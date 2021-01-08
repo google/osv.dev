@@ -309,7 +309,7 @@
     {
       "name": "faq",
       "x-displayName": "Frequently asked questions",
-      "description": "TODO.\n"
+      "description": "## Where does the data come from?\n\nCurrently, our data comes from\n[380+ open source projects](https://github.com/google/oss-fuzz/tree/master/projects)\nintegrated with\n[OSS-Fuzz](https://github.com/google/oss-fuzz). We are planning to work with the\nopen source community to expand this to other ecosytems.\n\n## How can I help onboard a new source of data?\n\nWe are finalizing the details of this, but please let us know of your interest\nvia either our [issue tracker](https://github.com/google/osv/issues) or\n[mailing list](mailto:osv-discuss@googlegroups.com)!\n\n## How do you obtain the introduced in / fixed in commits?\n\nWe perform bisects to determine these.\n\n## What does it mean when an introduced in / fixed in commit is a range?\n\nBisection may fail in some cases (e.g. build failures or reproduction flake) and\nwe may show a narrow range \"A:B\" of commits instead. This means the range of\ncommits from A (exclusive) to B (inclusive).\n\n## I'm a project maintainer. Can I edit the details of OSV entries for my project?\n\nWe are working on a way for project maintainers to edit relevant OSV\nvulnerabilities.\n"
     }
   ],
   "x-tagGroups": [

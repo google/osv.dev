@@ -13,16 +13,18 @@
 # limitations under the License.
 
 import json
+import os
+import shutil
 import subprocess
 
-_GENERATED_FILENAME = 'osv_service_v1.swagger.json'
+_GENERATED_FILENAME = 'v1/osv_service_v1.swagger.json'
 
 
 def main():
   subprocess.run([
-      'protoc', '-I', '.', '-I', '../v1', '-I', '../googleapis', '-I', '../',
+      'protoc', '-I', '../gcp/api', '-I', '../gcp/api/v1', '-I', '../gcp/api/googleapis',
       '--openapiv2_out', '.', '--openapiv2_opt', 'logtostderr=true',
-      '../v1/osv_service_v1.proto'
+      '../gcp/api/v1/osv_service_v1.proto'
   ],
                  check=True)
 
@@ -86,6 +88,8 @@ def main():
 
   with open(_GENERATED_FILENAME, 'w') as f:
     f.write(json.dumps(spec, indent=2))
+
+  shutil.move(_GENERATED_FILENAME, os.path.basename(_GENERATED_FILENAME))
 
 
 if __name__ == '__main__':

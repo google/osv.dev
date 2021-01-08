@@ -19,8 +19,13 @@ handlers:
   - url: /static
     static_dir: dist/static
 
-  - url: /docs
-    static_dir: docs
+  - url: /docs/osv_service_v1.swagger.json
+    static_files: docs/osv_service_v1.swagger.json
+    upload: docs/osv_service_v1.swagger.json
+
+  - url: /docs/.*
+    static_files: docs/index.html
+    upload: docs/index.html
 
   - url: /backend/.*
     script: auto

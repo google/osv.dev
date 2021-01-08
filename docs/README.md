@@ -1,3 +1,11 @@
+## Prerequisites
+
+To install the protobuf service converter, run:
+
+```bash
+go mod download
+```
+
 # Documentation generation
 
 API documentation is auto-generated from the service protobuf definitions. This
@@ -27,5 +35,6 @@ Docs are served from App Engine. To deploy them, change your working directory
 to `gcp/appengine` and deploy.
 
 ```bash
-gcloud app deploy --project=oss-vdb
+./deploy.sh
 ```
+

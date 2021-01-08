@@ -29,7 +29,7 @@ to onboard more sources of data.
 ```
 
 Detailed documentation for using the API can be found at
-<https://osv.dev/docs/index.html>.
+<https://osv.dev/docs/>.
 
 ## This repository
 

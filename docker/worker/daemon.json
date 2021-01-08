@@ -1,0 +1,8 @@
+{
+    "runtimes": {
+        "runsc": {
+            "path": "/usr/bin/runsc"
+        }
+    },
+    "default-runtime": "runsc"
+}

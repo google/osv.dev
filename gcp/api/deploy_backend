@@ -1,0 +1,20 @@
+#!/bin/bash
+
+if [ $# -lt 2 ]; then
+  echo "Usage: $0 <tag> <service-name>"
+  exit 1
+fi
+
+tag=$1
+name=$2
+
+rm -rf osv
+cp -r ../../lib/osv .
+docker build -t "gcr.io/oss-vdb/osv-server:$tag" . &&
+docker push "gcr.io/oss-vdb/osv-server:$tag"
+
+gcloud run deploy $name \
+  --platform managed \
+  --project=oss-vdb \
+  --region=us-central1 \
+  --image="gcr.io/oss-vdb/osv-server:$tag"

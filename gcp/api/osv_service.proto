@@ -1,0 +1,130 @@
+// Copyright 2021 Google LLC
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//      http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+syntax = "proto3";
+
+package osv;
+
+import "google/api/annotations.proto";
+import "google/protobuf/empty.proto";
+
+// Deprecated. Will be removed once V1 is finalized.
+
+// A vulnerability entry.
+message Bug {
+  // The unique allocated ID for the bug.
+  string id = 1;
+  // The project this bug is for.
+  string project = 2;
+  // The number from 0-100 representing how accurate the affected tags are
+  // expected to be.
+  int64 confidence = 3;
+  // The commit that caused the bug.
+  CommitV0 regressed = 4;
+  // The commit that fixed the bug.
+  CommitV0 fixed = 5;
+  // The crash type of the bug.
+  string crash_type = 6;
+  // The versions that are affected.
+  repeated AffectedVersion affected = 7;
+  // Links to more information.
+  repeated string references = 8;
+}
+
+// An affected version.
+message AffectedVersion {
+  oneof id {
+    // A git tag.
+    string tag = 1;
+  }
+}
+
+// An exact commit or commit range in a repo.
+message CommitV0 {
+  // The type of the repo. Currently always "git".
+  string repo_type = 1;
+  // The URL of the repo.
+  string repo_url = 2;
+  // Either "exact" or "range". If "exact", "commit" will be set. If "range",
+  //"to" and "from" will be set instead.
+  string type = 3;
+  // The exact commit reference. Will be set if type is "exact".
+  string commit = 4;
+  // The first commit in the commit range. Will be set if type is "range".
+  string from = 5;
+  // The last commit in the commit range. Will be set if type is "range".
+  string to = 6;
+}
+
+// Query format.
+message Query {
+  oneof param {
+    // The commit hash to query for. If specified, "tag" and "version" should not be set.
+    string commit = 1;
+    // The git tag to query for. If specified, "commit" and "version" should not be set.
+    string tag = 2;
+    // The version string to query for. A fuzzy match is done against upstream
+    // tags. If specified, "commit" and "tag" should not be set.
+    string version = 3;
+  }
+}
+
+// A list of Bug entries.
+message BugList {
+  repeated Bug bugs = 1;
+}
+
+// Parameters for GetBugById.
+message GetBugByIdParameters {
+  string bug_id = 1;
+}
+
+// Parameters for QueryAffected.
+message QueryAffectedParameters {
+  string project = 1;
+  Query query = 2;
+}
+
+// Parameters for QueryAffectedByCommit.
+message QueryAffectedByCommitParameters {
+  Query query = 1;
+}
+
+// Open source vulnerability database.
+service OSV {
+  // Return a `Bug` object for a given OSV ID.
+  rpc GetBugById ( GetBugByIdParameters ) returns ( Bug ) {
+    option (google.api.http) = {
+      get:"/v0/bugs/{bugId}"
+    };
+  }
+
+  // Query bugs for a particular project at a given commit or version.
+  rpc QueryAffected ( QueryAffectedParameters ) returns ( BugList ) {
+    option (google.api.http) = {
+      post:"/v0/projects/{project}/query"
+      body:"query"
+    };
+  }
+
+  // Query bugs for across all projects at a given commit. Since git SHAs should
+  // be unique, this is provided as a convenience over the project qualified
+  // endpoint.
+  rpc QueryAffectedByCommit ( QueryAffectedByCommitParameters ) returns ( BugList ) {
+    option (google.api.http) = {
+      post: "/v0/query"
+      body: "query"
+    };
+  }
+}

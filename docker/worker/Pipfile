@@ -1,0 +1,17 @@
+[[source]]
+url = "https://pypi.python.org/simple"
+verify_ssl = true
+name = "pypi"
+
+[packages]
+google-cloud-pubsub = "*"
+google-cloud-datastore = "*"
+google-cloud-logging = "*"
+google-cloud-ndb = "*"
+pygit2 = "*"
+PyYAML = "*"
+
+[dev-packages]
+yapf = "*"
+pylint = "*"
+

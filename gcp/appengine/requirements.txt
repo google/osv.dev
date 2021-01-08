@@ -1,0 +1,9 @@
+Flask==1.1.2
+google-auth==1.24.0
+google-cloud-datastore==1.15.3
+google-cloud-logging==2.0.1
+google-cloud-ndb==1.7.2
+google-cloud-pubsub==2.2.0
+google-cloud-secret-manager==1.0.0
+pygit2==1.4.0
+requests==2.25.0

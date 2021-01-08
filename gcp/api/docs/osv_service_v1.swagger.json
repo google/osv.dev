@@ -1,0 +1,335 @@
+{
+  "swagger": "2.0",
+  "info": {
+    "title": "OSV",
+    "version": "1.0",
+    "description": "# What is OSV?\n---\n\n### Introduction\n\nOSV is a vulnerability database for open source projects. It exposes an API that\nlets users of these projects query whether or not their versions are impacted.\n\nFor each vulnerability, we perform bisects to figure out the exact commit that\nintroduces the bug, as well the exact commit that fixes it. This is cross\nreferenced against upstream repositories to figure out the affected tags and\ncommit ranges.\n\n### How does the API work?\n\nThe API accepts a git hash, git tag name, or a version number and returns the\nlist of vulnerabilities that are present for that version.\n\n### Is there a rate limit?\n\nThere is a rate limit of 100 requests/min.\n\n### Where does the data come from?\n\nThis is currently filled with mostly C/C++ data from [OSS-Fuzz], a continuous\nfuzzing infrastructure for over 350 open source pojects that has found over\n[20000] bugs. This will be extended in the future to support other vulnerability\nsources.\n\nThe full list of vulnerabilities can be browsed at <https://osv.dev>.\n\n[OSS-Fuzz]: https://github.com/google/oss-fuzz\n[20000]:\u00a0https://bugs.chromium.org/p/oss-fuzz/issues/list?q=-status%3AWontFix%2CDuplicate%20-component%3AInfra&can=1r\n\n# Getting Started\n---\n\n### Before you begin\n\n1. Create a new [Cloud Platform project](https://console.developers.google.com/projectcreate).\n\n### Creating an API key\n\n1. [Create an API key](https://console.developers.google.com/apis/credentials) in the Google APIs Console.\n2. Click **Create credentials**, then select **API key**.\n3. Copy the key to the clipboard.\n4. Click **Close**.\n\n### Enable the API\n\nBefore you can make calls to this API, you need to enable it in the Cloud Platform project you created.\n1. [View this API](https://console.developers.google.com/apis/api/api.osv.dev/overview) in the Google APIs Console.\n2. Click the **Enable** button, then wait for it to complete.\n3. You can now call the API using the API key you created!\n\n### Using the API\n\nBrowse the reference section of this site to see examples of what you can do\nwith this API and how to use it. You can use the **Try this API** tool on the\nright side of an API method page to generate a sample request.\n\nFor a quick example using curl, run:\n\n```\ncurl -X POST -d '{\"commit\": \"6879efc2c1596d11a6a6ad296f80063b558d5e0f\"}' 'https://api.osv.dev/v1/query?key=API_KEY'\n```\n\nReplace the `API_KEY` above with your actual key.\n"
+  },
+  "consumes": [
+    "application/json"
+  ],
+  "produces": [
+    "application/json"
+  ],
+  "paths": {
+    "/v1/query": {
+      "post": {
+        "summary": "Query vulnerabilities for a particular project at a given commit or\nversion.",
+        "operationId": "OSV_QueryAffected",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1VulnerabilityList"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/v1Query"
+            }
+          }
+        ],
+        "tags": [
+          "api"
+        ],
+        "x-code-samples": [
+          {
+            "lang": "Bash",
+            "source": "curl -X POST -d \\\n  {\"commit\": \"6879efc2c1596d11a6a6ad296f80063b558d5e0f\"} \\\n  \"https://api.osv.dev/v1/query?key=API_KEY\""
+          }
+        ]
+      }
+    },
+    "/v1/vulns/{id}": {
+      "get": {
+        "summary": "Return a `Vulnerability` object for a given OSV ID.",
+        "operationId": "OSV_GetVulnById",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/osvVulnerability"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "tags": [
+          "api"
+        ],
+        "x-code-samples": [
+          {
+            "lang": "Bash",
+            "source": "curl \"https://api.osv.dev/v1/vulns/2020-111?key=API_KEY\""
+          }
+        ]
+      }
+    }
+  },
+  "definitions": {
+    "CommitRepoType": {
+      "type": "string",
+      "enum": [
+        "UNSPECIFIED",
+        "GIT"
+      ],
+      "default": "UNSPECIFIED",
+      "description": "The repository type."
+    },
+    "VulnerabilitySeverity": {
+      "type": "string",
+      "enum": [
+        "NONE",
+        "LOW",
+        "MEDIUM",
+        "HIGH",
+        "CRITICAL"
+      ],
+      "default": "NONE",
+      "description": "Vulnerability severity information. This matches the qualitative rating\nscale used for CVSSv3.1."
+    },
+    "osvAffectedRange": {
+      "type": "object",
+      "properties": {
+        "introducedIn": {
+          "$ref": "#/definitions/osvCommit",
+          "description": "Required. The earliest commit where this vulnerability was introduced in."
+        },
+        "fixedIn": {
+          "$ref": "#/definitions/osvCommit",
+          "description": "Optional. The commit that this vulnerability was fixed in. This must be\nreachable from the \"introduced_in\" commit.\n\nIf the vulnerability is not fixed, this will be unset."
+        }
+      },
+      "description": "Represents a range of commits in a branch that contain a vulnerability."
+    },
+    "osvAffects": {
+      "type": "object",
+      "properties": {
+        "ranges": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/osvAffectedRange"
+          },
+          "description": "Required (at least one entry). The commit ranges that contain this\nvulnerability. Each range entry should represent a different upstream\nbranch.\n\nWhen provided, OSV will attempt to detect cherry-picks and append affected\nranges for other branches."
+        },
+        "versions": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Optional. List of affected versions. This should match tag names in the\nupstream repository. OSV will populate or add to this automatically\nbased on the provided ranges."
+        }
+      },
+      "description": "Affected versions and commits."
+    },
+    "osvCommit": {
+      "type": "object",
+      "properties": {
+        "repoType": {
+          "$ref": "#/definitions/CommitRepoType",
+          "description": "Required. The type of the repo."
+        },
+        "repoUrl": {
+          "type": "string",
+          "description": "Required. The publicly accessible URL of the repo that can be directly\npassed to clone commands."
+        },
+        "commit": {
+          "type": "string",
+          "description": "Required. The commit identifier (e.g. git SHA). In some cases where the\nexact commit fails to be determined by automation, this may be a small\nrange in the form \"A:B\" which means the commit range from A (exclusive) to\nB (inclusive)."
+        }
+      },
+      "description": "Commit reference.\n\nIn some rare cases, this may refer to a small range of commits rather than an\nexact commit (to accomodate for automated systems). In such cases, the\nsemantics are as follows:\n\n- If this is referring to a commit which introduces a vulnerability, then\n*any* commits in the range is assumed to cause the vulnerability.\n\n- If this is referring to a commit which fixes a vulnerability, then *all*\ncommits in the range is assumed to cause the vulnerability."
+    },
+    "osvPackage": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "Required. Name of the package. Should match the name used in the package\necosystem (e.g. the npm package name). For C/C++ projects integrated in\nOSS-Fuzz, this is the name used for the integration."
+        },
+        "ecosystem": {
+          "type": "string",
+          "description": "Optional. The ecosystem for this package. If omitted, the name will be\nmatched against libraries that do not have a package management ecosystem\n(e.g. C/C++ libraries)."
+        }
+      },
+      "description": "Package information and version."
+    },
+    "osvVulnerability": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for this vulnerability (assigned by OSV).\nThis is of the format YEAR-N (e.g. \"2020-111\")."
+        },
+        "package": {
+          "$ref": "#/definitions/osvPackage",
+          "description": "Required. Package information."
+        },
+        "summary": {
+          "type": "string",
+          "description": "Required. One line human readable summary for the vulnerability. It is\nrecommended to keep this under 120 characters."
+        },
+        "details": {
+          "type": "string",
+          "description": "Required. Any additional human readable details for the vulnerability."
+        },
+        "severity": {
+          "$ref": "#/definitions/VulnerabilitySeverity",
+          "description": "Required. Severity of the vulnerability."
+        },
+        "affects": {
+          "$ref": "#/definitions/osvAffects",
+          "description": "Required. Commit and version impacts."
+        },
+        "referenceUrls": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Optional. URLs to more information/advisories (including the\nscheme e.g \"https://\")."
+        },
+        "cves": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Optional. CVEs, if allocated."
+        },
+        "packageEcosystemMetadata": {
+          "type": "object",
+          "description": "Optional. Additional metadata specific to the package ecosystem. For the\nJSON REST endpoint, this is any JSON object."
+        }
+      },
+      "description": "A vulnerability entry."
+    },
+    "protobufAny": {
+      "type": "object",
+      "properties": {
+        "typeUrl": {
+          "type": "string"
+        },
+        "value": {
+          "type": "string",
+          "format": "byte"
+        }
+      }
+    },
+    "protobufNullValue": {
+      "type": "string",
+      "enum": [
+        "NULL_VALUE"
+      ],
+      "default": "NULL_VALUE",
+      "description": "`NullValue` is a singleton enumeration to represent the null value for the\n`Value` type union.\n\n The JSON representation for `NullValue` is JSON `null`.\n\n - NULL_VALUE: Null value."
+    },
+    "rpcStatus": {
+      "type": "object",
+      "properties": {
+        "code": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "message": {
+          "type": "string"
+        },
+        "details": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/protobufAny"
+          }
+        }
+      }
+    },
+    "v1Query": {
+      "type": "object",
+      "properties": {
+        "commit": {
+          "type": "string",
+          "description": "The commit hash to query for. If specified, \"version\" should not be set."
+        },
+        "version": {
+          "type": "string",
+          "description": "The version string to query for. A fuzzy match is done against upstream\nversions. If specified, \"commit\" should not be set."
+        },
+        "package": {
+          "$ref": "#/definitions/osvPackage",
+          "description": "The package to query against. When a \"commit\" hash is given, this is\noptional."
+        }
+      },
+      "description": "Query format."
+    },
+    "v1VulnerabilityList": {
+      "type": "object",
+      "properties": {
+        "vulns": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/osvVulnerability"
+          }
+        }
+      },
+      "description": "A list of Vulnerability entries."
+    }
+  },
+  "host": "api.osv.dev",
+  "tags": [
+    {
+      "name": "api",
+      "x-displayName": "API",
+      "description": "API Endpoints"
+    },
+    {
+      "name": "vulnerability_schema",
+      "x-displayName": "Vulnerability schema",
+      "description": "<SchemaDefinition schemaRef=\"#/components/schemas/osvVulnerability\" />"
+    },
+    {
+      "name": "faq",
+      "x-displayName": "Frequently asked questions",
+      "description": "TODO.\n"
+    }
+  ],
+  "x-tagGroups": [
+    {
+      "name": "API",
+      "tags": [
+        "api"
+      ]
+    },
+    {
+      "name": "Schema",
+      "tags": [
+        "vulnerability_schema"
+      ]
+    },
+    {
+      "name": "Documentation",
+      "tags": [
+        "faq"
+      ]
+    }
+  ]
+}

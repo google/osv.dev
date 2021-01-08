@@ -1,0 +1,25 @@
+#!/bin/bash -ex
+
+if [ $# -lt 3 ]; then
+  echo "Usage: $0 <API> <Cloud Run service name> <api_config.yaml>"
+  exit 1
+fi
+
+api=$1
+service=$2
+api_config=$3
+this_dir=$(dirname "$(readlink -f "$0")")
+
+gcloud endpoints services deploy api_descriptor.pb $3 --project=oss-vdb
+config_id=$(curl -H "Authorization: Bearer $(gcloud auth print-access-token)" \
+            https://servicemanagement.googleapis.com/v1/services/$api/configs | \
+            jq -r '.serviceConfigs[0].id')
+echo Deploying for $config_id
+
+image_tag=$($this_dir/build_esp_image -s $api -p oss-vdb -c $config_id | grep "IMAGE:" | cut -f2 -d' ')
+gcloud run deploy $service \
+  --allow-unauthenticated \
+  --platform managed \
+  --project=oss-vdb \
+  --region=us-central1 \
+  --image="$image_tag"

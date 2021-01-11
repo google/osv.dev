@@ -36,8 +36,17 @@ def main():
   shutil.copytree(os.path.join(_ROOT_DIR, 'lib', 'osv'), osv_path)
 
   subprocess.run([
-      'protoc', '-I', api_dir, '-I', v1_api_dir, '-I', googleapis_dir,
-      '--openapiv2_out', '.', '--openapiv2_opt', 'logtostderr=true',
+      'protoc',
+      '-I',
+      api_dir,
+      '-I',
+      v1_api_dir,
+      '-I',
+      googleapis_dir,
+      '--openapiv2_out',
+      '.',
+      '--openapiv2_opt',
+      'logtostderr=true',
       service_proto_path,
   ],
                  check=True)
@@ -56,18 +65,13 @@ def main():
       'x-displayName': 'API',
       'description': 'API Endpoints'
   }, {
-      'name':
-          'vulnerability_schema',
-      'x-displayName':
-          'Vulnerability schema',
-      'description':
-          '<SchemaDefinition schemaRef='
-          '"#/components/schemas/osvVulnerability" />'
+      'name': 'vulnerability_schema',
+      'x-displayName': 'Vulnerability schema',
+      'description': '<SchemaDefinition schemaRef='
+                     '"#/components/schemas/osvVulnerability" />'
   }, {
-      'name':
-          'faq',
-      'x-displayName':
-          'Frequently asked questions',
+      'name': 'faq',
+      'x-displayName': 'Frequently asked questions',
       'description': faq,
   }]
 
@@ -86,11 +90,11 @@ def main():
   spec['paths']['/v1/vulns/{id}']['get']['tags'] = ['api']
 
   spec['paths']['/v1/query']['post']['x-code-samples'] = [{
-      'lang': 'Bash',
-      'source': (
-          'curl -X POST -d \\\n'
-          '  {"commit": "6879efc2c1596d11a6a6ad296f80063b558d5e0f"} \\\n'
-          '  "https://api.osv.dev/v1/query?key=$API_KEY"')
+      'lang':
+          'Bash',
+      'source': ('curl -X POST -d \\\n'
+                 '  {"commit": "6879efc2c1596d11a6a6ad296f80063b558d5e0f"} \\\n'
+                 '  "https://api.osv.dev/v1/query?key=$API_KEY"')
   }]
 
   spec['paths']['/v1/vulns/{id}']['get']['x-code-samples'] = [{

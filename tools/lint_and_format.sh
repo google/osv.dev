@@ -15,3 +15,4 @@
 
 script_dir=$(dirname "$0")
 git ls-files | grep '\.py$' | grep -v '_pb2' | xargs pylint --rcfile="$script_dir/../.pylintrc"
+git ls-files | grep '\.py$' | grep -v '_pb2' | xargs yapf -d --style "$script_dir/../.style.yapf"

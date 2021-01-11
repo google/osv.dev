@@ -31,8 +31,7 @@ class IntegrationTests(unittest.TestCase):
 
   _VULN_744 = {
       'affects': {
-          'ranges': [
-            {
+          'ranges': [{
               'fixedIn': {
                   'commit': '97319697c8f9f6ff27b32589947e1918e3015503',
                   'repoType': 'GIT',
@@ -43,8 +42,7 @@ class IntegrationTests(unittest.TestCase):
                   'repoType': 'GIT',
                   'repoUrl': 'https://github.com/mruby/mruby'
               },
-            },
-          ],
+          },],
           'versions': ['2.1.2-rc']
       },
       'details': 'OSS-Fuzz report: '

@@ -242,38 +242,23 @@ class ImpactTest(unittest.TestCase):
             ],
             'affected_fuzzy': ['0-1-1', '0-1-1', '1', '0-1-1', '0-2'],
             'additional_commit_ranges': [],
-            'fixed':
-                ('b1c95a196f22d06fcf80df8c6691cd113d8fefff:'
-                 '36f0bd9549298b44f9ff2496c9dd1326b3a9d0e2'),
-            'regressed':
-                'eefe8ec3f1f90d0e684890e810f3f21e8500a4cd',
-            'repo_url':
-                'https://repo.com/repo',
-            'confidence':
-                70,
-            'issue_id':
-                '9001',
-            'timestamp':
-                datetime.datetime(2020, 1, 1),
-            'source_id':
-                'oss-fuzz:123',
-            'project':
-                'project',
-            'ecosystem':
-                'ecosystem',
-            'summary':
-                'Heap-buffer-overflow in Foo',
-            'details':
-                'DETAILS',
+            'fixed': ('b1c95a196f22d06fcf80df8c6691cd113d8fefff:'
+                      '36f0bd9549298b44f9ff2496c9dd1326b3a9d0e2'),
+            'regressed': 'eefe8ec3f1f90d0e684890e810f3f21e8500a4cd',
+            'repo_url': 'https://repo.com/repo',
+            'confidence': 70,
+            'issue_id': '9001',
+            'timestamp': datetime.datetime(2020, 1, 1),
+            'source_id': 'oss-fuzz:123',
+            'project': 'project',
+            'ecosystem': 'ecosystem',
+            'summary': 'Heap-buffer-overflow in Foo',
+            'details': 'DETAILS',
             'reference_urls': ['https://url/'],
-            'severity':
-                'MEDIUM',
-            'public':
-                False,
-            'status':
-                osv.BugStatus.PROCESSED.value,
-            'has_affected':
-                True,
+            'severity': 'MEDIUM',
+            'public': False,
+            'status': osv.BugStatus.PROCESSED.value,
+            'has_affected': True,
             'search_indices': ['project', '2020-1337', '2020', '1337'],
         },
         ndb.Key(osv.Bug, '2020-1337').get()._to_dict())
@@ -334,38 +319,23 @@ class ImpactTest(unittest.TestCase):
             ],
             'affected_fuzzy': ['0-1-1', '0-1-1', '1', '0-1-1', '0-2'],
             'additional_commit_ranges': [],
-            'regressed':
-                'eefe8ec3f1f90d0e684890e810f3f21e8500a4cd',
-            'fixed':
-                ('eefe8ec3f1f90d0e684890e810f3f21e8500a4cd:'
-                 'b587c21c36a84e16cfc6b39eb68578d43b5281ad'),
-            'repo_url':
-                'https://repo.com/repo',
-            'confidence':
-                30,
-            'issue_id':
-                '9001',
-            'timestamp':
-                datetime.datetime(2020, 1, 1),
-            'source_id':
-                'oss-fuzz:123',
-            'project':
-                'project',
-            'ecosystem':
-                'ecosystem',
-            'summary':
-                'Heap-buffer-overflow in Foo',
-            'details':
-                'DETAILS',
+            'regressed': 'eefe8ec3f1f90d0e684890e810f3f21e8500a4cd',
+            'fixed': ('eefe8ec3f1f90d0e684890e810f3f21e8500a4cd:'
+                      'b587c21c36a84e16cfc6b39eb68578d43b5281ad'),
+            'repo_url': 'https://repo.com/repo',
+            'confidence': 30,
+            'issue_id': '9001',
+            'timestamp': datetime.datetime(2020, 1, 1),
+            'source_id': 'oss-fuzz:123',
+            'project': 'project',
+            'ecosystem': 'ecosystem',
+            'summary': 'Heap-buffer-overflow in Foo',
+            'details': 'DETAILS',
             'reference_urls': ['https://url/'],
-            'severity':
-                'MEDIUM',
-            'public':
-                False,
-            'status':
-                osv.BugStatus.PROCESSED.value,
-            'has_affected':
-                True,
+            'severity': 'MEDIUM',
+            'public': False,
+            'status': osv.BugStatus.PROCESSED.value,
+            'has_affected': True,
             'search_indices': ['project', '2020-1337', '2020', '1337'],
         },
         ndb.Key(osv.Bug, '2020-1337').get()._to_dict())

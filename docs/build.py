@@ -63,7 +63,7 @@ def main():
   spec['tags'] = [{
       'name': 'api',
       'x-displayName': 'API',
-      'description': 'API Endpoints'
+      'description': 'The API has 2 methods:'
   }, {
       'name': 'vulnerability_schema',
       'x-displayName': 'Vulnerability schema',
@@ -91,14 +91,18 @@ def main():
 
   spec['paths']['/v1/query']['post']['x-code-samples'] = [{
       'lang':
-          'Bash',
-      'source': ('curl -X POST -d \\\n'
-                 '  {"commit": "6879efc2c1596d11a6a6ad296f80063b558d5e0f"} \\\n'
-                 '  "https://api.osv.dev/v1/query?key=$API_KEY"')
+          'Curl example',
+      'source':
+          ('curl -X POST -d \\\n'
+           '  \'{"commit": "6879efc2c1596d11a6a6ad296f80063b558d5e0f"}\' \\\n'
+           '  "https://api.osv.dev/v1/query?key=$API_KEY"\n\n'
+           'curl -X POST -d \\\n'
+           '  \'{"package": {"name": "mruby"}, "version": "2.1.2rc"}\' \\\n'
+           '  "https://api.osv.dev/v1/query?key=$API_KEY"')
   }]
 
   spec['paths']['/v1/vulns/{id}']['get']['x-code-samples'] = [{
-      'lang': 'Bash',
+      'lang': 'Curl example',
       'source': 'curl "https://api.osv.dev/v1/vulns/2020-111?key=$API_KEY"'
   }]
 

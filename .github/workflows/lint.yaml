@@ -18,9 +18,8 @@ on: [pull_request]
 
 jobs:
   lint:
-    name: pylint
+    name: Lint and format
     runs-on: ubuntu-latest
-
     steps:
       - name: Check out code
         uses: actions/checkout@v2
@@ -29,6 +28,6 @@ jobs:
         with:
           python-version: '3.8'
       - name: Install dependencies
-        run: python -m pip install --upgrade pylint
-      - name: Run pylint
-        run: ./tools/lint.sh
+        run: python -m pip install --upgrade pylint yapf
+      - name: Run pylint and yapf
+        run: ./tools/lint_and_format.sh

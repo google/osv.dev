@@ -11,7 +11,6 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
 """Test helpers."""
 import os
 import requests
@@ -40,7 +39,9 @@ def start_datastore_emulator():
       '--host-port=localhost:' + str(_DATASTORE_EMULATOR_PORT),
       '--project=' + TEST_PROJECT_ID,
       '--no-store-on-disk',
-  ], stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+  ],
+                          stdout=subprocess.PIPE,
+                          stderr=subprocess.STDOUT)
 
   _wait_for_emulator_ready(proc, 'datastore', _DATASTORE_READY_INDICATOR)
   return proc

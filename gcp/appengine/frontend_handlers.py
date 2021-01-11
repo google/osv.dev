@@ -13,8 +13,6 @@
 # limitations under the License.
 """Handlers for the OSV web frontend."""
 
-import itertools
-
 from flask import abort
 from flask import Blueprint
 from flask import jsonify
@@ -24,7 +22,6 @@ from flask import request
 from google.cloud import ndb
 
 import osv
-import models
 import source_mapper
 
 blueprint = Blueprint('frontend_handlers', __name__)
@@ -40,21 +37,6 @@ _OSS_FUZZ_TRACKER_URL = 'https://bugs.chromium.org/p/oss-fuzz/issues/detail?id='
 def index():
   """Main page."""
   return render_template('index.html')
-
-
-def is_admin():
-  """Return whether or not we're an admin."""
-  # TODO(ochang): Replace this with a different auth mechanism before the
-  # dashboard is public.
-  user_email = request.headers.get('X-Goog-Authenticated-User-Email')
-  if not user_email:
-    return False
-
-  if not user_email.startswith(_IAP_ACCOUNT_NAMESPACE):
-    return False
-
-  user_email = user_email[len(_IAP_ACCOUNT_NAMESPACE):]
-  return bool(ndb.Key(models.Admin, user_email).get())
 
 
 def _to_commit(bug, commit_hash):
@@ -135,10 +117,8 @@ def query_handler():
   page = int(request.args.get('page', 1))
   affected_only = request.args.get('affected_only') == 'true'
 
-  query = osv.Bug.query(osv.Bug.status == osv.BugStatus.PROCESSED)
-
-  if not is_admin():
-    query = query.filter(osv.Bug.public == True)  # pylint: disable=singleton-comparison
+  query = osv.Bug.query(osv.Bug.status == osv.BugStatus.PROCESSED,
+                        osv.Bug.public == True)  # pylint: disable=singleton-comparison
 
   if search_string:
     query = query.filter(osv.Bug.search_indices == search_string)
@@ -188,26 +168,12 @@ def package_handler():
   query = osv.PackageTagInfo.query(osv.PackageTagInfo.package == package,
                                    osv.PackageTagInfo.ecosystem == ecosystem,
                                    osv.PackageTagInfo.bugs > '')
-  include_private = is_admin()
-  if include_private:
-    private_query = osv.PackageTagInfo.query(
-        osv.PackageTagInfo.package == package,
-        osv.PackageTagInfo.ecosystem == ecosystem,
-        osv.PackageTagInfo.bugs_private > '')
-
-    results = itertools.chain(query, private_query)
-  else:
-    results = query
-
   tags_with_bugs = []
-  for tag_info in results:
+  for tag_info in query:
     tag_with_bugs = {
         'tag': tag_info.tag,
         'bugs': tag_info.bugs,
     }
-
-    if include_private:
-      tag_with_bugs['bugs'].extend(tag_info.bugs_private)
 
     tags_with_bugs.append(tag_with_bugs)
 
@@ -235,7 +201,7 @@ def vulnerability_handler():
     abort(404)
     return None
 
-  if not bug.public and not is_admin():
+  if not bug.public:
     abort(403)
     return None
 

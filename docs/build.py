@@ -11,6 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+"""Documentation builder."""
 
 import json
 import os
@@ -60,7 +61,8 @@ def main():
       'x-displayName':
           'Vulnerability schema',
       'description':
-          '<SchemaDefinition schemaRef="#/components/schemas/osvVulnerability" />'
+          '<SchemaDefinition schemaRef='
+          '"#/components/schemas/osvVulnerability" />'
   }, {
       'name':
           'faq',

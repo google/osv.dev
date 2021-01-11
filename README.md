@@ -40,5 +40,12 @@ This repository contains all the code for running OSV on GCP. This consists of:
 - Workers for bisection and impact analysis (`docker/worker`)
 - Sample tools (`tools`)
 
+You'll need to check out submodules as well for many local building steps to
+work:
+
+```bash
+git submodule update --init --recursive
+```
+
 Contributions are welcome! We also have a [mailing
 list](mailto:osv-discuss@googlegroups.com).

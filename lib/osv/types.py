@@ -72,6 +72,8 @@ class RegressResult(ndb.Model):
   severity = ndb.StringProperty(validator=_check_valid_severity)
   # Reference URLs.
   reference_urls = ndb.StringProperty(repeated=True)
+  # Source timestamp.
+  timestamp = ndb.DateTimeProperty()
 
 
 class FixResult(ndb.Model):
@@ -96,6 +98,8 @@ class FixResult(ndb.Model):
   severity = ndb.StringProperty(validator=_check_valid_severity)
   # Reference URLs.
   reference_urls = ndb.StringProperty(repeated=True)
+  # Source timestamp.
+  timestamp = ndb.DateTimeProperty()
 
 
 class PackageInfo(ndb.Model):

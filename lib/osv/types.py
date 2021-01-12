@@ -220,6 +220,7 @@ class Bug(ndb.Model):
         details=self.details,
         package=package,
         severity=severity,
-        affects=affects)
+        affects=affects,
+        reference_urls=self.reference_urls)
 
     return result

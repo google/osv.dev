@@ -42,9 +42,11 @@ _TASKS_TOPIC = 'projects/{project}/topics/{topic}'.format(
 blueprint = Blueprint('handlers', __name__)
 
 
-def _get_counter():
+def _get_counter(year=None):
   """Get next Bug ID."""
-  year = datetime.datetime.utcnow().year
+  if year is None:
+    year = datetime.datetime.utcnow().year
+
   key = ndb.Key(osv.IDCounter, year)
 
   counter = key.get()
@@ -122,24 +124,35 @@ def process_results():
     abort(403)
 
   publisher = pubsub_v1.PublisherClient()
-  counter = _get_counter()
+  counters = {}
 
-  try:
-    for regress_result in osv.RegressResult.query():
-      key_id = regress_result.key.id()
-      if not regress_result.commit:
-        logging.info('Missing commit info for %s.', key_id)
-        continue
+  for regress_result in osv.RegressResult.query():
+    key_id = regress_result.key.id()
+    if not regress_result.commit:
+      logging.info('Missing commit info for %s.', key_id)
+      continue
 
-      fixed_result = ndb.Key(osv.FixResult, key_id).get()
-      if not fixed_result or not fixed_result.commit:
-        logging.info('Fixed result does not exist for %s.', key_id)
+    fixed_result = ndb.Key(osv.FixResult, key_id).get()
+    if not fixed_result or not fixed_result.commit:
+      logging.info('Fixed result does not exist for %s.', key_id)
 
-      bug = osv.Bug.query(osv.Bug.source_id == key_id).get()
-      if bug:
-        logging.info('Bug already exists for %s.', key_id)
-        continue
+    bug = osv.Bug.query(osv.Bug.source_id == key_id).get()
+    if bug:
+      logging.info('Bug already exists for %s.', key_id)
+      continue
 
+    # Get ID counter for the year.
+    if regress_result.timestamp:
+      id_year = regress_result.timestamp.year
+    else:
+      id_year = None
+
+    counter = counters.get(id_year)
+    if not counter:
+      counter = _get_counter(id_year)
+      counters[id_year] = counter
+
+    try:
       cur_id = '{}-{}'.format(counter.key.id(), counter.next_id)
       logging.info('Allocating OSV-%s.', cur_id)
       counter.next_id += 1
@@ -161,8 +174,8 @@ def process_results():
           type='impact',
           source_id=key_id,
           allocated_id=cur_id)
-  finally:
-    counter.put()
+    finally:
+      counter.put()
 
   # Re-compute bugs that aren't fixed.
   for bug in osv.Bug.query(osv.Bug.status == osv.BugStatus.PROCESSED,

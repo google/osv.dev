@@ -14,6 +14,7 @@
 # limitations under the License.
 """OSV Worker."""
 import argparse
+import datetime
 import json
 import logging
 import os
@@ -279,6 +280,10 @@ def process_bisect_task(oss_fuzz_dir, bisect_type, source_id, message):
   crash_state = message.attributes['crash_state']
   severity = message.attributes['severity'].upper()
 
+  timestamp = message.attributes['timestamp']
+  if timestamp:
+    timestamp = datetime.datetime.fromisoformat(timestamp)
+
   new_commit = message.attributes['new_commit']
   testcase = message.data
   logging.info(
@@ -312,10 +317,15 @@ def process_bisect_task(oss_fuzz_dir, bisect_type, source_id, message):
   entity.issue_id = issue_id
   if issue_id:
     entity.reference_urls.append(OSS_FUZZ_ISSUE_URL + issue_id)
+
   entity.summary = get_oss_fuzz_summary(crash_type, crash_state)
   entity.details = get_oss_fuzz_details(issue_id, crash_type, crash_state)
+
   if severity:
     entity.severity = severity
+
+  if timestamp:
+    entity.timestamp = timestamp
 
   if result and result.commit:
     logging.info('Bisected to %s', result.commit)

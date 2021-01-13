@@ -1,3 +1,4 @@
+#!/bin/sh
 # Copyright 2021 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -12,10 +13,16 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-FROM gcr.io/oss-vdb/worker
+if [ $# -lt 1 ]; then
+  echo "Usage: $0 /path/to/service_account.json"
+  exit 1
+fi
 
-RUN apt-get update && \
-    apt-get install -y \
-        google-cloud-sdk-datastore-emulator
+rm -rf osv
+cp -r ../../lib/osv .
 
-COPY daemon.json /etc/docker/daemon.json
+export GOOGLE_CLOUD_PROJECT=oss-vdb
+virtualenv ENV
+source ENV/bin/activate
+pip install -r requirements.txt
+python integration_tests.py "$1"

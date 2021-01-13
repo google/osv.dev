@@ -64,8 +64,12 @@ def start_esp(port, backend_port, service_account_path, log_path):
   service_account_dir = os.path.dirname(service_account_path)
   service_account_name = os.path.basename(service_account_path)
 
+  network = '--net=host'
+  if os.getenv('CLOUDBUILD'):
+    network = '--net=cloudbuild'
+
   esp_proc = subprocess.Popen([
-      'docker', 'run', '--rm', '--net=host', '-v',
+      'docker', 'run', '--rm', network, '-v',
       f'{service_account_dir}:/esp', f'--publish={port}',
       'gcr.io/endpoints-release/endpoints-runtime:2', '--disable_tracing',
       '--service=api-test.osv.dev', '--rollout_strategy=managed',

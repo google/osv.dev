@@ -14,9 +14,11 @@
 """API server integration tests."""
 
 import json
-import unittest
+import os
 import sys
+import subprocess
 import time
+import unittest
 
 import requests
 
@@ -104,16 +106,33 @@ class IntegrationTests(unittest.TestCase):
     self.assertDictEqual({'vulns': [self._VULN_744]}, response.json())
 
 
+def print_logs(filename):
+  """Print logs."""
+  if not os.path.exists(filename):
+    return
+
+  print(filename + ':')
+  with open(filename) as f:
+    print(f.read())
+
+
 if __name__ == '__main__':
   if len(sys.argv) < 2:
     print(f'Usage: {sys.argv[0]} path/to/service_account.json')
     sys.exit(1)
 
+  subprocess.run(
+      ['docker', 'pull', 'gcr.io/endpoints-release/endpoints-runtime:2'],
+      check=True)
+
   service_account_path = sys.argv.pop()
   server = test_server.start(service_account_path, port=_PORT)
-  time.sleep(3)
+  time.sleep(20)
 
   try:
     unittest.main()
   finally:
     server.stop()
+
+    print_logs('esp.log')
+    print_logs('backend.log')

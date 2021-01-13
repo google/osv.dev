@@ -60,15 +60,18 @@
       <h3>Open source</h3>
       <p>
         The code is <a href="https://github.com/google/osv">open source</a>
-        (Apache 2 licence)
+        (Apache 2 licence).
       </p>
       <h3>More information</h3>
       <p>
         Detailed documentation is available <a
-        href="https://osv.dev/docs/">here</a>. Check out FAQ <a
+        href="https://osv.dev/docs/">here</a>.
+      </p>
+      <p>
+        Check out our FAQ <a
         href="https://osv.dev/docs/#tag/faq">here</a>, report issues <a
-        href="https://github.com/google/osv/issues">here</a> and discuss things
-        on mailing list <a
+        href="https://github.com/google/osv/issues">here</a> and discuss
+        on the mailing list <a
         href="mailto:osv-discuss@googlegroups.com">here</a>.
       </p>
     </b-jumbotron>

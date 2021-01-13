@@ -39,7 +39,7 @@
         href="https://github.com/google/oss-fuzz">OSS-Fuzz</a> (mostly C/C++).
         More data sources to come soon.
       </p>
-      <h3>API & Docs</h3>
+      <h3>API</h3>
       <p>
         OSV provides a simple <a
         href="https://osv.dev/docs/#section/Getting-Started">API</a>
@@ -59,7 +59,8 @@
       </pre>
       <h3>Open source</h3>
       <p>
-        The code is <a href="https://github.com/google/osv">open source</a>.
+        The code is <a href="https://github.com/google/osv">open source</a>
+        (Apache 2 licence)
       </p>
       <h3>More information</h3>
       <p>

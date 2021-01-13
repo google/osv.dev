@@ -28,6 +28,11 @@ We perform bisections using the reproduction testcase and package binary to dete
 Bisection may fail in some cases (e.g. build failures or reproduction flakes) and
 we may show a narrow range "A:B" of commits instead of an exact commit. This means that the result lies in the range of commits from A (exclusive) to B (inclusive).
 
+## Which version control systems (VCS) do you support?
+
+Our efforts are currently focused on projects that use git. Support for other
+popular version control systems will be added as we get cycles.
+
 ## I'm a project maintainer. Can I edit the details of OSV entries for my project?
 
 We are working on a way for project maintainers to edit relevant OSV vulnerabilities. Please subscribe to our [mailing list](mailto:osv-discuss@googlegroups.com) for updates on this.

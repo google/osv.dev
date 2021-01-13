@@ -175,7 +175,7 @@ def get_affected_range(repo, regress_commits, fix_commits):
           get_commit_list(repo, equivalent_regress_commit,
                           last_affected_commit))
 
-  return list(commits), ranges
+  return commits, ranges
 
 
 def get_commit_range(repo, commit_or_range):

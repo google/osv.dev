@@ -119,6 +119,16 @@ class ImpactTest(unittest.TestCase):
         public=False)
     allocated_bug.put()
 
+    should_be_deleted = osv.AffectedCommit(
+        id='2020-1337-abcd',
+        bug_id='2020-1337',
+        commit='abcd',
+        confidence=100,
+        project='project',
+        ecosystem='ecosystem',
+        public=False)
+    should_be_deleted.put()
+
   def tearDown(self):
     self.clone_repository_patcher.stop()
 

@@ -224,6 +224,10 @@ def generate_package_info_tasks():
     if not result.project or not result.repo_url:
       continue
 
+    if result.ecosystem is None:
+      # Invalid/incomplete bug.
+      continue
+
     publisher.publish(
         _TASKS_TOPIC,
         data=b'',

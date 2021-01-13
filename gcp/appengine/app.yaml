@@ -44,3 +44,5 @@ inbound_services:
 
 automatic_scaling:
   min_instances: 1
+
+instance_class: F4

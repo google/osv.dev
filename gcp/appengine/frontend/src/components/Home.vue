@@ -35,14 +35,14 @@
         accurate affected commit ranges and versions.
       </p>
       <p>
-        Currently, this feed contains (mostly C/C++) vulnerabilities from <a
-        href="https://github.com/google/oss-fuzz">OSS-Fuzz</a>. More language
-        ecosystems to come soon.
+        Currently, this feed contains vulnerabilities from <a
+        href="https://github.com/google/oss-fuzz">OSS-Fuzz</a> (mostly C/C++).
+        More data sources to come soon.
       </p>
-      <h3>API</h3>
+      <h3>API & Docs</h3>
       <p>
         OSV provides a simple <a
-        href="https://api-docs.osv.dev/docs/api.osv.dev/g/c/Guides/Getting%20Started">API</a>
+        href="https://osv.dev/docs/#section/Getting-Started">API</a>
         that lets you query for vulnerabilities by a commit hash or version
         string:
       </p>
@@ -59,11 +59,16 @@
       </pre>
       <h3>Open source</h3>
       <p>
-        This is completely <a href="https://github.com/google/osv">open source</a>.
+        The code is <a href="https://github.com/google/osv">open source</a>.
       </p>
-      <h3>More info</h3>
+      <h3>More information</h3>
       <p>
-        More detailed documentation is available at TODO.
+        Detailed documentation is available <a
+        href="https://osv.dev/docs/">here</a>. Check out FAQ <a
+        href="https://osv.dev/docs/#tag/faq">here</a>, report issues <a
+        href="https://github.com/google/osv/issues">here</a> and discuss things
+        on mailing list <a
+        href="mailto:osv-discuss@googlegroups.com">here</a>.
       </p>
     </b-jumbotron>
   </div>

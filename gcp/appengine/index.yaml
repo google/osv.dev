@@ -59,12 +59,6 @@ indexes:
 
   - kind: Bug
     properties:
-      - name: status
-      - name: timestamp
-        direction: desc
-
-  - kind: Bug
-    properties:
       - name: public
       - name: status
 
@@ -73,6 +67,13 @@ indexes:
       - name: fixed
       - name: status
 
+  # TODO(ochang): Remove timestamp indexes once migration completes.
+  - kind: Bug
+    properties:
+      - name: status
+      - name: timestamp
+        direction: desc
+
   - kind: Bug
     properties:
     - name: search_indices
@@ -111,6 +112,60 @@ indexes:
     properties:
     - name: public
     - name: timestamp
+      direction: desc
+
+  - kind: Bug
+    properties:
+      - name: status
+      - name: sort_key
+        direction: desc
+
+  - kind: Bug
+    properties:
+    - name: search_indices
+    - name: has_affected
+    - name: public
+    - name: sort_key
+      direction: desc
+
+  - kind: Bug
+    properties:
+    - name: has_affected
+    - name: public
+    - name: sort_key
+      direction: desc
+
+  - kind: Bug
+    properties:
+    - name: has_affected
+    - name: sort_key
+      direction: desc
+
+  - kind: Bug
+    properties:
+    - name: search_indices
+    - name: has_affected
+    - name: sort_key
+      direction: desc
+
+  - kind: Bug
+    properties:
+    - name: has_affected
+    - name: public
+    - name: status
+    - name: sort_key
+      direction: desc
+
+  - kind: Bug
+    properties:
+    - name: search_indices
+    - name: sort_key
+      direction: desc
+
+  - kind: Bug
+    properties:
+    - name: public
+    - name: sort_key
       direction: desc
 
   - kind: Bug

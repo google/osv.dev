@@ -60,7 +60,7 @@
       <h3>Open source</h3>
       <p>
         The code is <a href="https://github.com/google/osv">open source</a>
-        (Apache 2 licence).
+        (Apache 2 license).
       </p>
       <h3>More information</h3>
       <p>

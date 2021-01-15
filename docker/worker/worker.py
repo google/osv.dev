@@ -304,10 +304,6 @@ def process_bisect_task(oss_fuzz_dir, bisect_type, source_id, message):
   fuzz_target = message.attributes['fuzz_target']
   old_commit = message.attributes['old_commit']
 
-  timestamp = message.attributes['timestamp']
-  if timestamp:
-    timestamp = datetime.datetime.fromisoformat(timestamp)
-
   new_commit = message.attributes['new_commit']
   testcase = message.data
   logging.info(

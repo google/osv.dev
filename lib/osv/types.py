@@ -173,6 +173,8 @@ class Bug(ndb.Model):
   search_indices = ndb.StringProperty(repeated=True)
   # Whether or not the bug has any affected tags (auto-populated).
   has_affected = ndb.BooleanProperty()
+  # Sort key.
+  sort_key = ndb.StringProperty()
 
   def _pre_put_hook(self):
     """Pre-put hook for populating search indices."""
@@ -180,11 +182,14 @@ class Bug(ndb.Model):
     if self.project:
       self.search_indices.append(self.project)
 
+    key_parts = self.key.id().split('-')
     self.search_indices.append(self.key.id())
-    self.search_indices.extend(self.key.id().split('-'))
+    self.search_indices.extend(key_parts)
 
     self.has_affected = bool(self.affected)
     self.affected_fuzzy = bug.normalize_tags(self.affected)
+
+    self.sort_key = key_parts[0] + '-' + key_parts[1].zfill(7)
 
   def to_vulnerability(self):
     """Convert to Vulnerability proto."""

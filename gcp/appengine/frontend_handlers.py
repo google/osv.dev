@@ -126,7 +126,7 @@ def query_handler():
   if affected_only:
     query = query.filter(osv.Bug.has_affected == True)  # pylint: disable=singleton-comparison
 
-  query = query.order(-osv.Bug.timestamp)
+  query = query.order(-osv.Bug.sort_key)
   results = {
       'total': (page + _PAGE_LOOKAHEAD) * _PAGE_SIZE,
       'items': [],

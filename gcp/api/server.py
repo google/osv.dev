@@ -143,7 +143,7 @@ class OSVServicer(osv_service_v1_pb2_grpc.OSVServicer, BaseServicer):
     """Return a `Vulnerability` object for a given OSV ID.
     """
     bug = ndb.Key(osv.Bug, request.id).get()
-    if not bug or bug.status != osv.BugStatus.PROCESSED:
+    if not bug or bug.status == osv.BugStatus.UNPROCESSED:
       context.abort(grpc.StatusCode.NOT_FOUND, 'Bug not found.')
       return None
 
@@ -293,7 +293,8 @@ def query_by_version(project,
                      privileged,
                      to_response=bug_to_response):
   """Query by (fuzzy) version."""
-  query = osv.Bug.query(osv.Bug.project == project,
+  query = osv.Bug.query(osv.Bug.status == osv.BugStatus.PROCESSED,
+                        osv.Bug.project == project,
                         osv.Bug.ecosystem == ecosystem,
                         osv.Bug.affected_fuzzy == osv.normalize_tag(version))
 

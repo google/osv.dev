@@ -211,6 +211,7 @@ class Bug(ndb.Model):
 
     package = vulnerability_pb2.Package(
         name=self.project, ecosystem=self.ecosystem)
+
     affects = vulnerability_pb2.Affects(
         ranges=[affected_range], versions=self.affected)
 
@@ -219,10 +220,16 @@ class Bug(ndb.Model):
     else:
       severity = vulnerability_pb2.Vulnerability.Severity.NONE
 
+    details = self.details
+    if self.status == bug.BugStatus.INVALID:
+      affects = None
+      details = 'INVALID'
+      severity = vulnerability_pb2.Vulnerability.Severity.NONE
+
     result = vulnerability_pb2.Vulnerability(
         id=self.key.id(),
         summary=self.summary,
-        details=self.details,
+        details=details,
         package=package,
         severity=severity,
         affects=affects,

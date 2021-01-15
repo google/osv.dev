@@ -400,6 +400,10 @@ def process_impact_task(source_id, message):
                   source_id, existing_bug.key.id())
     return
 
+  if existing_bug and existing_bug.status == osv.BugStatus.INVALID:
+    logging.warning('Bug %s already marked as invalid.', existing_bug.key.id())
+    return
+
   if existing_bug:
     public = existing_bug.public
   else:
@@ -510,6 +514,22 @@ def process_package_info_task(message):
   ndb.put_multi(infos)
 
 
+def mark_bug_invalid(message):
+  """Mark a bug as invalid."""
+  source_id = get_source_id(message)
+  bug = osv.Bug.query(osv.Bug.source_id == source_id).get()
+  if not bug:
+    logging.error('Bug with source id %s does not exist.', source_id)
+    return
+
+  bug.status = osv.BugStatus.INVALID
+  bug.put()
+
+  affected_commits = osv.AffectedCommit.query(
+      osv.AffectedCommit.bug_id == bug.key.id())
+  ndb.delete_multi([commit.key for commit in affected_commits])
+
+
 def get_source_id(message):
   """Get message ID."""
   source_id = message.attributes['source_id']
@@ -541,6 +561,8 @@ def do_process_task(oss_fuzz_dir, subscriber, subscription, ack_id, message,
           logging.error('Failed to process impact: %s', traceback.format_exc())
       elif task_type == 'package_info':
         process_package_info_task(message)
+      elif task_type == 'invalid':
+        mark_bug_invalid(message)
 
       _state.source_id = None
       subscriber.acknowledge(subscription=subscription, ack_ids=[ack_id])

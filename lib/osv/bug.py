@@ -22,6 +22,7 @@ class BugStatus(enum.IntFlag):
 
   UNPROCESSED = 0
   PROCESSED = 1
+  INVALID = 2
 
 
 # Groups of numbers, or {RC,alpha,beta,preview}<optional number>. Include a

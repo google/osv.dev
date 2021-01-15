@@ -64,6 +64,18 @@ class IntegrationTests(unittest.TestCase):
       'summary': 'Heap-double-free in mrb_default_allocf'
   }
 
+  _VULN_2258 = {
+      'details': 'INVALID',
+      'id': '2020-2258',
+      'package': {
+          'name': 'grok'
+      },
+      'referenceUrls': [
+          'https://bugs.chromium.org/p/oss-fuzz/issues/detail?id=28505'
+      ],
+      'summary': 'Heap-buffer-overflow in grk::t1_part1::T1Part1::decompress'
+  }
+
   def setUp(self):
     self.maxDiff = None  # pylint: disable=invalid-name
 
@@ -71,6 +83,11 @@ class IntegrationTests(unittest.TestCase):
     """Test getting a vulnerability."""
     response = requests.get(_API + '/v1/vulns/2020-744')
     self.assertDictEqual(self._VULN_744, response.json())
+
+  def test_get_invalid(self):
+    """Test getting an invalid vulnerability."""
+    response = requests.get(_API + '/v1/vulns/2020-2258')
+    self.assertDictEqual(self._VULN_2258, response.json())
 
   def test_query_commit(self):
     """Test querying by commit."""

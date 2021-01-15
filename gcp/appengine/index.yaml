@@ -59,6 +59,21 @@ indexes:
 
   - kind: Bug
     properties:
+      - name: status
+      - name: project
+      - name: ecosystem
+      - name: affected_fuzzy
+
+  - kind: Bug
+    properties:
+      - name: status
+      - name: project
+      - name: ecosystem
+      - name: affected_fuzzy
+      - name: public
+
+  - kind: Bug
+    properties:
       - name: public
       - name: status
 

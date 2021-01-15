@@ -671,6 +671,33 @@ class EcosystemTest(unittest.TestCase):
                                               'openssl'))
 
 
+class MarkBugInvalidTest(unittest.TestCase):
+  """Test mark_bug_invalid."""
+
+  def setUp(self):
+    tests.reset_emulator()
+
+  def test_mark_bug_invalid(self):
+    """Test mark_bug_invalid."""
+    osv.Bug(id='2021-1', source_id='oss-fuzz:1337').put()
+    osv.AffectedCommit(bug_id='2021-1').put()
+    osv.AffectedCommit(bug_id='2021-1').put()
+
+    message = mock.Mock()
+    message.attributes = {
+        'type': 'invalid',
+        'testcase_id': '1337',
+        'source_id': '',
+    }
+
+    worker.mark_bug_invalid(message)
+    bug = ndb.Key(osv.Bug, '2021-1').get()
+    self.assertEqual(osv.BugStatus.INVALID, bug.status)
+
+    commits = list(osv.AffectedCommit.query())
+    self.assertEqual(0, len(commits))
+
+
 if __name__ == '__main__':
   os.system('pkill -f datastore')
   ds_emulator = tests.start_datastore_emulator()

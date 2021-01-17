@@ -47,11 +47,12 @@ class ServerInstance:
 def start_backend(port, log_path):
   """Start backend server."""
   log_handle = open(log_path, 'w')
+  env = os.environ.copy()
+  env['GOOGLE_CLOUD_PROJECT'] = _GCP_PROJECT
+
   backend_proc = subprocess.Popen(
       [sys.executable, 'server.py', f'--port={port}'],
-      env={
-          'GOOGLE_CLOUD_PROJECT': _GCP_PROJECT,
-      },
+      env=env,
       stdout=log_handle,
       stderr=subprocess.STDOUT)
 
@@ -64,12 +65,8 @@ def start_esp(port, backend_port, service_account_path, log_path):
   service_account_dir = os.path.dirname(service_account_path)
   service_account_name = os.path.basename(service_account_path)
 
-  network = '--net=host'
-  if os.getenv('CLOUDBUILD'):
-    network = '--net=cloudbuild'
-
   esp_proc = subprocess.Popen([
-      'docker', 'run', '--rm', network, '-v',
+      'docker', 'run', '--rm', '--net=host', '-v',
       f'{service_account_dir}:/esp', f'--publish={port}',
       'gcr.io/endpoints-release/endpoints-runtime:2', '--disable_tracing',
       '--service=api-test.osv.dev', '--rollout_strategy=managed',

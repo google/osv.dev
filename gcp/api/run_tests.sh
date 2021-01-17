@@ -21,8 +21,11 @@ fi
 rm -rf osv
 cp -r ../../lib/osv .
 
-export GOOGLE_CLOUD_PROJECT=oss-vdb
 virtualenv ENV
 source ENV/bin/activate
 pip install -r requirements.txt
+service docker start
+
+export GOOGLE_CLOUD_PROJECT=oss-vdb
+export GOOGLE_APPLICATION_CREDENTIALS="$1"
 python integration_tests.py "$1"

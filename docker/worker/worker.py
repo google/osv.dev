@@ -266,6 +266,34 @@ def get_ecosystem(oss_fuzz_dir, project_name):
   return ecosystems.get(language, '')
 
 
+def _set_result_attributes(oss_fuzz_dir, message, entity):
+  """Set necessary fields from bisection message."""
+  project_name = message.attributes['project_name']
+  issue_id = message.attributes['issue_id'] or None
+  crash_type = message.attributes['crash_type']
+  crash_state = message.attributes['crash_state']
+  severity = message.attributes['severity'].upper()
+
+  timestamp = message.attributes['timestamp']
+  if timestamp:
+    timestamp = datetime.datetime.fromisoformat(timestamp)
+
+  entity.project = project_name
+  entity.ecosystem = get_ecosystem(oss_fuzz_dir, project_name)
+  entity.issue_id = issue_id
+  if issue_id:
+    entity.reference_urls.append(OSS_FUZZ_ISSUE_URL + issue_id)
+
+  entity.summary = get_oss_fuzz_summary(crash_type, crash_state)
+  entity.details = get_oss_fuzz_details(issue_id, crash_type, crash_state)
+
+  if severity:
+    entity.severity = severity
+
+  if timestamp:
+    entity.timestamp = timestamp
+
+
 def process_bisect_task(oss_fuzz_dir, bisect_type, source_id, message):
   """Process a bisect task."""
   bisect_type = message.attributes['type']
@@ -275,14 +303,6 @@ def process_bisect_task(oss_fuzz_dir, bisect_type, source_id, message):
   sanitizer = message.attributes['sanitizer']
   fuzz_target = message.attributes['fuzz_target']
   old_commit = message.attributes['old_commit']
-  issue_id = message.attributes['issue_id'] or None
-  crash_type = message.attributes['crash_type']
-  crash_state = message.attributes['crash_state']
-  severity = message.attributes['severity'].upper()
-
-  timestamp = message.attributes['timestamp']
-  if timestamp:
-    timestamp = datetime.datetime.fromisoformat(timestamp)
 
   new_commit = message.attributes['new_commit']
   testcase = message.data
@@ -312,20 +332,7 @@ def process_bisect_task(oss_fuzz_dir, bisect_type, source_id, message):
     assert bisect_type == 'regressed'
     entity = osv.RegressResult(id=source_id)
 
-  entity.project = project_name
-  entity.ecosystem = get_ecosystem(oss_fuzz_dir, project_name)
-  entity.issue_id = issue_id
-  if issue_id:
-    entity.reference_urls.append(OSS_FUZZ_ISSUE_URL + issue_id)
-
-  entity.summary = get_oss_fuzz_summary(crash_type, crash_state)
-  entity.details = get_oss_fuzz_details(issue_id, crash_type, crash_state)
-
-  if severity:
-    entity.severity = severity
-
-  if timestamp:
-    entity.timestamp = timestamp
+  _set_result_attributes(oss_fuzz_dir, message, entity)
 
   if result and result.commit:
     logging.info('Bisected to %s', result.commit)
@@ -391,6 +398,10 @@ def process_impact_task(source_id, message):
   if existing_bug and existing_bug.key.id() != allocated_bug_id:
     logging.error('Bug entry already exists for %s with a different ID %s',
                   source_id, existing_bug.key.id())
+    return
+
+  if existing_bug and existing_bug.status == osv.BugStatus.INVALID:
+    logging.warning('Bug %s already marked as invalid.', existing_bug.key.id())
     return
 
   if existing_bug:
@@ -503,6 +514,22 @@ def process_package_info_task(message):
   ndb.put_multi(infos)
 
 
+def mark_bug_invalid(message):
+  """Mark a bug as invalid."""
+  source_id = get_source_id(message)
+  bug = osv.Bug.query(osv.Bug.source_id == source_id).get()
+  if not bug:
+    logging.error('Bug with source id %s does not exist.', source_id)
+    return
+
+  bug.status = osv.BugStatus.INVALID
+  bug.put()
+
+  affected_commits = osv.AffectedCommit.query(
+      osv.AffectedCommit.bug_id == bug.key.id())
+  ndb.delete_multi([commit.key for commit in affected_commits])
+
+
 def get_source_id(message):
   """Get message ID."""
   source_id = message.attributes['source_id']
@@ -534,6 +561,8 @@ def do_process_task(oss_fuzz_dir, subscriber, subscription, ack_id, message,
           logging.error('Failed to process impact: %s', traceback.format_exc())
       elif task_type == 'package_info':
         process_package_info_task(message)
+      elif task_type == 'invalid':
+        mark_bug_invalid(message)
 
       _state.source_id = None
       subscriber.acknowledge(subscription=subscription, ack_ids=[ack_id])
@@ -547,7 +576,7 @@ def do_process_task(oss_fuzz_dir, subscriber, subscription, ack_id, message,
     done_event.set()
 
 
-def handle_timeout(subscriber, subscription, ack_id, message):
+def handle_timeout(subscriber, subscription, ack_id, oss_fuzz_dir, message):
   """Handle a timeout."""
   subscriber.acknowledge(subscription=subscription, ack_ids=[ack_id])
 
@@ -567,6 +596,8 @@ def handle_timeout(subscriber, subscription, ack_id, message):
   else:
     assert bisect_type == 'regressed'
     entity = osv.RegressResult(id=source_id)
+
+  _set_result_attributes(oss_fuzz_dir, message, entity)
 
   entity.commit = format_commit_range(old_commit, new_commit)
   entity.error = 'Timeout'
@@ -598,7 +629,7 @@ def task_loop(oss_fuzz_dir):
     done = done_event.wait(timeout=MAX_LEASE_DURATION)
     logging.info('Returned from task thread')
     if not done:
-      handle_timeout(subscriber, subscription, ack_id, message)
+      handle_timeout(subscriber, subscription, ack_id, oss_fuzz_dir, message)
       logging.error('Timed out processing task')
 
   while True:

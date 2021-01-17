@@ -72,13 +72,18 @@ def bug_to_response(bug, detailed=False):
   response = {
       'id': bug.key.id(),
       'summary': bug.summary,
-      'affected': _get_affected(bug),
       'package': {
           'name': bug.project,
           'ecosystem': bug.ecosystem,
       },
       'isFixed': bool(bug.fixed),
+      'invalid': bug.status == osv.BugStatus.INVALID
   }
+
+  if bug.status == osv.BugStatus.INVALID:
+    response['affected'] = []
+  else:
+    response['affected'] = _get_affected(bug)
 
   if detailed:
     response['repo_url'] = bug.repo_url
@@ -91,6 +96,12 @@ def bug_to_response(bug, detailed=False):
     if bug.fixed:
       response['fixed'] = _to_commit(bug, bug.fixed)
       response['fixed']['link'] = _commit_to_link(response['fixed'])
+
+    if bug.status == osv.BugStatus.INVALID:
+      response['regressed'] = _to_commit(bug, 'INVALID')
+      response['fixed'] = _to_commit(bug, 'INVALID')
+      response['details'] = 'INVALID'
+      response['severity'] = 'INVALID'
 
   return response
 
@@ -126,7 +137,7 @@ def query_handler():
   if affected_only:
     query = query.filter(osv.Bug.has_affected == True)  # pylint: disable=singleton-comparison
 
-  query = query.order(-osv.Bug.timestamp)
+  query = query.order(-osv.Bug.sort_key)
   results = {
       'total': (page + _PAGE_LOOKAHEAD) * _PAGE_SIZE,
       'items': [],
@@ -197,7 +208,7 @@ def vulnerability_handler():
     abort(404)
     return None
 
-  if bug.status != osv.BugStatus.PROCESSED:
+  if bug.status == osv.BugStatus.UNPROCESSED:
     abort(404)
     return None
 

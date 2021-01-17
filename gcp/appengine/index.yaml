@@ -60,8 +60,17 @@ indexes:
   - kind: Bug
     properties:
       - name: status
-      - name: timestamp
-        direction: desc
+      - name: project
+      - name: ecosystem
+      - name: affected_fuzzy
+
+  - kind: Bug
+    properties:
+      - name: status
+      - name: project
+      - name: ecosystem
+      - name: affected_fuzzy
+      - name: public
 
   - kind: Bug
     properties:
@@ -75,42 +84,56 @@ indexes:
 
   - kind: Bug
     properties:
-    - name: search_indices
-    - name: has_affected
-    - name: public
-    - name: timestamp
-      direction: desc
-
-  - kind: Bug
-    properties:
-    - name: has_affected
-    - name: public
-    - name: timestamp
-      direction: desc
-
-  - kind: Bug
-    properties:
-    - name: has_affected
-    - name: timestamp
-      direction: desc
+      - name: status
+      - name: sort_key
+        direction: desc
 
   - kind: Bug
     properties:
     - name: search_indices
     - name: has_affected
-    - name: timestamp
+    - name: public
+    - name: sort_key
+      direction: desc
+
+  - kind: Bug
+    properties:
+    - name: has_affected
+    - name: public
+    - name: sort_key
+      direction: desc
+
+  - kind: Bug
+    properties:
+    - name: has_affected
+    - name: sort_key
       direction: desc
 
   - kind: Bug
     properties:
     - name: search_indices
-    - name: timestamp
+    - name: has_affected
+    - name: sort_key
+      direction: desc
+
+  - kind: Bug
+    properties:
+    - name: has_affected
+    - name: public
+    - name: status
+    - name: sort_key
+      direction: desc
+
+  - kind: Bug
+    properties:
+    - name: search_indices
+    - name: sort_key
       direction: desc
 
   - kind: Bug
     properties:
     - name: public
-    - name: timestamp
+    - name: sort_key
       direction: desc
 
   - kind: Bug

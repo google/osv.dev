@@ -173,6 +173,8 @@ class Bug(ndb.Model):
   search_indices = ndb.StringProperty(repeated=True)
   # Whether or not the bug has any affected tags (auto-populated).
   has_affected = ndb.BooleanProperty()
+  # Sort key.
+  sort_key = ndb.StringProperty()
 
   def _pre_put_hook(self):
     """Pre-put hook for populating search indices."""
@@ -180,11 +182,14 @@ class Bug(ndb.Model):
     if self.project:
       self.search_indices.append(self.project)
 
+    key_parts = self.key.id().split('-')
     self.search_indices.append(self.key.id())
-    self.search_indices.extend(self.key.id().split('-'))
+    self.search_indices.extend(key_parts)
 
     self.has_affected = bool(self.affected)
     self.affected_fuzzy = bug.normalize_tags(self.affected)
+
+    self.sort_key = key_parts[0] + '-' + key_parts[1].zfill(7)
 
   def to_vulnerability(self):
     """Convert to Vulnerability proto."""
@@ -206,6 +211,7 @@ class Bug(ndb.Model):
 
     package = vulnerability_pb2.Package(
         name=self.project, ecosystem=self.ecosystem)
+
     affects = vulnerability_pb2.Affects(
         ranges=[affected_range], versions=self.affected)
 
@@ -214,10 +220,16 @@ class Bug(ndb.Model):
     else:
       severity = vulnerability_pb2.Vulnerability.Severity.NONE
 
+    details = self.details
+    if self.status == bug.BugStatus.INVALID:
+      affects = None
+      details = 'INVALID'
+      severity = vulnerability_pb2.Vulnerability.Severity.NONE
+
     result = vulnerability_pb2.Vulnerability(
         id=self.key.id(),
         summary=self.summary,
-        details=self.details,
+        details=details,
         package=package,
         severity=severity,
         affects=affects,

@@ -25,7 +25,15 @@ import requests
 import test_server
 
 _PORT = 8080
-_API = f'http://localhost:{_PORT}'
+
+
+def _api():
+  if os.getenv('CLOUDBUILD'):
+    host = test_server.get_cloudbuild_esp_host()
+  else:
+    host = 'localhost'
+
+  return f'http://{host}:{_PORT}'
 
 
 class IntegrationTests(unittest.TestCase):
@@ -45,7 +53,7 @@ class IntegrationTests(unittest.TestCase):
                   'repoUrl': 'https://github.com/mruby/mruby'
               },
           },],
-          'versions': ['2.1.2-rc']
+          'versions': ['2.1.2', '2.1.2-rc', '2.1.2-rc2']
       },
       'details': 'OSS-Fuzz report: '
                  'https://bugs.chromium.org/p/oss-fuzz/issues/detail?id=23801\n'
@@ -83,18 +91,18 @@ class IntegrationTests(unittest.TestCase):
 
   def test_get(self):
     """Test getting a vulnerability."""
-    response = requests.get(_API + '/v1/vulns/2020-744')
+    response = requests.get(_api() + '/v1/vulns/2020-744')
     self.assertDictEqual(self._VULN_744, response.json())
 
   def test_get_invalid(self):
     """Test getting an invalid vulnerability."""
-    response = requests.get(_API + '/v1/vulns/2020-2258')
+    response = requests.get(_api() + '/v1/vulns/2020-2258')
     self.assertDictEqual(self._VULN_2258, response.json())
 
   def test_query_commit(self):
     """Test querying by commit."""
     response = requests.post(
-        _API + '/v1/query',
+        _api() + '/v1/query',
         data=json.dumps({
             'commit': '233cb49903fa17637bd51f4a16b4ca61e0750f24',
         }))
@@ -103,7 +111,7 @@ class IntegrationTests(unittest.TestCase):
   def test_query_version(self):
     """Test querying by version."""
     response = requests.post(
-        _API + '/v1/query',
+        _api() + '/v1/query',
         data=json.dumps({
             'version': '2.1.2rc',
             'package': {
@@ -113,7 +121,7 @@ class IntegrationTests(unittest.TestCase):
     self.assertDictEqual({'vulns': [self._VULN_744]}, response.json())
 
     response = requests.post(
-        _API + '/v1/query',
+        _api() + '/v1/query',
         data=json.dumps({
             'version': '2.1.2-rc',
             'package': {
@@ -144,7 +152,7 @@ if __name__ == '__main__':
 
   service_account_path = sys.argv.pop()
   server = test_server.start(service_account_path, port=_PORT)
-  time.sleep(20)
+  time.sleep(30)
 
   try:
     unittest.main()

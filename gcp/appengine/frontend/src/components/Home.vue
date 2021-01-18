@@ -18,8 +18,11 @@
   <div>
     <b-jumbotron id="container">
       <template #header>
-        <img id="hero_logo" src="./hero_logo.png">
+        <video id="splash" autoplay="" muted="" loop="">
+          <source src="./splash.mp4" type="video/mp4">
+        </video>
       </template>
+      <br/>
       <h3>Database for open source vulnerabilities</h3>
       <p>
         Matching vulnerabilities with affected versions of open source software
@@ -91,7 +94,7 @@ export default {
     margin: 0 auto;
   }
 
-  #hero_logo {
+  #splash {
     display: block;
     margin: 0 auto;
     max-width: 100%;

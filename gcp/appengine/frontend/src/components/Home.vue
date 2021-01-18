@@ -54,7 +54,7 @@
       </pre>
       <pre>
         curl -X POST -d \
-            '{"version": "1.0.0", "package": {"name": "foo", "ecosystem": "bar"}' \
+            '{"version": "1.0.0", "package": {"name": "foo", "ecosystem": "bar"}}' \
             "https://api.osv.dev/v1/query?key=$API_KEY"
       </pre>
       <h3>Open source</h3>

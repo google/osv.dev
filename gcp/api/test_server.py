@@ -47,15 +47,40 @@ class ServerInstance:
 def start_backend(port, log_path):
   """Start backend server."""
   log_handle = open(log_path, 'w')
+  env = os.environ.copy()
+  env['GOOGLE_CLOUD_PROJECT'] = _GCP_PROJECT
+
   backend_proc = subprocess.Popen(
       [sys.executable, 'server.py', f'--port={port}'],
-      env={
-          'GOOGLE_CLOUD_PROJECT': _GCP_PROJECT,
-      },
+      env=env,
       stdout=log_handle,
       stderr=subprocess.STDOUT)
 
   return backend_proc
+
+
+def get_cloudbuild_esp_host():
+  """Get cloudbuild host."""
+  result = subprocess.run([
+      'docker', 'inspect', 'esp',
+      '--format={{(index .NetworkSettings.Networks "cloudbuild").IPAddress}}'
+  ],
+                          capture_output=True,
+                          check=True)
+  ip = result.stdout.decode().strip()
+  print('Got cloudbuild ESP host', ip)
+  return ip
+
+
+def get_ip():
+  """Get IP."""
+  result = subprocess.run([
+      'hostname',
+      '-i',
+  ], capture_output=True, check=True)
+  ip = result.stdout.decode().strip()
+  print('Got cloudbuild host', ip)
+  return ip
 
 
 def start_esp(port, backend_port, service_account_path, log_path):
@@ -64,12 +89,19 @@ def start_esp(port, backend_port, service_account_path, log_path):
   service_account_dir = os.path.dirname(service_account_path)
   service_account_name = os.path.basename(service_account_path)
 
+  if os.getenv('CLOUDBUILD'):
+    network = '--network=cloudbuild'
+    host = get_ip()
+  else:
+    network = '--network=host'
+    host = 'localhost'
+
   esp_proc = subprocess.Popen([
-      'docker', 'run', '--rm', '--net=host', '-v',
+      'docker', 'run', '--privileged', '--name', 'esp', network, '--rm', '-v',
       f'{service_account_dir}:/esp', f'--publish={port}',
       'gcr.io/endpoints-release/endpoints-runtime:2', '--disable_tracing',
       '--service=api-test.osv.dev', '--rollout_strategy=managed',
-      f'--listener_port={port}', f'--backend=grpc://localhost:{backend_port}',
+      f'--listener_port={port}', f'--backend=grpc://{host}:{backend_port}',
       f'--service_account_key=/esp/{service_account_name}', '--non_gcp',
       '--enable_debug'
   ],

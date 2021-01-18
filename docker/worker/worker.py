@@ -470,7 +470,7 @@ def process_impact_task(source_id, message):
 
   for introduced_in, fixed_in in sorted(result.affected_ranges, key=_sort_key):
     if (introduced_in == existing_bug.regressed and
-        fixed_in == existing_bug.fixed):
+        (fixed_in or '') == existing_bug.fixed):
       # Don't include the main range.
       continue
 

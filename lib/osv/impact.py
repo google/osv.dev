@@ -61,6 +61,39 @@ def clone_with_retries(git_url, checkout_dir):
       continue
 
 
+class RangeCollector:
+  """Affected range collector."""
+
+  def __init__(self):
+    self.grouped_ranges = {}
+
+  def add(self, introduced_in, fixed_in):
+    """Add a new commit range."""
+    if introduced_in in self.grouped_ranges:
+      if fixed_in is None:
+        # New range doesn't add anything new.
+        return
+
+      self.grouped_ranges[introduced_in].append((introduced_in, fixed_in))
+
+      # Remove any existing ranges with the same introduced in commit but with a
+      # None fixed commit.
+      self.grouped_ranges[introduced_in] = [
+          commit_range for commit_range in self.grouped_ranges[introduced_in]
+          if commit_range[1] is not None
+      ]
+    else:
+      self.grouped_ranges[introduced_in] = [(introduced_in, fixed_in)]
+
+  def ranges(self):
+    """Return a set representing the collected commit ranges."""
+    ranges = set()
+    for value in self.grouped_ranges.values():
+      ranges.update(value)
+
+    return ranges
+
+
 def get_affected(git_url, regress_commit_or_range, fix_commit_or_range):
   """"Get list of affected tags and commits for a bug given regressed and fixed
   commits."""
@@ -124,7 +157,7 @@ def get_affected(git_url, regress_commit_or_range, fix_commit_or_range):
 
 def get_affected_range(repo, regress_commits, fix_commits):
   """Get affected range."""
-  ranges = set()
+  range_collector = RangeCollector()
   commits = set()
   seen_commits = set()
 
@@ -153,7 +186,7 @@ def get_affected_range(repo, regress_commits, fix_commits):
       if equivalent_commit:
         equivalent_fix_commit = equivalent_commit
 
-    ranges.add((equivalent_regress_commit, equivalent_fix_commit))
+    range_collector.add(equivalent_regress_commit, equivalent_fix_commit)
 
     last_affected_commits = []
     if equivalent_fix_commit:
@@ -175,7 +208,7 @@ def get_affected_range(repo, regress_commits, fix_commits):
           get_commit_list(repo, equivalent_regress_commit,
                           last_affected_commit))
 
-  return commits, ranges
+  return commits, range_collector.ranges()
 
 
 def get_commit_range(repo, commit_or_range):

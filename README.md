@@ -24,7 +24,7 @@ to onboard more sources of data.
       "https://api.osv.dev/v1/query?key=$API_KEY"
 
   curl -X POST -d \
-      '{"version": "1.0.0", "package": {"name": "foo", "ecosystem": "bar"}' \
+      '{"version": "1.0.0", "package": {"name": "foo", "ecosystem": "bar"}}' \
       "https://api.osv.dev/v1/query?key=$API_KEY"
 ```
 

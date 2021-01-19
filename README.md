@@ -24,12 +24,16 @@ to onboard more sources of data.
       "https://api.osv.dev/v1/query?key=$API_KEY"
 
   curl -X POST -d \
-      '{"version": "1.0.0", "package": {"name": "foo", "ecosystem": "bar"}' \
+      '{"version": "1.0.0", "package": {"name": "foo", "ecosystem": "bar"}}' \
       "https://api.osv.dev/v1/query?key=$API_KEY"
 ```
 
 Detailed documentation for using the API can be found at
 <https://osv.dev/docs/>.
+
+## Architecture
+
+You can find an overview of OSV's architecture [here](docs/architecture.md).
 
 ## This repository
 

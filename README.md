@@ -31,6 +31,10 @@ to onboard more sources of data.
 Detailed documentation for using the API can be found at
 <https://osv.dev/docs/>.
 
+## Architecture
+
+You can find an overview of OSV's architecture [here](docs/architecture.md).
+
 ## This repository
 
 This repository contains all the code for running OSV on GCP. This consists of:

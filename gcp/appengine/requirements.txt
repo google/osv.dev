@@ -6,4 +6,5 @@ google-cloud-ndb==1.7.2
 google-cloud-pubsub==2.2.0
 google-cloud-secret-manager==1.0.0
 pygit2==1.4.0
+redis==3.5.3
 requests==2.25.0

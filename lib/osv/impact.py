@@ -295,7 +295,8 @@ def get_equivalent_commit(repo, to_search, target_commit):
     return None
 
   for commit in commits:
-    if not commit.parents:
+    # Ignore commits without parents and merge commits with multiple parents.
+    if not commit.parents or len(commit.parents) > 1:
       continue
 
     patch_id = repo.cache.get(commit.id)

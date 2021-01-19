@@ -540,9 +540,6 @@ class ImpactTest(unittest.TestCase):
             ],
             'affected_fuzzy': ['0-1-1', '0-1-1', '1', '0-1-1', '0-2'],
             'additional_commit_ranges': [{
-                'introduced_in': 'eefe8ec3f1f90d0e684890e810f3f21e8500a4cd',
-                'fixed_in': None
-            }, {
                 'introduced_in': 'febfac1940086bc1f6d3dc33fda0a1d1ba336209',
                 'fixed_in': None
             }],

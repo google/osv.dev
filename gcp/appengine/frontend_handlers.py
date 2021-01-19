@@ -56,6 +56,21 @@ def _to_commit(bug, commit_hash):
   return commit
 
 
+def _get_commits(bug, commit_hashes):
+  """Get commits."""
+  commits = []
+  for i, commit_hash in enumerate(set(commit_hashes)):
+    if commit_hash is None:
+      continue
+
+    commit = _to_commit(bug, commit_hash)
+    commit['link'] = _commit_to_link(commit)
+    commit['id'] = i
+    commits.append(commit)
+
+  return commits
+
+
 def _get_affected(bug):
   """Get affected tags."""
   result = []
@@ -89,17 +104,20 @@ def bug_to_response(bug, detailed=False):
     response['repo_url'] = bug.repo_url
     response['details'] = bug.details
     response['severity'] = bug.severity
-    response['regressed'] = _to_commit(bug, bug.regressed)
-    response['regressed']['link'] = _commit_to_link(response['regressed'])
     response['references'] = bug.reference_urls
+    response['regressed'] = _get_commits(bug, [bug.regressed] + [
+        commit_range.introduced_in
+        for commit_range in bug.additional_commit_ranges
+    ])
 
     if bug.fixed:
-      response['fixed'] = _to_commit(bug, bug.fixed)
-      response['fixed']['link'] = _commit_to_link(response['fixed'])
+      response['fixed'] = _get_commits(bug, [bug.fixed] + [
+          commit_range.fixed_in for commit_range in bug.additional_commit_ranges
+      ])
 
     if bug.status == osv.BugStatus.INVALID:
-      response['regressed'] = _to_commit(bug, 'INVALID')
-      response['fixed'] = _to_commit(bug, 'INVALID')
+      response['regressed'] = [_to_commit(bug, 'INVALID')]
+      response['fixed'] = [_to_commit(bug, 'INVALID')]
       response['details'] = 'INVALID'
       response['severity'] = 'INVALID'
 

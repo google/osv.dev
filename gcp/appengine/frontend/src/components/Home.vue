@@ -17,12 +17,10 @@
 <template>
   <div>
     <b-jumbotron id="container">
-      <template #header>
-        <video id="splash" autoplay="" muted="" loop="">
-          <source src="./splash.mp4" type="video/mp4">
-        </video>
-      </template>
-      <br/>
+       <template #header>
+         <img id="hero_logo" src="./hero_logo.png">
+       </template>
+
       <h3>Database for open source vulnerabilities</h3>
       <p>
         Matching vulnerabilities with affected versions of open source software
@@ -49,7 +47,6 @@
         that lets you query for vulnerabilities by a commit hash or version
         string:
       </p>
-
       <pre>
         curl -X POST -d \
             '{"commit": "6879efc2c1596d11a6a6ad296f80063b558d5e0f"}' \
@@ -60,6 +57,10 @@
             '{"version": "1.0.0", "package": {"name": "foo", "ecosystem": "bar"}}' \
             "https://api.osv.dev/v1/query?key=$API_KEY"
       </pre>
+      <h4>Demo</h4>
+      <video controls id="splash" autoplay="" muted="" loop="">
+        <source src="./splash.mp4" type="video/mp4">
+      </video>
       <h3>Open source</h3>
       <p>
         The code is <a href="https://github.com/google/osv">open source</a>
@@ -94,8 +95,17 @@ export default {
     margin: 0 auto;
   }
 
+  #hero_logo {
+    display: block;
+    max-width: 50%;
+    width: auto;
+    height: auto;
+    margin: 0 auto;
+  }
+
   #splash {
     display: block;
+    padding: 1em;
     margin: 0 auto;
     max-width: 100%;
     width: auto;

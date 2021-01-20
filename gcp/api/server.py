@@ -241,7 +241,11 @@ def bug_to_response(bug):
 def _get_bugs(bug_ids, to_response=bug_to_response):
   """Get bugs from bug ids."""
   bugs = ndb.get_multi([ndb.Key(osv.Bug, bug_id) for bug_id in bug_ids])
-  return [to_response(bug) for bug in bugs]
+  return [
+      to_response(bug)
+      for bug in bugs
+      if bug and bug.status == osv.BugStatus.PROCESSED
+  ]
 
 
 def query_by_commit(project,

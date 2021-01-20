@@ -46,3 +46,10 @@ automatic_scaling:
   min_instances: 1
 
 instance_class: F4
+
+env_variables:
+  REDISHOST: 10.126.238.68
+  REDISPORT: 6379
+
+vpc_access_connector:
+  name: 'projects/oss-vdb/locations/us-west2/connectors/connector'

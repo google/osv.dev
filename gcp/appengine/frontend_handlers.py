@@ -13,6 +13,8 @@
 # limitations under the License.
 """Handlers for the OSV web frontend."""
 
+import os
+
 from flask import abort
 from flask import Blueprint
 from flask import jsonify
@@ -22,6 +24,7 @@ from flask import request
 from google.cloud import ndb
 
 import osv
+import rate_limiter
 import source_mapper
 
 blueprint = Blueprint('frontend_handlers', __name__)
@@ -31,6 +34,24 @@ _PAGE_SIZE = 16
 _PAGE_LOOKAHEAD = 4
 _IAP_ACCOUNT_NAMESPACE = 'accounts.google.com:'
 _OSS_FUZZ_TRACKER_URL = 'https://bugs.chromium.org/p/oss-fuzz/issues/detail?id='
+_REQUESTS_PER_MIN = 30
+
+
+def _is_prod():
+  return os.getenv('GAE_ENV', '').startswith('standard')
+
+
+if _is_prod():
+  redis_host = os.environ.get('REDISHOST', 'localhost')
+  redis_port = int(os.environ.get('REDISPORT', 6379))
+  limiter = rate_limiter.RateLimiter(
+      redis_host, redis_port, requests_per_min=_REQUESTS_PER_MIN)
+
+  @blueprint.before_request
+  def check_rate_limit():
+    ip_addr = request.headers.get('X-Appengine-User-Ip', 'unknown')
+    if not limiter.check_request(ip_addr):
+      abort(429)
 
 
 @blueprint.route('/')

@@ -115,12 +115,20 @@
       "type": "object",
       "properties": {
         "introducedIn": {
-          "$ref": "#/definitions/osvCommit",
-          "description": "Required. The earliest commit where this vulnerability was introduced in."
+          "description": "Required. The earliest commit where this vulnerability was introduced in.",
+          "allOf": [
+            {
+              "$ref": "#/definitions/osvCommit"
+            }
+          ]
         },
         "fixedIn": {
-          "$ref": "#/definitions/osvCommit",
-          "description": "Optional. The commit that this vulnerability was fixed in. This must be\nreachable from the \"introduced_in\" commit.\n\nIf the vulnerability is not fixed, this will be unset."
+          "description": "Optional. The commit that this vulnerability was fixed in. This must be\nreachable from the \"introduced_in\" commit.\n\nIf the vulnerability is not fixed, this will be unset.",
+          "allOf": [
+            {
+              "$ref": "#/definitions/osvCommit"
+            }
+          ]
         }
       },
       "description": "Represents a range of commits in a branch that contain a vulnerability."
@@ -185,8 +193,12 @@
           "description": "Unique identifier for this vulnerability (assigned by OSV).\nThis is of the format YEAR-N (e.g. \"2020-111\")."
         },
         "package": {
-          "$ref": "#/definitions/osvPackage",
-          "description": "Required. Package information."
+          "description": "Required. Package information.",
+          "allOf": [
+            {
+              "$ref": "#/definitions/osvPackage"
+            }
+          ]
         },
         "summary": {
           "type": "string",
@@ -197,12 +209,20 @@
           "description": "Required. Any additional human readable details for the vulnerability."
         },
         "severity": {
-          "$ref": "#/definitions/VulnerabilitySeverity",
-          "description": "Required. Severity of the vulnerability."
+          "description": "Required. Severity of the vulnerability.",
+          "allOf": [
+            {
+              "$ref": "#/definitions/VulnerabilitySeverity"
+            }
+          ]
         },
         "affects": {
-          "$ref": "#/definitions/osvAffects",
-          "description": "Required. Commit and version impacts."
+          "description": "Required. Affected commit ranges and versions.",
+          "allOf": [
+            {
+              "$ref": "#/definitions/osvAffects"
+            }
+          ]
         },
         "referenceUrls": {
           "type": "array",
@@ -275,8 +295,12 @@
           "description": "The version string to query for. A fuzzy match is done against upstream\nversions. If specified, \"commit\" should not be set."
         },
         "package": {
-          "$ref": "#/definitions/osvPackage",
-          "description": "The package to query against. When a \"commit\" hash is given, this is\noptional."
+          "description": "The package to query against. When a \"commit\" hash is given, this is\noptional.",
+          "allOf": [
+            {
+              "$ref": "#/definitions/osvPackage"
+            }
+          ]
         }
       },
       "description": "Query format."
@@ -307,6 +331,11 @@
       "description": "<SchemaDefinition schemaRef=\"#/components/schemas/osvVulnerability\" />"
     },
     {
+      "name": "commit_schema",
+      "x-displayName": "Commit schema",
+      "description": "<SchemaDefinition schemaRef=\"#/components/schemas/osvCommit\" />"
+    },
+    {
       "name": "faq",
       "x-displayName": "Frequently asked questions",
       "description": "## Why did you create OSV?\n\nWe created OSV initially for our [OSS-Fuzz](https://github.com/google/oss-fuzz) service, where we needed a way to store, track and query the large numbers of security bugs we find and reproduce in open source software in an automated fashion. We understand that fuzzing is not the only way vulnerabilities are discovered, so we're hoping to expand the data sources tracked by OSV in the future.\n\n## How does OSV compare to the existing CVE process?\n\nOSV complements the existing CVE process. We plan to automatically include CVE data in OSV for the cases where we have information on when a vulnerability was introduced into the source or can automatically reproduce it. The goal of OSV is to provide OSS consumers with precise vulnerability metadata in an easy-to-query database (using either package versions or commits). So, this will make CVE vulnerabilities easier to query and faster to adopt. Currently, OSV provides access to thousands of vulnerabilities found by our OSS-Fuzz fuzzing service. In near future, OSV plans to aggregate vulnerabilities from other data sources, e.g. direct developer input and package managers.\n\n## Where does the data come from?\n\nCurrently, our data aggregates [thousands of vulnerabilities](https://bugs.chromium.org/p/oss-fuzz/issues/list?q=Type%3DBug-Security%20-status%3AWontFix%2CDuplicate&can=1) found via fuzzing\n[380+ open source projects](https://github.com/google/oss-fuzz/tree/master/projects)\nintegrated with\n[OSS-Fuzz](https://github.com/google/oss-fuzz). We are planning to work with the\nopen source community to expand this to various language ecosystems.\n\n## How can I help onboard a new source of data?\n\nPlease let us know of your interest via either our [issue tracker](https://github.com/google/osv/issues)\nor the [mailing list](mailto:osv-discuss@googlegroups.com). We are looking for data sources that can provide precise information on where the bug was introduced and where it got fixed (via versions / tags or commits or both). If this information is not available, we need a reproducer testcase to accurately determine this via build bisection. Our goal is to provide [easy access](https://osv.dev/docs/#tag/api) to actionable vulnerabilities in a fully automated way.\n \n## How do you determine the introduced in / fixed in commits?\n\nWe perform bisections using the reproduction testcase and package binary to determine these values.\n\n## What does it mean when an introduced in / fixed in commit is a range?\n\nBisection may fail in some cases (e.g. build failures or reproduction flakes) and\nwe may show a narrow range \"A:B\" of commits instead of an exact commit. This means that the result lies in the range of commits from A (exclusive) to B (inclusive).\n\n## Which version control systems (VCS) do you support?\n\nOur efforts are currently focused on projects that use git. Support for other\npopular version control systems will be added as we get cycles.\n\n## I'm a project maintainer. Can I edit the details of OSV entries for my project?\n\nWe are working on a way for project maintainers to edit relevant OSV vulnerabilities. Please subscribe to our [mailing list](mailto:osv-discuss@googlegroups.com) for updates on this.\n\n## Will I be able to see bugs that don\u2019t have a fix yet?\n\nWe comply with the OSS-Fuzz vulnerability disclosure policy, either 90 days from report or 30 days after a fix is checked in, whichever comes earlier. The vulnerabilities are hidden until the disclosure timeline is met.\n"
@@ -322,7 +351,8 @@
     {
       "name": "Schema",
       "tags": [
-        "vulnerability_schema"
+        "vulnerability_schema",
+        "commit_schema"
       ]
     },
     {

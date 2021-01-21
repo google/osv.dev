@@ -24,7 +24,7 @@
         <b-form-checkbox
             v-model="affectedOnly"
             name="affectedOnly">
-          With affected tags only
+          With affected versions only
         </b-form-checkbox>
       </div>
     </div>

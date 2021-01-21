@@ -43,6 +43,7 @@ TASK_SUBSCRIPTION = 'tasks'
 MAX_LEASE_DURATION = 6 * 60 * 60  # 4 hours.
 
 OSS_FUZZ_ISSUE_URL = 'https://bugs.chromium.org/p/oss-fuzz/issues/detail?id='
+OSS_FUZZ_SOURCE_PREFIX = 'oss-fuzz:'
 
 # Large projects which take way too long to build.
 # TODO(ochang): Don't hardcode this.
@@ -298,9 +299,10 @@ def _set_result_attributes(oss_fuzz_dir, message, entity):
 def find_oss_fuzz_fix_via_commit(repo, start_commit, end_commit, source_id,
                                  issue_id):
   """Find fix commit by checking commit messages."""
-  if not source_id.startswith('oss-fuzz:'):
+  if not source_id.startswith(OSS_FUZZ_SOURCE_PREFIX):
     return None
 
+  # Walk through start_commit..end_commit
   try:
     walker = repo.walk(end_commit, pygit2.GIT_SORT_TOPOLOGICAL)
   except KeyError:
@@ -310,7 +312,7 @@ def find_oss_fuzz_fix_via_commit(repo, start_commit, end_commit, source_id,
   walker.hide(start_commit)
 
   testcase_id = source_id.split(':')[1]
-  oss_fuzz_pattern = re.compile(r'oss-?fuzz')
+  oss_fuzz_pattern = re.compile(r'oss-?fuzz', re.IGNORECASE)
   has_oss_fuzz_in_message = []
   has_testcase_id_in_message = []
   has_issue_id_in_message = []
@@ -476,7 +478,7 @@ def process_impact_task(source_id, message):
 
     # If not a precise fix commit, try to find the exact one by going through
     # commit messages (oss-fuzz only).
-    if source_id.startswith('oss-fuzz:') and ':' in fix_commit:
+    if source_id.startswith(OSS_FUZZ_SOURCE_PREFIX) and ':' in fix_commit:
       start_commit, end_commit = fix_commit.split(':')
       commit = find_oss_fuzz_fix_via_commit(repo, start_commit, end_commit,
                                             source_id, issue_id)
@@ -606,7 +608,7 @@ def get_source_id(message):
 
   testcase_id = message.attributes['testcase_id']
   if testcase_id:
-    return 'oss-fuzz:' + testcase_id
+    return OSS_FUZZ_SOURCE_PREFIX + testcase_id
 
   return None
 

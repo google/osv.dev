@@ -695,6 +695,46 @@ class MarkBugInvalidTest(unittest.TestCase):
     self.assertEqual(0, len(commits))
 
 
+class FindOssFuzzFixViaCommitTest(unittest.TestCase):
+  """Test finding OSS-Fuzz fixes via commits."""
+
+  def setUp(self):
+    self.repo = pygit2.Repository('osv-test')
+
+  def test_has_issue_id(self):
+    """Test identifying the commit that has the issue ID."""
+    commit = worker.find_oss_fuzz_fix_via_commit(
+        self.repo, 'e1b045257bc5ca2a11d0476474f45ef77a0366c7',
+        '949f182716f037e25394bbb98d39b3295d230a29', 'oss-fuzz:133713371337',
+        '12345')
+
+    self.assertEqual('57e58a5d7c2bb3ce0f04f17ec0648b92ee82531f', commit)
+
+  def test_has_testcase_id(self):
+    """Test identifying the commit that has the testcase ID."""
+    commit = worker.find_oss_fuzz_fix_via_commit(
+        self.repo, 'e1b045257bc5ca2a11d0476474f45ef77a0366c7',
+        '00514d6f244f696e750a37083163992c6a50cfd3', 'oss-fuzz:133713371337',
+        '12345')
+
+    self.assertEqual('90aa4127295b2c37b5f7fcf6a9772b12c99a5212', commit)
+
+  def test_has_oss_fuzz_reference(self):
+    """Test identifying the commit that has the testcase ID."""
+    commit = worker.find_oss_fuzz_fix_via_commit(
+        self.repo, 'e1b045257bc5ca2a11d0476474f45ef77a0366c7',
+        'b1fa81a5d59e9b4d6e276d82fc17058f3cf139d9', 'oss-fuzz:133713371337',
+        '12345')
+
+    self.assertEqual('3c5dcf6a5bec14baab3b247d369a7270232e1b83', commit)
+
+  def test_has_multiple_oss_fuzz_reference(self):
+    commit = worker.find_oss_fuzz_fix_via_commit(
+        self.repo, 'e1b045257bc5ca2a11d0476474f45ef77a0366c7',
+        '949f182716f037e25394bbb98d39b3295d230a29', 'oss-fuzz:7331', '54321')
+    self.assertIsNone(commit)
+
+
 if __name__ == '__main__':
   os.system('pkill -f datastore')
   ds_emulator = tests.start_datastore_emulator()

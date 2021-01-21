@@ -19,6 +19,7 @@ import json
 import logging
 import os
 import math
+import re
 import resource
 import shutil
 import subprocess
@@ -294,6 +295,59 @@ def _set_result_attributes(oss_fuzz_dir, message, entity):
     entity.timestamp = timestamp
 
 
+def find_oss_fuzz_fix_via_commit(repo, start_commit, end_commit, source_id,
+                                 issue_id):
+  """Find fix commit by checking commit messages."""
+  if not source_id.startswith('oss-fuzz:'):
+    return None
+
+  try:
+    walker = repo.walk(end_commit,
+                       pygit2.GIT_SORT_TOPOLOGICAL | pygit2.GIT_SORT_REVERSE)
+  except KeyError:
+    logging.error('Failed to walk repo with invalid commit: %s', end_commit)
+    return None
+
+  walker.hide(start_commit)
+
+  testcase_id = source_id.split(':')[1]
+  oss_fuzz_pattern = re.compile(r'oss-?fuzz')
+  has_oss_fuzz_in_message = []
+  has_testcase_id_in_message = []
+  has_issue_id_in_message = []
+
+  # Look for commits with (in order of decreasing priority):
+  # - "oss-?fuzz" and the issue ID in the message.
+  # - ClusterFuzz testcase ID in the message.
+  # - "oss-?fuzz" in the message.
+
+  for commit in walker:
+    commit_message = commit.message.lower()
+    has_oss_fuzz = False
+
+    if oss_fuzz_pattern.search(commit_message):
+      has_oss_fuzz = True
+      has_oss_fuzz_in_message.append(commit)
+
+    if testcase_id in commit_message:
+      has_testcase_id_in_message.append(commit)
+
+    if issue_id and issue_id in commit_message and has_oss_fuzz:
+      has_issue_id_in_message.append(commit)
+
+  if has_issue_id_in_message:
+    return str(has_issue_id_in_message[0].id)
+
+  if has_testcase_id_in_message:
+    return str(has_testcase_id_in_message[0].id)
+
+  if len(has_oss_fuzz_in_message) == 1:
+    # Only pick the commit if there is a single one that mentions oss-fuzz.
+    return str(has_oss_fuzz_in_message[0].id)
+
+  return None
+
+
 def process_bisect_task(oss_fuzz_dir, bisect_type, source_id, message):
   """Process a bisect task."""
   bisect_type = message.attributes['type']
@@ -415,8 +469,26 @@ def process_impact_task(source_id, message):
   if not repo_url:
     raise osv.ImpactError('No repo_url set')
 
-  result = osv.get_affected(repo_url, regress_result.commit, fix_result.commit)
-  logging.info('Found affected %s', ', '.join(result.tags))
+  issue_id = fix_result.issue_id or regress_result.issue_id
+
+  with tempfile.TemporaryDirectory() as tmp_dir:
+    repo = osv.clone_with_retries(repo_url, tmp_dir)
+
+    # If not a precise fix commit, try to find the exact one by going through
+    # commit messages (oss-fuzz only).
+    fix_commit = fix_result.commit
+    if source_id.startswith('oss-fuzz:') and ':' in fix_commit:
+      start_commit, end_commit = fix_commit.split(':')
+      commit = find_oss_fuzz_fix_via_commit(repo, start_commit, end_commit,
+                                            source_id, issue_id)
+      if commit:
+        logging.info('Found exact fix commit %s via commit message (oss-fuzz)',
+                     commit)
+        fix_commit = commit
+
+    # Actually compute the affected commits/tags.
+    result = osv.get_affected(repo, regress_result.commit, fix_result.commit)
+    logging.info('Found affected %s', ', '.join(result.tags))
 
   # If the range resolved to a single commit, simplify it.
   if len(result.fix_commits) == 1:
@@ -424,15 +496,12 @@ def process_impact_task(source_id, message):
   elif not result.fix_commits:
     # Not fixed.
     fix_commit = ''
-  else:
-    fix_commit = fix_result.commit
 
   if len(result.regress_commits) == 1:
     regress_commit = result.regress_commits[0]
   else:
     regress_commit = regress_result.commit
 
-  issue_id = fix_result.issue_id or regress_result.issue_id
   project = fix_result.project or regress_result.project
   ecosystem = fix_result.ecosystem or regress_result.ecosystem
   summary = fix_result.summary or regress_result.summary

@@ -94,65 +94,62 @@ class RangeCollector:
     return ranges
 
 
-def get_affected(git_url, regress_commit_or_range, fix_commit_or_range):
+def get_affected(repo, regress_commit_or_range, fix_commit_or_range):
   """"Get list of affected tags and commits for a bug given regressed and fixed
   commits."""
   confidence = CONFIDENCE_FULL
 
-  with tempfile.TemporaryDirectory() as tmp_dir:
-    repo = clone_with_retries(git_url, tmp_dir)
+  # If multiple, assume any commit in the regression range cause the
+  # regression.
+  regress_commits = get_commit_range(repo, regress_commit_or_range)
+  if len(regress_commits) > COMMIT_RANGE_LIMIT:
+    raise ImpactError('Too many commits in regression range.')
 
-    # If multiple, assume any commit in the regression range cause the
-    # regression.
-    regress_commits = get_commit_range(repo, regress_commit_or_range)
-    if len(regress_commits) > COMMIT_RANGE_LIMIT:
-      raise ImpactError('Too many commits in regression range.')
+  # If multiple, assume all commits are necessary for fixing the regression.
+  fix_commits = get_commit_range(repo, fix_commit_or_range)
+  if len(fix_commits) > COMMIT_RANGE_LIMIT:
+    logging.warning('Too many commits in fix range.')
+    # Rather than bail out here and potentially leaving a Bug as "unfixed"
+    # indefinitely, we do the best we can here, by assuming the last
+    # COMMIT_RANGE_LIMIT commits fix the bug.
+    fix_commits = fix_commits[-COMMIT_RANGE_LIMIT:]
+    confidence -= CONFIDENCE_RANGE_REDUCTION
 
-    # If multiple, assume all commits are necessary for fixing the regression.
-    fix_commits = get_commit_range(repo, fix_commit_or_range)
-    if len(fix_commits) > COMMIT_RANGE_LIMIT:
-      logging.warning('Too many commits in fix range.')
-      # Rather than bail out here and potentially leaving a Bug as "unfixed"
-      # indefinitely, we do the best we can here, by assuming the last
-      # COMMIT_RANGE_LIMIT commits fix the bug.
-      fix_commits = fix_commits[-COMMIT_RANGE_LIMIT:]
-      confidence -= CONFIDENCE_RANGE_REDUCTION
+  # For every extra commit in the range, reduce the confidence.
+  if len(regress_commits) > 1:
+    confidence -= CONFIDENCE_RANGE_REDUCTION
+    confidence -= (len(regress_commits) - 1) * CONFIDENCE_RANGE_REDUCTION_STEP
 
-    # For every extra commit in the range, reduce the confidence.
-    if len(regress_commits) > 1:
-      confidence -= CONFIDENCE_RANGE_REDUCTION
-      confidence -= (len(regress_commits) - 1) * CONFIDENCE_RANGE_REDUCTION_STEP
+  # Special case: unknown status for earlier revisions.
+  unknown_earlier_revisions = UNKNOWN_COMMIT in regress_commit_or_range
+  if unknown_earlier_revisions:
+    confidence -= CONFIDENCE_RANGE_REDUCTION
 
-    # Special case: unknown status for earlier revisions.
-    unknown_earlier_revisions = UNKNOWN_COMMIT in regress_commit_or_range
-    if unknown_earlier_revisions:
-      confidence -= CONFIDENCE_RANGE_REDUCTION
+  if len(fix_commits) > 1:
+    confidence -= CONFIDENCE_RANGE_REDUCTION
+    confidence -= (len(fix_commits) - 1) * CONFIDENCE_RANGE_REDUCTION_STEP
 
-    if len(fix_commits) > 1:
-      confidence -= CONFIDENCE_RANGE_REDUCTION
-      confidence -= (len(fix_commits) - 1) * CONFIDENCE_RANGE_REDUCTION_STEP
+  if confidence < 0:
+    confidence = 0
 
-    if confidence < 0:
-      confidence = 0
+  tags_with_bug = set()
+  for commit in regress_commits:
+    tags_with_bug.update(get_tags_with_commits(repo, [commit]))
 
-    tags_with_bug = set()
-    for commit in regress_commits:
-      tags_with_bug.update(get_tags_with_commits(repo, [commit]))
+  tags_with_fix = get_tags_with_commits(repo, fix_commits)
 
-    tags_with_fix = get_tags_with_commits(repo, fix_commits)
+  affected_tags = list(tags_with_bug - tags_with_fix)
+  affected_tags.sort()
 
-    affected_tags = list(tags_with_bug - tags_with_fix)
-    affected_tags.sort()
+  affected_commits, affected_ranges = get_affected_range(
+      repo, regress_commits, fix_commits)
 
-    affected_commits, affected_ranges = get_affected_range(
-        repo, regress_commits, fix_commits)
+  if unknown_earlier_revisions:
+    # Include the unknown marker in resulting entities.
+    regress_commits.insert(0, UNKNOWN_COMMIT)
 
-    if unknown_earlier_revisions:
-      # Include the unknown marker in resulting entities.
-      regress_commits.insert(0, UNKNOWN_COMMIT)
-
-    return AffectedResult(affected_tags, affected_commits, affected_ranges,
-                          regress_commits, fix_commits, confidence)
+  return AffectedResult(affected_tags, affected_commits, affected_ranges,
+                        regress_commits, fix_commits, confidence)
 
 
 def get_affected_range(repo, regress_commits, fix_commits):

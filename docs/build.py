@@ -22,6 +22,15 @@ _ROOT_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 _GENERATED_FILENAME = 'v1/osv_service_v1.swagger.json'
 
 
+def property_description_workaround(definition):
+  """Work around an OpenAPI limitation with a field descriptions getting replaced
+  by the object descriptions."""
+  for value in definition['properties'].values():
+    if '$ref' in value:
+      value['allOf'] = [{'$ref': value['$ref']}]
+      del value['$ref']
+
+
 def main():
   api_dir = os.path.join(_ROOT_DIR, 'gcp', 'api')
   v1_api_dir = os.path.join(api_dir, 'v1')
@@ -70,6 +79,11 @@ def main():
       'description': '<SchemaDefinition schemaRef='
                      '"#/components/schemas/osvVulnerability" />'
   }, {
+      'name': 'commit_schema',
+      'x-displayName': 'Commit schema',
+      'description': '<SchemaDefinition schemaRef='
+                     '"#/components/schemas/osvCommit" />'
+  }, {
       'name': 'faq',
       'x-displayName': 'Frequently asked questions',
       'description': faq,
@@ -80,7 +94,7 @@ def main():
       'tags': ['api']
   }, {
       'name': 'Schema',
-      'tags': ['vulnerability_schema']
+      'tags': ['vulnerability_schema', 'commit_schema']
   }, {
       'name': 'Documentation',
       'tags': ['faq']
@@ -105,6 +119,10 @@ def main():
       'lang': 'Curl example',
       'source': 'curl "https://api.osv.dev/v1/vulns/2020-111?key=$API_KEY"'
   }]
+
+  property_description_workaround(spec['definitions']['v1Query'])
+  property_description_workaround(spec['definitions']['osvVulnerability'])
+  property_description_workaround(spec['definitions']['osvAffectedRange'])
 
   with open('sections.md') as f:
     spec['info']['description'] = f.read()

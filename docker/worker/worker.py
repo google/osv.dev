@@ -469,13 +469,13 @@ def process_impact_task(source_id, message):
     raise osv.ImpactError('No repo_url set')
 
   issue_id = fix_result.issue_id or regress_result.issue_id
+  fix_commit = fix_result.commit
 
   with tempfile.TemporaryDirectory() as tmp_dir:
     repo = osv.clone_with_retries(repo_url, tmp_dir)
 
     # If not a precise fix commit, try to find the exact one by going through
     # commit messages (oss-fuzz only).
-    fix_commit = fix_result.commit
     if source_id.startswith('oss-fuzz:') and ':' in fix_commit:
       start_commit, end_commit = fix_commit.split(':')
       commit = find_oss_fuzz_fix_via_commit(repo, start_commit, end_commit,
@@ -486,7 +486,7 @@ def process_impact_task(source_id, message):
         fix_commit = commit
 
     # Actually compute the affected commits/tags.
-    result = osv.get_affected(repo, regress_result.commit, fix_result.commit)
+    result = osv.get_affected(repo, regress_result.commit, fix_commit)
     logging.info('Found affected %s', ', '.join(result.tags))
 
   # If the range resolved to a single commit, simplify it.

@@ -707,8 +707,13 @@ class FindOssFuzzFixViaCommitTest(unittest.TestCase):
         self.repo, 'e1b045257bc5ca2a11d0476474f45ef77a0366c7',
         '949f182716f037e25394bbb98d39b3295d230a29', 'oss-fuzz:133713371337',
         '12345')
-
     self.assertEqual('57e58a5d7c2bb3ce0f04f17ec0648b92ee82531f', commit)
+
+    commit = worker.find_oss_fuzz_fix_via_commit(
+        self.repo, 'e1b045257bc5ca2a11d0476474f45ef77a0366c7',
+        '25147a74d8aeb27b43665530ee121a2a1b19dc58', 'oss-fuzz:133713371337',
+        '12345')
+    self.assertEqual('25147a74d8aeb27b43665530ee121a2a1b19dc58', commit)
 
   def test_has_testcase_id(self):
     """Test identifying the commit that has the testcase ID."""

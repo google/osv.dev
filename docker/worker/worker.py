@@ -302,8 +302,7 @@ def find_oss_fuzz_fix_via_commit(repo, start_commit, end_commit, source_id,
     return None
 
   try:
-    walker = repo.walk(end_commit,
-                       pygit2.GIT_SORT_TOPOLOGICAL | pygit2.GIT_SORT_REVERSE)
+    walker = repo.walk(end_commit, pygit2.GIT_SORT_TOPOLOGICAL)
   except KeyError:
     logging.error('Failed to walk repo with invalid commit: %s', end_commit)
     return None

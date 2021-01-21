@@ -142,6 +142,11 @@ indexes:
     - name: ecosystem
     - name: repo_url
 
+  - kind: Bug
+    properties:
+    - name: status
+    - name: timestamp
+
   - kind: PackageTagInfo
     properties:
     - name: package

@@ -23,8 +23,8 @@ _GENERATED_FILENAME = 'v1/osv_service_v1.swagger.json'
 
 
 def property_description_workaround(definition):
-  """Work around an OpenAPI limitation with a field descriptions getting replaced
-  by the object descriptions."""
+  """Work around an OpenAPI limitation with a field descriptions getting
+  replaced by the object descriptions."""
   # Workaround described in https://github.com/Redocly/redoc/issues/835.
   for value in definition['properties'].values():
     if '$ref' in value:

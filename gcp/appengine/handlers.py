@@ -141,6 +141,13 @@ def process_results():
       logging.info('Bug already exists for %s.', key_id)
       continue
 
+    if regress_result.issue_id:
+      bug = osv.Bug.query(osv.Bug.issue_id == regress_result.issue_id).get()
+      if bug:
+        logging.info('Bug already exists for issue %s.',
+                     regress_result.issue_id)
+        continue
+
     # Get ID counter for the year.
     if regress_result.timestamp:
       id_year = regress_result.timestamp.year

@@ -25,8 +25,6 @@ from google.cloud import ndb
 import grpc
 
 import osv
-import osv_service_pb2
-import osv_service_pb2_grpc
 import osv_service_v1_pb2
 import osv_service_v1_pb2_grpc
 
@@ -63,76 +61,6 @@ class BaseServicer:
         return True
 
     return False
-
-
-class OSVServicerV0(osv_service_pb2_grpc.OSVServicer, BaseServicer):
-  """V0 OSV servicer."""
-
-  # Deprecated methods:
-  @ndb_context
-  def GetBugById(self, request, context):
-    """Return a `Bug` object for a given OSV ID.
-    """
-    bug = ndb.Key(osv.Bug, request.bug_id).get()
-    if not bug or bug.status != osv.BugStatus.PROCESSED:
-      context.abort(grpc.StatusCode.NOT_FOUND, 'Bug not found.')
-      return None
-
-    if not bug.public and not self.is_privileged(context):
-      context.abort(grpc.StatusCode.PERMISSION_DENIED, 'Permission denied.')
-      return None
-
-    return bug_to_response_v0(bug)
-
-  @ndb_context
-  def QueryAffected(self, request, context):
-    """Query bugs for a particular project at a given commit or version.
-    """
-    privileged = self.is_privileged(context)
-    if request.query.WhichOneof('param') == 'commit':
-      bugs = query_by_commit(
-          request.project,
-          '',
-          request.query.commit,
-          privileged,
-          to_response=bug_to_response_v0)
-    elif request.query.WhichOneof('param') == 'tag':
-      bugs = query_by_tag(
-          request.project,
-          '',
-          request.query.tag,
-          privileged,
-          to_response=bug_to_response_v0)
-    elif request.query.WhichOneof('param') == 'version':
-      bugs = query_by_version(
-          request.project,
-          '',
-          request.query.version,
-          privileged,
-          to_response=bug_to_response_v0)
-    else:
-      context.abort(grpc.StatusCode.INVALID_ARGUMENT, 'Invalid query.')
-
-    return osv_service_pb2.BugList(bugs=bugs)
-
-  @ndb_context
-  def QueryAffectedByCommit(self, request, context):
-    """Query bugs for across all projects at a given commit. Since git SHAs
-    should be unique, this is provided as a convenience over the project
-    qualified API.  """
-    if request.query.WhichOneof('param') != 'commit':
-      context.abort(grpc.StatusCode.INVALID_ARGUMENT,
-                    'Only commit can be specified.')
-      return None
-
-    privileged = self.is_privileged(context)
-    bugs = query_by_commit(
-        None,
-        '',
-        request.query.commit,
-        privileged,
-        to_response=bug_to_response_v0)
-    return osv_service_pb2.BugList(bugs=bugs)
 
 
 class OSVServicer(osv_service_v1_pb2_grpc.OSVServicer, BaseServicer):
@@ -183,54 +111,6 @@ class OSVServicer(osv_service_v1_pb2_grpc.OSVServicer, BaseServicer):
       context.abort(grpc.StatusCode.INVALID_ARGUMENT, 'Invalid query.')
 
     return osv_service_v1_pb2.VulnerabilityList(vulns=bugs)
-
-
-def _to_commit_v0(bug, commit_hash):
-  """Convert a commit hash to a Commit structure."""
-  commit = osv_service_pb2.CommitV0(repo_type='git', repo_url=bug.repo_url)
-
-  if ':' in commit_hash:
-    commit.type = 'range'
-    commit_range = commit_hash.split(':')
-    setattr(commit, 'from', commit_range[0])  # from is a reserved keyword.
-    commit.to = commit_range[1]
-    return commit
-
-  commit.type = 'exact'
-  commit.commit = commit_hash
-  return commit
-
-
-def _get_affected(bug):
-  """Get affected tags."""
-  result = []
-  for affected in bug.affected:
-    result.append(osv_service_pb2.AffectedVersion(tag=affected))
-
-  return result
-
-
-def bug_to_response_v0(bug):
-  """Convert a Bug entity to a response object."""
-  fixed = None
-  fix_commit = bug.fixed
-  if fix_commit:
-    fixed = _to_commit_v0(bug, fix_commit)
-
-  result = osv_service_pb2.Bug(
-      id=bug.key.id(),
-      confidence=bug.confidence,
-      regressed=_to_commit_v0(bug, bug.regressed),
-      fixed=fixed,
-      crash_type=bug.summary,
-      affected=_get_affected(bug),
-      project=bug.project)
-
-  issue_id = bug.issue_id
-  if issue_id:
-    result.references.append(_OSS_FUZZ_TRACKER_URL + bug.issue_id)
-
-  return result
 
 
 def bug_to_response(bug):
@@ -315,7 +195,6 @@ def query_by_version(project,
 def serve(port):
   """Configures and runs the bookstore API server."""
   server = grpc.server(futures.ThreadPoolExecutor(max_workers=10))
-  osv_service_pb2_grpc.add_OSVServicer_to_server(OSVServicerV0(), server)
   osv_service_v1_pb2_grpc.add_OSVServicer_to_server(OSVServicer(), server)
   server.add_insecure_port('[::]:{}'.format(port))
   server.start()

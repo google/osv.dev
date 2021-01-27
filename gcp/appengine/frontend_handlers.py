@@ -177,8 +177,9 @@ def query_handler():
     query = query.filter(osv.Bug.has_affected == True)  # pylint: disable=singleton-comparison
 
   query = query.order(-osv.Bug.sort_key)
+  total = query.count()
   results = {
-      'total': (page + _PAGE_LOOKAHEAD) * _PAGE_SIZE,
+      'total': total,
       'items': [],
   }
 

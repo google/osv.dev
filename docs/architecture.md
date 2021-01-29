@@ -22,6 +22,9 @@ this with other sources.
 GKE is used for running [workers] to perform bisects and impact analysis. These
 workers consume tasks from a Cloud Pub/Sub topic.
 
+Workers are Docker containers which use [gVisor](https://gvisor.dev/) for
+sandboxing untrusted workloads.
+
 [workers]: https://github.com/google/osv/tree/master/docker/worker
 
 [here]: https://github.com/google/osv/blob/master/lib/osv/types.py

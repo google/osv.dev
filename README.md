@@ -13,8 +13,15 @@ query whether or not their versions are impacted.
   <img src="docs/images/diagram.png" width="600">
 </p>
 
+Current data sources:
+- [OSS-Fuzz](https://github.com/google/oss-fuzz)
+
 This is an ongoing project. We are hoping to work with the open source community
 to onboard more sources of data.
+
+## Viewing the web UI
+
+An instance of OSV's web UI is deployed at <https://osv.dev>.
 
 ## Using the API
 
@@ -52,4 +59,5 @@ git submodule update --init --recursive
 ```
 
 Contributions are welcome! We also have a [mailing
-list](mailto:osv-discuss@googlegroups.com).
+list](mailto:osv-discuss@googlegroups.com) and a
+[FAQ](https://osv.dev/docs/#tag/faq).

@@ -71,6 +71,8 @@ export default {
 
       this.latestTag = results.latestTag;
       this.bugs = results.bugs;
+
+      document.title = `OSV - ${this.$route.params.package}`;
     },
 
     getBugLink(bugId) {

@@ -1,10 +1,33 @@
 ## Why did you create OSV?
 
-We created OSV initially for our [OSS-Fuzz](https://github.com/google/oss-fuzz) service, where we needed a way to store, track and query the large numbers of security bugs we find and reproduce in open source software in an automated fashion. We understand that fuzzing is not the only way vulnerabilities are discovered, so we're hoping to expand the data sources tracked by OSV in the future.
+We created OSV to address some of the shortcomings of dealing with
+vulnerabilities in open source software.
+
+As believers of automation, we initially built OSV for our
+[OSS-Fuzz](https://github.com/google/oss-fuzz) service, where we needed a way to
+store, triage and query the large numbers of open source vulnerabilities we
+discover in an automated fashion.
+
+We understand that fuzzing is not the only way vulnerabilities are discovered,
+and we plan to extend our data with other sources by working with open source
+communities.
+
+## Who is OSV for?
+
+OSV can be used by both:
+
+- Open source consumers: By querying our API to find vulnerabilities in their
+  dependencies.
+
+- Open source maintainers: By using our bisection and triage infrastructure to
+  determine accurate affected commits and versions when a vulnerability is
+  fixed.
 
 ## How does OSV compare to the existing CVE process?
 
-OSV complements the existing CVE process. We plan to automatically include CVE data in OSV for the cases where we have information on when a vulnerability was introduced into the source or can automatically reproduce it. The goal of OSV is to provide OSS consumers with precise vulnerability metadata in an easy-to-query database (using either package versions or commits). So, this will make CVE vulnerabilities easier to query and faster to adopt. Currently, OSV provides access to thousands of vulnerabilities found by our OSS-Fuzz fuzzing service. In near future, OSV plans to aggregate vulnerabilities from other data sources, e.g. direct developer input and package managers.
+We plan to aggregate existing vulnerabilities feeds (such as CVEs). OSV
+complements CVEs by extending them with precise vulnerability metadata and
+making it easier to query for them (using either package versions or commits).
 
 ## Where does the data come from?
 
@@ -13,6 +36,11 @@ Currently, our data aggregates [thousands of vulnerabilities](https://bugs.chrom
 integrated with
 [OSS-Fuzz](https://github.com/google/oss-fuzz). We are planning to work with the
 open source community to expand this to various language ecosystems.
+
+All our vulnerabilities are described in a [simple format] easily used by
+automation tools.
+
+[simple format]: https://osv.dev/docs/#tag/vulnerability_schema
 
 ## How can I help onboard a new source of data?
 
@@ -28,6 +56,18 @@ We perform bisections using the reproduction testcase and package binary to dete
 Bisection may fail in some cases (e.g. build failures or reproduction flakes) and
 we may show a narrow range "A:B" of commits instead of an exact commit. This means that the result lies in the range of commits from A (exclusive) to B (inclusive).
 
+## What if it's not feasible to compute the introduced in / fixed in commits?
+
+We encourage all vulnerabilities to have reproduction steps and/or precise
+commit level details where possible. However we understand that in some cases
+and package ecosystems this is not feasible at scale and does not provide as
+much value.
+
+In these cases [Vulnerabilities] may omit the affected commit ranges and
+only specify a list of affected versions instead.
+
+[Vulnerabilities]: https://osv.dev/docs/#tag/vulnerability_schema
+
 ## Which version control systems (VCS) do you support?
 
 Our efforts are currently focused on projects that use git. Support for other
@@ -36,7 +76,5 @@ popular version control systems will be added as we get cycles.
 ## I'm a project maintainer. Can I edit the details of OSV entries for my project?
 
 We are working on a way for project maintainers to edit relevant OSV vulnerabilities. Please subscribe to our [mailing list](mailto:osv-discuss@googlegroups.com) for updates on this.
-
-## Will I be able to see bugs that don’t have a fix yet?
 
 We comply with the OSS-Fuzz vulnerability disclosure policy, either 90 days from report or 30 days after a fix is checked in, whichever comes earlier. The vulnerabilities are hidden until the disclosure timeline is met.

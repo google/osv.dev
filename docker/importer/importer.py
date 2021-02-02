@@ -39,14 +39,14 @@ class SourceRepository(ndb.Model):
 
 
 def _git_author():
-  """Get the git Author for commits."""
+  """Get the git author for commits."""
   return pygit2.Signature('OSV', 'infra@osv.dev')
 
 
 def _yaml_str_representer(dumper, data):
   """YAML str representer override."""
   if '\n' in data:
-    return dumper.represent_scalar(u'tag:yaml.org,2002:str', data, style='|')
+    return dumper.represent_scalar('tag:yaml.org,2002:str', data, style='|')
   return dumper.represent_scalar('tag:yaml.org,2002:str', data)
 
 

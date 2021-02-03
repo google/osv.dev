@@ -111,11 +111,13 @@ class Importer:
         if os.path.exists(vulnerability_path):
           continue
 
+        logging.info('Writing %s', bug.id)
         with open(vulnerability_path, 'w') as handle:
           data = json_format.MessageToDict(bug.to_vulnerability())
           yaml.safe_dump(data, handle, sort_keys=False)
 
-      # Commit changes.
+      # Commit Vulnerability changes back to the oss-fuzz source repository.
+      logging.info('Commiting and pushing changes')
       repo.index.add_all()
       repo.index.write()
       tree = repo.index.write_tree()

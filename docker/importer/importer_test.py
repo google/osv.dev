@@ -21,9 +21,9 @@ import unittest
 from google.cloud import ndb
 import pygit2
 
+import importer
 import osv
 from osv import tests
-import importer
 
 TEST_DATA_DIR = os.path.join(
     os.path.dirname(os.path.abspath(__file__)), 'testdata')
@@ -86,7 +86,7 @@ class ImporterTest(unittest.TestCase):
 
   def test_basic(self):
     """Basic tests."""
-    imp = importer.Importer(None, None)
+    imp = importer.Importer('fake_public_key', 'fake_private_key')
     imp.run()
 
     repo = pygit2.Repository(self.remote_source_repo_path)

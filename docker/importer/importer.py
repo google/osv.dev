@@ -86,12 +86,9 @@ class Importer:
     # This then becomes the source of truth where any edits are imported back
     # into OSV.
     with tempfile.TemporaryDirectory() as tmp_dir:
-      if self._ssh_key_public_path and self._ssh_key_private_path:
-        callbacks = GitRemoteCallback(oss_fuzz_source.repo_username,
-                                      self._ssh_key_public_path,
-                                      self._ssh_key_private_path)
-      else:
-        callbacks = None
+      callbacks = GitRemoteCallback(oss_fuzz_source.repo_username,
+                                    self._ssh_key_public_path,
+                                    self._ssh_key_private_path)
 
       repo = osv.clone_with_retries(
           oss_fuzz_source.repo_url, tmp_dir, callbacks=callbacks)

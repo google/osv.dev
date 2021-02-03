@@ -1,3 +1,4 @@
+#!/bin/bash -x
 # Copyright 2021 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -11,9 +12,12 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""OSV common utilities."""
 
-from .bug import *
-from .impact import *
-from .sources import *
-from .types import *
+# Copy common libraries/utils shared with App Engine as symlinks don't work
+# here.
+rm -rf osv
+cp -r ../../lib/osv .
+
+cd ../worker
+pipenv sync
+pipenv run python ../importer/importer_test.py

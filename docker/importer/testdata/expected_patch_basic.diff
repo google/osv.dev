@@ -1,0 +1,34 @@
+diff --git a/file/5417710252982272.yaml b/file/5417710252982272.yaml
+new file mode 100644
+index 0000000..fc1fb2f
+--- /dev/null
++++ b/file/5417710252982272.yaml
+@@ -0,0 +1,28 @@
++id: 2017-134
++package:
++  name: file
++summary: Heap-buffer-overflow in cdf_file_property_info
++details: |
++  OSS-Fuzz report: https://bugs.chromium.org/p/oss-fuzz/issues/detail?id=1064
++
++  Crash type: Heap-buffer-overflow READ 1
++  Crash state:
++  cdf_file_property_info
++  cdf_file_summary_info
++  cdf_check_summary_info
++severity: MEDIUM
++affects:
++  ranges:
++  - introducedIn:
++      repoType: GIT
++      repoUrl: https://github.com/file/file.git
++      commit: 17ee4cf670c363de8d2ea4a4897d7a699837873f
++    fixedIn:
++      repoType: GIT
++      repoUrl: https://github.com/file/file.git
++      commit: 19ccebafb7663c422c714e0c67fa4775abf91c43
++  versions:
++  - FILE5_29
++  - FILE5_30
++referenceUrls:
++- https://bugs.chromium.org/p/oss-fuzz/issues/detail?id=1064

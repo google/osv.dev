@@ -1,13 +1,17 @@
 # OSV - Open Source Vulnerabilities
 
-OSV is a vulnerability database for open source projects aimed at helping both
-open source maintainers and consumers of open source.
+OSV is a [vulnerability database] and triage infrastructure for open source
+projects aimed at helping both open source maintainers and consumers of open
+source.
 
-For open source maintainers, OSV's automation helps determine accurate affected
-releases and commit ranges for vulnerabilities.
+For open source maintainers, OSV's automation helps reduce the burden of triage.
+Each vulnerability undergoes automated bisection and impact analysis to
+determine precise affected commit and version ranges.
 
 For open source consumers, OSV provides an API that lets users of these projects
 query whether or not their versions are impacted.
+
+[vulnerability database]: https://osv.dev/list
 
 <p align="center">
   <img src="docs/images/diagram.png" width="600">

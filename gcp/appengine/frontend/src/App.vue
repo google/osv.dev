@@ -27,6 +27,9 @@
           <b-nav-item to="/list">Bug list</b-nav-item>
           <b-nav-item href="/docs/">API & Docs</b-nav-item>
         </b-navbar-nav>
+        <b-navbar-nav class="ml-auto">
+          <b-nav-item href="https://github.com/google/osv">GitHub</b-nav-item>
+        </b-navbar-nav>
       </b-collapse>
     </b-navbar>
     <div id="container">
@@ -42,7 +45,7 @@
             <a href="https://policies.google.com/privacy">Privacy policy</a>
           </b-col>
           <b-col cols="2">
-            <a href="https://github.com/google/osv">GitHub</a>
+            <a href="https://osv.dev/docs/#tag/faq">FAQ</a>
           </b-col>
         </b-row>
       </b-container>

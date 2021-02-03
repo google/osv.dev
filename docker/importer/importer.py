@@ -120,7 +120,6 @@ class Importer:
       repo.index.write()
       tree = repo.index.write_tree()
       author = _git_author()
-      print(repo.head.name)
       repo.create_commit(repo.head.name, author, author, 'Import from OSS-Fuzz',
                          tree, [repo.head.peel().oid])
 

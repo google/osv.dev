@@ -47,12 +47,12 @@ class ImpactError(Exception):
   """Impact error."""
 
 
-def clone_with_retries(git_url, checkout_dir):
+def clone_with_retries(git_url, checkout_dir, callbacks=None):
   """Clone with retries."""
   logging.info('Cloning %s to %s', git_url, checkout_dir)
   for _ in range(CLONE_TRIES):
     try:
-      repo = pygit2.clone_repository(git_url, checkout_dir)
+      repo = pygit2.clone_repository(git_url, checkout_dir, callbacks=callbacks)
       repo.cache = {}
       return repo
     except pygit2.GitError as e:

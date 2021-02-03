@@ -23,29 +23,26 @@
 
       <h3>Database for open source vulnerabilities</h3>
       <p>
-        Matching vulnerabilities with affected versions of open source software
-        is difficult.
+        OSV is a <router-link to="list">vulnerability database</router-link>
+        and triage infrastructure for open source projects aimed at helping
+        both open source maintainers and consumers of open source.
       <p>
-      <p>
-        OSV makes this easier by providing an easily queryable
-        <router-link to="list">database</router-link>.
-      </p>
-      <h4>Data sources</h4>
-      <p>
-        Data sources undergo automated bisection and impact analysis to provide
-        accurate affected commit ranges and versions.
-      </p>
       <p>
         Currently, this feed contains vulnerabilities from <a
         href="https://github.com/google/oss-fuzz">OSS-Fuzz</a> (mostly C/C++).
         More data sources to come soon.
       </p>
-      <h3>API</h3>
+      <h4>Triaging vulnerabilities</h4>
       <p>
-        OSV provides a simple <a
-        href="https://osv.dev/docs/#section/Getting-Started">API</a>
-        that lets you query for vulnerabilities by a commit hash or version
-        string:
+        For open source maintainers, OSV's automation helps reduce the burden
+        of triage. Each vulnerability undergoes automated bisection and impact
+        analysis to determine precise affected commit and version ranges.
+      </p>
+      <h4>API</h4>
+      <p>
+        For open source consumers, OSV provides an <a
+        href="https://osv.dev/docs/#section/Getting-Started">API</a> that lets
+        users query whether or not their versions are impacted.
       </p>
       <pre>
         curl -X POST -d \
@@ -57,14 +54,14 @@
             '{"version": "1.0.0", "package": {"name": "foo", "ecosystem": "bar"}}' \
             "https://api.osv.dev/v1/query?key=$API_KEY"
       </pre>
-      <h4>Demo</h4>
+      <h5>Demo</h5>
       <video controls id="splash" autoplay="" muted="" loop="">
         <source src="./splash.mp4" type="video/mp4">
       </video>
       <h3>Open source</h3>
       <p>
-        The code is <a href="https://github.com/google/osv">open source</a>
-        (Apache 2 license).
+        This project is <a href="https://github.com/google/osv">open source</a>
+        (Apache 2.0).
       </p>
       <h3>More information</h3>
       <p>
@@ -72,11 +69,9 @@
         href="https://osv.dev/docs/">here</a>.
       </p>
       <p>
-        Check out our FAQ <a
-        href="https://osv.dev/docs/#tag/faq">here</a>, report issues <a
-        href="https://github.com/google/osv/issues">here</a> and discuss
-        on the mailing list <a
-        href="mailto:osv-discuss@googlegroups.com">here</a>.
+        Check out our <a href="https://osv.dev/docs/#tag/faq">FAQ</a>,
+        <a href="https://github.com/google/osv/issues">report issues</a>
+        and discuss on our <a href="mailto:osv-discuss@googlegroups.com">mailing list</a>.
       </p>
     </b-jumbotron>
   </div>

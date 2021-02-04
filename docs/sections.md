@@ -25,7 +25,8 @@ There is a rate limit of 100 requests/min.
 This is currently filled with vulnerabilities found by [OSS-Fuzz] (mostly C/C++
 projects). OSS-Fuzz is a continuous fuzzing service for open source software,
 with over 350 open source projects integrated and has found over [25,000] bugs.
-This will be extended in the future to support other vulnerability sources.
+This will be extended in the future to
+[support other vulnerability sources](https://github.com/google/osv/issues/44).
 
 The full list of vulnerabilities can be browsed at <https://osv.dev>.
 

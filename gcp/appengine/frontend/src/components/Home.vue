@@ -30,7 +30,7 @@
       <p>
         Currently, this feed contains vulnerabilities from <a
         href="https://github.com/google/oss-fuzz">OSS-Fuzz</a> (mostly C/C++).
-        More data sources to come soon.
+        More data sources to <a href="https://github.com/google/osv/issues/44">come soon</a>.
       </p>
       <h4>Triaging vulnerabilities</h4>
       <p>

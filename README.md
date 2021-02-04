@@ -20,8 +20,8 @@ query whether or not their versions are impacted.
 Current data sources:
 - [OSS-Fuzz](https://github.com/google/oss-fuzz)
 
-This is an ongoing project. We are hoping to work with the open source community
-to onboard more sources of data.
+**This is an ongoing project.** We are hoping to work with the open source community
+to [onboard more sources of data](https://github.com/google/osv/issues/44).
 
 ## Viewing the web UI
 

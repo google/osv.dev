@@ -28,18 +28,6 @@ import osv
 DEFAULT_WORK_DIR = '/work'
 
 
-class SourceRepository(ndb.Model):
-  """Source repository."""
-  # The name of the source.
-  name = ndb.StringProperty()
-  # The repo URL for the source.
-  repo_url = ndb.StringProperty()
-  # The username to use for SSH auth.
-  repo_username = ndb.StringProperty()
-  # The directory in the repo where Vulnerability data is stored.
-  directory_path = ndb.StringProperty()
-
-
 class GitRemoteCallback(pygit2.RemoteCallbacks):
   """Authentication callbacks."""
 
@@ -60,8 +48,20 @@ class GitRemoteCallback(pygit2.RemoteCallbacks):
     return None
 
 
+def _yaml_str_representer(dumper, data):
+  """YAML str representer override."""
+  if '\n' in data:
+    return dumper.represent_scalar('tag:yaml.org,2002:str', data, style='|')
+  return dumper.represent_scalar('tag:yaml.org,2002:str', data)
+
+
 class Importer:
   """Importer."""
+
+  class YamlDumper(yaml.SafeDumper):
+    """Overridden dumper to to use | for multiline strings."""
+
+  YamlDumper.add_representer(str, _yaml_str_representer)
 
   def __init__(self, ssh_key_public_path, ssh_key_private_path):
     self._ssh_key_public_path = ssh_key_public_path
@@ -70,7 +70,7 @@ class Importer:
   def run(self):
     """Run importer."""
     # Currently only importing OSS-Fuzz data.
-    oss_fuzz_source = ndb.Key(SourceRepository, 'oss-fuzz').get()
+    oss_fuzz_source = osv.get_source_repository('oss-fuzz')
     if not oss_fuzz_source:
       raise RuntimeError('OSS-Fuzz source not found.')
 
@@ -89,6 +89,7 @@ class Importer:
       callbacks = GitRemoteCallback(oss_fuzz_source.repo_username,
                                     self._ssh_key_public_path,
                                     self._ssh_key_private_path)
+
       repo = osv.clone_with_retries(
           oss_fuzz_source.repo_url, tmp_dir, callbacks=callbacks)
       if not repo:
@@ -100,10 +101,10 @@ class Importer:
       # TODO(ochang): Make this more efficient by recording whether or not we
       # imported already in Datastore.
       for bug in osv.Bug.query(osv.Bug.status == osv.BugStatus.PROCESSED):
-        if not bug.source_id.startswith(oss_fuzz_source.name):
+        source_name, source_id = osv.parse_source_id(bug.source_id)
+        if source_name != oss_fuzz_source.name:
           continue
 
-        source_id = bug.source_id.split(':')[1]
         project_dir = os.path.join(vulnerabilities_path, bug.project)
         os.makedirs(project_dir, exist_ok=True)
         vulnerability_path = os.path.join(project_dir, source_id + '.yaml')
@@ -111,10 +112,10 @@ class Importer:
         if os.path.exists(vulnerability_path):
           continue
 
-        logging.info('Writing %s', bug.id)
+        logging.info('Writing %s', bug.key.id())
         with open(vulnerability_path, 'w') as handle:
           data = json_format.MessageToDict(bug.to_vulnerability())
-          yaml.safe_dump(data, handle, sort_keys=False)
+          yaml.dump(data, handle, sort_keys=False, Dumper=self.YamlDumper)
 
       # Commit Vulnerability changes back to the oss-fuzz source repository.
       logging.info('Commiting and pushing changes')
@@ -137,13 +138,6 @@ def _git_author():
   return pygit2.Signature('OSV', 'infra@osv.dev')
 
 
-def _yaml_str_representer(dumper, data):
-  """YAML str representer override."""
-  if '\n' in data:
-    return dumper.represent_scalar('tag:yaml.org,2002:str', data, style='|')
-  return dumper.represent_scalar('tag:yaml.org,2002:str', data)
-
-
 def main():
   logging.getLogger().setLevel(logging.INFO)
   logging.getLogger('google.api_core.bidi').setLevel(logging.ERROR)
@@ -161,8 +155,6 @@ def main():
   os.makedirs(tmp_dir, exist_ok=True)
   os.environ['TMPDIR'] = tmp_dir
 
-  # Override YAML string printing to use | for multiline strings.
-  yaml.add_representer(str, _yaml_str_representer, Dumper=yaml.SafeDumper)
   importer = Importer(args.ssh_key_public, args.ssh_key_private)
   importer.run()
 

@@ -19,6 +19,9 @@ steps:
 - name: 'gcr.io/oss-vdb/ci'
   dir: docker/worker
   args: ['bash', '-x', 'run_tests.sh']
+- name: 'gcr.io/oss-vdb/ci'
+  dir: docker/importer
+  args: ['bash', '-x', 'run_tests.sh']
 - name: 'gcr.io/cloud-builders/gcloud'
   entrypoint: 'bash'
   args: [ '-c', "gcloud secrets versions access latest --secret=integration-test-account --format='get(payload.data)' | tr '_-' '/+' | base64 -d > /workspace/service_account.json" ]

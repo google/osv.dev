@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 # Copyright 2021 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -11,9 +12,19 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""OSV common utilities."""
+"""Importer sources."""
 
-from .bug import *
-from .impact import *
-from .sources import *
-from .types import *
+from google.cloud import ndb
+
+# pylint: disable=relative-beyond-top-level
+from . import types
+
+
+def get_source_repository(source_name):
+  """Get source repository."""
+  return ndb.Key(types.SourceRepository, source_name).get()
+
+
+def parse_source_id(source_id):
+  """Get the source name and id from source_id."""
+  return source_id.split(':', 1)

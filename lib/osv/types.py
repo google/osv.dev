@@ -236,3 +236,15 @@ class Bug(ndb.Model):
         reference_urls=self.reference_urls)
 
     return result
+
+
+class SourceRepository(ndb.Model):
+  """Source repository."""
+  # The name of the source.
+  name = ndb.StringProperty()
+  # The repo URL for the source.
+  repo_url = ndb.StringProperty()
+  # The username to use for SSH auth.
+  repo_username = ndb.StringProperty()
+  # The directory in the repo where Vulnerability data is stored.
+  directory_path = ndb.StringProperty()

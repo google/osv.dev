@@ -62,6 +62,6 @@ work:
 git submodule update --init --recursive
 ```
 
-Contributions are welcome! We also have a [mailing
-list](mailto:osv-discuss@googlegroups.com) and a
+Contributions are welcome! We also have a
+[mailing list](https://groups.google.com/g/osv-discuss) and a
 [FAQ](https://osv.dev/docs/#tag/faq).

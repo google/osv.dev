@@ -71,7 +71,7 @@
       <p>
         Check out our <a href="https://osv.dev/docs/#tag/faq">FAQ</a>,
         <a href="https://github.com/google/osv/issues">report issues</a>
-        and discuss on our <a href="mailto:osv-discuss@googlegroups.com">mailing list</a>.
+        and discuss on our <a href="https://groups.google.com/g/osv-discuss">mailing list</a>.
       </p>
     </b-jumbotron>
   </div>

@@ -49,7 +49,7 @@ used for interoperability with vulnerability sources.
 ## How can I help onboard a new source of data?
 
 Please let us know of your interest via either our [issue tracker](https://github.com/google/osv/issues)
-or the [mailing list](mailto:osv-discuss@googlegroups.com).
+or the [mailing list](https://groups.google.com/g/osv-discuss).
 
 The pipeline for this is still in progress (and open to feedback). You can
 follow along on how this might look at at <https://github.com/google/osv/issues/44>.
@@ -91,7 +91,10 @@ popular version control systems will be added as we get cycles.
 
 ## I'm a project maintainer. Can I edit the details of OSV entries for my project?
 
-We are working on a way for project maintainers to edit relevant OSV vulnerabilities. Please subscribe to our [mailing list](mailto:osv-discuss@googlegroups.com) for updates on this.
+We are working on a way for project maintainers to edit relevant OSV
+vulnerabilities by creating a pull request. Please subscribe to our
+[mailing list](https://groups.google.com/g/osv-discuss) and
+[this issue](https://github.com/google/osv/issues/44) for updates.
 
 ## Will I be able to see bugs that don’t have a fix yet?
 

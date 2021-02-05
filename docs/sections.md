@@ -39,6 +39,9 @@ The full list of vulnerabilities can be browsed at <https://osv.dev>.
 ### Before you begin
 
 1. Create a new [Cloud Platform project](https://console.developers.google.com/projectcreate).
+2. Join [this group](https://groups.google.com/g/osv-users) with the same
+   account used for the Cloud project to obtain access to the API (membership
+   lists are private).
 
 ### Creating an API key
 

@@ -199,8 +199,12 @@ def package_handler():
     abort(400)
     return None
 
-  ecosystem, package = package_path.split('/', 1)
+  parts = package_path.split('/', 1)
+  if len(parts) != 2:
+    abort(400)
+    return None
 
+  ecosystem, package = parts
   package_info = ndb.Key(osv.PackageInfo, package_path).get()
   if package_info and package_info.latest_tag:
     latest_tag = package_info.latest_tag

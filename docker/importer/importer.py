@@ -27,6 +27,7 @@ import osv
 
 AUTHOR_EMAIL = 'infra@osv.dev'
 DEFAULT_WORK_DIR = '/work'
+VULNERABILITY_EXTENSION = '.yaml'
 
 
 class GitRemoteCallback(pygit2.RemoteCallbacks):
@@ -57,9 +58,14 @@ def _yaml_str_representer(dumper, data):
 
 
 def _repo_path(repo):
-  """Return path to repo."""
+  """Return local disk path to repo."""
   # Remove '.git' component.
   return os.path.dirname(repo.path.rstrip('/'))
+
+
+def _is_vulnerability_file(file_path):
+  """Return whether or not the file is a Vulnerability entry."""
+  return file_path.endswith(VULNERABILITY_EXTENSION)
 
 
 def request_analysis(source_repo, path):  # pylint: disable=unused-argument
@@ -97,7 +103,7 @@ class Importer:
     self.process_updates(oss_fuzz_source)
 
   def _use_existing_checkout(self, source_repo, checkout_dir):
-    """Load existing checkout."""
+    """Update and use existing checkout."""
     repo = pygit2.Repository(checkout_dir)
     for remote in repo.remotes:
       remote.fetch(callbacks=self._git_callbacks(source_repo))
@@ -142,7 +148,8 @@ class Importer:
 
       project_dir = os.path.join(vulnerabilities_path, bug.project)
       os.makedirs(project_dir, exist_ok=True)
-      vulnerability_path = os.path.join(project_dir, source_id + '.yaml')
+      vulnerability_path = os.path.join(project_dir,
+                                        source_id + VULNERABILITY_EXTENSION)
 
       if os.path.exists(vulnerability_path):
         continue
@@ -191,10 +198,10 @@ class Importer:
       for parent in commit.parents:
         diff = repo.diff(parent, commit)
         for delta in diff.deltas:
-          if delta.old_file and delta.old_file.path.endswith('.yaml'):
+          if delta.old_file and _is_vulnerability_file(delta.old_file.path):
             changed_entries.add(delta.old_file.path)
 
-          if delta.new_file and delta.new_file.path.endswith('.yaml'):
+          if delta.new_file and _is_vulnerability_file(delta.new_file.path):
             changed_entries.add(delta.new_file.path)
 
     # Create tasks for changed files.

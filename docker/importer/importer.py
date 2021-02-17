@@ -60,7 +60,7 @@ def _yaml_str_representer(dumper, data):
 def _repo_path(repo):
   """Return local disk path to repo."""
   # Remove '.git' component.
-  return os.path.dirname(repo.path.rstrip('/'))
+  return os.path.dirname(repo.path.rstrip(os.sep))
 
 
 def _is_vulnerability_file(file_path):

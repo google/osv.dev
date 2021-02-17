@@ -16,7 +16,7 @@
 import argparse
 import logging
 import os
-import tempfile
+import shutil
 
 from google.cloud import ndb
 from google.protobuf import json_format
@@ -25,7 +25,9 @@ import yaml
 
 import osv
 
+AUTHOR_EMAIL = 'infra@osv.dev'
 DEFAULT_WORK_DIR = '/work'
+VULNERABILITY_EXTENSION = '.yaml'
 
 
 class GitRemoteCallback(pygit2.RemoteCallbacks):
@@ -55,6 +57,22 @@ def _yaml_str_representer(dumper, data):
   return dumper.represent_scalar('tag:yaml.org,2002:str', data)
 
 
+def _repo_path(repo):
+  """Return local disk path to repo."""
+  # Remove '.git' component.
+  return os.path.dirname(repo.path.rstrip(os.sep))
+
+
+def _is_vulnerability_file(file_path):
+  """Return whether or not the file is a Vulnerability entry."""
+  return file_path.endswith(VULNERABILITY_EXTENSION)
+
+
+def request_analysis(source_repo, path):  # pylint: disable=unused-argument
+  """Request analysis."""
+  # TODO(ochang): Implement this.
+
+
 class Importer:
   """Importer."""
 
@@ -63,9 +81,16 @@ class Importer:
 
   YamlDumper.add_representer(str, _yaml_str_representer)
 
-  def __init__(self, ssh_key_public_path, ssh_key_private_path):
+  def __init__(self, ssh_key_public_path, ssh_key_private_path, work_dir):
     self._ssh_key_public_path = ssh_key_public_path
     self._ssh_key_private_path = ssh_key_private_path
+    self._work_dir = work_dir
+
+  def _git_callbacks(self, source_repo):
+    """Get git auth callbacks."""
+    return GitRemoteCallback(source_repo.repo_username,
+                             self._ssh_key_public_path,
+                             self._ssh_key_private_path)
 
   def run(self):
     """Run importer."""
@@ -75,6 +100,115 @@ class Importer:
       raise RuntimeError('OSS-Fuzz source not found.')
 
     self.process_oss_fuzz(oss_fuzz_source)
+    self.process_updates(oss_fuzz_source)
+
+  def _use_existing_checkout(self, source_repo, checkout_dir):
+    """Update and use existing checkout."""
+    repo = pygit2.Repository(checkout_dir)
+    for remote in repo.remotes:
+      remote.fetch(callbacks=self._git_callbacks(source_repo))
+
+    repo.reset(repo.head.peel().oid, pygit2.GIT_RESET_HARD)
+    # TODO(ochang): Don't hardcode "master".
+    repo.checkout('refs/remotes/origin/master')
+    logging.info('Using existing checkout at %s', checkout_dir)
+    return repo
+
+  def checkout(self, source_repo):
+    """Check out a source repo."""
+    checkout_dir = os.path.join(self._work_dir, source_repo.name)
+
+    if os.path.exists(checkout_dir):
+      # Already exists, reset and checkout latest revision.
+      try:
+        return self._use_existing_checkout(source_repo, checkout_dir)
+      except Exception as e:
+        # Failed to re-use existing checkout. Delete it and start over.
+        logging.error('Failed to load existing checkout: %s', e)
+        shutil.rmtree(checkout_dir)
+
+    return osv.clone_with_retries(
+        source_repo.repo_url,
+        checkout_dir,
+        callbacks=self._git_callbacks(source_repo))
+
+  def import_new_oss_fuzz_entries(self, repo, oss_fuzz_source):
+    """Import new entries."""
+    # TODO(ochang): Make this more efficient by recording whether or not we
+    # imported already in Datastore.
+    vulnerabilities_path = os.path.join(
+        _repo_path(repo), oss_fuzz_source.directory_path or '')
+    for bug in osv.Bug.query(osv.Bug.status == osv.BugStatus.PROCESSED):
+      if not bug.public:
+        continue
+
+      source_name, source_id = osv.parse_source_id(bug.source_id)
+      if source_name != oss_fuzz_source.name:
+        continue
+
+      project_dir = os.path.join(vulnerabilities_path, bug.project)
+      os.makedirs(project_dir, exist_ok=True)
+      vulnerability_path = os.path.join(project_dir,
+                                        source_id + VULNERABILITY_EXTENSION)
+
+      if os.path.exists(vulnerability_path):
+        continue
+
+      logging.info('Writing %s', bug.key.id())
+      with open(vulnerability_path, 'w') as handle:
+        data = json_format.MessageToDict(bug.to_vulnerability())
+        yaml.dump(data, handle, sort_keys=False, Dumper=self.YamlDumper)
+
+    # Commit Vulnerability changes back to the oss-fuzz source repository.
+    repo.index.add_all()
+
+    diff = repo.index.diff_to_tree(repo.head.peel().tree)
+    if not diff:
+      logging.info('No new entries, skipping committing.')
+      return
+
+    logging.info('Commiting and pushing new entries')
+    repo.index.write()
+    tree = repo.index.write_tree()
+    author = _git_author()
+    repo.create_commit(repo.head.name, author, author, 'Import from OSS-Fuzz',
+                       tree, [repo.head.peel().oid])
+
+    # TODO(ochang): Rebase and retry if necessary.
+    repo.remotes['origin'].push([repo.head.name],
+                                callbacks=self._git_callbacks(oss_fuzz_source))
+
+  def process_updates(self, source_repo):
+    """Process user changes and updates."""
+    repo = self.checkout(source_repo)
+
+    walker = repo.walk(repo.head.target, pygit2.GIT_SORT_TOPOLOGICAL)
+    if source_repo.last_synced_hash:
+      walker.hide(source_repo.last_synced_hash)
+
+    # Get list of changed files since last sync.
+    changed_entries = set()
+    for commit in walker:
+      if commit.author.email == AUTHOR_EMAIL:
+        continue
+
+      logging.info('Processing commit %s from %s', commit.id,
+                   commit.author.email)
+
+      for parent in commit.parents:
+        diff = repo.diff(parent, commit)
+        for delta in diff.deltas:
+          if delta.old_file and _is_vulnerability_file(delta.old_file.path):
+            changed_entries.add(delta.old_file.path)
+
+          if delta.new_file and _is_vulnerability_file(delta.new_file.path):
+            changed_entries.add(delta.new_file.path)
+
+    # Create tasks for changed files.
+    # TODO(ochang): Actually create the tasks.
+    for changed_entry in changed_entries:
+      logging.info('Re-analysis triggered for %s', changed_entry)
+      request_analysis(source_repo, changed_entry)
 
   def process_oss_fuzz(self, oss_fuzz_source):
     """Process OSS-Fuzz source data."""
@@ -85,57 +219,13 @@ class Importer:
     #
     # This then becomes the source of truth where any edits are imported back
     # into OSV.
-    with tempfile.TemporaryDirectory() as tmp_dir:
-      callbacks = GitRemoteCallback(oss_fuzz_source.repo_username,
-                                    self._ssh_key_public_path,
-                                    self._ssh_key_private_path)
-
-      repo = osv.clone_with_retries(
-          oss_fuzz_source.repo_url, tmp_dir, callbacks=callbacks)
-      if not repo:
-        raise RuntimeError('Failed to clone source repo')
-
-      vulnerabilities_path = os.path.join(tmp_dir,
-                                          oss_fuzz_source.directory_path or '')
-
-      # TODO(ochang): Make this more efficient by recording whether or not we
-      # imported already in Datastore.
-      for bug in osv.Bug.query(osv.Bug.status == osv.BugStatus.PROCESSED):
-        source_name, source_id = osv.parse_source_id(bug.source_id)
-        if source_name != oss_fuzz_source.name:
-          continue
-
-        project_dir = os.path.join(vulnerabilities_path, bug.project)
-        os.makedirs(project_dir, exist_ok=True)
-        vulnerability_path = os.path.join(project_dir, source_id + '.yaml')
-
-        if os.path.exists(vulnerability_path):
-          continue
-
-        logging.info('Writing %s', bug.key.id())
-        with open(vulnerability_path, 'w') as handle:
-          data = json_format.MessageToDict(bug.to_vulnerability())
-          yaml.dump(data, handle, sort_keys=False, Dumper=self.YamlDumper)
-
-      # Commit Vulnerability changes back to the oss-fuzz source repository.
-      logging.info('Commiting and pushing changes')
-      repo.index.add_all()
-      repo.index.write()
-      tree = repo.index.write_tree()
-      author = _git_author()
-      repo.create_commit(repo.head.name, author, author, 'Import from OSS-Fuzz',
-                         tree, [repo.head.peel().oid])
-
-      # TODO(ochang): Rebase and retry if necessary.
-      repo.remotes['origin'].push([repo.head.name], callbacks=callbacks)
-
-    # TODO(ochang): Import user/manual changes made in the repo and create new
-    # analysis tasks.
+    repo = self.checkout(oss_fuzz_source)
+    self.import_new_oss_fuzz_entries(repo, oss_fuzz_source)
 
 
 def _git_author():
   """Get the git author for commits."""
-  return pygit2.Signature('OSV', 'infra@osv.dev')
+  return pygit2.Signature('OSV', AUTHOR_EMAIL)
 
 
 def main():
@@ -155,7 +245,7 @@ def main():
   os.makedirs(tmp_dir, exist_ok=True)
   os.environ['TMPDIR'] = tmp_dir
 
-  importer = Importer(args.ssh_key_public, args.ssh_key_private)
+  importer = Importer(args.ssh_key_public, args.ssh_key_private, args.work_dir)
   importer.run()
 
 

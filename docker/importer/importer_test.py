@@ -17,6 +17,7 @@ import os
 import shutil
 import tempfile
 import unittest
+from unittest import mock
 
 from google.cloud import ndb
 import pygit2
@@ -47,6 +48,20 @@ class ImporterTest(unittest.TestCase):
     tree = repo.TreeBuilder().write()
     author = pygit2.Signature('OSV', 'infra@osv.dev')
     repo.create_commit('HEAD', author, author, 'Initial commit', tree, [])
+
+    # Add a fake user change.
+    with open(os.path.join(self.remote_source_repo_path, '2021-111.yaml'),
+              'w') as f:
+      f.write('')
+
+    oid = repo.write(pygit2.GIT_OBJ_BLOB, '')
+    repo.index.add(
+        pygit2.IndexEntry('2021-111.yaml', oid, pygit2.GIT_FILEMODE_BLOB))
+    repo.index.write()
+    tree = repo.index.write_tree()
+    author = pygit2.Signature('User', 'user@email')
+    repo.create_commit('HEAD', author, author, 'Changes', tree,
+                       [repo.head.peel().oid])
 
     osv.SourceRepository(
         id='oss-fuzz',
@@ -84,9 +99,13 @@ class ImporterTest(unittest.TestCase):
         summary='Heap-buffer-overflow in cdf_file_property_info',
         timestamp=datetime.datetime(2021, 1, 15, 0, 0, 24, 559102)).put()
 
-  def test_basic(self):
-    """Basic tests."""
-    imp = importer.Importer('fake_public_key', 'fake_private_key')
+  def tearDown(self):
+    shutil.rmtree(self.tmp_dir, ignore_errors=True)
+
+  @mock.patch('importer.request_analysis')
+  def test_basic(self, mock_request_analysis):
+    """Test basic run."""
+    imp = importer.Importer('fake_public_key', 'fake_private_key', self.tmp_dir)
     imp.run()
 
     repo = pygit2.Repository(self.remote_source_repo_path)
@@ -100,8 +119,8 @@ class ImporterTest(unittest.TestCase):
     self.assertEqual(
         self._load_test_data('expected_patch_basic.diff'), diff.patch)
 
-  def tearDown(self):
-    shutil.rmtree(self.tmp_dir, ignore_errors=True)
+    mock_request_analysis.assert_has_calls(
+        [mock.call(mock.ANY, '2021-111.yaml')])
 
 
 if __name__ == '__main__':

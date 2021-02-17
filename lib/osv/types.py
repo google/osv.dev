@@ -248,3 +248,5 @@ class SourceRepository(ndb.Model):
   repo_username = ndb.StringProperty()
   # The directory in the repo where Vulnerability data is stored.
   directory_path = ndb.StringProperty()
+  # Last synced hash.
+  last_synced_hash = ndb.StringProperty()

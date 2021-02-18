@@ -13,7 +13,10 @@
 # limitations under the License.
 """Datastore types."""
 
+import datetime
+
 from google.cloud import ndb
+from google.protobuf import timestamp_pb2
 
 # pylint: disable=relative-beyond-top-level
 from . import bug
@@ -138,6 +141,8 @@ class Bug(ndb.Model):
   status = ndb.IntegerProperty()
   # Timestamp when Bug was allocated.
   timestamp = ndb.DateTimeProperty()
+  # When the entry was last edited.
+  last_modified = ndb.DateTimeProperty()
   # The source identifier.
   source_id = ndb.StringProperty()
   # Repo URL.
@@ -201,6 +206,7 @@ class Bug(ndb.Model):
     self.affected_fuzzy = bug.normalize_tags(self.affected)
 
     self.sort_key = key_parts[0] + '-' + key_parts[1].zfill(7)
+    self.last_modified = datetime.datetime.utcnow()
 
   def to_vulnerability(self):
     """Convert to Vulnerability proto."""
@@ -239,6 +245,49 @@ class Bug(ndb.Model):
 
     result = vulnerability_pb2.Vulnerability(
         id=self.OSV_ID_PREFIX + self.key.id(),  # TODO(ochang): Generalize.
+        summary=self.summary,
+        details=details,
+        package=package,
+        severity=severity,
+        affects=affects,
+        reference_urls=self.reference_urls)
+
+    return result
+
+  def to_vulnerability_new(self):
+    """Convert to VulnerabilityNew proto."""
+    affected_range = vulnerability_pb2.AffectedRangeNew(
+        type=vulnerability_pb2.AffectedRangeNew.Type.GIT,
+        repo_url=self.repo_url,
+        introduced_in=self.regressed,
+        fixed_in=self.fixed)
+
+    package = vulnerability_pb2.Package(
+        name=self.project, ecosystem=self.ecosystem)
+
+    affects = vulnerability_pb2.AffectsNew(
+        ranges=[affected_range], versions=self.affected)
+
+    if self.severity:
+      severity = vulnerability_pb2.Vulnerability.Severity.Value(self.severity)
+    else:
+      severity = vulnerability_pb2.Vulnerability.Severity.NONE
+
+    details = self.details
+    if self.status == bug.BugStatus.INVALID:
+      affects = None
+      details = 'INVALID'
+      severity = vulnerability_pb2.Vulnerability.Severity.NONE
+
+    if self.last_modified:
+      last_modified = timestamp_pb2.Timestamp()
+      last_modified.FromDatetime(self.last_modified)
+    else:
+      last_modified = None
+
+    result = vulnerability_pb2.VulnerabilityNew(
+        id=self.OSV_ID_PREFIX + self.key.id(),  # TODO(ochang): Generalize.
+        last_modified=last_modified,
         summary=self.summary,
         details=details,
         package=package,

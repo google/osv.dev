@@ -190,7 +190,7 @@
       "properties": {
         "id": {
           "type": "string",
-          "description": "Unique identifier for this vulnerability (assigned by OSV).\nThis is of the format YEAR-N (e.g. \"2020-111\")."
+          "description": "Unique identifier for this vulnerability.\nThis is of the format YEAR-N (e.g. \"OSV-2020-111\")."
         },
         "package": {
           "description": "Required. Package information.",

@@ -132,6 +132,8 @@ class CommitRange(ndb.Model):
 
 class Bug(ndb.Model):
   """Bug entity."""
+  OSV_ID_PREFIX = 'OSV-'
+
   # Status of the bug.
   status = ndb.IntegerProperty()
   # Timestamp when Bug was allocated.
@@ -175,6 +177,15 @@ class Bug(ndb.Model):
   has_affected = ndb.BooleanProperty()
   # Sort key.
   sort_key = ndb.StringProperty()
+
+  @classmethod
+  def get_by_id(cls, vuln_id, *args, **kwargs):
+    """Overridden get_by_id to handle OSV allocated IDs."""
+    # OSV allocated bug IDs are stored without the prefix.
+    if vuln_id.startswith(cls.OSV_ID_PREFIX):
+      vuln_id = vuln_id[len(cls.OSV_ID_PREFIX):]
+
+    return super().get_by_id(vuln_id, *args, **kwargs)
 
   def _pre_put_hook(self):
     """Pre-put hook for populating search indices."""
@@ -227,7 +238,7 @@ class Bug(ndb.Model):
       severity = vulnerability_pb2.Vulnerability.Severity.NONE
 
     result = vulnerability_pb2.Vulnerability(
-        id=self.key.id(),
+        id=self.OSV_ID_PREFIX + self.key.id(),  # TODO(ochang): Generalize.
         summary=self.summary,
         details=details,
         package=package,

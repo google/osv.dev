@@ -70,7 +70,7 @@ class OSVServicer(osv_service_v1_pb2_grpc.OSVServicer, BaseServicer):
   def GetVulnById(self, request, context):
     """Return a `Vulnerability` object for a given OSV ID.
     """
-    bug = ndb.Key(osv.Bug, request.id).get()
+    bug = osv.Bug.get_by_id(request.id)
     if not bug or bug.status == osv.BugStatus.UNPROCESSED:
       context.abort(grpc.StatusCode.NOT_FOUND, 'Bug not found.')
       return None

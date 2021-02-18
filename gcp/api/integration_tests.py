@@ -63,7 +63,7 @@ class IntegrationTests(unittest.TestCase):
                  'mrb_default_allocf\n'
                  'mrb_free\n'
                  'obj_free\n',
-      'id': '2020-744',
+      'id': 'OSV-2020-744',
       'package': {
           'name': 'mruby'
       },
@@ -76,7 +76,7 @@ class IntegrationTests(unittest.TestCase):
 
   _VULN_2258 = {
       'details': 'INVALID',
-      'id': '2020-2258',
+      'id': 'OSV-2020-2258',
       'package': {
           'name': 'grok'
       },
@@ -94,9 +94,12 @@ class IntegrationTests(unittest.TestCase):
     response = requests.get(_api() + '/v1/vulns/2020-744')
     self.assertDictEqual(self._VULN_744, response.json())
 
+    response = requests.get(_api() + '/v1/vulns/OSV-2020-744')
+    self.assertDictEqual(self._VULN_744, response.json())
+
   def test_get_invalid(self):
     """Test getting an invalid vulnerability."""
-    response = requests.get(_api() + '/v1/vulns/2020-2258')
+    response = requests.get(_api() + '/v1/vulns/OSV-2020-2258')
     self.assertDictEqual(self._VULN_2258, response.json())
 
   def test_query_commit(self):

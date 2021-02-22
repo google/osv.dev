@@ -258,9 +258,9 @@ class Bug(ndb.Model):
     """Convert to VulnerabilityNew proto."""
     affected_range = vulnerability_pb2.AffectedRangeNew(
         type=vulnerability_pb2.AffectedRangeNew.Type.GIT,
-        repo_url=self.repo_url,
-        introduced_in=self.regressed,
-        fixed_in=self.fixed)
+        repo=self.repo_url,
+        introduced=self.regressed,
+        fixed=self.fixed)
 
     package = vulnerability_pb2.Package(
         name=self.project, ecosystem=self.ecosystem)

@@ -292,6 +292,9 @@ def get_equivalent_commit(repo, to_search, target_commit):
     return None
 
   for commit in commits:
+    if commit.id == target.id:
+      return target_commit
+
     # Ignore commits without parents and merge commits with multiple parents.
     if not commit.parents or len(commit.parents) > 1:
       continue

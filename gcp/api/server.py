@@ -70,7 +70,7 @@ class OSVServicer(osv_service_v1_pb2_grpc.OSVServicer, BaseServicer):
   def GetVulnById(self, request, context):
     """Return a `Vulnerability` object for a given OSV ID.
     """
-    bug = ndb.Key(osv.Bug, request.id).get()
+    bug = osv.Bug.get_by_id(request.id)
     if not bug or bug.status == osv.BugStatus.UNPROCESSED:
       context.abort(grpc.StatusCode.NOT_FOUND, 'Bug not found.')
       return None
@@ -112,10 +112,61 @@ class OSVServicer(osv_service_v1_pb2_grpc.OSVServicer, BaseServicer):
 
     return osv_service_v1_pb2.VulnerabilityList(vulns=bugs)
 
+  @ndb_context
+  def GetVulnByIdNew(self, request, context):
+    """Return a `Vulnerability` object for a given OSV ID.
+    """
+    bug = osv.Bug.get_by_id(request.id)
+    if not bug or bug.status == osv.BugStatus.UNPROCESSED:
+      context.abort(grpc.StatusCode.NOT_FOUND, 'Bug not found.')
+      return None
+
+    if not bug.public and not self.is_privileged(context):
+      context.abort(grpc.StatusCode.PERMISSION_DENIED, 'Permission denied.')
+      return None
+
+    return bug_to_response_new(bug)
+
+  @ndb_context
+  def QueryAffectedNew(self, request, context):
+    """Query vulnerabilities for a particular project at a given commit or
+    version."""
+    privileged = self.is_privileged(context)
+    if request.query.HasField('package'):
+      package_name = request.query.package.name
+      ecosystem = request.query.package.ecosystem
+    else:
+      package_name = ''
+      ecosystem = ''
+
+    if request.query.WhichOneof('param') == 'commit':
+      bugs = query_by_commit(
+          package_name,
+          ecosystem,
+          request.query.commit,
+          privileged,
+          to_response=bug_to_response_new)
+    elif request.query.WhichOneof('param') == 'version':
+      bugs = query_by_version(
+          package_name,
+          ecosystem,
+          request.query.version,
+          privileged,
+          to_response=bug_to_response_new)
+    else:
+      context.abort(grpc.StatusCode.INVALID_ARGUMENT, 'Invalid query.')
+
+    return osv_service_v1_pb2.VulnerabilityNewList(vulns=bugs)
+
 
 def bug_to_response(bug):
   """Convert a Bug entity to a response object."""
   return bug.to_vulnerability()
+
+
+def bug_to_response_new(bug):
+  """Convert a Bug entity to a response object."""
+  return bug.to_vulnerability_new()
 
 
 def _get_bugs(bug_ids, to_response=bug_to_response):

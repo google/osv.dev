@@ -13,7 +13,10 @@
 # limitations under the License.
 """Datastore types."""
 
+import datetime
+
 from google.cloud import ndb
+from google.protobuf import timestamp_pb2
 
 # pylint: disable=relative-beyond-top-level
 from . import bug
@@ -26,6 +29,11 @@ def _check_valid_severity(prop, value):
 
   if value not in ('LOW', 'MEDIUM', 'HIGH', 'CRITICAL'):
     raise ValueError('Invalid severity: ' + value)
+
+
+def utcnow():
+  """For mocking."""
+  return datetime.datetime.utcnow()
 
 
 class IDCounter(ndb.Model):
@@ -132,10 +140,14 @@ class CommitRange(ndb.Model):
 
 class Bug(ndb.Model):
   """Bug entity."""
+  OSV_ID_PREFIX = 'OSV-'
+
   # Status of the bug.
   status = ndb.IntegerProperty()
   # Timestamp when Bug was allocated.
   timestamp = ndb.DateTimeProperty()
+  # When the entry was last edited.
+  last_modified = ndb.DateTimeProperty()
   # The source identifier.
   source_id = ndb.StringProperty()
   # Repo URL.
@@ -176,6 +188,15 @@ class Bug(ndb.Model):
   # Sort key.
   sort_key = ndb.StringProperty()
 
+  @classmethod
+  def get_by_id(cls, vuln_id, *args, **kwargs):
+    """Overridden get_by_id to handle OSV allocated IDs."""
+    # OSV allocated bug IDs are stored without the prefix.
+    if vuln_id.startswith(cls.OSV_ID_PREFIX):
+      vuln_id = vuln_id[len(cls.OSV_ID_PREFIX):]
+
+    return super().get_by_id(vuln_id, *args, **kwargs)
+
   def _pre_put_hook(self):
     """Pre-put hook for populating search indices."""
     self.search_indices = []
@@ -190,6 +211,7 @@ class Bug(ndb.Model):
     self.affected_fuzzy = bug.normalize_tags(self.affected)
 
     self.sort_key = key_parts[0] + '-' + key_parts[1].zfill(7)
+    self.last_modified = utcnow()
 
   def to_vulnerability(self):
     """Convert to Vulnerability proto."""
@@ -227,7 +249,50 @@ class Bug(ndb.Model):
       severity = vulnerability_pb2.Vulnerability.Severity.NONE
 
     result = vulnerability_pb2.Vulnerability(
-        id=self.key.id(),
+        id=self.OSV_ID_PREFIX + self.key.id(),  # TODO(ochang): Generalize.
+        summary=self.summary,
+        details=details,
+        package=package,
+        severity=severity,
+        affects=affects,
+        reference_urls=self.reference_urls)
+
+    return result
+
+  def to_vulnerability_new(self):
+    """Convert to VulnerabilityNew proto."""
+    affected_range = vulnerability_pb2.AffectedRangeNew(
+        type=vulnerability_pb2.AffectedRangeNew.Type.GIT,
+        repo=self.repo_url,
+        introduced=self.regressed,
+        fixed=self.fixed)
+
+    package = vulnerability_pb2.Package(
+        name=self.project, ecosystem=self.ecosystem)
+
+    affects = vulnerability_pb2.AffectsNew(
+        ranges=[affected_range], versions=self.affected)
+
+    if self.severity:
+      severity = vulnerability_pb2.Vulnerability.Severity.Value(self.severity)
+    else:
+      severity = vulnerability_pb2.Vulnerability.Severity.NONE
+
+    details = self.details
+    if self.status == bug.BugStatus.INVALID:
+      affects = None
+      details = 'INVALID'
+      severity = vulnerability_pb2.Vulnerability.Severity.NONE
+
+    if self.last_modified:
+      last_modified = timestamp_pb2.Timestamp()
+      last_modified.FromDatetime(self.last_modified)
+    else:
+      last_modified = None
+
+    result = vulnerability_pb2.VulnerabilityNew(
+        id=self.OSV_ID_PREFIX + self.key.id(),  # TODO(ochang): Generalize.
+        last_modified=last_modified,
         summary=self.summary,
         details=details,
         package=package,

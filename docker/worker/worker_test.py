@@ -100,6 +100,7 @@ class OssFuzzDetailsTest(unittest.TestCase):
         'Bar\n', details)
 
 
+@mock.patch('osv.types.utcnow', lambda: datetime.datetime(2021, 1, 1))
 class ImpactTest(unittest.TestCase):
   """Impact task tests."""
 
@@ -182,6 +183,7 @@ class ImpactTest(unittest.TestCase):
             'repo_url': 'https://repo.com/repo',
             'confidence': 100,
             'issue_id': '9001',
+            'last_modified': datetime.datetime(2021, 1, 1, 0, 0),
             'timestamp': datetime.datetime(2020, 1, 1),
             'source_id': 'oss-fuzz:123',
             'project': 'project',
@@ -259,6 +261,7 @@ class ImpactTest(unittest.TestCase):
             'repo_url': 'https://repo.com/repo',
             'confidence': 70,
             'issue_id': '9001',
+            'last_modified': datetime.datetime(2021, 1, 1, 0, 0),
             'timestamp': datetime.datetime(2020, 1, 1),
             'source_id': 'oss-fuzz:123',
             'project': 'project',
@@ -337,6 +340,7 @@ class ImpactTest(unittest.TestCase):
             'repo_url': 'https://repo.com/repo',
             'confidence': 30,
             'issue_id': '9001',
+            'last_modified': datetime.datetime(2021, 1, 1, 0, 0),
             'timestamp': datetime.datetime(2020, 1, 1),
             'source_id': 'oss-fuzz:123',
             'project': 'project',
@@ -413,6 +417,7 @@ class ImpactTest(unittest.TestCase):
             'repo_url': 'https://repo.com/repo',
             'confidence': 80,
             'issue_id': '9001',
+            'last_modified': datetime.datetime(2021, 1, 1, 0, 0),
             'timestamp': datetime.datetime(2020, 1, 1),
             'source_id': 'oss-fuzz:123',
             'project': 'project',
@@ -494,6 +499,7 @@ class ImpactTest(unittest.TestCase):
             'repo_url': 'https://repo.com/repo',
             'confidence': 100,
             'issue_id': '9001',
+            'last_modified': datetime.datetime(2021, 1, 1, 0, 0),
             'timestamp': datetime.datetime(2020, 1, 1),
             'source_id': 'oss-fuzz:123',
             'project': 'project',
@@ -548,6 +554,7 @@ class ImpactTest(unittest.TestCase):
             'repo_url': 'https://repo.com/repo',
             'confidence': 100,
             'issue_id': '9001',
+            'last_modified': datetime.datetime(2021, 1, 1, 0, 0),
             'timestamp': datetime.datetime(2020, 1, 1),
             'source_id': 'oss-fuzz:123',
             'project': 'project',

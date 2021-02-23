@@ -106,7 +106,7 @@ def _get_affected(bug):
 def bug_to_response(bug, detailed=False):
   """Convert a Bug entity to a response object."""
   response = {
-      'id': bug.key.id(),
+      'id': osv.Bug.OSV_ID_PREFIX + bug.key.id(),
       'summary': bug.summary,
       'package': {
           'name': bug.project,
@@ -227,7 +227,7 @@ def package_handler():
   for tag_info in query:
     tag_with_bugs = {
         'tag': tag_info.tag,
-        'bugs': tag_info.bugs,
+        'bugs': [osv.Bug.OSV_ID_PREFIX + bug for bug in tag_info.bugs],
     }
 
     tags_with_bugs.append(tag_with_bugs)
@@ -247,7 +247,7 @@ def vulnerability_handler():
     abort(400)
     return None
 
-  bug = ndb.Key(osv.Bug, vuln_id).get()
+  bug = osv.Bug.get_by_id(vuln_id)
   if not bug:
     abort(404)
     return None

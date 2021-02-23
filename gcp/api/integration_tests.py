@@ -63,7 +63,7 @@ class IntegrationTests(unittest.TestCase):
                  'mrb_default_allocf\n'
                  'mrb_free\n'
                  'obj_free\n',
-      'id': '2020-744',
+      'id': 'OSV-2020-744',
       'package': {
           'name': 'mruby'
       },
@@ -74,9 +74,38 @@ class IntegrationTests(unittest.TestCase):
       'summary': 'Heap-double-free in mrb_default_allocf'
   }
 
+  _VULN_744_NEW = {
+      'affects': {
+          'ranges': [{
+              'type': 'GIT',
+              'repo': 'https://github.com/mruby/mruby',
+              'introduced': '9cdf439db52b66447b4e37c61179d54fad6c8f33',
+              'fixed': '97319697c8f9f6ff27b32589947e1918e3015503',
+          }],
+          'versions': ['2.1.2', '2.1.2-rc', '2.1.2-rc2']
+      },
+      'details': 'OSS-Fuzz report: '
+                 'https://bugs.chromium.org/p/oss-fuzz/issues/detail?id=23801\n'
+                 '\n'
+                 'Crash type: Heap-double-free\n'
+                 'Crash state:\n'
+                 'mrb_default_allocf\n'
+                 'mrb_free\n'
+                 'obj_free\n',
+      'id': 'OSV-2020-744',
+      'package': {
+          'name': 'mruby'
+      },
+      'referenceUrls': [
+          'https://bugs.chromium.org/p/oss-fuzz/issues/detail?id=23801'
+      ],
+      'severity': 'HIGH',
+      'summary': 'Heap-double-free in mrb_default_allocf',
+  }
+
   _VULN_2258 = {
       'details': 'INVALID',
-      'id': '2020-2258',
+      'id': 'OSV-2020-2258',
       'package': {
           'name': 'grok'
       },
@@ -89,14 +118,41 @@ class IntegrationTests(unittest.TestCase):
   def setUp(self):
     self.maxDiff = None  # pylint: disable=invalid-name
 
+  def assert_vuln_equal(self, expected, actual):
+    """Assert that the vulnerability is equal."""
+    self.remove_last_modified(actual)
+    self.assertDictEqual(expected, actual)
+
+  def assert_results_equal(self, expected, actual):
+    for vuln in actual['vulns']:
+      self.remove_last_modified(vuln)
+
+    self.assertDictEqual(expected, actual)
+
+  def remove_last_modified(self, vuln):
+    """Remove lastModified for comparison."""
+    if 'lastModified' in vuln:
+      del vuln['lastModified']
+
   def test_get(self):
     """Test getting a vulnerability."""
     response = requests.get(_api() + '/v1/vulns/2020-744')
     self.assertDictEqual(self._VULN_744, response.json())
 
+    response = requests.get(_api() + '/v1/vulns/OSV-2020-744')
+    self.assertDictEqual(self._VULN_744, response.json())
+
+  def test_get_new(self):
+    """Test getting a vulnerability (new format)."""
+    response = requests.get(_api() + '/v1new/vulns/2020-744')
+    self.assert_vuln_equal(self._VULN_744_NEW, response.json())
+
+    response = requests.get(_api() + '/v1new/vulns/OSV-2020-744')
+    self.assert_vuln_equal(self._VULN_744_NEW, response.json())
+
   def test_get_invalid(self):
     """Test getting an invalid vulnerability."""
-    response = requests.get(_api() + '/v1/vulns/2020-2258')
+    response = requests.get(_api() + '/v1/vulns/OSV-2020-2258')
     self.assertDictEqual(self._VULN_2258, response.json())
 
   def test_query_commit(self):
@@ -107,6 +163,15 @@ class IntegrationTests(unittest.TestCase):
             'commit': '233cb49903fa17637bd51f4a16b4ca61e0750f24',
         }))
     self.assertDictEqual({'vulns': [self._VULN_744]}, response.json())
+
+  def test_query_commit_new(self):
+    """Test querying by commit (new format)."""
+    response = requests.post(
+        _api() + '/v1new/query',
+        data=json.dumps({
+            'commit': '233cb49903fa17637bd51f4a16b4ca61e0750f24',
+        }))
+    self.assert_results_equal({'vulns': [self._VULN_744_NEW]}, response.json())
 
   def test_query_version(self):
     """Test querying by version."""

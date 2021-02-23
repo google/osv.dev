@@ -31,14 +31,14 @@ message VulnerabilityNewList {
 // Query format.
 message Query {
   oneof param {
-    // The commit hash to query for. If specified, "version" should not be set.
+    // The commit hash to query for. If specified, `version` should not be set.
     string commit = 1;
     // The version string to query for. A fuzzy match is done against upstream
-    // versions. If specified, "commit" should not be set.
+    // versions. If specified, `commit` should not be set.
     string version = 2;
   }
 
-  // The package to query against. When a "commit" hash is given, this is
+  // The package to query against. When a `commit` hash is given, this is
   // optional.
   osv.Package package = 4;
 }

@@ -190,7 +190,7 @@
       "properties": {
         "type": {
           "$ref": "#/definitions/osvAffectedRangeNewType",
-          "description": "Required. The type of the repo."
+          "description": "Required. The type of version information."
         },
         "repo": {
           "type": "string",
@@ -198,11 +198,11 @@
         },
         "introduced": {
           "type": "string",
-          "description": "Required. The earliest version/commit where this vulnerability was introduced in."
+          "description": "Strongly recommended. The earliest version/commit where this vulnerability\nwas introduced in. If not specified, *all* commits/versions prior to the\n`fixed` commit/version are assumed to be affected."
         },
         "fixed": {
           "type": "string",
-          "description": "Optional. The version/commit that this vulnerability was fixed in. This\nmust be reachable from the \"introduced_in\" version/commit.\n\nIf the vulnerability is not fixed, this will be unset."
+          "description": "Optional only if `introduced` is specified. The version/commit that this\nvulnerability was fixed in. This must be reachable from the \"introduced\"\nversion/commit.\n\nIf the vulnerability is not fixed, this will be unset."
         }
       }
     },
@@ -244,14 +244,14 @@
           "items": {
             "$ref": "#/definitions/osvAffectedRangeNew"
           },
-          "description": "Required (at least one entry). The commit ranges that contain this\nvulnerability. Each range entry should represent a different upstream\nbranch.\n\nWhen provided, OSV will attempt to detect cherry-picks and append affected\nranges for other branches."
+          "description": "Required (at least one entry). The commit/version ranges that contain this\nvulnerability.\n\nWhen provided, OSV will attempt to detect and append additional ranges that\nmay be affected as well (e.g. cherry-picks to other branches)."
         },
         "versions": {
           "type": "array",
           "items": {
             "type": "string"
           },
-          "description": "Optional. List of affected versions. This should match tag names in the\nupstream repository. OSV will populate or add to this automatically\nbased on the provided ranges."
+          "description": "Optional. List of affected versions. This should match tag names in the\nupstream repository. OSV will populate or add to this automatically\nbased on the provided commit ranges."
         }
       },
       "description": "Affected versions and commits."
@@ -353,7 +353,7 @@
       "properties": {
         "id": {
           "type": "string",
-          "description": "Unique identifier for this vulnerability.\nThis is of the format YEAR-N (e.g. \"OSV-2020-111\")."
+          "description": "Unique identifier for this vulnerability.\nThis is of the format YEAR-N (e.g. \"OSV-2020-111\").\nUnique identifier for this vulnerability.\nThis is of the format DB-ENTRYID, where DB names the database\nand ENTRYID is in the format used by the database.\nFor example, \u201cOSV-2020-111\u201d or \u201cCVE-2021-3114\u201d\nor \u201cGHSA-vp9c-fpxx-744v\u201d.."
         },
         "package": {
           "$ref": "#/definitions/osvPackage",
@@ -387,7 +387,7 @@
           "items": {
             "type": "string"
           },
-          "description": "Optional. IDs for other vulnerability databases."
+          "description": "Optional. IDs for the same vulnerability in other databases."
         },
         "packageSpecific": {
           "type": "object",
@@ -395,7 +395,7 @@
         },
         "databaseSpecific": {
           "type": "object",
-          "description": "Optional. Additional metadata specific to the database. For the JSON\nrepresentation, this is any JSON object."
+          "description": "Optional. Database specific metadata. For the JSON representation,\nthis is any JSON object."
         },
         "lastModified": {
           "type": "string",
@@ -472,14 +472,14 @@
       "properties": {
         "commit": {
           "type": "string",
-          "description": "The commit hash to query for. If specified, \"version\" should not be set."
+          "description": "The commit hash to query for. If specified, `version` should not be set."
         },
         "version": {
           "type": "string",
-          "description": "The version string to query for. A fuzzy match is done against upstream\nversions. If specified, \"commit\" should not be set."
+          "description": "The version string to query for. A fuzzy match is done against upstream\nversions. If specified, `commit` should not be set."
         },
         "package": {
-          "description": "The package to query against. When a \"commit\" hash is given, this is\noptional.",
+          "description": "The package to query against. When a `commit` hash is given, this is\noptional.",
           "allOf": [
             {
               "$ref": "#/definitions/osvPackage"
@@ -523,12 +523,12 @@
     {
       "name": "vulnerability_schema",
       "x-displayName": "Vulnerability schema",
-      "description": "<SchemaDefinition schemaRef=\"#/components/schemas/osvVulnerability\" />"
+      "description": "<SchemaDefinition schemaRef=\"#/components/schemas/osvVulnerabilityNew\" />"
     },
     {
-      "name": "commit_schema",
-      "x-displayName": "Commit schema",
-      "description": "<SchemaDefinition schemaRef=\"#/components/schemas/osvCommit\" />"
+      "name": "vulnerability_schema_old",
+      "x-displayName": "Vulnerability schema (deprecated)",
+      "description": "<SchemaDefinition schemaRef=\"#/components/schemas/osvVulnerability\" />"
     },
     {
       "name": "faq",
@@ -547,7 +547,7 @@
       "name": "Schema",
       "tags": [
         "vulnerability_schema",
-        "commit_schema"
+        "vulnerability_schema_old"
       ]
     },
     {

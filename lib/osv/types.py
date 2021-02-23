@@ -31,6 +31,11 @@ def _check_valid_severity(prop, value):
     raise ValueError('Invalid severity: ' + value)
 
 
+def utcnow():
+  """For mocking."""
+  return datetime.datetime.utcnow()
+
+
 class IDCounter(ndb.Model):
   """Counter for ID allocations."""
   # Next ID to allocate.
@@ -206,7 +211,7 @@ class Bug(ndb.Model):
     self.affected_fuzzy = bug.normalize_tags(self.affected)
 
     self.sort_key = key_parts[0] + '-' + key_parts[1].zfill(7)
-    self.last_modified = datetime.datetime.utcnow()
+    self.last_modified = utcnow()
 
   def to_vulnerability(self):
     """Convert to Vulnerability proto."""

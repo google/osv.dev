@@ -52,7 +52,6 @@ REPO_DENYLIST = {
 }
 
 _state = threading.local()
-_ndb_client = ndb.Client()
 
 
 class LogFilter(logging.Filter):
@@ -237,14 +236,15 @@ def get_source_id(message):
 class TaskRunner:
   """Task runner."""
 
-  def __init__(self, oss_fuzz_dir):
+  def __init__(self, ndb_client, oss_fuzz_dir):
+    self._ndb_client = ndb_client
     self._oss_fuzz_dir = oss_fuzz_dir
 
   def _do_process_task(self, subscriber, subscription, ack_id, message,
                        done_event):
     """Process task with timeout."""
     try:
-      with _ndb_client.context():
+      with self._ndb_client.context():
         source_id = get_source_id(message)
         _state.source_id = source_id
 
@@ -361,10 +361,12 @@ def main():
   sys.path.append(os.path.join(oss_fuzz_dir, 'infra'))
 
   ensure_updated_checkout(OSS_FUZZ_GIT_URL, oss_fuzz_dir)
-  task_runner = TaskRunner(oss_fuzz_dir)
-  task_runner.loop()
+
+  ndb_client = ndb.Client()
+  with ndb_client.context():
+    task_runner = TaskRunner(ndb_client, oss_fuzz_dir)
+    task_runner.loop()
 
 
 if __name__ == '__main__':
-  with _ndb_client.context():
-    main()
+  main()

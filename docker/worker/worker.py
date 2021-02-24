@@ -301,8 +301,7 @@ class TaskRunner:
       done_event = threading.Event()
       thread = threading.Thread(
           target=self._do_process_task,
-          args=(self._oss_fuzz_dir, subscriber, subscription, ack_id, message,
-                done_event),
+          args=(subscriber, subscription, ack_id, message, done_event),
           daemon=True)
       thread.start()
 

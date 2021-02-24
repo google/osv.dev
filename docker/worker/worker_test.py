@@ -24,6 +24,7 @@ import pygit2
 
 import osv
 from osv import tests
+import oss_fuzz
 import worker
 
 # pylint: disable=protected-access,invalid-name
@@ -37,10 +38,10 @@ class OssFuzzDetailsTest(unittest.TestCase):
     crash_type = 'Heap-buffer-overflow'
     crash_state = 'Foo\nBar\nBlah\n'
 
-    summary = worker.get_oss_fuzz_summary(crash_type, crash_state)
+    summary = oss_fuzz.get_oss_fuzz_summary(crash_type, crash_state)
     self.assertEqual('Heap-buffer-overflow in Foo', summary)
 
-    details = worker.get_oss_fuzz_details('1337', crash_type, crash_state)
+    details = oss_fuzz.get_oss_fuzz_details('1337', crash_type, crash_state)
     self.assertEqual(
         'OSS-Fuzz report: '
         'https://bugs.chromium.org/p/oss-fuzz/issues/detail?id=1337\n\n'
@@ -55,7 +56,7 @@ class OssFuzzDetailsTest(unittest.TestCase):
     crash_type = 'Heap-buffer-overflow'
     crash_state = 'Foo\nBar\nBlah\n'
 
-    details = worker.get_oss_fuzz_details('', crash_type, crash_state)
+    details = oss_fuzz.get_oss_fuzz_details('', crash_type, crash_state)
     self.assertEqual(
         'Crash type: Heap-buffer-overflow\n'
         'Crash state:\n'
@@ -68,10 +69,10 @@ class OssFuzzDetailsTest(unittest.TestCase):
     crash_type = 'ASSERT'
     crash_state = 'idx < length\nFoo\nBar\n'
 
-    summary = worker.get_oss_fuzz_summary(crash_type, crash_state)
+    summary = oss_fuzz.get_oss_fuzz_summary(crash_type, crash_state)
     self.assertEqual('ASSERT: idx < length', summary)
 
-    details = worker.get_oss_fuzz_details('1337', crash_type, crash_state)
+    details = oss_fuzz.get_oss_fuzz_details('1337', crash_type, crash_state)
     self.assertEqual(
         'OSS-Fuzz report: '
         'https://bugs.chromium.org/p/oss-fuzz/issues/detail?id=1337\n\n'
@@ -86,10 +87,10 @@ class OssFuzzDetailsTest(unittest.TestCase):
     crash_type = 'Bad-cast'
     crash_state = 'Bad-cast to A from B\nFoo\nBar\n'
 
-    summary = worker.get_oss_fuzz_summary(crash_type, crash_state)
+    summary = oss_fuzz.get_oss_fuzz_summary(crash_type, crash_state)
     self.assertEqual('Bad-cast to A from B', summary)
 
-    details = worker.get_oss_fuzz_details('1337', crash_type, crash_state)
+    details = oss_fuzz.get_oss_fuzz_details('1337', crash_type, crash_state)
     self.assertEqual(
         'OSS-Fuzz report: '
         'https://bugs.chromium.org/p/oss-fuzz/issues/detail?id=1337\n\n'
@@ -165,7 +166,7 @@ class ImpactTest(unittest.TestCase):
         reference_urls=['https://url/'])
     fix_result.put()
 
-    worker.process_impact_task('oss-fuzz:123', message)
+    oss_fuzz.process_impact_task('oss-fuzz:123', message)
     self.assertDictEqual(
         {
             'affected':
@@ -246,7 +247,7 @@ class ImpactTest(unittest.TestCase):
         reference_urls=['https://url/'])
     fix_result.put()
 
-    worker.process_impact_task('oss-fuzz:123', message)
+    oss_fuzz.process_impact_task('oss-fuzz:123', message)
     self.assertDictEqual(
         {
             'affected': [
@@ -325,7 +326,7 @@ class ImpactTest(unittest.TestCase):
         reference_urls=['https://url/'])
     fix_result.put()
 
-    worker.process_impact_task('oss-fuzz:123', message)
+    oss_fuzz.process_impact_task('oss-fuzz:123', message)
     self.assertDictEqual(
         {
             'affected': [
@@ -405,7 +406,7 @@ class ImpactTest(unittest.TestCase):
         reference_urls=['https://url/'])
     fix_result.put()
 
-    worker.process_impact_task('oss-fuzz:123', message)
+    oss_fuzz.process_impact_task('oss-fuzz:123', message)
     self.assertDictEqual(
         {
             'affected':
@@ -481,7 +482,7 @@ class ImpactTest(unittest.TestCase):
         reference_urls=['https://url/'])
     fix_result.put()
 
-    worker.process_impact_task('oss-fuzz:123', message)
+    oss_fuzz.process_impact_task('oss-fuzz:123', message)
     self.assertDictEqual(
         {
             'affected':
@@ -537,7 +538,7 @@ class ImpactTest(unittest.TestCase):
         reference_urls=['https://url/'])
     regress_result.put()
 
-    worker.process_impact_task('oss-fuzz:123', message)
+    oss_fuzz.process_impact_task('oss-fuzz:123', message)
     self.assertDictEqual(
         {
             'affected': [
@@ -665,14 +666,14 @@ class EcosystemTest(unittest.TestCase):
   def test_get_ecosystem(self):
     """Test getting ecosystems."""
     self.assertEqual('pypi',
-                     worker.get_ecosystem(self.oss_fuzz_checkout, 'pillow'))
+                     oss_fuzz.get_ecosystem(self.oss_fuzz_checkout, 'pillow'))
     self.assertEqual(
-        'golang', worker.get_ecosystem(self.oss_fuzz_checkout,
-                                       'golang-protobuf'))
+        'golang',
+        oss_fuzz.get_ecosystem(self.oss_fuzz_checkout, 'golang-protobuf'))
     self.assertEqual('cargo',
-                     worker.get_ecosystem(self.oss_fuzz_checkout, 'servo'))
-    self.assertEqual('', worker.get_ecosystem(self.oss_fuzz_checkout,
-                                              'openssl'))
+                     oss_fuzz.get_ecosystem(self.oss_fuzz_checkout, 'servo'))
+    self.assertEqual('',
+                     oss_fuzz.get_ecosystem(self.oss_fuzz_checkout, 'openssl'))
 
 
 class MarkBugInvalidTest(unittest.TestCase):
@@ -710,13 +711,13 @@ class FindOssFuzzFixViaCommitTest(unittest.TestCase):
 
   def test_has_issue_id(self):
     """Test identifying the commit that has the issue ID."""
-    commit = worker.find_oss_fuzz_fix_via_commit(
+    commit = oss_fuzz.find_oss_fuzz_fix_via_commit(
         self.repo, 'e1b045257bc5ca2a11d0476474f45ef77a0366c7',
         '949f182716f037e25394bbb98d39b3295d230a29', 'oss-fuzz:133713371337',
         '12345')
     self.assertEqual('57e58a5d7c2bb3ce0f04f17ec0648b92ee82531f', commit)
 
-    commit = worker.find_oss_fuzz_fix_via_commit(
+    commit = oss_fuzz.find_oss_fuzz_fix_via_commit(
         self.repo, 'e1b045257bc5ca2a11d0476474f45ef77a0366c7',
         '25147a74d8aeb27b43665530ee121a2a1b19dc58', 'oss-fuzz:133713371337',
         '12345')
@@ -724,7 +725,7 @@ class FindOssFuzzFixViaCommitTest(unittest.TestCase):
 
   def test_has_testcase_id(self):
     """Test identifying the commit that has the testcase ID."""
-    commit = worker.find_oss_fuzz_fix_via_commit(
+    commit = oss_fuzz.find_oss_fuzz_fix_via_commit(
         self.repo, 'e1b045257bc5ca2a11d0476474f45ef77a0366c7',
         '00514d6f244f696e750a37083163992c6a50cfd3', 'oss-fuzz:133713371337',
         '12345')
@@ -733,7 +734,7 @@ class FindOssFuzzFixViaCommitTest(unittest.TestCase):
 
   def test_has_oss_fuzz_reference(self):
     """Test identifying the commit that has the testcase ID."""
-    commit = worker.find_oss_fuzz_fix_via_commit(
+    commit = oss_fuzz.find_oss_fuzz_fix_via_commit(
         self.repo, 'e1b045257bc5ca2a11d0476474f45ef77a0366c7',
         'b1fa81a5d59e9b4d6e276d82fc17058f3cf139d9', 'oss-fuzz:133713371337',
         '12345')
@@ -741,7 +742,7 @@ class FindOssFuzzFixViaCommitTest(unittest.TestCase):
     self.assertEqual('3c5dcf6a5bec14baab3b247d369a7270232e1b83', commit)
 
   def test_has_multiple_oss_fuzz_reference(self):
-    commit = worker.find_oss_fuzz_fix_via_commit(
+    commit = oss_fuzz.find_oss_fuzz_fix_via_commit(
         self.repo, 'e1b045257bc5ca2a11d0476474f45ef77a0366c7',
         '949f182716f037e25394bbb98d39b3295d230a29', 'oss-fuzz:7331', '54321')
     self.assertIsNone(commit)

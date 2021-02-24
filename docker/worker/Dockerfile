@@ -64,7 +64,7 @@ ENV PIP_NO_BINARY pygit2
 COPY Pipfile Pipfile.lock /work/
 RUN pip3 install pipenv && pipenv sync
 
-COPY oss_fuzz.py worker.py /usr/local/bin
+COPY oss_fuzz.py worker.py /usr/local/bin/
 COPY osv /usr/local/bin/osv/
 RUN chmod 755 /usr/local/bin/worker.py
 

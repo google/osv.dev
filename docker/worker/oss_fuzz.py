@@ -299,8 +299,7 @@ def process_impact_task(source_id, message):
   severity = fix_result.severity or regress_result.severity
   reference_urls = fix_result.reference_urls or regress_result.reference_urls
 
-  datastore.update_affected_commits(allocated_bug_id, result, project,
-                                    ecosystem, public)
+  update_affected_commits(allocated_bug_id, result, project, ecosystem, public)
 
   existing_bug.repo_url = repo_url
   existing_bug.fixed = fix_commit

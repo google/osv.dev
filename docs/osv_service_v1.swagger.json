@@ -353,7 +353,7 @@
       "properties": {
         "id": {
           "type": "string",
-          "description": "Unique identifier for this vulnerability.\nThis is of the format YEAR-N (e.g. \"OSV-2020-111\").\nUnique identifier for this vulnerability.\nThis is of the format DB-ENTRYID, where DB names the database\nand ENTRYID is in the format used by the database.\nFor example, \u201cOSV-2020-111\u201d or \u201cCVE-2021-3114\u201d\nor \u201cGHSA-vp9c-fpxx-744v\u201d.."
+          "description": "Unique identifier for this vulnerability.\nThis is of the format DB-ENTRYID, where DB names the database\nand ENTRYID is in the format used by the database.\nFor example, \u201cOSV-2020-111\u201d or \u201cCVE-2021-3114\u201d\nor \u201cGHSA-vp9c-fpxx-744v\u201d.."
         },
         "package": {
           "$ref": "#/definitions/osvPackage",
@@ -389,7 +389,7 @@
           },
           "description": "Optional. IDs for the same vulnerability in other databases."
         },
-        "packageSpecific": {
+        "ecosystemSpecific": {
           "type": "object",
           "description": "Optional. Additional metadata specific to the package ecosystem. For the\nJSON representation, this is any JSON object."
         },
@@ -415,7 +415,7 @@
         "CRITICAL"
       ],
       "default": "NONE",
-      "description": "Vulnerability severity information. This matches the qualitative rating\nscale used for CVSSv3.1."
+      "description": "Vulnerability severity information. The exact meaning of these levels will\nbe defined by the database."
     },
     "osvVulnerabilitySeverity": {
       "type": "string",

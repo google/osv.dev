@@ -1,9 +1,9 @@
 diff --git a/file/5417710252982272.yaml b/file/5417710252982272.yaml
 new file mode 100644
-index 0000000..6cc1890
+index 0000000..b3279d5
 --- /dev/null
 +++ b/file/5417710252982272.yaml
-@@ -0,0 +1,28 @@
+@@ -0,0 +1,25 @@
 +id: OSV-2017-134
 +package:
 +  name: file
@@ -19,16 +19,13 @@ index 0000000..6cc1890
 +severity: MEDIUM
 +affects:
 +  ranges:
-+  - introducedIn:
-+      repoType: GIT
-+      repoUrl: https://github.com/file/file.git
-+      commit: 17ee4cf670c363de8d2ea4a4897d7a699837873f
-+    fixedIn:
-+      repoType: GIT
-+      repoUrl: https://github.com/file/file.git
-+      commit: 19ccebafb7663c422c714e0c67fa4775abf91c43
++  - type: GIT
++    repo: https://github.com/file/file.git
++    introduced: 17ee4cf670c363de8d2ea4a4897d7a699837873f
++    fixed: 19ccebafb7663c422c714e0c67fa4775abf91c43
 +  versions:
 +  - FILE5_29
 +  - FILE5_30
 +referenceUrls:
 +- https://bugs.chromium.org/p/oss-fuzz/issues/detail?id=1064
++lastModified: '2021-01-01T00:00:00Z'

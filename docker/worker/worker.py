@@ -22,6 +22,7 @@ import resource
 import shutil
 import subprocess
 import sys
+import tempfile
 import threading
 import time
 import traceback
@@ -32,6 +33,7 @@ import pygit2
 
 sys.path.append(os.path.dirname(os.path.realpath(__file__)))
 import osv
+from osv import vulnerability_pb2
 import oss_fuzz
 
 DEFAULT_WORK_DIR = '/work'
@@ -236,9 +238,89 @@ def get_source_id(message):
 class TaskRunner:
   """Task runner."""
 
-  def __init__(self, ndb_client, oss_fuzz_dir):
+  def __init__(self, ndb_client, oss_fuzz_dir, work_dir, ssh_key_public_path,
+               ssh_key_private_path):
     self._ndb_client = ndb_client
     self._oss_fuzz_dir = oss_fuzz_dir
+    self._work_dir = work_dir
+    self._sources_dir = os.path.join(self._work_dir, 'sources')
+    self._ssh_key_public_path = ssh_key_public_path
+    self._ssh_key_private_path = ssh_key_private_path
+    os.makedirs(self._sources_dir, exist_ok=True)
+
+  def _git_callbacks(self, source_repo):
+    """Get git auth callbacks."""
+    return osv.GitRemoteCallback(source_repo.repo_username,
+                                 self._ssh_key_public_path,
+                                 self._ssh_key_private_path)
+
+  def _source_update(self, message):
+    """Source update."""
+    source = message.attributes['source']
+    path = message.attributes['path']
+
+    source_repo = osv.get_source_repository(source)
+    repo = osv.clone_with_retries(
+        source_repo.repo_url,
+        os.path.join(self._sources_dir, source),
+        callbacks=self._git_callbacks(source_repo))
+
+    yaml_path = os.path.join(osv.repo_path(repo), path)
+    vulnerability = osv.parse_vulnerability(yaml_path)
+    self._do_update(source_repo, repo, vulnerability, yaml_path)
+
+  def _do_update(self, source_repo, repo, vulnerability, yaml_path):
+    """Process updates on a vulnerability."""
+    has_updates = False
+    repo_dir = tempfile.TemporaryDirectory()
+    repo_url = None
+    package_repo = None
+
+    try:
+      # Make a copy as we are modifying it.
+      ranges = list(vulnerability.affects.ranges)
+      for affected_range in ranges:
+        if affected_range.type != vulnerability_pb2.AffectedRangeNew.GIT:
+          continue
+
+        current_repo_url = affected_range.repo
+        if current_repo_url != repo_url:
+          # Different repo from previous one.
+          repo_dir.cleanup()
+          repo_dir = tempfile.TemporaryDirectory()
+          repo_url = current_repo_url
+          package_repo = osv.clone_with_retries(repo_url, repo_dir.name)
+
+        result = osv.get_affected(package_repo, affected_range.introduced,
+                                  affected_range.fixed)
+        has_updates |= osv.update_vulnerability(vulnerability, repo_url, result)
+    finally:
+      repo_dir.cleanup()
+
+    if not has_updates:
+      # Nothing to do.
+      return
+
+    # Write updates, and push.
+    # TODO(ochang): last_modified
+    osv.vulnerability_to_yaml(vulnerability, yaml_path)
+    # TODO(ochang): Hash check for conflicts.
+    allocated_id = os.path.splitext(os.path.basename(yaml_path))[0]
+    repo.index.add_all()
+    if not osv.push_source_changes(repo, f'Update {allocated_id}',
+                                   self._git_callbacks(source_repo)):
+      # Ran into a conflict, discard any changes.
+      return
+
+    # Update datastore with new information.
+    bug = osv.Bug.get_by_id(allocated_id)
+    if not bug:
+      # TODO(ochang): Create new entry if needed.
+      logging.error('Failed to find bug with ID %s', allocated_id)
+      return
+
+    bug.update_from_vulnerability(vulnerability)
+    bug.put()
 
   def _do_process_task(self, subscriber, subscription, ack_id, message,
                        done_event):
@@ -262,6 +344,8 @@ class TaskRunner:
           process_package_info_task(message)
         elif task_type == 'invalid':
           mark_bug_invalid(message)
+        elif task_type == 'update':
+          self._source_update(message)
 
         _state.source_id = None
         subscriber.acknowledge(subscription=subscription, ack_ids=[ack_id])
@@ -342,6 +426,8 @@ def main():
   parser = argparse.ArgumentParser(description='Worker')
   parser.add_argument(
       '--work_dir', help='Working directory', default=DEFAULT_WORK_DIR)
+  parser.add_argument('--ssh_key_public', help='Public SSH key path')
+  parser.add_argument('--ssh_key_private', help='Private SSH key path')
   args = parser.parse_args()
 
   # Work around kernel bug: https://gvisor.dev/issue/1765
@@ -363,7 +449,9 @@ def main():
 
   ndb_client = ndb.Client()
   with ndb_client.context():
-    task_runner = TaskRunner(ndb_client, oss_fuzz_dir)
+    task_runner = TaskRunner(ndb_client, oss_fuzz_dir, args.work_dir,
+                             args.ssh_key_public_path,
+                             args.ssh_key_private_path)
     task_runner.loop()
 
 

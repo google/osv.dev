@@ -213,6 +213,30 @@ class Bug(ndb.Model):
     self.sort_key = key_parts[0] + '-' + key_parts[1].zfill(7)
     self.last_modified = utcnow()
 
+  def update_from_vulnerability(self, vulnerability):
+    """Set fields from vulnerability."""
+    self.summary = vulnerability.summary
+    self.details = vulnerability.details
+    self.severity = (
+        vulnerability_pb2.VulnerabilityNew.Severity.Name(
+            vulnerability.severity))
+    self.reference_urls = list(vulnerability.reference_urls)
+
+    found_first = False
+    for affected_range in vulnerability.affects.ranges:
+      if affected_range.type != vulnerability_pb2.AffectedRangeNew.Type.GIT:
+        continue
+
+      if found_first:
+        self.additional_commit_ranges.append(
+            CommitRange(
+                introduced_in=affected_range.introduced,
+                fixed_in=affected_range.fixed))
+      else:
+        self.regressed = affected_range.introduced
+        self.fixed = affected_range.fixed
+        found_first = True
+
   def to_vulnerability(self):
     """Convert to Vulnerability proto."""
 

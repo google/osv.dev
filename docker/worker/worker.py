@@ -277,7 +277,7 @@ class TaskRunner:
 
     try:
       added_ranges = set()
-      added_versions  = set()
+      added_versions = set()
 
       # Make a copy as we are modifying it.
       ranges = list(vulnerability.affects.ranges)
@@ -295,8 +295,8 @@ class TaskRunner:
 
         result = osv.get_affected(package_repo, affected_range.introduced,
                                   affected_range.fixed)
-        new_ranges, new_versions = osv.update_vulnerability(vulnerability,
-                                                            repo_url, result)
+        new_ranges, new_versions = osv.update_vulnerability(
+            vulnerability, repo_url, result)
         added_ranges.update(new_ranges)
         added_versions.update(new_versions)
     finally:

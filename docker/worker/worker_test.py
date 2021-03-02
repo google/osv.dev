@@ -814,6 +814,8 @@ class UpdateTest(unittest.TestCase):
         repo_url='file://' + self.remote_source_repo_path,
         repo_username='').put()
 
+    osv.Bug(id='BLAH-123', project='blah.com/package', ecosystem='golang').put()
+
   def tearDown(self):
     self.tmp_dir.cleanup()
 
@@ -838,7 +840,38 @@ class UpdateTest(unittest.TestCase):
     diff = repo.diff(commit.parents[0], commit)
     self.assertEqual(self._load_test_data('expected.diff'), diff.patch)
 
-    # TODO(ochang): Check updated bug.
+    self.assertDictEqual(
+        {
+            'additional_commit_ranges': [{
+                'fixed_in': 'b9b3fd4732695b83c3068b7b6a14bb372ec31f98',
+                'introduced_in': 'eefe8ec3f1f90d0e684890e810f3f21e8500a4cd'
+            }, {
+                'fixed_in': '',
+                'introduced_in': 'febfac1940086bc1f6d3dc33fda0a1d1ba336209'
+            }],
+            'affected': [],
+            'affected_fuzzy': [],
+            'confidence': None,
+            'details': 'Blah blah blah\nBlah\n',
+            'ecosystem': 'golang',
+            'fixed': '8d8242f545e9cec3e6d0d2e3f5bde8be1c659735',
+            'has_affected': False,
+            'issue_id': None,
+            'last_modified': datetime.datetime(2021, 1, 1, 0, 0),
+            'project': 'blah.com/package',
+            'public': None,
+            'reference_urls': ['https://ref.com/ref'],
+            'regressed': 'eefe8ec3f1f90d0e684890e810f3f21e8500a4cd',
+            'repo_url': None,
+            'search_indices': ['blah.com/package', 'BLAH-123', 'BLAH', '123'],
+            'severity': 'HIGH',
+            'sort_key': 'BLAH-0000123',
+            'source_id': None,
+            'status': None,
+            'summary': 'A vulnerability',
+            'timestamp': None
+        },
+        osv.Bug.get_by_id('BLAH-123')._to_dict())
 
 
 if __name__ == '__main__':

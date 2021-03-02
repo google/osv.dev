@@ -297,13 +297,10 @@ class TaskRunner:
     package_repo_url = None
     package_repo = None
 
+    added_ranges = set()
+    added_versions = set()
     try:
-      added_ranges = set()
-      added_versions = set()
-
-      # Make a copy as we are modifying it.
-      ranges = list(vulnerability.affects.ranges)
-      for affected_range in ranges:
+      for affected_range in vulnerability.affects.ranges:
         # Go through existing provided ranges to find additional ranges (via
         # cherrypicks and branches).
         if affected_range.type != vulnerability_pb2.AffectedRangeNew.GIT:

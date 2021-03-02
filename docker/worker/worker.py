@@ -271,6 +271,8 @@ class TaskRunner:
 
   def _do_update(self, source_repo, repo, vulnerability, yaml_path):
     """Process updates on a vulnerability."""
+    allocated_id = os.path.splitext(os.path.basename(yaml_path))[0]
+    logging.info(f'Processing update for vulnerability {allocated_id}')
     package_repo_dir = tempfile.TemporaryDirectory()
     package_repo_url = None
     package_repo = None
@@ -303,32 +305,33 @@ class TaskRunner:
     finally:
       package_repo_dir.cleanup()
 
-    if not added_ranges and not added_versions:
+    if added_ranges or added_versions:
+      # Add new ranges and versions.
+      for repo_url, introduced, fixed in sorted(added_ranges):
+        vulnerability.affects.ranges.add(
+            type=vulnerability_pb2.AffectedRangeNew.Type.GIT,
+            repo=repo_url,
+            introduced=introduced,
+            fixed=fixed)
+
+      for version in sorted(added_versions):
+        vulnerability.affects.versions.append(version)
+
+      # Write updates, and push.
+      vulnerability.last_modified.FromDatetime(osv.utcnow())
+      osv.vulnerability_to_yaml(vulnerability, yaml_path)
+      # TODO(ochang): Hash check for conflicts.
+      repo.index.add_all()
+      if not osv.push_source_changes(repo, f'Update {allocated_id}',
+                                     self._git_callbacks(source_repo)):
+        # Ran into a conflict, discard any changes.
+        logging.warning(
+            f'Discarding changes for {allocated_id} due to conflicts.')
+        return
+    else:
       # Nothing to do.
-      return
-
-    for repo_url, introduced, fixed in sorted(added_ranges):
-      vulnerability.affects.ranges.add(
-          type=vulnerability_pb2.AffectedRangeNew.Type.GIT,
-          repo=repo_url,
-          introduced=introduced,
-          fixed=fixed)
-
-    for version in sorted(added_versions):
-      vulnerability.affects.versions.append(version)
-
-    # Write updates, and push.
-    vulnerability.last_modified.FromDatetime(osv.utcnow())
-    osv.vulnerability_to_yaml(vulnerability, yaml_path)
-    # TODO(ochang): Hash check for conflicts.
-    allocated_id = os.path.splitext(os.path.basename(yaml_path))[0]
-    repo.index.add_all()
-    if not osv.push_source_changes(repo, f'Update {allocated_id}',
-                                   self._git_callbacks(source_repo)):
-      # Ran into a conflict, discard any changes.
-      logging.warning(
-          f'Discarding changes for {allocated_id} due to conflicts.')
-      return
+      logging.info(
+          f'No range/version changes for vulnerability {allocated_id}.')
 
     # Update datastore with new information.
     bug = osv.Bug.get_by_id(allocated_id)

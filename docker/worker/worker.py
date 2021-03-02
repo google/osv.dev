@@ -326,6 +326,8 @@ class TaskRunner:
     if not osv.push_source_changes(repo, f'Update {allocated_id}',
                                    self._git_callbacks(source_repo)):
       # Ran into a conflict, discard any changes.
+      logging.warning(
+          f'Discarding changes for {allocated_id} due to conflicts.')
       return
 
     # Update datastore with new information.

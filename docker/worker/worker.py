@@ -271,8 +271,8 @@ class TaskRunner:
 
   def _do_update(self, source_repo, repo, vulnerability, yaml_path):
     """Process updates on a vulnerability."""
-    repo_dir = tempfile.TemporaryDirectory()
-    repo_url = None
+    package_repo_dir = tempfile.TemporaryDirectory()
+    package_repo_url = None
     package_repo = None
 
     try:
@@ -286,21 +286,22 @@ class TaskRunner:
           continue
 
         current_repo_url = affected_range.repo
-        if current_repo_url != repo_url:
+        if current_repo_url != package_repo_url:
           # Different repo from previous one.
-          repo_dir.cleanup()
-          repo_dir = tempfile.TemporaryDirectory()
-          repo_url = current_repo_url
-          package_repo = osv.clone_with_retries(repo_url, repo_dir.name)
+          package_repo_dir.cleanup()
+          package_repo_dir = tempfile.TemporaryDirectory()
+          package_repo_url = current_repo_url
+          package_repo = osv.clone_with_retries(package_repo_url,
+                                                package_repo_dir.name)
 
         result = osv.get_affected(package_repo, affected_range.introduced,
                                   affected_range.fixed)
         new_ranges, new_versions = osv.update_vulnerability(
-            vulnerability, repo_url, result)
+            vulnerability, package_repo_url, result)
         added_ranges.update(new_ranges)
         added_versions.update(new_versions)
     finally:
-      repo_dir.cleanup()
+      package_repo_dir.cleanup()
 
     if not added_ranges and not added_versions:
       # Nothing to do.

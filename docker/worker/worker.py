@@ -269,10 +269,30 @@ class TaskRunner:
     vulnerability = osv.parse_vulnerability(yaml_path)
     self._do_update(source_repo, repo, vulnerability, yaml_path)
 
+  def _push_new_ranges_and_versions(self, source_repo, repo, vulnerability,
+                                    yaml_path, added_ranges, added_versions):
+    # Add new ranges and versions (sorted for determinism).
+    for repo_url, introduced, fixed in sorted(added_ranges):
+      vulnerability.affects.ranges.add(
+          type=vulnerability_pb2.AffectedRangeNew.Type.GIT,
+          repo=repo_url,
+          introduced=introduced,
+          fixed=fixed)
+
+    for version in sorted(added_versions):
+      vulnerability.affects.versions.append(version)
+
+    # Write updates, and push.
+    vulnerability.last_modified.FromDatetime(osv.utcnow())
+    osv.vulnerability_to_yaml(vulnerability, yaml_path)
+    # TODO(ochang): Hash check for conflicts.
+    repo.index.add_all()
+    return osv.push_source_changes(repo, f'Update {vulnerability.id}',
+                                   self._git_callbacks(source_repo))
+
   def _do_update(self, source_repo, repo, vulnerability, yaml_path):
     """Process updates on a vulnerability."""
-    allocated_id = os.path.splitext(os.path.basename(yaml_path))[0]
-    logging.info(f'Processing update for vulnerability {allocated_id}')
+    logging.info(f'Processing update for vulnerability {vulnerability.id}')
     package_repo_dir = tempfile.TemporaryDirectory()
     package_repo_url = None
     package_repo = None
@@ -284,6 +304,8 @@ class TaskRunner:
       # Make a copy as we are modifying it.
       ranges = list(vulnerability.affects.ranges)
       for affected_range in ranges:
+        # Go through existing provided ranges to find additional ranges (via
+        # cherrypicks and branches).
         if affected_range.type != vulnerability_pb2.AffectedRangeNew.GIT:
           continue
 
@@ -300,44 +322,30 @@ class TaskRunner:
                                   affected_range.fixed)
         new_ranges, new_versions = osv.update_vulnerability(
             vulnerability, package_repo_url, result)
+
+        # Collect newly added ranges and versions.
         added_ranges.update(new_ranges)
         added_versions.update(new_versions)
     finally:
       package_repo_dir.cleanup()
 
     if added_ranges or added_versions:
-      # Add new ranges and versions.
-      for repo_url, introduced, fixed in sorted(added_ranges):
-        vulnerability.affects.ranges.add(
-            type=vulnerability_pb2.AffectedRangeNew.Type.GIT,
-            repo=repo_url,
-            introduced=introduced,
-            fixed=fixed)
-
-      for version in sorted(added_versions):
-        vulnerability.affects.versions.append(version)
-
-      # Write updates, and push.
-      vulnerability.last_modified.FromDatetime(osv.utcnow())
-      osv.vulnerability_to_yaml(vulnerability, yaml_path)
-      # TODO(ochang): Hash check for conflicts.
-      repo.index.add_all()
-      if not osv.push_source_changes(repo, f'Update {allocated_id}',
-                                     self._git_callbacks(source_repo)):
-        # Ran into a conflict, discard any changes.
+      if not self._push_new_ranges_and_versions(
+          source_repo, repo, vulnerability, yaml_path, added_ranges,
+          added_versions):
         logging.warning(
-            f'Discarding changes for {allocated_id} due to conflicts.')
+            f'Discarding changes for {vulnerability.id} due to conflicts.')
         return
     else:
       # Nothing to do.
       logging.info(
-          f'No range/version changes for vulnerability {allocated_id}.')
+          f'No range/version changes for vulnerability {vulnerability.id}.')
 
     # Update datastore with new information.
-    bug = osv.Bug.get_by_id(allocated_id)
+    bug = osv.Bug.get_by_id(vulnerability.id)
     if not bug:
       # TODO(ochang): Create new entry if needed.
-      logging.error('Failed to find bug with ID %s', allocated_id)
+      logging.error('Failed to find bug with ID %s', vulnerability.id)
       return
 
     bug.update_from_vulnerability(vulnerability)

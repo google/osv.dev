@@ -17,6 +17,7 @@
 from google.protobuf import json_format
 import os
 import pygit2
+import time
 import yaml
 
 # pylint: disable=relative-beyond-top-level
@@ -24,6 +25,8 @@ from . import types
 from . import vulnerability_pb2
 
 AUTHOR_EMAIL = 'infra@osv.dev'
+PUSH_RETRIES = 2
+PUSH_RETRY_SLEEP_SECONDS = 10
 
 
 class GitRemoteCallback(pygit2.RemoteCallbacks):
@@ -136,8 +139,39 @@ def push_source_changes(repo, commit_message, git_callbacks):
   repo.create_commit(repo.head.name, author, author, commit_message, tree,
                      [repo.head.peel().oid])
 
-  # TODO(ochang): Rebase and retry if necessary.
-  repo.remotes['origin'].push([repo.head.name], callbacks=git_callbacks)
+  for retry_num in range(1 + PUSH_RETRIES):
+    try:
+      repo.remotes['origin'].push([repo.head.name], callbacks=git_callbacks)
+    except pygit2.GitError:
+      if retry_num == PUSH_RETRIES:
+        return False
+
+      time.sleep(PUSH_RETRY_SLEEP_SECONDS)
+
+      # Try rebasing.
+      commit = repo.head.peel()
+      repo.remotes['origin'].fetch(callbacks=git_callbacks)
+      remote_branch = repo.lookup_branch(
+          repo.head.name.replace('refs/heads/', 'origin/'),
+          pygit2.GIT_BRANCH_REMOTE)
+
+      # Reset to remote branch.
+      repo.head.set_target(remote_branch.target)
+      repo.reset(remote_branch.target, pygit2.GIT_RESET_HARD)
+
+      # Then cherrypick our original commit.
+      repo.cherrypick(commit.id)
+      if repo.index.conflicts is not None:
+        # Conflict. Don't try to resolve.
+        return False
+
+      # Success, commit and try pushing again.
+      tree = repo.index.write_tree()
+      repo.create_commit(repo.head.name, commit.author, commit.author,
+                         commit.message, tree, [repo.head.peel().oid])
+      repo.state_cleanup()
+
+  return True
 
 
 def git_author():

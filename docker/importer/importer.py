@@ -118,7 +118,6 @@ class Importer:
 
     # Commit Vulnerability changes back to the oss-fuzz source repository.
     repo.index.add_all()
-
     diff = repo.index.diff_to_tree(repo.head.peel().tree)
     if not diff:
       logging.info('No new entries, skipping committing.')

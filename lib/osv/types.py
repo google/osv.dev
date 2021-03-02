@@ -211,7 +211,8 @@ class Bug(ndb.Model):
     self.affected_fuzzy = bug.normalize_tags(self.affected)
 
     self.sort_key = key_parts[0] + '-' + key_parts[1].zfill(7)
-    self.last_modified = utcnow()
+    if not self.last_modified:
+      self.last_modified = utcnow()
 
   def update_from_vulnerability(self, vulnerability):
     """Set fields from vulnerability."""

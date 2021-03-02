@@ -271,12 +271,14 @@ class TaskRunner:
 
   def _do_update(self, source_repo, repo, vulnerability, yaml_path):
     """Process updates on a vulnerability."""
-    has_updates = False
     repo_dir = tempfile.TemporaryDirectory()
     repo_url = None
     package_repo = None
 
     try:
+      added_ranges = set()
+      added_versions  = set()
+
       # Make a copy as we are modifying it.
       ranges = list(vulnerability.affects.ranges)
       for affected_range in ranges:
@@ -293,16 +295,29 @@ class TaskRunner:
 
         result = osv.get_affected(package_repo, affected_range.introduced,
                                   affected_range.fixed)
-        has_updates |= osv.update_vulnerability(vulnerability, repo_url, result)
+        new_ranges, new_versions = osv.update_vulnerability(vulnerability,
+                                                            repo_url, result)
+        added_ranges.update(new_ranges)
+        added_versions.update(new_versions)
     finally:
       repo_dir.cleanup()
 
-    if not has_updates:
+    if not added_ranges and not added_versions:
       # Nothing to do.
       return
 
+    for repo_url, introduced, fixed in sorted(added_ranges):
+      vulnerability.affects.ranges.add(
+          type=vulnerability_pb2.AffectedRangeNew.Type.GIT,
+          repo=repo_url,
+          introduced=introduced,
+          fixed=fixed)
+
+    for version in sorted(added_versions):
+      vulnerability.affects.versions.append(version)
+
     # Write updates, and push.
-    # TODO(ochang): last_modified
+    vulnerability.last_modified.FromDatetime(osv.utcnow())
     osv.vulnerability_to_yaml(vulnerability, yaml_path)
     # TODO(ochang): Hash check for conflicts.
     allocated_id = os.path.splitext(os.path.basename(yaml_path))[0]

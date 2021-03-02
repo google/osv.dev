@@ -118,6 +118,11 @@ class ImpactTest(unittest.TestCase):
     mock_clone = self.clone_repository_patcher.start()
     mock_clone.return_value = pygit2.Repository('osv-test')
 
+    patcher = mock.patch('osv.types.utcnow')
+    mock_utcnow = patcher.start()
+    mock_utcnow.return_value = datetime.datetime(2021, 1, 1)
+    self.addCleanup(patcher.stop)
+
     allocated_bug = osv.Bug(
         id='2020-1337',
         timestamp=datetime.datetime(2020, 1, 1),
@@ -753,7 +758,7 @@ class FindOssFuzzFixViaCommitTest(unittest.TestCase):
     self.assertIsNone(commit)
 
 
-@mock.patch('osv.types.utcnow', lambda: datetime.datetime(2021, 1, 1))
+@mock.patch('osv.utcnow', lambda: datetime.datetime(2021, 1, 1))
 class UpdateTest(unittest.TestCase):
   """Vulnerability update tests."""
 
@@ -772,6 +777,7 @@ class UpdateTest(unittest.TestCase):
     self.maxDiff = None
     tests.reset_emulator()
 
+    # TODO(ochang): Refactor out into common test utilities.
     self.original_clone = pygit2.clone_repository
     self.clone_repository_patcher = mock.patch('pygit2.clone_repository')
     mock_clone = self.clone_repository_patcher.start()

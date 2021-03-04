@@ -12,15 +12,44 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Test helpers."""
+import datetime
 import os
 import requests
 import subprocess
+import tempfile
 import threading
+from unittest import mock
+
+import pygit2
 
 _EMULATOR_TIMEOUT = 30
 _DATASTORE_EMULATOR_PORT = 8002
 _DATASTORE_READY_INDICATOR = b'is now running'
 TEST_PROJECT_ID = 'test-osv'
+
+
+class MockRepo:
+  """Mock repo."""
+
+  def __init__(self, path):
+    self.path = path
+    self._repo = pygit2.init_repository(path, True)
+    tree = self._repo.TreeBuilder().write()
+    author = pygit2.Signature('OSV', 'infra@osv.dev')
+    self._repo.create_commit('HEAD', author, author, 'Initial commit', tree, [])
+
+  def add_file(self, path, contents):
+    """Add a file."""
+    oid = self._repo.write(pygit2.GIT_OBJ_BLOB, contents)
+    self._repo.index.add(pygit2.IndexEntry(path, oid, pygit2.GIT_FILEMODE_BLOB))
+    self._repo.index.write()
+
+  def commit(self, author_name, author_email):
+    """Commit."""
+    tree = self._repo.index.write_tree()
+    author = pygit2.Signature(author_name, author_email)
+    self._repo.create_commit('HEAD', author, author, 'Changes', tree,
+                             [self._repo.head.peel().oid])
 
 
 def start_datastore_emulator():
@@ -83,3 +112,31 @@ def reset_emulator():
   resp = requests.post(
       'http://localhost:{}/reset'.format(_DATASTORE_EMULATOR_PORT))
   resp.raise_for_status()
+
+
+def mock_datetime(test):
+  """Mock datetime."""
+  for to_mock in ('osv.types.utcnow', 'osv.utcnow'):
+    patcher = mock.patch(to_mock)
+    mock_utcnow = patcher.start()
+    mock_utcnow.return_value = datetime.datetime(2021, 1, 1)
+    test.addCleanup(patcher.stop)
+
+
+def mock_repository(test):
+  """Create a mock repo."""
+  tmp_dir = tempfile.TemporaryDirectory()
+  test.remote_source_repo_path = tmp_dir.name
+  test.addCleanup(tmp_dir.cleanup)
+  return MockRepo(test.remote_source_repo_path)
+
+
+def mock_clone(test, func=None, return_value=None):
+  """Mock clone_repository."""
+  patcher = mock.patch('pygit2.clone_repository')
+  mocked = patcher.start()
+  if return_value:
+    mocked.return_value = return_value
+  else:
+    mocked.side_effect = func
+  test.addCleanup(patcher.stop)

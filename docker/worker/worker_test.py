@@ -106,22 +106,15 @@ class OssFuzzDetailsTest(unittest.TestCase):
         'Bar\n', details)
 
 
-@mock.patch('osv.types.utcnow', lambda: datetime.datetime(2021, 1, 1))
 class ImpactTest(unittest.TestCase):
   """Impact task tests."""
 
   def setUp(self):
     tests.reset_emulator()
-    self.clone_repository_patcher = mock.patch('pygit2.clone_repository')
     self.maxDiff = None
 
-    mock_clone = self.clone_repository_patcher.start()
-    mock_clone.return_value = pygit2.Repository('osv-test')
-
-    patcher = mock.patch('osv.types.utcnow')
-    mock_utcnow = patcher.start()
-    mock_utcnow.return_value = datetime.datetime(2021, 1, 1)
-    self.addCleanup(patcher.stop)
+    tests.mock_clone(self, return_value=pygit2.Repository('osv-test'))
+    tests.mock_datetime(self)
 
     allocated_bug = osv.Bug(
         id='2020-1337',
@@ -140,9 +133,6 @@ class ImpactTest(unittest.TestCase):
         ecosystem='ecosystem',
         public=False)
     should_be_deleted.put()
-
-  def tearDown(self):
-    self.clone_repository_patcher.stop()
 
   def test_basic(self):
     """Basic test."""
@@ -607,17 +597,12 @@ class PackageInfoTests(unittest.TestCase):
 
   def setUp(self):
     tests.reset_emulator()
-    self.clone_repository_patcher = mock.patch('pygit2.clone_repository')
-    mock_clone = self.clone_repository_patcher.start()
-    mock_clone.return_value = pygit2.Repository('osv-test')
+    tests.mock_clone(self, return_value=pygit2.Repository('osv-test'))
 
     osv.Bug(
         id='2020-1', project='project', affected=['v0.1.1'], public=True).put()
     osv.Bug(
         id='2020-2', project='project', affected=['v0.2'], public=False).put()
-
-  def tearDown(self):
-    self.clone_repository_patcher.stop()
 
   def test_package_info(self):
     """Test project info task."""
@@ -758,7 +743,6 @@ class FindOssFuzzFixViaCommitTest(unittest.TestCase):
     self.assertIsNone(commit)
 
 
-@mock.patch('osv.utcnow', lambda: datetime.datetime(2021, 1, 1))
 class UpdateTest(unittest.TestCase):
   """Vulnerability update tests."""
 
@@ -777,36 +761,21 @@ class UpdateTest(unittest.TestCase):
     self.maxDiff = None
     tests.reset_emulator()
 
-    # TODO(ochang): Refactor out into common test utilities.
     self.original_clone = pygit2.clone_repository
-    self.clone_repository_patcher = mock.patch('pygit2.clone_repository')
-    mock_clone = self.clone_repository_patcher.start()
-    mock_clone.side_effect = self.mock_clone
+    tests.mock_clone(self, func=self.mock_clone)
 
-    patcher = mock.patch('osv.types.utcnow')
-    mock_utcnow = patcher.start()
-    mock_utcnow.return_value = datetime.datetime(2021, 1, 1)
-    self.addCleanup(patcher.stop)
+    tests.mock_datetime(self)
+    repo = tests.mock_repository(self)
+    self.remote_source_repo_path = repo.path
 
     # Initialise fake source_repo.
     self.tmp_dir = tempfile.TemporaryDirectory()
-    self.remote_source_repo_path = os.path.join(self.tmp_dir.name,
-                                                'source_repo')
-    repo = pygit2.init_repository(self.remote_source_repo_path, True)
-    tree = repo.TreeBuilder().write()
-    author = pygit2.Signature('OSV', 'infra@osv.dev')
-    repo.create_commit('HEAD', author, author, 'Initial commit', tree, [])
 
-    # Add a source.
-    oid = repo.write(
-        pygit2.GIT_OBJ_BLOB,
+    repo = tests.mock_repository(self)
+    repo.add_file(
+        'BLAH-123.yaml',
         self._load_test_data(os.path.join(TEST_DATA_DIR, 'BLAH-123.yaml')))
-    repo.index.add(
-        pygit2.IndexEntry('BLAH-123.yaml', oid, pygit2.GIT_FILEMODE_BLOB))
-    repo.index.write()
-    tree = repo.index.write_tree()
-    repo.create_commit('HEAD', author, author, 'Changes', tree,
-                       [repo.head.peel().oid])
+    repo.commit('User', 'user@email')
 
     osv.SourceRepository(
         id='source',

@@ -27,6 +27,11 @@ from osv import tests
 import oss_fuzz
 import worker
 
+TEST_DATA_DIR = os.path.join(
+    os.path.dirname(os.path.abspath(__file__)), 'testdata')
+
+ndb_client = None
+
 # pylint: disable=protected-access,invalid-name
 
 
@@ -112,6 +117,11 @@ class ImpactTest(unittest.TestCase):
 
     mock_clone = self.clone_repository_patcher.start()
     mock_clone.return_value = pygit2.Repository('osv-test')
+
+    patcher = mock.patch('osv.types.utcnow')
+    mock_utcnow = patcher.start()
+    mock_utcnow.return_value = datetime.datetime(2021, 1, 1)
+    self.addCleanup(patcher.stop)
 
     allocated_bug = osv.Bug(
         id='2020-1337',
@@ -748,11 +758,128 @@ class FindOssFuzzFixViaCommitTest(unittest.TestCase):
     self.assertIsNone(commit)
 
 
+@mock.patch('osv.utcnow', lambda: datetime.datetime(2021, 1, 1))
+class UpdateTest(unittest.TestCase):
+  """Vulnerability update tests."""
+
+  def mock_clone(self, repo_url, *args, **kwargs):
+    if 'osv-test' in repo_url:
+      return pygit2.Repository('osv-test')
+
+    return self.original_clone(repo_url, *args, **kwargs)
+
+  def _load_test_data(self, name):
+    """Load test data."""
+    with open(os.path.join(TEST_DATA_DIR, name)) as f:
+      return f.read()
+
+  def setUp(self):
+    self.maxDiff = None
+    tests.reset_emulator()
+
+    # TODO(ochang): Refactor out into common test utilities.
+    self.original_clone = pygit2.clone_repository
+    self.clone_repository_patcher = mock.patch('pygit2.clone_repository')
+    mock_clone = self.clone_repository_patcher.start()
+    mock_clone.side_effect = self.mock_clone
+
+    patcher = mock.patch('osv.types.utcnow')
+    mock_utcnow = patcher.start()
+    mock_utcnow.return_value = datetime.datetime(2021, 1, 1)
+    self.addCleanup(patcher.stop)
+
+    # Initialise fake source_repo.
+    self.tmp_dir = tempfile.TemporaryDirectory()
+    self.remote_source_repo_path = os.path.join(self.tmp_dir.name,
+                                                'source_repo')
+    repo = pygit2.init_repository(self.remote_source_repo_path, True)
+    tree = repo.TreeBuilder().write()
+    author = pygit2.Signature('OSV', 'infra@osv.dev')
+    repo.create_commit('HEAD', author, author, 'Initial commit', tree, [])
+
+    # Add a source.
+    oid = repo.write(
+        pygit2.GIT_OBJ_BLOB,
+        self._load_test_data(os.path.join(TEST_DATA_DIR, 'BLAH-123.yaml')))
+    repo.index.add(
+        pygit2.IndexEntry('BLAH-123.yaml', oid, pygit2.GIT_FILEMODE_BLOB))
+    repo.index.write()
+    tree = repo.index.write_tree()
+    repo.create_commit('HEAD', author, author, 'Changes', tree,
+                       [repo.head.peel().oid])
+
+    osv.SourceRepository(
+        id='source',
+        name='source',
+        repo_url='file://' + self.remote_source_repo_path,
+        repo_username='').put()
+
+    osv.Bug(id='BLAH-123', project='blah.com/package', ecosystem='golang').put()
+
+  def tearDown(self):
+    self.tmp_dir.cleanup()
+
+  def test_update(self):
+    """Test basic update."""
+    task_runner = worker.TaskRunner(ndb_client, None, self.tmp_dir.name, None,
+                                    None)
+    message = mock.Mock()
+    message.attributes = {
+        'source': 'source',
+        'path': 'BLAH-123.yaml',
+        'original_hash': 'hash',
+    }
+    task_runner._source_update(message)
+
+    repo = pygit2.Repository(self.remote_source_repo_path)
+    commit = repo.head.peel()
+
+    self.assertEqual('infra@osv.dev', commit.author.email)
+    self.assertEqual('OSV', commit.author.name)
+    self.assertEqual('Update BLAH-123', commit.message)
+    diff = repo.diff(commit.parents[0], commit)
+    self.assertEqual(self._load_test_data('expected.diff'), diff.patch)
+
+    self.assertDictEqual(
+        {
+            'additional_commit_ranges': [{
+                'fixed_in': 'b9b3fd4732695b83c3068b7b6a14bb372ec31f98',
+                'introduced_in': 'eefe8ec3f1f90d0e684890e810f3f21e8500a4cd'
+            }, {
+                'fixed_in': '',
+                'introduced_in': 'febfac1940086bc1f6d3dc33fda0a1d1ba336209'
+            }],
+            'affected': [],
+            'affected_fuzzy': [],
+            'confidence': None,
+            'details': 'Blah blah blah\nBlah\n',
+            'ecosystem': 'golang',
+            'fixed': '8d8242f545e9cec3e6d0d2e3f5bde8be1c659735',
+            'has_affected': False,
+            'issue_id': None,
+            'last_modified': datetime.datetime(2021, 1, 1, 0, 0),
+            'project': 'blah.com/package',
+            'public': None,
+            'reference_urls': ['https://ref.com/ref'],
+            'regressed': 'eefe8ec3f1f90d0e684890e810f3f21e8500a4cd',
+            'repo_url': None,
+            'search_indices': ['blah.com/package', 'BLAH-123', 'BLAH', '123'],
+            'severity': 'HIGH',
+            'sort_key': 'BLAH-0000123',
+            'source_id': None,
+            'status': None,
+            'summary': 'A vulnerability',
+            'timestamp': None
+        },
+        osv.Bug.get_by_id('BLAH-123')._to_dict())
+
+
 if __name__ == '__main__':
   os.system('pkill -f datastore')
   ds_emulator = tests.start_datastore_emulator()
   try:
-    with ndb.Client().context() as context:
+    ndb_client = ndb.Client()
+    with ndb_client.context() as context:
       context.set_memcache_policy(False)
       context.set_cache_policy(False)
       unittest.main()

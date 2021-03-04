@@ -43,6 +43,11 @@ class ImporterTest(unittest.TestCase):
     self.tmp_dir = tempfile.mkdtemp()
     self.remote_source_repo_path = os.path.join(self.tmp_dir, 'source_repo')
 
+    patcher = mock.patch('osv.types.utcnow')
+    mock_utcnow = patcher.start()
+    mock_utcnow.return_value = datetime.datetime(2021, 1, 1)
+    self.addCleanup(patcher.stop)
+
     # Initialise fake source_repo.
     repo = pygit2.init_repository(self.remote_source_repo_path, True)
     tree = repo.TreeBuilder().write()

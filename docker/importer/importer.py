@@ -19,48 +19,12 @@ import os
 import shutil
 
 from google.cloud import ndb
-from google.protobuf import json_format
 import pygit2
-import yaml
 
 import osv
 
-AUTHOR_EMAIL = 'infra@osv.dev'
 DEFAULT_WORK_DIR = '/work'
 VULNERABILITY_EXTENSION = '.yaml'
-
-
-class GitRemoteCallback(pygit2.RemoteCallbacks):
-  """Authentication callbacks."""
-
-  def __init__(self, username, ssh_key_public_path, ssh_key_private_path):
-    super().__init__()
-    self._username = username
-    self._ssh_key_public_path = ssh_key_public_path
-    self._ssh_key_private_path = ssh_key_private_path
-
-  def credentials(self, url, username_from_url, allowed_types):
-    if allowed_types & pygit2.credentials.GIT_CREDENTIAL_USERNAME:
-      return pygit2.Username(self._username)
-
-    if allowed_types & pygit2.credentials.GIT_CREDENTIAL_SSH_KEY:
-      return pygit2.Keypair(self._username, self._ssh_key_public_path,
-                            self._ssh_key_private_path, '')
-
-    return None
-
-
-def _yaml_str_representer(dumper, data):
-  """YAML str representer override."""
-  if '\n' in data:
-    return dumper.represent_scalar('tag:yaml.org,2002:str', data, style='|')
-  return dumper.represent_scalar('tag:yaml.org,2002:str', data)
-
-
-def _repo_path(repo):
-  """Return local disk path to repo."""
-  # Remove '.git' component.
-  return os.path.dirname(repo.path.rstrip(os.sep))
 
 
 def _is_vulnerability_file(file_path):
@@ -76,11 +40,6 @@ def request_analysis(source_repo, path):  # pylint: disable=unused-argument
 class Importer:
   """Importer."""
 
-  class YamlDumper(yaml.SafeDumper):
-    """Overridden dumper to to use | for multiline strings."""
-
-  YamlDumper.add_representer(str, _yaml_str_representer)
-
   def __init__(self, ssh_key_public_path, ssh_key_private_path, work_dir):
     self._ssh_key_public_path = ssh_key_public_path
     self._ssh_key_private_path = ssh_key_private_path
@@ -88,9 +47,9 @@ class Importer:
 
   def _git_callbacks(self, source_repo):
     """Get git auth callbacks."""
-    return GitRemoteCallback(source_repo.repo_username,
-                             self._ssh_key_public_path,
-                             self._ssh_key_private_path)
+    return osv.GitRemoteCallback(source_repo.repo_username,
+                                 self._ssh_key_public_path,
+                                 self._ssh_key_private_path)
 
   def run(self):
     """Run importer."""
@@ -137,7 +96,7 @@ class Importer:
     # TODO(ochang): Make this more efficient by recording whether or not we
     # imported already in Datastore.
     vulnerabilities_path = os.path.join(
-        _repo_path(repo), oss_fuzz_source.directory_path or '')
+        osv.repo_path(repo), oss_fuzz_source.directory_path or '')
     for bug in osv.Bug.query(osv.Bug.status == osv.BugStatus.PROCESSED):
       if not bug.public:
         continue
@@ -155,28 +114,18 @@ class Importer:
         continue
 
       logging.info('Writing %s', bug.key.id())
-      with open(vulnerability_path, 'w') as handle:
-        data = json_format.MessageToDict(bug.to_vulnerability())
-        yaml.dump(data, handle, sort_keys=False, Dumper=self.YamlDumper)
+      osv.vulnerability_to_yaml(bug.to_vulnerability_new(), vulnerability_path)
 
     # Commit Vulnerability changes back to the oss-fuzz source repository.
     repo.index.add_all()
-
     diff = repo.index.diff_to_tree(repo.head.peel().tree)
     if not diff:
       logging.info('No new entries, skipping committing.')
       return
 
     logging.info('Commiting and pushing new entries')
-    repo.index.write()
-    tree = repo.index.write_tree()
-    author = _git_author()
-    repo.create_commit(repo.head.name, author, author, 'Import from OSS-Fuzz',
-                       tree, [repo.head.peel().oid])
-
-    # TODO(ochang): Rebase and retry if necessary.
-    repo.remotes['origin'].push([repo.head.name],
-                                callbacks=self._git_callbacks(oss_fuzz_source))
+    osv.push_source_changes(repo, 'Import from OSS-Fuzz',
+                            self._git_callbacks(oss_fuzz_source))
 
   def process_updates(self, source_repo):
     """Process user changes and updates."""
@@ -189,7 +138,7 @@ class Importer:
     # Get list of changed files since last sync.
     changed_entries = set()
     for commit in walker:
-      if commit.author.email == AUTHOR_EMAIL:
+      if commit.author.email == osv.AUTHOR_EMAIL:
         continue
 
       logging.info('Processing commit %s from %s', commit.id,
@@ -221,11 +170,6 @@ class Importer:
     # into OSV.
     repo = self.checkout(oss_fuzz_source)
     self.import_new_oss_fuzz_entries(repo, oss_fuzz_source)
-
-
-def _git_author():
-  """Get the git author for commits."""
-  return pygit2.Signature('OSV', AUTHOR_EMAIL)
 
 
 def main():

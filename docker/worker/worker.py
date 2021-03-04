@@ -22,6 +22,7 @@ import resource
 import shutil
 import subprocess
 import sys
+import tempfile
 import threading
 import time
 import traceback
@@ -32,6 +33,7 @@ import pygit2
 
 sys.path.append(os.path.dirname(os.path.realpath(__file__)))
 import osv
+from osv import vulnerability_pb2
 import oss_fuzz
 
 DEFAULT_WORK_DIR = '/work'
@@ -236,9 +238,115 @@ def get_source_id(message):
 class TaskRunner:
   """Task runner."""
 
-  def __init__(self, ndb_client, oss_fuzz_dir):
+  def __init__(self, ndb_client, oss_fuzz_dir, work_dir, ssh_key_public_path,
+               ssh_key_private_path):
     self._ndb_client = ndb_client
     self._oss_fuzz_dir = oss_fuzz_dir
+    self._work_dir = work_dir
+    self._sources_dir = os.path.join(self._work_dir, 'sources')
+    self._ssh_key_public_path = ssh_key_public_path
+    self._ssh_key_private_path = ssh_key_private_path
+    os.makedirs(self._sources_dir, exist_ok=True)
+
+  def _git_callbacks(self, source_repo):
+    """Get git auth callbacks."""
+    return osv.GitRemoteCallback(source_repo.repo_username,
+                                 self._ssh_key_public_path,
+                                 self._ssh_key_private_path)
+
+  def _source_update(self, message):
+    """Source update."""
+    source = message.attributes['source']
+    path = message.attributes['path']
+
+    source_repo = osv.get_source_repository(source)
+    repo = osv.clone_with_retries(
+        source_repo.repo_url,
+        os.path.join(self._sources_dir, source),
+        callbacks=self._git_callbacks(source_repo))
+
+    yaml_path = os.path.join(osv.repo_path(repo), path)
+    vulnerability = osv.parse_vulnerability(yaml_path)
+    self._do_update(source_repo, repo, vulnerability, yaml_path)
+
+  def _push_new_ranges_and_versions(self, source_repo, repo, vulnerability,
+                                    yaml_path, added_ranges, added_versions):
+    # Add new ranges and versions (sorted for determinism).
+    for repo_url, introduced, fixed in sorted(added_ranges):
+      vulnerability.affects.ranges.add(
+          type=vulnerability_pb2.AffectedRangeNew.Type.GIT,
+          repo=repo_url,
+          introduced=introduced,
+          fixed=fixed)
+
+    for version in sorted(added_versions):
+      vulnerability.affects.versions.append(version)
+
+    # Write updates, and push.
+    vulnerability.last_modified.FromDatetime(osv.utcnow())
+    osv.vulnerability_to_yaml(vulnerability, yaml_path)
+    # TODO(ochang): Hash check for conflicts.
+    repo.index.add_all()
+    return osv.push_source_changes(repo, f'Update {vulnerability.id}',
+                                   self._git_callbacks(source_repo))
+
+  def _do_update(self, source_repo, repo, vulnerability, yaml_path):
+    """Process updates on a vulnerability."""
+    logging.info(f'Processing update for vulnerability {vulnerability.id}')
+    package_repo_dir = tempfile.TemporaryDirectory()
+    package_repo_url = None
+    package_repo = None
+
+    added_ranges = set()
+    added_versions = set()
+    try:
+      for affected_range in vulnerability.affects.ranges:
+        # Go through existing provided ranges to find additional ranges (via
+        # cherrypicks and branches).
+        if affected_range.type != vulnerability_pb2.AffectedRangeNew.GIT:
+          continue
+
+        current_repo_url = affected_range.repo
+        if current_repo_url != package_repo_url:
+          # Different repo from previous one.
+          package_repo_dir.cleanup()
+          package_repo_dir = tempfile.TemporaryDirectory()
+          package_repo_url = current_repo_url
+          package_repo = osv.clone_with_retries(package_repo_url,
+                                                package_repo_dir.name)
+
+        result = osv.get_affected(package_repo, affected_range.introduced,
+                                  affected_range.fixed)
+        new_ranges, new_versions = osv.update_vulnerability(
+            vulnerability, package_repo_url, result)
+
+        # Collect newly added ranges and versions.
+        added_ranges.update(new_ranges)
+        added_versions.update(new_versions)
+    finally:
+      package_repo_dir.cleanup()
+
+    if added_ranges or added_versions:
+      if not self._push_new_ranges_and_versions(
+          source_repo, repo, vulnerability, yaml_path, added_ranges,
+          added_versions):
+        logging.warning(
+            f'Discarding changes for {vulnerability.id} due to conflicts.')
+        return
+    else:
+      # Nothing to do.
+      logging.info(
+          f'No range/version changes for vulnerability {vulnerability.id}.')
+
+    # Update datastore with new information.
+    bug = osv.Bug.get_by_id(vulnerability.id)
+    if not bug:
+      # TODO(ochang): Create new entry if needed.
+      logging.error('Failed to find bug with ID %s', vulnerability.id)
+      return
+
+    bug.update_from_vulnerability(vulnerability)
+    bug.put()
 
   def _do_process_task(self, subscriber, subscription, ack_id, message,
                        done_event):
@@ -262,6 +370,8 @@ class TaskRunner:
           process_package_info_task(message)
         elif task_type == 'invalid':
           mark_bug_invalid(message)
+        elif task_type == 'update':
+          self._source_update(message)
 
         _state.source_id = None
         subscriber.acknowledge(subscription=subscription, ack_ids=[ack_id])
@@ -342,6 +452,8 @@ def main():
   parser = argparse.ArgumentParser(description='Worker')
   parser.add_argument(
       '--work_dir', help='Working directory', default=DEFAULT_WORK_DIR)
+  parser.add_argument('--ssh_key_public', help='Public SSH key path')
+  parser.add_argument('--ssh_key_private', help='Private SSH key path')
   args = parser.parse_args()
 
   # Work around kernel bug: https://gvisor.dev/issue/1765
@@ -363,7 +475,9 @@ def main():
 
   ndb_client = ndb.Client()
   with ndb_client.context():
-    task_runner = TaskRunner(ndb_client, oss_fuzz_dir)
+    task_runner = TaskRunner(ndb_client, oss_fuzz_dir, args.work_dir,
+                             args.ssh_key_public_path,
+                             args.ssh_key_private_path)
     task_runner.loop()
 
 

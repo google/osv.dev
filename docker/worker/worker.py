@@ -258,6 +258,7 @@ class TaskRunner:
     """Source update."""
     source = message.attributes['source']
     path = message.attributes['path']
+    original_sha256 = message.attributes['original_sha256']
 
     source_repo = osv.get_source_repository(source)
     repo = osv.clone_with_retries(
@@ -266,11 +267,21 @@ class TaskRunner:
         callbacks=self._git_callbacks(source_repo))
 
     yaml_path = os.path.join(osv.repo_path(repo), path)
+    current_sha256 = osv.sha256(yaml_path)
+    if current_sha256 != original_sha256:
+      logging.warning(
+          'sha256sum of %s no longer matches (expected=%s vs current=%s).',
+          path, original_sha256, current_sha256)
+      return
+
     vulnerability = osv.parse_vulnerability(yaml_path)
-    self._do_update(source_repo, repo, vulnerability, yaml_path)
+    self._do_update(source_repo, repo, vulnerability, yaml_path,
+                    original_sha256)
 
   def _push_new_ranges_and_versions(self, source_repo, repo, vulnerability,
-                                    yaml_path, added_ranges, added_versions):
+                                    yaml_path, original_sha256, added_ranges,
+                                    added_versions):
+    """Pushes new ranges and versions."""
     # Add new ranges and versions (sorted for determinism).
     for repo_url, introduced, fixed in sorted(added_ranges):
       vulnerability.affects.ranges.add(
@@ -285,14 +296,19 @@ class TaskRunner:
     # Write updates, and push.
     vulnerability.last_modified.FromDatetime(osv.utcnow())
     osv.vulnerability_to_yaml(vulnerability, yaml_path)
-    # TODO(ochang): Hash check for conflicts.
     repo.index.add_all()
-    return osv.push_source_changes(repo, f'Update {vulnerability.id}',
-                                   self._git_callbacks(source_repo))
+    return osv.push_source_changes(
+        repo,
+        f'Update {vulnerability.id}',
+        self._git_callbacks(source_repo),
+        expected_hashes={
+            yaml_path: original_sha256,
+        })
 
-  def _do_update(self, source_repo, repo, vulnerability, yaml_path):
+  def _do_update(self, source_repo, repo, vulnerability, yaml_path,
+                 original_sha256):
     """Process updates on a vulnerability."""
-    logging.info(f'Processing update for vulnerability {vulnerability.id}')
+    logging.info('Processing update for vulnerability %s', vulnerability.id)
     package_repo_dir = tempfile.TemporaryDirectory()
     package_repo_url = None
     package_repo = None
@@ -328,15 +344,15 @@ class TaskRunner:
 
     if added_ranges or added_versions:
       if not self._push_new_ranges_and_versions(
-          source_repo, repo, vulnerability, yaml_path, added_ranges,
-          added_versions):
-        logging.warning(
-            f'Discarding changes for {vulnerability.id} due to conflicts.')
+          source_repo, repo, vulnerability, yaml_path, original_sha256,
+          added_ranges, added_versions):
+        logging.warning('Discarding changes for %s due to conflicts.',
+                        vulnerability.id)
         return
     else:
       # Nothing to do.
-      logging.info(
-          f'No range/version changes for vulnerability {vulnerability.id}.')
+      logging.info('No range/version changes for vulnerability %s.',
+                   vulnerability.id)
 
     # Update datastore with new information.
     bug = osv.Bug.get_by_id(vulnerability.id)

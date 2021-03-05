@@ -14,11 +14,14 @@
 # limitations under the License.
 """Importer sources."""
 
-from google.protobuf import json_format
+import hashlib
+import logging
 import os
 import pygit2
 import time
 import yaml
+
+from google.protobuf import json_format
 
 # pylint: disable=relative-beyond-top-level
 from . import types
@@ -127,7 +130,10 @@ def update_vulnerability(vulnerability, repo_url, result):
   return new_ranges, new_versions
 
 
-def push_source_changes(repo, commit_message, git_callbacks):
+def push_source_changes(repo,
+                        commit_message,
+                        git_callbacks,
+                        expected_hashes=None):
   """Push source changes."""
   repo.index.write()
   tree = repo.index.write_tree()
@@ -155,6 +161,15 @@ def push_source_changes(repo, commit_message, git_callbacks):
       repo.head.set_target(remote_branch.target)
       repo.reset(remote_branch.target, pygit2.GIT_RESET_HARD)
 
+      for path, expected_hash in expected_hashes.items():
+        current_hash = sha256(path)
+        if current_hash != expected_hash:
+          logging.warning(
+              'Upstream hash for %s changed (expected=%s vs current=%s)', path,
+              expected_hash, current_hash)
+
+          continue
+
       # Then cherrypick our original commit.
       repo.cherrypick(commit.id)
       if repo.index.conflicts is not None:
@@ -173,3 +188,11 @@ def push_source_changes(repo, commit_message, git_callbacks):
 def git_author():
   """Get the git author for commits."""
   return pygit2.Signature('OSV', AUTHOR_EMAIL)
+
+
+def sha256(yaml_path):
+  """Computes sha256 sum."""
+  hasher = hashlib.sha256()
+  with open(yaml_path, 'rb') as f:
+    hasher.update(f.read())
+  return hasher.hexdigest()

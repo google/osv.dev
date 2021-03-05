@@ -132,6 +132,7 @@ class PackageTagInfo(ndb.Model):
 
 class CommitRange(ndb.Model):
   """Commit range."""
+  # TODO(ochang): Add type and repo URL.
   # The regressing commit.
   introduced_in = ndb.StringProperty()
   # The fix commit.
@@ -287,17 +288,21 @@ class Bug(ndb.Model):
 
   def to_vulnerability_new(self):
     """Convert to VulnerabilityNew proto."""
-    affected_range = vulnerability_pb2.AffectedRangeNew(
+    package = vulnerability_pb2.Package(
+        name=self.project, ecosystem=self.ecosystem)
+
+    affects = vulnerability_pb2.AffectsNew(versions=self.affected)
+    affects.ranges.add(
         type=vulnerability_pb2.AffectedRangeNew.Type.GIT,
         repo=self.repo_url,
         introduced=self.regressed,
         fixed=self.fixed)
-
-    package = vulnerability_pb2.Package(
-        name=self.project, ecosystem=self.ecosystem)
-
-    affects = vulnerability_pb2.AffectsNew(
-        ranges=[affected_range], versions=self.affected)
+    for additional_range in self.additional_commit_ranges:
+      affects.ranges.add(
+          type=vulnerability_pb2.AffectedRangeNew.Type.GIT,
+          repo=self.repo_url,
+          introduced=additional_range.introduced_in,
+          fixed=additional_range.fixed_in)
 
     if self.severity:
       severity = vulnerability_pb2.Vulnerability.Severity.Value(self.severity)

@@ -41,33 +41,13 @@ class ImporterTest(unittest.TestCase):
   def setUp(self):
     self.maxDiff = None  # pylint: disable=invalid-name
     self.tmp_dir = tempfile.mkdtemp()
-    self.remote_source_repo_path = os.path.join(self.tmp_dir, 'source_repo')
 
-    patcher = mock.patch('osv.types.utcnow')
-    mock_utcnow = patcher.start()
-    mock_utcnow.return_value = datetime.datetime(2021, 1, 1)
-    self.addCleanup(patcher.stop)
+    tests.mock_datetime(self)
+    repo = tests.mock_repository(self)
+    repo.add_file('2021-111.yaml', '')
+    repo.commit('User', 'user@email')
 
-    # Initialise fake source_repo.
-    repo = pygit2.init_repository(self.remote_source_repo_path, True)
-    tree = repo.TreeBuilder().write()
-    author = pygit2.Signature('OSV', 'infra@osv.dev')
-    repo.create_commit('HEAD', author, author, 'Initial commit', tree, [])
-
-    # Add a fake user change.
-    with open(os.path.join(self.remote_source_repo_path, '2021-111.yaml'),
-              'w') as f:
-      f.write('')
-
-    oid = repo.write(pygit2.GIT_OBJ_BLOB, '')
-    repo.index.add(
-        pygit2.IndexEntry('2021-111.yaml', oid, pygit2.GIT_FILEMODE_BLOB))
-    repo.index.write()
-    tree = repo.index.write_tree()
-    author = pygit2.Signature('User', 'user@email')
-    repo.create_commit('HEAD', author, author, 'Changes', tree,
-                       [repo.head.peel().oid])
-
+    self.remote_source_repo_path = repo.path
     osv.SourceRepository(
         id='oss-fuzz',
         name='oss-fuzz',

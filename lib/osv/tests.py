@@ -12,10 +12,15 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Test helpers."""
+import datetime
 import os
 import requests
 import subprocess
+import tempfile
 import threading
+from unittest import mock
+
+import pygit2
 
 _EMULATOR_TIMEOUT = 30
 _DATASTORE_EMULATOR_PORT = 8002
@@ -23,8 +28,32 @@ _DATASTORE_READY_INDICATOR = b'is now running'
 TEST_PROJECT_ID = 'test-osv'
 
 
+class MockRepo:
+  """Mock repo."""
+
+  def __init__(self, path):
+    self.path = path
+    self._repo = pygit2.init_repository(path, True)
+    tree = self._repo.TreeBuilder().write()
+    author = pygit2.Signature('OSV', 'infra@osv.dev')
+    self._repo.create_commit('HEAD', author, author, 'Initial commit', tree, [])
+
+  def add_file(self, path, contents):
+    """Adds a file."""
+    oid = self._repo.write(pygit2.GIT_OBJ_BLOB, contents)
+    self._repo.index.add(pygit2.IndexEntry(path, oid, pygit2.GIT_FILEMODE_BLOB))
+    self._repo.index.write()
+
+  def commit(self, author_name, author_email):
+    """Makes a commit."""
+    tree = self._repo.index.write_tree()
+    author = pygit2.Signature(author_name, author_email)
+    self._repo.create_commit('HEAD', author, author, 'Changes', tree,
+                             [self._repo.head.peel().oid])
+
+
 def start_datastore_emulator():
-  """Start Datastore emulator."""
+  """Starts Datastore emulator."""
   os.environ['DATASTORE_EMULATOR_HOST'] = 'localhost:' + str(
       _DATASTORE_EMULATOR_PORT)
   os.environ['DATASTORE_PROJECT_ID'] = TEST_PROJECT_ID
@@ -51,7 +80,7 @@ def _wait_for_emulator_ready(proc,
                              emulator,
                              indicator,
                              timeout=_EMULATOR_TIMEOUT):
-  """Wait for emulator to be ready."""
+  """Waits for emulator to be ready."""
 
   def _read_thread(proc, ready_event):
     """Thread to continuously read from the process stdout."""
@@ -79,7 +108,35 @@ def _wait_for_emulator_ready(proc,
 
 
 def reset_emulator():
-  """Reset emulator."""
+  """Resets emulator."""
   resp = requests.post(
       'http://localhost:{}/reset'.format(_DATASTORE_EMULATOR_PORT))
   resp.raise_for_status()
+
+
+def mock_datetime(test):
+  """Mocks datetime."""
+  for to_mock in ('osv.types.utcnow', 'osv.utcnow'):
+    patcher = mock.patch(to_mock)
+    mock_utcnow = patcher.start()
+    mock_utcnow.return_value = datetime.datetime(2021, 1, 1)
+    test.addCleanup(patcher.stop)
+
+
+def mock_repository(test):
+  """Creates a mock repo."""
+  tmp_dir = tempfile.TemporaryDirectory()
+  test.remote_source_repo_path = tmp_dir.name
+  test.addCleanup(tmp_dir.cleanup)
+  return MockRepo(test.remote_source_repo_path)
+
+
+def mock_clone(test, func=None, return_value=None):
+  """Mocks clone_repository."""
+  patcher = mock.patch('pygit2.clone_repository')
+  mocked = patcher.start()
+  if return_value:
+    mocked.return_value = return_value
+  else:
+    mocked.side_effect = func
+  test.addCleanup(patcher.stop)

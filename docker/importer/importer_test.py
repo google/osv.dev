@@ -87,8 +87,8 @@ class ImporterTest(unittest.TestCase):
   def tearDown(self):
     shutil.rmtree(self.tmp_dir, ignore_errors=True)
 
-  @mock.patch('importer.request_analysis')
-  def test_basic(self, mock_request_analysis):
+  @mock.patch('google.cloud.pubsub_v1.PublisherClient.publish')
+  def test_basic(self, mock_publish):
     """Test basic run."""
     imp = importer.Importer('fake_public_key', 'fake_private_key', self.tmp_dir)
     imp.run()
@@ -104,8 +104,16 @@ class ImporterTest(unittest.TestCase):
     self.assertEqual(
         self._load_test_data('expected_patch_basic.diff'), diff.patch)
 
-    mock_request_analysis.assert_has_calls(
-        [mock.call(mock.ANY, '2021-111.yaml')])
+    mock_publish.assert_has_calls([
+        mock.call(
+            'projects/oss-vdb/topics/tasks',
+            data=b'',
+            original_sha256=('e3b0c44298fc1c149afbf4c8996fb924'
+                             '27ae41e4649b934ca495991b7852b855'),
+            path='2021-111.yaml',
+            source='oss-fuzz',
+            type='update')
+    ])
 
 
 if __name__ == '__main__':

@@ -771,11 +771,11 @@ class UpdateTest(unittest.TestCase):
     # Initialise fake source_repo.
     self.tmp_dir = tempfile.TemporaryDirectory()
 
-    repo = tests.mock_repository(self)
-    repo.add_file(
+    self.mock_repo = tests.mock_repository(self)
+    self.mock_repo.add_file(
         'BLAH-123.yaml',
         self._load_test_data(os.path.join(TEST_DATA_DIR, 'BLAH-123.yaml')))
-    repo.commit('User', 'user@email')
+    self.mock_repo.commit('User', 'user@email')
 
     osv.SourceRepository(
         id='source',
@@ -794,9 +794,12 @@ class UpdateTest(unittest.TestCase):
                                     None)
     message = mock.Mock()
     message.attributes = {
-        'source': 'source',
-        'path': 'BLAH-123.yaml',
-        'original_hash': 'hash',
+        'source':
+            'source',
+        'path':
+            'BLAH-123.yaml',
+        'original_sha256': ('4ff2c39882e21b963f6d716f318f07c2'
+                            '9434baef91eb339aefa9840fadb12084'),
     }
     task_runner._source_update(message)
 
@@ -841,6 +844,59 @@ class UpdateTest(unittest.TestCase):
             'timestamp': None
         },
         osv.Bug.get_by_id('BLAH-123')._to_dict())
+
+  def test_update_conflict(self):
+    """Test basic update with a conflict."""
+    task_runner = worker.TaskRunner(ndb_client, None, self.tmp_dir.name, None,
+                                    None)
+    message = mock.Mock()
+    message.attributes = {
+        'source': 'source',
+        'path': 'BLAH-123.yaml',
+        'original_sha256': 'invalid',
+    }
+    task_runner._source_update(message)
+
+    repo = pygit2.Repository(self.remote_source_repo_path)
+    commit = repo.head.peel()
+
+    # Latest commit is still the user commit.
+    self.assertEqual('user@email', commit.author.email)
+    self.assertEqual('User', commit.author.name)
+
+  def test_update_conflict_while_pushing(self):
+    """Test basic update with a conflict while pushing."""
+    original_push_source_changes = osv.push_source_changes
+
+    def mock_push_source_changes(*args, **kwargs):
+      self.mock_repo.add_file('BLAH-123.yaml', 'changed')
+      self.mock_repo.commit('Another user', 'user@email')
+
+      original_push_source_changes(*args, **kwargs)
+
+    patcher = mock.patch('osv.push_source_changes')
+    self.addCleanup(patcher.stop)
+    patcher.start().side_effect = mock_push_source_changes
+
+    task_runner = worker.TaskRunner(ndb_client, None, self.tmp_dir.name, None,
+                                    None)
+    message = mock.Mock()
+    message.attributes = {
+        'source':
+            'source',
+        'path':
+            'BLAH-123.yaml',
+        'original_sha256': ('4ff2c39882e21b963f6d716f318f07c2'
+                            '9434baef91eb339aefa9840fadb12084'),
+    }
+    task_runner._source_update(message)
+
+    repo = pygit2.Repository(self.remote_source_repo_path)
+    commit = repo.head.peel()
+
+    # Latest commit is still the user commit.
+    self.assertEqual('user@email', commit.author.email)
+    self.assertEqual('Another user', commit.author.name)
 
 
 if __name__ == '__main__':

@@ -19,6 +19,7 @@ import os
 import shutil
 
 from google.cloud import ndb
+from google.cloud import pubsub_v1
 import pygit2
 
 import osv
@@ -26,15 +27,14 @@ import osv
 DEFAULT_WORK_DIR = '/work'
 VULNERABILITY_EXTENSION = '.yaml'
 
+_PROJECT = 'oss-vdb'
+_TASKS_TOPIC = 'projects/{project}/topics/{topic}'.format(
+    project=_PROJECT, topic='tasks')
+
 
 def _is_vulnerability_file(file_path):
   """Return whether or not the file is a Vulnerability entry."""
   return file_path.endswith(VULNERABILITY_EXTENSION)
-
-
-def request_analysis(source_repo, path):  # pylint: disable=unused-argument
-  """Request analysis."""
-  # TODO(ochang): Implement this.
 
 
 class Importer:
@@ -44,12 +44,24 @@ class Importer:
     self._ssh_key_public_path = ssh_key_public_path
     self._ssh_key_private_path = ssh_key_private_path
     self._work_dir = work_dir
+    self._publisher = pubsub_v1.PublisherClient()
 
   def _git_callbacks(self, source_repo):
     """Get git auth callbacks."""
     return osv.GitRemoteCallback(source_repo.repo_username,
                                  self._ssh_key_public_path,
                                  self._ssh_key_private_path)
+
+  def _request_analysis(self, source_repo, repo, path):
+    """Request analysis."""
+    original_sha256 = osv.sha256(os.path.join(osv.repo_path(repo), path))
+    self._publisher.publish(
+        _TASKS_TOPIC,
+        data=b'',
+        type='update',
+        source=source_repo.name,
+        path=path,
+        original_sha256=original_sha256)
 
   def run(self):
     """Run importer."""
@@ -157,7 +169,7 @@ class Importer:
     # TODO(ochang): Actually create the tasks.
     for changed_entry in changed_entries:
       logging.info('Re-analysis triggered for %s', changed_entry)
-      request_analysis(source_repo, changed_entry)
+      self._request_analysis(source_repo, repo, changed_entry)
 
   def process_oss_fuzz(self, oss_fuzz_source):
     """Process OSS-Fuzz source data."""

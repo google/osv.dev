@@ -78,11 +78,6 @@ def main():
       'name': 'vulnerability_schema',
       'x-displayName': 'Vulnerability schema',
       'description': '<SchemaDefinition schemaRef='
-                     '"#/components/schemas/osvVulnerabilityNew" />'
-  }, {
-      'name': 'vulnerability_schema_old',
-      'x-displayName': 'Vulnerability schema (deprecated)',
-      'description': '<SchemaDefinition schemaRef='
                      '"#/components/schemas/osvVulnerability" />'
   }, {
       'name': 'faq',
@@ -95,7 +90,7 @@ def main():
       'tags': ['api']
   }, {
       'name': 'Schema',
-      'tags': ['vulnerability_schema', 'vulnerability_schema_old']
+      'tags': ['vulnerability_schema']
   }, {
       'name': 'Documentation',
       'tags': ['faq']

@@ -29,12 +29,12 @@ class OSVStub(object):
         self.GetVulnByIdNew = channel.unary_unary(
                 '/osv.v1.OSV/GetVulnByIdNew',
                 request_serializer=osv__service__v1__pb2.GetVulnByIdParameters.SerializeToString,
-                response_deserializer=osv_dot_vulnerability__pb2.VulnerabilityNew.FromString,
+                response_deserializer=osv_dot_vulnerability__pb2.Vulnerability.FromString,
                 )
         self.QueryAffectedNew = channel.unary_unary(
                 '/osv.v1.OSV/QueryAffectedNew',
                 request_serializer=osv__service__v1__pb2.QueryAffectedParameters.SerializeToString,
-                response_deserializer=osv__service__v1__pb2.VulnerabilityNewList.FromString,
+                response_deserializer=osv__service__v1__pb2.VulnerabilityList.FromString,
                 )
 
 
@@ -88,12 +88,12 @@ def add_OSVServicer_to_server(servicer, server):
             'GetVulnByIdNew': grpc.unary_unary_rpc_method_handler(
                     servicer.GetVulnByIdNew,
                     request_deserializer=osv__service__v1__pb2.GetVulnByIdParameters.FromString,
-                    response_serializer=osv_dot_vulnerability__pb2.VulnerabilityNew.SerializeToString,
+                    response_serializer=osv_dot_vulnerability__pb2.Vulnerability.SerializeToString,
             ),
             'QueryAffectedNew': grpc.unary_unary_rpc_method_handler(
                     servicer.QueryAffectedNew,
                     request_deserializer=osv__service__v1__pb2.QueryAffectedParameters.FromString,
-                    response_serializer=osv__service__v1__pb2.VulnerabilityNewList.SerializeToString,
+                    response_serializer=osv__service__v1__pb2.VulnerabilityList.SerializeToString,
             ),
     }
     generic_handler = grpc.method_handlers_generic_handler(
@@ -153,7 +153,7 @@ class OSV(object):
             metadata=None):
         return grpc.experimental.unary_unary(request, target, '/osv.v1.OSV/GetVulnByIdNew',
             osv__service__v1__pb2.GetVulnByIdParameters.SerializeToString,
-            osv_dot_vulnerability__pb2.VulnerabilityNew.FromString,
+            osv_dot_vulnerability__pb2.Vulnerability.FromString,
             options, channel_credentials,
             insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
 
@@ -170,6 +170,6 @@ class OSV(object):
             metadata=None):
         return grpc.experimental.unary_unary(request, target, '/osv.v1.OSV/QueryAffectedNew',
             osv__service__v1__pb2.QueryAffectedParameters.SerializeToString,
-            osv__service__v1__pb2.VulnerabilityNewList.FromString,
+            osv__service__v1__pb2.VulnerabilityList.FromString,
             options, channel_credentials,
             insecure, call_credentials, compression, wait_for_ready, timeout, metadata)

@@ -42,41 +42,6 @@ class IntegrationTests(unittest.TestCase):
   _VULN_744 = {
       'affects': {
           'ranges': [{
-              'fixedIn': {
-                  'commit': '97319697c8f9f6ff27b32589947e1918e3015503',
-                  'repoType': 'GIT',
-                  'repoUrl': 'https://github.com/mruby/mruby'
-              },
-              'introducedIn': {
-                  'commit': '9cdf439db52b66447b4e37c61179d54fad6c8f33',
-                  'repoType': 'GIT',
-                  'repoUrl': 'https://github.com/mruby/mruby'
-              },
-          },],
-          'versions': ['2.1.2', '2.1.2-rc', '2.1.2-rc2']
-      },
-      'details': 'OSS-Fuzz report: '
-                 'https://bugs.chromium.org/p/oss-fuzz/issues/detail?id=23801\n'
-                 '\n'
-                 'Crash type: Heap-double-free\n'
-                 'Crash state:\n'
-                 'mrb_default_allocf\n'
-                 'mrb_free\n'
-                 'obj_free\n',
-      'id': 'OSV-2020-744',
-      'package': {
-          'name': 'mruby'
-      },
-      'referenceUrls': [
-          'https://bugs.chromium.org/p/oss-fuzz/issues/detail?id=23801'
-      ],
-      'severity': 'HIGH',
-      'summary': 'Heap-double-free in mrb_default_allocf'
-  }
-
-  _VULN_744_NEW = {
-      'affects': {
-          'ranges': [{
               'type': 'GIT',
               'repo': 'https://github.com/mruby/mruby',
               'introduced': '9cdf439db52b66447b4e37c61179d54fad6c8f33',
@@ -142,14 +107,6 @@ class IntegrationTests(unittest.TestCase):
     response = requests.get(_api() + '/v1/vulns/OSV-2020-744')
     self.assertDictEqual(self._VULN_744, response.json())
 
-  def test_get_new(self):
-    """Test getting a vulnerability (new format)."""
-    response = requests.get(_api() + '/v1new/vulns/2020-744')
-    self.assert_vuln_equal(self._VULN_744_NEW, response.json())
-
-    response = requests.get(_api() + '/v1new/vulns/OSV-2020-744')
-    self.assert_vuln_equal(self._VULN_744_NEW, response.json())
-
   def test_get_invalid(self):
     """Test getting an invalid vulnerability."""
     response = requests.get(_api() + '/v1/vulns/OSV-2020-2258')
@@ -163,15 +120,6 @@ class IntegrationTests(unittest.TestCase):
             'commit': '233cb49903fa17637bd51f4a16b4ca61e0750f24',
         }))
     self.assertDictEqual({'vulns': [self._VULN_744]}, response.json())
-
-  def test_query_commit_new(self):
-    """Test querying by commit (new format)."""
-    response = requests.post(
-        _api() + '/v1new/query',
-        data=json.dumps({
-            'commit': '233cb49903fa17637bd51f4a16b4ca61e0750f24',
-        }))
-    self.assert_results_equal({'vulns': [self._VULN_744_NEW]}, response.json())
 
   def test_query_version(self):
     """Test querying by version."""

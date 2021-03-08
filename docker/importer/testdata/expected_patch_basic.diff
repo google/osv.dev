@@ -1,8 +1,8 @@
-diff --git a/file/5417710252982272.yaml b/file/5417710252982272.yaml
+diff --git a/file/OSV-2017-134.yaml b/file/OSV-2017-134.yaml
 new file mode 100644
 index 0000000..b3279d5
 --- /dev/null
-+++ b/file/5417710252982272.yaml
++++ b/file/OSV-2017-134.yaml
 @@ -0,0 +1,25 @@
 +id: OSV-2017-134
 +package:

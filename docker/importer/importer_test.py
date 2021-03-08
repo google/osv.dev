@@ -43,11 +43,11 @@ class ImporterTest(unittest.TestCase):
     self.tmp_dir = tempfile.mkdtemp()
 
     tests.mock_datetime(self)
-    repo = tests.mock_repository(self)
-    repo.add_file('2021-111.yaml', '')
-    repo.commit('User', 'user@email')
+    self.mock_repo = tests.mock_repository(self)
+    self.mock_repo.add_file('2021-111.yaml', '')
+    self.mock_repo.commit('User', 'user@email')
 
-    self.remote_source_repo_path = repo.path
+    self.remote_source_repo_path = self.mock_repo.path
     osv.SourceRepository(
         id='oss-fuzz',
         name='oss-fuzz',
@@ -80,6 +80,7 @@ class ImporterTest(unittest.TestCase):
         severity='MEDIUM',
         sort_key='2017-0000134',
         source_id='oss-fuzz:5417710252982272',
+        source_of_truth=osv.SourceOfTruth.INTERNAL,
         status=1,
         summary='Heap-buffer-overflow in cdf_file_property_info',
         timestamp=datetime.datetime(2021, 1, 15, 0, 0, 24, 559102)).put()
@@ -100,11 +101,81 @@ class ImporterTest(unittest.TestCase):
     self.assertEqual('OSV', commit.author.name)
     self.assertEqual('Import from OSS-Fuzz', commit.message)
     diff = repo.diff(commit.parents[0], commit)
-
     self.assertEqual(
         self._load_test_data('expected_patch_basic.diff'), diff.patch)
 
     mock_publish.assert_has_calls([
+        mock.call(
+            'projects/oss-vdb/topics/tasks',
+            data=b'',
+            original_sha256=('e3b0c44298fc1c149afbf4c8996fb924'
+                             '27ae41e4649b934ca495991b7852b855'),
+            path='2021-111.yaml',
+            source='oss-fuzz',
+            type='update')
+    ])
+    bug = osv.Bug.get_by_id('2017-134')
+    self.assertEqual(osv.SourceOfTruth.SOURCE_REPO, bug.source_of_truth)
+
+  @mock.patch('google.cloud.pubsub_v1.PublisherClient.publish')
+  def test_scheduled_updates(self, mock_publish):
+    """Test scheduled updates."""
+    self.mock_repo.add_file('proj/OSV-2021-1337.yaml', '')
+    self.mock_repo.add_file('proj/OSV-2021-1339.yaml', '')
+    self.mock_repo.add_file('OSV-2021-1338.yaml', '')
+    self.mock_repo.commit('OSV', 'infra@osv.dev')
+
+    osv.Bug(
+        id='2021-1337',
+        project='proj',
+        fixed='',
+        status=1,
+        source_id='oss-fuzz:123',
+        source_of_truth=osv.SourceOfTruth.SOURCE_REPO,
+        timestamp=datetime.datetime(2020, 1, 1, 0, 0, 0, 0)).put()
+    osv.Bug(
+        id='2021-1338',
+        project='proj',
+        fixed='fix',
+        source_id='source:OSV-2021-1338.yaml',
+        status=1,
+        source_of_truth=osv.SourceOfTruth.SOURCE_REPO,
+        timestamp=datetime.datetime.utcnow()).put()
+    osv.Bug(
+        id='2021-1339',
+        project='proj',
+        fixed='',
+        status=1,
+        source_id='oss-fuzz:124',
+        source_of_truth=osv.SourceOfTruth.INTERNAL,
+        timestamp=datetime.datetime(2020, 1, 1, 0, 0, 0, 0)).put()
+
+    imp = importer.Importer('fake_public_key', 'fake_private_key', self.tmp_dir)
+    imp.run()
+
+    mock_publish.assert_has_calls([
+        mock.call(
+            'projects/oss-vdb/topics/tasks',
+            data=b'',
+            original_sha256=('e3b0c44298fc1c149afbf4c8996fb924'
+                             '27ae41e4649b934ca495991b7852b855'),
+            path='proj/OSV-2021-1337.yaml',
+            source='oss-fuzz',
+            type='update'),
+        mock.call(
+            'projects/oss-vdb/topics/tasks',
+            allocated_id='2021-1339',
+            data=b'',
+            source_id='oss-fuzz:124',
+            type='impact'),
+        mock.call(
+            'projects/oss-vdb/topics/tasks',
+            data=b'',
+            original_sha256=('e3b0c44298fc1c149afbf4c8996fb924'
+                             '27ae41e4649b934ca495991b7852b855'),
+            path='OSV-2021-1338.yaml',
+            source='oss-fuzz',
+            type='update'),
         mock.call(
             'projects/oss-vdb/topics/tasks',
             data=b'',

@@ -69,4 +69,4 @@ COPY osv /usr/local/bin/osv/
 RUN chmod 755 /usr/local/bin/worker.py
 
 ENV GOOGLE_CLOUD_PROJECT oss-vdb
-CMD ["pipenv", "run", "worker.py"]
+ENTRYPOINT ["pipenv", "run", "worker.py"]

@@ -278,7 +278,8 @@ def process_impact_task(source_id, message):
 
     # Actually compute the affected commits/tags.
     result = osv.get_affected(repo, regress_result.commit, fix_commit)
-    logging.info('Found affected %s', ', '.join(result.tags))
+    affected_tags = sorted(list(result.tags_with_bug - result.tags_with_fix))
+    logging.info('Found affected %s', ', '.join(affected_tags))
 
   # If the range resolved to a single commit, simplify it.
   if len(result.fix_commits) == 1:
@@ -301,11 +302,13 @@ def process_impact_task(source_id, message):
 
   update_affected_commits(allocated_bug_id, result, project, ecosystem, public)
 
+  affected_tags = sorted(list(result.tags_with_bug - result.tags_with_fix))
+
   existing_bug.repo_url = repo_url
   existing_bug.fixed = fix_commit
   existing_bug.regressed = regress_commit
-  existing_bug.affected = result.tags
-  existing_bug.affected_fuzzy = osv.normalize_tags(result.tags)
+  existing_bug.affected = affected_tags
+  existing_bug.affected_fuzzy = osv.normalize_tags(affected_tags)
   existing_bug.confidence = result.confidence
   existing_bug.issue_id = issue_id
   existing_bug.project = project

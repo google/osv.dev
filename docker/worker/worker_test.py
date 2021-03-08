@@ -193,6 +193,7 @@ class ImpactTest(unittest.TestCase):
             'details': 'DETAILS',
             'severity': 'MEDIUM',
             'sort_key': '2020-0001337',
+            'source_of_truth': osv.SourceOfTruth.INTERNAL,
             'public': False,
             'reference_urls': ['https://url/'],
             'status': osv.BugStatus.PROCESSED.value,
@@ -272,6 +273,7 @@ class ImpactTest(unittest.TestCase):
             'reference_urls': ['https://url/'],
             'severity': 'MEDIUM',
             'sort_key': '2020-0001337',
+            'source_of_truth': osv.SourceOfTruth.INTERNAL,
             'public': False,
             'status': osv.BugStatus.PROCESSED.value,
             'has_affected': True,
@@ -351,6 +353,7 @@ class ImpactTest(unittest.TestCase):
             'reference_urls': ['https://url/'],
             'severity': 'MEDIUM',
             'sort_key': '2020-0001337',
+            'source_of_truth': osv.SourceOfTruth.INTERNAL,
             'public': False,
             'status': osv.BugStatus.PROCESSED.value,
             'has_affected': True,
@@ -427,6 +430,7 @@ class ImpactTest(unittest.TestCase):
             'details': 'DETAILS',
             'severity': 'MEDIUM',
             'sort_key': '2020-0001337',
+            'source_of_truth': osv.SourceOfTruth.INTERNAL,
             'reference_urls': ['https://url/'],
             'public': False,
             'status': osv.BugStatus.PROCESSED.value,
@@ -509,6 +513,7 @@ class ImpactTest(unittest.TestCase):
             'details': 'DETAILS',
             'severity': 'MEDIUM',
             'sort_key': '2020-0001337',
+            'source_of_truth': osv.SourceOfTruth.INTERNAL,
             'reference_urls': ['https://url/'],
             'public': False,
             'status': osv.BugStatus.PROCESSED.value,
@@ -564,6 +569,7 @@ class ImpactTest(unittest.TestCase):
             'details': 'DETAILS',
             'severity': 'MEDIUM',
             'sort_key': '2020-0001337',
+            'source_of_truth': osv.SourceOfTruth.INTERNAL,
             'reference_urls': ['https://url/'],
             'public': False,
             'status': osv.BugStatus.PROCESSED.value,
@@ -775,6 +781,12 @@ class UpdateTest(unittest.TestCase):
     self.mock_repo.add_file(
         'BLAH-123.yaml',
         self._load_test_data(os.path.join(TEST_DATA_DIR, 'BLAH-123.yaml')))
+    self.mock_repo.add_file(
+        'BLAH-124.yaml',
+        self._load_test_data(os.path.join(TEST_DATA_DIR, 'BLAH-124.yaml')))
+    self.mock_repo.add_file(
+        'BLAH-125.yaml',
+        self._load_test_data(os.path.join(TEST_DATA_DIR, 'BLAH-125.yaml')))
     self.mock_repo.commit('User', 'user@email')
 
     osv.SourceRepository(
@@ -783,7 +795,27 @@ class UpdateTest(unittest.TestCase):
         repo_url='file://' + self.remote_source_repo_path,
         repo_username='').put()
 
-    osv.Bug(id='BLAH-123', project='blah.com/package', ecosystem='golang').put()
+    osv.Bug(
+        id='BLAH-123',
+        project='blah.com/package',
+        ecosystem='golang',
+        source_id='source:BLAH-123.yaml',
+        source_of_truth=osv.SourceOfTruth.SOURCE_REPO).put()
+    osv.Bug(
+        id='BLAH-124',
+        regressed='eefe8ec3f1f90d0e684890e810f3f21e8500a4cd',
+        project='blah.com/package',
+        ecosystem='golang',
+        source_id='source:BLAH-124.yaml',
+        source_of_truth=osv.SourceOfTruth.SOURCE_REPO).put()
+    osv.Bug(
+        id='BLAH-125',
+        regressed='eefe8ec3f1f90d0e684890e810f3f21e8500a4cd',
+        fixed='8d8242f545e9cec3e6d0d2e3f5bde8be1c659735',
+        project='blah.com/package',
+        ecosystem='golang',
+        source_id='source:BLAH-125.yaml',
+        source_of_truth=osv.SourceOfTruth.SOURCE_REPO).put()
 
   def tearDown(self):
     self.tmp_dir.cleanup()
@@ -838,12 +870,96 @@ class UpdateTest(unittest.TestCase):
             'search_indices': ['blah.com/package', 'BLAH-123', 'BLAH', '123'],
             'severity': 'HIGH',
             'sort_key': 'BLAH-0000123',
-            'source_id': None,
+            'source_id': 'source:BLAH-123.yaml',
+            'source_of_truth': osv.SourceOfTruth.SOURCE_REPO,
             'status': None,
             'summary': 'A vulnerability',
             'timestamp': None
         },
         osv.Bug.get_by_id('BLAH-123')._to_dict())
+
+  def test_update_add_fix(self):
+    """Test basic update adding a fix."""
+    fix_result = osv.FixResult(
+        id='source:BLAH-124.yaml',
+        commit='8d8242f545e9cec3e6d0d2e3f5bde8be1c659735')
+    fix_result.put()
+    task_runner = worker.TaskRunner(ndb_client, None, self.tmp_dir.name, None,
+                                    None)
+    message = mock.Mock()
+    message.attributes = {
+        'source':
+            'source',
+        'path':
+            'BLAH-124.yaml',
+        'original_sha256': ('80e0cb5e08fb624fc265c91729422cd8'
+                            '8d1c0b1696990f9a6defe417101e6d6d'),
+    }
+    task_runner._source_update(message)
+
+    repo = pygit2.Repository(self.remote_source_repo_path)
+    commit = repo.head.peel()
+
+    self.assertEqual('infra@osv.dev', commit.author.email)
+    self.assertEqual('OSV', commit.author.name)
+    self.assertEqual('Update BLAH-124', commit.message)
+    diff = repo.diff(commit.parents[0], commit)
+    self.assertEqual(self._load_test_data('expected_add_fix.diff'), diff.patch)
+
+    self.assertDictEqual(
+        {
+            'additional_commit_ranges': [{
+                'fixed_in': 'b9b3fd4732695b83c3068b7b6a14bb372ec31f98',
+                'introduced_in': 'eefe8ec3f1f90d0e684890e810f3f21e8500a4cd'
+            }, {
+                'fixed_in': '',
+                'introduced_in': 'febfac1940086bc1f6d3dc33fda0a1d1ba336209'
+            }],
+            'affected': [],
+            'affected_fuzzy': [],
+            'confidence': None,
+            'details': 'Blah blah blah\nBlah\n',
+            'ecosystem': 'golang',
+            'fixed': '8d8242f545e9cec3e6d0d2e3f5bde8be1c659735',
+            'has_affected': False,
+            'issue_id': None,
+            'last_modified': datetime.datetime(2021, 1, 1, 0, 0),
+            'project': 'blah.com/package',
+            'public': None,
+            'reference_urls': ['https://ref.com/ref'],
+            'regressed': 'eefe8ec3f1f90d0e684890e810f3f21e8500a4cd',
+            'repo_url': None,
+            'search_indices': ['blah.com/package', 'BLAH-124', 'BLAH', '124'],
+            'severity': 'HIGH',
+            'sort_key': 'BLAH-0000124',
+            'source_id': 'source:BLAH-124.yaml',
+            'source_of_truth': osv.SourceOfTruth.SOURCE_REPO,
+            'status': None,
+            'summary': 'A vulnerability',
+            'timestamp': None
+        },
+        osv.Bug.get_by_id('BLAH-124')._to_dict())
+
+  def test_update_no_changes(self):
+    """Test basic update (with no changes)."""
+    task_runner = worker.TaskRunner(ndb_client, None, self.tmp_dir.name, None,
+                                    None)
+    message = mock.Mock()
+    message.attributes = {
+        'source':
+            'source',
+        'path':
+            'BLAH-125.yaml',
+        'original_sha256': ('e405bf50fe67dc09217eb898b1321a4c'
+                            'b7a0bfb71de68910240ff804e45e7ff5'),
+    }
+    task_runner._source_update(message)
+
+    repo = pygit2.Repository(self.remote_source_repo_path)
+    commit = repo.head.peel()
+
+    self.assertEqual('user@email', commit.author.email)
+    self.assertEqual('User', commit.author.name)
 
   def test_update_conflict(self):
     """Test basic update with a conflict."""

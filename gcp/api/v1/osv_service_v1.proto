@@ -24,10 +24,6 @@ message VulnerabilityList {
   repeated osv.Vulnerability vulns = 1;
 }
 
-message VulnerabilityNewList {
-  repeated osv.VulnerabilityNew vulns = 1;
-}
-
 // Query format.
 message Query {
   oneof param {
@@ -72,7 +68,7 @@ service OSV {
   }
 
   // Return a `Vulnerability` object for a given OSV ID.
-  rpc GetVulnByIdNew ( GetVulnByIdParameters ) returns ( osv.VulnerabilityNew ) {
+  rpc GetVulnByIdNew ( GetVulnByIdParameters ) returns ( osv.Vulnerability ) {
     option (google.api.http) = {
       get:"/v1new/vulns/{id}"
     };
@@ -80,7 +76,7 @@ service OSV {
 
   // Query vulnerabilities for a particular project at a given commit or
   // version.
-  rpc QueryAffectedNew ( QueryAffectedParameters ) returns ( VulnerabilityNewList ) {
+  rpc QueryAffectedNew ( QueryAffectedParameters ) returns ( VulnerabilityList ) {
     option (google.api.http) = {
       post:"/v1new/query"
       body:"query"

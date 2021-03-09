@@ -70,7 +70,7 @@ def repo_path(repo):
 
 def parse_vulnerability(path):
   """Parse vulnerability YAML."""
-  vulnerability = vulnerability_pb2.VulnerabilityNew()
+  vulnerability = vulnerability_pb2.Vulnerability()
   with open(path) as f:
     data = yaml.safe_load(f)
   json_format.ParseDict(data, vulnerability)
@@ -102,7 +102,7 @@ def vulnerability_to_yaml(vulnerability, output_path):
 def vulnerability_has_range(vulnerability, introduced, fixed):
   """Check if a vulnerability has a range."""
   for affected_range in vulnerability.affects.ranges:
-    if affected_range.type != vulnerability_pb2.AffectedRangeNew.Type.GIT:
+    if affected_range.type != vulnerability_pb2.AffectedRange.Type.GIT:
       continue
 
     if (affected_range.introduced == introduced and

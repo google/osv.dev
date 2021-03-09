@@ -126,7 +126,7 @@ class Importer:
         continue
 
       logging.info('Writing %s', bug.key.id())
-      osv.vulnerability_to_yaml(bug.to_vulnerability_new(), vulnerability_path)
+      osv.vulnerability_to_yaml(bug.to_vulnerability(), vulnerability_path)
 
     # Commit Vulnerability changes back to the oss-fuzz source repository.
     repo.index.add_all()

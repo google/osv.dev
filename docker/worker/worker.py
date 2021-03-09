@@ -285,7 +285,7 @@ class TaskRunner:
     # Add new ranges and versions (sorted for determinism).
     for repo_url, introduced, fixed in sorted(added_ranges):
       vulnerability.affects.ranges.add(
-          type=vulnerability_pb2.AffectedRangeNew.Type.GIT,
+          type=vulnerability_pb2.AffectedRange.Type.GIT,
           repo=repo_url,
           introduced=introduced,
           fixed=fixed)
@@ -319,7 +319,7 @@ class TaskRunner:
       for affected_range in vulnerability.affects.ranges:
         # Go through existing provided ranges to find additional ranges (via
         # cherrypicks and branches).
-        if affected_range.type != vulnerability_pb2.AffectedRangeNew.GIT:
+        if affected_range.type != vulnerability_pb2.AffectedRange.GIT:
           continue
 
         current_repo_url = affected_range.repo

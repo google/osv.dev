@@ -220,14 +220,13 @@ class Bug(ndb.Model):
     self.summary = vulnerability.summary
     self.details = vulnerability.details
     self.severity = (
-        vulnerability_pb2.VulnerabilityNew.Severity.Name(
-            vulnerability.severity))
+        vulnerability_pb2.Vulnerability.Severity.Name(vulnerability.severity))
     self.reference_urls = list(vulnerability.reference_urls)
     self.last_modified = vulnerability.last_modified.ToDatetime()
 
     found_first = False
     for affected_range in vulnerability.affects.ranges:
-      if affected_range.type != vulnerability_pb2.AffectedRangeNew.Type.GIT:
+      if affected_range.type != vulnerability_pb2.AffectedRange.Type.GIT:
         continue
 
       if found_first:
@@ -242,64 +241,18 @@ class Bug(ndb.Model):
 
   def to_vulnerability(self):
     """Convert to Vulnerability proto."""
-
-    def _to_commit(commit_hash):
-      """Convert a commit hash to a Commit structure."""
-      return vulnerability_pb2.Commit(
-          repo_type=vulnerability_pb2.Commit.RepoType.GIT,
-          repo_url=self.repo_url,
-          commit=commit_hash)
-
-    fixed = None
-    fix_commit = self.fixed
-    if fix_commit:
-      fixed = _to_commit(fix_commit)
-
-    affected_range = vulnerability_pb2.AffectedRange(
-        introduced_in=_to_commit(self.regressed), fixed_in=fixed)
-
     package = vulnerability_pb2.Package(
         name=self.project, ecosystem=self.ecosystem)
 
-    affects = vulnerability_pb2.Affects(
-        ranges=[affected_range], versions=self.affected)
-
-    if self.severity:
-      severity = vulnerability_pb2.Vulnerability.Severity.Value(self.severity)
-    else:
-      severity = vulnerability_pb2.Vulnerability.Severity.NONE
-
-    details = self.details
-    if self.status == bug.BugStatus.INVALID:
-      affects = None
-      details = 'INVALID'
-      severity = vulnerability_pb2.Vulnerability.Severity.NONE
-
-    result = vulnerability_pb2.Vulnerability(
-        id=self.OSV_ID_PREFIX + self.key.id(),  # TODO(ochang): Generalize.
-        summary=self.summary,
-        details=details,
-        package=package,
-        severity=severity,
-        affects=affects,
-        reference_urls=self.reference_urls)
-
-    return result
-
-  def to_vulnerability_new(self):
-    """Convert to VulnerabilityNew proto."""
-    package = vulnerability_pb2.Package(
-        name=self.project, ecosystem=self.ecosystem)
-
-    affects = vulnerability_pb2.AffectsNew(versions=self.affected)
+    affects = vulnerability_pb2.Affects(versions=self.affected)
     affects.ranges.add(
-        type=vulnerability_pb2.AffectedRangeNew.Type.GIT,
+        type=vulnerability_pb2.AffectedRange.Type.GIT,
         repo=self.repo_url,
         introduced=self.regressed,
         fixed=self.fixed)
     for additional_range in self.additional_commit_ranges:
       affects.ranges.add(
-          type=vulnerability_pb2.AffectedRangeNew.Type.GIT,
+          type=vulnerability_pb2.AffectedRange.Type.GIT,
           repo=self.repo_url,
           introduced=additional_range.introduced_in,
           fixed=additional_range.fixed_in)
@@ -321,7 +274,7 @@ class Bug(ndb.Model):
     else:
       last_modified = None
 
-    result = vulnerability_pb2.VulnerabilityNew(
+    result = vulnerability_pb2.Vulnerability(
         id=self.OSV_ID_PREFIX + self.key.id(),  # TODO(ochang): Generalize.
         last_modified=last_modified,
         summary=self.summary,

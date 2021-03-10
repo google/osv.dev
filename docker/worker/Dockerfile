@@ -44,16 +44,24 @@ RUN curl -fsSL https://gvisor.dev/archive.key | apt-key add - && \
 # Make gVisor the default Docker runtime.
 COPY daemon.json /etc/docker/daemon.json
 
-# Use newer libgit2 to avoid a bug with cloning from Gerrit
-# https://github.com/libgit2/libgit2/pull/5536
-RUN apt-get install -y cmake build-essential wget libssl-dev && \
+# Build newer libssh2 (to fix auth issues) and use newer libgit2 to avoid a bug
+# with cloning from Gerrit (https://github.com/libgit2/libgit2/pull/5536)
+RUN mkdir /tmp/build && cd /tmp/build && \
+    apt-get install -y cmake build-essential wget libssl-dev pkg-config && \
+    # Clone because of https://github.com/libssh2/libssh2/issues/379
+    git clone https://github.com/libssh2/libssh2.git && cd libssh2 && \
+    git checkout libssh2-1.9.0 && \
+    mkdir bin && cd bin && \
+    cmake .. && \
+    cmake --build . && cmake --build . --target install && \
+    cd /tmp/build && \
     wget https://github.com/libgit2/libgit2/releases/download/v1.1.0/libgit2-1.1.0.tar.gz && \
     tar xzf libgit2-1.1.0.tar.gz && \
     cd libgit2-1.1.0/ && \
     cmake . && \
-    make && \
-    make install && \
-    apt-get remove --purge -y cmake build-essential wget libssl-dev
+    make && make install && \
+    apt-get remove --purge -y cmake build-essential wget libssl-dev pkg-config && \
+    rm -rf /tmp/build
 RUN ldconfig
 
 RUN mkdir /work

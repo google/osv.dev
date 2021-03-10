@@ -373,15 +373,14 @@ class TaskRunner:
     finally:
       package_repo_dir.cleanup()
 
-    if not self._push_new_ranges_and_versions(
+    if self._push_new_ranges_and_versions(
         source_repo, repo, vulnerability, yaml_path, original_sha256,
         range_collectors, list(versions_with_bug - versions_with_fix)):
+      logging.info('Updated range/versions for vulnerability %s.',
+                   vulnerability.id)
+    else:
       logging.warning('Discarding changes for %s due to conflicts.',
                       vulnerability.id)
-    else:
-      # Nothing to do.
-      logging.info('No range/version changes for vulnerability %s.',
-                   vulnerability.id)
 
     # Update datastore with new information.
     bug = osv.Bug.get_by_id(vulnerability.id)

@@ -30,6 +30,7 @@ from . import vulnerability_pb2
 AUTHOR_EMAIL = 'infra@osv.dev'
 PUSH_RETRIES = 2
 PUSH_RETRY_SLEEP_SECONDS = 10
+VULNERABILITY_EXTENSION = '.yaml'
 
 
 class GitRemoteCallback(pygit2.RemoteCallbacks):
@@ -130,6 +131,18 @@ def update_vulnerability(vulnerability, repo_url, result):
   return new_ranges, new_versions
 
 
+def reset_repo(repo, git_callbacks):
+  """Reset repo."""
+  repo.remotes['origin'].fetch(callbacks=git_callbacks)
+  remote_branch = repo.lookup_branch(
+      repo.head.name.replace('refs/heads/', 'origin/'),
+      pygit2.GIT_BRANCH_REMOTE)
+
+  # Reset to remote branch.
+  repo.head.set_target(remote_branch.target)
+  repo.reset(remote_branch.target, pygit2.GIT_RESET_HARD)
+
+
 def push_source_changes(repo,
                         commit_message,
                         git_callbacks,
@@ -144,22 +157,18 @@ def push_source_changes(repo,
   for retry_num in range(1 + PUSH_RETRIES):
     try:
       repo.remotes['origin'].push([repo.head.name], callbacks=git_callbacks)
-    except pygit2.GitError:
+      return True
+    except pygit2.GitError as e:
+      logging.warning('Failed to push: %s', e)
       if retry_num == PUSH_RETRIES:
+        reset_repo(repo, git_callbacks)
         return False
 
       time.sleep(PUSH_RETRY_SLEEP_SECONDS)
 
       # Try rebasing.
       commit = repo.head.peel()
-      repo.remotes['origin'].fetch(callbacks=git_callbacks)
-      remote_branch = repo.lookup_branch(
-          repo.head.name.replace('refs/heads/', 'origin/'),
-          pygit2.GIT_BRANCH_REMOTE)
-
-      # Reset to remote branch.
-      repo.head.set_target(remote_branch.target)
-      repo.reset(remote_branch.target, pygit2.GIT_RESET_HARD)
+      reset_repo(repo, git_callbacks)
 
       for path, expected_hash in expected_hashes.items():
         current_hash = sha256(path)
@@ -174,6 +183,8 @@ def push_source_changes(repo,
       repo.cherrypick(commit.id)
       if repo.index.conflicts is not None:
         # Conflict. Don't try to resolve.
+        repo.state_cleanup()
+        reset_repo(repo, git_callbacks)
         return False
 
       # Success, commit and try pushing again.
@@ -196,3 +207,12 @@ def sha256(yaml_path):
   with open(yaml_path, 'rb') as f:
     hasher.update(f.read())
   return hasher.hexdigest()
+
+
+def source_path(bug):
+  """Get the OSS-Fuzz source path for an osv.Bug."""
+  source_name, source_id = parse_source_id(bug.source_id)
+  if source_name == 'oss-fuzz':
+    return os.path.join(bug.project, bug.id() + VULNERABILITY_EXTENSION)
+
+  return source_id

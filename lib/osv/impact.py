@@ -37,8 +37,8 @@ TAG_PREFIX = 'refs/tags/'
 UNKNOWN_COMMIT = 'unknown'
 
 AffectedResult = collections.namedtuple(
-    'AffectedResult',
-    'tags commits affected_ranges regress_commits fix_commits confidence')
+    'AffectedResult', 'tags_with_bug tags_with_fix commits affected_ranges '
+    'regress_commits fix_commits confidence')
 
 TagsInfo = collections.namedtuple('TagsInfo', 'tags latest_tag')
 
@@ -62,7 +62,7 @@ def clone_with_retries(git_url, checkout_dir, callbacks=None):
 
 
 class RangeCollector:
-  """Affected range collector."""
+  """Affected range collector (preserves insertion order)."""
 
   def __init__(self):
     self.grouped_ranges = {}
@@ -74,22 +74,22 @@ class RangeCollector:
         # New range doesn't add anything new.
         return
 
-      self.grouped_ranges[introduced_in].append((introduced_in, fixed_in))
-
-      # Remove any existing ranges with the same introduced in commit but with a
-      # None fixed commit.
-      self.grouped_ranges[introduced_in] = [
-          commit_range for commit_range in self.grouped_ranges[introduced_in]
-          if commit_range[1] is not None
-      ]
+      # Remove in-place as we need to preserve insertion order.
+      ranges = self.grouped_ranges[introduced_in]
+      ranges.append((introduced_in, fixed_in))
+      for value in ranges.copy():
+        if value[1] is None:
+          ranges.remove(value)
     else:
       self.grouped_ranges[introduced_in] = [(introduced_in, fixed_in)]
 
   def ranges(self):
     """Return a set representing the collected commit ranges."""
-    ranges = set()
-    for value in self.grouped_ranges.values():
-      ranges.update(value)
+    ranges = []
+    for grouped_range in self.grouped_ranges.values():
+      for commit_range in grouped_range:
+        if commit_range not in ranges:
+          ranges.append(commit_range)
 
     return ranges
 
@@ -138,18 +138,21 @@ def get_affected(repo, regress_commit_or_range, fix_commit_or_range):
 
   tags_with_fix = get_tags_with_commits(repo, fix_commits)
 
-  affected_tags = list(tags_with_bug - tags_with_fix)
-  affected_tags.sort()
-
   affected_commits, affected_ranges = get_affected_range(
       repo, regress_commits, fix_commits)
+
+  if len(regress_commits) > 1 or len(fix_commits) > 1:
+    # Don't return ranges if input regressed and fixed commits are not single
+    # commits.
+    affected_ranges = []
 
   if unknown_earlier_revisions:
     # Include the unknown marker in resulting entities.
     regress_commits.insert(0, UNKNOWN_COMMIT)
 
-  return AffectedResult(affected_tags, affected_commits, affected_ranges,
-                        regress_commits, fix_commits, confidence)
+  return AffectedResult(tags_with_bug, tags_with_fix, affected_commits,
+                        affected_ranges, regress_commits, fix_commits,
+                        confidence)
 
 
 def get_affected_range(repo, regress_commits, fix_commits):
@@ -158,8 +161,9 @@ def get_affected_range(repo, regress_commits, fix_commits):
   commits = set()
   seen_commits = set()
 
-  # Check all branches for cherry picked regress/fix commits.
-  for branch in repo.branches.remote:
+  # Check all branches for cherry picked regress/fix commits (sorted for
+  # determinism).
+  for branch in sorted(repo.branches.remote):
     ref = 'refs/remotes/' + branch
 
     # Get the earliest equivalent commit in the regression range.

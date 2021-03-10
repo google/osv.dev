@@ -14,6 +14,7 @@
 # limitations under the License.
 """OSV Worker."""
 import argparse
+import collections
 import json
 import logging
 import os
@@ -235,6 +236,14 @@ def get_source_id(message):
   return None
 
 
+def add_fix_information(vulnerability, bug, fix_result):
+  """Add fix information to a vulnerability."""
+  for affected_range in vulnerability.affects.ranges:
+    if (affected_range.introduced == bug.regressed and
+        not affected_range.fixed):
+      affected_range.fixed = fix_result.commit
+
+
 class TaskRunner:
   """Task runner."""
 
@@ -279,19 +288,28 @@ class TaskRunner:
                     original_sha256)
 
   def _push_new_ranges_and_versions(self, source_repo, repo, vulnerability,
-                                    yaml_path, original_sha256, added_ranges,
-                                    added_versions):
+                                    yaml_path, original_sha256,
+                                    range_collectors, versions):
     """Pushes new ranges and versions."""
-    # Add new ranges and versions (sorted for determinism).
-    for repo_url, introduced, fixed in sorted(added_ranges):
-      vulnerability.affects.ranges.add(
-          type=vulnerability_pb2.AffectedRange.Type.GIT,
-          repo=repo_url,
-          introduced=introduced,
-          fixed=fixed)
+    old_ranges = list(vulnerability.affects.ranges)
+    del vulnerability.affects.ranges[:]
 
-    for version in sorted(added_versions):
-      vulnerability.affects.versions.append(version)
+    for repo_url, range_collector in range_collectors.items():
+      for introduced, fixed in range_collector.ranges():
+        vulnerability.affects.ranges.add(
+            type=vulnerability_pb2.AffectedRange.Type.GIT,
+            repo=repo_url,
+            introduced=introduced,
+            fixed=fixed)
+
+    has_changes = old_ranges != list(vulnerability.affects.ranges)
+    for version in sorted(versions):
+      if version not in vulnerability.affects.versions:
+        has_changes = True
+        vulnerability.affects.versions.append(version)
+
+    if not has_changes:
+      return True
 
     # Write updates, and push.
     vulnerability.last_modified.FromDatetime(osv.utcnow())
@@ -313,9 +331,23 @@ class TaskRunner:
     package_repo_url = None
     package_repo = None
 
-    added_ranges = set()
-    added_versions = set()
+    bug = osv.Bug.get_by_id(vulnerability.id)
+    if bug:
+      fix_result = osv.FixResult.get_by_id(bug.source_id)
+      if fix_result:
+        add_fix_information(vulnerability, bug, fix_result)
+
+    range_collectors = collections.defaultdict(osv.RangeCollector)
+    versions_with_bug = set()
+    versions_with_fix = set()
     try:
+      for affected_range in vulnerability.affects.ranges:
+        if affected_range.type != vulnerability_pb2.AffectedRange.GIT:
+          continue
+
+        range_collectors[affected_range.repo].add(affected_range.introduced,
+                                                  affected_range.fixed)
+
       for affected_range in vulnerability.affects.ranges:
         # Go through existing provided ranges to find additional ranges (via
         # cherrypicks and branches).
@@ -333,26 +365,22 @@ class TaskRunner:
 
         result = osv.get_affected(package_repo, affected_range.introduced,
                                   affected_range.fixed)
-        new_ranges, new_versions = osv.update_vulnerability(
-            vulnerability, package_repo_url, result)
+        for introduced, fixed in result.affected_ranges:
+          range_collectors[current_repo_url].add(introduced, fixed)
 
-        # Collect newly added ranges and versions.
-        added_ranges.update(new_ranges)
-        added_versions.update(new_versions)
+        versions_with_fix.update(result.tags_with_fix)
+        versions_with_bug.update(result.tags_with_bug)
     finally:
       package_repo_dir.cleanup()
 
-    if added_ranges or added_versions:
-      if not self._push_new_ranges_and_versions(
-          source_repo, repo, vulnerability, yaml_path, original_sha256,
-          added_ranges, added_versions):
-        logging.warning('Discarding changes for %s due to conflicts.',
-                        vulnerability.id)
-        return
-    else:
-      # Nothing to do.
-      logging.info('No range/version changes for vulnerability %s.',
+    if self._push_new_ranges_and_versions(
+        source_repo, repo, vulnerability, yaml_path, original_sha256,
+        range_collectors, list(versions_with_bug - versions_with_fix)):
+      logging.info('Updated range/versions for vulnerability %s.',
                    vulnerability.id)
+    else:
+      logging.warning('Discarding changes for %s due to conflicts.',
+                      vulnerability.id)
 
     # Update datastore with new information.
     bug = osv.Bug.get_by_id(vulnerability.id)
@@ -492,8 +520,7 @@ def main():
   ndb_client = ndb.Client()
   with ndb_client.context():
     task_runner = TaskRunner(ndb_client, oss_fuzz_dir, args.work_dir,
-                             args.ssh_key_public_path,
-                             args.ssh_key_private_path)
+                             args.ssh_key_public, args.ssh_key_private)
     task_runner.loop()
 
 

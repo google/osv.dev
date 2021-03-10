@@ -184,36 +184,6 @@ def process_results():
     finally:
       counter.put()
 
-  # Re-compute bugs that aren't fixed.
-  for bug in osv.Bug.query(osv.Bug.status == osv.BugStatus.PROCESSED,
-                           osv.Bug.fixed == ''):
-    publisher.publish(
-        _TASKS_TOPIC,
-        data=b'',
-        type='impact',
-        source_id=bug.source_id,
-        allocated_id=bug.key.id())
-
-  # Re-compute existing Bugs for a period of time, as upstream changes may
-  # affect results.
-  cutoff_time = (
-      datetime.datetime.utcnow() - datetime.timedelta(days=_BUG_REDO_DAYS))
-  query = osv.Bug.query(osv.Bug.status == osv.BugStatus.PROCESSED,
-                        osv.Bug.timestamp >= cutoff_time)
-
-  for bug in query:
-    logging.info('Re-requesting impact for %s.', bug.key.id())
-    if not bug.fixed:
-      # Previous query already requested impact tasks for unfixed bugs.
-      continue
-
-    publisher.publish(
-        _TASKS_TOPIC,
-        data=b'',
-        type='impact',
-        source_id=bug.source_id,
-        allocated_id=bug.key.id())
-
   return 'done'
 
 

@@ -14,6 +14,7 @@
 # limitations under the License.
 """OSV Importer."""
 import argparse
+import datetime
 import logging
 import os
 import shutil
@@ -25,8 +26,8 @@ import pygit2
 import osv
 
 DEFAULT_WORK_DIR = '/work'
-VULNERABILITY_EXTENSION = '.yaml'
 
+_BUG_REDO_DAYS = 14
 _PROJECT = 'oss-vdb'
 _TASKS_TOPIC = 'projects/{project}/topics/{topic}'.format(
     project=_PROJECT, topic='tasks')
@@ -34,7 +35,7 @@ _TASKS_TOPIC = 'projects/{project}/topics/{topic}'.format(
 
 def _is_vulnerability_file(file_path):
   """Return whether or not the file is a Vulnerability entry."""
-  return file_path.endswith(VULNERABILITY_EXTENSION)
+  return file_path.endswith(osv.VULNERABILITY_EXTENSION)
 
 
 class Importer:
@@ -52,7 +53,14 @@ class Importer:
                                  self._ssh_key_public_path,
                                  self._ssh_key_private_path)
 
-  def _request_analysis(self, source_repo, repo, path):
+  def _request_analysis(self, bug, source_repo, repo):
+    """Request analysis."""
+    if bug.source_of_truth == osv.SourceOfTruth.SOURCE_REPO:
+      self._request_analysis_external(source_repo, repo, osv.source_path(bug))
+    else:
+      self._request_internal_analysis(bug)
+
+  def _request_analysis_external(self, source_repo, repo, path):
     """Request analysis."""
     original_sha256 = osv.sha256(os.path.join(osv.repo_path(repo), path))
     self._publisher.publish(
@@ -62,6 +70,15 @@ class Importer:
         source=source_repo.name,
         path=path,
         original_sha256=original_sha256)
+
+  def _request_internal_analysis(self, bug):
+    """Request internal analysis."""
+    self._publisher.publish(
+        _TASKS_TOPIC,
+        data=b'',
+        type='impact',
+        source_id=bug.source_id,
+        allocated_id=bug.key.id())
 
   def run(self):
     """Run importer."""
@@ -76,12 +93,7 @@ class Importer:
   def _use_existing_checkout(self, source_repo, checkout_dir):
     """Update and use existing checkout."""
     repo = pygit2.Repository(checkout_dir)
-    for remote in repo.remotes:
-      remote.fetch(callbacks=self._git_callbacks(source_repo))
-
-    repo.reset(repo.head.peel().oid, pygit2.GIT_RESET_HARD)
-    # TODO(ochang): Don't hardcode "master".
-    repo.checkout('refs/remotes/origin/master')
+    osv.reset_repo(repo, git_callbacks=self._git_callbacks(source_repo))
     logging.info('Using existing checkout at %s', checkout_dir)
     return repo
 
@@ -105,28 +117,32 @@ class Importer:
 
   def import_new_oss_fuzz_entries(self, repo, oss_fuzz_source):
     """Import new entries."""
-    # TODO(ochang): Make this more efficient by recording whether or not we
-    # imported already in Datastore.
+    exported = []
     vulnerabilities_path = os.path.join(
         osv.repo_path(repo), oss_fuzz_source.directory_path or '')
-    for bug in osv.Bug.query(osv.Bug.status == osv.BugStatus.PROCESSED):
+    for bug in osv.Bug.query(
+        osv.Bug.source_of_truth == osv.SourceOfTruth.INTERNAL):
+      if bug.status != osv.BugStatus.PROCESSED:
+        continue
+
       if not bug.public:
         continue
 
-      source_name, source_id = osv.parse_source_id(bug.source_id)
+      source_name, _ = osv.parse_source_id(bug.source_id)
       if source_name != oss_fuzz_source.name:
         continue
 
-      project_dir = os.path.join(vulnerabilities_path, bug.project)
-      os.makedirs(project_dir, exist_ok=True)
-      vulnerability_path = os.path.join(project_dir,
-                                        source_id + VULNERABILITY_EXTENSION)
-
+      vulnerability_path = os.path.join(vulnerabilities_path,
+                                        osv.source_path(bug))
+      os.makedirs(os.path.dirname(vulnerability_path), exist_ok=True)
       if os.path.exists(vulnerability_path):
         continue
 
       logging.info('Writing %s', bug.key.id())
       osv.vulnerability_to_yaml(bug.to_vulnerability(), vulnerability_path)
+      # The source of truth is now this yaml file.
+      bug.source_of_truth = osv.SourceOfTruth.SOURCE_REPO
+      exported.append(bug)
 
     # Commit Vulnerability changes back to the oss-fuzz source repository.
     repo.index.add_all()
@@ -136,8 +152,30 @@ class Importer:
       return
 
     logging.info('Commiting and pushing new entries')
-    osv.push_source_changes(repo, 'Import from OSS-Fuzz',
-                            self._git_callbacks(oss_fuzz_source))
+    if osv.push_source_changes(repo, 'Import from OSS-Fuzz',
+                               self._git_callbacks(oss_fuzz_source)):
+      ndb.put_multi(exported)
+
+  def schedule_regular_updates(self, repo, source_repo):
+    """Schedule regular OSS-Fuzz updates."""
+    for bug in osv.Bug.query(osv.Bug.status == osv.BugStatus.PROCESSED,
+                             osv.Bug.fixed == ''):
+      self._request_analysis(bug, source_repo, repo)
+
+    # Re-compute existing Bugs for a period of time, as upstream changes may
+    # affect results.
+    cutoff_time = (
+        datetime.datetime.utcnow() - datetime.timedelta(days=_BUG_REDO_DAYS))
+    query = osv.Bug.query(osv.Bug.status == osv.BugStatus.PROCESSED,
+                          osv.Bug.timestamp >= cutoff_time)
+
+    for bug in query:
+      logging.info('Re-requesting impact for %s.', bug.key.id())
+      if not bug.fixed:
+        # Previous query already requested impact tasks for unfixed bugs.
+        continue
+
+      self._request_analysis(bug, source_repo, repo)
 
   def process_updates(self, source_repo):
     """Process user changes and updates."""
@@ -166,10 +204,9 @@ class Importer:
             changed_entries.add(delta.new_file.path)
 
     # Create tasks for changed files.
-    # TODO(ochang): Actually create the tasks.
     for changed_entry in changed_entries:
       logging.info('Re-analysis triggered for %s', changed_entry)
-      self._request_analysis(source_repo, repo, changed_entry)
+      self._request_analysis_external(source_repo, repo, changed_entry)
 
   def process_oss_fuzz(self, oss_fuzz_source):
     """Process OSS-Fuzz source data."""
@@ -181,6 +218,7 @@ class Importer:
     # This then becomes the source of truth where any edits are imported back
     # into OSV.
     repo = self.checkout(oss_fuzz_source)
+    self.schedule_regular_updates(repo, oss_fuzz_source)
     self.import_new_oss_fuzz_entries(repo, oss_fuzz_source)
 
 

@@ -14,6 +14,8 @@
 """Datastore types."""
 
 import datetime
+import enum
+import re
 
 from google.cloud import ndb
 from google.protobuf import timestamp_pb2
@@ -139,6 +141,15 @@ class CommitRange(ndb.Model):
   fixed_in = ndb.StringProperty()
 
 
+class SourceOfTruth(enum.IntEnum):
+  """Source of truth."""
+  NONE = 0
+  # Internal to OSV (e.g. private OSS-Fuzz bugs).
+  INTERNAL = 1
+  # Vulnerabilities that are available in a public repo.
+  SOURCE_REPO = 2
+
+
 class Bug(ndb.Model):
   """Bug entity."""
   OSV_ID_PREFIX = 'OSV-'
@@ -188,6 +199,15 @@ class Bug(ndb.Model):
   has_affected = ndb.BooleanProperty()
   # Sort key.
   sort_key = ndb.StringProperty()
+  # Source of truth for this Bug.
+  source_of_truth = ndb.IntegerProperty(default=SourceOfTruth.INTERNAL)
+
+  def id(self):
+    """Get the bug ID."""
+    if re.match(r'^\d+', self.key.id()):
+      return self.OSV_ID_PREFIX + self.key.id()
+
+    return self.key.id()
 
   @classmethod
   def get_by_id(cls, vuln_id, *args, **kwargs):
@@ -275,7 +295,7 @@ class Bug(ndb.Model):
       last_modified = None
 
     result = vulnerability_pb2.Vulnerability(
-        id=self.OSV_ID_PREFIX + self.key.id(),  # TODO(ochang): Generalize.
+        id=self.id(),
         last_modified=last_modified,
         summary=self.summary,
         details=details,

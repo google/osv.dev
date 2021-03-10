@@ -144,7 +144,9 @@ class CommitRange(ndb.Model):
 class SourceOfTruth(enum.IntEnum):
   """Source of truth."""
   NONE = 0
+  # Internal to OSV (e.g. private OSS-Fuzz bugs).
   INTERNAL = 1
+  # Vulnerabilities that are available in a public repo.
   SOURCE_REPO = 2
 
 

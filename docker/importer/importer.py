@@ -53,7 +53,14 @@ class Importer:
                                  self._ssh_key_public_path,
                                  self._ssh_key_private_path)
 
-  def _request_analysis(self, source_repo, repo, path):
+  def _request_analysis(self, bug, source_repo, repo):
+    """Request analysis."""
+    if bug.source_of_truth == osv.SourceOfTruth.SOURCE_REPO:
+      self._request_analysis_external(source_repo, repo, osv.source_path(bug))
+    else:
+      self._request_internal_analysis(bug)
+
+  def _request_analysis_external(self, source_repo, repo, path):
     """Request analysis."""
     original_sha256 = osv.sha256(os.path.join(osv.repo_path(repo), path))
     self._publisher.publish(
@@ -149,14 +156,11 @@ class Importer:
                                self._git_callbacks(oss_fuzz_source)):
       ndb.put_multi(exported)
 
-  def schedule_regular_updates(self, repo, oss_fuzz_source):
+  def schedule_regular_updates(self, repo, source_repo):
     """Schedule regular OSS-Fuzz updates."""
     for bug in osv.Bug.query(osv.Bug.status == osv.BugStatus.PROCESSED,
                              osv.Bug.fixed == ''):
-      if bug.source_of_truth == osv.SourceOfTruth.SOURCE_REPO:
-        self._request_analysis(oss_fuzz_source, repo, osv.source_path(bug))
-      else:
-        self._request_internal_analysis(bug)
+      self._request_analysis(bug, source_repo, repo)
 
     # Re-compute existing Bugs for a period of time, as upstream changes may
     # affect results.
@@ -171,10 +175,7 @@ class Importer:
         # Previous query already requested impact tasks for unfixed bugs.
         continue
 
-      if bug.source_of_truth == osv.SourceOfTruth.SOURCE_REPO:
-        self._request_analysis(oss_fuzz_source, repo, osv.source_path(bug))
-      else:
-        self._request_internal_analysis(bug)
+      self._request_analysis(bug, source_repo, repo)
 
   def process_updates(self, source_repo):
     """Process user changes and updates."""
@@ -205,7 +206,7 @@ class Importer:
     # Create tasks for changed files.
     for changed_entry in changed_entries:
       logging.info('Re-analysis triggered for %s', changed_entry)
-      self._request_analysis(source_repo, repo, changed_entry)
+      self._request_analysis_external(source_repo, repo, changed_entry)
 
   def process_oss_fuzz(self, oss_fuzz_source):
     """Process OSS-Fuzz source data."""

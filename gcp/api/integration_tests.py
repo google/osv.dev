@@ -102,15 +102,15 @@ class IntegrationTests(unittest.TestCase):
   def test_get(self):
     """Test getting a vulnerability."""
     response = requests.get(_api() + '/v1/vulns/2020-744')
-    self.assertDictEqual(self._VULN_744, response.json())
+    self.assert_vuln_equal(self._VULN_744, response.json())
 
     response = requests.get(_api() + '/v1/vulns/OSV-2020-744')
-    self.assertDictEqual(self._VULN_744, response.json())
+    self.assert_vuln_equal(self._VULN_744, response.json())
 
   def test_get_invalid(self):
     """Test getting an invalid vulnerability."""
     response = requests.get(_api() + '/v1/vulns/OSV-2020-2258')
-    self.assertDictEqual(self._VULN_2258, response.json())
+    self.assert_vuln_equal(self._VULN_2258, response.json())
 
   def test_query_commit(self):
     """Test querying by commit."""
@@ -119,7 +119,7 @@ class IntegrationTests(unittest.TestCase):
         data=json.dumps({
             'commit': '233cb49903fa17637bd51f4a16b4ca61e0750f24',
         }))
-    self.assertDictEqual({'vulns': [self._VULN_744]}, response.json())
+    self.assert_results_equal({'vulns': [self._VULN_744]}, response.json())
 
   def test_query_version(self):
     """Test querying by version."""
@@ -131,7 +131,7 @@ class IntegrationTests(unittest.TestCase):
                 'name': 'mruby',
             }
         }))
-    self.assertDictEqual({'vulns': [self._VULN_744]}, response.json())
+    self.assert_results_equal({'vulns': [self._VULN_744]}, response.json())
 
     response = requests.post(
         _api() + '/v1/query',
@@ -141,7 +141,7 @@ class IntegrationTests(unittest.TestCase):
                 'name': 'mruby',
             }
         }))
-    self.assertDictEqual({'vulns': [self._VULN_744]}, response.json())
+    self.assert_results_equal({'vulns': [self._VULN_744]}, response.json())
 
 
 def print_logs(filename):

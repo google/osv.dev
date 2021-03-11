@@ -40,6 +40,7 @@ class IntegrationTests(unittest.TestCase):
   """Server integration tests."""
 
   _VULN_744 = {
+      'created': '2020-07-04T00:00:01.948828Z',
       'affects': {
           'ranges': [{
               'type': 'GIT',
@@ -61,7 +62,7 @@ class IntegrationTests(unittest.TestCase):
       'package': {
           'name': 'mruby'
       },
-      'referenceUrls': [
+      'references': [
           'https://bugs.chromium.org/p/oss-fuzz/issues/detail?id=23801'
       ],
       'severity': 'HIGH',
@@ -69,12 +70,13 @@ class IntegrationTests(unittest.TestCase):
   }
 
   _VULN_2258 = {
+      'created': '2020-12-11T00:00:45.856Z',
       'details': 'INVALID',
       'id': 'OSV-2020-2258',
       'package': {
           'name': 'grok'
       },
-      'referenceUrls': [
+      'references': [
           'https://bugs.chromium.org/p/oss-fuzz/issues/detail?id=28505'
       ],
       'summary': 'Heap-buffer-overflow in grk::t1_part1::T1Part1::decompress'
@@ -85,19 +87,19 @@ class IntegrationTests(unittest.TestCase):
 
   def assert_vuln_equal(self, expected, actual):
     """Assert that the vulnerability is equal."""
-    self.remove_last_modified(actual)
+    self.remove_modified(actual)
     self.assertDictEqual(expected, actual)
 
   def assert_results_equal(self, expected, actual):
     for vuln in actual['vulns']:
-      self.remove_last_modified(vuln)
+      self.remove_modified(vuln)
 
     self.assertDictEqual(expected, actual)
 
-  def remove_last_modified(self, vuln):
+  def remove_modified(self, vuln):
     """Remove lastModified for comparison."""
-    if 'lastModified' in vuln:
-      del vuln['lastModified']
+    if 'modified' in vuln:
+      del vuln['modified']
 
   def test_get(self):
     """Test getting a vulnerability."""

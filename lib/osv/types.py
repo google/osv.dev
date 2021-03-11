@@ -289,20 +289,24 @@ class Bug(ndb.Model):
       severity = vulnerability_pb2.Vulnerability.Severity.NONE
 
     if self.last_modified:
-      last_modified = timestamp_pb2.Timestamp()
-      last_modified.FromDatetime(self.last_modified)
+      modified = timestamp_pb2.Timestamp()
+      modified.FromDatetime(self.last_modified)
     else:
-      last_modified = None
+      modified = None
+
+    created = timestamp_pb2.Timestamp()
+    created.FromDatetime(self.timestamp)
 
     result = vulnerability_pb2.Vulnerability(
         id=self.id(),
-        last_modified=last_modified,
+        created=created,
+        modified=modified,
         summary=self.summary,
         details=details,
         package=package,
         severity=severity,
         affects=affects,
-        reference_urls=self.reference_urls)
+        references=self.reference_urls)
 
     return result
 

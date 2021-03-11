@@ -1,5 +1,5 @@
 diff --git a/BLAH-124.yaml b/BLAH-124.yaml
-index 3c00ebc..2cfbcb4 100644
+index a0808d3..88989eb 100644
 --- a/BLAH-124.yaml
 +++ b/BLAH-124.yaml
 @@ -12,7 +12,18 @@ affects:
@@ -18,6 +18,6 @@ index 3c00ebc..2cfbcb4 100644
    - branch-v0.1.1
 +  - branch_1_cherrypick_regress
 +  - v0.1.1
- referenceUrls:
+ references:
  - https://ref.com/ref
-+lastModified: '2021-01-01T00:00:00Z'
++modified: '2021-01-01T00:00:00Z'

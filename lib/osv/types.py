@@ -241,8 +241,8 @@ class Bug(ndb.Model):
     self.details = vulnerability.details
     self.severity = (
         vulnerability_pb2.Vulnerability.Severity.Name(vulnerability.severity))
-    self.reference_urls = list(vulnerability.reference_urls)
-    self.last_modified = vulnerability.last_modified.ToDatetime()
+    self.reference_urls = list(vulnerability.references)
+    self.last_modified = vulnerability.modified.ToDatetime()
 
     found_first = False
     for affected_range in vulnerability.affects.ranges:

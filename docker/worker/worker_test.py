@@ -830,8 +830,8 @@ class UpdateTest(unittest.TestCase):
             'source',
         'path':
             'BLAH-123.yaml',
-        'original_sha256': ('4ff2c39882e21b963f6d716f318f07c2'
-                            '9434baef91eb339aefa9840fadb12084'),
+        'original_sha256': ('b149accd3dd3e66f882de2201481d9fa'
+                            'd25324916501a9a0f7b1ae1afe256f0b'),
     }
     task_runner._source_update(message)
 
@@ -892,8 +892,8 @@ class UpdateTest(unittest.TestCase):
             'source',
         'path':
             'BLAH-124.yaml',
-        'original_sha256': ('80e0cb5e08fb624fc265c91729422cd8'
-                            '8d1c0b1696990f9a6defe417101e6d6d'),
+        'original_sha256': ('df9b0207ff2aa433d71869fa206b4884'
+                            '071807d5dfddf8626b93da210b6572ef'),
     }
     task_runner._source_update(message)
 
@@ -950,8 +950,8 @@ class UpdateTest(unittest.TestCase):
             'source',
         'path':
             'BLAH-125.yaml',
-        'original_sha256': ('e405bf50fe67dc09217eb898b1321a4c'
-                            'b7a0bfb71de68910240ff804e45e7ff5'),
+        'original_sha256': ('b5ecb05106faef7fc5bd07f86e089783',
+                            '4354608c5bb59d3b6317491874198a3a'),
     }
     task_runner._source_update(message)
 
@@ -1002,8 +1002,8 @@ class UpdateTest(unittest.TestCase):
             'source',
         'path':
             'BLAH-123.yaml',
-        'original_sha256': ('4ff2c39882e21b963f6d716f318f07c2'
-                            '9434baef91eb339aefa9840fadb12084'),
+        'original_sha256': ('b149accd3dd3e66f882de2201481d9fa'
+                            'd25324916501a9a0f7b1ae1afe256f0b'),
     }
     task_runner._source_update(message)
 

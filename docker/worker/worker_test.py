@@ -669,8 +669,7 @@ class EcosystemTest(unittest.TestCase):
     self.assertEqual('PyPI',
                      oss_fuzz.get_ecosystem(self.oss_fuzz_checkout, 'pillow'))
     self.assertEqual(
-        'Go',
-        oss_fuzz.get_ecosystem(self.oss_fuzz_checkout, 'golang-protobuf'))
+        'Go', oss_fuzz.get_ecosystem(self.oss_fuzz_checkout, 'golang-protobuf'))
     self.assertEqual('OSS-Fuzz',
                      oss_fuzz.get_ecosystem(self.oss_fuzz_checkout, 'openssl'))
 

@@ -312,7 +312,7 @@ class TaskRunner:
       return True
 
     # Write updates, and push.
-    vulnerability.last_modified.FromDatetime(osv.utcnow())
+    vulnerability.modified.FromDatetime(osv.utcnow())
     osv.vulnerability_to_yaml(vulnerability, yaml_path)
     repo.index.add_all()
     return osv.push_source_changes(

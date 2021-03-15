@@ -50,8 +50,6 @@ class AffectedCommit(ndb.Model):
   bug_id = ndb.StringProperty()
   # The commit hash.
   commit = ndb.StringProperty()
-  # Confidence in this result.
-  confidence = ndb.IntegerProperty()
   # Project for the bug.
   project = ndb.StringProperty()
   # Ecosystem for the affected commit.

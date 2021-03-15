@@ -340,6 +340,8 @@ class TaskRunner:
     range_collectors = collections.defaultdict(osv.RangeCollector)
     versions_with_bug = set()
     versions_with_fix = set()
+    commits = set()
+
     try:
       for affected_range in vulnerability.affects.ranges:
         if affected_range.type != vulnerability_pb2.AffectedRange.GIT:
@@ -370,6 +372,7 @@ class TaskRunner:
 
         versions_with_fix.update(result.tags_with_fix)
         versions_with_bug.update(result.tags_with_bug)
+        commits.update(result.commits)
     finally:
       package_repo_dir.cleanup()
 
@@ -381,6 +384,7 @@ class TaskRunner:
     else:
       logging.warning('Discarding changes for %s due to conflicts.',
                       vulnerability.id)
+      return
 
     # Update datastore with new information.
     bug = osv.Bug.get_by_id(vulnerability.id)
@@ -391,6 +395,9 @@ class TaskRunner:
 
     bug.update_from_vulnerability(vulnerability)
     bug.put()
+
+    osv.update_affected_commits(bug.key.id(), commits, bug.project,
+                                bug.ecosystem, bug.public)
 
   def _do_process_task(self, subscriber, subscription, ack_id, message,
                        done_event):

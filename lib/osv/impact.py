@@ -19,7 +19,10 @@ import logging
 import tempfile
 import time
 
+from google.cloud import ndb
 import pygit2
+
+from . import types
 
 CLONE_TRIES = 3
 COMMIT_RANGE_LIMIT = 4
@@ -326,3 +329,31 @@ def get_tags(repo_url):
 
     latest_tag = find_latest_tag(repo, tags)
     return TagsInfo([tag[len(TAG_PREFIX):] for tag in tags], latest_tag)
+
+
+def update_affected_commits(bug_id, commits, project, ecosystem, public):
+  """Update affected commits."""
+  to_put = []
+  to_delete = []
+
+  for commit in commits:
+    affected_commit = types.AffectedCommit(
+        id=bug_id + '-' + commit,
+        bug_id=bug_id,
+        commit=commit,
+        project=project,
+        ecosystem=ecosystem,
+        public=public)
+
+    to_put.append(affected_commit)
+
+  # Delete any affected commits that no longer apply. This can happen in cases
+  # where a FixResult comes in later and we had previously marked a commit prior
+  # to the fix commit as being affected by a vulnerability.
+  for existing in types.AffectedCommit.query(
+      types.AffectedCommit.bug_id == bug_id):
+    if existing.commit not in commits:
+      to_delete.append(existing.key)
+
+  ndb.put_multi(to_put)
+  ndb.delete_multi(to_delete)

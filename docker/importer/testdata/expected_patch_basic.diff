@@ -1,9 +1,9 @@
 diff --git a/file/OSV-2017-134.yaml b/file/OSV-2017-134.yaml
 new file mode 100644
-index 0000000..b3279d5
+index 0000000..a06c0cc
 --- /dev/null
 +++ b/file/OSV-2017-134.yaml
-@@ -0,0 +1,25 @@
+@@ -0,0 +1,26 @@
 +id: OSV-2017-134
 +package:
 +  name: file
@@ -26,6 +26,7 @@ index 0000000..b3279d5
 +  versions:
 +  - FILE5_29
 +  - FILE5_30
-+referenceUrls:
++references:
 +- https://bugs.chromium.org/p/oss-fuzz/issues/detail?id=1064
-+lastModified: '2021-01-01T00:00:00Z'
++modified: '2021-01-01T00:00:00Z'
++created: '2021-01-15T00:00:24.559102Z'

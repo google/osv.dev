@@ -60,7 +60,8 @@ class IntegrationTests(unittest.TestCase):
                  'obj_free\n',
       'id': 'OSV-2020-744',
       'package': {
-          'name': 'mruby'
+          'name': 'mruby',
+          'ecosystem': 'OSS-Fuzz',
       },
       'references': [
           'https://bugs.chromium.org/p/oss-fuzz/issues/detail?id=23801'
@@ -74,7 +75,8 @@ class IntegrationTests(unittest.TestCase):
       'details': 'INVALID',
       'id': 'OSV-2020-2258',
       'package': {
-          'name': 'grok'
+          'name': 'grok',
+          'ecosystem': 'OSS-Fuzz',
       },
       'references': [
           'https://bugs.chromium.org/p/oss-fuzz/issues/detail?id=28505'
@@ -131,6 +133,7 @@ class IntegrationTests(unittest.TestCase):
             'version': '2.1.2rc',
             'package': {
                 'name': 'mruby',
+                'ecosystem': 'OSS-Fuzz',
             }
         }))
     self.assert_results_equal({'vulns': [self._VULN_744]}, response.json())

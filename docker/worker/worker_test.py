@@ -666,14 +666,11 @@ class EcosystemTest(unittest.TestCase):
 
   def test_get_ecosystem(self):
     """Test getting ecosystems."""
-    self.assertEqual('pypi',
+    self.assertEqual('PyPI',
                      oss_fuzz.get_ecosystem(self.oss_fuzz_checkout, 'pillow'))
     self.assertEqual(
-        'golang',
-        oss_fuzz.get_ecosystem(self.oss_fuzz_checkout, 'golang-protobuf'))
-    self.assertEqual('cargo',
-                     oss_fuzz.get_ecosystem(self.oss_fuzz_checkout, 'servo'))
-    self.assertEqual('',
+        'Go', oss_fuzz.get_ecosystem(self.oss_fuzz_checkout, 'golang-protobuf'))
+    self.assertEqual('OSS-Fuzz',
                      oss_fuzz.get_ecosystem(self.oss_fuzz_checkout, 'openssl'))
 
 

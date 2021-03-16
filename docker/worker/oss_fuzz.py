@@ -353,13 +353,13 @@ def get_ecosystem(oss_fuzz_dir, project_name):
   language = project_yaml.get('language', '')
 
   ecosystems = {
-      'python': 'pypi',
-      'rust': 'cargo',
-      'go': 'golang',
+      'python': 'PyPI',
+      'go': 'Go',
   }
 
-  # C/C++ projects from OSS-Fuzz don't belong to any package ecosystem.
-  return ecosystems.get(language, '')
+  # C/C++ projects from OSS-Fuzz don't belong to any package ecosystem, so we
+  # set "OSS-Fuzz".
+  return ecosystems.get(language, 'OSS-Fuzz')
 
 
 def _set_result_attributes(oss_fuzz_dir, message, entity):

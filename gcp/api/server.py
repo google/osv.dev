@@ -187,10 +187,13 @@ def query_by_version(project,
                      privileged,
                      to_response=bug_to_response):
   """Query by (fuzzy) version."""
+
   query = osv.Bug.query(osv.Bug.status == osv.BugStatus.PROCESSED,
                         osv.Bug.project == project,
-                        osv.Bug.ecosystem == ecosystem,
                         osv.Bug.affected_fuzzy == osv.normalize_tag(version))
+
+  if ecosystem:
+    query = query.filter(osv.Bug.ecosystem == ecosystem)
 
   if not privileged:
     query = query.filter(osv.Bug.public == True)  # pylint: disable=singleton-comparison

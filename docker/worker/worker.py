@@ -283,7 +283,12 @@ class TaskRunner:
           path, original_sha256, current_sha256)
       return
 
-    vulnerability = osv.parse_vulnerability(yaml_path)
+    try:
+      vulnerability = osv.parse_vulnerability(yaml_path)
+    except Exception as e:
+      logging.error('Failed to parse vulnerability %s: %s', yaml_path, e)
+      return
+
     self._do_update(source_repo, repo, vulnerability, yaml_path,
                     original_sha256)
 

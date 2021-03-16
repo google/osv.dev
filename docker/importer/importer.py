@@ -56,7 +56,8 @@ class Importer:
   def _request_analysis(self, bug, source_repo, repo):
     """Request analysis."""
     if bug.source_of_truth == osv.SourceOfTruth.SOURCE_REPO:
-      self._request_analysis_external(source_repo, repo, osv.source_path(bug))
+      self._request_analysis_external(source_repo, repo,
+                                      osv.source_path(source_repo, bug))
     else:
       self._request_internal_analysis(bug)
 
@@ -118,8 +119,6 @@ class Importer:
   def import_new_oss_fuzz_entries(self, repo, oss_fuzz_source):
     """Import new entries."""
     exported = []
-    vulnerabilities_path = os.path.join(
-        osv.repo_path(repo), oss_fuzz_source.directory_path or '')
     for bug in osv.Bug.query(
         osv.Bug.source_of_truth == osv.SourceOfTruth.INTERNAL):
       if bug.status != osv.BugStatus.PROCESSED:
@@ -132,8 +131,8 @@ class Importer:
       if source_name != oss_fuzz_source.name:
         continue
 
-      vulnerability_path = os.path.join(vulnerabilities_path,
-                                        osv.source_path(bug))
+      vulnerability_path = os.path.join(
+          osv.repo_path(repo), osv.source_path(oss_fuzz_source, bug))
       os.makedirs(os.path.dirname(vulnerability_path), exist_ok=True)
       if os.path.exists(vulnerability_path):
         continue

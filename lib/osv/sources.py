@@ -209,10 +209,14 @@ def sha256(yaml_path):
   return hasher.hexdigest()
 
 
-def source_path(bug):
-  """Get the OSS-Fuzz source path for an osv.Bug."""
+def source_path(source_repo, bug):
+  """Get the source path for an osv.Bug."""
   source_name, source_id = parse_source_id(bug.source_id)
   if source_name == 'oss-fuzz':
-    return os.path.join(bug.project, bug.id() + VULNERABILITY_EXTENSION)
+    path = os.path.join(bug.project, bug.id() + VULNERABILITY_EXTENSION)
+    if source_repo.directory_path:
+      path = os.path.join(source_repo.directory_path, path)
+
+    return path
 
   return source_id

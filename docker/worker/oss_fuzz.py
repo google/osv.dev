@@ -192,34 +192,6 @@ def process_bisect_task(oss_fuzz_dir, bisect_type, source_id, message):
   entity.put()
 
 
-def update_affected_commits(bug_id, result, project, ecosystem, public):
-  """Update affected commits."""
-  to_put = []
-  to_delete = []
-
-  for commit in result.commits:
-    affected_commit = osv.AffectedCommit(
-        id=bug_id + '-' + commit,
-        bug_id=bug_id,
-        commit=commit,
-        confidence=result.confidence,
-        project=project,
-        ecosystem=ecosystem,
-        public=public)
-
-    to_put.append(affected_commit)
-
-  # Delete any affected commits that no longer apply. This can happen in cases
-  # where a FixResult comes in later and we had previously marked a commit prior
-  # to the fix commit as being affected by a vulnerability.
-  for existing in osv.AffectedCommit.query(osv.AffectedCommit.bug_id == bug_id):
-    if existing.commit not in result.commits:
-      to_delete.append(existing.key)
-
-  ndb.put_multi(to_put)
-  ndb.delete_multi(to_delete)
-
-
 def process_impact_task(source_id, message):
   """Process an impact task."""
   logging.info('Processing impact task for %s', source_id)
@@ -300,7 +272,8 @@ def process_impact_task(source_id, message):
   severity = fix_result.severity or regress_result.severity
   reference_urls = fix_result.reference_urls or regress_result.reference_urls
 
-  update_affected_commits(allocated_bug_id, result, project, ecosystem, public)
+  osv.update_affected_commits(allocated_bug_id, result.commits, project,
+                              ecosystem, public)
 
   affected_tags = sorted(list(result.tags_with_bug - result.tags_with_fix))
 

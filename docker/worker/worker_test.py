@@ -128,7 +128,6 @@ class ImpactTest(unittest.TestCase):
         id='2020-1337-abcd',
         bug_id='2020-1337',
         commit='abcd',
-        confidence=100,
         project='project',
         ecosystem='ecosystem',
         public=False)
@@ -204,7 +203,6 @@ class ImpactTest(unittest.TestCase):
 
     affected_commits = list(osv.AffectedCommit.query())
     for commit in affected_commits:
-      self.assertEqual(100, commit.confidence)
       self.assertEqual('project', commit.project)
 
     self.assertCountEqual([
@@ -283,7 +281,6 @@ class ImpactTest(unittest.TestCase):
 
     affected_commits = list(osv.AffectedCommit.query())
     for commit in affected_commits:
-      self.assertEqual(70, commit.confidence)
       self.assertEqual('project', commit.project)
 
     self.assertCountEqual([
@@ -363,7 +360,6 @@ class ImpactTest(unittest.TestCase):
 
     affected_commits = list(osv.AffectedCommit.query())
     for commit in affected_commits:
-      self.assertEqual(30, commit.confidence)
       self.assertEqual('project', commit.project)
 
     self.assertCountEqual([
@@ -441,7 +437,6 @@ class ImpactTest(unittest.TestCase):
 
     affected_commits = list(osv.AffectedCommit.query())
     for commit in affected_commits:
-      self.assertEqual(80, commit.confidence)
       self.assertEqual('project', commit.project)
 
     self.assertCountEqual([
@@ -580,7 +575,6 @@ class ImpactTest(unittest.TestCase):
 
     affected_commits = list(osv.AffectedCommit.query())
     for commit in affected_commits:
-      self.assertEqual(100, commit.confidence)
       self.assertEqual('project', commit.project)
 
     self.assertCountEqual([
@@ -875,6 +869,15 @@ class UpdateTest(unittest.TestCase):
         },
         osv.Bug.get_by_id('BLAH-123')._to_dict())
 
+    affected_commits = list(osv.AffectedCommit.query())
+    self.assertCountEqual([
+        '4c155795426727ea05575bd5904321def23c03f4',
+        'b1c95a196f22d06fcf80df8c6691cd113d8fefff',
+        'eefe8ec3f1f90d0e684890e810f3f21e8500a4cd',
+        'febfac1940086bc1f6d3dc33fda0a1d1ba336209',
+        'ff8cc32ba60ad9cbb3b23f0a82aad96ebe9ff76b',
+    ], [commit.commit for commit in affected_commits])
+
   def test_update_add_fix(self):
     """Test basic update adding a fix."""
     fix_result = osv.FixResult(
@@ -936,6 +939,15 @@ class UpdateTest(unittest.TestCase):
             'timestamp': None
         },
         osv.Bug.get_by_id('BLAH-124')._to_dict())
+
+    affected_commits = list(osv.AffectedCommit.query())
+    self.assertCountEqual([
+        '4c155795426727ea05575bd5904321def23c03f4',
+        'b1c95a196f22d06fcf80df8c6691cd113d8fefff',
+        'eefe8ec3f1f90d0e684890e810f3f21e8500a4cd',
+        'febfac1940086bc1f6d3dc33fda0a1d1ba336209',
+        'ff8cc32ba60ad9cbb3b23f0a82aad96ebe9ff76b',
+    ], [commit.commit for commit in affected_commits])
 
   def test_update_no_changes(self):
     """Test basic update (with no changes)."""

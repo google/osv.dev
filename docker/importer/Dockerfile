@@ -16,4 +16,4 @@ FROM gcr.io/oss-vdb/worker
 
 COPY importer.py /usr/local/bin
 RUN chmod 755 /usr/local/bin/importer.py
-CMD ["pipenv", "run", "importer.py"]
+ENTRYPOINT ["pipenv", "run", "importer.py"]

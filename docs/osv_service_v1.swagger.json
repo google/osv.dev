@@ -96,7 +96,7 @@
           "200": {
             "description": "A successful response.",
             "schema": {
-              "$ref": "#/definitions/v1VulnerabilityNewList"
+              "$ref": "#/definitions/v1VulnerabilityList"
             }
           },
           "default": {
@@ -129,7 +129,7 @@
           "200": {
             "description": "A successful response.",
             "schema": {
-              "$ref": "#/definitions/osvVulnerabilityNew"
+              "$ref": "#/definitions/osvVulnerability"
             }
           },
           "default": {
@@ -154,43 +154,28 @@
     }
   },
   "definitions": {
-    "CommitRepoType": {
+    "VulnerabilitySeverity": {
       "type": "string",
       "enum": [
-        "UNSPECIFIED",
-        "GIT"
+        "NONE",
+        "LOW",
+        "MEDIUM",
+        "HIGH",
+        "CRITICAL"
       ],
-      "default": "UNSPECIFIED",
-      "description": "The repository type."
+      "default": "NONE",
+      "description": "Vulnerability severity information. The exact meaning of these levels will\nbe defined by the database."
     },
     "osvAffectedRange": {
       "type": "object",
       "properties": {
-        "introducedIn": {
-          "description": "Required. The earliest commit where this vulnerability was introduced in.",
-          "allOf": [
-            {
-              "$ref": "#/definitions/osvCommit"
-            }
-          ]
-        },
-        "fixedIn": {
-          "description": "Optional. The commit that this vulnerability was fixed in. This must be\nreachable from the \"introduced_in\" commit.\n\nIf the vulnerability is not fixed, this will be unset.",
-          "allOf": [
-            {
-              "$ref": "#/definitions/osvCommit"
-            }
-          ]
-        }
-      },
-      "description": "Represents a range of commits in a branch that contain a vulnerability."
-    },
-    "osvAffectedRangeNew": {
-      "type": "object",
-      "properties": {
         "type": {
-          "$ref": "#/definitions/osvAffectedRangeNewType",
-          "description": "Required. The type of version information."
+          "description": "Required. The type of version information.",
+          "allOf": [
+            {
+              "$ref": "#/definitions/osvAffectedRangeType"
+            }
+          ]
         },
         "repo": {
           "type": "string",
@@ -206,7 +191,7 @@
         }
       }
     },
-    "osvAffectedRangeNewType": {
+    "osvAffectedRangeType": {
       "type": "string",
       "enum": [
         "UNSPECIFIED",
@@ -224,26 +209,6 @@
           "items": {
             "$ref": "#/definitions/osvAffectedRange"
           },
-          "description": "Required (at least one entry). The commit ranges that contain this\nvulnerability. Each range entry should represent a different upstream\nbranch.\n\nWhen provided, OSV will attempt to detect cherry-picks and append affected\nranges for other branches."
-        },
-        "versions": {
-          "type": "array",
-          "items": {
-            "type": "string"
-          },
-          "description": "Optional. List of affected versions. This should match tag names in the\nupstream repository. OSV will populate or add to this automatically\nbased on the provided ranges."
-        }
-      },
-      "description": "Affected versions and commits."
-    },
-    "osvAffectsNew": {
-      "type": "object",
-      "properties": {
-        "ranges": {
-          "type": "array",
-          "items": {
-            "$ref": "#/definitions/osvAffectedRangeNew"
-          },
           "description": "Required (at least one entry). The commit/version ranges that contain this\nvulnerability.\n\nWhen provided, OSV will attempt to detect and append additional ranges that\nmay be affected as well (e.g. cherry-picks to other branches)."
         },
         "versions": {
@@ -255,24 +220,6 @@
         }
       },
       "description": "Affected versions and commits."
-    },
-    "osvCommit": {
-      "type": "object",
-      "properties": {
-        "repoType": {
-          "$ref": "#/definitions/CommitRepoType",
-          "description": "Required. The type of the repo."
-        },
-        "repoUrl": {
-          "type": "string",
-          "description": "Required. The publicly accessible URL of the repo that can be directly\npassed to clone commands."
-        },
-        "commit": {
-          "type": "string",
-          "description": "Required. The commit identifier (e.g. git SHA). In some cases where the\nexact commit fails to be determined by automation, this may be a small\nrange in the form \"A:B\" which means the commit range from A (exclusive) to\nB (inclusive)."
-        }
-      },
-      "description": "Commit reference.\n\nIn some rare cases, this may refer to a small range of commits rather than an\nexact commit (to accomodate for automated systems). In such cases, the\nsemantics are as follows:\n\n- If this is referring to a commit which introduces a vulnerability, then\n*any* commits in the range is assumed to cause the vulnerability.\n\n- If this is referring to a commit which fixes a vulnerability, then *all*\ncommits in the range is assumed to cause the vulnerability."
     },
     "osvPackage": {
       "type": "object",
@@ -293,7 +240,7 @@
       "properties": {
         "id": {
           "type": "string",
-          "description": "Unique identifier for this vulnerability.\nThis is of the format YEAR-N (e.g. \"OSV-2020-111\")."
+          "description": "Unique identifier for this vulnerability.\nThis is of the format DB-ENTRYID, where DB names the database\nand ENTRYID is in the format used by the database.\nFor example, \u201cOSV-2020-111\u201d or \u201cCVE-2021-3114\u201d\nor \u201cGHSA-vp9c-fpxx-744v\u201d.."
         },
         "package": {
           "description": "Required. Package information.",
@@ -315,7 +262,7 @@
           "description": "Required. Severity of the vulnerability.",
           "allOf": [
             {
-              "$ref": "#/definitions/osvVulnerabilitySeverity"
+              "$ref": "#/definitions/VulnerabilitySeverity"
             }
           ]
         },
@@ -327,55 +274,7 @@
             }
           ]
         },
-        "referenceUrls": {
-          "type": "array",
-          "items": {
-            "type": "string"
-          },
-          "description": "Optional. URLs to more information/advisories (including the\nscheme e.g \"https://\")."
-        },
-        "cves": {
-          "type": "array",
-          "items": {
-            "type": "string"
-          },
-          "description": "Optional. CVEs, if allocated."
-        },
-        "packageEcosystemMetadata": {
-          "type": "object",
-          "description": "Optional. Additional metadata specific to the package ecosystem. For the\nJSON REST endpoint, this is any JSON object."
-        }
-      },
-      "description": "A vulnerability entry."
-    },
-    "osvVulnerabilityNew": {
-      "type": "object",
-      "properties": {
-        "id": {
-          "type": "string",
-          "description": "Unique identifier for this vulnerability.\nThis is of the format DB-ENTRYID, where DB names the database\nand ENTRYID is in the format used by the database.\nFor example, \u201cOSV-2020-111\u201d or \u201cCVE-2021-3114\u201d\nor \u201cGHSA-vp9c-fpxx-744v\u201d.."
-        },
-        "package": {
-          "$ref": "#/definitions/osvPackage",
-          "description": "Required. Package information."
-        },
-        "summary": {
-          "type": "string",
-          "description": "Required. One line human readable summary for the vulnerability. It is\nrecommended to keep this under 120 characters."
-        },
-        "details": {
-          "type": "string",
-          "description": "Required. Any additional human readable details for the vulnerability."
-        },
-        "severity": {
-          "$ref": "#/definitions/osvVulnerabilityNewSeverity",
-          "description": "Required. Severity of the vulnerability."
-        },
-        "affects": {
-          "$ref": "#/definitions/osvAffectsNew",
-          "description": "Required. Affected commit ranges and versions."
-        },
-        "referenceUrls": {
+        "references": {
           "type": "array",
           "items": {
             "type": "string"
@@ -389,45 +288,22 @@
           },
           "description": "Optional. IDs for the same vulnerability in other databases."
         },
-        "ecosystemSpecific": {
+        "extra": {
           "type": "object",
-          "description": "Optional. Additional metadata specific to the package ecosystem. For the\nJSON representation, this is any JSON object."
+          "description": "Optional. Additional metadata. For the JSON representation, this is any\nJSON object."
         },
-        "databaseSpecific": {
-          "type": "object",
-          "description": "Optional. Database specific metadata. For the JSON representation,\nthis is any JSON object."
-        },
-        "lastModified": {
+        "modified": {
           "type": "string",
           "format": "date-time",
           "description": "Output only (by infrastructure). The RFC3339 timestamp indicating when this\nentry was last modified."
+        },
+        "created": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Output only (by infrastructure). The RFC3339 timestamp indicating when this\nentry was created."
         }
       },
       "description": "A vulnerability entry (with some backwards incompatible changes)."
-    },
-    "osvVulnerabilityNewSeverity": {
-      "type": "string",
-      "enum": [
-        "NONE",
-        "LOW",
-        "MEDIUM",
-        "HIGH",
-        "CRITICAL"
-      ],
-      "default": "NONE",
-      "description": "Vulnerability severity information. The exact meaning of these levels will\nbe defined by the database."
-    },
-    "osvVulnerabilitySeverity": {
-      "type": "string",
-      "enum": [
-        "NONE",
-        "LOW",
-        "MEDIUM",
-        "HIGH",
-        "CRITICAL"
-      ],
-      "default": "NONE",
-      "description": "Vulnerability severity information. This matches the qualitative rating\nscale used for CVSSv3.1."
     },
     "protobufAny": {
       "type": "object",
@@ -500,17 +376,6 @@
         }
       },
       "description": "A list of Vulnerability entries."
-    },
-    "v1VulnerabilityNewList": {
-      "type": "object",
-      "properties": {
-        "vulns": {
-          "type": "array",
-          "items": {
-            "$ref": "#/definitions/osvVulnerabilityNew"
-          }
-        }
-      }
     }
   },
   "host": "api.osv.dev",
@@ -523,11 +388,6 @@
     {
       "name": "vulnerability_schema",
       "x-displayName": "Vulnerability schema",
-      "description": "<SchemaDefinition schemaRef=\"#/components/schemas/osvVulnerabilityNew\" />"
-    },
-    {
-      "name": "vulnerability_schema_old",
-      "x-displayName": "Vulnerability schema (deprecated)",
       "description": "<SchemaDefinition schemaRef=\"#/components/schemas/osvVulnerability\" />"
     },
     {
@@ -546,8 +406,7 @@
     {
       "name": "Schema",
       "tags": [
-        "vulnerability_schema",
-        "vulnerability_schema_old"
+        "vulnerability_schema"
       ]
     },
     {

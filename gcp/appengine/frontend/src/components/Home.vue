@@ -60,7 +60,7 @@
       </video>
       <h3>Open source</h3>
       <p>
-        This is an <a href="https://github.com/google/osv">open source project</a> from Google.
+        This is an <a href="https://github.com/google/osv">open source project</a> from <b>Google</b>.
       </p>
       <h3>More information</h3>
       <p>

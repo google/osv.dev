@@ -192,6 +192,29 @@ def process_bisect_task(oss_fuzz_dir, bisect_type, source_id, message):
   entity.put()
 
 
+def set_bug_attributes(bug, regress_result, fix_result):
+  """Set bug attributes from bisection results."""
+  repo_url = regress_result.repo_url or fix_result.repo_url
+  issue_id = fix_result.issue_id or regress_result.issue_id
+  project = fix_result.project or regress_result.project
+  ecosystem = fix_result.ecosystem or regress_result.ecosystem
+  summary = fix_result.summary or regress_result.summary
+  details = fix_result.details or regress_result.details
+  severity = fix_result.severity or regress_result.severity
+  reference_urls = fix_result.reference_urls or regress_result.reference_urls
+
+  bug.repo_url = repo_url
+  bug.issue_id = issue_id
+  bug.project = project
+  bug.ecosystem = ecosystem
+  bug.summary = summary
+  bug.details = details
+  bug.severity = severity
+  bug.reference_urls = reference_urls
+  bug.regressed = regress_result.commit or ''
+  bug.fixed = fix_result.commit or ''
+
+
 def process_impact_task(source_id, message):
   """Process an impact task."""
   logging.info('Processing impact task for %s', source_id)
@@ -225,11 +248,14 @@ def process_impact_task(source_id, message):
   else:
     raise osv.ImpactError('Task requested without Bug allocated.')
 
-  # TODO(ochang): Handle changing repo types? e.g. SVN -> Git.
-
   repo_url = regress_result.repo_url or fix_result.repo_url
   if not repo_url:
     raise osv.ImpactError('No repo_url set')
+
+  # Always populate Bug attributes, even if the remainder of the analysis fails.
+  # This does not mark the Bug as being valid.
+  set_bug_attributes(existing_bug, regress_result, fix_result)
+  existing_bug.put()
 
   issue_id = fix_result.issue_id or regress_result.issue_id
   fix_commit = fix_result.commit
@@ -267,30 +293,16 @@ def process_impact_task(source_id, message):
 
   project = fix_result.project or regress_result.project
   ecosystem = fix_result.ecosystem or regress_result.ecosystem
-  summary = fix_result.summary or regress_result.summary
-  details = fix_result.details or regress_result.details
-  severity = fix_result.severity or regress_result.severity
-  reference_urls = fix_result.reference_urls or regress_result.reference_urls
-
   osv.update_affected_commits(allocated_bug_id, result.commits, project,
                               ecosystem, public)
 
   affected_tags = sorted(list(result.tags_with_bug - result.tags_with_fix))
-
-  existing_bug.repo_url = repo_url
   existing_bug.fixed = fix_commit
   existing_bug.regressed = regress_commit
   existing_bug.affected = affected_tags
   existing_bug.affected_fuzzy = osv.normalize_tags(affected_tags)
   existing_bug.confidence = result.confidence
-  existing_bug.issue_id = issue_id
-  existing_bug.project = project
-  existing_bug.ecosystem = ecosystem
-  existing_bug.summary = summary
-  existing_bug.details = details
   existing_bug.status = osv.BugStatus.PROCESSED
-  existing_bug.severity = severity
-  existing_bug.reference_urls = reference_urls
 
   existing_bug.additional_commit_ranges = []
   # Don't display additional ranges for imprecise commits, as they can be

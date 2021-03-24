@@ -30,7 +30,6 @@ import traceback
 
 from google.cloud import ndb
 from google.cloud import pubsub_v1
-import pygit2
 
 sys.path.append(os.path.dirname(os.path.realpath(__file__)))
 import osv
@@ -149,23 +148,6 @@ class _PubSubLeaserThread(threading.Thread):
         logging.error('Leaser thread failed: %s', str(e))
 
 
-def ensure_updated_checkout(git_url, checkout_dir):
-  """Ensure a Git repo is checked out to the latest master revision."""
-
-  if os.path.exists(checkout_dir):
-    repo = pygit2.Repository(checkout_dir)
-  else:
-    os.makedirs(checkout_dir)
-    repo = pygit2.clone_repository(git_url, checkout_dir)
-
-  for remote in repo.remotes:
-    remote.fetch()
-
-  repo.reset(repo.head.peel().oid, pygit2.GIT_RESET_HARD)
-  repo.checkout('refs/remotes/origin/master')
-  logging.info('OSS-Fuzz repo now at: %s', repo.head.peel().message)
-
-
 def clean_artifacts(oss_fuzz_dir):
   """Clean build artifact from previous runs."""
   build_dir = os.path.join(oss_fuzz_dir, 'build')
@@ -270,10 +252,10 @@ class TaskRunner:
     original_sha256 = message.attributes['original_sha256']
 
     source_repo = osv.get_source_repository(source)
-    repo = osv.clone_with_retries(
+    repo = osv.ensure_updated_checkout(
         source_repo.repo_url,
         os.path.join(self._sources_dir, source),
-        callbacks=self._git_callbacks(source_repo))
+        git_callbacks=self._git_callbacks(source_repo))
 
     yaml_path = os.path.join(osv.repo_path(repo), path)
     current_sha256 = osv.sha256(yaml_path)
@@ -460,7 +442,7 @@ class TaskRunner:
 
     def process_task(ack_id, message):
       """Process a task."""
-      ensure_updated_checkout(OSS_FUZZ_GIT_URL, self._oss_fuzz_dir)
+      osv.ensure_updated_checkout(OSS_FUZZ_GIT_URL, self._oss_fuzz_dir)
       clean_artifacts(self._oss_fuzz_dir)
 
       # Enforce timeout by doing the work in another thread.
@@ -527,7 +509,7 @@ def main():
   # Add oss-fuzz/infra to the import path so we can import from it.
   sys.path.append(os.path.join(oss_fuzz_dir, 'infra'))
 
-  ensure_updated_checkout(OSS_FUZZ_GIT_URL, oss_fuzz_dir)
+  osv.ensure_updated_checkout(OSS_FUZZ_GIT_URL, oss_fuzz_dir)
 
   ndb_client = ndb.Client()
   with ndb_client.context():

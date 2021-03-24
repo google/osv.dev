@@ -652,8 +652,7 @@ class EcosystemTest(unittest.TestCase):
   def setUp(self):
     self.tmp_dir = tempfile.mkdtemp()
     self.oss_fuzz_checkout = os.path.join(self.tmp_dir, 'oss-fuzz')
-    worker.ensure_updated_checkout(worker.OSS_FUZZ_GIT_URL,
-                                   self.oss_fuzz_checkout)
+    osv.ensure_updated_checkout(worker.OSS_FUZZ_GIT_URL, self.oss_fuzz_checkout)
 
   def tearDown(self):
     shutil.rmtree(self.tmp_dir, ignore_errors=True)

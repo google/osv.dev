@@ -17,21 +17,19 @@ import collections
 import datetime
 import logging
 import tempfile
-import time
 
 from google.cloud import ndb
 import pygit2
 
+from . import repos
 from . import types
 
-CLONE_TRIES = 3
 COMMIT_RANGE_LIMIT = 4
 CONFIDENCE_FULL = 100
 # Flat reduction in confidence for any range.
 CONFIDENCE_RANGE_REDUCTION = 20
 # Reduction in confidence per commit in a range.
 CONFIDENCE_RANGE_REDUCTION_STEP = 10
-RETRY_SLEEP_SECONDS = 5
 
 TAG_PREFIX = 'refs/tags/'
 
@@ -48,20 +46,6 @@ TagsInfo = collections.namedtuple('TagsInfo', 'tags latest_tag')
 
 class ImpactError(Exception):
   """Impact error."""
-
-
-def clone_with_retries(git_url, checkout_dir, callbacks=None):
-  """Clone with retries."""
-  logging.info('Cloning %s to %s', git_url, checkout_dir)
-  for _ in range(CLONE_TRIES):
-    try:
-      repo = pygit2.clone_repository(git_url, checkout_dir, callbacks=callbacks)
-      repo.cache = {}
-      return repo
-    except pygit2.GitError as e:
-      logging.error('Clone failed: %s', str(e))
-      time.sleep(RETRY_SLEEP_SECONDS)
-      continue
 
 
 class RangeCollector:
@@ -322,7 +306,7 @@ def get_equivalent_commit(repo, to_search, target_commit):
 def get_tags(repo_url):
   """Get tags information."""
   with tempfile.TemporaryDirectory() as tmp_dir:
-    repo = clone_with_retries(repo_url, tmp_dir)
+    repo = repos.clone_with_retries(repo_url, tmp_dir)
     tags = [
         ref for ref in repo.listall_references() if ref.startswith(TAG_PREFIX)
     ]

@@ -24,6 +24,7 @@ import yaml
 from google.protobuf import json_format
 
 # pylint: disable=relative-beyond-top-level
+from . import repos
 from . import types
 from . import vulnerability_pb2
 
@@ -131,18 +132,6 @@ def update_vulnerability(vulnerability, repo_url, result):
   return new_ranges, new_versions
 
 
-def reset_repo(repo, git_callbacks):
-  """Reset repo."""
-  repo.remotes['origin'].fetch(callbacks=git_callbacks)
-  remote_branch = repo.lookup_branch(
-      repo.head.name.replace('refs/heads/', 'origin/'),
-      pygit2.GIT_BRANCH_REMOTE)
-
-  # Reset to remote branch.
-  repo.head.set_target(remote_branch.target)
-  repo.reset(remote_branch.target, pygit2.GIT_RESET_HARD)
-
-
 def push_source_changes(repo,
                         commit_message,
                         git_callbacks,
@@ -161,14 +150,14 @@ def push_source_changes(repo,
     except pygit2.GitError as e:
       logging.warning('Failed to push: %s', e)
       if retry_num == PUSH_RETRIES:
-        reset_repo(repo, git_callbacks)
+        repos.reset_repo(repo, git_callbacks)
         return False
 
       time.sleep(PUSH_RETRY_SLEEP_SECONDS)
 
       # Try rebasing.
       commit = repo.head.peel()
-      reset_repo(repo, git_callbacks)
+      repos.reset_repo(repo, git_callbacks)
 
       for path, expected_hash in expected_hashes.items():
         current_hash = sha256(path)
@@ -184,7 +173,7 @@ def push_source_changes(repo,
       if repo.index.conflicts is not None:
         # Conflict. Don't try to resolve.
         repo.state_cleanup()
-        reset_repo(repo, git_callbacks)
+        repos.reset_repo(repo, git_callbacks)
         return False
 
       # Success, commit and try pushing again.

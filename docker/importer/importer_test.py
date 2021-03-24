@@ -30,6 +30,7 @@ TEST_DATA_DIR = os.path.join(
     os.path.dirname(os.path.abspath(__file__)), 'testdata')
 
 
+@mock.patch('importer.utcnow', lambda: datetime.datetime(2021, 1, 1))
 class ImporterTest(unittest.TestCase):
   """Importer tests."""
 
@@ -44,8 +45,6 @@ class ImporterTest(unittest.TestCase):
 
     tests.mock_datetime(self)
     self.mock_repo = tests.mock_repository(self)
-    self.mock_repo.add_file('2021-111.yaml', '')
-    self.mock_repo.commit('User', 'user@email')
 
     self.remote_source_repo_path = self.mock_repo.path
     osv.SourceRepository(
@@ -91,6 +90,9 @@ class ImporterTest(unittest.TestCase):
   @mock.patch('google.cloud.pubsub_v1.PublisherClient.publish')
   def test_basic(self, mock_publish):
     """Test basic run."""
+    self.mock_repo.add_file('2021-111.yaml', '')
+    self.mock_repo.commit('User', 'user@email')
+
     imp = importer.Importer('fake_public_key', 'fake_private_key', self.tmp_dir)
     imp.run()
 
@@ -117,6 +119,9 @@ class ImporterTest(unittest.TestCase):
     bug = osv.Bug.get_by_id('2017-134')
     self.assertEqual(osv.SourceOfTruth.SOURCE_REPO, bug.source_of_truth)
 
+    source_repo = osv.SourceRepository.get_by_id('oss-fuzz')
+    self.assertEqual(str(commit.id), source_repo.last_synced_hash)
+
   @mock.patch('google.cloud.pubsub_v1.PublisherClient.publish')
   def test_scheduled_updates(self, mock_publish):
     """Test scheduled updates."""
@@ -140,7 +145,7 @@ class ImporterTest(unittest.TestCase):
         source_id='source:OSV-2021-1338.yaml',
         status=1,
         source_of_truth=osv.SourceOfTruth.SOURCE_REPO,
-        timestamp=datetime.datetime.utcnow()).put()
+        timestamp=importer.utcnow()).put()
     osv.Bug(
         id='2021-1339',
         project='proj',
@@ -176,15 +181,33 @@ class ImporterTest(unittest.TestCase):
             path='OSV-2021-1338.yaml',
             source='oss-fuzz',
             type='update'),
-        mock.call(
-            'projects/oss-vdb/topics/tasks',
-            data=b'',
-            original_sha256=('e3b0c44298fc1c149afbf4c8996fb924'
-                             '27ae41e4649b934ca495991b7852b855'),
-            path='2021-111.yaml',
-            source='oss-fuzz',
-            type='update')
     ])
+
+    source_repo = osv.SourceRepository.get_by_id('oss-fuzz')
+    self.assertEqual(datetime.date(2021, 1, 1), source_repo.last_update_date)
+
+  @mock.patch('google.cloud.pubsub_v1.PublisherClient.publish')
+  def test_scheduled_updates_already_done(self, mock_publish):
+    """Scheduled updates already done."""
+    source_repo = osv.SourceRepository.get_by_id('oss-fuzz')
+    source_repo.last_update_date = importer.utcnow().date()
+    source_repo.put()
+
+    self.mock_repo.add_file('proj/OSV-2021-1337.yaml', '')
+    self.mock_repo.commit('OSV', 'infra@osv.dev')
+    osv.Bug(
+        id='2021-1337',
+        project='proj',
+        fixed='',
+        status=1,
+        source_id='oss-fuzz:123',
+        source_of_truth=osv.SourceOfTruth.SOURCE_REPO,
+        timestamp=datetime.datetime(2020, 1, 1, 0, 0, 0, 0)).put()
+
+    imp = importer.Importer('fake_public_key', 'fake_private_key', self.tmp_dir)
+    imp.run()
+
+    self.assertEqual(0, mock_publish.call_count)
 
 
 if __name__ == '__main__':

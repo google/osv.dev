@@ -321,3 +321,5 @@ class SourceRepository(ndb.Model):
   directory_path = ndb.StringProperty()
   # Last synced hash.
   last_synced_hash = ndb.StringProperty()
+  # Last date recurring updates were requested.
+  last_update_date = ndb.DateProperty()

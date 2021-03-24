@@ -38,6 +38,11 @@ def _is_vulnerability_file(file_path):
   return file_path.endswith(osv.VULNERABILITY_EXTENSION)
 
 
+def utcnow():
+  """utcnow() for mocking."""
+  return datetime.datetime.utcnow()
+
+
 class Importer:
   """Importer."""
 
@@ -157,14 +162,17 @@ class Importer:
 
   def schedule_regular_updates(self, repo, source_repo):
     """Schedule regular OSS-Fuzz updates."""
+    if (source_repo.last_update_date and
+        source_repo.last_update_date >= utcnow().date()):
+      return
+
     for bug in osv.Bug.query(osv.Bug.status == osv.BugStatus.PROCESSED,
                              osv.Bug.fixed == ''):
       self._request_analysis(bug, source_repo, repo)
 
     # Re-compute existing Bugs for a period of time, as upstream changes may
     # affect results.
-    cutoff_time = (
-        datetime.datetime.utcnow() - datetime.timedelta(days=_BUG_REDO_DAYS))
+    cutoff_time = (utcnow() - datetime.timedelta(days=_BUG_REDO_DAYS))
     query = osv.Bug.query(osv.Bug.status == osv.BugStatus.PROCESSED,
                           osv.Bug.timestamp >= cutoff_time)
 
@@ -175,6 +183,9 @@ class Importer:
         continue
 
       self._request_analysis(bug, source_repo, repo)
+
+    source_repo.last_update_date = utcnow().date()
+    source_repo.put()
 
   def process_updates(self, source_repo):
     """Process user changes and updates."""
@@ -206,6 +217,9 @@ class Importer:
     for changed_entry in changed_entries:
       logging.info('Re-analysis triggered for %s', changed_entry)
       self._request_analysis_external(source_repo, repo, changed_entry)
+
+    source_repo.last_synced_hash = str(repo.head.target)
+    source_repo.put()
 
   def process_oss_fuzz(self, oss_fuzz_source):
     """Process OSS-Fuzz source data."""

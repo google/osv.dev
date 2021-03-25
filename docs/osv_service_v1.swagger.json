@@ -230,7 +230,7 @@
         },
         "ecosystem": {
           "type": "string",
-          "description": "Optional. The ecosystem for this package. If omitted, the name will be\nmatched against libraries that do not have a package management ecosystem\n(e.g. C/C++ libraries)."
+          "description": "Required. The ecosystem for this package. For vulnerabilities from OSS-Fuzz\nthat do not have a package ecosystem (e.g. C/C++ packages), this is\n\"OSS-Fuzz\".\nOther valid values are:\n  - \"Go\" for Go modules.\n  - \"PyPI\" for Python packages.\n  - \"NPM\" for NPM packages."
         }
       },
       "description": "Package information and version."

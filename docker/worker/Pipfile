@@ -10,8 +10,8 @@ google-cloud-logging = "*"
 google-cloud-ndb = "*"
 pygit2 = "*"
 PyYAML = "*"
+google-cloud-storage = "*"
 
 [dev-packages]
 yapf = "*"
 pylint = "*"
-

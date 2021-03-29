@@ -87,9 +87,7 @@ def make_bugs_public():
   monorail_account = get_monorail_service_account()
   monorail_client = monorail.Client('oss-fuzz', monorail_account)
 
-  query = osv.Bug.query(
-      osv.Bug.public == False,  # pylint: disable=singleton-comparison
-      osv.Bug.status == osv.BugStatus.PROCESSED)
+  query = osv.Bug.query(osv.Bug.public == False)  # pylint: disable=singleton-comparison
 
   to_mark_public = []
   for bug in query:

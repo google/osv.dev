@@ -1,12 +1,13 @@
 diff --git a/file/OSV-2017-134.yaml b/file/OSV-2017-134.yaml
 new file mode 100644
-index 0000000..a06c0cc
+index 0000000..ab4b30f
 --- /dev/null
 +++ b/file/OSV-2017-134.yaml
-@@ -0,0 +1,26 @@
+@@ -0,0 +1,27 @@
 +id: OSV-2017-134
 +package:
 +  name: file
++  ecosystem: OSS-Fuzz
 +summary: Heap-buffer-overflow in cdf_file_property_info
 +details: |
 +  OSS-Fuzz report: https://bugs.chromium.org/p/oss-fuzz/issues/detail?id=1064

@@ -46,6 +46,10 @@ class ImporterTest(unittest.TestCase):
     tests.mock_datetime(self)
     self.mock_repo = tests.mock_repository(self)
 
+    storage_patcher = mock.patch('google.cloud.storage.Client')
+    self.addCleanup(storage_patcher.stop)
+    self.mock_storage_client = storage_patcher.start()
+
     self.remote_source_repo_path = self.mock_repo.path
     self.source_repo = osv.SourceRepository(
         id='oss-fuzz',
@@ -65,7 +69,7 @@ class ImporterTest(unittest.TestCase):
             'Crash type: Heap-buffer-overflow READ 1\n'
             'Crash state:\ncdf_file_property_info\ncdf_file_summary_info\n'
             'cdf_check_summary_info\n'),
-        ecosystem='',
+        ecosystem='OSS-Fuzz',
         fixed='19ccebafb7663c422c714e0c67fa4775abf91c43',
         has_affected=True,
         issue_id='1064',
@@ -94,7 +98,8 @@ class ImporterTest(unittest.TestCase):
     self.mock_repo.add_file('2021-111.yaml', '')
     self.mock_repo.commit('User', 'user@email')
 
-    imp = importer.Importer('fake_public_key', 'fake_private_key', self.tmp_dir)
+    imp = importer.Importer('fake_public_key', 'fake_private_key', self.tmp_dir,
+                            'bucket')
     imp.run()
 
     repo = pygit2.Repository(self.remote_source_repo_path)
@@ -123,6 +128,16 @@ class ImporterTest(unittest.TestCase):
 
     source_repo = osv.SourceRepository.get_by_id('oss-fuzz')
     self.assertEqual(str(commit.id), source_repo.last_synced_hash)
+
+    self.mock_storage_client().get_bucket.assert_called_with('bucket')
+    bucket = self.mock_storage_client().get_bucket('bucket')
+    expected_upload_contents = self._load_test_data('expected.json')
+    bucket.blob.assert_has_calls([
+        mock.call('testcase/5417710252982272.json'),
+        mock.call().upload_from_string(expected_upload_contents),
+        mock.call('issue/1064.json'),
+        mock.call().upload_from_string(expected_upload_contents),
+    ])
 
   @mock.patch('google.cloud.pubsub_v1.PublisherClient.publish')
   def test_delete(self, mock_publish):
@@ -164,6 +179,7 @@ class ImporterTest(unittest.TestCase):
     osv.Bug(
         id='2021-1337',
         project='proj',
+        ecosystem='OSS-Fuzz',
         fixed='',
         status=1,
         source_id='oss-fuzz:123',
@@ -180,13 +196,15 @@ class ImporterTest(unittest.TestCase):
     osv.Bug(
         id='2021-1339',
         project='proj',
+        ecosystem='OSS-Fuzz',
         fixed='',
         status=1,
         source_id='oss-fuzz:124',
         source_of_truth=osv.SourceOfTruth.INTERNAL,
         timestamp=datetime.datetime(2020, 1, 1, 0, 0, 0, 0)).put()
 
-    imp = importer.Importer('fake_public_key', 'fake_private_key', self.tmp_dir)
+    imp = importer.Importer('fake_public_key', 'fake_private_key', self.tmp_dir,
+                            'bucket')
     imp.run()
 
     mock_publish.assert_has_calls([
@@ -237,7 +255,8 @@ class ImporterTest(unittest.TestCase):
         source_of_truth=osv.SourceOfTruth.SOURCE_REPO,
         timestamp=datetime.datetime(2020, 1, 1, 0, 0, 0, 0)).put()
 
-    imp = importer.Importer('fake_public_key', 'fake_private_key', self.tmp_dir)
+    imp = importer.Importer('fake_public_key', 'fake_private_key', self.tmp_dir,
+                            'bucket')
     imp.run()
 
     self.assertEqual(0, mock_publish.call_count)

@@ -14,13 +14,17 @@
 # limitations under the License.
 """OSV Importer."""
 import argparse
+import concurrent.futures
 import datetime
+import json
 import logging
 import os
 import shutil
 
 from google.cloud import ndb
 from google.cloud import pubsub_v1
+from google.cloud import storage
+from google.protobuf import json_format
 import pygit2
 
 import osv
@@ -31,6 +35,8 @@ _BUG_REDO_DAYS = 14
 _PROJECT = 'oss-vdb'
 _TASKS_TOPIC = 'projects/{project}/topics/{topic}'.format(
     project=_PROJECT, topic='tasks')
+_OSS_FUZZ_EXPORT_BUCKET = 'oss-fuzz-osv-vulns'
+_EXPORT_WORKERS = 32
 
 
 def _is_vulnerability_file(file_path):
@@ -46,11 +52,13 @@ def utcnow():
 class Importer:
   """Importer."""
 
-  def __init__(self, ssh_key_public_path, ssh_key_private_path, work_dir):
+  def __init__(self, ssh_key_public_path, ssh_key_private_path, work_dir,
+               oss_fuzz_export_bucket):
     self._ssh_key_public_path = ssh_key_public_path
     self._ssh_key_private_path = ssh_key_private_path
     self._work_dir = work_dir
     self._publisher = pubsub_v1.PublisherClient()
+    self._oss_fuzz_export_bucket = oss_fuzz_export_bucket
 
   def _git_callbacks(self, source_repo):
     """Get git auth callbacks."""
@@ -249,6 +257,37 @@ class Importer:
     repo = self.checkout(oss_fuzz_source)
     self.schedule_regular_updates(repo, oss_fuzz_source)
     self.import_new_oss_fuzz_entries(repo, oss_fuzz_source)
+    self.export_oss_fuzz_to_bucket()
+
+  def export_oss_fuzz_to_bucket(self):
+    """Export OSS-Fuzz vulns to bucket."""
+    storage_client = storage.Client()
+    bucket = storage_client.get_bucket(self._oss_fuzz_export_bucket)
+
+    def export_oss_fuzz(vulnerability, testcase_id, issue_id):
+      """Export a single vulnerability."""
+      try:
+        blob = bucket.blob(f'testcase/{testcase_id}.json')
+        data = json.dumps(json_format.MessageToDict(vulnerability))
+        blob.upload_from_string(data)
+
+        if not issue_id:
+          return
+
+        blob = bucket.blob(f'issue/{issue_id}.json')
+        blob.upload_from_string(data)
+      except Exception as e:
+        logging.error('Failed to export: %s', e)
+
+    with concurrent.futures.ThreadPoolExecutor(
+        max_workers=_EXPORT_WORKERS) as executor:
+      for bug in osv.Bug.query(osv.Bug.ecosystem == 'OSS-Fuzz'):
+        if not bug.public:
+          continue
+
+        _, source_id = osv.parse_source_id(bug.source_id)
+        executor.submit(export_oss_fuzz, bug.to_vulnerability(), source_id,
+                        bug.issue_id)
 
 
 def main():
@@ -268,7 +307,8 @@ def main():
   os.makedirs(tmp_dir, exist_ok=True)
   os.environ['TMPDIR'] = tmp_dir
 
-  importer = Importer(args.ssh_key_public, args.ssh_key_private, args.work_dir)
+  importer = Importer(args.ssh_key_public, args.ssh_key_private, args.work_dir,
+                      _OSS_FUZZ_EXPORT_BUCKET)
   importer.run()
 
 

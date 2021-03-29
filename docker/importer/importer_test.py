@@ -154,7 +154,8 @@ class ImporterTest(unittest.TestCase):
     self.mock_repo.delete_file('2021-111.yaml')
     self.mock_repo.commit('User', 'user@email')
 
-    imp = importer.Importer('fake_public_key', 'fake_private_key', self.tmp_dir)
+    imp = importer.Importer('fake_public_key', 'fake_private_key', self.tmp_dir,
+                            'bucket')
     imp.run()
 
     mock_publish.assert_has_calls([

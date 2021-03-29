@@ -66,16 +66,21 @@ class Importer:
     else:
       self._request_internal_analysis(bug)
 
-  def _request_analysis_external(self, source_repo, repo, path):
+  def _request_analysis_external(self, source_repo, repo, path, deleted=False):
     """Request analysis."""
-    original_sha256 = osv.sha256(os.path.join(osv.repo_path(repo), path))
+    if deleted:
+      original_sha256 = ''
+    else:
+      original_sha256 = osv.sha256(os.path.join(osv.repo_path(repo), path))
+
     self._publisher.publish(
         _TASKS_TOPIC,
         data=b'',
         type='update',
         source=source_repo.name,
         path=path,
-        original_sha256=original_sha256)
+        original_sha256=original_sha256,
+        deleted=str(deleted).lower())
 
   def _request_internal_analysis(self, bug):
     """Request internal analysis."""
@@ -197,6 +202,7 @@ class Importer:
 
     # Get list of changed files since last sync.
     changed_entries = set()
+    deleted_entries = set()
     for commit in walker:
       if commit.author.email == osv.AUTHOR_EMAIL:
         continue
@@ -208,6 +214,10 @@ class Importer:
         diff = repo.diff(parent, commit)
         for delta in diff.deltas:
           if delta.old_file and _is_vulnerability_file(delta.old_file.path):
+            if delta.status == pygit2.GIT_DELTA_DELETED:
+              deleted_entries.add(delta.old_file.path)
+              continue
+
             changed_entries.add(delta.old_file.path)
 
           if delta.new_file and _is_vulnerability_file(delta.new_file.path):
@@ -217,6 +227,12 @@ class Importer:
     for changed_entry in changed_entries:
       logging.info('Re-analysis triggered for %s', changed_entry)
       self._request_analysis_external(source_repo, repo, changed_entry)
+
+    # Mark deleted entries as invalid.
+    for deleted_entry in deleted_entries:
+      logging.info('Marking %s as invalid', deleted_entry)
+      self._request_analysis_external(
+          source_repo, repo, deleted_entry, deleted=True)
 
     source_repo.last_synced_hash = str(repo.head.target)
     source_repo.put()

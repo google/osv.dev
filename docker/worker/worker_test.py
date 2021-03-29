@@ -761,13 +761,12 @@ class UpdateTest(unittest.TestCase):
     tests.mock_clone(self, func=self.mock_clone)
 
     tests.mock_datetime(self)
-    repo = tests.mock_repository(self)
-    self.remote_source_repo_path = repo.path
 
     # Initialise fake source_repo.
     self.tmp_dir = tempfile.TemporaryDirectory()
 
     self.mock_repo = tests.mock_repository(self)
+    self.remote_source_repo_path = self.mock_repo.path
     self.mock_repo.add_file(
         'BLAH-123.yaml',
         self._load_test_data(os.path.join(TEST_DATA_DIR, 'BLAH-123.yaml')))
@@ -816,12 +815,11 @@ class UpdateTest(unittest.TestCase):
                                     None)
     message = mock.Mock()
     message.attributes = {
-        'source':
-            'source',
-        'path':
-            'BLAH-123.yaml',
+        'source': 'source',
+        'path': 'BLAH-123.yaml',
         'original_sha256': ('b149accd3dd3e66f882de2201481d9fa'
                             'd25324916501a9a0f7b1ae1afe256f0b'),
+        'deleted': 'false',
     }
     task_runner._source_update(message)
 
@@ -856,7 +854,7 @@ class UpdateTest(unittest.TestCase):
             'public': None,
             'reference_urls': ['https://ref.com/ref'],
             'regressed': 'eefe8ec3f1f90d0e684890e810f3f21e8500a4cd',
-            'repo_url': None,
+            'repo_url': 'https://osv-test/repo/url',
             'search_indices': ['blah.com/package', 'BLAH-123', 'BLAH', '123'],
             'severity': 'HIGH',
             'sort_key': 'BLAH-0000123',
@@ -887,12 +885,11 @@ class UpdateTest(unittest.TestCase):
                                     None)
     message = mock.Mock()
     message.attributes = {
-        'source':
-            'source',
-        'path':
-            'BLAH-124.yaml',
+        'source': 'source',
+        'path': 'BLAH-124.yaml',
         'original_sha256': ('df9b0207ff2aa433d71869fa206b4884'
                             '071807d5dfddf8626b93da210b6572ef'),
+        'deleted': 'false',
     }
     task_runner._source_update(message)
 
@@ -927,7 +924,7 @@ class UpdateTest(unittest.TestCase):
             'public': None,
             'reference_urls': ['https://ref.com/ref'],
             'regressed': 'eefe8ec3f1f90d0e684890e810f3f21e8500a4cd',
-            'repo_url': None,
+            'repo_url': 'https://osv-test/repo/url',
             'search_indices': ['blah.com/package', 'BLAH-124', 'BLAH', '124'],
             'severity': 'HIGH',
             'sort_key': 'BLAH-0000124',
@@ -948,18 +945,96 @@ class UpdateTest(unittest.TestCase):
         'ff8cc32ba60ad9cbb3b23f0a82aad96ebe9ff76b',
     ], [commit.commit for commit in affected_commits])
 
+  def test_update_new(self):
+    """Test update with new vulnerability added."""
+    self.mock_repo.add_file(
+        'BLAH-126.yaml',
+        self._load_test_data(os.path.join(TEST_DATA_DIR, 'BLAH-126.yaml')))
+    self.mock_repo.commit('User', 'user@email')
+
+    task_runner = worker.TaskRunner(ndb_client, None, self.tmp_dir.name, None,
+                                    None)
+    message = mock.Mock()
+    message.attributes = {
+        'source': 'source',
+        'path': 'BLAH-126.yaml',
+        'original_sha256': ('bfbbcdaa2d90d39e1086933b8f69ca8e'
+                            'ae35c9d093ec9b4a37d7c01851da7b2a'),
+        'deleted': 'false',
+    }
+    task_runner._source_update(message)
+
+    repo = pygit2.Repository(self.remote_source_repo_path)
+    commit = repo.head.peel()
+
+    self.assertEqual('infra@osv.dev', commit.author.email)
+    self.assertEqual('OSV', commit.author.name)
+    self.assertEqual('Update BLAH-126', commit.message)
+
+    self.assertDictEqual(
+        {
+            'additional_commit_ranges': [{
+                'fixed_in': 'b9b3fd4732695b83c3068b7b6a14bb372ec31f98',
+                'introduced_in': 'eefe8ec3f1f90d0e684890e810f3f21e8500a4cd'
+            }, {
+                'fixed_in': '',
+                'introduced_in': 'febfac1940086bc1f6d3dc33fda0a1d1ba336209'
+            }],
+            'affected': [],
+            'affected_fuzzy': [],
+            'confidence': None,
+            'details': 'Blah blah blah\nBlah\n',
+            'ecosystem': 'golang',
+            'fixed': '8d8242f545e9cec3e6d0d2e3f5bde8be1c659735',
+            'has_affected': False,
+            'issue_id': None,
+            'last_modified': datetime.datetime(2021, 1, 1, 0, 0),
+            'project': 'blah.com/package',
+            'public': None,
+            'reference_urls': ['https://ref.com/ref'],
+            'regressed': 'eefe8ec3f1f90d0e684890e810f3f21e8500a4cd',
+            'repo_url': 'https://osv-test/repo/url',
+            'search_indices': ['blah.com/package', 'BLAH-126', 'BLAH', '126'],
+            'severity': 'HIGH',
+            'sort_key': 'BLAH-0000126',
+            'source_id': 'source:BLAH-126.yaml',
+            'source_of_truth': osv.SourceOfTruth.SOURCE_REPO,
+            'status': osv.BugStatus.PROCESSED,
+            'summary': 'A vulnerability',
+            'timestamp': datetime.datetime(2021, 1, 1, 0, 0),
+        },
+        osv.Bug.get_by_id('BLAH-126')._to_dict())
+
+  def test_update_delete(self):
+    """Test deletion."""
+    task_runner = worker.TaskRunner(ndb_client, None, self.tmp_dir.name, None,
+                                    None)
+    self.mock_repo.delete_file('BLAH-123.yaml')
+    self.mock_repo.commit('User', 'user@email')
+
+    message = mock.Mock()
+    message.attributes = {
+        'source': 'source',
+        'path': 'BLAH-123.yaml',
+        'original_sha256': ('b149accd3dd3e66f882de2201481d9fa'
+                            'd25324916501a9a0f7b1ae1afe256f0b'),
+        'deleted': 'true',
+    }
+    task_runner._source_update(message)
+    bug = osv.Bug.get_by_id('BLAH-123')
+    self.assertEqual(osv.BugStatus.INVALID, bug.status)
+
   def test_update_no_changes(self):
     """Test basic update (with no changes)."""
     task_runner = worker.TaskRunner(ndb_client, None, self.tmp_dir.name, None,
                                     None)
     message = mock.Mock()
     message.attributes = {
-        'source':
-            'source',
-        'path':
-            'BLAH-125.yaml',
+        'source': 'source',
+        'path': 'BLAH-125.yaml',
         'original_sha256': ('b5ecb05106faef7fc5bd07f86e089783',
                             '4354608c5bb59d3b6317491874198a3a'),
+        'deleted': 'false',
     }
     task_runner._source_update(message)
 
@@ -978,6 +1053,7 @@ class UpdateTest(unittest.TestCase):
         'source': 'source',
         'path': 'BLAH-123.yaml',
         'original_sha256': 'invalid',
+        'deleted': 'false',
     }
     task_runner._source_update(message)
 
@@ -1006,12 +1082,11 @@ class UpdateTest(unittest.TestCase):
                                     None)
     message = mock.Mock()
     message.attributes = {
-        'source':
-            'source',
-        'path':
-            'BLAH-123.yaml',
+        'source': 'source',
+        'path': 'BLAH-123.yaml',
         'original_sha256': ('b149accd3dd3e66f882de2201481d9fa'
                             'd25324916501a9a0f7b1ae1afe256f0b'),
+        'deleted': 'false',
     }
     task_runner._source_update(message)
 

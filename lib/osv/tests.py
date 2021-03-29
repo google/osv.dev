@@ -44,6 +44,11 @@ class MockRepo:
     self._repo.index.add(pygit2.IndexEntry(path, oid, pygit2.GIT_FILEMODE_BLOB))
     self._repo.index.write()
 
+  def delete_file(self, path):
+    """Delete a file."""
+    self._repo.index.remove(path)
+    self._repo.index.write()
+
   def commit(self, author_name, author_email):
     """Makes a commit."""
     tree = self._repo.index.write_tree()

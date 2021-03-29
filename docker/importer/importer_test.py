@@ -47,11 +47,12 @@ class ImporterTest(unittest.TestCase):
     self.mock_repo = tests.mock_repository(self)
 
     self.remote_source_repo_path = self.mock_repo.path
-    osv.SourceRepository(
+    self.source_repo = osv.SourceRepository(
         id='oss-fuzz',
         name='oss-fuzz',
         repo_url='file://' + self.remote_source_repo_path,
-        repo_username='').put()
+        repo_username='')
+    self.source_repo.put()
 
     osv.Bug(
         id='2017-134',
@@ -110,6 +111,7 @@ class ImporterTest(unittest.TestCase):
         mock.call(
             'projects/oss-vdb/topics/tasks',
             data=b'',
+            deleted='false',
             original_sha256=('e3b0c44298fc1c149afbf4c8996fb924'
                              '27ae41e4649b934ca495991b7852b855'),
             path='2021-111.yaml',
@@ -121,6 +123,35 @@ class ImporterTest(unittest.TestCase):
 
     source_repo = osv.SourceRepository.get_by_id('oss-fuzz')
     self.assertEqual(str(commit.id), source_repo.last_synced_hash)
+
+  @mock.patch('google.cloud.pubsub_v1.PublisherClient.publish')
+  def test_delete(self, mock_publish):
+    """Test deletion."""
+    self.mock_repo.add_file('2021-111.yaml', '')
+    self.mock_repo.commit('User', 'user@email')
+
+    repo = pygit2.Repository(self.remote_source_repo_path)
+    synced_commit = repo.head.peel()
+
+    self.source_repo.last_synced_hash = str(synced_commit.id)
+    self.source_repo.put()
+
+    self.mock_repo.delete_file('2021-111.yaml')
+    self.mock_repo.commit('User', 'user@email')
+
+    imp = importer.Importer('fake_public_key', 'fake_private_key', self.tmp_dir)
+    imp.run()
+
+    mock_publish.assert_has_calls([
+        mock.call(
+            'projects/oss-vdb/topics/tasks',
+            data=b'',
+            deleted='true',
+            original_sha256='',
+            path='2021-111.yaml',
+            source='oss-fuzz',
+            type='update')
+    ])
 
   @mock.patch('google.cloud.pubsub_v1.PublisherClient.publish')
   def test_scheduled_updates(self, mock_publish):
@@ -162,6 +193,7 @@ class ImporterTest(unittest.TestCase):
         mock.call(
             'projects/oss-vdb/topics/tasks',
             data=b'',
+            deleted='false',
             original_sha256=('e3b0c44298fc1c149afbf4c8996fb924'
                              '27ae41e4649b934ca495991b7852b855'),
             path='proj/OSV-2021-1337.yaml',
@@ -176,6 +208,7 @@ class ImporterTest(unittest.TestCase):
         mock.call(
             'projects/oss-vdb/topics/tasks',
             data=b'',
+            deleted='false',
             original_sha256=('e3b0c44298fc1c149afbf4c8996fb924'
                              '27ae41e4649b934ca495991b7852b855'),
             path='OSV-2021-1338.yaml',

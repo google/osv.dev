@@ -241,6 +241,8 @@ class Bug(ndb.Model):
         vulnerability_pb2.Vulnerability.Severity.Name(vulnerability.severity))
     self.reference_urls = list(vulnerability.references)
     self.last_modified = vulnerability.modified.ToDatetime()
+    self.project = vulnerability.package.name
+    self.ecosystem = vulnerability.package.ecosystem
 
     found_first = False
     for affected_range in vulnerability.affects.ranges:
@@ -255,6 +257,7 @@ class Bug(ndb.Model):
       else:
         self.regressed = affected_range.introduced
         self.fixed = affected_range.fixed
+        self.repo_url = affected_range.repo
         found_first = True
 
   def to_vulnerability(self):

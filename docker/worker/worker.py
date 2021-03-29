@@ -250,6 +250,7 @@ class TaskRunner:
     source = message.attributes['source']
     path = message.attributes['path']
     original_sha256 = message.attributes['original_sha256']
+    deleted = message.attributes['deleted'] == 'true'
 
     source_repo = osv.get_source_repository(source)
     repo = osv.ensure_updated_checkout(
@@ -258,6 +259,17 @@ class TaskRunner:
         git_callbacks=self._git_callbacks(source_repo))
 
     yaml_path = os.path.join(osv.repo_path(repo), path)
+    if not os.path.exists(yaml_path):
+      logging.info('%s was deleted.', yaml_path)
+      if deleted:
+        self._handle_deleted(yaml_path)
+
+      return
+
+    if deleted:
+      logging.info('Deletion request but source still exists, aborting.')
+      return
+
     current_sha256 = osv.sha256(yaml_path)
     if current_sha256 != original_sha256:
       logging.warning(
@@ -271,8 +283,20 @@ class TaskRunner:
       logging.error('Failed to parse vulnerability %s: %s', yaml_path, e)
       return
 
-    self._do_update(source_repo, repo, vulnerability, yaml_path,
+    self._do_update(source_repo, repo, vulnerability, yaml_path, path,
                     original_sha256)
+
+  def _handle_deleted(self, yaml_path):
+    """Handle deleted source."""
+    vuln_id = os.path.splitext(os.path.basename(yaml_path))[0]
+    logging.info('Marking %s as invalid.', vuln_id)
+    bug = osv.Bug.get_by_id(vuln_id)
+    if not bug:
+      logging.error('Failed to find Bug with ID %s', vuln_id)
+      return
+
+    bug.status = osv.BugStatus.INVALID
+    bug.put()
 
   def _push_new_ranges_and_versions(self, source_repo, repo, vulnerability,
                                     yaml_path, original_sha256,
@@ -311,7 +335,7 @@ class TaskRunner:
         })
 
   def _do_update(self, source_repo, repo, vulnerability, yaml_path,
-                 original_sha256):
+                 relative_path, original_sha256):
     """Process updates on a vulnerability."""
     logging.info('Processing update for vulnerability %s', vulnerability.id)
     package_repo_dir = tempfile.TemporaryDirectory()
@@ -376,9 +400,16 @@ class TaskRunner:
     # Update datastore with new information.
     bug = osv.Bug.get_by_id(vulnerability.id)
     if not bug:
-      # TODO(ochang): Create new entry if needed.
-      logging.error('Failed to find bug with ID %s', vulnerability.id)
-      return
+      if source_repo.name == 'oss-fuzz':
+        logging.warning('%s not found for OSS-Fuzz source.', vulnerability.id)
+        return
+
+      bug = osv.Bug(
+          id=vulnerability.id,
+          source_id=f'{source_repo.name}:{relative_path}',
+          timestamp=osv.utcnow(),
+          status=osv.BugStatus.PROCESSED,
+          source_of_truth=osv.SourceOfTruth.SOURCE_REPO)
 
     bug.update_from_vulnerability(vulnerability)
     bug.put()

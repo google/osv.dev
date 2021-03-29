@@ -44,6 +44,7 @@ class GitRemoteCallback(pygit2.RemoteCallbacks):
     self._ssh_key_private_path = ssh_key_private_path
 
   def credentials(self, url, username_from_url, allowed_types):
+    logging.info('Allowed types = %s\n', allowed_types)
     if allowed_types & pygit2.credentials.GIT_CREDENTIAL_USERNAME:
       return pygit2.Username(self._username)
 

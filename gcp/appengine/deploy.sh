@@ -4,4 +4,4 @@ pushd frontend
 npm run build
 popd
 
-gcloud app deploy --project=oss-vdb
+gcloud app deploy app.yaml cron.yaml cron-service.yaml --project=oss-vdb

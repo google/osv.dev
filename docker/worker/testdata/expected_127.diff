@@ -1,0 +1,19 @@
+diff --git a/BLAH-127.yaml b/BLAH-127.yaml
+index 915f291..c6a4223 100644
+--- a/BLAH-127.yaml
++++ b/BLAH-127.yaml
+@@ -12,5 +12,14 @@ affects:
+   - type: GIT
+     repo: https://osv-test/repo/url
+     fixed: 8d8242f545e9cec3e6d0d2e3f5bde8be1c659735
++  - type: GIT
++    repo: https://osv-test/repo/url
++    fixed: b9b3fd4732695b83c3068b7b6a14bb372ec31f98
++  versions:
++  - branch-v0.1.1
++  - branch_1_cherrypick_regress
++  - v0.1
++  - v0.1.1
+ references:
+ - https://ref.com/ref
++modified: '2021-01-01T00:00:00Z'

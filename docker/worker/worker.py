@@ -358,8 +358,10 @@ class TaskRunner:
         if affected_range.type != vulnerability_pb2.AffectedRange.GIT:
           continue
 
-        range_collectors[affected_range.repo].add(affected_range.introduced,
-                                                  affected_range.fixed)
+        # Convert empty values ('') to None.
+        introduced = affected_range.introduced or None
+        fixed = affected_range.fixed or None
+        range_collectors[affected_range.repo].add(introduced, fixed)
 
       for affected_range in vulnerability.affects.ranges:
         # Go through existing provided ranges to find additional ranges (via

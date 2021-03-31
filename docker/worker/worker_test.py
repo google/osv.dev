@@ -776,6 +776,9 @@ class UpdateTest(unittest.TestCase):
     self.mock_repo.add_file(
         'BLAH-125.yaml',
         self._load_test_data(os.path.join(TEST_DATA_DIR, 'BLAH-125.yaml')))
+    self.mock_repo.add_file(
+        'BLAH-127.yaml',
+        self._load_test_data(os.path.join(TEST_DATA_DIR, 'BLAH-127.yaml')))
     self.mock_repo.commit('User', 'user@email')
 
     osv.SourceRepository(
@@ -804,6 +807,12 @@ class UpdateTest(unittest.TestCase):
         project='blah.com/package',
         ecosystem='golang',
         source_id='source:BLAH-125.yaml',
+        source_of_truth=osv.SourceOfTruth.SOURCE_REPO).put()
+    osv.Bug(
+        id='BLAH-127',
+        project='blah.com/package',
+        ecosystem='golang',
+        source_id='source:BLAH-127.yaml',
         source_of_truth=osv.SourceOfTruth.SOURCE_REPO).put()
 
   def tearDown(self):
@@ -945,6 +954,80 @@ class UpdateTest(unittest.TestCase):
         'ff8cc32ba60ad9cbb3b23f0a82aad96ebe9ff76b',
     ], [commit.commit for commit in affected_commits])
 
+  def test_update_no_introduced(self):
+    """Test update vulnerability with no introduced commit."""
+    task_runner = worker.TaskRunner(ndb_client, None, self.tmp_dir.name, None,
+                                    None)
+
+    message = mock.Mock()
+    message.attributes = {
+        'source': 'source',
+        'path': 'BLAH-127.yaml',
+        'original_sha256': ('484f6d8659f0c01e2f08a6fba9791fb2'
+                            '9b5df09530e5d8307fc1f368b01d7dcb'),
+        'deleted': 'false',
+    }
+    task_runner._source_update(message)
+
+    repo = pygit2.Repository(self.remote_source_repo_path)
+    commit = repo.head.peel()
+
+    self.assertEqual('infra@osv.dev', commit.author.email)
+    self.assertEqual('OSV', commit.author.name)
+    self.assertEqual('Update BLAH-127', commit.message)
+    diff = repo.diff(commit.parents[0], commit)
+    self.assertEqual(self._load_test_data('expected_127.diff'), diff.patch)
+
+    self.assertDictEqual(
+        {
+            'additional_commit_ranges': [{
+                'fixed_in': 'b9b3fd4732695b83c3068b7b6a14bb372ec31f98',
+                'introduced_in': ''
+            },],
+            'affected': [],
+            'affected_fuzzy': [],
+            'confidence': None,
+            'details': 'Blah blah blah\nBlah\n',
+            'ecosystem': 'golang',
+            'fixed': '8d8242f545e9cec3e6d0d2e3f5bde8be1c659735',
+            'has_affected': False,
+            'issue_id': None,
+            'last_modified': datetime.datetime(2021, 1, 1, 0, 0),
+            'project': 'blah.com/package',
+            'public': None,
+            'reference_urls': ['https://ref.com/ref'],
+            'regressed': '',
+            'repo_url': 'https://osv-test/repo/url',
+            'search_indices': ['blah.com/package', 'BLAH-127', 'BLAH', '127'],
+            'severity': 'HIGH',
+            'sort_key': 'BLAH-0000127',
+            'source_id': 'source:BLAH-127.yaml',
+            'source_of_truth': osv.SourceOfTruth.SOURCE_REPO,
+            'status': None,
+            'summary': 'A vulnerability',
+            'timestamp': None
+        },
+        osv.Bug.get_by_id('BLAH-127')._to_dict())
+
+    affected_commits = list(osv.AffectedCommit.query())
+    self.assertCountEqual([
+        'b1c95a196f22d06fcf80df8c6691cd113d8fefff',
+        'eefe8ec3f1f90d0e684890e810f3f21e8500a4cd',
+        'a2ba949290915d445d34d0e8e9de2e7ce38198fc',
+        'e1b045257bc5ca2a11d0476474f45ef77a0366c7',
+        '00514d6f244f696e750a37083163992c6a50cfd3',
+        '25147a74d8aeb27b43665530ee121a2a1b19dc58',
+        '3c5dcf6a5bec14baab3b247d369a7270232e1b83',
+        '4c155795426727ea05575bd5904321def23c03f4',
+        '57e58a5d7c2bb3ce0f04f17ec0648b92ee82531f',
+        '90aa4127295b2c37b5f7fcf6a9772b12c99a5212',
+        '949f182716f037e25394bbb98d39b3295d230a29',
+        'b1fa81a5d59e9b4d6e276d82fc17058f3cf139d9',
+        'f0cc40d8c3dabb27c2cfe26f1764305abc91a0b9',
+        'febfac1940086bc1f6d3dc33fda0a1d1ba336209',
+        'ff8cc32ba60ad9cbb3b23f0a82aad96ebe9ff76b',
+    ], [commit.commit for commit in affected_commits])
+
   def test_update_new(self):
     """Test update with new vulnerability added."""
     self.mock_repo.add_file(
@@ -1032,7 +1115,7 @@ class UpdateTest(unittest.TestCase):
     message.attributes = {
         'source': 'source',
         'path': 'BLAH-125.yaml',
-        'original_sha256': ('b5ecb05106faef7fc5bd07f86e089783',
+        'original_sha256': ('b5ecb05106faef7fc5bd07f86e089783'
                             '4354608c5bb59d3b6317491874198a3a'),
         'deleted': 'false',
     }

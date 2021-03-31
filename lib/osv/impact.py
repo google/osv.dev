@@ -123,8 +123,12 @@ def get_affected(repo, regress_commit_or_range, fix_commit_or_range):
   for commit in regress_commits:
     tags_with_bug.update(get_tags_with_commits(repo, [commit]))
 
-  tags_with_fix = get_tags_with_commits(repo, fix_commits)
+  if not regress_commits:
+    # If no introduced commit provided, assume all commits prior to fix are
+    # vulnerable.
+    tags_with_bug.update(get_all_tags(repo))
 
+  tags_with_fix = get_tags_with_commits(repo, fix_commits)
   affected_commits, affected_ranges = get_affected_range(
       repo, regress_commits, fix_commits)
 
@@ -163,7 +167,8 @@ def get_affected_range(repo, regress_commits, fix_commits):
       if equivalent_regress_commit:
         break
 
-    if not equivalent_regress_commit:
+    if not equivalent_regress_commit and regress_commits:
+      # Allow empty regress_commits.
       continue
 
     # Get the latest equivalent commit in the fix range.
@@ -186,7 +191,9 @@ def get_affected_range(repo, regress_commits, fix_commits):
       # Not fixed in this branch. Everything is still vulnerabile.
       last_affected_commits.append(repo.revparse_single(ref).id)
 
-    commits.add(equivalent_regress_commit)
+    if equivalent_regress_commit:
+      commits.add(equivalent_regress_commit)
+
     for last_affected_commit in last_affected_commits:
       if (equivalent_regress_commit, last_affected_commit) in seen_commits:
         continue
@@ -214,6 +221,15 @@ def get_commit_range(repo, commit_or_range):
     return [end_commit]
 
   return get_commit_list(repo, start_commit, end_commit)
+
+
+def get_all_tags(repo):
+  """Get all tags."""
+  return [
+      ref[len(TAG_PREFIX):]
+      for ref in repo.listall_references()
+      if ref.startswith(TAG_PREFIX)
+  ]
 
 
 def get_tags_with_commits(repo, commits):
@@ -244,7 +260,9 @@ def get_commit_list(repo, start_commit, end_commit):
   except KeyError as e:
     raise ImpactError('Invalid commit.') from e
 
-  walker.hide(start_commit)
+  if start_commit:
+    walker.hide(start_commit)
+
   return [str(commit.id) for commit in walker]
 
 

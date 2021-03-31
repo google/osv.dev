@@ -18,7 +18,7 @@ query whether or not their versions are impacted.
 </p>
 
 Current data sources:
-- [OSS-Fuzz](https://github.com/google/oss-fuzz)
+- [OSS-Fuzz](https://github.com/google/oss-fuzz) (https://github.com/google/oss-fuzz-vulns)
 
 **This is an ongoing project.** We are hoping to work with the open source community
 to [onboard more sources of data](https://github.com/google/osv/issues/44).

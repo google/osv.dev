@@ -118,8 +118,10 @@ class Importer:
 
   def checkout(self, source_repo):
     """Check out a source repo."""
-    checkout_dir = os.path.join(self._work_dir, source_repo.name)
+    sources_dir = os.path.join(self._work_dir, 'sources')
+    os.makedirs(sources_dir, exist_ok=True)
 
+    checkout_dir = os.path.join(sources_dir, source_repo.name)
     if os.path.exists(checkout_dir):
       # Already exists, reset and checkout latest revision.
       try:

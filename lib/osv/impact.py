@@ -167,8 +167,8 @@ def get_affected_range(repo, regress_commits, fix_commits):
       if equivalent_regress_commit:
         break
 
+    # If regress_commits is provided, then we should find an equivalent.
     if not equivalent_regress_commit and regress_commits:
-      # Allow empty regress_commits.
       continue
 
     # Get the latest equivalent commit in the fix range.

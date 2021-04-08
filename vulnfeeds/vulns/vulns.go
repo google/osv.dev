@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package vuln
+package vulns
 
 import (
 	"log"
@@ -60,6 +60,7 @@ func timestampToRFC3339(timestamp string) (string, error) {
 func FromCVE(cve cves.CVEItem, pkg, ecosystem, versionType string) *Vulnerability {
 	cveID := cve.CVE.CVEDataMeta.ID
 	v := Vulnerability{
+		// TODO: Generalize.
 		ID:       "PYSEC-" + cveID,
 		Summary:  "TODO",
 		Details:  cves.EnglishDescription(cve.CVE),
@@ -67,7 +68,7 @@ func FromCVE(cve cves.CVEItem, pkg, ecosystem, versionType string) *Vulnerabilit
 		Aliases:  []string{cveID},
 	}
 	v.Package.Name = pkg
-	v.Package.Ecosystem = "PyPI"
+	v.Package.Ecosystem = ecosystem
 
 	var err error
 	v.Created, err = timestampToRFC3339(cve.PublishedDate)

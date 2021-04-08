@@ -26,7 +26,7 @@ import (
 
 	"github.com/google/osv/vulnfeeds/cves"
 	"github.com/google/osv/vulnfeeds/pypi"
-	"github.com/google/osv/vulnfeeds/vuln"
+	"github.com/google/osv/vulnfeeds/vulns"
 )
 
 func main() {
@@ -54,7 +54,7 @@ func main() {
 			continue
 		}
 
-		v := vuln.FromCVE(cve, pkg, "PyPI", "PyPI")
+		v := vulns.FromCVE(cve, pkg, "PyPI", "ECOSYSTEM")
 		data, err := yaml.Marshal(v)
 		if err != nil {
 			log.Fatalf("Failed to marshal YAML: %v", err)

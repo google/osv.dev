@@ -159,8 +159,10 @@ class Bug(ndb.Model):
   # When the entry was last edited.
   last_modified = ndb.DateTimeProperty()
   # The source identifier.
+  # For OSS-Fuzz, this oss-fuzz:<ClusterFuzz testcase ID>.
+  # For others this is <source>:<path/to/source>.
   source_id = ndb.StringProperty()
-  # Repo URL.
+  # Main repo url.
   repo_url = ndb.StringProperty()
   # The main fixed commit.
   fixed = ndb.StringProperty()
@@ -169,15 +171,13 @@ class Bug(ndb.Model):
   # Additional affected commit ranges derived from the main fixed and regressed
   # commits.
   additional_commit_ranges = ndb.StructuredProperty(CommitRange, repeated=True)
-  # List of affected tags.
+  # List of affected versions.
   affected = ndb.StringProperty(repeated=True)
-  # List of normalized tags for fuzzy matching.
+  # List of normalized versions for fuzzy matching.
   affected_fuzzy = ndb.StringProperty(repeated=True)
-  # Confidence in the commit range and affected tags.
-  confidence = ndb.IntegerProperty()
   # OSS-Fuzz issue ID.
   issue_id = ndb.StringProperty()
-  # Project for the bug.
+  # Project/package name for the bug.
   project = ndb.StringProperty()
   # Package ecosystem for the project.
   ecosystem = ndb.StringProperty()
@@ -187,13 +187,13 @@ class Bug(ndb.Model):
   details = ndb.StringProperty()
   # Severity of the bug.
   severity = ndb.StringProperty(validator=_check_valid_severity)
-  # Whether or not the bug is public.
+  # Whether or not the bug is public (OSS-Fuzz only).
   public = ndb.BooleanProperty()
   # Reference URLs.
   reference_urls = ndb.StringProperty(repeated=True)
   # Search indices (auto-populated)
   search_indices = ndb.StringProperty(repeated=True)
-  # Whether or not the bug has any affected tags (auto-populated).
+  # Whether or not the bug has any affected versions (auto-populated).
   has_affected = ndb.BooleanProperty()
   # Sort key.
   sort_key = ndb.StringProperty()

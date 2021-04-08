@@ -62,7 +62,6 @@ class ImporterTest(unittest.TestCase):
         id='2017-134',
         affected=['FILE5_29', 'FILE5_30'],
         affected_fuzzy=['5-29', '5-30'],
-        confidence=100,
         details=(
             'OSS-Fuzz report: '
             'https://bugs.chromium.org/p/oss-fuzz/issues/detail?id=1064\n\n'

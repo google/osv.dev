@@ -25,11 +25,6 @@ from . import repos
 from . import types
 
 COMMIT_RANGE_LIMIT = 4
-CONFIDENCE_FULL = 100
-# Flat reduction in confidence for any range.
-CONFIDENCE_RANGE_REDUCTION = 20
-# Reduction in confidence per commit in a range.
-CONFIDENCE_RANGE_REDUCTION_STEP = 10
 
 TAG_PREFIX = 'refs/tags/'
 
@@ -39,7 +34,7 @@ UNKNOWN_COMMIT = 'unknown'
 
 AffectedResult = collections.namedtuple(
     'AffectedResult', 'tags_with_bug tags_with_fix commits affected_ranges '
-    'regress_commits fix_commits confidence')
+    'regress_commits fix_commits')
 
 TagsInfo = collections.namedtuple('TagsInfo', 'tags latest_tag')
 
@@ -84,8 +79,6 @@ class RangeCollector:
 def get_affected(repo, regress_commit_or_range, fix_commit_or_range):
   """"Get list of affected tags and commits for a bug given regressed and fixed
   commits."""
-  confidence = CONFIDENCE_FULL
-
   # If multiple, assume any commit in the regression range cause the
   # regression.
   regress_commits = get_commit_range(repo, regress_commit_or_range)
@@ -100,24 +93,9 @@ def get_affected(repo, regress_commit_or_range, fix_commit_or_range):
     # indefinitely, we do the best we can here, by assuming the last
     # COMMIT_RANGE_LIMIT commits fix the bug.
     fix_commits = fix_commits[-COMMIT_RANGE_LIMIT:]
-    confidence -= CONFIDENCE_RANGE_REDUCTION
-
-  # For every extra commit in the range, reduce the confidence.
-  if len(regress_commits) > 1:
-    confidence -= CONFIDENCE_RANGE_REDUCTION
-    confidence -= (len(regress_commits) - 1) * CONFIDENCE_RANGE_REDUCTION_STEP
 
   # Special case: unknown status for earlier revisions.
   unknown_earlier_revisions = UNKNOWN_COMMIT in regress_commit_or_range
-  if unknown_earlier_revisions:
-    confidence -= CONFIDENCE_RANGE_REDUCTION
-
-  if len(fix_commits) > 1:
-    confidence -= CONFIDENCE_RANGE_REDUCTION
-    confidence -= (len(fix_commits) - 1) * CONFIDENCE_RANGE_REDUCTION_STEP
-
-  if confidence < 0:
-    confidence = 0
 
   tags_with_bug = set()
   for commit in regress_commits:
@@ -142,8 +120,7 @@ def get_affected(repo, regress_commit_or_range, fix_commit_or_range):
     regress_commits.insert(0, UNKNOWN_COMMIT)
 
   return AffectedResult(tags_with_bug, tags_with_fix, affected_commits,
-                        affected_ranges, regress_commits, fix_commits,
-                        confidence)
+                        affected_ranges, regress_commits, fix_commits)
 
 
 def get_affected_range(repo, regress_commits, fix_commits):

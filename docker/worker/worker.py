@@ -348,6 +348,7 @@ class TaskRunner:
       if fix_result:
         add_fix_information(vulnerability, bug, fix_result)
 
+    # Repo -> Git range collectors
     range_collectors = collections.defaultdict(osv.RangeCollector)
     versions_with_bug = set()
     versions_with_fix = set()
@@ -367,6 +368,7 @@ class TaskRunner:
         # Go through existing provided ranges to find additional ranges (via
         # cherrypicks and branches).
         if affected_range.type != vulnerability_pb2.AffectedRange.GIT:
+          # TODO: Handle SEMVER and other defined ranges.
           continue
 
         current_repo_url = affected_range.repo

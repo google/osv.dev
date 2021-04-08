@@ -301,7 +301,6 @@ def process_impact_task(source_id, message):
   existing_bug.regressed = regress_commit
   existing_bug.affected = affected_tags
   existing_bug.affected_fuzzy = osv.normalize_tags(affected_tags)
-  existing_bug.confidence = result.confidence
   existing_bug.status = osv.BugStatus.PROCESSED
 
   existing_bug.additional_commit_ranges = []

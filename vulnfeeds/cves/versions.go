@@ -62,7 +62,7 @@ func extractGitHubCommit(link string) *FixCommit {
 	}
 }
 
-func ExtractVersionInfo(cve CVEItem) VersionInfo {
+func ExtractVersionInfo(cve CVEItem, validVersions []string) VersionInfo {
 	v := VersionInfo{}
 	for _, reference := range cve.CVE.References.ReferenceData {
 		// TODO(ochang): Support other common commit URLs.

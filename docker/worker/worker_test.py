@@ -844,12 +844,13 @@ class UpdateTest(unittest.TestCase):
                 'fixed_in': '',
                 'introduced_in': 'febfac1940086bc1f6d3dc33fda0a1d1ba336209'
             }],
-            'affected': [],
-            'affected_fuzzy': [],
+            'affected':
+                ['branch-v0.1.1', 'branch_1_cherrypick_regress', 'v0.1.1'],
+            'affected_fuzzy': ['0-1-1', '1', '0-1-1'],
             'details': 'Blah blah blah\nBlah\n',
             'ecosystem': 'golang',
             'fixed': '8d8242f545e9cec3e6d0d2e3f5bde8be1c659735',
-            'has_affected': False,
+            'has_affected': True,
             'issue_id': None,
             'last_modified': datetime.datetime(2021, 1, 1, 0, 0),
             'project': 'blah.com/package',
@@ -913,12 +914,13 @@ class UpdateTest(unittest.TestCase):
                 'fixed_in': '',
                 'introduced_in': 'febfac1940086bc1f6d3dc33fda0a1d1ba336209'
             }],
-            'affected': [],
-            'affected_fuzzy': [],
+            'affected':
+                ['branch-v0.1.1', 'branch_1_cherrypick_regress', 'v0.1.1'],
+            'affected_fuzzy': ['0-1-1', '1', '0-1-1'],
             'details': 'Blah blah blah\nBlah\n',
             'ecosystem': 'golang',
             'fixed': '8d8242f545e9cec3e6d0d2e3f5bde8be1c659735',
-            'has_affected': False,
+            'has_affected': True,
             'issue_id': None,
             'last_modified': datetime.datetime(2021, 1, 1, 0, 0),
             'project': 'blah.com/package',
@@ -976,12 +978,14 @@ class UpdateTest(unittest.TestCase):
                 'fixed_in': 'b9b3fd4732695b83c3068b7b6a14bb372ec31f98',
                 'introduced_in': ''
             },],
-            'affected': [],
-            'affected_fuzzy': [],
+            'affected': [
+                'branch-v0.1.1', 'branch_1_cherrypick_regress', 'v0.1', 'v0.1.1'
+            ],
+            'affected_fuzzy': ['0-1-1', '1', '0-1', '0-1-1'],
             'details': 'Blah blah blah\nBlah\n',
             'ecosystem': 'golang',
             'fixed': '8d8242f545e9cec3e6d0d2e3f5bde8be1c659735',
-            'has_affected': False,
+            'has_affected': True,
             'issue_id': None,
             'last_modified': datetime.datetime(2021, 1, 1, 0, 0),
             'project': 'blah.com/package',
@@ -1054,12 +1058,13 @@ class UpdateTest(unittest.TestCase):
                 'fixed_in': '',
                 'introduced_in': 'febfac1940086bc1f6d3dc33fda0a1d1ba336209'
             }],
-            'affected': [],
-            'affected_fuzzy': [],
+            'affected':
+                ['branch-v0.1.1', 'branch_1_cherrypick_regress', 'v0.1.1'],
+            'affected_fuzzy': ['0-1-1', '1', '0-1-1'],
             'details': 'Blah blah blah\nBlah\n',
             'ecosystem': 'golang',
             'fixed': '8d8242f545e9cec3e6d0d2e3f5bde8be1c659735',
-            'has_affected': False,
+            'has_affected': True,
             'issue_id': None,
             'last_modified': datetime.datetime(2021, 1, 1, 0, 0),
             'project': 'blah.com/package',

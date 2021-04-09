@@ -18,10 +18,34 @@ CREATE TEMP FUNCTION PROCESS_LINKS(val ARRAY<STRING>) AS ((
   FROM (SELECT DISTINCT * FROM UNNEST(val) v) t
 ));
 
+# Extract https links from package description.
+CREATE TEMP FUNCTION EXTRACT_LINKS(name STRING, description STRING)
+RETURNS ARRAY<STRING>
+LANGUAGE js
+AS r"""
+if (!description) {
+  return [];
+}
+
+let results = [];
+for (let link of description.matchAll(/https:\/\/[A-Za-z0-9.\/#?&@=_\-]+/g)) {
+  link = link[0];
+  if (link.toLowerCase().includes(name.toLowerCase())) {
+    results.push(link.replace(/\.$/, ''));
+  }
+  if (results.length >= 32) {
+    break;
+  }
+}
+return results;
+
+""";
+
 SELECT name,
 PROCESS_LINKS(ARRAY_CONCAT(
   ARRAY_AGG(DISTINCT home_page),
-  ARRAY_CONCAT_AGG(project_urls))) as links
+  ARRAY_CONCAT_AGG(project_urls),
+  ARRAY_CONCAT_AGG(EXTRACT_LINKS(name, description)))) as links
 FROM `bigquery-public-data.pypi.distribution_metadata`
 WHERE home_page is not NULL
 GROUP BY name

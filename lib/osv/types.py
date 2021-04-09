@@ -243,6 +243,7 @@ class Bug(ndb.Model):
     self.last_modified = vulnerability.modified.ToDatetime()
     self.project = vulnerability.package.name
     self.ecosystem = vulnerability.package.ecosystem
+    self.affected = list(vulnerability.affects.versions)
 
     found_first = False
     for affected_range in vulnerability.affects.ranges:

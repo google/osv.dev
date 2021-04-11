@@ -31,6 +31,7 @@ let results = [];
 for (let link of description.matchAll(/https:\/\/[A-Za-z0-9.\/#?&@=_\-]+/g)) {
   link = link[0];
   if (link.toLowerCase().includes(name.toLowerCase())) {
+    // Remove trailing periods (in cases where the link is at the end of a sentence).
     results.push(link.replace(/\.$/, ''));
   }
   if (results.length >= 32) {

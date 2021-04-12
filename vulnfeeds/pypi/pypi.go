@@ -130,9 +130,9 @@ func processVersions(versionsSource []pypiVersions) map[string][]string {
 	return versions
 }
 
-func New(pypiLinksJSON string, pypiVersionsJSON string) *PyPI {
-	linksSource := loadLinks(pypiLinksJSON)
-	versionsSource := loadVersions(pypiVersionsJSON)
+func New(pypiLinksPath string, pypiVersionsPath string) *PyPI {
+	linksSource := loadLinks(pypiLinksPath)
+	versionsSource := loadVersions(pypiVersionsPath)
 
 	return &PyPI{
 		links:           processLinks(linksSource),

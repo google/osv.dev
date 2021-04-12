@@ -31,8 +31,8 @@ import (
 
 func main() {
 	jsonPath := flag.String("nvd_json", "", "Path to NVD CVE JSON.")
-	pypiLinksJSON := flag.String("pypi_links", "", "Path to pypi_links.json.")
-	pypiVersionsJSON := flag.String("pypi_versions", "", "Path to pypi_versions.json.")
+	pypiLinksPath := flag.String("pypi_links", "", "Path to pypi_links.json.")
+	pypiVersionsPath := flag.String("pypi_versions", "", "Path to pypi_versions.json.")
 	outDir := flag.String("out_dir", "", "Path to output results.")
 
 	flag.Parse()
@@ -48,7 +48,7 @@ func main() {
 		log.Fatalf("Failed to parse NVD CVE JSON: %v", err)
 	}
 
-	ecosystem := pypi.New(*pypiLinksJSON, *pypiVersionsJSON)
+	ecosystem := pypi.New(*pypiLinksPath, *pypiVersionsPath)
 	for _, cve := range parsed.CVEItems {
 		pkg := ""
 		if pkg = ecosystem.Matches(cve); pkg == "" {

@@ -78,13 +78,19 @@ func versionIndex(validVersions []string, version string) int {
 }
 
 func nextVersion(validVersions []string, version string) string {
-	idx := versionIndex(validVersions, version) + 1
-	if idx < len(validVersions) {
-		return validVersions[idx]
+	idx := versionIndex(validVersions, version)
+	if idx == -1 {
+		log.Printf("Warning: %s is not a valid version", version)
+		return ""
 	}
 
-	log.Printf("Warning: %s is not a valid version", version)
-	return ""
+	idx += 1
+	if idx >= len(validVersions) {
+		log.Printf("Warning: %s does not have a version that comes after.", version)
+		return ""
+	}
+
+	return validVersions[idx]
 }
 
 func processExtractedVersion(version string) string {

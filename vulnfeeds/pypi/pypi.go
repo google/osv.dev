@@ -20,6 +20,7 @@ import (
 	"log"
 	"net/http"
 	"net/url"
+	"sort"
 	"strings"
 
 	"github.com/google/osv/vulnfeeds/cves"
@@ -31,7 +32,7 @@ type pypiExport struct {
 }
 
 type PyPI struct {
-	links           map[string]map[string]bool
+	links           map[string][]string
 	checkedPackages map[string]bool
 }
 
@@ -41,7 +42,11 @@ const (
 
 // linkBlocklist is a set of reference links to reject.
 var linkBlocklist = map[string]bool{
-	"https://github.com": true,
+	"https://github.com":         true,
+	"https://gitlab.com":         true,
+	"https://bitbucket.com":      true,
+	"https://pypi.org":           true,
+	"https://jira.atlassian.com": true,
 }
 
 func NewPyPI(pypiJSON string) *PyPI {
@@ -71,7 +76,21 @@ func NewPyPI(pypiJSON string) *PyPI {
 		}
 	}
 
-	return &PyPI{links: links, checkedPackages: map[string]bool{}}
+	// Sort package names by longest length first to prioritise packages with longer names.
+	processedLinks := map[string][]string{}
+	for link, pkgs := range links {
+		processedLinks[link] = make([]string, 0, len(pkgs))
+		for pkg := range pkgs {
+			processedLinks[link] = append(processedLinks[link], pkg)
+		}
+
+		sortedPkgs := processedLinks[link]
+		sort.Slice(processedLinks[link], func(i, j int) bool {
+			return len(sortedPkgs[i]) > len(sortedPkgs[j])
+		})
+	}
+
+	return &PyPI{links: processedLinks, checkedPackages: map[string]bool{}}
 }
 
 func (p *PyPI) Matches(cve cves.CVEItem) string {
@@ -125,14 +144,13 @@ func (p *PyPI) matchesPackage(link string, desc string) string {
 		}
 
 		// Check that the package still exists on PyPI.
-		for pkg := range pkgs {
-			if !p.packageExists(pkg) {
-				continue
-			}
+		for _, pkg := range pkgs {
+			log.Printf("Got potential match for %s: %s", link, pkg)
 			// If we get a match, make sure the vulnerability description
 			// mentions our package name as an additional check to avoid
 			// false positives.
-			if strings.Contains(strings.ToLower(desc), strings.ToLower(pkg)) {
+			if strings.Contains(strings.ToLower(desc), strings.ToLower(pkg)) && p.packageExists(pkg) {
+				log.Printf("Matched description")
 				return pkg
 			}
 		}

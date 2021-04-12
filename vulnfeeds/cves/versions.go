@@ -62,7 +62,7 @@ func extractGitHubCommit(link string) *FixCommit {
 	}
 }
 
-func ExtractVersionInfo(cve CVEItem) VersionInfo {
+func ExtractVersionInfo(cve CVEItem, validVersions []string) VersionInfo {
 	v := VersionInfo{}
 	for _, reference := range cve.CVE.References.ReferenceData {
 		// TODO(ochang): Support other common commit URLs.
@@ -84,12 +84,12 @@ func ExtractVersionInfo(cve CVEItem) VersionInfo {
 
 			if match.VersionStartIncluding != "" || match.VersionEndExcluding != "" {
 				if match.VersionStartExcluding != "" || match.VersionEndIncluding != "" {
-					// TODO: handle these.
+					// TODO: handle these by using validVersions.
 					continue
 				}
 
 				v.AffectedVersions = append(v.AffectedVersions, AffectedVersion{
-					// TODO: make sure these actually match PyPI numbers.
+					// TODO: make sure these match validVersions.
 					Introduced: match.VersionStartIncluding,
 					Fixed:      match.VersionEndExcluding,
 				})

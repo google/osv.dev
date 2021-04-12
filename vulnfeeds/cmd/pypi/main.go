@@ -31,7 +31,8 @@ import (
 
 func main() {
 	jsonPath := flag.String("nvd_json", "", "Path to NVD CVE JSON.")
-	pypiJson := flag.String("pypi_json", "", "Path to pypi.json.")
+	pypiLinksPath := flag.String("pypi_links", "", "Path to pypi_links.json.")
+	pypiVersionsPath := flag.String("pypi_versions", "", "Path to pypi_versions.json.")
 	outDir := flag.String("out_dir", "", "Path to output results.")
 
 	flag.Parse()
@@ -47,14 +48,22 @@ func main() {
 		log.Fatalf("Failed to parse NVD CVE JSON: %v", err)
 	}
 
-	ecosystem := pypi.NewPyPI(*pypiJson)
+	ecosystem := pypi.New(*pypiLinksPath, *pypiVersionsPath)
 	for _, cve := range parsed.CVEItems {
 		pkg := ""
 		if pkg = ecosystem.Matches(cve); pkg == "" {
 			continue
 		}
 
-		v := vulns.FromCVE(cve, pkg, "PyPI", "ECOSYSTEM")
+		log.Printf("Matched %s to %s.", cve.CVE.CVEDataMeta.ID, pkg)
+		validVersions := ecosystem.Versions(pkg)
+		if validVersions == nil {
+			log.Printf("pkg %s does not have valid versions, skipping", pkg)
+			continue
+		}
+		log.Printf("Valid versions = %v\n", validVersions)
+
+		v := vulns.FromCVE(cve, pkg, "PyPI", "ECOSYSTEM", validVersions)
 		data, err := yaml.Marshal(v)
 		if err != nil {
 			log.Fatalf("Failed to marshal YAML: %v", err)

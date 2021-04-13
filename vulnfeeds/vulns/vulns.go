@@ -57,15 +57,6 @@ func timestampToRFC3339(timestamp string) (string, error) {
 	return t.Format(time.RFC3339), nil
 }
 
-func hasVersion(validVersions []string, version string) bool {
-	for _, cur := range validVersions {
-		if cur == version {
-			return true
-		}
-	}
-	return false
-}
-
 func FromCVE(cve cves.CVEItem, pkg, ecosystem, versionType string, validVersions []string) *Vulnerability {
 	cveID := cve.CVE.CVEDataMeta.ID
 	v := Vulnerability{
@@ -105,14 +96,6 @@ func FromCVE(cve cves.CVEItem, pkg, ecosystem, versionType string, validVersions
 	}
 
 	for _, affected := range version.AffectedVersions {
-		if affected.Introduced != "" && !hasVersion(validVersions, affected.Introduced) {
-			log.Printf("Warning: %s is not a valid introduced version", affected.Introduced)
-		}
-
-		if affected.Fixed != "" && !hasVersion(validVersions, affected.Fixed) {
-			log.Printf("Warning: %s is not a valid fixed version", affected.Fixed)
-		}
-
 		v.Affects.Ranges = append(v.Affects.Ranges, AffectedRange{
 			Type:       versionType,
 			Introduced: affected.Introduced,

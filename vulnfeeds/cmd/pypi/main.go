@@ -64,6 +64,10 @@ func main() {
 		log.Printf("Valid versions = %v\n", validVersions)
 
 		v := vulns.FromCVE(cve, pkg, "PyPI", "ECOSYSTEM", validVersions)
+		if len(v.Affects.Ranges) == 0 {
+			log.Printf("No affected versions detected.")
+		}
+
 		data, err := yaml.Marshal(v)
 		if err != nil {
 			log.Fatalf("Failed to marshal YAML: %v", err)

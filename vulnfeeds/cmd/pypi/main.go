@@ -15,12 +15,14 @@
 package main
 
 import (
+	"bufio"
 	"encoding/json"
 	"flag"
 	"io/ioutil"
 	"log"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"gopkg.in/yaml.v2"
 
@@ -29,10 +31,34 @@ import (
 	"github.com/google/osv/vulnfeeds/vulns"
 )
 
+func loadFalsePositives(path string) map[string]bool {
+	falsePositives := map[string]bool{}
+
+	file, err := os.Open(path)
+	if os.IsNotExist(err) {
+		return falsePositives
+	}
+	if err != nil {
+		log.Fatalf("Failed to open %s: %v", path, err)
+	}
+	defer file.Close()
+
+	scanner := bufio.NewScanner(file)
+	for scanner.Scan() {
+		falsePositives[scanner.Text()] = true
+	}
+	if err := scanner.Err(); err != nil {
+		log.Fatal("Failed to read lines: %v", err)
+	}
+
+	return falsePositives
+}
+
 func main() {
 	jsonPath := flag.String("nvd_json", "", "Path to NVD CVE JSON.")
 	pypiLinksPath := flag.String("pypi_links", "", "Path to pypi_links.json.")
 	pypiVersionsPath := flag.String("pypi_versions", "", "Path to pypi_versions.json.")
+	falsePositivesPath := flag.String("false_positives", "", "Path to false positives file.")
 	outDir := flag.String("out_dir", "", "Path to output results.")
 
 	flag.Parse()
@@ -48,8 +74,14 @@ func main() {
 		log.Fatalf("Failed to parse NVD CVE JSON: %v", err)
 	}
 
+	falsePositives := loadFalsePositives(*falsePositivesPath)
 	ecosystem := pypi.New(*pypiLinksPath, *pypiVersionsPath)
 	for _, cve := range parsed.CVEItems {
+		if _, exists := falsePositives[cve.CVE.CVEDataMeta.ID]; exists {
+			log.Printf("Skipping %s as a false positive.", cve.CVE.CVEDataMeta.ID)
+			continue
+		}
+
 		pkg := ""
 		if pkg = ecosystem.Matches(cve); pkg == "" {
 			continue
@@ -63,7 +95,7 @@ func main() {
 		}
 		log.Printf("Valid versions = %v\n", validVersions)
 
-		v := vulns.FromCVE(cve, pkg, "PyPI", "ECOSYSTEM", validVersions)
+		v, notes := vulns.FromCVE(cve, pkg, "PyPI", "ECOSYSTEM", validVersions)
 		if len(v.Affects.Ranges) == 0 {
 			log.Printf("No affected versions detected.")
 		}
@@ -80,9 +112,23 @@ func main() {
 		}
 
 		vulnPath := filepath.Join(pkgDir, v.ID+".yaml")
+		if _, err := os.Stat(vulnPath); err == nil {
+			log.Printf("Skipping %s as it already exists.", vulnPath)
+			continue
+		}
+
 		err = ioutil.WriteFile(vulnPath, data, 0644)
 		if err != nil {
 			log.Fatalf("Failed to write %s: %v", vulnPath, err)
+		}
+
+		// If there are notes that require human intervention, write them.
+		if len(notes) > 0 {
+			notesPath := filepath.Join(pkgDir, v.ID+".notes")
+			err = ioutil.WriteFile(notesPath, []byte(strings.Join(notes, "\n")), 0644)
+			if err != nil {
+				log.Fatalf("Failed to write %s: %v", notesPath, err)
+			}
 		}
 	}
 }

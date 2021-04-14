@@ -1175,6 +1175,87 @@ class UpdateTest(unittest.TestCase):
     self.assertEqual('user@email', commit.author.email)
     self.assertEqual('Another user', commit.author.name)
 
+  def test_update_pypi(self):
+    """Test a PyPI entry."""
+    self.mock_repo.add_file(
+        'PYSEC-123.yaml',
+        self._load_test_data(os.path.join(TEST_DATA_DIR, 'PYSEC-123.yaml')))
+    self.mock_repo.commit('User', 'user@email')
+    task_runner = worker.TaskRunner(ndb_client, None, self.tmp_dir.name, None,
+                                    None)
+    message = mock.Mock()
+    message.attributes = {
+        'source': 'source',
+        'path': 'PYSEC-123.yaml',
+        'original_sha256': ('54da5e3f2f2c01cc1aceadb2aaf92a0e'
+                            '566ea8020b2fa80aaf5b073603d2a7f7'),
+        'deleted': 'false',
+    }
+    task_runner._source_update(message)
+
+    repo = pygit2.Repository(self.remote_source_repo_path)
+    commit = repo.head.peel()
+
+    self.assertEqual('infra@osv.dev', commit.author.email)
+    self.assertEqual('OSV', commit.author.name)
+    self.assertEqual('Update PYSEC-123', commit.message)
+    diff = repo.diff(commit.parents[0], commit)
+    self.assertEqual(self._load_test_data('expected_pypi.diff'), diff.patch)
+
+    self.assertDictEqual(
+        {
+            'additional_commit_ranges': [],
+            'affected': [
+                '1.14.2', '1.15.0', '1.15.0rc1', '1.16.0', '1.16.0rc1',
+                '1.16.1', '1.16.1rc1', '1.17.0', '1.17.0rc1', '1.17.1',
+                '1.17.1rc1', '1.18.0', '1.18.0rc1', '1.19.0', '1.19.0rc1',
+                '1.20.0', '1.20.0rc1', '1.20.0rc2', '1.20.0rc3', '1.20.1',
+                '1.21.0rc1', '1.21.1', '1.21.1rc1', '1.22.0', '1.22.0rc1',
+                '1.22.1', '1.23.0', '1.23.0rc1', '1.23.1', '1.24.0',
+                '1.24.0rc1', '1.24.1', '1.24.3', '1.25.0', '1.25.0rc1',
+                '1.26.0', '1.26.0rc1', '1.27.0rc1', '1.27.0rc2', '1.27.1',
+                '1.27.2', '1.28.0.dev0', '1.28.0rc1', '1.28.0rc2', '1.28.0rc3',
+                '1.28.1', '1.29.0', '1.30.0', '1.30.0rc1', '1.31.0rc1',
+                '1.31.0rc2'
+            ],
+            'affected_fuzzy': [
+                '1-14-2', '1-15-0', '1-15-0-rc1', '1-16-0', '1-16-0-rc1',
+                '1-16-1', '1-16-1-rc1', '1-17-0', '1-17-0-rc1', '1-17-1',
+                '1-17-1-rc1', '1-18-0', '1-18-0-rc1', '1-19-0', '1-19-0-rc1',
+                '1-20-0', '1-20-0-rc1', '1-20-0-rc2', '1-20-0-rc3', '1-20-1',
+                '1-21-0-rc1', '1-21-1', '1-21-1-rc1', '1-22-0', '1-22-0-rc1',
+                '1-22-1', '1-23-0', '1-23-0-rc1', '1-23-1', '1-24-0',
+                '1-24-0-rc1', '1-24-1', '1-24-3', '1-25-0', '1-25-0-rc1',
+                '1-26-0', '1-26-0-rc1', '1-27-0-rc1', '1-27-0-rc2', '1-27-1',
+                '1-27-2', '1-28-0-0', '1-28-0-rc1', '1-28-0-rc2', '1-28-0-rc3',
+                '1-28-1', '1-29-0', '1-30-0', '1-30-0-rc1', '1-31-0-rc1',
+                '1-31-0-rc2'
+            ],
+            'details': 'Blah blah blah\nBlah\n',
+            'ecosystem': 'PyPI',
+            'fixed': None,
+            'has_affected': True,
+            'issue_id': None,
+            'last_modified': datetime.datetime(2021, 1, 1, 0, 0),
+            'project': 'grpcio',
+            'public': None,
+            'reference_urls': ['https://ref.com/ref'],
+            'regressed': None,
+            'repo_url': None,
+            'search_indices': ['grpcio', 'PYSEC-123', 'PYSEC', '123'],
+            'severity': 'HIGH',
+            'sort_key': 'PYSEC-0000123',
+            'source_id': 'source:PYSEC-123.yaml',
+            'source_of_truth': osv.SourceOfTruth.SOURCE_REPO,
+            'status': osv.BugStatus.PROCESSED,
+            'summary': 'A vulnerability',
+            'timestamp': datetime.datetime(2021, 1, 1, 0, 0),
+        },
+        osv.Bug.get_by_id('PYSEC-123')._to_dict())
+
+    affected_commits = list(osv.AffectedCommit.query())
+    self.assertEqual(0, len(affected_commits))
+
 
 if __name__ == '__main__':
   os.system('pkill -f datastore')

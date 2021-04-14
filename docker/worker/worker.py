@@ -33,6 +33,7 @@ from google.cloud import pubsub_v1
 
 sys.path.append(os.path.dirname(os.path.realpath(__file__)))
 import osv
+from osv import ecosystems
 from osv import vulnerability_pb2
 import oss_fuzz
 
@@ -302,18 +303,26 @@ class TaskRunner:
                                     yaml_path, original_sha256,
                                     range_collectors, versions):
     """Pushes new ranges and versions."""
-    old_ranges = list(vulnerability.affects.ranges)
-    del vulnerability.affects.ranges[:]
+    has_changes = False
 
     for repo_url, range_collector in range_collectors.items():
       for introduced, fixed in range_collector.ranges():
+        if any(
+            # Range collectors use None, while the proto uses '' for empty
+            # values.
+            (affected_range.introduced or None) == introduced and
+            (affected_range.fixed or None) == fixed
+            for affected_range in vulnerability.affects.ranges):
+          # Range already exists.
+          continue
+
+        has_changes = True
         vulnerability.affects.ranges.add(
             type=vulnerability_pb2.AffectedRange.Type.GIT,
             repo=repo_url,
             introduced=introduced,
             fixed=fixed)
 
-    has_changes = old_ranges != list(vulnerability.affects.ranges)
     for version in sorted(versions):
       if version not in vulnerability.affects.versions:
         has_changes = True
@@ -333,6 +342,28 @@ class TaskRunner:
         expected_hashes={
             yaml_path: original_sha256,
         })
+
+  def _enumerate_versions(self, package, ecosystem, affected_ranges):
+    """Enumerate versions from SEMVER and ECOSYSTEM input ranges."""
+    helpers = ecosystems.get(ecosystem)
+    if not helpers:
+      logging.warning('No ecosystem helpers implemented for %s', ecosystem)
+      return []
+
+    versions = set()
+    for affected_range in affected_ranges:
+      if affected_range.type in (vulnerability_pb2.AffectedRange.ECOSYSTEM,
+                                 vulnerability_pb2.AffectedRange.SEMVER):
+        if not affected_range.introduced and not affected_range.fixed:
+          continue
+
+        versions.update(
+            helpers.enumerate_versions(package, affected_range.introduced,
+                                       affected_range.fixed))
+
+    versions = list(versions)
+    helpers.sort_versions(versions)
+    return versions
 
   def _do_update(self, source_repo, repo, vulnerability, yaml_path,
                  relative_path, original_sha256):
@@ -368,7 +399,6 @@ class TaskRunner:
         # Go through existing provided ranges to find additional ranges (via
         # cherrypicks and branches).
         if affected_range.type != vulnerability_pb2.AffectedRange.GIT:
-          # TODO: Handle SEMVER and other defined ranges.
           continue
 
         current_repo_url = affected_range.repo
@@ -391,9 +421,16 @@ class TaskRunner:
     finally:
       package_repo_dir.cleanup()
 
-    if self._push_new_ranges_and_versions(
-        source_repo, repo, vulnerability, yaml_path, original_sha256,
-        range_collectors, list(versions_with_bug - versions_with_fix)):
+    # Enumerate ECOSYSTEM and SEMVER ranges.
+    versions = self._enumerate_versions(vulnerability.package.name,
+                                        vulnerability.package.ecosystem,
+                                        vulnerability.affects.ranges)
+    # Add additional versions derived from tags.
+    versions.extend(versions_with_bug - versions_with_fix)
+
+    if self._push_new_ranges_and_versions(source_repo, repo, vulnerability,
+                                          yaml_path, original_sha256,
+                                          range_collectors, versions):
       logging.info('Updated range/versions for vulnerability %s.',
                    vulnerability.id)
     else:

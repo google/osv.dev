@@ -218,3 +218,18 @@ func ExtractVersionInfo(cve CVEItem, validVersions []string) (VersionInfo, []str
 	}
 	return v, notes
 }
+
+func CPEs(cve CVEItem) []string {
+	cpesMap := map[string]bool{}
+	for _, node := range cve.Configurations.Nodes {
+		for _, match := range node.CPEMatch {
+			cpesMap[match.CPE23URI] = true
+		}
+	}
+
+	var cpes []string
+	for cpe := range cpesMap {
+		cpes = append(cpes, cpe)
+	}
+	return cpes
+}

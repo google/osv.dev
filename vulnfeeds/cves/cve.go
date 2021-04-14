@@ -44,6 +44,7 @@ type CVEItem struct {
 			Operator string `json:"operator"`
 			CPEMatch []struct {
 				Vulnerable            bool   `json:"vulnerable"`
+				CPE23URI              string `json:"cpe23Uri"`
 				VersionStartExcluding string `json:"versionStartExcluding"`
 				VersionStartIncluding string `json:"versionStartIncluding"`
 				VersionEndExcluding   string `json:"versionEndExcluding"`

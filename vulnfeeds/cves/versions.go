@@ -15,6 +15,7 @@
 package cves
 
 import (
+	"fmt"
 	"log"
 	"net/url"
 	"regexp"
@@ -77,20 +78,18 @@ func versionIndex(validVersions []string, version string) int {
 	return -1
 }
 
-func nextVersion(validVersions []string, version string) string {
+func nextVersion(validVersions []string, version string) (string, error) {
 	idx := versionIndex(validVersions, version)
 	if idx == -1 {
-		log.Printf("Warning: %s is not a valid version", version)
-		return ""
+		return "", fmt.Errorf("Warning: %s is not a valid version", version)
 	}
 
 	idx += 1
 	if idx >= len(validVersions) {
-		log.Printf("Warning: %s does not have a version that comes after.", version)
-		return ""
+		return "", fmt.Errorf("Warning: %s does not have a version that comes after.", version)
 	}
 
-	return validVersions[idx]
+	return validVersions[idx], nil
 }
 
 func processExtractedVersion(version string) string {
@@ -103,7 +102,7 @@ func processExtractedVersion(version string) string {
 	return version
 }
 
-func extractVersionsFromDescription(validVersions []string, description string) []AffectedVersion {
+func extractVersionsFromDescription(validVersions []string, description string) ([]AffectedVersion, []string) {
 	// Match:
 	//  - x.x.x before x.x.x
 	//  - x.x.x through x.x.x
@@ -112,9 +111,10 @@ func extractVersionsFromDescription(validVersions []string, description string) 
 	pattern := regexp.MustCompile(`(?i)([\w.+\-]+)?\s+(through|before)\s+(?:version\s+)?([\w.+\-]+)`)
 	matches := pattern.FindAllStringSubmatch(description, -1)
 	if matches == nil {
-		return nil
+		return nil, []string{"Failed to parse versions from description"}
 	}
 
+	var notes []string
 	var versions []AffectedVersion
 	for _, match := range matches {
 		// Trim periods that are part of sentences.
@@ -122,10 +122,15 @@ func extractVersionsFromDescription(validVersions []string, description string) 
 		fixed := processExtractedVersion(match[3])
 		if match[2] == "through" {
 			// "Through" implies inclusive range, so the fixed version is the one that comes after.
-			fixed = nextVersion(validVersions, fixed)
+			var err error
+			fixed, err = nextVersion(validVersions, fixed)
+			if err != nil {
+				notes = append(notes, err.Error())
+			}
 		}
 
 		if introduced == "" && fixed == "" {
+			notes = append(notes, "Failed to match version range from description")
 			continue
 		}
 
@@ -135,10 +140,11 @@ func extractVersionsFromDescription(validVersions []string, description string) 
 		})
 	}
 
-	return versions
+	return versions, notes
 }
 
-func ExtractVersionInfo(cve CVEItem, validVersions []string) VersionInfo {
+func ExtractVersionInfo(cve CVEItem, validVersions []string) (VersionInfo, []string) {
+	var notes []string
 	v := VersionInfo{}
 	for _, reference := range cve.CVE.References.ReferenceData {
 		// TODO(ochang): Support other common commit URLs.
@@ -163,13 +169,21 @@ func ExtractVersionInfo(cve CVEItem, validVersions []string) VersionInfo {
 			if match.VersionStartIncluding != "" {
 				introduced = match.VersionStartIncluding
 			} else if match.VersionStartExcluding != "" {
-				introduced = nextVersion(validVersions, match.VersionStartExcluding)
+				var err error
+				introduced, err = nextVersion(validVersions, match.VersionStartExcluding)
+				if err != nil {
+					notes = append(notes, err.Error())
+				}
 			}
 
 			if match.VersionEndExcluding != "" {
 				fixed = match.VersionEndExcluding
 			} else if match.VersionEndIncluding != "" {
-				fixed = nextVersion(validVersions, match.VersionEndIncluding)
+				var err error
+				fixed, err = nextVersion(validVersions, match.VersionEndIncluding)
+				if err != nil {
+					notes = append(notes, err.Error())
+				}
 			}
 
 			if introduced == "" && fixed == "" {
@@ -177,11 +191,11 @@ func ExtractVersionInfo(cve CVEItem, validVersions []string) VersionInfo {
 			}
 
 			if introduced != "" && !hasVersion(validVersions, introduced) {
-				log.Printf("Warning: %s is not a valid introduced version", introduced)
+				notes = append(notes, fmt.Sprintf("Warning: %s is not a valid introduced version", introduced))
 			}
 
 			if fixed != "" && !hasVersion(validVersions, fixed) {
-				log.Printf("Warning: %s is not a valid fixed version", fixed)
+				notes = append(notes, fmt.Sprintf("Warning: %s is not a valid fixed version", fixed))
 			}
 
 			gotVersions = true
@@ -193,9 +207,14 @@ func ExtractVersionInfo(cve CVEItem, validVersions []string) VersionInfo {
 	}
 
 	if !gotVersions {
-		v.AffectedVersions = extractVersionsFromDescription(validVersions, EnglishDescription(cve.CVE))
+		var extractNotes []string
+		v.AffectedVersions, extractNotes = extractVersionsFromDescription(validVersions, EnglishDescription(cve.CVE))
+		notes = append(notes, extractNotes...)
 		log.Printf("Extracted versions from description = %+v", v.AffectedVersions)
 	}
 
-	return v
+	if len(v.AffectedVersions) == 0 {
+		notes = append(notes, "No versions detected.")
+	}
+	return v, notes
 }

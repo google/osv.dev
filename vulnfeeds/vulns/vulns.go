@@ -15,7 +15,7 @@
 package vulns
 
 import (
-	"log"
+	"fmt"
 	"time"
 
 	"github.com/google/osv/vulnfeeds/cves"
@@ -57,7 +57,7 @@ func timestampToRFC3339(timestamp string) (string, error) {
 	return t.Format(time.RFC3339), nil
 }
 
-func FromCVE(cve cves.CVEItem, pkg, ecosystem, versionType string, validVersions []string) *Vulnerability {
+func FromCVE(cve cves.CVEItem, pkg, ecosystem, versionType string, validVersions []string) (*Vulnerability, []string) {
 	cveID := cve.CVE.CVEDataMeta.ID
 	v := Vulnerability{
 		// TODO: Generalize.
@@ -71,14 +71,15 @@ func FromCVE(cve cves.CVEItem, pkg, ecosystem, versionType string, validVersions
 	v.Package.Ecosystem = ecosystem
 
 	var err error
+	var notes []string
 	v.Created, err = timestampToRFC3339(cve.PublishedDate)
 	if err != nil {
-		log.Printf("Failed to parse published date: %v\n", err)
+		notes = append(notes, fmt.Sprintf("Failed to parse published date: %v\n", err))
 	}
 
 	v.Modified, err = timestampToRFC3339(cve.LastModifiedDate)
 	if err != nil {
-		log.Printf("Failed to parse modified date: %v\n", err)
+		notes = append(notes, fmt.Sprintf("Failed to parse modified date: %v\n", err))
 	}
 
 	for _, reference := range cve.CVE.References.ReferenceData {
@@ -86,7 +87,9 @@ func FromCVE(cve cves.CVEItem, pkg, ecosystem, versionType string, validVersions
 	}
 
 	// Extract version information where we can.
-	version := cves.ExtractVersionInfo(cve, validVersions)
+	version, versionNotes := cves.ExtractVersionInfo(cve, validVersions)
+	notes = append(notes, versionNotes...)
+
 	for _, fixCommit := range version.FixCommits {
 		v.Affects.Ranges = append(v.Affects.Ranges, AffectedRange{
 			Type:  "GIT",
@@ -102,5 +105,5 @@ func FromCVE(cve cves.CVEItem, pkg, ecosystem, versionType string, validVersions
 			Fixed:      affected.Fixed,
 		})
 	}
-	return &v
+	return &v, notes
 }

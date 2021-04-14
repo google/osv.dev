@@ -198,6 +198,10 @@ func (p *PyPI) Matches(cve cves.CVEItem) string {
 	}
 
 	cpe := strings.Split(cpes[0], ":")
+	if len(cpe) < 5 {
+		return ""
+	}
+
 	vendorProduct := cpe[3] + "/" + cpe[4]
 	if pkgs, exists := p.vendorProductToPkg[vendorProduct]; exists {
 		for _, pkg := range pkgs {

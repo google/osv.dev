@@ -5,7 +5,7 @@ For PyPI, we find package reference URLs by doing a BigQuery query on
 the public PyPI dataset.
 
 ```bash
-bq query --max_rows=10000000 --format=json --nouse_legacy_sql --flagfile=pypi_links.sql > pypi_links.json
+bq query --max_rows=10000000 --format=json --nouse_legacy_sql < pypi_links.sql > pypi_links.json
 ```
 
 However this includes packages that no longer exist or were deleted, so we check
@@ -16,5 +16,5 @@ to make sure any matches actually exist.
 We also extract all valid versions by doing:
 
 ```bash
-bq query --max_rows=10000000 --format=json --nouse_legacy_sql --flagfile=pypi_versions.sql > pypi_versions.json
+bq query --max_rows=10000000 --format=json --nouse_legacy_sql < pypi_versions.sql > pypi_versions.json
 ```

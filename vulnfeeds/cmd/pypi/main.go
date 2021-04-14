@@ -45,7 +45,7 @@ func loadFalsePositives(path string) map[string]bool {
 
 	scanner := bufio.NewScanner(file)
 	for scanner.Scan() {
-		falsePositives[scanner.Text()] = true
+		falsePositives[strings.TrimSpace(scanner.Text())] = true
 	}
 	if err := scanner.Err(); err != nil {
 		log.Fatal("Failed to read lines: %v", err)
@@ -95,7 +95,8 @@ func main() {
 		}
 		log.Printf("Valid versions = %v\n", validVersions)
 
-		v, notes := vulns.FromCVE(cve, pkg, "PyPI", "ECOSYSTEM", validVersions)
+		id := "PYSEC-" + cve.CVE.CVEDataMeta.ID
+		v, notes := vulns.FromCVE(id, cve, pkg, "PyPI", "ECOSYSTEM", validVersions)
 		if len(v.Affects.Ranges) == 0 {
 			log.Printf("No affected versions detected.")
 		}

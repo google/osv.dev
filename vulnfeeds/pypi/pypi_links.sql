@@ -14,7 +14,7 @@
 
 # Remove duplicates and "Type, " prefixes.
 CREATE TEMP FUNCTION PROCESS_LINKS(val ARRAY<STRING>) AS ((
-  SELECT ARRAY_AGG(REGEXP_REPLACE(t.v, "^.*,\\s*", ""))
+  SELECT ARRAY_AGG(REGEXP_REPLACE(t.v, "^.*,\\s*", "") IGNORE NULLS)
   FROM (SELECT DISTINCT * FROM UNNEST(val) v) t
 ));
 
@@ -45,6 +45,7 @@ return results;
 SELECT name,
 PROCESS_LINKS(ARRAY_CONCAT(
   ARRAY_AGG(DISTINCT home_page),
+  ARRAY_AGG(DISTINCT download_url),
   ARRAY_CONCAT_AGG(project_urls),
   ARRAY_CONCAT_AGG(EXTRACT_LINKS(name, description)))) as links
 FROM `bigquery-public-data.pypi.distribution_metadata`

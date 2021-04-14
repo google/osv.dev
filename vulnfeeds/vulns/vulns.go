@@ -42,7 +42,7 @@ type Vulnerability struct {
 		Versions []string        `json:"versions" yaml:"versions,omitempty"`
 	}
 	References []string               `json:"references" yaml:"references"`
-	Aliases    []string               `json:"aliases" yaml:"aliases"`
+	Aliases    []string               `json:"aliases,omitempty" yaml:"aliases,omitempty"`
 	Extra      map[string]interface{} `json:"extras,omitempty" yaml:"extra,omitempty"`
 	Modified   string                 `json:"modified" yaml:"modified"`
 	Created    string                 `json:"created" yaml:"created"`
@@ -57,15 +57,18 @@ func timestampToRFC3339(timestamp string) (string, error) {
 	return t.Format(time.RFC3339), nil
 }
 
-func FromCVE(cve cves.CVEItem, pkg, ecosystem, versionType string, validVersions []string) (*Vulnerability, []string) {
-	cveID := cve.CVE.CVEDataMeta.ID
+func FromCVE(id string, cve cves.CVEItem, pkg, ecosystem, versionType string, validVersions []string) (*Vulnerability, []string) {
+	var aliases []string
+	if id != cve.CVE.CVEDataMeta.ID {
+		aliases = append(aliases, cve.CVE.CVEDataMeta.ID)
+	}
+
 	v := Vulnerability{
-		// TODO: Generalize.
-		ID:       "PYSEC-" + cveID,
-		Summary:  "TODO",
+		ID:       id,
+		Summary:  fmt.Sprintf("Vulnerability in %s", pkg),
 		Details:  cves.EnglishDescription(cve.CVE),
 		Severity: cve.Impact.BaseMetricV3.CVSSV3.BaseSeverity,
-		Aliases:  []string{cveID},
+		Aliases:  aliases,
 	}
 	v.Package.Name = pkg
 	v.Package.Ecosystem = ecosystem

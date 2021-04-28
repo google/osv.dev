@@ -40,6 +40,7 @@ class ImporterTest(unittest.TestCase):
       return f.read()
 
   def setUp(self):
+    tests.reset_emulator()
     self.maxDiff = None  # pylint: disable=invalid-name
     self.tmp_dir = tempfile.mkdtemp()
 
@@ -58,6 +59,12 @@ class ImporterTest(unittest.TestCase):
         repo_username='')
     self.source_repo.put()
 
+  def tearDown(self):
+    shutil.rmtree(self.tmp_dir, ignore_errors=True)
+
+  @mock.patch('google.cloud.pubsub_v1.PublisherClient.publish')
+  def test_basic(self, mock_publish):
+    """Test basic run."""
     osv.Bug(
         id='2017-134',
         affected=['FILE5_29', 'FILE5_30'],
@@ -88,12 +95,6 @@ class ImporterTest(unittest.TestCase):
         summary='Heap-buffer-overflow in cdf_file_property_info',
         timestamp=datetime.datetime(2021, 1, 15, 0, 0, 24, 559102)).put()
 
-  def tearDown(self):
-    shutil.rmtree(self.tmp_dir, ignore_errors=True)
-
-  @mock.patch('google.cloud.pubsub_v1.PublisherClient.publish')
-  def test_basic(self, mock_publish):
-    """Test basic run."""
     self.mock_repo.add_file('2021-111.yaml', '')
     self.mock_repo.commit('User', 'user@email')
 
@@ -260,6 +261,17 @@ class ImporterTest(unittest.TestCase):
     imp.run()
 
     self.assertEqual(0, mock_publish.call_count)
+
+  @mock.patch('google.cloud.pubsub_v1.PublisherClient.publish')
+  def test_no_updates(self, mock_publish):
+    """Test no update marker."""
+    self.mock_repo.add_file('2021-111.yaml', '')
+    self.mock_repo.commit('User', 'user@email', 'message. OSV-NO-UPDATE')
+
+    imp = importer.Importer('fake_public_key', 'fake_private_key', self.tmp_dir,
+                            'bucket')
+    imp.run()
+    mock_publish.assert_not_called()
 
 
 if __name__ == '__main__':

@@ -32,6 +32,12 @@ def property_description_workaround(definition):
       del value['$ref']
 
 
+def replace_property_name(definition, key, replacement):
+  """Replace property name."""
+  definition['properties'][replacement] = definition['properties'][key]
+  del definition['properties'][key]
+
+
 def main():
   api_dir = os.path.join(_ROOT_DIR, 'gcp', 'api')
   v1_api_dir = os.path.join(api_dir, 'v1')
@@ -119,6 +125,11 @@ def main():
   property_description_workaround(spec['definitions']['v1Query'])
   property_description_workaround(spec['definitions']['osvVulnerability'])
   property_description_workaround(spec['definitions']['osvAffectedRange'])
+
+  replace_property_name(spec['definitions']['osvVulnerability'],
+                        'databaseSpecific', 'database_specific')
+  replace_property_name(spec['definitions']['osvVulnerability'],
+                        'ecosystemSpecific', 'ecosystem_specific')
 
   with open('sections.md') as f:
     spec['info']['description'] = f.read()

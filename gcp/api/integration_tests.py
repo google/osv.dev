@@ -40,7 +40,7 @@ class IntegrationTests(unittest.TestCase):
   """Server integration tests."""
 
   _VULN_744 = {
-      'created': '2020-07-04T00:00:01.948828Z',
+      'published': '2020-07-04T00:00:01.948828Z',
       'affects': {
           'ranges': [{
               'type': 'GIT',
@@ -71,7 +71,7 @@ class IntegrationTests(unittest.TestCase):
   }
 
   _VULN_2258 = {
-      'created': '2020-12-11T00:00:45.856Z',
+      'published': '2020-12-11T00:00:45.856Z',
       'details': 'INVALID',
       'id': 'OSV-2020-2258',
       'package': {

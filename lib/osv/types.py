@@ -237,10 +237,12 @@ class Bug(ndb.Model):
     """Set fields from vulnerability."""
     self.summary = vulnerability.summary
     self.details = vulnerability.details
-    self.severity = (
-        vulnerability_pb2.Vulnerability.Severity.Name(vulnerability.severity))
+    self.severity = vulnerability_pb2.Severity.Name(vulnerability.severity)
     self.reference_urls = list(vulnerability.references)
-    self.last_modified = vulnerability.modified.ToDatetime()
+    if vulnerability.HasField('modified'):
+      self.last_modified = vulnerability.modified.ToDatetime()
+    if vulnerability.HasField('published'):
+      self.timestamp = vulnerability.published.ToDatetime()
     self.project = vulnerability.package.name
     self.ecosystem = vulnerability.package.ecosystem
     self.affected = list(vulnerability.affects.versions)
@@ -280,15 +282,15 @@ class Bug(ndb.Model):
           fixed=additional_range.fixed_in)
 
     if self.severity:
-      severity = vulnerability_pb2.Vulnerability.Severity.Value(self.severity)
+      severity = vulnerability_pb2.Severity.Value(self.severity)
     else:
-      severity = vulnerability_pb2.Vulnerability.Severity.NONE
+      severity = vulnerability_pb2.Severity.NONE
 
     details = self.details
     if self.status == bug.BugStatus.INVALID:
       affects = None
       details = 'INVALID'
-      severity = vulnerability_pb2.Vulnerability.Severity.NONE
+      severity = vulnerability_pb2.Severity.NONE
 
     if self.last_modified:
       modified = timestamp_pb2.Timestamp()
@@ -296,12 +298,12 @@ class Bug(ndb.Model):
     else:
       modified = None
 
-    created = timestamp_pb2.Timestamp()
-    created.FromDatetime(self.timestamp)
+    published = timestamp_pb2.Timestamp()
+    published.FromDatetime(self.timestamp)
 
     result = vulnerability_pb2.Vulnerability(
         id=self.id(),
-        created=created,
+        published=published,
         modified=modified,
         summary=self.summary,
         details=details,

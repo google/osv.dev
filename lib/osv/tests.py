@@ -49,11 +49,11 @@ class MockRepo:
     self._repo.index.remove(path)
     self._repo.index.write()
 
-  def commit(self, author_name, author_email):
+  def commit(self, author_name, author_email, message='Changes'):
     """Makes a commit."""
     tree = self._repo.index.write_tree()
     author = pygit2.Signature(author_name, author_email)
-    self._repo.create_commit('HEAD', author, author, 'Changes', tree,
+    self._repo.create_commit('HEAD', author, author, message, tree,
                              [self._repo.head.peel().oid])
 
 

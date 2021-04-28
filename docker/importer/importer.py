@@ -37,6 +37,7 @@ _TASKS_TOPIC = 'projects/{project}/topics/{topic}'.format(
     project=_PROJECT, topic='tasks')
 _OSS_FUZZ_EXPORT_BUCKET = 'oss-fuzz-osv-vulns'
 _EXPORT_WORKERS = 32
+_NO_UPDATE_MARKER = 'OSV-NO-UPDATE'
 
 
 def _is_vulnerability_file(file_path):
@@ -215,6 +216,10 @@ class Importer:
     deleted_entries = set()
     for commit in walker:
       if commit.author.email == osv.AUTHOR_EMAIL:
+        continue
+
+      if _NO_UPDATE_MARKER in commit.message:
+        logging.info('Skipping commit %s as no update marker found.', commit.id)
         continue
 
       logging.info('Processing commit %s from %s', commit.id,

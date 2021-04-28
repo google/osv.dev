@@ -19,6 +19,7 @@ echo Deploying for $config_id
 image_tag=$($this_dir/build_esp_image -s $api -p oss-vdb -c $config_id | grep "IMAGE:" | cut -f2 -d' ')
 gcloud run deploy $service \
   --allow-unauthenticated \
+  --set-env-vars=ESPv2_ARGS=--transcoding_preserve_proto_field_names \
   --platform managed \
   --project=oss-vdb \
   --region=us-central1 \

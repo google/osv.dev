@@ -154,18 +154,6 @@
     }
   },
   "definitions": {
-    "VulnerabilitySeverity": {
-      "type": "string",
-      "enum": [
-        "NONE",
-        "LOW",
-        "MEDIUM",
-        "HIGH",
-        "CRITICAL"
-      ],
-      "default": "NONE",
-      "description": "Vulnerability severity information. The exact meaning of these levels will\nbe defined by the database."
-    },
     "osvAffectedRange": {
       "type": "object",
       "properties": {
@@ -196,7 +184,8 @@
       "enum": [
         "UNSPECIFIED",
         "GIT",
-        "SEMVER"
+        "SEMVER",
+        "ECOSYSTEM"
       ],
       "default": "UNSPECIFIED",
       "description": "Type of the version information."
@@ -235,12 +224,53 @@
       },
       "description": "Package information and version."
     },
+    "osvSeverity": {
+      "type": "string",
+      "enum": [
+        "NONE",
+        "LOW",
+        "MEDIUM",
+        "HIGH",
+        "CRITICAL"
+      ],
+      "default": "NONE",
+      "description": "Vulnerability severity information. The exact meaning of these levels are\nspecific to OSS-Fuzz."
+    },
     "osvVulnerability": {
       "type": "object",
       "properties": {
         "id": {
           "type": "string",
-          "description": "Unique identifier for this vulnerability.\nThis is of the format DB-ENTRYID, where DB names the database\nand ENTRYID is in the format used by the database.\nFor example, \u201cOSV-2020-111\u201d or \u201cCVE-2021-3114\u201d\nor \u201cGHSA-vp9c-fpxx-744v\u201d.."
+          "description": "The `id` field is a unique identifier for the vulnerability entry. It is a\nstring of the format `<DB>-<ENTRYID>`, where `DB` names the database and\n`ENTRYID` is in the format used by the database. For example:\n\u201cOSV-2020-111\u201d, \u201cCVE-2021-3114\u201d, or \u201cGHSA-vp9c-fpxx-744v\u201d."
+        },
+        "published": {
+          "type": "string",
+          "format": "date-time",
+          "description": "The RFC3339 timestamp indicating when this entry was published."
+        },
+        "modified": {
+          "type": "string",
+          "format": "date-time",
+          "description": "The RFC3339 timestamp indicating when this entry was last modified."
+        },
+        "withdrawn": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Optional. The RFC3339 timestamp indicating when this entry is considered to\nbe withdrawn."
+        },
+        "aliases": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Optional. IDs for the same vulnerability in other databases."
+        },
+        "related": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Optional. List of IDs of closely related vulnerabilities, such as the same\nproblem in alternate ecosystems."
         },
         "package": {
           "description": "Required. Package information.",
@@ -258,14 +288,6 @@
           "type": "string",
           "description": "Required. Any additional human readable details for the vulnerability."
         },
-        "severity": {
-          "description": "Required. Severity of the vulnerability.",
-          "allOf": [
-            {
-              "$ref": "#/definitions/VulnerabilitySeverity"
-            }
-          ]
-        },
         "affects": {
           "description": "Required. Affected commit ranges and versions.",
           "allOf": [
@@ -281,29 +303,24 @@
           },
           "description": "Optional. URLs to more information/advisories (including the\nscheme e.g \"https://\")."
         },
-        "aliases": {
-          "type": "array",
-          "items": {
-            "type": "string"
-          },
-          "description": "Optional. IDs for the same vulnerability in other databases."
+        "severity": {
+          "description": "Deprecated and will be removed in the future.",
+          "allOf": [
+            {
+              "$ref": "#/definitions/osvSeverity"
+            }
+          ]
         },
-        "extra": {
+        "database_specific": {
           "type": "object",
-          "description": "Optional. Additional metadata. For the JSON representation, this is any\nJSON object."
+          "description": "Optional. JSON object holding additional information about the\nvulnerability as defined by the database for which the record applies."
         },
-        "modified": {
-          "type": "string",
-          "format": "date-time",
-          "description": "Output only (by infrastructure). The RFC3339 timestamp indicating when this\nentry was last modified."
-        },
-        "created": {
-          "type": "string",
-          "format": "date-time",
-          "description": "Output only (by infrastructure). The RFC3339 timestamp indicating when this\nentry was created."
+        "ecosystem_specific": {
+          "type": "object",
+          "description": "Optional. JSON object holding additional information about the\nvulnerability as defined by the ecosystem for which the record applies."
         }
       },
-      "description": "A vulnerability entry (with some backwards incompatible changes)."
+      "description": "A vulnerability entry.\nThe protobuf representation is *NOT* stable and only used for implementing\nthe JSON based API."
     },
     "protobufAny": {
       "type": "object",

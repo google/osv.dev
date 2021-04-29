@@ -194,6 +194,9 @@ class ImpactTest(unittest.TestCase):
             'source_of_truth': osv.SourceOfTruth.INTERNAL,
             'public': False,
             'reference_urls': ['https://url/'],
+            'reference_url_types': {
+                'https://url/': 'WEB'
+            },
             'status': osv.BugStatus.PROCESSED.value,
             'has_affected': True,
             'search_indices': ['project', '2020-1337', '2020', '1337'],
@@ -267,6 +270,9 @@ class ImpactTest(unittest.TestCase):
             'summary': 'Heap-buffer-overflow in Foo',
             'details': 'DETAILS',
             'reference_urls': ['https://url/'],
+            'reference_url_types': {
+                'https://url/': 'WEB'
+            },
             'severity': 'MEDIUM',
             'sort_key': '2020-0001337',
             'source_of_truth': osv.SourceOfTruth.INTERNAL,
@@ -344,6 +350,9 @@ class ImpactTest(unittest.TestCase):
             'ecosystem': 'ecosystem',
             'summary': 'Heap-buffer-overflow in Foo',
             'details': 'DETAILS',
+            'reference_url_types': {
+                'https://url/': 'WEB'
+            },
             'reference_urls': ['https://url/'],
             'severity': 'MEDIUM',
             'sort_key': '2020-0001337',
@@ -423,6 +432,9 @@ class ImpactTest(unittest.TestCase):
             'severity': 'MEDIUM',
             'sort_key': '2020-0001337',
             'source_of_truth': osv.SourceOfTruth.INTERNAL,
+            'reference_url_types': {
+                'https://url/': 'WEB'
+            },
             'reference_urls': ['https://url/'],
             'public': False,
             'status': osv.BugStatus.PROCESSED.value,
@@ -504,6 +516,9 @@ class ImpactTest(unittest.TestCase):
             'severity': 'MEDIUM',
             'sort_key': '2020-0001337',
             'source_of_truth': osv.SourceOfTruth.INTERNAL,
+            'reference_url_types': {
+                'https://url/': 'WEB'
+            },
             'reference_urls': ['https://url/'],
             'public': False,
             'status': osv.BugStatus.PROCESSED.value,
@@ -559,6 +574,9 @@ class ImpactTest(unittest.TestCase):
             'severity': 'MEDIUM',
             'sort_key': '2020-0001337',
             'source_of_truth': osv.SourceOfTruth.INTERNAL,
+            'reference_url_types': {
+                'https://url/': 'WEB'
+            },
             'reference_urls': ['https://url/'],
             'public': False,
             'status': osv.BugStatus.PROCESSED.value,
@@ -820,8 +838,8 @@ class UpdateTest(unittest.TestCase):
     message.attributes = {
         'source': 'source',
         'path': 'BLAH-123.yaml',
-        'original_sha256': ('b149accd3dd3e66f882de2201481d9fa'
-                            'd25324916501a9a0f7b1ae1afe256f0b'),
+        'original_sha256': ('f791309e3ede0c516167652ccf2c6582'
+                            'a1bbd8dc38bfa711ac2b6f0f4d5b6a22'),
         'deleted': 'false',
     }
     task_runner._source_update(message)
@@ -855,6 +873,9 @@ class UpdateTest(unittest.TestCase):
             'last_modified': datetime.datetime(2021, 1, 1, 0, 0),
             'project': 'blah.com/package',
             'public': None,
+            'reference_url_types': {
+                'https://ref.com/ref': 'WEB'
+            },
             'reference_urls': ['https://ref.com/ref'],
             'regressed': 'eefe8ec3f1f90d0e684890e810f3f21e8500a4cd',
             'repo_url': 'https://osv-test/repo/url',
@@ -890,8 +911,8 @@ class UpdateTest(unittest.TestCase):
     message.attributes = {
         'source': 'source',
         'path': 'BLAH-124.yaml',
-        'original_sha256': ('df9b0207ff2aa433d71869fa206b4884'
-                            '071807d5dfddf8626b93da210b6572ef'),
+        'original_sha256': ('323bdd5d8cc8c771d6aac84426a57dd6'
+                            '00995702fcb021b7fe9afd082b8a6e4c'),
         'deleted': 'false',
     }
     task_runner._source_update(message)
@@ -925,6 +946,9 @@ class UpdateTest(unittest.TestCase):
             'last_modified': datetime.datetime(2021, 1, 1, 0, 0),
             'project': 'blah.com/package',
             'public': None,
+            'reference_url_types': {
+                'https://ref.com/ref': 'WEB'
+            },
             'reference_urls': ['https://ref.com/ref'],
             'regressed': 'eefe8ec3f1f90d0e684890e810f3f21e8500a4cd',
             'repo_url': 'https://osv-test/repo/url',
@@ -957,8 +981,8 @@ class UpdateTest(unittest.TestCase):
     message.attributes = {
         'source': 'source',
         'path': 'BLAH-127.yaml',
-        'original_sha256': ('484f6d8659f0c01e2f08a6fba9791fb2'
-                            '9b5df09530e5d8307fc1f368b01d7dcb'),
+        'original_sha256': ('d00c24789be7ea03ac6ac97b321ffa5b'
+                            '9380d13f510b13723fb5bb66a0ca4338'),
         'deleted': 'false',
     }
     task_runner._source_update(message)
@@ -990,6 +1014,9 @@ class UpdateTest(unittest.TestCase):
             'last_modified': datetime.datetime(2021, 1, 1, 0, 0),
             'project': 'blah.com/package',
             'public': None,
+            'reference_url_types': {
+                'https://ref.com/ref': 'WEB'
+            },
             'reference_urls': ['https://ref.com/ref'],
             'regressed': '',
             'repo_url': 'https://osv-test/repo/url',
@@ -1036,8 +1063,8 @@ class UpdateTest(unittest.TestCase):
     message.attributes = {
         'source': 'source',
         'path': 'BLAH-126.yaml',
-        'original_sha256': ('bfbbcdaa2d90d39e1086933b8f69ca8e'
-                            'ae35c9d093ec9b4a37d7c01851da7b2a'),
+        'original_sha256': ('5e1c2f30f6312cb16f5eedac88f92992'
+                            'dd015e2891d17e84ee2ab8af78b801b9'),
         'deleted': 'false',
     }
     task_runner._source_update(message)
@@ -1069,6 +1096,9 @@ class UpdateTest(unittest.TestCase):
             'last_modified': datetime.datetime(2021, 1, 1, 0, 0),
             'project': 'blah.com/package',
             'public': None,
+            'reference_url_types': {
+                'https://ref.com/ref': 'WEB'
+            },
             'reference_urls': ['https://ref.com/ref'],
             'regressed': 'eefe8ec3f1f90d0e684890e810f3f21e8500a4cd',
             'repo_url': 'https://osv-test/repo/url',
@@ -1094,8 +1124,8 @@ class UpdateTest(unittest.TestCase):
     message.attributes = {
         'source': 'source',
         'path': 'BLAH-123.yaml',
-        'original_sha256': ('b149accd3dd3e66f882de2201481d9fa'
-                            'd25324916501a9a0f7b1ae1afe256f0b'),
+        'original_sha256': ('f791309e3ede0c516167652ccf2c6582'
+                            'a1bbd8dc38bfa711ac2b6f0f4d5b6a22'),
         'deleted': 'true',
     }
     task_runner._source_update(message)
@@ -1110,8 +1140,8 @@ class UpdateTest(unittest.TestCase):
     message.attributes = {
         'source': 'source',
         'path': 'BLAH-125.yaml',
-        'original_sha256': ('b5ecb05106faef7fc5bd07f86e089783'
-                            '4354608c5bb59d3b6317491874198a3a'),
+        'original_sha256': ('f3914d12891a3a441cb19cfe5c11f9b6'
+                            'b5cd0c87c3c14c40d54559dad4bb813a'),
         'deleted': 'false',
     }
     task_runner._source_update(message)
@@ -1162,8 +1192,8 @@ class UpdateTest(unittest.TestCase):
     message.attributes = {
         'source': 'source',
         'path': 'BLAH-123.yaml',
-        'original_sha256': ('b149accd3dd3e66f882de2201481d9fa'
-                            'd25324916501a9a0f7b1ae1afe256f0b'),
+        'original_sha256': ('f791309e3ede0c516167652ccf2c6582'
+                            'a1bbd8dc38bfa711ac2b6f0f4d5b6a22'),
         'deleted': 'false',
     }
     task_runner._source_update(message)
@@ -1187,8 +1217,8 @@ class UpdateTest(unittest.TestCase):
     message.attributes = {
         'source': 'source',
         'path': 'PYSEC-123.yaml',
-        'original_sha256': ('54da5e3f2f2c01cc1aceadb2aaf92a0e'
-                            '566ea8020b2fa80aaf5b073603d2a7f7'),
+        'original_sha256': ('44a2ead7fa69e76be3d0033cce3fe05e'
+                            '63189ed6c2e72b88dffe73618b476e96'),
         'deleted': 'false',
     }
     task_runner._source_update(message)
@@ -1239,6 +1269,9 @@ class UpdateTest(unittest.TestCase):
             'last_modified': datetime.datetime(2021, 1, 1, 0, 0),
             'project': 'grpcio',
             'public': None,
+            'reference_url_types': {
+                'https://ref.com/ref': 'WEB'
+            },
             'reference_urls': ['https://ref.com/ref'],
             'regressed': None,
             'repo_url': None,

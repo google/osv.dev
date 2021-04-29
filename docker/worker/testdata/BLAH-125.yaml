@@ -25,5 +25,6 @@ affects:
   - branch_1_cherrypick_regress
   - v0.1.1
 references:
-- https://ref.com/ref
+- type: WEB
+  url: https://ref.com/ref
 modified: '2020-01-01T00:00:00Z'

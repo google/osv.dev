@@ -15,4 +15,5 @@ affects:
   versions:
   - branch-v0.1.1
 references:
-- https://ref.com/ref
+- type: WEB
+  url: https://ref.com/ref

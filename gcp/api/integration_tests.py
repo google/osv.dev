@@ -63,9 +63,10 @@ class IntegrationTests(unittest.TestCase):
           'name': 'mruby',
           'ecosystem': 'OSS-Fuzz',
       },
-      'references': [
-          'https://bugs.chromium.org/p/oss-fuzz/issues/detail?id=23801'
-      ],
+      'references': [{
+          'type': 'WEB',
+          'url': 'https://bugs.chromium.org/p/oss-fuzz/issues/detail?id=23801',
+      }],
       'severity': 'HIGH',
       'summary': 'Heap-double-free in mrb_default_allocf',
   }
@@ -78,9 +79,10 @@ class IntegrationTests(unittest.TestCase):
           'name': 'grok',
           'ecosystem': 'OSS-Fuzz',
       },
-      'references': [
-          'https://bugs.chromium.org/p/oss-fuzz/issues/detail?id=28505'
-      ],
+      'references': [{
+          'type': 'WEB',
+          'url': 'https://bugs.chromium.org/p/oss-fuzz/issues/detail?id=28505',
+      }],
       'summary': 'Heap-buffer-overflow in grk::t1_part1::T1Part1::decompress'
   }
 

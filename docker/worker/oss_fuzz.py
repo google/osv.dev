@@ -211,6 +211,15 @@ def set_bug_attributes(bug, regress_result, fix_result):
   bug.details = details
   bug.severity = severity
   bug.reference_urls = reference_urls
+  bug.reference_url_types = {}
+
+  for reference_url in reference_urls:
+    if OSS_FUZZ_ISSUE_URL in reference_url:
+      link_type = 'REPORT'
+    else:
+      link_type = 'WEB'
+    bug.reference_url_types[reference_url] = link_type
+
   bug.regressed = regress_result.commit or ''
   bug.fixed = fix_result.commit or ''
 

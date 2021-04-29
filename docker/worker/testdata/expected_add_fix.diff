@@ -1,8 +1,8 @@
 diff --git a/BLAH-124.yaml b/BLAH-124.yaml
-index a0808d3..88989eb 100644
+index 04be478..8fc8b15 100644
 --- a/BLAH-124.yaml
 +++ b/BLAH-124.yaml
-@@ -12,7 +12,18 @@ affects:
+@@ -12,8 +12,19 @@ affects:
    - type: GIT
      repo: https://osv-test/repo/url
      introduced: eefe8ec3f1f90d0e684890e810f3f21e8500a4cd
@@ -18,6 +18,7 @@ index a0808d3..88989eb 100644
    - branch-v0.1.1
 +  - branch_1_cherrypick_regress
 +  - v0.1.1
- references:
- - https://ref.com/ref
 +modified: '2021-01-01T00:00:00Z'
+ references:
+ - type: WEB
+   url: https://ref.com/ref

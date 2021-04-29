@@ -224,6 +224,32 @@
       },
       "description": "Package information and version."
     },
+    "osvReference": {
+      "type": "object",
+      "properties": {
+        "type": {
+          "$ref": "#/definitions/osvReferenceType",
+          "description": "Required. The type of the reference."
+        },
+        "url": {
+          "type": "string",
+          "description": "Required. The URL."
+        }
+      },
+      "description": "Reference URL."
+    },
+    "osvReferenceType": {
+      "type": "string",
+      "enum": [
+        "NONE",
+        "WEB",
+        "ADVISORY",
+        "REPORT",
+        "FIX",
+        "PACKAGE"
+      ],
+      "default": "NONE"
+    },
     "osvSeverity": {
       "type": "string",
       "enum": [
@@ -299,7 +325,7 @@
         "references": {
           "type": "array",
           "items": {
-            "type": "string"
+            "$ref": "#/definitions/osvReference"
           },
           "description": "Optional. URLs to more information/advisories (including the\nscheme e.g \"https://\")."
         },

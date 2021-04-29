@@ -13,4 +13,5 @@ affects:
     introduced: 1.14.2
     fixed: 1.31.0
 references:
-- https://ref.com/ref
+- type: WEB
+  url: https://ref.com/ref

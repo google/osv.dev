@@ -191,6 +191,8 @@ class Bug(ndb.Model):
   public = ndb.BooleanProperty()
   # Reference URLs.
   reference_urls = ndb.StringProperty(repeated=True)
+  # Reference URL types (dict of url -> type).
+  reference_url_types = ndb.JsonProperty()
   # Search indices (auto-populated)
   search_indices = ndb.StringProperty(repeated=True)
   # Whether or not the bug has any affected versions (auto-populated).
@@ -238,7 +240,11 @@ class Bug(ndb.Model):
     self.summary = vulnerability.summary
     self.details = vulnerability.details
     self.severity = vulnerability_pb2.Severity.Name(vulnerability.severity)
-    self.reference_urls = list(vulnerability.references)
+    self.reference_urls = [ref.url for ref in vulnerability.references]
+    self.reference_url_types = {
+        ref.url: vulnerability_pb2.Reference.Type.Name(ref.type)
+        for ref in vulnerability.references
+    }
     if vulnerability.HasField('modified'):
       self.last_modified = vulnerability.modified.ToDatetime()
     if vulnerability.HasField('published'):
@@ -301,6 +307,16 @@ class Bug(ndb.Model):
     published = timestamp_pb2.Timestamp()
     published.FromDatetime(self.timestamp)
 
+    references = []
+    reference_url_types = self.reference_url_types or {}
+
+    for url in self.reference_urls:
+      references.append(
+          vulnerability_pb2.Reference(
+              url=url,
+              type=vulnerability_pb2.Reference.Type.Value(
+                  reference_url_types.get(url, 'WEB'))))
+
     result = vulnerability_pb2.Vulnerability(
         id=self.id(),
         published=published,
@@ -310,8 +326,7 @@ class Bug(ndb.Model):
         package=package,
         severity=severity,
         affects=affects,
-        references=self.reference_urls)
-
+        references=references)
     return result
 
 

@@ -1,8 +1,8 @@
 diff --git a/PYSEC-123.yaml b/PYSEC-123.yaml
-index 54912c6..5ab8a38 100644
+index 7f16594..6f04049 100644
 --- a/PYSEC-123.yaml
 +++ b/PYSEC-123.yaml
-@@ -12,5 +12,58 @@ affects:
+@@ -12,6 +12,59 @@ affects:
    - type: ECOSYSTEM
      introduced: 1.14.2
      fixed: 1.31.0
@@ -58,6 +58,7 @@ index 54912c6..5ab8a38 100644
 +  - 1.30.0rc1
 +  - 1.31.0rc1
 +  - 1.31.0rc2
- references:
- - https://ref.com/ref
 +modified: '2021-01-01T00:00:00Z'
+ references:
+ - type: WEB
+   url: https://ref.com/ref

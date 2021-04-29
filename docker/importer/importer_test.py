@@ -81,6 +81,10 @@ class ImporterTest(unittest.TestCase):
         issue_id='1064',
         project='file',
         public=True,
+        reference_url_types={
+            'https://bugs.chromium.org/p/oss-fuzz/issues/detail?id=1064':
+                'REPORT'
+        },
         reference_urls=[
             'https://bugs.chromium.org/p/oss-fuzz/issues/detail?id=1064'
         ],

@@ -28,24 +28,28 @@ type AffectedRange struct {
 	Fixed      string `json:"fixed,omitempty" yaml:"fixed,omitempty"`
 }
 
+type Reference struct {
+	Type string `json:"type" yaml:"type"`
+	URL  string `json:"url" yaml:"url"`
+}
+
 type Vulnerability struct {
 	ID      string `json:"id" yaml:"id"`
 	Package struct {
 		Name      string `json:"name" yaml:"name"`
 		Ecosystem string `json:"ecosystem" yaml:"ecosystem"`
 	} `json:"package"`
-	Summary  string `json:"summary" yaml:"summary"`
-	Details  string `json:"details" yaml:"details"`
-	Severity string `json:"severity" yaml:"severity"`
-	Affects  struct {
+	Summary string `json:"summary" yaml:"summary"`
+	Details string `json:"details" yaml:"details"`
+	Affects struct {
 		Ranges   []AffectedRange `json:"ranges"`
 		Versions []string        `json:"versions" yaml:"versions,omitempty"`
 	}
-	References []string               `json:"references" yaml:"references"`
+	References []Reference            `json:"references" yaml:"references"`
 	Aliases    []string               `json:"aliases,omitempty" yaml:"aliases,omitempty"`
 	Extra      map[string]interface{} `json:"extras,omitempty" yaml:"extra,omitempty"`
 	Modified   string                 `json:"modified" yaml:"modified"`
-	Created    string                 `json:"created" yaml:"created"`
+	Published  string                 `json:"published" yaml:"published"`
 }
 
 func timestampToRFC3339(timestamp string) (string, error) {
@@ -64,18 +68,17 @@ func FromCVE(id string, cve cves.CVEItem, pkg, ecosystem, versionType string, va
 	}
 
 	v := Vulnerability{
-		ID:       id,
-		Summary:  fmt.Sprintf("Vulnerability in %s", pkg),
-		Details:  cves.EnglishDescription(cve.CVE),
-		Severity: cve.Impact.BaseMetricV3.CVSSV3.BaseSeverity,
-		Aliases:  aliases,
+		ID:      id,
+		Summary: fmt.Sprintf("Vulnerability in %s", pkg),
+		Details: cves.EnglishDescription(cve.CVE),
+		Aliases: aliases,
 	}
 	v.Package.Name = pkg
 	v.Package.Ecosystem = ecosystem
 
 	var err error
 	var notes []string
-	v.Created, err = timestampToRFC3339(cve.PublishedDate)
+	v.Published, err = timestampToRFC3339(cve.PublishedDate)
 	if err != nil {
 		notes = append(notes, fmt.Sprintf("Failed to parse published date: %v\n", err))
 	}
@@ -86,7 +89,10 @@ func FromCVE(id string, cve cves.CVEItem, pkg, ecosystem, versionType string, va
 	}
 
 	for _, reference := range cve.CVE.References.ReferenceData {
-		v.References = append(v.References, reference.URL)
+		v.References = append(v.References, Reference{
+			Type: "WEB",
+			URL:  reference.URL,
+		})
 	}
 
 	// Extract version information where we can.

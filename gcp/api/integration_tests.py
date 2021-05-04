@@ -64,7 +64,7 @@ class IntegrationTests(unittest.TestCase):
           'ecosystem': 'OSS-Fuzz',
       },
       'references': [{
-          'type': 'WEB',
+          'type': 'REPORT',
           'url': 'https://bugs.chromium.org/p/oss-fuzz/issues/detail?id=23801',
       }],
       'severity': 'HIGH',
@@ -80,7 +80,7 @@ class IntegrationTests(unittest.TestCase):
           'ecosystem': 'OSS-Fuzz',
       },
       'references': [{
-          'type': 'WEB',
+          'type': 'REPORT',
           'url': 'https://bugs.chromium.org/p/oss-fuzz/issues/detail?id=28505',
       }],
       'summary': 'Heap-buffer-overflow in grk::t1_part1::T1Part1::decompress'

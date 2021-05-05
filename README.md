@@ -32,11 +32,11 @@ An instance of OSV's web UI is deployed at <https://osv.dev>.
 ```bash
   curl -X POST -d \
       '{"commit": "6879efc2c1596d11a6a6ad296f80063b558d5e0f"}' \
-      "https://api.osv.dev/v1/query?key=$API_KEY"
+      "https://api.osv.dev/v1/query"
 
   curl -X POST -d \
       '{"version": "1.0.0", "package": {"name": "foo", "ecosystem": "bar"}}' \
-      "https://api.osv.dev/v1/query?key=$API_KEY"
+      "https://api.osv.dev/v1/query"
 ```
 
 Detailed documentation for using the API can be found at

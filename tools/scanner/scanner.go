@@ -20,10 +20,6 @@ const (
 	BaseVulnerabilityURL = "https://osv.dev/vulnerability/"
 )
 
-var (
-	apiKey = flag.String("api_key", "", "API key for requests (required)")
-)
-
 // OSVQuery represents a query to OSV.
 type OSVQuery struct {
 	Commit string `json:"commit"`
@@ -84,7 +80,7 @@ func makeOSVRequest(commit string) (*OSVResponse, error) {
 	}
 	requestBuf := bytes.NewBuffer(requestBytes)
 
-	endpoint := fmt.Sprintf("%s?key=%s", QueryEndpoint, *apiKey)
+	endpoint := fmt.Sprintf("%s", QueryEndpoint)
 	resp, err := http.Post(endpoint, "application/json", requestBuf)
 	if err != nil {
 		return nil, err
@@ -127,11 +123,6 @@ func doScan(repoDir string) error {
 func main() {
 	flag.Usage = usage
 	flag.Parse()
-
-	if *apiKey == "" {
-		flag.Usage()
-		os.Exit(1)
-	}
 
 	for _, dir := range flag.Args() {
 		scan(dir)

@@ -111,15 +111,15 @@ def main():
       'source':
           ('curl -X POST -d \\\n'
            '  \'{"commit": "6879efc2c1596d11a6a6ad296f80063b558d5e0f"}\' \\\n'
-           '  "https://api.osv.dev/v1/query?key=$API_KEY"\n\n'
+           '  "https://api.osv.dev/v1/query"\n\n'
            'curl -X POST -d \\\n'
            '  \'{"package": {"name": "mruby"}, "version": "2.1.2rc"}\' \\\n'
-           '  "https://api.osv.dev/v1/query?key=$API_KEY"')
+           '  "https://api.osv.dev/v1/query"')
   }]
 
   spec['paths']['/v1/vulns/{id}']['get']['x-code-samples'] = [{
       'lang': 'Curl example',
-      'source': 'curl "https://api.osv.dev/v1/vulns/2020-111?key=$API_KEY"'
+      'source': 'curl "https://api.osv.dev/v1/vulns/2020-111"'
   }]
 
   property_description_workaround(spec['definitions']['v1Query'])

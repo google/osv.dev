@@ -47,12 +47,12 @@
       <pre>
         curl -X POST -d \
             '{"commit": "6879efc2c1596d11a6a6ad296f80063b558d5e0f"}' \
-            "https://api.osv.dev/v1/query?key=$API_KEY"
+            "https://api.osv.dev/v1/query"
       </pre>
       <pre>
         curl -X POST -d \
             '{"version": "1.0.0", "package": {"name": "foo", "ecosystem": "bar"}}' \
-            "https://api.osv.dev/v1/query?key=$API_KEY"
+            "https://api.osv.dev/v1/query"
       </pre>
       <h5>Demo</h5>
       <video controls id="splash" autoplay="" muted="" loop="">

@@ -36,41 +36,17 @@ The full list of vulnerabilities can be browsed at <https://osv.dev>.
 # Getting Started
 ---
 
-### Before you begin
-
-1. Create a new [Cloud Platform project](https://console.developers.google.com/projectcreate).
-2. Join [this group](https://groups.google.com/g/osv-users) with the same
-   account used for the Cloud project to obtain access to the API (membership
-   lists are private).
-
-### Creating an API key
-
-1. [Create an API key](https://console.developers.google.com/apis/credentials) in the Google APIs Console.
-2. Click **Create credentials**, then select **API key**.
-3. Copy this key in clipboard and click **Close**.
-4. Set the key in a helper environment variable.
-
-```
-export API_KEY=<paste api key from clipboard>
-```
-
-### Enable the API
-
-Before you can make calls to this API, you need to enable it in the Cloud Platform project you created.
-1. [View this API](https://console.developers.google.com/apis/api/api.osv.dev/overview) in the Google APIs Console.
-2. Click the **Enable** button, then wait for it to complete.
-3. You can now call the API using the API key you created!
-
 ### Using the API
 
 Browse the reference section of this site to see examples of what you can do
-with this API and how to use it. You can use the **Try this API** tool on the
-right side of an API method page to generate a sample request.
+with this API and how to use it.
 
 For a quick example using curl, run:
 
 ```
 curl -X POST -d '{"commit": "6879efc2c1596d11a6a6ad296f80063b558d5e0f"}' \
-  "https://api.osv.dev/v1/query?key=$API_KEY"
+    "https://api.osv.dev/v1/query"
 ```
 
+Note that the format of the JSON returned is not yet stable and may be subject
+to minor changes.

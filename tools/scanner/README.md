@@ -11,5 +11,5 @@ mechanism where dependencies are checked out as real git repositories.
 ## Example
 
 ```bash
-$ go run scanner.go -api_key=API_KEY /path/to/your/repo
+$ go run scanner.go /path/to/your/repo
 ```

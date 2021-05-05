@@ -80,8 +80,7 @@ func makeOSVRequest(commit string) (*OSVResponse, error) {
 	}
 	requestBuf := bytes.NewBuffer(requestBytes)
 
-	endpoint := fmt.Sprintf("%s", QueryEndpoint)
-	resp, err := http.Post(endpoint, "application/json", requestBuf)
+	resp, err := http.Post(QueryEndpoint, "application/json", requestBuf)
 	if err != nil {
 		return nil, err
 	}

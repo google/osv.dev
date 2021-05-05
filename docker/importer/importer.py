@@ -183,7 +183,7 @@ class Importer:
       return
 
     for bug in osv.Bug.query(osv.Bug.status == osv.BugStatus.PROCESSED,
-                             osv.Bug.fixed == ''):
+                             osv.Bug.is_fixed == False):  # pylint: disable=singleton-comparison
       self._request_analysis(bug, source_repo, repo)
 
     # Re-compute existing Bugs for a period of time, as upstream changes may

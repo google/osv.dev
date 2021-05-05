@@ -69,6 +69,12 @@ class ImporterTest(unittest.TestCase):
         id='2017-134',
         affected=['FILE5_29', 'FILE5_30'],
         affected_fuzzy=['5-29', '5-30'],
+        affected_ranges=[{
+            'type': 'GIT',
+            'repo_url': 'https://github.com/file/file.git',
+            'introduced': '17ee4cf670c363de8d2ea4a4897d7a699837873f',
+            'fixed': '19ccebafb7663c422c714e0c67fa4775abf91c43',
+        }],
         details=(
             'OSS-Fuzz report: '
             'https://bugs.chromium.org/p/oss-fuzz/issues/detail?id=1064\n\n'
@@ -89,7 +95,6 @@ class ImporterTest(unittest.TestCase):
             'https://bugs.chromium.org/p/oss-fuzz/issues/detail?id=1064'
         ],
         regressed='17ee4cf670c363de8d2ea4a4897d7a699837873f',
-        repo_url='https://github.com/file/file.git',
         search_indices=['file', '2017-134', '2017', '134'],
         severity='MEDIUM',
         sort_key='2017-0000134',

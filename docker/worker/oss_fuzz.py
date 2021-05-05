@@ -203,7 +203,6 @@ def set_bug_attributes(bug, regress_result, fix_result):
   severity = fix_result.severity or regress_result.severity
   reference_urls = fix_result.reference_urls or regress_result.reference_urls
 
-  bug.repo_url = repo_url
   bug.issue_id = issue_id
   bug.project = project
   bug.ecosystem = ecosystem
@@ -222,6 +221,14 @@ def set_bug_attributes(bug, regress_result, fix_result):
 
   bug.regressed = regress_result.commit or ''
   bug.fixed = fix_result.commit or ''
+
+  bug.affected_ranges = [
+      osv.AffectedRange(
+          type='GIT',
+          repo_url=repo_url,
+          introduced=bug.regressed,
+          fixed=bug.fixed)
+  ]
 
 
 def process_impact_task(source_id, message):
@@ -312,7 +319,14 @@ def process_impact_task(source_id, message):
   existing_bug.affected_fuzzy = osv.normalize_tags(affected_tags)
   existing_bug.status = osv.BugStatus.PROCESSED
 
-  existing_bug.additional_commit_ranges = []
+  existing_bug.affected_ranges = [
+      osv.AffectedRange(
+          type='GIT',
+          repo_url=repo_url,
+          introduced=existing_bug.regressed,
+          fixed=existing_bug.fixed)
+  ]
+
   # Don't display additional ranges for imprecise commits, as they can be
   # confusing.
   if ':' in existing_bug.fixed or ':' in existing_bug.regressed:
@@ -324,13 +338,20 @@ def process_impact_task(source_id, message):
     return (value[0] or '', value[1] or '')
 
   for introduced_in, fixed_in in sorted(result.affected_ranges, key=_sort_key):
+    if not fixed_in:
+      fixed_in = ''
+
     if (introduced_in == existing_bug.regressed and
-        (fixed_in or '') == existing_bug.fixed):
-      # Don't include the main range.
+        fixed_in == existing_bug.fixed):
+      # Don't repeat the main range.
       continue
 
-    existing_bug.additional_commit_ranges.append(
-        osv.CommitRange(introduced_in=introduced_in, fixed_in=fixed_in))
+    existing_bug.affected_ranges.append(
+        osv.AffectedRange(
+            type='GIT',
+            repo_url=repo_url,
+            introduced=introduced_in,
+            fixed=fixed_in))
 
   existing_bug.put()
 

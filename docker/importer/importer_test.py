@@ -69,6 +69,12 @@ class ImporterTest(unittest.TestCase):
         id='2017-134',
         affected=['FILE5_29', 'FILE5_30'],
         affected_fuzzy=['5-29', '5-30'],
+        affected_ranges=[{
+            'type': 'GIT',
+            'repo_url': 'https://github.com/file/file.git',
+            'introduced': '17ee4cf670c363de8d2ea4a4897d7a699837873f',
+            'fixed': '19ccebafb7663c422c714e0c67fa4775abf91c43',
+        }],
         details=(
             'OSS-Fuzz report: '
             'https://bugs.chromium.org/p/oss-fuzz/issues/detail?id=1064\n\n'
@@ -89,7 +95,6 @@ class ImporterTest(unittest.TestCase):
             'https://bugs.chromium.org/p/oss-fuzz/issues/detail?id=1064'
         ],
         regressed='17ee4cf670c363de8d2ea4a4897d7a699837873f',
-        repo_url='https://github.com/file/file.git',
         search_indices=['file', '2017-134', '2017', '134'],
         severity='MEDIUM',
         sort_key='2017-0000134',
@@ -185,7 +190,6 @@ class ImporterTest(unittest.TestCase):
         id='2021-1337',
         project='proj',
         ecosystem='OSS-Fuzz',
-        fixed='',
         status=1,
         source_id='oss-fuzz:123',
         source_of_truth=osv.SourceOfTruth.SOURCE_REPO,
@@ -193,16 +197,19 @@ class ImporterTest(unittest.TestCase):
     osv.Bug(
         id='2021-1338',
         project='proj',
-        fixed='fix',
         source_id='source:OSV-2021-1338.yaml',
         status=1,
         source_of_truth=osv.SourceOfTruth.SOURCE_REPO,
-        timestamp=importer.utcnow()).put()
+        timestamp=importer.utcnow(),
+        affected_ranges=[{
+            'fixed': 'fix',
+            'repo_url': 'repo',
+            'type': 'GIT',
+        }]).put()
     osv.Bug(
         id='2021-1339',
         project='proj',
         ecosystem='OSS-Fuzz',
-        fixed='',
         status=1,
         source_id='oss-fuzz:124',
         source_of_truth=osv.SourceOfTruth.INTERNAL,

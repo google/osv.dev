@@ -33,6 +33,14 @@ def _check_valid_severity(prop, value):
     raise ValueError('Invalid severity: ' + value)
 
 
+def _check_valid_range_type(prop, value):
+  """Check valid range type."""
+  del prop
+
+  if value not in ('GIT', 'SEMVER', 'ECOSYSTEM'):
+    raise ValueError('Invalid severity: ' + value)
+
+
 def utcnow():
   """For mocking."""
   return datetime.datetime.utcnow()
@@ -130,13 +138,16 @@ class PackageTagInfo(ndb.Model):
   bugs_private = ndb.StringProperty(repeated=True)
 
 
-class CommitRange(ndb.Model):
-  """Commit range."""
-  # TODO(ochang): Add type and repo URL.
+class AffectedRange(ndb.Model):
+  """Affected range."""
+  # Type of range.
+  type = ndb.StringProperty(validator=_check_valid_range_type)
+  # Repo URL.
+  repo_url = ndb.StringProperty()
   # The regressing commit.
-  introduced_in = ndb.StringProperty()
+  introduced = ndb.StringProperty()
   # The fix commit.
-  fixed_in = ndb.StringProperty()
+  fixed = ndb.StringProperty()
 
 
 class SourceOfTruth(enum.IntEnum):
@@ -162,15 +173,12 @@ class Bug(ndb.Model):
   # For OSS-Fuzz, this oss-fuzz:<ClusterFuzz testcase ID>.
   # For others this is <source>:<path/to/source>.
   source_id = ndb.StringProperty()
-  # Main repo url.
-  repo_url = ndb.StringProperty()
-  # The main fixed commit.
-  fixed = ndb.StringProperty()
-  # The main regressing commit.
-  regressed = ndb.StringProperty()
-  # Additional affected commit ranges derived from the main fixed and regressed
-  # commits.
-  additional_commit_ranges = ndb.StructuredProperty(CommitRange, repeated=True)
+  # The main fixed commit (from bisection).
+  fixed = ndb.StringProperty(default='')
+  # The main regressing commit (from bisection).
+  regressed = ndb.StringProperty(default='')
+  # All affected ranges.
+  affected_ranges = ndb.StructuredProperty(AffectedRange, repeated=True)
   # List of affected versions.
   affected = ndb.StringProperty(repeated=True)
   # List of normalized versions for fuzzy matching.
@@ -201,6 +209,8 @@ class Bug(ndb.Model):
   sort_key = ndb.StringProperty()
   # Source of truth for this Bug.
   source_of_truth = ndb.IntegerProperty(default=SourceOfTruth.INTERNAL)
+  # Whether the bug is fixed (indexed for querying).
+  is_fixed = ndb.BooleanProperty()
 
   def id(self):
     """Get the bug ID."""
@@ -208,6 +218,15 @@ class Bug(ndb.Model):
       return self.OSV_ID_PREFIX + self.key.id()
 
     return self.key.id()
+
+  @property
+  def repo_url(self):
+    """Repo URL."""
+    for affected_range in self.affected_ranges:
+      if affected_range.repo_url:
+        return affected_range.repo_url
+
+    return None
 
   @classmethod
   def get_by_id(cls, vuln_id, *args, **kwargs):
@@ -235,6 +254,9 @@ class Bug(ndb.Model):
     if not self.last_modified:
       self.last_modified = utcnow()
 
+    self.is_fixed = any(
+        affected_range.fixed for affected_range in self.affected_ranges)
+
   def update_from_vulnerability(self, vulnerability):
     """Set fields from vulnerability."""
     self.summary = vulnerability.summary
@@ -253,21 +275,15 @@ class Bug(ndb.Model):
     self.ecosystem = vulnerability.package.ecosystem
     self.affected = list(vulnerability.affects.versions)
 
-    found_first = False
+    self.affected_ranges = []
     for affected_range in vulnerability.affects.ranges:
-      if affected_range.type != vulnerability_pb2.AffectedRange.Type.GIT:
-        continue
-
-      if found_first:
-        self.additional_commit_ranges.append(
-            CommitRange(
-                introduced_in=affected_range.introduced,
-                fixed_in=affected_range.fixed))
-      else:
-        self.regressed = affected_range.introduced
-        self.fixed = affected_range.fixed
-        self.repo_url = affected_range.repo
-        found_first = True
+      self.affected_ranges.append(
+          AffectedRange(
+              type=vulnerability_pb2.AffectedRange.Type.Name(
+                  affected_range.type),
+              repo_url=affected_range.repo,
+              introduced=affected_range.introduced or '',
+              fixed=affected_range.fixed or ''))
 
   def to_vulnerability(self):
     """Convert to Vulnerability proto."""
@@ -275,17 +291,12 @@ class Bug(ndb.Model):
         name=self.project, ecosystem=self.ecosystem)
 
     affects = vulnerability_pb2.Affects(versions=self.affected)
-    affects.ranges.add(
-        type=vulnerability_pb2.AffectedRange.Type.GIT,
-        repo=self.repo_url,
-        introduced=self.regressed,
-        fixed=self.fixed)
-    for additional_range in self.additional_commit_ranges:
+    for affected_range in self.affected_ranges:
       affects.ranges.add(
-          type=vulnerability_pb2.AffectedRange.Type.GIT,
-          repo=self.repo_url,
-          introduced=additional_range.introduced_in,
-          fixed=additional_range.fixed_in)
+          type=vulnerability_pb2.AffectedRange.Type.Value(affected_range.type),
+          repo=affected_range.repo_url,
+          introduced=affected_range.introduced,
+          fixed=affected_range.fixed)
 
     if self.severity:
       severity = vulnerability_pb2.Severity.Value(self.severity)

@@ -170,18 +170,27 @@ class ImpactTest(unittest.TestCase):
         {
             'affected':
                 ['branch-v0.1.1', 'branch_1_cherrypick_regress', 'v0.1.1'],
-            'additional_commit_ranges': [{
-                'introduced_in': 'eefe8ec3f1f90d0e684890e810f3f21e8500a4cd',
-                'fixed_in': 'b9b3fd4732695b83c3068b7b6a14bb372ec31f98'
-            }, {
-                'introduced_in': 'febfac1940086bc1f6d3dc33fda0a1d1ba336209',
-                'fixed_in': None
-            }],
             'affected_fuzzy': ['0-1-1', '1', '0-1-1'],
+            'affected_ranges': [{
+                'fixed': '8d8242f545e9cec3e6d0d2e3f5bde8be1c659735',
+                'introduced': 'eefe8ec3f1f90d0e684890e810f3f21e8500a4cd',
+                'repo_url': 'https://repo.com/repo',
+                'type': 'GIT'
+            }, {
+                'fixed': 'b9b3fd4732695b83c3068b7b6a14bb372ec31f98',
+                'introduced': 'eefe8ec3f1f90d0e684890e810f3f21e8500a4cd',
+                'repo_url': 'https://repo.com/repo',
+                'type': 'GIT'
+            }, {
+                'fixed': '',
+                'introduced': 'febfac1940086bc1f6d3dc33fda0a1d1ba336209',
+                'repo_url': 'https://repo.com/repo',
+                'type': 'GIT'
+            }],
             'fixed': '8d8242f545e9cec3e6d0d2e3f5bde8be1c659735',
             'regressed': 'eefe8ec3f1f90d0e684890e810f3f21e8500a4cd',
-            'repo_url': 'https://repo.com/repo',
             'issue_id': '9001',
+            'is_fixed': True,
             'last_modified': datetime.datetime(2021, 1, 1, 0, 0),
             'timestamp': datetime.datetime(2020, 1, 1),
             'source_id': 'oss-fuzz:123',
@@ -256,12 +265,18 @@ class ImpactTest(unittest.TestCase):
                 'branch_1_cherrypick_regress', 'v0.1.1', 'v0.2'
             ],
             'affected_fuzzy': ['0-1-1', '0-1-1', '1', '0-1-1', '0-2'],
-            'additional_commit_ranges': [],
+            'affected_ranges': [{
+                'fixed': 'b1c95a196f22d06fcf80df8c6691cd113d8fefff:'
+                         '36f0bd9549298b44f9ff2496c9dd1326b3a9d0e2',
+                'introduced': 'eefe8ec3f1f90d0e684890e810f3f21e8500a4cd',
+                'repo_url': 'https://repo.com/repo',
+                'type': 'GIT'
+            }],
             'fixed': ('b1c95a196f22d06fcf80df8c6691cd113d8fefff:'
                       '36f0bd9549298b44f9ff2496c9dd1326b3a9d0e2'),
             'regressed': 'eefe8ec3f1f90d0e684890e810f3f21e8500a4cd',
-            'repo_url': 'https://repo.com/repo',
             'issue_id': '9001',
+            'is_fixed': True,
             'last_modified': datetime.datetime(2021, 1, 1, 0, 0),
             'timestamp': datetime.datetime(2020, 1, 1),
             'source_id': 'oss-fuzz:123',
@@ -337,12 +352,18 @@ class ImpactTest(unittest.TestCase):
                 'branch_1_cherrypick_regress', 'v0.1.1', 'v0.2'
             ],
             'affected_fuzzy': ['0-1-1', '0-1-1', '1', '0-1-1', '0-2'],
-            'additional_commit_ranges': [],
+            'affected_ranges': [{
+                'fixed': 'eefe8ec3f1f90d0e684890e810f3f21e8500a4cd:'
+                         'b587c21c36a84e16cfc6b39eb68578d43b5281ad',
+                'introduced': 'eefe8ec3f1f90d0e684890e810f3f21e8500a4cd',
+                'repo_url': 'https://repo.com/repo',
+                'type': 'GIT'
+            }],
             'regressed': 'eefe8ec3f1f90d0e684890e810f3f21e8500a4cd',
             'fixed': ('eefe8ec3f1f90d0e684890e810f3f21e8500a4cd:'
                       'b587c21c36a84e16cfc6b39eb68578d43b5281ad'),
-            'repo_url': 'https://repo.com/repo',
             'issue_id': '9001',
+            'is_fixed': True,
             'last_modified': datetime.datetime(2021, 1, 1, 0, 0),
             'timestamp': datetime.datetime(2020, 1, 1),
             'source_id': 'oss-fuzz:123',
@@ -417,11 +438,20 @@ class ImpactTest(unittest.TestCase):
             'affected':
                 ['branch-v0.1.1', 'branch_1_cherrypick_regress', 'v0.1.1'],
             'affected_fuzzy': ['0-1-1', '1', '0-1-1'],
-            'additional_commit_ranges': [],
+            'affected_ranges': [{
+                'fixed':
+                    '8d8242f545e9cec3e6d0d2e3f5bde8be1c659735',
+                'introduced':
+                    'unknown:eefe8ec3f1f90d0e684890e810f3f21e8500a4cd',
+                'repo_url':
+                    'https://repo.com/repo',
+                'type':
+                    'GIT'
+            }],
             'fixed': '8d8242f545e9cec3e6d0d2e3f5bde8be1c659735',
             'regressed': 'unknown:eefe8ec3f1f90d0e684890e810f3f21e8500a4cd',
-            'repo_url': 'https://repo.com/repo',
             'issue_id': '9001',
+            'is_fixed': True,
             'last_modified': datetime.datetime(2021, 1, 1, 0, 0),
             'timestamp': datetime.datetime(2020, 1, 1),
             'source_id': 'oss-fuzz:123',
@@ -495,17 +525,26 @@ class ImpactTest(unittest.TestCase):
             'affected':
                 ['branch-v0.1.1', 'branch_1_cherrypick_regress', 'v0.1.1'],
             'affected_fuzzy': ['0-1-1', '1', '0-1-1'],
-            'additional_commit_ranges': [{
-                'introduced_in': 'eefe8ec3f1f90d0e684890e810f3f21e8500a4cd',
-                'fixed_in': 'b9b3fd4732695b83c3068b7b6a14bb372ec31f98'
+            'affected_ranges': [{
+                'fixed': '8d8242f545e9cec3e6d0d2e3f5bde8be1c659735',
+                'introduced': 'eefe8ec3f1f90d0e684890e810f3f21e8500a4cd',
+                'repo_url': 'https://repo.com/repo',
+                'type': 'GIT'
             }, {
-                'introduced_in': 'febfac1940086bc1f6d3dc33fda0a1d1ba336209',
-                'fixed_in': None
+                'fixed': 'b9b3fd4732695b83c3068b7b6a14bb372ec31f98',
+                'introduced': 'eefe8ec3f1f90d0e684890e810f3f21e8500a4cd',
+                'repo_url': 'https://repo.com/repo',
+                'type': 'GIT'
+            }, {
+                'fixed': '',
+                'introduced': 'febfac1940086bc1f6d3dc33fda0a1d1ba336209',
+                'repo_url': 'https://repo.com/repo',
+                'type': 'GIT'
             }],
             'fixed': '8d8242f545e9cec3e6d0d2e3f5bde8be1c659735',
             'regressed': 'eefe8ec3f1f90d0e684890e810f3f21e8500a4cd',
-            'repo_url': 'https://repo.com/repo',
             'issue_id': '9001',
+            'is_fixed': True,
             'last_modified': datetime.datetime(2021, 1, 1, 0, 0),
             'timestamp': datetime.datetime(2020, 1, 1),
             'source_id': 'oss-fuzz:123',
@@ -556,14 +595,21 @@ class ImpactTest(unittest.TestCase):
                 'branch_1_cherrypick_regress', 'v0.1.1', 'v0.2'
             ],
             'affected_fuzzy': ['0-1-1', '0-1-1', '1', '0-1-1', '0-2'],
-            'additional_commit_ranges': [{
-                'introduced_in': 'febfac1940086bc1f6d3dc33fda0a1d1ba336209',
-                'fixed_in': None
+            'affected_ranges': [{
+                'fixed': '',
+                'introduced': 'eefe8ec3f1f90d0e684890e810f3f21e8500a4cd',
+                'repo_url': 'https://repo.com/repo',
+                'type': 'GIT'
+            }, {
+                'fixed': '',
+                'introduced': 'febfac1940086bc1f6d3dc33fda0a1d1ba336209',
+                'repo_url': 'https://repo.com/repo',
+                'type': 'GIT'
             }],
             'fixed': '',
             'regressed': 'eefe8ec3f1f90d0e684890e810f3f21e8500a4cd',
-            'repo_url': 'https://repo.com/repo',
             'issue_id': '9001',
+            'is_fixed': False,
             'last_modified': datetime.datetime(2021, 1, 1, 0, 0),
             'timestamp': datetime.datetime(2020, 1, 1),
             'source_id': 'oss-fuzz:123',
@@ -855,21 +901,31 @@ class UpdateTest(unittest.TestCase):
 
     self.assertDictEqual(
         {
-            'additional_commit_ranges': [{
-                'fixed_in': 'b9b3fd4732695b83c3068b7b6a14bb372ec31f98',
-                'introduced_in': 'eefe8ec3f1f90d0e684890e810f3f21e8500a4cd'
+            'affected_ranges': [{
+                'fixed': '8d8242f545e9cec3e6d0d2e3f5bde8be1c659735',
+                'introduced': 'eefe8ec3f1f90d0e684890e810f3f21e8500a4cd',
+                'repo_url': 'https://osv-test/repo/url',
+                'type': 'GIT'
             }, {
-                'fixed_in': '',
-                'introduced_in': 'febfac1940086bc1f6d3dc33fda0a1d1ba336209'
+                'fixed': 'b9b3fd4732695b83c3068b7b6a14bb372ec31f98',
+                'introduced': 'eefe8ec3f1f90d0e684890e810f3f21e8500a4cd',
+                'repo_url': 'https://osv-test/repo/url',
+                'type': 'GIT'
+            }, {
+                'fixed': '',
+                'introduced': 'febfac1940086bc1f6d3dc33fda0a1d1ba336209',
+                'repo_url': 'https://osv-test/repo/url',
+                'type': 'GIT'
             }],
             'affected':
                 ['branch-v0.1.1', 'branch_1_cherrypick_regress', 'v0.1.1'],
             'affected_fuzzy': ['0-1-1', '1', '0-1-1'],
             'details': 'Blah blah blah\nBlah\n',
             'ecosystem': 'golang',
-            'fixed': '8d8242f545e9cec3e6d0d2e3f5bde8be1c659735',
+            'fixed': '',
             'has_affected': True,
             'issue_id': None,
+            'is_fixed': True,
             'last_modified': datetime.datetime(2021, 1, 1, 0, 0),
             'project': 'blah.com/package',
             'public': None,
@@ -877,8 +933,7 @@ class UpdateTest(unittest.TestCase):
                 'https://ref.com/ref': 'WEB'
             },
             'reference_urls': ['https://ref.com/ref'],
-            'regressed': 'eefe8ec3f1f90d0e684890e810f3f21e8500a4cd',
-            'repo_url': 'https://osv-test/repo/url',
+            'regressed': '',
             'search_indices': ['blah.com/package', 'BLAH-123', 'BLAH', '123'],
             'severity': 'HIGH',
             'sort_key': 'BLAH-0000123',
@@ -928,21 +983,31 @@ class UpdateTest(unittest.TestCase):
 
     self.assertDictEqual(
         {
-            'additional_commit_ranges': [{
-                'fixed_in': 'b9b3fd4732695b83c3068b7b6a14bb372ec31f98',
-                'introduced_in': 'eefe8ec3f1f90d0e684890e810f3f21e8500a4cd'
-            }, {
-                'fixed_in': '',
-                'introduced_in': 'febfac1940086bc1f6d3dc33fda0a1d1ba336209'
-            }],
             'affected':
                 ['branch-v0.1.1', 'branch_1_cherrypick_regress', 'v0.1.1'],
             'affected_fuzzy': ['0-1-1', '1', '0-1-1'],
+            'affected_ranges': [{
+                'fixed': '8d8242f545e9cec3e6d0d2e3f5bde8be1c659735',
+                'introduced': 'eefe8ec3f1f90d0e684890e810f3f21e8500a4cd',
+                'repo_url': 'https://osv-test/repo/url',
+                'type': 'GIT'
+            }, {
+                'fixed': 'b9b3fd4732695b83c3068b7b6a14bb372ec31f98',
+                'introduced': 'eefe8ec3f1f90d0e684890e810f3f21e8500a4cd',
+                'repo_url': 'https://osv-test/repo/url',
+                'type': 'GIT'
+            }, {
+                'fixed': '',
+                'introduced': 'febfac1940086bc1f6d3dc33fda0a1d1ba336209',
+                'repo_url': 'https://osv-test/repo/url',
+                'type': 'GIT'
+            }],
             'details': 'Blah blah blah\nBlah\n',
             'ecosystem': 'golang',
-            'fixed': '8d8242f545e9cec3e6d0d2e3f5bde8be1c659735',
+            'fixed': '',
             'has_affected': True,
             'issue_id': None,
+            'is_fixed': True,
             'last_modified': datetime.datetime(2021, 1, 1, 0, 0),
             'project': 'blah.com/package',
             'public': None,
@@ -951,7 +1016,6 @@ class UpdateTest(unittest.TestCase):
             },
             'reference_urls': ['https://ref.com/ref'],
             'regressed': 'eefe8ec3f1f90d0e684890e810f3f21e8500a4cd',
-            'repo_url': 'https://osv-test/repo/url',
             'search_indices': ['blah.com/package', 'BLAH-124', 'BLAH', '124'],
             'severity': 'HIGH',
             'sort_key': 'BLAH-0000124',
@@ -998,19 +1062,27 @@ class UpdateTest(unittest.TestCase):
 
     self.assertDictEqual(
         {
-            'additional_commit_ranges': [{
-                'fixed_in': 'b9b3fd4732695b83c3068b7b6a14bb372ec31f98',
-                'introduced_in': ''
-            },],
             'affected': [
                 'branch-v0.1.1', 'branch_1_cherrypick_regress', 'v0.1', 'v0.1.1'
             ],
             'affected_fuzzy': ['0-1-1', '1', '0-1', '0-1-1'],
+            'affected_ranges': [{
+                'fixed': '8d8242f545e9cec3e6d0d2e3f5bde8be1c659735',
+                'introduced': '',
+                'repo_url': 'https://osv-test/repo/url',
+                'type': 'GIT'
+            }, {
+                'fixed': 'b9b3fd4732695b83c3068b7b6a14bb372ec31f98',
+                'introduced': '',
+                'repo_url': 'https://osv-test/repo/url',
+                'type': 'GIT'
+            }],
             'details': 'Blah blah blah\nBlah\n',
             'ecosystem': 'golang',
-            'fixed': '8d8242f545e9cec3e6d0d2e3f5bde8be1c659735',
+            'fixed': '',
             'has_affected': True,
             'issue_id': None,
+            'is_fixed': True,
             'last_modified': datetime.datetime(2021, 1, 1, 0, 0),
             'project': 'blah.com/package',
             'public': None,
@@ -1019,7 +1091,6 @@ class UpdateTest(unittest.TestCase):
             },
             'reference_urls': ['https://ref.com/ref'],
             'regressed': '',
-            'repo_url': 'https://osv-test/repo/url',
             'search_indices': ['blah.com/package', 'BLAH-127', 'BLAH', '127'],
             'severity': 'HIGH',
             'sort_key': 'BLAH-0000127',
@@ -1078,21 +1149,31 @@ class UpdateTest(unittest.TestCase):
 
     self.assertDictEqual(
         {
-            'additional_commit_ranges': [{
-                'fixed_in': 'b9b3fd4732695b83c3068b7b6a14bb372ec31f98',
-                'introduced_in': 'eefe8ec3f1f90d0e684890e810f3f21e8500a4cd'
-            }, {
-                'fixed_in': '',
-                'introduced_in': 'febfac1940086bc1f6d3dc33fda0a1d1ba336209'
-            }],
             'affected':
                 ['branch-v0.1.1', 'branch_1_cherrypick_regress', 'v0.1.1'],
             'affected_fuzzy': ['0-1-1', '1', '0-1-1'],
+            'affected_ranges': [{
+                'fixed': '8d8242f545e9cec3e6d0d2e3f5bde8be1c659735',
+                'introduced': 'eefe8ec3f1f90d0e684890e810f3f21e8500a4cd',
+                'repo_url': 'https://osv-test/repo/url',
+                'type': 'GIT'
+            }, {
+                'fixed': 'b9b3fd4732695b83c3068b7b6a14bb372ec31f98',
+                'introduced': 'eefe8ec3f1f90d0e684890e810f3f21e8500a4cd',
+                'repo_url': 'https://osv-test/repo/url',
+                'type': 'GIT'
+            }, {
+                'fixed': '',
+                'introduced': 'febfac1940086bc1f6d3dc33fda0a1d1ba336209',
+                'repo_url': 'https://osv-test/repo/url',
+                'type': 'GIT'
+            }],
             'details': 'Blah blah blah\nBlah\n',
             'ecosystem': 'golang',
-            'fixed': '8d8242f545e9cec3e6d0d2e3f5bde8be1c659735',
+            'fixed': '',
             'has_affected': True,
             'issue_id': None,
+            'is_fixed': True,
             'last_modified': datetime.datetime(2021, 1, 1, 0, 0),
             'project': 'blah.com/package',
             'public': None,
@@ -1100,8 +1181,7 @@ class UpdateTest(unittest.TestCase):
                 'https://ref.com/ref': 'WEB'
             },
             'reference_urls': ['https://ref.com/ref'],
-            'regressed': 'eefe8ec3f1f90d0e684890e810f3f21e8500a4cd',
-            'repo_url': 'https://osv-test/repo/url',
+            'regressed': '',
             'search_indices': ['blah.com/package', 'BLAH-126', 'BLAH', '126'],
             'severity': 'HIGH',
             'sort_key': 'BLAH-0000126',
@@ -1234,7 +1314,6 @@ class UpdateTest(unittest.TestCase):
 
     self.assertDictEqual(
         {
-            'additional_commit_ranges': [],
             'affected': [
                 '1.14.2', '1.15.0', '1.15.0rc1', '1.16.0', '1.16.0rc1',
                 '1.16.1', '1.16.1rc1', '1.17.0', '1.17.0rc1', '1.17.1',
@@ -1261,11 +1340,18 @@ class UpdateTest(unittest.TestCase):
                 '1-28-1', '1-29-0', '1-30-0', '1-30-0-rc1', '1-31-0-rc1',
                 '1-31-0-rc2'
             ],
+            'affected_ranges': [{
+                'fixed': '1.31.0',
+                'introduced': '1.14.2',
+                'repo_url': '',
+                'type': 'ECOSYSTEM'
+            }],
             'details': 'Blah blah blah\nBlah\n',
             'ecosystem': 'PyPI',
-            'fixed': None,
+            'fixed': '',
             'has_affected': True,
             'issue_id': None,
+            'is_fixed': True,
             'last_modified': datetime.datetime(2021, 1, 1, 0, 0),
             'project': 'grpcio',
             'public': None,
@@ -1273,8 +1359,7 @@ class UpdateTest(unittest.TestCase):
                 'https://ref.com/ref': 'WEB'
             },
             'reference_urls': ['https://ref.com/ref'],
-            'regressed': None,
-            'repo_url': None,
+            'regressed': '',
             'search_indices': ['grpcio', 'PYSEC-123', 'PYSEC', '123'],
             'severity': 'HIGH',
             'sort_key': 'PYSEC-0000123',

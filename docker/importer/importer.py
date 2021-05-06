@@ -183,7 +183,7 @@ class Importer:
       return
 
     for bug in osv.Bug.query(osv.Bug.status == osv.BugStatus.PROCESSED,
-                             osv.Bug.fixed == ''):
+                             osv.Bug.is_fixed == False):  # pylint: disable=singleton-comparison
       self._request_analysis(bug, source_repo, repo)
 
     # Re-compute existing Bugs for a period of time, as upstream changes may
@@ -194,7 +194,7 @@ class Importer:
 
     for bug in query:
       logging.info('Re-requesting impact for %s.', bug.key.id())
-      if not bug.fixed:
+      if not bug.is_fixed:
         # Previous query already requested impact tasks for unfixed bugs.
         continue
 

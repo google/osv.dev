@@ -77,9 +77,15 @@ indexes:
       - name: public
       - name: status
 
+  # TODO(ochang) remove after migration.
   - kind: Bug
     properties:
       - name: fixed
+      - name: status
+
+  - kind: Bug
+    properties:
+      - name: is_fixed
       - name: status
 
   - kind: Bug

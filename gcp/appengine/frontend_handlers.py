@@ -112,7 +112,7 @@ def bug_to_response(bug, detailed=False):
           'name': bug.project,
           'ecosystem': bug.ecosystem,
       },
-      'isFixed': bool(bug.fixed),
+      'isFixed': bug.is_fixed,
       'invalid': bug.status == osv.BugStatus.INVALID
   }
 
@@ -126,15 +126,13 @@ def bug_to_response(bug, detailed=False):
     response['details'] = bug.details
     response['severity'] = bug.severity
     response['references'] = bug.reference_urls
-    response['regressed'] = _get_commits(bug, [bug.regressed] + [
-        commit_range.introduced_in
-        for commit_range in bug.additional_commit_ranges
-    ])
+    response['regressed'] = _get_commits(
+        bug,
+        [affected_range.introduced for affected_range in bug.affected_ranges])
 
-    if bug.fixed:
-      response['fixed'] = _get_commits(bug, [bug.fixed] + [
-          commit_range.fixed_in for commit_range in bug.additional_commit_ranges
-      ])
+    if bug.is_fixed:
+      response['fixed'] = _get_commits(
+          bug, [affected_range.fixed for affected_range in bug.affected_ranges])
 
     if bug.status == osv.BugStatus.INVALID:
       response['regressed'] = [_to_commit(bug, 'INVALID')]

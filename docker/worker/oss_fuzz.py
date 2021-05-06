@@ -209,7 +209,6 @@ def set_bug_attributes(bug, regress_result, fix_result):
   bug.summary = summary
   bug.details = details
   bug.severity = severity
-  bug.reference_urls = reference_urls
   bug.reference_url_types = {}
 
   for reference_url in reference_urls:

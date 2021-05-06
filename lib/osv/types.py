@@ -197,8 +197,6 @@ class Bug(ndb.Model):
   severity = ndb.StringProperty(validator=_check_valid_severity)
   # Whether or not the bug is public (OSS-Fuzz only).
   public = ndb.BooleanProperty()
-  # Reference URLs.
-  reference_urls = ndb.StringProperty(repeated=True)
   # Reference URL types (dict of url -> type).
   reference_url_types = ndb.JsonProperty()
   # Search indices (auto-populated)
@@ -262,7 +260,6 @@ class Bug(ndb.Model):
     self.summary = vulnerability.summary
     self.details = vulnerability.details
     self.severity = vulnerability_pb2.Severity.Name(vulnerability.severity)
-    self.reference_urls = [ref.url for ref in vulnerability.references]
     self.reference_url_types = {
         ref.url: vulnerability_pb2.Reference.Type.Name(ref.type)
         for ref in vulnerability.references
@@ -319,14 +316,11 @@ class Bug(ndb.Model):
     published.FromDatetime(self.timestamp)
 
     references = []
-    reference_url_types = self.reference_url_types or {}
-
-    for url in self.reference_urls:
-      references.append(
-          vulnerability_pb2.Reference(
-              url=url,
-              type=vulnerability_pb2.Reference.Type.Value(
-                  reference_url_types.get(url, 'WEB'))))
+    if self.reference_url_types:
+      for url, url_type in self.reference_url_types.items():
+        references.append(
+            vulnerability_pb2.Reference(
+                url=url, type=vulnerability_pb2.Reference.Type.Value(url_type)))
 
     result = vulnerability_pb2.Vulnerability(
         id=self.id(),

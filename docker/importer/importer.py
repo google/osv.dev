@@ -194,7 +194,7 @@ class Importer:
 
     for bug in query:
       logging.info('Re-requesting impact for %s.', bug.key.id())
-      if not bug.fixed:
+      if not bug.is_fixed:
         # Previous query already requested impact tasks for unfixed bugs.
         continue
 

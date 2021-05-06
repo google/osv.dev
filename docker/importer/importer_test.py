@@ -190,7 +190,6 @@ class ImporterTest(unittest.TestCase):
         id='2021-1337',
         project='proj',
         ecosystem='OSS-Fuzz',
-        fixed='',
         status=1,
         source_id='oss-fuzz:123',
         source_of_truth=osv.SourceOfTruth.SOURCE_REPO,
@@ -198,16 +197,19 @@ class ImporterTest(unittest.TestCase):
     osv.Bug(
         id='2021-1338',
         project='proj',
-        fixed='fix',
         source_id='source:OSV-2021-1338.yaml',
         status=1,
         source_of_truth=osv.SourceOfTruth.SOURCE_REPO,
-        timestamp=importer.utcnow()).put()
+        timestamp=importer.utcnow(),
+        affected_ranges=[{
+            'fixed': 'fix',
+            'repo_url': 'repo',
+            'type': 'GIT',
+        }]).put()
     osv.Bug(
         id='2021-1339',
         project='proj',
         ecosystem='OSS-Fuzz',
-        fixed='',
         status=1,
         source_id='oss-fuzz:124',
         source_of_truth=osv.SourceOfTruth.INTERNAL,

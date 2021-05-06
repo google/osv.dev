@@ -33,6 +33,14 @@ def _check_valid_severity(prop, value):
     raise ValueError('Invalid severity: ' + value)
 
 
+def _check_valid_range_type(prop, value):
+  """Check valid range type."""
+  del prop
+
+  if value not in ('GIT', 'SEMVER', 'ECOSYSTEM'):
+    raise ValueError('Invalid severity: ' + value)
+
+
 def utcnow():
   """For mocking."""
   return datetime.datetime.utcnow()
@@ -133,7 +141,7 @@ class PackageTagInfo(ndb.Model):
 class AffectedRange(ndb.Model):
   """Affected range."""
   # Type of range.
-  type = ndb.StringProperty()
+  type = ndb.StringProperty(validator=_check_valid_range_type)
   # Repo URL.
   repo_url = ndb.StringProperty()
   # The regressing commit.

@@ -192,9 +192,7 @@ def generate_package_info_tasks():
     abort(403)
 
   publisher = pubsub_v1.PublisherClient()
-  query = osv.Bug.query(
-      projection=(osv.Bug.project, osv.Bug.ecosystem, osv.Bug.repo_url),
-      distinct_on=(osv.Bug.project, osv.Bug.ecosystem))
+  query = osv.Bug.query(distinct_on=(osv.Bug.project, osv.Bug.ecosystem))
   for result in query:
     if not result.project or not result.repo_url:
       continue

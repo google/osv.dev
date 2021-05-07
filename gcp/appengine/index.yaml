@@ -146,7 +146,6 @@ indexes:
     properties:
     - name: project
     - name: ecosystem
-    - name: repo_url
 
   - kind: Bug
     properties:

@@ -125,7 +125,7 @@ def bug_to_response(bug, detailed=False):
     response['repo_url'] = bug.repo_url
     response['details'] = bug.details
     response['severity'] = bug.severity
-    response['references'] = bug.reference_urls
+    response['references'] = list(bug.reference_url_types.keys())
     response['regressed'] = _get_commits(
         bug,
         [affected_range.introduced for affected_range in bug.affected_ranges])

@@ -202,7 +202,6 @@ class ImpactTest(unittest.TestCase):
             'sort_key': '2020-0001337',
             'source_of_truth': osv.SourceOfTruth.INTERNAL,
             'public': False,
-            'reference_urls': ['https://url/'],
             'reference_url_types': {
                 'https://url/': 'WEB'
             },
@@ -284,7 +283,6 @@ class ImpactTest(unittest.TestCase):
             'ecosystem': 'ecosystem',
             'summary': 'Heap-buffer-overflow in Foo',
             'details': 'DETAILS',
-            'reference_urls': ['https://url/'],
             'reference_url_types': {
                 'https://url/': 'WEB'
             },
@@ -374,7 +372,6 @@ class ImpactTest(unittest.TestCase):
             'reference_url_types': {
                 'https://url/': 'WEB'
             },
-            'reference_urls': ['https://url/'],
             'severity': 'MEDIUM',
             'sort_key': '2020-0001337',
             'source_of_truth': osv.SourceOfTruth.INTERNAL,
@@ -465,7 +462,6 @@ class ImpactTest(unittest.TestCase):
             'reference_url_types': {
                 'https://url/': 'WEB'
             },
-            'reference_urls': ['https://url/'],
             'public': False,
             'status': osv.BugStatus.PROCESSED.value,
             'has_affected': True,
@@ -558,7 +554,6 @@ class ImpactTest(unittest.TestCase):
             'reference_url_types': {
                 'https://url/': 'WEB'
             },
-            'reference_urls': ['https://url/'],
             'public': False,
             'status': osv.BugStatus.PROCESSED.value,
             'has_affected': True,
@@ -623,7 +618,6 @@ class ImpactTest(unittest.TestCase):
             'reference_url_types': {
                 'https://url/': 'WEB'
             },
-            'reference_urls': ['https://url/'],
             'public': False,
             'status': osv.BugStatus.PROCESSED.value,
             'has_affected': True,
@@ -932,7 +926,6 @@ class UpdateTest(unittest.TestCase):
             'reference_url_types': {
                 'https://ref.com/ref': 'WEB'
             },
-            'reference_urls': ['https://ref.com/ref'],
             'regressed': '',
             'search_indices': ['blah.com/package', 'BLAH-123', 'BLAH', '123'],
             'severity': 'HIGH',
@@ -1014,7 +1007,6 @@ class UpdateTest(unittest.TestCase):
             'reference_url_types': {
                 'https://ref.com/ref': 'WEB'
             },
-            'reference_urls': ['https://ref.com/ref'],
             'regressed': 'eefe8ec3f1f90d0e684890e810f3f21e8500a4cd',
             'search_indices': ['blah.com/package', 'BLAH-124', 'BLAH', '124'],
             'severity': 'HIGH',
@@ -1089,7 +1081,6 @@ class UpdateTest(unittest.TestCase):
             'reference_url_types': {
                 'https://ref.com/ref': 'WEB'
             },
-            'reference_urls': ['https://ref.com/ref'],
             'regressed': '',
             'search_indices': ['blah.com/package', 'BLAH-127', 'BLAH', '127'],
             'severity': 'HIGH',
@@ -1180,7 +1171,6 @@ class UpdateTest(unittest.TestCase):
             'reference_url_types': {
                 'https://ref.com/ref': 'WEB'
             },
-            'reference_urls': ['https://ref.com/ref'],
             'regressed': '',
             'search_indices': ['blah.com/package', 'BLAH-126', 'BLAH', '126'],
             'severity': 'HIGH',
@@ -1358,7 +1348,6 @@ class UpdateTest(unittest.TestCase):
             'reference_url_types': {
                 'https://ref.com/ref': 'WEB'
             },
-            'reference_urls': ['https://ref.com/ref'],
             'regressed': '',
             'search_indices': ['grpcio', 'PYSEC-123', 'PYSEC', '123'],
             'severity': 'HIGH',

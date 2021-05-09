@@ -91,9 +91,6 @@ class ImporterTest(unittest.TestCase):
             'https://bugs.chromium.org/p/oss-fuzz/issues/detail?id=1064':
                 'REPORT'
         },
-        reference_urls=[
-            'https://bugs.chromium.org/p/oss-fuzz/issues/detail?id=1064'
-        ],
         regressed='17ee4cf670c363de8d2ea4a4897d7a699837873f',
         search_indices=['file', '2017-134', '2017', '134'],
         severity='MEDIUM',

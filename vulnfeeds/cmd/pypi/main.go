@@ -96,7 +96,8 @@ func main() {
 		log.Printf("Valid versions = %v\n", validVersions)
 
 		id := "PYSEC-" + cve.CVE.CVEDataMeta.ID
-		v, notes := vulns.FromCVE(id, cve, pkg, "PyPI", "ECOSYSTEM", validVersions)
+		normalizedPkg := pypi.NormalizePackageName(pkg)
+		v, notes := vulns.FromCVE(id, cve, normalizedPkg, "PyPI", "ECOSYSTEM", validVersions)
 		if len(v.Affects.Ranges) == 0 {
 			log.Printf("No affected versions detected.")
 		}
@@ -106,7 +107,7 @@ func main() {
 			log.Fatalf("Failed to marshal YAML: %v", err)
 		}
 
-		pkgDir := filepath.Join(*outDir, pkg)
+		pkgDir := filepath.Join(*outDir, normalizedPkg)
 		err = os.MkdirAll(pkgDir, 0755)
 		if err != nil {
 			log.Fatalf("Failed to create dir: %v", err)

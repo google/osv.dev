@@ -20,6 +20,7 @@ import (
 	"log"
 	"net/http"
 	"net/url"
+	"regexp"
 	"sort"
 	"strings"
 
@@ -91,6 +92,13 @@ func loadVersions(path string) []pypiVersions {
 		log.Fatalf("Failed to parse %s: %v", err)
 	}
 	return versions
+}
+
+// NormalizePackageName normalizes a PyPI package name.
+func NormalizePackageName(name string) string {
+	// Per https://www.python.org/dev/peps/pep-0503/#normalized-names
+	re := regexp.MustCompile(`[-_.]+`)
+	return strings.ToLower(re.ReplaceAllString(name, "-"))
 }
 
 // extractVendorProduct takes a link and extracts the "vendor/product" from it

@@ -12,8 +12,9 @@ reference URLs used in the CVE, in addition to some other heuristics to avoid
 false positives.
 
 ## Extracting affected versions and commits
-Where possible, we try to extract affected version ranges from descriptions and
-other fields, and extract commit hashes from e.g. GitHub links.
+Where possible, we try to extract affected version ranges from
+descriptions (pattern matching) and other fields. We also extract
+commit hashes from e.g. GitHub links.
 
 Extracted version numbers are cross referenced against the list of actual
 versions released in the package manager to ensure accuracy.

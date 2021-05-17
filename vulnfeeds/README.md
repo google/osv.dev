@@ -21,6 +21,8 @@ versions released in the package manager to ensure accuracy.
 
 ## Workflow
 
+### Scraping existing feeds
+
 The intended workflow is for a human to periodically run the tools here against
 the latest NVD CVE feeds.
 
@@ -40,20 +42,42 @@ This auto-generates matching `<ID>.yaml` files into `$VULNS_REPO/vulns`.
 
 However, human intervention will always be required in some cases, when versions
 cannot be reliably extracted automatically from CVE data. In these cases a
-corresponding `<ID>.notes` file will be generated alongside the `<ID>.yaml` file to
-indicate that a human should look at this.
+comment block will be appended to the `<ID>.yaml` to indicate that a human
+should look at this.
 
-An example `<ID>.notes` file will look like:
+An example notes block will look like:
 
 ```
-Warning: 2017.5.0 is not a valid introduced version
-Warning: 2018.2.0 is not a valid introduced version
-Warning: 3000.0 is not a valid introduced version
+# <Vulnfeeds Notes>
+# Warning: 2017.5.0 is not a valid introduced version
+# Warning: 2018.2.0 is not a valid introduced version
+# Warning: 3000.0 is not a valid introduced version
 ```
 
-These files should be removed once resolved and not commited into the repo.
-Subsequent runs of the tool will **not** overwrite existing `.yaml` files to
-preserve human edits.
+These files will have the placeholder ID format `<PREFIX>-0000-....` (where
+`<PREFIX>` is the database ID prefix, e.g. `PYSEC`).
+
+### Merging manual pull requests
+
+Entries can also be manually contributed via a pull request. These entries
+should use a placeholder ID of the format `<PREFIX>-0000-<anything>` to indicate
+that an ID needs to be assigned.
+
+### ID generation
+
+Once vulnerabilities are scraped (or pull requests are merged), we need to
+assign IDs. Do this by running:
+
+```
+export VULNS_REPO=/path/to/vulns/repo
+export PREFIX=PYSEC
+go run ./cmd/ids -dir $VULNS_REPO -prefix $PREFIX
+```
+
+This will replace previous placeholder IDs with IDs of the form
+`<PREFIX>-YEAR-NNN`.
+
+TODO: GitHub Action to do this.
 
 ### False positives
 

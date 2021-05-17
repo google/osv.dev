@@ -16,7 +16,10 @@ package vulns
 
 import (
 	"fmt"
+	"io"
 	"time"
+
+	"gopkg.in/yaml.v2"
 
 	"github.com/google/osv/vulnfeeds/cves"
 )
@@ -115,4 +118,20 @@ func FromCVE(id string, cve cves.CVEItem, pkg, ecosystem, versionType string, va
 		})
 	}
 	return &v, notes
+}
+
+func FromYAML(r io.Reader) (*Vulnerability, error) {
+	decoder := yaml.NewDecoder(r)
+	var vuln Vulnerability
+	err := decoder.Decode(&vuln)
+	if err != nil {
+		return nil, err
+	}
+
+	return &vuln, nil
+}
+
+func (v *Vulnerability) ToYAML(w io.Writer) error {
+	encoder := yaml.NewEncoder(w)
+	return encoder.Encode(v)
 }

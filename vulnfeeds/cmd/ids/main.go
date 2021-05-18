@@ -102,6 +102,8 @@ func assignID(path, prefix string, yearCounters map[int]int, defaultYear int) er
 	if err := vuln.ToYAML(writef); err != nil {
 		return fmt.Errorf("failed to serialize: %w", err)
 	}
+
+	fmt.Printf("Assigning %s to %s\n", path, newPath)
 	return os.Remove(path)
 }
 

@@ -18,17 +18,21 @@ import (
 	"bufio"
 	"encoding/json"
 	"flag"
+	"fmt"
+	"io/fs"
 	"io/ioutil"
 	"log"
 	"os"
 	"path/filepath"
 	"strings"
 
-	"gopkg.in/yaml.v2"
-
 	"github.com/google/osv/vulnfeeds/cves"
 	"github.com/google/osv/vulnfeeds/pypi"
 	"github.com/google/osv/vulnfeeds/vulns"
+)
+
+const (
+	extension = ".yaml"
 )
 
 func loadFalsePositives(path string) map[string]bool {
@@ -54,6 +58,44 @@ func loadFalsePositives(path string) map[string]bool {
 	return falsePositives
 }
 
+func loadExisting(vulnsDir string) (map[string]bool, error) {
+	ids := map[string]bool{}
+	err := filepath.Walk(vulnsDir, func(path string, info fs.FileInfo, err error) error {
+		if err != nil {
+			return fmt.Errorf("Failed to access %s: %w", path, err)
+		}
+		if info.IsDir() {
+			return nil
+		}
+
+		if !strings.HasSuffix(path, extension) {
+			return nil
+		}
+
+		f, err := os.Open(path)
+		if err != nil {
+			return fmt.Errorf("Failed to open %s: %w", path, err)
+		}
+		defer f.Close()
+
+		vuln, err := vulns.FromYAML(f)
+		if err != nil {
+			return fmt.Errorf("Failed to parse %s: %w", path, err)
+		}
+
+		ids[vuln.ID] = true
+		for _, alias := range vuln.Aliases {
+			ids[alias] = true
+		}
+		return nil
+	})
+	if err != nil {
+		return nil, fmt.Errorf("Failed to walk: %w", err)
+	}
+
+	return ids, nil
+}
+
 func main() {
 	jsonPath := flag.String("nvd_json", "", "Path to NVD CVE JSON.")
 	pypiLinksPath := flag.String("pypi_links", "", "Path to pypi_links.json.")
@@ -76,9 +118,18 @@ func main() {
 
 	falsePositives := loadFalsePositives(*falsePositivesPath)
 	ecosystem := pypi.New(*pypiLinksPath, *pypiVersionsPath)
+	existingIDs, err := loadExisting(*outDir)
+	if err != nil {
+		log.Fatalf("Failed to load existing IDs: %v", err)
+	}
+
 	for _, cve := range parsed.CVEItems {
 		if _, exists := falsePositives[cve.CVE.CVEDataMeta.ID]; exists {
 			log.Printf("Skipping %s as a false positive.", cve.CVE.CVEDataMeta.ID)
+			continue
+		}
+		if _, exists := existingIDs[cve.CVE.CVEDataMeta.ID]; exists {
+			log.Printf("Skipping %s as it already exists.", cve.CVE.CVEDataMeta.ID)
 			continue
 		}
 
@@ -95,16 +146,12 @@ func main() {
 		}
 		log.Printf("Valid versions = %v\n", validVersions)
 
-		id := "PYSEC-" + cve.CVE.CVEDataMeta.ID
+		id := "PYSEC-0000-" + cve.CVE.CVEDataMeta.ID // To be assigned later.
+
 		normalizedPkg := pypi.NormalizePackageName(pkg)
 		v, notes := vulns.FromCVE(id, cve, normalizedPkg, "PyPI", "ECOSYSTEM", validVersions)
 		if len(v.Affects.Ranges) == 0 {
 			log.Printf("No affected versions detected.")
-		}
-
-		data, err := yaml.Marshal(v)
-		if err != nil {
-			log.Fatalf("Failed to marshal YAML: %v", err)
 		}
 
 		pkgDir := filepath.Join(*outDir, normalizedPkg)
@@ -113,21 +160,26 @@ func main() {
 			log.Fatalf("Failed to create dir: %v", err)
 		}
 
-		vulnPath := filepath.Join(pkgDir, v.ID+".yaml")
+		vulnPath := filepath.Join(pkgDir, v.ID+extension)
 		if _, err := os.Stat(vulnPath); err == nil {
 			log.Printf("Skipping %s as it already exists.", vulnPath)
 			continue
 		}
 
-		err = ioutil.WriteFile(vulnPath, data, 0644)
+		f, err := os.Create(vulnPath)
+		if err != nil {
+			log.Fatalf("Failed to open %s for writing: %v", vulnPath, err)
+		}
+		defer f.Close()
+		err = v.ToYAML(f)
 		if err != nil {
 			log.Fatalf("Failed to write %s: %v", vulnPath, err)
 		}
 
-		// If there are notes that require human intervention, write them.
+		// If there are notes that require human intervention, write them to the end of the YAML.
 		if len(notes) > 0 {
 			notesPath := filepath.Join(pkgDir, v.ID+".notes")
-			err = ioutil.WriteFile(notesPath, []byte(strings.Join(notes, "\n")), 0644)
+			_, err = f.WriteString("\n# <Vulnfeeds Notes>\n# " + strings.Join(notes, "\n# "))
 			if err != nil {
 				log.Fatalf("Failed to write %s: %v", notesPath, err)
 			}

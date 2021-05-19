@@ -25,7 +25,7 @@ from google.protobuf import json_format
 
 # pylint: disable=relative-beyond-top-level
 from . import repos
-from . import types
+from . import models
 from . import vulnerability_pb2
 
 AUTHOR_EMAIL = 'infra@osv.dev'
@@ -57,7 +57,7 @@ class GitRemoteCallback(pygit2.RemoteCallbacks):
 
 def get_source_repository(source_name):
   """Get source repository."""
-  return types.SourceRepository.get_by_id(source_name)
+  return models.SourceRepository.get_by_id(source_name)
 
 
 def parse_source_id(source_id):

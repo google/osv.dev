@@ -27,6 +27,7 @@ import (
 	"github.com/aquasecurity/go-pep440-version"
 
 	"github.com/google/osv/vulnfeeds/cves"
+	"github.com/google/osv/vulnfeeds/triage"
 )
 
 type pypiLinks struct {
@@ -59,6 +60,8 @@ var linkBlocklist = map[string]bool{
 	"https://github.com":         true,
 	"https://gitlab.com":         true,
 	"https://bitbucket.com":      true,
+	"https://bitbucket.org":      true,
+	"https://twitter.com":        true,
 	"https://pypi.org":           true,
 	"https://jira.atlassian.com": true,
 }
@@ -184,16 +187,18 @@ func New(pypiLinksPath string, pypiVersionsPath string) *PyPI {
 	}
 }
 
-func (p *PyPI) Matches(cve cves.CVEItem) string {
+func (p *PyPI) Matches(cve cves.CVEItem, falsePositives *triage.FalsePositives) string {
 	for _, reference := range cve.CVE.References.ReferenceData {
-		// If there is a PyPI link, it must be a Python package.
+		// If there is a PyPI link, it must be a Python package. These take precedence.
 		if pkg := extractPyPIProject(reference.URL); pkg != "" {
 			log.Printf("Matched via PyPI link: %s", reference.URL)
 			return pkg
 		}
+	}
 
+	for _, reference := range cve.CVE.References.ReferenceData {
 		// Otherwise try to cross-reference the link against our set of known links.
-		if pkg := p.matchesPackage(reference.URL, cve.CVE); pkg != "" {
+		if pkg := p.matchesPackage(reference.URL, cve.CVE, falsePositives); pkg != "" {
 			return pkg
 		}
 	}
@@ -213,7 +218,7 @@ func (p *PyPI) Matches(cve cves.CVEItem) string {
 	vendorProduct := cpe[3] + "/" + cpe[4]
 	if pkgs, exists := p.vendorProductToPkg[vendorProduct]; exists {
 		for _, pkg := range pkgs {
-			if p.finalPkgCheck(cve.CVE, pkg) {
+			if p.finalPkgCheck(cve.CVE, pkg, falsePositives) {
 				return pkg
 			}
 		}
@@ -221,8 +226,18 @@ func (p *PyPI) Matches(cve cves.CVEItem) string {
 	return ""
 }
 
+func filterVersions(versions []string) []string {
+	var filtered []string
+	for _, v := range versions {
+		if _, err := version.Parse(v); err == nil {
+			filtered = append(filtered, v)
+		}
+	}
+	return filtered
+}
+
 func (p *PyPI) Versions(pkg string) []string {
-	versions := p.versions[pkg]
+	versions := filterVersions(p.versions[pkg])
 	if versions == nil {
 		return nil
 	}
@@ -258,9 +273,9 @@ func (p *PyPI) packageExists(pkg string) bool {
 	return result
 }
 
-func (p *PyPI) finalPkgCheck(cve cves.CVE, pkg string) bool {
+func (p *PyPI) finalPkgCheck(cve cves.CVE, pkg string, falsePositives *triage.FalsePositives) bool {
 	// To avoid false positives, check that the pkg name is mentioned in the description.
-	desc := cves.EnglishDescription(cve)
+	desc := strings.ToLower(cves.EnglishDescription(cve))
 	pkgNameParts := strings.Split(pkg, "-")
 
 	for _, part := range pkgNameParts {
@@ -268,18 +283,24 @@ func (p *PyPI) finalPkgCheck(cve cves.CVE, pkg string) bool {
 		// Remove this to be a bit more lenient when matching against the description.
 		part = strings.TrimPrefix(part, "py")
 		part = strings.TrimSuffix(part, "py")
-		if !strings.Contains(strings.ToLower(desc), strings.ToLower(part)) {
+		if !strings.Contains(desc, strings.ToLower(part)) {
 			return false
 		}
 	}
 	log.Printf("Matched description")
+
+	if falsePositives.CheckPackage(pkg) && !strings.Contains(desc, "python") {
+		// If this package is listed as a false positive, and the description does not
+		// mention "python" anywhere, it's most likely a true false positive.
+		return false
+	}
 
 	// Finally check that the package still exists.
 	return p.packageExists(pkg)
 }
 
 // matchesPackage checks if a given reference link matches a PyPI package.
-func (p *PyPI) matchesPackage(link string, cve cves.CVE) string {
+func (p *PyPI) matchesPackage(link string, cve cves.CVE, falsePositives *triage.FalsePositives) string {
 	u, err := url.Parse(link)
 	if err != nil {
 		return ""
@@ -302,7 +323,7 @@ func (p *PyPI) matchesPackage(link string, cve cves.CVE) string {
 		// Check that the package still exists on PyPI.
 		for _, pkg := range pkgs {
 			log.Printf("Got potential match for %s: %s", link, pkg)
-			if p.finalPkgCheck(cve, pkg) {
+			if p.finalPkgCheck(cve, pkg, falsePositives) {
 				return pkg
 			}
 		}

@@ -17,4 +17,4 @@ from .bug import *
 from .impact import *
 from .repos import *
 from .sources import *
-from .types import *
+from .models import *

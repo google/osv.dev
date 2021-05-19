@@ -121,7 +121,7 @@ def reset_emulator():
 
 def mock_datetime(test):
   """Mocks datetime."""
-  for to_mock in ('osv.types.utcnow', 'osv.utcnow'):
+  for to_mock in ('osv.models.utcnow', 'osv.utcnow'):
     patcher = mock.patch(to_mock)
     mock_utcnow = patcher.start()
     mock_utcnow.return_value = datetime.datetime(2021, 1, 1)

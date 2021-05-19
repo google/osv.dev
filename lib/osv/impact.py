@@ -22,7 +22,7 @@ from google.cloud import ndb
 import pygit2
 
 from . import repos
-from . import types
+from . import models
 
 COMMIT_RANGE_LIMIT = 4
 
@@ -316,7 +316,7 @@ def update_affected_commits(bug_id, commits, project, ecosystem, public):
   to_delete = []
 
   for commit in commits:
-    affected_commit = types.AffectedCommit(
+    affected_commit = models.AffectedCommit(
         id=bug_id + '-' + commit,
         bug_id=bug_id,
         commit=commit,
@@ -329,8 +329,8 @@ def update_affected_commits(bug_id, commits, project, ecosystem, public):
   # Delete any affected commits that no longer apply. This can happen in cases
   # where a FixResult comes in later and we had previously marked a commit prior
   # to the fix commit as being affected by a vulnerability.
-  for existing in types.AffectedCommit.query(
-      types.AffectedCommit.bug_id == bug_id):
+  for existing in models.AffectedCommit.query(
+      models.AffectedCommit.bug_id == bug_id):
     if existing.commit not in commits:
       to_delete.append(existing.key)
 

@@ -833,11 +833,12 @@ class UpdateTest(unittest.TestCase):
         self._load_test_data(os.path.join(TEST_DATA_DIR, 'BLAH-127.yaml')))
     self.mock_repo.commit('User', 'user@email')
 
-    osv.SourceRepository(
+    self.source_repo = osv.SourceRepository(
         id='source',
         name='source',
         repo_url='file://' + self.remote_source_repo_path,
-        repo_username='').put()
+        repo_username='')
+    self.source_repo.put()
 
     osv.Bug(
         id='BLAH-123',
@@ -1277,6 +1278,9 @@ class UpdateTest(unittest.TestCase):
 
   def test_update_pypi(self):
     """Test a PyPI entry."""
+    self.source_repo.ignore_git = True
+    self.source_repo.put()
+
     self.mock_repo.add_file(
         'PYSEC-123.yaml',
         self._load_test_data(os.path.join(TEST_DATA_DIR, 'PYSEC-123.yaml')))
@@ -1287,8 +1291,8 @@ class UpdateTest(unittest.TestCase):
     message.attributes = {
         'source': 'source',
         'path': 'PYSEC-123.yaml',
-        'original_sha256': ('44a2ead7fa69e76be3d0033cce3fe05e'
-                            '63189ed6c2e72b88dffe73618b476e96'),
+        'original_sha256': ('c8313271c17c169afd795e7006d5b7f9'
+                            'd692359904c1c9bca39a007e3963f1c6'),
         'deleted': 'false',
     }
     task_runner._source_update(message)
@@ -1330,12 +1334,20 @@ class UpdateTest(unittest.TestCase):
                 '1-28-1', '1-29-0', '1-30-0', '1-30-0-rc1', '1-31-0-rc1',
                 '1-31-0-rc2'
             ],
-            'affected_ranges': [{
-                'fixed': '1.31.0',
-                'introduced': '1.14.2',
-                'repo_url': '',
-                'type': 'ECOSYSTEM'
-            }],
+            'affected_ranges': [
+                {
+                    'fixed': '1.31.0',
+                    'introduced': '1.14.2',
+                    'repo_url': '',
+                    'type': 'ECOSYSTEM'
+                },
+                {
+                    'fixed': '8d8242f545e9cec3e6d0d2e3f5bde8be1c659735',
+                    'introduced': 'eefe8ec3f1f90d0e684890e810f3f21e8500a4cd',
+                    'repo_url': 'https://osv-test/repo/url',
+                    'type': 'GIT'
+                },
+            ],
             'details': 'Blah blah blah\nBlah\n',
             'ecosystem': 'PyPI',
             'fixed': '',
@@ -1350,7 +1362,7 @@ class UpdateTest(unittest.TestCase):
             },
             'regressed': '',
             'search_indices': ['grpcio', 'PYSEC-123', 'PYSEC', '123'],
-            'severity': 'HIGH',
+            'severity': None,
             'sort_key': 'PYSEC-0000123',
             'source_id': 'source:PYSEC-123.yaml',
             'source_of_truth': osv.SourceOfTruth.SOURCE_REPO,

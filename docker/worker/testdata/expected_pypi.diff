@@ -1,11 +1,11 @@
 diff --git a/PYSEC-123.yaml b/PYSEC-123.yaml
-index 7f16594..6f04049 100644
+index 3714f05..8684499 100644
 --- a/PYSEC-123.yaml
 +++ b/PYSEC-123.yaml
-@@ -12,6 +12,59 @@ affects:
-   - type: ECOSYSTEM
-     introduced: 1.14.2
-     fixed: 1.31.0
+@@ -15,6 +15,59 @@ affects:
+     repo: https://osv-test/repo/url
+     introduced: eefe8ec3f1f90d0e684890e810f3f21e8500a4cd
+     fixed: 8d8242f545e9cec3e6d0d2e3f5bde8be1c659735
 +  versions:
 +  - 1.14.2
 +  - 1.15.0

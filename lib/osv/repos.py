@@ -37,6 +37,8 @@ def clone_with_retries(git_url, checkout_dir, callbacks=None):
       time.sleep(RETRY_SLEEP_SECONDS)
       continue
 
+  return None
+
 
 def _use_existing_checkout(git_url, checkout_dir, git_callbacks):
   """Update and use existing checkout."""

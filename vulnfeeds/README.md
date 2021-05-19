@@ -31,7 +31,7 @@ input files (pypi_links.json, pypi_versions.json)).
 
 ```bash
 export VULNS_REPO=/path/to/vulns/repo
-go run ./cmd/pypi -false_positives $VULNS_REPO/triage/false_positives.txt \
+go run ./cmd/pypi -false_positives $VULNS_REPO/triage/false_positives.yaml \
     -nvd_json /path/to/nvdcve-1.1-2021.json \
     -pypi_links pypi/pypi_links.json \
     -pypi_versions pypi/pypi_versions.json \
@@ -82,7 +82,7 @@ TODO: GitHub Action to do this.
 ### False positives
 
 False positives (i.e. CVEs that are incorrectly matched to a package) can be
-added into a `false_positives.txt` file and commited as part of the
+added into a `false_positives.yaml` file and commited as part of the
 vulnerability repo for future runs.
 
 The format of this file is newline delimited CVE IDs.
@@ -90,7 +90,10 @@ The format of this file is newline delimited CVE IDs.
 e.g.
 
 ```
-CVE-2021-1337
-CVE-2021-1338
+ids:
+- CVE-2021-1337  # justification
+- CVE-2021-1338  # justification
+packages:
+- blah # justification
 ...
 ```

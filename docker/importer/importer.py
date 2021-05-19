@@ -240,11 +240,17 @@ class Importer:
 
     # Create tasks for changed files.
     for changed_entry in changed_entries:
+      if source_repo.ignore_file(changed_entry):
+        continue
+
       logging.info('Re-analysis triggered for %s', changed_entry)
       self._request_analysis_external(source_repo, repo, changed_entry)
 
     # Mark deleted entries as invalid.
     for deleted_entry in deleted_entries:
+      if source_repo.ignore_file(deleted_entry):
+        continue
+
       logging.info('Marking %s as invalid', deleted_entry)
       self._request_analysis_external(
           source_repo, repo, deleted_entry, deleted=True)

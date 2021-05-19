@@ -387,7 +387,8 @@ class TaskRunner:
 
     try:
       for affected_range in vulnerability.affects.ranges:
-        if affected_range.type != vulnerability_pb2.AffectedRange.GIT:
+        if (affected_range.type != vulnerability_pb2.AffectedRange.GIT or
+            source_repo.ignore_git):
           continue
 
         # Convert empty values ('') to None.
@@ -398,7 +399,8 @@ class TaskRunner:
       for affected_range in vulnerability.affects.ranges:
         # Go through existing provided ranges to find additional ranges (via
         # cherrypicks and branches).
-        if affected_range.type != vulnerability_pb2.AffectedRange.GIT:
+        if (affected_range.type != vulnerability_pb2.AffectedRange.GIT or
+            source_repo.ignore_git):
           continue
 
         current_repo_url = affected_range.repo

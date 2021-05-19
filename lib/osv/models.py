@@ -16,6 +16,7 @@
 import datetime
 import enum
 import re
+import os
 
 from google.cloud import ndb
 from google.protobuf import timestamp_pb2
@@ -259,7 +260,8 @@ class Bug(ndb.Model):
     """Set fields from vulnerability."""
     self.summary = vulnerability.summary
     self.details = vulnerability.details
-    self.severity = vulnerability_pb2.Severity.Name(vulnerability.severity)
+    if vulnerability.severity != vulnerability_pb2.Severity.NONE:
+      self.severity = vulnerability_pb2.Severity.Name(vulnerability.severity)
     self.reference_url_types = {
         ref.url: vulnerability_pb2.Reference.Type.Name(ref.type)
         for ref in vulnerability.references
@@ -349,3 +351,19 @@ class SourceRepository(ndb.Model):
   last_synced_hash = ndb.StringProperty()
   # Last date recurring updates were requested.
   last_update_date = ndb.DateProperty()
+  # Patterns of files to exclude (regex).
+  ignore_patterns = ndb.StringProperty(repeated=True)
+  # It true, don't expand on git ranges.
+  ignore_git = ndb.BooleanProperty(default=False)
+
+  def ignore_file(self, file_path):
+    """Return whether or not we should be ignoring a file."""
+    if not self.ignore_patterns:
+      return False
+
+    file_name = os.path.basename(file_path)
+    for pattern in self.ignore_patterns:
+      if re.match(pattern, file_name):
+        return True
+
+    return False

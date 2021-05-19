@@ -56,7 +56,8 @@ class ImporterTest(unittest.TestCase):
         id='oss-fuzz',
         name='oss-fuzz',
         repo_url='file://' + self.remote_source_repo_path,
-        repo_username='')
+        repo_username='',
+        ignore_patterns=['.*IGNORE.*'])
     self.source_repo.put()
 
   def tearDown(self):
@@ -275,6 +276,17 @@ class ImporterTest(unittest.TestCase):
     """Test no update marker."""
     self.mock_repo.add_file('2021-111.yaml', '')
     self.mock_repo.commit('User', 'user@email', 'message. OSV-NO-UPDATE')
+
+    imp = importer.Importer('fake_public_key', 'fake_private_key', self.tmp_dir,
+                            'bucket')
+    imp.run()
+    mock_publish.assert_not_called()
+
+  @mock.patch('google.cloud.pubsub_v1.PublisherClient.publish')
+  def test_ignore(self, mock_publish):
+    """Test ignoring."""
+    self.mock_repo.add_file('2021-111IGNORE.yaml', '')
+    self.mock_repo.commit('User', 'user@email', 'message.')
 
     imp = importer.Importer('fake_public_key', 'fake_private_key', self.tmp_dir,
                             'bucket')

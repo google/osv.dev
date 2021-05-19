@@ -15,7 +15,6 @@
 package main
 
 import (
-	"bufio"
 	"encoding/json"
 	"flag"
 	"fmt"
@@ -28,35 +27,13 @@ import (
 
 	"github.com/google/osv/vulnfeeds/cves"
 	"github.com/google/osv/vulnfeeds/pypi"
+	"github.com/google/osv/vulnfeeds/triage"
 	"github.com/google/osv/vulnfeeds/vulns"
 )
 
 const (
 	extension = ".yaml"
 )
-
-func loadFalsePositives(path string) map[string]bool {
-	falsePositives := map[string]bool{}
-
-	file, err := os.Open(path)
-	if os.IsNotExist(err) {
-		return falsePositives
-	}
-	if err != nil {
-		log.Fatalf("Failed to open %s: %v", path, err)
-	}
-	defer file.Close()
-
-	scanner := bufio.NewScanner(file)
-	for scanner.Scan() {
-		falsePositives[strings.TrimSpace(scanner.Text())] = true
-	}
-	if err := scanner.Err(); err != nil {
-		log.Fatal("Failed to read lines: %v", err)
-	}
-
-	return falsePositives
-}
 
 func loadExisting(vulnsDir string) (map[string]bool, error) {
 	ids := map[string]bool{}
@@ -116,7 +93,11 @@ func main() {
 		log.Fatalf("Failed to parse NVD CVE JSON: %v", err)
 	}
 
-	falsePositives := loadFalsePositives(*falsePositivesPath)
+	falsePositives, err := triage.LoadFalsePositives(*falsePositivesPath)
+	if err != nil {
+		log.Fatalf("Failed to load false positives file %s: %v", *falsePositivesPath, err)
+	}
+
 	ecosystem := pypi.New(*pypiLinksPath, *pypiVersionsPath)
 	existingIDs, err := loadExisting(*outDir)
 	if err != nil {
@@ -124,7 +105,7 @@ func main() {
 	}
 
 	for _, cve := range parsed.CVEItems {
-		if _, exists := falsePositives[cve.CVE.CVEDataMeta.ID]; exists {
+		if falsePositives.CheckID(cve.CVE.CVEDataMeta.ID) {
 			log.Printf("Skipping %s as a false positive.", cve.CVE.CVEDataMeta.ID)
 			continue
 		}
@@ -134,7 +115,7 @@ func main() {
 		}
 
 		pkg := ""
-		if pkg = ecosystem.Matches(cve); pkg == "" {
+		if pkg = ecosystem.Matches(cve, falsePositives); pkg == "" {
 			continue
 		}
 

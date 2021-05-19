@@ -87,8 +87,8 @@ func assignID(path, prefix string, yearCounters map[int]int, defaultYear int) er
 	}
 
 	// Allocate a new ID and write the new file.
-	id := yearCounters[year]
-	yearCounters[year] += 1
+	id := yearCounters[year] + 1
+	yearCounters[year] = id
 
 	vuln.ID = fmt.Sprintf("%s-%d-%d", prefix, year, id)
 	newPath := filepath.Join(filepath.Dir(path), vuln.ID+extension)

@@ -103,12 +103,11 @@ class Importer:
   def run(self):
     """Run importer."""
     # Currently only importing OSS-Fuzz data.
-    oss_fuzz_source = osv.get_source_repository('oss-fuzz')
-    if not oss_fuzz_source:
-      raise RuntimeError('OSS-Fuzz source not found.')
+    for source_repo in osv.SourceRepository.query():
+      if source_repo.name == 'oss-fuzz':
+        self.process_oss_fuzz(source_repo)
 
-    self.process_oss_fuzz(oss_fuzz_source)
-    self.process_updates(oss_fuzz_source)
+      self.process_updates(source_repo)
 
   def _use_existing_checkout(self, source_repo, checkout_dir):
     """Update and use existing checkout."""

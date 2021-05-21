@@ -108,8 +108,7 @@ export default {
     async makeRequest() {
       const curId = ++this.requestId;
       const response = await fetch(
-          `/backend/query?page=${this.currentPage}&search=${this.queryParam}&affected_only=${this.affectedOnly}`,
-          { credentials: 'include' });
+          `/backend/query?page=${this.currentPage}&search=${this.queryParam}&affected_only=${this.affectedOnly}`);
 
       const results = await response.json();
       if (curId != this.requestId) {

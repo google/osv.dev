@@ -57,8 +57,7 @@ export default {
     async makeRequest() {
       const curId = ++this.requestId;
       const response = await fetch(
-          `/backend/package?package=${this.$route.params.package}`,
-          { credentials: 'include' });
+          `/backend/package?package=${this.$route.params.package}`);
       if (response.status != 200) {
         this.$router.replace({name: 'notfound'});
       }

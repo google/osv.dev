@@ -54,16 +54,19 @@
           <router-link :to="getVulnerabilityLink(summary.item.id)">(Details)</router-link>
         </p>
       </template>
-      <template v-slot:cell(affected)="data">
-        <div v-for="affected in data.value.slice(0, 8)" :key="affected">
-          {{affected.tag}}
-        </div>
-        <div v-if="data.value.length > 8" v-b-popover.hover.right="formatLongAffected(data.value.slice(8))">
-          ...
-        </div>
-        <div v-if="data.value.length == 0">
+      <template v-slot:cell(affects)="data">
+        <span v-if="data.value.versions && data.value.versions.length > 0">
+          <div v-for="version in data.value.versions.slice(0, 8)" :key="version">
+            {{version}}
+          </div>
+          <div v-if="data.value.versions.length > 8" v-b-popover.hover.right="formatLongAffected(data.value.versions.slice(8))">
+            ...
+          </div>
+        </span>
+        <div v-else>
           No impacted versions.
         </div>
+        </span>
       </template>
     </b-table>
   </div>
@@ -96,7 +99,7 @@ export default {
             label: 'Summary',
         },
         {
-            key: 'affected',
+            key: 'affects',
         },
       ]
     };

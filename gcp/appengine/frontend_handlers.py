@@ -77,11 +77,11 @@ def _to_commit(bug, commit_hash):
   return commit
 
 
-def _get_commits(bug, commit_hashes):
+def _get_commits(bug, ranges, attr):
   """Get commits."""
-  commits = []
-  for i, commit_hash in enumerate(set(commit_hashes)):
-    if commit_hash is None:
+  versions = []
+  for i, version in enumerate(set(versions)):
+    if version is None:
       continue
 
     commit = _to_commit(bug, commit_hash)
@@ -92,70 +92,54 @@ def _get_commits(bug, commit_hashes):
   return commits
 
 
-def _get_affected(bug):
-  """Get affected tags."""
-  result = []
-  for affected in bug.affected:
-    result.append({
-        'tag': affected,
-    })
-
-  return result
-
-
 def bug_to_response(bug, detailed=False):
   """Convert a Bug entity to a response object."""
-  response = {
-      'id': osv.Bug.OSV_ID_PREFIX + bug.key.id(),
-      'summary': bug.summary,
-      'package': {
-          'name': bug.project,
-          'ecosystem': bug.ecosystem,
-      },
+  response = osv.vulnerability_to_dict(bug.to_vulnerability())
+  response.update({
       'isFixed': bug.is_fixed,
       'invalid': bug.status == osv.BugStatus.INVALID
-  }
+  })
 
-  if bug.status == osv.BugStatus.INVALID:
-    response['affected'] = []
-  else:
-    response['affected'] = _get_affected(bug)
-
-  if detailed:
-    response['repo_url'] = bug.repo_url
-    response['details'] = bug.details
-    response['severity'] = bug.severity
-    response['references'] = list(bug.reference_url_types.keys())
-    response['regressed'] = _get_commits(
-        bug,
-        [affected_range.introduced for affected_range in bug.affected_ranges])
-
-    if bug.is_fixed:
-      response['fixed'] = _get_commits(
-          bug, [affected_range.fixed for affected_range in bug.affected_ranges])
-
-    if bug.status == osv.BugStatus.INVALID:
-      response['regressed'] = [_to_commit(bug, 'INVALID')]
-      response['fixed'] = [_to_commit(bug, 'INVALID')]
-      response['details'] = 'INVALID'
-      response['severity'] = 'INVALID'
-
+  add_links(response)
   return response
 
 
-def _commit_to_link(commit):
+def add_links(bug):
+  """Add VCS links where possible."""
+  for i, affected in enumerate(bug['affects']['ranges']):
+    affected['id'] = i
+    if affected['type'] != 'GIT':
+      continue
+
+    repo_url = affected.get('repo')
+    if not repo_url:
+      continue
+
+    if affected.get('introduced'):
+      affected['introduced_link'] = _commit_to_link(repo_url, affected['introduced'])
+
+    if affected.get('fixed'):
+      affected['fixed_link'] = _commit_to_link(repo_url, affected['fixed'])
+
+
+def _commit_to_link(repo_url, commit):
   """Convert commit to link."""
-  vcs = source_mapper.get_vcs_viewer_for_url(commit['repoUrl'])
+  vcs = source_mapper.get_vcs_viewer_for_url(repo_url)
   if not vcs:
     return None
 
-  if commit['type'] == 'exact':
-    return vcs.get_source_url_for_revision(commit['commit'])
+  if ':' not in commit:
+    return vcs.get_source_url_for_revision(commit)
 
-  if commit['from'] == 'unknown':
+  commit_parts = commit.split(':')
+  if len(commit_parts) != 2:
     return None
 
-  return vcs.get_source_url_for_revision_diff(commit['from'], commit['to'])
+  start, end = commit_parts
+  if start == 'unknown':
+    return None
+
+  return vcs.get_source_url_for_revision_diff(start, end)
 
 
 @blueprint.route(_BACKEND_ROUTE + '/query')

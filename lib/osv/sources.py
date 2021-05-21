@@ -95,7 +95,6 @@ class _YamlDumper(yaml.SafeDumper):
 _YamlDumper.add_representer(str, _yaml_str_representer)
 
 
-
 def vulnerability_to_dict(vulnerability):
   """Convert Vulnerability to a dict."""
   return json_format.MessageToDict(vulnerability)

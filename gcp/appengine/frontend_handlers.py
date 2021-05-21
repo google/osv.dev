@@ -32,8 +32,6 @@ blueprint = Blueprint('frontend_handlers', __name__)
 _BACKEND_ROUTE = '/backend'
 _PAGE_SIZE = 16
 _PAGE_LOOKAHEAD = 4
-_IAP_ACCOUNT_NAMESPACE = 'accounts.google.com:'
-_OSS_FUZZ_TRACKER_URL = 'https://bugs.chromium.org/p/oss-fuzz/issues/detail?id='
 _REQUESTS_PER_MIN = 30
 
 
@@ -60,39 +58,7 @@ def index():
   return render_template('index.html')
 
 
-def _to_commit(bug, commit_hash):
-  """Convert a commit hash to a Commit structure."""
-  commit = {
-      'repoType': 'git',  # TODO(ochang): Remove hardcode.
-      'repoUrl': bug.repo_url,
-  }
-
-  if ':' in commit_hash:
-    commit['type'] = 'range'
-    commit['from'], commit['to'] = commit_hash.split(':')
-    return commit
-
-  commit['type'] = 'exact'
-  commit['commit'] = commit_hash
-  return commit
-
-
-def _get_commits(bug, ranges, attr):
-  """Get commits."""
-  versions = []
-  for i, version in enumerate(set(versions)):
-    if version is None:
-      continue
-
-    commit = _to_commit(bug, commit_hash)
-    commit['link'] = _commit_to_link(commit)
-    commit['id'] = i
-    commits.append(commit)
-
-  return commits
-
-
-def bug_to_response(bug, detailed=False):
+def bug_to_response(bug):
   """Convert a Bug entity to a response object."""
   response = osv.vulnerability_to_dict(bug.to_vulnerability())
   response.update({
@@ -116,7 +82,8 @@ def add_links(bug):
       continue
 
     if affected.get('introduced'):
-      affected['introduced_link'] = _commit_to_link(repo_url, affected['introduced'])
+      affected['introduced_link'] = _commit_to_link(repo_url,
+                                                    affected['introduced'])
 
     if affected.get('fixed'):
       affected['fixed_link'] = _commit_to_link(repo_url, affected['fixed'])
@@ -242,4 +209,4 @@ def vulnerability_handler():
     abort(403)
     return None
 
-  return jsonify(bug_to_response(bug, detailed=True))
+  return jsonify(bug_to_response(bug))

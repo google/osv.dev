@@ -66,7 +66,6 @@
         <div v-else>
           No impacted versions.
         </div>
-        </span>
       </template>
     </b-table>
   </div>

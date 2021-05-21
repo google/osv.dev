@@ -923,7 +923,7 @@ class UpdateTest(unittest.TestCase):
             'is_fixed': True,
             'last_modified': datetime.datetime(2021, 1, 1, 0, 0),
             'project': 'blah.com/package',
-            'public': None,
+            'public': True,
             'reference_url_types': {
                 'https://ref.com/ref': 'WEB'
             },
@@ -1004,7 +1004,7 @@ class UpdateTest(unittest.TestCase):
             'is_fixed': True,
             'last_modified': datetime.datetime(2021, 1, 1, 0, 0),
             'project': 'blah.com/package',
-            'public': None,
+            'public': True,
             'reference_url_types': {
                 'https://ref.com/ref': 'WEB'
             },
@@ -1078,7 +1078,7 @@ class UpdateTest(unittest.TestCase):
             'is_fixed': True,
             'last_modified': datetime.datetime(2021, 1, 1, 0, 0),
             'project': 'blah.com/package',
-            'public': None,
+            'public': True,
             'reference_url_types': {
                 'https://ref.com/ref': 'WEB'
             },
@@ -1168,7 +1168,7 @@ class UpdateTest(unittest.TestCase):
             'is_fixed': True,
             'last_modified': datetime.datetime(2021, 1, 1, 0, 0),
             'project': 'blah.com/package',
-            'public': None,
+            'public': True,
             'reference_url_types': {
                 'https://ref.com/ref': 'WEB'
             },
@@ -1356,7 +1356,7 @@ class UpdateTest(unittest.TestCase):
             'is_fixed': True,
             'last_modified': datetime.datetime(2021, 1, 1, 0, 0),
             'project': 'grpcio',
-            'public': None,
+            'public': True,
             'reference_url_types': {
                 'https://ref.com/ref': 'WEB'
             },

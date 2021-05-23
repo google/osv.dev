@@ -95,10 +95,15 @@ class _YamlDumper(yaml.SafeDumper):
 _YamlDumper.add_representer(str, _yaml_str_representer)
 
 
+def vulnerability_to_dict(vulnerability):
+  """Convert Vulnerability to a dict."""
+  return json_format.MessageToDict(vulnerability)
+
+
 def vulnerability_to_yaml(vulnerability, output_path):
   """Convert Vulnerability to YAML."""
   with open(output_path, 'w') as handle:
-    data = json_format.MessageToDict(vulnerability)
+    data = vulnerability_to_dict(vulnerability)
     yaml.dump(data, handle, sort_keys=False, Dumper=_YamlDumper)
 
 

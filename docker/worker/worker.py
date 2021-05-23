@@ -455,6 +455,7 @@ class TaskRunner:
           source_of_truth=osv.SourceOfTruth.SOURCE_REPO)
 
     bug.update_from_vulnerability(vulnerability)
+    bug.public = True
     bug.put()
 
     osv.update_affected_commits(bug.key.id(), commits, bug.project,

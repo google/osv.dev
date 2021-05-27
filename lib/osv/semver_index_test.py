@@ -49,6 +49,7 @@ class SemverIndexTests(unittest.TestCase):
   def test_sort(self):
     """Test sorting."""
     versions = [
+        '1.0.2', '1.0.11', '1.9.0', '1.11.0',
         '1.0.1-20191109021931-daa7c04131f5',
         '1.0.1-pre.0.20191109021931-daa7c04131f5',
         '1.0.1-0.20191109021931-daa7c04131f5', '1.0.1-beta.2', '1.0.1-beta.11',
@@ -57,10 +58,23 @@ class SemverIndexTests(unittest.TestCase):
     ]
 
     self.assertListEqual([
-        '1.0.1-0.20191109021931-daa7c04131f5', '1.0.1-9', '1.0.1-0a',
-        '1.0.1-20191109021931-daa7c04131f5', '1.0.1-alpha', '1.0.1-alpha.1',
-        '1.0.1-alpha.beta', '1.0.1-beta', '1.0.1-beta.2', '1.0.1-beta.11',
-        '1.0.1-pre.0.20191109021931-daa7c04131f5', '1.0.1-rc.1', '1.0.1'
+        '1.0.1-0.20191109021931-daa7c04131f5',
+        '1.0.1-9',
+        '1.0.1-0a',
+        '1.0.1-20191109021931-daa7c04131f5',
+        '1.0.1-alpha',
+        '1.0.1-alpha.1',
+        '1.0.1-alpha.beta',
+        '1.0.1-beta',
+        '1.0.1-beta.2',
+        '1.0.1-beta.11',
+        '1.0.1-pre.0.20191109021931-daa7c04131f5',
+        '1.0.1-rc.1',
+        '1.0.1',
+        '1.0.2',
+        '1.0.11',
+        '1.9.0',
+        '1.11.0',
     ], sorted(versions, key=semver_index.normalize))
 
     # Sanity check that the python semver library agrees.

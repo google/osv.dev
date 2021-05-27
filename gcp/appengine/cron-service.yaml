@@ -9,7 +9,7 @@ handlers:
 basic_scaling:
   max_instances: 3
 
-instance_class: B4
+instance_class: B4_1G
 
 env_variables:
   REDISHOST: 10.126.238.68

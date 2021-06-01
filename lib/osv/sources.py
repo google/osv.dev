@@ -31,7 +31,6 @@ from . import vulnerability_pb2
 AUTHOR_EMAIL = 'infra@osv.dev'
 PUSH_RETRIES = 2
 PUSH_RETRY_SLEEP_SECONDS = 10
-VULNERABILITY_EXTENSION = '.yaml'
 
 
 class GitRemoteCallback(pygit2.RemoteCallbacks):
@@ -78,6 +77,13 @@ def parse_vulnerability(path):
     data = yaml.safe_load(f)
   json_format.ParseDict(data, vulnerability)
 
+  return vulnerability
+
+
+def parse_vulnerability_from_dict(data):
+  """Parse vulnerability from dict."""
+  vulnerability = vulnerability_pb2.Vulnerability()
+  json_format.ParseDict(data, vulnerability)
   return vulnerability
 
 
@@ -196,11 +202,18 @@ def git_author():
   return pygit2.Signature('OSV', AUTHOR_EMAIL)
 
 
-def sha256(yaml_path):
+def sha256(file_path):
   """Computes sha256 sum."""
   hasher = hashlib.sha256()
-  with open(yaml_path, 'rb') as f:
+  with open(file_path, 'rb') as f:
     hasher.update(f.read())
+  return hasher.hexdigest()
+
+
+def sha256_bytes(data):
+  """Computes sha256sum."""
+  hasher = hashlib.sha256()
+  hasher.update(data)
   return hasher.hexdigest()
 
 
@@ -208,7 +221,7 @@ def source_path(source_repo, bug):
   """Get the source path for an osv.Bug."""
   source_name, source_id = parse_source_id(bug.source_id)
   if source_name == 'oss-fuzz':
-    path = os.path.join(bug.project, bug.id() + VULNERABILITY_EXTENSION)
+    path = os.path.join(bug.project, bug.id() + source_repo.extension)
     if source_repo.directory_path:
       path = os.path.join(source_repo.directory_path, path)
 

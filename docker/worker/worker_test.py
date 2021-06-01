@@ -27,6 +27,7 @@ from osv import tests
 import oss_fuzz
 import worker
 
+TEST_BUCKET = 'test-osv-source-bucket'
 TEST_DATA_DIR = os.path.join(
     os.path.dirname(os.path.abspath(__file__)), 'testdata')
 
@@ -834,9 +835,11 @@ class UpdateTest(unittest.TestCase):
     self.mock_repo.commit('User', 'user@email')
 
     self.source_repo = osv.SourceRepository(
+        type=osv.SourceRepositoryType.GIT,
         id='source',
         name='source',
         repo_url='file://' + self.remote_source_repo_path,
+        editable=True,
         repo_username='')
     self.source_repo.put()
 
@@ -1374,6 +1377,121 @@ class UpdateTest(unittest.TestCase):
 
     affected_commits = list(osv.AffectedCommit.query())
     self.assertEqual(0, len(affected_commits))
+
+  def test_update_bucket(self):
+    """Test bucket entries."""
+    self.source_repo.type = osv.SourceRepositoryType.BUCKET
+    self.source_repo.bucket = TEST_BUCKET
+    self.source_repo.editable = False
+    self.source_repo.put()
+
+    task_runner = worker.TaskRunner(ndb_client, None, self.tmp_dir.name, None,
+                                    None)
+
+    message = mock.Mock()
+    message.attributes = {
+        'source': 'source',
+        'path': 'a/b/test.json',
+        'original_sha256': ('b2b37bde8f39256239419078de672ce7'
+                            'a408735f1c2502ee8fa08745096e1971'),
+        'deleted': 'false',
+    }
+    task_runner._source_update(message)
+
+    self.assertDictEqual(
+        {
+            'affected': [],
+            'affected_fuzzy': [],
+            'affected_ranges': [{
+                'fixed': 'v1.0.0-rc8.0.20190930145003-cad42f6e0932',
+                'introduced': '',
+                'repo_url': '',
+                'type': 'SEMVER'
+            }],
+            'details':
+                'AppArmor restrictions may be bypassed due to improper '
+                'validation of mount\n'
+                'targets, allowing a malicious image to mount volumes over e.g.'
+                ' /proc.\n',
+            'ecosystem': 'Go',
+            'fixed': '',
+            'has_affected': False,
+            'is_fixed': True,
+            'issue_id': None,
+            'last_modified': datetime.datetime(2021, 4, 14, 12, 0),
+            'project': 'github.com/opencontainers/runc/libcontainer',
+            'public': True,
+            'reference_url_types': {
+                'https://github.com/opencontainers/runc/commit/'
+                'cad42f6e0932db0ce08c3a3d9e89e6063ec283e4':
+                    'FIX',
+                'https://github.com/opencontainers/runc/issues/2128':
+                    'WEB',
+                'https://github.com/opencontainers/runc/pull/2130':
+                    'FIX'
+            },
+            'regressed': '',
+            'search_indices': [
+                'github.com/opencontainers/runc/libcontainer', 'GO-2021-0085',
+                'GO', '2021', '0085'
+            ],
+            'severity': None,
+            'sort_key': 'GO-0002021',
+            'source_id': 'source:a/b/test.json',
+            'source_of_truth': 2,
+            'status': 1,
+            'summary': '',
+            'timestamp': datetime.datetime(2021, 4, 14, 12, 0)
+        },
+        osv.Bug.get_by_id('GO-2021-0085')._to_dict())
+    self.assertDictEqual(
+        {
+            'affected': [],
+            'affected_fuzzy': [],
+            'affected_ranges': [{
+                'fixed': 'v1.0.0-rc9.0.20200122160610-2fc03cc11c77',
+                'introduced': '',
+                'repo_url': '',
+                'type': 'SEMVER'
+            }],
+            'details':
+                'A race while mounting volumes allows a possible '
+                'symlink-exchange\n'
+                'attack, allowing a user whom can start multiple containers '
+                'with\n'
+                'custom volume mount configurations to escape the container.\n'
+                '\n',
+            'ecosystem': 'Go',
+            'fixed': '',
+            'has_affected': False,
+            'is_fixed': True,
+            'issue_id': None,
+            'last_modified': datetime.datetime(2021, 4, 14, 12, 0),
+            'project': 'github.com/opencontainers/runc/libcontainer',
+            'public': True,
+            'reference_url_types': {
+                'https://github.com/opencontainers/runc/commit/'
+                '2fc03cc11c775b7a8b2e48d7ee447cb9bef32ad0':
+                    'FIX',
+                'https://github.com/opencontainers/runc/issues/2197':
+                    'WEB',
+                'https://github.com/opencontainers/runc/pull/2207':
+                    'FIX'
+            },
+            'regressed': '',
+            'search_indices': [
+                'github.com/opencontainers/runc/libcontainer', 'GO-2021-0087',
+                'GO', '2021', '0087'
+            ],
+            'severity': None,
+            'sort_key': 'GO-0002021',
+            'source_id': 'source:a/b/test.json',
+            'source_of_truth': 2,
+            'status': 1,
+            'summary': '',
+            'timestamp': datetime.datetime(2021, 4, 14, 12, 0)
+        },
+        osv.Bug.get_by_id('GO-2021-0087')._to_dict())
 
 
 if __name__ == '__main__':

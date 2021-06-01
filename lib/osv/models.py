@@ -337,14 +337,24 @@ class Bug(ndb.Model):
     return result
 
 
+class SourceRepositoryType(enum.IntEnum):
+  """SourceRepository type."""
+  GIT = 0
+  BUCKET = 1
+
+
 class SourceRepository(ndb.Model):
   """Source repository."""
+  # The type of the repository.
+  type = ndb.IntegerProperty()
   # The name of the source.
   name = ndb.StringProperty()
   # The repo URL for the source.
   repo_url = ndb.StringProperty()
   # The username to use for SSH auth.
   repo_username = ndb.StringProperty()
+  # Bucket name.
+  bucket = ndb.StringProperty()
   # The directory in the repo where Vulnerability data is stored.
   directory_path = ndb.StringProperty()
   # Last synced hash.
@@ -355,6 +365,10 @@ class SourceRepository(ndb.Model):
   ignore_patterns = ndb.StringProperty(repeated=True)
   # It true, don't expand on git ranges.
   ignore_git = ndb.BooleanProperty(default=False)
+  # Whether this repository is editable.
+  editable = ndb.BooleanProperty(default=False)
+  # Default extension.
+  extension = ndb.StringProperty(default='.yaml')
 
   def ignore_file(self, file_path):
     """Return whether or not we should be ignoring a file."""
@@ -367,3 +381,8 @@ class SourceRepository(ndb.Model):
         return True
 
     return False
+
+  def _pre_put_hook(self):
+    """Pre-put hook for validation."""
+    if self.type == SourceRepositoryType.BUCKET and self.editable:
+      raise ValueError('BUCKET SourceRepository cannot be editable.')

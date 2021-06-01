@@ -40,9 +40,9 @@ _EXPORT_WORKERS = 32
 _NO_UPDATE_MARKER = 'OSV-NO-UPDATE'
 
 
-def _is_vulnerability_file(file_path):
+def _is_vulnerability_file(source_repo, file_path):
   """Return whether or not the file is a Vulnerability entry."""
-  return file_path.endswith(osv.VULNERABILITY_EXTENSION)
+  return file_path.endswith(source_repo.extension)
 
 
 def utcnow():
@@ -70,18 +70,18 @@ class Importer:
   def _request_analysis(self, bug, source_repo, repo):
     """Request analysis."""
     if bug.source_of_truth == osv.SourceOfTruth.SOURCE_REPO:
-      self._request_analysis_external(source_repo, repo,
-                                      osv.source_path(source_repo, bug))
+      path = osv.source_path(source_repo, bug)
+      original_sha256 = osv.sha256(os.path.join(osv.repo_path(repo), path))
+      self._request_analysis_external(source_repo, original_sha256, path)
     else:
       self._request_internal_analysis(bug)
 
-  def _request_analysis_external(self, source_repo, repo, path, deleted=False):
+  def _request_analysis_external(self,
+                                 source_repo,
+                                 original_sha256,
+                                 path,
+                                 deleted=False):
     """Request analysis."""
-    if deleted:
-      original_sha256 = ''
-    else:
-      original_sha256 = osv.sha256(os.path.join(osv.repo_path(repo), path))
-
     self._publisher.publish(
         _TASKS_TOPIC,
         data=b'',
@@ -201,8 +201,8 @@ class Importer:
     source_repo.last_update_date = utcnow().date()
     source_repo.put()
 
-  def process_updates(self, source_repo):
-    """Process user changes and updates."""
+  def _process_updates_git(self, source_repo):
+    """Process updates for a git source_repo."""
     repo = self.checkout(source_repo)
 
     walker = repo.walk(repo.head.target, pygit2.GIT_SORT_TOPOLOGICAL)
@@ -226,14 +226,16 @@ class Importer:
       for parent in commit.parents:
         diff = repo.diff(parent, commit)
         for delta in diff.deltas:
-          if delta.old_file and _is_vulnerability_file(delta.old_file.path):
+          if delta.old_file and _is_vulnerability_file(source_repo,
+                                                       delta.old_file.path):
             if delta.status == pygit2.GIT_DELTA_DELETED:
               deleted_entries.add(delta.old_file.path)
               continue
 
             changed_entries.add(delta.old_file.path)
 
-          if delta.new_file and _is_vulnerability_file(delta.new_file.path):
+          if delta.new_file and _is_vulnerability_file(source_repo,
+                                                       delta.new_file.path):
             changed_entries.add(delta.new_file.path)
 
     # Create tasks for changed files.
@@ -242,7 +244,10 @@ class Importer:
         continue
 
       logging.info('Re-analysis triggered for %s', changed_entry)
-      self._request_analysis_external(source_repo, repo, changed_entry)
+      original_sha256 = osv.sha256(
+          os.path.join(osv.repo_path(repo), changed_entry))
+      self._request_analysis_external(source_repo, original_sha256,
+                                      changed_entry)
 
     # Mark deleted entries as invalid.
     for deleted_entry in deleted_entries:
@@ -250,11 +255,45 @@ class Importer:
         continue
 
       logging.info('Marking %s as invalid', deleted_entry)
+      original_sha256 = ''
       self._request_analysis_external(
-          source_repo, repo, deleted_entry, deleted=True)
+          source_repo, original_sha256, deleted_entry, deleted=True)
 
     source_repo.last_synced_hash = str(repo.head.target)
     source_repo.put()
+
+  def _process_updates_bucket(self, source_repo):
+    """Process updates from bucket."""
+    if (source_repo.last_update_date and
+        source_repo.last_update_date >= utcnow().date()):
+      return
+
+    # TODO(ochang): Use Pub/Sub change notifications for more efficient
+    # processing.
+    storage_client = storage.Client()
+    for blob in storage_client.list_blobs(source_repo.bucket):
+      if not _is_vulnerability_file(source_repo, blob.name):
+        continue
+
+      logging.info('Bucket entry triggered for for %s/%s', source_repo.bucket,
+                   blob.name)
+      original_sha256 = osv.sha256_bytes(blob.download_as_bytes())
+      self._request_analysis_external(source_repo, original_sha256, blob.name)
+
+    source_repo.last_update_date = utcnow().date()
+    source_repo.put()
+
+  def process_updates(self, source_repo):
+    """Process user changes and updates."""
+    if source_repo.type == osv.SourceRepositoryType.GIT:
+      self._process_updates_git(source_repo)
+      return
+
+    if source_repo.type == osv.SourceRepositoryType.BUCKET:
+      self._process_updates_bucket(source_repo)
+      return
+
+    raise RuntimeError('Invalid repo type.')
 
   def process_oss_fuzz(self, oss_fuzz_source):
     """Process OSS-Fuzz source data."""

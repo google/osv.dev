@@ -17,7 +17,7 @@
 # Copy common libraries/utils shared with App Engine as symlinks don't work
 # here.
 rm -rf osv
-cp -r ../../lib/osv .
+cp -r ../../lib .
 
 docker build -t gcr.io/oss-vdb/worker:$1 . && \
 docker build -t gcr.io/oss-vdb/worker:latest . && \

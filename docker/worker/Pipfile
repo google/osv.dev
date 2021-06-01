@@ -15,3 +15,7 @@ google-cloud-storage = "*"
 [dev-packages]
 yapf = "*"
 pylint = "*"
+
+[packages.e01afd4]
+path = "./lib"
+editable = true

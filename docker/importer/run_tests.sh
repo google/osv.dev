@@ -15,8 +15,8 @@
 
 # Copy common libraries/utils shared with App Engine as symlinks don't work
 # here.
-rm -rf osv
-cp -r ../../lib/osv .
+rm -rf lib
+cp -r ../../lib .
 
 cd ../worker
 pipenv sync

@@ -1,9 +1,12 @@
 package main
 
 import (
+	"encoding/hex"
 	"flag"
 	"fmt"
 	"io/fs"
+	"io/ioutil"
+	"math/rand"
 	"os"
 	"path/filepath"
 	"strconv"
@@ -14,10 +17,13 @@ import (
 )
 
 const (
-	extension = ".yaml"
+	conflictFile       = ".id-allocator"
+	conflictMarkerSize = 32
+	extension          = ".yaml"
 )
 
 func main() {
+	rand.Seed(time.Now().Unix())
 	prefix := flag.String("prefix", "", "Vulnerability prefix (e.g. \"PYSEC\".")
 	dir := flag.String("dir", "", "Path to vulnerabilites.")
 	flag.Parse()
@@ -27,9 +33,9 @@ func main() {
 		return
 	}
 
-	// TODO(ochang): Handle conflicts from parallel runs.
 	if err := assignIDs(*prefix, *dir); err != nil {
 		fmt.Printf("Failed to assign IDs: %v", err)
+		os.Exit(1)
 	}
 }
 
@@ -141,11 +147,22 @@ func assignIDs(prefix, dir string) error {
 		return fmt.Errorf("failed to walk: %w", err)
 	}
 
+	if len(unassigned) == 0 {
+		fmt.Printf("Nothing to allocate")
+		return nil
+	}
+
 	fmt.Printf("Assigning IDs using detected maximums: %v\n", yearCounters)
 	for _, path := range unassigned {
 		if err := assignID(path, prefix, yearCounters, defaultYear); err != nil {
 			return fmt.Errorf("failed to assign ID: %w", err)
 		}
 	}
-	return nil
+
+	b := make([]byte, conflictMarkerSize)
+	if _, err := rand.Read(b); err != nil {
+		return fmt.Errorf("failed to generate random string: %w", err)
+	}
+
+	return ioutil.WriteFile(filepath.Join(dir, conflictFile), []byte(hex.EncodeToString(b)), 0644)
 }

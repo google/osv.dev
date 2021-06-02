@@ -21,8 +21,10 @@ import tempfile
 from google.cloud import ndb
 import pygit2
 
+from . import ecosystems
 from . import repos
 from . import models
+from . import vulnerability_pb2
 
 COMMIT_RANGE_LIMIT = 4
 
@@ -35,6 +37,8 @@ UNKNOWN_COMMIT = 'unknown'
 AffectedResult = collections.namedtuple(
     'AffectedResult', 'tags_with_bug tags_with_fix commits affected_ranges '
     'regress_commits fix_commits')
+
+AnalyzeResult = collections.namedtuple('AnalyzeResult', 'has_changes commits')
 
 TagsInfo = collections.namedtuple('TagsInfo', 'tags latest_tag')
 
@@ -336,3 +340,116 @@ def update_affected_commits(bug_id, commits, project, ecosystem, public):
 
   ndb.put_multi(to_put)
   ndb.delete_multi(to_delete)
+
+
+def enumerate_versions(package, ecosystem, affected_ranges):
+  """Enumerate versions from SEMVER and ECOSYSTEM input ranges."""
+  versions = set()
+  for affected_range in affected_ranges:
+    if affected_range.type in (vulnerability_pb2.AffectedRange.ECOSYSTEM,
+                               vulnerability_pb2.AffectedRange.SEMVER):
+      if not affected_range.introduced and not affected_range.fixed:
+        continue
+
+      versions.update(
+          ecosystem.enumerate_versions(package, affected_range.introduced,
+                                       affected_range.fixed))
+
+  versions = list(versions)
+  ecosystem.sort_versions(versions)
+  return versions
+
+
+def analyze(vulnerability, analyze_git=True):
+  """Update and analyze a vulnerability based on its input ranges."""
+  package_repo_dir = tempfile.TemporaryDirectory()
+  package_repo_url = None
+  package_repo = None
+
+  # Repo -> Git range collectors
+  range_collectors = collections.defaultdict(RangeCollector)
+  versions_with_bug = set()
+  versions_with_fix = set()
+  commits = set()
+
+  try:
+    for affected_range in vulnerability.affects.ranges:
+      if (affected_range.type != vulnerability_pb2.AffectedRange.GIT or
+          not analyze_git):
+        continue
+
+      # Convert empty values ('') to None.
+      introduced = affected_range.introduced or None
+      fixed = affected_range.fixed or None
+      range_collectors[affected_range.repo].add(introduced, fixed)
+
+    for affected_range in vulnerability.affects.ranges:
+      # Go through existing provided ranges to find additional ranges (via
+      # cherrypicks and branches).
+      if (affected_range.type != vulnerability_pb2.AffectedRange.GIT or
+          not analyze_git):
+        continue
+
+      current_repo_url = affected_range.repo
+      if current_repo_url != package_repo_url:
+        # Different repo from previous one.
+        package_repo_dir.cleanup()
+        package_repo_dir = tempfile.TemporaryDirectory()
+        package_repo_url = current_repo_url
+        package_repo = repos.clone_with_retries(package_repo_url,
+                                                package_repo_dir.name)
+
+      result = get_affected(package_repo, affected_range.introduced,
+                            affected_range.fixed)
+      for introduced, fixed in result.affected_ranges:
+        range_collectors[current_repo_url].add(introduced, fixed)
+
+      versions_with_fix.update(result.tags_with_fix)
+      versions_with_bug.update(result.tags_with_bug)
+      commits.update(result.commits)
+  finally:
+    package_repo_dir.cleanup()
+
+  # Enumerate ECOSYSTEM and SEMVER ranges.
+  ecosystem_helpers = ecosystems.get(vulnerability.package.ecosystem)
+  if ecosystem_helpers:
+    versions = enumerate_versions(vulnerability.package.name, ecosystem_helpers,
+                                  vulnerability.affects.ranges)
+  else:
+    logging.warning('No ecosystem helpers implemented for %s',
+                    vulnerability.package.ecosystem)
+    versions = []
+
+  # Add additional versions derived from tags.
+  versions.extend(versions_with_bug - versions_with_fix)
+
+  # Apply changes.
+  has_changes = False
+  for repo_url, range_collector in range_collectors.items():
+    for introduced, fixed in range_collector.ranges():
+      if any(
+          # Range collectors use None, while the proto uses '' for empty
+          # values.
+          (affected_range.introduced or None) == introduced and
+          (affected_range.fixed or None) == fixed
+          for affected_range in vulnerability.affects.ranges):
+        # Range already exists.
+        continue
+
+      has_changes = True
+      vulnerability.affects.ranges.add(
+          type=vulnerability_pb2.AffectedRange.Type.GIT,
+          repo=repo_url,
+          introduced=introduced,
+          fixed=fixed)
+
+  for version in sorted(versions):
+    if version not in vulnerability.affects.versions:
+      has_changes = True
+      vulnerability.affects.versions.append(version)
+
+  if not has_changes:
+    return AnalyzeResult(False, commits)
+
+  vulnerability.modified.FromDatetime(models.utcnow())
+  return AnalyzeResult(True, commits)

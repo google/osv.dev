@@ -5,6 +5,7 @@ google-cloud-logging==2.4.0
 google-cloud-ndb==1.8.0
 google-cloud-pubsub==2.5.0
 google-cloud-secret-manager==1.0.0
+packaging==20.9
 pygit2==1.4.0
 redis==3.5.3
 requests==2.25.0

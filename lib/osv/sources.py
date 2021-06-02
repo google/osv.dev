@@ -25,7 +25,6 @@ from google.protobuf import json_format
 
 # pylint: disable=relative-beyond-top-level
 from . import repos
-from . import models
 from . import vulnerability_pb2
 
 AUTHOR_EMAIL = 'infra@osv.dev'
@@ -52,11 +51,6 @@ class GitRemoteCallback(pygit2.RemoteCallbacks):
                             self._ssh_key_private_path, '')
 
     return None
-
-
-def get_source_repository(source_name):
-  """Get source repository."""
-  return models.SourceRepository.get_by_id(source_name)
 
 
 def parse_source_id(source_id):
@@ -103,7 +97,8 @@ _YamlDumper.add_representer(str, _yaml_str_representer)
 
 def vulnerability_to_dict(vulnerability):
   """Convert Vulnerability to a dict."""
-  return json_format.MessageToDict(vulnerability)
+  return json_format.MessageToDict(
+      vulnerability, preserving_proto_field_name=True)
 
 
 def vulnerability_to_yaml(vulnerability, output_path):

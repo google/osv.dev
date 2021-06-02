@@ -22,6 +22,11 @@ _FAKE_PRE_WIDTH = 16
 def normalize(version):
   """Normalize semver version for indexing (to allow for lexical
   sorting/filtering)."""
+  # Versions starting with "v" aren't valid SemVer, but we handle them just in
+  # case.
+  if version.startswith('v'):
+    version = version[1:]
+
   version = semver.VersionInfo.parse(version)
 
   # Precedence rules: https://semver.org/#spec-item-11

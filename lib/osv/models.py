@@ -23,6 +23,8 @@ from google.protobuf import timestamp_pb2
 
 # pylint: disable=relative-beyond-top-level
 from . import bug
+from . import semver_index
+from . import sources
 from . import vulnerability_pb2
 
 
@@ -210,6 +212,12 @@ class Bug(ndb.Model):
   source_of_truth = ndb.IntegerProperty(default=SourceOfTruth.INTERNAL)
   # Whether the bug is fixed (indexed for querying).
   is_fixed = ndb.BooleanProperty()
+  # Database specific.
+  database_specific = ndb.JsonProperty()
+  # Ecosystem specific.
+  ecosystem_specific = ndb.JsonProperty()
+  # Normalized SEMVER fixed indexes for querying.
+  semver_fixed_indexes = ndb.StringProperty(repeated=True)
 
   def id(self):
     """Get the bug ID."""
@@ -256,6 +264,12 @@ class Bug(ndb.Model):
     self.is_fixed = any(
         affected_range.fixed for affected_range in self.affected_ranges)
 
+    self.semver_fixed_indexes = []
+    for affected_range in self.affected_ranges:
+      if affected_range.type == 'SEMVER':
+        self.semver_fixed_indexes.append(
+            semver_index.normalize(affected_range.fixed))
+
   def update_from_vulnerability(self, vulnerability):
     """Set fields from vulnerability."""
     self.summary = vulnerability.summary
@@ -273,6 +287,13 @@ class Bug(ndb.Model):
     self.project = vulnerability.package.name
     self.ecosystem = vulnerability.package.ecosystem
     self.affected = list(vulnerability.affects.versions)
+
+    vuln_dict = sources.vulnerability_to_dict(vulnerability)
+    if vulnerability.database_specific:
+      self.database_specific = vuln_dict['database_specific']
+
+    if vulnerability.ecosystem_specific:
+      self.ecosystem_specific = vuln_dict['ecosystem_specific']
 
     self.affected_ranges = []
     for affected_range in vulnerability.affects.ranges:
@@ -386,3 +407,8 @@ class SourceRepository(ndb.Model):
     """Pre-put hook for validation."""
     if self.type == SourceRepositoryType.BUCKET and self.editable:
       raise ValueError('BUCKET SourceRepository cannot be editable.')
+
+
+def get_source_repository(source_name):
+  """Get source repository."""
+  return SourceRepository.get_by_id(source_name)

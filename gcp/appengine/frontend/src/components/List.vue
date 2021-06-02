@@ -50,7 +50,7 @@
       </template>
       <template v-slot:cell(summary)="summary">
         <p>
-          {{summary.value}}
+          {{getSummary(summary.value, summary.item.details)}}
           <router-link :to="getVulnerabilityLink(summary.item.id)">(Details)</router-link>
         </p>
       </template>
@@ -118,6 +118,22 @@ export default {
 
       this.total = results.total;
       this.items = results.items;
+    },
+
+    getSummary(summary, details) {
+      if (summary) {
+        return summary;
+      }
+
+      if (!details) {
+        return 'NA';
+      }
+
+      if (details.length <= 120) {
+        return details;
+      }
+
+      return details.substring(0, 120) + '...';
     },
 
     getParams() {

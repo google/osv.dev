@@ -28,8 +28,10 @@ import threading
 import time
 import traceback
 
+import google.cloud.exceptions
 from google.cloud import ndb
 from google.cloud import pubsub_v1
+from google.cloud import storage
 
 sys.path.append(os.path.dirname(os.path.realpath(__file__)))
 import osv
@@ -55,6 +57,10 @@ REPO_DENYLIST = {
 }
 
 _state = threading.local()
+
+
+class UpdateConflictError(Exception):
+  """Update conflict exception."""
 
 
 class LogFilter(logging.Filter):
@@ -254,38 +260,63 @@ class TaskRunner:
     deleted = message.attributes['deleted'] == 'true'
 
     source_repo = osv.get_source_repository(source)
-    repo = osv.ensure_updated_checkout(
-        source_repo.repo_url,
-        os.path.join(self._sources_dir, source),
-        git_callbacks=self._git_callbacks(source_repo))
+    if source_repo.type == osv.SourceRepositoryType.GIT:
+      repo = osv.ensure_updated_checkout(
+          source_repo.repo_url,
+          os.path.join(self._sources_dir, source),
+          git_callbacks=self._git_callbacks(source_repo))
 
-    yaml_path = os.path.join(osv.repo_path(repo), path)
-    if not os.path.exists(yaml_path):
-      logging.info('%s was deleted.', yaml_path)
+      yaml_path = os.path.join(osv.repo_path(repo), path)
+      if not os.path.exists(yaml_path):
+        logging.info('%s was deleted.', yaml_path)
+        if deleted:
+          self._handle_deleted(yaml_path)
+
+        return
+
       if deleted:
-        self._handle_deleted(yaml_path)
+        logging.info('Deletion request but source still exists, aborting.')
+        return
 
-      return
+      try:
+        vulnerabilities = [osv.parse_vulnerability(yaml_path)]
+      except Exception as e:
+        logging.error('Failed to parse vulnerability %s: %s', yaml_path, e)
+        return
 
-    if deleted:
-      logging.info('Deletion request but source still exists, aborting.')
-      return
+      current_sha256 = osv.sha256(yaml_path)
+    elif source_repo.type == osv.SourceRepositoryType.BUCKET:
+      storage_client = storage.Client()
+      bucket = storage_client.bucket(source_repo.bucket)
+      try:
+        blob = bucket.blob(path).download_as_bytes()
+      except google.cloud.exceptions.NotFound:
+        logging.error('Bucket path %s does not exist.', path)
+        return
 
-    current_sha256 = osv.sha256(yaml_path)
+      current_sha256 = osv.sha256_bytes(blob)
+      try:
+        data = json.loads(blob)
+        if isinstance(data, list):
+          vulnerabilities = [osv.parse_vulnerability_from_dict(v) for v in data]
+        else:
+          vulnerabilities = [osv.parse_vulnerability_from_dict(data)]
+      except Exception as e:
+        logging.error('Failed to parse vulnerability %s: %s', path, e)
+        return
+
+      repo = None
+    else:
+      raise RuntimeError('Unsupported SourceRepository type.')
+
     if current_sha256 != original_sha256:
       logging.warning(
           'sha256sum of %s no longer matches (expected=%s vs current=%s).',
           path, original_sha256, current_sha256)
       return
 
-    try:
-      vulnerability = osv.parse_vulnerability(yaml_path)
-    except Exception as e:
-      logging.error('Failed to parse vulnerability %s: %s', yaml_path, e)
-      return
-
-    self._do_update(source_repo, repo, vulnerability, yaml_path, path,
-                    original_sha256)
+    for vulnerability in vulnerabilities:
+      self._do_update(source_repo, repo, vulnerability, path, original_sha256)
 
   def _handle_deleted(self, yaml_path):
     """Handle deleted source."""
@@ -365,10 +396,9 @@ class TaskRunner:
     helpers.sort_versions(versions)
     return versions
 
-  def _do_update(self, source_repo, repo, vulnerability, yaml_path,
-                 relative_path, original_sha256):
-    """Process updates on a vulnerability."""
-    logging.info('Processing update for vulnerability %s', vulnerability.id)
+  def _analyze_vulnerability(self, source_repo, repo, vulnerability, path,
+                             original_sha256):
+    """Analyze vulnerability and push new changes."""
     package_repo_dir = tempfile.TemporaryDirectory()
     package_repo_url = None
     package_repo = None
@@ -430,15 +460,30 @@ class TaskRunner:
     # Add additional versions derived from tags.
     versions.extend(versions_with_bug - versions_with_fix)
 
+    yaml_path = os.path.join(osv.repo_path(repo), path)
     if self._push_new_ranges_and_versions(source_repo, repo, vulnerability,
                                           yaml_path, original_sha256,
                                           range_collectors, versions):
       logging.info('Updated range/versions for vulnerability %s.',
                    vulnerability.id)
-    else:
-      logging.warning('Discarding changes for %s due to conflicts.',
-                      vulnerability.id)
-      return
+      return commits
+
+    logging.warning('Discarding changes for %s due to conflicts.',
+                    vulnerability.id)
+    raise UpdateConflictError
+
+  def _do_update(self, source_repo, repo, vulnerability, relative_path,
+                 original_sha256):
+    """Process updates on a vulnerability."""
+    logging.info('Processing update for vulnerability %s', vulnerability.id)
+
+    if source_repo.editable:
+      try:
+        commits = self._analyze_vulnerability(source_repo, repo, vulnerability,
+                                              relative_path, original_sha256)
+      except UpdateConflictError:
+        # Discard changes due to conflict.
+        return
 
     # Update datastore with new information.
     bug = osv.Bug.get_by_id(vulnerability.id)
@@ -458,8 +503,9 @@ class TaskRunner:
     bug.public = True
     bug.put()
 
-    osv.update_affected_commits(bug.key.id(), commits, bug.project,
-                                bug.ecosystem, bug.public)
+    if source_repo.editable:
+      osv.update_affected_commits(bug.key.id(), commits, bug.project,
+                                  bug.ecosystem, bug.public)
 
   def _do_process_task(self, subscriber, subscription, ack_id, message,
                        done_event):

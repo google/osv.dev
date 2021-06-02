@@ -28,6 +28,7 @@ from osv import tests
 
 TEST_DATA_DIR = os.path.join(
     os.path.dirname(os.path.abspath(__file__)), 'testdata')
+TEST_BUCKET = 'test-osv-source-bucket'
 
 
 @mock.patch('importer.utcnow', lambda: datetime.datetime(2021, 1, 1))
@@ -53,6 +54,7 @@ class ImporterTest(unittest.TestCase):
 
     self.remote_source_repo_path = self.mock_repo.path
     self.source_repo = osv.SourceRepository(
+        type=osv.SourceRepositoryType.GIT,
         id='oss-fuzz',
         name='oss-fuzz',
         repo_url='file://' + self.remote_source_repo_path,
@@ -292,6 +294,47 @@ class ImporterTest(unittest.TestCase):
                             'bucket')
     imp.run()
     mock_publish.assert_not_called()
+
+
+@mock.patch('importer.utcnow', lambda: datetime.datetime(2021, 1, 1))
+class BucketImporterTest(unittest.TestCase):
+  """Bucket importer tests."""
+
+  def setUp(self):
+    tests.reset_emulator()
+    self.maxDiff = None  # pylint: disable=invalid-name
+    self.tmp_dir = tempfile.mkdtemp()
+
+    tests.mock_datetime(self)
+
+    self.source_repo = osv.SourceRepository(
+        type=osv.SourceRepositoryType.BUCKET,
+        id='bucket',
+        name='bucket',
+        bucket=TEST_BUCKET,
+        extension='.json')
+    self.source_repo.put()
+
+  def tearDown(self):
+    shutil.rmtree(self.tmp_dir, ignore_errors=True)
+
+  @mock.patch('google.cloud.pubsub_v1.PublisherClient.publish')
+  def test_bucket(self, mock_publish):
+    """Test bucket updates."""
+    imp = importer.Importer('fake_public_key', 'fake_private_key', self.tmp_dir,
+                            'bucket')
+    imp.run()
+    mock_publish.assert_has_calls([
+        mock.call(
+            'projects/oss-vdb/topics/tasks',
+            data=b'',
+            type='update',
+            source='bucket',
+            path='a/b/test.json',
+            original_sha256=('b2b37bde8f39256239419078de672ce7'
+                             'a408735f1c2502ee8fa08745096e1971'),
+            deleted='false'),
+    ])
 
 
 if __name__ == '__main__':

@@ -35,7 +35,7 @@ An instance of OSV's web UI is deployed at <https://osv.dev>.
       "https://api.osv.dev/v1/query"
 
   curl -X POST -d \
-      '{"version": "1.0.0", "package": {"name": "foo", "ecosystem": "bar"}}' \
+      '{"version": "2.4.1", "package": {"name": "jinja2", "ecosystem": "PyPI"}}' \
       "https://api.osv.dev/v1/query"
 ```
 

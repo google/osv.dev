@@ -72,7 +72,6 @@ func FromCVE(id string, cve cves.CVEItem, pkg, ecosystem, versionType string, va
 
 	v := Vulnerability{
 		ID:      id,
-		Summary: fmt.Sprintf("Vulnerability in %s", pkg),
 		Details: cves.EnglishDescription(cve.CVE),
 		Aliases: aliases,
 	}

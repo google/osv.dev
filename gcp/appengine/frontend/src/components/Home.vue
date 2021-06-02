@@ -51,7 +51,7 @@
       </pre>
       <pre>
         curl -X POST -d \
-            '{"version": "1.0.0", "package": {"name": "foo", "ecosystem": "bar"}}' \
+            '{"version": "2.4.1", "package": {"name": "jinja2", "ecosystem": "PyPI"}}' \
             "https://api.osv.dev/v1/query"
       </pre>
       <h5>Demo</h5>

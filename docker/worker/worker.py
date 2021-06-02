@@ -14,7 +14,6 @@
 # limitations under the License.
 """OSV Worker."""
 import argparse
-import collections
 import json
 import logging
 import os
@@ -23,7 +22,6 @@ import resource
 import shutil
 import subprocess
 import sys
-import tempfile
 import threading
 import time
 import traceback
@@ -35,8 +33,6 @@ from google.cloud import storage
 
 sys.path.append(os.path.dirname(os.path.realpath(__file__)))
 import osv
-from osv import ecosystems
-from osv import vulnerability_pb2
 import oss_fuzz
 
 DEFAULT_WORK_DIR = '/work'
@@ -331,39 +327,8 @@ class TaskRunner:
     bug.put()
 
   def _push_new_ranges_and_versions(self, source_repo, repo, vulnerability,
-                                    yaml_path, original_sha256,
-                                    range_collectors, versions):
+                                    yaml_path, original_sha256):
     """Pushes new ranges and versions."""
-    has_changes = False
-
-    for repo_url, range_collector in range_collectors.items():
-      for introduced, fixed in range_collector.ranges():
-        if any(
-            # Range collectors use None, while the proto uses '' for empty
-            # values.
-            (affected_range.introduced or None) == introduced and
-            (affected_range.fixed or None) == fixed
-            for affected_range in vulnerability.affects.ranges):
-          # Range already exists.
-          continue
-
-        has_changes = True
-        vulnerability.affects.ranges.add(
-            type=vulnerability_pb2.AffectedRange.Type.GIT,
-            repo=repo_url,
-            introduced=introduced,
-            fixed=fixed)
-
-    for version in sorted(versions):
-      if version not in vulnerability.affects.versions:
-        has_changes = True
-        vulnerability.affects.versions.append(version)
-
-    if not has_changes:
-      return True
-
-    # Write updates, and push.
-    vulnerability.modified.FromDatetime(osv.utcnow())
     osv.vulnerability_to_yaml(vulnerability, yaml_path)
     repo.index.add_all()
     return osv.push_source_changes(
@@ -374,99 +339,26 @@ class TaskRunner:
             yaml_path: original_sha256,
         })
 
-  def _enumerate_versions(self, package, ecosystem, affected_ranges):
-    """Enumerate versions from SEMVER and ECOSYSTEM input ranges."""
-    helpers = ecosystems.get(ecosystem)
-    if not helpers:
-      logging.warning('No ecosystem helpers implemented for %s', ecosystem)
-      return []
-
-    versions = set()
-    for affected_range in affected_ranges:
-      if affected_range.type in (vulnerability_pb2.AffectedRange.ECOSYSTEM,
-                                 vulnerability_pb2.AffectedRange.SEMVER):
-        if not affected_range.introduced and not affected_range.fixed:
-          continue
-
-        versions.update(
-            helpers.enumerate_versions(package, affected_range.introduced,
-                                       affected_range.fixed))
-
-    versions = list(versions)
-    helpers.sort_versions(versions)
-    return versions
-
   def _analyze_vulnerability(self, source_repo, repo, vulnerability, path,
                              original_sha256):
     """Analyze vulnerability and push new changes."""
-    package_repo_dir = tempfile.TemporaryDirectory()
-    package_repo_url = None
-    package_repo = None
-
+    # Add OSS-Fuzz
     bug = osv.Bug.get_by_id(vulnerability.id)
     if bug:
       fix_result = osv.FixResult.get_by_id(bug.source_id)
       if fix_result:
         add_fix_information(vulnerability, bug, fix_result)
 
-    # Repo -> Git range collectors
-    range_collectors = collections.defaultdict(osv.RangeCollector)
-    versions_with_bug = set()
-    versions_with_fix = set()
-    commits = set()
-
-    try:
-      for affected_range in vulnerability.affects.ranges:
-        if (affected_range.type != vulnerability_pb2.AffectedRange.GIT or
-            source_repo.ignore_git):
-          continue
-
-        # Convert empty values ('') to None.
-        introduced = affected_range.introduced or None
-        fixed = affected_range.fixed or None
-        range_collectors[affected_range.repo].add(introduced, fixed)
-
-      for affected_range in vulnerability.affects.ranges:
-        # Go through existing provided ranges to find additional ranges (via
-        # cherrypicks and branches).
-        if (affected_range.type != vulnerability_pb2.AffectedRange.GIT or
-            source_repo.ignore_git):
-          continue
-
-        current_repo_url = affected_range.repo
-        if current_repo_url != package_repo_url:
-          # Different repo from previous one.
-          package_repo_dir.cleanup()
-          package_repo_dir = tempfile.TemporaryDirectory()
-          package_repo_url = current_repo_url
-          package_repo = osv.clone_with_retries(package_repo_url,
-                                                package_repo_dir.name)
-
-        result = osv.get_affected(package_repo, affected_range.introduced,
-                                  affected_range.fixed)
-        for introduced, fixed in result.affected_ranges:
-          range_collectors[current_repo_url].add(introduced, fixed)
-
-        versions_with_fix.update(result.tags_with_fix)
-        versions_with_bug.update(result.tags_with_bug)
-        commits.update(result.commits)
-    finally:
-      package_repo_dir.cleanup()
-
-    # Enumerate ECOSYSTEM and SEMVER ranges.
-    versions = self._enumerate_versions(vulnerability.package.name,
-                                        vulnerability.package.ecosystem,
-                                        vulnerability.affects.ranges)
-    # Add additional versions derived from tags.
-    versions.extend(versions_with_bug - versions_with_fix)
+    result = osv.analyze(vulnerability, analyze_git=not source_repo.ignore_git)
+    if not result.has_changes:
+      return result
 
     yaml_path = os.path.join(osv.repo_path(repo), path)
     if self._push_new_ranges_and_versions(source_repo, repo, vulnerability,
-                                          yaml_path, original_sha256,
-                                          range_collectors, versions):
+                                          yaml_path, original_sha256):
       logging.info('Updated range/versions for vulnerability %s.',
                    vulnerability.id)
-      return commits
+      return result
 
     logging.warning('Discarding changes for %s due to conflicts.',
                     vulnerability.id)
@@ -479,8 +371,8 @@ class TaskRunner:
 
     if source_repo.editable:
       try:
-        commits = self._analyze_vulnerability(source_repo, repo, vulnerability,
-                                              relative_path, original_sha256)
+        result = self._analyze_vulnerability(source_repo, repo, vulnerability,
+                                             relative_path, original_sha256)
       except UpdateConflictError:
         # Discard changes due to conflict.
         return
@@ -504,7 +396,7 @@ class TaskRunner:
     bug.put()
 
     if source_repo.editable:
-      osv.update_affected_commits(bug.key.id(), commits, bug.project,
+      osv.update_affected_commits(bug.key.id(), result.commits, bug.project,
                                   bug.ecosystem, bug.public)
 
   def _do_process_task(self, subscriber, subscription, ack_id, message,

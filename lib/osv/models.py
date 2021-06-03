@@ -363,6 +363,12 @@ class Bug(ndb.Model):
         severity=severity,
         affects=affects,
         references=references)
+
+    if self.ecosystem_specific:
+      result.ecosystem_specific.update(self.ecosystem_specific)
+    if self.database_specific:
+      result.database_specific.update(self.database_specific)
+
     return result
 
 

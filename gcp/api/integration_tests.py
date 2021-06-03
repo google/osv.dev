@@ -86,6 +86,46 @@ class IntegrationTests(unittest.TestCase):
       'summary': 'Heap-buffer-overflow in grk::t1_part1::T1Part1::decompress'
   }
 
+  _VULN_GO_2020_0004 = {
+      'id':
+          'GO-2020-0004',
+      'package': {
+          'name': 'github.com/nanobox-io/golang-nanoauth',
+          'ecosystem': 'Go'
+      },
+      'details':
+          'If any of the `ListenAndServe` functions are called with an '
+          'empty token,\ntoken authentication is disabled globally for '
+          'all listeners.\n\nAlso, a minor timing side channel was '
+          'present allowing attackers with\nvery low latency and able '
+          'to make a lot of requests to potentially\nrecover the '
+          'token.\n',
+      'affects': {
+          'ranges': [{
+              'type': 'SEMVER',
+              'introduced': 'v0.0.0-20160722212129-ac0cc4484ad4',
+              'fixed': 'v0.0.0-20200131131040-063a3fb69896'
+          }]
+      },
+      'published':
+          '2021-04-14T12:00:00Z',
+      'ecosystemSpecific': {
+          'symbols': [
+              'Auth.ServerHTTP', 'Auth.ListenAndServeTLS', 'Auth.ListenAndServe'
+          ],
+          'url': 'https://go.googlesource.com/vulndb/+/refs/heads/master/'
+                 'reports/GO-2020-0004.yaml'
+      },
+      'references': [{
+          'type': 'FIX',
+          'url': 'https://github.com/nanobox-io/golang-nanoauth/pull/5'
+      }, {
+          'type': 'FIX',
+          'url': 'https://github.com/nanobox-io/golang-nanoauth/commit/'
+                 '063a3fb69896acf985759f0fe3851f15973993f3'
+      }]
+  }
+
   def setUp(self):
     self.maxDiff = None  # pylint: disable=invalid-name
 
@@ -95,7 +135,7 @@ class IntegrationTests(unittest.TestCase):
     self.assertDictEqual(expected, actual)
 
   def assert_results_equal(self, expected, actual):
-    for vuln in actual['vulns']:
+    for vuln in actual.get('vulns', []):
       self.remove_modified(vuln)
 
     self.assertDictEqual(expected, actual)
@@ -149,6 +189,54 @@ class IntegrationTests(unittest.TestCase):
             }
         }))
     self.assert_results_equal({'vulns': [self._VULN_744]}, response.json())
+
+  def test_query_semver(self):
+    """Test query by SemVer."""
+    response = requests.post(
+        _api() + '/v1/query',
+        data=json.dumps({
+            'version': '0.0.0-2017a',
+            'package': {
+                'name': 'github.com/nanobox-io/golang-nanoauth',
+                'ecosystem': 'Go',
+            }
+        }))
+    self.assert_results_equal({'vulns': [self._VULN_GO_2020_0004]},
+                              response.json())
+
+    response = requests.post(
+        _api() + '/v1/query',
+        data=json.dumps({
+            'version': '0.0.0-20160722212129-ac0cc4484ad4',
+            'package': {
+                'name': 'github.com/nanobox-io/golang-nanoauth',
+                'ecosystem': 'Go',
+            }
+        }))
+    self.assert_results_equal({'vulns': [self._VULN_GO_2020_0004]},
+                              response.json())
+
+    response = requests.post(
+        _api() + '/v1/query',
+        data=json.dumps({
+            'version': '0.0.0-20200131131040-063a3fb69896',
+            'package': {
+                'name': 'github.com/nanobox-io/golang-nanoauth',
+                'ecosystem': 'Go',
+            }
+        }))
+    self.assert_results_equal({}, response.json())
+
+    response = requests.post(
+        _api() + '/v1/query',
+        data=json.dumps({
+            'version': '0.0.0',
+            'package': {
+                'name': 'github.com/nanobox-io/golang-nanoauth',
+                'ecosystem': 'Go',
+            }
+        }))
+    self.assert_results_equal({}, response.json())
 
 
 def print_logs(filename):

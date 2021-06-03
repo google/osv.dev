@@ -18,12 +18,6 @@ indexes:
       - name: project
       - name: ecosystem
       - name: commit
-
-  - kind: AffectedCommit
-    properties:
-      - name: project
-      - name: ecosystem
-      - name: commit
       - name: public
 
   - kind: AffectedCommit
@@ -46,12 +40,7 @@ indexes:
 
   - kind: Bug
     properties:
-      - name: project
-      - name: ecosystem
-      - name: affected_fuzzy
-
-  - kind: Bug
-    properties:
+      - name: status
       - name: project
       - name: ecosystem
       - name: affected_fuzzy
@@ -62,15 +51,8 @@ indexes:
       - name: status
       - name: project
       - name: ecosystem
-      - name: affected_fuzzy
-
-  - kind: Bug
-    properties:
-      - name: status
-      - name: project
-      - name: ecosystem
-      - name: affected_fuzzy
       - name: public
+      - name: semver_fixed_indexes
 
   - kind: Bug
     properties:

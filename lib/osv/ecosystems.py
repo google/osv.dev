@@ -30,6 +30,28 @@ class Ecosystem:
     """Enumerate versions."""
     raise NotImplementedError
 
+  @property
+  def is_semver(self):
+    return False
+
+
+class Go(Ecosystem):
+  """Go ecosystem helpers."""
+
+  def sort_versions(self, versions):
+    """Sort versions (no-op)."""
+    del versions
+
+  def enumerate_versions(self, package, introduced, fixed):
+    """Enumerate versions (no-op)."""
+    del package
+    del introduced
+    del fixed
+
+  @property
+  def is_semver(self):
+    return True
+
 
 class PyPI(Ecosystem):
   """PyPI ecosystem helpers."""
@@ -68,5 +90,8 @@ def get(name):
   """Get ecosystem helpers for a given ecosytem."""
   if name == 'PyPI':
     return PyPI()
+
+  if name == 'Go':
+    return Go()
 
   return None

@@ -25,6 +25,8 @@ from google.cloud import ndb
 import grpc
 
 import osv
+from osv import ecosystems
+from osv import semver_index
 import osv_service_v1_pb2
 import osv_service_v1_pb2_grpc
 
@@ -50,20 +52,7 @@ def ndb_context(func):
   return wrapper
 
 
-class BaseServicer:
-  """Base servicer."""
-
-  def is_privileged(self, context):
-    """Check whether if the calling client is privileged."""
-    for key, _ in context.invocation_metadata():
-      # If we have this metadata value, it means it passed JWT validation.
-      if key == 'x-endpoint-api-userinfo':
-        return True
-
-    return False
-
-
-class OSVServicer(osv_service_v1_pb2_grpc.OSVServicer, BaseServicer):
+class OSVServicer(osv_service_v1_pb2_grpc.OSVServicer):
   """V1 OSV servicer."""
 
   @ndb_context
@@ -75,7 +64,7 @@ class OSVServicer(osv_service_v1_pb2_grpc.OSVServicer, BaseServicer):
       context.abort(grpc.StatusCode.NOT_FOUND, 'Bug not found.')
       return None
 
-    if not bug.public and not self.is_privileged(context):
+    if not bug.public:
       context.abort(grpc.StatusCode.PERMISSION_DENIED, 'Permission denied.')
       return None
 
@@ -85,7 +74,6 @@ class OSVServicer(osv_service_v1_pb2_grpc.OSVServicer, BaseServicer):
   def QueryAffected(self, request, context):
     """Query vulnerabilities for a particular project at a given commit or
     version."""
-    privileged = self.is_privileged(context)
     if request.query.HasField('package'):
       package_name = request.query.package.name
       ecosystem = request.query.package.ecosystem
@@ -98,14 +86,12 @@ class OSVServicer(osv_service_v1_pb2_grpc.OSVServicer, BaseServicer):
           package_name,
           ecosystem,
           request.query.commit,
-          privileged,
           to_response=bug_to_response)
     elif request.query.WhichOneof('param') == 'version':
       bugs = query_by_version(
           package_name,
           ecosystem,
           request.query.version,
-          privileged,
           to_response=bug_to_response)
     else:
       context.abort(grpc.StatusCode.INVALID_ARGUMENT, 'Invalid query.')
@@ -138,22 +124,16 @@ def _get_bugs(bug_ids, to_response=bug_to_response):
   ]
 
 
-def query_by_commit(project,
-                    ecosystem,
-                    commit,
-                    privileged,
-                    to_response=bug_to_response):
+def query_by_commit(project, ecosystem, commit, to_response=bug_to_response):
   """Query by commit."""
-  query = osv.AffectedCommit.query(osv.AffectedCommit.commit == commit)
+  query = osv.AffectedCommit.query(osv.AffectedCommit.commit == commit,
+                                   osv.AffectedCommit.public == True)  # pylint: disable=singleton-comparison
 
   if project:
     query = query.filter(osv.AffectedCommit.project == project)
 
   if ecosystem:
     query = query.filter(osv.AffectedCommit.ecosystem == ecosystem)
-
-  if not privileged:
-    query = query.filter(osv.AffectedCommit.public == True)  # pylint: disable=singleton-comparison
 
   bug_ids = []
   for affected_commit in query:
@@ -162,44 +142,45 @@ def query_by_commit(project,
   return _get_bugs(bug_ids, to_response=to_response)
 
 
-def query_by_tag(project,
-                 ecosystem,
-                 tag,
-                 privileged,
-                 to_response=bug_to_response):
-  """Query by tag."""
-  query = osv.Bug.query(osv.Bug.project == project,
-                        osv.Bug.ecosystem == ecosystem, osv.Bug.affected == tag)
+def _is_semver_affected(affected_ranges, version):
+  """Returns whether or not the given version is within an affected SEMVER
+  range."""
+  version = semver_index.parse(version)
 
-  if not privileged:
-    query = query.filter(osv.Bug.public == True)  # pylint: disable=singleton-comparison
+  for affected_range in affected_ranges:
+    if affected_range.type != 'SEMVER':
+      continue
 
-  bugs = []
-  for bug in query:
-    bugs.append(bug)
+    introduced = affected_range.introduced
+    fixed = affected_range.fixed
 
-  return [to_response(bug) for bug in bugs]
+    if ((not introduced or version >= semver_index.parse(introduced)) and
+        (not fixed or version < semver_index.parse(fixed))):
+      return True
+
+  return False
 
 
-def query_by_version(project,
-                     ecosystem,
-                     version,
-                     privileged,
-                     to_response=bug_to_response):
+def query_by_version(project, ecosystem, version, to_response=bug_to_response):
   """Query by (fuzzy) version."""
-
+  ecosystem_info = ecosystems.get(ecosystem)
+  is_semver = ecosystem_info and ecosystem_info.is_semver
   query = osv.Bug.query(osv.Bug.status == osv.BugStatus.PROCESSED,
-                        osv.Bug.project == project,
-                        osv.Bug.affected_fuzzy == osv.normalize_tag(version))
+                        osv.Bug.project == project, osv.Bug.public == True)  # pylint: disable=singleton-comparison
+  if is_semver:
+    query = query.filter(
+        osv.Bug.semver_fixed_indexes > semver_index.normalize(version))
+  else:
+    query = query.filter(osv.Bug.affected_fuzzy == osv.normalize_tag(version))
 
   if ecosystem:
     query = query.filter(osv.Bug.ecosystem == ecosystem)
 
-  if not privileged:
-    query = query.filter(osv.Bug.public == True)  # pylint: disable=singleton-comparison
-
   bugs = []
   for bug in query:
+    if is_semver and not _is_semver_affected(bug.affected_ranges, version):
+      continue
+
     bugs.append(bug)
 
   return [to_response(bug) for bug in bugs]

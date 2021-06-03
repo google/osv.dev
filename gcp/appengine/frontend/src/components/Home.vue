@@ -28,9 +28,11 @@
         both open source maintainers and consumers of open source.
       <p>
       <p>
-        Currently, this feed contains vulnerabilities from <a
-        href="https://github.com/google/oss-fuzz">OSS-Fuzz</a> (mostly C/C++).
-        More data sources to <a href="https://github.com/google/osv/issues/44">come soon</a>.
+        This feed contains vulnerabilities from
+        <a href="https://github.com/google/oss-fuzz">OSS-Fuzz</a> (mostly C/C++),
+        <a href="https://github.com/pypa/advisory-db">Python</a>, and
+        <a href="https://github.com/golang/vulndb">Go</a>.
+        More <a href="https://github.com/google/osv/issues/44">to come<a/>.
       </p>
       <h4>Triaging vulnerabilities</h4>
       <p>

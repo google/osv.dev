@@ -9,3 +9,4 @@ packaging==20.9
 pygit2==1.4.0
 redis==3.5.3
 requests==2.25.0
+semver==2.13.0

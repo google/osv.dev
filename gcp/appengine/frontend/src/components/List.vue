@@ -63,6 +63,9 @@
             ...
           </div>
         </span>
+        <span v-else-if="hasSemVer(data.value.ranges)">
+          See details.
+        </span>
         <div v-else>
           No impacted versions.
         </div>
@@ -168,6 +171,13 @@ export default {
 
       return '';
     },
+
+    hasSemVer(ranges) {
+      for (let range of ranges) {
+        if (range.type == 'SEMVER') return true;
+      }
+      return false;
+    }
   },
 
   watch: {

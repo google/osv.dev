@@ -165,6 +165,8 @@ class SourceOfTruth(enum.IntEnum):
 class Bug(ndb.Model):
   """Bug entity."""
   OSV_ID_PREFIX = 'OSV-'
+  # Very large fake version to use when there is no fix available.
+  _NOT_FIXED_SEMVER = '999999.999999.999999'
 
   # Status of the bug.
   status = ndb.IntegerProperty()
@@ -270,8 +272,8 @@ class Bug(ndb.Model):
     self.semver_fixed_indexes = []
     for affected_range in self.affected_ranges:
       if affected_range.type == 'SEMVER':
-        self.semver_fixed_indexes.append(
-            semver_index.normalize(affected_range.fixed))
+        fixed = affected_range.fixed or self._NOT_FIXED_SEMVER
+        self.semver_fixed_indexes.append(semver_index.normalize(fixed))
 
     if self.source_id:
       self.source, _ = sources.parse_source_id(self.source_id)

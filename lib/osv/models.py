@@ -218,6 +218,8 @@ class Bug(ndb.Model):
   ecosystem_specific = ndb.JsonProperty()
   # Normalized SEMVER fixed indexes for querying.
   semver_fixed_indexes = ndb.StringProperty(repeated=True)
+  # The source of this Bug.
+  source = ndb.StringProperty()
 
   def id(self):
     """Get the bug ID."""
@@ -254,7 +256,8 @@ class Bug(ndb.Model):
     self.search_indices.append(self.key.id())
     self.search_indices.extend(key_parts)
 
-    self.has_affected = bool(self.affected)
+    self.has_affected = bool(self.affected) or any(
+        r.type in ('SEMVER', 'ECOSYSTEM') for r in self.affected_ranges)
     self.affected_fuzzy = bug.normalize_tags(self.affected)
 
     self.sort_key = key_parts[0] + '-' + key_parts[1].zfill(7)
@@ -269,6 +272,9 @@ class Bug(ndb.Model):
       if affected_range.type == 'SEMVER':
         self.semver_fixed_indexes.append(
             semver_index.normalize(affected_range.fixed))
+
+    if self.source_id:
+      self.source, _ = sources.parse_source_id(self.source_id)
 
   def update_from_vulnerability(self, vulnerability):
     """Set fields from vulnerability."""

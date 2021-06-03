@@ -212,6 +212,7 @@ class ImpactTest(unittest.TestCase):
             'ecosystem_specific': None,
             'database_specific': None,
             'semver_fixed_indexes': [],
+            'source': 'oss-fuzz',
         },
         ndb.Key(osv.Bug, '2020-1337').get()._to_dict())
 
@@ -300,6 +301,7 @@ class ImpactTest(unittest.TestCase):
             'ecosystem_specific': None,
             'database_specific': None,
             'semver_fixed_indexes': [],
+            'source': 'oss-fuzz',
         },
         ndb.Key(osv.Bug, '2020-1337').get()._to_dict())
 
@@ -389,6 +391,7 @@ class ImpactTest(unittest.TestCase):
             'ecosystem_specific': None,
             'database_specific': None,
             'semver_fixed_indexes': [],
+            'source': 'oss-fuzz',
         },
         ndb.Key(osv.Bug, '2020-1337').get()._to_dict())
 
@@ -479,6 +482,7 @@ class ImpactTest(unittest.TestCase):
             'ecosystem_specific': None,
             'database_specific': None,
             'semver_fixed_indexes': [],
+            'source': 'oss-fuzz',
         },
         ndb.Key(osv.Bug, '2020-1337').get()._to_dict())
 
@@ -574,6 +578,7 @@ class ImpactTest(unittest.TestCase):
             'ecosystem_specific': None,
             'database_specific': None,
             'semver_fixed_indexes': [],
+            'source': 'oss-fuzz',
         },
         ndb.Key(osv.Bug, '2020-1337').get()._to_dict())
 
@@ -641,6 +646,7 @@ class ImpactTest(unittest.TestCase):
             'ecosystem_specific': None,
             'database_specific': None,
             'semver_fixed_indexes': [],
+            'source': 'oss-fuzz',
         },
         ndb.Key(osv.Bug, '2020-1337').get()._to_dict())
 
@@ -960,6 +966,7 @@ class UpdateTest(unittest.TestCase):
             'ecosystem_specific': None,
             'database_specific': None,
             'semver_fixed_indexes': [],
+            'source': 'source',
         },
         osv.Bug.get_by_id('BLAH-123')._to_dict())
 
@@ -1044,6 +1051,7 @@ class UpdateTest(unittest.TestCase):
             'ecosystem_specific': None,
             'database_specific': None,
             'semver_fixed_indexes': [],
+            'source': 'source',
         },
         osv.Bug.get_by_id('BLAH-124')._to_dict())
 
@@ -1121,6 +1129,7 @@ class UpdateTest(unittest.TestCase):
             'ecosystem_specific': None,
             'database_specific': None,
             'semver_fixed_indexes': [],
+            'source': 'source',
         },
         osv.Bug.get_by_id('BLAH-127')._to_dict())
 
@@ -1214,6 +1223,7 @@ class UpdateTest(unittest.TestCase):
             'ecosystem_specific': None,
             'database_specific': None,
             'semver_fixed_indexes': [],
+            'source': 'source',
         },
         osv.Bug.get_by_id('BLAH-126')._to_dict())
 
@@ -1405,6 +1415,7 @@ class UpdateTest(unittest.TestCase):
             'ecosystem_specific': None,
             'database_specific': None,
             'semver_fixed_indexes': [],
+            'source': 'source',
         },
         osv.Bug.get_by_id('PYSEC-123')._to_dict())
 
@@ -1451,7 +1462,7 @@ class UpdateTest(unittest.TestCase):
             'fixed':
                 '',
             'has_affected':
-                False,
+                True,
             'is_fixed':
                 True,
             'issue_id':
@@ -1483,6 +1494,8 @@ class UpdateTest(unittest.TestCase):
                 'GO-0002021',
             'source_id':
                 'source:a/b/test.json',
+            'source':
+                'source',
             'source_of_truth':
                 2,
             'status':
@@ -1520,22 +1533,14 @@ class UpdateTest(unittest.TestCase):
                 'with\n'
                 'custom volume mount configurations to escape the container.\n'
                 '\n',
-            'ecosystem':
-                'Go',
-            'fixed':
-                '',
-            'has_affected':
-                False,
-            'is_fixed':
-                True,
-            'issue_id':
-                None,
-            'last_modified':
-                datetime.datetime(2021, 4, 14, 12, 0),
-            'project':
-                'github.com/opencontainers/runc/libcontainer',
-            'public':
-                True,
+            'ecosystem': 'Go',
+            'fixed': '',
+            'has_affected': True,
+            'is_fixed': True,
+            'issue_id': None,
+            'last_modified': datetime.datetime(2021, 4, 14, 12, 0),
+            'project': 'github.com/opencontainers/runc/libcontainer',
+            'public': True,
             'reference_url_types': {
                 'https://github.com/opencontainers/runc/commit/'
                 '2fc03cc11c775b7a8b2e48d7ee447cb9bef32ad0':
@@ -1545,37 +1550,29 @@ class UpdateTest(unittest.TestCase):
                 'https://github.com/opencontainers/runc/pull/2207':
                     'FIX'
             },
-            'regressed':
-                '',
+            'regressed': '',
             'search_indices': [
                 'github.com/opencontainers/runc/libcontainer', 'GO-2021-0087',
                 'GO', '2021', '0087'
             ],
-            'severity':
-                None,
-            'sort_key':
-                'GO-0002021',
-            'source_id':
-                'source:a/b/test.json',
-            'source_of_truth':
-                2,
-            'status':
-                1,
-            'summary':
-                '',
-            'timestamp':
-                datetime.datetime(2021, 4, 14, 12, 0),
+            'severity': None,
+            'sort_key': 'GO-0002021',
+            'source_id': 'source:a/b/test.json',
+            'source_of_truth': 2,
+            'status': 1,
+            'summary': '',
+            'timestamp': datetime.datetime(2021, 4, 14, 12, 0),
             'ecosystem_specific': {
                 'Symbols': ['mountToRootfs'],
                 'url': 'https://go.googlesource.com/vulndb/+/refs/'
                        'heads/main/reports/GO-2021-0087.toml'
             },
-            'database_specific':
-                None,
+            'database_specific': None,
             'semver_fixed_indexes': [
                 '00000001.00000000.00000000-1rc9.'
                 '00000000.120200122160610-2fc03cc11c77'
             ],
+            'source': 'source',
         },
         osv.Bug.get_by_id('GO-2021-0087')._to_dict())
 

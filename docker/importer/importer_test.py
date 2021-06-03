@@ -235,15 +235,6 @@ class ImporterTest(unittest.TestCase):
             data=b'',
             source_id='oss-fuzz:124',
             type='impact'),
-        mock.call(
-            'projects/oss-vdb/topics/tasks',
-            data=b'',
-            deleted='false',
-            original_sha256=('e3b0c44298fc1c149afbf4c8996fb924'
-                             '27ae41e4649b934ca495991b7852b855'),
-            path='OSV-2021-1338.yaml',
-            source='oss-fuzz',
-            type='update'),
     ])
 
     source_repo = osv.SourceRepository.get_by_id('oss-fuzz')

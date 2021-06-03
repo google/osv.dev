@@ -19,6 +19,8 @@ query whether or not their versions are impacted.
 
 Current data sources:
 - [OSS-Fuzz](https://github.com/google/oss-fuzz) (https://github.com/google/oss-fuzz-vulns)
+- [Python](https://github.com/pypa/advisory-db) 
+- [Go](https://github.com/golang/vulndb)
 
 **This is an ongoing project.** We are hoping to work with the open source community
 to [onboard more sources of data](https://github.com/google/osv/issues/44).

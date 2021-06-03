@@ -81,6 +81,7 @@ indexes:
     properties:
       - name: is_fixed
       - name: status
+      - name: source
 
   - kind: Bug
     properties:
@@ -145,6 +146,7 @@ indexes:
     properties:
     - name: status
     - name: timestamp
+    - name: source
 
   - kind: PackageTagInfo
     properties:

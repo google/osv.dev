@@ -23,6 +23,8 @@ from google.protobuf import timestamp_pb2
 
 # pylint: disable=relative-beyond-top-level
 from . import bug
+from . import semver_index
+from . import sources
 from . import vulnerability_pb2
 
 
@@ -163,6 +165,8 @@ class SourceOfTruth(enum.IntEnum):
 class Bug(ndb.Model):
   """Bug entity."""
   OSV_ID_PREFIX = 'OSV-'
+  # Very large fake version to use when there is no fix available.
+  _NOT_FIXED_SEMVER = '999999.999999.999999'
 
   # Status of the bug.
   status = ndb.IntegerProperty()
@@ -210,6 +214,14 @@ class Bug(ndb.Model):
   source_of_truth = ndb.IntegerProperty(default=SourceOfTruth.INTERNAL)
   # Whether the bug is fixed (indexed for querying).
   is_fixed = ndb.BooleanProperty()
+  # Database specific.
+  database_specific = ndb.JsonProperty()
+  # Ecosystem specific.
+  ecosystem_specific = ndb.JsonProperty()
+  # Normalized SEMVER fixed indexes for querying.
+  semver_fixed_indexes = ndb.StringProperty(repeated=True)
+  # The source of this Bug.
+  source = ndb.StringProperty()
 
   def id(self):
     """Get the bug ID."""
@@ -246,7 +258,8 @@ class Bug(ndb.Model):
     self.search_indices.append(self.key.id())
     self.search_indices.extend(key_parts)
 
-    self.has_affected = bool(self.affected)
+    self.has_affected = bool(self.affected) or any(
+        r.type in ('SEMVER', 'ECOSYSTEM') for r in self.affected_ranges)
     self.affected_fuzzy = bug.normalize_tags(self.affected)
 
     self.sort_key = key_parts[0] + '-' + key_parts[1].zfill(7)
@@ -255,6 +268,15 @@ class Bug(ndb.Model):
 
     self.is_fixed = any(
         affected_range.fixed for affected_range in self.affected_ranges)
+
+    self.semver_fixed_indexes = []
+    for affected_range in self.affected_ranges:
+      if affected_range.type == 'SEMVER':
+        fixed = affected_range.fixed or self._NOT_FIXED_SEMVER
+        self.semver_fixed_indexes.append(semver_index.normalize(fixed))
+
+    if self.source_id:
+      self.source, _ = sources.parse_source_id(self.source_id)
 
   def update_from_vulnerability(self, vulnerability):
     """Set fields from vulnerability."""
@@ -273,6 +295,13 @@ class Bug(ndb.Model):
     self.project = vulnerability.package.name
     self.ecosystem = vulnerability.package.ecosystem
     self.affected = list(vulnerability.affects.versions)
+
+    vuln_dict = sources.vulnerability_to_dict(vulnerability)
+    if vulnerability.database_specific:
+      self.database_specific = vuln_dict['database_specific']
+
+    if vulnerability.ecosystem_specific:
+      self.ecosystem_specific = vuln_dict['ecosystem_specific']
 
     self.affected_ranges = []
     for affected_range in vulnerability.affects.ranges:
@@ -334,6 +363,12 @@ class Bug(ndb.Model):
         severity=severity,
         affects=affects,
         references=references)
+
+    if self.ecosystem_specific:
+      result.ecosystem_specific.update(self.ecosystem_specific)
+    if self.database_specific:
+      result.database_specific.update(self.database_specific)
+
     return result
 
 
@@ -386,3 +421,8 @@ class SourceRepository(ndb.Model):
     """Pre-put hook for validation."""
     if self.type == SourceRepositoryType.BUCKET and self.editable:
       raise ValueError('BUCKET SourceRepository cannot be editable.')
+
+
+def get_source_repository(source_name):
+  """Get source repository."""
+  return SourceRepository.get_by_id(source_name)

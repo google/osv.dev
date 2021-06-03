@@ -146,6 +146,8 @@ class Importer:
       if not bug.public:
         continue
 
+      # We don't index this as INTERNAL generally implies OSS-Fuzz anyway (at
+      # time of writing).
       source_name, _ = osv.parse_source_id(bug.source_id)
       if source_name != oss_fuzz_source.name:
         continue
@@ -175,19 +177,22 @@ class Importer:
       ndb.put_multi(exported)
 
   def schedule_regular_updates(self, repo, source_repo):
-    """Schedule regular OSS-Fuzz updates."""
+    """Schedule regular updates."""
     if (source_repo.last_update_date and
         source_repo.last_update_date >= utcnow().date()):
       return
 
-    for bug in osv.Bug.query(osv.Bug.status == osv.BugStatus.PROCESSED,
-                             osv.Bug.is_fixed == False):  # pylint: disable=singleton-comparison
+    for bug in osv.Bug.query(
+        osv.Bug.status == osv.BugStatus.PROCESSED,
+        osv.Bug.is_fixed == False,  # pylint: disable=singleton-comparison
+        osv.Bug.source == source_repo.name):
       self._request_analysis(bug, source_repo, repo)
 
     # Re-compute existing Bugs for a period of time, as upstream changes may
     # affect results.
     cutoff_time = (utcnow() - datetime.timedelta(days=_BUG_REDO_DAYS))
     query = osv.Bug.query(osv.Bug.status == osv.BugStatus.PROCESSED,
+                          osv.Bug.source == source_repo.name,
                           osv.Bug.timestamp >= cutoff_time)
 
     for bug in query:

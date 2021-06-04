@@ -72,7 +72,12 @@ def bug_to_response(bug):
 
 def add_links(bug):
   """Add VCS links where possible."""
-  for i, affected in enumerate(bug['affects']['ranges']):
+  try:
+    ranges = bug['affects']['ranges']
+  except KeyError:
+    return
+
+  for i, affected in enumerate(ranges):
     affected['id'] = i
     if affected['type'] != 'GIT':
       continue

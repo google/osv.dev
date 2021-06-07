@@ -81,7 +81,6 @@ def _use_existing_checkout(git_url, checkout_dir, git_callbacks):
   repo.cache = {}
   if repo.remotes['origin'].url != git_url:
     raise RuntimeError('Repo URL changed.')
-  repo.cache = {}
 
   reset_repo(repo, git_callbacks)
   logging.info('Using existing checkout at %s', checkout_dir)

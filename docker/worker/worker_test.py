@@ -834,7 +834,7 @@ class UpdateTest(unittest.TestCase):
     self.maxDiff = None
     tests.reset_emulator()
 
-    self.original_clone = pygit2.clone_repository
+    self.original_clone = osv.clone
     tests.mock_clone(self, func=self.mock_clone)
 
     tests.mock_datetime(self)

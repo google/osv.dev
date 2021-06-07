@@ -16,6 +16,7 @@
 import logging
 import os
 import shutil
+import subprocess
 import time
 
 import pygit2
@@ -24,16 +25,50 @@ CLONE_TRIES = 3
 RETRY_SLEEP_SECONDS = 5
 
 
+class GitRemoteCallback(pygit2.RemoteCallbacks):
+  """Authentication callbacks."""
+
+  def __init__(self, username, ssh_key_public_path, ssh_key_private_path):
+    super().__init__()
+    self.username = username
+    self.ssh_key_public_path = ssh_key_public_path
+    self.ssh_key_private_path = ssh_key_private_path
+
+  def credentials(self, url, username_from_url, allowed_types):
+    if allowed_types & pygit2.credentials.GIT_CREDENTIAL_USERNAME:
+      return pygit2.Username(self.username)
+
+    if allowed_types & pygit2.credentials.GIT_CREDENTIAL_SSH_KEY:
+      return pygit2.Keypair(self.username, self.ssh_key_public_path,
+                            self.ssh_key_private_path, '')
+
+    return None
+
+
+def clone(git_url, checkout_dir, callbacks=None):
+  """Perform a clone."""
+  # Use 'git' CLI here as it's much faster than libgit2's clone.
+  env = {}
+  if callbacks:
+    env['GIT_SSH_COMMAND'] = (
+        f'ssh -i "{callbacks.ssh_key_private_path}" '
+        f'-o User={callbacks.username} -o IdentitiesOnly=yes')
+
+  subprocess.check_call(['git', 'clone', git_url, checkout_dir], env=env)
+  return pygit2.Repository(checkout_dir)
+
+
 def clone_with_retries(git_url, checkout_dir, callbacks=None):
   """Clone with retries."""
   logging.info('Cloning %s to %s', git_url, checkout_dir)
   for _ in range(CLONE_TRIES):
     try:
-      repo = pygit2.clone_repository(git_url, checkout_dir, callbacks=callbacks)
+      repo = clone(git_url, checkout_dir, callbacks)
       repo.cache = {}
       return repo
-    except pygit2.GitError as e:
+    except (pygit2.GitError, subprocess.CalledProcessError) as e:
       logging.error('Clone failed: %s', str(e))
+      shutil.rmtree(checkout_dir, ignore_errors=True)
       time.sleep(RETRY_SLEEP_SECONDS)
       continue
 
@@ -43,6 +78,7 @@ def clone_with_retries(git_url, checkout_dir, callbacks=None):
 def _use_existing_checkout(git_url, checkout_dir, git_callbacks):
   """Update and use existing checkout."""
   repo = pygit2.Repository(checkout_dir)
+  repo.cache = {}
   if repo.remotes['origin'].url != git_url:
     raise RuntimeError('Repo URL changed.')
   repo.cache = {}

@@ -127,8 +127,8 @@ indexes:
   - kind: Bug
     properties:
     - name: status
-    - name: timestamp
     - name: source
+    - name: timestamp
 
   - kind: PackageTagInfo
     properties:

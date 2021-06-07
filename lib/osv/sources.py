@@ -14,6 +14,7 @@
 # limitations under the License.
 """Importer sources."""
 
+import json
 import hashlib
 import logging
 import os
@@ -30,6 +31,9 @@ from . import vulnerability_pb2
 AUTHOR_EMAIL = 'infra@osv.dev'
 PUSH_RETRIES = 2
 PUSH_RETRY_SLEEP_SECONDS = 10
+
+YAML_EXTENSIONS = ('.yaml', '.yml')
+JSON_EXTENSIONS = ('.json')
 
 
 class GitRemoteCallback(pygit2.RemoteCallbacks):
@@ -64,18 +68,39 @@ def repo_path(repo):
   return os.path.dirname(repo.path.rstrip(os.sep))
 
 
-def parse_vulnerability(path):
-  """Parse vulnerability YAML."""
-  vulnerability = vulnerability_pb2.Vulnerability()
+def _parse_vulnerability_dict(path):
+  """Parse a vulnerability file into a dict."""
   with open(path) as f:
-    data = yaml.safe_load(f)
-  json_format.ParseDict(data, vulnerability)
+    ext = os.path.splitext(path)[1]
+    if ext in YAML_EXTENSIONS:
+      return yaml.safe_load(f)
 
-  return vulnerability
+    if ext in JSON_EXTENSIONS:
+      return json.load(f)
+
+    raise RuntimeError('Unknown format ' + ext)
+
+  return None
 
 
-def parse_vulnerability_from_dict(data):
+def parse_vulnerability(path, key_path=None):
+  """Parse vulnerability YAML."""
+  data = _parse_vulnerability_dict(path)
+  return parse_vulnerability_from_dict(data, key_path)
+
+
+def _get_nested_vulnerability(data, key_path=None):
+  """Get nested vulnerability."""
+  if key_path:
+    for component in key_path.split('.'):
+      data = data[component]
+
+  return data
+
+
+def parse_vulnerability_from_dict(data, key_path=None):
   """Parse vulnerability from dict."""
+  data = _get_nested_vulnerability(data, key_path)
   vulnerability = vulnerability_pb2.Vulnerability()
   json_format.ParseDict(data, vulnerability)
   return vulnerability
@@ -106,6 +131,36 @@ def vulnerability_to_yaml(vulnerability, output_path):
   with open(output_path, 'w') as handle:
     data = vulnerability_to_dict(vulnerability)
     yaml.dump(data, handle, sort_keys=False, Dumper=YamlDumper)
+
+
+def _write_vulnerability_dict(data, output_path):
+  """Write a vulnerability dict to disk."""
+  with open(output_path, 'w') as f:
+    ext = os.path.splitext(output_path)[1]
+    if ext in YAML_EXTENSIONS:
+      yaml.dump(data, f, sort_keys=False, Dumper=YamlDumper)
+    elif ext in JSON_EXTENSIONS:
+      json.dump(data, f, indent=2)
+    else:
+      raise RuntimeError('Unknown format ' + ext)
+
+
+def write_vulnerability(vulnerability, output_path, key_path=None):
+  """Update a vulnerability file on disk."""
+  if os.path.exists(output_path):
+    data = _parse_vulnerability_dict(output_path)
+  else:
+    data = {}
+    if key_path:
+      cur = data
+      for component in key_path.split('.'):
+        cur[component] = {}
+        cur = cur[component]
+
+  vuln_data = _get_nested_vulnerability(data, key_path)
+  vuln_data.clear()
+  vuln_data.update(vulnerability_to_dict(vulnerability))
+  _write_vulnerability_dict(data, output_path)
 
 
 def vulnerability_has_range(vulnerability, introduced, fixed):

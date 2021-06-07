@@ -16,6 +16,7 @@
 import argparse
 import json
 import logging
+import os
 import subprocess
 
 import yaml
@@ -63,40 +64,23 @@ def main():
     paths = args.paths
 
   for path in paths:
-    if not path.endswith(args.format):
-      continue
+    ext = os.path.splitext(path)[1]
+    if args.format == 'yaml':
+      if ext not in sources.YAML_EXTENSIONS:
+        continue
+    else:
+      assert args.format == 'json'
+      if ext not in sources.JSON_EXTENSIONS:
+        continue
 
     logging.info('Analyzing %s', path)
-    analyze(path, args.checkout_path, args.format, args.key_path, analyze_git,
+    analyze(path, args.checkout_path, args.key_path, analyze_git,
             detect_cherrypicks)
 
 
-def analyze(path, checkout_path, file_format, key_path, analyze_git,
-            detect_cherrypicks):
+def analyze(path, checkout_path, key_path, analyze_git, detect_cherrypicks):
   """Analyze and write changes to file."""
-  with open(path) as f:
-    if file_format == 'json':
-      data = json.load(f)
-    else:
-      # Validated by argument parsing.
-      assert file_format == 'yaml'
-      data = yaml.safe_load(f)
-
-  vuln_data = data
-  if key_path:
-    try:
-      for component in key_path.split('.'):
-        vuln_data = vuln_data[component]
-    except KeyError:
-      logging.warning('Failed to parse %s with key path %s', path, key_path)
-      return
-
-  try:
-    vuln = sources.parse_vulnerability_from_dict(vuln_data)
-  except Exception:
-    logging.warning('Failed to parse %s', path)
-    return
-
+  vuln = sources.parse_vulnerability(path, key_path)
   result = impact.analyze(
       vuln,
       analyze_git=analyze_git,
@@ -105,14 +89,4 @@ def analyze(path, checkout_path, file_format, key_path, analyze_git,
   if not result.has_changes:
     return
 
-  # Update in place so `key_path` is automatically updated correctly.
-  vuln_data.clear()
-  vuln_data.update(sources.vulnerability_to_dict(vuln))
-
-  with open(path, 'w') as f:
-    if file_format == 'json':
-      json.dump(data, f, indent=2)
-    else:
-      # Validated by argument parsing.
-      assert file_format == 'yaml'
-      yaml.dump(data, f, sort_keys=False, Dumper=sources.YamlDumper)
+  sources.write_vulnerability(vuln, path, key_path)

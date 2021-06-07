@@ -88,11 +88,11 @@ def _yaml_str_representer(dumper, data):
   return dumper.represent_scalar('tag:yaml.org,2002:str', data)
 
 
-class _YamlDumper(yaml.SafeDumper):
+class YamlDumper(yaml.SafeDumper):
   """Overridden dumper to to use | for multiline strings."""
 
 
-_YamlDumper.add_representer(str, _yaml_str_representer)
+YamlDumper.add_representer(str, _yaml_str_representer)
 
 
 def vulnerability_to_dict(vulnerability):
@@ -105,7 +105,7 @@ def vulnerability_to_yaml(vulnerability, output_path):
   """Convert Vulnerability to YAML."""
   with open(output_path, 'w') as handle:
     data = vulnerability_to_dict(vulnerability)
-    yaml.dump(data, handle, sort_keys=False, Dumper=_YamlDumper)
+    yaml.dump(data, handle, sort_keys=False, Dumper=YamlDumper)
 
 
 def vulnerability_has_range(vulnerability, introduced, fixed):

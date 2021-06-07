@@ -16,6 +16,8 @@
 import collections
 import datetime
 import logging
+import os
+import subprocess
 import tempfile
 
 from google.cloud import ndb
@@ -80,111 +82,202 @@ class RangeCollector:
     return ranges
 
 
-def get_affected(repo, regress_commit_or_range, fix_commit_or_range):
-  """"Get list of affected tags and commits for a bug given regressed and fixed
-  commits."""
-  # If multiple, assume any commit in the regression range cause the
-  # regression.
-  regress_commits = get_commit_range(repo, regress_commit_or_range)
-  if len(regress_commits) > COMMIT_RANGE_LIMIT:
-    raise ImpactError('Too many commits in regression range.')
+class RepoAnalyzer:
+  """Repository analyzer."""
 
-  # If multiple, assume all commits are necessary for fixing the regression.
-  fix_commits = get_commit_range(repo, fix_commit_or_range)
-  if len(fix_commits) > COMMIT_RANGE_LIMIT:
-    logging.warning('Too many commits in fix range.')
-    # Rather than bail out here and potentially leaving a Bug as "unfixed"
-    # indefinitely, we do the best we can here, by assuming the last
-    # COMMIT_RANGE_LIMIT commits fix the bug.
-    fix_commits = fix_commits[-COMMIT_RANGE_LIMIT:]
+  def __init__(self, detect_cherrypicks=True):
+    self.detect_cherrypicks = detect_cherrypicks
 
-  # Special case: unknown status for earlier revisions.
-  unknown_earlier_revisions = UNKNOWN_COMMIT in regress_commit_or_range
+  def get_affected(self, repo, regress_commit_or_range, fix_commit_or_range):
+    """"Get list of affected tags and commits for a bug given regressed and
+    fixed commits."""
+    # If multiple, assume any commit in the regression range cause the
+    # regression.
+    regress_commits = get_commit_range(repo, regress_commit_or_range)
+    if len(regress_commits) > COMMIT_RANGE_LIMIT:
+      raise ImpactError('Too many commits in regression range.')
 
-  tags_with_bug = set()
-  for commit in regress_commits:
-    tags_with_bug.update(get_tags_with_commits(repo, [commit]))
+    # If multiple, assume all commits are necessary for fixing the regression.
+    fix_commits = get_commit_range(repo, fix_commit_or_range)
+    if len(fix_commits) > COMMIT_RANGE_LIMIT:
+      logging.warning('Too many commits in fix range.')
+      # Rather than bail out here and potentially leaving a Bug as "unfixed"
+      # indefinitely, we do the best we can here, by assuming the last
+      # COMMIT_RANGE_LIMIT commits fix the bug.
+      fix_commits = fix_commits[-COMMIT_RANGE_LIMIT:]
 
-  if not regress_commits:
-    # If no introduced commit provided, assume all commits prior to fix are
-    # vulnerable.
-    tags_with_bug.update(get_all_tags(repo))
+    # Special case: unknown status for earlier revisions.
+    unknown_earlier_revisions = UNKNOWN_COMMIT in regress_commit_or_range
 
-  tags_with_fix = get_tags_with_commits(repo, fix_commits)
-  affected_commits, affected_ranges = get_affected_range(
-      repo, regress_commits, fix_commits)
+    tags_with_bug = set()
+    for commit in regress_commits:
+      tags_with_bug.update(self.get_tags_with_commits(repo, [commit]))
 
-  if len(regress_commits) > 1 or len(fix_commits) > 1:
-    # Don't return ranges if input regressed and fixed commits are not single
-    # commits.
-    affected_ranges = []
+    if not regress_commits:
+      # If no introduced commit provided, assume all commits prior to fix are
+      # vulnerable.
+      tags_with_bug.update(get_all_tags(repo))
 
-  if unknown_earlier_revisions:
-    # Include the unknown marker in resulting entities.
-    regress_commits.insert(0, UNKNOWN_COMMIT)
+    tags_with_fix = self.get_tags_with_commits(repo, fix_commits)
+    affected_commits, affected_ranges = self.get_affected_range(
+        repo, regress_commits, fix_commits)
 
-  return AffectedResult(tags_with_bug, tags_with_fix, affected_commits,
-                        affected_ranges, regress_commits, fix_commits)
+    if len(regress_commits) > 1 or len(fix_commits) > 1:
+      # Don't return ranges if input regressed and fixed commits are not single
+      # commits.
+      affected_ranges = []
 
+    if unknown_earlier_revisions:
+      # Include the unknown marker in resulting entities.
+      regress_commits.insert(0, UNKNOWN_COMMIT)
 
-def get_affected_range(repo, regress_commits, fix_commits):
-  """Get affected range."""
-  range_collector = RangeCollector()
-  commits = set()
-  seen_commits = set()
+    return AffectedResult(tags_with_bug, tags_with_fix, affected_commits,
+                          affected_ranges, regress_commits, fix_commits)
 
-  # Check all branches for cherry picked regress/fix commits (sorted for
-  # determinism).
-  for branch in sorted(repo.branches.remote):
-    ref = 'refs/remotes/' + branch
+  def get_affected_range(self, repo, regress_commits, fix_commits):
+    """Get affected range."""
+    range_collector = RangeCollector()
+    commits = set()
+    seen_commits = set()
 
-    # Get the earliest equivalent commit in the regression range.
-    equivalent_regress_commit = None
-    for regress_commit in regress_commits:
-      logging.info('Finding equivalent regress commit to %s in %s',
-                   regress_commit, ref)
-      equivalent_regress_commit = get_equivalent_commit(repo, ref,
-                                                        regress_commit)
-      if equivalent_regress_commit:
-        break
-
-    # If regress_commits is provided, then we should find an equivalent.
-    if not equivalent_regress_commit and regress_commits:
-      continue
-
-    # Get the latest equivalent commit in the fix range.
-    equivalent_fix_commit = None
-    for fix_commit in fix_commits:
-      logging.info('Finding equivalent fix commit to %s in %s', fix_commit, ref)
-      equivalent_commit = get_equivalent_commit(repo, ref, fix_commit)
-      if equivalent_commit:
-        equivalent_fix_commit = equivalent_commit
-
-    range_collector.add(equivalent_regress_commit, equivalent_fix_commit)
-
-    last_affected_commits = []
-    if equivalent_fix_commit:
-      # Last affected commit is the one before the fix.
-      last_affected_commits.extend(
-          parent.id
-          for parent in repo.revparse_single(equivalent_fix_commit).parents)
+    if self.detect_cherrypicks:
+      # Check all branches for cherry picked regress/fix commits (sorted for
+      # determinism).
+      branches = sorted(repo.branches.remote)
     else:
-      # Not fixed in this branch. Everything is still vulnerabile.
-      last_affected_commits.append(repo.revparse_single(ref).id)
+      branches = [repo.head.name.replace('refs/heads/', '')]
 
-    if equivalent_regress_commit:
-      commits.add(equivalent_regress_commit)
+    for branch in branches:
+      ref = 'refs/remotes/' + branch
 
-    for last_affected_commit in last_affected_commits:
-      if (equivalent_regress_commit, last_affected_commit) in seen_commits:
+      # Get the earliest equivalent commit in the regression range.
+      equivalent_regress_commit = None
+      if self.detect_cherrypicks:
+        for regress_commit in regress_commits:
+          logging.info('Finding equivalent regress commit to %s in %s',
+                       regress_commit, ref)
+          equivalent_regress_commit = self.get_equivalent_commit(
+              repo, ref, regress_commit)
+          if equivalent_regress_commit:
+            break
+      else:
+        if regress_commits:
+          equivalent_regress_commit = regress_commits[0]
+
+      # If regress_commits is provided, then we should find an equivalent.
+      if not equivalent_regress_commit and regress_commits:
         continue
 
-      seen_commits.add((equivalent_regress_commit, last_affected_commit))
-      commits.update(
-          get_commit_list(repo, equivalent_regress_commit,
-                          last_affected_commit))
+      # Get the latest equivalent commit in the fix range.
+      equivalent_fix_commit = None
+      if self.detect_cherrypicks:
+        for fix_commit in fix_commits:
+          logging.info('Finding equivalent fix commit to %s in %s', fix_commit,
+                       ref)
+          equivalent_commit = self.get_equivalent_commit(repo, ref, fix_commit)
+          if equivalent_commit:
+            equivalent_fix_commit = equivalent_commit
+      else:
+        if regress_commits:
+          equivalent_fix_commit = fix_commits[-1]
 
-  return commits, range_collector.ranges()
+      range_collector.add(equivalent_regress_commit, equivalent_fix_commit)
+
+      last_affected_commits = []
+      if equivalent_fix_commit:
+        # Last affected commit is the one before the fix.
+        last_affected_commits.extend(
+            parent.id
+            for parent in repo.revparse_single(equivalent_fix_commit).parents)
+      else:
+        # Not fixed in this branch. Everything is still vulnerabile.
+        last_affected_commits.append(repo.revparse_single(ref).id)
+
+      if equivalent_regress_commit:
+        commits.add(equivalent_regress_commit)
+
+      for last_affected_commit in last_affected_commits:
+        if (equivalent_regress_commit, last_affected_commit) in seen_commits:
+          continue
+
+        seen_commits.add((equivalent_regress_commit, last_affected_commit))
+        commits.update(
+            get_commit_list(repo, equivalent_regress_commit,
+                            last_affected_commit))
+
+    return commits, range_collector.ranges()
+
+  def get_equivalent_commit(self, repo, to_search, target_commit):
+    """Find an equivalent commit at to_search, or None. The equivalent commit
+    can be equal to target_commit."""
+    if not target_commit:
+      return None
+
+    target = repo.revparse_single(target_commit)
+    target_patch_id = repo.diff(target.parents[0], target).patchid
+
+    search = repo.revparse_single(to_search)
+    try:
+      commits = repo.walk(search.id)
+    except ValueError:
+      # Invalid commit
+      return None
+
+    for commit in commits:
+      if commit.id == target.id:
+        return target_commit
+
+      if not self.detect_cherrypicks:
+        continue
+
+      # Ignore commits without parents and merge commits with multiple parents.
+      if not commit.parents or len(commit.parents) > 1:
+        continue
+
+      patch_id = repo.cache.get(commit.id)
+      if not patch_id:
+        diff = repo.diff(commit.parents[0], commit)
+        patch_id = diff.patchid
+        repo.cache[commit.id] = patch_id
+
+      if patch_id == target_patch_id:
+        return str(commit.id)
+
+    # TODO(ochang): Possibly look at commit message, author etc.
+    return None
+
+  def get_tags_with_commits(self, repo, commits):
+    """Get tags with a given commit."""
+    if not commits:
+      return set()
+
+    logging.info('Getting tags which contain %s', ','.join(commits))
+
+    tags = [
+        ref for ref in repo.listall_references() if ref.startswith(TAG_PREFIX)
+    ]
+
+    if self.detect_cherrypicks:
+      affected = set()
+      for tag in tags:
+        if all(
+            self.get_equivalent_commit(repo, tag, commit)
+            for commit in commits):
+          affected.add(tag[len(TAG_PREFIX):])
+    else:
+      affected = None
+      # pygit2 does not provide any easy to way to compute this efficiently, so
+      # we use git here.
+      for commit in commits:
+        current = subprocess.check_output(
+            ['git', '-C', repo.path, 'tag', '--contains',
+             commit]).decode().splitlines()
+        if affected is None:
+          affected = set(current)
+        else:
+          affected &= set(current)
+
+    return affected
 
 
 def get_commit_range(repo, commit_or_range):
@@ -211,25 +304,6 @@ def get_all_tags(repo):
       for ref in repo.listall_references()
       if ref.startswith(TAG_PREFIX)
   ]
-
-
-def get_tags_with_commits(repo, commits):
-  """Get tags with a given commit."""
-  if not commits:
-    return set()
-
-  affected = set()
-  logging.info('Getting tags which contain %s', ','.join(commits))
-
-  tags = [
-      ref for ref in repo.listall_references() if ref.startswith(TAG_PREFIX)
-  ]
-
-  for tag in tags:
-    if all(get_equivalent_commit(repo, tag, commit) for commit in commits):
-      affected.add(tag[len(TAG_PREFIX):])
-
-  return affected
 
 
 def get_commit_list(repo, start_commit, end_commit):
@@ -262,44 +336,6 @@ def find_latest_tag(repo, tags):
       latest_tag = tag[len(TAG_PREFIX):]
 
   return latest_tag
-
-
-def get_equivalent_commit(repo, to_search, target_commit):
-  """Find an equivalent commit at to_search, or None. The equivalent commit can
-  be equal to target_commit."""
-  if not target_commit:
-    return None
-
-  target = repo.revparse_single(target_commit)
-  target_patch_id = repo.diff(target.parents[0], target).patchid
-
-  search = repo.revparse_single(to_search)
-
-  try:
-    commits = repo.walk(search.id)
-  except ValueError:
-    # Invalid commit
-    return None
-
-  for commit in commits:
-    if commit.id == target.id:
-      return target_commit
-
-    # Ignore commits without parents and merge commits with multiple parents.
-    if not commit.parents or len(commit.parents) > 1:
-      continue
-
-    patch_id = repo.cache.get(commit.id)
-    if not patch_id:
-      diff = repo.diff(commit.parents[0], commit)
-      patch_id = diff.patchid
-      repo.cache[commit.id] = patch_id
-
-    if patch_id == target_patch_id:
-      return str(commit.id)
-
-  # TODO(ochang): Possibly look at commit message, author etc.
-  return None
 
 
 def get_tags(repo_url):
@@ -360,7 +396,10 @@ def enumerate_versions(package, ecosystem, affected_ranges):
   return versions
 
 
-def analyze(vulnerability, analyze_git=True):
+def analyze(vulnerability,
+            analyze_git=True,
+            checkout_path=None,
+            detect_cherrypicks=True):
   """Update and analyze a vulnerability based on its input ranges."""
   package_repo_dir = tempfile.TemporaryDirectory()
   package_repo_url = None
@@ -372,6 +411,7 @@ def analyze(vulnerability, analyze_git=True):
   versions_with_fix = set()
   commits = set()
 
+  repo_analyzer = RepoAnalyzer(detect_cherrypicks=detect_cherrypicks)
   try:
     for affected_range in vulnerability.affects.ranges:
       if (affected_range.type != vulnerability_pb2.AffectedRange.GIT or
@@ -391,16 +431,23 @@ def analyze(vulnerability, analyze_git=True):
         continue
 
       current_repo_url = affected_range.repo
-      if current_repo_url != package_repo_url:
-        # Different repo from previous one.
-        package_repo_dir.cleanup()
-        package_repo_dir = tempfile.TemporaryDirectory()
-        package_repo_url = current_repo_url
-        package_repo = repos.clone_with_retries(package_repo_url,
-                                                package_repo_dir.name)
+      if checkout_path:
+        repo_name = os.path.basename(
+            current_repo_url.rstrip('/')).rstrip('.git')
+        package_repo = repos.ensure_updated_checkout(
+            current_repo_url, os.path.join(checkout_path, repo_name))
+      else:
+        if current_repo_url != package_repo_url:
+          # Different repo from previous one.
+          package_repo_dir.cleanup()
+          package_repo_dir = tempfile.TemporaryDirectory()
+          package_repo_url = current_repo_url
+          package_repo = repos.clone_with_retries(package_repo_url,
+                                                  package_repo_dir.name)
 
-      result = get_affected(package_repo, affected_range.introduced,
-                            affected_range.fixed)
+      result = repo_analyzer.get_affected(package_repo,
+                                          affected_range.introduced,
+                                          affected_range.fixed)
       for introduced, fixed in result.affected_ranges:
         range_collectors[current_repo_url].add(introduced, fixed)
 

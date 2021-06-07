@@ -138,7 +138,7 @@ def mock_repository(test):
 
 def mock_clone(test, func=None, return_value=None):
   """Mocks clone_repository."""
-  patcher = mock.patch('pygit2.clone_repository')
+  patcher = mock.patch('osv.repos.clone')
   mocked = patcher.start()
   if return_value:
     mocked.return_value = return_value

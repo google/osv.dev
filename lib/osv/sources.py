@@ -32,27 +32,6 @@ PUSH_RETRIES = 2
 PUSH_RETRY_SLEEP_SECONDS = 10
 
 
-class GitRemoteCallback(pygit2.RemoteCallbacks):
-  """Authentication callbacks."""
-
-  def __init__(self, username, ssh_key_public_path, ssh_key_private_path):
-    super().__init__()
-    self._username = username
-    self._ssh_key_public_path = ssh_key_public_path
-    self._ssh_key_private_path = ssh_key_private_path
-
-  def credentials(self, url, username_from_url, allowed_types):
-    logging.info('Allowed types = %s\n', allowed_types)
-    if allowed_types & pygit2.credentials.GIT_CREDENTIAL_USERNAME:
-      return pygit2.Username(self._username)
-
-    if allowed_types & pygit2.credentials.GIT_CREDENTIAL_SSH_KEY:
-      return pygit2.Keypair(self._username, self._ssh_key_public_path,
-                            self._ssh_key_private_path, '')
-
-    return None
-
-
 def parse_source_id(source_id):
   """Get the source name and id from source_id."""
   return source_id.split(':', 1)

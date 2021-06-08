@@ -24,6 +24,14 @@ import pygit2
 CLONE_TRIES = 3
 RETRY_SLEEP_SECONDS = 5
 
+# More performant mirrors for large/popular repos.
+# TODO: Don't hardcode this.
+_GIT_MIRRORS = {
+    'https://git.kernel.org/pub/scm/linux/kernel/git/stable/linux.git':
+        'https://kernel.googlesource.com/pub/scm/'
+        'linux/kernel/git/stable/linux.git'
+}
+
 
 class GitRemoteCallback(pygit2.RemoteCallbacks):
   """Authentication callbacks."""
@@ -45,6 +53,16 @@ class GitRemoteCallback(pygit2.RemoteCallbacks):
     return None
 
 
+def _git_mirror(git_url):
+  """Get git mirror. If no mirror exists, return the git URL as is."""
+  mirror = _GIT_MIRRORS.get(git_url.rstrip('/'))
+  if mirror:
+    logging.info('Using mirror %s for git URL %s.', mirror, git_url)
+    return mirror
+
+  return git_url
+
+
 def clone(git_url, checkout_dir, callbacks=None):
   """Perform a clone."""
   # Use 'git' CLI here as it's much faster than libgit2's clone.
@@ -55,7 +73,8 @@ def clone(git_url, checkout_dir, callbacks=None):
         f'-o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null '
         f'-o User={callbacks.username} -o IdentitiesOnly=yes')
 
-  subprocess.check_call(['git', 'clone', git_url, checkout_dir], env=env)
+  subprocess.check_call(
+      ['git', 'clone', _git_mirror(git_url), checkout_dir], env=env)
   return pygit2.Repository(checkout_dir)
 
 
@@ -80,7 +99,7 @@ def _use_existing_checkout(git_url, checkout_dir, git_callbacks):
   """Update and use existing checkout."""
   repo = pygit2.Repository(checkout_dir)
   repo.cache = {}
-  if repo.remotes['origin'].url != git_url:
+  if repo.remotes['origin'].url != _git_mirror(git_url):
     raise RuntimeError('Repo URL changed.')
 
   reset_repo(repo, git_callbacks)

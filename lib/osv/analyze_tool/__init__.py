@@ -63,6 +63,9 @@ def main():
   else:
     paths = args.paths
 
+  if not paths:
+    print('No vulnerability paths specified.')
+
   for path in paths:
     ext = os.path.splitext(path)[1]
     if args.format == 'yaml':

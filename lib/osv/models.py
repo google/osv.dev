@@ -404,6 +404,10 @@ class SourceRepository(ndb.Model):
   editable = ndb.BooleanProperty(default=False)
   # Default extension.
   extension = ndb.StringProperty(default='.yaml')
+  # Key path within each file to store the vulnerability.
+  key_path = ndb.StringProperty()
+  # Whether to detect cherypicks or not (slow for large repos).
+  detect_cherrypicks = ndb.BooleanProperty(default=True)
 
   def ignore_file(self, file_path):
     """Return whether or not we should be ignoring a file."""

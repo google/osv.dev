@@ -158,38 +158,41 @@ def clean_artifacts(oss_fuzz_dir):
     shutil.rmtree(build_dir, ignore_errors=True)
 
 
-def find_bugs_for_tag(project_name, tag, public):
-  """Find bugs for a given project and tag."""
-  query = osv.Bug.query(osv.Bug.project == project_name,
-                        osv.Bug.affected == tag, osv.Bug.public == public)
-
-  return [bug.key.id() for bug in query]
-
-
 def process_package_info_task(message):
   """Process project info."""
   package_name = message.attributes['package_name']
   ecosystem = message.attributes['ecosystem']
-  repo_url = message.attributes['repo_url']
 
-  tags_info = osv.get_tags(repo_url)
-  if tags_info.latest_tag:
-    info = osv.PackageInfo(id=f'{ecosystem}/{package_name}')
-    info.latest_tag = tags_info.latest_tag
-    info.put()
+  tags_and_bugs = {}
+
+  for bug in osv.Bug.query(osv.Bug.project == package_name,
+                           osv.Bug.ecosystem == ecosystem):
+    if not bug.affected:
+      continue
+
+    if not bug.public:
+      continue
+
+    for version in bug.affected:
+      tags_and_bugs.setdefault(version, []).append(bug.id())
 
   infos = []
-  for tag in tags_info.tags:
+  for tag, bugs in tags_and_bugs.items():
     tag_info = osv.PackageTagInfo(id=f'{ecosystem}/{package_name}-{tag}')
     tag_info.package = package_name
     tag_info.ecosystem = ecosystem
     tag_info.tag = tag
-    tag_info.bugs = find_bugs_for_tag(package_name, tag, public=True)
-    tag_info.bugs_private = find_bugs_for_tag(package_name, tag, public=False)
-
+    tag_info.bugs = bugs
     infos.append(tag_info)
 
   ndb.put_multi(infos)
+
+  to_delete = []
+  for info in osv.PackageTagInfo.query():
+    if info.tag not in tags_and_bugs:
+      to_delete.append(info.key)
+
+  ndb.delete_multi(to_delete)
 
 
 def mark_bug_invalid(message):

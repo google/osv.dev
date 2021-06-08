@@ -27,19 +27,6 @@ indexes:
 
   - kind: Bug
     properties:
-      - name: project
-      - name: ecosystem
-      - name: affected
-
-  - kind: Bug
-    properties:
-      - name: project
-      - name: ecosystem
-      - name: affected
-      - name: public
-
-  - kind: Bug
-    properties:
       - name: status
       - name: project
       - name: ecosystem
@@ -142,9 +129,3 @@ indexes:
     - name: package
     - name: ecosystem
     - name: bugs
-
-  - kind: PackageTagInfo
-    properties:
-    - name: package
-    - name: ecosystem
-    - name: bugs_private

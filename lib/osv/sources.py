@@ -147,6 +147,7 @@ def write_vulnerability(vulnerability, output_path, key_path=None):
   if os.path.exists(output_path):
     data = _parse_vulnerability_dict(output_path)
   else:
+    # Set up the expected nesting based on key_path.
     data = {}
     if key_path:
       cur = data

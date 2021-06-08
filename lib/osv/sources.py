@@ -68,6 +68,31 @@ def parse_vulnerability(path, key_path=None):
   return parse_vulnerability_from_dict(data, key_path)
 
 
+def _parse_vulnerabilities(data, key_path):
+  """Parse multiple vulnerabilities."""
+  if isinstance(data, list):
+    return [parse_vulnerability_from_dict(v, key_path) for v in data]
+
+  return [parse_vulnerability_from_dict(data, key_path)]
+
+
+def parse_vulnerabilities(path, key_path=None):
+  """Parse vulnerabilities (potentially multiple in a list)."""
+  return _parse_vulnerabilities(_parse_vulnerability_dict(path), key_path)
+
+
+def parse_vulnerabilities_from_data(data, extension, key_path=None):
+  """Parse vulnerabilities from data."""
+  if extension in YAML_EXTENSIONS:
+    data = yaml.safe_load(data)
+  elif extension in JSON_EXTENSIONS:
+    data = json.loads(data)
+  else:
+    raise RuntimeError('Unknown format ' + extension)
+
+  return _parse_vulnerabilities(data, key_path)
+
+
 def _get_nested_vulnerability(data, key_path=None):
   """Get nested vulnerability."""
   if key_path:
@@ -103,13 +128,6 @@ def vulnerability_to_dict(vulnerability):
   """Convert Vulnerability to a dict."""
   return json_format.MessageToDict(
       vulnerability, preserving_proto_field_name=True)
-
-
-def vulnerability_to_yaml(vulnerability, output_path):
-  """Convert Vulnerability to YAML."""
-  with open(output_path, 'w') as handle:
-    data = vulnerability_to_dict(vulnerability)
-    yaml.dump(data, handle, sort_keys=False, Dumper=YamlDumper)
 
 
 def _write_vulnerability_dict(data, output_path):

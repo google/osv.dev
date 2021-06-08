@@ -387,9 +387,11 @@ def enumerate_versions(package, ecosystem, affected_ranges):
       if not affected_range.introduced and not affected_range.fixed:
         continue
 
-      versions.update(
-          ecosystem.enumerate_versions(package, affected_range.introduced,
-                                       affected_range.fixed))
+      current_versions = ecosystem.enumerate_versions(package,
+                                                      affected_range.introduced,
+                                                      affected_range.fixed)
+      if current_versions:
+        versions.update(current_versions)
 
   versions = list(versions)
   ecosystem.sort_versions(versions)

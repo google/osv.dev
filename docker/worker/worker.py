@@ -262,11 +262,11 @@ class TaskRunner:
           os.path.join(self._sources_dir, source),
           git_callbacks=self._git_callbacks(source_repo))
 
-      yaml_path = os.path.join(osv.repo_path(repo), path)
-      if not os.path.exists(yaml_path):
-        logging.info('%s was deleted.', yaml_path)
+      vuln_path = os.path.join(osv.repo_path(repo), path)
+      if not os.path.exists(vuln_path):
+        logging.info('%s was deleted.', vuln_path)
         if deleted:
-          self._handle_deleted(yaml_path)
+          self._handle_deleted(vuln_path)
 
         return
 
@@ -275,12 +275,13 @@ class TaskRunner:
         return
 
       try:
-        vulnerabilities = [osv.parse_vulnerability(yaml_path)]
+        vulnerabilities = osv.parse_vulnerabilities(
+            vuln_path, key_path=source_repo.key_path)
       except Exception as e:
-        logging.error('Failed to parse vulnerability %s: %s', yaml_path, e)
+        logging.error('Failed to parse vulnerability %s: %s', vuln_path, e)
         return
 
-      current_sha256 = osv.sha256(yaml_path)
+      current_sha256 = osv.sha256(vuln_path)
     elif source_repo.type == osv.SourceRepositoryType.BUCKET:
       storage_client = storage.Client()
       bucket = storage_client.bucket(source_repo.bucket)
@@ -292,11 +293,10 @@ class TaskRunner:
 
       current_sha256 = osv.sha256_bytes(blob)
       try:
-        data = json.loads(blob)
-        if isinstance(data, list):
-          vulnerabilities = [osv.parse_vulnerability_from_dict(v) for v in data]
-        else:
-          vulnerabilities = [osv.parse_vulnerability_from_dict(data)]
+        vulnerabilities = osv.parse_vulnerabilities_from_data(
+            blob,
+            extension=os.path.splitext(path)[1],
+            key_path=source_repo.key_path)
       except Exception as e:
         logging.error('Failed to parse vulnerability %s: %s', path, e)
         return
@@ -314,9 +314,9 @@ class TaskRunner:
     for vulnerability in vulnerabilities:
       self._do_update(source_repo, repo, vulnerability, path, original_sha256)
 
-  def _handle_deleted(self, yaml_path):
+  def _handle_deleted(self, vuln_path):
     """Handle deleted source."""
-    vuln_id = os.path.splitext(os.path.basename(yaml_path))[0]
+    vuln_id = os.path.splitext(os.path.basename(vuln_path))[0]
     logging.info('Marking %s as invalid.', vuln_id)
     bug = osv.Bug.get_by_id(vuln_id)
     if not bug:
@@ -327,16 +327,17 @@ class TaskRunner:
     bug.put()
 
   def _push_new_ranges_and_versions(self, source_repo, repo, vulnerability,
-                                    yaml_path, original_sha256):
+                                    output_path, original_sha256):
     """Pushes new ranges and versions."""
-    osv.vulnerability_to_yaml(vulnerability, yaml_path)
+    osv.write_vulnerability(
+        vulnerability, output_path, key_path=source_repo.key_path)
     repo.index.add_all()
     return osv.push_source_changes(
         repo,
         f'Update {vulnerability.id}',
         self._git_callbacks(source_repo),
         expected_hashes={
-            yaml_path: original_sha256,
+            output_path: original_sha256,
         })
 
   def _analyze_vulnerability(self, source_repo, repo, vulnerability, path,
@@ -353,9 +354,12 @@ class TaskRunner:
     if not result.has_changes:
       return result
 
-    yaml_path = os.path.join(osv.repo_path(repo), path)
+    if not source_repo.editable:
+      return result
+
+    output_path = os.path.join(osv.repo_path(repo), path)
     if self._push_new_ranges_and_versions(source_repo, repo, vulnerability,
-                                          yaml_path, original_sha256):
+                                          output_path, original_sha256):
       logging.info('Updated range/versions for vulnerability %s.',
                    vulnerability.id)
       return result
@@ -369,13 +373,12 @@ class TaskRunner:
     """Process updates on a vulnerability."""
     logging.info('Processing update for vulnerability %s', vulnerability.id)
 
-    if source_repo.editable:
-      try:
-        result = self._analyze_vulnerability(source_repo, repo, vulnerability,
-                                             relative_path, original_sha256)
-      except UpdateConflictError:
-        # Discard changes due to conflict.
-        return
+    try:
+      result = self._analyze_vulnerability(source_repo, repo, vulnerability,
+                                           relative_path, original_sha256)
+    except UpdateConflictError:
+      # Discard changes due to conflict.
+      return
 
     # Update datastore with new information.
     bug = osv.Bug.get_by_id(vulnerability.id)

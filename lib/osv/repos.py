@@ -52,6 +52,7 @@ def clone(git_url, checkout_dir, callbacks=None):
   if callbacks:
     env['GIT_SSH_COMMAND'] = (
         f'ssh -i "{callbacks.ssh_key_private_path}" '
+        f'-o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null '
         f'-o User={callbacks.username} -o IdentitiesOnly=yes')
 
   subprocess.check_call(['git', 'clone', git_url, checkout_dir], env=env)

@@ -65,16 +65,15 @@ RUN mkdir /tmp/build && cd /tmp/build && \
 RUN ldconfig
 
 RUN mkdir /work && mkdir /env
-WORKDIR /env
 VOLUME /var/lib/docker
 
 ENV PIP_NO_BINARY pygit2
 COPY Pipfile Pipfile.lock /env/
 COPY lib /env/lib
-RUN pip3 install pipenv && pipenv sync
+RUN cd /env && pip3 install pipenv && pipenv install --deploy --system
 
 COPY oss_fuzz.py worker.py /usr/local/bin/
 RUN chmod 755 /usr/local/bin/worker.py
 
 ENV GOOGLE_CLOUD_PROJECT oss-vdb
-ENTRYPOINT ["pipenv", "run", "worker.py"]
+ENTRYPOINT ["worker.py"]

@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 # Copyright 2021 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -11,9 +12,9 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+"""Analyze action."""
 
-FROM gcr.io/oss-vdb/worker
+from osv import analyze_tool
 
-COPY importer.py /usr/local/bin
-RUN chmod 755 /usr/local/bin/importer.py
-ENTRYPOINT ["importer.py"]
+if __name__ == '__main__':
+  analyze_tool.main()

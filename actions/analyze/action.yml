@@ -1,0 +1,42 @@
+name: 'Analyze vulnerabilities'
+description: 'Analyze vulnerabilities and populate affected versions'
+inputs:
+  analyze-git:
+    description: 'Analyze git ranges'
+    required: false
+    default: true
+  detect-cherrypicks:
+    description: 'Detect cherry picks (very slow for large repos)'
+    required: false
+    default: false
+  format:
+    description: 'Input format (yaml or json).'
+    required: false
+    default: 'yaml'
+  key-path:
+    description: 'The key path for each individual file where the vulnerability is defined.'
+    required: false
+    default: ''
+  checkout-path:
+    description: 'Path to use for checkouts. Existing checkouts in this directory are re-used.'
+    required: false
+    default: ''
+  pr-base:
+    description: 'Pull request base reference.'
+    required: true
+runs:
+  using: 'docker'
+  image: 'Dockerfile'
+  args:
+    - '--analyze_git'
+    - ${{ inputs.analyze-git }}
+    - '--detect_cherrypicks'
+    - ${{ inputs.detect-cherrypicks }}
+    - '--format'
+    - ${{ inputs.format }}
+    - '--key_path'
+    - ${{ inputs.key-path }}
+    - '--checkout_path'
+    - ${{ inputs.checkout-path }}
+    - '--pr_base'
+    - ${{ inputs.pr-base }}

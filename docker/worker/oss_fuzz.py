@@ -290,7 +290,8 @@ def process_impact_task(source_id, message):
         fix_commit = commit
 
     # Actually compute the affected commits/tags.
-    result = osv.get_affected(repo, regress_result.commit, fix_commit)
+    repo_analyzer = osv.RepoAnalyzer()
+    result = repo_analyzer.get_affected(repo, regress_result.commit, fix_commit)
     affected_tags = sorted(list(result.tags_with_bug - result.tags_with_fix))
     logging.info('Found affected %s', ', '.join(affected_tags))
 

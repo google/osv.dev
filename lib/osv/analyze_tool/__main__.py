@@ -11,9 +11,9 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+"""Analyze CLI tool."""
 
-FROM gcr.io/oss-vdb/worker
+from . import main
 
-COPY importer.py /usr/local/bin
-RUN chmod 755 /usr/local/bin/importer.py
-ENTRYPOINT ["importer.py"]
+if __name__ == '__main__':
+  main()

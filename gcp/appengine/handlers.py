@@ -194,7 +194,7 @@ def generate_package_info_tasks():
   publisher = pubsub_v1.PublisherClient()
   query = osv.Bug.query(distinct_on=(osv.Bug.project, osv.Bug.ecosystem))
   for result in query:
-    if not result.project or not result.repo_url:
+    if not result.project:
       continue
 
     if result.ecosystem is None:
@@ -206,8 +206,7 @@ def generate_package_info_tasks():
         data=b'',
         type='package_info',
         package_name=result.project,
-        ecosystem=result.ecosystem,
-        repo_url=result.repo_url)
+        ecosystem=result.ecosystem)
 
   return 'done'
 

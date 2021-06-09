@@ -32,7 +32,7 @@
         <a href="https://github.com/google/oss-fuzz">OSS-Fuzz</a> (mostly C/C++),
         <a href="https://github.com/pypa/advisory-db">Python</a>, and
         <a href="https://github.com/golang/vulndb">Go</a>.
-        More <a href="https://github.com/google/osv/issues/44">to come<a/>.
+        More <a href="https://github.com/google/osv/issues/44">to come</a>.
       </p>
       <h4>Triaging vulnerabilities</h4>
       <p>

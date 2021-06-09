@@ -677,9 +677,22 @@ class PackageInfoTests(unittest.TestCase):
     tests.mock_clone(self, return_value=pygit2.Repository('osv-test'))
 
     osv.Bug(
-        id='2020-1', project='project', affected=['v0.1.1'], public=True).put()
+        id='2020-1',
+        project='project',
+        ecosystem='ecosystem',
+        affected=['v0.1.1'],
+        public=True).put()
     osv.Bug(
-        id='2020-2', project='project', affected=['v0.2'], public=False).put()
+        id='2020-2',
+        project='project',
+        ecosystem='ecosystem',
+        affected=['v0.2'],
+        public=False).put()
+    osv.PackageTagInfo(
+        id='ecosystem/project-v0.1.6',
+        package='project',
+        ecosystem='ecosystem',
+        tag='v0.1.6').put()
 
   def test_package_info(self):
     """Test project info task."""
@@ -687,40 +700,19 @@ class PackageInfoTests(unittest.TestCase):
     message.attributes = {
         'package_name': 'project',
         'ecosystem': 'ecosystem',
-        'repo_url': 'https://repo.com/repo',
     }
 
     worker.process_package_info_task(message)
 
-    package_info = ndb.Key(osv.PackageInfo, 'ecosystem/project').get()
-    self.assertEqual('branch_1_cherrypick_regress', package_info.latest_tag)
-
-    tags_without_bugs = [
-        'branch-v0.1.1',
-        'branch-v0.1.1-with-fix',
-        'branch_1_cherrypick_regress',
-        'v0.1',
-    ]
-
-    for tag in tags_without_bugs:
-      tag_info = ndb.Key(osv.PackageTagInfo, 'ecosystem/project-' + tag).get()
-      self.assertIsNotNone(tag_info)
-      self.assertEqual('project', tag_info.package)
-      self.assertEqual(tag, tag_info.tag)
-      self.assertListEqual([], tag_info.bugs)
-      self.assertListEqual([], tag_info.bugs_private)
-
     tag_info = ndb.Key(osv.PackageTagInfo, 'ecosystem/project-v0.1.1').get()
     self.assertEqual('project', tag_info.package)
     self.assertEqual('v0.1.1', tag_info.tag)
-    self.assertListEqual(['2020-1'], tag_info.bugs)
-    self.assertListEqual([], tag_info.bugs_private)
+    self.assertListEqual(['OSV-2020-1'], tag_info.bugs)
 
-    tag_info = ndb.Key(osv.PackageTagInfo, 'ecosystem/project-v0.2').get()
-    self.assertEqual('project', tag_info.package)
-    self.assertEqual('v0.2', tag_info.tag)
-    self.assertListEqual([], tag_info.bugs)
-    self.assertListEqual(['2020-2'], tag_info.bugs_private)
+    self.assertIsNone(
+        ndb.Key(osv.PackageTagInfo, 'ecosystem/project-v0.2').get())
+    self.assertIsNone(
+        ndb.Key(osv.PackageTagInfo, 'ecosystem/project-v0.1.6').get())
 
 
 class EcosystemTest(unittest.TestCase):

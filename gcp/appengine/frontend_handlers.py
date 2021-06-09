@@ -21,8 +21,6 @@ from flask import jsonify
 from flask import render_template
 from flask import request
 
-from google.cloud import ndb
-
 import osv
 import rate_limiter
 import source_mapper
@@ -159,21 +157,6 @@ def package_handler():
     return None
 
   ecosystem, package = parts
-  package_info = ndb.Key(osv.PackageInfo, package_path).get()
-  if package_info and package_info.latest_tag:
-    latest_tag = package_info.latest_tag
-  else:
-    # Fall back to last lexicographically ordered tag.
-    latest_tag_info = osv.PackageTagInfo.query(
-        osv.PackageTagInfo.package == package,
-        osv.PackageTagInfo.ecosystem == ecosystem)
-    latest_tag_info = latest_tag_info.order(-osv.PackageTagInfo.tag).get()
-    if not latest_tag_info:
-      abort(404)
-      return None
-
-    latest_tag = latest_tag_info.tag
-
   query = osv.PackageTagInfo.query(osv.PackageTagInfo.package == package,
                                    osv.PackageTagInfo.ecosystem == ecosystem,
                                    osv.PackageTagInfo.bugs > '')
@@ -181,14 +164,13 @@ def package_handler():
   for tag_info in query:
     tag_with_bugs = {
         'tag': tag_info.tag,
-        'bugs': [osv.Bug.OSV_ID_PREFIX + bug for bug in tag_info.bugs],
+        'bugs': tag_info.bugs,
     }
 
     tags_with_bugs.append(tag_with_bugs)
 
   tags_with_bugs.sort(key=lambda b: b['tag'], reverse=True)
   return jsonify({
-      'latestTag': latest_tag,
       'bugs': tags_with_bugs,
   })
 

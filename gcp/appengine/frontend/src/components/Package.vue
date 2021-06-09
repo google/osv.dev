@@ -17,8 +17,7 @@
 <template>
   <div>
     <h1>{{ this.$route.params.package }}</h1>
-    <p>Latest tag: {{ latestTag }} </p>
-    <h2>Tags with vulnerabilities</h2>
+    <h2>Versions with vulnerabilities</h2>
 
     <b-table
       id="my-table"
@@ -39,7 +38,6 @@ export default {
   name: 'Package',
   data() {
     return {
-      latestTag: '',
       bugs: [],
       requestId: 0,
       fields: [
@@ -68,7 +66,6 @@ export default {
         return;
       }
 
-      this.latestTag = results.latestTag;
       this.bugs = results.bugs;
 
       document.title = `OSV - ${this.$route.params.package}`;

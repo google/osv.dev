@@ -121,12 +121,6 @@ class FixResult(ndb.Model):
   timestamp = ndb.DateTimeProperty()
 
 
-class PackageInfo(ndb.Model):
-  """Package info."""
-  # The latest tag for the package.
-  latest_tag = ndb.StringProperty()
-
-
 class PackageTagInfo(ndb.Model):
   """Project tag information."""
   # The name of the package.
@@ -137,8 +131,6 @@ class PackageTagInfo(ndb.Model):
   tag = ndb.StringProperty()
   # List of public bugs.
   bugs = ndb.StringProperty(repeated=True)
-  # List of private bugs.
-  bugs_private = ndb.StringProperty(repeated=True)
 
 
 class AffectedRange(ndb.Model):
@@ -185,8 +177,8 @@ class Bug(ndb.Model):
   # All affected ranges.
   affected_ranges = ndb.StructuredProperty(AffectedRange, repeated=True)
   # List of affected versions.
-  affected = ndb.StringProperty(repeated=True)
-  # List of normalized versions for fuzzy matching.
+  affected = ndb.TextProperty(repeated=True)
+  # List of normalized versions indexed for fuzzy matching.
   affected_fuzzy = ndb.StringProperty(repeated=True)
   # OSS-Fuzz issue ID.
   issue_id = ndb.StringProperty()

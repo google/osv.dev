@@ -109,7 +109,7 @@ class IntegrationTests(unittest.TestCase):
       },
       'published':
           '2021-04-14T12:00:00Z',
-      'ecosystemSpecific': {
+      'ecosystem_specific': {
           'symbols': [
               'Auth.ServerHTTP', 'Auth.ListenAndServeTLS', 'Auth.ListenAndServe'
           ],

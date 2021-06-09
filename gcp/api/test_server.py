@@ -103,7 +103,8 @@ def start_esp(port, backend_port, service_account_path, log_path):
       '--service=api-test.osv.dev', '--rollout_strategy=managed',
       f'--listener_port={port}', f'--backend=grpc://{host}:{backend_port}',
       f'--service_account_key=/esp/{service_account_name}', '--non_gcp',
-      '--enable_debug'
+      '--enable_debug', '--transcoding_preserve_proto_field_names',
+      '--envoy_connection_buffer_limit_bytes=10485760',
   ],
                               stdout=log_handle,
                               stderr=subprocess.STDOUT)

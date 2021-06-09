@@ -42,7 +42,7 @@ type Vulnerability struct {
 		Name      string `json:"name" yaml:"name"`
 		Ecosystem string `json:"ecosystem" yaml:"ecosystem"`
 	} `json:"package"`
-	Summary string `json:"summary" yaml:"summary"`
+	Summary string `json:"summary,omitempty" yaml:"summary,omitempty"`
 	Details string `json:"details" yaml:"details"`
 	Affects struct {
 		Ranges   []AffectedRange `json:"ranges"`

@@ -134,6 +134,13 @@ func extractVersionsFromDescription(validVersions []string, description string) 
 			continue
 		}
 
+		if introduced != "" && !hasVersion(validVersions, introduced) {
+			notes = append(notes, fmt.Sprintf("Extracted version %s is not a valid version", introduced))
+		}
+		if fixed != "" && !hasVersion(validVersions, fixed) {
+			notes = append(notes, fmt.Sprintf("Extracted version %s is not a valid version", fixed))
+		}
+
 		versions = append(versions, AffectedVersion{
 			Introduced: introduced,
 			Fixed:      fixed,

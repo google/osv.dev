@@ -78,6 +78,7 @@ func main() {
 	pypiLinksPath := flag.String("pypi_links", "", "Path to pypi_links.json.")
 	pypiVersionsPath := flag.String("pypi_versions", "", "Path to pypi_versions.json.")
 	falsePositivesPath := flag.String("false_positives", "", "Path to false positives file.")
+	withoutNotes := flag.Bool("without_notes", false, "Output vulnerabilities without notes only.")
 	outDir := flag.String("out_dir", "", "Path to output results.")
 
 	flag.Parse()
@@ -144,6 +145,11 @@ func main() {
 		vulnPath := filepath.Join(pkgDir, v.ID+extension)
 		if _, err := os.Stat(vulnPath); err == nil {
 			log.Printf("Skipping %s as it already exists.", vulnPath)
+			continue
+		}
+
+		if len(notes) > 0 && *withoutNotes {
+			log.Printf("Skipping %s as there are notes associated with it.", vulnPath)
 			continue
 		}
 

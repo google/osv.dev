@@ -17,6 +17,7 @@ import argparse
 import json
 import logging
 import os
+import re
 import subprocess
 
 import yaml
@@ -50,6 +51,8 @@ def main():
       '--checkout_path', help='Path for checking out repositories')
   parser.add_argument(
       '--pr_base', help='Pull request base branch (to diff against).')
+  parser.add_argument(
+      '--skip_pattern', help='Regex pattern to match skipped files.')
   parser.add_argument('paths', nargs='*', help='File paths')
 
   args = parser.parse_args()
@@ -67,6 +70,9 @@ def main():
     print('No vulnerability paths specified.')
 
   for path in paths:
+    if args.skip_pattern and re.search(args.skip_pattern, path):
+      continue
+
     ext = os.path.splitext(path)[1]
     if args.format == 'yaml':
       if ext not in sources.YAML_EXTENSIONS:

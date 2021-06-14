@@ -380,6 +380,8 @@ class SourceRepository(ndb.Model):
   repo_url = ndb.StringProperty()
   # The username to use for SSH auth.
   repo_username = ndb.StringProperty()
+  # Optional branch for repo.
+  repo_branch = ndb.StringProperty()
   # Bucket name.
   bucket = ndb.StringProperty()
   # The directory in the repo where Vulnerability data is stored.

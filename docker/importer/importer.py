@@ -19,7 +19,6 @@ import datetime
 import json
 import logging
 import os
-import shutil
 
 from google.cloud import ndb
 from google.cloud import pubsub_v1
@@ -60,6 +59,9 @@ class Importer:
     self._work_dir = work_dir
     self._publisher = pubsub_v1.PublisherClient()
     self._oss_fuzz_export_bucket = oss_fuzz_export_bucket
+
+    self._sources_dir = os.path.join(self._work_dir, 'sources')
+    os.makedirs(self._sources_dir, exist_ok=True)
 
   def _git_callbacks(self, source_repo):
     """Get git auth callbacks."""
@@ -108,32 +110,13 @@ class Importer:
 
       self.process_updates(source_repo)
 
-  def _use_existing_checkout(self, source_repo, checkout_dir):
-    """Update and use existing checkout."""
-    repo = pygit2.Repository(checkout_dir)
-    osv.reset_repo(repo, git_callbacks=self._git_callbacks(source_repo))
-    logging.info('Using existing checkout at %s', checkout_dir)
-    return repo
-
   def checkout(self, source_repo):
     """Check out a source repo."""
-    sources_dir = os.path.join(self._work_dir, 'sources')
-    os.makedirs(sources_dir, exist_ok=True)
-
-    checkout_dir = os.path.join(sources_dir, source_repo.name)
-    if os.path.exists(checkout_dir):
-      # Already exists, reset and checkout latest revision.
-      try:
-        return self._use_existing_checkout(source_repo, checkout_dir)
-      except Exception as e:
-        # Failed to re-use existing checkout. Delete it and start over.
-        logging.error('Failed to load existing checkout: %s', e)
-        shutil.rmtree(checkout_dir)
-
-    return osv.clone_with_retries(
+    return osv.ensure_updated_checkout(
         source_repo.repo_url,
-        checkout_dir,
-        callbacks=self._git_callbacks(source_repo))
+        os.path.join(self._sources_dir, source_repo.name),
+        git_callbacks=self._git_callbacks(source_repo),
+        branch=source_repo.repo_branch)
 
   def import_new_oss_fuzz_entries(self, repo, oss_fuzz_source):
     """Import new entries."""

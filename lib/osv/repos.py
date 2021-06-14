@@ -63,28 +63,44 @@ def _git_mirror(git_url):
   return git_url
 
 
-def clone(git_url, checkout_dir, callbacks=None):
+def _checkout_branch(repo, branch):
+  """Check out a branch."""
+  remote_branch = repo.lookup_branch('origin/' + branch,
+                                     pygit2.GIT_BRANCH_REMOTE)
+  local_branch = repo.lookup_branch(branch, pygit2.GIT_BRANCH_LOCAL)
+  if not local_branch:
+    local_branch = repo.branches.create(branch, commit=remote_branch.peel())
+
+  local_branch.upstream = remote_branch
+  local_branch.set_target(remote_branch.target)
+  repo.checkout(local_branch)
+  repo.reset(remote_branch.target, pygit2.GIT_RESET_HARD)
+
+
+def clone(git_url, checkout_dir, git_callbacks=None):
   """Perform a clone."""
   # Use 'git' CLI here as it's much faster than libgit2's clone.
   env = {}
-  if callbacks:
+  if git_callbacks:
     env['GIT_SSH_COMMAND'] = (
-        f'ssh -i "{callbacks.ssh_key_private_path}" '
+        f'ssh -i "{git_callbacks.ssh_key_private_path}" '
         f'-o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null '
-        f'-o User={callbacks.username} -o IdentitiesOnly=yes')
+        f'-o User={git_callbacks.username} -o IdentitiesOnly=yes')
 
   subprocess.check_call(
       ['git', 'clone', _git_mirror(git_url), checkout_dir], env=env)
   return pygit2.Repository(checkout_dir)
 
 
-def clone_with_retries(git_url, checkout_dir, callbacks=None):
+def clone_with_retries(git_url, checkout_dir, git_callbacks=None, branch=None):
   """Clone with retries."""
   logging.info('Cloning %s to %s', git_url, checkout_dir)
   for _ in range(CLONE_TRIES):
     try:
-      repo = clone(git_url, checkout_dir, callbacks)
+      repo = clone(git_url, checkout_dir, git_callbacks)
       repo.cache = {}
+      if branch:
+        _checkout_branch(repo, branch)
       return repo
     except (pygit2.GitError, subprocess.CalledProcessError) as e:
       logging.error('Clone failed: %s', str(e))
@@ -95,30 +111,41 @@ def clone_with_retries(git_url, checkout_dir, callbacks=None):
   return None
 
 
-def _use_existing_checkout(git_url, checkout_dir, git_callbacks):
+def _use_existing_checkout(git_url,
+                           checkout_dir,
+                           git_callbacks=None,
+                           branch=None):
   """Update and use existing checkout."""
   repo = pygit2.Repository(checkout_dir)
   repo.cache = {}
   if repo.remotes['origin'].url != _git_mirror(git_url):
     raise RuntimeError('Repo URL changed.')
 
+  if branch:
+    _checkout_branch(repo, branch)
+
   reset_repo(repo, git_callbacks)
   logging.info('Using existing checkout at %s', checkout_dir)
   return repo
 
 
-def ensure_updated_checkout(git_url, checkout_dir, git_callbacks=None):
+def ensure_updated_checkout(git_url,
+                            checkout_dir,
+                            git_callbacks=None,
+                            branch=None):
   """Ensure updated checkout."""
   if os.path.exists(checkout_dir):
     # Already exists, reset and checkout latest revision.
     try:
-      return _use_existing_checkout(git_url, checkout_dir, git_callbacks)
+      return _use_existing_checkout(
+          git_url, checkout_dir, git_callbacks=git_callbacks, branch=branch)
     except Exception as e:
       # Failed to re-use existing checkout. Delete it and start over.
       logging.error('Failed to load existing checkout: %s', e)
       shutil.rmtree(checkout_dir)
 
-  repo = clone_with_retries(git_url, checkout_dir, git_callbacks)
+  repo = clone_with_retries(
+      git_url, checkout_dir, git_callbacks=git_callbacks, branch=branch)
   logging.info('Repo now at: %s', repo.head.peel().message)
   return repo
 

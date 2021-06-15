@@ -24,6 +24,9 @@ inputs:
   pr-base:
     description: 'Pull request base reference.'
     required: true
+  skip-pattern:
+    description: 'File path patterns to skip.'
+    default: ''
 runs:
   using: 'docker'
   image: 'Dockerfile'
@@ -40,3 +43,5 @@ runs:
     - ${{ inputs.checkout-path }}
     - '--pr_base'
     - ${{ inputs.pr-base }}
+    - '--skip_pattern'
+    - ${{ inputs.skip-pattern }}

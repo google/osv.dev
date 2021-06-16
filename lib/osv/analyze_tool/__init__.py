@@ -82,20 +82,30 @@ def main():
       if ext not in sources.JSON_EXTENSIONS:
         continue
 
-    logging.info('Analyzing %s', path)
+    if not os.path.exists(path):
+      continue
+
     analyze(path, args.checkout_path, args.key_path, analyze_git,
             detect_cherrypicks)
 
 
 def analyze(path, checkout_path, key_path, analyze_git, detect_cherrypicks):
   """Analyze and write changes to file."""
-  vuln = sources.parse_vulnerability(path, key_path)
+  logging.info('Analyzing %s', path)
+  try:
+    vuln = sources.parse_vulnerability(path, key_path)
+  except Exception:
+    logging.error('Failed to parse %s', path)
+    return
+
   result = impact.analyze(
       vuln,
       analyze_git=analyze_git,
       checkout_path=checkout_path,
       detect_cherrypicks=detect_cherrypicks)
   if not result.has_changes:
+    logging.info('No changes required.')
     return
 
+  logging.info('Writing changes.')
   sources.write_vulnerability(vuln, path, key_path)

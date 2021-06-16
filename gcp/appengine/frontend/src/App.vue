@@ -60,6 +60,13 @@ export default {
 }
 </script>
 
+<style lang="scss">
+  $font-family-sans-serif: 'Roboto', sans-serif;
+  @import url('https://fonts.googleapis.com/css2?family=Roboto&display=swap');
+  @import '~bootstrap/scss/bootstrap.scss';
+  @import '~bootstrap-vue/src/index.scss';
+</style>
+
 <style scoped>
 #container {
   padding: 1em;

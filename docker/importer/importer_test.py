@@ -97,7 +97,6 @@ class ImporterTest(unittest.TestCase):
         regressed='17ee4cf670c363de8d2ea4a4897d7a699837873f',
         search_indices=['file', '2017-134', '2017', '134'],
         severity='MEDIUM',
-        sort_key='2017-0000134',
         source_id='oss-fuzz:5417710252982272',
         source_of_truth=osv.SourceOfTruth.INTERNAL,
         status=1,

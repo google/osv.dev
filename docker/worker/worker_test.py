@@ -200,7 +200,6 @@ class ImpactTest(unittest.TestCase):
             'summary': 'Heap-buffer-overflow in Foo',
             'details': 'DETAILS',
             'severity': 'MEDIUM',
-            'sort_key': '2020-0001337',
             'source_of_truth': osv.SourceOfTruth.INTERNAL,
             'public': False,
             'reference_url_types': {
@@ -208,7 +207,9 @@ class ImpactTest(unittest.TestCase):
             },
             'status': osv.BugStatus.PROCESSED.value,
             'has_affected': True,
-            'search_indices': ['project', '2020-1337', '2020', '1337'],
+            'search_indices': [
+                '1337', '2020', 'ecosystem', 'osv', 'osv-2020-1337', 'project'
+            ],
             'ecosystem_specific': None,
             'database_specific': None,
             'semver_fixed_indexes': [],
@@ -292,12 +293,13 @@ class ImpactTest(unittest.TestCase):
                 'https://url/': 'WEB'
             },
             'severity': 'MEDIUM',
-            'sort_key': '2020-0001337',
             'source_of_truth': osv.SourceOfTruth.INTERNAL,
             'public': False,
             'status': osv.BugStatus.PROCESSED.value,
             'has_affected': True,
-            'search_indices': ['project', '2020-1337', '2020', '1337'],
+            'search_indices': [
+                '1337', '2020', 'ecosystem', 'osv', 'osv-2020-1337', 'project'
+            ],
             'ecosystem_specific': None,
             'database_specific': None,
             'semver_fixed_indexes': [],
@@ -382,12 +384,13 @@ class ImpactTest(unittest.TestCase):
                 'https://url/': 'WEB'
             },
             'severity': 'MEDIUM',
-            'sort_key': '2020-0001337',
             'source_of_truth': osv.SourceOfTruth.INTERNAL,
             'public': False,
             'status': osv.BugStatus.PROCESSED.value,
             'has_affected': True,
-            'search_indices': ['project', '2020-1337', '2020', '1337'],
+            'search_indices': [
+                '1337', '2020', 'ecosystem', 'osv', 'osv-2020-1337', 'project'
+            ],
             'ecosystem_specific': None,
             'database_specific': None,
             'semver_fixed_indexes': [],
@@ -470,7 +473,6 @@ class ImpactTest(unittest.TestCase):
             'summary': 'Heap-buffer-overflow in Foo',
             'details': 'DETAILS',
             'severity': 'MEDIUM',
-            'sort_key': '2020-0001337',
             'source_of_truth': osv.SourceOfTruth.INTERNAL,
             'reference_url_types': {
                 'https://url/': 'WEB'
@@ -478,7 +480,9 @@ class ImpactTest(unittest.TestCase):
             'public': False,
             'status': osv.BugStatus.PROCESSED.value,
             'has_affected': True,
-            'search_indices': ['project', '2020-1337', '2020', '1337'],
+            'search_indices': [
+                '1337', '2020', 'ecosystem', 'osv', 'osv-2020-1337', 'project'
+            ],
             'ecosystem_specific': None,
             'database_specific': None,
             'semver_fixed_indexes': [],
@@ -566,7 +570,6 @@ class ImpactTest(unittest.TestCase):
             'summary': 'Heap-buffer-overflow in Foo',
             'details': 'DETAILS',
             'severity': 'MEDIUM',
-            'sort_key': '2020-0001337',
             'source_of_truth': osv.SourceOfTruth.INTERNAL,
             'reference_url_types': {
                 'https://url/': 'WEB'
@@ -574,7 +577,9 @@ class ImpactTest(unittest.TestCase):
             'public': False,
             'status': osv.BugStatus.PROCESSED.value,
             'has_affected': True,
-            'search_indices': ['project', '2020-1337', '2020', '1337'],
+            'search_indices': [
+                '1337', '2020', 'ecosystem', 'osv', 'osv-2020-1337', 'project'
+            ],
             'ecosystem_specific': None,
             'database_specific': None,
             'semver_fixed_indexes': [],
@@ -634,7 +639,6 @@ class ImpactTest(unittest.TestCase):
             'summary': 'Heap-buffer-overflow in Foo',
             'details': 'DETAILS',
             'severity': 'MEDIUM',
-            'sort_key': '2020-0001337',
             'source_of_truth': osv.SourceOfTruth.INTERNAL,
             'reference_url_types': {
                 'https://url/': 'WEB'
@@ -642,7 +646,9 @@ class ImpactTest(unittest.TestCase):
             'public': False,
             'status': osv.BugStatus.PROCESSED.value,
             'has_affected': True,
-            'search_indices': ['project', '2020-1337', '2020', '1337'],
+            'search_indices': [
+                '1337', '2020', 'ecosystem', 'osv', 'osv-2020-1337', 'project'
+            ],
             'ecosystem_specific': None,
             'database_specific': None,
             'semver_fixed_indexes': [],
@@ -947,9 +953,11 @@ class UpdateTest(unittest.TestCase):
                 'https://ref.com/ref': 'WEB'
             },
             'regressed': '',
-            'search_indices': ['blah.com/package', 'BLAH-123', 'BLAH', '123'],
+            'search_indices': [
+                '123', 'blah', 'blah-123', 'blah.com/package', 'com', 'golang',
+                'package'
+            ],
             'severity': 'HIGH',
-            'sort_key': 'BLAH-0000123',
             'source_id': 'source:BLAH-123.yaml',
             'source_of_truth': osv.SourceOfTruth.SOURCE_REPO,
             'status': None,
@@ -1032,9 +1040,11 @@ class UpdateTest(unittest.TestCase):
                 'https://ref.com/ref': 'WEB'
             },
             'regressed': 'eefe8ec3f1f90d0e684890e810f3f21e8500a4cd',
-            'search_indices': ['blah.com/package', 'BLAH-124', 'BLAH', '124'],
+            'search_indices': [
+                '124', 'blah', 'blah-124', 'blah.com/package', 'com', 'golang',
+                'package'
+            ],
             'severity': 'HIGH',
-            'sort_key': 'BLAH-0000124',
             'source_id': 'source:BLAH-124.yaml',
             'source_of_truth': osv.SourceOfTruth.SOURCE_REPO,
             'status': None,
@@ -1110,9 +1120,11 @@ class UpdateTest(unittest.TestCase):
                 'https://ref.com/ref': 'WEB'
             },
             'regressed': '',
-            'search_indices': ['blah.com/package', 'BLAH-127', 'BLAH', '127'],
+            'search_indices': [
+                '127', 'blah', 'blah-127', 'blah.com/package', 'com', 'golang',
+                'package'
+            ],
             'severity': 'HIGH',
-            'sort_key': 'BLAH-0000127',
             'source_id': 'source:BLAH-127.yaml',
             'source_of_truth': osv.SourceOfTruth.SOURCE_REPO,
             'status': None,
@@ -1204,9 +1216,11 @@ class UpdateTest(unittest.TestCase):
                 'https://ref.com/ref': 'WEB'
             },
             'regressed': '',
-            'search_indices': ['blah.com/package', 'BLAH-126', 'BLAH', '126'],
+            'search_indices': [
+                '126', 'blah', 'blah-126', 'blah.com/package', 'com', 'golang',
+                'package'
+            ],
             'severity': 'HIGH',
-            'sort_key': 'BLAH-0000126',
             'source_id': 'source:BLAH-126.yaml',
             'source_of_truth': osv.SourceOfTruth.SOURCE_REPO,
             'status': osv.BugStatus.PROCESSED,
@@ -1396,9 +1410,8 @@ class UpdateTest(unittest.TestCase):
                 'https://ref.com/ref': 'WEB'
             },
             'regressed': '',
-            'search_indices': ['grpcio', 'PYSEC-123', 'PYSEC', '123'],
+            'search_indices': ['123', 'grpcio', 'pypi', 'pysec', 'pysec-123'],
             'severity': None,
-            'sort_key': 'PYSEC-0000123',
             'source_id': 'source:PYSEC-123.yaml',
             'source_of_truth': osv.SourceOfTruth.SOURCE_REPO,
             'status': osv.BugStatus.PROCESSED,
@@ -1477,13 +1490,12 @@ class UpdateTest(unittest.TestCase):
             'regressed':
                 '',
             'search_indices': [
-                'github.com/opencontainers/runc/libcontainer', 'GO-2021-0085',
-                'GO', '2021', '0085'
+                '0085', '2021', 'com', 'github',
+                'github.com/opencontainers/runc/libcontainer', 'go',
+                'go-2021-0085', 'libcontainer', 'opencontainers', 'runc'
             ],
             'severity':
                 None,
-            'sort_key':
-                'GO-0002021',
             'source_id':
                 'source:a/b/test.json',
             'source':
@@ -1544,11 +1556,11 @@ class UpdateTest(unittest.TestCase):
             },
             'regressed': '',
             'search_indices': [
-                'github.com/opencontainers/runc/libcontainer', 'GO-2021-0087',
-                'GO', '2021', '0087'
+                '0087', '2021', 'com', 'github',
+                'github.com/opencontainers/runc/libcontainer', 'go',
+                'go-2021-0087', 'libcontainer', 'opencontainers', 'runc'
             ],
             'severity': None,
-            'sort_key': 'GO-0002021',
             'source_id': 'source:a/b/test.json',
             'source_of_truth': 2,
             'status': 1,

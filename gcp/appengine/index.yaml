@@ -55,56 +55,33 @@ indexes:
   - kind: Bug
     properties:
       - name: status
-      - name: sort_key
+      - name: public
+      - name: last_modified
         direction: desc
 
   - kind: Bug
     properties:
-    - name: search_indices
-    - name: has_affected
-    - name: public
-    - name: sort_key
-      direction: desc
+      - name: status
+      - name: public
+      - name: ecosystem
+      - name: last_modified
+        direction: desc
 
   - kind: Bug
     properties:
-    - name: has_affected
-    - name: public
-    - name: sort_key
-      direction: desc
+      - name: status
+      - name: public
+      - name: search_indices
+      - name: last_modified
+        direction: desc
 
   - kind: Bug
     properties:
-    - name: has_affected
-    - name: sort_key
-      direction: desc
-
-  - kind: Bug
-    properties:
-    - name: search_indices
-    - name: has_affected
-    - name: sort_key
-      direction: desc
-
-  - kind: Bug
-    properties:
-    - name: has_affected
-    - name: public
-    - name: status
-    - name: sort_key
-      direction: desc
-
-  - kind: Bug
-    properties:
-    - name: search_indices
-    - name: sort_key
-      direction: desc
-
-  - kind: Bug
-    properties:
-    - name: public
-    - name: sort_key
-      direction: desc
+      - name: status
+      - name: public
+      - name: has_affected
+      - name: last_modified
+        direction: desc
 
   - kind: Bug
     properties:

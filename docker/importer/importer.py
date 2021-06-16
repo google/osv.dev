@@ -73,7 +73,14 @@ class Importer:
     """Request analysis."""
     if bug.source_of_truth == osv.SourceOfTruth.SOURCE_REPO:
       path = osv.source_path(source_repo, bug)
-      original_sha256 = osv.sha256(os.path.join(osv.repo_path(repo), path))
+      file_path = os.path.join(osv.repo_path(repo), path)
+      if not os.path.exists(file_path):
+        logging.info(
+            'Skipping analysis for %s as the source file no longer exists.',
+            path)
+        return
+
+      original_sha256 = osv.sha256(file_path)
       self._request_analysis_external(source_repo, original_sha256, path)
     else:
       self._request_internal_analysis(bug)
@@ -231,15 +238,24 @@ class Importer:
       if source_repo.ignore_file(changed_entry):
         continue
 
+      path = os.path.join(osv.repo_path(repo), changed_entry)
+      if not os.path.exists(path):
+        # Path no longer exists. It must have been deleted in another commit.
+        continue
+
       logging.info('Re-analysis triggered for %s', changed_entry)
-      original_sha256 = osv.sha256(
-          os.path.join(osv.repo_path(repo), changed_entry))
+      original_sha256 = osv.sha256(path)
       self._request_analysis_external(source_repo, original_sha256,
                                       changed_entry)
 
     # Mark deleted entries as invalid.
     for deleted_entry in deleted_entries:
       if source_repo.ignore_file(deleted_entry):
+        continue
+
+      path = os.path.join(osv.repo_path(repo), deleted_entry)
+      if os.path.exists(path):
+        # Path still exists. It must have been added back in another commit.
         continue
 
       logging.info('Marking %s as invalid', deleted_entry)

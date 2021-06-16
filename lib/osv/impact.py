@@ -145,7 +145,7 @@ class RepoAnalyzer:
       # determinism).
       branches = sorted(repo.branches.remote)
     else:
-      branches = [repo.head.name.replace('refs/heads/', '')]
+      branches = [repo.head.name.replace('refs/heads/', 'origin/')]
 
     for branch in branches:
       ref = 'refs/remotes/' + branch

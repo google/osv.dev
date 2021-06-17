@@ -84,7 +84,7 @@ export default {
   data() {
     return {
       // Set to a high limit to allow page numbers from url param to be set
-      // before kesults are loaded.
+      // before results are loaded.
       total: 1000000,
       items: [],
       requestId: 0,

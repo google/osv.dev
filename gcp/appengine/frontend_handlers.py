@@ -95,7 +95,7 @@ def add_links(bug):
 
 
 def add_source_info(bug, response):
-  """Add source information."""
+  """Add source information to `response`."""
   if bug.source_of_truth == osv.SourceOfTruth.INTERNAL:
     response['source'] = 'INTERNAL'
     return

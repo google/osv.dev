@@ -274,8 +274,6 @@ class Bug(ndb.Model):
     """Set fields from vulnerability."""
     self.summary = vulnerability.summary
     self.details = vulnerability.details
-    if vulnerability.severity != vulnerability_pb2.Severity.NONE:
-      self.severity = vulnerability_pb2.Severity.Name(vulnerability.severity)
     self.reference_url_types = {
         ref.url: vulnerability_pb2.Reference.Type.Name(ref.type)
         for ref in vulnerability.references

@@ -106,7 +106,7 @@ def parse_vulnerability_from_dict(data, key_path=None):
   """Parse vulnerability from dict."""
   data = _get_nested_vulnerability(data, key_path)
   vulnerability = vulnerability_pb2.Vulnerability()
-  json_format.ParseDict(data, vulnerability)
+  json_format.ParseDict(data, vulnerability, ignore_unknown_fields=True)
   return vulnerability
 
 

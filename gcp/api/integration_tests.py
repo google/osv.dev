@@ -103,8 +103,8 @@ class IntegrationTests(unittest.TestCase):
       'affects': {
           'ranges': [{
               'type': 'SEMVER',
-              'introduced': 'v0.0.0-20160722212129-ac0cc4484ad4',
-              'fixed': 'v0.0.0-20200131131040-063a3fb69896'
+              'introduced': '0.0.0-20160722212129-ac0cc4484ad4',
+              'fixed': '0.0.0-20200131131040-063a3fb69896'
           }]
       },
       'published':

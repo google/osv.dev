@@ -31,14 +31,9 @@
         This feed contains vulnerabilities from
         <a href="https://github.com/google/oss-fuzz">OSS-Fuzz</a> (mostly C/C++),
         <a href="https://github.com/pypa/advisory-db">Python</a>, and
-        <a href="https://github.com/golang/vulndb">Go</a>.
+        <a href="https://github.com/golang/vulndb">Go</a>, and
+        <a href="https://github.com/distributedweaknessfiling/dwflist">DWF</a>.
         More <a href="https://github.com/google/osv/issues/44">to come</a>.
-      </p>
-      <h4>Triaging vulnerabilities</h4>
-      <p>
-        For open source maintainers, OSV's automation helps reduce the burden
-        of triage. Each vulnerability undergoes automated bisection and impact
-        analysis to determine precise affected commit and version ranges.
       </p>
       <h4>API</h4>
       <p>
@@ -56,6 +51,16 @@
             '{"version": "2.4.1", "package": {"name": "jinja2", "ecosystem": "PyPI"}}' \
             "https://api.osv.dev/v1/query"
       </pre>
+      <h4>Triaging vulnerabilities</h4>
+      <p>
+        For open source and vulnerability database maintainers, OSV's
+        <a href="https://github.com/pypa/advisory-db/commit/7afe2510b693ad60a0b95da8a5b2a370a7c48997">automation</a>
+        helps reduce the burden of triage.
+
+        Vulnerabilities undergo optional bisection and <a
+        href="https://github.com/pypa/advisory-db/commit/e4035d8131324cf207ac9b40eacac79b97b1c6b2">version analysis</a>
+        to determine precise affected commit and version ranges.
+      </p>
       <h5>Demo</h5>
       <video controls id="splash" autoplay="" muted="" loop="">
         <source src="./splash.mp4" type="video/mp4">

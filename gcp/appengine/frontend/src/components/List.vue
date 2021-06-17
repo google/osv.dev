@@ -16,25 +16,26 @@
 
 <template>
   <div>
-    <div class="search">
+    <div class="d-flex flex-wrap search">
       <div class="mt-2">
-        <b-form-input v-model="queryParam" placeholder="Package or ID search"></b-form-input>
+        <b-form inline>
+          <b-form-input class="mr-1" v-model="queryParam" placeholder="Package or ID search"></b-form-input>
+          <b-form-select class="mr-1" v-model="ecosystem" :options="ecosystems"></b-form-select>
+          <b-form-checkbox
+              v-model="affectedOnly"
+              name="affectedOnly">
+            With affected versions only
+          </b-form-checkbox>
+        </b-form>
       </div>
-      <div class="mt-2">
-        <b-form-checkbox
-            v-model="affectedOnly"
-            name="affectedOnly">
-          With affected versions only
-        </b-form-checkbox>
+      <div class="ml-auto">
+        <b-pagination
+            v-model="currentPage"
+            :total-rows="total"
+            :per-page="16"
+            aria-controls="my-table">
+        </b-pagination>
       </div>
-    </div>
-    <div class="mt-2">
-      <b-pagination
-          v-model="currentPage"
-          :total-rows="total"
-          :per-page="16"
-          aria-controls="my-table"
-      ></b-pagination>
     </div>
 
     <b-table
@@ -88,6 +89,10 @@ export default {
       items: [],
       requestId: 0,
       changeId: 0,
+      ecosystems: [{
+        text: 'Select ecosystem',
+        value: '',
+      }],
       fields: [
         {
             key: 'id',
@@ -111,7 +116,8 @@ export default {
     async makeRequest() {
       const curId = ++this.requestId;
       const response = await fetch(
-          `/backend/query?page=${this.currentPage}&search=${this.queryParam}&affected_only=${this.affectedOnly}`);
+          `/backend/query?page=${this.currentPage}&search=${this.queryParam}&` +
+          `affected_only=${this.affectedOnly}&ecosystem=${this.ecosystem}`);
 
       const results = await response.json();
       if (curId != this.requestId) {
@@ -121,6 +127,22 @@ export default {
 
       this.total = results.total;
       this.items = results.items;
+    },
+
+    async getEcosystems() {
+      const response = await fetch('/backend/ecosystems');
+      this.ecosystems = [{
+        text: 'Select ecosystem',
+        value: '',
+      }];
+
+      const results = await response.json();
+      for (let ecosystem of results) {
+        this.ecosystems.push({
+          text: ecosystem,
+          value: ecosystem,
+        });
+      }
     },
 
     getSummary(summary, details) {
@@ -143,17 +165,13 @@ export default {
       return {
         q: this.queryParam,
         affected_only: this.affectedOnly,
-        page: this.currentPage
+        page: this.currentPage,
+        ecosystem: this.ecosystem,
       };
     },
 
     formatLongAffected(affected) {
-      const tags = [];
-      for (const entry of affected) {
-        tags.push(entry.tag);
-      }
-
-      return tags.join(' ');
+      return affected.join(' ');
     },
 
     getVulnerabilityLink(vulnId) {
@@ -207,6 +225,16 @@ export default {
       }
     },
 
+    ecosystem: {
+      get() {
+        return this.$route.query.ecosystem || '';
+      },
+
+      set(value) {
+        this.$router.replace({path: this.$route.path, query: { ...this.getParams(), ecosystem: value } });
+      }
+    },
+
     queryParam: {
       get() {
         return this.$route.query.q || '';
@@ -227,6 +255,7 @@ export default {
   },
 
   async mounted() {
+    this.getEcosystems();
     await this.makeRequest();
   },
 }
@@ -235,7 +264,6 @@ export default {
 <!-- Add "scoped" attribute to limit CSS to this component only -->
 <style>
 .search {
-  max-width: 400px;
 }
 
 .not_fixed {

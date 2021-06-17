@@ -56,7 +56,7 @@ def index():
   return render_template('index.html')
 
 
-def bug_to_response(bug):
+def bug_to_response(bug, detailed=True):
   """Convert a Bug entity to a response object."""
   response = osv.vulnerability_to_dict(bug.to_vulnerability())
   response.update({
@@ -64,7 +64,9 @@ def bug_to_response(bug):
       'invalid': bug.status == osv.BugStatus.INVALID
   })
 
-  add_links(response)
+  if detailed:
+    add_links(response)
+    add_source_info(bug, response)
   return response
 
 
@@ -92,6 +94,21 @@ def add_links(bug):
       affected['fixed_link'] = _commit_to_link(repo_url, affected['fixed'])
 
 
+def add_source_info(bug, response):
+  """Add source information to `response`."""
+  if bug.source_of_truth == osv.SourceOfTruth.INTERNAL:
+    response['source'] = 'INTERNAL'
+    return
+
+  source_repo = osv.get_source_repository(bug.source)
+  if not source_repo or not source_repo.link:
+    return
+
+  source_path = osv.source_path(source_repo, bug)
+  response['source'] = source_repo.link + source_path
+  response['source_link'] = response['source']
+
+
 def _commit_to_link(repo_url, commit):
   """Convert commit to link."""
   vcs = source_mapper.get_vcs_viewer_for_url(repo_url)
@@ -112,23 +129,34 @@ def _commit_to_link(repo_url, commit):
   return vcs.get_source_url_for_revision_diff(start, end)
 
 
+@blueprint.route(_BACKEND_ROUTE + '/ecosystems')
+def ecosystems_handler():
+  """Get list of ecosystems."""
+  query = osv.Bug.query(projection=[osv.Bug.ecosystem], distinct=True)
+  return jsonify(sorted([bug.ecosystem for bug in query if bug.ecosystem]))
+
+
 @blueprint.route(_BACKEND_ROUTE + '/query')
 def query_handler():
   """Handle a query."""
   search_string = request.args.get('search')
   page = int(request.args.get('page', 1))
   affected_only = request.args.get('affected_only') == 'true'
+  ecosystem = request.args.get('ecosystem')
 
   query = osv.Bug.query(osv.Bug.status == osv.BugStatus.PROCESSED,
                         osv.Bug.public == True)  # pylint: disable=singleton-comparison
 
   if search_string:
-    query = query.filter(osv.Bug.search_indices == search_string)
+    query = query.filter(osv.Bug.search_indices == search_string.lower())
 
   if affected_only:
     query = query.filter(osv.Bug.has_affected == True)  # pylint: disable=singleton-comparison
 
-  query = query.order(-osv.Bug.sort_key)
+  if ecosystem:
+    query = query.filter(osv.Bug.ecosystem == ecosystem)
+
+  query = query.order(-osv.Bug.last_modified)
   total = query.count()
   results = {
       'total': total,
@@ -138,7 +166,7 @@ def query_handler():
   bugs, _, _ = query.fetch_page(
       page_size=_PAGE_SIZE, offset=(page - 1) * _PAGE_SIZE)
   for bug in bugs:
-    results['items'].append(bug_to_response(bug))
+    results['items'].append(bug_to_response(bug, detailed=False))
 
   return jsonify(results)
 

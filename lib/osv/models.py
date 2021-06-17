@@ -200,8 +200,6 @@ class Bug(ndb.Model):
   search_indices = ndb.StringProperty(repeated=True)
   # Whether or not the bug has any affected versions (auto-populated).
   has_affected = ndb.BooleanProperty()
-  # Sort key.
-  sort_key = ndb.StringProperty()
   # Source of truth for this Bug.
   source_of_truth = ndb.IntegerProperty(default=SourceOfTruth.INTERNAL)
   # Whether the bug is fixed (indexed for querying).
@@ -240,21 +238,30 @@ class Bug(ndb.Model):
 
     return super().get_by_id(vuln_id, *args, **kwargs)
 
+  def _tokenize(self, value):
+    """Tokenize value for indexing."""
+    if not value:
+      return []
+
+    value_lower = value.lower()
+    return re.split(r'\W+', value_lower) + [value_lower]
+
   def _pre_put_hook(self):
     """Pre-put hook for populating search indices."""
-    self.search_indices = []
+    search_indices = set()
+
+    search_indices.update(self._tokenize(self.id()))
     if self.project:
-      self.search_indices.append(self.project)
+      search_indices.update(self._tokenize(self.project))
 
-    key_parts = self.key.id().split('-')
-    self.search_indices.append(self.key.id())
-    self.search_indices.extend(key_parts)
+    if self.ecosystem:
+      search_indices.update(self._tokenize(self.ecosystem))
 
+    self.search_indices = sorted(list(search_indices))
     self.has_affected = bool(self.affected) or any(
         r.type in ('SEMVER', 'ECOSYSTEM') for r in self.affected_ranges)
     self.affected_fuzzy = bug.normalize_tags(self.affected)
 
-    self.sort_key = key_parts[0] + '-' + key_parts[1].zfill(7)
     if not self.last_modified:
       self.last_modified = utcnow()
 
@@ -402,6 +409,8 @@ class SourceRepository(ndb.Model):
   key_path = ndb.StringProperty()
   # Whether to detect cherypicks or not (slow for large repos).
   detect_cherrypicks = ndb.BooleanProperty(default=True)
+  # HTTP link prefix.
+  link = ndb.StringProperty()
 
   def ignore_file(self, file_path):
     """Return whether or not we should be ignoring a file."""

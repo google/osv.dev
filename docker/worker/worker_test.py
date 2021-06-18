@@ -1327,7 +1327,9 @@ class UpdateTest(unittest.TestCase):
 
   def test_update_pypi(self):
     """Test a PyPI entry."""
-    self.source_repo.ignore_git = True
+    self.source_repo.ignore_git = False
+    self.source_repo.versions_from_repo = False
+    self.source_repo.detect_cherrypicks = False
     self.source_repo.put()
 
     self.mock_repo.add_file(
@@ -1425,7 +1427,10 @@ class UpdateTest(unittest.TestCase):
         osv.Bug.get_by_id('PYSEC-123')._to_dict())
 
     affected_commits = list(osv.AffectedCommit.query())
-    self.assertEqual(0, len(affected_commits))
+    self.assertCountEqual([
+        'b1c95a196f22d06fcf80df8c6691cd113d8fefff',
+        'eefe8ec3f1f90d0e684890e810f3f21e8500a4cd',
+    ], [a.commit for a in affected_commits])
 
   def test_update_bucket(self):
     """Test bucket entries."""

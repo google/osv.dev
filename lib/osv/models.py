@@ -121,18 +121,6 @@ class FixResult(ndb.Model):
   timestamp = ndb.DateTimeProperty()
 
 
-class PackageTagInfo(ndb.Model):
-  """Project tag information."""
-  # The name of the package.
-  package = ndb.StringProperty()
-  # The ecosystem for the package.
-  ecosystem = ndb.StringProperty()
-  # The tag.
-  tag = ndb.StringProperty()
-  # List of public bugs.
-  bugs = ndb.StringProperty(repeated=True)
-
-
 class AffectedRange(ndb.Model):
   """Affected range."""
   # Type of range.

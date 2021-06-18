@@ -699,52 +699,6 @@ class ImpactTest(unittest.TestCase):
     ], [commit.commit for commit in affected_commits])
 
 
-class PackageInfoTests(unittest.TestCase):
-  """package_info tests."""
-
-  def setUp(self):
-    tests.reset_emulator()
-    tests.mock_clone(self, return_value=pygit2.Repository('osv-test'))
-
-    osv.Bug(
-        id='2020-1',
-        project='project',
-        ecosystem='ecosystem',
-        affected=['v0.1.1'],
-        public=True).put()
-    osv.Bug(
-        id='2020-2',
-        project='project',
-        ecosystem='ecosystem',
-        affected=['v0.2'],
-        public=False).put()
-    osv.PackageTagInfo(
-        id='ecosystem/project-v0.1.6',
-        package='project',
-        ecosystem='ecosystem',
-        tag='v0.1.6').put()
-
-  def test_package_info(self):
-    """Test project info task."""
-    message = mock.Mock()
-    message.attributes = {
-        'package_name': 'project',
-        'ecosystem': 'ecosystem',
-    }
-
-    worker.process_package_info_task(message)
-
-    tag_info = ndb.Key(osv.PackageTagInfo, 'ecosystem/project-v0.1.1').get()
-    self.assertEqual('project', tag_info.package)
-    self.assertEqual('v0.1.1', tag_info.tag)
-    self.assertListEqual(['OSV-2020-1'], tag_info.bugs)
-
-    self.assertIsNone(
-        ndb.Key(osv.PackageTagInfo, 'ecosystem/project-v0.2').get())
-    self.assertIsNone(
-        ndb.Key(osv.PackageTagInfo, 'ecosystem/project-v0.1.6').get())
-
-
 class EcosystemTest(unittest.TestCase):
   """Test getting ecosystem."""
 

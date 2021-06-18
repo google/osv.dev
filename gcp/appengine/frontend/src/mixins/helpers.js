@@ -5,17 +5,13 @@ const Helpers = {
     },
 
     getPackageLink(package_value) {
-      let value = this.formatPackage(package_value);
-      let link = this.$router.resolve({
-        name: 'package',
-        params: {
-          package: value,
+      return {
+        name: 'list',
+        query: {
+          ecosystem: package_value.ecosystem,
+          q: package_value.name,
         },
-        encodeQuery: false,
-      }).href;
-
-      // Don't encode slashes, as they're part of the package name.
-      return link.replace('%2F', '/');
+      };
     },
   }
 };

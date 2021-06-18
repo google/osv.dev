@@ -61,10 +61,6 @@
         href="https://github.com/pypa/advisory-db/commit/e4035d8131324cf207ac9b40eacac79b97b1c6b2">version analysis</a>
         to determine precise affected commit and version ranges.
       </p>
-      <h5>Demo</h5>
-      <video controls id="splash" autoplay="" muted="" loop="">
-        <source src="./splash.mp4" type="video/mp4">
-      </video>
       <h3>Open source</h3>
       <p>
         This is an <a href="https://github.com/google/osv">open source project</a> from <b>Google</b>.
@@ -86,6 +82,9 @@
 <script>
 export default {
   name: 'Home',
+  mounted() {
+    document.title = 'OSV';
+  }
 }
 </script>
 

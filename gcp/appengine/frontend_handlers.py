@@ -171,38 +171,6 @@ def query_handler():
   return jsonify(results)
 
 
-@blueprint.route(_BACKEND_ROUTE + '/package')
-def package_handler():
-  """Handle a package request."""
-  package_path = request.args.get('package')
-  if not package_path:
-    abort(400)
-    return None
-
-  parts = package_path.split('/', 1)
-  if len(parts) != 2:
-    abort(400)
-    return None
-
-  ecosystem, package = parts
-  query = osv.PackageTagInfo.query(osv.PackageTagInfo.package == package,
-                                   osv.PackageTagInfo.ecosystem == ecosystem,
-                                   osv.PackageTagInfo.bugs > '')
-  tags_with_bugs = []
-  for tag_info in query:
-    tag_with_bugs = {
-        'tag': tag_info.tag,
-        'bugs': tag_info.bugs,
-    }
-
-    tags_with_bugs.append(tag_with_bugs)
-
-  tags_with_bugs.sort(key=lambda b: b['tag'], reverse=True)
-  return jsonify({
-      'bugs': tags_with_bugs,
-  })
-
-
 @blueprint.route(_BACKEND_ROUTE + '/vulnerability')
 def vulnerability_handler():
   """Handle a vulnerability request."""

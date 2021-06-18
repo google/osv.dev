@@ -22,10 +22,12 @@
           <b-form-input class="mr-1" v-model="queryParam" placeholder="Package or ID search"></b-form-input>
           <b-form-select class="mr-1" v-model="ecosystem" :options="ecosystems"></b-form-select>
           <b-form-checkbox
+              class="mr-2"
               v-model="affectedOnly"
               name="affectedOnly">
             With affected versions only
           </b-form-checkbox>
+          <b-spinner variant="primary" v-show="loading"></b-spinner>
         </b-form>
       </div>
       <div class="ml-auto">
@@ -47,7 +49,9 @@
         <router-link :to="getVulnerabilityLink(vulnId.value)">{{ vulnId.value }}</router-link>
       </template>
       <template v-slot:cell(package)="package_data">
-        <a :href="getPackageLink(package_data.value)">{{ formatPackage(package_data.value) }}</a>
+        <router-link :to="getPackageLink(package_data.value)">
+          {{ formatPackage(package_data.value) }}
+        </router-link>
       </template>
       <template v-slot:cell(summary)="summary">
         <p>
@@ -89,6 +93,7 @@ export default {
       items: [],
       requestId: 0,
       changeId: 0,
+      loading: false,
       ecosystems: [{
         text: 'Select ecosystem',
         value: '',
@@ -114,6 +119,8 @@ export default {
 
   methods: {
     async makeRequest() {
+      this.loading = true;
+      this.items = [];
       const curId = ++this.requestId;
       const response = await fetch(
           `/backend/query?page=${this.currentPage}&search=${this.queryParam}&` +
@@ -125,6 +132,7 @@ export default {
         return;
       }
 
+      this.loading = false;
       this.total = results.total;
       this.items = results.items;
     },
@@ -255,6 +263,7 @@ export default {
   },
 
   async mounted() {
+    document.title = 'Vulnerability list';
     this.getEcosystems();
     await this.makeRequest();
   },

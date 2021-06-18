@@ -158,43 +158,6 @@ def clean_artifacts(oss_fuzz_dir):
     shutil.rmtree(build_dir, ignore_errors=True)
 
 
-def process_package_info_task(message):
-  """Process project info."""
-  package_name = message.attributes['package_name']
-  ecosystem = message.attributes['ecosystem']
-
-  tags_and_bugs = {}
-
-  for bug in osv.Bug.query(osv.Bug.project == package_name,
-                           osv.Bug.ecosystem == ecosystem):
-    if not bug.affected:
-      continue
-
-    if not bug.public:
-      continue
-
-    for version in bug.affected:
-      tags_and_bugs.setdefault(version, []).append(bug.id())
-
-  infos = []
-  for tag, bugs in tags_and_bugs.items():
-    tag_info = osv.PackageTagInfo(id=f'{ecosystem}/{package_name}-{tag}')
-    tag_info.package = package_name
-    tag_info.ecosystem = ecosystem
-    tag_info.tag = tag
-    tag_info.bugs = bugs
-    infos.append(tag_info)
-
-  ndb.put_multi(infos)
-
-  to_delete = []
-  for info in osv.PackageTagInfo.query():
-    if info.tag not in tags_and_bugs:
-      to_delete.append(info.key)
-
-  ndb.delete_multi(to_delete)
-
-
 def mark_bug_invalid(message):
   """Mark a bug as invalid."""
   source_id = get_source_id(message)
@@ -427,8 +390,6 @@ class TaskRunner:
           except osv.ImpactError:
             logging.error('Failed to process impact: %s',
                           traceback.format_exc())
-        elif task_type == 'package_info':
-          process_package_info_task(message)
         elif task_type == 'invalid':
           mark_bug_invalid(message)
         elif task_type == 'update':

@@ -21,7 +21,6 @@ import App from './App.vue'
 import Home from './components/Home.vue'
 import List from './components/List.vue'
 import NotFound from './components/NotFound.vue'
-import Package from './components/Package.vue'
 import Vulnerability from './components/Vulnerability.vue'
 
 Vue.use(VueRouter);
@@ -41,7 +40,6 @@ const router = new VueRouter({
     { path: '/', component: Home, name: 'home' },
     { path: '/list', component: List, name: 'list' },
     { path: '/404', component: NotFound, name: 'notfound' },
-    { path: '/package/:package(.*)', component: Package, name: 'package' },
     { path: '/vulnerability/:vulnId', component: Vulnerability, name: 'vulnerability' },
   ],
 })

@@ -178,7 +178,7 @@ class RepoAnalyzer:
           if equivalent_commit:
             equivalent_fix_commit = equivalent_commit
       else:
-        if regress_commits:
+        if fix_commits:
           equivalent_fix_commit = fix_commits[-1]
 
       range_collector.add(equivalent_regress_commit, equivalent_fix_commit)

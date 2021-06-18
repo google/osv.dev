@@ -160,12 +160,18 @@ class Bug(ndb.Model):
   # Very large fake version to use when there is no fix available.
   _NOT_FIXED_SEMVER = '999999.999999.999999'
 
+  # Other IDs this bug is known as.
+  aliases = ndb.StringProperty(repeated=True)
+  # Related IDs.
+  related = ndb.StringProperty(repeated=True)
   # Status of the bug.
   status = ndb.IntegerProperty()
   # Timestamp when Bug was allocated.
   timestamp = ndb.DateTimeProperty()
   # When the entry was last edited.
   last_modified = ndb.DateTimeProperty()
+  # When the entry was withdrawn.
+  withdrawn = ndb.DateTimeProperty()
   # The source identifier.
   # For OSS-Fuzz, this oss-fuzz:<ClusterFuzz testcase ID>.
   # For others this is <source>:<path/to/source>.
@@ -182,6 +188,8 @@ class Bug(ndb.Model):
   affected_fuzzy = ndb.StringProperty(repeated=True)
   # OSS-Fuzz issue ID.
   issue_id = ndb.StringProperty()
+  # Package URL for this package.
+  purl = ndb.StringProperty()
   # Project/package name for the bug.
   project = ndb.StringProperty()
   # Package ecosystem for the project.
@@ -287,13 +295,22 @@ class Bug(ndb.Model):
         ref.url: vulnerability_pb2.Reference.Type.Name(ref.type)
         for ref in vulnerability.references
     }
+
     if vulnerability.HasField('modified'):
       self.last_modified = vulnerability.modified.ToDatetime()
     if vulnerability.HasField('published'):
       self.timestamp = vulnerability.published.ToDatetime()
+    if vulnerability.HasField('withdrawn'):
+      self.withdrawn = vulnerability.withdrawn.ToDatetime()
+
     self.project = vulnerability.package.name
     self.ecosystem = vulnerability.package.ecosystem
+    if vulnerability.package.purl:
+      self.purl = vulnerability.package.purl
+
     self.affected = list(vulnerability.affects.versions)
+    self.aliases = list(vulnerability.aliases)
+    self.related = list(vulnerability.related)
 
     vuln_dict = sources.vulnerability_to_dict(vulnerability)
     if vulnerability.database_specific:
@@ -315,7 +332,7 @@ class Bug(ndb.Model):
   def to_vulnerability(self):
     """Convert to Vulnerability proto."""
     package = vulnerability_pb2.Package(
-        name=self.project, ecosystem=self.ecosystem)
+        name=self.project, ecosystem=self.ecosystem, purl=self.purl)
 
     affects = vulnerability_pb2.Affects(versions=self.affected)
     for affected_range in self.affected_ranges:
@@ -342,6 +359,12 @@ class Bug(ndb.Model):
     else:
       modified = None
 
+    if self.withdrawn:
+      withdrawn = timestamp_pb2.Timestamp()
+      withdrawn.FromDatetime(self.withdrawn)
+    else:
+      withdrawn = None
+
     published = timestamp_pb2.Timestamp()
     published.FromDatetime(self.timestamp)
 
@@ -356,6 +379,9 @@ class Bug(ndb.Model):
         id=self.id(),
         published=published,
         modified=modified,
+        aliases=self.aliases,
+        related=self.related,
+        withdrawn=withdrawn,
         summary=self.summary,
         details=details,
         package=package,

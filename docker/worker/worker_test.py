@@ -169,6 +169,10 @@ class ImpactTest(unittest.TestCase):
     oss_fuzz.process_impact_task('oss-fuzz:123', message)
     self.assertDictEqual(
         {
+            'aliases': [],
+            'purl': None,
+            'related': [],
+            'withdrawn': None,
             'affected':
                 ['branch-v0.1.1', 'branch_1_cherrypick_regress', 'v0.1.1'],
             'affected_fuzzy': ['0-1-1', '1', '0-1-1'],
@@ -265,6 +269,10 @@ class ImpactTest(unittest.TestCase):
     oss_fuzz.process_impact_task('oss-fuzz:123', message)
     self.assertDictEqual(
         {
+            'aliases': [],
+            'purl': None,
+            'related': [],
+            'withdrawn': None,
             'affected': [
                 'branch-v0.1.1', 'branch-v0.1.1-with-fix',
                 'branch_1_cherrypick_regress', 'v0.1.1', 'v0.2'
@@ -356,6 +364,10 @@ class ImpactTest(unittest.TestCase):
     oss_fuzz.process_impact_task('oss-fuzz:123', message)
     self.assertDictEqual(
         {
+            'aliases': [],
+            'purl': None,
+            'related': [],
+            'withdrawn': None,
             'affected': [
                 'branch-v0.1.1', 'branch-v0.1.1-with-fix',
                 'branch_1_cherrypick_regress', 'v0.1.1', 'v0.2'
@@ -448,6 +460,10 @@ class ImpactTest(unittest.TestCase):
     oss_fuzz.process_impact_task('oss-fuzz:123', message)
     self.assertDictEqual(
         {
+            'aliases': [],
+            'purl': None,
+            'related': [],
+            'withdrawn': None,
             'affected':
                 ['branch-v0.1.1', 'branch_1_cherrypick_regress', 'v0.1.1'],
             'affected_fuzzy': ['0-1-1', '1', '0-1-1'],
@@ -539,6 +555,10 @@ class ImpactTest(unittest.TestCase):
     oss_fuzz.process_impact_task('oss-fuzz:123', message)
     self.assertDictEqual(
         {
+            'aliases': [],
+            'purl': None,
+            'related': [],
+            'withdrawn': None,
             'affected':
                 ['branch-v0.1.1', 'branch_1_cherrypick_regress', 'v0.1.1'],
             'affected_fuzzy': ['0-1-1', '1', '0-1-1'],
@@ -611,6 +631,10 @@ class ImpactTest(unittest.TestCase):
     oss_fuzz.process_impact_task('oss-fuzz:123', message)
     self.assertDictEqual(
         {
+            'aliases': [],
+            'purl': None,
+            'related': [],
+            'withdrawn': None,
             'affected': [
                 'branch-v0.1.1', 'branch-v0.1.1-with-fix',
                 'branch_1_cherrypick_regress', 'v0.1.1', 'v0.2'
@@ -921,6 +945,10 @@ class UpdateTest(unittest.TestCase):
 
     self.assertDictEqual(
         {
+            'aliases': [],
+            'purl': None,
+            'related': [],
+            'withdrawn': None,
             'affected_ranges': [{
                 'fixed': '8d8242f545e9cec3e6d0d2e3f5bde8be1c659735',
                 'introduced': 'eefe8ec3f1f90d0e684890e810f3f21e8500a4cd',
@@ -1008,6 +1036,10 @@ class UpdateTest(unittest.TestCase):
 
     self.assertDictEqual(
         {
+            'aliases': [],
+            'purl': None,
+            'related': [],
+            'withdrawn': None,
             'affected':
                 ['branch-v0.1.1', 'branch_1_cherrypick_regress', 'v0.1.1'],
             'affected_fuzzy': ['0-1-1', '1', '0-1-1'],
@@ -1092,6 +1124,10 @@ class UpdateTest(unittest.TestCase):
 
     self.assertDictEqual(
         {
+            'aliases': [],
+            'purl': None,
+            'related': [],
+            'withdrawn': None,
             'affected': [
                 'branch-v0.1.1', 'branch_1_cherrypick_regress', 'v0.1', 'v0.1.1'
             ],
@@ -1184,6 +1220,10 @@ class UpdateTest(unittest.TestCase):
 
     self.assertDictEqual(
         {
+            'aliases': [],
+            'purl': None,
+            'related': [],
+            'withdrawn': None,
             'affected':
                 ['branch-v0.1.1', 'branch_1_cherrypick_regress', 'v0.1.1'],
             'affected_fuzzy': ['0-1-1', '1', '0-1-1'],
@@ -1359,6 +1399,10 @@ class UpdateTest(unittest.TestCase):
 
     self.assertDictEqual(
         {
+            'aliases': [],
+            'purl': None,
+            'related': [],
+            'withdrawn': None,
             'affected': [
                 '1.14.2', '1.15.0', '1.15.0rc1', '1.16.0', '1.16.0rc1',
                 '1.16.1', '1.16.1rc1', '1.17.0', '1.17.0rc1', '1.17.1',
@@ -1454,6 +1498,12 @@ class UpdateTest(unittest.TestCase):
 
     self.assertDictEqual(
         {
+            'aliases': ['CVE-2019-16884'],
+            'purl':
+                None,
+            'related': [],
+            'withdrawn':
+                None,
             'affected': [],
             'affected_fuzzy': [],
             'affected_ranges': [{
@@ -1527,6 +1577,10 @@ class UpdateTest(unittest.TestCase):
         osv.Bug.get_by_id('GO-2021-0085')._to_dict())
     self.assertDictEqual(
         {
+            'aliases': ['CVE-2019-19921'],
+            'purl': None,
+            'related': [],
+            'withdrawn': None,
             'affected': [],
             'affected_fuzzy': [],
             'affected_ranges': [{

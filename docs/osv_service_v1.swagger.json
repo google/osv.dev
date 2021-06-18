@@ -220,6 +220,10 @@
         "ecosystem": {
           "type": "string",
           "description": "Required. The ecosystem for this package. For vulnerabilities from OSS-Fuzz\nthat do not have a package ecosystem (e.g. C/C++ packages), this is\n\"OSS-Fuzz\".\nOther valid values are:\n  - \"Go\" for Go modules.\n  - \"PyPI\" for Python packages.\n  - \"NPM\" for NPM packages."
+        },
+        "purl": {
+          "type": "string",
+          "description": "Optional. The package URL for this package."
         }
       },
       "description": "Package information and version."

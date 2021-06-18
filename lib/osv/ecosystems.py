@@ -35,8 +35,8 @@ class Ecosystem:
     return False
 
 
-class Go(Ecosystem):
-  """Go ecosystem helpers."""
+class SemverEcosystem(Ecosystem):
+  """Generic semver ecosystem helpers."""
 
   def sort_versions(self, versions):
     """Sort versions (no-op)."""
@@ -51,6 +51,10 @@ class Go(Ecosystem):
   @property
   def is_semver(self):
     return True
+
+
+Crates = SemverEcosystem
+Go = SemverEcosystem
 
 
 class PyPI(Ecosystem):
@@ -86,12 +90,13 @@ class PyPI(Ecosystem):
     return versions[start_idx:end_idx]
 
 
+_ecosystems = {
+    'crates.io': Crates(),
+    'Go': Go(),
+    'PyPI': PyPI(),
+}
+
+
 def get(name):
   """Get ecosystem helpers for a given ecosytem."""
-  if name == 'PyPI':
-    return PyPI()
-
-  if name == 'Go':
-    return Go()
-
-  return None
+  return _ecosystems.get(name)

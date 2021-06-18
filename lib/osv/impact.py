@@ -401,7 +401,8 @@ def enumerate_versions(package, ecosystem, affected_ranges):
 def analyze(vulnerability,
             analyze_git=True,
             checkout_path=None,
-            detect_cherrypicks=True):
+            detect_cherrypicks=True,
+            versions_from_repo=True):
   """Update and analyze a vulnerability based on its input ranges."""
   package_repo_dir = tempfile.TemporaryDirectory()
   package_repo_url = None
@@ -469,8 +470,9 @@ def analyze(vulnerability,
                     vulnerability.package.ecosystem)
     versions = []
 
-  # Add additional versions derived from tags.
-  versions.extend(versions_with_bug - versions_with_fix)
+  # Add additional versions derived from commits and tags.
+  if versions_from_repo:
+    versions.extend(versions_with_bug - versions_with_fix)
 
   # Apply changes.
   has_changes = False

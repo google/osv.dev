@@ -399,16 +399,18 @@ class SourceRepository(ndb.Model):
   last_update_date = ndb.DateProperty()
   # Patterns of files to exclude (regex).
   ignore_patterns = ndb.StringProperty(repeated=True)
-  # It true, don't expand on git ranges.
-  ignore_git = ndb.BooleanProperty(default=False)
   # Whether this repository is editable.
   editable = ndb.BooleanProperty(default=False)
   # Default extension.
   extension = ndb.StringProperty(default='.yaml')
   # Key path within each file to store the vulnerability.
   key_path = ndb.StringProperty()
+  # It true, don't analyze any git ranges.
+  ignore_git = ndb.BooleanProperty(default=False)
   # Whether to detect cherypicks or not (slow for large repos).
   detect_cherrypicks = ndb.BooleanProperty(default=True)
+  # Whether to populate "versions" from git ranges.
+  versions_from_repo = ndb.BooleanProperty(default=True)
   # HTTP link prefix.
   link = ndb.StringProperty()
 

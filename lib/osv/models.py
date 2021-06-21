@@ -317,7 +317,7 @@ class Bug(ndb.Model):
               introduced=affected_range.introduced or '',
               fixed=affected_range.fixed or ''))
 
-  def to_vulnerability(self):
+  def to_vulnerability(self, include_source=False):
     """Convert to Vulnerability proto."""
     package = vulnerability_pb2.Package(
         name=self.project, ecosystem=self.ecosystem, purl=self.purl)
@@ -381,6 +381,15 @@ class Bug(ndb.Model):
       result.ecosystem_specific.update(self.ecosystem_specific)
     if self.database_specific:
       result.database_specific.update(self.database_specific)
+
+    if self.source and include_source:
+      source_repo = get_source_repository(self.source)
+      if not source_repo or not source_repo.link:
+        return result
+
+      result.database_specific.update({
+          'source': source_repo.link + sources.source_path(source_repo, self),
+      })
 
     return result
 

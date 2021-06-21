@@ -111,7 +111,7 @@ class OSVServicer(osv_service_v1_pb2_grpc.OSVServicer):
 
 def bug_to_response(bug):
   """Convert a Bug entity to a response object."""
-  return bug.to_vulnerability()
+  return bug.to_vulnerability(include_source=True)
 
 
 def _get_bugs(bug_ids, to_response=bug_to_response):

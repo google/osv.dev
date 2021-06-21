@@ -69,6 +69,10 @@ class IntegrationTests(unittest.TestCase):
       }],
       'severity': 'HIGH',
       'summary': 'Heap-double-free in mrb_default_allocf',
+      'database_specific': {
+          'source': 'https://github.com/google/oss-fuzz-vulns/'
+                    'blob/main/vulns/mruby/OSV-2020-744.yaml'
+      },
   }
 
   _VULN_2258 = {
@@ -83,23 +87,25 @@ class IntegrationTests(unittest.TestCase):
           'type': 'REPORT',
           'url': 'https://bugs.chromium.org/p/oss-fuzz/issues/detail?id=28505',
       }],
-      'summary': 'Heap-buffer-overflow in grk::t1_part1::T1Part1::decompress'
+      'summary': 'Heap-buffer-overflow in grk::t1_part1::T1Part1::decompress',
+      'database_specific': {
+          'source': 'https://github.com/google/oss-fuzz-vulns/'
+                    'blob/main/vulns/grok/OSV-2020-2258.yaml'
+      },
   }
 
   _VULN_GO_2020_0004 = {
-      'id':
-          'GO-2020-0004',
+      'id': 'GO-2020-0004',
       'package': {
           'name': 'github.com/nanobox-io/golang-nanoauth',
           'ecosystem': 'Go'
       },
-      'details':
-          'If any of the `ListenAndServe` functions are called with an '
-          'empty token,\ntoken authentication is disabled globally for '
-          'all listeners.\n\nAlso, a minor timing side channel was '
-          'present allowing attackers with\nvery low latency and able '
-          'to make a lot of requests to potentially\nrecover the '
-          'token.\n',
+      'details': 'If any of the `ListenAndServe` functions are called with an '
+                 'empty token,\ntoken authentication is disabled globally for '
+                 'all listeners.\n\nAlso, a minor timing side channel was '
+                 'present allowing attackers with\nvery low latency and able '
+                 'to make a lot of requests to potentially\nrecover the '
+                 'token.\n',
       'affects': {
           'ranges': [{
               'type': 'SEMVER',
@@ -107,8 +113,7 @@ class IntegrationTests(unittest.TestCase):
               'fixed': '0.0.0-20200131131040-063a3fb69896'
           }]
       },
-      'published':
-          '2021-04-14T12:00:00Z',
+      'published': '2021-04-14T12:00:00Z',
       'ecosystem_specific': {
           'symbols': [
               'Auth.ServerHTTP', 'Auth.ListenAndServeTLS', 'Auth.ListenAndServe'
@@ -123,7 +128,11 @@ class IntegrationTests(unittest.TestCase):
           'type': 'FIX',
           'url': 'https://github.com/nanobox-io/golang-nanoauth/commit/'
                  '063a3fb69896acf985759f0fe3851f15973993f3'
-      }]
+      }],
+      'database_specific': {
+          'source': 'https://storage.googleapis.com/go-vulndb/'
+                    'github.com/nanobox-io/golang-nanoauth.json'
+      }
   }
 
   def setUp(self):

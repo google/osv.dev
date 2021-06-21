@@ -67,7 +67,6 @@ class IntegrationTests(unittest.TestCase):
           'type': 'REPORT',
           'url': 'https://bugs.chromium.org/p/oss-fuzz/issues/detail?id=23801',
       }],
-      'severity': 'HIGH',
       'summary': 'Heap-double-free in mrb_default_allocf',
       'database_specific': {
           'source': 'https://github.com/google/oss-fuzz-vulns/'

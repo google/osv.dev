@@ -210,6 +210,9 @@ def set_bug_attributes(bug, regress_result, fix_result):
   bug.details = details
   bug.severity = severity
   bug.reference_url_types = {}
+  bug.ecosystem_specific = {
+      'severity': severity,
+  }
 
   for reference_url in reference_urls:
     if OSS_FUZZ_ISSUE_URL in reference_url:

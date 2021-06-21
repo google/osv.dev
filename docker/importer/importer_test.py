@@ -85,6 +85,9 @@ class ImporterTest(unittest.TestCase):
             'Crash state:\ncdf_file_property_info\ncdf_file_summary_info\n'
             'cdf_check_summary_info\n'),
         ecosystem='OSS-Fuzz',
+        ecosystem_specific={
+            'severity': 'MEDIUM',
+        },
         fixed='19ccebafb7663c422c714e0c67fa4775abf91c43',
         has_affected=True,
         issue_id='1064',
@@ -96,7 +99,6 @@ class ImporterTest(unittest.TestCase):
         },
         regressed='17ee4cf670c363de8d2ea4a4897d7a699837873f',
         search_indices=['file', '2017-134', '2017', '134'],
-        severity='MEDIUM',
         source_id='oss-fuzz:5417710252982272',
         source_of_truth=osv.SourceOfTruth.INTERNAL,
         status=1,

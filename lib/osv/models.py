@@ -277,8 +277,6 @@ class Bug(ndb.Model):
     """Set fields from vulnerability."""
     self.summary = vulnerability.summary
     self.details = vulnerability.details
-    if vulnerability.severity != vulnerability_pb2.Severity.NONE:
-      self.severity = vulnerability_pb2.Severity.Name(vulnerability.severity)
     self.reference_url_types = {
         ref.url: vulnerability_pb2.Reference.Type.Name(ref.type)
         for ref in vulnerability.references
@@ -330,16 +328,10 @@ class Bug(ndb.Model):
           introduced=affected_range.introduced,
           fixed=affected_range.fixed)
 
-    if self.severity:
-      severity = vulnerability_pb2.Severity.Value(self.severity)
-    else:
-      severity = vulnerability_pb2.Severity.NONE
-
     details = self.details
     if self.status == bug.BugStatus.INVALID:
       affects = None
       details = 'INVALID'
-      severity = vulnerability_pb2.Severity.NONE
 
     if self.last_modified:
       modified = timestamp_pb2.Timestamp()
@@ -373,7 +365,6 @@ class Bug(ndb.Model):
         summary=self.summary,
         details=details,
         package=package,
-        severity=severity,
         affects=affects,
         references=references)
 

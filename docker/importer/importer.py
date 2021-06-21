@@ -23,7 +23,6 @@ import os
 from google.cloud import ndb
 from google.cloud import pubsub_v1
 from google.cloud import storage
-from google.protobuf import json_format
 import pygit2
 
 import osv
@@ -322,7 +321,7 @@ class Importer:
       """Export a single vulnerability."""
       try:
         blob = bucket.blob(f'testcase/{testcase_id}.json')
-        data = json.dumps(json_format.MessageToDict(vulnerability))
+        data = json.dumps(osv.vulnerability_to_dict(vulnerability))
         blob.upload_from_string(data)
 
         if not issue_id:

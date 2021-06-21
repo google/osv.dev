@@ -214,7 +214,9 @@ class ImpactTest(unittest.TestCase):
             'search_indices': [
                 '1337', '2020', 'ecosystem', 'osv', 'osv-2020-1337', 'project'
             ],
-            'ecosystem_specific': None,
+            'ecosystem_specific': {
+                'severity': 'MEDIUM'
+            },
             'database_specific': None,
             'semver_fixed_indexes': [],
             'source': 'oss-fuzz',
@@ -308,7 +310,9 @@ class ImpactTest(unittest.TestCase):
             'search_indices': [
                 '1337', '2020', 'ecosystem', 'osv', 'osv-2020-1337', 'project'
             ],
-            'ecosystem_specific': None,
+            'ecosystem_specific': {
+                'severity': 'MEDIUM'
+            },
             'database_specific': None,
             'semver_fixed_indexes': [],
             'source': 'oss-fuzz',
@@ -403,7 +407,9 @@ class ImpactTest(unittest.TestCase):
             'search_indices': [
                 '1337', '2020', 'ecosystem', 'osv', 'osv-2020-1337', 'project'
             ],
-            'ecosystem_specific': None,
+            'ecosystem_specific': {
+                'severity': 'MEDIUM'
+            },
             'database_specific': None,
             'semver_fixed_indexes': [],
             'source': 'oss-fuzz',
@@ -499,7 +505,9 @@ class ImpactTest(unittest.TestCase):
             'search_indices': [
                 '1337', '2020', 'ecosystem', 'osv', 'osv-2020-1337', 'project'
             ],
-            'ecosystem_specific': None,
+            'ecosystem_specific': {
+                'severity': 'MEDIUM'
+            },
             'database_specific': None,
             'semver_fixed_indexes': [],
             'source': 'oss-fuzz',
@@ -600,7 +608,9 @@ class ImpactTest(unittest.TestCase):
             'search_indices': [
                 '1337', '2020', 'ecosystem', 'osv', 'osv-2020-1337', 'project'
             ],
-            'ecosystem_specific': None,
+            'ecosystem_specific': {
+                'severity': 'MEDIUM'
+            },
             'database_specific': None,
             'semver_fixed_indexes': [],
             'source': 'oss-fuzz',
@@ -673,7 +683,9 @@ class ImpactTest(unittest.TestCase):
             'search_indices': [
                 '1337', '2020', 'ecosystem', 'osv', 'osv-2020-1337', 'project'
             ],
-            'ecosystem_specific': None,
+            'ecosystem_specific': {
+                'severity': 'MEDIUM'
+            },
             'database_specific': None,
             'semver_fixed_indexes': [],
             'source': 'oss-fuzz',
@@ -939,7 +951,7 @@ class UpdateTest(unittest.TestCase):
                 '123', 'blah', 'blah-123', 'blah.com/package', 'com', 'golang',
                 'package'
             ],
-            'severity': 'HIGH',
+            'severity': None,
             'source_id': 'source:BLAH-123.yaml',
             'source_of_truth': osv.SourceOfTruth.SOURCE_REPO,
             'status': None,
@@ -1030,7 +1042,7 @@ class UpdateTest(unittest.TestCase):
                 '124', 'blah', 'blah-124', 'blah.com/package', 'com', 'golang',
                 'package'
             ],
-            'severity': 'HIGH',
+            'severity': None,
             'source_id': 'source:BLAH-124.yaml',
             'source_of_truth': osv.SourceOfTruth.SOURCE_REPO,
             'status': None,
@@ -1114,7 +1126,7 @@ class UpdateTest(unittest.TestCase):
                 '127', 'blah', 'blah-127', 'blah.com/package', 'com', 'golang',
                 'package'
             ],
-            'severity': 'HIGH',
+            'severity': None,
             'source_id': 'source:BLAH-127.yaml',
             'source_of_truth': osv.SourceOfTruth.SOURCE_REPO,
             'status': None,
@@ -1214,7 +1226,7 @@ class UpdateTest(unittest.TestCase):
                 '126', 'blah', 'blah-126', 'blah.com/package', 'com', 'golang',
                 'package'
             ],
-            'severity': 'HIGH',
+            'severity': None,
             'source_id': 'source:BLAH-126.yaml',
             'source_of_truth': osv.SourceOfTruth.SOURCE_REPO,
             'status': osv.BugStatus.PROCESSED,

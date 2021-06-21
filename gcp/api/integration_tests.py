@@ -94,6 +94,7 @@ class IntegrationTests(unittest.TestCase):
           'source': 'https://github.com/google/oss-fuzz-vulns/'
                     'blob/main/vulns/grok/OSV-2020-2258.yaml'
       },
+      'ecosystem_specific': {'severity': 'MEDIUM'},
   }
 
   _VULN_GO_2020_0004 = {

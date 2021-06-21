@@ -72,6 +72,9 @@ class IntegrationTests(unittest.TestCase):
           'source': 'https://github.com/google/oss-fuzz-vulns/'
                     'blob/main/vulns/mruby/OSV-2020-744.yaml'
       },
+      'ecosystem_specific': {
+          'severity': 'HIGH'
+      },
   }
 
   _VULN_2258 = {

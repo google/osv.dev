@@ -13,7 +13,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-docker build -t gcr.io/oss-vdb/importer:$1 . && \
-docker build -t gcr.io/oss-vdb/importer:latest . && \
-docker push gcr.io/oss-vdb/importer:$1 && \
-docker push gcr.io/oss-vdb/importer:latest
+docker build -t gcr.io/oss-vdb/exporter:$1 . && \
+docker build -t gcr.io/oss-vdb/exporter:latest . && \
+docker push gcr.io/oss-vdb/exporter:$1 && \
+docker push gcr.io/oss-vdb/exporter:latest

@@ -1,4 +1,3 @@
-#!/bin/bash -x
 # Copyright 2021 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -13,7 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-docker build -t gcr.io/oss-vdb/importer:$1 . && \
-docker build -t gcr.io/oss-vdb/importer:latest . && \
-docker push gcr.io/oss-vdb/importer:$1 && \
-docker push gcr.io/oss-vdb/importer:latest
+FROM gcr.io/oss-vdb/worker
+
+COPY exporter.py /usr/local/bin
+RUN chmod 755 /usr/local/bin/exporter.py
+ENTRYPOINT ["exporter.py"]

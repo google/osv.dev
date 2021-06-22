@@ -21,6 +21,8 @@ Current data sources:
 - [OSS-Fuzz](https://github.com/google/oss-fuzz) (https://github.com/google/oss-fuzz-vulns)
 - [Python](https://github.com/pypa/advisory-db) 
 - [Go](https://github.com/golang/vulndb)
+- [Rust](https://github.com/RustSec/advisory-db)
+- [DWF](https://github.com/distributedweaknessfiling/dwflist)
 
 **This is an ongoing project.** We are hoping to work with the open source community
 to [onboard more sources of data](https://github.com/google/osv/issues/44).

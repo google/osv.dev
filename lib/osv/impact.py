@@ -152,22 +152,19 @@ class RepoAnalyzer:
       ref = 'refs/remotes/' + branch
 
       # Get the earliest equivalent commit in the regression range.
-      equivalent_regress_commit = None
       if self.detect_cherrypicks:
         logging.info('Finding equivalent regress commit to %s in %s',
                      regress_commit, ref)
         equivalent_regress_commit = self.get_equivalent_commit(
             repo, ref, regress_commit)
       else:
-        if regress_commit:
-          equivalent_regress_commit = regress_commit
+        equivalent_regress_commit = regress_commit
 
       # If regress_commits is provided, then we should find an equivalent.
       if not equivalent_regress_commit and regress_commit:
         continue
 
       # Get the latest equivalent commit in the fix range.
-      equivalent_fix_commit = None
       if self.detect_cherrypicks:
         logging.info('Finding equivalent fix commit to %s in %s', fix_commit,
                      ref)

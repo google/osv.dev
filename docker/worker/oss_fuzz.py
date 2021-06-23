@@ -194,7 +194,6 @@ def process_bisect_task(oss_fuzz_dir, bisect_type, source_id, message):
 
 def set_bug_attributes(bug, regress_result, fix_result):
   """Set bug attributes from bisection results."""
-  repo_url = regress_result.repo_url or fix_result.repo_url
   issue_id = fix_result.issue_id or regress_result.issue_id
   project = fix_result.project or regress_result.project
   ecosystem = fix_result.ecosystem or regress_result.ecosystem
@@ -223,14 +222,6 @@ def set_bug_attributes(bug, regress_result, fix_result):
 
   bug.regressed = regress_result.commit or ''
   bug.fixed = fix_result.commit or ''
-
-  bug.affected_ranges = [
-      osv.AffectedRange(
-          type='GIT',
-          repo_url=repo_url,
-          introduced=bug.regressed,
-          fixed=bug.fixed)
-  ]
 
 
 def process_impact_task(source_id, message):
@@ -305,7 +296,8 @@ def process_impact_task(source_id, message):
     # Not fixed.
     fix_commit = ''
 
-  if len(result.regress_commits) == 1:
+  if (len(result.regress_commits) == 1 and
+      osv.UNKNOWN_COMMIT not in regress_result.commit):
     regress_commit = result.regress_commits[0]
   else:
     regress_commit = regress_result.commit
@@ -322,13 +314,24 @@ def process_impact_task(source_id, message):
   existing_bug.affected_fuzzy = osv.normalize_tags(affected_tags)
   existing_bug.status = osv.BugStatus.PROCESSED
 
+  # For the AffectedRange, use the first commit in the regress commit range, and
+  # the last commit in the fix commit range.
+  introduced = result.regress_commits[0] if result.regress_commits else ''
+  fixed = result.fix_commits[-1] if result.fix_commits else ''
   existing_bug.affected_ranges = [
       osv.AffectedRange(
-          type='GIT',
-          repo_url=repo_url,
-          introduced=existing_bug.regressed,
-          fixed=existing_bug.fixed)
+          type='GIT', repo_url=repo_url, introduced=introduced, fixed=fixed),
   ]
+
+  # Expose range data in `database_specific`.
+  database_specific = {}
+  if ':' in existing_bug.regressed:
+    database_specific['introduced_range'] = existing_bug.regressed
+  if ':' in existing_bug.fixed:
+    database_specific['fixed_range'] = existing_bug.fixed
+
+  if database_specific:
+    existing_bug.database_specific = database_specific
 
   # Don't display additional ranges for imprecise commits, as they can be
   # confusing.

@@ -281,8 +281,7 @@ class ImpactTest(unittest.TestCase):
             ],
             'affected_fuzzy': ['0-1-1', '0-1-1', '1', '0-1-1', '0-2'],
             'affected_ranges': [{
-                'fixed': 'b1c95a196f22d06fcf80df8c6691cd113d8fefff:'
-                         '36f0bd9549298b44f9ff2496c9dd1326b3a9d0e2',
+                'fixed': '36f0bd9549298b44f9ff2496c9dd1326b3a9d0e2',
                 'introduced': 'eefe8ec3f1f90d0e684890e810f3f21e8500a4cd',
                 'repo_url': 'https://repo.com/repo',
                 'type': 'GIT'
@@ -313,7 +312,10 @@ class ImpactTest(unittest.TestCase):
             'ecosystem_specific': {
                 'severity': 'MEDIUM'
             },
-            'database_specific': None,
+            'database_specific': {
+                'fixed_range': 'b1c95a196f22d06fcf80df8c6691cd113d8fefff:'
+                               '36f0bd9549298b44f9ff2496c9dd1326b3a9d0e2'
+            },
             'semver_fixed_indexes': [],
             'source': 'oss-fuzz',
         },
@@ -324,6 +326,7 @@ class ImpactTest(unittest.TestCase):
       self.assertEqual('project', commit.project)
 
     self.assertCountEqual([
+        'b9b3fd4732695b83c3068b7b6a14bb372ec31f98',
         'ff8cc32ba60ad9cbb3b23f0a82aad96ebe9ff76b',
         'febfac1940086bc1f6d3dc33fda0a1d1ba336209',
         '4c155795426727ea05575bd5904321def23c03f4',
@@ -378,12 +381,15 @@ class ImpactTest(unittest.TestCase):
             ],
             'affected_fuzzy': ['0-1-1', '0-1-1', '1', '0-1-1', '0-2'],
             'affected_ranges': [{
-                'fixed': 'eefe8ec3f1f90d0e684890e810f3f21e8500a4cd:'
-                         'b587c21c36a84e16cfc6b39eb68578d43b5281ad',
+                'fixed': 'b587c21c36a84e16cfc6b39eb68578d43b5281ad',
                 'introduced': 'eefe8ec3f1f90d0e684890e810f3f21e8500a4cd',
                 'repo_url': 'https://repo.com/repo',
                 'type': 'GIT'
             }],
+            'database_specific': {
+                'fixed_range': 'eefe8ec3f1f90d0e684890e810f3f21e8500a4cd:'
+                               'b587c21c36a84e16cfc6b39eb68578d43b5281ad'
+            },
             'regressed': 'eefe8ec3f1f90d0e684890e810f3f21e8500a4cd',
             'fixed': ('eefe8ec3f1f90d0e684890e810f3f21e8500a4cd:'
                       'b587c21c36a84e16cfc6b39eb68578d43b5281ad'),
@@ -410,7 +416,6 @@ class ImpactTest(unittest.TestCase):
             'ecosystem_specific': {
                 'severity': 'MEDIUM'
             },
-            'database_specific': None,
             'semver_fixed_indexes': [],
             'source': 'oss-fuzz',
         },
@@ -421,6 +426,7 @@ class ImpactTest(unittest.TestCase):
       self.assertEqual('project', commit.project)
 
     self.assertCountEqual([
+        'b9b3fd4732695b83c3068b7b6a14bb372ec31f98',
         'ff8cc32ba60ad9cbb3b23f0a82aad96ebe9ff76b',
         'febfac1940086bc1f6d3dc33fda0a1d1ba336209',
         '4c155795426727ea05575bd5904321def23c03f4',
@@ -474,14 +480,10 @@ class ImpactTest(unittest.TestCase):
                 ['branch-v0.1.1', 'branch_1_cherrypick_regress', 'v0.1.1'],
             'affected_fuzzy': ['0-1-1', '1', '0-1-1'],
             'affected_ranges': [{
-                'fixed':
-                    '8d8242f545e9cec3e6d0d2e3f5bde8be1c659735',
-                'introduced':
-                    'unknown:eefe8ec3f1f90d0e684890e810f3f21e8500a4cd',
-                'repo_url':
-                    'https://repo.com/repo',
-                'type':
-                    'GIT'
+                'fixed': '8d8242f545e9cec3e6d0d2e3f5bde8be1c659735',
+                'introduced': 'eefe8ec3f1f90d0e684890e810f3f21e8500a4cd',
+                'repo_url': 'https://repo.com/repo',
+                'type': 'GIT'
             }],
             'fixed': '8d8242f545e9cec3e6d0d2e3f5bde8be1c659735',
             'regressed': 'unknown:eefe8ec3f1f90d0e684890e810f3f21e8500a4cd',
@@ -508,7 +510,10 @@ class ImpactTest(unittest.TestCase):
             'ecosystem_specific': {
                 'severity': 'MEDIUM'
             },
-            'database_specific': None,
+            'database_specific': {
+                'introduced_range': 'unknown:'
+                                    'eefe8ec3f1f90d0e684890e810f3f21e8500a4cd'
+            },
             'semver_fixed_indexes': [],
             'source': 'oss-fuzz',
         },

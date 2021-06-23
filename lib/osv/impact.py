@@ -91,50 +91,51 @@ class RepoAnalyzer:
   def get_affected(self, repo, regress_commit_or_range, fix_commit_or_range):
     """"Get list of affected tags and commits for a bug given regressed and
     fixed commits."""
-    # If multiple, assume any commit in the regression range cause the
-    # regression.
     regress_commits = get_commit_range(repo, regress_commit_or_range)
     if len(regress_commits) > COMMIT_RANGE_LIMIT:
       raise ImpactError('Too many commits in regression range.')
 
-    # If multiple, assume all commits are necessary for fixing the regression.
+    # If multiple, assume the first commit in the regression range cause the
+    # regression.
+    if regress_commits:
+      regress_commit = regress_commits[0]
+    else:
+      regress_commit = None
+
     fix_commits = get_commit_range(repo, fix_commit_or_range)
     if len(fix_commits) > COMMIT_RANGE_LIMIT:
       logging.warning('Too many commits in fix range.')
       # Rather than bail out here and potentially leaving a Bug as "unfixed"
-      # indefinitely, we do the best we can here, by assuming the last
-      # COMMIT_RANGE_LIMIT commits fix the bug.
-      fix_commits = fix_commits[-COMMIT_RANGE_LIMIT:]
+      # indefinitely, we continue.
 
-    # Special case: unknown status for earlier revisions.
-    unknown_earlier_revisions = UNKNOWN_COMMIT in regress_commit_or_range
+    # If multiple, assume the last commit is necessary for fixing the
+    # regression.
+    if fix_commits:
+      fix_commit = fix_commits[-1]
+    else:
+      fix_commit = None
 
     tags_with_bug = set()
-    for commit in regress_commits:
-      tags_with_bug.update(self.get_tags_with_commits(repo, [commit]))
+    tags_with_bug.update(self.get_tags_with_commit(repo, regress_commit))
 
     if not regress_commits:
       # If no introduced commit provided, assume all commits prior to fix are
       # vulnerable.
       tags_with_bug.update(get_all_tags(repo))
 
-    tags_with_fix = self.get_tags_with_commits(repo, fix_commits)
+    tags_with_fix = self.get_tags_with_commit(repo, fix_commit)
     affected_commits, affected_ranges = self.get_affected_range(
-        repo, regress_commits, fix_commits)
+        repo, regress_commit, fix_commit)
 
     if len(regress_commits) > 1 or len(fix_commits) > 1:
       # Don't return ranges if input regressed and fixed commits are not single
       # commits.
       affected_ranges = []
 
-    if unknown_earlier_revisions:
-      # Include the unknown marker in resulting entities.
-      regress_commits.insert(0, UNKNOWN_COMMIT)
-
     return AffectedResult(tags_with_bug, tags_with_fix, affected_commits,
                           affected_ranges, regress_commits, fix_commits)
 
-  def get_affected_range(self, repo, regress_commits, fix_commits):
+  def get_affected_range(self, repo, regress_commit, fix_commit):
     """Get affected range."""
     range_collector = RangeCollector()
     commits = set()
@@ -153,33 +154,27 @@ class RepoAnalyzer:
       # Get the earliest equivalent commit in the regression range.
       equivalent_regress_commit = None
       if self.detect_cherrypicks:
-        for regress_commit in regress_commits:
-          logging.info('Finding equivalent regress commit to %s in %s',
-                       regress_commit, ref)
-          equivalent_regress_commit = self.get_equivalent_commit(
-              repo, ref, regress_commit)
-          if equivalent_regress_commit:
-            break
+        logging.info('Finding equivalent regress commit to %s in %s',
+                     regress_commit, ref)
+        equivalent_regress_commit = self.get_equivalent_commit(
+            repo, ref, regress_commit)
       else:
-        if regress_commits:
-          equivalent_regress_commit = regress_commits[0]
+        if regress_commit:
+          equivalent_regress_commit = regress_commit
 
       # If regress_commits is provided, then we should find an equivalent.
-      if not equivalent_regress_commit and regress_commits:
+      if not equivalent_regress_commit and regress_commit:
         continue
 
       # Get the latest equivalent commit in the fix range.
       equivalent_fix_commit = None
       if self.detect_cherrypicks:
-        for fix_commit in fix_commits:
-          logging.info('Finding equivalent fix commit to %s in %s', fix_commit,
-                       ref)
-          equivalent_commit = self.get_equivalent_commit(repo, ref, fix_commit)
-          if equivalent_commit:
-            equivalent_fix_commit = equivalent_commit
+        logging.info('Finding equivalent fix commit to %s in %s', fix_commit,
+                     ref)
+        equivalent_fix_commit = self.get_equivalent_commit(
+            repo, ref, fix_commit)
       else:
-        if fix_commits:
-          equivalent_fix_commit = fix_commits[-1]
+        equivalent_fix_commit = fix_commit
 
       range_collector.add(equivalent_regress_commit, equivalent_fix_commit)
 
@@ -246,12 +241,12 @@ class RepoAnalyzer:
     # TODO(ochang): Possibly look at commit message, author etc.
     return None
 
-  def get_tags_with_commits(self, repo, commits):
+  def get_tags_with_commit(self, repo, commit):
     """Get tags with a given commit."""
-    if not commits:
+    if not commit:
       return set()
 
-    logging.info('Getting tags which contain %s', ','.join(commits))
+    logging.info('Getting tags which contain %s', commit)
 
     tags = [
         ref for ref in repo.listall_references() if ref.startswith(TAG_PREFIX)
@@ -260,24 +255,16 @@ class RepoAnalyzer:
     if self.detect_cherrypicks:
       affected = set()
       for tag in tags:
-        if all(
-            self.get_equivalent_commit(repo, tag, commit)
-            for commit in commits):
+        if self.get_equivalent_commit(repo, tag, commit):
           affected.add(tag[len(TAG_PREFIX):])
     else:
-      affected = None
       # pygit2 does not provide any easy to way to compute this efficiently, so
       # we use git here.
-      for commit in commits:
-        current = subprocess.check_output(
-            ['git', '-C', repo.path, 'tag', '--contains',
-             commit]).decode().splitlines()
-        if affected is None:
-          affected = set(current)
-        else:
-          affected &= set(current)
+      affected = subprocess.check_output(
+          ['git', '-C', repo.path, 'tag', '--contains',
+           commit]).decode().splitlines()
 
-    return affected
+    return set(affected)
 
 
 def get_commit_range(repo, commit_or_range):

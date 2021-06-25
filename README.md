@@ -17,15 +17,22 @@ query whether or not their versions are impacted.
   <img src="docs/images/diagram.png" width="600">
 </p>
 
-Current data sources:
-- [OSS-Fuzz](https://github.com/google/oss-fuzz) (https://github.com/google/oss-fuzz-vulns)
+## Current data sources
+**This is an ongoing project.** We are hoping to work with the open source community
+to [onboard more sources of data](https://github.com/google/osv/issues/44).
+
+- [OSS-Fuzz](https://github.com/google/oss-fuzz-vulns)
 - [Python](https://github.com/pypa/advisory-db) 
 - [Go](https://github.com/golang/vulndb)
 - [Rust](https://github.com/RustSec/advisory-db)
 - [DWF](https://github.com/distributedweaknessfiling/dwflist)
 
-**This is an ongoing project.** We are hoping to work with the open source community
-to [onboard more sources of data](https://github.com/google/osv/issues/44).
+For convenience, these sources are aggregated and continuously exported to a GCS bucket
+maintained by OSV: [gs://osv-vulnerabilities](https://osv-vulnerabilities.storage.googleapis.com).
+
+This bucket contains individual entries of the format `gs://osv-vulnerabilities/<ECOSYSTEM>/<ID>.json`
+as well as a zip containing all vulnerabilities for each ecosystem at
+`gs://osv-vulnerabilities/<ECOSYSTEM>/all.zip`
 
 ## Viewing the web UI
 

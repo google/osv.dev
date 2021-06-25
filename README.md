@@ -18,9 +18,13 @@ query whether or not their versions are impacted.
 </p>
 
 ## Current data sources
-**This is an ongoing project.** We are hoping to work with the open source community
-to [onboard more sources of data](https://github.com/google/osv/issues/44).
+**This is an ongoing project.** We encourage open source ecosystems to adopt
+our [vulnerability interchange schema format](https://tinyurl.com/vuln-json) for the
+benefit of the open source community. See our
+[blog post](https://security.googleblog.com/2021/06/announcing-unified-vulnerability-schema.html)
+for more details.
 
+The following ecosystems have already adopted this format:
 - [OSS-Fuzz](https://github.com/google/oss-fuzz-vulns)
 - [Python](https://github.com/pypa/advisory-db) 
 - [Go](https://github.com/golang/vulndb)
@@ -32,7 +36,14 @@ maintained by OSV: [gs://osv-vulnerabilities](https://osv-vulnerabilities.storag
 
 This bucket contains individual entries of the format `gs://osv-vulnerabilities/<ECOSYSTEM>/<ID>.json`
 as well as a zip containing all vulnerabilities for each ecosystem at
-`gs://osv-vulnerabilities/<ECOSYSTEM>/all.zip`
+`gs://osv-vulnerabilities/<ECOSYSTEM>/all.zip`.
+
+E.g. for PyPI vulnerabilities:
+
+```bash
+# Or download over HTTP via https://osv-vulnerabilities.storage.googleapis.com/PyPI/all.zip
+gsutil cp `gs://osv-vulnerabilities/PyPI/all.zip .
+```
 
 ## Viewing the web UI
 

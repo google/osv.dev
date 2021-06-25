@@ -42,7 +42,7 @@ E.g. for PyPI vulnerabilities:
 
 ```bash
 # Or download over HTTP via https://osv-vulnerabilities.storage.googleapis.com/PyPI/all.zip
-gsutil cp `gs://osv-vulnerabilities/PyPI/all.zip .
+gsutil cp gs://osv-vulnerabilities/PyPI/all.zip .
 ```
 
 ## Viewing the web UI

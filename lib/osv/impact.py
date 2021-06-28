@@ -164,7 +164,6 @@ class RepoAnalyzer:
       if detect_cherrypicks:
         logging.info('Finding equivalent regress commit to %s in %s',
                      regress_commit, ref)
-        # Only actually detect cherrypicks if the input range is complete.
         equivalent_regress_commit = self._get_equivalent_commit(
             repo, ref, regress_commit, detect_cherrypicks=detect_cherrypicks)
       else:
@@ -279,7 +278,7 @@ def _get_commit_to_tag_mappings(repo):
       continue
 
     ref = repo.references[ref_name]
-    mappings.setdefault(str(ref.resolve().target),
+    mappings.setdefault(str(ref.resolve().peel().id),
                         []).append(ref_name[len(TAG_PREFIX):])
 
   return mappings

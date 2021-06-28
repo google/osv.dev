@@ -14,11 +14,11 @@
 """Impact analysis."""
 
 import collections
-import datetime
 import logging
 import os
 import subprocess
 import tempfile
+import time
 
 from google.cloud import ndb
 import pygit2
@@ -37,12 +37,15 @@ TAG_PREFIX = 'refs/tags/'
 UNKNOWN_COMMIT = 'unknown'
 
 AffectedResult = collections.namedtuple(
-    'AffectedResult', 'tags_with_bug tags_with_fix commits affected_ranges '
+    'AffectedResult', 'tags commits affected_ranges '
     'regress_commits fix_commits')
 
 AnalyzeResult = collections.namedtuple('AnalyzeResult', 'has_changes commits')
 
 TagsInfo = collections.namedtuple('TagsInfo', 'tags latest_tag')
+
+_DATASTORE_BATCH_SIZE = 20000
+_DATASTORE_BATCH_SLEEP = 5
 
 
 class ImpactError(Exception):
@@ -91,7 +94,7 @@ class RepoAnalyzer:
   def get_affected(self, repo, regress_commit_or_range, fix_commit_or_range):
     """"Get list of affected tags and commits for a bug given regressed and
     fixed commits."""
-    regress_commits = get_commit_range(repo, regress_commit_or_range)
+    regress_commits = _get_commit_range(repo, regress_commit_or_range)
     if len(regress_commits) > COMMIT_RANGE_LIMIT:
       raise ImpactError('Too many commits in regression range.')
 
@@ -102,7 +105,7 @@ class RepoAnalyzer:
     else:
       regress_commit = None
 
-    fix_commits = get_commit_range(repo, fix_commit_or_range)
+    fix_commits = _get_commit_range(repo, fix_commit_or_range)
     if len(fix_commits) > COMMIT_RANGE_LIMIT:
       logging.warning('Too many commits in fix range.')
       # Rather than bail out here and potentially leaving a Bug as "unfixed"
@@ -115,16 +118,7 @@ class RepoAnalyzer:
     else:
       fix_commit = None
 
-    tags_with_bug = set()
-    tags_with_bug.update(self.get_tags_with_commit(repo, regress_commit))
-
-    if not regress_commits:
-      # If no introduced commit provided, assume all commits prior to fix are
-      # vulnerable.
-      tags_with_bug.update(get_all_tags(repo))
-
-    tags_with_fix = self.get_tags_with_commit(repo, fix_commit)
-    affected_commits, affected_ranges = self.get_affected_range(
+    affected_commits, affected_ranges, tags = self._get_affected_range(
         repo, regress_commit, fix_commit)
 
     if len(regress_commits) > 1 or len(fix_commits) > 1:
@@ -132,31 +126,47 @@ class RepoAnalyzer:
       # commits.
       affected_ranges = []
 
-    return AffectedResult(tags_with_bug, tags_with_fix, affected_commits,
-                          affected_ranges, regress_commits, fix_commits)
+    return AffectedResult(tags, affected_commits, affected_ranges,
+                          regress_commits, fix_commits)
 
-  def get_affected_range(self, repo, regress_commit, fix_commit):
+  def _get_affected_range(self, repo, regress_commit, fix_commit):
     """Get affected range."""
     range_collector = RangeCollector()
     commits = set()
     seen_commits = set()
+    tags = set()
+    commits_to_tags = _get_commit_to_tag_mappings(repo)
 
-    if self.detect_cherrypicks:
+    is_complete_range = regress_commit and fix_commit
+    # Only actually detect cherrypicks if the input range includes both
+    # "introduced" and "fixed". Otherwise we may get false positives.
+    detect_cherrypicks = self.detect_cherrypicks and is_complete_range
+
+    branches = []
+    if detect_cherrypicks:
       # Check all branches for cherry picked regress/fix commits (sorted for
       # determinism).
       branches = sorted(repo.branches.remote)
     else:
-      branches = [repo.head.name.replace('refs/heads/', 'origin/')]
+      if fix_commit:
+        # If a fix commit is available, we don't really need to analyze any
+        # other branches.
+        branches = [repo.head.name.replace('refs/heads/', 'origin/')]
+      elif regress_commit:
+        # If only a regress commit is available, we need to find all branches
+        # that it reaches.
+        branches = _branches_with_commit(repo, regress_commit)
 
     for branch in branches:
       ref = 'refs/remotes/' + branch
 
       # Get the earliest equivalent commit in the regression range.
-      if self.detect_cherrypicks:
+      if detect_cherrypicks:
         logging.info('Finding equivalent regress commit to %s in %s',
                      regress_commit, ref)
-        equivalent_regress_commit = self.get_equivalent_commit(
-            repo, ref, regress_commit)
+        # Only actually detect cherrypicks if the input range is complete.
+        equivalent_regress_commit = self._get_equivalent_commit(
+            repo, ref, regress_commit, detect_cherrypicks=detect_cherrypicks)
       else:
         equivalent_regress_commit = regress_commit
 
@@ -165,41 +175,45 @@ class RepoAnalyzer:
         continue
 
       # Get the latest equivalent commit in the fix range.
-      if self.detect_cherrypicks:
+      if detect_cherrypicks:
         logging.info('Finding equivalent fix commit to %s in %s', fix_commit,
                      ref)
-        equivalent_fix_commit = self.get_equivalent_commit(
-            repo, ref, fix_commit)
+        equivalent_fix_commit = self._get_equivalent_commit(
+            repo, ref, fix_commit, detect_cherrypicks=detect_cherrypicks)
       else:
         equivalent_fix_commit = fix_commit
 
       range_collector.add(equivalent_regress_commit, equivalent_fix_commit)
 
-      last_affected_commits = []
       if equivalent_fix_commit:
-        # Last affected commit is the one before the fix.
-        last_affected_commits.extend(
-            parent.id
-            for parent in repo.revparse_single(equivalent_fix_commit).parents)
+        end_commit = equivalent_fix_commit
+        include_end = False
       else:
         # Not fixed in this branch. Everything is still vulnerabile.
-        last_affected_commits.append(repo.revparse_single(ref).id)
+        end_commit = str(repo.revparse_single(ref).id)
+        include_end = True
 
-      if equivalent_regress_commit:
-        commits.add(equivalent_regress_commit)
+      if (equivalent_regress_commit, end_commit) in seen_commits:
+        continue
 
-      for last_affected_commit in last_affected_commits:
-        if (equivalent_regress_commit, last_affected_commit) in seen_commits:
-          continue
+      seen_commits.add((equivalent_regress_commit, end_commit))
+      cur_commits, cur_tags = _get_commit_and_tag_list(
+          repo,
+          equivalent_regress_commit,
+          end_commit,
+          commits_to_tags=commits_to_tags,
+          include_start=True,
+          include_end=include_end)
+      commits.update(cur_commits)
+      tags.update(cur_tags)
 
-        seen_commits.add((equivalent_regress_commit, last_affected_commit))
-        commits.update(
-            get_commit_list(repo, equivalent_regress_commit,
-                            last_affected_commit))
+    return commits, range_collector.ranges(), tags
 
-    return commits, range_collector.ranges()
-
-  def get_equivalent_commit(self, repo, to_search, target_commit):
+  def _get_equivalent_commit(self,
+                             repo,
+                             to_search,
+                             target_commit,
+                             detect_cherrypicks=True):
     """Find an equivalent commit at to_search, or None. The equivalent commit
     can be equal to target_commit."""
     if not target_commit:
@@ -219,7 +233,7 @@ class RepoAnalyzer:
       if commit.id == target.id:
         return target_commit
 
-      if not self.detect_cherrypicks:
+      if not detect_cherrypicks:
         continue
 
       # Ignore commits without parents and merge commits with multiple parents.
@@ -238,33 +252,8 @@ class RepoAnalyzer:
     # TODO(ochang): Possibly look at commit message, author etc.
     return None
 
-  def get_tags_with_commit(self, repo, commit):
-    """Get tags with a given commit."""
-    if not commit:
-      return set()
 
-    logging.info('Getting tags which contain %s', commit)
-
-    tags = [
-        ref for ref in repo.listall_references() if ref.startswith(TAG_PREFIX)
-    ]
-
-    if self.detect_cherrypicks:
-      affected = set()
-      for tag in tags:
-        if self.get_equivalent_commit(repo, tag, commit):
-          affected.add(tag[len(TAG_PREFIX):])
-    else:
-      # pygit2 does not provide any easy to way to compute this efficiently, so
-      # we use git here.
-      affected = subprocess.check_output(
-          ['git', '-C', repo.path, 'tag', '--contains',
-           commit]).decode().splitlines()
-
-    return set(affected)
-
-
-def get_commit_range(repo, commit_or_range):
+def _get_commit_range(repo, commit_or_range):
   """Get a commit range."""
   if not commit_or_range:
     return []
@@ -278,19 +267,30 @@ def get_commit_range(repo, commit_or_range):
     # is the regressing commit as that's the best we can do.
     return [end_commit]
 
-  return get_commit_list(repo, start_commit, end_commit)
+  commits, _ = _get_commit_and_tag_list(repo, start_commit, end_commit)
+  return commits
 
 
-def get_all_tags(repo):
-  """Get all tags."""
-  return [
-      ref[len(TAG_PREFIX):]
-      for ref in repo.listall_references()
-      if ref.startswith(TAG_PREFIX)
-  ]
+def _get_commit_to_tag_mappings(repo):
+  """Get all commit to tag mappings"""
+  mappings = {}
+  for ref_name in repo.references:
+    if not ref_name.startswith(TAG_PREFIX):
+      continue
+
+    ref = repo.references[ref_name]
+    mappings.setdefault(str(ref.resolve().target),
+                        []).append(ref_name[len(TAG_PREFIX):])
+
+  return mappings
 
 
-def get_commit_list(repo, start_commit, end_commit):
+def _get_commit_and_tag_list(repo,
+                             start_commit,
+                             end_commit,
+                             commits_to_tags=None,
+                             include_start=False,
+                             include_end=True):
   """Get commit list."""
   logging.info('Getting commits %s..%s', start_commit, end_commit)
   try:
@@ -302,36 +302,62 @@ def get_commit_list(repo, start_commit, end_commit):
   if start_commit:
     walker.hide(start_commit)
 
-  return [str(commit.id) for commit in walker]
+  commits = []
+  tags = []
+
+  def process_commit(commit):
+    commits.append(commit)
+    if not commits_to_tags:
+      return
+
+    tags.extend(commits_to_tags.get(commit, []))
+
+  for commit in walker:
+    if not include_end and str(commit.id) == end_commit:
+      continue
+
+    process_commit(str(commit.id))
+
+  if include_start and start_commit:
+    process_commit(start_commit)
+
+  return commits, tags
 
 
-def find_latest_tag(repo, tags):
-  """Find the latest tag (by commit time)."""
-  latest_commit_time = None
-  latest_tag = None
+def _branches_with_commit(repo, commit):
+  """Get all remote branches that include a commit."""
+  # pygit2's implementation of this is much slower, so we use `git`.
+  branches = subprocess.check_output(
+      ['git', '-C', repo.path, 'branch', '-r', '--contains',
+       commit]).decode().splitlines()
 
-  for tag in tags:
-    commit = repo.lookup_reference(tag).peel()
-    commit_time = (
-        datetime.datetime.fromtimestamp(commit.commit_time) -
-        datetime.timedelta(minutes=commit.commit_time_offset))
-    if not latest_commit_time or commit_time > latest_commit_time:
-      latest_commit_time = commit_time
-      latest_tag = tag[len(TAG_PREFIX):]
+  def process_ref(ref):
+    return ref.strip().split()[0]
 
-  return latest_tag
+  # Ignore duplicate <remote>/HEAD branch.
+  return [process_ref(branch) for branch in branches if '/HEAD' not in branch]
 
 
-def get_tags(repo_url):
-  """Get tags information."""
-  with tempfile.TemporaryDirectory() as tmp_dir:
-    repo = repos.clone_with_retries(repo_url, tmp_dir)
-    tags = [
-        ref for ref in repo.listall_references() if ref.startswith(TAG_PREFIX)
-    ]
+def _batcher(entries, batch_size):
+  """Batcher."""
+  for i in range(0, len(entries), batch_size):
+    yield entries[i:i + batch_size], i + batch_size >= len(entries)
 
-    latest_tag = find_latest_tag(repo, tags)
-    return TagsInfo([tag[len(TAG_PREFIX):] for tag in tags], latest_tag)
+
+def _throttled_put(to_put):
+  """Throttled ndb put."""
+  for batch, is_last in _batcher(to_put, _DATASTORE_BATCH_SIZE):
+    ndb.put_multi(batch)
+    if not is_last:
+      time.sleep(_DATASTORE_BATCH_SLEEP)
+
+
+def _throttled_delete(to_delete):
+  """Throttled ndb delete."""
+  for batch, is_last in _batcher(to_delete, _DATASTORE_BATCH_SIZE):
+    ndb.delete_multi(batch)
+    if not is_last:
+      time.sleep(_DATASTORE_BATCH_SLEEP)
 
 
 def update_affected_commits(bug_id, commits, project, ecosystem, public):
@@ -358,8 +384,8 @@ def update_affected_commits(bug_id, commits, project, ecosystem, public):
     if existing.commit not in commits:
       to_delete.append(existing.key)
 
-  ndb.put_multi(to_put)
-  ndb.delete_multi(to_delete)
+  _throttled_put(to_put)
+  _throttled_delete(to_delete)
 
 
 def enumerate_versions(package, ecosystem, affected_ranges):
@@ -394,8 +420,7 @@ def analyze(vulnerability,
 
   # Repo -> Git range collectors
   range_collectors = collections.defaultdict(RangeCollector)
-  versions_with_bug = set()
-  versions_with_fix = set()
+  new_versions = set()
   commits = set()
 
   repo_analyzer = RepoAnalyzer(detect_cherrypicks=detect_cherrypicks)
@@ -438,8 +463,7 @@ def analyze(vulnerability,
       for introduced, fixed in result.affected_ranges:
         range_collectors[current_repo_url].add(introduced, fixed)
 
-      versions_with_fix.update(result.tags_with_fix)
-      versions_with_bug.update(result.tags_with_bug)
+      new_versions.update(result.tags)
       commits.update(result.commits)
   finally:
     package_repo_dir.cleanup()
@@ -456,7 +480,7 @@ def analyze(vulnerability,
 
   # Add additional versions derived from commits and tags.
   if versions_from_repo:
-    versions.extend(versions_with_bug - versions_with_fix)
+    versions.extend(new_versions)
 
   # Apply changes.
   has_changes = False

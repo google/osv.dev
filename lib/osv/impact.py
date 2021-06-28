@@ -290,7 +290,7 @@ def _get_commit_and_tag_list(repo,
                              commits_to_tags=None,
                              include_start=False,
                              include_end=True):
-  """Get commit list."""
+  """Given a commit range, return the list of commits and tags in the range."""
   logging.info('Getting commits %s..%s', start_commit, end_commit)
   try:
     walker = repo.walk(end_commit,

@@ -37,6 +37,10 @@ _OSS_FUZZ_EXPORT_BUCKET = 'oss-fuzz-osv-vulns'
 _EXPORT_WORKERS = 32
 _NO_UPDATE_MARKER = 'OSV-NO-UPDATE'
 
+_ECOSYSTEM_PUSH_TOPICS = {
+    'PyPI': 'projects/oss-vdb/topics/pypi-bridge',
+}
+
 
 def _is_vulnerability_file(source_repo, file_path):
   """Return whether or not the file is a Vulnerability entry."""
@@ -88,7 +92,8 @@ class Importer:
                                  source_repo,
                                  original_sha256,
                                  path,
-                                 deleted=False):
+                                 deleted=False,
+                                 vulnerability=None):
     """Request analysis."""
     self._publisher.publish(
         _TASKS_TOPIC,
@@ -98,6 +103,16 @@ class Importer:
         path=path,
         original_sha256=original_sha256,
         deleted=str(deleted).lower())
+
+    if not vulnerability:
+      return
+
+    ecosystem_push_topic = _ECOSYSTEM_PUSH_TOPICS.get(
+        vulnerability.package.ecosystem)
+    if ecosystem_push_topic:
+      self._publisher.publish(
+          ecosystem_push_topic,
+          data=json.dumps(osv.vulnerability_to_dict(vulnerability)).encode())
 
   def _request_internal_analysis(self, bug):
     """Request internal analysis."""
@@ -242,10 +257,16 @@ class Importer:
         # Path no longer exists. It must have been deleted in another commit.
         continue
 
+      vulnerability = osv.parse_vulnerability(
+          path, key_path=source_repo.key_path)
+
       logging.info('Re-analysis triggered for %s', changed_entry)
       original_sha256 = osv.sha256(path)
-      self._request_analysis_external(source_repo, original_sha256,
-                                      changed_entry)
+      self._request_analysis_external(
+          source_repo,
+          original_sha256,
+          changed_entry,
+          vulnerability=vulnerability)
 
     # Mark deleted entries as invalid.
     for deleted_entry in deleted_entries:

@@ -122,7 +122,7 @@ func extractVendorProduct(link string) string {
 		return ""
 	}
 
-	return strings.ToLower(parts[1]) + "/" + strings.ToLower(parts[2])
+	return strings.ToLower(parts[1]) + "/" + strings.TrimRight(strings.ToLower(parts[2]), ".git")
 }
 
 // processLinks takes a pypi_links.json and returns a map of links to list of

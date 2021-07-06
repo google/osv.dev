@@ -63,7 +63,17 @@ var linkBlocklist = map[string]bool{
 	"https://bitbucket.org":      true,
 	"https://twitter.com":        true,
 	"https://pypi.org":           true,
+	"https://pypi.org/project":   true,
 	"https://jira.atlassian.com": true,
+	"https://www.python.org":     true,
+	"https://gitee.com":          true,
+	"http://github.com":          true,
+	"http://www.cisco.com":       true,
+	"http://www.redhat.com":      true,
+	"http://www.hp.com":          true,
+	"http://www.oracle.com":      true,
+	"http://www.python.org":      true,
+	"unknown":                    true,
 }
 
 func readOrPanic(path string) []byte {

@@ -122,7 +122,7 @@ func extractVendorProduct(link string) string {
 		return ""
 	}
 
-	return strings.ToLower(parts[1]) + "/" + strings.ToLower(parts[2])
+	return strings.ToLower(parts[1]) + "/" + strings.TrimRight(strings.ToLower(parts[2]), ".git")
 }
 
 // processLinks takes a pypi_links.json and returns a map of links to list of
@@ -338,15 +338,27 @@ func extractPyPIProject(link string) string {
 		return ""
 	}
 
-	if u.Host != "pypi.org" {
-		return ""
-	}
-
-	// Should be /project/<name>
 	parts := strings.Split(u.Path, "/")
-	if len(parts) < 3 || parts[1] != "project" {
-		return ""
+
+	switch u.Host {
+	// Example: https://pypi.org/project/tensorflow
+	case "pypi.org":
+		if len(parts) < 3 || (parts[1] != "project" && parts[1] != "simple") {
+			return ""
+		}
+		return parts[2]
+		// Example: https://pypi.python.org/pypi/tensorflow
+	case "pypi.python.org":
+		if len(parts) < 3 || parts[1] != "pypi" {
+			return ""
+		}
+		return parts[2]
+	case "upload.pypi.org":
+		if len(parts) < 3 || parts[1] != "legacy" {
+			return ""
+		}
+		return parts[2]
 	}
 
-	return parts[2]
+	return ""
 }

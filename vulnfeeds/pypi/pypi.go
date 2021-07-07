@@ -63,7 +63,17 @@ var linkBlocklist = map[string]bool{
 	"https://bitbucket.org":      true,
 	"https://twitter.com":        true,
 	"https://pypi.org":           true,
+	"https://pypi.org/project":   true,
 	"https://jira.atlassian.com": true,
+	"https://www.python.org":     true,
+	"https://gitee.com":          true,
+	"http://github.com":          true,
+	"http://www.cisco.com":       true,
+	"http://www.redhat.com":      true,
+	"http://www.hp.com":          true,
+	"http://www.oracle.com":      true,
+	"http://www.python.org":      true,
+	"unknown":                    true,
 }
 
 func readOrPanic(path string) []byte {
@@ -122,7 +132,7 @@ func extractVendorProduct(link string) string {
 		return ""
 	}
 
-	return strings.ToLower(parts[1]) + "/" + strings.ToLower(parts[2])
+	return strings.ToLower(parts[1]) + "/" + strings.TrimSuffix(strings.ToLower(parts[2]), ".git")
 }
 
 // processLinks takes a pypi_links.json and returns a map of links to list of
@@ -132,7 +142,7 @@ func processLinks(linksSource []pypiLinks) (map[string][]string, map[string][]st
 	links := map[string]map[string]bool{}
 	for _, pkg := range linksSource {
 		for _, link := range pkg.Links {
-			link = strings.TrimRight(link, "/")
+			link = strings.ToLower(strings.TrimSuffix(strings.TrimRight(link, "/"), ".git"))
 			if _, exists := linkBlocklist[link]; exists {
 				continue
 			}
@@ -301,7 +311,7 @@ func (p *PyPI) finalPkgCheck(cve cves.CVE, pkg string, falsePositives *triage.Fa
 
 // matchesPackage checks if a given reference link matches a PyPI package.
 func (p *PyPI) matchesPackage(link string, cve cves.CVE, falsePositives *triage.FalsePositives) string {
-	u, err := url.Parse(link)
+	u, err := url.Parse(strings.ToLower(link))
 	if err != nil {
 		return ""
 	}
@@ -310,7 +320,7 @@ func (p *PyPI) matchesPackage(link string, cve cves.CVE, falsePositives *triage.
 	pathParts := strings.Split(u.Path, "/")
 	for i := len(pathParts); i > 0; i-- {
 		u.Path = strings.Join(pathParts[0:i], "/")
-		fullURL := u.String()
+		fullURL := strings.TrimSuffix(u.String(), ".git")
 
 		pkgs, exists := p.links[fullURL]
 		if !exists {
@@ -338,15 +348,27 @@ func extractPyPIProject(link string) string {
 		return ""
 	}
 
-	if u.Host != "pypi.org" {
-		return ""
-	}
-
-	// Should be /project/<name>
 	parts := strings.Split(u.Path, "/")
-	if len(parts) < 3 || parts[1] != "project" {
-		return ""
+
+	switch u.Host {
+	// Example: https://pypi.org/project/tensorflow
+	case "pypi.org":
+		if len(parts) < 3 || (parts[1] != "project" && parts[1] != "simple") {
+			return ""
+		}
+		return parts[2]
+		// Example: https://pypi.python.org/pypi/tensorflow
+	case "pypi.python.org":
+		if len(parts) < 3 || parts[1] != "pypi" {
+			return ""
+		}
+		return parts[2]
+	case "upload.pypi.org":
+		if len(parts) < 3 || parts[1] != "legacy" {
+			return ""
+		}
+		return parts[2]
 	}
 
-	return parts[2]
+	return ""
 }

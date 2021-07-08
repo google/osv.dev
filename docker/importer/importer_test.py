@@ -57,6 +57,7 @@ class ImporterTest(unittest.TestCase):
         type=osv.SourceRepositoryType.GIT,
         id='oss-fuzz',
         name='oss-fuzz',
+        db_prefix='OSV-',
         repo_url='file://' + self.remote_source_repo_path,
         repo_username='',
         ignore_patterns=['.*IGNORE.*'])
@@ -69,7 +70,7 @@ class ImporterTest(unittest.TestCase):
   def test_basic(self, mock_publish):
     """Test basic run."""
     osv.Bug(
-        id='2017-134',
+        db_id='OSV-2017-134',
         affected=['FILE5_29', 'FILE5_30'],
         affected_fuzzy=['5-29', '5-30'],
         affected_ranges=[{
@@ -133,7 +134,7 @@ class ImporterTest(unittest.TestCase):
             source='oss-fuzz',
             type='update')
     ])
-    bug = osv.Bug.get_by_id('2017-134')
+    bug = osv.Bug.get_by_id('OSV-2017-134')
     self.assertEqual(osv.SourceOfTruth.SOURCE_REPO, bug.source_of_truth)
 
     source_repo = osv.SourceRepository.get_by_id('oss-fuzz')
@@ -187,8 +188,14 @@ class ImporterTest(unittest.TestCase):
     self.mock_repo.add_file('OSV-2021-1338.yaml', '')
     self.mock_repo.commit('OSV', 'infra@osv.dev')
 
+    osv.SourceRepository(
+        type=osv.SourceRepositoryType.GIT,
+        id='source',
+        name='source',
+        repo_url='file://' + self.remote_source_repo_path,
+        repo_username='').put()
     osv.Bug(
-        id='2021-1337',
+        db_id='OSV-2021-1337',
         project='proj',
         ecosystem='OSS-Fuzz',
         status=1,
@@ -196,7 +203,7 @@ class ImporterTest(unittest.TestCase):
         source_of_truth=osv.SourceOfTruth.SOURCE_REPO,
         timestamp=datetime.datetime(2020, 1, 1, 0, 0, 0, 0)).put()
     osv.Bug(
-        id='2021-1338',
+        db_id='OSV-2021-1338',
         project='proj',
         source_id='source:OSV-2021-1338.yaml',
         status=1,
@@ -208,7 +215,7 @@ class ImporterTest(unittest.TestCase):
             'type': 'GIT',
         }]).put()
     osv.Bug(
-        id='2021-1339',
+        db_id='OSV-2021-1339',
         project='proj',
         ecosystem='OSS-Fuzz',
         status=1,
@@ -232,7 +239,7 @@ class ImporterTest(unittest.TestCase):
             type='update'),
         mock.call(
             'projects/oss-vdb/topics/tasks',
-            allocated_id='2021-1339',
+            allocated_id='OSV-2021-1339',
             data=b'',
             source_id='oss-fuzz:124',
             type='impact'),
@@ -251,7 +258,7 @@ class ImporterTest(unittest.TestCase):
     self.mock_repo.add_file('proj/OSV-2021-1337.yaml', '')
     self.mock_repo.commit('OSV', 'infra@osv.dev')
     osv.Bug(
-        id='2021-1337',
+        db_id='OSV-2021-1337',
         project='proj',
         fixed='',
         status=1,

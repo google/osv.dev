@@ -114,6 +114,38 @@ func NormalizePackageName(name string) string {
 	return strings.ToLower(re.ReplaceAllString(name, "-"))
 }
 
+func hasPrefix(list []string, item string) bool {
+	for _, candidate := range list {
+		if item == candidate {
+			// Don't count exact matches.
+			continue
+		}
+
+		if strings.HasPrefix(candidate, item) {
+			return true
+		}
+	}
+	return false
+}
+
+func processMatches(names []string) []string {
+	// Normalize all PyPI package names.
+	normalized := make([]string, 0, len(names))
+	for _, name := range names {
+		normalized = append(normalized, NormalizePackageName(name))
+	}
+
+	// Then filter out package names which are a prefix of another.
+	// It's very likely it's a false positive and we should take the longest match.
+	filtered := make([]string, 0, len(names))
+	for _, name := range normalized {
+		if !hasPrefix(normalized, name) {
+			filtered = append(filtered, name)
+		}
+	}
+	return filtered
+}
+
 // extractVendorProduct takes a link and extracts the "vendor/product" from it
 // if the link is a VCS link.
 func extractVendorProduct(link string) string {
@@ -147,29 +179,25 @@ func processLinks(linksSource []pypiLinks) (map[string][]string, map[string][]st
 				continue
 			}
 
+			normalizedName := NormalizePackageName(pkg.Name)
+
 			if _, exists := links[link]; !exists {
 				links[link] = make(map[string]bool)
 			}
-			links[link][pkg.Name] = true
+			links[link][normalizedName] = true
 
 			if vendorProduct := extractVendorProduct(link); vendorProduct != "" {
-				vendorProductToPkg[vendorProduct] = append(vendorProductToPkg[vendorProduct], pkg.Name)
+				vendorProductToPkg[vendorProduct] = append(vendorProductToPkg[vendorProduct], normalizedName)
 			}
 		}
 	}
 
-	// Sort package names by longest length first to prioritise packages with longer names.
 	processedLinks := map[string][]string{}
 	for link, pkgs := range links {
 		processedLinks[link] = make([]string, 0, len(pkgs))
 		for pkg := range pkgs {
 			processedLinks[link] = append(processedLinks[link], pkg)
 		}
-
-		sortedPkgs := processedLinks[link]
-		sort.Slice(processedLinks[link], func(i, j int) bool {
-			return len(sortedPkgs[i]) > len(sortedPkgs[j])
-		})
 	}
 
 	return processedLinks, vendorProductToPkg
@@ -179,7 +207,7 @@ func processLinks(linksSource []pypiLinks) (map[string][]string, map[string][]st
 func processVersions(versionsSource []pypiVersions) map[string][]string {
 	versions := map[string][]string{}
 	for _, data := range versionsSource {
-		versions[data.Name] = data.Versions
+		versions[NormalizePackageName(data.Name)] = data.Versions
 	}
 	return versions
 }
@@ -197,43 +225,49 @@ func New(pypiLinksPath string, pypiVersionsPath string) *PyPI {
 	}
 }
 
-func (p *PyPI) Matches(cve cves.CVEItem, falsePositives *triage.FalsePositives) string {
+func (p *PyPI) Matches(cve cves.CVEItem, falsePositives *triage.FalsePositives) []string {
+	matches := []string{}
 	for _, reference := range cve.CVE.References.ReferenceData {
 		// If there is a PyPI link, it must be a Python package. These take precedence.
 		if pkg := extractPyPIProject(reference.URL); pkg != "" {
 			log.Printf("Matched via PyPI link: %s", reference.URL)
-			return pkg
+			matches = append(matches, pkg)
 		}
+	}
+	if len(matches) != 0 {
+		return processMatches(matches)
 	}
 
 	for _, reference := range cve.CVE.References.ReferenceData {
 		// Otherwise try to cross-reference the link against our set of known links.
-		if pkg := p.matchesPackage(reference.URL, cve.CVE, falsePositives); pkg != "" {
-			return pkg
-		}
+		pkgs := p.matchesPackage(reference.URL, cve.CVE, falsePositives)
+		matches = append(matches, pkgs...)
+	}
+	if len(matches) != 0 {
+		return processMatches(matches)
 	}
 
 	// As a last resort, extract the vendor and product from the CPE and try to match that
 	// against vendor/product combinations extracted from e.g. GitHub links.
 	cpes := cves.CPEs(cve)
 	if len(cpes) == 0 {
-		return ""
+		return processMatches(matches)
 	}
 
 	cpe := strings.Split(cpes[0], ":")
 	if len(cpe) < 5 {
-		return ""
+		return processMatches(matches)
 	}
 
 	vendorProduct := cpe[3] + "/" + cpe[4]
 	if pkgs, exists := p.vendorProductToPkg[vendorProduct]; exists {
 		for _, pkg := range pkgs {
 			if p.finalPkgCheck(cve.CVE, pkg, falsePositives) {
-				return pkg
+				matches = append(matches, pkg)
 			}
 		}
 	}
-	return ""
+	return processMatches(matches)
 }
 
 func filterVersions(versions []string) []string {
@@ -310,10 +344,11 @@ func (p *PyPI) finalPkgCheck(cve cves.CVE, pkg string, falsePositives *triage.Fa
 }
 
 // matchesPackage checks if a given reference link matches a PyPI package.
-func (p *PyPI) matchesPackage(link string, cve cves.CVE, falsePositives *triage.FalsePositives) string {
+func (p *PyPI) matchesPackage(link string, cve cves.CVE, falsePositives *triage.FalsePositives) []string {
+	pkgs := []string{}
 	u, err := url.Parse(strings.ToLower(link))
 	if err != nil {
-		return ""
+		return pkgs
 	}
 
 	// Repeatedly strip the last component in the URL.
@@ -322,23 +357,23 @@ func (p *PyPI) matchesPackage(link string, cve cves.CVE, falsePositives *triage.
 		u.Path = strings.Join(pathParts[0:i], "/")
 		fullURL := strings.TrimSuffix(u.String(), ".git")
 
-		pkgs, exists := p.links[fullURL]
+		candidates, exists := p.links[fullURL]
 		if !exists {
-			pkgs, exists = p.links[fullURL+"/"]
+			candidates, exists = p.links[fullURL+"/"]
 		}
 		if !exists {
 			continue
 		}
 
 		// Check that the package still exists on PyPI.
-		for _, pkg := range pkgs {
+		for _, pkg := range candidates {
 			log.Printf("Got potential match for %s: %s", link, pkg)
 			if p.finalPkgCheck(cve, pkg, falsePositives) {
-				return pkg
+				pkgs = append(pkgs, pkg)
 			}
 		}
 	}
-	return ""
+	return pkgs
 }
 
 func extractPyPIProject(link string) string {
@@ -356,18 +391,18 @@ func extractPyPIProject(link string) string {
 		if len(parts) < 3 || (parts[1] != "project" && parts[1] != "simple") {
 			return ""
 		}
-		return parts[2]
+		return NormalizePackageName(parts[2])
 		// Example: https://pypi.python.org/pypi/tensorflow
 	case "pypi.python.org":
 		if len(parts) < 3 || parts[1] != "pypi" {
 			return ""
 		}
-		return parts[2]
+		return NormalizePackageName(parts[2])
 	case "upload.pypi.org":
 		if len(parts) < 3 || parts[1] != "legacy" {
 			return ""
 		}
-		return parts[2]
+		return NormalizePackageName(parts[2])
 	}
 
 	return ""

@@ -60,9 +60,9 @@ func loadExisting(vulnsDir string) (map[string]bool, error) {
 			return fmt.Errorf("Failed to parse %s: %w", path, err)
 		}
 
-		ids[vuln.ID] = true
+		ids[vuln.ID+"/"+vuln.Package.Name] = true
 		for _, alias := range vuln.Aliases {
-			ids[alias] = true
+			ids[alias+"/"+vuln.Package.Name] = true
 		}
 		return nil
 	})
@@ -110,65 +110,67 @@ func main() {
 			log.Printf("Skipping %s as a false positive.", cve.CVE.CVEDataMeta.ID)
 			continue
 		}
-		if _, exists := existingIDs[cve.CVE.CVEDataMeta.ID]; exists {
-			log.Printf("Skipping %s as it already exists.", cve.CVE.CVEDataMeta.ID)
+
+		pkgs := ecosystem.Matches(cve, falsePositives)
+		if len(pkgs) == 0 {
 			continue
 		}
 
-		pkg := ""
-		if pkg = ecosystem.Matches(cve, falsePositives); pkg == "" {
-			continue
-		}
+		for _, pkg := range pkgs {
+			if _, exists := existingIDs[cve.CVE.CVEDataMeta.ID+"/"+pkg]; exists {
+				log.Printf("Skipping %s match for %s as it already exists.", cve.CVE.CVEDataMeta.ID, pkg)
+				continue
+			}
 
-		log.Printf("Matched %s to %s.", cve.CVE.CVEDataMeta.ID, pkg)
-		validVersions := ecosystem.Versions(pkg)
-		if validVersions == nil {
-			log.Printf("pkg %s does not have valid versions, skipping", pkg)
-			continue
-		}
-		log.Printf("Valid versions = %v\n", validVersions)
+			log.Printf("Matched %s to %s.", cve.CVE.CVEDataMeta.ID, pkg)
+			validVersions := ecosystem.Versions(pkg)
+			if validVersions == nil {
+				log.Printf("pkg %s does not have valid versions, skipping", pkg)
+				continue
+			}
+			log.Printf("Valid versions = %v\n", validVersions)
 
-		id := "PYSEC-0000-" + cve.CVE.CVEDataMeta.ID // To be assigned later.
+			id := "PYSEC-0000-" + cve.CVE.CVEDataMeta.ID // To be assigned later.
 
-		normalizedPkg := pypi.NormalizePackageName(pkg)
-		v, notes := vulns.FromCVE(id, cve, normalizedPkg, "PyPI", "ECOSYSTEM", validVersions)
-		if len(v.Affects.Ranges) == 0 {
-			log.Printf("No affected versions detected.")
-		}
+			v, notes := vulns.FromCVE(id, cve, pkg, "PyPI", "ECOSYSTEM", validVersions)
+			if len(v.Affects.Ranges) == 0 {
+				log.Printf("No affected versions detected.")
+			}
 
-		pkgDir := filepath.Join(*outDir, normalizedPkg)
-		err = os.MkdirAll(pkgDir, 0755)
-		if err != nil {
-			log.Fatalf("Failed to create dir: %v", err)
-		}
-
-		vulnPath := filepath.Join(pkgDir, v.ID+extension)
-		if _, err := os.Stat(vulnPath); err == nil {
-			log.Printf("Skipping %s as it already exists.", vulnPath)
-			continue
-		}
-
-		if len(notes) > 0 && *withoutNotes {
-			log.Printf("Skipping %s as there are notes associated with it.", vulnPath)
-			continue
-		}
-
-		f, err := os.Create(vulnPath)
-		if err != nil {
-			log.Fatalf("Failed to open %s for writing: %v", vulnPath, err)
-		}
-		defer f.Close()
-		err = v.ToYAML(f)
-		if err != nil {
-			log.Fatalf("Failed to write %s: %v", vulnPath, err)
-		}
-
-		// If there are notes that require human intervention, write them to the end of the YAML.
-		if len(notes) > 0 {
-			notesPath := filepath.Join(pkgDir, v.ID+".notes")
-			_, err = f.WriteString("\n# <Vulnfeeds Notes>\n# " + strings.Join(notes, "\n# "))
+			pkgDir := filepath.Join(*outDir, pkg)
+			err = os.MkdirAll(pkgDir, 0755)
 			if err != nil {
-				log.Fatalf("Failed to write %s: %v", notesPath, err)
+				log.Fatalf("Failed to create dir: %v", err)
+			}
+
+			vulnPath := filepath.Join(pkgDir, v.ID+extension)
+			if _, err := os.Stat(vulnPath); err == nil {
+				log.Printf("Skipping %s as it already exists.", vulnPath)
+				continue
+			}
+
+			if len(notes) > 0 && *withoutNotes {
+				log.Printf("Skipping %s as there are notes associated with it.", vulnPath)
+				continue
+			}
+
+			f, err := os.Create(vulnPath)
+			if err != nil {
+				log.Fatalf("Failed to open %s for writing: %v", vulnPath, err)
+			}
+			defer f.Close()
+			err = v.ToYAML(f)
+			if err != nil {
+				log.Fatalf("Failed to write %s: %v", vulnPath, err)
+			}
+
+			// If there are notes that require human intervention, write them to the end of the YAML.
+			if len(notes) > 0 {
+				notesPath := filepath.Join(pkgDir, v.ID+".notes")
+				_, err = f.WriteString("\n# <Vulnfeeds Notes>\n# " + strings.Join(notes, "\n# "))
+				if err != nil {
+					log.Fatalf("Failed to write %s: %v", notesPath, err)
+				}
 			}
 		}
 	}

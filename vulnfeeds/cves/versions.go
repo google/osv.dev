@@ -166,7 +166,6 @@ func ExtractVersionInfo(cve CVEItem, validVersions []string) (VersionInfo, []str
 	}
 
 	gotVersions := false
-	appendAllVersionsNote := false
 	for _, node := range cve.Configurations.Nodes {
 		if node.Operator != "OR" {
 			continue
@@ -185,7 +184,6 @@ func ExtractVersionInfo(cve CVEItem, validVersions []string) (VersionInfo, []str
 				var err error
 				introduced, err = nextVersion(validVersions, cleanVersion(match.VersionStartExcluding))
 				if err != nil {
-					appendAllVersionsNote = true
 					notes = append(notes, err.Error())
 				}
 			}
@@ -196,7 +194,6 @@ func ExtractVersionInfo(cve CVEItem, validVersions []string) (VersionInfo, []str
 				var err error
 				fixed, err = nextVersion(validVersions, cleanVersion(match.VersionEndIncluding))
 				if err != nil {
-					appendAllVersionsNote = true
 					notes = append(notes, err.Error())
 				}
 			}
@@ -207,12 +204,10 @@ func ExtractVersionInfo(cve CVEItem, validVersions []string) (VersionInfo, []str
 
 			if introduced != "" && !hasVersion(validVersions, introduced) {
 				notes = append(notes, fmt.Sprintf("Warning: %s is not a valid introduced version", introduced))
-				appendAllVersionsNote = true
 			}
 
 			if fixed != "" && !hasVersion(validVersions, fixed) {
 				notes = append(notes, fmt.Sprintf("Warning: %s is not a valid fixed version", fixed))
-				appendAllVersionsNote = true
 			}
 
 			gotVersions = true
@@ -232,10 +227,9 @@ func ExtractVersionInfo(cve CVEItem, validVersions []string) (VersionInfo, []str
 
 	if len(v.AffectedVersions) == 0 {
 		notes = append(notes, "No versions detected.")
-		appendAllVersionsNote = true
 	}
 
-	if appendAllVersionsNote {
+	if len(notes) != 0 {
 		notes = append(notes, "Valid versions:")
 		for _, version := range validVersions {
 			notes = append(notes, "  - "+version)

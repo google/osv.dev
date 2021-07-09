@@ -158,14 +158,14 @@ def process_results():
       counters[id_year] = counter
 
     try:
-      cur_id = '{}-{}'.format(counter.key.id(), counter.next_id)
-      logging.info('Allocating OSV-%s.', cur_id)
+      cur_id = 'OSV-{}-{}'.format(counter.key.id(), counter.next_id)
+      logging.info('Allocating %s.', cur_id)
       counter.next_id += 1
 
       # Create the Bug now to avoid races when this cron is run again before the
       # impact task finishes.
       bug = osv.Bug(
-          id=cur_id,
+          db_id=cur_id,
           timestamp=datetime.datetime.utcnow(),
           public=False,
           source_id=key_id,

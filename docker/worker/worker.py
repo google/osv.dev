@@ -359,7 +359,7 @@ class TaskRunner:
         return
 
       bug = osv.Bug(
-          id=vulnerability.id,
+          db_id=vulnerability.id,
           source_id=f'{source_repo.name}:{relative_path}',
           timestamp=osv.utcnow(),
           status=osv.BugStatus.PROCESSED,

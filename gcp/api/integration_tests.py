@@ -161,9 +161,6 @@ class IntegrationTests(unittest.TestCase):
 
   def test_get(self):
     """Test getting a vulnerability."""
-    response = requests.get(_api() + '/v1/vulns/2020-744')
-    self.assert_vuln_equal(self._VULN_744, response.json())
-
     response = requests.get(_api() + '/v1/vulns/OSV-2020-744')
     self.assert_vuln_equal(self._VULN_744, response.json())
 

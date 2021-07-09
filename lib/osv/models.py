@@ -74,9 +74,9 @@ class RegressResult(ndb.Model):
   # The commit hash.
   commit = ndb.StringProperty(default='')
   # Vulnerability summary.
-  summary = ndb.StringProperty()
+  summary = ndb.TextProperty()
   # Vulnerability details.
-  details = ndb.StringProperty()
+  details = ndb.TextProperty()
   # Error (if any).
   error = ndb.StringProperty()
   # OSS-Fuzz issue ID.
@@ -100,9 +100,9 @@ class FixResult(ndb.Model):
   # The commit hash.
   commit = ndb.StringProperty(default='')
   # Vulnerability summary.
-  summary = ndb.StringProperty()
+  summary = ndb.TextProperty()
   # Vulnerability details.
-  details = ndb.StringProperty()
+  details = ndb.TextProperty()
   # Error (if any).
   error = ndb.StringProperty()
   # OSS-Fuzz issue ID.
@@ -183,9 +183,9 @@ class Bug(ndb.Model):
   # Package ecosystem for the project.
   ecosystem = ndb.StringProperty()
   # Summary for the bug.
-  summary = ndb.StringProperty()
+  summary = ndb.TextProperty()
   # Vulnerability details.
-  details = ndb.StringProperty()
+  details = ndb.TextProperty()
   # Severity of the bug.
   severity = ndb.StringProperty(validator=_check_valid_severity)
   # Whether or not the bug is public (OSS-Fuzz only).

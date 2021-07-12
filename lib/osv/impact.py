@@ -19,6 +19,7 @@ import os
 import subprocess
 import tempfile
 import time
+import traceback
 
 from google.cloud import ndb
 import pygit2
@@ -407,26 +408,16 @@ def enumerate_versions(package, ecosystem, affected_ranges):
   return versions
 
 
-def analyze(vulnerability,
-            analyze_git=True,
-            checkout_path=None,
-            detect_cherrypicks=True,
-            versions_from_repo=True):
-  """Update and analyze a vulnerability based on its input ranges."""
+def _analyze_git_ranges(repo_analyzer, checkout_path, vulnerability,
+                        range_collectors, new_versions, commits):
+  """Analyze git ranges."""
   package_repo_dir = tempfile.TemporaryDirectory()
   package_repo_url = None
   package_repo = None
 
-  # Repo -> Git range collectors
-  range_collectors = collections.defaultdict(RangeCollector)
-  new_versions = set()
-  commits = set()
-
-  repo_analyzer = RepoAnalyzer(detect_cherrypicks=detect_cherrypicks)
   try:
     for affected_range in vulnerability.affects.ranges:
-      if (affected_range.type != vulnerability_pb2.AffectedRange.GIT or
-          not analyze_git):
+      if affected_range.type != vulnerability_pb2.AffectedRange.GIT:
         continue
 
       # Convert empty values ('') to None.
@@ -437,8 +428,7 @@ def analyze(vulnerability,
     for affected_range in vulnerability.affects.ranges:
       # Go through existing provided ranges to find additional ranges (via
       # cherrypicks and branches).
-      if (affected_range.type != vulnerability_pb2.AffectedRange.GIT or
-          not analyze_git):
+      if affected_range.type != vulnerability_pb2.AffectedRange.GIT:
         continue
 
       current_repo_url = affected_range.repo
@@ -456,9 +446,15 @@ def analyze(vulnerability,
           package_repo = repos.clone_with_retries(package_repo_url,
                                                   package_repo_dir.name)
 
-      result = repo_analyzer.get_affected(package_repo,
-                                          affected_range.introduced,
-                                          affected_range.fixed)
+      try:
+        result = repo_analyzer.get_affected(package_repo,
+                                            affected_range.introduced,
+                                            affected_range.fixed)
+      except ImpactError:
+        logging.warning('Got error while analyzing git range: %s',
+                        traceback.format_exc())
+        continue
+
       for introduced, fixed in result.affected_ranges:
         range_collectors[current_repo_url].add(introduced, fixed)
 
@@ -466,6 +462,26 @@ def analyze(vulnerability,
       commits.update(result.commits)
   finally:
     package_repo_dir.cleanup()
+
+  return range_collectors, new_versions, commits
+
+
+def analyze(vulnerability,
+            analyze_git=True,
+            checkout_path=None,
+            detect_cherrypicks=True,
+            versions_from_repo=True):
+  """Update and analyze a vulnerability based on its input ranges."""
+  # Repo -> Git range collectors
+  range_collectors = collections.defaultdict(RangeCollector)
+  new_versions = set()
+  commits = set()
+
+  # Analyze git ranges.
+  if analyze_git:
+    repo_analyzer = RepoAnalyzer(detect_cherrypicks=detect_cherrypicks)
+    _analyze_git_ranges(repo_analyzer, checkout_path, vulnerability,
+                        range_collectors, new_versions, commits)
 
   # Enumerate ECOSYSTEM and SEMVER ranges.
   ecosystem_helpers = ecosystems.get(vulnerability.package.ecosystem)

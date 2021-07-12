@@ -26,10 +26,10 @@ for more details.
 
 The following ecosystems have already adopted this format:
 - [OSS-Fuzz](https://github.com/google/oss-fuzz-vulns)
-- [Python](https://github.com/pypa/advisory-db) 
+- [Python](https://github.com/pypa/advisory-db)
 - [Go](https://github.com/golang/vulndb)
 - [Rust](https://github.com/RustSec/advisory-db)
-- [DWF](https://github.com/distributedweaknessfiling/dwflist)
+- [UVI](https://github.com/cloudsecurityalliance/uvi-database)
 
 For convenience, these sources are aggregated and continuously exported to a GCS bucket
 maintained by OSV: [gs://osv-vulnerabilities](https://osv-vulnerabilities.storage.googleapis.com).

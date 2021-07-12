@@ -22,16 +22,20 @@ There is a rate limit of 100 requests/min.
 
 ### Where does the data come from?
 
-This is currently filled with vulnerabilities found by [OSS-Fuzz] (mostly C/C++
-projects). OSS-Fuzz is a continuous fuzzing service for open source software,
-with over 350 open source projects integrated and has found over [25,000] bugs.
-This will be extended in the future to
-[support other vulnerability sources](https://github.com/google/osv/issues/44).
+This is currently filled with vulnerabilities in the following ecosystems (with
+more in the pipeline):
+
+- [OSS-Fuzz](https://github.com/google/oss-fuzz-vulns)
+- [Python](https://github.com/pypa/advisory-db)
+- [Go](https://github.com/golang/vulndb)
+- [Rust](https://github.com/RustSec/advisory-db)
+- [UVI](https://github.com/cloudsecurityalliance/uvi-database)
+
+These are all vulnerability databases that have adopted our
+[interchange format](https://tinyurl.com/vuln-json), making it easier to work
+with vulnerabilities in an ecosystem independent way.
 
 The full list of vulnerabilities can be browsed at <https://osv.dev>.
-
-[OSS-Fuzz]: https://github.com/google/oss-fuzz
-[25,000]: https://bugs.chromium.org/p/oss-fuzz/issues/list?q=-status%3AWontFix%2CDuplicate%20-component%3AInfra&can=1
 
 # Getting Started
 ---

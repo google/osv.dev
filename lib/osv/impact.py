@@ -45,7 +45,7 @@ AnalyzeResult = collections.namedtuple('AnalyzeResult', 'has_changes commits')
 
 TagsInfo = collections.namedtuple('TagsInfo', 'tags latest_tag')
 
-_DATASTORE_BATCH_SIZE = 20000
+_DATASTORE_BATCH_SIZE = 10000
 _DATASTORE_BATCH_SLEEP = 5
 
 

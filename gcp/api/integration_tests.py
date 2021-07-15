@@ -218,6 +218,17 @@ class IntegrationTests(unittest.TestCase):
     response = requests.post(
         _api() + '/v1/query',
         data=json.dumps({
+            'version': '0.0.0-2017a',
+            'package': {
+                'name': 'github.com/nanobox-io/golang-nanoauth',
+            }
+        }))
+    self.assert_results_equal({'vulns': [self._VULN_GO_2020_0004]},
+                              response.json())
+
+    response = requests.post(
+        _api() + '/v1/query',
+        data=json.dumps({
             'version': '0.0.0-20160722212129-ac0cc4484ad4',
             'package': {
                 'name': 'github.com/nanobox-io/golang-nanoauth',

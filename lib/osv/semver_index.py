@@ -19,14 +19,24 @@ _PAD_WIDTH = 8
 _FAKE_PRE_WIDTH = 16
 
 
-def parse(version):
-  """Parse a SemVer."""
+def _strip_leading_v(version):
+  """Strip leading v from the version, if any."""
   # Versions starting with "v" aren't valid SemVer, but we handle them just in
   # case.
   if version.startswith('v'):
-    version = version[1:]
+    return version[1:]
 
-  return semver.VersionInfo.parse(version)
+  return version
+
+
+def is_valid(version):
+  """Returns whether or not the version is a valid semver."""
+  return semver.VersionInfo.isvalid(_strip_leading_v(version))
+
+
+def parse(version):
+  """Parse a SemVer."""
+  return semver.VersionInfo.parse(_strip_leading_v(version))
 
 
 def normalize(version):

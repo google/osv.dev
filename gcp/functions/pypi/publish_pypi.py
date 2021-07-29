@@ -24,7 +24,7 @@ import requests
 import osv
 
 _ENDPOINT = 'https://pypi.org/_/vulnerabilities/osv/report'
-_PROJECT_ID = 'oss-vdb'
+_PROJECT_ID = '651737493649'
 _SECRET_NAME = f'projects/{_PROJECT_ID}/secrets/pypi-key/versions/latest'
 
 

@@ -46,13 +46,13 @@ def publish(event, context):
   private_key = serialization.load_pem_private_key(
       data=key_data['key'].encode(), password=None)
 
-  request = json.dumps({
+  request = json.dumps([{
       'id': vulnerability.id,
       'project': vulnerability.package.name,
       'versions': list(vulnerability.affects.versions),
       'link': f'https://osv.dev/vulnerability/{vulnerability.id}',
       'aliases': list(vulnerability.aliases),
-  }).encode()
+  }]).encode()
 
   signature = private_key.sign(
       data=request, signature_algorithm=ECDSA(algorithm=SHA256()))

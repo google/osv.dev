@@ -21,7 +21,7 @@ from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives.asymmetric.ec import ECDSA
 from cryptography.hazmat.primitives.hashes import SHA256
 
-import publish_pypi
+import main
 
 _TEST_DATA_DIR = 'testdata'
 
@@ -69,13 +69,13 @@ class PublishPyPiTest(unittest.TestCase):
         'data': base64.b64encode(_TEST_VULN),
     }
 
-    publish_pypi.publish(event, None)
+    main.publish(event, None)
     self.mock_post.assert_called_once_with(
         'https://pypi.org/_/vulnerabilities/osv/report',
-        data=b'{"id": "PYSEC-2021-63", "project": "cryptography", '
+        data=b'[{"id": "PYSEC-2021-63", "project": "cryptography", '
         b'"versions": ["3.1", "3.1.1", "3.2", "3.2.1", "3.3", "3.3.1"], '
         b'"link": "https://osv.dev/vulnerability/PYSEC-2021-63", '
-        b'"aliases": ["CVE-2020-36242"]}',
+        b'"aliases": ["CVE-2020-36242"]}]',
         headers={
             'VULN-PUBLIC-KEY-IDENTIFIER': '7ef88907d5bba4c0120f82bfd78386a9'
                                           'd9328fb5d2d112c473ce52add3e4cd5b',

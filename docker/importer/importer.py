@@ -257,8 +257,12 @@ class Importer:
         # Path no longer exists. It must have been deleted in another commit.
         continue
 
-      vulnerability = osv.parse_vulnerability(
-          path, key_path=source_repo.key_path)
+      try:
+        vulnerability = osv.parse_vulnerability(
+            path, key_path=source_repo.key_path)
+      except Exception as e:
+        logging.error('Failed to parse %s: %s', changed_entry, str(e))
+        continue
 
       logging.info('Re-analysis triggered for %s', changed_entry)
       original_sha256 = osv.sha256(path)

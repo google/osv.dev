@@ -62,4 +62,5 @@ def publish(event, context):
   }
 
   print(f'Posting {vulnerability.id} to PyPI.')
-  requests.post(_ENDPOINT, data=request, headers=headers)
+  response = requests.post(_ENDPOINT, data=request, headers=headers)
+  response.raise_for_status()

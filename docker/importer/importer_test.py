@@ -30,6 +30,8 @@ TEST_DATA_DIR = os.path.join(
     os.path.dirname(os.path.abspath(__file__)), 'testdata')
 TEST_BUCKET = 'test-osv-source-bucket'
 
+_EMPTY_VULNERABILITY = 'id: EMPTY'
+
 
 @mock.patch('importer.utcnow', lambda: datetime.datetime(2021, 1, 1))
 class ImporterTest(unittest.TestCase):
@@ -57,6 +59,7 @@ class ImporterTest(unittest.TestCase):
         type=osv.SourceRepositoryType.GIT,
         id='oss-fuzz',
         name='oss-fuzz',
+        db_prefix='OSV-',
         repo_url='file://' + self.remote_source_repo_path,
         repo_username='',
         ignore_patterns=['.*IGNORE.*'])
@@ -69,7 +72,7 @@ class ImporterTest(unittest.TestCase):
   def test_basic(self, mock_publish):
     """Test basic run."""
     osv.Bug(
-        id='2017-134',
+        db_id='OSV-2017-134',
         affected=['FILE5_29', 'FILE5_30'],
         affected_fuzzy=['5-29', '5-30'],
         affected_ranges=[{
@@ -105,7 +108,7 @@ class ImporterTest(unittest.TestCase):
         summary='Heap-buffer-overflow in cdf_file_property_info',
         timestamp=datetime.datetime(2021, 1, 15, 0, 0, 24, 559102)).put()
 
-    self.mock_repo.add_file('2021-111.yaml', '')
+    self.mock_repo.add_file('2021-111.yaml', _EMPTY_VULNERABILITY)
     self.mock_repo.commit('User', 'user@email')
 
     imp = importer.Importer('fake_public_key', 'fake_private_key', self.tmp_dir,
@@ -127,13 +130,13 @@ class ImporterTest(unittest.TestCase):
             'projects/oss-vdb/topics/tasks',
             data=b'',
             deleted='false',
-            original_sha256=('e3b0c44298fc1c149afbf4c8996fb924'
-                             '27ae41e4649b934ca495991b7852b855'),
+            original_sha256=('bd3cc48676794308a58a19c97972a5e5'
+                             '42abcc9eb948db5701421616432cc0b9'),
             path='2021-111.yaml',
             source='oss-fuzz',
             type='update')
     ])
-    bug = osv.Bug.get_by_id('2017-134')
+    bug = osv.Bug.get_by_id('OSV-2017-134')
     self.assertEqual(osv.SourceOfTruth.SOURCE_REPO, bug.source_of_truth)
 
     source_repo = osv.SourceRepository.get_by_id('oss-fuzz')
@@ -152,7 +155,7 @@ class ImporterTest(unittest.TestCase):
   @mock.patch('google.cloud.pubsub_v1.PublisherClient.publish')
   def test_delete(self, mock_publish):
     """Test deletion."""
-    self.mock_repo.add_file('2021-111.yaml', '')
+    self.mock_repo.add_file('2021-111.yaml', _EMPTY_VULNERABILITY)
     self.mock_repo.commit('User', 'user@email')
 
     repo = pygit2.Repository(self.remote_source_repo_path)
@@ -182,13 +185,19 @@ class ImporterTest(unittest.TestCase):
   @mock.patch('google.cloud.pubsub_v1.PublisherClient.publish')
   def test_scheduled_updates(self, mock_publish):
     """Test scheduled updates."""
-    self.mock_repo.add_file('proj/OSV-2021-1337.yaml', '')
-    self.mock_repo.add_file('proj/OSV-2021-1339.yaml', '')
-    self.mock_repo.add_file('OSV-2021-1338.yaml', '')
+    self.mock_repo.add_file('proj/OSV-2021-1337.yaml', _EMPTY_VULNERABILITY)
+    self.mock_repo.add_file('proj/OSV-2021-1339.yaml', _EMPTY_VULNERABILITY)
+    self.mock_repo.add_file('OSV-2021-1338.yaml', _EMPTY_VULNERABILITY)
     self.mock_repo.commit('OSV', 'infra@osv.dev')
 
+    osv.SourceRepository(
+        type=osv.SourceRepositoryType.GIT,
+        id='source',
+        name='source',
+        repo_url='file://' + self.remote_source_repo_path,
+        repo_username='').put()
     osv.Bug(
-        id='2021-1337',
+        db_id='OSV-2021-1337',
         project='proj',
         ecosystem='OSS-Fuzz',
         status=1,
@@ -196,7 +205,7 @@ class ImporterTest(unittest.TestCase):
         source_of_truth=osv.SourceOfTruth.SOURCE_REPO,
         timestamp=datetime.datetime(2020, 1, 1, 0, 0, 0, 0)).put()
     osv.Bug(
-        id='2021-1338',
+        db_id='OSV-2021-1338',
         project='proj',
         source_id='source:OSV-2021-1338.yaml',
         status=1,
@@ -208,7 +217,7 @@ class ImporterTest(unittest.TestCase):
             'type': 'GIT',
         }]).put()
     osv.Bug(
-        id='2021-1339',
+        db_id='OSV-2021-1339',
         project='proj',
         ecosystem='OSS-Fuzz',
         status=1,
@@ -225,14 +234,14 @@ class ImporterTest(unittest.TestCase):
             'projects/oss-vdb/topics/tasks',
             data=b'',
             deleted='false',
-            original_sha256=('e3b0c44298fc1c149afbf4c8996fb924'
-                             '27ae41e4649b934ca495991b7852b855'),
+            original_sha256=('bd3cc48676794308a58a19c97972a5e5'
+                             '42abcc9eb948db5701421616432cc0b9'),
             path='proj/OSV-2021-1337.yaml',
             source='oss-fuzz',
             type='update'),
         mock.call(
             'projects/oss-vdb/topics/tasks',
-            allocated_id='2021-1339',
+            allocated_id='OSV-2021-1339',
             data=b'',
             source_id='oss-fuzz:124',
             type='impact'),
@@ -248,10 +257,10 @@ class ImporterTest(unittest.TestCase):
     source_repo.last_update_date = importer.utcnow().date()
     source_repo.put()
 
-    self.mock_repo.add_file('proj/OSV-2021-1337.yaml', '')
+    self.mock_repo.add_file('proj/OSV-2021-1337.yaml', _EMPTY_VULNERABILITY)
     self.mock_repo.commit('OSV', 'infra@osv.dev')
     osv.Bug(
-        id='2021-1337',
+        db_id='OSV-2021-1337',
         project='proj',
         fixed='',
         status=1,
@@ -268,7 +277,7 @@ class ImporterTest(unittest.TestCase):
   @mock.patch('google.cloud.pubsub_v1.PublisherClient.publish')
   def test_no_updates(self, mock_publish):
     """Test no update marker."""
-    self.mock_repo.add_file('2021-111.yaml', '')
+    self.mock_repo.add_file('2021-111.yaml', _EMPTY_VULNERABILITY)
     self.mock_repo.commit('User', 'user@email', 'message. OSV-NO-UPDATE')
 
     imp = importer.Importer('fake_public_key', 'fake_private_key', self.tmp_dir,
@@ -279,13 +288,50 @@ class ImporterTest(unittest.TestCase):
   @mock.patch('google.cloud.pubsub_v1.PublisherClient.publish')
   def test_ignore(self, mock_publish):
     """Test ignoring."""
-    self.mock_repo.add_file('2021-111IGNORE.yaml', '')
+    self.mock_repo.add_file('2021-111IGNORE.yaml', _EMPTY_VULNERABILITY)
     self.mock_repo.commit('User', 'user@email', 'message.')
 
     imp = importer.Importer('fake_public_key', 'fake_private_key', self.tmp_dir,
                             'bucket')
     imp.run()
     mock_publish.assert_not_called()
+
+  @mock.patch('google.cloud.pubsub_v1.PublisherClient.publish')
+  def test_ecosystem_bridge(self, mock_publish):
+    """Test ecosystem pub/sub publishing."""
+    self.source_repo.key.delete()
+    self.source_repo = osv.SourceRepository(
+        type=osv.SourceRepositoryType.GIT,
+        id='PyPI',
+        name='PyPI',
+        repo_url='file://' + self.remote_source_repo_path,
+        repo_username='')
+    self.source_repo.put()
+    self.mock_repo.add_file(
+        'PYSEC-2021-1.yaml', 'id: PYSEC-2021-1\n'
+        'package:\n'
+        '  name: pkg\n'
+        '  ecosystem: PyPI\n')
+    self.mock_repo.commit('User', 'user@email')
+
+    imp = importer.Importer('fake_public_key', 'fake_private_key', self.tmp_dir,
+                            'bucket')
+    imp.run()
+    mock_publish.assert_has_calls([
+        mock.call(
+            'projects/oss-vdb/topics/tasks',
+            data=b'',
+            type='update',
+            source='PyPI',
+            path='PYSEC-2021-1.yaml',
+            original_sha256=('cb700a08fa26d2e494670b9edd49d66e'
+                             '957ef4c9a1f7a4c4975c888e6d9da4f7'),
+            deleted='false'),
+        mock.call(
+            'projects/oss-vdb/topics/pypi-bridge',
+            data=b'{"id": "PYSEC-2021-1", "package": '
+            b'{"name": "pkg", "ecosystem": "PyPI"}}')
+    ])
 
 
 @mock.patch('importer.utcnow', lambda: datetime.datetime(2021, 1, 1))

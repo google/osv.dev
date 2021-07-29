@@ -37,7 +37,21 @@ indexes:
     properties:
       - name: status
       - name: project
+      - name: affected_fuzzy
+      - name: public
+
+  - kind: Bug
+    properties:
+      - name: status
+      - name: project
       - name: ecosystem
+      - name: public
+      - name: semver_fixed_indexes
+
+  - kind: Bug
+    properties:
+      - name: status
+      - name: project
       - name: public
       - name: semver_fixed_indexes
 

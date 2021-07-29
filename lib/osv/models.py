@@ -74,9 +74,9 @@ class RegressResult(ndb.Model):
   # The commit hash.
   commit = ndb.StringProperty(default='')
   # Vulnerability summary.
-  summary = ndb.StringProperty()
+  summary = ndb.TextProperty()
   # Vulnerability details.
-  details = ndb.StringProperty()
+  details = ndb.TextProperty()
   # Error (if any).
   error = ndb.StringProperty()
   # OSS-Fuzz issue ID.
@@ -100,9 +100,9 @@ class FixResult(ndb.Model):
   # The commit hash.
   commit = ndb.StringProperty(default='')
   # Vulnerability summary.
-  summary = ndb.StringProperty()
+  summary = ndb.TextProperty()
   # Vulnerability details.
-  details = ndb.StringProperty()
+  details = ndb.TextProperty()
   # Error (if any).
   error = ndb.StringProperty()
   # OSS-Fuzz issue ID.
@@ -148,6 +148,9 @@ class Bug(ndb.Model):
   # Very large fake version to use when there is no fix available.
   _NOT_FIXED_SEMVER = '999999.999999.999999'
 
+  # Display ID as used by the source database. The full qualified database that
+  # OSV tracks this as may be different.
+  db_id = ndb.StringProperty()
   # Other IDs this bug is known as.
   aliases = ndb.StringProperty(repeated=True)
   # Related IDs.
@@ -183,9 +186,9 @@ class Bug(ndb.Model):
   # Package ecosystem for the project.
   ecosystem = ndb.StringProperty()
   # Summary for the bug.
-  summary = ndb.StringProperty()
+  summary = ndb.TextProperty()
   # Vulnerability details.
-  details = ndb.StringProperty()
+  details = ndb.TextProperty()
   # Severity of the bug.
   severity = ndb.StringProperty(validator=_check_valid_severity)
   # Whether or not the bug is public (OSS-Fuzz only).
@@ -211,6 +214,10 @@ class Bug(ndb.Model):
 
   def id(self):
     """Get the bug ID."""
+    if self.db_id:
+      return self.db_id
+
+    # TODO(ochang): Remove once all existing bugs have IDs migrated.
     if re.match(r'^\d+', self.key.id()):
       return self.OSV_ID_PREFIX + self.key.id()
 
@@ -228,7 +235,11 @@ class Bug(ndb.Model):
   @classmethod
   def get_by_id(cls, vuln_id, *args, **kwargs):
     """Overridden get_by_id to handle OSV allocated IDs."""
-    # OSV allocated bug IDs are stored without the prefix.
+    result = cls.query(cls.db_id == vuln_id).get()
+    if result:
+      return result
+
+    # TODO(ochang): Remove once all exsting bugs have IDs migrated.
     if vuln_id.startswith(cls.OSV_ID_PREFIX):
       vuln_id = vuln_id[len(cls.OSV_ID_PREFIX):]
 
@@ -273,8 +284,26 @@ class Bug(ndb.Model):
     if self.source_id:
       self.source, _ = sources.parse_source_id(self.source_id)
 
+    if not self.source:
+      raise ValueError('Source not specified for Bug.')
+
+    if not self.db_id:
+      raise ValueError('DB ID not specified for Bug.')
+
+    if not self.key:
+      source_repo = get_source_repository(self.source)
+      if not source_repo:
+        raise ValueError(f'Invalid source {self.source}')
+
+      if source_repo.db_prefix and self.db_id.startswith(source_repo.db_prefix):
+        key_id = self.db_id
+      else:
+        key_id = f'{self.source}:{self.db_id}'
+
+      self.key = ndb.Key(Bug, key_id)
+
   def update_from_vulnerability(self, vulnerability):
-    """Set fields from vulnerability."""
+    """Set fields from vulnerability. Does not set the ID."""
     self.summary = vulnerability.summary
     self.details = vulnerability.details
     self.reference_url_types = {
@@ -427,6 +456,8 @@ class SourceRepository(ndb.Model):
   versions_from_repo = ndb.BooleanProperty(default=True)
   # HTTP link prefix.
   link = ndb.StringProperty()
+  # DB prefix, if the database allocates its own.
+  db_prefix = ndb.StringProperty()
 
   def ignore_file(self, file_path):
     """Return whether or not we should be ignoring a file."""

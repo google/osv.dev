@@ -161,27 +161,45 @@ def _is_semver_affected(affected_ranges, version):
   return False
 
 
+def _query_by_semver(query, version):
+  """Query by semver."""
+  if not semver_index.is_valid(version):
+    return []
+
+  query = query.filter(
+      osv.Bug.semver_fixed_indexes > semver_index.normalize(version))
+
+  return [
+      bug for bug in query if _is_semver_affected(bug.affected_ranges, version)
+  ]
+
+
+def _query_by_generic_version(query, version):
+  """Query by generic version."""
+  query = query.filter(osv.Bug.affected_fuzzy == osv.normalize_tag(version))
+  return list(query)
+
+
 def query_by_version(project, ecosystem, version, to_response=bug_to_response):
   """Query by (fuzzy) version."""
   ecosystem_info = ecosystems.get(ecosystem)
   is_semver = ecosystem_info and ecosystem_info.is_semver
   query = osv.Bug.query(osv.Bug.status == osv.BugStatus.PROCESSED,
                         osv.Bug.project == project, osv.Bug.public == True)  # pylint: disable=singleton-comparison
-  if is_semver:
-    query = query.filter(
-        osv.Bug.semver_fixed_indexes > semver_index.normalize(version))
-  else:
-    query = query.filter(osv.Bug.affected_fuzzy == osv.normalize_tag(version))
-
   if ecosystem:
     query = query.filter(osv.Bug.ecosystem == ecosystem)
 
   bugs = []
-  for bug in query:
-    if is_semver and not _is_semver_affected(bug.affected_ranges, version):
-      continue
-
-    bugs.append(bug)
+  if ecosystem:
+    if is_semver:
+      # Ecosystem supports semver only.
+      bugs.extend(_query_by_semver(query, version))
+    else:
+      bugs.extend(_query_by_generic_version(query, version))
+  else:
+    # Unspecified ecosystem. Try both.
+    bugs.extend(_query_by_semver(query, version))
+    bugs.extend(_query_by_generic_version(query, version))
 
   return [to_response(bug) for bug in bugs]
 

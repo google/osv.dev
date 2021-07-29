@@ -117,8 +117,10 @@ class ImpactTest(unittest.TestCase):
     tests.mock_clone(self, return_value=pygit2.Repository('osv-test'))
     tests.mock_datetime(self)
 
+    osv.SourceRepository(id='oss-fuzz', name='oss-fuzz', db_prefix='OSV-').put()
+
     allocated_bug = osv.Bug(
-        id='2020-1337',
+        db_id='OSV-2020-1337',
         timestamp=datetime.datetime(2020, 1, 1),
         source_id='oss-fuzz:123',
         status=osv.BugStatus.UNPROCESSED,
@@ -126,8 +128,8 @@ class ImpactTest(unittest.TestCase):
     allocated_bug.put()
 
     should_be_deleted = osv.AffectedCommit(
-        id='2020-1337-abcd',
-        bug_id='2020-1337',
+        id='OSV-2020-1337-abcd',
+        bug_id='OSV-2020-1337',
         commit='abcd',
         project='project',
         ecosystem='ecosystem',
@@ -139,7 +141,7 @@ class ImpactTest(unittest.TestCase):
     message = mock.Mock()
     message.attributes = {
         'source_id': 'oss-fuzz:123',
-        'allocated_id': '2020-1337',
+        'allocated_id': 'OSV-2020-1337',
     }
 
     regress_result = osv.RegressResult(
@@ -169,6 +171,7 @@ class ImpactTest(unittest.TestCase):
     oss_fuzz.process_impact_task('oss-fuzz:123', message)
     self.assertDictEqual(
         {
+            'db_id': 'OSV-2020-1337',
             'aliases': [],
             'purl': None,
             'related': [],
@@ -221,7 +224,7 @@ class ImpactTest(unittest.TestCase):
             'semver_fixed_indexes': [],
             'source': 'oss-fuzz',
         },
-        ndb.Key(osv.Bug, '2020-1337').get()._to_dict())
+        ndb.Key(osv.Bug, 'OSV-2020-1337').get()._to_dict())
 
     affected_commits = list(osv.AffectedCommit.query())
     for commit in affected_commits:
@@ -240,7 +243,7 @@ class ImpactTest(unittest.TestCase):
     message = mock.Mock()
     message.attributes = {
         'source_id': 'oss-fuzz:123',
-        'allocated_id': '2020-1337',
+        'allocated_id': 'OSV-2020-1337',
     }
 
     regress_result = osv.RegressResult(
@@ -271,6 +274,7 @@ class ImpactTest(unittest.TestCase):
     oss_fuzz.process_impact_task('oss-fuzz:123', message)
     self.assertDictEqual(
         {
+            'db_id': 'OSV-2020-1337',
             'aliases': [],
             'purl': None,
             'related': [],
@@ -319,7 +323,7 @@ class ImpactTest(unittest.TestCase):
             'semver_fixed_indexes': [],
             'source': 'oss-fuzz',
         },
-        ndb.Key(osv.Bug, '2020-1337').get()._to_dict())
+        ndb.Key(osv.Bug, 'OSV-2020-1337').get()._to_dict())
 
     affected_commits = list(osv.AffectedCommit.query())
     for commit in affected_commits:
@@ -340,7 +344,7 @@ class ImpactTest(unittest.TestCase):
     message = mock.Mock()
     message.attributes = {
         'source_id': 'oss-fuzz:123',
-        'allocated_id': '2020-1337',
+        'allocated_id': 'OSV-2020-1337',
     }
 
     regress_result = osv.RegressResult(
@@ -371,6 +375,7 @@ class ImpactTest(unittest.TestCase):
     oss_fuzz.process_impact_task('oss-fuzz:123', message)
     self.assertDictEqual(
         {
+            'db_id': 'OSV-2020-1337',
             'aliases': [],
             'purl': None,
             'related': [],
@@ -419,7 +424,7 @@ class ImpactTest(unittest.TestCase):
             'semver_fixed_indexes': [],
             'source': 'oss-fuzz',
         },
-        ndb.Key(osv.Bug, '2020-1337').get()._to_dict())
+        ndb.Key(osv.Bug, 'OSV-2020-1337').get()._to_dict())
 
     affected_commits = list(osv.AffectedCommit.query())
     for commit in affected_commits:
@@ -442,7 +447,7 @@ class ImpactTest(unittest.TestCase):
     message = mock.Mock()
     message.attributes = {
         'source_id': 'oss-fuzz:123',
-        'allocated_id': '2020-1337',
+        'allocated_id': 'OSV-2020-1337',
     }
 
     regress_result = osv.RegressResult(
@@ -472,6 +477,7 @@ class ImpactTest(unittest.TestCase):
     oss_fuzz.process_impact_task('oss-fuzz:123', message)
     self.assertDictEqual(
         {
+            'db_id': 'OSV-2020-1337',
             'aliases': [],
             'purl': None,
             'related': [],
@@ -517,7 +523,7 @@ class ImpactTest(unittest.TestCase):
             'semver_fixed_indexes': [],
             'source': 'oss-fuzz',
         },
-        ndb.Key(osv.Bug, '2020-1337').get()._to_dict())
+        ndb.Key(osv.Bug, 'OSV-2020-1337').get()._to_dict())
 
     affected_commits = list(osv.AffectedCommit.query())
     for commit in affected_commits:
@@ -536,7 +542,7 @@ class ImpactTest(unittest.TestCase):
     message = mock.Mock()
     message.attributes = {
         'source_id': 'oss-fuzz:123',
-        'allocated_id': '2020-1337',
+        'allocated_id': 'OSV-2020-1337',
     }
 
     regress_result = osv.RegressResult(
@@ -568,6 +574,7 @@ class ImpactTest(unittest.TestCase):
     oss_fuzz.process_impact_task('oss-fuzz:123', message)
     self.assertDictEqual(
         {
+            'db_id': 'OSV-2020-1337',
             'aliases': [],
             'purl': None,
             'related': [],
@@ -620,14 +627,14 @@ class ImpactTest(unittest.TestCase):
             'semver_fixed_indexes': [],
             'source': 'oss-fuzz',
         },
-        ndb.Key(osv.Bug, '2020-1337').get()._to_dict())
+        ndb.Key(osv.Bug, 'OSV-2020-1337').get()._to_dict())
 
   def test_not_fixed(self):
     """Test not fixed bug."""
     message = mock.Mock()
     message.attributes = {
         'source_id': 'oss-fuzz:123',
-        'allocated_id': '2020-1337',
+        'allocated_id': 'OSV-2020-1337',
     }
 
     regress_result = osv.RegressResult(
@@ -646,6 +653,7 @@ class ImpactTest(unittest.TestCase):
     oss_fuzz.process_impact_task('oss-fuzz:123', message)
     self.assertDictEqual(
         {
+            'db_id': 'OSV-2020-1337',
             'aliases': [],
             'purl': None,
             'related': [],
@@ -688,7 +696,7 @@ class ImpactTest(unittest.TestCase):
             'semver_fixed_indexes': [],
             'source': 'oss-fuzz',
         },
-        ndb.Key(osv.Bug, '2020-1337').get()._to_dict())
+        ndb.Key(osv.Bug, 'OSV-2020-1337').get()._to_dict())
 
     affected_commits = list(osv.AffectedCommit.query())
     for commit in affected_commits:
@@ -736,9 +744,10 @@ class MarkBugInvalidTest(unittest.TestCase):
 
   def test_mark_bug_invalid(self):
     """Test mark_bug_invalid."""
-    osv.Bug(id='2021-1', source_id='oss-fuzz:1337').put()
-    osv.AffectedCommit(bug_id='2021-1').put()
-    osv.AffectedCommit(bug_id='2021-1').put()
+    osv.SourceRepository(id='oss-fuzz', name='oss-fuzz', db_prefix='OSV-').put()
+    osv.Bug(db_id='OSV-2021-1', source_id='oss-fuzz:1337').put()
+    osv.AffectedCommit(bug_id='OSV-2021-1').put()
+    osv.AffectedCommit(bug_id='OSV-2021-1').put()
 
     message = mock.Mock()
     message.attributes = {
@@ -748,7 +757,7 @@ class MarkBugInvalidTest(unittest.TestCase):
     }
 
     worker.mark_bug_invalid(message)
-    bug = ndb.Key(osv.Bug, '2021-1').get()
+    bug = ndb.Key(osv.Bug, 'OSV-2021-1').get()
     self.assertEqual(osv.BugStatus.INVALID, bug.status)
 
     commits = list(osv.AffectedCommit.query())
@@ -846,26 +855,27 @@ class UpdateTest(unittest.TestCase):
         type=osv.SourceRepositoryType.GIT,
         id='source',
         name='source',
+        db_prefix='BLAH-',
         repo_url='file://' + self.remote_source_repo_path,
         editable=True,
         repo_username='')
     self.source_repo.put()
 
     osv.Bug(
-        id='BLAH-123',
+        db_id='BLAH-123',
         project='blah.com/package',
         ecosystem='golang',
         source_id='source:BLAH-123.yaml',
         source_of_truth=osv.SourceOfTruth.SOURCE_REPO).put()
     osv.Bug(
-        id='BLAH-124',
+        db_id='BLAH-124',
         regressed='eefe8ec3f1f90d0e684890e810f3f21e8500a4cd',
         project='blah.com/package',
         ecosystem='golang',
         source_id='source:BLAH-124.yaml',
         source_of_truth=osv.SourceOfTruth.SOURCE_REPO).put()
     osv.Bug(
-        id='BLAH-125',
+        db_id='BLAH-125',
         regressed='eefe8ec3f1f90d0e684890e810f3f21e8500a4cd',
         fixed='8d8242f545e9cec3e6d0d2e3f5bde8be1c659735',
         project='blah.com/package',
@@ -873,7 +883,7 @@ class UpdateTest(unittest.TestCase):
         source_id='source:BLAH-125.yaml',
         source_of_truth=osv.SourceOfTruth.SOURCE_REPO).put()
     osv.Bug(
-        id='BLAH-127',
+        db_id='BLAH-127',
         project='blah.com/package',
         ecosystem='golang',
         source_id='source:BLAH-127.yaml',
@@ -907,6 +917,7 @@ class UpdateTest(unittest.TestCase):
 
     self.assertDictEqual(
         {
+            'db_id': 'BLAH-123',
             'aliases': [],
             'purl': None,
             'related': [],
@@ -998,6 +1009,7 @@ class UpdateTest(unittest.TestCase):
 
     self.assertDictEqual(
         {
+            'db_id': 'BLAH-124',
             'aliases': [],
             'purl': None,
             'related': [],
@@ -1086,6 +1098,7 @@ class UpdateTest(unittest.TestCase):
 
     self.assertDictEqual(
         {
+            'db_id': 'BLAH-127',
             'aliases': [],
             'purl': None,
             'related': [],
@@ -1164,6 +1177,7 @@ class UpdateTest(unittest.TestCase):
 
     self.assertDictEqual(
         {
+            'db_id': 'BLAH-126',
             'aliases': [],
             'purl': None,
             'related': [],
@@ -1343,6 +1357,7 @@ class UpdateTest(unittest.TestCase):
 
     self.assertDictEqual(
         {
+            'db_id': 'PYSEC-123',
             'aliases': [],
             'purl': None,
             'related': [],
@@ -1412,7 +1427,7 @@ class UpdateTest(unittest.TestCase):
             'semver_fixed_indexes': [],
             'source': 'source',
         },
-        osv.Bug.get_by_id('PYSEC-123')._to_dict())
+        ndb.Key(osv.Bug, 'source:PYSEC-123').get()._to_dict())
 
     affected_commits = list(osv.AffectedCommit.query())
     self.assertCountEqual([
@@ -1442,6 +1457,8 @@ class UpdateTest(unittest.TestCase):
 
     self.assertDictEqual(
         {
+            'db_id':
+                'GO-2021-0085',
             'aliases': ['CVE-2019-16884'],
             'purl':
                 None,
@@ -1521,6 +1538,7 @@ class UpdateTest(unittest.TestCase):
         osv.Bug.get_by_id('GO-2021-0085')._to_dict())
     self.assertDictEqual(
         {
+            'db_id': 'GO-2021-0087',
             'aliases': ['CVE-2019-19921'],
             'purl': None,
             'related': [],

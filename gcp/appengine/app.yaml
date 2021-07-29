@@ -35,6 +35,10 @@ handlers:
     script: auto
     secure: always
 
+  - url: /public_keys
+    static_dir: dist/public_keys
+    mime_type: text/plain
+
   - url: /.*
     static_files: dist/index.html
     upload: dist/index.html

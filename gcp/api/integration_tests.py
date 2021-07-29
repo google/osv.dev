@@ -161,9 +161,6 @@ class IntegrationTests(unittest.TestCase):
 
   def test_get(self):
     """Test getting a vulnerability."""
-    response = requests.get(_api() + '/v1/vulns/2020-744')
-    self.assert_vuln_equal(self._VULN_744, response.json())
-
     response = requests.get(_api() + '/v1/vulns/OSV-2020-744')
     self.assert_vuln_equal(self._VULN_744, response.json())
 
@@ -213,6 +210,17 @@ class IntegrationTests(unittest.TestCase):
             'package': {
                 'name': 'github.com/nanobox-io/golang-nanoauth',
                 'ecosystem': 'Go',
+            }
+        }))
+    self.assert_results_equal({'vulns': [self._VULN_GO_2020_0004]},
+                              response.json())
+
+    response = requests.post(
+        _api() + '/v1/query',
+        data=json.dumps({
+            'version': '0.0.0-2017a',
+            'package': {
+                'name': 'github.com/nanobox-io/golang-nanoauth',
             }
         }))
     self.assert_results_equal({'vulns': [self._VULN_GO_2020_0004]},

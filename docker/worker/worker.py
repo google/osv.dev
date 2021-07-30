@@ -367,8 +367,13 @@ class TaskRunner:
 
     bug.update_from_vulnerability(vulnerability)
     bug.public = True
-    bug.put()
 
+    if bug.withdrawn:
+      bug.status = osv.BugStatus.INVALID
+    else:
+      bug.status = osv.BugStatus.PROCESSED
+
+    bug.put()
     osv.update_affected_commits(bug.key.id(), result.commits, bug.project,
                                 bug.ecosystem, bug.public)
 

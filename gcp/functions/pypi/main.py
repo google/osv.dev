@@ -61,6 +61,6 @@ def publish(event, context):
       'VULN-PUBLIC-KEY-SIGNATURE': base64.b64encode(signature).decode(),
   }
 
-  print(f'Posting {vulnerability.id} to PyPI.')
+  print(f'Posting {vulnerability.id} to PyPI:', request.decode())
   response = requests.post(_ENDPOINT, data=request, headers=headers)
   response.raise_for_status()

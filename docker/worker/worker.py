@@ -233,7 +233,7 @@ class TaskRunner:
       if not os.path.exists(vuln_path):
         logging.info('%s was deleted.', vuln_path)
         if deleted:
-          self._handle_deleted(vuln_path)
+          self._handle_deleted(source_repo, path)
 
         return
 
@@ -281,15 +281,21 @@ class TaskRunner:
     for vulnerability in vulnerabilities:
       self._do_update(source_repo, repo, vulnerability, path, original_sha256)
 
-  def _handle_deleted(self, vuln_path):
+  def _handle_deleted(self, source_repo, vuln_path):
     """Handle deleted source."""
     vuln_id = os.path.splitext(os.path.basename(vuln_path))[0]
-    logging.info('Marking %s as invalid.', vuln_id)
     bug = osv.Bug.get_by_id(vuln_id)
     if not bug:
       logging.error('Failed to find Bug with ID %s', vuln_id)
       return
 
+    bug_source_path = osv.source_path(source_repo, bug)
+    if bug_source_path != vuln_path:
+      logging.info('Request path %s does not match %s, not marking as invalid.',
+                   vuln_path, bug_source_path)
+      return
+
+    logging.info('Marking %s as invalid.', vuln_id)
     bug.status = osv.BugStatus.INVALID
     bug.put()
 
@@ -360,13 +366,13 @@ class TaskRunner:
 
       bug = osv.Bug(
           db_id=vulnerability.id,
-          source_id=f'{source_repo.name}:{relative_path}',
           timestamp=osv.utcnow(),
           status=osv.BugStatus.PROCESSED,
           source_of_truth=osv.SourceOfTruth.SOURCE_REPO)
 
     bug.update_from_vulnerability(vulnerability)
     bug.public = True
+    bug.source_id = f'{source_repo.name}:{relative_path}'
 
     if bug.withdrawn:
       bug.status = osv.BugStatus.INVALID

@@ -82,11 +82,7 @@ class OSVServicer(osv_service_v1_pb2_grpc.OSVServicer):
       ecosystem = ''
 
     if request.query.WhichOneof('param') == 'commit':
-      bugs = query_by_commit(
-          package_name,
-          ecosystem,
-          request.query.commit,
-          to_response=bug_to_response)
+      bugs = query_by_commit(request.query.commit, to_response=bug_to_response)
     elif request.query.WhichOneof('param') == 'version':
       bugs = query_by_version(
           package_name,
@@ -124,17 +120,10 @@ def _get_bugs(bug_ids, to_response=bug_to_response):
   ]
 
 
-def query_by_commit(project, ecosystem, commit, to_response=bug_to_response):
+def query_by_commit(commit, to_response=bug_to_response):
   """Query by commit."""
   query = osv.AffectedCommit.query(osv.AffectedCommit.commit == commit,
                                    osv.AffectedCommit.public == True)  # pylint: disable=singleton-comparison
-
-  if project:
-    query = query.filter(osv.AffectedCommit.project == project)
-
-  if ecosystem:
-    query = query.filter(osv.AffectedCommit.ecosystem == ecosystem)
-
   bug_ids = []
   for affected_commit in query:
     bug_ids.append(affected_commit.bug_id)
@@ -142,21 +131,22 @@ def query_by_commit(project, ecosystem, commit, to_response=bug_to_response):
   return _get_bugs(bug_ids, to_response=to_response)
 
 
-def _is_semver_affected(affected_ranges, version):
+def _is_semver_affected(affected_packages, version):
   """Returns whether or not the given version is within an affected SEMVER
   range."""
   version = semver_index.parse(version)
 
-  for affected_range in affected_ranges:
-    if affected_range.type != 'SEMVER':
-      continue
+  for affected_package in affected_packages:
+    for affected_range in affected_package.ranges:
+      if affected_range.type != 'SEMVER':
+        continue
 
-    introduced = affected_range.introduced
-    fixed = affected_range.fixed
+      introduced = affected_range.introduced
+      fixed = affected_range.fixed
 
-    if ((not introduced or version >= semver_index.parse(introduced)) and
-        (not fixed or version < semver_index.parse(fixed))):
-      return True
+      if ((not introduced or version >= semver_index.parse(introduced)) and
+          (not fixed or version < semver_index.parse(fixed))):
+        return True
 
   return False
 
@@ -170,7 +160,8 @@ def _query_by_semver(query, version):
       osv.Bug.semver_fixed_indexes > semver_index.normalize(version))
 
   return [
-      bug for bug in query if _is_semver_affected(bug.affected_ranges, version)
+      bug for bug in query
+      if _is_semver_affected(bug.affected_packages, version)
   ]
 
 

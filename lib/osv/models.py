@@ -23,6 +23,7 @@ from google.protobuf import timestamp_pb2
 
 # pylint: disable=relative-beyond-top-level
 from . import bug
+from . import ecosystems
 from . import semver_index
 from . import sources
 from . import vulnerability_pb2
@@ -41,7 +42,15 @@ def _check_valid_range_type(prop, value):
   del prop
 
   if value not in ('GIT', 'SEMVER', 'ECOSYSTEM'):
-    raise ValueError('Invalid severity: ' + value)
+    raise ValueError('Invalid range type: ' + value)
+
+
+def _check_valid_event_type(prop, value):
+  """Check valid event type."""
+  del prop
+
+  if value not in ('introduced', 'fixed', 'limit'):
+    raise ValueError('Invalid event type: ' + value)
 
 
 def utcnow():
@@ -133,6 +142,22 @@ class AffectedRange(ndb.Model):
   fixed = ndb.StringProperty()
 
 
+class AffectedEvent(ndb.Model):
+  """Affected event."""
+  type = ndb.StringProperty(validator=_check_valid_event_type)
+  value = ndb.StringProperty()
+
+
+class AffectedRange2(ndb.Model):
+  """Affected range."""
+  # Type of range.
+  type = ndb.StringProperty(validator=_check_valid_range_type)
+  # Repo URL.
+  repo_url = ndb.StringProperty()
+  # Events.
+  events = ndb.LocalStructuredProperty(AffectedEvent, repeated=True)
+
+
 class SourceOfTruth(enum.IntEnum):
   """Source of truth."""
   NONE = 0
@@ -140,6 +165,27 @@ class SourceOfTruth(enum.IntEnum):
   INTERNAL = 1
   # Vulnerabilities that are available in a public repo.
   SOURCE_REPO = 2
+
+
+class Package(ndb.Model):
+  """Package."""
+  ecosystem = ndb.StringProperty()
+  name = ndb.StringProperty()
+  purl = ndb.StringProperty()
+
+
+class AffectedPackage(ndb.Model):
+  """Affected packages."""
+  # The affected package identifier.
+  package = ndb.StructuredProperty(Package)
+  # The list of affected ranges.
+  ranges = ndb.LocalStructuredProperty(AffectedRange2, repeated=True)
+  # The list of explicit affected versions.
+  versions = ndb.TextProperty(repeated=True)
+  # Database specific metadata.
+  database_specific = ndb.JsonProperty()
+  # Ecosystem specific metadata.
+  ecosystem_specific = ndb.JsonProperty()
 
 
 class Bug(ndb.Model):
@@ -171,7 +217,7 @@ class Bug(ndb.Model):
   fixed = ndb.StringProperty(default='')
   # The main regressing commit (from bisection).
   regressed = ndb.StringProperty(default='')
-  # All affected ranges.
+  # All affected ranges. TODO(ochang): To be removed.
   affected_ranges = ndb.StructuredProperty(AffectedRange, repeated=True)
   # List of affected versions.
   affected = ndb.TextProperty(repeated=True)
@@ -179,6 +225,7 @@ class Bug(ndb.Model):
   affected_fuzzy = ndb.StringProperty(repeated=True)
   # OSS-Fuzz issue ID.
   issue_id = ndb.StringProperty()
+  # TODO(ochang): Turn these into repeated properties.
   # Package URL for this package.
   purl = ndb.StringProperty()
   # Project/package name for the bug.
@@ -209,6 +256,9 @@ class Bug(ndb.Model):
   ecosystem_specific = ndb.JsonProperty()
   # Normalized SEMVER fixed indexes for querying.
   semver_fixed_indexes = ndb.StringProperty(repeated=True)
+  # Affected packages and versions.
+  affected_packages = ndb.LocalStructuredProperty(
+      AffectedPackage, repeated=True)
   # The source of this Bug.
   source = ndb.StringProperty()
 
@@ -226,9 +276,10 @@ class Bug(ndb.Model):
   @property
   def repo_url(self):
     """Repo URL."""
-    for affected_range in self.affected_ranges:
-      if affected_range.repo_url:
-        return affected_range.repo_url
+    for affected_package in self.affected_packages:
+      for affected_range in affected_package.ranges:
+        if affected_range.repo_url:
+          return affected_range.repo_url
 
     return None
 
@@ -258,28 +309,43 @@ class Bug(ndb.Model):
     search_indices = set()
 
     search_indices.update(self._tokenize(self.id()))
-    if self.project:
-      search_indices.update(self._tokenize(self.project))
 
-    if self.ecosystem:
+    if self.affected_packages:
+      self.project = self.affected_packages[0].package.name
+      self.ecosystem = self.affected_packages[0].package.ecosystem
+
+      search_indices.update(self._tokenize(self.project))
       search_indices.update(self._tokenize(self.ecosystem))
 
     self.search_indices = sorted(list(search_indices))
-    self.has_affected = bool(self.affected) or any(
-        r.type in ('SEMVER', 'ECOSYSTEM') for r in self.affected_ranges)
-    self.affected_fuzzy = bug.normalize_tags(self.affected)
+
+    self.affected_fuzzy = []
+    self.semver_fixed_indexes = []
+    self.has_affected = False
+    self.is_fixed = False
+
+    for affected_package in self.affected_packages:
+      # Indexes used for querying by exact version.
+      self.affected_fuzzy.extend(bug.normalize_tags(affected_package.versions))
+      self.has_affected |= bool(affected_package.versions)
+
+      for affected_range in affected_package.ranges:
+        fixed_version = None
+        for event in affected_range.events:
+          # Index used to query by fixed/unfixed.
+          if event.type == 'fixed':
+            self.is_fixed = True
+            fixed_version = event.value
+
+        if affected_range.type == 'SEMVER':
+          # Indexes used for querying by semver.
+          fixed = fixed_version or self._NOT_FIXED_SEMVER
+          self.semver_fixed_indexes.append(semver_index.normalize(fixed))
+
+        self.has_affected |= (affected_range.type in ('SEMVER', 'ECOSYSTEM'))
 
     if not self.last_modified:
       self.last_modified = utcnow()
-
-    self.is_fixed = any(
-        affected_range.fixed for affected_range in self.affected_ranges)
-
-    self.semver_fixed_indexes = []
-    for affected_range in self.affected_ranges:
-      if affected_range.type == 'SEMVER':
-        fixed = affected_range.fixed or self._NOT_FIXED_SEMVER
-        self.semver_fixed_indexes.append(semver_index.normalize(fixed))
 
     if self.source_id:
       self.source, _ = sources.parse_source_id(self.source_id)
@@ -318,44 +384,119 @@ class Bug(ndb.Model):
     if vulnerability.HasField('withdrawn'):
       self.withdrawn = vulnerability.withdrawn.ToDatetime()
 
-    self.project = vulnerability.package.name
-    self.ecosystem = vulnerability.package.ecosystem
-    if vulnerability.package.purl:
-      self.purl = vulnerability.package.purl
+    if self.affected_packages:
+      affected_package = self.affected_packages[0]
+    else:
+      affected_package = AffectedPackage()
+      self.affected_packages.append(affected_package)
 
-    self.affected = list(vulnerability.affects.versions)
+    affected_package.package = Package(
+        name=vulnerability.package.name,
+        ecosystem=vulnerability.package.ecosystem)
+
+    if vulnerability.package.purl:
+      affected_package.package.purl = vulnerability.package.purl
+
     self.aliases = list(vulnerability.aliases)
     self.related = list(vulnerability.related)
 
     vuln_dict = sources.vulnerability_to_dict(vulnerability)
     if vulnerability.database_specific:
-      self.database_specific = vuln_dict['database_specific']
+      affected_package.database_specific = vuln_dict['database_specific']
 
     if vulnerability.ecosystem_specific:
-      self.ecosystem_specific = vuln_dict['ecosystem_specific']
+      affected_package.ecosystem_specific = vuln_dict['ecosystem_specific']
 
-    self.affected_ranges = []
+    affected_package.versions = list(vulnerability.affects.versions)
+    affected_package.ranges = []
+    events_by_type = {}
+    repo_url = None
+
     for affected_range in vulnerability.affects.ranges:
-      self.affected_ranges.append(
-          AffectedRange(
-              type=vulnerability_pb2.AffectedRange.Type.Name(
+      events = events_by_type.setdefault(
+          vulnerability_pb2.AffectedRange.Type.Name(affected_range.type), [])
+
+      # An empty introduced in 0.7 now needs to be represented as '0' in 0.8.
+      introduced = AffectedEvent(
+          type='introduced', value=affected_range.introduced or '0')
+      if introduced not in events:
+        events.append(introduced)
+
+      if affected_range.fixed:
+        fixed = AffectedEvent(type='fixed', value=affected_range.fixed)
+        if fixed not in events:
+          events.append(fixed)
+
+    for range_type, events in events_by_type.items():
+      affected_range = AffectedRange2(type=range_type, events=events)
+
+      if range_type == 'GIT' and repo_url:
+        affected_range.repo_url = repo_url
+
+      affected_package.ranges.append(affected_range)
+
+  def _get_pre_0_8_affects(self):
+    """Get pre 0.8 schema affects field."""
+    affected_package = self.affected_packages[0]
+    affects = vulnerability_pb2.Affects(versions=affected_package.versions)
+    for affected_range in affected_package.ranges:
+      # Convert flattened events to range pairs (pre-0.8 schema).
+      # TODO(ochang): Remove this once all consumers are migrated.
+      # pylint: disable=cell-var-from-loop
+      new_range = lambda: vulnerability_pb2.AffectedRange(
+          type=vulnerability_pb2.AffectedRange.Type.Value(affected_range.type),
+          repo=affected_range.repo_url)
+      cur_range = new_range()
+
+      # Sort the flattened events, then find corresponding [introduced,
+      # fixed) pairs.
+      for event in _sorted_events(affected_package.package.ecosystem,
+                                  affected_range.type, affected_range.events):
+        if event.type == 'introduced':
+          if cur_range.introduced:
+            if affected_range.type == 'GIT':
+              affects.ranges.append(cur_range)
+              cur_range = new_range()
+
+          if not cur_range.introduced:
+            cur_range.introduced = event.value
+            if cur_range.introduced == '0':
+              cur_range.introduced = ''
+
+        if event.type == 'fixed':
+          cur_range.fixed = event.value
+          affects.ranges.append(cur_range)
+          cur_range = vulnerability_pb2.AffectedRange(
+              type=vulnerability_pb2.AffectedRange.Type.Value(
                   affected_range.type),
-              repo_url=affected_range.repo,
-              introduced=affected_range.introduced or '',
-              fixed=affected_range.fixed or ''))
+              repo=affected_range.repo_url)
+
+      if cur_range.introduced:
+        affects.ranges.add(cur_range)
+
+    return affects
 
   def to_vulnerability(self, include_source=False):
     """Convert to Vulnerability proto."""
-    package = vulnerability_pb2.Package(
-        name=self.project, ecosystem=self.ecosystem, purl=self.purl)
+    # Currently the schema only supports a single package, so we take the first.
+    package = None
+    ecosystem_specific = None
+    database_specific = None
+    affects = None
 
-    affects = vulnerability_pb2.Affects(versions=self.affected)
-    for affected_range in self.affected_ranges:
-      affects.ranges.add(
-          type=vulnerability_pb2.AffectedRange.Type.Value(affected_range.type),
-          repo=affected_range.repo_url,
-          introduced=affected_range.introduced,
-          fixed=affected_range.fixed)
+    if self.affected_packages:
+      affected_package = self.affected_packages[0]
+
+      package = vulnerability_pb2.Package(
+          name=affected_package.package.name,
+          ecosystem=affected_package.package.ecosystem,
+          purl=affected_package.package.purl)
+
+      affects = self._get_pre_0_8_affects()
+      if affected_package.ecosystem_specific:
+        ecosystem_specific = affected_package.ecosystem_specific
+      if affected_package.database_specific:
+        database_specific = affected_package.database_specific
 
     details = self.details
     if self.status == bug.BugStatus.INVALID:
@@ -397,10 +538,11 @@ class Bug(ndb.Model):
         affects=affects,
         references=references)
 
-    if self.ecosystem_specific:
-      result.ecosystem_specific.update(self.ecosystem_specific)
-    if self.database_specific:
-      result.database_specific.update(self.database_specific)
+    if ecosystem_specific:
+      result.ecosystem_specific.update(ecosystem_specific)
+
+    if database_specific:
+      result.database_specific.update(database_specific)
 
     if self.source and include_source:
       source_repo = get_source_repository(self.source)
@@ -480,3 +622,28 @@ class SourceRepository(ndb.Model):
 def get_source_repository(source_name):
   """Get source repository."""
   return SourceRepository.get_by_id(source_name)
+
+
+def _sorted_events(ecosystem, range_type, events):
+  """Sort events."""
+  if range_type == 'GIT':
+    # No need to sort.
+    return events
+
+  if range_type == 'SEMVER':
+    ecosystem_helper = ecosystems.SemverEcosystem
+  else:
+    ecosystem_helper = ecosystems.get(ecosystem)
+
+  # Remove any magic '0' values.
+  zero_event = None
+  for event in events.copy():
+    if event.value == '0':
+      zero_event = event
+      events.remove(event)
+
+  events = sorted(events, key=lambda e: ecosystem_helper.SORT_KEY(e.value))
+  if zero_event:
+    events.insert(0, zero_event)
+
+  return events

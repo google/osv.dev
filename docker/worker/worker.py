@@ -380,8 +380,7 @@ class TaskRunner:
       bug.status = osv.BugStatus.PROCESSED
 
     bug.put()
-    osv.update_affected_commits(bug.key.id(), result.commits, bug.project,
-                                bug.ecosystem, bug.public)
+    osv.update_affected_commits(bug.key.id(), result.commits, bug.public)
 
   def _do_process_task(self, subscriber, subscription, ack_id, message,
                        done_event):

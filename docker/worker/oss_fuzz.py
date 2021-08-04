@@ -208,16 +208,19 @@ def set_bug_attributes(bug, regress_result, fix_result):
   severity = fix_result.severity or regress_result.severity
   reference_urls = fix_result.reference_urls or regress_result.reference_urls
 
+  bug.affected_packages = [
+      osv.AffectedPackage(
+          package=osv.Package(name=project, ecosystem=ecosystem),
+          ecosystem_specific={
+              'severity': severity,
+          })
+  ]
+
   bug.issue_id = issue_id
-  bug.project = project
-  bug.ecosystem = ecosystem
   bug.summary = summary
   bug.details = details
   bug.severity = severity
   bug.reference_url_types = {}
-  bug.ecosystem_specific = {
-      'severity': severity,
-  }
 
   for reference_url in reference_urls:
     if OSS_FUZZ_ISSUE_URL in reference_url:
@@ -366,24 +369,34 @@ def process_impact_task(source_id, message):
 
   project = fix_result.project or regress_result.project
   ecosystem = fix_result.ecosystem or regress_result.ecosystem
-  osv.update_affected_commits(allocated_bug_id, result.commits, project,
-                              ecosystem, public)
+  osv.update_affected_commits(allocated_bug_id, result.commits, public)
 
   affected_tags = sorted(list(result.tags))
   existing_bug.fixed = fix_commit
   existing_bug.regressed = regress_commit
-  existing_bug.affected = affected_tags
-  existing_bug.affected_fuzzy = osv.normalize_tags(affected_tags)
   existing_bug.status = osv.BugStatus.PROCESSED
+
+  if existing_bug.affected_packages:
+    affected_package = existing_bug.affected_packages[0]
+  else:
+    affected_package = osv.AffectedPackage(
+        package=osv.Package(name=project, ecosystem=ecosystem))
+    existing_bug.affected_packages = [affected_package]
+
+  affected_package.versions = affected_tags
 
   # For the AffectedRange, use the first commit in the regress commit range, and
   # the last commit in the fix commit range.
   introduced = regress_commits[0] if regress_commits else ''
   fixed = fix_commits[-1] if fix_commits else ''
-  existing_bug.affected_ranges = [
-      osv.AffectedRange(
-          type='GIT', repo_url=repo_url, introduced=introduced, fixed=fixed),
+  events = [
+      osv.AffectedEvent(type='introduced', value=introduced),
   ]
+  if fixed:
+    events.append(osv.AffectedEvent(type='fixed', value=fixed))
+
+  git_range = osv.AffectedRange2(type='GIT', repo_url=repo_url, events=events)
+  affected_package.ranges = [git_range]
 
   # Expose range data in `database_specific`.
   database_specific = {}
@@ -393,7 +406,7 @@ def process_impact_task(source_id, message):
     database_specific['fixed_range'] = existing_bug.fixed
 
   if database_specific:
-    existing_bug.database_specific = database_specific
+    affected_package.database_specific = database_specific
 
   # Don't display additional ranges for imprecise commits, as they can be
   # confusing.
@@ -414,12 +427,14 @@ def process_impact_task(source_id, message):
       # Don't repeat the main range.
       continue
 
-    existing_bug.affected_ranges.append(
-        osv.AffectedRange(
-            type='GIT',
-            repo_url=repo_url,
-            introduced=introduced_in,
-            fixed=fixed_in))
+    introduced = osv.AffectedEvent(type='introduced', value=introduced_in)
+    if introduced not in git_range.events:
+      git_range.events.append(introduced)
+
+    if fixed_in:
+      fixed = osv.AffectedEvent(type='fixed', value=fixed_in)
+      if fixed not in git_range.events:
+        git_range.events.append(fixed)
 
   existing_bug.put()
 

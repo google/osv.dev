@@ -174,24 +174,6 @@ def vulnerability_has_range(vulnerability, introduced, fixed):
   return False
 
 
-def update_vulnerability(vulnerability, repo_url, result):
-  """Update vulnerability from AffectedResult."""
-  new_ranges = []
-  new_versions = []
-
-  # Add any additional discovered ranges.
-  for introduced, fixed in result.affected_ranges:
-    if not vulnerability_has_range(vulnerability, introduced, fixed):
-      new_ranges.append((repo_url, introduced, fixed))
-
-  # Add additional discovered versions.
-  for tag in result.tags:
-    if tag not in vulnerability.affects.versions:
-      new_versions.append(tag)
-
-  return new_ranges, new_versions
-
-
 def push_source_changes(repo,
                         commit_message,
                         git_callbacks,

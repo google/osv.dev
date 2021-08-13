@@ -658,12 +658,19 @@ class ImpactTest(unittest.TestCase):
             'purl': None,
             'related': [],
             'withdrawn': None,
-            'affected':
-                ['branch-v0.1.1', 'branch-v0.1.1-with-fix', 'v0.1.1', 'v0.2'],
-            'affected_fuzzy': ['0-1-1', '0-1-1', '0-1-1', '0-2'],
+            'affected': [
+                'branch-v0.1.1', 'branch-v0.1.1-with-fix',
+                'branch_1_cherrypick_regress', 'v0.1.1', 'v0.2'
+            ],
+            'affected_fuzzy': ['0-1-1', '0-1-1', '1', '0-1-1', '0-2'],
             'affected_ranges': [{
                 'fixed': '',
                 'introduced': 'eefe8ec3f1f90d0e684890e810f3f21e8500a4cd',
+                'repo_url': 'https://repo.com/repo',
+                'type': 'GIT'
+            }, {
+                'fixed': '',
+                'introduced': 'febfac1940086bc1f6d3dc33fda0a1d1ba336209',
                 'repo_url': 'https://repo.com/repo',
                 'type': 'GIT'
             }],
@@ -712,6 +719,8 @@ class ImpactTest(unittest.TestCase):
         'b587c21c36a84e16cfc6b39eb68578d43b5281ad',
         '88e5ae3c40c85b702ba89a34c29f233048abb12b',
         '3ea6feea9bb853596c727abab309476cc07d1505',
+        'febfac1940086bc1f6d3dc33fda0a1d1ba336209',
+        'ff8cc32ba60ad9cbb3b23f0a82aad96ebe9ff76b',
     ], [commit.commit for commit in affected_commits])
 
 
@@ -1103,10 +1112,17 @@ class UpdateTest(unittest.TestCase):
             'purl': None,
             'related': [],
             'withdrawn': None,
-            'affected': ['v0.1', 'v0.1.1'],
-            'affected_fuzzy': ['0-1', '0-1-1'],
+            'affected': [
+                'branch-v0.1.1', 'branch_1_cherrypick_regress', 'v0.1', 'v0.1.1'
+            ],
+            'affected_fuzzy': ['0-1-1', '1', '0-1', '0-1-1'],
             'affected_ranges': [{
                 'fixed': '8d8242f545e9cec3e6d0d2e3f5bde8be1c659735',
+                'introduced': '',
+                'repo_url': 'https://osv-test/repo/url',
+                'type': 'GIT'
+            }, {
+                'fixed': 'b9b3fd4732695b83c3068b7b6a14bb372ec31f98',
                 'introduced': '',
                 'repo_url': 'https://osv-test/repo/url',
                 'type': 'GIT'
@@ -1147,6 +1163,17 @@ class UpdateTest(unittest.TestCase):
         'eefe8ec3f1f90d0e684890e810f3f21e8500a4cd',
         'a2ba949290915d445d34d0e8e9de2e7ce38198fc',
         'e1b045257bc5ca2a11d0476474f45ef77a0366c7',
+        '00514d6f244f696e750a37083163992c6a50cfd3',
+        '25147a74d8aeb27b43665530ee121a2a1b19dc58',
+        '3c5dcf6a5bec14baab3b247d369a7270232e1b83',
+        '4c155795426727ea05575bd5904321def23c03f4',
+        '57e58a5d7c2bb3ce0f04f17ec0648b92ee82531f',
+        '90aa4127295b2c37b5f7fcf6a9772b12c99a5212',
+        '949f182716f037e25394bbb98d39b3295d230a29',
+        'b1fa81a5d59e9b4d6e276d82fc17058f3cf139d9',
+        'f0cc40d8c3dabb27c2cfe26f1764305abc91a0b9',
+        'febfac1940086bc1f6d3dc33fda0a1d1ba336209',
+        'ff8cc32ba60ad9cbb3b23f0a82aad96ebe9ff76b',
     ], [commit.commit for commit in affected_commits])
 
   def test_update_new(self):

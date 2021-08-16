@@ -30,6 +30,12 @@ import osv
 OSS_FUZZ_ISSUE_URL = 'https://bugs.chromium.org/p/oss-fuzz/issues/detail?id='
 SOURCE_PREFIX = 'oss-fuzz:'
 
+COMMIT_RANGE_LIMIT = 4
+
+# Used in cases where an earlier commit in a regression range cannot be
+# determined.
+UNKNOWN_COMMIT = 'unknown'
+
 # Large projects which take way too long to build.
 # TODO(ochang): Don't hardcode this.
 PROJECT_DENYLIST = {
@@ -48,7 +54,7 @@ def format_commit_range(old_commit, new_commit):
   if old_commit == new_commit:
     return old_commit
 
-  return (old_commit or osv.UNKNOWN_COMMIT) + ':' + new_commit
+  return (old_commit or UNKNOWN_COMMIT) + ':' + new_commit
 
 
 def find_oss_fuzz_fix_via_commit(repo, start_commit, end_commit, source_id,
@@ -224,6 +230,39 @@ def set_bug_attributes(bug, regress_result, fix_result):
   bug.fixed = fix_result.commit or ''
 
 
+def _get_commit_range(repo, commit_or_range):
+  """Get a commit range."""
+  if not commit_or_range:
+    return []
+
+  if ':' not in commit_or_range:
+    return [commit_or_range]
+
+  start_commit, end_commit = commit_or_range.split(':')
+  if start_commit == UNKNOWN_COMMIT:
+    # Special case: No information about earlier builds. Assume the end_commit
+    # is the regressing commit as that's the best we can do.
+    return [end_commit]
+
+  commits, _ = osv.get_commit_and_tag_list(repo, start_commit, end_commit)
+  return commits
+
+
+def _get_commits(repo, regress_commit_or_range, fix_commit_or_range):
+  """Get commits for analysis."""
+  regress_commits = _get_commit_range(repo, regress_commit_or_range)
+  if len(regress_commits) > COMMIT_RANGE_LIMIT:
+    raise osv.ImpactError('Too many commits in regression range.')
+
+  fix_commits = _get_commit_range(repo, fix_commit_or_range)
+  if len(fix_commits) > COMMIT_RANGE_LIMIT:
+    logging.warning('Too many commits in fix range.')
+    # Rather than bail out here and potentially leaving a Bug as "unfixed"
+    # indefinitely, we continue.
+
+  return regress_commits, fix_commits
+
+
 def process_impact_task(source_id, message):
   """Process an impact task."""
   logging.info('Processing impact task for %s', source_id)
@@ -285,20 +324,43 @@ def process_impact_task(source_id, message):
 
     # Actually compute the affected commits/tags.
     repo_analyzer = osv.RepoAnalyzer()
-    result = repo_analyzer.get_affected(repo, regress_result.commit, fix_commit)
+    regress_commits, fix_commits = _get_commits(repo, regress_result.commit,
+                                                fix_commit)
+
+    # If multiple, assume the first commit in the regression range cause the
+    # regression.
+    if regress_commits:
+      regress_commit_to_analyze = regress_commits[0]
+    else:
+      regress_commit_to_analyze = None
+
+    # If multiple, assume the last commit is necessary for fixing the
+    # regression.
+    if fix_commits:
+      fix_commit_to_analyze = fix_commits[-1]
+    else:
+      fix_commit_to_analyze = None
+
+    result = repo_analyzer.get_affected(repo, [regress_commit_to_analyze],
+                                        [fix_commit_to_analyze])
     affected_tags = sorted(list(result.tags))
     logging.info('Found affected %s', ', '.join(affected_tags))
 
+    if len(regress_commits) > 1 or len(fix_commits) > 1:
+      # Don't return ranges if input regressed and fixed commits are not single
+      # commits.
+      result.affected_ranges.clear()
+
   # If the range resolved to a single commit, simplify it.
-  if len(result.fix_commits) == 1:
-    fix_commit = result.fix_commits[0]
-  elif not result.fix_commits:
+  if len(fix_commits) == 1:
+    fix_commit = fix_commits[0]
+  elif not fix_commits:
     # Not fixed.
     fix_commit = ''
 
-  if (len(result.regress_commits) == 1 and
-      osv.UNKNOWN_COMMIT not in regress_result.commit):
-    regress_commit = result.regress_commits[0]
+  if (len(regress_commits) == 1 and
+      UNKNOWN_COMMIT not in regress_result.commit):
+    regress_commit = regress_commits[0]
   else:
     regress_commit = regress_result.commit
 
@@ -316,8 +378,8 @@ def process_impact_task(source_id, message):
 
   # For the AffectedRange, use the first commit in the regress commit range, and
   # the last commit in the fix commit range.
-  introduced = result.regress_commits[0] if result.regress_commits else ''
-  fixed = result.fix_commits[-1] if result.fix_commits else ''
+  introduced = regress_commits[0] if regress_commits else ''
+  fixed = fix_commits[-1] if fix_commits else ''
   existing_bug.affected_ranges = [
       osv.AffectedRange(
           type='GIT', repo_url=repo_url, introduced=introduced, fixed=fixed),

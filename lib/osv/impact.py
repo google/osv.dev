@@ -29,17 +29,10 @@ from . import repos
 from . import models
 from . import vulnerability_pb2
 
-COMMIT_RANGE_LIMIT = 4
-
 TAG_PREFIX = 'refs/tags/'
 
-# Used in cases where an earlier commit in a regression range cannot be
-# determined.
-UNKNOWN_COMMIT = 'unknown'
-
-AffectedResult = collections.namedtuple(
-    'AffectedResult', 'tags commits affected_ranges '
-    'regress_commits fix_commits')
+AffectedResult = collections.namedtuple('AffectedResult',
+                                        'tags commits affected_ranges')
 
 AnalyzeResult = collections.namedtuple('AnalyzeResult', 'has_changes commits')
 
@@ -92,45 +85,15 @@ class RepoAnalyzer:
   def __init__(self, detect_cherrypicks=True):
     self.detect_cherrypicks = detect_cherrypicks
 
-  def get_affected(self, repo, regress_commit_or_range, fix_commit_or_range):
+  def get_affected(self, repo, regress_commits, fix_commits):
     """"Get list of affected tags and commits for a bug given regressed and
     fixed commits."""
-    regress_commits = _get_commit_range(repo, regress_commit_or_range)
-    if len(regress_commits) > COMMIT_RANGE_LIMIT:
-      raise ImpactError('Too many commits in regression range.')
-
-    # If multiple, assume the first commit in the regression range cause the
-    # regression.
-    if regress_commits:
-      regress_commit = regress_commits[0]
-    else:
-      regress_commit = None
-
-    fix_commits = _get_commit_range(repo, fix_commit_or_range)
-    if len(fix_commits) > COMMIT_RANGE_LIMIT:
-      logging.warning('Too many commits in fix range.')
-      # Rather than bail out here and potentially leaving a Bug as "unfixed"
-      # indefinitely, we continue.
-
-    # If multiple, assume the last commit is necessary for fixing the
-    # regression.
-    if fix_commits:
-      fix_commit = fix_commits[-1]
-    else:
-      fix_commit = None
-
     affected_commits, affected_ranges, tags = self._get_affected_range(
-        repo, regress_commit, fix_commit)
+        repo, regress_commits, fix_commits)
 
-    if len(regress_commits) > 1 or len(fix_commits) > 1:
-      # Don't return ranges if input regressed and fixed commits are not single
-      # commits.
-      affected_ranges = []
+    return AffectedResult(tags, affected_commits, affected_ranges)
 
-    return AffectedResult(tags, affected_commits, affected_ranges,
-                          regress_commits, fix_commits)
-
-  def _get_affected_range(self, repo, regress_commit, fix_commit):
+  def _get_affected_range(self, repo, regress_commits, fix_commits):
     """Get affected range."""
     range_collector = RangeCollector()
     commits = set()
@@ -138,50 +101,52 @@ class RepoAnalyzer:
     tags = set()
     commits_to_tags = _get_commit_to_tag_mappings(repo)
 
-    is_complete_range = regress_commit and fix_commit
-    # Only actually detect cherrypicks if the input range includes both
-    # "introduced" and "fixed". Otherwise we may get false positives.
-    detect_cherrypicks = self.detect_cherrypicks and is_complete_range
-
     branches = []
-    if detect_cherrypicks:
+    if self.detect_cherrypicks:
       # Check all branches for cherry picked regress/fix commits (sorted for
       # determinism).
       branches = sorted(repo.branches.remote)
     else:
-      if fix_commit:
-        # If a fix commit is available, we don't really need to analyze any
-        # other branches.
-        branches = [repo.head.name.replace('refs/heads/', 'origin/')]
-      elif regress_commit:
+      if fix_commits:
+        # If not detecting cherry picks, take only branches that contain the fix
+        # commit. Otherwise we may have false positives.
+        for fix_commit in fix_commits:
+          branches.extend(_branches_with_commit(repo, fix_commit))
+      elif regress_commits:
         # If only a regress commit is available, we need to find all branches
         # that it reaches.
-        branches = _branches_with_commit(repo, regress_commit)
+        for regress_commit in regress_commits:
+          branches.extend(_branches_with_commit(repo, regress_commit))
 
     for branch in branches:
       ref = 'refs/remotes/' + branch
 
       # Get the earliest equivalent commit in the regression range.
-      if detect_cherrypicks:
+      equivalent_regress_commit = None
+      for regress_commit in regress_commits:
         logging.info('Finding equivalent regress commit to %s in %s',
                      regress_commit, ref)
         equivalent_regress_commit = self._get_equivalent_commit(
-            repo, ref, regress_commit, detect_cherrypicks=detect_cherrypicks)
-      else:
-        equivalent_regress_commit = regress_commit
+            repo,
+            ref,
+            regress_commit,
+            detect_cherrypicks=self.detect_cherrypicks)
+        if equivalent_regress_commit:
+          break
 
       # If regress_commits is provided, then we should find an equivalent.
-      if not equivalent_regress_commit and regress_commit:
+      if not equivalent_regress_commit and regress_commits:
         continue
 
       # Get the latest equivalent commit in the fix range.
-      if detect_cherrypicks:
+      equivalent_fix_commit = None
+      for fix_commit in fix_commits:
         logging.info('Finding equivalent fix commit to %s in %s', fix_commit,
                      ref)
         equivalent_fix_commit = self._get_equivalent_commit(
-            repo, ref, fix_commit, detect_cherrypicks=detect_cherrypicks)
-      else:
-        equivalent_fix_commit = fix_commit
+            repo, ref, fix_commit, detect_cherrypicks=self.detect_cherrypicks)
+        if equivalent_fix_commit:
+          break
 
       range_collector.add(equivalent_regress_commit, equivalent_fix_commit)
 
@@ -197,7 +162,7 @@ class RepoAnalyzer:
         continue
 
       seen_commits.add((equivalent_regress_commit, end_commit))
-      cur_commits, cur_tags = _get_commit_and_tag_list(
+      cur_commits, cur_tags = get_commit_and_tag_list(
           repo,
           equivalent_regress_commit,
           end_commit,
@@ -253,24 +218,6 @@ class RepoAnalyzer:
     return None
 
 
-def _get_commit_range(repo, commit_or_range):
-  """Get a commit range."""
-  if not commit_or_range:
-    return []
-
-  if ':' not in commit_or_range:
-    return [commit_or_range]
-
-  start_commit, end_commit = commit_or_range.split(':')
-  if start_commit == UNKNOWN_COMMIT:
-    # Special case: No information about earlier builds. Assume the end_commit
-    # is the regressing commit as that's the best we can do.
-    return [end_commit]
-
-  commits, _ = _get_commit_and_tag_list(repo, start_commit, end_commit)
-  return commits
-
-
 def _get_commit_to_tag_mappings(repo):
   """Get all commit to tag mappings"""
   mappings = {}
@@ -285,12 +232,12 @@ def _get_commit_to_tag_mappings(repo):
   return mappings
 
 
-def _get_commit_and_tag_list(repo,
-                             start_commit,
-                             end_commit,
-                             commits_to_tags=None,
-                             include_start=False,
-                             include_end=True):
+def get_commit_and_tag_list(repo,
+                            start_commit,
+                            end_commit,
+                            commits_to_tags=None,
+                            include_start=False,
+                            include_end=True):
   """Given a commit range, return the list of commits and tags in the range."""
   logging.info('Getting commits %s..%s', start_commit, end_commit)
   try:
@@ -412,10 +359,10 @@ def _analyze_git_ranges(repo_analyzer, checkout_path, vulnerability,
                         range_collectors, new_versions, commits):
   """Analyze git ranges."""
   package_repo_dir = tempfile.TemporaryDirectory()
-  package_repo_url = None
   package_repo = None
 
   try:
+    grouped_git_ranges = {}
     for affected_range in vulnerability.affects.ranges:
       if affected_range.type != vulnerability_pb2.AffectedRange.GIT:
         continue
@@ -425,38 +372,38 @@ def _analyze_git_ranges(repo_analyzer, checkout_path, vulnerability,
       fixed = affected_range.fixed or None
       range_collectors[affected_range.repo].add(introduced, fixed)
 
-    for affected_range in vulnerability.affects.ranges:
-      # Go through existing provided ranges to find additional ranges (via
-      # cherrypicks and branches).
-      if affected_range.type != vulnerability_pb2.AffectedRange.GIT:
-        continue
+      grouped_git_ranges.setdefault(affected_range.repo, []).append(
+          (introduced, fixed))
 
-      current_repo_url = affected_range.repo
+    for repo_url, affected_ranges in grouped_git_ranges.items():
       if checkout_path:
-        repo_name = os.path.basename(
-            current_repo_url.rstrip('/')).rstrip('.git')
+        repo_name = os.path.basename(repo_url.rstrip('/')).rstrip('.git')
         package_repo = repos.ensure_updated_checkout(
-            current_repo_url, os.path.join(checkout_path, repo_name))
+            repo_url, os.path.join(checkout_path, repo_name))
       else:
-        if current_repo_url != package_repo_url:
-          # Different repo from previous one.
-          package_repo_dir.cleanup()
-          package_repo_dir = tempfile.TemporaryDirectory()
-          package_repo_url = current_repo_url
-          package_repo = repos.clone_with_retries(package_repo_url,
-                                                  package_repo_dir.name)
+        package_repo_dir.cleanup()
+        package_repo_dir = tempfile.TemporaryDirectory()
+        package_repo = repos.clone_with_retries(repo_url, package_repo_dir.name)
+
+      all_introduced = []
+      all_fixed = []
+      for (introduced, fixed) in affected_ranges:
+        if introduced:
+          all_introduced.append(introduced)
+
+        if fixed:
+          all_fixed.append(fixed)
 
       try:
-        result = repo_analyzer.get_affected(package_repo,
-                                            affected_range.introduced,
-                                            affected_range.fixed)
+        result = repo_analyzer.get_affected(package_repo, all_introduced,
+                                            all_fixed)
       except ImpactError:
         logging.warning('Got error while analyzing git range: %s',
                         traceback.format_exc())
         continue
 
       for introduced, fixed in result.affected_ranges:
-        range_collectors[current_repo_url].add(introduced, fixed)
+        range_collectors[repo_url].add(introduced, fixed)
 
       new_versions.update(result.tags)
       commits.update(result.commits)

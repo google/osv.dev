@@ -453,17 +453,21 @@ class Bug(ndb.Model):
       for event in _sorted_events(affected_package.package.ecosystem,
                                   affected_range.type, affected_range.events):
         if event.type == 'introduced':
-          if cur_range.introduced:
-            if affected_range.type == 'GIT':
-              affects.ranges.append(cur_range)
-              cur_range = new_range()
+          if cur_range.introduced and affected_range.type == 'GIT':
+            # If this is GIT, then we need to store all "introduced", even if
+            # they overlap.
+            affects.ranges.append(cur_range)
+            cur_range = new_range()
 
           if not cur_range.introduced:
+            # If not GIT, ignore overlapping introduced versions since they're
+            # redundant.
             cur_range.introduced = event.value
             if cur_range.introduced == '0':
               cur_range.introduced = ''
 
         if event.type == 'fixed':
+          # Found a complete pair.
           cur_range.fixed = event.value
           affects.ranges.append(cur_range)
           cur_range = vulnerability_pb2.AffectedRange(
@@ -478,13 +482,14 @@ class Bug(ndb.Model):
 
   def to_vulnerability(self, include_source=False):
     """Convert to Vulnerability proto."""
-    # Currently the schema only supports a single package, so we take the first.
     package = None
     ecosystem_specific = None
     database_specific = None
     affects = None
 
     if self.affected_packages:
+      # The pre-0.8 schema only supports a single package, so we take the
+      # first.
       affected_package = self.affected_packages[0]
 
       package = vulnerability_pb2.Package(

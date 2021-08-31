@@ -285,7 +285,7 @@ class ImporterTest(unittest.TestCase):
     self.mock_repo.commit('OSV', 'infra@osv.dev')
     osv.Bug(
         db_id='OSV-2021-1337',
-        project='proj',
+        project=['proj'],
         fixed='',
         status=1,
         source_id='oss-fuzz:123',

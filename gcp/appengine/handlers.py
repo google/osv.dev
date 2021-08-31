@@ -185,32 +185,6 @@ def process_results():
   return 'done'
 
 
-@blueprint.route(_CRON_ROUTE + '/generate-package-info-tasks')
-def generate_package_info_tasks():
-  """Generate package_info tasks."""
-  if not request.headers.get('X-Appengine-Cron'):
-    abort(403)
-
-  publisher = pubsub_v1.PublisherClient()
-  query = osv.Bug.query(distinct_on=(osv.Bug.project, osv.Bug.ecosystem))
-  for result in query:
-    if not result.project:
-      continue
-
-    if result.ecosystem is None:
-      # Invalid/incomplete bug.
-      continue
-
-    publisher.publish(
-        _TASKS_TOPIC,
-        data=b'',
-        type='package_info',
-        package_name=result.project,
-        ecosystem=result.ecosystem)
-
-  return 'done'
-
-
 @blueprint.route(_CRON_ROUTE + '/backup')
 def backup():
   """Create a Datastore backup."""

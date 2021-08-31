@@ -574,29 +574,29 @@ class UpdateTest(unittest.TestCase, ExpectationTest):
 
     osv.Bug(
         db_id='BLAH-123',
-        project='blah.com/package',
-        ecosystem='golang',
+        project=['blah.com/package'],
+        ecosystem=['golang'],
         source_id='source:BLAH-123.yaml',
         source_of_truth=osv.SourceOfTruth.SOURCE_REPO).put()
     osv.Bug(
         db_id='BLAH-124',
         regressed='eefe8ec3f1f90d0e684890e810f3f21e8500a4cd',
-        project='blah.com/package',
-        ecosystem='golang',
+        project=['blah.com/package'],
+        ecosystem=['golang'],
         source_id='source:BLAH-124.yaml',
         source_of_truth=osv.SourceOfTruth.SOURCE_REPO).put()
     osv.Bug(
         db_id='BLAH-125',
         regressed='eefe8ec3f1f90d0e684890e810f3f21e8500a4cd',
         fixed='8d8242f545e9cec3e6d0d2e3f5bde8be1c659735',
-        project='blah.com/package',
-        ecosystem='golang',
+        project=['blah.com/package'],
+        ecosystem=['golang'],
         source_id='source:BLAH-125.yaml',
         source_of_truth=osv.SourceOfTruth.SOURCE_REPO).put()
     osv.Bug(
         db_id='BLAH-127',
-        project='blah.com/package',
-        ecosystem='golang',
+        project=['blah.com/package'],
+        ecosystem=['golang'],
         source_id='source:BLAH-127.yaml',
         source_of_truth=osv.SourceOfTruth.SOURCE_REPO).put()
 

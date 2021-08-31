@@ -225,13 +225,12 @@ class Bug(ndb.Model):
   affected_fuzzy = ndb.StringProperty(repeated=True)
   # OSS-Fuzz issue ID.
   issue_id = ndb.StringProperty()
-  # TODO(ochang): Turn these into repeated properties.
   # Package URL for this package.
-  purl = ndb.StringProperty()
+  purl = ndb.StringProperty(repeated=True)
   # Project/package name for the bug.
-  project = ndb.StringProperty()
+  project = ndb.StringProperty(repeated=True)
   # Package ecosystem for the project.
-  ecosystem = ndb.StringProperty()
+  ecosystem = ndb.StringProperty(repeated=True)
   # Summary for the bug.
   summary = ndb.TextProperty()
   # Vulnerability details.
@@ -311,11 +310,23 @@ class Bug(ndb.Model):
     search_indices.update(self._tokenize(self.id()))
 
     if self.affected_packages:
-      self.project = self.affected_packages[0].package.name
-      self.ecosystem = self.affected_packages[0].package.ecosystem
+      self.project = [
+          pkg.package.name for pkg in self.affected_packages if pkg.package.name
+      ]
+      self.ecosystem = [
+          pkg.package.ecosystem
+          for pkg in self.affected_packages
+          if pkg.package.ecosystem
+      ]
+      self.purl = [
+          pkg.package.purl for pkg in self.affected_packages if pkg.package.purl
+      ]
 
-      search_indices.update(self._tokenize(self.project))
-      search_indices.update(self._tokenize(self.ecosystem))
+      for project in self.project:
+        search_indices.update(self._tokenize(project))
+
+      for ecosystem in self.ecosystem:
+        search_indices.update(self._tokenize(ecosystem))
 
     self.search_indices = sorted(list(search_indices))
 

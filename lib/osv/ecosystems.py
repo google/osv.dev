@@ -18,13 +18,19 @@ import packaging.version
 
 import requests
 
+from . import semver_index
+
 
 class Ecosystem:
   """Ecosystem helpers."""
 
+  def sort_key(self, version):
+    """Sort key."""
+    raise NotImplementedError
+
   def sort_versions(self, versions):
     """Sort versions."""
-    raise NotImplementedError
+    versions.sort(key=self.sort_key)
 
   def enumerate_versions(self, package, introduced, fixed):
     """Enumerate versions."""
@@ -38,9 +44,9 @@ class Ecosystem:
 class SemverEcosystem(Ecosystem):
   """Generic semver ecosystem helpers."""
 
-  def sort_versions(self, versions):
-    """Sort versions (no-op)."""
-    del versions
+  def sort_key(self, version):
+    """Sort key."""
+    return semver_index.parse(version)
 
   def enumerate_versions(self, package, introduced, fixed):
     """Enumerate versions (no-op)."""
@@ -62,9 +68,9 @@ class PyPI(Ecosystem):
 
   _API_PACKAGE_URL = 'https://pypi.org/pypi/{package}/json'
 
-  def sort_versions(self, versions):
-    """Sort versions."""
-    versions.sort(key=packaging.version.parse)
+  def sort_key(self, version):
+    """Sort key."""
+    return packaging.version.parse(version)
 
   def enumerate_versions(self, package, introduced, fixed):
     """Enumerate versions."""

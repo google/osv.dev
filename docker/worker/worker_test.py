@@ -12,8 +12,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Worker tests."""
+# pylint: disable=line-too-long
 import datetime
 import os
+import pprint
 import shutil
 import tempfile
 import unittest
@@ -34,6 +36,24 @@ TEST_DATA_DIR = os.path.join(
 ndb_client = None
 
 # pylint: disable=protected-access,invalid-name
+
+
+class ExpectationTest:
+  """Mixin for test output generation/comparison."""
+
+  def expect_dict_equal(self, expected_name, actual):
+    """Check if the output dict is equal to the expected value."""
+    expected_path = os.path.join(
+        TEST_DATA_DIR, f'{self.__class__.__name__}_{expected_name}.txt')
+    if os.getenv('TESTS_GENERATE'):
+      pp = pprint.PrettyPrinter(indent=4)
+      with open(expected_path, 'w') as f:
+        f.write(pp.pformat(actual))
+
+    with open(expected_path) as f:
+      expected = eval(f.read())  # pylint: disable=eval-used
+
+    self.assertDictEqual(expected, actual)
 
 
 class OssFuzzDetailsTest(unittest.TestCase):
@@ -107,7 +127,7 @@ class OssFuzzDetailsTest(unittest.TestCase):
         'Bar\n', details)
 
 
-class ImpactTest(unittest.TestCase):
+class ImpactTest(unittest.TestCase, ExpectationTest):
   """Impact task tests."""
 
   def setUp(self):
@@ -169,67 +189,10 @@ class ImpactTest(unittest.TestCase):
     fix_result.put()
 
     oss_fuzz.process_impact_task('oss-fuzz:123', message)
-    self.assertDictEqual(
-        {
-            'db_id': 'OSV-2020-1337',
-            'aliases': [],
-            'purl': None,
-            'related': [],
-            'withdrawn': None,
-            'affected':
-                ['branch-v0.1.1', 'branch_1_cherrypick_regress', 'v0.1.1'],
-            'affected_fuzzy': ['0-1-1', '1', '0-1-1'],
-            'affected_ranges': [{
-                'fixed': '8d8242f545e9cec3e6d0d2e3f5bde8be1c659735',
-                'introduced': 'eefe8ec3f1f90d0e684890e810f3f21e8500a4cd',
-                'repo_url': 'https://repo.com/repo',
-                'type': 'GIT'
-            }, {
-                'fixed': 'b9b3fd4732695b83c3068b7b6a14bb372ec31f98',
-                'introduced': 'eefe8ec3f1f90d0e684890e810f3f21e8500a4cd',
-                'repo_url': 'https://repo.com/repo',
-                'type': 'GIT'
-            }, {
-                'fixed': '',
-                'introduced': 'febfac1940086bc1f6d3dc33fda0a1d1ba336209',
-                'repo_url': 'https://repo.com/repo',
-                'type': 'GIT'
-            }],
-            'fixed': '8d8242f545e9cec3e6d0d2e3f5bde8be1c659735',
-            'regressed': 'eefe8ec3f1f90d0e684890e810f3f21e8500a4cd',
-            'issue_id': '9001',
-            'is_fixed': True,
-            'last_modified': datetime.datetime(2021, 1, 1, 0, 0),
-            'timestamp': datetime.datetime(2020, 1, 1),
-            'source_id': 'oss-fuzz:123',
-            'project': 'project',
-            'ecosystem': 'ecosystem',
-            'summary': 'Heap-buffer-overflow in Foo',
-            'details': 'DETAILS',
-            'severity': 'MEDIUM',
-            'source_of_truth': osv.SourceOfTruth.INTERNAL,
-            'public': False,
-            'reference_url_types': {
-                'https://url/': 'WEB'
-            },
-            'status': osv.BugStatus.PROCESSED.value,
-            'has_affected': True,
-            'search_indices': [
-                '1337', '2020', 'ecosystem', 'osv', 'osv-2020-1337', 'project'
-            ],
-            'ecosystem_specific': {
-                'severity': 'MEDIUM'
-            },
-            'database_specific': None,
-            'semver_fixed_indexes': [],
-            'source': 'oss-fuzz',
-        },
-        ndb.Key(osv.Bug, 'OSV-2020-1337').get()._to_dict())
+    self.expect_dict_equal('basic',
+                           ndb.Key(osv.Bug, 'OSV-2020-1337').get()._to_dict())
 
     affected_commits = list(osv.AffectedCommit.query())
-    for commit in affected_commits:
-      self.assertEqual('project', commit.project)
-
     self.assertCountEqual([
         'ff8cc32ba60ad9cbb3b23f0a82aad96ebe9ff76b',
         'febfac1940086bc1f6d3dc33fda0a1d1ba336209',
@@ -272,62 +235,10 @@ class ImpactTest(unittest.TestCase):
     fix_result.put()
 
     oss_fuzz.process_impact_task('oss-fuzz:123', message)
-    self.assertDictEqual(
-        {
-            'db_id': 'OSV-2020-1337',
-            'aliases': [],
-            'purl': None,
-            'related': [],
-            'withdrawn': None,
-            'affected': [
-                'branch-v0.1.1', 'branch-v0.1.1-with-fix',
-                'branch_1_cherrypick_regress', 'v0.1.1', 'v0.2'
-            ],
-            'affected_fuzzy': ['0-1-1', '0-1-1', '1', '0-1-1', '0-2'],
-            'affected_ranges': [{
-                'fixed': '36f0bd9549298b44f9ff2496c9dd1326b3a9d0e2',
-                'introduced': 'eefe8ec3f1f90d0e684890e810f3f21e8500a4cd',
-                'repo_url': 'https://repo.com/repo',
-                'type': 'GIT'
-            }],
-            'fixed': ('b1c95a196f22d06fcf80df8c6691cd113d8fefff:'
-                      '36f0bd9549298b44f9ff2496c9dd1326b3a9d0e2'),
-            'regressed': 'eefe8ec3f1f90d0e684890e810f3f21e8500a4cd',
-            'issue_id': '9001',
-            'is_fixed': True,
-            'last_modified': datetime.datetime(2021, 1, 1, 0, 0),
-            'timestamp': datetime.datetime(2020, 1, 1),
-            'source_id': 'oss-fuzz:123',
-            'project': 'project',
-            'ecosystem': 'ecosystem',
-            'summary': 'Heap-buffer-overflow in Foo',
-            'details': 'DETAILS',
-            'reference_url_types': {
-                'https://url/': 'WEB'
-            },
-            'severity': 'MEDIUM',
-            'source_of_truth': osv.SourceOfTruth.INTERNAL,
-            'public': False,
-            'status': osv.BugStatus.PROCESSED.value,
-            'has_affected': True,
-            'search_indices': [
-                '1337', '2020', 'ecosystem', 'osv', 'osv-2020-1337', 'project'
-            ],
-            'ecosystem_specific': {
-                'severity': 'MEDIUM'
-            },
-            'database_specific': {
-                'fixed_range': 'b1c95a196f22d06fcf80df8c6691cd113d8fefff:'
-                               '36f0bd9549298b44f9ff2496c9dd1326b3a9d0e2'
-            },
-            'semver_fixed_indexes': [],
-            'source': 'oss-fuzz',
-        },
-        ndb.Key(osv.Bug, 'OSV-2020-1337').get()._to_dict())
+    self.expect_dict_equal('range',
+                           ndb.Key(osv.Bug, 'OSV-2020-1337').get()._to_dict())
 
     affected_commits = list(osv.AffectedCommit.query())
-    for commit in affected_commits:
-      self.assertEqual('project', commit.project)
 
     self.assertCountEqual([
         'b9b3fd4732695b83c3068b7b6a14bb372ec31f98',
@@ -373,62 +284,10 @@ class ImpactTest(unittest.TestCase):
     fix_result.put()
 
     oss_fuzz.process_impact_task('oss-fuzz:123', message)
-    self.assertDictEqual(
-        {
-            'db_id': 'OSV-2020-1337',
-            'aliases': [],
-            'purl': None,
-            'related': [],
-            'withdrawn': None,
-            'affected': [
-                'branch-v0.1.1', 'branch-v0.1.1-with-fix',
-                'branch_1_cherrypick_regress', 'v0.1.1', 'v0.2'
-            ],
-            'affected_fuzzy': ['0-1-1', '0-1-1', '1', '0-1-1', '0-2'],
-            'affected_ranges': [{
-                'fixed': 'b587c21c36a84e16cfc6b39eb68578d43b5281ad',
-                'introduced': 'eefe8ec3f1f90d0e684890e810f3f21e8500a4cd',
-                'repo_url': 'https://repo.com/repo',
-                'type': 'GIT'
-            }],
-            'database_specific': {
-                'fixed_range': 'eefe8ec3f1f90d0e684890e810f3f21e8500a4cd:'
-                               'b587c21c36a84e16cfc6b39eb68578d43b5281ad'
-            },
-            'regressed': 'eefe8ec3f1f90d0e684890e810f3f21e8500a4cd',
-            'fixed': ('eefe8ec3f1f90d0e684890e810f3f21e8500a4cd:'
-                      'b587c21c36a84e16cfc6b39eb68578d43b5281ad'),
-            'issue_id': '9001',
-            'is_fixed': True,
-            'last_modified': datetime.datetime(2021, 1, 1, 0, 0),
-            'timestamp': datetime.datetime(2020, 1, 1),
-            'source_id': 'oss-fuzz:123',
-            'project': 'project',
-            'ecosystem': 'ecosystem',
-            'summary': 'Heap-buffer-overflow in Foo',
-            'details': 'DETAILS',
-            'reference_url_types': {
-                'https://url/': 'WEB'
-            },
-            'severity': 'MEDIUM',
-            'source_of_truth': osv.SourceOfTruth.INTERNAL,
-            'public': False,
-            'status': osv.BugStatus.PROCESSED.value,
-            'has_affected': True,
-            'search_indices': [
-                '1337', '2020', 'ecosystem', 'osv', 'osv-2020-1337', 'project'
-            ],
-            'ecosystem_specific': {
-                'severity': 'MEDIUM'
-            },
-            'semver_fixed_indexes': [],
-            'source': 'oss-fuzz',
-        },
-        ndb.Key(osv.Bug, 'OSV-2020-1337').get()._to_dict())
+    self.expect_dict_equal('fixed_range_too_long',
+                           ndb.Key(osv.Bug, 'OSV-2020-1337').get()._to_dict())
 
     affected_commits = list(osv.AffectedCommit.query())
-    for commit in affected_commits:
-      self.assertEqual('project', commit.project)
 
     self.assertCountEqual([
         'b9b3fd4732695b83c3068b7b6a14bb372ec31f98',
@@ -475,59 +334,10 @@ class ImpactTest(unittest.TestCase):
     fix_result.put()
 
     oss_fuzz.process_impact_task('oss-fuzz:123', message)
-    self.assertDictEqual(
-        {
-            'db_id': 'OSV-2020-1337',
-            'aliases': [],
-            'purl': None,
-            'related': [],
-            'withdrawn': None,
-            'affected':
-                ['branch-v0.1.1', 'branch_1_cherrypick_regress', 'v0.1.1'],
-            'affected_fuzzy': ['0-1-1', '1', '0-1-1'],
-            'affected_ranges': [{
-                'fixed': '8d8242f545e9cec3e6d0d2e3f5bde8be1c659735',
-                'introduced': 'eefe8ec3f1f90d0e684890e810f3f21e8500a4cd',
-                'repo_url': 'https://repo.com/repo',
-                'type': 'GIT'
-            }],
-            'fixed': '8d8242f545e9cec3e6d0d2e3f5bde8be1c659735',
-            'regressed': 'unknown:eefe8ec3f1f90d0e684890e810f3f21e8500a4cd',
-            'issue_id': '9001',
-            'is_fixed': True,
-            'last_modified': datetime.datetime(2021, 1, 1, 0, 0),
-            'timestamp': datetime.datetime(2020, 1, 1),
-            'source_id': 'oss-fuzz:123',
-            'project': 'project',
-            'ecosystem': 'ecosystem',
-            'summary': 'Heap-buffer-overflow in Foo',
-            'details': 'DETAILS',
-            'severity': 'MEDIUM',
-            'source_of_truth': osv.SourceOfTruth.INTERNAL,
-            'reference_url_types': {
-                'https://url/': 'WEB'
-            },
-            'public': False,
-            'status': osv.BugStatus.PROCESSED.value,
-            'has_affected': True,
-            'search_indices': [
-                '1337', '2020', 'ecosystem', 'osv', 'osv-2020-1337', 'project'
-            ],
-            'ecosystem_specific': {
-                'severity': 'MEDIUM'
-            },
-            'database_specific': {
-                'introduced_range': 'unknown:'
-                                    'eefe8ec3f1f90d0e684890e810f3f21e8500a4cd'
-            },
-            'semver_fixed_indexes': [],
-            'source': 'oss-fuzz',
-        },
-        ndb.Key(osv.Bug, 'OSV-2020-1337').get()._to_dict())
+    self.expect_dict_equal('zero_regression_range',
+                           ndb.Key(osv.Bug, 'OSV-2020-1337').get()._to_dict())
 
     affected_commits = list(osv.AffectedCommit.query())
-    for commit in affected_commits:
-      self.assertEqual('project', commit.project)
 
     self.assertCountEqual([
         'ff8cc32ba60ad9cbb3b23f0a82aad96ebe9ff76b',
@@ -572,62 +382,8 @@ class ImpactTest(unittest.TestCase):
     fix_result.put()
 
     oss_fuzz.process_impact_task('oss-fuzz:123', message)
-    self.assertDictEqual(
-        {
-            'db_id': 'OSV-2020-1337',
-            'aliases': [],
-            'purl': None,
-            'related': [],
-            'withdrawn': None,
-            'affected':
-                ['branch-v0.1.1', 'branch_1_cherrypick_regress', 'v0.1.1'],
-            'affected_fuzzy': ['0-1-1', '1', '0-1-1'],
-            'affected_ranges': [{
-                'fixed': '8d8242f545e9cec3e6d0d2e3f5bde8be1c659735',
-                'introduced': 'eefe8ec3f1f90d0e684890e810f3f21e8500a4cd',
-                'repo_url': 'https://repo.com/repo',
-                'type': 'GIT'
-            }, {
-                'fixed': 'b9b3fd4732695b83c3068b7b6a14bb372ec31f98',
-                'introduced': 'eefe8ec3f1f90d0e684890e810f3f21e8500a4cd',
-                'repo_url': 'https://repo.com/repo',
-                'type': 'GIT'
-            }, {
-                'fixed': '',
-                'introduced': 'febfac1940086bc1f6d3dc33fda0a1d1ba336209',
-                'repo_url': 'https://repo.com/repo',
-                'type': 'GIT'
-            }],
-            'fixed': '8d8242f545e9cec3e6d0d2e3f5bde8be1c659735',
-            'regressed': 'eefe8ec3f1f90d0e684890e810f3f21e8500a4cd',
-            'issue_id': '9001',
-            'is_fixed': True,
-            'last_modified': datetime.datetime(2021, 1, 1, 0, 0),
-            'timestamp': datetime.datetime(2020, 1, 1),
-            'source_id': 'oss-fuzz:123',
-            'project': 'project',
-            'ecosystem': 'ecosystem',
-            'summary': 'Heap-buffer-overflow in Foo',
-            'details': 'DETAILS',
-            'severity': 'MEDIUM',
-            'source_of_truth': osv.SourceOfTruth.INTERNAL,
-            'reference_url_types': {
-                'https://url/': 'WEB'
-            },
-            'public': False,
-            'status': osv.BugStatus.PROCESSED.value,
-            'has_affected': True,
-            'search_indices': [
-                '1337', '2020', 'ecosystem', 'osv', 'osv-2020-1337', 'project'
-            ],
-            'ecosystem_specific': {
-                'severity': 'MEDIUM'
-            },
-            'database_specific': None,
-            'semver_fixed_indexes': [],
-            'source': 'oss-fuzz',
-        },
-        ndb.Key(osv.Bug, 'OSV-2020-1337').get()._to_dict())
+    self.expect_dict_equal('simplify_range',
+                           ndb.Key(osv.Bug, 'OSV-2020-1337').get()._to_dict())
 
   def test_not_fixed(self):
     """Test not fixed bug."""
@@ -651,64 +407,10 @@ class ImpactTest(unittest.TestCase):
     regress_result.put()
 
     oss_fuzz.process_impact_task('oss-fuzz:123', message)
-    self.assertDictEqual(
-        {
-            'db_id': 'OSV-2020-1337',
-            'aliases': [],
-            'purl': None,
-            'related': [],
-            'withdrawn': None,
-            'affected': [
-                'branch-v0.1.1', 'branch-v0.1.1-with-fix',
-                'branch_1_cherrypick_regress', 'v0.1.1', 'v0.2'
-            ],
-            'affected_fuzzy': ['0-1-1', '0-1-1', '1', '0-1-1', '0-2'],
-            'affected_ranges': [{
-                'fixed': '',
-                'introduced': 'eefe8ec3f1f90d0e684890e810f3f21e8500a4cd',
-                'repo_url': 'https://repo.com/repo',
-                'type': 'GIT'
-            }, {
-                'fixed': '',
-                'introduced': 'febfac1940086bc1f6d3dc33fda0a1d1ba336209',
-                'repo_url': 'https://repo.com/repo',
-                'type': 'GIT'
-            }],
-            'fixed': '',
-            'regressed': 'eefe8ec3f1f90d0e684890e810f3f21e8500a4cd',
-            'issue_id': '9001',
-            'is_fixed': False,
-            'last_modified': datetime.datetime(2021, 1, 1, 0, 0),
-            'timestamp': datetime.datetime(2020, 1, 1),
-            'source_id': 'oss-fuzz:123',
-            'project': 'project',
-            'ecosystem': 'ecosystem',
-            'summary': 'Heap-buffer-overflow in Foo',
-            'details': 'DETAILS',
-            'severity': 'MEDIUM',
-            'source_of_truth': osv.SourceOfTruth.INTERNAL,
-            'reference_url_types': {
-                'https://url/': 'WEB'
-            },
-            'public': False,
-            'status': osv.BugStatus.PROCESSED.value,
-            'has_affected': True,
-            'search_indices': [
-                '1337', '2020', 'ecosystem', 'osv', 'osv-2020-1337', 'project'
-            ],
-            'ecosystem_specific': {
-                'severity': 'MEDIUM'
-            },
-            'database_specific': None,
-            'semver_fixed_indexes': [],
-            'source': 'oss-fuzz',
-        },
-        ndb.Key(osv.Bug, 'OSV-2020-1337').get()._to_dict())
+    self.expect_dict_equal('not_fixed',
+                           ndb.Key(osv.Bug, 'OSV-2020-1337').get()._to_dict())
 
     affected_commits = list(osv.AffectedCommit.query())
-    for commit in affected_commits:
-      self.assertEqual('project', commit.project)
-
     self.assertCountEqual([
         '4c155795426727ea05575bd5904321def23c03f4',
         'b1c95a196f22d06fcf80df8c6691cd113d8fefff',
@@ -818,7 +520,7 @@ class FindOssFuzzFixViaCommitTest(unittest.TestCase):
     self.assertIsNone(commit)
 
 
-class UpdateTest(unittest.TestCase):
+class UpdateTest(unittest.TestCase, ExpectationTest):
   """Vulnerability update tests."""
 
   def mock_clone(self, repo_url, *args, **kwargs):
@@ -924,61 +626,7 @@ class UpdateTest(unittest.TestCase):
     diff = repo.diff(commit.parents[0], commit)
     self.assertEqual(self._load_test_data('expected.diff'), diff.patch)
 
-    self.assertDictEqual(
-        {
-            'db_id': 'BLAH-123',
-            'aliases': [],
-            'purl': None,
-            'related': [],
-            'withdrawn': None,
-            'affected_ranges': [{
-                'fixed': '8d8242f545e9cec3e6d0d2e3f5bde8be1c659735',
-                'introduced': 'eefe8ec3f1f90d0e684890e810f3f21e8500a4cd',
-                'repo_url': 'https://osv-test/repo/url',
-                'type': 'GIT'
-            }, {
-                'fixed': 'b9b3fd4732695b83c3068b7b6a14bb372ec31f98',
-                'introduced': 'eefe8ec3f1f90d0e684890e810f3f21e8500a4cd',
-                'repo_url': 'https://osv-test/repo/url',
-                'type': 'GIT'
-            }, {
-                'fixed': '',
-                'introduced': 'febfac1940086bc1f6d3dc33fda0a1d1ba336209',
-                'repo_url': 'https://osv-test/repo/url',
-                'type': 'GIT'
-            }],
-            'affected':
-                ['branch-v0.1.1', 'branch_1_cherrypick_regress', 'v0.1.1'],
-            'affected_fuzzy': ['0-1-1', '1', '0-1-1'],
-            'details': 'Blah blah blah\nBlah\n',
-            'ecosystem': 'golang',
-            'fixed': '',
-            'has_affected': True,
-            'issue_id': None,
-            'is_fixed': True,
-            'last_modified': datetime.datetime(2021, 1, 1, 0, 0),
-            'project': 'blah.com/package',
-            'public': True,
-            'reference_url_types': {
-                'https://ref.com/ref': 'WEB'
-            },
-            'regressed': '',
-            'search_indices': [
-                '123', 'blah', 'blah-123', 'blah.com/package', 'com', 'golang',
-                'package'
-            ],
-            'severity': None,
-            'source_id': 'source:BLAH-123.yaml',
-            'source_of_truth': osv.SourceOfTruth.SOURCE_REPO,
-            'status': osv.BugStatus.PROCESSED,
-            'summary': 'A vulnerability',
-            'timestamp': None,
-            'ecosystem_specific': None,
-            'database_specific': None,
-            'semver_fixed_indexes': [],
-            'source': 'source',
-        },
-        osv.Bug.get_by_id('BLAH-123')._to_dict())
+    self.expect_dict_equal('update', osv.Bug.get_by_id('BLAH-123')._to_dict())
 
     affected_commits = list(osv.AffectedCommit.query())
     self.assertCountEqual([
@@ -1016,61 +664,8 @@ class UpdateTest(unittest.TestCase):
     diff = repo.diff(commit.parents[0], commit)
     self.assertEqual(self._load_test_data('expected_add_fix.diff'), diff.patch)
 
-    self.assertDictEqual(
-        {
-            'db_id': 'BLAH-124',
-            'aliases': [],
-            'purl': None,
-            'related': [],
-            'withdrawn': None,
-            'affected':
-                ['branch-v0.1.1', 'branch_1_cherrypick_regress', 'v0.1.1'],
-            'affected_fuzzy': ['0-1-1', '1', '0-1-1'],
-            'affected_ranges': [{
-                'fixed': '8d8242f545e9cec3e6d0d2e3f5bde8be1c659735',
-                'introduced': 'eefe8ec3f1f90d0e684890e810f3f21e8500a4cd',
-                'repo_url': 'https://osv-test/repo/url',
-                'type': 'GIT'
-            }, {
-                'fixed': 'b9b3fd4732695b83c3068b7b6a14bb372ec31f98',
-                'introduced': 'eefe8ec3f1f90d0e684890e810f3f21e8500a4cd',
-                'repo_url': 'https://osv-test/repo/url',
-                'type': 'GIT'
-            }, {
-                'fixed': '',
-                'introduced': 'febfac1940086bc1f6d3dc33fda0a1d1ba336209',
-                'repo_url': 'https://osv-test/repo/url',
-                'type': 'GIT'
-            }],
-            'details': 'Blah blah blah\nBlah\n',
-            'ecosystem': 'golang',
-            'fixed': '',
-            'has_affected': True,
-            'issue_id': None,
-            'is_fixed': True,
-            'last_modified': datetime.datetime(2021, 1, 1, 0, 0),
-            'project': 'blah.com/package',
-            'public': True,
-            'reference_url_types': {
-                'https://ref.com/ref': 'WEB'
-            },
-            'regressed': 'eefe8ec3f1f90d0e684890e810f3f21e8500a4cd',
-            'search_indices': [
-                '124', 'blah', 'blah-124', 'blah.com/package', 'com', 'golang',
-                'package'
-            ],
-            'severity': None,
-            'source_id': 'source:BLAH-124.yaml',
-            'source_of_truth': osv.SourceOfTruth.SOURCE_REPO,
-            'status': osv.BugStatus.PROCESSED,
-            'summary': 'A vulnerability',
-            'timestamp': None,
-            'ecosystem_specific': None,
-            'database_specific': None,
-            'semver_fixed_indexes': [],
-            'source': 'source',
-        },
-        osv.Bug.get_by_id('BLAH-124')._to_dict())
+    self.expect_dict_equal('update_add_fix',
+                           osv.Bug.get_by_id('BLAH-124')._to_dict())
 
     affected_commits = list(osv.AffectedCommit.query())
     self.assertCountEqual([
@@ -1105,57 +700,8 @@ class UpdateTest(unittest.TestCase):
     diff = repo.diff(commit.parents[0], commit)
     self.assertEqual(self._load_test_data('expected_127.diff'), diff.patch)
 
-    self.assertDictEqual(
-        {
-            'db_id': 'BLAH-127',
-            'aliases': [],
-            'purl': None,
-            'related': [],
-            'withdrawn': None,
-            'affected': [
-                'branch-v0.1.1', 'branch_1_cherrypick_regress', 'v0.1', 'v0.1.1'
-            ],
-            'affected_fuzzy': ['0-1-1', '1', '0-1', '0-1-1'],
-            'affected_ranges': [{
-                'fixed': '8d8242f545e9cec3e6d0d2e3f5bde8be1c659735',
-                'introduced': '',
-                'repo_url': 'https://osv-test/repo/url',
-                'type': 'GIT'
-            }, {
-                'fixed': 'b9b3fd4732695b83c3068b7b6a14bb372ec31f98',
-                'introduced': '',
-                'repo_url': 'https://osv-test/repo/url',
-                'type': 'GIT'
-            }],
-            'details': 'Blah blah blah\nBlah\n',
-            'ecosystem': 'golang',
-            'fixed': '',
-            'has_affected': True,
-            'issue_id': None,
-            'is_fixed': True,
-            'last_modified': datetime.datetime(2021, 1, 1, 0, 0),
-            'project': 'blah.com/package',
-            'public': True,
-            'reference_url_types': {
-                'https://ref.com/ref': 'WEB'
-            },
-            'regressed': '',
-            'search_indices': [
-                '127', 'blah', 'blah-127', 'blah.com/package', 'com', 'golang',
-                'package'
-            ],
-            'severity': None,
-            'source_id': 'source:BLAH-127.yaml',
-            'source_of_truth': osv.SourceOfTruth.SOURCE_REPO,
-            'status': osv.BugStatus.PROCESSED,
-            'summary': 'A vulnerability',
-            'timestamp': None,
-            'ecosystem_specific': None,
-            'database_specific': None,
-            'semver_fixed_indexes': [],
-            'source': 'source',
-        },
-        osv.Bug.get_by_id('BLAH-127')._to_dict())
+    self.expect_dict_equal('update_no_introduced',
+                           osv.Bug.get_by_id('BLAH-127')._to_dict())
 
     affected_commits = list(osv.AffectedCommit.query())
     self.assertCountEqual([
@@ -1202,61 +748,8 @@ class UpdateTest(unittest.TestCase):
     self.assertEqual('OSV', commit.author.name)
     self.assertEqual('Update BLAH-126', commit.message)
 
-    self.assertDictEqual(
-        {
-            'db_id': 'BLAH-126',
-            'aliases': [],
-            'purl': None,
-            'related': [],
-            'withdrawn': None,
-            'affected':
-                ['branch-v0.1.1', 'branch_1_cherrypick_regress', 'v0.1.1'],
-            'affected_fuzzy': ['0-1-1', '1', '0-1-1'],
-            'affected_ranges': [{
-                'fixed': '8d8242f545e9cec3e6d0d2e3f5bde8be1c659735',
-                'introduced': 'eefe8ec3f1f90d0e684890e810f3f21e8500a4cd',
-                'repo_url': 'https://osv-test/repo/url',
-                'type': 'GIT'
-            }, {
-                'fixed': 'b9b3fd4732695b83c3068b7b6a14bb372ec31f98',
-                'introduced': 'eefe8ec3f1f90d0e684890e810f3f21e8500a4cd',
-                'repo_url': 'https://osv-test/repo/url',
-                'type': 'GIT'
-            }, {
-                'fixed': '',
-                'introduced': 'febfac1940086bc1f6d3dc33fda0a1d1ba336209',
-                'repo_url': 'https://osv-test/repo/url',
-                'type': 'GIT'
-            }],
-            'details': 'Blah blah blah\nBlah\n',
-            'ecosystem': 'golang',
-            'fixed': '',
-            'has_affected': True,
-            'issue_id': None,
-            'is_fixed': True,
-            'last_modified': datetime.datetime(2021, 1, 1, 0, 0),
-            'project': 'blah.com/package',
-            'public': True,
-            'reference_url_types': {
-                'https://ref.com/ref': 'WEB'
-            },
-            'regressed': '',
-            'search_indices': [
-                '126', 'blah', 'blah-126', 'blah.com/package', 'com', 'golang',
-                'package'
-            ],
-            'severity': None,
-            'source_id': 'source:BLAH-126.yaml',
-            'source_of_truth': osv.SourceOfTruth.SOURCE_REPO,
-            'status': osv.BugStatus.PROCESSED,
-            'summary': 'A vulnerability',
-            'timestamp': datetime.datetime(2021, 1, 1, 0, 0),
-            'ecosystem_specific': None,
-            'database_specific': None,
-            'semver_fixed_indexes': [],
-            'source': 'source',
-        },
-        osv.Bug.get_by_id('BLAH-126')._to_dict())
+    self.expect_dict_equal('update_new',
+                           osv.Bug.get_by_id('BLAH-126')._to_dict())
 
   def test_update_delete(self):
     """Test deletion."""
@@ -1382,78 +875,8 @@ class UpdateTest(unittest.TestCase):
     diff = repo.diff(commit.parents[0], commit)
     self.assertEqual(self._load_test_data('expected_pypi.diff'), diff.patch)
 
-    self.assertDictEqual(
-        {
-            'db_id': 'PYSEC-123',
-            'aliases': [],
-            'purl': None,
-            'related': [],
-            'withdrawn': None,
-            'affected': [
-                '1.14.2', '1.15.0', '1.15.0rc1', '1.16.0', '1.16.0rc1',
-                '1.16.1', '1.16.1rc1', '1.17.0', '1.17.0rc1', '1.17.1',
-                '1.17.1rc1', '1.18.0', '1.18.0rc1', '1.19.0', '1.19.0rc1',
-                '1.20.0', '1.20.0rc1', '1.20.0rc2', '1.20.0rc3', '1.20.1',
-                '1.21.0rc1', '1.21.1', '1.21.1rc1', '1.22.0', '1.22.0rc1',
-                '1.22.1', '1.23.0', '1.23.0rc1', '1.23.1', '1.24.0',
-                '1.24.0rc1', '1.24.1', '1.24.3', '1.25.0', '1.25.0rc1',
-                '1.26.0', '1.26.0rc1', '1.27.0rc1', '1.27.0rc2', '1.27.1',
-                '1.27.2', '1.28.0.dev0', '1.28.0rc1', '1.28.0rc2', '1.28.0rc3',
-                '1.28.1', '1.29.0', '1.30.0', '1.30.0rc1', '1.31.0rc1',
-                '1.31.0rc2'
-            ],
-            'affected_fuzzy': [
-                '1-14-2', '1-15-0', '1-15-0-rc1', '1-16-0', '1-16-0-rc1',
-                '1-16-1', '1-16-1-rc1', '1-17-0', '1-17-0-rc1', '1-17-1',
-                '1-17-1-rc1', '1-18-0', '1-18-0-rc1', '1-19-0', '1-19-0-rc1',
-                '1-20-0', '1-20-0-rc1', '1-20-0-rc2', '1-20-0-rc3', '1-20-1',
-                '1-21-0-rc1', '1-21-1', '1-21-1-rc1', '1-22-0', '1-22-0-rc1',
-                '1-22-1', '1-23-0', '1-23-0-rc1', '1-23-1', '1-24-0',
-                '1-24-0-rc1', '1-24-1', '1-24-3', '1-25-0', '1-25-0-rc1',
-                '1-26-0', '1-26-0-rc1', '1-27-0-rc1', '1-27-0-rc2', '1-27-1',
-                '1-27-2', '1-28-0-0', '1-28-0-rc1', '1-28-0-rc2', '1-28-0-rc3',
-                '1-28-1', '1-29-0', '1-30-0', '1-30-0-rc1', '1-31-0-rc1',
-                '1-31-0-rc2'
-            ],
-            'affected_ranges': [
-                {
-                    'fixed': '1.31.0',
-                    'introduced': '1.14.2',
-                    'repo_url': '',
-                    'type': 'ECOSYSTEM'
-                },
-                {
-                    'fixed': '8d8242f545e9cec3e6d0d2e3f5bde8be1c659735',
-                    'introduced': 'eefe8ec3f1f90d0e684890e810f3f21e8500a4cd',
-                    'repo_url': 'https://osv-test/repo/url',
-                    'type': 'GIT'
-                },
-            ],
-            'details': 'Blah blah blah\nBlah\n',
-            'ecosystem': 'PyPI',
-            'fixed': '',
-            'has_affected': True,
-            'issue_id': None,
-            'is_fixed': True,
-            'last_modified': datetime.datetime(2021, 1, 1, 0, 0),
-            'project': 'grpcio',
-            'public': True,
-            'reference_url_types': {
-                'https://ref.com/ref': 'WEB'
-            },
-            'regressed': '',
-            'search_indices': ['123', 'grpcio', 'pypi', 'pysec', 'pysec-123'],
-            'severity': None,
-            'source_id': 'source:PYSEC-123.yaml',
-            'source_of_truth': osv.SourceOfTruth.SOURCE_REPO,
-            'status': osv.BugStatus.PROCESSED,
-            'summary': 'A vulnerability',
-            'timestamp': datetime.datetime(2021, 1, 1, 0, 0),
-            'ecosystem_specific': None,
-            'database_specific': None,
-            'semver_fixed_indexes': [],
-            'source': 'source',
-        },
+    self.expect_dict_equal(
+        'update_pypi',
         ndb.Key(osv.Bug, 'source:PYSEC-123').get()._to_dict())
 
     affected_commits = list(osv.AffectedCommit.query())
@@ -1482,151 +905,10 @@ class UpdateTest(unittest.TestCase):
     }
     task_runner._source_update(message)
 
-    self.assertDictEqual(
-        {
-            'db_id':
-                'GO-2021-0085',
-            'aliases': ['CVE-2019-16884'],
-            'purl':
-                None,
-            'related': [],
-            'withdrawn':
-                None,
-            'affected': [],
-            'affected_fuzzy': [],
-            'affected_ranges': [{
-                'fixed': 'v1.0.0-rc8.0.20190930145003-cad42f6e0932',
-                'introduced': '',
-                'repo_url': '',
-                'type': 'SEMVER'
-            }],
-            'details':
-                'AppArmor restrictions may be bypassed due to improper '
-                'validation of mount\n'
-                'targets, allowing a malicious image to mount volumes over e.g.'
-                ' /proc.\n',
-            'ecosystem':
-                'Go',
-            'fixed':
-                '',
-            'has_affected':
-                True,
-            'is_fixed':
-                True,
-            'issue_id':
-                None,
-            'last_modified':
-                datetime.datetime(2021, 4, 14, 12, 0),
-            'project':
-                'github.com/opencontainers/runc/libcontainer',
-            'public':
-                True,
-            'reference_url_types': {
-                'https://github.com/opencontainers/runc/commit/'
-                'cad42f6e0932db0ce08c3a3d9e89e6063ec283e4':
-                    'FIX',
-                'https://github.com/opencontainers/runc/issues/2128':
-                    'WEB',
-                'https://github.com/opencontainers/runc/pull/2130':
-                    'FIX'
-            },
-            'regressed':
-                '',
-            'search_indices': [
-                '0085', '2021', 'com', 'github',
-                'github.com/opencontainers/runc/libcontainer', 'go',
-                'go-2021-0085', 'libcontainer', 'opencontainers', 'runc'
-            ],
-            'severity':
-                None,
-            'source_id':
-                'source:a/b/test.json',
-            'source':
-                'source',
-            'source_of_truth':
-                2,
-            'status':
-                1,
-            'summary':
-                '',
-            'timestamp':
-                datetime.datetime(2021, 4, 14, 12, 0),
-            'ecosystem_specific': {
-                'url': 'https://go.googlesource.com/vulndb/+/refs/'
-                       'heads/main/reports/GO-2021-0085.toml'
-            },
-            'database_specific':
-                None,
-            'semver_fixed_indexes': [
-                '00000001.00000000.00000000-1rc8.'
-                '00000000.120190930145003-cad42f6e0932'
-            ],
-        },
-        osv.Bug.get_by_id('GO-2021-0085')._to_dict())
-    self.assertDictEqual(
-        {
-            'db_id': 'GO-2021-0087',
-            'aliases': ['CVE-2019-19921'],
-            'purl': None,
-            'related': [],
-            'withdrawn': None,
-            'affected': [],
-            'affected_fuzzy': [],
-            'affected_ranges': [{
-                'fixed': 'v1.0.0-rc9.0.20200122160610-2fc03cc11c77',
-                'introduced': '',
-                'repo_url': '',
-                'type': 'SEMVER'
-            }],
-            'details':
-                'A race while mounting volumes allows a possible '
-                'symlink-exchange\n'
-                'attack, allowing a user whom can start multiple containers '
-                'with\n'
-                'custom volume mount configurations to escape the container.\n'
-                '\n',
-            'ecosystem': 'Go',
-            'fixed': '',
-            'has_affected': True,
-            'is_fixed': True,
-            'issue_id': None,
-            'last_modified': datetime.datetime(2021, 4, 14, 12, 0),
-            'project': 'github.com/opencontainers/runc/libcontainer',
-            'public': True,
-            'reference_url_types': {
-                'https://github.com/opencontainers/runc/commit/'
-                '2fc03cc11c775b7a8b2e48d7ee447cb9bef32ad0':
-                    'FIX',
-                'https://github.com/opencontainers/runc/issues/2197':
-                    'WEB',
-                'https://github.com/opencontainers/runc/pull/2207':
-                    'FIX'
-            },
-            'regressed': '',
-            'search_indices': [
-                '0087', '2021', 'com', 'github',
-                'github.com/opencontainers/runc/libcontainer', 'go',
-                'go-2021-0087', 'libcontainer', 'opencontainers', 'runc'
-            ],
-            'severity': None,
-            'source_id': 'source:a/b/test.json',
-            'source_of_truth': 2,
-            'status': 1,
-            'summary': '',
-            'timestamp': datetime.datetime(2021, 4, 14, 12, 0),
-            'ecosystem_specific': {
-                'Symbols': ['mountToRootfs'],
-                'url': 'https://go.googlesource.com/vulndb/+/refs/'
-                       'heads/main/reports/GO-2021-0087.toml'
-            },
-            'database_specific': None,
-            'semver_fixed_indexes': [
-                '00000001.00000000.00000000-1rc9.'
-                '00000000.120200122160610-2fc03cc11c77'
-            ],
-            'source': 'source',
-        },
-        osv.Bug.get_by_id('GO-2021-0087')._to_dict())
+    self.expect_dict_equal('update_bucket_0',
+                           osv.Bug.get_by_id('GO-2021-0085')._to_dict())
+    self.expect_dict_equal('update_bucket_1',
+                           osv.Bug.get_by_id('GO-2021-0087')._to_dict())
 
 
 if __name__ == '__main__':

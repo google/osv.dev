@@ -307,19 +307,14 @@ def _throttled_delete(to_delete):
       time.sleep(_DATASTORE_BATCH_SLEEP)
 
 
-def update_affected_commits(bug_id, commits, project, ecosystem, public):
+def update_affected_commits(bug_id, commits, public):
   """Update affected commits."""
   to_put = []
   to_delete = []
 
   for commit in commits:
     affected_commit = models.AffectedCommit(
-        id=bug_id + '-' + commit,
-        bug_id=bug_id,
-        commit=commit,
-        project=project,
-        ecosystem=ecosystem,
-        public=public)
+        id=bug_id + '-' + commit, bug_id=bug_id, commit=commit, public=public)
 
     to_put.append(affected_commit)
 

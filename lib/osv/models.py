@@ -448,8 +448,8 @@ class Bug(ndb.Model):
 
       # Sort the flattened events, then find corresponding [introduced,
       # fixed) pairs.
-      for event in _sorted_events(affected_package.package.ecosystem,
-                                  affected_range.type, affected_range.events):
+      for event in sorted_events(affected_package.package.ecosystem,
+                                 affected_range.type, affected_range.events):
         if event.type == 'introduced':
           if cur_range.introduced and affected_range.type == 'GIT':
             # If this is GIT, then we need to store all "introduced", even if
@@ -627,7 +627,7 @@ def get_source_repository(source_name):
   return SourceRepository.get_by_id(source_name)
 
 
-def _sorted_events(ecosystem, range_type, events):
+def sorted_events(ecosystem, range_type, events):
   """Sort events."""
   if range_type == 'GIT':
     # No need to sort.

@@ -142,7 +142,8 @@ def _is_semver_affected(affected_packages, version):
       if affected_range.type != 'SEMVER':
         continue
 
-      for event in affected_range.events:
+      for event in osv.sorted_events('', affected_range.type,
+                                     affected_range.events):
         if (event.type == 'introduced' and
             version >= semver_index.parse(event.value)):
           affected = True

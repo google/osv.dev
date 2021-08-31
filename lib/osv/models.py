@@ -474,7 +474,7 @@ class Bug(ndb.Model):
               repo=affected_range.repo_url)
 
       if cur_range.introduced:
-        affects.ranges.add(cur_range)
+        affects.ranges.append(cur_range)
 
     return affects
 

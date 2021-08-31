@@ -136,19 +136,21 @@ def _is_semver_affected(affected_packages, version):
   range."""
   version = semver_index.parse(version)
 
+  affected = False
   for affected_package in affected_packages:
     for affected_range in affected_package.ranges:
       if affected_range.type != 'SEMVER':
         continue
 
-      introduced = affected_range.introduced
-      fixed = affected_range.fixed
+      for event in affected_range.events:
+        if (event.type == 'introduced' and
+            version >= semver_index.parse(event.value)):
+          affected = True
 
-      if ((not introduced or version >= semver_index.parse(introduced)) and
-          (not fixed or version < semver_index.parse(fixed))):
-        return True
+        if event.type == 'fixed' and version >= semver_index.parse(event.value):
+          affected = False
 
-  return False
+  return affected
 
 
 def _query_by_semver(query, version):

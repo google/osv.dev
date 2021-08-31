@@ -392,10 +392,8 @@ class Bug(ndb.Model):
 
     affected_package.package = Package(
         name=vulnerability.package.name,
-        ecosystem=vulnerability.package.ecosystem)
-
-    if vulnerability.package.purl:
-      affected_package.package.purl = vulnerability.package.purl
+        ecosystem=vulnerability.package.ecosystem,
+        purl=vulnerability.package.purl)
 
     self.aliases = list(vulnerability.aliases)
     self.related = list(vulnerability.related)
@@ -410,11 +408,11 @@ class Bug(ndb.Model):
     affected_package.versions = list(vulnerability.affects.versions)
     affected_package.ranges = []
     events_by_type = {}
-    repo_url = None
 
     for affected_range in vulnerability.affects.ranges:
       events = events_by_type.setdefault(
-          vulnerability_pb2.AffectedRange.Type.Name(affected_range.type), [])
+          (vulnerability_pb2.AffectedRange.Type.Name(affected_range.type),
+           affected_range.repo), [])
 
       # An empty introduced in 0.7 now needs to be represented as '0' in 0.8.
       introduced = AffectedEvent(
@@ -427,7 +425,7 @@ class Bug(ndb.Model):
         if fixed not in events:
           events.append(fixed)
 
-    for range_type, events in events_by_type.items():
+    for (range_type, repo_url), events in events_by_type.items():
       affected_range = AffectedRange2(type=range_type, events=events)
 
       if range_type == 'GIT' and repo_url:

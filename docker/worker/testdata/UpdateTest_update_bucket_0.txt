@@ -4,7 +4,7 @@
                                  'ecosystem_specific': {   'url': 'https://go.googlesource.com/vulndb/+/refs/heads/main/reports/GO-2021-0085.toml'},
                                  'package': {   'ecosystem': 'Go',
                                                 'name': 'github.com/opencontainers/runc/libcontainer',
-                                                'purl': None},
+                                                'purl': ''},
                                  'ranges': [   {   'events': [   {   'type': 'introduced',
                                                                      'value': '0'},
                                                                  {   'type': 'fixed',

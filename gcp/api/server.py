@@ -145,7 +145,7 @@ def _is_semver_affected(affected_packages, version):
       for event in osv.sorted_events('', affected_range.type,
                                      affected_range.events):
         if (event.type == 'introduced' and
-            version >= semver_index.parse(event.value)):
+            (event.value == '0' or version >= semver_index.parse(event.value))):
           affected = True
 
         if event.type == 'fixed' and version >= semver_index.parse(event.value):

@@ -650,14 +650,17 @@ def sorted_events(ecosystem, range_type, events):
     ecosystem_helper = ecosystems.get(ecosystem)
 
   # Remove any magic '0' values.
+  sorted_copy = []
   zero_event = None
-  for event in events.copy():
+  for event in events:
     if event.value == '0':
       zero_event = event
-      events.remove(event)
+      continue
 
-  events = sorted(events, key=lambda e: ecosystem_helper.sort_key(e.value))
+    sorted_copy.append(event)
+
+  sorted_copy.sort(key=lambda e: ecosystem_helper.sort_key(e.value))
   if zero_event:
-    events.insert(0, zero_event)
+    sorted_copy.insert(0, zero_event)
 
-  return events
+  return sorted_copy

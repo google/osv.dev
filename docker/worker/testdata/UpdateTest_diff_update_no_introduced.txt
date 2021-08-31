@@ -1,0 +1,22 @@
+('diff --git a/BLAH-127.yaml b/BLAH-127.yaml\n'
+ 'index c2056a9..d78ce0a 100644\n'
+ '--- a/BLAH-127.yaml\n'
+ '+++ b/BLAH-127.yaml\n'
+ '@@ -3,6 +3,7 @@ summary: A vulnerability\n'
+ ' details: |\n'
+ '   Blah blah blah\n'
+ '   Blah\n'
+ "+modified: '2021-01-01T00:00:00Z'\n"
+ ' references:\n'
+ ' - type: WEB\n'
+ '   url: https://ref.com/ref\n'
+ '@@ -16,3 +17,9 @@ affected:\n'
+ '     events:\n'
+ "     - introduced: '0'\n"
+ '     - fixed: 8d8242f545e9cec3e6d0d2e3f5bde8be1c659735\n'
+ '+    - fixed: b9b3fd4732695b83c3068b7b6a14bb372ec31f98\n'
+ '+  versions:\n'
+ '+  - branch-v0.1.1\n'
+ '+  - branch_1_cherrypick_regress\n'
+ '+  - v0.1\n'
+ '+  - v0.1.1\n')

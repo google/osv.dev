@@ -41,8 +41,8 @@ ndb_client = None
 class ExpectationTest:
   """Mixin for test output generation/comparison."""
 
-  def expect_dict_equal(self, expected_name, actual):
-    """Check if the output dict is equal to the expected value."""
+  def _load_expected(self, expected_name, actual):
+    """Load expected data."""
     expected_path = os.path.join(
         TEST_DATA_DIR, f'{self.__class__.__name__}_{expected_name}.txt')
     if os.getenv('TESTS_GENERATE'):
@@ -51,9 +51,15 @@ class ExpectationTest:
         f.write(pp.pformat(actual))
 
     with open(expected_path) as f:
-      expected = eval(f.read())  # pylint: disable=eval-used
+      return eval(f.read())  # pylint: disable=eval-used
 
-    self.assertDictEqual(expected, actual)
+  def expect_dict_equal(self, expected_name, actual):
+    """Check if the output dict is equal to the expected value."""
+    self.assertDictEqual(self._load_expected(expected_name, actual), actual)
+
+  def expect_equal(self, expected_name, actual):
+    """Check if the output is equal to the expected value."""
+    self.assertEqual(self._load_expected(expected_name, actual), actual)
 
 
 class OssFuzzDetailsTest(unittest.TestCase):
@@ -552,14 +558,23 @@ class UpdateTest(unittest.TestCase, ExpectationTest):
         'BLAH-123.yaml',
         self._load_test_data(os.path.join(TEST_DATA_DIR, 'BLAH-123.yaml')))
     self.mock_repo.add_file(
+        'BLAH-123.old.yaml',
+        self._load_test_data(os.path.join(TEST_DATA_DIR, 'BLAH-123.old.yaml')))
+    self.mock_repo.add_file(
         'BLAH-124.yaml',
         self._load_test_data(os.path.join(TEST_DATA_DIR, 'BLAH-124.yaml')))
+    self.mock_repo.add_file(
+        'BLAH-124.old.yaml',
+        self._load_test_data(os.path.join(TEST_DATA_DIR, 'BLAH-124.old.yaml')))
     self.mock_repo.add_file(
         'BLAH-125.yaml',
         self._load_test_data(os.path.join(TEST_DATA_DIR, 'BLAH-125.yaml')))
     self.mock_repo.add_file(
         'BLAH-127.yaml',
         self._load_test_data(os.path.join(TEST_DATA_DIR, 'BLAH-127.yaml')))
+    self.mock_repo.add_file(
+        'BLAH-127.old.yaml',
+        self._load_test_data(os.path.join(TEST_DATA_DIR, 'BLAH-127.old.yaml')))
     self.mock_repo.commit('User', 'user@email')
 
     self.source_repo = osv.SourceRepository(
@@ -603,14 +618,14 @@ class UpdateTest(unittest.TestCase, ExpectationTest):
   def tearDown(self):
     self.tmp_dir.cleanup()
 
-  def test_update(self):
+  def test_update_pre_0_8(self):
     """Test basic update."""
     task_runner = worker.TaskRunner(ndb_client, None, self.tmp_dir.name, None,
                                     None)
     message = mock.Mock()
     message.attributes = {
         'source': 'source',
-        'path': 'BLAH-123.yaml',
+        'path': 'BLAH-123.old.yaml',
         'original_sha256': ('f791309e3ede0c516167652ccf2c6582'
                             'a1bbd8dc38bfa711ac2b6f0f4d5b6a22'),
         'deleted': 'false',
@@ -624,9 +639,83 @@ class UpdateTest(unittest.TestCase, ExpectationTest):
     self.assertEqual('OSV', commit.author.name)
     self.assertEqual('Update BLAH-123', commit.message)
     diff = repo.diff(commit.parents[0], commit)
-    self.assertEqual(self._load_test_data('expected.diff'), diff.patch)
 
+    self.expect_equal('diff_update_pre_0_8', diff.patch)
+    self.expect_dict_equal('update_pre_0_8',
+                           osv.Bug.get_by_id('BLAH-123')._to_dict())
+
+    affected_commits = list(osv.AffectedCommit.query())
+    self.assertCountEqual([
+        '4c155795426727ea05575bd5904321def23c03f4',
+        'b1c95a196f22d06fcf80df8c6691cd113d8fefff',
+        'eefe8ec3f1f90d0e684890e810f3f21e8500a4cd',
+        'febfac1940086bc1f6d3dc33fda0a1d1ba336209',
+        'ff8cc32ba60ad9cbb3b23f0a82aad96ebe9ff76b',
+    ], [commit.commit for commit in affected_commits])
+
+  def test_update(self):
+    """Test basic update."""
+    task_runner = worker.TaskRunner(ndb_client, None, self.tmp_dir.name, None,
+                                    None)
+    message = mock.Mock()
+    message.attributes = {
+        'source': 'source',
+        'path': 'BLAH-123.yaml',
+        'original_sha256': ('d35b787ba467d6d45c2046c0c5a9c237'
+                            'ab4b7d9942cc9ad25f2bc27a2ffa7859'),
+        'deleted': 'false',
+    }
+    task_runner._source_update(message)
+
+    repo = pygit2.Repository(self.remote_source_repo_path)
+    commit = repo.head.peel()
+
+    self.assertEqual('infra@osv.dev', commit.author.email)
+    self.assertEqual('OSV', commit.author.name)
+    self.assertEqual('Update BLAH-123', commit.message)
+    diff = repo.diff(commit.parents[0], commit)
+
+    self.expect_equal('diff_update', diff.patch)
     self.expect_dict_equal('update', osv.Bug.get_by_id('BLAH-123')._to_dict())
+
+    affected_commits = list(osv.AffectedCommit.query())
+    self.assertCountEqual([
+        '4c155795426727ea05575bd5904321def23c03f4',
+        'b1c95a196f22d06fcf80df8c6691cd113d8fefff',
+        'eefe8ec3f1f90d0e684890e810f3f21e8500a4cd',
+        'febfac1940086bc1f6d3dc33fda0a1d1ba336209',
+        'ff8cc32ba60ad9cbb3b23f0a82aad96ebe9ff76b',
+    ], [commit.commit for commit in affected_commits])
+
+  def test_update_add_fix_pre_0_8(self):
+    """Test basic update adding a fix."""
+    fix_result = osv.FixResult(
+        id='source:BLAH-124.yaml',
+        commit='8d8242f545e9cec3e6d0d2e3f5bde8be1c659735')
+    fix_result.put()
+    task_runner = worker.TaskRunner(ndb_client, None, self.tmp_dir.name, None,
+                                    None)
+    message = mock.Mock()
+    message.attributes = {
+        'source': 'source',
+        'path': 'BLAH-124.old.yaml',
+        'original_sha256': ('323bdd5d8cc8c771d6aac84426a57dd6'
+                            '00995702fcb021b7fe9afd082b8a6e4c'),
+        'deleted': 'false',
+    }
+    task_runner._source_update(message)
+
+    repo = pygit2.Repository(self.remote_source_repo_path)
+    commit = repo.head.peel()
+
+    self.assertEqual('infra@osv.dev', commit.author.email)
+    self.assertEqual('OSV', commit.author.name)
+    self.assertEqual('Update BLAH-124', commit.message)
+    diff = repo.diff(commit.parents[0], commit)
+
+    self.expect_equal('diff_update_add_fix_pre_0_8', diff.patch)
+    self.expect_dict_equal('update_add_fix_pre_0_8',
+                           osv.Bug.get_by_id('BLAH-124')._to_dict())
 
     affected_commits = list(osv.AffectedCommit.query())
     self.assertCountEqual([
@@ -649,8 +738,8 @@ class UpdateTest(unittest.TestCase, ExpectationTest):
     message.attributes = {
         'source': 'source',
         'path': 'BLAH-124.yaml',
-        'original_sha256': ('323bdd5d8cc8c771d6aac84426a57dd6'
-                            '00995702fcb021b7fe9afd082b8a6e4c'),
+        'original_sha256': ('5d6224b81fb100d51bf61c2568b1c75f'
+                            '1df355ace1872af1b7eb0b1b5d93f477'),
         'deleted': 'false',
     }
     task_runner._source_update(message)
@@ -662,8 +751,8 @@ class UpdateTest(unittest.TestCase, ExpectationTest):
     self.assertEqual('OSV', commit.author.name)
     self.assertEqual('Update BLAH-124', commit.message)
     diff = repo.diff(commit.parents[0], commit)
-    self.assertEqual(self._load_test_data('expected_add_fix.diff'), diff.patch)
 
+    self.expect_equal('diff_update_add_fix', diff.patch)
     self.expect_dict_equal('update_add_fix',
                            osv.Bug.get_by_id('BLAH-124')._to_dict())
 
@@ -676,7 +765,7 @@ class UpdateTest(unittest.TestCase, ExpectationTest):
         'ff8cc32ba60ad9cbb3b23f0a82aad96ebe9ff76b',
     ], [commit.commit for commit in affected_commits])
 
-  def test_update_no_introduced(self):
+  def test_update_no_introduced_pre_0_8(self):
     """Test update vulnerability with no introduced commit."""
     task_runner = worker.TaskRunner(ndb_client, None, self.tmp_dir.name, None,
                                     None)
@@ -684,7 +773,7 @@ class UpdateTest(unittest.TestCase, ExpectationTest):
     message = mock.Mock()
     message.attributes = {
         'source': 'source',
-        'path': 'BLAH-127.yaml',
+        'path': 'BLAH-127.old.yaml',
         'original_sha256': ('d00c24789be7ea03ac6ac97b321ffa5b'
                             '9380d13f510b13723fb5bb66a0ca4338'),
         'deleted': 'false',
@@ -698,10 +787,56 @@ class UpdateTest(unittest.TestCase, ExpectationTest):
     self.assertEqual('OSV', commit.author.name)
     self.assertEqual('Update BLAH-127', commit.message)
     diff = repo.diff(commit.parents[0], commit)
-    self.assertEqual(self._load_test_data('expected_127.diff'), diff.patch)
+
+    self.expect_dict_equal('update_no_introduced_pre_0_8',
+                           osv.Bug.get_by_id('BLAH-127')._to_dict())
+    self.expect_equal('diff_update_no_introduced_pre_0_8', diff.patch)
+
+    affected_commits = list(osv.AffectedCommit.query())
+    self.assertCountEqual([
+        'b1c95a196f22d06fcf80df8c6691cd113d8fefff',
+        'eefe8ec3f1f90d0e684890e810f3f21e8500a4cd',
+        'a2ba949290915d445d34d0e8e9de2e7ce38198fc',
+        'e1b045257bc5ca2a11d0476474f45ef77a0366c7',
+        '00514d6f244f696e750a37083163992c6a50cfd3',
+        '25147a74d8aeb27b43665530ee121a2a1b19dc58',
+        '3c5dcf6a5bec14baab3b247d369a7270232e1b83',
+        '4c155795426727ea05575bd5904321def23c03f4',
+        '57e58a5d7c2bb3ce0f04f17ec0648b92ee82531f',
+        '90aa4127295b2c37b5f7fcf6a9772b12c99a5212',
+        '949f182716f037e25394bbb98d39b3295d230a29',
+        'b1fa81a5d59e9b4d6e276d82fc17058f3cf139d9',
+        'f0cc40d8c3dabb27c2cfe26f1764305abc91a0b9',
+        'febfac1940086bc1f6d3dc33fda0a1d1ba336209',
+        'ff8cc32ba60ad9cbb3b23f0a82aad96ebe9ff76b',
+    ], [commit.commit for commit in affected_commits])
+
+  def test_update_no_introduced(self):
+    """Test update vulnerability with no introduced commit."""
+    task_runner = worker.TaskRunner(ndb_client, None, self.tmp_dir.name, None,
+                                    None)
+
+    message = mock.Mock()
+    message.attributes = {
+        'source': 'source',
+        'path': 'BLAH-127.yaml',
+        'original_sha256': ('41ba4799f09d73ab41d60f8fbeaa83a7'
+                            '9f6d8a301330c5c1061cf113ff96a8a3'),
+        'deleted': 'false',
+    }
+    task_runner._source_update(message)
+
+    repo = pygit2.Repository(self.remote_source_repo_path)
+    commit = repo.head.peel()
+
+    self.assertEqual('infra@osv.dev', commit.author.email)
+    self.assertEqual('OSV', commit.author.name)
+    self.assertEqual('Update BLAH-127', commit.message)
+    diff = repo.diff(commit.parents[0], commit)
 
     self.expect_dict_equal('update_no_introduced',
                            osv.Bug.get_by_id('BLAH-127')._to_dict())
+    self.expect_equal('diff_update_no_introduced', diff.patch)
 
     affected_commits = list(osv.AffectedCommit.query())
     self.assertCountEqual([
@@ -762,8 +897,8 @@ class UpdateTest(unittest.TestCase, ExpectationTest):
     message.attributes = {
         'source': 'source',
         'path': 'BLAH-123.yaml',
-        'original_sha256': ('f791309e3ede0c516167652ccf2c6582'
-                            'a1bbd8dc38bfa711ac2b6f0f4d5b6a22'),
+        'original_sha256': ('d35b787ba467d6d45c2046c0c5a9c237'
+                            'ab4b7d9942cc9ad25f2bc27a2ffa7859'),
         'deleted': 'true',
     }
     task_runner._source_update(message)
@@ -830,8 +965,8 @@ class UpdateTest(unittest.TestCase, ExpectationTest):
     message.attributes = {
         'source': 'source',
         'path': 'BLAH-123.yaml',
-        'original_sha256': ('f791309e3ede0c516167652ccf2c6582'
-                            'a1bbd8dc38bfa711ac2b6f0f4d5b6a22'),
+        'original_sha256': ('d35b787ba467d6d45c2046c0c5a9c237'
+                            'ab4b7d9942cc9ad25f2bc27a2ffa7859'),
         'deleted': 'false',
     }
     task_runner._source_update(message)
@@ -843,7 +978,7 @@ class UpdateTest(unittest.TestCase, ExpectationTest):
     self.assertEqual('user@email', commit.author.email)
     self.assertEqual('Another user', commit.author.name)
 
-  def test_update_pypi(self):
+  def test_update_pypi_pre_0_8(self):
     """Test a PyPI entry."""
     self.source_repo.ignore_git = False
     self.source_repo.versions_from_repo = False
@@ -852,7 +987,7 @@ class UpdateTest(unittest.TestCase, ExpectationTest):
 
     self.mock_repo.add_file(
         'PYSEC-123.yaml',
-        self._load_test_data(os.path.join(TEST_DATA_DIR, 'PYSEC-123.yaml')))
+        self._load_test_data(os.path.join(TEST_DATA_DIR, 'PYSEC-123.old.yaml')))
     self.mock_repo.commit('User', 'user@email')
     task_runner = worker.TaskRunner(ndb_client, None, self.tmp_dir.name, None,
                                     None)
@@ -873,7 +1008,49 @@ class UpdateTest(unittest.TestCase, ExpectationTest):
     self.assertEqual('OSV', commit.author.name)
     self.assertEqual('Update PYSEC-123', commit.message)
     diff = repo.diff(commit.parents[0], commit)
-    self.assertEqual(self._load_test_data('expected_pypi.diff'), diff.patch)
+    self.expect_equal('diff_pypi_pre_0_8', diff.patch)
+
+    self.expect_dict_equal(
+        'update_pypi_pre_0_8',
+        ndb.Key(osv.Bug, 'source:PYSEC-123').get()._to_dict())
+
+    affected_commits = list(osv.AffectedCommit.query())
+    self.assertCountEqual([
+        'b1c95a196f22d06fcf80df8c6691cd113d8fefff',
+        'eefe8ec3f1f90d0e684890e810f3f21e8500a4cd',
+    ], [a.commit for a in affected_commits])
+
+  def test_update_pypi(self):
+    """Test a PyPI entry."""
+    self.source_repo.ignore_git = False
+    self.source_repo.versions_from_repo = False
+    self.source_repo.detect_cherrypicks = False
+    self.source_repo.put()
+
+    self.mock_repo.add_file(
+        'PYSEC-123.yaml',
+        self._load_test_data(os.path.join(TEST_DATA_DIR, 'PYSEC-123.yaml')))
+    self.mock_repo.commit('User', 'user@email')
+    task_runner = worker.TaskRunner(ndb_client, None, self.tmp_dir.name, None,
+                                    None)
+    message = mock.Mock()
+    message.attributes = {
+        'source': 'source',
+        'path': 'PYSEC-123.yaml',
+        'original_sha256': ('f664bd547299c003e658feb81d4e3b36'
+                            '17c1433e301037a5a825a615581fc6ee'),
+        'deleted': 'false',
+    }
+    task_runner._source_update(message)
+
+    repo = pygit2.Repository(self.remote_source_repo_path)
+    commit = repo.head.peel()
+
+    self.assertEqual('infra@osv.dev', commit.author.email)
+    self.assertEqual('OSV', commit.author.name)
+    self.assertEqual('Update PYSEC-123', commit.message)
+    diff = repo.diff(commit.parents[0], commit)
+    self.expect_equal('diff_pypi', diff.patch)
 
     self.expect_dict_equal(
         'update_pypi',

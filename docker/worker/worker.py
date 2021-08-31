@@ -33,6 +33,7 @@ from google.cloud import storage
 
 sys.path.append(os.path.dirname(os.path.realpath(__file__)))
 import osv
+from osv import vulnerability_pb2
 import oss_fuzz
 
 DEFAULT_WORK_DIR = '/work'
@@ -189,10 +190,40 @@ def get_source_id(message):
 
 def add_fix_information(vulnerability, bug, fix_result):
   """Add fix information to a vulnerability."""
-  for affected_range in vulnerability.affects.ranges:
-    if (affected_range.introduced == bug.regressed and
-        not affected_range.fixed):
-      affected_range.fixed = fix_result.commit
+  database_specific = {}
+  fix_commit = fix_result.commit
+  if ':' in fix_result.commit:
+    database_specific['fixed_range'] = fix_result.commit
+    fix_commit = fix_result.commit.split(':')[1]
+
+  if vulnerability.affected:
+    # 0.8 schema.
+    for affected_package in vulnerability.affected:
+      added_fix = False
+      for affected_range in affected_package.ranges:
+        if affected_range.type != vulnerability_pb2.Range.GIT:
+          continue
+
+        # If this range includes the introduced commit, and not the fixed
+        # commit, add it.
+        # Use "in" for the introduced comparison because `bug.regressed` could
+        # be a commit range for OSS-Fuzz bugs.
+        if (any(event.introduced and event.introduced in bug.regressed
+                for event in affected_range.events) and
+            not any(event.fixed == fix_commit
+                    for event in affected_range.events)):
+          affected_range.events.add(fixed=fix_commit)
+
+      if added_fix:
+        affected_package.database_specific.update(database_specific)
+  else:
+    # Pre 0.8 schema.
+    for affected_range in vulnerability.affects.ranges:
+      if (affected_range.introduced and
+          affected_range.introduced in bug.regressed and
+          not affected_range.fixed):
+        affected_range.fixed = fix_commit
+        vulnerability.database_specific.update(database_specific)
 
 
 class TaskRunner:

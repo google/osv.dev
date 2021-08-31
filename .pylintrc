@@ -34,6 +34,8 @@ disable=
   useless-suppression,
   wrong-import-order,
   wrong-import-position,
+  unspecified-encoding,
+  consider-using-with
 
 
 [BASIC]

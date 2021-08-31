@@ -356,7 +356,7 @@ class Bug(ndb.Model):
     if not self.db_id:
       raise ValueError('DB ID not specified for Bug.')
 
-    if not self.key:
+    if not self.key:  # pylint: disable=access-member-before-definition
       source_repo = get_source_repository(self.source)
       if not source_repo:
         raise ValueError(f'Invalid source {self.source}')
@@ -411,8 +411,8 @@ class Bug(ndb.Model):
 
     for affected_range in vulnerability.affects.ranges:
       events = events_by_type.setdefault(
-          (vulnerability_pb2.AffectedRange.Type.Name(affected_range.type),
-           affected_range.repo), [])
+          (vulnerability_pb2.AffectedRange.Type.Name(
+              affected_range.type), affected_range.repo), [])
 
       # An empty introduced in 0.7 now needs to be represented as '0' in 0.8.
       introduced = AffectedEvent(

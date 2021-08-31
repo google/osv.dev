@@ -634,7 +634,7 @@ def sorted_events(ecosystem, range_type, events):
     return events
 
   if range_type == 'SEMVER':
-    ecosystem_helper = ecosystems.SemverEcosystem
+    ecosystem_helper = ecosystems.SemverEcosystem()
   else:
     ecosystem_helper = ecosystems.get(ecosystem)
 
@@ -645,7 +645,7 @@ def sorted_events(ecosystem, range_type, events):
       zero_event = event
       events.remove(event)
 
-  events = sorted(events, key=lambda e: ecosystem_helper.SORT_KEY(e.value))
+  events = sorted(events, key=lambda e: ecosystem_helper.sort_key(e.value))
   if zero_event:
     events.insert(0, zero_event)
 

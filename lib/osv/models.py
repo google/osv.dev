@@ -505,44 +505,42 @@ class Bug(ndb.Model):
       # Convert flattened events to range pairs (pre-0.8 schema).
       # TODO(ochang): Remove this once all consumers are migrated.
       # pylint: disable=cell-var-from-loop
-      new_range = lambda: vulnerability_pb2.AffectedRange(
+      new_range = lambda x, y: vulnerability_pb2.AffectedRange(
           type=vulnerability_pb2.AffectedRange.Type.Value(affected_range.type),
-          repo=affected_range.repo_url)
-      cur_range = new_range()
+          repo=affected_range.repo_url,
+          introduced=x,
+          fixed=y)
+      last_introduced = None
 
       # Sort the flattened events, then find corresponding [introduced,
       # fixed) pairs.
       for event in sorted_events(affected_package.package.ecosystem,
                                  affected_range.type, affected_range.events):
         if event.type == 'introduced':
-          if cur_range.introduced and affected_range.type == 'GIT':
+          if last_introduced is not None and affected_range.type == 'GIT':
             # If this is GIT, then we need to store all "introduced", even if
             # they overlap.
-            affects.ranges.append(cur_range)
-            cur_range = new_range()
+            affects.ranges.append(new_range(last_introduced, ''))
+            last_introduced = None
 
-          if not cur_range.introduced:
+          if last_introduced is None:
             # If not GIT, ignore overlapping introduced versions since they're
             # redundant.
-            cur_range.introduced = event.value
-            if cur_range.introduced == '0':
-              cur_range.introduced = ''
+            last_introduced = event.value
+            if last_introduced == '0':
+              last_introduced = ''
 
         if event.type == 'fixed':
-          if affected_range.type != 'GIT' and not cur_range.introduced:
+          if affected_range.type != 'GIT' and last_introduced is None:
             # No prior introduced, so ignore this invalid entry.
             continue
 
           # Found a complete pair.
-          cur_range.fixed = event.value
-          affects.ranges.append(cur_range)
-          cur_range = vulnerability_pb2.AffectedRange(
-              type=vulnerability_pb2.AffectedRange.Type.Value(
-                  affected_range.type),
-              repo=affected_range.repo_url)
+          affects.ranges.append(new_range(last_introduced, event.value))
+          last_introduced = None
 
-      if cur_range.introduced:
-        affects.ranges.append(cur_range)
+      if last_introduced is not None:
+        affects.ranges.append(new_range(last_introduced, ''))
 
     return affects
 

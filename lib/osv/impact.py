@@ -395,7 +395,14 @@ def enumerate_versions(package, ecosystem, affected_range):
     if event.limit:
       limits.append(event.limit)
 
-  sorted_events.sort(key=lambda e: e.introduced or e.fixed)
+  def sort_key(event):
+    """Sort key."""
+    if event.introduced:
+      return ecosystem.sort_key(event.introduced)
+
+    return ecosystem.sort_key(event.fixed)
+
+  sorted_events.sort(key=sort_key)
   if zero_event:
     sorted_events.insert(0, zero_event)
 

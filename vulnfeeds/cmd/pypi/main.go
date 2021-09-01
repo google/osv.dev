@@ -60,9 +60,9 @@ func loadExisting(vulnsDir string) (map[string]bool, error) {
 			return fmt.Errorf("Failed to parse %s: %w", path, err)
 		}
 
-		ids[vuln.ID+"/"+vuln.Package.Name] = true
+		ids[vuln.ID+"/"+vuln.Affected[0].Package.Name] = true
 		for _, alias := range vuln.Aliases {
-			ids[alias+"/"+vuln.Package.Name] = true
+			ids[alias+"/"+vuln.Affected[0].Package.Name] = true
 		}
 		return nil
 	})
@@ -133,7 +133,7 @@ func main() {
 			id := "PYSEC-0000-" + cve.CVE.CVEDataMeta.ID // To be assigned later.
 
 			v, notes := vulns.FromCVE(id, cve, pkg, "PyPI", "ECOSYSTEM", validVersions)
-			if len(v.Affects.Ranges) == 0 {
+			if len(v.Affected[0].Ranges) == 0 {
 				log.Printf("No affected versions detected.")
 			}
 

@@ -24,11 +24,25 @@ import (
 	"github.com/google/osv/vulnfeeds/cves"
 )
 
-type AffectedRange struct {
-	Type       string `json:"type" yaml:"type"`
-	Repo       string `json:"repo,omitempty" yaml:"repo,omitempty"`
+type Event struct {
 	Introduced string `json:"introduced,omitempty" yaml:"introduced,omitempty"`
 	Fixed      string `json:"fixed,omitempty" yaml:"fixed,omitempty"`
+	Limit      string `json:"limit,omitempty" yaml:"limit,omitempty"`
+}
+
+type Affected struct {
+	Package struct {
+		Name      string `json:"name" yaml:"name"`
+		Ecosystem string `json:"ecosystem" yaml:"ecosystem"`
+	} `json:"package"`
+	Ranges   []AffectedRange `json:"ranges" yaml:"ranges"`
+	Versions []string        `json:"versions" yaml:"versions,omitempty"`
+}
+
+type AffectedRange struct {
+	Type   string  `json:"type" yaml:"type"`
+	Repo   string  `json:"repo,omitempty" yaml:"repo,omitempty"`
+	Events []Event `json:"events", yaml:"events"`
 }
 
 type Reference struct {
@@ -37,22 +51,14 @@ type Reference struct {
 }
 
 type Vulnerability struct {
-	ID      string `json:"id" yaml:"id"`
-	Package struct {
-		Name      string `json:"name" yaml:"name"`
-		Ecosystem string `json:"ecosystem" yaml:"ecosystem"`
-	} `json:"package"`
-	Summary string `json:"summary,omitempty" yaml:"summary,omitempty"`
-	Details string `json:"details" yaml:"details"`
-	Affects struct {
-		Ranges   []AffectedRange `json:"ranges"`
-		Versions []string        `json:"versions" yaml:"versions,omitempty"`
-	}
-	References []Reference            `json:"references" yaml:"references"`
-	Aliases    []string               `json:"aliases,omitempty" yaml:"aliases,omitempty"`
-	Extra      map[string]interface{} `json:"extras,omitempty" yaml:"extra,omitempty"`
-	Modified   string                 `json:"modified" yaml:"modified"`
-	Published  string                 `json:"published" yaml:"published"`
+	ID         string      `json:"id" yaml:"id"`
+	Summary    string      `json:"summary,omitempty" yaml:"summary,omitempty"`
+	Details    string      `json:"details" yaml:"details"`
+	Affected   []Affected  `json:"affected" yaml:"affected"`
+	References []Reference `json:"references" yaml:"references"`
+	Aliases    []string    `json:"aliases,omitempty" yaml:"aliases,omitempty"`
+	Modified   string      `json:"modified" yaml:"modified"`
+	Published  string      `json:"published" yaml:"published"`
 }
 
 func timestampToRFC3339(timestamp string) (string, error) {
@@ -75,8 +81,10 @@ func FromCVE(id string, cve cves.CVEItem, pkg, ecosystem, versionType string, va
 		Details: cves.EnglishDescription(cve.CVE),
 		Aliases: aliases,
 	}
-	v.Package.Name = pkg
-	v.Package.Ecosystem = ecosystem
+
+	affected := Affected{}
+	affected.Package.Name = pkg
+	affected.Package.Ecosystem = ecosystem
 
 	var err error
 	var notes []string
@@ -101,21 +109,52 @@ func FromCVE(id string, cve cves.CVEItem, pkg, ecosystem, versionType string, va
 	version, versionNotes := cves.ExtractVersionInfo(cve, validVersions)
 	notes = append(notes, versionNotes...)
 
+	repoToCommits := map[string][]string{}
 	for _, fixCommit := range version.FixCommits {
-		v.Affects.Ranges = append(v.Affects.Ranges, AffectedRange{
-			Type:  "GIT",
-			Repo:  fixCommit.Repo,
-			Fixed: fixCommit.Commit,
-		})
+		repoToCommits[fixCommit.Repo] = append(repoToCommits[fixCommit.Repo], fixCommit.Commit)
 	}
 
-	for _, affected := range version.AffectedVersions {
-		v.Affects.Ranges = append(v.Affects.Ranges, AffectedRange{
-			Type:       versionType,
-			Introduced: affected.Introduced,
-			Fixed:      affected.Fixed,
-		})
+	for repo, commits := range repoToCommits {
+		gitRange := AffectedRange{
+			Type: "GIT",
+			Repo: repo,
+		}
+		for _, commit := range commits {
+			gitRange.Events = append(gitRange.Events, Event{Fixed: commit})
+		}
+		affected.Ranges = append(affected.Ranges, gitRange)
 	}
+
+	versionRange := AffectedRange{
+		Type: "ECOSYSTEM",
+	}
+	seenIntroduced := map[string]bool{}
+	seenFixed := map[string]bool{}
+
+	for _, v := range version.AffectedVersions {
+		var introduced string
+		if v.Introduced == "" {
+			introduced = "0"
+		} else {
+			introduced = v.Introduced
+		}
+
+		if _, seen := seenIntroduced[introduced]; !seen {
+			versionRange.Events = append(versionRange.Events, Event{
+				Introduced: introduced,
+			})
+			seenIntroduced[introduced] = true
+		}
+
+		if _, seen := seenFixed[v.Fixed]; v.Fixed != "" && !seen {
+			versionRange.Events = append(versionRange.Events, Event{
+				Fixed: v.Fixed,
+			})
+			seenFixed[v.Fixed] = true
+		}
+	}
+	affected.Ranges = append(affected.Ranges, versionRange)
+	v.Affected = append(v.Affected, affected)
 	return &v, notes
 }
 

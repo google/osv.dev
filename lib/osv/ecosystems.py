@@ -90,6 +90,9 @@ class PyPI(Ecosystem):
 
     parsed_versions = [packaging.version.parse(v) for v in versions]
 
+    if introduced == '0':
+      introduced = None
+
     if introduced:
       introduced = packaging.version.parse(introduced)
       start_idx = bisect.bisect_left(parsed_versions, introduced)

@@ -103,22 +103,30 @@ class RepoAnalyzer:
                           fix_commits,
                           limit_commits=None):
     """Get affected range."""
-    # TODO(ochang): Use limits.
-    del limit_commits
-
     range_collector = RangeCollector()
     commits = set()
     seen_commits = set()
     tags = set()
     commits_to_tags = _get_commit_to_tag_mappings(repo)
+    branch_to_limit = {}
 
     branches = []
-    if self.detect_cherrypicks:
+    detect_cherrypicks = self.detect_cherrypicks and not limit_commits
+    if detect_cherrypicks:
       # Check all branches for cherry picked regress/fix commits (sorted for
       # determinism).
       branches = sorted(repo.branches.remote)
     else:
-      if fix_commits:
+      if limit_commits:
+        for limit_commit in limit_commits:
+          current_branches = _branches_with_commit(repo, limit_commit)
+          for branch in current_branches:
+            branch_to_limit[branch] = limit_commit
+
+          branches.extend(current_branches)
+      elif fix_commits:
+        # TODO(ochang): Remove this check. This behaviour should only be keyed
+        # on `limit_commits`.
         # If not detecting cherry picks, take only branches that contain the fix
         # commit. Otherwise we may have false positives.
         for fix_commit in fix_commits:
@@ -138,10 +146,7 @@ class RepoAnalyzer:
         logging.info('Finding equivalent regress commit to %s in %s',
                      regress_commit, ref)
         equivalent_regress_commit = self._get_equivalent_commit(
-            repo,
-            ref,
-            regress_commit,
-            detect_cherrypicks=self.detect_cherrypicks)
+            repo, ref, regress_commit, detect_cherrypicks=detect_cherrypicks)
         if equivalent_regress_commit:
           break
 
@@ -155,7 +160,7 @@ class RepoAnalyzer:
         logging.info('Finding equivalent fix commit to %s in %s', fix_commit,
                      ref)
         equivalent_fix_commit = self._get_equivalent_commit(
-            repo, ref, fix_commit, detect_cherrypicks=self.detect_cherrypicks)
+            repo, ref, fix_commit, detect_cherrypicks=detect_cherrypicks)
         if equivalent_fix_commit:
           break
 
@@ -179,7 +184,8 @@ class RepoAnalyzer:
           end_commit,
           commits_to_tags=commits_to_tags,
           include_start=True,
-          include_end=include_end)
+          include_end=include_end,
+          limit_commit=branch_to_limit.get(branch))
       commits.update(cur_commits)
       tags.update(cur_tags)
 
@@ -248,8 +254,16 @@ def get_commit_and_tag_list(repo,
                             end_commit,
                             commits_to_tags=None,
                             include_start=False,
-                            include_end=True):
+                            include_end=True,
+                            limit_commit=None):
   """Given a commit range, return the list of commits and tags in the range."""
+  if limit_commit:
+    if str(repo.merge_base(end_commit, limit_commit)) == limit_commit:
+      # Limit commit is an earlier ancestor, so use that as the end of the
+      # range instead.
+      include_end = False
+      end_commit = limit_commit
+
   logging.info('Getting commits %s..%s', start_commit, end_commit)
   try:
     walker = repo.walk(end_commit,
@@ -365,6 +379,7 @@ def enumerate_versions(package, ecosystem, affected_range):
   """Enumerate versions from SEMVER and ECOSYSTEM input ranges."""
   versions = set()
   sorted_events = []
+  limits = []
 
   # Remove any magic '0' values.
   zero_event = None
@@ -375,6 +390,10 @@ def enumerate_versions(package, ecosystem, affected_range):
 
     if event.introduced or event.fixed:
       sorted_events.append(event)
+      continue
+
+    if event.limit:
+      limits.append(event.limit)
 
   sorted_events.sort(key=lambda e: e.introduced or e.fixed)
   if zero_event:
@@ -386,15 +405,15 @@ def enumerate_versions(package, ecosystem, affected_range):
       last_introduced = event.introduced
 
     if event.fixed:
-      current_versions = ecosystem.enumerate_versions(package, last_introduced,
-                                                      event.fixed)
+      current_versions = ecosystem.enumerate_versions(
+          package, last_introduced, event.fixed, limits=limits)
       if current_versions:
         versions.update(current_versions)
       last_introduced = None
 
   if last_introduced:
-    current_versions = ecosystem.enumerate_versions(package, last_introduced,
-                                                    event.fixed)
+    current_versions = ecosystem.enumerate_versions(
+        package, last_introduced, None, limits=limits)
     if current_versions:
       versions.update(current_versions)
 
@@ -598,8 +617,9 @@ def analyze(vulnerability,
         # Enumerate ECOSYSTEM and SEMVER ranges.
         ecosystem_helpers = ecosystems.get(affected_package.package.ecosystem)
         if ecosystem_helpers:
-          versions = enumerate_versions(affected_package.package.name,
-                                        ecosystem_helpers, affected_range)
+          versions.extend(
+              enumerate_versions(affected_package.package.name,
+                                 ecosystem_helpers, affected_range))
         else:
           logging.warning('No ecosystem helpers implemented for %s',
                           affected_package.package.ecosystem)

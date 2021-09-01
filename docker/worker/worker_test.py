@@ -575,6 +575,9 @@ class UpdateTest(unittest.TestCase, ExpectationTest):
     self.mock_repo.add_file(
         'BLAH-127.old.yaml',
         self._load_test_data(os.path.join(TEST_DATA_DIR, 'BLAH-127.old.yaml')))
+    self.mock_repo.add_file(
+        'BLAH-128.yaml',
+        self._load_test_data(os.path.join(TEST_DATA_DIR, 'BLAH-128.yaml')))
     self.mock_repo.commit('User', 'user@email')
 
     self.source_repo = osv.SourceRepository(
@@ -685,6 +688,40 @@ class UpdateTest(unittest.TestCase, ExpectationTest):
         'eefe8ec3f1f90d0e684890e810f3f21e8500a4cd',
         'febfac1940086bc1f6d3dc33fda0a1d1ba336209',
         'ff8cc32ba60ad9cbb3b23f0a82aad96ebe9ff76b',
+    ], [commit.commit for commit in affected_commits])
+
+  def test_update_limit(self):
+    """Test basic update with limit events."""
+    task_runner = worker.TaskRunner(ndb_client, None, self.tmp_dir.name, None,
+                                    None)
+    message = mock.Mock()
+    message.attributes = {
+        'source': 'source',
+        'path': 'BLAH-128.yaml',
+        'original_sha256': ('54683c1611241e58bfe7489df6d5431fa'
+                            '476ff15eaf7511e2800246733ff3975'),
+        'deleted': 'false',
+    }
+    task_runner._source_update(message)
+
+    repo = pygit2.Repository(self.remote_source_repo_path)
+    commit = repo.head.peel()
+
+    self.assertEqual('infra@osv.dev', commit.author.email)
+    self.assertEqual('OSV', commit.author.name)
+    self.assertEqual('Update BLAH-128', commit.message)
+    diff = repo.diff(commit.parents[0], commit)
+
+    self.expect_equal('diff_update_limit', diff.patch)
+    self.expect_dict_equal('update_limit',
+                           osv.Bug.get_by_id('BLAH-128')._to_dict())
+
+    affected_commits = list(osv.AffectedCommit.query())
+    self.assertCountEqual([
+        'a2ba949290915d445d34d0e8e9de2e7ce38198fc',
+        'e1b045257bc5ca2a11d0476474f45ef77a0366c7',
+        'eefe8ec3f1f90d0e684890e810f3f21e8500a4cd',
+        'b1c95a196f22d06fcf80df8c6691cd113d8fefff',
     ], [commit.commit for commit in affected_commits])
 
   def test_update_add_fix_pre_0_8(self):

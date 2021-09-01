@@ -546,32 +546,69 @@ class Bug(ndb.Model):
 
     return affects
 
-  def to_vulnerability(self, include_source=False):
+  def to_vulnerability(self, include_source=False, v0_7=True, v0_8=False):
     """Convert to Vulnerability proto."""
     package = None
     ecosystem_specific = None
     database_specific = None
+    affected = []
     affects = None
 
     if self.affected_packages:
-      # The pre-0.8 schema only supports a single package, so we take the
-      # first.
-      affected_package = self.affected_packages[0]
+      if v0_7:
+        # The pre-0.8 schema only supports a single package, so we take the
+        # first.
+        affected_package = self.affected_packages[0]
 
-      package = vulnerability_pb2.Package(
-          name=affected_package.package.name,
-          ecosystem=affected_package.package.ecosystem,
-          purl=affected_package.package.purl)
+        package = vulnerability_pb2.Package(
+            name=affected_package.package.name,
+            ecosystem=affected_package.package.ecosystem,
+            purl=affected_package.package.purl)
 
-      affects = self._get_pre_0_8_affects()
-      if affected_package.ecosystem_specific:
-        ecosystem_specific = affected_package.ecosystem_specific
-      if affected_package.database_specific:
-        database_specific = affected_package.database_specific
+        affects = self._get_pre_0_8_affects()
+        if affected_package.ecosystem_specific:
+          ecosystem_specific = affected_package.ecosystem_specific
+        if affected_package.database_specific:
+          database_specific = affected_package.database_specific
+
+      if v0_8:
+        for affected_package in self.affected_packages:
+          ranges = []
+          for affected_range in affected_package.ranges:
+            events = []
+            for event in affected_range.events:
+              kwargs = {event.type: event.value}
+              events.append(vulnerability_pb2.Event(**kwargs))
+
+            current_range = vulnerability_pb2.Range(
+                type=vulnerability_pb2.Range.Type.Value(affected_range.type),
+                repo=affected_range.repo_url,
+                events=events)
+
+            ranges.append(current_range)
+
+          current = vulnerability_pb2.Affected(
+              package=vulnerability_pb2.Package(
+                  name=affected_package.package.name,
+                  ecosystem=affected_package.package.ecosystem,
+                  purl=affected_package.package.purl),
+              ranges=ranges,
+              versions=affected_package.versions)
+
+          if affected_package.database_specific:
+            current.database_specific.update(
+                affected_package.database_specific)
+
+          if affected_package.ecosystem_specific:
+            current.ecosystem_specific.update(
+                affected_package.ecosystem_specific)
+
+        affected.append(current)
 
     details = self.details
     if self.status == bug.BugStatus.INVALID:
       affects = None
+      affected = None
       details = 'INVALID'
 
     if self.last_modified:
@@ -607,6 +644,7 @@ class Bug(ndb.Model):
         details=details,
         package=package,
         affects=affects,
+        affected=affected,
         references=references)
 
     if ecosystem_specific:

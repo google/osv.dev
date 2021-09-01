@@ -529,6 +529,10 @@ class Bug(ndb.Model):
               cur_range.introduced = ''
 
         if event.type == 'fixed':
+          if affected_range.type != 'GIT' and not cur_range.introduced:
+            # No prior introduced, so ignore this invalid entry.
+            continue
+
           # Found a complete pair.
           cur_range.fixed = event.value
           affects.ranges.append(cur_range)

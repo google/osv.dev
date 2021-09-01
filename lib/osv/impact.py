@@ -404,7 +404,7 @@ def enumerate_versions(package, ecosystem, affected_range):
     if event.introduced and not last_introduced:
       last_introduced = event.introduced
 
-    if event.fixed:
+    if last_introduced and event.fixed:
       current_versions = ecosystem.enumerate_versions(
           package, last_introduced, event.fixed, limits=limits)
       if current_versions:

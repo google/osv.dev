@@ -14,6 +14,7 @@
 """Test helpers."""
 import datetime
 import os
+import pprint
 import requests
 import subprocess
 import tempfile
@@ -26,6 +27,35 @@ _EMULATOR_TIMEOUT = 30
 _DATASTORE_EMULATOR_PORT = 8002
 _DATASTORE_READY_INDICATOR = b'is now running'
 TEST_PROJECT_ID = 'test-osv'
+
+
+def ExpectationTest(test_data_dir):  # pylint: disable=invalid-name
+  """Mixin for test output generation/comparison."""
+
+  class Mixin:
+    """Mixin."""
+
+    def _load_expected(self, expected_name, actual):
+      """Load expected data."""
+      expected_path = os.path.join(
+          test_data_dir, f'{self.__class__.__name__}_{expected_name}.txt')
+      if os.getenv('TESTS_GENERATE'):
+        pp = pprint.PrettyPrinter(indent=4)
+        with open(expected_path, 'w') as f:
+          f.write(pp.pformat(actual))
+
+      with open(expected_path) as f:
+        return eval(f.read())  # pylint: disable=eval-used
+
+    def expect_dict_equal(self, expected_name, actual):
+      """Check if the output dict is equal to the expected value."""
+      self.assertDictEqual(self._load_expected(expected_name, actual), actual)
+
+    def expect_equal(self, expected_name, actual):
+      """Check if the output is equal to the expected value."""
+      self.assertEqual(self._load_expected(expected_name, actual), actual)
+
+  return Mixin
 
 
 class MockRepo:

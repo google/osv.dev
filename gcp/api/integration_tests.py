@@ -41,6 +41,29 @@ class IntegrationTests(unittest.TestCase):
 
   _VULN_744 = {
       'published': '2020-07-04T00:00:01.948828Z',
+      'affected': [{
+          'database_specific': {
+              'source': 'https://github.com/google/oss-fuzz-vulns/'
+                        'blob/main/vulns/mruby/OSV-2020-744.yaml'
+          },
+          'ecosystem_specific': {
+              'severity': 'HIGH'
+          },
+          'package': {
+              'ecosystem': 'OSS-Fuzz',
+              'name': 'mruby'
+          },
+          'ranges': [{
+              'events': [{
+                  'introduced': '9cdf439db52b66447b4e37c61179d54fad6c8f33'
+              }, {
+                  'fixed': '97319697c8f9f6ff27b32589947e1918e3015503'
+              }],
+              'repo': 'https://github.com/mruby/mruby',
+              'type': 'GIT'
+          }],
+          'versions': ['2.1.2', '2.1.2-rc', '2.1.2-rc2']
+      }],
       'affects': {
           'ranges': [{
               'type': 'GIT',
@@ -101,6 +124,32 @@ class IntegrationTests(unittest.TestCase):
 
   _VULN_GO_2020_0004 = {
       'id': 'GO-2020-0004',
+      'affected': [{
+          'database_specific': {
+              'source': 'https://storage.googleapis.com/go-vulndb/'
+                        'github.com/nanobox-io/golang-nanoauth.json'
+          },
+          'ecosystem_specific': {
+              'symbols': [
+                  'Auth.ServerHTTP', 'Auth.ListenAndServeTLS',
+                  'Auth.ListenAndServe'
+              ],
+              'url': 'https://go.googlesource.com/vulndb/+/refs/heads/'
+                     'master/reports/GO-2020-0004.yaml'
+          },
+          'package': {
+              'ecosystem': 'Go',
+              'name': 'github.com/nanobox-io/golang-nanoauth'
+          },
+          'ranges': [{
+              'events': [{
+                  'introduced': '0.0.0-20160722212129-ac0cc4484ad4'
+              }, {
+                  'fixed': '0.0.0-20200131131040-063a3fb69896'
+              }],
+              'type': 'SEMVER'
+          }]
+      }],
       'package': {
           'name': 'github.com/nanobox-io/golang-nanoauth',
           'ecosystem': 'Go'

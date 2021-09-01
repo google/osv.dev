@@ -42,6 +42,10 @@ class IntegrationTests(unittest.TestCase):
   _VULN_744 = {
       'published': '2020-07-04T00:00:01.948828Z',
       'affected': [{
+          'database_specific': {
+              'source': 'https://github.com/google/oss-fuzz-vulns/'
+                        'blob/main/vulns/mruby/OSV-2020-744.yaml'
+          },
           'ecosystem_specific': {
               'severity': 'HIGH'
           },
@@ -121,6 +125,10 @@ class IntegrationTests(unittest.TestCase):
   _VULN_GO_2020_0004 = {
       'id': 'GO-2020-0004',
       'affected': [{
+          'database_specific': {
+              'source': 'https://storage.googleapis.com/go-vulndb/'
+                        'github.com/nanobox-io/golang-nanoauth.json'
+          },
           'ecosystem_specific': {
               'symbols': [
                   'Auth.ServerHTTP', 'Auth.ListenAndServeTLS',

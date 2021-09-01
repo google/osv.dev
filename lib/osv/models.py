@@ -554,6 +554,12 @@ class Bug(ndb.Model):
     affected = []
     affects = None
 
+    source_link = None
+    if self.source and include_source:
+      source_repo = get_source_repository(self.source)
+      if source_repo and source_repo.link:
+        source_link = source_repo.link + sources.source_path(source_repo, self)
+
     if self.affected_packages:
       if v0_7:
         # The pre-0.8 schema only supports a single package, so we take the
@@ -596,8 +602,10 @@ class Bug(ndb.Model):
               versions=affected_package.versions)
 
           if affected_package.database_specific:
-            current.database_specific.update(
-                affected_package.database_specific)
+            current.database_specific.update(affected_package.database_specific)
+
+          if source_link:
+            current.database_specific.update({'source': source_link})
 
           if affected_package.ecosystem_specific:
             current.ecosystem_specific.update(
@@ -653,14 +661,8 @@ class Bug(ndb.Model):
     if database_specific:
       result.database_specific.update(database_specific)
 
-    if self.source and include_source:
-      source_repo = get_source_repository(self.source)
-      if not source_repo or not source_repo.link:
-        return result
-
-      result.database_specific.update({
-          'source': source_repo.link + sources.source_path(source_repo, self),
-      })
+    if source_link:
+      result.database_specific.update({'source': source_link})
 
     return result
 

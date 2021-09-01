@@ -15,7 +15,6 @@
 # pylint: disable=line-too-long
 import datetime
 import os
-import pprint
 import shutil
 import tempfile
 import unittest
@@ -36,30 +35,6 @@ TEST_DATA_DIR = os.path.join(
 ndb_client = None
 
 # pylint: disable=protected-access,invalid-name
-
-
-class ExpectationTest:
-  """Mixin for test output generation/comparison."""
-
-  def _load_expected(self, expected_name, actual):
-    """Load expected data."""
-    expected_path = os.path.join(
-        TEST_DATA_DIR, f'{self.__class__.__name__}_{expected_name}.txt')
-    if os.getenv('TESTS_GENERATE'):
-      pp = pprint.PrettyPrinter(indent=4)
-      with open(expected_path, 'w') as f:
-        f.write(pp.pformat(actual))
-
-    with open(expected_path) as f:
-      return eval(f.read())  # pylint: disable=eval-used
-
-  def expect_dict_equal(self, expected_name, actual):
-    """Check if the output dict is equal to the expected value."""
-    self.assertDictEqual(self._load_expected(expected_name, actual), actual)
-
-  def expect_equal(self, expected_name, actual):
-    """Check if the output is equal to the expected value."""
-    self.assertEqual(self._load_expected(expected_name, actual), actual)
 
 
 class OssFuzzDetailsTest(unittest.TestCase):
@@ -133,7 +108,7 @@ class OssFuzzDetailsTest(unittest.TestCase):
         'Bar\n', details)
 
 
-class ImpactTest(unittest.TestCase, ExpectationTest):
+class ImpactTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
   """Impact task tests."""
 
   def setUp(self):
@@ -526,7 +501,7 @@ class FindOssFuzzFixViaCommitTest(unittest.TestCase):
     self.assertIsNone(commit)
 
 
-class UpdateTest(unittest.TestCase, ExpectationTest):
+class UpdateTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
   """Vulnerability update tests."""
 
   def mock_clone(self, repo_url, *args, **kwargs):

@@ -34,7 +34,7 @@ _EMPTY_VULNERABILITY = 'id: EMPTY'
 
 
 @mock.patch('importer.utcnow', lambda: datetime.datetime(2021, 1, 1))
-class ImporterTest(unittest.TestCase):
+class ImporterTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
   """Importer tests."""
 
   def _load_test_data(self, name):
@@ -136,8 +136,7 @@ class ImporterTest(unittest.TestCase):
     self.assertEqual('OSV', commit.author.name)
     self.assertEqual('Import from OSS-Fuzz', commit.message)
     diff = repo.diff(commit.parents[0], commit)
-    self.assertEqual(
-        self._load_test_data('expected_patch_basic.diff'), diff.patch)
+    self.expect_equal('diff_basic', diff.patch)
 
     mock_publish.assert_has_calls([
         mock.call(

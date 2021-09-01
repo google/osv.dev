@@ -59,7 +59,7 @@
                                                                      'value': '1.14.2'},
                                                                  {   'type': 'fixed',
                                                                      'value': '1.31.0'}],
-                                                   'repo_url': '',
+                                                   'repo_url': None,
                                                    'type': 'ECOSYSTEM'},
                                                {   'events': [   {   'type': 'introduced',
                                                                      'value': 'eefe8ec3f1f90d0e684890e810f3f21e8500a4cd'},

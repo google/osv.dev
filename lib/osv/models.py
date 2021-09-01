@@ -19,6 +19,7 @@ import re
 import os
 
 from google.cloud import ndb
+from google.protobuf import json_format
 from google.protobuf import timestamp_pb2
 
 # pylint: disable=relative-beyond-top-level
@@ -379,22 +380,8 @@ class Bug(ndb.Model):
 
       self.key = ndb.Key(Bug, key_id)
 
-  def update_from_vulnerability(self, vulnerability):
-    """Set fields from vulnerability. Does not set the ID."""
-    self.summary = vulnerability.summary
-    self.details = vulnerability.details
-    self.reference_url_types = {
-        ref.url: vulnerability_pb2.Reference.Type.Name(ref.type)
-        for ref in vulnerability.references
-    }
-
-    if vulnerability.HasField('modified'):
-      self.last_modified = vulnerability.modified.ToDatetime()
-    if vulnerability.HasField('published'):
-      self.timestamp = vulnerability.published.ToDatetime()
-    if vulnerability.HasField('withdrawn'):
-      self.withdrawn = vulnerability.withdrawn.ToDatetime()
-
+  def _update_from_pre_0_8(self, vulnerability):
+    """Update from pre 0.8 import."""
     if self.affected_packages:
       affected_package = self.affected_packages[0]
     else:
@@ -444,6 +431,72 @@ class Bug(ndb.Model):
 
       affected_package.ranges.append(affected_range)
 
+  def update_from_vulnerability(self, vulnerability):
+    """Set fields from vulnerability. Does not set the ID."""
+    self.summary = vulnerability.summary
+    self.details = vulnerability.details
+    self.reference_url_types = {
+        ref.url: vulnerability_pb2.Reference.Type.Name(ref.type)
+        for ref in vulnerability.references
+    }
+
+    if vulnerability.HasField('modified'):
+      self.last_modified = vulnerability.modified.ToDatetime()
+    if vulnerability.HasField('published'):
+      self.timestamp = vulnerability.published.ToDatetime()
+    if vulnerability.HasField('withdrawn'):
+      self.withdrawn = vulnerability.withdrawn.ToDatetime()
+
+    if not vulnerability.affected:
+      self._update_from_pre_0_8(vulnerability)
+      return
+
+    self.affected_packages = []
+    for affected_package in vulnerability.affected:
+      current = AffectedPackage()
+      current.package = Package(
+          name=affected_package.package.name,
+          ecosystem=affected_package.package.ecosystem,
+          purl=affected_package.package.purl)
+      current.ranges = []
+
+      for affected_range in affected_package.ranges:
+        current_range = AffectedRange2(
+            type=vulnerability_pb2.Range.Type.Name(affected_range.type),
+            repo_url=affected_range.repo,
+            events=[])
+
+        for evt in affected_range.events:
+          if evt.introduced:
+            current_range.events.append(
+                AffectedEvent(type='introduced', value=evt.introduced))
+            continue
+
+          if evt.fixed:
+            current_range.events.append(
+                AffectedEvent(type='fixed', value=evt.fixed))
+            continue
+
+          if evt.limit:
+            current_range.events.append(
+                AffectedEvent(type='limit', value=evt.limit))
+            continue
+
+        current.ranges.append(current_range)
+
+      current.versions = list(affected_package.versions)
+      if affected_package.database_specific:
+        current.database_specific = json_format.MessageToDict(
+            affected_package.database_specific,
+            preserving_proto_field_name=True)
+
+      if affected_package.ecosystem_specific:
+        current.ecosystem_specific = json_format.MessageToDict(
+            affected_package.ecosystem_specific,
+            preserving_proto_field_name=True)
+
+      self.affected_packages.append(current)
+
   def _get_pre_0_8_affects(self):
     """Get pre 0.8 schema affects field."""
     affected_package = self.affected_packages[0]
@@ -476,6 +529,10 @@ class Bug(ndb.Model):
               cur_range.introduced = ''
 
         if event.type == 'fixed':
+          if affected_range.type != 'GIT' and not cur_range.introduced:
+            # No prior introduced, so ignore this invalid entry.
+            continue
+
           # Found a complete pair.
           cur_range.fixed = event.value
           affects.ranges.append(cur_range)

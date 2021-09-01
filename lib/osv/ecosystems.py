@@ -24,6 +24,14 @@ from . import semver_index
 class Ecosystem:
   """Ecosystem helpers."""
 
+  def _before_limits(self, version, limits):
+    """Return whether or not the given version is before any limits."""
+    if not limits or '*' in limits:
+      return True
+
+    return any(
+        self.sort_key(version) < self.sort_key(limit) for limit in limits)
+
   def sort_key(self, version):
     """Sort key."""
     raise NotImplementedError
@@ -32,7 +40,7 @@ class Ecosystem:
     """Sort versions."""
     versions.sort(key=self.sort_key)
 
-  def enumerate_versions(self, package, introduced, fixed):
+  def enumerate_versions(self, package, introduced, fixed, limits=None):
     """Enumerate versions."""
     raise NotImplementedError
 
@@ -48,11 +56,12 @@ class SemverEcosystem(Ecosystem):
     """Sort key."""
     return semver_index.parse(version)
 
-  def enumerate_versions(self, package, introduced, fixed):
+  def enumerate_versions(self, package, introduced, fixed, limits=None):
     """Enumerate versions (no-op)."""
     del package
     del introduced
     del fixed
+    del limits
 
   @property
   def is_semver(self):
@@ -72,7 +81,7 @@ class PyPI(Ecosystem):
     """Sort key."""
     return packaging.version.parse(version)
 
-  def enumerate_versions(self, package, introduced, fixed):
+  def enumerate_versions(self, package, introduced, fixed, limits=None):
     """Enumerate versions."""
     response = requests.get(self._API_PACKAGE_URL.format(package=package))
     response = response.json()
@@ -93,7 +102,8 @@ class PyPI(Ecosystem):
     else:
       end_idx = len(versions)
 
-    return versions[start_idx:end_idx]
+    affected = versions[start_idx:end_idx]
+    return [v for v in affected if self._before_limits(v, limits)]
 
 
 _ecosystems = {

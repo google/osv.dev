@@ -212,6 +212,7 @@ def add_fix_information(vulnerability, bug, fix_result):
                 for event in affected_range.events) and
             not any(event.fixed == fix_commit
                     for event in affected_range.events)):
+          added_fix = True
           affected_range.events.add(fixed=fix_commit)
 
       if added_fix:

@@ -133,7 +133,7 @@ def _commit_to_link(repo_url, commit):
 def ecosystems_handler():
   """Get list of ecosystems."""
   query = osv.Bug.query(projection=[osv.Bug.ecosystem], distinct=True)
-  return jsonify(sorted([bug.ecosystem for bug in query if bug.ecosystem]))
+  return jsonify(sorted([bug.ecosystem[0] for bug in query if bug.ecosystem]))
 
 
 @blueprint.route(_BACKEND_ROUTE + '/query')

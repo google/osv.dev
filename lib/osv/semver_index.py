@@ -13,6 +13,8 @@
 # limitations under the License.
 """SemVer indexer."""
 
+import re
+
 import semver
 
 _PAD_WIDTH = 8
@@ -29,6 +31,17 @@ def _strip_leading_v(version):
   return version
 
 
+def coerce(version):
+  """Coerce a potentially invalid semver into valid semver."""
+  version = _strip_leading_v(version)
+  version_pattern = re.compile(r'^(\d+)(\.\d+)?(\.\d+)?$')
+  match = version_pattern.match(version)
+  if not match:
+    return version
+
+  return match.group(1) + (match.group(2) or '.0') + (match.group(3) or '.0')
+
+
 def is_valid(version):
   """Returns whether or not the version is a valid semver."""
   return semver.VersionInfo.isvalid(_strip_leading_v(version))
@@ -36,7 +49,7 @@ def is_valid(version):
 
 def parse(version):
   """Parse a SemVer."""
-  return semver.VersionInfo.parse(_strip_leading_v(version))
+  return semver.VersionInfo.parse(coerce(version))
 
 
 def normalize(version):

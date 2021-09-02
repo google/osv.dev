@@ -23,6 +23,25 @@ import semver_index
 class SemverIndexTests(unittest.TestCase):
   """SemVer index tests."""
 
+  def test_coerce(self):
+    """Test coerce."""
+    self.assertEqual('1.0.0', semver_index.coerce('1'))
+    self.assertEqual('1.0.0', semver_index.coerce('v1'))
+    self.assertEqual('1.0.0', semver_index.coerce('v1.0'))
+    self.assertEqual('1.0.0', semver_index.coerce('1.0.0'))
+
+    self.assertEqual('1.5.0', semver_index.coerce('1.5'))
+    self.assertEqual('1.5.0', semver_index.coerce('v1.5'))
+    self.assertEqual('1.5.0', semver_index.coerce('v1.5.0'))
+    self.assertEqual('1.5.1', semver_index.coerce('1.5.1'))
+
+    self.assertEqual('', semver_index.coerce(''))
+    self.assertEqual('rubbish', semver_index.coerce('rubbish'))
+    self.assertEqual('a1.0.0', semver_index.coerce('a1.0.0'))
+    self.assertEqual('1.0.0.0', semver_index.coerce('1.0.0.0'))
+    self.assertEqual('1.0.0-foo', semver_index.coerce('1.0.0-foo'))
+    self.assertEqual('1-foo', semver_index.coerce('1-foo'))
+
   def test_normalize(self):
     """Test version normalization."""
     versions = [

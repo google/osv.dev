@@ -1,5 +1,21 @@
 ## Prerequisites
 
+Install `protoc` for your platform:
+
+https://grpc.io/docs/protoc-installation/
+
+In the root directory, update submodules:
+
+```bash
+git submodule update --init --recursive
+```
+
+Install `protoc-gen-openapiv2`:
+
+```bash
+go install github.com/grpc-ecosystem/grpc-gateway/v2/protoc-gen-openapiv2
+```
+
 To install the protobuf service converter, run:
 
 ```bash

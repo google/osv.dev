@@ -41,7 +41,7 @@ class Exporter:
   def run(self):
     """Run exporter."""
     query = osv.Bug.query(projection=[osv.Bug.ecosystem], distinct=True)
-    ecosystems = [bug.ecosystem for bug in query if bug.ecosystem]
+    ecosystems = [bug.ecosystem[0] for bug in query if bug.ecosystem]
 
     for ecosystem in ecosystems:
       with tempfile.TemporaryDirectory() as tmp_dir:

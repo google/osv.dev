@@ -119,7 +119,7 @@ def main():
 
   spec['paths']['/v1/vulns/{id}']['get']['x-code-samples'] = [{
       'lang': 'Curl example',
-      'source': 'curl "https://api.osv.dev/v1/vulns/2020-111"'
+      'source': 'curl "https://api.osv.dev/v1/vulns/OSV-2020-111"'
   }]
 
   property_description_workaround(spec['definitions']['v1Query'])

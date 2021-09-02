@@ -83,7 +83,7 @@
         "x-code-samples": [
           {
             "lang": "Curl example",
-            "source": "curl \"https://api.osv.dev/v1/vulns/2020-111\""
+            "source": "curl \"https://api.osv.dev/v1/vulns/OSV-2020-111\""
           }
         ]
       }
@@ -154,6 +154,38 @@
     }
   },
   "definitions": {
+    "osvAffected": {
+      "type": "object",
+      "properties": {
+        "package": {
+          "$ref": "#/definitions/osvPackage",
+          "description": "Required. Package information."
+        },
+        "ranges": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/osvRange"
+          },
+          "description": "Required. Range information."
+        },
+        "versions": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Optional. List of affected versions."
+        },
+        "ecosystemSpecific": {
+          "type": "object",
+          "description": "Optional. JSON object holding additional information about the\nvulnerability as defined by the ecosystem for which the record applies."
+        },
+        "databaseSpecific": {
+          "type": "object",
+          "description": "Optional. JSON object holding additional information about the\nvulnerability as defined by the database for which the record applies."
+        }
+      },
+      "description": "Affected versions and commits."
+    },
     "osvAffectedRange": {
       "type": "object",
       "properties": {
@@ -208,7 +240,25 @@
           "description": "Optional. List of affected versions. This should match tag names in the\nupstream repository. OSV will populate or add to this automatically\nbased on the provided commit ranges."
         }
       },
-      "description": "Affected versions and commits."
+      "description": "Affected versions and commits. Deprecated."
+    },
+    "osvEvent": {
+      "type": "object",
+      "properties": {
+        "introduced": {
+          "type": "string",
+          "description": "The earliest version/commit where this vulnerability\nwas introduced in."
+        },
+        "fixed": {
+          "type": "string",
+          "description": "The version/commit that this vulnerability was fixed in."
+        },
+        "limit": {
+          "type": "string",
+          "description": "The limit to apply to the range."
+        }
+      },
+      "description": "Version events."
     },
     "osvPackage": {
       "type": "object",
@@ -227,6 +277,38 @@
         }
       },
       "description": "Package information and version."
+    },
+    "osvRange": {
+      "type": "object",
+      "properties": {
+        "type": {
+          "$ref": "#/definitions/osvRangeType",
+          "description": "Required. The type of version information."
+        },
+        "repo": {
+          "type": "string",
+          "description": "Required if type is GIT. The publicly accessible URL of the repo that can\nbe directly passed to clone commands."
+        },
+        "events": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/osvEvent"
+          },
+          "description": "Required. Version event information."
+        }
+      },
+      "description": "Affected ranges."
+    },
+    "osvRangeType": {
+      "type": "string",
+      "enum": [
+        "UNSPECIFIED",
+        "GIT",
+        "SEMVER",
+        "ECOSYSTEM"
+      ],
+      "default": "UNSPECIFIED",
+      "description": "Type of the version information."
     },
     "osvReference": {
       "type": "object",
@@ -319,12 +401,19 @@
           "description": "Required. Any additional human readable details for the vulnerability."
         },
         "affects": {
-          "description": "Required. Affected commit ranges and versions.",
+          "description": "Required. Affected commit ranges and versions. Deprecated.",
           "allOf": [
             {
               "$ref": "#/definitions/osvAffects"
             }
           ]
+        },
+        "affected": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/osvAffected"
+          },
+          "description": "Required. Affected commit ranges and versions."
         },
         "references": {
           "type": "array",

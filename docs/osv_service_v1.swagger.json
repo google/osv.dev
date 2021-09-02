@@ -83,7 +83,7 @@
         "x-code-samples": [
           {
             "lang": "Curl example",
-            "source": "curl \"https://api.osv.dev/v1/vulns/2020-111\""
+            "source": "curl \"https://api.osv.dev/v1/vulns/OSV-2020-111\""
           }
         ]
       }

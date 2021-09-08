@@ -127,15 +127,15 @@ class IntegrationTests(unittest.TestCase):
       'affected': [{
           'database_specific': {
               'source': 'https://storage.googleapis.com/go-vulndb/'
-                        'github.com/nanobox-io/golang-nanoauth.json'
+                        'github.com/nanobox-io/golang-nanoauth.json',
+              'url': 'https://go.googlesource.com/vulndb/+/refs/heads/'
+                     'master/reports/GO-2020-0004.yaml'
           },
           'ecosystem_specific': {
               'symbols': [
                   'Auth.ServerHTTP', 'Auth.ListenAndServeTLS',
                   'Auth.ListenAndServe'
               ],
-              'url': 'https://go.googlesource.com/vulndb/+/refs/heads/'
-                     'master/reports/GO-2020-0004.yaml'
           },
           'package': {
               'ecosystem': 'Go',
@@ -172,8 +172,6 @@ class IntegrationTests(unittest.TestCase):
           'symbols': [
               'Auth.ServerHTTP', 'Auth.ListenAndServeTLS', 'Auth.ListenAndServe'
           ],
-          'url': 'https://go.googlesource.com/vulndb/+/refs/heads/master/'
-                 'reports/GO-2020-0004.yaml'
       },
       'references': [{
           'type': 'FIX',
@@ -185,8 +183,113 @@ class IntegrationTests(unittest.TestCase):
       }],
       'database_specific': {
           'source': 'https://storage.googleapis.com/go-vulndb/'
-                    'github.com/nanobox-io/golang-nanoauth.json'
+                    'github.com/nanobox-io/golang-nanoauth.json',
+          'url': 'https://go.googlesource.com/vulndb/+/refs/heads/master/'
+                 'reports/GO-2020-0004.yaml'
       }
+  }
+
+  _VULN_GO_2020_0015 = {
+      'affected': [{
+          'database_specific': {
+              'source':
+                  'https://storage.googleapis.com/go-vulndb/golang.org/'
+                  'x/text.json',
+              'url':
+                  'https://go.googlesource.com/vulndb/+/refs/heads/master/'
+                  'reports/GO-2020-0015.yaml'
+          },
+          'ecosystem_specific': {
+              'symbols': ['utf16Decoder.Transform']
+          },
+          'package': {
+              'ecosystem': 'Go',
+              'name': 'golang.org/x/text/encoding/unicode'
+          },
+          'ranges': [{
+              'events': [{
+                  'introduced': '0'
+              }, {
+                  'fixed': '0.3.3'
+              }],
+              'type': 'SEMVER'
+          }]
+      }, {
+          'database_specific': {
+              'source':
+                  'https://storage.googleapis.com/go-vulndb/golang.org/'
+                  'x/text.json',
+              'url':
+                  'https://go.googlesource.com/vulndb/+/refs/heads/master/'
+                  'reports/GO-2020-0015.yaml'
+          },
+          'ecosystem_specific': {
+              'symbols': ['Transform']
+          },
+          'package': {
+              'ecosystem': 'Go',
+              'name': 'golang.org/x/text/transform'
+          },
+          'ranges': [{
+              'events': [{
+                  'introduced': '0'
+              }, {
+                  'fixed': '0.3.3'
+              }],
+              'type': 'SEMVER'
+          }]
+      }],
+      'affects': {
+          'ranges': [{
+              'fixed': '0.3.3',
+              'type': 'SEMVER'
+          }]
+      },
+      'aliases': ['CVE-2020-14040'],
+      'database_specific': {
+          'source':
+              'https://storage.googleapis.com/go-vulndb/golang.org/x/text.json',
+          'url':
+              'https://go.googlesource.com/vulndb/+/refs/heads/master/'
+              'reports/GO-2020-0015.yaml'
+      },
+      'details':
+          'An attacker could provide a single byte to a [`UTF16`] decoder '
+          'instantiated with\n'
+          '[`UseBOM`] or [`ExpectBOM`] to trigger an infinite loop if the '
+          '[`String`] function on\n'
+          'the [`Decoder`] is called, or the [`Decoder`] is passed to '
+          '[`transform.String`].\n'
+          'If used to parse user supplied input, this may be used as a '
+          'denial of service\n'
+          'vector.\n',
+      'ecosystem_specific': {
+          'symbols': ['utf16Decoder.Transform']
+      },
+      'id':
+          'GO-2020-0015',
+      'package': {
+          'ecosystem': 'Go',
+          'name': 'golang.org/x/text/encoding/unicode'
+      },
+      'published':
+          '2021-04-14T12:00:00Z',
+      'references': [{
+          'type': 'FIX',
+          'url': 'https://go-review.googlesource.com/c/text/+/238238'
+      }, {
+          'type':
+              'FIX',
+          'url':
+              'https://github.com/golang/text/commit/'
+              '23ae387dee1f90d29a23c0e87ee0b46038fbed0e'
+      }, {
+          'type': 'WEB',
+          'url': 'https://github.com/golang/go/issues/39491'
+      }, {
+          'type': 'WEB',
+          'url': 'https://groups.google.com/g/golang-announce/c/bXVeAmGOqz0'
+      }]
   }
 
   def setUp(self):
@@ -212,6 +315,11 @@ class IntegrationTests(unittest.TestCase):
     """Test getting a vulnerability."""
     response = requests.get(_api() + '/v1/vulns/OSV-2020-744')
     self.assert_vuln_equal(self._VULN_744, response.json())
+
+  def test_get_with_multiple(self):
+    """Test getting a vulnerability with multiple packages."""
+    response = requests.get(_api() + '/v1/vulns/GO-2020-0015')
+    self.assert_vuln_equal(self._VULN_GO_2020_0015, response.json())
 
   def test_get_invalid(self):
     """Test getting an invalid vulnerability."""

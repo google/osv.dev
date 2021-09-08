@@ -393,9 +393,6 @@ class Bug(ndb.Model):
         ecosystem=vulnerability.package.ecosystem,
         purl=vulnerability.package.purl)
 
-    self.aliases = list(vulnerability.aliases)
-    self.related = list(vulnerability.related)
-
     vuln_dict = sources.vulnerability_to_dict(vulnerability)
     if vulnerability.database_specific:
       affected_package.database_specific = vuln_dict['database_specific']
@@ -446,6 +443,9 @@ class Bug(ndb.Model):
       self.timestamp = vulnerability.published.ToDatetime()
     if vulnerability.HasField('withdrawn'):
       self.withdrawn = vulnerability.withdrawn.ToDatetime()
+
+    self.aliases = list(vulnerability.aliases)
+    self.related = list(vulnerability.related)
 
     if not vulnerability.affected:
       self._update_from_pre_0_8(vulnerability)
@@ -609,7 +609,7 @@ class Bug(ndb.Model):
             current.ecosystem_specific.update(
                 affected_package.ecosystem_specific)
 
-        affected.append(current)
+          affected.append(current)
 
     details = self.details
     if self.status == bug.BugStatus.INVALID:

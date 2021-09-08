@@ -192,12 +192,10 @@ class IntegrationTests(unittest.TestCase):
   _VULN_GO_2020_0015 = {
       'affected': [{
           'database_specific': {
-              'source':
-                  'https://storage.googleapis.com/go-vulndb/golang.org/'
-                  'x/text.json',
-              'url':
-                  'https://go.googlesource.com/vulndb/+/refs/heads/master/'
-                  'reports/GO-2020-0015.yaml'
+              'source': 'https://storage.googleapis.com/go-vulndb/golang.org/'
+                        'x/text.json',
+              'url': 'https://go.googlesource.com/vulndb/+/refs/heads/master/'
+                     'reports/GO-2020-0015.yaml'
           },
           'ecosystem_specific': {
               'symbols': ['utf16Decoder.Transform']
@@ -216,12 +214,10 @@ class IntegrationTests(unittest.TestCase):
           }]
       }, {
           'database_specific': {
-              'source':
-                  'https://storage.googleapis.com/go-vulndb/golang.org/'
-                  'x/text.json',
-              'url':
-                  'https://go.googlesource.com/vulndb/+/refs/heads/master/'
-                  'reports/GO-2020-0015.yaml'
+              'source': 'https://storage.googleapis.com/go-vulndb/golang.org/'
+                        'x/text.json',
+              'url': 'https://go.googlesource.com/vulndb/+/refs/heads/master/'
+                     'reports/GO-2020-0015.yaml'
           },
           'ecosystem_specific': {
               'symbols': ['Transform']
@@ -278,11 +274,9 @@ class IntegrationTests(unittest.TestCase):
           'type': 'FIX',
           'url': 'https://go-review.googlesource.com/c/text/+/238238'
       }, {
-          'type':
-              'FIX',
-          'url':
-              'https://github.com/golang/text/commit/'
-              '23ae387dee1f90d29a23c0e87ee0b46038fbed0e'
+          'type': 'FIX',
+          'url': 'https://github.com/golang/text/commit/'
+                 '23ae387dee1f90d29a23c0e87ee0b46038fbed0e'
       }, {
           'type': 'WEB',
           'url': 'https://github.com/golang/go/issues/39491'

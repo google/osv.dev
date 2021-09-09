@@ -58,7 +58,8 @@ def index():
 
 def bug_to_response(bug, detailed=True):
   """Convert a Bug entity to a response object."""
-  response = osv.vulnerability_to_dict(bug.to_vulnerability())
+  response = osv.vulnerability_to_dict(
+      bug.to_vulnerability(v0_7=False, v0_8=True))
   response.update({
       'isFixed': bug.is_fixed,
       'invalid': bug.status == osv.BugStatus.INVALID
@@ -72,26 +73,30 @@ def bug_to_response(bug, detailed=True):
 
 def add_links(bug):
   """Add VCS links where possible."""
-  try:
-    ranges = bug['affects']['ranges']
-  except KeyError:
-    return
 
-  for i, affected in enumerate(ranges):
-    affected['id'] = i
-    if affected['type'] != 'GIT':
-      continue
+  for entry in bug.get('affected', []):
+    for i, affected_range in enumerate(entry.get('ranges')):
+      affected_range['id'] = i
+      if affected_range['type'] != 'GIT':
+        continue
 
-    repo_url = affected.get('repo')
-    if not repo_url:
-      continue
+      repo_url = affected_range.get('repo')
+      if not repo_url:
+        continue
 
-    if affected.get('introduced'):
-      affected['introduced_link'] = _commit_to_link(repo_url,
-                                                    affected['introduced'])
+      for event in affected_range.get('events', []):
+        if event.get('introduced'):
+          event['introduced_link'] = _commit_to_link(repo_url,
+                                                     event['introduced'])
+          continue
 
-    if affected.get('fixed'):
-      affected['fixed_link'] = _commit_to_link(repo_url, affected['fixed'])
+        if event.get('fixed'):
+          event['fixed_link'] = _commit_to_link(repo_url, event['fixed'])
+          continue
+
+        if event.get('limit'):
+          event['limit_link'] = _commit_to_link(repo_url, event['limit'])
+          continue
 
 
 def add_source_info(bug, response):

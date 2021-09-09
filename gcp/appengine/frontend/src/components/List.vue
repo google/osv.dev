@@ -48,10 +48,12 @@
       <template v-slot:cell(id)="vulnId">
         <router-link :to="getVulnerabilityLink(vulnId.value)">{{ vulnId.value }}</router-link>
       </template>
-      <template v-slot:cell(package)="package_data">
-        <router-link :to="getPackageLink(package_data.value)">
-          {{ formatPackage(package_data.value) }}
-        </router-link>
+      <template v-slot:cell(packages)="data">
+        <div v-for="affected in data.item.affected" :key="affected.package.name">
+          <router-link :to="getPackageLink(affected.package)">
+            {{ formatPackage(affected.package) }}
+          </router-link>
+        </div>
       </template>
       <template v-slot:cell(summary)="summary">
         <p>
@@ -59,21 +61,20 @@
           <router-link :to="getVulnerabilityLink(summary.item.id)">(Details)</router-link>
         </p>
       </template>
-      <template v-slot:cell(affects)="data">
-        <span v-if="data.value.versions && data.value.versions.length > 0">
-          <div v-for="version in data.value.versions.slice(0, 8)" :key="version">
-            {{version}}
-          </div>
-          <div v-if="data.value.versions.length > 8" v-b-popover.hover.right="formatLongAffected(data.value.versions.slice(8))">
-            ...
-          </div>
-        </span>
-        <span v-else-if="hasSemVer(data.value.ranges)">
+      <template v-slot:cell(affected)="data">
+        <span v-if="hasSemVer(data.value)">
           See details.
         </span>
-        <div v-else>
-          No impacted versions.
-        </div>
+        <span v-else>
+          <div v-for="([affected, extra], idx) in [collectVersions(data.value)]" :key="idx">
+            <div v-for="version in affected" :key="version">
+              {{version}}
+            </div>
+            <div v-if="extra.length > 0" v-b-popover.hover.right="formatLongAffected(extra)">
+              ...
+            </div>
+          </div>
+        </span>
       </template>
     </b-table>
   </div>
@@ -104,14 +105,14 @@ export default {
             label: 'ID',
         },
         {
-            key: 'package',
+            key: 'packages',
         },
         {
             key: 'summary',
             label: 'Summary',
         },
         {
-            key: 'affects',
+            key: 'affected',
         },
       ]
     };
@@ -198,11 +199,26 @@ export default {
       return '';
     },
 
-    hasSemVer(ranges) {
-      for (let range of ranges) {
-        if (range.type == 'SEMVER') return true;
+    hasSemVer(affected) {
+      for (let entry of affected) {
+        if (!entry.ranges) continue;
+
+        for (let range of entry.ranges) {
+          if (range.type == 'SEMVER') return true;
+        }
       }
       return false;
+    },
+
+    collectVersions(affected) {
+      let versions = [];
+      for (let entry of affected) {
+        if (!entry.versions) continue;
+        for (let version of entry.versions) {
+          versions.push(version);
+        }
+      }
+      return [versions.slice(0, 8), versions.slice(8)];
     }
   },
 

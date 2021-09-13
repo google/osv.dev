@@ -126,8 +126,17 @@ YamlDumper.add_representer(str, _yaml_str_representer)
 
 def vulnerability_to_dict(vulnerability):
   """Convert Vulnerability to a dict."""
-  return json_format.MessageToDict(
+  result = json_format.MessageToDict(
       vulnerability, preserving_proto_field_name=True)
+
+  if 'affected' not in result:
+    return result
+
+  for affected in result['affected']:
+    if 'versions' not in affected:
+      affected['versions'] = []
+
+  return result
 
 
 def _write_vulnerability_dict(data, output_path):

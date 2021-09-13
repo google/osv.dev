@@ -119,6 +119,7 @@ func FromCVE(id string, cve cves.CVEItem, pkg, ecosystem, versionType string, va
 			Type: "GIT",
 			Repo: repo,
 		}
+		gitRange.Events = append(gitRange.Events, Event{Introduced: "0"})
 		for _, commit := range commits {
 			gitRange.Events = append(gitRange.Events, Event{Fixed: commit})
 		}

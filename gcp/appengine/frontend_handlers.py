@@ -75,7 +75,7 @@ def add_links(bug):
   """Add VCS links where possible."""
 
   for entry in bug.get('affected', []):
-    for i, affected_range in enumerate(entry.get('ranges')):
+    for i, affected_range in enumerate(entry.get('ranges', [])):
       affected_range['id'] = i
       if affected_range['type'] != 'GIT':
         continue

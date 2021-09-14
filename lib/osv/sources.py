@@ -132,17 +132,11 @@ def vulnerability_to_dict(vulnerability):
   if 'affected' not in result:
     return result
 
-  # If no SemVer ranges, output an empty "versions": [] to conform to the spec.
-  has_semver = False
   for affected in result['affected']:
-    has_semver = any(
-        r.get('type') == 'SEMVER' for r in affected.get('ranges', []))
-    if has_semver:
-      break
+    if any(r.get('type') == 'SEMVER' for r in affected.get('ranges', [])):
+      return result
 
-  if has_semver:
-    return result
-
+  # If no SemVer ranges, output an empty "versions": [] to conform to the spec.
   for affected in result['affected']:
     if 'versions' not in affected:
       affected['versions'] = []

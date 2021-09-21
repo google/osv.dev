@@ -131,13 +131,19 @@ def query_by_commit(commit, to_response=bug_to_response):
   return _get_bugs(bug_ids, to_response=to_response)
 
 
-def _is_semver_affected(affected_packages, version):
+def _is_semver_affected(affected_packages, package_name, ecosystem, version):
   """Returns whether or not the given version is within an affected SEMVER
   range."""
   version = semver_index.parse(version)
 
   affected = False
   for affected_package in affected_packages:
+    if package_name and package_name != affected_package.package.name:
+      continue
+
+    if ecosystem and ecosystem != affected_package.package.ecosystem:
+      continue
+
     for affected_range in affected_package.ranges:
       if affected_range.type != 'SEMVER':
         continue
@@ -154,7 +160,7 @@ def _is_semver_affected(affected_packages, version):
   return affected
 
 
-def _query_by_semver(query, version):
+def _query_by_semver(query, package_name, ecosystem, version):
   """Query by semver."""
   if not semver_index.is_valid(version):
     return []
@@ -163,8 +169,8 @@ def _query_by_semver(query, version):
       osv.Bug.semver_fixed_indexes > semver_index.normalize(version))
 
   return [
-      bug for bug in query
-      if _is_semver_affected(bug.affected_packages, version)
+      bug for bug in query if _is_semver_affected(
+          bug.affected_packages, package_name, ecosystem, version)
   ]
 
 
@@ -187,12 +193,12 @@ def query_by_version(project, ecosystem, version, to_response=bug_to_response):
   if ecosystem:
     if is_semver:
       # Ecosystem supports semver only.
-      bugs.extend(_query_by_semver(query, version))
+      bugs.extend(_query_by_semver(query, project, ecosystem, version))
     else:
       bugs.extend(_query_by_generic_version(query, version))
   else:
     # Unspecified ecosystem. Try both.
-    bugs.extend(_query_by_semver(query, version))
+    bugs.extend(_query_by_semver(query, project, ecosystem, version))
     bugs.extend(_query_by_generic_version(query, version))
 
   return [to_response(bug) for bug in bugs]

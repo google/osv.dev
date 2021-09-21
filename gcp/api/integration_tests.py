@@ -411,6 +411,35 @@ class IntegrationTests(unittest.TestCase):
         }))
     self.assert_results_equal({}, response.json())
 
+  def test_query_semver_multiple_package(self):
+    """Test query by SemVer (with multiple packages)."""
+    response = requests.post(
+        _api() + '/v1/query',
+        data=json.dumps({
+            'version': '2.4.0',
+            'package': {
+                'name': 'gopkg.in/yaml.v2',
+                'ecosystem': 'Go',
+            }
+        }))
+
+    self.assert_results_equal({}, response.json())
+
+    response = requests.post(
+        _api() + '/v1/query',
+        data=json.dumps({
+            'version': '2.4.0',
+            'package': {
+                'name': 'github.com/go-yaml/yaml',
+                'ecosystem': 'Go',
+            }
+        }))
+
+    response_json = response.json()
+    self.assertEqual(2, len(response_json['vulns']))
+    self.assertCountEqual(['GO-2021-0061', 'GO-2020-0036'],
+                          [vuln['id'] for vuln in response_json['vulns']])
+
 
 def print_logs(filename):
   """Print logs."""

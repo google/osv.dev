@@ -569,7 +569,13 @@ class Bug(ndb.Model):
             ecosystem=affected_package.package.ecosystem,
             purl=affected_package.package.purl)
 
-        affects = self._get_pre_0_8_affects()
+        try:
+          affects = self._get_pre_0_8_affects()
+        except Exception:
+          # Unsupported conversion. Just skip for now since this code will be
+          # deleted very soon.
+          pass
+
         if affected_package.ecosystem_specific:
           ecosystem_specific = affected_package.ecosystem_specific
         if affected_package.database_specific:
@@ -743,6 +749,9 @@ def sorted_events(ecosystem, range_type, events):
     ecosystem_helper = ecosystems.SemverEcosystem()
   else:
     ecosystem_helper = ecosystems.get(ecosystem)
+
+  if ecosystem_helper is None:
+    raise ValueError('Unsupported ecosystem ' + ecosystem)
 
   # Remove any magic '0' values.
   sorted_copy = []

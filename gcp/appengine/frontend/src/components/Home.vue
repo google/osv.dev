@@ -45,7 +45,7 @@
         users query whether or not their versions are impacted.
 
         These vulnerabilities are encoded in the
-        <a href="https://ossf.github.io/osv-schema/">OpenSSF Open Source Vulnerability format</a>
+        <a href="https://ossf.github.io/osv-schema/">OpenSSF Open Source Vulnerability format</a>.
       </p>
       <pre>
         curl -X POST -d \

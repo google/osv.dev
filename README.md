@@ -24,7 +24,7 @@ benefit of the open source community. See our
 [blog post](https://security.googleblog.com/2021/06/announcing-unified-vulnerability-schema.html)
 for more details.
 
-The following ecosystems have vulnerabilities encoded in this this format:
+The following ecosystems have vulnerabilities encoded in this format:
 - [OSS-Fuzz](https://github.com/google/oss-fuzz-vulns)
 - [Python](https://github.com/pypa/advisory-db)
 - [Go](https://github.com/golang/vulndb)

@@ -33,7 +33,9 @@
         <a href="https://github.com/pypa/advisory-db">Python</a>, and
         <a href="https://github.com/golang/vulndb">Go</a>, and
         <a href="https://github.com/RustSec/advisory-db">Rust</a>, and
-        <a href="https://github.com/distributedweaknessfiling/dwflist">DWF</a>.
+        <a href="https://github.com/cloudsecurityalliance/uvi-database">UVI</a>, and
+        npm (from GitHub Security Advisories).
+
         More <a href="https://github.com/google/osv/issues/44">to come</a>.
       </p>
       <h4>API</h4>
@@ -41,6 +43,9 @@
         For open source consumers, OSV provides an <a
         href="https://osv.dev/docs/#section/Getting-Started">API</a> that lets
         users query whether or not their versions are impacted.
+
+        These vulnerabilities are encoded in the
+        <a href="https://ossf.github.io/osv-schema/">OpenSSF Open Source Vulnerability format</a>.
       </p>
       <pre>
         curl -X POST -d \

@@ -70,6 +70,7 @@ class SemverEcosystem(Ecosystem):
 
 Crates = SemverEcosystem
 Go = SemverEcosystem
+NPM = SemverEcosystem
 
 
 class PyPI(Ecosystem):
@@ -113,6 +114,7 @@ _ecosystems = {
     'crates.io': Crates(),
     'Go': Go(),
     'PyPI': PyPI(),
+    'npm': NPM(),
 }
 
 

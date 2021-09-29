@@ -19,17 +19,18 @@ query whether or not their versions are impacted.
 
 ## Current data sources
 **This is an ongoing project.** We encourage open source ecosystems to adopt
-our [vulnerability interchange schema format](https://tinyurl.com/vuln-json) for the
+the [OpenSSF Vulnerability format](https://github.com/ossf/osv-schema) for the
 benefit of the open source community. See our
 [blog post](https://security.googleblog.com/2021/06/announcing-unified-vulnerability-schema.html)
 for more details.
 
-The following ecosystems have already adopted this format:
+The following ecosystems have vulnerabilities encoded in this format:
 - [OSS-Fuzz](https://github.com/google/oss-fuzz-vulns)
 - [Python](https://github.com/pypa/advisory-db)
 - [Go](https://github.com/golang/vulndb)
 - [Rust](https://github.com/RustSec/advisory-db)
 - [UVI](https://github.com/cloudsecurityalliance/uvi-database)
+- npm (from GitHub Security Advisories).
 
 For convenience, these sources are aggregated and continuously exported to a GCS bucket
 maintained by OSV: [gs://osv-vulnerabilities](https://osv-vulnerabilities.storage.googleapis.com).

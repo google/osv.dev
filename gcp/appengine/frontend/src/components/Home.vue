@@ -44,7 +44,7 @@
         href="https://osv.dev/docs/#section/Getting-Started">API</a> that lets
         users query whether or not their versions are impacted.
 
-        The format these vulnerabilities are encoded in is the
+        These vulnerabilities are encoded in the
         <a href="https://ossf.github.io/osv-schema/">OpenSSF Open Source Vulnerability format</a>
       </p>
       <pre>

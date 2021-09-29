@@ -19,7 +19,7 @@ query whether or not their versions are impacted.
 
 ## Current data sources
 **This is an ongoing project.** We encourage open source ecosystems to adopt
-the [OpenSSF vulnerability schema](https://github.com/ossf/osv-schema) for the
+the [OpenSSF Vulnerability format](https://github.com/ossf/osv-schema) for the
 benefit of the open source community. See our
 [blog post](https://security.googleblog.com/2021/06/announcing-unified-vulnerability-schema.html)
 for more details.

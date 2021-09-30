@@ -61,7 +61,7 @@ class Exporter:
 
         file_path = os.path.join(tmp_dir, bug.id() + '.json')
         osv.write_vulnerability(
-            bug.to_vulnerability(v0_7=True, v0_8=True, include_source=True),
+            bug.to_vulnerability(v0_7=False, v0_8=True, include_source=True),
             file_path)
         zip_file.write(file_path, os.path.basename(file_path))
 

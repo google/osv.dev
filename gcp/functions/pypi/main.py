@@ -52,6 +52,15 @@ def publish(event, context):
       'versions': list(vulnerability.affects.versions),
       'link': f'https://osv.dev/vulnerability/{vulnerability.id}',
       'aliases': list(vulnerability.aliases),
+      'details': vulnerability.details,
+      'ranges': [
+          {
+              'introduced': r.introduced,
+              'fixed': r.fixed,
+          }
+          for r in vulnerability.affects.ranges
+          if r.type == osv.vulnerability_pb2.AffectedRange.ECOSYSTEM
+      ],
   }]).encode()
 
   signature = private_key.sign(

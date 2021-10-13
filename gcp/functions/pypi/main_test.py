@@ -75,7 +75,10 @@ class PublishPyPiTest(unittest.TestCase):
         data=b'[{"id": "PYSEC-2021-63", "project": "cryptography", '
         b'"versions": ["3.1", "3.1.1", "3.2", "3.2.1", "3.3", "3.3.1"], '
         b'"link": "https://osv.dev/vulnerability/PYSEC-2021-63", '
-        b'"aliases": ["CVE-2020-36242"]}]',
+        b'"aliases": ["CVE-2020-36242"], '
+        b'"details": "In the cryptography package before 3.3.2 for Python, certain sequences of update calls to symmetrically encrypt multi-GB values could result in an integer overflow and buffer overflow, as demonstrated by the Fernet class.", '
+        b'"ranges": [{"introduced": "3.1", "fixed": "3.3.2"}]'
+        b'}]',
         headers={
             'VULN-PUBLIC-KEY-IDENTIFIER': '7ef88907d5bba4c0120f82bfd78386a9'
                                           'd9328fb5d2d112c473ce52add3e4cd5b',

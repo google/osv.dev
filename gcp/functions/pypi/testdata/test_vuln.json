@@ -28,7 +28,7 @@
   "modified": "2021-02-19T17:23:00Z",
   "published": "2021-02-07T20:15:00Z",
   "database_specific": {
-    "source": "https://github.co/pypa/advisory-db/blob/main/vulns/cryptography/PYSEC-2021-63.yaml"
+    "source": "https://github.com/pypa/advisory-db/blob/main/vulns/cryptography/PYSEC-2021-63.yaml"
   },
   "references": [
     {

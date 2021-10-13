@@ -17,6 +17,8 @@ package vulns
 import (
 	"fmt"
 	"io"
+	"net/url"
+	"strings"
 	"time"
 
 	"gopkg.in/yaml.v2"
@@ -70,6 +72,59 @@ func timestampToRFC3339(timestamp string) (string, error) {
 	return t.Format(time.RFC3339), nil
 }
 
+func classifyReferenceLink(link string) string {
+	u, err := url.Parse(link)
+	if err != nil {
+		return "WEB"
+	}
+
+	pathParts := strings.Split(u.Path, "/")
+
+	if u.Host == "github.com" {
+		// Example: https://github.com/google/osv/commit/cd4e934d0527e5010e373e7fed54ef5daefba2f5
+		if pathParts[len(pathParts)-2] == "commit" {
+			return "FIX"
+		}
+
+		// Example: https://github.com/advisories/GHSA-fr26-qjc8-mvjx
+		// Example: https://github.com/dpgaspar/Flask-AppBuilder/security/advisories/GHSA-624f-cqvr-3qw4
+		if pathParts[0] == "advisories" || pathParts[len(pathParts)-2] == "advisories" {
+			return "ADVISORY"
+		}
+	}
+
+	if u.Host == "snyk.io" {
+		//Example: https://snyk.io/vuln/SNYK-PYTHON-TRYTOND-1730329
+		if pathParts[0] == "vuln" {
+			return "ADVISORY"
+		}
+	}
+
+	if u.Host == "nvd.nist.gov" {
+		//Example: https://nvd.nist.gov/vuln/detail/CVE-2021-23336
+		if pathParts[0] == "vuln" && pathParts[1] == "detail" {
+			return "ADVISORY"
+		}
+	}
+
+	if u.Host == "pypi.org" {
+		//Example: "https://pypi.org/project/flask"
+		if pathParts[0] == "project" {
+			return "PACKAGE"
+		}
+	}
+
+	if strings.Contains(link, "advisory") || strings.Contains(link, "advisories") {
+		return "ADVISORY"
+	}
+
+	if strings.Contains(link, "blog") {
+		return "ARTICLE"
+	}
+
+	return "WEB"
+}
+
 func FromCVE(id string, cve cves.CVEItem, pkg, ecosystem, versionType string, validVersions []string) (*Vulnerability, []string) {
 	var aliases []string
 	if id != cve.CVE.CVEDataMeta.ID {
@@ -100,7 +155,7 @@ func FromCVE(id string, cve cves.CVEItem, pkg, ecosystem, versionType string, va
 
 	for _, reference := range cve.CVE.References.ReferenceData {
 		v.References = append(v.References, Reference{
-			Type: "WEB",
+			Type: classifyReferenceLink(reference.URL),
 			URL:  reference.URL,
 		})
 	}

@@ -53,11 +53,11 @@ def publish(event, context):
       if affected_range.type != osv.vulnerability_pb2.Range.ECOSYSTEM:
         continue
 
-      for event in affected_range.events:
-        if event.introduced:
-          events.append({'introduced': event.introduced})
-        elif event.fixed:
-          events.append({'fixed': event.fixed})
+      for evt in affected_range.events:
+        if evt.introduced:
+          events.append({'introduced': evt.introduced})
+        elif evt.fixed:
+          events.append({'fixed': evt.fixed})
 
     request = json.dumps([{
         'id': vulnerability.id,

@@ -80,37 +80,40 @@ func classifyReferenceLink(link string) string {
 
 	pathParts := strings.Split(u.Path, "/")
 
-	if u.Host == "github.com" {
-		// Example: https://github.com/google/osv/commit/cd4e934d0527e5010e373e7fed54ef5daefba2f5
-		if pathParts[len(pathParts)-2] == "commit" {
-			return "FIX"
+	// Index 0 will always be "", so the length must be at least 2 to be relevant
+	if len(pathParts) >= 2 {
+		if u.Host == "github.com" {
+			// Example: https://github.com/google/osv/commit/cd4e934d0527e5010e373e7fed54ef5daefba2f5
+			if pathParts[len(pathParts)-2] == "commit" {
+				return "FIX"
+			}
+
+			// Example: https://github.com/advisories/GHSA-fr26-qjc8-mvjx
+			// Example: https://github.com/dpgaspar/Flask-AppBuilder/security/advisories/GHSA-624f-cqvr-3qw4
+			if pathParts[1] == "advisories" || pathParts[len(pathParts)-2] == "advisories" {
+				return "ADVISORY"
+			}
 		}
 
-		// Example: https://github.com/advisories/GHSA-fr26-qjc8-mvjx
-		// Example: https://github.com/dpgaspar/Flask-AppBuilder/security/advisories/GHSA-624f-cqvr-3qw4
-		if pathParts[0] == "advisories" || pathParts[len(pathParts)-2] == "advisories" {
-			return "ADVISORY"
+		if u.Host == "snyk.io" {
+			//Example: https://snyk.io/vuln/SNYK-PYTHON-TRYTOND-1730329
+			if pathParts[1] == "vuln" {
+				return "ADVISORY"
+			}
 		}
-	}
 
-	if u.Host == "snyk.io" {
-		//Example: https://snyk.io/vuln/SNYK-PYTHON-TRYTOND-1730329
-		if pathParts[0] == "vuln" {
-			return "ADVISORY"
+		if u.Host == "nvd.nist.gov" {
+			//Example: https://nvd.nist.gov/vuln/detail/CVE-2021-23336
+			if len(pathParts) == 4 && pathParts[1] == "vuln" && pathParts[2] == "detail" {
+				return "ADVISORY"
+			}
 		}
-	}
 
-	if u.Host == "nvd.nist.gov" {
-		//Example: https://nvd.nist.gov/vuln/detail/CVE-2021-23336
-		if pathParts[0] == "vuln" && pathParts[1] == "detail" {
-			return "ADVISORY"
-		}
-	}
-
-	if u.Host == "pypi.org" {
-		//Example: "https://pypi.org/project/flask"
-		if pathParts[0] == "project" {
-			return "PACKAGE"
+		if u.Host == "pypi.org" {
+			//Example: "https://pypi.org/project/flask"
+			if pathParts[1] == "project" {
+				return "PACKAGE"
+			}
 		}
 	}
 

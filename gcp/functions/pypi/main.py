@@ -46,22 +46,28 @@ def publish(event, context):
   private_key = serialization.load_pem_private_key(
       data=key_data['key'].encode(), password=None)
 
-  request = json.dumps([{
-      'id': vulnerability.id,
-      'project': vulnerability.package.name,
-      'versions': list(vulnerability.affects.versions),
-      'link': f'https://osv.dev/vulnerability/{vulnerability.id}',
-      'aliases': list(vulnerability.aliases),
-      'details': vulnerability.details,
-      'ranges': [
-          {
-              'introduced': r.introduced,
-              'fixed': r.fixed,
-          }
-          for r in vulnerability.affects.ranges
-          if r.type == osv.vulnerability_pb2.AffectedRange.ECOSYSTEM
-      ],
-  }]).encode()
+  for affected in vulnerability.affected:
+    events = []
+
+    for affected_range in affected.ranges:
+      if affected_range.type != osv.vulnerability_pb2.Range.ECOSYSTEM:
+        continue
+
+      for event in affected_range.events:
+        if event.introduced:
+          events.append({'introduced': event.introduced})
+        elif event.fixed:
+          events.append({'fixed': event.fixed})
+
+    request = json.dumps([{
+        'id': vulnerability.id,
+        'project': affected.package.name,
+        'versions': list(affected.versions),
+        'link': f'https://osv.dev/vulnerability/{vulnerability.id}',
+        'aliases': list(vulnerability.aliases),
+        'details': vulnerability.details,
+        'events': events,
+    }]).encode()
 
   signature = private_key.sign(
       data=request, signature_algorithm=ECDSA(algorithm=SHA256()))

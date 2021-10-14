@@ -12,6 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """publish_pypi tests."""
+# pylint: disable=line-too-long
+
 import base64
 import os
 import unittest

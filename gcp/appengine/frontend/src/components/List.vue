@@ -124,7 +124,7 @@ export default {
       this.items = [];
       const curId = ++this.requestId;
       const response = await fetch(
-          `/backend/query?page=${this.currentPage}&search=${this.queryParam}&` +
+          `${process.env.VUE_APP_BACKEND}/backend/query?page=${this.currentPage}&search=${this.queryParam}&` +
           `affected_only=${this.affectedOnly}&ecosystem=${this.ecosystem}`);
 
       const results = await response.json();
@@ -139,7 +139,7 @@ export default {
     },
 
     async getEcosystems() {
-      const response = await fetch('/backend/ecosystems');
+      const response = await fetch(`${process.env.VUE_APP_BACKEND}/backend/ecosystems`);
       this.ecosystems = [{
         text: 'Select ecosystem',
         value: '',

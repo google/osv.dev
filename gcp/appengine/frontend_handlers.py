@@ -18,6 +18,7 @@ import os
 from flask import abort
 from flask import Blueprint
 from flask import jsonify
+from flask import make_response
 from flask import render_template
 from flask import request
 
@@ -48,6 +49,26 @@ if _is_prod():
     ip_addr = request.headers.get('X-Appengine-User-Ip', 'unknown')
     if not limiter.check_request(ip_addr):
       abort(429)
+
+
+@blueprint.before_request
+def check_cors_preflight():
+  """Handle CORS preflight requests."""
+  if request.method != 'OPTIONS':
+    return None
+
+  response = make_response()
+  response.headers.add('Access-Control-Allow-Origin', 'http://localhost:8080')
+  response.headers.add('Access-Control-Allow-Methods', '*')
+  response.headers.add('Access-Control-Allow-Headers', '*')
+  return response
+
+
+@blueprint.after_request
+def add_cors_headers(response):
+  """Add CORS headers."""
+  response.headers.add('Access-Control-Allow-Origin', 'http://localhost:8080')
+  return response
 
 
 @blueprint.route('/')

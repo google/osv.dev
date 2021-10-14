@@ -49,6 +49,10 @@ func extractGitHubCommit(link string) *FixCommit {
 	}
 
 	pathParts := strings.Split(u.Path, "/")
+	if len(pathParts) < 2 {
+		return nil
+	}
+
 	if pathParts[len(pathParts)-2] != "commit" {
 		return nil
 	}

@@ -64,15 +64,6 @@ class IntegrationTests(unittest.TestCase):
           }],
           'versions': ['2.1.2', '2.1.2-rc', '2.1.2-rc2']
       }],
-      'affects': {
-          'ranges': [{
-              'type': 'GIT',
-              'repo': 'https://github.com/mruby/mruby',
-              'introduced': '9cdf439db52b66447b4e37c61179d54fad6c8f33',
-              'fixed': '97319697c8f9f6ff27b32589947e1918e3015503',
-          }],
-          'versions': ['2.1.2', '2.1.2-rc', '2.1.2-rc2']
-      },
       'details': 'OSS-Fuzz report: '
                  'https://bugs.chromium.org/p/oss-fuzz/issues/detail?id=23801\n'
                  '\n'
@@ -82,48 +73,27 @@ class IntegrationTests(unittest.TestCase):
                  'mrb_free\n'
                  'obj_free\n',
       'id': 'OSV-2020-744',
-      'package': {
-          'name': 'mruby',
-          'ecosystem': 'OSS-Fuzz',
-      },
       'references': [{
           'type': 'REPORT',
           'url': 'https://bugs.chromium.org/p/oss-fuzz/issues/detail?id=23801',
       }],
       'summary': 'Heap-double-free in mrb_default_allocf',
-      'database_specific': {
-          'source': 'https://github.com/google/oss-fuzz-vulns/'
-                    'blob/main/vulns/mruby/OSV-2020-744.yaml'
-      },
-      'ecosystem_specific': {
-          'severity': 'HIGH'
-      },
   }
 
   _VULN_2258 = {
       'published': '2020-12-11T00:00:45.856Z',
       'details': 'INVALID',
       'id': 'OSV-2020-2258',
-      'package': {
-          'name': 'grok',
-          'ecosystem': 'OSS-Fuzz',
-      },
       'references': [{
           'type': 'REPORT',
           'url': 'https://bugs.chromium.org/p/oss-fuzz/issues/detail?id=28505',
       }],
       'summary': 'Heap-buffer-overflow in grk::t1_part1::T1Part1::decompress',
-      'database_specific': {
-          'source': 'https://github.com/google/oss-fuzz-vulns/'
-                    'blob/main/vulns/grok/OSV-2020-2258.yaml'
-      },
-      'ecosystem_specific': {
-          'severity': 'MEDIUM'
-      },
   }
 
   _VULN_GO_2020_0004 = {
-      'id': 'GO-2020-0004',
+      'id':
+          'GO-2020-0004',
       'affected': [{
           'database_specific': {
               'source': 'https://storage.googleapis.com/go-vulndb/'
@@ -150,29 +120,15 @@ class IntegrationTests(unittest.TestCase):
               'type': 'SEMVER'
           }]
       }],
-      'package': {
-          'name': 'github.com/nanobox-io/golang-nanoauth',
-          'ecosystem': 'Go'
-      },
-      'details': 'If any of the `ListenAndServe` functions are called with an '
-                 'empty token,\ntoken authentication is disabled globally for '
-                 'all listeners.\n\nAlso, a minor timing side channel was '
-                 'present allowing attackers with\nvery low latency and able '
-                 'to make a lot of requests to potentially\nrecover the '
-                 'token.\n',
-      'affects': {
-          'ranges': [{
-              'type': 'SEMVER',
-              'introduced': '0.0.0-20160722212129-ac0cc4484ad4',
-              'fixed': '0.0.0-20200131131040-063a3fb69896'
-          }]
-      },
-      'published': '2021-04-14T12:00:00Z',
-      'ecosystem_specific': {
-          'symbols': [
-              'Auth.ServerHTTP', 'Auth.ListenAndServeTLS', 'Auth.ListenAndServe'
-          ],
-      },
+      'details':
+          'If any of the `ListenAndServe` functions are called with an '
+          'empty token,\ntoken authentication is disabled globally for '
+          'all listeners.\n\nAlso, a minor timing side channel was '
+          'present allowing attackers with\nvery low latency and able '
+          'to make a lot of requests to potentially\nrecover the '
+          'token.\n',
+      'published':
+          '2021-04-14T12:00:00Z',
       'references': [{
           'type': 'FIX',
           'url': 'https://github.com/nanobox-io/golang-nanoauth/pull/5'
@@ -181,19 +137,13 @@ class IntegrationTests(unittest.TestCase):
           'url': 'https://github.com/nanobox-io/golang-nanoauth/commit/'
                  '063a3fb69896acf985759f0fe3851f15973993f3'
       }],
-      'database_specific': {
-          'source': 'https://storage.googleapis.com/go-vulndb/'
-                    'github.com/nanobox-io/golang-nanoauth.json',
-          'url': 'https://go.googlesource.com/vulndb/+/refs/heads/master/'
-                 'reports/GO-2020-0004.yaml'
-      }
   }
 
   _VULN_GO_2020_0015 = {
       'affected': [{
           'database_specific': {
-              'source': 'https://storage.googleapis.com/go-vulndb/golang.org/'
-                        'x/text.json',
+              'source': 'https://storage.googleapis.com/go-vulndb/byID/'
+                        'GO-2020-0015.json',
               'url': 'https://go.googlesource.com/vulndb/+/refs/heads/master/'
                      'reports/GO-2020-0015.yaml'
           },
@@ -214,8 +164,8 @@ class IntegrationTests(unittest.TestCase):
           }]
       }, {
           'database_specific': {
-              'source': 'https://storage.googleapis.com/go-vulndb/golang.org/'
-                        'x/text.json',
+              'source': 'https://storage.googleapis.com/go-vulndb/byID/'
+                        'GO-2020-0015.json',
               'url': 'https://go.googlesource.com/vulndb/+/refs/heads/master/'
                      'reports/GO-2020-0015.yaml'
           },
@@ -235,20 +185,7 @@ class IntegrationTests(unittest.TestCase):
               'type': 'SEMVER'
           }]
       }],
-      'affects': {
-          'ranges': [{
-              'fixed': '0.3.3',
-              'type': 'SEMVER'
-          }]
-      },
       'aliases': ['CVE-2020-14040'],
-      'database_specific': {
-          'source':
-              'https://storage.googleapis.com/go-vulndb/golang.org/x/text.json',
-          'url':
-              'https://go.googlesource.com/vulndb/+/refs/heads/master/'
-              'reports/GO-2020-0015.yaml'
-      },
       'details':
           'An attacker could provide a single byte to a [`UTF16`] decoder '
           'instantiated with\n'
@@ -259,15 +196,8 @@ class IntegrationTests(unittest.TestCase):
           'If used to parse user supplied input, this may be used as a '
           'denial of service\n'
           'vector.\n',
-      'ecosystem_specific': {
-          'symbols': ['utf16Decoder.Transform']
-      },
       'id':
           'GO-2020-0015',
-      'package': {
-          'ecosystem': 'Go',
-          'name': 'golang.org/x/text/encoding/unicode'
-      },
       'published':
           '2021-04-14T12:00:00Z',
       'references': [{

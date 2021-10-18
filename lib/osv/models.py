@@ -544,7 +544,7 @@ class Bug(ndb.Model):
 
     return affects
 
-  def to_vulnerability(self, include_source=False, v0_7=True, v0_8=False):
+  def to_vulnerability(self, include_source=False, v0_7=False, v0_8=True):
     """Convert to Vulnerability proto."""
     package = None
     ecosystem_specific = None
@@ -665,7 +665,7 @@ class Bug(ndb.Model):
     if database_specific:
       result.database_specific.update(database_specific)
 
-    if source_link:
+    if source_link and v0_7:
       result.database_specific.update({'source': source_link})
 
     return result

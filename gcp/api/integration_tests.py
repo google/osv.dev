@@ -92,7 +92,8 @@ class IntegrationTests(unittest.TestCase):
   }
 
   _VULN_GO_2020_0004 = {
-      'id': 'GO-2020-0004',
+      'id':
+          'GO-2020-0004',
       'affected': [{
           'database_specific': {
               'source': 'https://storage.googleapis.com/go-vulndb/'
@@ -119,13 +120,15 @@ class IntegrationTests(unittest.TestCase):
               'type': 'SEMVER'
           }]
       }],
-      'details': 'If any of the `ListenAndServe` functions are called with an '
-                 'empty token,\ntoken authentication is disabled globally for '
-                 'all listeners.\n\nAlso, a minor timing side channel was '
-                 'present allowing attackers with\nvery low latency and able '
-                 'to make a lot of requests to potentially\nrecover the '
-                 'token.\n',
-      'published': '2021-04-14T12:00:00Z',
+      'details':
+          'If any of the `ListenAndServe` functions are called with an '
+          'empty token,\ntoken authentication is disabled globally for '
+          'all listeners.\n\nAlso, a minor timing side channel was '
+          'present allowing attackers with\nvery low latency and able '
+          'to make a lot of requests to potentially\nrecover the '
+          'token.\n',
+      'published':
+          '2021-04-14T12:00:00Z',
       'references': [{
           'type': 'FIX',
           'url': 'https://github.com/nanobox-io/golang-nanoauth/pull/5'

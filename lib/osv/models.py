@@ -665,7 +665,7 @@ class Bug(ndb.Model):
     if database_specific:
       result.database_specific.update(database_specific)
 
-    if source_link:
+    if source_link and v0_7:
       result.database_specific.update({'source': source_link})
 
     return result

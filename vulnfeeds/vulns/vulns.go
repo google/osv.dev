@@ -128,16 +128,53 @@ func classifyReferenceLink(link string) string {
 	return "WEB"
 }
 
-func FromCVE(id string, cve cves.CVEItem, pkg, ecosystem, versionType string, validVersions []string) (*Vulnerability, []string) {
+func extractAliases(id string, cve cves.CVE) []string {
 	var aliases []string
-	if id != cve.CVE.CVEDataMeta.ID {
-		aliases = append(aliases, cve.CVE.CVEDataMeta.ID)
+	if id != cve.CVEDataMeta.ID {
+		aliases = append(aliases, cve.CVEDataMeta.ID)
 	}
 
+	for _, reference := range cve.References.ReferenceData {
+		u, err := url.Parse(reference.URL)
+		if err == nil {
+			pathParts := strings.Split(u.Path, "/")
+
+			// Index 0 will always be "", so the length must be at least 3 here to be relevant
+			if len(pathParts) >= 3 {
+				if u.Host == "github.com" {
+					// Example: https://github.com/advisories/GHSA-fr26-qjc8-mvjx
+					// Example: https://github.com/dpgaspar/Flask-AppBuilder/security/advisories/GHSA-624f-cqvr-3qw4
+					if pathParts[len(pathParts)-2] == "advisories" {
+						a := pathParts[len(pathParts)-1]
+
+						if id != a && strings.HasPrefix(a, "GHSA-") {
+							aliases = append(aliases, a)
+						}
+					}
+				}
+
+				if u.Host == "snyk.io" {
+					//Example: https://snyk.io/vuln/SNYK-PYTHON-TRYTOND-1730329
+					if pathParts[1] == "vuln" {
+						a := pathParts[len(pathParts)-1]
+
+						if id != a && strings.HasPrefix(a, "SNYK-") {
+							aliases = append(aliases, a)
+						}
+					}
+				}
+			}
+		}
+	}
+
+	return aliases
+}
+
+func FromCVE(id string, cve cves.CVEItem, pkg, ecosystem, versionType string, validVersions []string) (*Vulnerability, []string) {
 	v := Vulnerability{
 		ID:      id,
 		Details: cves.EnglishDescription(cve.CVE),
-		Aliases: aliases,
+		Aliases: extractAliases(id, cve.CVE),
 	}
 
 	affected := Affected{}

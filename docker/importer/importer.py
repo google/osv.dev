@@ -107,12 +107,18 @@ class Importer:
     if not vulnerability:
       return
 
-    ecosystem_push_topic = _ECOSYSTEM_PUSH_TOPICS.get(
-        vulnerability.package.ecosystem)
-    if ecosystem_push_topic:
-      self._publisher.publish(
-          ecosystem_push_topic,
-          data=json.dumps(osv.vulnerability_to_dict(vulnerability)).encode())
+    ecosystems = set()
+    for affected in vulnerability.affected:
+      if affected.package.ecosystem in ecosystems:
+        continue
+
+      ecosystems.add(affected.package.ecosystem)
+      ecosystem_push_topic = _ECOSYSTEM_PUSH_TOPICS.get(
+          affected.package.ecosystem)
+      if ecosystem_push_topic:
+        self._publisher.publish(
+            ecosystem_push_topic,
+            data=json.dumps(osv.vulnerability_to_dict(vulnerability)).encode())
 
   def _request_internal_analysis(self, bug):
     """Request internal analysis."""

@@ -97,7 +97,7 @@ class IntegrationTests(unittest.TestCase):
       'affected': [{
           'database_specific': {
               'source': 'https://storage.googleapis.com/go-vulndb/'
-                        'github.com/nanobox-io/golang-nanoauth.json',
+                        'byID/GO-2020-0004.json',
               'url': 'https://go.googlesource.com/vulndb/+/refs/heads/'
                      'master/reports/GO-2020-0004.yaml'
           },

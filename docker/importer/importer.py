@@ -44,6 +44,13 @@ _ECOSYSTEM_PUSH_TOPICS = {
 
 def _is_vulnerability_file(source_repo, file_path):
   """Return whether or not the file is a Vulnerability entry."""
+  if (source_repo.directory_path and
+      not file_path.startswith(source_repo.directory_path.rstrip('/')) + '/'):
+    return False
+
+  if source_repo.ignore_file(file_path):
+    return False
+
   return file_path.endswith(source_repo.extension)
 
 
@@ -256,9 +263,6 @@ class Importer:
 
     # Create tasks for changed files.
     for changed_entry in changed_entries:
-      if source_repo.ignore_file(changed_entry):
-        continue
-
       path = os.path.join(osv.repo_path(repo), changed_entry)
       if not os.path.exists(path):
         # Path no longer exists. It must have been deleted in another commit.
@@ -281,9 +285,6 @@ class Importer:
 
     # Mark deleted entries as invalid.
     for deleted_entry in deleted_entries:
-      if source_repo.ignore_file(deleted_entry):
-        continue
-
       path = os.path.join(osv.repo_path(repo), deleted_entry)
       if os.path.exists(path):
         # Path still exists. It must have been added back in another commit.

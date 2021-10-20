@@ -332,9 +332,10 @@ class ImporterTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
     self.source_repo.put()
     self.mock_repo.add_file(
         'PYSEC-2021-1.yaml', 'id: PYSEC-2021-1\n'
-        'package:\n'
-        '  name: pkg\n'
-        '  ecosystem: PyPI\n')
+        'affected:\n'
+        '- package:\n'
+        '    name: pkg\n'
+        '    ecosystem: PyPI\n')
     self.mock_repo.commit('User', 'user@email')
 
     imp = importer.Importer('fake_public_key', 'fake_private_key', self.tmp_dir,
@@ -347,13 +348,14 @@ class ImporterTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
             type='update',
             source='PyPI',
             path='PYSEC-2021-1.yaml',
-            original_sha256=('cb700a08fa26d2e494670b9edd49d66e'
-                             '957ef4c9a1f7a4c4975c888e6d9da4f7'),
+            original_sha256=('875811e67e3e9bb50f3442dc262583c2'
+                             '99b2d8b571e80a53af837b8f3787fa20'),
             deleted='false'),
         mock.call(
             'projects/oss-vdb/topics/pypi-bridge',
-            data=b'{"id": "PYSEC-2021-1", "package": '
-            b'{"name": "pkg", "ecosystem": "PyPI"}}')
+            data=b'{"id": "PYSEC-2021-1", "affected": '
+            b'[{"package": {"name": "pkg", "ecosystem": "PyPI"}, '
+            b'"versions": []}]}')
     ])
 
 

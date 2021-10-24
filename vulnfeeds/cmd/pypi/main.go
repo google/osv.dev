@@ -131,8 +131,9 @@ func main() {
 			log.Printf("Valid versions = %v\n", validVersions)
 
 			id := "PYSEC-0000-" + cve.CVE.CVEDataMeta.ID // To be assigned later.
+			purl := ecosystem.PackageURL(pkg)
 
-			v, notes := vulns.FromCVE(id, cve, pkg, "PyPI", "ECOSYSTEM", validVersions)
+			v, notes := vulns.FromCVE(id, cve, pkg, "PyPI", purl, "ECOSYSTEM", validVersions)
 			if len(v.Affected[0].Ranges) == 0 {
 				log.Printf("No affected versions detected.")
 			}

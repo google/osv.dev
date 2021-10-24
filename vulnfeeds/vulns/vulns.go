@@ -36,6 +36,7 @@ type Affected struct {
 	Package struct {
 		Name      string `json:"name" yaml:"name"`
 		Ecosystem string `json:"ecosystem" yaml:"ecosystem"`
+		Purl      string `json:"purl,omitempty" yaml:"purl,omitempty"`
 	} `json:"package"`
 	Ranges   []AffectedRange `json:"ranges" yaml:"ranges"`
 	Versions []string        `json:"versions" yaml:"versions,omitempty"`
@@ -170,7 +171,7 @@ func extractAliases(id string, cve cves.CVE) []string {
 	return aliases
 }
 
-func FromCVE(id string, cve cves.CVEItem, pkg, ecosystem, versionType string, validVersions []string) (*Vulnerability, []string) {
+func FromCVE(id string, cve cves.CVEItem, pkg, ecosystem, purl, versionType string, validVersions []string) (*Vulnerability, []string) {
 	v := Vulnerability{
 		ID:      id,
 		Details: cves.EnglishDescription(cve.CVE),
@@ -180,6 +181,7 @@ func FromCVE(id string, cve cves.CVEItem, pkg, ecosystem, versionType string, va
 	affected := Affected{}
 	affected.Package.Name = pkg
 	affected.Package.Ecosystem = ecosystem
+	affected.Package.Purl = purl
 
 	var err error
 	var notes []string

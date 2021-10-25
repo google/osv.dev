@@ -91,8 +91,13 @@ func classifyReferenceLink(link string) string {
 
 			// Example: https://github.com/advisories/GHSA-fr26-qjc8-mvjx
 			// Example: https://github.com/dpgaspar/Flask-AppBuilder/security/advisories/GHSA-624f-cqvr-3qw4
-			if pathParts[1] == "advisories" || pathParts[len(pathParts)-2] == "advisories" {
+			if pathParts[len(pathParts)-2] == "advisories" {
 				return "ADVISORY"
+			}
+
+			// Example: https://github.com/Netflix/lemur/issues/117
+			if pathParts[len(pathParts)-2] == "issues" {
+				return "REPORT"
 			}
 		}
 

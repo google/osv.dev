@@ -270,6 +270,13 @@ func (p *PyPI) Matches(cve cves.CVEItem, falsePositives *triage.FalsePositives) 
 	return processMatches(matches)
 }
 
+func (p *PyPI) PackageURL(pkg string) string {
+	// https://github.com/package-url/purl-spec/blob/master/PURL-TYPES.rst#pypi
+	// Example: pkg:pypi/django-allauth
+	normalizedName := NormalizePackageName(pkg)
+	return "pkg:pypi:" + normalizedName
+}
+
 func filterVersions(versions []string) []string {
 	var filtered []string
 	for _, v := range versions {

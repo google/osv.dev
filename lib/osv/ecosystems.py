@@ -15,9 +15,11 @@
 
 import bisect
 import packaging.version
+import urllib.parse
 
 import requests
 
+from . import maven
 from . import semver_index
 
 
@@ -43,6 +45,29 @@ class Ecosystem:
   def enumerate_versions(self, package, introduced, fixed, limits=None):
     """Enumerate versions."""
     raise NotImplementedError
+
+  def _get_affected_versions(self, versions, introduced, fixed, limits):
+    """Get affected versions given a list of sorted versions, and an
+    introduced/fixed."""
+    parsed_versions = [self.sort_key(v) for v in versions]
+
+    if introduced == '0':
+      introduced = None
+
+    if introduced:
+      introduced = self.sort_key(introduced)
+      start_idx = bisect.bisect_left(parsed_versions, introduced)
+    else:
+      start_idx = 0
+
+    if fixed:
+      fixed = self.sort_key(fixed)
+      end_idx = bisect.bisect_left(parsed_versions, fixed)
+    else:
+      end_idx = len(versions)
+
+    affected = versions[start_idx:end_idx]
+    return [v for v in affected if self._before_limits(v, limits)]
 
   @property
   def is_semver(self):
@@ -89,32 +114,55 @@ class PyPI(Ecosystem):
     versions = list(response['releases'].keys())
     self.sort_versions(versions)
 
-    parsed_versions = [packaging.version.parse(v) for v in versions]
+    return self._get_affected_versions(versions, introduced, fixed, limits)
 
-    if introduced == '0':
-      introduced = None
 
-    if introduced:
-      introduced = packaging.version.parse(introduced)
-      start_idx = bisect.bisect_left(parsed_versions, introduced)
-    else:
-      start_idx = 0
+class Maven(Ecosystem):
+  """Maven ecosystem."""
 
-    if fixed:
-      fixed = packaging.version.parse(fixed)
-      end_idx = bisect.bisect_left(parsed_versions, fixed)
-    else:
-      end_idx = len(versions)
+  _API_PACKAGE_URL = 'https://search.maven.org/solrsearch/select'
 
-    affected = versions[start_idx:end_idx]
-    return [v for v in affected if self._before_limits(v, limits)]
+  def sort_key(self, version):
+    """Sort key."""
+    return maven.Version.from_string(version)
+
+  def enumerate_versions(self, package, introduced, fixed, limits=None):
+    """Enumerate versions."""
+    group_id, artifact_id = package.split(':', 2)
+    start = 0
+
+    versions = []
+
+    while True:
+      query = {
+          'q': f'g:"{group_id}" AND a:"{artifact_id}"',
+          'core': 'gav',
+          'rows': '20',
+          'wt': 'json',
+          'start': start
+      }
+      url = self._API_PACKAGE_URL + '?' + urllib.parse.urlencode(query)
+      response = requests.get(url)
+      response = response.json()['response']
+
+      for result in response['docs']:
+        versions.append(result['v'])
+
+      if len(versions) >= response['numFound']:
+        break
+
+      start = len(versions)
+
+    self.sort_versions(versions)
+    return self._get_affected_versions(versions, introduced, fixed, limits)
 
 
 _ecosystems = {
     'crates.io': Crates(),
     'Go': Go(),
-    'PyPI': PyPI(),
+    'Maven': Maven(),
     'npm': NPM(),
+    'PyPI': PyPI(),
 }
 
 

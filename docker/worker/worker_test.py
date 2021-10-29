@@ -1074,6 +1074,43 @@ class UpdateTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
         'eefe8ec3f1f90d0e684890e810f3f21e8500a4cd',
     ], [a.commit for a in affected_commits])
 
+  def test_update_maven(self):
+    """Test updating maven."""
+    self.source_repo.ignore_git = False
+    self.source_repo.versions_from_repo = False
+    self.source_repo.detect_cherrypicks = False
+    self.source_repo.put()
+
+    self.mock_repo.add_file(
+        'GHSA-838r-hvwh-24h8.json',
+        self._load_test_data(
+            os.path.join(TEST_DATA_DIR, 'GHSA-838r-hvwh-24h8.json')))
+    self.mock_repo.commit('User', 'user@email')
+    task_runner = worker.TaskRunner(ndb_client, None, self.tmp_dir.name, None,
+                                    None)
+    message = mock.Mock()
+    message.attributes = {
+        'source': 'source',
+        'path': 'GHSA-838r-hvwh-24h8.json',
+        'original_sha256': ('0e522f0c1785756021839af1fba8a603'
+                            'a56f8864039c75d69d5d552a1fa44e9d'),
+        'deleted': 'false',
+    }
+    task_runner._source_update(message)
+
+    repo = pygit2.Repository(self.remote_source_repo_path)
+    commit = repo.head.peel()
+
+    self.assertEqual('infra@osv.dev', commit.author.email)
+    self.assertEqual('OSV', commit.author.name)
+    self.assertEqual('Update GHSA-838r-hvwh-24h8', commit.message)
+    diff = repo.diff(commit.parents[0], commit)
+    self.expect_equal('diff_maven', diff.patch)
+
+    self.expect_dict_equal(
+        'update_maven',
+        ndb.Key(osv.Bug, 'source:GHSA-838r-hvwh-24h8').get()._to_dict())
+
   def test_update_bucket(self):
     """Test bucket entries."""
     self.source_repo.type = osv.SourceRepositoryType.BUCKET

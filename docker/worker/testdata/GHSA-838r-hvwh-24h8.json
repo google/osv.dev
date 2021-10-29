@@ -1,0 +1,42 @@
+{
+  "id": "GHSA-838r-hvwh-24h8",
+  "published": "2021-09-13T20:06:31Z",
+  "modified": "2021-09-13T20:06:31Z",
+  "aliases": [
+    "CVE-2021-38555"
+  ],
+  "description": "An XML external entity (XXE) injection vulnerability was discovered in the Any23 StreamUtils.java file and is known to affect Any23 versions < 2.5. XML external entity injection (also known as XXE) is a web security vulnerability that allows an attacker to interfere with an application's processing of XML data. It often allows an attacker to view files on the application server filesystem, and to interact with any back-end or external systems that the application itself can access.",
+  "summary": "XML Injection in Any23",
+  "references": [
+    {
+      "type": "ADVISORY",
+      "url": "https://nvd.nist.gov/vuln/detail/CVE-2021-38555"
+    },
+    {
+      "type": "ADVISORY",
+      "url": "https://github.com/advisories/GHSA-838r-hvwh-24h8"
+    }
+  ],
+  "affected": [
+    {
+      "package": {
+        "ecosystem": "Maven",
+        "name": "org.apache.any23:apache-any23"
+      },
+      "ranges": [
+        {
+          "type": "ECOSYSTEM",
+          "events": [
+            {
+              "introduced": "0"
+            },
+            {
+              "fixed": "2.5"
+            }
+          ]
+        }
+      ],
+      "versions": []
+    }
+  ]
+}

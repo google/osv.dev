@@ -73,7 +73,7 @@ func timestampToRFC3339(timestamp string) (string, error) {
 	return t.Format(time.RFC3339), nil
 }
 
-func classifyReferenceLink(link string) string {
+func ClassifyReferenceLink(link string) string {
 	u, err := url.Parse(link)
 	if err != nil {
 		return "WEB"
@@ -115,6 +115,55 @@ func classifyReferenceLink(link string) string {
 			}
 		}
 
+		if u.Host == "www.debian.org" {
+			//Example: https://www.debian.org/security/2021/dsa-4878
+			if pathParts[1] == "security" {
+				return "ADVISORY"
+			}
+		}
+
+		if u.Host == "usn.ubuntu.com" {
+			//Example: https://usn.ubuntu.com/usn/usn-4661-1
+			if pathParts[1] == "usn" {
+				return "ADVISORY"
+			}
+		}
+
+		if u.Host == "www.ubuntu.com" {
+			//Example: http://www.ubuntu.com/usn/USN-2915-2
+			if pathParts[1] == "usn" {
+				return "ADVISORY"
+			}
+		}
+
+		if u.Host == "ubuntu.com" {
+			//Example: https://ubuntu.com/security/notices/USN-5124-1
+			if pathParts[1] == "security" && pathParts[2] == "notices" {
+				return "ADVISORY"
+			}
+		}
+
+		if u.Host == "rhn.redhat.com" {
+			//Example: http://rhn.redhat.com/errata/RHSA-2016-0504.html
+			if pathParts[1] == "errata" {
+				return "ADVISORY"
+			}
+		}
+
+		if u.Host == "access.redhat.com" {
+			//Example: https://access.redhat.com/errata/RHSA-2017:1499
+			if pathParts[1] == "errata" {
+				return "ADVISORY"
+			}
+		}
+
+		if u.Host == "security.gentoo.org" {
+			//Example: https://security.gentoo.org/glsa/202003-45
+			if pathParts[len(pathParts)-2] == "glsa" {
+				return "ADVISORY"
+			}
+		}
+
 		if u.Host == "pypi.org" {
 			//Example: "https://pypi.org/project/flask"
 			if pathParts[1] == "project" {
@@ -125,6 +174,10 @@ func classifyReferenceLink(link string) string {
 
 	if strings.Contains(link, "advisory") || strings.Contains(link, "advisories") {
 		return "ADVISORY"
+	}
+
+	if strings.Contains(link, "bugzilla") {
+		return "REPORT"
 	}
 
 	if strings.Contains(link, "blog") {
@@ -202,7 +255,7 @@ func FromCVE(id string, cve cves.CVEItem, pkg, ecosystem, purl, versionType stri
 
 	for _, reference := range cve.CVE.References.ReferenceData {
 		v.References = append(v.References, Reference{
-			Type: classifyReferenceLink(reference.URL),
+			Type: ClassifyReferenceLink(reference.URL),
 			URL:  reference.URL,
 		})
 	}

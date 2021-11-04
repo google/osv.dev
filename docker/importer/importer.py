@@ -45,7 +45,7 @@ _ECOSYSTEM_PUSH_TOPICS = {
 def _is_vulnerability_file(source_repo, file_path):
   """Return whether or not the file is a Vulnerability entry."""
   if (source_repo.directory_path and
-      not file_path.startswith(source_repo.directory_path.rstrip('/')) + '/'):
+      not file_path.startswith(source_repo.directory_path.rstrip('/') + '/')):
     return False
 
   if source_repo.ignore_file(file_path):

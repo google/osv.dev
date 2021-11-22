@@ -404,7 +404,10 @@ class TaskRunner:
 
     bug.update_from_vulnerability(vulnerability)
     bug.public = True
-    bug.source_id = f'{source_repo.name}:{relative_path}'
+
+    # OSS-Fuzz sourced bugs use a different format for source_id.
+    if source_repo.name != 'oss-fuzz' or not bug.source_id:
+      bug.source_id = f'{source_repo.name}:{relative_path}'
 
     if bug.withdrawn:
       bug.status = osv.BugStatus.INVALID

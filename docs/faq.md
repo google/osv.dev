@@ -34,7 +34,7 @@ versions.
 
 ## Where does the data come from?
 
-Please see the above "What is OSV" section!
+Please see the above ["What is OSV"](#section/What-is-OSV) section!
 
 ## How are vulnerabilities represented?
 

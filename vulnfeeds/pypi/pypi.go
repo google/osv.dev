@@ -135,8 +135,14 @@ func hasPrefix(list []string, item string) bool {
 func processMatches(names []string) []string {
 	// Normalize all PyPI package names.
 	normalized := make([]string, 0, len(names))
+	encountered := map[string]bool{}
 	for _, name := range names {
-		normalized = append(normalized, NormalizePackageName(name))
+		normalizedName := NormalizePackageName(name)
+
+		if _, exists := encountered[normalizedName]; !exists {
+			encountered[normalizedName] = true
+			normalized = append(normalized, normalizedName)
+		}
 	}
 
 	// Then filter out package names which are a prefix of another.
@@ -342,7 +348,7 @@ func (p *PyPI) finalPkgCheck(cve cves.CVE, pkg string, falsePositives *triage.Fa
 			return false
 		}
 	}
-	log.Printf("Matched description")
+	log.Printf("Matched description for %s", pkg)
 
 	if falsePositives.CheckPackage(pkg) && !strings.Contains(desc, "python") {
 		// If this package is listed as a false positive, and the description does not

@@ -31,6 +31,7 @@ The following ecosystems have vulnerabilities encoded in this format:
 - [Rust](https://github.com/RustSec/advisory-db)
 - [UVI](https://github.com/cloudsecurityalliance/uvi-database)
 - npm (from GitHub Security Advisories).
+- Maven (from GitHub Security Advisories).
 
 For convenience, these sources are aggregated and continuously exported to a GCS bucket
 maintained by OSV: [gs://osv-vulnerabilities](https://osv-vulnerabilities.storage.googleapis.com).

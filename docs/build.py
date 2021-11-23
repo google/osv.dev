@@ -83,8 +83,8 @@ def main():
   }, {
       'name': 'vulnerability_schema',
       'x-displayName': 'Vulnerability schema',
-      'description': '<SchemaDefinition schemaRef='
-                     '"#/components/schemas/osvVulnerability" />'
+      'description': 'Please see the [OpenSSF Open Source Vulnerability spec]'
+                     '(https://ossf.github.io/osv-schema/).',
   }, {
       'name': 'faq',
       'x-displayName': 'Frequently asked questions',

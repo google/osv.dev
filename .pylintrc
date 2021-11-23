@@ -35,7 +35,8 @@ disable=
   wrong-import-order,
   wrong-import-position,
   unspecified-encoding,
-  consider-using-with
+  consider-using-with,
+  consider-using-f-string  # TODO(ochang): remove this.
 
 
 [BASIC]

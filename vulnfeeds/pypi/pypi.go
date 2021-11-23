@@ -72,7 +72,11 @@ var linkBlocklist = map[string]bool{
 	"http://www.redhat.com":      true,
 	"http://www.hp.com":          true,
 	"http://www.oracle.com":      true,
+	"https://www.oracle.com":     true,
 	"http://www.python.org":      true,
+	"http://dev.mysql.com":       true,
+	"https://aws.amazon.com":     true,
+	"https://github.com/aws":     true,
 	"unknown":                    true,
 }
 
@@ -374,7 +378,7 @@ func (p *PyPI) matchesPackage(link string, cve cves.CVE, falsePositives *triage.
 
 		// Check that the package still exists on PyPI.
 		for _, pkg := range candidates {
-			log.Printf("Got potential match for %s: %s", link, pkg)
+			log.Printf("Got potential match for %s: %s", fullURL, pkg)
 			if p.finalPkgCheck(cve, pkg, falsePositives) {
 				pkgs = append(pkgs, pkg)
 			}

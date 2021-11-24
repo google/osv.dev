@@ -196,35 +196,30 @@ def add_fix_information(vulnerability, bug, fix_result):
     database_specific['fixed_range'] = fix_result.commit
     fix_commit = fix_result.commit.split(':')[1]
 
-  if vulnerability.affected:
-    # 0.8 schema.
-    for affected_package in vulnerability.affected:
-      added_fix = False
-      for affected_range in affected_package.ranges:
-        if affected_range.type != vulnerability_pb2.Range.GIT:
-          continue
+  has_changes = False
 
-        # If this range includes the introduced commit, and not the fixed
-        # commit, add it.
-        # Use "in" for the introduced comparison because `bug.regressed` could
-        # be a commit range for OSS-Fuzz bugs.
-        if (any(event.introduced and event.introduced in bug.regressed
-                for event in affected_range.events) and
-            not any(event.fixed == fix_commit
-                    for event in affected_range.events)):
-          added_fix = True
-          affected_range.events.add(fixed=fix_commit)
+  for affected_package in vulnerability.affected:
+    added_fix = False
+    for affected_range in affected_package.ranges:
+      if affected_range.type != vulnerability_pb2.Range.GIT:
+        continue
 
-      if added_fix:
-        affected_package.database_specific.update(database_specific)
-  else:
-    # Pre 0.8 schema.
-    for affected_range in vulnerability.affects.ranges:
-      if (affected_range.introduced and
-          affected_range.introduced in bug.regressed and
-          not affected_range.fixed):
-        affected_range.fixed = fix_commit
-        vulnerability.database_specific.update(database_specific)
+      # If this range includes the introduced commit, and not the fixed
+      # commit, add it.
+      # Use "in" for the introduced comparison because `bug.regressed` could
+      # be a commit range for OSS-Fuzz bugs.
+      if (any(event.introduced and event.introduced in bug.regressed
+              for event in affected_range.events) and
+          not any(event.fixed == fix_commit
+                  for event in affected_range.events)):
+        added_fix = True
+        has_changes = True
+        affected_range.events.add(fixed=fix_commit)
+
+    if added_fix:
+      affected_package.database_specific.update(database_specific)
+
+  return has_changes
 
 
 class TaskRunner:
@@ -349,18 +344,19 @@ class TaskRunner:
                              original_sha256):
     """Analyze vulnerability and push new changes."""
     # Add OSS-Fuzz
+    added_fix_info = False
     bug = osv.Bug.get_by_id(vulnerability.id)
     if bug:
       fix_result = osv.FixResult.get_by_id(bug.source_id)
       if fix_result:
-        add_fix_information(vulnerability, bug, fix_result)
+        added_fix_info = add_fix_information(vulnerability, bug, fix_result)
 
     result = osv.analyze(
         vulnerability,
         analyze_git=not source_repo.ignore_git,
         detect_cherrypicks=source_repo.detect_cherrypicks,
         versions_from_repo=source_repo.versions_from_repo)
-    if not result.has_changes:
+    if not result.has_changes and not added_fix_info:
       return result
 
     if not source_repo.editable:

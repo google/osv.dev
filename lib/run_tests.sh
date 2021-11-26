@@ -1,4 +1,5 @@
 #!/bin/bash -ex
 
-python -m unittest osv.bug_test
-python -m unittest osv.ecosystems_test
+pipenv sync
+pipenv run python -m unittest osv.bug_test
+pipenv run python -m unittest osv.ecosystems_test

@@ -19,3 +19,4 @@ RUN apt-get update && \
         google-cloud-sdk-datastore-emulator
 
 COPY daemon.json /etc/docker/daemon.json
+ENTRYPOINT []

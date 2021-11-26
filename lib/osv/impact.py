@@ -201,7 +201,12 @@ class RepoAnalyzer:
     if not target_commit:
       return None
 
-    target = repo.revparse_single(target_commit)
+    try:
+      target = repo.revparse_single(target_commit)
+    except KeyError:
+      # Invalid commit.
+      return None
+
     target_patch_id = repo.diff(target.parents[0], target).patchid
 
     search = repo.revparse_single(to_search)

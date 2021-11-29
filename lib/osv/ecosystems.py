@@ -34,6 +34,19 @@ class Ecosystem:
     return any(
         self.sort_key(version) < self.sort_key(limit) for limit in limits)
 
+  def next_version(self, package, version):
+    """Get the next version after the given version."""
+    versions = self.enumerate_versions(package, version, fixed=None)
+    if versions and versions[0] != version:
+      # Version does not exist, so use the first one that would sort
+      # after it (which is what enumerate_versions returns).
+      return versions[0]
+
+    if len(versions) > 1:
+      return versions[1]
+
+    return None
+
   def sort_key(self, version):
     """Sort key."""
     raise NotImplementedError
@@ -87,6 +100,15 @@ class SemverEcosystem(Ecosystem):
     del introduced
     del fixed
     del limits
+
+  def next_version(self, package, version):
+    """Get the next version after the given version."""
+    del package  # Unused.
+    parsed_version = semver_index.parse(version)
+    if parsed_version.prerelease:
+      return version + '.0'
+
+    return version + '-0'
 
   @property
   def is_semver(self):

@@ -15,7 +15,7 @@
 
 import unittest
 
-import bug
+from . import bug
 
 
 class NormalizeTest(unittest.TestCase):

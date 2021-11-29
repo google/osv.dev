@@ -108,7 +108,7 @@ class SemverEcosystem(Ecosystem):
     if parsed_version.prerelease:
       return version + '.0'
 
-    return version + '-0'
+    return str(parsed_version.bump_patch()) + '-0'
 
   @property
   def is_semver(self):

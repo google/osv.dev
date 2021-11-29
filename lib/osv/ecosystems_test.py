@@ -35,7 +35,7 @@ class GetNextVersionTest(unittest.TestCase):
 
   def test_semver(self):
     ecosystem = ecosystems.get('Go')
-    self.assertEqual('1.0.0-0', ecosystem.next_version('blah', '1.0.0'))
+    self.assertEqual('1.0.1-0', ecosystem.next_version('blah', '1.0.0'))
     self.assertEqual('1.0.0-pre.0', ecosystem.next_version('blah', '1.0.0-pre'))
 
 

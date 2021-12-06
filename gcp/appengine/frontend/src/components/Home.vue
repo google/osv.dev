@@ -33,7 +33,7 @@
         <a href="https://github.com/pypa/advisory-db">Python</a>, and
         <a href="https://github.com/golang/vulndb">Go</a>, and
         <a href="https://github.com/RustSec/advisory-db">Rust</a>, and
-        <a href="https://github.com/cloudsecurityalliance/uvi-database">UVI</a>, and
+        <a href="https://github.com/cloudsecurityalliance/gsd-database">GSD</a>, and
         npm (from GitHub Security Advisories).
 
         More <a href="https://github.com/google/osv/issues/44">to come</a>.

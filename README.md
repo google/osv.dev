@@ -29,7 +29,7 @@ The following ecosystems have vulnerabilities encoded in this format:
 - [Python](https://github.com/pypa/advisory-db)
 - [Go](https://github.com/golang/vulndb)
 - [Rust](https://github.com/RustSec/advisory-db)
-- [UVI](https://github.com/cloudsecurityalliance/uvi-database)
+- [GSD](https://github.com/cloudsecurityalliance/gsd-database)
 - npm (from GitHub Security Advisories).
 - Maven (from GitHub Security Advisories).
 

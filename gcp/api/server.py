@@ -174,9 +174,17 @@ def _query_by_semver(query, package_name, ecosystem, version):
   ]
 
 
-def _query_by_generic_version(query, version):
+def _query_by_generic_version(base_query, version):
   """Query by generic version."""
-  query = query.filter(osv.Bug.affected_fuzzy == osv.normalize_tag(version))
+  # Try without normalizing.
+  query = base_query.filter(osv.Bug.affected_fuzzy == version)
+  results = list(query)
+  if results:
+    return results
+
+  # Try again after normalizing.
+  query = base_query.filter(
+      osv.Bug.affected_fuzzy == osv.normalize_tag(version))
   return list(query)
 
 

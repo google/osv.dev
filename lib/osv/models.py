@@ -338,7 +338,12 @@ class Bug(ndb.Model):
 
     for affected_package in self.affected_packages:
       # Indexes used for querying by exact version.
-      self.affected_fuzzy.extend(bug.normalize_tags(affected_package.versions))
+      if ecosystems.get(affected_package.package.ecosystem):
+        # No need to normalize if the ecosystem is supported.
+        self.affected_fuzzy.extend(affected_package.versions)
+      else:
+        self.affected_fuzzy.extend(bug.normalize_tags(affected_package.versions))
+
       self.has_affected |= bool(affected_package.versions)
 
       for affected_range in affected_package.ranges:

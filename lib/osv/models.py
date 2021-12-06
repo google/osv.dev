@@ -342,7 +342,8 @@ class Bug(ndb.Model):
         # No need to normalize if the ecosystem is supported.
         self.affected_fuzzy.extend(affected_package.versions)
       else:
-        self.affected_fuzzy.extend(bug.normalize_tags(affected_package.versions))
+        self.affected_fuzzy.extend(
+            bug.normalize_tags(affected_package.versions))
 
       self.has_affected |= bool(affected_package.versions)
 

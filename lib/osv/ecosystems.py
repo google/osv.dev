@@ -132,6 +132,10 @@ class PyPI(Ecosystem):
   def enumerate_versions(self, package, introduced, fixed, limits=None):
     """Enumerate versions."""
     response = requests.get(self._API_PACKAGE_URL.format(package=package))
+    if response.status_code != 200:
+      raise RuntimeError(
+          f'Failed to get PyPI versions for {package} with: {response.text}')
+
     response = response.json()
     versions = list(response['releases'].keys())
     self.sort_versions(versions)
@@ -165,8 +169,11 @@ class Maven(Ecosystem):
       }
       url = self._API_PACKAGE_URL + '?' + urllib.parse.urlencode(query)
       response = requests.get(url)
-      response = response.json()['response']
+      if response.status_code != 200:
+        raise RuntimeError(
+            f'Failed to get Maven versions for {package} with: {response.text}')
 
+      response = response.json()['response']
       for result in response['docs']:
         versions.append(result['v'])
 

@@ -4,7 +4,7 @@
                                  'ecosystem_specific': None,
                                  'package': {   'ecosystem': 'golang',
                                                 'name': 'blah.com/package',
-                                                'purl': ''},
+                                                'purl': None},
                                  'ranges': [   {   'events': [   {   'type': 'introduced',
                                                                      'value': 'eefe8ec3f1f90d0e684890e810f3f21e8500a4cd'},
                                                                  {   'type': 'fixed',

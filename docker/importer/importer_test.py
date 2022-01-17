@@ -94,6 +94,7 @@ class ImporterTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
             'package': {
                 'ecosystem': 'OSS-Fuzz',
                 'name': 'file',
+                'purl': 'pkg:generic/file',
             },
             'ecosystem_specific': {
                 'severity': 'MEDIUM',

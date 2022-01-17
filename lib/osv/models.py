@@ -25,6 +25,7 @@ from google.protobuf import timestamp_pb2
 # pylint: disable=relative-beyond-top-level
 from . import bug
 from . import ecosystems
+from . import purl_helpers
 from . import semver_index
 from . import sources
 from . import vulnerability_pb2
@@ -310,24 +311,29 @@ class Bug(ndb.Model):
 
     search_indices.update(self._tokenize(self.id()))
 
-    if self.affected_packages:
-      self.project = [
-          pkg.package.name for pkg in self.affected_packages if pkg.package.name
-      ]
-      self.ecosystem = [
-          pkg.package.ecosystem
-          for pkg in self.affected_packages
-          if pkg.package.ecosystem
-      ]
-      self.purl = [
-          pkg.package.purl for pkg in self.affected_packages if pkg.package.purl
-      ]
+    for affected_package in self.affected_packages:
+      # Set PURL if it wasn't provided.
+      if not affected_package.package.purl:
+        affected_package.package.purl = purl_helpers.package_to_purl(
+            affected_package.package.ecosystem, affected_package.package.name)
 
-      for project in self.project:
-        search_indices.update(self._tokenize(project))
+    self.project = [
+        pkg.package.name for pkg in self.affected_packages if pkg.package.name
+    ]
+    self.ecosystem = [
+        pkg.package.ecosystem
+        for pkg in self.affected_packages
+        if pkg.package.ecosystem
+    ]
+    self.purl = [
+        pkg.package.purl for pkg in self.affected_packages if pkg.package.purl
+    ]
 
-      for ecosystem in self.ecosystem:
-        search_indices.update(self._tokenize(ecosystem))
+    for project in self.project:
+      search_indices.update(self._tokenize(project))
+
+    for ecosystem in self.ecosystem:
+      search_indices.update(self._tokenize(ecosystem))
 
     self.search_indices = sorted(list(search_indices))
 

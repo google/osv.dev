@@ -57,6 +57,36 @@ indexes:
 
   - kind: Bug
     properties:
+      - name: status
+      - name: purl
+      - name: ecosystem
+      - name: affected_fuzzy
+      - name: public
+
+  - kind: Bug
+    properties:
+      - name: status
+      - name: purl
+      - name: affected_fuzzy
+      - name: public
+
+  - kind: Bug
+    properties:
+      - name: status
+      - name: purl
+      - name: ecosystem
+      - name: public
+      - name: semver_fixed_indexes
+
+  - kind: Bug
+    properties:
+      - name: status
+      - name: purl
+      - name: public
+      - name: semver_fixed_indexes
+
+  - kind: Bug
+    properties:
       - name: public
       - name: status
 

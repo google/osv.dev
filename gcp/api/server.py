@@ -77,9 +77,11 @@ class OSVServicer(osv_service_v1_pb2_grpc.OSVServicer):
     if request.query.HasField('package'):
       package_name = request.query.package.name
       ecosystem = request.query.package.ecosystem
+      purl = request.query.package.purl
     else:
       package_name = ''
       ecosystem = ''
+      purl = ''
 
     if request.query.WhichOneof('param') == 'commit':
       bugs = query_by_commit(request.query.commit, to_response=bug_to_response)
@@ -87,6 +89,7 @@ class OSVServicer(osv_service_v1_pb2_grpc.OSVServicer):
       bugs = query_by_version(
           package_name,
           ecosystem,
+          purl,
           request.query.version,
           to_response=bug_to_response)
     else:
@@ -131,7 +134,8 @@ def query_by_commit(commit, to_response=bug_to_response):
   return _get_bugs(bug_ids, to_response=to_response)
 
 
-def _is_semver_affected(affected_packages, package_name, ecosystem, version):
+def _is_semver_affected(affected_packages, package_name, ecosystem, purl,
+                        version):
   """Returns whether or not the given version is within an affected SEMVER
   range."""
   version = semver_index.parse(version)
@@ -142,6 +146,9 @@ def _is_semver_affected(affected_packages, package_name, ecosystem, version):
       continue
 
     if ecosystem and ecosystem != affected_package.package.ecosystem:
+      continue
+
+    if purl and purl != affected_package.package.purl:
       continue
 
     for affected_range in affected_package.ranges:
@@ -160,7 +167,7 @@ def _is_semver_affected(affected_packages, package_name, ecosystem, version):
   return affected
 
 
-def _query_by_semver(query, package_name, ecosystem, version):
+def _query_by_semver(query, package_name, ecosystem, purl, version):
   """Query by semver."""
   if not semver_index.is_valid(version):
     return []
@@ -170,7 +177,7 @@ def _query_by_semver(query, package_name, ecosystem, version):
 
   return [
       bug for bug in query if _is_semver_affected(
-          bug.affected_packages, package_name, ecosystem, version)
+          bug.affected_packages, package_name, ecosystem, purl, version)
   ]
 
 
@@ -188,12 +195,21 @@ def _query_by_generic_version(base_query, version):
   return list(query)
 
 
-def query_by_version(project, ecosystem, version, to_response=bug_to_response):
+def query_by_version(project,
+                     ecosystem,
+                     purl,
+                     version,
+                     to_response=bug_to_response):
   """Query by (fuzzy) version."""
   ecosystem_info = ecosystems.get(ecosystem)
   is_semver = ecosystem_info and ecosystem_info.is_semver
-  query = osv.Bug.query(osv.Bug.status == osv.BugStatus.PROCESSED,
-                        osv.Bug.project == project, osv.Bug.public == True)  # pylint: disable=singleton-comparison
+  if project:
+    query = osv.Bug.query(osv.Bug.status == osv.BugStatus.PROCESSED,
+                          osv.Bug.project == project, osv.Bug.public == True)  # pylint: disable=singleton-comparison
+  elif purl:
+    query = osv.Bug.query(osv.Bug.status == osv.BugStatus.PROCESSED,
+                          osv.Bug.purl == purl, osv.Bug.public == True)  # pylint: disable=singleton-comparison
+
   if ecosystem:
     query = query.filter(osv.Bug.ecosystem == ecosystem)
 
@@ -201,12 +217,12 @@ def query_by_version(project, ecosystem, version, to_response=bug_to_response):
   if ecosystem:
     if is_semver:
       # Ecosystem supports semver only.
-      bugs.extend(_query_by_semver(query, project, ecosystem, version))
+      bugs.extend(_query_by_semver(query, project, ecosystem, purl, version))
     else:
       bugs.extend(_query_by_generic_version(query, version))
   else:
     # Unspecified ecosystem. Try both.
-    bugs.extend(_query_by_semver(query, project, ecosystem, version))
+    bugs.extend(_query_by_semver(query, project, ecosystem, purl, version))
     bugs.extend(_query_by_generic_version(query, version))
 
   return [to_response(bug) for bug in bugs]

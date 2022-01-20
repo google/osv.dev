@@ -209,6 +209,8 @@ def query_by_version(project,
   elif purl:
     query = osv.Bug.query(osv.Bug.status == osv.BugStatus.PROCESSED,
                           osv.Bug.purl == purl, osv.Bug.public == True)  # pylint: disable=singleton-comparison
+  else:
+    return []
 
   if ecosystem:
     query = query.filter(osv.Bug.ecosystem == ecosystem)

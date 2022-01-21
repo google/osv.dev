@@ -14,6 +14,7 @@
 """Worker tests."""
 # pylint: disable=line-too-long
 import datetime
+import hashlib
 import os
 import shutil
 import tempfile
@@ -35,6 +36,16 @@ TEST_DATA_DIR = os.path.join(
 ndb_client = None
 
 # pylint: disable=protected-access,invalid-name
+
+
+def _sha256(test_name):
+  """Get sha256 sum."""
+  hasher = hashlib.sha256()
+
+  with open(os.path.join(TEST_DATA_DIR, test_name), 'rb') as f:
+    hasher.update(f.read())
+
+  return hasher.hexdigest()
 
 
 class OssFuzzDetailsTest(unittest.TestCase):
@@ -604,8 +615,7 @@ class UpdateTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
     message.attributes = {
         'source': 'source',
         'path': 'BLAH-123.yaml',
-        'original_sha256': ('d35b787ba467d6d45c2046c0c5a9c237'
-                            'ab4b7d9942cc9ad25f2bc27a2ffa7859'),
+        'original_sha256': _sha256('BLAH-123.yaml'),
         'deleted': 'false',
     }
     task_runner._source_update(message)
@@ -638,8 +648,7 @@ class UpdateTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
     message.attributes = {
         'source': 'source',
         'path': 'BLAH-128.yaml',
-        'original_sha256': ('54683c1611241e58bfe7489df6d5431fa'
-                            '476ff15eaf7511e2800246733ff3975'),
+        'original_sha256': _sha256('BLAH-128.yaml'),
         'deleted': 'false',
     }
     task_runner._source_update(message)
@@ -676,8 +685,7 @@ class UpdateTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
     message.attributes = {
         'source': 'source',
         'path': 'BLAH-124.yaml',
-        'original_sha256': ('5d6224b81fb100d51bf61c2568b1c75f'
-                            '1df355ace1872af1b7eb0b1b5d93f477'),
+        'original_sha256': _sha256('BLAH-124.yaml'),
         'deleted': 'false',
     }
     task_runner._source_update(message)
@@ -712,8 +720,7 @@ class UpdateTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
     message.attributes = {
         'source': 'source',
         'path': 'BLAH-127.yaml',
-        'original_sha256': ('41ba4799f09d73ab41d60f8fbeaa83a7'
-                            '9f6d8a301330c5c1061cf113ff96a8a3'),
+        'original_sha256': _sha256('BLAH-127.yaml'),
         'deleted': 'false',
     }
     task_runner._source_update(message)
@@ -762,8 +769,7 @@ class UpdateTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
     message.attributes = {
         'source': 'source',
         'path': 'BLAH-126.yaml',
-        'original_sha256': ('5e1c2f30f6312cb16f5eedac88f92992'
-                            'dd015e2891d17e84ee2ab8af78b801b9'),
+        'original_sha256': _sha256('BLAH-126.yaml'),
         'deleted': 'false',
     }
     task_runner._source_update(message)
@@ -789,8 +795,7 @@ class UpdateTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
     message.attributes = {
         'source': 'source',
         'path': 'BLAH-123.yaml',
-        'original_sha256': ('d35b787ba467d6d45c2046c0c5a9c237'
-                            'ab4b7d9942cc9ad25f2bc27a2ffa7859'),
+        'original_sha256': _sha256('BLAH-123.yaml'),
         'deleted': 'true',
     }
     task_runner._source_update(message)
@@ -805,8 +810,7 @@ class UpdateTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
     message.attributes = {
         'source': 'source',
         'path': 'BLAH-125.yaml',
-        'original_sha256': ('f3914d12891a3a441cb19cfe5c11f9b6'
-                            'b5cd0c87c3c14c40d54559dad4bb813a'),
+        'original_sha256': _sha256('BLAH-125.yaml'),
         'deleted': 'false',
     }
     task_runner._source_update(message)
@@ -857,8 +861,7 @@ class UpdateTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
     message.attributes = {
         'source': 'source',
         'path': 'BLAH-123.yaml',
-        'original_sha256': ('d35b787ba467d6d45c2046c0c5a9c237'
-                            'ab4b7d9942cc9ad25f2bc27a2ffa7859'),
+        'original_sha256': _sha256('BLAH-123.yaml'),
         'deleted': 'false',
     }
     task_runner._source_update(message)
@@ -887,8 +890,7 @@ class UpdateTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
     message.attributes = {
         'source': 'source',
         'path': 'PYSEC-123.yaml',
-        'original_sha256': ('f664bd547299c003e658feb81d4e3b36'
-                            '17c1433e301037a5a825a615581fc6ee'),
+        'original_sha256': _sha256('PYSEC-123.yaml'),
         'deleted': 'false',
     }
     task_runner._source_update(message)
@@ -930,8 +932,7 @@ class UpdateTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
     message.attributes = {
         'source': 'source',
         'path': 'GHSA-838r-hvwh-24h8.json',
-        'original_sha256': ('0e522f0c1785756021839af1fba8a603'
-                            'a56f8864039c75d69d5d552a1fa44e9d'),
+        'original_sha256': _sha256('GHSA-838r-hvwh-24h8.json'),
         'deleted': 'false',
     }
     task_runner._source_update(message)

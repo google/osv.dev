@@ -3,7 +3,6 @@ summary: A vulnerability
 details: |
   Blah blah blah
   Blah
-severity: HIGH
 references:
 - type: WEB
   url: https://ref.com/ref

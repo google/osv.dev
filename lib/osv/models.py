@@ -30,6 +30,8 @@ from . import semver_index
 from . import sources
 from . import vulnerability_pb2
 
+SCHEMA_VERSION = '1.2.0'
+
 
 def _check_valid_severity(prop, value):
   """Check valid severity."""
@@ -190,6 +192,18 @@ class AffectedPackage(ndb.Model):
   ecosystem_specific = ndb.JsonProperty()
 
 
+class Credit(ndb.Model):
+  """Credits."""
+  name = ndb.StringProperty()
+  contact = ndb.StringProperty(repeated=True)
+
+
+class Severity(ndb.Model):
+  """Severity."""
+  type = ndb.StringProperty()
+  score = ndb.StringProperty()
+
+
 class Bug(ndb.Model):
   """Bug entity."""
   OSV_ID_PREFIX = 'OSV-'
@@ -238,7 +252,9 @@ class Bug(ndb.Model):
   # Vulnerability details.
   details = ndb.TextProperty()
   # Severity of the bug.
-  severity = ndb.StringProperty(validator=_check_valid_severity)
+  severities = ndb.LocalStructuredProperty(Severity, repeated=True)
+  # Credits for the bug.
+  credits = ndb.LocalStructuredProperty(Credit, repeated=True)
   # Whether or not the bug is public (OSS-Fuzz only).
   public = ndb.BooleanProperty()
   # Reference URL types (dict of url -> type).
@@ -253,8 +269,6 @@ class Bug(ndb.Model):
   is_fixed = ndb.BooleanProperty()
   # Database specific.
   database_specific = ndb.JsonProperty()
-  # Ecosystem specific.
-  ecosystem_specific = ndb.JsonProperty()
   # Normalized SEMVER fixed indexes for querying.
   semver_fixed_indexes = ndb.StringProperty(repeated=True)
   # Affected packages and versions.
@@ -392,54 +406,6 @@ class Bug(ndb.Model):
 
       self.key = ndb.Key(Bug, key_id)
 
-  def _update_from_pre_0_8(self, vulnerability):
-    """Update from pre 0.8 import."""
-    if self.affected_packages:
-      affected_package = self.affected_packages[0]
-    else:
-      affected_package = AffectedPackage()
-      self.affected_packages.append(affected_package)
-
-    affected_package.package = Package(
-        name=vulnerability.package.name,
-        ecosystem=vulnerability.package.ecosystem,
-        purl=vulnerability.package.purl)
-
-    vuln_dict = sources.vulnerability_to_dict(vulnerability)
-    if vulnerability.database_specific:
-      affected_package.database_specific = vuln_dict['database_specific']
-
-    if vulnerability.ecosystem_specific:
-      affected_package.ecosystem_specific = vuln_dict['ecosystem_specific']
-
-    affected_package.versions = list(vulnerability.affects.versions)
-    affected_package.ranges = []
-    events_by_type = {}
-
-    for affected_range in vulnerability.affects.ranges:
-      events = events_by_type.setdefault(
-          (vulnerability_pb2.AffectedRange.Type.Name(
-              affected_range.type), affected_range.repo), [])
-
-      # An empty introduced in 0.7 now needs to be represented as '0' in 0.8.
-      introduced = AffectedEvent(
-          type='introduced', value=affected_range.introduced or '0')
-      if introduced not in events:
-        events.append(introduced)
-
-      if affected_range.fixed:
-        fixed = AffectedEvent(type='fixed', value=affected_range.fixed)
-        if fixed not in events:
-          events.append(fixed)
-
-    for (range_type, repo_url), events in events_by_type.items():
-      affected_range = AffectedRange2(type=range_type, events=events)
-
-      if range_type == 'GIT' and repo_url:
-        affected_range.repo_url = repo_url
-
-      affected_package.ranges.append(affected_range)
-
   def update_from_vulnerability(self, vulnerability):
     """Set fields from vulnerability. Does not set the ID."""
     self.summary = vulnerability.summary
@@ -458,10 +424,6 @@ class Bug(ndb.Model):
 
     self.aliases = list(vulnerability.aliases)
     self.related = list(vulnerability.related)
-
-    if not vulnerability.affected:
-      self._update_from_pre_0_8(vulnerability)
-      return
 
     self.affected_packages = []
     for affected_package in vulnerability.affected:
@@ -509,60 +471,26 @@ class Bug(ndb.Model):
 
       self.affected_packages.append(current)
 
-  def _get_pre_0_8_affects(self):
-    """Get pre 0.8 schema affects field."""
-    affected_package = self.affected_packages[0]
-    affects = vulnerability_pb2.Affects(versions=affected_package.versions)
-    for affected_range in affected_package.ranges:
-      # Convert flattened events to range pairs (pre-0.8 schema).
-      # TODO(ochang): Remove this once all consumers are migrated.
-      # pylint: disable=cell-var-from-loop
-      new_range = lambda x, y: vulnerability_pb2.AffectedRange(
-          type=vulnerability_pb2.AffectedRange.Type.Value(affected_range.type),
-          repo=affected_range.repo_url,
-          introduced=x,
-          fixed=y)
-      last_introduced = None
+    self.severities = []
+    for severity in vulnerability.severity:
+      self.severities.append(
+          Severity(
+              type=vulnerability_pb2.Severity.Type.Name(severity.type),
+              score=severity.score))
 
-      # Sort the flattened events, then find corresponding [introduced,
-      # fixed) pairs.
-      for event in sorted_events(affected_package.package.ecosystem,
-                                 affected_range.type, affected_range.events):
-        if event.type == 'introduced':
-          if last_introduced is not None and affected_range.type == 'GIT':
-            # If this is GIT, then we need to store all "introduced", even if
-            # they overlap.
-            affects.ranges.append(new_range(last_introduced, ''))
-            last_introduced = None
+    self.credits = []
+    for credit in vulnerability.credits:
+      self.credits.append(
+          Credit(name=credit.name, contact=list(credit.contact)))
 
-          if last_introduced is None:
-            # If not GIT, ignore overlapping introduced versions since they're
-            # redundant.
-            last_introduced = event.value
-            if last_introduced == '0':
-              last_introduced = ''
+    if vulnerability.database_specific:
+      self.database_specific = json_format.MessageToDict(
+          vulnerability.database_specific, preserving_proto_field_name=True)
 
-        if event.type == 'fixed':
-          if affected_range.type != 'GIT' and last_introduced is None:
-            # No prior introduced, so ignore this invalid entry.
-            continue
-
-          # Found a complete pair.
-          affects.ranges.append(new_range(last_introduced, event.value))
-          last_introduced = None
-
-      if last_introduced is not None:
-        affects.ranges.append(new_range(last_introduced, ''))
-
-    return affects
-
-  def to_vulnerability(self, include_source=False, v0_7=False, v0_8=True):
+  def to_vulnerability(self, include_source=False):
     """Convert to Vulnerability proto."""
     package = None
-    ecosystem_specific = None
-    database_specific = None
     affected = []
-    affects = None
 
     source_link = None
     if self.source and include_source:
@@ -571,67 +499,42 @@ class Bug(ndb.Model):
         source_link = source_repo.link + sources.source_path(source_repo, self)
 
     if self.affected_packages:
-      if v0_7:
-        # The pre-0.8 schema only supports a single package, so we take the
-        # first.
-        affected_package = self.affected_packages[0]
+      for affected_package in self.affected_packages:
+        ranges = []
+        for affected_range in affected_package.ranges:
+          events = []
+          for event in affected_range.events:
+            kwargs = {event.type: event.value}
+            events.append(vulnerability_pb2.Event(**kwargs))
 
-        package = vulnerability_pb2.Package(
-            name=affected_package.package.name,
-            ecosystem=affected_package.package.ecosystem,
-            purl=affected_package.package.purl)
+          current_range = vulnerability_pb2.Range(
+              type=vulnerability_pb2.Range.Type.Value(affected_range.type),
+              repo=affected_range.repo_url,
+              events=events)
 
-        try:
-          affects = self._get_pre_0_8_affects()
-        except Exception:
-          # Unsupported conversion. Just skip for now since this code will be
-          # deleted very soon.
-          pass
+          ranges.append(current_range)
+
+        current = vulnerability_pb2.Affected(
+            package=vulnerability_pb2.Package(
+                name=affected_package.package.name,
+                ecosystem=affected_package.package.ecosystem,
+                purl=affected_package.package.purl),
+            ranges=ranges,
+            versions=affected_package.versions)
+
+        if affected_package.database_specific:
+          current.database_specific.update(affected_package.database_specific)
+
+        if source_link:
+          current.database_specific.update({'source': source_link})
 
         if affected_package.ecosystem_specific:
-          ecosystem_specific = affected_package.ecosystem_specific
-        if affected_package.database_specific:
-          database_specific = affected_package.database_specific
+          current.ecosystem_specific.update(affected_package.ecosystem_specific)
 
-      if v0_8:
-        for affected_package in self.affected_packages:
-          ranges = []
-          for affected_range in affected_package.ranges:
-            events = []
-            for event in affected_range.events:
-              kwargs = {event.type: event.value}
-              events.append(vulnerability_pb2.Event(**kwargs))
-
-            current_range = vulnerability_pb2.Range(
-                type=vulnerability_pb2.Range.Type.Value(affected_range.type),
-                repo=affected_range.repo_url,
-                events=events)
-
-            ranges.append(current_range)
-
-          current = vulnerability_pb2.Affected(
-              package=vulnerability_pb2.Package(
-                  name=affected_package.package.name,
-                  ecosystem=affected_package.package.ecosystem,
-                  purl=affected_package.package.purl),
-              ranges=ranges,
-              versions=affected_package.versions)
-
-          if affected_package.database_specific:
-            current.database_specific.update(affected_package.database_specific)
-
-          if source_link:
-            current.database_specific.update({'source': source_link})
-
-          if affected_package.ecosystem_specific:
-            current.ecosystem_specific.update(
-                affected_package.ecosystem_specific)
-
-          affected.append(current)
+        affected.append(current)
 
     details = self.details
     if self.status == bug.BugStatus.INVALID:
-      affects = None
       affected = None
       details = 'INVALID'
 
@@ -657,7 +560,20 @@ class Bug(ndb.Model):
             vulnerability_pb2.Reference(
                 url=url, type=vulnerability_pb2.Reference.Type.Value(url_type)))
 
+    severity = []
+    for entry in self.severities:
+      severity.append(
+          vulnerability_pb2.Severity(
+              type=vulnerability_pb2.Severity.Type.Value(entry.type),
+              score=entry.score))
+
+    credits_ = []
+    for credit in self.credits:
+      credits_.append(
+          vulnerability_pb2.Credit(name=credit.name, contact=credit.contact))
+
     result = vulnerability_pb2.Vulnerability(
+        schema_version=SCHEMA_VERSION,
         id=self.id(),
         published=published,
         modified=modified,
@@ -667,18 +583,13 @@ class Bug(ndb.Model):
         summary=self.summary,
         details=details,
         package=package,
-        affects=affects,
         affected=affected,
+        severity=severity,
+        credits=credits_,
         references=references)
 
-    if ecosystem_specific:
-      result.ecosystem_specific.update(ecosystem_specific)
-
-    if database_specific:
-      result.database_specific.update(database_specific)
-
-    if source_link and v0_7:
-      result.database_specific.update({'source': source_link})
+    if self.database_specific:
+      result.database_specific.update(self.database_specific)
 
     return result
 

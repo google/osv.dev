@@ -79,8 +79,7 @@ def index():
 
 def bug_to_response(bug, detailed=True):
   """Convert a Bug entity to a response object."""
-  response = osv.vulnerability_to_dict(
-      bug.to_vulnerability(v0_7=False, v0_8=True))
+  response = osv.vulnerability_to_dict(bug.to_vulnerability())
   response.update({
       'isFixed': bug.is_fixed,
       'invalid': bug.status == osv.BugStatus.INVALID

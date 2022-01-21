@@ -6,7 +6,6 @@ summary: A vulnerability
 details: |
   Blah blah blah
   Blah
-severity: HIGH
 affects:
   ranges:
   - type: GIT

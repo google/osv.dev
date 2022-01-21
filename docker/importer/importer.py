@@ -176,8 +176,7 @@ class Importer:
         continue
 
       logging.info('Writing %s', bug.key.id())
-      osv.write_vulnerability(
-          bug.to_vulnerability(v0_7=False, v0_8=True), vulnerability_path)
+      osv.write_vulnerability(bug.to_vulnerability(), vulnerability_path)
       # The source of truth is now this yaml file.
       bug.source_of_truth = osv.SourceOfTruth.SOURCE_REPO
       exported.append(bug)
@@ -372,8 +371,7 @@ class Importer:
           continue
 
         _, source_id = osv.parse_source_id(bug.source_id)
-        executor.submit(export_oss_fuzz,
-                        bug.to_vulnerability(v0_7=False, v0_8=True), source_id,
+        executor.submit(export_oss_fuzz, bug.to_vulnerability(), source_id,
                         bug.issue_id)
 
 

@@ -99,8 +99,22 @@ class ImporterTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
             'ecosystem_specific': {
                 'severity': 'MEDIUM',
             },
+            'database_specific': {
+                'database_specific': 1337,
+            },
         }],
         affected_fuzzy=['5-29', '5-30'],
+        credits=[{
+            'name': 'Foo bar',
+            'contact': [],
+        }, {
+            'name': 'Bar foo',
+            'contact': ['mailto:bar@foo.com'],
+        }],
+        severities=[{
+            'type': 'CVSS_V3',
+            'score': '7.5',
+        }],
         details=(
             'OSS-Fuzz report: '
             'https://bugs.chromium.org/p/oss-fuzz/issues/detail?id=1064\n\n'
@@ -121,7 +135,11 @@ class ImporterTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
         source_of_truth=osv.SourceOfTruth.INTERNAL,
         status=1,
         summary='Heap-buffer-overflow in cdf_file_property_info',
-        timestamp=datetime.datetime(2021, 1, 15, 0, 0, 24, 559102)).put()
+        timestamp=datetime.datetime(2021, 1, 15, 0, 0, 24, 559102),
+        database_specific={
+            'database_specific': 1337
+        },
+    ).put()
 
     self.mock_repo.add_file('2021-111.yaml', _EMPTY_VULNERABILITY)
     self.mock_repo.commit('User', 'user@email')
@@ -158,12 +176,15 @@ class ImporterTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
 
     self.mock_storage_client().get_bucket.assert_called_with('bucket')
     bucket = self.mock_storage_client().get_bucket('bucket')
-    expected_upload_contents = self._load_test_data('expected.json')
+
+    expected_json = bucket.blob().upload_from_string.call_args[0][0]
+    self.expect_equal('expected.json', expected_json)
+
     bucket.blob.assert_has_calls([
         mock.call('testcase/5417710252982272.json'),
-        mock.call().upload_from_string(expected_upload_contents),
+        mock.call().upload_from_string(expected_json),
         mock.call('issue/1064.json'),
-        mock.call().upload_from_string(expected_upload_contents),
+        mock.call().upload_from_string(expected_json),
     ])
 
   @mock.patch('google.cloud.pubsub_v1.PublisherClient.publish')

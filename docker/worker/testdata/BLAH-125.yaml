@@ -6,7 +6,9 @@ summary: A vulnerability
 details: |
   Blah blah blah
   Blah
-severity: HIGH
+severity:
+- type: CVSS_V3
+  score: '7.5'
 affects:
   ranges:
   - type: GIT

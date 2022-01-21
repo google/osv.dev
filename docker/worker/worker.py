@@ -131,7 +131,7 @@ class _PubSubLeaserThread(threading.Thread):
               'stopping renewal.', self._max_lease_seconds)
           break
 
-        extension_seconds = min(self.EXTENSION_TIME_SECONDS, time_left)
+        extension_seconds = int(min(self.EXTENSION_TIME_SECONDS, time_left))
 
         logging.info('Renewing lease for task by %d seconds.',
                      extension_seconds)

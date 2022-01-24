@@ -41,6 +41,7 @@ class IntegrationTests(unittest.TestCase):
 
   _VULN_744 = {
       'published': '2020-07-04T00:00:01.948828Z',
+      'schema_version': '1.2.0',
       'affected': [{
           'database_specific': {
               'source': 'https://github.com/google/oss-fuzz-vulns/'
@@ -51,7 +52,8 @@ class IntegrationTests(unittest.TestCase):
           },
           'package': {
               'ecosystem': 'OSS-Fuzz',
-              'name': 'mruby'
+              'name': 'mruby',
+              'purl': 'pkg:generic/mruby'
           },
           'ranges': [{
               'events': [{
@@ -82,6 +84,7 @@ class IntegrationTests(unittest.TestCase):
 
   _VULN_2258 = {
       'published': '2020-12-11T00:00:45.856Z',
+      'schema_version': '1.2.0',
       'details': 'INVALID',
       'id': 'OSV-2020-2258',
       'references': [{
@@ -92,6 +95,8 @@ class IntegrationTests(unittest.TestCase):
   }
 
   _VULN_GO_2020_0004 = {
+      'schema_version':
+          '1.2.0',
       'id':
           'GO-2020-0004',
       'affected': [{
@@ -109,7 +114,8 @@ class IntegrationTests(unittest.TestCase):
           },
           'package': {
               'ecosystem': 'Go',
-              'name': 'github.com/nanobox-io/golang-nanoauth'
+              'name': 'github.com/nanobox-io/golang-nanoauth',
+              'purl': 'pkg:golang/github.com/nanobox-io/golang-nanoauth'
           },
           'ranges': [{
               'events': [{
@@ -140,6 +146,8 @@ class IntegrationTests(unittest.TestCase):
   }
 
   _VULN_GO_2020_0015 = {
+      'schema_version':
+          '1.2.0',
       'affected': [{
           'database_specific': {
               'source': 'https://storage.googleapis.com/go-vulndb/byID/'
@@ -152,7 +160,8 @@ class IntegrationTests(unittest.TestCase):
           },
           'package': {
               'ecosystem': 'Go',
-              'name': 'golang.org/x/text/encoding/unicode'
+              'name': 'golang.org/x/text/encoding/unicode',
+              'purl': 'pkg:golang/golang.org/x/text/encoding/unicode',
           },
           'ranges': [{
               'events': [{
@@ -174,7 +183,8 @@ class IntegrationTests(unittest.TestCase):
           },
           'package': {
               'ecosystem': 'Go',
-              'name': 'golang.org/x/text/transform'
+              'name': 'golang.org/x/text/transform',
+              'purl': 'pkg:golang/golang.org/x/text/transform'
           },
           'ranges': [{
               'events': [{
@@ -217,6 +227,8 @@ class IntegrationTests(unittest.TestCase):
   }
 
   _VULN_RUSTSEC_2020_0105 = {
+      'schema_version':
+          '1.2.0',
       'id':
           'RUSTSEC-2020-0105',
       'summary':

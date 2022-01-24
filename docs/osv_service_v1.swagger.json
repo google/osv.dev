@@ -186,61 +186,21 @@
       },
       "description": "Affected versions and commits."
     },
-    "osvAffectedRange": {
+    "osvCredit": {
       "type": "object",
       "properties": {
-        "type": {
-          "description": "Required. The type of version information.",
-          "allOf": [
-            {
-              "$ref": "#/definitions/osvAffectedRangeType"
-            }
-          ]
-        },
-        "repo": {
+        "name": {
           "type": "string",
-          "description": "Required if type is GIT. The publicly accessible URL of the repo that can\nbe directly passed to clone commands."
+          "description": "The name to give credit to."
         },
-        "introduced": {
-          "type": "string",
-          "description": "Strongly recommended. The earliest version/commit where this vulnerability\nwas introduced in. If not specified, *all* commits/versions prior to the\n`fixed` commit/version are assumed to be affected."
-        },
-        "fixed": {
-          "type": "string",
-          "description": "Optional only if `introduced` is specified. The version/commit that this\nvulnerability was fixed in. This must be reachable from the \"introduced\"\nversion/commit.\n\nIf the vulnerability is not fixed, this will be unset."
-        }
-      }
-    },
-    "osvAffectedRangeType": {
-      "type": "string",
-      "enum": [
-        "UNSPECIFIED",
-        "GIT",
-        "SEMVER",
-        "ECOSYSTEM"
-      ],
-      "default": "UNSPECIFIED",
-      "description": "Type of the version information."
-    },
-    "osvAffects": {
-      "type": "object",
-      "properties": {
-        "ranges": {
-          "type": "array",
-          "items": {
-            "$ref": "#/definitions/osvAffectedRange"
-          },
-          "description": "Required (at least one entry). The commit/version ranges that contain this\nvulnerability.\n\nWhen provided, OSV will attempt to detect and append additional ranges that\nmay be affected as well (e.g. cherry-picks to other branches)."
-        },
-        "versions": {
+        "contact": {
           "type": "array",
           "items": {
             "type": "string"
           },
-          "description": "Optional. List of affected versions. This should match tag names in the\nupstream repository. OSV will populate or add to this automatically\nbased on the provided commit ranges."
+          "description": "Contact methods (URLs)."
         }
-      },
-      "description": "Affected versions and commits. Deprecated."
+      }
     },
     "osvEvent": {
       "type": "object",
@@ -332,25 +292,40 @@
         "ADVISORY",
         "REPORT",
         "FIX",
-        "PACKAGE"
+        "PACKAGE",
+        "ARTICLE"
       ],
       "default": "NONE"
     },
     "osvSeverity": {
+      "type": "object",
+      "properties": {
+        "type": {
+          "$ref": "#/definitions/osvSeverityType",
+          "description": "The type of this severity entry."
+        },
+        "score": {
+          "type": "string",
+          "description": "The quantitative score."
+        }
+      }
+    },
+    "osvSeverityType": {
       "type": "string",
       "enum": [
-        "NONE",
-        "LOW",
-        "MEDIUM",
-        "HIGH",
-        "CRITICAL"
+        "UNSPECIFIED",
+        "CVSS_V3"
       ],
-      "default": "NONE",
-      "description": "Vulnerability severity information. The exact meaning of these levels are\nspecific to OSS-Fuzz."
+      "default": "UNSPECIFIED",
+      "description": "Type of the severity."
     },
     "osvVulnerability": {
       "type": "object",
       "properties": {
+        "schemaVersion": {
+          "type": "string",
+          "description": "The OSV schema version."
+        },
         "id": {
           "type": "string",
           "description": "The `id` field is a unique identifier for the vulnerability entry. It is a\nstring of the format `<DB>-<ENTRYID>`, where `DB` names the database and\n`ENTRYID` is in the format used by the database. For example:\n\u201cOSV-2020-111\u201d, \u201cCVE-2021-3114\u201d, or \u201cGHSA-vp9c-fpxx-744v\u201d."
@@ -400,14 +375,6 @@
           "type": "string",
           "description": "Required. Any additional human readable details for the vulnerability."
         },
-        "affects": {
-          "description": "Required. Affected commit ranges and versions. Deprecated.",
-          "allOf": [
-            {
-              "$ref": "#/definitions/osvAffects"
-            }
-          ]
-        },
         "affected": {
           "type": "array",
           "items": {
@@ -423,20 +390,22 @@
           "description": "Optional. URLs to more information/advisories (including the\nscheme e.g \"https://\")."
         },
         "severity": {
-          "description": "Deprecated and will be removed in the future.",
-          "allOf": [
-            {
-              "$ref": "#/definitions/osvSeverity"
-            }
-          ]
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/osvSeverity"
+          },
+          "description": "Optional. Severity of the vulnerability."
+        },
+        "credits": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/osvCredit"
+          },
+          "description": "Optional. Credits for the vulnerability."
         },
         "database_specific": {
           "type": "object",
           "description": "Optional. JSON object holding additional information about the\nvulnerability as defined by the database for which the record applies."
-        },
-        "ecosystem_specific": {
-          "type": "object",
-          "description": "Optional. JSON object holding additional information about the\nvulnerability as defined by the ecosystem for which the record applies."
         }
       },
       "description": "A vulnerability entry.\nThe protobuf representation is *NOT* stable and only used for implementing\nthe JSON based API."

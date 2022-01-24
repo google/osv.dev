@@ -360,26 +360,6 @@ def update_affected_commits(bug_id, commits, public):
   _throttled_delete(to_delete)
 
 
-def enumerate_versions_pre_0_8(package, ecosystem, affected_ranges):
-  """Enumerate versions from SEMVER and ECOSYSTEM input ranges."""
-  versions = set()
-  for affected_range in affected_ranges:
-    if affected_range.type in (vulnerability_pb2.AffectedRange.ECOSYSTEM,
-                               vulnerability_pb2.AffectedRange.SEMVER):
-      if not affected_range.introduced and not affected_range.fixed:
-        continue
-
-      current_versions = ecosystem.enumerate_versions(package,
-                                                      affected_range.introduced,
-                                                      affected_range.fixed)
-      if current_versions:
-        versions.update(current_versions)
-
-  versions = list(versions)
-  ecosystem.sort_versions(versions)
-  return versions
-
-
 def enumerate_versions(package, ecosystem, affected_range):
   """Enumerate versions from SEMVER and ECOSYSTEM input ranges."""
   versions = set()
@@ -487,138 +467,12 @@ def _analyze_git_ranges(repo_analyzer, checkout_path, affected_range,
   return new_versions, commits
 
 
-def _analyze_git_ranges_pre_0_8(repo_analyzer, checkout_path, vulnerability,
-                                range_collectors, new_versions, commits):
-  """Analyze git ranges (pre 0.8)."""
-  package_repo_dir = tempfile.TemporaryDirectory()
-  package_repo = None
-
-  try:
-    grouped_git_ranges = {}
-    for affected_range in vulnerability.affects.ranges:
-      if affected_range.type != vulnerability_pb2.AffectedRange.GIT:
-        continue
-
-      # Convert empty values ('') to None.
-      introduced = affected_range.introduced or None
-      fixed = affected_range.fixed or None
-      range_collectors[affected_range.repo].add(introduced, fixed)
-
-      grouped_git_ranges.setdefault(affected_range.repo, []).append(
-          (introduced, fixed))
-
-    for repo_url, affected_ranges in grouped_git_ranges.items():
-      if checkout_path:
-        repo_name = os.path.basename(repo_url.rstrip('/')).rstrip('.git')
-        package_repo = repos.ensure_updated_checkout(
-            repo_url, os.path.join(checkout_path, repo_name))
-      else:
-        package_repo_dir.cleanup()
-        package_repo_dir = tempfile.TemporaryDirectory()
-        package_repo = repos.clone_with_retries(repo_url, package_repo_dir.name)
-
-      all_introduced = []
-      all_fixed = []
-      for (introduced, fixed) in affected_ranges:
-        if introduced:
-          all_introduced.append(introduced)
-
-        if fixed:
-          all_fixed.append(fixed)
-
-      try:
-        result = repo_analyzer.get_affected(package_repo, all_introduced,
-                                            all_fixed)
-      except ImpactError:
-        logging.warning('Got error while analyzing git range: %s',
-                        traceback.format_exc())
-        continue
-
-      for introduced, fixed in result.affected_ranges:
-        range_collectors[repo_url].add(introduced, fixed)
-
-      new_versions.update(result.tags)
-      commits.update(result.commits)
-  finally:
-    package_repo_dir.cleanup()
-
-  return range_collectors, new_versions, commits
-
-
-def _analyze_pre_0_8(vulnerability,
-                     analyze_git=True,
-                     checkout_path=None,
-                     detect_cherrypicks=True,
-                     versions_from_repo=True):
-  """Update and analyze a vulnerability based on its input ranges (pre 0.8)."""
-  # Repo -> Git range collectors
-  range_collectors = collections.defaultdict(RangeCollector)
-  new_versions = set()
-  commits = set()
-
-  # Analyze git ranges.
-  if analyze_git:
-    repo_analyzer = RepoAnalyzer(detect_cherrypicks=detect_cherrypicks)
-    _analyze_git_ranges_pre_0_8(repo_analyzer, checkout_path, vulnerability,
-                                range_collectors, new_versions, commits)
-
-  # Enumerate ECOSYSTEM and SEMVER ranges.
-  ecosystem_helpers = ecosystems.get(vulnerability.package.ecosystem)
-  if ecosystem_helpers:
-    versions = enumerate_versions_pre_0_8(vulnerability.package.name,
-                                          ecosystem_helpers,
-                                          vulnerability.affects.ranges)
-  else:
-    logging.warning('No ecosystem helpers implemented for %s',
-                    vulnerability.package.ecosystem)
-    versions = []
-
-  # Add additional versions derived from commits and tags.
-  if versions_from_repo:
-    versions.extend(new_versions)
-
-  # Apply changes.
-  has_changes = False
-  for repo_url, range_collector in range_collectors.items():
-    for introduced, fixed in range_collector.ranges():
-      if any(
-          # Range collectors use None, while the proto uses '' for empty
-          # values.
-          (affected_range.introduced or None) == introduced and
-          (affected_range.fixed or None) == fixed
-          for affected_range in vulnerability.affects.ranges):
-        # Range already exists.
-        continue
-
-      has_changes = True
-      vulnerability.affects.ranges.add(
-          type=vulnerability_pb2.AffectedRange.Type.GIT,
-          repo=repo_url,
-          introduced=introduced,
-          fixed=fixed)
-
-  for version in sorted(versions):
-    if version not in vulnerability.affects.versions:
-      has_changes = True
-      vulnerability.affects.versions.append(version)
-
-  if not has_changes:
-    return AnalyzeResult(False, commits)
-
-  vulnerability.modified.FromDatetime(models.utcnow())
-  return AnalyzeResult(True, commits)
-
-
 def analyze(vulnerability,
             analyze_git=True,
             checkout_path=None,
             detect_cherrypicks=True,
             versions_from_repo=True):
   """Update and analyze a vulnerability based on its input ranges."""
-  if not vulnerability.affected:
-    return _analyze_pre_0_8(vulnerability, analyze_git, checkout_path,
-                            detect_cherrypicks, versions_from_repo)
-
   commits = set()
   has_changes = False
   for affected_package in vulnerability.affected:

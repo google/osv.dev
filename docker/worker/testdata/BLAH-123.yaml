@@ -3,7 +3,13 @@ summary: A vulnerability
 details: |
   Blah blah blah
   Blah
-severity: HIGH
+severity:
+- type: CVSS_V3
+  score: '7.5'
+credits:
+- name: Foo bar
+  contact:
+  - mailto:foo@bar.com
 references:
 - type: WEB
   url: https://ref.com/ref
@@ -19,3 +25,5 @@ affected:
     - fixed: 8d8242f545e9cec3e6d0d2e3f5bde8be1c659735
   versions:
   - branch-v0.1.1
+database_specific:
+  specific: 1337

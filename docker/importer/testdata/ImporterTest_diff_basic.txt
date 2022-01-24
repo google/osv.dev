@@ -1,9 +1,9 @@
 ('diff --git a/file/OSV-2017-134.yaml b/file/OSV-2017-134.yaml\n'
  'new file mode 100644\n'
- 'index 0000000..49f0c47\n'
+ 'index 0000000..f76d8c2\n'
  '--- /dev/null\n'
  '+++ b/file/OSV-2017-134.yaml\n'
- '@@ -0,0 +1,31 @@\n'
+ '@@ -0,0 +1,44 @@\n'
  '+id: OSV-2017-134\n'
  '+summary: Heap-buffer-overflow in cdf_file_property_info\n'
  '+details: |\n'
@@ -17,6 +17,8 @@
  '+  cdf_check_summary_info\n'
  "+modified: '2021-01-01T00:00:00Z'\n"
  "+published: '2021-01-15T00:00:24.559102Z'\n"
+ '+database_specific:\n'
+ '+  database_specific: 1337.0\n'
  '+references:\n'
  '+- type: REPORT\n'
  '+  url: https://bugs.chromium.org/p/oss-fuzz/issues/detail?id=1064\n'
@@ -35,4 +37,15 @@
  '+  - FILE5_29\n'
  '+  - FILE5_30\n'
  '+  ecosystem_specific:\n'
- '+    severity: MEDIUM\n')
+ '+    severity: MEDIUM\n'
+ '+  database_specific:\n'
+ '+    database_specific: 1337.0\n'
+ '+schema_version: 1.2.0\n'
+ '+severity:\n'
+ '+- type: CVSS_V3\n'
+ "+  score: '7.5'\n"
+ '+credits:\n'
+ '+- name: Foo bar\n'
+ '+- name: Bar foo\n'
+ '+  contact:\n'
+ '+  - mailto:bar@foo.com\n')

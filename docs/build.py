@@ -124,12 +124,9 @@ def main():
 
   property_description_workaround(spec['definitions']['v1Query'])
   property_description_workaround(spec['definitions']['osvVulnerability'])
-  property_description_workaround(spec['definitions']['osvAffectedRange'])
 
   replace_property_name(spec['definitions']['osvVulnerability'],
                         'databaseSpecific', 'database_specific')
-  replace_property_name(spec['definitions']['osvVulnerability'],
-                        'ecosystemSpecific', 'ecosystem_specific')
 
   with open('sections.md') as f:
     spec['info']['description'] = f.read()

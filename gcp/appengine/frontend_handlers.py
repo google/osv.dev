@@ -105,21 +105,7 @@ def list():
 @blueprint.route('/v2/vulnerability/<id>')
 def vulnerability(id):
   """Vulnerability page."""
-  item = osv_get_by_id(id)
-
-  vulnerability = {
-    "id": item['id'],
-    "summary": item['summary'] if 'summary' in item else '',
-    "packages": item['affected'][0]['package']['ecosystem'],
-    "versions": item['affected'][0]['versions'],
-    "details": item['details'] if 'details' in item else '',
-    "modified": item['modified'],
-    "published": item['published'],
-    "references": item['references'],
-    "source": item['source'],
-    "source_link": item['source_link'],
-  }
-
+  vulnerability = osv_get_by_id(id)
   return render_template('vulnerability.html', vulnerability = vulnerability)
 
 

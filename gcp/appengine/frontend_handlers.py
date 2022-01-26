@@ -52,6 +52,7 @@ if _is_prod():
     if not limiter.check_request(ip_addr):
       abort(429)
 
+
 @blueprint.before_request
 def check_cors_preflight():
   """Handle CORS preflight requests."""
@@ -93,20 +94,20 @@ def list():
   vulnerabilities = []
   for item in results['items']:
     vulnerabilities.append({
-      "id": item['id'],
-      "summary": item['summary'] if 'summary' in item else '',
-      "packages": item['affected'][0]['package']['ecosystem'],
-      "versions": item['affected'][0]['versions']
+        "id": item['id'],
+        "summary": item['summary'] if 'summary' in item else '',
+        "packages": item['affected'][0]['package']['ecosystem'],
+        "versions": item['affected'][0]['versions']
     })
 
-  return render_template('list.html', vulnerabilities = vulnerabilities)
+  return render_template('list.html', vulnerabilities=vulnerabilities)
 
 
 @blueprint.route('/v2/vulnerability/<id>')
 def vulnerability(id):
   """Vulnerability page."""
   vulnerability = osv_get_by_id(id)
-  return render_template('vulnerability.html', vulnerability = vulnerability)
+  return render_template('vulnerability.html', vulnerability=vulnerability)
 
 
 def bug_to_response(bug, detailed=True):
@@ -220,6 +221,7 @@ def osv_query(search_string, page, affected_only, ecosystem):
     results['items'].append(bug_to_response(bug, detailed=False))
 
   return results
+
 
 def osv_get_by_id(vuln_id):
   """Gets bug details from its id. If invalid, aborts the request."""

@@ -52,7 +52,6 @@ if _is_prod():
     if not limiter.check_request(ip_addr):
       abort(429)
 
-
 @blueprint.before_request
 def check_cors_preflight():
   """Handle CORS preflight requests."""
@@ -87,10 +86,8 @@ def index_v2():
 @blueprint.route('/v2/list')
 def list():
   """Main page."""
-  # TODO: Can/should we do this as an internal query not a full on request to osv.dev?
-  page = request.args.get('page') if request.args.get('page') and request.args.get('page').isnumeric() else '1'
-  response = requests.get('https://osv.dev/backend/query?page=%s&search=&affected_only=true&ecosystem=' % page)
-  results = json.loads(response.content)
+  page = int(request.args.get('page', 1))
+  results = osv_query('', page, False, '')
 
   vulnerabilities = []
   for item in results['items']:
@@ -107,9 +104,7 @@ def list():
 @blueprint.route('/v2/vulnerability/<id>')
 def vulnerability(id):
   """Vulnerability page."""
-  # TODO: Can/should we do this as an internal query not a full on request to osv.dev?
-  response = requests.get('https://osv.dev/backend/vulnerability?id=%s' % id)
-  item = json.loads(response.content)
+  item = osv_get_by_id(id)
 
   vulnerability = {
     "id": item['id'],
@@ -211,14 +206,8 @@ def ecosystems_handler():
   return jsonify(sorted([bug.ecosystem[0] for bug in query if bug.ecosystem]))
 
 
-@blueprint.route(_BACKEND_ROUTE + '/query')
-def query_handler():
-  """Handle a query."""
-  search_string = request.args.get('search')
-  page = int(request.args.get('page', 1))
-  affected_only = request.args.get('affected_only') == 'true'
-  ecosystem = request.args.get('ecosystem')
-
+def osv_query(search_string, page, affected_only, ecosystem):
+  """Run an OSV query."""
   query = osv.Bug.query(osv.Bug.status == osv.BugStatus.PROCESSED,
                         osv.Bug.public == True)  # pylint: disable=singleton-comparison
 
@@ -243,13 +232,10 @@ def query_handler():
   for bug in bugs:
     results['items'].append(bug_to_response(bug, detailed=False))
 
-  return jsonify(results)
+  return results
 
-
-@blueprint.route(_BACKEND_ROUTE + '/vulnerability')
-def vulnerability_handler():
-  """Handle a vulnerability request."""
-  vuln_id = request.args.get('id')
+def osv_get_by_id(vuln_id):
+  """Gets bug details from its id. If invalid, aborts the request."""
   if not vuln_id:
     abort(400)
     return None
@@ -267,4 +253,22 @@ def vulnerability_handler():
     abort(403)
     return None
 
-  return jsonify(bug_to_response(bug))
+  return bug_to_response(bug)
+
+
+@blueprint.route(_BACKEND_ROUTE + '/query')
+def query_handler():
+  """Handle a query."""
+  search_string = request.args.get('search')
+  page = int(request.args.get('page', 1))
+  affected_only = request.args.get('affected_only') == 'true'
+  ecosystem = request.args.get('ecosystem')
+  results = osv_query(search_string, page, affected_only, ecosystem)
+  return jsonify(results)
+
+
+@blueprint.route(_BACKEND_ROUTE + '/vulnerability')
+def vulnerability_handler():
+  """Handle a vulnerability request."""
+  vuln_id = request.args.get('id')
+  return jsonify(osv_get_by_id(vuln_id))

@@ -1,0 +1,203 @@
+@use 'sass:string';
+
+$osv-background: #292929;
+$osv-text-color: #fff;
+$osv-font-family: string.unquote('Overpass, sans-serif');
+
+@use '@material/theme' with (
+  $surface: $osv-background,
+);
+@use '@material/layout-grid/mdc-layout-grid';
+@use '@material/data-table/data-table';
+@use '@material/data-table/data-table-theme';
+@include data-table.core-styles;
+@include data-table.theme-baseline;
+
+@mixin full-width {
+  width: 100vw;
+  position: relative;
+  left: 50%;
+  right: 50%;
+  margin-left: -50vw;
+  margin-right: -50vw;
+}
+
+/** Reset */
+
+*, *::before, *::after {
+  box-sizing: border-box;
+}
+
+* {
+  margin: 0;
+}
+
+html, body {
+  height: 100%;
+}
+
+ol, ul, menu {
+  list-style: none;
+}
+
+img, picture, video, canvas, svg {
+  max-width: 100%;
+}
+
+table {
+  border-collapse: collapse;
+}
+
+/** Global styles */
+
+body {
+  background: $osv-background;
+  color: $osv-text-color;
+  font-family: $osv-font-family;
+  font-size: 14px;
+  --mdc-theme-primary: $osv-text-color;
+  --mdc-theme-surface: $osv-background;
+  --mdc-theme-background: $osv-background;
+  --mdc-typography-font-family: $osv-font-family;
+  --mdc-text-field-fill-color: #696969;
+  --mdc-text-field-ink-color: $osv-text-color;
+}
+
+a {
+  color: $osv-text-color;
+  cursor: pointer;
+  text-decoration: underline;
+}
+
+h1,
+pre {
+  font-family: 'Overpass Mono', monospace;
+}
+
+turbo-frame {
+  display: contents;
+}
+
+/** WIP notice */
+
+.wip-notice {
+  display: flex;
+  align-items: center;
+  height: 30px;
+  width: 100%;
+  background: #b31412;
+  color: #fff;
+  justify-content: center;
+  top: 0;
+  z-index: 999;
+}
+
+/** Top bar */
+
+.top-bar {
+  display: flex;
+  padding: 34px 40px;
+
+  .logo {
+    $logo-width: 53px;
+    flex: 1 0 ($logo-width + 40px);
+    max-width: $logo-width + 112px;
+  }
+
+  .tabs {
+    display: flex;
+    list-style: none;
+    margin: 0;
+    gap: 40px;
+    font-size: 16px;
+
+    li {
+      $active-spacing: 6px;
+      margin: -$active-spacing 0;
+      padding: $active-spacing 0;
+      a {
+        text-decoration: none;
+      }
+      &.active {
+        border-bottom: 8px solid $osv-text-color;
+      }
+    }
+  }
+}
+
+/** List page */
+
+.list-page .title {
+  font-size: 20px;
+}
+
+.search-container {
+  margin-top: 22px;
+  border: 2px solid $osv-text-color;
+  border-radius: 8px;
+  --mdc-text-field-fill-color: rgba(255, 255, 255, 0.3);
+  --mdc-text-field-label-ink-color: $osv-text-color;
+
+  // Make the inner search field full-width.
+  .search-field {
+    width: 100%;
+  }
+
+  // Hax: Use our own icon because mwc-textfield supplies a dark gray one. Maybe M3 will fix it:
+  // https://github.com/material-components/material-web/commit/0c200ecf04a533b1dc56932c3979e3e5d8fb7d73
+  position: relative;
+  .search-icon {
+    position: absolute;
+    top: 50%;
+    transform: translate(50%, -50%);
+  }
+
+  // Hax: Get rid of the material underline.
+  overflow: hidden; /* The underline would otherwise show underneath the border radius. */
+  &::after {
+    margin-bottom: -4px;
+    background: #fff;
+    height: 2px;
+    position: relative;
+    top: -2px;
+    content: '';
+    display: block;
+  }
+}
+
+// Hax: Make @material/mwc-icon-button play well with @material/data-table.
+mwc-icon-button.mdc-data-table__sort-icon-button {
+  width: auto;
+  height: auto;
+  --mdc-icon-button-size: 36px;
+}
+
+.vuln-table-container {
+  // The vulnerability list should be full-width but not overflow the page bounds.
+  @include full-width;
+  .vuln-table {
+    overflow-x: scroll;
+    width: 100%;
+  }
+}
+
+/** Vulnerability page */
+
+.vulnerability-page .title {
+  font-size: 60px;
+}
+
+.vulnerability-details {
+  display: grid;
+  grid-template-columns: max-content auto;
+
+  dt {
+    grid-column: 1;
+    font-weight: bold;
+    padding-right: 18px;
+  }
+
+  dd {
+    grid-column: 2;
+  }
+}

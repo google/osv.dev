@@ -22,8 +22,10 @@ from flask import make_response
 from flask import render_template
 from flask import request
 
+import json
 import osv
 import rate_limiter
+import requests
 import source_mapper
 
 blueprint = Blueprint('frontend_handlers', __name__)
@@ -75,6 +77,54 @@ def add_cors_headers(response):
 def index():
   """Main page."""
   return render_template('index.html')
+
+
+@blueprint.route('/v2/')
+def index_v2():
+  return render_template('home.html')
+
+
+@blueprint.route('/v2/list')
+def list():
+  """Main page."""
+  # TODO: Can/should we do this as an internal query not a full on request to osv.dev?
+  page = request.args.get('page') if request.args.get('page') and request.args.get('page').isnumeric() else '1'
+  response = requests.get('https://osv.dev/backend/query?page=%s&search=&affected_only=true&ecosystem=' % page)
+  results = json.loads(response.content)
+
+  vulnerabilities = []
+  for item in results['items']:
+    vulnerabilities.append({
+      "id": item['id'],
+      "summary": item['summary'] if 'summary' in item else '',
+      "packages": item['affected'][0]['package']['ecosystem'],
+      "versions": item['affected'][0]['versions']
+    })
+
+  return render_template('list.html', vulnerabilities = vulnerabilities)
+
+
+@blueprint.route('/v2/vulnerability/<id>')
+def vulnerability(id):
+  """Vulnerability page."""
+  # TODO: Can/should we do this as an internal query not a full on request to osv.dev?
+  response = requests.get('https://osv.dev/backend/vulnerability?id=%s' % id)
+  item = json.loads(response.content)
+
+  vulnerability = {
+    "id": item['id'],
+    "summary": item['summary'] if 'summary' in item else '',
+    "packages": item['affected'][0]['package']['ecosystem'],
+    "versions": item['affected'][0]['versions'],
+    "details": item['details'] if 'details' in item else '',
+    "modified": item['modified'],
+    "published": item['published'],
+    "references": item['references'],
+    "source": item['source'],
+    "source_link": item['source_link'],
+  }
+
+  return render_template('vulnerability.html', vulnerability = vulnerability)
 
 
 def bug_to_response(bug, detailed=True):

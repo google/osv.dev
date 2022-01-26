@@ -1,0 +1,31 @@
+{
+  "name": "frontend3",
+  "version": "0.0.0",
+  "private": true,
+  "scripts": {
+    "watch": "webpack --watch",
+    "start": "webpack serve",
+    "build": "webpack"
+  },
+  "dependencies": {
+    "@hotwired/turbo": "^7.1.0",
+    "@material/data-table": "^13.0.0",
+    "@material/layout-grid": "^13.0.0",
+    "@material/mwc-icon": "^0.25.3",
+    "@material/mwc-icon-button": "^0.25.3",
+    "@material/mwc-textfield": "^0.25.3",
+    "@material/theme": "^13.0.0"
+  },
+  "devDependencies": {
+    "copy-webpack-plugin": "^10.2.0",
+    "css-loader": "^6.5.1",
+    "html-webpack-plugin": "^5.5.0",
+    "mini-css-extract-plugin": "^2.4.6",
+    "sass": "^1.43.5",
+    "sass-loader": "^12.3.0",
+    "style-loader": "^3.3.1",
+    "webpack": "^5.64.4",
+    "webpack-cli": "^4.9.1",
+    "webpack-dev-server": "^4.6.0"
+  }
+}

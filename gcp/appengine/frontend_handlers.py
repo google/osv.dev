@@ -87,7 +87,8 @@ def index_v2():
 def list():
   """Main page."""
   page = int(request.args.get('page', 1))
-  results = osv_query('', page, False, '')
+  ecosystem = request.args.get('ecosystem')
+  results = osv_query('', page, False, ecosystem)
 
   vulnerabilities = []
   for item in results['items']:

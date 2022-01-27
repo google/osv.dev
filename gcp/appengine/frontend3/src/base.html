@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css?family=Material+Icons&display=block" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Overpass+Mono&family=Overpass:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
+  <meta charset="utf-8">
+  <title>OSV</title>
+</head>
+<body>
+  <aside class="wip-notice">
+    <p>Super <strong>work in progress</strong> website! Feel free to take a look, but you probably want to be using the
+    <a href="{{ url_for('frontend_handlers.index') }}" data-turbo="false">current version</a> instead!</p>
+  </aside>
+  <header class="top-bar">
+    <div class="logo">
+      <a href="{{ url_for('frontend_handlers.index_v2') }}">
+        <img src="/static/img/logo.png" srcset="/static/img/logo.png, /static/img/logo@2x.png 2x">
+      </a>
+    </div>
+    <ul class="tabs">
+      <li class="{{ 'active' if active_section == 'vulnerabilities' else '' }}">
+        <a href="{{ url_for('frontend_handlers.list') }}">Vulnerability Database</a>
+      </li>
+      <li>About</li>
+      <li>Getting Started</li>
+      <li>Media Coverage</li>
+    </ul>
+  </header>
+  {% block content %}{% endblock %}
+</body>
+</html>

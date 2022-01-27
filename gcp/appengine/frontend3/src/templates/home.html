@@ -1,0 +1,22 @@
+{% extends 'base.html' %}
+{% set active_section = 'home' %}
+
+{% block content %}
+<div class="mdc-layout-grid">
+  <div class="mdc-layout-grid__inner home-page">
+    <div class="mdc-layout-grid__cell--span-8 hero">
+      <h1 class="title">A complete picture of vulnerabilities in your open source dependencies.</h1>
+      <div class="explainer">
+        <p>
+          An ongoing project backed by Google.
+        </p>
+        <p>
+          OSV captures precise data about a vulnerability's impact, and
+          automates the process of vulnerability triage and database
+          maintenance across major open source ecosystems.
+        </p>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

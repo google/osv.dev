@@ -31,6 +31,10 @@ handlers:
     script: auto
     secure: always
 
+  - url: /v2/.*
+    script: auto
+    secure: always
+
   - url: /cron/.*
     script: auto
     secure: always

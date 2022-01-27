@@ -18,3 +18,4 @@ __pycache__/
 # Ignored by the build system
 /setup.cfg
 frontend
+frontend3

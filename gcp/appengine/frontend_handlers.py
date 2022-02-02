@@ -100,7 +100,7 @@ def list():
         "versions": item['affected'][0]['versions']
     })
 
-  return render_template('list.html', vulnerabilities=vulnerabilities)
+  return render_template('list.html', page=page, vulnerabilities=vulnerabilities)
 
 
 @blueprint.route('/v2/vulnerability/<id>')

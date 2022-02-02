@@ -2,7 +2,9 @@
 
 $osv-background: #292929;
 $osv-text-color: #fff;
+$osv-accent-color: #c5221f;
 $osv-font-family: string.unquote('Overpass, sans-serif');
+$osv-heading-font-family: string.unquote('"Overpass Mono", monospace');
 
 @use '@material/theme' with (
   $surface: $osv-background,
@@ -71,7 +73,7 @@ a {
 
 h1,
 pre {
-  font-family: 'Overpass Mono', monospace;
+  font-family: $osv-heading-font-family;
 }
 
 turbo-frame {
@@ -187,7 +189,8 @@ mwc-icon-button.mdc-data-table__sort-icon-button {
   font-size: 60px;
 }
 
-.vulnerability-details {
+dl.vulnerability-details,
+.vulnerability-package-subsection dl {
   display: grid;
   grid-template-columns: max-content auto;
 
@@ -199,5 +202,54 @@ mwc-icon-button.mdc-data-table__sort-icon-button {
 
   dd {
     grid-column: 2;
+  }
+}
+
+.vulnerability-packages-container {
+  margin-top: 80px;
+}
+
+.vulnerability-packages {
+  h2 {
+    background: #aaa;
+    color: #000;
+    display: inline-block;
+    font-size: 14px;
+    padding: 16px;
+  }
+
+  .subtitle {
+    font-family: $osv-heading-font-family;
+    font-size: 20px;
+  }
+
+  // Tab bar styling.
+  --const-mq-affordances:
+    [screen] tab-bar
+  ;
+  &[affordance="tab-bar"] h2 {
+    cursor: default;
+
+    // Default tab spacing of 20px. First tab should match grid margin.
+    margin-left: 20px;
+    &:first-of-type {
+      margin-left: var(--mdc-layout-grid-margin-desktop);
+    }
+
+    // Selected tab styling.
+    &[tabindex="0"] {
+      background: #fff;
+      color: $osv-accent-color;
+    }
+  }
+
+  // Tab panel styling.
+  [role="tabpanel"] {
+    border-top: 1px dashed #fff;
+  }
+  
+  .vulnerability-package-subsection {
+    padding: 14px 0;
+    border-bottom: 1px dashed #fff;
   }
 }

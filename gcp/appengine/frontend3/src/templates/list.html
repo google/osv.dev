@@ -34,12 +34,6 @@ data-column-id="{{ column_id }}"
     </div>
   </div>
 </div>
-<div class="mdc-layout-grid__cell--span-12">
-  Pages
-  <a href="{{ url_for(request.endpoint) }}?page=1" data-turbo-frame="vulnerability-table">1</a>
-  <a href="{{ url_for(request.endpoint) }}?page=2" data-turbo-frame="vulnerability-table">2</a>
-  <a href="{{ url_for(request.endpoint) }}?page=3" data-turbo-frame="vulnerability-table">3</a>
-</div>
 <div class="vuln-table-container mdc-data-table">
   <div role="table" class="vuln-table mdc-data-table__table" aria-label="Vulnerability table">
     <div role="rowgroup" class="vuln-table-header">
@@ -53,7 +47,7 @@ data-column-id="{{ column_id }}"
       </div>
     </div>
     <div role="rowgroup" class="vuln-table-rows mdc-data-table__content">
-      <turbo-frame id="vulnerability-table" data-turbo-action="advance" target="_top">
+      <turbo-frame id="vulnerability-table-page{{ page }}" data-turbo-action="advance" target="_top">
         {% for vulnerability in vulnerabilities %}
         <div role="row" class="vuln-table-row mdc-data-table__row">
           <span role="cell" class="vuln-table-cell mdc-data-table__cell">
@@ -76,6 +70,11 @@ data-column-id="{{ column_id }}"
           <span role="cell" class="vuln-table-cell mdc-data-table__cell"></span>
         </div>
         {% endfor %}
+        <turbo-frame id="vulnerability-table-page{{ page+1 }}" data-turbo-action="advance" target="_top">
+          <div role="row" class="vuln-table-row mdc-data-table__row">
+            <a href="{{ url_for(request.endpoint) }}?page={{ page + 1 }}" data-turbo-frame="_self">Load more...</a>
+          </div>
+        </turbo-frame>
       </turbo-frame>
     </div>
   </table>

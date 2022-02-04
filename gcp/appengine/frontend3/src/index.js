@@ -1,4 +1,5 @@
 import './styles.scss';
+import '@material/mwc-circular-progress';
 import '@material/mwc-icon';
 import '@material/mwc-icon-button';
 import '@material/mwc-textfield';

@@ -57,7 +57,7 @@ body {
   color: $osv-text-color;
   font-family: $osv-font-family;
   font-size: 14px;
-  --mdc-theme-primary: $osv-text-color;
+  --mdc-theme-primary: #{$osv-text-color};
   --mdc-theme-surface: $osv-background;
   --mdc-theme-background: $osv-background;
   --mdc-typography-font-family: $osv-font-family;
@@ -78,6 +78,17 @@ pre {
 
 turbo-frame {
   display: contents;
+}
+
+.link-button {
+  display: inline-flex;
+  padding: 0 16px;
+  height: 36px;
+  background: $osv-accent-color;
+  color: $osv-text-color;
+  border-radius: 4px;
+  align-items: center;
+  text-decoration: none;
 }
 
 /** WIP notice */
@@ -176,10 +187,34 @@ mwc-icon-button.mdc-data-table__sort-icon-button {
 
 .vuln-table-container {
   // The vulnerability list should be full-width but not overflow the page bounds.
-  @include full-width;
+  overflow-x: scroll;
+  width: 100%;
+
+  // Apply table display etc.
   .vuln-table {
-    overflow-x: scroll;
-    width: 100%;
+    display: table;
+  }
+  .vuln-table-header {
+    display: table-header-group;
+  }
+  .vuln-table-rows {
+    display: table-row-group;
+  }
+  .vuln-table-row {
+    display: table-row;
+  }
+  .vuln-table-cell {
+    display: table-cell;
+    vertical-align: middle;
+  }
+
+  // Swap next page button/loading indicator as needed.
+  turbo-frame .next-page-indicator,
+  turbo-frame[busy] .next-page-button {
+    display: none;
+  }
+  turbo-frame[busy] .next-page-indicator {
+    display: block;
   }
 }
 

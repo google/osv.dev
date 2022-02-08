@@ -35,7 +35,7 @@ data-column-id="{{ column_id }}"
               <mwc-textfield-with-enter label="Package or ID search" icon="a" class="query-field" name="q" value="{{ query }}"></mwc-textfield-with-enter>
             </div>
           </div>
-          <div class="ecosystems">
+          <submit-radios class="ecosystems">
             {% if ecosystems %}
               {% for ecosystem in ecosystems %}
                 <input type="radio" name="ecosystem" id="ecosystem-radio-{{ loop.index }}"
@@ -43,7 +43,7 @@ data-column-id="{{ column_id }}"
                 <label for="ecosystem-radio-{{ loop.index }}">{{ ecosystem }}</label>
               {% endfor %}
             {% endif %}
-          </div>
+          </submit-radios>
           <input type="submit">
         </form>
       </div>

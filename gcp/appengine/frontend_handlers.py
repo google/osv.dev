@@ -101,8 +101,11 @@ def list():
         "versions": item['affected'][0]['versions']
     })
 
+  # Fetch ecosystems by default. As an optimization, skip when rendering page fragments.
+  ecosystems = osv_get_ecosystems() if not request.headers.get('Turbo-Frame') else None
+
   return render_template(
-      'list.html', page=page, query=query, vulnerabilities=vulnerabilities)
+      'list.html', page=page, query=query, selected_ecosystem=ecosystem, ecosystems=ecosystems, vulnerabilities=vulnerabilities)
 
 
 @blueprint.route('/v2/vulnerability/<id>')
@@ -189,11 +192,10 @@ def _commit_to_link(repo_url, commit):
   return vcs.get_source_url_for_revision_diff(start, end)
 
 
-@blueprint.route(_BACKEND_ROUTE + '/ecosystems')
-def ecosystems_handler():
+def osv_get_ecosystems():
   """Get list of ecosystems."""
   query = osv.Bug.query(projection=[osv.Bug.ecosystem], distinct=True)
-  return jsonify(sorted([bug.ecosystem[0] for bug in query if bug.ecosystem]))
+  return sorted([bug.ecosystem[0] for bug in query if bug.ecosystem])
 
 
 def osv_query(search_string, page, affected_only, ecosystem):
@@ -245,6 +247,12 @@ def osv_get_by_id(vuln_id):
     return None
 
   return bug_to_response(bug)
+
+
+@blueprint.route(_BACKEND_ROUTE + '/ecosystems')
+def ecosystems_handler():
+  """Handle query for list of ecosystems."""
+  return jsonify(osv_get_ecosystems())
 
 
 @blueprint.route(_BACKEND_ROUTE + '/query')

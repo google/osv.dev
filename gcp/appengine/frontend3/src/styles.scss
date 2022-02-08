@@ -136,11 +136,40 @@ pre {
 
 /** List page */
 
-.list-page .title {
-  font-size: 20px;
+.list-page {
+  .title {
+    font-size: 20px;
+  }
+
+  // Hide the submit button.
+  .search input[type=submit] {
+    display: none;
+  }
 }
 
-.search-container {
+.ecosystems {
+  margin-top: 20px;
+  display: flex;
+  gap: 10px;
+
+  label {
+    font-family: $osv-heading-font-family;
+    padding: 10px 20px;
+    background: #696969;
+    border-radius: 999px;
+  }
+
+  input[type=radio]:checked + label {
+    background: $osv-text-color;
+    color: $osv-background;
+  }
+
+  input[type=radio] {
+    display: none;
+  }
+}
+
+.query-container {
   margin-top: 22px;
   border: 2px solid $osv-text-color;
   border-radius: 8px;
@@ -148,7 +177,7 @@ pre {
   --mdc-text-field-label-ink-color: $osv-text-color;
 
   // Make the inner search field full-width.
-  .search-field {
+  .query-field {
     width: 100%;
   }
 
@@ -171,11 +200,6 @@ pre {
     top: -2px;
     content: '';
     display: block;
-  }
-
-  // Hide the submit button.
-  input[type=submit] {
-    display: none;
   }
 }
 

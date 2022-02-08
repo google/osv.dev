@@ -22,6 +22,8 @@ export class MwcTextFieldWithEnter extends MwcTextField {
       const form = this.closest('form');
       if (form) {
         e.preventDefault();
+        // Make a fake input and submit it. If the actual form is submitted,
+        // Turbo won't intercept the event.
         const fakeSubmit = document.createElement('input');
         fakeSubmit.type = 'submit';
         fakeSubmit.style.display = 'none';

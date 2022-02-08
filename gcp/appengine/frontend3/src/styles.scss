@@ -76,10 +76,6 @@ pre {
   font-family: $osv-heading-font-family;
 }
 
-turbo-frame {
-  display: contents;
-}
-
 .link-button {
   display: inline-flex;
   padding: 0 16px;
@@ -176,6 +172,11 @@ turbo-frame {
     content: '';
     display: block;
   }
+
+  // Hide the submit button.
+  input[type=submit] {
+    display: none;
+  }
 }
 
 // Hax: Make @material/mwc-icon-button play well with @material/data-table.
@@ -206,6 +207,19 @@ mwc-icon-button.mdc-data-table__sort-icon-button {
   .vuln-table-cell {
     display: table-cell;
     vertical-align: middle;
+  }
+
+  // Busy effect.
+  .vuln-table-rows {
+    transition: filter .3s;
+  }
+  &[busy] .vuln-table-rows {
+    filter: blur(4px);
+  }
+
+  // Turbo frames should not create layout by default.
+  turbo-frame {
+    display: contents;
   }
 
   // Swap next page button/loading indicator as needed.

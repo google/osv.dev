@@ -28,13 +28,16 @@ data-column-id="{{ column_id }}"
     <div class="mdc-layout-grid__cell--span-8">
       <h1 class="title">Vulnerability Library</h1>
       <div class="search-container">
-        <mwc-icon class="search-icon">search</mwc-icon>
-        <mwc-textfield label="Package or ID search" icon="a" class="search-field"></mwc-textfield>
+        <form action="{{ url_for('frontend_handlers.list') }}" data-turbo-frame="vulnerability-table">
+          <mwc-icon class="search-icon">search</mwc-icon>
+          <mwc-textfield-with-enter label="Package or ID search" icon="a" class="search-field" name="q" value="{{ query }}"></mwc-textfield-with-enter>
+          <input type="submit">
+        </form>
       </div>
     </div>
   </div>
 </div>
-<div class="vuln-table-container mdc-data-table">
+<turbo-frame class="vuln-table-container mdc-data-table" id="vulnerability-table" data-turbo-action="advance">
   <div role="table" class="vuln-table mdc-data-table__table" aria-label="Vulnerability table">
     <div role="rowgroup" class="vuln-table-header">
       <div role="row" class="vuln-table-row mdc-data-table__header-row">
@@ -79,6 +82,6 @@ data-column-id="{{ column_id }}"
       </turbo-frame>
     </div>
   </div>
-</div>
+</turbo-frame>
 </div>
 {% endblock %}

@@ -87,9 +87,10 @@ def index_v2():
 @blueprint.route('/v2/list')
 def list():
   """Main page."""
+  query = request.args.get('q', '')
   page = int(request.args.get('page', 1))
   ecosystem = request.args.get('ecosystem')
-  results = osv_query('', page, False, ecosystem)
+  results = osv_query(query, page, False, ecosystem)
 
   vulnerabilities = []
   for item in results['items']:
@@ -101,7 +102,7 @@ def list():
     })
 
   return render_template(
-      'list.html', page=page, vulnerabilities=vulnerabilities)
+      'list.html', page=page, query=query, vulnerabilities=vulnerabilities)
 
 
 @blueprint.route('/v2/vulnerability/<id>')

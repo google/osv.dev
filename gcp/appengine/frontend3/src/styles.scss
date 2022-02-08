@@ -201,11 +201,6 @@ pre {
     content: '';
     display: block;
   }
-
-  // Hide the submit button.
-  input[type=submit] {
-    display: none;
-  }
 }
 
 // Hax: Make @material/mwc-icon-button play well with @material/data-table.

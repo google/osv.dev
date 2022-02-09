@@ -60,6 +60,8 @@ data-column-id="{{ column_id }}"
         {{ table_header_cell('affected-versions', 'Affected versions') }}
         {{ table_header_cell('ecosystem', 'Ecosystem') }}
         {{ table_header_cell('last-modified', 'Last modified') }}
+        {{ table_header_cell('fixed', 'Fix') }}
+        {{ table_header_cell('severity', 'Severity') }}
       </div>
     </div>
     <div role="rowgroup" class="vuln-table-rows mdc-data-table__content">
@@ -83,6 +85,10 @@ data-column-id="{{ column_id }}"
             {{ version }}
             {% endfor %}
             {% endfor %}
+          </span>
+          <span role="cell" class="vuln-table-cell mdc-data-table__cell"></span>
+          <span role="cell" class="vuln-table-cell mdc-data-table__cell">
+            {{ vulnerability.modified }}
           </span>
           <span role="cell" class="vuln-table-cell mdc-data-table__cell"></span>
           <span role="cell" class="vuln-table-cell mdc-data-table__cell"></span>

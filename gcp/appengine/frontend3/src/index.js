@@ -44,10 +44,9 @@ export class MwcTextFieldWithEnter extends MwcTextField {
   constructor() {
     super();
     this.addEventListener('keyup', (e) => {
-      if (e.key !== 'Enter') {
-        return;
+      if (e.key === 'Enter') {
+        submitForm(this.closest('form'));
       }
-      submitForm(this.closest('form'));
     });
   }
 }

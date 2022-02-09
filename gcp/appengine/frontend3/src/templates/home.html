@@ -4,10 +4,10 @@
 {% block content %}
 <div class="mdc-layout-grid">
   <div class="mdc-layout-grid__inner home-page">
-    <div class="mdc-layout-grid__cell--span-8 hero">
+    <div class="mdc-layout-grid__cell--span-6 hero">
       <h1 class="title">A complete picture of vulnerabilities in your open source dependencies.</h1>
       <div class="explainer">
-        <p>
+        <p class="google-backed">
           An ongoing project backed by Google.
         </p>
         <p>
@@ -16,6 +16,14 @@
           maintenance across major open source ecosystems.
         </p>
       </div>
+      <div class="cta">
+        <a class="cta-primary link-button" href="{{ url_for('frontend_handlers.list') }}">Search Vulnerability Database</a>
+        <a class="cta-secondary" href="#">Learn more</a>
+      </div>
+    </div>
+    <div class="mdc-layout-grid__cell--span-12 usage-examples">
+      <h2 class="heading">Use the API</h2>
+      ...
     </div>
   </div>
 </div>

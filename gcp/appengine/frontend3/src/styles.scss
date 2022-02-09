@@ -337,3 +337,27 @@ dl.vulnerability-details,
     border-bottom: 1px dashed #fff;
   }
 }
+
+/** Home page */
+
+.home-page {
+  .title {
+    font-size: 60px;
+    line-height: 70px;
+  }
+
+  .explainer {
+    font-size: 20px;
+  }
+
+  .google-backed::after {
+    display: inline;
+    content: 'google';
+    font-family: 'Google Material Icons';
+  }
+
+  .usage-examples .heading {
+    font-size: 60px;
+    text-align: center;
+  }
+}

@@ -92,15 +92,6 @@ def list():
   ecosystem = request.args.get('ecosystem')
   results = osv_query(query, page, False, ecosystem)
 
-  vulnerabilities = []
-  for item in results['items']:
-    vulnerabilities.append({
-        "id": item['id'],
-        "summary": item['summary'] if 'summary' in item else '',
-        "packages": item['affected'][0]['package']['ecosystem'],
-        "versions": item['affected'][0]['versions']
-    })
-
   # Fetch ecosystems by default. As an optimization, skip when rendering page fragments.
   ecosystems = osv_get_ecosystems(
   ) if not request.headers.get('Turbo-Frame') else None
@@ -111,7 +102,7 @@ def list():
       query=query,
       selected_ecosystem=ecosystem,
       ecosystems=ecosystems,
-      vulnerabilities=vulnerabilities)
+      vulnerabilities=results['items'])
 
 
 @blueprint.route('/v2/vulnerability/<id>')

@@ -102,10 +102,16 @@ def list():
     })
 
   # Fetch ecosystems by default. As an optimization, skip when rendering page fragments.
-  ecosystems = osv_get_ecosystems() if not request.headers.get('Turbo-Frame') else None
+  ecosystems = osv_get_ecosystems(
+  ) if not request.headers.get('Turbo-Frame') else None
 
   return render_template(
-      'list.html', page=page, query=query, selected_ecosystem=ecosystem, ecosystems=ecosystems, vulnerabilities=vulnerabilities)
+      'list.html',
+      page=page,
+      query=query,
+      selected_ecosystem=ecosystem,
+      ecosystems=ecosystems,
+      vulnerabilities=vulnerabilities)
 
 
 @blueprint.route('/v2/vulnerability/<id>')

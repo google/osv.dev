@@ -215,6 +215,17 @@ mwc-icon-button.mdc-data-table__sort-icon-button {
   overflow-x: scroll;
   width: 100%;
 
+  // Override MDC table styling.
+  border-width: 0;
+  .mdc-data-table__header-cell {
+    border-bottom-color: $osv-text-color;
+    border-bottom-style: solid;
+    font-family: $osv-heading-font-family;
+  }
+  .mdc-data-table__cell {
+    border-bottom-style: dashed;
+  }
+
   // Apply table display etc.
   .vuln-table {
     display: table;

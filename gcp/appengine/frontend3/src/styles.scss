@@ -76,10 +76,6 @@ pre {
   font-family: $osv-heading-font-family;
 }
 
-turbo-frame {
-  display: contents;
-}
-
 .link-button {
   display: inline-flex;
   padding: 0 16px;
@@ -140,11 +136,40 @@ turbo-frame {
 
 /** List page */
 
-.list-page .title {
-  font-size: 20px;
+.list-page {
+  .title {
+    font-size: 20px;
+  }
+
+  // Hide the submit button.
+  .search input[type=submit] {
+    display: none;
+  }
 }
 
-.search-container {
+.ecosystems {
+  margin-top: 20px;
+  display: flex;
+  gap: 10px;
+
+  label {
+    font-family: $osv-heading-font-family;
+    padding: 10px 20px;
+    background: #696969;
+    border-radius: 999px;
+  }
+
+  input[type=radio]:checked + label {
+    background: $osv-text-color;
+    color: $osv-background;
+  }
+
+  input[type=radio] {
+    display: none;
+  }
+}
+
+.query-container {
   margin-top: 22px;
   border: 2px solid $osv-text-color;
   border-radius: 8px;
@@ -152,7 +177,7 @@ turbo-frame {
   --mdc-text-field-label-ink-color: $osv-text-color;
 
   // Make the inner search field full-width.
-  .search-field {
+  .query-field {
     width: 100%;
   }
 
@@ -206,6 +231,19 @@ mwc-icon-button.mdc-data-table__sort-icon-button {
   .vuln-table-cell {
     display: table-cell;
     vertical-align: middle;
+  }
+
+  // Busy effect.
+  .vuln-table-rows {
+    transition: filter .3s;
+  }
+  &[busy] .vuln-table-rows {
+    filter: blur(4px);
+  }
+
+  // Turbo frames should not create layout by default.
+  turbo-frame {
+    display: contents;
   }
 
   // Swap next page button/loading indicator as needed.

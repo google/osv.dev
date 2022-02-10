@@ -25,16 +25,32 @@ data-column-id="{{ column_id }}"
 <div class="list-page">
 <div class="mdc-layout-grid">
   <div class="mdc-layout-grid__inner">
-    <div class="mdc-layout-grid__cell--span-8">
+    <div class="mdc-layout-grid__cell--span-12">
       <h1 class="title">Vulnerability Library</h1>
-      <div class="search-container">
-        <mwc-icon class="search-icon">search</mwc-icon>
-        <mwc-textfield label="Package or ID search" icon="a" class="search-field"></mwc-textfield>
+      <div class="search">
+        <form action="{{ url_for('frontend_handlers.list') }}" data-turbo-frame="vulnerability-table">
+          <div class="mdc-layout-grid__inner">
+            <div class="query-container mdc-layout-grid__cell--span-8">
+              <mwc-icon class="search-icon">search</mwc-icon>
+              <mwc-textfield-with-enter label="Package or ID search" icon="a" class="query-field" name="q" value="{{ query }}"></mwc-textfield-with-enter>
+            </div>
+          </div>
+          <submit-radios class="ecosystems">
+            {% if ecosystems %}
+              {% for ecosystem in ecosystems %}
+                <input type="radio" name="ecosystem" id="ecosystem-radio-{{ loop.index }}"
+                    value="{{ ecosystem }}"{% if selected_ecosystem == ecosystem %} checked{% endif %}>
+                <label for="ecosystem-radio-{{ loop.index }}">{{ ecosystem }}</label>
+              {% endfor %}
+            {% endif %}
+          </submit-radios>
+          <input type="submit">
+        </form>
       </div>
     </div>
   </div>
 </div>
-<div class="vuln-table-container mdc-data-table">
+<turbo-frame class="vuln-table-container mdc-data-table" id="vulnerability-table" data-turbo-action="advance">
   <div role="table" class="vuln-table mdc-data-table__table" aria-label="Vulnerability table">
     <div role="rowgroup" class="vuln-table-header">
       <div role="row" class="vuln-table-row mdc-data-table__header-row">
@@ -79,6 +95,6 @@ data-column-id="{{ column_id }}"
       </turbo-frame>
     </div>
   </div>
-</div>
+</turbo-frame>
 </div>
 {% endblock %}

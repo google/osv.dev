@@ -60,6 +60,8 @@ data-column-id="{{ column_id }}"
         {{ table_header_cell('affected-versions', 'Affected versions') }}
         {{ table_header_cell('ecosystem', 'Ecosystem') }}
         {{ table_header_cell('last-modified', 'Last modified') }}
+        {{ table_header_cell('fixed', 'Fix') }}
+        {{ table_header_cell('severity', 'Severity') }}
       </div>
     </div>
     <div role="rowgroup" class="vuln-table-rows mdc-data-table__content">
@@ -70,17 +72,23 @@ data-column-id="{{ column_id }}"
             <a href="{{ url_for('frontend_handlers.vulnerability', id=vulnerability.id) }}">{{ vulnerability.id }}</a>
           </span>
           <span role="cell" class="vuln-table-cell mdc-data-table__cell">
-            {% for package in vulnerability.packages %}
-            {{ package }}
+            {% for affected in vulnerability.affected %}
+            {{ affected.package.ecosystem }}/{{ affected.package.name }}
             {% endfor %}
           </span>
           <span role="cell" class="vuln-table-cell mdc-data-table__cell">
             {{ vulnerability.summary }}
           </span>
           <span role="cell" class="vuln-table-cell mdc-data-table__cell">
-            {% for version in vulnerability.versions %}
-            {{ version }}
+            {% for version in vulnerability.affected | map(attribute='versions', default=[]) | sum(start=[]) %}
+              {{ version }}
+            {% else %}
+              See details.
             {% endfor %}
+          </span>
+          <span role="cell" class="vuln-table-cell mdc-data-table__cell"></span>
+          <span role="cell" class="vuln-table-cell mdc-data-table__cell">
+            {{ vulnerability.modified }}
           </span>
           <span role="cell" class="vuln-table-cell mdc-data-table__cell"></span>
           <span role="cell" class="vuln-table-cell mdc-data-table__cell"></span>

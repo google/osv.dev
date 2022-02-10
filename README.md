@@ -1,15 +1,17 @@
 # OSV - Open Source Vulnerabilities
 
-OSV is a [vulnerability database] and triage infrastructure for open source
-projects aimed at helping both open source maintainers and consumers of open
-source.
+https://osv.dev is a [vulnerability database] and triage infrastructure for
+open source projects aimed at helping both open source maintainers and
+consumers of open source.
 
-For open source maintainers, OSV's automation helps reduce the burden of triage.
-Each vulnerability undergoes automated bisection and impact analysis to
-determine precise affected commit and version ranges.
+This repository contains the infrastructure code that serves https://osv.dev
+(and other user tooling). This infrastructure serves as an aggregator of
+vulnerability databases that have adopted the
+[OpenSSF Vulnerability format](https://github.com/ossf/osv-schema).
 
-For open source consumers, OSV provides an API that lets users of these projects
-query whether or not their versions are impacted.
+https://osv.dev additionally provides infrastructure to ensure affected
+versions are accurately represented in each vulnerability entry, through
+bisection and version analysis.
 
 [vulnerability database]: https://osv.dev/list
 
@@ -19,9 +21,9 @@ query whether or not their versions are impacted.
 
 ## Current data sources
 **This is an ongoing project.** We encourage open source ecosystems to adopt
-the [OpenSSF Vulnerability format](https://github.com/ossf/osv-schema) for the
-benefit of the open source community. See our
-[blog post](https://security.googleblog.com/2021/06/announcing-unified-vulnerability-schema.html)
+the [OpenSSF Vulnerability format](https://github.com/ossf/osv-schema) to enable
+open source users to easily aggregate and consume vulnerabilities across all ecosystesm.
+See our [blog post](https://security.googleblog.com/2021/06/announcing-unified-vulnerability-schema.html)
 for more details.
 
 The following ecosystems have vulnerabilities encoded in this format:
@@ -72,7 +74,8 @@ You can find an overview of OSV's architecture [here](docs/architecture.md).
 
 ## This repository
 
-This repository contains all the code for running OSV on GCP. This consists of:
+This repository contains all the code for running https://osv.dev on GCP. This
+consists of:
 
 - API server (`gcp/api`)
 - Web interface (`gcp/appengine`)

@@ -80,10 +80,10 @@ data-column-id="{{ column_id }}"
             {{ vulnerability.summary }}
           </span>
           <span role="cell" class="vuln-table-cell mdc-data-table__cell">
-            {% for affected in vulnerability.affected %}
-            {% for version in affected.versions %}
-            {{ version }}
-            {% endfor %}
+            {% for version in vulnerability.affected | map(attribute='versions', default=[]) | sum(start=[]) %}
+              {{ version }}
+            {% else %}
+              See details.
             {% endfor %}
           </span>
           <span role="cell" class="vuln-table-cell mdc-data-table__cell"></span>

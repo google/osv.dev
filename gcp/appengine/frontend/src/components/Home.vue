@@ -23,29 +23,30 @@
 
       <h3>Database for open source vulnerabilities</h3>
       <p>
-        OSV is a <router-link to="list">vulnerability database</router-link>
+        OSV.dev is a <router-link to="list">vulnerability database</router-link>
         and triage infrastructure for open source projects aimed at helping
         both open source maintainers and consumers of open source.
       <p>
       <p>
-        This feed contains vulnerabilities from
+        This infrastructure serves as an aggregator of vulnerabilities from
         <a href="https://github.com/google/oss-fuzz">OSS-Fuzz</a> (mostly C/C++),
         <a href="https://github.com/pypa/advisory-db">Python</a>, and
         <a href="https://github.com/golang/vulndb">Go</a>, and
         <a href="https://github.com/RustSec/advisory-db">Rust</a>, and
         <a href="https://github.com/cloudsecurityalliance/gsd-database">GSD</a>, and
-        npm (from GitHub Security Advisories).
-
-        More <a href="https://github.com/google/osv/issues/44">to come</a>.
+        parts of GitHub Security Advisories (Maven, npm).
+      </p>
+      <p>
+        These databases have all adopted the 
+        <a href="https://ossf.github.io/osv-schema/">OpenSSF Open Source
+        Vulnerability format</a>, making common tooling and aggregation very
+        simple. More data sources from other popular ecosystems are in the works.
       </p>
       <h4>API</h4>
       <p>
         For open source consumers, OSV provides an <a
         href="https://osv.dev/docs/#section/Getting-Started">API</a> that lets
         users query whether or not their versions are impacted.
-
-        These vulnerabilities are encoded in the
-        <a href="https://ossf.github.io/osv-schema/">OpenSSF Open Source Vulnerability format</a>.
       </p>
       <pre>
         curl -X POST -d \
@@ -69,7 +70,8 @@
       </p>
       <h3>Open source</h3>
       <p>
-        This is an <a href="https://github.com/google/osv">open source project</a> from <b>Google</b>.
+        This is an <a href="https://github.com/google/osv">open source project</a>.
+        We welcome contributions!
       </p>
       <h3>More information</h3>
       <p>

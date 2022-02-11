@@ -1,0 +1,23 @@
+about_resource: gem.py
+license_expression: apache-2.0 AND mit
+download_url: https://raw.githubusercontent.com/coi-gov-pl/puppeter/04e2a2008bd89a0429b734fdde6da83813688865/puppeter/domain/model/gemrequirement.py
+copyright: |
+ Copyright (c) nexB, Inc. and others.
+ Copyright (c) Center for Information Technology, http://coi.gov.pl
+ Copyright (c) Chad Fowler, Rich Kilmer, Jim Weirich and others.
+ Copyright (c) Engine Yard and Andre Arko, Facebook, Inc. and its affiliates.
+
+package_url: pkg:pypi/puppeter@0.8.3#src/domain/model/gemrequirement.py
+homepage_url: https://github.com/coi-gov-pl/puppeter
+notice_file: gem.py.NOTICE
+
+notes: This file started as a subset of the coi.gov/pl code modified for
+ use in univers. The original Apache-licensed puppeteer code was used as a base,
+ extracting the Ruby version handling code. That coi code was in turn
+ originally based on MIT-licensed Rubygems code ported to Python.
+ This has been substantially modified and enhanced to pass correctly all the
+ upstream Rubygems tests and work with univers. This mixed code has been further
+ updated from the Rubygems ruby code from
+ https://github.com/rubygems/rubygems specifically
+ lib/rubygems/version.rb and lib/rubygems/requirement.rb
+

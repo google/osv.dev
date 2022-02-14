@@ -31,15 +31,25 @@ def _strip_leading_v(version):
   return version
 
 
+def _remove_leading_zero(component):
+  """Remove leading zeros from a component."""
+  if component[0] == '.':
+    return '.' + str(int(component[1:]))
+
+  return str(int(component))
+
+
 def coerce(version):
   """Coerce a potentially invalid semver into valid semver."""
   version = _strip_leading_v(version)
-  version_pattern = re.compile(r'^(\d+)(\.\d+)?(\.\d+)?$')
+  version_pattern = re.compile(r'^(\d+)(\.\d+)?(\.\d+)?(.*)$')
   match = version_pattern.match(version)
   if not match:
     return version
 
-  return match.group(1) + (match.group(2) or '.0') + (match.group(3) or '.0')
+  return (_remove_leading_zero(match.group(1)) +
+          _remove_leading_zero(match.group(2) or '.0') +
+          _remove_leading_zero(match.group(3) or '.0') + match.group(4))
 
 
 def is_valid(version):

@@ -82,18 +82,6 @@ class IntegrationTests(unittest.TestCase):
       'summary': 'Heap-double-free in mrb_default_allocf',
   }
 
-  _VULN_2258 = {
-      'published': '2020-12-11T00:00:45.856Z',
-      'schema_version': '1.2.0',
-      'details': 'INVALID',
-      'id': 'OSV-2020-2258',
-      'references': [{
-          'type': 'REPORT',
-          'url': 'https://bugs.chromium.org/p/oss-fuzz/issues/detail?id=28505',
-      }],
-      'summary': 'Heap-buffer-overflow in grk::t1_part1::T1Part1::decompress',
-  }
-
   _VULN_GO_2020_0004 = {
       'schema_version':
           '1.2.0',
@@ -312,11 +300,6 @@ class IntegrationTests(unittest.TestCase):
     """Test getting a vulnerability with multiple packages."""
     response = requests.get(_api() + '/v1/vulns/GO-2020-0015')
     self.assert_vuln_equal(self._VULN_GO_2020_0015, response.json())
-
-  def test_get_invalid(self):
-    """Test getting an invalid vulnerability."""
-    response = requests.get(_api() + '/v1/vulns/OSV-2020-2258')
-    self.assert_vuln_equal(self._VULN_2258, response.json())
 
   def test_query_commit(self):
     """Test querying by commit."""

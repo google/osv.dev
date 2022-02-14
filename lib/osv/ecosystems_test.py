@@ -33,6 +33,16 @@ class GetNextVersionTest(unittest.TestCase):
                      ecosystem.next_version('io.grpc:grpc-core', '1.35.1'))
     self.assertEqual('0.7.0', ecosystem.next_version('io.grpc:grpc-core', '0'))
 
+  def test_gems(self):
+    ecosystem = ecosystems.get('RubyGems')
+    self.assertEqual('0.8.0', ecosystem.next_version('rails', '0'))
+    self.assertEqual('0.9.5', ecosystem.next_version('rails', '0.9.4.1'))
+    self.assertEqual('2.3.8.pre1', ecosystem.next_version('rails', '2.3.7'))
+    self.assertEqual('4.0.0.rc1',
+                     ecosystem.next_version('rails', '4.0.0.beta1'))
+    self.assertEqual('5.0.0.racecar1',
+                     ecosystem.next_version('rails', '5.0.0.beta4'))
+
   def test_semver(self):
     ecosystem = ecosystems.get('Go')
     self.assertEqual('1.0.1-0', ecosystem.next_version('blah', '1.0.0'))

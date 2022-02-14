@@ -18,6 +18,7 @@ import packaging.version
 import urllib.parse
 
 import requests
+from .third_party.univers.gem import GemVersion
 
 from . import maven
 from . import semver_index
@@ -186,12 +187,36 @@ class Maven(Ecosystem):
     return self._get_affected_versions(versions, introduced, fixed, limits)
 
 
+class RubyGems(Ecosystem):
+  """RubyGems ecosystem."""
+
+  _API_PACKAGE_URL = 'https://rubygems.org/api/v1/versions/{package}.json'
+
+  def sort_key(self, version):
+    """Sort key."""
+    return GemVersion(version)
+
+  def enumerate_versions(self, package, introduced, fixed, limits=None):
+    """Enumerate versions."""
+    response = requests.get(self._API_PACKAGE_URL.format(package=package))
+    if response.status_code != 200:
+      raise RuntimeError(
+          f'Failed to get RubyGems versions for {package} with: {response.text}'
+      )
+
+    response = response.json()
+    versions = [entry['number'] for entry in response]
+    self.sort_versions(versions)
+    return self._get_affected_versions(versions, introduced, fixed, limits)
+
+
 _ecosystems = {
     'crates.io': Crates(),
     'Go': Go(),
     'Maven': Maven(),
     'npm': NPM(),
     'PyPI': PyPI(),
+    'RubyGems': RubyGems(),
 }
 
 

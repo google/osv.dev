@@ -35,6 +35,7 @@ def _load_test_data(name):
 
 
 _TEST_VULN = _load_test_data("test_vuln.json")
+_TEST_VULN_WITHDRAWN = _load_test_data("test_vuln_withdrawn.json")
 _FAKE_SECRET = _load_test_data("fake_secret.json")
 _FAKE_PUB_KEY = _load_test_data("fake_pub_key.pem")
 
@@ -79,7 +80,34 @@ class PublishPyPiTest(unittest.TestCase):
         b'"link": "https://osv.dev/vulnerability/PYSEC-2021-63", '
         b'"aliases": ["CVE-2020-36242"], '
         b'"details": "In the cryptography package before 3.3.2 for Python, certain sequences of update calls to symmetrically encrypt multi-GB values could result in an integer overflow and buffer overflow, as demonstrated by the Fernet class.", '
-        b'"events": [{"introduced": "3.1"}, {"fixed": "3.3.2"}]'
+        b'"events": [{"introduced": "3.1"}, {"fixed": "3.1.2"}, {"introduced": "3.2"}, {"fixed": "3.3.2"}]'
+        b'}]',
+        headers={
+            'VULN-PUBLIC-KEY-IDENTIFIER': '7ef88907d5bba4c0120f82bfd78386a9'
+                                          'd9328fb5d2d112c473ce52add3e4cd5b',
+            'VULN-PUBLIC-KEY-SIGNATURE': mock.ANY
+        })
+
+    request = self.mock_post.call_args.kwargs['data']
+    signature = self.mock_post.call_args.kwargs['headers'][
+        'VULN-PUBLIC-KEY-SIGNATURE']
+    self._verify_signature(request, signature)
+
+  def test_publish_withdrawn(self):
+    """Test publishing withdrawn vulnerability."""
+    event = {
+        'data': base64.b64encode(_TEST_VULN_WITHDRAWN),
+    }
+
+    main.publish(event, None)
+    self.mock_post.assert_called_once_with(
+        'https://pypi.org/_/vulnerabilities/osv/report',
+        data=b'[{"id": "PYSEC-2021-63", "project": "cryptography", '
+        b'"versions": [], '
+        b'"link": "https://osv.dev/vulnerability/PYSEC-2021-63", '
+        b'"aliases": ["CVE-2020-36242"], '
+        b'"details": "In the cryptography package before 3.3.2 for Python, certain sequences of update calls to symmetrically encrypt multi-GB values could result in an integer overflow and buffer overflow, as demonstrated by the Fernet class.", '
+        b'"events": []'
         b'}]',
         headers={
             'VULN-PUBLIC-KEY-IDENTIFIER': '7ef88907d5bba4c0120f82bfd78386a9'

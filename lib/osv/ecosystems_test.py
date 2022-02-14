@@ -43,6 +43,17 @@ class GetNextVersionTest(unittest.TestCase):
     self.assertEqual('5.0.0.racecar1',
                      ecosystem.next_version('rails', '5.0.0.beta4'))
 
+  def test_nuget(self):
+    ecosystem = ecosystems.get('NuGet')
+    self.assertEqual('3.0.1',
+                     ecosystem.next_version('NuGet.Server.Core', '3.0.0'))
+    self.assertEqual('3.0.0.4001',
+                     ecosystem.next_version('Castle.Core', '3.0.0.3001'))
+    self.assertEqual('3.1.0-RC',
+                     ecosystem.next_version('Castle.Core', '3.0.0.4001'))
+    self.assertEqual('2.1.0-dev-00668',
+                     ecosystem.next_version('Serilog', '2.1.0-dev-00666'))
+
   def test_semver(self):
     ecosystem = ecosystems.get('Go')
     self.assertEqual('1.0.1-0', ecosystem.next_version('blah', '1.0.0'))

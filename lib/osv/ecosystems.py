@@ -21,6 +21,7 @@ import requests
 from .third_party.univers.gem import GemVersion
 
 from . import maven
+from . import nuget
 from . import semver_index
 
 
@@ -206,6 +207,44 @@ class RubyGems(Ecosystem):
 
     response = response.json()
     versions = [entry['number'] for entry in response]
+
+
+class NuGet(Ecosystem):
+  """NuGet ecosystem."""
+
+  _API_PACKAGE_URL = ('https://api.nuget.org/v3/registration3/{package}/'
+                      'index.json')
+
+  def sort_key(self, version):
+    """Sort key."""
+    return nuget.Version.from_string(version)
+
+  def enumerate_versions(self, package, introduced, fixed, limits=None):
+    """Enumerate versions."""
+    url = self._API_PACKAGE_URL.format(package=package.lower())
+    response = requests.get(url)
+    if response.status_code != 200:
+      raise RuntimeError(
+          f'Failed to get NuGet versions for {package} with: {response.text}')
+
+    response = response.json()
+
+    versions = []
+    for page in response['items']:
+      if 'items' in page:
+        items = page['items']
+      else:
+        items_response = requests.get(page['@id'])
+        if items_response.status_code != 200:
+          raise RuntimeError(
+              f'Failed to get NuGet versions page for {package} with: '
+              f'{response.text}')
+
+        items = items_response.json()['items']
+
+      for item in items:
+        versions.append(item['catalogEntry']['version'])
+
     self.sort_versions(versions)
     return self._get_affected_versions(versions, introduced, fixed, limits)
 
@@ -215,6 +254,7 @@ _ecosystems = {
     'Go': Go(),
     'Maven': Maven(),
     'npm': NPM(),
+    'NuGet': NuGet(),
     'PyPI': PyPI(),
     'RubyGems': RubyGems(),
 }

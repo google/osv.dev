@@ -46,8 +46,20 @@ def publish(event, context):
   private_key = serialization.load_pem_private_key(
       data=key_data['key'].encode(), password=None)
 
+  # TODO: Support multiple packages. Currently this only takes the first
+  # package.
+  package_name = None
+  events = []
+  versions = []
   for affected in vulnerability.affected:
-    events = []
+    if affected.package.ecosystem != 'PyPI':
+      continue
+
+    if package_name:
+      if affected.package.name != package_name:
+        continue
+    else:
+      package_name = affected.package.name
 
     for affected_range in affected.ranges:
       if affected_range.type != osv.vulnerability_pb2.Range.ECOSYSTEM:
@@ -59,15 +71,21 @@ def publish(event, context):
         elif evt.fixed:
           events.append({'fixed': evt.fixed})
 
-    request = json.dumps([{
-        'id': vulnerability.id,
-        'project': affected.package.name,
-        'versions': list(affected.versions),
-        'link': f'https://osv.dev/vulnerability/{vulnerability.id}',
-        'aliases': list(vulnerability.aliases),
-        'details': vulnerability.details,
-        'events': events,
-    }]).encode()
+    versions.extend(affected.versions)
+
+  if vulnerability.HasField('withdrawn'):
+    events = []
+    versions = []
+
+  request = json.dumps([{
+      'id': vulnerability.id,
+      'project': package_name,
+      'versions': versions,
+      'link': f'https://osv.dev/vulnerability/{vulnerability.id}',
+      'aliases': list(vulnerability.aliases),
+      'details': vulnerability.details,
+      'events': events,
+  }]).encode()
 
   signature = private_key.sign(
       data=request, signature_algorithm=ECDSA(algorithm=SHA256()))

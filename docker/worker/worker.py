@@ -14,6 +14,7 @@
 # limitations under the License.
 """OSV Worker."""
 import argparse
+import datetime
 import json
 import logging
 import os
@@ -167,6 +168,7 @@ def mark_bug_invalid(message):
     logging.error('Bug with source id %s does not exist.', source_id)
     return
 
+  bug.withdrawn = datetime.datetime.utcnow()
   bug.status = osv.BugStatus.INVALID
   bug.put()
 

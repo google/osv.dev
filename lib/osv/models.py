@@ -406,6 +406,9 @@ class Bug(ndb.Model):
 
       self.key = ndb.Key(Bug, key_id)
 
+    if self.withdrawn:
+      self.status = bug.BugStatus.INVALID
+
   def update_from_vulnerability(self, vulnerability):
     """Set fields from vulnerability. Does not set the ID."""
     self.summary = vulnerability.summary
@@ -421,6 +424,8 @@ class Bug(ndb.Model):
       self.timestamp = vulnerability.published.ToDatetime()
     if vulnerability.HasField('withdrawn'):
       self.withdrawn = vulnerability.withdrawn.ToDatetime()
+    else:
+      self.withdrawn = None
 
     self.aliases = list(vulnerability.aliases)
     self.related = list(vulnerability.related)
@@ -534,9 +539,6 @@ class Bug(ndb.Model):
         affected.append(current)
 
     details = self.details
-    if self.status == bug.BugStatus.INVALID:
-      affected = None
-      details = 'INVALID'
 
     if self.last_modified:
       modified = timestamp_pb2.Timestamp()

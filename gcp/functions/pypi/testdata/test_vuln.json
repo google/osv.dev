@@ -38,14 +38,38 @@
               "introduced": "3.1"
             },
             {
-              "fixed": "3.3.2"
+              "fixed": "3.1.2"
             }
           ]
         }
       ],
       "versions": [
         "3.1",
-        "3.1.1",
+        "3.1.1"
+      ],
+      "database_specific": {
+        "source": "https://github.com/pypa/advisory-db/blob/main/vulns/cryptography/PYSEC-2021-63.yaml"
+      }
+    },
+    {
+      "package": {
+        "name": "cryptography",
+        "ecosystem": "PyPI"
+      },
+      "ranges": [
+        {
+          "type": "ECOSYSTEM",
+          "events": [
+            {
+              "introduced": "3.2"
+            },
+            {
+              "fixed": "3.3.2"
+            }
+          ]
+        }
+      ],
+      "versions": [
         "3.2",
         "3.2.1",
         "3.3",

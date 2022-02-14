@@ -18,7 +18,7 @@
 # https://github.com/apache/maven/blob/c3cf29438e3d65d6ee5c5726f8611af99d9a649a/maven-artifact/src/test/java/org/apache/maven/artifact/versioning/ComparableVersionTest.java.
 import unittest
 
-import version
+from . import version
 
 
 class VersionTest(unittest.TestCase):

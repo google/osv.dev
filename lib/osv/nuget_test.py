@@ -1,4 +1,3 @@
-"""NuGet version parser tests."""
 # Copyright 2022 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -16,6 +15,8 @@
 # pylint: disable=line-too-long
 # Many tests are ported from
 # https://github.com/NuGet/NuGet.Client/blob/dev/test/NuGet.Core.Tests/NuGet.Versioning.Test/VersionComparerTests.cs
+"""NuGet version parser tests."""
+
 import unittest
 
 from . import nuget

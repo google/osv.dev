@@ -208,6 +208,9 @@ class RubyGems(Ecosystem):
     response = response.json()
     versions = [entry['number'] for entry in response]
 
+    self.sort_versions(versions)
+    return self._get_affected_versions(versions, introduced, fixed, limits)
+
 
 class NuGet(Ecosystem):
   """NuGet ecosystem."""

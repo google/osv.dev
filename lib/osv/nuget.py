@@ -1,4 +1,3 @@
-"""NuGet version parser."""
 # Copyright 2022 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -12,6 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+"""NuGet version parser."""
 
 import functools
 import re
@@ -29,6 +29,7 @@ from . import semver_index
 
 def _extract_revision(str_version):
   """Extract revision (4th component) from version number (if any)."""
+  # e.g. '1.0.0.0-prerelease'
   pattern = re.compile(r'^(\d+)(\.\d+)(\.\d+)(\.\d+)(.*)')
   match = pattern.match(str_version)
   if not match:

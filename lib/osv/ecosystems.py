@@ -215,8 +215,8 @@ class RubyGems(Ecosystem):
 class NuGet(Ecosystem):
   """NuGet ecosystem."""
 
-  _API_PACKAGE_URL = ('https://api.nuget.org/v3/registration3/{package}/'
-                      'index.json')
+  _API_PACKAGE_URL = ('https://api.nuget.org/v3/registration5-semver1/'
+                      '{package}/index.json')
 
   def sort_key(self, version):
     """Sort key."""

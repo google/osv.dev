@@ -33,4 +33,8 @@ def package_to_purl(ecosystem, package_name):
   if not purl_type:
     return None
 
+  if purl_type == 'maven':
+    # PURLs use / to separate the group ID and the artifact ID.
+    package_name = package_name.replace(':', '/', 1)
+
   return f'pkg:{purl_type}/{package_name}'

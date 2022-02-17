@@ -22,10 +22,8 @@ from flask import make_response
 from flask import render_template
 from flask import request
 
-import json
 import osv
 import rate_limiter
-import requests
 import source_mapper
 
 blueprint = Blueprint('frontend_handlers', __name__)
@@ -85,14 +83,15 @@ def index_v2():
 
 
 @blueprint.route('/v2/list')
-def list():
+def list_vulnerabilities():
   """Main page."""
   query = request.args.get('q', '')
   page = int(request.args.get('page', 1))
   ecosystem = request.args.get('ecosystem')
   results = osv_query(query, page, False, ecosystem)
 
-  # Fetch ecosystems by default. As an optimization, skip when rendering page fragments.
+  # Fetch ecosystems by default. As an optimization, skip when rendering page
+  # fragments.
   ecosystems = osv_get_ecosystems(
   ) if not request.headers.get('Turbo-Frame') else None
 
@@ -106,10 +105,10 @@ def list():
 
 
 @blueprint.route('/v2/vulnerability/<id>')
-def vulnerability(id):
+def vulnerability(vuln_id):
   """Vulnerability page."""
-  vulnerability = osv_get_by_id(id)
-  return render_template('vulnerability.html', vulnerability=vulnerability)
+  vuln = osv_get_by_id(vuln_id)
+  return render_template('vulnerability.html', vulnerability=vuln)
 
 
 def bug_to_response(bug, detailed=True):

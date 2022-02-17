@@ -435,6 +435,15 @@ class IntegrationTests(unittest.TestCase):
     self.assert_results_equal({'vulns': [self._VULN_RUSTSEC_2020_0105]},
                               response.json())
 
+    response = requests.post(
+        _api() + '/v1/query',
+        data=json.dumps({'package': {
+            'purl': 'pkg:cargo/abi_stable@0.9.0',
+        }}))
+
+    self.assert_results_equal({'vulns': [self._VULN_RUSTSEC_2020_0105]},
+                              response.json())
+
 
 def print_logs(filename):
   """Print logs."""

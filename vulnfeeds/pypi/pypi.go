@@ -284,7 +284,7 @@ func (p *PyPI) PackageURL(pkg string) string {
 	// https://github.com/package-url/purl-spec/blob/master/PURL-TYPES.rst#pypi
 	// Example: pkg:pypi/django-allauth
 	normalizedName := NormalizePackageName(pkg)
-	return "pkg:pypi:" + normalizedName
+	return "pkg:pypi/" + normalizedName
 }
 
 func filterVersions(versions []string) []string {

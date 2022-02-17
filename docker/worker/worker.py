@@ -217,6 +217,8 @@ def add_fix_information(vulnerability, bug, fix_result):
         added_fix = True
         has_changes = True
         affected_range.events.add(fixed=fix_commit)
+        # Clear existing versions to re-compute them from scratch.
+        del affected_package.versions[:]
 
     if added_fix:
       affected_package.database_specific.update(database_specific)

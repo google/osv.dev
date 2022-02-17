@@ -23,6 +23,7 @@ import time
 
 from google.cloud import ndb
 import grpc
+from packageurl import PackageURL
 
 import osv
 from osv import ecosystems
@@ -83,8 +84,25 @@ class OSVServicer(osv_service_v1_pb2_grpc.OSVServicer):
       ecosystem = ''
       purl = ''
 
+    purl_version = None
+    if purl:
+      try:
+        parsed_purl = PackageURL.from_string(purl)
+        purl_version = parsed_purl.version
+        purl = _clean_purl(parsed_purl).to_string()
+      except ValueError:
+        context.abort(grpc.StatusCode.INVALID_ARGUMENT, 'Invalid Package URL.')
+        return None
+
     if request.query.WhichOneof('param') == 'commit':
       bugs = query_by_commit(request.query.commit, to_response=bug_to_response)
+    elif purl and purl_version:
+      bugs = query_by_version(
+          package_name,
+          ecosystem,
+          purl,
+          purl_version,
+          to_response=bug_to_response)
     elif request.query.WhichOneof('param') == 'version':
       bugs = query_by_version(
           package_name,
@@ -94,6 +112,7 @@ class OSVServicer(osv_service_v1_pb2_grpc.OSVServicer):
           to_response=bug_to_response)
     else:
       context.abort(grpc.StatusCode.INVALID_ARGUMENT, 'Invalid query.')
+      return None
 
     return osv_service_v1_pb2.VulnerabilityList(vulns=bugs)
 
@@ -121,6 +140,15 @@ def _get_bugs(bug_ids, to_response=bug_to_response):
       for bug in bugs
       if bug and bug.status == osv.BugStatus.PROCESSED
   ]
+
+
+def _clean_purl(purl):
+  """Clean a purl object."""
+  values = purl.to_dict()
+  values.pop('version', None)
+  values.pop('subpath', None)
+  values.pop('qualifiers', None)
+  return PackageURL(**values)
 
 
 def query_by_commit(commit, to_response=bug_to_response):

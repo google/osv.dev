@@ -677,6 +677,7 @@ class UpdateTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
     """Test basic update adding a fix."""
     fix_result = osv.FixResult(
         id='source:BLAH-124.yaml',
+        repo_url='https://osv-test/repo/url',
         commit='8d8242f545e9cec3e6d0d2e3f5bde8be1c659735')
     fix_result.put()
     task_runner = worker.TaskRunner(ndb_client, None, self.tmp_dir.name, None,

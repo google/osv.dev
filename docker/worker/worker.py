@@ -202,12 +202,9 @@ def add_fix_information(vulnerability, bug, fix_result):
       if affected_range.type != vulnerability_pb2.Range.GIT:
         continue
 
-      # If this range includes the introduced commit, and not the fixed
-      # commit, add it.
-      # Use "in" for the introduced comparison because `bug.regressed` could
-      # be a commit range for OSS-Fuzz bugs.
-      if (any(event.introduced and event.introduced in bug.regressed
-              for event in affected_range.events) and
+      # If this range does not include the fixed commit, add it.
+      # Use the repo URL to key on if the fix commit needs to be added.
+      if (fix_result.repo_url == affected_range.repo and
           not any(event.fixed == fix_commit
                   for event in affected_range.events)):
         added_fix = True

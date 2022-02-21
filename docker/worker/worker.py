@@ -163,18 +163,14 @@ def clean_artifacts(oss_fuzz_dir):
 def mark_bug_invalid(message):
   """Mark a bug as invalid."""
   source_id = get_source_id(message)
-  bug = osv.Bug.query(osv.Bug.source_id == source_id).get()
-  if not bug:
-    logging.error('Bug with source id %s does not exist.', source_id)
-    return
+  for bug in osv.Bug.query(osv.Bug.source_id == source_id):
+    bug.withdrawn = datetime.datetime.utcnow()
+    bug.status = osv.BugStatus.INVALID
+    bug.put()
 
-  bug.withdrawn = datetime.datetime.utcnow()
-  bug.status = osv.BugStatus.INVALID
-  bug.put()
-
-  affected_commits = osv.AffectedCommit.query(
-      osv.AffectedCommit.bug_id == bug.key.id())
-  ndb.delete_multi([commit.key for commit in affected_commits])
+    affected_commits = osv.AffectedCommit.query(
+        osv.AffectedCommit.bug_id == bug.key.id())
+    ndb.delete_multi([commit.key for commit in affected_commits])
 
 
 def get_source_id(message):

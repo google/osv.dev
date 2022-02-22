@@ -30,14 +30,14 @@
       <p>
         This infrastructure serves as an aggregator of vulnerabilities from
         <a href="https://github.com/google/oss-fuzz">OSS-Fuzz</a> (mostly C/C++),
-        <a href="https://github.com/pypa/advisory-db">Python</a>, and
+        <a href="https://github.com/pypa/advisory-database">Python</a>, and
         <a href="https://github.com/golang/vulndb">Go</a>, and
         <a href="https://github.com/RustSec/advisory-db">Rust</a>, and
         <a href="https://github.com/cloudsecurityalliance/gsd-database">GSD</a>, and
         parts of GitHub Security Advisories (Maven, npm).
       </p>
       <p>
-        These databases have all adopted the 
+        These databases have all adopted the
         <a href="https://ossf.github.io/osv-schema/">OpenSSF Open Source
         Vulnerability format</a>, making common tooling and aggregation very
         simple. More data sources from other popular ecosystems are in the works.
@@ -61,11 +61,11 @@
       <h4>Triaging vulnerabilities</h4>
       <p>
         For open source and vulnerability database maintainers, OSV's
-        <a href="https://github.com/pypa/advisory-db/commit/7afe2510b693ad60a0b95da8a5b2a370a7c48997">automation</a>
+        <a href="https://github.com/pypa/advisory-database/commit/7afe2510b693ad60a0b95da8a5b2a370a7c48997">automation</a>
         helps reduce the burden of triage.
 
         Vulnerabilities undergo optional bisection and <a
-        href="https://github.com/pypa/advisory-db/commit/e4035d8131324cf207ac9b40eacac79b97b1c6b2">version analysis</a>
+        href="https://github.com/pypa/advisory-database/commit/e4035d8131324cf207ac9b40eacac79b97b1c6b2">version analysis</a>
         to determine precise affected commit and version ranges.
       </p>
       <h3>Open source</h3>

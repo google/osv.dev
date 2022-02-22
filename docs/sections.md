@@ -24,7 +24,7 @@ There is a rate limit of 100 requests/min.
 
 Currently, our database includes vulnerabilities from:
 - [OSS-Fuzz](https://github.com/google/oss-fuzz-vulns)
-- [Python](https://github.com/pypa/advisory-db)
+- [Python](https://github.com/pypa/advisory-database)
 - [Go](https://github.com/golang/vulndb)
 - [Rust](https://github.com/RustSec/advisory-db)
 - [GSD](https://github.com/cloudsecurityalliance/gsd-database)

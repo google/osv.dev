@@ -29,7 +29,7 @@ for more details.
 
 The following ecosystems have vulnerabilities encoded in this format:
 - [OSS-Fuzz](https://github.com/google/oss-fuzz-vulns)
-- [Python](https://github.com/pypa/advisory-db)
+- [Python](https://github.com/pypa/advisory-database)
 - [Go](https://github.com/golang/vulndb)
 - [Rust](https://github.com/RustSec/advisory-db)
 - [GSD](https://github.com/cloudsecurityalliance/gsd-database)

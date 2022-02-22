@@ -48,7 +48,7 @@
         "3.1.1"
       ],
       "database_specific": {
-        "source": "https://github.com/pypa/advisory-db/blob/main/vulns/cryptography/PYSEC-2021-63.yaml"
+        "source": "https://github.com/pypa/advisory-database/blob/main/vulns/cryptography/PYSEC-2021-63.yaml"
       }
     },
     {
@@ -76,7 +76,7 @@
         "3.3.1"
       ],
       "database_specific": {
-        "source": "https://github.com/pypa/advisory-db/blob/main/vulns/cryptography/PYSEC-2021-63.yaml"
+        "source": "https://github.com/pypa/advisory-database/blob/main/vulns/cryptography/PYSEC-2021-63.yaml"
       }
     }
   ]

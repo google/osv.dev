@@ -28,13 +28,28 @@
         both open source maintainers and consumers of open source.
       <p>
       <p>
-        This infrastructure serves as an aggregator of vulnerabilities from
-        <a href="https://github.com/google/oss-fuzz">OSS-Fuzz</a> (mostly C/C++),
-        <a href="https://github.com/pypa/advisory-database">Python</a>, and
-        <a href="https://github.com/golang/vulndb">Go</a>, and
-        <a href="https://github.com/RustSec/advisory-db">Rust</a>, and
-        <a href="https://github.com/cloudsecurityalliance/gsd-database">GSD</a>, and
-        parts of GitHub Security Advisories (Maven, npm).
+        This infrastructure serves as an aggregator of vulnerabilities from 
+        <a href="https://github.com/github/advisory-database">GitHub Security Advisories</a>, 
+        <a href="https://github.com/google/oss-fuzz">OSS-Fuzz</a> (mostly C/C++), 
+        <a href="https://github.com/pypa/advisory-database">PyPI Advisory Database </a>, 
+        <a href="https://github.com/golang/vulndb">Go Vulnerability Database</a>, 
+        <a href="https://github.com/RustSec/advisory-db">Rust Advisory Database</a>, and 
+        <a href="https://github.com/cloudsecurityalliance/gsd-database">Global Security Database</a>.
+      </p>
+      <p>
+        Together, these include vulnerabilities from:
+        <ul>
+          <li>npm</li>
+          <li>Maven</li>
+          <li>Go</li>
+          <li>NuGet</li>
+          <li>PyPI</li>
+          <li>RubyGems</li>
+          <li>crates.io</li>
+          <li>Packagist</li>
+          <li>Linux</li>
+          <li>OSS-Fuzz</li>
+        </ul>
       </p>
       <p>
         These databases have all adopted the

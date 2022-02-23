@@ -104,7 +104,7 @@ def list_vulnerabilities():
       vulnerabilities=results['items'])
 
 
-@blueprint.route('/v2/vulnerability/<id>')
+@blueprint.route('/v2/vulnerability/<vuln_id>')
 def vulnerability(vuln_id):
   """Vulnerability page."""
   vuln = osv_get_by_id(vuln_id)

@@ -69,7 +69,7 @@ data-column-id="{{ column_id }}"
         {% for vulnerability in vulnerabilities %}
         <div role="row" class="vuln-table-row mdc-data-table__row">
           <span role="cell" class="vuln-table-cell mdc-data-table__cell">
-            <a href="{{ url_for('frontend_handlers.vulnerability', id=vulnerability.id) }}">{{ vulnerability.id }}</a>
+            <a href="{{ url_for('frontend_handlers.vulnerability', vuln_id=vulnerability.id) }}">{{ vulnerability.id }}</a>
           </span>
           <span role="cell" class="vuln-table-cell mdc-data-table__cell">
             <ul class="packages">

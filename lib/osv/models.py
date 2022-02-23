@@ -331,21 +331,21 @@ class Bug(ndb.Model):
         affected_package.package.purl = purl_helpers.package_to_purl(
             affected_package.package.ecosystem, affected_package.package.name)
 
-    self.project = list(set([
+    self.project = list({
         pkg.package.name for pkg in self.affected_packages if pkg.package.name
-    ]))
+    })
     self.project.sort()
 
-    self.ecosystem = list(set([
+    self.ecosystem = list({
         pkg.package.ecosystem
         for pkg in self.affected_packages
         if pkg.package.ecosystem
-    ]))
+    })
     self.ecosystem.sort()
 
-    self.purl = list(set([
+    self.purl = list({
         pkg.package.purl for pkg in self.affected_packages if pkg.package.purl
-    ]))
+    })
     self.purl.sort()
 
     for project in self.project:

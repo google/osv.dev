@@ -186,7 +186,7 @@ def get_source_id(message):
   return None
 
 
-def add_fix_information(vulnerability, bug, fix_result):
+def add_fix_information(vulnerability, fix_result):
   """Add fix information to a vulnerability."""
   database_specific = {}
   fix_commit = fix_result.commit
@@ -346,7 +346,7 @@ class TaskRunner:
     if bug:
       fix_result = osv.FixResult.get_by_id(bug.source_id)
       if fix_result:
-        added_fix_info = add_fix_information(vulnerability, bug, fix_result)
+        added_fix_info = add_fix_information(vulnerability, fix_result)
 
     result = osv.analyze(
         vulnerability,

@@ -331,17 +331,22 @@ class Bug(ndb.Model):
         affected_package.package.purl = purl_helpers.package_to_purl(
             affected_package.package.ecosystem, affected_package.package.name)
 
-    self.project = [
+    self.project = list(set([
         pkg.package.name for pkg in self.affected_packages if pkg.package.name
-    ]
-    self.ecosystem = [
+    ]))
+    self.project.sort()
+
+    self.ecosystem = list(set([
         pkg.package.ecosystem
         for pkg in self.affected_packages
         if pkg.package.ecosystem
-    ]
-    self.purl = [
+    ]))
+    self.ecosystem.sort()
+
+    self.purl = list(set([
         pkg.package.purl for pkg in self.affected_packages if pkg.package.purl
-    ]
+    ]))
+    self.purl.sort()
 
     for project in self.project:
       search_indices.update(self._tokenize(project))
@@ -349,7 +354,8 @@ class Bug(ndb.Model):
     for ecosystem in self.ecosystem:
       search_indices.update(self._tokenize(ecosystem))
 
-    self.search_indices = sorted(list(search_indices))
+    self.search_indices = list(set(search_indices))
+    self.search_indices.sort()
 
     self.affected_fuzzy = []
     self.semver_fixed_indexes = []
@@ -381,6 +387,9 @@ class Bug(ndb.Model):
           self.semver_fixed_indexes.append(semver_index.normalize(fixed))
 
         self.has_affected |= (affected_range.type in ('SEMVER', 'ECOSYSTEM'))
+
+    self.affected_fuzzy = list(set(self.affected_fuzzy))
+    self.affected_fuzzy.sort()
 
     if not self.last_modified:
       self.last_modified = utcnow()

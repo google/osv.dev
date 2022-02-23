@@ -1,5 +1,5 @@
 {   'affected': [],
-    'affected_fuzzy': ['0-1-1', '0-1-1', '1', '0-1-1', '0-2'],
+    'affected_fuzzy': ['0-1-1', '0-2', '1'],
     'affected_packages': [   {   'database_specific': {   'fixed_range': 'b1c95a196f22d06fcf80df8c6691cd113d8fefff:36f0bd9549298b44f9ff2496c9dd1326b3a9d0e2'},
                                  'ecosystem_specific': {'severity': 'MEDIUM'},
                                  'package': {   'ecosystem': 'ecosystem',

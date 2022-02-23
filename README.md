@@ -28,13 +28,26 @@ See our [blog post](https://security.googleblog.com/2021/06/announcing-unified-v
 for more details.
 
 The following ecosystems have vulnerabilities encoded in this format:
+- [GitHub Security Advisories](https://github.com/github/advisory-database)
+- [PyPI Advisory Database](https://github.com/pypa/advisory-database)
+- [Go Vulnerability Database](https://github.com/golang/vulndb)
+- [Rust Advisory Database](https://github.com/RustSec/advisory-db)
+- [Global Security Database](https://github.com/cloudsecurityalliance/gsd-database)
 - [OSS-Fuzz](https://github.com/google/oss-fuzz-vulns)
-- [Python](https://github.com/pypa/advisory-database)
-- [Go](https://github.com/golang/vulndb)
-- [Rust](https://github.com/RustSec/advisory-db)
-- [GSD](https://github.com/cloudsecurityalliance/gsd-database)
-- npm (from GitHub Security Advisories).
-- Maven (from GitHub Security Advisories).
+
+Together, these include vulnerabilities from:
+- npm
+- Maven
+- Go
+- NuGet
+- PyPI
+- RubyGems
+- crates.io
+- Packagist
+- Linux
+- OSS-Fuzz
+
+### Data dumps
 
 For convenience, these sources are aggregated and continuously exported to a GCS bucket
 maintained by OSV: [gs://osv-vulnerabilities](https://osv-vulnerabilities.storage.googleapis.com).

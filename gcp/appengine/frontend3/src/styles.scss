@@ -3,6 +3,7 @@
 $osv-background: #292929;
 $osv-text-color: #fff;
 $osv-accent-color: #c5221f;
+$osv-red-300: #ec928e;
 $osv-font-family: string.unquote('Overpass, sans-serif');
 $osv-heading-font-family: string.unquote('"Overpass Mono", monospace');
 
@@ -242,6 +243,36 @@ mwc-icon-button.mdc-data-table__sort-icon-button {
   .vuln-table-cell {
     display: table-cell;
     vertical-align: middle;
+  }
+
+  // Packages list.
+  .packages {
+    margin: 0;
+    padding: 0;
+  }
+
+  // Version list.
+  .versions {
+    margin: 0;
+    padding: 0;
+    display: grid;
+    grid-template-columns: 50% 50%;
+  }
+  .version {
+    display: block;
+  }
+
+  // Tag styling.
+  .tag {
+    display: inline-block;
+    background: $osv-text-color;
+    color: $osv-background;
+    padding: 0 7px;
+    border-radius: 4px;
+
+    &.fix-unavailable {
+      background: $osv-red-300;
+    }
   }
 
   // Busy effect.

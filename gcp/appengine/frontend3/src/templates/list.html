@@ -72,25 +72,41 @@ data-column-id="{{ column_id }}"
             <a href="{{ url_for('frontend_handlers.vulnerability', id=vulnerability.id) }}">{{ vulnerability.id }}</a>
           </span>
           <span role="cell" class="vuln-table-cell mdc-data-table__cell">
+            <ul class="packages">
             {% for affected in vulnerability.affected %}
-            {{ affected.package.ecosystem }}/{{ affected.package.name }}
+              <li>{{ affected.package.ecosystem }}/{{ affected.package.name }}</li>
             {% endfor %}
+            </ul>
           </span>
           <span role="cell" class="vuln-table-cell mdc-data-table__cell">
             {{ vulnerability.summary }}
           </span>
           <span role="cell" class="vuln-table-cell mdc-data-table__cell">
+            <ul class="versions">
             {% for version in vulnerability.affected | map(attribute='versions', default=[]) | sum(start=[]) %}
-              {{ version }}
+              {% if loop.index < 8 %}
+              <li class="version">{{ version }}</li>
+              {% elif loop.index == 8 %}
+              <li class="version">...</li>
+              {% endif %}
             {% else %}
-              See details.
+              <li class="version">See details.</li>
             {% endfor %}
+          </ul>
           </span>
           <span role="cell" class="vuln-table-cell mdc-data-table__cell"></span>
           <span role="cell" class="vuln-table-cell mdc-data-table__cell">
-            {{ vulnerability.modified }}
+            <relative-time datetime="{{ vulnerability.modified }}">
+              {{ vulnerability.modified }}
+            </relative-time>
           </span>
-          <span role="cell" class="vuln-table-cell mdc-data-table__cell"></span>
+          <span role="cell" class="vuln-table-cell mdc-data-table__cell">
+            {% if vulnerability.affected | map(attribute='ranges', default=[]) | sum(start=[]) | map(attribute='events', default='') | sum(start=[]) | selectattr('fixed', 'defined') | first %}
+            <span class="tag fix-available">Fix available</span>
+            {% else %}
+            <span class="tag fix-unavailable">No fix available</span>
+            {% endif %}
+          </span>
           <span role="cell" class="vuln-table-cell mdc-data-table__cell"></span>
         </div>
         {% endfor %}

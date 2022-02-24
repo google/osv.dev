@@ -195,6 +195,36 @@ def _is_semver_affected(affected_packages, package_name, ecosystem, purl,
   return affected
 
 
+def _is_version_affected(affected_packages,
+                         package_name,
+                         ecosystem,
+                         purl,
+                         version,
+                         normalize=False):
+  """Returns whether or not the given version is within an affected ECOSYSTEM
+  range."""
+  for affected_package in affected_packages:
+    if package_name and package_name != affected_package.package.name:
+      continue
+
+    if ecosystem and ecosystem != affected_package.package.ecosystem:
+      continue
+
+    if purl and purl != affected_package.package.purl:
+      continue
+
+    if normalize:
+      if any(
+          osv.normalize_tag(version) == osv.normalize_tag(v)
+          for v in affected_package.versions):
+        return True
+    else:
+      if version in affected_package.versions:
+        return True
+
+  return False
+
+
 def _query_by_semver(query, package_name, ecosystem, purl, version):
   """Query by semver."""
   if not semver_index.is_valid(version):
@@ -209,18 +239,29 @@ def _query_by_semver(query, package_name, ecosystem, purl, version):
   ]
 
 
-def _query_by_generic_version(base_query, version):
+def _query_by_generic_version(base_query, project, ecosystem, purl, version):
   """Query by generic version."""
   # Try without normalizing.
   query = base_query.filter(osv.Bug.affected_fuzzy == version)
-  results = list(query)
+  results = [
+      bug for bug in query if _is_version_affected(
+          bug.affected_packages, project, ecosystem, purl, version)
+  ]
   if results:
     return results
 
   # Try again after normalizing.
-  query = base_query.filter(
-      osv.Bug.affected_fuzzy == osv.normalize_tag(version))
-  return list(query)
+  version = osv.normalize_tag(version)
+  query = base_query.filter(osv.Bug.affected_fuzzy == version)
+  return [
+      bug for bug in query if _is_version_affected(
+          bug.affected_packages,
+          project,
+          ecosystem,
+          purl,
+          version,
+          normalize=True)
+  ]
 
 
 def query_by_version(project,
@@ -249,11 +290,13 @@ def query_by_version(project,
       # Ecosystem supports semver only.
       bugs.extend(_query_by_semver(query, project, ecosystem, purl, version))
     else:
-      bugs.extend(_query_by_generic_version(query, version))
+      bugs.extend(
+          _query_by_generic_version(query, project, ecosystem, purl, version))
   else:
     # Unspecified ecosystem. Try both.
     bugs.extend(_query_by_semver(query, project, ecosystem, purl, version))
-    bugs.extend(_query_by_generic_version(query, version))
+    bugs.extend(
+        _query_by_generic_version(query, project, ecosystem, purl, version))
 
   return [to_response(bug) for bug in bugs]
 

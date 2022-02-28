@@ -34,6 +34,7 @@ from google.cloud import storage
 
 sys.path.append(os.path.dirname(os.path.realpath(__file__)))
 import osv
+import osv.ecosystems
 from osv import vulnerability_pb2
 import oss_fuzz
 
@@ -512,9 +513,14 @@ def main():
   parser = argparse.ArgumentParser(description='Worker')
   parser.add_argument(
       '--work_dir', help='Working directory', default=DEFAULT_WORK_DIR)
+  parser.add_argument('--deps_dev_api_key', help='deps.dev API key')
   parser.add_argument('--ssh_key_public', help='Public SSH key path')
   parser.add_argument('--ssh_key_private', help='Private SSH key path')
   args = parser.parse_args()
+
+  if args.deps_dev_api_key:
+    osv.ecosystems.use_deps_dev = True
+    osv.ecosystems.deps_dev_api_key = args.deps_dev_api_key
 
   # Work around kernel bug: https://gvisor.dev/issue/1765
   resource.setrlimit(resource.RLIMIT_MEMLOCK,

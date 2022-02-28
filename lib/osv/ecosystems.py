@@ -24,9 +24,48 @@ from . import maven
 from . import nuget
 from . import semver_index
 
+_DEPS_DEV_API = (
+    'https://api.deps.dev/insights/v1alpha/systems/{ecosystem}/packages/'
+    '{package}/versions')
+use_deps_dev = False
+deps_dev_api_key = ''
+
+
+class DepsDevMixin:
+  """deps.dev mixin."""
+
+  _DEPS_DEV_ECOSYSTEM_MAP = {
+      'Maven': 'MAVEN',
+      'PyPI': 'PYPI',
+  }
+
+  def _deps_dev_enumerate(self, package, introduced, fixed, limits=None):
+    """Use deps.dev to get list of versions."""
+    ecosystem = self._DEPS_DEV_ECOSYSTEM_MAP[self.name]
+    url = _DEPS_DEV_API.format(ecosystem=ecosystem, package=package)
+    response = requests.get(
+        url, headers={
+            'X-DepsDev-APIKey': deps_dev_api_key,
+        })
+
+    if response.status_code != 200:
+      raise RuntimeError(
+          f'Failed to get {ecosystem} versions for {package} with: '
+          f'{response.text}')
+
+    response = response.json()
+    versions = [v['version'] for v in response['versions']]
+    self.sort_versions(versions)
+    return self._get_affected_versions(versions, introduced, fixed, limits)
+
 
 class Ecosystem:
   """Ecosystem helpers."""
+
+  @property
+  def name(self):
+    """Get the name of the ecosystem."""
+    return self.__class__.__name__
 
   def _before_limits(self, version, limits):
     """Return whether or not the given version is before any limits."""
@@ -145,7 +184,7 @@ class PyPI(Ecosystem):
     return self._get_affected_versions(versions, introduced, fixed, limits)
 
 
-class Maven(Ecosystem):
+class Maven(Ecosystem, DepsDevMixin):
   """Maven ecosystem."""
 
   _API_PACKAGE_URL = 'https://search.maven.org/solrsearch/select'
@@ -156,6 +195,9 @@ class Maven(Ecosystem):
 
   def enumerate_versions(self, package, introduced, fixed, limits=None):
     """Enumerate versions."""
+    if use_deps_dev:
+      return self._deps_dev_enumerate(package, introduced, fixed, limits=limits)
+
     group_id, artifact_id = package.split(':', 2)
     start = 0
 

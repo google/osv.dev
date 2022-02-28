@@ -13,6 +13,7 @@
 # limitations under the License.
 """Bug helper tests."""
 
+import os
 import unittest
 
 from . import ecosystems
@@ -32,6 +33,17 @@ class GetNextVersionTest(unittest.TestCase):
     self.assertEqual('1.36.0',
                      ecosystem.next_version('io.grpc:grpc-core', '1.35.1'))
     self.assertEqual('0.7.0', ecosystem.next_version('io.grpc:grpc-core', '0'))
+
+  @unittest.skipUnless(os.getenv('DEPS_DEV_API_KEY'), 'Requires API key')
+  def test_maven_deps_dev(self):
+    ecosystems.use_deps_dev = True
+    ecosystems.deps_dev_api_key = os.getenv('DEPS_DEV_API_KEY')
+
+    ecosystem = ecosystems.get('Maven')
+    self.assertEqual('1.36.0',
+                     ecosystem.next_version('io.grpc:grpc-core', '1.35.1'))
+    self.assertEqual('0.7.0', ecosystem.next_version('io.grpc:grpc-core', '0'))
+    ecosystems.use_deps_dev = False
 
   def test_gems(self):
     ecosystem = ecosystems.get('RubyGems')

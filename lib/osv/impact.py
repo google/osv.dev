@@ -483,9 +483,14 @@ def analyze(vulnerability,
         # Enumerate ECOSYSTEM and SEMVER ranges.
         ecosystem_helpers = ecosystems.get(affected_package.package.ecosystem)
         if ecosystem_helpers:
-          versions.extend(
-              enumerate_versions(affected_package.package.name,
-                                 ecosystem_helpers, affected_range))
+          try:
+            versions.extend(
+                enumerate_versions(affected_package.package.name,
+                                   ecosystem_helpers, affected_range))
+          except ecosystems.EnumerateError:
+            # Allow non-retryable enumeration errors to occur (e.g. if the
+            # package no longer exists).
+            pass
         else:
           logging.warning('No ecosystem helpers implemented for %s',
                           affected_package.package.ecosystem)

@@ -30,13 +30,23 @@ indexes:
       - name: status
       - name: project
       - name: ecosystem
-      - name: affected_fuzzy
       - name: public
 
   - kind: Bug
     properties:
       - name: status
       - name: project
+      - name: public
+
+  - kind: Bug
+    properties:
+      - name: status
+      - name: purl
+      - name: public
+
+  - kind: Bug
+    properties:
+      - name: status
       - name: affected_fuzzy
       - name: public
 
@@ -54,21 +64,6 @@ indexes:
       - name: project
       - name: public
       - name: semver_fixed_indexes
-
-  - kind: Bug
-    properties:
-      - name: status
-      - name: purl
-      - name: ecosystem
-      - name: affected_fuzzy
-      - name: public
-
-  - kind: Bug
-    properties:
-      - name: status
-      - name: purl
-      - name: affected_fuzzy
-      - name: public
 
   - kind: Bug
     properties:

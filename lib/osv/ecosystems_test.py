@@ -23,19 +23,26 @@ class GetNextVersionTest(unittest.TestCase):
   """get_next_version tests."""
 
   def test_pypi(self):
+    """Test PyPI."""
     ecosystem = ecosystems.get('PyPI')
     self.assertEqual('1.36.0rc1', ecosystem.next_version('grpcio', '1.35.0'))
     self.assertEqual('1.36.1', ecosystem.next_version('grpcio', '1.36.0'))
     self.assertEqual('0.3.0', ecosystem.next_version('grpcio', '0'))
+    with self.assertRaises(ecosystems.EnumerateError):
+      ecosystem.next_version('doesnotexist123456', '1')
 
   def test_maven(self):
+    """Test Maven."""
     ecosystem = ecosystems.get('Maven')
     self.assertEqual('1.36.0',
                      ecosystem.next_version('io.grpc:grpc-core', '1.35.1'))
     self.assertEqual('0.7.0', ecosystem.next_version('io.grpc:grpc-core', '0'))
+    with self.assertRaises(ecosystems.EnumerateError):
+      ecosystem.next_version('blah:doesnotexist123456', '1')
 
   @unittest.skipUnless(os.getenv('DEPS_DEV_API_KEY'), 'Requires API key')
   def test_maven_deps_dev(self):
+    """Test Maven using deps.dev."""
     ecosystems.use_deps_dev = True
     ecosystems.deps_dev_api_key = os.getenv('DEPS_DEV_API_KEY')
 
@@ -43,9 +50,13 @@ class GetNextVersionTest(unittest.TestCase):
     self.assertEqual('1.36.0',
                      ecosystem.next_version('io.grpc:grpc-core', '1.35.1'))
     self.assertEqual('0.7.0', ecosystem.next_version('io.grpc:grpc-core', '0'))
+    with self.assertRaises(ecosystems.EnumerateError):
+      ecosystem.next_version('blah:doesnotexist123456', '1')
+
     ecosystems.use_deps_dev = False
 
   def test_gems(self):
+    """Test RubyGems."""
     ecosystem = ecosystems.get('RubyGems')
     self.assertEqual('0.8.0', ecosystem.next_version('rails', '0'))
     self.assertEqual('0.9.5', ecosystem.next_version('rails', '0.9.4.1'))
@@ -54,8 +65,11 @@ class GetNextVersionTest(unittest.TestCase):
                      ecosystem.next_version('rails', '4.0.0.beta1'))
     self.assertEqual('5.0.0.racecar1',
                      ecosystem.next_version('rails', '5.0.0.beta4'))
+    with self.assertRaises(ecosystems.EnumerateError):
+      ecosystem.next_version('doesnotexist123456', '1')
 
   def test_nuget(self):
+    """Test NuGet."""
     ecosystem = ecosystems.get('NuGet')
     self.assertEqual('3.0.1',
                      ecosystem.next_version('NuGet.Server.Core', '3.0.0'))
@@ -65,8 +79,11 @@ class GetNextVersionTest(unittest.TestCase):
                      ecosystem.next_version('Castle.Core', '3.0.0.4001'))
     self.assertEqual('2.1.0-dev-00668',
                      ecosystem.next_version('Serilog', '2.1.0-dev-00666'))
+    with self.assertRaises(ecosystems.EnumerateError):
+      ecosystem.next_version('doesnotexist123456', '1')
 
   def test_semver(self):
+    """Test SemVer."""
     ecosystem = ecosystems.get('Go')
     self.assertEqual('1.0.1-0', ecosystem.next_version('blah', '1.0.0'))
     self.assertEqual('1.0.0-pre.0', ecosystem.next_version('blah', '1.0.0-pre'))

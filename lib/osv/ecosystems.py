@@ -31,6 +31,10 @@ use_deps_dev = False
 deps_dev_api_key = ''
 
 
+class EnumerateError(Exception):
+  """Non-retryable version enumeration error."""
+
+
 class DepsDevMixin:
   """deps.dev mixin."""
 
@@ -48,6 +52,8 @@ class DepsDevMixin:
             'X-DepsDev-APIKey': deps_dev_api_key,
         })
 
+    if response.status_code == 404:
+      raise EnumerateError(f'Package {package} not found')
     if response.status_code != 200:
       raise RuntimeError(
           f'Failed to get {ecosystem} versions for {package} with: '
@@ -173,6 +179,9 @@ class PyPI(Ecosystem):
   def enumerate_versions(self, package, introduced, fixed, limits=None):
     """Enumerate versions."""
     response = requests.get(self._API_PACKAGE_URL.format(package=package))
+
+    if response.status_code == 404:
+      raise EnumerateError(f'Package {package} not found')
     if response.status_code != 200:
       raise RuntimeError(
           f'Failed to get PyPI versions for {package} with: {response.text}')
@@ -218,6 +227,9 @@ class Maven(Ecosystem, DepsDevMixin):
             f'Failed to get Maven versions for {package} with: {response.text}')
 
       response = response.json()['response']
+      if response['numFound'] == 0:
+        raise EnumerateError(f'Package {package} not found')
+
       for result in response['docs']:
         versions.append(result['v'])
 
@@ -242,6 +254,8 @@ class RubyGems(Ecosystem):
   def enumerate_versions(self, package, introduced, fixed, limits=None):
     """Enumerate versions."""
     response = requests.get(self._API_PACKAGE_URL.format(package=package))
+    if response.status_code == 404:
+      raise EnumerateError(f'Package {package} not found')
     if response.status_code != 200:
       raise RuntimeError(
           f'Failed to get RubyGems versions for {package} with: {response.text}'
@@ -268,6 +282,8 @@ class NuGet(Ecosystem):
     """Enumerate versions."""
     url = self._API_PACKAGE_URL.format(package=package.lower())
     response = requests.get(url)
+    if response.status_code == 404:
+      raise EnumerateError(f'Package {package} not found')
     if response.status_code != 200:
       raise RuntimeError(
           f'Failed to get NuGet versions for {package} with: {response.text}')

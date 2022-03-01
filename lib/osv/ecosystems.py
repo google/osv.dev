@@ -320,6 +320,11 @@ _ecosystems = {
     'RubyGems': RubyGems(),
 }
 
+SEMVER_ECOSYSTEMS = {
+    'Go',
+    'npm',
+}
+
 
 def get(name):
   """Get ecosystem helpers for a given ecosytem."""

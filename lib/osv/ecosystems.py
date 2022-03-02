@@ -321,6 +321,7 @@ _ecosystems = {
 }
 
 SEMVER_ECOSYSTEMS = {
+    'crates.io',
     'Go',
     'npm',
 }

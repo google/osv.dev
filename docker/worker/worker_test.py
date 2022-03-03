@@ -994,7 +994,7 @@ class UpdateTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
                             '1f7fb7de3b3a33de94ebcc7bd0f23a14'),
         'deleted': 'false',
     }
-    
+
     task_runner._source_update(message)
     self.expect_dict_equal('update_bucket_2',
                            osv.Bug.get_by_id('ASB-A-153358911')._to_dict())

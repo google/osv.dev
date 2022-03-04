@@ -82,205 +82,24 @@ class IntegrationTests(unittest.TestCase):
       'summary': 'Heap-double-free in mrb_default_allocf',
   }
 
-  _VULN_GO_2020_0004 = {
-      'schema_version':
-          '1.2.0',
-      'id':
-          'GO-2020-0004',
-      'affected': [{
-          'database_specific': {
-              'source': 'https://storage.googleapis.com/go-vulndb/'
-                        'byID/GO-2020-0004.json',
-              'url': 'https://go.googlesource.com/vulndb/+/refs/heads/'
-                     'master/reports/GO-2020-0004.yaml'
-          },
-          'ecosystem_specific': {
-              'symbols': [
-                  'Auth.ServerHTTP', 'Auth.ListenAndServeTLS',
-                  'Auth.ListenAndServe'
-              ],
-          },
-          'package': {
-              'ecosystem': 'Go',
-              'name': 'github.com/nanobox-io/golang-nanoauth',
-              'purl': 'pkg:golang/github.com/nanobox-io/golang-nanoauth'
-          },
-          'ranges': [{
-              'events': [{
-                  'introduced': '0.0.0-20160722212129-ac0cc4484ad4'
-              }, {
-                  'fixed': '0.0.0-20200131131040-063a3fb69896'
-              }],
-              'type': 'SEMVER'
-          }]
-      }],
-      'details':
-          'If any of the `ListenAndServe` functions are called with an '
-          'empty token,\ntoken authentication is disabled globally for '
-          'all listeners.\n\nAlso, a minor timing side channel was '
-          'present allowing attackers with\nvery low latency and able '
-          'to make a lot of requests to potentially\nrecover the '
-          'token.\n',
-      'published':
-          '2021-04-14T12:00:00Z',
-      'references': [{
-          'type': 'FIX',
-          'url': 'https://github.com/nanobox-io/golang-nanoauth/pull/5'
-      }, {
-          'type': 'FIX',
-          'url': 'https://github.com/nanobox-io/golang-nanoauth/commit/'
-                 '063a3fb69896acf985759f0fe3851f15973993f3'
-      }],
-  }
-
-  _VULN_GO_2020_0015 = {
-      'schema_version':
-          '1.2.0',
-      'affected': [{
-          'database_specific': {
-              'source': 'https://storage.googleapis.com/go-vulndb/byID/'
-                        'GO-2020-0015.json',
-              'url': 'https://go.googlesource.com/vulndb/+/refs/heads/master/'
-                     'reports/GO-2020-0015.yaml'
-          },
-          'ecosystem_specific': {
-              'symbols': ['utf16Decoder.Transform']
-          },
-          'package': {
-              'ecosystem': 'Go',
-              'name': 'golang.org/x/text/encoding/unicode',
-              'purl': 'pkg:golang/golang.org/x/text/encoding/unicode',
-          },
-          'ranges': [{
-              'events': [{
-                  'introduced': '0'
-              }, {
-                  'fixed': '0.3.3'
-              }],
-              'type': 'SEMVER'
-          }]
-      }, {
-          'database_specific': {
-              'source': 'https://storage.googleapis.com/go-vulndb/byID/'
-                        'GO-2020-0015.json',
-              'url': 'https://go.googlesource.com/vulndb/+/refs/heads/master/'
-                     'reports/GO-2020-0015.yaml'
-          },
-          'ecosystem_specific': {
-              'symbols': ['Transform']
-          },
-          'package': {
-              'ecosystem': 'Go',
-              'name': 'golang.org/x/text/transform',
-              'purl': 'pkg:golang/golang.org/x/text/transform'
-          },
-          'ranges': [{
-              'events': [{
-                  'introduced': '0'
-              }, {
-                  'fixed': '0.3.3'
-              }],
-              'type': 'SEMVER'
-          }]
-      }],
-      'aliases': ['CVE-2020-14040'],
-      'details':
-          'An attacker could provide a single byte to a [`UTF16`] decoder '
-          'instantiated with\n'
-          '[`UseBOM`] or [`ExpectBOM`] to trigger an infinite loop if the '
-          '[`String`] function on\n'
-          'the [`Decoder`] is called, or the [`Decoder`] is passed to '
-          '[`transform.String`].\n'
-          'If used to parse user supplied input, this may be used as a '
-          'denial of service\n'
-          'vector.\n',
-      'id':
-          'GO-2020-0015',
-      'published':
-          '2021-04-14T12:00:00Z',
-      'references': [{
-          'type': 'FIX',
-          'url': 'https://go-review.googlesource.com/c/text/+/238238'
-      }, {
-          'type': 'FIX',
-          'url': 'https://github.com/golang/text/commit/'
-                 '23ae387dee1f90d29a23c0e87ee0b46038fbed0e'
-      }, {
-          'type': 'WEB',
-          'url': 'https://github.com/golang/go/issues/39491'
-      }, {
-          'type': 'WEB',
-          'url': 'https://groups.google.com/g/golang-announce/c/bXVeAmGOqz0'
-      }]
-  }
-
-  _VULN_RUSTSEC_2020_0105 = {
-      'schema_version':
-          '1.2.0',
-      'id':
-          'RUSTSEC-2020-0105',
-      'summary':
-          'Update unsound DrainFilter and RString::retain',
-      'details':
-          'Affected versions of this crate contained code from the '
-          'Rust standard library that contained soundness bugs '
-          'rust-lang/rust#60977 (double drop) & rust-lang/rust#78498 '
-          '(create invalid utf-8 string).\n\n'
-          'The flaw was corrected in v0.9.1 by making a similar fix '
-          'to the one made in the Rust standard library.',
-      'aliases': ['CVE-2020-36212', 'CVE-2020-36213'],
-      'published':
-          '2020-12-21T12:00:00Z',
-      'references': [{
-          'type': 'PACKAGE',
-          'url': 'https://crates.io/crates/abi_stable'
-      }, {
-          'type': 'ADVISORY',
-          'url': 'https://rustsec.org/advisories/RUSTSEC-2020-0105.html'
-      }, {
-          'type': 'REPORT',
-          'url': 'https://github.com/rodrimati1992/abi_stable_crates/issues/44'
-      }],
-      'affected': [{
-          'package': {
-              'name': 'abi_stable',
-              'ecosystem': 'crates.io',
-              'purl': 'pkg:cargo/abi_stable'
-          },
-          'ranges': [{
-              'type': 'SEMVER',
-              'events': [{
-                  'introduced': '0.0.0-0'
-              }, {
-                  'fixed': '0.9.1'
-              }]
-          }],
-          'ecosystem_specific': {
-              'affects': {
-                  'functions': [],
-                  'arch': [],
-                  'os': []
-              }
-          },
-          'database_specific': {
-              'informational': None,
-              'cvss': 'CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:H',
-              'categories': ['memory-corruption'],
-              'source': 'https://github.com/rustsec/advisory-db/blob/'
-                        'osv/crates/RUSTSEC-2020-0105.json'
-          }
-      }]
-  }
+  def _get(self, vuln_id):
+    """Get a vulnerability."""
+    response = requests.get(_api() + '/v1/vulns/' + vuln_id)
+    return response.json()
 
   def setUp(self):
     self.maxDiff = None  # pylint: disable=invalid-name
 
   def assert_vuln_equal(self, expected, actual):
     """Assert that the vulnerability is equal."""
+    self.remove_modified(expected)
     self.remove_modified(actual)
     self.assertDictEqual(expected, actual)
 
   def assert_results_equal(self, expected, actual):
+    for vuln in expected.get('vulns', []):
+      self.remove_modified(vuln)
+
     for vuln in actual.get('vulns', []):
       self.remove_modified(vuln)
 
@@ -298,8 +117,9 @@ class IntegrationTests(unittest.TestCase):
 
   def test_get_with_multiple(self):
     """Test getting a vulnerability with multiple packages."""
+    go_2020_0015 = self._get('GO-2020-0015')
     response = requests.get(_api() + '/v1/vulns/GO-2020-0015')
-    self.assert_vuln_equal(self._VULN_GO_2020_0015, response.json())
+    self.assert_vuln_equal(go_2020_0015, response.json())
 
   def test_query_commit(self):
     """Test querying by commit."""
@@ -335,6 +155,7 @@ class IntegrationTests(unittest.TestCase):
 
   def test_query_semver(self):
     """Test query by SemVer."""
+    go_2020_0004 = self._get('GO-2020-0004')
     response = requests.post(
         _api() + '/v1/query',
         data=json.dumps({
@@ -344,8 +165,7 @@ class IntegrationTests(unittest.TestCase):
                 'ecosystem': 'Go',
             }
         }))
-    self.assert_results_equal({'vulns': [self._VULN_GO_2020_0004]},
-                              response.json())
+    self.assert_results_equal({'vulns': [go_2020_0004]}, response.json())
 
     response = requests.post(
         _api() + '/v1/query',
@@ -355,8 +175,7 @@ class IntegrationTests(unittest.TestCase):
                 'name': 'github.com/nanobox-io/golang-nanoauth',
             }
         }))
-    self.assert_results_equal({'vulns': [self._VULN_GO_2020_0004]},
-                              response.json())
+    self.assert_results_equal({'vulns': [go_2020_0004]}, response.json())
 
     response = requests.post(
         _api() + '/v1/query',
@@ -367,8 +186,7 @@ class IntegrationTests(unittest.TestCase):
                 'ecosystem': 'Go',
             }
         }))
-    self.assert_results_equal({'vulns': [self._VULN_GO_2020_0004]},
-                              response.json())
+    self.assert_results_equal({'vulns': [go_2020_0004]}, response.json())
 
     response = requests.post(
         _api() + '/v1/query',
@@ -423,26 +241,27 @@ class IntegrationTests(unittest.TestCase):
 
   def test_query_purl(self):
     """Test querying by PURL."""
+    expected = self._get('GHSA-qc84-gqf4-9926')
+
     response = requests.post(
         _api() + '/v1/query',
         data=json.dumps({
-            'version': '0.9.0',
+            'version': '0.8.6',
             'package': {
-                'purl': 'pkg:cargo/abi_stable',
+                'purl': 'pkg:cargo/crossbeam-utils',
             }
         }))
 
-    self.assert_results_equal({'vulns': [self._VULN_RUSTSEC_2020_0105]},
-                              response.json())
+    self.assert_results_equal({'vulns': [expected]}, response.json())
 
     response = requests.post(
         _api() + '/v1/query',
-        data=json.dumps({'package': {
-            'purl': 'pkg:cargo/abi_stable@0.9.0',
-        }}))
+        data=json.dumps(
+            {'package': {
+                'purl': 'pkg:cargo/crossbeam-utils@0.8.6',
+            }}))
 
-    self.assert_results_equal({'vulns': [self._VULN_RUSTSEC_2020_0105]},
-                              response.json())
+    self.assert_results_equal({'vulns': [expected]}, response.json())
 
 
 def print_logs(filename):

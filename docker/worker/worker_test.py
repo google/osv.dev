@@ -976,6 +976,29 @@ class UpdateTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
     self.expect_dict_equal('update_bucket_1',
                            osv.Bug.get_by_id('GO-2021-0087')._to_dict())
 
+  def test_update_android(self):
+    """Test updating Android through bucket entries."""
+    self.source_repo.type = osv.SourceRepositoryType.BUCKET
+    self.source_repo.bucket = TEST_BUCKET
+    self.source_repo.editable = False
+    self.source_repo.put()
+
+    task_runner = worker.TaskRunner(ndb_client, None, self.tmp_dir.name, None,
+                                    None)
+
+    message = mock.Mock()
+    message.attributes = {
+        'source': 'source',
+        'path': 'a/b/android-test.json',
+        'original_sha256': ('12453f85cd87bc1d465e0d013db572c0'
+                            '1f7fb7de3b3a33de94ebcc7bd0f23a14'),
+        'deleted': 'false',
+    }
+
+    task_runner._source_update(message)
+    self.expect_dict_equal('update_bucket_2',
+                           osv.Bug.get_by_id('ASB-A-153358911')._to_dict())
+
 
 if __name__ == '__main__':
   os.system('pkill -f datastore')

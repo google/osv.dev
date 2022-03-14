@@ -30,20 +30,43 @@ func scan(arg string) error {
 		return scanDir(arg)
 	}
 
-	// Try guessing file type and scanning the SBOM.
-	log.Printf("Scanning file %s\n", arg)
-	file, err := os.Open(arg)
+	return scanFile(arg)
+}
+
+func scanDir(dir string) error {
+	log.Printf("Scanning dir %s\n", dir)
+	return filepath.Walk(dir, func(path string, info os.FileInfo, err error) error {
+		if err != nil {
+			log.Printf("Failed to walk %s: %v", path, err)
+			return err
+		}
+
+		if info.IsDir() && info.Name() == ".git" {
+			err = scanGit(filepath.Dir(path))
+			if err != nil {
+				log.Printf("scan failed for %s: %v\n", path, err)
+				return err
+			}
+		}
+
+		return nil
+	})
+}
+
+func scanIdentifier(id sbom.Identifier) error {
+	resp, err := osv.MakePURLRequest(id.PURL)
 	if err != nil {
 		return err
 	}
+	printResults(id.PURL, resp)
+	return nil
+}
 
-	scanIdentifier := func(id sbom.Identifier) error {
-		resp, err := osv.MakePURLRequest(id.PURL)
-		if err != nil {
-			return err
-		}
-		printResults(id.PURL, resp)
-		return nil
+func scanFile(path string) error {
+	log.Printf("Scanning file %s\n", path)
+	file, err := os.Open(path)
+	if err != nil {
+		return err
 	}
 
 	for _, provider := range sbom.Providers {
@@ -64,26 +87,6 @@ func scan(arg string) error {
 	return nil
 }
 
-func scanDir(dir string) error {
-	log.Printf("Scanning dir %s\n", dir)
-	return filepath.Walk(dir, func(path string, info os.FileInfo, err error) error {
-		if err != nil {
-			log.Printf("Failed to walk %s: %v", path, err)
-			return err
-		}
-
-		if info.IsDir() && info.Name() == ".git" {
-			err = doScan(filepath.Dir(path))
-			if err != nil {
-				log.Printf("scan failed for %s: %v\n", path, err)
-				return err
-			}
-		}
-
-		return nil
-	})
-}
-
 func getCommitSHA(repoDir string) (string, error) {
 	cmd := exec.Command("git", "-C", repoDir, "rev-parse", "HEAD")
 	var out bytes.Buffer
@@ -96,7 +99,7 @@ func getCommitSHA(repoDir string) (string, error) {
 	return strings.TrimSpace(out.String()), nil
 }
 
-func doScan(repoDir string) error {
+func scanGit(repoDir string) error {
 	commit, err := getCommitSHA(repoDir)
 	if err != nil {
 		return err

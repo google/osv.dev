@@ -72,6 +72,16 @@ a {
   text-decoration: underline;
 }
 
+a:not([href^="https://osv.dev"]):not([href^="/"])::after {
+  display: inline-block;
+  content: ' ';
+  background-image: url('/static/img/external-link.svg');
+  width: 16px;
+  height: 16px;
+  margin-left: 3px;
+  vertical-align: middle;
+}
+
 h1,
 pre {
   font-family: $osv-heading-font-family;
@@ -307,7 +317,8 @@ mwc-icon-button.mdc-data-table__sort-icon-button {
 dl.vulnerability-details,
 .vulnerability-package-subsection dl {
   display: grid;
-  grid-template-columns: max-content auto;
+  grid-template-columns: max-content minmax(0, auto);
+  grid-row-gap: 5px;
 
   dt {
     grid-column: 1;
@@ -317,6 +328,17 @@ dl.vulnerability-details,
 
   dd {
     grid-column: 2;
+  }
+
+  pre {
+    white-space: pre-wrap;
+  }
+
+  .links {
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
   }
 }
 

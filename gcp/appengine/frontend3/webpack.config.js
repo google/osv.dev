@@ -53,7 +53,12 @@ module.exports = {
           // `styleloader` so that CSS is in a separate file, not bundled with
           // JS. Improves caching, performance (e.g. FOUC) concerns.
           MiniCssExtractPlugin.loader,
-          'css-loader',
+          { 
+            loader: 'css-loader',
+            options: {
+              url: false
+            }
+          },
           'sass-loader'
         ],
       },

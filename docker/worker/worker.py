@@ -220,6 +220,51 @@ def add_fix_information(vulnerability, fix_result):
   return has_changes
 
 
+# TODO(ochang): Remove this function once GHSA's encoding is fixed.
+def fix_invalid_ghsa(vulnerability):
+  """Attempt to fix an invalid GHSA entry and returns whether the GHSA
+  entry is valid."""
+  packages = {}
+  for affected in vulnerability.affected:
+    details = packages.setdefault(
+        (affected.package.ecosystem, affected.package.name), {
+            'has_single_introduced': False,
+            'has_fixed': False
+        })
+
+    has_bad_equals_encoding = False
+    for affected_range in affected.ranges:
+      if len(
+          affected_range.events) == 1 and affected_range.events[0].introduced:
+        details['has_single_introduced'] = True
+        if (affected.versions and
+            affected.versions[0] == affected_range.events[0].introduced):
+          # https://github.com/github/advisory-database/issues/59.
+          has_bad_equals_encoding = True
+
+      for event in affected_range.events:
+        if event.fixed:
+          details['has_fixed'] = True
+
+    if has_bad_equals_encoding:
+      if len(affected.ranges) == 1:
+        # Try to fix this by removing the range.
+        del affected.ranges[:]
+        logging.info('Removing bad range from %s', vulnerability.id)
+      else:
+        # Unable to fix this if there are multiple ranges.
+        return False
+
+  for details in packages.values():
+    # Another case of a bad encoding: Having ranges with a single "introduced"
+    # event, when there are actually "fix" events encoded in another range for
+    # the same package.
+    if details['has_single_introduced'] and details['has_fixed']:
+      return False
+
+  return True
+
+
 class TaskRunner:
   """Task runner."""
 
@@ -375,6 +420,9 @@ class TaskRunner:
                  original_sha256):
     """Process updates on a vulnerability."""
     logging.info('Processing update for vulnerability %s', vulnerability.id)
+    if source_repo.name == 'ghsa' and not fix_invalid_ghsa(vulnerability):
+      logging.warning('%s has an encoding error, skipping.', vulnerability.id)
+      return
 
     try:
       result = self._analyze_vulnerability(source_repo, repo, vulnerability,

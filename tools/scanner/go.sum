@@ -1,0 +1,3 @@
+github.com/spdx/gordf v0.0.0-20201111095634-7098f93598fb/go.mod h1:uKWaldnbMnjsSAXRurWqqrdyZen1R7kxl8TkmWk2OyM=
+github.com/spdx/tools-golang v0.2.0 h1:KBNcw7xvVycRWeCWZK/5xQJA+plymW1+rTCs8ekJDro=
+github.com/spdx/tools-golang v0.2.0/go.mod h1:RO4Y3IFROJnz+43JKm1YOrbtgQNljW4gAPpA/sY2eqo=

@@ -13,7 +13,7 @@ type Identifier struct {
 // SBOMReader is an interface for all SBOM providers.
 type SBOMReader interface {
 	Name() string
-	GetPackages(io.Reader, func(Identifier) error) error
+	GetPackages(io.ReadSeeker, func(Identifier) error) error
 }
 
 var (
@@ -23,5 +23,6 @@ var (
 var (
 	Providers = []SBOMReader{
 		&SPDX{},
+		&CycloneDX{},
 	}
 )

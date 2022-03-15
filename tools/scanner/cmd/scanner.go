@@ -70,7 +70,6 @@ func scanFile(path string) error {
 	}
 
 	for _, provider := range sbom.Providers {
-		file.Seek(0, os.SEEK_SET)
 		err := provider.GetPackages(file, scanIdentifier)
 		if err == nil {
 			// Found the right format.

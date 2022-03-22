@@ -22,9 +22,11 @@ from flask import make_response
 from flask import render_template
 from flask import request
 
+from cache import cache
 import osv
 import rate_limiter
 import source_mapper
+import utils
 
 blueprint = Blueprint('frontend_handlers', __name__)
 
@@ -33,12 +35,7 @@ _PAGE_SIZE = 16
 _PAGE_LOOKAHEAD = 4
 _REQUESTS_PER_MIN = 30
 
-
-def _is_prod():
-  return os.getenv('GAE_ENV', '').startswith('standard')
-
-
-if _is_prod():
+if utils.is_prod():
   redis_host = os.environ.get('REDISHOST', 'localhost')
   redis_port = int(os.environ.get('REDISPORT', 6379))
   limiter = rate_limiter.RateLimiter(
@@ -194,6 +191,17 @@ def osv_get_ecosystems():
   return sorted([bug.ecosystem[0] for bug in query if bug.ecosystem])
 
 
+@cache.cached(timeout=24 * 60 * 60)
+def osv_get_ecosystem_counts():
+  """Get count of vulnerabilities per ecosystem."""
+  counts = {}
+  ecosystems = osv_get_ecosystems()
+  for ecosystem in ecosystems:
+    counts[ecosystem] = osv.Bug.query(osv.Bug.ecosystem == ecosystem).count()
+
+  return counts
+
+
 def osv_query(search_string, page, affected_only, ecosystem):
   """Run an OSV query."""
   query = osv.Bug.query(osv.Bug.status == osv.BugStatus.PROCESSED,
@@ -249,6 +257,12 @@ def osv_get_by_id(vuln_id):
 def ecosystems_handler():
   """Handle query for list of ecosystems."""
   return jsonify(osv_get_ecosystems())
+
+
+@blueprint.route(_BACKEND_ROUTE + '/ecosystem-counts')
+def ecosystem_counts_handler():
+  """Handle query for list of ecosystems."""
+  return jsonify(osv_get_ecosystem_counts())
 
 
 @blueprint.route(_BACKEND_ROUTE + '/query')

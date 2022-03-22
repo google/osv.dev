@@ -14,14 +14,15 @@
 """App Engine entrypoint."""
 
 import logging
-import os
 
 from flask import Flask
 import google.cloud.logging
 from google.cloud import ndb
 
+from cache import cache
 import frontend_handlers
 import handlers
+import utils
 
 ndb_client = ndb.Client()
 
@@ -36,13 +37,9 @@ def ndb_wsgi_middleware(wsgi_app):
   return middleware
 
 
-def _is_prod():
-  return os.getenv('GAE_ENV', '').startswith('standard')
-
-
 def create_app():
   """Create flask app."""
-  if _is_prod():
+  if utils.is_prod():
     logging_client = google.cloud.logging.Client()
     logging_client.setup_logging()
 
@@ -58,6 +55,7 @@ def create_app():
 
 app = create_app()
 app.wsgi_app = ndb_wsgi_middleware(app.wsgi_app)
+cache.init_app(app)
 
 if __name__ == '__main__':
   app.run(host='127.0.0.1', port=8000, debug=True)

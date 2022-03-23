@@ -223,8 +223,6 @@ mwc-icon-button.mdc-data-table__sort-icon-button {
 }
 
 .vuln-table-container {
-  // The vulnerability list should be full-width but not overflow the page bounds.
-  overflow-x: auto;
   width: 100%;
 
   // Override MDC table styling.

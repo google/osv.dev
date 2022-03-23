@@ -110,7 +110,7 @@ data-column-id="{{ column_id }}"
         </div>
         {% endfor %}
         <turbo-frame id="vulnerability-table-page{{ page + 1 }}" data-turbo-action="advance" target="_top"
-            class="next-page-row mdc-data-table__row">
+            class="next-page-frame">
           <div class="next-page-container">
             <a class="next-page-button link-button" data-turbo-frame="_self"
                 href="{{ url_for(request.endpoint) }}?page={{ page + 1 }}{% if selected_ecosystem %}&ecosystem={{ selected_ecosystem }}{% endif %}">

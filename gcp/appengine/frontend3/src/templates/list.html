@@ -37,6 +37,9 @@ data-column-id="{{ column_id }}"
           </div>
           <submit-radios class="ecosystems">
             {% if ecosystems %}
+              <input type="radio" name="ecosystem" id="ecosystem-radio-all"
+                  value=""{% if not selected_ecosystem %} checked{% endif %}>
+              <label for="ecosystem-radio-all">All ecosystems</label>
               {% for ecosystem in ecosystems %}
                 <input type="radio" name="ecosystem" id="ecosystem-radio-{{ loop.index }}"
                     value="{{ ecosystem }}"{% if selected_ecosystem == ecosystem %} checked{% endif %}>

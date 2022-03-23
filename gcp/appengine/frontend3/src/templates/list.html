@@ -69,7 +69,7 @@ data-column-id="{{ column_id }}"
           <span role="cell" class="vuln-table-cell mdc-data-table__cell">
             <a href="{{ url_for('frontend_handlers.vulnerability', vuln_id=vulnerability.id) }}">{{ vulnerability.id }}</a>
           </span>
-          <span role="cell" class="vuln-table-cell mdc-data-table__cell">
+          <span role="cell" class="vuln-table-cell vuln-packages mdc-data-table__cell">
             <ul class="packages">
             {% for affected in vulnerability.affected %}
               <li>{{ affected.package.ecosystem }}/{{ affected.package.name }}</li>

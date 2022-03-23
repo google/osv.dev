@@ -260,8 +260,8 @@ mwc-icon-button.mdc-data-table__sort-icon-button {
   }
   .vuln-table-cell {
     vertical-align: top;
-    padding-top: 8px;
-    padding-bottom: 8px;
+    padding-top: 16px;
+    padding-bottom: 16px;
   }
   .vuln-versions {
     white-space: nowrap;
@@ -389,6 +389,20 @@ dl.vulnerability-details,
     &[tabindex="0"] {
       background: #fff;
       color: $osv-accent-color;
+    }
+
+    // Show parts of the vulnerability on separate lines.
+    .vuln-ecosystem {
+      display: block;
+      font-weight: bold;
+      text-transform: uppercase;
+    }
+    .vuln-name {
+      display: block;
+      font-weight: normal;
+    }
+    .vuln-title-divider {
+      display: none;
     }
   }
 

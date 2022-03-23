@@ -237,7 +237,7 @@ mwc-icon-button.mdc-data-table__sort-icon-button {
     border-bottom-style: dashed;
   }
 
-  // Apply table display etc.
+  // Render the divs as a table.
   .vuln-table {
     display: table;
   }
@@ -252,7 +252,19 @@ mwc-icon-button.mdc-data-table__sort-icon-button {
   }
   .vuln-table-cell {
     display: table-cell;
-    vertical-align: middle;
+  }
+
+  // Table styling.
+  .vuln-table {
+    white-space: normal;
+  }
+  .vuln-table-cell {
+    vertical-align: top;
+    padding-top: 8px;
+    padding-bottom: 8px;
+  }
+  .vuln-versions {
+    white-space: nowrap;
   }
 
   // Packages list.

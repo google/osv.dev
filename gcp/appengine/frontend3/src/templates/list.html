@@ -58,10 +58,8 @@ data-column-id="{{ column_id }}"
         {{ table_header_cell('package', 'Packages') }}
         {{ table_header_cell('summary', 'Summary') }}
         {{ table_header_cell('affected-versions', 'Affected versions') }}
-        {{ table_header_cell('ecosystem', 'Ecosystem') }}
         {{ table_header_cell('last-modified', 'Last modified') }}
         {{ table_header_cell('fixed', 'Fix') }}
-        {{ table_header_cell('severity', 'Severity') }}
       </div>
     </div>
     <div role="rowgroup" class="vuln-table-rows mdc-data-table__content">
@@ -78,10 +76,10 @@ data-column-id="{{ column_id }}"
             {% endfor %}
             </ul>
           </span>
-          <span role="cell" class="vuln-table-cell mdc-data-table__cell">
+          <span role="cell" class="vuln-table-cell vuln-summary mdc-data-table__cell">
             {{ vulnerability.summary }}
           </span>
-          <span role="cell" class="vuln-table-cell mdc-data-table__cell">
+          <span role="cell" class="vuln-table-cell vuln-versions mdc-data-table__cell">
             <ul class="versions">
             {% for version in vulnerability.affected | map(attribute='versions', default=[]) | sum(start=[]) %}
               {% if loop.index < 8 %}
@@ -94,7 +92,6 @@ data-column-id="{{ column_id }}"
             {% endfor %}
           </ul>
           </span>
-          <span role="cell" class="vuln-table-cell mdc-data-table__cell"></span>
           <span role="cell" class="vuln-table-cell mdc-data-table__cell">
             <relative-time datetime="{{ vulnerability.modified }}">
               {{ vulnerability.modified }}
@@ -107,7 +104,6 @@ data-column-id="{{ column_id }}"
             <span class="tag fix-unavailable">No fix available</span>
             {% endif %}
           </span>
-          <span role="cell" class="vuln-table-cell mdc-data-table__cell"></span>
         </div>
         {% endfor %}
         <turbo-frame id="vulnerability-table-page{{ page + 1 }}" data-turbo-action="advance" target="_top">

@@ -319,6 +319,18 @@ mwc-icon-button.mdc-data-table__sort-icon-button {
   turbo-frame[busy] .next-page-indicator {
     display: block;
   }
+
+  // Center the next page button.
+  .next-page-row {
+    position: relative;
+
+    .next-page-container {
+      padding: 40px 0;
+      position: absolute;
+      left: 50%;
+      transform: translateX(-50%);
+    }
+  }
 }
 
 /** Vulnerability page */

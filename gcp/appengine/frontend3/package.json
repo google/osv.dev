@@ -18,7 +18,7 @@
     "@material/mwc-textfield": "^0.25.3",
     "@material/theme": "^13.0.0",
     "lit": "^2.0.0",
-    "spicy-sections": "git+https://github.com/tabvengers/spicy-sections.git#1b0f4850bdc5e87a5272b709f353472ed0a05284"
+    "spicy-sections": "git+https://github.com/tabvengers/spicy-sections.git#c3aae99dbf1e627cdf03a35c913d7f6e970de22b"
   },
   "devDependencies": {
     "copy-webpack-plugin": "^10.2.0",

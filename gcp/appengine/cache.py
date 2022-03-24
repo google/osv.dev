@@ -15,18 +15,18 @@
 
 import os
 
-from flask_caching import Cache
+import flask_caching
 
 import utils
 
 if utils.is_prod():
-  cache = Cache(
+  instance = flask_caching.Cache(
       config={
           'CACHE_TYPE': 'RedisCache',
           'CACHE_REDIS_HOST': os.environ.get('REDISHOST', 'localhost'),
           'CACHE_REDIS_PORT': int(os.environ.get('REDISPORT', 6379)),
       })
 else:
-  cache = Cache(config={
+  instance = flask_caching.Cache(config={
       'CACHE_TYPE': 'SimpleCache',
   })

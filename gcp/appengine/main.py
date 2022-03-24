@@ -19,7 +19,7 @@ from flask import Flask
 import google.cloud.logging
 from google.cloud import ndb
 
-from cache import cache
+import cache
 import frontend_handlers
 import handlers
 import utils
@@ -55,7 +55,7 @@ def create_app():
 
 app = create_app()
 app.wsgi_app = ndb_wsgi_middleware(app.wsgi_app)
-cache.init_app(app)
+cache.instance.init_app(app)
 
 if __name__ == '__main__':
   app.run(host='127.0.0.1', port=8000, debug=True)

@@ -22,7 +22,7 @@ from flask import make_response
 from flask import render_template
 from flask import request
 
-from cache import cache
+import cache
 import osv
 import rate_limiter
 import source_mapper
@@ -191,7 +191,8 @@ def osv_get_ecosystems():
   return sorted([bug.ecosystem[0] for bug in query if bug.ecosystem])
 
 
-@cache.cached(timeout=24 * 60 * 60)
+@cache.instance.cached(
+    timeout=24 * 60 * 60, key_prefix='osv_get_ecosystem_counts')
 def osv_get_ecosystem_counts():
   """Get count of vulnerabilities per ecosystem."""
   counts = {}

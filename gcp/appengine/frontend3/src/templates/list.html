@@ -4,7 +4,7 @@
 {% macro table_header_cell(column_id, column_name, is_sortable, is_sorted, is_descending) %}
 <span
 class="vuln-table-cell mdc-data-table__header-cell
-    {% if is_sortable %}mdc-data-table__header-cell--with-sort{% endif %}
+    {% if is_sortable %}mdc-data-table__header-cell--with-sort__DISABLED{% endif %}
     {% if is_sorted %}mdc-data-table__header-cell--sorted{% endif %}
     {% if is_descending %}mdc-data-table__header-cell--sorted-descending{% endif %}"
 role="columnheader"
@@ -17,7 +17,7 @@ data-column-id="{{ column_id }}"
     {{ column_name }}
   </div>
   {% if is_sortable %}
-  <mwc-icon-button class="mdc-data-table__sort-icon-button" icon="arrow_upward"
+  <mwc-icon-button class="mdc-data-table__sort-icon-button" icon="arrow_upward" disabled
   aria-label="Sort by {{ column_name }}" aria-describedby="{{ column_id }}-status-label"></mwc-icon-button>
   <div class="mdc-data-table__sort-status-label" aria-hidden="true" id="{{ column_id }}-status-label">
   </div>

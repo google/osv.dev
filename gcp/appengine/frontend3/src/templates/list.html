@@ -100,7 +100,7 @@ data-column-id="{{ column_id }}"
               {{ vulnerability.modified }}
             </relative-time>
           </span>
-          <span role="cell" class="vuln-table-cell mdc-data-table__cell">
+          <span role="cell" class="vuln-table-cell vuln-fix-status mdc-data-table__cell">
             {% if vulnerability.affected | map(attribute='ranges', default=[]) | sum(start=[]) | map(attribute='events', default='') | sum(start=[]) | selectattr('fixed', 'defined') | first %}
             <span class="tag fix-available">Fix available</span>
             {% else %}

@@ -20,10 +20,6 @@ updates:
   directory: "/gcp/functions/pypi"
   schedule:
     interval: daily
-- package-ecosystem: pip
-  directory: "/gcp/functions/pypi"
-  schedule:
-    interval: daily
 - package-ecosystem: npm
   directory: "/gcp/appengine/frontend"
   schedule:

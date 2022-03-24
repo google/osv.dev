@@ -36,14 +36,21 @@ data-column-id="{{ column_id }}"
             </div>
           </div>
           <submit-radios class="ecosystems">
-            {% if ecosystems %}
+            {% if ecosystem_counts %}
               <input type="radio" name="ecosystem" id="ecosystem-radio-all"
                   value=""{% if not selected_ecosystem %} checked{% endif %}>
-              <label for="ecosystem-radio-all">All ecosystems</label>
-              {% for ecosystem in ecosystems %}
+              <label class="ecosystem-label ecosystem-label-all" for="ecosystem-radio-all">
+                <span class="ecosystem-name">All ecosystems</span>
+                <span class="ecosystem-count">{{ ecosystem_counts.values() | sum }}</span>
+              </label>
+              <span class="ecosystems-divider"></span>
+              {% for ecosystem in ecosystem_counts %}
                 <input type="radio" name="ecosystem" id="ecosystem-radio-{{ loop.index }}"
                     value="{{ ecosystem }}"{% if selected_ecosystem == ecosystem %} checked{% endif %}>
-                <label for="ecosystem-radio-{{ loop.index }}">{{ ecosystem }}</label>
+                <label class="ecosystem-label" for="ecosystem-radio-{{ loop.index }}">
+                  <span class="ecosystem-name">{{ ecosystem }}</span>
+                  <span class="ecosystem-count">{{ ecosystem_counts[ecosystem] }}</span>
+                </label>
               {% endfor %}
             {% endif %}
           </submit-radios>

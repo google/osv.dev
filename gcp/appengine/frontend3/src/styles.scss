@@ -84,8 +84,11 @@ a:not([href^="https://osv.dev"]):not([href^="/"])::after {
 }
 
 h1,
+h2,
+h3,
 pre {
   font-family: $osv-heading-font-family;
+  font-weight: normal;
 }
 
 .link-button {
@@ -465,8 +468,83 @@ dl.vulnerability-details,
     font-family: 'Google Material Icons';
   }
 
-  .usage-examples .heading {
-    font-size: 60px;
-    text-align: center;
+  .ecosystem-counts {
+    .ecosystems {
+      display: grid;
+      grid-template-rows: 30px 210px;
+      grid-auto-flow: column;
+      dt {
+        position: relative;
+        top: 210px;
+      }
+      dd {
+        position: relative;
+        top: -30px;
+        background: #333;
+        height: 100%;
+      }
+      .ecosystem-count {
+        position: relative;
+        left: 50%;
+        top: 50%;
+        transform: translateX(-50%) translateY(-50%);
+        display: block;
+        background: #ddd;
+        color: #000;
+        border-radius: 999px;
+        text-align: center;
+      }
+    }
+  }
+
+  .usage-examples {
+    margin-bottom: 120px;
+    .heading {
+      font-size: 60px;
+      text-align: center;
+      margin-bottom: 32px;
+    }
+  }
+
+  .code-card {
+    position: relative;
+    background: #d46d59;
+    border-radius: 10px;
+    padding: 32px;
+
+    .code-card-title {
+      font-size: 32px;
+    }
+
+    .code-card-copy {
+      position: absolute;
+      left: 50%;
+      bottom: 0;
+      transform: translateX(-50%) translateY(50%);
+
+      .icon {
+        background: #fff;
+        border-radius: 999px;
+        color: #d46d59;
+      }
+    }
+  }
+
+  .api-banner {
+    width: 640px;
+    margin: 0 auto;
+
+    .heading {
+      font-size: 28px;
+      line-height: 54px;
+    }
+    .description {
+      font-size: 20px;
+      line-height: 24px;
+    }
+    .cta {
+      margin: 32px 0;
+      text-align: center;
+    }
   }
 }

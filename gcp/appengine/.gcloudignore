@@ -19,3 +19,4 @@ __pycache__/
 /setup.cfg
 frontend
 frontend3
+Pipfile*

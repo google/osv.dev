@@ -13,6 +13,7 @@ cp -r ../../lib/osv .
 docker build -t "gcr.io/oss-vdb/osv-server:$tag" . &&
 docker push "gcr.io/oss-vdb/osv-server:$tag"
 
+pipenv lock -r > requirements.txt
 gcloud run deploy $name \
   --platform managed \
   --project=oss-vdb \

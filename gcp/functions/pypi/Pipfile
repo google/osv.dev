@@ -1,0 +1,10 @@
+[[source]]
+url = "https://pypi.python.org/simple"
+verify_ssl = true
+name = "pypi"
+
+[packages]
+cryptography = "==3.4.7"
+google-cloud-secret-manager = "==2.5.0"
+osv = "==0.0.12"
+requests = "==2.25.1"

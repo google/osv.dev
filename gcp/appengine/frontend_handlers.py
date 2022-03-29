@@ -89,7 +89,7 @@ def list_vulnerabilities():
 
   # Fetch ecosystems by default. As an optimization, skip when rendering page
   # fragments.
-  ecosystems = osv_get_ecosystems(
+  ecosystem_counts = osv_get_ecosystem_counts(
   ) if not request.headers.get('Turbo-Frame') else None
 
   return render_template(
@@ -97,7 +97,7 @@ def list_vulnerabilities():
       page=page,
       query=query,
       selected_ecosystem=ecosystem,
-      ecosystems=ecosystems,
+      ecosystem_counts=ecosystem_counts,
       vulnerabilities=results['items'])
 
 

@@ -1,0 +1,34 @@
+version: 2
+updates:
+- package-ecosystem: pip
+  directory: "/docker/worker"
+  schedule:
+    interval: daily
+- package-ecosystem: pip
+  directory: "/lib"
+  schedule:
+    interval: daily
+- package-ecosystem: pip
+  directory: "/gcp/api"
+  schedule:
+    interval: daily
+- package-ecosystem: pip
+  directory: "/gcp/appengine"
+  schedule:
+    interval: daily
+- package-ecosystem: pip
+  directory: "/gcp/functions/pypi"
+  schedule:
+    interval: daily
+- package-ecosystem: npm
+  directory: "/gcp/appengine/frontend"
+  schedule:
+    interval: daily
+- package-ecosystem: npm
+  directory: "/gcp/appengine/frontend3"
+  schedule:
+    interval: daily
+- package-ecosystem: github-actions
+  directory: "/"
+  schedule:
+    interval: daily

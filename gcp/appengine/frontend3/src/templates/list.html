@@ -1,22 +1,27 @@
 {% extends 'base.html' %}
 {% set active_section = 'vulnerabilities' %}
 
-{% macro table_header_cell(column_id, column_name) %}
+{% macro table_header_cell(column_id, column_name, is_sortable, is_sorted, is_descending) %}
 <span
-class="vuln-table-cell mdc-data-table__header-cell mdc-data-table__header-cell--with-sort"
+class="vuln-table-cell mdc-data-table__header-cell
+    {% if is_sortable %}mdc-data-table__header-cell--with-sort__DISABLED{% endif %}
+    {% if is_sorted %}mdc-data-table__header-cell--sorted{% endif %}
+    {% if is_descending %}mdc-data-table__header-cell--sorted-descending{% endif %}"
 role="columnheader"
 scope="col"
-aria-sort="none"
+aria-sort="{% if is_sorted %}{% if is_descending %}descending{% else %}ascending{% endif %}{% else %}none{% endif %}"
 data-column-id="{{ column_id }}"
 >
 <div class="mdc-data-table__header-cell-wrapper">
   <div class="mdc-data-table__header-cell-label">
     {{ column_name }}
   </div>
-  <mwc-icon-button class="mdc-data-table__sort-icon-button" icon="arrow_upward"
+  {% if is_sortable %}
+  <mwc-icon-button class="mdc-data-table__sort-icon-button" icon="arrow_upward" disabled
   aria-label="Sort by {{ column_name }}" aria-describedby="{{ column_id }}-status-label"></mwc-icon-button>
   <div class="mdc-data-table__sort-status-label" aria-hidden="true" id="{{ column_id }}-status-label">
   </div>
+  {% endif %}
 </div>
 </span>
 {% endmacro %}
@@ -36,11 +41,21 @@ data-column-id="{{ column_id }}"
             </div>
           </div>
           <submit-radios class="ecosystems">
-            {% if ecosystems %}
-              {% for ecosystem in ecosystems %}
+            {% if ecosystem_counts %}
+              <input type="radio" name="ecosystem" id="ecosystem-radio-all"
+                  value=""{% if not selected_ecosystem %} checked{% endif %}>
+              <label class="ecosystem-label ecosystem-label-all" for="ecosystem-radio-all">
+                <span class="ecosystem-name">All ecosystems</span>
+                <span class="ecosystem-count">{{ ecosystem_counts.values() | sum }}</span>
+              </label>
+              <span class="ecosystems-divider"></span>
+              {% for ecosystem in ecosystem_counts %}
                 <input type="radio" name="ecosystem" id="ecosystem-radio-{{ loop.index }}"
                     value="{{ ecosystem }}"{% if selected_ecosystem == ecosystem %} checked{% endif %}>
-                <label for="ecosystem-radio-{{ loop.index }}">{{ ecosystem }}</label>
+                <label class="ecosystem-label" for="ecosystem-radio-{{ loop.index }}">
+                  <span class="ecosystem-name">{{ ecosystem }}</span>
+                  <span class="ecosystem-count">{{ ecosystem_counts[ecosystem] }}</span>
+                </label>
               {% endfor %}
             {% endif %}
           </submit-radios>
@@ -54,14 +69,12 @@ data-column-id="{{ column_id }}"
   <div role="table" class="vuln-table mdc-data-table__table" aria-label="Vulnerability table">
     <div role="rowgroup" class="vuln-table-header">
       <div role="row" class="vuln-table-row mdc-data-table__header-row">
-        {{ table_header_cell('id', 'ID') }}
-        {{ table_header_cell('package', 'Packages') }}
-        {{ table_header_cell('summary', 'Summary') }}
-        {{ table_header_cell('affected-versions', 'Affected versions') }}
-        {{ table_header_cell('ecosystem', 'Ecosystem') }}
-        {{ table_header_cell('last-modified', 'Last modified') }}
-        {{ table_header_cell('fixed', 'Fix') }}
-        {{ table_header_cell('severity', 'Severity') }}
+        {{ table_header_cell('id', 'ID', False, False, False) }}
+        {{ table_header_cell('package', 'Packages', False, False, False) }}
+        {{ table_header_cell('summary', 'Summary', False, False, False) }}
+        {{ table_header_cell('affected-versions', 'Affected versions', False, False, False) }}
+        {{ table_header_cell('last-modified', 'Last modified', True, True, True) }}
+        {{ table_header_cell('fixed', 'Fix', False, False, False) }}
       </div>
     </div>
     <div role="rowgroup" class="vuln-table-rows mdc-data-table__content">
@@ -71,17 +84,17 @@ data-column-id="{{ column_id }}"
           <span role="cell" class="vuln-table-cell mdc-data-table__cell">
             <a href="{{ url_for('frontend_handlers.vulnerability', vuln_id=vulnerability.id) }}">{{ vulnerability.id }}</a>
           </span>
-          <span role="cell" class="vuln-table-cell mdc-data-table__cell">
+          <span role="cell" class="vuln-table-cell vuln-packages mdc-data-table__cell">
             <ul class="packages">
             {% for affected in vulnerability.affected %}
               <li>{{ affected.package.ecosystem }}/{{ affected.package.name }}</li>
             {% endfor %}
             </ul>
           </span>
-          <span role="cell" class="vuln-table-cell mdc-data-table__cell">
+          <span role="cell" class="vuln-table-cell vuln-summary mdc-data-table__cell">
             {{ vulnerability.summary }}
           </span>
-          <span role="cell" class="vuln-table-cell mdc-data-table__cell">
+          <span role="cell" class="vuln-table-cell vuln-versions mdc-data-table__cell">
             <ul class="versions">
             {% for version in vulnerability.affected | map(attribute='versions', default=[]) | sum(start=[]) %}
               {% if loop.index < 8 %}
@@ -94,25 +107,27 @@ data-column-id="{{ column_id }}"
             {% endfor %}
           </ul>
           </span>
-          <span role="cell" class="vuln-table-cell mdc-data-table__cell"></span>
           <span role="cell" class="vuln-table-cell mdc-data-table__cell">
             <relative-time datetime="{{ vulnerability.modified }}">
               {{ vulnerability.modified }}
             </relative-time>
           </span>
-          <span role="cell" class="vuln-table-cell mdc-data-table__cell">
+          <span role="cell" class="vuln-table-cell vuln-fix-status mdc-data-table__cell">
             {% if vulnerability.affected | map(attribute='ranges', default=[]) | sum(start=[]) | map(attribute='events', default='') | sum(start=[]) | selectattr('fixed', 'defined') | first %}
             <span class="tag fix-available">Fix available</span>
             {% else %}
             <span class="tag fix-unavailable">No fix available</span>
             {% endif %}
           </span>
-          <span role="cell" class="vuln-table-cell mdc-data-table__cell"></span>
         </div>
         {% endfor %}
-        <turbo-frame id="vulnerability-table-page{{ page + 1 }}" data-turbo-action="advance" target="_top">
+        <turbo-frame id="vulnerability-table-page{{ page + 1 }}" data-turbo-action="advance" target="_top"
+            class="next-page-frame">
           <div class="next-page-container">
-            <a class="next-page-button link-button" href="{{ url_for(request.endpoint) }}?page={{ page + 1 }}" data-turbo-frame="_self">Load more...</a>
+            <a class="next-page-button link-button" data-turbo-frame="_self"
+                href="{{ url_for(request.endpoint) }}?page={{ page + 1 }}{% if selected_ecosystem %}&ecosystem={{ selected_ecosystem }}{% endif %}">
+              Load more...
+            </a>
             <mwc-circular-progress class="next-page-indicator" indeterminate density="-4"></mwc-circular-progress>
           </div>
         </turbo-frame>

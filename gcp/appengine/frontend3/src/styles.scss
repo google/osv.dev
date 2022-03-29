@@ -4,6 +4,7 @@ $osv-background: #292929;
 $osv-text-color: #fff;
 $osv-accent-color: #c5221f;
 $osv-red-300: #ec928e;
+$osv-grey-600: #80868b;
 $osv-font-family: string.unquote('Overpass, sans-serif');
 $osv-heading-font-family: string.unquote('"Overpass Mono", monospace');
 
@@ -161,18 +162,33 @@ pre {
 .ecosystems {
   margin-top: 20px;
   display: flex;
+  flex-wrap: wrap;
   gap: 10px;
+  align-items: center;
 
-  label {
+  .ecosystem-label {
+    display: flex;
+    gap: 16px;
     font-family: $osv-heading-font-family;
     padding: 10px 20px;
     background: #696969;
     border-radius: 999px;
+
+    .ecosystem-count {
+      font-weight: bold;
+    }
   }
 
-  input[type=radio]:checked + label {
+  .ecosystems-divider {
+    display: block;
+    margin: 0 10px;
+    height: 30px;
+    border-right: 1px solid $osv-grey-600;
+  }
+
+  input[type=radio]:checked + .ecosystem-label {
     background: $osv-text-color;
-    color: $osv-background;
+    color: $osv-accent-color;
   }
 
   input[type=radio] {
@@ -222,8 +238,6 @@ mwc-icon-button.mdc-data-table__sort-icon-button {
 }
 
 .vuln-table-container {
-  // The vulnerability list should be full-width but not overflow the page bounds.
-  overflow-x: auto;
   width: 100%;
 
   // Override MDC table styling.
@@ -237,7 +251,7 @@ mwc-icon-button.mdc-data-table__sort-icon-button {
     border-bottom-style: dashed;
   }
 
-  // Apply table display etc.
+  // Render the divs as a table.
   .vuln-table {
     display: table;
   }
@@ -252,7 +266,23 @@ mwc-icon-button.mdc-data-table__sort-icon-button {
   }
   .vuln-table-cell {
     display: table-cell;
-    vertical-align: middle;
+  }
+
+  // Table styling.
+  .vuln-table {
+    white-space: normal;
+  }
+  .vuln-table-cell {
+    vertical-align: top;
+    padding-top: 16px;
+    padding-bottom: 16px;
+    &.vuln-table-header {
+      vertical-align: middle;
+    }
+  }
+  .vuln-versions,
+  .vuln-fix-status {
+    white-space: nowrap;
   }
 
   // Packages list.
@@ -305,6 +335,18 @@ mwc-icon-button.mdc-data-table__sort-icon-button {
   }
   turbo-frame[busy] .next-page-indicator {
     display: block;
+  }
+
+  // Center the next page button.
+  .next-page-frame {
+    position: relative;
+
+    .next-page-container {
+      padding: 40px 0;
+      position: absolute;
+      left: 50%;
+      transform: translateX(-50%);
+    }
   }
 }
 
@@ -377,6 +419,20 @@ dl.vulnerability-details,
     &[tabindex="0"] {
       background: #fff;
       color: $osv-accent-color;
+    }
+
+    // Show parts of the vulnerability on separate lines.
+    .vuln-ecosystem {
+      display: block;
+      font-weight: bold;
+      text-transform: uppercase;
+    }
+    .vuln-name {
+      display: block;
+      font-weight: normal;
+    }
+    .vuln-title-divider {
+      display: none;
     }
   }
 

@@ -136,4 +136,8 @@ data-column-id="{{ column_id }}"
   </div>
 </turbo-frame>
 </div>
+<script>
+import {MDCDataTable} from '@material/data-table';
+const dataTable = new MDCDataTable(document.querySelector('.mdc-data-table'));
+</script>
 {% endblock %}

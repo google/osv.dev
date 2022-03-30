@@ -8,10 +8,6 @@ import 'spicy-sections/src/SpicySections';
 import {TextField as MwcTextField} from '@material/mwc-textfield';
 import {LitElement, html} from 'lit';
 
-import {MDCDataTable} from '@material/data-table';
-const dataTable = new MDCDataTable(document.querySelector('.mdc-data-table'));
-console.log('dataTable', dataTable);
-
 // Submits a form in a way such that Turbo can intercept the event.
 // Triggering submit on the form directly would still give a correct resulting
 // page, but we want to let Turbo speed up renders as intended.

@@ -24,30 +24,18 @@
     <div class="mdc-layout-grid__cell--span-12 ecosystem-counts">
       <h2 class="heading">Our current vulnerability coverage</h2>
       <dl class="ecosystems">
-        <dt>DWF</dt>
-        <dd>
-          <span class="ecosystem-count" style="width: 142px; height: 142px;">21K</span>
-        </dd>
-        <dt>Go</dt>
-        <dd>
-          <span class="ecosystem-count" style="width: 88px; height: 88px;">12K</span>
-        </dd>
-        <dt>Linux</dt>
-        <dd>
-          <span class="ecosystem-count" style="width: 210px; height: 210px;">26K</span>
-        </dd>
-        <dt>OSS-Fuzz</dt>
-        <dd>
-          <span class="ecosystem-count" style="width: 62px; height: 62px;">5K</span>
-        </dd>
-        <dt>PyPI</dt>
-        <dd>
-          <span class="ecosystem-count" style="width: 124px; height: 124px;">16K</span>
-        </dd>
-        <dt>Crates.io</dt>
-        <dd>
-          <span class="ecosystem-count" style="width: 14px; height: 14px;">1K</span>
-        </dd>
+        {% if ecosystem_counts %}
+          {% set total = ecosystem_counts.values() | sum %}
+          {% for ecosystem in ecosystem_counts %}
+            <dt>{{ ecosystem }}</dt>
+            <dd>
+              <span class="ecosystem-count" style="
+                  width: {{ ecosystem_counts[ecosystem] / total * 100 }}%;">
+                {{ ecosystem_counts[ecosystem] }}
+              </span>
+            </dd>
+          {% endfor %}
+        {% endif %}
       </dl>
     </div>
     <div class="mdc-layout-grid__cell--span-12 usage-examples">

@@ -156,45 +156,45 @@ pre {
     font-size: 20px;
   }
 
-  // Hide the submit button.
-  .search input[type=submit] {
-    display: none;
-  }
-}
-
-.ecosystems {
-  margin-top: 20px;
-  display: flex;
-  flex-wrap: wrap;
-  gap: 10px;
-  align-items: center;
-
-  .ecosystem-label {
+  .ecosystems {
+    margin-top: 20px;
     display: flex;
-    gap: 16px;
-    font-family: $osv-heading-font-family;
-    padding: 10px 20px;
-    background: #696969;
-    border-radius: 999px;
-
-    .ecosystem-count {
-      font-weight: bold;
+    flex-wrap: wrap;
+    gap: 10px;
+    align-items: center;
+  
+    .ecosystem-label {
+      display: flex;
+      gap: 16px;
+      font-family: $osv-heading-font-family;
+      padding: 10px 20px;
+      background: #696969;
+      border-radius: 999px;
+  
+      .ecosystem-count {
+        font-weight: bold;
+      }
+    }
+  
+    .ecosystems-divider {
+      display: block;
+      margin: 0 10px;
+      height: 30px;
+      border-right: 1px solid $osv-grey-600;
+    }
+  
+    input[type=radio]:checked + .ecosystem-label {
+      background: $osv-text-color;
+      color: $osv-accent-color;
+    }
+  
+    input[type=radio] {
+      display: none;
     }
   }
 
-  .ecosystems-divider {
-    display: block;
-    margin: 0 10px;
-    height: 30px;
-    border-right: 1px solid $osv-grey-600;
-  }
-
-  input[type=radio]:checked + .ecosystem-label {
-    background: $osv-text-color;
-    color: $osv-accent-color;
-  }
-
-  input[type=radio] {
+  // Hide the submit button.
+  .search input[type=submit] {
     display: none;
   }
 }
@@ -469,6 +469,8 @@ dl.vulnerability-details,
   }
 
   .ecosystem-counts {
+    margin-top: 130px;
+
     .ecosystems {
       display: grid;
       grid-template-rows: 30px 210px;
@@ -482,6 +484,8 @@ dl.vulnerability-details,
         top: -30px;
         background: #333;
         height: 100%;
+        // Keep 1:1 ratio of child element.
+        padding-top: 100%;
       }
       .ecosystem-count {
         position: relative;
@@ -498,6 +502,7 @@ dl.vulnerability-details,
   }
 
   .usage-examples {
+    margin-top: 130px;
     margin-bottom: 120px;
     .heading {
       font-size: 60px;

@@ -77,8 +77,7 @@ def index():
 @blueprint.route('/v2/')
 def index_v2():
   return render_template(
-      'home.html',
-      ecosystem_counts=osv_get_ecosystem_counts())
+      'home.html', ecosystem_counts=osv_get_ecosystem_counts())
 
 
 @blueprint.route('/v2/list')

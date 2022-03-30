@@ -6,7 +6,7 @@ name = "pypi"
 [packages]
 google-api-core = "==1.24.1"
 google-api-python-client = "==1.12.8"
-google-auth = "==1.24.0"
+google-auth = "==1.35.0"
 google-auth-httplib2 = "==0.0.4"
 google-cloud-core = "==1.5.0"
 google-cloud-datastore = "==1.15.3"

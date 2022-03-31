@@ -1,4 +1,5 @@
 import './styles.scss';
+import '@github/clipboard-copy-element';
 import '@github/time-elements';
 import '@material/mwc-circular-progress';
 import '@material/mwc-icon';

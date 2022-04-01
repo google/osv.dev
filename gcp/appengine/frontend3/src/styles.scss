@@ -5,7 +5,7 @@ $osv-text-color: #fff;
 $osv-accent-color: #c5221f;
 $osv-red-300: #ec928e;
 $osv-grey-600: #80868b;
-$osv-font-family: string.unquote('Overpass, sans-serif');
+$osv-body-font-family: string.unquote('Overpass, sans-serif');
 $osv-heading-font-family: string.unquote('"Overpass Mono", monospace');
 
 @use '@material/theme' with (
@@ -57,12 +57,12 @@ table {
 body {
   background: $osv-background;
   color: $osv-text-color;
-  font-family: $osv-font-family;
+  font-family: $osv-body-font-family;
   font-size: 14px;
   --mdc-theme-primary: #{$osv-text-color};
   --mdc-theme-surface: $osv-background;
   --mdc-theme-background: $osv-background;
-  --mdc-typography-font-family: $osv-font-family;
+  --mdc-typography-font-family: $osv-body-font-family;
   --mdc-text-field-fill-color: #696969;
   --mdc-text-field-ink-color: $osv-text-color;
 }
@@ -550,6 +550,43 @@ dl.vulnerability-details,
     .cta {
       margin: 32px 0;
       text-align: center;
+    }
+  }
+}
+
+.about-page {
+  .title,
+  .faq-title {
+    font-size: 60px;
+  }
+
+  .faq-title {
+    margin-top: 80px;
+    margin-bottom: 48px;
+  }
+
+  .open-docs {
+    display: block;
+    width: 744px;
+    padding: 20px 50px;
+    background: #676767;
+    font-size: 20px;
+    font-family: $osv-heading-font-family;
+  }
+
+  .questions {
+    --const-mq-affordances:
+      [screen] collapse
+    ;
+
+    .question {
+      border-top: 1px dotted #a0a0a0;
+      padding: 20px 0;
+      font-family: $osv-body-font-family;
+    }
+
+    .answer {
+      padding-bottom: 20px;
     }
   }
 }

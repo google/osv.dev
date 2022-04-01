@@ -1,0 +1,42 @@
+{% extends 'base.html' %}
+{% set active_section = 'about' %}
+
+{% block content %}
+<div class="about-page">
+<div class="mdc-layout-grid">
+  <div class="mdc-layout-grid__inner">
+    <div class="mdc-layout-grid__cell--span-12">
+      <h1 class="title">About OSV</h2>
+      <a class="open-docs" href="https://osv.dev/docs/">Open full documentation</a>
+
+      <h2 class="faq-title">Commonly asked questions</h2>
+      <spicy-sections class="questions">
+        <h3 class="question">Why did you create OSV?</h3>
+        <div class="answer">
+          <p>We created OSV to address some of the shortcomings of dealing with vulnerabilities in open source software.</p>
+          <p>As believers of automation, we initially built OSV for our <a href="https://github.com/google/oss-fuzz">OSS-Fuzz</a>
+            service, where we needed a way to store, triage and query the large numbers of open source vulnerabilities we
+            discover in an automated and precise fashion. Since then we have expanded this to include vulnerabilities in
+            many more open source ecosystems.</p>
+          <p>See our blog posts for more details:</p>
+          <ul>
+            <li><a href="https://security.googleblog.com/2021/02/launching-osv-better-vulnerability.html">https://security.googleblog.com/2021/02/launching-osv-better-vulnerability.html</a></li>
+            <li><a href="https://security.googleblog.com/2021/06/announcing-unified-vulnerability-schema.html">https://security.googleblog.com/2021/06/announcing-unified-vulnerability-schema.html</a></li>
+          </ul>
+        </div>
+        <h3 class="question">Who is OSV for?</h3>
+        <div class="answer">
+          <p>OSV can be used by both:</p>
+          <ul>
+            <li>Open source consumers: By querying our API to find vulnerabilities in their dependencies.</li>
+            <li>Open source maintainers: By using our automation infrastructure to determine accurate affected commits and
+              versions when a vulnerability is fixed. Currently this works for bugs found by OSS-Fuzz, but we are working
+              to make this more generally available.</li>
+          </ul>
+        </div>
+      </spicy-sections>
+    </div>
+  </div>
+</div>
+</div>
+{% endblock %}

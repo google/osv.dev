@@ -80,6 +80,11 @@ def index_v2():
       'home.html', ecosystem_counts=osv_get_ecosystem_counts())
 
 
+@blueprint.route('/v2/about')
+def about():
+  return render_template('about.html')
+
+
 @blueprint.route('/v2/list')
 def list_vulnerabilities():
   """Main page."""

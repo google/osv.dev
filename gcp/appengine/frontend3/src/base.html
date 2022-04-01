@@ -24,9 +24,9 @@
       <li class="{{ 'active' if active_section == 'vulnerabilities' else '' }}">
         <a href="{{ url_for('frontend_handlers.list_vulnerabilities') }}">Vulnerability Database</a>
       </li>
-      <li>About</li>
-      <li>Getting Started</li>
-      <li>Media Coverage</li>
+      <li class="{{ 'active' if active_section == 'about' else '' }}">
+        <a href="{{ url_for('frontend_handlers.about') }}">About OSV</a>
+      </li>
     </ul>
   </header>
   {% block content %}{% endblock %}

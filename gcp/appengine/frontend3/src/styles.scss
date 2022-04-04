@@ -470,7 +470,6 @@ dl.vulnerability-details,
 
   .explainer {
     font-size: 20px;
-    text-align: center;
 
     p {
       margin-bottom: 8px;
@@ -549,12 +548,47 @@ dl.vulnerability-details,
   }
 
   .usage-examples {
-    margin-top: 130px;
+    margin-top: 100px;
     margin-bottom: 120px;
     .heading {
       font-size: 60px;
       text-align: center;
       margin-bottom: 32px;
+    }
+    .description {
+      font-size: 20px;
+      line-height: 24px;
+      margin-bottom: 10px;
+      text-align: center;
+    }
+  }
+
+  .schema-info {
+    width: 800px;
+    margin: 0 auto;
+    margin-top: 100px;
+
+    .heading {
+      font-size: 60px;
+      text-align: center;
+      margin-bottom: 32px;
+    }
+    .description {
+      font-size: 20px;
+      line-height: 24px;
+      margin-bottom: 10px;
+    }
+
+    .code {
+      background: #333;
+      padding: 32px;
+      font-size: 12px;
+      border-radius: 10px;
+    }
+
+    .cta {
+      margin: 32px 0;
+      text-align: center;
     }
   }
 
@@ -582,7 +616,7 @@ dl.vulnerability-details,
     }
   }
 
-  .api-banner {
+  .open-source-banner {
     width: 640px;
     margin: 0 auto;
 

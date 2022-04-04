@@ -7,14 +7,7 @@
     <div class="mdc-layout-grid__cell--span-12 hero">
       <h1 class="title">A distributed vulnerability database for Open Source</h1>
       <div class="explainer">
-        <p>
-        This infrastructure serves as an aggregator of vulnerability databases
-        that have adopted the <a href="https://ossf.github.io/osv-schema/">OpenSSF OSV format</a>.
-        </p>
-        <p>
-        All advisories can be easily mapped to package versions used in package
-        manager ecosystems.
-        </p>
+        <p>An open, distributed way of managing vulnerabilities for open source.</p>
       </div>
       <div class="cta">
         <a class="cta-primary link-button" href="{{ url_for('frontend_handlers.list_vulnerabilities') }}">Search Vulnerability Database</a>
@@ -23,7 +16,7 @@
       </div>
     </div>
     <div class="mdc-layout-grid__cell--span-12 ecosystem-counts">
-      <h2 class="heading">Current vulnerability coverage</h2>
+      <h2 class="heading">Ecosystems</h2>
       <div class="ecosystems-line-mid"></div>
       <div class="ecosystems-line-0"></div>
       <div class="ecosystems-line-1"></div>
@@ -47,9 +40,75 @@
         {% endif %}
       </dl>
     </div>
+
+    <div class="mdc-layout-grid__cell--span-12 schema-info">
+      <h2 class="heading">OSV schema</h2>
+      <p class="description">
+        All advisories in this database use the
+        <a href="https://ossf.github.io/osv-schema/">OpenSSF OSV format</a>, which
+        was developed in collaboration with many open source communities. This
+        infrastructure serves as an aggregator of
+        <a href="https://github.com/ossf/osv-schema#open-source-vulnerability-schema">vulnerability databases</a>
+        that have adopted this schema.
+      </p>
+      <p class="description">
+        The OSV schema provides a human and machine readable data format to
+        describe vulnerabilities in a way that precisely map to open source
+        package versions.
+      </p>
+      <pre class="code">
+{
+  "schema_version": "1.3.0",
+  "id": "GHSA-c3g4-w6cv-6v7h",
+  "modified": "2022-04-01T13:56:42Z",
+  "published": "2022-04-01T13:56:42Z",
+  "aliases": [ "CVE-2022-27651" ],
+  "summary": "Non-empty default inheritable capabilities for linux container in Buildah",
+  "details": "A bug was found in Buildah where containers were created ...",
+  "affected": [
+    {
+      "package": {
+        "ecosystem": "Go",
+        "name": "github.com/containers/buildah"
+      },
+      "ranges": [
+        {
+          "type": "ECOSYSTEM",
+          "events": [
+            {
+              "introduced": "0"
+            },
+            {
+              "fixed": "1.25.0"
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "references": [
+    {
+      "type": "WEB",
+      "url": "https://github.com/containers/buildah/commit/..."
+    },
+    {
+      "type": "PACKAGE",
+      "url": "https://github.com/containers/buildah"
+    }
+  ],
+}
+        </pre>
+        <div class="cta">
+          <a class="cta-secondary" href="https://security.googleblog.com/2021/06/announcing-unified-vulnerability-schema.html">Learn more</a>
+        </div>
+      </p>
+    </div>
     <div class="mdc-layout-grid__cell--span-12 usage-examples">
       <h2 class="heading">Use the API</h2>
-      
+      <p class="description">
+        An easy-to-use API is available to query for all known vulnerabilities
+        by either a commit hash, or a package version.
+      </p>
       <div class="mdc-layout-grid__inner">
         <div class="code-card mdc-layout-grid__cell--span-6">
           <h3 class="code-card-title">Query by commit hash</h3>
@@ -72,15 +131,11 @@
         </div>
       </div>
     </div>
-    <div class="mdc-layout-grid__cell--span-12 api-banner">
-      <h2 class="heading">Understand your open source exposure.</h2>
+    <div class="mdc-layout-grid__cell--span-12 open-source-banner">
+      <h2 class="heading">Open source</h2>
       <p class="description">
-        Enter a git commit hash or version number and the API
-        returns a list of vulnerabilities affecting that version.
+        This project is <a href="https://github.com/google/osv">open source</a>. Contributions are welcome!
       </p>
-      <div class="cta">
-        <a class="link-button" href="{{ url_for('frontend_handlers.list_vulnerabilities') }}">To the API</a>
-      </div>
     </div>
   </div>
 </div>

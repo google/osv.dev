@@ -14,6 +14,7 @@
 """Handlers for the OSV web frontend."""
 
 import os
+import math
 
 from flask import abort
 from flask import Blueprint
@@ -288,3 +289,8 @@ def vulnerability_handler():
   """Handle a vulnerability request."""
   vuln_id = request.args.get('id')
   return jsonify(osv_get_by_id(vuln_id))
+
+
+@blueprint.app_template_filter('log')
+def logarithm(n):
+  return math.log(n)

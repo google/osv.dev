@@ -4,36 +4,45 @@
 {% block content %}
 <div class="mdc-layout-grid">
   <div class="mdc-layout-grid__inner home-page">
-    <div class="mdc-layout-grid__cell--span-6 hero">
-      <h1 class="title">A complete picture of vulnerabilities in your open source dependencies.</h1>
+    <div class="mdc-layout-grid__cell--span-12 hero">
+      <h1 class="title">A distributed vulnerability database for Open Source</h1>
       <div class="explainer">
-        <p class="google-backed">
-          An ongoing project backed by Google.
+        <p>
+        This infrastructure serves as an aggregator of vulnerability databases
+        that have adopted the <a href="https://ossf.github.io/osv-schema/">OpenSSF OSV format</a>.
         </p>
         <p>
-          OSV captures precise data about a vulnerability's impact, and
-          automates the process of vulnerability triage and database
-          maintenance across major open source ecosystems.
+        All advisories can be easily mapped to package versions used in package
+        manager ecosystems.
         </p>
       </div>
       <div class="cta">
         <a class="cta-primary link-button" href="{{ url_for('frontend_handlers.list_vulnerabilities') }}">Search Vulnerability Database</a>
+        <a class="cta-primary link-button" href="#">Use the API</a>
         <a class="cta-secondary" href="#">Learn more</a>
       </div>
     </div>
     <div class="mdc-layout-grid__cell--span-12 ecosystem-counts">
-      <h2 class="heading">Our current vulnerability coverage</h2>
+      <h2 class="heading">Current vulnerability coverage</h2>
+      <div class="ecosystems-line-mid"></div>
+      <div class="ecosystems-line-0"></div>
+      <div class="ecosystems-line-1"></div>
+      <div class="ecosystems-line-2"></div>
+      <div class="ecosystems-line-3"></div>
       <dl class="ecosystems">
         {% if ecosystem_counts %}
           {% set total = ecosystem_counts.values() | sum %}
           {% for ecosystem in ecosystem_counts %}
-            <dt>{{ ecosystem }}</dt>
-            <dd>
-              <span class="ecosystem-count" style="
-                  width: {{ ecosystem_counts[ecosystem] / total * 100 }}%;">
-                {{ ecosystem_counts[ecosystem] }}
-              </span>
-            </dd>
+            {% if ecosystem_counts[ecosystem] > 30 %}
+              <dt>{{ ecosystem }}</dt>
+              <dd>
+                {% set radius = [(ecosystem_counts[ecosystem] | log) / (total | log) * 100, 30] | max %}
+                <span class="ecosystem-count" style="
+                   width: {{ radius }}px; height: {{ radius }}px; line-height: {{ radius }}px">
+                  {{ ecosystem_counts[ecosystem] }}
+                </span>
+              </dd>
+            {% endif %}
           {% endfor %}
         {% endif %}
       </dl>

@@ -453,19 +453,29 @@ dl.vulnerability-details,
 /** Home page */
 
 .home-page {
+  .hero {
+    width: 1000px;
+    margin: 0 auto;
+
+    .cta {
+      text-align: center;
+    }
+  }
+
   .title {
     font-size: 60px;
     line-height: 70px;
+    margin-bottom: 12px;
   }
 
   .explainer {
     font-size: 20px;
-  }
+    text-align: center;
 
-  .google-backed::after {
-    display: inline;
-    content: 'google';
-    font-family: 'Google Material Icons';
+    p {
+      margin-bottom: 8px;
+    }
+    margin-bottom: 32px;
   }
 
   .ecosystem-counts {
@@ -478,6 +488,8 @@ dl.vulnerability-details,
       dt {
         position: relative;
         top: 210px;
+        text-align: center;
+        font-family: $osv-heading-font-family;
       }
       dd {
         position: relative;
@@ -488,16 +500,51 @@ dl.vulnerability-details,
         padding-top: 100%;
       }
       .ecosystem-count {
-        position: relative;
+        font-family: $osv-heading-font-family;
+        position: absolute;
         left: 50%;
         top: 50%;
         transform: translateX(-50%) translateY(-50%);
         display: block;
-        background: #ddd;
+        background: #c4c4c4;
         color: #000;
-        border-radius: 999px;
+        border-radius: 50%;
         text-align: center;
+        z-index: 1;
       }
+    }
+
+    .ecosystems-line {
+      width: 100%;
+      border-top: 1px dashed #a0a0a0;
+      position: relative;
+      z-index: 1;
+    }
+
+    .ecosystems-line-mid {
+      @extend .ecosystems-line;
+      top: 105px;
+      border-top: 1px solid #a0a0a0;
+    }
+
+    .ecosystems-line-0 {
+      @extend .ecosystems-line;
+      top: 1px;
+    }
+
+    .ecosystems-line-1 {
+      @extend .ecosystems-line;
+      top: 52px;
+    }
+
+    .ecosystems-line-2 {
+      @extend .ecosystems-line;
+      top: 157px;
+    }
+
+    .ecosystems-line-3 {
+      @extend .ecosystems-line;
+      top: 210px;
     }
   }
 

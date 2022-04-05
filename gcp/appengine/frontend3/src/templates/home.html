@@ -17,19 +17,19 @@
     </div>
     <div class="mdc-layout-grid__cell--span-12 ecosystem-counts">
       <h2 class="heading">Ecosystems</h2>
-      <div class="ecosystems-line-mid"></div>
-      <div class="ecosystems-line-0"></div>
-      <div class="ecosystems-line-1"></div>
-      <div class="ecosystems-line-2"></div>
-      <div class="ecosystems-line-3"></div>
       <dl class="ecosystems">
         {% if ecosystem_counts %}
           {% set total = ecosystem_counts.values() | sum %}
           {% for ecosystem in ecosystem_counts %}
             {% if ecosystem_counts[ecosystem] > 30 %}
-              <dt>{{ ecosystem }}</dt>
               <dd>
+              <div class="ecosystems-line-mid"></div>
+              <div class="ecosystems-line-0"></div>
+              <div class="ecosystems-line-1"></div>
+              <div class="ecosystems-line-2"></div>
+              <div class="ecosystems-line-3"></div>
                 {% set radius = [(ecosystem_counts[ecosystem] | log) / (total | log) * 100, 30] | max %}
+                <p class="ecosystem">{{ ecosystem }}</p>
                 <span class="ecosystem-count" style="
                    width: {{ radius }}px; height: {{ radius }}px; line-height: {{ radius }}px">
                   {{ ecosystem_counts[ecosystem] }}
@@ -46,7 +46,7 @@
       <p class="description">
         All advisories in this database use the
         <a href="https://ossf.github.io/osv-schema/">OpenSSF OSV format</a>, which
-        was developed in collaboration with many open source communities. This
+        was developed in collaboration with open source communities. This
         infrastructure serves as an aggregator of
         <a href="https://github.com/ossf/osv-schema#open-source-vulnerability-schema">vulnerability databases</a>
         that have adopted this schema.
@@ -56,8 +56,9 @@
         describe vulnerabilities in a way that precisely map to open source
         package versions.
       </p>
-      <pre class="code">
-{
+      <div class="mdc-layout-grid__inner">
+        <div class="mdc-layout-grid__cell--span-12">
+          <code-block>{
   "schema_version": "1.3.0",
   "id": "GHSA-c3g4-w6cv-6v7h",
   "modified": "2022-04-01T13:56:42Z",
@@ -96,12 +97,12 @@
       "url": "https://github.com/containers/buildah"
     }
   ],
-}
-        </pre>
-        <div class="cta">
-          <a class="cta-secondary" href="https://security.googleblog.com/2021/06/announcing-unified-vulnerability-schema.html">Learn more</a>
+}</code-block>
         </div>
-      </p>
+      </div>
+      <div class="cta">
+        <a class="cta-secondary" href="https://security.googleblog.com/2021/06/announcing-unified-vulnerability-schema.html">Learn more</a>
+      </div>
     </div>
     <div class="mdc-layout-grid__cell--span-12 usage-examples">
       <h2 class="heading">Use the API</h2>
@@ -110,18 +111,18 @@
         by either a commit hash, or a package version.
       </p>
       <div class="mdc-layout-grid__inner">
-        <div class="code-card mdc-layout-grid__cell--span-6">
+        <div class="code-card mdc-layout-grid__cell--span-6 mdc-layout-grid__cell--span-12-tablet">
           <h3 class="code-card-title">Query by commit hash</h3>
-          <pre id="example-commit-hash">curl -X POST -d \
+          <pre class="code-card-content" id="example-commit-hash">curl -X POST -d \
   '{"commit": "6879efc2c1596d11a6a6ad296f80063b558d5e0f"}' \
   "https://api.osv.dev/v1/query"</pre>
           <clipboard-copy class="code-card-copy" for="example-commit-hash">
             <mwc-icon-button class="icon" icon="content_copy"></mwc-icon-button>
           </clipboard-copy>
         </div>
-        <div class="code-card mdc-layout-grid__cell--span-6">
+        <div class="code-card mdc-layout-grid__cell--span-6 mdc-layout-grid__cell--span-12-tablet">
           <h3 class="code-card-title">Query by version number</h3>
-          <pre id="example-version-number">curl -X POST -d \
+          <pre class="code-card-content" id="example-version-number">curl -X POST -d \
   '{"version": "2.4.1",
     "package": {"name": "jinja2", "ecosystem": "PyPI"}}' \
   "https://api.osv.dev/v1/query"</pre>

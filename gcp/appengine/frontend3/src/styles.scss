@@ -7,6 +7,10 @@ $osv-red-300: #ec928e;
 $osv-grey-600: #80868b;
 $osv-body-font-family: string.unquote('Overpass, sans-serif');
 $osv-heading-font-family: string.unquote('"Overpass Mono", monospace');
+$osv-heading-size: 60px;
+$osv-heading-size-mobile: 40px;
+$osv-heading-line-height: 70px;
+$osv-heading-line-height-mobile: 50px;
 
 @use '@material/theme' with (
   $surface: $osv-background,
@@ -249,6 +253,7 @@ mwc-icon-button.mdc-data-table__sort-icon-button {
     border-bottom-color: $osv-text-color;
     border-bottom-style: solid;
     font-family: $osv-heading-font-family;
+    font-weight: bold;
   }
   .mdc-data-table__cell {
     border-bottom-style: dashed;
@@ -454,49 +459,55 @@ dl.vulnerability-details,
 
 .home-page {
   .hero {
-    width: 1000px;
+    max-width: 1000px;
     margin: 0 auto;
+    text-align: center;
 
     .cta {
       text-align: center;
+
+      a {
+        margin: 2px;
+      }
     }
   }
 
   .title {
-    font-size: 60px;
-    line-height: 70px;
+    font-size: $osv-heading-size;
+    line-height: $osv-heading-line-height;
     margin-bottom: 12px;
+  }
+
+  @media (max-width: 500px) {
+    .title {
+      font-size: $osv-heading-size-mobile;
+      line-height: $osv-heading-line-height-mobile;
+    }
   }
 
   .explainer {
     font-size: 20px;
 
     p {
-      margin-bottom: 8px;
+      margin-bottom: 20px;
     }
-    margin-bottom: 32px;
+    margin-bottom: 24px;
   }
 
   .ecosystem-counts {
-    margin-top: 130px;
+    margin-top: 100px;
 
     .ecosystems {
       display: grid;
-      grid-template-rows: 30px 210px;
-      grid-auto-flow: column;
-      dt {
-        position: relative;
-        top: 210px;
+      grid-template-columns: repeat(auto-fit, minmax(80px, 1fr));
+      .ecosystem {
         text-align: center;
         font-family: $osv-heading-font-family;
       }
       dd {
         position: relative;
-        top: -30px;
         background: #333;
-        height: 100%;
-        // Keep 1:1 ratio of child element.
-        padding-top: 100%;
+        height: 210px;
       }
       .ecosystem-count {
         font-family: $osv-heading-font-family;
@@ -506,7 +517,7 @@ dl.vulnerability-details,
         transform: translateX(-50%) translateY(-50%);
         display: block;
         background: #c4c4c4;
-        color: #000;
+        color: #3c4043;
         border-radius: 50%;
         text-align: center;
         z-index: 1;
@@ -528,7 +539,7 @@ dl.vulnerability-details,
 
     .ecosystems-line-0 {
       @extend .ecosystems-line;
-      top: 1px;
+      top: 0px;
     }
 
     .ecosystems-line-1 {
@@ -543,51 +554,63 @@ dl.vulnerability-details,
 
     .ecosystems-line-3 {
       @extend .ecosystems-line;
-      top: 210px;
+      top: 207px;
     }
   }
+
+  .schema-info {
+    max-width: 800px;
+    margin: 100px auto 0;
+
+    .heading {
+      font-size: $osv-heading-size;
+      text-align: center;
+      margin-bottom: 32px;
+    }
+
+    @media (max-width: 500px) {
+      .heading {
+        font-size: $osv-heading-size-mobile;
+      }
+    }
+
+    .description {
+      font-size: 20px;
+      line-height: 24px;
+      margin-bottom: 24px;
+    }
+
+    code-block {
+      font-size: 12px;
+      font-family: $osv-heading-font-family;
+    }
+
+    .cta {
+      margin: 32px 0;
+      text-align: center;
+    }
+  }
+
 
   .usage-examples {
     margin-top: 100px;
     margin-bottom: 120px;
     .heading {
-      font-size: 60px;
+      font-size: $osv-heading-size;
       text-align: center;
       margin-bottom: 32px;
     }
+
+    @media (max-width: 500px) {
+      .heading {
+        font-size: $osv-heading-size-mobile;
+      }
+    }
+
     .description {
       font-size: 20px;
       line-height: 24px;
-      margin-bottom: 10px;
-      text-align: center;
-    }
-  }
-
-  .schema-info {
-    width: 800px;
-    margin: 0 auto;
-    margin-top: 100px;
-
-    .heading {
-      font-size: 60px;
-      text-align: center;
-      margin-bottom: 32px;
-    }
-    .description {
-      font-size: 20px;
-      line-height: 24px;
-      margin-bottom: 10px;
-    }
-
-    .code {
-      background: #333;
-      padding: 32px;
-      font-size: 12px;
-      border-radius: 10px;
-    }
-
-    .cta {
-      margin: 32px 0;
+      margin-bottom: 20px;
       text-align: center;
     }
   }
@@ -597,9 +620,14 @@ dl.vulnerability-details,
     background: #d46d59;
     border-radius: 10px;
     padding: 32px;
+    margin-bottom: 16px;
 
     .code-card-title {
       font-size: 32px;
+    }
+
+    .code-card-content {
+      overflow: auto;
     }
 
     .code-card-copy {
@@ -617,7 +645,7 @@ dl.vulnerability-details,
   }
 
   .open-source-banner {
-    width: 640px;
+    max-width: 640px;
     margin: 0 auto;
 
     .heading {
@@ -671,3 +699,4 @@ dl.vulnerability-details,
     }
   }
 }
+

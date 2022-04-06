@@ -6,18 +6,20 @@
 <div class="mdc-layout-grid">
   <div class="mdc-layout-grid__inner">
     <div class="mdc-layout-grid__cell--span-12">
-      <h1 class="title">About OSV</h2>
-      <a class="open-docs" href="https://osv.dev/docs/">Open full documentation</a>
-
-      <h2 class="faq-title">Commonly asked questions</h2>
+      <h2 class="faq-title">Learn more</h2>
       <spicy-sections class="questions">
-        <h3 class="question">Why did you create OSV?</h3>
+        <h3 class="question">What is OSV?</h3>
         <div class="answer">
-          <p>We created OSV to address some of the shortcomings of dealing with vulnerabilities in open source software.</p>
-          <p>As believers of automation, we initially built OSV for our <a href="https://github.com/google/oss-fuzz">OSS-Fuzz</a>
-            service, where we needed a way to store, triage and query the large numbers of open source vulnerabilities we
-            discover in an automated and precise fashion. Since then we have expanded this to include vulnerabilities in
-            many more open source ecosystems.</p>
+          <p>OSV consists of:</p>
+          <ul>
+            <li><a href="https://ossf.github.io/osv-schema/">The OSV Schema</a>: An easy-to-use data format that maps precisely to open source versioning schemes.</li>
+            <li>Reference infrastructure (this site, API, and tooling) that aggregates and indexes vulnerability data from
+              databases that use the OSV schema.</li>
+          </ul>
+          <p>
+            We created OSV to address many of the shortcomings of dealing with
+            vulnerabilities in open source software using existing solutions.
+          </p>
           <p>See our blog posts for more details:</p>
           <ul>
             <li><a href="https://security.googleblog.com/2021/02/launching-osv-better-vulnerability.html">https://security.googleblog.com/2021/02/launching-osv-better-vulnerability.html</a></li>
@@ -28,10 +30,63 @@
         <div class="answer">
           <p>OSV can be used by both:</p>
           <ul>
-            <li>Open source consumers: By querying our API to find vulnerabilities in their dependencies.</li>
-            <li>Open source maintainers: By using our automation infrastructure to determine accurate affected commits and
-              versions when a vulnerability is fixed. Currently this works for bugs found by OSS-Fuzz, but we are working
-              to make this more generally available.</li>
+            <li>Open source consumers: By querying our API and using our
+              tooling to find known vulnerabilities in their dependencies.</li>
+            <li>Vulnerability database producers: By making the database
+              available in the OSV format.</li>
+          </ul>
+        </div>
+        <h3 class="question">Why a new format to describe vulnerabilities?</h3>
+        <div class="answer">
+          <p>We found that there was no existing standard format which:</p>
+          <p>
+            <ul>
+              <li>Enforces version specification that precisely matches naming and versioning schemes used in actual open source package ecosystems. For instance, matching a vulnerability such as a CVE to a package name and set of versions in a package manager is difficult to do in an automated way using existing mechanisms such as CPEs.</li>
+              <li>Can be used to describe vulnerabilities in any open source ecosystem, while not requiring ecosystem-dependent logic to process them.</li>
+              <li>Is easy to use by both automated systems and humans.</li>
+            </ul>
+          </p>
+          <p>
+            A unified format means that vulnerability databases, open source
+            users, and security researchers can easily share tooling and consume
+            vulnerabilities across all of open source. This means a more complete
+            view of vulnerabilities in open source for everyone, as well as
+            faster detection and remediation times resulting from easier
+            automation.
+          </p>
+        </div>
+        <h3 class="question">Who is using the OSV schema?</h3>
+        <div class="answer">
+          The benefits of the OSV schema have led to adoption by several
+          vulnerability databases, including GitHub Security Advisories, PyPA,
+          RustSec, and many more.
+
+          The full list of databases can be found
+          <a href="https://github.com/ossf/osv-schema#open-source-vulnerability-schema">here</a>.
+        </div>
+        <h3 class="question">How do I use OSV as an open source user?</h3>
+        <div class="answer">
+          <p>OSV provides an <a href="/docs/" data-turbo="false">easy-to-use API</a>
+          for querying against the aggregated database of vulnerabilities.</p>
+          <p><a href="https://github.com/google/osv/tree/master/tools/osv-scanner">Command line tooling</a> is currently being developed to enable easy
+          vulnerability scanning of SBOMs, language manifests, and container images. Stay tuned!</p>
+        </div>
+        <h3 class="question">How do I use OSV as an vulnerability database maintainer?</h3>
+        <div class="answer">
+          <p>By making your vulnerability database available in the OSV format,
+          open source users will have a consistent way to consume vulnerabilities across all
+          open source ecosystems.</p>
+
+          <p>Vulnerability databases can also benefit from easier interchange
+          and vulnerabiltiy sharing from other databases that use the OSV
+          format.</p>
+        </div>
+        <h3 class="question">How do I contribute to OSV?</h3>
+        <div class="answer">
+          <p>OSV is completely open source!</p>
+          <ul>
+            <li>The infrastructure code is available at <a href="https://github.com/google/osv">https://github.com/google/osv</a>
+            <li>The OSV schema spec is available at <a href="https://github.com/ossf/osv-schema">https://github.com/ossf/osv-schema</a>
           </ul>
         </div>
       </spicy-sections>

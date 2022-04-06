@@ -82,7 +82,7 @@ def main():
       'x-displayName': 'Vulnerability schema',
       'description': 'Please see the [OpenSSF Open Source Vulnerability spec]'
                      '(https://ossf.github.io/osv-schema/).',
-  } ]
+  }]
 
   spec['x-tagGroups'] = [{
       'name': 'API',

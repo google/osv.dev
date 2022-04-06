@@ -354,6 +354,9 @@ class Bug(ndb.Model):
     for ecosystem in self.ecosystem:
       search_indices.update(self._tokenize(ecosystem))
 
+    for alias in self.aliases:
+      search_indices.update(self._tokenize(alias))
+
     self.search_indices = list(set(search_indices))
     self.search_indices.sort()
 

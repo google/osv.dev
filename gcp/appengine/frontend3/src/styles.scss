@@ -360,8 +360,16 @@ mwc-icon-button.mdc-data-table__sort-icon-button {
 
 /** Vulnerability page */
 
-.vulnerability-page .title {
-  font-size: 60px;
+.vulnerability-page {
+  .title {
+    font-size: $osv-heading-size;
+  }
+
+  @media (max-width: 500px) {
+    .title {
+      font-size: $osv-heading-size-mobile;
+    }
+  }
 }
 
 dl.vulnerability-details,
@@ -382,6 +390,7 @@ dl.vulnerability-details,
 
   pre {
     white-space: pre-wrap;
+    overflow: auto;
   }
 
   .links {
@@ -389,11 +398,28 @@ dl.vulnerability-details,
     display: flex;
     flex-direction: column;
     gap: 10px;
+    overflow-wrap: break-word;
   }
 }
 
 .vulnerability-packages-container {
-  margin-top: 80px;
+  margin-top: 50px;
+
+  .title {
+    margin-left: 20px;
+    font-size: 24px;
+    margin-bottom: 16px;
+    font-weight: bold;
+  }
+
+  // Tab bar styling.
+  --const-mq-affordances:
+    [screen and (max-width: 500px) ] collapse |
+    [screen and (min-width: 501px) ] tab-bar;
+
+  .force-collapse {
+    --const-mq-affordances: [screen] collapse;
+  }
 }
 
 .vulnerability-packages {
@@ -410,10 +436,38 @@ dl.vulnerability-details,
     font-size: 20px;
   }
 
-  // Tab bar styling.
-  --const-mq-affordances:
-    [screen] tab-bar
-  ;
+  .version-value {
+    font-family: $osv-heading-font-family;
+  }
+
+  .events {
+    gap: 4px;
+  }
+
+  .spicy-sections-workaround {
+    // https://github.com/tabvengers/spicy-sections/issues/64.
+    pointer-events: none;
+  }
+
+  &[affordance="collapse"] h2 {
+    .vuln-ecosystem {
+      display: inline;
+      font-weight: bold;
+      text-transform: uppercase;
+    }
+    .vuln-name {
+      display: inline;
+      font-weight: normal;
+    }
+
+    &[expanded] {
+      background: #fff;
+      color: $osv-accent-color;
+    }
+
+    width: 100%;
+  }
+
   &[affordance="tab-bar"] h2 {
     cursor: default;
 

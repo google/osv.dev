@@ -291,6 +291,59 @@ def vulnerability_handler():
   return jsonify(osv_get_by_id(vuln_id))
 
 
+@blueprint.app_template_filter('event_type')
+def event_type(event):
+  """Get the type from an event."""
+  if event.get('introduced'):
+    return 'Introduced'
+  if event.get('fixed'):
+    return 'Fixed'
+  if event.get('limit'):
+    return 'Limit'
+  if event.get('last_affected'):
+    return 'Last affected'
+
+  return None
+
+
+@blueprint.app_template_filter('event_link')
+def event_link(event):
+  """Get the link from an event."""
+  if event.get('introduced_link'):
+    return event['introduced_link']
+  if event.get('fixed_link'):
+    return event['fixed_link']
+  if event.get('limit_link'):
+    return event['limit_link']
+  if event.get('last_affected_link'):
+    return event['last_affected_link']
+
+  return None
+
+
+@blueprint.app_template_filter('event_value')
+def event_value(event):
+  """Get the value from an event."""
+  if event.get('introduced'):
+    return event['introduced']
+  if event.get('fixed'):
+    return event['fixed']
+  if event.get('limit'):
+    return event['limit']
+  if event.get('last_affected'):
+    return event['last_affected']
+
+  return None
+
+
+@blueprint.app_template_filter('should_collapse')
+def should_collapse(affected):
+  """Whether if we should collapse the package tab bar."""
+  total_package_length = sum(
+      [len(entry.get('package', {}).get('name', '')) for entry in affected])
+  return total_package_length > 70 or len(affected) > 5
+
+
 @blueprint.app_template_filter('log')
 def logarithm(n):
   return math.log(n)

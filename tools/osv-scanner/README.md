@@ -1,4 +1,4 @@
-# Vulnerability scanner (preview).
+# Vulnerability scanner (preview)
 
 This contains a vulnerability scanner written in Go.
 
@@ -17,12 +17,6 @@ input file contents.
 
 ```bash
 $ go run cmd/scanner.go /path/to/your/sbom.json
-```
-
-### Example
-
-```bash
-$ go run cmd/scanner.go /path/to/your/repo
 ```
 
 ## Scanning a directory

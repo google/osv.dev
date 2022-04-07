@@ -19,7 +19,7 @@
     "@material/mwc-textfield": "^0.25.3",
     "@material/theme": "^13.0.0",
     "highlight.js": "^11.5.0",
-    "lit": "^2.0.0",
+    "lit": "^2.2.2",
     "spicy-sections": "git+https://github.com/tabvengers/spicy-sections.git#c3aae99dbf1e627cdf03a35c913d7f6e970de22b"
   },
   "devDependencies": {

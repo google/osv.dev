@@ -523,11 +523,10 @@ dl.vulnerability-details,
     text-align: center;
 
     .cta {
-      text-align: center;
-
-      a {
-        margin: 2px;
-      }
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 4px;
     }
   }
 
@@ -646,11 +645,10 @@ dl.vulnerability-details,
 
     .cta {
       margin: 32px 0;
-      text-align: center;
-
-      a {
-        margin: 2px;
-      }
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 4px;
     }
   }
 
@@ -677,11 +675,10 @@ dl.vulnerability-details,
     }
 
     .cta {
-      text-align: center;
-
-      a {
-        margin: 2px;
-      }
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 4px;
     }
 
     .cmdline {
@@ -743,7 +740,10 @@ dl.vulnerability-details,
     }
     .cta {
       margin: 32px 0;
-      text-align: center;
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 4px;
     }
   }
 }

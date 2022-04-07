@@ -31,7 +31,7 @@
     "sass": "^1.43.5",
     "sass-loader": "^12.3.0",
     "style-loader": "^3.3.1",
-    "webpack": "^5.64.4",
+    "webpack": "^5.71.0",
     "webpack-cli": "^4.9.1",
     "webpack-dev-server": "^4.6.0"
   }

@@ -42,6 +42,7 @@ $osv-heading-line-height-mobile: 50px;
 
 html, body {
   height: 100%;
+  scroll-behavior: smooth;
 }
 
 ol, ul, menu {
@@ -77,7 +78,7 @@ a {
   text-decoration: underline;
 }
 
-a:not([href^="https://osv.dev"]):not([href^="/"])::after {
+a:not([href^="https://osv.dev"]):not([href^="/"]):not([href^="#"])::after {
   display: inline-block;
   content: ' ';
   background-image: url('/static/img/external-link.svg');
@@ -400,6 +401,10 @@ dl.vulnerability-details,
     gap: 10px;
     overflow-wrap: break-word;
   }
+
+  .aliases {
+    padding: 0;
+  }
 }
 
 .vulnerability-packages-container {
@@ -612,7 +617,7 @@ dl.vulnerability-details,
     }
   }
 
-  .schema-info {
+  .text-info {
     max-width: 800px;
     margin: 100px auto 0;
 
@@ -642,9 +647,12 @@ dl.vulnerability-details,
     .cta {
       margin: 32px 0;
       text-align: center;
+
+      a {
+        margin: 2px;
+      }
     }
   }
-
 
   .usage-examples {
     margin-top: 100px;
@@ -667,6 +675,20 @@ dl.vulnerability-details,
       margin-bottom: 20px;
       text-align: center;
     }
+
+    .cta {
+      text-align: center;
+
+      a {
+        margin: 2px;
+      }
+    }
+
+    .cmdline {
+      max-width: 600px;
+      margin-left: auto;
+      margin-right: auto;
+    }
   }
 
   .code-card {
@@ -674,7 +696,7 @@ dl.vulnerability-details,
     background: #d46d59;
     border-radius: 10px;
     padding: 32px;
-    margin-bottom: 16px;
+    margin-bottom: 32px;
 
     .code-card-title {
       font-size: 32px;
@@ -703,12 +725,21 @@ dl.vulnerability-details,
     margin: 0 auto;
 
     .heading {
-      font-size: 28px;
-      line-height: 54px;
+      font-size: $osv-heading-size;
+      text-align: center;
+      margin-bottom: 32px;
     }
+
+    @media (max-width: 500px) {
+      .heading {
+        font-size: $osv-heading-size-mobile;
+      }
+    }
+
     .description {
       font-size: 20px;
       line-height: 24px;
+      text-align: center;
     }
     .cta {
       margin: 32px 0;
@@ -724,7 +755,7 @@ dl.vulnerability-details,
   }
 
   .faq-title {
-    margin-top: 80px;
+    margin-top: 40px;
     margin-bottom: 48px;
   }
 
@@ -746,10 +777,21 @@ dl.vulnerability-details,
       border-top: 1px dotted #a0a0a0;
       padding: 20px 0;
       font-family: $osv-body-font-family;
+      font-size: 20px;
     }
 
     .answer {
+      margin-left: 20px;
       padding-bottom: 20px;
+      font-size: 16px;
+
+      p {
+        margin-bottom: 16px;
+      }
+
+      li {
+        margin-bottom: 16px;
+      }
     }
   }
 }

@@ -70,9 +70,6 @@ def main():
   with open(_GENERATED_FILENAME) as f:
     spec = json.load(f)
 
-  with open('faq.md') as f:
-    faq = f.read()
-
   spec['host'] = 'api.osv.dev'
   spec['info']['title'] = 'OSV'
   spec['info']['version'] = '1.0'
@@ -85,10 +82,6 @@ def main():
       'x-displayName': 'Vulnerability schema',
       'description': 'Please see the [OpenSSF Open Source Vulnerability spec]'
                      '(https://ossf.github.io/osv-schema/).',
-  }, {
-      'name': 'faq',
-      'x-displayName': 'Frequently asked questions',
-      'description': faq,
   }]
 
   spec['x-tagGroups'] = [{
@@ -97,9 +90,6 @@ def main():
   }, {
       'name': 'Schema',
       'tags': ['vulnerability_schema']
-  }, {
-      'name': 'Documentation',
-      'tags': ['faq']
   }]
 
   spec['paths']['/v1/query']['post']['tags'] = ['api']

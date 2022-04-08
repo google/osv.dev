@@ -379,6 +379,7 @@ dl.vulnerability-details,
   grid-template-columns: max-content minmax(0, auto);
   grid-row-gap: 5px;
   max-width: 1000px;
+  gap: 8px;
 
   dt {
     grid-column: 1;
@@ -439,6 +440,7 @@ dl.vulnerability-details,
   
   h3 {
     font-family: $osv-body-font-family;
+    font-weight: bold;
   }
 
   .subtitle {

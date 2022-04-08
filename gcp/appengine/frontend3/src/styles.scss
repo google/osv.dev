@@ -378,6 +378,7 @@ dl.vulnerability-details,
   display: grid;
   grid-template-columns: max-content minmax(0, auto);
   grid-row-gap: 5px;
+  max-width: 1000px;
 
   dt {
     grid-column: 1;
@@ -443,6 +444,18 @@ dl.vulnerability-details,
 
   .version-value {
     font-family: $osv-heading-font-family;
+  }
+
+  .versions {
+    display: flex;
+    overflow: auto;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .version {
+    width: 100px;
+    overflow-wrap: break-word;
   }
 
   .events {

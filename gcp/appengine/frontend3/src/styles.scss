@@ -436,6 +436,10 @@ dl.vulnerability-details,
     font-size: 14px;
     padding: 16px;
   }
+  
+  h3 {
+    font-family: $osv-body-font-family;
+  }
 
   .subtitle {
     font-family: $osv-heading-font-family;

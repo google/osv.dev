@@ -482,8 +482,10 @@ dl.vulnerability-details,
     flex-wrap: wrap;
     gap: 8px;
     padding-bottom: 12px;
-    border-bottom: 1px dashed #fff;
+  }
 
+  .versions-separator {
+    border-bottom: 1px dashed #fff;
   }
 
   .version {

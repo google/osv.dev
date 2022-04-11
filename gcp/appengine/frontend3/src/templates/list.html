@@ -53,11 +53,11 @@ data-column-id="{{ column_id }}"
                   </label>
                 </spicy-h>
                 <div class="spicy-content">
-                  <span class="ecosystems-divider expandable"></span>
+                  <span class="ecosystems-divider"></span>
                   {% for ecosystem in ecosystem_counts %}
                     <input type="radio" name="ecosystem" id="ecosystem-radio-{{ loop.index }}"
                         value="{{ ecosystem }}"{% if selected_ecosystem == ecosystem %} checked{% endif %}>
-                    <label class="ecosystem-label expandable" for="ecosystem-radio-{{ loop.index }}">
+                    <label class="ecosystem-label" for="ecosystem-radio-{{ loop.index }}">
                       <span class="ecosystem-name">{{ ecosystem }}</span>
                       <span class="ecosystem-count">{{ ecosystem_counts[ecosystem] }}</span>
                     </label>

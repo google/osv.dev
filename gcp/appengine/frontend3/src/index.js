@@ -34,9 +34,58 @@ export class SubmitRadiosOnClickContainer extends LitElement {
   constructor() {
     super();
     this.addEventListener('change', () => submitForm(this.closest('form')))
+    this.expanded = false;
+  }
+
+  toggleExpanded() {
+    this.expanded = !this.expanded;
+    const expander = this.renderRoot.querySelector('#ecosystem-expander');
+    if (this.expanded) {
+      expander.classList.add('expanded');
+    } else {
+      expander.classList.remove('expanded');
+    }
+
+    for (const label of this.querySelectorAll('.expandable')) {
+      if (this.expanded) {
+        label.classList.add('expanded');
+      } else {
+        label.classList.remove('expanded');
+      }
+    }
+  }
+
+  firstUpdated() {
+    const expander = this.renderRoot.querySelector('#ecosystem-expander');
+    expander.addEventListener('click', this.toggleExpanded.bind(this));
+  }
+
+  static get styles() {
+    return [
+      css`
+        #ecosystem-expander {
+          display: none;
+        }
+
+        @media (max-width: 500px) {
+          #ecosystem-expander {
+            display: block;
+            background: url(/static/img/arrow.png) no-repeat;
+            background-position: center;
+            width: 16px;
+            height: 16px;
+          }
+
+          #ecosystem-expander.expanded {
+            transform: rotate(90deg);
+          }
+        }`
+    ];
   }
   // Render the contents of the element as-is.
-  render() { return html`<slot></slot>`; }
+  render() { return html`
+      <span id="ecosystem-expander"></span>
+      <slot></slot>`; }
 }
 customElements.define('submit-radios', SubmitRadiosOnClickContainer);
 

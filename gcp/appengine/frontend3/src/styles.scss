@@ -180,12 +180,30 @@ pre {
         font-weight: bold;
       }
     }
-  
+
     .ecosystems-divider {
       display: block;
       margin: 0 10px;
       height: 30px;
       border-right: 1px solid $osv-grey-600;
+    }
+
+    @media (max-width: 500px) {
+      .expandable {
+        display: none;
+      }
+
+      .ecosystems-divider.expandable {
+        display: none;
+      }
+
+      .expandable.expanded {
+        display: flex;
+      }
+
+      .ecosystems-divider.expanded {
+        display: block;
+      }
     }
   
     input[type=radio]:checked + .ecosystem-label {
@@ -247,6 +265,12 @@ mwc-icon-button.mdc-data-table__sort-icon-button {
 
 .vuln-table-container {
   width: 100%;
+
+  @media (max-width: 500px) {
+    .hide-on-mobile {
+      display: none !important;
+    }
+  }
 
   // Override MDC table styling.
   border-width: 0;

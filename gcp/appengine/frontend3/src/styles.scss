@@ -11,6 +11,7 @@ $osv-heading-size: 60px;
 $osv-heading-size-mobile: 40px;
 $osv-heading-line-height: 70px;
 $osv-heading-line-height-mobile: 50px;
+$osv-mobile-breakpoint: 500px;
 
 @use '@material/theme' with (
   $surface: $osv-background,
@@ -171,7 +172,7 @@ pre {
     // We use <spicy-sections> to collapse the ecosystem list only on mobile.
     // On desktop, display the full list.
     --const-mq-affordances:
-      [screen and (max-width: 500px) ] collapse;
+      [screen and (max-width: $osv-mobile-breakpoint) ] collapse;
     &::part(tab-bar) {
       // The tab bar affordance isn't used, so hide it.
       display: none;
@@ -283,7 +284,7 @@ mwc-icon-button.mdc-data-table__sort-icon-button {
 .vuln-table-container {
   width: 100%;
 
-  @media (max-width: 500px) {
+  @media (max-width: $osv-mobile-breakpoint) {
     .hide-on-mobile {
       display: none !important;
     }

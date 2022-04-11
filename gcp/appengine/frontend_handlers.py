@@ -344,6 +344,22 @@ def should_collapse(affected):
   return total_package_length > 70 or len(affected) > 5
 
 
+@blueprint.app_template_filter('group_versions')
+def group_versions(versions):
+  """Group versions by prefix."""
+  groups = {}
+
+  for version in sorted(versions):
+    if '.' not in version:
+      groups.setdefault('Other', []).append(version)
+      continue
+
+    label = version.split('.')[0] + '.*'
+    groups.setdefault(label, []).append(version)
+
+  return groups
+
+
 @blueprint.app_template_filter('log')
 def logarithm(n):
   return math.log(n)

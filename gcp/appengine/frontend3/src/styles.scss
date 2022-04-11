@@ -378,6 +378,8 @@ dl.vulnerability-details,
   display: grid;
   grid-template-columns: max-content minmax(0, auto);
   grid-row-gap: 5px;
+  max-width: 1000px;
+  gap: 8px;
 
   dt {
     grid-column: 1;
@@ -435,6 +437,11 @@ dl.vulnerability-details,
     font-size: 14px;
     padding: 16px;
   }
+  
+  h3 {
+    font-family: $osv-body-font-family;
+    font-weight: bold;
+  }
 
   .subtitle {
     font-family: $osv-heading-font-family;
@@ -443,6 +450,47 @@ dl.vulnerability-details,
 
   .version-value {
     font-family: $osv-heading-font-family;
+  }
+
+  .versions-section {
+    --const-mq-affordances: [screen] collapse;
+
+    h2.version-header::before {
+      content: '';
+      margin-right: 16px;
+      background: url(/static/img/arrow.png);
+      background-position: center;
+      transform: rotate(0deg);
+    }
+
+    h2.version-header[expanded]::before {
+      transform: rotate(90deg);
+    }
+
+    h2.version-header {
+      background: none;
+      font-family: $osv-heading-font-family;
+      color: #fff;
+      padding-left: 0px;
+      font-size: 16px;
+    }
+  }
+
+  .versions {
+    display: flex;
+    overflow: auto;
+    flex-wrap: wrap;
+    gap: 8px;
+    padding-bottom: 12px;
+  }
+
+  .versions-separator {
+    border-bottom: 1px dashed #fff;
+  }
+
+  .version {
+    width: 100px;
+    overflow-wrap: break-word;
   }
 
   .events {
@@ -454,7 +502,7 @@ dl.vulnerability-details,
     pointer-events: none;
   }
 
-  &[affordance="collapse"] h2 {
+  &[affordance="collapse"] h2.package-header {
     .vuln-ecosystem {
       display: inline;
       font-weight: bold;
@@ -473,7 +521,7 @@ dl.vulnerability-details,
     width: 100%;
   }
 
-  &[affordance="tab-bar"] h2 {
+  &[affordance="tab-bar"] h2.package-header {
     cursor: default;
 
     // Default tab spacing of 20px. First tab should match grid margin.

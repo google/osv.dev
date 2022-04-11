@@ -172,7 +172,7 @@ pre {
     // We use <spicy-sections> to collapse the ecosystem list only on mobile.
     // On desktop, display the full list.
     --const-mq-affordances:
-      [screen and (max-width: $osv-mobile-breakpoint) ] collapse;
+      [screen and (max-width: #{$osv-mobile-breakpoint}) ] collapse;
     &::part(tab-bar) {
       // The tab bar affordance isn't used, so hide it.
       display: none;

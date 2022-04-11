@@ -34,7 +34,6 @@ export class SubmitRadiosOnClickContainer extends LitElement {
   constructor() {
     super();
     this.addEventListener('change', () => submitForm(this.closest('form')))
-    this.expanded = false;
   }
   // Render the contents of the element as-is.
   render() { return html`<slot></slot>`; }

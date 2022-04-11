@@ -161,12 +161,47 @@ pre {
     font-size: 20px;
   }
 
-  .ecosystems {
+  .ecosystem-buttons {
     margin-top: 20px;
     display: flex;
     flex-wrap: wrap;
     gap: 10px;
     align-items: center;
+
+    // We use <spicy-sections> to collapse the ecosystem list only on mobile.
+    // On desktop, display the full list.
+    --const-mq-affordances:
+      [screen and (max-width: 500px) ] collapse;
+    &::part(tab-bar) {
+      // The tab bar affordance isn't used, so hide it.
+      display: none;
+    }
+    &::part(content-panels) {
+      // Because the shadow root of <spicy-sections> actually wraps our content
+      // we need to use display: contents; in order for flex to apply as if the
+      // child elements are direct descendants of the parent flex container.
+      display: contents;
+    }
+    .spicy-content {
+      // Expanded contents also should act as if they were direct descendants
+      // of our flex container.
+      display: contents;
+    }
+
+    // Customizing the collapsing header for <spicy-sections>. We can select it
+    // by looking for the element with affordance="collapse".
+    [affordance=collapse] {
+      display: flex;
+      align-items: center;
+      // The ::before on the collapsible is used to display the chevron.
+      &::before {
+        display: block;
+        padding: 0 8px;
+        // HACK: Invert the black chevron to white. The chevron is set using
+        // background-image, so we can't use the CSS fill property on it.
+        filter: invert(100%);
+      }
+    }
   
     .ecosystem-label {
       display: flex;
@@ -186,24 +221,6 @@ pre {
       margin: 0 10px;
       height: 30px;
       border-right: 1px solid $osv-grey-600;
-    }
-
-    @media (max-width: 500px) {
-      .expandable {
-        display: none;
-      }
-
-      .ecosystems-divider.expandable {
-        display: none;
-      }
-
-      .expandable.expanded {
-        display: flex;
-      }
-
-      .ecosystems-divider.expanded {
-        display: block;
-      }
     }
   
     input[type=radio]:checked + .ecosystem-label {

@@ -408,7 +408,7 @@ mwc-icon-button.mdc-data-table__sort-icon-button {
     font-size: $osv-heading-size;
   }
 
-  @media (max-width: 500px) {
+  @media (max-width: $osv-mobile-breakpoint) {
     .title {
       font-size: $osv-heading-size-mobile;
     }
@@ -463,8 +463,8 @@ dl.vulnerability-details,
 
   // Tab bar styling.
   --const-mq-affordances:
-    [screen and (max-width: 500px) ] collapse |
-    [screen and (min-width: 501px) ] tab-bar;
+    [screen and (max-width: #{$osv-mobile-breakpoint}) ] collapse |
+    [screen and (min-width: #{$osv-mobile-breakpoint+1}) ] tab-bar;
 
   .force-collapse {
     --const-mq-affordances: [screen] collapse;
@@ -626,7 +626,7 @@ dl.vulnerability-details,
     margin-bottom: 12px;
   }
 
-  @media (max-width: 500px) {
+  @media (max-width: $osv-mobile-breakpoint) {
     .title {
       font-size: $osv-heading-size-mobile;
       line-height: $osv-heading-line-height-mobile;
@@ -734,7 +734,7 @@ dl.vulnerability-details,
       margin-bottom: 32px;
     }
 
-    @media (max-width: 500px) {
+    @media (max-width: $osv-mobile-breakpoint) {
       .heading {
         font-size: $osv-heading-size-mobile;
       }
@@ -769,7 +769,7 @@ dl.vulnerability-details,
       margin-bottom: 32px;
     }
 
-    @media (max-width: 500px) {
+    @media (max-width: $osv-mobile-breakpoint) {
       .heading {
         font-size: $osv-heading-size-mobile;
       }
@@ -835,7 +835,7 @@ dl.vulnerability-details,
       margin-bottom: 32px;
     }
 
-    @media (max-width: 500px) {
+    @media (max-width: $osv-mobile-breakpoint) {
       .heading {
         font-size: $osv-heading-size-mobile;
       }

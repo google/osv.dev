@@ -408,7 +408,7 @@ mwc-icon-button.mdc-data-table__sort-icon-button {
     font-size: $osv-heading-size;
   }
 
-  @media (max-width: 500px) {
+  @media (max-width: $osv-mobile-breakpoint) {
     .title {
       font-size: $osv-heading-size-mobile;
     }
@@ -463,8 +463,8 @@ dl.vulnerability-details,
 
   // Tab bar styling.
   --const-mq-affordances:
-    [screen and (max-width: 500px) ] collapse |
-    [screen and (min-width: 501px) ] tab-bar;
+    [screen and (max-width: #{$osv-mobile-breakpoint}) ] collapse |
+    [screen and (min-width: #{$osv-mobile-breakpoint+1}) ] tab-bar;
 
   .force-collapse {
     --const-mq-affordances: [screen] collapse;
@@ -626,7 +626,7 @@ dl.vulnerability-details,
     margin-bottom: 12px;
   }
 
-  @media (max-width: 500px) {
+  @media (max-width: $osv-mobile-breakpoint) {
     .title {
       font-size: $osv-heading-size-mobile;
       line-height: $osv-heading-line-height-mobile;
@@ -642,20 +642,70 @@ dl.vulnerability-details,
     margin-bottom: 24px;
   }
 
-  .ecosystem-counts {
+  .ecosystems-section {
+    $ecosystem-name-height: 30px;
+    $ecosystem-count-wrapper-height: 210px;
     margin-top: 100px;
 
-    .ecosystems {
+    .ecosystem-counts-wrapper {
+      position: relative;
+      background: #333;
+      margin-top: 20px;
+      height: $ecosystem-count-wrapper-height;
+
+      .ecosystems-line-mid,
+      .ecosystems-line-0,
+      .ecosystems-line-1,
+      .ecosystems-line-2,
+      .ecosystems-line-3 {
+        width: 100%;
+        border-top: 1px dashed #a0a0a0;
+        position: absolute;
+        z-index: 1;
+      }
+      .ecosystems-line-mid {
+        top: 105px;
+        border-top-style: solid;
+      }
+      .ecosystems-line-0 {
+        top: 0px;
+      }
+      .ecosystems-line-1 {
+        top: 52px;
+      }
+      .ecosystems-line-2 {
+        top: 157px;
+      }
+      .ecosystems-line-3 {
+        top: 207px;
+      }
+    }
+
+    .ecosystem-counts {
       display: grid;
+      grid-template-rows: $ecosystem-name-height $ecosystem-count-wrapper-height;
+      grid-column-gap: 4px;
+      // Indeterminate number of columns of minimum 80px width.
       grid-template-columns: repeat(auto-fit, minmax(80px, 1fr));
-      .ecosystem {
+      // Force columns outside of available space to overflow.
+      // These do not use the value set in grid-template-columns, so set it.
+      overflow-x: auto;
+      grid-auto-flow: column;
+      grid-auto-columns: minmax(80px, 1fr);
+
+      .ecosystem-name {
+        position: relative;
+        top: $ecosystem-count-wrapper-height;
+        height: $ecosystem-name-height;
+        display: flex;
+        align-items: center;
+        justify-content: center;
         text-align: center;
         font-family: $osv-heading-font-family;
       }
-      dd {
+      .ecosystem-count-wrapper {
         position: relative;
-        background: #333;
-        height: 210px;
+        top: -$ecosystem-name-height;
       }
       .ecosystem-count {
         font-family: $osv-heading-font-family;
@@ -671,39 +721,6 @@ dl.vulnerability-details,
         z-index: 1;
       }
     }
-
-    .ecosystems-line {
-      width: 100%;
-      border-top: 1px dashed #a0a0a0;
-      position: relative;
-      z-index: 1;
-    }
-
-    .ecosystems-line-mid {
-      @extend .ecosystems-line;
-      top: 105px;
-      border-top: 1px solid #a0a0a0;
-    }
-
-    .ecosystems-line-0 {
-      @extend .ecosystems-line;
-      top: 0px;
-    }
-
-    .ecosystems-line-1 {
-      @extend .ecosystems-line;
-      top: 52px;
-    }
-
-    .ecosystems-line-2 {
-      @extend .ecosystems-line;
-      top: 157px;
-    }
-
-    .ecosystems-line-3 {
-      @extend .ecosystems-line;
-      top: 207px;
-    }
   }
 
   .text-info {
@@ -716,7 +733,7 @@ dl.vulnerability-details,
       margin-bottom: 32px;
     }
 
-    @media (max-width: 500px) {
+    @media (max-width: $osv-mobile-breakpoint) {
       .heading {
         font-size: $osv-heading-size-mobile;
       }
@@ -751,7 +768,7 @@ dl.vulnerability-details,
       margin-bottom: 32px;
     }
 
-    @media (max-width: 500px) {
+    @media (max-width: $osv-mobile-breakpoint) {
       .heading {
         font-size: $osv-heading-size-mobile;
       }
@@ -817,7 +834,7 @@ dl.vulnerability-details,
       margin-bottom: 32px;
     }
 
-    @media (max-width: 500px) {
+    @media (max-width: $osv-mobile-breakpoint) {
       .heading {
         font-size: $osv-heading-size-mobile;
       }

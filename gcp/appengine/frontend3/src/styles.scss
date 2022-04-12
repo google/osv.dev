@@ -643,12 +643,15 @@ dl.vulnerability-details,
   }
 
   .ecosystems-section {
+    $ecosystem-name-height: 30px;
+    $ecosystem-count-wrapper-height: 210px;
     margin-top: 100px;
 
     .ecosystem-counts-wrapper {
       @include full-width;
       position: relative;
       background: #333;
+      height: $ecosystem-count-wrapper-height;
 
       .ecosystems-line-mid,
       .ecosystems-line-0,
@@ -681,6 +684,7 @@ dl.vulnerability-details,
     .ecosystem-counts {
       display: grid;
       margin-top: 20px;
+      grid-template-rows: $ecosystem-name-height $ecosystem-count-wrapper-height;
       grid-column-gap: 4px;
       // Indeterminate number of columns of minimum 80px width.
       grid-template-columns: repeat(auto-fit, minmax(80px, 1fr));
@@ -690,13 +694,19 @@ dl.vulnerability-details,
       grid-auto-flow: column;
       grid-auto-columns: minmax(80px, 1fr);
 
-      .ecosystem {
+      .ecosystem-name {
+        position: relative;
+        top: $ecosystem-count-wrapper-height;
+        height: $ecosystem-name-height;
+        display: flex;
+        align-items: center;
+        justify-content: center;
         text-align: center;
         font-family: $osv-heading-font-family;
       }
-      dd {
+      .ecosystem-count-wrapper {
         position: relative;
-        height: 210px;
+        top: -$ecosystem-name-height;
       }
       .ecosystem-count {
         font-family: $osv-heading-font-family;

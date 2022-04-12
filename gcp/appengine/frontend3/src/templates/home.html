@@ -14,30 +14,32 @@
         <a class="cta-primary link-button" href="#use-the-api">Use the API</a>
       </div>
     </div>
-    <div class="mdc-layout-grid__cell--span-12 ecosystem-counts">
+    <div class="mdc-layout-grid__cell--span-12 ecosystems-section">
       <h2 class="heading">Ecosystems</h2>
-      <dl class="ecosystems">
+      <div class="ecosystem-counts-wrapper">
         <div class="ecosystems-line-mid"></div>
         <div class="ecosystems-line-0"></div>
         <div class="ecosystems-line-1"></div>
         <div class="ecosystems-line-2"></div>
         <div class="ecosystems-line-3"></div>
-        {% if ecosystem_counts %}
-          {% set total = ecosystem_counts.values() | sum %}
-          {% for ecosystem in ecosystem_counts %}
-            {% if ecosystem_counts[ecosystem] > 30 %}
-              <dd>
-                {% set radius = [(ecosystem_counts[ecosystem] | log) / (total | log) * 100, 30] | max %}
-                <p class="ecosystem">{{ ecosystem }}</p>
-                <span class="ecosystem-count" style="
-                   width: {{ radius }}px; height: {{ radius }}px; line-height: {{ radius }}px">
-                  {{ ecosystem_counts[ecosystem] }}
-                </span>
-              </dd>
-            {% endif %}
-          {% endfor %}
-        {% endif %}
-      </dl>
+        <dl class="ecosystem-counts">
+          {% if ecosystem_counts %}
+            {% set total = ecosystem_counts.values() | sum %}
+            {% for ecosystem in ecosystem_counts %}
+              {% if ecosystem_counts[ecosystem] > 30 %}
+                <dd>
+                  {% set radius = [(ecosystem_counts[ecosystem] | log) / (total | log) * 100, 30] | max %}
+                  <p class="ecosystem">{{ ecosystem }}</p>
+                  <span class="ecosystem-count" style="
+                    width: {{ radius }}px; height: {{ radius }}px; line-height: {{ radius }}px">
+                    {{ ecosystem_counts[ecosystem] }}
+                  </span>
+                </dd>
+              {% endif %}
+            {% endfor %}
+          {% endif %}
+        </dl>
+      </div>
     </div>
 
     <div class="mdc-layout-grid__cell--span-12 text-info">

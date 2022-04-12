@@ -646,8 +646,38 @@ dl.vulnerability-details,
     margin-top: 100px;
 
     .ecosystems {
+      @include full-width;
       display: grid;
+      margin-top: 20px;
       grid-template-columns: repeat(auto-fit, minmax(80px, 1fr));
+
+      .ecosystems-line-mid,
+      .ecosystems-line-0,
+      .ecosystems-line-1,
+      .ecosystems-line-2,
+      .ecosystems-line-3 {
+        width: 100%;
+        border-top: 1px dashed #a0a0a0;
+        position: absolute;
+        z-index: 1;
+      }
+      .ecosystems-line-mid {
+        top: 105px;
+        border-top-style: solid;
+      }
+      .ecosystems-line-0 {
+        top: 0px;
+      }
+      .ecosystems-line-1 {
+        top: 52px;
+      }
+      .ecosystems-line-2 {
+        top: 157px;
+      }
+      .ecosystems-line-3 {
+        top: 207px;
+      }
+
       .ecosystem {
         text-align: center;
         font-family: $osv-heading-font-family;
@@ -670,39 +700,6 @@ dl.vulnerability-details,
         text-align: center;
         z-index: 1;
       }
-    }
-
-    .ecosystems-line {
-      width: 100%;
-      border-top: 1px dashed #a0a0a0;
-      position: relative;
-      z-index: 1;
-    }
-
-    .ecosystems-line-mid {
-      @extend .ecosystems-line;
-      top: 105px;
-      border-top: 1px solid #a0a0a0;
-    }
-
-    .ecosystems-line-0 {
-      @extend .ecosystems-line;
-      top: 0px;
-    }
-
-    .ecosystems-line-1 {
-      @extend .ecosystems-line;
-      top: 52px;
-    }
-
-    .ecosystems-line-2 {
-      @extend .ecosystems-line;
-      top: 157px;
-    }
-
-    .ecosystems-line-3 {
-      @extend .ecosystems-line;
-      top: 207px;
     }
   }
 

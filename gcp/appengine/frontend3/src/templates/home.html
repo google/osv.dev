@@ -17,16 +17,16 @@
     <div class="mdc-layout-grid__cell--span-12 ecosystem-counts">
       <h2 class="heading">Ecosystems</h2>
       <dl class="ecosystems">
+        <div class="ecosystems-line-mid"></div>
+        <div class="ecosystems-line-0"></div>
+        <div class="ecosystems-line-1"></div>
+        <div class="ecosystems-line-2"></div>
+        <div class="ecosystems-line-3"></div>
         {% if ecosystem_counts %}
           {% set total = ecosystem_counts.values() | sum %}
           {% for ecosystem in ecosystem_counts %}
             {% if ecosystem_counts[ecosystem] > 30 %}
               <dd>
-              <div class="ecosystems-line-mid"></div>
-              <div class="ecosystems-line-0"></div>
-              <div class="ecosystems-line-1"></div>
-              <div class="ecosystems-line-2"></div>
-              <div class="ecosystems-line-3"></div>
                 {% set radius = [(ecosystem_counts[ecosystem] | log) / (total | log) * 100, 30] | max %}
                 <p class="ecosystem">{{ ecosystem }}</p>
                 <span class="ecosystem-count" style="

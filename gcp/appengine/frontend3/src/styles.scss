@@ -648,9 +648,9 @@ dl.vulnerability-details,
     margin-top: 100px;
 
     .ecosystem-counts-wrapper {
-      @include full-width;
       position: relative;
       background: #333;
+      margin-top: 20px;
       height: $ecosystem-count-wrapper-height;
 
       .ecosystems-line-mid,
@@ -683,7 +683,6 @@ dl.vulnerability-details,
 
     .ecosystem-counts {
       display: grid;
-      margin-top: 20px;
       grid-template-rows: $ecosystem-name-height $ecosystem-count-wrapper-height;
       grid-column-gap: 4px;
       // Indeterminate number of columns of minimum 80px width.

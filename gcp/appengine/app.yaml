@@ -27,14 +27,6 @@ handlers:
     static_files: docs/index.html
     upload: docs/index.html
 
-  - url: /backend/.*
-    script: auto
-    secure: always
-
-  - url: /v2/.*
-    script: auto
-    secure: always
-
   - url: /cron/.*
     script: auto
     secure: always
@@ -44,8 +36,8 @@ handlers:
     mime_type: text/plain
 
   - url: /.*
-    static_files: dist/index.html
-    upload: dist/index.html
+    script: auto
+    secure: always
 
 inbound_services:
   - warmup

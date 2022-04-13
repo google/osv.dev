@@ -18,8 +18,8 @@ import math
 
 from flask import abort
 from flask import Blueprint
-from flask import jsonify
 from flask import make_response
+from flask import redirect
 from flask import render_template
 from flask import request
 import markdown2
@@ -32,7 +32,6 @@ import utils
 
 blueprint = Blueprint('frontend_handlers', __name__)
 
-_BACKEND_ROUTE = '/backend'
 _PAGE_SIZE = 16
 _PAGE_LOOKAHEAD = 4
 _REQUESTS_PER_MIN = 30
@@ -70,24 +69,28 @@ def add_cors_headers(response):
   return response
 
 
-@blueprint.route('/')
-def index():
-  """Main page."""
-  return render_template('index.html')
-
-
 @blueprint.route('/v2/')
 def index_v2():
+  return redirect('/')
+
+
+@blueprint.route('/v2/<path:subpath>')
+def index_v2_with_subpath(subpath):
+  return redirect('/' + subpath)
+
+
+@blueprint.route('/')
+def index():
   return render_template(
       'home.html', ecosystem_counts=osv_get_ecosystem_counts())
 
 
-@blueprint.route('/v2/about')
+@blueprint.route('/about')
 def about():
   return render_template('about.html')
 
 
-@blueprint.route('/v2/list')
+@blueprint.route('/list')
 def list_vulnerabilities():
   """Main page."""
   query = request.args.get('q', '')
@@ -109,7 +112,7 @@ def list_vulnerabilities():
       vulnerabilities=results['items'])
 
 
-@blueprint.route('/v2/vulnerability/<vuln_id>')
+@blueprint.route('/vulnerability/<vuln_id>')
 def vulnerability(vuln_id):
   """Vulnerability page."""
   vuln = osv_get_by_id(vuln_id)
@@ -261,36 +264,6 @@ def osv_get_by_id(vuln_id):
     return None
 
   return bug_to_response(bug)
-
-
-@blueprint.route(_BACKEND_ROUTE + '/ecosystems')
-def ecosystems_handler():
-  """Handle query for list of ecosystems."""
-  return jsonify(osv_get_ecosystems())
-
-
-@blueprint.route(_BACKEND_ROUTE + '/ecosystem-counts')
-def ecosystem_counts_handler():
-  """Handle query for list of ecosystems."""
-  return jsonify(osv_get_ecosystem_counts())
-
-
-@blueprint.route(_BACKEND_ROUTE + '/query')
-def query_handler():
-  """Handle a query."""
-  search_string = request.args.get('search')
-  page = int(request.args.get('page', 1))
-  affected_only = request.args.get('affected_only') == 'true'
-  ecosystem = request.args.get('ecosystem')
-  results = osv_query(search_string, page, affected_only, ecosystem)
-  return jsonify(results)
-
-
-@blueprint.route(_BACKEND_ROUTE + '/vulnerability')
-def vulnerability_handler():
-  """Handle a vulnerability request."""
-  vuln_id = request.args.get('id')
-  return jsonify(osv_get_by_id(vuln_id))
 
 
 @blueprint.app_template_filter('event_type')

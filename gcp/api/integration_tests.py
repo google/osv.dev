@@ -69,11 +69,12 @@ class IntegrationTests(unittest.TestCase):
       'details': 'OSS-Fuzz report: '
                  'https://bugs.chromium.org/p/oss-fuzz/issues/detail?id=23801\n'
                  '\n'
+                 '```\n'
                  'Crash type: Heap-double-free\n'
                  'Crash state:\n'
                  'mrb_default_allocf\n'
                  'mrb_free\n'
-                 'obj_free\n',
+                 'obj_free\n```\n',
       'id': 'OSV-2020-744',
       'references': [{
           'type': 'REPORT',

@@ -22,6 +22,7 @@ from flask import jsonify
 from flask import make_response
 from flask import render_template
 from flask import request
+import markdown2
 
 import cache
 import osv
@@ -359,6 +360,12 @@ def group_versions(versions):
     groups.setdefault(label, []).append(version)
 
   return groups
+
+
+@blueprint.app_template_filter('markdown')
+def markdown(text):
+  """Render markdown."""
+  return markdown2.markdown(text, extras=['fenced-code-blocks'])
 
 
 @blueprint.app_template_filter('log')

@@ -25,14 +25,14 @@
         <dl class="ecosystem-counts">
           {% if ecosystem_counts %}
             {% set total = ecosystem_counts.values() | sum %}
-            {% for ecosystem in ecosystem_counts %}
-              {% if ecosystem_counts[ecosystem] > 30 %}
+            {% for ecosystem, count in ecosystem_counts.items() %}
+              {% if count > 30 %}
                 <dt class="ecosystem-name">{{ ecosystem }}</dt>
                 <dd class="ecosystem-count-wrapper">
-                  {% set radius = [(ecosystem_counts[ecosystem] | log) / (total | log) * 100, 30] | max %}
+                  {% set radius = [(count | log) / (total | log) * 100, 30] | max %}
                   <span class="ecosystem-count" style="
                     width: {{ radius }}px; height: {{ radius }}px; line-height: {{ radius }}px">
-                    {{ ecosystem_counts[ecosystem] }}
+                    {{ count }}
                   </span>
                 </dd>
               {% endif %}
@@ -172,7 +172,8 @@ $GOPATH/bin/osv-scanner cycloned-or-spdx-sbom.json
     <div class="mdc-layout-grid__cell--span-12 open-source-banner">
       <h2 class="heading">Open source</h2>
       <p class="description">
-        This project is <a href="https://github.com/google/osv">open source</a>. Contributions are welcome!
+        This project is <a href="https://github.com/google/osv">open source</a>. If you have any ideas or questions, please feel free to
+        reach out by <a href="https://github.com/google/osv/issues/new">creating an issue</a>!
       </p>
       <div class="cta">
         <a class="cta-primary link-button" href="{{ url_for('frontend_handlers.about') }}">Learn more</a>

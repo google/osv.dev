@@ -108,20 +108,6 @@ pre {
   text-decoration: none;
 }
 
-/** WIP notice */
-
-.wip-notice {
-  display: flex;
-  align-items: center;
-  height: 30px;
-  width: 100%;
-  background: #b31412;
-  color: #fff;
-  justify-content: center;
-  top: 0;
-  z-index: 999;
-}
-
 /** Top bar */
 
 .top-bar {
@@ -426,6 +412,7 @@ dl.vulnerability-details,
   dt {
     grid-column: 1;
     font-weight: bold;
+    font-size: 15px;
     padding-right: 18px;
   }
 
@@ -876,6 +863,9 @@ dl.vulnerability-details,
   }
 
   .questions {
+    max-width: 800px;
+    margin: 0 auto;
+
     --const-mq-affordances:
       [screen] collapse
     ;
@@ -885,6 +875,16 @@ dl.vulnerability-details,
       padding: 20px 0;
       font-family: $osv-body-font-family;
       font-size: 20px;
+      font-weight: bold;
+    }
+
+    [affordance=collapse] {
+      &::before {
+        padding: 0 8px;
+        // HACK: Invert the black chevron to white. The chevron is set using
+        // background-image, so we can't use the CSS fill property on it.
+        filter: invert(100%);
+      }
     }
 
     .answer {
@@ -897,7 +897,10 @@ dl.vulnerability-details,
       }
 
       li {
-        margin-bottom: 16px;
+        $active-spacing: 6px;
+        margin: -$active-spacing 0;
+        padding: $active-spacing 0;
+        list-style-type: decimal;
       }
     }
   }

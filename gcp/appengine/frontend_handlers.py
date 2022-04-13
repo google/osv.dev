@@ -338,7 +338,10 @@ def group_versions(versions):
 @blueprint.app_template_filter('markdown')
 def markdown(text):
   """Render markdown."""
-  return markdown2.markdown(text, extras=['fenced-code-blocks'])
+  if text:
+    return markdown2.markdown(text, extras=['fenced-code-blocks'])
+
+  return ''
 
 
 @blueprint.app_template_filter('log')

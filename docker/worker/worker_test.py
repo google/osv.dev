@@ -63,11 +63,12 @@ class OssFuzzDetailsTest(unittest.TestCase):
     self.assertEqual(
         'OSS-Fuzz report: '
         'https://bugs.chromium.org/p/oss-fuzz/issues/detail?id=1337\n\n'
+        '```\n'
         'Crash type: Heap-buffer-overflow\n'
         'Crash state:\n'
         'Foo\n'
         'Bar\n'
-        'Blah\n', details)
+        'Blah\n```\n', details)
 
   def test_no_issue(self):
     """Test generating details without an issue ID."""
@@ -76,11 +77,12 @@ class OssFuzzDetailsTest(unittest.TestCase):
 
     details = oss_fuzz.get_oss_fuzz_details('', crash_type, crash_state)
     self.assertEqual(
+        '```\n'
         'Crash type: Heap-buffer-overflow\n'
         'Crash state:\n'
         'Foo\n'
         'Bar\n'
-        'Blah\n', details)
+        'Blah\n```\n', details)
 
   def test_assert(self):
     """Basic assertion failures."""
@@ -94,11 +96,12 @@ class OssFuzzDetailsTest(unittest.TestCase):
     self.assertEqual(
         'OSS-Fuzz report: '
         'https://bugs.chromium.org/p/oss-fuzz/issues/detail?id=1337\n\n'
+        '```\n'
         'Crash type: ASSERT\n'
         'Crash state:\n'
         'idx < length\n'
         'Foo\n'
-        'Bar\n', details)
+        'Bar\n```\n', details)
 
   def test_bad_cast(self):
     """Basic bad casts."""
@@ -112,11 +115,12 @@ class OssFuzzDetailsTest(unittest.TestCase):
     self.assertEqual(
         'OSS-Fuzz report: '
         'https://bugs.chromium.org/p/oss-fuzz/issues/detail?id=1337\n\n'
+        '```\n'
         'Crash type: Bad-cast\n'
         'Crash state:\n'
         'Bad-cast to A from B\n'
         'Foo\n'
-        'Bar\n', details)
+        'Bar\n```\n', details)
 
 
 class ImpactTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):

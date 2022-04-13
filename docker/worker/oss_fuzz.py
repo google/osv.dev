@@ -530,5 +530,7 @@ def get_oss_fuzz_details(issue_id, crash_type, crash_state):
     details = f'OSS-Fuzz report: {oss_fuzz_link}\n\n'
 
   crash_type = crash_type.replace('\n', ' ')
-  return details + (f'Crash type: {crash_type}\n'
-                    f'Crash state:\n{crash_state}')
+  return details + ('```\n'
+                    f'Crash type: {crash_type}\n'
+                    f'Crash state:\n{crash_state}'
+                    '```\n')

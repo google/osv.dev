@@ -1,9 +1,5 @@
 #!/bin/bash
 
-pushd frontend
-npm run build
-popd
-
 pushd frontend3
 npm run build
 popd

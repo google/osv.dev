@@ -422,6 +422,48 @@ dl.vulnerability-details,
     grid-column: 2;
   }
 
+
+  dd.details {
+    overflow-wrap: break-word;
+    
+    h1, h2, h3, h4 {
+      font-family: $osv-body-font-family;
+      font-weight: bold;
+      margin-bottom: 16px;
+    }
+
+    p {
+      margin-bottom: 16px;
+    }
+
+    ol, ul {
+      margin-bottom: 16px;
+    }
+
+    ol {
+      list-style: decimal;
+    }
+
+    ul {
+      list-style: circle;
+    }
+
+    code {
+      font-family: $osv-heading-font-family;
+      background: #333;
+    }
+
+    pre {
+      background: #333;
+      padding: 8px;
+      border-radius: 8px;
+      white-space: pre;
+      overflow-x: auto;
+      margin-bottom: 16px;
+    }
+  }
+
+
   pre {
     white-space: pre-wrap;
     overflow: auto;
@@ -899,9 +941,6 @@ dl.vulnerability-details,
       }
 
       li {
-        $active-spacing: 6px;
-        margin: -$active-spacing 0;
-        padding: $active-spacing 0;
         list-style-type: decimal;
       }
     }

@@ -390,9 +390,12 @@ mwc-icon-button.mdc-data-table__sort-icon-button {
 /** Vulnerability page */
 
 .vulnerability-page {
+  font-size: 15px;
   .title {
     font-size: $osv-heading-size;
   }
+  max-width: 1200px;
+  margin: 0 auto;
 
   @media (max-width: $osv-mobile-breakpoint) {
     .title {
@@ -406,7 +409,6 @@ dl.vulnerability-details,
   display: grid;
   grid-template-columns: max-content minmax(0, auto);
   grid-row-gap: 5px;
-  max-width: 1000px;
   gap: 8px;
 
   dt {

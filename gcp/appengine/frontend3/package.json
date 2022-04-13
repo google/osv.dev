@@ -3,9 +3,10 @@
   "version": "0.0.0",
   "private": true,
   "scripts": {
-    "watch": "webpack --watch",
-    "start": "webpack serve",
-    "build": "webpack"
+    "watch": "webpack --config webpack.dev.js --watch",
+    "start": "webpack --config webpack.dev.js serve",
+    "build": "webpack --config webpack.dev.js",
+    "build:prod": "webpack --config webpack.prod.js"
   },
   "dependencies": {
     "@github/clipboard-copy-element": "^1.1.2",

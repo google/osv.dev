@@ -1,7 +1,7 @@
 #!/bin/bash
 
 pushd frontend3
-npm run build
+npm run build:prod
 popd
 
 pipenv lock -r > requirements.txt

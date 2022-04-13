@@ -5,46 +5,50 @@
 <div class="about-page">
 <div class="mdc-layout-grid">
   <div class="mdc-layout-grid__inner">
-    <div class="mdc-layout-grid__cell--span-12">
+    <div class="mdc-layout-grid__cell--span-12 questions">
       <h2 class="faq-title">Learn more</h2>
-      <spicy-sections class="questions">
+      <spicy-sections>
         <h3 class="question">What is OSV?</h3>
         <div class="answer">
           <p>OSV consists of:</p>
-          <ul>
-            <li><a href="https://ossf.github.io/osv-schema/">The OSV Schema</a>: An easy-to-use data format that maps precisely to open source versioning schemes.</li>
-            <li>Reference infrastructure (this site, API, and tooling) that aggregates and indexes vulnerability data from
-              databases that use the OSV schema.</li>
-          </ul>
+          <p>
+            <ol>
+              <li><a href="https://ossf.github.io/osv-schema/">The OSV Schema</a>: An easy-to-use data format that maps precisely to open source versioning schemes.</li>
+              <li>Reference infrastructure (this site, API, and tooling) that aggregates and indexes vulnerability data from
+                databases that use the OSV schema.</li>
+            </ol>
+          </p>
           <p>
             We created OSV to address many of the shortcomings of dealing with
             vulnerabilities in open source software using existing solutions.
           </p>
           <p>See our blog posts for more details:</p>
-          <ul>
-            <li><a href="https://security.googleblog.com/2021/02/launching-osv-better-vulnerability.html">https://security.googleblog.com/2021/02/launching-osv-better-vulnerability.html</a></li>
-            <li><a href="https://security.googleblog.com/2021/06/announcing-unified-vulnerability-schema.html">https://security.googleblog.com/2021/06/announcing-unified-vulnerability-schema.html</a></li>
-          </ul>
+          <p>
+            <ol>
+              <li><a href="https://security.googleblog.com/2021/02/launching-osv-better-vulnerability.html">https://security.googleblog.com/2021/02/launching-osv-better-vulnerability.html</a></li>
+              <li><a href="https://security.googleblog.com/2021/06/announcing-unified-vulnerability-schema.html">https://security.googleblog.com/2021/06/announcing-unified-vulnerability-schema.html</a></li>
+            </ol>
+          </p>
         </div>
         <h3 class="question">Who is OSV for?</h3>
         <div class="answer">
           <p>OSV can be used by both:</p>
-          <ul>
+          <ol>
             <li>Open source consumers: By querying our API and using our
               tooling to find known vulnerabilities in their dependencies.</li>
             <li>Vulnerability database producers: By making the database
               available in the OSV format.</li>
-          </ul>
+          </ol>
         </div>
         <h3 class="question">Why a new format to describe vulnerabilities?</h3>
         <div class="answer">
           <p>We found that there was no existing standard format which:</p>
           <p>
-            <ul>
+            <ol>
               <li>Enforces version specification that precisely matches naming and versioning schemes used in actual open source package ecosystems. For instance, matching a vulnerability such as a CVE to a package name and set of versions in a package manager is difficult to do in an automated way using existing mechanisms such as CPEs.</li>
               <li>Can be used to describe vulnerabilities in any open source ecosystem, while not requiring ecosystem-dependent logic to process them.</li>
               <li>Is easy to use by both automated systems and humans.</li>
-            </ul>
+            </ol>
           </p>
           <p>
             A unified format means that vulnerability databases, open source
@@ -81,13 +85,17 @@
           and vulnerabiltiy sharing from other databases that use the OSV
           format.</p>
         </div>
-        <h3 class="question">How do I contribute to OSV?</h3>
+        <h3 class="question">How do I contribute to OSV, or ask a question?</h3>
         <div class="answer">
           <p>OSV is completely open source!</p>
-          <ul>
-            <li>The infrastructure code is available at <a href="https://github.com/google/osv">https://github.com/google/osv</a>
-            <li>The OSV schema spec is available at <a href="https://github.com/ossf/osv-schema">https://github.com/ossf/osv-schema</a>
-          </ul>
+          <p>
+            <ol>
+              <li>The infrastructure code is available at <a href="https://github.com/google/osv">https://github.com/google/osv</a>
+              <li>The OSV schema spec is available at <a href="https://github.com/ossf/osv-schema">https://github.com/ossf/osv-schema</a>
+            </ol>
+          </p>
+
+          <p>If you have any questions, please feel free to create an issue in either repo!</p>
         </div>
       </spicy-sections>
     </div>

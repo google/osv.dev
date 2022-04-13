@@ -195,7 +195,8 @@ def _commit_to_link(repo_url, commit):
 def osv_get_ecosystems():
   """Get list of ecosystems."""
   query = osv.Bug.query(projection=[osv.Bug.ecosystem], distinct=True)
-  return sorted([bug.ecosystem[0] for bug in query if bug.ecosystem])
+  return sorted([bug.ecosystem[0] for bug in query if bug.ecosystem],
+                key=str.lower)
 
 
 @cache.instance.cached(

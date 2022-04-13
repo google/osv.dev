@@ -425,11 +425,6 @@ dl.vulnerability-details,
 
   dd.details {
     overflow-wrap: break-word;
-    li {
-      $active-spacing: 6px;
-      margin: -$active-spacing 0;
-      padding: $active-spacing 0;
-    }
     
     h1, h2, h3, h4 {
       font-family: $osv-body-font-family;
@@ -946,9 +941,6 @@ dl.vulnerability-details,
       }
 
       li {
-        $active-spacing: 6px;
-        margin: -$active-spacing 0;
-        padding: $active-spacing 0;
         list-style-type: decimal;
       }
     }

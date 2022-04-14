@@ -214,9 +214,9 @@ def add_fix_information(vulnerability, fix_result):
       # Do this if:
       #   - There is only one repo URL in the entire vulnerability, or
       #   - The repo URL matches the FixResult repo URL.
-      if ((fix_result.repo_url == affected_range.repo or len(repos) == 1)
-          and not any(event.fixed == fix_commit for
-                      event in affected_range.events)):
+      if ((fix_result.repo_url == affected_range.repo or len(repos) == 1) and
+          not any(event.fixed == fix_commit
+                  for event in affected_range.events)):
         added_fix = True
         has_changes = True
         affected_range.events.add(fixed=fix_commit)

@@ -199,13 +199,22 @@ def add_fix_information(vulnerability, fix_result):
 
   for affected_package in vulnerability.affected:
     added_fix = False
+
+    # Count unique repo URLs.
+    repos = set()
+    for affected_range in affected_package.ranges:
+      if affected_range.type == vulnerability_pb2.Range.GIT:
+        repos.add(affected_range.repo)
+
     for affected_range in affected_package.ranges:
       if affected_range.type != vulnerability_pb2.Range.GIT:
         continue
 
       # If this range does not include the fixed commit, add it.
-      # Use the repo URL to key on if the fix commit needs to be added.
-      if (fix_result.repo_url == affected_range.repo and
+      # Do this if:
+      #   - There is only one repo URL in the entire vulnerability, or
+      #   - The repo URL matches the FixResult repo URL.
+      if ((fix_result.repo_url == affected_range.repo or len(repos) == 1) and
           not any(event.fixed == fix_commit
                   for event in affected_range.events)):
         added_fix = True

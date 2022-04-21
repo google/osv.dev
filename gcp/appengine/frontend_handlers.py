@@ -13,6 +13,7 @@
 # limitations under the License.
 """Handlers for the OSV web frontend."""
 
+import json
 import os
 import math
 
@@ -342,6 +343,15 @@ def markdown(text):
     return markdown2.markdown(text, extras=['fenced-code-blocks'])
 
   return ''
+
+
+@blueprint.app_template_filter('display_json')
+def display_json(data):
+  # We can't use the default `tojson` filter as it's intended for code (and
+  # escapes characters like '<' to '\u003c'). We want to render the JSON for
+  # display purposes and use HTML escaping ('&lt;') instead so it's rendered
+  # as '<'.
+  return json.dumps(data, indent=4)
 
 
 @blueprint.app_template_filter('log')

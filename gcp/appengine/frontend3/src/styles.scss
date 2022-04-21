@@ -570,6 +570,10 @@ dl.vulnerability-details,
     gap: 4px;
   }
 
+  .specific {
+    overflow: auto;
+  }
+
   .spicy-sections-workaround {
     // https://github.com/tabvengers/spicy-sections/issues/64.
     pointer-events: none;

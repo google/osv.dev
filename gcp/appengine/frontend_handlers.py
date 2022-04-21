@@ -349,7 +349,8 @@ def markdown(text):
 def display_json(data):
   # We can't use the default `tojson` filter as it's intended for code (and
   # escapes characters like '<' to '\u003c'). We want to render the JSON for
-  # display purposes and render '<' as-is using HTML escaping instead.
+  # display purposes and use HTML escaping ('&lt;') instead so it's rendered
+  # as '<'.
   return json.dumps(data, indent=4)
 
 

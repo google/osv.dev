@@ -24,6 +24,11 @@ message VulnerabilityList {
   repeated osv.Vulnerability vulns = 1;
 }
 
+// Batched lists of Vulnerability entries.
+message BatchVulnerabilityList {
+  repeated VulnerabilityList results = 1;
+}
+
 // Query format.
 message Query {
   oneof param {
@@ -39,6 +44,12 @@ message Query {
   osv.Package package = 4;
 }
 
+// Batch query format.
+message BatchQuery {
+  // The queries that form this batch query.
+  repeated Query queries = 1;
+}
+
 // Parameters for GetBugById.
 message GetVulnByIdParameters {
   string id = 1;
@@ -47,6 +58,11 @@ message GetVulnByIdParameters {
 // Parameters for QueryAffected.
 message QueryAffectedParameters {
   Query query = 1;
+}
+
+// Parameters for QueryAffectedBatch.
+message QueryAffectedBatchParameters {
+  BatchQuery query = 1;
 }
 
 // Open source vulnerability database.
@@ -67,20 +83,12 @@ service OSV {
     };
   }
 
-  // Return a `Vulnerability` object for a given OSV ID.
-  rpc GetVulnByIdNew ( GetVulnByIdParameters ) returns ( osv.Vulnerability ) {
+  // Query vulnerabilities for a particular project at given commits and
+  // versions.
+  rpc QueryAffectedBatch ( QueryAffectedBatchParameters ) returns ( BatchVulnerabilityList ) {
     option (google.api.http) = {
-      get:"/v1new/vulns/{id}"
-    };
-  }
-
-  // Query vulnerabilities for a particular project at a given commit or
-  // version.
-  rpc QueryAffectedNew ( QueryAffectedParameters ) returns ( VulnerabilityList ) {
-    option (google.api.http) = {
-      post:"/v1new/query"
+      post:"/v1/querybatch"
       body:"query"
     };
   }
 }
-

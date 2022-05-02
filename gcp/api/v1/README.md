@@ -23,6 +23,11 @@ python3 -m grpc_tools.protoc \
 ## Deploy service proxy
 To deploy the service proxy,
 
+### Test
+```
+../deploy_service_proxy api-test.osv.dev osv-grpc-v1-test api_config_test.yaml
+```
+
 ### Staging
 ```
 ../deploy_service_proxy api-staging.osv.dev osv-grpc-v1-staging /path/to/api_config_staging.yaml

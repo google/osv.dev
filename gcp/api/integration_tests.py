@@ -264,6 +264,44 @@ class IntegrationTests(unittest.TestCase):
 
     self.assert_results_equal({'vulns': [expected]}, response.json())
 
+  def test_query_batch(self):
+    """Test batch query."""
+    response = requests.post(
+        _api() + '/v1/querybatch',
+        data=json.dumps({
+            'queries': [{
+                'version': '0.8.6',
+                'package': {
+                    'purl': 'pkg:cargo/crossbeam-utils',
+                }
+            }, {
+                'version': '2.4.0',
+                'package': {
+                    'name': 'gopkg.in/yaml.v2',
+                    'ecosystem': 'Go',
+                }
+            }, {
+                'commit': '233cb49903fa17637bd51f4a16b4ca61e0750f24',
+            }],
+        }))
+
+    self.assert_results_equal(
+        {
+            'results': [
+                {
+                    'vulns': [{
+                        'id': 'GHSA-qc84-gqf4-9926'
+                    }]
+                },
+                {},
+                {
+                    'vulns': [{
+                        'id': 'OSV-2020-744'
+                    }]
+                },
+            ]
+        }, response.json())
+
 
 def print_logs(filename):
   """Print logs."""

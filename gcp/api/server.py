@@ -75,61 +75,67 @@ class OSVServicer(osv_service_v1_pb2_grpc.OSVServicer):
   def QueryAffected(self, request, context):
     """Query vulnerabilities for a particular project at a given commit or
     version."""
-    if request.query.HasField('package'):
-      package_name = request.query.package.name
-      ecosystem = request.query.package.ecosystem
-      purl = request.query.package.purl
-    else:
-      package_name = ''
-      ecosystem = ''
-      purl = ''
+    results = do_query(request.query, context)
+    if results is not None:
+      return osv_service_v1_pb2.VulnerabilityList(vulns=results)
 
-    purl_version = None
-    if purl:
-      try:
-        parsed_purl = PackageURL.from_string(purl)
-        purl_version = parsed_purl.version
-        purl = _clean_purl(parsed_purl).to_string()
-      except ValueError:
-        context.abort(grpc.StatusCode.INVALID_ARGUMENT, 'Invalid Package URL.')
-        return None
+    return None
 
-    if request.query.WhichOneof('param') == 'commit':
-      bugs = query_by_commit(request.query.commit, to_response=bug_to_response)
-    elif purl and purl_version:
-      bugs = query_by_version(
-          package_name,
-          ecosystem,
-          purl,
-          purl_version,
-          to_response=bug_to_response)
-    elif request.query.WhichOneof('param') == 'version':
-      bugs = query_by_version(
-          package_name,
-          ecosystem,
-          purl,
-          request.query.version,
-          to_response=bug_to_response)
-    else:
-      context.abort(grpc.StatusCode.INVALID_ARGUMENT, 'Invalid query.')
+  @ndb_context
+  def QueryAffectedBatch(self, request, context):
+    """Query vulnerabilities (batch)."""
+    batch_results = []
+    for query in request.query.queries:
+      results = do_query(query, context, include_details=False) or []
+      batch_results.append(osv_service_v1_pb2.VulnerabilityList(vulns=results))
+
+    return osv_service_v1_pb2.BatchVulnerabilityList(results=batch_results)
+
+
+def do_query(query, context, include_details=True):
+  """Do a query."""
+  if query.HasField('package'):
+    package_name = query.package.name
+    ecosystem = query.package.ecosystem
+    purl = query.package.purl
+  else:
+    package_name = ''
+    ecosystem = ''
+    purl = ''
+
+  purl_version = None
+  if purl:
+    try:
+      parsed_purl = PackageURL.from_string(purl)
+      purl_version = parsed_purl.version
+      purl = _clean_purl(parsed_purl).to_string()
+    except ValueError:
+      context.abort(grpc.StatusCode.INVALID_ARGUMENT, 'Invalid Package URL.')
       return None
 
-    return osv_service_v1_pb2.VulnerabilityList(vulns=bugs)
+  to_response = lambda b: bug_to_response(b, include_details)
 
-  def GetVulnByIdNew(self, request, context):
-    """Return a `Vulnerability` object for a given OSV ID.
-    """
-    return self.GetVulnById(request, context)
+  if query.WhichOneof('param') == 'commit':
+    bugs = query_by_commit(query.commit, to_response=to_response)
+  elif purl and purl_version:
+    bugs = query_by_version(
+        package_name, ecosystem, purl, purl_version, to_response=to_response)
+  elif query.WhichOneof('param') == 'version':
+    bugs = query_by_version(
+        package_name, ecosystem, purl, query.version, to_response=to_response)
+  else:
+    context.abort(grpc.StatusCode.INVALID_ARGUMENT, 'Invalid query.')
+    return None
 
-  def QueryAffectedNew(self, request, context):
-    """Query vulnerabilities for a particular project at a given commit or
-    version."""
-    return self.QueryAffected(request, context)
+  return bugs
 
 
-def bug_to_response(bug):
+def bug_to_response(bug, include_details=True):
   """Convert a Bug entity to a response object."""
-  return bug.to_vulnerability(include_source=True)
+  if include_details:
+    return bug.to_vulnerability(include_source=True)
+
+  return {'id': bug.id()}
 
 
 def _get_bugs(bug_ids, to_response=bug_to_response):

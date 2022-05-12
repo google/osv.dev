@@ -20,20 +20,20 @@ func usage() {
 	flag.PrintDefaults()
 }
 
-func scan(arg string) error {
+func scan(query *osv.BatchedQuery, arg string) error {
 	info, err := os.Stat(arg)
 	if err != nil {
-		return err
+		return nil
 	}
 
 	if info.IsDir() {
-		return scanDir(arg)
+		return scanDir(query, arg)
 	}
 
-	return scanFile(arg)
+	return scanFile(query, arg)
 }
 
-func scanDir(dir string) error {
+func scanDir(query *osv.BatchedQuery, dir string) error {
 	log.Printf("Scanning dir %s\n", dir)
 	return filepath.Walk(dir, func(path string, info os.FileInfo, err error) error {
 		if err != nil {
@@ -42,27 +42,19 @@ func scanDir(dir string) error {
 		}
 
 		if info.IsDir() && info.Name() == ".git" {
-			err = scanGit(filepath.Dir(path))
+			gitQuery, err := scanGit(filepath.Dir(path))
 			if err != nil {
 				log.Printf("scan failed for %s: %v\n", path, err)
 				return err
 			}
+			query.Queries = append(query.Queries, gitQuery)
 		}
 
 		return nil
 	})
 }
 
-func scanIdentifier(id sbom.Identifier) error {
-	resp, err := osv.MakePURLRequest(id.PURL)
-	if err != nil {
-		return err
-	}
-	printResults(id.PURL, resp)
-	return nil
-}
-
-func scanFile(path string) error {
+func scanFile(query *osv.BatchedQuery, path string) error {
 	log.Printf("Scanning file %s\n", path)
 	file, err := os.Open(path)
 	if err != nil {
@@ -70,7 +62,10 @@ func scanFile(path string) error {
 	}
 
 	for _, provider := range sbom.Providers {
-		err := provider.GetPackages(file, scanIdentifier)
+		err := provider.GetPackages(file, func(id sbom.Identifier) error {
+			query.Queries = append(query.Queries, osv.MakePURLRequest(id.PURL))
+			return nil
+		})
 		if err == nil {
 			// Found the right format.
 			log.Printf("Scanned %s SBOM", provider.Name())
@@ -98,41 +93,51 @@ func getCommitSHA(repoDir string) (string, error) {
 	return strings.TrimSpace(out.String()), nil
 }
 
-func scanGit(repoDir string) error {
+func scanGit(repoDir string) (*osv.Query, error) {
 	commit, err := getCommitSHA(repoDir)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	log.Printf("Scanning %s at commit %s", repoDir, commit)
-	resp, err := osv.MakeCommitRequest(commit)
-	if err != nil {
-		return err
-	}
-
-	printResults(repoDir, resp)
-	return nil
+	return osv.MakeCommitRequest(commit), nil
 }
 
-func printResults(id string, resp *osv.Response) {
-	if len(resp.Vulns) > 0 {
+func printResults(query osv.BatchedQuery, resp *osv.BatchedResponse) {
+	for i, query := range query.Queries {
+		if len(resp.Results[i].Vulns) == 0 {
+			continue
+		}
+
 		var urls []string
-		for _, vuln := range resp.Vulns {
+		for _, vuln := range resp.Results[i].Vulns {
 			urls = append(urls, osv.BaseVulnerabilityURL+vuln.ID)
 		}
 
-		log.Printf("%s is vulnerable to %s", id, strings.Join(urls, ", "))
+		log.Printf("%v is vulnerable to %s", query, strings.Join(urls, ", "))
 	}
 }
 
 // TODO(ochang): Machine readable output format.
 // TODO(ochang): Ability to specify type of input.
-// TODO(ochang): Use batch API once available.
 func main() {
 	flag.Usage = usage
 	flag.Parse()
 
+	var query osv.BatchedQuery
+
 	for _, arg := range flag.Args() {
-		scan(arg)
+		if err := scan(&query, arg); err != nil {
+			log.Printf("scan failed: %v\n", err)
+			return
+		}
 	}
+
+	resp, err := osv.MakeRequest(query)
+	if err != nil {
+		log.Printf("scan failed: %v\n", err)
+		return
+	}
+
+	printResults(query, resp)
 }

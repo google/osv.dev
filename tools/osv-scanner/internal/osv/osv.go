@@ -3,12 +3,13 @@ package osv
 import (
 	"bytes"
 	"encoding/json"
+	"log"
 	"net/http"
 )
 
 const (
 	// QueryEndpoint is the URL for posting queries to OSV.
-	QueryEndpoint = "https://api.osv.dev/v1/query"
+	QueryEndpoint = "https://api-staging.osv.dev/v1/querybatch"
 	// BaseVulnerabilityURL is the base URL for detailed vulnerability views.
 	BaseVulnerabilityURL = "https://osv.dev/vulnerability/"
 )
@@ -24,6 +25,11 @@ type Query struct {
 	Package Package `json:"package,omitempty"`
 }
 
+// BatchedQuery represents a batched query to OSV.
+type BatchedQuery struct {
+	Queries []*Query `json:"queries"`
+}
+
 // Response represents a (simplified) response from OSV.
 type Response struct {
 	Vulns []struct {
@@ -31,25 +37,28 @@ type Response struct {
 	} `json:"vulns"`
 }
 
+// BatchedResponse represents a batched response from OSV.
+type BatchedResponse struct {
+	Results []Response `json:"results"`
+}
+
 // MakeCommitRequest makes a commit hash request.
-func MakeCommitRequest(commit string) (*Response, error) {
-	request := Query{
+func MakeCommitRequest(commit string) *Query {
+	return &Query{
 		Commit: commit,
 	}
-	return makeRequest(request)
 }
 
 // MakePURLRequest makes a PURL request.
-func MakePURLRequest(purl string) (*Response, error) {
-	request := Query{
+func MakePURLRequest(purl string) *Query {
+	return &Query{
 		Package: Package{
 			PURL: purl,
 		},
 	}
-	return makeRequest(request)
 }
 
-func makeRequest(request Query) (*Response, error) {
+func MakeRequest(request BatchedQuery) (*BatchedResponse, error) {
 	requestBytes, err := json.Marshal(request)
 	if err != nil {
 		return nil, err
@@ -62,7 +71,7 @@ func makeRequest(request Query) (*Response, error) {
 	}
 	defer resp.Body.Close()
 
-	var osvResp Response
+	var osvResp BatchedResponse
 	decoder := json.NewDecoder(resp.Body)
 	err = decoder.Decode(&osvResp)
 	if err != nil {

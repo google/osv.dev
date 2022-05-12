@@ -39,6 +39,8 @@ _SHUTDOWN_GRACE_DURATION = 5
 _AUTHORIZATION_HEADER_PREFIX = 'Bearer '
 _EXPECTED_AUDIENCE = 'https://db.oss-fuzz.com'
 
+_MAX_BATCH_QUERY = 1000
+
 _ndb_client = ndb.Client()
 
 
@@ -75,7 +77,7 @@ class OSVServicer(osv_service_v1_pb2_grpc.OSVServicer):
   def QueryAffected(self, request, context):
     """Query vulnerabilities for a particular project at a given commit or
     version."""
-    results = do_query(request.query, context)
+    results = do_query(request.query, context).result()
     if results is not None:
       return osv_service_v1_pb2.VulnerabilityList(vulns=results)
 
@@ -85,13 +87,23 @@ class OSVServicer(osv_service_v1_pb2_grpc.OSVServicer):
   def QueryAffectedBatch(self, request, context):
     """Query vulnerabilities (batch)."""
     batch_results = []
+    futures = []
+
+    if len(request.query.queries) > _MAX_BATCH_QUERY:
+      context.abort(grpc.StatusCode.INVALID_ARGUMENT, 'Too many queries.')
+      return None
+
     for query in request.query.queries:
-      results = do_query(query, context, include_details=False) or []
-      batch_results.append(osv_service_v1_pb2.VulnerabilityList(vulns=results))
+      futures.append(do_query(query, context, include_details=False))
+
+    for future in futures:
+      batch_results.append(
+          osv_service_v1_pb2.VulnerabilityList(vulns=future.result() or []))
 
     return osv_service_v1_pb2.BatchVulnerabilityList(results=batch_results)
 
 
+@ndb.tasklet
 def do_query(query, context, include_details=True):
   """Do a query."""
   if query.HasField('package'):
@@ -116,12 +128,12 @@ def do_query(query, context, include_details=True):
   to_response = lambda b: bug_to_response(b, include_details)
 
   if query.WhichOneof('param') == 'commit':
-    bugs = query_by_commit(query.commit, to_response=to_response)
+    bugs = yield query_by_commit(query.commit, to_response=to_response)
   elif purl and purl_version:
-    bugs = query_by_version(
+    bugs = yield query_by_version(
         package_name, ecosystem, purl, purl_version, to_response=to_response)
   elif query.WhichOneof('param') == 'version':
-    bugs = query_by_version(
+    bugs = yield query_by_version(
         package_name, ecosystem, purl, query.version, to_response=to_response)
   else:
     context.abort(grpc.StatusCode.INVALID_ARGUMENT, 'Invalid query.')
@@ -157,12 +169,15 @@ def _clean_purl(purl):
   return PackageURL(**values)
 
 
+@ndb.tasklet
 def query_by_commit(commit, to_response=bug_to_response):
   """Query by commit."""
   query = osv.AffectedCommit.query(osv.AffectedCommit.commit == commit,
                                    osv.AffectedCommit.public == True)  # pylint: disable=singleton-comparison
   bug_ids = []
-  for affected_commit in query:
+  it = query.iter()
+  while (yield it.has_next_async()):
+    affected_commit = it.next()
     bug_ids.append(affected_commit.bug_id)
 
   return _get_bugs(bug_ids, to_response=to_response)
@@ -231,45 +246,61 @@ def _is_version_affected(affected_packages,
   return False
 
 
+@ndb.tasklet
 def _query_by_semver(query, package_name, ecosystem, purl, version):
   """Query by semver."""
   if not semver_index.is_valid(version):
     return []
 
+  results = []
   query = query.filter(
       osv.Bug.semver_fixed_indexes > semver_index.normalize(version))
+  it = query.iter()
 
-  return [
-      bug for bug in query if _is_semver_affected(
-          bug.affected_packages, package_name, ecosystem, purl, version)
-  ]
+  while (yield it.has_next_async()):
+    bug = it.next()
+    if _is_semver_affected(bug.affected_packages, package_name, ecosystem, purl,
+                           version):
+      results.append(bug)
+
+  return results
 
 
+@ndb.tasklet
 def _query_by_generic_version(base_query, project, ecosystem, purl, version):
   """Query by generic version."""
   # Try without normalizing.
+  results = []
   query = base_query.filter(osv.Bug.affected_fuzzy == version)
-  results = [
-      bug for bug in query if _is_version_affected(
-          bug.affected_packages, project, ecosystem, purl, version)
-  ]
+  it = query.iter()
+  while (yield it.has_next_async()):
+    bug = it.next()
+    if _is_version_affected(bug.affected_packages, project, ecosystem, purl,
+                            version):
+      results.append(bug)
+
   if results:
     return results
 
   # Try again after normalizing.
   version = osv.normalize_tag(version)
   query = base_query.filter(osv.Bug.affected_fuzzy == version)
-  return [
-      bug for bug in query if _is_version_affected(
-          bug.affected_packages,
-          project,
-          ecosystem,
-          purl,
-          version,
-          normalize=True)
-  ]
+  it = query.iter()
+  while (yield it.has_next_async()):
+    bug = it.next()
+    if _is_version_affected(
+        bug.affected_packages,
+        project,
+        ecosystem,
+        purl,
+        version,
+        normalize=True):
+      results.append(bug)
+
+  return results
 
 
+@ndb.tasklet
 def query_by_version(project,
                      ecosystem,
                      purl,
@@ -294,15 +325,17 @@ def query_by_version(project,
   if ecosystem:
     if is_semver:
       # Ecosystem supports semver only.
-      bugs.extend(_query_by_semver(query, project, ecosystem, purl, version))
+      bugs.extend((yield _query_by_semver(query, project, ecosystem, purl,
+                                          version)))
     else:
-      bugs.extend(
-          _query_by_generic_version(query, project, ecosystem, purl, version))
+      bugs.extend((yield _query_by_generic_version(query, project, ecosystem,
+                                                   purl, version)))
   else:
     # Unspecified ecosystem. Try both.
-    bugs.extend(_query_by_semver(query, project, ecosystem, purl, version))
-    bugs.extend(
-        _query_by_generic_version(query, project, ecosystem, purl, version))
+    bugs.extend((yield _query_by_semver(query, project, ecosystem, purl,
+                                        version)))
+    bugs.extend((yield _query_by_generic_version(query, project, ecosystem,
+                                                 purl, version)))
 
   return [to_response(bug) for bug in bugs]
 

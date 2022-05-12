@@ -90,7 +90,7 @@ class OSVServicer(osv_service_v1_pb2_grpc.OSVServicer):
     futures = []
 
     if len(request.query.queries) > _MAX_BATCH_QUERY:
-      context.abort(grpc.StatusCode.INVALID_ARGUMENT, 'Permission denied.')
+      context.abort(grpc.StatusCode.INVALID_ARGUMENT, 'Too many queries.')
       return None
 
     for query in request.query.queries:

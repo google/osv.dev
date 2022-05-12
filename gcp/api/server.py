@@ -39,6 +39,8 @@ _SHUTDOWN_GRACE_DURATION = 5
 _AUTHORIZATION_HEADER_PREFIX = 'Bearer '
 _EXPECTED_AUDIENCE = 'https://db.oss-fuzz.com'
 
+_MAX_BATCH_QUERY = 1000
+
 _ndb_client = ndb.Client()
 
 
@@ -86,6 +88,11 @@ class OSVServicer(osv_service_v1_pb2_grpc.OSVServicer):
     """Query vulnerabilities (batch)."""
     batch_results = []
     futures = []
+
+    if len(request.query.queries) > _MAX_BATCH_QUERY:
+      context.abort(grpc.StatusCode.INVALID_ARGUMENT, 'Permission denied.')
+      return None
+
     for query in request.query.queries:
       futures.append(do_query(query, context, include_details=False))
 

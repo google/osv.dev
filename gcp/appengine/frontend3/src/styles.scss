@@ -751,6 +751,11 @@ dl.vulnerability-details,
       .ecosystem-count-wrapper {
         position: relative;
         top: -$ecosystem-name-height;
+
+        a {
+          text-decoration: none;
+          color: inherit;
+        }
       }
       .ecosystem-count {
         font-family: $osv-heading-font-family;
@@ -764,11 +769,6 @@ dl.vulnerability-details,
         border-radius: 50%;
         text-align: center;
         z-index: 1;
-
-        a {
-          text-decoration: none;
-          color: inherit;
-        }
 
         .tooltip {
           display: none;

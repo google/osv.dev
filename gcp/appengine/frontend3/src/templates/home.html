@@ -30,14 +30,16 @@
                 <dt class="ecosystem-name">{{ ecosystem }}</dt>
                 <dd class="ecosystem-count-wrapper">
                   {% set radius = [(count | log) / (total | log) * 100, 30] | max %}
-                  <span class="ecosystem-count" style="
-                    width: {{ radius }}px; height: {{ radius }}px; line-height: {{ radius }}px">
-                    <a href="{{ url_for('frontend_handlers.list_vulnerabilities', ecosystem=ecosystem) }}">{{ count }}</a>
-                    <span class="tooltip" style="
-                     top: -{{ (radius / 2) + 5}}px;">
-                      View {{ ecosystem }} vulnerabilities
+                  <a href="{{ url_for('frontend_handlers.list_vulnerabilities', ecosystem=ecosystem) }}">
+                    <span class="ecosystem-count" style="
+                      width: {{ radius }}px; height: {{ radius }}px; line-height: {{ radius }}px">
+                      {{ count }}
+                      <span class="tooltip" style="
+                       top: -{{ (radius / 2) + 5}}px;">
+                        View {{ ecosystem }} vulnerabilities
+                      </span>
                     </span>
-                  </span>
+                  </a>
                 </dd>
               {% endif %}
             {% endfor %}

@@ -3,6 +3,7 @@
 $osv-background: #292929;
 $osv-text-color: #fff;
 $osv-accent-color: #c5221f;
+$osv-accent-color-hover: #c5221fb2;
 $osv-red-300: #ec928e;
 $osv-grey-600: #80868b;
 $osv-body-font-family: string.unquote('Overpass, sans-serif');
@@ -108,6 +109,10 @@ pre {
   text-decoration: none;
 }
 
+.link-button:hover {
+  background: $osv-accent-color-hover;
+}
+
 /** Top bar */
 
 .top-bar {
@@ -131,11 +136,16 @@ pre {
       $active-spacing: 6px;
       margin: -$active-spacing 0;
       padding: $active-spacing 0;
+      border-bottom: 8px solid #fff0;
       a {
         text-decoration: none;
       }
       &.active {
         border-bottom: 8px solid $osv-text-color;
+      }
+      &:hover {
+        border-bottom: 8px solid $osv-text-color;
+        opacity: 70%;
       }
     }
   }
@@ -754,6 +764,32 @@ dl.vulnerability-details,
         border-radius: 50%;
         text-align: center;
         z-index: 1;
+
+        a {
+          text-decoration: none;
+          color: inherit;
+        }
+
+        .tooltip {
+          display: none;
+          color: $osv-text-color;
+          position: absolute;
+          background: #11111199;
+          max-width: 250px;
+          line-height: 16px;
+          padding: 5px;
+          border-radius: 4px;
+        }
+      }
+
+      .ecosystem-count:hover {
+        background: #d4d4d4;
+        cursor: pointer;
+
+        z-index: 999;
+        .tooltip {
+          display: block;
+        }
       }
     }
   }
@@ -776,7 +812,7 @@ dl.vulnerability-details,
 
     .description {
       font-size: 20px;
-      line-height: 24px;
+      line-height: 26px;
       margin-bottom: 24px;
     }
 
@@ -811,7 +847,7 @@ dl.vulnerability-details,
 
     .description {
       font-size: 20px;
-      line-height: 24px;
+      line-height: 26px;
       margin-bottom: 20px;
       text-align: center;
     }
@@ -828,6 +864,11 @@ dl.vulnerability-details,
       margin-left: auto;
       margin-right: auto;
     }
+  }
+
+  .code-card-container {
+    max-width: 1400px;
+    margin: 0 auto;
   }
 
   .code-card {
@@ -877,7 +918,7 @@ dl.vulnerability-details,
 
     .description {
       font-size: 20px;
-      line-height: 24px;
+      line-height: 26px;
       text-align: center;
     }
     .cta {

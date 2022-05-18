@@ -45,7 +45,10 @@ def ExpectationTest(test_data_dir):  # pylint: disable=invalid-name
           f.write(pp.pformat(actual))
 
       with open(expected_path) as f:
-        return eval(f.read())  # pylint: disable=eval-used
+        eval_globals = globals()
+        eval_globals['call'] = mock.call
+
+        return eval(f.read(), eval_globals)  # pylint: disable=eval-used
 
     def expect_dict_equal(self, expected_name, actual):
       """Check if the output dict is equal to the expected value."""

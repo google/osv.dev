@@ -55,6 +55,10 @@ REPO_DENYLIST = {
     'https://github.com/google/AFL.git',
 }
 
+_ECOSYSTEM_PUSH_TOPICS = {
+    'PyPI': 'projects/oss-vdb/topics/pypi-bridge',
+}
+
 _state = threading.local()
 
 
@@ -467,6 +471,23 @@ class TaskRunner:
 
     bug.put()
     osv.update_affected_commits(bug.key.id(), result.commits, bug.public)
+    self._notify_ecosystem_bridge(vulnerability)
+
+  def _notify_ecosystem_bridge(self, vulnerability):
+    """Notify ecosystem bridges."""
+    ecosystems = set()
+    for affected in vulnerability.affected:
+      if affected.package.ecosystem in ecosystems:
+        continue
+
+      ecosystems.add(affected.package.ecosystem)
+      ecosystem_push_topic = _ECOSYSTEM_PUSH_TOPICS.get(
+          affected.package.ecosystem)
+      if ecosystem_push_topic:
+        publisher = pubsub_v1.PublisherClient()
+        publisher.publish(
+            ecosystem_push_topic,
+            data=json.dumps(osv.vulnerability_to_dict(vulnerability)).encode())
 
   def _do_process_task(self, subscriber, subscription, ack_id, message,
                        done_event):

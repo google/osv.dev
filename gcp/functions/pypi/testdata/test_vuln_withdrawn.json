@@ -1,0 +1,60 @@
+{
+  "id": "PYSEC-2021-63",
+  "details": "In the cryptography package before 3.3.2 for Python, certain sequences of update calls to symmetrically encrypt multi-GB values could result in an integer overflow and buffer overflow, as demonstrated by the Fernet class.",
+  "aliases": [
+    "CVE-2020-36242"
+  ],
+  "modified": "2021-02-19T17:23:00Z",
+  "published": "2021-02-07T20:15:00Z",
+  "withdrawn": "2021-02-10T20:15:00Z",
+  "references": [
+    {
+      "type": "WEB",
+      "url": "https://github.com/pyca/cryptography/issues/5615"
+    },
+    {
+      "type": "WEB",
+      "url": "https://github.com/pyca/cryptography/blob/master/CHANGELOG.rst"
+    },
+    {
+      "type": "WEB",
+      "url": "https://github.com/pyca/cryptography/compare/3.3.1...3.3.2"
+    },
+    {
+      "type": "WEB",
+      "url": "https://lists.fedoraproject.org/archives/list/package-announce@lists.fedoraproject.org/message/L7RGQLK4J5ZQFRLKCHVVG6BKZTUQMG7E/"
+    }
+  ],
+  "affected": [
+    {
+      "package": {
+        "name": "cryptography",
+        "ecosystem": "PyPI"
+      },
+      "ranges": [
+        {
+          "type": "ECOSYSTEM",
+          "events": [
+            {
+              "introduced": "3.1"
+            },
+            {
+              "fixed": "3.3.2"
+            }
+          ]
+        }
+      ],
+      "versions": [
+        "3.1",
+        "3.1.1",
+        "3.2",
+        "3.2.1",
+        "3.3",
+        "3.3.1"
+      ],
+      "database_specific": {
+        "source": "https://github.com/pypa/advisory-db/blob/main/vulns/cryptography/PYSEC-2021-63.yaml"
+      }
+    }
+  ]
+}

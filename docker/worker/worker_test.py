@@ -608,6 +608,10 @@ class UpdateTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
         source_id='source:BLAH-127.yaml',
         source_of_truth=osv.SourceOfTruth.SOURCE_REPO).put()
 
+    mock_publish = mock.patch('google.cloud.pubsub_v1.PublisherClient.publish')
+    self.mock_publish = mock_publish.start()
+    self.addCleanup(mock_publish.stop)
+
   def tearDown(self):
     self.tmp_dir.cleanup()
 
@@ -643,6 +647,8 @@ class UpdateTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
         'febfac1940086bc1f6d3dc33fda0a1d1ba336209',
         'ff8cc32ba60ad9cbb3b23f0a82aad96ebe9ff76b',
     ], [commit.commit for commit in affected_commits])
+
+    self.mock_publish.assert_not_called()
 
   def test_update_limit(self):
     """Test basic update with limit events."""
@@ -919,6 +925,8 @@ class UpdateTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
         'eefe8ec3f1f90d0e684890e810f3f21e8500a4cd',
     ], [a.commit for a in affected_commits])
 
+    self.expect_equal('pypi_pubsub_calls', self.mock_publish.mock_calls)
+
   def test_update_maven(self):
     """Test updating maven."""
     self.source_repo.ignore_git = False
@@ -954,6 +962,8 @@ class UpdateTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
     self.expect_dict_equal(
         'update_maven',
         ndb.Key(osv.Bug, 'source:GHSA-838r-hvwh-24h8').get()._to_dict())
+
+    self.mock_publish.assert_not_called()
 
   def test_update_bucket(self):
     """Test bucket entries."""

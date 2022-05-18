@@ -295,8 +295,7 @@ class ImporterTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
     source_repo = osv.SourceRepository.get_by_id('oss-fuzz')
     self.assertEqual(datetime.date(2021, 1, 1), source_repo.last_update_date)
 
-  @mock.patch('google.cloud.pubsub_v1.PublisherClient.publish')
-  def test_scheduled_updates_already_done(self, mock_publish):
+  def test_scheduled_updates_already_done(self):
     """Scheduled updates already done."""
     source_repo = osv.SourceRepository.get_by_id('oss-fuzz')
     source_repo.last_update_date = importer.utcnow().date()
@@ -317,10 +316,7 @@ class ImporterTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
                             'bucket')
     imp.run()
 
-    self.assertEqual(0, mock_publish.call_count)
-
-  @mock.patch('google.cloud.pubsub_v1.PublisherClient.publish')
-  def test_no_updates(self, mock_publish):
+  def test_no_updates(self):
     """Test no update marker."""
     self.mock_repo.add_file('2021-111.yaml', _EMPTY_VULNERABILITY)
     self.mock_repo.commit('User', 'user@email', 'message. OSV-NO-UPDATE')
@@ -328,10 +324,8 @@ class ImporterTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
     imp = importer.Importer('fake_public_key', 'fake_private_key', self.tmp_dir,
                             'bucket')
     imp.run()
-    mock_publish.assert_not_called()
 
-  @mock.patch('google.cloud.pubsub_v1.PublisherClient.publish')
-  def test_ignore(self, mock_publish):
+  def test_ignore(self):
     """Test ignoring."""
     self.mock_repo.add_file('2021-111IGNORE.yaml', _EMPTY_VULNERABILITY)
     self.mock_repo.commit('User', 'user@email', 'message.')
@@ -339,46 +333,6 @@ class ImporterTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
     imp = importer.Importer('fake_public_key', 'fake_private_key', self.tmp_dir,
                             'bucket')
     imp.run()
-    mock_publish.assert_not_called()
-
-  @mock.patch('google.cloud.pubsub_v1.PublisherClient.publish')
-  def test_ecosystem_bridge(self, mock_publish):
-    """Test ecosystem pub/sub publishing."""
-    self.source_repo.key.delete()
-    self.source_repo = osv.SourceRepository(
-        type=osv.SourceRepositoryType.GIT,
-        id='PyPI',
-        name='PyPI',
-        repo_url='file://' + self.remote_source_repo_path,
-        repo_username='')
-    self.source_repo.put()
-    self.mock_repo.add_file(
-        'PYSEC-2021-1.yaml', 'id: PYSEC-2021-1\n'
-        'affected:\n'
-        '- package:\n'
-        '    name: pkg\n'
-        '    ecosystem: PyPI\n')
-    self.mock_repo.commit('User', 'user@email')
-
-    imp = importer.Importer('fake_public_key', 'fake_private_key', self.tmp_dir,
-                            'bucket')
-    imp.run()
-    mock_publish.assert_has_calls([
-        mock.call(
-            'projects/oss-vdb/topics/tasks',
-            data=b'',
-            type='update',
-            source='PyPI',
-            path='PYSEC-2021-1.yaml',
-            original_sha256=('875811e67e3e9bb50f3442dc262583c2'
-                             '99b2d8b571e80a53af837b8f3787fa20'),
-            deleted='false'),
-        mock.call(
-            'projects/oss-vdb/topics/pypi-bridge',
-            data=b'{"id": "PYSEC-2021-1", "affected": '
-            b'[{"package": {"name": "pkg", "ecosystem": "PyPI"}, '
-            b'"versions": []}]}')
-    ])
 
 
 @mock.patch('importer.utcnow', lambda: datetime.datetime(2021, 1, 1))

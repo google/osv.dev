@@ -37,10 +37,6 @@ _OSS_FUZZ_EXPORT_BUCKET = 'oss-fuzz-osv-vulns'
 _EXPORT_WORKERS = 32
 _NO_UPDATE_MARKER = 'OSV-NO-UPDATE'
 
-_ECOSYSTEM_PUSH_TOPICS = {
-    'PyPI': 'projects/oss-vdb/topics/pypi-bridge',
-}
-
 
 def _is_vulnerability_file(source_repo, file_path):
   """Return whether or not the file is a Vulnerability entry."""
@@ -99,8 +95,7 @@ class Importer:
                                  source_repo,
                                  original_sha256,
                                  path,
-                                 deleted=False,
-                                 vulnerability=None):
+                                 deleted=False):
     """Request analysis."""
     self._publisher.publish(
         _TASKS_TOPIC,
@@ -110,22 +105,6 @@ class Importer:
         path=path,
         original_sha256=original_sha256,
         deleted=str(deleted).lower())
-
-    if not vulnerability:
-      return
-
-    ecosystems = set()
-    for affected in vulnerability.affected:
-      if affected.package.ecosystem in ecosystems:
-        continue
-
-      ecosystems.add(affected.package.ecosystem)
-      ecosystem_push_topic = _ECOSYSTEM_PUSH_TOPICS.get(
-          affected.package.ecosystem)
-      if ecosystem_push_topic:
-        self._publisher.publish(
-            ecosystem_push_topic,
-            data=json.dumps(osv.vulnerability_to_dict(vulnerability)).encode())
 
   def _request_internal_analysis(self, bug):
     """Request internal analysis."""
@@ -227,38 +206,50 @@ class Importer:
     """Process updates for a git source_repo."""
     repo = self.checkout(source_repo)
 
-    walker = repo.walk(repo.head.target, pygit2.GIT_SORT_TOPOLOGICAL)
-    if source_repo.last_synced_hash:
-      walker.hide(source_repo.last_synced_hash)
-
     # Get list of changed files since last sync.
     changed_entries = set()
     deleted_entries = set()
-    for commit in walker:
-      if commit.author.email == osv.AUTHOR_EMAIL:
-        continue
 
-      if _NO_UPDATE_MARKER in commit.message:
-        logging.info('Skipping commit %s as no update marker found.', commit.id)
-        continue
+    if source_repo.last_synced_hash:
+      # Syncing from a previous commit.
+      walker = repo.walk(repo.head.target, pygit2.GIT_SORT_TOPOLOGICAL)
+      walker.hide(source_repo.last_synced_hash)
 
-      logging.info('Processing commit %s from %s', commit.id,
-                   commit.author.email)
+      for commit in walker:
+        if commit.author.email == osv.AUTHOR_EMAIL:
+          continue
 
-      for parent in commit.parents:
-        diff = repo.diff(parent, commit)
-        for delta in diff.deltas:
-          if delta.old_file and _is_vulnerability_file(source_repo,
-                                                       delta.old_file.path):
-            if delta.status == pygit2.GIT_DELTA_DELETED:
-              deleted_entries.add(delta.old_file.path)
-              continue
+        if _NO_UPDATE_MARKER in commit.message:
+          logging.info('Skipping commit %s as no update marker found.',
+                       commit.id)
+          continue
 
-            changed_entries.add(delta.old_file.path)
+        logging.info('Processing commit %s from %s', commit.id,
+                     commit.author.email)
 
-          if delta.new_file and _is_vulnerability_file(source_repo,
-                                                       delta.new_file.path):
-            changed_entries.add(delta.new_file.path)
+        for parent in commit.parents:
+          diff = repo.diff(parent, commit)
+          for delta in diff.deltas:
+            if delta.old_file and _is_vulnerability_file(
+                source_repo, delta.old_file.path):
+              if delta.status == pygit2.GIT_DELTA_DELETED:
+                deleted_entries.add(delta.old_file.path)
+                continue
+
+              changed_entries.add(delta.old_file.path)
+
+            if delta.new_file and _is_vulnerability_file(
+                source_repo, delta.new_file.path):
+              changed_entries.add(delta.new_file.path)
+    else:
+      # First sync from scratch.
+      logging.info('Syncing repo from scratch')
+      for root, _, filenames in os.walk(osv.repo_path(repo)):
+        for filename in filenames:
+          path = os.path.join(root, filename)
+          rel_path = os.path.relpath(path, osv.repo_path(repo))
+          if _is_vulnerability_file(source_repo, rel_path):
+            changed_entries.add(rel_path)
 
     # Create tasks for changed files.
     for changed_entry in changed_entries:
@@ -276,11 +267,8 @@ class Importer:
 
       logging.info('Re-analysis triggered for %s', changed_entry)
       original_sha256 = osv.sha256(path)
-      self._request_analysis_external(
-          source_repo,
-          original_sha256,
-          changed_entry,
-          vulnerability=vulnerability)
+      self._request_analysis_external(source_repo, original_sha256,
+                                      changed_entry)
 
     # Mark deleted entries as invalid.
     for deleted_entry in deleted_entries:

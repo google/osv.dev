@@ -41,7 +41,7 @@
     'ecosystem': ['PyPI'],
     'fixed': '',
     'has_affected': True,
-    'is_fixed': False,
+    'is_fixed': True,
     'issue_id': None,
     'last_modified': datetime.datetime(2021, 1, 1, 0, 0),
     'project': ['grpcio'],

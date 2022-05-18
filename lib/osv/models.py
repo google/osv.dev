@@ -380,6 +380,10 @@ class Bug(ndb.Model):
         fixed_version = None
         for event in affected_range.events:
           # Index used to query by fixed/unfixed.
+          if event.type == 'limit':
+            self.is_fixed = True
+            fixed_version = event.value
+
           if event.type == 'fixed':
             self.is_fixed = True
             fixed_version = event.value

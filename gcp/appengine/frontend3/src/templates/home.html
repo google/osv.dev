@@ -30,10 +30,16 @@
                 <dt class="ecosystem-name">{{ ecosystem }}</dt>
                 <dd class="ecosystem-count-wrapper">
                   {% set radius = [(count | log) / (total | log) * 100, 30] | max %}
-                  <span class="ecosystem-count" style="
-                    width: {{ radius }}px; height: {{ radius }}px; line-height: {{ radius }}px">
-                    {{ count }}
-                  </span>
+                  <a href="{{ url_for('frontend_handlers.list_vulnerabilities', ecosystem=ecosystem) }}">
+                    <span class="ecosystem-count" style="
+                      width: {{ radius }}px; height: {{ radius }}px; line-height: {{ radius }}px">
+                      {{ count }}
+                      <span class="tooltip" style="
+                       top: -{{ (radius / 2) + 5}}px;">
+                        View {{ ecosystem }} vulnerabilities
+                      </span>
+                    </span>
+                  </a>
                 </dd>
               {% endif %}
             {% endfor %}
@@ -124,7 +130,7 @@
         An easy-to-use API is available to query for all known vulnerabilities
         by either a commit hash, or a package version.
       </p>
-      <div class="mdc-layout-grid__inner">
+      <div class="code-card-container mdc-layout-grid__inner">
         <div class="code-card mdc-layout-grid__cell--span-6 mdc-layout-grid__cell--span-12-tablet">
           <h3 class="code-card-title">Query by commit hash</h3>
           <pre class="code-card-content" id="example-commit-hash">curl -X POST -d \

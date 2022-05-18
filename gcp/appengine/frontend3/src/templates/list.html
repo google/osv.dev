@@ -120,7 +120,7 @@ data-column-id="{{ column_id }}"
             </relative-time>
           </span>
           <span role="cell" class="vuln-table-cell vuln-fix-status mdc-data-table__cell hide-on-mobile">
-            {% if vulnerability.affected | map(attribute='ranges', default=[]) | sum(start=[]) | map(attribute='events', default='') | sum(start=[]) | selectattr('fixed', 'defined') | first %}
+            {% if vulnerability.isFixed %}
             <span class="tag fix-available">Fix available</span>
             {% else %}
             <span class="tag fix-unavailable">No fix available</span>

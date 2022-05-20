@@ -3,7 +3,6 @@ package osv
 import (
 	"bytes"
 	"encoding/json"
-	"log"
 	"net/http"
 )
 

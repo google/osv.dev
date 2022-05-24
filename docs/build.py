@@ -76,7 +76,7 @@ def main():
   spec['tags'] = [{
       'name': 'api',
       'x-displayName': 'API',
-      'description': 'The API has 2 methods:'
+      'description': 'The API has 3 methods:'
   }, {
       'name': 'vulnerability_schema',
       'x-displayName': 'Vulnerability schema',
@@ -93,6 +93,7 @@ def main():
   }]
 
   spec['paths']['/v1/query']['post']['tags'] = ['api']
+  spec['paths']['/v1/querybatch']['post']['tags'] = ['api']
   spec['paths']['/v1/vulns/{id}']['get']['tags'] = ['api']
 
   spec['paths']['/v1/query']['post']['x-code-samples'] = [{
@@ -105,6 +106,33 @@ def main():
            'curl -X POST -d \\\n'
            '  \'{"package": {"name": "mruby"}, "version": "2.1.2rc"}\' \\\n'
            '  "https://api.osv.dev/v1/query"')
+  }]
+
+  spec['paths']['/v1/querybatch']['post']['x-code-samples'] = [{
+      'lang':
+          'Curl example',
+      'source':
+          ("""cat <<EOF | curl -X POST -d @- "https://api.osv.dev/v1/querybatch"
+{
+  "queries": [
+    {
+      "package": {
+        "purl": "pkg:pypi/antlr4-python3-runtime@4.7.2"
+      }
+    },
+    {
+      "commit": "6879efc2c1596d11a6a6ad296f80063b558d5e0f"
+    },
+    {
+      "package": {
+        "ecosystem": "PyPI",
+        "name": "jinja2"
+      },
+      "version": "2.4.1"
+    }
+  ]
+}
+EOF""")
   }]
 
   spec['paths']['/v1/vulns/{id}']['get']['x-code-samples'] = [{

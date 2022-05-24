@@ -53,8 +53,7 @@ class OSVServicer(object):
         raise NotImplementedError('Method not implemented!')
 
     def QueryAffectedBatch(self, request, context):
-        """Query vulnerabilities for a particular project at given commits and
-        versions.
+        """Query vulnerabilities (batched) for given package versions and commits.
         """
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details('Method not implemented!')

@@ -51,6 +51,45 @@
         ]
       }
     },
+    "/v1/querybatch": {
+      "post": {
+        "summary": "Query vulnerabilities (batched) for given package versions and commits.",
+        "operationId": "OSV_QueryAffectedBatch",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1BatchVulnerabilityList"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/v1BatchQuery"
+            }
+          }
+        ],
+        "tags": [
+          "api"
+        ],
+        "x-code-samples": [
+          {
+            "lang": "Curl example",
+            "source": "cat <<EOF | curl -X POST -d @- \"https://api.osv.dev/v1/querybatch\"\n{\n  \"queries\": [\n    {\n      \"package\": {\n        \"purl\": \"pkg:pypi/antlr4-python3-runtime@4.7.2\"\n      }\n    },\n    {\n      \"commit\": \"6879efc2c1596d11a6a6ad296f80063b558d5e0f\"\n    },\n    {\n      \"package\": {\n        \"ecosystem\": \"PyPI\",\n        \"name\": \"jinja2\"\n      },\n      \"version\": \"2.4.1\"\n    }\n  ]\n}\nEOF"
+          }
+        ]
+      }
+    },
     "/v1/vulns/{id}": {
       "get": {
         "summary": "Return a `Vulnerability` object for a given OSV ID.",
@@ -85,70 +124,6 @@
             "lang": "Curl example",
             "source": "curl \"https://api.osv.dev/v1/vulns/OSV-2020-111\""
           }
-        ]
-      }
-    },
-    "/v1new/query": {
-      "post": {
-        "summary": "Query vulnerabilities for a particular project at a given commit or\nversion.",
-        "operationId": "OSV_QueryAffectedNew",
-        "responses": {
-          "200": {
-            "description": "A successful response.",
-            "schema": {
-              "$ref": "#/definitions/v1VulnerabilityList"
-            }
-          },
-          "default": {
-            "description": "An unexpected error response.",
-            "schema": {
-              "$ref": "#/definitions/rpcStatus"
-            }
-          }
-        },
-        "parameters": [
-          {
-            "name": "body",
-            "in": "body",
-            "required": true,
-            "schema": {
-              "$ref": "#/definitions/v1Query"
-            }
-          }
-        ],
-        "tags": [
-          "OSV"
-        ]
-      }
-    },
-    "/v1new/vulns/{id}": {
-      "get": {
-        "summary": "Return a `Vulnerability` object for a given OSV ID.",
-        "operationId": "OSV_GetVulnByIdNew",
-        "responses": {
-          "200": {
-            "description": "A successful response.",
-            "schema": {
-              "$ref": "#/definitions/osvVulnerability"
-            }
-          },
-          "default": {
-            "description": "An unexpected error response.",
-            "schema": {
-              "$ref": "#/definitions/rpcStatus"
-            }
-          }
-        },
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "required": true,
-            "type": "string"
-          }
-        ],
-        "tags": [
-          "OSV"
         ]
       }
     }
@@ -448,6 +423,31 @@
         }
       }
     },
+    "v1BatchQuery": {
+      "type": "object",
+      "properties": {
+        "queries": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/v1Query"
+          },
+          "description": "The queries that form this batch query."
+        }
+      },
+      "description": "Batch query format."
+    },
+    "v1BatchVulnerabilityList": {
+      "type": "object",
+      "properties": {
+        "results": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/v1VulnerabilityList"
+          }
+        }
+      },
+      "description": "Batched lists of Vulnerability entries."
+    },
     "v1Query": {
       "type": "object",
       "properties": {
@@ -488,7 +488,7 @@
     {
       "name": "api",
       "x-displayName": "API",
-      "description": "The API has 2 methods:"
+      "description": "The API has 3 methods:"
     },
     {
       "name": "vulnerability_schema",

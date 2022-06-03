@@ -53,7 +53,7 @@
     },
     "/v1/querybatch": {
       "post": {
-        "summary": "Query vulnerabilities (batched) for given package versions and commits.",
+        "summary": "Query vulnerabilities (batched) for given package versions and commits.\nThis currently allows a maximum of 1000 package versions to be included in a single query.",
         "operationId": "OSV_QueryAffectedBatch",
         "responses": {
           "200": {

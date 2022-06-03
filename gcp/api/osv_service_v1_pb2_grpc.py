@@ -54,6 +54,7 @@ class OSVServicer(object):
 
     def QueryAffectedBatch(self, request, context):
         """Query vulnerabilities (batched) for given package versions and commits.
+        This currently allows a maximum of 1000 package versions to be included in a single query.
         """
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details('Method not implemented!')

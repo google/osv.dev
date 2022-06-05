@@ -84,6 +84,7 @@ service OSV {
   }
 
   // Query vulnerabilities (batched) for given package versions and commits.
+  // This currently allows a maximum of 1000 package versions to be included in a single query.
   rpc QueryAffectedBatch ( QueryAffectedBatchParameters ) returns ( BatchVulnerabilityList ) {
     option (google.api.http) = {
       post:"/v1/querybatch"

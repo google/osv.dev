@@ -310,6 +310,36 @@ class NuGet(Ecosystem):
     return self._get_affected_versions(versions, introduced, fixed, limits)
 
 
+class Debian(Ecosystem):
+  """Debian ecosystem"""
+
+  _API_PACKAGE_URL = 'https://snapshot.debian.org/mr/package/{package}/'
+  versions_to_idx = None
+
+  def sort_key(self, version):
+    if self.versions_to_idx is None:
+      raise Exception('versions to idx not initiated')
+
+    return self.versions_to_idx[version]
+
+  def enumerate_versions(self, package, introduced, fixed, limits=None):
+    url = self._API_PACKAGE_URL.format(package=package.lower())
+    response = requests.get(url)
+    if response.status_code == 404:
+      raise EnumerateError(f'Package {package} not found')
+    if response.status_code != 200:
+      raise RuntimeError(
+          f'Failed to get Debian versions for {package} with: {response.text}')
+
+    response = response.json()
+
+    versions = list(map(lambda x: x['version'], response['result']))
+    # Reverse so versions is in ascending order
+    versions.reverse()
+    self.versions_to_idx = dict(zip(versions, range(len(versions))))
+    return self._get_affected_versions(versions, introduced, fixed, limits)
+
+
 _ecosystems = {
     'crates.io': Crates(),
     'Go': Go(),
@@ -318,6 +348,7 @@ _ecosystems = {
     'NuGet': NuGet(),
     'PyPI': PyPI(),
     'RubyGems': RubyGems(),
+    'Debian': Debian(),
 }
 
 SEMVER_ECOSYSTEMS = {

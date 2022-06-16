@@ -23,6 +23,7 @@ from .third_party.univers.gem import GemVersion
 from . import maven
 from . import nuget
 from . import semver_index
+from . import debian_version_cache
 
 _DEPS_DEV_API = (
     'https://api.deps.dev/insights/v1alpha/systems/{ecosystem}/packages/'
@@ -341,6 +342,11 @@ class Debian(Ecosystem):
     # Reverse so versions is in ascending order
     versions.reverse()
     self.versions_to_idx = dict(zip(versions, range(len(versions))))
+
+    if introduced == '0':
+      # Update introduced to the first version of the debian version
+      introduced = debian_version_cache.get_first_package_version(package, self.debian_release_ver)
+
     return self._get_affected_versions(versions, introduced, fixed, limits)
 
 # All lowercase ecosystem names

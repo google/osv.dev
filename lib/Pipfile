@@ -8,5 +8,6 @@ google-cloud-ndb = "*"
 semver = "*"
 pyyaml = "*"
 pygit2 = "*"
+pandas = "*"
 
 [dev-packages]

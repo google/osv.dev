@@ -325,7 +325,10 @@ class Debian(Ecosystem):
     if self.versions_to_idx is None:
       raise Exception('versions to idx not initiated')
 
-    return self.versions_to_idx[version]
+    try:
+      return self.versions_to_idx[version]
+    except KeyError:
+      raise EnumerateError(f'Version {version} does not exist')
 
   def enumerate_versions(self, package, introduced, fixed, limits=None):
     url = self._API_PACKAGE_URL.format(package=package.lower())

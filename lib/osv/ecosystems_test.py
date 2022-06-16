@@ -91,6 +91,10 @@ class GetNextVersionTest(unittest.TestCase):
                      ecosystem.next_version('nginx', '1.13.6-1'))
     self.assertEqual('3.0.1+dfsg-2',
                      ecosystem.next_version('blender', '3.0.1+dfsg-1'))
+
+    with self.assertRaises(ecosystems.EnumerateError):
+      ecosystem.next_version('blender', '999.9.9-doesnotexist')
+
     with self.assertRaises(ecosystems.EnumerateError):
       ecosystem.next_version('doesnotexist123456', '1')
 

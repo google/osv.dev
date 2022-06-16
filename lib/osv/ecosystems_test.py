@@ -82,12 +82,23 @@ class GetNextVersionTest(unittest.TestCase):
     with self.assertRaises(ecosystems.EnumerateError):
       ecosystem.next_version('doesnotexist123456', '1')
 
+  def test_debian(self):
+    """Test Debian"""
+    ecosystem = ecosystems.get('Debian:9')
+    self.assertEqual('1.13.6-1',
+                     ecosystem.next_version('nginx', '1.13.5-1'))
+    self.assertEqual('1.13.6-2',
+                     ecosystem.next_version('nginx', '1.13.6-1'))
+    self.assertEqual('3.0.1+dfsg-2',
+                     ecosystem.next_version('blender', '3.0.1+dfsg-1'))
+    with self.assertRaises(ecosystems.EnumerateError):
+      ecosystem.next_version('doesnotexist123456', '1')
+
   def test_semver(self):
     """Test SemVer."""
     ecosystem = ecosystems.get('Go')
     self.assertEqual('1.0.1-0', ecosystem.next_version('blah', '1.0.0'))
     self.assertEqual('1.0.0-pre.0', ecosystem.next_version('blah', '1.0.0-pre'))
-
 
 if __name__ == '__main__':
   unittest.main()

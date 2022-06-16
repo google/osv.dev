@@ -315,6 +315,10 @@ class Debian(Ecosystem):
 
   _API_PACKAGE_URL = 'https://snapshot.debian.org/mr/package/{package}/'
   versions_to_idx = None
+  debian_release_ver: str
+
+  def __init__(self, debian_release_ver: str):
+    self.debian_release_ver = debian_release_ver
 
   def sort_key(self, version):
     if self.versions_to_idx is None:
@@ -333,31 +337,37 @@ class Debian(Ecosystem):
 
     response = response.json()
 
-    versions = list(map(lambda x: x['version'], response['result']))
+    versions = [x['version'] for x in response['result']]
     # Reverse so versions is in ascending order
     versions.reverse()
     self.versions_to_idx = dict(zip(versions, range(len(versions))))
     return self._get_affected_versions(versions, introduced, fixed, limits)
 
-
+# All lowercase ecosystem names
 _ecosystems = {
     'crates.io': Crates(),
-    'Go': Go(),
-    'Maven': Maven(),
+    'go': Go(),
+    'maven': Maven(),
     'npm': NPM(),
-    'NuGet': NuGet(),
-    'PyPI': PyPI(),
-    'RubyGems': RubyGems(),
-    'Debian': Debian(),
+    'nuget': NuGet(),
+    'pypi': PyPI(),
+    'rubygems': RubyGems(),
 }
 
 SEMVER_ECOSYSTEMS = {
     'crates.io',
-    'Go',
+    'go',
     'npm',
 }
 
 
-def get(name):
-  """Get ecosystem helpers for a given ecosytem."""
-  return _ecosystems.get(name)
+def get(name: str) -> Ecosystem:
+  """Get ecosystem helpers for a given ecosytem. (Case insensitive)"""
+
+  name = name.lower()
+
+  if name.startswith('debian:'):
+    return Debian(name.split(':')[1])
+  else:
+    return _ecosystems.get(name)
+

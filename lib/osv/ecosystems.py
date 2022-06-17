@@ -20,10 +20,10 @@ import urllib.parse
 import requests
 from .third_party.univers.gem import GemVersion
 
+from . import debian_version_cache
 from . import maven
 from . import nuget
 from . import semver_index
-from . import debian_version_cache
 
 _DEPS_DEV_API = (
     'https://api.deps.dev/insights/v1alpha/systems/{ecosystem}/packages/'
@@ -322,6 +322,8 @@ class Debian(Ecosystem):
     debian_version_cache.initiate_from_cloud_cache()
 
   def sort_key(self, version):
+    # TODO: Add functionality to make sort_key work without having
+    # called enumerate_versions first
     if self.versions_to_idx is None:
       raise Exception('versions to idx not initiated')
 
@@ -354,30 +356,27 @@ class Debian(Ecosystem):
     return self._get_affected_versions(versions, introduced, fixed, limits)
 
 
-# All lowercase ecosystem names
 _ecosystems = {
-    'crates.io': Crates(),
-    'go': Go(),
-    'maven': Maven(),
-    'npm': NPM(),
-    'nuget': NuGet(),
-    'pypi': PyPI(),
-    'rubygems': RubyGems(),
+  'crates.io': Crates(),
+  'Go': Go(),
+  'Maven': Maven(),
+  'npm': NPM(),
+  'NuGet': NuGet(),
+  'PyPI': PyPI(),
+  'RubyGems': RubyGems(),
 }
 
 SEMVER_ECOSYSTEMS = {
     'crates.io',
-    'go',
+    'Go',
     'npm',
 }
 
 
 def get(name: str) -> Ecosystem:
-  """Get ecosystem helpers for a given ecosytem. (Case insensitive)"""
+  """Get ecosystem helpers for a given ecosystem."""
 
-  name = name.lower()
-
-  if name.startswith('debian:'):
+  if name.startswith('Debian:'):
     return Debian(name.split(':')[1])
   else:
     return _ecosystems.get(name)

@@ -108,8 +108,7 @@ class Ecosystem:
     raise NotImplementedError
 
   def _get_affected_versions(self, versions, introduced, fixed, limits):
-    """Get affected versions given a list of sorted versions, and an
-    introduced/fixed."""
+    """Get affected versions given a list of sorted versions, and an introduced/fixed."""
     parsed_versions = [self.sort_key(v) for v in versions]
 
     if introduced == '0':
@@ -329,7 +328,7 @@ class Debian(Ecosystem):
     try:
       return self.versions_to_idx[version]
     except KeyError:
-      raise EnumerateError(f'Version {version} does not exist')
+      raise EnumerateError(f'Version {version} does not exist') from KeyError
 
   def enumerate_versions(self, package, introduced, fixed, limits=None):
     url = self._API_PACKAGE_URL.format(package=package.lower())
@@ -349,9 +348,11 @@ class Debian(Ecosystem):
 
     if introduced == '0':
       # Update introduced to the first version of the debian version
-      introduced = debian_version_cache.get_first_package_version(package, self.debian_release_ver)
+      introduced = debian_version_cache.get_first_package_version(
+          package, self.debian_release_ver)
 
     return self._get_affected_versions(versions, introduced, fixed, limits)
+
 
 # All lowercase ecosystem names
 _ecosystems = {
@@ -380,4 +381,3 @@ def get(name: str) -> Ecosystem:
     return Debian(name.split(':')[1])
   else:
     return _ecosystems.get(name)
-

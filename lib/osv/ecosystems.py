@@ -19,6 +19,7 @@ import urllib.parse
 
 import requests
 from .third_party.univers.gem import GemVersion
+from .third_party.univers.debian import Version as DebianVersion
 
 from . import debian_version_cache
 from . import maven
@@ -322,15 +323,7 @@ class Debian(Ecosystem):
     debian_version_cache.initiate_from_cloud_cache()
 
   def sort_key(self, version):
-    # TODO: Add functionality to make sort_key work without having
-    # called enumerate_versions first
-    if self.versions_to_idx is None:
-      raise Exception('versions to idx not initiated')
-
-    try:
-      return self.versions_to_idx[version]
-    except KeyError:
-      raise EnumerateError(f'Version {version} does not exist') from KeyError
+    return DebianVersion.from_string(version)
 
   def enumerate_versions(self, package, introduced, fixed, limits=None):
     url = self._API_PACKAGE_URL.format(package=package.lower())

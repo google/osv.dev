@@ -37,6 +37,7 @@ setuptools.setup(
         'pygit2',
         'PyYAML',
         'semver',
+        'attrs',
     ],
     package_dir={
         '': '.',

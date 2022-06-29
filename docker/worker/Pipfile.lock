@@ -1,7 +1,7 @@
 {
     "_meta": {
         "hash": {
-            "sha256": "849e9db55b8329fe8ac57038b8555ed0e1464eb979e6c9bb8f5a92efe638448d"
+            "sha256": "e7fd8e67fceea3e16ab1934b4b65b233500ca15e53ad0ed1e6ba3fe0ea09c258"
         },
         "pipfile-spec": 6,
         "requires": {},
@@ -119,10 +119,6 @@
             "version": "==1.2.13"
         },
         "e01afd4": {
-            "editable": true,
-            "path": "./lib"
-        },
-        "fd92e1": {
             "editable": true,
             "path": "./lib"
         },

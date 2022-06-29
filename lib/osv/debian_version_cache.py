@@ -21,7 +21,8 @@ CLOUD_API_CACHE_URL = 'https://storage.googleapis.com/debian-osv/first_package_c
 debian_version_cache = None
 
 
-def _initiate_from_cloud_cache(force_reload: bool = False) -> typing.Dict[str, typing.Dict]:
+def _initiate_from_cloud_cache(
+    force_reload: bool = False) -> typing.Dict[str, typing.Dict]:
   """Load the debian version cache from the Google cloud link, if it hasn't been loaded yet"""
   global debian_version_cache
   if debian_version_cache is None or force_reload:

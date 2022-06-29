@@ -18,8 +18,8 @@ import packaging.version
 import urllib.parse
 
 import requests
-from .third_party.univers.gem import GemVersion
 from .third_party.univers.debian import Version as DebianVersion
+from .third_party.univers.gem import GemVersion
 
 from . import debian_version_cache
 from . import maven
@@ -315,12 +315,11 @@ class Debian(Ecosystem):
   """Debian ecosystem"""
 
   _API_PACKAGE_URL = 'https://snapshot.debian.org/mr/package/{package}/'
-  versions_to_idx = None
   debian_release_ver: str
 
   def __init__(self, debian_release_ver: str):
     self.debian_release_ver = debian_release_ver
-    debian_version_cache.initiate_from_cloud_cache()
+    debian_version_cache._initiate_from_cloud_cache()
 
   def sort_key(self, version):
     return DebianVersion.from_string(version)
@@ -339,7 +338,8 @@ class Debian(Ecosystem):
     versions = [x['version'] for x in response['result']]
     # Reverse so versions is in ascending order
     versions.reverse()
-    self.versions_to_idx = dict(zip(versions, range(len(versions))))
+    # Sort to ensure it is in the correct order
+    versions.sort(key=self.sort_key)
 
     if introduced == '0':
       # Update introduced to the first version of the debian version

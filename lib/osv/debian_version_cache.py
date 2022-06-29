@@ -20,7 +20,7 @@ CLOUD_API_CACHE_URL = 'https://storage.googleapis.com/debian-osv/first_package_c
 debian_version_cache = None
 
 
-def initiate_from_cloud_cache(force_reload: bool = False) -> dict[str, dict]:
+def _initiate_from_cloud_cache(force_reload: bool = False) -> dict[str, dict]:
   """Load the debian version cache from the Google cloud link, if it hasn't been loaded yet"""
   global debian_version_cache
   if debian_version_cache is None or force_reload:
@@ -31,7 +31,7 @@ def initiate_from_cloud_cache(force_reload: bool = False) -> dict[str, dict]:
 def get_first_package_version(package_name: str, release_number: str) -> str:
   """Get first package version"""
   if debian_version_cache is None:
-    raise Exception('Debian version cache not initiated')
+    debian_version_cache = _initiate_from_cloud_cache()
 
   try:
     return debian_version_cache[release_number][package_name]

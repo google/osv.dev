@@ -3,10 +3,6 @@
   "summary": "nginx - security update",
   "affected": [
     {
-      "ecosystem_specific": {
-        "release": "wheezy",
-        "version": "7"
-      },
       "package": {
         "ecosystem": "Debian:7",
         "name": "nginx"

@@ -999,8 +999,7 @@ class UpdateTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
 
     self.mock_repo.add_file(
         'DSA-3029-1.json',
-        self._load_test_data(
-            os.path.join(TEST_DATA_DIR, 'DSA-3029-1.json')))
+        self._load_test_data(os.path.join(TEST_DATA_DIR, 'DSA-3029-1.json')))
     self.mock_repo.commit('User', 'user@email')
     task_runner = worker.TaskRunner(ndb_client, None, self.tmp_dir.name, None,
                                     None)

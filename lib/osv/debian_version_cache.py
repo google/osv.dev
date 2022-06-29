@@ -32,7 +32,7 @@ def _initiate_from_cloud_cache(force_reload: bool = False) -> typing.Dict[str, t
 def get_first_package_version(package_name: str, release_number: str) -> str:
   """Get first package version"""
   if debian_version_cache is None:
-    debian_version_cache = _initiate_from_cloud_cache()
+    _initiate_from_cloud_cache()
 
   try:
     return debian_version_cache[release_number][package_name]

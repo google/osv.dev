@@ -336,8 +336,6 @@ class Debian(Ecosystem):
     response = response.json()
 
     versions = [x['version'] for x in response['result']]
-    # Reverse so versions is in ascending order
-    versions.reverse()
     # Sort to ensure it is in the correct order
     versions.sort(key=self.sort_key)
 

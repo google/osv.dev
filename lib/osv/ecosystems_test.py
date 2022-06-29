@@ -90,7 +90,8 @@ class GetNextVersionTest(unittest.TestCase):
     self.assertEqual('3.0.1+dfsg-2',
                      ecosystem.next_version('blender', '3.0.1+dfsg-1'))
 
-    self.assertGreater(ecosystem.sort_key('1.13.6-2'), ecosystem.sort_key('1.13.6-1'))
+    self.assertGreater(
+        ecosystem.sort_key('1.13.6-2'), ecosystem.sort_key('1.13.6-1'))
 
     with self.assertRaises(ecosystems.EnumerateError):
       ecosystem.next_version('doesnotexist123456', '1')

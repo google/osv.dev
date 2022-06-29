@@ -350,13 +350,13 @@ class Debian(Ecosystem):
 
 
 _ecosystems = {
-  'crates.io': Crates(),
-  'Go': Go(),
-  'Maven': Maven(),
-  'npm': NPM(),
-  'NuGet': NuGet(),
-  'PyPI': PyPI(),
-  'RubyGems': RubyGems(),
+    'crates.io': Crates(),
+    'Go': Go(),
+    'Maven': Maven(),
+    'npm': NPM(),
+    'NuGet': NuGet(),
+    'PyPI': PyPI(),
+    'RubyGems': RubyGems(),
 }
 
 SEMVER_ECOSYSTEMS = {

@@ -18,8 +18,10 @@ import packaging.version
 import urllib.parse
 
 import requests
+from .third_party.univers.debian import Version as DebianVersion
 from .third_party.univers.gem import GemVersion
 
+from . import debian_version_cache
 from . import maven
 from . import nuget
 from . import semver_index
@@ -107,8 +109,7 @@ class Ecosystem:
     raise NotImplementedError
 
   def _get_affected_versions(self, versions, introduced, fixed, limits):
-    """Get affected versions given a list of sorted versions, and an
-    introduced/fixed."""
+    """Get affected versions given a list of sorted versions, and an introduced/fixed."""
     parsed_versions = [self.sort_key(v) for v in versions]
 
     if introduced == '0':
@@ -310,6 +311,42 @@ class NuGet(Ecosystem):
     return self._get_affected_versions(versions, introduced, fixed, limits)
 
 
+class Debian(Ecosystem):
+  """Debian ecosystem"""
+
+  _API_PACKAGE_URL = 'https://snapshot.debian.org/mr/package/{package}/'
+  debian_release_ver: str
+
+  def __init__(self, debian_release_ver: str):
+    self.debian_release_ver = debian_release_ver
+    debian_version_cache._initiate_from_cloud_cache()
+
+  def sort_key(self, version):
+    return DebianVersion.from_string(version)
+
+  def enumerate_versions(self, package, introduced, fixed, limits=None):
+    url = self._API_PACKAGE_URL.format(package=package.lower())
+    response = requests.get(url)
+    if response.status_code == 404:
+      raise EnumerateError(f'Package {package} not found')
+    if response.status_code != 200:
+      raise RuntimeError(
+          f'Failed to get Debian versions for {package} with: {response.text}')
+
+    response = response.json()
+
+    versions = [x['version'] for x in response['result']]
+    # Sort to ensure it is in the correct order
+    versions.sort(key=self.sort_key)
+
+    if introduced == '0':
+      # Update introduced to the first version of the debian version
+      introduced = debian_version_cache.get_first_package_version(
+          package, self.debian_release_ver)
+
+    return self._get_affected_versions(versions, introduced, fixed, limits)
+
+
 _ecosystems = {
     'crates.io': Crates(),
     'Go': Go(),
@@ -327,6 +364,10 @@ SEMVER_ECOSYSTEMS = {
 }
 
 
-def get(name):
-  """Get ecosystem helpers for a given ecosytem."""
-  return _ecosystems.get(name)
+def get(name: str) -> Ecosystem:
+  """Get ecosystem helpers for a given ecosystem."""
+
+  if name.startswith('Debian:'):
+    return Debian(name.split(':')[1])
+  else:
+    return _ecosystems.get(name)

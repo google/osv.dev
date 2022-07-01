@@ -4,6 +4,10 @@ verify_ssl = true
 name = "pypi"
 
 [packages]
+# TODO: Temporary attrs package because it is used by osv.
+# Better soultion is to load the osv library here to
+# automatically pull in dependencies it needs
+attrs = "==21.4.0"
 google-api-core = "==1.31.5"
 google-api-python-client = "==1.12.8"
 google-auth = "==1.35.0"

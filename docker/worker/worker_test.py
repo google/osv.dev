@@ -990,6 +990,44 @@ class UpdateTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
     self.expect_dict_equal('update_bucket_1',
                            osv.Bug.get_by_id('GO-2021-0087')._to_dict())
 
+  def test_update_debian(self):
+    """Test updating debian."""
+    self.source_repo.ignore_git = False
+    self.source_repo.versions_from_repo = False
+    self.source_repo.detect_cherrypicks = False
+    self.source_repo.put()
+
+    self.mock_repo.add_file(
+        'DSA-3029-1.json',
+        self._load_test_data(os.path.join(TEST_DATA_DIR, 'DSA-3029-1.json')))
+    self.mock_repo.commit('User', 'user@email')
+    task_runner = worker.TaskRunner(ndb_client, None, self.tmp_dir.name, None,
+                                    None)
+    message = mock.Mock()
+    message.attributes = {
+        'source': 'source',
+        'path': 'DSA-3029-1.json',
+        'original_sha256': _sha256('DSA-3029-1.json'),
+        'deleted': 'false',
+    }
+    task_runner._source_update(message)
+
+    repo = pygit2.Repository(self.remote_source_repo_path)
+    commit = repo.head.peel()
+
+    self.assertEqual('infra@osv.dev', commit.author.email)
+    self.assertEqual('OSV', commit.author.name)
+    self.assertEqual('Update DSA-3029-1', commit.message)
+    diff = repo.diff(commit.parents[0], commit)
+
+    self.expect_equal('diff_debian', diff.patch)
+
+    self.expect_dict_equal(
+        'update_debian',
+        ndb.Key(osv.Bug, 'source:DSA-3029-1').get()._to_dict())
+
+    self.mock_publish.assert_not_called()
+
   def test_update_android(self):
     """Test updating Android through bucket entries."""
     self.source_repo.type = osv.SourceRepositoryType.BUCKET

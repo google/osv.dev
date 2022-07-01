@@ -211,7 +211,11 @@ def osv_get_ecosystem_counts():
   counts = {}
   ecosystems = osv_get_ecosystems()
   for ecosystem in ecosystems:
-    counts[ecosystem] = osv.Bug.query(osv.Bug.ecosystem == ecosystem).count()
+    base_ecosystem = ecosystem.split(':')[0]
+    if base_ecosystem not in counts:
+      counts[base_ecosystem] = 0
+
+    counts[base_ecosystem] += osv.Bug.query(osv.Bug.ecosystem == ecosystem).count()
 
   return counts
 

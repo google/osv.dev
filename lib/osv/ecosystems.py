@@ -316,8 +316,8 @@ class Debian(Ecosystem):
   """Debian ecosystem"""
 
   _API_PACKAGE_URL = 'https://snapshot.debian.org/mr/package/{package}/'
-  _BACKOFF_FACTOR = 4;
-  _RETRY_TOTAL = 6;
+  _BACKOFF_FACTOR = 4
+  _RETRY_TOTAL = 6
   debian_release_ver: str
 
   def __init__(self, debian_release_ver: str):

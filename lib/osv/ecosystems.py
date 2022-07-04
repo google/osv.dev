@@ -316,6 +316,8 @@ class Debian(Ecosystem):
   """Debian ecosystem"""
 
   _API_PACKAGE_URL = 'https://snapshot.debian.org/mr/package/{package}/'
+  _BACKOFF_FACTOR = 4;
+  _RETRY_TOTAL = 6;
   debian_release_ver: str
 
   def __init__(self, debian_release_ver: str):
@@ -329,8 +331,8 @@ class Debian(Ecosystem):
     url = self._API_PACKAGE_URL.format(package=package.lower())
     session = requests.session()
     retries = Retry(
-        backoff_factor=1,
-        total=6,
+        backoff_factor=self._BACKOFF_FACTOR,
+        total=self._RETRY_TOTAL,
     )
     session.mount('https://', HTTPAdapter(max_retries=retries))
 

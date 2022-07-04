@@ -336,11 +336,17 @@ class Bug(ndb.Model):
     })
     self.project.sort()
 
-    self.ecosystem = list({
+    ecosystems_set = {
         pkg.package.ecosystem
         for pkg in self.affected_packages
         if pkg.package.ecosystem
-    })
+    }
+
+    # For all ecosystems that specify a specific version with colon,
+    # also add the base name
+    ecosystems_set.update({x.split(':')[0] for x in ecosystems_set})
+
+    self.ecosystem = list(ecosystems_set)
     self.ecosystem.sort()
 
     self.purl = list({

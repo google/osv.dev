@@ -83,7 +83,7 @@ def index_v2_with_subpath(subpath):
 @blueprint.route('/')
 def index():
   return render_template(
-      'home.html', ecosystem_counts=osv_get_ecosystem_counts())
+      'home.html', ecosystem_counts=osv_get_ecosystem_counts_cached())
 
 
 @blueprint.route('/about')
@@ -101,7 +101,7 @@ def list_vulnerabilities():
 
   # Fetch ecosystems by default. As an optimization, skip when rendering page
   # fragments.
-  ecosystem_counts = osv_get_ecosystem_counts(
+  ecosystem_counts = osv_get_ecosystem_counts_cached(
   ) if not request.headers.get('Turbo-Frame') else None
 
   return render_template(
@@ -204,14 +204,25 @@ def osv_get_ecosystems():
                 key=str.lower)
 
 
+# TODO: Figure out how to skip cache when testing
 @cache.instance.cached(
     timeout=24 * 60 * 60, key_prefix='osv_get_ecosystem_counts')
+def osv_get_ecosystem_counts_cached():
+  """Get count of vulnerabilities per ecosystem, cached"""
+  return osv_get_ecosystem_counts()
+
+
 def osv_get_ecosystem_counts():
   """Get count of vulnerabilities per ecosystem."""
   counts = {}
   ecosystems = osv_get_ecosystems()
   for ecosystem in ecosystems:
-    counts[ecosystem] = osv.Bug.query(osv.Bug.ecosystem == ecosystem).count()
+    base_ecosystem = ecosystem.split(':')[0]
+    if base_ecosystem not in counts:
+      counts[base_ecosystem] = 0
+
+    counts[base_ecosystem] += osv.Bug.query(
+        osv.Bug.ecosystem == ecosystem).count()
 
   return counts
 

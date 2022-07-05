@@ -217,12 +217,15 @@ def osv_get_ecosystem_counts():
   counts = {}
   ecosystems = osv_get_ecosystems()
   for ecosystem in ecosystems:
-    base_ecosystem = ecosystem.split(':')[0]
-    if base_ecosystem not in counts:
-      counts[base_ecosystem] = 0
+    if ':' in ecosystem:
+      # Count by the base ecosystem index. Otherwise we'll overcount as a
+      # single entry may refer to multiple sub-ecosystems.
+      continue
 
-    counts[base_ecosystem] += osv.Bug.query(
-        osv.Bug.ecosystem == ecosystem).count()
+    counts[ecosystem] = osv.Bug.query(
+        osv.Bug.ecosystem == ecosystem,
+        osv.Bug.public == True,  # pylint: disable=singleton-comparison
+        osv.Bug.status == osv.BugStatus.PROCESSED).count()
 
   return counts
 

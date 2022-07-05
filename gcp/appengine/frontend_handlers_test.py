@@ -21,6 +21,7 @@ from unittest import mock
 from google.cloud import ndb
 
 import frontend_handlers
+from osv import models
 from osv import tests
 
 
@@ -37,21 +38,81 @@ class FrontendHandlerTest(unittest.TestCase):
   def tearDown(self):
     shutil.rmtree(self.tmp_dir, ignore_errors=True)
 
-  @mock.patch('osv.Bug.query')
-  @mock.patch('frontend_handlers.osv_get_ecosystems')
-  def test_ecosystem_counts(self, mock_osv_get_ecosystems: mock.Mock,
-                            mock_query: mock.Mock):
+  def test_ecosystem_counts(self):
     """Test ecosystem counts aggregates correctly updates."""
+    models.Bug(
+        id='BLAH-0',
+        db_id='BLAH-0',
+        status=1,
+        public=True,
+        source='test',
+        affected_packages=[{
+            'package': {
+                'ecosystem': 'PyPI',
+                'name': 'blah',
+            },
+        }]).put()
 
-    mock_osv_get_ecosystems.return_value = [
-        'Android', 'Debian:3.1', 'Debian:7', 'npm'
-    ]
-    mock_query.return_value.count.return_value = 4
+    models.Bug(
+        id='BLAH-1',
+        db_id='BLAH-1',
+        status=1,
+        public=True,
+        source='test',
+        affected_packages=[{
+            'package': {
+                'ecosystem': 'Debian:3.1',
+                'name': 'blah',
+            },
+        }, {
+            'package': {
+                'ecosystem': 'Debian:7',
+                'name': 'blah',
+            },
+        }]).put()
+
+    models.Bug(
+        id='BLAH-2',
+        db_id='BLAH-2',
+        status=1,
+        public=True,
+        source='test',
+        affected_packages=[{
+            'package': {
+                'ecosystem': 'Debian:8',
+                'name': 'blah',
+            },
+        }]).put()
+
+    # Invalid entries.
+    models.Bug(
+        id='BLAH-3',
+        db_id='BLAH-3',
+        status=2,
+        public=True,
+        source='test',
+        affected_packages=[{
+            'package': {
+                'ecosystem': 'Debian:8',
+                'name': 'blah',
+            },
+        }]).put()
+
+    models.Bug(
+        id='BLAH-4',
+        db_id='BLAH-4',
+        status=1,
+        public=False,
+        source='test',
+        affected_packages=[{
+            'package': {
+                'ecosystem': 'Debian:8',
+                'name': 'blah',
+            },
+        }]).put()
 
     counts = frontend_handlers.osv_get_ecosystem_counts()
-
-    mock_osv_get_ecosystems.assert_called_once()
-    self.assertDictEqual(counts, {'Android': 4, 'Debian': 8, 'npm': 4})
+    self.assertDictEqual({'Debian': 2, 'PyPI': 1}, counts)
 
 
 if __name__ == '__main__':

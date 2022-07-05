@@ -16,8 +16,9 @@
 import bisect
 import packaging.version
 import urllib.parse
-
 import requests
+from requests.adapters import HTTPAdapter, Retry
+
 from .third_party.univers.debian import Version as DebianVersion
 from .third_party.univers.gem import GemVersion
 
@@ -315,6 +316,8 @@ class Debian(Ecosystem):
   """Debian ecosystem"""
 
   _API_PACKAGE_URL = 'https://snapshot.debian.org/mr/package/{package}/'
+  _BACKOFF_FACTOR = 4
+  _RETRY_TOTAL = 6
   debian_release_ver: str
 
   def __init__(self, debian_release_ver: str):
@@ -326,7 +329,14 @@ class Debian(Ecosystem):
 
   def enumerate_versions(self, package, introduced, fixed, limits=None):
     url = self._API_PACKAGE_URL.format(package=package.lower())
-    response = requests.get(url)
+    session = requests.session()
+    retries = Retry(
+        backoff_factor=self._BACKOFF_FACTOR,
+        total=self._RETRY_TOTAL,
+    )
+    session.mount('https://', HTTPAdapter(max_retries=retries))
+
+    response = session.get(url)
     if response.status_code == 404:
       raise EnumerateError(f'Package {package} not found')
     if response.status_code != 200:

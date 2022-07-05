@@ -13,6 +13,8 @@
 # limitations under the License.
 """PURL conversion utilities."""
 
+from urllib.parse import quote
+
 PURL_ECOSYSTEMS = {
     'crates.io': 'cargo',
     'Hex': 'hex',
@@ -27,6 +29,12 @@ PURL_ECOSYSTEMS = {
 }
 
 
+def _url_encode(package_name):
+  """URL encode a PURL `namespace/name` or `name`."""
+  parts = package_name.split('/')
+  return '/'.join(quote(p) for p in parts)
+
+
 def package_to_purl(ecosystem, package_name):
   """Convert a ecosystem and package name to PURL."""
   purl_type = PURL_ECOSYSTEMS.get(ecosystem)
@@ -37,4 +45,4 @@ def package_to_purl(ecosystem, package_name):
     # PURLs use / to separate the group ID and the artifact ID.
     package_name = package_name.replace(':', '/', 1)
 
-  return f'pkg:{purl_type}/{package_name}'
+  return f'pkg:{purl_type}/{_url_encode(package_name)}'

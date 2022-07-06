@@ -2,8 +2,10 @@
 
 import redis
 
+
 class Cache:
   """Cache Interface"""
+
   def get(self, key):
     raise NotImplementedError
 
@@ -24,4 +26,3 @@ class RedisCache(Cache):
 
   def set(self, key, value, expiry):
     return self.redis_instance.set(key, value, ex=expiry)
-

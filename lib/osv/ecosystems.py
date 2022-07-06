@@ -28,10 +28,7 @@ from . import maven
 from . import nuget
 from . import semver_index
 from .cache import Cache
-
-DEFAULT_BACKOFF_FACTOR = 5
-DEFAULT_RETRY_TOTAL = 7
-DEFAULT_REDIS_TTL_SECONDS = 6 * 60 * 60
+from .request_helper import RequestException, RequestHelper
 
 _DEPS_DEV_API = (
     'https://api.deps.dev/insights/v1alpha/systems/{ecosystem}/packages/'
@@ -338,9 +335,9 @@ class Debian(Ecosystem):
 
   def enumerate_versions(self, package, introduced, fixed, limits=None):
     url = self._API_PACKAGE_URL.format(package=package.lower())
-
+    request_helper = RequestHelper(shared_cache)
     try:
-      text_response = _request_with_cache(url)
+      text_response = request_helper.get(url)
     except RequestException as ex:
       if ex.response.status_code == 404:
         raise EnumerateError(f'Package {package} not found') from ex
@@ -376,42 +373,6 @@ SEMVER_ECOSYSTEMS = {
     'Go',
     'npm',
 }
-
-
-class RequestException(Exception):
-  response: requests.Response
-
-  def __init__(self, response: requests.Response):
-    self.response = response
-    super().__init__()
-
-
-def _request_with_cache(url,
-                        backoff_factor=DEFAULT_BACKOFF_FACTOR,
-                        retry_total=DEFAULT_RETRY_TOTAL,
-                        redis_ttl=DEFAULT_REDIS_TTL_SECONDS):
-
-  if shared_cache is not None:
-    cached_result = shared_cache.get(url)
-    if cached_result is not None:
-      return json.loads(cached_result)
-
-  session = requests.session()
-  retries = Retry(
-      backoff_factor=backoff_factor,
-      total=retry_total,
-  )
-  session.mount('https://', HTTPAdapter(max_retries=retries))
-  response = session.get(url)
-
-  if response.status_code != 200:
-    raise RequestException(response)
-
-  text_response = response.text
-  if shared_cache is not None:
-    shared_cache.set(url, text_response, redis_ttl)
-
-  return text_response
 
 
 def get(name: str) -> Ecosystem:

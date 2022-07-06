@@ -102,8 +102,7 @@ class GetNextVersionTest(unittest.TestCase):
     self.assertEqual('1.0.1-0', ecosystem.next_version('blah', '1.0.0'))
     self.assertEqual('1.0.0-pre.0', ecosystem.next_version('blah', '1.0.0-pre'))
 
-
-  @mock.patch("osv.cache.Cache")
+  @mock.patch('osv.cache.Cache')
   def test_cache(self, cache: mock.MagicMock):
     cache.get.return_value = None
     ecosystems.set_cache(cache)

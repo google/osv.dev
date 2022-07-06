@@ -37,6 +37,7 @@ deps_dev_api_key = ''
 
 redis_cache: redis.client.Redis = None
 
+
 class EnumerateError(Exception):
   """Non-retryable version enumeration error."""
 

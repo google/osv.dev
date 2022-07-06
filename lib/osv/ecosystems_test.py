@@ -84,7 +84,6 @@ class GetNextVersionTest(unittest.TestCase):
 
   def test_debian(self):
     """Test Debian"""
-    ecosystems.set_cache(RedisCache("127.0.0.1", "6379"))
     ecosystem = ecosystems.get('Debian:9')
     self.assertEqual('1.13.6-1', ecosystem.next_version('nginx', '1.13.5-1'))
     self.assertEqual('1.13.6-2', ecosystem.next_version('nginx', '1.13.6-1'))

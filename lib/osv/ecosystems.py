@@ -401,5 +401,6 @@ def get(name: str) -> Ecosystem:
 
 
 def set_cache(redis_host: str, redis_port: str):
+  """Configures and enables the redis caching layer"""
   global redis_cache
   redis_cache = redis.Redis(host=redis_host, port=redis_port)

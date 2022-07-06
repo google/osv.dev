@@ -11,6 +11,5 @@ pyyaml = "*"
 # TODO: Update Dockerfile to use newer libgit2 version
 pygit2 = "==1.5.0"
 attrs = "*"
-redis = "*"
 
 [dev-packages]

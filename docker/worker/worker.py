@@ -19,6 +19,7 @@ import json
 import logging
 import os
 import math
+import redis
 import resource
 import shutil
 import subprocess
@@ -35,6 +36,7 @@ from google.cloud import storage
 sys.path.append(os.path.dirname(os.path.realpath(__file__)))
 import osv
 import osv.ecosystems
+import osv.cache
 from osv import vulnerability_pb2
 import oss_fuzz
 
@@ -60,6 +62,21 @@ _ECOSYSTEM_PUSH_TOPICS = {
 }
 
 _state = threading.local()
+
+
+class RedisCache(osv.cache.Cache):
+  """Redis cache implementation."""
+
+  redis_instance: redis.client.Redis
+
+  def __init__(self, host, port):
+    self.redis_instance = redis.Redis(host, port)
+
+  def get(self, key):
+    return self.redis_instance.get(key)
+
+  def set(self, key, value, ttl):
+    return self.redis_instance.set(key, value, ex=ttl)
 
 
 class UpdateConflictError(Exception):
@@ -604,8 +621,7 @@ def main():
     osv.ecosystems.deps_dev_api_key = args.deps_dev_api_key
 
   if args.redis_host:
-    osv.ecosystems.set_cache(
-        osv.cache.RedisCache(args.redis_host, args.redis_port))
+    osv.ecosystems.set_cache(RedisCache(args.redis_host, args.redis_port))
 
   # Work around kernel bug: https://gvisor.dev/issue/1765
   resource.setrlimit(resource.RLIMIT_MEMLOCK,

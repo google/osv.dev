@@ -15,9 +15,6 @@
 import datetime
 import typing
 
-import redis
-
-
 class Cache:
   """Cache Interface"""
 
@@ -26,21 +23,6 @@ class Cache:
 
   def set(self, key, value, ttl):
     raise NotImplementedError
-
-
-class RedisCache(Cache):
-  """Redis cache implementation."""
-
-  redis_instance: redis.client.Redis
-
-  def __init__(self, host, port):
-    self.redis_instance = redis.Redis(host, port)
-
-  def get(self, key):
-    return self.redis_instance.get(key)
-
-  def set(self, key, value, ttl):
-    return self.redis_instance.set(key, value, ex=ttl)
 
 
 class _CacheEntry:

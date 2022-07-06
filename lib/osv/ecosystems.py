@@ -18,7 +18,6 @@ import json
 import packaging.version
 import urllib.parse
 import requests
-from requests.adapters import HTTPAdapter, Retry
 
 from .third_party.univers.debian import Version as DebianVersion
 from .third_party.univers.gem import GemVersion

@@ -604,7 +604,8 @@ def main():
     osv.ecosystems.deps_dev_api_key = args.deps_dev_api_key
 
   if args.redis_host:
-    osv.ecosystems.set_cache(osv.cache.RedisCache(args.redis_host, args.redis_port))
+    osv.ecosystems.set_cache(
+        osv.cache.RedisCache(args.redis_host, args.redis_port))
 
   # Work around kernel bug: https://gvisor.dev/issue/1765
   resource.setrlimit(resource.RLIMIT_MEMLOCK,

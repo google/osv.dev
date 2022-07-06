@@ -15,6 +15,7 @@
 import datetime
 import typing
 
+
 class Cache:
   """Cache Interface"""
 

@@ -27,7 +27,7 @@ from . import maven
 from . import nuget
 from . import semver_index
 from .cache import Cache
-from .request_helper import RequestException, RequestHelper
+from .request_helper import RequestError, RequestHelper
 
 _DEPS_DEV_API = (
     'https://api.deps.dev/insights/v1alpha/systems/{ecosystem}/packages/'
@@ -337,7 +337,7 @@ class Debian(Ecosystem):
     request_helper = RequestHelper(shared_cache)
     try:
       text_response = request_helper.get(url)
-    except RequestException as ex:
+    except RequestError as ex:
       if ex.response.status_code == 404:
         raise EnumerateError(f'Package {package} not found') from ex
       raise RuntimeError(

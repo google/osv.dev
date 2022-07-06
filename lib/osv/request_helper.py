@@ -23,7 +23,7 @@ DEFAULT_RETRY_TOTAL = 7
 DEFAULT_REDIS_TTL_SECONDS = 6 * 60 * 60
 
 
-class RequestException(Exception):
+class RequestError(Exception):
   """Exception raised by request helper when response is not 200"""
   response: requests.Response
 
@@ -64,7 +64,7 @@ class RequestHelper:
     response = session.get(url)
 
     if response.status_code != 200:
-      raise RequestException(response)
+      raise RequestError(response)
 
     text_response = response.text
     if self.cache is not None:

@@ -16,7 +16,6 @@
 import os
 import unittest
 from unittest import mock
-from .cache import Cache
 from . import ecosystems
 
 

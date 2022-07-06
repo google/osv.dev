@@ -11,6 +11,7 @@ DEFAULT_REDIS_TTL_SECONDS = 6 * 60 * 60
 
 
 class RequestException(Exception):
+  """Exception raised by request helper when response is not 200"""
   response: requests.Response
 
   def __init__(self, response: requests.Response):

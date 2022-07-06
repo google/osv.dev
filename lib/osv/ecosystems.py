@@ -17,7 +17,6 @@ import bisect
 import json
 import packaging.version
 import urllib.parse
-import redis
 import requests
 from requests.adapters import HTTPAdapter, Retry
 
@@ -28,6 +27,11 @@ from . import debian_version_cache
 from . import maven
 from . import nuget
 from . import semver_index
+from .cache import Cache
+
+DEFAULT_BACKOFF_FACTOR = 5
+DEFAULT_RETRY_TOTAL = 7
+DEFAULT_REDIS_TTL_SECONDS = 6 * 60 * 60
 
 _DEPS_DEV_API = (
     'https://api.deps.dev/insights/v1alpha/systems/{ecosystem}/packages/'
@@ -35,7 +39,7 @@ _DEPS_DEV_API = (
 use_deps_dev = False
 deps_dev_api_key = ''
 
-redis_cache: redis.client.Redis = None
+shared_cache: Cache = None
 
 
 class EnumerateError(Exception):
@@ -320,9 +324,6 @@ class Debian(Ecosystem):
   """Debian ecosystem"""
 
   _API_PACKAGE_URL = 'https://snapshot.debian.org/mr/package/{package}/'
-  _BACKOFF_FACTOR = 5
-  _RETRY_TOTAL = 7
-  _REDIS_TTL_SECONDS = 3600
   debian_release_ver: str
 
   def __init__(self, debian_release_ver: str):
@@ -334,35 +335,20 @@ class Debian(Ecosystem):
 
   def _get_package_version_response(self, package):
     """Return the response from debian snapshot api for the given package"""
-    url = self._API_PACKAGE_URL.format(package=package.lower())
-
-    if redis_cache is not None:
-      redis_result = redis_cache.get(url)
-      if redis_result is not None:
-        return json.loads(redis_result)
-
-    session = requests.session()
-    retries = Retry(
-        backoff_factor=self._BACKOFF_FACTOR,
-        total=self._RETRY_TOTAL,
-    )
-    session.mount('https://', HTTPAdapter(max_retries=retries))
-    response = session.get(url)
-    if response.status_code == 404:
-      raise EnumerateError(f'Package {package} not found')
-    if response.status_code != 200:
-      raise RuntimeError(
-          f'Failed to get Debian versions for {package} with: {response.text}')
-
-    text_response = response.text
-    if redis_cache is not None:
-      redis_cache.set(url, text_response, ex=self._REDIS_TTL_SECONDS)
-
-    return json.loads(text_response)
 
   def enumerate_versions(self, package, introduced, fixed, limits=None):
-    response = self._get_package_version_response(package)
+    url = self._API_PACKAGE_URL.format(package=package.lower())
 
+    try:
+      text_response = _request_with_cache(url)
+    except RequestException as ex:
+      if ex.response.status_code == 404:
+        raise EnumerateError(f'Package {package} not found') from ex
+      raise RuntimeError(
+          f'Failed to get Debian versions for {package} with: {ex.response.text}'
+      ) from ex
+
+    response = json.loads(text_response)
     versions = [x['version'] for x in response['result']]
     # Sort to ensure it is in the correct order
     versions.sort(key=self.sort_key)
@@ -392,6 +378,42 @@ SEMVER_ECOSYSTEMS = {
 }
 
 
+class RequestException(Exception):
+  response: requests.Response
+
+  def __init__(self, response: requests.Response):
+    self.response = response
+    super().__init__()
+
+
+def _request_with_cache(url,
+                        backoff_factor=DEFAULT_BACKOFF_FACTOR,
+                        retry_total=DEFAULT_RETRY_TOTAL,
+                        redis_ttl=DEFAULT_REDIS_TTL_SECONDS):
+
+  if shared_cache is not None:
+    cached_result = shared_cache.get(url)
+    if cached_result is not None:
+      return json.loads(cached_result)
+
+  session = requests.session()
+  retries = Retry(
+      backoff_factor=backoff_factor,
+      total=retry_total,
+  )
+  session.mount('https://', HTTPAdapter(max_retries=retries))
+  response = session.get(url)
+
+  if response.status_code != 200:
+    raise RequestException(response)
+
+  text_response = response.text
+  if shared_cache is not None:
+    shared_cache.set(url, text_response, redis_ttl)
+
+  return text_response
+
+
 def get(name: str) -> Ecosystem:
   """Get ecosystem helpers for a given ecosystem."""
 
@@ -401,7 +423,7 @@ def get(name: str) -> Ecosystem:
     return _ecosystems.get(name)
 
 
-def set_cache(redis_host: str, redis_port: str):
+def set_cache(cache: Cache):
   """Configures and enables the redis caching layer"""
-  global redis_cache
-  redis_cache = redis.Redis(host=redis_host, port=redis_port)
+  global shared_cache
+  shared_cache = cache

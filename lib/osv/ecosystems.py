@@ -14,8 +14,10 @@
 """Ecosystem helpers."""
 
 import bisect
+import json
 import packaging.version
 import urllib.parse
+import redis
 import requests
 from requests.adapters import HTTPAdapter, Retry
 
@@ -33,6 +35,7 @@ _DEPS_DEV_API = (
 use_deps_dev = False
 deps_dev_api_key = ''
 
+redis_cache: redis.client.Redis = None
 
 class EnumerateError(Exception):
   """Non-retryable version enumeration error."""
@@ -318,6 +321,7 @@ class Debian(Ecosystem):
   _API_PACKAGE_URL = 'https://snapshot.debian.org/mr/package/{package}/'
   _BACKOFF_FACTOR = 5
   _RETRY_TOTAL = 7
+  _REDIS_TTL_SECONDS = 3600
   debian_release_ver: str
 
   def __init__(self, debian_release_ver: str):
@@ -327,15 +331,20 @@ class Debian(Ecosystem):
   def sort_key(self, version):
     return DebianVersion.from_string(version)
 
-  def enumerate_versions(self, package, introduced, fixed, limits=None):
+  def _get_package_version_json(self, package):
     url = self._API_PACKAGE_URL.format(package=package.lower())
+
+    if redis_cache is not None:
+      redis_result = redis_cache.get(url)
+      if redis_result is not None:
+        return json.loads(redis_result)
+
     session = requests.session()
     retries = Retry(
         backoff_factor=self._BACKOFF_FACTOR,
         total=self._RETRY_TOTAL,
     )
     session.mount('https://', HTTPAdapter(max_retries=retries))
-
     response = session.get(url)
     if response.status_code == 404:
       raise EnumerateError(f'Package {package} not found')
@@ -343,7 +352,14 @@ class Debian(Ecosystem):
       raise RuntimeError(
           f'Failed to get Debian versions for {package} with: {response.text}')
 
-    response = response.json()
+    text_response = response.text
+    if redis_cache is not None:
+      redis_cache.set(url, text_response, ex=self._REDIS_TTL_SECONDS)
+
+    return json.loads(text_response)
+
+  def enumerate_versions(self, package, introduced, fixed, limits=None):
+    response = self._get_package_version_json(package)
 
     versions = [x['version'] for x in response['result']]
     # Sort to ensure it is in the correct order
@@ -381,3 +397,8 @@ def get(name: str) -> Ecosystem:
     return Debian(name.split(':')[1])
   else:
     return _ecosystems.get(name)
+
+
+def set_cache(redis_host: str, redis_port: str):
+  global redis_cache
+  redis_cache = redis.Redis(host=redis_host, port=redis_port)

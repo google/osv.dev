@@ -235,8 +235,7 @@ def add_fix_information(vulnerability, fix_result):
 
 # TODO(ochang): Remove this function once GHSA's encoding is fixed.
 def fix_invalid_ghsa(vulnerability):
-  """Attempt to fix an invalid GHSA entry and returns whether the GHSA
-  entry is valid."""
+  """Attempt to fix an invalid GHSA entry and returns whether the GHSA entry is valid."""
   packages = {}
   for affected in vulnerability.affected:
     details = packages.setdefault(
@@ -594,11 +593,18 @@ def main():
   parser.add_argument('--deps_dev_api_key', help='deps.dev API key')
   parser.add_argument('--ssh_key_public', help='Public SSH key path')
   parser.add_argument('--ssh_key_private', help='Private SSH key path')
+  parser.add_argument(
+      '--redis_host', help='URL to redis instance, enables redis cache')
+  parser.add_argument(
+      '--redis_port', default=6379, help='Port of redis instance')
   args = parser.parse_args()
 
   if args.deps_dev_api_key:
     osv.ecosystems.use_deps_dev = True
     osv.ecosystems.deps_dev_api_key = args.deps_dev_api_key
+
+  if args.redis_host:
+    osv.ecosystems.set_cache(args.redis_host, args.redis_port)
 
   # Work around kernel bug: https://gvisor.dev/issue/1765
   resource.setrlimit(resource.RLIMIT_MEMLOCK,

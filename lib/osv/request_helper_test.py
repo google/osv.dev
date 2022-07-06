@@ -33,7 +33,7 @@ class RequestHelperTests(unittest.TestCase):
     TEST_RESPONSE = types.SimpleNamespace()
     TEST_RESPONSE.status_code = 200
     TEST_RESPONSE.text = 'test123'
-    TEST_URL = "https://example.com"
+    TEST_URL = 'https://example.com'
 
     session_get.return_value = TEST_RESPONSE
 
@@ -46,7 +46,7 @@ class RequestHelperTests(unittest.TestCase):
 
     cached_response = request_helper.get(TEST_URL)
     self.assertEqual(example_result, cached_response)
-    session_get.assert_called_once() # Still only called once
+    session_get.assert_called_once()  # Still only called once
 
 
 if __name__ == '__main__':

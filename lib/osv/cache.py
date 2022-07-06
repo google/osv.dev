@@ -51,6 +51,7 @@ class _CacheEntry:
     self.data = data
     self.expiry = datetime.datetime.now().timestamp() + ttl
 
+
 class InMemoryCache(Cache):
   """In memory cache implementation."""
 

@@ -45,13 +45,13 @@ class InMemoryCache(Cache):
 
   def get(self, key):
     entry = self.key_val_map.get(key)
-    if entry:
-      if entry.expiry >= datetime.datetime.now().timestamp():
-        return entry.data
-      else:
-        self.key_val_map.pop(key)
-        return None
+    if not entry:
+      return None
+
+    if entry.expiry >= datetime.datetime.now().timestamp():
+      return entry.data
     else:
+      self.key_val_map.pop(key)
       return None
 
   def set(self, key, value, ttl):

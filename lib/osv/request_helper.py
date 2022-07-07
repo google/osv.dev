@@ -50,9 +50,9 @@ class RequestHelper:
     self.cache = cache
 
   def get(self, url):
-    if self.cache is not None:
+    if self.cache:
       cached_result = self.cache.get(url)
-      if cached_result is not None:
+      if cached_result:
         return cached_result
 
     session = requests.session()
@@ -67,7 +67,7 @@ class RequestHelper:
       raise RequestError(response)
 
     text_response = response.text
-    if self.cache is not None:
+    if self.cache:
       self.cache.set(url, text_response, self.cache_ttl)
 
     return text_response

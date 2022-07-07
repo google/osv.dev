@@ -329,9 +329,6 @@ class Debian(Ecosystem):
   def sort_key(self, version):
     return DebianVersion.from_string(version)
 
-  def _get_package_version_response(self, package):
-    """Return the response from debian snapshot api for the given package"""
-
   def enumerate_versions(self, package, introduced, fixed, limits=None):
     url = self._API_PACKAGE_URL.format(package=package.lower())
     request_helper = RequestHelper(shared_cache)

@@ -15,7 +15,7 @@
 
 import os
 import unittest
-
+from unittest import mock
 from . import ecosystems
 
 
@@ -101,6 +101,16 @@ class GetNextVersionTest(unittest.TestCase):
     ecosystem = ecosystems.get('Go')
     self.assertEqual('1.0.1-0', ecosystem.next_version('blah', '1.0.0'))
     self.assertEqual('1.0.0-pre.0', ecosystem.next_version('blah', '1.0.0-pre'))
+
+  @mock.patch('osv.cache.Cache')
+  def test_cache(self, cache: mock.MagicMock):
+    cache.get.return_value = None
+    ecosystems.set_cache(cache)
+
+    debian = ecosystems.get('Debian:9')
+    debian.next_version('nginx', '1.13.5-1')
+    cache.get.assert_called_once()
+    cache.set.assert_called_once()
 
 
 if __name__ == '__main__':

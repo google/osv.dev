@@ -11,11 +11,9 @@ google-cloud-ndb = "*"
 pygit2 = "==1.5.0"
 PyYAML = "*"
 google-cloud-storage = "*"
+redis = "*"
+osv = {editable = true, path = "./lib"}
 
 [dev-packages]
 yapf = "*"
 pylint = "*"
-
-[packages.e01afd4]
-path = "./lib"
-editable = true

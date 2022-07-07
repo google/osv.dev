@@ -14,10 +14,10 @@
 """Ecosystem helpers."""
 
 import bisect
+import json
 import packaging.version
 import urllib.parse
 import requests
-from requests.adapters import HTTPAdapter, Retry
 
 from .third_party.univers.debian import Version as DebianVersion
 from .third_party.univers.gem import GemVersion
@@ -26,12 +26,16 @@ from . import debian_version_cache
 from . import maven
 from . import nuget
 from . import semver_index
+from .cache import Cache
+from .request_helper import RequestError, RequestHelper
 
 _DEPS_DEV_API = (
     'https://api.deps.dev/insights/v1alpha/systems/{ecosystem}/packages/'
     '{package}/versions')
 use_deps_dev = False
 deps_dev_api_key = ''
+
+shared_cache: Cache = None
 
 
 class EnumerateError(Exception):
@@ -316,8 +320,6 @@ class Debian(Ecosystem):
   """Debian ecosystem"""
 
   _API_PACKAGE_URL = 'https://snapshot.debian.org/mr/package/{package}/'
-  _BACKOFF_FACTOR = 5
-  _RETRY_TOTAL = 7
   debian_release_ver: str
 
   def __init__(self, debian_release_ver: str):
@@ -329,22 +331,17 @@ class Debian(Ecosystem):
 
   def enumerate_versions(self, package, introduced, fixed, limits=None):
     url = self._API_PACKAGE_URL.format(package=package.lower())
-    session = requests.session()
-    retries = Retry(
-        backoff_factor=self._BACKOFF_FACTOR,
-        total=self._RETRY_TOTAL,
-    )
-    session.mount('https://', HTTPAdapter(max_retries=retries))
-
-    response = session.get(url)
-    if response.status_code == 404:
-      raise EnumerateError(f'Package {package} not found')
-    if response.status_code != 200:
+    request_helper = RequestHelper(shared_cache)
+    try:
+      text_response = request_helper.get(url)
+    except RequestError as ex:
+      if ex.response.status_code == 404:
+        raise EnumerateError(f'Package {package} not found') from ex
       raise RuntimeError(
-          f'Failed to get Debian versions for {package} with: {response.text}')
+          f'Failed to get Debian versions for {package} with: {ex.response.text}'
+      ) from ex
 
-    response = response.json()
-
+    response = json.loads(text_response)
     versions = [x['version'] for x in response['result']]
     # Sort to ensure it is in the correct order
     versions.sort(key=self.sort_key)
@@ -381,3 +378,9 @@ def get(name: str) -> Ecosystem:
     return Debian(name.split(':')[1])
   else:
     return _ecosystems.get(name)
+
+
+def set_cache(cache: Cache):
+  """Configures and enables the redis caching layer"""
+  global shared_cache
+  shared_cache = cache

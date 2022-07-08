@@ -472,10 +472,6 @@ class TaskRunner:
           timestamp=osv.utcnow(),
           status=osv.BugStatus.PROCESSED,
           source_of_truth=osv.SourceOfTruth.SOURCE_REPO)
-    elif hasattr(vulnerability, 'import_last_modified') and \
-            bug.import_last_modified == vulnerability.import_last_modified:
-      logging.info('Skipping entry since identical import_last_modified date')
-      return
 
     bug.update_from_vulnerability(vulnerability)
     bug.public = True

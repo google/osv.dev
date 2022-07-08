@@ -131,7 +131,7 @@
     'project': ['nginx'],
     'public': True,
     'purl': [],
-    'reference_url_types': {},
+    'reference_url_types': {   'https://www.debian.org/security/2014/dsa-3029': 'ADVISORY'},
     'regressed': '',
     'related': [],
     'search_indices': [   '1',

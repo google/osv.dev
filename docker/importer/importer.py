@@ -300,7 +300,15 @@ class Importer:
 
       logging.info('Bucket entry triggered for for %s/%s', source_repo.bucket,
                    blob.name)
-      original_sha256 = osv.sha256_bytes(blob.download_as_bytes())
+      blob_bytes = blob.download_as_bytes()
+
+      vulnerability = json.loads(blob_bytes)
+      bug = osv.Bug.get_by_id(vulnerability.id)
+
+      if bug.import_last_modified == vulnerability.modified:
+        continue
+
+      original_sha256 = osv.sha256_bytes(blob_bytes)
       self._request_analysis_external(source_repo, original_sha256, blob.name)
 
     source_repo.last_update_date = utcnow().date()

@@ -124,6 +124,7 @@
     'ecosystem': ['Debian', 'Debian:7'],
     'fixed': '',
     'has_affected': True,
+    'import_last_modified': datetime.datetime(2021, 1, 1, 0, 0),
     'is_fixed': True,
     'issue_id': None,
     'last_modified': datetime.datetime(2021, 1, 1, 0, 0),

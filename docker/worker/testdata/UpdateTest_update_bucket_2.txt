@@ -18,6 +18,7 @@
     'ecosystem': ['Android'],
     'fixed': '',
     'has_affected': True,
+    'import_last_modified': datetime.datetime(2021, 10, 1, 0, 0),
     'is_fixed': False,
     'issue_id': None,
     'last_modified': datetime.datetime(2021, 10, 1, 0, 0),

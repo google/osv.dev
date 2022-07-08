@@ -25,6 +25,7 @@
     'ecosystem': ['ecosystem'],
     'fixed': 'eefe8ec3f1f90d0e684890e810f3f21e8500a4cd:b587c21c36a84e16cfc6b39eb68578d43b5281ad',
     'has_affected': True,
+    'import_last_modified': None,
     'is_fixed': True,
     'issue_id': '9001',
     'last_modified': datetime.datetime(2021, 1, 1, 0, 0),

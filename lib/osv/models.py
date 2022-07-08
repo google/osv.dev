@@ -223,6 +223,8 @@ class Bug(ndb.Model):
   timestamp = ndb.DateTimeProperty()
   # When the entry was last edited.
   last_modified = ndb.DateTimeProperty()
+  # Last modified field of the original imported file
+  import_last_modified = ndb.DateTimeProperty()
   # When the entry was withdrawn.
   withdrawn = ndb.DateTimeProperty()
   # The source identifier.
@@ -442,6 +444,7 @@ class Bug(ndb.Model):
 
     if vulnerability.HasField('modified'):
       self.last_modified = vulnerability.modified.ToDatetime()
+      self.import_last_modified = vulnerability.modified.ToDatetime()
     if vulnerability.HasField('published'):
       self.timestamp = vulnerability.published.ToDatetime()
     if vulnerability.HasField('withdrawn'):

@@ -303,9 +303,9 @@ class Importer:
       blob_bytes = blob.download_as_bytes()
 
       vulnerability = json.loads(blob_bytes)
-      bug = osv.Bug.get_by_id(vulnerability.id)
+      bug = osv.Bug.get_by_id(vulnerability['id'])
 
-      if bug.import_last_modified == vulnerability.modified:
+      if bug and bug.import_last_modified == vulnerability['modified']:
         continue
 
       original_sha256 = osv.sha256_bytes(blob_bytes)

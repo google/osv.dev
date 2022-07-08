@@ -302,10 +302,17 @@ class Importer:
                    blob.name)
       blob_bytes = blob.download_as_bytes()
 
-      vulnerability = json.loads(blob_bytes)
-      bug = osv.Bug.get_by_id(vulnerability['id'])
+      # Might be an array, might not
+      vulnerabilities = json.loads(blob_bytes)
 
-      if bug and bug.import_last_modified == vulnerability['modified']:
+      if not isinstance(vulnerabilities, list):
+        vulnerabilities = [vulnerabilities]
+
+      def identical_vuln_exist(vuln):
+        bug = osv.Bug.get_by_id(vuln['id'])
+        return bug and bug.import_last_modified == vuln['modified']
+
+      if all(identical_vuln_exist(vuln) for vuln in vulnerabilities):
         continue
 
       original_sha256 = osv.sha256_bytes(blob_bytes)

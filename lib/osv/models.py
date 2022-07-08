@@ -514,6 +514,16 @@ class Bug(ndb.Model):
       self.database_specific = json_format.MessageToDict(
           vulnerability.database_specific, preserving_proto_field_name=True)
 
+  def to_vulnerability_minimal(self):
+    """Convert to Vulnerability proto (minimal)."""
+    if self.last_modified:
+      modified = timestamp_pb2.Timestamp()
+      modified.FromDatetime(self.last_modified)
+    else:
+      modified = None
+
+    return vulnerability_pb2.Vulnerability(id=self.id(), modified=modified)
+
   def to_vulnerability(self, include_source=False):
     """Convert to Vulnerability proto."""
     package = None

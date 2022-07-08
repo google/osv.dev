@@ -290,13 +290,15 @@ class IntegrationTests(unittest.TestCase):
             'results': [
                 {
                     'vulns': [{
-                        'id': 'GHSA-qc84-gqf4-9926'
+                        'id': 'GHSA-qc84-gqf4-9926',
+                        'modified': '2022-06-08T15:22:39Z'
                     }]
                 },
                 {},
                 {
                     'vulns': [{
-                        'id': 'OSV-2020-744'
+                        'id': 'OSV-2020-744',
+                        'modified': '2022-04-13T03:04:39.780694Z'
                     }]
                 },
             ]

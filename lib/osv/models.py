@@ -444,7 +444,6 @@ class Bug(ndb.Model):
 
     if vulnerability.HasField('modified'):
       self.last_modified = vulnerability.modified.ToDatetime()
-      self.import_last_modified = vulnerability.modified.ToDatetime()
     if vulnerability.HasField('published'):
       self.timestamp = vulnerability.published.ToDatetime()
     if vulnerability.HasField('withdrawn'):

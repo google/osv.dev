@@ -310,7 +310,8 @@ class Importer:
 
       def identical_vuln_exist(vuln):
         bug = osv.Bug.get_by_id(vuln['id'])
-        return bug and bug.import_last_modified == vuln['modified']
+        return bug and bug.import_last_modified == datetime.datetime.fromisoformat(
+            vuln['modified'].replace('Z', '+00:00'))
 
       if all(identical_vuln_exist(vuln) for vuln in vulnerabilities):
         continue

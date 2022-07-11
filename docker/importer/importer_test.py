@@ -358,10 +358,25 @@ class BucketImporterTest(unittest.TestCase):
     shutil.rmtree(self.tmp_dir, ignore_errors=True)
 
   @mock.patch('google.cloud.pubsub_v1.PublisherClient.publish')
-  def test_bucket(self, mock_publish):
+  @mock.patch('osv.Bug.get_by_id')
+  def test_bucket(self, mock_get_by_id: mock.MagicMock,
+                  mock_publish: mock.MagicMock):
     """Test bucket updates."""
     imp = importer.Importer('fake_public_key', 'fake_private_key', self.tmp_dir,
                             'bucket')
+
+    def get_by_id_mock_side_effect(id_value):
+      # For this entry specifically, return the exact same modified value
+      # Should result in skipping publishing this entry
+      if id_value == 'DSA-3029-1':
+        return mock.MagicMock(
+            import_last_modified=datetime.datetime.fromisoformat(
+                '2014-09-20T08:18:07+00:00'))
+      else:
+        return None
+
+    mock_get_by_id.side_effect = get_by_id_mock_side_effect
+
     imp.run()
     mock_publish.assert_has_calls([
         mock.call(
@@ -374,6 +389,18 @@ class BucketImporterTest(unittest.TestCase):
                              'a408735f1c2502ee8fa08745096e1971'),
             deleted='false'),
     ])
+
+    # Test this entry is not published
+    dsa_call = mock.call(
+        'projects/oss-vdb/topics/tasks',
+        data=b'',
+        type='update',
+        source='bucket',
+        path='a/b/DSA-3029-1.json',
+        original_sha256=mock.ANY,
+        deleted='false')
+
+    assert dsa_call not in mock_publish.mock_calls
 
 
 if __name__ == '__main__':

@@ -301,19 +301,17 @@ class Importer:
       logging.info('Bucket entry triggered for for %s/%s', source_repo.bucket,
                    blob.name)
       blob_bytes = blob.download_as_bytes()
-
       # Might be an array, might not
-      vulnerabilities = json.loads(blob_bytes)
+      vulnerabilities = osv.parse_vulnerabilities_from_data(
+          blob_bytes,
+          os.path.splitext(blob.name)[1])
 
-      if not isinstance(vulnerabilities, list):
-        vulnerabilities = [vulnerabilities]
+      def unchanged_vuln_exist(vuln):
+        bug = osv.Bug.get_by_id(vuln.id)
+        return bug and bug.import_last_modified == vuln.modified.ToDatetime(
+            tzinfo=datetime.timezone.utc)
 
-      def identical_vuln_exist(vuln):
-        bug = osv.Bug.get_by_id(vuln['id'])
-        return bug and bug.import_last_modified == datetime.datetime.fromisoformat(
-            vuln['modified'].replace('Z', '+00:00'))
-
-      if all(identical_vuln_exist(vuln) for vuln in vulnerabilities):
+      if all(unchanged_vuln_exist(vuln) for vuln in vulnerabilities):
         continue
 
       original_sha256 = osv.sha256_bytes(blob_bytes)

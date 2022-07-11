@@ -308,8 +308,8 @@ class Importer:
 
       def unchanged_vuln_exist(vuln):
         bug = osv.Bug.get_by_id(vuln.id)
-        return bug and bug.import_last_modified == vuln.modified.ToDatetime(
-            tzinfo=datetime.timezone.utc)
+        # Both times are not timezone aware
+        return bug and bug.import_last_modified == vuln.modified.ToDatetime()
 
       if all(unchanged_vuln_exist(vuln) for vuln in vulnerabilities):
         continue

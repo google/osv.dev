@@ -223,6 +223,8 @@ class Bug(ndb.Model):
   timestamp = ndb.DateTimeProperty()
   # When the entry was last edited.
   last_modified = ndb.DateTimeProperty()
+  # Last modified field of the original imported file
+  import_last_modified = ndb.DateTimeProperty()
   # When the entry was withdrawn.
   withdrawn = ndb.DateTimeProperty()
   # The source identifier.

@@ -1,7 +1,7 @@
 {
     "_meta": {
         "hash": {
-            "sha256": "586a36911fef5c4a1f7880dcf807d4b56319cd330059c9bef2118b69cd3710fe"
+            "sha256": "7922b3bcf8940eecf3962f3b1ac6da007ad742c740d368d6a767ae4aee22db40"
         },
         "pipfile-spec": 6,
         "requires": {},
@@ -139,7 +139,9 @@
             "version": "==1.2.13"
         },
         "google-api-core": {
-            "extras": [],
+            "extras": [
+                "grpc"
+            ],
             "hashes": [
                 "sha256:06f7244c640322b508b125903bb5701bebabce8832f85aba9335ec00b3d02edc",
                 "sha256:93c6a91ccac79079ac6bbf8b74ee75db970cc899278b97d53bc012f35908cf50"
@@ -362,7 +364,7 @@
         },
         "osv": {
             "editable": true,
-            "path": "./lib"
+            "path": "./../.."
         },
         "packaging": {
             "hashes": [

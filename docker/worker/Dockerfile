@@ -44,7 +44,7 @@ RUN curl -fsSL https://gvisor.dev/archive.key | apt-key add - && \
     apt-get update && apt-get install -y runsc
 
 # Make gVisor the default Docker runtime.
-COPY daemon.json /etc/docker/daemon.json
+COPY docker/worker/daemon.json /etc/docker/daemon.json
 
 # Build newer libssh2 (to fix auth issues) and use newer libgit2 to avoid a bug
 # with cloning from Gerrit (https://github.com/libgit2/libgit2/pull/5536)
@@ -66,15 +66,17 @@ RUN mkdir /tmp/build && cd /tmp/build && \
     rm -rf /tmp/build
 RUN ldconfig
 
-RUN mkdir /work && mkdir /env
+RUN mkdir /work && mkdir -p /env/docker/worker
 VOLUME /var/lib/docker
 
 ENV PIP_NO_BINARY pygit2
-COPY Pipfile Pipfile.lock /env/
-COPY lib /env/lib
-RUN cd /env && pip3 install pipenv && pipenv install --deploy --system
+# Replicate project structure to make relative editable pipenv dependency work.
+COPY docker/worker/Pipfile* /env/docker/worker/
+COPY setup.py Pipfile* README.md /env/
+COPY osv /env/osv
+RUN cd /env/docker/worker && pip3 install pipenv && pipenv install --deploy --system
 
-COPY oss_fuzz.py worker.py /usr/local/bin/
+COPY docker/worker/oss_fuzz.py docker/worker/worker.py /usr/local/bin/
 RUN chmod 755 /usr/local/bin/worker.py
 
 ENV GOOGLE_CLOUD_PROJECT oss-vdb

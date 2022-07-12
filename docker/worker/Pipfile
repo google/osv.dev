@@ -12,7 +12,7 @@ pygit2 = "==1.5.0"
 PyYAML = "*"
 google-cloud-storage = "*"
 redis = "*"
-osv = {editable = true, path = "./lib"}
+osv = {editable = true, path = "../../"}
 
 [dev-packages]
 yapf = "*"

@@ -476,7 +476,7 @@ class TaskRunner:
 
     bug.update_from_vulnerability(vulnerability)
     bug.public = True
-    bug.import_last_modified = og_modified_date
+    bug.import_last_modified = og_modified_date.ToDatetime()
 
     # OSS-Fuzz sourced bugs use a different format for source_id.
     if source_repo.name != 'oss-fuzz' or not bug.source_id:

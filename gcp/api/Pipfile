@@ -9,7 +9,7 @@ name = "pypi"
 # automatically pull in dependencies it needs
 attrs = "==21.4.0"
 google-api-core = "==1.31.5"
-google-api-python-client = "==1.12.8"
+google-api-python-client = "==2.0.2"
 google-auth = "==1.35.0"
 google-auth-httplib2 = "==0.0.4"
 google-cloud-core = "==1.7.2"

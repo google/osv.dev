@@ -57,9 +57,9 @@ RUN mkdir /tmp/build && cd /tmp/build && \
     cmake .. && \
     cmake --build . && cmake --build . --target install && \
     cd /tmp/build && \
-    wget https://github.com/libgit2/libgit2/releases/download/v1.1.0/libgit2-1.1.0.tar.gz && \
-    tar xzf libgit2-1.1.0.tar.gz && \
-    cd libgit2-1.1.0/ && \
+    wget https://github.com/libgit2/libgit2/archive/refs/tags/v1.4.3.tar.gz && \
+    tar xzf v1.4.3.tar.gz && \
+    cd libgit2-1.4.3/ && \
     cmake . && \
     make && make install && \
     apt-get remove --purge -y cmake build-essential wget libssl-dev pkg-config && \

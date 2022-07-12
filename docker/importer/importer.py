@@ -311,8 +311,8 @@ class Importer:
         return bug and bug.import_last_modified == vuln.modified.ToDatetime()
 
       if all(unchanged_vuln_exist(vuln) for vuln in vulnerabilities):
-        logging.info(
-            'Skipping updates for %s as modified date unchanged.', blob.name)
+        logging.info('Skipping updates for %s as modified date unchanged.',
+                     blob.name)
         continue
 
       original_sha256 = osv.sha256_bytes(blob_bytes)

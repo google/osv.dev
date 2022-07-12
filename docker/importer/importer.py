@@ -301,7 +301,6 @@ class Importer:
       logging.info('Bucket entry triggered for for %s/%s', source_repo.bucket,
                    blob.name)
       blob_bytes = blob.download_as_bytes()
-      # Might be an array, might not
       vulnerabilities = osv.parse_vulnerabilities_from_data(
           blob_bytes,
           os.path.splitext(blob.name)[1])

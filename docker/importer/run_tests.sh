@@ -13,11 +13,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# Copy common libraries/utils shared with App Engine as symlinks don't work
-# here.
-rm -rf lib
-cp -r ../../lib .
-
 cd ../worker
 pipenv sync
 pipenv run python ../importer/importer_test.py

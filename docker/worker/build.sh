@@ -17,7 +17,9 @@
 # Copy common libraries/utils shared with App Engine as symlinks don't work
 # here.
 rm -rf lib
-cp -r ../../lib .
+mkdir -p lib
+cp -r ../../osv lib
+cp ../../{setup.py,Pipfile,Pipfile.lock,README.md} lib
 
 docker build -t gcr.io/oss-vdb/worker:$1 . && \
 docker build -t gcr.io/oss-vdb/worker:latest . && \

@@ -4,22 +4,17 @@ verify_ssl = true
 name = "pypi"
 
 [packages]
-# TODO: Temporary attrs package because it is used by osv.
-# Better soultion is to load the osv library here to
-# automatically pull in dependencies it needs
-attrs = "==21.4.0"
 Flask = "==1.1.2"
 Flask-Caching = "==1.10.1"
 google-auth = "==1.30.1"
-google-cloud-datastore = "==1.15.3"
 google-cloud-logging = "==2.4.0"
-google-cloud-ndb = "==1.8.0"
 google-cloud-pubsub = "==2.5.0"
 google-cloud-secret-manager = "==1.0.0"
 itsdangerous = "==2.0.1"
 jinja2 = "==3.0.3"
 markdown2 = "==2.4.2"
 markupsafe = "==2.0.1"
+osv = {editable = true, path = "../../"}
 packaging = "==20.9"
 pygit2 = "==1.4.0"
 redis = "==3.5.3"

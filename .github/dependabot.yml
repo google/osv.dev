@@ -5,10 +5,6 @@ updates:
   schedule:
     interval: weekly
 - package-ecosystem: pip
-  directory: "/lib"
-  schedule:
-    interval: weekly
-- package-ecosystem: pip
   directory: "/gcp/api"
   schedule:
     interval: weekly
@@ -29,6 +25,10 @@ updates:
   schedule:
     interval: weekly
 - package-ecosystem: github-actions
+  directory: "/"
+  schedule:
+    interval: weekly
+- package-ecosystem: pip
   directory: "/"
   schedule:
     interval: weekly

@@ -15,8 +15,8 @@
 
 # Copy common libraries/utils shared with App Engine as symlinks don't work
 # here.
-rm -rf lib
-cp -r ../../lib .
+rm -rf osv
+cp -r ../../osv .
 
 export GOOGLE_CLOUD_PROJECT=fake-project123
 pipenv sync

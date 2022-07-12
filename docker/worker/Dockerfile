@@ -25,6 +25,7 @@ RUN apt-get update && apt-get upgrade -y && \
         python3-pip \
         software-properties-common
 
+
 # Install Docker.
 RUN curl -fsSL https://download.docker.com/linux/ubuntu/gpg | apt-key add - && \
     add-apt-repository \

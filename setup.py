@@ -33,6 +33,7 @@ setuptools.setup(
         'Operating System :: OS Independent',
     ],
     install_requires=[
+        # TODO(ochang): Get this from the Pipfile.
         'google-cloud-ndb',
         'pygit2',
         'PyYAML',

@@ -301,9 +301,13 @@ class Importer:
       logging.info('Bucket entry triggered for for %s/%s', source_repo.bucket,
                    blob.name)
       blob_bytes = blob.download_as_bytes()
-      vulnerabilities = osv.parse_vulnerabilities_from_data(
-          blob_bytes,
-          os.path.splitext(blob.name)[1])
+      try:
+        vulnerabilities = osv.parse_vulnerabilities_from_data(
+            blob_bytes,
+            os.path.splitext(blob.name)[1])
+      except Exception as e:
+        logging.error('Failed to parse vulnerability %s: %s', blob.name, e)
+        continue
 
       def unchanged_vuln_exist(vuln):
         bug = osv.Bug.get_by_id(vuln.id)

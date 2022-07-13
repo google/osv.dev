@@ -71,6 +71,7 @@ VOLUME /var/lib/docker
 
 ENV PIP_NO_BINARY pygit2
 # Replicate project structure to make relative editable pipenv dependency work.
+# TODO(ochang): Just copy the entire project (needs a clean checkout).
 COPY docker/worker/Pipfile* /env/docker/worker/
 COPY setup.py Pipfile* README.md /env/
 COPY osv /env/osv

@@ -17,13 +17,12 @@ steps:
   dir: docker/worker
   args: ['clone', 'https://source.developers.google.com/p/oss-vdb/r/osv-test']
 - name: 'gcr.io/oss-vdb/ci'
+  args: ['bash', '-x', 'run_tests.sh']
+- name: 'gcr.io/oss-vdb/ci'
   dir: docker/worker
   args: ['bash', '-x', 'run_tests.sh']
 - name: 'gcr.io/oss-vdb/ci'
   dir: docker/importer
-  args: ['bash', '-x', 'run_tests.sh']
-- name: 'gcr.io/oss-vdb/ci'
-  dir: lib
   args: ['bash', '-x', 'run_tests.sh']
 - name: 'gcr.io/cloud-builders/gcloud'
   entrypoint: 'bash'

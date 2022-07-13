@@ -9,7 +9,7 @@ tag=$1
 name=$2
 
 rm -rf osv
-cp -r ../../lib/osv .
+cp -r ../../osv .
 docker build -t "gcr.io/oss-vdb/osv-server:$tag" . &&
 docker push "gcr.io/oss-vdb/osv-server:$tag"
 

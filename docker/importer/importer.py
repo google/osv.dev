@@ -300,7 +300,26 @@ class Importer:
 
       logging.info('Bucket entry triggered for for %s/%s', source_repo.bucket,
                    blob.name)
-      original_sha256 = osv.sha256_bytes(blob.download_as_bytes())
+      blob_bytes = blob.download_as_bytes()
+      try:
+        vulnerabilities = osv.parse_vulnerabilities_from_data(
+            blob_bytes,
+            os.path.splitext(blob.name)[1])
+      except Exception as e:
+        logging.error('Failed to parse vulnerability %s: %s', blob.name, e)
+        continue
+
+      def unchanged_vuln_exist(vuln):
+        bug = osv.Bug.get_by_id(vuln.id)
+        # Both times are not timezone aware
+        return bug and bug.import_last_modified == vuln.modified.ToDatetime()
+
+      if all(unchanged_vuln_exist(vuln) for vuln in vulnerabilities):
+        logging.info('Skipping updates for %s as modified date unchanged.',
+                     blob.name)
+        continue
+
+      original_sha256 = osv.sha256_bytes(blob_bytes)
       self._request_analysis_external(source_repo, original_sha256, blob.name)
 
     source_repo.last_update_date = utcnow().date()

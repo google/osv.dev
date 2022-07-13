@@ -25,6 +25,7 @@ RUN apt-get update && apt-get upgrade -y && \
         python3-pip \
         software-properties-common
 
+
 # Install Docker.
 RUN curl -fsSL https://download.docker.com/linux/ubuntu/gpg | apt-key add - && \
     add-apt-repository \
@@ -38,11 +39,12 @@ RUN echo "deb [signed-by=/usr/share/keyrings/cloud.google.gpg] http://packages.c
 
 # Install gVisor.
 RUN curl -fsSL https://gvisor.dev/archive.key | apt-key add - && \
-    add-apt-repository "deb https://storage.googleapis.com/gvisor/releases master main" && \
+    # Pinning the version as the latest has a hash sum mismatch.
+    add-apt-repository "deb https://storage.googleapis.com/gvisor/releases 20220621 main" && \
     apt-get update && apt-get install -y runsc
 
 # Make gVisor the default Docker runtime.
-COPY daemon.json /etc/docker/daemon.json
+COPY docker/worker/daemon.json /etc/docker/daemon.json
 
 # Build newer libssh2 (to fix auth issues) and use newer libgit2 to avoid a bug
 # with cloning from Gerrit (https://github.com/libgit2/libgit2/pull/5536)
@@ -55,24 +57,26 @@ RUN mkdir /tmp/build && cd /tmp/build && \
     cmake .. && \
     cmake --build . && cmake --build . --target install && \
     cd /tmp/build && \
-    wget https://github.com/libgit2/libgit2/releases/download/v1.1.0/libgit2-1.1.0.tar.gz && \
-    tar xzf libgit2-1.1.0.tar.gz && \
-    cd libgit2-1.1.0/ && \
+    wget https://github.com/libgit2/libgit2/archive/refs/tags/v1.4.3.tar.gz && \
+    tar xzf v1.4.3.tar.gz && \
+    cd libgit2-1.4.3/ && \
     cmake . && \
     make && make install && \
     apt-get remove --purge -y cmake build-essential wget libssl-dev pkg-config && \
     rm -rf /tmp/build
 RUN ldconfig
 
-RUN mkdir /work && mkdir /env
+RUN mkdir /work && mkdir -p /env/docker/worker
 VOLUME /var/lib/docker
 
 ENV PIP_NO_BINARY pygit2
-COPY Pipfile Pipfile.lock /env/
-COPY lib /env/lib
-RUN cd /env && pip3 install pipenv && pipenv install --deploy --system
+# Replicate project structure to make relative editable pipenv dependency work.
+COPY docker/worker/Pipfile* /env/docker/worker/
+COPY setup.py Pipfile* README.md /env/
+COPY osv /env/osv
+RUN cd /env/docker/worker && pip3 install pipenv && pipenv install --deploy --system
 
-COPY oss_fuzz.py worker.py /usr/local/bin/
+COPY docker/worker/oss_fuzz.py docker/worker/worker.py /usr/local/bin/
 RUN chmod 755 /usr/local/bin/worker.py
 
 ENV GOOGLE_CLOUD_PROJECT oss-vdb

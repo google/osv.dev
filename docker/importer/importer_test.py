@@ -354,14 +354,32 @@ class BucketImporterTest(unittest.TestCase):
         extension='.json')
     self.source_repo.put()
 
+    osv.Bug(
+        id='DSA-3029-1',
+        db_id='DSA-3029-1',
+        status=1,
+        source='test',
+        public=True,
+        affected_packages=[{
+            'package': {
+                'ecosystem': 'Debian:7',
+                'name': 'test',
+            },
+        }],
+        # Same timestamp as the DSA-3029-1 modified file
+        import_last_modified=datetime.datetime(2014, 9, 20, 8, 18, 7, 0),
+    ).put()
+
   def tearDown(self):
     shutil.rmtree(self.tmp_dir, ignore_errors=True)
 
   @mock.patch('google.cloud.pubsub_v1.PublisherClient.publish')
-  def test_bucket(self, mock_publish):
+  def test_bucket(self, mock_publish: mock.MagicMock):
     """Test bucket updates."""
+
     imp = importer.Importer('fake_public_key', 'fake_private_key', self.tmp_dir,
                             'bucket')
+
     imp.run()
     mock_publish.assert_has_calls([
         mock.call(
@@ -374,6 +392,18 @@ class BucketImporterTest(unittest.TestCase):
                              'a408735f1c2502ee8fa08745096e1971'),
             deleted='false'),
     ])
+
+    # Test this entry is not published
+    dsa_call = mock.call(
+        'projects/oss-vdb/topics/tasks',
+        data=b'',
+        type='update',
+        source='bucket',
+        path='a/b/DSA-3029-1.json',
+        original_sha256=mock.ANY,
+        deleted='false')
+
+    assert dsa_call not in mock_publish.mock_calls
 
 
 if __name__ == '__main__':

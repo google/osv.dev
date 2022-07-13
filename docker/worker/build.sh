@@ -13,13 +13,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# Build from root context.
+cd ../../
 
-# Copy common libraries/utils shared with App Engine as symlinks don't work
-# here.
-rm -rf lib
-cp -r ../../lib .
-
-docker build -t gcr.io/oss-vdb/worker:$1 . && \
-docker build -t gcr.io/oss-vdb/worker:latest . && \
+docker build -t gcr.io/oss-vdb/worker:$1 -f docker/worker/Dockerfile . && \
+docker build -t gcr.io/oss-vdb/worker:latest -f docker/worker/Dockerfile . && \
 gcloud docker -- push gcr.io/oss-vdb/worker:$1 && \
 gcloud docker -- push gcr.io/oss-vdb/worker:latest

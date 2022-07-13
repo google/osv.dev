@@ -8,11 +8,11 @@ google-cloud-pubsub = "*"
 google-cloud-datastore = "*"
 google-cloud-logging = "*"
 google-cloud-ndb = "*"
-pygit2 = "==1.5.0"
+pygit2 = "==1.9.2"
 PyYAML = "*"
 google-cloud-storage = "*"
 redis = "*"
-osv = {editable = true, path = "./lib"}
+osv = {editable = true, path = "../../"}
 
 [dev-packages]
 yapf = "*"

@@ -21,9 +21,6 @@ jobs:
   publish:
     name: Publish
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: lib
     steps:
     - uses: actions/checkout@v3 # v2.3.4
       with:
@@ -47,4 +44,4 @@ jobs:
       uses: pypa/gh-action-pypi-publish@717ba43cfbb0387f6ce311b169a825772f54d295 # v1.4.2
       with:
         password: ${{ secrets.PYPI_API_TOKEN }}
-        packages_dir: lib/dist/
+        packages_dir: dist/

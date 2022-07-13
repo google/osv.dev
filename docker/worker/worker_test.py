@@ -585,6 +585,7 @@ class UpdateTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
         project=['blah.com/package'],
         ecosystem=['golang'],
         source_id='source:BLAH-123.yaml',
+        import_last_modified=datetime.datetime(2021, 1, 1, 0, 0),
         source_of_truth=osv.SourceOfTruth.SOURCE_REPO).put()
     osv.Bug(
         db_id='BLAH-124',
@@ -592,6 +593,7 @@ class UpdateTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
         project=['blah.com/package'],
         ecosystem=['golang'],
         source_id='source:BLAH-124.yaml',
+        import_last_modified=datetime.datetime(2021, 1, 1, 0, 0),
         source_of_truth=osv.SourceOfTruth.SOURCE_REPO).put()
     osv.Bug(
         db_id='BLAH-125',
@@ -600,12 +602,14 @@ class UpdateTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
         project=['blah.com/package'],
         ecosystem=['golang'],
         source_id='source:BLAH-125.yaml',
+        import_last_modified=datetime.datetime(2021, 1, 1, 0, 0),
         source_of_truth=osv.SourceOfTruth.SOURCE_REPO).put()
     osv.Bug(
         db_id='BLAH-127',
         project=['blah.com/package'],
         ecosystem=['golang'],
         source_id='source:BLAH-127.yaml',
+        import_last_modified=datetime.datetime(2021, 1, 1, 0, 0),
         source_of_truth=osv.SourceOfTruth.SOURCE_REPO).put()
 
     mock_publish = mock.patch('google.cloud.pubsub_v1.PublisherClient.publish')

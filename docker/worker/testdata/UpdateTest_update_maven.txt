@@ -39,6 +39,7 @@
     'ecosystem': ['Maven'],
     'fixed': '',
     'has_affected': True,
+    'import_last_modified': datetime.datetime(2021, 9, 13, 20, 6, 31),
     'is_fixed': True,
     'issue_id': None,
     'last_modified': datetime.datetime(2021, 1, 1, 0, 0),

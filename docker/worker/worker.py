@@ -453,6 +453,7 @@ class TaskRunner:
       logging.warning('%s has an encoding error, skipping.', vulnerability.id)
       return
 
+    orig_modified_date = vulnerability.modified.ToDatetime()
     try:
       result = self._analyze_vulnerability(source_repo, repo, vulnerability,
                                            relative_path, original_sha256)
@@ -475,6 +476,7 @@ class TaskRunner:
 
     bug.update_from_vulnerability(vulnerability)
     bug.public = True
+    bug.import_last_modified = orig_modified_date
 
     # OSS-Fuzz sourced bugs use a different format for source_id.
     if source_repo.name != 'oss-fuzz' or not bug.source_id:

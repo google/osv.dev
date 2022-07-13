@@ -19,7 +19,7 @@ if [ $# -lt 1 ]; then
 fi
 
 rm -rf osv
-cp -r ../../lib/osv .
+cp -r ../../osv .
 
 pipenv lock -r > requirements.txt
 virtualenv ENV

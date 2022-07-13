@@ -174,6 +174,10 @@ class Importer:
 
   def schedule_regular_updates(self, repo, source_repo):
     """Schedule regular updates."""
+    if (source_repo.last_update_date and
+        source_repo.last_update_date >= utcnow().date()):
+      return
+
     for bug in osv.Bug.query(
         osv.Bug.status == osv.BugStatus.PROCESSED,
         osv.Bug.is_fixed == False,  # pylint: disable=singleton-comparison

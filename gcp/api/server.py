@@ -147,7 +147,7 @@ def bug_to_response(bug, include_details=True):
   if include_details:
     return bug.to_vulnerability(include_source=True)
 
-  return {'id': bug.id()}
+  return bug.to_vulnerability_minimal()
 
 
 def _get_bugs(bug_ids, to_response=bug_to_response):

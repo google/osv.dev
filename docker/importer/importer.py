@@ -287,10 +287,6 @@ class Importer:
 
   def _process_updates_bucket(self, source_repo):
     """Process updates from bucket."""
-    if (source_repo.last_update_date and
-        source_repo.last_update_date >= utcnow().date()):
-      return
-
     # TODO(ochang): Use Pub/Sub change notifications for more efficient
     # processing.
     storage_client = storage.Client()

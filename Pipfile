@@ -7,7 +7,7 @@ name = "pypi"
 google-cloud-ndb = "*"
 semver = "*"
 pyyaml = "*"
-pygit2 = "*"
+pygit2 = ">=1.9.2"
 attrs = "*"
 
 [dev-packages]

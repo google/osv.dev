@@ -12,16 +12,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-FROM gcr.io/google_appengine/python
+FROM python:3.8-slim
 
-RUN virtualenv -p python3.7 /env
+# TODO(ochang): Just copy the entire project (needs a clean checkout).
+COPY setup.py Pipfile* README.md /osv/
+COPY gcp/api /osv/gcp/api
 
-ENV VIRTUAL_ENV /env
-ENV PATH /env/bin:$PATH
+WORKDIR /osv/gcp/api
+RUN pip3 install -U pipenv && python3 -m pipenv install --deploy --system
 
-ADD . /osv/
-
-WORKDIR /osv
-RUN pip install -r requirements.txt
-
-ENTRYPOINT ["python", "/osv/server.py"]
+ENTRYPOINT ["python", "/osv/gcp/api/server.py"]

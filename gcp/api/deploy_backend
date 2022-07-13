@@ -8,12 +8,11 @@ fi
 tag=$1
 name=$2
 
-rm -rf osv
-cp -r ../../osv .
-docker build -t "gcr.io/oss-vdb/osv-server:$tag" . &&
+pushd ../../
+docker build -t "gcr.io/oss-vdb/osv-server:$tag" -f gcp/api/Dockerfile .
 docker push "gcr.io/oss-vdb/osv-server:$tag"
+popd
 
-pipenv lock -r > requirements.txt
 gcloud run deploy $name \
   --platform managed \
   --project=oss-vdb \

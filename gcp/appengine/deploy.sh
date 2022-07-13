@@ -4,5 +4,7 @@ pushd frontend3
 npm run build:prod
 popd
 
-python3 -m pipenv lock -r > requirements.txt
+# Skip the '-e' editable library install as we copy in the "osv" library
+# directly instead for deployment.
+python3 -m pipenv lock -r | grep -v '^-e '  > requirements.txt
 gcloud app deploy app.yaml cron.yaml cron-service.yaml --project=oss-vdb

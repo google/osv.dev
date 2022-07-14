@@ -74,7 +74,9 @@ class OSVServicer(osv_service_v1_pb2_grpc.OSVServicer):
 
   @ndb_context
   def QueryAffected(self, request, context):
-    """Query vulnerabilities for a particular project at a given commit or version."""
+    """Query vulnerabilities for a particular project at a given commit or
+    version.
+    """
     results = do_query(request.query, context).result()
     if results is not None:
       return osv_service_v1_pb2.VulnerabilityList(vulns=results)
@@ -183,7 +185,9 @@ def query_by_commit(commit, to_response=bug_to_response):
 
 def _is_semver_affected(affected_packages, package_name, ecosystem, purl,
                         version):
-  """Returns whether or not the given version is within an affected SEMVER range."""
+  """Returns whether or not the given version is within an affected SEMVER
+  range.
+  """
   version = semver_index.parse(version)
 
   affected = False
@@ -219,7 +223,9 @@ def _is_version_affected(affected_packages,
                          purl,
                          version,
                          normalize=False):
-  """Returns whether or not the given version is within an affected ECOSYSTEM range."""
+  """Returns whether or not the given version is within an affected ECOSYSTEM
+  range.
+  """
   for affected_package in affected_packages:
     if package_name and package_name != affected_package.package.name:
       continue

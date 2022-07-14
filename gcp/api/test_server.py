@@ -86,7 +86,7 @@ def get_ip():
 def start_esp(port, backend_port, service_account_path, log_path):
   """Start ESPv2 frontend."""
   log_handle = open(log_path, 'w')
-  service_account_dir = os.path.dirname(service_account_path)
+  service_account_dir = os.path.dirname(os.path.abspath(service_account_path))
   service_account_name = os.path.basename(service_account_path)
 
   if os.getenv('CLOUDBUILD'):

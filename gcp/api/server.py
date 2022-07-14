@@ -60,8 +60,7 @@ class OSVServicer(osv_service_v1_pb2_grpc.OSVServicer):
 
   @ndb_context
   def GetVulnById(self, request, context):
-    """Return a `Vulnerability` object for a given OSV ID.
-    """
+    """Return a `Vulnerability` object for a given OSV ID."""
     bug = osv.Bug.get_by_id(request.id)
     if not bug or bug.status == osv.BugStatus.UNPROCESSED:
       context.abort(grpc.StatusCode.NOT_FOUND, 'Bug not found.')
@@ -76,7 +75,8 @@ class OSVServicer(osv_service_v1_pb2_grpc.OSVServicer):
   @ndb_context
   def QueryAffected(self, request, context):
     """Query vulnerabilities for a particular project at a given commit or
-    version."""
+    version.
+    """
     results = do_query(request.query, context).result()
     if results is not None:
       return osv_service_v1_pb2.VulnerabilityList(vulns=results)
@@ -186,7 +186,8 @@ def query_by_commit(commit, to_response=bug_to_response):
 def _is_semver_affected(affected_packages, package_name, ecosystem, purl,
                         version):
   """Returns whether or not the given version is within an affected SEMVER
-  range."""
+  range.
+  """
   version = semver_index.parse(version)
 
   affected = False
@@ -223,13 +224,18 @@ def _is_version_affected(affected_packages,
                          version,
                          normalize=False):
   """Returns whether or not the given version is within an affected ECOSYSTEM
-  range."""
+  range.
+  """
   for affected_package in affected_packages:
     if package_name and package_name != affected_package.package.name:
       continue
 
-    if ecosystem and ecosystem != affected_package.package.ecosystem:
-      continue
+    if ecosystem:
+      # If package ecosystem has a :, also try ignoring parts after it.
+      if (affected_package.package.ecosystem != ecosystem and
+          ecosystems.normalize(
+              affected_package.package.ecosystem) != ecosystem):
+        continue
 
     if purl and purl != affected_package.package.purl:
       continue

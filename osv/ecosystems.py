@@ -384,3 +384,7 @@ def set_cache(cache: Cache):
   """Configures and enables the redis caching layer"""
   global shared_cache
   shared_cache = cache
+
+
+def normalize(ecosystem_name: str):
+  return ecosystem_name.split(':')[0]

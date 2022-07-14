@@ -226,8 +226,8 @@ def _is_version_affected(affected_packages,
 
     if ecosystem:
       # If package ecosystem has a :, also try ignoring parts after it.
-      if affected_package.package.ecosystem != ecosystem and affected_package.package.ecosystem.split(
-          ':')[0] != ecosystem:
+      if affected_package.package.ecosystem != ecosystem and\
+          ecosystems.normalize(affected_package.package.ecosystem) != ecosystem:
         continue
 
     if purl and purl != affected_package.package.purl:

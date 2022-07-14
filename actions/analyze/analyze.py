@@ -19,5 +19,8 @@ import subprocess
 from osv import analyze_tool
 
 if __name__ == '__main__':
-  subprocess.check_output(['git', 'config', '--global', '--add', 'safe.directory', '/github/workspace'])
+  subprocess.check_output([
+      'git', 'config', '--global', '--add', 'safe.directory',
+      '/github/workspace'
+  ])
   analyze_tool.main()

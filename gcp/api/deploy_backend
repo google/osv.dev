@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/bash -ex
 
 if [ $# -lt 2 ]; then
   echo "Usage: $0 <tag> <service-name>"

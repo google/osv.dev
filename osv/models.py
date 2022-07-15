@@ -346,7 +346,7 @@ class Bug(ndb.Model):
 
     # For all ecosystems that specify a specific version with colon,
     # also add the base name
-    ecosystems_set.update({x.split(':')[0] for x in ecosystems_set})
+    ecosystems_set.update({ecosystems.normalize(x) for x in ecosystems_set})
 
     self.ecosystem = list(ecosystems_set)
     self.ecosystem.sort()

@@ -154,6 +154,56 @@ class IntegrationTests(unittest.TestCase):
         }))
     self.assert_results_equal({'vulns': [self._VULN_744]}, response.json())
 
+  def test_query_debian(self):
+    """Test querying Debian with sub ecosystem versions"""
+    dsa_2665_1 = self._get('DSA-710-1')
+
+    response = requests.post(
+        _api() + '/v1/query',
+        data=json.dumps({
+            'version': '1.0.2-1',
+            'package': {
+                'name': 'gtkhtml',
+                'ecosystem': 'Debian',
+            }
+        }))
+    self.assert_results_equal({'vulns': [dsa_2665_1]}, response.json())
+
+    response = requests.post(
+        _api() + '/v1/query',
+        data=json.dumps({
+            'version': '1.0.2-1',
+            'package': {
+                'name': 'gtkhtml',
+                'ecosystem': 'Debian:3.0',
+            }
+        }))
+    self.assert_results_equal({'vulns': [dsa_2665_1]}, response.json())
+
+    # The vulnerbility does not exist in 4.0 release, so this should return
+    # with nothing
+    response = requests.post(
+        _api() + '/v1/query',
+        data=json.dumps({
+            'version': '1.0.2-1',
+            'package': {
+                'name': 'gtkhtml',
+                'ecosystem': 'Debian:4.0',
+            }
+        }))
+    self.assert_results_equal({}, response.json())
+
+    response = requests.post(
+        _api() + '/v1/query',
+        data=json.dumps({
+            'version': '1.0.2-1',
+            'package': {
+                'name': 'gtkhtml',
+                'ecosystem': 'Debian:9',
+            }
+        }))
+    self.assert_results_equal({}, response.json())
+
   def test_query_semver(self):
     """Test query by SemVer."""
     go_2020_0004 = self._get('GO-2020-0004')

@@ -5,10 +5,8 @@ name = "pypi"
 
 [packages]
 google-cloud-pubsub = "*"
-google-cloud-datastore = "*"
 google-cloud-logging = "*"
 google-cloud-ndb = "*"
-pygit2 = "==1.9.2"
 PyYAML = "*"
 google-cloud-storage = "*"
 redis = "*"

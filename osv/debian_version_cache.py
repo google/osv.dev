@@ -17,28 +17,42 @@ import typing
 from urllib import request
 import json
 
+from . import cache
+
 CLOUD_API_CACHE_URL = 'https://storage.googleapis.com/debian-osv/first_package_cache.json.gz'
-debian_version_cache = None
+CACHE_DURATION_SECONDS = 60 * 60 * 24
+
+debian_version_cache = cache.InMemoryCache()
 
 
-def _initiate_from_cloud_cache(
-    force_reload: bool = False) -> typing.Dict[str, typing.Dict]:
-  """Load the debian version cache from the Google cloud link, if it hasn't been loaded yet"""
-  global debian_version_cache
-  if debian_version_cache is None or force_reload:
-    res = request.urlopen(CLOUD_API_CACHE_URL)
-    debian_version_cache = json.loads(gzip.decompress(res.read()))
+def _update_from_cloud_cache():
+  """Update the debian version cache from the Google cloud link"""
+  res = request.urlopen(CLOUD_API_CACHE_URL)
+
+  item: typing.Dict[str, typing.Dict] = json.loads(gzip.decompress(res.read()))
+  for release, sources in item.items():
+    if not sources:
+      continue
+
+    for package, version in sources.items():
+      debian_version_cache.set((package, release), version,
+                               CACHE_DURATION_SECONDS)
 
 
 def get_first_package_version(package_name: str, release_number: str) -> str:
   """Get first package version"""
-  if debian_version_cache is None:
-    _initiate_from_cloud_cache()
 
-  try:
-    return debian_version_cache[release_number][package_name]
-  except KeyError:
-    # The package is not added when the image is first seen.
-    # So it is safe to return 0, indicating the earliest version
-    # given by the snapshot API
-    return '0'
+  result = debian_version_cache.get((package_name, release_number))
+  if result:
+    return result
+
+  _update_from_cloud_cache()
+  # Try again after updating cloud cache
+  result = debian_version_cache.get((package_name, release_number))
+  if result:
+    return result
+
+  # The package is not added when the image is first seen.
+  # So it is safe to return 0, indicating the earliest version
+  # given by the snapshot API
+  return '0'

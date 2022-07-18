@@ -324,7 +324,7 @@ class Debian(Ecosystem):
 
   def __init__(self, debian_release_ver: str):
     self.debian_release_ver = debian_release_ver
-    debian_version_cache._initiate_from_cloud_cache()
+    debian_version_cache._update_from_cloud_cache()
 
   def sort_key(self, version):
     return DebianVersion.from_string(version)

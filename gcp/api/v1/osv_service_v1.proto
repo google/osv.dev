@@ -22,6 +22,7 @@ import "google/api/annotations.proto";
 // A list of Vulnerability entries.
 message VulnerabilityList {
   repeated osv.Vulnerability vulns = 1;
+  string next_page_token = 2;
 }
 
 // Batched lists of Vulnerability entries.

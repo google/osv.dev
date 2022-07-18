@@ -16,6 +16,7 @@ FROM python:3.8-slim
 
 # TODO(ochang): Just copy the entire project (needs a clean checkout).
 COPY setup.py Pipfile* README.md /osv/
+COPY osv /osv/osv
 COPY gcp/api /osv/gcp/api
 
 WORKDIR /osv/gcp/api

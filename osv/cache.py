@@ -13,7 +13,10 @@
 # limitations under the License.
 """Caching interface and implementations"""
 import datetime
+import functools
 import typing
+from inspect import getcallargs
+from os.path import exists
 
 
 class Cache:
@@ -56,3 +59,30 @@ class InMemoryCache(Cache):
 
   def set(self, key, value, ttl):
     self.key_val_map[key] = _CacheEntry(value, ttl)
+
+
+def Cached(cache: Cache, ttl: int = 60 * 60, cache_blacklist=frozenset()):
+  """
+  Decorates your function to cache results
+  :param cache_blacklist: Avoid caching these results
+  :param cache: Cache object to store information
+  :param ttl: Time to live in seconds (default 1 hour)
+  """
+
+  def decorator(func):
+
+    @functools.wraps(func)
+    def wrapper(*args, **kwargs):
+      key = frozenset(getcallargs(func, *args, **kwargs).items())
+      cached_value = cache.get(key)
+      if cached_value:
+        return cached_value
+
+      value = func(*args, **kwargs)
+      if value not in cache_blacklist:
+        cache.set(key, value, ttl)
+      return value
+
+    return wrapper
+
+  return decorator

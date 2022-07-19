@@ -19,18 +19,16 @@ import json
 
 from . import cache
 
-CLOUD_API_CACHE_URL_TEMPLATE = 'https://storage.googleapis.com/debian-osv/first_package_output/{version}/{package}.txt'
+CLOUD_API_CACHE_URL_TEMPLATE = 'https://storage.googleapis.com/debian-osv/first_package_output/{version}/{package}'
 CACHE_DURATION_SECONDS = 60 * 60 * 24
 
 debian_version_cache = cache.InMemoryCache()
 
 
+@cache.Cached(
+    debian_version_cache, 24 * 60 * 60, cache_blacklist=frozenset({'0'}))
 def get_first_package_version(package_name: str, release_number: str) -> str:
   """Get first package version"""
-
-  result = debian_version_cache.get((package_name, release_number))
-  if result:
-    return result
 
   response = requests.get(
       CLOUD_API_CACHE_URL_TEMPLATE.format(
@@ -40,8 +38,5 @@ def get_first_package_version(package_name: str, release_number: str) -> str:
     # So it is safe to return 0, indicating the earliest version
     # given by the snapshot API
     return '0'
-
-  debian_version_cache.set((package_name, release_number), response.text,
-                           24 * 60 * 60)
 
   return response.text

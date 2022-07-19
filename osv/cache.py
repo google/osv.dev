@@ -16,7 +16,6 @@ import datetime
 import functools
 import typing
 from inspect import getcallargs, getmodule
-from os.path import exists
 
 
 class Cache:
@@ -64,7 +63,6 @@ class InMemoryCache(Cache):
 def Cached(cache: Cache, ttl: int = 60 * 60):
   """
   Decorates your function to cache results
-  :param cache_blocklist: Avoid caching these results
   :param cache: Cache object to store information, each function also has a
   unique key for values cached, therefore you can safely share the same cache
   object across different functions.

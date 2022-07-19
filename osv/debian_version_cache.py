@@ -23,6 +23,7 @@ debian_version_cache = cache.InMemoryCache()
 
 
 class VersionNotFoundError(Exception):
+  """First version of package in release can't be found"""
   pass
 
 

@@ -61,10 +61,10 @@ class InMemoryCache(Cache):
     self.key_val_map[key] = _CacheEntry(value, ttl)
 
 
-def Cached(cache: Cache, ttl: int = 60 * 60, cache_blacklist=frozenset()):
+def Cached(cache: Cache, ttl: int = 60 * 60):
   """
   Decorates your function to cache results
-  :param cache_blacklist: Avoid caching these results
+  :param cache_blocklist: Avoid caching these results
   :param cache: Cache object to store information
   :param ttl: Time to live in seconds (default 1 hour)
   """
@@ -79,8 +79,8 @@ def Cached(cache: Cache, ttl: int = 60 * 60, cache_blacklist=frozenset()):
         return cached_value
 
       value = func(*args, **kwargs)
-      if value not in cache_blacklist:
-        cache.set(key, value, ttl)
+      cache.set(key, value, ttl)
+
       return value
 
     return wrapper

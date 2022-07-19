@@ -103,14 +103,17 @@ work:
 git submodule update --init --recursive
 ```
 
+## Development
+See <CONTRIBUTING.md>.
+
 ## Third party tools
 
 There are also community tools that use OSV. Note that these are community built tools and
-unsupported by the core OSV maintainers. 
+unsupported by the core OSV maintainers.
 
-- [G-Rath/osv-detector](https://github.com/G-Rath/osv-detector): A scanner that uses the OSV database. 
+- [G-Rath/osv-detector](https://github.com/G-Rath/osv-detector): A scanner that uses the OSV database.
 
-## Contributing 
+## Contributing
 Contributions are welcome! We also have a
 [mailing list](https://groups.google.com/g/osv-discuss) and a
 [FAQ](https://osv.dev/docs/#tag/faq).

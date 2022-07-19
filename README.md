@@ -104,7 +104,7 @@ git submodule update --init --recursive
 ```
 
 ## Development
-See <CONTRIBUTING.md>.
+See [CONTRIBUTING.md](CONTRIBUTING.md).
 
 ## Third party tools
 

@@ -342,9 +342,15 @@ class Debian(Ecosystem):
       ) from ex
 
     response = json.loads(text_response)
-    versions = [x['version'] for x in response['result']]
+    versions: list[str] = [x['version'] for x in response['result']]
     # Sort to ensure it is in the correct order
     versions.sort(key=self.sort_key)
+
+    # The only versions with +deb
+    versions = [
+        x for x in versions
+        if '+deb' not in x or f'+deb{self.debian_release_ver}' in x
+    ]
 
     if introduced == '0':
       # Update introduced to the first version of the debian version

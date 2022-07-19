@@ -93,6 +93,14 @@ class GetNextVersionTest(unittest.TestCase):
     self.assertGreater(
         ecosystem.sort_key('1.13.6-2'), ecosystem.sort_key('1.13.6-1'))
 
+    # Test Ecosystem remover
+    ecosystem = ecosystems.get('Debian:10')
+    versions = ecosystem.enumerate_versions('cyrus-sasl2', '2.1.27+dfsg-1',
+                                            None)
+    self.assertIn('2.1.27+dfsg-1+deb10u1', versions)
+    self.assertNotIn('2.1.27~101-g0780600+dfsg-3+deb9u1', versions)
+    self.assertNotIn('2.1.27~101-g0780600+dfsg-3+deb9u2', versions)
+
     with self.assertRaises(ecosystems.EnumerateError):
       ecosystem.next_version('doesnotexist123456', '1')
 

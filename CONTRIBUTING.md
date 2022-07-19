@@ -39,7 +39,6 @@ You must install:
 Then you can set up the development environment by cloning the OSV repo and
 installing the Pipfile dependencies.
 
-
 ```shell
 $ git clone https://github.com/google/osv.dev
 $ cd osv.dev
@@ -54,6 +53,7 @@ Certain tests require you to auth with the Google Cloud SDK:
 $ gcloud auth login --update-adc
 ```
 
+To run tests:
 ```shell
 $ make all-tests
 ```

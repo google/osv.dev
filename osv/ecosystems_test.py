@@ -95,8 +95,8 @@ class GetNextVersionTest(unittest.TestCase):
 
     # Test Ecosystem remover
     ecosystem = ecosystems.get('Debian:10')
-    versions = ecosystem.enumerate_versions('cyrus-sasl2', '2.1.27+dfsg-1',
-                                            None)
+    # '0' as introduced version also tests the get_first_package_version func
+    versions = ecosystem.enumerate_versions('cyrus-sasl2', '0', None)
     self.assertIn('2.1.27+dfsg-1+deb10u1', versions)
     self.assertNotIn('2.1.27~101-g0780600+dfsg-3+deb9u1', versions)
     self.assertNotIn('2.1.27~101-g0780600+dfsg-3+deb9u2', versions)

@@ -49,7 +49,7 @@ def main():
   if os.path.exists(osv_path):
     shutil.rmtree(osv_path)
 
-  shutil.copytree(os.path.join(_ROOT_DIR, 'lib', 'osv'), osv_path)
+  shutil.copytree(os.path.join(_ROOT_DIR, 'osv'), osv_path)
 
   subprocess.run([
       'protoc',

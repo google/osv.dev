@@ -13,28 +13,39 @@
 # limitations under the License.
 """Caches the debian package first version dataframe"""
 import requests
+import json
 
 from . import cache
 
-CLOUD_API_CACHE_URL_TEMPLATE = 'https://storage.googleapis.com/debian-osv/first_package_output/{version}/{package}'
+CLOUD_API_CACHE_URL_TEMPLATE = 'https://storage.googleapis.com/debian-osv/first_package_output/{version}.json'
 CACHE_DURATION_SECONDS = 60 * 60 * 24
 
 debian_version_cache = cache.InMemoryCache()
 
 
-class VersionNotFoundError(Exception):
-  """First version of package in release can't be found"""
-  pass
+class ReleaseNotFoundError(Exception):
+  """Release cannot be found, most likely a new release that haven't been picked up yet"""
+  release_number: str
+
+  def __init__(self, release_number):
+    self.release_number = release_number
 
 
 @cache.Cached(debian_version_cache, 24 * 60 * 60)
+def _get_first_versions_for_release(release_number: str):
+  """Gets the first version mapping for specific release number"""
+  response = requests.get(
+      CLOUD_API_CACHE_URL_TEMPLATE.format(version=release_number))
+  if response.status_code == 404:
+    raise ReleaseNotFoundError(release_number)
+
+  return json.loads(response.text)
+
+
 def get_first_package_version(package_name: str, release_number: str) -> str:
   """Get first package version"""
 
-  response = requests.get(
-      CLOUD_API_CACHE_URL_TEMPLATE.format(
-          version=release_number, package=package_name))
-  if response.status_code == 404:
-    raise VersionNotFoundError()
-
-  return response.text
+  try:
+    return _get_first_versions_for_release(release_number)[package_name]
+  except KeyError:
+    return '0'

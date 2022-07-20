@@ -137,10 +137,9 @@ data-column-id="{{ column_id }}"
           <div class="next-page-container">
           <a class="next-page-button link-button" data-turbo-frame="_self"
              href="{{ url_for(request.endpoint) }}?page={{ page + 1 }}{% if selected_ecosystem %}&ecosystem={{ selected_ecosystem }}{% endif %}">
-            Load more...
+            <span>Load more...</span>
             {% if total_pages - page <= 3 %}
-              &nbsp;&nbsp;&nbsp;
-              ({{ total_pages - page }} page{% if total_pages - page > 1 %}s{% endif %} left)
+              <span style="margin-left: 5px">({{ total_pages - page }} page{% if total_pages - page > 1 %}s{% endif %} left)</span>
             {% endif %}
           </a>
           <mwc-circular-progress class="next-page-indicator" indeterminate density="-4"></mwc-circular-progress>

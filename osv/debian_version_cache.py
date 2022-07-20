@@ -48,4 +48,7 @@ def get_first_package_version(package_name: str, release_number: str) -> str:
   try:
     return _get_first_versions_for_release(release_number)[package_name]
   except KeyError:
+    # The package is not added when the image is first seen.
+    # So it is safe to leave it as 0, indicating the earliest version
+    # given by the snapshot API
     return '0'

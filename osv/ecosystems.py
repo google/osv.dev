@@ -352,15 +352,9 @@ class Debian(Ecosystem):
     ]
 
     if introduced == '0':
-      try:
-        # Update introduced to the first version of the debian version
-        introduced = debian_version_cache.get_first_package_version(
-            package, self.debian_release_ver)
-      except debian_version_cache.VersionNotFoundError:
-        # The package is not added when the image is first seen.
-        # So it is safe to leave it as 0, indicating the earliest version
-        # given by the snapshot API
-        pass
+      # Update introduced to the first version of the debian version
+      introduced = debian_version_cache.get_first_package_version(
+          package, self.debian_release_ver)
 
     return self._get_affected_versions(versions, introduced, fixed, limits)
 

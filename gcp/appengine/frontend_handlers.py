@@ -23,6 +23,7 @@ from flask import make_response
 from flask import redirect
 from flask import render_template
 from flask import request
+from flask import url_for
 import markdown2
 from urllib import parse
 
@@ -102,7 +103,8 @@ def list_vulnerabilities():
     if request.args.get('page', 1) != 1:
       q = parse.parse_qs(request.query_string)
       q.pop(b'page', None)
-      return redirect(request.path + '?' + parse.urlencode(q, True))
+      return redirect(
+          url_for(request.endpoint) + '?' + parse.urlencode(q, True))
 
   query = request.args.get('q', '')
   page = int(request.args.get('page', 1))

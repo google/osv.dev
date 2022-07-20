@@ -24,6 +24,7 @@ from flask import redirect
 from flask import render_template
 from flask import request
 import markdown2
+from urllib import parse
 
 import cache
 import osv
@@ -94,6 +95,15 @@ def about():
 @blueprint.route('/list')
 def list_vulnerabilities():
   """Main page."""
+  is_turbo_frame = request.headers.get('Turbo-Frame')
+
+  # Remove page parameter if not from turbo frame
+  if not is_turbo_frame:
+    if request.args.get('page', 1) != 1:
+      q = parse.parse_qs(request.query_string)
+      q.pop(b'page', None)
+      return redirect(request.path + '?' + parse.urlencode(q, True))
+
   query = request.args.get('q', '')
   page = int(request.args.get('page', 1))
   ecosystem = request.args.get('ecosystem')
@@ -102,11 +112,12 @@ def list_vulnerabilities():
   # Fetch ecosystems by default. As an optimization, skip when rendering page
   # fragments.
   ecosystem_counts = osv_get_ecosystem_counts_cached(
-  ) if not request.headers.get('Turbo-Frame') else None
+  ) if not is_turbo_frame else None
 
   return render_template(
       'list.html',
       page=page,
+      total_pages=math.ceil(results['total'] / _PAGE_SIZE),
       query=query,
       selected_ecosystem=ecosystem,
       ecosystem_counts=ecosystem_counts,

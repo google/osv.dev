@@ -395,6 +395,15 @@ mwc-icon-button.mdc-data-table__sort-icon-button {
       transform: translateX(-50%);
     }
   }
+
+  .no-results {
+    font-family: $osv-heading-font-family;
+    font-weight: bold;
+    position: absolute;
+    left: 50%;
+    transform: translateX(-50%);
+    padding: 25px;
+  }
 }
 
 /** Vulnerability page */

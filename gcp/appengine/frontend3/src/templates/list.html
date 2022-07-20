@@ -128,16 +128,25 @@ data-column-id="{{ column_id }}"
           </span>
         </div>
         {% endfor %}
-        <turbo-frame id="vulnerability-table-page{{ page + 1 }}" data-turbo-action="advance" target="_top"
-            class="next-page-frame">
+        {% if vulnerabilities | length == 0 %}
+          <span class="no-results">No results</span>
+        {% endif %}
+        {% if page < total_pages %}
+          <turbo-frame id="vulnerability-table-page{{ page + 1 }}" data-turbo-action="advance" target="_top"
+                       class="next-page-frame">
           <div class="next-page-container">
-            <a class="next-page-button link-button" data-turbo-frame="_self"
-                href="{{ url_for(request.endpoint) }}?page={{ page + 1 }}{% if selected_ecosystem %}&ecosystem={{ selected_ecosystem }}{% endif %}">
-              Load more...
-            </a>
-            <mwc-circular-progress class="next-page-indicator" indeterminate density="-4"></mwc-circular-progress>
+          <a class="next-page-button link-button" data-turbo-frame="_self"
+             href="{{ url_for(request.endpoint) }}?page={{ page + 1 }}{% if selected_ecosystem %}&ecosystem={{ selected_ecosystem }}{% endif %}">
+            Load more...
+            {% if total_pages - page <= 3 %}
+              &nbsp;&nbsp;&nbsp;
+              ({{ total_pages - page }} page{% if total_pages - page > 1 %}s{% endif %} left)
+            {% endif %}
+          </a>
+          <mwc-circular-progress class="next-page-indicator" indeterminate density="-4"></mwc-circular-progress>
           </div>
-        </turbo-frame>
+          </turbo-frame>
+        {% endif %}
       </turbo-frame>
     </div>
   </div>

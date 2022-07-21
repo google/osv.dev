@@ -334,14 +334,6 @@
           },
           "description": "Optional. List of IDs of closely related vulnerabilities, such as the same\nproblem in alternate ecosystems."
         },
-        "package": {
-          "description": "Required. Package information.",
-          "allOf": [
-            {
-              "$ref": "#/definitions/osvPackage"
-            }
-          ]
-        },
         "summary": {
           "type": "string",
           "description": "Required. One line human readable summary for the vulnerability. It is\nrecommended to keep this under 120 characters."

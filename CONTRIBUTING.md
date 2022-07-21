@@ -43,15 +43,18 @@ installing the Pipfile dependencies.
 ```shell
 $ git clone https://github.com/google/osv.dev
 $ cd osv.dev
+$ git submodule update --init --recursive
 $ pipenv sync --dev
 $ pipenv shell
 ```
 
 ### Running tests
-Certain tests require you to auth with the Google Cloud SDK:
+Certain tests require you to auth with the Google Cloud SDK and to install
+the Datastore Emulator:
 
 ```shell
 $ gcloud auth login --update-adc
+$ gcloud components install beta cloud-datastore-emulator
 ```
 
 To run tests:

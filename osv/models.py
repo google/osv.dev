@@ -528,7 +528,6 @@ class Bug(ndb.Model):
 
   def to_vulnerability(self, include_source=False):
     """Convert to Vulnerability proto."""
-    package = None
     affected = []
 
     source_link = None
@@ -618,7 +617,6 @@ class Bug(ndb.Model):
         withdrawn=withdrawn,
         summary=self.summary,
         details=details,
-        package=package,
         affected=affected,
         severity=severity,
         credits=credits_,

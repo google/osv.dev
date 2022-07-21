@@ -73,3 +73,21 @@ export class CodeBlock extends LitElement {
   }
 }
 customElements.define('code-block', CodeBlock);
+
+function checkVisible(elm) {
+  var rect = elm.getBoundingClientRect();
+  var viewHeight = Math.max(document.documentElement.clientHeight, window.innerHeight);
+  return !(rect.bottom < 0 || rect.top - viewHeight >= 0);
+}
+
+document.addEventListener('scroll', () => {
+  let next_pg_btn = document.querySelector('.next-page-button')
+
+  if (next_pg_btn && !next_pg_btn.getAttribute('already-clicked')) {
+    let vis = checkVisible(next_pg_btn);
+    if (vis) {
+      next_pg_btn.setAttribute('already-clicked', 'true')
+      next_pg_btn.click();
+    }
+  }
+})

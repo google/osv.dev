@@ -1,3 +1,6 @@
 [submodule "gcp/api/googleapis"]
 	path = gcp/api/googleapis
 	url = https://github.com/googleapis/googleapis
+[submodule "docker/worker/osv-test"]
+	path = docker/worker/osv-test
+	url = https://github.com/oliverchang/osv-test.git

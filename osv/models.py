@@ -668,7 +668,7 @@ class SourceRepository(ndb.Model):
   detect_cherrypicks = ndb.BooleanProperty(default=True)
   # Whether to populate "versions" from git ranges.
   versions_from_repo = ndb.BooleanProperty(default=True)
-  # Ignore last import time once
+  # Ignore last import time once.
   ignore_last_import_time = ndb.BooleanProperty(default=False)
   # HTTP link prefix.
   link = ndb.StringProperty()

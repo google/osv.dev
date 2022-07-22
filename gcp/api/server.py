@@ -100,7 +100,7 @@ class OSVServicer(osv_service_v1_pb2_grpc.OSVServicer):
 
     for future in futures:
       batch_results.append(
-          osv_service_v1_pb2.VulnerabilityList(vulns=future.result() or []))
+          osv_service_v1_pb2.VulnerabilityList(vulns=future.result()[0] or []))
 
     return osv_service_v1_pb2.BatchVulnerabilityList(results=batch_results)
 

@@ -1,0 +1,9 @@
+{
+  "public_keys": [
+    {
+      "key_identifier": "da1e5968f30808f0edae0882b46d3282edb691cb8b46be04840aaa2f7f5bf162",
+      "key": "-----BEGIN PUBLIC KEY-----\nMFYwEAYHKoZIzj0CAQYFK4EEAAoDQgAE6ZUVCBpniyHqjA4ZiYskxrkLaGi5f+Ra\ngex175FOARaoUkFXrSIY0ULJO4hUYuYYHdVyDytfT3PKVevs/kPvSA==\n-----END PUBLIC KEY-----\n",
+      "is_current": true
+    }
+  ]
+}

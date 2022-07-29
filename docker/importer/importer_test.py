@@ -402,7 +402,44 @@ class BucketImporterTest(unittest.TestCase):
         path='a/b/DSA-3029-1.json',
         original_sha256=mock.ANY,
         deleted='false')
+    assert dsa_call not in mock_publish.mock_calls
 
+  @mock.patch('google.cloud.pubsub_v1.PublisherClient.publish')
+  def test_import_override(self, mock_publish: mock.MagicMock):
+    """Test bucket updates."""
+
+    self.source_repo.ignore_last_import_time = True
+    self.source_repo.put()
+
+    imp = importer.Importer('fake_public_key', 'fake_private_key', self.tmp_dir,
+                            'bucket')
+
+    imp.run()
+
+    mock_publish.assert_has_calls([
+        mock.call(
+            'projects/oss-vdb/topics/tasks',
+            data=b'',
+            type='update',
+            source='bucket',
+            path='a/b/DSA-3029-1.json',
+            original_sha256=mock.ANY,
+            deleted='false')
+    ])
+    mock_publish.reset_mock()
+
+    # Second run should not import it again, since each import run resets the
+    # value of source_repo.ignore_last_import_time to False
+    imp.run()
+
+    dsa_call = mock.call(
+        'projects/oss-vdb/topics/tasks',
+        data=b'',
+        type='update',
+        source='bucket',
+        path='a/b/DSA-3029-1.json',
+        original_sha256=mock.ANY,
+        deleted='false')
     assert dsa_call not in mock_publish.mock_calls
 
 

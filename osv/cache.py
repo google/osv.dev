@@ -77,7 +77,8 @@ def Cached(cache: Cache, ttl: int = 60 * 60):
   """
 
   def decorator(func):
-    unique_f_key = ('FUNC_MODULE_NAME', getmodule(func).__name__, func.__name__)
+    unique_f_key = ('FUNC_MODULE_NAME', getmodule(func).__name__,
+                    func.__qualname__)
 
     @functools.wraps(func)
     def wrapper(*args, **kwargs):

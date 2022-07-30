@@ -57,6 +57,7 @@ class GetNextVersionTest(unittest.TestCase):
     self.assertEqual('1.36.0',
                      ecosystem.next_version('io.grpc:grpc-core', '1.35.1'))
     self.assertEqual(call_count, mock_get.call_count)
+    ecosystems.set_cache(None)
 
   @unittest.skipUnless(os.getenv('DEPS_DEV_API_KEY'), 'Requires API key')
   def test_maven_deps_dev(self):

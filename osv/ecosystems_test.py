@@ -19,6 +19,7 @@ from unittest import mock
 
 import requests
 
+from . import cache
 from . import ecosystems
 
 
@@ -42,6 +43,20 @@ class GetNextVersionTest(unittest.TestCase):
     self.assertEqual('0.7.0', ecosystem.next_version('io.grpc:grpc-core', '0'))
     with self.assertRaises(ecosystems.EnumerateError):
       ecosystem.next_version('blah:doesnotexist123456', '1')
+
+  @mock.patch('requests.Session.get', side_effect=lambda url: requests.get(url))
+  def test_maven_with_cache(self, mock_get):
+    """Test Maven."""
+    test_cache = cache.InMemoryCache()
+    ecosystems.set_cache(test_cache)
+
+    ecosystem = ecosystems.get('Maven')
+    self.assertEqual('1.36.0',
+                     ecosystem.next_version('io.grpc:grpc-core', '1.35.1'))
+    call_count = mock_get.call_count
+    self.assertEqual('1.36.0',
+                     ecosystem.next_version('io.grpc:grpc-core', '1.35.1'))
+    self.assertEqual(call_count, mock_get.call_count)
 
   @unittest.skipUnless(os.getenv('DEPS_DEV_API_KEY'), 'Requires API key')
   def test_maven_deps_dev(self):

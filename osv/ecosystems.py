@@ -209,7 +209,8 @@ class Maven(Ecosystem, DepsDevMixin):
     """Sort key."""
     return maven.Version.from_string(version)
 
-  def _get_versions(self, package):
+  @staticmethod
+  def _get_versions(package):
     """Get versions."""
     versions = []
     request_helper = RequestHelper()
@@ -225,7 +226,7 @@ class Maven(Ecosystem, DepsDevMixin):
           'wt': 'json',
           'start': start
       }
-      url = self._API_PACKAGE_URL + '?' + urllib.parse.urlencode(query)
+      url = Maven._API_PACKAGE_URL + '?' + urllib.parse.urlencode(query)
       response = request_helper.get(url)
       response = json.loads(response)['response']
       if response['numFound'] == 0:
@@ -239,7 +240,6 @@ class Maven(Ecosystem, DepsDevMixin):
 
       start = len(versions)
 
-    self.sort_versions(versions)
     return versions
 
   def enumerate_versions(self, package, introduced, fixed, limits=None):
@@ -252,6 +252,7 @@ class Maven(Ecosystem, DepsDevMixin):
       get_versions = Cached(shared_cache)(get_versions)
 
     versions = get_versions(package)
+    self.sort_versions(versions)
     return self._get_affected_versions(versions, introduced, fixed, limits)
 
 

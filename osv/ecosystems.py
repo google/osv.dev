@@ -334,6 +334,10 @@ class Debian(Ecosystem):
     self.debian_release_ver = debian_release_ver
 
   def sort_key(self, version):
+    if version == '<end-of-life>':
+      # End of life advisory means all versions can be affected
+      return DebianVersion(999999)
+
     return DebianVersion.from_string(version)
 
   def enumerate_versions(self, package, introduced, fixed, limits=None):

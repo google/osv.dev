@@ -62,6 +62,16 @@ def utcnow():
   return datetime.datetime.utcnow()
 
 
+def _get_purl_indexes(affected_packages):
+  resulting_set = set()
+  for pkg in affected_packages:
+    if pkg.package.purl:
+      resulting_set.add(pkg.package.purl)
+      if '?' in pkg.package.purl:
+        resulting_set.add(pkg.package.purl.split('?')[0])
+  return list(resulting_set)
+
+
 class IDCounter(ndb.Model):
   """Counter for ID allocations."""
   # Next ID to allocate.
@@ -352,19 +362,7 @@ class Bug(ndb.Model):
     self.ecosystem = list(ecosystems_set)
     self.ecosystem.sort()
 
-    def with_and_without_qualifiers(affected_packages):
-      resulting_set = set()
-      for pkg in affected_packages:
-        if pkg.package.purl:
-          res = pkg.package.purl.split('?')
-          if len(res) == 1:
-            resulting_set.add(pkg.package.purl)
-          else:
-            resulting_set.add(pkg.package.purl)
-            resulting_set.add(res[0])
-      return list(resulting_set)
-
-    self.purl = with_and_without_qualifiers(self.affected_packages)
+    self.purl = _get_purl_indexes(self.affected_packages)
     self.purl.sort()
 
     for project in self.project:

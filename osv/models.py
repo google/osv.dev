@@ -331,7 +331,8 @@ class Bug(ndb.Model):
       # Set PURL if it wasn't provided.
       if not affected_package.package.purl:
         affected_package.package.purl = purl_helpers.package_to_purl(
-            affected_package.package.ecosystem, affected_package.package.name)
+            ecosystems.normalize(affected_package.package.ecosystem),
+            affected_package.package.name)
 
     self.project = list({
         pkg.package.name for pkg in self.affected_packages if pkg.package.name

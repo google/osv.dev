@@ -37,6 +37,11 @@ class PurlHelpersTest(unittest.TestCase):
     self.assertEqual('pkg:npm/%40hapi/hoek',
                      purl_helpers.package_to_purl('npm', '@hapi/hoek'))
 
+  def test_debian(self):
+    """Test PURL generation for npm."""
+    self.assertEqual('pkg:deb/debian/nginx',
+                     purl_helpers.package_to_purl('Debian', 'nginx'))
+
 
 if __name__ == '__main__':
   unittest.main()

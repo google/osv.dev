@@ -14,6 +14,7 @@
 """Caching interface and implementations"""
 import datetime
 import functools
+import json
 import typing
 from inspect import getcallargs, getmodule
 
@@ -35,6 +36,12 @@ class _CacheEntry:
   def __init__(self, data, ttl):
     self.data = data
     self.expiry = datetime.datetime.now().timestamp() + ttl
+
+
+def _check_json_serializable(obj):
+  """Raise exception if `obj` is not JSON serializable."""
+  # Cache implementations require keys and values to be JSON serializable.
+  json.dumps(obj)
 
 
 class InMemoryCache(Cache):
@@ -70,17 +77,20 @@ def Cached(cache: Cache, ttl: int = 60 * 60):
   """
 
   def decorator(func):
-    unique_f_key = ('FUNC_MODULE_NAME', getmodule(func).__name__, func.__name__)
+    unique_f_key = ('FUNC_MODULE_NAME', getmodule(func).__name__,
+                    func.__qualname__)
 
     @functools.wraps(func)
     def wrapper(*args, **kwargs):
-      key = frozenset(
-          {*getcallargs(func, *args, **kwargs).items(), unique_f_key})
+      # TODO(ochang): Detect and handle `self` arguments.
+      key = (*getcallargs(func, *args, **kwargs).items(), unique_f_key)
+      _check_json_serializable(key)
       cached_value = cache.get(key)
       if cached_value:
         return cached_value
 
       value = func(*args, **kwargs)
+      _check_json_serializable(value)
       cache.set(key, value, ttl)
 
       return value

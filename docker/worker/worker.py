@@ -73,10 +73,14 @@ class RedisCache(osv.cache.Cache):
     self.redis_instance = redis.Redis(host, port)
 
   def get(self, key):
-    return self.redis_instance.get(key)
+    try:
+      return json.loads(self.redis_instance.get(json.dumps(key)))
+    except Exception:
+      # TODO(ochang): Remove this after old cache entries are flushed.
+      return None
 
   def set(self, key, value, ttl):
-    return self.redis_instance.set(key, value, ex=ttl)
+    return self.redis_instance.set(json.dumps(key), json.dumps(value), ex=ttl)
 
 
 class UpdateConflictError(Exception):

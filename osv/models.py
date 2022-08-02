@@ -63,6 +63,7 @@ def utcnow():
 
 
 def _get_purl_indexes(affected_packages):
+  """Get list of purls from affected packages, with and without qualifiers"""
   resulting_set = set()
   for pkg in affected_packages:
     if pkg.package.purl:

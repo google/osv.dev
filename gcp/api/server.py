@@ -371,11 +371,14 @@ def query_by_package(project, ecosystem, purl, page_token, to_response):
                           osv.Bug.public == True)  # pylint: disable=singleton-comparison
   elif purl:
     query = osv.Bug.query(osv.Bug.status == osv.BugStatus.PROCESSED,
-                          osv.Bug.purl == project, osv.Bug.public == True)  # pylint: disable=singleton-comparison
+                          osv.Bug.purl == purl, osv.Bug.public == True)  # pylint: disable=singleton-comparison
   else:
     return []
 
-  it = query.iter(start_cursor=page_token)
+  # Set limit to the max + 1, as otherwise we can't detect if there are any
+  # more left.
+  it = query.iter(
+      start_cursor=page_token, limit=_MAX_VULNERABILITIES_LISTED + 1)
   cursor = None
   while (yield it.has_next_async()):
     if len(bugs) >= _MAX_VULNERABILITIES_LISTED:

@@ -352,7 +352,7 @@ class Bug(ndb.Model):
     self.ecosystem = list(ecosystems_set)
     self.ecosystem.sort()
 
-    def with_and_without_qualifiers(affected_packages) -> list[str]:
+    def with_and_without_qualifiers(affected_packages):
       resulting_set = set()
       for pkg in affected_packages:
         if pkg.package.purl:

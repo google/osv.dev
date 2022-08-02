@@ -39,7 +39,7 @@ class PurlHelpersTest(unittest.TestCase):
 
   def test_debian(self):
     """Test PURL generation for npm."""
-    self.assertEqual('pkg:deb/debian/nginx',
+    self.assertEqual('pkg:deb/debian/nginx?arch=source',
                      purl_helpers.package_to_purl('Debian', 'nginx'))
 
 

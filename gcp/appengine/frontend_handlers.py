@@ -201,6 +201,14 @@ def add_related_aliases(bug: osv.Bug, response):
       aliases.append((alias, False))
   response['aliases'] = aliases
 
+  if bug.aliases:
+    query = osv.Bug.query(
+        osv.Bug.aliases.IN(bug.aliases), osv.Bug.aliases == bug.db_id)
+  else:
+    query = osv.Bug.query(osv.Bug.aliases == bug.db_id)
+
+  response['alias_referenced'] = [x.id() for x in query if x.id() != bug.id()]
+
 
 def _commit_to_link(repo_url, commit):
   """Convert commit to link."""

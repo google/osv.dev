@@ -192,6 +192,8 @@ def add_source_info(bug, response):
 
 
 def add_related_aliases(bug: osv.Bug, response):
+  """Add links to other osv entries that's related through aliases"""
+  # Add links to other entires if they exist
   aliases = []
   for alias in bug.aliases:
     result = bug.get_by_id(alias)
@@ -201,6 +203,7 @@ def add_related_aliases(bug: osv.Bug, response):
       aliases.append((alias, False))
   response['aliases'] = aliases
 
+  # Add links to other entries if they have this element as an alias
   if bug.aliases:
     query = osv.Bug.query(
         osv.Bug.aliases.IN(bug.aliases), osv.Bug.aliases == bug.db_id)

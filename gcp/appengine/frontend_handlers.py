@@ -144,6 +144,7 @@ def bug_to_response(bug, detailed=True):
   if detailed:
     add_links(response)
     add_source_info(bug, response)
+    add_related_aliases(bug, response)
   return response
 
 
@@ -188,6 +189,17 @@ def add_source_info(bug, response):
   source_path = osv.source_path(source_repo, bug)
   response['source'] = source_repo.link + source_path
   response['source_link'] = response['source']
+
+
+def add_related_aliases(bug: osv.Bug, response):
+  aliases = []
+  for alias in bug.aliases:
+    result = bug.get_by_id(alias)
+    if result:
+      aliases.append((alias, True))
+    else:
+      aliases.append((alias, False))
+  response['aliases'] = aliases
 
 
 def _commit_to_link(repo_url, commit):

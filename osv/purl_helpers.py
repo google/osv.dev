@@ -17,6 +17,7 @@ from urllib.parse import quote
 
 PURL_ECOSYSTEMS = {
     'crates.io': 'cargo',
+    'Debian': 'deb',
     'Hex': 'hex',
     'Go': 'golang',
     'Maven': 'maven',
@@ -41,8 +42,14 @@ def package_to_purl(ecosystem, package_name):
   if not purl_type:
     return None
 
+  suffix = ''
+
   if purl_type == 'maven':
     # PURLs use / to separate the group ID and the artifact ID.
     package_name = package_name.replace(':', '/', 1)
 
-  return f'pkg:{purl_type}/{_url_encode(package_name)}'
+  if purl_type == 'deb':
+    package_name = 'debian/' + package_name
+    suffix = '?arch=source'
+
+  return f'pkg:{purl_type}/{_url_encode(package_name)}{suffix}'

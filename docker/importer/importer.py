@@ -289,6 +289,12 @@ class Importer:
     """Process updates from bucket."""
     # TODO(ochang): Use Pub/Sub change notifications for more efficient
     # processing.
+
+    ignore_last_import_time = source_repo.ignore_last_import_time
+    if ignore_last_import_time:
+      source_repo.ignore_last_import_time = False
+      source_repo.put()
+
     storage_client = storage.Client()
     for blob in storage_client.list_blobs(source_repo.bucket):
       if not _is_vulnerability_file(source_repo, blob.name):
@@ -310,7 +316,8 @@ class Importer:
         # Both times are not timezone aware
         return bug and bug.import_last_modified == vuln.modified.ToDatetime()
 
-      if all(unchanged_vuln_exist(vuln) for vuln in vulnerabilities):
+      if not ignore_last_import_time and all(
+          unchanged_vuln_exist(vuln) for vuln in vulnerabilities):
         logging.info('Skipping updates for %s as modified date unchanged.',
                      blob.name)
         continue

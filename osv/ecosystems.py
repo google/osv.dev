@@ -27,6 +27,7 @@ from . import maven
 from . import nuget
 from . import semver_index
 from .cache import Cache
+from .cache import Cached
 from .request_helper import RequestError, RequestHelper
 
 _DEPS_DEV_API = (
@@ -208,15 +209,14 @@ class Maven(Ecosystem, DepsDevMixin):
     """Sort key."""
     return maven.Version.from_string(version)
 
-  def enumerate_versions(self, package, introduced, fixed, limits=None):
-    """Enumerate versions."""
-    if use_deps_dev:
-      return self._deps_dev_enumerate(package, introduced, fixed, limits=limits)
+  @staticmethod
+  def _get_versions(package):
+    """Get versions."""
+    versions = []
+    request_helper = RequestHelper()
 
     group_id, artifact_id = package.split(':', 2)
     start = 0
-
-    versions = []
 
     while True:
       query = {
@@ -226,13 +226,9 @@ class Maven(Ecosystem, DepsDevMixin):
           'wt': 'json',
           'start': start
       }
-      url = self._API_PACKAGE_URL + '?' + urllib.parse.urlencode(query)
-      response = requests.get(url)
-      if response.status_code != 200:
-        raise RuntimeError(
-            f'Failed to get Maven versions for {package} with: {response.text}')
-
-      response = response.json()['response']
+      url = Maven._API_PACKAGE_URL + '?' + urllib.parse.urlencode(query)
+      response = request_helper.get(url)
+      response = json.loads(response)['response']
       if response['numFound'] == 0:
         raise EnumerateError(f'Package {package} not found')
 
@@ -244,6 +240,18 @@ class Maven(Ecosystem, DepsDevMixin):
 
       start = len(versions)
 
+    return versions
+
+  def enumerate_versions(self, package, introduced, fixed, limits=None):
+    """Enumerate versions."""
+    if use_deps_dev:
+      return self._deps_dev_enumerate(package, introduced, fixed, limits=limits)
+
+    get_versions = self._get_versions
+    if shared_cache:
+      get_versions = Cached(shared_cache)(get_versions)
+
+    versions = get_versions(package)
     self.sort_versions(versions)
     return self._get_affected_versions(versions, introduced, fixed, limits)
 

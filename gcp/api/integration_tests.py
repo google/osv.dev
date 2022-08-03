@@ -382,7 +382,7 @@ class IntegrationTests(unittest.TestCase):
     result = response.json()
     vulns_second = set(v['id'] for v in result['vulns'])
 
-    self.assertEqual(set(), vulns_first & vulns_second)
+    self.assertEqual(set(), vulns_first.intersection(vulns_second))
 
   def test_query_package_purl(self):
     """Test query by package (purl)."""
@@ -408,7 +408,7 @@ class IntegrationTests(unittest.TestCase):
     result = response.json()
     vulns_second = set(v['id'] for v in result['vulns'])
 
-    self.assertEqual(set(), vulns_first & vulns_second)
+    self.assertEqual(set(), vulns_first.intersection(vulns_second))
 
 
 def print_logs(filename):

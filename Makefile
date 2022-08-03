@@ -1,4 +1,4 @@
-# Copyright 2021 Google LLC
+# Copyright 2022 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -11,23 +11,20 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+lib-tests:
+	./run_tests.sh
 
-name: lint
+worker-tests:
+	cd docker/worker && ./run_tests.sh
 
-on: [pull_request]
+importer-tests:
+	cd docker/importer && ./run_tests.sh
 
-jobs:
-  lint:
-    name: Lint and format
-    runs-on: ubuntu-latest
-    steps:
-      - name: Check out code
-        uses: actions/checkout@v3
-      - name: Set up Python
-        uses: actions/setup-python@v4
-        with:
-          python-version: '3.8'
-      - name: Install dependencies
-        run: python -m pip install --upgrade pylint yapf
-      - name: Run pylint and yapf
-        run: ./tools/lint_and_format.sh
+appengine-tests:
+	cd gcp/appengine && ./run_tests.sh
+
+lint:
+	tools/lint_and_format.sh
+
+# TODO: API integration tests.
+all-tests: lib-tests worker-tests importer-tests appengine-tests

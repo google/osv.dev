@@ -62,6 +62,17 @@ def utcnow():
   return datetime.datetime.utcnow()
 
 
+def _get_purl_indexes(affected_packages):
+  """Get list of purls from affected packages, with and without qualifiers"""
+  resulting_set = set()
+  for pkg in affected_packages:
+    if pkg.package.purl:
+      resulting_set.add(pkg.package.purl)
+      if '?' in pkg.package.purl:
+        resulting_set.add(pkg.package.purl.split('?')[0])
+  return list(resulting_set)
+
+
 class IDCounter(ndb.Model):
   """Counter for ID allocations."""
   # Next ID to allocate.
@@ -331,7 +342,8 @@ class Bug(ndb.Model):
       # Set PURL if it wasn't provided.
       if not affected_package.package.purl:
         affected_package.package.purl = purl_helpers.package_to_purl(
-            affected_package.package.ecosystem, affected_package.package.name)
+            ecosystems.normalize(affected_package.package.ecosystem),
+            affected_package.package.name)
 
     self.project = list({
         pkg.package.name for pkg in self.affected_packages if pkg.package.name
@@ -351,9 +363,7 @@ class Bug(ndb.Model):
     self.ecosystem = list(ecosystems_set)
     self.ecosystem.sort()
 
-    self.purl = list({
-        pkg.package.purl for pkg in self.affected_packages if pkg.package.purl
-    })
+    self.purl = _get_purl_indexes(self.affected_packages)
     self.purl.sort()
 
     for project in self.project:
@@ -528,7 +538,6 @@ class Bug(ndb.Model):
 
   def to_vulnerability(self, include_source=False):
     """Convert to Vulnerability proto."""
-    package = None
     affected = []
 
     source_link = None
@@ -618,7 +627,6 @@ class Bug(ndb.Model):
         withdrawn=withdrawn,
         summary=self.summary,
         details=details,
-        package=package,
         affected=affected,
         severity=severity,
         credits=credits_,
@@ -670,6 +678,8 @@ class SourceRepository(ndb.Model):
   detect_cherrypicks = ndb.BooleanProperty(default=True)
   # Whether to populate "versions" from git ranges.
   versions_from_repo = ndb.BooleanProperty(default=True)
+  # Ignore last import time once.
+  ignore_last_import_time = ndb.BooleanProperty(default=False)
   # HTTP link prefix.
   link = ndb.StringProperty()
   # DB prefix, if the database allocates its own.

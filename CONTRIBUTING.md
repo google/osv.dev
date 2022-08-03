@@ -29,6 +29,47 @@ This project follows
 
 ## Contributing code
 
-Please follow the instructions in
-[Contributing code](https://google.github.io/clusterfuzz/contributing-code/)
-section in the ClusterFuzz documentation.
+### Prerequisites
+You must install:
+1. Git
+1. Python 3.8+
+1. [Make](https://www.gnu.org/software/make/)
+1. [Pipenv](https://pipenv.pypa.io/en/latest/)
+1. [Google Cloud SDK](https://cloud.google.com/sdk)
+
+Then you can set up the development environment by cloning the OSV repo and
+installing the Pipfile dependencies.
+
+```shell
+$ git clone https://github.com/google/osv.dev
+$ cd osv.dev
+$ git submodule update --init --recursive
+$ pipenv sync --dev
+$ pipenv shell
+```
+
+### Running tests
+Certain tests require you to auth with the Google Cloud SDK and to install
+the Datastore Emulator:
+
+```shell
+$ gcloud auth login --update-adc
+$ gcloud components install beta cloud-datastore-emulator
+```
+
+To run tests:
+```shell
+$ make all-tests
+```
+
+### Linting and formatting
+To lint your code, run
+
+```shell
+$ make lint
+```
+
+To format your code, run
+```shell
+$ yapf -i <file>.py
+```

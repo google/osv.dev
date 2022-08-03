@@ -27,7 +27,7 @@ sandboxing untrusted workloads.
 
 [workers]: https://github.com/google/osv/tree/master/docker/worker
 
-[here]: https://github.com/google/osv/blob/master/lib/osv/models.py
+[here]: https://github.com/google/osv/blob/master/osv/models.py
 
 ## Cloud Run / Cloud Endpoints
 

@@ -358,7 +358,7 @@ class Debian(Ecosystem):
     raw_versions: list[str] = [x['version'] for x in response['result']]
 
     # Remove rare cases of unknown versions
-    def version_is_valid_log(v):
+    def version_is_valid(v):
       if not DebianVersion.is_valid(v):
         logging.warning('Package %s has invalid version: %s', package, v)
         return False

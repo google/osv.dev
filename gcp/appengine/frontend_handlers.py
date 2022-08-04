@@ -198,9 +198,9 @@ def add_related_aliases(bug: osv.Bug, response):
   for alias in bug.aliases:
     result = bug.get_by_id(alias)
     if result:
-      aliases.append((alias, True))
+      aliases.append({'alias_id': alias, 'exists': True})
     else:
-      aliases.append((alias, False))
+      aliases.append({'alias_id': alias, 'exists': False})
   response['aliases'] = aliases
 
   # Add links to other entries if they have this element as an alias

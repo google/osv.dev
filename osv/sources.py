@@ -107,6 +107,9 @@ def parse_vulnerability_from_dict(data, key_path=None):
   data = _get_nested_vulnerability(data, key_path)
   vulnerability = vulnerability_pb2.Vulnerability()
   json_format.ParseDict(data, vulnerability, ignore_unknown_fields=True)
+  if not vulnerability.id:
+    raise ValueError('Missing id field. Invalid vulnerability.')
+
   return vulnerability
 
 

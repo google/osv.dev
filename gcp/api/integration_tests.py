@@ -354,6 +354,62 @@ class IntegrationTests(unittest.TestCase):
             ]
         }, response.json())
 
+  def test_query_package(self):
+    """Test query by package."""
+    response = requests.post(
+        _api() + '/v1/query',
+        data=json.dumps({
+            'package': {
+                'ecosystem': 'Maven',
+                'name': 'org.apache.tomcat:tomcat',
+            }
+        }))
+
+    result = response.json()
+    vulns_first = set(v['id'] for v in result['vulns'])
+    self.assertIn('next_page_token', result)
+
+    response = requests.post(
+        _api() + '/v1/query',
+        data=json.dumps({
+            'package': {
+                'ecosystem': 'Maven',
+                'name': 'org.apache.tomcat:tomcat',
+            },
+            'page_token': result['next_page_token'],
+        }))
+
+    result = response.json()
+    vulns_second = set(v['id'] for v in result['vulns'])
+
+    self.assertEqual(set(), vulns_first.intersection(vulns_second))
+
+  def test_query_package_purl(self):
+    """Test query by package (purl)."""
+    response = requests.post(
+        _api() + '/v1/query',
+        data=json.dumps(
+            {'package': {
+                'purl': 'pkg:maven/org.apache.tomcat/tomcat',
+            }}))
+    result = response.json()
+    vulns_first = set(v['id'] for v in result['vulns'])
+    self.assertIn('next_page_token', result)
+
+    response = requests.post(
+        _api() + '/v1/query',
+        data=json.dumps({
+            'package': {
+                'purl': 'pkg:maven/org.apache.tomcat/tomcat',
+            },
+            'page_token': result['next_page_token'],
+        }))
+
+    result = response.json()
+    vulns_second = set(v['id'] for v in result['vulns'])
+
+    self.assertEqual(set(), vulns_first.intersection(vulns_second))
+
 
 def print_logs(filename):
   """Print logs."""

@@ -40,6 +40,7 @@ _AUTHORIZATION_HEADER_PREFIX = 'Bearer '
 _EXPECTED_AUDIENCE = 'https://db.oss-fuzz.com'
 
 _MAX_BATCH_QUERY = 1000
+_MAX_VULNERABILITIES_LISTED = 16
 
 _ndb_client = ndb.Client()
 
@@ -77,9 +78,10 @@ class OSVServicer(osv_service_v1_pb2_grpc.OSVServicer):
     """Query vulnerabilities for a particular project at a given commit or
     version.
     """
-    results = do_query(request.query, context).result()
+    results, next_page_token = do_query(request.query, context).result()
     if results is not None:
-      return osv_service_v1_pb2.VulnerabilityList(vulns=results)
+      return osv_service_v1_pb2.VulnerabilityList(
+          vulns=results, next_page_token=next_page_token)
 
     return None
 
@@ -98,7 +100,7 @@ class OSVServicer(osv_service_v1_pb2_grpc.OSVServicer):
 
     for future in futures:
       batch_results.append(
-          osv_service_v1_pb2.VulnerabilityList(vulns=future.result() or []))
+          osv_service_v1_pb2.VulnerabilityList(vulns=future.result()[0] or []))
 
     return osv_service_v1_pb2.BatchVulnerabilityList(results=batch_results)
 
@@ -115,6 +117,10 @@ def do_query(query, context, include_details=True):
     ecosystem = ''
     purl = ''
 
+  page_token = None
+  if query.page_token:
+    page_token = ndb.Cursor(urlsafe=query.page_token)
+
   purl_version = None
   if purl:
     try:
@@ -126,6 +132,7 @@ def do_query(query, context, include_details=True):
       return None
 
   to_response = lambda b: bug_to_response(b, include_details)
+  next_page_token = None
 
   if query.WhichOneof('param') == 'commit':
     bugs = yield query_by_commit(query.commit, to_response=to_response)
@@ -135,11 +142,18 @@ def do_query(query, context, include_details=True):
   elif query.WhichOneof('param') == 'version':
     bugs = yield query_by_version(
         package_name, ecosystem, purl, query.version, to_response=to_response)
+  elif (package_name != '' and ecosystem != '') or (purl and not purl_version):
+    # Package specified without version.
+    bugs, next_page_token = yield query_by_package(
+        package_name, ecosystem, purl, page_token, to_response=to_response)
   else:
     context.abort(grpc.StatusCode.INVALID_ARGUMENT, 'Invalid query.')
     return None
 
-  return bugs
+  if next_page_token:
+    next_page_token = next_page_token.urlsafe()
+
+  return bugs, next_page_token
 
 
 def bug_to_response(bug, include_details=True):
@@ -344,6 +358,36 @@ def query_by_version(project,
                                                  purl, version)))
 
   return [to_response(bug) for bug in bugs]
+
+
+@ndb.tasklet
+def query_by_package(project, ecosystem, purl, page_token, to_response):
+  """Query by package."""
+  bugs = []
+  if project and ecosystem:
+    query = osv.Bug.query(osv.Bug.status == osv.BugStatus.PROCESSED,
+                          osv.Bug.project == project,
+                          osv.Bug.ecosystem == ecosystem,
+                          osv.Bug.public == True)  # pylint: disable=singleton-comparison
+  elif purl:
+    query = osv.Bug.query(osv.Bug.status == osv.BugStatus.PROCESSED,
+                          osv.Bug.purl == purl, osv.Bug.public == True)  # pylint: disable=singleton-comparison
+  else:
+    return []
+
+  # Set limit to the max + 1, as otherwise we can't detect if there are any
+  # more left.
+  it = query.iter(
+      start_cursor=page_token, limit=_MAX_VULNERABILITIES_LISTED + 1)
+  cursor = None
+  while (yield it.has_next_async()):
+    if len(bugs) >= _MAX_VULNERABILITIES_LISTED:
+      cursor = it.cursor_after()
+      break
+
+    bugs.append(it.next())
+
+  return [to_response(bug) for bug in bugs], cursor
 
 
 def serve(port):

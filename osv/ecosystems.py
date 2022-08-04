@@ -365,7 +365,7 @@ class Debian(Ecosystem):
       else:
         return True
 
-    versions = [v for v in raw_versions if version_is_valid_log(v)]
+    versions = [v for v in raw_versions if version_is_valid(v)]
     # Sort to ensure it is in the correct order
     versions.sort(key=self.sort_key)
     # The only versions with +deb

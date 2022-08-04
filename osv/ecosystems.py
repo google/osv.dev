@@ -15,6 +15,8 @@
 
 import bisect
 import json
+import logging
+
 import packaging.version
 import urllib.parse
 import requests
@@ -334,6 +336,10 @@ class Debian(Ecosystem):
     self.debian_release_ver = debian_release_ver
 
   def sort_key(self, version):
+    if version == '<end-of-life>':
+      # End of life advisory means all versions can be affected
+      return DebianVersion(999999)
+
     return DebianVersion.from_string(version)
 
   def enumerate_versions(self, package, introduced, fixed, limits=None):
@@ -349,10 +355,19 @@ class Debian(Ecosystem):
       ) from ex
 
     response = json.loads(text_response)
-    versions: list[str] = [x['version'] for x in response['result']]
+    raw_versions: list[str] = [x['version'] for x in response['result']]
+
+    # Remove rare cases of unknown versions
+    def version_is_valid(v):
+      if not DebianVersion.is_valid(v):
+        logging.warning('Package %s has invalid version: %s', package, v)
+        return False
+      else:
+        return True
+
+    versions = [v for v in raw_versions if version_is_valid(v)]
     # Sort to ensure it is in the correct order
     versions.sort(key=self.sort_key)
-
     # The only versions with +deb
     versions = [
         x for x in versions

@@ -113,6 +113,9 @@ class GetNextVersionTest(unittest.TestCase):
     self.assertGreater(
         ecosystem.sort_key('1.13.6-2'), ecosystem.sort_key('1.13.6-1'))
 
+    self.assertGreater(
+        ecosystem.sort_key('<end-of-life>'), ecosystem.sort_key('1.13.6-1'))
+
     # Test Ecosystem remover
     ecosystem = ecosystems.get('Debian:10')
     # '0' as introduced version also tests the get_first_package_version func

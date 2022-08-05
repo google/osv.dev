@@ -332,10 +332,13 @@ class Bug(ndb.Model):
     value_lower = value.lower()
     return re.split(r'\W+', value_lower) + [value_lower]
 
-  def _normalize(self, name):
-    """Normalize package name per https://peps.python.org/pep-0503/#normalized-names"""
+  def _normalize_package_name(self, package):
+    """Normalize package name as necessary."""
+    if package.ecosystem == 'PyPI':
+      # per https://peps.python.org/pep-0503/#normalized-names
+      return re.sub(r'[-_.]+', '-', package.name).lower()
 
-    return re.sub(r"[-_.]+", "-", name).lower()
+    return package.name
 
   def _pre_put_hook(self):
     """Pre-put hook for populating search indices."""
@@ -344,13 +347,12 @@ class Bug(ndb.Model):
     search_indices.update(self._tokenize(self.id()))
 
     for pkg in self.affected_packages:
+      pkg.package.name = self._normalize_package_name(pkg)
       # Set PURL if it wasn't provided.
       if not pkg.package.purl:
         pkg.package.purl = purl_helpers.package_to_purl(
             ecosystems.normalize(affected_package.package.ecosystem),
             pkg.package.name)
-      if pkg.package.ecosystem and pkg.package.ecosystem == 'PyPI':
-        pkg.package.name = self._normalize(pkg.package.name)
 
     self.project = list({
         pkg.package.name for pkg in self.affected_packages if pkg.package.name

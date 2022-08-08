@@ -62,6 +62,22 @@ To run tests:
 $ make all-tests
 ```
 
+#### Test result generation
+
+Many tests are written using a
+[simple framework](https://github.com/google/osv.dev/blob/a4b682a32575cc3314a5ef83c8e91b70c60f7b77/osv/tests.py#L32)
+to help with generating expected test outputs.
+
+The expected outputs are generated once and saved into the source tree to run
+all subsequent tests against.
+
+If a change is made that requires these outputs to be regenerated, you can set
+the environment variable `TESTS_GENERATE=1` and run the tests:
+
+```shell
+$ TESTS_GENERATE=1 make all-tests
+```
+
 ### Linting and formatting
 To lint your code, run
 

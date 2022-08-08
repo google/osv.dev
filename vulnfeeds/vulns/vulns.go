@@ -15,6 +15,7 @@
 package vulns
 
 import (
+	"encoding/json"
 	"fmt"
 	"io"
 	"net/url"
@@ -327,5 +328,10 @@ func FromYAML(r io.Reader) (*Vulnerability, error) {
 
 func (v *Vulnerability) ToYAML(w io.Writer) error {
 	encoder := yaml.NewEncoder(w)
+	return encoder.Encode(v)
+}
+
+func (v *Vulnerability) ToJSON(w io.Writer) error {
+	encoder := json.NewEncoder(w)
 	return encoder.Encode(v)
 }

@@ -15,6 +15,7 @@ lib-tests:
 	./run_tests.sh
 
 worker-tests:
+	git submodule update --init --recursive
 	cd docker/worker && ./run_tests.sh
 
 importer-tests:

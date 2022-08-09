@@ -89,3 +89,25 @@ To format your code, run
 ```shell
 $ yapf -i <file>.py
 ```
+
+### Running local UI and API instances (maintainers only)
+
+#### UI
+
+```shell
+$ gcloud auth login --update-adc
+$ make run-appengine
+```
+
+#### API
+
+Running a local instance of the API server requires service account
+credentials.
+
+You will need to download a service account key for `esp-test@oss-vdb.iam.gserviceaccount.com` from
+<https://cloud.google.com/console/iam-admin/serviceaccounts?project=oss-vdb>. Keep this safe.
+
+```shell
+$ gcloud auth login --update-adc
+$ make SERVICE_ACCOUNT=/path/to/service_account.json run-api-server
+```

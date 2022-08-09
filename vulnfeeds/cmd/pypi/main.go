@@ -92,19 +92,6 @@ func main() {
 	if err != nil {
 		log.Fatalf("Failed to parse NVD CVE JSON: %v", err)
 	}
-	for _, cve := range parsed.CVEItems {
-		v, notes := vulns.FromCVE("PYSEC-0000-"+cve.CVE.CVEDataMeta.ID, cve, "testpkg", "PYPI", "pkg:pypi/pythontest/testpkg", "ECOSYSTEM", []string{"0.0.0", "1.0.1", "1.4.5"})
-		fmt.Println(v, notes)
-		f, err := os.Create("output/" + v.ID + ".json")
-		if err != nil {
-			log.Fatalf("Failed to open %s for writing: %v", v.ID, err)
-		}
-		defer f.Close()
-		err = v.ToJSON(f)
-		if err != nil {
-			log.Fatalf("Failed to write %s: %v", v.ID, err)
-		}
-	}
 
 	falsePositives, err := triage.LoadFalsePositives(*falsePositivesPath)
 	if err != nil {
@@ -145,7 +132,12 @@ func main() {
 			id := "PYSEC-0000-" + cve.CVE.CVEDataMeta.ID // To be assigned later.
 			purl := ecosystem.PackageURL(pkg)
 
-			v, notes := vulns.FromCVE(id, cve, pkg, "PyPI", purl, "ECOSYSTEM", validVersions)
+			pkgInfo := vulns.PackageInfo{
+				PkgName:   pkg,
+				Ecosystem: "PyPI",
+				Purl:      purl,
+			}
+			v, notes := vulns.FromCVEWithVersionExtraction(id, cve, []vulns.PackageInfo{pkgInfo}, validVersions)
 			if len(v.Affected[0].Ranges) == 0 {
 				log.Printf("No affected versions detected.")
 			}

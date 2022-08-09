@@ -230,17 +230,53 @@ func extractAliases(id string, cve cves.CVE) []string {
 	return aliases
 }
 
-func FromCVE(id string, cve cves.CVEItem, pkg, ecosystem, purl, versionType string, validVersions []string) (*Vulnerability, []string) {
+type PackageInfo struct {
+	PkgName      string
+	Ecosystem    string
+	Purl         string
+	FixedVersion string
+	FixedCommit  string
+	Repo         string
+}
+
+// Create a OSV object from a given CVEItem and package name
+// Leaves version field empty to be manually fixed later
+func FromCVE(id string, cve cves.CVEItem, pkgInfo []PackageInfo) (*Vulnerability, []string) {
 	v := Vulnerability{
 		ID:      id,
 		Details: cves.EnglishDescription(cve.CVE),
 		Aliases: extractAliases(id, cve.CVE),
 	}
 
-	affected := Affected{}
-	affected.Package.Name = pkg
-	affected.Package.Ecosystem = ecosystem
-	affected.Package.Purl = purl
+	for _, info := range pkgInfo {
+		affected := Affected{}
+		affected.Package.Name = info.PkgName
+		affected.Package.Ecosystem = info.Ecosystem
+		affected.Package.Purl = info.Purl
+		if info.FixedVersion != "" {
+			versionRange := AffectedRange{
+				Type: "ECOSYSTEM",
+				Events: []Event{
+					{Introduced: "0"},
+					{Fixed: info.FixedVersion},
+				},
+			}
+			affected.Ranges = append(affected.Ranges, versionRange)
+		}
+
+		if info.FixedCommit != "" {
+			versionRange := AffectedRange{
+				Type: "GIT",
+				Repo: info.Repo,
+				Events: []Event{
+					{Introduced: "0"},
+					{Fixed: info.FixedCommit},
+				},
+			}
+			affected.Ranges = append(affected.Ranges, versionRange)
+		}
+		v.Affected = append(v.Affected, affected)
+	}
 
 	var err error
 	var notes []string
@@ -260,6 +296,15 @@ func FromCVE(id string, cve cves.CVEItem, pkg, ecosystem, purl, versionType stri
 			URL:  reference.URL,
 		})
 	}
+	return &v, notes
+}
+
+// Create a OSV object from a given CVEItem and package name
+// Tries to extract version information from the given CVEItem
+func FromCVEWithVersionExtraction(id string, cve cves.CVEItem, pkgInfo []PackageInfo, validVersions []string) (*Vulnerability, []string) {
+	v, notes := FromCVE(id, cve, pkgInfo)
+	// TODO(rexpan): Check this doesn't change behaviour
+	affected := &v.Affected[0]
 
 	// Extract version information where we can.
 	version, versionNotes := cves.ExtractVersionInfo(cve, validVersions)
@@ -311,8 +356,7 @@ func FromCVE(id string, cve cves.CVEItem, pkg, ecosystem, purl, versionType stri
 		}
 	}
 	affected.Ranges = append(affected.Ranges, versionRange)
-	v.Affected = append(v.Affected, affected)
-	return &v, notes
+	return v, notes
 }
 
 func FromYAML(r io.Reader) (*Vulnerability, error) {

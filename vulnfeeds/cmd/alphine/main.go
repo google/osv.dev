@@ -79,34 +79,59 @@ func loadAllCVEs() map[string]cves.CVEItem {
 		for _, item := range nvdcve.CVEItems {
 			result[item.CVE.CVEDataMeta.ID] = item
 		}
+		log.Printf("Loaded CVE: %s", entry.Name())
 		file.Close()
 	}
 	return result
 }
 
+type VersionAndPkg struct {
+	Ver string
+	Pkg string
+}
+
 func generateAlpineOSV(version string, allCVEs map[string]cves.CVEItem) {
 	secdb := downloadAlpine(version)
-
+	allAlpineSecDb := make(map[string][]VersionAndPkg)
 	for _, pkg := range secdb.Packages {
 		for version, cveIds := range pkg.Pkg.Secfixes {
 			for _, cveId := range cveIds {
 				cveId = strings.Split(cveId, " ")[0]
-				vuln, _ := vulns.FromCVEWithVersionExtraction("ALPINE-"+cveId, allCVEs[cveId], pkg.Pkg.Name, "Alpine", "pkg:alpine/"+pkg.Pkg.Name, "ECOSYSTEM", []string{version})
-				log.Printf("Writing %s", cveId)
-				file, err := os.OpenFile(osvOutputPath+"/ALPINE-"+cveId+".json", os.O_CREATE|os.O_RDWR, 0644)
-				if err != nil {
-					log.Fatalf("Failed to create/write osv output file: %s", err)
-				}
-				encoder := json.NewEncoder(file)
-				encoder.SetIndent("", "  ")
-				err = encoder.Encode(&vuln)
-				if err != nil {
-					log.Fatalf("Failed to encode osv output file: %s", err)
-				}
-				file.Close()
+				allAlpineSecDb[cveId] = append(allAlpineSecDb[cveId], VersionAndPkg{Pkg: pkg.Pkg.Name, Ver: version})
 			}
 		}
 	}
+
+	for cveId, verPkgs := range allAlpineSecDb {
+		pkgInfos := make([]vulns.PackageInfo, 0, len(verPkgs))
+
+		for _, verPkg := range verPkgs {
+			pkgInfo := vulns.PackageInfo{
+				PkgName:      verPkg.Pkg,
+				FixedVersion: verPkg.Ver,
+				Ecosystem:    "Alpine",
+				Purl:         "pkg:alpine/" + verPkg.Pkg,
+			}
+			pkgInfos = append(pkgInfos, pkgInfo)
+		}
+		if len(pkgInfos) > 1 {
+			log.Println("Multiple lines: " + cveId)
+		}
+		vuln, _ := vulns.FromCVE("ALPINE-"+cveId, allCVEs[cveId], pkgInfos)
+		file, err := os.OpenFile(osvOutputPath+"/ALPINE-"+cveId+".json", os.O_CREATE|os.O_RDWR, 0644)
+		if err != nil {
+			log.Fatalf("Failed to create/write osv output file: %s", err)
+		}
+		encoder := json.NewEncoder(file)
+		encoder.SetIndent("", "  ")
+		err = encoder.Encode(&vuln)
+		if err != nil {
+			log.Fatalf("Failed to encode osv output file: %s", err)
+		}
+		_ = file.Close()
+	}
+
+	log.Println("Finished")
 }
 
 func downloadAlpine(version string) AlpineSecDB {

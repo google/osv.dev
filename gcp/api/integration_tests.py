@@ -292,7 +292,10 @@ class IntegrationTests(unittest.TestCase):
 
   def test_query_purl(self):
     """Test querying by PURL."""
-    expected = self._get('GHSA-qc84-gqf4-9926')
+    expected = [
+        self._get('GHSA-qc84-gqf4-9926'),
+        self._get('RUSTSEC-2022-0041')
+    ]
 
     response = requests.post(
         _api() + '/v1/query',
@@ -303,7 +306,7 @@ class IntegrationTests(unittest.TestCase):
             }
         }))
 
-    self.assert_results_equal({'vulns': [expected]}, response.json())
+    self.assert_results_equal({'vulns': expected}, response.json())
 
     response = requests.post(
         _api() + '/v1/query',
@@ -312,7 +315,7 @@ class IntegrationTests(unittest.TestCase):
                 'purl': 'pkg:cargo/crossbeam-utils@0.8.6',
             }}))
 
-    self.assert_results_equal({'vulns': [expected]}, response.json())
+    self.assert_results_equal({'vulns': expected}, response.json())
 
   def test_query_batch(self):
     """Test batch query."""
@@ -342,6 +345,9 @@ class IntegrationTests(unittest.TestCase):
                     'vulns': [{
                         'id': 'GHSA-qc84-gqf4-9926',
                         'modified': '2022-06-08T15:22:39Z'
+                    }, {
+                        'id': 'RUSTSEC-2022-0041',
+                        'modified': '2022-08-04T13:56:30Z'
                     }]
                 },
                 {},

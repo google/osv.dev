@@ -62,7 +62,7 @@ def start_backend(port, log_path):
 def get_cloudbuild_esp_host():
   """Get cloudbuild host."""
   result = subprocess.run([
-      'docker', 'inspect', 'esp',
+      'docker', 'inspect', 'osv-esp',
       '--format={{(index .NetworkSettings.Networks "cloudbuild").IPAddress}}'
   ],
                           capture_output=True,

@@ -96,12 +96,14 @@ def start_esp(port, backend_port, service_account_path, log_path):
     network = '--network=host'
     host = 'localhost'
 
+  # Stop existing osv-esp processes that weren't killed properly.
+  subprocess.run(['docker', 'stop', 'osv-esp'])
   esp_proc = subprocess.Popen([
       'docker',
       'run',
       '--privileged',
       '--name',
-      'esp',
+      'osv-esp',
       network,
       '--rm',
       '-v',

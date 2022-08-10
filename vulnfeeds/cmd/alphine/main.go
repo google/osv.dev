@@ -14,6 +14,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"regexp"
 	"strconv"
 	"strings"
 	"time"
@@ -22,6 +23,7 @@ import (
 const (
 	cveUrlBase       = "https://nvd.nist.gov/feeds/json/cve/1.1/"
 	alpineUrlBase    = "https://secdb.alpinelinux.org/%s/main.json"
+	alpineIndexUrl   = "https://secdb.alpinelinux.org/"
 	fileNameBase     = "nvdcve-1.1-"
 	startingYear     = 2002
 	cveOutputPath    = "output2"
@@ -54,7 +56,33 @@ func main() {
 	downloadCveAsNeeded("recent")
 
 	allCves := loadAllCVEs()
-	generateAlpineOSV("v3.16", allCves)
+	//getAllAlpineVersions()
+	generateAlpineOSV(allCves)
+}
+
+func getAllAlpineVersions() []string {
+	res, err := http.Get(alpineIndexUrl)
+	if err != nil {
+		log.Fatalf("Failed to get alpine index page: %s", err)
+	}
+	buf := new(strings.Builder)
+	_, err = io.Copy(buf, res.Body)
+	if err != nil {
+		log.Fatalf("Failed to get alpine index page: %s", err)
+	}
+
+	exp := regexp.MustCompile("href=\"(v[\\d.]*)/\"")
+
+	searchRes := exp.FindAllStringSubmatch(buf.String(), -1)
+	alpineVersions := make([]string, 0, len(searchRes))
+
+	for _, match := range searchRes {
+		// The expression only has one capture that must always be there
+		log.Printf("Found ver: %s", match[1])
+		alpineVersions = append(alpineVersions, match[1])
+	}
+
+	return alpineVersions
 }
 
 func loadAllCVEs() map[string]cves.CVEItem {
@@ -86,18 +114,27 @@ func loadAllCVEs() map[string]cves.CVEItem {
 }
 
 type VersionAndPkg struct {
-	Ver string
-	Pkg string
+	Ver       string
+	Pkg       string
+	AlpineVer string
 }
 
-func generateAlpineOSV(version string, allCVEs map[string]cves.CVEItem) {
-	secdb := downloadAlpine(version)
+func generateAlpineOSV(allCVEs map[string]cves.CVEItem) {
 	allAlpineSecDb := make(map[string][]VersionAndPkg)
-	for _, pkg := range secdb.Packages {
-		for version, cveIds := range pkg.Pkg.Secfixes {
-			for _, cveId := range cveIds {
-				cveId = strings.Split(cveId, " ")[0]
-				allAlpineSecDb[cveId] = append(allAlpineSecDb[cveId], VersionAndPkg{Pkg: pkg.Pkg.Name, Ver: version})
+	allAlpineVers := getAllAlpineVersions()
+	for _, alpineVer := range allAlpineVers {
+		secdb := downloadAlpine(alpineVer)
+		for _, pkg := range secdb.Packages {
+			for version, cveIds := range pkg.Pkg.Secfixes {
+				for _, cveId := range cveIds {
+					cveId = strings.Split(cveId, " ")[0]
+					allAlpineSecDb[cveId] = append(allAlpineSecDb[cveId],
+						VersionAndPkg{
+							Pkg:       pkg.Pkg.Name,
+							Ver:       version,
+							AlpineVer: alpineVer,
+						})
+				}
 			}
 		}
 	}
@@ -109,7 +146,7 @@ func generateAlpineOSV(version string, allCVEs map[string]cves.CVEItem) {
 			pkgInfo := vulns.PackageInfo{
 				PkgName:      verPkg.Pkg,
 				FixedVersion: verPkg.Ver,
-				Ecosystem:    "Alpine",
+				Ecosystem:    "Alpine:" + verPkg.AlpineVer,
 				Purl:         "pkg:alpine/" + verPkg.Pkg,
 			}
 			pkgInfos = append(pkgInfos, pkgInfo)
@@ -143,7 +180,7 @@ func downloadAlpine(version string) AlpineSecDB {
 	var decodedSecdb AlpineSecDB
 
 	if err := json.NewDecoder(res.Body).Decode(&decodedSecdb); err != nil {
-		log.Fatalf("Failed to parse alpinr json: %s", err)
+		log.Fatalf("Failed to parse alpine json: %s", err)
 	}
 	return decodedSecdb
 }

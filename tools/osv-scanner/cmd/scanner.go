@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bufio"
 	"bytes"
 	"errors"
 	"flag"
@@ -11,6 +12,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/google/osv/tools/scanner/internal/lockfiles"
 	"github.com/google/osv/tools/scanner/internal/osv"
 	"github.com/google/osv/tools/scanner/internal/sbom"
 )
@@ -23,6 +25,7 @@ func usage() {
 func scan(query *osv.BatchedQuery, arg string) error {
 	info, err := os.Stat(arg)
 	if err != nil {
+		scanDebianDocker(query, arg)
 		return nil
 	}
 
@@ -61,23 +64,36 @@ func scanFile(query *osv.BatchedQuery, path string) error {
 		return err
 	}
 
-	for _, provider := range sbom.Providers {
-		err := provider.GetPackages(file, func(id sbom.Identifier) error {
-			query.Queries = append(query.Queries, osv.MakePURLRequest(id.PURL))
-			return nil
-		})
-		if err == nil {
-			// Found the right format.
-			log.Printf("Scanned %s SBOM", provider.Name())
-			return nil
+	switch filepath.Base(path) {
+	case "Cargo.lock":
+		packagePurls := lockfiles.ScanCargoFile(file)
+		for _, purl := range packagePurls {
+			query.Queries = append(query.Queries, osv.MakePURLRequest(purl))
 		}
+		log.Printf("Scanned Cargo.lock file with %d packages", len(packagePurls))
+	//case "package-lock.json", "yarn.lock", "pnpm-lock.yaml":
+	//	lockfiles.ScanNpmFile(file)
+	//	break
+	default:
+		for _, provider := range sbom.Providers {
+			err := provider.GetPackages(file, func(id sbom.Identifier) error {
+				query.Queries = append(query.Queries, osv.MakePURLRequest(id.PURL))
+				return nil
+			})
+			if err == nil {
+				// Found the right format.
+				log.Printf("Scanned %s SBOM", provider.Name())
+				return nil
+			}
 
-		if errors.Is(err, sbom.InvalidFormat) {
-			continue
+			if errors.Is(err, sbom.InvalidFormat) {
+				continue
+			}
+
+			return err
 		}
-
-		return err
 	}
+
 	return nil
 }
 
@@ -103,6 +119,45 @@ func scanGit(repoDir string) (*osv.Query, error) {
 	return osv.MakeCommitRequest(commit), nil
 }
 
+type DockerPackageVersion struct {
+	Name    string
+	Version string
+}
+
+func scanDebianDocker(query *osv.BatchedQuery, dockerImageName string) {
+	cmd := exec.Command("docker", "run", "--rm", dockerImageName, "/usr/bin/dpkg-query", "-f", "${Package}###${Version}\\n", "-W")
+	stdout, err := cmd.StdoutPipe()
+	if err != nil {
+		log.Fatalf("Failed to get stdout: %s", err)
+	}
+	err = cmd.Start()
+	//output, err := cmd.Output()
+	if err != nil {
+		return
+	}
+	//stuff := string(output)
+	//log.Println(stuff)
+	defer cmd.Wait()
+	if err != nil {
+		log.Fatalf("Failed to run docker: %s", err)
+	}
+	var allPackagesPurl []string
+	scanner := bufio.NewScanner(stdout)
+	for scanner.Scan() {
+		text := scanner.Text()
+		text = strings.TrimSpace(text)
+		if len(text) == 0 {
+			continue
+		}
+		splitText := strings.Split(text, "###")
+		allPackagesPurl = append(allPackagesPurl, "pkg:deb/debian/"+splitText[0]+"@"+splitText[1])
+	}
+	for _, purl := range allPackagesPurl {
+		query.Queries = append(query.Queries, osv.MakePURLRequest(purl))
+	}
+	log.Printf("Scanned docker image")
+}
+
 func printResults(query osv.BatchedQuery, resp *osv.BatchedResponse) {
 	for i, query := range query.Queries {
 		if len(resp.Results[i].Vulns) == 0 {
@@ -121,7 +176,7 @@ func printResults(query osv.BatchedQuery, resp *osv.BatchedResponse) {
 // TODO(ochang): Machine readable output format.
 // TODO(ochang): Ability to specify type of input.
 func main() {
-	flag.Usage = usage
+
 	flag.Parse()
 
 	var query osv.BatchedQuery

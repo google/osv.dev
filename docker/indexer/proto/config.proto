@@ -1,0 +1,24 @@
+syntax="proto3";
+
+package config;
+
+option go_package="proto/";
+
+enum RepositoryType {
+    UNSPECIFIED = 0;
+    GIT = 1;
+}
+
+message Repository {
+    // the origin address
+    string address = 1;
+    string name = 2;
+    RepositoryType type = 3;
+    string base_cpe = 4;
+    // the regex is used to extract the version number from the branch/tag name
+    string version_regex = 5;
+    bool tag_versioning = 6;
+    bool branch_versioning = 7;
+    bool hash_all_commits = 8;
+    repeated string file_extensions = 9;
+}

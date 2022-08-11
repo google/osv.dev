@@ -197,26 +197,30 @@ def add_related_aliases(bug: osv.Bug, response):
   aliases = dict()
   for alias in bug.aliases:
     result = bug.get_by_id(alias)
-    aliases[alias] = result
-
-  # Add links to other entries if they have this element as an alias
-  query = osv.Bug.query(osv.Bug.aliases == bug.db_id)
-
-  for x in query:
-    aliases[x.id()] = True
+    aliases[alias] = {'exists': result, 'same_alias_entries': list()}
 
   # Add links to other entries that have the same alias
   if bug.aliases:
     query = osv.Bug.query(osv.Bug.aliases.IN(bug.aliases))
     for x in query:
-      aliases[x.id()] = True
+      if x.id() == bug.id():
+        continue
+      for x_alias in x.aliases:
+        if x_alias in aliases:
+          aliases[x_alias]['same_alias_entries'].append(x.id())
+
+  # Add links to other entries if they have this element as an alias
+  query = osv.Bug.query(osv.Bug.aliases == bug.db_id)
+  for x in query:
+    aliases[x.id()] = {'exists': True, 'same_alias_entries': list()}
 
   # Remove self if it was added
   aliases.pop(bug.id(), None)
 
   response['aliases'] = [{
       'alias_id': aid,
-      'exists': ex
+      'exists': ex['exists'],
+      'same_alias_entries': ex['same_alias_entries']
   } for aid, ex in aliases.items()]
 
 

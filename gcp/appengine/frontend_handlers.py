@@ -210,7 +210,9 @@ def add_related_aliases(bug: osv.Bug, response):
   else:
     query = osv.Bug.query(osv.Bug.aliases == bug.db_id)
 
-  response['alias_referenced'] = [x.id() for x in query if x.id() != bug.id()]
+  response['alias_referenced'] = [
+      x.id() for x in query if x.id() != bug.id() and x.id() not in bug.aliases
+  ]
 
 
 def _commit_to_link(repo_url, commit):

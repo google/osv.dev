@@ -194,25 +194,30 @@ def add_source_info(bug, response):
 def add_related_aliases(bug: osv.Bug, response):
   """Add links to other osv entries that's related through aliases"""
   # Add links to other entires if they exist
-  aliases = []
+  aliases = dict()
   for alias in bug.aliases:
     result = bug.get_by_id(alias)
-    if result:
-      aliases.append({'alias_id': alias, 'exists': True})
-    else:
-      aliases.append({'alias_id': alias, 'exists': False})
-  response['aliases'] = aliases
+    aliases[alias] = result
 
   # Add links to other entries if they have this element as an alias
-  if bug.aliases:
-    query = osv.Bug.query(
-        osv.Bug.aliases.IN(bug.aliases), osv.Bug.aliases == bug.db_id)
-  else:
-    query = osv.Bug.query(osv.Bug.aliases == bug.db_id)
+  query = osv.Bug.query(osv.Bug.aliases == bug.db_id)
 
-  response['alias_referenced'] = [
-      x.id() for x in query if x.id() != bug.id() and x.id() not in bug.aliases
-  ]
+  for x in query:
+    aliases[x.id()] = True
+
+  # Add links to other entries that have the same alias
+  if bug.aliases:
+    query = osv.Bug.query(osv.Bug.aliases.IN(bug.aliases))
+    for x in query:
+      aliases[x.id()] = True
+
+  # Remove self if it was added
+  aliases.pop(bug.id(), None)
+
+  response['aliases'] = [{
+      'alias_id': aid,
+      'exists': ex
+  } for aid, ex in aliases.items()]
 
 
 def _commit_to_link(repo_url, commit):

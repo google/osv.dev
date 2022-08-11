@@ -251,9 +251,6 @@ def _is_version_affected(affected_packages,
               affected_package.package.ecosystem) != ecosystem):
         continue
 
-    if purl and purl != affected_package.package.purl:
-      continue
-
     if normalize:
       if any(
           osv.normalize_tag(version) == osv.normalize_tag(v)

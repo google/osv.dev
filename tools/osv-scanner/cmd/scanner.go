@@ -25,6 +25,8 @@ func usage() {
 func scan(query *osv.BatchedQuery, arg string) error {
 	info, err := os.Stat(arg)
 	if err != nil {
+		// Assume it's a docker image if file can't be found
+		// TODO: Have actual commands to differentiate these functions
 		scanDebianDocker(query, arg)
 		return nil
 	}
@@ -73,7 +75,6 @@ func scanFile(query *osv.BatchedQuery, path string) error {
 		log.Printf("Scanned Cargo.lock file with %d packages", len(packagePurls))
 	//case "package-lock.json", "yarn.lock", "pnpm-lock.yaml":
 	//	lockfiles.ScanNpmFile(file)
-	//	break
 	default:
 		for _, provider := range sbom.Providers {
 			err := provider.GetPackages(file, func(id sbom.Identifier) error {
@@ -131,12 +132,9 @@ func scanDebianDocker(query *osv.BatchedQuery, dockerImageName string) {
 		log.Fatalf("Failed to get stdout: %s", err)
 	}
 	err = cmd.Start()
-	//output, err := cmd.Output()
 	if err != nil {
-		return
+		log.Fatalf("Failed to start docker image: %s", err)
 	}
-	//stuff := string(output)
-	//log.Println(stuff)
 	defer cmd.Wait()
 	if err != nil {
 		log.Fatalf("Failed to run docker: %s", err)
@@ -176,7 +174,7 @@ func printResults(query osv.BatchedQuery, resp *osv.BatchedResponse) {
 // TODO(ochang): Machine readable output format.
 // TODO(ochang): Ability to specify type of input.
 func main() {
-
+	flag.Usage = usage
 	flag.Parse()
 
 	var query osv.BatchedQuery

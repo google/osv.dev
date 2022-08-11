@@ -969,7 +969,8 @@ class UpdateTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
         'eefe8ec3f1f90d0e684890e810f3f21e8500a4cd',
     ], [a.commit for a in affected_commits])
 
-    self.expect_equal('normalized_pypi_pubsub_calls', self.mock_publish.mock_calls)
+    self.expect_equal('normalized_pypi_pubsub_calls',
+                      self.mock_publish.mock_calls)
 
   def test_update_maven(self):
     """Test updating maven."""

@@ -25,7 +25,7 @@ bisection and version analysis.
 ## Current data sources
 **This is an ongoing project.** We encourage open source ecosystems to adopt
 the [OpenSSF Vulnerability format](https://github.com/ossf/osv-schema) to enable
-open source users to easily aggregate and consume vulnerabilities across all ecosystesm.
+open source users to easily aggregate and consume vulnerabilities across all ecosystems.
 See our [blog post](https://security.googleblog.com/2021/06/announcing-unified-vulnerability-schema.html)
 for more details.
 

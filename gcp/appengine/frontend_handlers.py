@@ -196,7 +196,11 @@ def add_related_aliases(bug: osv.Bug, response):
   # Add links to other entries if they exist
   aliases = {}
   for alias in bug.aliases:
-    result = bug.get_by_id(alias)
+    if len(
+        bug.aliases) <= 8:  # only if there aren't too many, otherwise skip this
+      result = bug.get_by_id(alias)
+    else:
+      result = False
     aliases[alias] = {'exists': result, 'same_alias_entries': []}
 
   # Add links to other entries that have the same alias or references this
@@ -208,9 +212,6 @@ def add_related_aliases(bug: osv.Bug, response):
       for other_alias in other.aliases:
         if other_alias in aliases:
           aliases[other_alias]['same_alias_entries'].append(other.id())
-    # Add links to other entries if they have this element as an alias
-    # This has to be a separate loop to avoid the new aliases entries interfering
-    for other in query:
       if bug.id() in other.aliases:
         aliases[other.id()] = {'exists': True, 'same_alias_entries': []}
 

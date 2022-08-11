@@ -298,14 +298,17 @@ def fix_invalid_ghsa(vulnerability):
 
   return True
 
+
 def maybe_normalize_package_names(vulnerability):
   """Normalize package names as necessary."""
   for affected in vulnerability.affected:
     if affected.package.ecosystem == 'PyPI':
       # per https://peps.python.org/pep-0503/#normalized-names
-      affected.package.name = re.sub(r'[-_.]+', '-', affected.package.name).lower()
+      affected.package.name = re.sub(r'[-_.]+', '-',
+                                     affected.package.name).lower()
 
   return vulnerability
+
 
 class TaskRunner:
   """Task runner."""

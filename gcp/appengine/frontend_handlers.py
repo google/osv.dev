@@ -193,26 +193,26 @@ def add_source_info(bug, response):
 
 def add_related_aliases(bug: osv.Bug, response):
   """Add links to other osv entries that's related through aliases"""
-  # Add links to other entires if they exist
-  aliases = dict()
+  # Add links to other entries if they exist
+  aliases = {}
   for alias in bug.aliases:
     result = bug.get_by_id(alias)
-    aliases[alias] = {'exists': result, 'same_alias_entries': list()}
+    aliases[alias] = {'exists': result, 'same_alias_entries': []}
 
-  # Add links to other entries that have the same alias
+  # Add links to other entries that have the same alias or references this
   if bug.aliases:
-    query = osv.Bug.query(osv.Bug.aliases.IN(bug.aliases))
-    for x in query:
-      if x.id() == bug.id():
+    query = osv.Bug.query(osv.Bug.aliases.IN(bug.aliases + [bug.id()]))
+    for other in query:
+      if other.id() == bug.id():
         continue
-      for x_alias in x.aliases:
-        if x_alias in aliases:
-          aliases[x_alias]['same_alias_entries'].append(x.id())
-
-  # Add links to other entries if they have this element as an alias
-  query = osv.Bug.query(osv.Bug.aliases == bug.db_id)
-  for x in query:
-    aliases[x.id()] = {'exists': True, 'same_alias_entries': list()}
+      for other_alias in other.aliases:
+        if other_alias in aliases:
+          aliases[other_alias]['same_alias_entries'].append(other.id())
+    # Add links to other entries if they have this element as an alias
+    # This has to be a separate loop to avoid the new aliases entries interfering
+    for other in query:
+      if bug.id() in other.aliases:
+        aliases[other.id()] = {'exists': True, 'same_alias_entries': []}
 
   # Remove self if it was added
   aliases.pop(bug.id(), None)

@@ -475,7 +475,7 @@ class Bug(ndb.Model):
     for affected_package in vulnerability.affected:
       current = AffectedPackage()
       current.package = Package(
-          name=self._normalize_package_name(affected_package.package)
+          name=self._normalize_package_name(affected_package.package),
           ecosystem=affected_package.package.ecosystem,
           purl=affected_package.package.purl)
       current.ranges = []

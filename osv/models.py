@@ -332,14 +332,6 @@ class Bug(ndb.Model):
     value_lower = value.lower()
     return re.split(r'\W+', value_lower) + [value_lower]
 
-  def _normalize_package_name(self, package):
-    """Normalize package name as necessary."""
-    if package.ecosystem == 'PyPI':
-      # per https://peps.python.org/pep-0503/#normalized-names
-      return re.sub(r'[-_.]+', '-', package.name).lower()
-
-    return package.name
-
   def _pre_put_hook(self):
     """Pre-put hook for populating search indices."""
     search_indices = set()
@@ -475,7 +467,7 @@ class Bug(ndb.Model):
     for affected_package in vulnerability.affected:
       current = AffectedPackage()
       current.package = Package(
-          name=self._normalize_package_name(affected_package.package),
+          name=affected_package.package.name,
           ecosystem=affected_package.package.ecosystem,
           purl=affected_package.package.purl)
       current.ranges = []

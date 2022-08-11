@@ -347,7 +347,6 @@ class Bug(ndb.Model):
     search_indices.update(self._tokenize(self.id()))
 
     for pkg in self.affected_packages:
-      pkg.package.name = self._normalize_package_name(pkg.package)
       # Set PURL if it wasn't provided.
       if not pkg.package.purl:
         pkg.package.purl = purl_helpers.package_to_purl(
@@ -476,7 +475,7 @@ class Bug(ndb.Model):
     for affected_package in vulnerability.affected:
       current = AffectedPackage()
       current.package = Package(
-          name=affected_package.package.name,
+          name=self._normalize_package_name(affected_package.package)
           ecosystem=affected_package.package.ecosystem,
           purl=affected_package.package.purl)
       current.ranges = []

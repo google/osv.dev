@@ -197,6 +197,24 @@ def query_by_commit(commit, to_response=bug_to_response):
   return _get_bugs(bug_ids, to_response=to_response)
 
 
+def _match_purl(purl_query, purl_db) -> bool:
+  """Check if purl match at the specifity level of purl_query
+
+  If purl_query doesn't have qualifiers, then we will match against purl_db
+  without qualifiers, otherwise match with qualifiers
+  """
+
+  if '?' in purl_query:
+    if purl_query != purl_db:
+      return False
+
+  else:
+    if purl_query != purl_db.split('?')[0]:
+      return False
+
+  return True
+
+
 def _is_semver_affected(affected_packages, package_name, ecosystem, purl,
                         version):
   """Returns whether or not the given version is within an affected SEMVER
@@ -212,7 +230,7 @@ def _is_semver_affected(affected_packages, package_name, ecosystem, purl,
     if ecosystem and ecosystem != affected_package.package.ecosystem:
       continue
 
-    if purl and purl != affected_package.package.purl:
+    if purl and not _match_purl(purl, affected_package.package.purl):
       continue
 
     for affected_range in affected_package.ranges:
@@ -250,6 +268,9 @@ def _is_version_affected(affected_packages,
           ecosystems.normalize(
               affected_package.package.ecosystem) != ecosystem):
         continue
+
+    if purl and not _match_purl(purl, affected_package.package.purl):
+      continue
 
     if normalize:
       if any(

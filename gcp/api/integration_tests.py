@@ -292,7 +292,10 @@ class IntegrationTests(unittest.TestCase):
 
   def test_query_purl(self):
     """Test querying by PURL."""
-    expected = self._get('GHSA-qc84-gqf4-9926')
+    expected = [
+        self._get('GHSA-qc84-gqf4-9926'),
+        self._get('RUSTSEC-2022-0041')
+    ]
 
     response = requests.post(
         _api() + '/v1/query',
@@ -303,7 +306,7 @@ class IntegrationTests(unittest.TestCase):
             }
         }))
 
-    self.assert_results_equal({'vulns': [expected]}, response.json())
+    self.assert_results_equal({'vulns': expected}, response.json())
 
     response = requests.post(
         _api() + '/v1/query',
@@ -312,7 +315,7 @@ class IntegrationTests(unittest.TestCase):
                 'purl': 'pkg:cargo/crossbeam-utils@0.8.6',
             }}))
 
-    self.assert_results_equal({'vulns': [expected]}, response.json())
+    self.assert_results_equal({'vulns': expected}, response.json())
 
   def test_query_batch(self):
     """Test batch query."""
@@ -342,6 +345,9 @@ class IntegrationTests(unittest.TestCase):
                     'vulns': [{
                         'id': 'GHSA-qc84-gqf4-9926',
                         'modified': '2022-06-08T15:22:39Z'
+                    }, {
+                        'id': 'RUSTSEC-2022-0041',
+                        'modified': '2022-08-04T13:56:30Z'
                     }]
                 },
                 {},
@@ -353,6 +359,62 @@ class IntegrationTests(unittest.TestCase):
                 },
             ]
         }, response.json())
+
+  def test_query_package(self):
+    """Test query by package."""
+    response = requests.post(
+        _api() + '/v1/query',
+        data=json.dumps({
+            'package': {
+                'ecosystem': 'Maven',
+                'name': 'org.apache.tomcat:tomcat',
+            }
+        }))
+
+    result = response.json()
+    vulns_first = set(v['id'] for v in result['vulns'])
+    self.assertIn('next_page_token', result)
+
+    response = requests.post(
+        _api() + '/v1/query',
+        data=json.dumps({
+            'package': {
+                'ecosystem': 'Maven',
+                'name': 'org.apache.tomcat:tomcat',
+            },
+            'page_token': result['next_page_token'],
+        }))
+
+    result = response.json()
+    vulns_second = set(v['id'] for v in result['vulns'])
+
+    self.assertEqual(set(), vulns_first.intersection(vulns_second))
+
+  def test_query_package_purl(self):
+    """Test query by package (purl)."""
+    response = requests.post(
+        _api() + '/v1/query',
+        data=json.dumps(
+            {'package': {
+                'purl': 'pkg:maven/org.apache.tomcat/tomcat',
+            }}))
+    result = response.json()
+    vulns_first = set(v['id'] for v in result['vulns'])
+    self.assertIn('next_page_token', result)
+
+    response = requests.post(
+        _api() + '/v1/query',
+        data=json.dumps({
+            'package': {
+                'purl': 'pkg:maven/org.apache.tomcat/tomcat',
+            },
+            'page_token': result['next_page_token'],
+        }))
+
+    result = response.json()
+    vulns_second = set(v['id'] for v in result['vulns'])
+
+    self.assertEqual(set(), vulns_first.intersection(vulns_second))
 
 
 def print_logs(filename):

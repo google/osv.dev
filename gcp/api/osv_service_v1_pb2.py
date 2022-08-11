@@ -21,7 +21,7 @@ DESCRIPTOR = _descriptor.FileDescriptor(
   syntax='proto3',
   serialized_options=None,
   create_key=_descriptor._internal_create_key,
-  serialized_pb=b'\n\x14osv_service_v1.proto\x12\x06osv.v1\x1a\x17osv/vulnerability.proto\x1a\x1cgoogle/api/annotations.proto\"6\n\x11VulnerabilityList\x12!\n\x05vulns\x18\x01 \x03(\x0b\x32\x12.osv.Vulnerability\"D\n\x16\x42\x61tchVulnerabilityList\x12*\n\x07results\x18\x01 \x03(\x0b\x32\x19.osv.v1.VulnerabilityList\"T\n\x05Query\x12\x10\n\x06\x63ommit\x18\x01 \x01(\tH\x00\x12\x11\n\x07version\x18\x02 \x01(\tH\x00\x12\x1d\n\x07package\x18\x04 \x01(\x0b\x32\x0c.osv.PackageB\x07\n\x05param\",\n\nBatchQuery\x12\x1e\n\x07queries\x18\x01 \x03(\x0b\x32\r.osv.v1.Query\"#\n\x15GetVulnByIdParameters\x12\n\n\x02id\x18\x01 \x01(\t\"7\n\x17QueryAffectedParameters\x12\x1c\n\x05query\x18\x01 \x01(\x0b\x32\r.osv.v1.Query\"A\n\x1cQueryAffectedBatchParameters\x12!\n\x05query\x18\x01 \x01(\x0b\x32\x12.osv.v1.BatchQuery2\xc1\x02\n\x03OSV\x12X\n\x0bGetVulnById\x12\x1d.osv.v1.GetVulnByIdParameters\x1a\x12.osv.Vulnerability\"\x16\x82\xd3\xe4\x93\x02\x10\x12\x0e/v1/vulns/{id}\x12\x65\n\rQueryAffected\x12\x1f.osv.v1.QueryAffectedParameters\x1a\x19.osv.v1.VulnerabilityList\"\x18\x82\xd3\xe4\x93\x02\x12\"\t/v1/query:\x05query\x12y\n\x12QueryAffectedBatch\x12$.osv.v1.QueryAffectedBatchParameters\x1a\x1e.osv.v1.BatchVulnerabilityList\"\x1d\x82\xd3\xe4\x93\x02\x17\"\x0e/v1/querybatch:\x05queryb\x06proto3'
+  serialized_pb=b'\n\x14osv_service_v1.proto\x12\x06osv.v1\x1a\x17osv/vulnerability.proto\x1a\x1cgoogle/api/annotations.proto\"O\n\x11VulnerabilityList\x12!\n\x05vulns\x18\x01 \x03(\x0b\x32\x12.osv.Vulnerability\x12\x17\n\x0fnext_page_token\x18\x02 \x01(\t\"D\n\x16\x42\x61tchVulnerabilityList\x12*\n\x07results\x18\x01 \x03(\x0b\x32\x19.osv.v1.VulnerabilityList\"h\n\x05Query\x12\x10\n\x06\x63ommit\x18\x01 \x01(\tH\x00\x12\x11\n\x07version\x18\x02 \x01(\tH\x00\x12\x1d\n\x07package\x18\x04 \x01(\x0b\x32\x0c.osv.Package\x12\x12\n\npage_token\x18\x05 \x01(\tB\x07\n\x05param\",\n\nBatchQuery\x12\x1e\n\x07queries\x18\x01 \x03(\x0b\x32\r.osv.v1.Query\"#\n\x15GetVulnByIdParameters\x12\n\n\x02id\x18\x01 \x01(\t\"7\n\x17QueryAffectedParameters\x12\x1c\n\x05query\x18\x01 \x01(\x0b\x32\r.osv.v1.Query\"A\n\x1cQueryAffectedBatchParameters\x12!\n\x05query\x18\x01 \x01(\x0b\x32\x12.osv.v1.BatchQuery2\xc1\x02\n\x03OSV\x12X\n\x0bGetVulnById\x12\x1d.osv.v1.GetVulnByIdParameters\x1a\x12.osv.Vulnerability\"\x16\x82\xd3\xe4\x93\x02\x10\x12\x0e/v1/vulns/{id}\x12\x65\n\rQueryAffected\x12\x1f.osv.v1.QueryAffectedParameters\x1a\x19.osv.v1.VulnerabilityList\"\x18\x82\xd3\xe4\x93\x02\x12\"\t/v1/query:\x05query\x12y\n\x12QueryAffectedBatch\x12$.osv.v1.QueryAffectedBatchParameters\x1a\x1e.osv.v1.BatchVulnerabilityList\"\x1d\x82\xd3\xe4\x93\x02\x17\"\x0e/v1/querybatch:\x05queryb\x06proto3'
   ,
   dependencies=[osv_dot_vulnerability__pb2.DESCRIPTOR,google_dot_api_dot_annotations__pb2.DESCRIPTOR,])
 
@@ -43,6 +43,13 @@ _VULNERABILITYLIST = _descriptor.Descriptor(
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=None, file=DESCRIPTOR,  create_key=_descriptor._internal_create_key),
+    _descriptor.FieldDescriptor(
+      name='next_page_token', full_name='osv.v1.VulnerabilityList.next_page_token', index=1,
+      number=2, type=9, cpp_type=9, label=1,
+      has_default_value=False, default_value=b"".decode('utf-8'),
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR,  create_key=_descriptor._internal_create_key),
   ],
   extensions=[
   ],
@@ -56,7 +63,7 @@ _VULNERABILITYLIST = _descriptor.Descriptor(
   oneofs=[
   ],
   serialized_start=87,
-  serialized_end=141,
+  serialized_end=166,
 )
 
 
@@ -87,8 +94,8 @@ _BATCHVULNERABILITYLIST = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=143,
-  serialized_end=211,
+  serialized_start=168,
+  serialized_end=236,
 )
 
 
@@ -121,6 +128,13 @@ _QUERY = _descriptor.Descriptor(
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=None, file=DESCRIPTOR,  create_key=_descriptor._internal_create_key),
+    _descriptor.FieldDescriptor(
+      name='page_token', full_name='osv.v1.Query.page_token', index=3,
+      number=5, type=9, cpp_type=9, label=1,
+      has_default_value=False, default_value=b"".decode('utf-8'),
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR,  create_key=_descriptor._internal_create_key),
   ],
   extensions=[
   ],
@@ -138,8 +152,8 @@ _QUERY = _descriptor.Descriptor(
       create_key=_descriptor._internal_create_key,
     fields=[]),
   ],
-  serialized_start=213,
-  serialized_end=297,
+  serialized_start=238,
+  serialized_end=342,
 )
 
 
@@ -170,8 +184,8 @@ _BATCHQUERY = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=299,
-  serialized_end=343,
+  serialized_start=344,
+  serialized_end=388,
 )
 
 
@@ -202,8 +216,8 @@ _GETVULNBYIDPARAMETERS = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=345,
-  serialized_end=380,
+  serialized_start=390,
+  serialized_end=425,
 )
 
 
@@ -234,8 +248,8 @@ _QUERYAFFECTEDPARAMETERS = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=382,
-  serialized_end=437,
+  serialized_start=427,
+  serialized_end=482,
 )
 
 
@@ -266,8 +280,8 @@ _QUERYAFFECTEDBATCHPARAMETERS = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=439,
-  serialized_end=504,
+  serialized_start=484,
+  serialized_end=549,
 )
 
 _VULNERABILITYLIST.fields_by_name['vulns'].message_type = osv_dot_vulnerability__pb2._VULNERABILITY
@@ -349,8 +363,8 @@ _OSV = _descriptor.ServiceDescriptor(
   index=0,
   serialized_options=None,
   create_key=_descriptor._internal_create_key,
-  serialized_start=507,
-  serialized_end=828,
+  serialized_start=552,
+  serialized_end=873,
   methods=[
   _descriptor.MethodDescriptor(
     name='GetVulnById',

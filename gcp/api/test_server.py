@@ -62,7 +62,7 @@ def start_backend(port, log_path):
 def get_cloudbuild_esp_host():
   """Get cloudbuild host."""
   result = subprocess.run([
-      'docker', 'inspect', 'esp',
+      'docker', 'inspect', 'osv-esp',
       '--format={{(index .NetworkSettings.Networks "cloudbuild").IPAddress}}'
   ],
                           capture_output=True,
@@ -96,12 +96,14 @@ def start_esp(port, backend_port, service_account_path, log_path):
     network = '--network=host'
     host = 'localhost'
 
+  # Stop existing osv-esp processes that weren't killed properly.
+  subprocess.run(['docker', 'stop', 'osv-esp'])
   esp_proc = subprocess.Popen([
       'docker',
       'run',
       '--privileged',
       '--name',
-      'esp',
+      'osv-esp',
       network,
       '--rm',
       '-v',

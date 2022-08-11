@@ -22,6 +22,7 @@ import "google/api/annotations.proto";
 // A list of Vulnerability entries.
 message VulnerabilityList {
   repeated osv.Vulnerability vulns = 1;
+  string next_page_token = 2;
 }
 
 // Batched lists of Vulnerability entries.
@@ -42,6 +43,7 @@ message Query {
   // The package to query against. When a `commit` hash is given, this is
   // optional.
   osv.Package package = 4;
+  string page_token = 5;
 }
 
 // Batch query format.

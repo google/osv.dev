@@ -1,23 +1,51 @@
+/*
+Copyright 2022 Google LLC
+
+ Licensed under the Apache License, Version 2.0 (the "License");
+ you may not use this file except in compliance with the License.
+ You may obtain a copy of the License at
+
+      http://www.apache.org/licenses/LICENSE-2.0
+
+ Unless required by applicable law or agreed to in writing, software
+ distributed under the License is distributed on an "AS IS" BASIS,
+ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ See the License for the specific language governing permissions and
+ limitations under the License.
+*/
 // Package config provides functionality to load configurations
 package config
 
 import (
 	"context"
+	"fmt"
 	"io"
+	"path/filepath"
 	"strings"
 
 	"cloud.google.com/go/storage"
 	"google.golang.org/api/iterator"
-
-	"github.com/golang/protobuf/proto"
+	"gopkg.in/yaml.v3"
 
 	log "github.com/golang/glog"
-	pb "github.com/google/osv.dev/docker/indexer/proto"
 )
 
+// RepoConfig holds the configuration for a single repository.
+type RepoConfig struct {
+	Address          string   `yaml:"address"`
+	Name             string   `yaml:"name"`
+	Type             string   `yaml:"type"`
+	BaseCPE          string   `yaml:"base_cpe"`
+	VersionRE        string   `yaml:"version_regex"`
+	TagVersioning    bool     `yaml:"tag_versioning"`
+	BranchVersioning bool     `yaml:"branch_versioning"`
+	HashAllCommits   bool     `yaml:"hash_all_commits"`
+	FileExts         []string `yaml:"file_extension"`
+}
+
 // Load loads the repository configurations from the provided bucket.
-func Load(ctx context.Context, cfgBucket *storage.BucketHandle) ([]*pb.Repository, error) {
-	var repos []*pb.Repository
+func Load(ctx context.Context, cfgBucket *storage.BucketHandle) ([]*RepoConfig, error) {
+	var repos []*RepoConfig
 	nameTracker := make(map[string]bool)
 	iter := cfgBucket.Objects(ctx, nil)
 	for {
@@ -28,34 +56,33 @@ func Load(ctx context.Context, cfgBucket *storage.BucketHandle) ([]*pb.Repositor
 		if err != nil {
 			return nil, err
 		}
-
-		if strings.HasSuffix(attrs.Name, "textproto") {
-			obj := cfgBucket.Object(attrs.Name)
-			r, err := obj.NewReader(ctx)
-			if err != nil {
-				log.Errorf("failed to receive object %s: %v", err, attrs.Name)
-				continue
-			}
-
-			buf, err := io.ReadAll(r)
-			if err != nil {
-				log.Errorf("failed to read object %s: %v", err, attrs.Name)
-				continue
-			}
-
-			repo := &pb.Repository{}
-			if err := proto.UnmarshalText(string(buf), repo); err != nil {
-				log.Errorf("failed to unmarshal repo for object %s: %v", attrs.Name, err)
-				continue
-			}
-			if ok := nameTracker[repo.Name]; ok {
-				log.Errorf("duplicated repo name: %s", repo.Name)
-				continue
-			}
-			nameTracker[repo.Name] = true
-			repos = append(repos, repo)
-			log.Infof("loaded configuration for %s", repo.Name)
+		if filepath.Ext(attrs.Name) != ".yaml" {
+			continue
 		}
+
+		obj := cfgBucket.Object(attrs.Name)
+		r, err := obj.NewReader(ctx)
+		if err != nil {
+			return nil, fmt.Errorf("failed to receive object %s: %v", err, attrs.Name)
+		}
+
+		buf, err := io.ReadAll(r)
+		if err != nil {
+			return nil, fmt.Errorf("failed to read object %s: %v", err, attrs.Name)
+		}
+		cfg := &RepoConfig{}
+		if err := yaml.Unmarshal(buf, cfg); err != nil {
+			log.Errorf("failed to parse config: %s", err)
+			continue
+		}
+
+		if nameTracker[cfg.Name] {
+			log.Errorf("duplicated configuration name %s", cfg.Name)
+			continue
+		}
+		nameTracker[cfg.Name] = true
+		cfg.Type = strings.ToUpper(cfg.Type)
+		repos = append(repos, cfg)
 	}
 
 	return repos, nil

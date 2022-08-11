@@ -1,3 +1,18 @@
+/*
+Copyright 2022 Google LLC
+
+ Licensed under the Apache License, Version 2.0 (the "License");
+ you may not use this file except in compliance with the License.
+ You may obtain a copy of the License at
+
+      http://www.apache.org/licenses/LICENSE-2.0
+
+ Unless required by applicable law or agreed to in writing, software
+ distributed under the License is distributed on an "AS IS" BASIS,
+ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ See the License for the specific language governing permissions and
+ limitations under the License.
+*/
 // Package processing implements the hashing step for each provide input.
 package processing
 
@@ -9,15 +24,14 @@ import (
 	"io/fs"
 	"os"
 	"path/filepath"
-	"sync"
 
 	"cloud.google.com/go/storage"
 	"github.com/go-git/go-git/v5"
 	"github.com/google/osv.dev/docker/indexer/shared"
 	"github.com/google/osv.dev/docker/indexer/stages/preparation"
+	"golang.org/x/sync/semaphore"
 
 	log "github.com/golang/glog"
-	pb "github.com/google/osv.dev/docker/indexer/proto"
 )
 
 const workers = 25
@@ -29,8 +43,9 @@ type Storer interface {
 
 // FileResult holds the per file hash and path information.
 type FileResult struct {
-	Path string
-	Hash [md5.Size]byte
+	Path     string
+	HashType string
+	Hash     []byte
 }
 
 // Stage holds the data structures necessary to perform the processing.
@@ -42,13 +57,12 @@ type Stage struct {
 // Run runs the stages and hashes all files for each incoming request.
 func (s *Stage) Run(ctx context.Context, input chan *preparation.Result) error {
 	wErr := make(chan error, workers)
-	routineCtr := 0
-	wg := sync.WaitGroup{}
+	sem := semaphore.NewWeighted(workers)
 	for {
-		if routineCtr >= workers {
-			wg.Wait()
-			routineCtr = 0
+		if err := sem.Acquire(ctx, 1); err != nil {
+			return fmt.Errorf("failed to acquire semaphore: %v", err)
 		}
+
 		var (
 			repoInfo *preparation.Result
 			ok       bool
@@ -64,14 +78,12 @@ func (s *Stage) Run(ctx context.Context, input chan *preparation.Result) error {
 			break
 		}
 
-		routineCtr++
-		wg.Add(1)
 		go func() {
-			defer wg.Done()
+			defer sem.Release(1)
 
 			var err error
 			switch repoInfo.Type {
-			case pb.RepositoryType_GIT:
+			case shared.Git:
 				err = s.processGit(ctx, repoInfo)
 			default:
 				err = errors.New("unknown repository type")
@@ -81,8 +93,7 @@ func (s *Stage) Run(ctx context.Context, input chan *preparation.Result) error {
 			}
 		}()
 	}
-	wg.Wait()
-	return nil
+	return sem.Acquire(ctx, workers)
 }
 
 func (s *Stage) processGit(ctx context.Context, repoInfo *preparation.Result) error {
@@ -118,9 +129,11 @@ func (s *Stage) processGit(ctx context.Context, repoInfo *preparation.Result) er
 				if err != nil {
 					return err
 				}
+				hash := md5.Sum(buf)
 				fileResults = append(fileResults, FileResult{
-					Path: p,
-					Hash: md5.Sum(buf),
+					Path:     p,
+					HashType: "MD5",
+					Hash:     hash[:],
 				})
 			}
 		}

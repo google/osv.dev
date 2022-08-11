@@ -1,15 +1,14 @@
-# proto-message: Repository
-
 address: "https://github.com/protocolbuffers/protobuf.git"
 name: "protobuf"
-type: GIT
+type: "GIT"
 base_cpe: "cpe:2.3:a:google:protobuf:"
 version_regex: "v({\\d}+\\.{\\d}+)"
 tag_versioning: true
 hash_all_commits: false
-file_extensions: ".c"
-file_extensions: ".cc"
-file_extensions: ".cpp"
-file_extensions: ".h"
-file_extensions: ".hh"
-file_extensions: ".hpp"
+file_extensions:
+  - ".c"
+  - ".cc"
+  - ".cpp"
+  - ".h"
+  - ".hh"
+  - ".hpp"

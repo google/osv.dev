@@ -1,3 +1,18 @@
+/*
+Copyright 2022 Google LLC
+
+ Licensed under the Apache License, Version 2.0 (the "License");
+ you may not use this file except in compliance with the License.
+ You may obtain a copy of the License at
+
+      http://www.apache.org/licenses/LICENSE-2.0
+
+ Unless required by applicable law or agreed to in writing, software
+ distributed under the License is distributed on an "AS IS" BASIS,
+ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ See the License for the specific language governing permissions and
+ limitations under the License.
+*/
 // Package preparation provides functionality to extract tags, branches and commits from repository configurations.
 package preparation
 
@@ -10,32 +25,34 @@ import (
 	"path/filepath"
 	"regexp"
 	"strings"
-	"sync"
 	"time"
 
 	"cloud.google.com/go/storage"
 	"github.com/go-git/go-git/v5"
 	"github.com/go-git/go-git/v5/plumbing"
 	"github.com/go-git/go-git/v5/plumbing/object"
+	"github.com/google/osv.dev/docker/indexer/config"
 	"github.com/google/osv.dev/docker/indexer/shared"
+	"golang.org/x/sync/semaphore"
 
 	log "github.com/golang/glog"
-	pb "github.com/google/osv.dev/docker/indexer/proto"
 )
 
 const workers = 5
+
+var (
+	genericVersionRE = regexp.MustCompile(`(\d+|(?<![a-z])(?:rc|alpha|beta|preview)\d*)`)
+)
 
 // Result is the data structure returned by the stage.
 type Result struct {
 	Name            string
 	BaseCPE         string
-	VersionRE       *regexp.Regexp
-	TagMatching     bool
-	BranchMatching  bool
+	Version         string
 	CheckoutOptions *git.CheckoutOptions
 	Commit          plumbing.Hash
 	When            time.Time
-	Type            pb.RepositoryType
+	Type            string
 	FileExts        []string
 }
 
@@ -50,20 +67,22 @@ type Stage struct {
 	RepoHdl *storage.BucketHandle
 }
 
-// Run runs the stage and outputs Result data types to the results channel. 
-func (s *Stage) Run(ctx context.Context, cfgs []*pb.Repository, results chan *Result) error {
+// Run runs the stage and outputs Result data types to the results channel.
+func (s *Stage) Run(ctx context.Context, cfgs []*config.RepoConfig, results chan *Result) error {
 	var err error
 	wErr := make(chan error, workers)
-	wg := sync.WaitGroup{}
-	routineCtr := 0
+
 	wCtx, wCancel := context.WithCancel(ctx)
+	defer wCancel()
+
+	sem := semaphore.NewWeighted(workers)
 	for _, repoCfg := range cfgs {
-		if routineCtr >= workers {
-			wg.Wait()
-			routineCtr = 0
+		if err := sem.Acquire(wCtx, 1); err != nil {
+			return fmt.Errorf("failed to acquire semaphore: %v", err)
 		}
-		go func(ctx context.Context, repoCfg *pb.Repository, results chan *Result, errCh chan error) {
-			defer wg.Done()
+
+		go func(ctx context.Context, repoCfg *config.RepoConfig, results chan *Result, errCh chan error) {
+			defer sem.Release(1)
 
 			var err error
 			select {
@@ -74,40 +93,32 @@ func (s *Stage) Run(ctx context.Context, cfgs []*pb.Repository, results chan *Re
 			}
 			log.Infof("received config for %s", repoCfg.Name)
 			switch repoCfg.Type {
-			case pb.RepositoryType_GIT:
+			case shared.Git:
 				err = s.processGit(ctx, repoCfg, results)
 			default:
-				errCh <- fmt.Errorf("unsupported repository type %s", repoCfg.Type.String())
+				errCh <- fmt.Errorf("unsupported repository type %s", repoCfg.Type)
 			}
 			if err != nil {
 				wErr <- err
 			}
 		}(wCtx, repoCfg, results, wErr)
 
-		wg.Add(1)
-		routineCtr++
 		select {
 		case err = <-wErr:
-			wCancel()
+			log.Errorf("preparation worker returned an error: %v", err)
 		default:
 		}
-		if err != nil {
-			break
-		}
 	}
-	wg.Wait()
-	wCancel()
-	return err
+	return sem.Acquire(ctx, workers)
 }
 
 func (s *Stage) objectExists(ctx context.Context, name string) bool {
 	objItr := s.RepoHdl.Objects(ctx, &storage.Query{Prefix: name + shared.TarExt})
 	_, err := objItr.Next()
 	return err == nil
-
 }
 
-func (s *Stage) processGit(ctx context.Context, repoCfg *pb.Repository, results chan *Result) error {
+func (s *Stage) processGit(ctx context.Context, repoCfg *config.RepoConfig, results chan *Result) error {
 	var (
 		err     error
 		repo    *git.Repository
@@ -155,28 +166,31 @@ func (s *Stage) processGit(ctx context.Context, repoCfg *pb.Repository, results 
 		if c, ok := allCommits[ref.Hash()]; ok {
 			when = c.Author.When
 		}
-		versRE, err := regexp.Compile(repoCfg.VersionRegex)
+		versRE, err := regexp.Compile(repoCfg.VersionRE)
 		if err != nil {
 			return err
 		}
+		version := versRE.FindString(ref.Name().String())
+		if version == "" {
+			version = genericVersionRE.FindString(ref.Name().String())
+		}
 		results <- &Result{
-			Name:        repoCfg.Name,
-			BaseCPE:     repoCfg.BaseCpe,
-			VersionRE:   versRE,
-			TagMatching: true,
+			Name:    repoCfg.Name,
+			BaseCPE: repoCfg.BaseCPE,
+			Version: version,
 			CheckoutOptions: &git.CheckoutOptions{
 				Branch: ref.Name(),
 				Force:  true,
 			},
 			When:     when,
 			Commit:   ref.Hash(),
-			Type:     pb.RepositoryType_GIT,
-			FileExts: repoCfg.FileExtensions,
+			Type:     shared.Git,
+			FileExts: repoCfg.FileExts,
 		}
 		commitTracker[ref.Hash()] = true
 		return nil
 	}
-	if repoCfg.GetBranchVersioning() {
+	if repoCfg.BranchVersioning {
 		repoItr, err := repo.Branches()
 		if err != nil {
 			return err
@@ -185,7 +199,7 @@ func (s *Stage) processGit(ctx context.Context, repoCfg *pb.Repository, results 
 			return err
 		}
 	}
-	if repoCfg.GetTagVersioning() {
+	if repoCfg.TagVersioning {
 		repoItr, err := repo.Tags()
 		if err != nil {
 			return err
@@ -212,8 +226,8 @@ func (s *Stage) processGit(ctx context.Context, repoCfg *pb.Repository, results 
 					},
 					When:     c.Author.When,
 					Commit:   h,
-					Type:     pb.RepositoryType_GIT,
-					FileExts: repoCfg.FileExtensions,
+					Type:     shared.Git,
+					FileExts: repoCfg.FileExts,
 				}
 			}
 		}

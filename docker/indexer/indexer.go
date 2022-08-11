@@ -1,17 +1,17 @@
 /*
 Copyright 2022 Google LLC
 
- Licensed under the Apache License, Version 2.0 (the "License");
- you may not use this file except in compliance with the License.
- You may obtain a copy of the License at
+	Licensed under the Apache License, Version 2.0 (the "License");
+	you may not use this file except in compliance with the License.
+	You may obtain a copy of the License at
 
-      http://www.apache.org/licenses/LICENSE-2.0
+	     http://www.apache.org/licenses/LICENSE-2.0
 
- Unless required by applicable law or agreed to in writing, software
- distributed under the License is distributed on an "AS IS" BASIS,
- WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- See the License for the specific language governing permissions and
- limitations under the License.
+	Unless required by applicable law or agreed to in writing, software
+	distributed under the License is distributed on an "AS IS" BASIS,
+	WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+	See the License for the specific language governing permissions and
+	limitations under the License.
 */
 package main
 
@@ -33,6 +33,7 @@ import (
 var (
 	configsBucket = flag.String("configs", "", "bucket containing the textproto configs")
 	reposBucket   = flag.String("repos", "", "bucket for storing the repository data")
+	projectID     = flag.String("project_id", "", "the gcp project ID")
 )
 
 func main() {
@@ -53,6 +54,11 @@ func main() {
 		log.Exitf("failed to load configurations: %v", err)
 	}
 
+	storer, err := idxStorage.New(ctx, *projectID)
+	if err != nil {
+		log.Exitf("failed to create the indexers' storer: %v", err)
+	}
+
 	stageCtx, cancel := context.WithCancel(ctx)
 	defer cancel()
 	procChan := make(chan *preparation.Result, 10)
@@ -61,7 +67,7 @@ func main() {
 	prepGrp.SetLimit(2)
 	prepStage := preparation.Stage{
 		RepoHdl: repoBucketHdl,
-		Checker: &idxStorage.Store{},
+		Checker: storer,
 	}
 
 	// The pipline starts by cloning and/or updating the configured
@@ -78,7 +84,7 @@ func main() {
 	}()
 
 	procStage := processing.Stage{
-		Storer:  &idxStorage.Store{},
+		Storer:  storer,
 		RepoHdl: repoBucketHdl,
 	}
 

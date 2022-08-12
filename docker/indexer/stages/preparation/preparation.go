@@ -166,21 +166,25 @@ func (s *Stage) processGit(ctx context.Context, repoCfg *config.RepoConfig, resu
 		if c, ok := allCommits[ref.Hash()]; ok {
 			when = c.Author.When
 		}
-		versRE, err := regexp.Compile(repoCfg.VersionRE)
-		if err != nil {
-			return err
+
+		var version string
+		if repoCfg.VersionRE != "" {
+			versRE, err := regexp.Compile(repoCfg.VersionRE)
+			if err != nil {
+				return err
+			}
+			version = versRE.FindString(ref.Name().String())
 		}
-		version := versRE.FindString(ref.Name().String())
 		if version == "" {
 			version = genericVersionRE.FindString(ref.Name().String())
 		}
+
 		results <- &Result{
 			Name:    repoCfg.Name,
 			BaseCPE: repoCfg.BaseCPE,
 			Version: version,
 			CheckoutOptions: &git.CheckoutOptions{
 				Branch: ref.Name(),
-				Force:  true,
 			},
 			When:     when,
 			Commit:   ref.Hash(),
@@ -190,6 +194,15 @@ func (s *Stage) processGit(ctx context.Context, repoCfg *config.RepoConfig, resu
 		commitTracker[ref.Hash()] = true
 		return nil
 	}
+
+	repoItr, err := repo.Tags()
+	if err != nil {
+		return err
+	}
+	if err := repoItr.ForEach(repoInfo); err != nil {
+		return err
+	}
+
 	if repoCfg.BranchVersioning {
 		repoItr, err := repo.Branches()
 		if err != nil {
@@ -199,15 +212,7 @@ func (s *Stage) processGit(ctx context.Context, repoCfg *config.RepoConfig, resu
 			return err
 		}
 	}
-	if repoCfg.TagVersioning {
-		repoItr, err := repo.Tags()
-		if err != nil {
-			return err
-		}
-		if err := repoItr.ForEach(repoInfo); err != nil {
-			return err
-		}
-	}
+
 	if repoCfg.HashAllCommits {
 		for h, c := range allCommits {
 			if found := commitTracker[h]; !found {

@@ -114,6 +114,7 @@ func (s *Stage) processGit(ctx context.Context, repoInfo *preparation.Result) er
 	if err != nil {
 		return err
 	}
+	repoInfo.CheckoutOptions.Force = true
 	if err := tree.Checkout(repoInfo.CheckoutOptions); err != nil {
 		return err
 	}

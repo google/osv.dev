@@ -18,15 +18,17 @@ package storage
 
 import (
 	"context"
+	"fmt"
+	"sync"
 	"time"
 
 	"cloud.google.com/go/datastore"
 	"github.com/go-git/go-git/v5/plumbing"
 	"github.com/google/osv.dev/docker/indexer/stages/preparation"
 	"github.com/google/osv.dev/docker/indexer/stages/processing"
-
-	log "github.com/golang/glog"
 )
+
+const kind = "source-repository"
 
 type document struct {
 	Name        string
@@ -39,8 +41,8 @@ type document struct {
 	FileResults []processing.FileResult
 }
 
-func newDoc(repoInfo *preparation.Result, fileResults []processing.FileResult) document {
-	return document{
+func newDoc(repoInfo *preparation.Result, fileResults []processing.FileResult) *document {
+	return &document{
 		Name:        repoInfo.Name,
 		BaseCPE:     repoInfo.BaseCPE,
 		Version:     repoInfo.Version,
@@ -55,7 +57,8 @@ func newDoc(repoInfo *preparation.Result, fileResults []processing.FileResult) d
 // Store provides the functionality to check for existing documents
 // in datastore and add new ones.
 type Store struct {
-	dsCl *datastore.Client
+	dsCl  *datastore.Client
+	cache sync.Map
 }
 
 // New returns a new Store.
@@ -64,18 +67,29 @@ func New(ctx context.Context, projectID string) (*Store, error) {
 	if err != nil {
 		return nil, err
 	}
-	return &Store{dsCl: client}, nil
+	return &Store{dsCl: client, cache: sync.Map{}}, nil
 }
 
 // Exists checks whether a name/hash pair already exists in datastore.
 func (s *Store) Exists(ctx context.Context, name string, hash plumbing.Hash) (bool, error) {
-	return false, nil
+	if _, ok := s.cache.Load(fmt.Sprintf("%s-%x", name, hash)); ok {
+		return true, nil
+	}
+	key := datastore.NameKey(kind, fmt.Sprintf("%s-%x", name, hash), nil)
+	tmp := &document{}
+	if err := s.dsCl.Get(ctx, key, tmp); err != nil {
+		if err == datastore.ErrNoSuchEntity {
+			return false, nil
+		}
+		return false, err
+	}
+	s.cache.Store(fmt.Sprintf("%s-%x", name, hash), true)
+	return true, nil
 }
 
 // Store stores a new entry in the datastore.
 func (s *Store) Store(ctx context.Context, repoInfo *preparation.Result, fileResults []processing.FileResult) error {
-	log.Infof("storing %s and %s", repoInfo.Name, repoInfo.Commit.String())
-	key := datastore.IncompleteKey("Repo", nil)
+	key := datastore.NameKey(kind, fmt.Sprintf("%s-%x", repoInfo.Name, repoInfo.Commit[:]), nil)
 	_, err := s.dsCl.Put(ctx, key, newDoc(repoInfo, fileResults))
 	return err
 }

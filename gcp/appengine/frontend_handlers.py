@@ -38,6 +38,7 @@ blueprint = Blueprint('frontend_handlers', __name__)
 _PAGE_SIZE = 16
 _PAGE_LOOKAHEAD = 4
 _REQUESTS_PER_MIN = 30
+_MAX_LINKING_ALIASES = 8
 
 if utils.is_prod():
   redis_host = os.environ.get('REDISHOST', 'localhost')
@@ -197,7 +198,7 @@ def add_related_aliases(bug: osv.Bug, response):
   aliases = {}
   for alias in bug.aliases:
     # only if there aren't too many, otherwise skip this
-    if len(bug.aliases) <= 8:
+    if len(bug.aliases) <= _MAX_LINKING_ALIASES:
       result = bug.get_by_id(alias)
     else:
       result = False

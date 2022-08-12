@@ -931,6 +931,47 @@ class UpdateTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
 
     self.expect_equal('pypi_pubsub_calls', self.mock_publish.mock_calls)
 
+  def test_normalize_pypi(self):
+    """Test a PyPI entry normalizes as expected."""
+    self.source_repo.ignore_git = False
+    self.source_repo.versions_from_repo = False
+    self.source_repo.detect_cherrypicks = False
+    self.source_repo.put()
+
+    self.mock_repo.add_file(
+        'PYSEC-456.yaml',
+        self._load_test_data(os.path.join(TEST_DATA_DIR, 'PYSEC-456.yaml')))
+    self.mock_repo.commit('User', 'user@email')
+    task_runner = worker.TaskRunner(ndb_client, None, self.tmp_dir.name, None,
+                                    None)
+    message = mock.Mock()
+    message.attributes = {
+        'source': 'source',
+        'path': 'PYSEC-456.yaml',
+        'original_sha256': _sha256('PYSEC-456.yaml'),
+        'deleted': 'false',
+    }
+    task_runner._source_update(message)
+
+    repo = pygit2.Repository(self.remote_source_repo_path)
+    commit = repo.head.peel()
+    diff = repo.diff(commit.parents[0], commit)
+
+    self.expect_equal('diff_normalized_pypi', diff.patch)
+
+    self.expect_dict_equal(
+        'normalized_pypi',
+        ndb.Key(osv.Bug, 'source:PYSEC-456').get()._to_dict())
+
+    affected_commits = list(osv.AffectedCommit.query())
+    self.assertCountEqual([
+        'b1c95a196f22d06fcf80df8c6691cd113d8fefff',
+        'eefe8ec3f1f90d0e684890e810f3f21e8500a4cd',
+    ], [a.commit for a in affected_commits])
+
+    self.expect_equal('normalized_pypi_pubsub_calls',
+                      self.mock_publish.mock_calls)
+
   def test_update_maven(self):
     """Test updating maven."""
     self.source_repo.ignore_git = False

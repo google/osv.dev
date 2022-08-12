@@ -1,0 +1,22 @@
+id: PYSEC-456
+summary: A vulnerability in an unnormalized package
+details: |
+  Blah blah blah
+  Blah
+references:
+- type: WEB
+  url: https://ref.com/ref
+affected:
+- package:
+    name: Scrapy
+    ecosystem: PyPI
+  ranges:
+  - type: ECOSYSTEM
+    events:
+    - introduced: 1.14.2
+    - fixed: 1.31.0
+  - type: GIT
+    repo: https://osv-test/repo/url
+    events:
+    - introduced: eefe8ec3f1f90d0e684890e810f3f21e8500a4cd
+    - fixed: 8d8242f545e9cec3e6d0d2e3f5bde8be1c659735

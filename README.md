@@ -136,6 +136,7 @@ tools and unsupported by the core OSV maintainers.
 -   [Skjold: Security audit python project dependencies against several security
     advisory databases](https://github.com/twu/skjold)
 -   [Cortex XSOAR](https://github.com/demisto/content)
+-   [dependency track](https://github.com/DependencyTrack/dependency-track)
 
 ## Contributing
 

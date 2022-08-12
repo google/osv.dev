@@ -136,7 +136,9 @@ data-column-id="{{ column_id }}"
                        class="next-page-frame">
           <div class="next-page-container">
           <a class="next-page-button link-button" data-turbo-frame="_self"
-             href="{{ url_for(request.endpoint) }}?page={{ page + 1 }}{% if selected_ecosystem %}&ecosystem={{ selected_ecosystem }}{% endif %}">
+             href="{{ url_for(request.endpoint) }}?page={{ page + 1 }}
+                  {%- if query %}&q={{ query }}{% endif %}
+                  {%- if selected_ecosystem %}&ecosystem={{ selected_ecosystem }}{% endif %}">
             <span>Load more...</span>
             {% if total_pages - page <= 3 %}
               <span style="margin-left: 5px">({{ total_pages - page }} page{% if total_pages - page > 1 %}s{% endif %} left)</span>

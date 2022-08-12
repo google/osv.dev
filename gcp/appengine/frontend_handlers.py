@@ -196,8 +196,8 @@ def add_related_aliases(bug: osv.Bug, response):
   # Add links to other entries if they exist
   aliases = {}
   for alias in bug.aliases:
-    if len(
-        bug.aliases) <= 8:  # only if there aren't too many, otherwise skip this
+    # only if there aren't too many, otherwise skip this
+    if len(bug.aliases) <= 8:
       result = bug.get_by_id(alias)
     else:
       result = False

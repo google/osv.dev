@@ -117,7 +117,17 @@ class Ecosystem:
     raise NotImplementedError
 
   def _get_affected_versions(self, versions, introduced, fixed, limits):
-    """Get affected versions given a list of sorted versions, and an introduced/fixed."""
+    """Get affected versions.
+
+    Args:
+      versions: a list of version strings.
+      introduced: a list of version strings.
+      fixed: a list of version strings.
+      limits: a list of version strings.
+
+    Returns:
+      A list of affected version strings.
+    """
     parsed_versions = [self.sort_key(v) for v in versions]
 
     if introduced == '0':
@@ -362,8 +372,8 @@ class Debian(Ecosystem):
       if not DebianVersion.is_valid(v):
         logging.warning('Package %s has invalid version: %s', package, v)
         return False
-      else:
-        return True
+
+      return True
 
     versions = [v for v in raw_versions if version_is_valid(v)]
     # Sort to ensure it is in the correct order
@@ -404,8 +414,8 @@ def get(name: str) -> Ecosystem:
 
   if name.startswith('Debian:'):
     return Debian(name.split(':')[1])
-  else:
-    return _ecosystems.get(name)
+
+  return _ecosystems.get(name)
 
 
 def set_cache(cache: Cache):

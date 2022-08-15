@@ -28,8 +28,12 @@ import (
 	"github.com/google/osv.dev/docker/indexer/stages/processing"
 )
 
-const kind = "source-repository"
+const (
+	kind   = "source-repository"
+	keyFmt = "%s-%x"
+)
 
+// document represents a single repository entry in datastore.
 type document struct {
 	Name        string
 	BaseCPE     string
@@ -72,10 +76,10 @@ func New(ctx context.Context, projectID string) (*Store, error) {
 
 // Exists checks whether a name/hash pair already exists in datastore.
 func (s *Store) Exists(ctx context.Context, name string, hash plumbing.Hash) (bool, error) {
-	if _, ok := s.cache.Load(fmt.Sprintf("%s-%x", name, hash)); ok {
+	if _, ok := s.cache.Load(fmt.Sprintf(keyFmt, name, hash)); ok {
 		return true, nil
 	}
-	key := datastore.NameKey(kind, fmt.Sprintf("%s-%x", name, hash), nil)
+	key := datastore.NameKey(kind, fmt.Sprintf(keyFmt, name, hash), nil)
 	tmp := &document{}
 	if err := s.dsCl.Get(ctx, key, tmp); err != nil {
 		if err == datastore.ErrNoSuchEntity {
@@ -83,13 +87,13 @@ func (s *Store) Exists(ctx context.Context, name string, hash plumbing.Hash) (bo
 		}
 		return false, err
 	}
-	s.cache.Store(fmt.Sprintf("%s-%x", name, hash), true)
+	s.cache.Store(fmt.Sprintf(keyFmt, name, hash), true)
 	return true, nil
 }
 
-// Store stores a new entry in the datastore.
+// Store stores a new entry in datastore.
 func (s *Store) Store(ctx context.Context, repoInfo *preparation.Result, fileResults []processing.FileResult) error {
-	key := datastore.NameKey(kind, fmt.Sprintf("%s-%x", repoInfo.Name, repoInfo.Commit[:]), nil)
+	key := datastore.NameKey(kind, fmt.Sprintf(keyFmt, repoInfo.Name, repoInfo.Commit[:]), nil)
 	_, err := s.dsCl.Put(ctx, key, newDoc(repoInfo, fileResults))
 	return err
 }

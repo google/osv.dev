@@ -9,7 +9,7 @@
 Our data is sourced from a variety of [sources], which we are looking to expand
 on over time.
 
-[sources]: https://github.com/google/osv.dev/tree/master/vulnfeeds
+[sources]: https://github.com/google/osv.dev#current-data-sources
 
 OSV runs on Google Cloud Platform, with the following main components:
 

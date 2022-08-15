@@ -50,6 +50,20 @@ class RequestHelper:
     self.cache = cache
 
   def get(self, url):
+    """Getter method.
+
+    Retrieves the text at the URL, using the cached result if available.
+
+    Args:
+      url: URL to retrieve
+
+    Returns:
+      the text at the URL.
+
+    Raises:
+      RequestError on a non-200 HTTP response.
+
+    """
     if self.cache:
       cached_result = self.cache.get(url)
       if cached_result:

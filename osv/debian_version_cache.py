@@ -17,17 +17,26 @@ import json
 
 from . import cache
 
-CLOUD_API_CACHE_URL_TEMPLATE = 'https://storage.googleapis.com/debian-osv/first_package_output/{version}.json'
+CLOUD_API_CACHE_URL_TEMPLATE = (
+    'https://storage.googleapis.com/debian-osv/first_package_output/{version}.json'
+)
 CACHE_DURATION_SECONDS = 60 * 60 * 24
 
 debian_version_cache = cache.InMemoryCache()
 
 
 class ReleaseNotFoundError(Exception):
-  """Release cannot be found, most likely a new release that haven't been picked up yet"""
+  """Release cannot be found.
+
+  Most likely a new release that haven't been picked up yet.
+
+  Args:
+      release_number: the release number that cannot be found.
+  """
   release_number: str
 
   def __init__(self, release_number):
+    super().__init__(release_number)
     self.release_number = release_number
 
 

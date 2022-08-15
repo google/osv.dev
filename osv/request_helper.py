@@ -69,19 +69,19 @@ class RequestHelper:
       if cached_result:
         return cached_result
 
-    session = requests.session()
-    retries = Retry(
-        backoff_factor=self.backoff_factor,
-        total=self.retry_total,
-    )
-    session.mount('https://', HTTPAdapter(max_retries=retries))
-    response = session.get(url)
+    with requests.session() as session:
+      retries = Retry(
+          backoff_factor=self.backoff_factor,
+          total=self.retry_total,
+      )
+      session.mount('https://', HTTPAdapter(max_retries=retries))
+      response = session.get(url)
 
-    if response.status_code != 200:
-      raise RequestError(response)
+      if response.status_code != 200:
+        raise RequestError(response)
 
-    text_response = response.text
-    if self.cache:
-      self.cache.set(url, text_response, self.cache_ttl)
+      text_response = response.text
+      if self.cache:
+        self.cache.set(url, text_response, self.cache_ttl)
 
-    return text_response
+      return text_response

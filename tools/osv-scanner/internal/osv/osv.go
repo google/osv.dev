@@ -5,18 +5,22 @@ import (
 	"encoding/json"
 	"log"
 	"net/http"
+	"osv-detector/pkg/lockfile"
 )
 
 const (
 	// QueryEndpoint is the URL for posting queries to OSV.
 	QueryEndpoint = "https://api-staging.osv.dev/v1/querybatch"
+	// QueryEndpoint = "http://127.0.0.1:8080/v1/querybatch"
 	// BaseVulnerabilityURL is the base URL for detailed vulnerability views.
 	BaseVulnerabilityURL = "https://osv.dev/vulnerability/"
 )
 
 // Package represents a package identifier for OSV.
 type Package struct {
-	PURL string `json:"purl"`
+	PURL      string `json:"purl,omitempty"`
+	Name      string `json:"name,omitempty"`
+	Ecosystem string `json:"ecosystem,omitempty"`
 }
 
 // Query represents a query to OSV.
@@ -54,6 +58,15 @@ func MakePURLRequest(purl string) *Query {
 	return &Query{
 		Package: Package{
 			PURL: purl,
+		},
+	}
+}
+
+func MakePkgDetailsRequest(pkgDetails lockfile.PackageDetails) *Query {
+	return &Query{
+		Package: Package{
+			Name:      pkgDetails.Name,
+			Ecosystem: string(pkgDetails.Ecosystem),
 		},
 	}
 }

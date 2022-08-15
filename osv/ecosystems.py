@@ -360,9 +360,8 @@ class Debian(Ecosystem):
     except RequestError as ex:
       if ex.response.status_code == 404:
         raise EnumerateError(f'Package {package} not found') from ex
-      raise RuntimeError(
-          f'Failed to get Debian versions for {package} with: {ex.response.text}'
-      ) from ex
+      raise RuntimeError('Failed to get Debian versions for '
+                         f'{package} with: {ex.response.text}') from ex
 
     response = json.loads(text_response)
     raw_versions: list[str] = [x['version'] for x in response['result']]

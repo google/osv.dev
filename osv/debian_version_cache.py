@@ -18,8 +18,8 @@ import json
 from . import cache
 
 CLOUD_API_CACHE_URL_TEMPLATE = (
-    'https://storage.googleapis.com/debian-osv/first_package_output/{version}.json'
-)
+    'https://storage.googleapis.com/debian-osv/first_package_output/'
+    '{version}.json')
 CACHE_DURATION_SECONDS = 60 * 60 * 24
 
 debian_version_cache = cache.InMemoryCache()

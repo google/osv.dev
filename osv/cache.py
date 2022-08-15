@@ -50,7 +50,7 @@ class InMemoryCache(Cache):
   key_val_map: typing.Dict[str, _CacheEntry]
 
   def __init__(self):
-    self.key_val_map = dict()
+    self.key_val_map = {}
 
   def get(self, key):
     entry = self.key_val_map.get(key)
@@ -59,21 +59,22 @@ class InMemoryCache(Cache):
 
     if entry.expiry >= datetime.datetime.now().timestamp():
       return entry.data
-    else:
-      self.key_val_map.pop(key)
-      return None
+
+    self.key_val_map.pop(key)
+    return None
 
   def set(self, key, value, ttl):
     self.key_val_map[key] = _CacheEntry(value, ttl)
 
 
 def Cached(cache: Cache, ttl: int = 60 * 60):
-  """
-  Decorates your function to cache results
-  :param cache: Cache object to store information, each function also has a
-  unique key for values cached, therefore you can safely share the same cache
-  object across different functions.
-  :param ttl: Time to live in seconds (default 1 hour)
+  """Function decorator to cache results.
+
+  Args:
+    cache: Cache object to store information, each function also has a unique
+      key for values cached, therefore you can safely share the same cache
+      object across different functions.
+    ttl: Time to live in seconds (default 1 hour).
   """
 
   def decorator(func):

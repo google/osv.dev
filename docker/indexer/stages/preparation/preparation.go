@@ -179,6 +179,10 @@ func (s *Stage) processGit(ctx context.Context, repoCfg *config.RepoConfig, resu
 			version = genericVersionRE.FindString(ref.Name().String())
 		}
 
+		if version == "" {
+			return nil
+		}
+
 		results <- &Result{
 			Name:    repoCfg.Name,
 			BaseCPE: repoCfg.BaseCPE,

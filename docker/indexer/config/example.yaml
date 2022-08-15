@@ -3,7 +3,6 @@ name: "protobuf"
 type: "GIT"
 base_cpe: "cpe:2.3:a:google:protobuf:"
 version_regex: "(\\d+\\.\\d+)"
-tag_versioning: true
 hash_all_commits: false
 file_extensions:
   - ".c"

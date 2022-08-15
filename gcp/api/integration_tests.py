@@ -98,18 +98,27 @@ class IntegrationTests(unittest.TestCase):
     self.assertDictEqual(expected, actual)
 
   def assert_results_equal(self, expected, actual):
+    # Single query results.
     for vuln in expected.get('vulns', []):
       self.remove_modified(vuln)
 
     for vuln in actual.get('vulns', []):
       self.remove_modified(vuln)
 
+    # Batch query results.
+    for batch_result in actual.get('results', []):
+      for vuln in batch_result.get('vulns', {}):
+        # Ensure that batch queries include the timestamp.
+        self.remove_modified(vuln, check_exists=True)
+
     self.assertDictEqual(expected, actual)
 
-  def remove_modified(self, vuln):
+  def remove_modified(self, vuln, check_exists=False):
     """Remove lastModified for comparison."""
     if 'modified' in vuln:
       del vuln['modified']
+    elif check_exists:
+      raise ValueError('Missing modified timestamp')
 
   def test_get(self):
     """Test getting a vulnerability."""
@@ -344,17 +353,14 @@ class IntegrationTests(unittest.TestCase):
                 {
                     'vulns': [{
                         'id': 'GHSA-qc84-gqf4-9926',
-                        'modified': '2022-06-08T15:22:39Z'
                     }, {
                         'id': 'RUSTSEC-2022-0041',
-                        'modified': '2022-08-04T13:56:30Z'
                     }]
                 },
                 {},
                 {
                     'vulns': [{
                         'id': 'OSV-2020-744',
-                        'modified': '2022-04-13T03:04:39.780694Z'
                     }]
                 },
             ]

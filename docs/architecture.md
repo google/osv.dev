@@ -4,6 +4,13 @@
   <img src="images/architecture.png" width="800">
 </p>
 
+## Data source
+
+Our data is sourced from a variety of [sources], which we are looking to expand
+on over time.
+
+[sources]: https://github.com/google/osv.dev/tree/master/vulnfeeds
+
 OSV runs on Google Cloud Platform, with the following main components:
 
 ## Cloud Datastore
@@ -15,14 +22,6 @@ All vulnerability data is stored in [Cloud Datastore], with the [models] defined
 [models]:
 https://googleapis.dev/python/python-ndb/latest/index.html#defining-entities-keys-and-properties
 [here]: https://github.com/google/osv/blob/master/osv/models.py
-
-## OSS-Fuzz
-
-All of our data is currently sourced from [OSS-Fuzz], and we are working to
-extend this with [other sources].
-
-[OSS-Fuzz]: https://github.com/google/oss-fuzz
-[other sources]: https://github.com/google/osv.dev/tree/master/vulnfeeds
 
 ## Google Kubernetes Engine (GKE)
 

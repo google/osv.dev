@@ -10,8 +10,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"osv-detector/pkg/lockfile"
-
+	"github.com/g-rath/osv-detector/pkg/lockfile"
 	"github.com/urfave/cli/v2"
 
 	"github.com/google/osv/tools/scanner/internal/osv"
@@ -41,6 +40,7 @@ func scanDir(query *osv.BatchedQuery, dir string) error {
 
 func scanLockfile(query *osv.BatchedQuery, path string) error {
 	log.Printf("Scanning file %s\n", path)
+
 	parsedLockfile, err := lockfile.Parse(path, "")
 	if err != nil {
 		return err
@@ -134,7 +134,6 @@ func scanDebianDocker(query *osv.BatchedQuery, dockerImageName string) {
 		allPackagesPurl = append(allPackagesPurl, "pkg:deb/debian/"+splitText[0]+"@"+splitText[1])
 	}
 	for _, purl := range allPackagesPurl {
-		log.Println(purl)
 		query.Queries = append(query.Queries, osv.MakePURLRequest(purl))
 	}
 	log.Printf("Scanned docker image")
@@ -187,7 +186,10 @@ func main() {
 						return errors.New("no lockfile path specified")
 					}
 					for _, lockfile := range context.Args().Slice() {
-						scanLockfile(&query, lockfile)
+						err := scanLockfile(&query, lockfile)
+						if err != nil {
+							return err
+						}
 					}
 					return nil
 				},

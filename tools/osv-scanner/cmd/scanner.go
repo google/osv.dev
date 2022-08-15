@@ -53,7 +53,7 @@ func scanLockfile(query *osv.BatchedQuery, path string) error {
 	return nil
 }
 
-func scanFile(query *osv.BatchedQuery, path string) error {
+func scanSbomFile(query *osv.BatchedQuery, path string) error {
 	log.Printf("Scanning file %s\n", path)
 	file, err := os.Open(path)
 	if err != nil {
@@ -161,68 +161,70 @@ func main() {
 	app := &cli.App{
 		Name:  "osv-scanner",
 		Usage: "scans various mediums for dependencies and matches it against the OSV database",
-		Commands: []*cli.Command{
-			{
-				Name:  "docker",
-				Usage: "scan docker images",
-				Action: func(context *cli.Context) error {
-					if context.NArg() == 0 {
-						return errors.New("no container name specified")
-					}
-					for _, container := range context.Args().Slice() {
-						// TODO: Automatically figure out what docker base image
-						// and scan appropriately.
-						scanDebianDocker(&query, container)
-					}
-					return nil
-				},
-				ArgsUsage: "container-name1 container-name2...",
+		Flags: []cli.Flag{
+			&cli.StringSliceFlag{
+				Name:      "docker",
+				Aliases:   []string{"D"},
+				Usage:     "scan docker image with this name",
+				TakesFile: false,
 			},
-			{
-				Name:  "lockfile",
-				Usage: "scan package lockfiles",
-				Action: func(context *cli.Context) error {
-					if context.NArg() == 0 {
-						return errors.New("no lockfile path specified")
-					}
-					for _, lockfile := range context.Args().Slice() {
-						err := scanLockfile(&query, lockfile)
-						if err != nil {
-							return err
-						}
-					}
-					return nil
-				},
-				ArgsUsage: "path1 path2...",
+			&cli.StringSliceFlag{
+				Name:      "lockfile",
+				Aliases:   []string{"L"},
+				Usage:     "scan package lockfile on this path",
+				TakesFile: true,
 			},
-			{
-				Name:  "sbom",
-				Usage: "scan sbom files",
-				Action: func(context *cli.Context) error {
-					if context.NArg() == 0 {
-						return errors.New("no sbom path specified")
-					}
-					for _, dirPath := range context.Args().Slice() {
-						scanDir(&query, dirPath)
-					}
-					return nil
-				},
-				ArgsUsage: "sbom1 sbom2...",
+			&cli.StringSliceFlag{
+				Name:      "sbom",
+				Aliases:   []string{"S"},
+				Usage:     "scan sbom file on this path",
+				TakesFile: true,
 			},
-			{
-				Name:  "dir",
-				Usage: "scan directory for git, lockfiles, Dockerfiles, and SBOMs (WIP)",
-				Action: func(context *cli.Context) error {
-					if context.NArg() == 0 {
-						return errors.New("no directories specified")
-					}
-					for _, dirPath := range context.Args().Slice() {
-						scanDir(&query, dirPath)
-					}
-					return nil
-				},
-				ArgsUsage: "dir1 dir2...",
+			&cli.StringSliceFlag{
+				Name:      "git",
+				Aliases:   []string{"G"},
+				Usage:     "scan for git repository in this directory",
+				TakesFile: true,
 			},
+		},
+		ArgsUsage: "[directory1 directory2...]",
+		Action: func(context *cli.Context) error {
+			containers := context.StringSlice("docker")
+			for _, container := range containers {
+				// TODO: Automatically figure out what docker base image
+				// and scan appropriately.
+				scanDebianDocker(&query, container)
+			}
+
+			lockfiles := context.StringSlice("lockfile")
+			for _, lockfile := range lockfiles {
+				err := scanLockfile(&query, lockfile)
+				if err != nil {
+					return err
+				}
+			}
+
+			sboms := context.StringSlice("sbom")
+			for _, sbom := range sboms {
+				err := scanSbomFile(&query, sbom)
+				if err != nil {
+					return err
+				}
+			}
+
+			gitDirs := context.StringSlice("git")
+			for _, gitDir := range gitDirs {
+				err := scanDir(&query, gitDir)
+				if err != nil {
+					return err
+				}
+			}
+
+			if len(query.Queries) == 0 {
+				cli.ShowAppHelpAndExit(context, 1)
+			}
+
+			return nil
 		},
 	}
 	if err := app.Run(os.Args); err != nil {

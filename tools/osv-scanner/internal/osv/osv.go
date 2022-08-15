@@ -3,6 +3,7 @@ package osv
 import (
 	"bytes"
 	"encoding/json"
+	"io"
 	"log"
 	"net/http"
 
@@ -11,8 +12,7 @@ import (
 
 const (
 	// QueryEndpoint is the URL for posting queries to OSV.
-	QueryEndpoint = "https://api-staging.osv.dev/v1/querybatch"
-	// QueryEndpoint = "http://127.0.0.1:8080/v1/querybatch"
+	QueryEndpoint = "https://api.osv.dev/v1/querybatch"
 	// BaseVulnerabilityURL is the base URL for detailed vulnerability views.
 	BaseVulnerabilityURL = "https://osv.dev/vulnerability/"
 )
@@ -28,6 +28,7 @@ type Package struct {
 type Query struct {
 	Commit  string  `json:"commit,omitempty"`
 	Package Package `json:"package,omitempty"`
+	Version string  `json:"version,omitempty"`
 }
 
 // BatchedQuery represents a batched query to OSV.
@@ -65,6 +66,8 @@ func MakePURLRequest(purl string) *Query {
 
 func MakePkgDetailsRequest(pkgDetails lockfile.PackageDetails) *Query {
 	return &Query{
+		Version: pkgDetails.Version,
+		Commit:  pkgDetails.Commit,
 		Package: Package{
 			Name:      pkgDetails.Name,
 			Ecosystem: string(pkgDetails.Ecosystem),
@@ -82,7 +85,6 @@ func chunkBy[T any](items []T, chunkSize int) [][]T {
 }
 
 func MakeRequest(request BatchedQuery) (*BatchedResponse, error) {
-
 	// API has a limit of 1000 bulk query per request
 	queryChunks := chunkBy(request.Queries, 990)
 	var totalOsvResp BatchedResponse
@@ -102,7 +104,9 @@ func MakeRequest(request BatchedQuery) (*BatchedResponse, error) {
 
 		if resp.StatusCode != 200 {
 			// TODO(rexpan): Better error handling
-			log.Fatalf("Server response error")
+			buffer := bytes.NewBufferString("")
+			io.Copy(buffer, resp.Body)
+			log.Fatalf("Server response error: \n\n%s", buffer.String())
 		}
 
 		var osvResp BatchedResponse

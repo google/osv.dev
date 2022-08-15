@@ -40,7 +40,7 @@ class ReleaseNotFoundError(Exception):
     self.release_number = release_number
 
 
-@cache.Cached(debian_version_cache, 24 * 60 * 60)
+@cache.cached(debian_version_cache, 24 * 60 * 60)
 def _get_first_versions_for_release(release_number: str):
   """Gets the first version mapping for specific release number"""
   response = requests.get(

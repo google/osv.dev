@@ -67,7 +67,7 @@ class InMemoryCache(Cache):
     self.key_val_map[key] = _CacheEntry(value, ttl)
 
 
-def Cached(cache: Cache, ttl: int = 60 * 60):
+def cached(cache: Cache, ttl: int = 60 * 60):
   """Function decorator to cache results.
 
   Args:

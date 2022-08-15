@@ -13,7 +13,7 @@ All vulnerability data is stored in [Cloud Datastore], with the [models] defined
 
 [Cloud Datastore]: https://cloud.google.com/datastore
 [models]:
-https://cloudplatform.googleblog.com/2015/08/Introduction-to-data-models-in-Cloud-Datastore.html
+https://googleapis.dev/python/python-ndb/latest/index.html#defining-entities-keys-and-properties
 [here]: https://github.com/google/osv/blob/master/osv/models.py
 
 ## OSS-Fuzz

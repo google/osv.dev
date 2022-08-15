@@ -29,7 +29,7 @@ from . import maven
 from . import nuget
 from . import semver_index
 from .cache import Cache
-from .cache import Cached
+from .cache import cached
 from .request_helper import RequestError, RequestHelper
 
 _DEPS_DEV_API = (
@@ -261,7 +261,7 @@ class Maven(Ecosystem, DepsDevMixin):
 
     get_versions = self._get_versions
     if shared_cache:
-      get_versions = Cached(shared_cache)(get_versions)
+      get_versions = cached(shared_cache)(get_versions)
 
     versions = get_versions(package)
     self.sort_versions(versions)

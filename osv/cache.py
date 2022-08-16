@@ -14,9 +14,9 @@
 """Caching interface and implementations"""
 import datetime
 import functools
+import inspect
 import json
 import typing
-from inspect import getcallargs, getmodule
 
 
 class Cache:
@@ -78,21 +78,31 @@ def cached(cache: Cache, ttl: int = 60 * 60):
   """
 
   def decorator(func):
-    unique_f_key = ('FUNC_MODULE_NAME', getmodule(func).__name__,
+    # Get the name of the function decorated, this will be used as the key in
+    # the cache.
+    unique_f_key = ('FUNC_MODULE_NAME', inspect.getmodule(func).__name__,
                     func.__qualname__)
 
     @functools.wraps(func)
     def wrapper(*args, **kwargs):
       # TODO(ochang): Detect and handle `self` arguments.
-      key = (*getcallargs(func, *args, **kwargs).items(), unique_f_key)
-      _check_json_serializable(key)
-      cached_value = cache.get(key)
+      sig = inspect.signature(func)
+      # Passing through the arguments made to the function
+      bound_args = sig.bind(*args, **kwargs)
+      # Apply the default since the cache could be external (Redis)
+      # If default changes, we want a new key to be generated
+      bound_args.apply_defaults()
+      # Making it hashable and combining it with the function name
+      cache_key = (*bound_args.arguments.items(), unique_f_key)
+      _check_json_serializable(cache_key)
+      cached_value = cache.get(cache_key)
       if cached_value:
         return cached_value
 
+      # Cache miss, cache the return value from the decorated function
       value = func(*args, **kwargs)
       _check_json_serializable(value)
-      cache.set(key, value, ttl)
+      cache.set(cache_key, value, ttl)
 
       return value
 

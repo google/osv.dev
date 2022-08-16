@@ -181,6 +181,7 @@ func (s *Stage) processGit(ctx context.Context, repoCfg *config.RepoConfig, resu
 		}
 
 		if version == "" {
+			log.Warningf("failed to extract version for repo: %s\ttag/branch: %s", repoCfg.Address, ref.Name().String())
 			return nil
 		}
 

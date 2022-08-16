@@ -450,6 +450,3 @@ if __name__ == '__main__':
     unittest.main()
   finally:
     server.stop()
-
-    print_logs('esp.log')
-    print_logs('backend.log')

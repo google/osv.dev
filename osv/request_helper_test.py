@@ -13,12 +13,9 @@
 # limitations under the License.
 """Request helpers tests"""
 
-import os
 import unittest
 import types
 from unittest import mock
-
-import requests
 
 from .request_helper import RequestHelper
 from .cache import InMemoryCache
@@ -29,22 +26,23 @@ class RequestHelperTests(unittest.TestCase):
 
   @mock.patch('requests.sessions.Session.get')
   def test_cache(self, session_get: mock.MagicMock):
+    """Test cache works as expected."""
 
-    TEST_RESPONSE = types.SimpleNamespace()
-    TEST_RESPONSE.status_code = 200
-    TEST_RESPONSE.text = 'test123'
-    TEST_URL = 'https://example.com'
+    test_response = types.SimpleNamespace()
+    test_response.status_code = 200
+    test_response.text = 'test123'
+    test_url = 'https://example.com'
 
-    session_get.return_value = TEST_RESPONSE
+    session_get.return_value = test_response
 
     cache = InMemoryCache()
     request_helper = RequestHelper(cache)
 
-    example_result = request_helper.get(TEST_URL)
-    self.assertEqual(example_result, TEST_RESPONSE.text)
-    session_get.assert_called_once_with(TEST_URL)
+    example_result = request_helper.get(test_url)
+    self.assertEqual(example_result, test_response.text)
+    session_get.assert_called_once_with(test_url)
 
-    cached_response = request_helper.get(TEST_URL)
+    cached_response = request_helper.get(test_url)
     self.assertEqual(example_result, cached_response)
     session_get.assert_called_once()  # Still only called once
 

@@ -202,6 +202,54 @@ class Importer:
     source_repo.last_update_date = utcnow().date()
     source_repo.put()
 
+  def _sync_from_previous_commit(self, source_repo, repo):
+    """Sync the repository from the previous commit.
+
+    This was refactored out of _process_updates_git() due to excessive
+    indentation.
+
+    Args:
+      source_repo: the Git source repository.
+      repo: the checked out Git source repository.
+
+    Returns:
+      changed_entries: the set of repository paths that have changed.
+      deleted_entries: the set of repository paths that have been deleted.
+    """
+    changed_entries = set()
+    deleted_entries = set()
+
+    walker = repo.walk(repo.head.target, pygit2.GIT_SORT_TOPOLOGICAL)
+    walker.hide(source_repo.last_synced_hash)
+
+    for commit in walker:
+      if commit.author.email == osv.AUTHOR_EMAIL:
+        continue
+
+      if _NO_UPDATE_MARKER in commit.message:
+        logging.info('Skipping commit %s as no update marker found.', commit.id)
+        continue
+
+      logging.info('Processing commit %s from %s', commit.id,
+                   commit.author.email)
+
+      for parent in commit.parents:
+        diff = repo.diff(parent, commit)
+        for delta in diff.deltas:
+          if delta.old_file and _is_vulnerability_file(source_repo,
+                                                       delta.old_file.path):
+            if delta.status == pygit2.GIT_DELTA_DELETED:
+              deleted_entries.add(delta.old_file.path)
+              continue
+
+            changed_entries.add(delta.old_file.path)
+
+          if delta.new_file and _is_vulnerability_file(source_repo,
+                                                       delta.new_file.path):
+            changed_entries.add(delta.new_file.path)
+
+    return changed_entries, deleted_entries
+
   def _process_updates_git(self, source_repo):
     """Process updates for a git source_repo."""
     repo = self.checkout(source_repo)
@@ -212,35 +260,9 @@ class Importer:
 
     if source_repo.last_synced_hash:
       # Syncing from a previous commit.
-      walker = repo.walk(repo.head.target, pygit2.GIT_SORT_TOPOLOGICAL)
-      walker.hide(source_repo.last_synced_hash)
+      changed_entries, deleted_entries = self._sync_from_previous_commit(
+          source_repo, repo)
 
-      for commit in walker:
-        if commit.author.email == osv.AUTHOR_EMAIL:
-          continue
-
-        if _NO_UPDATE_MARKER in commit.message:
-          logging.info('Skipping commit %s as no update marker found.',
-                       commit.id)
-          continue
-
-        logging.info('Processing commit %s from %s', commit.id,
-                     commit.author.email)
-
-        for parent in commit.parents:
-          diff = repo.diff(parent, commit)
-          for delta in diff.deltas:
-            if delta.old_file and _is_vulnerability_file(
-                source_repo, delta.old_file.path):
-              if delta.status == pygit2.GIT_DELTA_DELETED:
-                deleted_entries.add(delta.old_file.path)
-                continue
-
-              changed_entries.add(delta.old_file.path)
-
-            if delta.new_file and _is_vulnerability_file(
-                source_repo, delta.new_file.path):
-              changed_entries.add(delta.new_file.path)
     else:
       # First sync from scratch.
       logging.info('Syncing repo from scratch')
@@ -259,8 +281,7 @@ class Importer:
         continue
 
       try:
-        vulnerability = osv.parse_vulnerability(
-            path, key_path=source_repo.key_path)
+        _ = osv.parse_vulnerability(path, key_path=source_repo.key_path)
       except Exception as e:
         logging.error('Failed to parse %s: %s', changed_entry, str(e))
         continue

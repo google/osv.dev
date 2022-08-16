@@ -14,7 +14,7 @@
 """API server implementation."""
 
 import argparse
-from concurrent import futures
+import concurrent
 import functools
 import logging
 import os
@@ -76,6 +76,7 @@ class OSVServicer(osv_service_v1_pb2_grpc.OSVServicer):
   @ndb_context
   def QueryAffected(self, request, context):
     """Query vulnerabilities for a particular project at a given commit or
+
     version.
     """
     results, next_page_token = do_query(request.query, context).result()
@@ -223,6 +224,7 @@ def _match_purl(purl_query: PackageURL, purl_db: PackageURL) -> bool:
 def _is_semver_affected(affected_packages, package_name, ecosystem,
                         purl: PackageURL, version):
   """Returns whether or not the given version is within an affected SEMVER
+
   range.
   """
   version = semver_index.parse(version)
@@ -262,6 +264,7 @@ def _is_version_affected(affected_packages,
                          version,
                          normalize=False):
   """Returns whether or not the given version is within an affected ECOSYSTEM
+
   range.
   """
   for affected_package in affected_packages:
@@ -421,7 +424,7 @@ def query_by_package(project, ecosystem, purl: PackageURL, page_token,
 
 def serve(port):
   """Configures and runs the bookstore API server."""
-  server = grpc.server(futures.ThreadPoolExecutor(max_workers=10))
+  server = grpc.server(concurrent.futures.ThreadPoolExecutor(max_workers=10))
   osv_service_v1_pb2_grpc.add_OSVServicer_to_server(OSVServicer(), server)
   server.add_insecure_port('[::]:{}'.format(port))
   server.start()

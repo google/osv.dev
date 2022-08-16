@@ -257,7 +257,14 @@ def add_fix_information(vulnerability, fix_result):
 
 # TODO(ochang): Remove this function once GHSA's encoding is fixed.
 def fix_invalid_ghsa(vulnerability):
-  """Attempt to fix an invalid GHSA entry and returns whether the GHSA entry is valid."""
+  """Attempt to fix an invalid GHSA entry.
+
+  Args:
+    vulnerability: a vulnerability object.
+
+  Returns:
+    whether the GHSA entry is valid.
+  """
   packages = {}
   for affected in vulnerability.affected:
     details = packages.setdefault(

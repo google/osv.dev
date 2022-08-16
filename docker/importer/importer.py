@@ -210,8 +210,10 @@ class Importer:
     changed_entries = set()
     deleted_entries = set()
 
-    if source_repo.last_synced_hash:
-      # Syncing from a previous commit.
+    def _sync_from_previous_commit(repo):
+      entries_changed = set()
+      entries_deleted = set()
+
       walker = repo.walk(repo.head.target, pygit2.GIT_SORT_TOPOLOGICAL)
       walker.hide(source_repo.last_synced_hash)
 
@@ -233,14 +235,21 @@ class Importer:
             if delta.old_file and _is_vulnerability_file(
                 source_repo, delta.old_file.path):
               if delta.status == pygit2.GIT_DELTA_DELETED:
-                deleted_entries.add(delta.old_file.path)
+                entries_deleted.add(delta.old_file.path)
                 continue
 
-              changed_entries.add(delta.old_file.path)
+              entries_changed.add(delta.old_file.path)
 
             if delta.new_file and _is_vulnerability_file(
                 source_repo, delta.new_file.path):
-              changed_entries.add(delta.new_file.path)
+              entries_changed.add(delta.new_file.path)
+
+      return entries_changed, entries_deleted
+
+    if source_repo.last_synced_hash:
+      # Syncing from a previous commit.
+      changed_entries, deleted_entries = _sync_from_previous_commit(repo)
+
     else:
       # First sync from scratch.
       logging.info('Syncing repo from scratch')

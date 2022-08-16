@@ -98,6 +98,12 @@ class IntegrationTests(unittest.TestCase):
     self.assertDictEqual(expected, actual)
 
   def assert_results_equal(self, expected, actual):
+    """Assert that results are equal.
+
+    Args:
+      expected: dictionary representation of the expected vulnerability.
+      actual: dictionary representation of the actual vulnerability.
+    """
     # Single query results.
     for vuln in expected.get('vulns', []):
       self.remove_modified(vuln)

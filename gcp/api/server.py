@@ -111,22 +111,23 @@ def do_query(query, context, include_details=True):
   if query.HasField('package'):
     package_name = query.package.name
     ecosystem = query.package.ecosystem
-    purl = query.package.purl
+    purl_str = query.package.purl
   else:
     package_name = ''
     ecosystem = ''
-    purl = ''
+    purl_str = ''
 
   page_token = None
   if query.page_token:
     page_token = ndb.Cursor(urlsafe=query.page_token)
 
+  purl = None
   purl_version = None
-  if purl:
+  if purl_str:
     try:
-      parsed_purl = PackageURL.from_string(purl)
+      parsed_purl = PackageURL.from_string(purl_str)
       purl_version = parsed_purl.version
-      purl = _clean_purl(parsed_purl).to_string()
+      purl = _clean_purl(parsed_purl)
     except ValueError:
       context.abort(grpc.StatusCode.INVALID_ARGUMENT, 'Invalid Package URL.')
       return None
@@ -175,12 +176,20 @@ def _get_bugs(bug_ids, to_response=bug_to_response):
 
 
 def _clean_purl(purl):
-  """Clean a purl object."""
+  """
+  Clean a purl object.
+
+  Removes version, subpath, and qualifiers with the exeption of
+  the 'arch' qualifier
+  """
   values = purl.to_dict()
   values.pop('version', None)
   values.pop('subpath', None)
-  values.pop('qualifiers', None)
-  return PackageURL(**values)
+  qualifiers = values.pop('qualifiers', None)
+  new_qualifiers = {}
+  if qualifiers and 'arch' in qualifiers:  # CPU arch for debian packages
+    new_qualifiers['arch'] = qualifiers['arch']
+  return PackageURL(qualifiers=new_qualifiers, **values)
 
 
 @ndb.tasklet
@@ -197,26 +206,22 @@ def query_by_commit(commit, to_response=bug_to_response):
   return _get_bugs(bug_ids, to_response=to_response)
 
 
-def _match_purl(purl_query, purl_db) -> bool:
+def _match_purl(purl_query: PackageURL, purl_db: PackageURL) -> bool:
   """Check if purl match at the specifity level of purl_query
 
   If purl_query doesn't have qualifiers, then we will match against purl_db
   without qualifiers, otherwise match with qualifiers
   """
 
-  if '?' in purl_query:
-    if purl_query != purl_db:
-      return False
+  if len(purl_query.qualifiers) == 0:
+    # No qualifiers, and our PURLs never have versions, so just match name
+    return purl_query.name == purl_db.name
 
-  else:
-    if purl_query != purl_db.split('?')[0]:
-      return False
-
-  return True
+  return purl_query == purl_db
 
 
-def _is_semver_affected(affected_packages, package_name, ecosystem, purl,
-                        version):
+def _is_semver_affected(affected_packages, package_name, ecosystem,
+                        purl: PackageURL, version):
   """Returns whether or not the given version is within an affected SEMVER
   range.
   """
@@ -230,7 +235,8 @@ def _is_semver_affected(affected_packages, package_name, ecosystem, purl,
     if ecosystem and ecosystem != affected_package.package.ecosystem:
       continue
 
-    if purl and not _match_purl(purl, affected_package.package.purl):
+    if purl and not (affected_package.package.purl and _match_purl(
+        purl, PackageURL.from_string(affected_package.package.purl))):
       continue
 
     for affected_range in affected_package.ranges:
@@ -252,7 +258,7 @@ def _is_semver_affected(affected_packages, package_name, ecosystem, purl,
 def _is_version_affected(affected_packages,
                          package_name,
                          ecosystem,
-                         purl,
+                         purl: PackageURL,
                          version,
                          normalize=False):
   """Returns whether or not the given version is within an affected ECOSYSTEM
@@ -269,7 +275,8 @@ def _is_version_affected(affected_packages,
               affected_package.package.ecosystem) != ecosystem):
         continue
 
-    if purl and not _match_purl(purl, affected_package.package.purl):
+    if purl and not (affected_package.package.purl and _match_purl(
+        purl, PackageURL.from_string(affected_package.package.purl))):
       continue
 
     if normalize:
@@ -285,7 +292,7 @@ def _is_version_affected(affected_packages,
 
 
 @ndb.tasklet
-def _query_by_semver(query, package_name, ecosystem, purl, version):
+def _query_by_semver(query, package_name, ecosystem, purl: PackageURL, version):
   """Query by semver."""
   if not semver_index.is_valid(version):
     return []
@@ -305,7 +312,8 @@ def _query_by_semver(query, package_name, ecosystem, purl, version):
 
 
 @ndb.tasklet
-def _query_by_generic_version(base_query, project, ecosystem, purl, version):
+def _query_by_generic_version(base_query, project, ecosystem, purl: PackageURL,
+                              version):
   """Query by generic version."""
   # Try without normalizing.
   results = []
@@ -339,9 +347,9 @@ def _query_by_generic_version(base_query, project, ecosystem, purl, version):
 
 
 @ndb.tasklet
-def query_by_version(project,
-                     ecosystem,
-                     purl,
+def query_by_version(project: str,
+                     ecosystem: str,
+                     purl: PackageURL,
                      version,
                      to_response=bug_to_response):
   """Query by (fuzzy) version."""
@@ -352,7 +360,8 @@ def query_by_version(project,
                           osv.Bug.project == project, osv.Bug.public == True)  # pylint: disable=singleton-comparison
   elif purl:
     query = osv.Bug.query(osv.Bug.status == osv.BugStatus.PROCESSED,
-                          osv.Bug.purl == purl, osv.Bug.public == True)  # pylint: disable=singleton-comparison
+                          osv.Bug.purl == purl.to_string(),
+                          osv.Bug.public == True)  # pylint: disable=singleton-comparison
   else:
     return []
 
@@ -379,7 +388,8 @@ def query_by_version(project,
 
 
 @ndb.tasklet
-def query_by_package(project, ecosystem, purl, page_token, to_response):
+def query_by_package(project, ecosystem, purl: PackageURL, page_token,
+                     to_response):
   """Query by package."""
   bugs = []
   if project and ecosystem:
@@ -389,7 +399,8 @@ def query_by_package(project, ecosystem, purl, page_token, to_response):
                           osv.Bug.public == True)  # pylint: disable=singleton-comparison
   elif purl:
     query = osv.Bug.query(osv.Bug.status == osv.BugStatus.PROCESSED,
-                          osv.Bug.purl == purl, osv.Bug.public == True)  # pylint: disable=singleton-comparison
+                          osv.Bug.purl == purl.to_string(),
+                          osv.Bug.public == True)  # pylint: disable=singleton-comparison
   else:
     return []
 

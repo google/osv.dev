@@ -122,7 +122,6 @@ func scanDebianDocker(query *osv.BatchedQuery, dockerImageName string) {
 	if err != nil {
 		log.Fatalf("Failed to run docker: %s", err)
 	}
-	var allPackagesPurl []string
 	scanner := bufio.NewScanner(stdout)
 	for scanner.Scan() {
 		text := scanner.Text()
@@ -131,10 +130,13 @@ func scanDebianDocker(query *osv.BatchedQuery, dockerImageName string) {
 			continue
 		}
 		splitText := strings.Split(text, "###")
-		allPackagesPurl = append(allPackagesPurl, "pkg:deb/debian/"+splitText[0]+"@"+splitText[1])
-	}
-	for _, purl := range allPackagesPurl {
-		query.Queries = append(query.Queries, osv.MakePURLRequest(purl))
+		pkgDetails := osv.MakePkgDetailsRequest(lockfile.PackageDetails{
+			Name:    splitText[0],
+			Version: splitText[1],
+			// TODO(rexpan): Get and specify exact debian release version
+			Ecosystem: "Debian",
+		})
+		query.Queries = append(query.Queries, pkgDetails)
 	}
 	log.Printf("Scanned docker image")
 }

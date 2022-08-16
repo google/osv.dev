@@ -38,14 +38,13 @@ const workers = 25
 
 // Storer is used to permanently store the results.
 type Storer interface {
-	Store(ctx context.Context, repoInfo *preparation.Result, fileResults []FileResult) error
+	Store(ctx context.Context, repoInfo *preparation.Result, hashType string, fileResults []FileResult) error
 }
 
 // FileResult holds the per file hash and path information.
 type FileResult struct {
-	Path     string
-	HashType string
-	Hash     []byte
+	Path string
+	Hash []byte
 }
 
 // Stage holds the data structures necessary to perform the processing.
@@ -132,9 +131,8 @@ func (s *Stage) processGit(ctx context.Context, repoInfo *preparation.Result) er
 				}
 				hash := md5.Sum(buf)
 				fileResults = append(fileResults, FileResult{
-					Path:     p,
-					HashType: "MD5",
-					Hash:     hash[:],
+					Path: p,
+					Hash: hash[:],
 				})
 			}
 		}
@@ -142,5 +140,5 @@ func (s *Stage) processGit(ctx context.Context, repoInfo *preparation.Result) er
 	}); err != nil {
 		return err
 	}
-	return s.Storer.Store(ctx, repoInfo, fileResults)
+	return s.Storer.Store(ctx, repoInfo, shared.MD5, fileResults)
 }

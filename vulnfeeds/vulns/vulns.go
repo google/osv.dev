@@ -239,7 +239,7 @@ type PackageInfo struct {
 	Repo         string
 }
 
-// Create a OSV object from a given CVEItem and package name
+// FromCVE Create an OSV object from a given CVEItem and package name
 // Leaves version field empty to be manually fixed later
 func FromCVE(id string, cve cves.CVEItem, pkgInfo []PackageInfo) (*Vulnerability, []string) {
 	v := Vulnerability{
@@ -299,7 +299,7 @@ func FromCVE(id string, cve cves.CVEItem, pkgInfo []PackageInfo) (*Vulnerability
 	return &v, notes
 }
 
-// Create a OSV object from a given CVEItem and package name
+// FromCVEWithVersionExtraction Create an OSV object from a given CVEItem and package name
 // Tries to extract version information from the given CVEItem
 func FromCVEWithVersionExtraction(id string, cve cves.CVEItem, pkgInfo []PackageInfo, validVersions []string) (*Vulnerability, []string) {
 	v, notes := FromCVE(id, cve, pkgInfo)

@@ -132,7 +132,7 @@ def do_query(query, context, include_details=True):
       context.abort(grpc.StatusCode.INVALID_ARGUMENT, 'Invalid Package URL.')
       return None
 
-  to_response = lambda b: bug_to_response(b, include_details)
+  to_response = lambda b: bug_to_response(b, include_details)  # pylint: disable=unnecessary-lambda-assignment
   next_page_token = None
 
   if query.WhichOneof('param') == 'commit':

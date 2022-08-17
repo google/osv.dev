@@ -29,7 +29,7 @@ import (
 )
 
 const (
-	kind   = "source-repository"
+	kind   = "RepoIndex"
 	keyFmt = "%s-%s-%x"
 )
 

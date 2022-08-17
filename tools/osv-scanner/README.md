@@ -20,7 +20,7 @@ auto-detected based on the input file contents.
 [Package URLs]: https://github.com/package-url/purl-spec
 
 ```bash
-$ go run cmd/scanner.go /path/to/your/sbom.json
+$ go run main.go /path/to/your/sbom.json
 ```
 
 ## Scanning a directory
@@ -34,5 +34,5 @@ mechanism where dependencies are checked out as real git repositories.
 ### Example
 
 ```bash
-$ go run cmd/scanner.go /path/to/your/repo
+$ go run main.go /path/to/your/repo
 ```

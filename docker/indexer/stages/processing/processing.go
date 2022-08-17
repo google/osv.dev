@@ -55,10 +55,11 @@ type Stage struct {
 
 // Run runs the stages and hashes all files for each incoming request.
 func (s *Stage) Run(ctx context.Context) error {
+	s.Input.ReceiveSettings.MaxOutstandingMessages = 5
 	return s.Input.Receive(ctx, func(ctx context.Context, m *pubsub.Message) {
 		// Always ack the message. Transient errors can be solved by
 		// the next scheduled run.
-		m.Ack()
+		defer m.Ack()
 		repoInfo := &preparation.Result{}
 		if err := json.Unmarshal(m.Data, repoInfo); err != nil {
 			log.Errorf("failed to unmarshal input: %v", err)

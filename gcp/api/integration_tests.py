@@ -370,8 +370,8 @@ class IntegrationTests(unittest.TestCase):
         _api() + '/v1/query',
         data=json.dumps({
             'package': {
-                'purl':
-                    'pkg:deb/debian/nginx@1.14.2-2+deb10u3?randomqualifier=1234',
+                'purl': ('pkg:deb/debian/nginx@1.14.2-2+deb10u3?'
+                         'randomqualifier=1234'),
             }
         }))
 

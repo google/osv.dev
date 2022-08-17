@@ -379,7 +379,7 @@ def event_value(event):
 def should_collapse(affected):
   """Whether if we should collapse the package tab bar."""
   total_package_length = sum(
-      [len(entry.get('package', {}).get('name', '')) for entry in affected])
+      len(entry.get('package', {}).get('name', '')) for entry in affected)
   return total_package_length > 70 or len(affected) > 5
 
 

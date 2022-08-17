@@ -332,7 +332,7 @@ class Bug(ndb.Model):
     value_lower = value.lower()
     return re.split(r'\W+', value_lower) + [value_lower]
 
-  def _pre_put_hook(self):
+  def _pre_put_hook(self):  # pylint: disable=arguments-differ
     """Pre-put hook for populating search indices."""
     search_indices = set()
 
@@ -696,7 +696,7 @@ class SourceRepository(ndb.Model):
 
     return False
 
-  def _pre_put_hook(self):
+  def _pre_put_hook(self):  # pylint: disable=arguments-differ
     """Pre-put hook for validation."""
     if self.type == SourceRepositoryType.BUCKET and self.editable:
       raise ValueError('BUCKET SourceRepository cannot be editable.')

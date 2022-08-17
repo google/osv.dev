@@ -14,5 +14,19 @@
 # limitations under the License.
 
 script_dir=$(dirname "$0")
-git ls-files | grep '\.py$' | grep -v '_pb2' | grep -v 'third_party' | xargs pylint --rcfile="$script_dir/../.pylintrc"
-git ls-files | grep '\.py$' | grep -v '_pb2' | grep -v 'third_party' | xargs yapf -d --style "$script_dir/../.style.yapf"
+IN_SCOPE_FILES="$(git ls-files | grep '\.py$' | grep -v -E '(_pb2|third_party)')"
+
+lint_findings=""
+if ! echo "$IN_SCOPE_FILES" | xargs pylint --rcfile="$script_dir/../.pylintrc"; then
+  lint_findings="lint_findings"
+fi
+
+format_findings=""
+if ! echo "$IN_SCOPE_FILES" | xargs yapf -d --style "$script_dir/../.style.yapf"; then
+  format_findings="format_findings"
+fi
+
+if [ $lint_findings ] || [ $format_findings ]; then
+  echo "Please fix the above findings"
+  exit 1
+fi

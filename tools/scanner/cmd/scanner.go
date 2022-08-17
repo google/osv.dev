@@ -13,8 +13,8 @@ import (
 	"github.com/g-rath/osv-detector/pkg/lockfile"
 	"github.com/urfave/cli/v2"
 
-	"github.com/google/osv/tools/scanner/internal/osv"
-	"github.com/google/osv/tools/scanner/internal/sbom"
+	"github.com/google/osv.dev/tools/scanner/internal/osv"
+	"github.com/google/osv.dev/tools/scanner/internal/sbom"
 )
 
 func scanDir(query *osv.BatchedQuery, dir string) error {

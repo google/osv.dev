@@ -50,24 +50,38 @@ class RequestHelper:
     self.cache = cache
 
   def get(self, url):
+    """Getter method.
+
+    Retrieves the text at the URL, using the cached result if available.
+
+    Args:
+      url: URL to retrieve
+
+    Returns:
+      the text at the URL.
+
+    Raises:
+      RequestError on a non-200 HTTP response.
+
+    """
     if self.cache:
       cached_result = self.cache.get(url)
       if cached_result:
         return cached_result
 
-    session = requests.session()
-    retries = Retry(
-        backoff_factor=self.backoff_factor,
-        total=self.retry_total,
-    )
-    session.mount('https://', HTTPAdapter(max_retries=retries))
-    response = session.get(url)
+    with requests.session() as session:
+      retries = Retry(
+          backoff_factor=self.backoff_factor,
+          total=self.retry_total,
+      )
+      session.mount('https://', HTTPAdapter(max_retries=retries))
+      response = session.get(url)
 
-    if response.status_code != 200:
-      raise RequestError(response)
+      if response.status_code != 200:
+        raise RequestError(response)
 
-    text_response = response.text
-    if self.cache:
-      self.cache.set(url, text_response, self.cache_ttl)
+      text_response = response.text
+      if self.cache:
+        self.cache.set(url, text_response, self.cache_ttl)
 
-    return text_response
+      return text_response

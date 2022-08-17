@@ -14,7 +14,7 @@
 """API server implementation."""
 
 import argparse
-from concurrent import futures
+import concurrent
 import functools
 import logging
 import os
@@ -76,6 +76,7 @@ class OSVServicer(osv_service_v1_pb2_grpc.OSVServicer):
   @ndb_context
   def QueryAffected(self, request, context):
     """Query vulnerabilities for a particular project at a given commit or
+
     version.
     """
     results, next_page_token = do_query(request.query, context).result()
@@ -131,7 +132,9 @@ def do_query(query, context, include_details=True):
       context.abort(grpc.StatusCode.INVALID_ARGUMENT, 'Invalid Package URL.')
       return None
 
-  to_response = lambda b: bug_to_response(b, include_details)
+  def to_response(b):
+    return bug_to_response(b, include_details)
+
   next_page_token = None
 
   if query.WhichOneof('param') == 'commit':
@@ -200,6 +203,7 @@ def query_by_commit(commit, to_response=bug_to_response):
 def _is_semver_affected(affected_packages, package_name, ecosystem, purl,
                         version):
   """Returns whether or not the given version is within an affected SEMVER
+
   range.
   """
   version = semver_index.parse(version)
@@ -238,6 +242,7 @@ def _is_version_affected(affected_packages,
                          version,
                          normalize=False):
   """Returns whether or not the given version is within an affected ECOSYSTEM
+
   range.
   """
   for affected_package in affected_packages:
@@ -392,7 +397,7 @@ def query_by_package(project, ecosystem, purl, page_token, to_response):
 
 def serve(port):
   """Configures and runs the bookstore API server."""
-  server = grpc.server(futures.ThreadPoolExecutor(max_workers=10))
+  server = grpc.server(concurrent.futures.ThreadPoolExecutor(max_workers=10))
   osv_service_v1_pb2_grpc.add_OSVServicer_to_server(OSVServicer(), server)
   server.add_insecure_port('[::]:{}'.format(port))
   server.start()

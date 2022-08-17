@@ -44,7 +44,7 @@ class GetNextVersionTest(unittest.TestCase):
     with self.assertRaises(ecosystems.EnumerateError):
       ecosystem.next_version('blah:doesnotexist123456', '1')
 
-  @mock.patch('requests.Session.get', side_effect=lambda url: requests.get(url))
+  @mock.patch('requests.Session.get', side_effect=requests.get)
   def test_maven_with_cache(self, mock_get):
     """Test Maven."""
     test_cache = cache.InMemoryCache()
@@ -139,14 +139,14 @@ class GetNextVersionTest(unittest.TestCase):
     self.assertEqual('1.0.0-pre.0', ecosystem.next_version('blah', '1.0.0-pre'))
 
   @mock.patch('osv.cache.Cache')
-  def test_cache(self, cache: mock.MagicMock):
-    cache.get.return_value = None
-    ecosystems.set_cache(cache)
+  def test_cache(self, cache_mock: mock.MagicMock):
+    cache_mock.get.return_value = None
+    ecosystems.set_cache(cache_mock)
 
     debian = ecosystems.get('Debian:9')
     debian.next_version('nginx', '1.13.5-1')
-    cache.get.assert_called_once()
-    cache.set.assert_called_once()
+    cache_mock.get.assert_called_once()
+    cache_mock.set.assert_called_once()
 
 
 if __name__ == '__main__':

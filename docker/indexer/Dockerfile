@@ -1,4 +1,3 @@
-#!/bin/sh
 # Copyright 2021 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -13,20 +12,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-script_dir=$(dirname "$0")
-IN_SCOPE_FILES="$(git ls-files | grep '\.py$' | grep -v -E '(_pb2|third_party)')"
+FROM golang:1.19 as GO_BUILD
+WORKDIR /build
+ADD ./ /build
+RUN chmod +x build.sh
+RUN ./build.sh
 
-lint_findings=""
-if ! echo "$IN_SCOPE_FILES" | xargs pylint --rcfile="$script_dir/../.pylintrc"; then
-  lint_findings="lint_findings"
-fi
-
-format_findings=""
-if ! echo "$IN_SCOPE_FILES" | xargs yapf -d --style "$script_dir/../.style.yapf"; then
-  format_findings="format_findings"
-fi
-
-if [ $lint_findings ] || [ $format_findings ]; then
-  echo "Please fix the above findings"
-  exit 1
-fi
+FROM gcr.io/distroless/base
+COPY --from=GO_BUILD build/indexer /indexer
+ENTRYPOINT ["/indexer"]
+CMD ["--help"]

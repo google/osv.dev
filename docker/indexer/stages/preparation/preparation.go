@@ -188,6 +188,7 @@ func (s *Stage) processGit(ctx context.Context, repoCfg *config.RepoConfig) erro
 			return nil
 		}
 
+
 		result := &Result{
 			Name:    repoCfg.Name,
 			BaseCPE: repoCfg.BaseCPE,

@@ -19,6 +19,7 @@ package preparation
 import (
 	"archive/tar"
 	"context"
+	"encoding/json"
 	"fmt"
 	"io/fs"
 	"os"
@@ -27,6 +28,7 @@ import (
 	"strings"
 	"time"
 
+	"cloud.google.com/go/pubsub"
 	"cloud.google.com/go/storage"
 	"github.com/go-git/go-git/v5"
 	"github.com/go-git/go-git/v5/plumbing"
@@ -66,10 +68,11 @@ type Checker interface {
 type Stage struct {
 	Checker Checker
 	RepoHdl *storage.BucketHandle
+	Output  *pubsub.Topic
 }
 
 // Run runs the stage and outputs Result data types to the results channel.
-func (s *Stage) Run(ctx context.Context, cfgs []*config.RepoConfig, results chan *Result) error {
+func (s *Stage) Run(ctx context.Context, cfgs []*config.RepoConfig) error {
 	var err error
 	wErr := make(chan error, workers)
 
@@ -82,7 +85,7 @@ func (s *Stage) Run(ctx context.Context, cfgs []*config.RepoConfig, results chan
 			return fmt.Errorf("failed to acquire semaphore: %v", err)
 		}
 
-		go func(ctx context.Context, repoCfg *config.RepoConfig, results chan *Result, errCh chan error) {
+		go func(ctx context.Context, repoCfg *config.RepoConfig, errCh chan error) {
 			defer sem.Release(1)
 
 			var err error
@@ -95,14 +98,14 @@ func (s *Stage) Run(ctx context.Context, cfgs []*config.RepoConfig, results chan
 			log.Infof("received config for %s", repoCfg.Name)
 			switch repoCfg.Type {
 			case shared.Git:
-				err = s.processGit(ctx, repoCfg, results)
+				err = s.processGit(ctx, repoCfg)
 			default:
 				errCh <- fmt.Errorf("unsupported repository type %s", repoCfg.Type)
 			}
 			if err != nil {
 				wErr <- err
 			}
-		}(wCtx, repoCfg, results, wErr)
+		}(wCtx, repoCfg, wErr)
 
 		select {
 		case err = <-wErr:
@@ -119,7 +122,7 @@ func (s *Stage) objectExists(ctx context.Context, name string) bool {
 	return err == nil
 }
 
-func (s *Stage) processGit(ctx context.Context, repoCfg *config.RepoConfig, results chan *Result) error {
+func (s *Stage) processGit(ctx context.Context, repoCfg *config.RepoConfig) error {
 	var (
 		err     error
 		repo    *git.Repository
@@ -185,7 +188,7 @@ func (s *Stage) processGit(ctx context.Context, repoCfg *config.RepoConfig, resu
 			return nil
 		}
 
-		results <- &Result{
+		result := &Result{
 			Name:    repoCfg.Name,
 			BaseCPE: repoCfg.BaseCPE,
 			Version: version,
@@ -199,7 +202,13 @@ func (s *Stage) processGit(ctx context.Context, repoCfg *config.RepoConfig, resu
 			FileExts: repoCfg.FileExts,
 		}
 		commitTracker[ref.Hash()] = true
-		return nil
+		buf, err := json.Marshal(result)
+		if err != nil {
+			return err
+		}
+		pubRes := s.Output.Publish(ctx, &pubsub.Message{Data: buf})
+		_, err = pubRes.Get(ctx)
+		return err
 	}
 
 	repoItr, err := repo.Tags()
@@ -230,7 +239,7 @@ func (s *Stage) processGit(ctx context.Context, repoCfg *config.RepoConfig, resu
 				if exists {
 					continue
 				}
-				results <- &Result{
+				result := &Result{
 					Name: repoCfg.Name,
 					CheckoutOptions: &git.CheckoutOptions{
 						Hash:  h,
@@ -241,6 +250,13 @@ func (s *Stage) processGit(ctx context.Context, repoCfg *config.RepoConfig, resu
 					Type:     shared.Git,
 					FileExts: repoCfg.FileExts,
 				}
+				buf, err := json.Marshal(result)
+				if err != nil {
+					return err
+				}
+				pubRes:= s.Output.Publish(ctx, &pubsub.Message{Data: buf})
+				_, err = pubRes.Get(ctx)
+				return err
 			}
 		}
 	}

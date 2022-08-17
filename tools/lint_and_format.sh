@@ -16,14 +16,10 @@
 script_dir=$(dirname "$0")
 IN_SCOPE_FILES="$(git ls-files | grep '\.py$' | grep -v -E '(_pb2|third_party)')"
 
-pylint --version
-
 lint_findings=""
 if ! echo "$IN_SCOPE_FILES" | xargs pylint --rcfile="$script_dir/../.pylintrc"; then
   lint_findings="lint_findings"
 fi
-
-yapf --version
 
 format_findings=""
 if ! echo "$IN_SCOPE_FILES" | xargs yapf -d --style "$script_dir/../.style.yapf"; then

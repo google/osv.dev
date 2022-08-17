@@ -11,8 +11,8 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/google/osv/tools/scanner/internal/osv"
-	"github.com/google/osv/tools/scanner/internal/sbom"
+	"github.com/google/osv.dev/tools/osv-scanner/internal/osv"
+	"github.com/google/osv.dev/tools/osv-scanner/internal/sbom"
 )
 
 func usage() {

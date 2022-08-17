@@ -19,6 +19,7 @@ import json
 import logging
 import os
 import math
+import re
 import redis
 import resource
 import shutil
@@ -256,7 +257,14 @@ def add_fix_information(vulnerability, fix_result):
 
 # TODO(ochang): Remove this function once GHSA's encoding is fixed.
 def fix_invalid_ghsa(vulnerability):
-  """Attempt to fix an invalid GHSA entry and returns whether the GHSA entry is valid."""
+  """Attempt to fix an invalid GHSA entry.
+
+  Args:
+    vulnerability: a vulnerability object.
+
+  Returns:
+    whether the GHSA entry is valid.
+  """
   packages = {}
   for affected in vulnerability.affected:
     details = packages.setdefault(
@@ -296,6 +304,17 @@ def fix_invalid_ghsa(vulnerability):
       return False
 
   return True
+
+
+def maybe_normalize_package_names(vulnerability):
+  """Normalize package names as necessary."""
+  for affected in vulnerability.affected:
+    if affected.package.ecosystem == 'PyPI':
+      # per https://peps.python.org/pep-0503/#normalized-names
+      affected.package.name = re.sub(r'[-_.]+', '-',
+                                     affected.package.name).lower()
+
+  return vulnerability
 
 
 class TaskRunner:
@@ -453,6 +472,7 @@ class TaskRunner:
                  original_sha256):
     """Process updates on a vulnerability."""
     logging.info('Processing update for vulnerability %s', vulnerability.id)
+    vulnerability = maybe_normalize_package_names(vulnerability)
     if source_repo.name == 'ghsa' and not fix_invalid_ghsa(vulnerability):
       logging.warning('%s has an encoding error, skipping.', vulnerability.id)
       return

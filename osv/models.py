@@ -338,12 +338,11 @@ class Bug(ndb.Model):
 
     search_indices.update(self._tokenize(self.id()))
 
-    for affected_package in self.affected_packages:
+    for pkg in self.affected_packages:
       # Set PURL if it wasn't provided.
-      if not affected_package.package.purl:
-        affected_package.package.purl = purl_helpers.package_to_purl(
-            ecosystems.normalize(affected_package.package.ecosystem),
-            affected_package.package.name)
+      if not pkg.package.purl:
+        pkg.package.purl = purl_helpers.package_to_purl(
+            ecosystems.normalize(pkg.package.ecosystem), pkg.package.name)
 
     self.project = list({
         pkg.package.name for pkg in self.affected_packages if pkg.package.name

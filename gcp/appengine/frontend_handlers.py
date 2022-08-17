@@ -38,6 +38,7 @@ blueprint = Blueprint('frontend_handlers', __name__)
 _PAGE_SIZE = 16
 _PAGE_LOOKAHEAD = 4
 _REQUESTS_PER_MIN = 30
+_MAX_LINKING_ALIASES = 8
 
 if utils.is_prod():
   redis_host = os.environ.get('REDISHOST', 'localhost')
@@ -144,6 +145,7 @@ def bug_to_response(bug, detailed=True):
   if detailed:
     add_links(response)
     add_source_info(bug, response)
+    add_related_aliases(bug, response)
   return response
 
 
@@ -188,6 +190,40 @@ def add_source_info(bug, response):
   source_path = osv.source_path(source_repo, bug)
   response['source'] = source_repo.link + source_path
   response['source_link'] = response['source']
+
+
+def add_related_aliases(bug: osv.Bug, response):
+  """Add links to other osv entries that's related through aliases"""
+  # Add links to other entries if they exist
+  aliases = {}
+  for alias in bug.aliases:
+    # only if there aren't too many, otherwise skip this
+    if len(bug.aliases) <= _MAX_LINKING_ALIASES:
+      result = bug.get_by_id(alias)
+    else:
+      result = False
+    aliases[alias] = {'exists': result, 'same_alias_entries': []}
+
+  # Add links to other entries that have the same alias or references this
+  if bug.aliases:
+    query = osv.Bug.query(osv.Bug.aliases.IN(bug.aliases + [bug.id()]))
+    for other in query:
+      if other.id() == bug.id():
+        continue
+      for other_alias in other.aliases:
+        if other_alias in aliases:
+          aliases[other_alias]['same_alias_entries'].append(other.id())
+      if bug.id() in other.aliases:
+        aliases[other.id()] = {'exists': True, 'same_alias_entries': []}
+
+  # Remove self if it was added
+  aliases.pop(bug.id(), None)
+
+  response['aliases'] = [{
+      'alias_id': aid,
+      'exists': ex['exists'],
+      'same_alias_entries': ex['same_alias_entries']
+  } for aid, ex in aliases.items()]
 
 
 def _commit_to_link(repo_url, commit):

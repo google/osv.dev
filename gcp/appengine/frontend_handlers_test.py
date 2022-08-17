@@ -16,7 +16,6 @@ import os
 import shutil
 import tempfile
 import unittest
-from unittest import mock
 
 from google.cloud import ndb
 

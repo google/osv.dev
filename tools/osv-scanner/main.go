@@ -17,6 +17,7 @@ import (
 	"github.com/google/osv.dev/tools/osv-scanner/internal/sbom"
 )
 
+// scanDir walks through the given directory to try to find any relevant files
 func scanDir(query *osv.BatchedQuery, dir string) error {
 	log.Printf("Scanning dir %s\n", dir)
 	return filepath.Walk(dir, func(path string, info os.FileInfo, err error) error {
@@ -32,6 +33,16 @@ func scanDir(query *osv.BatchedQuery, dir string) error {
 				return err
 			}
 			query.Queries = append(query.Queries, gitQuery)
+		}
+
+		if !info.IsDir() {
+			if parser, _ := lockfile.FindParser(path, ""); parser != nil {
+				scanLockfile(query, path)
+				if err != nil {
+					log.Println("Attempted to scan lockfile but failed: " + path)
+				}
+			}
+			scanSBOMFile(query, path)
 		}
 
 		return nil
@@ -186,12 +197,6 @@ func main() {
 				Usage:     "scan sbom file on this path",
 				TakesFile: true,
 			},
-			&cli.StringSliceFlag{
-				Name:      "git",
-				Aliases:   []string{"G"},
-				Usage:     "scan for git repository in this directory",
-				TakesFile: true,
-			},
 		},
 		ArgsUsage: "[directory1 directory2...]",
 		Action: func(context *cli.Context) error {
@@ -218,9 +223,9 @@ func main() {
 				}
 			}
 
-			gitDirs := context.StringSlice("git")
-			for _, gitDir := range gitDirs {
-				err := scanDir(&query, gitDir)
+			genericDirs := context.Args().Slice()
+			for _, dir := range genericDirs {
+				err := scanDir(&query, dir)
 				if err != nil {
 					return err
 				}

@@ -154,7 +154,7 @@ func generateAlpineOSV(allCVEs map[string]cves.CVEItem) {
 		if len(pkgInfos) > 1 {
 			log.Println("Multiple lines: " + cveId)
 		}
-		vuln, _ := vulns.FromCVE("ALPINE-"+cveId, allCVEs[cveId], pkgInfos)
+		vuln, _ := vulns.FromCVE(cveId, allCVEs[cveId], pkgInfos)
 		file, err := os.OpenFile(osvOutputPath+"/ALPINE-"+cveId+".json", os.O_CREATE|os.O_RDWR, 0644)
 		if err != nil {
 			log.Fatalf("Failed to create/write osv output file: %s", err)

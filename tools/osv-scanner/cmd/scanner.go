@@ -53,7 +53,7 @@ func scanLockfile(query *osv.BatchedQuery, path string) error {
 	return nil
 }
 
-func scanSbomFile(query *osv.BatchedQuery, path string) error {
+func scanSBOMFile(query *osv.BatchedQuery, path string) error {
 	log.Printf("Scanning file %s\n", path)
 	file, err := os.Open(path)
 	if err != nil {
@@ -103,6 +103,7 @@ func scanGit(repoDir string) (*osv.Query, error) {
 	return osv.MakeCommitRequest(commit), nil
 }
 
+// Information about a docker package and it's version.
 type DockerPackageVersion struct {
 	Name    string
 	Version string
@@ -130,6 +131,9 @@ func scanDebianDocker(query *osv.BatchedQuery, dockerImageName string) {
 			continue
 		}
 		splitText := strings.Split(text, "###")
+		if len(splitText) != 2 {
+			log.Fatalf("Unexpected output from debian container: \n\n%s", text)
+		}
 		pkgDetails := osv.MakePkgDetailsRequest(lockfile.PackageDetails{
 			Name:    splitText[0],
 			Version: splitText[1],
@@ -208,7 +212,7 @@ func main() {
 
 			sboms := context.StringSlice("sbom")
 			for _, sbom := range sboms {
-				err := scanSbomFile(&query, sbom)
+				err := scanSBOMFile(&query, sbom)
 				if err != nil {
 					return err
 				}

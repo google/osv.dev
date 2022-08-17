@@ -180,7 +180,7 @@ def _clean_purl(purl):
   """
   Clean a purl object.
 
-  Removes version, subpath, and qualifiers with the exeption of
+  Removes version, subpath, and qualifiers with the exception of
   the 'arch' qualifier
   """
   values = purl.to_dict()
@@ -214,7 +214,7 @@ def _match_purl(purl_query: PackageURL, purl_db: PackageURL) -> bool:
   without qualifiers, otherwise match with qualifiers
   """
 
-  if len(purl_query.qualifiers) == 0:
+  if not purl_query.qualifiers:
     # No qualifiers, and our PURLs never have versions, so just match name
     return purl_query.name == purl_db.name
 

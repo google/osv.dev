@@ -15,6 +15,9 @@ const (
 	QueryEndpoint = "https://api.osv.dev/v1/querybatch"
 	// BaseVulnerabilityURL is the base URL for detailed vulnerability views.
 	BaseVulnerabilityURL = "https://osv.dev/vulnerability/"
+	// MaxQueriesPerRequest splits up querybatch into multiple requests if
+	// number of queries exceed this number
+	MaxQueriesPerRequest = 1000
 )
 
 // Package represents a package identifier for OSV.
@@ -86,7 +89,7 @@ func chunkBy[T any](items []T, chunkSize int) [][]T {
 
 func MakeRequest(request BatchedQuery) (*BatchedResponse, error) {
 	// API has a limit of 1000 bulk query per request
-	queryChunks := chunkBy(request.Queries, 990)
+	queryChunks := chunkBy(request.Queries, MaxQueriesPerRequest)
 	var totalOsvResp BatchedResponse
 
 	for _, queries := range queryChunks {

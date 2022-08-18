@@ -143,7 +143,7 @@ func scanDebianDocker(query *osv.BatchedQuery, dockerImageName string) {
 		}
 		splitText := strings.Split(text, "###")
 		if len(splitText) != 2 {
-			log.Fatalf("Unexpected output from debian container: \n\n%s", text)
+			log.Fatalf("Unexpected output from Debian container: \n\n%s", text)
 		}
 		pkgDetails := osv.MakePkgRequest(lockfile.PackageDetails{
 			Name:    splitText[0],

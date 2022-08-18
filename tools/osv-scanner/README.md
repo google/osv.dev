@@ -44,7 +44,7 @@ $ go run main.go --lockfile=/path/to/your/package-lock.json -L /path/to/another/
 
 ## Scanning a Debian based docker image packages
 
-This tool will scrape the list of installed packages in a debian image and query for vulnerabilities on them.
+This tool will scrape the list of installed packages in a Debian image and query for vulnerabilities on them.
 
 Currently only Debian based docker image scanning is supported.
 

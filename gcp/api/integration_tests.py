@@ -332,6 +332,51 @@ class IntegrationTests(unittest.TestCase):
 
     self.assert_results_equal({'vulns': expected}, response.json())
 
+    expected_deb = [self._get('DSA-4921-1')]
+
+    response = requests.post(
+        _api() + '/v1/query',
+        data=json.dumps(
+            {'package': {
+                'purl': 'pkg:deb/debian/nginx@1.14.2-2+deb10u3',
+            }}))
+
+    self.assert_results_equal({'vulns': expected_deb}, response.json())
+
+    # Source arch should return the same as above
+    response = requests.post(
+        _api() + '/v1/query',
+        data=json.dumps({
+            'package': {
+                'purl': 'pkg:deb/debian/nginx@1.14.2-2+deb10u3?arch=source',
+            }
+        }))
+
+    self.assert_results_equal({'vulns': expected_deb}, response.json())
+
+    # A non source arch should return nothing, as we don't index them
+    response = requests.post(
+        _api() + '/v1/query',
+        data=json.dumps({
+            'package': {
+                'purl': 'pkg:deb/debian/nginx@1.14.2-2+deb10u3?arch=x64',
+            }
+        }))
+
+    self.assert_results_equal({}, response.json())
+
+    # A non arch qualifier should be ignored
+    response = requests.post(
+        _api() + '/v1/query',
+        data=json.dumps({
+            'package': {
+                'purl': ('pkg:deb/debian/nginx@1.14.2-2+deb10u3?'
+                         'randomqualifier=1234'),
+            }
+        }))
+
+    self.assert_results_equal({'vulns': expected_deb}, response.json())
+
   def test_query_batch(self):
     """Test batch query."""
     response = requests.post(
@@ -456,6 +501,3 @@ if __name__ == '__main__':
     unittest.main()
   finally:
     server.stop()
-
-    print_logs('esp.log')
-    print_logs('backend.log')

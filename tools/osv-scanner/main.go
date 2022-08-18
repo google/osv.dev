@@ -42,7 +42,10 @@ func scanDir(query *osv.BatchedQuery, dir string) error {
 					log.Println("Attempted to scan lockfile but failed: " + path)
 				}
 			}
-			scanSBOMFile(query, path)
+			extension := strings.ToLower(filepath.Ext(info.Name()))
+			if extension == ".json" || extension == ".spdx" {
+				scanSBOMFile(query, path)
+			}
 		}
 
 		return nil

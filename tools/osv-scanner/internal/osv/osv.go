@@ -67,7 +67,7 @@ func MakePURLRequest(purl string) *Query {
 	}
 }
 
-func MakePkgDetailsRequest(pkgDetails lockfile.PackageDetails) *Query {
+func MakePkgRequest(pkgDetails lockfile.PackageDetails) *Query {
 	return &Query{
 		Version: pkgDetails.Version,
 		// API has trouble parsing requests with both commit and Package details filled ins

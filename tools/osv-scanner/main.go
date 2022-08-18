@@ -59,7 +59,7 @@ func scanLockfile(query *osv.BatchedQuery, path string) error {
 	log.Printf("Scanned %s file with %d packages", parsedLockfile.ParsedAs, len(parsedLockfile.Packages))
 
 	for _, pkgDetail := range parsedLockfile.Packages {
-		query.Queries = append(query.Queries, osv.MakePkgDetailsRequest(pkgDetail))
+		query.Queries = append(query.Queries, osv.MakePkgRequest(pkgDetail))
 	}
 	return nil
 }
@@ -145,7 +145,7 @@ func scanDebianDocker(query *osv.BatchedQuery, dockerImageName string) {
 		if len(splitText) != 2 {
 			log.Fatalf("Unexpected output from debian container: \n\n%s", text)
 		}
-		pkgDetails := osv.MakePkgDetailsRequest(lockfile.PackageDetails{
+		pkgDetails := osv.MakePkgRequest(lockfile.PackageDetails{
 			Name:    splitText[0],
 			Version: splitText[1],
 			// TODO(rexpan): Get and specify exact debian release version

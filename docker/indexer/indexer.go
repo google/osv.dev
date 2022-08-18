@@ -18,6 +18,7 @@ package main
 import (
 	"context"
 	"flag"
+	"fmt"
 
 	"cloud.google.com/go/pubsub"
 	"cloud.google.com/go/storage"
@@ -49,9 +50,6 @@ func main() {
 	}
 	defer psCl.Close()
 
-	topic := psCl.Topic(*pubsubTopic)
-	defer topic.Stop()
-
 	gcsClient, err := storage.NewClient(ctx)
 	if err != nil {
 		log.Exitf("failed to initialize storage client: %v", err)
@@ -67,27 +65,39 @@ func main() {
 	defer storer.Close()
 
 	if *worker {
-		procStage := processing.Stage{
-			Storer:  storer,
-			RepoHdl: repoBucketHdl,
-			Input:   psCl.Subscription(*subName),
-		}
-		// The preparation results are picked up by the processing stage
-		// in workder mode.
-		// They include checkout options which are used to load the desired
-		// repository state and hash the source files in that particular tree.
-		// Finally, the computed hashes and repo state information is stored.
-		if err := procStage.Run(ctx); err != nil {
-			log.Exitf("processing stage failed: %v", err)
+		if err := runWorker(ctx, storer, repoBucketHdl, psCl.Subscription(*subName)); err != nil {
+			log.Exitf("failed to run worker: %v", err)
 		}
 		return
 	}
 
-	cfgBucketHdl := gcsClient.Bucket(*configsBucket)
+	if err := runController(ctx, storer, repoBucketHdl, gcsClient.Bucket(*configsBucket), psCl); err != nil {
+		log.Exitf("failed to run controller: %v", err)
+	}
+}
+
+func runWorker(ctx context.Context, storer *idxStorage.Store, repoBucketHdl *storage.BucketHandle, sub *pubsub.Subscription) error {
+	procStage := processing.Stage{
+		Storer:  storer,
+		RepoHdl: repoBucketHdl,
+		Input:   sub,
+	}
+	// The preparation results are picked up by the processing stage
+	// in workder mode.
+	// They include checkout options which are used to load the desired
+	// repository state and hash the source files in that particular tree.
+	// Finally, the computed hashes and repo state information is stored.
+	return procStage.Run(ctx)
+}
+
+func runController(ctx context.Context, storer *idxStorage.Store, repoBucketHdl, cfgBucketHdl *storage.BucketHandle, psCl *pubsub.Client) error {
 	cfgs, err := config.Load(ctx, cfgBucketHdl)
 	if err != nil {
-		log.Exitf("failed to load configurations: %v", err)
+		return fmt.Errorf("failed to load configurations: %v", err)
 	}
+
+	topic := psCl.Topic(*pubsubTopic)
+	defer topic.Stop()
 
 	prepStage := &preparation.Stage{
 		Checker: storer,
@@ -96,7 +106,5 @@ func main() {
 	}
 	// The pipline starts by cloning and/or updating the configured
 	// repositories. The results are returned on the procChan channel.
-	if err := prepStage.Run(ctx, cfgs); err != nil {
-		log.Exitf("preparation stage error %v", err)
-	}
+	return prepStage.Run(ctx, cfgs)
 }

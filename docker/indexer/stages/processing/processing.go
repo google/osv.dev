@@ -35,6 +35,8 @@ import (
 	log "github.com/golang/glog"
 )
 
+const pubSubOutstandingMessages = 5
+
 // Storer is used to permanently store the results.
 type Storer interface {
 	Store(ctx context.Context, repoInfo *preparation.Result, hashType string, fileResults []FileResult) error
@@ -55,7 +57,7 @@ type Stage struct {
 
 // Run runs the stages and hashes all files for each incoming request.
 func (s *Stage) Run(ctx context.Context) error {
-	s.Input.ReceiveSettings.MaxOutstandingMessages = 5
+	s.Input.ReceiveSettings.MaxOutstandingMessages = pubSubOutstandingMessages
 	return s.Input.Receive(ctx, func(ctx context.Context, m *pubsub.Message) {
 		// Always ack the message. Transient errors can be solved by
 		// the next scheduled run.

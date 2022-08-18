@@ -53,12 +53,13 @@ type Result struct {
 	Commit          plumbing.Hash
 	When            time.Time
 	Type            string
+	Addr            string
 	FileExts        []string
 }
 
 // Checker interface is used to check whether a name/hash pair already exists in storage.
 type Checker interface {
-	Exists(ctx context.Context, name string, hash plumbing.Hash) (bool, error)
+	Exists(ctx context.Context, addr string, hashType string, hash plumbing.Hash) (bool, error)
 }
 
 // Stage holds the data types necessary to process repository configuration.
@@ -154,7 +155,7 @@ func (s *Stage) processGit(ctx context.Context, repoCfg *config.RepoConfig, resu
 	commitTracker := make(map[plumbing.Hash]bool)
 	// repoInfo is used as the iterator function to create RepositoryInformation structs.
 	repoInfo := func(ref *plumbing.Reference) error {
-		found, err := s.Checker.Exists(ctx, repoCfg.Name, ref.Hash())
+		found, err := s.Checker.Exists(ctx, repoCfg.Address, shared.MD5, ref.Hash())
 		if err != nil {
 			return err
 		}
@@ -179,6 +180,11 @@ func (s *Stage) processGit(ctx context.Context, repoCfg *config.RepoConfig, resu
 			version = genericVersionRE.FindString(ref.Name().String())
 		}
 
+		if version == "" {
+			log.Warningf("failed to extract version for repo: %s\ttag/branch: %s", repoCfg.Address, ref.Name().String())
+			return nil
+		}
+
 		results <- &Result{
 			Name:    repoCfg.Name,
 			BaseCPE: repoCfg.BaseCPE,
@@ -189,6 +195,7 @@ func (s *Stage) processGit(ctx context.Context, repoCfg *config.RepoConfig, resu
 			When:     when,
 			Commit:   ref.Hash(),
 			Type:     shared.Git,
+			Addr:     repoCfg.Address,
 			FileExts: repoCfg.FileExts,
 		}
 		commitTracker[ref.Hash()] = true
@@ -216,7 +223,7 @@ func (s *Stage) processGit(ctx context.Context, repoCfg *config.RepoConfig, resu
 	if repoCfg.HashAllCommits {
 		for h, c := range allCommits {
 			if found := commitTracker[h]; !found {
-				exists, err := s.Checker.Exists(ctx, repoCfg.Name, h)
+				exists, err := s.Checker.Exists(ctx, repoCfg.Address, shared.MD5, h)
 				if err != nil {
 					return err
 				}

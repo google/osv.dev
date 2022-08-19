@@ -101,3 +101,8 @@ func (s *Store) Store(ctx context.Context, repoInfo *preparation.Result, hashTyp
 	_, err := s.dsCl.Put(ctx, key, newDoc(repoInfo, hashType, fileResults))
 	return err
 }
+
+// Close closes the datastore client.
+func (s *Store) Close() {
+	s.dsCl.Close()
+}

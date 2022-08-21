@@ -4,6 +4,7 @@ go 1.19
 
 require (
 	cloud.google.com/go/datastore v1.8.0
+	cloud.google.com/go/pubsub v1.24.0
 	cloud.google.com/go/storage v1.24.0
 	github.com/go-git/go-git/v5 v5.4.2
 	github.com/golang/glog v1.0.0

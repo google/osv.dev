@@ -388,6 +388,10 @@ class Debian(Ecosystem):
       introduced = debian_version_cache.get_first_package_version(
           package, self.debian_release_ver)
 
+    if fixed == "<end-of-life>":
+      # Special case for eol, we do not enumerate
+      versions = []
+
     return self._get_affected_versions(versions, introduced, fixed, limits)
 
 

@@ -44,7 +44,7 @@ func scanDir(query *osv.BatchedQuery, dir string) error {
 			}
 			extension := strings.ToLower(filepath.Ext(info.Name()))
 			if extension == ".json" || strings.Contains(info.Name(), ".spdx") {
-				_ := scanSBOMFile(query, path)
+				_ = scanSBOMFile(query, path)
 			}
 		}
 
@@ -115,12 +115,6 @@ func scanGit(repoDir string) (*osv.Query, error) {
 
 	log.Printf("Scanning %s at commit %s", repoDir, commit)
 	return osv.MakeCommitRequest(commit), nil
-}
-
-// Information about a docker package and it's version.
-type DockerPackageVersion struct {
-	Name    string
-	Version string
 }
 
 func scanDebianDocker(query *osv.BatchedQuery, dockerImageName string) {
@@ -210,17 +204,17 @@ func main() {
 				scanDebianDocker(&query, container)
 			}
 
-			lockfiles := context.StringSlice("lockfile")
-			for _, lockfile := range lockfiles {
-				err := scanLockfile(&query, lockfile)
+			lockfiles := context.StringSlice("lockfileElem")
+			for _, lockfileElem := range lockfiles {
+				err := scanLockfile(&query, lockfileElem)
 				if err != nil {
 					return err
 				}
 			}
 
-			sboms := context.StringSlice("sbom")
-			for _, sbom := range sboms {
-				err := scanSBOMFile(&query, sbom)
+			sboms := context.StringSlice("sbomElem")
+			for _, sbomElem := range sboms {
+				err := scanSBOMFile(&query, sbomElem)
 				if err != nil {
 					return err
 				}

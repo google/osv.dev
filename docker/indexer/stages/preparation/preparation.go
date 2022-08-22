@@ -73,9 +73,6 @@ type Stage struct {
 
 // Run runs the stage and outputs Result data types to the results channel.
 func (s *Stage) Run(ctx context.Context, cfgs []*config.RepoConfig) error {
-	var err error
-	wErr := make(chan error, workers)
-
 	wCtx, wCancel := context.WithCancel(ctx)
 	defer wCancel()
 
@@ -85,13 +82,13 @@ func (s *Stage) Run(ctx context.Context, cfgs []*config.RepoConfig) error {
 			return fmt.Errorf("failed to acquire semaphore: %v", err)
 		}
 
-		go func(ctx context.Context, repoCfg *config.RepoConfig, errCh chan error) {
+		go func(ctx context.Context, repoCfg *config.RepoConfig) {
 			defer sem.Release(1)
 
 			var err error
 			select {
 			case <-ctx.Done():
-				errCh <- context.Canceled
+				log.Error(context.Canceled)
 				return
 			default:
 			}
@@ -100,18 +97,12 @@ func (s *Stage) Run(ctx context.Context, cfgs []*config.RepoConfig) error {
 			case shared.Git:
 				err = s.processGit(ctx, repoCfg)
 			default:
-				errCh <- fmt.Errorf("unsupported repository type %s", repoCfg.Type)
+				log.Errorf("unsupported config type: %s", repoCfg.Type)
 			}
 			if err != nil {
-				wErr <- err
+				log.Errorf("preparation failed: %v", err)
 			}
-		}(wCtx, repoCfg, wErr)
-
-		select {
-		case err = <-wErr:
-			log.Errorf("preparation worker returned an error: %v", err)
-		default:
-		}
+		}(wCtx, repoCfg)
 	}
 	return sem.Acquire(ctx, workers)
 }
@@ -188,7 +179,6 @@ func (s *Stage) processGit(ctx context.Context, repoCfg *config.RepoConfig) erro
 			return nil
 		}
 
-
 		result := &Result{
 			Name:    repoCfg.Name,
 			BaseCPE: repoCfg.BaseCPE,
@@ -255,7 +245,7 @@ func (s *Stage) processGit(ctx context.Context, repoCfg *config.RepoConfig) erro
 				if err != nil {
 					return err
 				}
-				pubRes:= s.Output.Publish(ctx, &pubsub.Message{Data: buf})
+				pubRes := s.Output.Publish(ctx, &pubsub.Message{Data: buf})
 				_, err = pubRes.Get(ctx)
 				return err
 			}

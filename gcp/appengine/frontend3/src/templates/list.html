@@ -153,6 +153,11 @@ data-column-id="{{ column_id }}"
   </div>
 </turbo-frame>
 </div>
+<turbo-stream action="update" target="title">
+  <template>
+    Vulnerability Database - OSV
+  </template>
+</turbo-stream>
 <script>
 import {MDCDataTable} from '@material/data-table';
 const dataTable = new MDCDataTable(document.querySelector('.mdc-data-table'));

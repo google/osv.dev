@@ -42,10 +42,7 @@ func scanDir(query *osv.BatchedQuery, dir string) error {
 					log.Println("Attempted to scan lockfile but failed: " + path)
 				}
 			}
-			extension := strings.ToLower(filepath.Ext(info.Name()))
-			if extension == ".json" || strings.Contains(info.Name(), ".spdx") {
-				_ = scanSBOMFile(query, path)
-			}
+			_ = scanSBOMFile(query, path)
 		}
 
 		return nil
@@ -77,7 +74,8 @@ func scanSBOMFile(query *osv.BatchedQuery, path string) error {
 	for _, provider := range sbom.Providers {
 		if provider.Name() == "SPDX" &&
 			!strings.Contains(strings.ToLower(filepath.Base(path)), ".spdx") {
-			// All spdx files should have the .spdx in the filename
+			// All spdx files should have the .spdx in the filename, even if
+			// it's not the extension:  https://spdx.github.io/spdx-spec/v2.3/conformance/
 			// Skip if this isn't the case to avoid panics
 			continue
 		}

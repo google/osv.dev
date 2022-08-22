@@ -117,7 +117,7 @@ class GetNextVersionTest(unittest.TestCase):
         ecosystem.sort_key('<end-of-life>'), ecosystem.sort_key('1.13.6-1'))
 
     self.assertEqual(
-        ecosystem.enumerate_versions("nginx", "0", "<end-of-life>"), [])
+        ecosystem.enumerate_versions('nginx', '0', '<end-of-life>'), [])
     # Test Ecosystem remover
     ecosystem = ecosystems.get('Debian:10')
     # '0' as introduced version also tests the get_first_package_version func

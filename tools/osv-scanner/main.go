@@ -75,6 +75,12 @@ func scanSBOMFile(query *osv.BatchedQuery, path string) error {
 	}
 
 	for _, provider := range sbom.Providers {
+		if provider.Name() == "SPDX" &&
+			!strings.Contains(strings.ToLower(filepath.Base(path)), ".spdx") {
+			// All spdx files should have the .spdx in the filename
+			// Skip if this isn't the case to avoid panics
+			continue
+		}
 		err := provider.GetPackages(file, func(id sbom.Identifier) error {
 			query.Queries = append(query.Queries, osv.MakePURLRequest(id.PURL))
 			return nil

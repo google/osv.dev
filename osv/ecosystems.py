@@ -341,6 +341,7 @@ class Debian(Ecosystem):
 
   _API_PACKAGE_URL = 'https://snapshot.debian.org/mr/package/{package}/'
   _END_OF_LIFE_VER = '<end-of-life>'
+  _UNFIXED_VER = '<unfixed>'
   debian_release_ver: str
 
   def __init__(self, debian_release_ver: str):
@@ -389,8 +390,8 @@ class Debian(Ecosystem):
       introduced = debian_version_cache.get_first_package_version(
           package, self.debian_release_ver)
 
-    if fixed == self._END_OF_LIFE_VER:
-      # Special case for eol, we do not enumerate
+    if fixed in (self._END_OF_LIFE_VER, fixed == self._UNFIXED_VER):
+      # Special case for eol and unfixed, we do not enumerate versions
       return []
 
     return self._get_affected_versions(versions, introduced, fixed, limits)

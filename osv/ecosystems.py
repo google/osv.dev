@@ -391,7 +391,7 @@ class Debian(Ecosystem):
 
     if fixed == self._END_OF_LIFE_VER:
       # Special case for eol, we do not enumerate
-      versions = []
+      return []
 
     return self._get_affected_versions(versions, introduced, fixed, limits)
 

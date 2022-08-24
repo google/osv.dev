@@ -42,6 +42,9 @@ func scanDir(query *osv.BatchedQuery, dir string) error {
 					log.Println("Attempted to scan lockfile but failed: " + path)
 				}
 			}
+			// No need to check for error
+			// If scan fails, it means it isn't a valid SBOM file,
+			// so just move onto the next file
 			_ = scanSBOMFile(query, path)
 		}
 

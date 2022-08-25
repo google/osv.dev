@@ -37,7 +37,7 @@ import (
 
 // Storer is used to permanently store the results.
 type Storer interface {
-	Store(ctx context.Context, repoInfo *preparation.Result, hashType string, fileResults []FileResult) error
+	Store(ctx context.Context, repoInfo *preparation.Result, hashType string, fileResults []*FileResult) error
 }
 
 // FileResult holds the per file hash and path information.
@@ -58,9 +58,9 @@ type Stage struct {
 func (s *Stage) Run(ctx context.Context) error {
 	s.Input.ReceiveSettings.MaxOutstandingMessages = s.PubSubOutstandingMessages
 	return s.Input.Receive(ctx, func(ctx context.Context, m *pubsub.Message) {
-		// Always immediately ack the message to avoid timeouts/redelivery for large repos.
-		// Transient errors can be solved by the next scheduled run.
-		m.Ack()
+		// Always ack the message. Transient errors can be solved by the
+		// next scheduled run.
+		defer m.Ack()
 		repoInfo := &preparation.Result{}
 		if err := json.Unmarshal(m.Data, repoInfo); err != nil {
 			log.Errorf("failed to unmarshal input: %v", err)
@@ -102,7 +102,7 @@ func (s *Stage) processGit(ctx context.Context, repoInfo *preparation.Result) er
 		return err
 	}
 
-	var fileResults []FileResult
+	var fileResults []*FileResult
 	if err := filepath.Walk(repoDir, func(p string, info fs.FileInfo, err error) error {
 		if info.IsDir() {
 			return nil
@@ -114,7 +114,7 @@ func (s *Stage) processGit(ctx context.Context, repoInfo *preparation.Result) er
 					return err
 				}
 				hash := md5.Sum(buf)
-				fileResults = append(fileResults, FileResult{
+				fileResults = append(fileResults, &FileResult{
 					Path: p,
 					Hash: hash[:],
 				})

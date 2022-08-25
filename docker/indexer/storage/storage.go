@@ -35,19 +35,19 @@ const (
 
 // document represents a single repository entry in datastore.
 type document struct {
-	Name         string                  `datastore:"name"`
-	BaseCPE      string                  `datastore:"base_cpe"`
-	Version      string                  `datastore:"version"`
-	Commit       []byte                  `datastore:"commit"`
-	When         time.Time               `datastore:"when"`
-	RepoType     string                  `datastore:"repo_type"`
-	RepoAddr     string                  `datastore:"repo_addr"`
-	FileExts     []string                `datastore:"file_exts"`
-	FileHashType string                  `datastore:"file_hash_type"`
-	FileResults  []processing.FileResult `datastore:"file_results"`
+	Name         string                   `datastore:"name"`
+	BaseCPE      string                   `datastore:"base_cpe"`
+	Version      string                   `datastore:"version"`
+	Commit       []byte                   `datastore:"commit"`
+	When         time.Time                `datastore:"when,omitempty"`
+	RepoType     string                   `datastore:"repo_type"`
+	RepoAddr     string                   `datastore:"repo_addr"`
+	FileExts     []string                 `datastore:"file_exts"`
+	FileHashType string                   `datastore:"file_hash_type"`
+	FileResults  []*processing.FileResult `datastore:"file_results,noindex"`
 }
 
-func newDoc(repoInfo *preparation.Result, hashType string, fileResults []processing.FileResult) *document {
+func newDoc(repoInfo *preparation.Result, hashType string, fileResults []*processing.FileResult) *document {
 	return &document{
 		Name:         repoInfo.Name,
 		BaseCPE:      repoInfo.BaseCPE,
@@ -96,7 +96,7 @@ func (s *Store) Exists(ctx context.Context, addr string, hashType string, hash p
 }
 
 // Store stores a new entry in datastore.
-func (s *Store) Store(ctx context.Context, repoInfo *preparation.Result, hashType string, fileResults []processing.FileResult) error {
+func (s *Store) Store(ctx context.Context, repoInfo *preparation.Result, hashType string, fileResults []*processing.FileResult) error {
 	key := datastore.NameKey(kind, fmt.Sprintf(keyFmt, repoInfo.Addr, hashType, repoInfo.Commit[:]), nil)
 	_, err := s.dsCl.Put(ctx, key, newDoc(repoInfo, hashType, fileResults))
 	return err

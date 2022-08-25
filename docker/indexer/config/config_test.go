@@ -19,7 +19,7 @@ file_extensions:
   - ".cc"
 `
 
-func TestLoad(t *testing.T) {
+func TestParseConfig(t *testing.T) {
 	want := &RepoConfig{
 		Address:          "example.com/abc",
 		Name:             "abc",

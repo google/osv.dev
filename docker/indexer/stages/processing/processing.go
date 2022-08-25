@@ -25,6 +25,7 @@ import (
 	"io/fs"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"cloud.google.com/go/pubsub"
 	"cloud.google.com/go/storage"
@@ -115,7 +116,7 @@ func (s *Stage) processGit(ctx context.Context, repoInfo *preparation.Result) er
 				}
 				hash := md5.Sum(buf)
 				fileResults = append(fileResults, &FileResult{
-					Path: p,
+					Path: strings.ReplaceAll(repoDir, p, ""),
 					Hash: hash[:],
 				})
 			}

@@ -79,9 +79,10 @@ func main() {
 
 func runWorker(ctx context.Context, storer *idxStorage.Store, repoBucketHdl *storage.BucketHandle, sub *pubsub.Subscription, outstanding int) error {
 	procStage := processing.Stage{
-		Storer:  storer,
-		RepoHdl: repoBucketHdl,
-		Input:   sub,
+		Storer:                    storer,
+		RepoHdl:                   repoBucketHdl,
+		Input:                     sub,
+		PubSubOutstandingMessages: outstanding,
 	}
 	// The preparation results are picked up by the processing stage
 	// in workder mode.

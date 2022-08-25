@@ -35,7 +35,6 @@ import (
 	log "github.com/golang/glog"
 )
 
-
 // Storer is used to permanently store the results.
 type Storer interface {
 	Store(ctx context.Context, repoInfo *preparation.Result, hashType string, fileResults []FileResult) error
@@ -59,9 +58,9 @@ type Stage struct {
 func (s *Stage) Run(ctx context.Context) error {
 	s.Input.ReceiveSettings.MaxOutstandingMessages = s.PubSubOutstandingMessages
 	return s.Input.Receive(ctx, func(ctx context.Context, m *pubsub.Message) {
-		// Always ack the message. Transient errors can be solved by
-		// the next scheduled run.
-		defer m.Ack()
+		// Always immediately ack the message to avoid timeouts/redelivery for large repos.
+		// Transient errors can be solved by the next scheduled run.
+		m.Ack()
 		repoInfo := &preparation.Result{}
 		if err := json.Unmarshal(m.Data, repoInfo); err != nil {
 			log.Errorf("failed to unmarshal input: %v", err)

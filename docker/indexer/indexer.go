@@ -1,17 +1,17 @@
 /*
 Copyright 2022 Google LLC
 
- Licensed under the Apache License, Version 2.0 (the "License");
- you may not use this file except in compliance with the License.
- You may obtain a copy of the License at
+	 Licensed under the Apache License, Version 2.0 (the "License");
+	 you may not use this file except in compliance with the License.
+	 You may obtain a copy of the License at
 
-	http://www.apache.org/licenses/LICENSE-2.0
+		http://www.apache.org/licenses/LICENSE-2.0
 
- Unless required by applicable law or agreed to in writing, software
- distributed under the License is distributed on an "AS IS" BASIS,
- WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- See the License for the specific language governing permissions and
- limitations under the License.
+	 Unless required by applicable law or agreed to in writing, software
+	 distributed under the License is distributed on an "AS IS" BASIS,
+	 WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+	 See the License for the specific language governing permissions and
+	 limitations under the License.
 */
 package main
 
@@ -37,6 +37,7 @@ var (
 	worker        = flag.Bool("worker", false, "makes this a worker node reading from pubsub to process the data")
 	pubsubTopic   = flag.String("topic", "", "sets the pubsub topic to publish to or to read from")
 	subName       = flag.String("subscription", "", "sets the pubsub subscription name for workers")
+	subMessages   = flag.Int("messages", 1, "pubsub outstanding messages")
 )
 
 func main() {
@@ -65,7 +66,7 @@ func main() {
 	defer storer.Close()
 
 	if *worker {
-		if err := runWorker(ctx, storer, repoBucketHdl, psCl.Subscription(*subName)); err != nil {
+		if err := runWorker(ctx, storer, repoBucketHdl, psCl.Subscription(*subName), *subMessages); err != nil {
 			log.Exitf("failed to run worker: %v", err)
 		}
 		return
@@ -76,7 +77,7 @@ func main() {
 	}
 }
 
-func runWorker(ctx context.Context, storer *idxStorage.Store, repoBucketHdl *storage.BucketHandle, sub *pubsub.Subscription) error {
+func runWorker(ctx context.Context, storer *idxStorage.Store, repoBucketHdl *storage.BucketHandle, sub *pubsub.Subscription, outstanding int) error {
 	procStage := processing.Stage{
 		Storer:  storer,
 		RepoHdl: repoBucketHdl,

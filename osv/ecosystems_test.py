@@ -116,11 +116,13 @@ class GetNextVersionTest(unittest.TestCase):
     self.assertGreater(
         ecosystem.sort_key('<end-of-life>'), ecosystem.sort_key('1.13.6-1'))
 
+    self.assertEqual(
+        ecosystem.enumerate_versions('nginx', '0', '<end-of-life>'), [])
     # Test Ecosystem remover
     ecosystem = ecosystems.get('Debian:10')
     # '0' as introduced version also tests the get_first_package_version func
     versions = ecosystem.enumerate_versions('cyrus-sasl2', '0', None)
-    self.assertEqual(requests_mock.call_count, 1)
+    self.assertEqual(requests_mock.call_count, 2)
     self.assertIn('2.1.27+dfsg-1+deb10u1', versions)
     self.assertNotIn('2.1.27~101-g0780600+dfsg-3+deb9u1', versions)
     self.assertNotIn('2.1.27~101-g0780600+dfsg-3+deb9u2', versions)
@@ -130,7 +132,7 @@ class GetNextVersionTest(unittest.TestCase):
 
     # This should now only call the cache, and not requests.get
     ecosystem.enumerate_versions('cyrus-sasl2', '0', None)
-    self.assertEqual(requests_mock.call_count, 1)
+    self.assertEqual(requests_mock.call_count, 2)
 
   def test_semver(self):
     """Test SemVer."""

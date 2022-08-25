@@ -151,6 +151,15 @@ data-column-id="{{ column_id }}"
       </turbo-frame>
     </div>
   </div>
+  <turbo-stream action="update" target="title">
+    <template>
+      {% if selected_ecosystem %}
+        {{ selected_ecosystem }} - OSV
+      {% else %}
+        Vulnerability Database - OSV
+      {% endif %}
+    </template>
+  </turbo-stream>
 </turbo-frame>
 </div>
 <script>

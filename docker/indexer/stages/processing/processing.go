@@ -19,81 +19,65 @@ package processing
 import (
 	"context"
 	"crypto/md5"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io/fs"
 	"os"
 	"path/filepath"
 
+	"cloud.google.com/go/pubsub"
 	"cloud.google.com/go/storage"
 	"github.com/go-git/go-git/v5"
 	"github.com/google/osv.dev/docker/indexer/shared"
 	"github.com/google/osv.dev/docker/indexer/stages/preparation"
-	"golang.org/x/sync/semaphore"
 
 	log "github.com/golang/glog"
 )
 
-const workers = 25
+const pubSubOutstandingMessages = 5
 
 // Storer is used to permanently store the results.
 type Storer interface {
-	Store(ctx context.Context, repoInfo *preparation.Result, fileResults []FileResult) error
+	Store(ctx context.Context, repoInfo *preparation.Result, hashType string, fileResults []FileResult) error
 }
 
 // FileResult holds the per file hash and path information.
 type FileResult struct {
-	Path     string
-	HashType string
-	Hash     []byte
+	Path string
+	Hash []byte
 }
 
 // Stage holds the data structures necessary to perform the processing.
 type Stage struct {
 	Storer  Storer
 	RepoHdl *storage.BucketHandle
+	Input   *pubsub.Subscription
 }
 
 // Run runs the stages and hashes all files for each incoming request.
-func (s *Stage) Run(ctx context.Context, input chan *preparation.Result) error {
-	wErr := make(chan error, workers)
-	sem := semaphore.NewWeighted(workers)
-	for {
-		if err := sem.Acquire(ctx, 1); err != nil {
-			return fmt.Errorf("failed to acquire semaphore: %v", err)
+func (s *Stage) Run(ctx context.Context) error {
+	s.Input.ReceiveSettings.MaxOutstandingMessages = pubSubOutstandingMessages
+	return s.Input.Receive(ctx, func(ctx context.Context, m *pubsub.Message) {
+		// Always ack the message. Transient errors can be solved by
+		// the next scheduled run.
+		defer m.Ack()
+		repoInfo := &preparation.Result{}
+		if err := json.Unmarshal(m.Data, repoInfo); err != nil {
+			log.Errorf("failed to unmarshal input: %v", err)
+			return
 		}
-
-		var (
-			repoInfo *preparation.Result
-			ok       bool
-		)
-		select {
-		case repoInfo, ok = <-input:
-		case err := <-wErr:
-			log.Errorf("worker returned an error: %v", err)
-		case <-ctx.Done():
-			return context.Canceled
+		var err error
+		switch repoInfo.Type {
+		case shared.Git:
+			err = s.processGit(ctx, repoInfo)
+		default:
+			err = errors.New("unknown repository type")
 		}
-		if !ok {
-			break
+		if err != nil {
+			log.Errorf("failed to process input: %v", err)
 		}
-
-		go func() {
-			defer sem.Release(1)
-
-			var err error
-			switch repoInfo.Type {
-			case shared.Git:
-				err = s.processGit(ctx, repoInfo)
-			default:
-				err = errors.New("unknown repository type")
-			}
-			if err != nil {
-				wErr <- err
-			}
-		}()
-	}
-	return sem.Acquire(ctx, workers)
+	})
 }
 
 func (s *Stage) processGit(ctx context.Context, repoInfo *preparation.Result) error {
@@ -132,9 +116,8 @@ func (s *Stage) processGit(ctx context.Context, repoInfo *preparation.Result) er
 				}
 				hash := md5.Sum(buf)
 				fileResults = append(fileResults, FileResult{
-					Path:     p,
-					HashType: "MD5",
-					Hash:     hash[:],
+					Path: p,
+					Hash: hash[:],
 				})
 			}
 		}
@@ -142,5 +125,5 @@ func (s *Stage) processGit(ctx context.Context, repoInfo *preparation.Result) er
 	}); err != nil {
 		return err
 	}
-	return s.Storer.Store(ctx, repoInfo, fileResults)
+	return s.Storer.Store(ctx, repoInfo, shared.MD5, fileResults)
 }

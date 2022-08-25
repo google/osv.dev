@@ -29,6 +29,7 @@ import (
 const (
 	TarExt = ".tar"
 	Git    = "GIT"
+	MD5    = "MD5"
 )
 
 // CopyFromBucket copies a directory from a bucket to a temporary location.

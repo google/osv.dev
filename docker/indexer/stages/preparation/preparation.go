@@ -19,6 +19,7 @@ package preparation
 import (
 	"archive/tar"
 	"context"
+	"encoding/json"
 	"fmt"
 	"io/fs"
 	"os"
@@ -27,6 +28,7 @@ import (
 	"strings"
 	"time"
 
+	"cloud.google.com/go/pubsub"
 	"cloud.google.com/go/storage"
 	"github.com/go-git/go-git/v5"
 	"github.com/go-git/go-git/v5/plumbing"
@@ -53,25 +55,24 @@ type Result struct {
 	Commit          plumbing.Hash
 	When            time.Time
 	Type            string
+	Addr            string
 	FileExts        []string
 }
 
 // Checker interface is used to check whether a name/hash pair already exists in storage.
 type Checker interface {
-	Exists(ctx context.Context, name string, hash plumbing.Hash) (bool, error)
+	Exists(ctx context.Context, addr string, hashType string, hash plumbing.Hash) (bool, error)
 }
 
 // Stage holds the data types necessary to process repository configuration.
 type Stage struct {
 	Checker Checker
 	RepoHdl *storage.BucketHandle
+	Output  *pubsub.Topic
 }
 
 // Run runs the stage and outputs Result data types to the results channel.
-func (s *Stage) Run(ctx context.Context, cfgs []*config.RepoConfig, results chan *Result) error {
-	var err error
-	wErr := make(chan error, workers)
-
+func (s *Stage) Run(ctx context.Context, cfgs []*config.RepoConfig) error {
 	wCtx, wCancel := context.WithCancel(ctx)
 	defer wCancel()
 
@@ -81,33 +82,27 @@ func (s *Stage) Run(ctx context.Context, cfgs []*config.RepoConfig, results chan
 			return fmt.Errorf("failed to acquire semaphore: %v", err)
 		}
 
-		go func(ctx context.Context, repoCfg *config.RepoConfig, results chan *Result, errCh chan error) {
+		go func(ctx context.Context, repoCfg *config.RepoConfig) {
 			defer sem.Release(1)
 
 			var err error
 			select {
 			case <-ctx.Done():
-				errCh <- context.Canceled
+				log.Error(context.Canceled)
 				return
 			default:
 			}
 			log.Infof("received config for %s", repoCfg.Name)
 			switch repoCfg.Type {
 			case shared.Git:
-				err = s.processGit(ctx, repoCfg, results)
+				err = s.processGit(ctx, repoCfg)
 			default:
-				errCh <- fmt.Errorf("unsupported repository type %s", repoCfg.Type)
+				log.Errorf("unsupported config type: %s", repoCfg.Type)
 			}
 			if err != nil {
-				wErr <- err
+				log.Errorf("preparation failed: %v", err)
 			}
-		}(wCtx, repoCfg, results, wErr)
-
-		select {
-		case err = <-wErr:
-			log.Errorf("preparation worker returned an error: %v", err)
-		default:
-		}
+		}(wCtx, repoCfg)
 	}
 	return sem.Acquire(ctx, workers)
 }
@@ -118,7 +113,7 @@ func (s *Stage) objectExists(ctx context.Context, name string) bool {
 	return err == nil
 }
 
-func (s *Stage) processGit(ctx context.Context, repoCfg *config.RepoConfig, results chan *Result) error {
+func (s *Stage) processGit(ctx context.Context, repoCfg *config.RepoConfig) error {
 	var (
 		err     error
 		repo    *git.Repository
@@ -154,7 +149,7 @@ func (s *Stage) processGit(ctx context.Context, repoCfg *config.RepoConfig, resu
 	commitTracker := make(map[plumbing.Hash]bool)
 	// repoInfo is used as the iterator function to create RepositoryInformation structs.
 	repoInfo := func(ref *plumbing.Reference) error {
-		found, err := s.Checker.Exists(ctx, repoCfg.Name, ref.Hash())
+		found, err := s.Checker.Exists(ctx, repoCfg.Address, shared.MD5, ref.Hash())
 		if err != nil {
 			return err
 		}
@@ -179,7 +174,12 @@ func (s *Stage) processGit(ctx context.Context, repoCfg *config.RepoConfig, resu
 			version = genericVersionRE.FindString(ref.Name().String())
 		}
 
-		results <- &Result{
+		if version == "" {
+			log.Warningf("failed to extract version for repo: %s\ttag/branch: %s", repoCfg.Address, ref.Name().String())
+			return nil
+		}
+
+		result := &Result{
 			Name:    repoCfg.Name,
 			BaseCPE: repoCfg.BaseCPE,
 			Version: version,
@@ -189,10 +189,17 @@ func (s *Stage) processGit(ctx context.Context, repoCfg *config.RepoConfig, resu
 			When:     when,
 			Commit:   ref.Hash(),
 			Type:     shared.Git,
+			Addr:     repoCfg.Address,
 			FileExts: repoCfg.FileExts,
 		}
 		commitTracker[ref.Hash()] = true
-		return nil
+		buf, err := json.Marshal(result)
+		if err != nil {
+			return err
+		}
+		pubRes := s.Output.Publish(ctx, &pubsub.Message{Data: buf})
+		_, err = pubRes.Get(ctx)
+		return err
 	}
 
 	repoItr, err := repo.Tags()
@@ -216,14 +223,14 @@ func (s *Stage) processGit(ctx context.Context, repoCfg *config.RepoConfig, resu
 	if repoCfg.HashAllCommits {
 		for h, c := range allCommits {
 			if found := commitTracker[h]; !found {
-				exists, err := s.Checker.Exists(ctx, repoCfg.Name, h)
+				exists, err := s.Checker.Exists(ctx, repoCfg.Address, shared.MD5, h)
 				if err != nil {
 					return err
 				}
 				if exists {
 					continue
 				}
-				results <- &Result{
+				result := &Result{
 					Name: repoCfg.Name,
 					CheckoutOptions: &git.CheckoutOptions{
 						Hash:  h,
@@ -234,6 +241,13 @@ func (s *Stage) processGit(ctx context.Context, repoCfg *config.RepoConfig, resu
 					Type:     shared.Git,
 					FileExts: repoCfg.FileExts,
 				}
+				buf, err := json.Marshal(result)
+				if err != nil {
+					return err
+				}
+				pubRes := s.Output.Publish(ctx, &pubsub.Message{Data: buf})
+				_, err = pubRes.Get(ctx)
+				return err
 			}
 		}
 	}

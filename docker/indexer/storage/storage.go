@@ -18,22 +18,91 @@ package storage
 
 import (
 	"context"
+	"fmt"
+	"sync"
+	"time"
 
+	"cloud.google.com/go/datastore"
 	"github.com/go-git/go-git/v5/plumbing"
 	"github.com/google/osv.dev/docker/indexer/stages/preparation"
 	"github.com/google/osv.dev/docker/indexer/stages/processing"
-
-	log "github.com/golang/glog"
 )
 
+const (
+	kind   = "RepoIndex"
+	keyFmt = "%s-%s-%x"
+)
+
+// document represents a single repository entry in datastore.
+type document struct {
+	Name         string                  `datastore:"name"`
+	BaseCPE      string                  `datastore:"base_cpe"`
+	Version      string                  `datastore:"version"`
+	Commit       []byte                  `datastore:"commit"`
+	When         time.Time               `datastore:"when"`
+	RepoType     string                  `datastore:"repo_type"`
+	RepoAddr     string                  `datastore:"repo_addr"`
+	FileExts     []string                `datastore:"file_exts"`
+	FileHashType string                  `datastore:"file_hash_type"`
+	FileResults  []processing.FileResult `datastore:"file_results"`
+}
+
+func newDoc(repoInfo *preparation.Result, hashType string, fileResults []processing.FileResult) *document {
+	return &document{
+		Name:         repoInfo.Name,
+		BaseCPE:      repoInfo.BaseCPE,
+		Version:      repoInfo.Version,
+		Commit:       repoInfo.Commit[:],
+		When:         repoInfo.When,
+		RepoType:     repoInfo.Type,
+		RepoAddr:     repoInfo.Addr,
+		FileExts:     repoInfo.FileExts,
+		FileHashType: hashType,
+		FileResults:  fileResults,
+	}
+}
+
+// Store provides the functionality to check for existing documents
+// in datastore and add new ones.
 type Store struct {
+	dsCl  *datastore.Client
+	cache sync.Map
 }
 
-func (s *Store) Exists(ctx context.Context, name string, hash plumbing.Hash) (bool, error) {
-	return false, nil
+// New returns a new Store.
+func New(ctx context.Context, projectID string) (*Store, error) {
+	client, err := datastore.NewClient(ctx, projectID)
+	if err != nil {
+		return nil, err
+	}
+	return &Store{dsCl: client, cache: sync.Map{}}, nil
 }
 
-func (s *Store) Store(ctx context.Context, repoInfo *preparation.Result, fileResults []processing.FileResult) error {
-	log.Infof("storing %s and %s", repoInfo.Name, repoInfo.Commit.String())
-	return nil
+// Exists checks whether a name/hash pair already exists in datastore.
+func (s *Store) Exists(ctx context.Context, addr string, hashType string, hash plumbing.Hash) (bool, error) {
+	if _, ok := s.cache.Load(fmt.Sprintf(keyFmt, addr, hashType, hash)); ok {
+		return true, nil
+	}
+	key := datastore.NameKey(kind, fmt.Sprintf(keyFmt, addr, hashType, hash), nil)
+	tmp := &document{}
+	if err := s.dsCl.Get(ctx, key, tmp); err != nil {
+		if err == datastore.ErrNoSuchEntity {
+			return false, nil
+		}
+		return false, err
+	}
+	s.cache.Store(fmt.Sprintf(keyFmt, addr, hashType, hash), true)
+	return true, nil
+}
+
+// Store stores a new entry in datastore.
+func (s *Store) Store(ctx context.Context, repoInfo *preparation.Result, hashType string, fileResults []processing.FileResult) error {
+	key := datastore.NameKey(kind, fmt.Sprintf(keyFmt, repoInfo.Addr, hashType, repoInfo.Commit[:]), nil)
+	_, err := s.dsCl.Put(ctx, key, newDoc(repoInfo, hashType, fileResults))
+	return err
+}
+
+// Close closes the datastore client.
+func (s *Store) Close() {
+	s.dsCl.Close()
 }

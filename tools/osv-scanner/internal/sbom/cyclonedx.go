@@ -40,7 +40,7 @@ func (c *CycloneDX) GetPackages(r io.ReadSeeker, callback func(Identifier) error
 		r.Seek(0, io.SeekStart)
 		decoder := cyclonedx.NewBOMDecoder(r, formatType)
 		err := decoder.Decode(&bom)
-		if err == nil {
+		if err == nil && bom.BOMFormat == "CycloneDX" {
 			return c.enumeratePackages(&bom, callback)
 		}
 	}

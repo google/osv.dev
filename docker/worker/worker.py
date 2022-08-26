@@ -177,7 +177,7 @@ class _PubSubLeaserThread(threading.Thread):
           logging.info('Task complete, stopping renewal.')
           break
       except Exception as e:
-        logging.error('Leaser thread failed: %s', str(e))
+        logging.exception('Leaser thread failed: ')
 
 
 def clean_artifacts(oss_fuzz_dir):
@@ -366,8 +366,8 @@ class TaskRunner:
       try:
         vulnerabilities = osv.parse_vulnerabilities(
             vuln_path, key_path=source_repo.key_path)
-      except Exception as e:
-        logging.error('Failed to parse vulnerability %s: %s', vuln_path, e)
+      except Exception:
+        logging.exception('Failed to parse vulnerability %s:', vuln_path)
         return
 
       current_sha256 = osv.sha256(vuln_path)
@@ -377,7 +377,7 @@ class TaskRunner:
       try:
         blob = bucket.blob(path).download_as_bytes()
       except google.cloud.exceptions.NotFound:
-        logging.error('Bucket path %s does not exist.', path)
+        logging.exception('Bucket path %s does not exist.', path)
         return
 
       current_sha256 = osv.sha256_bytes(blob)
@@ -387,7 +387,7 @@ class TaskRunner:
             extension=os.path.splitext(path)[1],
             key_path=source_repo.key_path)
       except Exception as e:
-        logging.error('Failed to parse vulnerability %s: %s', path, e)
+        logging.exception('Failed to parse vulnerability %s: %s', path)
         return
 
       repo = None
@@ -547,8 +547,7 @@ class TaskRunner:
           try:
             oss_fuzz.process_impact_task(source_id, message)
           except osv.ImpactError:
-            logging.error('Failed to process impact: %s',
-                          traceback.format_exc())
+            logging.exception('Failed to process impact: ')
         elif task_type == 'invalid':
           mark_bug_invalid(message)
         elif task_type == 'update':
@@ -557,8 +556,7 @@ class TaskRunner:
         _state.source_id = None
         subscriber.acknowledge(subscription=subscription, ack_ids=[ack_id])
     except Exception:
-      logging.error('Unexpected exception while processing task:\n%s',
-                    traceback.format_exc())
+      logging.exception('Unexpected exception while processing task: ',)
       subscriber.modify_ack_deadline(
           subscription=subscription, ack_ids=[ack_id], ack_deadline_seconds=0)
     finally:

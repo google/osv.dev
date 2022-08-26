@@ -43,8 +43,8 @@ type Storer interface {
 
 // FileResult holds the per file hash and path information.
 type FileResult struct {
-	Path string
-	Hash []byte
+	Path string `datastore:"path"`
+	Hash []byte `datastore:"hash"`
 }
 
 // Stage holds the data structures necessary to perform the processing.

@@ -37,12 +37,15 @@ func scanDir(query *osv.BatchedQuery, dir string) error {
 
 		if !info.IsDir() {
 			if parser, _ := lockfile.FindParser(path, ""); parser != nil {
-				scanLockfile(query, path)
+				err := scanLockfile(query, path)
 				if err != nil {
 					log.Println("Attempted to scan lockfile but failed: " + path)
 				}
 			}
-			scanSBOMFile(query, path)
+			// No need to check for error
+			// If scan fails, it means it isn't a valid SBOM file,
+			// so just move onto the next file
+			_ = scanSBOMFile(query, path)
 		}
 
 		return nil
@@ -72,6 +75,13 @@ func scanSBOMFile(query *osv.BatchedQuery, path string) error {
 	}
 
 	for _, provider := range sbom.Providers {
+		if provider.Name() == "SPDX" &&
+			!strings.Contains(strings.ToLower(filepath.Base(path)), ".spdx") {
+			// All spdx files should have the .spdx in the filename, even if
+			// it's not the extension:  https://spdx.github.io/spdx-spec/v2.3/conformance/
+			// Skip if this isn't the case to avoid panics
+			continue
+		}
 		err := provider.GetPackages(file, func(id sbom.Identifier) error {
 			query.Queries = append(query.Queries, osv.MakePURLRequest(id.PURL))
 			return nil
@@ -112,12 +122,6 @@ func scanGit(repoDir string) (*osv.Query, error) {
 
 	log.Printf("Scanning %s at commit %s", repoDir, commit)
 	return osv.MakeCommitRequest(commit), nil
-}
-
-// Information about a docker package and it's version.
-type DockerPackageVersion struct {
-	Name    string
-	Version string
 }
 
 func scanDebianDocker(query *osv.BatchedQuery, dockerImageName string) {
@@ -207,17 +211,17 @@ func main() {
 				scanDebianDocker(&query, container)
 			}
 
-			lockfiles := context.StringSlice("lockfile")
-			for _, lockfile := range lockfiles {
-				err := scanLockfile(&query, lockfile)
+			lockfiles := context.StringSlice("lockfileElem")
+			for _, lockfileElem := range lockfiles {
+				err := scanLockfile(&query, lockfileElem)
 				if err != nil {
 					return err
 				}
 			}
 
-			sboms := context.StringSlice("sbom")
-			for _, sbom := range sboms {
-				err := scanSBOMFile(&query, sbom)
+			sboms := context.StringSlice("sbomElem")
+			for _, sbomElem := range sboms {
+				err := scanSBOMFile(&query, sbomElem)
 				if err != nil {
 					return err
 				}

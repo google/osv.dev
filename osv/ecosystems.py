@@ -347,10 +347,6 @@ class Debian(Ecosystem):
     self.debian_release_ver = debian_release_ver
 
   def sort_key(self, version):
-    if version == self._END_OF_LIFE_VER:
-      # End of life advisory means all versions can be affected
-      return DebianVersion(999999)
-
     return DebianVersion.from_string(version)
 
   def enumerate_versions(self, package, introduced, fixed, limits=None):
@@ -389,8 +385,10 @@ class Debian(Ecosystem):
       introduced = debian_version_cache.get_first_package_version(
           package, self.debian_release_ver)
 
-    if fixed == self._END_OF_LIFE_VER:
-      # Special case for eol, we do not enumerate
+    if not DebianVersion.is_valid(fixed):
+      logging.warning(
+          'Package %s has invalid fixed version: %s. In debian release %s',
+          package, fixed, self.debian_release_ver)
       return []
 
     return self._get_affected_versions(versions, introduced, fixed, limits)

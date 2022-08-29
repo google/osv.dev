@@ -27,7 +27,6 @@ import subprocess
 import sys
 import threading
 import time
-import traceback
 
 import google.cloud.exceptions
 from google.cloud import ndb
@@ -176,7 +175,7 @@ class _PubSubLeaserThread(threading.Thread):
         if self._done_event.wait(wait_seconds):
           logging.info('Task complete, stopping renewal.')
           break
-      except Exception as e:
+      except Exception:
         logging.exception('Leaser thread failed: ')
 
 
@@ -386,8 +385,8 @@ class TaskRunner:
             blob,
             extension=os.path.splitext(path)[1],
             key_path=source_repo.key_path)
-      except Exception as e:
-        logging.exception('Failed to parse vulnerability %s: %s', path)
+      except Exception:
+        logging.exception('Failed to parse vulnerability %s', path)
         return
 
       repo = None

@@ -388,7 +388,7 @@ class Debian(Ecosystem):
       introduced = debian_version_cache.get_first_package_version(
           package, self.debian_release_ver)
 
-    if not DebianVersion.is_valid(fixed):
+    if fixed is not None and not DebianVersion.is_valid(fixed):
       logging.warning(
           'Package %s has invalid fixed version: %s. In debian release %s',
           package, fixed, self.debian_release_ver)

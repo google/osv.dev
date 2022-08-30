@@ -126,7 +126,7 @@ class GetNextVersionTest(unittest.TestCase):
     self.assertIn('2.1.27+dfsg-1+deb10u1', versions)
     self.assertNotIn('2.1.27~101-g0780600+dfsg-3+deb9u1', versions)
     self.assertNotIn('2.1.27~101-g0780600+dfsg-3+deb9u2', versions)
-
+    self.assertEqual(1, 2, 'Test fail')
     with self.assertRaises(ecosystems.EnumerateError):
       ecosystem.next_version('doesnotexist123456', '1')
 

@@ -37,6 +37,7 @@ var (
 	worker        = flag.Bool("worker", false, "makes this a worker node reading from pubsub to process the data")
 	pubsubTopic   = flag.String("topic", "", "sets the pubsub topic to publish to or to read from")
 	subName       = flag.String("subscription", "", "sets the pubsub subscription name for workers")
+	subMessages   = flag.Int("messages", 1, "pubsub outstanding messages")
 )
 
 func main() {
@@ -65,7 +66,7 @@ func main() {
 	defer storer.Close()
 
 	if *worker {
-		if err := runWorker(ctx, storer, repoBucketHdl, psCl.Subscription(*subName)); err != nil {
+		if err := runWorker(ctx, storer, repoBucketHdl, psCl.Subscription(*subName), *subMessages); err != nil {
 			log.Exitf("failed to run worker: %v", err)
 		}
 		return
@@ -76,11 +77,12 @@ func main() {
 	}
 }
 
-func runWorker(ctx context.Context, storer *idxStorage.Store, repoBucketHdl *storage.BucketHandle, sub *pubsub.Subscription) error {
+func runWorker(ctx context.Context, storer *idxStorage.Store, repoBucketHdl *storage.BucketHandle, sub *pubsub.Subscription, outstanding int) error {
 	procStage := processing.Stage{
-		Storer:  storer,
-		RepoHdl: repoBucketHdl,
-		Input:   sub,
+		Storer:                    storer,
+		RepoHdl:                   repoBucketHdl,
+		Input:                     sub,
+		PubSubOutstandingMessages: outstanding,
 	}
 	// The preparation results are picked up by the processing stage
 	// in workder mode.

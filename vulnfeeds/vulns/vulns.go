@@ -248,6 +248,30 @@ func FromCVE(id string, cve cves.CVEItem, pkgInfo []PackageInfo) (*Vulnerability
 		Aliases: extractAliases(id, cve.CVE),
 	}
 
+	v.AddPkgInfo(pkgInfo)
+
+	var err error
+	var notes []string
+	v.Published, err = timestampToRFC3339(cve.PublishedDate)
+	if err != nil {
+		notes = append(notes, fmt.Sprintf("Failed to parse published date: %v\n", err))
+	}
+
+	v.Modified, err = timestampToRFC3339(cve.LastModifiedDate)
+	if err != nil {
+		notes = append(notes, fmt.Sprintf("Failed to parse modified date: %v\n", err))
+	}
+
+	for _, reference := range cve.CVE.References.ReferenceData {
+		v.References = append(v.References, Reference{
+			Type: ClassifyReferenceLink(reference.URL),
+			URL:  reference.URL,
+		})
+	}
+	return &v, notes
+}
+
+func (v *Vulnerability) AddPkgInfo(pkgInfo []PackageInfo) {
 	for _, info := range pkgInfo {
 		affected := Affected{}
 		affected.Package.Name = info.PkgName
@@ -277,26 +301,6 @@ func FromCVE(id string, cve cves.CVEItem, pkgInfo []PackageInfo) (*Vulnerability
 		}
 		v.Affected = append(v.Affected, affected)
 	}
-
-	var err error
-	var notes []string
-	v.Published, err = timestampToRFC3339(cve.PublishedDate)
-	if err != nil {
-		notes = append(notes, fmt.Sprintf("Failed to parse published date: %v\n", err))
-	}
-
-	v.Modified, err = timestampToRFC3339(cve.LastModifiedDate)
-	if err != nil {
-		notes = append(notes, fmt.Sprintf("Failed to parse modified date: %v\n", err))
-	}
-
-	for _, reference := range cve.CVE.References.ReferenceData {
-		v.References = append(v.References, Reference{
-			Type: ClassifyReferenceLink(reference.URL),
-			URL:  reference.URL,
-		})
-	}
-	return &v, notes
 }
 
 // FromCVEWithVersionExtraction Create an OSV object from a given CVEItem and package name

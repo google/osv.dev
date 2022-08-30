@@ -53,14 +53,20 @@ func main() {
 
 func generateIntermediateCVE(loadedCves map[string]cves.CVEItem) {
 	log.Println("Begin writing intermediate files")
+	convertedCves := map[string]*vulns.Vulnerability{}
 	for vId, v := range loadedCves {
 		cve, _ := vulns.FromCVE(vId, v, []vulns.PackageInfo{})
-		file, err := os.OpenFile(osvIntermediateOutputPath+"/"+vId+".intermediate.json", os.O_CREATE|os.O_RDWR, 0644)
-		if err != nil {
-			log.Fatalf("Failed to create/open file to write: %s", err)
-		}
-		cve.ToJSON(file)
-		file.Close()
+		convertedCves[vId] = cve
+	}
+	file, err := os.OpenFile(osvIntermediateOutputPath+"/"+"intermediate.json.gz", os.O_CREATE|os.O_RDWR, 0644)
+	if err != nil {
+		log.Fatalf("Failed to create/open file to write: %s", err)
+	}
+	gzWriter := gzip.NewWriter(file)
+	encoder := json.NewEncoder(gzWriter)
+	err = encoder.Encode(convertedCves)
+	if err != nil {
+		log.Fatalf("Failed to encode intermediate cves")
 	}
 	log.Println("Successfully written all intermediate files")
 }
@@ -91,12 +97,6 @@ func loadAllCVEs() map[string]cves.CVEItem {
 		file.Close()
 	}
 	return result
-}
-
-type VersionAndPkg struct {
-	Ver       string
-	Pkg       string
-	AlpineVer string
 }
 
 func downloadCveAsNeeded(version string) {

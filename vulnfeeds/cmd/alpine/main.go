@@ -18,7 +18,6 @@ const (
 	alpineUrlBase             = "https://secdb.alpinelinux.org/%s/main.json"
 	alpineIndexUrl            = "https://secdb.alpinelinux.org/"
 	alpineOutputPath          = "alpine_output"
-	osvOutputPath             = "osv_output"
 	osvIntermediateOutputPath = "osv_interm_output"
 )
 
@@ -30,8 +29,7 @@ func main() {
 		log.Fatalf("Can't create output path: %s", err)
 	}
 
-	allCves := loadIntermediateCves()
-	generateAlpineOSV(allCves)
+	generateAlpineOSV()
 }
 
 func getAllAlpineVersions() []string {
@@ -59,32 +57,32 @@ func getAllAlpineVersions() []string {
 	return alpineVersions
 }
 
-func loadIntermediateCves() map[string]vulns.Vulnerability {
-	dir, err := os.ReadDir(osvIntermediateOutputPath)
-	if err != nil {
-		log.Fatalf("Failed to read dir? %s", err)
-	}
-
-	result := make(map[string]vulns.Vulnerability)
-
-	for _, entry := range dir {
-		file, err := os.Open(osvIntermediateOutputPath + "/" + entry.Name())
-		if err != nil {
-			log.Fatalf("Failed to open cve json: %s", err)
-		}
-		var vuln vulns.Vulnerability
-		err = json.NewDecoder(file).Decode(&vuln)
-		if err != nil {
-			log.Fatalf("Failed to decode json: %s", err)
-		}
-		result[vuln.ID] = vuln
-
-		file.Close()
-	}
-	log.Printf("Loaded %d Intermediate CVEs", len(result))
-
-	return result
-}
+//func loadIntermediateCves() map[string]vulns.Vulnerability {
+//	dir, err := os.ReadDir(osvIntermediateOutputPath)
+//	if err != nil {
+//		log.Fatalf("Failed to read dir? %s", err)
+//	}
+//
+//	result := make(map[string]vulns.Vulnerability)
+//
+//	for _, entry := range dir {
+//		file, err := os.Open(osvIntermediateOutputPath + "/" + entry.Name())
+//		if err != nil {
+//			log.Fatalf("Failed to open cve json: %s", err)
+//		}
+//		var vuln vulns.Vulnerability
+//		err = json.NewDecoder(file).Decode(&vuln)
+//		if err != nil {
+//			log.Fatalf("Failed to decode json: %s", err)
+//		}
+//		result[vuln.ID] = vuln
+//
+//		file.Close()
+//	}
+//	log.Printf("Loaded %d Intermediate CVEs", len(result))
+//
+//	return result
+//}
 
 type VersionAndPkg struct {
 	Ver       string
@@ -92,7 +90,7 @@ type VersionAndPkg struct {
 	AlpineVer string
 }
 
-func generateAlpineOSV(allCVEs map[string]vulns.Vulnerability) {
+func generateAlpineOSV() {
 	allAlpineSecDb := make(map[string][]VersionAndPkg)
 	allAlpineVers := getAllAlpineVersions()
 	for _, alpineVer := range allAlpineVers {
@@ -127,16 +125,16 @@ func generateAlpineOSV(allCVEs map[string]vulns.Vulnerability) {
 		if len(pkgInfos) > 1 {
 			log.Println("Multiple lines: " + cveId)
 		}
-		vuln := allCVEs[cveId]
-		file, err := os.OpenFile(osvOutputPath+"/"+cveId+".json", os.O_CREATE|os.O_RDWR, 0644)
+
+		file, err := os.OpenFile(alpineOutputPath+"/"+cveId+".alpine.json", os.O_CREATE|os.O_RDWR, 0644)
 		if err != nil {
 			log.Fatalf("Failed to create/write osv output file: %s", err)
 		}
 		encoder := json.NewEncoder(file)
 		encoder.SetIndent("", "  ")
-		err = encoder.Encode(&vuln)
+		err = encoder.Encode(&pkgInfos)
 		if err != nil {
-			log.Fatalf("Failed to encode osv output file: %s", err)
+			log.Fatalf("Failed to encode package info output file: %s", err)
 		}
 		_ = file.Close()
 	}

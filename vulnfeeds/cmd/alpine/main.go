@@ -17,7 +17,7 @@ import (
 const (
 	alpineUrlBase             = "https://secdb.alpinelinux.org/%s/main.json"
 	alpineIndexUrl            = "https://secdb.alpinelinux.org/"
-	alpineOutputPath          = "alpine_output"
+	alpineOutputPath          = "parts/alpine_output"
 	osvIntermediateOutputPath = "osv_interm_output"
 )
 
@@ -57,33 +57,6 @@ func getAllAlpineVersions() []string {
 	return alpineVersions
 }
 
-//func loadIntermediateCves() map[string]vulns.Vulnerability {
-//	dir, err := os.ReadDir(osvIntermediateOutputPath)
-//	if err != nil {
-//		log.Fatalf("Failed to read dir? %s", err)
-//	}
-//
-//	result := make(map[string]vulns.Vulnerability)
-//
-//	for _, entry := range dir {
-//		file, err := os.Open(osvIntermediateOutputPath + "/" + entry.Name())
-//		if err != nil {
-//			log.Fatalf("Failed to open cve json: %s", err)
-//		}
-//		var vuln vulns.Vulnerability
-//		err = json.NewDecoder(file).Decode(&vuln)
-//		if err != nil {
-//			log.Fatalf("Failed to decode json: %s", err)
-//		}
-//		result[vuln.ID] = vuln
-//
-//		file.Close()
-//	}
-//	log.Printf("Loaded %d Intermediate CVEs", len(result))
-//
-//	return result
-//}
-
 type VersionAndPkg struct {
 	Ver       string
 	Pkg       string
@@ -122,9 +95,9 @@ func generateAlpineOSV() {
 			}
 			pkgInfos = append(pkgInfos, pkgInfo)
 		}
-		if len(pkgInfos) > 1 {
-			log.Println("Multiple lines: " + cveId)
-		}
+		//if len(pkgInfos) > 1 {
+		//	log.Println("Multiple lines: " + cveId)
+		//}
 
 		file, err := os.OpenFile(alpineOutputPath+"/"+cveId+".alpine.json", os.O_CREATE|os.O_RDWR, 0644)
 		if err != nil {

@@ -179,7 +179,7 @@ func genericPrintResults(
 	outputTable.SetOutputMirror(os.Stdout)
 	headerRows := table.Row{"Source"}
 	headerRows = append(headerRows, headers...)
-	headerRows = append(headerRows, "Vuln ID", "OSV Url")
+	headerRows = append(headerRows, "Vulnerability ID", "OSV Url")
 	outputTable.AppendHeader(headerRows)
 
 	for i, query := range query.Queries {

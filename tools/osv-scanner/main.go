@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"bytes"
 	"errors"
+	"github.com/jedib0t/go-pretty/v6/text"
 	"log"
 	"os"
 	"os/exec"
@@ -15,6 +16,8 @@ import (
 
 	"github.com/google/osv.dev/tools/osv-scanner/internal/osv"
 	"github.com/google/osv.dev/tools/osv-scanner/internal/sbom"
+
+	"github.com/jedib0t/go-pretty/v6/table"
 )
 
 // scanDir walks through the given directory to try to find any relevant files
@@ -32,6 +35,7 @@ func scanDir(query *osv.BatchedQuery, dir string) error {
 				log.Printf("scan failed for %s: %v\n", path, err)
 				return err
 			}
+			gitQuery.Source = "git:" + filepath.Dir(path)
 			query.Queries = append(query.Queries, gitQuery)
 		}
 
@@ -62,7 +66,9 @@ func scanLockfile(query *osv.BatchedQuery, path string) error {
 	log.Printf("Scanned %s file with %d packages", parsedLockfile.ParsedAs, len(parsedLockfile.Packages))
 
 	for _, pkgDetail := range parsedLockfile.Packages {
-		query.Queries = append(query.Queries, osv.MakePkgRequest(pkgDetail))
+		pkgDetailQuery := osv.MakePkgRequest(pkgDetail)
+		pkgDetailQuery.Source = "lockfile:" + path
+		query.Queries = append(query.Queries, pkgDetailQuery)
 	}
 	return nil
 }
@@ -83,7 +89,9 @@ func scanSBOMFile(query *osv.BatchedQuery, path string) error {
 			continue
 		}
 		err := provider.GetPackages(file, func(id sbom.Identifier) error {
-			query.Queries = append(query.Queries, osv.MakePURLRequest(id.PURL))
+			purlQuery := osv.MakePURLRequest(id.PURL)
+			purlQuery.Source = "sbom:" + path
+			query.Queries = append(query.Queries, purlQuery)
 			return nil
 		})
 		if err == nil {
@@ -149,30 +157,61 @@ func scanDebianDocker(query *osv.BatchedQuery, dockerImageName string) {
 		if len(splitText) != 2 {
 			log.Fatalf("Unexpected output from Debian container: \n\n%s", text)
 		}
-		pkgDetails := osv.MakePkgRequest(lockfile.PackageDetails{
+		pkgDetailsQuery := osv.MakePkgRequest(lockfile.PackageDetails{
 			Name:    splitText[0],
 			Version: splitText[1],
 			// TODO(rexpan): Get and specify exact debian release version
 			Ecosystem: "Debian",
 		})
-		query.Queries = append(query.Queries, pkgDetails)
+		pkgDetailsQuery.Source = "docker:" + dockerImageName
+		query.Queries = append(query.Queries, pkgDetailsQuery)
 	}
 	log.Printf("Scanned docker image")
 }
 
-func printResults(query osv.BatchedQuery, resp *osv.BatchedResponse) {
+func genericPrintResults(
+	query osv.BatchedQuery,
+	resp *osv.BatchedResponse,
+	condition func(*osv.Query) bool,
+	dataExtractor func(*osv.Query) []interface{},
+	headers []interface{})  {
+	outputTable := table.NewWriter()
+	outputTable.SetOutputMirror(os.Stdout)
+	headerRows := table.Row{"Source"}
+	headerRows = append(headerRows, headers...)
+	headerRows = append(headerRows, "Vuln ID", "OSV Url")
+	outputTable.AppendHeader(headerRows)
+
 	for i, query := range query.Queries {
-		if len(resp.Results[i].Vulns) == 0 {
+		if len(resp.Results[i].Vulns) == 0 || !condition(query) {
 			continue
 		}
-
-		var urls []string
 		for _, vuln := range resp.Results[i].Vulns {
-			urls = append(urls, osv.BaseVulnerabilityURL+vuln.ID)
+			outputRow := table.Row{query.Source}
+			outputRow = append(outputRow, dataExtractor(query)...)
+			outputRow = append(outputRow, vuln.ID, osv.BaseVulnerabilityURL + vuln.ID)
+			outputTable.AppendRow(outputRow)
 		}
-
-		log.Printf("%v is vulnerable to %s", query, strings.Join(urls, ", "))
 	}
+
+	outputTable.SetStyle(table.StyleRounded)
+	outputTable.Style().Color.Row = text.Colors{text.Reset, text.BgBlack}
+	outputTable.Style().Color.RowAlternate = text.Colors{text.Reset, text.Reset}
+	// TODO: Leave these here until styling is finalized
+	//outputTable.Style().Title = table.TitleOptionsBright
+	//outputTable.Style().Color.Header = text.Colors{text.FgHiCyan, text.BgBlack}
+	//outputTable.Style().Color.Row = text.Colors{text.Reset, text.Reset}
+	//outputTable.Style().Options.SeparateRows = true
+	//outputTable.Style().Options.SeparateColumns = true
+	//outputTable.SetColumnConfigs([]table.ColumnConfig{
+	//	{Number: 2, AutoMerge: true},
+	//	{Number: 3, AutoMerge: true},
+	//})
+
+	if outputTable.Length() == 0 {
+		return
+	}
+	outputTable.Render()
 }
 
 // TODO(ochang): Machine readable output format.
@@ -201,6 +240,10 @@ func main() {
 				Usage:     "scan sbom file on this path",
 				TakesFile: true,
 			},
+			&cli.BoolFlag{
+				Name:  "json",
+				Usage: "sets output to json (WIP)",
+			},
 		},
 		ArgsUsage: "[directory1 directory2...]",
 		Action: func(context *cli.Context) error {
@@ -211,7 +254,7 @@ func main() {
 				scanDebianDocker(&query, container)
 			}
 
-			lockfiles := context.StringSlice("lockfileElem")
+			lockfiles := context.StringSlice("lockfile")
 			for _, lockfileElem := range lockfiles {
 				err := scanLockfile(&query, lockfileElem)
 				if err != nil {
@@ -219,7 +262,7 @@ func main() {
 				}
 			}
 
-			sboms := context.StringSlice("sbomElem")
+			sboms := context.StringSlice("sbom")
 			for _, sbomElem := range sboms {
 				err := scanSBOMFile(&query, sbomElem)
 				if err != nil {
@@ -252,5 +295,22 @@ func main() {
 		return
 	}
 
-	printResults(query, resp)
+	genericPrintResults(query, resp, func(query *osv.Query) bool {
+		return query.Commit == "" && query.Package.PURL == ""
+	}, func(query *osv.Query) []interface{} {
+		return table.Row{query.Package.Ecosystem, query.Package.Name, query.Version}
+	}, table.Row{"Affected Ecosystem", "Affected Package", "Installed Version"})
+
+	genericPrintResults(query, resp, func(query *osv.Query) bool {
+		return query.Commit == "" && query.Package.PURL != ""
+	}, func(query *osv.Query) []interface{} {
+		return table.Row{query.Package.PURL}
+	}, table.Row{"Affected Package URL"})
+
+	genericPrintResults(query, resp, func(query *osv.Query) bool {
+		return query.Commit != ""
+	}, func(query *osv.Query) []interface{} {
+		return table.Row{query.Commit}
+	}, table.Row{"Affected Commit"})
+
 }

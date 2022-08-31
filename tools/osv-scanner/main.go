@@ -169,6 +169,10 @@ func scanDebianDocker(query *osv.BatchedQuery, dockerImageName string) {
 	log.Printf("Scanned docker image")
 }
 
+// genericPrintResults Prints the osv scan results into a human friendly table.
+// Allows caller to specify columns and filter data to show only responses relevant to
+// the specified columns. The intention is to display multiple tables with different columns
+// to cover all OSV responses.
 func genericPrintResults(
 	query osv.BatchedQuery,
 	resp *osv.BatchedResponse,

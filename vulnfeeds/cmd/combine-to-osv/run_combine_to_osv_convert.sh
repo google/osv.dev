@@ -8,7 +8,7 @@ rm -rf $OSV_PARTS_ROOT && mkdir -p $OSV_PARTS_ROOT
 rm -rf $OSV_OUTPUT && mkdir -p $OSV_OUTPUT
 
 echo "Begin syncing with cloud parts"
-gsutil -q -m rsync gs://cve-osv-conversion/parts/ $OSV_PARTS_ROOT
+gsutil -q -m rsync -r gs://cve-osv-conversion/parts/ $OSV_PARTS_ROOT
 echo "Successfully synced with cloud parts"
 
 echo "Run combine-to-osv"

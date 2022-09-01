@@ -4,7 +4,7 @@ import (
 	"bufio"
 	"bytes"
 	"errors"
-	"github.com/jedib0t/go-pretty/v6/text"
+	"golang.org/x/crypto/ssh/terminal"
 	"log"
 	"os"
 	"os/exec"
@@ -12,12 +12,12 @@ import (
 	"strings"
 
 	"github.com/g-rath/osv-detector/pkg/lockfile"
+	"github.com/jedib0t/go-pretty/v6/table"
+	"github.com/jedib0t/go-pretty/v6/text"
 	"github.com/urfave/cli/v2"
 
 	"github.com/google/osv.dev/tools/osv-scanner/internal/osv"
 	"github.com/google/osv.dev/tools/osv-scanner/internal/sbom"
-
-	"github.com/jedib0t/go-pretty/v6/table"
 )
 
 // scanDir walks through the given directory to try to find any relevant files
@@ -169,32 +169,43 @@ func scanDebianDocker(query *osv.BatchedQuery, dockerImageName string) {
 	log.Printf("Scanned docker image")
 }
 
-// genericPrintResults Prints the osv scan results into a human friendly table.
-// Allows caller to specify columns and filter data to show only responses relevant to
-// the specified columns. The intention is to display multiple tables with different columns
-// to cover all OSV responses.
-func genericPrintResults(
-	query osv.BatchedQuery,
-	resp *osv.BatchedResponse,
-	condition func(*osv.Query) bool,
-	dataExtractor func(*osv.Query) []interface{},
-	headers []interface{})  {
+// printResults prints the osv scan results into a human friendly table.
+func printResults(query osv.BatchedQuery, resp *osv.BatchedResponse) {
 	outputTable := table.NewWriter()
 	outputTable.SetOutputMirror(os.Stdout)
-	headerRows := table.Row{"Source"}
-	headerRows = append(headerRows, headers...)
-	headerRows = append(headerRows, "Vulnerability ID", "OSV Url")
-	outputTable.AppendHeader(headerRows)
+	outputTable.AppendHeader(table.Row{"Source", "Ecosystem", "Affected Package", "Installed Version", "Vulnerability ID", "OSV URL"})
+
+	max := func(a int, b int) int {
+		if a > b {
+			return a
+		} else {
+			return b
+		}
+	}
+	maxCharacters := 0
 
 	for i, query := range query.Queries {
-		if len(resp.Results[i].Vulns) == 0 || !condition(query) {
+		if len(resp.Results[i].Vulns) == 0 {
 			continue
 		}
 		for _, vuln := range resp.Results[i].Vulns {
 			outputRow := table.Row{query.Source}
-			outputRow = append(outputRow, dataExtractor(query)...)
+			shouldMerge := false
+			if query.Commit != "" {
+				outputRow = append(outputRow, "GIT", query.Commit, query.Commit)
+				maxCharacters = max(maxCharacters, len(query.Commit))
+				shouldMerge = true
+			} else if query.Package.PURL != "" {
+				outputRow = append(outputRow, "PURL", query.Package.PURL, query.Package.PURL)
+				maxCharacters = max(maxCharacters, len(query.Package.PURL))
+				shouldMerge = true
+			} else {
+				outputRow = append(outputRow, query.Package.Ecosystem, query.Package.Name, query.Version)
+				maxCharacters = max(maxCharacters, len(query.Package.Name))
+				maxCharacters = max(maxCharacters, len(query.Version))
+			}
 			outputRow = append(outputRow, vuln.ID, osv.BaseVulnerabilityURL + vuln.ID)
-			outputTable.AppendRow(outputRow)
+			outputTable.AppendRow(outputRow, table.RowConfig{AutoMerge: shouldMerge})
 		}
 	}
 
@@ -202,16 +213,19 @@ func genericPrintResults(
 	outputTable.Style().Color.Row = text.Colors{text.Reset, text.BgBlack}
 	outputTable.Style().Color.RowAlternate = text.Colors{text.Reset, text.Reset}
 	// TODO: Leave these here until styling is finalized
-	//outputTable.Style().Title = table.TitleOptionsBright
 	//outputTable.Style().Color.Header = text.Colors{text.FgHiCyan, text.BgBlack}
 	//outputTable.Style().Color.Row = text.Colors{text.Reset, text.Reset}
 	//outputTable.Style().Options.SeparateRows = true
 	//outputTable.Style().Options.SeparateColumns = true
 	//outputTable.SetColumnConfigs([]table.ColumnConfig{
-	//	{Number: 2, AutoMerge: true},
-	//	{Number: 3, AutoMerge: true},
+	//	{Number: 2, AutoMerge: true, WidthMax: maxCharacters},
+	//	{Number: 3, AutoMerge: true, WidthMax: maxCharacters},
 	//})
 
+	width, _, err := terminal.GetSize(int(os.Stdout.Fd()))
+	if err == nil { // If output is a terminal, set max length to width
+		outputTable.SetAllowedRowLength(width)
+	} // Otherwise don't set max width (e.g. getting piped to a file)
 	if outputTable.Length() == 0 {
 		return
 	}
@@ -298,23 +312,5 @@ func main() {
 		log.Printf("scan failed: %v\n", err)
 		return
 	}
-
-	genericPrintResults(query, resp, func(query *osv.Query) bool {
-		return query.Commit == "" && query.Package.PURL == ""
-	}, func(query *osv.Query) []interface{} {
-		return table.Row{query.Package.Ecosystem, query.Package.Name, query.Version}
-	}, table.Row{"Affected Ecosystem", "Affected Package", "Installed Version"})
-
-	genericPrintResults(query, resp, func(query *osv.Query) bool {
-		return query.Commit == "" && query.Package.PURL != ""
-	}, func(query *osv.Query) []interface{} {
-		return table.Row{query.Package.PURL}
-	}, table.Row{"Affected Package URL"})
-
-	genericPrintResults(query, resp, func(query *osv.Query) bool {
-		return query.Commit != ""
-	}, func(query *osv.Query) []interface{} {
-		return table.Row{query.Commit}
-	}, table.Row{"Affected Commit"})
-
+	printResults(query, resp)
 }

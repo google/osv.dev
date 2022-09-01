@@ -46,7 +46,7 @@ type Affected struct {
 type AffectedRange struct {
 	Type   string  `json:"type" yaml:"type"`
 	Repo   string  `json:"repo,omitempty" yaml:"repo,omitempty"`
-	Events []Event `json:"events", yaml:"events"`
+	Events []Event `json:"events" yaml:"events"`
 }
 
 type Reference struct {

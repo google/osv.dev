@@ -39,7 +39,7 @@ type RepoConfig struct {
 	VersionRE        string   `yaml:"version_regex,omitempty"`
 	BranchVersioning bool     `yaml:"branch_versioning,omitempty"`
 	HashAllCommits   bool     `yaml:"hash_all_commits,omitempty"`
-	FileExts         []string `yaml:"file_extension"`
+	FileExts         []string `yaml:"file_extensions"`
 }
 
 // Load loads the repository configurations from the provided bucket.
@@ -69,8 +69,8 @@ func Load(ctx context.Context, cfgBucket *storage.BucketHandle) ([]*RepoConfig, 
 		if err != nil {
 			return nil, fmt.Errorf("failed to read object %s: %v", err, attrs.Name)
 		}
-		cfg := &RepoConfig{}
-		if err := yaml.Unmarshal(buf, cfg); err != nil {
+		cfg, err := parseConfig(buf)
+		if err != nil {
 			log.Errorf("failed to parse config: %s", err)
 			continue
 		}
@@ -85,4 +85,12 @@ func Load(ctx context.Context, cfgBucket *storage.BucketHandle) ([]*RepoConfig, 
 	}
 
 	return repos, nil
+}
+
+func parseConfig(buf []byte) (*RepoConfig, error) {
+	cfg := &RepoConfig{}
+	if err := yaml.Unmarshal(buf, cfg); err != nil {
+		return nil, err
+	}
+	return cfg, nil
 }

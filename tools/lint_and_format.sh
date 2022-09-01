@@ -34,11 +34,11 @@ fi
 
 go_vet_findings=""
 for module_dir in $IN_SCOPE_GO_MODULES; do
-  pushd "$module_dir" >/dev/null
+  cd "$module_dir"
   if ! go vet ./...; then
     go_vet_findings="go_vet_findings"
   fi
-  popd >/dev/null
+  cd -
 done
 
 if [ $python_lint_findings ] || [ $python_format_findings ] || [ $go_vet_findings ]; then

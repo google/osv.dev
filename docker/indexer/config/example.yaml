@@ -1,0 +1,13 @@
+address: "https://github.com/protocolbuffers/protobuf.git"
+name: "protobuf"
+type: "GIT"
+base_cpe: "cpe:2.3:a:google:protobuf:"
+version_regex: "(\\d+\\.\\d+)"
+hash_all_commits: false
+file_extensions:
+  - ".c"
+  - ".cc"
+  - ".cpp"
+  - ".h"
+  - ".hh"
+  - ".hpp"

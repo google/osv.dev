@@ -15,6 +15,8 @@
 
 import bisect
 import json
+import logging
+
 import packaging.version
 import urllib.parse
 import requests
@@ -27,6 +29,7 @@ from . import maven
 from . import nuget
 from . import semver_index
 from .cache import Cache
+from .cache import cached
 from .request_helper import RequestError, RequestHelper
 
 _DEPS_DEV_API = (
@@ -114,7 +117,17 @@ class Ecosystem:
     raise NotImplementedError
 
   def _get_affected_versions(self, versions, introduced, fixed, limits):
-    """Get affected versions given a list of sorted versions, and an introduced/fixed."""
+    """Get affected versions.
+
+    Args:
+      versions: a list of version strings.
+      introduced: a list of version strings.
+      fixed: a list of version strings.
+      limits: a list of version strings.
+
+    Returns:
+      A list of affected version strings.
+    """
     parsed_versions = [self.sort_key(v) for v in versions]
 
     if introduced == '0':
@@ -208,15 +221,14 @@ class Maven(Ecosystem, DepsDevMixin):
     """Sort key."""
     return maven.Version.from_string(version)
 
-  def enumerate_versions(self, package, introduced, fixed, limits=None):
-    """Enumerate versions."""
-    if use_deps_dev:
-      return self._deps_dev_enumerate(package, introduced, fixed, limits=limits)
+  @staticmethod
+  def _get_versions(package):
+    """Get versions."""
+    versions = []
+    request_helper = RequestHelper()
 
     group_id, artifact_id = package.split(':', 2)
     start = 0
-
-    versions = []
 
     while True:
       query = {
@@ -226,13 +238,9 @@ class Maven(Ecosystem, DepsDevMixin):
           'wt': 'json',
           'start': start
       }
-      url = self._API_PACKAGE_URL + '?' + urllib.parse.urlencode(query)
-      response = requests.get(url)
-      if response.status_code != 200:
-        raise RuntimeError(
-            f'Failed to get Maven versions for {package} with: {response.text}')
-
-      response = response.json()['response']
+      url = Maven._API_PACKAGE_URL + '?' + urllib.parse.urlencode(query)
+      response = request_helper.get(url)
+      response = json.loads(response)['response']
       if response['numFound'] == 0:
         raise EnumerateError(f'Package {package} not found')
 
@@ -244,6 +252,18 @@ class Maven(Ecosystem, DepsDevMixin):
 
       start = len(versions)
 
+    return versions
+
+  def enumerate_versions(self, package, introduced, fixed, limits=None):
+    """Enumerate versions."""
+    if use_deps_dev:
+      return self._deps_dev_enumerate(package, introduced, fixed, limits=limits)
+
+    get_versions = self._get_versions
+    if shared_cache:
+      get_versions = cached(shared_cache)(get_versions)
+
+    versions = get_versions(package)
     self.sort_versions(versions)
     return self._get_affected_versions(versions, introduced, fixed, limits)
 
@@ -324,9 +344,12 @@ class Debian(Ecosystem):
 
   def __init__(self, debian_release_ver: str):
     self.debian_release_ver = debian_release_ver
-    debian_version_cache._initiate_from_cloud_cache()
 
   def sort_key(self, version):
+    if not DebianVersion.is_valid(version):
+      # If debian version is not valid, it is most likely an invalid fixed
+      # version then sort it to the last/largest element
+      return DebianVersion(999999, 999999)
     return DebianVersion.from_string(version)
 
   def enumerate_versions(self, package, introduced, fixed, limits=None):
@@ -337,15 +360,23 @@ class Debian(Ecosystem):
     except RequestError as ex:
       if ex.response.status_code == 404:
         raise EnumerateError(f'Package {package} not found') from ex
-      raise RuntimeError(
-          f'Failed to get Debian versions for {package} with: {ex.response.text}'
-      ) from ex
+      raise RuntimeError('Failed to get Debian versions for '
+                         f'{package} with: {ex.response.text}') from ex
 
     response = json.loads(text_response)
-    versions: list[str] = [x['version'] for x in response['result']]
+    raw_versions: list[str] = [x['version'] for x in response['result']]
+
+    # Remove rare cases of unknown versions
+    def version_is_valid(v):
+      if not DebianVersion.is_valid(v):
+        logging.warning('Package %s has invalid version: %s', package, v)
+        return False
+
+      return True
+
+    versions = [v for v in raw_versions if version_is_valid(v)]
     # Sort to ensure it is in the correct order
     versions.sort(key=self.sort_key)
-
     # The only versions with +deb
     versions = [
         x for x in versions
@@ -356,6 +387,12 @@ class Debian(Ecosystem):
       # Update introduced to the first version of the debian version
       introduced = debian_version_cache.get_first_package_version(
           package, self.debian_release_ver)
+
+    if fixed is not None and not DebianVersion.is_valid(fixed):
+      logging.warning(
+          'Package %s has invalid fixed version: %s. In debian release %s',
+          package, fixed, self.debian_release_ver)
+      return []
 
     return self._get_affected_versions(versions, introduced, fixed, limits)
 
@@ -382,8 +419,8 @@ def get(name: str) -> Ecosystem:
 
   if name.startswith('Debian:'):
     return Debian(name.split(':')[1])
-  else:
-    return _ecosystems.get(name)
+
+  return _ecosystems.get(name)
 
 
 def set_cache(cache: Cache):

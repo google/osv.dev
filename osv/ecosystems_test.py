@@ -16,6 +16,10 @@
 import os
 import unittest
 from unittest import mock
+
+import requests
+
+from . import cache
 from . import ecosystems
 
 
@@ -39,6 +43,21 @@ class GetNextVersionTest(unittest.TestCase):
     self.assertEqual('0.7.0', ecosystem.next_version('io.grpc:grpc-core', '0'))
     with self.assertRaises(ecosystems.EnumerateError):
       ecosystem.next_version('blah:doesnotexist123456', '1')
+
+  @mock.patch('requests.Session.get', side_effect=requests.get)
+  def test_maven_with_cache(self, mock_get):
+    """Test Maven."""
+    test_cache = cache.InMemoryCache()
+    ecosystems.set_cache(test_cache)
+
+    ecosystem = ecosystems.get('Maven')
+    self.assertEqual('1.36.0',
+                     ecosystem.next_version('io.grpc:grpc-core', '1.35.1'))
+    call_count = mock_get.call_count
+    self.assertEqual('1.36.0',
+                     ecosystem.next_version('io.grpc:grpc-core', '1.35.1'))
+    self.assertEqual(call_count, mock_get.call_count)
+    ecosystems.set_cache(None)
 
   @unittest.skipUnless(os.getenv('DEPS_DEV_API_KEY'), 'Requires API key')
   def test_maven_deps_dev(self):
@@ -82,7 +101,8 @@ class GetNextVersionTest(unittest.TestCase):
     with self.assertRaises(ecosystems.EnumerateError):
       ecosystem.next_version('doesnotexist123456', '1')
 
-  def test_debian(self):
+  @mock.patch('osv.debian_version_cache.requests.get', side_effect=requests.get)
+  def test_debian(self, requests_mock: mock.MagicMock):
     """Test Debian"""
     ecosystem = ecosystems.get('Debian:9')
     self.assertEqual('1.13.6-1', ecosystem.next_version('nginx', '1.13.5-1'))
@@ -93,16 +113,26 @@ class GetNextVersionTest(unittest.TestCase):
     self.assertGreater(
         ecosystem.sort_key('1.13.6-2'), ecosystem.sort_key('1.13.6-1'))
 
+    self.assertGreater(
+        ecosystem.sort_key('<end-of-life>'), ecosystem.sort_key('1.13.6-1'))
+
+    self.assertEqual(
+        ecosystem.enumerate_versions('nginx', '0', '<end-of-life>'), [])
     # Test Ecosystem remover
     ecosystem = ecosystems.get('Debian:10')
-    versions = ecosystem.enumerate_versions('cyrus-sasl2', '2.1.27+dfsg-1',
-                                            None)
+    # '0' as introduced version also tests the get_first_package_version func
+    versions = ecosystem.enumerate_versions('cyrus-sasl2', '0', None)
+    self.assertEqual(requests_mock.call_count, 2)
     self.assertIn('2.1.27+dfsg-1+deb10u1', versions)
     self.assertNotIn('2.1.27~101-g0780600+dfsg-3+deb9u1', versions)
     self.assertNotIn('2.1.27~101-g0780600+dfsg-3+deb9u2', versions)
 
     with self.assertRaises(ecosystems.EnumerateError):
       ecosystem.next_version('doesnotexist123456', '1')
+
+    # This should now only call the cache, and not requests.get
+    ecosystem.enumerate_versions('cyrus-sasl2', '0', None)
+    self.assertEqual(requests_mock.call_count, 2)
 
   def test_semver(self):
     """Test SemVer."""
@@ -111,14 +141,14 @@ class GetNextVersionTest(unittest.TestCase):
     self.assertEqual('1.0.0-pre.0', ecosystem.next_version('blah', '1.0.0-pre'))
 
   @mock.patch('osv.cache.Cache')
-  def test_cache(self, cache: mock.MagicMock):
-    cache.get.return_value = None
-    ecosystems.set_cache(cache)
+  def test_cache(self, cache_mock: mock.MagicMock):
+    cache_mock.get.return_value = None
+    ecosystems.set_cache(cache_mock)
 
     debian = ecosystems.get('Debian:9')
     debian.next_version('nginx', '1.13.5-1')
-    cache.get.assert_called_once()
-    cache.set.assert_called_once()
+    cache_mock.get.assert_called_once()
+    cache_mock.set.assert_called_once()
 
 
 if __name__ == '__main__':

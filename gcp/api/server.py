@@ -14,7 +14,7 @@
 """API server implementation."""
 
 import argparse
-from concurrent import futures
+import concurrent
 import functools
 import logging
 import os
@@ -40,6 +40,7 @@ _AUTHORIZATION_HEADER_PREFIX = 'Bearer '
 _EXPECTED_AUDIENCE = 'https://db.oss-fuzz.com'
 
 _MAX_BATCH_QUERY = 1000
+_MAX_VULNERABILITIES_LISTED = 16
 
 _ndb_client = ndb.Client()
 
@@ -75,11 +76,13 @@ class OSVServicer(osv_service_v1_pb2_grpc.OSVServicer):
   @ndb_context
   def QueryAffected(self, request, context):
     """Query vulnerabilities for a particular project at a given commit or
+
     version.
     """
-    results = do_query(request.query, context).result()
+    results, next_page_token = do_query(request.query, context).result()
     if results is not None:
-      return osv_service_v1_pb2.VulnerabilityList(vulns=results)
+      return osv_service_v1_pb2.VulnerabilityList(
+          vulns=results, next_page_token=next_page_token)
 
     return None
 
@@ -98,7 +101,7 @@ class OSVServicer(osv_service_v1_pb2_grpc.OSVServicer):
 
     for future in futures:
       batch_results.append(
-          osv_service_v1_pb2.VulnerabilityList(vulns=future.result() or []))
+          osv_service_v1_pb2.VulnerabilityList(vulns=future.result()[0] or []))
 
     return osv_service_v1_pb2.BatchVulnerabilityList(results=batch_results)
 
@@ -109,23 +112,31 @@ def do_query(query, context, include_details=True):
   if query.HasField('package'):
     package_name = query.package.name
     ecosystem = query.package.ecosystem
-    purl = query.package.purl
+    purl_str = query.package.purl
   else:
     package_name = ''
     ecosystem = ''
-    purl = ''
+    purl_str = ''
 
+  page_token = None
+  if query.page_token:
+    page_token = ndb.Cursor(urlsafe=query.page_token)
+
+  purl = None
   purl_version = None
-  if purl:
+  if purl_str:
     try:
-      parsed_purl = PackageURL.from_string(purl)
+      parsed_purl = PackageURL.from_string(purl_str)
       purl_version = parsed_purl.version
-      purl = _clean_purl(parsed_purl).to_string()
+      purl = _clean_purl(parsed_purl)
     except ValueError:
       context.abort(grpc.StatusCode.INVALID_ARGUMENT, 'Invalid Package URL.')
       return None
 
-  to_response = lambda b: bug_to_response(b, include_details)
+  def to_response(b):
+    return bug_to_response(b, include_details)
+
+  next_page_token = None
 
   if query.WhichOneof('param') == 'commit':
     bugs = yield query_by_commit(query.commit, to_response=to_response)
@@ -135,11 +146,18 @@ def do_query(query, context, include_details=True):
   elif query.WhichOneof('param') == 'version':
     bugs = yield query_by_version(
         package_name, ecosystem, purl, query.version, to_response=to_response)
+  elif (package_name != '' and ecosystem != '') or (purl and not purl_version):
+    # Package specified without version.
+    bugs, next_page_token = yield query_by_package(
+        package_name, ecosystem, purl, page_token, to_response=to_response)
   else:
     context.abort(grpc.StatusCode.INVALID_ARGUMENT, 'Invalid query.')
     return None
 
-  return bugs
+  if next_page_token:
+    next_page_token = next_page_token.urlsafe()
+
+  return bugs, next_page_token
 
 
 def bug_to_response(bug, include_details=True):
@@ -161,12 +179,20 @@ def _get_bugs(bug_ids, to_response=bug_to_response):
 
 
 def _clean_purl(purl):
-  """Clean a purl object."""
+  """
+  Clean a purl object.
+
+  Removes version, subpath, and qualifiers with the exception of
+  the 'arch' qualifier
+  """
   values = purl.to_dict()
   values.pop('version', None)
   values.pop('subpath', None)
-  values.pop('qualifiers', None)
-  return PackageURL(**values)
+  qualifiers = values.pop('qualifiers', None)
+  new_qualifiers = {}
+  if qualifiers and 'arch' in qualifiers:  # CPU arch for debian packages
+    new_qualifiers['arch'] = qualifiers['arch']
+  return PackageURL(qualifiers=new_qualifiers, **values)
 
 
 @ndb.tasklet
@@ -183,9 +209,24 @@ def query_by_commit(commit, to_response=bug_to_response):
   return _get_bugs(bug_ids, to_response=to_response)
 
 
-def _is_semver_affected(affected_packages, package_name, ecosystem, purl,
-                        version):
+def _match_purl(purl_query: PackageURL, purl_db: PackageURL) -> bool:
+  """Check if purl match at the specifity level of purl_query
+
+  If purl_query doesn't have qualifiers, then we will match against purl_db
+  without qualifiers, otherwise match with qualifiers
+  """
+
+  if not purl_query.qualifiers:
+    # No qualifiers, and our PURLs never have versions, so just match name
+    return purl_query.name == purl_db.name
+
+  return purl_query == purl_db
+
+
+def _is_semver_affected(affected_packages, package_name, ecosystem,
+                        purl: PackageURL, version):
   """Returns whether or not the given version is within an affected SEMVER
+
   range.
   """
   version = semver_index.parse(version)
@@ -198,7 +239,8 @@ def _is_semver_affected(affected_packages, package_name, ecosystem, purl,
     if ecosystem and ecosystem != affected_package.package.ecosystem:
       continue
 
-    if purl and purl != affected_package.package.purl:
+    if purl and not (affected_package.package.purl and _match_purl(
+        purl, PackageURL.from_string(affected_package.package.purl))):
       continue
 
     for affected_range in affected_package.ranges:
@@ -220,10 +262,11 @@ def _is_semver_affected(affected_packages, package_name, ecosystem, purl,
 def _is_version_affected(affected_packages,
                          package_name,
                          ecosystem,
-                         purl,
+                         purl: PackageURL,
                          version,
                          normalize=False):
   """Returns whether or not the given version is within an affected ECOSYSTEM
+
   range.
   """
   for affected_package in affected_packages:
@@ -237,7 +280,8 @@ def _is_version_affected(affected_packages,
               affected_package.package.ecosystem) != ecosystem):
         continue
 
-    if purl and purl != affected_package.package.purl:
+    if purl and not (affected_package.package.purl and _match_purl(
+        purl, PackageURL.from_string(affected_package.package.purl))):
       continue
 
     if normalize:
@@ -253,7 +297,7 @@ def _is_version_affected(affected_packages,
 
 
 @ndb.tasklet
-def _query_by_semver(query, package_name, ecosystem, purl, version):
+def _query_by_semver(query, package_name, ecosystem, purl: PackageURL, version):
   """Query by semver."""
   if not semver_index.is_valid(version):
     return []
@@ -273,7 +317,8 @@ def _query_by_semver(query, package_name, ecosystem, purl, version):
 
 
 @ndb.tasklet
-def _query_by_generic_version(base_query, project, ecosystem, purl, version):
+def _query_by_generic_version(base_query, project, ecosystem, purl: PackageURL,
+                              version):
   """Query by generic version."""
   # Try without normalizing.
   results = []
@@ -307,9 +352,9 @@ def _query_by_generic_version(base_query, project, ecosystem, purl, version):
 
 
 @ndb.tasklet
-def query_by_version(project,
-                     ecosystem,
-                     purl,
+def query_by_version(project: str,
+                     ecosystem: str,
+                     purl: PackageURL,
                      version,
                      to_response=bug_to_response):
   """Query by (fuzzy) version."""
@@ -320,7 +365,8 @@ def query_by_version(project,
                           osv.Bug.project == project, osv.Bug.public == True)  # pylint: disable=singleton-comparison
   elif purl:
     query = osv.Bug.query(osv.Bug.status == osv.BugStatus.PROCESSED,
-                          osv.Bug.purl == purl, osv.Bug.public == True)  # pylint: disable=singleton-comparison
+                          osv.Bug.purl == purl.to_string(),
+                          osv.Bug.public == True)  # pylint: disable=singleton-comparison
   else:
     return []
 
@@ -346,9 +392,41 @@ def query_by_version(project,
   return [to_response(bug) for bug in bugs]
 
 
+@ndb.tasklet
+def query_by_package(project, ecosystem, purl: PackageURL, page_token,
+                     to_response):
+  """Query by package."""
+  bugs = []
+  if project and ecosystem:
+    query = osv.Bug.query(osv.Bug.status == osv.BugStatus.PROCESSED,
+                          osv.Bug.project == project,
+                          osv.Bug.ecosystem == ecosystem,
+                          osv.Bug.public == True)  # pylint: disable=singleton-comparison
+  elif purl:
+    query = osv.Bug.query(osv.Bug.status == osv.BugStatus.PROCESSED,
+                          osv.Bug.purl == purl.to_string(),
+                          osv.Bug.public == True)  # pylint: disable=singleton-comparison
+  else:
+    return []
+
+  # Set limit to the max + 1, as otherwise we can't detect if there are any
+  # more left.
+  it = query.iter(
+      start_cursor=page_token, limit=_MAX_VULNERABILITIES_LISTED + 1)
+  cursor = None
+  while (yield it.has_next_async()):
+    if len(bugs) >= _MAX_VULNERABILITIES_LISTED:
+      cursor = it.cursor_after()
+      break
+
+    bugs.append(it.next())
+
+  return [to_response(bug) for bug in bugs], cursor
+
+
 def serve(port):
   """Configures and runs the bookstore API server."""
-  server = grpc.server(futures.ThreadPoolExecutor(max_workers=10))
+  server = grpc.server(concurrent.futures.ThreadPoolExecutor(max_workers=10))
   osv_service_v1_pb2_grpc.add_OSVServicer_to_server(OSVServicer(), server)
   server.add_insecure_port('[::]:{}'.format(port))
   server.start()

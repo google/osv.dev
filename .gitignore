@@ -1,2 +1,4 @@
 *.pyc
 __pycache__/
+.idea/
+*.egg-info

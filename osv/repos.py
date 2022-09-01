@@ -92,7 +92,9 @@ def clone(git_url, checkout_dir, git_callbacks=None):
         f'-o User={git_callbacks.username} -o IdentitiesOnly=yes')
 
   subprocess.check_call(
-      ['git', 'clone', _git_mirror(git_url), checkout_dir], env=env)
+      ['git', 'clone', _git_mirror(git_url), checkout_dir],
+      env=env,
+      stderr=subprocess.STDOUT)
   return pygit2.Repository(checkout_dir)
 
 

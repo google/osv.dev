@@ -4,7 +4,6 @@ import (
 	"bufio"
 	"bytes"
 	"errors"
-	"golang.org/x/crypto/ssh/terminal"
 	"log"
 	"os"
 	"os/exec"
@@ -15,6 +14,8 @@ import (
 	"github.com/jedib0t/go-pretty/v6/table"
 	"github.com/jedib0t/go-pretty/v6/text"
 	"github.com/urfave/cli/v2"
+	"github.com/package-url/packageurl-go"
+	"golang.org/x/crypto/ssh/terminal"
 
 	"github.com/google/osv.dev/tools/osv-scanner/internal/osv"
 	"github.com/google/osv.dev/tools/osv-scanner/internal/sbom"
@@ -175,15 +176,6 @@ func printResults(query osv.BatchedQuery, resp *osv.BatchedResponse) {
 	outputTable.SetOutputMirror(os.Stdout)
 	outputTable.AppendHeader(table.Row{"Source", "Ecosystem", "Affected Package", "Installed Version", "Vulnerability ID", "OSV URL"})
 
-	max := func(a int, b int) int {
-		if a > b {
-			return a
-		} else {
-			return b
-		}
-	}
-	maxCharacters := 0
-
 	for i, query := range query.Queries {
 		if len(resp.Results[i].Vulns) == 0 {
 			continue
@@ -193,18 +185,22 @@ func printResults(query osv.BatchedQuery, resp *osv.BatchedResponse) {
 			shouldMerge := false
 			if query.Commit != "" {
 				outputRow = append(outputRow, "GIT", query.Commit, query.Commit)
-				maxCharacters = max(maxCharacters, len(query.Commit))
 				shouldMerge = true
 			} else if query.Package.PURL != "" {
-				outputRow = append(outputRow, "PURL", query.Package.PURL, query.Package.PURL)
-				maxCharacters = max(maxCharacters, len(query.Package.PURL))
+				parsedPURL, err := packageurl.FromString(query.Package.PURL)
+				if err != nil {
+					log.Println("Failed to parse purl")
+					continue
+				}
+				purlVersion := parsedPURL.Version
+				parsedPURL.Version = ""
+				parsedPURL.Qualifiers = []packageurl.Qualifier{}
+				outputRow = append(outputRow, "PURL", parsedPURL.ToString(), purlVersion)
 				shouldMerge = true
 			} else {
 				outputRow = append(outputRow, query.Package.Ecosystem, query.Package.Name, query.Version)
-				maxCharacters = max(maxCharacters, len(query.Package.Name))
-				maxCharacters = max(maxCharacters, len(query.Version))
 			}
-			outputRow = append(outputRow, vuln.ID, osv.BaseVulnerabilityURL + vuln.ID)
+			outputRow = append(outputRow, vuln.ID, osv.BaseVulnerabilityURL+vuln.ID)
 			outputTable.AppendRow(outputRow, table.RowConfig{AutoMerge: shouldMerge})
 		}
 	}

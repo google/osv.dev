@@ -25,6 +25,7 @@ import (
 	"io/fs"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"cloud.google.com/go/pubsub"
 	"cloud.google.com/go/storage"
@@ -35,32 +36,31 @@ import (
 	log "github.com/golang/glog"
 )
 
-const pubSubOutstandingMessages = 5
-
 // Storer is used to permanently store the results.
 type Storer interface {
-	Store(ctx context.Context, repoInfo *preparation.Result, hashType string, fileResults []FileResult) error
+	Store(ctx context.Context, repoInfo *preparation.Result, hashType string, fileResults []*FileResult) error
 }
 
 // FileResult holds the per file hash and path information.
 type FileResult struct {
-	Path string
-	Hash []byte
+	Path string `datastore:"path"`
+	Hash []byte `datastore:"hash"`
 }
 
 // Stage holds the data structures necessary to perform the processing.
 type Stage struct {
-	Storer  Storer
-	RepoHdl *storage.BucketHandle
-	Input   *pubsub.Subscription
+	Storer                    Storer
+	RepoHdl                   *storage.BucketHandle
+	Input                     *pubsub.Subscription
+	PubSubOutstandingMessages int
 }
 
 // Run runs the stages and hashes all files for each incoming request.
 func (s *Stage) Run(ctx context.Context) error {
-	s.Input.ReceiveSettings.MaxOutstandingMessages = pubSubOutstandingMessages
+	s.Input.ReceiveSettings.MaxOutstandingMessages = s.PubSubOutstandingMessages
 	return s.Input.Receive(ctx, func(ctx context.Context, m *pubsub.Message) {
-		// Always ack the message. Transient errors can be solved by
-		// the next scheduled run.
+		// Always ack the message. Transient errors can be solved by the
+		// next scheduled run.
 		defer m.Ack()
 		repoInfo := &preparation.Result{}
 		if err := json.Unmarshal(m.Data, repoInfo); err != nil {
@@ -103,7 +103,7 @@ func (s *Stage) processGit(ctx context.Context, repoInfo *preparation.Result) er
 		return err
 	}
 
-	var fileResults []FileResult
+	var fileResults []*FileResult
 	if err := filepath.Walk(repoDir, func(p string, info fs.FileInfo, err error) error {
 		if info.IsDir() {
 			return nil
@@ -115,8 +115,8 @@ func (s *Stage) processGit(ctx context.Context, repoInfo *preparation.Result) er
 					return err
 				}
 				hash := md5.Sum(buf)
-				fileResults = append(fileResults, FileResult{
-					Path: p,
+				fileResults = append(fileResults, &FileResult{
+					Path: strings.ReplaceAll(p, repoDir, ""),
 					Hash: hash[:],
 				})
 			}

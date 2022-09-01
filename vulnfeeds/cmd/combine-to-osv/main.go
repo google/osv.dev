@@ -20,7 +20,7 @@ import (
 )
 
 const (
-	cveUrlBase     = "https://nvd.nist.gov/feeds/json/cve/1.1/"
+	cveURLBase     = "https://nvd.nist.gov/feeds/json/cve/1.1/"
 	fileNameBase   = "nvdcve-1.1-"
 	startingYear   = 2002
 	cveOutputPath  = "output2"
@@ -29,7 +29,6 @@ const (
 )
 
 func main() {
-	//jsonPath := flag.String("nvd_json", "", "Path to NVD CVE JSON.")
 	flag.Parse()
 
 	currentYear := time.Now().Year()
@@ -43,14 +42,14 @@ func main() {
 	}
 
 	for i := startingYear; i <= currentYear; i++ {
-		downloadCveAsNeeded(strconv.Itoa(i))
+		downloadCVEAsNeeded(strconv.Itoa(i))
 	}
-	downloadCveAsNeeded("modified")
-	downloadCveAsNeeded("recent")
+	downloadCVEAsNeeded("modified")
+	downloadCVEAsNeeded("recent")
 
 	allCves := loadAllCVEs()
 	allParts := loadParts()
-	combineIntoOsv(allCves, allParts)
+	combineIntoOSV(allCves, allParts)
 }
 
 func loadParts() map[string][]vulns.PackageInfo {
@@ -90,7 +89,7 @@ func loadParts() map[string][]vulns.PackageInfo {
 	return output
 }
 
-func combineIntoOsv(loadedCves map[string]cves.CVEItem, allParts map[string][]vulns.PackageInfo) {
+func combineIntoOSV(loadedCves map[string]cves.CVEItem, allParts map[string][]vulns.PackageInfo) {
 	log.Println("Begin writing OSV files")
 	convertedCves := map[string]*vulns.Vulnerability{}
 	for vId, v := range loadedCves {
@@ -143,7 +142,7 @@ func loadAllCVEs() map[string]cves.CVEItem {
 	return result
 }
 
-func downloadCveAsNeeded(version string) {
+func downloadCVEAsNeeded(version string) {
 	file, err := os.OpenFile(cveOutputPath+"/"+fileNameBase+version+".json", os.O_CREATE|os.O_RDWR, 0644)
 	defer file.Close()
 	if err != nil { // There's an existing file, check if it matches server file
@@ -156,7 +155,7 @@ func downloadCveAsNeeded(version string) {
 	} else if written > 0 {
 		currentHash := strings.ToUpper(hex.EncodeToString(hasher.Sum(nil)))
 
-		res, err := http.Get(cveUrlBase + fileNameBase + version + ".meta")
+		res, err := http.Get(cveURLBase + fileNameBase + version + ".meta")
 		if err != nil {
 			log.Fatalf("Failed to get meta file for version '%s' with error %s", version, err)
 		}
@@ -179,7 +178,7 @@ func downloadCveAsNeeded(version string) {
 		}
 	}
 
-	res, err := http.Get(cveUrlBase + fileNameBase + version + ".json.gz")
+	res, err := http.Get(cveURLBase + fileNameBase + version + ".json.gz")
 	if err != nil {
 		log.Fatalf("Failed to get meta file for version '%s' with error %s", version, err)
 	}

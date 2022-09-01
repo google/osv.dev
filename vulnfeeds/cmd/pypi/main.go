@@ -135,7 +135,7 @@ func main() {
 			pkgInfo := vulns.PackageInfo{
 				PkgName:   pkg,
 				Ecosystem: "PyPI",
-				Purl:      purl,
+				PURL:      purl,
 			}
 			v, notes := vulns.FromCVEWithVersionExtraction(id, cve, []vulns.PackageInfo{pkgInfo}, validVersions)
 			if len(v.Affected[0].Ranges) == 0 {

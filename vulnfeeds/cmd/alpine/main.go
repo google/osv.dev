@@ -15,10 +15,9 @@ import (
 )
 
 const (
-	alpineUrlBase             = "https://secdb.alpinelinux.org/%s/main.json"
-	alpineIndexUrl            = "https://secdb.alpinelinux.org/"
-	alpineOutputPath          = "parts/alpine_output"
-	osvIntermediateOutputPath = "osv_interm_output"
+	alpineURLBase    = "https://secdb.alpinelinux.org/%s/main.json"
+	alpineIndexURL   = "https://secdb.alpinelinux.org/"
+	alpineOutputPath = "parts/alpine_output"
 )
 
 func main() {
@@ -33,7 +32,7 @@ func main() {
 }
 
 func getAllAlpineVersions() []string {
-	res, err := http.Get(alpineIndexUrl)
+	res, err := http.Get(alpineIndexURL)
 	if err != nil {
 		log.Fatalf("Failed to get alpine index page: %s", err)
 	}
@@ -69,7 +68,7 @@ func generateAlpineOSV() {
 	for _, alpineVer := range allAlpineVers {
 		secdb := downloadAlpine(alpineVer)
 		for _, pkg := range secdb.Packages {
-			for version, cveIds := range pkg.Pkg.Secfixes {
+			for version, cveIds := range pkg.Pkg.SecFixes {
 				for _, cveId := range cveIds {
 					cveId = strings.Split(cveId, " ")[0]
 					allAlpineSecDb[cveId] = append(allAlpineSecDb[cveId],
@@ -91,13 +90,10 @@ func generateAlpineOSV() {
 				PkgName:      verPkg.Pkg,
 				FixedVersion: verPkg.Ver,
 				Ecosystem:    "Alpine:" + verPkg.AlpineVer,
-				Purl:         "pkg:alpine/" + verPkg.Pkg,
+				PURL:         "pkg:alpine/" + verPkg.Pkg,
 			}
 			pkgInfos = append(pkgInfos, pkgInfo)
 		}
-		//if len(pkgInfos) > 1 {
-		//	log.Println("Multiple lines: " + cveId)
-		//}
 
 		file, err := os.OpenFile(alpineOutputPath+"/"+cveId+".alpine.json", os.O_CREATE|os.O_RDWR, 0644)
 		if err != nil {
@@ -116,7 +112,7 @@ func generateAlpineOSV() {
 }
 
 func downloadAlpine(version string) AlpineSecDB {
-	res, err := http.Get(fmt.Sprintf(alpineUrlBase, version))
+	res, err := http.Get(fmt.Sprintf(alpineURLBase, version))
 	if err != nil {
 		log.Fatalf("Failed to get alpine file for version '%s' with error %s", version, err)
 	}

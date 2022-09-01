@@ -233,7 +233,7 @@ func extractAliases(id string, cve cves.CVE) []string {
 type PackageInfo struct {
 	PkgName      string
 	Ecosystem    string
-	Purl         string
+	PURL         string
 	FixedVersion string
 	FixedCommit  string
 	Repo         string
@@ -276,7 +276,7 @@ func (v *Vulnerability) AddPkgInfo(pkgInfo []PackageInfo) {
 		affected := Affected{}
 		affected.Package.Name = info.PkgName
 		affected.Package.Ecosystem = info.Ecosystem
-		affected.Package.Purl = info.Purl
+		affected.Package.Purl = info.PURL
 		if info.FixedVersion != "" {
 			versionRange := AffectedRange{
 				Type: "ECOSYSTEM",
@@ -303,7 +303,7 @@ func (v *Vulnerability) AddPkgInfo(pkgInfo []PackageInfo) {
 	}
 }
 
-// FromCVEWithVersionExtraction Create an OSV object from a given CVEItem and package name
+// FromCVEWithVersionExtraction create an OSV object from a given CVEItem and package name
 // Tries to extract version information from the given CVEItem
 func FromCVEWithVersionExtraction(id string, cve cves.CVEItem, pkgInfo []PackageInfo, validVersions []string) (*Vulnerability, []string) {
 	v, notes := FromCVE(id, cve, pkgInfo)

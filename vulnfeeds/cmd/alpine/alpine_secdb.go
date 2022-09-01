@@ -1,15 +1,15 @@
 package main
 
 type AlpineSecDB struct {
-	Apkurl        string   `json:"apkurl"`
+	ApkURL        string   `json:"apkurl"`
 	Archs         []string `json:"archs"`
-	Reponame      string   `json:"reponame"`
-	Urlprefix     string   `json:"urlprefix"`
-	Distroversion string   `json:"distroversion"`
+	RepoName      string   `json:"reponame"`
+	URLprefix     string   `json:"urlprefix"`
+	DistroVersion string   `json:"distroversion"`
 	Packages      []struct {
 		Pkg struct {
 			Name     string              `json:"name"`
-			Secfixes map[string][]string `json:"secfixes"`
+			SecFixes map[string][]string `json:"secfixes"`
 		} `json:"pkg"`
 	} `json:"packages"`
 }

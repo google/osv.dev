@@ -38,7 +38,7 @@ for module_dir in $IN_SCOPE_GO_MODULES; do
   if ! go vet ./...; then
     go_vet_findings="go_vet_findings"
   fi
-  cd -
+  cd - > /dev/null
 done
 
 if [ $python_lint_findings ] || [ $python_format_findings ] || [ $go_vet_findings ]; then

@@ -4,7 +4,7 @@ type AlpineSecDB struct {
 	ApkURL        string   `json:"apkurl"`
 	Archs         []string `json:"archs"`
 	RepoName      string   `json:"reponame"`
-	URLprefix     string   `json:"urlprefix"`
+	URLPrefix     string   `json:"urlprefix"`
 	DistroVersion string   `json:"distroversion"`
 	Packages      []struct {
 		Pkg struct {

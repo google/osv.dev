@@ -24,7 +24,7 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/aquasecurity/go-pep440-version"
+	version "github.com/aquasecurity/go-pep440-version"
 
 	"github.com/google/osv/vulnfeeds/cves"
 	"github.com/google/osv/vulnfeeds/triage"
@@ -95,7 +95,7 @@ func loadLinks(path string) []pypiLinks {
 	var links []pypiLinks
 	err := json.Unmarshal(data, &links)
 	if err != nil {
-		log.Fatalf("Failed to parse %s: %v", err)
+		log.Fatalf("Failed to parse %s: %v", data, err)
 	}
 	return links
 }
@@ -106,7 +106,7 @@ func loadVersions(path string) []pypiVersions {
 	var versions []pypiVersions
 	err := json.Unmarshal(data, &versions)
 	if err != nil {
-		log.Fatalf("Failed to parse %s: %v", err)
+		log.Fatalf("Failed to parse %s: %v", data, err)
 	}
 	return versions
 }

@@ -15,7 +15,6 @@
 package vulns
 
 import (
-	"encoding/json"
 	"fmt"
 	"io"
 	"net/url"
@@ -239,7 +238,7 @@ type PackageInfo struct {
 	Repo         string
 }
 
-// FromCVE Create an OSV object from a given CVEItem and package name
+// FromCVE create an OSV object from a given CVEItem and package name.
 // Leaves version field empty to be manually fixed later
 func FromCVE(id string, cve cves.CVEItem, pkgInfo []PackageInfo) (*Vulnerability, []string) {
 	v := Vulnerability{
@@ -376,10 +375,5 @@ func FromYAML(r io.Reader) (*Vulnerability, error) {
 
 func (v *Vulnerability) ToYAML(w io.Writer) error {
 	encoder := yaml.NewEncoder(w)
-	return encoder.Encode(v)
-}
-
-func (v *Vulnerability) ToJSON(w io.Writer) error {
-	encoder := json.NewEncoder(w)
 	return encoder.Encode(v)
 }

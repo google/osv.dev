@@ -3,11 +3,12 @@ package main
 import (
 	"encoding/json"
 	"flag"
-	"github.com/google/osv/vulnfeeds/cves"
-	"github.com/google/osv/vulnfeeds/vulns"
 	"log"
 	"os"
 	"strings"
+
+	"github.com/google/osv/vulnfeeds/cves"
+	"github.com/google/osv/vulnfeeds/vulns"
 )
 
 const (
@@ -30,6 +31,8 @@ func main() {
 
 	allCves := loadAllCVEs()
 	allParts := loadParts()
+	marshalled, _ := json.Marshal(allCves["CVE-2012-2812"].CVE)
+	log.Printf("%s", string(marshalled))
 	combineIntoOSV(allCves, allParts)
 }
 

@@ -34,9 +34,8 @@ func main() {
 
 	allCves := loadAllCVEs(*cvePath)
 	allParts := loadParts(*partsInputPath)
-	marshalled, _ := json.Marshal(allCves["CVE-2012-2812"].CVE)
-	log.Printf("%s", string(marshalled))
-	combineIntoOSV(allCves, allParts)
+	combinedData := combineIntoOSV(allCves, allParts)
+	writeOsvFile(combinedData, *osvOutputPath)
 }
 
 func loadParts(partsInputPath string) map[string][]vulns.PackageInfo {
@@ -76,7 +75,7 @@ func loadParts(partsInputPath string) map[string][]vulns.PackageInfo {
 	return output
 }
 
-func combineIntoOSV(loadedCves map[string]cves.CVEItem, allParts map[string][]vulns.PackageInfo) {
+func combineIntoOSV(loadedCves map[string]cves.CVEItem, allParts map[string][]vulns.PackageInfo) map[string]*vulns.Vulnerability {
 	log.Println("Begin writing OSV files")
 	convertedCves := map[string]*vulns.Vulnerability{}
 	for vId, v := range loadedCves {
@@ -85,13 +84,19 @@ func combineIntoOSV(loadedCves map[string]cves.CVEItem, allParts map[string][]vu
 		}
 		cve, _ := vulns.FromCVE(vId, v, allParts[vId])
 		convertedCves[vId] = cve
-		file, err := os.OpenFile(defaultOsvOutputPath+"/"+vId+".json", os.O_CREATE|os.O_RDWR, 0644)
+	}
+	return convertedCves
+}
+
+func writeOsvFile(osvData map[string]*vulns.Vulnerability, osvOutputPath string) {
+	for vId, osv := range osvData {
+		file, err := os.OpenFile(osvOutputPath+"/"+vId+".json", os.O_CREATE|os.O_RDWR, 0644)
 		if err != nil {
 			log.Fatalf("Failed to create/open file to write: %s", err)
 		}
 		encoder := json.NewEncoder(file)
 		encoder.SetIndent("", "  ")
-		err = encoder.Encode(cve)
+		err = encoder.Encode(osv)
 		if err != nil {
 			log.Fatalf("Failed to encode OSVs")
 		}

@@ -10,7 +10,7 @@ import (
 )
 
 func loadTestData(cveName string) cves.CVEItem {
-	file, err := os.Open("../test_data/nvdcve-1.1-test-data.json")
+	file, err := os.Open("../../test_data/nvdcve-1.1-test-data.json")
 	if err != nil {
 		log.Fatalf("Failed to load test data")
 	}
@@ -65,5 +65,20 @@ func TestLoadParts(t *testing.T) {
 
 	if hasCve != 2 {
 		t.Errorf("Expected CVEs does not exist")
+	}
+}
+
+func TestCombineIntoOSV(t *testing.T) {
+	cveStuff := map[string]cves.CVEItem{
+		"CVE-2022-33745": loadTestData("CVE-2022-33745"),
+	}
+	allParts := loadParts("../../test_data/parts")
+
+	combinedOsv := combineIntoOSV(cveStuff, allParts)
+	if len(combinedOsv) != 1 {
+		t.Errorf("Expected 1 combination, got %v", combinedOsv)
+	}
+	if len(combinedOsv["CVE-2022-33745"].Affected) != len(allParts["CVE-2022-33745"]) {
+		t.Errorf("Affected lengths do not match")
 	}
 }

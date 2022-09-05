@@ -20,13 +20,13 @@ const (
 func main() {
 	currentYear := time.Now().Year()
 	for i := startingYear; i <= currentYear; i++ {
-		downloadCVEAsNeeded(strconv.Itoa(i))
+		downloadCVE(strconv.Itoa(i))
 	}
-	downloadCVEAsNeeded("modified")
-	downloadCVEAsNeeded("recent")
+	downloadCVE("modified")
+	downloadCVE("recent")
 }
 
-func downloadCVEAsNeeded(version string) {
+func downloadCVE(version string) {
 	file, err := os.OpenFile(cvePath+"/"+fileNameBase+version+".json", os.O_CREATE|os.O_RDWR|os.O_TRUNC, 0644)
 	defer file.Close()
 	if err != nil { // There's an existing file, check if it matches server file

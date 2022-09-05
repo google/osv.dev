@@ -6,6 +6,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"path"
 	"strconv"
 	"time"
 )
@@ -27,7 +28,7 @@ func main() {
 }
 
 func downloadCVE(version string) {
-	file, err := os.OpenFile(cvePath+"/"+fileNameBase+version+".json", os.O_CREATE|os.O_RDWR|os.O_TRUNC, 0644)
+	file, err := os.OpenFile(path.Join(cvePath, fileNameBase+version+".json"), os.O_CREATE|os.O_RDWR|os.O_TRUNC, 0644)
 	defer file.Close()
 	if err != nil { // There's an existing file, check if it matches server file
 		log.Fatalf("Something's went wrong when creating/opening file %s, %s", version, err)

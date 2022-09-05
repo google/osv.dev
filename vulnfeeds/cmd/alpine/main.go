@@ -8,6 +8,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"path"
 	"regexp"
 	"strings"
 
@@ -102,7 +103,7 @@ func generateAlpineOSV(allAlpineSecDb map[string][]VersionAndPkg) {
 			pkgInfos = append(pkgInfos, pkgInfo)
 		}
 
-		file, err := os.OpenFile(alpineOutputPath+"/"+cveId+".alpine.json", os.O_CREATE|os.O_RDWR, 0644)
+		file, err := os.OpenFile(path.Join(alpineOutputPath, cveId+".alpine.json"), os.O_CREATE|os.O_RDWR, 0644)
 		if err != nil {
 			log.Fatalf("Failed to create/write osv output file: %s", err)
 		}

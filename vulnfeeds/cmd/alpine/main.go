@@ -16,21 +16,25 @@ import (
 )
 
 const (
-	alpineURLBase    = "https://secdb.alpinelinux.org/%s/main.json"
-	alpineIndexURL   = "https://secdb.alpinelinux.org/"
-	alpineOutputPath = "parts/alpine_output"
+	alpineURLBase           = "https://secdb.alpinelinux.org/%s/main.json"
+	alpineIndexURL          = "https://secdb.alpinelinux.org/"
+	alpineOutputPathDefault = "parts/alpine_output"
 )
 
 func main() {
+	alpineOutputPath := flag.String(
+		"alpineOutput",
+		alpineOutputPathDefault,
+		"path to output general alpine affected package information")
 	flag.Parse()
 
-	err := os.MkdirAll(alpineOutputPath, 0755)
+	err := os.MkdirAll(*alpineOutputPath, 0755)
 	if err != nil {
 		log.Fatalf("Can't create output path: %s", err)
 	}
 
 	allAlpineSecDB := getAlpineSecDBData()
-	generateAlpineOSV(allAlpineSecDB)
+	generateAlpineOSV(allAlpineSecDB, *alpineOutputPath)
 }
 
 // getAllAlpineVersions gets all available version name in alpine secdb
@@ -89,7 +93,7 @@ func getAlpineSecDBData() map[string][]VersionAndPkg {
 }
 
 // generateAlpineOSV generates the generic PackageInfo package from the information given by alpine advisory
-func generateAlpineOSV(allAlpineSecDb map[string][]VersionAndPkg) {
+func generateAlpineOSV(allAlpineSecDb map[string][]VersionAndPkg, alpineOutputPath string) {
 	for cveId, verPkgs := range allAlpineSecDb {
 		pkgInfos := make([]vulns.PackageInfo, 0, len(verPkgs))
 

@@ -12,31 +12,34 @@ import (
 )
 
 const (
-	cvePath        = "cve_jsons"
-	partsInputPath = "parts"
-	osvOutputPath  = "osv_output"
+	defaultCvePath        = "cve_jsons"
+	defaultPartsInputPath = "parts"
+	defaultOsvOutputPath  = "osv_output"
 )
 
 func main() {
+	cvePath := flag.String("cvePath", defaultCvePath, "Path to CVE file")
+	partsInputPath := flag.String("partsPath", defaultPartsInputPath, "Path to CVE file")
+	osvOutputPath := flag.String("osvOutputPath", defaultOsvOutputPath, "Path to CVE file")
 	flag.Parse()
 
-	err := os.MkdirAll(cvePath, 0755)
+	err := os.MkdirAll(*cvePath, 0755)
 	if err != nil {
 		log.Fatalf("Can't create output path: %s", err)
 	}
-	err = os.MkdirAll(osvOutputPath, 0755)
+	err = os.MkdirAll(*osvOutputPath, 0755)
 	if err != nil {
 		log.Fatalf("Can't create output path: %s", err)
 	}
 
-	allCves := loadAllCVEs()
-	allParts := loadParts()
+	allCves := loadAllCVEs(*cvePath)
+	allParts := loadParts(*partsInputPath)
 	marshalled, _ := json.Marshal(allCves["CVE-2012-2812"].CVE)
 	log.Printf("%s", string(marshalled))
 	combineIntoOSV(allCves, allParts)
 }
 
-func loadParts() map[string][]vulns.PackageInfo {
+func loadParts(partsInputPath string) map[string][]vulns.PackageInfo {
 	dir, err := os.ReadDir(partsInputPath)
 	if err != nil {
 		log.Fatalf("Failed to read dir? %s", err)
@@ -82,7 +85,7 @@ func combineIntoOSV(loadedCves map[string]cves.CVEItem, allParts map[string][]vu
 		}
 		cve, _ := vulns.FromCVE(vId, v, allParts[vId])
 		convertedCves[vId] = cve
-		file, err := os.OpenFile(osvOutputPath+"/"+vId+".json", os.O_CREATE|os.O_RDWR, 0644)
+		file, err := os.OpenFile(defaultOsvOutputPath+"/"+vId+".json", os.O_CREATE|os.O_RDWR, 0644)
 		if err != nil {
 			log.Fatalf("Failed to create/open file to write: %s", err)
 		}
@@ -98,7 +101,7 @@ func combineIntoOSV(loadedCves map[string]cves.CVEItem, allParts map[string][]vu
 	log.Println("Successfully written all OSV files")
 }
 
-func loadAllCVEs() map[string]cves.CVEItem {
+func loadAllCVEs(cvePath string) map[string]cves.CVEItem {
 	dir, err := os.ReadDir(cvePath)
 	if err != nil {
 		log.Fatalf("Failed to read dir? %s", err)

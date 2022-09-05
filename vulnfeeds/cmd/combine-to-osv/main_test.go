@@ -25,18 +25,6 @@ func loadTestData(cveName string) cves.CVEItem {
 	return cves.CVEItem{}
 }
 
-func sliceEqual[K comparable](a []K, b []K) bool {
-	if len(a) != len(b) {
-		return false
-	}
-	for i := 0; i < len(a); i++ {
-		if a[i] != b[i] {
-			return false
-		}
-	}
-	return true
-}
-
 func TestLoadParts(t *testing.T) {
 	allParts := loadParts("../../test_data/parts")
 

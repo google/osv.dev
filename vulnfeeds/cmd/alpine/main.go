@@ -28,9 +28,11 @@ func main() {
 		log.Fatalf("Can't create output path: %s", err)
 	}
 
-	generateAlpineOSV()
+	allAlpineSecDB := getAlpineSecDBData()
+	generateAlpineOSV(allAlpineSecDB)
 }
 
+// getAllAlpineVersions gets all available version name in alpine secdb
 func getAllAlpineVersions() []string {
 	res, err := http.Get(alpineIndexURL)
 	if err != nil {
@@ -62,7 +64,8 @@ type VersionAndPkg struct {
 	AlpineVer string
 }
 
-func generateAlpineOSV() {
+// getAlpineSecDBData Download from Alpine API
+func getAlpineSecDBData() map[string][]VersionAndPkg {
 	allAlpineSecDb := make(map[string][]VersionAndPkg)
 	allAlpineVers := getAllAlpineVersions()
 	for _, alpineVer := range allAlpineVers {
@@ -81,7 +84,11 @@ func generateAlpineOSV() {
 			}
 		}
 	}
+	return allAlpineSecDb
+}
 
+// generateAlpineOsv generates the generic PackageInfo package from the information given by alpine advisory
+func generateAlpineOSV(allAlpineSecDb map[string][]VersionAndPkg) {
 	for cveId, verPkgs := range allAlpineSecDb {
 		pkgInfos := make([]vulns.PackageInfo, 0, len(verPkgs))
 
@@ -111,6 +118,7 @@ func generateAlpineOSV() {
 	log.Println("Finished")
 }
 
+// downloadAlpine downloads Alpine SecDB data from their API
 func downloadAlpine(version string) AlpineSecDB {
 	res, err := http.Get(fmt.Sprintf(alpineURLBase, version))
 	if err != nil {

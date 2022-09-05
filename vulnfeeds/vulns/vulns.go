@@ -270,6 +270,7 @@ func FromCVE(id string, cve cves.CVEItem, pkgInfo []PackageInfo) (*Vulnerability
 	return &v, notes
 }
 
+// AddPkgInfo adds affected package information to the OSV vulnerability object
 func (v *Vulnerability) AddPkgInfo(pkgInfo []PackageInfo) {
 	for _, info := range pkgInfo {
 		affected := Affected{}

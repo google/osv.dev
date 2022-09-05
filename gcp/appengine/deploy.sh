@@ -1,6 +1,7 @@
 #!/bin/bash -ex
 
 pushd frontend3
+npm install
 npm run build:prod
 popd
 

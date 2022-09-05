@@ -3,4 +3,4 @@ pypi_links.json
 pypi_versions.json
 cve_jsons
 osv_output
-parts
+/parts

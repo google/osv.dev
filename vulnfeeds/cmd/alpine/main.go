@@ -18,7 +18,7 @@ import (
 const (
 	alpineURLBase           = "https://secdb.alpinelinux.org/%s/main.json"
 	alpineIndexURL          = "https://secdb.alpinelinux.org/"
-	alpineOutputPathDefault = "parts/alpine_output"
+	alpineOutputPathDefault = "parts/alpine"
 )
 
 func main() {

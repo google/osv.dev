@@ -230,12 +230,12 @@ func extractAliases(id string, cve cves.CVE) []string {
 }
 
 type PackageInfo struct {
-	PkgName      string
-	Ecosystem    string
-	PURL         string
-	FixedVersion string
-	FixedCommit  string
-	Repo         string
+	PkgName      string `json:"pkg_name"`
+	Ecosystem    string `json:"ecosystem"`
+	PURL         string `json:"purl"`
+	FixedVersion string `json:"fixed_version"`
+	FixedCommit  string `json:"fixed_commit"`
+	Repo         string `json:"repo"`
 }
 
 // FromCVE create an OSV object from a given CVEItem and package name.

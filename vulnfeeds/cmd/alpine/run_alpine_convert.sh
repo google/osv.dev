@@ -7,7 +7,7 @@
 
 set -e
 
-OSV_PARTS_OUTPUT="parts/alpine_output"
+OSV_PARTS_OUTPUT="parts/alpine"
 
 echo "Setup initial directories"
 rm -rf $OSV_PARTS_OUTPUT && mkdir -p $OSV_PARTS_OUTPUT

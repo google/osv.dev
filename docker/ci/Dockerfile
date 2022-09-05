@@ -17,6 +17,8 @@ FROM gcr.io/oss-vdb/worker
 RUN apt-get update && \
     apt-get install -y \
         google-cloud-sdk-datastore-emulator \
+        nodejs \
+        npm \
         openjdk-11-jre  # Needed for Datastore emulator.
 
 COPY daemon.json /etc/docker/daemon.json

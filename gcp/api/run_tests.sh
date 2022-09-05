@@ -21,7 +21,7 @@ fi
 rm -rf osv
 cp -r ../../osv .
 
-pipenv lock -r > requirements.txt
+pipenv requirements > requirements.txt
 virtualenv ENV
 source ENV/bin/activate
 pip install -r requirements.txt

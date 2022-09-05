@@ -4,6 +4,7 @@
 ## Then uploads the results to google cloud store.
 ##
 ## This script is intended to be the entrypoint of the docker image.
+## with the working directory being the root of the repository
 
 set -e
 

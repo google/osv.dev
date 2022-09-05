@@ -2,6 +2,7 @@ package main
 
 import (
 	"compress/gzip"
+	"flag"
 	"io"
 	"log"
 	"net/http"
@@ -12,22 +13,24 @@ import (
 )
 
 const (
-	cveURLBase   = "https://nvd.nist.gov/feeds/json/cve/1.1/"
-	fileNameBase = "nvdcve-1.1-"
-	startingYear = 2002
-	cvePath      = "cve_jsons"
+	cveURLBase     = "https://nvd.nist.gov/feeds/json/cve/1.1/"
+	fileNameBase   = "nvdcve-1.1-"
+	startingYear   = 2002
+	cvePathDefault = "cve_jsons"
 )
 
 func main() {
+	cvePath := flag.String("cvePath", cvePathDefault, "Where to download CVEs to")
+	flag.Parse()
 	currentYear := time.Now().Year()
 	for i := startingYear; i <= currentYear; i++ {
-		downloadCVE(strconv.Itoa(i))
+		downloadCVE(strconv.Itoa(i), *cvePath)
 	}
-	downloadCVE("modified")
-	downloadCVE("recent")
+	downloadCVE("modified", *cvePath)
+	downloadCVE("recent", *cvePath)
 }
 
-func downloadCVE(version string) {
+func downloadCVE(version string, cvePath string) {
 	file, err := os.OpenFile(path.Join(cvePath, fileNameBase+version+".json"), os.O_CREATE|os.O_RDWR|os.O_TRUNC, 0644)
 	defer file.Close()
 	if err != nil { // There's an existing file, check if it matches server file

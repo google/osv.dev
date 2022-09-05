@@ -44,7 +44,7 @@ func TestLoadParts(t *testing.T) {
 		t.Errorf("Expected 10 entries, got %d entries", len(allParts["Alpine"]))
 	}
 
-	hasCve := false
+	hasCve := 0
 	for id, v := range allParts {
 		if id == "CVE-2015-9251" {
 			if len(v) != 1 {
@@ -53,11 +53,17 @@ func TestLoadParts(t *testing.T) {
 			if v[0].Ecosystem != "Alpine:v3.10" {
 				t.Errorf("Expected ecosystem to be: Alpine:v3.10, got %s.", v[0].Ecosystem)
 			}
-			hasCve = true
+			hasCve++
+		}
+		if id == "CVE-2016-2176" {
+			if len(v) != 7 {
+				t.Errorf("Expected 7 alpine entries for CVE-2016-2176, got %d entries", len(v))
+			}
+			hasCve++
 		}
 	}
 
-	if !hasCve {
-		t.Errorf("Expected CVE does not exist")
+	if hasCve != 2 {
+		t.Errorf("Expected CVEs does not exist")
 	}
 }

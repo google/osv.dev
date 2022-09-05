@@ -15,20 +15,20 @@
 steps:
 - name: 'gcr.io/cloud-builders/git'
   args: ['submodule', 'update', '--init', '--recursive']
-- name: 'gcr.io/oss-vdb/ci'
-  args: ['make', 'all-tests']
-- name: 'gcr.io/cloud-builders/gcloud'
-  entrypoint: 'bash'
-  args: [ '-c', "gcloud secrets versions access latest --secret=integration-test-account --format='get(payload.data)' | tr '_-' '/+' | base64 -d > /workspace/service_account.json" ]
-- name: 'gcr.io/oss-vdb/ci'
-  dir: gcp/api
-  args: ['bash', '-ex', 'run_tests.sh', '/workspace/service_account.json']
-  env:
-  - CLOUDBUILD=1
-- name: 'gcr.io/cloud-builders/gcloud'
-  entrypoint: 'bash'
-  args: [ '-c', "rm /workspace/service_account.json" ]
-- name: 'gcr.io/oss-vdb/ci'
+    #- name: 'gcr.io/oss-vdb/ci'
+    #  args: ['make', 'all-tests']
+    #- name: 'gcr.io/cloud-builders/gcloud'
+    #  entrypoint: 'bash'
+    #  args: [ '-c', "gcloud secrets versions access latest --secret=integration-test-account --format='get(payload.data)' | tr '_-' '/+' | base64 -d > /workspace/service_account.json" ]
+    #- name: 'gcr.io/oss-vdb/ci'
+    #  dir: gcp/api
+    #  args: ['bash', '-ex', 'run_tests.sh', '/workspace/service_account.json']
+    #  env:
+    #  - CLOUDBUILD=1
+    #- name: 'gcr.io/cloud-builders/gcloud'
+    #  entrypoint: 'bash'
+    #  args: [ '-c', "rm /workspace/service_account.json" ]
+- name: 'gcr.io/oss-vdb/deployment'
   args: ['bash', '-ex', 'deploy-staging.sh']
   dir: gcp/appengine
 timeout: 7200s

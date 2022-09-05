@@ -1,5 +1,10 @@
 #!/bin/bash
 
+## Combines the general affected package information in google cloud store
+## with CVE information from NVD database
+##
+## This script is intended to be the entrypoint of the docker image.
+
 set -e
 
 OSV_PARTS_ROOT="parts/"

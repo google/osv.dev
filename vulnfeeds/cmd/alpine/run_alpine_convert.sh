@@ -1,5 +1,10 @@
 #!/bin/bash
 
+## Converts alpine security advisory into general affected package information
+## Then uploads the results to google cloud store.
+##
+## This script is intended to be the entrypoint of the docker image.
+
 set -e
 
 OSV_PARTS_OUTPUT="parts/alpine_output"

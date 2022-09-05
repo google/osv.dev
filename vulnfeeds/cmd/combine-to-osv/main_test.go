@@ -62,11 +62,11 @@ func TestCombineIntoOSV(t *testing.T) {
 	}
 	allParts := loadParts("../../test_data/parts")
 
-	combinedOsv := combineIntoOSV(cveStuff, allParts)
-	if len(combinedOsv) != 1 {
-		t.Errorf("Expected 1 combination, got %v", combinedOsv)
+	combinedOSV := combineIntoOSV(cveStuff, allParts)
+	if len(combinedOSV) != 1 {
+		t.Errorf("Expected 1 combination, got %v", combinedOSV)
 	}
-	if len(combinedOsv["CVE-2022-33745"].Affected) != len(allParts["CVE-2022-33745"]) {
+	if len(combinedOSV["CVE-2022-33745"].Affected) != len(allParts["CVE-2022-33745"]) {
 		t.Errorf("Affected lengths do not match")
 	}
 }

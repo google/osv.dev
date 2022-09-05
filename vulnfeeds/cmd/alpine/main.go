@@ -88,7 +88,7 @@ func getAlpineSecDBData() map[string][]VersionAndPkg {
 	return allAlpineSecDb
 }
 
-// generateAlpineOsv generates the generic PackageInfo package from the information given by alpine advisory
+// generateAlpineOSV generates the generic PackageInfo package from the information given by alpine advisory
 func generateAlpineOSV(allAlpineSecDb map[string][]VersionAndPkg) {
 	for cveId, verPkgs := range allAlpineSecDb {
 		pkgInfos := make([]vulns.PackageInfo, 0, len(verPkgs))

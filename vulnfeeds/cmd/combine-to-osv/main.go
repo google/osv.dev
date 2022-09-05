@@ -14,13 +14,13 @@ import (
 const (
 	defaultCvePath        = "cve_jsons"
 	defaultPartsInputPath = "parts"
-	defaultOsvOutputPath  = "osv_output"
+	defaultOSVOutputPath  = "osv_output"
 )
 
 func main() {
 	cvePath := flag.String("cvePath", defaultCvePath, "Path to CVE file")
 	partsInputPath := flag.String("partsPath", defaultPartsInputPath, "Path to CVE file")
-	osvOutputPath := flag.String("osvOutputPath", defaultOsvOutputPath, "Path to CVE file")
+	osvOutputPath := flag.String("osvOutputPath", defaultOSVOutputPath, "Path to CVE file")
 	flag.Parse()
 
 	err := os.MkdirAll(*cvePath, 0755)
@@ -35,7 +35,7 @@ func main() {
 	allCves := loadAllCVEs(*cvePath)
 	allParts := loadParts(*partsInputPath)
 	combinedData := combineIntoOSV(allCves, allParts)
-	writeOsvFile(combinedData, *osvOutputPath)
+	writeOSVFile(combinedData, *osvOutputPath)
 }
 
 // loadInnerParts loads second level folder for the loadParts function
@@ -94,7 +94,7 @@ func loadParts(partsInputPath string) map[string][]vulns.PackageInfo {
 	return output
 }
 
-// combineIntoOsv creates OSV entry by combining loaded CVEs from NVD and PackageInfo information from security advisories.
+// combineIntoOSV creates OSV entry by combining loaded CVEs from NVD and PackageInfo information from security advisories.
 func combineIntoOSV(loadedCves map[string]cves.CVEItem, allParts map[string][]vulns.PackageInfo) map[string]*vulns.Vulnerability {
 	log.Println("Begin writing OSV files")
 	convertedCves := map[string]*vulns.Vulnerability{}
@@ -108,8 +108,8 @@ func combineIntoOSV(loadedCves map[string]cves.CVEItem, allParts map[string][]vu
 	return convertedCves
 }
 
-// writeOsvFile writes out the given osv objects into individual json files
-func writeOsvFile(osvData map[string]*vulns.Vulnerability, osvOutputPath string) {
+// writeOSVFile writes out the given osv objects into individual json files
+func writeOSVFile(osvData map[string]*vulns.Vulnerability, osvOutputPath string) {
 	for vId, osv := range osvData {
 		file, err := os.OpenFile(path.Join(osvOutputPath, vId+".json"), os.O_CREATE|os.O_RDWR, 0644)
 		if err != nil {

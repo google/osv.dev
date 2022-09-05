@@ -23,7 +23,7 @@ cp -r ../../osv .
 
 pipenv requirements > requirements.txt
 virtualenv ENV
-source ENV/bin/activate
+. ENV/bin/activate
 pip install -r requirements.txt
 service docker start
 

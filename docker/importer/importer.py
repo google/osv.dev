@@ -23,6 +23,7 @@ import os
 from google.cloud import ndb
 from google.cloud import pubsub_v1
 from google.cloud import storage
+from google.cloud import logging as google_logging
 import pygit2
 
 import osv
@@ -430,5 +431,7 @@ def main():
 
 if __name__ == '__main__':
   _ndb_client = ndb.Client()
+  logging_client = google_logging.Client()
+  logging_client.setup_logging()
   with _ndb_client.context():
     main()

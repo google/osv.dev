@@ -11,7 +11,11 @@ import (
 	"strings"
 
 	"github.com/g-rath/osv-detector/pkg/lockfile"
+	"github.com/jedib0t/go-pretty/v6/table"
+	"github.com/jedib0t/go-pretty/v6/text"
 	"github.com/urfave/cli/v2"
+	"github.com/package-url/packageurl-go"
+	"golang.org/x/crypto/ssh/terminal"
 
 	"github.com/google/osv.dev/tools/osv-scanner/internal/osv"
 	"github.com/google/osv.dev/tools/osv-scanner/internal/sbom"
@@ -32,6 +36,7 @@ func scanDir(query *osv.BatchedQuery, dir string) error {
 				log.Printf("scan failed for %s: %v\n", path, err)
 				return err
 			}
+			gitQuery.Source = "git:" + filepath.Dir(path)
 			query.Queries = append(query.Queries, gitQuery)
 		}
 
@@ -62,7 +67,9 @@ func scanLockfile(query *osv.BatchedQuery, path string) error {
 	log.Printf("Scanned %s file with %d packages", parsedLockfile.ParsedAs, len(parsedLockfile.Packages))
 
 	for _, pkgDetail := range parsedLockfile.Packages {
-		query.Queries = append(query.Queries, osv.MakePkgRequest(pkgDetail))
+		pkgDetailQuery := osv.MakePkgRequest(pkgDetail)
+		pkgDetailQuery.Source = "lockfile:" + path
+		query.Queries = append(query.Queries, pkgDetailQuery)
 	}
 	return nil
 }
@@ -83,7 +90,9 @@ func scanSBOMFile(query *osv.BatchedQuery, path string) error {
 			continue
 		}
 		err := provider.GetPackages(file, func(id sbom.Identifier) error {
-			query.Queries = append(query.Queries, osv.MakePURLRequest(id.PURL))
+			purlQuery := osv.MakePURLRequest(id.PURL)
+			purlQuery.Source = "sbom:" + path
+			query.Queries = append(query.Queries, purlQuery)
 			return nil
 		})
 		if err == nil {
@@ -149,30 +158,74 @@ func scanDebianDocker(query *osv.BatchedQuery, dockerImageName string) {
 		if len(splitText) != 2 {
 			log.Fatalf("Unexpected output from Debian container: \n\n%s", text)
 		}
-		pkgDetails := osv.MakePkgRequest(lockfile.PackageDetails{
+		pkgDetailsQuery := osv.MakePkgRequest(lockfile.PackageDetails{
 			Name:    splitText[0],
 			Version: splitText[1],
 			// TODO(rexpan): Get and specify exact debian release version
 			Ecosystem: "Debian",
 		})
-		query.Queries = append(query.Queries, pkgDetails)
+		pkgDetailsQuery.Source = "docker:" + dockerImageName
+		query.Queries = append(query.Queries, pkgDetailsQuery)
 	}
 	log.Printf("Scanned docker image")
 }
 
+// printResults prints the osv scan results into a human friendly table.
 func printResults(query osv.BatchedQuery, resp *osv.BatchedResponse) {
+	outputTable := table.NewWriter()
+	outputTable.SetOutputMirror(os.Stdout)
+	outputTable.AppendHeader(table.Row{"Source", "Ecosystem", "Affected Package", "Installed Version", "Vulnerability ID", "OSV URL"})
+
 	for i, query := range query.Queries {
 		if len(resp.Results[i].Vulns) == 0 {
 			continue
 		}
-
-		var urls []string
 		for _, vuln := range resp.Results[i].Vulns {
-			urls = append(urls, osv.BaseVulnerabilityURL+vuln.ID)
+			outputRow := table.Row{query.Source}
+			shouldMerge := false
+			if query.Commit != "" {
+				outputRow = append(outputRow, "GIT", query.Commit, query.Commit)
+				shouldMerge = true
+			} else if query.Package.PURL != "" {
+				parsedPURL, err := packageurl.FromString(query.Package.PURL)
+				if err != nil {
+					log.Println("Failed to parse purl")
+					continue
+				}
+				purlVersion := parsedPURL.Version
+				parsedPURL.Version = ""
+				parsedPURL.Qualifiers = []packageurl.Qualifier{}
+				outputRow = append(outputRow, "PURL", parsedPURL.ToString(), purlVersion)
+				shouldMerge = true
+			} else {
+				outputRow = append(outputRow, query.Package.Ecosystem, query.Package.Name, query.Version)
+			}
+			outputRow = append(outputRow, vuln.ID, osv.BaseVulnerabilityURL+vuln.ID)
+			outputTable.AppendRow(outputRow, table.RowConfig{AutoMerge: shouldMerge})
 		}
-
-		log.Printf("%v is vulnerable to %s", query, strings.Join(urls, ", "))
 	}
+
+	outputTable.SetStyle(table.StyleRounded)
+	outputTable.Style().Color.Row = text.Colors{text.Reset, text.BgBlack}
+	outputTable.Style().Color.RowAlternate = text.Colors{text.Reset, text.Reset}
+	// TODO: Leave these here until styling is finalized
+	//outputTable.Style().Color.Header = text.Colors{text.FgHiCyan, text.BgBlack}
+	//outputTable.Style().Color.Row = text.Colors{text.Reset, text.Reset}
+	//outputTable.Style().Options.SeparateRows = true
+	//outputTable.Style().Options.SeparateColumns = true
+	//outputTable.SetColumnConfigs([]table.ColumnConfig{
+	//	{Number: 2, AutoMerge: true, WidthMax: maxCharacters},
+	//	{Number: 3, AutoMerge: true, WidthMax: maxCharacters},
+	//})
+
+	width, _, err := terminal.GetSize(int(os.Stdout.Fd()))
+	if err == nil { // If output is a terminal, set max length to width
+		outputTable.SetAllowedRowLength(width)
+	} // Otherwise don't set max width (e.g. getting piped to a file)
+	if outputTable.Length() == 0 {
+		return
+	}
+	outputTable.Render()
 }
 
 // TODO(ochang): Machine readable output format.
@@ -201,6 +254,10 @@ func main() {
 				Usage:     "scan sbom file on this path",
 				TakesFile: true,
 			},
+			&cli.BoolFlag{
+				Name:  "json",
+				Usage: "sets output to json (WIP)",
+			},
 		},
 		ArgsUsage: "[directory1 directory2...]",
 		Action: func(context *cli.Context) error {
@@ -211,7 +268,7 @@ func main() {
 				scanDebianDocker(&query, container)
 			}
 
-			lockfiles := context.StringSlice("lockfileElem")
+			lockfiles := context.StringSlice("lockfile")
 			for _, lockfileElem := range lockfiles {
 				err := scanLockfile(&query, lockfileElem)
 				if err != nil {
@@ -219,7 +276,7 @@ func main() {
 				}
 			}
 
-			sboms := context.StringSlice("sbomElem")
+			sboms := context.StringSlice("sbom")
 			for _, sbomElem := range sboms {
 				err := scanSBOMFile(&query, sbomElem)
 				if err != nil {
@@ -251,6 +308,5 @@ func main() {
 		log.Printf("scan failed: %v\n", err)
 		return
 	}
-
 	printResults(query, resp)
 }

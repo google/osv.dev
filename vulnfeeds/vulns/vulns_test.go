@@ -109,11 +109,9 @@ func TestAddPkgInfo(t *testing.T) {
 		Repo:        "github.com/foo/bar",
 		FixedCommit: "dsafwefwfe370a9e65d68d62ef37345597e4100b0e87021dfb",
 	}
-	vuln.AddPkgInfo([]PackageInfo{
-		testPkgInfoNameEco,
-		testPkgInfoPURL,
-		testPkgInfoCommits,
-	})
+	vuln.AddPkgInfo(testPkgInfoNameEco)
+	vuln.AddPkgInfo(testPkgInfoPURL)
+	vuln.AddPkgInfo(testPkgInfoCommits)
 
 	// testPkgInfoNameEco vvvvvvvvvvvvvvv
 	if vuln.Affected[0].Package.Name != testPkgInfoNameEco.PkgName {

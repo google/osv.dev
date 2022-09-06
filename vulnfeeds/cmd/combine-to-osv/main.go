@@ -98,12 +98,15 @@ func loadParts(partsInputPath string) map[string][]vulns.PackageInfo {
 func combineIntoOSV(loadedCves map[string]cves.CVEItem, allParts map[string][]vulns.PackageInfo) map[string]*vulns.Vulnerability {
 	log.Println("Begin writing OSV files")
 	convertedCves := map[string]*vulns.Vulnerability{}
-	for vId, v := range loadedCves {
-		if len(allParts[vId]) == 0 {
+	for cveId, cve := range loadedCves {
+		if len(allParts[cveId]) == 0 {
 			continue
 		}
-		cve, _ := vulns.FromCVE(vId, v, allParts[vId])
-		convertedCves[vId] = cve
+		convertedCve, _ := vulns.FromCVE(cveId, cve)
+		for _, pkgInfo := range allParts[cveId] {
+			convertedCve.AddPkgInfo(pkgInfo)
+		}
+		convertedCves[cveId] = convertedCve
 	}
 	return convertedCves
 }

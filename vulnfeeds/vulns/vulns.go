@@ -238,17 +238,14 @@ type PackageInfo struct {
 	Repo         string `json:"repo"`
 }
 
-// FromCVE create an OSV object from a given CVEItem and package name.
-// Leaves version field empty to be manually fixed later
-func FromCVE(id string, cve cves.CVEItem, pkgInfo []PackageInfo) (*Vulnerability, []string) {
+// FromCVE creates a bare minimum OSV object from a given CVEItem and id.
+// Leaves affected and version fields empty to be filled in later with AddPkgInfo
+func FromCVE(id string, cve cves.CVEItem) (*Vulnerability, []string) {
 	v := Vulnerability{
 		ID:      id,
 		Details: cves.EnglishDescription(cve.CVE),
 		Aliases: extractAliases(id, cve.CVE),
 	}
-
-	v.AddPkgInfo(pkgInfo)
-
 	var err error
 	var notes []string
 	v.Published, err = timestampToRFC3339(cve.PublishedDate)
@@ -271,49 +268,39 @@ func FromCVE(id string, cve cves.CVEItem, pkgInfo []PackageInfo) (*Vulnerability
 }
 
 // AddPkgInfo adds affected package information to the OSV vulnerability object
-func (v *Vulnerability) AddPkgInfo(pkgInfo []PackageInfo) {
-	for _, info := range pkgInfo {
-		affected := Affected{}
-		affected.Package.Name = info.PkgName
-		affected.Package.Ecosystem = info.Ecosystem
-		affected.Package.Purl = info.PURL
-		if info.FixedVersion != "" {
-			versionRange := AffectedRange{
-				Type: "ECOSYSTEM",
-				Events: []Event{
-					{Introduced: "0"},
-					{Fixed: info.FixedVersion},
-				},
-			}
-			affected.Ranges = append(affected.Ranges, versionRange)
+func (v *Vulnerability) AddPkgInfo(pkgInfo PackageInfo) {
+	affected := Affected{}
+	affected.Package.Name = pkgInfo.PkgName
+	affected.Package.Ecosystem = pkgInfo.Ecosystem
+	affected.Package.Purl = pkgInfo.PURL
+	if pkgInfo.FixedVersion != "" {
+		versionRange := AffectedRange{
+			Type: "ECOSYSTEM",
+			Events: []Event{
+				{Introduced: "0"},
+				{Fixed: pkgInfo.FixedVersion},
+			},
 		}
-
-		if info.FixedCommit != "" {
-			versionRange := AffectedRange{
-				Type: "GIT",
-				Repo: info.Repo,
-				Events: []Event{
-					{Introduced: "0"},
-					{Fixed: info.FixedCommit},
-				},
-			}
-			affected.Ranges = append(affected.Ranges, versionRange)
-		}
-		v.Affected = append(v.Affected, affected)
+		affected.Ranges = append(affected.Ranges, versionRange)
 	}
+
+	if pkgInfo.FixedCommit != "" {
+		versionRange := AffectedRange{
+			Type: "GIT",
+			Repo: pkgInfo.Repo,
+			Events: []Event{
+				{Introduced: "0"},
+				{Fixed: pkgInfo.FixedCommit},
+			},
+		}
+		affected.Ranges = append(affected.Ranges, versionRange)
+	}
+	v.Affected = append(v.Affected, affected)
 }
 
-// FromCVEWithVersionExtraction create an OSV object from a given CVEItem and package name
-// Tries to extract version information from the given CVEItem
-func FromCVEWithVersionExtraction(id string, cve cves.CVEItem, pkgInfo []PackageInfo, validVersions []string) (*Vulnerability, []string) {
-	v, notes := FromCVE(id, cve, pkgInfo)
-	// TODO(rexpan): Check this doesn't change behaviour
-	affected := &v.Affected[0]
-
-	// Extract version information where we can.
-	version, versionNotes := cves.ExtractVersionInfo(cve, validVersions)
-	notes = append(notes, versionNotes...)
-
+// AttachExtractedVersionInfo adds version information extracted from CVEs onto
+// the affected field
+func (affected *Affected) AttachExtractedVersionInfo(version cves.VersionInfo) {
 	repoToCommits := map[string][]string{}
 	for _, fixCommit := range version.FixCommits {
 		repoToCommits[fixCommit.Repo] = append(repoToCommits[fixCommit.Repo], fixCommit.Commit)
@@ -360,7 +347,6 @@ func FromCVEWithVersionExtraction(id string, cve cves.CVEItem, pkgInfo []Package
 		}
 	}
 	affected.Ranges = append(affected.Ranges, versionRange)
-	return v, notes
 }
 
 func FromYAML(r io.Reader) (*Vulnerability, error) {

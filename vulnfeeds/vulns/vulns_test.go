@@ -2,6 +2,7 @@ package vulns
 
 import (
 	"encoding/json"
+	"github.com/google/osv/vulnfeeds/utility"
 	"log"
 	"os"
 	"testing"
@@ -57,27 +58,15 @@ func loadTestData(cveName string) cves.CVEItem {
 	return cves.CVEItem{}
 }
 
-func sliceEqual[K comparable](a []K, b []K) bool {
-	if len(a) != len(b) {
-		return false
-	}
-	for i := 0; i < len(a); i++ {
-		if a[i] != b[i] {
-			return false
-		}
-	}
-	return true
-}
-
 func TestExtractAliases(t *testing.T) {
 	cveItem := loadTestData("CVE-2022-36037")
 	aliases := extractAliases(cveItem.CVE.CVEDataMeta.ID, cveItem.CVE)
-	if !sliceEqual(aliases, []string{"GHSA-3f89-869f-5w76"}) {
+	if !utility.SliceEqual(aliases, []string{"GHSA-3f89-869f-5w76"}) {
 		t.Errorf("Aliases not extracted, got %v, but expected %v.", aliases, []string{"GHSA-3f89-869f-5w76"})
 	}
 	cveItem = loadTestData("CVE-2022-36749")
 	aliases = extractAliases(cveItem.CVE.CVEDataMeta.ID, cveItem.CVE)
-	if !sliceEqual(aliases, []string{}) {
+	if !utility.SliceEqual(aliases, []string{}) {
 		t.Errorf("Aliases not extracted, got %v, but expected %v.", aliases, []string{"GHSA-3f89-869f-5w76"})
 	}
 }

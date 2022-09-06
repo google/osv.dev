@@ -6,6 +6,7 @@ import (
 	"log"
 	"os"
 	"path"
+	"strings"
 
 	"github.com/google/osv/vulnfeeds/cves"
 	"github.com/google/osv/vulnfeeds/vulns"
@@ -55,7 +56,8 @@ func loadInnerParts(innerPartInputPath string, output map[string][]vulns.Package
 			log.Fatalf("Failed to decode json: %s", err)
 		}
 
-		cveId := path.Base(entryInner.Name())
+		// Turns CVE-2022-12345.alpine.json into CVE-2022-12345
+		cveId := strings.Split(entryInner.Name(), ".")[0]
 		output[cveId] = append(output[cveId], pkgInfos...)
 
 		log.Printf("Loaded Alpine Item: %s", entryInner.Name())

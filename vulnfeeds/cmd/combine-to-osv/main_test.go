@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	"github.com/google/osv/vulnfeeds/cves"
+	"github.com/google/osv/vulnfeeds/utility"
 )
 
 func loadTestData(cveName string) cves.CVEItem {
@@ -32,27 +33,40 @@ func TestLoadParts(t *testing.T) {
 		t.Errorf("Expected 10 entries, got %d entries", len(allParts["Alpine"]))
 	}
 
+	tests := map[string]struct {
+		ecosystems []string
+	}{
+		"CVE-2015-9251": {
+			ecosystems: []string{"Alpine:v3.10"},
+		},
+		"CVE-2016-2176": {
+			ecosystems: []string{
+				"Alpine:v3.2",
+				"Alpine:v3.3",
+				"Alpine:v3.4",
+				"Alpine:v3.5",
+				"Alpine:v3.6",
+				"Alpine:v3.7",
+				"Alpine:v3.8"},
+		},
+	}
+
 	hasCve := 0
 	for id, v := range allParts {
-		if id == "CVE-2015-9251" {
-			if len(v) != 1 {
-				t.Errorf("Expected 1 alpine entry for CVE-2015-9251, got %d entries", len(v))
+		if elem, ok := tests[id]; ok {
+			var ecosystemArray []string
+			for _, elem := range v {
+				ecosystemArray = append(ecosystemArray, elem.Ecosystem)
 			}
-			if v[0].Ecosystem != "Alpine:v3.10" {
-				t.Errorf("Expected ecosystem to be: Alpine:v3.10, got %s.", v[0].Ecosystem)
-			}
-			hasCve++
-		}
-		if id == "CVE-2016-2176" {
-			if len(v) != 7 {
-				t.Errorf("Expected 7 alpine entries for CVE-2016-2176, got %d entries", len(v))
+			if !utility.SliceEqualUnordered(elem.ecosystems, ecosystemArray) {
+				t.Errorf("Expected ecosystem to have: %v, got %v.", elem.ecosystems, ecosystemArray)
 			}
 			hasCve++
 		}
 	}
 
-	if hasCve != 2 {
-		t.Errorf("Expected CVEs does not exist")
+	if hasCve != len(tests) {
+		t.Errorf("Expected CVEs do not exist")
 	}
 }
 

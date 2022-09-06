@@ -87,7 +87,6 @@ func main() {
 	if err != nil {
 		log.Fatalf("Failed to open file: %v", err)
 	}
-
 	var parsed cves.NVDCVE
 	err = json.Unmarshal(data, &parsed)
 	if err != nil {
@@ -132,8 +131,17 @@ func main() {
 
 			id := "PYSEC-0000-" + cve.CVE.CVEDataMeta.ID // To be assigned later.
 			purl := ecosystem.PackageURL(pkg)
+			pkgInfo := vulns.PackageInfo{
+				PkgName:   pkg,
+				Ecosystem: "PyPI",
+				PURL:      purl,
+			}
 
-			v, notes := vulns.FromCVE(id, cve, pkg, "PyPI", purl, "ECOSYSTEM", validVersions)
+			v, notes := vulns.FromCVE(id, cve)
+			v.AddPkgInfo(pkgInfo)
+			versions, versionNotes := cves.ExtractVersionInfo(cve, validVersions)
+			notes = append(notes, versionNotes...)
+			v.Affected[0].AttachExtractedVersionInfo(versions)
 			if len(v.Affected[0].Ranges) == 0 {
 				log.Printf("No affected versions detected.")
 			}

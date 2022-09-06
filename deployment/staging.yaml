@@ -31,6 +31,18 @@ steps:
 - name: 'gcr.io/oss-vdb/deployment'
   args: ['bash', '-ex', 'deploy.sh', 'app.yaml', '--no-promote']
   dir: gcp/appengine
+- name: 'gcr.io/oss-vdb/deployment'
+  args: ['bash', '-ex', '../deploy_service_proxy', 'api-staging.osv.dev', 'osv-grpc-v1-staging', 'api_config_staging.yaml']
+  dir: gcp/api/v1
+- name: 'gcr.io/cloud-builders/docker'
+  args: ['build', '-t', 'gcr.io/oss-vdb/osv-server:$COMMIT_SHA', '-f', 'gcp/api/Dockerfile', '.']
+- name: 'gcr.io/cloud-builders/docker'
+  args: ['push', 'gcr.io/oss-vdb/osv-server:$COMMIT_SHA']
+- name: 'gcr.io/oss-vdb/deployment'
+  args: ['bash', '-ex', 'deploy_backend', '$COMMIT_SHA', 'osv-grpc-backend-staging']
+  dir: gcp/api
+  env:
+  - CLOUDBUILD=1
 timeout: 7200s
 options:
   machineType: N1_HIGHCPU_8

@@ -8,10 +8,12 @@ fi
 tag=$1
 name=$2
 
-pushd ../../
-docker build -t "gcr.io/oss-vdb/osv-server:$tag" -f gcp/api/Dockerfile .
-docker push "gcr.io/oss-vdb/osv-server:$tag"
-popd
+if [ -z "$CLOUDBUILD"]; then
+  pushd ../../
+  docker build -t "gcr.io/oss-vdb/osv-server:$tag" -f gcp/api/Dockerfile .
+  docker push "gcr.io/oss-vdb/osv-server:$tag"
+  popd
+fi
 
 gcloud run deploy $name \
   --platform managed \

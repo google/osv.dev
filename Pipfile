@@ -13,4 +13,4 @@ attrs = "*"
 [dev-packages]
 yapf = "*"
 pylint = "*"
-pipenv = "*"
+pipenv = ">=2022.9.4"

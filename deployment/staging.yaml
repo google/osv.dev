@@ -29,7 +29,7 @@ steps:
   entrypoint: 'bash'
   args: [ '-c', "rm /workspace/service_account.json" ]
 - name: 'gcr.io/oss-vdb/deployment'
-  args: ['bash', '-ex', 'deploy-staging.sh']
+  args: ['bash', '-ex', 'deploy.sh', 'app.yaml', '--no-promote']
   dir: gcp/appengine
 timeout: 7200s
 options:

@@ -39,4 +39,4 @@ run-scanner-tests:
 	cd tools/osv-scanner && ./run_tests.sh
 
 # TODO: API integration tests.
-all-tests: lib-tests worker-tests importer-tests appengine-tests
+all-tests: lib-tests worker-tests importer-tests appengine-tests run-scanner-tests

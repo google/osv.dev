@@ -2,6 +2,22 @@ import re
 
 
 class PackagistVersion(object):
+  """
+  Follows the packagist version ordering, which is recommended to be semver, but
+  not enforced to be semver. The php standard version comparison code written in
+  C is located here: https://github.com/php/php-src/blob/master/ext/standard/versioning.c
+
+  The function first replaces _, - and + with a dot . in the version strings and
+  also inserts dots . before and after any non number so that for example
+  '4.3.2RC1' becomes '4.3.2.RC.1'. Then it compares the parts starting from
+  left to right.
+
+  If a part contains special version strings these are handled in the following order:
+  any string not found in this list < dev < alpha = a < beta = b < RC = rc < # < pl = p.
+  This way not only versions with different levels like '4.1' and '4.1.2' can be
+  compared but also any PHP specific version containing development state.
+  """
+
   version_str: str
   canonicalized_version: str
 
@@ -71,31 +87,43 @@ class PackagistVersion(object):
 
   @staticmethod
   def php_canonicalize_version(version: str) -> str:
+    """
+    Replaces special separators (`-`,`_`,`+`) with `.`, and inserts `.`
+    between any digit and non-digit.
+    """
     replaced = re.sub('[-_+]', '.', version)
     replaced = re.sub(r'([^\d.])(\d)', r'\1.\2', replaced)
     replaced = re.sub(r'(\d)([^\d.])', r'\1.\2', replaced)
     return replaced
 
+  SPECIAL_CHARACTER_ORDER = {
+      "dev": 0,
+      "alpha": 1,
+      "a": 1,
+      "beta": 2,
+      "b": 2,
+      "RC": 3,
+      "rc": 3,
+      "#": 4,
+      "pl": 5,
+      "p": 5,
+      None: 0,
+  }
+
   @staticmethod
   def compare_special_versions(version_part_a: str, version_part_b: str) -> int:
-    special_chars = {
-        "dev": 0,
-        "alpha": 1,
-        "a": 1,
-        "beta": 2,
-        "b": 2,
-        "RC": 3,
-        "rc": 3,
-        "#": 4,
-        "pl": 5,
-        "p": 5,
-        None: 0,
-    }
+    """
+    Compares the order of special characters against the order specified in php
+    docs.
+
+    any string not found in this list < dev < alpha = a < beta = b < RC = rc < # < pl = p.
+
+    :return: 1 if a > b, -1 if b > a, 0 if a == b
+    """
     # This isn't quite the behaviour of the c implementation of packagist
     # In packagist if the part starts with special_chars its enough
-
-    found_a = special_chars.get(version_part_a, -1)
-    found_b = special_chars.get(version_part_b, -1)
+    found_a = PackagistVersion.SPECIAL_CHARACTER_ORDER.get(version_part_a, -1)
+    found_b = PackagistVersion.SPECIAL_CHARACTER_ORDER.get(version_part_b, -1)
 
     if found_a > found_b:
       return 1

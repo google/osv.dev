@@ -23,7 +23,7 @@ RUN apt-get update && \
 COPY daemon.json /etc/docker/daemon.json
 COPY install_go.sh /tmp/install_go.sh
 
-RUN "/tmp/install_go.sh"
+RUN "/tmp/install_go.sh" "/tmp"
 ENV PATH "$PATH:/root/.go/bin"
 
 ENTRYPOINT []

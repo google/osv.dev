@@ -1,4 +1,4 @@
-#!/bin/bash -eux
+#!/bin/bash
 # Copyright 2022 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -16,14 +16,15 @@
 ################################################################################
 
 # Install go on x86_64, don't do anything on ARM.
+set -eux
 
 case $(uname -m) in
     x86_64)
       # Download and install the latest stable Go.
-      wget https://storage.googleapis.com/golang/getgo/installer_linux -O ./installer_linux
-      chmod +x ./installer_linux
-      SHELL="bash" ./installer_linux -version 1.18
-      rm ./installer_linux
+      wget https://storage.googleapis.com/golang/getgo/installer_linux -O $1/installer_linux
+      chmod +x $1/installer_linux
+      SHELL="bash" $1/installer_linux -version 1.18
+      rm $1/installer_linux
 #      # Set up Golang coverage modules.
 #      printf $(find . -name gocoverage)
 #      cd $GOPATH/gocoverage && go install ./...

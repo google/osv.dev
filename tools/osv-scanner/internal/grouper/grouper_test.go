@@ -42,15 +42,21 @@ func TestGroup(t *testing.T) {
 			"CVE-4",
 		},
 	}
+	v6 := osv.Vulnerability{
+		ID: "BAR-3",
+		Aliases: []string{
+			"CVE-4",
+		},
+	}
 
 	// Unrelated.
-	v6 := osv.Vulnerability{
+	v7 := osv.Vulnerability{
 		ID: "UNRELATED-1",
 		Aliases: []string{
 			"BAR-1337",
 		},
 	}
-	v7 := osv.Vulnerability{
+	v8 := osv.Vulnerability{
 		ID: "UNRELATED-2",
 		Aliases: []string{
 			"BAR-1338",
@@ -63,17 +69,36 @@ func TestGroup(t *testing.T) {
 	}{
 		{
 			vulns: []osv.Vulnerability{
-				v1, v2, v3, v4, v5, v6, v7,
+				v1, v2, v3, v4, v5, v6, v7, v8,
 			},
 			want: []GroupedVulnerabilities{
 				GroupedVulnerabilities{
 					v1, v2, v3,
 				},
 				GroupedVulnerabilities{
-					v4, v5,
+					v4, v5, v6,
 				},
 				GroupedVulnerabilities{
-					v6,
+					v7,
+				},
+				GroupedVulnerabilities{
+					v8,
+				},
+			},
+		},
+		{
+			vulns: []osv.Vulnerability{
+				v8, v2, v1, v5, v7, v4, v6, v3,
+			},
+			want: []GroupedVulnerabilities{
+				GroupedVulnerabilities{
+					v8,
+				},
+				GroupedVulnerabilities{
+					v2, v1, v3,
+				},
+				GroupedVulnerabilities{
+					v5, v4, v6,
 				},
 				GroupedVulnerabilities{
 					v7,

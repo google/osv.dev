@@ -40,12 +40,8 @@ func Group(vulns []osv.Vulnerability) []GroupedVulnerabilities {
 	}
 
 	// Do a pair-wise (n^2) comparison and merge all intersecting vulns.
-	for i, _ := range vulns {
-		for j, _ := range vulns {
-			if i == j {
-				continue
-			}
-
+	for i := 0; i < len(vulns); i++ {
+		for j := i + 1; j < len(vulns); j++ {
 			if hasAliasIntersection(vulns[i], vulns[j]) {
 				// Merge the two groups. Use the smaller index as the representative ID.
 				groups[i] = min(groups[i], groups[j])

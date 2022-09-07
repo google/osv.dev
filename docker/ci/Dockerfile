@@ -16,6 +16,7 @@ FROM gcr.io/oss-vdb/worker
 
 RUN apt-get update && \
     apt-get install -y \
+        golang-go \
         google-cloud-sdk-datastore-emulator \
         openjdk-11-jre  # Needed for Datastore emulator.
 

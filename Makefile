@@ -39,4 +39,4 @@ run-api-server:
 	cd gcp/api && GOOGLE_CLOUD_PROJECT=oss-vdb pipenv run python test_server.py $(SERVICE_ACCOUNT)
 
 # TODO: API integration tests.
-all-tests: lib-tests worker-tests importer-tests appengine-tests
+all-tests: lib-tests worker-tests importer-tests appengine-tests vulnfeed-tests

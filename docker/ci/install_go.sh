@@ -18,23 +18,11 @@
 # Install go on x86_64, don't do anything on ARM.
 set -eux
 
-case $(uname -m) in
-    x86_64)
-      # Download and install the latest stable Go.
-      wget https://storage.googleapis.com/golang/getgo/installer_linux -O $1/installer_linux
-      chmod +x $1/installer_linux
-      SHELL="bash" $1/installer_linux -version 1.18
-      rm $1/installer_linux
-#      # Set up Golang coverage modules.
-#      printf $(find . -name gocoverage)
-#      cd $GOPATH/gocoverage && go install ./...
-      ;;
-    aarch64)
-      # Don't install go because installer is not provided.
-      echo "Not installing go: aarch64."
-      ;;
-    *)
-      echo "Error: unsupported architecture: $(uname -m)"
-      exit 1
-      ;;
-esac
+# Download and install the latest stable Go.
+wget https://storage.googleapis.com/golang/getgo/installer_linux -O $1/installer_linux
+chmod +x $1/installer_linux
+SHELL="bash" $1/installer_linux -version 1.18
+rm $1/installer_linux
+# # Set up Golang coverage modules.
+# printf $(find . -name gocoverage)
+# cd $GOPATH/gocoverage && go install ./...

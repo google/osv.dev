@@ -3,7 +3,8 @@ package osv
 import (
 	"bytes"
 	"encoding/json"
-	"io"
+	"fmt"
+	"io/ioutil"
 	"log"
 	"net/http"
 
@@ -13,6 +14,8 @@ import (
 const (
 	// QueryEndpoint is the URL for posting queries to OSV.
 	QueryEndpoint = "https://api.osv.dev/v1/querybatch"
+	// GetEndpoint is the URL for getting vulenrabilities from OSV.
+	GetEndpoint = "https://api.osv.dev/v1/vulns"
 	// BaseVulnerabilityURL is the base URL for detailed vulnerability views.
 	BaseVulnerabilityURL = "https://osv.dev/vulnerability/"
 	// MaxQueriesPerRequest splits up querybatch into multiple requests if
@@ -40,11 +43,15 @@ type BatchedQuery struct {
 	Queries []*Query `json:"queries"`
 }
 
+// Vulnerability represents a vulnerability entry from OSV.
+type Vulnerability struct {
+	ID      string   `json:"id"`
+	Aliases []string `json:"aliases"`
+}
+
 // Response represents a (simplified) response from OSV.
 type Response struct {
-	Vulns []struct {
-		ID string `json:"id"`
-	} `json:"vulns"`
+	Vulns []Vulnerability `json:"vulns"`
 }
 
 // BatchedResponse represents a batched response from OSV.
@@ -89,6 +96,20 @@ func chunkBy[T any](items []T, chunkSize int) [][]T {
 	return append(_chunks, items)
 }
 
+// checkResponseError checks if the response has an error.
+func checkResponseError(resp *http.Response) error {
+	if resp.StatusCode == http.StatusOK {
+		return nil
+	}
+
+	respBuf, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		log.Fatalf("Failed to read error response from server.")
+	}
+
+	return fmt.Errorf("Server response error: %s", string(respBuf))
+}
+
 func MakeRequest(request BatchedQuery) (*BatchedResponse, error) {
 	// API has a limit of 1000 bulk query per request
 	queryChunks := chunkBy(request.Queries, MaxQueriesPerRequest)
@@ -107,11 +128,8 @@ func MakeRequest(request BatchedQuery) (*BatchedResponse, error) {
 		}
 		defer resp.Body.Close()
 
-		if resp.StatusCode != 200 {
-			// TODO(rexpan): Better error handling
-			buffer := bytes.NewBufferString("")
-			io.Copy(buffer, resp.Body)
-			log.Fatalf("Server response error: \n\n%s", buffer.String())
+		if err := checkResponseError(resp); err != nil {
+			return nil, err
 		}
 
 		var osvResp BatchedResponse
@@ -125,4 +143,42 @@ func MakeRequest(request BatchedQuery) (*BatchedResponse, error) {
 	}
 
 	return &totalOsvResp, nil
+}
+
+// Get a Vulnerabiltiy for the given ID.
+func Get(id string) (*Vulnerability, error) {
+	resp, err := http.Get(GetEndpoint + "/" + id)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	if err := checkResponseError(resp); err != nil {
+		return nil, err
+	}
+
+	var vuln Vulnerability
+	decoder := json.NewDecoder(resp.Body)
+	err = decoder.Decode(&vuln)
+	if err != nil {
+		return nil, err
+	}
+	return &vuln, nil
+}
+
+// Hydrate fills the results of the batched response with the full
+// Vulnerability details.
+func Hydrate(resp *BatchedResponse) error {
+	// TODO(ochang): Parallelize requests, or implement batch GET.
+	for i, response := range resp.Results {
+		for j, vuln := range response.Vulns {
+			vuln, err := Get(vuln.ID)
+			if err != nil {
+				return err
+			}
+
+			resp.Results[i].Vulns[j] = *vuln
+		}
+	}
+	return nil
 }

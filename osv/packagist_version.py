@@ -53,6 +53,11 @@ class PackagistVersion(object):
 
   @staticmethod
   def php_version_compare(version_a: str, version_b: str) -> int:
+    """
+    Given two packagist versions, compare which is newer
+
+    :return: 1 if a > b, -1 if b > a, 0 if a == b
+    """
     version_a = PackagistVersion.php_canonicalize_version(version_a)
     version_b = PackagistVersion.php_canonicalize_version(version_b)
 

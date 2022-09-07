@@ -131,21 +131,21 @@ func (s *Store) Exists(ctx context.Context, addr string, hashType string, hash p
 func (s *Store) Store(ctx context.Context, repoInfo *preparation.Result, hashType string, fileResults []*processing.FileResult) error {
 	docKey := datastore.NameKey(docKind, fmt.Sprintf(docKeyFmt, repoInfo.Addr, hashType, repoInfo.Commit[:]), nil)
 	doc, results := newDoc(repoInfo, hashType, fileResults)
-	_, err := s.dsCl.Put(ctx, docKey, doc)
-	if err != nil {
-		return err
-	}
-	for _, r := range results {
-		resultKey := datastore.NameKey(resultKind, fmt.Sprintf(resultKeyFmt, repoInfo.Commit, hashType, r.Page), docKey)
-		_, err := s.dsCl.Put(ctx, resultKey, r)
+	_, err := s.dsCl.RunInTransaction(ctx, func(tx *datastore.Transaction) error {
+		_, err := s.dsCl.Put(ctx, docKey, doc)
 		if err != nil {
-			if deleteErr := s.dsCl.Delete(ctx, docKey); deleteErr != nil {
-				return fmt.Errorf("failed to put new results %s and to delete document %s\nPut error: %v\nDelete err: %v", resultKey, docKey, err, deleteErr)
-			}
 			return err
 		}
-	}
-	return nil
+		for _, r := range results {
+			resultKey := datastore.NameKey(resultKind, fmt.Sprintf(resultKeyFmt, repoInfo.Commit, hashType, r.Page), docKey)
+			_, err := s.dsCl.Put(ctx, resultKey, r)
+			if err != nil {
+				return err
+			}
+		}
+		return nil
+	})
+	return err
 }
 
 // Close closes the datastore client.

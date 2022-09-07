@@ -32,6 +32,7 @@ type Query struct {
 	Commit  string  `json:"commit,omitempty"`
 	Package Package `json:"package,omitempty"`
 	Version string  `json:"version,omitempty"`
+	Source  string  `json:"omit"`
 }
 
 // BatchedQuery represents a batched query to OSV.

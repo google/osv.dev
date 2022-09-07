@@ -21,10 +21,10 @@ import packaging.version
 import urllib.parse
 import requests
 
-from osv.packagist_version import PackagistVersion
 from .third_party.univers.debian import Version as DebianVersion
 from .third_party.univers.gem import GemVersion
 
+from . import packagist_version
 from . import debian_version_cache
 from . import maven
 from . import nuget
@@ -377,7 +377,7 @@ class Debian(Ecosystem):
 
     versions = [v for v in raw_versions if version_is_valid(v)]
     # Sort to ensure it is in the correct order
-    versions.sort(key=self.sort_key)
+    self.sort_versions(versions)
     # The only versions with +deb
     versions = [
         x for x in versions
@@ -404,7 +404,7 @@ class Packagist(Ecosystem):
   _API_PACKAGE_URL = 'https://repo.packagist.org/p2/{package}.json'
 
   def sort_key(self, version):
-    return PackagistVersion(version)
+    return packagist_version.PackagistVersion(version)
 
   def enumerate_versions(self, package, introduced, fixed, limits=None):
     url = self._API_PACKAGE_URL.format(package=package.lower())
@@ -418,10 +418,8 @@ class Packagist(Ecosystem):
                          f'{package} with: {ex.response.text}') from ex
 
     response = json.loads(text_response)
-    versions: list[str] = \
-      [x['version'] for x in response['packages'][package]]
-
-    versions.sort(key=self.sort_key)
+    versions: list[str] = [x['version'] for x in response['packages'][package]]
+    self.sort_versions(versions)
 
     return self._get_affected_versions(versions, introduced, fixed, limits)
 

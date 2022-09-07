@@ -136,7 +136,6 @@ class GetNextVersionTest(unittest.TestCase):
 
   def test_packagist(self):
     ecosystem = ecosystems.get("Packagist")
-    # self.assertEqual('4.3.2.RC.1', ecosystems.Packagist.php_canonicalize_version('4.3-2RC1'))
     self.assertLess(
         ecosystem.sort_key('4.3-2RC1'), ecosystem.sort_key('4.3-2RC2'))
     self.assertGreater(

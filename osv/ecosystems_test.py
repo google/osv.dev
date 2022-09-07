@@ -134,6 +134,26 @@ class GetNextVersionTest(unittest.TestCase):
     ecosystem.enumerate_versions('cyrus-sasl2', '0', None)
     self.assertEqual(requests_mock.call_count, 2)
 
+  def test_packagist(self):
+    ecosystem = ecosystems.get("Packagist")
+    # self.assertEqual('4.3.2.RC.1', ecosystems.Packagist.php_canonicalize_version('4.3-2RC1'))
+    self.assertLess(
+        ecosystem.sort_key('4.3-2RC1'), ecosystem.sort_key('4.3-2RC2'))
+    self.assertGreater(
+        ecosystem.sort_key('4.3-2RC2'), ecosystem.sort_key('4.3-2beta5'))
+    self.assertGreater(
+        ecosystem.sort_key('4.3-2'), ecosystem.sort_key('4.3-2beta1'))
+    self.assertGreater(ecosystem.sort_key('1.0.0'), ecosystem.sort_key('1.0'))
+    self.assertEqual(
+        ecosystem.sort_key('1.0.0rc2'), ecosystem.sort_key('1.0.0.rc2'))
+
+    enumerated_versions = ecosystem.enumerate_versions("neos/neos", "3.3.0",
+                                                       "4.4.0")
+    self.assertIn("4.3.19", enumerated_versions)
+    self.assertIn("4.2.18", enumerated_versions)
+    self.assertIn("3.3.1", enumerated_versions)
+    self.assertIn("3.3.0", enumerated_versions)
+
   def test_semver(self):
     """Test SemVer."""
     ecosystem = ecosystems.get('Go')

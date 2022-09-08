@@ -25,6 +25,8 @@ from . import ecosystems
 
 class GetNextVersionTest(unittest.TestCase):
   """get_next_version tests."""
+  _TEST_DATA_DIR = os.path.join(
+      os.path.dirname(os.path.abspath(__file__)), 'testdata')
 
   def test_pypi(self):
     """Test PyPI."""
@@ -153,7 +155,8 @@ class GetNextVersionTest(unittest.TestCase):
     self.assertIn('3.3.1', enumerated_versions)
     self.assertIn('3.3.0', enumerated_versions)
 
-    with open('osv/testdata/packagist_test_cases.txt') as file:
+    with open(os.path.join(self._TEST_DATA_DIR,
+                           'packagist_test_cases.txt')) as file:
       for line in file.readlines():
         pieces = line.strip('\n').split(' ')
         sort_value = ecosystem.sort_key(pieces[0]).__cmp__(

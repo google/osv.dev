@@ -158,6 +158,8 @@ class GetNextVersionTest(unittest.TestCase):
     with open(os.path.join(self._TEST_DATA_DIR,
                            'packagist_test_cases.txt')) as file:
       for line in file.readlines():
+        if line.startswith('//') or line.isspace():
+          continue
         pieces = line.strip('\n').split(' ')
         sort_value = ecosystem.sort_key(pieces[0]).__cmp__(
             ecosystem.sort_key(pieces[2]))

@@ -1,3 +1,4 @@
+// From https://github.com/php/php-src/blob/master/ext/standard/tests/versioning/version_compare.phpt
 1 < 2
 10 > 2
 1.0 < 1.1
@@ -51,6 +52,8 @@
 1.0pl1 > 1.0rc1
 1.0pl1 > 1.0
 1.0pl1 = 1.0pl1
+
+// From https://github.com/composer/semver/blob/main/tests/ComparatorTest.php
 1.25.0 < 1.26.0
 1.0.0 < 1.2-dev
 dev-foo < 1.26.0
@@ -59,3 +62,9 @@ dev-foo < 1.26.0
 1.25.0beta2.1 = 1.25.0-b2.1
 1.26.0 > dev-foo
 1.25.0 > 1.24.0
+
+// Edge case tests
+1.2.3.# = 1.2.3
+1.2.3.# = 1.2.3.#
+1.2.3.# = 1.2.3.1
+1.2.3.#.1 > 1.2.3

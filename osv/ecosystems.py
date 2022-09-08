@@ -24,10 +24,10 @@ import requests
 from .third_party.univers.debian import Version as DebianVersion
 from .third_party.univers.gem import GemVersion
 
-from . import packagist_version
 from . import debian_version_cache
 from . import maven
 from . import nuget
+from . import packagist_version
 from . import semver_index
 from .cache import Cache
 from .cache import cached

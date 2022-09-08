@@ -135,7 +135,7 @@ class GetNextVersionTest(unittest.TestCase):
     self.assertEqual(requests_mock.call_count, 2)
 
   def test_packagist(self):
-    ecosystem = ecosystems.get("Packagist")
+    ecosystem = ecosystems.get('Packagist')
     self.assertLess(
         ecosystem.sort_key('4.3-2RC1'), ecosystem.sort_key('4.3-2RC2'))
     self.assertGreater(
@@ -146,12 +146,29 @@ class GetNextVersionTest(unittest.TestCase):
     self.assertEqual(
         ecosystem.sort_key('1.0.0rc2'), ecosystem.sort_key('1.0.0.rc2'))
 
-    enumerated_versions = ecosystem.enumerate_versions("neos/neos", "3.3.0",
-                                                       "4.4.0")
-    self.assertIn("4.3.19", enumerated_versions)
-    self.assertIn("4.2.18", enumerated_versions)
-    self.assertIn("3.3.1", enumerated_versions)
-    self.assertIn("3.3.0", enumerated_versions)
+    enumerated_versions = ecosystem.enumerate_versions('neos/neos', '3.3.0',
+                                                       '4.4.0')
+    self.assertIn('4.3.19', enumerated_versions)
+    self.assertIn('4.2.18', enumerated_versions)
+    self.assertIn('3.3.1', enumerated_versions)
+    self.assertIn('3.3.0', enumerated_versions)
+
+    with open('osv/testdata/packagist_test_cases.txt') as file:
+      for line in file.readlines():
+        pieces = line.strip('\n').split(' ')
+        sort_value = ecosystem.sort_key(pieces[0]).__cmp__(
+            ecosystem.sort_key(pieces[2]))
+
+        if pieces[1] == '<':
+          expected_value = -1
+        elif pieces[1] == '=':
+          expected_value = 0
+        elif pieces[1] == '>':
+          expected_value = 1
+        else:
+          raise RuntimeError('Input not expected: ' + pieces[1])
+
+        self.assertEqual(expected_value, sort_value, pieces)
 
   def test_semver(self):
     """Test SemVer."""

@@ -88,7 +88,10 @@ class PackagistVersion:
         compare = PackagistVersion.compare_special_versions(a, '#')
 
       if compare != 0:
-        return compare
+        if compare > 0:
+          return 1
+        else:
+          return -1
 
     if len(a_split) > len(b_split):
       next_char = a_split[len(b_split)]

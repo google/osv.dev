@@ -172,7 +172,7 @@ func scanDebianDocker(query *osv.BatchedQuery, dockerImageName string) {
 }
 
 // printResults prints the osv scan results into a human friendly table.
-func printResults(query osv.BatchedQuery, resp *osv.BatchedResponse) {
+func printResults(query osv.BatchedQuery, resp *osv.HydratedBatchedResponse) {
 	outputTable := table.NewWriter()
 	outputTable.SetOutputMirror(os.Stdout)
 	outputTable.AppendHeader(table.Row{"Source", "Ecosystem", "Affected Package", "Installed Version", "Vulnerability ID", "OSV URL"})
@@ -318,9 +318,10 @@ func main() {
 		log.Fatalf("Scan failed: %v", err)
 	}
 
-	if err := osv.Hydrate(resp); err != nil {
+	hydratedResp, err := osv.Hydrate(resp)
+	if err != nil {
 		log.Fatalf("Failed to hydrate OSV response: %v", err)
 	}
 
-	printResults(query, resp)
+	printResults(query, hydratedResp)
 }

@@ -43,19 +43,35 @@ type BatchedQuery struct {
 	Queries []*Query `json:"queries"`
 }
 
+// MinimalVulnerability represents an unhydrated vulnerability entry from OSV.
+type MinimalVulnerability struct {
+	ID string `json:"id"`
+}
+
 // Vulnerability represents a vulnerability entry from OSV.
 type Vulnerability struct {
 	ID      string   `json:"id"`
 	Aliases []string `json:"aliases"`
+	// TODO(ochang): Add other fields.
 }
 
-// Response represents a (simplified) response from OSV.
+// Response represents a full response from OSV.
 type Response struct {
 	Vulns []Vulnerability `json:"vulns"`
 }
 
-// BatchedResponse represents a batched response from OSV.
+// MinimalResponse represents an unhydrated response from OSV.
+type MinimalResponse struct {
+	Vulns []MinimalVulnerability `json:"vulns"`
+}
+
+// BatchedResponse represents an unhydrated batched response from OSV.
 type BatchedResponse struct {
+	Results []MinimalResponse `json:"results"`
+}
+
+// HydratedBatchedResponse represents a hydrated batched response from OSV.
+type HydratedBatchedResponse struct {
 	Results []Response `json:"results"`
 }
 
@@ -168,17 +184,21 @@ func Get(id string) (*Vulnerability, error) {
 
 // Hydrate fills the results of the batched response with the full
 // Vulnerability details.
-func Hydrate(resp *BatchedResponse) error {
+func Hydrate(resp *BatchedResponse) (*HydratedBatchedResponse, error) {
 	// TODO(ochang): Parallelize requests, or implement batch GET.
-	for i, response := range resp.Results {
-		for j, vuln := range response.Vulns {
+	hydrated := HydratedBatchedResponse{}
+
+	for _, response := range resp.Results {
+		result := Response{}
+		for _, vuln := range response.Vulns {
 			vuln, err := Get(vuln.ID)
 			if err != nil {
-				return err
+				return nil, err
 			}
 
-			resp.Results[i].Vulns[j] = *vuln
+			result.Vulns = append(result.Vulns, *vuln)
 		}
+		hydrated.Results = append(hydrated.Results, result)
 	}
-	return nil
+	return &hydrated, nil
 }

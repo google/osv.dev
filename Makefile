@@ -24,6 +24,9 @@ importer-tests:
 appengine-tests:
 	cd gcp/appengine && ./run_tests.sh
 
+vulnfeed-tests:
+	cd vulnfeed && ./run_tests.sh
+
 lint:
 	tools/lint_and_format.sh
 
@@ -39,4 +42,4 @@ run-scanner-tests:
 	cd tools/osv-scanner && ./run_tests.sh
 
 # TODO: API integration tests.
-all-tests: lib-tests worker-tests importer-tests appengine-tests run-scanner-tests
+all-tests: lib-tests worker-tests importer-tests appengine-tests vulnfeed-tests run-scanner-tests

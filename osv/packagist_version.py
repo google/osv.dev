@@ -30,6 +30,16 @@ class PackagistVersion:
   any string not found in this list < dev < alpha = a < beta = b < RC = rc < # < pl = p.
   This way not only versions with different levels like '4.1' and '4.1.2' can be
   compared but also any PHP specific version containing development state.
+
+  ---
+
+  ## Known differences:
+  The following are some examples of known differences between this python
+  implementation and the C implementation of PHP
+
+  - In this version, special version strings need to exactly match to not be
+    considered "any other string", while in the original implementation the
+    string only need to start with one of the listed strings.
   """
 
   version_str: str
@@ -66,17 +76,10 @@ class PackagistVersion:
     return self.php_version_compare(self.version_str, other.version_str)
 
   @staticmethod
-  def php_version_compare(version_a: str, version_b: str) -> int:
+  def php_slices_compare(a_split: [str], b_split: [str]):
     """
-    Given two packagist versions, compare which is newer
-
-    :return: 1 if a > b, -1 if b > a, 0 if a == b
+    Compare php versions after being split by '.'
     """
-    version_a = PackagistVersion.php_canonicalize_version(version_a)
-    version_b = PackagistVersion.php_canonicalize_version(version_b)
-
-    a_split = version_a.split('.')
-    b_split = version_b.split('.')
     for a, b in zip(a_split, b_split):
       if a.isdigit() and b.isdigit():
         compare = int(a) - int(b)
@@ -97,15 +100,29 @@ class PackagistVersion:
       next_char = a_split[len(b_split)]
       if next_char.isdigit():
         return 1
-      return PackagistVersion.compare_special_versions(next_char, '#')
+      return PackagistVersion.php_slices_compare(a_split[len(b_split):], ['#'])
 
     if len(a_split) < len(b_split):
       next_char = b_split[len(a_split)]
       if next_char.isdigit():
         return -1
-      return PackagistVersion.compare_special_versions('#', next_char)
+      return PackagistVersion.php_slices_compare(['#'], b_split[len(a_split):])
 
     return 0
+
+  @staticmethod
+  def php_version_compare(version_a: str, version_b: str) -> int:
+    """
+    Given two php versions, compare which is newer
+
+    :return: 1 if a > b, -1 if b > a, 0 if a == b
+    """
+    version_a = PackagistVersion.php_canonicalize_version(version_a)
+    version_b = PackagistVersion.php_canonicalize_version(version_b)
+
+    a_split = version_a.split('.')
+    b_split = version_b.split('.')
+    return PackagistVersion.php_slices_compare(a_split, b_split)
 
   @staticmethod
   def php_canonicalize_version(version: str) -> str:
@@ -142,8 +159,16 @@ class PackagistVersion:
 
     :return: 1 if a > b, -1 if b > a, 0 if a == b
     """
-    # This isn't quite the behaviour of the c implementation of packagist
-    # In packagist if the part starts with special_chars its enough
+    # This isn't quite the behaviour of the c implementation of php version_compare
+    # In php if the part starts with special_chars its enough.
+    # ### For example:
+    # *PHP implementation:*
+    # `1.0.0beta1 = 1.0.0betawithsomeothertext1`
+    #
+    # *This python implementation*
+    # `1.0.0beta1 > 1.0.0betawithsomeothertext1`
+    # Because "any string not found in this list" should apply to
+    # `betawithsomeothertext`
     found_a = PackagistVersion.SPECIAL_CHARACTER_ORDER.get(version_part_a, -1)
     found_b = PackagistVersion.SPECIAL_CHARACTER_ORDER.get(version_part_b, -1)
 

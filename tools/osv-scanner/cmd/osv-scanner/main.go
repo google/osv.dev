@@ -59,13 +59,11 @@ func scanDir(query *osv.BatchedQuery, dir string) error {
 }
 
 func scanLockfile(query *osv.BatchedQuery, path string) error {
-	log.Printf("Scanning file %s\n", path)
-
 	parsedLockfile, err := lockfile.Parse(path, "")
 	if err != nil {
 		return err
 	}
-	log.Printf("Scanned %s file with %d packages", parsedLockfile.ParsedAs, len(parsedLockfile.Packages))
+	log.Printf("Scanned %s file and found %d packages", path, len(parsedLockfile.Packages))
 
 	for _, pkgDetail := range parsedLockfile.Packages {
 		pkgDetailQuery := osv.MakePkgRequest(pkgDetail)
@@ -76,7 +74,6 @@ func scanLockfile(query *osv.BatchedQuery, path string) error {
 }
 
 func scanSBOMFile(query *osv.BatchedQuery, path string) error {
-	log.Printf("Scanning file %s\n", path)
 	file, err := os.Open(path)
 	if err != nil {
 		return err

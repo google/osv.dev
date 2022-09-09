@@ -25,7 +25,7 @@ appengine-tests:
 	cd gcp/appengine && ./run_tests.sh
 
 vulnfeed-tests:
-	cd vulnfeed && ./run_tests.sh
+	cd vulnfeeds && ./run_tests.sh
 
 lint:
 	tools/lint_and_format.sh

@@ -280,7 +280,7 @@ func ParseCPE(cpe_str string) (*CPE, bool) {
 
 	cpe_fields := strings.Split(cpe_str, ":")
 
-	if len(cpe_fields) < 12 {
+	if len(cpe_fields) < 13 {
 		return nil, false
 	}
 

@@ -26,7 +26,10 @@ type CVE struct {
 	} `json:"CVE_data_meta"`
 	References struct {
 		ReferenceData []struct {
-			URL string `json:"url"`
+			URL       string   `json:"url"`
+			Name      string   `json:"name"`
+			RefSource string   `json:"refsource"`
+			Tags      []string `json:"tags"`
 		} `json:"reference_data"`
 	} `json:"references"`
 	Description struct {

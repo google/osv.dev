@@ -9,21 +9,47 @@ import (
 	"cloud.google.com/go/logging"
 )
 
+type LoggerWrapper struct {
+	Logger *logging.Logger
+}
+
 type Logger logging.Logger
 
-func InfoLogf(logger *logging.Logger, format string, a ...any) {
-	logger.Log(logging.Entry{
+func (wrapper LoggerWrapper) InfoLogf(format string, a ...any) {
+	if wrapper.Logger == nil {
+		log.Printf(format, a...)
+		return
+	}
+
+	wrapper.Logger.Log(logging.Entry{
 		Severity: logging.Info,
-		Payload:  fmt.Sprintf(format, a) + "\n",
+		Payload:  fmt.Sprintf(format, a...) + "\n",
 	})
 }
 
-func FatalLogf(logger *logging.Logger, format string, a ...any) {
-	logger.Log(logging.Entry{
-		Severity: logging.Error,
-		Payload:  fmt.Sprintf(format, a) + "\n" + string(debug.Stack()),
+func (wrapper LoggerWrapper) WarnLogf(format string, a ...any) {
+	if wrapper.Logger == nil {
+		log.Printf(format, a...)
+		return
+	}
+
+	wrapper.Logger.Log(logging.Entry{
+		Severity: logging.Warning,
+		Payload:  fmt.Sprintf(format, a...) + "\n",
 	})
-	err := logger.Flush()
+}
+
+func (wrapper LoggerWrapper) FatalLogf(format string, a ...any) {
+	if wrapper.Logger == nil {
+		log.Fatalf(format, a...)
+		return
+	}
+
+	wrapper.Logger.Log(logging.Entry{
+		Severity: logging.Error,
+		Payload:  fmt.Sprintf(format, a...) + "\n" + string(debug.Stack()),
+	})
+	err := wrapper.Logger.Flush()
 	if err != nil {
 		log.Fatalln("Failed to flush logger")
 	}

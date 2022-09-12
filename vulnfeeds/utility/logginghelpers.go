@@ -9,12 +9,13 @@ import (
 	"cloud.google.com/go/logging"
 )
 
+// LoggerWrapper wraps the Logger provided by google cloud
+// Will default to the go stdout and stderr logging if GCP logger is not set
 type LoggerWrapper struct {
 	Logger *logging.Logger
 }
 
-type Logger logging.Logger
-
+// InfoLogf prints Info level log
 func (wrapper LoggerWrapper) InfoLogf(format string, a ...any) {
 	if wrapper.Logger == nil {
 		log.Printf(format, a...)
@@ -27,6 +28,7 @@ func (wrapper LoggerWrapper) InfoLogf(format string, a ...any) {
 	})
 }
 
+// WarnLogf prints Warning level log, defaults to stdout if GCP logger is not set
 func (wrapper LoggerWrapper) WarnLogf(format string, a ...any) {
 	if wrapper.Logger == nil {
 		log.Printf(format, a...)
@@ -39,6 +41,7 @@ func (wrapper LoggerWrapper) WarnLogf(format string, a ...any) {
 	})
 }
 
+// FatalLogf prints Error level log with stack trace, before exiting with error code 1
 func (wrapper LoggerWrapper) FatalLogf(format string, a ...any) {
 	if wrapper.Logger == nil {
 		log.Fatalf(format, a...)

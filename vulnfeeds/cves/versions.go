@@ -15,6 +15,7 @@
 package cves
 
 import (
+	"errors"
 	"fmt"
 	"log"
 	"net/url"
@@ -35,6 +36,21 @@ type AffectedVersion struct {
 type VersionInfo struct {
 	FixCommits       []FixCommit
 	AffectedVersions []AffectedVersion
+}
+
+type CPE struct {
+	CPEVersion string
+	Part       string
+	Vendor     string
+	Product    string
+	Version    string
+	Update     string
+	Edition    string
+	Language   string
+	SWEdition  string
+	TargetSw   string
+	TargetHw   string
+	Other      string
 }
 
 func extractGitHubCommit(link string) *FixCommit {
@@ -255,4 +271,30 @@ func CPEs(cve CVEItem) []string {
 		cpes = append(cpes, cpe)
 	}
 	return cpes
+}
+
+// Parse a well-formed CPE string into a struct.
+func ParseCPE(cpe_str string) (*CPE, error) {
+	if !strings.HasPrefix(cpe_str, "cpe:") {
+		return nil, errors.New("Invalid CPE string")
+	}
+	if !strings.Contains(cpe_str, ":") {
+		return nil, errors.New("Invalid CPE string")
+	}
+
+	cpe_fields := strings.Split(cpe_str, ":")
+
+	return &CPE{
+		CPEVersion: cpe_fields[1],
+		Part:       cpe_fields[2],
+		Vendor:     cpe_fields[3],
+		Product:    cpe_fields[4],
+		Version:    cpe_fields[5],
+		Update:     cpe_fields[6],
+		Edition:    cpe_fields[7],
+		Language:   cpe_fields[8],
+		SWEdition:  cpe_fields[9],
+		TargetSw:   cpe_fields[10],
+		TargetHw:   cpe_fields[11],
+		Other:      cpe_fields[12]}, nil
 }

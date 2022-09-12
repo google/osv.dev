@@ -23,6 +23,7 @@ import time
 
 from google.cloud import ndb
 import grpc
+from grpc_reflection.v1alpha import reflection
 from packageurl import PackageURL
 
 import osv
@@ -114,16 +115,11 @@ class OSVServicer(osv_service_v1_pb2_grpc.OSVServicer):
     if request.query.name == "":
       context.abort(grpc.StatusCode.NOT_IMPLEMENTED, 'Querying only by file hash is not implemented yet.')
       return None
-    idxFuture = get_version_by_name(request.query, context)
-    # resFuture = 
-    print(idxFuture.result())
-    return idxFuture.result()
-    
+    return get_version_by_name(request.query, context).result()
 
 @ndb.tasklet
 def get_version_by_name(query: osv_service_v1_pb2.VersionQuery, context: grpc.ServicerContext) -> osv_service_v1_pb2.VersionMatchList:
-  # 1) get all commits with the package name
-  # 2) go through the RepoIndexResults and brute force compare it
+  """Identifies the version based on the provided name."""
   q = osv.RepoIndex.query(osv.RepoIndex.name == query.name)
   it = q.iter()
   futures = []
@@ -140,7 +136,7 @@ def get_version_by_name(query: osv_service_v1_pb2.VersionQuery, context: grpc.Se
 
 @ndb.tasklet
 def compare_hashes_from_commit(idx: osv.RepoIndex, hashes: List[osv_service_v1_pb2.FileHash]) -> osv_service_v1_pb2.VersionMatch:
-  # receive page by page and brute force compare with file hashes
+  """"Retrieves the hashes from the provided index and compares them to the input hashes."""
   total_files = 0
   matching_hashes = 0
   for i in range(idx.pages):
@@ -157,7 +153,6 @@ def compare_hashes_from_commit(idx: osv.RepoIndex, hashes: List[osv_service_v1_p
             matching_hashes += 1
             break
         total_files += 1
-  # print(total_files, matching_hashes)
   score = matching_hashes/total_files if total_files != 0 else 0.0
   return osv_service_v1_pb2.VersionMatch(type=3, value=idx.version, score=score)
 
@@ -479,11 +474,16 @@ def query_by_package(project, ecosystem, purl: PackageURL, page_token,
   return [to_response(bug) for bug in bugs], cursor
 
 
-def serve(port):
+def serve(port:int, local:bool):
   """Configures and runs the bookstore API server."""
   server = grpc.server(concurrent.futures.ThreadPoolExecutor(max_workers=10))
   osv_service_v1_pb2_grpc.add_OSVServicer_to_server(OSVServicer(), server)
-  
+  if local:
+    SERVICE_NAMES = (
+      osv_service_v1_pb2.DESCRIPTOR.services_by_name['OSV'].full_name,
+      reflection.SERVICE_NAME,
+    )
+    reflection.enable_server_reflection(SERVICE_NAMES, server)
   server.add_insecure_port('[::]:{}'.format(port))
   server.start()
 
@@ -509,6 +509,12 @@ def main():
       help='The port to listen on.'
       'If arg is not set, will listen on the $PORT env var.'
       'If env var is empty, defaults to 8000.')
+  parser.add_argument(
+    '--local',
+    type=bool,
+    default=False,
+    help='If set reflection is enabled to allow debugging with grpcurl.'
+  )
 
   args = parser.parse_args()
   port = args.port
@@ -517,7 +523,7 @@ def main():
   if not port:
     port = 8000
 
-  serve(port)
+  serve(port, args.local)
 
 
 if __name__ == '__main__':

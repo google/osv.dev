@@ -420,6 +420,7 @@ class Packagist(Ecosystem):
     response = json.loads(text_response)
     versions: list[str] = [x['version'] for x in response['packages'][package]]
     self.sort_versions(versions)
+    # TODO(rexpan): Potentially filter out branch versions like dev-master
 
     return self._get_affected_versions(versions, introduced, fixed, limits)
 

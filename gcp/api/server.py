@@ -107,17 +107,20 @@ class OSVServicer(osv_service_v1_pb2_grpc.OSVServicer):
           osv_service_v1_pb2.VulnerabilityList(vulns=future.result()[0] or []))
 
     return osv_service_v1_pb2.BatchVulnerabilityList(results=batch_results)
-  
+
   @ndb_context
   def DetermineVersion(self, request, context):
     """Determine the version of the provided hashes."""
     if request.query.name == "":
-      context.abort(grpc.StatusCode.NOT_IMPLEMENTED, 'Querying only by file hash is not implemented yet.')
+      context.abort(grpc.StatusCode.NOT_IMPLEMENTED,
+        'Querying only by file hash is not implemented yet.')
       return None
     return get_version_by_name(request.query, context).result()
 
+
 @ndb.tasklet
-def get_version_by_name(query: osv_service_v1_pb2.VersionQuery, context: grpc.ServicerContext) -> ndb.Future:
+def get_version_by_name(query: osv_service_v1_pb2.VersionQuery,
+  context: grpc.ServicerContext) -> ndb.Future:
   """Identifies the version based on the provided name."""
   q = osv.RepoIndex.query(osv.RepoIndex.name == query.name)
   it = q.iter()
@@ -133,13 +136,18 @@ def get_version_by_name(query: osv_service_v1_pb2.VersionQuery, context: grpc.Se
       results.append(r)
   return osv_service_v1_pb2.VersionMatchList(matches=results)
 
+
 @ndb.tasklet
-def compare_hashes_from_commit(idx: osv.RepoIndex, hashes: List[osv_service_v1_pb2.FileHash]) -> ndb.Future:
+def compare_hashes_from_commit(idx: osv.RepoIndex,
+  hashes: List[osv_service_v1_pb2.FileHash]) -> ndb.Future:
   """"Retrieves the hashes from the provided index and compares them to the input hashes."""
   total_files = 0
   matching_hashes = 0
   for i in range(idx.pages):
-    key = ndb.Key(idx.key.kind(), idx.key.id(), osv.RepoIndexResult, f"{idx.commit.hex()}-{idx.file_hash_type}-{i}")
+    key = ndb.Key(idx.key.kind(),
+      idx.key.id(),
+      osv.RepoIndexResult,
+      f"{idx.commit.hex()}-{idx.file_hash_type}-{i}")
     q = osv.RepoIndexResult.query(osv.RepoIndexResult.key == key)
     it = q.iter()
     while (yield it.has_next_async()):
@@ -150,8 +158,9 @@ def compare_hashes_from_commit(idx: osv.RepoIndex, hashes: List[osv_service_v1_p
             matching_hashes += 1
             break
         total_files += 1
-  score = matching_hashes/total_files if total_files != 0 else 0.0
+  score = matching_hashes / total_files if total_files != 0 else 0.0
   return osv_service_v1_pb2.VersionMatch(type=3, value=idx.version, score=score)
+
 
 @ndb.tasklet
 def do_query(query, context, include_details=True):

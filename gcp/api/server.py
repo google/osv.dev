@@ -140,9 +140,7 @@ def compare_hashes_from_commit(idx: osv.RepoIndex, hashes: List[osv_service_v1_p
   total_files = 0
   matching_hashes = 0
   for i in range(idx.pages):
-    print("query: " + f"{idx.commit.hex()}-{idx.file_hash_type}-{i}")
     key = ndb.Key(idx.key.kind(), idx.key.id(), osv.RepoIndexResult, f"{idx.commit.hex()}-{idx.file_hash_type}-{i}")
-    print(key)
     q = osv.RepoIndexResult.query(osv.RepoIndexResult.key == key)
     it = q.iter()
     while (yield it.has_next_async()):

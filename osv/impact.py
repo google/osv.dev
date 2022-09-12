@@ -417,7 +417,6 @@ def enumerate_versions(package, ecosystem, affected_range):
 def _analyze_git_ranges(repo_analyzer, checkout_path, affected_range,
                         new_versions, commits, new_introduced, new_fixed):
   """Analyze git ranges."""
-  package_repo_dir = tempfile.TemporaryDirectory()
   package_repo = None
 
   with tempfile.TemporaryDirectory() as package_repo_dir:

@@ -67,16 +67,20 @@ message QueryAffectedBatchParameters {
   BatchQuery query = 1;
 }
 
+// Parameters for DetermineVersion.
 message DetermineVersionParameters {
   VersionQuery query = 1;
 }
 
+// The version query.
 message VersionQuery {
   // The name of the dependency. Can be empty.
   string name = 1;
   repeated FileHash file_hashes = 2;
 }
 
+// Information about the files in the repository
+// to identify the version.
 message FileHash {
   // The file path inside the repository. 
   // Can be empty but providing it increases matching quality.
@@ -85,10 +89,12 @@ message FileHash {
   repeated bytes hash = 3;
 }
 
+// Result of DetmineVersion.
 message VersionMatchList {
   repeated VersionMatch matches = 1;
 }
 
+// Match information for the provided VersionQuery.
 message VersionMatch {
   enum IDType {
     UNSPECIFIED = 0;
@@ -98,7 +104,10 @@ message VersionMatch {
     GIT_REPO = 4;
   }
   IDType type = 1;
+  // Identifier value.
   string value = 2;
+  // Score in the intervall (0.0 1.0] with 1.0
+  // being a perfect match.
   double score = 3;
 }
 
@@ -129,6 +138,7 @@ service OSV {
     };
   }
 
+  // Determine the version of the provided hash values.
   rpc DetermineVersion(DetermineVersionParameters) returns (VersionMatchList) {
     option (google.api.http) = {
       post:"/v1/determineversion"

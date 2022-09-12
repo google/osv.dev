@@ -12,8 +12,9 @@ import (
 	"strconv"
 	"time"
 
-	"cloud.google.com/go/logging"
 	"github.com/google/osv/vulnfeeds/utility"
+
+	"cloud.google.com/go/logging"
 )
 
 const (

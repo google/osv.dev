@@ -9,10 +9,11 @@ import (
 	"path"
 	"strings"
 
-	"cloud.google.com/go/logging"
 	"github.com/google/osv/vulnfeeds/cves"
 	"github.com/google/osv/vulnfeeds/utility"
 	"github.com/google/osv/vulnfeeds/vulns"
+
+	"cloud.google.com/go/logging"
 )
 
 const (

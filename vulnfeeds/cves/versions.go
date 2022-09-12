@@ -15,7 +15,6 @@
 package cves
 
 import (
-	"errors"
 	"fmt"
 	"log"
 	"net/url"
@@ -48,8 +47,8 @@ type CPE struct {
 	Edition    string
 	Language   string
 	SWEdition  string
-	TargetSw   string
-	TargetHw   string
+	TargetSW   string
+	TargetHW   string
 	Other      string
 }
 
@@ -274,15 +273,16 @@ func CPEs(cve CVEItem) []string {
 }
 
 // Parse a well-formed CPE string into a struct.
-func ParseCPE(cpe_str string) (*CPE, error) {
+func ParseCPE(cpe_str string) (*CPE, bool) {
 	if !strings.HasPrefix(cpe_str, "cpe:") {
-		return nil, errors.New("Invalid CPE string")
-	}
-	if !strings.Contains(cpe_str, ":") {
-		return nil, errors.New("Invalid CPE string")
+		return nil, false
 	}
 
 	cpe_fields := strings.Split(cpe_str, ":")
+
+	if len(cpe_fields) < 12 {
+		return nil, false
+	}
 
 	return &CPE{
 		CPEVersion: cpe_fields[1],
@@ -294,7 +294,7 @@ func ParseCPE(cpe_str string) (*CPE, error) {
 		Edition:    cpe_fields[7],
 		Language:   cpe_fields[8],
 		SWEdition:  cpe_fields[9],
-		TargetSw:   cpe_fields[10],
-		TargetHw:   cpe_fields[11],
-		Other:      cpe_fields[12]}, nil
+		TargetSW:   cpe_fields[10],
+		TargetHW:   cpe_fields[11],
+		Other:      cpe_fields[12]}, true
 }

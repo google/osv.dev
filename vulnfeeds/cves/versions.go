@@ -278,23 +278,23 @@ func ParseCPE(cpe_str string) (*CPE, bool) {
 		return nil, false
 	}
 
-	cpe_fields := strings.Split(cpe_str, ":")
+	cpeFields := strings.Split(cpe_str, ":")
 
-	if len(cpe_fields) < 13 {
+	if len(cpeFields) < 13 {
 		return nil, false
 	}
 
 	return &CPE{
-		CPEVersion: cpe_fields[1],
-		Part:       cpe_fields[2],
-		Vendor:     cpe_fields[3],
-		Product:    cpe_fields[4],
-		Version:    cpe_fields[5],
-		Update:     cpe_fields[6],
-		Edition:    cpe_fields[7],
-		Language:   cpe_fields[8],
-		SWEdition:  cpe_fields[9],
-		TargetSW:   cpe_fields[10],
-		TargetHW:   cpe_fields[11],
-		Other:      cpe_fields[12]}, true
+		CPEVersion: cpeFields[1],
+		Part:       cpeFields[2],
+		Vendor:     cpeFields[3],
+		Product:    cpeFields[4],
+		Version:    cpeFields[5],
+		Update:     cpeFields[6],
+		Edition:    cpeFields[7],
+		Language:   cpeFields[8],
+		SWEdition:  cpeFields[9],
+		TargetSW:   cpeFields[10],
+		TargetHW:   cpeFields[11],
+		Other:      cpeFields[12]}, true
 }

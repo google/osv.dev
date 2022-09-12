@@ -2,6 +2,7 @@ package main
 
 import (
 	"compress/gzip"
+	"context"
 	"flag"
 	"io"
 	"log"
@@ -10,6 +11,8 @@ import (
 	"path"
 	"strconv"
 	"time"
+
+	"cloud.google.com/go/logging"
 )
 
 const (
@@ -17,9 +20,18 @@ const (
 	fileNameBase   = "nvdcve-1.1-"
 	startingYear   = 2002
 	cvePathDefault = "cve_jsons"
+	projectId      = "oss-vdb"
 )
 
+var LOGGER *logging.Logger
+
 func main() {
+	client, err := logging.NewClient(context.Background(), projectId)
+	if err != nil {
+		log.Fatalf("Failed to create client: %v", err)
+	}
+	defer client.Close()
+	LOGGER = client.Logger("combine-to-osv")
 	cvePath := flag.String("cvePath", cvePathDefault, "Where to download CVEs to")
 	flag.Parse()
 	currentYear := time.Now().Year()
@@ -54,5 +66,6 @@ func downloadCVE(version string, cvePath string) {
 	if _, err := io.Copy(file, reader); err != nil {
 		log.Fatalf("Failed to write to file %s: %s", version, err)
 	}
-	log.Printf("Success for %s\n", version)
+	LOGGER.StandardLogger(logging.Info).Printf(
+		"Successfully downloaded CVE %s\n", version)
 }

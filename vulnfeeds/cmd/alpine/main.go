@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"encoding/json"
 	"flag"
 	"fmt"
@@ -12,6 +13,7 @@ import (
 	"regexp"
 	"strings"
 
+	"cloud.google.com/go/logging"
 	"github.com/google/osv/vulnfeeds/vulns"
 )
 
@@ -19,16 +21,26 @@ const (
 	alpineURLBase           = "https://secdb.alpinelinux.org/%s/main.json"
 	alpineIndexURL          = "https://secdb.alpinelinux.org/"
 	alpineOutputPathDefault = "parts/alpine"
+	projectId               = "oss-vdb"
 )
 
+var LOGGER *logging.Logger
+
 func main() {
+	client, err := logging.NewClient(context.Background(), projectId)
+	if err != nil {
+		log.Fatalf("Failed to create client: %v", err)
+	}
+	defer client.Close()
+	LOGGER = client.Logger("alpine-osv")
+
 	alpineOutputPath := flag.String(
 		"alpineOutput",
 		alpineOutputPathDefault,
 		"path to output general alpine affected package information")
 	flag.Parse()
 
-	err := os.MkdirAll(*alpineOutputPath, 0755)
+	err = os.MkdirAll(*alpineOutputPath, 0755)
 	if err != nil {
 		log.Fatalf("Can't create output path: %s", err)
 	}
@@ -56,7 +68,7 @@ func getAllAlpineVersions() []string {
 
 	for _, match := range searchRes {
 		// The expression only has one capture that must always be there
-		log.Printf("Found ver: %s", match[1])
+		LOGGER.StandardLogger(logging.Info).Printf("Found ver: %s", match[1])
 		alpineVersions = append(alpineVersions, match[1])
 	}
 
@@ -120,7 +132,7 @@ func generateAlpineOSV(allAlpineSecDb map[string][]VersionAndPkg, alpineOutputPa
 		_ = file.Close()
 	}
 
-	log.Println("Finished")
+	LOGGER.StandardLogger(logging.Info).Println("Finished")
 }
 
 // downloadAlpine downloads Alpine SecDB data from their API

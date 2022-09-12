@@ -113,14 +113,14 @@ class OSVServicer(osv_service_v1_pb2_grpc.OSVServicer):
     """Determine the version of the provided hashes."""
     if request.query.name == "":
       context.abort(grpc.StatusCode.NOT_IMPLEMENTED,
-        'Querying only by file hash is not implemented yet.')
+                    'Querying only by file hash is not implemented yet.')
       return None
     return get_version_by_name(request.query, context).result()
 
 
 @ndb.tasklet
 def get_version_by_name(query: osv_service_v1_pb2.VersionQuery,
-  context: grpc.ServicerContext) -> ndb.Future:
+                        context: grpc.ServicerContext) -> ndb.Future:
   """Identifies the version based on the provided name."""
   q = osv.RepoIndex.query(osv.RepoIndex.name == query.name)
   it = q.iter()
@@ -138,16 +138,15 @@ def get_version_by_name(query: osv_service_v1_pb2.VersionQuery,
 
 
 @ndb.tasklet
-def compare_hashes_from_commit(idx: osv.RepoIndex,
-  hashes: List[osv_service_v1_pb2.FileHash]) -> ndb.Future:
+def compare_hashes_from_commit(
+    idx: osv.RepoIndex,
+    hashes: List[osv_service_v1_pb2.FileHash]) -> ndb.Future:
   """"Retrieves the hashes from the provided index and compares them to the input hashes."""
   total_files = 0
   matching_hashes = 0
   for i in range(idx.pages):
-    key = ndb.Key(idx.key.kind(),
-      idx.key.id(),
-      osv.RepoIndexResult,
-      f"{idx.commit.hex()}-{idx.file_hash_type}-{i}")
+    key = ndb.Key(idx.key.kind(), idx.key.id(), osv.RepoIndexResult,
+                  f"{idx.commit.hex()}-{idx.file_hash_type}-{i}")
     q = osv.RepoIndexResult.query(osv.RepoIndexResult.key == key)
     it = q.iter()
     while (yield it.has_next_async()):
@@ -480,14 +479,14 @@ def query_by_package(project, ecosystem, purl: PackageURL, page_token,
   return [to_response(bug) for bug in bugs], cursor
 
 
-def serve(port:int, local:bool):
+def serve(port: int, local: bool):
   """Configures and runs the bookstore API server."""
   server = grpc.server(concurrent.futures.ThreadPoolExecutor(max_workers=10))
   osv_service_v1_pb2_grpc.add_OSVServicer_to_server(OSVServicer(), server)
   if local:
     SERVICE_NAMES = (
-      osv_service_v1_pb2.DESCRIPTOR.services_by_name['OSV'].full_name,
-      reflection.SERVICE_NAME,
+        osv_service_v1_pb2.DESCRIPTOR.services_by_name['OSV'].full_name,
+        reflection.SERVICE_NAME,
     )
     reflection.enable_server_reflection(SERVICE_NAMES, server)
   server.add_insecure_port('[::]:{}'.format(port))
@@ -516,11 +515,10 @@ def main():
       'If arg is not set, will listen on the $PORT env var.'
       'If env var is empty, defaults to 8000.')
   parser.add_argument(
-    '--local',
-    action='store_true',
-    default=False,
-    help='If set reflection is enabled to allow debugging with grpcurl.'
-  )
+      '--local',
+      action='store_true',
+      default=False,
+      help='If set reflection is enabled to allow debugging with grpcurl.')
 
   args = parser.parse_args()
   port = args.port

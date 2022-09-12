@@ -636,6 +636,7 @@ class Bug(ndb.Model):
 
     return result
 
+
 class RepoIndex(ndb.Model):
   """RepoIndex entry"""
   # The dependency name
@@ -656,6 +657,7 @@ class RepoIndex(ndb.Model):
   file_hash_type = ndb.StringProperty()
   # The repository type
   repo_type = ndb.StringProperty()
+
 
 class RepoIndexResult(ndb.Model):
   """RepoIndexResult entries containing the actual hash values"""

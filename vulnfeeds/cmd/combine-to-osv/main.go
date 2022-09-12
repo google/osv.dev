@@ -4,13 +4,13 @@ import (
 	"context"
 	"encoding/json"
 	"flag"
-	"log"
 	"os"
 	"path"
 	"strings"
 
 	"cloud.google.com/go/logging"
 	"github.com/google/osv/vulnfeeds/cves"
+	"github.com/google/osv/vulnfeeds/utility"
 	"github.com/google/osv/vulnfeeds/vulns"
 )
 
@@ -26,7 +26,7 @@ var LOGGER *logging.Logger
 func main() {
 	client, err := logging.NewClient(context.Background(), projectId)
 	if err != nil {
-		log.Fatalf("Failed to create client: %v", err)
+		utility.FatalLogf(LOGGER, "Failed to create client: %v", err)
 	}
 	defer client.Close()
 	LOGGER = client.Logger("combine-to-osv")
@@ -38,11 +38,11 @@ func main() {
 
 	err = os.MkdirAll(*cvePath, 0755)
 	if err != nil {
-		log.Fatalf("Can't create output path: %s", err)
+		utility.FatalLogf(LOGGER, "Can't create output path: %s", err)
 	}
 	err = os.MkdirAll(*osvOutputPath, 0755)
 	if err != nil {
-		log.Fatalf("Can't create output path: %s", err)
+		utility.FatalLogf(LOGGER, "Can't create output path: %s", err)
 	}
 
 	allCves := loadAllCVEs(*cvePath)
@@ -55,24 +55,24 @@ func main() {
 func loadInnerParts(innerPartInputPath string, output map[string][]vulns.PackageInfo) {
 	dirInner, err := os.ReadDir(innerPartInputPath)
 	if err != nil {
-		log.Fatalf("Failed to read dir? %s", err)
+		utility.FatalLogf(LOGGER, "Failed to read dir? %s", err)
 	}
 	for _, entryInner := range dirInner {
 		file, err := os.Open(path.Join(innerPartInputPath, entryInner.Name()))
 		if err != nil {
-			log.Fatalf("Failed to open cve json: %s", err)
+			utility.FatalLogf(LOGGER, "Failed to open cve json: %s", err)
 		}
 		var pkgInfos []vulns.PackageInfo
 		err = json.NewDecoder(file).Decode(&pkgInfos)
 		if err != nil {
-			log.Fatalf("Failed to decode json: %s", err)
+			utility.FatalLogf(LOGGER, "Failed to decode json: %s", err)
 		}
 
 		// Turns CVE-2022-12345.alpine.json into CVE-2022-12345
 		cveId := strings.Split(entryInner.Name(), ".")[0]
 		output[cveId] = append(output[cveId], pkgInfos...)
 
-		LOGGER.StandardLogger(logging.Info).Printf(
+		utility.InfoLogf(LOGGER,
 			"Loaded Alpine Item: %s", entryInner.Name())
 		file.Close()
 	}
@@ -96,12 +96,13 @@ func loadInnerParts(innerPartInputPath string, output map[string][]vulns.Package
 func loadParts(partsInputPath string) map[string][]vulns.PackageInfo {
 	dir, err := os.ReadDir(partsInputPath)
 	if err != nil {
-		log.Fatalf("Failed to read dir? %s", err)
+		utility.FatalLogf(LOGGER, "Failed to read dir? %s", err)
 	}
 	output := map[string][]vulns.PackageInfo{}
 	for _, entry := range dir {
 		if !entry.IsDir() {
-			LOGGER.StandardLogger(logging.Warning).Println("Unexpected file entry in " + partsInputPath)
+			LOGGER.StandardLogger(logging.Warning).Println(
+				"Unexpected file entry in " + partsInputPath)
 			continue
 		}
 		// map is already a reference type, so no need to pass in a pointer
@@ -132,13 +133,13 @@ func writeOSVFile(osvData map[string]*vulns.Vulnerability, osvOutputPath string)
 	for vId, osv := range osvData {
 		file, err := os.OpenFile(path.Join(osvOutputPath, vId+".json"), os.O_CREATE|os.O_RDWR, 0644)
 		if err != nil {
-			log.Fatalf("Failed to create/open file to write: %s", err)
+			utility.FatalLogf(LOGGER, "Failed to create/open file to write: %s", err)
 		}
 		encoder := json.NewEncoder(file)
 		encoder.SetIndent("", "  ")
 		err = encoder.Encode(osv)
 		if err != nil {
-			log.Fatalf("Failed to encode OSVs")
+			utility.FatalLogf(LOGGER, "Failed to encode OSVs")
 		}
 		file.Close()
 	}
@@ -150,7 +151,7 @@ func writeOSVFile(osvData map[string]*vulns.Vulnerability, osvOutputPath string)
 func loadAllCVEs(cvePath string) map[string]cves.CVEItem {
 	dir, err := os.ReadDir(cvePath)
 	if err != nil {
-		log.Fatalf("Failed to read dir? %s", err)
+		utility.FatalLogf(LOGGER, "Failed to read dir? %s", err)
 	}
 
 	result := make(map[string]cves.CVEItem)
@@ -158,18 +159,18 @@ func loadAllCVEs(cvePath string) map[string]cves.CVEItem {
 	for _, entry := range dir {
 		file, err := os.Open(path.Join(cvePath, entry.Name()))
 		if err != nil {
-			log.Fatalf("Failed to open cve json: %s", err)
+			utility.FatalLogf(LOGGER, "Failed to open cve json: %s", err)
 		}
 		var nvdcve cves.NVDCVE
 		err = json.NewDecoder(file).Decode(&nvdcve)
 		if err != nil {
-			log.Fatalf("Failed to decode json: %s", err)
+			utility.FatalLogf(LOGGER, "Failed to decode json: %s", err)
 		}
 
 		for _, item := range nvdcve.CVEItems {
 			result[item.CVE.CVEDataMeta.ID] = item
 		}
-		LOGGER.StandardLogger(logging.Info).Printf("Loaded CVE: %s", entry.Name())
+		utility.InfoLogf(LOGGER, "Loaded CVE: %s", entry.Name())
 		file.Close()
 	}
 	return result

@@ -6,7 +6,6 @@ import (
 	"flag"
 	"fmt"
 	"io"
-	"log"
 	"net/http"
 	"os"
 	"path"
@@ -14,6 +13,7 @@ import (
 	"strings"
 
 	"cloud.google.com/go/logging"
+	"github.com/google/osv/vulnfeeds/utility"
 	"github.com/google/osv/vulnfeeds/vulns"
 )
 
@@ -29,7 +29,7 @@ var LOGGER *logging.Logger
 func main() {
 	client, err := logging.NewClient(context.Background(), projectId)
 	if err != nil {
-		log.Fatalf("Failed to create client: %v", err)
+		utility.FatalLogf(LOGGER, "Failed to create client: %v", err)
 	}
 	defer client.Close()
 	LOGGER = client.Logger("alpine-osv")
@@ -42,7 +42,7 @@ func main() {
 
 	err = os.MkdirAll(*alpineOutputPath, 0755)
 	if err != nil {
-		log.Fatalf("Can't create output path: %s", err)
+		utility.FatalLogf(LOGGER, "Can't create output path: %s", err)
 	}
 
 	allAlpineSecDB := getAlpineSecDBData()
@@ -53,12 +53,12 @@ func main() {
 func getAllAlpineVersions() []string {
 	res, err := http.Get(alpineIndexURL)
 	if err != nil {
-		log.Fatalf("Failed to get alpine index page: %s", err)
+		utility.FatalLogf(LOGGER, "Failed to get alpine index page: %s", err)
 	}
 	buf := new(strings.Builder)
 	_, err = io.Copy(buf, res.Body)
 	if err != nil {
-		log.Fatalf("Failed to get alpine index page: %s", err)
+		utility.FatalLogf(LOGGER, "Failed to get alpine index page: %s", err)
 	}
 
 	exp := regexp.MustCompile("href=\"(v[\\d.]*)/\"")
@@ -68,7 +68,7 @@ func getAllAlpineVersions() []string {
 
 	for _, match := range searchRes {
 		// The expression only has one capture that must always be there
-		LOGGER.StandardLogger(logging.Info).Printf("Found ver: %s", match[1])
+		utility.InfoLogf(LOGGER, "Found ver: %s", match[1])
 		alpineVersions = append(alpineVersions, match[1])
 	}
 
@@ -121,13 +121,13 @@ func generateAlpineOSV(allAlpineSecDb map[string][]VersionAndPkg, alpineOutputPa
 
 		file, err := os.OpenFile(path.Join(alpineOutputPath, cveId+".alpine.json"), os.O_CREATE|os.O_RDWR, 0644)
 		if err != nil {
-			log.Fatalf("Failed to create/write osv output file: %s", err)
+			utility.FatalLogf(LOGGER, "Failed to create/write osv output file: %s", err)
 		}
 		encoder := json.NewEncoder(file)
 		encoder.SetIndent("", "  ")
 		err = encoder.Encode(&pkgInfos)
 		if err != nil {
-			log.Fatalf("Failed to encode package info output file: %s", err)
+			utility.FatalLogf(LOGGER, "Failed to encode package info output file: %s", err)
 		}
 		_ = file.Close()
 	}
@@ -139,13 +139,13 @@ func generateAlpineOSV(allAlpineSecDb map[string][]VersionAndPkg, alpineOutputPa
 func downloadAlpine(version string) AlpineSecDB {
 	res, err := http.Get(fmt.Sprintf(alpineURLBase, version))
 	if err != nil {
-		log.Fatalf("Failed to get alpine file for version '%s' with error %s", version, err)
+		utility.FatalLogf(LOGGER, "Failed to get alpine file for version '%s' with error %s", version, err)
 	}
 
 	var decodedSecdb AlpineSecDB
 
 	if err := json.NewDecoder(res.Body).Decode(&decodedSecdb); err != nil {
-		log.Fatalf("Failed to parse alpine json: %s", err)
+		utility.FatalLogf(LOGGER, "Failed to parse alpine json: %s", err)
 	}
 	return decodedSecdb
 }

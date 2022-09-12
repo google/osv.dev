@@ -5,7 +5,6 @@ import (
 	"context"
 	"flag"
 	"io"
-	"log"
 	"net/http"
 	"os"
 	"path"
@@ -13,6 +12,7 @@ import (
 	"time"
 
 	"cloud.google.com/go/logging"
+	"github.com/google/osv/vulnfeeds/utility"
 )
 
 const (
@@ -28,7 +28,7 @@ var LOGGER *logging.Logger
 func main() {
 	client, err := logging.NewClient(context.Background(), projectId)
 	if err != nil {
-		log.Fatalf("Failed to create client: %v", err)
+		utility.FatalLogf(LOGGER, "Failed to create client: %v", err)
 	}
 	defer client.Close()
 	LOGGER = client.Logger("combine-to-osv")
@@ -46,26 +46,26 @@ func downloadCVE(version string, cvePath string) {
 	file, err := os.OpenFile(path.Join(cvePath, fileNameBase+version+".json"), os.O_CREATE|os.O_RDWR|os.O_TRUNC, 0644)
 	defer file.Close()
 	if err != nil { // There's an existing file, check if it matches server file
-		log.Fatalf("Something's went wrong when creating/opening file %s, %s", version, err)
+		utility.FatalLogf(LOGGER, "Something's went wrong when creating/opening file %s, %s", version, err)
 	}
 
 	res, err := http.Get(cveURLBase + fileNameBase + version + ".json.gz")
 	if err != nil {
-		log.Fatalf("Failed to retrieve cve json with: %d, for version: %s", err, version)
+		utility.FatalLogf(LOGGER, "Failed to retrieve cve json with: %d, for version: %s", err, version)
 	}
 
 	if res.StatusCode != 200 {
-		log.Fatalf("Failed to retrieve cve json with: %d, for version: %s", res.StatusCode, version)
+		utility.FatalLogf(LOGGER, "Failed to retrieve cve json with: %d, for version: %s", res.StatusCode, version)
 	}
 
 	reader, err := gzip.NewReader(res.Body)
 	if err != nil {
-		log.Fatalf("Failed to create gzip reader: %s", err)
+		utility.FatalLogf(LOGGER, "Failed to create gzip reader: %s", err)
 	}
 
 	if _, err := io.Copy(file, reader); err != nil {
-		log.Fatalf("Failed to write to file %s: %s", version, err)
+		utility.FatalLogf(LOGGER, "Failed to write to file %s: %s", version, err)
 	}
-	LOGGER.StandardLogger(logging.Info).Printf(
+	utility.InfoLogf(LOGGER,
 		"Successfully downloaded CVE %s\n", version)
 }

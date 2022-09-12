@@ -31,6 +31,8 @@ from osv import semver_index
 import osv_service_v1_pb2
 import osv_service_v1_pb2_grpc
 
+from typing import List
+
 _PROJECT = 'oss-vdb'
 _OSS_FUZZ_TRACKER_URL = 'https://bugs.chromium.org/p/oss-fuzz/issues/detail?id='
 
@@ -104,7 +106,60 @@ class OSVServicer(osv_service_v1_pb2_grpc.OSVServicer):
           osv_service_v1_pb2.VulnerabilityList(vulns=future.result()[0] or []))
 
     return osv_service_v1_pb2.BatchVulnerabilityList(results=batch_results)
+  
+  @ndb_context
+  def DetermineVersion(self, request, context):
+    """Determine the version of the provided hashes."""
+    print(request)
+    if request.query.name == "":
+      context.abort(grpc.StatusCode.NOT_IMPLEMENTED, 'Querying only by file hash is not implemented yet.')
+      return None
+    idxFuture = get_version_by_name(request.query, context)
+    # resFuture = 
+    print(idxFuture.result())
+    return idxFuture.result()
+    
 
+@ndb.tasklet
+def get_version_by_name(query: osv_service_v1_pb2.VersionQuery, context: grpc.ServicerContext) -> osv_service_v1_pb2.VersionMatchList:
+  # 1) get all commits with the package name
+  # 2) go through the RepoIndexResults and brute force compare it
+  q = osv.RepoIndex.query(osv.RepoIndex.name == query.name)
+  it = q.iter()
+  futures = []
+  while (yield it.has_next_async()):
+    idx = it.next()
+    v = compare_hashes_from_commit(idx, query.file_hashes)
+    futures.append(v)
+  results = []
+  for f in futures:
+    r = f.result()
+    if r.score != 0.0:
+      results.append(r)
+  return osv_service_v1_pb2.VersionMatchList(matches=results)
+
+@ndb.tasklet
+def compare_hashes_from_commit(idx: osv.RepoIndex, hashes: List[osv_service_v1_pb2.FileHash]) -> osv_service_v1_pb2.VersionMatch:
+  # receive page by page and brute force compare with file hashes
+  total_files = 0
+  matching_hashes = 0
+  for i in range(idx.pages):
+    print("query: " + f"{idx.commit.hex()}-{idx.file_hash_type}-{i}")
+    key = ndb.Key(idx.key.kind(), idx.key.id(), osv.RepoIndexResult, f"{idx.commit.hex()}-{idx.file_hash_type}-{i}")
+    print(key)
+    q = osv.RepoIndexResult.query(osv.RepoIndexResult.key == key)
+    it = q.iter()
+    while (yield it.has_next_async()):
+      res = it.next()
+      for idxHash in res.file_results:
+        for inHash in hashes:
+          if inHash.hash == idxHash:
+            matching_hashes += 1
+            break
+        total_files += 1
+  # print(total_files, matching_hashes)
+  score = matching_hashes/total_files if total_files != 0 else 0.0
+  return osv_service_v1_pb2.VersionMatch(type=3, value=idx.version, score=score)
 
 @ndb.tasklet
 def do_query(query, context, include_details=True):
@@ -428,6 +483,7 @@ def serve(port):
   """Configures and runs the bookstore API server."""
   server = grpc.server(concurrent.futures.ThreadPoolExecutor(max_workers=10))
   osv_service_v1_pb2_grpc.add_OSVServicer_to_server(OSVServicer(), server)
+  
   server.add_insecure_port('[::]:{}'.format(port))
   server.start()
 

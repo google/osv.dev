@@ -92,9 +92,10 @@ message VersionMatchList {
 message VersionMatch {
   enum IDType {
     UNSPECIFIED = 0;
-    CPE = 1;
-    VERSION = 2;
-    GIT_REPO = 3;
+    OSV = 1;
+    CPE = 2;
+    VERSION = 3;
+    GIT_REPO = 4;
   }
   IDType type = 1;
   string value = 2;

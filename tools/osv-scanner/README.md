@@ -20,7 +20,7 @@ auto-detected based on the input file contents.
 [Package URLs]: https://github.com/package-url/purl-spec
 
 ```bash
-$ go run main.go --sbom=/path/to/your/sbom.json
+$ go run ./cmd/osv-scanner --sbom=/path/to/your/sbom.json
 ```
 
 ## Scanning a lockfile
@@ -39,7 +39,7 @@ A wide range of lockfiles are supported by utilizing this [lockfile package](htt
 - `requirements.txt`\*
 
 ```bash
-$ go run main.go --lockfile=/path/to/your/package-lock.json -L /path/to/another/Cargo.lock
+$ go run ./cmd/osv-scanner --lockfile=/path/to/your/package-lock.json -L /path/to/another/Cargo.lock
 ```
 
 ## Scanning a Debian based docker image packages
@@ -51,7 +51,7 @@ Currently only Debian based docker image scanning is supported.
 Requires `docker` to be installed and the tool to have permission calling it.
 
 ```bash
-$ go run main.go --docker image_name:latest
+$ go run ./cmd/osv-scanner --docker image_name:latest
 ```
 
 ## Scanning a directory
@@ -71,5 +71,5 @@ as real git repositories.
 ### Example
 
 ```bash
-$ go run main.go /path/to/your/dir
+$ go run ./cmd/osv-scanner /path/to/your/dir
 ```

@@ -13,10 +13,11 @@ import (
 	"github.com/g-rath/osv-detector/pkg/lockfile"
 	"github.com/jedib0t/go-pretty/v6/table"
 	"github.com/jedib0t/go-pretty/v6/text"
-	"github.com/urfave/cli/v2"
 	"github.com/package-url/packageurl-go"
+	"github.com/urfave/cli/v2"
 	"golang.org/x/crypto/ssh/terminal"
 
+	"github.com/google/osv.dev/tools/osv-scanner/internal/grouper"
 	"github.com/google/osv.dev/tools/osv-scanner/internal/osv"
 	"github.com/google/osv.dev/tools/osv-scanner/internal/sbom"
 )
@@ -58,13 +59,11 @@ func scanDir(query *osv.BatchedQuery, dir string) error {
 }
 
 func scanLockfile(query *osv.BatchedQuery, path string) error {
-	log.Printf("Scanning file %s\n", path)
-
 	parsedLockfile, err := lockfile.Parse(path, "")
 	if err != nil {
 		return err
 	}
-	log.Printf("Scanned %s file with %d packages", parsedLockfile.ParsedAs, len(parsedLockfile.Packages))
+	log.Printf("Scanned %s file and found %d packages", path, len(parsedLockfile.Packages))
 
 	for _, pkgDetail := range parsedLockfile.Packages {
 		pkgDetailQuery := osv.MakePkgRequest(pkgDetail)
@@ -75,7 +74,6 @@ func scanLockfile(query *osv.BatchedQuery, path string) error {
 }
 
 func scanSBOMFile(query *osv.BatchedQuery, path string) error {
-	log.Printf("Scanning file %s\n", path)
 	file, err := os.Open(path)
 	if err != nil {
 		return err
@@ -171,7 +169,7 @@ func scanDebianDocker(query *osv.BatchedQuery, dockerImageName string) {
 }
 
 // printResults prints the osv scan results into a human friendly table.
-func printResults(query osv.BatchedQuery, resp *osv.BatchedResponse) {
+func printResults(query osv.BatchedQuery, resp *osv.HydratedBatchedResponse) {
 	outputTable := table.NewWriter()
 	outputTable.SetOutputMirror(os.Stdout)
 	outputTable.AppendHeader(table.Row{"Source", "Ecosystem", "Affected Package", "Installed Version", "Vulnerability ID", "OSV URL"})
@@ -180,7 +178,7 @@ func printResults(query osv.BatchedQuery, resp *osv.BatchedResponse) {
 		if len(resp.Results[i].Vulns) == 0 {
 			continue
 		}
-		for _, vuln := range resp.Results[i].Vulns {
+		for _, group := range grouper.Group(resp.Results[i].Vulns) {
 			outputRow := table.Row{query.Source}
 			shouldMerge := false
 			if query.Commit != "" {
@@ -200,7 +198,16 @@ func printResults(query osv.BatchedQuery, resp *osv.BatchedResponse) {
 			} else {
 				outputRow = append(outputRow, query.Package.Ecosystem, query.Package.Name, query.Version)
 			}
-			outputRow = append(outputRow, vuln.ID, osv.BaseVulnerabilityURL+vuln.ID)
+
+			var ids []string
+			var links []string
+
+			for _, vuln := range group {
+				ids = append(ids, vuln.ID)
+				links = append(links, osv.BaseVulnerabilityURL+vuln.ID)
+			}
+
+			outputRow = append(outputRow, strings.Join(ids, "\n"), strings.Join(links, "\n"))
 			outputTable.AppendRow(outputRow, table.RowConfig{AutoMerge: shouldMerge})
 		}
 	}
@@ -305,8 +312,13 @@ func main() {
 
 	resp, err := osv.MakeRequest(query)
 	if err != nil {
-		log.Printf("scan failed: %v\n", err)
-		return
+		log.Fatalf("Scan failed: %v", err)
 	}
-	printResults(query, resp)
+
+	hydratedResp, err := osv.Hydrate(resp)
+	if err != nil {
+		log.Fatalf("Failed to hydrate OSV response: %v", err)
+	}
+
+	printResults(query, hydratedResp)
 }

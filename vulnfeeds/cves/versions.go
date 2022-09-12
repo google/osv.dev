@@ -37,6 +37,21 @@ type VersionInfo struct {
 	AffectedVersions []AffectedVersion
 }
 
+type CPE struct {
+	CPEVersion string
+	Part       string
+	Vendor     string
+	Product    string
+	Version    string
+	Update     string
+	Edition    string
+	Language   string
+	SWEdition  string
+	TargetSW   string
+	TargetHW   string
+	Other      string
+}
+
 func extractGitHubCommit(link string) *FixCommit {
 	// Example: https://github.com/google/osv/commit/cd4e934d0527e5010e373e7fed54ef5daefba2f5
 	u, err := url.Parse(link)
@@ -255,4 +270,31 @@ func CPEs(cve CVEItem) []string {
 		cpes = append(cpes, cpe)
 	}
 	return cpes
+}
+
+// Parse a well-formed CPE string into a struct.
+func ParseCPE(cpe_str string) (*CPE, bool) {
+	if !strings.HasPrefix(cpe_str, "cpe:") {
+		return nil, false
+	}
+
+	cpeFields := strings.Split(cpe_str, ":")
+
+	if len(cpeFields) < 13 {
+		return nil, false
+	}
+
+	return &CPE{
+		CPEVersion: cpeFields[1],
+		Part:       cpeFields[2],
+		Vendor:     cpeFields[3],
+		Product:    cpeFields[4],
+		Version:    cpeFields[5],
+		Update:     cpeFields[6],
+		Edition:    cpeFields[7],
+		Language:   cpeFields[8],
+		SWEdition:  cpeFields[9],
+		TargetSW:   cpeFields[10],
+		TargetHW:   cpeFields[11],
+		Other:      cpeFields[12]}, true
 }

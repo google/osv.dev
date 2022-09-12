@@ -1,4 +1,5 @@
-# Copyright 2021 Google LLC
+#!/bin/bash
+# Copyright 2022 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -11,19 +12,17 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+#
+################################################################################
 
-FROM gcr.io/oss-vdb/worker
+# Install go on x86_64, don't do anything on ARM.
+set -eux
 
-RUN apt-get update && \
-    apt-get install -y \
-        wget \
-        google-cloud-sdk-datastore-emulator \
-        openjdk-11-jre  # Needed for Datastore emulator.
-
-COPY daemon.json /etc/docker/daemon.json
-COPY install_go.sh /tmp/install_go.sh
-
-RUN "/tmp/install_go.sh" "/tmp"
-ENV PATH "$PATH:/root/.go/bin"
-
-ENTRYPOINT []
+# Download and install the latest stable Go.
+wget https://storage.googleapis.com/golang/getgo/installer_linux -O $1/installer_linux
+chmod +x $1/installer_linux
+SHELL="bash" $1/installer_linux -version 1.18
+rm $1/installer_linux
+# # Set up Golang coverage modules.
+# printf $(find . -name gocoverage)
+# cd $GOPATH/gocoverage && go install ./...

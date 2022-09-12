@@ -111,14 +111,13 @@ class OSVServicer(osv_service_v1_pb2_grpc.OSVServicer):
   @ndb_context
   def DetermineVersion(self, request, context):
     """Determine the version of the provided hashes."""
-    print(request)
     if request.query.name == "":
       context.abort(grpc.StatusCode.NOT_IMPLEMENTED, 'Querying only by file hash is not implemented yet.')
       return None
     return get_version_by_name(request.query, context).result()
 
 @ndb.tasklet
-def get_version_by_name(query: osv_service_v1_pb2.VersionQuery, context: grpc.ServicerContext) -> osv_service_v1_pb2.VersionMatchList:
+def get_version_by_name(query: osv_service_v1_pb2.VersionQuery, context: grpc.ServicerContext) -> ndb.Future:
   """Identifies the version based on the provided name."""
   q = osv.RepoIndex.query(osv.RepoIndex.name == query.name)
   it = q.iter()
@@ -135,7 +134,7 @@ def get_version_by_name(query: osv_service_v1_pb2.VersionQuery, context: grpc.Se
   return osv_service_v1_pb2.VersionMatchList(matches=results)
 
 @ndb.tasklet
-def compare_hashes_from_commit(idx: osv.RepoIndex, hashes: List[osv_service_v1_pb2.FileHash]) -> osv_service_v1_pb2.VersionMatch:
+def compare_hashes_from_commit(idx: osv.RepoIndex, hashes: List[osv_service_v1_pb2.FileHash]) -> ndb.Future:
   """"Retrieves the hashes from the provided index and compares them to the input hashes."""
   total_files = 0
   matching_hashes = 0
@@ -509,7 +508,7 @@ def main():
       'If env var is empty, defaults to 8000.')
   parser.add_argument(
     '--local',
-    type=bool,
+    action='store_true',
     default=False,
     help='If set reflection is enabled to allow debugging with grpcurl.'
   )

@@ -157,10 +157,17 @@ def compare_hashes_from_commit(
             break
         total_files += 1
   score = matching_hashes / total_files if total_files != 0 else 0.0
-  return osv_service_v1_pb2.VersionMatch(type=osv_service_v1_pb2.VersionMatch.VERSION, value=idx.version, score=score)
+  return osv_service_v1_pb2.VersionMatch(
+      type=osv_service_v1_pb2.VersionMatch.VERSION,
+      value=idx.version,
+      score=score)
 
-def version_hashes_key(parent_key: ndb.Key, commit: bytes, hash_type: str, page:int) -> ndb.Key:
-  return ndb.Key(parent_key.kind(), parent_key.id(), osv.RepoIndexResult, f"{commit.hex()}-{hash_type}-{page}")
+
+def version_hashes_key(parent_key: ndb.Key, commit: bytes, hash_type: str,
+                       page: int) -> ndb.Key:
+  return ndb.Key(parent_key.kind(), parent_key.id(), osv.RepoIndexResult,
+                 f"{commit.hex()}-{hash_type}-{page}")
+
 
 @ndb.tasklet
 def do_query(query, context, include_details=True):

@@ -106,8 +106,7 @@ message VersionMatch {
   IDType type = 1;
   // Identifier value.
   string value = 2;
-  // Score in the intervall (0.0 1.0] with 1.0
-  // being a perfect match.
+  // Score in the interval (0.0, 1.0] with 1.0 being a perfect match.
   double score = 3;
 }
 
@@ -141,7 +140,7 @@ service OSV {
   // Determine the version of the provided hash values.
   rpc DetermineVersion(DetermineVersionParameters) returns (VersionMatchList) {
     option (google.api.http) = {
-      post:"/v1/determineversion"
+      post:"/v1experimental/determineversion"
       body:"query"
     };
   }

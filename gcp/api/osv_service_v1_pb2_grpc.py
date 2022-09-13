@@ -66,7 +66,8 @@ class OSVServicer(object):
         raise NotImplementedError('Method not implemented!')
 
     def DetermineVersion(self, request, context):
-        """Missing associated documentation comment in .proto file."""
+        """Determine the version of the provided hash values.
+        """
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')

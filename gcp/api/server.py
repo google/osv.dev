@@ -111,7 +111,7 @@ class OSVServicer(osv_service_v1_pb2_grpc.OSVServicer):
   @ndb_context
   def DetermineVersion(self, request, context):
     """Determine the version of the provided hashes."""
-    if request.query.name == "":
+    if not request.query.name:
       context.abort(grpc.StatusCode.NOT_IMPLEMENTED,
                     'Querying only by file hash is not implemented yet.')
       return None
@@ -119,21 +119,21 @@ class OSVServicer(osv_service_v1_pb2_grpc.OSVServicer):
 
 
 @ndb.tasklet
-def get_version_by_name(query: osv_service_v1_pb2.VersionQuery,
+def get_version_by_name(version_query: osv_service_v1_pb2.VersionQuery,
                         context: grpc.ServicerContext) -> ndb.Future:
   """Identifies the version based on the provided name."""
-  q = osv.RepoIndex.query(osv.RepoIndex.name == query.name)
-  it = q.iter()
+  query = osv.RepoIndex.query(osv.RepoIndex.name == version_query.name)
+  it = query.iter()
   futures = []
   while (yield it.has_next_async()):
     idx = it.next()
-    v = compare_hashes_from_commit(idx, query.file_hashes)
-    futures.append(v)
+    match = compare_hashes_from_commit(idx, version_query.file_hashes)
+    futures.append(match)
   results = []
   for f in futures:
-    r = f.result()
-    if r.score != 0.0:
-      results.append(r)
+    match = f.result()
+    if match.score != 0.0:
+      results.append(match)
   return osv_service_v1_pb2.VersionMatchList(matches=results)
 
 
@@ -145,21 +145,22 @@ def compare_hashes_from_commit(
   total_files = 0
   matching_hashes = 0
   for i in range(idx.pages):
-    key = ndb.Key(idx.key.kind(), idx.key.id(), osv.RepoIndexResult,
-                  f"{idx.commit.hex()}-{idx.file_hash_type}-{i}")
+    key = version_hashes_key(idx.key, idx.commit, idx.file_hash_type, i)
     q = osv.RepoIndexResult.query(osv.RepoIndexResult.key == key)
     it = q.iter()
     while (yield it.has_next_async()):
       res = it.next()
-      for idxHash in res.file_results:
-        for inHash in hashes:
-          if inHash.hash == idxHash:
+      for idx_hash in res.file_results:
+        for in_hash in hashes:
+          if in_hash.hash == idx_hash:
             matching_hashes += 1
             break
         total_files += 1
   score = matching_hashes / total_files if total_files != 0 else 0.0
-  return osv_service_v1_pb2.VersionMatch(type=3, value=idx.version, score=score)
+  return osv_service_v1_pb2.VersionMatch(type=osv_service_v1_pb2.VersionMatch.VERSION, value=idx.version, score=score)
 
+def version_hashes_key(parent_key: ndb.Key, commit: bytes, hash_type: str, page:int) -> ndb.Key:
+  return ndb.Key(parent_key.kind(), parent_key.id(), osv.RepoIndexResult, f"{commit.hex()}-{hash_type}-{page}")
 
 @ndb.tasklet
 def do_query(query, context, include_details=True):

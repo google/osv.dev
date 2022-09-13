@@ -31,6 +31,8 @@ class Cache:
 
 class _CacheEntry:
   data: typing.Any
+  # TODO(rexpan):
+  #  Add more complex expiry logic by checking Last-Modified headers
   expiry: float
 
   def __init__(self, data, ttl):

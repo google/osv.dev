@@ -33,6 +33,10 @@ RUN echo "deb [signed-by=/usr/share/keyrings/cloud.google.gpg] https://packages.
 RUN mkdir /src
 WORKDIR /src
 
+COPY ./go.mod /src/go.mod
+COPY ./go.sum /src/go.sum
+RUN go mod download
+
 COPY ./ /src/
 RUN go build -o combine-to-osv-gen ./cmd/alpine/
 ENTRYPOINT ["/src/cmd/combine-to-osv/run_combine_to_osv_convert.sh"]

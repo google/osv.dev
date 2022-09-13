@@ -2,5 +2,43 @@
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
   "extends": [
     "config:base"
+  ],
+  "packageRules": [
+    {
+      "matchPaths": ["gcp/appengine/"],
+      "matchLanguages": ["python"],
+      "group": "appengine-backend"
+    },
+    {
+      "matchPaths": ["gcp/appengine/"],
+      "matchLanguages": ["javascript"],
+      "group": "appengine-frontend"
+    },
+    {
+      "matchPaths": ["gcp/api/"],
+      "group": "api"
+    },
+    {
+      "matchPaths": ["docker/"],
+      "matchLanguages": ["python"],
+      "group": "workers"
+    },
+    {
+      "matchPaths": ["docker/"],
+      "matchLanguages": ["go"],
+      "group": "indexer"
+    },
+    {
+      "matchPaths": ["vulnfeeds/"],
+      "group": "vulnfeeds"
+    },
+    {
+      "matchPaths": ["tools/"],
+      "group": "tools"
+    },
+    {
+      "matchFiles": ["Pipfile"],
+      "group": "osv-lib"
+    }
   ]
 }

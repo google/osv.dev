@@ -27,6 +27,7 @@ from .third_party.univers.gem import GemVersion
 from . import debian_version_cache
 from . import maven
 from . import nuget
+from . import packagist_version
 from . import semver_index
 from .cache import Cache
 from .cache import cached
@@ -376,7 +377,7 @@ class Debian(Ecosystem):
 
     versions = [v for v in raw_versions if version_is_valid(v)]
     # Sort to ensure it is in the correct order
-    versions.sort(key=self.sort_key)
+    self.sort_versions(versions)
     # The only versions with +deb
     versions = [
         x for x in versions
@@ -397,12 +398,40 @@ class Debian(Ecosystem):
     return self._get_affected_versions(versions, introduced, fixed, limits)
 
 
+class Packagist(Ecosystem):
+  """Packagist ecosystem"""
+
+  _API_PACKAGE_URL = 'https://repo.packagist.org/p2/{package}.json'
+
+  def sort_key(self, version):
+    return packagist_version.PackagistVersion(version)
+
+  def enumerate_versions(self, package, introduced, fixed, limits=None):
+    url = self._API_PACKAGE_URL.format(package=package.lower())
+    request_helper = RequestHelper(shared_cache)
+    try:
+      text_response = request_helper.get(url)
+    except RequestError as ex:
+      if ex.response.status_code == 404:
+        raise EnumerateError(f'Package {package} not found') from ex
+      raise RuntimeError('Failed to get Packagist versions for '
+                         f'{package} with: {ex.response.text}') from ex
+
+    response = json.loads(text_response)
+    versions: list[str] = [x['version'] for x in response['packages'][package]]
+    self.sort_versions(versions)
+    # TODO(rexpan): Potentially filter out branch versions like dev-master
+
+    return self._get_affected_versions(versions, introduced, fixed, limits)
+
+
 _ecosystems = {
     'crates.io': Crates(),
     'Go': Go(),
     'Maven': Maven(),
     'npm': NPM(),
     'NuGet': NuGet(),
+    'Packagist': Packagist(),
     'PyPI': PyPI(),
     'RubyGems': RubyGems(),
 }

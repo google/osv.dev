@@ -7,38 +7,38 @@
     {
       "matchPaths": ["gcp/appengine/"],
       "matchLanguages": ["python"],
-      "group": "appengine-backend"
+      "groupName": "appengine-backend"
     },
     {
       "matchPaths": ["gcp/appengine/"],
       "matchLanguages": ["javascript"],
-      "group": "appengine-frontend"
+      "groupName": "appengine-frontend"
     },
     {
       "matchPaths": ["gcp/api/"],
-      "group": "api"
+      "groupName": "api"
     },
     {
       "matchPaths": ["docker/"],
       "matchLanguages": ["python"],
-      "group": "workers"
+      "groupName": "workers"
     },
     {
       "matchPaths": ["docker/"],
       "matchLanguages": ["go"],
-      "group": "indexer"
+      "groupName": "indexer"
     },
     {
       "matchPaths": ["vulnfeeds/"],
-      "group": "vulnfeeds"
+      "groupName": "vulnfeeds"
     },
     {
       "matchPaths": ["tools/"],
-      "group": "tools"
+      "groupName": "tools"
     },
     {
       "matchFiles": ["Pipfile"],
-      "group": "osv-lib"
+      "groupName": "osv-lib"
     }
   ]
 }

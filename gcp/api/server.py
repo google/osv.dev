@@ -147,14 +147,9 @@ def compare_hashes_from_commit(
   for i in range(idx.pages):
     key = version_hashes_key(idx.key, idx.commit, idx.file_hash_type, i)
     result = key.get()
-    print(result)
-    # q = osv.RepoIndexResult.query(osv.RepoIndexResult.key == key)
-    # it = q.iter()
-    # while (yield it.has_next_async()):
-    #   res = it.next()
-    for idx_res in result.file_results:
+    for f_result in result.file_results:
       for in_hash in hashes:
-        if in_hash.hash == idx_res.hash:
+        if in_hash.hash == f_result.hash:
           matching_hashes += 1
           break
       total_files += 1

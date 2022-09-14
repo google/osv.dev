@@ -12,27 +12,17 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-FROM golang:alpine
+name: osv-scanner
 
-RUN mkdir /src
-WORKDIR /src
+on: [pull_request]
 
-COPY ./go.mod /src/go.mod
-COPY ./go.sum /src/go.sum
-RUN go mod download
-
-COPY ./ /src/
-RUN go build -o osv-scanner ./cmd/osv-scanner/
-
-FROM alpine:latest
-RUN apk --no-cache add \
-    ca-certificates \
-    git
-
-# Allow git to run on mounted directories
-RUN git config --global --add safe.directory '*'
-
-WORKDIR /root/
-COPY --from=0 /src/osv-scanner ./
-
-ENTRYPOINT ["/root/osv-scanner"]
+jobs:
+  osv-scanner:
+    name: Scan for vulnerabilities
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+      - name: osv scan step
+        id: osv-scanning
+        uses: ./tools/osv-scanner/

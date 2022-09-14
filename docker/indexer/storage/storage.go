@@ -54,7 +54,7 @@ type document struct {
 
 type result struct {
 	Page        int                      `datastore:"page"`
-	FileResults []*processing.FileResult `datastore:"file_results"`
+	FileResults []*processing.FileResult `datastore:"file_results,flatten"`
 }
 
 func newDoc(repoInfo *preparation.Result, hashType string, fileResults []*processing.FileResult) (*document, []*result) {

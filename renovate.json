@@ -45,6 +45,10 @@
       "groupName": "tools"
     },
     {
+      "matchPaths": [".github/"],
+      "groupName": "workflows"
+    },
+    {
       "matchFiles": ["Pipfile"],
       "groupName": "osv-lib"
     }

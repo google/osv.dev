@@ -30,7 +30,6 @@
                                                  '2.2',
                                                  '2.3',
                                                  '2.4']}],
-    'affected_ranges': [],
     'aliases': ['CVE-2021-38555'],
     'credits': [],
     'database_specific': None,

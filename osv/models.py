@@ -30,7 +30,7 @@ from . import semver_index
 from . import sources
 from . import vulnerability_pb2
 
-SCHEMA_VERSION = '1.2.0'
+SCHEMA_VERSION = '1.3.0'
 
 
 def _check_valid_severity(prop, value):
@@ -53,7 +53,7 @@ def _check_valid_event_type(prop, value):
   """Check valid event type."""
   del prop
 
-  if value not in ('introduced', 'fixed', 'limit'):
+  if value not in ('introduced', 'fixed', 'last_affected', 'limit'):
     raise ValueError('Invalid event type: ' + value)
 
 
@@ -145,18 +145,6 @@ class FixResult(ndb.Model):
   timestamp = ndb.DateTimeProperty()
 
 
-class AffectedRange(ndb.Model):
-  """Affected range."""
-  # Type of range.
-  type = ndb.StringProperty(validator=_check_valid_range_type)
-  # Repo URL.
-  repo_url = ndb.StringProperty()
-  # The regressing commit.
-  introduced = ndb.StringProperty()
-  # The fix commit.
-  fixed = ndb.StringProperty()
-
-
 class AffectedEvent(ndb.Model):
   """Affected event."""
   type = ndb.StringProperty(validator=_check_valid_event_type)
@@ -246,8 +234,6 @@ class Bug(ndb.Model):
   fixed = ndb.StringProperty(default='')
   # The main regressing commit (from bisection).
   regressed = ndb.StringProperty(default='')
-  # All affected ranges. TODO(ochang): To be removed.
-  affected_ranges = ndb.StructuredProperty(AffectedRange, repeated=True)
   # List of affected versions.
   affected = ndb.TextProperty(repeated=True)
   # List of normalized versions indexed for fuzzy matching.
@@ -487,6 +473,11 @@ class Bug(ndb.Model):
           if evt.fixed:
             current_range.events.append(
                 AffectedEvent(type='fixed', value=evt.fixed))
+            continue
+
+          if evt.last_affected:
+            current_range.events.append(
+                AffectedEvent(type='last_affected', value=evt.last_affected))
             continue
 
           if evt.limit:

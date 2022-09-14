@@ -12,13 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-FROM ubuntu:22.04
-
-RUN apt-get update && apt-get upgrade -y && \
-    apt-get install -y \
-        apt-transport-https \
-        ca-certificates \
-        golang-go
+FROM golang:alpine
 
 RUN mkdir /src
 WORKDIR /src
@@ -31,11 +25,14 @@ COPY ./ /src/
 RUN go build -o osv-scanner ./cmd/osv-scanner/
 
 FROM alpine:latest
-RUN apk --no-cache add ca-certificates \
+RUN apk --no-cache add \
     ca-certificates \
     git
+
+# Allow git to run on mounted directories
+RUN git config --global --add safe.directory '*'
 
 WORKDIR /root/
 COPY --from=0 /src/osv-scanner ./
 
-CMD ["./osv-scanner"]
+ENTRYPOINT ["./osv-scanner"]

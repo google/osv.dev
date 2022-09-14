@@ -11,7 +11,7 @@
     },
     {
       "matchPaths": ["gcp/appengine/"],
-      "matchLanguages": ["javascript"],
+      "matchLanguages": ["js"],
       "groupName": "appengine-frontend"
     },
     {
@@ -25,12 +25,16 @@
     },
     {
       "matchPaths": ["docker/"],
-      "matchLanguages": ["go"],
+      "matchLanguages": ["golang"],
       "groupName": "indexer"
     },
     {
       "matchPaths": ["vulnfeeds/"],
       "groupName": "vulnfeeds"
+    },
+    {
+      "matchPaths": ["docs/"],
+      "groupName": "docs"
     },
     {
       "matchPaths": ["tools/"],

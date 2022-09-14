@@ -146,16 +146,18 @@ def compare_hashes_from_commit(
   matching_hashes = 0
   for i in range(idx.pages):
     key = version_hashes_key(idx.key, idx.commit, idx.file_hash_type, i)
-    q = osv.RepoIndexResult.query(osv.RepoIndexResult.key == key)
-    it = q.iter()
-    while (yield it.has_next_async()):
-      res = it.next()
-      for idx_hash in res.file_results:
-        for in_hash in hashes:
-          if in_hash.hash == idx_hash:
-            matching_hashes += 1
-            break
-        total_files += 1
+    result = key.get()
+    print(result)
+    # q = osv.RepoIndexResult.query(osv.RepoIndexResult.key == key)
+    # it = q.iter()
+    # while (yield it.has_next_async()):
+    #   res = it.next()
+    for idx_res in result.file_results:
+      for in_hash in hashes:
+        if in_hash.hash == idx_res.hash:
+          matching_hashes += 1
+          break
+      total_files += 1
   score = matching_hashes / total_files if total_files != 0 else 0.0
   return osv_service_v1_pb2.VersionMatch(
       type=osv_service_v1_pb2.VersionMatch.VERSION,

@@ -658,11 +658,17 @@ class RepoIndex(ndb.Model):
   # The repository type
   repo_type = ndb.StringProperty()
 
+class FileResult(ndb.Model):
+  """FileResult entry containing the path and hash"""
+  # The hash value of the file
+  hash = ndb.BlobKeyProperty(indexed=True)
+  # The file path
+  path = ndb.TextProperty()
 
 class RepoIndexResult(ndb.Model):
   """RepoIndexResult entries containing the actual hash values"""
-  # The hash values
-  file_results = ndb.BlobProperty(repeated=True)
+  # The file results per file
+  file_results = ndb.StructuredProperty(FileResult, repeated=True)
   # The actual page
   page = ndb.IntegerProperty()
 

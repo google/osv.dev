@@ -19,6 +19,10 @@
       "groupName": "api"
     },
     {
+      "matchPaths": ["gcp/functions/"],
+      "groupName": "functions"
+    },
+    {
       "matchPaths": ["docker/"],
       "matchLanguages": ["python"],
       "groupName": "workers"

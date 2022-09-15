@@ -16,7 +16,7 @@ import re
 
 
 class PackagistVersion:
-  # pylint: disable-next=line-too-long
+  # pylint: disable=line-too-long
   """
   Follows the packagist version ordering, which is recommended to be semver, but
   not enforced to be semver. The php standard version comparison code written in
@@ -44,6 +44,7 @@ class PackagistVersion:
     considered "any other string", while in the original implementation the
     string only need to start with one of the listed strings.
   """
+  # pylint: enable=line-too-long
 
   version_str: str
   canonicalized_version: str
@@ -155,7 +156,7 @@ class PackagistVersion:
 
   @staticmethod
   def compare_special_versions(version_part_a: str, version_part_b: str) -> int:
-    # pylint: disable-next=line-too-long
+    # pylint: disable=line-too-long
     """
     Compares the order of special characters against the order specified in php
     docs.
@@ -164,7 +165,9 @@ class PackagistVersion:
 
     :return: 1 if a > b, -1 if b > a, 0 if a == b
     """
-    # This isn't quite the behaviour of the c implementation of php version_compare
+    # pylint: enable=line-too-long
+    # This isn't quite the behaviour of the c implementation of php
+    # version_compare
     # In php if the part starts with special_chars its enough.
     # ### For example:
     # *PHP implementation:*

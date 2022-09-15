@@ -16,17 +16,20 @@ import re
 
 
 class PackagistVersion:
+  # pylint: disable-next=line-too-long
   """
   Follows the packagist version ordering, which is recommended to be semver, but
   not enforced to be semver. The php standard version comparison code written in
-  C is located here: https://github.com/php/php-src/blob/master/ext/standard/versioning.c
+  C is located here:
+  https://github.com/php/php-src/blob/master/ext/standard/versioning.c
 
   The function first replaces _, - and + with a dot . in the version strings and
   also inserts dots . before and after any non number so that for example
   '4.3.2RC1' becomes '4.3.2.RC.1'. Then it compares the parts starting from
   left to right.
 
-  If a part contains special version strings these are handled in the following order:
+  If a part contains special version strings these are handled in the following
+  order:
   any string not found in this list < dev < alpha = a < beta = b < RC = rc < # < pl = p.
   This way not only versions with different levels like '4.1' and '4.1.2' can be
   compared but also any PHP specific version containing development state.
@@ -93,8 +96,7 @@ class PackagistVersion:
       if compare != 0:
         if compare > 0:
           return 1
-        else:
-          return -1
+        return -1
 
     if len(a_split) > len(b_split):
       next_char = a_split[len(b_split)]
@@ -130,6 +132,8 @@ class PackagistVersion:
     Replaces special separators (`-`,`_`,`+`) with `.`, and inserts `.`
     between any digit and non-digit.
     """
+    if version.startswith('v'):
+      version = version[1:]
     replaced = re.sub('[-_+]', '.', version)
     replaced = re.sub(r'([^\d.])(\d)', r'\1.\2', replaced)
     replaced = re.sub(r'(\d)([^\d.])', r'\1.\2', replaced)
@@ -151,6 +155,7 @@ class PackagistVersion:
 
   @staticmethod
   def compare_special_versions(version_part_a: str, version_part_b: str) -> int:
+    # pylint: disable-next=line-too-long
     """
     Compares the order of special characters against the order specified in php
     docs.

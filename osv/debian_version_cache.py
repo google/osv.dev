@@ -21,6 +21,7 @@ CLOUD_API_CACHE_URL_TEMPLATE = (
     'https://storage.googleapis.com/debian-osv/first_package_output/'
     '{version}.json')
 CACHE_DURATION_SECONDS = 60 * 60 * 24
+TIMEOUT = 30  # Timeout for HTTP(S) requests
 
 debian_version_cache = cache.InMemoryCache()
 
@@ -44,7 +45,8 @@ class ReleaseNotFoundError(Exception):
 def _get_first_versions_for_release(release_number: str):
   """Gets the first version mapping for specific release number"""
   response = requests.get(
-      CLOUD_API_CACHE_URL_TEMPLATE.format(version=release_number))
+      CLOUD_API_CACHE_URL_TEMPLATE.format(version=release_number),
+      timeout=TIMEOUT)
   if response.status_code == 404:
     raise ReleaseNotFoundError(release_number)
 

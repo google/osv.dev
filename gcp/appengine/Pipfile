@@ -6,7 +6,7 @@ name = "pypi"
 [packages]
 Flask = "==2.2.2"
 Flask-Caching = "==2.0.1"
-google-auth = "==1.35.0"
+google-auth = "==2.11.0"
 google-cloud-logging = "==3.2.2"
 google-cloud-pubsub = "==2.13.6"
 google-cloud-secret-manager = "==1.0.0"

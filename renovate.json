@@ -5,6 +5,10 @@
   ],
   "packageRules": [
     {
+      "matchUpdateTypes": ["major"],
+      "enabled": false
+    },
+    {
       "matchPaths": ["gcp/appengine/"],
       "matchLanguages": ["python"],
       "groupName": "appengine-backend"

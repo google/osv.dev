@@ -206,12 +206,10 @@ func main() {
 					}
 				}
 			} else {
-				continue
 				log.Printf("FYI: skipping %s due to:", cve.CVE.CVEDataMeta.ID)
 				log.Printf("\t * believed non-software")
 			}
 		} else {
-			continue
 			log.Printf("FYI: skipping %s due to:", cve.CVE.CVEDataMeta.ID)
 			if len(cpes) == 0 {
 				log.Printf("\t * lack of CPEs")

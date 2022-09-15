@@ -1,0 +1,60 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": [
+    "config:base"
+  ],
+  "packageRules": [
+    {
+      "matchUpdateTypes": ["major"],
+      "enabled": false
+    },
+    {
+      "matchPaths": ["gcp/appengine/"],
+      "matchLanguages": ["python"],
+      "groupName": "appengine-backend"
+    },
+    {
+      "matchPaths": ["gcp/appengine/"],
+      "matchLanguages": ["js"],
+      "groupName": "appengine-frontend"
+    },
+    {
+      "matchPaths": ["gcp/api/"],
+      "groupName": "api"
+    },
+    {
+      "matchPaths": ["gcp/functions/"],
+      "groupName": "functions"
+    },
+    {
+      "matchPaths": ["docker/"],
+      "matchLanguages": ["python"],
+      "groupName": "workers"
+    },
+    {
+      "matchPaths": ["docker/"],
+      "matchLanguages": ["golang"],
+      "groupName": "indexer"
+    },
+    {
+      "matchPaths": ["vulnfeeds/"],
+      "groupName": "vulnfeeds"
+    },
+    {
+      "matchPaths": ["docs/"],
+      "groupName": "docs"
+    },
+    {
+      "matchPaths": ["tools/"],
+      "groupName": "tools"
+    },
+    {
+      "matchPaths": [".github/"],
+      "groupName": "workflows"
+    },
+    {
+      "matchFiles": ["Pipfile"],
+      "groupName": "osv-lib"
+    }
+  ]
+}

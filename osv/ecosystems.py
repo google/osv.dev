@@ -443,6 +443,7 @@ SEMVER_ECOSYSTEMS = {
     'crates.io',
     'Go',
     'npm',
+    'Hex',
 }
 
 

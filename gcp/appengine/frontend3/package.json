@@ -12,7 +12,7 @@
     "@github/clipboard-copy-element": "^1.1.2",
     "@github/time-elements": "^3.1.2",
     "@hotwired/turbo": "^7.1.0",
-    "@material/data-table": "^13.0.0",
+    "@material/data-table": "^14.0.0",
     "@material/layout-grid": "^13.0.0",
     "@material/mwc-circular-progress": "^0.25.3",
     "@material/mwc-icon": "^0.25.3",

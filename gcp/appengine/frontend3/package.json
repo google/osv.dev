@@ -16,7 +16,7 @@
     "@material/layout-grid": "^13.0.0",
     "@material/mwc-circular-progress": "^0.25.3",
     "@material/mwc-icon": "^0.25.3",
-    "@material/mwc-icon-button": "^0.25.3",
+    "@material/mwc-icon-button": "^0.27.0",
     "@material/mwc-textfield": "^0.25.3",
     "@material/theme": "^13.0.0",
     "highlight.js": "^11.5.1",

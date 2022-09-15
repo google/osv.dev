@@ -4,7 +4,7 @@ verify_ssl = true
 name = "pypi"
 
 [packages]
-google-api-core = "==1.31.5"
+google-api-core = "==1.33.0"
 google-cloud-logging = "==2.1.0"
 google-cloud-pubsub = "==2.6.0"
 grpcio = "==1.47.0"

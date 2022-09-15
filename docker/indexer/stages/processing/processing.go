@@ -43,7 +43,7 @@ type Storer interface {
 
 // FileResult holds the per file hash and path information.
 type FileResult struct {
-	Path string `datastore:"path"`
+	Path string `datastore:"path,noindex"`
 	Hash []byte `datastore:"hash"`
 }
 

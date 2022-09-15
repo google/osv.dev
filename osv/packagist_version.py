@@ -164,7 +164,8 @@ class PackagistVersion:
 
     :return: 1 if a > b, -1 if b > a, 0 if a == b
     """
-    # This isn't quite the behaviour of the c implementation of php version_compare
+    # This isn't quite the behaviour of the c implementation of php
+    # version_compare
     # In php if the part starts with special_chars its enough.
     # ### For example:
     # *PHP implementation:*

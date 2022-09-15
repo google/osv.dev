@@ -137,6 +137,7 @@ class GetNextVersionTest(unittest.TestCase):
     self.assertEqual(requests_mock.call_count, 2)
 
   def test_packagist(self):
+    """Test Packagist."""
     ecosystem = ecosystems.get('Packagist')
     self.assertLess(
         ecosystem.sort_key('4.3-2RC1'), ecosystem.sort_key('4.3-2RC2'))

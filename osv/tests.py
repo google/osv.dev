@@ -148,7 +148,8 @@ def _wait_for_emulator_ready(proc,
 def reset_emulator():
   """Resets emulator."""
   resp = requests.post(
-      'http://localhost:{}/reset'.format(_DATASTORE_EMULATOR_PORT))
+      'http://localhost:{}/reset'.format(_DATASTORE_EMULATOR_PORT),
+      timeout=_EMULATOR_TIMEOUT)
   resp.raise_for_status()
 
 

@@ -1,0 +1,224 @@
+package main
+
+import (
+	"bufio"
+	"bytes"
+	"encoding/json"
+	"flag"
+	"io/ioutil"
+	"log"
+	"net/url"
+	"os"
+	"path"
+	"regexp"
+	"strings"
+	"text/template"
+
+	"github.com/google/osv/vulnfeeds/cves"
+)
+
+// Checks if a URL is to a supported repo.
+func IsRepoUrl(url string) bool {
+	re := regexp.MustCompile(`http[s]?:\/\/(?:c?git(?:hub|lab)?)\.|\.git$`)
+
+	return re.MatchString(url)
+}
+
+// Checks if a URL relates to the FSF.
+func IsGnuUrl(url string) bool {
+	re := regexp.MustCompile(`\.(?:non)?gnu\.org/`)
+
+	return re.MatchString(url)
+}
+
+// Tries to translate Savannah URLs to their corresponding Git repository URL.
+func MaybeTranslateSavannahURL(u string) (string, bool) {
+	type GnuPlaceholder struct {
+		GnuOrNonGnu string
+		Path        string
+	}
+	var tpl bytes.Buffer
+
+	supportedHostnames := []string{
+		"download.savannah.gnu.org",
+		"savannah.gnu.org",
+		"download.savannah.gnu.org",
+		"download-mirror.savannah.gnu.org",
+		"download.savannah.nongnu.org",
+		"savannah.nongnu.org",
+		"download.savannah.nongnu.org",
+		"download-mirror.savannah.nongnu.org",
+	}
+
+	// Get hostname out of URL
+	parsedURL, err := url.Parse(u)
+	if err != nil {
+		panic(err)
+	}
+
+	supportedHostname := false
+	for _, value := range supportedHostnames {
+		if value == parsedURL.Hostname() {
+			supportedHostname = true
+			break
+		}
+	}
+
+	// Check hostname is in supported set
+	if supportedHostname {
+		hostnameParts := strings.Split(parsedURL.Hostname(), ".")
+		// Pull out the "nongnu" or "gnu" part of the hostname
+		domain := GnuPlaceholder{hostnameParts[len(hostnameParts)-2], path.Base(parsedURL.Path)}
+		savannahGitRepoTemplate, err := template.New("savannahGitRepoUrl").Parse("https://git.savannah.{{ .GnuOrNonGnu }}.org/git/{{ .Path }}.git")
+		if err != nil {
+			panic(err)
+		}
+		err = savannahGitRepoTemplate.Execute(&tpl, domain)
+		return tpl.String(), true
+	}
+
+	// Return the original URL unmodified
+	return u, false
+}
+
+// Returns the data associated with the ^Source: line of a machine-readable Debian copyright file
+// See https://www.debian.org/doc/packaging-manuals/copyright-format/1.0/
+func MaybeGetSourceFromDebianCopyright(copyrightFile string) (string, bool) {
+	re := regexp.MustCompile(`^Source: (.*)$`)
+
+	file, err := os.Open(copyrightFile)
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer file.Close()
+
+	scanner := bufio.NewScanner(file)
+
+	// Check the first line to see if we have a machine-readable copyright file
+	scanner.Scan()
+	if scanner.Text() != "Format: https://www.debian.org/doc/packaging-manuals/copyright-format/1.0/" {
+		return "", false
+	}
+
+	for scanner.Scan() {
+		line := scanner.Text()
+		match := re.FindStringSubmatch(line)
+		if match != nil {
+			return match[1], true
+		}
+	}
+
+	return "", false
+}
+
+// Tries to find a Debian copyright file for the package and returns the source URL if IsRepoUrl() agrees.
+func MaybeGetSourceRepoFromDebian(mdir string, pkg string) string {
+	var metadata string
+	if strings.HasPrefix(pkg, "lib") {
+		metadata = path.Join(mdir, "changelogs/main", string(pkg[0:4]), pkg, "unstable_copyright")
+	} else {
+		metadata = path.Join(mdir, "changelogs/main", string(pkg[0]), pkg, "unstable_copyright")
+	}
+	if _, err := os.Stat(metadata); err == nil {
+		// parse the copyright file and go from here
+		log.Printf("FYI: Will look at %s", metadata)
+		possibleRepo, ok := MaybeGetSourceFromDebianCopyright(metadata)
+		if !ok {
+			return ""
+		}
+		if IsRepoUrl(possibleRepo) {
+			return possibleRepo
+		}
+		// Incorporate Savannah URL to Git translation here
+		if IsGnuUrl(possibleRepo) {
+			repo, translated := MaybeTranslateSavannahURL(possibleRepo)
+			if translated {
+				return repo
+			}
+		}
+		log.Printf("FYI: Disregarding %s", possibleRepo)
+	}
+	return ""
+}
+
+func main() {
+	jsonPath := flag.String("nvd_json", "", "Path to NVD CVE JSON to examine.")
+	debianMetadataPath := flag.String("debian_metadata_path", "", "Path to Debian copyright metadata")
+
+	flag.Parse()
+
+	data, err := ioutil.ReadFile(*jsonPath)
+	if err != nil {
+		log.Fatalf("Failed to open file: %v", err) // double check this is best practice output
+	}
+
+	var parsed cves.NVDCVE
+	err = json.Unmarshal(data, &parsed)
+	if err != nil {
+		log.Fatalf("Failed to parse NVD CVE JSON: %v", err)
+	}
+
+	for _, cve := range parsed.CVEItems {
+		refs := cve.CVE.References.ReferenceData
+		patch_refs := 0
+		cpes := cves.CPEs(cve)
+
+		if len(refs) > 0 && len(cpes) > 0 {
+			// Does it have any application CPEs?
+			app_cpes := 0
+			for _, cpe_str := range cves.CPEs(cve) {
+				cpe, ok := cves.ParseCPE(cpe_str)
+				if !ok {
+					log.Fatalf("Failed to parse CPE %s: %v", cpe_str, err)
+				}
+				if cpe.Part == "a" {
+					// log.Printf("FYI: %s is an application CPE", cpe_str)
+					app_cpes += 1
+				}
+			}
+			if app_cpes > 0 {
+				log.Printf("%s", cve.CVE.CVEDataMeta.ID)
+				for _, ref := range refs {
+					// Are any of the reference's tags 'Patch'?
+					for _, tag := range ref.Tags {
+						if tag == "Patch" && IsRepoUrl(ref.URL) {
+							log.Printf("\t * %s", ref.URL)
+							patch_refs += 1
+						}
+					}
+				}
+				if patch_refs == 0 && app_cpes > 0 {
+					log.Printf("FYI: Will need to rely on CPE exclusively")
+				}
+				for _, cpe_str := range cves.CPEs(cve) {
+					cpe, ok := cves.ParseCPE(cpe_str)
+					if !ok {
+						log.Fatalf("Failed to parse CPE %s: %v", cpe_str, err)
+					}
+					if cpe.Part == "a" {
+						log.Printf("\t * vendor=%s, product=%s", cpe.Vendor, cpe.Product)
+						if patch_refs == 0 {
+							repo := MaybeGetSourceRepoFromDebian(*debianMetadataPath, cpe.Product)
+							if repo != "" {
+								log.Printf("Derived repo: %s", repo)
+							}
+						}
+					}
+				}
+			} else {
+				continue
+				log.Printf("FYI: skipping %s due to:", cve.CVE.CVEDataMeta.ID)
+				log.Printf("\t * believed non-software")
+			}
+		} else {
+			continue
+			log.Printf("FYI: skipping %s due to:", cve.CVE.CVEDataMeta.ID)
+			if len(cpes) == 0 {
+				log.Printf("\t * lack of CPEs")
+			}
+			if len(refs) == 0 {
+				log.Printf("\t * lack of references")
+			}
+		}
+	}
+}

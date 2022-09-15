@@ -186,6 +186,7 @@ class SemverEcosystem(Ecosystem):
 Crates = SemverEcosystem
 Go = SemverEcosystem
 NPM = SemverEcosystem
+Hex = SemverEcosystem
 
 
 class PyPI(Ecosystem):
@@ -431,6 +432,7 @@ class Packagist(Ecosystem):
 _ecosystems = {
     'crates.io': Crates(),
     'Go': Go(),
+    'Hex': Hex(),
     'Maven': Maven(),
     'npm': NPM(),
     'NuGet': NuGet(),

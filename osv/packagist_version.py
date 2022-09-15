@@ -132,6 +132,8 @@ class PackagistVersion:
     Replaces special separators (`-`,`_`,`+`) with `.`, and inserts `.`
     between any digit and non-digit.
     """
+    if version.startswith('v'):
+      version = version[1:]
     replaced = re.sub('[-_+]', '.', version)
     replaced = re.sub(r'([^\d.])(\d)', r'\1.\2', replaced)
     replaced = re.sub(r'(\d)([^\d.])', r'\1.\2', replaced)

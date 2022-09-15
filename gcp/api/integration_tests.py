@@ -25,6 +25,7 @@ import requests
 import test_server
 
 _PORT = 8080
+_TIMEOUT = 10  # Timeout for HTTP(S) requests
 
 
 def _api():
@@ -85,7 +86,7 @@ class IntegrationTests(unittest.TestCase):
 
   def _get(self, vuln_id):
     """Get a vulnerability."""
-    response = requests.get(_api() + '/v1/vulns/' + vuln_id)
+    response = requests.get(_api() + '/v1/vulns/' + vuln_id, timeout=_TIMEOUT)
     return response.json()
 
   def setUp(self):
@@ -128,13 +129,13 @@ class IntegrationTests(unittest.TestCase):
 
   def test_get(self):
     """Test getting a vulnerability."""
-    response = requests.get(_api() + '/v1/vulns/OSV-2020-744')
+    response = requests.get(_api() + '/v1/vulns/OSV-2020-744', timeout=_TIMEOUT)
     self.assert_vuln_equal(self._VULN_744, response.json())
 
   def test_get_with_multiple(self):
     """Test getting a vulnerability with multiple packages."""
     go_2020_0015 = self._get('GO-2020-0015')
-    response = requests.get(_api() + '/v1/vulns/GO-2020-0015')
+    response = requests.get(_api() + '/v1/vulns/GO-2020-0015', timeout=_TIMEOUT)
     self.assert_vuln_equal(go_2020_0015, response.json())
 
   def test_query_commit(self):
@@ -143,7 +144,8 @@ class IntegrationTests(unittest.TestCase):
         _api() + '/v1/query',
         data=json.dumps({
             'commit': '233cb49903fa17637bd51f4a16b4ca61e0750f24',
-        }))
+        }),
+        timeout=_TIMEOUT)
     self.assert_results_equal({'vulns': [self._VULN_744]}, response.json())
 
   def test_query_version(self):
@@ -156,7 +158,8 @@ class IntegrationTests(unittest.TestCase):
                 'name': 'mruby',
                 'ecosystem': 'OSS-Fuzz',
             }
-        }))
+        }),
+        timeout=_TIMEOUT)
     self.assert_results_equal({'vulns': [self._VULN_744]}, response.json())
 
     response = requests.post(
@@ -166,7 +169,8 @@ class IntegrationTests(unittest.TestCase):
             'package': {
                 'name': 'mruby',
             }
-        }))
+        }),
+        timeout=_TIMEOUT)
     self.assert_results_equal({'vulns': [self._VULN_744]}, response.json())
 
   def test_query_debian(self):
@@ -181,7 +185,8 @@ class IntegrationTests(unittest.TestCase):
                 'name': 'gtkhtml',
                 'ecosystem': 'Debian',
             }
-        }))
+        }),
+        timeout=_TIMEOUT)
     self.assert_results_equal({'vulns': [dsa_2665_1]}, response.json())
 
     response = requests.post(
@@ -192,7 +197,8 @@ class IntegrationTests(unittest.TestCase):
                 'name': 'gtkhtml',
                 'ecosystem': 'Debian:3.0',
             }
-        }))
+        }),
+        timeout=_TIMEOUT)
     self.assert_results_equal({'vulns': [dsa_2665_1]}, response.json())
 
     # The vulnerbility does not exist in 4.0 release, so this should return
@@ -205,7 +211,8 @@ class IntegrationTests(unittest.TestCase):
                 'name': 'gtkhtml',
                 'ecosystem': 'Debian:4.0',
             }
-        }))
+        }),
+        timeout=_TIMEOUT)
     self.assert_results_equal({}, response.json())
 
     response = requests.post(
@@ -216,7 +223,8 @@ class IntegrationTests(unittest.TestCase):
                 'name': 'gtkhtml',
                 'ecosystem': 'Debian:9',
             }
-        }))
+        }),
+        timeout=_TIMEOUT)
     self.assert_results_equal({}, response.json())
 
   def test_query_semver(self):
@@ -230,7 +238,8 @@ class IntegrationTests(unittest.TestCase):
                 'name': 'github.com/nanobox-io/golang-nanoauth',
                 'ecosystem': 'Go',
             }
-        }))
+        }),
+        timeout=_TIMEOUT)
     self.assert_results_equal({'vulns': [go_2020_0004]}, response.json())
 
     response = requests.post(
@@ -240,7 +249,8 @@ class IntegrationTests(unittest.TestCase):
             'package': {
                 'name': 'github.com/nanobox-io/golang-nanoauth',
             }
-        }))
+        }),
+        timeout=_TIMEOUT)
     self.assert_results_equal({'vulns': [go_2020_0004]}, response.json())
 
     response = requests.post(
@@ -251,7 +261,8 @@ class IntegrationTests(unittest.TestCase):
                 'name': 'github.com/nanobox-io/golang-nanoauth',
                 'ecosystem': 'Go',
             }
-        }))
+        }),
+        timeout=_TIMEOUT)
     self.assert_results_equal({'vulns': [go_2020_0004]}, response.json())
 
     response = requests.post(
@@ -262,7 +273,8 @@ class IntegrationTests(unittest.TestCase):
                 'name': 'github.com/nanobox-io/golang-nanoauth',
                 'ecosystem': 'Go',
             }
-        }))
+        }),
+        timeout=_TIMEOUT)
     self.assert_results_equal({}, response.json())
 
     response = requests.post(
@@ -273,7 +285,8 @@ class IntegrationTests(unittest.TestCase):
                 'name': 'github.com/nanobox-io/golang-nanoauth',
                 'ecosystem': 'Go',
             }
-        }))
+        }),
+        timeout=_TIMEOUT)
     self.assert_results_equal({}, response.json())
 
   def test_query_semver_multiple_package(self):
@@ -286,7 +299,8 @@ class IntegrationTests(unittest.TestCase):
                 'name': 'gopkg.in/yaml.v2',
                 'ecosystem': 'Go',
             }
-        }))
+        }),
+        timeout=_TIMEOUT)
 
     self.assert_results_equal({}, response.json())
 
@@ -298,7 +312,8 @@ class IntegrationTests(unittest.TestCase):
                 'name': 'github.com/go-yaml/yaml',
                 'ecosystem': 'Go',
             }
-        }))
+        }),
+        timeout=_TIMEOUT)
 
     response_json = response.json()
     self.assertEqual(2, len(response_json['vulns']))
@@ -319,7 +334,8 @@ class IntegrationTests(unittest.TestCase):
             'package': {
                 'purl': 'pkg:cargo/crossbeam-utils',
             }
-        }))
+        }),
+        timeout=_TIMEOUT)
 
     self.assert_results_equal({'vulns': expected}, response.json())
 
@@ -328,7 +344,8 @@ class IntegrationTests(unittest.TestCase):
         data=json.dumps(
             {'package': {
                 'purl': 'pkg:cargo/crossbeam-utils@0.8.6',
-            }}))
+            }}),
+        timeout=_TIMEOUT)
 
     self.assert_results_equal({'vulns': expected}, response.json())
 
@@ -339,7 +356,8 @@ class IntegrationTests(unittest.TestCase):
         data=json.dumps(
             {'package': {
                 'purl': 'pkg:deb/debian/nginx@1.14.2-2+deb10u3',
-            }}))
+            }}),
+        timeout=_TIMEOUT)
 
     self.assert_results_equal({'vulns': expected_deb}, response.json())
 
@@ -350,7 +368,8 @@ class IntegrationTests(unittest.TestCase):
             'package': {
                 'purl': 'pkg:deb/debian/nginx@1.14.2-2+deb10u3?arch=source',
             }
-        }))
+        }),
+        timeout=_TIMEOUT)
 
     self.assert_results_equal({'vulns': expected_deb}, response.json())
 
@@ -361,7 +380,8 @@ class IntegrationTests(unittest.TestCase):
             'package': {
                 'purl': 'pkg:deb/debian/nginx@1.14.2-2+deb10u3?arch=x64',
             }
-        }))
+        }),
+        timeout=_TIMEOUT)
 
     self.assert_results_equal({}, response.json())
 
@@ -373,7 +393,8 @@ class IntegrationTests(unittest.TestCase):
                 'purl': ('pkg:deb/debian/nginx@1.14.2-2+deb10u3?'
                          'randomqualifier=1234'),
             }
-        }))
+        }),
+        timeout=_TIMEOUT)
 
     self.assert_results_equal({'vulns': expected_deb}, response.json())
 
@@ -396,7 +417,8 @@ class IntegrationTests(unittest.TestCase):
             }, {
                 'commit': '233cb49903fa17637bd51f4a16b4ca61e0750f24',
             }],
-        }))
+        }),
+        timeout=_TIMEOUT)
 
     self.assert_results_equal(
         {
@@ -426,7 +448,8 @@ class IntegrationTests(unittest.TestCase):
                 'ecosystem': 'Maven',
                 'name': 'org.apache.tomcat:tomcat',
             }
-        }))
+        }),
+        timeout=_TIMEOUT)
 
     result = response.json()
     vulns_first = set(v['id'] for v in result['vulns'])
@@ -440,7 +463,8 @@ class IntegrationTests(unittest.TestCase):
                 'name': 'org.apache.tomcat:tomcat',
             },
             'page_token': result['next_page_token'],
-        }))
+        }),
+        timeout=_TIMEOUT)
 
     result = response.json()
     vulns_second = set(v['id'] for v in result['vulns'])
@@ -454,7 +478,8 @@ class IntegrationTests(unittest.TestCase):
         data=json.dumps(
             {'package': {
                 'purl': 'pkg:maven/org.apache.tomcat/tomcat',
-            }}))
+            }}),
+        timeout=_TIMEOUT)
     result = response.json()
     vulns_first = set(v['id'] for v in result['vulns'])
     self.assertIn('next_page_token', result)
@@ -466,7 +491,8 @@ class IntegrationTests(unittest.TestCase):
                 'purl': 'pkg:maven/org.apache.tomcat/tomcat',
             },
             'page_token': result['next_page_token'],
-        }))
+        }),
+        timeout=_TIMEOUT)
 
     result = response.json()
     vulns_second = set(v['id'] for v in result['vulns'])

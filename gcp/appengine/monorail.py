@@ -22,6 +22,7 @@ import requests
 _API_BASE = 'https://api-dot-monorail-prod.appspot.com/prpc'
 _TARGET_AUDIENCE = 'https://monorail-prod.appspot.com'
 _XSSI_PREFIX = ')]}\'\n'
+_TIMEOUT = 30  # HTTP(S) request timeout
 
 
 class Client:
@@ -46,7 +47,7 @@ class Client:
     url = f'{_API_BASE}/monorail.v3.Issues/GetIssue'
     body = {'name': f'projects/{self.project}/issues/{issue_id}'}
 
-    resp = requests.post(url, json=body, headers=headers)
+    resp = requests.post(url, json=body, headers=headers, timeout=_TIMEOUT)
     resp.raise_for_status()
 
     result = resp.text

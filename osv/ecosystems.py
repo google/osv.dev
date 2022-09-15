@@ -36,6 +36,7 @@ from .request_helper import RequestError, RequestHelper
 _DEPS_DEV_API = (
     'https://api.deps.dev/insights/v1alpha/systems/{ecosystem}/packages/'
     '{package}/versions')
+TIMEOUT = 30  # Timeout for HTTP(S) requests
 use_deps_dev = False
 deps_dev_api_key = ''
 
@@ -61,7 +62,7 @@ class DepsDevMixin:
     response = requests.get(
         url, headers={
             'X-DepsDev-APIKey': deps_dev_api_key,
-        })
+        }, timeout=TIMEOUT)
 
     if response.status_code == 404:
       raise EnumerateError(f'Package {package} not found')
@@ -198,7 +199,8 @@ class PyPI(Ecosystem):
 
   def enumerate_versions(self, package, introduced, fixed, limits=None):
     """Enumerate versions."""
-    response = requests.get(self._API_PACKAGE_URL.format(package=package))
+    response = requests.get(
+        self._API_PACKAGE_URL.format(package=package), timeout=TIMEOUT)
 
     if response.status_code == 404:
       raise EnumerateError(f'Package {package} not found')
@@ -280,7 +282,8 @@ class RubyGems(Ecosystem):
 
   def enumerate_versions(self, package, introduced, fixed, limits=None):
     """Enumerate versions."""
-    response = requests.get(self._API_PACKAGE_URL.format(package=package))
+    response = requests.get(
+        self._API_PACKAGE_URL.format(package=package), timeout=TIMEOUT)
     if response.status_code == 404:
       raise EnumerateError(f'Package {package} not found')
     if response.status_code != 200:
@@ -308,7 +311,7 @@ class NuGet(Ecosystem):
   def enumerate_versions(self, package, introduced, fixed, limits=None):
     """Enumerate versions."""
     url = self._API_PACKAGE_URL.format(package=package.lower())
-    response = requests.get(url)
+    response = requests.get(url, timeout=TIMEOUT)
     if response.status_code == 404:
       raise EnumerateError(f'Package {package} not found')
     if response.status_code != 200:
@@ -322,7 +325,7 @@ class NuGet(Ecosystem):
       if 'items' in page:
         items = page['items']
       else:
-        items_response = requests.get(page['@id'])
+        items_response = requests.get(page['@id'], timeout=TIMEOUT)
         if items_response.status_code != 200:
           raise RuntimeError(
               f'Failed to get NuGet versions page for {package} with: '

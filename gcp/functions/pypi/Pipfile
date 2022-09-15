@@ -5,6 +5,6 @@ name = "pypi"
 
 [packages]
 cryptography = "==3.4.7"
-google-cloud-secret-manager = "==2.5.0"
+google-cloud-secret-manager = "==2.12.4"
 osv = "==0.0.14"
 requests = "==2.25.1"

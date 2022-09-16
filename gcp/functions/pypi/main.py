@@ -24,6 +24,7 @@ import requests
 import osv
 
 _ENDPOINT = 'https://pypi.org/_/vulnerabilities/osv/report'
+_TIMEOUT = 30  # Timeout for HTTP(S) requests
 _PROJECT_ID = '651737493649'
 _SECRET_NAME = f'projects/{_PROJECT_ID}/secrets/pypi-key/versions/latest'
 
@@ -95,5 +96,6 @@ def publish(event, context):
   }
 
   print(f'Posting {vulnerability.id} to PyPI:', request.decode())
-  response = requests.post(_ENDPOINT, data=request, headers=headers)
+  response = requests.post(
+      _ENDPOINT, data=request, headers=headers, timeout=_TIMEOUT)
   response.raise_for_status()

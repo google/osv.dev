@@ -1,4 +1,4 @@
-# Copyright 2021 Google LLC
+# Copyright 2022 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -12,18 +12,17 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-FROM gcr.io/oss-vdb/worker
+name: osv-scanner
 
-RUN apt-get update && \
-    apt-get install -y \
-        wget \
-        google-cloud-sdk-datastore-emulator \
-        openjdk-11-jre  # Needed for Datastore emulator.
+on: [pull_request]
 
-COPY daemon.json /etc/docker/daemon.json
-COPY install_go.sh /tmp/install_go.sh
-
-RUN "/tmp/install_go.sh" "/tmp"
-ENV PATH "$PATH:/root/.go/bin"
-
-ENTRYPOINT []
+jobs:
+  osv-scanner:
+    name: Scan for vulnerabilities
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+      - name: osv scan step
+        id: osv-scanning
+        uses: ./tools/osv-scanner/

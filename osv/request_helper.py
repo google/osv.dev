@@ -75,6 +75,7 @@ class RequestHelper:
           total=self.retry_total,
       )
       session.mount('https://', HTTPAdapter(max_retries=retries))
+      session.headers.update({'User-Agent': 'osv.dev'})
       response = session.get(url)
 
       if response.status_code != 200:

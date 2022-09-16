@@ -1,0 +1,12 @@
+steps:
+- name: gcr.io/cloud-builders/docker
+  args: [ 'build', '-t', 'gcr.io/oss-vdb/alpine-cve-convert', '-f', 'cmd/alpine/Dockerfile', '.' ]
+- name: gcr.io/cloud-builders/docker
+  args: [ 'build', '-t', 'gcr.io/oss-vdb/combine-to-osv', '-f', 'cmd/combine-to-osv/Dockerfile', '.' ]
+- name: gcr.io/cloud-builders/docker
+  args: [ 'push', 'gcr.io/oss-vdb/alpine-cve-convert' ]
+- name: gcr.io/cloud-builders/docker
+  args: [ 'push', 'gcr.io/oss-vdb/combine-to-osv' ]
+serviceAccount: 'projects/oss-vdb/serviceAccounts/deployment@oss-vdb.iam.gserviceaccount.com'
+options:
+  logging: CLOUD_LOGGING_ONLY

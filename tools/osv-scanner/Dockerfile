@@ -1,4 +1,4 @@
-# Copyright 2021 Google LLC
+# Copyright 2022 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -12,18 +12,27 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-FROM gcr.io/oss-vdb/worker
+FROM golang:alpine
 
-RUN apt-get update && \
-    apt-get install -y \
-        wget \
-        google-cloud-sdk-datastore-emulator \
-        openjdk-11-jre  # Needed for Datastore emulator.
+RUN mkdir /src
+WORKDIR /src
 
-COPY daemon.json /etc/docker/daemon.json
-COPY install_go.sh /tmp/install_go.sh
+COPY ./go.mod /src/go.mod
+COPY ./go.sum /src/go.sum
+RUN go mod download
 
-RUN "/tmp/install_go.sh" "/tmp"
-ENV PATH "$PATH:/root/.go/bin"
+COPY ./ /src/
+RUN go build -o osv-scanner ./cmd/osv-scanner/
 
-ENTRYPOINT []
+FROM alpine:latest
+RUN apk --no-cache add \
+    ca-certificates \
+    git
+
+# Allow git to run on mounted directories
+RUN git config --global --add safe.directory '*'
+
+WORKDIR /root/
+COPY --from=0 /src/osv-scanner ./
+
+ENTRYPOINT ["/root/osv-scanner"]

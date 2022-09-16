@@ -25,6 +25,8 @@ from . import ecosystems
 
 class GetNextVersionTest(unittest.TestCase):
   """get_next_version tests."""
+  _TEST_DATA_DIR = os.path.join(
+      os.path.dirname(os.path.abspath(__file__)), 'testdata')
 
   def test_pypi(self):
     """Test PyPI."""
@@ -133,6 +135,46 @@ class GetNextVersionTest(unittest.TestCase):
     # This should now only call the cache, and not requests.get
     ecosystem.enumerate_versions('cyrus-sasl2', '0', None)
     self.assertEqual(requests_mock.call_count, 2)
+
+  def test_packagist(self):
+    """Test Packagist."""
+    ecosystem = ecosystems.get('Packagist')
+    self.assertLess(
+        ecosystem.sort_key('4.3-2RC1'), ecosystem.sort_key('4.3-2RC2'))
+    self.assertGreater(
+        ecosystem.sort_key('4.3-2RC2'), ecosystem.sort_key('4.3-2beta5'))
+    self.assertGreater(
+        ecosystem.sort_key('4.3-2'), ecosystem.sort_key('4.3-2beta1'))
+    self.assertGreater(ecosystem.sort_key('1.0.0'), ecosystem.sort_key('1.0'))
+    self.assertEqual(
+        ecosystem.sort_key('1.0.0rc2'), ecosystem.sort_key('1.0.0.rc2'))
+
+    enumerated_versions = ecosystem.enumerate_versions('neos/neos', '3.3.0',
+                                                       '4.4.0')
+    self.assertIn('4.3.19', enumerated_versions)
+    self.assertIn('4.2.18', enumerated_versions)
+    self.assertIn('3.3.1', enumerated_versions)
+    self.assertIn('3.3.0', enumerated_versions)
+
+    with open(os.path.join(self._TEST_DATA_DIR,
+                           'packagist_test_cases.txt')) as file:
+      for line in file.readlines():
+        if line.startswith('//') or line.isspace():
+          continue
+        pieces = line.strip('\n').split(' ')
+        sort_value = ecosystem.sort_key(pieces[0]).__cmp__(
+            ecosystem.sort_key(pieces[2]))
+
+        if pieces[1] == '<':
+          expected_value = -1
+        elif pieces[1] == '=':
+          expected_value = 0
+        elif pieces[1] == '>':
+          expected_value = 1
+        else:
+          raise RuntimeError('Input not expected: ' + pieces[1])
+
+        self.assertEqual(expected_value, sort_value, pieces)
 
   def test_semver(self):
     """Test SemVer."""

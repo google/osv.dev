@@ -27,6 +27,7 @@ from .third_party.univers.gem import GemVersion
 from . import debian_version_cache
 from . import maven
 from . import nuget
+from . import packagist_version
 from . import semver_index
 from .cache import Cache
 from .cache import cached
@@ -35,6 +36,7 @@ from .request_helper import RequestError, RequestHelper
 _DEPS_DEV_API = (
     'https://api.deps.dev/insights/v1alpha/systems/{ecosystem}/packages/'
     '{package}/versions')
+TIMEOUT = 30  # Timeout for HTTP(S) requests
 use_deps_dev = False
 deps_dev_api_key = ''
 
@@ -60,7 +62,7 @@ class DepsDevMixin:
     response = requests.get(
         url, headers={
             'X-DepsDev-APIKey': deps_dev_api_key,
-        })
+        }, timeout=TIMEOUT)
 
     if response.status_code == 404:
       raise EnumerateError(f'Package {package} not found')
@@ -184,6 +186,7 @@ class SemverEcosystem(Ecosystem):
 Crates = SemverEcosystem
 Go = SemverEcosystem
 NPM = SemverEcosystem
+Hex = SemverEcosystem
 
 
 class PyPI(Ecosystem):
@@ -197,7 +200,8 @@ class PyPI(Ecosystem):
 
   def enumerate_versions(self, package, introduced, fixed, limits=None):
     """Enumerate versions."""
-    response = requests.get(self._API_PACKAGE_URL.format(package=package))
+    response = requests.get(
+        self._API_PACKAGE_URL.format(package=package), timeout=TIMEOUT)
 
     if response.status_code == 404:
       raise EnumerateError(f'Package {package} not found')
@@ -279,7 +283,8 @@ class RubyGems(Ecosystem):
 
   def enumerate_versions(self, package, introduced, fixed, limits=None):
     """Enumerate versions."""
-    response = requests.get(self._API_PACKAGE_URL.format(package=package))
+    response = requests.get(
+        self._API_PACKAGE_URL.format(package=package), timeout=TIMEOUT)
     if response.status_code == 404:
       raise EnumerateError(f'Package {package} not found')
     if response.status_code != 200:
@@ -307,7 +312,7 @@ class NuGet(Ecosystem):
   def enumerate_versions(self, package, introduced, fixed, limits=None):
     """Enumerate versions."""
     url = self._API_PACKAGE_URL.format(package=package.lower())
-    response = requests.get(url)
+    response = requests.get(url, timeout=TIMEOUT)
     if response.status_code == 404:
       raise EnumerateError(f'Package {package} not found')
     if response.status_code != 200:
@@ -321,7 +326,7 @@ class NuGet(Ecosystem):
       if 'items' in page:
         items = page['items']
       else:
-        items_response = requests.get(page['@id'])
+        items_response = requests.get(page['@id'], timeout=TIMEOUT)
         if items_response.status_code != 200:
           raise RuntimeError(
               f'Failed to get NuGet versions page for {package} with: '
@@ -376,7 +381,7 @@ class Debian(Ecosystem):
 
     versions = [v for v in raw_versions if version_is_valid(v)]
     # Sort to ensure it is in the correct order
-    versions.sort(key=self.sort_key)
+    self.sort_versions(versions)
     # The only versions with +deb
     versions = [
         x for x in versions
@@ -397,12 +402,41 @@ class Debian(Ecosystem):
     return self._get_affected_versions(versions, introduced, fixed, limits)
 
 
+class Packagist(Ecosystem):
+  """Packagist ecosystem"""
+
+  _API_PACKAGE_URL = 'https://repo.packagist.org/p2/{package}.json'
+
+  def sort_key(self, version):
+    return packagist_version.PackagistVersion(version)
+
+  def enumerate_versions(self, package, introduced, fixed, limits=None):
+    url = self._API_PACKAGE_URL.format(package=package.lower())
+    request_helper = RequestHelper(shared_cache)
+    try:
+      text_response = request_helper.get(url)
+    except RequestError as ex:
+      if ex.response.status_code == 404:
+        raise EnumerateError(f'Package {package} not found') from ex
+      raise RuntimeError('Failed to get Packagist versions for '
+                         f'{package} with: {ex.response.text}') from ex
+
+    response = json.loads(text_response)
+    versions: list[str] = [x['version'] for x in response['packages'][package]]
+    self.sort_versions(versions)
+    # TODO(rexpan): Potentially filter out branch versions like dev-master
+
+    return self._get_affected_versions(versions, introduced, fixed, limits)
+
+
 _ecosystems = {
     'crates.io': Crates(),
     'Go': Go(),
+    'Hex': Hex(),
     'Maven': Maven(),
     'npm': NPM(),
     'NuGet': NuGet(),
+    'Packagist': Packagist(),
     'PyPI': PyPI(),
     'RubyGems': RubyGems(),
 }
@@ -411,6 +445,7 @@ SEMVER_ECOSYSTEMS = {
     'crates.io',
     'Go',
     'npm',
+    'Hex',
 }
 
 

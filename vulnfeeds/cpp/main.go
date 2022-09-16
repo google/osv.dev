@@ -174,12 +174,13 @@ func main() {
 		app_cpes := 0
 		for _, cpe_str := range cves.CPEs(cve) {
 			cpe, ok := cves.ParseCPE(cpe_str)
-			if !ok {
+			if ok {
+				if cpe.Part == "a" {
+					// log.Printf("FYI: %s is an application CPE", cpe_str)
+					app_cpes += 1
+				}
+			} else {
 				log.Fatalf("Failed to parse CPE %s: %v", cpe_str, err)
-			}
-			if cpe.Part == "a" {
-				// log.Printf("FYI: %s is an application CPE", cpe_str)
-				app_cpes += 1
 			}
 		}
 

@@ -23,7 +23,7 @@ import (
 )
 
 // scanDir walks through the given directory to try to find any relevant files
-func scanDir(query *osv.BatchedQuery, dir string) error {
+func scanDir(query *osv.BatchedQuery, dir string, skipGit bool) error {
 	log.Printf("Scanning dir %s\n", dir)
 	return filepath.Walk(dir, func(path string, info os.FileInfo, err error) error {
 		if err != nil {
@@ -31,7 +31,7 @@ func scanDir(query *osv.BatchedQuery, dir string) error {
 			return err
 		}
 
-		if info.IsDir() && info.Name() == ".git" {
+		if !skipGit && info.IsDir() && info.Name() == ".git" {
 			gitQuery, err := scanGit(filepath.Dir(path))
 			if err != nil {
 				log.Printf("scan failed for %s: %v\n", path, err)
@@ -265,6 +265,11 @@ func main() {
 				Name:  "json",
 				Usage: "sets output to json (WIP)",
 			},
+			&cli.BoolFlag{
+				Name:  "skip-git",
+				Usage: "skip scanning git repositories",
+				Value: false,
+			},
 		},
 		ArgsUsage: "[directory1 directory2...]",
 		Action: func(context *cli.Context) error {
@@ -291,9 +296,10 @@ func main() {
 				}
 			}
 
+			skipGit := context.Bool("skip-git")
 			genericDirs := context.Args().Slice()
 			for _, dir := range genericDirs {
-				err := scanDir(&query, dir)
+				err := scanDir(&query, dir, skipGit)
 				if err != nil {
 					return err
 				}

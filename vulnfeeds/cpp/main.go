@@ -163,59 +163,60 @@ func main() {
 		patch_refs := 0
 		cpes := cves.CPEs(cve)
 
-		if len(refs) > 0 && len(cpes) > 0 {
-			// Does it have any application CPEs?
-			app_cpes := 0
-			for _, cpe_str := range cves.CPEs(cve) {
-				cpe, ok := cves.ParseCPE(cpe_str)
-				if !ok {
-					log.Fatalf("Failed to parse CPE %s: %v", cpe_str, err)
-				}
-				if cpe.Part == "a" {
-					// log.Printf("FYI: %s is an application CPE", cpe_str)
-					app_cpes += 1
-				}
-			}
-			if app_cpes > 0 {
-				log.Printf("%s", cve.CVE.CVEDataMeta.ID)
-				for _, ref := range refs {
-					// Are any of the reference's tags 'Patch'?
-					for _, tag := range ref.Tags {
-						if tag == "Patch" && IsRepoUrl(ref.URL) {
-							log.Printf("\t * %s", ref.URL)
-							patch_refs += 1
-						}
-					}
-				}
-				if patch_refs == 0 && app_cpes > 0 {
-					log.Printf("FYI: Will need to rely on CPE exclusively")
-				}
-				for _, cpe_str := range cves.CPEs(cve) {
-					cpe, ok := cves.ParseCPE(cpe_str)
-					if !ok {
-						log.Fatalf("Failed to parse CPE %s: %v", cpe_str, err)
-					}
-					if cpe.Part == "a" {
-						log.Printf("\t * vendor=%s, product=%s", cpe.Vendor, cpe.Product)
-						if patch_refs == 0 {
-							repo := MaybeGetSourceRepoFromDebian(*debianMetadataPath, cpe.Product)
-							if repo != "" {
-								log.Printf("Derived repo: %s", repo)
-							}
-						}
-					}
-				}
-			} else {
-				log.Printf("FYI: skipping %s due to:", cve.CVE.CVEDataMeta.ID)
-				log.Printf("\t * believed non-software")
-			}
-		} else {
+		if len(refs) == 0 && len(cpes) == 0 {
 			log.Printf("FYI: skipping %s due to:", cve.CVE.CVEDataMeta.ID)
-			if len(cpes) == 0 {
-				log.Printf("\t * lack of CPEs")
+			log.Printf("\t * lack of CPEs")
+			log.Printf("\t * lack of references")
+			continue
+		}
+
+		// Does it have any application CPEs?
+		app_cpes := 0
+		for _, cpe_str := range cves.CPEs(cve) {
+			cpe, ok := cves.ParseCPE(cpe_str)
+			if !ok {
+				log.Fatalf("Failed to parse CPE %s: %v", cpe_str, err)
 			}
-			if len(refs) == 0 {
-				log.Printf("\t * lack of references")
+			if cpe.Part == "a" {
+				// log.Printf("FYI: %s is an application CPE", cpe_str)
+				app_cpes += 1
+			}
+		}
+
+		if app_cpes == 0 {
+			log.Printf("FYI: skipping %s due to:", cve.CVE.CVEDataMeta.ID)
+			log.Printf("\t * believed non-software")
+			continue
+		}
+
+		log.Printf("%s", cve.CVE.CVEDataMeta.ID)
+		for _, ref := range refs {
+			// Are any of the reference's tags 'Patch'?
+			for _, tag := range ref.Tags {
+				if tag == "Patch" && IsRepoUrl(ref.URL) {
+					log.Printf("\t * %s", ref.URL)
+					patch_refs += 1
+				}
+			}
+		}
+
+		if patch_refs == 0 {
+			log.Printf("FYI: Will need to rely on CPE exclusively")
+		}
+
+		for _, cpe_str := range cves.CPEs(cve) {
+			cpe, ok := cves.ParseCPE(cpe_str)
+			if !ok {
+				log.Fatalf("Failed to parse CPE %s: %v", cpe_str, err)
+			}
+			if cpe.Part == "a" {
+				log.Printf("\t * vendor=%s, product=%s", cpe.Vendor, cpe.Product)
+				if patch_refs == 0 {
+					repo := MaybeGetSourceRepoFromDebian(*debianMetadataPath, cpe.Product)
+					if repo != "" {
+						log.Printf("Derived repo: %s", repo)
+					}
+				}
 			}
 		}
 	}

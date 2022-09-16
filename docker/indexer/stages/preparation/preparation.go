@@ -43,7 +43,7 @@ import (
 const workers = 5
 
 var (
-	genericVersionRE = regexp.MustCompile(`(\d+|(![a-z])(?:rc|alpha|beta|preview)\d*)`)
+	genericVersionRE = regexp.MustCompile(`(\d+\.\d+\.?\d?-?(rc|alpha|beta|preview)?\d?)`)
 )
 
 // Result is the data structure returned by the stage.

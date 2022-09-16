@@ -26,7 +26,7 @@ func IsRepoUrl(url string) bool {
 
 // Checks if a URL relates to the FSF.
 func IsGnuUrl(url string) bool {
-	re := regexp.MustCompile(`\.(?:non)?gnu\.org/`)
+	re := regexp.MustCompile(`^https?://.*\.(?:non)?gnu\.org/`)
 
 	return re.MatchString(url)
 }

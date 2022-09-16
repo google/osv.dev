@@ -115,12 +115,12 @@ class OSVServicer(osv_service_v1_pb2_grpc.OSVServicer):
       context.abort(grpc.StatusCode.NOT_IMPLEMENTED,
                     'Querying only by file hash is not implemented yet.')
       return None
-    return get_version_by_name(request.query, context).result()
+    return get_version_by_name(request.query).result()
 
 
 @ndb.tasklet
-def get_version_by_name(version_query: osv_service_v1_pb2.VersionQuery,
-                        context: grpc.ServicerContext) -> ndb.Future:
+def get_version_by_name(
+    version_query: osv_service_v1_pb2.VersionQuery) -> ndb.Future:
   """Identifies the version based on the provided name."""
   query = osv.RepoIndex.query(osv.RepoIndex.name == version_query.name)
   it = query.iter()
@@ -141,7 +141,8 @@ def get_version_by_name(version_query: osv_service_v1_pb2.VersionQuery,
 def compare_hashes_from_commit(
     idx: osv.RepoIndex,
     hashes: List[osv_service_v1_pb2.FileHash]) -> ndb.Future:
-  """"Retrieves the hashes from the provided index and compares them to the input hashes."""
+  """"Retrieves the hashes from the provided index and compares
+      them to the input hashes."""
   total_files = 0
   matching_hashes = 0
   for i in range(idx.pages):
@@ -489,11 +490,11 @@ def serve(port: int, local: bool):
   server = grpc.server(concurrent.futures.ThreadPoolExecutor(max_workers=10))
   osv_service_v1_pb2_grpc.add_OSVServicer_to_server(OSVServicer(), server)
   if local:
-    SERVICE_NAMES = (
+    service_names = (
         osv_service_v1_pb2.DESCRIPTOR.services_by_name['OSV'].full_name,
         reflection.SERVICE_NAME,
     )
-    reflection.enable_server_reflection(SERVICE_NAMES, server)
+    reflection.enable_server_reflection(service_names, server)
   server.add_insecure_port('[::]:{}'.format(port))
   server.start()
 

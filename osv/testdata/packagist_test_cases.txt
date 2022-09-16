@@ -53,6 +53,27 @@
 1.0pl1 > 1.0
 1.0pl1 = 1.0pl1
 
+v1.0pl1 > 1.0-dev
+v1.0pl1 > 1.0a1
+v1.0pl1 > 1.0b1
+v1.0pl1 > 1.0RC1
+v1.0pl1 > 1.0rc1
+v1.0pl1 > 1.0
+v1.0pl1 = 1.0pl1
+
+v1.0pl1 > v1.0-dev
+v1.0pl1 > v1.0a1
+v1.0pl1 > v1.0b1
+v1.0pl1 > v1.0RC1
+v1.0pl1 > v1.0rc1
+v1.0pl1 > v1.0
+v1.0pl1 = v1.0pl1
+
+v1 < 2
+v10 > 2
+v1.0 < 1.1
+v1.2 > 1.0.1
+
 // From https://github.com/composer/semver/blob/main/tests/ComparatorTest.php
 1.25.0 < 1.26.0
 1.0.0 < 1.2-dev

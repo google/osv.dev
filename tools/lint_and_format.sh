@@ -24,7 +24,7 @@ IN_SCOPE_GO_MODULES="$(git ls-files | fgrep go.mod | fgrep -v docs | xargs dirna
 
 python_lint_findings=""
 if ! echo "$IN_SCOPE_PYTHON_FILES" | xargs pylint --rcfile="$script_dir/../.pylintrc"; then
-  lint_findings="python_lint_findings"
+  python_lint_findings="python_lint_findings"
 fi
 
 python_format_findings=""

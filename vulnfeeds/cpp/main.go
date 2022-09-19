@@ -175,7 +175,7 @@ func main() {
 
 	for _, cve := range parsed.CVEItems {
 		refs := cve.CVE.References.ReferenceData
-		patch_refs := 0
+		patchRefs := 0
 		cpes := cves.CPEs(cve)
 
 		if len(refs) == 0 && len(cpes) == 0 {
@@ -210,12 +210,12 @@ func main() {
 			for _, tag := range ref.Tags {
 				if tag == "Patch" && IsRepoURL(ref.URL) {
 					Logger.Infof("\t * %s", ref.URL)
-					patch_refs += 1
+					patchRefs += 1
 				}
 			}
 		}
 
-		if patch_refs == 0 {
+		if patchRefs == 0 {
 			Logger.Infof("FYI: Will need to rely on CPE exclusively")
 		}
 
@@ -226,7 +226,7 @@ func main() {
 			}
 			if cpe.Part == "a" {
 				Logger.Infof("\t * vendor=%s, product=%s", cpe.Vendor, cpe.Product)
-				if patch_refs == 0 {
+				if patchRefs == 0 {
 					repo := MaybeGetSourceRepoFromDebian(*debianMetadataPath, cpe.Product)
 					if repo != "" {
 						Logger.Infof("Derived repo: %s", repo)

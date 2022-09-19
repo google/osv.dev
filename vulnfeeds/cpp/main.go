@@ -18,6 +18,7 @@ import (
 	"cloud.google.com/go/logging"
 	"github.com/google/osv/vulnfeeds/cves"
 	"github.com/google/osv/vulnfeeds/utility"
+	"golang.org/x/exp/slices"
 )
 
 const projectId = "oss-vdb"
@@ -63,16 +64,7 @@ func MaybeTranslateSavannahURL(u string) (string, bool) {
 		panic(err)
 	}
 
-	supportedHostname := false
-	for _, value := range supportedHostnames {
-		if value == parsedURL.Hostname() {
-			supportedHostname = true
-			break
-		}
-	}
-
-	// Check hostname is in supported set
-	if supportedHostname {
+	if slices.Contains(supportedHostnames, parsedURL.Hostname()) {
 		hostnameParts := strings.Split(parsedURL.Hostname(), ".")
 		// Pull out the "nongnu" or "gnu" part of the hostname
 		domain := GNUPlaceholder{hostnameParts[len(hostnameParts)-2], path.Base(parsedURL.Path)}

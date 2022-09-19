@@ -31,6 +31,11 @@ class OSVStub(object):
                 request_serializer=osv__service__v1__pb2.QueryAffectedBatchParameters.SerializeToString,
                 response_deserializer=osv__service__v1__pb2.BatchVulnerabilityList.FromString,
                 )
+        self.DetermineVersion = channel.unary_unary(
+                '/osv.v1.OSV/DetermineVersion',
+                request_serializer=osv__service__v1__pb2.DetermineVersionParameters.SerializeToString,
+                response_deserializer=osv__service__v1__pb2.VersionMatchList.FromString,
+                )
 
 
 class OSVServicer(object):
@@ -60,6 +65,13 @@ class OSVServicer(object):
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
 
+    def DetermineVersion(self, request, context):
+        """Determine the version of the provided hash values.
+        """
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
 
 def add_OSVServicer_to_server(servicer, server):
     rpc_method_handlers = {
@@ -77,6 +89,11 @@ def add_OSVServicer_to_server(servicer, server):
                     servicer.QueryAffectedBatch,
                     request_deserializer=osv__service__v1__pb2.QueryAffectedBatchParameters.FromString,
                     response_serializer=osv__service__v1__pb2.BatchVulnerabilityList.SerializeToString,
+            ),
+            'DetermineVersion': grpc.unary_unary_rpc_method_handler(
+                    servicer.DetermineVersion,
+                    request_deserializer=osv__service__v1__pb2.DetermineVersionParameters.FromString,
+                    response_serializer=osv__service__v1__pb2.VersionMatchList.SerializeToString,
             ),
     }
     generic_handler = grpc.method_handlers_generic_handler(
@@ -137,5 +154,22 @@ class OSV(object):
         return grpc.experimental.unary_unary(request, target, '/osv.v1.OSV/QueryAffectedBatch',
             osv__service__v1__pb2.QueryAffectedBatchParameters.SerializeToString,
             osv__service__v1__pb2.BatchVulnerabilityList.FromString,
+            options, channel_credentials,
+            insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
+
+    @staticmethod
+    def DetermineVersion(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(request, target, '/osv.v1.OSV/DetermineVersion',
+            osv__service__v1__pb2.DetermineVersionParameters.SerializeToString,
+            osv__service__v1__pb2.VersionMatchList.FromString,
             options, channel_credentials,
             insecure, call_credentials, compression, wait_for_ready, timeout, metadata)

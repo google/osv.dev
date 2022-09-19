@@ -32,7 +32,7 @@ func IsRepoURL(url string) bool {
 }
 
 // Checks if a URL relates to the FSF.
-func IsGnuURL(url string) bool {
+func IsGNUURL(url string) bool {
 	re := regexp.MustCompile(`^https?://.*\.(?:non)?gnu\.org/`)
 
 	return re.MatchString(url)
@@ -40,8 +40,8 @@ func IsGnuURL(url string) bool {
 
 // Tries to translate Savannah URLs to their corresponding Git repository URL.
 func MaybeTranslateSavannahURL(u string) (string, bool) {
-	type GnuPlaceholder struct {
-		GnuOrNonGnu string
+	type GNUPlaceholder struct {
+		GNUOrNonGNU string
 		Path        string
 	}
 	var tpl bytes.Buffer
@@ -75,8 +75,8 @@ func MaybeTranslateSavannahURL(u string) (string, bool) {
 	if supportedHostname {
 		hostnameParts := strings.Split(parsedURL.Hostname(), ".")
 		// Pull out the "nongnu" or "gnu" part of the hostname
-		domain := GnuPlaceholder{hostnameParts[len(hostnameParts)-2], path.Base(parsedURL.Path)}
-		savannahGitRepoTemplate, err := template.New("SavannahGitRepoURL").Parse("https://git.savannah.{{ .GnuOrNonGnu }}.org/git/{{ .Path }}.git")
+		domain := GNUPlaceholder{hostnameParts[len(hostnameParts)-2], path.Base(parsedURL.Path)}
+		savannahGitRepoTemplate, err := template.New("SavannahGitRepoURL").Parse("https://git.savannah.{{ .GNUOrNonGNU }}.org/git/{{ .Path }}.git")
 		if err != nil {
 			panic(err)
 		}
@@ -137,7 +137,7 @@ func MaybeGetSourceRepoFromDebian(mdir string, pkg string) string {
 			return possibleRepo
 		}
 		// Incorporate Savannah URL to Git translation here
-		if IsGnuURL(possibleRepo) {
+		if IsGNUURL(possibleRepo) {
 			repo, translated := MaybeTranslateSavannahURL(possibleRepo)
 			if translated {
 				return repo

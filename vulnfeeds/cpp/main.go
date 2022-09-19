@@ -200,6 +200,7 @@ func main() {
 		for _, ref := range refs {
 			// Are any of the reference's tags 'Patch'?
 			for _, tag := range ref.Tags {
+				// TODO(apollock): determine rate of false negatives
 				if tag == "Patch" && IsRepoURL(ref.URL) {
 					Logger.Infof("\t * %s", ref.URL)
 					patchRefs += 1

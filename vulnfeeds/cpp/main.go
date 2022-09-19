@@ -25,14 +25,14 @@ const projectId = "oss-vdb"
 var Logger utility.LoggerWrapper
 
 // Checks if a URL is to a supported repo.
-func IsRepoUrl(url string) bool {
+func IsRepoURL(url string) bool {
 	re := regexp.MustCompile(`http[s]?:\/\/(?:c?git(?:hub|lab)?)\.|\.git$`)
 
 	return re.MatchString(url)
 }
 
 // Checks if a URL relates to the FSF.
-func IsGnuUrl(url string) bool {
+func IsGnuURL(url string) bool {
 	re := regexp.MustCompile(`^https?://.*\.(?:non)?gnu\.org/`)
 
 	return re.MatchString(url)
@@ -76,7 +76,7 @@ func MaybeTranslateSavannahURL(u string) (string, bool) {
 		hostnameParts := strings.Split(parsedURL.Hostname(), ".")
 		// Pull out the "nongnu" or "gnu" part of the hostname
 		domain := GnuPlaceholder{hostnameParts[len(hostnameParts)-2], path.Base(parsedURL.Path)}
-		savannahGitRepoTemplate, err := template.New("savannahGitRepoUrl").Parse("https://git.savannah.{{ .GnuOrNonGnu }}.org/git/{{ .Path }}.git")
+		savannahGitRepoTemplate, err := template.New("SavannahGitRepoURL").Parse("https://git.savannah.{{ .GnuOrNonGnu }}.org/git/{{ .Path }}.git")
 		if err != nil {
 			panic(err)
 		}
@@ -118,7 +118,7 @@ func MaybeGetSourceFromDebianCopyright(copyrightFile string) (string, bool) {
 	return "", false
 }
 
-// Tries to find a Debian copyright file for the package and returns the source URL if IsRepoUrl() agrees.
+// Tries to find a Debian copyright file for the package and returns the source URL if IsRepoURL() agrees.
 func MaybeGetSourceRepoFromDebian(mdir string, pkg string) string {
 	var metadata string
 	if strings.HasPrefix(pkg, "lib") {
@@ -133,11 +133,11 @@ func MaybeGetSourceRepoFromDebian(mdir string, pkg string) string {
 		if !ok {
 			return ""
 		}
-		if IsRepoUrl(possibleRepo) {
+		if IsRepoURL(possibleRepo) {
 			return possibleRepo
 		}
 		// Incorporate Savannah URL to Git translation here
-		if IsGnuUrl(possibleRepo) {
+		if IsGnuURL(possibleRepo) {
 			repo, translated := MaybeTranslateSavannahURL(possibleRepo)
 			if translated {
 				return repo
@@ -208,7 +208,7 @@ func main() {
 		for _, ref := range refs {
 			// Are any of the reference's tags 'Patch'?
 			for _, tag := range ref.Tags {
-				if tag == "Patch" && IsRepoUrl(ref.URL) {
+				if tag == "Patch" && IsRepoURL(ref.URL) {
 					Logger.Infof("\t * %s", ref.URL)
 					patch_refs += 1
 				}

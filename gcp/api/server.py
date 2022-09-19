@@ -256,6 +256,10 @@ def _is_semver_affected(affected_packages, package_name, ecosystem,
         if event.type == 'fixed' and version >= semver_index.parse(event.value):
           affected = False
 
+        if event.type == 'last_affected' and version > semver_index.parse(
+            event.value):
+          affected = False
+
   return affected
 
 

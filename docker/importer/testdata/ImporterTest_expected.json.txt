@@ -14,6 +14,6 @@
  '"19ccebafb7663c422c714e0c67fa4775abf91c43"}]}], "versions": ["FILE5_29", '
  '"FILE5_30"], "ecosystem_specific": {"severity": "MEDIUM"}, '
  '"database_specific": {"database_specific": 1337.0}}], "schema_version": '
- '"1.2.0", "severity": [{"type": "CVSS_V3", "score": "7.5"}], "credits": '
+ '"1.3.0", "severity": [{"type": "CVSS_V3", "score": "7.5"}], "credits": '
  '[{"name": "Foo bar"}, {"name": "Bar foo", "contact": '
  '["mailto:bar@foo.com"]}]}')

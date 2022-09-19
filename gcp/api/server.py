@@ -18,6 +18,7 @@ import concurrent
 import functools
 import logging
 import os
+from random import choices
 import sys
 import time
 
@@ -115,7 +116,44 @@ class OSVServicer(osv_service_v1_pb2_grpc.OSVServicer):
       context.abort(grpc.StatusCode.NOT_IMPLEMENTED,
                     'Querying only by file hash is not implemented yet.')
       return None
-    return get_version_by_name(request.query).result()
+    return find_potential_commits(request.query).result()
+
+
+@ndb.tasklet
+def find_potential_commits(version_query: osv_service_v1_pb2.VersionQuery) -> ndb.Future:
+  """Identify fitting commits based on a subset of hashes"""
+  hashes = []
+  if len(version_query.file_hashes) <= 10:
+    for fh in version_query.file_hashes:
+      hashes.append(fh.hash)
+  else:
+    rnd_hashes = choices(version_query.file_hashes, k=10)
+    for fh in rnd_hashes:
+      hashes.append(fh.hash)
+  idx_keys = []
+  for h in hashes:
+    print(h)
+    k = ndb.BlobKey(h)
+    # ndb.Key
+    # query =osv.FileResult.query(osv.FileResult.hash == h)
+    query = osv.RepoIndexResult.query(
+      osv.RepoIndexResult.file_results.hash == k)
+    it = query.iter()
+    while (yield it.has_next_async()):
+      r = it.next()
+      idx_keys.append(r.key.parent)
+    idx_keys = set(idx_keys)
+    futures = []
+    for r in idx_keys:
+      idx = r.get()
+      match = compare_hashes_from_commit(idx, version_query.file_hashes)
+      futures.append(match)
+  results = []
+  for f in futures:
+    match = f.result()
+    if match.score != 0.0:
+      results.append(match)
+  return osv_service_v1_pb2.VersionMatchList(matches=results)
 
 
 @ndb.tasklet
@@ -150,6 +188,7 @@ def compare_hashes_from_commit(
     result = key.get()
     for f_result in result.file_results:
       for in_hash in hashes:
+        print(f'{in_hash.hash} == {f_result.hash} ?')
         if in_hash.hash == f_result.hash:
           matching_hashes += 1
           break

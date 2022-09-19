@@ -18,7 +18,6 @@
                                                  '1.2.1-2.2+wheezy1',
                                                  '1.2.1-2.2+wheezy2',
                                                  '1.2.1-2.2+wheezy3~bpo60+1']}],
-    'affected_ranges': [],
     'aliases': ['CVE-2014-3616'],
     'credits': [],
     'database_specific': None,

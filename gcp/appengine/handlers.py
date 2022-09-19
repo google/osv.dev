@@ -73,8 +73,8 @@ def get_monorail_service_account():
   """Get monorail service account credentials."""
   client = secretmanager_v1.SecretManagerServiceClient()
   response = client.access_secret_version(
-      name=f'projects/{_PROJECT_ID}/secrets/monorail-service-account/versions/latest'
-  )
+      name=f'projects/{_PROJECT_ID}/secrets/monorail-service-account/'
+      f'versions/latest')
   return json.loads(response.payload.data.decode())
 
 

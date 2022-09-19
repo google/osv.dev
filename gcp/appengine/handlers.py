@@ -24,7 +24,7 @@ from google.cloud.datastore_admin_v1.gapic import datastore_admin_client \
     as ds_admin
 from google.cloud import ndb
 from google.cloud import pubsub_v1
-from google.cloud import secretmanager
+from google.cloud import secretmanager_v1
 import requests
 
 import osv
@@ -71,10 +71,10 @@ def make_affected_commits_public(bug):
 
 def get_monorail_service_account():
   """Get monorail service account credentials."""
-  client = secretmanager.SecretManagerServiceClient()
+  client = secretmanager_v1.SecretManagerServiceClient()
   response = client.access_secret_version(
-      f'projects/{_PROJECT_ID}/secrets/monorail-service-account/versions/latest'
-  )
+      name=f'projects/{_PROJECT_ID}/secrets/monorail-service-account/'
+      f'versions/latest')
   return json.loads(response.payload.data.decode())
 
 

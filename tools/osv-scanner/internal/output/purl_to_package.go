@@ -1,19 +1,18 @@
 package output
 
 import (
-	"log"
-
 	"github.com/package-url/packageurl-go"
 )
 
-func PurlToPackage(purl string) Package {
+func PurlToPackage(purl string) (Package, error) {
 	parsedPURL, err := packageurl.FromString(purl)
 	if err != nil {
-		log.Fatalf("Failed to parse purl: %s, with error: %s", purl, err)
+		// log.Printf("Failed to parse purl: %s, with error: %s", purl, err)
+		return Package{}, err
 	}
 	return Package{
 		Name:      parsedPURL.Name,
-		Ecosystem: parsedPURL.Namespace,
+		Ecosystem: parsedPURL.Type, // TODO: Might want some mapping here to properly cased ecosystems
 		Version:   parsedPURL.Version,
-	}
+	}, nil
 }

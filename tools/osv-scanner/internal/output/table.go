@@ -10,7 +10,6 @@ import (
 
 	"github.com/jedib0t/go-pretty/v6/table"
 	"github.com/jedib0t/go-pretty/v6/text"
-	"github.com/package-url/packageurl-go"
 	"golang.org/x/term"
 )
 
@@ -31,15 +30,12 @@ func PrintTableResults(query osv.BatchedQuery, resp *osv.HydratedBatchedResponse
 				outputRow = append(outputRow, "GIT", query.Commit, query.Commit)
 				shouldMerge = true
 			} else if query.Package.PURL != "" {
-				parsedPURL, err := packageurl.FromString(query.Package.PURL)
+				pkg, err := PurlToPackage(query.Package.PURL)
 				if err != nil {
 					log.Println("Failed to parse purl")
 					continue
 				}
-				purlVersion := parsedPURL.Version
-				parsedPURL.Version = ""
-				parsedPURL.Qualifiers = []packageurl.Qualifier{}
-				outputRow = append(outputRow, "PURL", parsedPURL.ToString(), purlVersion)
+				outputRow = append(outputRow, pkg.Ecosystem, pkg.Name, pkg.Version)
 				shouldMerge = true
 			} else {
 				outputRow = append(outputRow, query.Package.Ecosystem, query.Package.Name, query.Version)

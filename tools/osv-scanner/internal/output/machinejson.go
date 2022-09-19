@@ -2,6 +2,8 @@ package output
 
 import (
 	"encoding/json"
+	"log"
+
 	"github.com/google/osv.dev/tools/osv-scanner/internal/osv"
 )
 
@@ -10,14 +12,14 @@ type Output struct {
 }
 
 type Result struct {
-	FilePath string `json:"filePath"`
+	FilePath string    `json:"filePath"`
 	Packages []Package `json:"packages"`
 }
 
 type Package struct {
-	Name            string `json:"name"`
-	Version         string `json:"version"`
-	Ecosystem       string `json:"ecosystem"`
+	Name            string              `json:"name"`
+	Version         string              `json:"version"`
+	Ecosystem       string              `json:"ecosystem"`
 	Vulnerabilities []osv.Vulnerability `json:"vulnerabilities"`
 }
 
@@ -30,13 +32,28 @@ func PrintJSONResults(query osv.BatchedQuery, resp *osv.HydratedBatchedResponse)
 		if len(response.Vulns) == 0 {
 			continue
 		}
-		groupedBySource[query.Source] = append(groupedBySource[query.Source], Package{
-			// TODO: Extract and use some of the logic in morphing PURL into this format
-			Name:            query.Package.Name,
-			Version:         query.Version,
-			Ecosystem:       query.Package.Ecosystem,
-			Vulnerabilities: response.Vulns,
-		})
+		var pkg Package
+		if query.Commit != "" {
+			pkg.Version = query.Commit
+		} else if query.Package.PURL != "" {
+			var err error
+			pkg, err = PurlToPackage(query.Package.PURL)
+			if err != nil {
+				log.Printf("Failed to parse purl: %s, with error: %s",
+					query.Package.PURL, err)
+				continue
+			}
+			pkg.Vulnerabilities = response.Vulns
+		} else {
+			pkg = Package{
+				Name:            query.Package.Name,
+				Version:         query.Version,
+				Ecosystem:       query.Package.Ecosystem,
+				Vulnerabilities: response.Vulns,
+			}
+		}
+
+		groupedBySource[query.Source] = append(groupedBySource[query.Source], pkg)
 	}
 
 	for source, packages := range groupedBySource {
@@ -46,7 +63,7 @@ func PrintJSONResults(query osv.BatchedQuery, resp *osv.HydratedBatchedResponse)
 		})
 	}
 
-	marshal, err := json.MarshalIndent(output,"", "  ")
+	marshal, err := json.MarshalIndent(output, "", "  ")
 	if err != nil {
 		return
 	}

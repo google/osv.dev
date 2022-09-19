@@ -137,7 +137,7 @@ func (s *Store) Store(ctx context.Context, repoInfo *preparation.Result, hashTyp
 			return err
 		}
 		for _, r := range results {
-			resultKey := datastore.NameKey(resultKind, fmt.Sprintf(resultKeyFmt, repoInfo.Commit, hashType, r.Page), docKey)
+			resultKey := datastore.NameKey(resultKind, fmt.Sprintf(resultKeyFmt, repoInfo.Commit[:], hashType, r.Page), docKey)
 			_, err := s.dsCl.Put(ctx, resultKey, r)
 			if err != nil {
 				return err

@@ -186,19 +186,19 @@ func main() {
 		}
 
 		// Does it have any application CPEs?
-		app_cpes := 0
-		for _, cpe_str := range cves.CPEs(cve) {
-			cpe, ok := cves.ParseCPE(cpe_str)
+		appCpes := 0
+		for _, cpeStr := range cves.CPEs(cve) {
+			cpe, ok := cves.ParseCPE(cpeStr)
 			if ok {
 				if cpe.Part == "a" {
-					app_cpes += 1
+					appCpes += 1
 				}
 			} else {
-				Logger.Fatalf("Failed to parse CPE %s: %v", cpe_str, err)
+				Logger.Fatalf("Failed to parse CPE %s: %v", cpeStr, err)
 			}
 		}
 
-		if app_cpes == 0 {
+		if appCpes == 0 {
 			Logger.Infof("FYI: skipping %s due to:", cve.CVE.CVEDataMeta.ID)
 			Logger.Infof("\t * believed non-software")
 			continue
@@ -219,10 +219,10 @@ func main() {
 			Logger.Infof("FYI: Will need to rely on CPE exclusively")
 		}
 
-		for _, cpe_str := range cves.CPEs(cve) {
-			cpe, ok := cves.ParseCPE(cpe_str)
+		for _, cpeStr := range cves.CPEs(cve) {
+			cpe, ok := cves.ParseCPE(cpeStr)
 			if !ok {
-				Logger.Infof("Failed to parse CPE %s: %v", cpe_str, err)
+				Logger.Infof("Failed to parse CPE %s: %v", cpeStr, err)
 			}
 			if cpe.Part == "a" {
 				Logger.Infof("\t * vendor=%s, product=%s", cpe.Vendor, cpe.Product)

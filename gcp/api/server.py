@@ -23,6 +23,7 @@ import time
 
 from google.cloud import ndb
 import grpc
+from grpc_reflection.v1alpha import reflection
 from packageurl import PackageURL
 
 import osv
@@ -30,6 +31,8 @@ from osv import ecosystems
 from osv import semver_index
 import osv_service_v1_pb2
 import osv_service_v1_pb2_grpc
+
+from typing import List
 
 _PROJECT = 'oss-vdb'
 _OSS_FUZZ_TRACKER_URL = 'https://bugs.chromium.org/p/oss-fuzz/issues/detail?id='
@@ -104,6 +107,64 @@ class OSVServicer(osv_service_v1_pb2_grpc.OSVServicer):
           osv_service_v1_pb2.VulnerabilityList(vulns=future.result()[0] or []))
 
     return osv_service_v1_pb2.BatchVulnerabilityList(results=batch_results)
+
+  @ndb_context
+  def DetermineVersion(self, request, context):
+    """Determine the version of the provided hashes."""
+    if not request.query.name:
+      context.abort(grpc.StatusCode.NOT_IMPLEMENTED,
+                    'Querying only by file hash is not implemented yet.')
+      return None
+    return get_version_by_name(request.query).result()
+
+
+@ndb.tasklet
+def get_version_by_name(
+    version_query: osv_service_v1_pb2.VersionQuery) -> ndb.Future:
+  """Identifies the version based on the provided name."""
+  query = osv.RepoIndex.query(osv.RepoIndex.name == version_query.name)
+  it = query.iter()
+  futures = []
+  while (yield it.has_next_async()):
+    idx = it.next()
+    match = compare_hashes_from_commit(idx, version_query.file_hashes)
+    futures.append(match)
+  results = []
+  for f in futures:
+    match = f.result()
+    if match.score != 0.0:
+      results.append(match)
+  return osv_service_v1_pb2.VersionMatchList(matches=results)
+
+
+@ndb.tasklet
+def compare_hashes_from_commit(
+    idx: osv.RepoIndex,
+    hashes: List[osv_service_v1_pb2.FileHash]) -> ndb.Future:
+  """"Retrieves the hashes from the provided index and compares
+      them to the input hashes."""
+  total_files = 0
+  matching_hashes = 0
+  for i in range(idx.pages):
+    key = version_hashes_key(idx.key, idx.commit, idx.file_hash_type, i)
+    result = key.get()
+    for f_result in result.file_results:
+      for in_hash in hashes:
+        if in_hash.hash == f_result.hash:
+          matching_hashes += 1
+          break
+      total_files += 1
+  score = matching_hashes / total_files if total_files != 0 else 0.0
+  return osv_service_v1_pb2.VersionMatch(
+      type=osv_service_v1_pb2.VersionMatch.VERSION,
+      value=idx.version,
+      score=score)
+
+
+def version_hashes_key(parent_key: ndb.Key, commit: bytes, hash_type: str,
+                       page: int) -> ndb.Key:
+  return ndb.Key(parent_key.kind(), parent_key.id(), osv.RepoIndexResult,
+                 f"{commit.hex()}-{hash_type}-{page}")
 
 
 @ndb.tasklet
@@ -254,6 +315,10 @@ def _is_semver_affected(affected_packages, package_name, ecosystem,
           affected = True
 
         if event.type == 'fixed' and version >= semver_index.parse(event.value):
+          affected = False
+
+        if event.type == 'last_affected' and version > semver_index.parse(
+            event.value):
           affected = False
 
   return affected
@@ -424,10 +489,16 @@ def query_by_package(project, ecosystem, purl: PackageURL, page_token,
   return [to_response(bug) for bug in bugs], cursor
 
 
-def serve(port):
+def serve(port: int, local: bool):
   """Configures and runs the bookstore API server."""
   server = grpc.server(concurrent.futures.ThreadPoolExecutor(max_workers=10))
   osv_service_v1_pb2_grpc.add_OSVServicer_to_server(OSVServicer(), server)
+  if local:
+    service_names = (
+        osv_service_v1_pb2.DESCRIPTOR.services_by_name['OSV'].full_name,
+        reflection.SERVICE_NAME,
+    )
+    reflection.enable_server_reflection(service_names, server)
   server.add_insecure_port('[::]:{}'.format(port))
   server.start()
 
@@ -453,6 +524,11 @@ def main():
       help='The port to listen on.'
       'If arg is not set, will listen on the $PORT env var.'
       'If env var is empty, defaults to 8000.')
+  parser.add_argument(
+      '--local',
+      action='store_true',
+      default=False,
+      help='If set reflection is enabled to allow debugging with grpcurl.')
 
   args = parser.parse_args()
   port = args.port
@@ -461,7 +537,7 @@ def main():
   if not port:
     port = 8000
 
-  serve(port)
+  serve(port, args.local)
 
 
 if __name__ == '__main__':

@@ -16,7 +16,6 @@
                                                  'branch_1_cherrypick_regress',
                                                  'v0.1.1',
                                                  'v0.2']}],
-    'affected_ranges': [],
     'aliases': [],
     'credits': [],
     'database_specific': None,

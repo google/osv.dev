@@ -9,7 +9,6 @@
                                                 'purl': None},
                                  'ranges': [],
                                  'versions': ['10', '11']}],
-    'affected_ranges': [],
     'aliases': ['CVE-2021-0483'],
     'credits': [],
     'database_specific': None,

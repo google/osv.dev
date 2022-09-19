@@ -55,7 +55,12 @@ class DepsDevMixin:
       'PyPI': 'PYPI',
   }
 
-  def _deps_dev_enumerate(self, package, introduced, fixed, limits=None):
+  def _deps_dev_enumerate(self,
+                          package,
+                          introduced,
+                          fixed=None,
+                          last_affected=None,
+                          limits=None):
     """Use deps.dev to get list of versions."""
     ecosystem = self._DEPS_DEV_ECOSYSTEM_MAP[self.name]
     url = _DEPS_DEV_API.format(ecosystem=ecosystem, package=package)
@@ -74,7 +79,8 @@ class DepsDevMixin:
     response = response.json()
     versions = [v['version'] for v in response['versions']]
     self.sort_versions(versions)
-    return self._get_affected_versions(versions, introduced, fixed, limits)
+    return self._get_affected_versions(versions, introduced, fixed,
+                                       last_affected, limits)
 
 
 class Ecosystem:
@@ -114,18 +120,25 @@ class Ecosystem:
     """Sort versions."""
     versions.sort(key=self.sort_key)
 
-  def enumerate_versions(self, package, introduced, fixed, limits=None):
+  def enumerate_versions(self,
+                         package,
+                         introduced,
+                         fixed=None,
+                         last_affected=None,
+                         limits=None):
     """Enumerate versions."""
     raise NotImplementedError
 
-  def _get_affected_versions(self, versions, introduced, fixed, limits):
+  def _get_affected_versions(self, versions, introduced, fixed, last_affected,
+                             limits):
     """Get affected versions.
 
     Args:
       versions: a list of version strings.
-      introduced: a list of version strings.
-      fixed: a list of version strings.
-      limits: a list of version strings.
+      introduced: a version string.
+      fixed: a version string.
+      last_affected: a version string.
+      limits: a version string.
 
     Returns:
       A list of affected version strings.
@@ -144,6 +157,9 @@ class Ecosystem:
     if fixed:
       fixed = self.sort_key(fixed)
       end_idx = bisect.bisect_left(parsed_versions, fixed)
+    elif last_affected:
+      last_affected = self.sort_key(last_affected)
+      end_idx = bisect.bisect_right(parsed_versions, last_affected)
     else:
       end_idx = len(versions)
 
@@ -162,7 +178,12 @@ class SemverEcosystem(Ecosystem):
     """Sort key."""
     return semver_index.parse(version)
 
-  def enumerate_versions(self, package, introduced, fixed, limits=None):
+  def enumerate_versions(self,
+                         package,
+                         introduced,
+                         fixed=None,
+                         last_affected=None,
+                         limits=None):
     """Enumerate versions (no-op)."""
     del package
     del introduced
@@ -198,7 +219,12 @@ class PyPI(Ecosystem):
     """Sort key."""
     return packaging.version.parse(version)
 
-  def enumerate_versions(self, package, introduced, fixed, limits=None):
+  def enumerate_versions(self,
+                         package,
+                         introduced,
+                         fixed=None,
+                         last_affected=None,
+                         limits=None):
     """Enumerate versions."""
     response = requests.get(
         self._API_PACKAGE_URL.format(package=package), timeout=TIMEOUT)
@@ -213,7 +239,8 @@ class PyPI(Ecosystem):
     versions = list(response['releases'].keys())
     self.sort_versions(versions)
 
-    return self._get_affected_versions(versions, introduced, fixed, limits)
+    return self._get_affected_versions(versions, introduced, fixed,
+                                       last_affected, limits)
 
 
 class Maven(Ecosystem, DepsDevMixin):
@@ -258,7 +285,12 @@ class Maven(Ecosystem, DepsDevMixin):
 
     return versions
 
-  def enumerate_versions(self, package, introduced, fixed, limits=None):
+  def enumerate_versions(self,
+                         package,
+                         introduced,
+                         fixed=None,
+                         last_affected=None,
+                         limits=None):
     """Enumerate versions."""
     if use_deps_dev:
       return self._deps_dev_enumerate(package, introduced, fixed, limits=limits)
@@ -269,7 +301,8 @@ class Maven(Ecosystem, DepsDevMixin):
 
     versions = get_versions(package)
     self.sort_versions(versions)
-    return self._get_affected_versions(versions, introduced, fixed, limits)
+    return self._get_affected_versions(versions, introduced, fixed,
+                                       last_affected, limits)
 
 
 class RubyGems(Ecosystem):
@@ -281,7 +314,12 @@ class RubyGems(Ecosystem):
     """Sort key."""
     return GemVersion(version)
 
-  def enumerate_versions(self, package, introduced, fixed, limits=None):
+  def enumerate_versions(self,
+                         package,
+                         introduced,
+                         fixed=None,
+                         last_affected=None,
+                         limits=None):
     """Enumerate versions."""
     response = requests.get(
         self._API_PACKAGE_URL.format(package=package), timeout=TIMEOUT)
@@ -296,7 +334,8 @@ class RubyGems(Ecosystem):
     versions = [entry['number'] for entry in response]
 
     self.sort_versions(versions)
-    return self._get_affected_versions(versions, introduced, fixed, limits)
+    return self._get_affected_versions(versions, introduced, fixed,
+                                       last_affected, limits)
 
 
 class NuGet(Ecosystem):
@@ -309,7 +348,12 @@ class NuGet(Ecosystem):
     """Sort key."""
     return nuget.Version.from_string(version)
 
-  def enumerate_versions(self, package, introduced, fixed, limits=None):
+  def enumerate_versions(self,
+                         package,
+                         introduced,
+                         fixed=None,
+                         last_affected=None,
+                         limits=None):
     """Enumerate versions."""
     url = self._API_PACKAGE_URL.format(package=package.lower())
     response = requests.get(url, timeout=TIMEOUT)
@@ -338,7 +382,8 @@ class NuGet(Ecosystem):
         versions.append(item['catalogEntry']['version'])
 
     self.sort_versions(versions)
-    return self._get_affected_versions(versions, introduced, fixed, limits)
+    return self._get_affected_versions(versions, introduced, fixed,
+                                       last_affected, limits)
 
 
 class Debian(Ecosystem):
@@ -357,7 +402,12 @@ class Debian(Ecosystem):
       return DebianVersion(999999, 999999)
     return DebianVersion.from_string(version)
 
-  def enumerate_versions(self, package, introduced, fixed, limits=None):
+  def enumerate_versions(self,
+                         package,
+                         introduced,
+                         fixed=None,
+                         last_affected=None,
+                         limits=None):
     url = self._API_PACKAGE_URL.format(package=package.lower())
     request_helper = RequestHelper(shared_cache)
     try:
@@ -399,7 +449,8 @@ class Debian(Ecosystem):
           package, fixed, self.debian_release_ver)
       return []
 
-    return self._get_affected_versions(versions, introduced, fixed, limits)
+    return self._get_affected_versions(versions, introduced, fixed,
+                                       last_affected, limits)
 
 
 class Packagist(Ecosystem):
@@ -410,7 +461,12 @@ class Packagist(Ecosystem):
   def sort_key(self, version):
     return packagist_version.PackagistVersion(version)
 
-  def enumerate_versions(self, package, introduced, fixed, limits=None):
+  def enumerate_versions(self,
+                         package,
+                         introduced,
+                         fixed=None,
+                         last_affected=None,
+                         limits=None):
     url = self._API_PACKAGE_URL.format(package=package.lower())
     request_helper = RequestHelper(shared_cache)
     try:
@@ -426,7 +482,8 @@ class Packagist(Ecosystem):
     self.sort_versions(versions)
     # TODO(rexpan): Potentially filter out branch versions like dev-master
 
-    return self._get_affected_versions(versions, introduced, fixed, limits)
+    return self._get_affected_versions(versions, introduced, fixed,
+                                       last_affected, limits)
 
 
 _ecosystems = {

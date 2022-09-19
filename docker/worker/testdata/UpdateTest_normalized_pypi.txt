@@ -18,7 +18,6 @@
                                                    'repo_url': 'https://osv-test/repo/url',
                                                    'type': 'GIT'}],
                                  'versions': []}],
-    'affected_ranges': [],
     'aliases': [],
     'credits': [],
     'database_specific': None,

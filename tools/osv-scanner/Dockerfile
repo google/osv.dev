@@ -1,4 +1,4 @@
-# Copyright 2021 Google LLC
+# Copyright 2022 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -12,18 +12,27 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-type: google.api.Service
-config_version: 3
-name: api-test.osv.dev
-title: OSV
-apis:
-  - name: osv.v1.OSV
-usage:
-  rules:
-    - selector: "*"
-      allow_unregistered_calls: true
-backend:
-  rules:
-    - selector: "*"
-      deadline: 120
+FROM golang:alpine
 
+RUN mkdir /src
+WORKDIR /src
+
+COPY ./go.mod /src/go.mod
+COPY ./go.sum /src/go.sum
+RUN go mod download
+
+COPY ./ /src/
+RUN go build -o osv-scanner ./cmd/osv-scanner/
+
+FROM alpine:latest
+RUN apk --no-cache add \
+    ca-certificates \
+    git
+
+# Allow git to run on mounted directories
+RUN git config --global --add safe.directory '*'
+
+WORKDIR /root/
+COPY --from=0 /src/osv-scanner ./
+
+ENTRYPOINT ["/root/osv-scanner"]

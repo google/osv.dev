@@ -373,7 +373,7 @@ def enumerate_versions(package, ecosystem, affected_range):
       zero_event = event
       continue
 
-    if event.introduced or event.fixed:
+    if event.introduced or event.fixed or event.last_affected:
       sorted_events.append(event)
       continue
 
@@ -384,8 +384,12 @@ def enumerate_versions(package, ecosystem, affected_range):
     """Sort key."""
     if event.introduced:
       return ecosystem.sort_key(event.introduced)
+    if event.fixed:
+      return ecosystem.sort_key(event.fixed)
+    if event.last_affected:
+      return ecosystem.sort_key(event.last_affected)
 
-    return ecosystem.sort_key(event.fixed)
+    raise ValueError('Invalid event')
 
   sorted_events.sort(key=sort_key)
   if zero_event:
@@ -398,14 +402,24 @@ def enumerate_versions(package, ecosystem, affected_range):
 
     if last_introduced and event.fixed:
       current_versions = ecosystem.enumerate_versions(
-          package, last_introduced, event.fixed, limits=limits)
+          package, last_introduced, fixed=event.fixed, limits=limits)
+      if current_versions:
+        versions.update(current_versions)
+      last_introduced = None
+
+    if last_introduced and event.last_affected:
+      current_versions = ecosystem.enumerate_versions(
+          package,
+          last_introduced,
+          last_affected=event.last_affected,
+          limits=limits)
       if current_versions:
         versions.update(current_versions)
       last_introduced = None
 
   if last_introduced:
     current_versions = ecosystem.enumerate_versions(
-        package, last_introduced, None, limits=limits)
+        package, last_introduced, limits=limits)
     if current_versions:
       versions.update(current_versions)
 
@@ -446,6 +460,7 @@ def _analyze_git_ranges(repo_analyzer, checkout_path, affected_range,
         continue
 
     try:
+      # TODO(ochang): Support last_affected.
       result = repo_analyzer.get_affected(package_repo, all_introduced,
                                           all_fixed, all_limit)
     except ImpactError:

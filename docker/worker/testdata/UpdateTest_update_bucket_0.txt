@@ -1,7 +1,6 @@
 {   'affected': [],
     'affected_fuzzy': [],
     'affected_packages': [],
-    'affected_ranges': [],
     'aliases': ['CVE-2019-16884'],
     'credits': [],
     'database_specific': None,

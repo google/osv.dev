@@ -13,3 +13,4 @@ osv = {editable = true, path = "../../"}
 packageurl-python = "==0.9.9"
 packaging = "==20.9"
 requests = "==2.27.1"
+grpcio-reflection = "*"

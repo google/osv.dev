@@ -548,23 +548,14 @@ class UpdateTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
         'BLAH-123.yaml',
         self._load_test_data(os.path.join(TEST_DATA_DIR, 'BLAH-123.yaml')))
     self.mock_repo.add_file(
-        'BLAH-123.old.yaml',
-        self._load_test_data(os.path.join(TEST_DATA_DIR, 'BLAH-123.old.yaml')))
-    self.mock_repo.add_file(
         'BLAH-124.yaml',
         self._load_test_data(os.path.join(TEST_DATA_DIR, 'BLAH-124.yaml')))
-    self.mock_repo.add_file(
-        'BLAH-124.old.yaml',
-        self._load_test_data(os.path.join(TEST_DATA_DIR, 'BLAH-124.old.yaml')))
     self.mock_repo.add_file(
         'BLAH-125.yaml',
         self._load_test_data(os.path.join(TEST_DATA_DIR, 'BLAH-125.yaml')))
     self.mock_repo.add_file(
         'BLAH-127.yaml',
         self._load_test_data(os.path.join(TEST_DATA_DIR, 'BLAH-127.yaml')))
-    self.mock_repo.add_file(
-        'BLAH-127.old.yaml',
-        self._load_test_data(os.path.join(TEST_DATA_DIR, 'BLAH-127.old.yaml')))
     self.mock_repo.add_file(
         'BLAH-128.yaml',
         self._load_test_data(os.path.join(TEST_DATA_DIR, 'BLAH-128.yaml')))
@@ -971,6 +962,41 @@ class UpdateTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
 
     self.expect_equal('normalized_pypi_pubsub_calls',
                       self.mock_publish.mock_calls)
+
+  def test_update_last_affected(self):
+    """Test a PyPI entry."""
+    self.source_repo.ignore_git = False
+    self.source_repo.versions_from_repo = False
+    self.source_repo.detect_cherrypicks = False
+    self.source_repo.put()
+
+    self.mock_repo.add_file(
+        'PYSEC-124.yaml',
+        self._load_test_data(os.path.join(TEST_DATA_DIR, 'PYSEC-124.yaml')))
+    self.mock_repo.commit('User', 'user@email')
+    task_runner = worker.TaskRunner(ndb_client, None, self.tmp_dir.name, None,
+                                    None)
+    message = mock.Mock()
+    message.attributes = {
+        'source': 'source',
+        'path': 'PYSEC-124.yaml',
+        'original_sha256': _sha256('PYSEC-124.yaml'),
+        'deleted': 'false',
+    }
+    task_runner._source_update(message)
+
+    repo = pygit2.Repository(self.remote_source_repo_path)
+    commit = repo.head.peel()
+
+    self.assertEqual('infra@osv.dev', commit.author.email)
+    self.assertEqual('OSV', commit.author.name)
+    self.assertEqual('Update PYSEC-124', commit.message)
+    diff = repo.diff(commit.parents[0], commit)
+    self.expect_equal('diff_last_affected', diff.patch)
+
+    self.expect_dict_equal(
+        'update_last_affected',
+        ndb.Key(osv.Bug, 'source:PYSEC-124').get()._to_dict())
 
   def test_update_maven(self):
     """Test updating maven."""

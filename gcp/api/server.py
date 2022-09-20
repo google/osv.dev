@@ -18,7 +18,6 @@ import concurrent
 import functools
 import logging
 import os
-from random import choices
 import sys
 import time
 
@@ -112,59 +111,34 @@ class OSVServicer(osv_service_v1_pb2_grpc.OSVServicer):
   @ndb_context
   def DetermineVersion(self, request, context):
     """Determine the version of the provided hashes."""
-    if not request.query.name:
-      context.abort(grpc.StatusCode.NOT_IMPLEMENTED,
-                    'Querying only by file hash is not implemented yet.')
-      return None
-    return find_potential_commits(request.query).result()
+    return determine_version(request.query, context).result()
 
 
 @ndb.tasklet
-def find_potential_commits(version_query: osv_service_v1_pb2.VersionQuery) -> ndb.Future:
+def determine_version(version_query: osv_service_v1_pb2.VersionQuery,
+                      context: grpc.ServicerContext) -> ndb.Future:
   """Identify fitting commits based on a subset of hashes"""
   hashes = []
-  if len(version_query.file_hashes) <= 10:
-    for fh in version_query.file_hashes:
-      hashes.append(fh.hash)
-  else:
-    rnd_hashes = choices(version_query.file_hashes, k=10)
-    for fh in rnd_hashes:
-      hashes.append(fh.hash)
-  idx_keys = []
+  for i in range(min(20, len(version_query.file_hashes))):
+    hashes.append(version_query.file_hashes[i].hash)
+  idx_keys_set = set()
   for h in hashes:
-    print(h)
-    k = ndb.BlobKey(h)
-    # ndb.Key
-    # query =osv.FileResult.query(osv.FileResult.hash == h)
     query = osv.RepoIndexResult.query(
-      osv.RepoIndexResult.file_results.hash == k)
+        osv.RepoIndexResult.file_results.hash == h)
+    query.keys_only = True
     it = query.iter()
     while (yield it.has_next_async()):
       r = it.next()
-      idx_keys.append(r.key.parent)
-    idx_keys = set(idx_keys)
-    futures = []
-    for r in idx_keys:
-      idx = r.get()
-      match = compare_hashes_from_commit(idx, version_query.file_hashes)
-      futures.append(match)
-  results = []
-  for f in futures:
-    match = f.result()
-    if match.score != 0.0:
-      results.append(match)
-  return osv_service_v1_pb2.VersionMatchList(matches=results)
+      idx_keys_set.add(r.key.parent())
+  if len(idx_keys_set) == 0:
+    context.abort(grpc.StatusCode.NOT_FOUND, 'no matches found')
+    return None
 
-
-@ndb.tasklet
-def get_version_by_name(
-    version_query: osv_service_v1_pb2.VersionQuery) -> ndb.Future:
-  """Identifies the version based on the provided name."""
-  query = osv.RepoIndex.query(osv.RepoIndex.name == version_query.name)
-  it = query.iter()
   futures = []
-  while (yield it.has_next_async()):
-    idx = it.next()
+  for r in idx_keys_set:
+    idx = r.get()
+    if version_query.name not in ('', idx.name):
+      continue
     match = compare_hashes_from_commit(idx, version_query.file_hashes)
     futures.append(match)
   results = []
@@ -172,6 +146,10 @@ def get_version_by_name(
     match = f.result()
     if match.score != 0.0:
       results.append(match)
+  if len(results) == 0:
+    context.abort(grpc.StatusCode.NOT_FOUND, 'no matches found')
+    return None
+
   return osv_service_v1_pb2.VersionMatchList(matches=results)
 
 
@@ -188,7 +166,6 @@ def compare_hashes_from_commit(
     result = key.get()
     for f_result in result.file_results:
       for in_hash in hashes:
-        print(f'{in_hash.hash} == {f_result.hash} ?')
         if in_hash.hash == f_result.hash:
           matching_hashes += 1
           break

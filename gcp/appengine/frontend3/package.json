@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "watch": "webpack --config webpack.dev.js --watch",
-    "start": "webpack --config webpack.dev.js serve",
+    "start": "webpack serve --config webpack.dev.js",
     "build": "webpack --config webpack.dev.js",
     "build:prod": "webpack --config webpack.prod.js"
   },

@@ -22,3 +22,8 @@ usage:
   rules:
     - selector: "*"
       allow_unregistered_calls: true
+backend:
+  rules:
+    - selector: "*"
+      deadline: 120
+

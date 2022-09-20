@@ -628,6 +628,44 @@ class Bug(ndb.Model):
     return result
 
 
+class RepoIndex(ndb.Model):
+  """RepoIndex entry"""
+  # The dependency name
+  name = ndb.StringProperty()
+  # The base cpe without the version
+  base_cpe = ndb.StringProperty()
+  # The repository commit
+  commit = ndb.BlobProperty()
+  # Number of hash pages
+  pages = ndb.IntegerProperty()
+  # The source address
+  repo_addr = ndb.StringProperty()
+  # The identified version
+  version = ndb.StringProperty()
+  # The scanned file extensions
+  file_exts = ndb.StringProperty(repeated=True)
+  # The hash algorithm used
+  file_hash_type = ndb.StringProperty()
+  # The repository type
+  repo_type = ndb.StringProperty()
+
+
+class FileResult(ndb.Model):
+  """FileResult entry containing the path and hash"""
+  # The hash value of the file
+  hash = ndb.BlobKeyProperty(indexed=True)
+  # The file path
+  path = ndb.TextProperty()
+
+
+class RepoIndexResult(ndb.Model):
+  """RepoIndexResult entries containing the actual hash values"""
+  # The file results per file
+  file_results = ndb.StructuredProperty(FileResult, repeated=True)
+  # The actual page
+  page = ndb.IntegerProperty()
+
+
 class SourceRepositoryType(enum.IntEnum):
   """SourceRepository type."""
   GIT = 0

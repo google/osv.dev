@@ -7,7 +7,6 @@ import (
 func PURLToPackage(purl string) (Package, error) {
 	parsedPURL, err := packageurl.FromString(purl)
 	if err != nil {
-		// log.Printf("Failed to parse purl: %s, with error: %s", purl, err)
 		return Package{}, err
 	}
 	return Package{

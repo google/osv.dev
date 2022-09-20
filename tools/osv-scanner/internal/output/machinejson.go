@@ -25,7 +25,7 @@ type Package struct {
 }
 
 // PrintJSONResults writes results to the provided writer in JSON format
-func PrintJSONResults(query osv.BatchedQuery, resp *osv.HydratedBatchedResponse, outputWriter io.Writer) {
+func PrintJSONResults(query osv.BatchedQuery, resp *osv.HydratedBatchedResponse, outputWriter io.Writer) error {
 	output := Output{}
 	groupedBySource := map[string][]Package{}
 
@@ -67,5 +67,5 @@ func PrintJSONResults(query osv.BatchedQuery, resp *osv.HydratedBatchedResponse,
 
 	encoder := json.NewEncoder(outputWriter)
 	encoder.SetIndent("", "  ")
-	encoder.Encode(output)
+	return encoder.Encode(output)
 }

@@ -258,8 +258,12 @@ func main() {
 	}
 
 	if outputJson {
-		output.PrintJSONResults(query, hydratedResp, os.Stdout)
+		err = output.PrintJSONResults(query, hydratedResp, os.Stdout)
 	} else {
 		output.PrintTableResults(query, hydratedResp, os.Stdout)
+	}
+
+	if err != nil {
+		log.Fatalf("Failed to write output: %s", err)
 	}
 }

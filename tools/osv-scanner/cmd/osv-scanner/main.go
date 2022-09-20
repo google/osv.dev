@@ -258,8 +258,8 @@ func main() {
 	}
 
 	if outputJson {
-		output.PrintJSONResults(query, hydratedResp)
+		output.PrintJSONResults(query, hydratedResp, os.Stdout)
 	} else {
-		output.PrintTableResults(query, hydratedResp)
+		output.PrintTableResults(query, hydratedResp, os.Stdout)
 	}
 }

@@ -1,6 +1,7 @@
 package output
 
 import (
+	"io"
 	"log"
 	"os"
 	"strings"
@@ -14,9 +15,9 @@ import (
 )
 
 // PrintTableResults prints the osv scan results into a human friendly table.
-func PrintTableResults(query osv.BatchedQuery, resp *osv.HydratedBatchedResponse) {
+func PrintTableResults(query osv.BatchedQuery, resp *osv.HydratedBatchedResponse, outputWriter io.Writer) {
 	outputTable := table.NewWriter()
-	outputTable.SetOutputMirror(os.Stdout)
+	outputTable.SetOutputMirror(outputWriter)
 	outputTable.AppendHeader(table.Row{"Source", "Ecosystem", "Affected Package", "Installed Version", "Vulnerability ID", "OSV URL"})
 
 	for i, query := range query.Queries {

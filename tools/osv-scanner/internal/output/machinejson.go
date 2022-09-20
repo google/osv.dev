@@ -2,6 +2,7 @@ package output
 
 import (
 	"encoding/json"
+	"io"
 	"log"
 
 	"github.com/google/osv.dev/tools/osv-scanner/internal/osv"
@@ -23,7 +24,8 @@ type Package struct {
 	Vulnerabilities []osv.Vulnerability `json:"vulnerabilities"`
 }
 
-func PrintJSONResults(query osv.BatchedQuery, resp *osv.HydratedBatchedResponse) {
+// PrintJSONResults writes results to the provided writer in JSON format
+func PrintJSONResults(query osv.BatchedQuery, resp *osv.HydratedBatchedResponse, outputWriter io.Writer) {
 	output := Output{}
 	groupedBySource := map[string][]Package{}
 
@@ -63,9 +65,7 @@ func PrintJSONResults(query osv.BatchedQuery, resp *osv.HydratedBatchedResponse)
 		})
 	}
 
-	marshal, err := json.MarshalIndent(output, "", "  ")
-	if err != nil {
-		return
-	}
-	print(string(marshal))
+	encoder := json.NewEncoder(outputWriter)
+	encoder.SetIndent("", "  ")
+	encoder.Encode(output)
 }

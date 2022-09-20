@@ -4,7 +4,7 @@ import (
 	"github.com/package-url/packageurl-go"
 )
 
-func PurlToPackage(purl string) (Package, error) {
+func PURLToPackage(purl string) (Package, error) {
 	parsedPURL, err := packageurl.FromString(purl)
 	if err != nil {
 		// log.Printf("Failed to parse purl: %s, with error: %s", purl, err)

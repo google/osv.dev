@@ -97,7 +97,7 @@ Detailed documentation for using the API can be found at
 <https://osv.dev/docs/>.
 
 ## Using the scanner
-Under `tools/osv-scanner`, we provide a go based tool that will scan your dependencies, and check them against the OSV database for known vulnerabilities via the OSV API. 
+Under `tools/osv-scanner`, we provide a Go based tool that will scan your dependencies, and check them against the OSV database for known vulnerabilities via the OSV API. 
 
 Currently it is able to scan various lockfiles, debian docker containers, SPDX and CycloneDB SBOMs, and git repositories.
 

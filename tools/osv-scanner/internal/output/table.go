@@ -30,7 +30,7 @@ func PrintTableResults(query osv.BatchedQuery, resp *osv.HydratedBatchedResponse
 				outputRow = append(outputRow, "GIT", query.Commit, query.Commit)
 				shouldMerge = true
 			} else if query.Package.PURL != "" {
-				pkg, err := PurlToPackage(query.Package.PURL)
+				pkg, err := PURLToPackage(query.Package.PURL)
 				if err != nil {
 					log.Println("Failed to parse purl")
 					continue

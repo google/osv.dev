@@ -37,7 +37,7 @@ func PrintJSONResults(query osv.BatchedQuery, resp *osv.HydratedBatchedResponse)
 			pkg.Version = query.Commit
 		} else if query.Package.PURL != "" {
 			var err error
-			pkg, err = PurlToPackage(query.Package.PURL)
+			pkg, err = PURLToPackage(query.Package.PURL)
 			if err != nil {
 				log.Printf("Failed to parse purl: %s, with error: %s",
 					query.Package.PURL, err)

@@ -653,7 +653,7 @@ class RepoIndex(ndb.Model):
 class FileResult(ndb.Model):
   """FileResult entry containing the path and hash"""
   # The hash value of the file
-  hash = ndb.BlobKeyProperty(indexed=True)
+  hash = ndb.BlobProperty(indexed=True)
   # The file path
   path = ndb.TextProperty()
 

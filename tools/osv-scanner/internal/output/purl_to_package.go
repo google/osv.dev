@@ -4,7 +4,7 @@ import (
 	"github.com/package-url/packageurl-go"
 )
 
-var purl_ecosystems = map[string]string{
+var purlEcosystems = map[string]string{
 	"cargo":    "crates.io",
 	"deb":      "Debian",
 	"hex":      "Hex",
@@ -23,7 +23,7 @@ func PURLToPackage(purl string) (Package, error) {
 	if err != nil {
 		return Package{}, err
 	}
-	ecosystem := purl_ecosystems[parsedPURL.Type]
+	ecosystem := purlEcosystems[parsedPURL.Type]
 	if ecosystem == "" {
 		ecosystem = parsedPURL.Type
 	}

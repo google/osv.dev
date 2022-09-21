@@ -3,6 +3,8 @@
   "extends": [
     "config:base"
   ],
+  "timezone": "Australia/Sydney",
+  "schedule": ["before 6am every Monday"],
   "packageRules": [
     {
       "matchUpdateTypes": ["major"],

@@ -403,8 +403,8 @@ def group_versions(versions):
 def markdown(text):
   """Render markdown."""
   if text:
-    text = text.replace('<', '&lt;').replace('>', '&gt;')
-    return markdown2.markdown(text, extras=['fenced-code-blocks'])
+    return markdown2.markdown(
+        text, safe_mode='escape', extras=['fenced-code-blocks'])
 
   return ''
 

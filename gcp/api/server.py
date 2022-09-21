@@ -18,8 +18,10 @@ import concurrent
 import functools
 import logging
 import os
+import random
 import sys
 import time
+from collections import defaultdict
 
 from google.cloud import ndb
 import grpc
@@ -44,6 +46,8 @@ _EXPECTED_AUDIENCE = 'https://db.oss-fuzz.com'
 
 _MAX_BATCH_QUERY = 1000
 _MAX_VULNERABILITIES_LISTED = 16
+_MAX_HASHES_TO_TRY = 50
+_MAX_COMMITS_TO_TRY = 10
 
 _ndb_client = ndb.Client()
 
@@ -118,31 +122,53 @@ class OSVServicer(osv_service_v1_pb2_grpc.OSVServicer):
 def determine_version(version_query: osv_service_v1_pb2.VersionQuery,
                       context: grpc.ServicerContext) -> ndb.Future:
   """Identify fitting commits based on a subset of hashes"""
-  hashes = []
-  for i in range(min(20, len(version_query.file_hashes))):
-    hashes.append(version_query.file_hashes[i].hash)
-  idx_keys_set = set()
+  if len(version_query.file_hashes) <= _MAX_HASHES_TO_TRY:
+    hashes = [
+        f.hash for f in version_query
+        .file_hashes[:min(_MAX_HASHES_TO_TRY, len(version_query.file_hashes))]
+    ]
+  else:
+    hashes = [
+        f.hash
+        for f in random.sample(version_query.file_hashes, _MAX_HASHES_TO_TRY)
+    ]
+  tracker = defaultdict(int)
+
+  hash_futures = []
   for h in hashes:
     query = osv.RepoIndexResult.query(
         osv.RepoIndexResult.file_results.hash == h)
     query.keys_only = True
-    it = query.iter()
-    while (yield it.has_next_async()):
-      r = it.next()
-      idx_keys_set.add(r.key.parent())
-  if len(idx_keys_set) == 0:
+    hash_futures.append(query.fetch_async())
+
+  for f in hash_futures:
+    for r in f.result():
+      tracker[r.key.parent()] += 1
+
+  idx_keys = []
+  for k, v in tracker.items():
+    if v == _MAX_HASHES_TO_TRY:
+      idx_keys.append(k)
+  if not idx_keys:
+    idx_keys = [
+        k for k, _ in sorted(
+            tracker.items(), key=lambda item: item[1], reverse=True)
+    ]
+    idx_keys = idx_keys[:min(_MAX_COMMITS_TO_TRY, len(idx_keys))]
+  if len(idx_keys) == 0:
     context.abort(grpc.StatusCode.NOT_FOUND, 'no matches found')
     return None
 
-  futures = []
-  for r in idx_keys_set:
-    idx = r.get()
+  idx_futures = ndb.get_multi_async(idx_keys)
+  match_futures = []
+  for f in idx_futures:
+    idx = f.result()
     if version_query.name not in ('', idx.name):
       continue
     match = compare_hashes_from_commit(idx, version_query.file_hashes)
-    futures.append(match)
+    match_futures.append(match)
   results = []
-  for f in futures:
+  for f in match_futures:
     match = f.result()
     if match.score != 0.0:
       results.append(match)

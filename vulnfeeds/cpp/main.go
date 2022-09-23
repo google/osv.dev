@@ -6,11 +6,13 @@ import (
 	"context"
 	"encoding/json"
 	"flag"
+	"fmt"
 	"io/ioutil"
 	"log"
 	"net/url"
 	"os"
 	"path"
+	"path/filepath"
 	"regexp"
 	"strings"
 	"text/template"
@@ -18,10 +20,14 @@ import (
 	"cloud.google.com/go/logging"
 	"github.com/google/osv/vulnfeeds/cves"
 	"github.com/google/osv/vulnfeeds/utility"
+	"github.com/google/osv/vulnfeeds/vulns"
 	"golang.org/x/exp/slices"
 )
 
-const projectId = "oss-vdb"
+const (
+	projectId = "oss-vdb"
+	extension = ".yaml"
+)
 
 var Logger utility.LoggerWrapper
 
@@ -30,6 +36,28 @@ func IsRepoURL(url string) bool {
 	re := regexp.MustCompile(`http[s]?:\/\/(?:c?git(?:hub|lab)?)\.|\.git$`)
 
 	return re.MatchString(url)
+}
+
+// Returns the base repository URL
+func Repo(u string) (string, bool) {
+	parsedURL, err := url.Parse(u)
+	if err != nil {
+		Logger.Fatalf("%v", err)
+	}
+	// GitHub and GitLab URLs are structured one way
+	if strings.Contains(parsedURL.Path, "commit") {
+		return fmt.Sprintf("%s://%s%s", parsedURL.Scheme, parsedURL.Hostname(), strings.Join(strings.Split(parsedURL.Path, "/")[0:3], "/")), true
+	}
+
+	// GitWeb URLs are structured another way
+	if parsedURL.Path == "/" && strings.Contains(parsedURL.RawQuery, "commit") {
+		repo := strings.Split(strings.Split(parsedURL.RawQuery, ";")[0], "=")[1]
+		return fmt.Sprintf("%s://%s/%s", parsedURL.Scheme, parsedURL.Hostname(), repo), true
+	}
+
+	// If we get to here we've encountered an unsupported URL
+	return "", false
+
 }
 
 // Checks if a URL relates to the FSF.
@@ -140,9 +168,75 @@ func MaybeGetSourceRepoFromDebian(mdir string, pkg string) string {
 	return ""
 }
 
+// Use the GitHub API to query the repository's language metadata to make the determination.
+func InScopeGitHubRepo(repoURL string) bool {
+	// TODO(apollock): Implement
+	return true
+}
+
+// Clone the repo and look for C/C++ files to make the determination.
+func InScopeGitRepo(repoURL string) bool {
+	// TODO(apollock): Implement
+	return true
+}
+
+// Looks at what the repo to determine if it contains code using an in-scope language
+func InScopeRepo(repoURL string) bool {
+	parsedURL, err := url.Parse(repoURL)
+	if err != nil {
+		return false
+	}
+
+	switch parsedURL.Hostname() {
+	case "github.com":
+		return InScopeGitHubRepo(repoURL)
+	default:
+		return InScopeGitRepo(repoURL)
+	}
+}
+
+// Takes an NVD CVE record and outputs an OSV file in the specified directory.
+func CVEToOSV(cve cves.CVEItem, directory string) {
+	CPEs := cves.CPEs(cve)
+	CPE, ok := cves.ParseCPE(CPEs[0])
+	if !ok {
+		Logger.Fatalf("Can't generate an OSV record for %s without CPE data", cve.CVE.CVEDataMeta.ID)
+	}
+	versions, versionNotes := cves.ExtractVersion(cve)
+	v, notes := vulns.FromCVE(cve.CVE.CVEDataMeta.ID, cve)
+	pkgInfo := vulns.PackageInfo{
+		PkgName:   CPE.Product,
+		Ecosystem: CPE.Product,
+	}
+	v.AddPkgInfo(pkgInfo)
+	notes = append(notes, versionNotes...)
+	v.Affected[0].AttachExtractedVersionInfo(versions)
+	if len(v.Affected[0].Ranges) == 0 {
+		Logger.Infof("No affected versions detected.")
+	}
+
+	vulnDir := filepath.Join(directory, CPE.Product)
+	err := os.MkdirAll(vulnDir, 0755)
+	if err != nil {
+		Logger.Fatalf("Failed to create dir: %v", err)
+	}
+	outputFile := filepath.Join(vulnDir, v.ID+extension)
+
+	f, err := os.Create(outputFile)
+	if err != nil {
+		Logger.Fatalf("Failed to open %s for writing: %v", outputFile, err)
+	}
+	defer f.Close()
+	err = v.ToYAML(f)
+	if err != nil {
+		Logger.Fatalf("Failed to write %s: %v", outputFile, err)
+	}
+}
+
 func main() {
 	jsonPath := flag.String("nvd_json", "", "Path to NVD CVE JSON to examine.")
 	debianMetadataPath := flag.String("debian_metadata_path", "", "Path to Debian copyright metadata")
+	outDir := flag.String("out_dir", "", "Path to output results.")
 
 	flag.Parse()
 
@@ -167,8 +261,9 @@ func main() {
 
 	for _, cve := range parsed.CVEItems {
 		refs := cve.CVE.References.ReferenceData
-		patchRefs := 0
+		patchRefCount := 0
 		cpes := cves.CPEs(cve)
+		repos := make(map[string]string)
 
 		if len(refs) == 0 && len(cpes) == 0 {
 			Logger.Infof("FYI: skipping %s due to:", cve.CVE.CVEDataMeta.ID)
@@ -178,21 +273,20 @@ func main() {
 		}
 
 		// Does it have any application CPEs?
-		appCpes := 0
+		appCpeCount := 0
 		for _, cpeStr := range cves.CPEs(cve) {
 			cpe, ok := cves.ParseCPE(cpeStr)
 			if ok {
 				if cpe.Part == "a" {
-					appCpes += 1
+					appCpeCount += 1
 				}
 			} else {
 				Logger.Fatalf("Failed to parse CPE %s: %v", cpeStr, err)
 			}
 		}
 
-		if appCpes == 0 {
-			Logger.Infof("FYI: skipping %s due to:", cve.CVE.CVEDataMeta.ID)
-			Logger.Infof("\t * believed non-software")
+		if appCpeCount == 0 {
+			// Not software, skip.
 			continue
 		}
 
@@ -200,16 +294,37 @@ func main() {
 		for _, ref := range refs {
 			// Are any of the reference's tags 'Patch'?
 			for _, tag := range ref.Tags {
-				// TODO(apollock): determine rate of false negatives
-				if tag == "Patch" && IsRepoURL(ref.URL) {
+				if tag == "Third Party Advisory" {
+					continue
+				}
+				// Alternative to the above:
+				// if tag == "Patch" && IsRepoURL(ref.URL) {
+				if IsRepoURL(ref.URL) {
 					Logger.Infof("\t * %s", ref.URL)
-					patchRefs += 1
+					// CVE entries have one set of references, but can have multiple CPEs
+					for _, cpeStr := range cves.CPEs(cve) {
+						cpe, ok := cves.ParseCPE(cpeStr)
+						if !ok {
+							Logger.Infof("Failed to parse CPE %s: %v", cpeStr, err)
+							continue
+						}
+						// Avoid unnecessary calls to Repo() if we already have the repo
+						if _, ok := repos[cpe.Product]; !ok {
+							repo, ok := Repo(ref.URL)
+							if ok {
+								repos[cpe.Product] = repo
+							}
+						}
+						if _, ok := repos[cve.CVE.CVEDataMeta.ID]; !ok {
+							repo, ok := Repo(ref.URL)
+							if ok {
+								repos[cve.CVE.CVEDataMeta.ID] = repo
+							}
+						}
+					}
+					patchRefCount += 1
 				}
 			}
-		}
-
-		if patchRefs == 0 {
-			Logger.Infof("FYI: Will need to rely on CPE exclusively")
 		}
 
 		for _, cpeStr := range cves.CPEs(cve) {
@@ -219,13 +334,39 @@ func main() {
 			}
 			if cpe.Part == "a" {
 				Logger.Infof("\t * vendor=%s, product=%s", cpe.Vendor, cpe.Product)
-				if patchRefs == 0 {
+				if patchRefCount == 0 {
 					repo := MaybeGetSourceRepoFromDebian(*debianMetadataPath, cpe.Product)
 					if repo != "" {
 						Logger.Infof("Derived repo: %s", repo)
+						repos[cpe.Product] = repo
 					}
 				}
+
 			}
 		}
+		Logger.Infof("Summary for %s: [CPEs=%d AppCPEs=%d patches=%d DerivedRepos=%d]", cve.CVE.CVEDataMeta.ID, len(cpes), appCpeCount, patchRefCount, len(repos))
+		Logger.Infof("Repos: %#v", repos)
+
+		// If we've made it to here, we may have:
+		// * a CVE that has Application-related CPEs (so applies to software)
+		// * has one or more patches with a known repository URL patch reference
+		// OR
+		// * a derived repository for the software
+		//
+		// We do not yet have:
+		// * any knowledge of the language used
+		// * definitive version information
+
+		if patchRefCount == 0 && len(repos) == 0 {
+			// We have nothing useful to work with, so we'll assume it's out of scope
+			Logger.Infof("FYI: Passing on %s due to lack of viable information", cve.CVE.CVEDataMeta.ID)
+			continue
+		}
+
+		if !InScopeRepo(repos[cve.CVE.CVEDataMeta.ID]) {
+			continue
+		}
+
+		CVEToOSV(cve, *outDir)
 	}
 }

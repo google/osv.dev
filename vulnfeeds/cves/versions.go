@@ -257,6 +257,78 @@ func ExtractVersionInfo(cve CVEItem, validVersions []string) (VersionInfo, []str
 	return v, notes
 }
 
+func ExtractVersion(cve CVEItem) (VersionInfo, []string) {
+	var notes []string
+	v := VersionInfo{}
+	// gotVersions := false
+	for _, node := range cve.Configurations.Nodes {
+		if node.Operator != "OR" {
+			continue
+		}
+
+		for _, match := range node.CPEMatch {
+			if !match.Vulnerable {
+				continue
+			}
+
+			introduced := ""
+			fixed := ""
+			if match.VersionStartIncluding != "" {
+				introduced = cleanVersion(match.VersionStartIncluding)
+			} /* else if match.VersionStartExcluding != "" {
+				var err error
+				introduced, err = nextVersion(validVersions, cleanVersion(match.VersionStartExcluding))
+				if err != nil {
+					notes = append(notes, err.Error())
+				}
+			} */
+
+			if match.VersionEndExcluding != "" {
+				fixed = cleanVersion(match.VersionEndExcluding)
+			} /* else if match.VersionEndIncluding != "" {
+				var err error
+				fixed, err = nextVersion(validVersions, cleanVersion(match.VersionEndIncluding))
+				if err != nil {
+					notes = append(notes, err.Error())
+				}
+			} */
+
+			if introduced == "" && fixed == "" {
+				continue
+			}
+
+			// gotVersions = true
+			v.AffectedVersions = append(v.AffectedVersions, AffectedVersion{
+				Introduced: introduced,
+				Fixed:      fixed,
+			})
+		}
+	}
+
+	/* This needs to be made independent of validVersions
+	if !gotVersions {
+		var extractNotes []string
+		v.AffectedVersions, extractNotes = extractVersionsFromDescription(validVersions, EnglishDescription(cve.CVE))
+		notes = append(notes, extractNotes...)
+		log.Printf("Extracted versions from description = %+v", v.AffectedVersions)
+	}
+	*/
+
+	if len(v.AffectedVersions) == 0 {
+		notes = append(notes, "No versions detected.")
+	}
+
+	/*
+		if len(notes) != 0 {
+			notes = append(notes, "Valid versions:")
+			for _, version := range validVersions {
+				notes = append(notes, "  - "+version)
+			}
+		}
+	*/
+	return v, notes
+}
+
 func CPEs(cve CVEItem) []string {
 	cpesMap := map[string]bool{}
 	for _, node := range cve.Configurations.Nodes {

@@ -4,7 +4,7 @@
     "config:base"
   ],
   "timezone": "Australia/Sydney",
-  "schedule": ["before 6am every monday"],
+  "schedule": ["before 6am on monday"],
   "packageRules": [
     {
       "matchUpdateTypes": ["major"],

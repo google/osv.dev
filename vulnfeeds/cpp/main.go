@@ -189,6 +189,7 @@ func InScopeGitRepo(repoURL string) bool {
 func InScopeRepo(repoURL string) bool {
 	parsedURL, err := url.Parse(repoURL)
 	if err != nil {
+		Logger.Infof("Warning: %s failed to parse, skipping", repoURL)
 		return false
 	}
 

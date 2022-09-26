@@ -44,11 +44,32 @@ func Repo(u string) (string, bool) {
 	if err != nil {
 		Logger.Fatalf("%v", err)
 	}
-	// GitHub and GitLab URLs are structured one way, e.g.
+	// GitHub and GitLab commit and blob URLs are structured one way, e.g.
 	// https://github.com/MariaDB/server/commit/b1351c15946349f9daa7e5297fb2ac6f3139e4a8
+	// https://github.com/tensorflow/tensorflow/blob/master/tensorflow/core/ops/math_ops.cc
 	// https://gitlab.freedesktop.org/virgl/virglrenderer/-/commit/b05bb61f454eeb8a85164c8a31510aeb9d79129c
 	// https://gitlab.com/qemu-project/qemu/-/commit/4367a20cc4
-	if strings.Contains(parsedURL.Path, "commit") {
+	// https://gitlab.com/gitlab-org/cves/-/blob/master/2022/CVE-2022-2501.json
+	//
+	// This also supports GitHub tag URLs, e.g.
+	// https://github.com/JonMagon/KDiskMark/releases/tag/3.1.0
+	//
+	// This also supports GitHub and Gitlab issue URLs, e.g.:
+	// https://github.com/axiomatic-systems/Bento4/issues/755
+	// https://gitlab.com/wireshark/wireshark/-/issues/18307
+	if strings.Contains(parsedURL.Path, "commit") || strings.Contains(parsedURL.Path, "blob") || strings.Contains(parsedURL.Path, "releases/tag") || strings.Contains(parsedURL.Path, "issues") {
+		return fmt.Sprintf("%s://%s%s", parsedURL.Scheme, parsedURL.Hostname(), strings.Join(strings.Split(parsedURL.Path, "/")[0:3], "/")), true
+	}
+
+	// GitHub pull request URLs are structured differently, e.g.
+	// https://github.com/google/osv.dev/pull/738
+	if parsedURL.Hostname() == "github.com" && strings.Contains(parsedURL.Path, "pull") {
+		return fmt.Sprintf("%s://%s%s", parsedURL.Scheme, parsedURL.Hostname(), strings.Join(strings.Split(parsedURL.Path, "/")[0:3], "/")), true
+	}
+
+	// Gitlab merge request URLs are structured differently, e.g.
+	// https://gitlab.com/libtiff/libtiff/-/merge_requests/378
+	if strings.Contains(parsedURL.Hostname(), "gitlab") && strings.Contains(parsedURL.Path, "merge_requests") {
 		return fmt.Sprintf("%s://%s%s", parsedURL.Scheme, parsedURL.Hostname(), strings.Join(strings.Split(parsedURL.Path, "/")[0:3], "/")), true
 	}
 
@@ -267,10 +288,10 @@ func main() {
 	for _, cve := range parsed.CVEItems {
 		refs := cve.CVE.References.ReferenceData
 		patchRefCount := 0
-		cpes := cves.CPEs(cve)
+		CPEs := cves.CPEs(cve)
 		repos := make(map[string]string)
 
-		if len(refs) == 0 && len(cpes) == 0 {
+		if len(refs) == 0 && len(CPEs) == 0 {
 			Logger.Infof("FYI: skipping %s due to:", cve.CVE.CVEDataMeta.ID)
 			Logger.Infof("\t * lack of CPEs")
 			Logger.Infof("\t * lack of references")
@@ -278,19 +299,19 @@ func main() {
 		}
 
 		// Does it have any application CPEs?
-		appCpeCount := 0
-		for _, cpeStr := range cves.CPEs(cve) {
-			cpe, ok := cves.ParseCPE(cpeStr)
+		appCPECount := 0
+		for _, CPEstr := range cves.CPEs(cve) {
+			CPE, ok := cves.ParseCPE(CPEstr)
 			if ok {
-				if cpe.Part == "a" {
-					appCpeCount += 1
+				if CPE.Part == "a" {
+					appCPECount += 1
 				}
 			} else {
-				Logger.Fatalf("Failed to parse CPE %s: %v", cpeStr, err)
+				Logger.Fatalf("Failed to parse CPE %s: %v", CPEstr, err)
 			}
 		}
 
-		if appCpeCount == 0 {
+		if appCPECount == 0 {
 			// Not software, skip.
 			continue
 		}
@@ -307,17 +328,17 @@ func main() {
 				if IsRepoURL(ref.URL) {
 					Logger.Infof("\t * %s", ref.URL)
 					// CVE entries have one set of references, but can have multiple CPEs
-					for _, cpeStr := range cves.CPEs(cve) {
-						cpe, ok := cves.ParseCPE(cpeStr)
+					for _, CPEstr := range cves.CPEs(cve) {
+						CPE, ok := cves.ParseCPE(CPEstr)
 						if !ok {
-							Logger.Infof("Failed to parse CPE %s: %v", cpeStr, err)
+							Logger.Infof("Failed to parse CPE %s: %v", CPEstr, err)
 							continue
 						}
 						// Avoid unnecessary calls to Repo() if we already have the repo
-						if _, ok := repos[cpe.Product]; !ok {
+						if _, ok := repos[CPE.Product]; !ok {
 							repo, ok := Repo(ref.URL)
 							if ok {
-								repos[cpe.Product] = repo
+								repos[CPE.Product] = repo
 							}
 						}
 						if _, ok := repos[cve.CVE.CVEDataMeta.ID]; !ok {
@@ -332,24 +353,24 @@ func main() {
 			}
 		}
 
-		for _, cpeStr := range cves.CPEs(cve) {
-			cpe, ok := cves.ParseCPE(cpeStr)
+		for _, CPEstr := range cves.CPEs(cve) {
+			CPE, ok := cves.ParseCPE(CPEstr)
 			if !ok {
-				Logger.Infof("Failed to parse CPE %s: %v", cpeStr, err)
+				Logger.Infof("Failed to parse CPE %s: %v", CPEstr, err)
 			}
-			if cpe.Part == "a" {
-				Logger.Infof("\t * vendor=%s, product=%s", cpe.Vendor, cpe.Product)
+			if CPE.Part == "a" {
+				Logger.Infof("\t * vendor=%s, product=%s", CPE.Vendor, CPE.Product)
 				if patchRefCount == 0 {
-					repo := MaybeGetSourceRepoFromDebian(*debianMetadataPath, cpe.Product)
+					repo := MaybeGetSourceRepoFromDebian(*debianMetadataPath, CPE.Product)
 					if repo != "" {
 						Logger.Infof("Derived repo: %s", repo)
-						repos[cpe.Product] = repo
+						repos[CPE.Product] = repo
 					}
 				}
 
 			}
 		}
-		Logger.Infof("Summary for %s: [CPEs=%d AppCPEs=%d patches=%d DerivedRepos=%d]", cve.CVE.CVEDataMeta.ID, len(cpes), appCpeCount, patchRefCount, len(repos))
+		Logger.Infof("Summary for %s: [CPEs=%d AppCPEs=%d patches=%d DerivedRepos=%d]", cve.CVE.CVEDataMeta.ID, len(CPEs), appCPECount, patchRefCount, len(repos))
 		Logger.Infof("Repos: %#v", repos)
 
 		// If we've made it to here, we may have:

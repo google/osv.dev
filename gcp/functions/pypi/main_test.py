@@ -88,8 +88,7 @@ class PublishPyPiTest(unittest.TestCase):
                                           'd9328fb5d2d112c473ce52add3e4cd5b',
             'VULN-PUBLIC-KEY-SIGNATURE': mock.ANY
         },
-        timeout=_TIMEOUT
-    )
+        timeout=_TIMEOUT)
 
     request = self.mock_post.call_args.kwargs['data']
     signature = self.mock_post.call_args.kwargs['headers'][
@@ -117,8 +116,7 @@ class PublishPyPiTest(unittest.TestCase):
                                           'd9328fb5d2d112c473ce52add3e4cd5b',
             'VULN-PUBLIC-KEY-SIGNATURE': mock.ANY
         },
-        timeout=_TIMEOUT
-    )
+        timeout=_TIMEOUT)
 
     request = self.mock_post.call_args.kwargs['data']
     signature = self.mock_post.call_args.kwargs['headers'][

@@ -86,7 +86,7 @@ message FileHash {
   // Can be empty but providing it increases matching quality.
   string file_path = 1;
   string hash_type = 2;
-  repeated bytes hash = 3;
+  bytes hash = 3;
 }
 
 // Result of DetmineVersion.

@@ -44,12 +44,17 @@ func Repo(u string) (string, bool) {
 	if err != nil {
 		Logger.Fatalf("%v", err)
 	}
-	// GitHub and GitLab URLs are structured one way
+	// GitHub and GitLab URLs are structured one way, e.g.
+	// https://github.com/MariaDB/server/commit/b1351c15946349f9daa7e5297fb2ac6f3139e4a8
+	// https://gitlab.freedesktop.org/virgl/virglrenderer/-/commit/b05bb61f454eeb8a85164c8a31510aeb9d79129c
+	// https://gitlab.com/qemu-project/qemu/-/commit/4367a20cc4
 	if strings.Contains(parsedURL.Path, "commit") {
 		return fmt.Sprintf("%s://%s%s", parsedURL.Scheme, parsedURL.Hostname(), strings.Join(strings.Split(parsedURL.Path, "/")[0:3], "/")), true
 	}
 
-	// GitWeb URLs are structured another way
+	// GitWeb URLs are structured another way, e.g.
+	// https://git.dpkg.org/cgit/dpkg/dpkg.git/commit/?id=faa4c92debe45412bfcf8a44f26e827800bb24be
+	// https://git.kernel.org/cgit/linux/kernel/git/torvalds/linux.git/commit/?id=817b8b9c5396d2b2d92311b46719aad5d3339dbe
 	if parsedURL.Path == "/" && strings.Contains(parsedURL.RawQuery, "commit") {
 		repo := strings.Split(strings.Split(parsedURL.RawQuery, ";")[0], "=")[1]
 		return fmt.Sprintf("%s://%s/%s", parsedURL.Scheme, parsedURL.Hostname(), repo), true

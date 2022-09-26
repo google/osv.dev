@@ -229,25 +229,13 @@ func CVEToOSV(cve cves.CVEItem, directory string) {
 	if !ok {
 		Logger.Fatalf("Can't generate an OSV record for %s without CPE data", cve.CVE.CVEDataMeta.ID)
 	}
-	versions, _ := cves.ExtractVersion(cve)
 	v, _ := vulns.FromCVE(cve.CVE.CVEDataMeta.ID, cve)
-	pkgInfo := vulns.PackageInfo{
-		PkgName:   CPE.Product,
-		Ecosystem: CPE.Product,
-	}
-	v.AddPkgInfo(pkgInfo)
-	v.Affected[0].AttachExtractedVersionInfo(versions)
-	if len(v.Affected[0].Ranges) == 0 {
-		Logger.Infof("No affected versions detected.")
-	}
-
 	vulnDir := filepath.Join(directory, CPE.Product)
 	err := os.MkdirAll(vulnDir, 0755)
 	if err != nil {
 		Logger.Fatalf("Failed to create dir: %v", err)
 	}
 	outputFile := filepath.Join(vulnDir, v.ID+extension)
-
 	f, err := os.Create(outputFile)
 	if err != nil {
 		Logger.Fatalf("Failed to open %s for writing: %v", outputFile, err)

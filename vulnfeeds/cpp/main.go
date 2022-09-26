@@ -208,14 +208,13 @@ func CVEToOSV(cve cves.CVEItem, directory string) {
 	if !ok {
 		Logger.Fatalf("Can't generate an OSV record for %s without CPE data", cve.CVE.CVEDataMeta.ID)
 	}
-	versions, versionNotes := cves.ExtractVersion(cve)
-	v, notes := vulns.FromCVE(cve.CVE.CVEDataMeta.ID, cve)
+	versions, _ := cves.ExtractVersion(cve)
+	v, _ := vulns.FromCVE(cve.CVE.CVEDataMeta.ID, cve)
 	pkgInfo := vulns.PackageInfo{
 		PkgName:   CPE.Product,
 		Ecosystem: CPE.Product,
 	}
 	v.AddPkgInfo(pkgInfo)
-	notes = append(notes, versionNotes...)
 	v.Affected[0].AttachExtractedVersionInfo(versions)
 	if len(v.Affected[0].Ranges) == 0 {
 		Logger.Infof("No affected versions detected.")

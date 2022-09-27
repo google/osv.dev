@@ -26,7 +26,7 @@ import (
 
 const (
 	projectId = "oss-vdb"
-	extension = ".yaml"
+	extension = ".json"
 )
 
 var Logger utility.LoggerWrapper
@@ -241,7 +241,7 @@ func CVEToOSV(cve cves.CVEItem, directory string) {
 		Logger.Fatalf("Failed to open %s for writing: %v", outputFile, err)
 	}
 	defer f.Close()
-	err = v.ToYAML(f)
+	err = v.ToJSON(f)
 	if err != nil {
 		Logger.Fatalf("Failed to write %s: %v", outputFile, err)
 	}

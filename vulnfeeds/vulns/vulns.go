@@ -379,6 +379,5 @@ func FromJSON(r io.Reader) (*Vulnerability, error) {
 
 func (v *Vulnerability) ToJSON(w io.Writer) error {
 	encoder := json.NewEncoder(w)
-	encoder.SetIndent("", "  ")
 	return encoder.Encode(v)
 }

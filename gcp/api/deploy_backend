@@ -8,7 +8,7 @@ fi
 tag=$1
 name=$2
 
-if [ -z "$CLOUDBUILD"]; then
+if [ -z "$CLOUDBUILD" ]; then
   pushd ../../
   docker build -t "gcr.io/oss-vdb/osv-server:$tag" -f gcp/api/Dockerfile .
   docker push "gcr.io/oss-vdb/osv-server:$tag"

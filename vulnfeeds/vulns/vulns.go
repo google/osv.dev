@@ -36,12 +36,12 @@ type Event struct {
 
 type Affected struct {
 	Package struct {
-		Name      string `json:"name" yaml:"name"`
-		Ecosystem string `json:"ecosystem" yaml:"ecosystem"`
+		Name      string `json:"name,omitempty" yaml:"name"`
+		Ecosystem string `json:"ecosystem,omitempty" yaml:"ecosystem"`
 		Purl      string `json:"purl,omitempty" yaml:"purl,omitempty"`
 	} `json:"package"`
 	Ranges   []AffectedRange `json:"ranges" yaml:"ranges"`
-	Versions []string        `json:"versions" yaml:"versions,omitempty"`
+	Versions []string        `json:"versions,omitempty" yaml:"versions,omitempty"`
 }
 
 type AffectedRange struct {

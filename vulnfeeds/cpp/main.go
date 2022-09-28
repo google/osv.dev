@@ -222,17 +222,6 @@ func InScopeRepo(repoURL string) bool {
 	}
 }
 
-// vulns.FromCVE has kindly already classified any fix URLs for us, so just grab it.
-func GetFixFromVuln(v *vulns.Vulnerability) string {
-	for _, reference := range v.References {
-		if reference.Type != "FIX" {
-			continue
-		}
-		return reference.URL
-	}
-	return ""
-}
-
 // Takes an NVD CVE record and outputs an OSV file in the specified directory.
 func CVEToOSV(CVE cves.CVEItem, repo, directory string) {
 	CPEs := cves.CPEs(CVE)
@@ -242,13 +231,9 @@ func CVEToOSV(CVE cves.CVEItem, repo, directory string) {
 	}
 	v, _ := vulns.FromCVE(CVE.CVE.CVEDataMeta.ID, CVE)
 	versions, _ := cves.ExtractVersionInfo(CVE, nil)
-	pkgInfo := vulns.PackageInfo{
-		Repo:        repo,
-		FixedCommit: GetFixFromVuln(v),
-	}
-	v.AddPkgInfo(pkgInfo)
-	// TODO(apollock): this seems to be selecting more commits than are actually fixes.
-	v.Affected[0].AttachExtractedVersionInfo(versions)
+	affected := vulns.Affected{}
+	affected.AttachExtractedVersionInfo(versions)
+	v.Affected = append(v.Affected, affected)
 	if len(v.Affected[0].Ranges) == 0 {
 		Logger.Infof("No affected versions detected.")
 	}

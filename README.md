@@ -60,6 +60,7 @@ Together, these include vulnerabilities from:
 -   NuGet
 -   OSS-Fuzz
 -   Packagist
+-   Pub
 -   PyPI
 -   RubyGems
 

@@ -375,7 +375,9 @@ func (affected *Affected) AttachExtractedVersionInfo(version cves.VersionInfo) {
 			seenFixed[v.Fixed] = true
 		}
 	}
-	affected.Ranges = append(affected.Ranges, versionRange)
+	if len(version.AffectedVersions) > 0 {
+		affected.Ranges = append(affected.Ranges, versionRange)
+	}
 }
 
 func FromYAML(r io.Reader) (*Vulnerability, error) {

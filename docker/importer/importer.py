@@ -251,8 +251,10 @@ class Importer:
 
     return changed_entries, deleted_entries
 
-  def _process_updates_git(self, source_repo):
+  def _process_updates_git(self, source_repo: osv.SourceRepository):
     """Process updates for a git source_repo."""
+    logging.info("Begin processing git: %s", source_repo.name)
+
     repo = self.checkout(source_repo)
 
     # Get list of changed files since last sync.
@@ -307,10 +309,13 @@ class Importer:
     source_repo.last_synced_hash = str(repo.head.target)
     source_repo.put()
 
-  def _process_updates_bucket(self, source_repo):
+    logging.info("Finish processing git: %s", source_repo.name)
+
+  def _process_updates_bucket(self, source_repo: osv.SourceRepository):
     """Process updates from bucket."""
     # TODO(ochang): Use Pub/Sub change notifications for more efficient
     # processing.
+    logging.info("Begin processing bucket: %s", source_repo.name)
 
     ignore_last_import_time = source_repo.ignore_last_import_time
     if ignore_last_import_time:
@@ -322,8 +327,8 @@ class Importer:
       if not _is_vulnerability_file(source_repo, blob.name):
         continue
 
-      logging.info('Bucket entry triggered for for %s/%s', source_repo.bucket,
-                   blob.name)
+      logging.debug('Bucket entry triggered for %s/%s', source_repo.bucket,
+                    blob.name)
       blob_bytes = blob.download_as_bytes()
       try:
         vulnerabilities = osv.parse_vulnerabilities_from_data(
@@ -333,15 +338,20 @@ class Importer:
         logging.error('Failed to parse vulnerability %s: %s', blob.name, e)
         continue
 
-      def unchanged_vuln_exist(vuln):
-        bug = osv.Bug.get_by_id(vuln.id)
-        # Both times are not timezone aware
-        return bug and bug.import_last_modified == vuln.modified.ToDatetime()
+      def all_vulns_unchanged(vulns: list[Vulnerability]):
+        vuln_ids = [x.id for x in vulns]
+        existing_vulns = osv.Bug.query(osv.Bug.db_id.IN(vuln_ids))
+        vuln_modified_time = {x.id: x.modified.ToDatetime() for x in vulns}
+        for existing in existing_vulns:
+          if not existing or existing.import_last_modified != vuln_modified_time[
+              existing.db_id].modified.ToDatetime():
+            return False
 
-      if not ignore_last_import_time and all(
-          unchanged_vuln_exist(vuln) for vuln in vulnerabilities):
-        logging.info('Skipping updates for %s as modified date unchanged.',
-                     blob.name)
+        return True
+
+      if not ignore_last_import_time and all_vulns_unchanged(vulnerabilities):
+        logging.debug('Skipping updates for %s as modified date unchanged.',
+                      blob.name)
         continue
 
       original_sha256 = osv.sha256_bytes(blob_bytes)
@@ -350,7 +360,9 @@ class Importer:
     source_repo.last_update_date = utcnow().date()
     source_repo.put()
 
-  def process_updates(self, source_repo):
+    logging.info("Finished processing bucket: %s", source_repo.name)
+
+  def process_updates(self, source_repo: osv.SourceRepository):
     """Process user changes and updates."""
     if source_repo.type == osv.SourceRepositoryType.GIT:
       self._process_updates_git(source_repo)

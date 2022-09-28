@@ -16,14 +16,18 @@
 import argparse
 import concurrent.futures
 import datetime
+import functools
 import json
 import logging
+import multiprocessing
 import os
+from typing import Tuple
 
 from google.cloud import ndb
 from google.cloud import pubsub_v1
 from google.cloud import storage
 from google.cloud import logging as google_logging
+from osv.vulnerability_pb2 import Vulnerability
 import pygit2
 
 import osv
@@ -37,6 +41,8 @@ _TASKS_TOPIC = 'projects/{project}/topics/{topic}'.format(
 _OSS_FUZZ_EXPORT_BUCKET = 'oss-fuzz-osv-vulns'
 _EXPORT_WORKERS = 32
 _NO_UPDATE_MARKER = 'OSV-NO-UPDATE'
+_BUCKET_BATCH_SIZE = 50
+_BUCKET_THREAD_POOL = 10
 
 
 def _is_vulnerability_file(source_repo, file_path):
@@ -323,39 +329,46 @@ class Importer:
       source_repo.put()
 
     storage_client = storage.Client()
-    for blob in storage_client.list_blobs(source_repo.bucket):
-      if not _is_vulnerability_file(source_repo, blob.name):
-        continue
+    # Load bucket index fully to get the total length
+    listed_blob_names = [
+        blob.name for blob in (storage_client.list_blobs(source_repo.bucket))
+    ]
+    batched_blob_names = [
+        listed_blob_names[i:i + _BUCKET_BATCH_SIZE]
+        for i in range(0, len(listed_blob_names), _BUCKET_BATCH_SIZE)
+    ]
 
-      logging.debug('Bucket entry triggered for %s/%s', source_repo.bucket,
-                    blob.name)
-      blob_bytes = blob.download_as_bytes()
-      try:
-        vulnerabilities = osv.parse_vulnerabilities_from_data(
-            blob_bytes,
-            os.path.splitext(blob.name)[1])
-      except Exception as e:
-        logging.error('Failed to parse vulnerability %s: %s', blob.name, e)
-        continue
+    with multiprocessing.Pool(_BUCKET_THREAD_POOL) as processing_pool:
+      for batch_blob in batched_blob_names:
+        convert_b = functools.partial(convert_blob_to_vuln, source_repo)
+        converted_vulns = processing_pool.map(convert_b, batch_blob)
+        # Flatten list[list[]] to list[]
+        vulnerabilities = [
+            inner for outer in converted_vulns for inner in outer
+        ]
 
-      def all_vulns_unchanged(vulns: list[Vulnerability]):
-        vuln_ids = [x.id for x in vulns]
-        existing_vulns = osv.Bug.query(osv.Bug.db_id.IN(vuln_ids))
-        vuln_modified_time = {x.id: x.modified.ToDatetime() for x in vulns}
-        for existing in existing_vulns:
-          if not existing or existing.import_last_modified != vuln_modified_time[
-              existing.db_id].modified.ToDatetime():
-            return False
+        # Set of vulns [hashes, names] that need to be updated
+        need_to_update: set[str, str] = set()
+        if not ignore_last_import_time:
+          # Batch query the bugs
+          vuln_ids = [x.id for x, _, _ in vulnerabilities]
+          existing_vulns = osv.Bug.query(osv.Bug.db_id.IN(vuln_ids))
 
-        return True
+          # Order the data structure to make it easier to match against the queried bugs
+          id_mapped_vulns = {x[0].id: x for x in vulnerabilities}
+          for existing in existing_vulns:
+            # Finally expand out the tuple info
+            vuln, vuln_hash, blob_name = id_mapped_vulns[existing.db_id]
+            if not existing or existing.import_last_modified != vuln.modified.ToDatetime(
+            ):
+              need_to_update.add((vuln_hash, blob_name))
+            else:
+              logging.debug(
+                  'Skipping updates for %s as modified date unchanged.',
+                  blob_name)
 
-      if not ignore_last_import_time and all_vulns_unchanged(vulnerabilities):
-        logging.debug('Skipping updates for %s as modified date unchanged.',
-                      blob.name)
-        continue
-
-      original_sha256 = osv.sha256_bytes(blob_bytes)
-      self._request_analysis_external(source_repo, original_sha256, blob.name)
+        for (original_sha256, name) in need_to_update:
+          self._request_analysis_external(source_repo, original_sha256, name)
 
     source_repo.last_update_date = utcnow().date()
     source_repo.put()
@@ -417,6 +430,27 @@ class Importer:
         _, source_id = osv.parse_source_id(bug.source_id)
         executor.submit(export_oss_fuzz, bug.to_vulnerability(), source_id,
                         bug.issue_id)
+
+
+def convert_blob_to_vuln(source_repo,
+                         blob_name) -> list[Tuple[Vulnerability, str, str]]:
+  if not _is_vulnerability_file(source_repo, blob_name):
+    return []
+
+  logging.debug('Bucket entry triggered for %s/%s', source_repo.bucket,
+                blob_name)
+  storage_client = storage.Client()
+  bucket = storage_client.bucket(source_repo.bucket)
+  blob_bytes = bucket.blob(blob_name).download_as_bytes()
+  try:
+    vulns = osv.parse_vulnerabilities_from_data(blob_bytes,
+                                                os.path.splitext(blob_name)[1])
+    hash = osv.sha256_bytes(blob_bytes)
+    # Store data needed later on in tuple
+    return [(vuln, hash, blob_name) for vuln in vulns]
+  except Exception as e:
+    logging.error('Failed to parse vulnerability %s: %s', blob_name, e)
+    return []
 
 
 def main():

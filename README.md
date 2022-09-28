@@ -25,7 +25,7 @@ version analysis.
 ## Current data sources
 
 **This is an ongoing project.** We encourage open source ecosystems to adopt the
-[OpenSSF Vulnerability format](https://github.com/ossf/osv-schema) to enable
+[OpenSSF Vulnerability format](https://ossf.github.io/osv-schema/) to enable
 open source users to easily aggregate and consume vulnerabilities across all
 ecosystems. See our
 [blog post](https://security.googleblog.com/2021/06/announcing-unified-vulnerability-schema.html)
@@ -48,16 +48,18 @@ The following ecosystems have vulnerabilities encoded in this format:
 
 Together, these include vulnerabilities from:
 
--   npm
--   Maven
+-   Android
+-   crates.io
+-   Debian GNU/Linux
 -   Go
+-   Linux kernel
+-   Maven
+-   npm
 -   NuGet
+-   OSS-Fuzz
+-   Packagist
 -   PyPI
 -   RubyGems
--   crates.io
--   Packagist
--   Linux
--   OSS-Fuzz
 
 ### Data dumps
 
@@ -97,9 +99,13 @@ Detailed documentation for using the API can be found at
 <https://osv.dev/docs/>.
 
 ## Using the scanner
-Under `tools/osv-scanner`, we provide a Go based tool that will scan your dependencies, and check them against the OSV database for known vulnerabilities via the OSV API. 
 
-Currently it is able to scan various lockfiles, debian docker containers, SPDX and CycloneDB SBOMs, and git repositories.
+Under `tools/osv-scanner`, we provide a Go based tool that will scan your
+dependencies, and check them against the OSV database for known vulnerabilities
+via the OSV API.
+
+Currently it is able to scan various lockfiles, debian docker containers, SPDX
+and CycloneDB SBOMs, and git repositories.
 
 Usage instructions are located in `tools/osv-scanner/README.md`.
 
@@ -115,7 +121,8 @@ consists of:
 -   API server (`gcp/api`)
 -   Web interface (`gcp/appengine`)
 -   Workers for bisection and impact analysis (`docker/worker`)
--   `osv-scanner` tool, to scan your project and containers for vulnerabilities tracked in OSV
+-   `osv-scanner` tool, to scan your project and containers for vulnerabilities
+    tracked in OSV
 
 You'll need to check out submodules as well for many local building steps to
 work:

@@ -8,7 +8,8 @@
 
 set -e
 
-BUCKET="${GCS_BUCKET:=cve-osv-conversion}"
+INPUT_BUCKET="${INPUT_GCS_BUCKET:=cve-osv-conversion}"
+OUTPUT_BUCKET="${OUTPUT_GCS_BUCKET:=cve-osv-conversion}"
 OSV_PARTS_ROOT="parts/"
 OSV_OUTPUT="osv_output/"
 CVE_OUTPUT="cve_jsons/"
@@ -19,7 +20,7 @@ rm -rf $OSV_OUTPUT && mkdir -p $OSV_OUTPUT
 rm -rf $CVE_OUTPUT && mkdir -p $CVE_OUTPUT
 
 echo "Begin syncing from parts in GCS bucket ${BUCKET}"
-gsutil -q -m rsync -r "gs://${BUCKET}/parts/" $OSV_PARTS_ROOT
+gsutil -q -m rsync -r "gs://${INPUT_BUCKET}/parts/" $OSV_PARTS_ROOT
 echo "Successfully synced from GCS bucket"
 
 echo "Run download-cves"
@@ -29,5 +30,5 @@ echo "Run combine-to-osv"
 go run ./cmd/combine-to-osv/ -cvePath $CVE_OUTPUT -partsPath $OSV_PARTS_ROOT -osvOutputPath $OSV_OUTPUT
 
 echo "Begin syncing output to GCS bucket ${BUCKET}"
-gsutil -q -m rsync $OSV_OUTPUT "gs://${BUCKET}/osv-output/"
+gsutil -q -m rsync $OSV_OUTPUT "gs://${OUTPUT_BUCKET}/osv-output/"
 echo "Successfully synced to GCS bucket"

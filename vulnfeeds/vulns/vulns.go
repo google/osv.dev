@@ -22,6 +22,7 @@ import (
 	"strings"
 	"time"
 
+	"golang.org/x/exp/slices"
 	"gopkg.in/yaml.v2"
 
 	"github.com/google/osv/vulnfeeds/cves"
@@ -74,7 +75,34 @@ func timestampToRFC3339(timestamp string) (string, error) {
 	return t.Format(time.RFC3339), nil
 }
 
-func ClassifyReferenceLink(link string) string {
+// For a given URL, infer the OSV schema's reference type of it.
+// See https://ossf.github.io/osv-schema/#references-field
+// Uses the tags first before resorting to inference by shape.
+func ClassifyReferenceLink(link string, tags []string) string {
+	if slices.Contains(tags, "Patch") {
+		return "FIX"
+	}
+	if slices.Contains(tags, "Exploit") {
+		return "EVIDENCE"
+	}
+	if slices.Contains(tags, "Mailing List") {
+		return "ARTICLE"
+	}
+	if slices.Contains(tags, "Issue Tracking") {
+		return "REPORT"
+	}
+
+	knownAdvisoryTags := []string{
+		"Vendor Advisory",
+		"Third Party Advisory",
+		"VDB Entry",
+	}
+	for _, advisoryTag := range knownAdvisoryTags {
+		if slices.Contains(tags, advisoryTag) {
+			return "ADVISORY"
+		}
+	}
+
 	u, err := url.Parse(link)
 	if err != nil {
 		return "WEB"
@@ -261,7 +289,7 @@ func FromCVE(id string, cve cves.CVEItem) (*Vulnerability, []string) {
 
 	for _, reference := range cve.CVE.References.ReferenceData {
 		v.References = append(v.References, Reference{
-			Type: ClassifyReferenceLink(reference.URL),
+			Type: ClassifyReferenceLink(reference.URL, reference.Tags),
 			URL:  reference.URL,
 		})
 	}

@@ -222,14 +222,38 @@ func InScopeRepo(repoURL string) bool {
 	}
 }
 
+// vulns.FromCVE has kindly already classified any fix URLs for us, so just grab it.
+func GetFixFromVuln(v *vulns.Vulnerability) string {
+	for _, reference := range v.References {
+		if reference.Type != "FIX" {
+			continue
+		}
+		return reference.URL
+	}
+	return ""
+}
+
 // Takes an NVD CVE record and outputs an OSV file in the specified directory.
-func CVEToOSV(cve cves.CVEItem, directory string) {
-	CPEs := cves.CPEs(cve)
+func CVEToOSV(CVE cves.CVEItem, repo, directory string) {
+	CPEs := cves.CPEs(CVE)
 	CPE, ok := cves.ParseCPE(CPEs[0])
 	if !ok {
-		Logger.Fatalf("Can't generate an OSV record for %s without CPE data", cve.CVE.CVEDataMeta.ID)
+		Logger.Fatalf("Can't generate an OSV record for %s without CPE data", CVE.CVE.CVEDataMeta.ID)
 	}
-	v, _ := vulns.FromCVE(cve.CVE.CVEDataMeta.ID, cve)
+	v, _ := vulns.FromCVE(CVE.CVE.CVEDataMeta.ID, CVE)
+	versions, _ := cves.ExtractVersionInfo(CVE, nil)
+	pkgInfo := vulns.PackageInfo{
+		Repo:        repo,
+		FixedCommit: GetFixFromVuln(v),
+	}
+	v.AddPkgInfo(pkgInfo)
+	// TODO(apollock): this seems to be selecting more commits than are actually fixes.
+	v.Affected[0].AttachExtractedVersionInfo(versions)
+	if len(v.Affected[0].Ranges) == 0 {
+		Logger.Infof("No affected versions detected.")
+	}
+
+	// Everything from here down relates to output.
 	vulnDir := filepath.Join(directory, CPE.Product)
 	err := os.MkdirAll(vulnDir, 0755)
 	if err != nil {
@@ -381,6 +405,6 @@ func main() {
 			continue
 		}
 
-		CVEToOSV(cve, *outDir)
+		CVEToOSV(cve, repos[cve.CVE.CVEDataMeta.ID], *outDir)
 	}
 }

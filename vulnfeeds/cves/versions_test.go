@@ -41,3 +41,42 @@ func TestParseCPE(t *testing.T) {
 		}
 	}
 }
+
+func TestExtractGitHubCommit(t *testing.T) {
+	tests := []struct {
+		description       string
+		inputLink         string
+		expectedFixCommit *FixCommit
+	}{
+		{
+			description: "Valid GitHub commit URL",
+			inputLink:   "https://github.com/google/osv/commit/cd4e934d0527e5010e373e7fed54ef5daefba2f5",
+			expectedFixCommit: &FixCommit{
+				Repo:   "https://github.com/google/osv",
+				Commit: "cd4e934d0527e5010e373e7fed54ef5daefba2f5",
+			},
+		},
+		{
+			description:       "Unsupported GitHub PR URL",
+			inputLink:         "https://github.com/google/osv/pull/123",
+			expectedFixCommit: nil,
+		},
+		{
+			description:       "Unsupported GitHub tag URL",
+			inputLink:         "https://github.com/google/osv.dev/releases/tag/v0.0.14",
+			expectedFixCommit: nil,
+		},
+		{
+			description:       "Unsupported Gitlab URL",
+			inputLink:         "https://gitlab.freedesktop.org/virgl/virglrenderer/-/commit/b05bb61f454eeb8a85164c8a31510aeb9d79129c",
+			expectedFixCommit: nil,
+		},
+	}
+
+	for _, tc := range tests {
+		got := extractGitHubCommit(tc.inputLink)
+		if !reflect.DeepEqual(got, tc.expectedFixCommit) {
+			t.Errorf("test %q: extractGitHubCommit for %q was incorrect, got: %#v, expected: %#v", tc.description, tc.inputLink, got, tc.expectedFixCommit)
+		}
+	}
+}

@@ -71,6 +71,11 @@ func TestExtractGitHubCommit(t *testing.T) {
 			inputLink:         "https://gitlab.freedesktop.org/virgl/virglrenderer/-/commit/b05bb61f454eeb8a85164c8a31510aeb9d79129c",
 			expectedFixCommit: nil,
 		},
+		{
+			description:       "Completely invalid input",
+			inputLink:         "",
+			expectedFixCommit: nil,
+		},
 	}
 
 	for _, tc := range tests {

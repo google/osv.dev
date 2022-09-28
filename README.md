@@ -51,7 +51,9 @@ Together, these include vulnerabilities from:
 -   Android
 -   crates.io
 -   Debian GNU/Linux
+-   GitHub Actions
 -   Go
+-   Hex
 -   Linux kernel
 -   Maven
 -   npm

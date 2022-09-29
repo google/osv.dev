@@ -329,8 +329,8 @@ class Importer:
       source_repo.ignore_last_import_time = False
       source_repo.put()
 
+    # First retrieve a list of files to parallel download
     storage_client = storage.Client()
-    # Load bucket index fully to get the total length
     listed_blob_names = [
         blob.name for blob in (storage_client.list_blobs(source_repo.bucket))
     ]
@@ -348,8 +348,8 @@ class Importer:
         initializer=thread_init,
         initargs=(convert_blob_to_vuln,)) as processing_pool:
       for batch_blob in batched_blob_names:
-        convert_b = functools.partial(convert_blob_to_vuln, source_repo)
-        converted_vulns = processing_pool.map(convert_b, batch_blob)
+        conv_func_partial = functools.partial(convert_blob_to_vuln, source_repo)
+        converted_vulns = processing_pool.map(conv_func_partial, batch_blob)
         # Flatten list[list[]] to list[]
         vulnerabilities = [
             inner for outer in converted_vulns for inner in outer
@@ -449,6 +449,7 @@ class Importer:
 
 def convert_blob_to_vuln(source_repo,
                          blob_name) -> list[Tuple[Vulnerability, str, str]]:
+  """Download and parse gcs blob into [Vulnerability, blob_hash, blob_name]"""
   if not _is_vulnerability_file(source_repo, blob_name):
     return []
 

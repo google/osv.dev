@@ -359,7 +359,8 @@ class Importer:
         vuln_ids = [x.id for x, _, _ in vulnerabilities]
         existing_vulns = osv.Bug.query(osv.Bug.db_id.IN(vuln_ids))
 
-        # Order the data structure to make it easier to match against the queried bugs
+        # Order the data structure to make it easier to
+        # match against the queried bugs
         id_mapped_vulns = {x[0].id: x for x in vulnerabilities}
 
         # Set of vulns [hashes, names] that need to be updated
@@ -375,7 +376,8 @@ class Importer:
                   'Skipping updates for %s as modified date unchanged.',
                   blob_name)
 
-        # Add the rest (either no existing vuln found, or ignoring last_import_time)
+        # Add the rest (either no existing vuln found,
+        # or ignoring last_import_time)
         need_to_update.update([
             (vuln_hash, blob_name)
             for _, vuln_hash, blob_name in id_mapped_vulns.values()
@@ -435,7 +437,6 @@ class Importer:
       except Exception as e:
         logging.error('Failed to export: %s', e)
 
-    concurrent.futures.ThreadPoolExecutor
     with concurrent.futures.ThreadPoolExecutor(
         max_workers=_EXPORT_WORKERS) as executor:
       for bug in osv.Bug.query(osv.Bug.ecosystem == 'OSS-Fuzz'):
@@ -462,9 +463,9 @@ def convert_blob_to_vuln(source_repo,
   try:
     vulns = osv.parse_vulnerabilities_from_data(blob_bytes,
                                                 os.path.splitext(blob_name)[1])
-    hash = osv.sha256_bytes(blob_bytes)
+    blob_hash = osv.sha256_bytes(blob_bytes)
     # Store data needed later on in tuple
-    return [(vuln, hash, blob_name) for vuln in vulns]
+    return [(vuln, blob_hash, blob_name) for vuln in vulns]
   except Exception as e:
     logging.error('Failed to parse vulnerability %s: %s', blob_name, e)
     return []

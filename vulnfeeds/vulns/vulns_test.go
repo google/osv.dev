@@ -2,10 +2,11 @@ package vulns
 
 import (
 	"encoding/json"
-	"github.com/google/osv/vulnfeeds/utility"
 	"log"
 	"os"
 	"testing"
+
+	"github.com/google/osv/vulnfeeds/utility"
 
 	"github.com/google/osv/vulnfeeds/cves"
 )
@@ -13,28 +14,30 @@ import (
 func TestClassifyReferenceLink(t *testing.T) {
 	tables := []struct {
 		refLink string
+		refTags []string
 		refType string
 	}{
-		{"https://example.com", "WEB"},
-		{"https://github.com/google/osv/commit/cd4e934d0527e5010e373e7fed54ef5daefba2f5", "FIX"},
-		{"https://github.com/advisories/GHSA-fr26-qjc8-mvjx", "ADVISORY"},
-		{"https://github.com/dpgaspar/Flask-AppBuilder/security/advisories/GHSA-624f-cqvr-3qw4", "ADVISORY"},
-		{"https://github.com/Netflix/lemur/issues/117", "REPORT"},
-		{"https://snyk.io/vuln/SNYK-PYTHON-TRYTOND-1730329", "ADVISORY"},
-		{"https://nvd.nist.gov/vuln/detail/CVE-2021-23336", "ADVISORY"},
-		{"https://www.debian.org/security/2021/dsa-4878", "ADVISORY"},
-		{"https://usn.ubuntu.com/usn/usn-4661-1", "ADVISORY"},
-		{"http://www.ubuntu.com/usn/USN-2915-2", "ADVISORY"},
-		{"https://ubuntu.com/security/notices/USN-5124-1", "ADVISORY"},
-		{"http://rhn.redhat.com/errata/RHSA-2016-0504.html", "ADVISORY"},
-		{"https://access.redhat.com/errata/RHSA-2017:1499", "ADVISORY"},
-		{"https://security.gentoo.org/glsa/202003-45", "ADVISORY"},
-		{"https://pypi.org/project/flask", "PACKAGE"},
-		{"https://bugzilla.redhat.com/show_bug.cgi?id=684877", "REPORT"},
+		{"https://example.com", nil, "WEB"},
+		{"https://github.com/google/osv/commit/cd4e934d0527e5010e373e7fed54ef5daefba2f5", nil, "FIX"},
+		{"https://github.com/advisories/GHSA-fr26-qjc8-mvjx", nil, "ADVISORY"},
+		{"https://github.com/dpgaspar/Flask-AppBuilder/security/advisories/GHSA-624f-cqvr-3qw4", nil, "ADVISORY"},
+		{"https://github.com/Netflix/lemur/issues/117", nil, "REPORT"},
+		{"https://snyk.io/vuln/SNYK-PYTHON-TRYTOND-1730329", nil, "ADVISORY"},
+		{"https://nvd.nist.gov/vuln/detail/CVE-2021-23336", nil, "ADVISORY"},
+		{"https://www.debian.org/security/2021/dsa-4878", nil, "ADVISORY"},
+		{"https://usn.ubuntu.com/usn/usn-4661-1", nil, "ADVISORY"},
+		{"http://www.ubuntu.com/usn/USN-2915-2", nil, "ADVISORY"},
+		{"https://ubuntu.com/security/notices/USN-5124-1", nil, "ADVISORY"},
+		{"http://rhn.redhat.com/errata/RHSA-2016-0504.html", nil, "ADVISORY"},
+		{"https://access.redhat.com/errata/RHSA-2017:1499", nil, "ADVISORY"},
+		{"https://security.gentoo.org/glsa/202003-45", nil, "ADVISORY"},
+		{"https://pypi.org/project/flask", nil, "PACKAGE"},
+		{"https://bugzilla.redhat.com/show_bug.cgi?id=684877", nil, "REPORT"},
+		{"https://github.com/log4js-node/log4js-node/pull/1141/commits/8042252861a1b65adb66931fdf702ead34fa9b76", []string{"Patch"}, "FIX"},
 	}
 
 	for _, table := range tables {
-		refType := ClassifyReferenceLink(table.refLink)
+		refType := ClassifyReferenceLink(table.refLink, table.refTags)
 		if refType != table.refType {
 			t.Errorf("ClassifyReferenceLink for %s was incorrect, got: %s, expected: %s.", table.refLink, refType, table.refType)
 		}

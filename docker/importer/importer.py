@@ -347,25 +347,31 @@ class Importer:
             inner for outer in converted_vulns for inner in outer
         ]
 
+        # Batch query the bugs
+        vuln_ids = [x.id for x, _, _ in vulnerabilities]
+        existing_vulns = osv.Bug.query(osv.Bug.db_id.IN(vuln_ids))
+
+        # Order the data structure to make it easier to match against the queried bugs
+        id_mapped_vulns = {x[0].id: x for x in vulnerabilities}
+
         # Set of vulns [hashes, names] that need to be updated
         need_to_update: set[str, str] = set()
         if not ignore_last_import_time:
-          # Batch query the bugs
-          vuln_ids = [x.id for x, _, _ in vulnerabilities]
-          existing_vulns = osv.Bug.query(osv.Bug.db_id.IN(vuln_ids))
-
-          # Order the data structure to make it easier to match against the queried bugs
-          id_mapped_vulns = {x[0].id: x for x in vulnerabilities}
           for existing in existing_vulns:
             # Finally expand out the tuple info
-            vuln, vuln_hash, blob_name = id_mapped_vulns[existing.db_id]
-            if not existing or existing.import_last_modified != vuln.modified.ToDatetime(
-            ):
+            vuln, vuln_hash, blob_name = id_mapped_vulns.pop(existing.db_id)
+            if existing.import_last_modified != vuln.modified.ToDatetime():
               need_to_update.add((vuln_hash, blob_name))
             else:
               logging.debug(
                   'Skipping updates for %s as modified date unchanged.',
                   blob_name)
+
+        # Add the rest (either no existing vuln found, or ignoring last_import_time)
+        need_to_update.update([
+            (vuln_hash, blob_name)
+            for _, vuln_hash, blob_name in id_mapped_vulns.values()
+        ])
 
         for (original_sha256, name) in need_to_update:
           self._request_analysis_external(source_repo, original_sha256, name)
@@ -421,6 +427,7 @@ class Importer:
       except Exception as e:
         logging.error('Failed to export: %s', e)
 
+    concurrent.futures.ThreadPoolExecutor
     with concurrent.futures.ThreadPoolExecutor(
         max_workers=_EXPORT_WORKERS) as executor:
       for bug in osv.Bug.query(osv.Bug.ecosystem == 'OSS-Fuzz'):

@@ -22,6 +22,7 @@ import (
 	"strings"
 	"time"
 
+	"golang.org/x/exp/slices"
 	"gopkg.in/yaml.v2"
 
 	"github.com/google/osv/vulnfeeds/cves"
@@ -77,6 +78,7 @@ func timestampToRFC3339(timestamp string) (string, error) {
 // For a given URL, infer the OSV schema's reference type of it.
 // See https://ossf.github.io/osv-schema/#references-field
 // Uses the tags first before resorting to inference by shape.
+
 func ClassifyReferenceLink(link string, tag string) string {
 	switch tag {
 	case "Patch":
@@ -391,7 +393,9 @@ func (affected *Affected) AttachExtractedVersionInfo(version cves.VersionInfo) {
 			seenFixed[v.Fixed] = true
 		}
 	}
-	affected.Ranges = append(affected.Ranges, versionRange)
+	if len(version.AffectedVersions) > 0 {
+		affected.Ranges = append(affected.Ranges, versionRange)
+	}
 }
 
 func FromYAML(r io.Reader) (*Vulnerability, error) {

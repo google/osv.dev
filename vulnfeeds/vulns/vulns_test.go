@@ -43,7 +43,6 @@ func TestClassifyReferenceLink(t *testing.T) {
 			t.Errorf("ClassifyReferenceLink for %s was incorrect, got: %s, expected: %s.", table.refLink, refType, table.refType)
 		}
 	}
-
 }
 
 func TestClassifyReferences(t *testing.T) {

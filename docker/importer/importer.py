@@ -21,8 +21,7 @@ import json
 import logging
 import multiprocessing
 import os
-import threading
-from typing import Tuple
+from typing import List, Tuple
 
 from google.cloud import ndb
 from google.cloud import pubsub_v1
@@ -449,7 +448,7 @@ class Importer:
 
 
 def convert_blob_to_vuln(source_repo,
-                         blob_name) -> list[Tuple[Vulnerability, str, str]]:
+                         blob_name) -> List[Tuple[Vulnerability, str, str]]:
   """Download and parse gcs blob into [Vulnerability, blob_hash, blob_name]"""
   if not _is_vulnerability_file(source_repo, blob_name):
     return []

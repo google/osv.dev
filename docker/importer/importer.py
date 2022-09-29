@@ -21,6 +21,7 @@ import json
 import logging
 import multiprocessing
 import os
+import threading
 from typing import Tuple
 
 from google.cloud import ndb
@@ -338,7 +339,14 @@ class Importer:
         for i in range(0, len(listed_blob_names), _BUCKET_BATCH_SIZE)
     ]
 
-    with multiprocessing.Pool(_BUCKET_THREAD_POOL) as processing_pool:
+    # Setup storage client
+    def thread_init(func):
+      func.client = storage.Client()
+
+    with multiprocessing.Pool(
+        _BUCKET_THREAD_POOL,
+        initializer=thread_init,
+        initargs=(convert_blob_to_vuln,)) as processing_pool:
       for batch_blob in batched_blob_names:
         convert_b = functools.partial(convert_blob_to_vuln, source_repo)
         converted_vulns = processing_pool.map(convert_b, batch_blob)
@@ -446,7 +454,8 @@ def convert_blob_to_vuln(source_repo,
 
   logging.debug('Bucket entry triggered for %s/%s', source_repo.bucket,
                 blob_name)
-  storage_client = storage.Client()
+  # Use the client variable set in the thread pool initiailizer
+  storage_client = convert_blob_to_vuln.client
   bucket = storage_client.bucket(source_repo.bucket)
   blob_bytes = bucket.blob(blob_name).download_as_bytes()
   try:

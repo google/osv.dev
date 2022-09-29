@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"log"
 	"os"
+	"reflect"
 	"testing"
 
 	"github.com/google/osv/vulnfeeds/utility"
@@ -14,35 +15,67 @@ import (
 func TestClassifyReferenceLink(t *testing.T) {
 	tables := []struct {
 		refLink string
-		refTags []string
+		refTag  string
 		refType string
 	}{
-		{"https://example.com", nil, "WEB"},
-		{"https://github.com/google/osv/commit/cd4e934d0527e5010e373e7fed54ef5daefba2f5", nil, "FIX"},
-		{"https://github.com/advisories/GHSA-fr26-qjc8-mvjx", nil, "ADVISORY"},
-		{"https://github.com/dpgaspar/Flask-AppBuilder/security/advisories/GHSA-624f-cqvr-3qw4", nil, "ADVISORY"},
-		{"https://github.com/Netflix/lemur/issues/117", nil, "REPORT"},
-		{"https://snyk.io/vuln/SNYK-PYTHON-TRYTOND-1730329", nil, "ADVISORY"},
-		{"https://nvd.nist.gov/vuln/detail/CVE-2021-23336", nil, "ADVISORY"},
-		{"https://www.debian.org/security/2021/dsa-4878", nil, "ADVISORY"},
-		{"https://usn.ubuntu.com/usn/usn-4661-1", nil, "ADVISORY"},
-		{"http://www.ubuntu.com/usn/USN-2915-2", nil, "ADVISORY"},
-		{"https://ubuntu.com/security/notices/USN-5124-1", nil, "ADVISORY"},
-		{"http://rhn.redhat.com/errata/RHSA-2016-0504.html", nil, "ADVISORY"},
-		{"https://access.redhat.com/errata/RHSA-2017:1499", nil, "ADVISORY"},
-		{"https://security.gentoo.org/glsa/202003-45", nil, "ADVISORY"},
-		{"https://pypi.org/project/flask", nil, "PACKAGE"},
-		{"https://bugzilla.redhat.com/show_bug.cgi?id=684877", nil, "REPORT"},
-		{"https://github.com/log4js-node/log4js-node/pull/1141/commits/8042252861a1b65adb66931fdf702ead34fa9b76", []string{"Patch"}, "FIX"},
+		{"https://example.com", "", "WEB"},
+		{"https://github.com/google/osv/commit/cd4e934d0527e5010e373e7fed54ef5daefba2f5", "", "FIX"},
+		{"https://github.com/advisories/GHSA-fr26-qjc8-mvjx", "", "ADVISORY"},
+		{"https://github.com/dpgaspar/Flask-AppBuilder/security/advisories/GHSA-624f-cqvr-3qw4", "", "ADVISORY"},
+		{"https://github.com/Netflix/lemur/issues/117", "", "REPORT"},
+		{"https://snyk.io/vuln/SNYK-PYTHON-TRYTOND-1730329", "", "ADVISORY"},
+		{"https://nvd.nist.gov/vuln/detail/CVE-2021-23336", "", "ADVISORY"},
+		{"https://www.debian.org/security/2021/dsa-4878", "", "ADVISORY"},
+		{"https://usn.ubuntu.com/usn/usn-4661-1", "", "ADVISORY"},
+		{"http://www.ubuntu.com/usn/USN-2915-2", "", "ADVISORY"},
+		{"https://ubuntu.com/security/notices/USN-5124-1", "", "ADVISORY"},
+		{"http://rhn.redhat.com/errata/RHSA-2016-0504.html", "", "ADVISORY"},
+		{"https://access.redhat.com/errata/RHSA-2017:1499", "", "ADVISORY"},
+		{"https://security.gentoo.org/glsa/202003-45", "", "ADVISORY"},
+		{"https://pypi.org/project/flask", "", "PACKAGE"},
+		{"https://bugzilla.redhat.com/show_bug.cgi?id=684877", "", "REPORT"},
+		{"https://github.com/log4js-node/log4js-node/pull/1141/commits/8042252861a1b65adb66931fdf702ead34fa9b76", "Patch", "FIX"},
 	}
 
 	for _, table := range tables {
-		refType := ClassifyReferenceLink(table.refLink, table.refTags)
+		refType := ClassifyReferenceLink(table.refLink, table.refTag)
 		if refType != table.refType {
 			t.Errorf("ClassifyReferenceLink for %s was incorrect, got: %s, expected: %s.", table.refLink, refType, table.refType)
 		}
 	}
 
+}
+
+func TestClassifyReferences(t *testing.T) {
+	testcases := []struct {
+		refData    cves.CVEReferences
+		references []Reference
+	}{
+		{cves.CVEReferences{
+			[]cves.CVEReferenceData{
+				{"https://example.com", "https://example.com", "MISC", nil},
+			},
+		},
+			[]Reference{{URL: "https://example.com", Type: "WEB"}}},
+		{cves.CVEReferences{
+			[]cves.CVEReferenceData{
+				{"https://github.com/Netflix/lemur/issues/117", "https://github.com/Netflix/lemur/issues/117", "MISC", []string{"Issue Tracking"}},
+			},
+		},
+			[]Reference{{URL: "https://github.com/Netflix/lemur/issues/117", Type: "REPORT"}}},
+		{cves.CVEReferences{
+			[]cves.CVEReferenceData{
+				{"https://github.com/curl/curl/issues/9271", "https://github.com/curl/curl/issues/9271", "MISC", []string{"Exploit", "Issue Tracking", "Third Party Advisory"}},
+			},
+		},
+			[]Reference{{URL: "https://github.com/curl/curl/issues/9271", Type: "EVIDENCE"}, {URL: "https://github.com/curl/curl/issues/9271", Type: "REPORT"}}},
+	}
+	for _, tc := range testcases {
+		references := ClassifyReferences(tc.refData)
+		if !reflect.DeepEqual(references, tc.references) {
+			t.Errorf("ClassifyReferences for %+v was incorrect, got: %+v, expected: %+v", tc.refData, references, tc.references)
+		}
+	}
 }
 
 func loadTestData(cveName string) cves.CVEItem {

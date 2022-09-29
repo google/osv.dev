@@ -52,20 +52,20 @@ func TestClassifyReferences(t *testing.T) {
 		references []Reference
 	}{
 		{cves.CVEReferences{
-			[]cves.CVEReferenceData{
-				{"https://example.com", "https://example.com", "MISC", nil},
+			ReferenceData: []cves.CVEReferenceData{
+				{URL: "https://example.com", Name: "https://example.com", RefSource: "MISC", Tags: nil},
 			},
 		},
 			[]Reference{{URL: "https://example.com", Type: "WEB"}}},
 		{cves.CVEReferences{
-			[]cves.CVEReferenceData{
-				{"https://github.com/Netflix/lemur/issues/117", "https://github.com/Netflix/lemur/issues/117", "MISC", []string{"Issue Tracking"}},
+			ReferenceData: []cves.CVEReferenceData{
+				{URL: "https://github.com/Netflix/lemur/issues/117", Name: "https://github.com/Netflix/lemur/issues/117", RefSource: "MISC", Tags: []string{"Issue Tracking"}},
 			},
 		},
 			[]Reference{{URL: "https://github.com/Netflix/lemur/issues/117", Type: "REPORT"}}},
 		{cves.CVEReferences{
-			[]cves.CVEReferenceData{
-				{"https://github.com/curl/curl/issues/9271", "https://github.com/curl/curl/issues/9271", "MISC", []string{"Exploit", "Issue Tracking", "Third Party Advisory"}},
+			ReferenceData: []cves.CVEReferenceData{
+				{URL: "https://github.com/curl/curl/issues/9271", Name: "https://github.com/curl/curl/issues/9271", RefSource: "MISC", Tags: []string{"Exploit", "Issue Tracking", "Third Party Advisory"}},
 			},
 		},
 			[]Reference{{URL: "https://github.com/curl/curl/issues/9271", Type: "EVIDENCE"}, {URL: "https://github.com/curl/curl/issues/9271", Type: "REPORT"}}},

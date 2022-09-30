@@ -22,7 +22,6 @@ import (
 	"strings"
 	"time"
 
-	"golang.org/x/exp/slices"
 	"gopkg.in/yaml.v2"
 
 	"github.com/google/osv/vulnfeeds/cves"
@@ -78,29 +77,19 @@ func timestampToRFC3339(timestamp string) (string, error) {
 // For a given URL, infer the OSV schema's reference type of it.
 // See https://ossf.github.io/osv-schema/#references-field
 // Uses the tags first before resorting to inference by shape.
-func ClassifyReferenceLink(link string, tags []string) string {
-	if slices.Contains(tags, "Patch") {
-		return "FIX"
-	}
-	if slices.Contains(tags, "Exploit") {
-		return "EVIDENCE"
-	}
-	if slices.Contains(tags, "Mailing List") {
-		return "ARTICLE"
-	}
-	if slices.Contains(tags, "Issue Tracking") {
-		return "REPORT"
-	}
 
-	knownAdvisoryTags := []string{
-		"Vendor Advisory",
-		"Third Party Advisory",
-		"VDB Entry",
-	}
-	for _, advisoryTag := range knownAdvisoryTags {
-		if slices.Contains(tags, advisoryTag) {
-			return "ADVISORY"
-		}
+func ClassifyReferenceLink(link string, tag string) string {
+	switch tag {
+	case "Patch":
+		return "FIX"
+	case "Exploit":
+		return "EVIDENCE"
+	case "Mailing List":
+		return "ARTICLE"
+	case "Issue Tracking":
+		return "REPORT"
+	case "Vendor Advisory", "Third Party Avisory", "VDB Entry":
+		return "ADVISORY"
 	}
 
 	u, err := url.Parse(link)
@@ -267,6 +256,39 @@ type PackageInfo struct {
 	Repo         string `json:"repo"`
 }
 
+func unique[T comparable](s []T) []T {
+	inResult := make(map[T]bool)
+	var result []T
+	for _, str := range s {
+		if _, ok := inResult[str]; !ok {
+			inResult[str] = true
+			result = append(result, str)
+		}
+	}
+	return result
+}
+
+// Annotates reference links based on their tags or the shape of them.
+func ClassifyReferences(refs cves.CVEReferences) []Reference {
+	references := []Reference{}
+	for _, reference := range refs.ReferenceData {
+		if len(reference.Tags) > 0 {
+			for _, tag := range reference.Tags {
+				references = append(references, Reference{
+					Type: ClassifyReferenceLink(reference.URL, tag),
+					URL:  reference.URL,
+				})
+			}
+		} else {
+			references = append(references, Reference{
+				Type: ClassifyReferenceLink(reference.URL, ""),
+				URL:  reference.URL,
+			})
+		}
+	}
+	return unique(references)
+}
+
 // FromCVE creates a bare minimum OSV object from a given CVEItem and id.
 // Leaves affected and version fields empty to be filled in later with AddPkgInfo
 func FromCVE(id string, cve cves.CVEItem) (*Vulnerability, []string) {
@@ -287,12 +309,7 @@ func FromCVE(id string, cve cves.CVEItem) (*Vulnerability, []string) {
 		notes = append(notes, fmt.Sprintf("Failed to parse modified date: %v\n", err))
 	}
 
-	for _, reference := range cve.CVE.References.ReferenceData {
-		v.References = append(v.References, Reference{
-			Type: ClassifyReferenceLink(reference.URL, reference.Tags),
-			URL:  reference.URL,
-		})
-	}
+	v.References = ClassifyReferences(cve.CVE.References)
 	return &v, notes
 }
 

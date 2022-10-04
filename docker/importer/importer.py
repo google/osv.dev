@@ -41,6 +41,8 @@ _EXPORT_WORKERS = 32
 _NO_UPDATE_MARKER = 'OSV-NO-UPDATE'
 _BUCKET_THREAD_COUNT = 10
 
+_client_store = threading.local()
+
 
 def _is_vulnerability_file(source_repo, file_path):
   """Return whether or not the file is a Vulnerability entry."""
@@ -353,8 +355,8 @@ class Importer:
               os.path.splitext(blob_name)[1])
           for vuln in vulns:
             bug = osv.Bug.get_by_id(vuln.id)
-            if bug is None or bug.import_last_modified != vuln.modified.ToDatetime(
-            ):
+            if bug is None or \
+                bug.import_last_modified != vuln.modified.ToDatetime():
               blob_hash = osv.sha256_bytes(blob_bytes)
               return blob_hash, blob_name
 
@@ -365,7 +367,6 @@ class Importer:
 
     # Setup storage client
     def thread_init():
-      global _client_store
       _client_store.storage_client = storage.Client()
       _client_store.ndb_client = ndb.Client()
 
@@ -435,9 +436,6 @@ class Importer:
         _, source_id = osv.parse_source_id(bug.source_id)
         executor.submit(export_oss_fuzz, bug.to_vulnerability(), source_id,
                         bug.issue_id)
-
-
-_client_store = threading.local()
 
 
 def main():

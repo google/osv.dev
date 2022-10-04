@@ -21,6 +21,7 @@ import json
 import logging
 import multiprocessing
 import os
+import threading
 from typing import List, Tuple, Optional
 
 from google.cloud import ndb
@@ -333,24 +334,47 @@ class Importer:
         blob.name for blob in storage_client.list_blobs(source_repo.bucket)
     ]
 
-    # batched_blob_names = [
-    #     listed_blob_names[i:i + _BUCKET_BATCH_SIZE]
-    #     for i in range(0, len(listed_blob_names), _BUCKET_BATCH_SIZE)
-    # ]
+    def convert_blob_to_vuln(blob_name) -> Optional[Tuple[str, str]]:
+      """Download and parse gcs blob into [blob_hash, blob_name]"""
+      if not _is_vulnerability_file(source_repo, blob_name):
+        return None
+
+      logging.debug('Bucket entry triggered for %s/%s', source_repo.bucket,
+                    blob_name)
+      # Use the _client_store thread local variable
+      # set in the thread pool initiailizer
+      bucket = _client_store.storage_client.bucket(source_repo.bucket)
+      blob_bytes = bucket.blob(blob_name).download_as_bytes()
+      if ignore_last_import_time:
+        blob_hash = osv.sha256_bytes(blob_bytes)
+        return blob_hash, blob_name
+
+      with _client_store.ndb_client.context():
+        try:
+          vulns = osv.parse_vulnerabilities_from_data(
+              blob_bytes,
+              os.path.splitext(blob_name)[1])
+          for vuln in vulns:
+            bug = osv.Bug.get_by_id(vuln.id)
+            if bug is None or bug.import_last_modified != vuln.modified.ToDatetime(
+            ):
+              blob_hash = osv.sha256_bytes(blob_bytes)
+              return blob_hash, blob_name
+
+          return None
+        except Exception as e:
+          logging.error('Failed to parse vulnerability %s: %s', blob_name, e)
+          return None
 
     # Setup storage client
-    def thread_init(func):
-      func.client = storage.Client()
-      _ndb_client = ndb.Client("oss-vdb")
-      _ndb_client.context()
+    def thread_init():
+      global _client_store
+      _client_store.storage_client = storage.Client()
+      _client_store.ndb_client = ndb.Client()
 
-    with multiprocessing.Pool(
-        _BUCKET_THREAD_COUNT,
-        initializer=thread_init,
-        initargs=(convert_blob_to_vuln,)) as processing_pool:
-      conv_func_partial = functools.partial(convert_blob_to_vuln, source_repo,
-                                            ignore_last_import_time)
-      converted_vulns = processing_pool.map(conv_func_partial,
+    with concurrent.futures.ThreadPoolExecutor(
+        _BUCKET_THREAD_COUNT, initializer=thread_init) as processing_pool:
+      converted_vulns = processing_pool.map(convert_blob_to_vuln,
                                             listed_blob_names)
       for cv in converted_vulns:
         if cv is not None:
@@ -418,37 +442,7 @@ class Importer:
                         bug.issue_id)
 
 
-def convert_blob_to_vuln(source_repo, ignore_last_import_time,
-                         blob_name) -> Optional[Tuple[str, str]]:
-  """Download and parse gcs blob into [Vulnerability, blob_hash, blob_name]"""
-  if not _is_vulnerability_file(source_repo, blob_name):
-    return None
-
-  logging.debug('Bucket entry triggered for %s/%s', source_repo.bucket,
-                blob_name)
-  # Use the client variable set in the thread pool initiailizer
-  storage_client = convert_blob_to_vuln.client
-  bucket = storage_client.bucket(source_repo.bucket)
-  blob_bytes = bucket.blob(blob_name).download_as_bytes()
-  if ignore_last_import_time:
-    blob_hash = osv.sha256_bytes(blob_bytes)
-    return blob_hash, blob_name
-
-  try:
-    vulns = osv.parse_vulnerabilities_from_data(blob_bytes,
-                                                os.path.splitext(blob_name)[1])
-    for vuln in vulns:
-      bug = osv.Bug.get_by_id(vuln.id)
-      if bug is None or bug.import_last_modified != vuln.modified.ToDatetime():
-        blob_hash = osv.sha256_bytes(blob_bytes)
-        return blob_hash, blob_name
-
-    return None
-    # Store data needed later on in tuple
-    # return [(vuln, blob_hash, blob_name) for vuln in vulns]
-  except Exception as e:
-    logging.error('Failed to parse vulnerability %s: %s', blob_name, e)
-    return None
+_client_store = threading.local()
 
 
 def main():

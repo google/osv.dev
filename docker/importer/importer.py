@@ -14,21 +14,18 @@
 # limitations under the License.
 """OSV Importer."""
 import argparse
-import concurrent.futures
+from concurrent.futures import ThreadPoolExecutor
 import datetime
-import functools
 import json
 import logging
-import multiprocessing
 import os
 import threading
-from typing import List, Tuple, Optional
+from typing import Tuple, Optional
 
 from google.cloud import ndb
 from google.cloud import pubsub_v1
 from google.cloud import storage
 from google.cloud import logging as google_logging
-from osv.vulnerability_pb2 import Vulnerability
 import pygit2
 
 import osv
@@ -372,10 +369,9 @@ class Importer:
       _client_store.storage_client = storage.Client()
       _client_store.ndb_client = ndb.Client()
 
-    with concurrent.futures.ThreadPoolExecutor(
-        _BUCKET_THREAD_COUNT, initializer=thread_init) as processing_pool:
-      converted_vulns = processing_pool.map(convert_blob_to_vuln,
-                                            listed_blob_names)
+    with ThreadPoolExecutor(
+        _BUCKET_THREAD_COUNT, initializer=thread_init) as executor:
+      converted_vulns = executor.map(convert_blob_to_vuln, listed_blob_names)
       for cv in converted_vulns:
         if cv is not None:
           self._request_analysis_external(source_repo, cv[0], cv[1])
@@ -431,8 +427,7 @@ class Importer:
       except Exception as e:
         logging.error('Failed to export: %s', e)
 
-    with concurrent.futures.ThreadPoolExecutor(
-        max_workers=_EXPORT_WORKERS) as executor:
+    with ThreadPoolExecutor(max_workers=_EXPORT_WORKERS) as executor:
       for bug in osv.Bug.query(osv.Bug.ecosystem == 'OSS-Fuzz'):
         if not bug.public:
           continue

@@ -21,7 +21,7 @@ import json
 import logging
 import multiprocessing
 import os
-from typing import List, Tuple
+from typing import List, Tuple, Optional
 
 from google.cloud import ndb
 from google.cloud import pubsub_v1
@@ -41,8 +41,7 @@ _TASKS_TOPIC = 'projects/{project}/topics/{topic}'.format(
 _OSS_FUZZ_EXPORT_BUCKET = 'oss-fuzz-osv-vulns'
 _EXPORT_WORKERS = 32
 _NO_UPDATE_MARKER = 'OSV-NO-UPDATE'
-_BUCKET_BATCH_SIZE = 50
-_BUCKET_THREAD_POOL = 10
+_BUCKET_THREAD_COUNT = 10
 
 
 def _is_vulnerability_file(source_repo, file_path):
@@ -331,59 +330,31 @@ class Importer:
     # First retrieve a list of files to parallel download
     storage_client = storage.Client()
     listed_blob_names = [
-        blob.name for blob in (storage_client.list_blobs(source_repo.bucket))
+        blob.name for blob in storage_client.list_blobs(source_repo.bucket)
     ]
-    batched_blob_names = [
-        listed_blob_names[i:i + _BUCKET_BATCH_SIZE]
-        for i in range(0, len(listed_blob_names), _BUCKET_BATCH_SIZE)
-    ]
+
+    # batched_blob_names = [
+    #     listed_blob_names[i:i + _BUCKET_BATCH_SIZE]
+    #     for i in range(0, len(listed_blob_names), _BUCKET_BATCH_SIZE)
+    # ]
 
     # Setup storage client
     def thread_init(func):
       func.client = storage.Client()
+      _ndb_client = ndb.Client("oss-vdb")
+      _ndb_client.context()
 
     with multiprocessing.Pool(
-        _BUCKET_THREAD_POOL,
+        _BUCKET_THREAD_COUNT,
         initializer=thread_init,
         initargs=(convert_blob_to_vuln,)) as processing_pool:
-      for batch_blob in batched_blob_names:
-        conv_func_partial = functools.partial(convert_blob_to_vuln, source_repo)
-        converted_vulns = processing_pool.map(conv_func_partial, batch_blob)
-        # Flatten list[list[]] to list[]
-        vulnerabilities = [
-            inner for outer in converted_vulns for inner in outer
-        ]
-
-        # Batch query the bugs
-        vuln_ids = [x.id for x, _, _ in vulnerabilities]
-        existing_vulns = osv.Bug.query(osv.Bug.db_id.IN(vuln_ids))
-
-        # Order the data structure to make it easier to
-        # match against the queried bugs
-        id_mapped_vulns = {x[0].id: x for x in vulnerabilities}
-
-        # Set of vulns [hashes, names] that need to be updated
-        need_to_update: set[str, str] = set()
-        if not ignore_last_import_time:
-          for existing in existing_vulns:
-            # Finally expand out the tuple info
-            vuln, vuln_hash, blob_name = id_mapped_vulns.pop(existing.db_id)
-            if existing.import_last_modified != vuln.modified.ToDatetime():
-              need_to_update.add((vuln_hash, blob_name))
-            else:
-              logging.debug(
-                  'Skipping updates for %s as modified date unchanged.',
-                  blob_name)
-
-        # Add the rest (either no existing vuln found,
-        # or ignoring last_import_time)
-        need_to_update.update([
-            (vuln_hash, blob_name)
-            for _, vuln_hash, blob_name in id_mapped_vulns.values()
-        ])
-
-        for (original_sha256, name) in need_to_update:
-          self._request_analysis_external(source_repo, original_sha256, name)
+      conv_func_partial = functools.partial(convert_blob_to_vuln, source_repo,
+                                            ignore_last_import_time)
+      converted_vulns = processing_pool.map(conv_func_partial,
+                                            listed_blob_names)
+      for cv in converted_vulns:
+        if cv is not None:
+          self._request_analysis_external(source_repo, cv[0], cv[1])
 
     source_repo.last_update_date = utcnow().date()
     source_repo.put()
@@ -447,11 +418,11 @@ class Importer:
                         bug.issue_id)
 
 
-def convert_blob_to_vuln(source_repo,
-                         blob_name) -> List[Tuple[Vulnerability, str, str]]:
+def convert_blob_to_vuln(source_repo, ignore_last_import_time,
+                         blob_name) -> Optional[Tuple[str, str]]:
   """Download and parse gcs blob into [Vulnerability, blob_hash, blob_name]"""
   if not _is_vulnerability_file(source_repo, blob_name):
-    return []
+    return None
 
   logging.debug('Bucket entry triggered for %s/%s', source_repo.bucket,
                 blob_name)
@@ -459,15 +430,25 @@ def convert_blob_to_vuln(source_repo,
   storage_client = convert_blob_to_vuln.client
   bucket = storage_client.bucket(source_repo.bucket)
   blob_bytes = bucket.blob(blob_name).download_as_bytes()
+  if ignore_last_import_time:
+    blob_hash = osv.sha256_bytes(blob_bytes)
+    return blob_hash, blob_name
+
   try:
     vulns = osv.parse_vulnerabilities_from_data(blob_bytes,
                                                 os.path.splitext(blob_name)[1])
-    blob_hash = osv.sha256_bytes(blob_bytes)
+    for vuln in vulns:
+      bug = osv.Bug.get_by_id(vuln.id)
+      if bug is None or bug.import_last_modified != vuln.modified.ToDatetime():
+        blob_hash = osv.sha256_bytes(blob_bytes)
+        return blob_hash, blob_name
+
+    return None
     # Store data needed later on in tuple
-    return [(vuln, blob_hash, blob_name) for vuln in vulns]
+    # return [(vuln, blob_hash, blob_name) for vuln in vulns]
   except Exception as e:
     logging.error('Failed to parse vulnerability %s: %s', blob_name, e)
-    return []
+    return None
 
 
 def main():

@@ -129,6 +129,7 @@ class Importer:
     return osv.ensure_updated_checkout(
         source_repo.repo_url,
         os.path.join(self._sources_dir, source_repo.name),
+        last_update_date=source_repo.last_update_date,
         git_callbacks=self._git_callbacks(source_repo),
         branch=source_repo.repo_branch)
 

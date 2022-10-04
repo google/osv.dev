@@ -24,20 +24,23 @@ type CVE struct {
 	CVEDataMeta struct {
 		ID string
 	} `json:"CVE_data_meta"`
-	References struct {
-		ReferenceData []struct {
-			URL       string   `json:"url"`
-			Name      string   `json:"name"`
-			RefSource string   `json:"refsource"`
-			Tags      []string `json:"tags"`
-		} `json:"reference_data"`
-	} `json:"references"`
+	References  CVEReferences `json:"references"`
 	Description struct {
 		DescriptionData []struct {
 			Lang  string `json:"lang"`
 			Value string `json:"value"`
 		} `json:"description_data"`
 	} `json:"description"`
+}
+type CVEReferenceData struct {
+	URL       string   `json:"url"`
+	Name      string   `json:"name"`
+	RefSource string   `json:"refsource"`
+	Tags      []string `json:"tags"`
+}
+
+type CVEReferences struct {
+	ReferenceData []CVEReferenceData `json:"reference_data"`
 }
 
 type CVEItem struct {

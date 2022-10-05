@@ -84,13 +84,15 @@ def _checkout_branch(repo, branch):
 
 def clone(git_url: str,
           checkout_dir: str,
-          git_callbacks: Optional = None,
+          git_callbacks: Optional[datetime.datetime] = None,
           last_update_date: Optional[datetime.datetime] = None):
   """
   Perform a clone.
+  
     :param git_url: git URL
     :param checkout_dir: checkout directory
-    :param git_callbacks: TODO:
+    :param git_callbacks: Used for git to retrieve credentials when pulling.
+      See `GitRemoteCallback`
     :param last_update_date: Optional python datetime object used to specify
       the date of the shallow clone.
   """
@@ -116,14 +118,15 @@ def clone(git_url: str,
 def clone_with_retries(git_url: str,
                        checkout_dir: str,
                        last_update_date: Optional[datetime.datetime] = None,
-                       git_callbacks: Optional = None,
+                       git_callbacks: Optional[datetime.datetime] = None,
                        branch: Optional[str] = None):
   """Clone with retries.
   Number of retries is defined in the CLONE_TRIES constant.
-  
+
     :param git_url: git URL
     :param checkout_dir: checkout directory
-    :param git_callbacks: TODO:
+    :param git_callbacks: Used for git to retrieve credentials when pulling.
+      See `GitRemoteCallback`
     :param last_update_date: Optional python datetime object used to specify
       the date of the shallow clone.
   """
@@ -166,12 +169,14 @@ def ensure_updated_checkout(
     git_url: str,
     checkout_dir: str,
     last_update_date: Optional[datetime.datetime] = None,
-    git_callbacks=None,
+    git_callbacks: Optional[pygit2.RemoteCallbacks] = None,
     branch: Optional[str] = None):
   """Ensure updated checkout.
+
     :param git_url: git URL
     :param checkout_dir: checkout directory
-    :param git_callbacks: TODO:
+    :param git_callbacks: Used for git to retrieve credentials when pulling.
+      See `GitRemoteCallback`
     :param last_update_date: Optional python datetime object used to specify
       the date of the shallow clone. If the repository already exists, this
       argument will be ignored, and new commits pulled down.

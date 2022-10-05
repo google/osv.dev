@@ -88,7 +88,7 @@ def clone(git_url: str,
           last_update_date: Optional[datetime.datetime] = None):
   """
   Perform a clone.
-  
+
     :param git_url: git URL
     :param checkout_dir: checkout directory
     :param git_callbacks: Used for git to retrieve credentials when pulling.

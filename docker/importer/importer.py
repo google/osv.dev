@@ -134,6 +134,7 @@ class Importer:
     return osv.ensure_updated_checkout(
         source_repo.repo_url,
         os.path.join(self._sources_dir, source_repo.name),
+        last_update_date=source_repo.last_update_date,
         git_callbacks=self._git_callbacks(source_repo),
         branch=source_repo.repo_branch)
 
@@ -312,6 +313,7 @@ class Importer:
           source_repo, original_sha256, deleted_entry, deleted=True)
 
     source_repo.last_synced_hash = str(repo.head.target)
+    source_repo.last_update_date = utcnow().date()
     source_repo.put()
 
     logging.info("Finish processing git: %s", source_repo.name)

@@ -313,6 +313,7 @@ class Importer:
           source_repo, original_sha256, deleted_entry, deleted=True)
 
     source_repo.last_synced_hash = str(repo.head.target)
+    source_repo.last_update_date = utcnow().date()
     source_repo.put()
 
     logging.info("Finish processing git: %s", source_repo.name)

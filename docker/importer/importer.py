@@ -14,11 +14,13 @@
 # limitations under the License.
 """OSV Importer."""
 import argparse
-import concurrent.futures
+from concurrent.futures import ThreadPoolExecutor
 import datetime
 import json
 import logging
 import os
+import threading
+from typing import Tuple, Optional
 
 from google.cloud import ndb
 from google.cloud import pubsub_v1
@@ -37,6 +39,9 @@ _TASKS_TOPIC = 'projects/{project}/topics/{topic}'.format(
 _OSS_FUZZ_EXPORT_BUCKET = 'oss-fuzz-osv-vulns'
 _EXPORT_WORKERS = 32
 _NO_UPDATE_MARKER = 'OSV-NO-UPDATE'
+_BUCKET_THREAD_COUNT = 10
+
+_client_store = threading.local()
 
 
 def _is_vulnerability_file(source_repo, file_path):
@@ -252,8 +257,10 @@ class Importer:
 
     return changed_entries, deleted_entries
 
-  def _process_updates_git(self, source_repo):
+  def _process_updates_git(self, source_repo: osv.SourceRepository):
     """Process updates for a git source_repo."""
+    logging.info("Begin processing git: %s", source_repo.name)
+
     repo = self.checkout(source_repo)
 
     # Get list of changed files since last sync.
@@ -308,50 +315,75 @@ class Importer:
     source_repo.last_synced_hash = str(repo.head.target)
     source_repo.put()
 
-  def _process_updates_bucket(self, source_repo):
+    logging.info("Finish processing git: %s", source_repo.name)
+
+  def _process_updates_bucket(self, source_repo: osv.SourceRepository):
     """Process updates from bucket."""
     # TODO(ochang): Use Pub/Sub change notifications for more efficient
     # processing.
+    logging.info("Begin processing bucket: %s", source_repo.name)
 
     ignore_last_import_time = source_repo.ignore_last_import_time
     if ignore_last_import_time:
       source_repo.ignore_last_import_time = False
       source_repo.put()
 
+    # First retrieve a list of files to parallel download
     storage_client = storage.Client()
-    for blob in storage_client.list_blobs(source_repo.bucket):
-      if not _is_vulnerability_file(source_repo, blob.name):
-        continue
+    listed_blob_names = [
+        blob.name for blob in storage_client.list_blobs(source_repo.bucket)
+    ]
 
-      logging.info('Bucket entry triggered for for %s/%s', source_repo.bucket,
-                   blob.name)
-      blob_bytes = blob.download_as_bytes()
-      try:
-        vulnerabilities = osv.parse_vulnerabilities_from_data(
-            blob_bytes,
-            os.path.splitext(blob.name)[1])
-      except Exception as e:
-        logging.error('Failed to parse vulnerability %s: %s', blob.name, e)
-        continue
+    def convert_blob_to_vuln(blob_name) -> Optional[Tuple[str, str]]:
+      """Download and parse gcs blob into [blob_hash, blob_name]"""
+      if not _is_vulnerability_file(source_repo, blob_name):
+        return None
 
-      def unchanged_vuln_exist(vuln):
-        bug = osv.Bug.get_by_id(vuln.id)
-        # Both times are not timezone aware
-        return bug and bug.import_last_modified == vuln.modified.ToDatetime()
+      logging.debug('Bucket entry triggered for %s/%s', source_repo.bucket,
+                    blob_name)
+      # Use the _client_store thread local variable
+      # set in the thread pool initiailizer
+      bucket = _client_store.storage_client.bucket(source_repo.bucket)
+      blob_bytes = bucket.blob(blob_name).download_as_bytes()
+      if ignore_last_import_time:
+        blob_hash = osv.sha256_bytes(blob_bytes)
+        return blob_hash, blob_name
 
-      if not ignore_last_import_time and all(
-          unchanged_vuln_exist(vuln) for vuln in vulnerabilities):
-        logging.info('Skipping updates for %s as modified date unchanged.',
-                     blob.name)
-        continue
+      with _client_store.ndb_client.context():
+        try:
+          vulns = osv.parse_vulnerabilities_from_data(
+              blob_bytes,
+              os.path.splitext(blob_name)[1])
+          for vuln in vulns:
+            bug = osv.Bug.get_by_id(vuln.id)
+            if bug is None or \
+                bug.import_last_modified != vuln.modified.ToDatetime():
+              blob_hash = osv.sha256_bytes(blob_bytes)
+              return blob_hash, blob_name
 
-      original_sha256 = osv.sha256_bytes(blob_bytes)
-      self._request_analysis_external(source_repo, original_sha256, blob.name)
+          return None
+        except Exception as e:
+          logging.error('Failed to parse vulnerability %s: %s', blob_name, e)
+          return None
+
+    # Setup storage client
+    def thread_init():
+      _client_store.storage_client = storage.Client()
+      _client_store.ndb_client = ndb.Client()
+
+    with ThreadPoolExecutor(
+        _BUCKET_THREAD_COUNT, initializer=thread_init) as executor:
+      converted_vulns = executor.map(convert_blob_to_vuln, listed_blob_names)
+      for cv in converted_vulns:
+        if cv:
+          self._request_analysis_external(source_repo, cv[0], cv[1])
 
     source_repo.last_update_date = utcnow().date()
     source_repo.put()
 
-  def process_updates(self, source_repo):
+    logging.info("Finished processing bucket: %s", source_repo.name)
+
+  def process_updates(self, source_repo: osv.SourceRepository):
     """Process user changes and updates."""
     if source_repo.type == osv.SourceRepositoryType.GIT:
       self._process_updates_git(source_repo)
@@ -397,8 +429,7 @@ class Importer:
       except Exception as e:
         logging.error('Failed to export: %s', e)
 
-    with concurrent.futures.ThreadPoolExecutor(
-        max_workers=_EXPORT_WORKERS) as executor:
+    with ThreadPoolExecutor(max_workers=_EXPORT_WORKERS) as executor:
       for bug in osv.Bug.query(osv.Bug.ecosystem == 'OSS-Fuzz'):
         if not bug.public:
           continue

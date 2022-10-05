@@ -3,16 +3,16 @@ module github.com/google/osv.dev/tools/osv-scanner
 go 1.19
 
 require (
-	github.com/CycloneDX/cyclonedx-go v0.6.0
+	github.com/CycloneDX/cyclonedx-go v0.7.0
 	github.com/g-rath/osv-detector v0.7.2
 	github.com/google/go-cmp v0.5.9
-	github.com/jedib0t/go-pretty/v6 v6.3.9
+	github.com/jedib0t/go-pretty/v6 v6.4.0
 	github.com/package-url/packageurl-go v0.1.0
 	github.com/spdx/tools-golang v0.3.0
-	github.com/urfave/cli/v2 v2.16.3
-	golang.org/x/crypto v0.0.0-20220926161630-eccd6366d1be
-	golang.org/x/exp v0.0.0-20220921164117-439092de6870
-	golang.org/x/term v0.0.0-20201126162022-7de9c90e9dd1
+	github.com/urfave/cli/v2 v2.17.1
+	golang.org/x/crypto v0.0.0-20221005025214-4161e89ecf1b
+	golang.org/x/exp v0.0.0-20221004215720-b9f4876ce741
+	golang.org/x/term v0.0.0-20220919170432-7a66f970e087
 )
 
 require (

@@ -93,7 +93,6 @@ def clone(git_url: str,
     :param git_callbacks: TODO:
     :param last_update_date: Optional python datetime object used to specify
       the date of the shallow clone.
-
   """
   # Use 'git' CLI here as it's much faster than libgit2's clone.
   env = {}
@@ -119,7 +118,15 @@ def clone_with_retries(git_url: str,
                        last_update_date: Optional[datetime.datetime] = None,
                        git_callbacks: Optional = None,
                        branch: Optional[str] = None):
-  """Clone with retries."""
+  """Clone with retries.
+  Number of retries is defined in the CLONE_TRIES constant.
+  
+    :param git_url: git URL
+    :param checkout_dir: checkout directory
+    :param git_callbacks: TODO:
+    :param last_update_date: Optional python datetime object used to specify
+      the date of the shallow clone.
+  """
   logging.info('Cloning %s to %s', git_url, checkout_dir)
   for _ in range(CLONE_TRIES):
     try:
@@ -161,7 +168,14 @@ def ensure_updated_checkout(
     last_update_date: Optional[datetime.datetime] = None,
     git_callbacks=None,
     branch: Optional[str] = None):
-  """Ensure updated checkout."""
+  """Ensure updated checkout.
+    :param git_url: git URL
+    :param checkout_dir: checkout directory
+    :param git_callbacks: TODO:
+    :param last_update_date: Optional python datetime object used to specify
+      the date of the shallow clone. If the repository already exists, this
+      argument will be ignored, and new commits pulled down.
+    """
   if os.path.exists(checkout_dir):
     # Already exists, reset and checkout latest revision.
     try:

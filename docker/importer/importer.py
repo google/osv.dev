@@ -374,7 +374,7 @@ class Importer:
         _BUCKET_THREAD_COUNT, initializer=thread_init) as executor:
       converted_vulns = executor.map(convert_blob_to_vuln, listed_blob_names)
       for cv in converted_vulns:
-        if cv is not None:
+        if cv:
           self._request_analysis_external(source_repo, cv[0], cv[1])
 
     source_repo.last_update_date = utcnow().date()

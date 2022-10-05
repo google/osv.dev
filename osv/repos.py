@@ -104,12 +104,12 @@ def clone(git_url: str,
         f'-o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null '
         f'-o User={git_callbacks.username} -o IdentitiesOnly=yes')
 
-    call_args = ['git', 'clone', _git_mirror(git_url), checkout_dir]
-    if last_update_date:
-      # Clone from 1 day prior to be safe and avoid any off by 1 errors
-      shallow_since_date = (last_update_date -
-                            datetime.timedelta(days=1)).strftime('%Y-%m-%d')
-      call_args.extend(['--shallow-since=' + shallow_since_date])
+  call_args = ['git', 'clone', _git_mirror(git_url), checkout_dir]
+  if last_update_date:
+    # Clone from 1 day prior to be safe and avoid any off by 1 errors
+    shallow_since_date = (last_update_date -
+                          datetime.timedelta(days=1)).strftime('%Y-%m-%d')
+    call_args.extend(['--shallow-since=' + shallow_since_date])
 
   subprocess.check_call(call_args, env=env, stderr=subprocess.STDOUT)
   return pygit2.Repository(checkout_dir)

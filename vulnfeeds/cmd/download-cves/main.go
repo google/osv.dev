@@ -66,10 +66,10 @@ func downloadCVE2(apiKey string, cvePath string) {
 		req.Header.Add("apiKey", apiKey)
 	}
 	resp, err := client.Do(req)
-	defer resp.Body.Close()
 	if err != nil {
 		log.Fatalf("Request failed: %+v", err)
 	}
+	defer resp.Body.Close()
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
 		log.Fatalf("Error reading response body: %+v", err)

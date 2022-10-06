@@ -74,6 +74,16 @@ type NVDCVE struct {
 	CVEDataTimestamp string    `json:"CVE_data_timestamp"`
 }
 
+type NVDCVE2 struct {
+	ResultsPerPage int    `json:"ResultsPerPage"`
+	StartIndex     int    `json:"StartIndex"`
+	TotalResults   int    `json:"TotalResults"`
+	Format         string `json:"format"`
+	Version        string `json:"version"`
+	Timestamp      string `json:"timestamp"`
+	// Vulnerabilities []string `json:"vulnerabilities"`
+}
+
 func EnglishDescription(cve CVE) string {
 	for _, desc := range cve.Description.DescriptionData {
 		if desc.Lang == "en" {

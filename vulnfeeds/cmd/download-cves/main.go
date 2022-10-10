@@ -80,7 +80,6 @@ func downloadCVE2(apiKey string, cvePath string) {
 		log.Fatalf("Failed to decode NVD data: %+v", err)
 	}
 	Logger.Infof("%d results to download", NVD2Data.TotalResults)
-	// TODO: figure out how to not decode but retain the vulnerabilities
 	// TODO: figure out how to paginate
 	file.Write(body)
 	file.Close()

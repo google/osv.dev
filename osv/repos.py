@@ -83,6 +83,7 @@ def _checkout_branch(repo, branch):
 
 
 def _set_git_callback_env(git_callbacks):
+  """Set the environment variable to set git callbacks for cli git"""
   env = {}
   if git_callbacks:
     env['GIT_SSH_COMMAND'] = (
@@ -213,6 +214,7 @@ def reset_repo(repo, git_callbacks):
   env = _set_git_callback_env(git_callbacks)
   # Use git cli instead of pygit2 for performance
   subprocess.check_call(['git', 'fetch', 'origin'], cwd=repo.workdir, env=env)
+  # Pygit2 equivalent of above call
   # repo.remotes['origin'].fetch(callbacks=git_callbacks)
   remote_branch = repo.lookup_branch(
       repo.head.name.replace('refs/heads/', 'origin/'),

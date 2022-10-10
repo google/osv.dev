@@ -20,6 +20,7 @@ import logging
 import os.path
 import subprocess
 import typing
+from abc import ABC, abstractmethod
 
 import packaging.version
 import urllib.parse
@@ -56,43 +57,7 @@ class EnumerateError(Exception):
   """Non-retryable version enumeration error."""
 
 
-class DepsDevMixin:
-  """deps.dev mixin."""
-
-  _DEPS_DEV_ECOSYSTEM_MAP = {
-      'Maven': 'MAVEN',
-      'PyPI': 'PYPI',
-  }
-
-  def _deps_dev_enumerate(self,
-                          package,
-                          introduced,
-                          fixed=None,
-                          last_affected=None,
-                          limits=None):
-    """Use deps.dev to get list of versions."""
-    ecosystem = self._DEPS_DEV_ECOSYSTEM_MAP[self.name]
-    url = _DEPS_DEV_API.format(ecosystem=ecosystem, package=package)
-    response = requests.get(
-        url, headers={
-            'X-DepsDev-APIKey': deps_dev_api_key,
-        }, timeout=TIMEOUT)
-
-    if response.status_code == 404:
-      raise EnumerateError(f'Package {package} not found')
-    if response.status_code != 200:
-      raise RuntimeError(
-          f'Failed to get {ecosystem} versions for {package} with: '
-          f'{response.text}')
-
-    response = response.json()
-    versions = [v['version'] for v in response['versions']]
-    self.sort_versions(versions)
-    return self._get_affected_versions(versions, introduced, fixed,
-                                       last_affected, limits)
-
-
-class Ecosystem:
+class Ecosystem(ABC):
   """Ecosystem helpers."""
 
   @property
@@ -101,7 +66,7 @@ class Ecosystem:
     return self.__class__.__name__
 
   def _before_limits(self, version, limits):
-    """Return whether or not the given version is before any limits."""
+    """Return whether the given version is before any limits."""
     if not limits or '*' in limits:
       return True
 
@@ -121,14 +86,15 @@ class Ecosystem:
 
     return None
 
+  @abstractmethod
   def sort_key(self, version):
     """Sort key."""
-    raise NotImplementedError
 
   def sort_versions(self, versions):
     """Sort versions."""
     versions.sort(key=self.sort_key)
 
+  @abstractmethod
   def enumerate_versions(self,
                          package,
                          introduced,
@@ -136,7 +102,6 @@ class Ecosystem:
                          last_affected=None,
                          limits=None):
     """Enumerate versions."""
-    raise NotImplementedError
 
   def _get_affected_versions(self, versions, introduced, fixed, last_affected,
                              limits):
@@ -178,6 +143,42 @@ class Ecosystem:
   @property
   def is_semver(self):
     return False
+
+
+class DepsDevMixin(Ecosystem, ABC):
+  """deps.dev mixin."""
+
+  _DEPS_DEV_ECOSYSTEM_MAP = {
+      'Maven': 'MAVEN',
+      'PyPI': 'PYPI',
+  }
+
+  def _deps_dev_enumerate(self,
+                          package,
+                          introduced,
+                          fixed=None,
+                          last_affected=None,
+                          limits=None):
+    """Use deps.dev to get list of versions."""
+    ecosystem = self._DEPS_DEV_ECOSYSTEM_MAP[self.name]
+    url = _DEPS_DEV_API.format(ecosystem=ecosystem, package=package)
+    response = requests.get(
+        url, headers={
+            'X-DepsDev-APIKey': deps_dev_api_key,
+        }, timeout=TIMEOUT)
+
+    if response.status_code == 404:
+      raise EnumerateError(f'Package {package} not found')
+    if response.status_code != 200:
+      raise RuntimeError(
+          f'Failed to get {ecosystem} versions for {package} with: '
+          f'{response.text}')
+
+    response = response.json()
+    versions = [v['version'] for v in response['versions']]
+    self.sort_versions(versions)
+    return self._get_affected_versions(versions, introduced, fixed,
+                                       last_affected, limits)
 
 
 class SemverEcosystem(Ecosystem):
@@ -252,7 +253,7 @@ class PyPI(Ecosystem):
                                        last_affected, limits)
 
 
-class Maven(Ecosystem, DepsDevMixin):
+class Maven(DepsDevMixin):
   """Maven ecosystem."""
 
   _API_PACKAGE_URL = 'https://search.maven.org/solrsearch/select'
@@ -396,7 +397,7 @@ class NuGet(Ecosystem):
 
 
 class Alpine(Ecosystem):
-  """Packagist ecosystem"""
+  """Alpine packages ecosystem"""
 
   _APORTS_GIT_URL = 'https://gitlab.alpinelinux.org/alpine/aports.git'
   _BRANCH_SUFFIX = '-stable'
@@ -415,15 +416,13 @@ class Alpine(Ecosystem):
   @staticmethod
   def _process_git_log(output: str) -> list:
     """Takes git log diff output,
-    finds all changes to pkgver and outputs that"""
+    finds all changes to pkgver and outputs that in an unsorted list"""
     all_versions = set()
     lines = [
         x for x in output.splitlines() if len(x) == 0 or x.startswith('+pkgver')
     ]
-    lines.reverse()
 
     current_ver = None
-    # current_rel = None
 
     for x in lines:
       if len(x) == 0:
@@ -440,11 +439,7 @@ class Alpine(Ecosystem):
         current_ver = ver
         continue
 
-      # TODO: Decide on whether pkgrel is relevant
-      # if x.startswith('+pkgrel'):
-      #   current_rel = ver
-      #   continue
-
+    # Return unsorted list of versions
     return list(all_versions)
 
   def enumerate_versions(self,

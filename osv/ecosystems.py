@@ -421,6 +421,9 @@ class Alpine(Ecosystem):
     lines = [
         x for x in output.splitlines() if len(x) == 0 or x.startswith('+pkgver')
     ]
+    # Reverse so that it's in chronological order.
+    # The following loop also expects this order.
+    lines.reverse()
 
     current_ver = None
 

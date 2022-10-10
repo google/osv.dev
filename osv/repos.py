@@ -82,6 +82,16 @@ def _checkout_branch(repo, branch):
   repo.reset(remote_branch.target, pygit2.GIT_RESET_HARD)
 
 
+def _set_git_callback_env(git_callbacks):
+  env = {}
+  if git_callbacks:
+    env['GIT_SSH_COMMAND'] = (
+        f'ssh -i "{git_callbacks.ssh_key_private_path}" '
+        f'-o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null '
+        f'-o User={git_callbacks.username} -o IdentitiesOnly=yes')
+  return env
+
+
 def clone(git_url: str,
           checkout_dir: str,
           git_callbacks: Optional[datetime.datetime] = None,
@@ -97,12 +107,7 @@ def clone(git_url: str,
       the date of the shallow clone.
   """
   # Use 'git' CLI here as it's much faster than libgit2's clone.
-  env = {}
-  if git_callbacks:
-    env['GIT_SSH_COMMAND'] = (
-        f'ssh -i "{git_callbacks.ssh_key_private_path}" '
-        f'-o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null '
-        f'-o User={git_callbacks.username} -o IdentitiesOnly=yes')
+  env = _set_git_callback_env(git_callbacks)
 
   call_args = ['git', 'clone', _git_mirror(git_url), checkout_dir]
   if last_update_date:
@@ -180,6 +185,7 @@ def ensure_updated_checkout(
     :param last_update_date: Optional python datetime object used to specify
       the date of the shallow clone. If the repository already exists, this
       argument will be ignored, and new commits pulled down.
+    :param branch: branch to checkout
     """
   if os.path.exists(checkout_dir):
     # Already exists, reset and checkout latest revision.
@@ -204,7 +210,10 @@ def ensure_updated_checkout(
 
 def reset_repo(repo, git_callbacks):
   """Reset repo."""
-  repo.remotes['origin'].fetch(callbacks=git_callbacks)
+  env = _set_git_callback_env(git_callbacks)
+  # Use git cli instead of pygit2 for performance
+  subprocess.check_call(['git', 'fetch', 'origin'], cwd=repo.workdir, env=env)
+  # repo.remotes['origin'].fetch(callbacks=git_callbacks)
   remote_branch = repo.lookup_branch(
       repo.head.name.replace('refs/heads/', 'origin/'),
       pygit2.GIT_BRANCH_REMOTE)

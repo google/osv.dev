@@ -14,15 +14,21 @@
 """Ecosystem helpers."""
 
 import bisect
+import glob
 import json
 import logging
+import os.path
+import subprocess
+import typing
 
 import packaging.version
 import urllib.parse
 import requests
 
+import osv
 from .third_party.univers.debian import Version as DebianVersion
 from .third_party.univers.gem import GemVersion
+from .third_party.univers.alpine import AlpineLinuxVersion
 
 from . import debian_version_cache
 from . import maven
@@ -39,8 +45,11 @@ _DEPS_DEV_API = (
 TIMEOUT = 30  # Timeout for HTTP(S) requests
 use_deps_dev = False
 deps_dev_api_key = ''
+# Used for checking out git repositories
+# Intended to be set in worker.py
+work_dir: typing.Optional[str] = None
 
-shared_cache: Cache = None
+shared_cache: typing.Optional[Cache] = None
 
 
 class EnumerateError(Exception):
@@ -386,6 +395,101 @@ class NuGet(Ecosystem):
                                        last_affected, limits)
 
 
+class Alpine(Ecosystem):
+  """Packagist ecosystem"""
+
+  _APORTS_GIT_URL = 'https://gitlab.alpinelinux.org/alpine/aports.git'
+  _BRANCH_SUFFIX = '-stable'
+  alpine_release_ver: str
+  _GIT_REPO_PATH = 'version_enum/aports/'
+
+  def __init__(self, alpine_release_ver: str):
+    self.alpine_release_ver = alpine_release_ver
+
+  def get_branch_name(self) -> str:
+    return self.alpine_release_ver.lstrip('v') + self._BRANCH_SUFFIX
+
+  def sort_key(self, version):
+    return AlpineLinuxVersion(version)
+
+  @staticmethod
+  def _process_git_log(output: str) -> list:
+    """Takes git log diff output,
+    finds all changes to pkgver and outputs that"""
+    all_versions = set()
+    lines = [
+        x for x in output.splitlines() if len(x) == 0 or x.startswith('+pkgver')
+    ]
+    lines.reverse()
+
+    current_ver = None
+    # current_rel = None
+
+    for x in lines:
+      if len(x) == 0:
+        all_versions.add(current_ver)
+        continue
+
+      x_split = x.split('=', 1)
+      if len(x_split) != 2:
+        # Skip the occasional invalid versions
+        continue
+
+      ver = x_split[1]
+      if x.startswith('+pkgver'):
+        current_ver = ver
+        continue
+
+      # TODO: Decide on whether pkgrel is relevant
+      # if x.startswith('+pkgrel'):
+      #   current_rel = ver
+      #   continue
+
+    return list(all_versions)
+
+  def enumerate_versions(self,
+                         package: str,
+                         introduced,
+                         fixed=None,
+                         last_affected=None,
+                         limits=None):
+    if work_dir is None:
+      logging.error(
+          "Tried to enumerate alpine version without workdir being set")
+      return []
+
+    get_versions = self._get_versions
+    if shared_cache:
+      get_versions = cached(shared_cache)(get_versions)
+
+    versions = get_versions(self.get_branch_name(), package)
+    self.sort_versions(versions)
+
+    return self._get_affected_versions(versions, introduced, fixed,
+                                       last_affected, limits)
+
+  @staticmethod
+  def _get_versions(branch: str, package: str) -> list[str]:
+    """Get all versions for a package from aports repo"""
+    checkout_dir = os.path.join(work_dir, Alpine._GIT_REPO_PATH)
+    osv.ensure_updated_checkout(
+        Alpine._APORTS_GIT_URL, checkout_dir, branch=branch)
+    directories = glob.glob(
+        '*/' + package.lower() + '/APKBUILD',
+        root_dir=checkout_dir,
+        recursive=True)
+
+    if len(directories) != 1:
+      raise EnumerateError('Cannot find package in aports')
+
+    stdout_data = subprocess.check_output(
+        ['git', 'log', '--oneline', '-L', '/pkgver=/,+2:' + directories[0]],
+        cwd=checkout_dir).decode('utf-8')
+
+    versions = Alpine._process_git_log(stdout_data)
+    return versions
+
+
 class Debian(Ecosystem):
   """Debian ecosystem"""
 
@@ -512,10 +616,13 @@ def get(name: str) -> Ecosystem:
   if name.startswith('Debian:'):
     return Debian(name.split(':')[1])
 
+  if name.startswith('Alpine:'):
+    return Alpine(name.split(':')[1])
+
   return _ecosystems.get(name)
 
 
-def set_cache(cache: Cache):
+def set_cache(cache: typing.Optional[Cache]):
   """Configures and enables the redis caching layer"""
   global shared_cache
   shared_cache = cache

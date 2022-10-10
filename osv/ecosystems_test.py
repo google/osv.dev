@@ -19,6 +19,7 @@ from unittest import mock
 
 import requests
 
+import osv
 from . import cache
 from . import ecosystems
 
@@ -103,9 +104,16 @@ class GetNextVersionTest(unittest.TestCase):
     with self.assertRaises(ecosystems.EnumerateError):
       ecosystem.next_version('doesnotexist123456', '1')
 
+  @mock.patch(
+      'osv.request_helper.requests.Session.get',
+      side_effect=requests.Session.get,
+      autospec=True)
   @mock.patch('osv.debian_version_cache.requests.get', side_effect=requests.get)
-  def test_debian(self, requests_mock: mock.MagicMock):
+  def test_debian(self, first_ver_requests_mock: mock.MagicMock,
+                  general_requests_mock: mock.MagicMock):
     """Test Debian"""
+    in_memory_cache = cache.InMemoryCache()
+    ecosystems.set_cache(in_memory_cache)
     ecosystem = ecosystems.get('Debian:9')
     self.assertEqual('1.13.6-1', ecosystem.next_version('nginx', '1.13.5-1'))
     self.assertEqual('1.13.6-2', ecosystem.next_version('nginx', '1.13.6-1'))
@@ -122,9 +130,15 @@ class GetNextVersionTest(unittest.TestCase):
         ecosystem.enumerate_versions('nginx', '0', '<end-of-life>'), [])
     # Test Ecosystem remover
     ecosystem = ecosystems.get('Debian:10')
+
+    # Called 2 times so far, once for nginx, once for blender.
+    # Calls to the same ecosystem should be cached
+    self.assertEqual(general_requests_mock.call_count, 2)
     # '0' as introduced version also tests the get_first_package_version func
     versions = ecosystem.enumerate_versions('cyrus-sasl2', '0', None)
-    self.assertEqual(requests_mock.call_count, 2)
+    self.assertEqual(first_ver_requests_mock.call_count, 2)
+    self.assertEqual(general_requests_mock.call_count, 3)
+
     self.assertIn('2.1.27+dfsg-1+deb10u1', versions)
     self.assertNotIn('2.1.27~101-g0780600+dfsg-3+deb9u1', versions)
     self.assertNotIn('2.1.27~101-g0780600+dfsg-3+deb9u2', versions)
@@ -132,9 +146,36 @@ class GetNextVersionTest(unittest.TestCase):
     with self.assertRaises(ecosystems.EnumerateError):
       ecosystem.next_version('doesnotexist123456', '1')
 
+    self.assertEqual(general_requests_mock.call_count, 4)
+
     # This should now only call the cache, and not requests.get
     ecosystem.enumerate_versions('cyrus-sasl2', '0', None)
-    self.assertEqual(requests_mock.call_count, 2)
+    self.assertEqual(first_ver_requests_mock.call_count, 2)
+    self.assertEqual(general_requests_mock.call_count, 4)
+    ecosystems.set_cache(None)
+
+  @mock.patch(
+      'osv.ensure_updated_checkout', side_effect=osv.ensure_updated_checkout)
+  def test_alpine(self, ensure_updated_checkout_mock: mock.MagicMock):
+    """Test Alpine"""
+    in_memory_cache = cache.InMemoryCache()
+    ecosystems.set_cache(in_memory_cache)
+
+    ecosystems.work_dir = self._TEST_DATA_DIR
+    ecosystem = ecosystems.get('Alpine:v3.16')
+    self.assertEqual(ensure_updated_checkout_mock.call_count, 0)
+    self.assertEqual('1.14.0', ecosystem.next_version('nginx', '1.12.2'))
+    self.assertEqual(ensure_updated_checkout_mock.call_count, 1)
+    self.assertEqual('1.16.1', ecosystem.next_version('nginx', '1.16.0'))
+    # Second call should use cache, so call count should not increase
+    self.assertEqual(ensure_updated_checkout_mock.call_count, 1)
+
+    self.assertEqual('2.78c', ecosystem.next_version('blender', '2.78a'))
+
+    self.assertGreater(
+        ecosystem.sort_key('1.13.2'), ecosystem.sort_key('1.13.2_alpha'))
+
+    ecosystems.set_cache(None)
 
   def test_packagist(self):
     """Test Packagist."""

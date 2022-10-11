@@ -26,12 +26,12 @@ import packaging.version
 import urllib.parse
 import requests
 
-import osv
 from .third_party.univers.debian import Version as DebianVersion
 from .third_party.univers.gem import GemVersion
 from .third_party.univers.alpine import AlpineLinuxVersion
 
 from . import debian_version_cache
+from . import repos
 from . import maven
 from . import nuget
 from . import packagist_version
@@ -470,7 +470,7 @@ class Alpine(Ecosystem):
   def _get_versions(branch: str, package: str) -> list[str]:
     """Get all versions for a package from aports repo"""
     checkout_dir = os.path.join(work_dir, Alpine._GIT_REPO_PATH)
-    osv.ensure_updated_checkout(
+    repos.ensure_updated_checkout(
         Alpine._APORTS_GIT_URL, checkout_dir, branch=branch)
     directories = glob.glob(
         '*/' + package.lower() + '/APKBUILD',

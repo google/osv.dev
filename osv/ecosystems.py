@@ -473,8 +473,7 @@ class Alpine(Ecosystem):
     repos.ensure_updated_checkout(
         Alpine._APORTS_GIT_URL, checkout_dir, branch=branch)
     directories = glob.glob(
-        '*/' + package.lower() + '/APKBUILD',
-        root_dir=checkout_dir,
+        os.path.join(checkout_dir, '*', package.lower(), 'APKBUILD'),
         recursive=True)
 
     if len(directories) != 1:

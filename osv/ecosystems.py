@@ -467,7 +467,7 @@ class Alpine(Ecosystem):
                                        last_affected, limits)
 
   @staticmethod
-  def _get_versions(branch: str, package: str) -> list[str]:
+  def _get_versions(branch: str, package: str) -> typing.List[str]:
     """Get all versions for a package from aports repo"""
     checkout_dir = os.path.join(work_dir, Alpine._GIT_REPO_PATH)
     repos.ensure_updated_checkout(

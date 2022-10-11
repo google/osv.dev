@@ -115,15 +115,15 @@ func downloadCVE2(APIKey string, CVEPath string) {
 	// completeNVDdataset starts out completely uninitialised
 	// the Vulnerability field is iteratively appended to
 	// This copies the other fields from the final result so they're set
-	src := reflect.ValueOf(page).Elem()
-	dst := reflect.ValueOf(completeNVDdataset).Elem()
+	src := reflect.ValueOf(&page).Elem()
+	dst := reflect.ValueOf(&completeNVDdataset).Elem()
 	for i := 0; i < src.NumField(); i++ {
 		srcf := src.Field(i)
 		dstfv := reflect.Value(dst.Field(i))
 		if !dstfv.IsNil() {
 			continue
 		}
-		dst.Set(reflect.Value(srcf))
+		dstfv.Set(reflect.Value(srcf))
 	}
 	err = completeNVDdataset.ToJSON(file)
 	if err != nil {

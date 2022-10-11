@@ -144,10 +144,10 @@ class GetNextVersionTest(unittest.TestCase):
     ecosystem = ecosystems.get('Debian:10')
 
     # Called 2 times so far, once for nginx, once for blender.
-    self.assertEqual(general_requests_mock.call_count, 2)
+    self.assertEqual(general_requests_mock.call_count, 3)
     # '0' as introduced version also tests the get_first_package_version func
     versions = ecosystem.enumerate_versions('cyrus-sasl2', '0', None)
-    self.assertEqual(general_requests_mock.call_count, 3)
+    self.assertEqual(general_requests_mock.call_count, 4)
 
     # new ecosystem, first version requests increase by 1
     self.assertEqual(first_ver_requests_mock.call_count, 2)
@@ -160,12 +160,12 @@ class GetNextVersionTest(unittest.TestCase):
     with self.assertRaises(ecosystems.EnumerateError):
       ecosystem.next_version('doesnotexist123456', '1')
 
-    self.assertEqual(general_requests_mock.call_count, 4)
+    self.assertEqual(general_requests_mock.call_count, 5)
 
     # This should now only call the cache, and not requests.get
     ecosystem.enumerate_versions('cyrus-sasl2', '0', None)
     self.assertEqual(first_ver_requests_mock.call_count, 2)
-    self.assertEqual(general_requests_mock.call_count, 4)
+    self.assertEqual(general_requests_mock.call_count, 5)
     ecosystems.set_cache(None)
 
   @mock.patch(

@@ -338,8 +338,8 @@ class Importer:
       if not _is_vulnerability_file(source_repo, blob_name):
         return None
 
-      logging.debug('Bucket entry triggered for %s/%s', source_repo.bucket,
-                    blob_name)
+      logging.info('Bucket entry triggered for %s/%s', source_repo.bucket,
+                   blob_name)
       # Use the _client_store thread local variable
       # set in the thread pool initiailizer
       bucket = _client_store.storage_client.bucket(source_repo.bucket)
@@ -441,7 +441,7 @@ class Importer:
 
 
 def main():
-  logging.getLogger().setLevel(logging.DEBUG)
+  logging.getLogger().setLevel(logging.INFO)
   logging.getLogger('google.api_core.bidi').setLevel(logging.ERROR)
   logging.getLogger('google.cloud.pubsub_v1.subscriber._protocol.'
                     'streaming_pull_manager').setLevel(logging.ERROR)

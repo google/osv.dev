@@ -19,7 +19,7 @@ from unittest import mock
 
 import requests
 
-import osv
+from . import repos
 from . import cache
 from . import ecosystems
 
@@ -122,10 +122,6 @@ class GetNextVersionTest(unittest.TestCase):
     self.assertEqual('3.0.1+dfsg-2',
                      ecosystem.next_version('blender', '3.0.1+dfsg-1'))
 
-    # Calls for first_version to the same ecosystem should be cached
-    # So only called once for all 3 requests above
-    self.assertEqual(first_ver_requests_mock.call_count, 1)
-
     # Tests that sort key works
     self.assertGreater(
         ecosystem.sort_key('1.13.6-2'), ecosystem.sort_key('1.13.6-1'))
@@ -137,6 +133,12 @@ class GetNextVersionTest(unittest.TestCase):
     # Test that end-of-life enumeration is disabled
     self.assertEqual(
         ecosystem.enumerate_versions('nginx', '0', '<end-of-life>'), [])
+
+    # Calls for first_version to the same ecosystem should be cached
+    self.assertEqual(first_ver_requests_mock.call_count, 1)
+    ecosystem.enumerate_versions('htop', '0')
+
+    self.assertEqual(first_ver_requests_mock.call_count, 1)
 
     # Now start testing that Debian:10 contains different versions compared to 9
     ecosystem = ecosystems.get('Debian:10')
@@ -167,7 +169,8 @@ class GetNextVersionTest(unittest.TestCase):
     ecosystems.set_cache(None)
 
   @mock.patch(
-      'osv.ensure_updated_checkout', side_effect=osv.ensure_updated_checkout)
+      'osv.repos.ensure_updated_checkout',
+      side_effect=repos.ensure_updated_checkout)
   def test_alpine(self, ensure_updated_checkout_mock: mock.MagicMock):
     """Test Alpine ecosystem enumeration and caching behaviour"""
     in_memory_cache = cache.InMemoryCache()

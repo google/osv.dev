@@ -100,12 +100,12 @@ func downloadCVE2(APIKey string, CVEPath string) {
 	if err != nil { // There's an existing file, check if it matches server file
 		Logger.Fatalf("Something went wrong when creating/opening file: %+v", err)
 	}
-	completeNVDDataset := cves.NVDCVE2{}
+	var vulnerabilities []json.RawMessage
 	page := cves.NVDCVE2{}
 	offset := 0
 	for {
 		page = downloadCVE2WithOffset(APIKey, offset)
-		completeNVDDataset.Vulnerabilities = append(completeNVDDataset.Vulnerabilities, page.Vulnerabilities...)
+		vulnerabilities = append(vulnerabilities, page.Vulnerabilities...)
 		offset += PageSize
 		if offset > *page.TotalResults {
 			break
@@ -113,7 +113,7 @@ func downloadCVE2(APIKey string, CVEPath string) {
 		time.Sleep(6)
 	}
 	// Make this look like one giant page of results from the API call
-	page.Vulnerabilities = completeNVDDataset.Vulnerabilities
+	page.Vulnerabilities = vulnerabilities
 	*page.StartIndex = 0
 	page.ResultsPerPage = page.TotalResults
 	err = page.ToJSON(file)

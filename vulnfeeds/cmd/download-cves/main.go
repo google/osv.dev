@@ -100,7 +100,7 @@ func downloadCVE2(APIKey string, CVEPath string) {
 	if err != nil { // There's an existing file, check if it matches server file
 		Logger.Fatalf("Something went wrong when creating/opening file: %+v", err)
 	}
-	completeNVDdataset := cves.NVDCVE2{}
+	completeNVDDataset := cves.NVDCVE2{}
 	page := cves.NVDCVE2{}
 	offset := 0
 	for {
@@ -108,15 +108,15 @@ func downloadCVE2(APIKey string, CVEPath string) {
 		if len(page.Vulnerabilities) == 0 {
 			break
 		}
-		completeNVDdataset.Vulnerabilities = append(completeNVDdataset.Vulnerabilities, page.Vulnerabilities...)
+		completeNVDDataset.Vulnerabilities = append(completeNVDDataset.Vulnerabilities, page.Vulnerabilities...)
 		offset += 2000
 		time.Sleep(6)
 	}
-	// completeNVDdataset starts out completely uninitialised
+	// completeNVDDataset starts out completely uninitialised
 	// the Vulnerability field is iteratively appended to
 	// This copies the other fields from the final result so they're set
 	src := reflect.ValueOf(&page).Elem()
-	dst := reflect.ValueOf(&completeNVDdataset).Elem()
+	dst := reflect.ValueOf(&completeNVDDataset).Elem()
 	for i := 0; i < src.NumField(); i++ {
 		srcf := src.Field(i)
 		dstfv := reflect.Value(dst.Field(i))
@@ -125,7 +125,7 @@ func downloadCVE2(APIKey string, CVEPath string) {
 		}
 		dstfv.Set(reflect.Value(srcf))
 	}
-	err = completeNVDdataset.ToJSON(file)
+	err = completeNVDDataset.ToJSON(file)
 	if err != nil {
 		Logger.Fatalf("Failed to write %s: %+v", path.Join(CVEPath, "nvdcve-2.0.json.new"), err)
 	}

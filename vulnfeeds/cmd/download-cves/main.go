@@ -89,7 +89,7 @@ func downloadCVE2WithOffset(APIKey string, offset int) cves.NVDCVE2 {
 	if err != nil {
 		log.Fatalf("Failed to decode NVD data: %+v", err)
 	}
-	Logger.Infof("At offset %d of total %d results", *NVD2Data.StartIndex, *NVD2Data.TotalResults)
+	Logger.Infof("At offset %d of %d total results", *NVD2Data.StartIndex, *NVD2Data.TotalResults)
 	return *NVD2Data
 }
 

@@ -126,7 +126,11 @@ func downloadCVE2(APIKey string, CVEPath string) {
 		}
 		dstfv.Set(reflect.Value(srcf))
 	}
-	err = completeNVDDataset.ToJSON(file)
+	// Make this look like one giant page of results from the API call
+	page.Vulnerabilities = completeNVDDataset.Vulnerabilities
+	*page.StartIndex = 0
+	page.ResultsPerPage = page.TotalResults
+	err = page.ToJSON(file)
 	if err != nil {
 		Logger.Fatalf("Failed to write %s: %+v", path.Join(CVEPath, "nvdcve-2.0.json.new"), err)
 	}

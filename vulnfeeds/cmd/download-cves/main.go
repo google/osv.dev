@@ -12,7 +12,6 @@ import (
 	"net/url"
 	"os"
 	"path"
-	"reflect"
 	"strconv"
 	"time"
 
@@ -112,19 +111,6 @@ func downloadCVE2(APIKey string, CVEPath string) {
 			break
 		}
 		time.Sleep(6)
-	}
-	// completeNVDDataset starts out completely uninitialised
-	// the Vulnerability field is iteratively appended to
-	// This copies the other fields from the final result so they're set
-	src := reflect.ValueOf(&page).Elem()
-	dst := reflect.ValueOf(&completeNVDDataset).Elem()
-	for i := 0; i < src.NumField(); i++ {
-		srcf := src.Field(i)
-		dstfv := reflect.Value(dst.Field(i))
-		if !dstfv.IsNil() {
-			continue
-		}
-		dstfv.Set(reflect.Value(srcf))
 	}
 	// Make this look like one giant page of results from the API call
 	page.Vulnerabilities = completeNVDDataset.Vulnerabilities

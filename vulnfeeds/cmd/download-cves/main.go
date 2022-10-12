@@ -25,6 +25,7 @@ import (
 const (
 	CVEURLBase     = "https://nvd.nist.gov/feeds/json/cve/1.1/"
 	NVDAPIEndpoint = "https://services.nvd.nist.gov/rest/json/cves/2.0"
+	PageSize       = 2000 // maximum page size with the 2.0 API is 2000
 	fileNameBase   = "nvdcve-1.1-"
 	startingYear   = 2002
 	CVEPathDefault = "cve_jsons"
@@ -56,7 +57,7 @@ func main() {
 }
 
 // Download one "page" of the CVE data using the 2.0 API
-// Pages are offset based, this assumes the default (and maximum) page size of 2000
+// Pages are offset based, this assumes the default (and maximum) page size of PageSize
 // Maintaining the recommended 6 seconds betweens calls is left to the caller.
 // See https://nvd.nist.gov/developers/vulnerabilities
 func downloadCVE2WithOffset(APIKey string, offset int) cves.NVDCVE2 {
@@ -109,7 +110,7 @@ func downloadCVE2(APIKey string, CVEPath string) {
 			break
 		}
 		completeNVDDataset.Vulnerabilities = append(completeNVDDataset.Vulnerabilities, page.Vulnerabilities...)
-		offset += 2000
+		offset += PageSize
 		time.Sleep(6)
 	}
 	// completeNVDDataset starts out completely uninitialised

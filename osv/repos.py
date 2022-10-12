@@ -81,6 +81,17 @@ def _checkout_branch(repo, branch):
   repo.reset(remote_branch.target, pygit2.GIT_RESET_HARD)
 
 
+def _set_git_callback_env(git_callbacks):
+  """Set the environment variable to set git callbacks for cli git"""
+  env = {}
+  if git_callbacks:
+    env['GIT_SSH_COMMAND'] = (
+        f'ssh -i "{git_callbacks.ssh_key_private_path}" '
+        f'-o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null '
+        f'-o User={git_callbacks.username} -o IdentitiesOnly=yes')
+  return env
+
+
 def clone(git_url, checkout_dir, git_callbacks=None):
   """Perform a clone."""
   # Use 'git' CLI here as it's much faster than libgit2's clone.

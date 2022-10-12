@@ -180,6 +180,7 @@ class GetNextVersionTest(unittest.TestCase):
     ecosystems.work_dir = self._TEST_DATA_DIR
     ecosystem = ecosystems.get('Alpine:v3.16')
     self.assertEqual(ensure_updated_checkout_mock.call_count, 0)
+    # Tests that next version and version enumeration generally works
     self.assertEqual('1.14.0', ecosystem.next_version('nginx', '1.12.2'))
     self.assertEqual(ensure_updated_checkout_mock.call_count, 1)
     self.assertEqual('1.16.1', ecosystem.next_version('nginx', '1.16.0'))

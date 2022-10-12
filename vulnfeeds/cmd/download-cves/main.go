@@ -108,7 +108,7 @@ func downloadCVE2(APIKey string, CVEPath string) {
 		page = downloadCVE2WithOffset(APIKey, offset)
 		completeNVDDataset.Vulnerabilities = append(completeNVDDataset.Vulnerabilities, page.Vulnerabilities...)
 		offset += PageSize
-		if offset > page.TotalResults {
+		if offset > *page.TotalResults {
 			break
 		}
 		time.Sleep(6)

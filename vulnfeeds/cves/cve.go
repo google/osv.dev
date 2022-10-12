@@ -14,7 +14,10 @@
 
 package cves
 
-import "time"
+import (
+	"encoding/json"
+	"time"
+)
 
 const (
 	CVETimeFormat = "2006-01-02T15:04Z07:00"
@@ -72,6 +75,16 @@ type CVEItem struct {
 type NVDCVE struct {
 	CVEItems         []CVEItem `json:"CVE_Items"`
 	CVEDataTimestamp string    `json:"CVE_data_timestamp"`
+}
+
+type NVDCVE2 struct {
+	ResultsPerPage  int             `json:"ResultsPerPage"`
+	StartIndex      int             `json:"StartIndex"`
+	TotalResults    int             `json:"TotalResults"`
+	Format          string          `json:"format"`
+	Version         string          `json:"version"`
+	Timestamp       string          `json:"timestamp"`
+	Vulnerabilities json.RawMessage `json:"vulnerabilities"`
 }
 
 func EnglishDescription(cve CVE) string {

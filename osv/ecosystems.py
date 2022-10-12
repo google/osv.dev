@@ -479,8 +479,9 @@ class Alpine(Ecosystem):
     if len(directories) != 1:
       raise EnumerateError('Cannot find package in aports')
 
+    relative_path = os.path.relpath(directories[0], checkout_dir)
     stdout_data = subprocess.check_output(
-        ['git', 'log', '--oneline', '-L', '/pkgver=/,+2:' + directories[0]],
+        ['git', 'log', '--oneline', '-L', '/pkgver=/,+2:' + relative_path],
         cwd=checkout_dir).decode('utf-8')
 
     versions = Alpine._process_git_log(stdout_data)

@@ -4,14 +4,14 @@ go 1.19
 
 require (
 	github.com/CycloneDX/cyclonedx-go v0.7.0
-	github.com/g-rath/osv-detector v0.7.2
+	github.com/g-rath/osv-detector v0.8.0
 	github.com/google/go-cmp v0.5.9
 	github.com/jedib0t/go-pretty/v6 v6.4.0
 	github.com/package-url/packageurl-go v0.1.0
 	github.com/spdx/tools-golang v0.3.0
-	github.com/urfave/cli/v2 v2.17.1
-	golang.org/x/crypto v0.0.0-20221005025214-4161e89ecf1b
-	golang.org/x/exp v0.0.0-20221004215720-b9f4876ce741
+	github.com/urfave/cli/v2 v2.19.2
+	golang.org/x/crypto v0.0.0-20221012134737-56aed061732a
+	golang.org/x/exp v0.0.0-20221012211006-4de253d81b95
 	golang.org/x/term v0.0.0-20220919170432-7a66f970e087
 )
 

@@ -197,7 +197,7 @@ def add_related_aliases(bug: osv.Bug, response):
   aliases = {}
   if bug.aliases:
     directly_refed = osv.Bug.query(osv.Bug.db_id.IN(bug.aliases))
-    is_directly_refed = set([dr.db_id for dr in directly_refed])
+    is_directly_refed = {dr.db_id for dr in directly_refed}
     for alias in bug.aliases:
       aliases[alias] = {
           'exists': alias in is_directly_refed,

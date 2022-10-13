@@ -10,12 +10,13 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/BurntSushi/toml"
+	"github.com/g-rath/osv-detector/pkg/lockfile"
 	"github.com/google/osv.dev/tools/osv-scanner/internal/osv"
 	"github.com/google/osv.dev/tools/osv-scanner/internal/output"
 	"github.com/google/osv.dev/tools/osv-scanner/internal/sbom"
-
-	"github.com/g-rath/osv-detector/pkg/lockfile"
 	"github.com/urfave/cli/v2"
+	"golang.org/x/exp/slices"
 )
 
 // scanDir walks through the given directory to try to find any relevant files
@@ -77,7 +78,7 @@ func scanSBOMFile(query *osv.BatchedQuery, path string) error {
 
 	for _, provider := range sbom.Providers {
 		if provider.Name() == "SPDX" &&
-			!strings.Contains(strings.ToLower(filepath.Base(path)), ".spdx") {
+				!strings.Contains(strings.ToLower(filepath.Base(path)), ".spdx") {
 			// All spdx files should have the .spdx in the filename, even if
 			// it's not the extension:  https://spdx.github.io/spdx-spec/v2.3/conformance/
 			// Skip if this isn't the case to avoid panics
@@ -164,13 +165,35 @@ func scanDebianDocker(query *osv.BatchedQuery, dockerImageName string) {
 	log.Printf("Scanned docker image")
 }
 
-// TODO(ochang): Machine readable output format.
+// Filters response according to config, returns number of responses removed
+func filterResponse(resp *osv.BatchedResponse, config Config) int {
+	//response := []osv.MinimalResponse{}
+	hiddenVulns := map[string]struct{}{}
+
+	for i, result := range resp.Results {
+		filteredVulns := []osv.MinimalVulnerability{}
+		for _, vuln := range result.Vulns {
+			if slices.Contains(config.IgnoredVulnIds, vuln.ID) {
+				hiddenVulns[vuln.ID] = struct{}{}
+			} else {
+				filteredVulns = append(filteredVulns, vuln)
+			}
+		}
+		resp.Results[i].Vulns = filteredVulns
+	}
+
+	return len(hiddenVulns)
+}
+
 func main() {
 	var query osv.BatchedQuery
 	var outputJson bool
+	var config Config
+
 	app := &cli.App{
-		Name:  "osv-scanner",
-		Usage: "scans various mediums for dependencies and matches it against the OSV database",
+		Name:    "osv-scanner",
+		Usage:   "scans various mediums for dependencies and matches it against the OSV database",
+		Suggest: true,
 		Flags: []cli.Flag{
 			&cli.StringSliceFlag{
 				Name:      "docker",
@@ -190,6 +213,11 @@ func main() {
 				Usage:     "scan sbom file on this path",
 				TakesFile: true,
 			},
+			&cli.StringFlag{
+				Name:      "config",
+				Usage:     "set/override config file",
+				TakesFile: true,
+			},
 			&cli.BoolFlag{
 				Name:  "json",
 				Usage: "sets output to json (WIP)",
@@ -202,6 +230,15 @@ func main() {
 		},
 		ArgsUsage: "[directory1 directory2...]",
 		Action: func(context *cli.Context) error {
+
+			configPath := context.String("config")
+			if configPath != "" {
+				_, err := toml.DecodeFile(configPath, &config)
+				if err != nil {
+					log.Fatalf("Failed to read config file: %s\n", err)
+				}
+			}
+
 			containers := context.StringSlice("docker")
 			for _, container := range containers {
 				// TODO: Automatically figure out what docker base image
@@ -243,6 +280,7 @@ func main() {
 			return nil
 		},
 	}
+
 	if err := app.Run(os.Args); err != nil {
 		log.Fatal(err)
 	}
@@ -250,6 +288,11 @@ func main() {
 	resp, err := osv.MakeRequest(query)
 	if err != nil {
 		log.Fatalf("Scan failed: %v", err)
+	}
+
+	filtered := filterResponse(resp, config)
+	if filtered > 0 {
+		log.Printf("Filtered %d vulnerabilities from output", filtered)
 	}
 
 	hydratedResp, err := osv.Hydrate(resp)

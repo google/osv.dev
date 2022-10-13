@@ -14,8 +14,13 @@
 """Ecosystem helpers."""
 
 import bisect
+import glob
 import json
 import logging
+import os.path
+import subprocess
+import typing
+from abc import ABC, abstractmethod
 
 import packaging.version
 import urllib.parse
@@ -23,8 +28,10 @@ import requests
 
 from .third_party.univers.debian import Version as DebianVersion
 from .third_party.univers.gem import GemVersion
+from .third_party.univers.alpine import AlpineLinuxVersion
 
 from . import debian_version_cache
+from . import repos
 from . import maven
 from . import nuget
 from . import packagist_version
@@ -39,51 +46,18 @@ _DEPS_DEV_API = (
 TIMEOUT = 30  # Timeout for HTTP(S) requests
 use_deps_dev = False
 deps_dev_api_key = ''
+# Used for checking out git repositories
+# Intended to be set in worker.py
+work_dir: typing.Optional[str] = None
 
-shared_cache: Cache = None
+shared_cache: typing.Optional[Cache] = None
 
 
 class EnumerateError(Exception):
   """Non-retryable version enumeration error."""
 
 
-class DepsDevMixin:
-  """deps.dev mixin."""
-
-  _DEPS_DEV_ECOSYSTEM_MAP = {
-      'Maven': 'MAVEN',
-      'PyPI': 'PYPI',
-  }
-
-  def _deps_dev_enumerate(self,
-                          package,
-                          introduced,
-                          fixed=None,
-                          last_affected=None,
-                          limits=None):
-    """Use deps.dev to get list of versions."""
-    ecosystem = self._DEPS_DEV_ECOSYSTEM_MAP[self.name]
-    url = _DEPS_DEV_API.format(ecosystem=ecosystem, package=package)
-    response = requests.get(
-        url, headers={
-            'X-DepsDev-APIKey': deps_dev_api_key,
-        }, timeout=TIMEOUT)
-
-    if response.status_code == 404:
-      raise EnumerateError(f'Package {package} not found')
-    if response.status_code != 200:
-      raise RuntimeError(
-          f'Failed to get {ecosystem} versions for {package} with: '
-          f'{response.text}')
-
-    response = response.json()
-    versions = [v['version'] for v in response['versions']]
-    self.sort_versions(versions)
-    return self._get_affected_versions(versions, introduced, fixed,
-                                       last_affected, limits)
-
-
-class Ecosystem:
+class Ecosystem(ABC):
   """Ecosystem helpers."""
 
   @property
@@ -92,7 +66,7 @@ class Ecosystem:
     return self.__class__.__name__
 
   def _before_limits(self, version, limits):
-    """Return whether or not the given version is before any limits."""
+    """Return whether the given version is before any limits."""
     if not limits or '*' in limits:
       return True
 
@@ -112,14 +86,15 @@ class Ecosystem:
 
     return None
 
+  @abstractmethod
   def sort_key(self, version):
     """Sort key."""
-    raise NotImplementedError
 
   def sort_versions(self, versions):
     """Sort versions."""
     versions.sort(key=self.sort_key)
 
+  @abstractmethod
   def enumerate_versions(self,
                          package,
                          introduced,
@@ -127,7 +102,6 @@ class Ecosystem:
                          last_affected=None,
                          limits=None):
     """Enumerate versions."""
-    raise NotImplementedError
 
   def _get_affected_versions(self, versions, introduced, fixed, last_affected,
                              limits):
@@ -169,6 +143,42 @@ class Ecosystem:
   @property
   def is_semver(self):
     return False
+
+
+class DepsDevMixin(Ecosystem, ABC):
+  """deps.dev mixin."""
+
+  _DEPS_DEV_ECOSYSTEM_MAP = {
+      'Maven': 'MAVEN',
+      'PyPI': 'PYPI',
+  }
+
+  def _deps_dev_enumerate(self,
+                          package,
+                          introduced,
+                          fixed=None,
+                          last_affected=None,
+                          limits=None):
+    """Use deps.dev to get list of versions."""
+    ecosystem = self._DEPS_DEV_ECOSYSTEM_MAP[self.name]
+    url = _DEPS_DEV_API.format(ecosystem=ecosystem, package=package)
+    response = requests.get(
+        url, headers={
+            'X-DepsDev-APIKey': deps_dev_api_key,
+        }, timeout=TIMEOUT)
+
+    if response.status_code == 404:
+      raise EnumerateError(f'Package {package} not found')
+    if response.status_code != 200:
+      raise RuntimeError(
+          f'Failed to get {ecosystem} versions for {package} with: '
+          f'{response.text}')
+
+    response = response.json()
+    versions = [v['version'] for v in response['versions']]
+    self.sort_versions(versions)
+    return self._get_affected_versions(versions, introduced, fixed,
+                                       last_affected, limits)
 
 
 class SemverEcosystem(Ecosystem):
@@ -243,7 +253,7 @@ class PyPI(Ecosystem):
                                        last_affected, limits)
 
 
-class Maven(Ecosystem, DepsDevMixin):
+class Maven(DepsDevMixin):
   """Maven ecosystem."""
 
   _API_PACKAGE_URL = 'https://search.maven.org/solrsearch/select'
@@ -386,6 +396,98 @@ class NuGet(Ecosystem):
                                        last_affected, limits)
 
 
+class Alpine(Ecosystem):
+  """Alpine packages ecosystem"""
+
+  _APORTS_GIT_URL = 'https://gitlab.alpinelinux.org/alpine/aports.git'
+  _BRANCH_SUFFIX = '-stable'
+  alpine_release_ver: str
+  _GIT_REPO_PATH = 'version_enum/aports/'
+
+  def __init__(self, alpine_release_ver: str):
+    self.alpine_release_ver = alpine_release_ver
+
+  def get_branch_name(self) -> str:
+    return self.alpine_release_ver.lstrip('v') + self._BRANCH_SUFFIX
+
+  def sort_key(self, version):
+    return AlpineLinuxVersion(version)
+
+  @staticmethod
+  def _process_git_log(output: str) -> list:
+    """Takes git log diff output,
+    finds all changes to pkgver and outputs that in an unsorted list"""
+    all_versions = set()
+    lines = [
+        x for x in output.splitlines() if len(x) == 0 or x.startswith('+pkgver')
+    ]
+    # Reverse so that it's in chronological order.
+    # The following loop also expects this order.
+    lines.reverse()
+
+    current_ver = None
+
+    for x in lines:
+      if len(x) == 0:
+        all_versions.add(current_ver)
+        continue
+
+      x_split = x.split('=', 1)
+      if len(x_split) != 2:
+        # Skip the occasional invalid versions
+        continue
+
+      ver = x_split[1]
+      if x.startswith('+pkgver'):
+        current_ver = ver
+        continue
+
+    # Return unsorted list of versions
+    return list(all_versions)
+
+  def enumerate_versions(self,
+                         package: str,
+                         introduced,
+                         fixed=None,
+                         last_affected=None,
+                         limits=None):
+    if work_dir is None:
+      logging.error(
+          "Tried to enumerate alpine version without workdir being set")
+      return []
+
+    get_versions = self._get_versions
+    if shared_cache:
+      get_versions = cached(shared_cache)(get_versions)
+
+    versions = get_versions(self.get_branch_name(), package)
+    self.sort_versions(versions)
+
+    return self._get_affected_versions(versions, introduced, fixed,
+                                       last_affected, limits)
+
+  @staticmethod
+  def _get_versions(branch: str, package: str) -> typing.List[str]:
+    """Get all versions for a package from aports repo"""
+    checkout_dir = os.path.join(work_dir, Alpine._GIT_REPO_PATH)
+    repos.ensure_updated_checkout(
+        Alpine._APORTS_GIT_URL, checkout_dir, branch=branch)
+    directories = glob.glob(
+        os.path.join(checkout_dir, '*', package.lower(), 'APKBUILD'),
+        recursive=True)
+
+    if len(directories) != 1:
+      raise EnumerateError('Cannot find package in aports')
+
+    relative_path = os.path.relpath(directories[0], checkout_dir)
+    stdout_data = subprocess.check_output(
+        ['git', 'log', '--oneline', '-L', '/pkgver=/,+2:' + relative_path],
+        cwd=checkout_dir).decode('utf-8')
+
+    versions = Alpine._process_git_log(stdout_data)
+    return versions
+
+
 class Debian(Ecosystem):
   """Debian ecosystem"""
 
@@ -512,10 +614,13 @@ def get(name: str) -> Ecosystem:
   if name.startswith('Debian:'):
     return Debian(name.split(':')[1])
 
+  if name.startswith('Alpine:'):
+    return Alpine(name.split(':')[1])
+
   return _ecosystems.get(name)
 
 
-def set_cache(cache: Cache):
+def set_cache(cache: typing.Optional[Cache]):
   """Configures and enables the redis caching layer"""
   global shared_cache
   shared_cache = cache

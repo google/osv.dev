@@ -134,7 +134,6 @@ class Importer:
     return osv.ensure_updated_checkout(
         source_repo.repo_url,
         os.path.join(self._sources_dir, source_repo.name),
-        last_update_date=source_repo.last_update_date,
         git_callbacks=self._git_callbacks(source_repo),
         branch=source_repo.repo_branch)
 
@@ -313,7 +312,6 @@ class Importer:
           source_repo, original_sha256, deleted_entry, deleted=True)
 
     source_repo.last_synced_hash = str(repo.head.target)
-    source_repo.last_update_date = utcnow().date()
     source_repo.put()
 
     logging.info("Finish processing git: %s", source_repo.name)
@@ -340,8 +338,8 @@ class Importer:
       if not _is_vulnerability_file(source_repo, blob_name):
         return None
 
-      logging.debug('Bucket entry triggered for %s/%s', source_repo.bucket,
-                    blob_name)
+      logging.info('Bucket entry triggered for %s/%s', source_repo.bucket,
+                   blob_name)
       # Use the _client_store thread local variable
       # set in the thread pool initiailizer
       bucket = _client_store.storage_client.bucket(source_repo.bucket)
@@ -377,6 +375,8 @@ class Importer:
       converted_vulns = executor.map(convert_blob_to_vuln, listed_blob_names)
       for cv in converted_vulns:
         if cv:
+          logging.info('Requesting analysis of bucket entry: %s/%s',
+                       source_repo.bucket, cv[1])
           self._request_analysis_external(source_repo, cv[0], cv[1])
 
     source_repo.last_update_date = utcnow().date()

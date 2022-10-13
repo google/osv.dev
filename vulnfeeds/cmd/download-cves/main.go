@@ -5,9 +5,11 @@ import (
 	"context"
 	"encoding/json"
 	"flag"
+	"fmt"
 	"io"
 	"log"
 	"net/http"
+	"net/url"
 	"os"
 	"path"
 	"strconv"
@@ -20,17 +22,18 @@ import (
 )
 
 const (
-	cveURLBase     = "https://nvd.nist.gov/feeds/json/cve/1.1/"
-	nvdAPI         = "https://services.nvd.nist.gov/rest/json/cves/2.0"
+	CVEURLBase     = "https://nvd.nist.gov/feeds/json/cve/1.1/"
+	NVDAPIEndpoint = "https://services.nvd.nist.gov/rest/json/cves/2.0"
+	PageSize       = 2000 // maximum page size with the 2.0 API is 2000
 	fileNameBase   = "nvdcve-1.1-"
 	startingYear   = 2002
-	cvePathDefault = "cve_jsons"
+	CVEPathDefault = "cve_jsons"
 	projectId      = "oss-vdb"
 )
 
 var Logger utility.LoggerWrapper
 var apiKey = flag.String("api_key", "", "API key for accessing NVD API 2.0")
-var cvePath = flag.String("cvePath", cvePathDefault, "Where to download CVEs to")
+var CVEPath = flag.String("cvePath", CVEPathDefault, "Where to download CVEs to")
 
 func main() {
 	client, err := logging.NewClient(context.Background(), projectId)
@@ -41,29 +44,35 @@ func main() {
 	Logger.GCloudLogger = client.Logger("download-cves")
 	flag.Parse()
 	if *apiKey != "" {
-		downloadCVE2(*apiKey, *cvePath)
+		downloadCVE2(*apiKey, *CVEPath)
 	} else {
 		currentYear := time.Now().Year()
 		for i := startingYear; i <= currentYear; i++ {
-			downloadCVE(strconv.Itoa(i), *cvePath)
+			downloadCVE(strconv.Itoa(i), *CVEPath)
 		}
-		downloadCVE("modified", *cvePath)
-		downloadCVE("recent", *cvePath)
+		downloadCVE("modified", *CVEPath)
+		downloadCVE("recent", *CVEPath)
 	}
 }
 
-// Download all of the CVE data using the 2.0 API
+// Download one "page" of the CVE data using the 2.0 API
+// Pages are offset based, this assumes the default (and maximum) page size of PageSize
+// Maintaining the recommended 6 seconds betweens calls is left to the caller.
 // See https://nvd.nist.gov/developers/vulnerabilities
-func downloadCVE2(apiKey string, cvePath string) {
-	file, err := os.OpenFile(path.Join(cvePath, "nvdcve-2.0.json.new"), os.O_CREATE|os.O_RDWR|os.O_TRUNC, 0644)
-	defer file.Close()
-	if err != nil { // There's an existing file, check if it matches server file
-		Logger.Fatalf("Something went wrong when creating/opening file: %+v", err)
-	}
+func downloadCVE2WithOffset(APIKey string, offset int) cves.NVDCVE2 {
 	client := &http.Client{}
-	req, err := http.NewRequest("GET", nvdAPI, nil)
-	if apiKey != "" {
-		req.Header.Add("apiKey", apiKey)
+	APIURL, err := url.Parse(NVDAPIEndpoint)
+	if err != nil {
+		log.Fatalf("Failed to parse %s: %+v", NVDAPIEndpoint, err)
+	}
+	params := url.Values{}
+	if offset > 0 {
+		params.Add("startIndex", strconv.Itoa(offset))
+	}
+	APIURL.RawQuery = params.Encode()
+	req, err := http.NewRequest("GET", fmt.Sprint(APIURL), nil)
+	if APIKey != "" {
+		req.Header.Add("apiKey", APIKey)
 	}
 	resp, err := client.Do(req)
 	if err != nil {
@@ -74,26 +83,55 @@ func downloadCVE2(apiKey string, cvePath string) {
 	if err != nil {
 		log.Fatalf("Error reading response body: %+v", err)
 	}
-	var NVD2Data cves.NVDCVE2
+	var NVD2Data *cves.NVDCVE2
 	err = json.Unmarshal(body, &NVD2Data)
 	if err != nil {
 		log.Fatalf("Failed to decode NVD data: %+v", err)
 	}
-	Logger.Infof("%d results to download", NVD2Data.TotalResults)
-	// TODO: figure out how to paginate
-	file.Write(body)
-	file.Close()
-	os.Rename(path.Join(cvePath, "nvdcve-2.0.json.new"), path.Join(cvePath, "nvdcve-2.0.json"))
+	Logger.Infof("At offset %d of %d total results", *NVD2Data.StartIndex, *NVD2Data.TotalResults)
+	return *NVD2Data
 }
 
-func downloadCVE(version string, cvePath string) {
-	file, err := os.OpenFile(path.Join(cvePath, fileNameBase+version+".json"), os.O_CREATE|os.O_RDWR|os.O_TRUNC, 0644)
+// Download all of the CVE data using the 2.0 API
+// See https://nvd.nist.gov/developers/vulnerabilities
+func downloadCVE2(APIKey string, CVEPath string) {
+	file, err := os.OpenFile(path.Join(CVEPath, "nvdcve-2.0.json.new"), os.O_CREATE|os.O_RDWR|os.O_TRUNC, 0644)
+	defer file.Close()
+	if err != nil { // There's an existing file, check if it matches server file
+		Logger.Fatalf("Something went wrong when creating/opening file: %+v", err)
+	}
+	var vulnerabilities []json.RawMessage
+	page := cves.NVDCVE2{}
+	offset := 0
+	for {
+		page = downloadCVE2WithOffset(APIKey, offset)
+		vulnerabilities = append(vulnerabilities, page.Vulnerabilities...)
+		offset += PageSize
+		if offset > *page.TotalResults {
+			break
+		}
+		time.Sleep(6)
+	}
+	// Make this look like one giant page of results from the API call
+	page.Vulnerabilities = vulnerabilities
+	*page.StartIndex = 0
+	page.ResultsPerPage = page.TotalResults
+	err = page.ToJSON(file)
+	if err != nil {
+		Logger.Fatalf("Failed to write %s: %+v", path.Join(CVEPath, "nvdcve-2.0.json.new"), err)
+	}
+	file.Close()
+	os.Rename(path.Join(CVEPath, "nvdcve-2.0.json.new"), path.Join(CVEPath, "nvdcve-2.0.json"))
+}
+
+func downloadCVE(version string, CVEPath string) {
+	file, err := os.OpenFile(path.Join(CVEPath, fileNameBase+version+".json"), os.O_CREATE|os.O_RDWR|os.O_TRUNC, 0644)
 	defer file.Close()
 	if err != nil { // There's an existing file, check if it matches server file
 		Logger.Fatalf("Something went wrong when creating/opening file %s, %s", version, err)
 	}
 
-	res, err := http.Get(cveURLBase + fileNameBase + version + ".json.gz")
+	res, err := http.Get(CVEURLBase + fileNameBase + version + ".json.gz")
 	if err != nil {
 		Logger.Fatalf("Failed to retrieve cve json with: %d, for version: %s", err, version)
 	}

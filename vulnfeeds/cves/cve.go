@@ -16,6 +16,7 @@ package cves
 
 import (
 	"encoding/json"
+	"io"
 	"time"
 )
 
@@ -78,13 +79,18 @@ type NVDCVE struct {
 }
 
 type NVDCVE2 struct {
-	ResultsPerPage  int             `json:"ResultsPerPage"`
-	StartIndex      int             `json:"StartIndex"`
-	TotalResults    int             `json:"TotalResults"`
-	Format          string          `json:"format"`
-	Version         string          `json:"version"`
-	Timestamp       string          `json:"timestamp"`
-	Vulnerabilities json.RawMessage `json:"vulnerabilities"`
+	ResultsPerPage  *int              `json:"ResultsPerPage"`
+	StartIndex      *int              `json:"StartIndex"`
+	TotalResults    *int              `json:"TotalResults"`
+	Format          *string           `json:"format"`
+	Version         *string           `json:"version"`
+	Timestamp       *string           `json:"timestamp"`
+	Vulnerabilities []json.RawMessage `json:"vulnerabilities"`
+}
+
+func (n *NVDCVE2) ToJSON(w io.Writer) error {
+	encoder := json.NewEncoder(w)
+	return encoder.Encode(n)
 }
 
 func EnglishDescription(cve CVE) string {

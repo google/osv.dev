@@ -28,8 +28,9 @@ import osv
 
 DEFAULT_WORK_DIR = '/work'
 
-_EXPORT_BUCKET = 'osv-vulnerabilities'
+DEFAULT_EXPORT_BUCKET = 'osv-vulnerabilities'
 _EXPORT_WORKERS = 32
+ECOSYSTEMS_FILE = 'ecosystems.txt'
 
 
 class Exporter:
@@ -48,6 +49,37 @@ class Exporter:
       with tempfile.TemporaryDirectory() as tmp_dir:
         self._export_ecosystem_to_bucket(ecosystem, tmp_dir)
 
+    with tempfile.TemporaryDirectory() as tmp_dir:
+      self._export_ecosystem_list_to_bucket(ecosystems, tmp_dir)
+
+  def upload_single(self, bucket, source_path, target_path):
+    """Upload a single file to a bucket."""
+    logging.info('Uploading %s', target_path)
+    try:
+      blob = bucket.blob(target_path)
+      blob.upload_from_filename(source_path)
+    except Exception as e:
+      logging.error('Failed to export: %s', e)
+
+  def _export_ecosystem_list_to_bucket(self, ecosystems: list[str],
+                                       tmp_dir: str):
+    """Export an ecosystems.txt file with all of the ecosystem names.
+
+    See https://github.com/google/osv.dev/issues/619
+
+    Args:
+      ecosystems: the list of ecosystem names
+      tmp_dir: temporary directory for scratch
+    """
+
+    storage_client = storage.Client()
+    bucket = storage_client.get_bucket(self._export_bucket)
+    ecosystems_file_path = os.path.join(tmp_dir, ECOSYSTEMS_FILE)
+    with open(ecosystems_file_path, "w") as ecosystems_file:
+      ecosystems_file.writelines([e + "\n" for e in ecosystems])
+
+    self.upload_single(bucket, ecosystems_file_path, ECOSYSTEMS_FILE)
+
   def _export_ecosystem_to_bucket(self, ecosystem, tmp_dir):
     """Export ecosystem vulns to bucket."""
     logging.info('Exporting vulnerabilities for ecosystem %s', ecosystem)
@@ -65,19 +97,11 @@ class Exporter:
             bug.to_vulnerability(include_source=True), file_path)
         zip_file.write(file_path, os.path.basename(file_path))
 
-    def upload_single(source_path, target_path):
-      """Upload a single vulnerability."""
-      logging.info('Uploading %s', target_path)
-      try:
-        blob = bucket.blob(target_path)
-        blob.upload_from_filename(source_path)
-      except Exception as e:
-        logging.error('Failed to export: %s', e)
-
     with concurrent.futures.ThreadPoolExecutor(
         max_workers=_EXPORT_WORKERS) as executor:
       for filename in os.listdir(tmp_dir):
-        executor.submit(upload_single, os.path.join(tmp_dir, filename),
+        executor.submit(self.upload_single, bucket,
+                        os.path.join(tmp_dir, filename),
                         f'{ecosystem}/{filename}')
 
 
@@ -86,13 +110,17 @@ def main():
   parser = argparse.ArgumentParser(description='Exporter')
   parser.add_argument(
       '--work_dir', help='Working directory', default=DEFAULT_WORK_DIR)
+  parser.add_argument(
+      '--bucket',
+      help='Bucket name to export to',
+      default=DEFAULT_EXPORT_BUCKET)
   args = parser.parse_args()
 
   tmp_dir = os.path.join(args.work_dir, 'tmp')
   os.makedirs(tmp_dir, exist_ok=True)
   os.environ['TMPDIR'] = tmp_dir
 
-  exporter = Exporter(args.work_dir, _EXPORT_BUCKET)
+  exporter = Exporter(args.work_dir, args.bucket)
   exporter.run()
 
 

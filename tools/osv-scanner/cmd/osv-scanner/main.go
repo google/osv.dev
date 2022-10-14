@@ -7,6 +7,7 @@ import (
 	"log"
 	"os"
 	"os/exec"
+	"path"
 	"path/filepath"
 	"strings"
 
@@ -19,28 +20,34 @@ import (
 	"golang.org/x/exp/slices"
 )
 
+const osvScannerConfigName = "osv-scanner.toml"
+
+var globalConfig *Config
+
 // scanDir walks through the given directory to try to find any relevant files
-func scanDir(query *osv.BatchedQuery, dir string, skipGit bool) error {
-	log.Printf("Scanning dir %s\n", dir)
+func scanDir(query *osv.BatchedQuery, dir string, skipGit bool, configMap map[string]Config) error {
 	return filepath.Walk(dir, func(path string, info os.FileInfo, err error) error {
 		if err != nil {
 			log.Printf("Failed to walk %s: %v", path, err)
 			return err
 		}
+		path, err = filepath.Abs(path)
+		if err != nil {
+			log.Fatalf("Failed to walk path %s", err)
+		}
 
 		if !skipGit && info.IsDir() && info.Name() == ".git" {
-			gitQuery, err := scanGit(filepath.Dir(path))
+			err := scanGit(query, filepath.Dir(path)+"/", configMap)
 			if err != nil {
 				log.Printf("scan failed for %s: %v\n", path, err)
 				return err
 			}
-			gitQuery.Source = "git:" + filepath.Dir(path)
-			query.Queries = append(query.Queries, gitQuery)
+			return filepath.SkipDir
 		}
 
 		if !info.IsDir() {
 			if parser, _ := lockfile.FindParser(path, ""); parser != nil {
-				err := scanLockfile(query, path)
+				err := scanLockfile(query, path, configMap)
 				if err != nil {
 					log.Println("Attempted to scan lockfile but failed: " + path)
 				}
@@ -48,19 +55,50 @@ func scanDir(query *osv.BatchedQuery, dir string, skipGit bool) error {
 			// No need to check for error
 			// If scan fails, it means it isn't a valid SBOM file,
 			// so just move onto the next file
-			_ = scanSBOMFile(query, path)
+			_ = scanSBOMFile(query, path, configMap)
 		}
 
 		return nil
 	})
 }
 
-func scanLockfile(query *osv.BatchedQuery, path string) error {
+// Tries to load config in `target` or any of it's parent dirs
+// `target` will be the key for the entry in configMap
+// Will shortcut and return "" if globalConfig is not nil
+func tryLoadConfig(target string, configMap map[string]Config) string {
+
+	if globalConfig != nil {
+		return ""
+	}
+
+	currentDir := target
+	for currentDir != "/" {
+		currentDir = path.Dir(currentDir)
+		fileToRead := path.Join(currentDir, osvScannerConfigName)
+		configFile, err := os.Open(fileToRead)
+		var config Config
+		if err == nil { // File exists, and we have permission to read
+			_, err := toml.NewDecoder(configFile).Decode(&config)
+			if err != nil {
+				log.Fatalf("Failed to read config file: %s\n", err)
+			}
+			configMap[target] = config
+			return fileToRead
+		}
+	}
+	return ""
+}
+
+func scanLockfile(query *osv.BatchedQuery, path string, configMap map[string]Config) error {
+	configPath := tryLoadConfig(path, configMap)
 	parsedLockfile, err := lockfile.Parse(path, "")
 	if err != nil {
 		return err
 	}
 	log.Printf("Scanned %s file and found %d packages", path, len(parsedLockfile.Packages))
+	if configPath != "" {
+		log.Printf("Using config %s", configPath)
+	}
 
 	for _, pkgDetail := range parsedLockfile.Packages {
 		pkgDetailQuery := osv.MakePkgRequest(pkgDetail)
@@ -70,7 +108,8 @@ func scanLockfile(query *osv.BatchedQuery, path string) error {
 	return nil
 }
 
-func scanSBOMFile(query *osv.BatchedQuery, path string) error {
+func scanSBOMFile(query *osv.BatchedQuery, path string, configMap map[string]Config) error {
+	configPath := tryLoadConfig(path, configMap)
 	file, err := os.Open(path)
 	if err != nil {
 		return err
@@ -78,7 +117,7 @@ func scanSBOMFile(query *osv.BatchedQuery, path string) error {
 
 	for _, provider := range sbom.Providers {
 		if provider.Name() == "SPDX" &&
-				!strings.Contains(strings.ToLower(filepath.Base(path)), ".spdx") {
+			!strings.Contains(strings.ToLower(filepath.Base(path)), ".spdx") {
 			// All spdx files should have the .spdx in the filename, even if
 			// it's not the extension:  https://spdx.github.io/spdx-spec/v2.3/conformance/
 			// Skip if this isn't the case to avoid panics
@@ -93,6 +132,9 @@ func scanSBOMFile(query *osv.BatchedQuery, path string) error {
 		if err == nil {
 			// Found the right format.
 			log.Printf("Scanned %s SBOM", provider.Name())
+			if configPath != "" {
+				log.Printf("Using config %s", configPath)
+			}
 			return nil
 		}
 
@@ -118,14 +160,23 @@ func getCommitSHA(repoDir string) (string, error) {
 	return strings.TrimSpace(out.String()), nil
 }
 
-func scanGit(repoDir string) (*osv.Query, error) {
+// Scan git repository. Expects repoDir to end with /
+func scanGit(query *osv.BatchedQuery, repoDir string, configMap map[string]Config) error {
 	commit, err := getCommitSHA(repoDir)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	log.Printf("Scanning %s at commit %s", repoDir, commit)
-	return osv.MakeCommitRequest(commit), nil
+	configPath := tryLoadConfig(repoDir, configMap)
+	if configPath != "" {
+		log.Printf("With config located at %s", configPath)
+	}
+
+	gitQuery := osv.MakeCommitRequest(commit)
+	gitQuery.Source = "git:" + repoDir
+	query.Queries = append(query.Queries, gitQuery)
+	return nil
 }
 
 func scanDebianDocker(query *osv.BatchedQuery, dockerImageName string) {
@@ -166,20 +217,32 @@ func scanDebianDocker(query *osv.BatchedQuery, dockerImageName string) {
 }
 
 // Filters response according to config, returns number of responses removed
-func filterResponse(resp *osv.BatchedResponse, config Config) int {
+func filterResponse(query osv.BatchedQuery, resp *osv.BatchedResponse, globalConfig *Config, configMap map[string]Config) int {
 	//response := []osv.MinimalResponse{}
 	hiddenVulns := map[string]struct{}{}
 
 	for i, result := range resp.Results {
-		filteredVulns := []osv.MinimalVulnerability{}
-		for _, vuln := range result.Vulns {
-			if slices.Contains(config.IgnoredVulnIds, vuln.ID) {
-				hiddenVulns[vuln.ID] = struct{}{}
-			} else {
-				filteredVulns = append(filteredVulns, vuln)
+		var filteredVulns []osv.MinimalVulnerability
+		var configToUse *Config
+		if globalConfig != nil {
+			configToUse = globalConfig
+		} else {
+			sourcePath := strings.SplitN(query.Queries[i].Source, ":", 2)[1]
+			configToUseTemp, ok := configMap[sourcePath]
+			if ok {
+				configToUse = &configToUseTemp
 			}
 		}
-		resp.Results[i].Vulns = filteredVulns
+		if configToUse != nil {
+			for _, vuln := range result.Vulns {
+				if slices.Contains(configToUse.IgnoredVulnIds, vuln.ID) {
+					hiddenVulns[vuln.ID] = struct{}{}
+				} else {
+					filteredVulns = append(filteredVulns, vuln)
+				}
+			}
+			resp.Results[i].Vulns = filteredVulns
+		}
 	}
 
 	return len(hiddenVulns)
@@ -188,7 +251,7 @@ func filterResponse(resp *osv.BatchedResponse, config Config) int {
 func main() {
 	var query osv.BatchedQuery
 	var outputJson bool
-	var config Config
+	configMap := map[string]Config{}
 
 	app := &cli.App{
 		Name:    "osv-scanner",
@@ -233,7 +296,9 @@ func main() {
 
 			configPath := context.String("config")
 			if configPath != "" {
+				config := Config{}
 				_, err := toml.DecodeFile(configPath, &config)
+				globalConfig = &config
 				if err != nil {
 					log.Fatalf("Failed to read config file: %s\n", err)
 				}
@@ -248,7 +313,11 @@ func main() {
 
 			lockfiles := context.StringSlice("lockfile")
 			for _, lockfileElem := range lockfiles {
-				err := scanLockfile(&query, lockfileElem)
+				lockfileElem, err := filepath.Abs(lockfileElem)
+				if err != nil {
+					log.Fatalf("Failed to resolved path with error %s", err)
+				}
+				err = scanLockfile(&query, lockfileElem, configMap)
 				if err != nil {
 					return err
 				}
@@ -256,7 +325,11 @@ func main() {
 
 			sboms := context.StringSlice("sbom")
 			for _, sbomElem := range sboms {
-				err := scanSBOMFile(&query, sbomElem)
+				sbomElem, err := filepath.Abs(sbomElem)
+				if err != nil {
+					log.Fatalf("Failed to resolved path with error %s", err)
+				}
+				err = scanSBOMFile(&query, sbomElem, configMap)
 				if err != nil {
 					return err
 				}
@@ -265,7 +338,8 @@ func main() {
 			skipGit := context.Bool("skip-git")
 			genericDirs := context.Args().Slice()
 			for _, dir := range genericDirs {
-				err := scanDir(&query, dir, skipGit)
+				log.Printf("Scanning dir %s\n", dir)
+				err := scanDir(&query, dir, skipGit, configMap)
 				if err != nil {
 					return err
 				}
@@ -290,7 +364,7 @@ func main() {
 		log.Fatalf("Scan failed: %v", err)
 	}
 
-	filtered := filterResponse(resp, config)
+	filtered := filterResponse(query, resp, globalConfig, configMap)
 	if filtered > 0 {
 		log.Printf("Filtered %d vulnerabilities from output", filtered)
 	}

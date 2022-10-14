@@ -1,0 +1,6 @@
+IgnoredVulnIds = [
+    "GO-2022-0968", # No ssh servers are connected to or hosted in Go lang
+    "GO-2021-0356", # No ssh servers
+    "GO-2022-1059", # No external http servers are written in Go lang.
+    "GO-2022-0969", # No external http servers in Go lang.
+]

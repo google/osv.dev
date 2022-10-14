@@ -79,6 +79,24 @@ as real git repositories.
 ```bash
 $ go run ./cmd/osv-scanner /path/to/your/dir
 ```
+
+## Configure `osv-scanner`
+
+By placing a `osv-scanner.toml` file in any parent directory of the file being
+scanned will be used to configure scanning of that file. This can be overridden
+by passing the `--config=/path/to/config` flag.
+
+Currently, there is only 1 option to configure:
+### Ignore vulnerabilities by ID
+Vulnerabilities can be marked as ignored by putting the vuln ID in an array
+under the `IgnoreVulnIds` key. 
+```
+IgnoredVulnIds = [
+    "GO-2022-0968",
+    "GO-2022-1059"
+]
+```
+
 ## JSON output
 By default osv-scanner outputs a human readable table. To have osv-scanner output JSON instead, pass the `--json` flag when calling osv-scanner. 
 

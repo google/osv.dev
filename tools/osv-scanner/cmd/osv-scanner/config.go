@@ -4,6 +4,7 @@ import (
 	"log"
 	"os"
 	"path"
+	"strings"
 
 	"github.com/BurntSushi/toml"
 )
@@ -18,6 +19,15 @@ type Config struct {
 func TryLoadConfig(target string, configMap map[string]Config) string {
 	if globalConfig != nil {
 		return ""
+	}
+	stat, err := os.Stat(target)
+	if err != nil {
+		log.Fatalf("Fatalf")
+	}
+
+	if stat.IsDir() && !strings.HasSuffix(target, "/") {
+		// Make sure directories ends with '/'
+		target += "/"
 	}
 
 	currentDir := target

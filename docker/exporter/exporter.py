@@ -73,6 +73,7 @@ class Exporter:
       tmp_dir: temporary directory for scratch
     """
 
+    logging.info('Exporting ecosystem list to %s', ECOSYSTEMS_FILE)
     storage_client = storage.Client()
     bucket = storage_client.get_bucket(self._export_bucket)
     ecosystems_file_path = os.path.join(tmp_dir, ECOSYSTEMS_FILE)

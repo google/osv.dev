@@ -19,6 +19,7 @@ import logging
 import os
 import tempfile
 import zipfile
+from typing import List
 
 from google.cloud import ndb
 from google.cloud import storage
@@ -61,7 +62,7 @@ class Exporter:
     except Exception as e:
       logging.error('Failed to export: %s', e)
 
-  def _export_ecosystem_list_to_bucket(self, ecosystems: list[str],
+  def _export_ecosystem_list_to_bucket(self, ecosystems: List[str],
                                        tmp_dir: str):
     """Export an ecosystems.txt file with all of the ecosystem names.
 
@@ -72,6 +73,7 @@ class Exporter:
       tmp_dir: temporary directory for scratch
     """
 
+    logging.info('Exporting ecosystem list to %s', ECOSYSTEMS_FILE)
     storage_client = storage.Client()
     bucket = storage_client.get_bucket(self._export_bucket)
     ecosystems_file_path = os.path.join(tmp_dir, ECOSYSTEMS_FILE)

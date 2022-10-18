@@ -22,7 +22,7 @@ func TryLoadConfig(target string, configMap map[string]Config) string {
 	}
 	stat, err := os.Stat(target)
 	if err != nil {
-		log.Fatalf("Fatalf")
+		log.Fatalf("Failed to stat path: %s", err)
 	}
 
 	if stat.IsDir() && !strings.HasSuffix(target, "/") {

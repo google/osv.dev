@@ -10,9 +10,9 @@ import (
 func TestTryLoadConfig(t *testing.T) {
 	configMap := map[string]Config{}
 	testPaths := []string{
-		"testdata/innerFolder/test.yaml",
-		"testdata/innerFolder/",
-		"testdata/",
+		"../../testdata/innerFolder/test.yaml",
+		"../../testdata/innerFolder/",
+		"../../testdata/",
 	}
 
 	for _, path := range testPaths {

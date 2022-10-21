@@ -152,8 +152,9 @@ func scanGit(query *osv.BatchedQuery, repoDir string, configMap map[string]Confi
 }
 
 func scanDebianDocker(query *osv.BatchedQuery, dockerImageName string) {
-	cmd := exec.Command("docker", "run", "--rm", dockerImageName, "/usr/bin/dpkg-query", "-f", "${Package}###${Version}\\n", "-W")
+	cmd := exec.Command("docker", "run", "--rm", "--entrypoint", "/usr/bin/dpkg-query", dockerImageName, "-f", "${Package}###${Version}\\n", "-W")
 	stdout, err := cmd.StdoutPipe()
+
 	if err != nil {
 		log.Fatalf("Failed to get stdout: %s", err)
 	}
@@ -166,6 +167,7 @@ func scanDebianDocker(query *osv.BatchedQuery, dockerImageName string) {
 		log.Fatalf("Failed to run docker: %s", err)
 	}
 	scanner := bufio.NewScanner(stdout)
+	packages := 0
 	for scanner.Scan() {
 		text := scanner.Text()
 		text = strings.TrimSpace(text)
@@ -184,8 +186,9 @@ func scanDebianDocker(query *osv.BatchedQuery, dockerImageName string) {
 		})
 		pkgDetailsQuery.Source = "docker:" + dockerImageName
 		query.Queries = append(query.Queries, pkgDetailsQuery)
+		packages += 1
 	}
-	log.Printf("Scanned docker image")
+	log.Printf("Scanned docker image with %d packages", packages)
 }
 
 // Filters response according to config, returns number of responses removed

@@ -4,30 +4,53 @@ import (
 	"log"
 	"os"
 	"path"
+	"path/filepath"
 	"strings"
 
 	"github.com/BurntSushi/toml"
+)
+
+type LoadConfigErrorType int64
+
+const (
+	GlobalConfigSet LoadConfigErrorType = iota
+	NoConfigFound
 )
 
 type Config struct {
 	IgnoredVulnIds []string
 }
 
+type LoadConfigError struct {
+	targetPath string
+	errorType  LoadConfigErrorType
+}
+
+func (e LoadConfigError) Error() string {
+	switch e.errorType {
+	case GlobalConfigSet:
+		return "Global config has been set"
+	case NoConfigFound:
+		return "No config file found on this or any ancestor path: " + e.targetPath
+	}
+	panic("Invalid error type")
+}
+
 // TryLoadConfig tries to load config in `target` or any of it's parent dirs
 // `target` will be the key for the entry in configMap
 // Will shortcut and return "" if globalConfig is not nil
-func TryLoadConfig(target string, configMap map[string]Config) string {
+func TryLoadConfig(target string, configMap map[string]Config) (string, error) {
 	if globalConfig != nil {
-		return ""
+		return "", LoadConfigError{targetPath: target, errorType: GlobalConfigSet}
 	}
 	stat, err := os.Stat(target)
 	if err != nil {
-		log.Fatalf("Failed to stat path: %s", err)
+		log.Fatalf("Failed to stat target: %s", err)
 	}
 
-	if stat.IsDir() && !strings.HasSuffix(target, "/") {
+	if stat.IsDir() && !strings.HasSuffix(target, string(filepath.Separator)) {
 		// Make sure directories ends with '/'
-		target += "/"
+		target += string(filepath.Separator)
 	}
 
 	currentDir := target
@@ -42,8 +65,8 @@ func TryLoadConfig(target string, configMap map[string]Config) string {
 				log.Fatalf("Failed to read config file: %s\n", err)
 			}
 			configMap[target] = config
-			return fileToRead
+			return fileToRead, nil
 		}
 	}
-	return ""
+	return "", LoadConfigError{targetPath: target, errorType: NoConfigFound}
 }

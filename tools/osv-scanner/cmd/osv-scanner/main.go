@@ -24,6 +24,10 @@ const osvScannerConfigName = "osv-scanner.toml"
 var globalConfig *Config
 
 // scanDir walks through the given directory to try to find any relevant files
+// These include:
+//   - Any lockfiles with scanLockfile
+//   - Any SBOM files with scanSBOMFile
+//   - Any git repositories with scanGit
 func scanDir(query *osv.BatchedQuery, dir string, skipGit bool, configMap map[string]Config) error {
 	return filepath.Walk(dir, func(path string, info os.FileInfo, err error) error {
 		if err != nil {
@@ -62,13 +66,13 @@ func scanDir(query *osv.BatchedQuery, dir string, skipGit bool, configMap map[st
 }
 
 func scanLockfile(query *osv.BatchedQuery, path string, configMap map[string]Config) error {
-	configPath := TryLoadConfig(path, configMap)
+	configPath, configErr := TryLoadConfig(path, configMap)
 	parsedLockfile, err := lockfile.Parse(path, "")
 	if err != nil {
 		return err
 	}
 	log.Printf("Scanned %s file and found %d packages", path, len(parsedLockfile.Packages))
-	if configPath != "" {
+	if configErr == nil {
 		log.Printf("Using config %s", configPath)
 	}
 
@@ -81,7 +85,7 @@ func scanLockfile(query *osv.BatchedQuery, path string, configMap map[string]Con
 }
 
 func scanSBOMFile(query *osv.BatchedQuery, path string, configMap map[string]Config) error {
-	configPath := TryLoadConfig(path, configMap)
+	configPath, configErr := TryLoadConfig(path, configMap)
 	file, err := os.Open(path)
 	if err != nil {
 		return err
@@ -104,7 +108,7 @@ func scanSBOMFile(query *osv.BatchedQuery, path string, configMap map[string]Con
 		if err == nil {
 			// Found the right format.
 			log.Printf("Scanned %s SBOM", provider.Name())
-			if configPath != "" {
+			if configErr == nil {
 				log.Printf("Using config %s", configPath)
 			}
 			return nil
@@ -140,8 +144,8 @@ func scanGit(query *osv.BatchedQuery, repoDir string, configMap map[string]Confi
 	}
 
 	log.Printf("Scanning %s at commit %s", repoDir, commit)
-	configPath := TryLoadConfig(repoDir, configMap)
-	if configPath != "" {
+	configPath, configErr := TryLoadConfig(repoDir, configMap)
+	if configErr != nil {
 		log.Printf("With config located at %s", configPath)
 	}
 

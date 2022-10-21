@@ -3,7 +3,6 @@ package main
 import (
 	"log"
 	"os"
-	"path"
 	"path/filepath"
 	"strings"
 
@@ -55,8 +54,8 @@ func TryLoadConfig(target string, configMap map[string]Config) (string, error) {
 
 	currentDir := target
 	for currentDir != "/" {
-		currentDir = path.Dir(currentDir)
-		fileToRead := path.Join(currentDir, osvScannerConfigName)
+		currentDir = filepath.Dir(currentDir)
+		fileToRead := filepath.Join(currentDir, osvScannerConfigName)
 		configFile, err := os.Open(fileToRead)
 		var config Config
 		if err == nil { // File exists, and we have permission to read

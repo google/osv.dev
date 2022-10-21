@@ -65,6 +65,8 @@ func scanDir(query *osv.BatchedQuery, dir string, skipGit bool, configMap map[st
 	})
 }
 
+// scanLockfile will load, identify, and parse the lockfile path passed in, and add the dependencies specified
+// within to `query`, and the config files in the parent folders found to configMap
 func scanLockfile(query *osv.BatchedQuery, path string, configMap map[string]Config) error {
 	configPath, configErr := TryLoadConfig(path, configMap)
 	parsedLockfile, err := lockfile.Parse(path, "")
@@ -84,6 +86,8 @@ func scanLockfile(query *osv.BatchedQuery, path string, configMap map[string]Con
 	return nil
 }
 
+// scanSBOMFile will load, identify, and parse the SBOM path passed in, and add the dependencies specified
+// within to `query`, and the config files in the parent folders found to configMap
 func scanSBOMFile(query *osv.BatchedQuery, path string, configMap map[string]Config) error {
 	configPath, configErr := TryLoadConfig(path, configMap)
 	file, err := os.Open(path)

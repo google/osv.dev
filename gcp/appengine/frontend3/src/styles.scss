@@ -199,7 +199,7 @@ pre {
         filter: invert(100%);
       }
     }
-  
+
     .ecosystem-label {
       display: flex;
       gap: 16px;
@@ -207,7 +207,7 @@ pre {
       padding: 10px 20px;
       background: #696969;
       border-radius: 999px;
-  
+
       .ecosystem-count {
         font-weight: bold;
       }
@@ -219,12 +219,12 @@ pre {
       height: 30px;
       border-right: 1px solid $osv-grey-600;
     }
-  
+
     input[type=radio]:checked + .ecosystem-label {
       background: $osv-text-color;
       color: $osv-accent-color;
     }
-  
+
     input[type=radio] {
       display: none;
     }
@@ -444,7 +444,7 @@ dl.vulnerability-details,
 
   dd.details {
     overflow-wrap: break-word;
-    
+
     h1, h2, h3, h4 {
       font-family: $osv-body-font-family;
       font-weight: bold;
@@ -529,7 +529,7 @@ dl.vulnerability-details,
     font-size: 14px;
     padding: 16px;
   }
-  
+
   h3 {
     font-family: $osv-body-font-family;
     font-weight: bold;
@@ -651,7 +651,7 @@ dl.vulnerability-details,
   [role="tabpanel"] {
     border-top: 1px dashed #fff;
   }
-  
+
   .vulnerability-package-subsection {
     padding: 14px 0;
     border-bottom: 1px dashed #fff;
@@ -660,16 +660,13 @@ dl.vulnerability-details,
 
 /** Home page */
 
+.wrapper.decorated {
+  background: url('/static/img/background-1.png');
+  background-repeat: no-repeat;
+  background-position: calc(50% - 70px) top;
+}
+
 .home-page {
-  .background-1 {
-    position: fixed;
-    top: -60px;
-    left: -210px;
-    z-index: -100;
-    width: 2000px;
-    max-width: 2000px;
-    opacity: 50%;
-  }
 
   @media (max-width: $osv-mobile-breakpoint) {
     .background-1 {
@@ -696,7 +693,7 @@ dl.vulnerability-details,
 
   .hero {
     max-width: 1000px;
-    margin: 0 auto;
+    margin: 55px auto 0 auto;
     text-align: center;
 
     .cta {

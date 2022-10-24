@@ -676,29 +676,6 @@ dl.vulnerability-details,
     margin: 0 24px;
   }
 
-  @media (max-width: $osv-mobile-breakpoint) {
-    .background-1 {
-      left: -400px;
-      opacity: 40%;
-    }
-  }
-
-  .background-2 {
-    position: fixed;
-    bottom: -100px;
-    right: -100px;
-    z-index: -100;
-    width: 800px;
-    max-width: 800px;
-    opacity: 50%;
-  }
-
-  @media (max-width: $osv-mobile-breakpoint) {
-    .background-2 {
-      display: none;
-    }
-  }
-
   .hero {
     max-width: 1000px;
     margin: 79px auto 0 auto;
@@ -849,7 +826,7 @@ dl.vulnerability-details,
   }
 
   .text-info {
-    max-width: 800px;
+    max-width: 900px;
     margin: 100px auto 0;
 
     .heading {
@@ -882,6 +859,14 @@ dl.vulnerability-details,
       justify-content: center;
       gap: 4px;
     }
+  }
+
+  .data-sources {
+    background: url('/static/img/background-2.png');
+    background-position: calc(50% - 70px) top;
+    background-repeat: no-repeat;
+    margin-top: 0;
+    padding-top: 205px;
   }
 
   .usage-examples {

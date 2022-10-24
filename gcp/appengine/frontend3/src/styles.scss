@@ -666,7 +666,15 @@ dl.vulnerability-details,
   background-position: calc(50% - 70px) top;
 }
 
+.mdc-layout-grid.home-page {
+  padding: 0;
+}
+
 .home-page {
+
+  .mdc-layout-grid__cell--span-12 {
+    margin: 0 24px;
+  }
 
   @media (max-width: $osv-mobile-breakpoint) {
     .background-1 {
@@ -693,7 +701,7 @@ dl.vulnerability-details,
 
   .hero {
     max-width: 1000px;
-    margin: 55px auto 0 auto;
+    margin: 79px auto 0 auto;
     text-align: center;
 
     .cta {
@@ -729,6 +737,8 @@ dl.vulnerability-details,
   .ecosystems-section {
     $ecosystem-name-height: 30px;
     $ecosystem-count-wrapper-height: 210px;
+    margin-left: 0;
+    margin-right: 0;
     margin-top: 100px;
 
     .ecosystem-counts-wrapper {
@@ -831,6 +841,11 @@ dl.vulnerability-details,
         }
       }
     }
+
+    .heading {
+      margin-left: 24px;
+    }
+
   }
 
   .text-info {

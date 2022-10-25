@@ -32,7 +32,7 @@ This project follows
 ### Prerequisites
 You must install:
 1. Git
-1. Python 3.8+
+1. Python 3.10+
 1. [Make](https://www.gnu.org/software/make/)
 1. [Pipenv](https://pipenv.pypa.io/en/latest/)
 1. [Google Cloud SDK](https://cloud.google.com/sdk)

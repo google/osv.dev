@@ -6,6 +6,7 @@ $osv-accent-color: #c5221f;
 $osv-accent-color-hover: #c5221fb2;
 $osv-red-300: #ec928e;
 $osv-grey-600: #80868b;
+$osv-grey-800: #3C4043;
 $osv-body-font-family: string.unquote('Overpass, sans-serif');
 $osv-heading-font-family: string.unquote('"Overpass Mono", monospace');
 $osv-heading-size: 60px;
@@ -1008,10 +1009,14 @@ dl.vulnerability-details,
     .question {
       border-top: 1px dotted #a0a0a0;
       cursor: pointer;
-      padding: 20px 0;
+      padding: 20px 10px;
       font-family: $osv-body-font-family;
       font-size: 20px;
       font-weight: bold;
+
+      &:hover {
+        background-color: $osv-grey-800;
+      }
     }
 
     [affordance=collapse] {
@@ -1026,6 +1031,7 @@ dl.vulnerability-details,
     .answer {
       margin-left: 20px;
       padding-bottom: 20px;
+      padding-top: 20px;
       font-size: 16px;
 
       p {

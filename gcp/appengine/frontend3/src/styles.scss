@@ -968,6 +968,13 @@ dl.vulnerability-details,
       gap: 4px;
     }
   }
+
+  footer {
+    background: url('/static/img/footer-decoration.png');
+    background-repeat: no-repeat;
+    background-position: center;
+    min-height: 500px;
+  }
 }
 
 .about-page {
@@ -1030,4 +1037,5 @@ dl.vulnerability-details,
     }
   }
 }
+
 

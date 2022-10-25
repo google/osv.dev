@@ -871,7 +871,7 @@ dl.vulnerability-details,
 
   .usage-examples {
     margin-top: 100px;
-    margin-bottom: 120px;
+
     .heading {
       font-size: $osv-heading-size;
       text-align: center;
@@ -941,7 +941,7 @@ dl.vulnerability-details,
 
   .open-source-banner {
     max-width: 640px;
-    margin: 0 auto;
+    margin: 100px auto 0 auto;
 
     .heading {
       font-size: $osv-heading-size;

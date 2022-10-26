@@ -30,7 +30,11 @@ TEST_DATA_DIR = os.path.join(
     os.path.dirname(os.path.abspath(__file__)), 'testdata')
 TEST_BUCKET = 'test-osv-source-bucket'
 
-_EMPTY_VULNERABILITY = 'id: EMPTY'
+_MIN_VALID_VULNERABILITY = '''{
+   "id":"OSV-2017-134",
+   "modified":"2021-01-01T00:00:00Z",
+   "schema_version":"1.3.0",
+}'''
 
 
 @mock.patch('importer.utcnow', lambda: datetime.datetime(2021, 1, 1))
@@ -141,7 +145,7 @@ class ImporterTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
         },
     ).put()
 
-    self.mock_repo.add_file('2021-111.yaml', _EMPTY_VULNERABILITY)
+    self.mock_repo.add_file('2021-111.yaml', _MIN_VALID_VULNERABILITY)
     self.mock_repo.commit('User', 'user@email')
 
     imp = importer.Importer('fake_public_key', 'fake_private_key', self.tmp_dir,
@@ -162,8 +166,8 @@ class ImporterTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
             'projects/oss-vdb/topics/tasks',
             data=b'',
             deleted='false',
-            original_sha256=('bd3cc48676794308a58a19c97972a5e5'
-                             '42abcc9eb948db5701421616432cc0b9'),
+            original_sha256=('874535768a62eb9dc4f3ea7acd9a4601'
+                             '19a3cd03fc15360bf16187f54df92a75'),
             path='2021-111.yaml',
             source='oss-fuzz',
             type='update')
@@ -190,7 +194,7 @@ class ImporterTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
   @mock.patch('google.cloud.pubsub_v1.PublisherClient.publish')
   def test_delete(self, mock_publish):
     """Test deletion."""
-    self.mock_repo.add_file('2021-111.yaml', _EMPTY_VULNERABILITY)
+    self.mock_repo.add_file('2021-111.yaml', _MIN_VALID_VULNERABILITY)
     self.mock_repo.commit('User', 'user@email')
 
     repo = pygit2.Repository(self.remote_source_repo_path)
@@ -220,7 +224,7 @@ class ImporterTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
   @mock.patch('google.cloud.pubsub_v1.PublisherClient.publish')
   def test_nop(self, mock_publish: mock.MagicMock):
     """Test deletion."""
-    self.mock_repo.add_file('2021-111.yaml', _EMPTY_VULNERABILITY)
+    self.mock_repo.add_file('2021-111.yaml', _MIN_VALID_VULNERABILITY)
     self.mock_repo.commit('User', 'user@email')
 
     repo = pygit2.Repository(self.remote_source_repo_path)
@@ -238,9 +242,9 @@ class ImporterTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
   @mock.patch('google.cloud.pubsub_v1.PublisherClient.publish')
   def test_scheduled_updates(self, mock_publish):
     """Test scheduled updates."""
-    self.mock_repo.add_file('proj/OSV-2021-1337.yaml', _EMPTY_VULNERABILITY)
-    self.mock_repo.add_file('proj/OSV-2021-1339.yaml', _EMPTY_VULNERABILITY)
-    self.mock_repo.add_file('OSV-2021-1338.yaml', _EMPTY_VULNERABILITY)
+    self.mock_repo.add_file('proj/OSV-2021-1337.yaml', _MIN_VALID_VULNERABILITY)
+    self.mock_repo.add_file('proj/OSV-2021-1339.yaml', _MIN_VALID_VULNERABILITY)
+    self.mock_repo.add_file('OSV-2021-1338.yaml', _MIN_VALID_VULNERABILITY)
     self.mock_repo.commit('OSV', 'infra@osv.dev')
 
     osv.SourceRepository(
@@ -297,8 +301,8 @@ class ImporterTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
             'projects/oss-vdb/topics/tasks',
             data=b'',
             deleted='false',
-            original_sha256=('bd3cc48676794308a58a19c97972a5e5'
-                             '42abcc9eb948db5701421616432cc0b9'),
+            original_sha256=('874535768a62eb9dc4f3ea7acd9a4601'
+                             '19a3cd03fc15360bf16187f54df92a75'),
             path='proj/OSV-2021-1337.yaml',
             source='oss-fuzz',
             type='update'),
@@ -319,7 +323,7 @@ class ImporterTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
     source_repo.last_update_date = importer.utcnow().date()
     source_repo.put()
 
-    self.mock_repo.add_file('proj/OSV-2021-1337.yaml', _EMPTY_VULNERABILITY)
+    self.mock_repo.add_file('proj/OSV-2021-1337.yaml', _MIN_VALID_VULNERABILITY)
     self.mock_repo.commit('OSV', 'infra@osv.dev')
     osv.Bug(
         db_id='OSV-2021-1337',
@@ -336,7 +340,7 @@ class ImporterTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
 
   def test_no_updates(self):
     """Test no update marker."""
-    self.mock_repo.add_file('2021-111.yaml', _EMPTY_VULNERABILITY)
+    self.mock_repo.add_file('2021-111.yaml', _MIN_VALID_VULNERABILITY)
     self.mock_repo.commit('User', 'user@email', 'message. OSV-NO-UPDATE')
 
     imp = importer.Importer('fake_public_key', 'fake_private_key', self.tmp_dir,
@@ -345,7 +349,7 @@ class ImporterTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
 
   def test_ignore(self):
     """Test ignoring."""
-    self.mock_repo.add_file('2021-111IGNORE.yaml', _EMPTY_VULNERABILITY)
+    self.mock_repo.add_file('2021-111IGNORE.yaml', _MIN_VALID_VULNERABILITY)
     self.mock_repo.commit('User', 'user@email', 'message.')
 
     imp = importer.Importer('fake_public_key', 'fake_private_key', self.tmp_dir,

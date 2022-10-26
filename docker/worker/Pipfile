@@ -4,13 +4,14 @@ verify_ssl = true
 name = "pypi"
 
 [packages]
+jsonschema = "*"
 google-cloud-pubsub = "*"
 google-cloud-logging = "*"
 google-cloud-ndb = "*"
 PyYAML = "*"
 google-cloud-storage = "*"
 redis = "*"
-osv = {editable = true, path = "../../"}
+osv = {editable = true, path = "./../.."}
 
 [dev-packages]
 yapf = "*"

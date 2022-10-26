@@ -18,6 +18,8 @@ import json
 import hashlib
 import logging
 import os
+
+import jsonschema
 import pygit2
 import time
 import yaml
@@ -27,14 +29,16 @@ from google.protobuf import json_format
 # pylint: disable=relative-beyond-top-level
 from . import repos
 from . import vulnerability_pb2
+from . import cache
 
 AUTHOR_EMAIL = 'infra@osv.dev'
 PUSH_RETRIES = 2
 PUSH_RETRY_SLEEP_SECONDS = 10
 
 YAML_EXTENSIONS = ('.yaml', '.yml')
-JSON_EXTENSIONS = ('.json')
+JSON_EXTENSIONS = '.json'
 
+shared_cache = cache.InMemoryCache()
 
 def parse_source_id(source_id):
   """Get the source name and id from source_id."""
@@ -47,12 +51,35 @@ def repo_path(repo):
   return os.path.dirname(repo.path.rstrip(os.sep))
 
 
+class NoDatesSafeLoader(yaml.SafeLoader):
+  @classmethod
+  def remove_implicit_resolver(cls, tag_to_remove):
+    """
+    Remove implicit resolvers for a particular tag
+
+    Takes care not to modify resolvers in super classes.
+
+    We want to load datetimes as strings, not dates, because we
+    go on to serialise as json which doesn't have the advanced types
+    of yaml, and leads to incompatibilities down the track.
+    """
+    if not 'yaml_implicit_resolvers' in cls.__dict__:
+      cls.yaml_implicit_resolvers = cls.yaml_implicit_resolvers.copy()
+
+    for first_letter, mappings in cls.yaml_implicit_resolvers.items():
+      cls.yaml_implicit_resolvers[first_letter] = [(tag, regexp)
+                                                   for tag, regexp in mappings
+                                                   if tag != tag_to_remove]
+
+NoDatesSafeLoader.remove_implicit_resolver('tag:yaml.org,2002:timestamp')
+
+
 def _parse_vulnerability_dict(path):
   """Parse a vulnerability file into a dict."""
   with open(path) as f:
     ext = os.path.splitext(path)[1]
     if ext in YAML_EXTENSIONS:
-      return yaml.safe_load(f)
+      return yaml.load(f, Loader=NoDatesSafeLoader)
 
     if ext in JSON_EXTENSIONS:
       return json.load(f)
@@ -60,6 +87,14 @@ def _parse_vulnerability_dict(path):
     raise RuntimeError('Unknown format ' + ext)
 
   return None
+
+
+@cache.cached(shared_cache)
+def load_schema():
+  path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'schema.json')
+  with open(path, 'r') as schema:
+    text = schema.read()
+    return json.loads(text)
 
 
 def parse_vulnerability(path, key_path=None):
@@ -81,12 +116,12 @@ def parse_vulnerabilities(path, key_path=None):
   return _parse_vulnerabilities(_parse_vulnerability_dict(path), key_path)
 
 
-def parse_vulnerabilities_from_data(data, extension, key_path=None):
+def parse_vulnerabilities_from_data(data_text, extension, key_path=None):
   """Parse vulnerabilities from data."""
   if extension in YAML_EXTENSIONS:
-    data = yaml.safe_load(data)
+    data = yaml.load(data_text, Loader=NoDatesSafeLoader)
   elif extension in JSON_EXTENSIONS:
-    data = json.loads(data)
+    data = json.loads(data_text)
   else:
     raise RuntimeError('Unknown format ' + extension)
 
@@ -105,6 +140,7 @@ def _get_nested_vulnerability(data, key_path=None):
 def parse_vulnerability_from_dict(data, key_path=None):
   """Parse vulnerability from dict."""
   data = _get_nested_vulnerability(data, key_path)
+  result = jsonschema.validate(data, load_schema())
   vulnerability = vulnerability_pb2.Vulnerability()
   json_format.ParseDict(data, vulnerability, ignore_unknown_fields=True)
   if not vulnerability.id:

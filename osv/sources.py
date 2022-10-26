@@ -53,7 +53,13 @@ def repo_path(repo):
 
 
 class NoDatesSafeLoader(yaml.SafeLoader):
-  """Safe yaml loader that removes datetime autoparsing"""
+  """
+  Safe YAML loader that removes datetime autoparsing
+
+  pyYAML automatically parses date strings into python datetime.datetime, which
+  will cause multiple issues in other parts of the osv library, including
+  automatically failling the json schema verifier.
+  """
 
   @classmethod
   def remove_implicit_resolver(cls, tag_to_remove):
@@ -61,10 +67,6 @@ class NoDatesSafeLoader(yaml.SafeLoader):
     Remove implicit resolvers for a particular tag
 
     Takes care not to modify resolvers in super classes.
-
-    We want to load datetimes as strings, not dates, because we
-    go on to serialise as json which doesn't have the advanced types
-    of yaml, and leads to incompatibilities down the track.
     """
     if 'yaml_implicit_resolvers' not in cls.__dict__:
       cls.yaml_implicit_resolvers = cls.yaml_implicit_resolvers.copy()

@@ -40,6 +40,7 @@ JSON_EXTENSIONS = '.json'
 
 shared_cache = cache.InMemoryCache()
 
+
 def parse_source_id(source_id):
   """Get the source name and id from source_id."""
   return source_id.split(':', 1)
@@ -52,6 +53,8 @@ def repo_path(repo):
 
 
 class NoDatesSafeLoader(yaml.SafeLoader):
+  """Safe yaml loader that removes datetime autoparsing"""
+
   @classmethod
   def remove_implicit_resolver(cls, tag_to_remove):
     """
@@ -63,13 +66,14 @@ class NoDatesSafeLoader(yaml.SafeLoader):
     go on to serialise as json which doesn't have the advanced types
     of yaml, and leads to incompatibilities down the track.
     """
-    if not 'yaml_implicit_resolvers' in cls.__dict__:
+    if 'yaml_implicit_resolvers' not in cls.__dict__:
       cls.yaml_implicit_resolvers = cls.yaml_implicit_resolvers.copy()
 
     for first_letter, mappings in cls.yaml_implicit_resolvers.items():
-      cls.yaml_implicit_resolvers[first_letter] = [(tag, regexp)
-                                                   for tag, regexp in mappings
-                                                   if tag != tag_to_remove]
+      cls.yaml_implicit_resolvers[first_letter] = [
+          (tag, regexp) for tag, regexp in mappings if tag != tag_to_remove
+      ]
+
 
 NoDatesSafeLoader.remove_implicit_resolver('tag:yaml.org,2002:timestamp')
 
@@ -140,7 +144,7 @@ def _get_nested_vulnerability(data, key_path=None):
 def parse_vulnerability_from_dict(data, key_path=None):
   """Parse vulnerability from dict."""
   data = _get_nested_vulnerability(data, key_path)
-  result = jsonschema.validate(data, load_schema())
+  jsonschema.validate(data, load_schema())
   vulnerability = vulnerability_pb2.Vulnerability()
   json_format.ParseDict(data, vulnerability, ignore_unknown_fields=True)
   if not vulnerability.id:

@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-FROM ubuntu:20.04
+FROM ubuntu:22.04
 
 ENV DEBIAN_FRONTEND noninteractive
 RUN apt-get update && apt-get upgrade -y && \
@@ -23,14 +23,9 @@ RUN apt-get update && apt-get upgrade -y && \
         git \
         gnupg-agent \
         python3-pip \
-        software-properties-common
+        software-properties-common \
+	docker.io
 
-
-# Install Docker.
-RUN curl -fsSL https://download.docker.com/linux/ubuntu/gpg | apt-key add - && \
-    add-apt-repository \
-        "deb [arch=amd64] https://download.docker.com/linux/ubuntu bionic stable" && \
-    apt-get install -y docker-ce
 
 # Install gcloud
 RUN echo "deb [signed-by=/usr/share/keyrings/cloud.google.gpg] http://packages.cloud.google.com/apt cloud-sdk main" | tee -a /etc/apt/sources.list.d/google-cloud-sdk.list && \

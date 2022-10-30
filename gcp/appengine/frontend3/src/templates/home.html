@@ -2,10 +2,8 @@
 {% set active_section = 'home' %}
 
 {% block content %}
-<div class="mdc-layout-grid">
-  <div class="mdc-layout-grid__inner home-page">
-    <img class="background-1" src="/static/img/background-1.png">
-    <img class="background-2" src="/static/img/background-2.png">
+<div class="mdc-layout-grid home-page">
+  <div class="mdc-layout-grid__inner">
     <div class="mdc-layout-grid__cell--span-12 hero">
       <h1 class="title">A distributed vulnerability database for Open Source</h1>
       <div class="explainer">
@@ -111,7 +109,7 @@
         <a class="cta-primary link-button" href="https://security.googleblog.com/2021/06/announcing-unified-vulnerability-schema.html">Blog post</a>
       </div>
     </div>
-    <div class="mdc-layout-grid__cell--span-12 text-info">
+    <div class="mdc-layout-grid__cell--span-12 text-info data-sources">
       <h2 class="heading">Data sources</h2>
       <p class="description">
         This infrastructure serves as an aggregator of vulnerability databases
@@ -189,5 +187,6 @@ $GOPATH/bin/osv-scanner --lockfile=package-lock.json
       </div>
     </div>
   </div>
+  <footer></footer>
 </div>
 {% endblock %}

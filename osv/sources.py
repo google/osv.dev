@@ -36,7 +36,7 @@ PUSH_RETRIES = 2
 PUSH_RETRY_SLEEP_SECONDS = 10
 
 YAML_EXTENSIONS = ('.yaml', '.yml')
-JSON_EXTENSIONS = '.json'
+JSON_EXTENSIONS = ('.json',)
 
 shared_cache = cache.InMemoryCache()
 

@@ -30,7 +30,9 @@ RUN apt-get update && apt-get upgrade -y && \
 
 RUN curl -sS https://www.python.org/ftp/python/3.11.0/Python-3.11.0.tgz | tar -C /tmp -xzv && \
     cd /tmp/Python-3.11.0 && \
-    ./configure --enable-optimizations --with-lto --enable-loadable-sqlite-extensions && make && make install && \
+    ./configure --enable-optimizations --with-lto --enable-loadable-sqlite-extensions && \
+    make && \
+    make install && \
     rm -rf /tmp/Python-3.11.0
 RUN pip3 install pipenv
 

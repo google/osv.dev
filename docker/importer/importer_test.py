@@ -218,6 +218,24 @@ class ImporterTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
     ])
 
   @mock.patch('google.cloud.pubsub_v1.PublisherClient.publish')
+  def test_nop(self, mock_publish: mock.MagicMock):
+    """Test deletion."""
+    self.mock_repo.add_file('2021-111.yaml', _EMPTY_VULNERABILITY)
+    self.mock_repo.commit('User', 'user@email')
+
+    repo = pygit2.Repository(self.remote_source_repo_path)
+    synced_commit = repo.head.peel()
+
+    self.source_repo.last_synced_hash = str(synced_commit.id)
+    self.source_repo.put()
+
+    imp = importer.Importer('fake_public_key', 'fake_private_key', self.tmp_dir,
+                            'bucket')
+    imp.run()
+
+    mock_publish.assert_not_called()
+
+  @mock.patch('google.cloud.pubsub_v1.PublisherClient.publish')
   def test_scheduled_updates(self, mock_publish):
     """Test scheduled updates."""
     self.mock_repo.add_file('proj/OSV-2021-1337.yaml', _EMPTY_VULNERABILITY)

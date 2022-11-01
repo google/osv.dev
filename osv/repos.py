@@ -12,13 +12,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Repo functions."""
-import datetime
+
 import logging
 import os
 import shutil
 import subprocess
 import time
-from typing import Optional
 
 import pygit2
 
@@ -82,58 +81,35 @@ def _checkout_branch(repo, branch):
   repo.reset(remote_branch.target, pygit2.GIT_RESET_HARD)
 
 
-def clone(git_url: str,
-          checkout_dir: str,
-          git_callbacks: Optional[datetime.datetime] = None,
-          last_update_date: Optional[datetime.datetime] = None):
-  """
-  Perform a clone.
-
-    :param git_url: git URL
-    :param checkout_dir: checkout directory
-    :param git_callbacks: Used for git to retrieve credentials when pulling.
-      See `GitRemoteCallback`
-    :param last_update_date: Optional python datetime object used to specify
-      the date of the shallow clone.
-  """
-  # Use 'git' CLI here as it's much faster than libgit2's clone.
+def _set_git_callback_env(git_callbacks):
+  """Set the environment variable to set git callbacks for cli git"""
   env = {}
   if git_callbacks:
     env['GIT_SSH_COMMAND'] = (
         f'ssh -i "{git_callbacks.ssh_key_private_path}" '
         f'-o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null '
         f'-o User={git_callbacks.username} -o IdentitiesOnly=yes')
+  return env
 
-  call_args = ['git', 'clone', _git_mirror(git_url), checkout_dir]
-  if last_update_date:
-    # Clone from 1 day prior to be safe and avoid any off by 1 errors
-    shallow_since_date = (last_update_date -
-                          datetime.timedelta(days=1)).strftime('%Y-%m-%d')
-    call_args.extend(['--shallow-since=' + shallow_since_date])
 
-  subprocess.check_call(call_args, env=env, stderr=subprocess.STDOUT)
+def clone(git_url, checkout_dir, git_callbacks=None):
+  """Perform a clone."""
+  # Use 'git' CLI here as it's much faster than libgit2's clone.
+  env = _set_git_callback_env(git_callbacks)
+
+  subprocess.check_call(
+      ['git', 'clone', _git_mirror(git_url), checkout_dir],
+      env=env,
+      stderr=subprocess.STDOUT)
   return pygit2.Repository(checkout_dir)
 
 
-def clone_with_retries(git_url: str,
-                       checkout_dir: str,
-                       last_update_date: Optional[datetime.datetime] = None,
-                       git_callbacks: Optional[datetime.datetime] = None,
-                       branch: Optional[str] = None):
-  """Clone with retries.
-  Number of retries is defined in the CLONE_TRIES constant.
-
-    :param git_url: git URL
-    :param checkout_dir: checkout directory
-    :param git_callbacks: Used for git to retrieve credentials when pulling.
-      See `GitRemoteCallback`
-    :param last_update_date: Optional python datetime object used to specify
-      the date of the shallow clone.
-  """
+def clone_with_retries(git_url, checkout_dir, git_callbacks=None, branch=None):
+  """Clone with retries."""
   logging.info('Cloning %s to %s', git_url, checkout_dir)
   for _ in range(CLONE_TRIES):
     try:
-      repo = clone(git_url, checkout_dir, git_callbacks, last_update_date)
+      repo = clone(git_url, checkout_dir, git_callbacks)
       repo.cache = {}
       if branch:
         _checkout_branch(repo, branch)
@@ -165,22 +141,11 @@ def _use_existing_checkout(git_url,
   return repo
 
 
-def ensure_updated_checkout(
-    git_url: str,
-    checkout_dir: str,
-    last_update_date: Optional[datetime.datetime] = None,
-    git_callbacks: Optional[pygit2.RemoteCallbacks] = None,
-    branch: Optional[str] = None):
-  """Ensure updated checkout.
-
-    :param git_url: git URL
-    :param checkout_dir: checkout directory
-    :param git_callbacks: Used for git to retrieve credentials when pulling.
-      See `GitRemoteCallback`
-    :param last_update_date: Optional python datetime object used to specify
-      the date of the shallow clone. If the repository already exists, this
-      argument will be ignored, and new commits pulled down.
-    """
+def ensure_updated_checkout(git_url,
+                            checkout_dir,
+                            git_callbacks=None,
+                            branch=None):
+  """Ensure updated checkout."""
   if os.path.exists(checkout_dir):
     # Already exists, reset and checkout latest revision.
     try:
@@ -192,19 +157,18 @@ def ensure_updated_checkout(
       shutil.rmtree(checkout_dir)
 
   repo = clone_with_retries(
-      git_url,
-      checkout_dir,
-      last_update_date,
-      git_callbacks=git_callbacks,
-      branch=branch)
-
+      git_url, checkout_dir, git_callbacks=git_callbacks, branch=branch)
   logging.info('Repo now at: %s', repo.head.peel().message)
   return repo
 
 
 def reset_repo(repo, git_callbacks):
   """Reset repo."""
-  repo.remotes['origin'].fetch(callbacks=git_callbacks)
+  env = _set_git_callback_env(git_callbacks)
+  # Use git cli instead of pygit2 for performance
+  subprocess.check_call(['git', 'fetch', 'origin'], cwd=repo.workdir, env=env)
+  # Pygit2 equivalent of above call
+  # repo.remotes['origin'].fetch(callbacks=git_callbacks)
   remote_branch = repo.lookup_branch(
       repo.head.name.replace('refs/heads/', 'origin/'),
       pygit2.GIT_BRANCH_REMOTE)

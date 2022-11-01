@@ -56,9 +56,9 @@ class NoDatesSafeLoader(yaml.SafeLoader):
   """
   Safe YAML loader that removes datetime autoparsing
 
-  pyYAML automatically parses date strings into python datetime.datetime, which
+  PyYAML automatically parses date strings into Python datetime.datetime, which
   will cause multiple issues in other parts of the osv library, including
-  automatically failling the json schema verifier.
+  automatically failing the json schema verifier.
   """
 
   @classmethod

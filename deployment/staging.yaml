@@ -18,7 +18,7 @@ steps:
 - name: 'gcr.io/oss-vdb/ci'
   args: ['make', 'all-tests']
 - name: 'gcr.io/cloud-builders/git'
-  args: ['git', 'clean', '-fdx']
+  args: ['clean', '-fdx']
 - name: 'gcr.io/cloud-builders/gcloud'
   entrypoint: 'bash'
   args: [ '-c', "gcloud secrets versions access latest --secret=integration-test-account --format='get(payload.data)' | tr '_-' '/+' | base64 -d > /workspace/service_account.json" ]

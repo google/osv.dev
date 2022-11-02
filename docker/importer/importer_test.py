@@ -36,6 +36,11 @@ _MIN_VALID_VULNERABILITY = '''{
    "schema_version":"1.3.0",
 }'''
 
+_MIN_INVALID_VULNERABILITY = '''{
+   "id":"OSV-2017-145",
+   "schema_version":"1.3.0",
+}'''
+
 
 @mock.patch('importer.utcnow', lambda: datetime.datetime(2021, 1, 1))
 class ImporterTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
@@ -222,6 +227,22 @@ class ImporterTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
     ])
 
   @mock.patch('google.cloud.pubsub_v1.PublisherClient.publish')
+  def test_invalid(self, mock_publish: mock.MagicMock):
+    """Test invalid entries behaves correctly."""
+    self.mock_repo.add_file('2021-111.yaml', _MIN_INVALID_VULNERABILITY)
+    self.mock_repo.commit('User', 'user@email')
+
+    imp = importer.Importer('fake_public_key', 'fake_private_key', self.tmp_dir,
+                            'bucket')
+    imp.run()
+
+    mock_publish.assert_not_called()
+    bucket = self.mock_storage_client().bucket(importer._PUBLIC_LOGGING_BUCKET)
+    expected_log = bucket.blob().upload_from_string.call_args[0][0]
+    self.assertIn('Failed to parse vulnerability',
+                  expected_log)
+
+  @mock.patch('google.cloud.pubsub_v1.PublisherClient.publish')
   def test_nop(self, mock_publish: mock.MagicMock):
     """Test deletion."""
     self.mock_repo.add_file('2021-111.yaml', _MIN_VALID_VULNERABILITY)
@@ -395,8 +416,10 @@ class BucketImporterTest(unittest.TestCase):
   def tearDown(self):
     shutil.rmtree(self.tmp_dir, ignore_errors=True)
 
+  @mock.patch('google.cloud.storage.Blob.upload_from_string')
   @mock.patch('google.cloud.pubsub_v1.PublisherClient.publish')
-  def test_bucket(self, mock_publish: mock.MagicMock):
+  def test_bucket(self, mock_publish: mock.MagicMock,
+                  upload_from_str: mock.MagicMock):
     """Test bucket updates."""
 
     imp = importer.Importer('fake_public_key', 'fake_private_key', self.tmp_dir,
@@ -404,6 +427,15 @@ class BucketImporterTest(unittest.TestCase):
 
     imp.run()
     mock_publish.assert_has_calls([
+        mock.call(
+            'projects/oss-vdb/topics/tasks',
+            data=b'',
+            type='update',
+            source='bucket',
+            path='a/b/android-test.json',
+            original_sha256=('12453f85cd87bc1d465e0d013db572c0'
+                             '1f7fb7de3b3a33de94ebcc7bd0f23a14'),
+            deleted='false'),
         mock.call(
             'projects/oss-vdb/topics/tasks',
             data=b'',
@@ -426,8 +458,24 @@ class BucketImporterTest(unittest.TestCase):
         deleted='false')
     assert dsa_call not in mock_publish.mock_calls
 
+    # Test invalid entry is not published
+    invalid_call = mock.call(
+        'projects/oss-vdb/topics/tasks',
+        data=b'',
+        type='update',
+        source='bucket',
+        path='a/b/test-invalid.json',
+        original_sha256=mock.ANY,
+        deleted=mock.ANY)
+    assert invalid_call not in mock_publish.mock_calls
+    # Check if uploaded log str has the failed to parse vuln
+    any('Failed to parse vulnerability "a/b/test-invalid.json"' in x[0][0]
+        for x in upload_from_str.call_args_list)
+
+  @mock.patch('google.cloud.storage.Blob.upload_from_string')
   @mock.patch('google.cloud.pubsub_v1.PublisherClient.publish')
-  def test_import_override(self, mock_publish: mock.MagicMock):
+  def test_import_override(self, mock_publish: mock.MagicMock,
+                           upload_from_str: mock.MagicMock):
     """Test bucket updates."""
 
     self.source_repo.ignore_last_import_time = True
@@ -463,6 +511,9 @@ class BucketImporterTest(unittest.TestCase):
         original_sha256=mock.ANY,
         deleted='false')
     assert dsa_call not in mock_publish.mock_calls
+    # Check if uploaded log str has the failed to parse vuln
+    any('Failed to parse vulnerability "a/b/test-invalid.json"' in x[0][0]
+        for x in upload_from_str.call_args_list)
 
 
 if __name__ == '__main__':

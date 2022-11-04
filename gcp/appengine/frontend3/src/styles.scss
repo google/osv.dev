@@ -6,6 +6,7 @@ $osv-accent-color: #c5221f;
 $osv-accent-color-hover: #c5221fb2;
 $osv-red-300: #ec928e;
 $osv-grey-600: #80868b;
+$osv-grey-800: #3C4043;
 $osv-body-font-family: string.unquote('Overpass, sans-serif');
 $osv-heading-font-family: string.unquote('"Overpass Mono", monospace');
 $osv-heading-size: 60px;
@@ -199,7 +200,7 @@ pre {
         filter: invert(100%);
       }
     }
-  
+
     .ecosystem-label {
       display: flex;
       gap: 16px;
@@ -207,7 +208,7 @@ pre {
       padding: 10px 20px;
       background: #696969;
       border-radius: 999px;
-  
+
       .ecosystem-count {
         font-weight: bold;
       }
@@ -219,12 +220,12 @@ pre {
       height: 30px;
       border-right: 1px solid $osv-grey-600;
     }
-  
+
     input[type=radio]:checked + .ecosystem-label {
       background: $osv-text-color;
       color: $osv-accent-color;
     }
-  
+
     input[type=radio] {
       display: none;
     }
@@ -444,7 +445,7 @@ dl.vulnerability-details,
 
   dd.details {
     overflow-wrap: break-word;
-    
+
     h1, h2, h3, h4 {
       font-family: $osv-body-font-family;
       font-weight: bold;
@@ -529,7 +530,7 @@ dl.vulnerability-details,
     font-size: 14px;
     padding: 16px;
   }
-  
+
   h3 {
     font-family: $osv-body-font-family;
     font-weight: bold;
@@ -651,7 +652,7 @@ dl.vulnerability-details,
   [role="tabpanel"] {
     border-top: 1px dashed #fff;
   }
-  
+
   .vulnerability-package-subsection {
     padding: 14px 0;
     border-bottom: 1px dashed #fff;
@@ -660,43 +661,25 @@ dl.vulnerability-details,
 
 /** Home page */
 
+.wrapper.decorated {
+  background: url('/static/img/background-1.png');
+  background-repeat: no-repeat;
+  background-position: calc(50% - 70px) top;
+}
+
+.mdc-layout-grid.home-page {
+  padding: 0;
+}
+
 .home-page {
-  .background-1 {
-    position: fixed;
-    top: -60px;
-    left: -210px;
-    z-index: -100;
-    width: 2000px;
-    max-width: 2000px;
-    opacity: 50%;
-  }
 
-  @media (max-width: $osv-mobile-breakpoint) {
-    .background-1 {
-      left: -400px;
-      opacity: 40%;
-    }
-  }
-
-  .background-2 {
-    position: fixed;
-    bottom: -100px;
-    right: -100px;
-    z-index: -100;
-    width: 800px;
-    max-width: 800px;
-    opacity: 50%;
-  }
-
-  @media (max-width: $osv-mobile-breakpoint) {
-    .background-2 {
-      display: none;
-    }
+  .mdc-layout-grid__cell--span-12 {
+    margin: 0 24px;
   }
 
   .hero {
     max-width: 1000px;
-    margin: 0 auto;
+    margin: 79px auto 0 auto;
     text-align: center;
 
     .cta {
@@ -732,6 +715,8 @@ dl.vulnerability-details,
   .ecosystems-section {
     $ecosystem-name-height: 30px;
     $ecosystem-count-wrapper-height: 210px;
+    margin-left: 0;
+    margin-right: 0;
     margin-top: 100px;
 
     .ecosystem-counts-wrapper {
@@ -834,10 +819,15 @@ dl.vulnerability-details,
         }
       }
     }
+
+    .heading {
+      margin-left: 24px;
+    }
+
   }
 
   .text-info {
-    max-width: 800px;
+    max-width: 900px;
     margin: 100px auto 0;
 
     .heading {
@@ -872,9 +862,17 @@ dl.vulnerability-details,
     }
   }
 
+  .data-sources {
+    background: url('/static/img/background-2.png');
+    background-position: calc(50% - 70px) top;
+    background-repeat: no-repeat;
+    margin-top: 0;
+    padding-top: 205px;
+  }
+
   .usage-examples {
     margin-top: 100px;
-    margin-bottom: 120px;
+
     .heading {
       font-size: $osv-heading-size;
       text-align: center;
@@ -944,7 +942,7 @@ dl.vulnerability-details,
 
   .open-source-banner {
     max-width: 640px;
-    margin: 0 auto;
+    margin: 100px auto 0 auto;
 
     .heading {
       font-size: $osv-heading-size;
@@ -971,6 +969,13 @@ dl.vulnerability-details,
       gap: 4px;
     }
   }
+
+  footer {
+    background: url('/static/img/footer-decoration.png');
+    background-repeat: no-repeat;
+    background-position: center;
+    min-height: 500px;
+  }
 }
 
 .about-page {
@@ -994,7 +999,7 @@ dl.vulnerability-details,
   }
 
   .questions {
-    max-width: 800px;
+    width: 800px;
     margin: 0 auto;
 
     --const-mq-affordances:
@@ -1003,10 +1008,15 @@ dl.vulnerability-details,
 
     .question {
       border-top: 1px dotted #a0a0a0;
-      padding: 20px 0;
+      cursor: pointer;
+      padding: 20px 10px;
       font-family: $osv-body-font-family;
       font-size: 20px;
       font-weight: bold;
+
+      &:hover {
+        background-color: $osv-grey-800;
+      }
     }
 
     [affordance=collapse] {
@@ -1021,6 +1031,7 @@ dl.vulnerability-details,
     .answer {
       margin-left: 20px;
       padding-bottom: 20px;
+      padding-top: 20px;
       font-size: 16px;
 
       p {
@@ -1033,4 +1044,5 @@ dl.vulnerability-details,
     }
   }
 }
+
 

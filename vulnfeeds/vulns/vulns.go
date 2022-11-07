@@ -15,6 +15,7 @@
 package vulns
 
 import (
+	"encoding/json"
 	"fmt"
 	"io"
 	"net/url"
@@ -34,12 +35,12 @@ type Event struct {
 
 type Affected struct {
 	Package struct {
-		Name      string `json:"name" yaml:"name"`
-		Ecosystem string `json:"ecosystem" yaml:"ecosystem"`
+		Name      string `json:"name,omitempty" yaml:"name"`
+		Ecosystem string `json:"ecosystem,omitempty" yaml:"ecosystem"`
 		Purl      string `json:"purl,omitempty" yaml:"purl,omitempty"`
 	} `json:"package"`
 	Ranges   []AffectedRange `json:"ranges" yaml:"ranges"`
-	Versions []string        `json:"versions" yaml:"versions,omitempty"`
+	Versions []string        `json:"versions,omitempty" yaml:"versions,omitempty"`
 }
 
 type AffectedRange struct {
@@ -73,7 +74,24 @@ func timestampToRFC3339(timestamp string) (string, error) {
 	return t.Format(time.RFC3339), nil
 }
 
-func ClassifyReferenceLink(link string) string {
+// For a given URL, infer the OSV schema's reference type of it.
+// See https://ossf.github.io/osv-schema/#references-field
+// Uses the tags first before resorting to inference by shape.
+
+func ClassifyReferenceLink(link string, tag string) string {
+	switch tag {
+	case "Patch":
+		return "FIX"
+	case "Exploit":
+		return "EVIDENCE"
+	case "Mailing List":
+		return "ARTICLE"
+	case "Issue Tracking":
+		return "REPORT"
+	case "Vendor Advisory", "Third Party Avisory", "VDB Entry":
+		return "ADVISORY"
+	}
+
 	u, err := url.Parse(link)
 	if err != nil {
 		return "WEB"
@@ -238,6 +256,39 @@ type PackageInfo struct {
 	Repo         string `json:"repo"`
 }
 
+func unique[T comparable](s []T) []T {
+	inResult := make(map[T]bool)
+	var result []T
+	for _, str := range s {
+		if _, ok := inResult[str]; !ok {
+			inResult[str] = true
+			result = append(result, str)
+		}
+	}
+	return result
+}
+
+// Annotates reference links based on their tags or the shape of them.
+func ClassifyReferences(refs cves.CVEReferences) []Reference {
+	references := []Reference{}
+	for _, reference := range refs.ReferenceData {
+		if len(reference.Tags) > 0 {
+			for _, tag := range reference.Tags {
+				references = append(references, Reference{
+					Type: ClassifyReferenceLink(reference.URL, tag),
+					URL:  reference.URL,
+				})
+			}
+		} else {
+			references = append(references, Reference{
+				Type: ClassifyReferenceLink(reference.URL, ""),
+				URL:  reference.URL,
+			})
+		}
+	}
+	return unique(references)
+}
+
 // FromCVE creates a bare minimum OSV object from a given CVEItem and id.
 // Leaves affected and version fields empty to be filled in later with AddPkgInfo
 func FromCVE(id string, cve cves.CVEItem) (*Vulnerability, []string) {
@@ -258,12 +309,7 @@ func FromCVE(id string, cve cves.CVEItem) (*Vulnerability, []string) {
 		notes = append(notes, fmt.Sprintf("Failed to parse modified date: %v\n", err))
 	}
 
-	for _, reference := range cve.CVE.References.ReferenceData {
-		v.References = append(v.References, Reference{
-			Type: ClassifyReferenceLink(reference.URL),
-			URL:  reference.URL,
-		})
-	}
+	v.References = ClassifyReferences(cve.CVE.References)
 	return &v, notes
 }
 
@@ -346,7 +392,9 @@ func (affected *Affected) AttachExtractedVersionInfo(version cves.VersionInfo) {
 			seenFixed[v.Fixed] = true
 		}
 	}
-	affected.Ranges = append(affected.Ranges, versionRange)
+	if len(version.AffectedVersions) > 0 {
+		affected.Ranges = append(affected.Ranges, versionRange)
+	}
 }
 
 func FromYAML(r io.Reader) (*Vulnerability, error) {
@@ -362,5 +410,21 @@ func FromYAML(r io.Reader) (*Vulnerability, error) {
 
 func (v *Vulnerability) ToYAML(w io.Writer) error {
 	encoder := yaml.NewEncoder(w)
+	return encoder.Encode(v)
+}
+
+func FromJSON(r io.Reader) (*Vulnerability, error) {
+	decoder := json.NewDecoder(r)
+	var vuln Vulnerability
+	err := decoder.Decode(&vuln)
+	if err != nil {
+		return nil, err
+	}
+
+	return &vuln, nil
+}
+
+func (v *Vulnerability) ToJSON(w io.Writer) error {
+	encoder := json.NewEncoder(w)
 	return encoder.Encode(v)
 }

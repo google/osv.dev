@@ -646,6 +646,8 @@ def main():
   if args.redis_host:
     osv.ecosystems.set_cache(RedisCache(args.redis_host, args.redis_port))
 
+  osv.ecosystems.work_dir = args.work_dir
+
   # Work around kernel bug: https://gvisor.dev/issue/1765
   resource.setrlimit(resource.RLIMIT_MEMLOCK,
                      (resource.RLIM_INFINITY, resource.RLIM_INFINITY))

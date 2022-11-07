@@ -19,6 +19,7 @@ from unittest import mock
 
 import requests
 
+from . import repos
 from . import cache
 from . import ecosystems
 
@@ -103,28 +104,55 @@ class GetNextVersionTest(unittest.TestCase):
     with self.assertRaises(ecosystems.EnumerateError):
       ecosystem.next_version('doesnotexist123456', '1')
 
+  @mock.patch(
+      'osv.request_helper.requests.Session.get',
+      side_effect=requests.Session.get,
+      autospec=True)
   @mock.patch('osv.debian_version_cache.requests.get', side_effect=requests.get)
-  def test_debian(self, requests_mock: mock.MagicMock):
-    """Test Debian"""
+  def test_debian(self, first_ver_requests_mock: mock.MagicMock,
+                  general_requests_mock: mock.MagicMock):
+    """Test Debian ecosystem enumeration and caching behaviour"""
+    in_memory_cache = cache.InMemoryCache()
+    ecosystems.set_cache(in_memory_cache)
     ecosystem = ecosystems.get('Debian:9')
+
+    # Tests that next version and version enumeration generally works
     self.assertEqual('1.13.6-1', ecosystem.next_version('nginx', '1.13.5-1'))
     self.assertEqual('1.13.6-2', ecosystem.next_version('nginx', '1.13.6-1'))
     self.assertEqual('3.0.1+dfsg-2',
                      ecosystem.next_version('blender', '3.0.1+dfsg-1'))
 
+    # Tests that sort key works
     self.assertGreater(
         ecosystem.sort_key('1.13.6-2'), ecosystem.sort_key('1.13.6-1'))
 
+    # Test that <end-of-life> specifically is greater than normal versions
     self.assertGreater(
         ecosystem.sort_key('<end-of-life>'), ecosystem.sort_key('1.13.6-1'))
 
+    # Test that end-of-life enumeration is disabled
     self.assertEqual(
         ecosystem.enumerate_versions('nginx', '0', '<end-of-life>'), [])
-    # Test Ecosystem remover
+
+    # Calls for first_version to the same ecosystem should be cached
+    self.assertEqual(first_ver_requests_mock.call_count, 1)
+    ecosystem.enumerate_versions('htop', '0')
+
+    self.assertEqual(first_ver_requests_mock.call_count, 1)
+
+    # Now start testing that Debian:10 contains different versions compared to 9
     ecosystem = ecosystems.get('Debian:10')
+
+    # Called 2 times so far, once for nginx, once for blender.
+    self.assertEqual(general_requests_mock.call_count, 3)
     # '0' as introduced version also tests the get_first_package_version func
     versions = ecosystem.enumerate_versions('cyrus-sasl2', '0', None)
-    self.assertEqual(requests_mock.call_count, 2)
+    self.assertEqual(general_requests_mock.call_count, 4)
+
+    # new ecosystem, first version requests increase by 1
+    self.assertEqual(first_ver_requests_mock.call_count, 2)
+
+    # Check that only deb10 versions are in Debian:10, and no deb9 versions
     self.assertIn('2.1.27+dfsg-1+deb10u1', versions)
     self.assertNotIn('2.1.27~101-g0780600+dfsg-3+deb9u1', versions)
     self.assertNotIn('2.1.27~101-g0780600+dfsg-3+deb9u2', versions)
@@ -132,9 +160,40 @@ class GetNextVersionTest(unittest.TestCase):
     with self.assertRaises(ecosystems.EnumerateError):
       ecosystem.next_version('doesnotexist123456', '1')
 
+    self.assertEqual(general_requests_mock.call_count, 5)
+
     # This should now only call the cache, and not requests.get
     ecosystem.enumerate_versions('cyrus-sasl2', '0', None)
-    self.assertEqual(requests_mock.call_count, 2)
+    self.assertEqual(first_ver_requests_mock.call_count, 2)
+    self.assertEqual(general_requests_mock.call_count, 5)
+    ecosystems.set_cache(None)
+
+  @mock.patch(
+      'osv.repos.ensure_updated_checkout',
+      side_effect=repos.ensure_updated_checkout)
+  def test_alpine(self, ensure_updated_checkout_mock: mock.MagicMock):
+    """Test Alpine ecosystem enumeration and caching behaviour"""
+    in_memory_cache = cache.InMemoryCache()
+    ecosystems.set_cache(in_memory_cache)
+
+    # Set work_dir to allow cloning/fetching
+    ecosystems.work_dir = self._TEST_DATA_DIR
+    ecosystem = ecosystems.get('Alpine:v3.16')
+    self.assertEqual(ensure_updated_checkout_mock.call_count, 0)
+    # Tests that next version and version enumeration generally works
+    self.assertEqual('1.14.0', ecosystem.next_version('nginx', '1.12.2'))
+    self.assertEqual(ensure_updated_checkout_mock.call_count, 1)
+    self.assertEqual('1.16.1', ecosystem.next_version('nginx', '1.16.0'))
+    # Second call should use cache, so call count should not increase
+    self.assertEqual(ensure_updated_checkout_mock.call_count, 1)
+
+    # Check letter suffixes clone correctly
+    self.assertEqual('2.78c', ecosystem.next_version('blender', '2.78a'))
+
+    self.assertGreater(
+        ecosystem.sort_key('1.13.2'), ecosystem.sort_key('1.13.2_alpha'))
+
+    ecosystems.set_cache(None)
 
   def test_packagist(self):
     """Test Packagist."""

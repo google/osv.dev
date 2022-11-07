@@ -81,15 +81,21 @@ def _checkout_branch(repo, branch):
   repo.reset(remote_branch.target, pygit2.GIT_RESET_HARD)
 
 
-def clone(git_url, checkout_dir, git_callbacks=None):
-  """Perform a clone."""
-  # Use 'git' CLI here as it's much faster than libgit2's clone.
+def _set_git_callback_env(git_callbacks):
+  """Set the environment variable to set git callbacks for cli git"""
   env = {}
   if git_callbacks:
     env['GIT_SSH_COMMAND'] = (
         f'ssh -i "{git_callbacks.ssh_key_private_path}" '
         f'-o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null '
         f'-o User={git_callbacks.username} -o IdentitiesOnly=yes')
+  return env
+
+
+def clone(git_url, checkout_dir, git_callbacks=None):
+  """Perform a clone."""
+  # Use 'git' CLI here as it's much faster than libgit2's clone.
+  env = _set_git_callback_env(git_callbacks)
 
   subprocess.check_call(
       ['git', 'clone', _git_mirror(git_url), checkout_dir],
@@ -158,7 +164,11 @@ def ensure_updated_checkout(git_url,
 
 def reset_repo(repo, git_callbacks):
   """Reset repo."""
-  repo.remotes['origin'].fetch(callbacks=git_callbacks)
+  env = _set_git_callback_env(git_callbacks)
+  # Use git cli instead of pygit2 for performance
+  subprocess.check_call(['git', 'fetch', 'origin'], cwd=repo.workdir, env=env)
+  # Pygit2 equivalent of above call
+  # repo.remotes['origin'].fetch(callbacks=git_callbacks)
   remote_branch = repo.lookup_branch(
       repo.head.name.replace('refs/heads/', 'origin/'),
       pygit2.GIT_BRANCH_REMOTE)

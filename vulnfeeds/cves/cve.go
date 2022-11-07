@@ -14,7 +14,11 @@
 
 package cves
 
-import "time"
+import (
+	"encoding/json"
+	"io"
+	"time"
+)
 
 const (
 	CVETimeFormat = "2006-01-02T15:04Z07:00"
@@ -24,20 +28,23 @@ type CVE struct {
 	CVEDataMeta struct {
 		ID string
 	} `json:"CVE_data_meta"`
-	References struct {
-		ReferenceData []struct {
-			URL       string   `json:"url"`
-			Name      string   `json:"name"`
-			RefSource string   `json:"refsource"`
-			Tags      []string `json:"tags"`
-		} `json:"reference_data"`
-	} `json:"references"`
+	References  CVEReferences `json:"references"`
 	Description struct {
 		DescriptionData []struct {
 			Lang  string `json:"lang"`
 			Value string `json:"value"`
 		} `json:"description_data"`
 	} `json:"description"`
+}
+type CVEReferenceData struct {
+	URL       string   `json:"url"`
+	Name      string   `json:"name"`
+	RefSource string   `json:"refsource"`
+	Tags      []string `json:"tags"`
+}
+
+type CVEReferences struct {
+	ReferenceData []CVEReferenceData `json:"reference_data"`
 }
 
 type CVEItem struct {
@@ -69,6 +76,21 @@ type CVEItem struct {
 type NVDCVE struct {
 	CVEItems         []CVEItem `json:"CVE_Items"`
 	CVEDataTimestamp string    `json:"CVE_data_timestamp"`
+}
+
+type NVDCVE2 struct {
+	ResultsPerPage  *int              `json:"ResultsPerPage"`
+	StartIndex      *int              `json:"StartIndex"`
+	TotalResults    *int              `json:"TotalResults"`
+	Format          *string           `json:"format"`
+	Version         *string           `json:"version"`
+	Timestamp       *string           `json:"timestamp"`
+	Vulnerabilities []json.RawMessage `json:"vulnerabilities"`
+}
+
+func (n *NVDCVE2) ToJSON(w io.Writer) error {
+	encoder := json.NewEncoder(w)
+	return encoder.Encode(n)
 }
 
 func EnglishDescription(cve CVE) string {

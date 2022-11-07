@@ -607,6 +607,8 @@ class UpdateTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
     self.mock_publish = mock_publish.start()
     self.addCleanup(mock_publish.stop)
 
+    osv.ecosystems.work_dir = 'testdata/tmp/'
+
   def tearDown(self):
     self.tmp_dir.cleanup()
 
@@ -1096,6 +1098,45 @@ class UpdateTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
     self.expect_dict_equal(
         'update_debian',
         ndb.Key(osv.Bug, 'source:DSA-3029-1').get()._to_dict())
+
+    self.mock_publish.assert_not_called()
+
+  def test_update_alpine(self):
+    """Test updating debian."""
+    self.source_repo.ignore_git = False
+    self.source_repo.versions_from_repo = False
+    self.source_repo.detect_cherrypicks = False
+    self.source_repo.put()
+
+    self.mock_repo.add_file(
+        'CVE-2022-27449.json',
+        self._load_test_data(
+            os.path.join(TEST_DATA_DIR, 'CVE-2022-27449.json')))
+    self.mock_repo.commit('User', 'user@email')
+    task_runner = worker.TaskRunner(ndb_client, None, self.tmp_dir.name, None,
+                                    None)
+    message = mock.Mock()
+    message.attributes = {
+        'source': 'source',
+        'path': 'CVE-2022-27449.json',
+        'original_sha256': _sha256('CVE-2022-27449.json'),
+        'deleted': 'false',
+    }
+    task_runner._source_update(message)
+
+    repo = pygit2.Repository(self.remote_source_repo_path)
+    commit = repo.head.peel()
+
+    self.assertEqual('infra@osv.dev', commit.author.email)
+    self.assertEqual('OSV', commit.author.name)
+    self.assertEqual('Update CVE-2022-27449', commit.message)
+    diff = repo.diff(commit.parents[0], commit)
+
+    self.expect_equal('diff_alpine', diff.patch)
+
+    self.expect_dict_equal(
+        'update_alpine',
+        ndb.Key(osv.Bug, 'source:CVE-2022-27449').get()._to_dict())
 
     self.mock_publish.assert_not_called()
 

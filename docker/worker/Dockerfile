@@ -18,13 +18,23 @@ ENV DEBIAN_FRONTEND noninteractive
 RUN apt-get update && apt-get upgrade -y && \
     apt-get install -y \
         apt-transport-https \
+        build-essential \
         ca-certificates \
         curl \
         git \
         gnupg-agent \
-        python3-pip \
+        zlib1g-dev \
+        libffi-dev \
+        libssl-dev \
         software-properties-common
 
+RUN curl -sS https://www.python.org/ftp/python/3.11.0/Python-3.11.0.tgz | tar -C /tmp -xzv && \
+    cd /tmp/Python-3.11.0 && \
+    ./configure --enable-optimizations --with-lto --enable-loadable-sqlite-extensions && \
+    make && \
+    make install && \
+    rm -rf /tmp/Python-3.11.0
+RUN pip3 install pipenv
 
 # Install Docker.
 RUN curl -fsSL https://download.docker.com/linux/ubuntu/gpg | apt-key add - && \

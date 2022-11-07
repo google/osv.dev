@@ -17,11 +17,14 @@ cron:
     url: /cron/process-results
     schedule: every day 00:00
     target: cron-service
+    timezone: Australia/NSW
   - description: Make bugs public
     url: /cron/make-bugs-public
     schedule: every day 12:00
     target: cron-service
+    timezone: Australia/NSW
   - description: Backup
     url: /cron/backup
     schedule: every day 18:00
     target: cron-service
+    timezone: Australia/NSW

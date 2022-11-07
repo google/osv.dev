@@ -1,5 +1,5 @@
 #!/bin/bash -x
-# Copyright 2021 Google LLC
+# Copyright 2022 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -16,6 +16,6 @@
 # Build from root context.
 cd ../../
 
-docker build -t gcr.io/oss-vdb/worker:$1 -t gcr.io/oss-vdb/worker:latest -f docker/worker/Dockerfile . && \
-gcloud docker -- push gcr.io/oss-vdb/worker:$1 && \
-gcloud docker -- push gcr.io/oss-vdb/worker:latest
+docker build -t gcr.io/oss-vdb/worker-base:$1 -t gcr.io/oss-vdb/worker-base:latest -f docker/worker-base/Dockerfile . && \
+gcloud docker -- push gcr.io/oss-vdb/worker-base:$1 && \
+gcloud docker -- push gcr.io/oss-vdb/worker-base:latest

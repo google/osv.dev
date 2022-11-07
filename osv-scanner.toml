@@ -1,6 +1,6 @@
 [[IgnoredVulns]]
 id = "GO-2022-0968"
-# ignore_until = 2022-11-09T00:00:00Z
+# ignore_until = 2022-11-09T00:00:00Z # Optional exception expiry date
 reason = "No ssh servers are connected to or hosted in Go lang"
 
 [[IgnoredVulns]]

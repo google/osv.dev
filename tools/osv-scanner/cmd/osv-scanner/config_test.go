@@ -51,13 +51,16 @@ func TestTryLoadConfig(t *testing.T) {
 
 	for _, elem := range configMap {
 		cmp.Equal(elem, Config{
-			IgnoredVulnIds: []string{
-				"GO-2022-0968",
-				"GO-2022-1059",
+			IgnoredVulns: []IgnoreLine{
+				{
+					Id: "GO-2022-0968",
+				},
+				{
+					Id: "GO-2022-1059",
+				},
 			},
 		})
 	}
-
 }
 
 func TestTryLoadConfigFail(t *testing.T) {
@@ -98,7 +101,7 @@ func TestTryLoadConfigFail(t *testing.T) {
 
 	for _, elem := range configMap {
 		cmp.Equal(elem, Config{
-			IgnoredVulnIds: []string{},
+			IgnoredVulns: []IgnoreLine{},
 		})
 	}
 

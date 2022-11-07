@@ -21,7 +21,7 @@ import (
 
 const osvScannerConfigName = "osv-scanner.toml"
 
-var globalConfig *Config
+var ignoreOverride *Config
 
 // scanDir walks through the given directory to try to find any relevant files
 // These include:
@@ -29,6 +29,11 @@ var globalConfig *Config
 //   - Any SBOM files with scanSBOMFile
 //   - Any git repositories with scanGit
 func scanDir(query *osv.BatchedQuery, dir string, skipGit bool, configMap map[string]Config) error {
+	configPath, configErr := TryLoadConfig(dir, configMap)
+	if configErr != nil {
+		log.Printf("With config located at %s", configPath)
+	}
+
 	return filepath.Walk(dir, func(path string, info os.FileInfo, err error) error {
 		if err != nil {
 			log.Printf("Failed to walk %s: %v", path, err)
@@ -218,7 +223,7 @@ func filterResponse(query osv.BatchedQuery, resp *osv.BatchedResponse, globalCon
 		}
 		if configToUse != nil {
 			for _, vuln := range result.Vulns {
-				if slices.Contains(configToUse.IgnoredVulnIds, vuln.ID) {
+				if slices.IndexFunc(configToUse.IgnoredVulns, func(elem IgnoreLine) bool { return elem.Id == vuln.ID }) != -1 {
 					hiddenVulns[vuln.ID] = struct{}{}
 				} else {
 					filteredVulns = append(filteredVulns, vuln)
@@ -281,7 +286,7 @@ func main() {
 			if configPath != "" {
 				config := Config{}
 				_, err := toml.DecodeFile(configPath, &config)
-				globalConfig = &config
+				ignoreOverride = &config
 				if err != nil {
 					log.Fatalf("Failed to read config file: %s\n", err)
 				}
@@ -347,7 +352,7 @@ func main() {
 		log.Fatalf("Scan failed: %v", err)
 	}
 
-	filtered := filterResponse(query, resp, globalConfig, configMap)
+	filtered := filterResponse(query, resp, ignoreOverride, configMap)
 	if filtered > 0 {
 		log.Printf("Filtered %d vulnerabilities from output", filtered)
 	}

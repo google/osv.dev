@@ -4,7 +4,7 @@ import (
 	"log"
 	"os"
 	"path/filepath"
-	"strings"
+	"time"
 
 	"github.com/BurntSushi/toml"
 )
@@ -17,7 +17,13 @@ const (
 )
 
 type Config struct {
-	IgnoredVulnIds []string
+	IgnoredVulns []IgnoreLine
+}
+
+type IgnoreLine struct {
+	Id          string
+	Valid_until time.Time
+	Reason      string
 }
 
 type LoadConfigError struct {
@@ -35,11 +41,11 @@ func (e LoadConfigError) Error() string {
 	panic("Invalid error type")
 }
 
-// TryLoadConfig tries to load config in `target` or any of it's parent dirs
+// TryLoadConfig tries to load config in `target` (or it's containing directory)
 // `target` will be the key for the entry in configMap
 // Will shortcut and return "" if globalConfig is not nil
 func TryLoadConfig(target string, configMap map[string]Config) (string, error) {
-	if globalConfig != nil {
+	if ignoreOverride != nil {
 		return "", LoadConfigError{targetPath: target, errorType: GlobalConfigSet}
 	}
 	stat, err := os.Stat(target)
@@ -47,25 +53,23 @@ func TryLoadConfig(target string, configMap map[string]Config) (string, error) {
 		log.Fatalf("Failed to stat target: %s", err)
 	}
 
-	if stat.IsDir() && !strings.HasSuffix(target, string(filepath.Separator)) {
-		// Make sure directories ends with '/'
-		target += string(filepath.Separator)
+	var containingFolder string
+	if !stat.IsDir() {
+		containingFolder = filepath.Dir(target)
+	} else {
+		containingFolder = target
 	}
 
-	currentDir := target
-	for currentDir != "/" {
-		currentDir = filepath.Dir(currentDir)
-		fileToRead := filepath.Join(currentDir, osvScannerConfigName)
-		configFile, err := os.Open(fileToRead)
-		var config Config
-		if err == nil { // File exists, and we have permission to read
-			_, err := toml.NewDecoder(configFile).Decode(&config)
-			if err != nil {
-				log.Fatalf("Failed to read config file: %s\n", err)
-			}
-			configMap[target] = config
-			return fileToRead, nil
+	configFile, err := os.Open(filepath.Join(containingFolder, osvScannerConfigName))
+	var config Config
+	if err == nil { // File exists, and we have permission to read
+		_, err := toml.NewDecoder(configFile).Decode(&config)
+		if err != nil {
+			log.Fatalf("Failed to read config file: %s\n", err)
 		}
+		configMap[target] = config
+		return containingFolder, nil
 	}
+
 	return "", LoadConfigError{targetPath: target, errorType: NoConfigFound}
 }

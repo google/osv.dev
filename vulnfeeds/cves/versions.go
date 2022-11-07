@@ -52,7 +52,7 @@ type CPE struct {
 	Other      string
 }
 
-func extractGitHubCommit(link string) *FixCommit {
+func extractGitCommit(link string) *FixCommit {
 	// Example: https://github.com/google/osv/commit/cd4e934d0527e5010e373e7fed54ef5daefba2f5
 	u, err := url.Parse(link)
 	if err != nil {
@@ -179,7 +179,7 @@ func ExtractVersionInfo(cve CVEItem, validVersions []string) (VersionInfo, []str
 	v := VersionInfo{}
 	for _, reference := range cve.CVE.References.ReferenceData {
 		// TODO(ochang): Support other common commit URLs.
-		if commit := extractGitHubCommit(reference.URL); commit != nil {
+		if commit := extractGitCommit(reference.URL); commit != nil {
 			v.FixCommits = append(v.FixCommits, *commit)
 		}
 	}

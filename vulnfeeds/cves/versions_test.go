@@ -42,7 +42,7 @@ func TestParseCPE(t *testing.T) {
 	}
 }
 
-func TestExtractGitHubCommit(t *testing.T) {
+func TestExtractGitCommit(t *testing.T) {
 	tests := []struct {
 		description       string
 		inputLink         string
@@ -79,9 +79,9 @@ func TestExtractGitHubCommit(t *testing.T) {
 	}
 
 	for _, tc := range tests {
-		got := extractGitHubCommit(tc.inputLink)
+		got := extractGitCommit(tc.inputLink)
 		if !reflect.DeepEqual(got, tc.expectedFixCommit) {
-			t.Errorf("test %q: extractGitHubCommit for %q was incorrect, got: %#v, expected: %#v", tc.description, tc.inputLink, got, tc.expectedFixCommit)
+			t.Errorf("test %q: extractGitCommit for %q was incorrect, got: %#v, expected: %#v", tc.description, tc.inputLink, got, tc.expectedFixCommit)
 		}
 	}
 }

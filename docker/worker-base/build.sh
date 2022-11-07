@@ -1,4 +1,5 @@
-# Copyright 2021 Google LLC
+#!/bin/bash -x
+# Copyright 2022 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -12,14 +13,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-FROM python:3.11-slim
+# Build from root context.
+cd ../../
 
-# TODO(ochang): Just copy the entire project (needs a clean checkout).
-COPY setup.py Pipfile* README.md /osv/
-COPY osv /osv/osv
-COPY gcp/api /osv/gcp/api
-
-WORKDIR /osv/gcp/api
-RUN pip3 install -U pipenv && python3 -m pipenv install --deploy --system
-
-ENTRYPOINT ["python", "/osv/gcp/api/server.py"]
+docker build -t gcr.io/oss-vdb/worker-base:$1 -t gcr.io/oss-vdb/worker-base:latest -f docker/worker-base/Dockerfile . && \
+gcloud docker -- push gcr.io/oss-vdb/worker-base:$1 && \
+gcloud docker -- push gcr.io/oss-vdb/worker-base:latest

@@ -18,6 +18,7 @@ import (
 	"fmt"
 	"log"
 	"net/url"
+	"path"
 	"regexp"
 	"strings"
 )
@@ -52,35 +53,115 @@ type CPE struct {
 	Other      string
 }
 
+// Returns the base repository URL for supported repository hosts.
+func repo(u string) (string, bool) {
+	parsedURL, err := url.Parse(u)
+	if err != nil {
+		log.Printf("%+v", err)
+		return "", false
+	}
+
+	// GitWeb URLs are structured another way, e.g.
+	// https://git.dpkg.org/cgit/dpkg/dpkg.git/commit/?id=faa4c92debe45412bfcf8a44f26e827800bb24be
+	// https://git.kernel.org/cgit/linux/kernel/git/torvalds/linux.git/commit/?id=817b8b9c5396d2b2d92311b46719aad5d3339dbe
+	if strings.HasPrefix(parsedURL.Path, "/cgit") && strings.HasSuffix(parsedURL.Path, "commit/") && strings.HasPrefix(parsedURL.RawQuery, "id=") {
+		repo := strings.TrimSuffix(parsedURL.Path, "/commit/")
+		return fmt.Sprintf("%s://%s%s", parsedURL.Scheme, parsedURL.Hostname(), repo), true
+	}
+
+	// GitHub and GitLab commit and blob URLs are structured one way, e.g.
+	// https://github.com/MariaDB/server/commit/b1351c15946349f9daa7e5297fb2ac6f3139e4a8
+	// https://github.com/tensorflow/tensorflow/blob/master/tensorflow/core/ops/math_ops.cc
+	// https://gitlab.freedesktop.org/virgl/virglrenderer/-/commit/b05bb61f454eeb8a85164c8a31510aeb9d79129c
+	// https://gitlab.com/qemu-project/qemu/-/commit/4367a20cc4
+	// https://gitlab.com/gitlab-org/cves/-/blob/master/2022/CVE-2022-2501.json
+	//
+	// This also supports GitHub tag URLs, e.g.
+	// https://github.com/JonMagon/KDiskMark/releases/tag/3.1.0
+	//
+	// This also supports GitHub and Gitlab issue URLs, e.g.:
+	// https://github.com/axiomatic-systems/Bento4/issues/755
+	// https://gitlab.com/wireshark/wireshark/-/issues/18307
+	if strings.Contains(parsedURL.Path, "commit") || strings.Contains(parsedURL.Path, "blob") || strings.Contains(parsedURL.Path, "releases/tag") || strings.Contains(parsedURL.Path, "issues") {
+		return fmt.Sprintf("%s://%s%s", parsedURL.Scheme, parsedURL.Hostname(), strings.Join(strings.Split(parsedURL.Path, "/")[0:3], "/")), true
+	}
+
+	// GitHub pull request URLs are structured differently, e.g.
+	// https://github.com/google/osv.dev/pull/738
+	if parsedURL.Hostname() == "github.com" && strings.Contains(parsedURL.Path, "pull") {
+		return fmt.Sprintf("%s://%s%s", parsedURL.Scheme, parsedURL.Hostname(), strings.Join(strings.Split(parsedURL.Path, "/")[0:3], "/")), true
+	}
+
+	// Gitlab merge request URLs are structured differently, e.g.
+	// https://gitlab.com/libtiff/libtiff/-/merge_requests/378
+	if strings.Contains(parsedURL.Hostname(), "gitlab") && strings.Contains(parsedURL.Path, "merge_requests") {
+		return fmt.Sprintf("%s://%s%s", parsedURL.Scheme, parsedURL.Hostname(), strings.Join(strings.Split(parsedURL.Path, "/")[0:3], "/")), true
+	}
+
+	// Bitbucket.org URLs are another snowflake, e.g.
+	// https://bitbucket.org/ianb/pastescript/changeset/a19e462769b4
+	// https://bitbucket.org/jespern/django-piston/commits/91bdaec89543/
+	// https://bitbucket.org/openpyxl/openpyxl/commits/3b4905f428e1
+	if parsedURL.Hostname() == "bitbucket.org" && (strings.Contains(parsedURL.Path, "changeset") || strings.Contains(parsedURL.Path, "commits")) {
+		return fmt.Sprintf("%s://%s%s", parsedURL.Scheme, parsedURL.Hostname(), strings.Join(strings.Split(parsedURL.Path, "/")[0:3], "/")), true
+	}
+
+	// If we get to here, we've encountered an unsupported URL.
+	log.Printf("repo: unsupported URL: %s", u)
+	return "", false
+}
+
+// Returns the commit ID from supported links.
+func commit(u string) (string, bool) {
+	parsedURL, err := url.Parse(u)
+	if err != nil {
+		log.Printf("%+v", err)
+		return "", false
+	}
+
+	// GitWeb URLs are structured another way, e.g.
+	// https://git.dpkg.org/cgit/dpkg/dpkg.git/commit/?id=faa4c92debe45412bfcf8a44f26e827800bb24be
+	// https://git.kernel.org/cgit/linux/kernel/git/torvalds/linux.git/commit/?id=817b8b9c5396d2b2d92311b46719aad5d3339dbe
+	if strings.HasPrefix(parsedURL.Path, "/cgit") && strings.HasSuffix(parsedURL.Path, "commit/") && strings.HasPrefix(parsedURL.RawQuery, "id=") {
+		return strings.Split(parsedURL.RawQuery, "=")[1], true
+	}
+
+	// GitHub and GitLab commit URLs are structured one way, e.g.
+	// https://github.com/MariaDB/server/commit/b1351c15946349f9daa7e5297fb2ac6f3139e4a8
+	// https://gitlab.freedesktop.org/virgl/virglrenderer/-/commit/b05bb61f454eeb8a85164c8a31510aeb9d79129c
+	// https://gitlab.com/qemu-project/qemu/-/commit/4367a20cc4
+	// and Bitbucket.org commit URLs are similiar yet slightly different:
+	// https://bitbucket.org/openpyxl/openpyxl/commits/3b4905f428e1
+	//
+	// Some bitbucket.org commit URLs have been observed in the wild with a trailing /, which will
+	// change the behaviour of path.Split(), so normalize the path to be tolerant of this.
+	parsedURL.Path = strings.TrimSuffix(parsedURL.Path, "/")
+	directory, possibleCommitHash := path.Split(parsedURL.Path)
+	if strings.HasSuffix(directory, "commit/") || strings.HasSuffix(directory, "commits/") {
+		return possibleCommitHash, true
+	}
+
+	// If we get to here, we've encountered an unsupported URL.
+	log.Printf("commit: unsupported URL: %s", u)
+	return "", false
+}
+
+// For URLs referencing commits in supported Git repository hosts, return a FixCommit.
 func extractGitCommit(link string) *FixCommit {
 	// Example: https://github.com/google/osv/commit/cd4e934d0527e5010e373e7fed54ef5daefba2f5
-	u, err := url.Parse(link)
-	if err != nil {
+	r, ok := repo(link)
+	if !ok {
 		return nil
 	}
 
-	if u.Host != "github.com" {
+	c, ok := commit(link)
+	if !ok {
 		return nil
 	}
-
-	pathParts := strings.Split(u.Path, "/")
-	if len(pathParts) < 2 {
-		return nil
-	}
-
-	if pathParts[len(pathParts)-2] != "commit" {
-		return nil
-	}
-
-	// Commit is the last component.
-	commit := pathParts[len(pathParts)-1]
-	// Stript the /commit/... to get the repo URL.
-	u.Path = strings.Join(pathParts[0:len(pathParts)-2], "/")
-	repo := u.String()
 
 	return &FixCommit{
-		Repo:   repo,
-		Commit: commit,
+		Repo:   r,
+		Commit: c,
 	}
 }
 

@@ -54,7 +54,7 @@ type CPE struct {
 }
 
 // Returns the base repository URL for supported repository hosts.
-func repo(u string) (string, bool) {
+func Repo(u string) (string, bool) {
 	parsedURL, err := url.Parse(u)
 	if err != nil {
 		log.Printf("%+v", err)
@@ -112,7 +112,7 @@ func repo(u string) (string, bool) {
 }
 
 // Returns the commit ID from supported links.
-func commit(u string) (string, bool) {
+func Commit(u string) (string, bool) {
 	parsedURL, err := url.Parse(u)
 	if err != nil {
 		log.Printf("%+v", err)
@@ -149,12 +149,12 @@ func commit(u string) (string, bool) {
 // For URLs referencing commits in supported Git repository hosts, return a FixCommit.
 func extractGitCommit(link string) *FixCommit {
 	// Example: https://github.com/google/osv/commit/cd4e934d0527e5010e373e7fed54ef5daefba2f5
-	r, ok := repo(link)
+	r, ok := Repo(link)
 	if !ok {
 		return nil
 	}
 
-	c, ok := commit(link)
+	c, ok := Commit(link)
 	if !ok {
 		return nil
 	}

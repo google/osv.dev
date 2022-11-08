@@ -14,7 +14,6 @@
 """OSV cron handlers."""
 
 import datetime
-import json
 import logging
 
 from flask import abort

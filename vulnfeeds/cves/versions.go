@@ -64,9 +64,12 @@ func Repo(u string) (string, bool) {
 	// GitWeb URLs are structured another way, e.g.
 	// https://git.dpkg.org/cgit/dpkg/dpkg.git/commit/?id=faa4c92debe45412bfcf8a44f26e827800bb24be
 	// https://git.kernel.org/cgit/linux/kernel/git/torvalds/linux.git/commit/?id=817b8b9c5396d2b2d92311b46719aad5d3339dbe
-	if strings.HasPrefix(parsedURL.Path, "/cgit") && strings.HasSuffix(parsedURL.Path, "commit/") && strings.HasPrefix(parsedURL.RawQuery, "id=") {
+	if strings.HasPrefix(parsedURL.Path, "/cgit") &&
+		strings.HasSuffix(parsedURL.Path, "commit/") &&
+		strings.HasPrefix(parsedURL.RawQuery, "id=") {
 		repo := strings.TrimSuffix(parsedURL.Path, "/commit/")
-		return fmt.Sprintf("%s://%s%s", parsedURL.Scheme, parsedURL.Hostname(), repo), true
+		return fmt.Sprintf("%s://%s%s", parsedURL.Scheme,
+			parsedURL.Hostname(), repo), true
 	}
 
 	// GitHub and GitLab commit and blob URLs are structured one way, e.g.
@@ -82,28 +85,47 @@ func Repo(u string) (string, bool) {
 	// This also supports GitHub and Gitlab issue URLs, e.g.:
 	// https://github.com/axiomatic-systems/Bento4/issues/755
 	// https://gitlab.com/wireshark/wireshark/-/issues/18307
-	if strings.Contains(parsedURL.Path, "commit") || strings.Contains(parsedURL.Path, "blob") || strings.Contains(parsedURL.Path, "releases/tag") || strings.Contains(parsedURL.Path, "issues") {
-		return fmt.Sprintf("%s://%s%s", parsedURL.Scheme, parsedURL.Hostname(), strings.Join(strings.Split(parsedURL.Path, "/")[0:3], "/")), true
+	if strings.Contains(parsedURL.Path, "commit") ||
+		strings.Contains(parsedURL.Path, "blob") ||
+		strings.Contains(parsedURL.Path, "releases/tag") ||
+		strings.Contains(parsedURL.Path, "issues") {
+		return fmt.Sprintf("%s://%s%s", parsedURL.Scheme,
+				parsedURL.Hostname(),
+				strings.Join(strings.Split(parsedURL.Path, "/")[0:3], "/")),
+			true
 	}
 
 	// GitHub pull request URLs are structured differently, e.g.
 	// https://github.com/google/osv.dev/pull/738
-	if parsedURL.Hostname() == "github.com" && strings.Contains(parsedURL.Path, "pull") {
-		return fmt.Sprintf("%s://%s%s", parsedURL.Scheme, parsedURL.Hostname(), strings.Join(strings.Split(parsedURL.Path, "/")[0:3], "/")), true
+	if parsedURL.Hostname() == "github.com" &&
+		strings.Contains(parsedURL.Path, "pull") {
+		return fmt.Sprintf("%s://%s%s", parsedURL.Scheme,
+				parsedURL.Hostname(),
+				strings.Join(strings.Split(parsedURL.Path, "/")[0:3], "/")),
+			true
 	}
 
 	// Gitlab merge request URLs are structured differently, e.g.
 	// https://gitlab.com/libtiff/libtiff/-/merge_requests/378
-	if strings.Contains(parsedURL.Hostname(), "gitlab") && strings.Contains(parsedURL.Path, "merge_requests") {
-		return fmt.Sprintf("%s://%s%s", parsedURL.Scheme, parsedURL.Hostname(), strings.Join(strings.Split(parsedURL.Path, "/")[0:3], "/")), true
+	if strings.Contains(parsedURL.Hostname(), "gitlab") &&
+		strings.Contains(parsedURL.Path, "merge_requests") {
+		return fmt.Sprintf("%s://%s%s", parsedURL.Scheme,
+				parsedURL.Hostname(),
+				strings.Join(strings.Split(parsedURL.Path, "/")[0:3], "/")),
+			true
 	}
 
 	// Bitbucket.org URLs are another snowflake, e.g.
 	// https://bitbucket.org/ianb/pastescript/changeset/a19e462769b4
 	// https://bitbucket.org/jespern/django-piston/commits/91bdaec89543/
 	// https://bitbucket.org/openpyxl/openpyxl/commits/3b4905f428e1
-	if parsedURL.Hostname() == "bitbucket.org" && (strings.Contains(parsedURL.Path, "changeset") || strings.Contains(parsedURL.Path, "commits")) {
-		return fmt.Sprintf("%s://%s%s", parsedURL.Scheme, parsedURL.Hostname(), strings.Join(strings.Split(parsedURL.Path, "/")[0:3], "/")), true
+	if parsedURL.Hostname() == "bitbucket.org" &&
+		(strings.Contains(parsedURL.Path, "changeset") ||
+			strings.Contains(parsedURL.Path, "commits")) {
+		return fmt.Sprintf("%s://%s%s", parsedURL.Scheme,
+				parsedURL.Hostname(),
+				strings.Join(strings.Split(parsedURL.Path, "/")[0:3], "/")),
+			true
 	}
 
 	// If we get to here, we've encountered an unsupported URL.
@@ -122,7 +144,9 @@ func Commit(u string) (string, bool) {
 	// GitWeb URLs are structured another way, e.g.
 	// https://git.dpkg.org/cgit/dpkg/dpkg.git/commit/?id=faa4c92debe45412bfcf8a44f26e827800bb24be
 	// https://git.kernel.org/cgit/linux/kernel/git/torvalds/linux.git/commit/?id=817b8b9c5396d2b2d92311b46719aad5d3339dbe
-	if strings.HasPrefix(parsedURL.Path, "/cgit") && strings.HasSuffix(parsedURL.Path, "commit/") && strings.HasPrefix(parsedURL.RawQuery, "id=") {
+	if strings.HasPrefix(parsedURL.Path, "/cgit") &&
+		strings.HasSuffix(parsedURL.Path, "commit/") &&
+		strings.HasPrefix(parsedURL.RawQuery, "id=") {
 		return strings.Split(parsedURL.RawQuery, "=")[1], true
 	}
 

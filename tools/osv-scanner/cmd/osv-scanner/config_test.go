@@ -53,10 +53,10 @@ func TestTryLoadConfig(t *testing.T) {
 		cmp.Equal(elem, Config{
 			IgnoredVulns: []IgnoreLine{
 				{
-					Id: "GO-2022-0968",
+					ID: "GO-2022-0968",
 				},
 				{
-					Id: "GO-2022-1059",
+					ID: "GO-2022-1059",
 				},
 			},
 		})

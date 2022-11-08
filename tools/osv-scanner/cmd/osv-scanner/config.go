@@ -21,22 +21,22 @@ type Config struct {
 }
 
 type IgnoreLine struct {
-	Id          string
-	Valid_until time.Time
+	ID          string
+	Valid_Until time.Time
 	Reason      string
 }
 
 type LoadConfigError struct {
-	targetPath string
-	errorType  LoadConfigErrorType
+	TargetPath string
+	ErrorType  LoadConfigErrorType
 }
 
 func (e LoadConfigError) Error() string {
-	switch e.errorType {
+	switch e.ErrorType {
 	case GlobalConfigSet:
 		return "Global config has been set"
 	case NoConfigFound:
-		return "No config file found on this or any ancestor path: " + e.targetPath
+		return "No config file found on this or any ancestor path: " + e.TargetPath
 	}
 	panic("Invalid error type")
 }
@@ -46,7 +46,7 @@ func (e LoadConfigError) Error() string {
 // Will shortcut and return "" if globalConfig is not nil
 func TryLoadConfig(target string, configMap map[string]Config) (string, error) {
 	if ignoreOverride != nil {
-		return "", LoadConfigError{targetPath: target, errorType: GlobalConfigSet}
+		return "", LoadConfigError{TargetPath: target, ErrorType: GlobalConfigSet}
 	}
 	stat, err := os.Stat(target)
 	if err != nil {
@@ -71,5 +71,5 @@ func TryLoadConfig(target string, configMap map[string]Config) (string, error) {
 		return containingFolder, nil
 	}
 
-	return "", LoadConfigError{targetPath: target, errorType: NoConfigFound}
+	return "", LoadConfigError{TargetPath: target, ErrorType: NoConfigFound}
 }

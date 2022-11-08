@@ -223,7 +223,7 @@ func filterResponse(query osv.BatchedQuery, resp *osv.BatchedResponse, globalCon
 		}
 		if configToUse != nil {
 			for _, vuln := range result.Vulns {
-				if slices.IndexFunc(configToUse.IgnoredVulns, func(elem IgnoreLine) bool { return elem.Id == vuln.ID }) != -1 {
+				if slices.IndexFunc(configToUse.IgnoredVulns, func(elem IgnoreLine) bool { return elem.ID == vuln.ID }) != -1 {
 					hiddenVulns[vuln.ID] = struct{}{}
 				} else {
 					filteredVulns = append(filteredVulns, vuln)

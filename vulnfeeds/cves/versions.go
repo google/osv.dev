@@ -141,6 +141,8 @@ func Commit(u string) (string, bool) {
 		return possibleCommitHash, true
 	}
 
+	// TODO(apollock): add support for resolving a GitHub PR to a commit hash
+
 	// If we get to here, we've encountered an unsupported URL.
 	log.Printf("commit: unsupported URL: %s", u)
 	return "", false

@@ -24,7 +24,6 @@ from google.cloud.datastore_admin_v1.gapic import datastore_admin_client \
     as ds_admin
 from google.cloud import ndb
 from google.cloud import pubsub_v1
-from google.cloud import secretmanager_v1
 import requests
 
 import osv
@@ -35,6 +34,7 @@ _PROJECT_ID = '651737493649'
 _BUG_REDO_DAYS = 14
 _CRON_ROUTE = '/cron'
 _BACKUP_BUCKET = 'osv-backup'
+_MONORAIL_ACCOUNT = 'service@oss-vdb.iam.gserviceaccount.com'
 
 _TASKS_TOPIC = 'projects/{project}/topics/{topic}'.format(
     project=_PROJECT, topic='tasks')
@@ -69,24 +69,13 @@ def make_affected_commits_public(bug):
     ndb.put_multi(to_update)
 
 
-def get_monorail_service_account():
-  """Get monorail service account credentials."""
-  client = secretmanager_v1.SecretManagerServiceClient()
-  response = client.access_secret_version(
-      name=f'projects/{_PROJECT_ID}/secrets/monorail-service-account/'
-      f'versions/latest')
-  return json.loads(response.payload.data.decode())
-
-
 @blueprint.route(_CRON_ROUTE + '/make-bugs-public')
 def make_bugs_public():
   """Mark bugs public."""
   if not request.headers.get('X-Appengine-Cron'):
     abort(403)
 
-  monorail_account = get_monorail_service_account()
-  monorail_client = monorail.Client('oss-fuzz', monorail_account)
-
+  monorail_client = monorail.Client('oss-fuzz', _MONORAIL_ACCOUNT)
   query = osv.Bug.query(osv.Bug.public == False)  # pylint: disable=singleton-comparison
 
   to_mark_public = []

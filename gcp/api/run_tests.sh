@@ -29,4 +29,5 @@ service docker start
 
 export GOOGLE_CLOUD_PROJECT=oss-vdb
 export GOOGLE_APPLICATION_CREDENTIALS="$1"
+export PROTOCOL_BUFFERS_PYTHON_IMPLEMENTATION="python"
 python integration_tests.py "$1"

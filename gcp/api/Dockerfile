@@ -19,6 +19,8 @@ COPY setup.py Pipfile* README.md /osv/
 COPY osv /osv/osv
 COPY gcp/api /osv/gcp/api
 
+ENV PROTOCOL_BUFFERS_PYTHON_IMPLEMENTATION "python"
+
 WORKDIR /osv/gcp/api
 RUN pip3 install -U pipenv && python3 -m pipenv install --deploy --system
 

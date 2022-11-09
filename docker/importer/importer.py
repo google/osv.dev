@@ -39,7 +39,7 @@ _TASKS_TOPIC = 'projects/{project}/topics/{topic}'.format(
 _OSS_FUZZ_EXPORT_BUCKET = 'oss-fuzz-osv-vulns'
 _EXPORT_WORKERS = 32
 _NO_UPDATE_MARKER = 'OSV-NO-UPDATE'
-_BUCKET_THREAD_COUNT = 10
+_BUCKET_THREAD_COUNT = 20
 
 _client_store = threading.local()
 

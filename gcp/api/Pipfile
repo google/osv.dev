@@ -11,6 +11,7 @@ grpcio = "==1.50.0"
 # Pinning this to a specific version seem to cause dependency resolution issues
 grpcio-tools = "*"
 osv = {editable = true, path = "../../"}
+jsonschema = "==4.17.0"
 packageurl-python = "==0.10.4"
 packaging = "==20.9"
 requests = "==2.28.1"

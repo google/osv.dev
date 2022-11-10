@@ -15,7 +15,8 @@
 
 import json
 
-from google.oauth2 import service_account
+import google.auth
+from google.auth import impersonated_credentials
 from google.auth.transport import requests as google_requests
 import requests
 
@@ -28,21 +29,30 @@ _TIMEOUT = 30  # HTTP(S) request timeout
 class Client:
   """Monorail client."""
 
-  def __init__(self, project, service_account_info):
+  def __init__(self, project, impersonated_principal):
     self.project = project
-    self._service_account_info = service_account_info
+    self._impersonated_principal = impersonated_principal
 
   def get_issue(self, issue_id):
     """Get issue data."""
-    credentials = service_account.IDTokenCredentials.from_service_account_info(
-        self._service_account_info, target_audience=_TARGET_AUDIENCE)
-    credentials.refresh(google_requests.Request())
+    # Impersonate the service account with access to Monorail.
+    source_credentials, _ = google.auth.default()
+    credentials = impersonated_credentials.Credentials(
+        source_credentials=source_credentials,
+        target_principal=self._impersonated_principal,
+        target_scopes=[])
+    id_token_credentials = impersonated_credentials.IDTokenCredentials(
+        target_credentials=credentials,
+        target_audience=_TARGET_AUDIENCE,
+        include_email=True)
+
+    id_token_credentials.refresh(google_requests.Request())
 
     headers = {
         'Content-Type': 'application/json',
         'Accept': 'application/json',
     }
-    credentials.apply(headers)
+    id_token_credentials.apply(headers)
 
     url = f'{_API_BASE}/monorail.v3.Issues/GetIssue'
     body = {'name': f'projects/{self.project}/issues/{issue_id}'}

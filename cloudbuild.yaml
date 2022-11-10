@@ -15,7 +15,7 @@
 steps:
 - name: 'gcr.io/cloud-builders/git'
   dir: docker/worker
-  args: ['clone', 'https://source.developers.google.com/p/oss-vdb/r/osv-test']
+  args: ['submodule', 'update', '--init']
 - name: 'gcr.io/oss-vdb/ci'
   args: ['bash', '-ex', 'run_tests.sh']
 - name: 'gcr.io/oss-vdb/ci'

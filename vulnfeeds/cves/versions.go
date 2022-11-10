@@ -54,11 +54,10 @@ type CPE struct {
 }
 
 // Returns the base repository URL for supported repository hosts.
-func Repo(u string) (string, bool) {
+func Repo(u string) (string, error) {
 	parsedURL, err := url.Parse(u)
 	if err != nil {
-		log.Printf("%+v", err)
-		return "", false
+		return "", err
 	}
 
 	// GitWeb URLs are structured another way, e.g.
@@ -69,7 +68,7 @@ func Repo(u string) (string, bool) {
 		strings.HasPrefix(parsedURL.RawQuery, "id=") {
 		repo := strings.TrimSuffix(parsedURL.Path, "/commit/")
 		return fmt.Sprintf("%s://%s%s", parsedURL.Scheme,
-			parsedURL.Hostname(), repo), true
+			parsedURL.Hostname(), repo), nil
 	}
 
 	// GitHub and GitLab commit and blob URLs are structured one way, e.g.
@@ -92,7 +91,7 @@ func Repo(u string) (string, bool) {
 		return fmt.Sprintf("%s://%s%s", parsedURL.Scheme,
 				parsedURL.Hostname(),
 				strings.Join(strings.Split(parsedURL.Path, "/")[0:3], "/")),
-			true
+			nil
 	}
 
 	// GitHub pull request URLs are structured differently, e.g.
@@ -102,7 +101,7 @@ func Repo(u string) (string, bool) {
 		return fmt.Sprintf("%s://%s%s", parsedURL.Scheme,
 				parsedURL.Hostname(),
 				strings.Join(strings.Split(parsedURL.Path, "/")[0:3], "/")),
-			true
+			nil
 	}
 
 	// Gitlab merge request URLs are structured differently, e.g.
@@ -112,7 +111,7 @@ func Repo(u string) (string, bool) {
 		return fmt.Sprintf("%s://%s%s", parsedURL.Scheme,
 				parsedURL.Hostname(),
 				strings.Join(strings.Split(parsedURL.Path, "/")[0:3], "/")),
-			true
+			nil
 	}
 
 	// Bitbucket.org URLs are another snowflake, e.g.
@@ -125,20 +124,18 @@ func Repo(u string) (string, bool) {
 		return fmt.Sprintf("%s://%s%s", parsedURL.Scheme,
 				parsedURL.Hostname(),
 				strings.Join(strings.Split(parsedURL.Path, "/")[0:3], "/")),
-			true
+			nil
 	}
 
 	// If we get to here, we've encountered an unsupported URL.
-	log.Printf("repo: unsupported URL: %s", u)
-	return "", false
+	return "", fmt.Errorf("Repo(): unsupported URL: %s", u)
 }
 
 // Returns the commit ID from supported links.
-func Commit(u string) (string, bool) {
+func Commit(u string) (string, error) {
 	parsedURL, err := url.Parse(u)
 	if err != nil {
-		log.Printf("%+v", err)
-		return "", false
+		return "", err
 	}
 
 	// GitWeb URLs are structured another way, e.g.
@@ -147,7 +144,7 @@ func Commit(u string) (string, bool) {
 	if strings.HasPrefix(parsedURL.Path, "/cgit") &&
 		strings.HasSuffix(parsedURL.Path, "commit/") &&
 		strings.HasPrefix(parsedURL.RawQuery, "id=") {
-		return strings.Split(parsedURL.RawQuery, "=")[1], true
+		return strings.Split(parsedURL.RawQuery, "=")[1], nil
 	}
 
 	// GitHub and GitLab commit URLs are structured one way, e.g.
@@ -162,26 +159,27 @@ func Commit(u string) (string, bool) {
 	parsedURL.Path = strings.TrimSuffix(parsedURL.Path, "/")
 	directory, possibleCommitHash := path.Split(parsedURL.Path)
 	if strings.HasSuffix(directory, "commit/") || strings.HasSuffix(directory, "commits/") {
-		return possibleCommitHash, true
+		return possibleCommitHash, nil
 	}
 
 	// TODO(apollock): add support for resolving a GitHub PR to a commit hash
 
 	// If we get to here, we've encountered an unsupported URL.
-	log.Printf("commit: unsupported URL: %s", u)
-	return "", false
+	return "", fmt.Errorf("Commit(): unsupported URL: %s", u)
 }
 
 // For URLs referencing commits in supported Git repository hosts, return a FixCommit.
 func extractGitCommit(link string) *FixCommit {
 	// Example: https://github.com/google/osv/commit/cd4e934d0527e5010e373e7fed54ef5daefba2f5
-	r, ok := Repo(link)
-	if !ok {
+	r, err := Repo(link)
+	if err != nil {
+		log.Printf("Failed to get repo from %s: %+v", link, err)
 		return nil
 	}
 
-	c, ok := Commit(link)
-	if !ok {
+	c, err := Commit(link)
+	if err != nil {
+		log.Printf("Failed to get commit from %s: %+v", link, err)
 		return nil
 	}
 

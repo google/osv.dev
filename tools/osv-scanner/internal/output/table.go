@@ -28,7 +28,8 @@ func PrintTableResults(query osv.BatchedQuery, resp *osv.HydratedBatchedResponse
 		workingDir, err := os.Getwd()
 		var source string
 		if err == nil {
-			source, err = filepath.Rel(workingDir, source)
+			sourcePath := strings.SplitN(query.Source, ":", 2)[1]
+			source, err = filepath.Rel(workingDir, sourcePath)
 			if err != nil {
 				source = query.Source
 			}

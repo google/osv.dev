@@ -1,6 +1,8 @@
 package main
 
 import (
+	"errors"
+	"fmt"
 	"log"
 	"os"
 	"path/filepath"
@@ -9,15 +11,9 @@ import (
 	"github.com/BurntSushi/toml"
 )
 
-type LoadConfigErrorType int64
-
-const (
-	GlobalConfigSet LoadConfigErrorType = iota
-	NoConfigFound
-)
-
 type Config struct {
 	IgnoredVulns []IgnoreLine
+	LoadPath     string
 }
 
 type IgnoreLine struct {
@@ -26,27 +22,12 @@ type IgnoreLine struct {
 	Reason      string
 }
 
-type LoadConfigError struct {
-	TargetPath string
-	ErrorType  LoadConfigErrorType
-}
-
-func (e LoadConfigError) Error() string {
-	switch e.ErrorType {
-	case GlobalConfigSet:
-		return "Global config has been set"
-	case NoConfigFound:
-		return "No config file found on this or any ancestor path: " + e.TargetPath
-	}
-	panic("Invalid error type")
-}
-
 // TryLoadConfig tries to load config in `target` (or it's containing directory)
 // `target` will be the key for the entry in configMap
 // Will shortcut and return "" if globalConfig is not nil
-func TryLoadConfig(target string, configMap map[string]Config) (string, error) {
+func TryLoadConfig(target string) (Config, error) {
 	if ignoreOverride != nil {
-		return "", LoadConfigError{TargetPath: target, ErrorType: GlobalConfigSet}
+		return Config{}, errors.New("Global config has been set")
 	}
 	stat, err := os.Stat(target)
 	if err != nil {
@@ -59,17 +40,17 @@ func TryLoadConfig(target string, configMap map[string]Config) (string, error) {
 	} else {
 		containingFolder = target
 	}
-
-	configFile, err := os.Open(filepath.Join(containingFolder, osvScannerConfigName))
+	configPath := filepath.Join(containingFolder, osvScannerConfigName)
+	configFile, err := os.Open(configPath)
 	var config Config
 	if err == nil { // File exists, and we have permission to read
 		_, err := toml.NewDecoder(configFile).Decode(&config)
 		if err != nil {
 			log.Fatalf("Failed to read config file: %s\n", err)
 		}
-		configMap[target] = config
-		return containingFolder, nil
+		config.LoadPath = configPath
+		return config, nil
 	}
 
-	return "", LoadConfigError{TargetPath: target, ErrorType: NoConfigFound}
+	return Config{}, fmt.Errorf("No config file found on this path: %s", containingFolder)
 }

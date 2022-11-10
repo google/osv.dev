@@ -4,6 +4,7 @@ import (
 	"io"
 	"log"
 	"os"
+	"path/filepath"
 	"strings"
 
 	"github.com/google/osv.dev/tools/osv-scanner/internal/grouper"
@@ -24,8 +25,18 @@ func PrintTableResults(query osv.BatchedQuery, resp *osv.HydratedBatchedResponse
 		if len(resp.Results[i].Vulns) == 0 {
 			continue
 		}
+		workingDir, err := os.Getwd()
+		var source string
+		if err == nil {
+			source, err = filepath.Rel(workingDir, source)
+			if err != nil {
+				source = query.Source
+			}
+		} else {
+			source = query.Source
+		}
 		for _, group := range grouper.Group(resp.Results[i].Vulns) {
-			outputRow := table.Row{query.Source}
+			outputRow := table.Row{source}
 			shouldMerge := false
 			if query.Commit != "" {
 				outputRow = append(outputRow, "GIT", query.Commit, query.Commit)

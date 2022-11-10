@@ -8,101 +8,60 @@ import (
 )
 
 type testStruct struct {
-	targetPath string
-	configPath string
-	configErr  error
+	targetPath   string
+	config       Config
+	configHasErr bool
 }
 
 func TestTryLoadConfig(t *testing.T) {
-	configMap := map[string]Config{}
-	testPaths := []testStruct{
-		{
-			targetPath: "../../testdata/testdatainner/innerFolder/test.yaml",
-			configPath: "../../testdata/testdatainner/osv-scanner.toml",
-			configErr:  nil,
-		},
-		{
-			targetPath: "../../testdata/testdatainner/innerFolder/",
-			configPath: "../../testdata/testdatainner/osv-scanner.toml",
-			configErr:  nil,
-		},
-		{ // Test no slash at the end
-			targetPath: "../../testdata/testdatainner/innerFolder",
-			configPath: "../../testdata/testdatainner/osv-scanner.toml",
-			configErr:  nil,
-		},
-		{
-			targetPath: "../../testdata/testdatainner/",
-			configPath: "../../testdata/testdatainner/osv-scanner.toml",
-			configErr:  nil,
-		},
-	}
 
-	for _, testPath := range testPaths {
-		absPath, err := filepath.Abs(testPath.targetPath)
-		if err != nil {
-			t.Errorf("%s", err)
-		}
-		configPath, configErr := TryLoadConfig(absPath, configMap)
-		cmp.Equal(configPath, testPath.configPath)
-		cmp.Equal(configErr, testPath.configErr)
-
-	}
-
-	for _, elem := range configMap {
-		cmp.Equal(elem, Config{
-			IgnoredVulns: []IgnoreLine{
-				{
-					ID: "GO-2022-0968",
-				},
-				{
-					ID: "GO-2022-1059",
-				},
+	expectedConfig := Config{
+		IgnoredVulns: []IgnoreLine{
+			{
+				ID: "GO-2022-0968",
 			},
-		})
+			{
+				ID: "GO-2022-1059",
+			},
+		},
 	}
-}
-
-func TestTryLoadConfigFail(t *testing.T) {
-	configMap := map[string]Config{}
 	testPaths := []testStruct{
 		{
-			targetPath: "../../testdata/testdatainner/",
-			configPath: "",
-			configErr:  LoadConfigError{},
+			targetPath:   "../../testdata/testdatainner/innerFolder/test.yaml",
+			config:       expectedConfig,
+			configHasErr: true,
 		},
 		{
-			targetPath: "../../testdata/testdatainner/innerFolder/",
-			configPath: "../../testdata/testdatainner/osv-scanner.toml",
-			configErr:  nil,
+			targetPath:   "../../testdata/testdatainner/innerFolder/",
+			config:       Config{},
+			configHasErr: true,
 		},
 		{ // Test no slash at the end
-			targetPath: "../../testdata/testdatainner/innerFolder",
-			configPath: "../../testdata/testdatainner/osv-scanner.toml",
-			configErr:  nil,
+			targetPath:   "../../testdata/testdatainner/innerFolder",
+			config:       Config{},
+			configHasErr: true,
 		},
 		{
-			targetPath: "../../testdata/testdatainner/",
-			configPath: "../../testdata/testdatainner/osv-scanner.toml",
-			configErr:  nil,
+			targetPath:   "../../testdata/testdatainner/",
+			config:       expectedConfig,
+			configHasErr: false,
+		},
+		{
+			targetPath:   "../../testdata/testdatainner/some-manifest.yaml",
+			config:       expectedConfig,
+			configHasErr: false,
 		},
 	}
 
-	for _, testPath := range testPaths {
-		absPath, err := filepath.Abs(testPath.targetPath)
+	for _, testData := range testPaths {
+		absPath, err := filepath.Abs(testData.targetPath)
 		if err != nil {
 			t.Errorf("%s", err)
 		}
-		configPath, configErr := TryLoadConfig(absPath, configMap)
-		cmp.Equal(configPath, testPath.configPath)
-		cmp.Equal(configErr, testPath.configErr)
-
+		config, configErr := TryLoadConfig(absPath)
+		cmp.Equal(config, testData.config)
+		if testData.configHasErr {
+			cmp.Equal(configErr, nil)
+		}
 	}
-
-	for _, elem := range configMap {
-		cmp.Equal(elem, Config{
-			IgnoredVulns: []IgnoreLine{},
-		})
-	}
-
 }

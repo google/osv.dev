@@ -1,5 +1,5 @@
-#!/bin/bash
-# Copyright 2021 Google LLC
+#!/bin/bash -x
+# Copyright 2022 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -13,6 +13,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# Build from root context.
+cd ../../
 
-cd ../
-python -m grpc_tools.protoc --python_out=. --proto_path=. osv/vulnerability.proto
+docker build -t gcr.io/oss-vdb/worker-base:$1 -t gcr.io/oss-vdb/worker-base:latest -f docker/worker-base/Dockerfile . && \
+gcloud docker -- push gcr.io/oss-vdb/worker-base:$1 && \
+gcloud docker -- push gcr.io/oss-vdb/worker-base:latest

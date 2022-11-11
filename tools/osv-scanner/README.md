@@ -88,13 +88,19 @@ by passing the `--config=/path/to/config` flag.
 
 Currently, there is only 1 option to configure:
 ### Ignore vulnerabilities by ID
-Vulnerabilities can be marked as ignored by putting the vuln ID in an array
-under the `IgnoreVulnIds` key. 
+Vulnerabilities can be marked as ignored by putting the ID an entry
+under the `IgnoreVulns` key, along with optional reason and expiry date.
+
+#### Example
 ```
-IgnoredVulnIds = [
-    "GO-2022-0968",
-    "GO-2022-1059"
-]
+[[IgnoredVulns]]
+id = "GO-2022-0968"
+# ignore_until = 2022-11-09T00:00:00Z # Optional exception expiry date
+reason = "No ssh servers are connected to or hosted in Go lang"
+
+id = "GO-2022-1059"
+# ignore_until = 2022-11-09T00:00:00Z # Optional exception expiry date
+reason = "No external http servers are written in Go lang."
 ```
 
 ## JSON output

@@ -10,7 +10,6 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/BurntSushi/toml"
 	"github.com/g-rath/osv-detector/pkg/lockfile"
 	"github.com/google/osv.dev/tools/osv-scanner/internal/osv"
 	"github.com/google/osv.dev/tools/osv-scanner/internal/output"
@@ -197,32 +196,21 @@ func scanDebianDocker(query *osv.BatchedQuery, dockerImageName string) {
 }
 
 // Filters response according to config, returns number of responses removed
-func filterResponse(query osv.BatchedQuery, resp *osv.BatchedResponse, configOverride *Config) int {
+func filterResponse(query osv.BatchedQuery, resp *osv.BatchedResponse, configManager *ConfigManager) int {
 	hiddenVulns := map[string]IgnoreLine{}
 
 	for i, result := range resp.Results {
 		var filteredVulns []osv.MinimalVulnerability
-		var configToUse *Config
-		if configOverride != nil {
-			configToUse = configOverride
-		} else {
-			configToUseTemp, configErr := TryLoadConfig(query.Queries[i].Source.Path)
-			if configErr == nil {
-				configToUse = &configToUseTemp
-				log.Printf("Loaded filter from: %s", configToUse.LoadPath)
+		configToUse := configManager.Get(query.Queries[i].Source.Path)
+		for _, vuln := range result.Vulns {
+			ignore, ignoreLine := configToUse.ShouldIgnore(vuln.ID)
+			if ignore {
+				hiddenVulns[vuln.ID] = ignoreLine
+			} else {
+				filteredVulns = append(filteredVulns, vuln)
 			}
 		}
-		if configToUse != nil {
-			for _, vuln := range result.Vulns {
-				ignore, ignoreLine := configToUse.ShouldIgnore(vuln.ID)
-				if ignore {
-					hiddenVulns[vuln.ID] = ignoreLine
-				} else {
-					filteredVulns = append(filteredVulns, vuln)
-				}
-			}
-			resp.Results[i].Vulns = filteredVulns
-		}
+		resp.Results[i].Vulns = filteredVulns
 	}
 
 	for id, ignoreLine := range hiddenVulns {
@@ -233,7 +221,10 @@ func filterResponse(query osv.BatchedQuery, resp *osv.BatchedResponse, configOve
 }
 
 func main() {
-	var configOverride *Config
+	configManager := ConfigManager{
+		defaultConfig: Config{},
+		configMap:     make(map[string]Config),
+	}
 	var query osv.BatchedQuery
 	var outputJson bool
 
@@ -280,10 +271,7 @@ func main() {
 
 			configPath := context.String("config")
 			if configPath != "" {
-				config := Config{}
-				_, err := toml.DecodeFile(configPath, &config)
-				config.LoadPath = configPath
-				configOverride = &config
+				err := configManager.UseOverride(configPath)
 				if err != nil {
 					log.Fatalf("Failed to read config file: %s\n", err)
 				}
@@ -349,7 +337,7 @@ func main() {
 		log.Fatalf("Scan failed: %v", err)
 	}
 
-	filtered := filterResponse(query, resp, configOverride)
+	filtered := filterResponse(query, resp, &configManager)
 	if filtered > 0 {
 		log.Printf("Filtered %d vulnerabilities from output", filtered)
 	}

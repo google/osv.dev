@@ -58,7 +58,8 @@ func TestTryLoadConfig(t *testing.T) {
 		if err != nil {
 			t.Errorf("%s", err)
 		}
-		config, configErr := TryLoadConfig(absPath)
+		configPath := normalizeConfigLoadPath(absPath)
+		config, configErr := tryLoadConfig(configPath)
 		cmp.Equal(config, testData.config)
 		if testData.configHasErr {
 			cmp.Equal(configErr, nil)

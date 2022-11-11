@@ -21,8 +21,6 @@ import (
 
 const osvScannerConfigName = "osv-scanner.toml"
 
-var configOverride *Config
-
 // scanDir walks through the given directory to try to find any relevant files
 // These include:
 //   - Any lockfiles with scanLockfile
@@ -216,10 +214,15 @@ func filterResponse(query osv.BatchedQuery, resp *osv.BatchedResponse, configOve
 		}
 	}
 
+	for id, _ := range hiddenVulns {
+		log.Printf("%s has been filtered out.", id)
+	}
+
 	return len(hiddenVulns)
 }
 
 func main() {
+	var configOverride *Config
 	var query osv.BatchedQuery
 	var outputJson bool
 

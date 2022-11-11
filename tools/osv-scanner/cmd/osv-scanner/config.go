@@ -1,7 +1,6 @@
 package main
 
 import (
-	"errors"
 	"fmt"
 	"log"
 	"os"
@@ -24,11 +23,7 @@ type IgnoreLine struct {
 
 // TryLoadConfig tries to load config in `target` (or it's containing directory)
 // `target` will be the key for the entry in configMap
-// Will shortcut and return "" if configOverride is not nil
 func TryLoadConfig(target string) (Config, error) {
-	if configOverride != nil {
-		return Config{}, errors.New("Global config has been set")
-	}
 	stat, err := os.Stat(target)
 	if err != nil {
 		log.Fatalf("Failed to stat target: %s", err)

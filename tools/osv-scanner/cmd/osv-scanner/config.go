@@ -26,9 +26,9 @@ type Config struct {
 }
 
 type IgnoreLine struct {
-	ID          string
-	Valid_Until time.Time
-	Reason      string
+	ID          string    `toml:"id"`
+	IgnoreUntil time.Time `toml:"ignoreUntil"`
+	Reason      string    `toml:"reason"`
 }
 
 func (c *Config) ShouldIgnore(vulnID string) (bool, IgnoreLine) {
@@ -36,7 +36,14 @@ func (c *Config) ShouldIgnore(vulnID string) (bool, IgnoreLine) {
 	if index == -1 {
 		return false, IgnoreLine{}
 	}
-	return true, c.IgnoredVulns[index]
+	ignoredLine := c.IgnoredVulns[index]
+	if ignoredLine.IgnoreUntil.IsZero() {
+		// If IgnoreUntil is not set, should ignore.
+		return true, ignoredLine
+	}
+	// Should ignore if IgnoreUntil is still after current time
+	return ignoredLine.IgnoreUntil.After(time.Now().UTC()), ignoredLine
+
 }
 
 // Sets the override config by reading the config file at configPath.

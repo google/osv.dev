@@ -28,6 +28,11 @@ func scanDir(query *osv.BatchedQuery, dir string, skipGit bool, recursive bool) 
 			return err
 		}
 
+		if !root && !recursive && info.IsDir() {
+			return filepath.SkipDir
+		}
+		root = false
+
 		if !skipGit && info.IsDir() && info.Name() == ".git" {
 			gitQuery, err := scanGit(filepath.Dir(path))
 			if err != nil {

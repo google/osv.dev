@@ -37,6 +37,8 @@ A wide range of lockfiles are supported by utilizing this [lockfile package](htt
 - `Gemfile.lock`      
 - `go.mod`            
 - `mix.lock`          
+- `poetry.lock`
+- `pubspec.lock`
 - `pom.xml`\*         
 - `requirements.txt`\*
 

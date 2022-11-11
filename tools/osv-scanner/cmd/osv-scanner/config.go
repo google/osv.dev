@@ -8,7 +8,9 @@ import (
 	"time"
 
 	"github.com/BurntSushi/toml"
+	"golang.org/x/exp/slices"
 )
+
 
 type Config struct {
 	IgnoredVulns []IgnoreLine
@@ -19,6 +21,14 @@ type IgnoreLine struct {
 	ID          string
 	Valid_Until time.Time
 	Reason      string
+}
+
+func (c *Config) ShouldIgnore(vulnID string) (bool, IgnoreLine) {
+	index := slices.IndexFunc(c.IgnoredVulns, func(elem IgnoreLine) bool { return elem.ID == vulnID })
+	if index == -1 {
+		return false, IgnoreLine{}
+	}
+	return true, c.IgnoredVulns[index]
 }
 
 // TryLoadConfig tries to load config in `target` (or it's containing directory)

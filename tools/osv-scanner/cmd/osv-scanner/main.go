@@ -16,7 +16,6 @@ import (
 	"github.com/google/osv.dev/tools/osv-scanner/internal/output"
 	"github.com/google/osv.dev/tools/osv-scanner/internal/sbom"
 	"github.com/urfave/cli/v2"
-	"golang.org/x/exp/slices"
 )
 
 const osvScannerConfigName = "osv-scanner.toml"
@@ -199,7 +198,7 @@ func scanDebianDocker(query *osv.BatchedQuery, dockerImageName string) {
 
 // Filters response according to config, returns number of responses removed
 func filterResponse(query osv.BatchedQuery, resp *osv.BatchedResponse, configOverride *Config) int {
-	hiddenVulns := map[string]struct{}{}
+	hiddenVulns := map[string]IgnoreLine{}
 
 	for i, result := range resp.Results {
 		var filteredVulns []osv.MinimalVulnerability
@@ -215,8 +214,9 @@ func filterResponse(query osv.BatchedQuery, resp *osv.BatchedResponse, configOve
 		}
 		if configToUse != nil {
 			for _, vuln := range result.Vulns {
-				if slices.IndexFunc(configToUse.IgnoredVulns, func(elem IgnoreLine) bool { return elem.ID == vuln.ID }) != -1 {
-					hiddenVulns[vuln.ID] = struct{}{}
+				ignore, ignoreLine := configToUse.ShouldIgnore(vuln.ID)
+				if ignore {
+					hiddenVulns[vuln.ID] = ignoreLine
 				} else {
 					filteredVulns = append(filteredVulns, vuln)
 				}
@@ -225,8 +225,8 @@ func filterResponse(query osv.BatchedQuery, resp *osv.BatchedResponse, configOve
 		}
 	}
 
-	for id, _ := range hiddenVulns {
-		log.Printf("%s has been filtered out.", id)
+	for id, ignoreLine := range hiddenVulns {
+		log.Printf("%s has been filtered out because: %s", id, ignoreLine.Reason)
 	}
 
 	return len(hiddenVulns)

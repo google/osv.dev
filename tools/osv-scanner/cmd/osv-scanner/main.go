@@ -74,7 +74,10 @@ func scanLockfile(query *osv.BatchedQuery, path string) error {
 
 	for _, pkgDetail := range parsedLockfile.Packages {
 		pkgDetailQuery := osv.MakePkgRequest(pkgDetail)
-		pkgDetailQuery.Source = "lockfile:" + path
+		pkgDetailQuery.Source = osv.Source{
+			Path: path,
+			Type: "lockfile",
+		}
 		query.Queries = append(query.Queries, pkgDetailQuery)
 	}
 	return nil
@@ -98,7 +101,10 @@ func scanSBOMFile(query *osv.BatchedQuery, path string) error {
 		}
 		err := provider.GetPackages(file, func(id sbom.Identifier) error {
 			purlQuery := osv.MakePURLRequest(id.PURL)
-			purlQuery.Source = "sbom:" + path
+			purlQuery.Source = osv.Source{
+				Path: path,
+				Type: "sbom",
+			}
 			query.Queries = append(query.Queries, purlQuery)
 			return nil
 		})
@@ -140,7 +146,10 @@ func scanGit(query *osv.BatchedQuery, repoDir string) error {
 	log.Printf("Scanning %s at commit %s", repoDir, commit)
 
 	gitQuery := osv.MakeCommitRequest(commit)
-	gitQuery.Source = "git:" + repoDir
+	gitQuery.Source = osv.Source{
+		Path: repoDir,
+		Type: "git",
+	}
 	query.Queries = append(query.Queries, gitQuery)
 	return nil
 }
@@ -178,7 +187,10 @@ func scanDebianDocker(query *osv.BatchedQuery, dockerImageName string) {
 			// TODO(rexpan): Get and specify exact debian release version
 			Ecosystem: "Debian",
 		})
-		pkgDetailsQuery.Source = "docker:" + dockerImageName
+		pkgDetailsQuery.Source = osv.Source{
+			Path: dockerImageName,
+			Type: "docker",
+		}
 		query.Queries = append(query.Queries, pkgDetailsQuery)
 		packages += 1
 	}
@@ -195,8 +207,7 @@ func filterResponse(query osv.BatchedQuery, resp *osv.BatchedResponse, configOve
 		if configOverride != nil {
 			configToUse = configOverride
 		} else {
-			sourcePath := strings.SplitN(query.Queries[i].Source, ":", 2)[1]
-			configToUseTemp, configErr := TryLoadConfig(sourcePath)
+			configToUseTemp, configErr := TryLoadConfig(query.Queries[i].Source.Path)
 			if configErr == nil {
 				configToUse = &configToUseTemp
 				log.Printf("Loaded filter from: %s", configToUse.LoadPath)

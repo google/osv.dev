@@ -13,8 +13,8 @@ type Output struct {
 }
 
 type Result struct {
-	FilePath string    `json:"filePath"`
-	Packages []Package `json:"packages"`
+	PackageSource osv.Source `json:"packageSource"`
+	Packages      []Package  `json:"packages"`
 }
 
 type Package struct {
@@ -29,7 +29,7 @@ func PrintJSONResults(query osv.BatchedQuery, resp *osv.HydratedBatchedResponse,
 	output := Output{
 		Results: []Result{},
 	}
-	groupedBySource := map[string][]Package{}
+	groupedBySource := map[osv.Source][]Package{}
 
 	for i, query := range query.Queries {
 		response := resp.Results[i]
@@ -62,8 +62,8 @@ func PrintJSONResults(query osv.BatchedQuery, resp *osv.HydratedBatchedResponse,
 
 	for source, packages := range groupedBySource {
 		output.Results = append(output.Results, Result{
-			FilePath: source,
-			Packages: packages,
+			PackageSource: source,
+			Packages:      packages,
 		})
 	}
 

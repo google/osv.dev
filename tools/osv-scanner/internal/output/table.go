@@ -26,15 +26,12 @@ func PrintTableResults(query osv.BatchedQuery, resp *osv.HydratedBatchedResponse
 			continue
 		}
 		workingDir, err := os.Getwd()
-		var source string
+		source := query.Source
 		if err == nil {
-			sourcePath := strings.SplitN(query.Source, ":", 2)[1]
-			source, err = filepath.Rel(workingDir, sourcePath)
-			if err != nil {
-				source = query.Source
+			sourcePath, err := filepath.Rel(workingDir, query.Source.Path)
+			if err == nil { // Simplify the path if possible
+				source.Path = sourcePath
 			}
-		} else {
-			source = query.Source
 		}
 		for _, group := range grouper.Group(resp.Results[i].Vulns) {
 			outputRow := table.Row{source}

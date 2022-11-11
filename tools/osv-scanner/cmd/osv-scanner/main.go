@@ -21,7 +21,7 @@ import (
 
 const osvScannerConfigName = "osv-scanner.toml"
 
-var ignoreOverride *Config
+var configOverride *Config
 
 // scanDir walks through the given directory to try to find any relevant files
 // These include:
@@ -188,15 +188,14 @@ func scanDebianDocker(query *osv.BatchedQuery, dockerImageName string) {
 }
 
 // Filters response according to config, returns number of responses removed
-func filterResponse(query osv.BatchedQuery, resp *osv.BatchedResponse, globalConfig *Config) int {
-	// configMap := map[string]Config{}
+func filterResponse(query osv.BatchedQuery, resp *osv.BatchedResponse, configOverride *Config) int {
 	hiddenVulns := map[string]struct{}{}
 
 	for i, result := range resp.Results {
 		var filteredVulns []osv.MinimalVulnerability
 		var configToUse *Config
-		if globalConfig != nil {
-			configToUse = globalConfig
+		if configOverride != nil {
+			configToUse = configOverride
 		} else {
 			sourcePath := strings.SplitN(query.Queries[i].Source, ":", 2)[1]
 			configToUseTemp, configErr := TryLoadConfig(sourcePath)
@@ -270,7 +269,7 @@ func main() {
 				config := Config{}
 				_, err := toml.DecodeFile(configPath, &config)
 				config.LoadPath = configPath
-				ignoreOverride = &config
+				configOverride = &config
 				if err != nil {
 					log.Fatalf("Failed to read config file: %s\n", err)
 				}
@@ -336,7 +335,7 @@ func main() {
 		log.Fatalf("Scan failed: %v", err)
 	}
 
-	filtered := filterResponse(query, resp, ignoreOverride)
+	filtered := filterResponse(query, resp, configOverride)
 	if filtered > 0 {
 		log.Printf("Filtered %d vulnerabilities from output", filtered)
 	}

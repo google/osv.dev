@@ -316,6 +316,21 @@ def maybe_normalize_package_names(vulnerability):
   return vulnerability
 
 
+def filter_unsupported_ecosystems(vulnerability):
+  """Remove unsupported ecosystems from vulnerabiltiy
+
+  Returns number of remaining affected packages after filtering
+  """
+  filtered = []
+  for affected in vulnerability.affected:
+    if osv.ecosystems.get(affected.package.ecosystem):
+      filtered.append(affected)
+  del vulnerability.affected[:]
+  vulnerability.affected.extend(filtered)
+
+  return len(filtered)
+
+
 class TaskRunner:
   """Task runner."""
 
@@ -475,6 +490,12 @@ class TaskRunner:
     if source_repo.name == 'ghsa' and not fix_invalid_ghsa(vulnerability):
       logging.warning('%s has an encoding error, skipping.', vulnerability.id)
       return
+
+    # TODO(michaelkedar): check is to preserve worker_test
+    if len(vulnerability.affected) > 0:
+      if filter_unsupported_ecosystems(vulnerability) == 0:
+        # Discard vulnerability if none of its ecosystems are supported
+        return
 
     orig_modified_date = vulnerability.modified.ToDatetime()
     try:

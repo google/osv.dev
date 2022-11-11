@@ -609,6 +609,12 @@ class UpdateTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
 
     osv.ecosystems.work_dir = 'testdata/tmp/'
 
+    # add fake ecosystems used in tests to supported ecosystems
+    osv.ecosystems._ecosystems.update({
+        'ecosystem': osv.ecosystems.OrderingUnsupportedEcosystem(),
+        'golang': osv.ecosystems.OrderingUnsupportedEcosystem(),
+    })
+
   def tearDown(self):
     self.tmp_dir.cleanup()
 
@@ -1162,6 +1168,54 @@ class UpdateTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
     task_runner._source_update(message)
     self.expect_dict_equal('update_bucket_2',
                            osv.Bug.get_by_id('ASB-A-153358911')._to_dict())
+
+  def test_update_bad_ecosystem_new(self):
+    """Test adding from an unsupported ecosystem"""
+    self.mock_repo.add_file(
+        'BLAH-129.yaml',
+        self._load_test_data(os.path.join(TEST_DATA_DIR, 'BLAH-129.yaml')))
+    self.mock_repo.commit('User', 'user@email')
+
+    task_runner = worker.TaskRunner(ndb_client, None, self.tmp_dir.name, None,
+                                    None)
+    message = mock.Mock()
+    message.attributes = {
+        'source': 'source',
+        'path': 'BLAH-129.yaml',
+        'original_sha256': _sha256('BLAH-129.yaml'),
+        'deleted': 'false',
+    }
+    task_runner._source_update(message)
+
+    self.assertIsNone(osv.Bug.get_by_id('BLAH-129'))
+
+  def test_update_partly_bad_ecosystem_new(self):
+    """Test adding vuln with both supported and unsupported ecosystem"""
+    self.mock_repo.add_file(
+        'BLAH-130.yaml',
+        self._load_test_data(os.path.join(TEST_DATA_DIR, 'BLAH-130.yaml')))
+    self.mock_repo.commit('User', 'user@email')
+
+    task_runner = worker.TaskRunner(ndb_client, None, self.tmp_dir.name, None,
+                                    None)
+    message = mock.Mock()
+    message.attributes = {
+        'source': 'source',
+        'path': 'BLAH-130.yaml',
+        'original_sha256': _sha256('BLAH-130.yaml'),
+        'deleted': 'false',
+    }
+    task_runner._source_update(message)
+
+    repo = pygit2.Repository(self.remote_source_repo_path)
+    commit = repo.head.peel()
+
+    self.assertEqual('infra@osv.dev', commit.author.email)
+    self.assertEqual('OSV', commit.author.name)
+    self.assertEqual('Update BLAH-130', commit.message)
+
+    self.expect_dict_equal('update_partly_bad_ecosystem_new',
+                           osv.Bug.get_by_id('BLAH-130')._to_dict())
 
 
 if __name__ == '__main__':

@@ -500,7 +500,7 @@ def analyze(vulnerability,
                                  vulnerability_pb2.Range.SEMVER):
         # Enumerate ECOSYSTEM and SEMVER ranges.
         ecosystem_helpers = ecosystems.get(affected_package.package.ecosystem)
-        if ecosystem_helpers:
+        if ecosystem_helpers and ecosystem_helpers.supports_ordering:
           try:
             versions.extend(
                 enumerate_versions(affected_package.package.name,

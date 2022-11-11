@@ -491,10 +491,10 @@ class TaskRunner:
       logging.warning('%s has an encoding error, skipping.', vulnerability.id)
       return
 
-    # TODO(michaelkedar): check is to preserve worker_test
+    # If the vulnerability has affected packages, but none of them are supported
+    # then discard it
     if len(vulnerability.affected) > 0:
       if filter_unsupported_ecosystems(vulnerability) == 0:
-        # Discard vulnerability if none of its ecosystems are supported
         return
 
     orig_modified_date = vulnerability.modified.ToDatetime()

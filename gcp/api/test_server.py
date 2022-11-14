@@ -159,7 +159,6 @@ def start(port=_ESP_PORT, backend_port=_BACKEND_PORT):
 
     raise
 
-  docker_inspect()
   return ServerInstance(backend, esp)
 
 

@@ -64,13 +64,14 @@ $ go run ./cmd/osv-scanner --docker image_name:latest
 
 ## Scanning a directory
 
-Given a list of directories, this tool will recursively walk through every file
-to find:
+This tool will walk through a list of directories to find:
 - Lockfiles
 - SBOMs
 - git directories for the latest commit hash
 
 and make requests to OSV to determine affected vulnerabilities.
+
+You can have it recursively walk through subdirectories with the `--recursive` flag.
 
 Searching for git commit hash is intended to work with projects that use
 git submodules or a similar mechanism where dependencies are checked out

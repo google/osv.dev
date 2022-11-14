@@ -139,7 +139,7 @@ def start(port=_ESP_PORT, backend_port=_BACKEND_PORT):
   backend = None
   esp = None
   try:
-    backend = start_backend(_BACKEND_PORT, 'backend.log')
+    backend = start_backend(backend_port, 'backend.log')
     esp = start_esp(port, backend_port, 'esp.log')
   except Exception:
     if esp:

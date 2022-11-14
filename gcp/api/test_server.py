@@ -121,13 +121,13 @@ def start_esp(port, backend_port, log_path):
   return esp_proc
 
 
-def start(service_account_path, port=_ESP_PORT, backend_port=_BACKEND_PORT):
+def start(port=_ESP_PORT, backend_port=_BACKEND_PORT):
   """Start the test server."""
   backend = None
   esp = None
   try:
     backend = start_backend(_BACKEND_PORT, 'backend.log')
-    esp = start_esp(port, backend_port, service_account_path, 'esp.log')
+    esp = start_esp(port, backend_port, 'esp.log')
   except Exception:
     if esp:
       esp.kill()
@@ -141,7 +141,7 @@ def start(service_account_path, port=_ESP_PORT, backend_port=_BACKEND_PORT):
 
 
 if __name__ == '__main__':
-  server = start(sys.argv[1])
+  server = start()
   try:
     while True:
       server.check()

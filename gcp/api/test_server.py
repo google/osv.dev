@@ -30,12 +30,26 @@ class ServerInstance:
     self.backend = backend
     self.esp = esp
 
+  def _emit_log(log_path):
+    """If log_path is non-zero length, display it."""
+    statinfo = os.stat(log_path)
+    if statinfo.st_size > 0:
+      print('{} contents:'.format(log_path))
+      with open(log_path) as log_handle:
+        while True:
+          line = log_handle.readline()
+          if not line:
+            break
+          print('{}'.format(line.strip()))
+
   def check(self):
     """Check that the server is still up."""
     if self.backend.poll():
+      _emit_log('esp.log')
       raise RuntimeError('Backend process died.')
 
     if self.esp.poll():
+      _emit_log('backend.log')
       raise RuntimeError('ESP process died.')
 
   def stop(self):

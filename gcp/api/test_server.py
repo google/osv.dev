@@ -125,7 +125,6 @@ def start_esp(port, backend_port, log_path):
       '--rollout_strategy=managed',
       f'--listener_port={port}',
       f'--backend=grpc://{host}:{backend_port}',
-      '--non_gcp',
       '--enable_debug',
       '--transcoding_preserve_proto_field_names',
       '--envoy_connection_buffer_limit_bytes=10485760',

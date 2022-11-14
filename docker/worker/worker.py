@@ -317,18 +317,13 @@ def maybe_normalize_package_names(vulnerability):
 
 
 def filter_unsupported_ecosystems(vulnerability):
-  """Remove unsupported ecosystems from vulnerabiltiy
-
-  Returns number of remaining affected packages after filtering
-  """
+  """Remove unsupported ecosystems from vulnerability"""
   filtered = []
   for affected in vulnerability.affected:
     if osv.ecosystems.get(affected.package.ecosystem):
       filtered.append(affected)
   del vulnerability.affected[:]
   vulnerability.affected.extend(filtered)
-
-  return len(filtered)
 
 
 class TaskRunner:
@@ -493,8 +488,9 @@ class TaskRunner:
 
     # If the vulnerability has affected packages, but none of them are supported
     # then discard it
-    if len(vulnerability.affected) > 0:
-      if filter_unsupported_ecosystems(vulnerability) == 0:
+    if vulnerability.affected:
+      filter_unsupported_ecosystems(vulnerability)
+      if not vulnerability.affected:
         return
 
     orig_modified_date = vulnerability.modified.ToDatetime()

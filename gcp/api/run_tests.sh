@@ -13,11 +13,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-if [ $# -lt 1 ]; then
-  echo "Usage: $0 /path/to/service_account.json"
-  exit 1
-fi
-
 rm -rf osv
 cp -r ../../osv .
 
@@ -28,6 +23,5 @@ pip install -r requirements.txt
 service docker start
 
 export GOOGLE_CLOUD_PROJECT=oss-vdb
-export GOOGLE_APPLICATION_CREDENTIALS="$1"
 export PROTOCOL_BUFFERS_PYTHON_IMPLEMENTATION="python"
-python integration_tests.py "$1"
+python integration_tests.py

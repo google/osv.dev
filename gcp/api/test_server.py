@@ -83,11 +83,9 @@ def get_ip():
   return ip
 
 
-def start_esp(port, backend_port, service_account_path, log_path):
+def start_esp(port, backend_port, log_path):
   """Start ESPv2 frontend."""
   log_handle = open(log_path, 'w')
-  service_account_dir = os.path.dirname(os.path.abspath(service_account_path))
-  service_account_name = os.path.basename(service_account_path)
 
   if os.getenv('CLOUDBUILD'):
     network = '--network=cloudbuild'
@@ -106,8 +104,6 @@ def start_esp(port, backend_port, service_account_path, log_path):
       'osv-esp',
       network,
       '--rm',
-      '-v',
-      f'{service_account_dir}:/esp',
       f'--publish={port}',
       'gcr.io/endpoints-release/endpoints-runtime:2',
       '--disable_tracing',
@@ -115,7 +111,6 @@ def start_esp(port, backend_port, service_account_path, log_path):
       '--rollout_strategy=managed',
       f'--listener_port={port}',
       f'--backend=grpc://{host}:{backend_port}',
-      f'--service_account_key=/esp/{service_account_name}',
       '--non_gcp',
       '--enable_debug',
       '--transcoding_preserve_proto_field_names',
@@ -146,10 +141,6 @@ def start(service_account_path, port=_ESP_PORT, backend_port=_BACKEND_PORT):
 
 
 if __name__ == '__main__':
-  if len(sys.argv) < 2:
-    print(f'Usage: {sys.argv[0]} path/to/service_account.json')
-    sys.exit(1)
-
   server = start(sys.argv[1])
   try:
     while True:

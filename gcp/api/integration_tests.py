@@ -511,16 +511,12 @@ def print_logs(filename):
 
 
 if __name__ == '__main__':
-  if len(sys.argv) < 2:
-    print(f'Usage: {sys.argv[0]} path/to/service_account.json')
-    sys.exit(1)
 
   subprocess.run(
       ['docker', 'pull', 'gcr.io/endpoints-release/endpoints-runtime:2'],
       check=True)
 
-  service_account_path = sys.argv.pop()
-  server = test_server.start(service_account_path, port=_PORT)
+  server = test_server.start(port=_PORT)
   time.sleep(30)
 
   try:

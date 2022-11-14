@@ -30,7 +30,7 @@ class ServerInstance:
     self.backend = backend
     self.esp = esp
 
-  def _emit_log(log_path):
+  def _emit_log(self, log_path):
     """If log_path is non-zero length, display it."""
     statinfo = os.stat(log_path)
     if statinfo.st_size > 0:

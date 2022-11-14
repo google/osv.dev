@@ -517,6 +517,7 @@ if __name__ == '__main__':
 
   server = test_server.start(port=_PORT)
   time.sleep(30)
+  server.check()
 
   try:
     unittest.main()

@@ -9,7 +9,7 @@ references:
 affected:
 - package:
     name: blah.com/package
-    ecosystem: golang
+    ecosystem: Go
   ranges:
   - type: GIT
     repo: https://osv-test/repo/url

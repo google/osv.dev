@@ -574,7 +574,7 @@ class UpdateTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
     osv.Bug(
         db_id='BLAH-123',
         project=['blah.com/package'],
-        ecosystem=['golang'],
+        ecosystem=['Go'],
         source_id='source:BLAH-123.yaml',
         import_last_modified=datetime.datetime(2021, 1, 1, 0, 0),
         source_of_truth=osv.SourceOfTruth.SOURCE_REPO).put()
@@ -582,7 +582,7 @@ class UpdateTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
         db_id='BLAH-124',
         regressed='eefe8ec3f1f90d0e684890e810f3f21e8500a4cd',
         project=['blah.com/package'],
-        ecosystem=['golang'],
+        ecosystem=['Go'],
         source_id='source:BLAH-124.yaml',
         import_last_modified=datetime.datetime(2021, 1, 1, 0, 0),
         source_of_truth=osv.SourceOfTruth.SOURCE_REPO).put()
@@ -591,14 +591,14 @@ class UpdateTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
         regressed='eefe8ec3f1f90d0e684890e810f3f21e8500a4cd',
         fixed='8d8242f545e9cec3e6d0d2e3f5bde8be1c659735',
         project=['blah.com/package'],
-        ecosystem=['golang'],
+        ecosystem=['Go'],
         source_id='source:BLAH-125.yaml',
         import_last_modified=datetime.datetime(2021, 1, 1, 0, 0),
         source_of_truth=osv.SourceOfTruth.SOURCE_REPO).put()
     osv.Bug(
         db_id='BLAH-127',
         project=['blah.com/package'],
-        ecosystem=['golang'],
+        ecosystem=['Go'],
         source_id='source:BLAH-127.yaml',
         import_last_modified=datetime.datetime(2021, 1, 1, 0, 0),
         source_of_truth=osv.SourceOfTruth.SOURCE_REPO).put()
@@ -612,7 +612,6 @@ class UpdateTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
     # add fake ecosystems used in tests to supported ecosystems
     osv.ecosystems._ecosystems.update({
         'ecosystem': osv.ecosystems.OrderingUnsupportedEcosystem(),
-        'golang': osv.ecosystems.OrderingUnsupportedEcosystem(),
     })
 
   def tearDown(self):

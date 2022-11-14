@@ -88,7 +88,9 @@ def get_cloudbuild_esp_host():
 
 def docker_inspect():
   """Convenience function to troubleshoot running Docker container."""
-  result = subprocess.run(['docker', 'inspect', 'osv-esp'], capture_output=True)
+  result = subprocess.run(['docker', 'inspect', 'osv-esp'],
+                          capture_output=True,
+                          check=True)
   print('This is what we know about the Docker container')
   print(result)
 

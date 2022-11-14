@@ -206,9 +206,10 @@ func main() {
 				Value: false,
 			},
 			&cli.BoolFlag{
-				Name:  "recursive",
-				Usage: "check subdirectories",
-				Value: false,
+				Name:    "recursive",
+				Aliases: []string{"r"},
+				Usage:   "check subdirectories",
+				Value:   false,
 			},
 		},
 		ArgsUsage: "[directory1 directory2...]",

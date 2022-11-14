@@ -86,6 +86,13 @@ def get_cloudbuild_esp_host():
   return ip
 
 
+def docker_inspect():
+  """Convenience function to troubleshoot running Docker container."""
+  result = subprocess.run(['docker', 'inspect', 'osv-esp'], capture_output=True)
+  print('This is what we know about the Docker container')
+  print(result)
+
+
 def get_ip():
   """Get IP."""
   result = subprocess.run([
@@ -150,6 +157,7 @@ def start(port=_ESP_PORT, backend_port=_BACKEND_PORT):
 
     raise
 
+  docker_inspect()
   return ServerInstance(backend, esp)
 
 

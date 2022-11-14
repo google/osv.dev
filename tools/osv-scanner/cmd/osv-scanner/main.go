@@ -14,6 +14,7 @@ import (
 	"github.com/google/osv.dev/tools/osv-scanner/internal/osv"
 	"github.com/google/osv.dev/tools/osv-scanner/internal/output"
 	"github.com/google/osv.dev/tools/osv-scanner/internal/sbom"
+
 	"github.com/urfave/cli/v2"
 )
 
@@ -24,7 +25,8 @@ const osvScannerConfigName = "osv-scanner.toml"
 //   - Any lockfiles with scanLockfile
 //   - Any SBOM files with scanSBOMFile
 //   - Any git repositories with scanGit
-func scanDir(query *osv.BatchedQuery, dir string, skipGit bool) error {
+func scanDir(query *osv.BatchedQuery, dir string, skipGit bool, recursive bool) error {
+	root := true
 	return filepath.WalkDir(dir, func(path string, info os.DirEntry, err error) error {
 		if err != nil {
 			log.Printf("Failed to walk %s: %v", path, err)
@@ -56,6 +58,11 @@ func scanDir(query *osv.BatchedQuery, dir string, skipGit bool) error {
 			// so just move onto the next file
 			_ = scanSBOMFile(query, path)
 		}
+
+		if !root && !recursive && info.IsDir() {
+			return filepath.SkipDir
+		}
+		root = false
 
 		return nil
 	})
@@ -265,6 +272,12 @@ func main() {
 				Usage: "skip scanning git repositories",
 				Value: false,
 			},
+			&cli.BoolFlag{
+				Name:    "recursive",
+				Aliases: []string{"r"},
+				Usage:   "check subdirectories",
+				Value:   false,
+			},
 		},
 		ArgsUsage: "[directory1 directory2...]",
 		Action: func(context *cli.Context) error {
@@ -309,10 +322,11 @@ func main() {
 			}
 
 			skipGit := context.Bool("skip-git")
+			recursive := context.Bool("recursive")
 			genericDirs := context.Args().Slice()
 			for _, dir := range genericDirs {
 				log.Printf("Scanning dir %s\n", dir)
-				err := scanDir(&query, dir, skipGit)
+				err := scanDir(&query, dir, skipGit, recursive)
 				if err != nil {
 					return err
 				}

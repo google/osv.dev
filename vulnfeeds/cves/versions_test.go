@@ -42,7 +42,7 @@ func TestParseCPE(t *testing.T) {
 	}
 }
 
-func TestExtractGitHubCommit(t *testing.T) {
+func TestExtractGitCommit(t *testing.T) {
 	tests := []struct {
 		description       string
 		inputLink         string
@@ -57,6 +57,46 @@ func TestExtractGitHubCommit(t *testing.T) {
 			},
 		},
 		{
+			description: "Valid GitLab commit URL",
+			inputLink:   "https://gitlab.freedesktop.org/virgl/virglrenderer/-/commit/b05bb61f454eeb8a85164c8a31510aeb9d79129c",
+			expectedFixCommit: &FixCommit{
+				Repo:   "https://gitlab.freedesktop.org/virgl/virglrenderer",
+				Commit: "b05bb61f454eeb8a85164c8a31510aeb9d79129c",
+			},
+		},
+		{
+			description: "Valid GitLab.com commit URL",
+			inputLink:   "https://gitlab.com/mayan-edms/mayan-edms/commit/9ebe80595afe4fdd1e2c74358d6a9421f4ce130e",
+			expectedFixCommit: &FixCommit{
+				Repo:   "https://gitlab.com/mayan-edms/mayan-edms",
+				Commit: "9ebe80595afe4fdd1e2c74358d6a9421f4ce130e",
+			},
+		},
+		{
+			description: "Valid bitbucket.org commit URL",
+			inputLink:   "https://bitbucket.org/openpyxl/openpyxl/commits/3b4905f428e1",
+			expectedFixCommit: &FixCommit{
+				Repo:   "https://bitbucket.org/openpyxl/openpyxl",
+				Commit: "3b4905f428e1",
+			},
+		},
+		{
+			description: "Valid bitbucket.org commit URL with trailing slash",
+			inputLink:   "https://bitbucket.org/jespern/django-piston/commits/91bdaec89543/",
+			expectedFixCommit: &FixCommit{
+				Repo:   "https://bitbucket.org/jespern/django-piston",
+				Commit: "91bdaec89543",
+			},
+		},
+		{
+			description: "Valid cGit commit URL",
+			inputLink:   "https://git.dpkg.org/cgit/dpkg/dpkg.git/commit/?id=faa4c92debe45412bfcf8a44f26e827800bb24be",
+			expectedFixCommit: &FixCommit{
+				Repo:   "https://git.dpkg.org/cgit/dpkg/dpkg.git",
+				Commit: "faa4c92debe45412bfcf8a44f26e827800bb24be",
+			},
+		},
+		{
 			description:       "Unsupported GitHub PR URL",
 			inputLink:         "https://github.com/google/osv/pull/123",
 			expectedFixCommit: nil,
@@ -67,11 +107,6 @@ func TestExtractGitHubCommit(t *testing.T) {
 			expectedFixCommit: nil,
 		},
 		{
-			description:       "Unsupported Gitlab URL",
-			inputLink:         "https://gitlab.freedesktop.org/virgl/virglrenderer/-/commit/b05bb61f454eeb8a85164c8a31510aeb9d79129c",
-			expectedFixCommit: nil,
-		},
-		{
 			description:       "Completely invalid input",
 			inputLink:         "",
 			expectedFixCommit: nil,
@@ -79,9 +114,9 @@ func TestExtractGitHubCommit(t *testing.T) {
 	}
 
 	for _, tc := range tests {
-		got := extractGitHubCommit(tc.inputLink)
+		got := extractGitCommit(tc.inputLink)
 		if !reflect.DeepEqual(got, tc.expectedFixCommit) {
-			t.Errorf("test %q: extractGitHubCommit for %q was incorrect, got: %#v, expected: %#v", tc.description, tc.inputLink, got, tc.expectedFixCommit)
+			t.Errorf("test %q: extractGitCommit for %q was incorrect, got: %#v, expected: %#v", tc.description, tc.inputLink, got, tc.expectedFixCommit)
 		}
 	}
 }

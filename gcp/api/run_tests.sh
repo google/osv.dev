@@ -23,5 +23,5 @@ pip install -r requirements.txt
 service docker start
 
 export GOOGLE_CLOUD_PROJECT=oss-vdb
-export PROTOCOL_BUFFERS_PYTHON_IMPLEMENTATION="python"
+python integration_tests.py
 python integration_tests.py

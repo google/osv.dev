@@ -27,9 +27,9 @@ import yaml
 from google.protobuf import json_format
 
 # pylint: disable=relative-beyond-top-level
+from . import cache
 from . import repos
 from . import vulnerability_pb2
-from . import cache
 
 AUTHOR_EMAIL = 'infra@osv.dev'
 PUSH_RETRIES = 2
@@ -39,6 +39,15 @@ YAML_EXTENSIONS = ('.yaml', '.yml')
 JSON_EXTENSIONS = ('.json',)
 
 shared_cache = cache.InMemoryCache()
+
+
+class KeyPathError(Exception):
+  """
+  The provided key path was not found in the object.
+
+  For example, this can happen with GSD entries where for most vulnerabilities,
+  an OSV entry is not published, only the GSD part.
+  """
 
 
 def parse_source_id(source_id):
@@ -103,26 +112,30 @@ def load_schema():
     return json.loads(text)
 
 
-def parse_vulnerability(path, key_path=None):
+def parse_vulnerability(path, key_path=None, strict=False):
   """Parse vulnerability YAML."""
   data = _parse_vulnerability_dict(path)
-  return parse_vulnerability_from_dict(data, key_path)
+  return parse_vulnerability_from_dict(data, key_path, strict)
 
 
-def _parse_vulnerabilities(data, key_path):
+def _parse_vulnerabilities(data, key_path, strict=False):
   """Parse multiple vulnerabilities."""
   if isinstance(data, list):
-    return [parse_vulnerability_from_dict(v, key_path) for v in data]
+    return [parse_vulnerability_from_dict(v, key_path, strict) for v in data]
 
-  return [parse_vulnerability_from_dict(data, key_path)]
+  return [parse_vulnerability_from_dict(data, key_path, strict)]
 
 
-def parse_vulnerabilities(path, key_path=None):
+def parse_vulnerabilities(path, key_path=None, strict=False):
   """Parse vulnerabilities (potentially multiple in a list)."""
-  return _parse_vulnerabilities(_parse_vulnerability_dict(path), key_path)
+  return _parse_vulnerabilities(
+      _parse_vulnerability_dict(path), key_path, strict)
 
 
-def parse_vulnerabilities_from_data(data_text, extension, key_path=None):
+def parse_vulnerabilities_from_data(data_text,
+                                    extension,
+                                    key_path=None,
+                                    strict=False):
   """Parse vulnerabilities from data."""
   if extension in YAML_EXTENSIONS:
     data = yaml.load(data_text, Loader=NoDatesSafeLoader)
@@ -131,22 +144,31 @@ def parse_vulnerabilities_from_data(data_text, extension, key_path=None):
   else:
     raise RuntimeError('Unknown format ' + extension)
 
-  return _parse_vulnerabilities(data, key_path)
+  return _parse_vulnerabilities(data, key_path, strict)
 
 
 def _get_nested_vulnerability(data, key_path=None):
   """Get nested vulnerability."""
   if key_path:
-    for component in key_path.split('.'):
-      data = data[component]
+    try:
+      for component in key_path.split('.'):
+        data = data[component]
+    except KeyError as e:
+      raise KeyPathError() from e
 
   return data
 
 
-def parse_vulnerability_from_dict(data, key_path=None):
+def parse_vulnerability_from_dict(data, key_path=None, strict=False):
   """Parse vulnerability from dict."""
   data = _get_nested_vulnerability(data, key_path)
-  jsonschema.validate(data, load_schema())
+  try:
+    jsonschema.validate(data, load_schema())
+  except jsonschema.exceptions.ValidationError as e:
+    logging.warning('Failed to validate loaded OSV entry: %s', e.message)
+    if strict:  # Reraise the error if strict
+      raise
+
   vulnerability = vulnerability_pb2.Vulnerability()
   json_format.ParseDict(data, vulnerability, ignore_unknown_fields=True)
   if not vulnerability.id:

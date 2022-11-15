@@ -429,7 +429,13 @@ class Alpine(Ecosystem):
 
     for x in lines:
       if len(x) == 0:
-        all_versions.add(current_ver)
+        current_ver = current_ver.split(' #')[0]  # Remove comment lines
+        current_ver = current_ver.strip(' "\'')  # Remove (occasional) quotes
+        # Ignore occasional version that is still not valid.
+        if AlpineLinuxVersion.is_valid(current_ver):
+          all_versions.add(current_ver)
+        else:
+          logging.warning('Alpine version "%s" is not valid', current_ver)
         continue
 
       x_split = x.split('=', 1)

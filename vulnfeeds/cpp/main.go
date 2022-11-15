@@ -6,7 +6,6 @@ import (
 	"context"
 	"encoding/json"
 	"flag"
-	"fmt"
 	"io/ioutil"
 	"log"
 	"net/url"
@@ -36,54 +35,6 @@ func IsRepoURL(url string) bool {
 	re := regexp.MustCompile(`http[s]?:\/\/(?:c?git(?:hub|lab)?)\.|\.git$`)
 
 	return re.MatchString(url)
-}
-
-// Returns the base repository URL
-func Repo(u string) (string, bool) {
-	parsedURL, err := url.Parse(u)
-	if err != nil {
-		Logger.Fatalf("%v", err)
-	}
-	// GitHub and GitLab commit and blob URLs are structured one way, e.g.
-	// https://github.com/MariaDB/server/commit/b1351c15946349f9daa7e5297fb2ac6f3139e4a8
-	// https://github.com/tensorflow/tensorflow/blob/master/tensorflow/core/ops/math_ops.cc
-	// https://gitlab.freedesktop.org/virgl/virglrenderer/-/commit/b05bb61f454eeb8a85164c8a31510aeb9d79129c
-	// https://gitlab.com/qemu-project/qemu/-/commit/4367a20cc4
-	// https://gitlab.com/gitlab-org/cves/-/blob/master/2022/CVE-2022-2501.json
-	//
-	// This also supports GitHub tag URLs, e.g.
-	// https://github.com/JonMagon/KDiskMark/releases/tag/3.1.0
-	//
-	// This also supports GitHub and Gitlab issue URLs, e.g.:
-	// https://github.com/axiomatic-systems/Bento4/issues/755
-	// https://gitlab.com/wireshark/wireshark/-/issues/18307
-	if strings.Contains(parsedURL.Path, "commit") || strings.Contains(parsedURL.Path, "blob") || strings.Contains(parsedURL.Path, "releases/tag") || strings.Contains(parsedURL.Path, "issues") {
-		return fmt.Sprintf("%s://%s%s", parsedURL.Scheme, parsedURL.Hostname(), strings.Join(strings.Split(parsedURL.Path, "/")[0:3], "/")), true
-	}
-
-	// GitHub pull request URLs are structured differently, e.g.
-	// https://github.com/google/osv.dev/pull/738
-	if parsedURL.Hostname() == "github.com" && strings.Contains(parsedURL.Path, "pull") {
-		return fmt.Sprintf("%s://%s%s", parsedURL.Scheme, parsedURL.Hostname(), strings.Join(strings.Split(parsedURL.Path, "/")[0:3], "/")), true
-	}
-
-	// Gitlab merge request URLs are structured differently, e.g.
-	// https://gitlab.com/libtiff/libtiff/-/merge_requests/378
-	if strings.Contains(parsedURL.Hostname(), "gitlab") && strings.Contains(parsedURL.Path, "merge_requests") {
-		return fmt.Sprintf("%s://%s%s", parsedURL.Scheme, parsedURL.Hostname(), strings.Join(strings.Split(parsedURL.Path, "/")[0:3], "/")), true
-	}
-
-	// GitWeb URLs are structured another way, e.g.
-	// https://git.dpkg.org/cgit/dpkg/dpkg.git/commit/?id=faa4c92debe45412bfcf8a44f26e827800bb24be
-	// https://git.kernel.org/cgit/linux/kernel/git/torvalds/linux.git/commit/?id=817b8b9c5396d2b2d92311b46719aad5d3339dbe
-	if parsedURL.Path == "/" && strings.Contains(parsedURL.RawQuery, "commit") {
-		repo := strings.Split(strings.Split(parsedURL.RawQuery, ";")[0], "=")[1]
-		return fmt.Sprintf("%s://%s/%s", parsedURL.Scheme, parsedURL.Hostname(), repo), true
-	}
-
-	// If we get to here we've encountered an unsupported URL
-	return "", false
-
 }
 
 // Checks if a URL relates to the FSF.
@@ -225,9 +176,9 @@ func InScopeRepo(repoURL string) bool {
 // Takes an NVD CVE record and outputs an OSV file in the specified directory.
 func CVEToOSV(CVE cves.CVEItem, repo, directory string) {
 	CPEs := cves.CPEs(CVE)
-	CPE, ok := cves.ParseCPE(CPEs[0])
-	if !ok {
-		Logger.Fatalf("Can't generate an OSV record for %s without CPE data", CVE.CVE.CVEDataMeta.ID)
+	CPE, err := cves.ParseCPE(CPEs[0])
+	if err != nil {
+		Logger.Fatalf("Can't generate an OSV record for %s without valid CPE data", CVE.CVE.CVEDataMeta.ID)
 	}
 	v, _ := vulns.FromCVE(CVE.CVE.CVEDataMeta.ID, CVE)
 	versions, _ := cves.ExtractVersionInfo(CVE, nil)
@@ -240,7 +191,7 @@ func CVEToOSV(CVE cves.CVEItem, repo, directory string) {
 
 	// Everything from here down relates to output.
 	vulnDir := filepath.Join(directory, CPE.Product)
-	err := os.MkdirAll(vulnDir, 0755)
+	err = os.MkdirAll(vulnDir, 0755)
 	if err != nil {
 		Logger.Fatalf("Failed to create dir: %v", err)
 	}
@@ -298,13 +249,13 @@ func main() {
 		// Does it have any application CPEs?
 		appCPECount := 0
 		for _, CPEstr := range cves.CPEs(cve) {
-			CPE, ok := cves.ParseCPE(CPEstr)
-			if ok {
-				if CPE.Part == "a" {
-					appCPECount += 1
-				}
-			} else {
-				Logger.Fatalf("Failed to parse CPE %s: %v", CPEstr, err)
+			CPE, err := cves.ParseCPE(CPEstr)
+			if err != nil {
+				Logger.Warnf("Failed to parse CPE %q: %+v", CPEstr, err)
+				continue
+			}
+			if CPE.Part == "a" {
+				appCPECount += 1
 			}
 		}
 
@@ -326,23 +277,27 @@ func main() {
 					Logger.Infof("\t * %s", ref.URL)
 					// CVE entries have one set of references, but can have multiple CPEs
 					for _, CPEstr := range cves.CPEs(cve) {
-						CPE, ok := cves.ParseCPE(CPEstr)
-						if !ok {
-							Logger.Infof("Failed to parse CPE %s: %v", CPEstr, err)
+						CPE, err := cves.ParseCPE(CPEstr)
+						if err != nil {
+							Logger.Warnf("Failed to parse CPE %q: %+v", CPEstr, err)
 							continue
 						}
-						// Avoid unnecessary calls to Repo() if we already have the repo
+						// Avoid unnecessary calls to cves.Repo() if we already have the repo
 						if _, ok := repos[CPE.Product]; !ok {
-							repo, ok := Repo(ref.URL)
-							if ok {
-								repos[CPE.Product] = repo
+							repo, err := cves.Repo(ref.URL)
+							if err != nil {
+								Logger.Warnf("Failed to parse %q for %q: %+v", ref.URL, CPE.Product, err)
+								continue
 							}
+							repos[CPE.Product] = repo
 						}
 						if _, ok := repos[cve.CVE.CVEDataMeta.ID]; !ok {
-							repo, ok := Repo(ref.URL)
-							if ok {
-								repos[cve.CVE.CVEDataMeta.ID] = repo
+							repo, err := cves.Repo(ref.URL)
+							if err != nil {
+								Logger.Warnf("Failed to parse %q for %q: %+v", ref.URL, CPE.Product, err)
+								continue
 							}
+							repos[cve.CVE.CVEDataMeta.ID] = repo
 						}
 					}
 					patchRefCount += 1
@@ -351,9 +306,9 @@ func main() {
 		}
 
 		for _, CPEstr := range cves.CPEs(cve) {
-			CPE, ok := cves.ParseCPE(CPEstr)
-			if !ok {
-				Logger.Infof("Failed to parse CPE %s: %v", CPEstr, err)
+			CPE, err := cves.ParseCPE(CPEstr)
+			if err != nil {
+				Logger.Warnf("Failed to parse CPE %q: %+v", CPEstr, err)
 			}
 			if CPE.Part == "a" {
 				Logger.Infof("\t * vendor=%s, product=%s", CPE.Vendor, CPE.Product)

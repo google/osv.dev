@@ -27,9 +27,9 @@ import yaml
 from google.protobuf import json_format
 
 # pylint: disable=relative-beyond-top-level
+from . import cache
 from . import repos
 from . import vulnerability_pb2
-from . import cache
 
 AUTHOR_EMAIL = 'infra@osv.dev'
 PUSH_RETRIES = 2
@@ -149,7 +149,7 @@ def parse_vulnerability_from_dict(data, key_path=None):
   try:
     jsonschema.validate(data, load_schema())
   except jsonschema.exceptions.ValidationError as e:
-    logging.warning("Failed to validate loaded OSV entry: %s", e.message)
+    logging.warning('Failed to validate loaded OSV entry: %s', e.message)
 
   vulnerability = vulnerability_pb2.Vulnerability()
   json_format.ParseDict(data, vulnerability, ignore_unknown_fields=True)

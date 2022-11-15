@@ -149,7 +149,7 @@ class ImporterTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
     self.mock_repo.commit('User', 'user@email')
 
     imp = importer.Importer('fake_public_key', 'fake_private_key', self.tmp_dir,
-                            'bucket')
+                            'bucket', True)
     imp.run()
 
     repo = pygit2.Repository(self.remote_source_repo_path)
@@ -207,7 +207,7 @@ class ImporterTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
     self.mock_repo.commit('User', 'user@email')
 
     imp = importer.Importer('fake_public_key', 'fake_private_key', self.tmp_dir,
-                            'bucket')
+                            'bucket', True)
     imp.run()
 
     mock_publish.assert_has_calls([
@@ -234,7 +234,7 @@ class ImporterTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
     self.source_repo.put()
 
     imp = importer.Importer('fake_public_key', 'fake_private_key', self.tmp_dir,
-                            'bucket')
+                            'bucket', True)
     imp.run()
 
     mock_publish.assert_not_called()
@@ -293,7 +293,7 @@ class ImporterTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
         timestamp=datetime.datetime(2020, 1, 1, 0, 0, 0, 0)).put()
 
     imp = importer.Importer('fake_public_key', 'fake_private_key', self.tmp_dir,
-                            'bucket')
+                            'bucket', True)
     imp.run()
 
     mock_publish.assert_has_calls([
@@ -335,7 +335,7 @@ class ImporterTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
         timestamp=datetime.datetime(2020, 1, 1, 0, 0, 0, 0)).put()
 
     imp = importer.Importer('fake_public_key', 'fake_private_key', self.tmp_dir,
-                            'bucket')
+                            'bucket', True)
     imp.run()
 
   def test_no_updates(self):
@@ -344,7 +344,7 @@ class ImporterTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
     self.mock_repo.commit('User', 'user@email', 'message. OSV-NO-UPDATE')
 
     imp = importer.Importer('fake_public_key', 'fake_private_key', self.tmp_dir,
-                            'bucket')
+                            'bucket', True)
     imp.run()
 
   def test_ignore(self):
@@ -353,7 +353,7 @@ class ImporterTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
     self.mock_repo.commit('User', 'user@email', 'message.')
 
     imp = importer.Importer('fake_public_key', 'fake_private_key', self.tmp_dir,
-                            'bucket')
+                            'bucket', True)
     imp.run()
 
 
@@ -400,7 +400,7 @@ class BucketImporterTest(unittest.TestCase):
     """Test bucket updates."""
 
     imp = importer.Importer('fake_public_key', 'fake_private_key', self.tmp_dir,
-                            'bucket')
+                            'bucket', True)
 
     imp.run()
     mock_publish.assert_has_calls([
@@ -434,7 +434,7 @@ class BucketImporterTest(unittest.TestCase):
     self.source_repo.put()
 
     imp = importer.Importer('fake_public_key', 'fake_private_key', self.tmp_dir,
-                            'bucket')
+                            'bucket', True)
 
     imp.run()
 

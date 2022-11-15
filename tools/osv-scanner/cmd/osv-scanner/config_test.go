@@ -16,7 +16,7 @@ type testStruct struct {
 func TestTryLoadConfig(t *testing.T) {
 
 	expectedConfig := Config{
-		IgnoredVulns: []IgnoreLine{
+		IgnoredVulns: []IgnoreEntry{
 			{
 				ID: "GO-2022-0968",
 			},

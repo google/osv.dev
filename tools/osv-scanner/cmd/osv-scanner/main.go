@@ -204,7 +204,7 @@ func scanDebianDocker(query *osv.BatchedQuery, dockerImageName string) {
 
 // Filters response according to config, returns number of responses removed
 func filterResponse(query osv.BatchedQuery, resp *osv.BatchedResponse, configManager *ConfigManager) int {
-	hiddenVulns := map[string]IgnoreLine{}
+	hiddenVulns := map[string]IgnoreEntry{}
 
 	for i, result := range resp.Results {
 		var filteredVulns []osv.MinimalVulnerability

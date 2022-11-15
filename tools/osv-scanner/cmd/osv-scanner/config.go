@@ -21,20 +21,20 @@ type ConfigManager struct {
 }
 
 type Config struct {
-	IgnoredVulns []IgnoreLine
+	IgnoredVulns []IgnoreEntry
 	LoadPath     string
 }
 
-type IgnoreLine struct {
+type IgnoreEntry struct {
 	ID          string    `toml:"id"`
 	IgnoreUntil time.Time `toml:"ignoreUntil"`
 	Reason      string    `toml:"reason"`
 }
 
-func (c *Config) ShouldIgnore(vulnID string) (bool, IgnoreLine) {
-	index := slices.IndexFunc(c.IgnoredVulns, func(elem IgnoreLine) bool { return elem.ID == vulnID })
+func (c *Config) ShouldIgnore(vulnID string) (bool, IgnoreEntry) {
+	index := slices.IndexFunc(c.IgnoredVulns, func(elem IgnoreEntry) bool { return elem.ID == vulnID })
 	if index == -1 {
-		return false, IgnoreLine{}
+		return false, IgnoreEntry{}
 	}
 	ignoredLine := c.IgnoredVulns[index]
 	if ignoredLine.IgnoreUntil.IsZero() {
@@ -67,16 +67,19 @@ func (c *ConfigManager) Get(targetPath string) Config {
 
 	configPath := normalizeConfigLoadPath(targetPath)
 	config, alreadyExists := c.configMap[configPath]
-	if !alreadyExists {
-		config, configErr := tryLoadConfig(configPath)
-		if configErr == nil {
-			log.Printf("Loaded filter from: %s", config.LoadPath)
-		} else {
-			// If config doesn't exist, use the default config
-			config = c.defaultConfig
-		}
-		c.configMap[configPath] = config
+	if alreadyExists {
+		return config
 	}
+
+	config, configErr := tryLoadConfig(configPath)
+	if configErr == nil {
+		log.Printf("Loaded filter from: %s", config.LoadPath)
+	} else {
+		// If config doesn't exist, use the default config
+		config = c.defaultConfig
+	}
+	c.configMap[configPath] = config
+
 	return config
 }
 

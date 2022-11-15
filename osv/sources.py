@@ -146,7 +146,11 @@ def _get_nested_vulnerability(data, key_path=None):
 def parse_vulnerability_from_dict(data, key_path=None):
   """Parse vulnerability from dict."""
   data = _get_nested_vulnerability(data, key_path)
-  jsonschema.validate(data, load_schema())
+  try:
+    jsonschema.validate(data, load_schema())
+  except jsonschema.exceptions.ValidationError as e:
+    logging.warning("Failed to validate loaded OSV entry: %s", e.message)
+
   vulnerability = vulnerability_pb2.Vulnerability()
   json_format.ParseDict(data, vulnerability, ignore_unknown_fields=True)
   if not vulnerability.id:

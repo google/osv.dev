@@ -71,7 +71,7 @@ This tool will walk through a list of directories to find:
 
 and make requests to OSV to determine affected vulnerabilities.
 
-You can have it recursively walk through subdirectories with the `--recursive` flag.
+You can have it recursively walk through subdirectories with the `--recursive` / `-r` flag.
 
 Searching for git commit hash is intended to work with projects that use
 git submodules or a similar mechanism where dependencies are checked out
@@ -80,7 +80,7 @@ as real git repositories.
 ### Example
 
 ```bash
-$ go run ./cmd/osv-scanner /path/to/your/dir
+$ go run ./cmd/osv-scanner -r /path/to/your/dir
 ```
 
 ## Configure `osv-scanner`

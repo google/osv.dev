@@ -112,10 +112,10 @@ def load_schema():
     return json.loads(text)
 
 
-def parse_vulnerability(path, key_path=None):
+def parse_vulnerability(path, key_path=None, strict=False):
   """Parse vulnerability YAML."""
   data = _parse_vulnerability_dict(path)
-  return parse_vulnerability_from_dict(data, key_path)
+  return parse_vulnerability_from_dict(data, key_path, strict)
 
 
 def _parse_vulnerabilities(data, key_path):
@@ -155,13 +155,15 @@ def _get_nested_vulnerability(data, key_path=None):
   return data
 
 
-def parse_vulnerability_from_dict(data, key_path=None):
+def parse_vulnerability_from_dict(data, key_path=None, strict=False):
   """Parse vulnerability from dict."""
   data = _get_nested_vulnerability(data, key_path)
   try:
     jsonschema.validate(data, load_schema())
   except jsonschema.exceptions.ValidationError as e:
     logging.warning('Failed to validate loaded OSV entry: %s', e.message)
+    if strict: # Reraise the error if strict
+      raise
 
   vulnerability = vulnerability_pb2.Vulnerability()
   json_format.ParseDict(data, vulnerability, ignore_unknown_fields=True)

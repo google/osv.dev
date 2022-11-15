@@ -65,7 +65,7 @@ class Importer:
   """Importer."""
 
   def __init__(self, ssh_key_public_path, ssh_key_private_path, work_dir,
-               oss_fuzz_export_bucket):
+               oss_fuzz_export_bucket, strict_validation: bool):
     self._ssh_key_public_path = ssh_key_public_path
     self._ssh_key_private_path = ssh_key_private_path
     self._work_dir = work_dir
@@ -73,6 +73,7 @@ class Importer:
     self._oss_fuzz_export_bucket = oss_fuzz_export_bucket
 
     self._sources_dir = os.path.join(self._work_dir, 'sources')
+    self._strict_validation = strict_validation
     os.makedirs(self._sources_dir, exist_ok=True)
 
   def _git_callbacks(self, source_repo):
@@ -455,6 +456,10 @@ def main():
       '--work_dir', help='Working directory', default=DEFAULT_WORK_DIR)
   parser.add_argument('--ssh_key_public', help='Public SSH key path')
   parser.add_argument('--ssh_key_private', help='Private SSH key path')
+  parser.add_argument(
+      '--strict_validation',
+      help='Fail to import entries that does not pass validation',
+      default=False)
   args = parser.parse_args()
 
   tmp_dir = os.path.join(args.work_dir, 'tmp')
@@ -462,7 +467,7 @@ def main():
   os.environ['TMPDIR'] = tmp_dir
 
   importer = Importer(args.ssh_key_public, args.ssh_key_private, args.work_dir,
-                      _OSS_FUZZ_EXPORT_BUCKET)
+                      _OSS_FUZZ_EXPORT_BUCKET, args.strict_validation)
   importer.run()
 
 

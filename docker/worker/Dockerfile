@@ -24,10 +24,6 @@ VOLUME /var/lib/docker
 COPY docker/worker/Pipfile* /env/docker/worker/
 COPY setup.py Pipfile* README.md /env/
 COPY osv /env/osv
-# Remove the symbolic link
-RUN rm /env/osv/schema.json
-# Copy over the real schema.json
-COPY osv/osv-schema/validation/schema.json /env/osv/schema.json
 RUN cd /env/docker/worker && pip3 install pipenv && pipenv install --deploy --system
 
 COPY docker/worker/oss_fuzz.py docker/worker/worker.py /usr/local/bin/

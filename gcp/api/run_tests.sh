@@ -24,4 +24,3 @@ service docker start
 
 export GOOGLE_CLOUD_PROJECT=oss-vdb
 python integration_tests.py
-python integration_tests.py

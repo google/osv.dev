@@ -13,27 +13,27 @@ func TestParseCPE(t *testing.T) {
 		expectedOk        bool
 	}{
 		{
-			description: "invalid input (empty string)", inputCPEString: "", expectedCPEStruct: nil, expectedOk: true,
+			description: "invalid input (empty string)", inputCPEString: "", expectedCPEStruct: nil, expectedOk: false,
 		},
 
 		{
-			description: "invalid input (corrupt)", inputCPEString: "fnord:2.3:h:intel:core_i3-1005g1:-:*:*:*:*:*:*:*", expectedCPEStruct: nil, expectedOk: true,
+			description: "invalid input (corrupt)", inputCPEString: "fnord:2.3:h:intel:core_i3-1005g1:-:*:*:*:*:*:*:*", expectedCPEStruct: nil, expectedOk: false,
 		},
 		{
-			description: "invalid input (truncated)", inputCPEString: "cpe:2.3:h:intel:core_i3-1005g1:", expectedCPEStruct: nil, expectedOk: true,
+			description: "invalid input (truncated)", inputCPEString: "cpe:2.3:h:intel:core_i3-1005g1:", expectedCPEStruct: nil, expectedOk: false,
 		},
 		{
 			description: "valid input (hardware)", inputCPEString: "cpe:2.3:h:intel:core_i3-1005g1:-:*:*:*:*:*:*:*", expectedCPEStruct: &CPE{
-				CPEVersion: "2.3", Part: "h", Vendor: "intel", Product: "core_i3-1005g1", Version: "-", Update: "*", Edition: "*", Language: "*", SWEdition: "*", TargetSW: "*", TargetHW: "*", Other: "*"}, expectedOk: false,
+				CPEVersion: "2.3", Part: "h", Vendor: "intel", Product: "core_i3-1005g1", Version: "-", Update: "*", Edition: "*", Language: "*", SWEdition: "*", TargetSW: "*", TargetHW: "*", Other: "*"}, expectedOk: true,
 		},
 		{
-			description: "valid input (software)", inputCPEString: "cpe:2.3:a:gitlab:gitlab:*:*:*:*:community:*:*:*", expectedCPEStruct: &CPE{CPEVersion: "2.3", Part: "a", Vendor: "gitlab", Product: "gitlab", Version: "*", Update: "*", Edition: "*", Language: "*", SWEdition: "community", TargetSW: "*", TargetHW: "*", Other: "*"}, expectedOk: false,
+			description: "valid input (software)", inputCPEString: "cpe:2.3:a:gitlab:gitlab:*:*:*:*:community:*:*:*", expectedCPEStruct: &CPE{CPEVersion: "2.3", Part: "a", Vendor: "gitlab", Product: "gitlab", Version: "*", Update: "*", Edition: "*", Language: "*", SWEdition: "community", TargetSW: "*", TargetHW: "*", Other: "*"}, expectedOk: true,
 		},
 	}
 
 	for _, tc := range tests {
 		got, ok := ParseCPE(tc.inputCPEString)
-		if !ok && !tc.expectedOk {
+		if !ok && tc.expectedOk {
 			t.Errorf("test %q: ParseCPE for %q unexpectedly failed", tc.description, tc.inputCPEString)
 		}
 		if !reflect.DeepEqual(got, tc.expectedCPEStruct) {

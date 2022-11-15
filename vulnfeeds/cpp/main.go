@@ -6,7 +6,6 @@ import (
 	"context"
 	"encoding/json"
 	"flag"
-	"fmt"
 	"io/ioutil"
 	"log"
 	"net/url"
@@ -36,54 +35,6 @@ func IsRepoURL(url string) bool {
 	re := regexp.MustCompile(`http[s]?:\/\/(?:c?git(?:hub|lab)?)\.|\.git$`)
 
 	return re.MatchString(url)
-}
-
-// Returns the base repository URL
-func Repo(u string) (string, bool) {
-	parsedURL, err := url.Parse(u)
-	if err != nil {
-		Logger.Fatalf("%v", err)
-	}
-	// GitHub and GitLab commit and blob URLs are structured one way, e.g.
-	// https://github.com/MariaDB/server/commit/b1351c15946349f9daa7e5297fb2ac6f3139e4a8
-	// https://github.com/tensorflow/tensorflow/blob/master/tensorflow/core/ops/math_ops.cc
-	// https://gitlab.freedesktop.org/virgl/virglrenderer/-/commit/b05bb61f454eeb8a85164c8a31510aeb9d79129c
-	// https://gitlab.com/qemu-project/qemu/-/commit/4367a20cc4
-	// https://gitlab.com/gitlab-org/cves/-/blob/master/2022/CVE-2022-2501.json
-	//
-	// This also supports GitHub tag URLs, e.g.
-	// https://github.com/JonMagon/KDiskMark/releases/tag/3.1.0
-	//
-	// This also supports GitHub and Gitlab issue URLs, e.g.:
-	// https://github.com/axiomatic-systems/Bento4/issues/755
-	// https://gitlab.com/wireshark/wireshark/-/issues/18307
-	if strings.Contains(parsedURL.Path, "commit") || strings.Contains(parsedURL.Path, "blob") || strings.Contains(parsedURL.Path, "releases/tag") || strings.Contains(parsedURL.Path, "issues") {
-		return fmt.Sprintf("%s://%s%s", parsedURL.Scheme, parsedURL.Hostname(), strings.Join(strings.Split(parsedURL.Path, "/")[0:3], "/")), true
-	}
-
-	// GitHub pull request URLs are structured differently, e.g.
-	// https://github.com/google/osv.dev/pull/738
-	if parsedURL.Hostname() == "github.com" && strings.Contains(parsedURL.Path, "pull") {
-		return fmt.Sprintf("%s://%s%s", parsedURL.Scheme, parsedURL.Hostname(), strings.Join(strings.Split(parsedURL.Path, "/")[0:3], "/")), true
-	}
-
-	// Gitlab merge request URLs are structured differently, e.g.
-	// https://gitlab.com/libtiff/libtiff/-/merge_requests/378
-	if strings.Contains(parsedURL.Hostname(), "gitlab") && strings.Contains(parsedURL.Path, "merge_requests") {
-		return fmt.Sprintf("%s://%s%s", parsedURL.Scheme, parsedURL.Hostname(), strings.Join(strings.Split(parsedURL.Path, "/")[0:3], "/")), true
-	}
-
-	// GitWeb URLs are structured another way, e.g.
-	// https://git.dpkg.org/cgit/dpkg/dpkg.git/commit/?id=faa4c92debe45412bfcf8a44f26e827800bb24be
-	// https://git.kernel.org/cgit/linux/kernel/git/torvalds/linux.git/commit/?id=817b8b9c5396d2b2d92311b46719aad5d3339dbe
-	if parsedURL.Path == "/" && strings.Contains(parsedURL.RawQuery, "commit") {
-		repo := strings.Split(strings.Split(parsedURL.RawQuery, ";")[0], "=")[1]
-		return fmt.Sprintf("%s://%s/%s", parsedURL.Scheme, parsedURL.Hostname(), repo), true
-	}
-
-	// If we get to here we've encountered an unsupported URL
-	return "", false
-
 }
 
 // Checks if a URL relates to the FSF.
@@ -328,21 +279,25 @@ func main() {
 					for _, CPEstr := range cves.CPEs(cve) {
 						CPE, ok := cves.ParseCPE(CPEstr)
 						if !ok {
-							Logger.Infof("Failed to parse CPE %s: %v", CPEstr, err)
+							Logger.Warnf("Failed to parse CPE %s: %v", CPEstr, err)
 							continue
 						}
-						// Avoid unnecessary calls to Repo() if we already have the repo
+						// Avoid unnecessary calls to cves.Repo() if we already have the repo
 						if _, ok := repos[CPE.Product]; !ok {
-							repo, ok := Repo(ref.URL)
-							if ok {
-								repos[CPE.Product] = repo
+							repo, err := cves.Repo(ref.URL)
+							if err != nil {
+								Logger.Warnf("Failed to parse %q for %q: %+v", ref.URL, CPE.Product, err)
+								continue
 							}
+							repos[CPE.Product] = repo
 						}
 						if _, ok := repos[cve.CVE.CVEDataMeta.ID]; !ok {
-							repo, ok := Repo(ref.URL)
-							if ok {
-								repos[cve.CVE.CVEDataMeta.ID] = repo
+							repo, err := cves.Repo(ref.URL)
+							if err != nil {
+								Logger.Warnf("Failed to parse %q for %q: %+v", ref.URL, CPE.Product, err)
+								continue
 							}
+							repos[cve.CVE.CVEDataMeta.ID] = repo
 						}
 					}
 					patchRefCount += 1

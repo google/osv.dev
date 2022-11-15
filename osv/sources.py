@@ -18,6 +18,8 @@ import json
 import hashlib
 import logging
 import os
+
+import jsonschema
 import pygit2
 import time
 import yaml
@@ -25,6 +27,7 @@ import yaml
 from google.protobuf import json_format
 
 # pylint: disable=relative-beyond-top-level
+from . import cache
 from . import repos
 from . import vulnerability_pb2
 
@@ -33,7 +36,18 @@ PUSH_RETRIES = 2
 PUSH_RETRY_SLEEP_SECONDS = 10
 
 YAML_EXTENSIONS = ('.yaml', '.yml')
-JSON_EXTENSIONS = ('.json')
+JSON_EXTENSIONS = ('.json',)
+
+shared_cache = cache.InMemoryCache()
+
+
+class KeyPathError(Exception):
+  """
+  The provided key path was not found in the object.
+
+  For example, this can happen with GSD entries where for most vulnerabilities,
+  an OSV entry is not published, only the GSD part.
+  """
 
 
 def parse_source_id(source_id):
@@ -47,12 +61,40 @@ def repo_path(repo):
   return os.path.dirname(repo.path.rstrip(os.sep))
 
 
+class NoDatesSafeLoader(yaml.SafeLoader):
+  """
+  Safe YAML loader that removes datetime autoparsing
+
+  PyYAML automatically parses date strings into Python datetime.datetime, which
+  will cause multiple issues in other parts of the osv library, including
+  automatically failing the json schema verifier.
+  """
+
+  @classmethod
+  def remove_implicit_resolver(cls, tag_to_remove):
+    """
+    Remove implicit resolvers for a particular tag
+
+    Takes care not to modify resolvers in super classes.
+    """
+    if 'yaml_implicit_resolvers' not in cls.__dict__:
+      cls.yaml_implicit_resolvers = cls.yaml_implicit_resolvers.copy()
+
+    for first_letter, mappings in cls.yaml_implicit_resolvers.items():
+      cls.yaml_implicit_resolvers[first_letter] = [
+          (tag, regexp) for tag, regexp in mappings if tag != tag_to_remove
+      ]
+
+
+NoDatesSafeLoader.remove_implicit_resolver('tag:yaml.org,2002:timestamp')
+
+
 def _parse_vulnerability_dict(path):
   """Parse a vulnerability file into a dict."""
   with open(path) as f:
     ext = os.path.splitext(path)[1]
     if ext in YAML_EXTENSIONS:
-      return yaml.safe_load(f)
+      return yaml.load(f, Loader=NoDatesSafeLoader)
 
     if ext in JSON_EXTENSIONS:
       return json.load(f)
@@ -62,49 +104,71 @@ def _parse_vulnerability_dict(path):
   return None
 
 
-def parse_vulnerability(path, key_path=None):
+@cache.cached(shared_cache)
+def load_schema():
+  path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'schema.json')
+  with open(path, 'r') as schema:
+    text = schema.read()
+    return json.loads(text)
+
+
+def parse_vulnerability(path, key_path=None, strict=False):
   """Parse vulnerability YAML."""
   data = _parse_vulnerability_dict(path)
-  return parse_vulnerability_from_dict(data, key_path)
+  return parse_vulnerability_from_dict(data, key_path, strict)
 
 
-def _parse_vulnerabilities(data, key_path):
+def _parse_vulnerabilities(data, key_path, strict=False):
   """Parse multiple vulnerabilities."""
   if isinstance(data, list):
-    return [parse_vulnerability_from_dict(v, key_path) for v in data]
+    return [parse_vulnerability_from_dict(v, key_path, strict) for v in data]
 
-  return [parse_vulnerability_from_dict(data, key_path)]
+  return [parse_vulnerability_from_dict(data, key_path, strict)]
 
 
-def parse_vulnerabilities(path, key_path=None):
+def parse_vulnerabilities(path, key_path=None, strict=False):
   """Parse vulnerabilities (potentially multiple in a list)."""
-  return _parse_vulnerabilities(_parse_vulnerability_dict(path), key_path)
+  return _parse_vulnerabilities(
+      _parse_vulnerability_dict(path), key_path, strict)
 
 
-def parse_vulnerabilities_from_data(data, extension, key_path=None):
+def parse_vulnerabilities_from_data(data_text,
+                                    extension,
+                                    key_path=None,
+                                    strict=False):
   """Parse vulnerabilities from data."""
   if extension in YAML_EXTENSIONS:
-    data = yaml.safe_load(data)
+    data = yaml.load(data_text, Loader=NoDatesSafeLoader)
   elif extension in JSON_EXTENSIONS:
-    data = json.loads(data)
+    data = json.loads(data_text)
   else:
     raise RuntimeError('Unknown format ' + extension)
 
-  return _parse_vulnerabilities(data, key_path)
+  return _parse_vulnerabilities(data, key_path, strict)
 
 
 def _get_nested_vulnerability(data, key_path=None):
   """Get nested vulnerability."""
   if key_path:
-    for component in key_path.split('.'):
-      data = data[component]
+    try:
+      for component in key_path.split('.'):
+        data = data[component]
+    except KeyError as e:
+      raise KeyPathError() from e
 
   return data
 
 
-def parse_vulnerability_from_dict(data, key_path=None):
+def parse_vulnerability_from_dict(data, key_path=None, strict=False):
   """Parse vulnerability from dict."""
   data = _get_nested_vulnerability(data, key_path)
+  try:
+    jsonschema.validate(data, load_schema())
+  except jsonschema.exceptions.ValidationError as e:
+    logging.warning('Failed to validate loaded OSV entry: %s', e.message)
+    if strict:  # Reraise the error if strict
+      raise
+
   vulnerability = vulnerability_pb2.Vulnerability()
   json_format.ParseDict(data, vulnerability, ignore_unknown_fields=True)
   if not vulnerability.id:

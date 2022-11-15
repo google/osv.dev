@@ -42,7 +42,8 @@ func (c *Config) ShouldIgnore(vulnID string) (bool, IgnoreEntry) {
 		return true, ignoredLine
 	}
 	// Should ignore if IgnoreUntil is still after current time
-	return ignoredLine.IgnoreUntil.After(time.Now().UTC()), ignoredLine
+	// Takes timezone offsets into account if it is specified. otherwise it's using local time
+	return ignoredLine.IgnoreUntil.After(time.Now()), ignoredLine
 
 }
 

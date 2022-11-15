@@ -98,11 +98,11 @@ under the `IgnoreVulns` key, along with optional reason and expiry date.
 ```
 [[IgnoredVulns]]
 id = "GO-2022-0968"
-# ignoreUntil = 2022-11-09T00:00:00Z # Optional exception expiry date
+# ignoreUntil = 2022-11-09 # Optional exception expiry date
 reason = "No ssh servers are connected to or hosted in Go lang"
 
 id = "GO-2022-1059"
-# ignoreUntil = 2022-11-09T00:00:00Z # Optional exception expiry date
+# ignoreUntil = 2022-11-09 # Optional exception expiry date
 reason = "No external http servers are written in Go lang."
 ```
 

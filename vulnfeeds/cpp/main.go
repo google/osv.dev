@@ -176,9 +176,9 @@ func InScopeRepo(repoURL string) bool {
 // Takes an NVD CVE record and outputs an OSV file in the specified directory.
 func CVEToOSV(CVE cves.CVEItem, repo, directory string) {
 	CPEs := cves.CPEs(CVE)
-	CPE, ok := cves.ParseCPE(CPEs[0])
-	if !ok {
-		Logger.Fatalf("Can't generate an OSV record for %s without CPE data", CVE.CVE.CVEDataMeta.ID)
+	CPE, err := cves.ParseCPE(CPEs[0])
+	if err != nil {
+		Logger.Fatalf("Can't generate an OSV record for %s without valid CPE data", CVE.CVE.CVEDataMeta.ID)
 	}
 	v, _ := vulns.FromCVE(CVE.CVE.CVEDataMeta.ID, CVE)
 	versions, _ := cves.ExtractVersionInfo(CVE, nil)
@@ -191,7 +191,7 @@ func CVEToOSV(CVE cves.CVEItem, repo, directory string) {
 
 	// Everything from here down relates to output.
 	vulnDir := filepath.Join(directory, CPE.Product)
-	err := os.MkdirAll(vulnDir, 0755)
+	err = os.MkdirAll(vulnDir, 0755)
 	if err != nil {
 		Logger.Fatalf("Failed to create dir: %v", err)
 	}
@@ -249,13 +249,13 @@ func main() {
 		// Does it have any application CPEs?
 		appCPECount := 0
 		for _, CPEstr := range cves.CPEs(cve) {
-			CPE, ok := cves.ParseCPE(CPEstr)
-			if ok {
-				if CPE.Part == "a" {
-					appCPECount += 1
-				}
-			} else {
-				Logger.Fatalf("Failed to parse CPE %s: %v", CPEstr, err)
+			CPE, err := cves.ParseCPE(CPEstr)
+			if err != nil {
+				Logger.Warnf("Failed to parse CPE %q: %+v", CPEstr, err)
+				continue
+			}
+			if CPE.Part == "a" {
+				appCPECount += 1
 			}
 		}
 
@@ -277,9 +277,9 @@ func main() {
 					Logger.Infof("\t * %s", ref.URL)
 					// CVE entries have one set of references, but can have multiple CPEs
 					for _, CPEstr := range cves.CPEs(cve) {
-						CPE, ok := cves.ParseCPE(CPEstr)
-						if !ok {
-							Logger.Warnf("Failed to parse CPE %s: %v", CPEstr, err)
+						CPE, err := cves.ParseCPE(CPEstr)
+						if err != nil {
+							Logger.Warnf("Failed to parse CPE %q: %+v", CPEstr, err)
 							continue
 						}
 						// Avoid unnecessary calls to cves.Repo() if we already have the repo
@@ -306,9 +306,9 @@ func main() {
 		}
 
 		for _, CPEstr := range cves.CPEs(cve) {
-			CPE, ok := cves.ParseCPE(CPEstr)
-			if !ok {
-				Logger.Infof("Failed to parse CPE %s: %v", CPEstr, err)
+			CPE, err := cves.ParseCPE(CPEstr)
+			if err != nil {
+				Logger.Warnf("Failed to parse CPE %q: %+v", CPEstr, err)
 			}
 			if CPE.Part == "a" {
 				Logger.Infof("\t * vendor=%s, product=%s", CPE.Vendor, CPE.Product)

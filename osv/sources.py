@@ -41,6 +41,15 @@ JSON_EXTENSIONS = ('.json',)
 shared_cache = cache.InMemoryCache()
 
 
+class KeyPathError(Exception):
+  """
+  The provided key path was not found in the object.
+
+  For example, this can happen with GSD entries where for most vulnerabilities,
+  an OSV entry is not published, only the GSD part.
+  """
+
+
 def parse_source_id(source_id):
   """Get the source name and id from source_id."""
   return source_id.split(':', 1)
@@ -137,8 +146,11 @@ def parse_vulnerabilities_from_data(data_text, extension, key_path=None):
 def _get_nested_vulnerability(data, key_path=None):
   """Get nested vulnerability."""
   if key_path:
-    for component in key_path.split('.'):
-      data = data[component]
+    try:
+      for component in key_path.split('.'):
+        data = data[component]
+    except KeyError as e:
+      raise KeyPathError() from e
 
   return data
 

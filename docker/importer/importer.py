@@ -290,13 +290,12 @@ class Importer:
 
       try:
         _ = osv.parse_vulnerability(path, key_path=source_repo.key_path)
+      except osv.sources.KeyPathError:
+        # Key path doesn't exist in the vulnerability.
+        # No need to log a full error, as this is expected result.
+        logging.info('Entry does not have an OSV entry: %s', changed_entry)
       except Exception as e:
-        if isinstance(e, KeyError) and source_repo.key_path in e.args:
-          # Key path doesn't exist in the vulnerability.
-          # No need to log a full error, as this is expected
-          logging.info('Entry does not have an OSV entry: %s', changed_entry)
-        else:
-          logging.error('Failed to parse %s: %s', changed_entry, str(e))
+        logging.error('Failed to parse %s: %s', changed_entry, str(e))
         continue
 
       logging.info('Re-analysis triggered for %s', changed_entry)

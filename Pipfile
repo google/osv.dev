@@ -9,6 +9,7 @@ semver = "*"
 pyyaml = "*"
 pygit2 = ">=1.9.2"
 attrs = "*"
+jsonschema = "*"
 
 [dev-packages]
 yapf = "*"

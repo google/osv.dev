@@ -607,7 +607,8 @@ class UpdateTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
     self.mock_publish = mock_publish.start()
     self.addCleanup(mock_publish.stop)
 
-    osv.ecosystems.work_dir = 'testdata/tmp/'
+    osv.ecosystems.work_dir = os.path.join(
+        os.path.dirname(os.path.abspath(__file__)), 'testdata/tmp/')
 
   def tearDown(self):
     self.tmp_dir.cleanup()

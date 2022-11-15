@@ -19,7 +19,7 @@ with open('README.md', 'r') as fh:
 
 setuptools.setup(
     name='osv',
-    version='0.0.15',
+    version='0.0.16',
     author='OSV authors',
     author_email='osv-discuss@googlegroups.com',
     description='Open Source Vulnerabilities library',
@@ -39,6 +39,7 @@ setuptools.setup(
         'PyYAML',
         'semver',
         'attrs',
+        'jsonschema'
     ],
     package_dir={
         '': '.',

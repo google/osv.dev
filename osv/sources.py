@@ -118,20 +118,20 @@ def parse_vulnerability(path, key_path=None, strict=False):
   return parse_vulnerability_from_dict(data, key_path, strict)
 
 
-def _parse_vulnerabilities(data, key_path):
+def _parse_vulnerabilities(data, key_path, strict=False):
   """Parse multiple vulnerabilities."""
   if isinstance(data, list):
-    return [parse_vulnerability_from_dict(v, key_path) for v in data]
+    return [parse_vulnerability_from_dict(v, key_path, strict) for v in data]
 
-  return [parse_vulnerability_from_dict(data, key_path)]
+  return [parse_vulnerability_from_dict(data, key_path, strict)]
 
 
-def parse_vulnerabilities(path, key_path=None):
+def parse_vulnerabilities(path, key_path=None, strict=False):
   """Parse vulnerabilities (potentially multiple in a list)."""
-  return _parse_vulnerabilities(_parse_vulnerability_dict(path), key_path)
+  return _parse_vulnerabilities(_parse_vulnerability_dict(path), key_path, strict)
 
 
-def parse_vulnerabilities_from_data(data_text, extension, key_path=None):
+def parse_vulnerabilities_from_data(data_text, extension, key_path=None, strict=False):
   """Parse vulnerabilities from data."""
   if extension in YAML_EXTENSIONS:
     data = yaml.load(data_text, Loader=NoDatesSafeLoader)
@@ -140,7 +140,7 @@ def parse_vulnerabilities_from_data(data_text, extension, key_path=None):
   else:
     raise RuntimeError('Unknown format ' + extension)
 
-  return _parse_vulnerabilities(data, key_path)
+  return _parse_vulnerabilities(data, key_path, strict)
 
 
 def _get_nested_vulnerability(data, key_path=None):

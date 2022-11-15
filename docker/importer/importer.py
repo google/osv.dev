@@ -290,7 +290,8 @@ class Importer:
         continue
 
       try:
-        _ = osv.parse_vulnerability(path, key_path=source_repo.key_path)
+        _ = osv.parse_vulnerability(
+            path, key_path=source_repo.key_path, strict=self._strict_validation)
       except osv.sources.KeyPathError:
         # Key path doesn't exist in the vulnerability.
         # No need to log a full error, as this is expected result.
@@ -357,7 +358,8 @@ class Importer:
         try:
           vulns = osv.parse_vulnerabilities_from_data(
               blob_bytes,
-              os.path.splitext(blob_name)[1])
+              os.path.splitext(blob_name)[1],
+              strict=self._strict_validation)
           for vuln in vulns:
             bug = osv.Bug.get_by_id(vuln.id)
             if bug is None or \

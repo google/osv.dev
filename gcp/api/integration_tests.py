@@ -518,9 +518,6 @@ if __name__ == '__main__':
   server = test_server.start(port=_PORT)
   time.sleep(30)
   server.check()
-  test_server.docker_inspect()
-  server._emit_log('backend.log')
-  server._emit_log('esp.log')
 
   try:
     unittest.main()

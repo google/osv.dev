@@ -10,7 +10,7 @@ google-cloud-ndb = "*"
 PyYAML = "*"
 google-cloud-storage = "*"
 redis = "*"
-osv = {editable = true, path = "../../"}
+osv = {editable = true, path = "./../.."}
 
 [dev-packages]
 yapf = "*"

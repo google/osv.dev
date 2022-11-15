@@ -128,10 +128,14 @@ def _parse_vulnerabilities(data, key_path, strict=False):
 
 def parse_vulnerabilities(path, key_path=None, strict=False):
   """Parse vulnerabilities (potentially multiple in a list)."""
-  return _parse_vulnerabilities(_parse_vulnerability_dict(path), key_path, strict)
+  return _parse_vulnerabilities(
+      _parse_vulnerability_dict(path), key_path, strict)
 
 
-def parse_vulnerabilities_from_data(data_text, extension, key_path=None, strict=False):
+def parse_vulnerabilities_from_data(data_text,
+                                    extension,
+                                    key_path=None,
+                                    strict=False):
   """Parse vulnerabilities from data."""
   if extension in YAML_EXTENSIONS:
     data = yaml.load(data_text, Loader=NoDatesSafeLoader)
@@ -162,7 +166,7 @@ def parse_vulnerability_from_dict(data, key_path=None, strict=False):
     jsonschema.validate(data, load_schema())
   except jsonschema.exceptions.ValidationError as e:
     logging.warning('Failed to validate loaded OSV entry: %s', e.message)
-    if strict: # Reraise the error if strict
+    if strict:  # Reraise the error if strict
       raise
 
   vulnerability = vulnerability_pb2.Vulnerability()

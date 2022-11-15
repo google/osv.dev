@@ -251,11 +251,11 @@ func main() {
 		for _, CPEstr := range cves.CPEs(cve) {
 			CPE, err := cves.ParseCPE(CPEstr)
 			if err != nil {
-				if CPE.Part == "a" {
-					appCPECount += 1
-				}
-			} else {
-				Logger.Fatalf("Failed to parse CPE %q: %+v", CPEstr, err)
+				Logger.Warnf("Failed to parse CPE %q: %+v", CPEstr, err)
+				continue
+			}
+			if CPE.Part == "a" {
+				appCPECount += 1
 			}
 		}
 
@@ -308,7 +308,7 @@ func main() {
 		for _, CPEstr := range cves.CPEs(cve) {
 			CPE, err := cves.ParseCPE(CPEstr)
 			if err != nil {
-				Logger.Infof("Failed to parse CPE %q: %+v", CPEstr, err)
+				Logger.Warnf("Failed to parse CPE %q: %+v", CPEstr, err)
 			}
 			if CPE.Part == "a" {
 				Logger.Infof("\t * vendor=%s, product=%s", CPE.Vendor, CPE.Product)

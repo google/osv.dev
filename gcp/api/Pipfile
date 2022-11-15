@@ -12,6 +12,7 @@ packageurl-python = "==0.10.4"
 packaging = "==20.9"
 requests = "==2.28.1"
 grpcio-reflection = "*"
+google-cloud-ndb = "*"
 
 [dev-packages]
 grpcio-tools = "*"

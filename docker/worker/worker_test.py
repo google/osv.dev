@@ -609,7 +609,7 @@ class UpdateTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
 
     osv.ecosystems.work_dir = 'testdata/tmp/'
 
-    # add fake ecosystems used in tests to supported ecosystems
+    # Add fake ecosystems used in tests to supported ecosystems.
     osv.ecosystems._ecosystems.update({
         'ecosystem': osv.ecosystems.OrderingUnsupportedEcosystem(),
     })
@@ -1169,7 +1169,7 @@ class UpdateTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
                            osv.Bug.get_by_id('ASB-A-153358911')._to_dict())
 
   def test_update_bad_ecosystem_new(self):
-    """Test adding from an unsupported ecosystem"""
+    """Test adding from an unsupported ecosystem."""
     self.mock_repo.add_file(
         'BLAH-129.yaml',
         self._load_test_data(os.path.join(TEST_DATA_DIR, 'BLAH-129.yaml')))
@@ -1189,7 +1189,7 @@ class UpdateTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
     self.assertIsNone(osv.Bug.get_by_id('BLAH-129'))
 
   def test_update_partly_bad_ecosystem_new(self):
-    """Test adding vuln with both supported and unsupported ecosystem"""
+    """Test adding vuln with both supported and unsupported ecosystem."""
     self.mock_repo.add_file(
         'BLAH-130.yaml',
         self._load_test_data(os.path.join(TEST_DATA_DIR, 'BLAH-130.yaml')))

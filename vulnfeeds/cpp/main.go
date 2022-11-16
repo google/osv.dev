@@ -186,8 +186,11 @@ func CVEToOSV(CVE cves.CVEItem, repo, directory string) {
 	affected.AttachExtractedVersionInfo(versions)
 	v.Affected = append(v.Affected, affected)
 	if len(v.Affected[0].Ranges) == 0 {
-		Logger.Infof("No affected versions detected.")
+		Logger.Infof("%s: No affected versions detected.", CVE.CVE.CVEDataMeta.ID)
 	}
+	// divine a package name from the CPE
+	v.Affected[0].Package.Ecosystem = "GIT"
+	v.Affected[0].Package.Name = CPE.Product
 
 	// Everything from here down relates to output.
 	vulnDir := filepath.Join(directory, CPE.Product)

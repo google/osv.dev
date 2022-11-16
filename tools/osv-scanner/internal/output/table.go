@@ -4,6 +4,7 @@ import (
 	"io"
 	"log"
 	"os"
+	"path/filepath"
 	"strings"
 
 	"github.com/google/osv.dev/tools/osv-scanner/internal/grouper"
@@ -24,8 +25,16 @@ func PrintTableResults(query osv.BatchedQuery, resp *osv.HydratedBatchedResponse
 		if len(resp.Results[i].Vulns) == 0 {
 			continue
 		}
+		workingDir, err := os.Getwd()
+		source := query.Source
+		if err == nil {
+			sourcePath, err := filepath.Rel(workingDir, query.Source.Path)
+			if err == nil { // Simplify the path if possible
+				source.Path = sourcePath
+			}
+		}
 		for _, group := range grouper.Group(resp.Results[i].Vulns) {
-			outputRow := table.Row{query.Source}
+			outputRow := table.Row{source}
 			shouldMerge := false
 			if query.Commit != "" {
 				outputRow = append(outputRow, "GIT", query.Commit, query.Commit)
@@ -58,15 +67,6 @@ func PrintTableResults(query osv.BatchedQuery, resp *osv.HydratedBatchedResponse
 	outputTable.SetStyle(table.StyleRounded)
 	outputTable.Style().Color.Row = text.Colors{text.Reset, text.BgBlack}
 	outputTable.Style().Color.RowAlternate = text.Colors{text.Reset, text.Reset}
-	// TODO: Leave these here until styling is finalized
-	//outputTable.Style().Color.Header = text.Colors{text.FgHiCyan, text.BgBlack}
-	//outputTable.Style().Color.Row = text.Colors{text.Reset, text.Reset}
-	//outputTable.Style().Options.SeparateRows = true
-	//outputTable.Style().Options.SeparateColumns = true
-	//outputTable.SetColumnConfigs([]table.ColumnConfig{
-	//	{Number: 2, AutoMerge: true, WidthMax: maxCharacters},
-	//	{Number: 3, AutoMerge: true, WidthMax: maxCharacters},
-	//})
 
 	width, _, err := term.GetSize(int(os.Stdout.Fd()))
 	if err == nil { // If output is a terminal, set max length to width

@@ -64,6 +64,7 @@ def utcnow():
 
 def replace_importer_log(client: storage.Client, source_name: str,
                          import_failure_logs: [str]):
+  """Replace the public importer logs with the new one."""
   bucket: storage.Bucket = client.bucket(_PUBLIC_LOGGING_BUCKET)
   upload_string = '--- ' + datetime.datetime.utcnow().isoformat() + ' ---\n'
   upload_string += '\n'.join(import_failure_logs)
@@ -274,12 +275,10 @@ class Importer:
 
     # Get list of changed files since last sync.
     changed_entries = set()
-    deleted_entries = set()
 
     if source_repo.last_synced_hash:
       # Syncing from a previous commit.
-      changed_entries, deleted_entries = self._sync_from_previous_commit(
-          source_repo, repo)
+      changed_entries, _ = self._sync_from_previous_commit(source_repo, repo)
 
     else:
       # First sync from scratch.
@@ -316,18 +315,6 @@ class Importer:
       original_sha256 = osv.sha256(path)
       self._request_analysis_external(source_repo, original_sha256,
                                       changed_entry)
-
-    # Mark deleted entries as invalid.
-    for deleted_entry in deleted_entries:
-      path = os.path.join(osv.repo_path(repo), deleted_entry)
-      if os.path.exists(path):
-        # Path still exists. It must have been added back in another commit.
-        continue
-
-      logging.info('Marking %s as invalid', deleted_entry)
-      original_sha256 = ''
-      self._request_analysis_external(
-          source_repo, original_sha256, deleted_entry, deleted=True)
 
     replace_importer_log(storage.Client(), source_repo.name,
                          import_failure_logs)

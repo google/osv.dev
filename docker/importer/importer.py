@@ -31,7 +31,7 @@ import pygit2
 import osv
 
 DEFAULT_WORK_DIR = '/work'
-PUBLIC_LOGGING_BUCKET = 'public-import-logging'
+PUBLIC_LOGGING_BUCKET = 'osv-public-import-logs'
 
 _BUG_REDO_DAYS = 14
 _PROJECT = 'oss-vdb'
@@ -308,7 +308,7 @@ class Importer:
       except Exception as e:
         logging.error('Failed to parse %s: %s', changed_entry, str(e))
         # Don't include error stack trace as that might leak sensitive info
-        import_failure_logs.append('Failed to parse vulnerability ' + path)
+        import_failure_logs.append('Failed to parse vulnerability "' + path + '"')
         continue
 
       logging.info('Re-analysis triggered for %s', changed_entry)
@@ -374,7 +374,7 @@ class Importer:
         except Exception as e:
           logging.error('Failed to parse vulnerability %s: %s', blob_name, e)
           # Don't include error stack trace as that might leak sensitive info
-          # List.append() is atomic and threadsafe, wow
+          # List.append() is atomic and threadsafe.
           import_failure_logs.append('Failed to parse vulnerability "' +
                                      blob_name + '"')
           return None

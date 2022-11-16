@@ -71,7 +71,7 @@ This tool will walk through a list of directories to find:
 
 and make requests to OSV to determine affected vulnerabilities.
 
-You can have it recursively walk through subdirectories with the `--recursive` flag.
+You can have it recursively walk through subdirectories with the `--recursive` / `-r` flag.
 
 Searching for git commit hash is intended to work with projects that use
 git submodules or a similar mechanism where dependencies are checked out
@@ -80,8 +80,32 @@ as real git repositories.
 ### Example
 
 ```bash
-$ go run ./cmd/osv-scanner /path/to/your/dir
+$ go run ./cmd/osv-scanner -r /path/to/your/dir
 ```
+
+## Configure `osv-scanner`
+
+By placing a `osv-scanner.toml` file in any parent directory of the file being
+scanned will be used to configure scanning of that file. This can be overridden
+by passing the `--config=/path/to/config` flag.
+
+Currently, there is only 1 option to configure:
+### Ignore vulnerabilities by ID
+Vulnerabilities can be marked as ignored by putting the ID an entry
+under the `IgnoreVulns` key, along with optional reason and expiry date.
+
+#### Example
+```
+[[IgnoredVulns]]
+id = "GO-2022-0968"
+# ignoreUntil = 2022-11-09 # Optional exception expiry date
+reason = "No ssh servers are connected to or hosted in Go lang"
+
+id = "GO-2022-1059"
+# ignoreUntil = 2022-11-09 # Optional exception expiry date
+reason = "No external http servers are written in Go lang."
+```
+
 ## JSON output
 By default osv-scanner outputs a human readable table. To have osv-scanner output JSON instead, pass the `--json` flag when calling osv-scanner. 
 

@@ -486,12 +486,7 @@ class TaskRunner:
       logging.warning('%s has an encoding error, skipping.', vulnerability.id)
       return
 
-    # If the vulnerability has affected packages, but none of them are supported
-    # then discard it.
-    if vulnerability.affected:
-      filter_unsupported_ecosystems(vulnerability)
-      if not vulnerability.affected:
-        return
+    filter_unsupported_ecosystems(vulnerability)
 
     orig_modified_date = vulnerability.modified.ToDatetime()
     try:
@@ -526,6 +521,11 @@ class TaskRunner:
       bug.status = osv.BugStatus.INVALID
     else:
       bug.status = osv.BugStatus.PROCESSED
+
+    if not vulnerability.affected:
+      logging.info('%s does not affect any packages. Marking as invalid.',
+                   vulnerability.id)
+      bug.status = osv.BugStatus.INVALID
 
     bug.put()
     osv.update_affected_commits(bug.key.id(), result.commits, bug.public)

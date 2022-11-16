@@ -559,6 +559,9 @@ class UpdateTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
     self.mock_repo.add_file(
         'BLAH-128.yaml',
         self._load_test_data(os.path.join(TEST_DATA_DIR, 'BLAH-128.yaml')))
+    self.mock_repo.add_file(
+        'BLAH-131.yaml',
+        self._load_test_data(os.path.join(TEST_DATA_DIR, 'BLAH-131.yaml')))
     self.mock_repo.commit('User', 'user@email')
 
     self.source_repo = osv.SourceRepository(
@@ -600,6 +603,13 @@ class UpdateTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
         project=['blah.com/package'],
         ecosystem=['Go'],
         source_id='source:BLAH-127.yaml',
+        import_last_modified=datetime.datetime(2021, 1, 1, 0, 0),
+        source_of_truth=osv.SourceOfTruth.SOURCE_REPO).put()
+    osv.Bug(
+        db_id='BLAH-131',
+        project=['blah.com/package'],
+        ecosystem=['ecosystem'],
+        source_id='source:BLAH-131.yaml',
         import_last_modified=datetime.datetime(2021, 1, 1, 0, 0),
         source_of_truth=osv.SourceOfTruth.SOURCE_REPO).put()
 
@@ -1185,8 +1195,8 @@ class UpdateTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
         'deleted': 'false',
     }
     task_runner._source_update(message)
-
-    self.assertIsNone(osv.Bug.get_by_id('BLAH-129'))
+    bug = osv.Bug.get_by_id('BLAH-129')
+    self.assertEqual(osv.BugStatus.INVALID, bug.status)
 
   def test_update_partly_bad_ecosystem_new(self):
     """Test adding vuln with both supported and unsupported ecosystem."""
@@ -1215,6 +1225,32 @@ class UpdateTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
 
     self.expect_dict_equal('update_partly_bad_ecosystem_new',
                            osv.Bug.get_by_id('BLAH-130')._to_dict())
+
+
+def test_update_partly_bad_ecosystem_delete(self):
+  """Test removal of only supported ecosystem in vulnerability with unsupported
+  and supported ecosystems.
+  """
+  task_runner = worker.TaskRunner(ndb_client, None, self.tmp_dir.name, None,
+                                  None)
+  message = mock.Mock()
+  message.attributes = {
+      'source': 'source',
+      'path': 'BLAH-131.yaml',
+      'original_sha256': _sha256('BLAH-131.yaml'),
+      'deleted': 'false',
+  }
+  task_runner._source_update(message)
+
+  repo = pygit2.Repository(self.remote_source_repo_path)
+  commit = repo.head.peel()
+
+  self.assertEqual('infra@osv.dev', commit.author.email)
+  self.assertEqual('OSV', commit.author.name)
+  self.assertEqual('Update BLAH-131', commit.message)
+
+  bug = osv.Bug.get_by_id('BLAH-131')
+  self.assertEqual(osv.BugStatus.INVALID, bug.status)
 
 
 if __name__ == '__main__':

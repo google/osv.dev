@@ -308,7 +308,8 @@ class Importer:
       except Exception as e:
         logging.error('Failed to parse %s: %s', changed_entry, str(e))
         # Don't include error stack trace as that might leak sensitive info
-        import_failure_logs.append('Failed to parse vulnerability "' + path + '"')
+        import_failure_logs.append(
+            'Failed to parse vulnerability "' + path + '"')
         continue
 
       logging.info('Re-analysis triggered for %s', changed_entry)

@@ -31,10 +31,10 @@ import pygit2
 import osv
 
 DEFAULT_WORK_DIR = '/work'
+PUBLIC_LOGGING_BUCKET = 'public-import-logging'
 
 _BUG_REDO_DAYS = 14
 _PROJECT = 'oss-vdb'
-_PUBLIC_LOGGING_BUCKET = 'public-import-logging'
 _TASKS_TOPIC = 'projects/{project}/topics/{topic}'.format(
     project=_PROJECT, topic='tasks')
 _OSS_FUZZ_EXPORT_BUCKET = 'oss-fuzz-osv-vulns'
@@ -65,7 +65,7 @@ def utcnow():
 def replace_importer_log(client: storage.Client, source_name: str,
                          import_failure_logs: [str]):
   """Replace the public importer logs with the new one."""
-  bucket: storage.Bucket = client.bucket(_PUBLIC_LOGGING_BUCKET)
+  bucket: storage.Bucket = client.bucket(PUBLIC_LOGGING_BUCKET)
   upload_string = '--- ' + datetime.datetime.utcnow().isoformat() + ' ---\n'
   upload_string += '\n'.join(import_failure_logs)
   bucket.blob(source_name).upload_from_string(upload_string)

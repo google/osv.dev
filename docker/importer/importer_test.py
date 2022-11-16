@@ -203,11 +203,11 @@ class ImporterTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
     self.mock_repo.commit('User', 'user@email')
 
     imp = importer.Importer('fake_public_key', 'fake_private_key', self.tmp_dir,
-                            'bucket')
+                            'bucket', True)
     imp.run()
 
     mock_publish.assert_not_called()
-    bucket = self.mock_storage_client().bucket(importer._PUBLIC_LOGGING_BUCKET)
+    bucket = self.mock_storage_client().bucket(importer.PUBLIC_LOGGING_BUCKET)
     expected_log = bucket.blob().upload_from_string.call_args[0][0]
     self.assertIn('Failed to parse vulnerability', expected_log)
 

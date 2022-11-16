@@ -192,36 +192,6 @@ class ImporterTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
     ])
 
   @mock.patch('google.cloud.pubsub_v1.PublisherClient.publish')
-  def test_delete(self, mock_publish):
-    """Test deletion."""
-    self.mock_repo.add_file('2021-111.yaml', _MIN_VALID_VULNERABILITY)
-    self.mock_repo.commit('User', 'user@email')
-
-    repo = pygit2.Repository(self.remote_source_repo_path)
-    synced_commit = repo.head.peel()
-
-    self.source_repo.last_synced_hash = str(synced_commit.id)
-    self.source_repo.put()
-
-    self.mock_repo.delete_file('2021-111.yaml')
-    self.mock_repo.commit('User', 'user@email')
-
-    imp = importer.Importer('fake_public_key', 'fake_private_key', self.tmp_dir,
-                            'bucket', True)
-    imp.run()
-
-    mock_publish.assert_has_calls([
-        mock.call(
-            'projects/oss-vdb/topics/tasks',
-            data=b'',
-            deleted='true',
-            original_sha256='',
-            path='2021-111.yaml',
-            source='oss-fuzz',
-            type='update')
-    ])
-
-  @mock.patch('google.cloud.pubsub_v1.PublisherClient.publish')
   def test_nop(self, mock_publish: mock.MagicMock):
     """Test deletion."""
     self.mock_repo.add_file('2021-111.yaml', _MIN_VALID_VULNERABILITY)

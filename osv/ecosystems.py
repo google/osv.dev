@@ -429,6 +429,9 @@ class Alpine(Ecosystem):
 
     for x in lines:
       if len(x) == 0:
+        if current_ver is None:
+          continue
+
         current_ver = current_ver.split(' #')[0]  # Remove comment lines
         current_ver = current_ver.strip(' "\'')  # Remove (occasional) quotes
         # Ignore occasional version that is still not valid.

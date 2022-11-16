@@ -18,24 +18,32 @@ import (
 	"github.com/urfave/cli/v2"
 )
 
+const osvScannerConfigName = "osv-scanner.toml"
+
 // scanDir walks through the given directory to try to find any relevant files
+// These include:
+//   - Any lockfiles with scanLockfile
+//   - Any SBOM files with scanSBOMFile
+//   - Any git repositories with scanGit
 func scanDir(query *osv.BatchedQuery, dir string, skipGit bool, recursive bool) error {
-	log.Printf("Scanning dir %s\n", dir)
 	root := true
-	return filepath.Walk(dir, func(path string, info os.FileInfo, err error) error {
+	return filepath.WalkDir(dir, func(path string, info os.DirEntry, err error) error {
 		if err != nil {
 			log.Printf("Failed to walk %s: %v", path, err)
 			return err
 		}
+		path, err = filepath.Abs(path)
+		if err != nil {
+			log.Fatalf("Failed to walk path %s", err)
+		}
 
 		if !skipGit && info.IsDir() && info.Name() == ".git" {
-			gitQuery, err := scanGit(filepath.Dir(path))
+			err := scanGit(query, filepath.Dir(path)+"/")
 			if err != nil {
 				log.Printf("scan failed for %s: %v\n", path, err)
 				return err
 			}
-			gitQuery.Source = "git:" + filepath.Dir(path)
-			query.Queries = append(query.Queries, gitQuery)
+			return filepath.SkipDir
 		}
 
 		if !info.IsDir() {
@@ -60,6 +68,8 @@ func scanDir(query *osv.BatchedQuery, dir string, skipGit bool, recursive bool) 
 	})
 }
 
+// scanLockfile will load, identify, and parse the lockfile path passed in, and add the dependencies specified
+// within to `query`
 func scanLockfile(query *osv.BatchedQuery, path string) error {
 	parsedLockfile, err := lockfile.Parse(path, "")
 	if err != nil {
@@ -69,12 +79,17 @@ func scanLockfile(query *osv.BatchedQuery, path string) error {
 
 	for _, pkgDetail := range parsedLockfile.Packages {
 		pkgDetailQuery := osv.MakePkgRequest(pkgDetail)
-		pkgDetailQuery.Source = "lockfile:" + path
+		pkgDetailQuery.Source = osv.Source{
+			Path: path,
+			Type: "lockfile",
+		}
 		query.Queries = append(query.Queries, pkgDetailQuery)
 	}
 	return nil
 }
 
+// scanSBOMFile will load, identify, and parse the SBOM path passed in, and add the dependencies specified
+// within to `query`
 func scanSBOMFile(query *osv.BatchedQuery, path string) error {
 	file, err := os.Open(path)
 	if err != nil {
@@ -91,7 +106,10 @@ func scanSBOMFile(query *osv.BatchedQuery, path string) error {
 		}
 		err := provider.GetPackages(file, func(id sbom.Identifier) error {
 			purlQuery := osv.MakePURLRequest(id.PURL)
-			purlQuery.Source = "sbom:" + path
+			purlQuery.Source = osv.Source{
+				Path: path,
+				Type: "sbom",
+			}
 			query.Queries = append(query.Queries, purlQuery)
 			return nil
 		})
@@ -123,19 +141,28 @@ func getCommitSHA(repoDir string) (string, error) {
 	return strings.TrimSpace(out.String()), nil
 }
 
-func scanGit(repoDir string) (*osv.Query, error) {
+// Scan git repository. Expects repoDir to end with /
+func scanGit(query *osv.BatchedQuery, repoDir string) error {
 	commit, err := getCommitSHA(repoDir)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	log.Printf("Scanning %s at commit %s", repoDir, commit)
-	return osv.MakeCommitRequest(commit), nil
+
+	gitQuery := osv.MakeCommitRequest(commit)
+	gitQuery.Source = osv.Source{
+		Path: repoDir,
+		Type: "git",
+	}
+	query.Queries = append(query.Queries, gitQuery)
+	return nil
 }
 
 func scanDebianDocker(query *osv.BatchedQuery, dockerImageName string) {
-	cmd := exec.Command("docker", "run", "--rm", dockerImageName, "/usr/bin/dpkg-query", "-f", "${Package}###${Version}\\n", "-W")
+	cmd := exec.Command("docker", "run", "--rm", "--entrypoint", "/usr/bin/dpkg-query", dockerImageName, "-f", "${Package}###${Version}\\n", "-W")
 	stdout, err := cmd.StdoutPipe()
+
 	if err != nil {
 		log.Fatalf("Failed to get stdout: %s", err)
 	}
@@ -148,6 +175,7 @@ func scanDebianDocker(query *osv.BatchedQuery, dockerImageName string) {
 		log.Fatalf("Failed to run docker: %s", err)
 	}
 	scanner := bufio.NewScanner(stdout)
+	packages := 0
 	for scanner.Scan() {
 		text := scanner.Text()
 		text = strings.TrimSpace(text)
@@ -164,19 +192,53 @@ func scanDebianDocker(query *osv.BatchedQuery, dockerImageName string) {
 			// TODO(rexpan): Get and specify exact debian release version
 			Ecosystem: "Debian",
 		})
-		pkgDetailsQuery.Source = "docker:" + dockerImageName
+		pkgDetailsQuery.Source = osv.Source{
+			Path: dockerImageName,
+			Type: "docker",
+		}
 		query.Queries = append(query.Queries, pkgDetailsQuery)
+		packages += 1
 	}
-	log.Printf("Scanned docker image")
+	log.Printf("Scanned docker image with %d packages", packages)
 }
 
-// TODO(ochang): Machine readable output format.
+// Filters response according to config, returns number of responses removed
+func filterResponse(query osv.BatchedQuery, resp *osv.BatchedResponse, configManager *ConfigManager) int {
+	hiddenVulns := map[string]IgnoreEntry{}
+
+	for i, result := range resp.Results {
+		var filteredVulns []osv.MinimalVulnerability
+		configToUse := configManager.Get(query.Queries[i].Source.Path)
+		for _, vuln := range result.Vulns {
+			ignore, ignoreLine := configToUse.ShouldIgnore(vuln.ID)
+			if ignore {
+				hiddenVulns[vuln.ID] = ignoreLine
+			} else {
+				filteredVulns = append(filteredVulns, vuln)
+			}
+		}
+		resp.Results[i].Vulns = filteredVulns
+	}
+
+	for id, ignoreLine := range hiddenVulns {
+		log.Printf("%s has been filtered out because: %s", id, ignoreLine.Reason)
+	}
+
+	return len(hiddenVulns)
+}
+
 func main() {
+	configManager := ConfigManager{
+		defaultConfig: Config{},
+		configMap:     make(map[string]Config),
+	}
 	var query osv.BatchedQuery
 	var outputJson bool
+
 	app := &cli.App{
-		Name:  "osv-scanner",
-		Usage: "scans various mediums for dependencies and matches it against the OSV database",
+		Name:    "osv-scanner",
+		Usage:   "scans various mediums for dependencies and matches it against the OSV database",
+		Suggest: true,
 		Flags: []cli.Flag{
 			&cli.StringSliceFlag{
 				Name:      "docker",
@@ -194,6 +256,11 @@ func main() {
 				Name:      "sbom",
 				Aliases:   []string{"S"},
 				Usage:     "scan sbom file on this path",
+				TakesFile: true,
+			},
+			&cli.StringFlag{
+				Name:      "config",
+				Usage:     "set/override config file",
 				TakesFile: true,
 			},
 			&cli.BoolFlag{
@@ -214,6 +281,15 @@ func main() {
 		},
 		ArgsUsage: "[directory1 directory2...]",
 		Action: func(context *cli.Context) error {
+
+			configPath := context.String("config")
+			if configPath != "" {
+				err := configManager.UseOverride(configPath)
+				if err != nil {
+					log.Fatalf("Failed to read config file: %s\n", err)
+				}
+			}
+
 			containers := context.StringSlice("docker")
 			for _, container := range containers {
 				// TODO: Automatically figure out what docker base image
@@ -223,7 +299,11 @@ func main() {
 
 			lockfiles := context.StringSlice("lockfile")
 			for _, lockfileElem := range lockfiles {
-				err := scanLockfile(&query, lockfileElem)
+				lockfileElem, err := filepath.Abs(lockfileElem)
+				if err != nil {
+					log.Fatalf("Failed to resolved path with error %s", err)
+				}
+				err = scanLockfile(&query, lockfileElem)
 				if err != nil {
 					return err
 				}
@@ -231,7 +311,11 @@ func main() {
 
 			sboms := context.StringSlice("sbom")
 			for _, sbomElem := range sboms {
-				err := scanSBOMFile(&query, sbomElem)
+				sbomElem, err := filepath.Abs(sbomElem)
+				if err != nil {
+					log.Fatalf("Failed to resolved path with error %s", err)
+				}
+				err = scanSBOMFile(&query, sbomElem)
 				if err != nil {
 					return err
 				}
@@ -241,6 +325,7 @@ func main() {
 			recursive := context.Bool("recursive")
 			genericDirs := context.Args().Slice()
 			for _, dir := range genericDirs {
+				log.Printf("Scanning dir %s\n", dir)
 				err := scanDir(&query, dir, skipGit, recursive)
 				if err != nil {
 					return err
@@ -256,6 +341,7 @@ func main() {
 			return nil
 		},
 	}
+
 	if err := app.Run(os.Args); err != nil {
 		log.Fatal(err)
 	}
@@ -263,6 +349,11 @@ func main() {
 	resp, err := osv.MakeRequest(query)
 	if err != nil {
 		log.Fatalf("Scan failed: %v", err)
+	}
+
+	filtered := filterResponse(query, resp, &configManager)
+	if filtered > 0 {
+		log.Printf("Filtered %d vulnerabilities from output", filtered)
 	}
 
 	hydratedResp, err := osv.Hydrate(resp)

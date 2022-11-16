@@ -8,7 +8,7 @@ import (
 	"log"
 	"net/http"
 
-	"github.com/g-rath/osv-detector/pkg/lockfile"
+	"github.com/google/osv.dev/tools/osv-scanner/pkg/lockfile"
 )
 
 const (
@@ -35,7 +35,16 @@ type Query struct {
 	Commit  string  `json:"commit,omitempty"`
 	Package Package `json:"package,omitempty"`
 	Version string  `json:"version,omitempty"`
-	Source  string  `json:"omit"`
+	Source  Source  `json:"omit"`
+}
+
+type Source struct {
+	Path string `json:"path"`
+	Type string `json:"type"`
+}
+
+func (s Source) String() string {
+	return s.Type + ":" + s.Path
 }
 
 // BatchedQuery represents a batched query to OSV.

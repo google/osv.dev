@@ -21,6 +21,8 @@ import (
 	"path"
 	"regexp"
 	"strings"
+
+	"github.com/knqyf263/go-cpe/naming"
 )
 
 type FixCommit struct {
@@ -378,28 +380,28 @@ func CPEs(cve CVEItem) []string {
 }
 
 // Parse a well-formed CPE string into a struct.
-func ParseCPE(cpe_str string) (*CPE, bool) {
-	if !strings.HasPrefix(cpe_str, "cpe:") {
-		return nil, false
+func ParseCPE(formattedString string) (*CPE, error) {
+	if !strings.HasPrefix(formattedString, "cpe:") {
+		return nil, fmt.Errorf("%q does not have expected 'cpe:' prefix", formattedString)
 	}
 
-	cpeFields := strings.Split(cpe_str, ":")
+	wfn, err := naming.UnbindFS(formattedString)
 
-	if len(cpeFields) < 13 {
-		return nil, false
+	if err != nil {
+		return nil, err
 	}
 
 	return &CPE{
-		CPEVersion: cpeFields[1],
-		Part:       cpeFields[2],
-		Vendor:     cpeFields[3],
-		Product:    cpeFields[4],
-		Version:    cpeFields[5],
-		Update:     cpeFields[6],
-		Edition:    cpeFields[7],
-		Language:   cpeFields[8],
-		SWEdition:  cpeFields[9],
-		TargetSW:   cpeFields[10],
-		TargetHW:   cpeFields[11],
-		Other:      cpeFields[12]}, true
+		CPEVersion: strings.Split(formattedString, ":")[1],
+		Part:       wfn.GetString("part"),
+		Vendor:     wfn.GetString("vendor"),
+		Product:    wfn.GetString("product"),
+		Version:    wfn.GetString("version"),
+		Update:     wfn.GetString("update"),
+		Edition:    wfn.GetString("edition"),
+		Language:   wfn.GetString("language"),
+		SWEdition:  wfn.GetString("sw_edition"),
+		TargetSW:   wfn.GetString("target_sw"),
+		TargetHW:   wfn.GetString("target_hw"),
+		Other:      wfn.GetString("other")}, nil
 }

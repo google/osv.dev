@@ -39,7 +39,7 @@ _TASKS_TOPIC = 'projects/{project}/topics/{topic}'.format(
 _OSS_FUZZ_EXPORT_BUCKET = 'oss-fuzz-osv-vulns'
 _EXPORT_WORKERS = 32
 _NO_UPDATE_MARKER = 'OSV-NO-UPDATE'
-_BUCKET_THREAD_COUNT = 10
+_BUCKET_THREAD_COUNT = 20
 
 _client_store = threading.local()
 
@@ -65,7 +65,7 @@ class Importer:
   """Importer."""
 
   def __init__(self, ssh_key_public_path, ssh_key_private_path, work_dir,
-               oss_fuzz_export_bucket):
+               oss_fuzz_export_bucket, strict_validation: bool):
     self._ssh_key_public_path = ssh_key_public_path
     self._ssh_key_private_path = ssh_key_private_path
     self._work_dir = work_dir
@@ -73,6 +73,7 @@ class Importer:
     self._oss_fuzz_export_bucket = oss_fuzz_export_bucket
 
     self._sources_dir = os.path.join(self._work_dir, 'sources')
+    self._strict_validation = strict_validation
     os.makedirs(self._sources_dir, exist_ok=True)
 
   def _git_callbacks(self, source_repo):
@@ -264,12 +265,10 @@ class Importer:
 
     # Get list of changed files since last sync.
     changed_entries = set()
-    deleted_entries = set()
 
     if source_repo.last_synced_hash:
       # Syncing from a previous commit.
-      changed_entries, deleted_entries = self._sync_from_previous_commit(
-          source_repo, repo)
+      changed_entries, _ = self._sync_from_previous_commit(source_repo, repo)
 
     else:
       # First sync from scratch.
@@ -289,7 +288,12 @@ class Importer:
         continue
 
       try:
-        _ = osv.parse_vulnerability(path, key_path=source_repo.key_path)
+        _ = osv.parse_vulnerability(
+            path, key_path=source_repo.key_path, strict=self._strict_validation)
+      except osv.sources.KeyPathError:
+        # Key path doesn't exist in the vulnerability.
+        # No need to log a full error, as this is expected result.
+        logging.info('Entry does not have an OSV entry: %s', changed_entry)
       except Exception as e:
         logging.error('Failed to parse %s: %s', changed_entry, str(e))
         continue
@@ -298,18 +302,6 @@ class Importer:
       original_sha256 = osv.sha256(path)
       self._request_analysis_external(source_repo, original_sha256,
                                       changed_entry)
-
-    # Mark deleted entries as invalid.
-    for deleted_entry in deleted_entries:
-      path = os.path.join(osv.repo_path(repo), deleted_entry)
-      if os.path.exists(path):
-        # Path still exists. It must have been added back in another commit.
-        continue
-
-      logging.info('Marking %s as invalid', deleted_entry)
-      original_sha256 = ''
-      self._request_analysis_external(
-          source_repo, original_sha256, deleted_entry, deleted=True)
 
     source_repo.last_synced_hash = str(repo.head.target)
     source_repo.put()
@@ -352,7 +344,8 @@ class Importer:
         try:
           vulns = osv.parse_vulnerabilities_from_data(
               blob_bytes,
-              os.path.splitext(blob_name)[1])
+              os.path.splitext(blob_name)[1],
+              strict=self._strict_validation)
           for vuln in vulns:
             bug = osv.Bug.get_by_id(vuln.id)
             if bug is None or \
@@ -451,6 +444,10 @@ def main():
       '--work_dir', help='Working directory', default=DEFAULT_WORK_DIR)
   parser.add_argument('--ssh_key_public', help='Public SSH key path')
   parser.add_argument('--ssh_key_private', help='Private SSH key path')
+  parser.add_argument(
+      '--strict_validation',
+      help='Fail to import entries that does not pass validation',
+      default=False)
   args = parser.parse_args()
 
   tmp_dir = os.path.join(args.work_dir, 'tmp')
@@ -458,7 +455,7 @@ def main():
   os.environ['TMPDIR'] = tmp_dir
 
   importer = Importer(args.ssh_key_public, args.ssh_key_private, args.work_dir,
-                      _OSS_FUZZ_EXPORT_BUCKET)
+                      _OSS_FUZZ_EXPORT_BUCKET, args.strict_validation)
   importer.run()
 
 

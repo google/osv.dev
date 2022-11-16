@@ -10,9 +10,12 @@ affected:
 - package:
     name: blah.com/package
     ecosystem: Go
+  versions:
+    - branch-v0.1.1
   ranges:
   - type: GIT
     repo: https://osv-test/repo/url
     events:
     - introduced: '0'
     - fixed: 8d8242f545e9cec3e6d0d2e3f5bde8be1c659735
+modified: '2020-01-01T00:00:00Z'

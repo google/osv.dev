@@ -379,6 +379,26 @@ func CPEs(cve CVEItem) []string {
 	return cpes
 }
 
+// There are some weird and wonderful rules about quoting with strings in CPEs
+// this uses a variation of how they wind up in there from go-cpe's
+// processQuotedChars()
+func RemoveQuoting(s string) (result string) {
+	idx := 0
+	for idx < len(s) {
+		c := s[idx : idx+1]
+		if c == "\\" {
+			nextchr := s[idx+1 : idx+2]
+			result += nextchr
+			idx += 2
+			continue
+		}
+		result += c
+		idx += 1
+		continue
+	}
+	return result
+}
+
 // Parse a well-formed CPE string into a struct.
 func ParseCPE(formattedString string) (*CPE, error) {
 	if !strings.HasPrefix(formattedString, "cpe:") {
@@ -394,9 +414,9 @@ func ParseCPE(formattedString string) (*CPE, error) {
 	return &CPE{
 		CPEVersion: strings.Split(formattedString, ":")[1],
 		Part:       wfn.GetString("part"),
-		Vendor:     wfn.GetString("vendor"),
-		Product:    wfn.GetString("product"),
-		Version:    wfn.GetString("version"),
+		Vendor:     RemoveQuoting(wfn.GetString("vendor")),
+		Product:    RemoveQuoting(wfn.GetString("product")),
+		Version:    RemoveQuoting(wfn.GetString("version")),
 		Update:     wfn.GetString("update"),
 		Edition:    wfn.GetString("edition"),
 		Language:   wfn.GetString("language"),

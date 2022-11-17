@@ -39,7 +39,7 @@
     'source': 'source',
     'source_id': 'source:a/b/test.json',
     'source_of_truth': 2,
-    'status': 1,
+    'status': 2,
     'summary': '',
     'timestamp': datetime.datetime(2021, 4, 14, 12, 0),
     'withdrawn': None}

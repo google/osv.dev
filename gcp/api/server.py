@@ -363,6 +363,9 @@ def _is_semver_affected(affected_packages, package_name, ecosystem,
             event.value):
           affected = False
 
+      if affected:
+        return affected
+
   return affected
 
 

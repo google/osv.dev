@@ -153,7 +153,7 @@ class OrderingUnsupportedEcosystem(Ecosystem):
   """Placeholder ecosystem helper for unimplemented ecosystems."""
 
   def sort_key(self, version):
-    raise NotImplementedError("Ecosystem helper does not support sorting")
+    raise NotImplementedError('Ecosystem helper does not support sorting')
 
   def enumerate_versions(self,
                          package,
@@ -161,7 +161,7 @@ class OrderingUnsupportedEcosystem(Ecosystem):
                          fixed=None,
                          last_affected=None,
                          limits=None):
-    raise NotImplementedError("Ecosystem helper does not support enumeration")
+    raise NotImplementedError('Ecosystem helper does not support enumeration')
 
   @property
   def supports_ordering(self):
@@ -629,7 +629,7 @@ _ecosystems = {
     'RubyGems': RubyGems(),
     # Ecosystems missing implementations:
     'Android': OrderingUnsupportedEcosystem(),
-    'Github Actions': OrderingUnsupportedEcosystem(),
+    'GitHub Actions': OrderingUnsupportedEcosystem(),
     'Linux': OrderingUnsupportedEcosystem(),
     'OSS-Fuzz': OrderingUnsupportedEcosystem(),
     'Pub': OrderingUnsupportedEcosystem(),

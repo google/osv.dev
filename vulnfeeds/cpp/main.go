@@ -205,6 +205,7 @@ func CVEToOSV(CVE cves.CVEItem, repo, directory string) {
 	if err != nil {
 		Logger.Fatalf("Failed to write %s: %v", outputFile, err)
 	}
+	Logger.Infof("Processed %s for %q", CVE.CVE.CVEDataMeta.ID, CPE.Product)
 }
 
 func main() {
@@ -311,7 +312,7 @@ func main() {
 				Logger.Warnf("Failed to parse CPE %q: %+v", CPEstr, err)
 			}
 			if CPE.Part == "a" {
-				Logger.Infof("\t * vendor=%s, product=%s", CPE.Vendor, CPE.Product)
+				Logger.Infof("\t * vendor=%q, product=%q", CPE.Vendor, CPE.Product)
 				if patchRefCount == 0 {
 					repo := MaybeGetSourceRepoFromDebian(*debianMetadataPath, CPE.Product)
 					if repo != "" {

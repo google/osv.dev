@@ -144,6 +144,29 @@ class Ecosystem(ABC):
   def is_semver(self):
     return False
 
+  @property
+  def supports_ordering(self):
+    return True
+
+
+class OrderingUnsupportedEcosystem(Ecosystem):
+  """Placeholder ecosystem helper for unimplemented ecosystems."""
+
+  def sort_key(self, version):
+    raise NotImplementedError('Ecosystem helper does not support sorting')
+
+  def enumerate_versions(self,
+                         package,
+                         introduced,
+                         fixed=None,
+                         last_affected=None,
+                         limits=None):
+    raise NotImplementedError('Ecosystem helper does not support enumeration')
+
+  @property
+  def supports_ordering(self):
+    return False
+
 
 class DepsDevMixin(Ecosystem, ABC):
   """deps.dev mixin."""
@@ -429,6 +452,9 @@ class Alpine(Ecosystem):
 
     for x in lines:
       if len(x) == 0:
+        if current_ver is None:
+          continue
+
         current_ver = current_ver.split(' #')[0]  # Remove comment lines
         current_ver = current_ver.strip(' "\'')  # Remove (occasional) quotes
         # Ignore occasional version that is still not valid.
@@ -604,6 +630,16 @@ _ecosystems = {
     'Packagist': Packagist(),
     'PyPI': PyPI(),
     'RubyGems': RubyGems(),
+    # Ecosystems missing implementations:
+    'Android': OrderingUnsupportedEcosystem(),
+    'GitHub Actions': OrderingUnsupportedEcosystem(),
+    'Linux': OrderingUnsupportedEcosystem(),
+    'OSS-Fuzz': OrderingUnsupportedEcosystem(),
+    'Pub': OrderingUnsupportedEcosystem(),
+    # Alpine and Debian require a release version for enumeration, which is
+    # handled separately in get().
+    'Alpine': OrderingUnsupportedEcosystem(),
+    'Debian': OrderingUnsupportedEcosystem(),
 }
 
 SEMVER_ECOSYSTEMS = {

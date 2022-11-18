@@ -96,6 +96,17 @@ func Repo(u string) (string, error) {
 			nil
 	}
 
+	// GitHub pull request and comparison URLs are structured differently, e.g.
+	// https://github.com/kovidgoyal/kitty/compare/v0.26.1...v0.26.2
+	// https://gitlab.com/mayan-edms/mayan-edms/-/compare/development...master
+	// https://git.drupalcode.org/project/views/-/compare/7.x-3.21...7.x-3.x
+	if strings.Contains(parsedURL.Path, "compare") {
+		return fmt.Sprintf("%s://%s%s", parsedURL.Scheme,
+				parsedURL.Hostname(),
+				strings.Join(strings.Split(parsedURL.Path, "/")[0:3], "/")),
+			nil
+	}
+
 	// GitHub pull request URLs are structured differently, e.g.
 	// https://github.com/google/osv.dev/pull/738
 	if parsedURL.Hostname() == "github.com" &&

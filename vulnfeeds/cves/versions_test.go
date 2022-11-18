@@ -64,6 +64,12 @@ func TestRepo(t *testing.T) {
 			expectedRepoURL: "https://gitlab.com/mayan-edms/mayan-edms",
 			expectedOk:      true,
 		},
+		{
+			description:     "Ambiguous GitLab compare URL",
+			inputLink:       "https://git.drupalcode.org/project/views/-/compare/7.x-3.21...7.x-3.x",
+			expectedRepoURL: "https://git.drupalcode.org/project/views",
+			expectedOk:      true,
+		},
 	}
 
 	for _, tc := range tests {

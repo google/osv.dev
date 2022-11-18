@@ -320,6 +320,22 @@ class IntegrationTests(unittest.TestCase):
     self.assertCountEqual(['GO-2021-0061', 'GO-2020-0036'],
                           [vuln['id'] for vuln in response_json['vulns']])
 
+    response = requests.post(
+        _api() + '/v1/query',
+        data=json.dumps({
+            'version': '7.1.1',
+            'package': {
+                'name': 'ws',
+                'ecosystem': 'npm',
+            }
+        }),
+        timeout=_TIMEOUT)
+
+    response_json = response.json()
+    self.assertEqual(1, len(response_json['vulns']))
+    self.assertCountEqual(['GHSA-6fc8-4gx4-v693'],
+                          [vuln['id'] for vuln in response_json['vulns']])
+
   def test_query_purl(self):
     """Test querying by PURL."""
     expected = [

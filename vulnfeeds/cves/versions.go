@@ -379,6 +379,13 @@ func CPEs(cve CVEItem) []string {
 	return cpes
 }
 
+// There are some weird and wonderful rules about quoting with strings in CPEs
+// See 5.3.2 of NISTIR 7695 for more details
+// https://nvlpubs.nist.gov/nistpubs/Legacy/IR/nistir7695.pdf
+func RemoveQuoting(s string) (result string) {
+	return strings.Replace(s, "\\", "", -1)
+}
+
 // Parse a well-formed CPE string into a struct.
 func ParseCPE(formattedString string) (*CPE, error) {
 	if !strings.HasPrefix(formattedString, "cpe:") {
@@ -394,9 +401,9 @@ func ParseCPE(formattedString string) (*CPE, error) {
 	return &CPE{
 		CPEVersion: strings.Split(formattedString, ":")[1],
 		Part:       wfn.GetString("part"),
-		Vendor:     wfn.GetString("vendor"),
-		Product:    wfn.GetString("product"),
-		Version:    wfn.GetString("version"),
+		Vendor:     RemoveQuoting(wfn.GetString("vendor")),
+		Product:    RemoveQuoting(wfn.GetString("product")),
+		Version:    RemoveQuoting(wfn.GetString("version")),
 		Update:     wfn.GetString("update"),
 		Edition:    wfn.GetString("edition"),
 		Language:   wfn.GetString("language"),

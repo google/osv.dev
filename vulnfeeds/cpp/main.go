@@ -205,7 +205,7 @@ func CVEToOSV(CVE cves.CVEItem, repo, directory string) {
 	if err != nil {
 		Logger.Fatalf("Failed to write %s: %v", outputFile, err)
 	}
-	Logger.Infof("Processed %q", CPE.Product)
+	Logger.Infof("Processed %s for %q", CVE.CVE.CVEDataMeta.ID, CPE.Product)
 }
 
 func main() {

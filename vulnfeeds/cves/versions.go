@@ -380,23 +380,10 @@ func CPEs(cve CVEItem) []string {
 }
 
 // There are some weird and wonderful rules about quoting with strings in CPEs
-// this uses a variation of how they wind up in there from go-cpe's
-// processQuotedChars()
+// See 5.3.2 of NISTIR 7695 for more details
+// https://nvlpubs.nist.gov/nistpubs/Legacy/IR/nistir7695.pdf
 func RemoveQuoting(s string) (result string) {
-	idx := 0
-	for idx < len(s) {
-		c := s[idx : idx+1]
-		if c == "\\" {
-			nextchr := s[idx+1 : idx+2]
-			result += nextchr
-			idx += 2
-			continue
-		}
-		result += c
-		idx += 1
-		continue
-	}
-	return result
+	return strings.Replace(s, "\\", "", -1)
 }
 
 // Parse a well-formed CPE string into a struct.

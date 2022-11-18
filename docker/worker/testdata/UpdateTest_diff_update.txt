@@ -1,5 +1,5 @@
 ('diff --git a/BLAH-123.yaml b/BLAH-123.yaml\n'
- 'index 6459f56..7799017 100644\n'
+ 'index 97638fe..177eda6 100644\n'
  '--- a/BLAH-123.yaml\n'
  '+++ b/BLAH-123.yaml\n'
  '@@ -3,13 +3,9 @@ summary: A vulnerability\n'

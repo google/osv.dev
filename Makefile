@@ -38,8 +38,5 @@ run-api-server:
 	test $(SERVICE_ACCOUNT) || (echo "SERVICE_ACCOUNT variable not set"; exit 1)
 	cd gcp/api && GOOGLE_CLOUD_PROJECT=oss-vdb pipenv run python test_server.py $(SERVICE_ACCOUNT)
 
-run-scanner-tests:
-	cd tools/osv-scanner && ./run_tests.sh
-
 # TODO: API integration tests.
-all-tests: lib-tests worker-tests importer-tests appengine-tests vulnfeed-tests run-scanner-tests
+all-tests: lib-tests worker-tests importer-tests appengine-tests vulnfeed-tests

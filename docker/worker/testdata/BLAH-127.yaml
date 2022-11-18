@@ -9,7 +9,7 @@ references:
 affected:
 - package:
     name: blah.com/package
-    ecosystem: golang
+    ecosystem: Go
   versions:
     - branch-v0.1.1
   ranges:

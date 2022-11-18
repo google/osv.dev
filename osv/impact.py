@@ -492,7 +492,8 @@ def analyze(vulnerability,
   for affected_package in vulnerability.affected:
     versions = []
     for affected_range in affected_package.ranges:
-      if affected_package.package.ecosystem in ecosystems.SEMVER_ECOSYSTEMS:
+      if (affected_range.type == vulnerability_pb2.Range.ECOSYSTEM and
+          affected_package.package.ecosystem in ecosystems.SEMVER_ECOSYSTEMS):
         # Replace erroneous range type.
         affected_range.type = vulnerability_pb2.Range.SEMVER
 
@@ -500,7 +501,7 @@ def analyze(vulnerability,
                                  vulnerability_pb2.Range.SEMVER):
         # Enumerate ECOSYSTEM and SEMVER ranges.
         ecosystem_helpers = ecosystems.get(affected_package.package.ecosystem)
-        if ecosystem_helpers:
+        if ecosystem_helpers and ecosystem_helpers.supports_ordering:
           try:
             versions.extend(
                 enumerate_versions(affected_package.package.name,

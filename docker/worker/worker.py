@@ -316,6 +316,16 @@ def maybe_normalize_package_names(vulnerability):
   return vulnerability
 
 
+def filter_unsupported_ecosystems(vulnerability):
+  """Remove unsupported ecosystems from vulnerability."""
+  filtered = []
+  for affected in vulnerability.affected:
+    if osv.ecosystems.get(affected.package.ecosystem):
+      filtered.append(affected)
+  del vulnerability.affected[:]
+  vulnerability.affected.extend(filtered)
+
+
 class TaskRunner:
   """Task runner."""
 
@@ -476,6 +486,8 @@ class TaskRunner:
       logging.warning('%s has an encoding error, skipping.', vulnerability.id)
       return
 
+    filter_unsupported_ecosystems(vulnerability)
+
     orig_modified_date = vulnerability.modified.ToDatetime()
     try:
       result = self._analyze_vulnerability(source_repo, repo, vulnerability,
@@ -509,6 +521,11 @@ class TaskRunner:
       bug.status = osv.BugStatus.INVALID
     else:
       bug.status = osv.BugStatus.PROCESSED
+
+    if not vulnerability.affected:
+      logging.info('%s does not affect any packages. Marking as invalid.',
+                   vulnerability.id)
+      bug.status = osv.BugStatus.INVALID
 
     bug.put()
     osv.update_affected_commits(bug.key.id(), result.commits, bug.public)

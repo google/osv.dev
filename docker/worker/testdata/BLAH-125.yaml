@@ -1,7 +1,7 @@
 id: BLAH-125
 package:
   name: blah.com/package
-  ecosystem: golang
+  ecosystem: Go
 summary: A vulnerability
 details: |
   Blah blah blah

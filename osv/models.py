@@ -370,7 +370,8 @@ class Bug(ndb.Model):
 
     for affected_package in self.affected_packages:
       # Indexes used for querying by exact version.
-      if ecosystems.get(affected_package.package.ecosystem):
+      ecosystem_helper = ecosystems.get(affected_package.package.ecosystem)
+      if ecosystem_helper and ecosystem_helper.supports_ordering:
         # No need to normalize if the ecosystem is supported.
         self.affected_fuzzy.extend(affected_package.versions)
       else:
@@ -747,7 +748,7 @@ def sorted_events(ecosystem, range_type, events):
   else:
     ecosystem_helper = ecosystems.get(ecosystem)
 
-  if ecosystem_helper is None:
+  if ecosystem_helper is None or not ecosystem_helper.supports_ordering:
     raise ValueError('Unsupported ecosystem ' + ecosystem)
 
   # Remove any magic '0' values.

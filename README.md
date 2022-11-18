@@ -103,14 +103,14 @@ Detailed documentation for using the API can be found at
 
 ## Using the scanner
 
-Under `tools/osv-scanner`, we provide a Go based tool that will scan your
+We provide a Go based tool that will scan your
 dependencies, and check them against the OSV database for known vulnerabilities
 via the OSV API.
 
 Currently it is able to scan various lockfiles, debian docker containers, SPDX
 and CycloneDB SBOMs, and git repositories.
 
-Usage instructions are located in `tools/osv-scanner/README.md`.
+The scanner is located in it's [own repository here](https://github.com/google/osv-scanner).
 
 ## Architecture
 
@@ -124,8 +124,6 @@ consists of:
 -   API server (`gcp/api`)
 -   Web interface (`gcp/appengine`)
 -   Workers for bisection and impact analysis (`docker/worker`)
--   `osv-scanner` tool, to scan your project and containers for vulnerabilities
-    tracked in OSV
 
 You'll need to check out submodules as well for many local building steps to
 work:

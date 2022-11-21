@@ -13,24 +13,98 @@ func TestParseCPE(t *testing.T) {
 		expectedOk        bool
 	}{
 		{
-			description: "invalid input (empty string)", inputCPEString: "", expectedCPEStruct: nil, expectedOk: false,
+			description:       "invalid input (empty string)",
+			inputCPEString:    "",
+			expectedCPEStruct: nil,
+			expectedOk:        false,
 		},
 
 		{
-			description: "invalid input (corrupt)", inputCPEString: "fnord:2.3:h:intel:core_i3-1005g1:-:*:*:*:*:*:*:*", expectedCPEStruct: nil, expectedOk: false,
+			description:       "invalid input (corrupt)",
+			inputCPEString:    "fnord:2.3:h:intel:core_i3-1005g1:-:*:*:*:*:*:*:*",
+			expectedCPEStruct: nil,
+			expectedOk:        false,
 		},
 		{
-			description: "invalid input (truncated)", inputCPEString: "cpe:2.3:h:intel:core_i3-1005g1:", expectedCPEStruct: nil, expectedOk: false,
+			description:       "invalid input (truncated)",
+			inputCPEString:    "cpe:2.3:h:intel:core_i3-1005g1:",
+			expectedCPEStruct: nil,
+			expectedOk:        false,
 		},
 		{
-			description: "valid input (hardware)", inputCPEString: "cpe:2.3:h:intel:core_i3-1005g1:-:*:*:*:*:*:*:*", expectedCPEStruct: &CPE{
-				CPEVersion: "2.3", Part: "h", Vendor: "intel", Product: "core_i3\\-1005g1", Version: "NA", Update: "ANY", Edition: "ANY", Language: "ANY", SWEdition: "ANY", TargetSW: "ANY", TargetHW: "ANY", Other: "ANY"}, expectedOk: true,
+			description: "valid input (hardware)", inputCPEString: "cpe:2.3:h:intel:core_i3-1005g1:-:*:*:*:*:*:*:*",
+			expectedCPEStruct: &CPE{
+				CPEVersion: "2.3",
+				Part:       "h",
+				Vendor:     "intel",
+				Product:    "core_i3-1005g1",
+				Version:    "NA",
+				Update:     "ANY",
+				Edition:    "ANY",
+				Language:   "ANY",
+				SWEdition:  "ANY",
+				TargetSW:   "ANY",
+				TargetHW:   "ANY",
+				Other:      "ANY",
+			},
+			expectedOk: true,
 		},
 		{
-			description: "valid input (software)", inputCPEString: "cpe:2.3:a:gitlab:gitlab:*:*:*:*:community:*:*:*", expectedCPEStruct: &CPE{CPEVersion: "2.3", Part: "a", Vendor: "gitlab", Product: "gitlab", Version: "ANY", Update: "ANY", Edition: "ANY", Language: "ANY", SWEdition: "community", TargetSW: "ANY", TargetHW: "ANY", Other: "ANY"}, expectedOk: true,
+			description:    "valid input (software)",
+			inputCPEString: "cpe:2.3:a:gitlab:gitlab:*:*:*:*:community:*:*:*",
+			expectedCPEStruct: &CPE{
+				CPEVersion: "2.3",
+				Part:       "a",
+				Vendor:     "gitlab",
+				Product:    "gitlab",
+				Version:    "ANY",
+				Update:     "ANY",
+				Edition:    "ANY",
+				Language:   "ANY",
+				SWEdition:  "community",
+				TargetSW:   "ANY",
+				TargetHW:   "ANY",
+				Other:      "ANY",
+			},
+			expectedOk: true,
 		},
 		{
-			description: "valid input (software) with embedded colons", inputCPEString: "cpe:2.3:a:http\\:\\:daemon_project:http\\:\\:daemon:*:*:*:*:*:*:*:*", expectedCPEStruct: &CPE{CPEVersion: "2.3", Part: "a", Vendor: "http\\:\\:daemon_project", Product: "http\\:\\:daemon", Version: "ANY", Update: "ANY", Edition: "ANY", Language: "ANY", SWEdition: "ANY", TargetSW: "ANY", TargetHW: "ANY", Other: "ANY"}, expectedOk: true,
+			description:    "valid input (software) with embedded colons",
+			inputCPEString: "cpe:2.3:a:http\\:\\:daemon_project:http\\:\\:daemon:*:*:*:*:*:*:*:*",
+			expectedCPEStruct: &CPE{
+				CPEVersion: "2.3",
+				Part:       "a",
+				Vendor:     "http::daemon_project",
+				Product:    "http::daemon",
+				Version:    "ANY",
+				Update:     "ANY",
+				Edition:    "ANY",
+				Language:   "ANY",
+				SWEdition:  "ANY",
+				TargetSW:   "ANY",
+				TargetHW:   "ANY",
+				Other:      "ANY",
+			},
+			expectedOk: true,
+		},
+		{
+			description:    "valid input (software) with escaped characters",
+			inputCPEString: "cpe:2.3:a:bloodshed:dev-c\\+\\+:4.9.9.2:*:*:*:*:*:*:*",
+			expectedCPEStruct: &CPE{
+				CPEVersion: "2.3",
+				Part:       "a",
+				Vendor:     "bloodshed",
+				Product:    "dev-c++",
+				Version:    "4.9.9.2",
+				Update:     "ANY",
+				Edition:    "ANY",
+				Language:   "ANY",
+				SWEdition:  "ANY",
+				TargetSW:   "ANY",
+				TargetHW:   "ANY",
+				Other:      "ANY",
+			},
+			expectedOk: true,
 		},
 	}
 
@@ -41,6 +115,44 @@ func TestParseCPE(t *testing.T) {
 		}
 		if !reflect.DeepEqual(got, tc.expectedCPEStruct) {
 			t.Errorf("test %q: ParseCPE for %q was incorrect, got: %#v, expected: %#v", tc.description, tc.inputCPEString, got, tc.expectedCPEStruct)
+		}
+	}
+}
+
+func TestRepo(t *testing.T) {
+	tests := []struct {
+		description     string // human-readable description of test case
+		inputLink       string // a possible repository URL to call Repo() with
+		expectedRepoURL string // The expected  repository URL to get back from Repo()
+		expectedOk      bool   // If an error is expected
+	}{
+		{
+			description:     "GitHub compare URL",
+			inputLink:       "https://github.com/kovidgoyal/kitty/compare/v0.26.1...v0.26.2",
+			expectedRepoURL: "https://github.com/kovidgoyal/kitty",
+			expectedOk:      true,
+		},
+		{
+			description:     "GitLab compare URL",
+			inputLink:       "https://gitlab.com/mayan-edms/mayan-edms/-/compare/development...master?from_project_id=396557&straight=false",
+			expectedRepoURL: "https://gitlab.com/mayan-edms/mayan-edms",
+			expectedOk:      true,
+		},
+		{
+			description:     "Ambiguous GitLab compare URL",
+			inputLink:       "https://git.drupalcode.org/project/views/-/compare/7.x-3.21...7.x-3.x",
+			expectedRepoURL: "https://git.drupalcode.org/project/views",
+			expectedOk:      true,
+		},
+	}
+
+	for _, tc := range tests {
+		got, err := Repo(tc.inputLink)
+		if err != nil && tc.expectedOk {
+			t.Errorf("test %q: Repo(%q) unexpectedly failed: %+v", tc.description, tc.inputLink, err)
+		}
+		if !reflect.DeepEqual(got, tc.expectedRepoURL) {
+			t.Errorf("test %q: Repo(%q) was incorrect, got: %#v, expected: %#v", tc.description, tc.inputLink, got, tc.expectedRepoURL)
 		}
 	}
 }

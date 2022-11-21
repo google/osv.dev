@@ -305,6 +305,7 @@ class Importer:
         # Key path doesn't exist in the vulnerability.
         # No need to log a full error, as this is expected result.
         logging.info('Entry does not have an OSV entry: %s', changed_entry)
+        continue
       except Exception as e:
         logging.error('Failed to parse %s: %s', changed_entry, str(e))
         # Don't include error stack trace as that might leak sensitive info

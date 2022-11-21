@@ -318,9 +318,11 @@ func FromCVE(id string, cve cves.CVEItem) (*Vulnerability, []string) {
 // AddPkgInfo adds affected package information to the OSV vulnerability object
 func (v *Vulnerability) AddPkgInfo(pkgInfo PackageInfo) {
 	affected := Affected{}
-	affected.Package.Name = pkgInfo.PkgName
-	affected.Package.Ecosystem = pkgInfo.Ecosystem
-	affected.Package.Purl = pkgInfo.PURL
+	affected.Package = &AffectedPackage{
+		Name:      pkgInfo.PkgName,
+		Ecosystem: pkgInfo.Ecosystem,
+		Purl:      pkgInfo.PURL,
+	}
 	if pkgInfo.FixedVersion != "" {
 		versionRange := AffectedRange{
 			Type: "ECOSYSTEM",

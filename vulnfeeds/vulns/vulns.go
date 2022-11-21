@@ -34,13 +34,15 @@ type Event struct {
 }
 
 type Affected struct {
-	Package struct {
-		Name      string `json:"name,omitempty" yaml:"name"`
-		Ecosystem string `json:"ecosystem,omitempty" yaml:"ecosystem"`
-		Purl      string `json:"purl,omitempty" yaml:"purl,omitempty"`
-	} `json:"package"`
-	Ranges   []AffectedRange `json:"ranges" yaml:"ranges"`
-	Versions []string        `json:"versions,omitempty" yaml:"versions,omitempty"`
+	Package  *AffectedPackage `json:"package,omitempty"`
+	Ranges   []AffectedRange  `json:"ranges" yaml:"ranges"`
+	Versions []string         `json:"versions,omitempty" yaml:"versions,omitempty"`
+}
+
+type AffectedPackage struct {
+	Name      string `json:"name,omitempty" yaml:"name"`
+	Ecosystem string `json:"ecosystem,omitempty" yaml:"ecosystem"`
+	Purl      string `json:"purl,omitempty" yaml:"purl,omitempty"`
 }
 
 type AffectedRange struct {
@@ -364,36 +366,39 @@ func (affected *Affected) AttachExtractedVersionInfo(version cves.VersionInfo) {
 		affected.Ranges = append(affected.Ranges, gitRange)
 	}
 
-	versionRange := AffectedRange{
-		Type: "ECOSYSTEM",
-	}
-	seenIntroduced := map[string]bool{}
-	seenFixed := map[string]bool{}
-
-	for _, v := range version.AffectedVersions {
-		var introduced string
-		if v.Introduced == "" {
-			introduced = "0"
-		} else {
-			introduced = v.Introduced
+	// Adding an ECOSYSTEM version range only makes sense if we have package information.
+	if affected.Package != nil {
+		versionRange := AffectedRange{
+			Type: "ECOSYSTEM",
 		}
+		seenIntroduced := map[string]bool{}
+		seenFixed := map[string]bool{}
 
-		if _, seen := seenIntroduced[introduced]; !seen {
-			versionRange.Events = append(versionRange.Events, Event{
-				Introduced: introduced,
-			})
-			seenIntroduced[introduced] = true
-		}
+		for _, v := range version.AffectedVersions {
+			var introduced string
+			if v.Introduced == "" {
+				introduced = "0"
+			} else {
+				introduced = v.Introduced
+			}
 
-		if _, seen := seenFixed[v.Fixed]; v.Fixed != "" && !seen {
-			versionRange.Events = append(versionRange.Events, Event{
-				Fixed: v.Fixed,
-			})
-			seenFixed[v.Fixed] = true
+			if _, seen := seenIntroduced[introduced]; !seen {
+				versionRange.Events = append(versionRange.Events, Event{
+					Introduced: introduced,
+				})
+				seenIntroduced[introduced] = true
+			}
+
+			if _, seen := seenFixed[v.Fixed]; v.Fixed != "" && !seen {
+				versionRange.Events = append(versionRange.Events, Event{
+					Fixed: v.Fixed,
+				})
+				seenFixed[v.Fixed] = true
+			}
 		}
-	}
-	if len(version.AffectedVersions) > 0 {
-		affected.Ranges = append(affected.Ranges, versionRange)
+		if len(version.AffectedVersions) > 0 {
+			affected.Ranges = append(affected.Ranges, versionRange)
+		}
 	}
 }
 

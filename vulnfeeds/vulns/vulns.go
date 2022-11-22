@@ -369,38 +369,40 @@ func (affected *Affected) AttachExtractedVersionInfo(version cves.VersionInfo) {
 	}
 
 	// Adding an ECOSYSTEM version range only makes sense if we have package information.
-	if affected.Package != nil {
-		versionRange := AffectedRange{
-			Type: "ECOSYSTEM",
-		}
-		seenIntroduced := map[string]bool{}
-		seenFixed := map[string]bool{}
+	if affected.Package == nil {
+		return
+	}
 
-		for _, v := range version.AffectedVersions {
-			var introduced string
-			if v.Introduced == "" {
-				introduced = "0"
-			} else {
-				introduced = v.Introduced
-			}
+	versionRange := AffectedRange{
+		Type: "ECOSYSTEM",
+	}
+	seenIntroduced := map[string]bool{}
+	seenFixed := map[string]bool{}
 
-			if _, seen := seenIntroduced[introduced]; !seen {
-				versionRange.Events = append(versionRange.Events, Event{
-					Introduced: introduced,
-				})
-				seenIntroduced[introduced] = true
-			}
+	for _, v := range version.AffectedVersions {
+		var introduced string
+		if v.Introduced == "" {
+			introduced = "0"
+		} else {
+			introduced = v.Introduced
+		}
 
-			if _, seen := seenFixed[v.Fixed]; v.Fixed != "" && !seen {
-				versionRange.Events = append(versionRange.Events, Event{
-					Fixed: v.Fixed,
-				})
-				seenFixed[v.Fixed] = true
-			}
+		if _, seen := seenIntroduced[introduced]; !seen {
+			versionRange.Events = append(versionRange.Events, Event{
+				Introduced: introduced,
+			})
+			seenIntroduced[introduced] = true
 		}
-		if len(version.AffectedVersions) > 0 {
-			affected.Ranges = append(affected.Ranges, versionRange)
+
+		if _, seen := seenFixed[v.Fixed]; v.Fixed != "" && !seen {
+			versionRange.Events = append(versionRange.Events, Event{
+				Fixed: v.Fixed,
+			})
+			seenFixed[v.Fixed] = true
 		}
+	}
+	if len(version.AffectedVersions) > 0 {
+		affected.Ranges = append(affected.Ranges, versionRange)
 	}
 }
 

@@ -185,27 +185,28 @@ func CVEToOSV(CVE cves.CVEItem, repo, directory string) {
 	affected := vulns.Affected{}
 	affected.AttachExtractedVersionInfo(versions)
 	v.Affected = append(v.Affected, affected)
-	if len(v.Affected[0].Ranges) == 0 {
-		Logger.Infof("No affected versions detected.")
-	}
 
-	// Everything from here down relates to output.
-	vulnDir := filepath.Join(directory, CPE.Product)
-	err = os.MkdirAll(vulnDir, 0755)
-	if err != nil {
-		Logger.Fatalf("Failed to create dir: %v", err)
+	if len(v.Affected[0].Ranges) == 0 {
+		Logger.Infof("No affected versions detected for %s for %q", CVE.CVE.CVEDataMeta.ID, CPE.Product)
+	} else {
+
+		vulnDir := filepath.Join(directory, CPE.Product)
+		err = os.MkdirAll(vulnDir, 0755)
+		if err != nil {
+			Logger.Fatalf("Failed to create dir: %v", err)
+		}
+		outputFile := filepath.Join(vulnDir, v.ID+extension)
+		f, err := os.Create(outputFile)
+		if err != nil {
+			Logger.Fatalf("Failed to open %s for writing: %v", outputFile, err)
+		}
+		defer f.Close()
+		err = v.ToJSON(f)
+		if err != nil {
+			Logger.Fatalf("Failed to write %s: %v", outputFile, err)
+		}
+		Logger.Infof("Processed %s for %q", CVE.CVE.CVEDataMeta.ID, CPE.Product)
 	}
-	outputFile := filepath.Join(vulnDir, v.ID+extension)
-	f, err := os.Create(outputFile)
-	if err != nil {
-		Logger.Fatalf("Failed to open %s for writing: %v", outputFile, err)
-	}
-	defer f.Close()
-	err = v.ToJSON(f)
-	if err != nil {
-		Logger.Fatalf("Failed to write %s: %v", outputFile, err)
-	}
-	Logger.Infof("Processed %s for %q", CVE.CVE.CVEDataMeta.ID, CPE.Product)
 }
 
 func main() {

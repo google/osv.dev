@@ -185,11 +185,12 @@ func CVEToOSV(CVE cves.CVEItem, repo, directory string) {
 	affected := vulns.Affected{}
 	affected.AttachExtractedVersionInfo(versions)
 	v.Affected = append(v.Affected, affected)
+
 	if len(v.Affected[0].Ranges) == 0 {
-		Logger.Infof("No affected versions detected.")
+		Logger.Infof("No affected versions detected for %s for %q", CVE.CVE.CVEDataMeta.ID, CPE.Product)
+		return
 	}
 
-	// Everything from here down relates to output.
 	vulnDir := filepath.Join(directory, CPE.Product)
 	err = os.MkdirAll(vulnDir, 0755)
 	if err != nil {

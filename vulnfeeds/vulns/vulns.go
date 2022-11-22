@@ -34,13 +34,15 @@ type Event struct {
 }
 
 type Affected struct {
-	Package struct {
-		Name      string `json:"name,omitempty" yaml:"name"`
-		Ecosystem string `json:"ecosystem,omitempty" yaml:"ecosystem"`
-		Purl      string `json:"purl,omitempty" yaml:"purl,omitempty"`
-	} `json:"package"`
-	Ranges   []AffectedRange `json:"ranges" yaml:"ranges"`
-	Versions []string        `json:"versions,omitempty" yaml:"versions,omitempty"`
+	Package  *AffectedPackage `json:"package,omitempty"`
+	Ranges   []AffectedRange  `json:"ranges" yaml:"ranges"`
+	Versions []string         `json:"versions,omitempty" yaml:"versions,omitempty"`
+}
+
+type AffectedPackage struct {
+	Name      string `json:"name,omitempty" yaml:"name"`
+	Ecosystem string `json:"ecosystem,omitempty" yaml:"ecosystem"`
+	Purl      string `json:"purl,omitempty" yaml:"purl,omitempty"`
 }
 
 type AffectedRange struct {
@@ -316,9 +318,11 @@ func FromCVE(id string, cve cves.CVEItem) (*Vulnerability, []string) {
 // AddPkgInfo adds affected package information to the OSV vulnerability object
 func (v *Vulnerability) AddPkgInfo(pkgInfo PackageInfo) {
 	affected := Affected{}
-	affected.Package.Name = pkgInfo.PkgName
-	affected.Package.Ecosystem = pkgInfo.Ecosystem
-	affected.Package.Purl = pkgInfo.PURL
+	affected.Package = &AffectedPackage{
+		Name:      pkgInfo.PkgName,
+		Ecosystem: pkgInfo.Ecosystem,
+		Purl:      pkgInfo.PURL,
+	}
 	if pkgInfo.FixedVersion != "" {
 		versionRange := AffectedRange{
 			Type: "ECOSYSTEM",
@@ -362,6 +366,11 @@ func (affected *Affected) AttachExtractedVersionInfo(version cves.VersionInfo) {
 			gitRange.Events = append(gitRange.Events, Event{Fixed: commit})
 		}
 		affected.Ranges = append(affected.Ranges, gitRange)
+	}
+
+	// Adding an ECOSYSTEM version range only makes sense if we have package information.
+	if affected.Package == nil {
+		return
 	}
 
 	versionRange := AffectedRange{

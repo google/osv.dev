@@ -8,6 +8,7 @@ import (
 	"io/ioutil"
 	"log"
 	"os"
+	"sort"
 
 	"cloud.google.com/go/logging"
 	"github.com/google/osv/vulnfeeds/cves"
@@ -82,8 +83,8 @@ func main() {
 	if err != nil {
 		Logger.Fatalf("Failed to load %s: %v", CPEDictionaryFile, err)
 	}
-	ProductToRepo := make(map[string]string)
-	Descriptions := make(map[string]bool)
+	ProductToRepo := make(map[string]*string)
+	DescriptionFrequency := make(map[string]int)
 	for _, c := range CPEDictionary.CPEItems {
 		CPE, err := cves.ParseCPE(c.CPE23.Name)
 		if err != nil {
@@ -94,8 +95,14 @@ func main() {
 			// Not interested in hardware or operating systems.
 			continue
 		}
+		if _, exists := ProductToRepo[CPE.Product]; !exists {
+			// This way every seen product will exist in the map,
+			// and ones we never determine a repo for will have a
+			// nil value.
+			ProductToRepo[CPE.Product] = nil
+		}
 		for _, r := range c.References {
-			Descriptions[r.Description] = true
+			DescriptionFrequency[r.Description] += 1
 			repo, err := cves.Repo(r.URL)
 			if err != nil {
 				Logger.Infof("Disregarding %q for %q (%s) because %v", r.URL, CPE.Product, r.Description, err)
@@ -107,17 +114,29 @@ func main() {
 			}
 			Logger.Infof("Liking %q for %q (%s)", repo, CPE.Product, r.Description)
 			// TODO(apollock): optimisation: check if key already present, flag differing value
-			ProductToRepo[CPE.Product] = repo
+			ProductToRepo[CPE.Product] = &repo
 		}
 	}
-	Logger.Infof("Loaded information about %d products", len(ProductToRepo))
-	fmt.Printf("Loaded information about %d products\n", len(ProductToRepo))
-	Logger.Infof("Seen %d descriptions", len(Descriptions))
-	fmt.Printf("Seen %d descriptions \n", len(Descriptions))
+	productsWithoutRepos := 0
 	for product, repo := range ProductToRepo {
-		fmt.Printf("%s -> %s\n", product, repo)
+		if repo == nil {
+			productsWithoutRepos++
+			continue
+		}
+		fmt.Printf("%s -> %s\n", product, *repo)
 	}
-	for description, _ := range Descriptions {
-		fmt.Printf("%s\n", description)
+	Logger.Infof("Loaded information about %d application products, %d do not have repos", len(ProductToRepo), productsWithoutRepos)
+	fmt.Printf("Loaded information about %d products, %d do not have repos\n", len(ProductToRepo), productsWithoutRepos)
+	descriptions := make([]string, 0, len(DescriptionFrequency))
+	for description := range DescriptionFrequency {
+		descriptions = append(descriptions, description)
 	}
+	sort.SliceStable(descriptions, func(i, j int) bool {
+		return DescriptionFrequency[descriptions[i]] > DescriptionFrequency[descriptions[j]]
+	})
+	for _, d := range descriptions {
+		fmt.Printf("%s,%d\n", d, DescriptionFrequency[d])
+	}
+	Logger.Infof("Seen %d descriptions", len(DescriptionFrequency))
+	fmt.Printf("Seen %d descriptions \n", len(DescriptionFrequency))
 }

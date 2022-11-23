@@ -10,7 +10,9 @@ import (
 	"os"
 
 	"cloud.google.com/go/logging"
+	"github.com/google/osv/vulnfeeds/cves"
 	"github.com/google/osv/vulnfeeds/utility"
+	"golang.org/x/exp/slices"
 )
 
 type CPEDict struct {
@@ -19,21 +21,20 @@ type CPEDict struct {
 }
 
 type CPEItem struct {
-	XMLName    xml.Name    `xml:"cpe-item"`
-	Name       string      `xml:"name,attr"`
-	Title      string      `xml:"title"`
-	References []Reference `xml:"references"`
-	CPE23      CPE23s      `xml:"cpe23-item"`
+	XMLName    xml.Name    `xml:"cpe-item",json:"-"`
+	Name       string      `xml:"name,attr",json:"name"`
+	Title      string      `xml:"title",json:"title"`
+	References []Reference `xml:"references>reference",json:"references"`
+	CPE23      CPE23Item   `xml:"cpe23-item",json:"cpe23-item"`
 }
 
 type Reference struct {
-	Href          string `xml:"href,attr"`
-	ReferenceType string `xml:"reference"`
+	URL         string `xml:"href,attr",json:"URL"`
+	Description string `xml:",chardata",json:"description"`
 }
 
-type CPE23s struct {
-	XMLName xml.Name `xml:"cpe23-item"`
-	Name    string   `xml:"name,attr"`
+type CPE23Item struct {
+	Name string `xml:"name,attr"`
 }
 
 const (
@@ -43,6 +44,12 @@ const (
 
 var (
 	Logger            utility.LoggerWrapper
+	ValidDescriptions = []string{
+		"Change Log",
+		"Version information via GitHub",
+		"product version information",
+		"Version",
+	}
 	CPEDictionaryFile = flag.String("cpe_dictionary", CPEDictionaryDefault, "CPE Dictionary file to parse")
 )
 
@@ -75,5 +82,42 @@ func main() {
 	if err != nil {
 		Logger.Fatalf("Failed to load %s: %v", CPEDictionaryFile, err)
 	}
-	fmt.Printf("%#v", CPEDictionary.CPEItems[0])
+	ProductToRepo := make(map[string]string)
+	Descriptions := make(map[string]bool)
+	for _, c := range CPEDictionary.CPEItems {
+		CPE, err := cves.ParseCPE(c.CPE23.Name)
+		if err != nil {
+			Logger.Infof("Failed to parse %q", c.CPE23.Name)
+			continue
+		}
+		if CPE.Part != "a" {
+			// Not interested in hardware or operating systems.
+			continue
+		}
+		for _, r := range c.References {
+			Descriptions[r.Description] = true
+			repo, err := cves.Repo(r.URL)
+			if err != nil {
+				Logger.Infof("Disregarding %q for %q (%s) because %v", r.URL, CPE.Product, r.Description, err)
+				continue
+			}
+			if !slices.Contains(ValidDescriptions, r.Description) {
+				Logger.Infof("Disregarding %q for %q (%s)", r.URL, CPE.Product, r.Description)
+				continue
+			}
+			Logger.Infof("Liking %q for %q (%s)", repo, CPE.Product, r.Description)
+			// TODO(apollock): optimisation: check if key already present, flag differing value
+			ProductToRepo[CPE.Product] = repo
+		}
+	}
+	Logger.Infof("Loaded information about %d products", len(ProductToRepo))
+	fmt.Printf("Loaded information about %d products\n", len(ProductToRepo))
+	Logger.Infof("Seen %d descriptions", len(Descriptions))
+	fmt.Printf("Seen %d descriptions \n", len(Descriptions))
+	for product, repo := range ProductToRepo {
+		fmt.Printf("%s -> %s\n", product, repo)
+	}
+	for description, _ := range Descriptions {
+		fmt.Printf("%s\n", description)
+	}
 }

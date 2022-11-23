@@ -17,21 +17,21 @@ import (
 )
 
 type CPEDict struct {
-	XMLName  xml.Name  `xml:cpe-list`
+	XMLName  xml.Name  `xml:"cpe-list"`
 	CPEItems []CPEItem `xml:"cpe-item"`
 }
 
 type CPEItem struct {
-	XMLName    xml.Name    `xml:"cpe-item",json:"-"`
-	Name       string      `xml:"name,attr",json:"name"`
-	Title      string      `xml:"title",json:"title"`
-	References []Reference `xml:"references>reference",json:"references"`
-	CPE23      CPE23Item   `xml:"cpe23-item",json:"cpe23-item"`
+	XMLName    xml.Name    `xml:"cpe-item" json:"-"`
+	Name       string      `xml:"name,attr" json:"name"`
+	Title      string      `xml:"title" json:"title"`
+	References []Reference `xml:"references>reference" json:"references"`
+	CPE23      CPE23Item   `xml:"cpe23-item" json:"cpe23-item"`
 }
 
 type Reference struct {
-	URL         string `xml:"href,attr",json:"URL"`
-	Description string `xml:",chardata",json:"description"`
+	URL         string `xml:"href,attr" json:"URL"`
+	Description string `xml:",chardata" json:"description"`
 }
 
 type CPE23Item struct {
@@ -108,7 +108,7 @@ func main() {
 
 	CPEDictionary, err := LoadCPEDictionary(*CPEDictionaryFile)
 	if err != nil {
-		Logger.Fatalf("Failed to load %s: %v", CPEDictionaryFile, err)
+		Logger.Fatalf("Failed to load %s: %v", *CPEDictionaryFile, err)
 	}
 	ProductToRepo := make(map[string]*string)
 	DescriptionFrequency := make(map[string]int)

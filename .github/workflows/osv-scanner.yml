@@ -13,8 +13,9 @@
 # limitations under the License.
 
 name: osv-scanner
-
 on: [pull_request]
+
+permissions: read-all
 
 jobs:
   osv-scanner:

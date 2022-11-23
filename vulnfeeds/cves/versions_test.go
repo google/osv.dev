@@ -119,6 +119,44 @@ func TestParseCPE(t *testing.T) {
 	}
 }
 
+func TestRepo(t *testing.T) {
+	tests := []struct {
+		description     string // human-readable description of test case
+		inputLink       string // a possible repository URL to call Repo() with
+		expectedRepoURL string // The expected  repository URL to get back from Repo()
+		expectedOk      bool   // If an error is expected
+	}{
+		{
+			description:     "GitHub compare URL",
+			inputLink:       "https://github.com/kovidgoyal/kitty/compare/v0.26.1...v0.26.2",
+			expectedRepoURL: "https://github.com/kovidgoyal/kitty",
+			expectedOk:      true,
+		},
+		{
+			description:     "GitLab compare URL",
+			inputLink:       "https://gitlab.com/mayan-edms/mayan-edms/-/compare/development...master?from_project_id=396557&straight=false",
+			expectedRepoURL: "https://gitlab.com/mayan-edms/mayan-edms",
+			expectedOk:      true,
+		},
+		{
+			description:     "Ambiguous GitLab compare URL",
+			inputLink:       "https://git.drupalcode.org/project/views/-/compare/7.x-3.21...7.x-3.x",
+			expectedRepoURL: "https://git.drupalcode.org/project/views",
+			expectedOk:      true,
+		},
+	}
+
+	for _, tc := range tests {
+		got, err := Repo(tc.inputLink)
+		if err != nil && tc.expectedOk {
+			t.Errorf("test %q: Repo(%q) unexpectedly failed: %+v", tc.description, tc.inputLink, err)
+		}
+		if !reflect.DeepEqual(got, tc.expectedRepoURL) {
+			t.Errorf("test %q: Repo(%q) was incorrect, got: %#v, expected: %#v", tc.description, tc.inputLink, got, tc.expectedRepoURL)
+		}
+	}
+}
+
 func TestExtractGitCommit(t *testing.T) {
 	tests := []struct {
 		description       string

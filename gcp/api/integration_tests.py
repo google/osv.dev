@@ -365,8 +365,7 @@ class IntegrationTests(unittest.TestCase):
 
     self.assert_results_equal({'vulns': expected}, response.json())
 
-    expected_deb = [self._get('DSA-4921-1'),
-                    self._get('DLA-3203-1')]
+    expected_deb = [self._get('DSA-4921-1'), self._get('DLA-3203-1')]
 
     response = requests.post(
         _api() + '/v1/query',

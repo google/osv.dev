@@ -46,10 +46,37 @@ const (
 var (
 	Logger            utility.LoggerWrapper
 	ValidDescriptions = []string{
-		"Change Log",
-		"Version information via GitHub",
-		"product version information",
 		"Version",
+		"Vendor",
+		"Change Log",
+		"Product",
+		// Brings in https://github.com/CVEProject/cvelist, which is not relevant
+		// "Advisory",
+		"Project",
+		"Vendor website", // unlikely to be a repo, but statistically significant as a description
+		"product changelog",
+		"Version information",
+		"vendor website", // unlikely to be a repo, but statistically significant as a description
+		"Vendor Website", // unlikely to be a repo, but statistically significant as a description
+		"version information",
+		"product version information",
+		"product information",
+		"Product changelog",
+		"vendor product information",
+		"Changelog",
+		"Version Information",
+		"Vendor changelog",
+		"project information",
+		"product release information",
+		"product release notes",
+		"vendor product website",
+		"Product version information",
+		"vendor changelog",
+	}
+	// These repos should never be considered authoritative for a product.
+	InvalidRepos = []string{
+		"https://github.com/CVEProject/cvelist", // Heavily in Advisory URLs, sometimes shows up elsewhere
+		"https://github.com/github/cvelist",     // Fork of the above
 	}
 	CPEDictionaryFile = flag.String("cpe_dictionary", CPEDictionaryDefault, "CPE Dictionary file to parse")
 )
@@ -108,6 +135,12 @@ func main() {
 				Logger.Infof("Disregarding %q for %q (%s) because %v", r.URL, CPE.Product, r.Description, err)
 				continue
 			}
+			// Disregard the repos we know we don't like.
+			if slices.Contains(InvalidRepos, repo) {
+				Logger.Infof("Disliking %q for %q (%s)", repo, CPE.Product, r.Description)
+				continue
+			}
+			// Don't consider URL descriptions not explicitly allowlisted to reduce invalidity.
 			if !slices.Contains(ValidDescriptions, r.Description) {
 				Logger.Infof("Disregarding %q for %q (%s)", r.URL, CPE.Product, r.Description)
 				continue
@@ -118,12 +151,17 @@ func main() {
 		}
 	}
 	productsWithoutRepos := 0
-	for product, repo := range ProductToRepo {
-		if repo == nil {
+	products := make([]string, 0, len(ProductToRepo))
+	for p := range ProductToRepo {
+		products = append(products, p)
+	}
+	sort.Strings(products)
+	for _, product := range products {
+		if ProductToRepo[product] == nil {
 			productsWithoutRepos++
 			continue
 		}
-		fmt.Printf("%s -> %s\n", product, *repo)
+		fmt.Printf("%s -> %s\n", product, *ProductToRepo[product])
 	}
 	Logger.Infof("Loaded information about %d application products, %d do not have repos", len(ProductToRepo), productsWithoutRepos)
 	fmt.Printf("Loaded information about %d products, %d do not have repos\n", len(ProductToRepo), productsWithoutRepos)

@@ -128,8 +128,10 @@ func main() {
 			// nil value.
 			ProductToRepo[CPE.Product] = nil
 		} else {
-			Logger.Infof("Already have %q for %q, skipping relookup", *ProductToRepo[CPE.Product], CPE.Product)
-			continue
+			if ProductToRepo[CPE.Product] != nil {
+				Logger.Infof("Already have %q for %q, skipping relookup", *ProductToRepo[CPE.Product], CPE.Product)
+				continue
+			}
 		}
 		for _, r := range c.References {
 			DescriptionFrequency[r.Description] += 1

@@ -23,6 +23,7 @@ import (
 	"strings"
 
 	"github.com/knqyf263/go-cpe/naming"
+	"golang.org/x/exp/slices"
 )
 
 type FixCommit struct {
@@ -57,9 +58,24 @@ type CPE struct {
 
 // Returns the base repository URL for supported repository hosts.
 func Repo(u string) (string, error) {
+	var supportedHosts = []string{
+		"github.com",
+		"gitlab.org",
+		"bitbucket.org",
+	}
 	parsedURL, err := url.Parse(u)
 	if err != nil {
 		return "", err
+	}
+
+	// Were we handed a base repository URL from the get go?
+	if slices.Contains(supportedHosts, parsedURL.Hostname()) {
+		if len(strings.Split(parsedURL.Path, "/")) == 3 {
+			return fmt.Sprintf("%s://%s%s", parsedURL.Scheme,
+					parsedURL.Hostname(),
+					parsedURL.Path),
+				nil
+		}
 	}
 
 	// GitWeb URLs are structured another way, e.g.
@@ -89,6 +105,8 @@ func Repo(u string) (string, error) {
 	if strings.Contains(parsedURL.Path, "commit") ||
 		strings.Contains(parsedURL.Path, "blob") ||
 		strings.Contains(parsedURL.Path, "releases/tag") ||
+		strings.Contains(parsedURL.Path, "releases") ||
+		strings.Contains(parsedURL.Path, "tags") ||
 		strings.Contains(parsedURL.Path, "issues") {
 		return fmt.Sprintf("%s://%s%s", parsedURL.Scheme,
 				parsedURL.Hostname(),

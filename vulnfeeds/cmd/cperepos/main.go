@@ -127,6 +127,9 @@ func main() {
 			// and ones we never determine a repo for will have a
 			// nil value.
 			ProductToRepo[CPE.Product] = nil
+		} else {
+			Logger.Infof("Already have %q for %q, skipping relookup", ProductToRepo[CPE.Product], CPE.Product)
+			continue
 		}
 		for _, r := range c.References {
 			DescriptionFrequency[r.Description] += 1
@@ -146,7 +149,6 @@ func main() {
 				continue
 			}
 			Logger.Infof("Liking %q for %q (%s)", repo, CPE.Product, r.Description)
-			// TODO(apollock): optimisation: check if key already present, flag differing value
 			ProductToRepo[CPE.Product] = &repo
 		}
 	}

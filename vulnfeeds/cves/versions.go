@@ -23,6 +23,7 @@ import (
 	"strings"
 
 	"github.com/knqyf263/go-cpe/naming"
+	"golang.org/x/exp/slices"
 )
 
 type FixCommit struct {
@@ -57,9 +58,24 @@ type CPE struct {
 
 // Returns the base repository URL for supported repository hosts.
 func Repo(u string) (string, error) {
+	var supportedHosts = []string{
+		"github.com",
+		"gitlab.org",
+		"bitbucket.org",
+	}
 	parsedURL, err := url.Parse(u)
 	if err != nil {
 		return "", err
+	}
+
+	// Were we handed a base repository URL from the get go?
+	if slices.Contains(supportedHosts, parsedURL.Hostname()) {
+		if len(strings.Split(parsedURL.Path, "/")) == 3 {
+			return fmt.Sprintf("%s://%s%s", parsedURL.Scheme,
+					parsedURL.Hostname(),
+					parsedURL.Path),
+				nil
+		}
 	}
 
 	// GitWeb URLs are structured another way, e.g.
@@ -86,10 +102,13 @@ func Repo(u string) (string, error) {
 	// This also supports GitHub and Gitlab issue URLs, e.g.:
 	// https://github.com/axiomatic-systems/Bento4/issues/755
 	// https://gitlab.com/wireshark/wireshark/-/issues/18307
-	if strings.Contains(parsedURL.Path, "commit") ||
-		strings.Contains(parsedURL.Path, "blob") ||
-		strings.Contains(parsedURL.Path, "releases/tag") ||
-		strings.Contains(parsedURL.Path, "issues") {
+	if (parsedURL.Hostname() == "github.com" || strings.HasPrefix(parsedURL.Hostname(), "gitlab.")) &&
+		(strings.Contains(parsedURL.Path, "commit") ||
+			strings.Contains(parsedURL.Path, "blob") ||
+			strings.Contains(parsedURL.Path, "releases/tag") ||
+			strings.Contains(parsedURL.Path, "releases") ||
+			strings.Contains(parsedURL.Path, "tags") ||
+			strings.Contains(parsedURL.Path, "issues")) {
 		return fmt.Sprintf("%s://%s%s", parsedURL.Scheme,
 				parsedURL.Hostname(),
 				strings.Join(strings.Split(parsedURL.Path, "/")[0:3], "/")),
@@ -119,7 +138,7 @@ func Repo(u string) (string, error) {
 
 	// Gitlab merge request URLs are structured differently, e.g.
 	// https://gitlab.com/libtiff/libtiff/-/merge_requests/378
-	if strings.Contains(parsedURL.Hostname(), "gitlab") &&
+	if strings.HasPrefix(parsedURL.Hostname(), "gitlab.") &&
 		strings.Contains(parsedURL.Path, "merge_requests") {
 		return fmt.Sprintf("%s://%s%s", parsedURL.Scheme,
 				parsedURL.Hostname(),

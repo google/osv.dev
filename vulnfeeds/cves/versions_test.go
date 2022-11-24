@@ -139,9 +139,27 @@ func TestRepo(t *testing.T) {
 			expectedOk:      true,
 		},
 		{
+			description:     "GitHub releases URL",
+			inputLink:       "https://github.com/apache/activemq-artemis/releases",
+			expectedRepoURL: "https://github.com/apache/activemq-artemis",
+			expectedOk:      true,
+		},
+		{
+			description:     "GitHub releases URL",
+			inputLink:       "https://github.com/apache/activemq-artemis/tags",
+			expectedRepoURL: "https://github.com/apache/activemq-artemis",
+			expectedOk:      true,
+		},
+		{
 			description:     "Ambiguous GitLab compare URL",
 			inputLink:       "https://git.drupalcode.org/project/views/-/compare/7.x-3.21...7.x-3.x",
 			expectedRepoURL: "https://git.drupalcode.org/project/views",
+			expectedOk:      true,
+		},
+		{
+			description:     "Exact repository URL",
+			inputLink:       "https://github.com/apache/activemq-artemis",
+			expectedRepoURL: "https://github.com/apache/activemq-artemis",
 			expectedOk:      true,
 		},
 	}

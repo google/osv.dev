@@ -9,6 +9,7 @@ import (
 	"log"
 	"os"
 	"sort"
+	"strings"
 
 	"cloud.google.com/go/logging"
 	"github.com/google/osv/vulnfeeds/cves"
@@ -40,6 +41,7 @@ type CPE23Item struct {
 
 const (
 	CPEDictionaryDefault = "cve_jsons/nvdcpematch-1.0.json"
+	OutputDirDefault     = "."
 	projectId            = "oss-vdb"
 )
 
@@ -51,6 +53,8 @@ var (
 		"https://github.com/github/cvelist",     // Fork of the above
 	}
 	CPEDictionaryFile = flag.String("cpe_dictionary", CPEDictionaryDefault, "CPE Dictionary file to parse")
+	OutputDir         = flag.String("output_dir", OutputDirDefault, "Directory to output CSV and JSON files to")
+	GCPLoggingProject = flag.String("gcp_logging_project", projectId, "GCP project ID to use for logging, set to an empty string to log locally only")
 )
 
 func LoadCPEDictionary(f string) (CPEDict, error) {
@@ -70,13 +74,16 @@ func LoadCPEDictionary(f string) (CPEDict, error) {
 }
 
 func main() {
-	client, err := logging.NewClient(context.Background(), projectId)
-	if err != nil {
-		log.Fatalf("Failed to create client: %v", err)
-	}
-	defer client.Close()
-	Logger.GCloudLogger = client.Logger("cperepos")
 	flag.Parse()
+
+	if *GCPLoggingProject != "" {
+		client, err := logging.NewClient(context.Background(), *GCPLoggingProject)
+		if err != nil {
+			log.Fatalf("Failed to create client: %v", err)
+		}
+		defer client.Close()
+		Logger.GCloudLogger = client.Logger("cperepos")
+	}
 
 	CPEDictionary, err := LoadCPEDictionary(*CPEDictionaryFile)
 	if err != nil {
@@ -84,6 +91,7 @@ func main() {
 	}
 	ProductToRepo := make(map[string]*string)
 	DescriptionFrequency := make(map[string]int)
+	ProductToVendor := make(map[string][]string)
 	for _, c := range CPEDictionary.CPEItems {
 		CPE, err := cves.ParseCPE(c.CPE23.Name)
 		if err != nil {
@@ -93,6 +101,14 @@ func main() {
 		if CPE.Part != "a" {
 			// Not interested in hardware or operating systems.
 			continue
+		}
+		// Gather the data to answer the question: "are there product name collisions?"
+		if _, exists := ProductToVendor[CPE.Product]; exists {
+			if !slices.Contains(ProductToVendor[CPE.Product], CPE.Vendor) {
+				ProductToVendor[CPE.Product] = append(ProductToVendor[CPE.Product], CPE.Vendor)
+			}
+		} else {
+			ProductToVendor[CPE.Product] = []string{CPE.Vendor}
 		}
 		if _, exists := ProductToRepo[CPE.Product]; !exists {
 			// This way every seen product will exist in the map,
@@ -136,6 +152,14 @@ func main() {
 	}
 	Logger.Infof("Loaded information about %d application products, %d do not have repos", len(ProductToRepo), productsWithoutRepos)
 	fmt.Printf("Loaded information about %d products, %d do not have repos\n", len(ProductToRepo), productsWithoutRepos)
+	// Answer the question: "are there product name collisions?"
+	for product, vendors := range ProductToVendor {
+		if len(vendors) == 1 {
+			continue
+		}
+		Logger.Infof("Product %s has >1 vendors: [%s]", product, strings.Join(vendors, ", "))
+		fmt.Printf("Product %s has >1 vendors: [%s]\n", product, strings.Join(vendors, ", "))
+	}
 	descriptions := make([]string, 0, len(DescriptionFrequency))
 	for description := range DescriptionFrequency {
 		descriptions = append(descriptions, description)

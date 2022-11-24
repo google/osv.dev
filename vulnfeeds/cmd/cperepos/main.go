@@ -238,20 +238,20 @@ func main() {
 		Logger.Fatalf("Failed to load %s: %v", *CPEDictionaryFile, err)
 	}
 
-	ProductToRepo, DescriptionFrequency, ProductToVendor := analyzeCPEDictionary(CPEDictionary)
+	productToRepo, descriptionFrequency, productToVendor := analyzeCPEDictionary(CPEDictionary)
 
-	ptrmf, err := os.Create(filepath.Join(*OutputDir, "cpe_product_to_repo.json"))
+	mappingFile, err := os.Create(filepath.Join(*OutputDir, "cpe_product_to_repo.json"))
 	if err != nil {
 		Logger.Fatalf("%v", err)
 	}
-	defer ptrmf.Close()
-	err = outputProductToRepoMap(ProductToRepo, ptrmf)
+	defer mappingFile.Close()
+	err = outputProductToRepoMap(productToRepo, mappingFile)
 	if err != nil {
 		Logger.Fatalf("%v", err)
 	}
 	// Answer the question: "are there product name collisions?"
 	if *Verbose {
-		for product, vendors := range ProductToVendor {
+		for product, vendors := range productToVendor {
 			if len(vendors) == 1 {
 				continue
 			}
@@ -259,12 +259,12 @@ func main() {
 			fmt.Printf("Product %s has >1 vendors: [%s]\n", product, strings.Join(vendors, ", "))
 		}
 	}
-	crdff, err := os.Create(filepath.Join(*OutputDir, "cpe_reference_description_frequency.csv"))
+	frequencyFile, err := os.Create(filepath.Join(*OutputDir, "cpe_reference_description_frequency.csv"))
 	if err != nil {
 		Logger.Fatalf("%v", err)
 	}
-	defer crdff.Close()
-	err = outputDescriptionFrequency(DescriptionFrequency, crdff)
+	defer frequencyFile.Close()
+	err = outputDescriptionFrequency(descriptionFrequency, frequencyFile)
 	if err != nil {
 		Logger.Fatalf("%v", err)
 	}

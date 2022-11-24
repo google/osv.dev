@@ -1,14 +1,43 @@
+/*
+cperepos analyzes the NVD CPE Dictionary for Open Source repository information.
+It reads the NVD CPE Dictionary XML file and outputs a JSON map of CPE products to discovered repository URLs.
+
+It can also output on stdout additional data about colliding CPE package names.
+
+Usage:
+
+	go run cmd/cperepos/main.go [flags]
+
+The flags are:
+
+	  --cpe_dictionary
+		The path to the uncompressed NVD CPE Dictionary XML file, see https://nvd.nist.gov/products/cpe
+
+	  --output_dir
+	        The directory to output cpe_product_to_repo.json and cpe_reference_description_frequency.csv in
+
+	  --gcp_logging_project
+		The GCP project ID to utilise for Cloud Logging. Set to the empty string to log to stdout
+
+	  --verbose
+		Output additional telemetry to stdout
+*/
 package main
 
 import (
 	"context"
+	"encoding/csv"
+	"encoding/json"
 	"encoding/xml"
 	"flag"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"log"
 	"os"
+	"path/filepath"
 	"sort"
+	"strconv"
 	"strings"
 
 	"cloud.google.com/go/logging"
@@ -53,8 +82,9 @@ var (
 		"https://github.com/github/cvelist",     // Fork of the above
 	}
 	CPEDictionaryFile = flag.String("cpe_dictionary", CPEDictionaryDefault, "CPE Dictionary file to parse")
-	OutputDir         = flag.String("output_dir", OutputDirDefault, "Directory to output CSV and JSON files to")
+	OutputDir         = flag.String("output_dir", OutputDirDefault, "Directory to output cpe_product_to_repo.json and cpe_reference_description_frequency.csv in")
 	GCPLoggingProject = flag.String("gcp_logging_project", projectId, "GCP project ID to use for logging, set to an empty string to log locally only")
+	Verbose           = flag.Bool("verbose", false, "Output some telemetry to stdout during execution")
 )
 
 func LoadCPEDictionary(f string) (CPEDict, error) {
@@ -73,26 +103,70 @@ func LoadCPEDictionary(f string) (CPEDict, error) {
 	return c, nil
 }
 
-func main() {
-	flag.Parse()
-
-	if *GCPLoggingProject != "" {
-		client, err := logging.NewClient(context.Background(), *GCPLoggingProject)
-		if err != nil {
-			log.Fatalf("Failed to create client: %v", err)
+// Outputs a JSON file of the product-to-repo map.
+func outputProductToRepoMap(prm map[string]*string, f io.Writer) error {
+	productsWithoutRepos := 0
+	for p := range prm {
+		if prm[p] == nil {
+			productsWithoutRepos++
+			delete(prm, p) // we don't want the repo-less products in our JSON output
+			continue
 		}
-		defer client.Close()
-		Logger.GCloudLogger = client.Logger("cperepos")
 	}
 
-	CPEDictionary, err := LoadCPEDictionary(*CPEDictionaryFile)
-	if err != nil {
-		Logger.Fatalf("Failed to load %s: %v", *CPEDictionaryFile, err)
+	e := json.NewEncoder(f)
+
+	if err := e.Encode(&prm); err != nil {
+		return err
 	}
-	ProductToRepo := make(map[string]*string)
-	DescriptionFrequency := make(map[string]int)
-	ProductToVendor := make(map[string][]string)
-	for _, c := range CPEDictionary.CPEItems {
+
+	if *Verbose {
+		fmt.Printf("Loaded information about %d products, %d do not have repos\n", len(prm), productsWithoutRepos)
+	}
+	Logger.Infof("Loaded information about %d application products, %d do not have repos", len(prm), productsWithoutRepos)
+	return nil
+}
+
+// Outputs a CSV file of the description frequency map, sorted in descending order.
+func outputDescriptionFrequency(df map[string]int, f io.Writer) error {
+	descriptions := make([]string, 0, len(df))
+	for description := range df {
+		descriptions = append(descriptions, description)
+	}
+	sort.SliceStable(descriptions, func(i, j int) bool {
+		return df[descriptions[i]] > df[descriptions[j]]
+	})
+
+	w := csv.NewWriter(f)
+
+	if err := w.Write([]string{"Description", "Frequency"}); err != nil {
+		return err
+	}
+	for _, d := range descriptions {
+		if err := w.Write([]string{d, strconv.Itoa(df[d])}); err != nil {
+			return err
+		}
+	}
+
+	w.Flush()
+
+	if err := w.Error(); err != nil {
+		return err
+	}
+
+	if *Verbose {
+		fmt.Printf("Seen %d descriptions \n", len(df))
+	}
+	Logger.Infof("Seen %d descriptions", len(df))
+	return nil
+}
+
+// Analyze CPE Dictionary
+func analyzeCPEDictionary(d CPEDict) (ProductToRepo map[string]*string, DescriptionFrequency map[string]int, ProductToVendor map[string][]string) {
+	ProductToRepo = make(map[string]*string)
+	DescriptionFrequency = make(map[string]int)
+	ProductToVendor = make(map[string][]string)
+	for _, c := range d.CPEItems {
 		CPE, err := cves.ParseCPE(c.CPE23.Name)
 		if err != nil {
 			Logger.Infof("Failed to parse %q", c.CPE23.Name)
@@ -103,12 +177,14 @@ func main() {
 			continue
 		}
 		// Gather the data to answer the question: "are there product name collisions?"
-		if _, exists := ProductToVendor[CPE.Product]; exists {
-			if !slices.Contains(ProductToVendor[CPE.Product], CPE.Vendor) {
-				ProductToVendor[CPE.Product] = append(ProductToVendor[CPE.Product], CPE.Vendor)
+		if *Verbose {
+			if _, exists := ProductToVendor[CPE.Product]; exists {
+				if !slices.Contains(ProductToVendor[CPE.Product], CPE.Vendor) {
+					ProductToVendor[CPE.Product] = append(ProductToVendor[CPE.Product], CPE.Vendor)
+				}
+			} else {
+				ProductToVendor[CPE.Product] = []string{CPE.Vendor}
 			}
-		} else {
-			ProductToVendor[CPE.Product] = []string{CPE.Vendor}
 		}
 		if _, exists := ProductToRepo[CPE.Product]; !exists {
 			// This way every seen product will exist in the map,
@@ -137,39 +213,59 @@ func main() {
 			ProductToRepo[CPE.Product] = &repo
 		}
 	}
-	productsWithoutRepos := 0
-	products := make([]string, 0, len(ProductToRepo))
-	for p := range ProductToRepo {
-		products = append(products, p)
+	return ProductToRepo, DescriptionFrequency, ProductToVendor
+}
+
+func main() {
+	flag.Usage = func() {
+		fmt.Fprint(flag.CommandLine.Output(), "Utility to analyze NVD CPE Dictionary\n\n")
+		fmt.Fprintf(flag.CommandLine.Output(), "Usage of %s:\n", os.Args[0])
+		flag.PrintDefaults()
 	}
-	sort.Strings(products)
-	for _, product := range products {
-		if ProductToRepo[product] == nil {
-			productsWithoutRepos++
-			continue
+	flag.Parse()
+
+	if *GCPLoggingProject != "" {
+		client, err := logging.NewClient(context.Background(), *GCPLoggingProject)
+		if err != nil {
+			log.Fatalf("Failed to create client: %v", err)
 		}
-		fmt.Printf("%s -> %s\n", product, *ProductToRepo[product])
+		defer client.Close()
+		Logger.GCloudLogger = client.Logger("cperepos")
 	}
-	Logger.Infof("Loaded information about %d application products, %d do not have repos", len(ProductToRepo), productsWithoutRepos)
-	fmt.Printf("Loaded information about %d products, %d do not have repos\n", len(ProductToRepo), productsWithoutRepos)
+
+	CPEDictionary, err := LoadCPEDictionary(*CPEDictionaryFile)
+	if err != nil {
+		Logger.Fatalf("Failed to load %s: %v", *CPEDictionaryFile, err)
+	}
+
+	ProductToRepo, DescriptionFrequency, ProductToVendor := analyzeCPEDictionary(CPEDictionary)
+
+	ptrmf, err := os.Create(filepath.Join(*OutputDir, "cpe_product_to_repo.json"))
+	if err != nil {
+		Logger.Fatalf("%v", err)
+	}
+	defer ptrmf.Close()
+	err = outputProductToRepoMap(ProductToRepo, ptrmf)
+	if err != nil {
+		Logger.Fatalf("%v", err)
+	}
 	// Answer the question: "are there product name collisions?"
-	for product, vendors := range ProductToVendor {
-		if len(vendors) == 1 {
-			continue
+	if *Verbose {
+		for product, vendors := range ProductToVendor {
+			if len(vendors) == 1 {
+				continue
+			}
+			Logger.Infof("Product %s has >1 vendors: [%s]", product, strings.Join(vendors, ", "))
+			fmt.Printf("Product %s has >1 vendors: [%s]\n", product, strings.Join(vendors, ", "))
 		}
-		Logger.Infof("Product %s has >1 vendors: [%s]", product, strings.Join(vendors, ", "))
-		fmt.Printf("Product %s has >1 vendors: [%s]\n", product, strings.Join(vendors, ", "))
 	}
-	descriptions := make([]string, 0, len(DescriptionFrequency))
-	for description := range DescriptionFrequency {
-		descriptions = append(descriptions, description)
+	crdff, err := os.Create(filepath.Join(*OutputDir, "cpe_reference_description_frequency.csv"))
+	if err != nil {
+		Logger.Fatalf("%v", err)
 	}
-	sort.SliceStable(descriptions, func(i, j int) bool {
-		return DescriptionFrequency[descriptions[i]] > DescriptionFrequency[descriptions[j]]
-	})
-	for _, d := range descriptions {
-		fmt.Printf("%s,%d\n", d, DescriptionFrequency[d])
+	defer crdff.Close()
+	err = outputDescriptionFrequency(DescriptionFrequency, crdff)
+	if err != nil {
+		Logger.Fatalf("%v", err)
 	}
-	Logger.Infof("Seen %d descriptions", len(DescriptionFrequency))
-	fmt.Printf("Seen %d descriptions \n", len(DescriptionFrequency))
 }

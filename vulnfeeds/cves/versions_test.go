@@ -174,6 +174,12 @@ func TestRepo(t *testing.T) {
 			expectedRepoURL: "https://gitlab.freedesktop.org/xorg/lib/libXRes",
 			expectedOk:      true,
 		},
+		{
+			description:     "Freedesktop cGit mirror refs/tags URL",
+			inputLink:       "http://cgit.freedesktop.org/spice/spice/refs/tags",
+			expectedRepoURL: "https://gitlab.freedesktop.org/spice/spice",
+			expectedOk:      true,
+		},
 	}
 
 	for _, tc := range tests {

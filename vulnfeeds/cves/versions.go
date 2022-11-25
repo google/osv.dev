@@ -95,13 +95,17 @@ func Repo(u string) (string, error) {
 		if strings.HasSuffix(parsedURL.Path, "commit/") &&
 			strings.HasPrefix(parsedURL.RawQuery, "id=") {
 			repo := strings.TrimSuffix(parsedURL.Path, "/commit/")
-			return fmt.Sprintf("%s://gitlab.freedesktop.org%s",
-				parsedURL.Scheme, repo), nil
+			return fmt.Sprintf("https://gitlab.freedesktop.org%s",
+				repo), nil
+		}
+		if strings.HasSuffix(parsedURL.Path, "refs/tags") {
+			repo := strings.TrimSuffix(parsedURL.Path, "/refs/tags")
+			return fmt.Sprintf("https://gitlab.freedesktop.org%s",
+				repo), nil
 		}
 		if len(strings.Split(parsedURL.Path, "/")) == 4 {
-			return fmt.Sprintf("%s://gitlab.freedesktop.org%s",
-					parsedURL.Scheme, parsedURL.Path),
-				nil
+			return fmt.Sprintf("https://gitlab.freedesktop.org%s",
+				parsedURL.Path), nil
 		}
 	}
 

@@ -114,7 +114,7 @@ var (
 		"https://github.com/z00z00z00/Safenet_SAC_CVE-2021-42056",
 	}
 	// Match repos with "CVE", "CVEs" or a pure CVE number in their name, anything from GitHubAssessments
-	InvalidRepoRegex  = `/(?:(?:CVEs?)|(?:CVE-\d{4}-\d{4,})|GitHubAssessments/.*)`
+	InvalidRepoRegex  = `/(?:(?:CVEs?)|(?:CVE-\d{4}-\d{4,})|GitHubAssessments/.*|advisories/GHSA.*)$`
 	CPEDictionaryFile = flag.String("cpe_dictionary", CPEDictionaryDefault, "CPE Dictionary file to parse")
 	OutputDir         = flag.String("output_dir", OutputDirDefault, "Directory to output cpe_product_to_repo.json and cpe_reference_description_frequency.csv in")
 	GCPLoggingProject = flag.String("gcp_logging_project", projectId, "GCP project ID to use for logging, set to an empty string to log locally only")
@@ -138,10 +138,10 @@ func LoadCPEDictionary(f string) (CPEDict, error) {
 }
 
 // Outputs a JSON file of the product-to-repo map.
-func outputProductToRepoMap(prm map[string]*string, f io.Writer) error {
+func outputProductToRepoMap(prm map[string][]string, f io.Writer) error {
 	productsWithoutRepos := 0
 	for p := range prm {
-		if prm[p] == nil {
+		if len(prm[p]) == 0 {
 			productsWithoutRepos++
 			delete(prm, p) // we don't want the repo-less products in our JSON output
 			continue
@@ -196,8 +196,8 @@ func outputDescriptionFrequency(df map[string]int, f io.Writer) error {
 }
 
 // Analyze CPE Dictionary
-func analyzeCPEDictionary(d CPEDict) (ProductToRepo map[string]*string, DescriptionFrequency map[string]int, ProductToVendor map[string][]string) {
-	ProductToRepo = make(map[string]*string)
+func analyzeCPEDictionary(d CPEDict) (ProductToRepo map[string][]string, DescriptionFrequency map[string]int, ProductToVendor map[string][]string) {
+	ProductToRepo = make(map[string][]string)
 	DescriptionFrequency = make(map[string]int)
 	ProductToVendor = make(map[string][]string)
 	for _, c := range d.CPEItems {
@@ -220,17 +220,14 @@ func analyzeCPEDictionary(d CPEDict) (ProductToRepo map[string]*string, Descript
 				ProductToVendor[CPE.Product] = []string{CPE.Vendor}
 			}
 		}
-		if _, exists := ProductToRepo[CPE.Product]; !exists {
-			// This way every seen product will exist in the map,
-			// and ones we never determine a repo for will have a
-			// nil value.
-			ProductToRepo[CPE.Product] = nil
-		} else {
-			if ProductToRepo[CPE.Product] != nil {
-				Logger.Infof("Already have %q for %q, skipping relookup", *ProductToRepo[CPE.Product], CPE.Product)
-				continue
+		/*
+			if _, exists := ProductToRepo[CPE.Product]; !exists {
+				// This way every seen product will exist in the map,
+				// and ones we never determine a repo for will have a
+				// nil value.
+				ProductToRepo[CPE.Product] = nil
 			}
-		}
+		*/
 		for _, r := range c.References {
 			DescriptionFrequency[r.Description] += 1
 			repo, err := cves.Repo(r.URL)
@@ -249,7 +246,9 @@ func analyzeCPEDictionary(d CPEDict) (ProductToRepo map[string]*string, Descript
 				continue
 			}
 			Logger.Infof("Liking %q for %q (%s)", repo, CPE.Product, r.Description)
-			ProductToRepo[CPE.Product] = &repo
+			if !slices.Contains(ProductToRepo[CPE.Product], repo) {
+				ProductToRepo[CPE.Product] = append(ProductToRepo[CPE.Product], repo)
+			}
 		}
 	}
 	return ProductToRepo, DescriptionFrequency, ProductToVendor

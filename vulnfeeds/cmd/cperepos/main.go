@@ -36,6 +36,7 @@ import (
 	"log"
 	"os"
 	"path/filepath"
+	"regexp"
 	"sort"
 	"strconv"
 	"strings"
@@ -77,10 +78,43 @@ const (
 var (
 	Logger utility.LoggerWrapper
 	// These repos should never be considered authoritative for a product.
+	// TODO(apollock): read this from an external file
 	InvalidRepos = []string{
+		"https://github.com/abhiunix/goo-blog-App-CVE",
+		"https://github.com/agadient/SERVEEZ-CVE",
+		"https://github.com/alwentiu/COVIDSafe-CVE-2020-12856",
+		"https://github.com/ciph0x01/Simple-Exam-Reviewer-Management-System-CVE",
 		"https://github.com/CVEProject/cvelist", // Heavily in Advisory URLs, sometimes shows up elsewhere
-		"https://github.com/github/cvelist",     // Fork of the above
+		"https://github.com/DayiliWaseem/CVE-2022-39196-",
+		"https://github.com/eddietcc/CVEnotes",
+		"https://github.com/Fadavvi/CVE-2018-17431-PoC",
+		"https://github.com/GitHubAssessments/CVE_Assessments_11_2019",
+		"https://github.com/github/cvelist", // Fork of https://github.com/CVEProject/cvelist
+		"https://github.com/Gr4y21/My-CVE-IDs",
+		"https://github.com/hemantsolo/CVE-Reference",
+		"https://github.com/huclilu/CVE_Add",
+		"https://github.com/i3umi3iei3ii/CentOS-Control-Web-Panel-CVE",
+		"https://github.com/Kenun99/CVE-batdappboomx",
+		"https://github.com/lukaszstu/SmartAsset-CORS-CVE-2020-26527",
+		"https://github.com/MacherCS/CVE_Evoh_Contract",
+		"https://github.com/martinkubecka/CVE-References",
+		"https://github.com/MrR3boot/CVE-Hunting",
+		"https://github.com/nu11secur1ty/CVE-nu11secur1ty",
+		"https://github.com/Orange-Cyberdefense/CVE-repository",
+		"https://github.com/post-cyberlabs/CVE-Advisory",
+		"https://github.com/refi64/CVE-2020-25265-25266",
+		"https://github.com/riteshgohil/My_CVE_References",
+		"https://github.com/roughb8722/CVE-2021-3122-Details",
+		"https://github.com/Ryan0lb/EC-cloud-e-commerce-system-CVE-application",
+		"https://github.com/SaumyajeetDas/POC-of-CVE-2022-36271",
+		"https://github.com/Security-AVS/-CVE-2021-26904",
+		"https://github.com/vQAQv/Request-CVE-ID-PoC",
+		"https://github.com/wsummerhill/BSA-Radar_CVE-Vulnerabilities",
+		"https://github.com/xiahao90/CVEproject",
+		"https://github.com/z00z00z00/Safenet_SAC_CVE-2021-42056",
 	}
+	// Match repos with "CVE", "CVEs" or a pure CVE number in their name, anything from GitHubAssessments
+	InvalidRepoRegex  = `/(?:(?:CVEs?)|(?:CVE-\d{4}-\d{4,})|GitHubAssessments/.*)`
 	CPEDictionaryFile = flag.String("cpe_dictionary", CPEDictionaryDefault, "CPE Dictionary file to parse")
 	OutputDir         = flag.String("output_dir", OutputDirDefault, "Directory to output cpe_product_to_repo.json and cpe_reference_description_frequency.csv in")
 	GCPLoggingProject = flag.String("gcp_logging_project", projectId, "GCP project ID to use for logging, set to an empty string to log locally only")
@@ -205,6 +239,11 @@ func analyzeCPEDictionary(d CPEDict) (ProductToRepo map[string]*string, Descript
 				continue
 			}
 			// Disregard the repos we know we don't like.
+			matched, _ := regexp.MatchString(InvalidRepoRegex, repo)
+			if matched {
+				Logger.Infof("Disliking %q for %q (%s) (matched regexp)", repo, CPE.Product, r.Description)
+				continue
+			}
 			if slices.Contains(InvalidRepos, repo) {
 				Logger.Infof("Disliking %q for %q (%s)", repo, CPE.Product, r.Description)
 				continue

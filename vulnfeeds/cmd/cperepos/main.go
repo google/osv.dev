@@ -220,14 +220,6 @@ func analyzeCPEDictionary(d CPEDict) (ProductToRepo map[string][]string, Descrip
 				ProductToVendor[CPE.Product] = []string{CPE.Vendor}
 			}
 		}
-		/*
-			if _, exists := ProductToRepo[CPE.Product]; !exists {
-				// This way every seen product will exist in the map,
-				// and ones we never determine a repo for will have a
-				// nil value.
-				ProductToRepo[CPE.Product] = nil
-			}
-		*/
 		for _, r := range c.References {
 			DescriptionFrequency[r.Description] += 1
 			repo, err := cves.Repo(r.URL)

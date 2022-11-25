@@ -237,10 +237,11 @@ func analyzeCPEDictionary(d CPEDict) (ProductToRepo map[string][]string, Descrip
 				Logger.Infof("Disliking %q for %q (%s)", repo, CPE.Product, r.Description)
 				continue
 			}
-			if !slices.Contains(ProductToRepo[CPE.Product], repo) {
-				Logger.Infof("Liking %q for %q (%s)", repo, CPE.Product, r.Description)
-				ProductToRepo[CPE.Product] = append(ProductToRepo[CPE.Product], repo)
+			if slices.Contains(ProductToRepo[CPE.Product], repo) {
+				continue
 			}
+			Logger.Infof("Liking %q for %q (%s)", repo, CPE.Product, r.Description)
+			ProductToRepo[CPE.Product] = append(ProductToRepo[CPE.Product], repo)
 		}
 	}
 	return ProductToRepo, DescriptionFrequency, ProductToVendor

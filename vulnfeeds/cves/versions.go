@@ -89,6 +89,22 @@ func Repo(u string) (string, error) {
 			parsedURL.Hostname(), repo), nil
 	}
 
+	// cgit.freedesktop.org is a special snowflake with enough repos to warrant special handling
+	// it is a mirror of gitlab.freedesktop.org
+	if parsedURL.Hostname() == "cgit.freedesktop.org" {
+		if strings.HasSuffix(parsedURL.Path, "commit/") &&
+			strings.HasPrefix(parsedURL.RawQuery, "id=") {
+			repo := strings.TrimSuffix(parsedURL.Path, "/commit/")
+			return fmt.Sprintf("%s://gitlab.freedesktop.org%s",
+				parsedURL.Scheme, repo), nil
+		}
+		if len(strings.Split(parsedURL.Path, "/")) == 4 {
+			return fmt.Sprintf("%s://gitlab.freedesktop.org%s",
+					parsedURL.Scheme, parsedURL.Path),
+				nil
+		}
+	}
+
 	// GitHub and GitLab commit and blob URLs are structured one way, e.g.
 	// https://github.com/MariaDB/server/commit/b1351c15946349f9daa7e5297fb2ac6f3139e4a8
 	// https://github.com/tensorflow/tensorflow/blob/master/tensorflow/core/ops/math_ops.cc

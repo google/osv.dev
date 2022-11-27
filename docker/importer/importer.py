@@ -31,6 +31,7 @@ import pygit2
 import osv
 
 DEFAULT_WORK_DIR = '/work'
+PUBLIC_LOGGING_BUCKET = 'osv-public-import-logs'
 
 _BUG_REDO_DAYS = 14
 _PROJECT = 'oss-vdb'
@@ -59,6 +60,15 @@ def _is_vulnerability_file(source_repo, file_path):
 def utcnow():
   """utcnow() for mocking."""
   return datetime.datetime.utcnow()
+
+
+def replace_importer_log(client: storage.Client, source_name: str,
+                         import_failure_logs: [str]):
+  """Replace the public importer logs with the new one."""
+  bucket: storage.Bucket = client.bucket(PUBLIC_LOGGING_BUCKET)
+  upload_string = '--- ' + datetime.datetime.utcnow().isoformat() + ' ---\n'
+  upload_string += '\n'.join(import_failure_logs)
+  bucket.blob(source_name).upload_from_string(upload_string)
 
 
 class Importer:
@@ -280,6 +290,7 @@ class Importer:
           if _is_vulnerability_file(source_repo, rel_path):
             changed_entries.add(rel_path)
 
+    import_failure_logs = []
     # Create tasks for changed files.
     for changed_entry in changed_entries:
       path = os.path.join(osv.repo_path(repo), changed_entry)
@@ -297,6 +308,9 @@ class Importer:
         continue
       except Exception as e:
         logging.error('Failed to parse %s: %s', changed_entry, str(e))
+        # Don't include error stack trace as that might leak sensitive info
+        import_failure_logs.append('Failed to parse vulnerability "' + path +
+                                   '"')
         continue
 
       logging.info('Re-analysis triggered for %s', changed_entry)
@@ -304,6 +318,8 @@ class Importer:
       self._request_analysis_external(source_repo, original_sha256,
                                       changed_entry)
 
+    replace_importer_log(storage.Client(), source_repo.name,
+                         import_failure_logs)
     source_repo.last_synced_hash = str(repo.head.target)
     source_repo.put()
 
@@ -325,6 +341,7 @@ class Importer:
     listed_blob_names = [
         blob.name for blob in storage_client.list_blobs(source_repo.bucket)
     ]
+    import_failure_logs = []
 
     def convert_blob_to_vuln(blob_name) -> Optional[Tuple[str, str]]:
       """Download and parse gcs blob into [blob_hash, blob_name]"""
@@ -334,7 +351,7 @@ class Importer:
       logging.info('Bucket entry triggered for %s/%s', source_repo.bucket,
                    blob_name)
       # Use the _client_store thread local variable
-      # set in the thread pool initiailizer
+      # set in the thread pool initializer
       bucket = _client_store.storage_client.bucket(source_repo.bucket)
       blob_bytes = bucket.blob(blob_name).download_as_bytes()
       if ignore_last_import_time:
@@ -349,6 +366,7 @@ class Importer:
               strict=self._strict_validation)
           for vuln in vulns:
             bug = osv.Bug.get_by_id(vuln.id)
+            # Check if the bug has been modified since last import
             if bug is None or \
                 bug.import_last_modified != vuln.modified.ToDatetime():
               blob_hash = osv.sha256_bytes(blob_bytes)
@@ -357,6 +375,10 @@ class Importer:
           return None
         except Exception as e:
           logging.error('Failed to parse vulnerability %s: %s', blob_name, e)
+          # Don't include error stack trace as that might leak sensitive info
+          # List.append() is atomic and threadsafe.
+          import_failure_logs.append('Failed to parse vulnerability "' +
+                                     blob_name + '"')
           return None
 
     # Setup storage client
@@ -373,6 +395,7 @@ class Importer:
                        source_repo.bucket, cv[1])
           self._request_analysis_external(source_repo, cv[0], cv[1])
 
+    replace_importer_log(storage_client, source_repo.name, import_failure_logs)
     source_repo.last_update_date = utcnow().date()
     source_repo.put()
 

@@ -13,8 +13,9 @@
 # limitations under the License.
 
 name: lint
-
 on: [pull_request]
+
+permissions: read-all
 
 jobs:
   lint:

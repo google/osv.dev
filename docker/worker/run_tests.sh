@@ -14,5 +14,6 @@
 # limitations under the License.
 
 export GOOGLE_CLOUD_PROJECT=fake-project123
+export PIPENV_IGNORE_VIRTUALENVS=1
 pipenv sync
 pipenv run python worker_test.py

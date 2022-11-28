@@ -16,6 +16,7 @@
 import json
 import os
 import math
+import re
 
 from flask import abort
 from flask import current_app
@@ -39,6 +40,8 @@ blueprint = Blueprint('frontend_handlers', __name__)
 _PAGE_SIZE = 16
 _PAGE_LOOKAHEAD = 4
 _REQUESTS_PER_MIN = 30
+_VALID_BLOG_NAME = re.compile(r'^[\w-]+$')
+_BLOG_CONTENTS_DIR = 'blog'
 
 if utils.is_prod():
   redis_host = os.environ.get('REDISHOST', 'localhost')
@@ -55,8 +58,13 @@ if utils.is_prod():
 
 def _load_blog_content(name):
   """Load blog content."""
-  with open(os.path.join(current_app.static_folder, 'blog', name)) as f:
-    return f.read()
+  path = os.path.join(current_app.static_folder, _BLOG_CONTENTS_DIR, name)
+  if not os.path.exists(path):
+    abort(404)
+    return None
+
+  with open(path) as handle:
+    return handle.read()
 
 
 @blueprint.before_request
@@ -100,8 +108,18 @@ def blog():
   return render_template('blog.html', index=_load_blog_content('index.html'))
 
 
+@blueprint.route('/blog/index.xml')
+def blog_rss():
+  return current_app.send_static_file(
+      os.path.join(_BLOG_CONTENTS_DIR, 'index.xml'))
+
+
 @blueprint.route('/blog/posts/<blog_name>/', strict_slashes=False)
 def blog_post(blog_name):
+  if not _VALID_BLOG_NAME.match(blog_name):
+    abort(404)
+    return None
+
   return render_template(
       'blog_post.html',
       content=_load_blog_content(

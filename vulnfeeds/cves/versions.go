@@ -91,6 +91,9 @@ func Repo(u string) (string, error) {
 
 	// cgit.freedesktop.org is a special snowflake with enough repos to warrant special handling
 	// it is a mirror of gitlab.freedesktop.org
+	// https://cgit.freedesktop.org/xorg/lib/libXRes/commit/?id=c05c6d918b0e2011d4bfa370c321482e34630b17
+	// https://cgit.freedesktop.org/xorg/lib/libXRes
+	// http://cgit.freedesktop.org/spice/spice/refs/tags
 	if parsedURL.Hostname() == "cgit.freedesktop.org" {
 		if strings.HasSuffix(parsedURL.Path, "commit/") &&
 			strings.HasPrefix(parsedURL.RawQuery, "id=") {

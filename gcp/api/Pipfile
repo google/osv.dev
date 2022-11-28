@@ -5,7 +5,7 @@ name = "pypi"
 
 [packages]
 google-cloud-logging = "==2.7.2"
-google-cloud-pubsub = "==2.13.10"
+google-cloud-pubsub = "==2.13.11"
 grpcio = "==1.50.0"
 osv = {editable = true, path = "../../"}
 packageurl-python = "==0.10.4"

@@ -5,9 +5,9 @@ go 1.19
 require (
 	cloud.google.com/go/logging v1.5.0
 	github.com/aquasecurity/go-pep440-version v0.0.0-20210121094942-22b2f8951d46
-	golang.org/x/exp v0.0.0-20221111204811-129d8d6c17ab
-	gopkg.in/yaml.v2 v2.4.0
 	github.com/knqyf263/go-cpe v0.0.0-20201213041631-54f6ab28673f
+	golang.org/x/exp v0.0.0-20221126150942-6ab00d035af9
+	gopkg.in/yaml.v2 v2.4.0
 )
 
 require (

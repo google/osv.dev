@@ -35,6 +35,9 @@
         <li class="{{ 'active' if active_section == 'about' else '' }}">
           <a href="{{ url_for('frontend_handlers.about') }}">About</a>
         </li>
+        <li class="{{ 'active' if active_section == 'blog' else '' }}">
+          <a href="{{ url_for('frontend_handlers.blog') }}">Blog</a>
+        </li>
       </ul>
     </header>
     {% block content %}{% endblock %}

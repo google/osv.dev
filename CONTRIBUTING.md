@@ -36,6 +36,7 @@ You must install:
 1. [Make](https://www.gnu.org/software/make/)
 1. [Pipenv](https://pipenv.pypa.io/en/latest/)
 1. [Google Cloud SDK](https://cloud.google.com/sdk)
+1. [Hugo](https://gohugo.io/installation/)
 
 Then you can set up the development environment by cloning the OSV repo and
 installing the Pipfile dependencies.

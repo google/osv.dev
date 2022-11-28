@@ -1,0 +1,11 @@
+{{ $pages := where site.RegularPages "Type" "posts"}}
+{{ range $pages.ByPublishDate.Reverse }}
+<div class="blog-entry">
+  <a class="title" href="{{ .Permalink | relURL }}">{{ .Title }}</a>
+  <div class="author">Posted by {{ .Params.author }} on {{ .PublishDate.Format "Jan 2, 2006" }}</div>
+  <div class="summary">
+    {{ .Summary }}
+    <p><a href="{{ .Permalink | relURL }}">Read more...</a></p>
+  </div>
+</div>
+{{ end }}

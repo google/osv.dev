@@ -1,0 +1,3 @@
+baseURL = 'http://osv.dev/blog/'
+languageCode = 'en-us'
+title = 'OSV Blog'

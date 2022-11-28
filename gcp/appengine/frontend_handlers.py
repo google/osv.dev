@@ -18,6 +18,7 @@ import os
 import math
 
 from flask import abort
+from flask import current_app
 from flask import Blueprint
 from flask import make_response
 from flask import redirect
@@ -50,6 +51,12 @@ if utils.is_prod():
     ip_addr = request.headers.get('X-Appengine-User-Ip', 'unknown')
     if not limiter.check_request(ip_addr):
       abort(429)
+
+
+def _load_blog_content(name):
+  """Load blog content."""
+  with open(os.path.join(current_app.static_folder, 'blog', name)) as f:
+    return f.read()
 
 
 @blueprint.before_request
@@ -86,6 +93,19 @@ def index_v2_with_subpath(subpath):
 def index():
   return render_template(
       'home.html', ecosystem_counts=osv_get_ecosystem_counts_cached())
+
+
+@blueprint.route('/blog/', strict_slashes=False)
+def blog():
+  return render_template('blog.html', index=_load_blog_content('index.html'))
+
+
+@blueprint.route('/blog/posts/<blog_name>/', strict_slashes=False)
+def blog_post(blog_name):
+  return render_template(
+      'blog_post.html',
+      content=_load_blog_content(
+          os.path.join('posts', blog_name, 'index.html')))
 
 
 @blueprint.route('/about')

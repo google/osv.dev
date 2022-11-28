@@ -39,4 +39,4 @@ If `draft` is set to `true`, the post is not rendered or included by default.
 
 Run the appengine frontend by following the steps
 [here](https://github.com/google/osv.dev/blob/master/CONTRIBUTING.md#ui), and
-navigate to <https://localhost:8000/blog/>.
+navigate to <http://localhost:8000/blog/>.

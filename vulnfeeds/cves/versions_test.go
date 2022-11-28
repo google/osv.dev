@@ -162,6 +162,24 @@ func TestRepo(t *testing.T) {
 			expectedRepoURL: "https://github.com/apache/activemq-artemis",
 			expectedOk:      true,
 		},
+		{
+			description:     "Freedesktop cGit mirror",
+			inputLink:       "https://cgit.freedesktop.org/xorg/lib/libXRes/commit/?id=c05c6d918b0e2011d4bfa370c321482e34630b17",
+			expectedRepoURL: "https://gitlab.freedesktop.org/xorg/lib/libXRes",
+			expectedOk:      true,
+		},
+		{
+			description:     "Exact Freedesktop cGit mirror",
+			inputLink:       "https://cgit.freedesktop.org/xorg/lib/libXRes",
+			expectedRepoURL: "https://gitlab.freedesktop.org/xorg/lib/libXRes",
+			expectedOk:      true,
+		},
+		{
+			description:     "Freedesktop cGit mirror refs/tags URL",
+			inputLink:       "http://cgit.freedesktop.org/spice/spice/refs/tags",
+			expectedRepoURL: "https://gitlab.freedesktop.org/spice/spice",
+			expectedOk:      true,
+		},
 	}
 
 	for _, tc := range tests {

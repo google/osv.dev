@@ -14,5 +14,7 @@
 # limitations under the License.
 
 cd ../worker
+
+export PIPENV_IGNORE_VIRTUALENVS=1
 pipenv sync
 pipenv run python ../importer/importer_test.py

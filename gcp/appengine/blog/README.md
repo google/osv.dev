@@ -1,8 +1,10 @@
 # OSV Blog
 
-This folder contains the OSV blog. The blog is rendered using Hugo(https://gohugo.io/).
+This folder contains the OSV blog. The blog is rendered using
+[Hugo](https://gohugo.io/).
 
-Follow the top level [contributing guide](https://github.com/google/osv.dev/blob/master/CONTRIBUTING.md)
+Follow the top level
+[contributing guide](https://github.com/google/osv.dev/blob/master/CONTRIBUTING.md)
 for Hugo installation.
 
 ## Writing a new blog post

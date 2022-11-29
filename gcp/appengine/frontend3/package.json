@@ -10,7 +10,7 @@
   },
   "dependencies": {
     "@github/clipboard-copy-element": "1.1.2",
-    "@github/time-elements": "3.1.4",
+    "@github/time-elements": "3.6.0",
     "@hotwired/turbo": "7.2.4",
     "@material/data-table": "13.0.0",
     "@material/layout-grid": "13.0.0",
@@ -19,20 +19,20 @@
     "@material/mwc-icon-button": "0.27.0",
     "@material/mwc-textfield": "0.27.0",
     "@material/theme": "13.0.0",
-    "highlight.js": "11.6.0",
-    "lit": "2.4.0",
+    "highlight.js": "11.7.0",
+    "lit": "2.4.1",
     "spicy-sections": "git+https://github.com/tabvengers/spicy-sections.git#c3aae99dbf1e627cdf03a35c913d7f6e970de22b"
   },
   "devDependencies": {
     "copy-webpack-plugin": "10.2.4",
-    "css-loader": "6.7.1",
+    "css-loader": "6.7.2",
     "html-webpack-plugin": "5.5.0",
-    "mini-css-extract-plugin": "2.6.1",
+    "mini-css-extract-plugin": "2.7.0",
     "raw-loader": "4.0.2",
-    "sass": "1.55.0",
+    "sass": "1.56.1",
     "sass-loader": "12.6.0",
     "style-loader": "3.3.1",
-    "webpack": "5.74.0",
+    "webpack": "5.75.0",
     "webpack-cli": "4.10.0",
     "webpack-dev-server": "4.11.1"
   }

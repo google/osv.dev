@@ -554,6 +554,8 @@ dl.vulnerability-details,
       background: url(/static/img/filled-triangle.svg);
       background-position: center;
       transform: rotate(0deg);
+      // Make the filled triangle white.
+      filter: invert(100%);
     }
 
     h2.version-header[expanded]::before {

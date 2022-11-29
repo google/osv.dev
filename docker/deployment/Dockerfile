@@ -8,4 +8,4 @@ RUN echo "deb [signed-by=/usr/share/keyrings/cloud.google.gpg] http://packages.c
     apt-get update && apt-get install -y google-cloud-sdk
 
 RUN pip3 install pipenv
-
+COPY --from=gcr.io/oss-vdb/ci /root/go/bin/hugo /usr/local/bin/hugo

@@ -1,0 +1,5 @@
+<h1 class="title">{{ .Title }}</h1>
+<div class="author">Posted by {{ .Params.author }} on {{ .PublishDate.Format "Jan 2, 2006" }}</div>
+<div class="content">
+  {{ .Content }}
+</div>

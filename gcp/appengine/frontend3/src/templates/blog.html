@@ -1,0 +1,14 @@
+{% extends 'base.html' %}
+{% set active_section = 'blog' %}
+
+{% block content %}
+<div class="blog-page">
+  <div class="mdc-layout-grid">
+    <div class="mdc-layout-grid__inner">
+      <div class="mdc-layout-grid__cell--span-12 posts">
+        {{ index|safe }}
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

@@ -1045,4 +1045,61 @@ dl.vulnerability-details,
   }
 }
 
+.blog-page {
+  .posts {
+    width: 800px;
+    margin: 0 auto;
 
+    .blog-entry {
+      padding-bottom: 48px;
+
+      .title {
+        font-size: 48px;
+        display: block;
+        font-family: $osv-heading-font-family;
+        padding-bottom: 16px;
+      }
+
+      .author {
+        font-size: 18px;
+        font-family: $osv-body-font-family;
+        font-weight: bold;
+        padding-bottom: 20px;
+      }
+
+      .summary {
+        font-size: 16px;
+      }
+
+      p {
+        padding-bottom: 16px;
+      }
+    }
+  }
+}
+
+.blog-post-page {
+  .post {
+    width: 800px;
+    margin: 0 auto;
+
+    font-size: 16px;
+
+    .title {
+      font-size: 48px;
+      font-family: $osv-heading-font-family;
+      padding-bottom: 16px;
+    }
+
+    .author {
+      font-size: 18px;
+      font-family: $osv-body-font-family;
+      font-weight: bold;
+      padding-bottom: 20px;
+    }
+
+    p {
+      margin-bottom: 16px;
+    }
+  }
+}

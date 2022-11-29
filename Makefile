@@ -32,6 +32,7 @@ lint:
 
 run-appengine:
 	cd gcp/appengine/frontend3 && npm run build
+	cd gcp/appengine/blog && hugo -d ../dist/static/blog
 	cd gcp/appengine && GOOGLE_CLOUD_PROJECT=oss-vdb pipenv run python main.py
 
 run-api-server:

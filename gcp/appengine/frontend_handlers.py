@@ -16,8 +16,10 @@
 import json
 import os
 import math
+import re
 
 from flask import abort
+from flask import current_app
 from flask import Blueprint
 from flask import make_response
 from flask import redirect
@@ -38,6 +40,8 @@ blueprint = Blueprint('frontend_handlers', __name__)
 _PAGE_SIZE = 16
 _PAGE_LOOKAHEAD = 4
 _REQUESTS_PER_MIN = 30
+_VALID_BLOG_NAME = re.compile(r'^[\w-]+$')
+_BLOG_CONTENTS_DIR = 'blog'
 
 if utils.is_prod():
   redis_host = os.environ.get('REDISHOST', 'localhost')
@@ -50,6 +54,17 @@ if utils.is_prod():
     ip_addr = request.headers.get('X-Appengine-User-Ip', 'unknown')
     if not limiter.check_request(ip_addr):
       abort(429)
+
+
+def _load_blog_content(name):
+  """Load blog content."""
+  path = os.path.join(current_app.static_folder, _BLOG_CONTENTS_DIR, name)
+  if not os.path.exists(path):
+    abort(404)
+    return None
+
+  with open(path) as handle:
+    return handle.read()
 
 
 @blueprint.before_request
@@ -86,6 +101,29 @@ def index_v2_with_subpath(subpath):
 def index():
   return render_template(
       'home.html', ecosystem_counts=osv_get_ecosystem_counts_cached())
+
+
+@blueprint.route('/blog/', strict_slashes=False)
+def blog():
+  return render_template('blog.html', index=_load_blog_content('index.html'))
+
+
+@blueprint.route('/blog/index.xml')
+def blog_rss():
+  return current_app.send_static_file(
+      os.path.join(_BLOG_CONTENTS_DIR, 'index.xml'))
+
+
+@blueprint.route('/blog/posts/<blog_name>/', strict_slashes=False)
+def blog_post(blog_name):
+  if not _VALID_BLOG_NAME.match(blog_name):
+    abort(404)
+    return None
+
+  return render_template(
+      'blog_post.html',
+      content=_load_blog_content(
+          os.path.join('posts', blog_name, 'index.html')))
 
 
 @blueprint.route('/about')

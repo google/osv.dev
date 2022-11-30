@@ -181,7 +181,7 @@ func InScopeRepo(repoURL string) bool {
 }
 
 // Takes an NVD CVE record and outputs an OSV file in the specified directory.
-func CVEToOSV(CVE cves.CVEItem, repo, directory string) error {
+func CVEToOSV(CVE cves.CVEItem, directory string) error {
 	CPEs := cves.CPEs(CVE)
 	CPE, err := cves.ParseCPE(CPEs[0])
 	if err != nil {
@@ -199,7 +199,7 @@ func CVEToOSV(CVE cves.CVEItem, repo, directory string) error {
 		return fmt.Errorf("No affected versions detected for %s for %q", CVE.CVE.CVEDataMeta.ID, CPE.Product)
 	}
 
-	vulnDir := filepath.Join(directory, CPE.Product)
+	vulnDir := filepath.Join(directory, CPE.Vendor, CPE.Product)
 	err = os.MkdirAll(vulnDir, 0755)
 	if err != nil {
 		Logger.Warnf("Failed to create dir: %v", err)
@@ -247,11 +247,14 @@ func main() {
 		Logger.Fatalf("Failed to parse NVD CVE JSON: %v", err)
 	}
 
+	// TODO(apollock): preload with CPE Dictionary preprocessed JSON
+	VPRepoCache := make(map[string]map[string]string)
+
 	for _, cve := range parsed.CVEItems {
 		refs := cve.CVE.References.ReferenceData
 		patchRefCount := 0
 		CPEs := cves.CPEs(cve)
-		repos := make(map[string]string)
+		ReposForCVE := make(map[string]string)
 
 		if len(refs) == 0 && len(CPEs) == 0 {
 			Logger.Infof("FYI: skipping %s due to:", cve.CVE.CVEDataMeta.ID)
@@ -286,8 +289,6 @@ func main() {
 				if tag == "Third Party Advisory" {
 					continue
 				}
-				// Alternative to the above:
-				// if tag == "Patch" && IsRepoURL(ref.URL) {
 				if IsRepoURL(ref.URL) {
 					Logger.Infof("\t * %s", ref.URL)
 					// CVE entries have one set of references, but can have multiple CPEs
@@ -297,29 +298,24 @@ func main() {
 							Logger.Warnf("Failed to parse CPE %q: %+v", CPEstr, err)
 							continue
 						}
-						// Avoid unnecessary calls to cves.Repo() if we already have the repo
-						if _, ok := repos[CPE.Product]; !ok {
+						if _, ok := VPRepoCache[CPE.Vendor][CPE.Product]; !ok {
 							repo, err := cves.Repo(ref.URL)
 							if err != nil {
 								Logger.Warnf("Failed to parse %q for %q: %+v", ref.URL, CPE.Product, err)
 								continue
 							}
-							repos[CPE.Product] = repo
+							VPRepoCache[CPE.Vendor] = map[string]string{CPE.Product: repo}
 						}
-						if _, ok := repos[cve.CVE.CVEDataMeta.ID]; !ok {
-							repo, err := cves.Repo(ref.URL)
-							if err != nil {
-								Logger.Warnf("Failed to parse %q for %q: %+v", ref.URL, CPE.Product, err)
-								continue
-							}
-							repos[cve.CVE.CVEDataMeta.ID] = repo
+						// Avoid unnecessary calls to cves.Repo() if we already have the repo
+						if _, ok := ReposForCVE[cve.CVE.CVEDataMeta.ID]; !ok {
+							ReposForCVE[cve.CVE.CVEDataMeta.ID] = VPRepoCache[CPE.Vendor][CPE.Product]
 						}
 					}
-					patchRefCount += 1
 				}
 			}
 		}
 
+		// TODO(apollock): move this over to CPE Dictionary parser
 		for _, CPEstr := range cves.CPEs(cve) {
 			CPE, err := cves.ParseCPE(CPEstr)
 			if err != nil {
@@ -331,39 +327,39 @@ func main() {
 					repo := MaybeGetSourceRepoFromDebian(*debianMetadataPath, CPE.Product)
 					if repo != "" {
 						Logger.Infof("Derived repo: %s", repo)
-						repos[CPE.Product] = repo
+						VPRepoCache[CPE.Vendor] = map[string]string{CPE.Product: repo}
 					}
 				}
 
 			}
 		}
-		Logger.Infof("Summary for %s: [CPEs=%d AppCPEs=%d patches=%d DerivedRepos=%d]", cve.CVE.CVEDataMeta.ID, len(CPEs), appCPECount, patchRefCount, len(repos))
-		Logger.Infof("Repos: %#v", repos)
+		Logger.Infof("Summary for %s: [CPEs=%d AppCPEs=%d patches=%d DerivedRepos=%d]", cve.CVE.CVEDataMeta.ID, len(CPEs), appCPECount, patchRefCount, len(ReposForCVE))
+		Logger.Infof("Repos: %#v", ReposForCVE)
 
-		// If we've made it to here, we may have:
-		// * a CVE that has Application-related CPEs (so applies to software)
-		// * has one or more patches with a known repository URL patch reference
+		// If we've made it to here, we may have a CVE:
+		// * that has Application-related CPEs (so applies to software)
+		// * has a reference that is a known repository URL
 		// OR
-		// * a derived repository for the software
+		// * a derived repository for the software package
 		//
 		// We do not yet have:
 		// * any knowledge of the language used
 		// * definitive version information
 
-		if patchRefCount == 0 && len(repos) == 0 {
+		if _, ok := ReposForCVE[cve.CVE.CVEDataMeta.ID]; !ok {
 			// We have nothing useful to work with, so we'll assume it's out of scope
-			Logger.Infof("FYI: Passing on %s due to lack of viable information", cve.CVE.CVEDataMeta.ID)
+			Logger.Infof("FYI: Passing on %s due to lack of viable repository", cve.CVE.CVEDataMeta.ID)
 			continue
 		}
 
-		if !InScopeRepo(repos[cve.CVE.CVEDataMeta.ID]) {
+		if !InScopeRepo(ReposForCVE[cve.CVE.CVEDataMeta.ID]) {
 			continue
 		}
 
-		err := CVEToOSV(cve, repos[cve.CVE.CVEDataMeta.ID], *outDir)
+		err := CVEToOSV(cve, *outDir)
 		if err != nil {
 			// Could we have potentially generated an OSV record by further analysis of a repo?
-			if _, ok := repos[cve.CVE.CVEDataMeta.ID]; ok {
+			if _, ok := ReposForCVE[cve.CVE.CVEDataMeta.ID]; ok {
 				Metrics.CVEsForKnownRepos++
 			}
 			continue

@@ -127,7 +127,7 @@ pre {
     max-width: $logo-width + 112px;
 
     // Keep logo visible.
-    z-index: 1;
+    z-index: 3;
   }
 
   #hamburger-checkbox {
@@ -171,7 +171,7 @@ pre {
       right: 30px;
 
       // Keep hamburger on top and clickable.
-      z-index: 1;
+      z-index: 3;
 
       // Individual hamburger bars.
       span {
@@ -194,10 +194,12 @@ pre {
         padding: $active-spacing 0;
       }
 
+      z-index: 2;
+
       background: $osv-grey-800;
       opacity: 95%;
 
-      position: absolute;
+      position: fixed;
       top: 0;
       left: 0;
       padding-top: 70px;
@@ -898,7 +900,7 @@ dl.vulnerability-details,
         background: #d4d4d4;
         cursor: pointer;
 
-        z-index: 999;
+        z-index: 2;
         .tooltip {
           display: block;
         }

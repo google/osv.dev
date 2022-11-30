@@ -99,7 +99,6 @@ func CVEToOSV(CVE cves.CVEItem, directory string) error {
 
 func main() {
 	jsonPath := flag.String("nvd_json", "", "Path to NVD CVE JSON to examine.")
-	// debianMetadataPath := flag.String("debian_metadata_path", "", "Path to Debian copyright metadata")
 	outDir := flag.String("out_dir", "", "Path to output results.")
 
 	flag.Parse()

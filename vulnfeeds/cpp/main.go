@@ -360,7 +360,7 @@ func main() {
 			if _, ok := ReposForCVE[cve.CVE.CVEDataMeta.ID]; ok {
 				Metrics.CVEsForKnownRepos++
 			}
-			Logger.Warnf("Failed to generate an OSV record for %s: %+v", cve.CVE.CVEDataMeta.ID, error)
+			Logger.Warnf("Failed to generate an OSV record for %s: %+v", cve.CVE.CVEDataMeta.ID, err)
 			continue
 		}
 		Metrics.OSVRecordsGenerated++

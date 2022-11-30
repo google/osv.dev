@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"log"
+	"net/url"
 	"os"
 	"path/filepath"
 
@@ -27,6 +28,22 @@ var Metrics struct {
 	CVEsForApplications int
 	CVEsForKnownRepos   int
 	OSVRecordsGenerated int
+}
+
+// Looks at what the repo to determine if it contains code using an in-scope language
+func InScopeRepo(repoURL string) bool {
+	parsedURL, err := url.Parse(repoURL)
+	if err != nil {
+		Logger.Infof("Warning: %s failed to parse, skipping", repoURL)
+		return false
+	}
+
+	switch parsedURL.Hostname() {
+	case "github.com":
+		return InScopeGitHubRepo(repoURL)
+	default:
+		return InScopeGitRepo(repoURL)
+	}
 }
 
 // Use the GitHub API to query the repository's language metadata to make the determination.

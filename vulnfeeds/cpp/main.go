@@ -1,27 +1,19 @@
 package main
 
 import (
-	"bufio"
-	"bytes"
 	"context"
 	"encoding/json"
 	"flag"
 	"fmt"
 	"io/ioutil"
 	"log"
-	"net/url"
 	"os"
-	"path"
 	"path/filepath"
-	"regexp"
-	"strings"
-	"text/template"
 
 	"cloud.google.com/go/logging"
 	"github.com/google/osv/vulnfeeds/cves"
 	"github.com/google/osv/vulnfeeds/utility"
 	"github.com/google/osv/vulnfeeds/vulns"
-	"golang.org/x/exp/slices"
 )
 
 const (
@@ -37,121 +29,6 @@ var Metrics struct {
 	OSVRecordsGenerated int
 }
 
-// Checks if a URL is to a supported repo.
-func IsRepoURL(url string) bool {
-	re := regexp.MustCompile(`http[s]?:\/\/(?:c?git(?:hub|lab)?)\.|\.git$`)
-
-	return re.MatchString(url)
-}
-
-// Checks if a URL relates to the FSF.
-func IsGNUURL(url string) bool {
-	re := regexp.MustCompile(`^https?://.*\.(?:non)?gnu\.org/`)
-
-	return re.MatchString(url)
-}
-
-// Tries to translate Savannah URLs to their corresponding Git repository URL.
-func MaybeTranslateSavannahURL(u string) (string, bool) {
-	type GNUPlaceholder struct {
-		GNUOrNonGNU string
-		Path        string
-	}
-	var tpl bytes.Buffer
-
-	supportedHostnames := []string{
-		"download.savannah.gnu.org",
-		"savannah.gnu.org",
-		"download.savannah.gnu.org",
-		"download-mirror.savannah.gnu.org",
-		"download.savannah.nongnu.org",
-		"savannah.nongnu.org",
-		"download.savannah.nongnu.org",
-		"download-mirror.savannah.nongnu.org",
-	}
-
-	// Get hostname out of URL
-	parsedURL, err := url.Parse(u)
-	if err != nil {
-		panic(err)
-	}
-
-	if slices.Contains(supportedHostnames, parsedURL.Hostname()) {
-		hostnameParts := strings.Split(parsedURL.Hostname(), ".")
-		// Pull out the "nongnu" or "gnu" part of the hostname
-		domain := GNUPlaceholder{hostnameParts[len(hostnameParts)-2], path.Base(parsedURL.Path)}
-		savannahGitRepoTemplate, err := template.New("SavannahGitRepoURL").Parse("https://git.savannah.{{ .GNUOrNonGNU }}.org/git/{{ .Path }}.git")
-		if err != nil {
-			panic(err)
-		}
-		err = savannahGitRepoTemplate.Execute(&tpl, domain)
-		return tpl.String(), true
-	}
-
-	// Return the original URL unmodified
-	return u, false
-}
-
-// Returns the data associated with the ^Source: line of a machine-readable Debian copyright file
-// See https://www.debian.org/doc/packaging-manuals/copyright-format/1.0/
-func MaybeGetSourceFromDebianCopyright(copyrightFile string) (string, bool) {
-	re := regexp.MustCompile(`^Source: (.*)$`)
-
-	file, err := os.Open(copyrightFile)
-	if err != nil {
-		Logger.Fatalf("%v", err)
-	}
-	defer file.Close()
-
-	scanner := bufio.NewScanner(file)
-
-	// Check the first line to see if we have a machine-readable copyright file
-	scanner.Scan()
-	if scanner.Text() != "Format: https://www.debian.org/doc/packaging-manuals/copyright-format/1.0/" {
-		return "", false
-	}
-
-	for scanner.Scan() {
-		line := scanner.Text()
-		match := re.FindStringSubmatch(line)
-		if match != nil {
-			return match[1], true
-		}
-	}
-
-	return "", false
-}
-
-// Tries to find a Debian copyright file for the package and returns the source URL if IsRepoURL() agrees.
-func MaybeGetSourceRepoFromDebian(mdir string, pkg string) string {
-	var metadata string
-	if strings.HasPrefix(pkg, "lib") {
-		metadata = path.Join(mdir, "changelogs/main", string(pkg[0:4]), pkg, "unstable_copyright")
-	} else {
-		metadata = path.Join(mdir, "changelogs/main", string(pkg[0]), pkg, "unstable_copyright")
-	}
-	if _, err := os.Stat(metadata); err == nil {
-		// parse the copyright file and go from here
-		Logger.Infof("FYI: Will look at %s", metadata)
-		possibleRepo, ok := MaybeGetSourceFromDebianCopyright(metadata)
-		if !ok {
-			return ""
-		}
-		if IsRepoURL(possibleRepo) {
-			return possibleRepo
-		}
-		// Incorporate Savannah URL to Git translation here
-		if IsGNUURL(possibleRepo) {
-			repo, translated := MaybeTranslateSavannahURL(possibleRepo)
-			if translated {
-				return repo
-			}
-		}
-		Logger.Infof("FYI: Disregarding %s", possibleRepo)
-	}
-	return ""
-}
-
 // Use the GitHub API to query the repository's language metadata to make the determination.
 func InScopeGitHubRepo(repoURL string) bool {
 	// TODO(apollock): Implement
@@ -162,22 +39,6 @@ func InScopeGitHubRepo(repoURL string) bool {
 func InScopeGitRepo(repoURL string) bool {
 	// TODO(apollock): Implement
 	return true
-}
-
-// Looks at what the repo to determine if it contains code using an in-scope language
-func InScopeRepo(repoURL string) bool {
-	parsedURL, err := url.Parse(repoURL)
-	if err != nil {
-		Logger.Infof("Warning: %s failed to parse, skipping", repoURL)
-		return false
-	}
-
-	switch parsedURL.Hostname() {
-	case "github.com":
-		return InScopeGitHubRepo(repoURL)
-	default:
-		return InScopeGitRepo(repoURL)
-	}
 }
 
 // Takes an NVD CVE record and outputs an OSV file in the specified directory.
@@ -221,7 +82,7 @@ func CVEToOSV(CVE cves.CVEItem, directory string) error {
 
 func main() {
 	jsonPath := flag.String("nvd_json", "", "Path to NVD CVE JSON to examine.")
-	debianMetadataPath := flag.String("debian_metadata_path", "", "Path to Debian copyright metadata")
+	// debianMetadataPath := flag.String("debian_metadata_path", "", "Path to Debian copyright metadata")
 	outDir := flag.String("out_dir", "", "Path to output results.")
 
 	flag.Parse()
@@ -250,7 +111,6 @@ func main() {
 
 	for _, cve := range parsed.CVEItems {
 		refs := cve.CVE.References.ReferenceData
-		patchRefCount := 0
 		CPEs := cves.CPEs(cve)
 		ReposForCVE := make(map[string]string)
 
@@ -287,7 +147,7 @@ func main() {
 				if tag == "Third Party Advisory" {
 					continue
 				}
-				if IsRepoURL(ref.URL) {
+				if utility.IsRepoURL(ref.URL) {
 					Logger.Infof("\t * %s", ref.URL)
 					// CVE entries have one set of references, but can have multiple CPEs
 					for _, CPEstr := range cves.CPEs(cve) {
@@ -313,25 +173,7 @@ func main() {
 			}
 		}
 
-		// TODO(apollock): move this over to CPE Dictionary parser
-		for _, CPEstr := range cves.CPEs(cve) {
-			CPE, err := cves.ParseCPE(CPEstr)
-			if err != nil {
-				Logger.Warnf("Failed to parse CPE %q: %+v", CPEstr, err)
-			}
-			if CPE.Part == "a" {
-				Logger.Infof("\t * vendor=%q, product=%q", CPE.Vendor, CPE.Product)
-				if patchRefCount == 0 {
-					repo := MaybeGetSourceRepoFromDebian(*debianMetadataPath, CPE.Product)
-					if repo != "" {
-						Logger.Infof("Derived repo: %s", repo)
-						VPRepoCache[CPE.Vendor] = map[string]string{CPE.Product: repo}
-					}
-				}
-
-			}
-		}
-		Logger.Infof("Summary for %s: [CPEs=%d AppCPEs=%d patches=%d DerivedRepos=%d]", cve.CVE.CVEDataMeta.ID, len(CPEs), appCPECount, patchRefCount, len(ReposForCVE))
+		Logger.Infof("Summary for %s: [CPEs=%d AppCPEs=%d DerivedRepos=%d]", cve.CVE.CVEDataMeta.ID, len(CPEs), appCPECount, len(ReposForCVE))
 		Logger.Infof("Repos: %#v", ReposForCVE)
 
 		// If we've made it to here, we may have a CVE:

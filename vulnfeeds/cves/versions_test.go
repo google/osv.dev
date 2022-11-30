@@ -180,6 +180,12 @@ func TestRepo(t *testing.T) {
 			expectedRepoURL: "https://gitlab.freedesktop.org/spice/spice",
 			expectedOk:      true,
 		},
+		{
+			description:     "Exact repo URL with a trailing slash",
+			inputLink:       "https://github.com/pyca/pyopenssl/",
+			expectedRepoURL: "https://github.com/pyca/pyopenssl",
+			expectedOk:      true,
+		},
 	}
 
 	for _, tc := range tests {

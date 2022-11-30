@@ -185,7 +185,6 @@ func CVEToOSV(CVE cves.CVEItem, directory string) error {
 	CPEs := cves.CPEs(CVE)
 	CPE, err := cves.ParseCPE(CPEs[0])
 	if err != nil {
-		Logger.Warnf("Can't generate an OSV record for %s without valid CPE data", CVE.CVE.CVEDataMeta.ID)
 		return fmt.Errorf("Can't generate an OSV record for %s without valid CPE data", CVE.CVE.CVEDataMeta.ID)
 	}
 	v, _ := vulns.FromCVE(CVE.CVE.CVEDataMeta.ID, CVE)
@@ -195,7 +194,6 @@ func CVEToOSV(CVE cves.CVEItem, directory string) error {
 	v.Affected = append(v.Affected, affected)
 
 	if len(v.Affected[0].Ranges) == 0 {
-		Logger.Warnf("No affected versions detected for %s for %q", CVE.CVE.CVEDataMeta.ID, CPE.Product)
 		return fmt.Errorf("No affected versions detected for %s for %q", CVE.CVE.CVEDataMeta.ID, CPE.Product)
 	}
 
@@ -362,6 +360,7 @@ func main() {
 			if _, ok := ReposForCVE[cve.CVE.CVEDataMeta.ID]; ok {
 				Metrics.CVEsForKnownRepos++
 			}
+			Logger.Warnf("Failed to generate an OSV record for %s: %+v", cve.CVE.CVEDataMeta.ID, error)
 			continue
 		}
 		Metrics.OSVRecordsGenerated++

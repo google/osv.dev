@@ -6,6 +6,7 @@ import (
 	"context"
 	"encoding/json"
 	"flag"
+	"fmt"
 	"io/ioutil"
 	"log"
 	"net/url"
@@ -29,6 +30,12 @@ const (
 )
 
 var Logger utility.LoggerWrapper
+var Metrics struct {
+	TotalCVEs           int
+	CVEsForApplications int
+	CVEsForKnownRepos   int
+	OSVRecordsGenerated int
+}
 
 // Checks if a URL is to a supported repo.
 func IsRepoURL(url string) bool {
@@ -174,11 +181,12 @@ func InScopeRepo(repoURL string) bool {
 }
 
 // Takes an NVD CVE record and outputs an OSV file in the specified directory.
-func CVEToOSV(CVE cves.CVEItem, repo, directory string) {
+func CVEToOSV(CVE cves.CVEItem, repo, directory string) error {
 	CPEs := cves.CPEs(CVE)
 	CPE, err := cves.ParseCPE(CPEs[0])
 	if err != nil {
-		Logger.Fatalf("Can't generate an OSV record for %s without valid CPE data", CVE.CVE.CVEDataMeta.ID)
+		Logger.Warnf("Can't generate an OSV record for %s without valid CPE data", CVE.CVE.CVEDataMeta.ID)
+		return fmt.Errorf("Can't generate an OSV record for %s without valid CPE data", CVE.CVE.CVEDataMeta.ID)
 	}
 	v, _ := vulns.FromCVE(CVE.CVE.CVEDataMeta.ID, CVE)
 	versions, _ := cves.ExtractVersionInfo(CVE, nil)
@@ -187,26 +195,30 @@ func CVEToOSV(CVE cves.CVEItem, repo, directory string) {
 	v.Affected = append(v.Affected, affected)
 
 	if len(v.Affected[0].Ranges) == 0 {
-		Logger.Infof("No affected versions detected for %s for %q", CVE.CVE.CVEDataMeta.ID, CPE.Product)
-		return
+		Logger.Warnf("No affected versions detected for %s for %q", CVE.CVE.CVEDataMeta.ID, CPE.Product)
+		return fmt.Errorf("No affected versions detected for %s for %q", CVE.CVE.CVEDataMeta.ID, CPE.Product)
 	}
 
 	vulnDir := filepath.Join(directory, CPE.Product)
 	err = os.MkdirAll(vulnDir, 0755)
 	if err != nil {
-		Logger.Fatalf("Failed to create dir: %v", err)
+		Logger.Warnf("Failed to create dir: %v", err)
+		return fmt.Errorf("Failed to create dir: %v", err)
 	}
 	outputFile := filepath.Join(vulnDir, v.ID+extension)
 	f, err := os.Create(outputFile)
 	if err != nil {
-		Logger.Fatalf("Failed to open %s for writing: %v", outputFile, err)
+		Logger.Warnf("Failed to open %s for writing: %v", outputFile, err)
+		return fmt.Errorf("Failed to open %s for writing: %v", outputFile, err)
 	}
 	defer f.Close()
 	err = v.ToJSON(f)
 	if err != nil {
-		Logger.Fatalf("Failed to write %s: %v", outputFile, err)
+		Logger.Warnf("Failed to write %s: %v", outputFile, err)
+		return fmt.Errorf("Failed to write %s: %v", outputFile, err)
 	}
 	Logger.Infof("Processed %s for %q", CVE.CVE.CVEDataMeta.ID, CPE.Product)
+	return nil
 }
 
 func main() {
@@ -243,8 +255,7 @@ func main() {
 
 		if len(refs) == 0 && len(CPEs) == 0 {
 			Logger.Infof("FYI: skipping %s due to:", cve.CVE.CVEDataMeta.ID)
-			Logger.Infof("\t * lack of CPEs")
-			Logger.Infof("\t * lack of references")
+			Logger.Infof("\t * lack of CPEs and lack of references")
 			continue
 		}
 
@@ -265,6 +276,8 @@ func main() {
 			// Not software, skip.
 			continue
 		}
+
+		Metrics.CVEsForApplications++
 
 		Logger.Infof("%s", cve.CVE.CVEDataMeta.ID)
 		for _, ref := range refs {
@@ -347,6 +360,16 @@ func main() {
 			continue
 		}
 
-		CVEToOSV(cve, repos[cve.CVE.CVEDataMeta.ID], *outDir)
+		err := CVEToOSV(cve, repos[cve.CVE.CVEDataMeta.ID], *outDir)
+		if err != nil {
+			// Could we have potentially generated an OSV record by further analysis of a repo?
+			if _, ok := repos[cve.CVE.CVEDataMeta.ID]; ok {
+				Metrics.CVEsForKnownRepos++
+			}
+			continue
+		}
+		Metrics.OSVRecordsGenerated++
 	}
+	Metrics.TotalCVEs = len(parsed.CVEItems)
+	Logger.Infof("Metrics: %+v", Metrics)
 }

@@ -313,7 +313,8 @@ def osv_get_ecosystem_counts():
         osv.Bug.public == True,  # pylint: disable=singleton-comparison
         osv.Bug.status == osv.BugStatus.PROCESSED).count()
 
-  return counts
+  filtered_counts = {key: elem for key, elem in counts.items() if elem > 0}
+  return filtered_counts
 
 
 def osv_query(search_string, page, affected_only, ecosystem):

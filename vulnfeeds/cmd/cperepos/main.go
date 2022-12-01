@@ -339,15 +339,6 @@ func analyzeCPEDictionary(d CPEDict) (ProductToRepo VendorProductToRepoMap, Desc
 			Logger.Infof("Failed to parse %q", c.CPE23.Name)
 			continue
 		}
-		// We may have already seen this Vendor/Product on an earlier
-		// entry (with a different version number) so may have an
-		// opportunity to move on quickly...
-		/* But this doesn't surface multiple repos for the same Vendor/Product...
-		if _, exists := ProductToRepo[CPE.Vendor][CPE.Product]; exists {
-			Logger.Infof("Already have %s for %q/%q, continuing...", ProductToRepo[CPE.Vendor][CPE.Product], CPE.Vendor, CPE.Product)
-			continue
-		}
-		*/
 		if CPE.Part != "a" {
 			// Not interested in hardware or operating systems.
 			continue

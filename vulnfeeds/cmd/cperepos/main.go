@@ -43,6 +43,7 @@ import (
 	"os"
 	"path"
 	"path/filepath"
+	"reflect"
 	"regexp"
 	"sort"
 	"strconv"
@@ -93,8 +94,12 @@ var (
 		"https://github.com/abhiunix/goo-blog-App-CVE",
 		"https://github.com/agadient/SERVEEZ-CVE",
 		"https://github.com/alwentiu/COVIDSafe-CVE-2020-12856",
+		"https://github.com/BlackFan/client-side-prototype-pollution",
+		"https://github.com/blindkey/cve_like",
 		"https://github.com/ciph0x01/Simple-Exam-Reviewer-Management-System-CVE",
 		"https://github.com/CVEProject/cvelist", // Heavily in Advisory URLs, sometimes shows up elsewhere
+		"https://github.com/cve-vul/vul",
+		"https://github.com/daaaalllii/cve-s",
 		"https://github.com/DayiliWaseem/CVE-2022-39196-",
 		"https://github.com/eddietcc/CVEnotes",
 		"https://github.com/Fadavvi/CVE-2018-17431-PoC",
@@ -104,27 +109,36 @@ var (
 		"https://github.com/hemantsolo/CVE-Reference",
 		"https://github.com/huclilu/CVE_Add",
 		"https://github.com/i3umi3iei3ii/CentOS-Control-Web-Panel-CVE",
+		"https://github.com/itodaro/doorGets_cve",
+		"https://github.com/jvz/test-cvelist",
 		"https://github.com/Kenun99/CVE-batdappboomx",
 		"https://github.com/lukaszstu/SmartAsset-CORS-CVE-2020-26527",
 		"https://github.com/MacherCS/CVE_Evoh_Contract",
+		"https://github.com/mandiant/Vulnerability-Disclosures",
 		"https://github.com/martinkubecka/CVE-References",
 		"https://github.com/MrR3boot/CVE-Hunting",
+		"https://github.com/nepenthe0320/cve_poc",
 		"https://github.com/nu11secur1ty/CVE-nu11secur1ty",
 		"https://github.com/Orange-Cyberdefense/CVE-repository",
+		"https://github.com/passtheticket/vulnerability-research",
 		"https://github.com/post-cyberlabs/CVE-Advisory",
 		"https://github.com/refi64/CVE-2020-25265-25266",
 		"https://github.com/riteshgohil/My_CVE_References",
 		"https://github.com/roughb8722/CVE-2021-3122-Details",
 		"https://github.com/Ryan0lb/EC-cloud-e-commerce-system-CVE-application",
 		"https://github.com/SaumyajeetDas/POC-of-CVE-2022-36271",
+		"https://github.com/seb1055/cve-2020-27358-27359",
 		"https://github.com/Security-AVS/-CVE-2021-26904",
+		"https://github.com/seqred-s-a/gxdlmsdirector-cve",
 		"https://github.com/vQAQv/Request-CVE-ID-PoC",
+		"https://github.com/vulnerabilities-cve/vulnerabilities",
 		"https://github.com/wsummerhill/BSA-Radar_CVE-Vulnerabilities",
 		"https://github.com/xiahao90/CVEproject",
 		"https://github.com/z00z00z00/Safenet_SAC_CVE-2021-42056",
+		"https://github.com/zer0yu/CVE_Request",
 	}
 	// Match repos with "CVE", "CVEs" or a pure CVE number in their name, anything from GitHubAssessments
-	InvalidRepoRegex   = `/(?:(?:CVEs?)|(?:CVE-\d{4}-\d{4,})|GitHubAssessments/.*|advisories/GHSA.*)$`
+	InvalidRepoRegex   = `(?i)/(?:(?:CVEs?)|(?:CVE-\d{4}-\d{4,})|GitHubAssessments/.*|advisories/GHSA.*)$`
 	CPEDictionaryFile  = flag.String("cpe_dictionary", CPEDictionaryDefault, "CPE Dictionary file to parse")
 	OutputDir          = flag.String("output_dir", OutputDirDefault, "Directory to output cpe_product_to_repo.json and cpe_reference_description_frequency.csv in")
 	GCPLoggingProject  = flag.String("gcp_logging_project", projectId, "GCP project ID to use for logging, set to an empty string to log locally only")
@@ -318,12 +332,22 @@ func MaybeGetSourceRepoFromDebian(mdir string, pkg string) string {
 func analyzeCPEDictionary(d CPEDict) (ProductToRepo VendorProductToRepoMap, DescriptionFrequency map[string]int) {
 	ProductToRepo = make(VendorProductToRepoMap)
 	DescriptionFrequency = make(map[string]int)
+	MaybeTryDebian := make(map[string]map[string]bool)
 	for _, c := range d.CPEItems {
 		CPE, err := cves.ParseCPE(c.CPE23.Name)
 		if err != nil {
 			Logger.Infof("Failed to parse %q", c.CPE23.Name)
 			continue
 		}
+		// We may have already seen this Vendor/Product on an earlier
+		// entry (with a different version number) so may have an
+		// opportunity to move on quickly...
+		/* But this doesn't surface multiple repos for the same Vendor/Product...
+		if _, exists := ProductToRepo[CPE.Vendor][CPE.Product]; exists {
+			Logger.Infof("Already have %s for %q/%q, continuing...", ProductToRepo[CPE.Vendor][CPE.Product], CPE.Vendor, CPE.Product)
+			continue
+		}
+		*/
 		if CPE.Part != "a" {
 			// Not interested in hardware or operating systems.
 			continue
@@ -350,14 +374,32 @@ func analyzeCPEDictionary(d CPEDict) (ProductToRepo VendorProductToRepoMap, Desc
 			}
 			Logger.Infof("Liking %q for %q/%q (%s)", repo, CPE.Vendor, CPE.Product, r.Description)
 			ProductToRepo[CPE.Vendor] = map[string][]string{CPE.Product: append(ProductToRepo[CPE.Vendor][CPE.Product], repo)}
+			if *DebianMetadataPath != "" {
+				delete(MaybeTryDebian[CPE.Vendor], CPE.Product)
+				if len(MaybeTryDebian[CPE.Vendor]) == 0 {
+					delete(MaybeTryDebian, CPE.Vendor)
+				}
+			}
 		}
 		// If we've arrived to this point and not calculated any repos for the product, try Debian
 		if len(ProductToRepo[CPE.Vendor][CPE.Product]) == 0 && *DebianMetadataPath != "" {
-			Logger.Infof("Trying to derive a repo from Debian for %q/%q", CPE.Vendor, CPE.Product)
-			repo := MaybeGetSourceRepoFromDebian(*DebianMetadataPath, CPE.Product)
+			MaybeTryDebian[CPE.Vendor] = map[string]bool{CPE.Product: true}
+		}
+	}
+	// Try the list of Debian possible ones here
+	if len(MaybeTryDebian) > 0 && *DebianMetadataPath != "" {
+		for vendor, product := range MaybeTryDebian {
+			product := reflect.ValueOf(product).MapKeys()[0].Interface().(string) // because we've got a nested map
+			Logger.Infof("Trying to derive a repo from Debian for %q/%q", vendor, product)
+			repo := MaybeGetSourceRepoFromDebian(*DebianMetadataPath, product)
 			if repo != "" {
-				Logger.Infof("Derived repo: %s", repo)
-				ProductToRepo[CPE.Vendor] = map[string][]string{CPE.Product: []string{repo}}
+				Logger.Infof("Derived repo: %s for %q/%q", repo, vendor, product)
+				repo, err := cves.Repo(repo)
+				if err != nil {
+					Logger.Infof("Disregarding derived repo for %q/%q because %v", vendor, product, err)
+					continue
+				}
+				ProductToRepo[vendor] = map[string][]string{product: []string{repo}}
 			}
 		}
 	}

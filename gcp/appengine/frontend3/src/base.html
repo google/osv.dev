@@ -28,6 +28,16 @@
           <img src="/static/img/logo.png" srcset="/static/img/logo.png, /static/img/logo@2x.png 2x">
         </a>
       </div>
+
+      <!-- Hidden checkbox for hamburger menu state -->
+      <input type="checkbox" id="hamburger-checkbox">
+      <!-- Hamburger menu -->
+      <label class="hamburger" for="hamburger-checkbox">
+        <span></span>
+        <span></span>
+        <span></span>
+      </label>
+
       <ul class="tabs">
         <li class="{{ 'active' if active_section == 'vulnerabilities' else '' }}">
           <a href="{{ url_for('frontend_handlers.list_vulnerabilities') }}">Vulnerability Database</a>

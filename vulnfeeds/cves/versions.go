@@ -70,10 +70,10 @@ func Repo(u string) (string, error) {
 
 	// Were we handed a base repository URL from the get go?
 	if slices.Contains(supportedHosts, parsedURL.Hostname()) {
-		if len(strings.Split(parsedURL.Path, "/")) == 3 {
+		if len(strings.Split(strings.TrimSuffix(parsedURL.Path, "/"), "/")) == 3 {
 			return fmt.Sprintf("%s://%s%s", parsedURL.Scheme,
 					parsedURL.Hostname(),
-					parsedURL.Path),
+					strings.TrimSuffix(parsedURL.Path, "/")),
 				nil
 		}
 	}

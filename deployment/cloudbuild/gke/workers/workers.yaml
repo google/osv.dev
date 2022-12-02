@@ -1,0 +1,72 @@
+# Copyright 2021 Google LLC
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#      http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: workers
+spec:
+  replicas: 30
+  selector:
+    matchLabels:
+      name: worker-private
+  template:
+    metadata:
+      labels:
+        name: worker-private
+    spec:
+      containers:
+      - name: worker-private
+        # gcr.io/<PROJECT_ID>/[...] must match the build project id.
+        # TODO(michaelkedar): Investigate dynamically setting this.
+        image: gcr.io/oss-vdb-test/worker:latest
+        imagePullPolicy: Always
+        # env:
+        #   - name: DEPS_DEV_API_KEY
+        #     valueFrom:
+        #        secretKeyRef:
+        #         name: secrets
+        #         key: deps.dev
+        # args:
+        #   - "--ssh_key_public=/secrets/ssh.pub"
+        #   - "--ssh_key_private=/secrets/ssh"
+        #   - "--redis_host=10.102.25.213"
+          # - "--deps_dev_api_key=$(DEPS_DEV_API_KEY)"
+        volumeMounts:
+          - mountPath: "/work"
+            name: "ssd"
+          # - mountPath: "/secrets"
+          #   name: "secrets"
+        securityContext:
+          privileged: true
+        resources:
+          requests:
+            cpu: 1
+            memory: "10G"
+          limits:
+            cpu: 2
+            memory: "13G"
+      volumes:
+        - name: "ssd"
+          hostPath:
+            path: "/mnt/disks/ssd0"
+        # - name: secrets
+        #   secret:
+        #     secretName: secrets
+        #     items:
+        #       - key: ssh
+        #         path: ssh
+        #         mode: 0600
+        #       - key: ssh.pub
+        #         path: ssh.pub

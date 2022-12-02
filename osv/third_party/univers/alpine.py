@@ -5,6 +5,7 @@
 # Visit https://aboutcode.org and
 # https://github.com/nexB/univers for support and download.
 import attr
+import re
 
 from . import gentoo
 from .utils import remove_spaces
@@ -14,7 +15,7 @@ class InvalidVersion(ValueError):
   pass
 
 
-def is_valid_alpine_version(s):
+def is_valid_alpine_version(s: str):
   """
   Return True is the string `s` is a valid Alpine version.
   We do not support yet version strings that start with
@@ -27,6 +28,11 @@ def is_valid_alpine_version(s):
   >>> is_valid_alpine_version("02-r1")
   False
   """
+  search = AlpineLinuxVersion.version_extractor.search(s)
+  if not search:
+    return False
+  
+  s = search.group(1)
   left, _, _ = s.partition(".")
   # hanlde the suffix case
   left, _, _ = left.partition("-")
@@ -56,7 +62,7 @@ class Version:
 
   # a comparable scheme-specific version object constructed from
   # the version string
-  value = attr.ib(default=None, repr=False)
+  value = attr.ib(default=None, repr=False, type=(str, int))
 
   def __attrs_post_init__(self):
     normalized_string = self.normalize(self.string)
@@ -138,6 +144,15 @@ class Version:
 @attr.s(frozen=True, order=False, eq=False, hash=True)
 class AlpineLinuxVersion(Version):
   """Alpine linux version"""
+  # E.g. For this version (1.9.5p2-r3), the following regex
+  # extracts (1.9.5p2) and (3)
+  version_extractor = re.compile(r'(.+?)(?:-r(\d+))?$')
+  
+  @classmethod
+  def build_value(cls, string: str):
+    search = cls.version_extractor.search(string)
+    return (search.group(1), int(search.group(2) or 0))
+
 
   @classmethod
   def is_valid(cls, string):
@@ -146,14 +161,26 @@ class AlpineLinuxVersion(Version):
   def __eq__(self, other):
     if not isinstance(other, self.__class__):
       return NotImplemented
-    return gentoo.vercmp(self.value, other.value) == 0
+    gentoo_vercmp = gentoo.vercmp(self.value[0], other.value[0])
+    return gentoo_vercmp == 0 and self.value[1] == other.value[1]
 
   def __lt__(self, other):
     if not isinstance(other, self.__class__):
       return NotImplemented
-    return gentoo.vercmp(self.value, other.value) < 0
+    try:
+      gentoo_vercmp = gentoo.vercmp(self.value[0], other.value[0])
+    except IndexError:
+      print("AYYET")
+    if gentoo_vercmp == 0:
+      return self.value[1] > other.value[1]
+
+    return gentoo_vercmp < 0
 
   def __gt__(self, other):
     if not isinstance(other, self.__class__):
       return NotImplemented
-    return gentoo.vercmp(self.value, other.value) > 0
+
+    gentoo_vercmp = gentoo.vercmp(self.value[0], other.value[0])
+    if gentoo_vercmp == 0:
+      return self.value[1] < other.value[1]
+    return gentoo_vercmp > 0

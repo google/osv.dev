@@ -43,7 +43,6 @@ import (
 	"os"
 	"path"
 	"path/filepath"
-	"reflect"
 	"regexp"
 	"sort"
 	"strconv"
@@ -78,7 +77,16 @@ type CPE23Item struct {
 	Name string `xml:"name,attr"`
 }
 
-type VendorProductToRepoMap map[string]map[string][]string
+type VendorProduct struct {
+	Vendor  string
+	Product string
+}
+
+func (vp VendorProduct) MarshalText() (text []byte, err error) {
+	return []byte(vp.Vendor + ":" + vp.Product), nil
+}
+
+type VendorProductToRepoMap map[VendorProduct][]string
 
 const (
 	CPEDictionaryDefault = "cve_jsons/nvdcpematch-1.0.json"
@@ -92,8 +100,14 @@ var (
 	// TODO(apollock): read this from an external file
 	InvalidRepos = []string{
 		"https://github.com/abhiunix/goo-blog-App-CVE",
+		"https://github.com/Accenture/AARO-Bugs",
+		"https://github.com/afeng2016-s/CVE-Request",
 		"https://github.com/agadient/SERVEEZ-CVE",
+		"https://github.com/AlwaysHereFight/YZMCMSxss",
 		"https://github.com/alwentiu/COVIDSafe-CVE-2020-12856",
+		"https://github.com/ArianeBlow/Axelor_Stored_XSS",
+		"https://github.com/beicheng-maker/vulns",
+		"https://github.com/BigTiger2020/74CMS",
 		"https://github.com/BlackFan/client-side-prototype-pollution",
 		"https://github.com/blindkey/cve_like",
 		"https://github.com/ciph0x01/Simple-Exam-Reviewer-Management-System-CVE",
@@ -102,22 +116,32 @@ var (
 		"https://github.com/daaaalllii/cve-s",
 		"https://github.com/DayiliWaseem/CVE-2022-39196-",
 		"https://github.com/eddietcc/CVEnotes",
+		"https://github.com/enesozeser/Vulnerabilities",
 		"https://github.com/Fadavvi/CVE-2018-17431-PoC",
+		"https://github.com/FCncdn/Appsmith-Js-Injection-POC",
+		"https://github.com/fireeye/Vulnerability-Disclosures",
 		"https://github.com/GitHubAssessments/CVE_Assessments_11_2019",
-		"https://github.com/github/cvelist", // Fork of https://github.com/CVEProject/cvelist
+		"https://github.com/github/cvelist",        // Fork of https://github.com/CVEProject/cvelist
+		"https://github.com/google/oss-fuzz-vulns", // 8^)
 		"https://github.com/Gr4y21/My-CVE-IDs",
 		"https://github.com/hemantsolo/CVE-Reference",
 		"https://github.com/huclilu/CVE_Add",
 		"https://github.com/i3umi3iei3ii/CentOS-Control-Web-Panel-CVE",
+		"https://github.com/ianxtianxt/gitbook-xss",
 		"https://github.com/itodaro/doorGets_cve",
 		"https://github.com/jvz/test-cvelist",
 		"https://github.com/Kenun99/CVE-batdappboomx",
+		"https://github.com/kyrie403/Vuln",
 		"https://github.com/lukaszstu/SmartAsset-CORS-CVE-2020-26527",
 		"https://github.com/MacherCS/CVE_Evoh_Contract",
 		"https://github.com/mandiant/Vulnerability-Disclosures",
 		"https://github.com/martinkubecka/CVE-References",
+		"https://github.com/mclab-hbrs/BBB-POC",
 		"https://github.com/MrR3boot/CVE-Hunting",
+		"https://github.com/N1ce759/74cmsSE-Arbitrary-File-Reading",
 		"https://github.com/nepenthe0320/cve_poc",
+		"https://github.com/Netflix/security-bulletins",
+		"https://github.com/nikip72/CVE-2021-39273-CVE-2021-39274",
 		"https://github.com/nu11secur1ty/CVE-nu11secur1ty",
 		"https://github.com/Orange-Cyberdefense/CVE-repository",
 		"https://github.com/passtheticket/vulnerability-research",
@@ -130,12 +154,23 @@ var (
 		"https://github.com/seb1055/cve-2020-27358-27359",
 		"https://github.com/Security-AVS/-CVE-2021-26904",
 		"https://github.com/seqred-s-a/gxdlmsdirector-cve",
+		"https://github.com/sickcodes/security",
+		"https://github.com/Snakinya/Vuln",
+		"https://github.com/snyk/zip-slip-vulnerability",
+		"https://github.com/soheilsamanabadi/vulnerability",
+		"https://github.com/soheilsamanabadi/vulnerabilitys",
+		"https://github.com/theyiyibest/Reflected-XSS-on-SockJS",
 		"https://github.com/vQAQv/Request-CVE-ID-PoC",
 		"https://github.com/vulnerabilities-cve/vulnerabilities",
+		"https://github.com/wind-cyber/LJCMS-UserTraversal-Vulnerability",
 		"https://github.com/wsummerhill/BSA-Radar_CVE-Vulnerabilities",
 		"https://github.com/xiahao90/CVEproject",
+		"https://github.com/xxhzz1/74cmsSE-Arbitrary-file-upload-vulnerability",
+		"https://github.com/ycdxsb/Vuln",
+		"https://github.com/YLoiK/74cmsSE-Arbitrary-file-upload-vulnerability",
 		"https://github.com/z00z00z00/Safenet_SAC_CVE-2021-42056",
 		"https://github.com/zer0yu/CVE_Request",
+		"https://github.com/Zeyad-Azima/Issabel-stored-XSS",
 	}
 	// Match repos with "CVE", "CVEs" or a pure CVE number in their name, anything from GitHubAssessments
 	InvalidRepoRegex   = `(?i)/(?:(?:CVEs?)|(?:CVE-\d{4}-\d{4,})|GitHubAssessments/.*|advisories/GHSA.*)$`
@@ -332,7 +367,7 @@ func MaybeGetSourceRepoFromDebian(mdir string, pkg string) string {
 func analyzeCPEDictionary(d CPEDict) (ProductToRepo VendorProductToRepoMap, DescriptionFrequency map[string]int) {
 	ProductToRepo = make(VendorProductToRepoMap)
 	DescriptionFrequency = make(map[string]int)
-	MaybeTryDebian := make(map[string]map[string]bool)
+	MaybeTryDebian := make(map[VendorProduct]bool)
 	for _, c := range d.CPEItems {
 		CPE, err := cves.ParseCPE(c.CPE23.Name)
 		if err != nil {
@@ -360,37 +395,37 @@ func analyzeCPEDictionary(d CPEDict) (ProductToRepo VendorProductToRepoMap, Desc
 				Logger.Infof("Disliking %q for %q/%q (%s)", repo, CPE.Vendor, CPE.Product, r.Description)
 				continue
 			}
-			if slices.Contains(ProductToRepo[CPE.Vendor][CPE.Product], repo) {
+			if slices.Contains(ProductToRepo[VendorProduct{CPE.Vendor, CPE.Product}], repo) {
 				continue
 			}
 			Logger.Infof("Liking %q for %q/%q (%s)", repo, CPE.Vendor, CPE.Product, r.Description)
-			ProductToRepo[CPE.Vendor] = map[string][]string{CPE.Product: append(ProductToRepo[CPE.Vendor][CPE.Product], repo)}
+			ProductToRepo[VendorProduct{CPE.Vendor, CPE.Product}] = append(ProductToRepo[VendorProduct{CPE.Vendor, CPE.Product}], repo)
 			if *DebianMetadataPath != "" {
-				delete(MaybeTryDebian[CPE.Vendor], CPE.Product)
-				if len(MaybeTryDebian[CPE.Vendor]) == 0 {
-					delete(MaybeTryDebian, CPE.Vendor)
-				}
+				delete(MaybeTryDebian, VendorProduct{CPE.Vendor, CPE.Product})
 			}
 		}
-		// If we've arrived to this point and not calculated any repos for the product, try Debian
-		if len(ProductToRepo[CPE.Vendor][CPE.Product]) == 0 && *DebianMetadataPath != "" {
-			MaybeTryDebian[CPE.Vendor] = map[string]bool{CPE.Product: true}
+		// If we've arrived to this point, we've exhausted the
+		// references  and not calculated any repos for the product,
+		// flag for trying Debian afterwards.
+		// We may encounter another CPE item that *does* have a viable reference in the meantime.
+		if len(ProductToRepo[VendorProduct{CPE.Vendor, CPE.Product}]) == 0 && *DebianMetadataPath != "" {
+			MaybeTryDebian[VendorProduct{CPE.Vendor, CPE.Product}] = true
 		}
 	}
-	// Try the list of Debian possible ones here
+	// Try any Debian possible ones as a last resort
 	if len(MaybeTryDebian) > 0 && *DebianMetadataPath != "" {
-		for vendor, product := range MaybeTryDebian {
-			product := reflect.ValueOf(product).MapKeys()[0].Interface().(string) // because we've got a nested map
-			Logger.Infof("Trying to derive a repo from Debian for %q/%q", vendor, product)
-			repo := MaybeGetSourceRepoFromDebian(*DebianMetadataPath, product)
+		for vp, _ := range MaybeTryDebian {
+			Logger.Infof("Trying to derive a repo from Debian for %q/%q", vp.Vendor, vp.Product)
+			repo := MaybeGetSourceRepoFromDebian(*DebianMetadataPath, vp.Product)
 			if repo != "" {
-				Logger.Infof("Derived repo: %s for %q/%q", repo, vendor, product)
+				Logger.Infof("Derived repo: %s for %q/%q", repo, vp.Vendor, vp.Product)
+				// Now check that what Debian gave us meets our expectations
 				repo, err := cves.Repo(repo)
 				if err != nil {
-					Logger.Infof("Disregarding derived repo for %q/%q because %v", vendor, product, err)
+					Logger.Infof("Disregarding derived repo for %q/%q because %v", vp.Vendor, vp.Product, err)
 					continue
 				}
-				ProductToRepo[vendor] = map[string][]string{product: []string{repo}}
+				ProductToRepo[VendorProduct{vp.Vendor, vp.Product}] = append(ProductToRepo[VendorProduct{vp.Vendor, vp.Product}], repo)
 			}
 		}
 	}

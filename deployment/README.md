@@ -75,7 +75,7 @@ First, edit the image path in `deployment/oss-vdb-test/cloudbuild/gke/workers/wo
 
 ```yaml
         # gcr.io/<PROJECT_ID>/[...] must match the build project id.
-        # TODO(michaelkedar): Investigate dynamically setting this.
+        # TODO(michaelkedar): Investigate dynamically setting this. [kustomize]
         image: gcr.io/<PROJECT_ID>/worker:latest
 ```
 
@@ -105,3 +105,4 @@ after the auto-repair finishes should work correctly.
 - Properly update existing build/deploy process to take project id as an input.
 - Configuring `SourceRepository` in datastore.
 - Configuring secrets.
+- Configuring Cloud Memorystore Redis instance

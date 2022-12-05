@@ -29,9 +29,10 @@ spec:
       containers:
       - name: worker-private
         # gcr.io/<PROJECT_ID>/[...] must match the build project id.
-        # TODO(michaelkedar): Investigate dynamically setting this.
+        # TODO(michaelkedar): Investigate dynamically setting this. [kustomize]
         image: gcr.io/oss-vdb-test/worker:latest
         imagePullPolicy: Always
+        # TODO(michaelkedar): secrets
         # env:
         #   - name: DEPS_DEV_API_KEY
         #     valueFrom:
@@ -41,7 +42,9 @@ spec:
         # args:
         #   - "--ssh_key_public=/secrets/ssh.pub"
         #   - "--ssh_key_private=/secrets/ssh"
+        # TODO(michaelkedar): set up Cloud Memorystore Redis instance
         #   - "--redis_host=10.102.25.213"
+        # NB(michaelkedar): deps_dev is commented out in real deployment as well
           # - "--deps_dev_api_key=$(DEPS_DEV_API_KEY)"
         volumeMounts:
           - mountPath: "/work"

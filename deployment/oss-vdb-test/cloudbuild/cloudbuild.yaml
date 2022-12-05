@@ -35,6 +35,7 @@ steps:
 - name: gcr.io/cloud-builders/gke-deploy
   args: ['run', '--filename=workers', '--image=gcr.io/$PROJECT_ID/worker:$COMMIT_SHA', '--location=us-central1-f', '--cluster=workers', '--output=/tmp', '--timeout=10m0s']
   dir: 'gke'
+# TODO(michaelkedar): importer, exporter
 # - name: gcr.io/cloud-builders/gke-deploy
 #   args: ['run', '--filename=importer', '--image=gcr.io/oss-vdb/importer:$COMMIT_SHA', '--location=us-central1-f', '--cluster=workers', '--output=/tmp']
 #   dir: 'gke'

@@ -4,7 +4,7 @@ Ensure the `GOOGLE_CLOUD_PROJECT` environment variable is exported for the proje
 ```bash
 export GOOGLE_CLOUD_PROJECT=<PROJECT_ID>
 ```
-The official project id of OSV is `oss-vdb`
+The official project id of OSV is `oss-vdb`.
 
 ## Terraform
 
@@ -59,7 +59,7 @@ Then, inside `docker/worker/`
 
 ## Deploy builds to cluster
 
-First, edit the image path in `deployment/cloudbuild/gke/workers/workers.yaml` to match the project ID:
+First, edit the image path in `deployment/oss-vdb-test/cloudbuild/gke/workers/workers.yaml` to match the project ID:
 
 ```yaml
         # gcr.io/<PROJECT_ID>/[...] must match the build project id.
@@ -67,12 +67,12 @@ First, edit the image path in `deployment/cloudbuild/gke/workers/workers.yaml` t
         image: gcr.io/<PROJECT_ID>/worker:latest
 ```
 
-e.g. for `oss-vdb`:
+e.g. for `oss-vdb-test`:
 ```yaml
-        image: gcr.io/oss-vdb/worker:latest
+        image: gcr.io/oss-vdb-test/worker:latest
 ```
 
-Then, inside `deployment/cloudbuild/`
+Then, inside `deployment/oss-vdb-test/cloudbuild/`
 
 ```bash
 gcloud beta builds submit . --project=<PROJECT_ID> --substitutions=COMMIT_SHA=<TAG>
@@ -89,4 +89,4 @@ after the auto-repair finishes should work correctly.
 - Deployments (and required terraform configs) for importer, indexer, etc.
 - Properly update existing build/deploy process to take project id as an input.
 - Configuring `SourceRepository` in datastore.
-- Configuring secrets
+- Configuring secrets.

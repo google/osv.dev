@@ -89,8 +89,8 @@ resource "google_container_node_pool" "default-pool" {
   }
 }
 
-resource "google_container_node_pool" "highend2" {
-  name     = "highend2"
+resource "google_container_node_pool" "highend" {
+  name     = "highend"
   cluster  = google_container_cluster.workers.name
   location = google_container_cluster.workers.location
 

@@ -1,0 +1,52 @@
+steps:
+# TODO(michaelkedar): Re-enable cloud building
+# Checkout at specified commit.
+# - name: gcr.io/cloud-builders/git
+#   args: ['clone', 'https://github.com/google/osv.dev.git']
+# - name: gcr.io/cloud-builders/git
+#   args: ['checkout', '$COMMIT_SHA']
+#   dir: 'osv.dev'
+# - name: gcr.io/cloud-builders/git
+#   args: ['submodule', 'update', '--init']
+#   dir: 'osv.dev'
+# Build/push core worker/importer/exporter images.
+# - name: gcr.io/cloud-builders/docker
+#   args: ['build', '-t', 'gcr.io/oss-vdb/worker', '-t', 'gcr.io/oss-vdb/worker:$COMMIT_SHA', '-f', 'docker/worker/Dockerfile', '.']
+#   dir: 'osv.dev'
+# - name: gcr.io/cloud-builders/docker
+#   args: ['build', '-t', 'gcr.io/oss-vdb/importer', '-t', 'gcr.io/oss-vdb/importer:$COMMIT_SHA', '.']
+#   dir: 'osv.dev/docker/importer'
+# - name: gcr.io/cloud-builders/docker
+#   args: ['build', '-t', 'gcr.io/oss-vdb/exporter', '-t', 'gcr.io/oss-vdb/exporter:$COMMIT_SHA', '.']
+#   dir: 'osv.dev/docker/exporter'
+# - name: gcr.io/cloud-builders/docker
+#   args: ['push', 'gcr.io/oss-vdb/worker:$COMMIT_SHA']
+# - name: gcr.io/cloud-builders/docker
+#   args: ['push', 'gcr.io/oss-vdb/worker']
+# - name: gcr.io/cloud-builders/docker
+#   args: ['push', 'gcr.io/oss-vdb/importer:$COMMIT_SHA']
+# - name: gcr.io/cloud-builders/docker
+#   args: ['push', 'gcr.io/oss-vdb/importer']
+# - name: gcr.io/cloud-builders/docker
+#   args: ['push', 'gcr.io/oss-vdb/exporter:$COMMIT_SHA']
+# - name: gcr.io/cloud-builders/docker
+#   args: ['push', 'gcr.io/oss-vdb/exporter']
+# Apply GKE configs.
+- name: gcr.io/cloud-builders/gke-deploy
+  args: ['run', '--filename=workers', '--image=gcr.io/$PROJECT_ID/worker:$COMMIT_SHA', '--location=us-central1-f', '--cluster=workers', '--output=/tmp', '--timeout=10m0s']
+  dir: 'gke'
+# TODO(michaelkedar): importer, exporter
+# - name: gcr.io/cloud-builders/gke-deploy
+#   args: ['run', '--filename=importer', '--image=gcr.io/oss-vdb/importer:$COMMIT_SHA', '--location=us-central1-f', '--cluster=workers', '--output=/tmp']
+#   dir: 'gke'
+# - name: gcr.io/cloud-builders/gke-deploy
+#   args: ['run', '--filename=exporter', '--image=gcr.io/oss-vdb/exporter:$COMMIT_SHA', '--location=us-central1-f', '--cluster=workers', '--output=/tmp']
+#   dir: 'gke'
+# TODO(ochang): Debian, indexer.
+# TODO(ochang): API deployment
+timeout: 2400s
+serviceAccount: 'projects/$PROJECT_ID/serviceAccounts/deployment@$PROJECT_ID.iam.gserviceaccount.com'
+options:
+  logging: CLOUD_LOGGING_ONLY
+tags:
+- prod-deploy

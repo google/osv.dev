@@ -21,14 +21,14 @@ Plan and apply required project infastructure:
 ```bash
 terraform plan
 ```
-Running `plan` is shows the what resources will be added, changed, and destroyed
+Running `plan` shows the what resources will be added, changed, and destroyed
 when applying the terraform configuration. It is not strictly necessary to run,
 but it is useful to perform a sanity check before applying.
 
 ```bash
 terraform apply
 ```
-Running `apply` will also ouput the same added/changed/destroyed resources as
+Running `apply` will also output the same added/changed/destroyed resources as
 `plan`, and will prompt if you wish to apply the proposed changes.
 
 Always review the planned changes (especially the destroyed resources) before

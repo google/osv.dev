@@ -14,17 +14,29 @@ Initialise terraform:
 ```bash
 terraform init
 ```
+This command only needs to be run once to first set up the terraform directory,
+though it is safe to run multiple times.
 
 Plan and apply required project infastructure:
 ```bash
 terraform plan
 ```
+Running `plan` is shows the what resources will be added, changed, and destroyed
+when applying the terraform configuration. It is not strictly necessary to run,
+but it is useful to perform a sanity check before applying.
+
 ```bash
 terraform apply
 ```
-Use these commands to deploy any configuration changes.
-Inspect the proposed changes when running the command to see what resources will
-be added, modified and destroyed.
+Running `apply` will also ouput the same added/changed/destroyed resources as
+`plan`, and will prompt if you wish to apply the proposed changes.
+
+Always review the planned changes (especially the destroyed resources) before
+applying them. Some changes may cause terraform to unexpectedly destroy and
+recreate resources.
+
+Use `terraform plan` and `terraform apply` to deploy any configuration changes.
+
 
 ## Setting up auto-scaler
 
@@ -72,6 +84,8 @@ e.g. for `oss-vdb-test`:
         image: gcr.io/oss-vdb-test/worker:latest
 ```
 
+(TODO: Do this automatically with [kustomize](https://kubernetes.io/docs/tasks/manage-kubernetes-objects/kustomization/))
+
 Then, inside `deployment/oss-vdb-test/cloudbuild/`
 
 ```bash
@@ -84,6 +98,7 @@ after the auto-repair finishes should work correctly.
 
 ## Still TODO
 - Refactor terraform files.
+  - https://cloud.google.com/docs/terraform/best-practices-for-terraform may be helpful
 - Investigate running terraform on existing GCP project.
   - May require `terraform import`-ing all existing resources.
 - Deployments (and required terraform configs) for importer, indexer, etc.

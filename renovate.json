@@ -5,6 +5,7 @@
   ],
   "timezone": "Australia/Sydney",
   "schedule": ["before 6am on monday"],
+  "label": ["dependencies"],
   "packageRules": [
     {
       "matchUpdateTypes": ["major"],

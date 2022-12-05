@@ -14,7 +14,7 @@ resource "google_project_service" "kubernetes_engine_api" {
 
 # Network
 
-resource "google_compute_subnetwork" "my-subnet-0" {
+resource "google_compute_subnetwork" "my_subnet_0" {
   name                     = "my-subnet-0"
   network                  = "default"
   ip_cidr_range            = "10.45.32.0/22"
@@ -28,7 +28,7 @@ resource "google_compute_router" "router" {
   region  = "us-central1"
 }
 
-resource "google_compute_router_nat" "nat-config" {
+resource "google_compute_router_nat" "nat_config" {
   name                               = "nat-config"
   router                             = google_compute_router.router.name
   source_subnetwork_ip_ranges_to_nat = "ALL_SUBNETWORKS_ALL_IP_RANGES"
@@ -42,7 +42,7 @@ resource "google_compute_router_nat" "nat-config" {
 resource "google_container_cluster" "workers" {
   name       = "workers"
   location   = "us-central1-f"
-  subnetwork = google_compute_subnetwork.my-subnet-0.self_link
+  subnetwork = google_compute_subnetwork.my_subnet_0.self_link
 
   private_cluster_config {
     enable_private_endpoint = false
@@ -67,7 +67,7 @@ resource "google_container_cluster" "workers" {
   initial_node_count       = 1
 }
 
-resource "google_container_node_pool" "default-pool" {
+resource "google_container_node_pool" "default_pool" {
   name     = "default-pool"
   cluster  = google_container_cluster.workers.name
   location = google_container_cluster.workers.location
@@ -132,7 +132,7 @@ resource "google_pubsub_topic" "tasks" {
   }
 }
 
-resource "google_pubsub_topic" "failed-tasks" {
+resource "google_pubsub_topic" "failed_tasks" {
   name = "failed-tasks"
 }
 
@@ -143,7 +143,7 @@ resource "google_pubsub_subscription" "tasks" {
   ack_deadline_seconds       = 600
 
   dead_letter_policy {
-    dead_letter_topic     = google_pubsub_topic.failed-tasks.id
+    dead_letter_topic     = google_pubsub_topic.failed_tasks.id
     max_delivery_attempts = 5
   }
 
@@ -156,7 +156,7 @@ resource "google_pubsub_subscription" "tasks" {
   }
 }
 
-resource "google_pubsub_topic" "pypi-bridge" {
+resource "google_pubsub_topic" "pypi_bridge" {
   name = "pypi-bridge"
 }
 
@@ -166,17 +166,17 @@ resource "google_pubsub_topic" "pypi-bridge" {
 data "google_compute_default_service_account" "default" {
 }
 
-resource "google_project_iam_member" "compute-service" {
+resource "google_project_iam_member" "compute_service" {
   role   = "roles/editor"
   member = "serviceAccount:${data.google_compute_default_service_account.default.email}"
 }
 
-resource "google_service_account" "deployment-service" {
+resource "google_service_account" "deployment_service" {
   account_id   = "deployment"
   display_name = "deployment"
 }
 
-resource "google_project_iam_member" "deployment-service" {
+resource "google_project_iam_member" "deployment_service" {
   role   = "roles/editor"
-  member = "serviceAccount:${google_service_account.deployment-service.email}"
+  member = "serviceAccount:${google_service_account.deployment_service.email}"
 }

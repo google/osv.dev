@@ -27,7 +27,7 @@
     "copy-webpack-plugin": "10.2.4",
     "css-loader": "6.7.2",
     "html-webpack-plugin": "5.5.0",
-    "mini-css-extract-plugin": "2.7.0",
+    "mini-css-extract-plugin": "2.7.2",
     "raw-loader": "4.0.2",
     "sass": "1.56.1",
     "sass-loader": "12.6.0",

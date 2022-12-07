@@ -167,12 +167,10 @@ class AlpineLinuxVersion(Version):
   def __lt__(self, other):
     if not isinstance(other, self.__class__):
       return NotImplemented
-    try:
-      gentoo_vercmp = gentoo.vercmp(self.value[0], other.value[0])
-    except IndexError:
-      print("AYYET")
+
+    gentoo_vercmp = gentoo.vercmp(self.value[0], other.value[0])
     if gentoo_vercmp == 0:
-      return self.value[1] > other.value[1]
+      return self.value[1] < other.value[1]
 
     return gentoo_vercmp < 0
 
@@ -182,5 +180,5 @@ class AlpineLinuxVersion(Version):
 
     gentoo_vercmp = gentoo.vercmp(self.value[0], other.value[0])
     if gentoo_vercmp == 0:
-      return self.value[1] < other.value[1]
+      return self.value[1] > other.value[1]
     return gentoo_vercmp > 0

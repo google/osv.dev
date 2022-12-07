@@ -457,7 +457,7 @@ class Alpine(Ecosystem):
     lines.reverse()
 
     current_ver = None
-    current_rel = None
+    current_rel = '0'
 
     def clean_versions(ver: str) -> str:
       ver = ver.split(' #')[0]  # Remove comment lines
@@ -475,8 +475,6 @@ class Alpine(Ecosystem):
         # Ignore occasional version that is still not valid.
         if AlpineLinuxVersion.is_valid(current_ver) and current_rel.isdigit():
           all_versions.add(current_ver + '-r' + current_rel)
-          current_ver = None
-          current_rel = None
         else:
           logging.warning('Alpine version "%s" - "%s" is not valid',
                           current_ver, current_rel)

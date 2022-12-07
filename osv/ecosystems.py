@@ -426,6 +426,8 @@ class Alpine(Ecosystem):
   _BRANCH_SUFFIX = '-stable'
   alpine_release_ver: str
   _GIT_REPO_PATH = 'version_enum/aports/'
+  # Sometimes (2 or 3 packages) APKBUILD files are a bash script and version
+  # is actually stored in variables. _kver is the common variable name.
   _PKGVER_ALIASES = ('+pkgver=', '+_kver=')
   _PKGREL_ALIASES = ('+pkgrel=', '+_krel=')
 
@@ -442,9 +444,6 @@ class Alpine(Ecosystem):
   def _process_git_log(output: str) -> list:
     """Takes git log diff output,
     finds all changes to pkgver and outputs that in an unsorted list
-    
-    TODO: This does not yet work with rare APKBUILD files where the pkgver and pkgrel
-    are made of bash variables.
     """
     all_versions = set()
     lines = [

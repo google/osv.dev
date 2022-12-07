@@ -18,6 +18,6 @@ cd ../../
 
 PROJECT=${GOOGLE_CLOUD_PROJECT:-oss-vdb}
 
-docker build -t gcr.io/$PROJECT/worker-base:$1 -t gcr.io/$PROJECT/worker-base:latest -f docker/worker-base/Dockerfile . && \
+docker build -t gcr.io/$PROJECT/worker-base:$1 -t gcr.io/$PROJECT/worker-base:latest -f docker/worker-base/Dockerfile --pull . && \
 gcloud docker -- push gcr.io/$PROJECT/worker-base:$1 && \
 gcloud docker -- push gcr.io/$PROJECT/worker-base:latest

@@ -58,7 +58,7 @@ REPO_DENYLIST = {
 }
 
 _ECOSYSTEM_PUSH_TOPICS = {
-    'PyPI': 'projects/oss-vdb/topics/pypi-bridge',
+    'PyPI': 'pypi-bridge',
 }
 
 _state = threading.local()
@@ -543,8 +543,10 @@ class TaskRunner:
           affected.package.ecosystem)
       if ecosystem_push_topic:
         publisher = pubsub_v1.PublisherClient()
+        cloud_project = os.environ['GOOGLE_CLOUD_PROJECT']
+        push_topic = publisher.topic_path(cloud_project, ecosystem_push_topic)
         publisher.publish(
-            ecosystem_push_topic,
+            push_topic,
             data=json.dumps(osv.vulnerability_to_dict(vulnerability)).encode())
 
   def _do_process_task(self, subscriber, subscription, ack_id, message,

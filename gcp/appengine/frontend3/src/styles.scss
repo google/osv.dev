@@ -117,36 +117,121 @@ pre {
 /** Top bar */
 
 .top-bar {
+  $left-padding: 40px;
   display: flex;
-  padding: 34px 40px;
+  padding: 34px $left-padding;
 
   .logo {
     $logo-width: 53px;
-    flex: 1 0 ($logo-width + 40px);
+    flex: 1 0 ($logo-width + $left-padding);
     max-width: $logo-width + 112px;
+
+    // Keep logo visible.
+    z-index: 3;
   }
 
-  .tabs {
-    display: flex;
-    list-style: none;
-    margin: 0;
-    gap: 40px;
-    font-size: 16px;
+  #hamburger-checkbox {
+    opacity: 0;
+  }
 
-    li {
-      $active-spacing: 6px;
-      margin: -$active-spacing 0;
-      padding: $active-spacing 0;
-      border-bottom: 8px solid #fff0;
+  @media (min-width: $osv-mobile-breakpoint+1) {
+    .tabs {
+      display: flex;
+      list-style: none;
+      margin: 0;
+      gap: 40px;
+      font-size: 16px;
+
+      li {
+        $active-spacing: 6px;
+        margin: -$active-spacing 0;
+        padding: $active-spacing 0;
+        border-bottom: 8px solid #fff0;
+        a {
+          text-decoration: none;
+        }
+        &.active {
+          border-bottom: 8px solid $osv-text-color;
+        }
+        &:hover {
+          border-bottom: 8px solid $osv-text-color;
+          opacity: 70%;
+        }
+      }
+    }
+    .hamburger {
+      display: none;
+    }
+  }
+
+  @media (max-width: $osv-mobile-breakpoint) {
+    .hamburger {
+      display: block;
+      position: absolute;
+      right: 30px;
+
+      // Keep hamburger on top and clickable.
+      z-index: 3;
+
+      // Individual hamburger bars.
+      span {
+        display: block;
+        background: $osv-text-color;
+        width: 16px;
+        height: 3px;
+        margin-bottom: 2px;
+        transition: all 0.5s ease;
+      }
+    }
+
+    .tabs {
       a {
         text-decoration: none;
       }
-      &.active {
-        border-bottom: 8px solid $osv-text-color;
+
+      li {
+        $active-spacing: 6px;
+        padding: $active-spacing 0;
       }
-      &:hover {
-        border-bottom: 8px solid $osv-text-color;
-        opacity: 70%;
+
+      z-index: 2;
+
+      background: $osv-grey-800;
+      opacity: 95%;
+
+      position: fixed;
+      top: 0;
+      left: 0;
+      padding-top: 70px;
+
+      padding-left: $left-padding;
+      padding-right: $left-padding;
+
+      font-size: 20px;
+      width: 100%;
+      height: 100%;
+
+      transform: translateY(-100%);
+      transition: transform 0.5s ease;
+    }
+
+    // Show menu when clicked.
+    #hamburger-checkbox:checked {
+      ~ .tabs {
+        transform: translateY(0%);
+        transition: transform 0.5s ease;
+      }
+
+      ~ .hamburger span:nth-child(1) {
+        transform: translateY(4px) rotate(45deg);
+      }
+
+      ~ .hamburger span:nth-child(2) {
+        opacity: 0;
+      }
+
+      ~ .hamburger span:nth-child(3) {
+        transform: translateY(-6px) rotate(-45deg);
       }
     }
   }
@@ -815,7 +900,7 @@ dl.vulnerability-details,
         background: #d4d4d4;
         cursor: pointer;
 
-        z-index: 999;
+        z-index: 2;
         .tooltip {
           display: block;
         }
@@ -848,6 +933,8 @@ dl.vulnerability-details,
       font-size: 20px;
       line-height: 26px;
       margin-bottom: 24px;
+      margin-left: 8px;
+      margin-right: 8px;
     }
 
     code-block {
@@ -887,6 +974,12 @@ dl.vulnerability-details,
       }
     }
 
+    @media (max-width: $osv-mobile-breakpoint) {
+      .mobile-spacer {
+        display: none;
+      }
+    }
+
     .description {
       font-size: 20px;
       line-height: 26px;
@@ -899,12 +992,6 @@ dl.vulnerability-details,
       flex-wrap: wrap;
       justify-content: center;
       gap: 4px;
-    }
-
-    .cmdline {
-      max-width: 600px;
-      margin-left: auto;
-      margin-right: auto;
     }
   }
 
@@ -991,17 +1078,8 @@ dl.vulnerability-details,
     margin-bottom: 48px;
   }
 
-  .open-docs {
-    display: block;
-    width: 744px;
-    padding: 20px 50px;
-    background: #676767;
-    font-size: 20px;
-    font-family: $osv-heading-font-family;
-  }
-
   .questions {
-    width: 800px;
+    max-width: 800px;
     margin: 0 auto;
 
     --const-mq-affordances:
@@ -1049,7 +1127,7 @@ dl.vulnerability-details,
 
 .blog-page {
   .posts {
-    width: 800px;
+    max-width: 800px;
     margin: 0 auto;
 
     .blog-entry {
@@ -1082,7 +1160,7 @@ dl.vulnerability-details,
 
 .blog-post-page {
   .post {
-    width: 800px;
+    max-width: 800px;
     margin: 0 auto;
 
     font-size: 16px;

@@ -34,9 +34,7 @@ DEFAULT_WORK_DIR = '/work'
 PUBLIC_LOGGING_BUCKET = 'osv-public-import-logs'
 
 _BUG_REDO_DAYS = 14
-_PROJECT = 'oss-vdb'
-_TASKS_TOPIC = 'projects/{project}/topics/{topic}'.format(
-    project=_PROJECT, topic='tasks')
+_TASKS_TOPIC = 'tasks'
 _OSS_FUZZ_EXPORT_BUCKET = 'oss-fuzz-osv-vulns'
 _EXPORT_WORKERS = 32
 _NO_UPDATE_MARKER = 'OSV-NO-UPDATE'
@@ -80,6 +78,8 @@ class Importer:
     self._ssh_key_private_path = ssh_key_private_path
     self._work_dir = work_dir
     self._publisher = pubsub_v1.PublisherClient()
+    project = os.environ['GOOGLE_CLOUD_PROJECT']
+    self._tasks_topic = self._publisher.topic_path(project, _TASKS_TOPIC)
     self._oss_fuzz_export_bucket = oss_fuzz_export_bucket
 
     self._sources_dir = os.path.join(self._work_dir, 'sources')
@@ -115,7 +115,7 @@ class Importer:
                                  deleted=False):
     """Request analysis."""
     self._publisher.publish(
-        _TASKS_TOPIC,
+        self._tasks_topic,
         data=b'',
         type='update',
         source=source_repo.name,
@@ -126,7 +126,7 @@ class Importer:
   def _request_internal_analysis(self, bug):
     """Request internal analysis."""
     self._publisher.publish(
-        _TASKS_TOPIC,
+        self._tasks_topic,
         data=b'',
         type='impact',
         source_id=bug.source_id,

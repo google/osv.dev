@@ -13,7 +13,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-docker build -t gcr.io/oss-vdb/importer:$1 . && \
-docker build -t gcr.io/oss-vdb/importer:latest . && \
-docker push gcr.io/oss-vdb/importer:$1 && \
-docker push gcr.io/oss-vdb/importer:latest
+PROJECT=${GOOGLE_CLOUD_PROJECT:-oss-vdb}
+
+docker build -t gcr.io/$PROJECT/importer:$1 . && \
+docker build -t gcr.io/$PROJECT/importer:latest . && \
+docker push gcr.io/$PROJECT/importer:$1 && \
+docker push gcr.io/$PROJECT/importer:latest

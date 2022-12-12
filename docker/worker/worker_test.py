@@ -25,6 +25,7 @@ from google.cloud import ndb
 import pygit2
 
 import osv
+from osv import ecosystems
 from osv import tests
 import oss_fuzz
 import worker

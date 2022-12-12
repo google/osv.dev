@@ -194,6 +194,9 @@ class DepsDevMixin(Ecosystem, ABC):
                 package_key=deps_dev_pb2.PackageKey(
                     name=package, system=ecosystem)),
             metadata=(('x-depsdev-apikey', deps_dev_api_key),))
+
+        for response in stream:
+          versions.extend([v.version_key.version for v in response.versions])
       except grpc.RpcError as ex:
         if ex.code() == grpc.StatusCode.NOT_FOUND:
           raise EnumerateError(f'Package {package} not found') from ex
@@ -201,9 +204,6 @@ class DepsDevMixin(Ecosystem, ABC):
         raise RuntimeError(
             f'Failed to get {ecosystem} versions for {package} with: '
             f'{ex.details()}') from ex
-
-      for response in stream:
-        versions.extend([v.version_key.version for v in response.versions])
 
     self.sort_versions(versions)
     return self._get_affected_versions(versions, introduced, fixed,

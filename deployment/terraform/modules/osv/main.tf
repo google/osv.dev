@@ -269,13 +269,13 @@ resource "google_vpc_access_connector" "connector" {
 # Storage Buckets
 
 # TODO(michaelkedar): naming of public buckets
-# resource "google_storage_bucket" "osv_public_import_logs" {
-#   project = var.project_id
-#   name = "osv-public-import-logs"
-#   location = var.resource_location
-#   uniform_bucket_level_access = true
+resource "google_storage_bucket" "osv_public_import_logs" {
+  project = var.project_id
+  name = "osv-test-public-import-logs"
+  location = var.resource_location
+  uniform_bucket_level_access = true
 
-#   lifecycle {
-#     prevent_destroy = true
-#   }
-# }
+  lifecycle {
+    prevent_destroy = true
+  }
+}

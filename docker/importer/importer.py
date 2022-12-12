@@ -31,7 +31,8 @@ import pygit2
 import osv
 
 DEFAULT_WORK_DIR = '/work'
-PUBLIC_LOGGING_BUCKET = 'osv-public-import-logs'
+# TODO(michaelkedar): Grab/generate bucket name from config
+PUBLIC_LOGGING_BUCKET = 'osv-test-public-import-logs'
 
 _BUG_REDO_DAYS = 14
 _TASKS_TOPIC = 'tasks'

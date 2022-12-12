@@ -3,6 +3,7 @@
 
 # APIs
 # TODO(michaelkedar): Check whether any required apis are missing.
+# TODO(michaelkedar): Add depends_on to enable APIs before any resources are created.
 
 resource "google_project_service" "compute_engine_api" {
   project = var.project_id
@@ -12,6 +13,21 @@ resource "google_project_service" "compute_engine_api" {
 resource "google_project_service" "kubernetes_engine_api" {
   project = var.project_id
   service = "container.googleapis.com"
+}
+
+resource "google_project_service" "redis_api" {
+  project = var.project_id
+  service = "redis.googleapis.com"
+}
+
+resource "google_project_service" "datastore_api" {
+  project = var.project_id
+  service = "datastore.googleapis.com"
+}
+
+resource "google_project_service" "vpcaccess_api" {
+  project = var.project_id
+  service = "vpcaccess.googleapis.com"
 }
 
 # Network
@@ -39,6 +55,7 @@ resource "google_compute_router_nat" "nat_config" {
   source_subnetwork_ip_ranges_to_nat = "ALL_SUBNETWORKS_ALL_IP_RANGES"
   nat_ip_allocate_option             = "AUTO_ONLY"
   region                             = google_compute_router.router.region
+  enable_endpoint_independent_mapping = false
 }
 
 
@@ -179,10 +196,20 @@ data "google_compute_default_service_account" "default" {
   project = var.project_id
 }
 
+data "google_app_engine_default_service_account" "default" {
+  project = var.project_id
+}
+
 resource "google_project_iam_member" "compute_service" {
   project = var.project_id
   role    = "roles/editor"
   member  = "serviceAccount:${data.google_compute_default_service_account.default.email}"
+}
+
+resource "google_project_iam_member" "app_engine_service" {
+  project = var.project_id
+  role    = "roles/editor"
+  member  = "serviceAccount:${data.google_app_engine_default_service_account.default.email}"
 }
 
 resource "google_service_account" "deployment_service" {
@@ -195,6 +222,48 @@ resource "google_project_iam_member" "deployment_service" {
   project = var.project_id
   role    = "roles/editor"
   member  = "serviceAccount:${google_service_account.deployment_service.email}"
+}
+
+# App Engine
+
+resource "google_app_engine_application" "app" {
+  project     = var.project_id
+  location_id = "us-west2"
+  database_type = "CLOUD_DATASTORE_COMPATIBILITY"
+}
+
+# MemoryStore
+resource "google_redis_instance" "west2" {
+  project                  = var.project_id
+  memory_size_gb           = 5
+  name                     = "redis"
+  read_replicas_mode       = "READ_REPLICAS_ENABLED"
+  redis_version            = "REDIS_6_X"
+  region                   = "us-west2"
+  replica_count            = 1
+  tier                     = "STANDARD_HA"
+  reserved_ip_range        = "10.126.238.64/28"
+}
+
+resource "google_redis_instance" "central1" {
+  project                  = var.project_id
+  memory_size_gb           = 16
+  name                     = "redis-central1"
+  read_replicas_mode       = "READ_REPLICAS_ENABLED"
+  redis_version            = "REDIS_6_X"
+  region                   = "us-central1"
+  replica_count            = 2
+  tier                     = "STANDARD_HA"
+  reserved_ip_range        = "10.102.25.208/28"
+}
+
+# Serverless VPC connector
+resource "google_vpc_access_connector" "connector" {
+  project       = var.project_id
+  name          = "connector"
+  network       = "default"
+  region        = "us-west2"
+  ip_cidr_range = "10.8.0.0/28"
 }
 
 # Storage Buckets

@@ -11,6 +11,7 @@ pygit2 = ">=1.9.2"
 attrs = "*"
 jsonschema = "*"
 grpcio = "*"
+packaging = "*"
 
 [dev-packages]
 yapf = "*"

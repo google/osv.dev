@@ -8,10 +8,7 @@ The official project id of OSV is `oss-vdb`.
 
 ## Terraform
 
-In directory `/deployment/terraform`:
-
-The `variables.tf` file defines variables used in this project.
-The `terraform.tfvars` file assigns these values for the `oss-vdb-test` project.
+Go to the relevant directory `/deployment/terraform/environments/<PROJECT_ID>`:
 
 Initialise terraform:
 ```bash

@@ -5,30 +5,35 @@
 # TODO(michaelkedar): Check whether any required apis are missing.
 
 resource "google_project_service" "compute_engine_api" {
+  project = var.project_id
   service = "compute.googleapis.com"
 }
 
 resource "google_project_service" "kubernetes_engine_api" {
+  project = var.project_id
   service = "container.googleapis.com"
 }
 
 # Network
 
 resource "google_compute_subnetwork" "my_subnet_0" {
+  project                  = var.project_id
   name                     = "my-subnet-0"
   network                  = "default"
   ip_cidr_range            = "10.45.32.0/22"
   private_ip_google_access = true
-  region                   = "us-central1"
+  region                   = var.resource_region
 }
 
 resource "google_compute_router" "router" {
+  project = var.project_id
   name    = "router"
   network = "default"
-  region  = "us-central1"
+  region  = var.resource_region
 }
 
 resource "google_compute_router_nat" "nat_config" {
+  project                            = var.project_id
   name                               = "nat-config"
   router                             = google_compute_router.router.name
   source_subnetwork_ip_ranges_to_nat = "ALL_SUBNETWORKS_ALL_IP_RANGES"
@@ -40,8 +45,9 @@ resource "google_compute_router_nat" "nat_config" {
 # Clusters / Node Pools
 
 resource "google_container_cluster" "workers" {
+  project    = var.project_id
   name       = "workers"
-  location   = "us-central1-f"
+  location   = var.worker_zone
   subnetwork = google_compute_subnetwork.my_subnet_0.self_link
 
   private_cluster_config {
@@ -68,6 +74,7 @@ resource "google_container_cluster" "workers" {
 }
 
 resource "google_container_node_pool" "default_pool" {
+  project  = var.project_id
   name     = "default-pool"
   cluster  = google_container_cluster.workers.name
   location = google_container_cluster.workers.location
@@ -90,6 +97,7 @@ resource "google_container_node_pool" "default_pool" {
 }
 
 resource "google_container_node_pool" "highend" {
+  project  = var.project_id
   name     = "highend"
   cluster  = google_container_cluster.workers.name
   location = google_container_cluster.workers.location
@@ -125,7 +133,8 @@ resource "google_container_node_pool" "highend" {
 # Pub/Sub topics
 
 resource "google_pubsub_topic" "tasks" {
-  name = "tasks"
+  project = var.project_id
+  name    = "tasks"
 
   labels = {
     goog-dm = "pubsub"
@@ -133,10 +142,12 @@ resource "google_pubsub_topic" "tasks" {
 }
 
 resource "google_pubsub_topic" "failed_tasks" {
-  name = "failed-tasks"
+  project = var.project_id
+  name    = "failed-tasks"
 }
 
 resource "google_pubsub_subscription" "tasks" {
+  project                    = var.project_id
   name                       = "tasks"
   topic                      = google_pubsub_topic.tasks.id
   message_retention_duration = "604800s"
@@ -157,26 +168,45 @@ resource "google_pubsub_subscription" "tasks" {
 }
 
 resource "google_pubsub_topic" "pypi_bridge" {
-  name = "pypi-bridge"
+  project = var.project_id
+  name    = "pypi-bridge"
 }
 
 
 # Service accounts permissions
 
 data "google_compute_default_service_account" "default" {
+  project = var.project_id
 }
 
 resource "google_project_iam_member" "compute_service" {
-  role   = "roles/editor"
-  member = "serviceAccount:${data.google_compute_default_service_account.default.email}"
+  project = var.project_id
+  role    = "roles/editor"
+  member  = "serviceAccount:${data.google_compute_default_service_account.default.email}"
 }
 
 resource "google_service_account" "deployment_service" {
+  project      = var.project_id
   account_id   = "deployment"
   display_name = "deployment"
 }
 
 resource "google_project_iam_member" "deployment_service" {
-  role   = "roles/editor"
-  member = "serviceAccount:${google_service_account.deployment_service.email}"
+  project = var.project_id
+  role    = "roles/editor"
+  member  = "serviceAccount:${google_service_account.deployment_service.email}"
 }
+
+# Storage Buckets
+
+# TODO(michaelkedar): naming of public buckets
+# resource "google_storage_bucket" "osv_public_import_logs" {
+#   project = var.project_id
+#   name = "osv-public-import-logs"
+#   location = var.resource_location
+#   uniform_bucket_level_access = true
+
+#   lifecycle {
+#     prevent_destroy = true
+#   }
+# }

@@ -10,8 +10,10 @@ pyyaml = "*"
 pygit2 = ">=1.9.2"
 attrs = "*"
 jsonschema = "*"
+grpcio = "*"
 
 [dev-packages]
 yapf = "*"
 pylint = "*"
 pipenv = ">=2022.9.4"
+grpcio-tools = "*"

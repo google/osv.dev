@@ -1,0 +1,49 @@
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: importer
+spec:
+  schedule: "*/15 * * * *"
+  concurrencyPolicy: Forbid
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          containers:
+          - name: importer
+          # gcr.io/<PROJECT_ID>/[...] must match the build project id.
+          # TODO(michaelkedar): Investigate dynamically setting this. [kustomize]
+            image: gcr.io/oss-vdb-test/importer:latest
+            imagePullPolicy: Always
+            # TODO(michaelkear): secrets
+            # args:
+            #   - "--ssh_key_public=/secrets/ssh.pub"
+            #   - "--ssh_key_private=/secrets/ssh"
+            volumeMounts:
+              - mountPath: "/work"
+                name: "ssd"
+              # - mountPath: "/secrets"
+              #   name: "secrets"
+            securityContext:
+              privileged: true
+            resources:
+              requests:
+                cpu: 1
+                memory: "1G"
+              limits:
+                cpu: 1
+                memory: "2G"
+          restartPolicy: OnFailure
+          volumes:
+            - name: "ssd"
+              hostPath:
+                path: "/mnt/disks/ssd0"
+            # - name: secrets
+            #   secret:
+            #     secretName: secrets
+            #     items:
+            #       - key: ssh
+            #         path: ssh
+            #         mode: 0600
+            #       - key: ssh.pub
+            #         path: ssh.pub

@@ -62,11 +62,11 @@ class GetNextVersionTest(unittest.TestCase):
     self.assertEqual(call_count, mock_get.call_count)
     ecosystems.set_cache(None)
 
-  @unittest.skipUnless(os.getenv('DEPS_DEV_API_KEY'), 'Requires API key')
+  @unittest.skipUnless(os.getenv('DEPSDEV_API_KEY'), 'Requires API key')
   def test_maven_deps_dev(self):
     """Test Maven using deps.dev."""
     ecosystems.use_deps_dev = True
-    ecosystems.deps_dev_api_key = os.getenv('DEPS_DEV_API_KEY')
+    ecosystems.deps_dev_api_key = os.getenv('DEPSDEV_API_KEY')
 
     ecosystem = ecosystems.get('Maven')
     self.assertEqual('1.36.0',

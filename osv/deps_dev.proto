@@ -1,0 +1,289 @@
+// Copyright 2022 Google LLC
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//      http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+syntax = "proto3";
+package deps_dev.v2alpha;
+// Add a go_package that places the generated files in your own package.
+// Example:
+//   option go_package = "github.com/myname/deps.dev/api";
+// The Insights service is served by api.deps.dev:443 using gRPC.
+//
+// This is not yet a stable service, and the protocol is subject to change.
+service Insights {
+  // Packages returns a list of all known packages, in a batched stream.
+  rpc Packages(PackagesRequest) returns (stream PackagesResponse) {}
+  // Versions returns the versions of a package.
+  rpc Versions(VersionsRequest) returns (stream VersionsResponse) {}
+  // Version returns information about specific package versions. If the
+  // request matches more than one version, multiple responses are returned.
+  rpc Version(VersionRequest) returns (stream VersionResponse) {}
+  // Dependencies returns the full dependency graph of a package version, as a
+  // stream of messages containing nodes and edges. The first node in the
+  // stream is the root of the graph. Edges do not appear before their
+  // referenced nodes. If the request matches more than one version, an error
+  // is returned.
+  rpc Dependencies(DependenciesRequest) returns (stream DependenciesResponse) {}
+  // DependentInfo returns information about the dependents of a package
+  // version. If the request matches more than one version, an error is
+  // returned.
+  rpc DependentInfo(DependentInfoRequest) returns (DependentInfoResponse) {}
+  // Advisory returns information about a security advisory.
+  rpc Advisory(AdvisoryRequest) returns (AdvisoryResponse) {}
+  // Project returns information about the specified project.
+  rpc Project(ProjectRequest) returns (ProjectResponse) {}
+  // ProjectPackageVersions returns a list of versions that reference the
+  // specified project.
+  // The links are not confirmed.
+  rpc ProjectPackageVersions(ProjectPackageVersionsRequest)
+      returns (stream ProjectPackageVersionsResponse) {}
+}
+// Digest holds known hash digests for a package version.
+message Digest {
+  bytes sha512 = 1;
+  bytes sha256 = 2;
+  bytes sha1 = 3;
+  bytes md5 = 4;
+}
+// System identifies a packaging system.
+enum System {
+  SYSTEM_UNSPECIFIED = 0;
+  SYSTEM_GO = 1;
+  SYSTEM_NPM = 3;
+  SYSTEM_CARGO = 4;
+  SYSTEM_MAVEN = 6;
+  SYSTEM_PYPI = 7;
+}
+// PackageKey identifies a package.
+message PackageKey {
+  System system = 1;
+  string name = 2;
+}
+message PackagesRequest {
+  System system = 1;  // Optional; if set, only return packages in this system
+}
+message PackagesResponse {
+  repeated PackageKey packages = 1;
+}
+// VersionKey identifies a package version.
+message VersionKey {
+  System system = 1;
+  string name = 2;
+  string version = 3;
+}
+// AdvisorySource identifies a security advisory source.
+enum AdvisorySource {
+  ADVISORY_SOURCE_UNSPECIFIED = 0;
+  ADVISORY_SOURCE_NSWG = 2;
+  ADVISORY_SOURCE_GHSA = 5;
+  ADVISORY_SOURCE_OSV = 6;
+}
+// AdvisoryKey identifies a security advisory.
+message AdvisoryKey {
+  AdvisorySource source = 1;
+  string id = 2;
+}
+// DataType identifies auxiliary data that can be attached to the response.
+enum DataType {
+  DATA_TYPE_UNSPECIFIED = 0;
+  DATA_TYPE_LICENSING = 1;
+  DATA_TYPE_SECURITY = 2;
+  DATA_TYPE_LINKS = 3;
+}
+message VersionsRequest {
+  PackageKey package_key = 1;
+  reserved 2;
+}
+message VersionsResponse {
+  message Version {
+    VersionKey version_key = 1;
+    bool is_default = 2;
+    repeated string upstream_urls = 3;
+  }
+  repeated Version versions = 1;
+}
+message VersionRequest {
+  // At least one of these fields must be set.
+  // Both fields may be set to narrow the results.
+  VersionKey version_key = 1;
+  Digest version_hash = 2;
+  reserved 3;
+  // Specify auxiliary data to be returned with the response.
+  // Multiple auxiliary data types may be requested.
+  // Setting this field may slow the response.
+  repeated DataType extra_data_types = 4;
+}
+message VersionResponse {
+  // May differ from the version key in the request, if set, due to
+  // canonicalization.
+  VersionKey version_key = 1;
+  repeated string upstream_urls = 2;
+  // These fields will be populated only if extra_data_types was set in the
+  // request.
+  repeated string licenses = 3;
+  repeated AdvisoryKey advisory_keys = 4;
+  repeated Link links = 5;
+}
+message DependenciesRequest {
+  // At least one of these fields must be set.
+  // Both fields may be set to narrow the results.
+  VersionKey version_key = 1;
+  Digest version_hash = 2;
+  reserved 3;
+  // Specify auxiliary data to be returned with the response.
+  // Multiple auxiliary data types may be requested.
+  // Setting this field may slow the response.
+  repeated DataType extra_data_types = 4;
+}
+message DependenciesResponse {
+  message Node {
+    VersionKey version_key = 1;
+    repeated string upstream_urls = 2;
+    // These fields will be populated only if extra_data_types was set in the
+    // request.
+    repeated string licenses = 3;
+    repeated AdvisoryKey advisory_keys = 4;
+    repeated Link links = 5;
+    // Errors associated with this node of the graph, such as an unknown
+    // dependency or unmet dependency requirement. An error here may imply the
+    // graph as a whole is incorrect. The error message has no defined format
+    // and is intended for human consumption.
+    repeated string errors = 6;
+  }
+  repeated Node nodes = 1;
+  message Edge {
+    uint32 from_node = 1;
+    uint32 to_node = 2;
+    string requirement = 3;
+  }
+  repeated Edge edges = 2;
+  // Any error associated with the dependency graph that is not specific to a
+  // node. This may be sent in any response message; there will be at most one
+  // of this error. An error here may imply the graph as a whole is incorrect.
+  // The error message has no defined format and is intended for human
+  // consumption.
+  string error = 3;
+}
+message Link {
+  string label = 1;
+  string url = 2;
+}
+message DependentInfoRequest {
+  // At least one of these fields must be set.
+  // Both fields may be set to narrow the results.
+  VersionKey version_key = 1;
+  Digest version_hash = 2;
+  reserved 3;
+  // Whether to include a sample of the dependents.
+  bool include_samples = 4;
+}
+message DependentInfoResponse {
+  // May differ from the version key in the request, if set, due to
+  // canonicalization.
+  VersionKey version_key = 1;
+  // The number of packages that directly import the requested package version.
+  uint32 direct_count = 2;
+  // The number of packages that depend on the requested package version
+  // without directly importing it themselves.
+  uint32 indirect_count = 3;
+  // The total number of distinct packages that depend on the requested package
+  // version. It may be less than direct_count + indirect_count because in some
+  // systems the same package may appear several times at different depths in a
+  // dependency graph.
+  uint32 total_count = 4;
+  // These samples contain versions of packages which depend on the requested
+  // package version. The distinction between direct and indirect dependents is
+  // the same as for the counts. These fields are only populated if
+  // include_samples was true in the request.
+  message Dependent {
+    VersionKey version_key = 1;
+    reserved 2;
+  }
+  repeated Dependent direct_dependent_samples = 5;
+  repeated Dependent indirect_dependent_samples = 6;
+}
+message AdvisoryRequest {
+  AdvisoryKey advisory_key = 1;
+}
+message AdvisoryResponse {
+  AdvisoryKey advisory_key = 1;
+  string url = 2;
+  // Brief human-readable description.
+  string title = 3;
+  // Other identifiers used for this advisory, including CVEs.
+  repeated string aliases = 4;
+  // The severity of this advisory, as measured on the CVSS v3 scale of [0,10].
+  float cvss3_score = 5;
+  // The severity of this advisory as represented by a CVSS vector string. The
+  // score can be derived from this field if it is set.
+  string cvss3_vector = 6;
+}
+message ProjectRequest {
+  string url = 1;
+}
+message ProjectResponse {
+  int64 open_issues_count = 3;
+  int64 stars_count = 4;
+  int64 forks_count = 5;
+  string license = 6;
+  string description = 7;
+  string homepage = 8;
+  // The Open Source Security Foundation security scorecard.
+  // (https://github.com/ossf/scorecard).
+  message Scorecard {
+    // Seconds since Unix epoch.
+    int64 date = 1;
+    message Repository {
+      // The name of the repository.
+      string name = 1;
+      // The repository commit scorecards was run against.
+      string commit = 2;
+    }
+    Repository repository = 2;
+    message ScorecardDetails {
+      // The version of the scorecards program run.
+      string version = 1;
+      // The commit of the scorecards program run.
+      string commit = 2;
+    }
+    ScorecardDetails scorecard = 3;
+    message Check {
+      string name = 1;
+      message Documentation {
+        // A short description of the check.
+        string short_description = 1;
+        // A link to more details about the check.
+        string url = 2;
+      }
+      Documentation documentation = 2;
+      // Between 0-10. A negative score indicates that the
+      // check was unable to be run successfully.
+      int64 score = 3;
+      string reason = 4;
+      repeated string details = 5;
+    }
+    repeated Check checks = 4;
+    // A weighted average score between 0-10 for the entire repository.
+    float overall_score = 5;
+    // Additional metadata associated with the scorecard.
+    repeated string metadata = 6;
+  }
+  Scorecard scorecard = 1;
+  reserved 2;
+}
+message ProjectPackageVersionsRequest {
+  string url = 1;
+}
+message ProjectPackageVersionsResponse {
+  repeated VersionKey version_keys = 1;
+}
+

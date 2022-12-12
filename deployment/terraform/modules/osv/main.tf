@@ -3,45 +3,68 @@
 
 # APIs
 # TODO(michaelkedar): Check whether any required apis are missing.
+# TODO(michaelkedar): Add depends_on to enable APIs before any resources are created.
 
 resource "google_project_service" "compute_engine_api" {
+  project = var.project_id
   service = "compute.googleapis.com"
 }
 
 resource "google_project_service" "kubernetes_engine_api" {
+  project = var.project_id
   service = "container.googleapis.com"
+}
+
+resource "google_project_service" "redis_api" {
+  project = var.project_id
+  service = "redis.googleapis.com"
+}
+
+resource "google_project_service" "datastore_api" {
+  project = var.project_id
+  service = "datastore.googleapis.com"
+}
+
+resource "google_project_service" "vpcaccess_api" {
+  project = var.project_id
+  service = "vpcaccess.googleapis.com"
 }
 
 # Network
 
 resource "google_compute_subnetwork" "my_subnet_0" {
+  project                  = var.project_id
   name                     = "my-subnet-0"
   network                  = "default"
   ip_cidr_range            = "10.45.32.0/22"
   private_ip_google_access = true
-  region                   = "us-central1"
+  region                   = var.resource_region
 }
 
 resource "google_compute_router" "router" {
+  project = var.project_id
   name    = "router"
   network = "default"
-  region  = "us-central1"
+  region  = var.resource_region
 }
 
 resource "google_compute_router_nat" "nat_config" {
+  project                            = var.project_id
   name                               = "nat-config"
   router                             = google_compute_router.router.name
   source_subnetwork_ip_ranges_to_nat = "ALL_SUBNETWORKS_ALL_IP_RANGES"
   nat_ip_allocate_option             = "AUTO_ONLY"
   region                             = google_compute_router.router.region
+  enable_endpoint_independent_mapping = false
 }
 
 
 # Clusters / Node Pools
 
 resource "google_container_cluster" "workers" {
+  project    = var.project_id
   name       = "workers"
-  location   = "us-central1-f"
+  location   = var.worker_zone
   subnetwork = google_compute_subnetwork.my_subnet_0.self_link
 
   private_cluster_config {
@@ -68,6 +91,7 @@ resource "google_container_cluster" "workers" {
 }
 
 resource "google_container_node_pool" "default_pool" {
+  project  = var.project_id
   name     = "default-pool"
   cluster  = google_container_cluster.workers.name
   location = google_container_cluster.workers.location
@@ -90,6 +114,7 @@ resource "google_container_node_pool" "default_pool" {
 }
 
 resource "google_container_node_pool" "highend" {
+  project  = var.project_id
   name     = "highend"
   cluster  = google_container_cluster.workers.name
   location = google_container_cluster.workers.location
@@ -125,7 +150,8 @@ resource "google_container_node_pool" "highend" {
 # Pub/Sub topics
 
 resource "google_pubsub_topic" "tasks" {
-  name = "tasks"
+  project = var.project_id
+  name    = "tasks"
 
   labels = {
     goog-dm = "pubsub"
@@ -133,10 +159,12 @@ resource "google_pubsub_topic" "tasks" {
 }
 
 resource "google_pubsub_topic" "failed_tasks" {
-  name = "failed-tasks"
+  project = var.project_id
+  name    = "failed-tasks"
 }
 
 resource "google_pubsub_subscription" "tasks" {
+  project                    = var.project_id
   name                       = "tasks"
   topic                      = google_pubsub_topic.tasks.id
   message_retention_duration = "604800s"
@@ -157,26 +185,97 @@ resource "google_pubsub_subscription" "tasks" {
 }
 
 resource "google_pubsub_topic" "pypi_bridge" {
-  name = "pypi-bridge"
+  project = var.project_id
+  name    = "pypi-bridge"
 }
 
 
 # Service accounts permissions
 
 data "google_compute_default_service_account" "default" {
+  project = var.project_id
+}
+
+data "google_app_engine_default_service_account" "default" {
+  project = var.project_id
 }
 
 resource "google_project_iam_member" "compute_service" {
-  role   = "roles/editor"
-  member = "serviceAccount:${data.google_compute_default_service_account.default.email}"
+  project = var.project_id
+  role    = "roles/editor"
+  member  = "serviceAccount:${data.google_compute_default_service_account.default.email}"
+}
+
+resource "google_project_iam_member" "app_engine_service" {
+  project = var.project_id
+  role    = "roles/editor"
+  member  = "serviceAccount:${data.google_app_engine_default_service_account.default.email}"
 }
 
 resource "google_service_account" "deployment_service" {
+  project      = var.project_id
   account_id   = "deployment"
   display_name = "deployment"
 }
 
 resource "google_project_iam_member" "deployment_service" {
-  role   = "roles/editor"
-  member = "serviceAccount:${google_service_account.deployment_service.email}"
+  project = var.project_id
+  role    = "roles/editor"
+  member  = "serviceAccount:${google_service_account.deployment_service.email}"
 }
+
+# App Engine
+
+resource "google_app_engine_application" "app" {
+  project     = var.project_id
+  location_id = "us-west2"
+  database_type = "CLOUD_DATASTORE_COMPATIBILITY"
+}
+
+# MemoryStore
+resource "google_redis_instance" "west2" {
+  project                  = var.project_id
+  memory_size_gb           = 5
+  name                     = "redis"
+  read_replicas_mode       = "READ_REPLICAS_ENABLED"
+  redis_version            = "REDIS_6_X"
+  region                   = "us-west2"
+  replica_count            = 1
+  tier                     = "STANDARD_HA"
+  reserved_ip_range        = "10.126.238.64/28"
+}
+
+resource "google_redis_instance" "central1" {
+  project                  = var.project_id
+  memory_size_gb           = 16
+  name                     = "redis-central1"
+  read_replicas_mode       = "READ_REPLICAS_ENABLED"
+  redis_version            = "REDIS_6_X"
+  region                   = "us-central1"
+  replica_count            = 2
+  tier                     = "STANDARD_HA"
+  reserved_ip_range        = "10.102.25.208/28"
+}
+
+# Serverless VPC connector
+resource "google_vpc_access_connector" "connector" {
+  project       = var.project_id
+  name          = "connector"
+  network       = "default"
+  region        = "us-west2"
+  ip_cidr_range = "10.8.0.0/28"
+}
+
+# Storage Buckets
+
+# TODO(michaelkedar): naming of public buckets
+# resource "google_storage_bucket" "osv_public_import_logs" {
+#   project = var.project_id
+#   name = "osv-public-import-logs"
+#   location = var.resource_location
+#   uniform_bucket_level_access = true
+
+#   lifecycle {
+#     prevent_destroy = true
+#   }
+# }

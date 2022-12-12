@@ -3,6 +3,11 @@ variable "project_id" {
   description = "GCP Project ID."
 }
 
+variable "public_import_logs_bucket" {
+  type        = string
+  description = "Name of bucket to write importer logs to."
+}
+
 variable "resource_location" {
   type        = string
   description = "Location for multi-regional resources."

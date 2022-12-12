@@ -16,9 +16,11 @@ spec:
             image: gcr.io/oss-vdb-test/importer:latest
             imagePullPolicy: Always
             # TODO(michaelkear): secrets
-            # args:
-            #   - "--ssh_key_public=/secrets/ssh.pub"
-            #   - "--ssh_key_private=/secrets/ssh"
+            args:
+              # TODO(michaelkedar): single source of truth w/ terraform config
+              - "--log_bucket=osv-test-public-import-logs"
+              # - "--ssh_key_public=/secrets/ssh.pub"
+              # - "--ssh_key_private=/secrets/ssh"
             volumeMounts:
               - mountPath: "/work"
                 name: "ssd"

@@ -49,12 +49,12 @@ resource "google_compute_router" "router" {
 }
 
 resource "google_compute_router_nat" "nat_config" {
-  project                            = var.project_id
-  name                               = "nat-config"
-  router                             = google_compute_router.router.name
-  source_subnetwork_ip_ranges_to_nat = "ALL_SUBNETWORKS_ALL_IP_RANGES"
-  nat_ip_allocate_option             = "AUTO_ONLY"
-  region                             = google_compute_router.router.region
+  project                             = var.project_id
+  name                                = "nat-config"
+  router                              = google_compute_router.router.name
+  source_subnetwork_ip_ranges_to_nat  = "ALL_SUBNETWORKS_ALL_IP_RANGES"
+  nat_ip_allocate_option              = "AUTO_ONLY"
+  region                              = google_compute_router.router.region
   enable_endpoint_independent_mapping = false
 }
 
@@ -270,9 +270,9 @@ resource "google_vpc_access_connector" "connector" {
 
 # TODO(michaelkedar): naming of public buckets
 resource "google_storage_bucket" "osv_public_import_logs" {
-  project = var.project_id
-  name = "osv-test-public-import-logs"
-  location = var.resource_location
+  project                     = var.project_id
+  name                        = var.public_import_logs_bucket
+  location                    = var.resource_location
   uniform_bucket_level_access = true
 
   lifecycle {

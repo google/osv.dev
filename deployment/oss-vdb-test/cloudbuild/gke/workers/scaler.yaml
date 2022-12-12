@@ -18,7 +18,8 @@ metadata:
   name: pubsub
 spec:
   minReplicas: 1
-  maxReplicas: 600
+  # oss-vdb-test does not have local SSD quota to support 600 workers
+  maxReplicas: 50
   metrics:
   - external:
       metric:

@@ -199,7 +199,7 @@ resource "google_project_iam_member" "deployment_service" {
 
 # Storage Buckets
 
-# TODO(michaelkedar): naming of public buckes
+# TODO(michaelkedar): naming of public buckets
 # resource "google_storage_bucket" "osv_public_import_logs" {
 #   project = var.project_id
 #   name = "osv-public-import-logs"

@@ -25,6 +25,7 @@ from google.cloud import ndb
 import pygit2
 
 import osv
+from osv import ecosystems
 from osv import tests
 import oss_fuzz
 import worker
@@ -624,6 +625,10 @@ class UpdateTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
     osv.ecosystems._ecosystems.update({
         'ecosystem': osv.ecosystems.OrderingUnsupportedEcosystem(),
     })
+
+    if os.getenv('DEPSDEV_API_KEY'):
+      ecosystems.use_deps_dev = True
+      ecosystems.deps_dev_api_key = os.getenv('DEPSDEV_API_KEY')
 
   def tearDown(self):
     self.tmp_dir.cleanup()

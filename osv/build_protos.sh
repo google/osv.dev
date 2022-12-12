@@ -16,3 +16,4 @@
 
 cd ../
 python -m grpc_tools.protoc --python_out=. --proto_path=. osv/vulnerability.proto
+python -m grpc_tools.protoc --python_out=. --grpc_python_out=. --proto_path=. osv/deps_dev.proto

@@ -8,7 +8,10 @@ The official project id of OSV is `oss-vdb`.
 
 ## Terraform
 
-In this directory (`/deployment`):
+In directory `/deployment/terraform`:
+
+The `variables.tf` file defines variables used in this project.
+The `terraform.tfvars` file assigns these values for the `oss-vdb-test` project.
 
 Initialise terraform:
 ```bash
@@ -95,6 +98,16 @@ gcloud beta builds submit . --project=<PROJECT_ID> --substitutions=COMMIT_SHA=<T
 This might time out if running the first time on a newly-created cluster.
 It seems to trigger an auto-repair on the cluster. Running the command again
 after the auto-repair finishes should work correctly.
+
+## Quotas
+
+It doesn't look like GCP Quota increase requests can be automated.
+
+Things that have been manually set:
+- Compute Engine
+  - CPUs => 1000
+  <!-- - Local SSD => 400 TB -->
+  - Pesistent Disk SSD => 50 TB
 
 ## Still TODO
 - Refactor terraform files.

@@ -76,7 +76,9 @@ class Ecosystem(ABC):
   def next_version(self, package, version):
     """Get the next version after the given version."""
     versions = self.enumerate_versions(package, version, fixed=None)
-    if versions and versions[0] != version:
+    # Check if the key used for sorting is equal as sometimes different
+    # strings could evaluate to the same version.
+    if versions and self.sort_key(versions[0]) != self.sort_key(version):
       # Version does not exist, so use the first one that would sort
       # after it (which is what enumerate_versions returns).
       return versions[0]
@@ -432,6 +434,10 @@ class Alpine(Ecosystem):
   _BRANCH_SUFFIX = '-stable'
   alpine_release_ver: str
   _GIT_REPO_PATH = 'version_enum/aports/'
+  # Sometimes (2 or 3 packages) APKBUILD files are a bash script and version
+  # is actually stored in variables. _kver is the common variable name.
+  _PKGVER_ALIASES = ('+pkgver=', '+_kver=')
+  _PKGREL_ALIASES = ('+pkgrel=', '+_krel=')
 
   def __init__(self, alpine_release_ver: str):
     self.alpine_release_ver = alpine_release_ver
@@ -445,39 +451,54 @@ class Alpine(Ecosystem):
   @staticmethod
   def _process_git_log(output: str) -> list:
     """Takes git log diff output,
-    finds all changes to pkgver and outputs that in an unsorted list"""
+    finds all changes to pkgver and outputs that in an unsorted list
+    """
     all_versions = set()
     lines = [
-        x for x in output.splitlines() if len(x) == 0 or x.startswith('+pkgver')
+        x for x in output.splitlines()
+        if len(x) == 0 or x.startswith(Alpine._PKGVER_ALIASES) or
+        x.startswith(Alpine._PKGREL_ALIASES)
     ]
     # Reverse so that it's in chronological order.
     # The following loop also expects this order.
     lines.reverse()
 
     current_ver = None
+    current_rel = None
 
-    for x in lines:
-      if len(x) == 0:
-        if current_ver is None:
+    def clean_versions(ver: str) -> str:
+      ver = ver.split(' #')[0]  # Remove comment lines
+      ver = ver.strip(' "\'')  # Remove (occasional) quotes
+      ver = ver.removeprefix('r')
+      return ver
+
+    for line in lines:
+      if not line:
+        if not current_ver or not current_rel:
           continue
 
-        current_ver = current_ver.split(' #')[0]  # Remove comment lines
-        current_ver = current_ver.strip(' "\'')  # Remove (occasional) quotes
+        current_ver = clean_versions(current_ver)
+        current_rel = clean_versions(current_rel)
         # Ignore occasional version that is still not valid.
-        if AlpineLinuxVersion.is_valid(current_ver):
-          all_versions.add(current_ver)
+        if AlpineLinuxVersion.is_valid(current_ver) and current_rel.isdigit():
+          all_versions.add(current_ver + '-r' + current_rel)
         else:
-          logging.warning('Alpine version "%s" is not valid', current_ver)
+          logging.warning('Alpine version "%s" - "%s" is not valid',
+                          current_ver, current_rel)
         continue
 
-      x_split = x.split('=', 1)
+      x_split = line.split('=', 1)
       if len(x_split) != 2:
         # Skip the occasional invalid versions
         continue
 
-      ver = x_split[1]
-      if x.startswith('+pkgver'):
-        current_ver = ver
+      num = x_split[1]
+      if line.startswith(Alpine._PKGVER_ALIASES):
+        current_ver = num
+        continue
+
+      if line.startswith(Alpine._PKGREL_ALIASES):
+        current_rel = num
         continue
 
     # Return unsorted list of versions
@@ -518,9 +539,17 @@ class Alpine(Ecosystem):
       raise EnumerateError('Cannot find package in aports')
 
     relative_path = os.path.relpath(directories[0], checkout_dir)
-    stdout_data = subprocess.check_output(
-        ['git', 'log', '--oneline', '-L', '/pkgver=/,+2:' + relative_path],
-        cwd=checkout_dir).decode('utf-8')
+
+    regex_test = '\\|'.join([
+        '\\(' + x.removeprefix('+') + '\\)'
+        for x in Alpine._PKGVER_ALIASES + Alpine._PKGREL_ALIASES
+    ])
+
+    stdout_data = subprocess.check_output([
+        'git', 'log', '--oneline', '-L',
+        '/' + regex_test + '/,+1:' + relative_path
+    ],
+                                          cwd=checkout_dir).decode('utf-8')
 
     versions = Alpine._process_git_log(stdout_data)
     return versions

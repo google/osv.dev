@@ -76,6 +76,8 @@ class Ecosystem(ABC):
   def next_version(self, package, version):
     """Get the next version after the given version."""
     versions = self.enumerate_versions(package, version, fixed=None)
+    # Check if the key used for sorting is equal as sometimes different
+    # strings could evaluate to the same version.
     if versions and self.sort_key(versions[0]) != self.sort_key(version):
       # Version does not exist, so use the first one that would sort
       # after it (which is what enumerate_versions returns).
@@ -462,7 +464,7 @@ class Alpine(Ecosystem):
     lines.reverse()
 
     current_ver = None
-    current_rel = '0'
+    current_rel = None
 
     def clean_versions(ver: str) -> str:
       ver = ver.split(' #')[0]  # Remove comment lines
@@ -470,9 +472,9 @@ class Alpine(Ecosystem):
       ver = ver.removeprefix('r')
       return ver
 
-    for x in lines:
-      if len(x) == 0:
-        if current_ver is None or current_rel is None:
+    for line in lines:
+      if not line:
+        if not current_ver or not current_rel:
           continue
 
         current_ver = clean_versions(current_ver)
@@ -485,17 +487,17 @@ class Alpine(Ecosystem):
                           current_ver, current_rel)
         continue
 
-      x_split = x.split('=', 1)
+      x_split = line.split('=', 1)
       if len(x_split) != 2:
         # Skip the occasional invalid versions
         continue
 
       num = x_split[1]
-      if x.startswith(Alpine._PKGVER_ALIASES):
+      if line.startswith(Alpine._PKGVER_ALIASES):
         current_ver = num
         continue
 
-      if x.startswith(Alpine._PKGREL_ALIASES):
+      if line.startswith(Alpine._PKGREL_ALIASES):
         current_rel = num
         continue
 

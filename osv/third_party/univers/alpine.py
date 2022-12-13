@@ -4,6 +4,8 @@
 #
 # Visit https://aboutcode.org and
 # https://github.com/nexB/univers for support and download.
+
+# Modified to support revisions in the form of <ver>-r<rev-num>
 import attr
 import re
 
@@ -26,7 +28,7 @@ def is_valid_alpine_version(s: str):
   >>> is_valid_alpine_version("1.2.3")
   True
   >>> is_valid_alpine_version("02-r1")
-  False
+  True
   """
   search = AlpineLinuxVersion.version_extractor.search(s)
   if not search:

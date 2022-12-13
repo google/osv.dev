@@ -181,17 +181,17 @@ class GetNextVersionTest(unittest.TestCase):
     ecosystem = ecosystems.get('Alpine:v3.16')
     self.assertEqual(ensure_updated_checkout_mock.call_count, 0)
     # Tests that next version and version enumeration generally works
-    self.assertEqual('1.14.0', ecosystem.next_version('nginx', '1.12.2'))
+    self.assertEqual('1.12.2-r1', ecosystem.next_version('nginx', '1.12.2'))
     self.assertEqual(ensure_updated_checkout_mock.call_count, 1)
-    self.assertEqual('1.16.1', ecosystem.next_version('nginx', '1.16.0'))
+    self.assertEqual('1.16.1-r0', ecosystem.next_version('nginx', '1.16.0-r4'))
     # Second call should use cache, so call count should not increase
     self.assertEqual(ensure_updated_checkout_mock.call_count, 1)
 
     # Check letter suffixes clone correctly
-    self.assertEqual('2.78c', ecosystem.next_version('blender', '2.78a'))
+    self.assertEqual('2.78c-r0', ecosystem.next_version('blender', '2.78a-r1'))
 
     self.assertGreater(
-        ecosystem.sort_key('1.13.2'), ecosystem.sort_key('1.13.2_alpha'))
+        ecosystem.sort_key('1.13.2-r0'), ecosystem.sort_key('1.13.2_alpha'))
 
     ecosystems.set_cache(None)
 
@@ -253,4 +253,4 @@ class GetNextVersionTest(unittest.TestCase):
 
 
 if __name__ == '__main__':
-  unittest.main()
+  unittest.main(failfast=True)

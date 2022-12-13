@@ -100,10 +100,10 @@ after the auto-repair finishes should work correctly.
 
 It doesn't look like GCP Quota increase requests can be automated.
 
-Things that have been manually set:
+Things that have been manually set on `oss-vdb-test`:
 - Compute Engine
   - CPUs => 1000
-  <!-- - Local SSD => 400 TB -->
+  - Local SSD => 100 TB
   - Pesistent Disk SSD => 50 TB
 
 ## Still TODO

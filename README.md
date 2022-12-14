@@ -103,14 +103,14 @@ Detailed documentation for using the API can be found at
 
 ## Using the scanner
 
-We provide a Go based tool that will scan your
-dependencies, and check them against the OSV database for known vulnerabilities
-via the OSV API.
+We provide a Go based tool that will scan your dependencies, and check them
+against the OSV database for known vulnerabilities via the OSV API.
 
 Currently it is able to scan various lockfiles, debian docker containers, SPDX
 and CycloneDB SBOMs, and git repositories.
 
-The scanner is located in it's [own repository here](https://github.com/google/osv-scanner).
+The scanner is located in it's
+[own repository here](https://github.com/google/osv-scanner).
 
 ## Architecture
 
@@ -145,6 +145,7 @@ tools and unsupported by the core OSV maintainers.
     that uses the OSV database.
 -   [Rust client library](https://github.com/gcmurphy/osv)
 -   [Golang support for the schema](https://pkg.go.dev/golang.org/x/vuln/osv)
+-   [pip-audit](https://pypi.org/project/pip-audit/)
 -   [.NET client library and support for the schema](https://github.com/JamieMagee/osv.net)
 -   [EZE-CLI: The one stop shop for security testing in modern development](https://github.com/RiverSafeUK/eze-cli)
 -   [OSS Review Toolkit](https://github.com/oss-review-toolkit/ort)
@@ -152,6 +153,11 @@ tools and unsupported by the core OSV maintainers.
     advisory databases](https://github.com/twu/skjold)
 -   [Cortex XSOAR](https://github.com/demisto/content)
 -   [Dependency-Track](https://github.com/DependencyTrack/dependency-track)
+-   [dep-scan](https://github.com/AppThreat/dep-scan)
+-   [bomber](https://github.com/devops-kung-fu/bomber)
+-   [it-depends](https://github.com/trailofbits/it-depends)
+
+Feel free to send a PR to add your project here.
 
 ## Contributing
 

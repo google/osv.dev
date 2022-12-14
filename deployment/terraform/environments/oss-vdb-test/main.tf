@@ -1,7 +1,9 @@
-module osv_test {
+module "osv_test" {
   source = "../../modules/osv"
 
   project_id = "oss-vdb-test"
+
+  public_import_logs_bucket = "osv-test-public-import-logs"
 
   resource_location = "US"
   resource_region   = "us-central1"
@@ -11,7 +13,7 @@ module osv_test {
 
 terraform {
   backend "gcs" {
-    bucket  = "oss-vdb-tf"
-    prefix  = "oss-vdb-test"
+    bucket = "oss-vdb-tf"
+    prefix = "oss-vdb-test"
   }
 }

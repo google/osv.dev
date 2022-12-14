@@ -31,12 +31,10 @@ import pygit2
 import osv
 
 DEFAULT_WORK_DIR = '/work'
-PUBLIC_LOGGING_BUCKET = 'osv-public-import-logs'
+DEFAULT_PUBLIC_LOGGING_BUCKET = 'osv-public-import-logs'
 
 _BUG_REDO_DAYS = 14
-_PROJECT = 'oss-vdb'
-_TASKS_TOPIC = 'projects/{project}/topics/{topic}'.format(
-    project=_PROJECT, topic='tasks')
+_TASKS_TOPIC = 'tasks'
 _OSS_FUZZ_EXPORT_BUCKET = 'oss-fuzz-osv-vulns'
 _EXPORT_WORKERS = 32
 _NO_UPDATE_MARKER = 'OSV-NO-UPDATE'
@@ -63,9 +61,9 @@ def utcnow():
 
 
 def replace_importer_log(client: storage.Client, source_name: str,
-                         import_failure_logs: [str]):
+                         bucket_name: str, import_failure_logs: [str]):
   """Replace the public importer logs with the new one."""
-  bucket: storage.Bucket = client.bucket(PUBLIC_LOGGING_BUCKET)
+  bucket: storage.Bucket = client.bucket(bucket_name)
   upload_string = '--- ' + datetime.datetime.utcnow().isoformat() + ' ---\n'
   upload_string += '\n'.join(import_failure_logs)
   bucket.blob(source_name).upload_from_string(upload_string)
@@ -75,11 +73,15 @@ class Importer:
   """Importer."""
 
   def __init__(self, ssh_key_public_path, ssh_key_private_path, work_dir,
-               oss_fuzz_export_bucket, strict_validation: bool):
+               public_log_bucket, oss_fuzz_export_bucket,
+               strict_validation: bool):
     self._ssh_key_public_path = ssh_key_public_path
     self._ssh_key_private_path = ssh_key_private_path
     self._work_dir = work_dir
     self._publisher = pubsub_v1.PublisherClient()
+    project = os.environ['GOOGLE_CLOUD_PROJECT']
+    self._tasks_topic = self._publisher.topic_path(project, _TASKS_TOPIC)
+    self._public_log_bucket = public_log_bucket
     self._oss_fuzz_export_bucket = oss_fuzz_export_bucket
 
     self._sources_dir = os.path.join(self._work_dir, 'sources')
@@ -115,7 +117,7 @@ class Importer:
                                  deleted=False):
     """Request analysis."""
     self._publisher.publish(
-        _TASKS_TOPIC,
+        self._tasks_topic,
         data=b'',
         type='update',
         source=source_repo.name,
@@ -126,7 +128,7 @@ class Importer:
   def _request_internal_analysis(self, bug):
     """Request internal analysis."""
     self._publisher.publish(
-        _TASKS_TOPIC,
+        self._tasks_topic,
         data=b'',
         type='impact',
         source_id=bug.source_id,
@@ -319,7 +321,7 @@ class Importer:
                                       changed_entry)
 
     replace_importer_log(storage.Client(), source_repo.name,
-                         import_failure_logs)
+                         self._public_log_bucket, import_failure_logs)
     source_repo.last_synced_hash = str(repo.head.target)
     source_repo.put()
 
@@ -395,7 +397,8 @@ class Importer:
                        source_repo.bucket, cv[1])
           self._request_analysis_external(source_repo, cv[0], cv[1])
 
-    replace_importer_log(storage_client, source_repo.name, import_failure_logs)
+    replace_importer_log(storage_client, source_repo.name,
+                         self._public_log_bucket, import_failure_logs)
     source_repo.last_update_date = utcnow().date()
     source_repo.put()
 
@@ -466,6 +469,10 @@ def main():
   parser = argparse.ArgumentParser(description='Importer')
   parser.add_argument(
       '--work_dir', help='Working directory', default=DEFAULT_WORK_DIR)
+  parser.add_argument(
+      '--public_log_bucket',
+      help="Public logging bucket",
+      default=DEFAULT_PUBLIC_LOGGING_BUCKET)
   parser.add_argument('--ssh_key_public', help='Public SSH key path')
   parser.add_argument('--ssh_key_private', help='Private SSH key path')
   parser.add_argument(
@@ -479,7 +486,8 @@ def main():
   os.environ['TMPDIR'] = tmp_dir
 
   importer = Importer(args.ssh_key_public, args.ssh_key_private, args.work_dir,
-                      _OSS_FUZZ_EXPORT_BUCKET, args.strict_validation)
+                      args.public_log_bucket, _OSS_FUZZ_EXPORT_BUCKET,
+                      args.strict_validation)
   importer.run()
 
 

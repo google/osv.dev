@@ -74,6 +74,8 @@ class ImporterTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
         ignore_patterns=['.*IGNORE.*'])
     self.source_repo.put()
 
+    self.tasks_topic = f'projects/{tests.TEST_PROJECT_ID}/topics/tasks'
+
   def tearDown(self):
     shutil.rmtree(self.tmp_dir, ignore_errors=True)
 
@@ -154,7 +156,8 @@ class ImporterTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
     self.mock_repo.commit('User', 'user@email')
 
     imp = importer.Importer('fake_public_key', 'fake_private_key', self.tmp_dir,
-                            'bucket', True)
+                            importer.DEFAULT_PUBLIC_LOGGING_BUCKET, 'bucket',
+                            True)
     imp.run()
 
     repo = pygit2.Repository(self.remote_source_repo_path)
@@ -168,7 +171,7 @@ class ImporterTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
 
     mock_publish.assert_has_calls([
         mock.call(
-            'projects/oss-vdb/topics/tasks',
+            self.tasks_topic,
             data=b'',
             deleted='false',
             original_sha256=('874535768a62eb9dc4f3ea7acd9a4601'
@@ -203,11 +206,13 @@ class ImporterTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
     self.mock_repo.commit('User', 'user@email')
 
     imp = importer.Importer('fake_public_key', 'fake_private_key', self.tmp_dir,
-                            'bucket', True)
+                            importer.DEFAULT_PUBLIC_LOGGING_BUCKET, 'bucket',
+                            True)
     imp.run()
 
     mock_publish.assert_not_called()
-    bucket = self.mock_storage_client().bucket(importer.PUBLIC_LOGGING_BUCKET)
+    bucket = self.mock_storage_client().bucket(
+        importer.DEFAULT_PUBLIC_LOGGING_BUCKET)
     expected_log = bucket.blob().upload_from_string.call_args[0][0]
     self.assertIn('Failed to parse vulnerability', expected_log)
 
@@ -224,7 +229,8 @@ class ImporterTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
     self.source_repo.put()
 
     imp = importer.Importer('fake_public_key', 'fake_private_key', self.tmp_dir,
-                            'bucket', True)
+                            importer.DEFAULT_PUBLIC_LOGGING_BUCKET, 'bucket',
+                            True)
     imp.run()
 
     mock_publish.assert_not_called()
@@ -283,12 +289,13 @@ class ImporterTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
         timestamp=datetime.datetime(2020, 1, 1, 0, 0, 0, 0)).put()
 
     imp = importer.Importer('fake_public_key', 'fake_private_key', self.tmp_dir,
-                            'bucket', True)
+                            importer.DEFAULT_PUBLIC_LOGGING_BUCKET, 'bucket',
+                            True)
     imp.run()
 
     mock_publish.assert_has_calls([
         mock.call(
-            'projects/oss-vdb/topics/tasks',
+            self.tasks_topic,
             data=b'',
             deleted='false',
             original_sha256=('874535768a62eb9dc4f3ea7acd9a4601'
@@ -297,7 +304,7 @@ class ImporterTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
             source='oss-fuzz',
             type='update'),
         mock.call(
-            'projects/oss-vdb/topics/tasks',
+            self.tasks_topic,
             allocated_id='OSV-2021-1339',
             data=b'',
             source_id='oss-fuzz:124',
@@ -325,7 +332,8 @@ class ImporterTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
         timestamp=datetime.datetime(2020, 1, 1, 0, 0, 0, 0)).put()
 
     imp = importer.Importer('fake_public_key', 'fake_private_key', self.tmp_dir,
-                            'bucket', True)
+                            importer.DEFAULT_PUBLIC_LOGGING_BUCKET, 'bucket',
+                            True)
     imp.run()
 
   def test_no_updates(self):
@@ -334,7 +342,8 @@ class ImporterTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
     self.mock_repo.commit('User', 'user@email', 'message. OSV-NO-UPDATE')
 
     imp = importer.Importer('fake_public_key', 'fake_private_key', self.tmp_dir,
-                            'bucket', True)
+                            importer.DEFAULT_PUBLIC_LOGGING_BUCKET, 'bucket',
+                            True)
     imp.run()
 
   def test_ignore(self):
@@ -343,7 +352,8 @@ class ImporterTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
     self.mock_repo.commit('User', 'user@email', 'message.')
 
     imp = importer.Importer('fake_public_key', 'fake_private_key', self.tmp_dir,
-                            'bucket', True)
+                            importer.DEFAULT_PUBLIC_LOGGING_BUCKET, 'bucket',
+                            True)
     imp.run()
 
 
@@ -382,6 +392,8 @@ class BucketImporterTest(unittest.TestCase):
         import_last_modified=datetime.datetime(2014, 9, 20, 8, 18, 7, 0),
     ).put()
 
+    self.tasks_topic = f'projects/{tests.TEST_PROJECT_ID}/topics/tasks'
+
   def tearDown(self):
     shutil.rmtree(self.tmp_dir, ignore_errors=True)
 
@@ -392,12 +404,13 @@ class BucketImporterTest(unittest.TestCase):
     """Test bucket updates."""
 
     imp = importer.Importer('fake_public_key', 'fake_private_key', self.tmp_dir,
-                            'bucket', True)
+                            importer.DEFAULT_PUBLIC_LOGGING_BUCKET, 'bucket',
+                            True)
 
     imp.run()
     mock_publish.assert_has_calls([
         mock.call(
-            'projects/oss-vdb/topics/tasks',
+            self.tasks_topic,
             data=b'',
             type='update',
             source='bucket',
@@ -406,7 +419,7 @@ class BucketImporterTest(unittest.TestCase):
                              '1f7fb7de3b3a33de94ebcc7bd0f23a14'),
             deleted='false'),
         mock.call(
-            'projects/oss-vdb/topics/tasks',
+            self.tasks_topic,
             data=b'',
             type='update',
             source='bucket',
@@ -418,7 +431,7 @@ class BucketImporterTest(unittest.TestCase):
 
     # Test this entry is not published
     dsa_call = mock.call(
-        'projects/oss-vdb/topics/tasks',
+        self.tasks_topic,
         data=b'',
         type='update',
         source='bucket',
@@ -429,7 +442,7 @@ class BucketImporterTest(unittest.TestCase):
 
     # Test invalid entry is not published
     invalid_call = mock.call(
-        'projects/oss-vdb/topics/tasks',
+        self.tasks_topic,
         data=b'',
         type='update',
         source='bucket',
@@ -451,13 +464,14 @@ class BucketImporterTest(unittest.TestCase):
     self.source_repo.put()
 
     imp = importer.Importer('fake_public_key', 'fake_private_key', self.tmp_dir,
-                            'bucket', True)
+                            importer.DEFAULT_PUBLIC_LOGGING_BUCKET, 'bucket',
+                            True)
 
     imp.run()
 
     mock_publish.assert_has_calls([
         mock.call(
-            'projects/oss-vdb/topics/tasks',
+            self.tasks_topic,
             data=b'',
             type='update',
             source='bucket',
@@ -472,7 +486,7 @@ class BucketImporterTest(unittest.TestCase):
     imp.run()
 
     dsa_call = mock.call(
-        'projects/oss-vdb/topics/tasks',
+        self.tasks_topic,
         data=b'',
         type='update',
         source='bucket',

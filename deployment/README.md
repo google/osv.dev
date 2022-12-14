@@ -53,9 +53,19 @@ kubectl create clusterrolebinding cluster-admin-binding \
 kubectl apply -f https://raw.githubusercontent.com/GoogleCloudPlatform/k8s-stackdriver/master/custom-metrics-stackdriver-adapter/deploy/production/adapter_new_resource_model.yaml
 ```
 
+## Build and deploy remote builds to oss-vdb-test
+Inside `deployment/oss-vdb-test/cloudbuild/`, run
+
+```bash
+gcloud beta builds submit . --project=oss-vdb-test --substitutions=COMMIT_SHA=<COMMIT_SHA>
+```
+
+Replacing <COMMIT_SHA> with the hash of the commit in google/osv.dev to deploy.
+
+
 ## Submit local builds to container registry
 
-Currently, only worker is implemented.
+Currently, only worker and importer are implemented.
 
 If `GOOGLE_CLOUD_PROJECT` is not set, the project ID will default to `oss-vdb`.
 
@@ -71,12 +81,14 @@ Then, inside `docker/worker/`
 
 ## Deploy builds to cluster
 
-First, edit the image path in `deployment/oss-vdb-test/cloudbuild/gke/workers/workers.yaml` to match the project ID:
+First, edit the image path in `deployment/oss-vdb-test/cloudbuild/gke/workers/workers.yaml` and `deployment/oss-vdb-test/cloudbuild/gke/importer/importer.yaml` to match the project ID:
 
 ```yaml
-        # gcr.io/<PROJECT_ID>/[...] must match the build project id.
-        # TODO(michaelkedar): Investigate dynamically setting this. [kustomize]
+        # in worker.yaml
         image: gcr.io/<PROJECT_ID>/worker:latest
+
+        # in importer.yaml
+        image: gcr.io/<PROJECT_ID>/importer:latest
 ```
 
 e.g. for `oss-vdb-test`:
@@ -86,7 +98,14 @@ e.g. for `oss-vdb-test`:
 
 (TODO: Do this automatically with [kustomize](https://kubernetes.io/docs/tasks/manage-kubernetes-objects/kustomization/))
 
+
+(Then, to deploy with gcloud builds)
+
 Then, inside `deployment/oss-vdb-test/cloudbuild/`
+
+Manually modify `cloudbuild.yaml` to remove image building steps
+
+Then run
 
 ```bash
 gcloud beta builds submit . --project=<PROJECT_ID> --substitutions=COMMIT_SHA=<TAG>
@@ -100,10 +119,10 @@ after the auto-repair finishes should work correctly.
 
 It doesn't look like GCP Quota increase requests can be automated.
 
-Things that have been manually set:
+Things that have been manually set on `oss-vdb-test`:
 - Compute Engine
   - CPUs => 1000
-  <!-- - Local SSD => 400 TB -->
+  - Local SSD => 100 TB
   - Pesistent Disk SSD => 50 TB
 
 ## Still TODO

@@ -89,7 +89,7 @@ func (vp VendorProduct) MarshalText() (text []byte, err error) {
 type VendorProductToRepoMap map[VendorProduct][]string
 
 const (
-	CPEDictionaryDefault = "cve_jsons/nvdcpematch-1.0.json"
+	CPEDictionaryDefault = "cve_jsons/official-cpe-dictionary_v2.3.xml"
 	OutputDirDefault     = "."
 	projectId            = "oss-vdb"
 )

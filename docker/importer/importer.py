@@ -470,10 +470,9 @@ def main():
   parser.add_argument(
       '--work_dir', help='Working directory', default=DEFAULT_WORK_DIR)
   parser.add_argument(
-    '--log_bucket',
-    help="Public logging bucket",
-    default=DEFAULT_PUBLIC_LOGGING_BUCKET
-  )
+      '--log_bucket',
+      help="Public logging bucket",
+      default=DEFAULT_PUBLIC_LOGGING_BUCKET)
   parser.add_argument('--ssh_key_public', help='Public SSH key path')
   parser.add_argument('--ssh_key_private', help='Private SSH key path')
   parser.add_argument(

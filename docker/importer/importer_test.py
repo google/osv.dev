@@ -211,7 +211,8 @@ class ImporterTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
     imp.run()
 
     mock_publish.assert_not_called()
-    bucket = self.mock_storage_client().bucket(importer.DEFAULT_PUBLIC_LOGGING_BUCKET)
+    bucket = self.mock_storage_client().bucket(
+        importer.DEFAULT_PUBLIC_LOGGING_BUCKET)
     expected_log = bucket.blob().upload_from_string.call_args[0][0]
     self.assertIn('Failed to parse vulnerability', expected_log)
 

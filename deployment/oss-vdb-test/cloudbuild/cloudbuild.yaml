@@ -1,7 +1,7 @@
 steps:
 # Checkout at specified commit.
 - name: gcr.io/cloud-builders/git
-  args: ['clone', 'https://github.com/michaelkedar/osv.dev.git']
+  args: ['clone', 'https://github.com/google/osv.dev.git']
 - name: gcr.io/cloud-builders/git
   args: ['checkout', '$COMMIT_SHA']
   dir: 'osv.dev'

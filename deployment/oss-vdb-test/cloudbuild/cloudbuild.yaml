@@ -26,9 +26,9 @@ steps:
 - name: gcr.io/cloud-builders/docker
   args: ['build', '-t', 'gcr.io/$PROJECT_ID/importer', '-t', 'gcr.io/$PROJECT_ID/importer:$COMMIT_SHA', '--build-arg', 'PROJECT=$PROJECT_ID', '.']
   dir: 'osv.dev/docker/importer'
-# - name: gcr.io/cloud-builders/docker
-#   args: ['build', '-t', 'gcr.io/$PROJECT_ID/exporter', '-t', 'gcr.io/$PROJECT_ID/exporter:$COMMIT_SHA', '--build-arg', 'PROJECT=$PROJECT_ID', '.']
-#   dir: 'osv.dev/docker/exporter'
+- name: gcr.io/cloud-builders/docker
+  args: ['build', '-t', 'gcr.io/$PROJECT_ID/exporter', '-t', 'gcr.io/$PROJECT_ID/exporter:$COMMIT_SHA', '--build-arg', 'PROJECT=$PROJECT_ID', '.']
+  dir: 'osv.dev/docker/exporter'
 - name: gcr.io/cloud-builders/docker
   args: ['push', 'gcr.io/$PROJECT_ID/worker:$COMMIT_SHA']
 - name: gcr.io/cloud-builders/docker
@@ -37,10 +37,10 @@ steps:
   args: ['push', 'gcr.io/$PROJECT_ID/importer:$COMMIT_SHA']
 - name: gcr.io/cloud-builders/docker
   args: ['push', 'gcr.io/$PROJECT_ID/importer']
-# - name: gcr.io/cloud-builders/docker
-#   args: ['push', 'gcr.io/$PROJECT_ID/exporter:$COMMIT_SHA']
-# - name: gcr.io/cloud-builders/docker
-#   args: ['push', 'gcr.io/$PROJECT_ID/exporter']
+- name: gcr.io/cloud-builders/docker
+  args: ['push', 'gcr.io/$PROJECT_ID/exporter:$COMMIT_SHA']
+- name: gcr.io/cloud-builders/docker
+  args: ['push', 'gcr.io/$PROJECT_ID/exporter']
 # Apply GKE configs.
 - name: gcr.io/cloud-builders/gke-deploy
   args: ['run', '--filename=workers', '--image=gcr.io/$PROJECT_ID/worker:$COMMIT_SHA', '--location=us-central1-f', '--cluster=workers', '--output=/tmp', '--timeout=10m0s']
@@ -48,10 +48,9 @@ steps:
 - name: gcr.io/cloud-builders/gke-deploy
   args: ['run', '--filename=importer', '--image=gcr.io/$PROJECT_ID/importer:$COMMIT_SHA', '--location=us-central1-f', '--cluster=workers', '--output=/tmp']
   dir: 'gke'
-# TODO(michaelkedar): exporter
-# - name: gcr.io/cloud-builders/gke-deploy
-#   args: ['run', '--filename=exporter', '--image=gcr.io/$PROJECT_ID/exporter:$COMMIT_SHA', '--location=us-central1-f', '--cluster=workers', '--output=/tmp']
-#   dir: 'gke'
+- name: gcr.io/cloud-builders/gke-deploy
+  args: ['run', '--filename=exporter', '--image=gcr.io/$PROJECT_ID/exporter:$COMMIT_SHA', '--location=us-central1-f', '--cluster=workers', '--output=/tmp']
+  dir: 'gke'
 # TODO(ochang): Debian, indexer.
 # TODO(ochang): API deployment
 timeout: 2400s

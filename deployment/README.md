@@ -65,7 +65,7 @@ Replacing <COMMIT_SHA> with the hash of the commit in google/osv.dev to deploy.
 
 ## Submit local builds to container registry
 
-Currently, only worker and importer are implemented.
+Currently, worker, importer and exporter are implemented.
 
 If `GOOGLE_CLOUD_PROJECT` is not set, the project ID will default to `oss-vdb`.
 
@@ -81,7 +81,7 @@ Then, inside `docker/worker/`
 
 ## Deploy builds to cluster
 
-First, edit the image path in `deployment/oss-vdb-test/cloudbuild/gke/workers/workers.yaml` and `deployment/oss-vdb-test/cloudbuild/gke/importer/importer.yaml` to match the project ID:
+First, edit the image path in `deployment/oss-vdb-test/cloudbuild/gke/workers/workers.yaml`, `.../gke/importer/importer.yaml`, and `.../gke/exporter/exporter.yaml` to match the project ID:
 
 ```yaml
         # in worker.yaml
@@ -89,6 +89,9 @@ First, edit the image path in `deployment/oss-vdb-test/cloudbuild/gke/workers/wo
 
         # in importer.yaml
         image: gcr.io/<PROJECT_ID>/importer:latest
+
+        # in exporter.yaml
+        image: gcr.io/<PROJECT_ID>/exporter:latest
 ```
 
 e.g. for `oss-vdb-test`:

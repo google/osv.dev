@@ -12,7 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-FROM gcr.io/oss-vdb/worker
+ARG PROJECT=oss-vdb
+FROM gcr.io/${PROJECT}/worker
 
 COPY exporter.py /usr/local/bin
 RUN chmod 755 /usr/local/bin/exporter.py

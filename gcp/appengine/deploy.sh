@@ -17,7 +17,7 @@ configs_dir=$1
 shift
 
 for config in $configs_dir/*.yaml; do
-  ln -sf "$config" $dir/$(basename "$config")
+  ln -sf $(realpath "$config") $dir/$(basename "$config")
 done
 
 cd "$dir"

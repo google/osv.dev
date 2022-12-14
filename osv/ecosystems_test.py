@@ -252,5 +252,23 @@ class GetNextVersionTest(unittest.TestCase):
     cache_mock.set.assert_called_once()
 
 
+class EnumerateTest(unittest.TestCase):
+  """Enumerate test."""
+
+  @unittest.skipUnless(os.getenv('DEPSDEV_API_KEY'), 'Requires API key')
+  def test_maven_deps_dev(self):
+    """Test Maven using deps.dev."""
+    ecosystems.use_deps_dev = True
+    ecosystems.deps_dev_api_key = os.getenv('DEPSDEV_API_KEY')
+
+    ecosystem = ecosystems.get('Maven')
+    self.assertEqual(['10.0', '10.0.1', '11.0-rc1', '11.0'],
+                     ecosystem.enumerate_versions(
+                         'com.google.guava:guava', '10.0',
+                         last_affected='11.0'))
+
+    ecosystems.use_deps_dev = False
+
+
 if __name__ == '__main__':
   unittest.main(failfast=True)

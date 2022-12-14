@@ -334,7 +334,8 @@ class Maven(DepsDevMixin):
                          limits=None):
     """Enumerate versions."""
     if use_deps_dev:
-      return self._deps_dev_enumerate(package, introduced, fixed, limits=limits)
+      return self._deps_dev_enumerate(
+          package, introduced, fixed, last_affected, limits=limits)
 
     get_versions = self._get_versions
     if shared_cache:

@@ -298,3 +298,14 @@ resource "google_storage_bucket" "osv_public_import_logs" {
     }
   }
 }
+
+resource "google_storage_bucket" "osv_vulnerabilities_export" {
+  project                     = var.project_id
+  name                        = var.osv_vulnerabilities_bucket
+  location                    = var.resource_location
+  uniform_bucket_level_access = true
+
+  lifecycle {
+    prevent_destroy = true
+  }
+}

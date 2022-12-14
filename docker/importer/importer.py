@@ -470,7 +470,7 @@ def main():
   parser.add_argument(
       '--work_dir', help='Working directory', default=DEFAULT_WORK_DIR)
   parser.add_argument(
-      '--log_bucket',
+      '--public_log_bucket',
       help="Public logging bucket",
       default=DEFAULT_PUBLIC_LOGGING_BUCKET)
   parser.add_argument('--ssh_key_public', help='Public SSH key path')
@@ -486,7 +486,7 @@ def main():
   os.environ['TMPDIR'] = tmp_dir
 
   importer = Importer(args.ssh_key_public, args.ssh_key_private, args.work_dir,
-                      args.log_bucket, _OSS_FUZZ_EXPORT_BUCKET,
+                      args.public_log_bucket, _OSS_FUZZ_EXPORT_BUCKET,
                       args.strict_validation)
   importer.run()
 

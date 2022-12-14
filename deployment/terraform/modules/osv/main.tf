@@ -227,34 +227,34 @@ resource "google_project_iam_member" "deployment_service" {
 # App Engine
 
 resource "google_app_engine_application" "app" {
-  project     = var.project_id
-  location_id = "us-west2"
+  project       = var.project_id
+  location_id   = "us-west2"
   database_type = "CLOUD_DATASTORE_COMPATIBILITY"
 }
 
 # MemoryStore
 resource "google_redis_instance" "west2" {
-  project                  = var.project_id
-  memory_size_gb           = 5
-  name                     = "redis"
-  read_replicas_mode       = "READ_REPLICAS_ENABLED"
-  redis_version            = "REDIS_6_X"
-  region                   = "us-west2"
-  replica_count            = 1
-  tier                     = "STANDARD_HA"
-  reserved_ip_range        = "10.126.238.64/28"
+  project            = var.project_id
+  memory_size_gb     = 5
+  name               = "redis"
+  read_replicas_mode = "READ_REPLICAS_ENABLED"
+  redis_version      = "REDIS_6_X"
+  region             = "us-west2"
+  replica_count      = 1
+  tier               = "STANDARD_HA"
+  reserved_ip_range  = "10.126.238.64/28"
 }
 
 resource "google_redis_instance" "central1" {
-  project                  = var.project_id
-  memory_size_gb           = 16
-  name                     = "redis-central1"
-  read_replicas_mode       = "READ_REPLICAS_ENABLED"
-  redis_version            = "REDIS_6_X"
-  region                   = "us-central1"
-  replica_count            = 2
-  tier                     = "STANDARD_HA"
-  reserved_ip_range        = "10.102.25.208/28"
+  project            = var.project_id
+  memory_size_gb     = 16
+  name               = "redis-central1"
+  read_replicas_mode = "READ_REPLICAS_ENABLED"
+  redis_version      = "REDIS_6_X"
+  region             = "us-central1"
+  replica_count      = 2
+  tier               = "STANDARD_HA"
+  reserved_ip_range  = "10.102.25.208/28"
 }
 
 # Serverless VPC connector
@@ -277,5 +277,24 @@ resource "google_storage_bucket" "osv_public_import_logs" {
 
   lifecycle {
     prevent_destroy = true
+  }
+
+  lifecycle_rule {
+    condition {
+      num_newer_versions = 100
+      with_state         = "ARCHIVED"
+    }
+    action {
+      type = "Delete"
+    }
+  }
+
+  lifecycle_rule {
+    condition {
+      days_since_noncurrent_time = 1
+    }
+    action {
+      type = "Delete"
+    }
   }
 }

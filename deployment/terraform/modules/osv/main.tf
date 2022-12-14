@@ -49,12 +49,12 @@ resource "google_compute_router" "router" {
 }
 
 resource "google_compute_router_nat" "nat_config" {
-  project                            = var.project_id
-  name                               = "nat-config"
-  router                             = google_compute_router.router.name
-  source_subnetwork_ip_ranges_to_nat = "ALL_SUBNETWORKS_ALL_IP_RANGES"
-  nat_ip_allocate_option             = "AUTO_ONLY"
-  region                             = google_compute_router.router.region
+  project                             = var.project_id
+  name                                = "nat-config"
+  router                              = google_compute_router.router.name
+  source_subnetwork_ip_ranges_to_nat  = "ALL_SUBNETWORKS_ALL_IP_RANGES"
+  nat_ip_allocate_option              = "AUTO_ONLY"
+  region                              = google_compute_router.router.region
   enable_endpoint_independent_mapping = false
 }
 
@@ -227,34 +227,34 @@ resource "google_project_iam_member" "deployment_service" {
 # App Engine
 
 resource "google_app_engine_application" "app" {
-  project     = var.project_id
-  location_id = "us-west2"
+  project       = var.project_id
+  location_id   = "us-west2"
   database_type = "CLOUD_DATASTORE_COMPATIBILITY"
 }
 
 # MemoryStore
 resource "google_redis_instance" "west2" {
-  project                  = var.project_id
-  memory_size_gb           = 5
-  name                     = "redis"
-  read_replicas_mode       = "READ_REPLICAS_ENABLED"
-  redis_version            = "REDIS_6_X"
-  region                   = "us-west2"
-  replica_count            = 1
-  tier                     = "STANDARD_HA"
-  reserved_ip_range        = "10.126.238.64/28"
+  project            = var.project_id
+  memory_size_gb     = 5
+  name               = "redis"
+  read_replicas_mode = "READ_REPLICAS_ENABLED"
+  redis_version      = "REDIS_6_X"
+  region             = "us-west2"
+  replica_count      = 1
+  tier               = "STANDARD_HA"
+  reserved_ip_range  = "10.126.238.64/28"
 }
 
 resource "google_redis_instance" "central1" {
-  project                  = var.project_id
-  memory_size_gb           = 16
-  name                     = "redis-central1"
-  read_replicas_mode       = "READ_REPLICAS_ENABLED"
-  redis_version            = "REDIS_6_X"
-  region                   = "us-central1"
-  replica_count            = 2
-  tier                     = "STANDARD_HA"
-  reserved_ip_range        = "10.102.25.208/28"
+  project            = var.project_id
+  memory_size_gb     = 16
+  name               = "redis-central1"
+  read_replicas_mode = "READ_REPLICAS_ENABLED"
+  redis_version      = "REDIS_6_X"
+  region             = "us-central1"
+  replica_count      = 2
+  tier               = "STANDARD_HA"
+  reserved_ip_range  = "10.102.25.208/28"
 }
 
 # Serverless VPC connector
@@ -269,13 +269,32 @@ resource "google_vpc_access_connector" "connector" {
 # Storage Buckets
 
 # TODO(michaelkedar): naming of public buckets
-# resource "google_storage_bucket" "osv_public_import_logs" {
-#   project = var.project_id
-#   name = "osv-public-import-logs"
-#   location = var.resource_location
-#   uniform_bucket_level_access = true
+resource "google_storage_bucket" "osv_public_import_logs" {
+  project                     = var.project_id
+  name                        = var.public_import_logs_bucket
+  location                    = var.resource_location
+  uniform_bucket_level_access = true
 
-#   lifecycle {
-#     prevent_destroy = true
-#   }
-# }
+  lifecycle {
+    prevent_destroy = true
+  }
+
+  lifecycle_rule {
+    condition {
+      num_newer_versions = 100
+      with_state         = "ARCHIVED"
+    }
+    action {
+      type = "Delete"
+    }
+  }
+
+  lifecycle_rule {
+    condition {
+      days_since_noncurrent_time = 1
+    }
+    action {
+      type = "Delete"
+    }
+  }
+}

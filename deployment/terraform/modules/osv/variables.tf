@@ -8,6 +8,11 @@ variable "public_import_logs_bucket" {
   description = "Name of bucket to write importer logs to."
 }
 
+variable "vulnerabilities_export_bucket" {
+  type        = string
+  description = "Name of bucket to export vulnerabilities to."
+}
+
 variable "resource_location" {
   type        = string
   description = "Location for multi-regional resources."

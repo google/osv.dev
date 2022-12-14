@@ -54,7 +54,7 @@ kubectl apply -f https://raw.githubusercontent.com/GoogleCloudPlatform/k8s-stack
 ```
 
 ## Build and deploy remote builds to oss-vdb-test
-Inside `deployment/oss-vdb-test/cloudbuild/`, run
+Inside `deployment/oss-vdb-test/k8s/`, run
 
 ```bash
 gcloud beta builds submit . --project=oss-vdb-test --substitutions=COMMIT_SHA=<COMMIT_SHA>
@@ -81,7 +81,7 @@ Then, inside `docker/worker/`
 
 ## Deploy builds to cluster
 
-First, edit the image path in `deployment/oss-vdb-test/cloudbuild/gke/workers/workers.yaml`, `.../gke/importer/importer.yaml`, and `.../gke/exporter/exporter.yaml` to match the project ID:
+First, edit the image path in `deployment/oss-vdb-test/k8s/gke/workers/workers.yaml`, `.../gke/importer/importer.yaml`, and `.../gke/exporter/exporter.yaml` to match the project ID:
 
 ```yaml
         # in worker.yaml
@@ -104,7 +104,7 @@ e.g. for `oss-vdb-test`:
 
 (Then, to deploy with gcloud builds)
 
-Then, inside `deployment/oss-vdb-test/cloudbuild/`
+Then, inside `deployment/oss-vdb-test/k8s/`
 
 Manually modify `cloudbuild.yaml` to remove image building steps
 

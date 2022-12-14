@@ -1,7 +1,7 @@
 steps:
 # Checkout at specified commit.
 - name: gcr.io/cloud-builders/git
-  args: ['clone', 'https://github.com/google/osv.dev.git']
+  args: ['clone', 'https://github.com/michaelkedar/osv.dev.git']
 - name: gcr.io/cloud-builders/git
   args: ['checkout', '$COMMIT_SHA']
   dir: 'osv.dev'
@@ -43,7 +43,7 @@ steps:
   args: ['push', 'gcr.io/$PROJECT_ID/exporter']
 # Apply GKE configs.
 - name: gcr.io/cloud-builders/gke-deploy
-  args: ['run', '--filename=workers', '--image=gcr.io/$PROJECT_ID/worker:$COMMIT_SHA', '--location=us-central1-f', '--cluster=workers', '--output=/tmp', '--timeout=10m0s']
+  args: ['run', '--filename=workers', '--image=gcr.io/$PROJECT_ID/worker:$COMMIT_SHA', '--location=us-central1-f', '--cluster=workers', '--output=/tmp']
   dir: 'gke'
 - name: gcr.io/cloud-builders/gke-deploy
   args: ['run', '--filename=importer', '--image=gcr.io/$PROJECT_ID/importer:$COMMIT_SHA', '--location=us-central1-f', '--cluster=workers', '--output=/tmp']

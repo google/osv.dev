@@ -1,22 +1,23 @@
 #!/bin/bash -ex
 
-if [ $# -lt 2 ]; then
-  echo "Usage: $0 <tag> <service-name>"
+if [ $# -lt 3 ]; then
+  echo "Usage: $0 <project-id> <tag> <service-name>"
   exit 1
 fi
 
-tag=$1
-name=$2
+project_id=$1
+tag=$2
+name=$3
 
 if [ -z "$CLOUDBUILD" ]; then
   pushd ../../
-  docker build -t "gcr.io/oss-vdb/osv-server:$tag" -f gcp/api/Dockerfile .
-  docker push "gcr.io/oss-vdb/osv-server:$tag"
+  docker build -t "gcr.io/$project_id/osv-server:$tag" -f gcp/api/Dockerfile .
+  docker push "gcr.io/$project_id/osv-server:$tag"
   popd
 fi
 
 gcloud run deploy $name \
   --platform managed \
-  --project=oss-vdb \
+  --project=$project_id \
   --region=us-central1 \
-  --image="gcr.io/oss-vdb/osv-server:$tag"
+  --image="gcr.io/$project_id/osv-server:$tag"

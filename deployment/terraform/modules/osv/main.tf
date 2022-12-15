@@ -30,6 +30,11 @@ resource "google_project_service" "vpcaccess_api" {
   service = "vpcaccess.googleapis.com"
 }
 
+resource "google_project_service" "cloud_run_api" {
+  project = var.project_id
+  service = "run.googleapis.com"
+}
+
 # Network
 
 resource "google_compute_subnetwork" "my_subnet_0" {

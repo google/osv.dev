@@ -15,11 +15,11 @@ https://cloud.google.com/container-registry/docs/advanced-authentication#gcloud-
 ## Staging
 
 ```
-./deploy_backend $(date +"%Y%m%d") osv-grpc-backend-staging
+./deploy_backend oss-vdb $(date +"%Y%m%d") osv-grpc-backend-staging
 ```
 
 ## Production
 
 ```
-./deploy_backend $(date +"%Y%m%d") osv-grpc-backend
+./deploy_backend oss-vdb $(date +"%Y%m%d") osv-grpc-backend
 ```

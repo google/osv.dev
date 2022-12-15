@@ -31,8 +31,7 @@ steps:
   entrypoint: 'bash'
   args: [ '-c', "rm /workspace/service_account.json" ]
 - name: 'gcr.io/oss-vdb/deployment'
-  args: ['bash', '-ex', 'deploy.sh', 'oss-vdb', 'app.yaml', '--no-promote']
-  dir: gcp/appengine
+  args: ['bash', '-ex', 'gcp/appengine/deploy.sh', 'oss-vdb', 'deployment/oss-vdb/gae', 'app.yaml', '--no-promote']
 - name: 'gcr.io/oss-vdb/deployment'
   args: ['bash', '-ex', '../deploy_service_proxy', 'api-staging.osv.dev', 'osv-grpc-v1-staging', 'api_config_staging.yaml']
   dir: gcp/api/v1

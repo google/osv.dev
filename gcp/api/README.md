@@ -23,3 +23,8 @@ https://cloud.google.com/container-registry/docs/advanced-authentication#gcloud-
 ```
 ./deploy_backend oss-vdb $(date +"%Y%m%d") osv-grpc-backend
 ```
+
+## oss-vdb-test Project
+```
+./deploy_backend oss-vdb-test $(date +"%Y%m%d") osv-grpc-backend
+```

@@ -25,7 +25,7 @@ To deploy the service proxy,
 
 ### Test
 ```
-../deploy_service_proxy oss-vdb api-test.osv.dev osv-grpc-v1-test api_config_test.yaml
+../deploy_service_proxy oss-vdb api-test.osv.dev osv-grpc-v1-test /path/to/api_config_test.yaml
 ```
 
 ### Staging
@@ -37,4 +37,10 @@ To deploy the service proxy,
 
 ```
 ../deploy_service_proxy oss-vdb api.osv.dev osv-grpc-v1 /path/to/api_config.yaml
+```
+
+### oss-vdb-test Project
+
+```
+../deploy_service_proxy oss-vdb-test api.osv.dev osv-grpc-v1 /path/to/api_config.yaml
 ```

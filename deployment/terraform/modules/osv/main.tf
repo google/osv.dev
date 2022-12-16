@@ -200,6 +200,12 @@ data "google_app_engine_default_service_account" "default" {
   project = var.project_id
 }
 
+resource "google_project_service_identity" "pubsub" {
+  provider = google-beta
+  project  = var.project_id
+  service  = "pubsub.googleapis.com"
+}
+
 resource "google_project_iam_member" "compute_service" {
   project = var.project_id
   role    = "roles/editor"
@@ -222,6 +228,20 @@ resource "google_project_iam_member" "deployment_service" {
   project = var.project_id
   role    = "roles/editor"
   member  = "serviceAccount:${google_service_account.deployment_service.email}"
+}
+
+resource "google_pubsub_subscription_iam_member" "tasks_service_subscriber" {
+  project      = var.project_id
+  subscription = google_pubsub_subscription.tasks.name
+  role         = "roles/pubsub.subscriber"
+  member       = "serviceAccount:${google_project_service_identity.pubsub.email}"
+}
+
+resource "google_pubsub_topic_iam_member" "failed_tasks_service_publisher" {
+  project = var.project_id
+  topic   = google_pubsub_topic.failed_tasks.name
+  role    = "roles/pubsub.publisher"
+  member  = "serviceAccount:${google_project_service_identity.pubsub.email}"
 }
 
 # App Engine

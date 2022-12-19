@@ -184,10 +184,6 @@ pre {
   }
 
   @media (max-width: $osv-mobile-breakpoint) {
-    .links {
-      display: none;
-    }
-
     .hamburger {
       display: block;
       position: absolute;

@@ -1276,7 +1276,6 @@ class UpdateTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
             ),
         'deleted': 'false',
     }
-    breakpoint()
     task_runner._source_update(message)
 
     actual_result = osv.Bug.get_by_id('CVE-2022-0128')

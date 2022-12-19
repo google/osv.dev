@@ -39,14 +39,20 @@
       </label>
 
       <ul class="tabs">
-        <li class="{{ 'active' if active_section == 'vulnerabilities' else '' }}">
+        <li class="{{ 'active' if active_section == 'vulnerabilities' else '' }} page-link">
           <a href="{{ url_for('frontend_handlers.list_vulnerabilities') }}">Vulnerability Database</a>
         </li>
-        <li class="{{ 'active' if active_section == 'blog' else '' }}">
+        <li class="{{ 'active' if active_section == 'blog' else '' }} page-link">
           <a href="{{ url_for('frontend_handlers.blog') }}">Blog</a>
         </li>
-        <li class="{{ 'active' if active_section == 'about' else '' }}">
+        <li class="{{ 'active' if active_section == 'about' else '' }} page-link">
           <a href="{{ url_for('frontend_handlers.about') }}">About</a>
+        </li>
+
+        <li class="push">
+          <a class="logo-img" href="https://github.com/google/osv.dev" target="_blank">
+            <img class="logo-link" src="/static/img/github-mark-white.svg">
+          </a>
         </li>
       </ul>
     </header>

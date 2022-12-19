@@ -44,7 +44,7 @@ To deploy the service proxy,
 ```
 ../deploy_service_proxy oss-vdb-test osv-grpc-v1-ivqje5d2hq-uc.a.run.app osv-grpc-v1 /path/to/api_config.yaml
 ```
-If creating the endpoint for the first time, the endpoint service needs to be enabled after creation:
-```
-gcloud services enable osv-grpc-v1-ivqje5d2hq-uc.a.run.app
-```
+
+Configuring the Cloud Endpoint requires the Cloud Run service to already exist before running, as it needs the URL.
+
+Some steps in [this tutorial](https://cloud.google.com/endpoints/docs/grpc/set-up-cloud-run-espv2) may be helpful if the API server needs to be recreated from scratch.

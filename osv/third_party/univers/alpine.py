@@ -33,7 +33,7 @@ def is_valid_alpine_version(s: str):
   search = AlpineLinuxVersion.version_extractor.search(s)
   if not search:
     return False
-  
+
   s = search.group(1)
   left, _, _ = s.partition(".")
   # hanlde the suffix case
@@ -149,23 +149,27 @@ class AlpineLinuxVersion(Version):
   # E.g. For this version (1.9.5_p2-r3), the following regex
   # extracts (1.9.5_p2) and (3)
   version_extractor = re.compile(r'(.+?)(?:-r(\d+))?$')
-  
+
   # Some suffixes are not separated with an underscore. E.g. 1.9.5p2
   # This should find them for inserting an underscore (replace with r'\1_\2')
   patch_finder = re.compile(r'(\d+)(p\d+)')
 
   @classmethod
+  def add_underscore(cls, input: str) -> str:
+    return re.sub(cls.patch_finder, r'\1_\2', input, 1)
+
+  @classmethod
   def build_value(cls, string: str):
     search = cls.version_extractor.search(string)
     main_group = search.group(1)
-    main_group_patched = re.sub(cls.patch_finder, r'\1_\2', main_group, 1)
+    main_group_patched = cls.add_underscore(main_group)
     return (main_group_patched, int(search.group(2) or 0))
-
 
   @classmethod
   def is_valid(cls, string):
-    string_patched = re.sub(cls.patch_finder, r'\1_\2', string, 1)
-    return is_valid_alpine_version(string_patched) and gentoo.is_valid(string_patched)
+    string_patched = cls.add_underscore(string)
+    return is_valid_alpine_version(string_patched) and gentoo.is_valid(
+        string_patched)
 
   def __eq__(self, other):
     if not isinstance(other, self.__class__):

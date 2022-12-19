@@ -14,7 +14,7 @@
 
 type: google.api.Service
 config_version: 3
-name: api.osv.dev
+name: osv-grpc-v1-ivqje5d2hq-uc.a.run.app
 title: OSV (v1)
 apis:
   - name: osv.v1.OSV

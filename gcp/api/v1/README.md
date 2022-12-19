@@ -42,5 +42,9 @@ To deploy the service proxy,
 ### oss-vdb-test Project
 
 ```
-../deploy_service_proxy oss-vdb-test api.osv.dev osv-grpc-v1 /path/to/api_config.yaml
+../deploy_service_proxy oss-vdb-test osv-grpc-v1-ivqje5d2hq-uc.a.run.app osv-grpc-v1 /path/to/api_config.yaml
+```
+If creating the endpoint for the first time, the endpoint service needs to be enabled after creation:
+```
+gcloud services enable osv-grpc-v1-ivqje5d2hq-uc.a.run.app
 ```

@@ -12,6 +12,7 @@
       <div class="cta">
         <a class="cta-primary link-button" href="{{ url_for('frontend_handlers.list_vulnerabilities') }}">Search Vulnerability Database</a>
         <a class="cta-primary link-button" href="#use-the-api">Use the API</a>
+        <a class="cta-primary link-button" href="#use-the-cli">CLI Tools</a>
       </div>
     </div>
     <div class="mdc-layout-grid__cell--span-12 ecosystems-section">
@@ -175,8 +176,8 @@ go install github.com/google/osv-scanner/cmd/osv-scanner@v1
         <div class="code-card mdc-layout-grid__cell--span-6 mdc-layout-grid__cell--span-12-tablet">
           <h3 class="code-card-title">Scan SBOM or Lockfiles</h3>
           <pre class="code-card-content" id="example-sbom-scan">
-$GOPATH/bin/osv-scanner --sbom=cycloned-or-spdx-sbom.json
-$GOPATH/bin/osv-scanner --lockfile=package-lock.json
+osv-scanner --sbom=cycloned-or-spdx-sbom.json
+osv-scanner --lockfile=package-lock.json
           </pre>
           <clipboard-copy class="code-card-copy" for="example-sbom-scan">
             <mwc-icon-button class="icon" icon="content_copy"></mwc-icon-button>
@@ -185,7 +186,7 @@ $GOPATH/bin/osv-scanner --lockfile=package-lock.json
         <div class="code-card mdc-layout-grid__cell--span-6 mdc-layout-grid__cell--span-12-tablet">
           <h3 class="code-card-title">Scan directory recursively</h3>
           <pre class="code-card-content" id="example-dir-scan">
-$GOPATH/bin/osv-scanner -r path/to/your/project
+osv-scanner -r path/to/your/project
           </pre>
           <clipboard-copy class="code-card-copy" for="example-dir-scan">
             <mwc-icon-button class="icon" icon="content_copy"></mwc-icon-button>

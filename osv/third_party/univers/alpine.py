@@ -151,20 +151,20 @@ class AlpineLinuxVersion(Version):
   version_extractor = re.compile(r'(.+?)(?:-r(\d+))?$')
   
   # Some suffixes are not separated with an underscore. E.g. 1.9.5p2
-  # This should separate them out
-  patch_extractor = re.compile(r'(\d+)(p\d+)')
+  # This should find them for inserting an underscore (replace with r'\1_\2')
+  patch_finder = re.compile(r'(\d+)(p\d+)')
 
   @classmethod
   def build_value(cls, string: str):
     search = cls.version_extractor.search(string)
     main_group = search.group(1)
-    main_group_patched = re.sub(cls.patch_extractor, r'\1_\2', main_group, 1)
+    main_group_patched = re.sub(cls.patch_finder, r'\1_\2', main_group, 1)
     return (main_group_patched, int(search.group(2) or 0))
 
 
   @classmethod
   def is_valid(cls, string):
-    string_patched = re.sub(cls.patch_extractor, r'\1_\2', string, 1)
+    string_patched = re.sub(cls.patch_finder, r'\1_\2', string, 1)
     return is_valid_alpine_version(string_patched) and gentoo.is_valid(string_patched)
 
   def __eq__(self, other):

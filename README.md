@@ -156,6 +156,8 @@ tools and unsupported by the core OSV maintainers.
 -   [dep-scan](https://github.com/AppThreat/dep-scan)
 -   [bomber](https://github.com/devops-kung-fu/bomber)
 -   [it-depends](https://github.com/trailofbits/it-depends)
+-   [Packj](https://github.com/ossillate-inc/packj)
+-   [Trivy](https://github.com/aquasecurity/trivy)
 
 Feel free to send a PR to add your project here.
 

@@ -134,15 +134,34 @@ pre {
     opacity: 0;
   }
 
+  .logo-link {
+    width: 24px;
+    height: 24px;
+  }
+
+  .tabs {
+    // Remove external link indicator.
+    a.logo-img::after {
+      display: none;
+      background-image: none;
+      content: '';
+    }
+  }
+
   @media (min-width: $osv-mobile-breakpoint+1) {
     .tabs {
+      width: 100%;
       display: flex;
       list-style: none;
       margin: 0;
       gap: 40px;
       font-size: 16px;
 
-      li {
+      .push {
+        margin-left: auto;
+      }
+
+      li.page-link {
         $active-spacing: 6px;
         margin: -$active-spacing 0;
         padding: $active-spacing 0;

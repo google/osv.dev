@@ -186,6 +186,10 @@ class GetNextVersionTest(unittest.TestCase):
     self.assertEqual('1.16.1-r0', ecosystem.next_version('nginx', '1.16.0-r4'))
     # Second call should use cache, so call count should not increase
     self.assertEqual(ensure_updated_checkout_mock.call_count, 1)
+    
+    # Should not throw exception
+    ecosystem.sort_key('1.9.5p2')
+    ecosystem.sort_key('1.9.5p2-r0')
 
     # Check letter suffixes clone correctly
     self.assertEqual('2.78c-r0', ecosystem.next_version('blender', '2.78a-r1'))

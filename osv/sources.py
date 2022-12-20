@@ -166,6 +166,7 @@ def parse_vulnerability_from_dict(data, key_path=None, strict=False):
     jsonschema.validate(data, load_schema())
   except jsonschema.exceptions.ValidationError as e:
     logging.warning('Failed to validate loaded OSV entry: %s', e.message)
+    logging.warning('Invalid data: %s', data)
     if strict:  # Reraise the error if strict
       raise
 

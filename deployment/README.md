@@ -57,7 +57,7 @@ kubectl apply -f https://raw.githubusercontent.com/GoogleCloudPlatform/k8s-stack
 Inside `deployment/oss-vdb-test/k8s/`, run
 
 ```bash
-gcloud beta builds submit . --project=oss-vdb-test --substitutions=COMMIT_SHA=<COMMIT_SHA>
+./deploy.sh <COMMIT_SHA>
 ```
 
 Replacing <COMMIT_SHA> with the hash of the commit in google/osv.dev to deploy.

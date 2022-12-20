@@ -187,6 +187,15 @@ class GetNextVersionTest(unittest.TestCase):
     # Second call should use cache, so call count should not increase
     self.assertEqual(ensure_updated_checkout_mock.call_count, 1)
 
+    # Should not throw exception
+    ecosystem.sort_key('1.9.5p2')
+    ecosystem.sort_key('1.9.5p2-r0')
+
+    self.assertGreater(
+        ecosystem.sort_key('1.9.5p3'), ecosystem.sort_key('1.9.5p2'))
+    self.assertGreater(
+        ecosystem.sort_key('1.9.5p1'), ecosystem.sort_key('1.9.5'))
+
     # Check letter suffixes clone correctly
     self.assertEqual('2.78c-r0', ecosystem.next_version('blender', '2.78a-r1'))
 

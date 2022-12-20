@@ -1274,7 +1274,8 @@ class UpdateTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
     actual_result = osv.Bug.get_by_id('CVE-2022-0128')
 
     # Remove some values that make the diff super unwieldly
-    del actual_result.affected_packages[0].versions
+    for affected in actual_result.affected_packages:
+      del affected.versions
     del actual_result.affected_fuzzy
 
     self.expect_dict_equal('update_bucket_cve', actual_result._to_dict())

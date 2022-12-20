@@ -1232,10 +1232,9 @@ class UpdateTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
     self.expect_dict_equal('update_partly_bad_ecosystem_new',
                            osv.Bug.get_by_id('BLAH-130')._to_dict())
 
-
   def test_update_partly_bad_ecosystem_delete(self):
-    """Test removal of only supported ecosystem in vulnerability with unsupported
-    and supported ecosystems.
+    """Test removal of only supported ecosystem in vulnerability with
+    unsupported and supported ecosystems.
     """
     task_runner = worker.TaskRunner(ndb_client, None, self.tmp_dir.name, None,
                                     None)

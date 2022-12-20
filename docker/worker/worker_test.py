@@ -1233,30 +1233,23 @@ class UpdateTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
                            osv.Bug.get_by_id('BLAH-130')._to_dict())
 
 
-def test_update_partly_bad_ecosystem_delete(self):
-  """Test removal of only supported ecosystem in vulnerability with unsupported
-  and supported ecosystems.
-  """
-  task_runner = worker.TaskRunner(ndb_client, None, self.tmp_dir.name, None,
-                                  None)
-  message = mock.Mock()
-  message.attributes = {
-      'source': 'source',
-      'path': 'BLAH-131.yaml',
-      'original_sha256': _sha256('BLAH-131.yaml'),
-      'deleted': 'false',
-  }
-  task_runner._source_update(message)
+  def test_update_partly_bad_ecosystem_delete(self):
+    """Test removal of only supported ecosystem in vulnerability with unsupported
+    and supported ecosystems.
+    """
+    task_runner = worker.TaskRunner(ndb_client, None, self.tmp_dir.name, None,
+                                    None)
+    message = mock.Mock()
+    message.attributes = {
+        'source': 'source',
+        'path': 'BLAH-131.yaml',
+        'original_sha256': _sha256('BLAH-131.yaml'),
+        'deleted': 'false',
+    }
+    task_runner._source_update(message)
 
-  repo = pygit2.Repository(self.remote_source_repo_path)
-  commit = repo.head.peel()
-
-  self.assertEqual('infra@osv.dev', commit.author.email)
-  self.assertEqual('OSV', commit.author.name)
-  self.assertEqual('Update BLAH-131', commit.message)
-
-  bug = osv.Bug.get_by_id('BLAH-131')
-  self.assertEqual(osv.BugStatus.INVALID, bug.status)
+    bug = osv.Bug.get_by_id('BLAH-131')
+    self.assertEqual(osv.BugStatus.INVALID, bug.status)
 
 
 if __name__ == '__main__':

@@ -1250,6 +1250,36 @@ class UpdateTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
     bug = osv.Bug.get_by_id('BLAH-131')
     self.assertEqual(osv.BugStatus.INVALID, bug.status)
 
+  def test_update_bucket_cve(self):
+    """Test a bucket entry that is a converted CVE and doesn't have an ecosystem."""
+    self.source_repo.type = osv.SourceRepositoryType.BUCKET
+    self.source_repo.bucket = TEST_BUCKET
+    self.source_repo.editable = False
+    self.source_repo.put()
+
+    task_runner = worker.TaskRunner(ndb_client, None, self.tmp_dir.name, None,
+                                    None)
+
+    message = mock.Mock()
+    message.attributes = {
+        'source': 'source',
+        'path': 'a/b/CVE-2022-0128.json',
+        'original_sha256':
+            ('a4060cb842363cb6ae7669057402ccddce21a94ed6cad98234e73305816a86d3'
+            ),
+        'deleted': 'false',
+    }
+    task_runner._source_update(message)
+
+    actual_result = osv.Bug.get_by_id('CVE-2022-0128')
+
+    # Remove some values that make the diff super unwieldly
+    for affected in actual_result.affected_packages:
+      del affected.versions
+    del actual_result.affected_fuzzy
+
+    self.expect_dict_equal('update_bucket_cve', actual_result._to_dict())
+
 
 if __name__ == '__main__':
   os.system('pkill -f datastore')

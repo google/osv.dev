@@ -1233,8 +1233,8 @@ class UpdateTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
                            osv.Bug.get_by_id('BLAH-130')._to_dict())
 
   def test_update_partly_bad_ecosystem_delete(self):
-    """Test removal of only supported ecosystem in vulnerability with unsupported
-    and supported ecosystems.
+    """Test removal of only supported ecosystem in vulnerability with
+    unsupported and supported ecosystems.
     """
     task_runner = worker.TaskRunner(ndb_client, None, self.tmp_dir.name, None,
                                     None)
@@ -1246,13 +1246,6 @@ class UpdateTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
         'deleted': 'false',
     }
     task_runner._source_update(message)
-
-    repo = pygit2.Repository(self.remote_source_repo_path)
-    commit = repo.head.peel()
-
-    self.assertEqual('infra@osv.dev', commit.author.email)
-    self.assertEqual('OSV', commit.author.name)
-    self.assertEqual('Update BLAH-131', commit.message)
 
     bug = osv.Bug.get_by_id('BLAH-131')
     self.assertEqual(osv.BugStatus.INVALID, bug.status)

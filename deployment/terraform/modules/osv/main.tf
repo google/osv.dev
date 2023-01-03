@@ -83,7 +83,7 @@ resource "google_storage_bucket" "osv_vulnerabilities_export" {
   }
 }
 
-# Service accounts permissions
+# Service account permissions
 resource "google_service_account" "deployment_service" {
   project      = var.project_id
   account_id   = "deployment"

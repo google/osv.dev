@@ -230,6 +230,9 @@ class IntegrationTests(unittest.TestCase):
   def test_query_semver(self):
     """Test query by SemVer."""
     go_2020_0004 = self._get('GO-2020-0004')
+    ghsa_hrm3_3xm6_x33h = self._get('GHSA-hrm3-3xm6-x33h')
+    expected_vulns = [go_2020_0004, ghsa_hrm3_3xm6_x33h]
+
     response = requests.post(
         _api() + '/v1/query',
         data=json.dumps({
@@ -240,7 +243,7 @@ class IntegrationTests(unittest.TestCase):
             }
         }),
         timeout=_TIMEOUT)
-    self.assert_results_equal({'vulns': [go_2020_0004]}, response.json())
+    self.assert_results_equal({'vulns': expected_vulns}, response.json())
 
     response = requests.post(
         _api() + '/v1/query',
@@ -251,7 +254,7 @@ class IntegrationTests(unittest.TestCase):
             }
         }),
         timeout=_TIMEOUT)
-    self.assert_results_equal({'vulns': [go_2020_0004]}, response.json())
+    self.assert_results_equal({'vulns': expected_vulns}, response.json())
 
     response = requests.post(
         _api() + '/v1/query',
@@ -263,7 +266,7 @@ class IntegrationTests(unittest.TestCase):
             }
         }),
         timeout=_TIMEOUT)
-    self.assert_results_equal({'vulns': [go_2020_0004]}, response.json())
+    self.assert_results_equal({'vulns': expected_vulns}, response.json())
 
     response = requests.post(
         _api() + '/v1/query',

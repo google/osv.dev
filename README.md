@@ -158,6 +158,7 @@ tools and unsupported by the core OSV maintainers.
 -   [it-depends](https://github.com/trailofbits/it-depends)
 -   [Packj](https://github.com/ossillate-inc/packj)
 -   [Trivy](https://github.com/aquasecurity/trivy)
+-   [Betterscan.io: Code Scanning/SAST/Static Analysis/Linting using many tools/Scanners with One Report (Code, IaC)](https://github.com/marcinguy/betterscan-ce) 
 
 Feel free to send a PR to add your project here.
 

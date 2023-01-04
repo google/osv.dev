@@ -228,62 +228,58 @@ class IntegrationTests(unittest.TestCase):
     self.assert_results_equal({}, response.json())
 
   def test_query_semver(self):
-    """Test query by SemVer."""
-    go_2020_0004 = self._get('GO-2020-0004')
+    """Test queries by SemVer."""
+
+    package = 'github.com/gin-gonic/gin'
+    ecosystem = 'Go'
+    go_2020_0001 = self._get('GO-2020-0001')
+    go_2021_0052 = self._get('GO-2021-0052')
+    ghsa_6vm3_jj99_7229 = self._get('GHSA-6vm3-jj99-7229')
+    ghsa_h395_qcrw_5vmq = self._get('GHSA-h395-qcrw-5vmq')
+    expected_vulns = [
+        ghsa_6vm3_jj99_7229,
+        go_2020_0001,
+        ghsa_h395_qcrw_5vmq,
+        go_2021_0052,
+    ]
+
+    # Test that a SemVer (believed to be vulnerable) version and an ecosystem
+    # returns expected vulnerabilities.
     response = requests.post(
         _api() + '/v1/query',
         data=json.dumps({
-            'version': '0.0.0-2017a',
+            'version': '1.1.4',
             'package': {
-                'name': 'github.com/nanobox-io/golang-nanoauth',
-                'ecosystem': 'Go',
+                'name': package,
+                'ecosystem': ecosystem,
             }
         }),
         timeout=_TIMEOUT)
-    self.assert_results_equal({'vulns': [go_2020_0004]}, response.json())
+    self.assert_results_equal({'vulns': expected_vulns}, response.json())
 
+    # Test that a SemVer with a (believed to be vulnerable) version and no
+    # ecosystem returns expected vulnerabilities to test the fallback logic to
+    # try semver matching in the case that an ecosystem isn't specified.
     response = requests.post(
         _api() + '/v1/query',
         data=json.dumps({
-            'version': '0.0.0-2017a',
+            'version': '1.1.4',
             'package': {
-                'name': 'github.com/nanobox-io/golang-nanoauth',
+                'name': package,
             }
         }),
         timeout=_TIMEOUT)
-    self.assert_results_equal({'vulns': [go_2020_0004]}, response.json())
+    self.assert_results_equal({'vulns': expected_vulns}, response.json())
 
+    # Test that a SemVer with a (believed to be non-vulnerable) version and an
+    # ecosystem returns no vulnerabilities.
     response = requests.post(
         _api() + '/v1/query',
         data=json.dumps({
-            'version': '0.0.0-20160722212129-ac0cc4484ad4',
+            'version': '1.7.8',
             'package': {
-                'name': 'github.com/nanobox-io/golang-nanoauth',
-                'ecosystem': 'Go',
-            }
-        }),
-        timeout=_TIMEOUT)
-    self.assert_results_equal({'vulns': [go_2020_0004]}, response.json())
-
-    response = requests.post(
-        _api() + '/v1/query',
-        data=json.dumps({
-            'version': '0.0.0-20200131131040-063a3fb69896',
-            'package': {
-                'name': 'github.com/nanobox-io/golang-nanoauth',
-                'ecosystem': 'Go',
-            }
-        }),
-        timeout=_TIMEOUT)
-    self.assert_results_equal({}, response.json())
-
-    response = requests.post(
-        _api() + '/v1/query',
-        data=json.dumps({
-            'version': '0.0.0',
-            'package': {
-                'name': 'github.com/nanobox-io/golang-nanoauth',
-                'ecosystem': 'Go',
+                'name': package,
+                'ecosystem': ecosystem,
             }
         }),
         timeout=_TIMEOUT)

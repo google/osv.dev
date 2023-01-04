@@ -36,13 +36,7 @@ import osv_service_v1_pb2_grpc
 
 from typing import List
 
-_PROJECT = 'oss-vdb'
-_OSS_FUZZ_TRACKER_URL = 'https://bugs.chromium.org/p/oss-fuzz/issues/detail?id='
-
 _SHUTDOWN_GRACE_DURATION = 5
-
-_AUTHORIZATION_HEADER_PREFIX = 'Bearer '
-_EXPECTED_AUDIENCE = 'https://db.oss-fuzz.com'
 
 _MAX_BATCH_QUERY = 1000
 _MAX_VULNERABILITIES_LISTED = 16

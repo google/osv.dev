@@ -25,16 +25,26 @@ To deploy the service proxy,
 
 ### Test
 ```
-../deploy_service_proxy api-test.osv.dev osv-grpc-v1-test api_config_test.yaml
+../deploy_service_proxy oss-vdb api-test.osv.dev osv-grpc-v1-test /path/to/api_config_test.yaml
 ```
 
 ### Staging
 ```
-../deploy_service_proxy api-staging.osv.dev osv-grpc-v1-staging /path/to/api_config_staging.yaml
+../deploy_service_proxy oss-vdb api-staging.osv.dev osv-grpc-v1-staging /path/to/api_config_staging.yaml
 ```
 
 ### Production
 
 ```
-../deploy_service_proxy api.osv.dev osv-grpc-v1 /path/to/api_config.yaml
+../deploy_service_proxy oss-vdb api.osv.dev osv-grpc-v1 /path/to/api_config.yaml
 ```
+
+### oss-vdb-test Project
+
+```
+../deploy_service_proxy oss-vdb-test osv-grpc-v1-ivqje5d2hq-uc.a.run.app osv-grpc-v1 /path/to/api_config.yaml
+```
+
+Configuring the Cloud Endpoint requires the Cloud Run service to already exist before running, as it needs the URL.
+
+Some steps in [this tutorial](https://cloud.google.com/endpoints/docs/grpc/set-up-cloud-run-espv2) may be helpful if the API server needs to be recreated from scratch.

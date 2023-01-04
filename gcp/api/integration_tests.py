@@ -251,7 +251,8 @@ class IntegrationTests(unittest.TestCase):
     self.assert_results_equal({'vulns': expected_vulns}, response.json())
 
     # Test that a SemVer with a (believed to be vulnerable) version and no
-    # ecosystem returns expected vulnerabilities.
+    # ecosystem returns expected vulnerabilities to test the fallback logic to
+    # try semver matching in the case that an ecosystem isn't specified.
     response = requests.post(
         _api() + '/v1/query',
         data=json.dumps({

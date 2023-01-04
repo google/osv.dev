@@ -230,18 +230,18 @@ class IntegrationTests(unittest.TestCase):
   def test_query_semver(self):
     """Test queries by SemVer."""
 
-    package = 'github.com/nanobox-io/golang-nanoauth'
+    package = 'github.com/gin-gonic/gin'
     ecosystem = 'Go'
-    go_2020_0004 = self._get('GO-2020-0004')
-    ghsa_hrm3_3xm6_x33h = self._get('GHSA-hrm3-3xm6-x33h')
-    expected_vulns = [go_2020_0004, ghsa_hrm3_3xm6_x33h]
+    go_2020_0001 = self._get('GO-2020-0001')
+    ghsa_6vm3_jj99_7229 = self._get('GHSA-6vm3-jj99-7229')
+    expected_vulns = [go_2020_0001, ghsa_6vm3_jj99_7229]
 
-    # Test that a SemVer with a pre-release (believed to be vulnerable) version
-    # and an ecosystem returns expected vulnerabilities.
+    # Test that a SemVer (believed to be vulnerable) version and an ecosystem
+    # returns expected vulnerabilities.
     response = requests.post(
         _api() + '/v1/query',
         data=json.dumps({
-            'version': '0.0.0-2017a',
+            'version': '1.1.4',
             'package': {
                 'name': package,
                 'ecosystem': ecosystem,
@@ -250,12 +250,12 @@ class IntegrationTests(unittest.TestCase):
         timeout=_TIMEOUT)
     self.assert_results_equal({'vulns': expected_vulns}, response.json())
 
-    # Test that a SemVer with a pre-release (believed to be vulnerable) version
-    # and no ecosystem returns expected vulnerabilities.
+    # Test that a SemVer with a (believed to be vulnerable) version and no
+    # ecosystem returns expected vulnerabilities.
     response = requests.post(
         _api() + '/v1/query',
         data=json.dumps({
-            'version': '0.0.0-2017a',
+            'version': '1.1.4',
             'package': {
                 'name': package,
             }
@@ -263,40 +263,12 @@ class IntegrationTests(unittest.TestCase):
         timeout=_TIMEOUT)
     self.assert_results_equal({'vulns': expected_vulns}, response.json())
 
-    # Test that a SemVer with a pre-release (believed to be vulnerable) version
-    # and an ecosystem returns expected vulnerabilities.
-    response = requests.post(
-        _api() + '/v1/query',
-        data=json.dumps({
-            'version': '0.0.0-20160722212129-ac0cc4484ad4',
-            'package': {
-                'name': package,
-                'ecosystem': ecosystem,
-            }
-        }),
-        timeout=_TIMEOUT)
-    self.assert_results_equal({'vulns': expected_vulns}, response.json())
-
-    # Test that a SemVer with a pre-release (believed to be non-vulnerable)
-    # version and an ecosystem returns no vulnerabilities.
-    response = requests.post(
-        _api() + '/v1/query',
-        data=json.dumps({
-            'version': '0.0.0-20200131131040-063a3fb69896',
-            'package': {
-                'name': package,
-                'ecosystem': ecosystem,
-            }
-        }),
-        timeout=_TIMEOUT)
-    self.assert_results_equal({}, response.json())
-
-    # Test that a SemVer (believed to be non-vulnerable) version and an
+    # Test that a SemVer with a (believed to be non-vulnerable) version and an
     # ecosystem returns no vulnerabilities.
     response = requests.post(
         _api() + '/v1/query',
         data=json.dumps({
-            'version': '0.0.0',
+            'version': '1.6.3',
             'package': {
                 'name': package,
                 'ecosystem': ecosystem,

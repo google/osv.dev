@@ -276,7 +276,7 @@ class IntegrationTests(unittest.TestCase):
     response = requests.post(
         _api() + '/v1/query',
         data=json.dumps({
-            'version': '1.6.3',
+            'version': '1.7.8',
             'package': {
                 'name': package,
                 'ecosystem': ecosystem,

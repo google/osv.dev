@@ -236,11 +236,12 @@ class IntegrationTests(unittest.TestCase):
     go_2021_0052 = self._get('GO-2021-0052')
     ghsa_6vm3_jj99_7229 = self._get('GHSA-6vm3-jj99-7229')
     ghsa_h395_qcrw_5vmq = self._get('GHSA-h395-qcrw-5vmq')
-    expected_vulns = [ghsa_6vm3_jj99_7229,
-                      go_2020_0001,
-                      ghsa_h395_qcrw_5vmq,
-                      go_2021_0052,
-                      ]
+    expected_vulns = [
+        ghsa_6vm3_jj99_7229,
+        go_2020_0001,
+        ghsa_h395_qcrw_5vmq,
+        go_2021_0052,
+    ]
 
     # Test that a SemVer (believed to be vulnerable) version and an ecosystem
     # returns expected vulnerabilities.

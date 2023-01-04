@@ -230,8 +230,8 @@ class IntegrationTests(unittest.TestCase):
   def test_query_semver(self):
     """Test queries by SemVer."""
 
-    PACKAGE = 'github.com/nanobox-io/golang-nanoauth'
-    ECOSYSTEM = 'Go'
+    package = 'github.com/nanobox-io/golang-nanoauth'
+    ecosystem = 'Go'
     go_2020_0004 = self._get('GO-2020-0004')
     ghsa_hrm3_3xm6_x33h = self._get('GHSA-hrm3-3xm6-x33h')
     expected_vulns = [go_2020_0004, ghsa_hrm3_3xm6_x33h]
@@ -243,8 +243,8 @@ class IntegrationTests(unittest.TestCase):
         data=json.dumps({
             'version': '0.0.0-2017a',
             'package': {
-                'name': PACKAGE,
-                'ecosystem': ECOSYSTEM,
+                'name': package,
+                'ecosystem': ecosystem,
             }
         }),
         timeout=_TIMEOUT)
@@ -257,7 +257,7 @@ class IntegrationTests(unittest.TestCase):
         data=json.dumps({
             'version': '0.0.0-2017a',
             'package': {
-                'name': PACKAGE,
+                'name': package,
             }
         }),
         timeout=_TIMEOUT)
@@ -270,8 +270,8 @@ class IntegrationTests(unittest.TestCase):
         data=json.dumps({
             'version': '0.0.0-20160722212129-ac0cc4484ad4',
             'package': {
-                'name': PACKAGE,
-                'ecosystem': ECOSYSTEM,
+                'name': package,
+                'ecosystem': ecosystem,
             }
         }),
         timeout=_TIMEOUT)
@@ -284,8 +284,8 @@ class IntegrationTests(unittest.TestCase):
         data=json.dumps({
             'version': '0.0.0-20200131131040-063a3fb69896',
             'package': {
-                'name': PACKAGE,
-                'ecosystem': ECOSYSTEM,
+                'name': package,
+                'ecosystem': ecosystem,
             }
         }),
         timeout=_TIMEOUT)
@@ -298,8 +298,8 @@ class IntegrationTests(unittest.TestCase):
         data=json.dumps({
             'version': '0.0.0',
             'package': {
-                'name': PACKAGE,
-                'ecosystem': ECOSYSTEM,
+                'name': package,
+                'ecosystem': ecosystem,
             }
         }),
         timeout=_TIMEOUT)

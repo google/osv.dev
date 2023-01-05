@@ -117,8 +117,7 @@ func loadCPEDictionary(ProductToRepo *VendorProductToRepoMap, f string) error {
 	if err != nil {
 		return err
 	}
-	err = json.Unmarshal(data, &ProductToRepo)
-	return err
+	return json.Unmarshal(data, &ProductToRepo)
 }
 
 func main() {

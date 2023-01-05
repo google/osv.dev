@@ -151,6 +151,12 @@ func TestRepo(t *testing.T) {
 			expectedOk:      true,
 		},
 		{
+			description:     "GitHub advisory URL",
+			inputLink:       "https://github.com/ballcat-projects/ballcat-codegen/security/advisories/GHSA-fv3m-xhqw-9m79",
+			expectedRepoURL: "https://github.com/ballcat-projects/ballcat-codegen",
+			expectedOk:      true,
+		},
+		{
 			description:     "Ambiguous GitLab compare URL",
 			inputLink:       "https://git.drupalcode.org/project/views/-/compare/7.x-3.21...7.x-3.x",
 			expectedRepoURL: "https://git.drupalcode.org/project/views",
@@ -184,6 +190,48 @@ func TestRepo(t *testing.T) {
 			description:     "Exact repo URL with a trailing slash",
 			inputLink:       "https://github.com/pyca/pyopenssl/",
 			expectedRepoURL: "https://github.com/pyca/pyopenssl",
+			expectedOk:      true,
+		},
+		{
+			description:     "Bitbucket download URL",
+			inputLink:       "https://bitbucket.org/snakeyaml/snakeyaml/downloads/?tab=tags",
+			expectedRepoURL: "https://bitbucket.org/snakeyaml/snakeyaml",
+			expectedOk:      true,
+		},
+		{
+			description:     "Bitbucket wiki URL",
+			inputLink:       "https://bitbucket.org/snakeyaml/snakeyaml/wiki/Home",
+			expectedRepoURL: "https://bitbucket.org/snakeyaml/snakeyaml",
+			expectedOk:      true,
+		},
+		{
+			description:     "Bitbucket security URL",
+			inputLink:       "https://bitbucket.org/snakeyaml/snakeyaml/security",
+			expectedRepoURL: "https://bitbucket.org/snakeyaml/snakeyaml",
+			expectedOk:      true,
+		},
+		{
+			description:     "Bitbucket pull-request URL",
+			inputLink:       "https://bitbucket.org/snakeyaml/snakeyaml/pull-requests/35",
+			expectedRepoURL: "https://bitbucket.org/snakeyaml/snakeyaml",
+			expectedOk:      true,
+		},
+		{
+			description:     "Bitbucket commit URL",
+			inputLink:       "https://bitbucket.org/snakeyaml/snakeyaml/commits/6e8cd890716dfe22d5ba56f9a592225fb7fa2803",
+			expectedRepoURL: "https://bitbucket.org/snakeyaml/snakeyaml",
+			expectedOk:      true,
+		},
+		{
+			description:     "Bitbucket issue URL with title",
+			inputLink:       "https://bitbucket.org/snakeyaml/snakeyaml/issues/566/build-android",
+			expectedRepoURL: "https://bitbucket.org/snakeyaml/snakeyaml",
+			expectedOk:      true,
+		},
+		{
+			description:     "Bitbucket bare issue URL",
+			inputLink:       "https://bitbucket.org/snakeyaml/snakeyaml/issues/566",
+			expectedRepoURL: "https://bitbucket.org/snakeyaml/snakeyaml",
 			expectedOk:      true,
 		},
 	}

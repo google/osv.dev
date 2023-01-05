@@ -125,12 +125,16 @@ func Repo(u string) (string, error) {
 	// This also supports GitHub and Gitlab issue URLs, e.g.:
 	// https://github.com/axiomatic-systems/Bento4/issues/755
 	// https://gitlab.com/wireshark/wireshark/-/issues/18307
+	//
+	// This also supports GitHub Security Advisory URLs, e.g.
+	// https://github.com/ballcat-projects/ballcat-codegen/security/advisories/GHSA-fv3m-xhqw-9m79
 	if (parsedURL.Hostname() == "github.com" || strings.HasPrefix(parsedURL.Hostname(), "gitlab.")) &&
 		(strings.Contains(parsedURL.Path, "commit") ||
 			strings.Contains(parsedURL.Path, "blob") ||
 			strings.Contains(parsedURL.Path, "releases/tag") ||
 			strings.Contains(parsedURL.Path, "releases") ||
 			strings.Contains(parsedURL.Path, "tags") ||
+			strings.Contains(parsedURL.Path, "security/advisories") ||
 			strings.Contains(parsedURL.Path, "issues")) {
 		return fmt.Sprintf("%s://%s%s", parsedURL.Scheme,
 				parsedURL.Hostname(),
@@ -173,8 +177,16 @@ func Repo(u string) (string, error) {
 	// https://bitbucket.org/ianb/pastescript/changeset/a19e462769b4
 	// https://bitbucket.org/jespern/django-piston/commits/91bdaec89543/
 	// https://bitbucket.org/openpyxl/openpyxl/commits/3b4905f428e1
+	// https://bitbucket.org/snakeyaml/snakeyaml/pull-requests/35
+	// https://bitbucket.org/snakeyaml/snakeyaml/issues/566
+	// https://bitbucket.org/snakeyaml/snakeyaml/downloads/?tab=tags
 	if parsedURL.Hostname() == "bitbucket.org" &&
 		(strings.Contains(parsedURL.Path, "changeset") ||
+			strings.Contains(parsedURL.Path, "downloads") ||
+			strings.Contains(parsedURL.Path, "wiki") ||
+			strings.Contains(parsedURL.Path, "issues") ||
+			strings.Contains(parsedURL.Path, "security") ||
+			strings.Contains(parsedURL.Path, "pull-requests") ||
 			strings.Contains(parsedURL.Path, "commits")) {
 		return fmt.Sprintf("%s://%s%s", parsedURL.Scheme,
 				parsedURL.Hostname(),

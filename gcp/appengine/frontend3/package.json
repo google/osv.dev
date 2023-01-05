@@ -25,11 +25,11 @@
   },
   "devDependencies": {
     "copy-webpack-plugin": "10.2.4",
-    "css-loader": "6.7.2",
+    "css-loader": "6.7.3",
     "html-webpack-plugin": "5.5.0",
     "mini-css-extract-plugin": "2.7.2",
     "raw-loader": "4.0.2",
-    "sass": "1.56.2",
+    "sass": "1.57.1",
     "sass-loader": "12.6.0",
     "style-loader": "3.3.1",
     "webpack": "5.75.0",

@@ -147,7 +147,6 @@ func main() {
 		Logger.Fatalf("Failed to parse NVD CVE JSON: %v", err)
 	}
 
-	// TODO(apollock): preload with CPE Dictionary preprocessed JSON
 	VPRepoCache := make(VendorProductToRepoMap)
 
 	if *parsedCPEDictionary != "" {
@@ -169,7 +168,7 @@ func main() {
 			continue
 		}
 
-		// Does it have any application CPEs?
+		// Does it have any application CPEs? Look for pre-computed repos.
 		appCPECount := 0
 		for _, CPEstr := range cves.CPEs(cve) {
 			CPE, err := cves.ParseCPE(CPEstr)
@@ -179,6 +178,9 @@ func main() {
 			}
 			if CPE.Part == "a" {
 				appCPECount += 1
+			}
+			if _, ok := VPRepoCache[VendorProduct{CPE.Vendor, CPE.Product}]; ok {
+				ReposForCVE[cve.CVE.CVEDataMeta.ID] = VPRepoCache[VendorProduct{CPE.Vendor, CPE.Product}]
 			}
 		}
 

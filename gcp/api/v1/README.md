@@ -41,10 +41,9 @@ To deploy the service proxy,
 
 ### oss-vdb-test Project
 
-```
-../deploy_service_proxy oss-vdb-test osv-grpc-v1-ivqje5d2hq-uc.a.run.app osv-grpc-v1 /path/to/api_config.yaml
-```
+Deployment is handled through terraform.
 
-Configuring the Cloud Endpoint requires the Cloud Run service to already exist before running, as it needs the URL.
+Copy `api_descriptor.pb` into `deployment/terraform/environments/oss-vdb-test/api/`,
+Make any desired changes to `api_config.tftpl` in same folder.
 
-Some steps in [this tutorial](https://cloud.google.com/endpoints/docs/grpc/set-up-cloud-run-espv2) may be helpful if the API server needs to be recreated from scratch.
+Then use `terraform plan` and `terraform apply` to deploy.

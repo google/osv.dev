@@ -21,8 +21,9 @@ resource "google_project_service" "redis_api" {
 }
 
 resource "google_project_service" "datastore_api" {
-  project = var.project_id
-  service = "datastore.googleapis.com"
+  project            = var.project_id
+  service            = "datastore.googleapis.com"
+  disable_on_destroy = false
 }
 
 resource "google_project_service" "vpcaccess_api" {

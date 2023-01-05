@@ -5,10 +5,6 @@ module "osv_test" {
 
   public_import_logs_bucket     = "osv-test-public-import-logs"
   vulnerabilities_export_bucket = "osv-test-vulnerabilities"
-
-  resource_location = "US"
-  resource_region   = "us-central1"
-  worker_zone       = "us-central1-f"
 }
 
 

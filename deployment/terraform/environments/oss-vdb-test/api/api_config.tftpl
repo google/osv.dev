@@ -14,7 +14,7 @@
 
 type: google.api.Service
 config_version: 3
-name: osv-grpc-v1-ivqje5d2hq-uc.a.run.app
+name: ${service_name}
 title: OSV (v1)
 apis:
   - name: osv.v1.OSV
@@ -29,4 +29,4 @@ authentication:
 backend:
   rules:
     - selector: "*"
-      address: grpcs://osv-grpc-backend-ivqje5d2hq-uc.a.run.app
+      address: ${backend_url}

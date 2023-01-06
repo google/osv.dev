@@ -1,0 +1,43 @@
+#!/bin/bash
+
+# Get the full tag of latest ESP image for use in terraform.
+# This is required as the gcloud_build_image script tags its built image with
+# the version number.
+# Optional in terraform external data source is "query = {esp_tag = <ESP_TAG>}"
+# which is equivalent to the -v flag of gcloud_build_image.
+
+set -e
+
+BASE_IMAGE_NAME="gcr.io/endpoints-release/endpoints-runtime-serverless"
+
+function error_exit() {
+  # ${BASH_SOURCE[1]} is the file name of the caller.
+  echo "${BASH_SOURCE[1]}: line ${BASH_LINENO[0]}: ${1:-Unknown Error.} (exit ${2:-1})" 1>&2
+  exit ${2:-1}
+}
+
+# Extract esp_tag (if it exists) from input into ESP_TAG shell variable.
+eval "$(jq -r '@sh "ESP_TAG=\(.esp_tag // empty)"')"
+if [ -z "${ESP_TAG}" ]; then
+  ESP_TAG="2"  # default as in gcloud_build_image.
+fi;
+
+ALL_TAGS=$(gcloud container images list-tags "${BASE_IMAGE_NAME}" \
+    --filter="tags~^${ESP_TAG}$" \
+    --format="value(tags)")
+IFS=',' read -ra TAGS_ARRAY <<< "${ALL_TAGS}"
+
+if [ ${#TAGS_ARRAY[@]} -eq 0 ]; then
+error_exit "Did not find ESP version: ${ESP_TAG}"
+fi;
+
+# Find the tag with the longest length.
+ESP_FULL_VERSION=""
+for tag in "${TAGS_ARRAY[@]}"; do
+    if [ ${#tag} -gt ${#ESP_FULL_VERSION} ]; then
+    ESP_FULL_VERSION=${tag}
+    fi
+done
+
+# Produce JSON object containing esp_full_version
+jq -n --arg esp_full_version "$ESP_FULL_VERSION" '{"esp_full_version":$esp_full_version}'

@@ -171,6 +171,17 @@ def vulnerability(vuln_id):
   return render_template('vulnerability.html', vulnerability=vuln)
 
 
+@blueprint.route('/<potential_vuln_id>')
+def vulnerability_redirector(potential_vuln_id):
+  """Convenience redirector for /VULN-ID to /vulnerability/VULN-ID."""
+  vuln = osv_get_by_id(potential_vuln_id)
+  if vuln:
+    return redirect(f'/vulnerability/{potential_vuln_id}')
+
+  abort(404)
+  return None
+
+
 def bug_to_response(bug, detailed=True):
   """Convert a Bug entity to a response object."""
   response = osv.vulnerability_to_dict(bug.to_vulnerability())

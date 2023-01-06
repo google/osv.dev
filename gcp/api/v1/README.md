@@ -43,7 +43,7 @@ To deploy the service proxy,
 
 Deployment is handled through terraform.
 
-Copy `api_descriptor.pb` into `deployment/terraform/environments/oss-vdb-test/api/`,
+`api_descriptor.pb` is symlinked to inside `deployment/terraform/environments/oss-vdb-test/api/`,
 Make any desired changes to `api_config.tftpl` in same folder.
 
 Then use `terraform plan` and `terraform apply` to deploy.

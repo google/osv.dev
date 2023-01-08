@@ -108,7 +108,7 @@ func CVEToOSV(CVE cves.CVEItem, directory string) error {
 		Logger.Warnf("Failed to write %s: %v", outputFile, err)
 		return fmt.Errorf("Failed to write %s: %v", outputFile, err)
 	}
-	Logger.Infof("Processed %s for %q", CVE.CVE.CVEDataMeta.ID, CPE.Product)
+	Logger.Infof("Generated OSV record from %s for %q", CVE.CVE.CVEDataMeta.ID, CPE.Product)
 	return nil
 }
 
@@ -162,8 +162,7 @@ func main() {
 		ReposForCVE := make(map[string][]string)
 
 		if len(refs) == 0 && len(CPEs) == 0 {
-			Logger.Infof("FYI: skipping %s due to:", cve.CVE.CVEDataMeta.ID)
-			Logger.Infof("\t * lack of CPEs and lack of references")
+			Logger.Infof("[%s]: skipping due to lack of CPEs and lack of references", cve.CVE.CVEDataMeta.ID)
 			continue
 		}
 
@@ -172,13 +171,14 @@ func main() {
 		for _, CPEstr := range cves.CPEs(cve) {
 			CPE, err := cves.ParseCPE(CPEstr)
 			if err != nil {
-				Logger.Warnf("Failed to parse CPE %q: %+v", CPEstr, err)
+				Logger.Warnf("[%s]: Failed to parse CPE %q: %+v", cve.CVE.CVEDataMeta.ID, CPEstr, err)
 				continue
 			}
 			if CPE.Part == "a" {
 				appCPECount += 1
 			}
 			if _, ok := VPRepoCache[VendorProduct{CPE.Vendor, CPE.Product}]; ok {
+				Logger.Infof("[%s]: Pre-references, derived %q for %q %q using cache", cve.CVE.CVEDataMeta.ID, VPRepoCache[VendorProduct{CPE.Vendor, CPE.Product}], CPE.Vendor, CPE.Product)
 				ReposForCVE[cve.CVE.CVEDataMeta.ID] = VPRepoCache[VendorProduct{CPE.Vendor, CPE.Product}]
 			}
 		}
@@ -190,31 +190,42 @@ func main() {
 
 		Metrics.CVEsForApplications++
 
-		Logger.Infof("%s", cve.CVE.CVEDataMeta.ID)
-		for _, ref := range refs {
-			// Are any of the reference's tags 'Patch'?
-			for _, tag := range ref.Tags {
-				if tag == "Third Party Advisory" {
-					continue
-				}
-				if utility.IsRepoURL(ref.URL) {
-					Logger.Infof("\t * %s", ref.URL)
-					// CVE entries have one set of references, but can have multiple CPEs
+		// We only need to do this if we didn't get a repo from the CPE Dictionary.
+		if _, ok := ReposForCVE[cve.CVE.CVEDataMeta.ID]; !ok {
+			for _, ref := range refs {
+				for _, tag := range ref.Tags {
+					// Third Party Advisories often reference
+					// completely unrelated repositories and can be
+					// misleading as to the software's repository,
+					// so disregard these references.
+					if tag == "Third Party Advisory" {
+						continue
+					}
+					if !utility.IsRepoURL(ref.URL) {
+						continue
+					}
+					Logger.Infof("[%s]: examining %q [%q]", cve.CVE.CVEDataMeta.ID, ref.URL, tag)
+					// CVE entries have one set of
+					// references, but can have multiple
+					// CPEs, so we have to consider them
+					// all for each reference.
 					for _, CPEstr := range cves.CPEs(cve) {
 						CPE, err := cves.ParseCPE(CPEstr)
 						if err != nil {
-							Logger.Warnf("Failed to parse CPE %q: %+v", CPEstr, err)
+							Logger.Warnf("[%s]: Failed to parse CPE %q: %+v", cve.CVE.CVEDataMeta.ID, CPEstr, err)
 							continue
 						}
-						if _, ok := VPRepoCache[VendorProduct{CPE.Vendor, CPE.Product}]; !ok {
-							repo, err := cves.Repo(ref.URL)
-							if err != nil {
-								Logger.Warnf("Failed to parse %q for %q: %+v", ref.URL, CPE.Product, err)
-								continue
-							}
-							VPRepoCache[VendorProduct{CPE.Vendor, CPE.Product}] = append(VPRepoCache[VendorProduct{CPE.Vendor, CPE.Product}], repo)
+						// Continue to only focus on application CPEs.
+						if CPE.Part != "a" {
+							continue
 						}
-						// Avoid unnecessary calls to cves.Repo() if we already have the repo
+						repo, err := cves.Repo(ref.URL)
+						if err != nil {
+							Logger.Warnf("[%s]: Failed to parse %q for %q: %+v", cve.CVE.CVEDataMeta.ID, ref.URL, CPE.Product, err)
+							continue
+						}
+						Logger.Infof("[%s]: Derived %q for %q %q from %q", cve.CVE.CVEDataMeta.ID, repo, CPE.Vendor, CPE.Product, ref.URL)
+						VPRepoCache[VendorProduct{CPE.Vendor, CPE.Product}] = append(VPRepoCache[VendorProduct{CPE.Vendor, CPE.Product}], repo)
 						if _, ok := ReposForCVE[cve.CVE.CVEDataMeta.ID]; !ok {
 							ReposForCVE[cve.CVE.CVEDataMeta.ID] = VPRepoCache[VendorProduct{CPE.Vendor, CPE.Product}]
 						}
@@ -223,8 +234,8 @@ func main() {
 			}
 		}
 
-		Logger.Infof("Summary for %s: [CPEs=%d AppCPEs=%d DerivedRepos=%d]", cve.CVE.CVEDataMeta.ID, len(CPEs), appCPECount, len(ReposForCVE))
-		Logger.Infof("Repos: %#v", ReposForCVE)
+		Logger.Infof("Summary for %s: [CPEs=%d AppCPEs=%d DerivedRepos=%d]", cve.CVE.CVEDataMeta.ID, len(CPEs), appCPECount, len(ReposForCVE[cve.CVE.CVEDataMeta.ID]))
+		Logger.Infof("[%s]: Repos: %#v", cve.CVE.CVEDataMeta.ID, ReposForCVE)
 
 		// If we've made it to here, we may have a CVE:
 		// * that has Application-related CPEs (so applies to software)
@@ -250,10 +261,8 @@ func main() {
 
 		err := CVEToOSV(cve, *outDir)
 		if err != nil {
-			// Could we have potentially generated an OSV record by further analysis of a repo?
-			if _, ok := ReposForCVE[cve.CVE.CVEDataMeta.ID]; ok {
-				Metrics.CVEsForKnownRepos++
-			}
+			// We did have a repo, though...
+			Metrics.CVEsForKnownRepos++
 			Logger.Warnf("Failed to generate an OSV record for %s: %+v", cve.CVE.CVEDataMeta.ID, err)
 			continue
 		}

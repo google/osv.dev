@@ -40,7 +40,9 @@ blueprint = Blueprint('frontend_handlers', __name__)
 _PAGE_SIZE = 16
 _PAGE_LOOKAHEAD = 4
 _REQUESTS_PER_MIN = 30
-_VALID_BLOG_NAME = re.compile(r'^[\w-]+$')
+_WORD_CHARACTERS_OR_DASH = re.compile(r'^[\w-]+$')
+_VALID_BLOG_NAME = _WORD_CHARACTERS_OR_DASH
+_VALID_VULN_ID = _WORD_CHARACTERS_OR_DASH
 _BLOG_CONTENTS_DIR = 'blog'
 
 if utils.is_prod():
@@ -169,6 +171,21 @@ def vulnerability(vuln_id):
   """Vulnerability page."""
   vuln = osv_get_by_id(vuln_id)
   return render_template('vulnerability.html', vulnerability=vuln)
+
+
+@blueprint.route('/<potential_vuln_id>')
+def vulnerability_redirector(potential_vuln_id):
+  """Convenience redirector for /VULN-ID to /vulnerability/VULN-ID."""
+  if not _VALID_VULN_ID.match(potential_vuln_id):
+    abort(404)
+    return None
+
+  vuln = osv_get_by_id(potential_vuln_id)
+  if vuln:
+    return redirect(f'/vulnerability/{potential_vuln_id}')
+
+  abort(404)
+  return None
 
 
 def bug_to_response(bug, detailed=True):

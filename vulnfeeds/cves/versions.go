@@ -237,16 +237,13 @@ func Commit(u string) (string, error) {
 
 // For URLs referencing commits in supported Git repository hosts, return a FixCommit.
 func extractGitCommit(link string) *FixCommit {
-	// Example: https://github.com/google/osv/commit/cd4e934d0527e5010e373e7fed54ef5daefba2f5
 	r, err := Repo(link)
 	if err != nil {
-		log.Printf("Failed to get repo from %s: %+v", link, err)
 		return nil
 	}
 
 	c, err := Commit(link)
 	if err != nil {
-		log.Printf("Failed to get commit from %s: %+v", link, err)
 		return nil
 	}
 
@@ -257,6 +254,9 @@ func extractGitCommit(link string) *FixCommit {
 }
 
 func hasVersion(validVersions []string, version string) bool {
+	if validVersions == nil || len(validVersions) == 0 {
+		return true
+	}
 	return versionIndex(validVersions, version) != -1
 }
 
@@ -346,11 +346,8 @@ func cleanVersion(version string) string {
 	return strings.TrimRight(version, ":")
 }
 
-func ExtractVersionInfo(cve CVEItem, validVersions []string) (VersionInfo, []string) {
-	var notes []string
-	v := VersionInfo{}
+func ExtractVersionInfo(cve CVEItem, validVersions []string) (v VersionInfo, notes []string) {
 	for _, reference := range cve.CVE.References.ReferenceData {
-		// TODO(ochang): Support other common commit URLs.
 		if commit := extractGitCommit(reference.URL); commit != nil {
 			v.FixCommits = append(v.FixCommits, *commit)
 		}
@@ -408,7 +405,6 @@ func ExtractVersionInfo(cve CVEItem, validVersions []string) (VersionInfo, []str
 			})
 		}
 	}
-
 	if !gotVersions {
 		var extractNotes []string
 		v.AffectedVersions, extractNotes = extractVersionsFromDescription(validVersions, EnglishDescription(cve.CVE))

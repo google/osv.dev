@@ -6,7 +6,7 @@ require (
 	cloud.google.com/go/logging v1.6.1
 	github.com/aquasecurity/go-pep440-version v0.0.0-20210121094942-22b2f8951d46
 	github.com/knqyf263/go-cpe v0.0.0-20201213041631-54f6ab28673f
-	golang.org/x/exp v0.0.0-20230105000112-eab7a2c85304
+	golang.org/x/exp v0.0.0-20230108222341-4b8118a2686a
 	gopkg.in/yaml.v2 v2.4.0
 )
 

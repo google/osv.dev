@@ -187,6 +187,16 @@ func TestRepo(t *testing.T) {
 			expectedOk:      true,
 		},
 		{
+			description: "cGit cgi-bin URL",
+			inputLink:   "https://git.gnupg.org/cgi-bin/gitweb.cgi?p=libksba.git;a=commit;h=f61a5ea4e0f6a80fd4b28ef0174bee77793cf070",
+			// Note to future selves: this isn't valid for this
+			// host, but we have no way of knowing this via purely
+			// URL mangling, so are probably going to need a
+			// mapping table for known odd cases
+			expectedRepoURL: "https://git.gnupg.org/libksba.git",
+			expectedOk:      true,
+		},
+		{
 			description:     "Exact repo URL with a trailing slash",
 			inputLink:       "https://github.com/pyca/pyopenssl/",
 			expectedRepoURL: "https://github.com/pyca/pyopenssl",
@@ -299,6 +309,14 @@ func TestExtractGitCommit(t *testing.T) {
 			expectedFixCommit: &FixCommit{
 				Repo:   "https://git.dpkg.org/cgit/dpkg/dpkg.git",
 				Commit: "faa4c92debe45412bfcf8a44f26e827800bb24be",
+			},
+		},
+		{
+			description: "Valid GitWeb commit URL",
+			inputLink:   "https://git.gnupg.org/cgi-bin/gitweb.cgi?p=libksba.git;a=commit;h=f61a5ea4e0f6a80fd4b28ef0174bee77793cf070",
+			expectedFixCommit: &FixCommit{
+				Repo:   "https://git.gnupg.org/libksba.git",
+				Commit: "f61a5ea4e0f6a80fd4b28ef0174bee77793cf070",
 			},
 		},
 		{

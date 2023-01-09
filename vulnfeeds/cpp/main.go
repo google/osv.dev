@@ -81,6 +81,7 @@ func GitVersionToCommit(versions cves.VersionInfo, repos []string) (v cves.Versi
 	// v is a VersionInfo with FixCommits included
 	v = versions
 	for _, repo := range repos {
+		Logger.Infof("Cloning %s", repo)
 		r, err := git.Clone(memory.NewStorage(), nil, &git.CloneOptions{
 			URL: repo,
 		})
@@ -95,7 +96,7 @@ func GitVersionToCommit(versions cves.VersionInfo, repos []string) (v cves.Versi
 			// Need to come up with a way to decide when to prefix
 			ref, err := r.Tag("v" + av.Fixed)
 			if err != nil {
-				Logger.Warnf("Failed to find a tag for %q: %v", av.Fixed, err)
+				Logger.Warnf("Failed to find a tag for %q in %s: %v", av.Fixed, repo, err)
 				continue
 			}
 			fc := cves.FixCommit{

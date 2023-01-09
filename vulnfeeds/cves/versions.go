@@ -78,7 +78,7 @@ func Repo(u string) (string, error) {
 		}
 	}
 
-	// GitWeb URLs are structured another way, e.g.
+	// cGit URLs are structured another way, e.g.
 	// https://git.dpkg.org/cgit/dpkg/dpkg.git/commit/?id=faa4c92debe45412bfcf8a44f26e827800bb24be
 	// https://git.kernel.org/cgit/linux/kernel/git/torvalds/linux.git/commit/?id=817b8b9c5396d2b2d92311b46719aad5d3339dbe
 	if strings.HasPrefix(parsedURL.Path, "/cgit") &&
@@ -87,6 +87,20 @@ func Repo(u string) (string, error) {
 		repo := strings.TrimSuffix(parsedURL.Path, "/commit/")
 		return fmt.Sprintf("%s://%s%s", parsedURL.Scheme,
 			parsedURL.Hostname(), repo), nil
+	}
+
+	// GitWeb CGI URLs are structured very differently, e.g.
+	// https://git.gnupg.org/cgi-bin/gitweb.cgi?p=libksba.git;a=commit;h=f61a5ea4e0f6a80fd4b28ef0174bee77793cf070 is another variation seen in the wild
+	if strings.HasPrefix(parsedURL.Path, "/cgi-bin/gitweb.cgi") &&
+		strings.HasPrefix(parsedURL.RawQuery, "p=") {
+		params := strings.Split(parsedURL.RawQuery, ";")
+		for _, param := range params {
+			if !strings.HasPrefix(param, "p=") {
+				continue
+			}
+			repo := strings.Split(param, "=")[1]
+			return fmt.Sprintf("%s://%s/%s", parsedURL.Scheme, parsedURL.Hostname(), repo), nil
+		}
 	}
 
 	// cgit.freedesktop.org is a special snowflake with enough repos to warrant special handling
@@ -205,13 +219,26 @@ func Commit(u string) (string, error) {
 		return "", err
 	}
 
-	// GitWeb URLs are structured another way, e.g.
+	// cGit URLs are structured another way, e.g.
 	// https://git.dpkg.org/cgit/dpkg/dpkg.git/commit/?id=faa4c92debe45412bfcf8a44f26e827800bb24be
 	// https://git.kernel.org/cgit/linux/kernel/git/torvalds/linux.git/commit/?id=817b8b9c5396d2b2d92311b46719aad5d3339dbe
 	if strings.HasPrefix(parsedURL.Path, "/cgit") &&
 		strings.HasSuffix(parsedURL.Path, "commit/") &&
 		strings.HasPrefix(parsedURL.RawQuery, "id=") {
 		return strings.Split(parsedURL.RawQuery, "=")[1], nil
+	}
+
+	// GitWeb cgi-bin URLs are structured another way, e.g.
+	// https://git.gnupg.org/cgi-bin/gitweb.cgi?p=libksba.git;a=commit;h=f61a5ea4e0f6a80fd4b28ef0174bee77793cf070
+	if strings.HasPrefix(parsedURL.Path, "/cgi-bin/gitweb.cgi") &&
+		strings.Contains(parsedURL.RawQuery, "a=commit") {
+		params := strings.Split(parsedURL.RawQuery, ";")
+		for _, param := range params {
+			if !strings.HasPrefix(param, "h=") {
+				continue
+			}
+			return strings.Split(param, "=")[1], nil
+		}
 	}
 
 	// GitHub and GitLab commit URLs are structured one way, e.g.

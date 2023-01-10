@@ -9,10 +9,12 @@ import (
 	"log"
 	"net/url"
 	"os"
+	"path"
 	"path/filepath"
 	"strings"
 
 	"cloud.google.com/go/logging"
+	"github.com/go-git/go-git/v5"
 	"github.com/google/osv/vulnfeeds/cves"
 	"github.com/google/osv/vulnfeeds/utility"
 	"github.com/google/osv/vulnfeeds/vulns"
@@ -73,8 +75,67 @@ func InScopeGitRepo(repoURL string) bool {
 	return true
 }
 
+func GetRepoDir(repoURL string) string {
+	repobasedir := "/tmp/repos" // TODO: flag and parameterise
+	parsedURL, err := url.Parse(repoURL)
+	if err != nil {
+		return ""
+	}
+	return path.Join(repobasedir, parsedURL.Hostname(), parsedURL.Path)
+}
+
+// Either clones the repository or returns the one previously cloned.
+func GetRepo(repoURL string) (r *git.Repository, e error) {
+	repodir := GetRepoDir(repoURL)
+	// TODO: reorder to open, then clone, once behaviour and failure modes understood
+	Logger.Infof("Cloning %s", repoURL)
+	r, err := git.PlainClone(repodir, false, &git.CloneOptions{
+		URL: repoURL,
+	})
+	if err != nil && err != git.ErrRepositoryAlreadyExists {
+		return nil, err
+	}
+	r, err = git.PlainOpen(repodir)
+	if err != nil {
+		return nil, err
+	}
+	return r, nil
+}
+
+// Examines repos and tries to convert version tags to commits
+func GitVersionToCommit(versions cves.VersionInfo, repos []string) (v cves.VersionInfo, e error) {
+	// versions is a VersionInfo with AffectedVersions and no FixCommits
+	// v is a VersionInfo with FixCommits included
+	v = versions
+	for _, repo := range repos {
+		r, err := GetRepo(repo)
+		if err != nil {
+			Logger.Warnf("Failed to get %s: %v", repo, err)
+			continue
+		}
+		for _, av := range versions.AffectedVersions {
+			// We can't map a non-existent version to a tag and commit, so skip.
+			if av.Fixed == "" {
+				continue
+			}
+			// TODO: add more sophisticated (fuzzy) version to tag matching.
+			ref, err := r.Tag("v" + av.Fixed)
+			if err != nil {
+				Logger.Warnf("Failed to find a tag for %q in %s: %v", av.Fixed, repo, err)
+				continue
+			}
+			fc := cves.FixCommit{
+				Repo:   repo,
+				Commit: ref.Hash().String(),
+			}
+			v.FixCommits = append(v.FixCommits, fc)
+		}
+	}
+	return v, nil
+}
+
 // Takes an NVD CVE record and outputs an OSV file in the specified directory.
-func CVEToOSV(CVE cves.CVEItem, directory string) error {
+func CVEToOSV(CVE cves.CVEItem, repos []string, directory string) error {
 	CPEs := cves.CPEs(CVE)
 	CPE, err := cves.ParseCPE(CPEs[0])
 	if err != nil {
@@ -82,12 +143,22 @@ func CVEToOSV(CVE cves.CVEItem, directory string) error {
 	}
 	v, _ := vulns.FromCVE(CVE.CVE.CVEDataMeta.ID, CVE)
 	versions, _ := cves.ExtractVersionInfo(CVE, nil)
+
+	if len(versions.FixCommits) == 0 && len(versions.AffectedVersions) != 0 {
+		// We have some versions to try and convert to commits
+		if len(repos) == 0 {
+			return fmt.Errorf("No affected ranges for %s for %q, and no repos to try and convert %+v to tags with", CVE.CVE.CVEDataMeta.ID, CPE.Product, versions.AffectedVersions)
+		}
+		Logger.Infof("[%s]: Trying to convert version tags %+v to commits using %v", CVE.CVE.CVEDataMeta.ID, versions.AffectedVersions, repos)
+		versions, err = GitVersionToCommit(versions, repos)
+	}
+
 	affected := vulns.Affected{}
 	affected.AttachExtractedVersionInfo(versions)
 	v.Affected = append(v.Affected, affected)
 
 	if len(v.Affected[0].Ranges) == 0 {
-		return fmt.Errorf("No affected versions detected for %s for %q", CVE.CVE.CVEDataMeta.ID, CPE.Product)
+		return fmt.Errorf("No affected ranges detected for %s for %q", CVE.CVE.CVEDataMeta.ID, CPE.Product)
 	}
 
 	vulnDir := filepath.Join(directory, CPE.Vendor, CPE.Product)
@@ -219,6 +290,7 @@ func main() {
 						if CPE.Part != "a" {
 							continue
 						}
+						// TODO: there's an opportunity to skip this
 						repo, err := cves.Repo(ref.URL)
 						if err != nil {
 							Logger.Warnf("[%s]: Failed to parse %q for %q: %+v", cve.CVE.CVEDataMeta.ID, ref.URL, CPE.Product, err)
@@ -259,10 +331,10 @@ func main() {
 			}
 		}
 
-		err := CVEToOSV(cve, *outDir)
+		Metrics.CVEsForKnownRepos++
+
+		err := CVEToOSV(cve, ReposForCVE[cve.CVE.CVEDataMeta.ID], *outDir)
 		if err != nil {
-			// We did have a repo, though...
-			Metrics.CVEsForKnownRepos++
 			Logger.Warnf("Failed to generate an OSV record for %s: %+v", cve.CVE.CVEDataMeta.ID, err)
 			continue
 		}

@@ -122,6 +122,7 @@ var (
 		"https://github.com/fireeye/Vulnerability-Disclosures",
 		"https://github.com/GitHubAssessments/CVE_Assessments_11_2019",
 		"https://github.com/github/cvelist",        // Fork of https://github.com/CVEProject/cvelist
+		"https://github.com/gitlabhq/gitlabhq",     // GitHub mirror, not canonical
 		"https://github.com/google/oss-fuzz-vulns", // 8^)
 		"https://github.com/Gr4y21/My-CVE-IDs",
 		"https://github.com/hemantsolo/CVE-Reference",

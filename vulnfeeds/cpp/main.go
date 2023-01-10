@@ -9,12 +9,12 @@ import (
 	"log"
 	"net/url"
 	"os"
+	"path"
 	"path/filepath"
 	"strings"
 
 	"cloud.google.com/go/logging"
 	"github.com/go-git/go-git/v5"
-	"github.com/go-git/go-git/v5/storage/memory"
 	"github.com/google/osv/vulnfeeds/cves"
 	"github.com/google/osv/vulnfeeds/utility"
 	"github.com/google/osv/vulnfeeds/vulns"
@@ -75,25 +75,50 @@ func InScopeGitRepo(repoURL string) bool {
 	return true
 }
 
-// Clones repos and tries to convert version tags to commits
+func GetRepoDir(repoURL string) string {
+	repobasedir := "/tmp/repos" // TODO: flag and parameterise
+	parsedURL, err := url.Parse(repoURL)
+	if err != nil {
+		return ""
+	}
+	return path.Join(repobasedir, parsedURL.Hostname(), parsedURL.Path)
+}
+
+// Either clones the repository or returns the one previously cloned.
+func GetRepo(repoURL string) (r *git.Repository, e error) {
+	repodir := GetRepoDir(repoURL)
+	// TODO: reorder to open, then clone, once behaviour and failure modes understood
+	Logger.Infof("Cloning %s", repoURL)
+	r, err := git.PlainClone(repodir, false, &git.CloneOptions{
+		URL: repoURL,
+	})
+	if err != nil && err != git.ErrRepositoryAlreadyExists {
+		return nil, err
+	}
+	r, err = git.PlainOpen(repodir)
+	if err != nil {
+		return nil, err
+	}
+	return r, nil
+}
+
+// Examines repos and tries to convert version tags to commits
 func GitVersionToCommit(versions cves.VersionInfo, repos []string) (v cves.VersionInfo, e error) {
 	// versions is a VersionInfo with AffectedVersions and no FixCommits
 	// v is a VersionInfo with FixCommits included
 	v = versions
 	for _, repo := range repos {
-		Logger.Infof("Cloning %s", repo)
-		r, err := git.Clone(memory.NewStorage(), nil, &git.CloneOptions{
-			URL: repo,
-		})
+		r, err := GetRepo(repo)
 		if err != nil {
-			Logger.Warnf("Failed clone %s: %v", repo, err)
+			Logger.Warnf("Failed to get %s: %v", repo, err)
 			continue
 		}
 		for _, av := range versions.AffectedVersions {
+			// We can't map a non-existent version to a tag and commit, so skip.
 			if av.Fixed == "" {
 				continue
 			}
-			// Need to come up with a way to decide when to prefix
+			// TODO: add more sophisticated (fuzzy) version to tag matching.
 			ref, err := r.Tag("v" + av.Fixed)
 			if err != nil {
 				Logger.Warnf("Failed to find a tag for %q in %s: %v", av.Fixed, repo, err)

@@ -172,6 +172,11 @@ var (
 		"https://github.com/z00z00z00/Safenet_SAC_CVE-2021-42056",
 		"https://github.com/zer0yu/CVE_Request",
 		"https://github.com/Zeyad-Azima/Issabel-stored-XSS",
+		"https://gitlab.com/gitlab-org/gitlab-ce",      // redirects to gitlab-foss
+		"https://gitlab.com/gitlab-org/gitlab-ee",      // redirects to gitlab
+		"https://gitlab.com/gitlab-org/gitlab-foss",    // not the canonical source
+		"https://gitlab.com/gitlab-org/omnibus-gitlab", // not the source
+		"https://gitlab.com/gitlab-org/release",        // not the source
 	}
 	// Match repos with "CVE", "CVEs" or a pure CVE number in their name, anything from GitHubAssessments
 	InvalidRepoRegex   = `(?i)/(?:(?:CVEs?)|(?:CVE-\d{4}-\d{4,})|GitHubAssessments/.*|advisories/GHSA.*)$`

@@ -131,7 +131,9 @@ def _use_existing_checkout(git_url,
   repo = pygit2.Repository(checkout_dir)
   repo.cache = {}
   if repo.remotes['origin'].url != _git_mirror(git_url):
-    raise RuntimeError('Repo URL changed.')
+    logging.warn('origin url updated:\nOld: %s\nNew: %s',
+                 repo.remotes['origin'].url, _git_mirror(git_url))
+    repo.remotes['origin'].url = _git_mirror(git_url)
 
   if branch:
     _checkout_branch(repo, branch)

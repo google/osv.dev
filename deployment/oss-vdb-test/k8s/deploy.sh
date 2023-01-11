@@ -23,6 +23,7 @@ if ! oss_fuzz_time && ! [ -n "$FORCE" ]; then
   exit 1
 fi
 
+# Check upstream url master by creating a temporary remote.
 git remote add $UPSTREAM_REMOTE_NAME $UPSTREAM_URL
 git fetch $UPSTREAM_REMOTE_NAME
 

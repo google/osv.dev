@@ -431,7 +431,8 @@ class NuGet(Ecosystem):
 class Alpine(Ecosystem):
   """Alpine packages ecosystem"""
 
-  _APORTS_GIT_URL = 'https://gitlab.alpinelinux.org/alpine/aports.git'
+  # Use github mirror which supports more bandwidth.
+  _APORTS_GIT_URL = 'https://github.com/alpinelinux/aports.git'
   _BRANCH_SUFFIX = '-stable'
   alpine_release_ver: str
   _GIT_REPO_PATH = 'version_enum/aports/'

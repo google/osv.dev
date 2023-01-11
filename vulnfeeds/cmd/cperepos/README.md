@@ -7,11 +7,11 @@ metadata mirror with:
 
 ```
 wget \
-  --directory debian_copyright
+  --directory debian_copyright \
     --mirror \
     -A debian_copyright \
     -A index.html \
-    https://metadata.ftp-master.debian.org/changelogs/main`
+    https://metadata.ftp-master.debian.org/changelogs/main
 ```
 
 ```

@@ -1283,7 +1283,7 @@ class UpdateTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
 
 if __name__ == '__main__':
   os.system('pkill -f datastore')
-  ds_emulator = tests.start_datastore_emulator()
+  ds_emulator = tests.start_datastore_emulator(timeout=60)
   try:
     ndb_client = ndb.Client()
     with ndb_client.context() as context:

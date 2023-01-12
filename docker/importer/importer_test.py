@@ -501,7 +501,7 @@ class BucketImporterTest(unittest.TestCase):
 
 if __name__ == '__main__':
   os.system('pkill -f datastore')
-  ds_emulator = tests.start_datastore_emulator()
+  ds_emulator = tests.start_datastore_emulator(timeout=60)
   try:
     with ndb.Client().context() as context:
       context.set_memcache_policy(False)

@@ -30,7 +30,7 @@ from . import semver_index
 from . import sources
 from . import vulnerability_pb2
 
-SCHEMA_VERSION = '1.3.0'
+SCHEMA_VERSION = '1.3.1'
 
 
 def _check_valid_severity(prop, value):

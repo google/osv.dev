@@ -60,7 +60,7 @@ jobs:
       - name: Set up Cloud SDK
         uses: google-github-actions/setup-gcloud@v1
         with:
-          install_components: 'cloud-datastore-emulator'
+          install_components: 'beta,cloud-datastore-emulator'
       - name: Run worker unittests
         run: |
           cd docker/worker
@@ -83,7 +83,7 @@ jobs:
       - name: Set up Cloud SDK
         uses: google-github-actions/setup-gcloud@v1
         with:
-          install_components: 'cloud-datastore-emulator'
+          install_components: 'beta,cloud-datastore-emulator'
       - name: Run importer unittests
         run: |
           cd docker/importer

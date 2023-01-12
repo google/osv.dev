@@ -90,7 +90,7 @@ class MockRepo:
                              [self._repo.head.peel().oid])
 
 
-def start_datastore_emulator():
+def start_datastore_emulator(timeout=_EMULATOR_TIMEOUT):
   """Starts Datastore emulator."""
   os.environ['DATASTORE_EMULATOR_HOST'] = 'localhost:' + str(
       _DATASTORE_EMULATOR_PORT)
@@ -110,14 +110,11 @@ def start_datastore_emulator():
                           stdout=subprocess.PIPE,
                           stderr=subprocess.STDOUT)
 
-  _wait_for_emulator_ready(proc, 'datastore', _DATASTORE_READY_INDICATOR)
+  _wait_for_emulator_ready(proc, 'datastore', _DATASTORE_READY_INDICATOR, timeout)
   return proc
 
 
-def _wait_for_emulator_ready(proc,
-                             emulator,
-                             indicator,
-                             timeout=_EMULATOR_TIMEOUT):
+def _wait_for_emulator_ready(proc, emulator, indicator, timeout):
   """Waits for emulator to be ready."""
 
   def _read_thread(proc, ready_event):

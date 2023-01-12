@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-name: unittest
+name: OSV Unittests
 
 on:
   push:
@@ -57,6 +57,9 @@ jobs:
       - name: Install pipenv
         run: |
           python -m pip install --upgrade pipenv
+      - name: Set up Cloud SDK
+        uses: google-github-actions/setup-gcloud@v1
+        install_components: 'cloud-datastore-emulator'
       - name: Run worker unittests
         run: |
           cd docker/worker
@@ -76,6 +79,9 @@ jobs:
       - name: Install pipenv
         run: |
           python -m pip install --upgrade pipenv
+      - name: Set up Cloud SDK
+        uses: google-github-actions/setup-gcloud@v1
+        install_components: 'cloud-datastore-emulator'
       - name: Run importer unittests
         run: |
           cd docker/importer

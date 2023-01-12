@@ -110,7 +110,8 @@ def start_datastore_emulator(timeout=_EMULATOR_TIMEOUT):
                           stdout=subprocess.PIPE,
                           stderr=subprocess.STDOUT)
 
-  _wait_for_emulator_ready(proc, 'datastore', _DATASTORE_READY_INDICATOR, timeout)
+  _wait_for_emulator_ready(proc, 'datastore', _DATASTORE_READY_INDICATOR,
+                           timeout)
   return proc
 
 

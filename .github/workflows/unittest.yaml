@@ -36,6 +36,9 @@ jobs:
         uses: actions/setup-python@v4
         with:
           python-version: '3.8'
+      - name: Install pipenv
+        run: |
+          python -m install --upgrade pipenv
       - name: Run top-level unittests
         run: |
           bash -ex run_tests.sh
@@ -51,6 +54,9 @@ jobs:
         uses: actions/setup-python@v4
         with:
           python-version: '3.8'
+      - name: Install pipenv
+        run: |
+          python -m install --upgrade pipenv
       - name: Run worker unittests
         run: |
           cd docker/worker
@@ -67,6 +73,9 @@ jobs:
         uses: actions/setup-python@v4
         with:
           python-version: '3.8'
+      - name: Install pipenv
+        run: |
+          python -m install --upgrade pipenv
       - name: Run importer unittests
         run: |
           cd docker/importer

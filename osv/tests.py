@@ -123,6 +123,7 @@ def _wait_for_emulator_ready(proc, emulator, indicator, timeout):
     ready = False
     while True:
       line = proc.stdout.readline()
+      print("Saw this from datastore emulator: ", line)
       if not line:
         break
 

@@ -182,6 +182,7 @@
 110.73-r0
 1
 
+# Versions with . connecting the revisions instead of -
 10.2.22.r0
 10.2.24.r0
 0.8.21.r2

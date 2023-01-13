@@ -3,6 +3,7 @@ package main
 import (
 	"bufio"
 	"os"
+	"strings"
 	"testing"
 )
 
@@ -15,6 +16,9 @@ func Test_valid_version_InvalidVersions(t *testing.T) {
 	scanner := bufio.NewScanner(file)
 	for scanner.Scan() {
 		ver := scanner.Text()
+		if len(ver) == 0 || strings.HasPrefix(ver, "#") {
+			continue
+		}
 		if valid_version(ver) {
 			t.Errorf("Invalid version is valid: %s", ver)
 		}
@@ -30,7 +34,7 @@ func Test_valid_version_ValidVersions(t *testing.T) {
 	scanner := bufio.NewScanner(file)
 	for scanner.Scan() {
 		ver := scanner.Text()
-		if len(ver) == 0 {
+		if len(ver) == 0 || strings.HasPrefix(ver, "#") {
 			continue
 		}
 		if !valid_version(ver) {

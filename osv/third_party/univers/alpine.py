@@ -6,8 +6,6 @@
 # https://github.com/nexB/univers for support and download.
 
 # Modified to support revisions in the form of <ver>-r<rev-num>
-# Also modified to support not technically valid versions strings that exist
-# in the alpine repository. See patch_and_normalize for normalizations.
 import attr
 import re
 
@@ -158,27 +156,19 @@ class AlpineLinuxVersion(Version):
   patch_finder = re.compile(r'(\d+)(p\d+)')
 
   @classmethod
-  def patch_and_normalize(cls, input: str) -> str:
-    # Replace all - with .
-    # This is required because some versions look like this:
-    # 4.10-1-r1, or 57-1-r2
-    val = input.replace('-', '.')
-    # Replace multiple periods with one, because some versions look like this:
-    # 1.7.5.-r1, 1.18.-r2
-    val = re.sub(re.compile(r'\.{2,}'), '.', val)
-
+  def add_underscore(cls, input: str) -> str:
     return re.sub(cls.patch_finder, r'\1_\2', input, 1)
 
   @classmethod
   def build_value(cls, string: str):
     search = cls.version_extractor.search(string)
     main_group = search.group(1)
-    main_group_patched = cls.patch_and_normalize(main_group)
+    main_group_patched = cls.add_underscore(main_group)
     return (main_group_patched, int(search.group(2) or 0))
 
   @classmethod
   def is_valid(cls, string):
-    string_patched = cls.patch_and_normalize(string)
+    string_patched = cls.add_underscore(string)
     return is_valid_alpine_version(string_patched) and gentoo.is_valid(
         string_patched)
 

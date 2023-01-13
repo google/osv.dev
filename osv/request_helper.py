@@ -29,10 +29,8 @@ class RequestError(Exception):
 
   def __init__(self, response: requests.Response):
     self.response = response
-    super().__init__(
-        f'{response.status_code} Server Error: {response.reason} '
-        f'for url: {response.request.url}'
-    )
+    super().__init__(f'{response.status_code} Server Error: {response.reason} '
+                     f'for url: {response.request.url}')
 
 
 class RequestHelper:

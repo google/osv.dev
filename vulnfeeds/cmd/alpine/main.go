@@ -93,6 +93,16 @@ func getAlpineSecDBData() map[string][]VersionAndPkg {
 			for version, cveIds := range pkg.Pkg.SecFixes {
 				for _, cveId := range cveIds {
 					cveId = strings.Split(cveId, " ")[0]
+
+					if !valid_version(version) {
+						log.Printf("Invalid alpine version: '%s', on package: '%s', and alpine version: '%s'",
+							version,
+							pkg.Pkg.Name,
+							alpineVer,
+						)
+						continue
+					}
+
 					allAlpineSecDb[cveId] = append(allAlpineSecDb[cveId],
 						VersionAndPkg{
 							Pkg:       pkg.Pkg.Name,

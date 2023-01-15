@@ -5,6 +5,7 @@ module "osv_test" {
 
   public_import_logs_bucket     = "osv-test-public-import-logs"
   vulnerabilities_export_bucket = "osv-test-vulnerabilities"
+  cve_osv_conversion_bucket = "cve-osv-conversion"
 
   api_url               = "api.test.osv.dev"
   api_backend_image_tag = "20230105"

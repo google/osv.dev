@@ -7,7 +7,7 @@ import (
 	"testing"
 )
 
-func Test_valid_version_InvalidVersions(t *testing.T) {
+func Test_validVersion_InvalidVersions(t *testing.T) {
 	file, err := os.Open("fixtures/invalid_versions.txt")
 	if err != nil {
 		t.Error("Failed to open invalid_version.txt")
@@ -19,13 +19,13 @@ func Test_valid_version_InvalidVersions(t *testing.T) {
 		if len(ver) == 0 || strings.HasPrefix(ver, "#") {
 			continue
 		}
-		if valid_version(ver) {
+		if validVersion(ver) {
 			t.Errorf("Invalid version is valid: %s", ver)
 		}
 	}
 }
 
-func Test_valid_version_ValidVersions(t *testing.T) {
+func Test_validVersion_ValidVersions(t *testing.T) {
 	file, err := os.Open("fixtures/valid_versions.txt")
 	if err != nil {
 		t.Error("Failed to open valid_version.txt")
@@ -37,7 +37,7 @@ func Test_valid_version_ValidVersions(t *testing.T) {
 		if len(ver) == 0 || strings.HasPrefix(ver, "#") {
 			continue
 		}
-		if !valid_version(ver) {
+		if !validVersion(ver) {
 			t.Errorf("valid version is invalid: %s", ver)
 		}
 	}

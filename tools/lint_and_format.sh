@@ -48,7 +48,7 @@ done
 
 terraform_fmt_findings=""
 cd $IN_SCOPE_TERRAFORM_FILES
-if ! terraform fmt -check -recursive; then
+if ! terraform fmt -check -recursive -diff; then
   terraform_fmt_findings="terraform_fmt_findings"
 fi
 

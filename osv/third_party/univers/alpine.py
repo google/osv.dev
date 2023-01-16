@@ -36,7 +36,7 @@ def is_valid_alpine_version(s: str):
 
   s = search.group(1)
   left, _, _ = s.partition(".")
-  # hanlde the suffix case
+  # handle the suffix case
   left, _, _ = left.partition("-")
   if not left.isdigit():
     return True
@@ -148,10 +148,11 @@ class AlpineLinuxVersion(Version):
   """Alpine linux version"""
   # E.g. For this version (1.9.5_p2-r3), the following regex
   # extracts (1.9.5_p2) and (3)
-  version_extractor = re.compile(r'(.+?)(?:-r(\d+))?$')
+  version_extractor = re.compile(r'(.+?)(?:[\.-]r(\d+))?$')
 
   # Some suffixes are not separated with an underscore. E.g. 1.9.5p2
   # This should find them for inserting an underscore (replace with r'\1_\2')
+  # See: https://gitlab.alpinelinux.org/alpine/abuild/-/issues/10088 for more context
   patch_finder = re.compile(r'(\d+)(p\d+)')
 
   @classmethod

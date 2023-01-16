@@ -38,6 +38,8 @@ class GetNextVersionTest(unittest.TestCase):
     with self.assertRaises(ecosystems.EnumerateError):
       ecosystem.next_version('doesnotexist123456', '1')
 
+  @unittest.skipIf(
+      os.getenv('DEPSDEV_API_KEY'), 'Unnecessary if using deps.dev')
   def test_maven(self):
     """Test Maven."""
     ecosystem = ecosystems.get('Maven')
@@ -47,6 +49,8 @@ class GetNextVersionTest(unittest.TestCase):
     with self.assertRaises(ecosystems.EnumerateError):
       ecosystem.next_version('blah:doesnotexist123456', '1')
 
+  @unittest.skipIf(
+      os.getenv('DEPSDEV_API_KEY'), 'Unnecessary if using deps.dev')
   @mock.patch('requests.Session.get', side_effect=requests.get)
   def test_maven_with_cache(self, mock_get):
     """Test Maven."""

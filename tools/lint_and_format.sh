@@ -14,6 +14,9 @@
 # limitations under the License.
 
 script_dir=$(dirname "$0")
+
+# Go to root dir before running any of the following commands
+cd "$script_dir/.."
 IN_SCOPE_PYTHON_FILES="$(git ls-files | grep '\.py$' | grep -v -E '(_pb2|third_party)')"
 # Explicitly excluding the docs directory due to
 # tools.go:4:2: import "github.com/grpc-ecosystem/grpc-gateway/v2/protoc-gen-openapiv2" is a program,not an importable package
@@ -21,6 +24,8 @@ IN_SCOPE_PYTHON_FILES="$(git ls-files | grep '\.py$' | grep -v -E '(_pb2|third_p
 # tools.go:6:2: import "google.golang.org/protobuf/cmd/protoc-gen-go" is a program, not an importable package
 # See also https://github.com/google/osv.dev/issues/573
 IN_SCOPE_GO_MODULES="$(git ls-files | fgrep go.mod | fgrep -v docs | xargs dirname)"
+
+IN_SCOPE_TERRAFORM_FILES="$script_dir/../deployment/terraform/"
 
 python_lint_findings=""
 if ! echo "$IN_SCOPE_PYTHON_FILES" | xargs pylint --rcfile="$script_dir/../.pylintrc"; then
@@ -41,7 +46,13 @@ for module_dir in $IN_SCOPE_GO_MODULES; do
   cd - > /dev/null
 done
 
-if [ $python_lint_findings ] || [ $python_format_findings ] || [ $go_vet_findings ]; then
+terraform_fmt_findings=""
+cd $IN_SCOPE_TERRAFORM_FILES
+if ! terraform fmt -check -recursive; then
+  terraform_fmt_findings="terraform_fmt_findings"
+fi
+
+if [ $python_lint_findings ] || [ $python_format_findings ] || [ $go_vet_findings ] || [ $terraform_fmt_findings ]; then
   echo "Please fix the above findings"
   exit 1
 fi

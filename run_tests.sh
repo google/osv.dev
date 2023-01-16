@@ -1,6 +1,9 @@
 #!/bin/bash -ex
 
 export PIPENV_IGNORE_VIRTUALENVS=1
+set +x  # Keep the API key out of execution logs
+export DEPSDEV_API_KEY=$(kubectl get secret secrets -o jsonpath='{.data.deps\.dev}' | base64 --decode)
+set -x
 python3 -m pipenv sync
 python3 -m pipenv run python -m unittest osv.bug_test
 python3 -m pipenv run python -m unittest osv.ecosystems_test

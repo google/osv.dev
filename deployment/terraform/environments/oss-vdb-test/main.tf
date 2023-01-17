@@ -8,7 +8,7 @@ module "osv_test" {
   cve_osv_conversion_bucket     = "osv-test-cve-osv-conversion"
 
   api_url               = "api.test.osv.dev"
-  esp_version           = "2.40.0"
+  esp_version           = "2.41.0"
   api_backend_image_tag = "20230105"
 }
 

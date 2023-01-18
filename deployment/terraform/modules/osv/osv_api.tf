@@ -46,6 +46,7 @@ resource "google_project_service" "grpc_service_api" {
 
 data "external" "esp_version" {
   program = ["bash", "${path.module}/scripts/esp_full_version"]
+  query   = { esp_tag = var.esp_version }
 }
 
 resource "null_resource" "grpc_proxy_image" {
@@ -62,7 +63,8 @@ resource "null_resource" "grpc_proxy_image" {
       bash ${path.module}/scripts/gcloud_build_image \
         -s ${var.api_url} \
         -c ${google_endpoints_service.grpc_service.config_id} \
-        -p ${var.project_id}
+        -p ${var.project_id} \
+        -v ${var.esp_version}
     EOS
   }
 }

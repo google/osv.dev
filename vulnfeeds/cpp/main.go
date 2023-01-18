@@ -148,8 +148,10 @@ func CVEToOSV(CVE cves.CVEItem, repos []string, repobasedir string, directory st
 		if len(repos) == 0 {
 			return fmt.Errorf("No affected ranges for %s for %q, and no repos to try and convert %+v to tags with", CVE.CVE.CVEDataMeta.ID, CPE.Product, versions.AffectedVersions)
 		}
-		Logger.Infof("[%s]: Trying to convert version tags %+v to commits using %v", CVE.CVE.CVEDataMeta.ID, versions.AffectedVersions, repos)
-		versions, err = GitVersionToCommit(versions, repos, repobasedir)
+		if repobasedir != "" {
+			Logger.Infof("[%s]: Trying to convert version tags %+v to commits using %v", CVE.CVE.CVEDataMeta.ID, versions.AffectedVersions, repos)
+			versions, err = GitVersionToCommit(versions, repos, repobasedir)
+		}
 	}
 
 	affected := vulns.Affected{}

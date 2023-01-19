@@ -257,6 +257,37 @@ func TestRepo(t *testing.T) {
 	}
 }
 
+func TestValidRepo(t *testing.T) {
+	tests := []struct {
+		description    string
+		repoURL        string
+		expectedResult interface{}
+		expectedOk     bool
+	}{
+		{
+			description:    "Valid repository",
+			repoURL:        "https://github.com/torvalds/linux",
+			expectedResult: true,
+			expectedOk:     true,
+		},
+		{
+			description:    "Invalid repository",
+			repoURL:        "https://github.com/andrewpollock/mybogusrepo",
+			expectedResult: false,
+			expectedOk:     true,
+		},
+	}
+	for _, tc := range tests {
+		got, err := ValidRepo(tc.repoURL)
+		if err != nil && tc.expectedOk {
+			t.Errorf("test %q: ValidRepo(%q) unexpectedly failed: %#v", tc.description, tc.repoURL, err)
+		}
+		if !reflect.DeepEqual(got, tc.expectedResult) {
+			t.Errorf("test %q: ValidRepo(%q) was incorrect, got: %#v, expected: %#v", tc.description, tc.repoURL, got, tc.expectedResult)
+		}
+	}
+}
+
 func TestExtractGitCommit(t *testing.T) {
 	tests := []struct {
 		description       string

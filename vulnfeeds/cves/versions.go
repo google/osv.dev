@@ -22,6 +22,9 @@ import (
 	"regexp"
 	"strings"
 
+	"github.com/go-git/go-git/v5"
+	"github.com/go-git/go-git/v5/config"
+	"github.com/go-git/go-git/v5/storage/memory"
 	"github.com/knqyf263/go-cpe/naming"
 	"golang.org/x/exp/slices"
 )
@@ -260,6 +263,22 @@ func Commit(u string) (string, error) {
 
 	// If we get to here, we've encountered an unsupported URL.
 	return "", fmt.Errorf("Commit(): unsupported URL: %s", u)
+}
+
+// Validate the repo by attempting to query it's references.
+func ValidRepo(u string) (valid bool, e error) {
+	remoteConfig := &config.RemoteConfig{
+		Name: "source",
+		URLs: []string{
+			u,
+		},
+	}
+	r := git.NewRemote(memory.NewStorage(), remoteConfig)
+	_, err := r.List(&git.ListOptions{})
+	if err != nil {
+		return false, err
+	}
+	return true, nil
 }
 
 // For URLs referencing commits in supported Git repository hosts, return a FixCommit.

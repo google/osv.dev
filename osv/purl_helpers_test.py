@@ -42,6 +42,11 @@ class PurlHelpersTest(unittest.TestCase):
     self.assertEqual('pkg:deb/debian/nginx?arch=source',
                      purl_helpers.package_to_purl('Debian', 'nginx'))
 
+  def test_alpine(self):
+    """Test PURL generation for alpine."""
+    self.assertEqual('pkg:apk/alpine/nginx?arch=source',
+                     purl_helpers.package_to_purl('Alpine', 'nginx'))
+
 
 if __name__ == '__main__':
   unittest.main()

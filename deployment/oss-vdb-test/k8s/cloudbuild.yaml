@@ -47,6 +47,14 @@ steps:
   args: ['push', 'gcr.io/$PROJECT_ID/exporter:$COMMIT_SHA']
 - name: gcr.io/cloud-builders/docker
   args: ['push', 'gcr.io/$PROJECT_ID/exporter']
+- name: gcr.io/cloud-builders/docker
+  args: ['push', 'gcr.io/$PROJECT_ID/alpine-cve-convert:$COMMIT_SHA']
+- name: gcr.io/cloud-builders/docker
+  args: ['push', 'gcr.io/$PROJECT_ID/alpine-cve-convert']
+- name: gcr.io/cloud-builders/docker
+  args: ['push', 'gcr.io/$PROJECT_ID/combine-to-osv:$COMMIT_SHA']
+- name: gcr.io/cloud-builders/docker
+  args: ['push', 'gcr.io/$PROJECT_ID/combine-to-osv']
 # Apply GKE configs.
 - name: gcr.io/cloud-builders/gke-deploy
   args: ['run', '--filename=workers', '--image=gcr.io/$PROJECT_ID/worker:$COMMIT_SHA', '--location=us-central1-f', '--cluster=workers', '--output=/tmp', '--timeout=10m0s']
@@ -58,10 +66,10 @@ steps:
   args: ['run', '--filename=exporter', '--image=gcr.io/$PROJECT_ID/exporter:$COMMIT_SHA', '--location=us-central1-f', '--cluster=workers', '--output=/tmp']
   dir: 'gke'
 - name: gcr.io/cloud-builders/gke-deploy
-  args: ['run', '--filename=alpine-cve-convert', '--image=gcr.io/$PROJECT_ID/worker:$COMMIT_SHA', '--location=us-central1-f', '--cluster=workers', '--output=/tmp', '--timeout=10m0s']
+  args: ['run', '--filename=alpine-cve-convert', '--image=gcr.io/$PROJECT_ID/alpine-cve-convert:$COMMIT_SHA', '--location=us-central1-f', '--cluster=workers', '--output=/tmp']
   dir: 'gke'
 - name: gcr.io/cloud-builders/gke-deploy
-  args: ['run', '--filename=combine-to-osv', '--image=gcr.io/$PROJECT_ID/worker:$COMMIT_SHA', '--location=us-central1-f', '--cluster=workers', '--output=/tmp', '--timeout=10m0s']
+  args: ['run', '--filename=combine-to-osv', '--image=gcr.io/$PROJECT_ID/combine-to-osv:$COMMIT_SHA', '--location=us-central1-f', '--cluster=workers', '--output=/tmp']
   dir: 'gke'
 # TODO(ochang): Debian, indexer.
 # TODO(ochang): API deployment

@@ -24,6 +24,7 @@ import (
 
 	"github.com/go-git/go-git/v5"
 	"github.com/go-git/go-git/v5/config"
+	"github.com/go-git/go-git/v5/plumbing/transport"
 	"github.com/go-git/go-git/v5/storage/memory"
 	"github.com/knqyf263/go-cpe/naming"
 	"golang.org/x/exp/slices"
@@ -275,8 +276,12 @@ func ValidRepo(u string) (valid bool, e error) {
 	}
 	r := git.NewRemote(memory.NewStorage(), remoteConfig)
 	_, err := r.List(&git.ListOptions{})
+	if err != nil && err == transport.ErrAuthenticationRequired {
+		// somewhat strangely, we get an authentication prompt via Git on non-existent repos.
+		return false, nil
+	}
 	if err != nil {
-		return false, err
+		return false, nil
 	}
 	return true, nil
 }

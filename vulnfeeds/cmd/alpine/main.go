@@ -126,7 +126,7 @@ func generateAlpineOSV(allAlpineSecDb map[string][]VersionAndPkg, alpineOutputPa
 				PkgName:      verPkg.Pkg,
 				FixedVersion: verPkg.Ver,
 				Ecosystem:    "Alpine:" + verPkg.AlpineVer,
-				PURL:         "pkg:alpine/" + verPkg.Pkg,
+				PURL:         "pkg:apk/alpine/" + verPkg.Pkg + "?arch=source",
 			}
 			pkgInfos = append(pkgInfos, pkgInfo)
 		}

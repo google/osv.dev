@@ -95,13 +95,20 @@ def normalize(version):
     pre = 'z' * _FAKE_PRE_WIDTH
     return f'{core_parts}-{pre}'
 
+  pre = normalize_prerelease(version.prerelease)
+  return f'{core_parts}-{pre}'
+
+
+def normalize_prerelease(prerelease):
+  """Normalize semver pre-release version suffix for indexing (to allow for
+  lexical sorting/filtering)."""
   # 4. Precedence for two pre-release versions with the same major, minor, and
   # patch version MUST be determined by comparing each dot separated identifier
   # from left to right until a difference is found as follows:
   #
   # Normalization: Pad the components.
   pre_components = []
-  for component in version.prerelease.split('.'):
+  for component in prerelease.split('.'):
     # 3. Numeric identifiers always have lower precedence than non-numeric
     # identifiers.
     #
@@ -119,6 +126,4 @@ def normalize(version):
   # set, if all of the preceding identifiers are equal.
   #
   # Consistent with lexical sorting after normalization.
-
-  pre = '.'.join(pre_components)
-  return f'{core_parts}-{pre}'
+  return '.'.join(pre_components)

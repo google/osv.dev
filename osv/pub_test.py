@@ -64,7 +64,7 @@ class PubTest(unittest.TestCase):
     check_version_equals("01.2.3", "1.2.3")
     check_version_equals("1.02.3", "1.2.3")
     check_version_equals("1.2.03", "1.2.3")
-    # check_version_equals("1.2.3-01", "1.2.3-1")
+    check_version_equals("1.2.3-01", "1.2.3-1")
     check_version_equals("1.2.3+01", "1.2.3+1")
 
 if __name__ == '__main__':

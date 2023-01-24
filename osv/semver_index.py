@@ -42,14 +42,28 @@ def _remove_leading_zero(component):
 def coerce(version):
   """Coerce a potentially invalid semver into valid semver."""
   version = _strip_leading_v(version)
-  version_pattern = re.compile(r'^(\d+)(\.\d+)?(\.\d+)?(.*)$')
+  version_pattern = re.compile(r'^(\d+)(\.\d+)?(\.\d+)?(([^+]*)(.*))$')
   match = version_pattern.match(version)
   if not match:
     return version
 
+  # also remove leading 0's from pre-release suffix
+  if match.group(4) and match.group(4)[0] == "-":
+    pre_components = []
+    for component in match.group(5)[1:].split('.'):
+      if component.isdigit():
+        pre_components.append(_remove_leading_zero(component))
+      else:
+        pre_components.append(component)
+    suffix = "-" + ".".join(pre_components) + match.group(6)
+  else:
+    suffix = match.group(4)
+
+
+
   return (_remove_leading_zero(match.group(1)) +
           _remove_leading_zero(match.group(2) or '.0') +
-          _remove_leading_zero(match.group(3) or '.0') + match.group(4))
+          _remove_leading_zero(match.group(3) or '.0') + suffix)
 
 
 def is_valid(version):

@@ -31,22 +31,10 @@ class PubTest(unittest.TestCase):
     """Test version comparisons."""
     # A correctly sorted list of versions.
     versions = [
-      '1.0.0-alpha',
-      '1.0.0-alpha.1',
-      '1.0.0-beta.2',
-      '1.0.0-beta.11',
-      '1.0.0-rc.1',
-      '1.0.0-rc.1+build.1',
-      '1.0.0',
-      '1.0.0+0.3.7',
-      '1.3.7+build',
-      '1.3.7+build.2.b8f12d7',
-      '1.3.7+build.11.e0f985a',
-      '2.0.0',
-      '2.1.0',
-      '2.2.0',
-      '2.11.0',
-      '2.11.1'
+        '1.0.0-alpha', '1.0.0-alpha.1', '1.0.0-beta.2', '1.0.0-beta.11',
+        '1.0.0-rc.1', '1.0.0-rc.1+build.1', '1.0.0', '1.0.0+0.3.7',
+        '1.3.7+build', '1.3.7+build.2.b8f12d7', '1.3.7+build.11.e0f985a',
+        '2.0.0', '2.1.0', '2.2.0', '2.11.0', '2.11.1'
     ]
 
     for i, a_str in enumerate(versions):
@@ -58,14 +46,26 @@ class PubTest(unittest.TestCase):
 
   def test_equality(self):
     """Test version equality."""
+
     def check_version_equals(v1, v2):
       self.assertEqual(pub.Version.from_string(v1), pub.Version.from_string(v2))
-    
-    check_version_equals("01.2.3", "1.2.3")
-    check_version_equals("1.02.3", "1.2.3")
-    check_version_equals("1.2.03", "1.2.3")
-    check_version_equals("1.2.3-01", "1.2.3-1")
-    check_version_equals("1.2.3+01", "1.2.3+1")
+
+    check_version_equals('01.2.3', '1.2.3')
+    check_version_equals('1.02.3', '1.2.3')
+    check_version_equals('1.2.03', '1.2.3')
+    check_version_equals('1.2.3-01', '1.2.3-1')
+    check_version_equals('1.2.3+01', '1.2.3+1')
+
+  def test_parse(self):
+    """Test versions can be parsed."""
+    pub.Version.from_string('0.0.0')
+    pub.Version.from_string('12.34.56')
+    pub.Version.from_string('1.2.3-alpha.1')
+    pub.Version.from_string('1.2.3-x.7.z-92')
+    pub.Version.from_string('1.2.3+build.1')
+    pub.Version.from_string('1.2.3+x.7.z-92')
+    pub.Version.from_string('1.0.0-rc-1+build-1')
+
 
 if __name__ == '__main__':
   unittest.main()

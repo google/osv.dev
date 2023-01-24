@@ -31,18 +31,18 @@ from . import semver_index
 # leading 0s on numeric identifiers, but our SemVer implementation also will
 # parse these cases.
 
+
 @functools.total_ordering
 class Version:
   """Pub version."""
 
   def __init__(self, semver):
     # Tuple comparison of (semver,) or (semver, build) is consistent with
-    # desired ordering. 
+    # desired ordering.
     if semver.build:
-        self._version = (semver,
-                          semver_index.normalize_prerelease(semver.build))
+      self._version = (semver, semver_index.normalize_prerelease(semver.build))
     else:
-        self._version = (semver,)
+      self._version = (semver,)
 
   def __lt__(self, other):
     return self._version < other._version

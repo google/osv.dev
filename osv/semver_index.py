@@ -48,18 +48,16 @@ def coerce(version):
     return version
 
   # also remove leading 0's from pre-release suffix
-  if match.group(4) and match.group(4)[0] == "-":
+  if match.group(4) and match.group(4)[0] == '-':
     pre_components = []
     for component in match.group(5)[1:].split('.'):
       if component.isdigit():
         pre_components.append(_remove_leading_zero(component))
       else:
         pre_components.append(component)
-    suffix = "-" + ".".join(pre_components) + match.group(6)
+    suffix = '-' + '.'.join(pre_components) + match.group(6)
   else:
     suffix = match.group(4)
-
-
 
   return (_remove_leading_zero(match.group(1)) +
           _remove_leading_zero(match.group(2) or '.0') +

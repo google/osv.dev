@@ -248,6 +248,32 @@ class GetNextVersionTest(unittest.TestCase):
 
         self.assertEqual(expected_value, sort_value, pieces)
 
+  def test_pub(self):
+    """Test Pub."""
+    ecosystem = ecosystems.get('Pub')
+
+    self.assertEqual('2.0.0-nullsafety.0',
+                     ecosystem.next_version('pub_semver', '1.4.4'))
+    self.assertEqual('2.0.0',
+                     ecosystem.next_version('pub_semver', '2.0.0-nullsafety.0'))
+    self.assertEqual('2.1.0', ecosystem.next_version('pub_semver', '2.0.0'))
+    self.assertEqual('2.1.1', ecosystem.next_version('pub_semver', '2.1.0'))
+
+    # Versions with pre-release and build suffixes.
+    self.assertEqual('3.0.0-alpha+2',
+                     ecosystem.next_version('mockito', '3.0.0-alpha'))
+    self.assertEqual('3.0.0-alpha+3',
+                     ecosystem.next_version('mockito', '3.0.0-alpha+2'))
+    self.assertEqual('3.0.0-beta',
+                     ecosystem.next_version('mockito', '3.0.0-alpha+5'))
+    self.assertEqual('3.0.0', ecosystem.next_version('mockito', '3.0.0-beta+3'))
+    self.assertEqual('4.1.1+1', ecosystem.next_version('mockito', '4.1.1'))
+    self.assertEqual('4.1.2', ecosystem.next_version('mockito', '4.1.1+1'))
+
+    # Version marked as retracted (go_router 4.2.1)
+    self.assertEqual('4.2.1', ecosystem.next_version('go_router', '4.2.0'))
+    self.assertEqual('4.2.2', ecosystem.next_version('go_router', '4.2.1'))
+
   def test_semver(self):
     """Test SemVer."""
     ecosystem = ecosystems.get('Go')

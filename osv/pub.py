@@ -50,6 +50,6 @@ class Version:
   def __eq__(self, other):
     return self._version == other._version
 
-  @staticmethod
-  def from_string(str_version):
+  @classmethod
+  def from_string(cls, str_version):
     return Version(semver_index.parse(str_version))

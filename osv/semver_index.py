@@ -39,29 +39,59 @@ def _remove_leading_zero(component):
   return str(int(component))
 
 
+def _coerce_suffix(suffix):
+  """Coerce a potentially invalid semver suffix into a valid semver suffix.
+
+  Removes leading zeros from the pre-release suffix and modifies empty
+  components to allow earlier SemVer specs (specifically 2.0.0-rc.1) to be
+  parsed.
+
+  Empty components are replaced with '-' (i.e 1.0.0-a..0 -> 1.0.0-a.-.0) which
+  mostly preserves ordering."""
+
+  if not suffix:
+    return suffix
+
+  suffix_pattern = re.compile(r'^(-[^+]*)?(\+.*)?(.*)$')
+  match = suffix_pattern.match(suffix)
+
+  pre = ''
+  if match.group(1):
+    pre_components = []
+    for component in match.group(1)[1:].split('.'):
+      if not component:
+        pre_components.append('-')
+      elif component.isdigit():
+        pre_components.append(_remove_leading_zero(component))
+      else:
+        pre_components.append(component)
+    pre = '-' + '.'.join(pre_components)
+
+  build = ''
+  if match.group(2):
+    build_components = []
+    for component in match.group(2)[1:].split('.'):
+      if not component:
+        build_components.append('-')
+      else:
+        build_components.append(component)
+    build = '+' + '.'.join(build_components)
+
+  return pre + build + match.group(3)
+
+
 def coerce(version):
   """Coerce a potentially invalid semver into valid semver."""
   version = _strip_leading_v(version)
-  version_pattern = re.compile(r'^(\d+)(\.\d+)?(\.\d+)?(([^+]*)(.*))$')
+  version_pattern = re.compile(r'^(\d+)(\.\d+)?(\.\d+)?(.*)$')
   match = version_pattern.match(version)
   if not match:
     return version
 
-  # also remove leading 0's from pre-release suffix
-  if match.group(4) and match.group(4)[0] == '-':
-    pre_components = []
-    for component in match.group(5)[1:].split('.'):
-      if component.isdigit():
-        pre_components.append(_remove_leading_zero(component))
-      else:
-        pre_components.append(component)
-    suffix = '-' + '.'.join(pre_components) + match.group(6)
-  else:
-    suffix = match.group(4)
-
   return (_remove_leading_zero(match.group(1)) +
           _remove_leading_zero(match.group(2) or '.0') +
-          _remove_leading_zero(match.group(3) or '.0') + suffix)
+          _remove_leading_zero(match.group(3) or '.0') +
+          _coerce_suffix(match.group(4)))
 
 
 def is_valid(version):

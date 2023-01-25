@@ -66,6 +66,35 @@ class PubTest(unittest.TestCase):
     pub.Version.from_string('1.2.3+x.7.z-92')
     pub.Version.from_string('1.0.0-rc-1+build-1')
 
+  def test_empty_identifier(self):
+    """Test parsing versions with empty identifiers.
+
+    Although it's unlikely that it was intentional, SemVer 2.0.0-rc.1 does not
+    explicitly disallow this case. Not sure if Pub even allows it.
+
+    This test is probably unnecessary."""
+
+    pub.Version.from_string('1.0.0-a..b')
+    pub.Version.from_string('1.0.0-.a.b')
+    pub.Version.from_string('1.0.0-a.b.')
+    pub.Version.from_string('1.0.0+a..b')
+    pub.Version.from_string('1.0.0+.a.b')
+    pub.Version.from_string('1.0.0+a.b.')
+    pub.Version.from_string('1.0.0-+')
+    pub.Version.from_string('1.0.0-.+.')
+    pub.Version.from_string('1.0.0-....+....')
+
+    # Basic test for ordering.
+    v_empty = pub.Version.from_string('1.0.0-a..b')
+    v_number = pub.Version.from_string('1.0.0-a.0.b')
+    v_str = pub.Version.from_string('1.0.0-a.a.b')
+    self.assertLess(v_number, v_empty)
+    self.assertLess(v_empty, v_str)
+
+    # note(michaelkedar):
+    # The implementation incorrectly assumes "1.0.0.a..b" == "1.0.0.a.-.b"
+    # I have decided that this extreme edge case is not worth fixing.
+
 
 if __name__ == '__main__':
   unittest.main()

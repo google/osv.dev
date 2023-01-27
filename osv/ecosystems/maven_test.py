@@ -113,8 +113,7 @@ class MavenVersionTest(unittest.TestCase):
     ]
 
     sorted_versions = [
-        str(v) for v in sorted(
-            maven.Version.from_string(v) for v in unsorted)
+        str(v) for v in sorted(maven.Version.from_string(v) for v in unsorted)
     ]
 
     self.assertListEqual([
@@ -255,7 +254,7 @@ class MavenEcosystemTest(unittest.TestCase):
   """Maven ecosystem helper tests."""
 
   @unittest.skipIf(
-    os.getenv('DEPSDEV_API_KEY'), 'Unnecessary if using deps.dev')
+      os.getenv('DEPSDEV_API_KEY'), 'Unnecessary if using deps.dev')
   def test_next_version(self):
     """Test next_version."""
     ecosystem = ecosystems.get('Maven')
@@ -264,7 +263,6 @@ class MavenEcosystemTest(unittest.TestCase):
     self.assertEqual('0.7.0', ecosystem.next_version('io.grpc:grpc-core', '0'))
     with self.assertRaises(ecosystems.EnumerateError):
       ecosystem.next_version('blah:doesnotexist123456', '1')
-
 
   @unittest.skipIf(
       os.getenv('DEPSDEV_API_KEY'), 'Unnecessary if using deps.dev')
@@ -283,7 +281,6 @@ class MavenEcosystemTest(unittest.TestCase):
     self.assertEqual(call_count, mock_get.call_count)
     ecosystems.config.set_cache(None)
 
-
   @unittest.skipUnless(os.getenv('DEPSDEV_API_KEY'), 'Requires API key')
   def test_next_version_deps_dev(self):
     """Test next_version using deps.dev."""
@@ -299,7 +296,6 @@ class MavenEcosystemTest(unittest.TestCase):
 
     ecosystems.config.use_deps_dev = False
 
-
   @unittest.skipUnless(os.getenv('DEPSDEV_API_KEY'), 'Requires API key')
   def test_enumerate_deps_dev(self):
     """Test enumerate using deps.dev."""
@@ -313,6 +309,7 @@ class MavenEcosystemTest(unittest.TestCase):
                          last_affected='11.0'))
 
     ecosystems.config.use_deps_dev = False
+
 
 if __name__ == '__main__':
   unittest.main()

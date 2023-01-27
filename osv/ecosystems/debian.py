@@ -24,7 +24,6 @@ from .helper_base import Ecosystem, EnumerateError
 from .. import cache
 from ..request_helper import RequestError, RequestHelper
 
-
 CLOUD_API_CACHE_URL_TEMPLATE = (
     'https://storage.googleapis.com/debian-osv/first_package_output/'
     '{version}.json')
@@ -127,8 +126,7 @@ class Debian(Ecosystem):
 
     if introduced == '0':
       # Update introduced to the first version of the debian version
-      introduced = get_first_package_version(
-          package, self.debian_release_ver)
+      introduced = get_first_package_version(package, self.debian_release_ver)
 
     if fixed is not None and not DebianVersion.is_valid(fixed):
       logging.warning(

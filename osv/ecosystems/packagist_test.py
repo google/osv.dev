@@ -18,11 +18,11 @@ import unittest
 
 from .. import ecosystems
 
+
 class PackagistEcosystemTest(unittest.TestCase):
   """Packagist ecosystem helper tests."""
   _TEST_DATA_DIR = os.path.join(
       os.path.dirname(os.path.abspath(__file__)), 'testdata')
-  
 
   def test_packagist(self):
     """Test Packagist."""

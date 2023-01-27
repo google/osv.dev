@@ -666,7 +666,8 @@ def main():
     osv.ecosystems.config.deps_dev_api_key = args.deps_dev_api_key
 
   if args.redis_host:
-    osv.ecosystems.config.set_cache(RedisCache(args.redis_host, args.redis_port))
+    osv.ecosystems.config.set_cache(
+        RedisCache(args.redis_host, args.redis_port))
 
   osv.ecosystems.config.work_dir = args.work_dir
 

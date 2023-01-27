@@ -85,18 +85,18 @@ class NuGetVersionTest(unittest.TestCase):
 
 class NuGetEcosystemTest(unittest.TestCase):
   """NuGet ecosystem helper tests."""
-  
+
   def test_next_version(self):
     """Test next_version."""
     ecosystem = ecosystems.get('NuGet')
     self.assertEqual('3.0.1',
-                    ecosystem.next_version('NuGet.Server.Core', '3.0.0'))
+                     ecosystem.next_version('NuGet.Server.Core', '3.0.0'))
     self.assertEqual('3.0.0.4001',
-                    ecosystem.next_version('Castle.Core', '3.0.0.3001'))
+                     ecosystem.next_version('Castle.Core', '3.0.0.3001'))
     self.assertEqual('3.1.0-RC',
-                    ecosystem.next_version('Castle.Core', '3.0.0.4001'))
+                     ecosystem.next_version('Castle.Core', '3.0.0.4001'))
     self.assertEqual('2.1.0-dev-00668',
-                    ecosystem.next_version('Serilog', '2.1.0-dev-00666'))
+                     ecosystem.next_version('Serilog', '2.1.0-dev-00666'))
     with self.assertRaises(ecosystems.EnumerateError):
       ecosystem.next_version('doesnotexist123456', '1')
 

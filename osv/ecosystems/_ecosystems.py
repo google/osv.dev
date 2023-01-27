@@ -13,7 +13,7 @@
 # limitations under the License.
 """Ecosystem helpers."""
 
-from .helper_base import *
+from .helper_base import Ecosystem, OrderingUnsupportedEcosystem
 from .alpine import Alpine
 from .debian import Debian
 from .maven import Maven
@@ -22,7 +22,6 @@ from .packagist import Packagist
 from .pypi import PyPI
 from .rubygems import RubyGems
 from .semver import Crates, Go, Hex, NPM
-
 
 _ecosystems = {
     'crates.io': Crates(),

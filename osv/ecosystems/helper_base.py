@@ -22,6 +22,7 @@ from . import config
 from .. import deps_dev_pb2
 from .. import deps_dev_pb2_grpc
 
+
 class EnumerateError(Exception):
   """Non-retryable version enumeration error."""
 

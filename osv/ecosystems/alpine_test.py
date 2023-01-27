@@ -21,11 +21,12 @@ from .. import cache
 from .. import ecosystems
 from .. import repos
 
+
 class AlpineEcosystemTest(unittest.TestCase):
   """Alpine ecosystem helper tests."""
   _TEST_DATA_DIR = os.path.join(
       os.path.dirname(os.path.abspath(__file__)), 'testdata')
-  
+
   @mock.patch(
       'osv.repos.ensure_updated_checkout',
       side_effect=repos.ensure_updated_checkout)

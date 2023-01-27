@@ -20,9 +20,10 @@ from unittest import mock
 from .. import cache
 from .. import ecosystems
 
+
 class DebianEcosystemTest(unittest.TestCase):
   """Debian ecosystem helper tests."""
-  
+
   @mock.patch(
       'osv.request_helper.requests.Session.get',
       side_effect=requests.Session.get,
@@ -86,7 +87,6 @@ class DebianEcosystemTest(unittest.TestCase):
     self.assertEqual(first_ver_requests_mock.call_count, 2)
     self.assertEqual(general_requests_mock.call_count, 5)
     ecosystems.config.set_cache(None)
-
 
   @mock.patch('osv.cache.Cache')
   def test_cache(self, cache_mock: mock.MagicMock):

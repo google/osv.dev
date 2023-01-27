@@ -17,9 +17,10 @@ import unittest
 
 from .. import ecosystems
 
+
 class RubyGemsEcosystemTest(unittest.TestCase):
   """RubyGems ecosystem helper tests."""
-  
+
   def test_next_version(self):
     """Test next_version."""
     ecosystem = ecosystems.get('RubyGems')

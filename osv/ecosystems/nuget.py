@@ -11,11 +11,14 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""NuGet version parser."""
+"""NuGet ecosystem helper."""
 
 import functools
 import re
+import requests
 
+from . import config
+from .helper_base import Ecosystem, EnumerateError
 from .. import semver_index
 
 # This relies on a strict SemVer implementation.
@@ -70,3 +73,51 @@ class Version:
     str_version = semver_index.coerce(str_version)
     str_version, revision = _extract_revision(str_version)
     return Version(semver_index.parse(str_version), revision)
+
+
+class NuGet(Ecosystem):
+  """NuGet ecosystem."""
+
+  _API_PACKAGE_URL = ('https://api.nuget.org/v3/registration5-semver1/'
+                      '{package}/index.json')
+
+  def sort_key(self, version):
+    """Sort key."""
+    return Version.from_string(version)
+
+  def enumerate_versions(self,
+                         package,
+                         introduced,
+                         fixed=None,
+                         last_affected=None,
+                         limits=None):
+    """Enumerate versions."""
+    url = self._API_PACKAGE_URL.format(package=package.lower())
+    response = requests.get(url, timeout=config.TIMEOUT)
+    if response.status_code == 404:
+      raise EnumerateError(f'Package {package} not found')
+    if response.status_code != 200:
+      raise RuntimeError(
+          f'Failed to get NuGet versions for {package} with: {response.text}')
+
+    response = response.json()
+
+    versions = []
+    for page in response['items']:
+      if 'items' in page:
+        items = page['items']
+      else:
+        items_response = requests.get(page['@id'], timeout=config.TIMEOUT)
+        if items_response.status_code != 200:
+          raise RuntimeError(
+              f'Failed to get NuGet versions page for {package} with: '
+              f'{response.text}')
+
+        items = items_response.json()['items']
+
+      for item in items:
+        versions.append(item['catalogEntry']['version'])
+
+    self.sort_versions(versions)
+    return self._get_affected_versions(versions, introduced, fixed,
+                                       last_affected, limits)

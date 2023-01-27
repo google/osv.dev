@@ -11,6 +11,17 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""Maven version support."""
+"""SemVer ecosystem helper tests."""
 
-from .version import *
+import unittest
+
+from .. import ecosystems
+
+class SemVerEcosystemTest(unittest.TestCase):
+  """SemVer ecosystem helper tests."""
+  
+  def test_next_version(self):
+    """Test next_version."""
+    ecosystem = ecosystems.get('Go')
+    self.assertEqual('1.0.1-0', ecosystem.next_version('blah', '1.0.0'))
+    self.assertEqual('1.0.0-pre.0', ecosystem.next_version('blah', '1.0.0-pre'))

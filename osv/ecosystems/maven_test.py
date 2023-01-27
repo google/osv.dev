@@ -1,4 +1,3 @@
-"""Maven version parser tests."""
 # Copyright 2021 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -16,20 +15,26 @@
 # pylint: disable=line-too-long
 # Many tests are ported from
 # https://github.com/apache/maven/blob/c3cf29438e3d65d6ee5c5726f8611af99d9a649a/maven-artifact/src/test/java/org/apache/maven/artifact/versioning/ComparableVersionTest.java.
+"""Maven ecosystem helper tests."""
+import os
+import requests
 import unittest
+from unittest import mock
 
-from . import version
+from . import maven
+from .. import cache
+from .. import ecosystems
 
 
-class VersionTest(unittest.TestCase):
-  """Version tests."""
+class MavenVersionTest(unittest.TestCase):
+  """Maven version tests."""
 
   def setUp(self):
     self.maxDiff = None  # pylint: disable=invalid-name
 
   def check_versions_order(self, *versions):
     """Check that our precedence logic matches the expected order."""
-    parsed_versions = [version.Version.from_string(v) for v in versions]
+    parsed_versions = [maven.Version.from_string(v) for v in versions]
 
     # pylint: disable=consider-using-enumerate
     for i in range(len(parsed_versions)):
@@ -45,7 +50,7 @@ class VersionTest(unittest.TestCase):
 
   def check_versions_equal(self, *versions):
     """Check that the provided versions are equivalent."""
-    parsed_versions = [version.Version.from_string(v) for v in versions]
+    parsed_versions = [maven.Version.from_string(v) for v in versions]
 
     # pylint: disable=consider-using-enumerate
     for i in range(len(parsed_versions)):
@@ -57,23 +62,23 @@ class VersionTest(unittest.TestCase):
 
   def test_normalize(self):
     """Test version normalization."""
-    self.assertEqual('1', str(version.Version.from_string('1.0.0')))
-    self.assertEqual('1', str(version.Version.from_string('1.ga')))
-    self.assertEqual('1', str(version.Version.from_string('1.final')))
-    self.assertEqual('1', str(version.Version.from_string('1.0')))
-    self.assertEqual('1', str(version.Version.from_string('1.')))
-    self.assertEqual('1', str(version.Version.from_string('1-')))
-    self.assertEqual('1-foo', str(version.Version.from_string('1.0.0-foo.0.0')))
-    self.assertEqual('1', str(version.Version.from_string('1.0.0-0.0.0')))
+    self.assertEqual('1', str(maven.Version.from_string('1.0.0')))
+    self.assertEqual('1', str(maven.Version.from_string('1.ga')))
+    self.assertEqual('1', str(maven.Version.from_string('1.final')))
+    self.assertEqual('1', str(maven.Version.from_string('1.0')))
+    self.assertEqual('1', str(maven.Version.from_string('1.')))
+    self.assertEqual('1', str(maven.Version.from_string('1-')))
+    self.assertEqual('1-foo', str(maven.Version.from_string('1.0.0-foo.0.0')))
+    self.assertEqual('1', str(maven.Version.from_string('1.0.0-0.0.0')))
     self.assertEqual('1-1.foo-bar-1-baz-0.1',
-                     str(version.Version.from_string('1-1.foo-bar1baz-.1')))
-    self.assertEqual('1-rc', str(version.Version.from_string('1cr')))
-    self.assertEqual('1-a', str(version.Version.from_string('1a')))
-    self.assertEqual('1-alpha-1', str(version.Version.from_string('1a1')))
-    self.assertEqual('1-beta-1', str(version.Version.from_string('1b1')))
-    self.assertEqual('1-c-1', str(version.Version.from_string('1c1')))
-    self.assertEqual('1-milestone-1', str(version.Version.from_string('1m1')))
-    self.assertEqual('1-1', str(version.Version.from_string('1-ga-1')))
+                     str(maven.Version.from_string('1-1.foo-bar1baz-.1')))
+    self.assertEqual('1-rc', str(maven.Version.from_string('1cr')))
+    self.assertEqual('1-a', str(maven.Version.from_string('1a')))
+    self.assertEqual('1-alpha-1', str(maven.Version.from_string('1a1')))
+    self.assertEqual('1-beta-1', str(maven.Version.from_string('1b1')))
+    self.assertEqual('1-c-1', str(maven.Version.from_string('1c1')))
+    self.assertEqual('1-milestone-1', str(maven.Version.from_string('1m1')))
+    self.assertEqual('1-1', str(maven.Version.from_string('1-ga-1')))
 
   def test_sort(self):
     """Basic sort tests."""
@@ -109,7 +114,7 @@ class VersionTest(unittest.TestCase):
 
     sorted_versions = [
         str(v) for v in sorted(
-            version.Version.from_string(v) for v in unsorted)
+            maven.Version.from_string(v) for v in unsorted)
     ]
 
     self.assertListEqual([
@@ -245,6 +250,69 @@ class VersionTest(unittest.TestCase):
 
     self.check_versions_equal('1', '01', '001')
 
+
+class MavenEcosystemTest(unittest.TestCase):
+  """Maven ecosystem helper tests."""
+
+  @unittest.skipIf(
+    os.getenv('DEPSDEV_API_KEY'), 'Unnecessary if using deps.dev')
+  def test_next_version(self):
+    """Test next_version."""
+    ecosystem = ecosystems.get('Maven')
+    self.assertEqual('1.36.0',
+                     ecosystem.next_version('io.grpc:grpc-core', '1.35.1'))
+    self.assertEqual('0.7.0', ecosystem.next_version('io.grpc:grpc-core', '0'))
+    with self.assertRaises(ecosystems.EnumerateError):
+      ecosystem.next_version('blah:doesnotexist123456', '1')
+
+
+  @unittest.skipIf(
+      os.getenv('DEPSDEV_API_KEY'), 'Unnecessary if using deps.dev')
+  @mock.patch('requests.Session.get', side_effect=requests.get)
+  def test_next_version_with_cache(self, mock_get):
+    """Test next_version using cache."""
+    test_cache = cache.InMemoryCache()
+    ecosystems.config.set_cache(test_cache)
+
+    ecosystem = ecosystems.get('Maven')
+    self.assertEqual('1.36.0',
+                     ecosystem.next_version('io.grpc:grpc-core', '1.35.1'))
+    call_count = mock_get.call_count
+    self.assertEqual('1.36.0',
+                     ecosystem.next_version('io.grpc:grpc-core', '1.35.1'))
+    self.assertEqual(call_count, mock_get.call_count)
+    ecosystems.config.set_cache(None)
+
+
+  @unittest.skipUnless(os.getenv('DEPSDEV_API_KEY'), 'Requires API key')
+  def test_next_version_deps_dev(self):
+    """Test next_version using deps.dev."""
+    ecosystems.config.use_deps_dev = True
+    ecosystems.config.deps_dev_api_key = os.getenv('DEPSDEV_API_KEY')
+
+    ecosystem = ecosystems.get('Maven')
+    self.assertEqual('1.36.0',
+                     ecosystem.next_version('io.grpc:grpc-core', '1.35.1'))
+    self.assertEqual('0.7.0', ecosystem.next_version('io.grpc:grpc-core', '0'))
+    with self.assertRaises(ecosystems.EnumerateError):
+      ecosystem.next_version('blah:doesnotexist123456', '1')
+
+    ecosystems.config.use_deps_dev = False
+
+
+  @unittest.skipUnless(os.getenv('DEPSDEV_API_KEY'), 'Requires API key')
+  def test_enumerate_deps_dev(self):
+    """Test enumerate using deps.dev."""
+    ecosystems.config.use_deps_dev = True
+    ecosystems.config.deps_dev_api_key = os.getenv('DEPSDEV_API_KEY')
+
+    ecosystem = ecosystems.get('Maven')
+    self.assertEqual(['10.0', '10.0.1', '11.0-rc1', '11.0'],
+                     ecosystem.enumerate_versions(
+                         'com.google.guava:guava', '10.0',
+                         last_affected='11.0'))
+
+    ecosystems.config.use_deps_dev = False
 
 if __name__ == '__main__':
   unittest.main()

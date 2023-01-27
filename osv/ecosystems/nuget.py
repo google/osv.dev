@@ -16,7 +16,7 @@
 import functools
 import re
 
-from . import semver_index
+from .. import semver_index
 
 # This relies on a strict SemVer implementation.
 # Differences from SemVer are described at

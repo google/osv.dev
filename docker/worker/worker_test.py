@@ -618,17 +618,17 @@ class UpdateTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
     self.mock_publish = mock_publish.start()
     self.addCleanup(mock_publish.stop)
 
-    osv.ecosystems.work_dir = os.path.join(
+    osv.ecosystems.config.work_dir = os.path.join(
         os.path.dirname(os.path.abspath(__file__)), 'testdata/tmp/')
 
     # Add fake ecosystems used in tests to supported ecosystems.
-    osv.ecosystems._ecosystems.update({
+    osv.ecosystems._ecosystems._ecosystems.update({
         'ecosystem': osv.ecosystems.OrderingUnsupportedEcosystem(),
     })
 
     if os.getenv('DEPSDEV_API_KEY'):
-      ecosystems.use_deps_dev = True
-      ecosystems.deps_dev_api_key = os.getenv('DEPSDEV_API_KEY')
+      ecosystems.config.use_deps_dev = True
+      ecosystems.config.deps_dev_api_key = os.getenv('DEPSDEV_API_KEY')
 
   def tearDown(self):
     self.tmp_dir.cleanup()

@@ -27,30 +27,21 @@ import packaging.version
 import urllib.parse
 import requests
 
-from .third_party.univers.debian import Version as DebianVersion
-from .third_party.univers.gem import GemVersion
-from .third_party.univers.alpine import AlpineLinuxVersion
+from ..third_party.univers.debian import Version as DebianVersion
+from ..third_party.univers.gem import GemVersion
+from ..third_party.univers.alpine import AlpineLinuxVersion
 
+from . import config
 from . import debian_version_cache
-from . import deps_dev_pb2
-from . import deps_dev_pb2_grpc
-from . import repos
+from .. import deps_dev_pb2
+from .. import deps_dev_pb2_grpc
+from .. import repos
 from . import maven
 from . import nuget
 from . import packagist_version
-from . import semver_index
-from .cache import Cache
-from .cache import cached
-from .request_helper import RequestError, RequestHelper
-
-TIMEOUT = 30  # Timeout for HTTP(S) requests
-use_deps_dev = False
-deps_dev_api_key = ''
-# Used for checking out git repositories
-# Intended to be set in worker.py
-work_dir: typing.Optional[str] = None
-
-shared_cache: typing.Optional[Cache] = None
+from .. import semver_index
+from ..cache import cached
+from ..request_helper import RequestError, RequestHelper
 
 
 class EnumerateError(Exception):
@@ -195,7 +186,7 @@ class DepsDevMixin(Ecosystem, ABC):
             deps_dev_pb2.VersionsRequest(
                 package_key=deps_dev_pb2.PackageKey(
                     name=package, system=ecosystem)),
-            metadata=(('x-depsdev-apikey', deps_dev_api_key),))
+            metadata=(('x-depsdev-apikey', config.deps_dev_api_key),))
 
         for response in stream:
           versions.extend([v.version_key.version for v in response.versions])
@@ -268,7 +259,7 @@ class PyPI(Ecosystem):
                          limits=None):
     """Enumerate versions."""
     response = requests.get(
-        self._API_PACKAGE_URL.format(package=package), timeout=TIMEOUT)
+        self._API_PACKAGE_URL.format(package=package), timeout=config.TIMEOUT)
 
     if response.status_code == 404:
       raise EnumerateError(f'Package {package} not found')
@@ -333,13 +324,13 @@ class Maven(DepsDevMixin):
                          last_affected=None,
                          limits=None):
     """Enumerate versions."""
-    if use_deps_dev:
+    if config.use_deps_dev:
       return self._deps_dev_enumerate(
           package, introduced, fixed, last_affected, limits=limits)
 
     get_versions = self._get_versions
-    if shared_cache:
-      get_versions = cached(shared_cache)(get_versions)
+    if config.shared_cache:
+      get_versions = cached(config.shared_cache)(get_versions)
 
     versions = get_versions(package)
     self.sort_versions(versions)
@@ -364,7 +355,7 @@ class RubyGems(Ecosystem):
                          limits=None):
     """Enumerate versions."""
     response = requests.get(
-        self._API_PACKAGE_URL.format(package=package), timeout=TIMEOUT)
+        self._API_PACKAGE_URL.format(package=package), timeout=config.TIMEOUT)
     if response.status_code == 404:
       raise EnumerateError(f'Package {package} not found')
     if response.status_code != 200:
@@ -398,7 +389,7 @@ class NuGet(Ecosystem):
                          limits=None):
     """Enumerate versions."""
     url = self._API_PACKAGE_URL.format(package=package.lower())
-    response = requests.get(url, timeout=TIMEOUT)
+    response = requests.get(url, timeout=config.TIMEOUT)
     if response.status_code == 404:
       raise EnumerateError(f'Package {package} not found')
     if response.status_code != 200:
@@ -412,7 +403,7 @@ class NuGet(Ecosystem):
       if 'items' in page:
         items = page['items']
       else:
-        items_response = requests.get(page['@id'], timeout=TIMEOUT)
+        items_response = requests.get(page['@id'], timeout=config.TIMEOUT)
         if items_response.status_code != 200:
           raise RuntimeError(
               f'Failed to get NuGet versions page for {package} with: '
@@ -512,14 +503,14 @@ class Alpine(Ecosystem):
                          fixed=None,
                          last_affected=None,
                          limits=None):
-    if work_dir is None:
+    if config.work_dir is None:
       logging.error(
           "Tried to enumerate alpine version without workdir being set")
       return []
 
     get_versions = self._get_versions
-    if shared_cache:
-      get_versions = cached(shared_cache)(get_versions)
+    if config.shared_cache:
+      get_versions = cached(config.shared_cache)(get_versions)
 
     versions = get_versions(self.get_branch_name(), package)
     self.sort_versions(versions)
@@ -530,7 +521,7 @@ class Alpine(Ecosystem):
   @staticmethod
   def _get_versions(branch: str, package: str) -> typing.List[str]:
     """Get all versions for a package from aports repo"""
-    checkout_dir = os.path.join(work_dir, Alpine._GIT_REPO_PATH)
+    checkout_dir = os.path.join(config.work_dir, Alpine._GIT_REPO_PATH)
     repos.ensure_updated_checkout(
         Alpine._APORTS_GIT_URL, checkout_dir, branch=branch)
     directories = glob.glob(
@@ -580,7 +571,7 @@ class Debian(Ecosystem):
                          last_affected=None,
                          limits=None):
     url = self._API_PACKAGE_URL.format(package=package.lower())
-    request_helper = RequestHelper(shared_cache)
+    request_helper = RequestHelper(config.shared_cache)
     try:
       text_response = request_helper.get(url)
     except RequestError as ex:
@@ -639,7 +630,7 @@ class Packagist(Ecosystem):
                          last_affected=None,
                          limits=None):
     url = self._API_PACKAGE_URL.format(package=package.lower())
-    request_helper = RequestHelper(shared_cache)
+    request_helper = RequestHelper(config.shared_cache)
     try:
       text_response = request_helper.get(url)
     except RequestError as ex:
@@ -697,12 +688,6 @@ def get(name: str) -> Ecosystem:
     return Alpine(name.split(':')[1])
 
   return _ecosystems.get(name)
-
-
-def set_cache(cache: typing.Optional[Cache]):
-  """Configures and enables the redis caching layer"""
-  global shared_cache
-  shared_cache = cache
 
 
 def normalize(ecosystem_name: str):

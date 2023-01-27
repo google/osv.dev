@@ -19,9 +19,9 @@ from unittest import mock
 
 import requests
 
-from . import repos
-from . import cache
-from . import ecosystems
+from .. import repos
+from .. import cache
+from .. import ecosystems
 
 
 class GetNextVersionTest(unittest.TestCase):
@@ -55,7 +55,7 @@ class GetNextVersionTest(unittest.TestCase):
   def test_maven_with_cache(self, mock_get):
     """Test Maven."""
     test_cache = cache.InMemoryCache()
-    ecosystems.set_cache(test_cache)
+    ecosystems.config.set_cache(test_cache)
 
     ecosystem = ecosystems.get('Maven')
     self.assertEqual('1.36.0',
@@ -64,13 +64,13 @@ class GetNextVersionTest(unittest.TestCase):
     self.assertEqual('1.36.0',
                      ecosystem.next_version('io.grpc:grpc-core', '1.35.1'))
     self.assertEqual(call_count, mock_get.call_count)
-    ecosystems.set_cache(None)
+    ecosystems.config.set_cache(None)
 
   @unittest.skipUnless(os.getenv('DEPSDEV_API_KEY'), 'Requires API key')
   def test_maven_deps_dev(self):
     """Test Maven using deps.dev."""
-    ecosystems.use_deps_dev = True
-    ecosystems.deps_dev_api_key = os.getenv('DEPSDEV_API_KEY')
+    ecosystems.config.use_deps_dev = True
+    ecosystems.config.deps_dev_api_key = os.getenv('DEPSDEV_API_KEY')
 
     ecosystem = ecosystems.get('Maven')
     self.assertEqual('1.36.0',
@@ -79,7 +79,7 @@ class GetNextVersionTest(unittest.TestCase):
     with self.assertRaises(ecosystems.EnumerateError):
       ecosystem.next_version('blah:doesnotexist123456', '1')
 
-    ecosystems.use_deps_dev = False
+    ecosystems.config.use_deps_dev = False
 
   def test_gems(self):
     """Test RubyGems."""
@@ -112,12 +112,12 @@ class GetNextVersionTest(unittest.TestCase):
       'osv.request_helper.requests.Session.get',
       side_effect=requests.Session.get,
       autospec=True)
-  @mock.patch('osv.debian_version_cache.requests.get', side_effect=requests.get)
+  @mock.patch('osv.ecosystems.debian_version_cache.requests.get', side_effect=requests.get)
   def test_debian(self, first_ver_requests_mock: mock.MagicMock,
                   general_requests_mock: mock.MagicMock):
     """Test Debian ecosystem enumeration and caching behaviour"""
     in_memory_cache = cache.InMemoryCache()
-    ecosystems.set_cache(in_memory_cache)
+    ecosystems.config.set_cache(in_memory_cache)
     ecosystem = ecosystems.get('Debian:9')
 
     # Tests that next version and version enumeration generally works
@@ -170,7 +170,7 @@ class GetNextVersionTest(unittest.TestCase):
     ecosystem.enumerate_versions('cyrus-sasl2', '0', None)
     self.assertEqual(first_ver_requests_mock.call_count, 2)
     self.assertEqual(general_requests_mock.call_count, 5)
-    ecosystems.set_cache(None)
+    ecosystems.config.set_cache(None)
 
   @mock.patch(
       'osv.repos.ensure_updated_checkout',
@@ -178,10 +178,10 @@ class GetNextVersionTest(unittest.TestCase):
   def test_alpine(self, ensure_updated_checkout_mock: mock.MagicMock):
     """Test Alpine ecosystem enumeration and caching behaviour"""
     in_memory_cache = cache.InMemoryCache()
-    ecosystems.set_cache(in_memory_cache)
+    ecosystems.config.set_cache(in_memory_cache)
 
     # Set work_dir to allow cloning/fetching
-    ecosystems.work_dir = self._TEST_DATA_DIR
+    ecosystems.config.work_dir = self._TEST_DATA_DIR
     ecosystem = ecosystems.get('Alpine:v3.16')
     self.assertEqual(ensure_updated_checkout_mock.call_count, 0)
     # Tests that next version and version enumeration generally works
@@ -206,7 +206,7 @@ class GetNextVersionTest(unittest.TestCase):
     self.assertGreater(
         ecosystem.sort_key('1.13.2-r0'), ecosystem.sort_key('1.13.2_alpha'))
 
-    ecosystems.set_cache(None)
+    ecosystems.config.set_cache(None)
 
   def test_packagist(self):
     """Test Packagist."""
@@ -257,7 +257,7 @@ class GetNextVersionTest(unittest.TestCase):
   @mock.patch('osv.cache.Cache')
   def test_cache(self, cache_mock: mock.MagicMock):
     cache_mock.get.return_value = None
-    ecosystems.set_cache(cache_mock)
+    ecosystems.config.set_cache(cache_mock)
 
     debian = ecosystems.get('Debian:9')
     debian.next_version('nginx', '1.13.5-1')
@@ -271,8 +271,8 @@ class EnumerateTest(unittest.TestCase):
   @unittest.skipUnless(os.getenv('DEPSDEV_API_KEY'), 'Requires API key')
   def test_maven_deps_dev(self):
     """Test Maven using deps.dev."""
-    ecosystems.use_deps_dev = True
-    ecosystems.deps_dev_api_key = os.getenv('DEPSDEV_API_KEY')
+    ecosystems.config.use_deps_dev = True
+    ecosystems.config.deps_dev_api_key = os.getenv('DEPSDEV_API_KEY')
 
     ecosystem = ecosystems.get('Maven')
     self.assertEqual(['10.0', '10.0.1', '11.0-rc1', '11.0'],
@@ -280,7 +280,7 @@ class EnumerateTest(unittest.TestCase):
                          'com.google.guava:guava', '10.0',
                          last_affected='11.0'))
 
-    ecosystems.use_deps_dev = False
+    ecosystems.config.use_deps_dev = False
 
 
 if __name__ == '__main__':

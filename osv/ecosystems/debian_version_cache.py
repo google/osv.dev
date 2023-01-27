@@ -15,7 +15,7 @@
 import requests
 import json
 
-from . import cache
+from .. import cache
 
 CLOUD_API_CACHE_URL_TEMPLATE = (
     'https://storage.googleapis.com/debian-osv/first_package_output/'

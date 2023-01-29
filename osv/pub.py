@@ -41,7 +41,7 @@ class Version:
     # desired ordering.
     if semver.build:
       # Reuse normalize_prerelease to so that the
-      # build suffix can to be compared lexicographically.
+      # build suffix can be compared lexicographically.
       self._version = (semver, semver_index.normalize_prerelease(semver.build))
     else:
       self._version = (semver,)

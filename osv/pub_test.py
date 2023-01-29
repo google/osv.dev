@@ -92,7 +92,7 @@ class PubTest(unittest.TestCase):
     self.assertLess(v_empty, v_str)
 
     # note(michaelkedar):
-    # The implementation incorrectly assumes "1.0.0.a..b" == "1.0.0.a.-.b"
+    # The implementation incorrectly assumes "1.0.0-a..b" == "1.0.0-a.-.b"
     # I have decided that this extreme edge case is not worth fixing.
 
 

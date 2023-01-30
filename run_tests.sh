@@ -12,6 +12,7 @@ python3 -m pipenv run python -m unittest osv.ecosystems.debian_test
 python3 -m pipenv run python -m unittest osv.ecosystems.maven_test
 python3 -m pipenv run python -m unittest osv.ecosystems.nuget_test
 python3 -m pipenv run python -m unittest osv.ecosystems.packagist_test
+python3 -m pipenv run python -m unittest osv.ecosystems.pub_test
 python3 -m pipenv run python -m unittest osv.ecosystems.pypi_test
 python3 -m pipenv run python -m unittest osv.ecosystems.rubygems_test
 python3 -m pipenv run python -m unittest osv.ecosystems.semver_test

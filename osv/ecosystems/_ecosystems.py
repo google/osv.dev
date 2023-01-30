@@ -19,6 +19,7 @@ from .debian import Debian
 from .maven import Maven
 from .nuget import NuGet
 from .packagist import Packagist
+from .pub import Pub
 from .pypi import PyPI
 from .rubygems import RubyGems
 from .semver import Crates, Go, Hex, NPM
@@ -31,6 +32,7 @@ _ecosystems = {
     'npm': NPM(),
     'NuGet': NuGet(),
     'Packagist': Packagist(),
+    'Pub': Pub(),
     'PyPI': PyPI(),
     'RubyGems': RubyGems(),
     # Ecosystems missing implementations:
@@ -38,7 +40,6 @@ _ecosystems = {
     'GitHub Actions': OrderingUnsupportedEcosystem(),
     'Linux': OrderingUnsupportedEcosystem(),
     'OSS-Fuzz': OrderingUnsupportedEcosystem(),
-    'Pub': OrderingUnsupportedEcosystem(),
     # Alpine and Debian require a release version for enumeration, which is
     # handled separately in get().
     'Alpine': OrderingUnsupportedEcosystem(),

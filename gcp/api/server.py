@@ -192,16 +192,15 @@ def compare_hashes_from_commit(
       total_files += 1
   score = matching_hashes / total_files if total_files != 0 else 0.0
   version_match = osv_service_v1_pb2.VersionMatch(
-    name=idx.name,
-    version=idx.version,
-    score=score,
-    repo_info=osv_service_v1_pb2.VersionRepositoryInformation(
-      type=osv_service_v1_pb2.VersionRepositoryInformation.GIT,
-      address=idx.repo_addr,
-      commit=idx.commit,
-    ),
+      name=idx.name,
+      version=idx.version,
+      score=score,
+      repo_info=osv_service_v1_pb2.VersionRepositoryInformation(
+          type=osv_service_v1_pb2.VersionRepositoryInformation.GIT,
+          address=idx.repo_addr,
+          commit=idx.commit,
+      ),
   )
-  
   return version_match
 
 

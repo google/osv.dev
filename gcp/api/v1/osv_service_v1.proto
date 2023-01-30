@@ -96,19 +96,40 @@ message VersionMatchList {
 
 // Match information for the provided VersionQuery.
 message VersionMatch {
+  // Identified package name.
+  string name = 1;
+  // Identified version number.
+  string version = 2;
+  // Score in the interval (0.0, 1.0] with 1.0 being a perfect match.
+  double score = 3;
+  // Information about the upstream repository.
+  VersionRepositoryInformation repo_info =4;
+  // Extra information about the package.
+  repeated VersionExtraInformation extra_info = 5;
+}
+
+message VersionRepositoryInformation {
+  enum RepoType {
+    UNSPECIFIED = 0;
+    GIT = 1;
+  }
+  RepoType type = 1;
+  // Source address of the repository.
+  string address = 2;
+  // Commit hash.
+  bytes commit = 3;
+}
+
+message VersionExtraInformation {
   enum IDType {
     UNSPECIFIED = 0;
     OSV = 1;
     CPE = 2;
-    VERSION = 3;
-    GIT_REPO = 4;
   }
   IDType type = 1;
-  // Identifier value.
   string value = 2;
-  // Score in the interval (0.0, 1.0] with 1.0 being a perfect match.
-  double score = 3;
 }
+
 
 // Open source vulnerability database.
 service OSV {

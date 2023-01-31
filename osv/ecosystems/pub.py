@@ -11,11 +11,15 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""Pub version parser."""
+"""Pub ecosystem helper."""
 
 import functools
+import json
 
-from . import semver_index
+from . import config
+from .helper_base import Ecosystem, EnumerateError
+from .. import semver_index
+from ..request_helper import RequestError, RequestHelper
 
 # Pub follows SemVer 2.0.0-rc.1:
 # https://semver.org/spec/v2.0.0-rc.1.html
@@ -55,3 +59,37 @@ class Version:
   @classmethod
   def from_string(cls, str_version):
     return Version(semver_index.parse(str_version))
+
+
+class Pub(Ecosystem):
+  """Pub ecosystem"""
+
+  _API_PACKAGE_URL = 'https://pub.dev/api/packages/{package}'
+
+  def sort_key(self, version):
+    """Sort key."""
+    return Version.from_string(version)
+
+  def enumerate_versions(self,
+                         package,
+                         introduced,
+                         fixed=None,
+                         last_affected=None,
+                         limits=None):
+    """Enumerate versions."""
+    url = self._API_PACKAGE_URL.format(package=package.lower())
+    request_helper = RequestHelper(config.shared_cache)
+    try:
+      text_response = request_helper.get(url)
+    except RequestError as ex:
+      if ex.response.status_code == 404:
+        raise EnumerateError(f'Package {package} not found') from ex
+      raise RuntimeError('Failed to get Pub versions for '
+                         f'{package} with: {ex.response.text}') from ex
+
+    response = json.loads(text_response)
+    versions: list[str] = [x['version'] for x in response['versions']]
+    self.sort_versions(versions)
+
+    return self._get_affected_versions(versions, introduced, fixed,
+                                       last_affected, limits)

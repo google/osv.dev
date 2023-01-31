@@ -1,4 +1,4 @@
-# Copyright 2021 Google LLC
+# Copyright 2023 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -11,6 +11,22 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""Maven version support."""
+"""Ecosystem helper configurations."""
+import typing
 
-from .version import *
+from ..cache import Cache
+
+timeout = 30  # Timeout for HTTP(S) requests
+use_deps_dev = False
+deps_dev_api_key = ''
+# Used for checking out git repositories
+# Intended to be set in worker.py
+work_dir: typing.Optional[str] = None
+
+shared_cache: typing.Optional[Cache] = None
+
+
+def set_cache(cache: typing.Optional[Cache]):
+  """Configures and enables the redis caching layer"""
+  global shared_cache
+  shared_cache = cache

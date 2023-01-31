@@ -93,7 +93,7 @@ class NuGet(Ecosystem):
                          limits=None):
     """Enumerate versions."""
     url = self._API_PACKAGE_URL.format(package=package.lower())
-    response = requests.get(url, timeout=config.TIMEOUT)
+    response = requests.get(url, timeout=config.timeout)
     if response.status_code == 404:
       raise EnumerateError(f'Package {package} not found')
     if response.status_code != 200:
@@ -107,7 +107,7 @@ class NuGet(Ecosystem):
       if 'items' in page:
         items = page['items']
       else:
-        items_response = requests.get(page['@id'], timeout=config.TIMEOUT)
+        items_response = requests.get(page['@id'], timeout=config.timeout)
         if items_response.status_code != 200:
           raise RuntimeError(
               f'Failed to get NuGet versions page for {package} with: '

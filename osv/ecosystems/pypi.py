@@ -37,7 +37,7 @@ class PyPI(Ecosystem):
                          limits=None):
     """Enumerate versions."""
     response = requests.get(
-        self._API_PACKAGE_URL.format(package=package), timeout=config.TIMEOUT)
+        self._API_PACKAGE_URL.format(package=package), timeout=config.timeout)
 
     if response.status_code == 404:
       raise EnumerateError(f'Package {package} not found')

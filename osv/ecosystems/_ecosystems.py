@@ -15,29 +15,27 @@
 
 from .helper_base import Ecosystem, OrderingUnsupportedEcosystem
 from .alpine import Alpine
-from .crates import Crates
 from .debian import Debian
-from .go import Go
-from .hex import Hex
 from .maven import Maven
-from .npm import NPM
 from .nuget import NuGet
 from .packagist import Packagist
 from .pub import Pub
 from .pypi import PyPI
 from .rubygems import RubyGems
+from .semver_ecosystem_helper import SemverEcosystem
 
 _ecosystems = {
-    'crates.io': Crates(),
-    'Go': Go(),
-    'Hex': Hex(),
     'Maven': Maven(),
-    'npm': NPM(),
     'NuGet': NuGet(),
     'Packagist': Packagist(),
     'Pub': Pub(),
     'PyPI': PyPI(),
     'RubyGems': RubyGems(),
+    # SemVer-based ecosystems (remember keep synced with SEMVER_ECOSYSTEMS):
+    'crates.io': SemverEcosystem(),
+    'Go': SemverEcosystem(),
+    'Hex': SemverEcosystem(),
+    'npm': SemverEcosystem(),
     # Ecosystems missing implementations:
     'Android': OrderingUnsupportedEcosystem(),
     'GitHub Actions': OrderingUnsupportedEcosystem(),
@@ -49,11 +47,13 @@ _ecosystems = {
     'Debian': OrderingUnsupportedEcosystem(),
 }
 
+# Semver-based ecosystems, should correspond to _ecoystems above.
+# TODO(michaelkedar): Avoid need to keep in sync with above.
 SEMVER_ECOSYSTEMS = {
     'crates.io',
     'Go',
-    'npm',
     'Hex',
+    'npm',
 }
 
 

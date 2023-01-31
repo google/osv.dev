@@ -48,9 +48,3 @@ class SemverEcosystem(Ecosystem):
   @property
   def is_semver(self):
     return True
-
-
-Crates = SemverEcosystem
-Go = SemverEcosystem
-NPM = SemverEcosystem
-Hex = SemverEcosystem

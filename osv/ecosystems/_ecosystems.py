@@ -15,14 +15,17 @@
 
 from .helper_base import Ecosystem, OrderingUnsupportedEcosystem
 from .alpine import Alpine
+from .crates import Crates
 from .debian import Debian
+from .go import Go
+from .hex import Hex
 from .maven import Maven
+from .npm import NPM
 from .nuget import NuGet
 from .packagist import Packagist
 from .pub import Pub
 from .pypi import PyPI
 from .rubygems import RubyGems
-from .semver import Crates, Go, Hex, NPM
 
 _ecosystems = {
     'crates.io': Crates(),

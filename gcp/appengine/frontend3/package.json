@@ -11,7 +11,7 @@
   "dependencies": {
     "@github/clipboard-copy-element": "1.1.2",
     "@github/time-elements": "3.6.0",
-    "@hotwired/turbo": "7.2.4",
+    "@hotwired/turbo": "7.2.5",
     "@material/data-table": "13.0.0",
     "@material/layout-grid": "13.0.0",
     "@material/mwc-circular-progress": "0.27.0",
@@ -20,7 +20,7 @@
     "@material/mwc-textfield": "0.27.0",
     "@material/theme": "13.0.0",
     "highlight.js": "11.7.0",
-    "lit": "2.5.0",
+    "lit": "2.6.1",
     "spicy-sections": "git+https://github.com/tabvengers/spicy-sections.git#c3aae99dbf1e627cdf03a35c913d7f6e970de22b"
   },
   "devDependencies": {
@@ -29,7 +29,7 @@
     "html-webpack-plugin": "5.5.0",
     "mini-css-extract-plugin": "2.7.2",
     "raw-loader": "4.0.2",
-    "sass": "1.57.1",
+    "sass": "1.58.0",
     "sass-loader": "12.6.0",
     "style-loader": "3.3.1",
     "webpack": "5.75.0",

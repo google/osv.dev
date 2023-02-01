@@ -9,7 +9,7 @@ Clone the following two repositories:
 `git` also has to be installed and on the `PATH`, 
 used to read modified dates of files 
 
-Running the `first_package_finder.py` also requires internet connection.
+Running the `first_package_finder.py` also requires an Internet connection.
 
 ## Run converter
 

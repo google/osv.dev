@@ -12,7 +12,7 @@ spec:
         spec:
           containers:
           - name: debian-convert
-            image: gcr.io/oss-vdb-test/debian
+            image: gcr.io/oss-vdb-test/debian-convert
             imagePullPolicy: Always
             command:
               - "/src/run_convert_debian.sh"

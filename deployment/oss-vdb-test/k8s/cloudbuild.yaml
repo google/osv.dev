@@ -58,15 +58,12 @@ steps:
   args: ['push', 'gcr.io/$PROJECT_ID/combine-to-osv']
 # Build/push debian converter images
 - name: gcr.io/cloud-builders/docker
-  args: ['build', '-t', 'gcr.io/$PROJECT_ID/debian-first-version', '-t', 'gcr.io/$PROJECT_ID/debian-first-version:$COMMIT_SHA', '--build-arg', 'PROJECT=$PROJECT_ID', '.']
+  args: ['build', '-t', 'gcr.io/$PROJECT_ID/debian-convert', '-t', 'gcr.io/$PROJECT_ID/debian-convert:$COMMIT_SHA', '.']
   dir: 'osv.dev/vulnfeeds/tools/debian'
-- name: gcr.io/cloud-builders/docker
-  args: ['build', '-t', 'gcr.io/$PROJECT_ID/debian-convert', '-t', 'gcr.io/$PROJECT_ID/debian-convert:$COMMIT_SHA', '--build-arg', 'PROJECT=$PROJECT_ID', '.']
-  dir: 'osv.dev/vulnfeeds/tools/debian'
-- name: gcr.io/cloud-builders/docker
-  args: ['push', 'gcr.io/$PROJECT_ID/debian-first-version']
 - name: gcr.io/cloud-builders/docker
   args: ['push', 'gcr.io/$PROJECT_ID/debian-convert']
+- name: gcr.io/cloud-builders/docker
+  args: ['push', 'gcr.io/$PROJECT_ID/debian-convert:$COMMIT_SHA']
 # Apply GKE configs.
 - name: gcr.io/cloud-builders/gke-deploy
   args: ['run', '--filename=workers', '--image=gcr.io/$PROJECT_ID/worker:$COMMIT_SHA', '--location=us-central1-f', '--cluster=workers', '--output=/tmp', '--timeout=10m0s']
@@ -87,7 +84,7 @@ steps:
   args: ['run', '--filename=debian/debian-convert.yaml', '--image=gcr.io/$PROJECT_ID/debian-convert:$COMMIT_SHA', '--location=us-central1-f', '--cluster=workers', '--output=/tmp']
   dir: 'gke'
 - name: gcr.io/cloud-builders/gke-deploy
-  args: ['run', '--filename=debian/debian-first-version.yaml', '--image=gcr.io/$PROJECT_ID/debian-first-version:$COMMIT_SHA', '--location=us-central1-f', '--cluster=workers', '--output=/tmp']
+  args: ['run', '--filename=debian/debian-first-version.yaml', '--image=gcr.io/$PROJECT_ID/debian-convert:$COMMIT_SHA', '--location=us-central1-f', '--cluster=workers', '--output=/tmp']
   dir: 'gke'
 # TODO(ochang): Debian, indexer.
 # TODO(ochang): API deployment

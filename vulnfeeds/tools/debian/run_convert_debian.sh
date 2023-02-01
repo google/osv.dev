@@ -5,6 +5,7 @@ WEBWML_PATH=webwml
 OSV_DSA_OUT=/tmp/osv/dsa
 OSV_DLA_OUT=/tmp/osv/dla
 OSV_DTSA_OUT=/tmp/osv/dtsa
+OUTPUT_BUCKET="${OUTPUT_GCS_BUCKET:=debian-osv}"
 
 echo "Setup initial directories"
 rm -rf $OSV_DSA_OUT && mkdir -p $OSV_DSA_OUT
@@ -26,7 +27,7 @@ pipenv run python3 convert_debian.py --adv_type=DTSA -o $OSV_DTSA_OUT $WEBWML_PA
 popd
 
 echo "Begin Syncing with cloud"
-gsutil -q -m rsync -d $OSV_DSA_OUT gs://debian-osv/dsa-osv
-gsutil -q -m rsync -d $OSV_DLA_OUT gs://debian-osv/dla-osv
-gsutil -q -m rsync -d $OSV_DTSA_OUT gs://debian-osv/dtsa-osv
+gsutil -q -m rsync -d $OSV_DSA_OUT gs://$OUTPUT_BUCKET/dsa-osv
+gsutil -q -m rsync -d $OSV_DLA_OUT gs://$OUTPUT_BUCKET/dla-osv
+gsutil -q -m rsync -d $OSV_DTSA_OUT gs://$OUTPUT_BUCKET/dtsa-osv
 echo "Successfully synced with cloud"

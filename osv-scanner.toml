@@ -17,23 +17,3 @@ reason = "No ssh servers"
 id = "GO-2022-0969"
 # ignoreUntil = 2022-11-09 # Optional exception expiry date
 reason = "No external http servers in Go lang."
-
-[CallAnalysis]
-enabled = true
-
-# https://pkg.go.dev/golang.org/x/vuln/vulncheck#Config
-[CallAnalysis.govulncheck.config]
-
-# ImportsOnly instructs vulncheck to analyze import chains only.
-# Otherwise, call chains are analyzed too.
-ImportsOnly = false
-# SourceGoVersion is Go version used to build Source inputs passed
-# to vulncheck. If not provided, the current Go version at PATH
-# is used to detect vulnerabilities in Go standard library.
-SourceGoVersion = "1.18"
-
-# Consider only vulnerabilities that apply to this OS and architecture.
-# An empty string means "all" (don't filter).
-# Applies only to Source.
-GOOS = "all"
-GOARCH = "amd64"

@@ -1,0 +1,19 @@
+#### !TEMPORARY! DELETE THIS OR REWORK THIS BEFORE DOING PULL REQUEST #####
+steps:
+# Checkout at specified commit.
+# - name: gcr.io/cloud-builders/git
+#   args: ['clone', 'https://github.com/google/osv.dev.git']
+# - name: gcr.io/cloud-builders/git
+#   args: ['checkout', '$COMMIT_SHA']
+#   dir: 'osv.dev'
+- name: gcr.io/oss-vdb-test/terraform
+  args: ['init', '-no-color']
+  dir:  deployment/terraform/environments/oss-vdb-test
+- name: gcr.io/oss-vdb-test/terraform
+  args: ['apply', '-no-color', '-auto-approve']
+  dir:  deployment/terraform/environments/oss-vdb-test
+
+timeout: 2400s
+serviceAccount: 'projects/oss-vdb-test/serviceAccounts/terraform-test@oss-vdb-test.iam.gserviceaccount.com'
+options:
+  logging: CLOUD_LOGGING_ONLY

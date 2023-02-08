@@ -55,3 +55,15 @@ resource "google_project_service" "endpoints" {
   service            = "endpoints.googleapis.com"
   disable_on_destroy = false
 }
+
+resource "google_project_service" "service_usage" {
+  project            = var.project_id
+  service            = "serviceusage.googleapis.com"
+  disable_on_destroy = false
+}
+
+resource "google_project_service" "app_engine" {
+  project            = var.project_id
+  service            = "appengine.googleapis.com"
+  disable_on_destroy = false
+}

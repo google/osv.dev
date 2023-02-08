@@ -25,16 +25,7 @@ https://cloud.google.com/container-registry/docs/advanced-authentication#gcloud-
 ```
 
 ## oss-vdb-test Project
-Building and deploying is now handled separately.
 
-To build, inside project root folder:
-```bash
-docker build -t "gcr.io/oss-vdb-test/osv-server:<TAG>" -f gcp/api/Dockerfile .
-docker push "gcr.io/oss-vdb-test/osv-server:<TAG>"
 ```
-
-Use terraform to deploy - in `deployment/terraform/environments/oss-vdb-test/main.tf` modify the line
+./deploy_backend oss-vdb-test $(date +"%Y%m%d") osv-grpc-backend
 ```
-  api_backend_image_tag = "<TAG>"
-```
-Then use `terraform plan` and `terraform apply` to deploy.

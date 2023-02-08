@@ -24,6 +24,8 @@ from .helper_base import Ecosystem, EnumerateError
 from .. import cache
 from ..request_helper import RequestError, RequestHelper
 
+# TODO(another-rex): Update this to use dynamically
+# change depending on the project
 CLOUD_API_CACHE_URL_TEMPLATE = (
     'https://storage.googleapis.com/debian-osv/first_package_output/'
     '{version}.json')

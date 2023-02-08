@@ -32,8 +32,3 @@ variable "esp_version" {
   type        = string
   description = "ESP version to use for OSV API frontend image."
 }
-
-variable "api_backend_image_tag" {
-  type        = string
-  description = "Image tag of GRPC backend that should be deployed."
-}

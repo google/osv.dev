@@ -96,16 +96,14 @@ message VersionMatchList {
 
 // Match information for the provided VersionQuery.
 message VersionMatch {
-  // Identified package name.
-  string name = 1;
-  // Identified version number.
-  string version = 2;
   // Score in the interval (0.0, 1.0] with 1.0 being a perfect match.
-  double score = 3;
+  double score = 1;
   // Information about the upstream repository.
-  VersionRepositoryInformation repo_info =4;
-  // Extra information about the package.
-  repeated VersionExtraInformation extra_info = 5;
+  VersionRepositoryInformation repo_info = 2;
+  // The OSV identifier.
+  osv.Package osv_identifier = 3;
+  // CPE dictionary. Keys are cpe version and values the CPE.
+  map<string, string> cpes = 4;
 }
 
 message VersionRepositoryInformation {
@@ -118,18 +116,11 @@ message VersionRepositoryInformation {
   string address = 2;
   // Commit hash.
   bytes commit = 3;
+  // Commit tag
+  string tag = 4;
+  // Parsed version from commit tag
+  string version = 5;
 }
-
-message VersionExtraInformation {
-  enum IDType {
-    UNSPECIFIED = 0;
-    OSV = 1;
-    CPE = 2;
-  }
-  IDType type = 1;
-  string value = 2;
-}
-
 
 // Open source vulnerability database.
 service OSV {

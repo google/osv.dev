@@ -5,13 +5,13 @@ Taken and modified from https://github.com/GoogleCloudPlatform/cloud-builders-co
 
 To build the builder, run
 ```
-gcloud builds submit --project=<PROJECT_ID> --config=cloudbuild.yaml
+gcloud builds submit --project=oss-vdb --config=cloudbuild.yaml
 ```
 
 Afterwards, can be used in Cloud Build as
 
 ```yaml
 steps:
-- name: gcr.io/<PROJECT_ID>/terraform
+- name: gcr.io/oss-vdb/terraform
   args: ['init', '-no-color']
 ```

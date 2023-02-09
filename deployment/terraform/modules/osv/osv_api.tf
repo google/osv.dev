@@ -1,12 +1,6 @@
 # The OSV API on Cloud Run
 # Adapted from https://github.com/hashicorp/terraform-provider-google/issues/5528#issuecomment-1136040976
 
-data "google_container_registry_image" "api_backend" {
-  project = var.project_id
-  name    = "osv-server"
-  tag     = var.api_backend_image_tag
-}
-
 resource "google_cloud_run_service" "api_backend" {
   project  = var.project_id
   name     = "osv-grpc-backend"
@@ -15,9 +9,16 @@ resource "google_cloud_run_service" "api_backend" {
   template {
     spec {
       containers {
-        image = data.google_container_registry_image.api_backend.image_url
+        image = "us-docker.pkg.dev/cloudrun/container/hello:latest" # Placeholder image.
       }
     }
+  }
+
+  lifecycle {
+    ignore_changes = [
+      # To be managed by Cloud Deploy.
+      template,
+    ]
   }
 
   traffic {

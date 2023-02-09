@@ -94,6 +94,17 @@ resource "google_storage_bucket" "cve_osv_conversion" {
   }
 }
 
+resource "google_storage_bucket" "debian_osv_conversion_bucket" {
+  project                     = var.project_id
+  name                        = var.debian_osv_conversion_bucket
+  location                    = "US"
+  uniform_bucket_level_access = true
+
+  lifecycle {
+    prevent_destroy = true
+  }
+}
+
 # Service account permissions
 resource "google_service_account" "deployment_service" {
   project      = var.project_id

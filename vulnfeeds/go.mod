@@ -7,7 +7,7 @@ require (
 	github.com/aquasecurity/go-pep440-version v0.0.0-20210121094942-22b2f8951d46
 	github.com/go-git/go-git/v5 v5.5.2
 	github.com/knqyf263/go-cpe v0.0.0-20201213041631-54f6ab28673f
-	golang.org/x/exp v0.0.0-20230108222341-4b8118a2686a
+	golang.org/x/exp v0.0.0-20230131160201-f062dba9d201
 	gopkg.in/yaml.v2 v2.4.0
 )
 

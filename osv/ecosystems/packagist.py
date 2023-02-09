@@ -11,8 +11,15 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""Ordered packagist version"""
+"""Packagist ecosystem helper."""
+
+import json
 import re
+from typing import List
+
+from . import config
+from .helper_base import Ecosystem, EnumerateError
+from ..request_helper import RequestError, RequestHelper
 
 
 class PackagistVersion:
@@ -80,7 +87,7 @@ class PackagistVersion:
     return self.php_version_compare(self.version_str, other.version_str)
 
   @staticmethod
-  def php_slices_compare(a_split: [str], b_split: [str]):
+  def php_slices_compare(a_split: List[str], b_split: List[str]):
     """
     Compare php versions after being split by '.'
     """
@@ -185,3 +192,36 @@ class PackagistVersion:
     if found_a < found_b:
       return -1
     return 0
+
+
+class Packagist(Ecosystem):
+  """Packagist ecosystem"""
+
+  _API_PACKAGE_URL = 'https://repo.packagist.org/p2/{package}.json'
+
+  def sort_key(self, version):
+    return PackagistVersion(version)
+
+  def enumerate_versions(self,
+                         package,
+                         introduced,
+                         fixed=None,
+                         last_affected=None,
+                         limits=None):
+    url = self._API_PACKAGE_URL.format(package=package.lower())
+    request_helper = RequestHelper(config.shared_cache)
+    try:
+      text_response = request_helper.get(url)
+    except RequestError as ex:
+      if ex.response.status_code == 404:
+        raise EnumerateError(f'Package {package} not found') from ex
+      raise RuntimeError('Failed to get Packagist versions for '
+                         f'{package} with: {ex.response.text}') from ex
+
+    response = json.loads(text_response)
+    versions: list[str] = [x['version'] for x in response['packages'][package]]
+    self.sort_versions(versions)
+    # TODO(rexpan): Potentially filter out branch versions like dev-master
+
+    return self._get_affected_versions(versions, introduced, fixed,
+                                       last_affected, limits)

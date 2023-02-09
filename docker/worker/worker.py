@@ -662,13 +662,14 @@ def main():
   args = parser.parse_args()
 
   if args.deps_dev_api_key:
-    osv.ecosystems.use_deps_dev = True
-    osv.ecosystems.deps_dev_api_key = args.deps_dev_api_key
+    osv.ecosystems.config.use_deps_dev = True
+    osv.ecosystems.config.deps_dev_api_key = args.deps_dev_api_key
 
   if args.redis_host:
-    osv.ecosystems.set_cache(RedisCache(args.redis_host, args.redis_port))
+    osv.ecosystems.config.set_cache(
+        RedisCache(args.redis_host, args.redis_port))
 
-  osv.ecosystems.work_dir = args.work_dir
+  osv.ecosystems.config.work_dir = args.work_dir
 
   # Work around kernel bug: https://gvisor.dev/issue/1765
   resource.setrlimit(resource.RLIMIT_MEMLOCK,

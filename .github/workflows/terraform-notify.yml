@@ -22,8 +22,8 @@ permissions:
   pull-requests: write
 
 jobs:
-  terraform-notify:
-    name: 'Terraform Notify'
+  pr-comment:
+    name: 'PR Comment'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/github-script@v6

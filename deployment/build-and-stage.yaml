@@ -33,7 +33,8 @@ steps:
 
 timeout: 7200s
 # Set in Cloud Build:
-serviceAccount: 'projects/oss-vdb/serviceAccounts/deployment@oss-vdb.iam.gserviceaccount.com'
+# serviceAccount: 'projects/oss-vdb/serviceAccounts/deployment@oss-vdb.iam.gserviceaccount.com'
 options:
-  machineType: N1_HIGHCPU_8
   logging: CLOUD_LOGGING_ONLY
+  # TODO(michaelkedar): uncomment when docker image building is implemented
+  # machineType: N1_HIGHCPU_8

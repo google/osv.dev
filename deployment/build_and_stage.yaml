@@ -32,6 +32,8 @@ steps:
 # TODO: Cloud Deploy
 
 timeout: 7200s
+# Set in Cloud Build:
+serviceAccount: 'projects/oss-vdb/serviceAccounts/deployment@oss-vdb.iam.gserviceaccount.com'
 options:
   machineType: N1_HIGHCPU_8
   logging: CLOUD_LOGGING_ONLY

@@ -16,7 +16,9 @@ name: 'Terraform Notify'
 on:
   pull_request:
     branches: [ master ]
-    paths: 'deployment/terraform/**'
+    paths:
+      - 'deployment/terraform/**'
+      - 'gcp/api/v1/api_descriptor.pb'
 permissions:
   contents: read
   pull-requests: write

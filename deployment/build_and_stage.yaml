@@ -20,6 +20,7 @@ steps:
 # TODO: Docker image creation & tagging
 
 # Apply Terraform config to staging environment
+# TODO: regenerate the api protobufs?
 - name: gcr.io/oss-vdb/terraform
   args: ['init', '-no-color']
   dir:  deployment/terraform/environments/oss-vdb-test

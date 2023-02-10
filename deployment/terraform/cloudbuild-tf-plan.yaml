@@ -14,6 +14,7 @@
 
 steps:
 # run terraform plan for oss-vdb-test
+# TODO: regenerate the api protobufs?
 - name: gcr.io/oss-vdb/terraform
   args: ['init', '-no-color']
   dir:  deployment/terraform/environments/oss-vdb-test

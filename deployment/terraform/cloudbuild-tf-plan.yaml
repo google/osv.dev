@@ -25,5 +25,4 @@ steps:
 
 # Set in Cloud Build:
 # serviceAccount: 'projects/oss-vdb/serviceAccounts/deployment@oss-vdb.iam.gserviceaccount.com'
-options:
-  logging: CLOUD_LOGGING_ONLY
+logsBucket: gs://oss-vdb-tf/cloudbuild-logs

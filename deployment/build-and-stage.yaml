@@ -34,7 +34,10 @@ steps:
 timeout: 7200s
 # Set in Cloud Build:
 # serviceAccount: 'projects/oss-vdb/serviceAccounts/deployment@oss-vdb.iam.gserviceaccount.com'
-options:
-  logging: CLOUD_LOGGING_ONLY
-  # TODO(michaelkedar): uncomment when docker image building is implemented
+
+# TODO(michaelkedar): the terraform bucket is not the best place for this
+logsBucket: gs://oss-vdb-tf/cloudbuild-logs
+
+# TODO(michaelkedar): uncomment when docker image building is implemented
+# options:
   # machineType: N1_HIGHCPU_8

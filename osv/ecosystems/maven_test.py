@@ -249,6 +249,15 @@ class MavenVersionTest(unittest.TestCase):
 
     self.check_versions_equal('1', '01', '001')
 
+  def test_version_zero(self):
+    """Test comparison and equality with versions 0.0.0"""
+    self.check_versions_equal('0.0.0', '0.0', '0')
+    self.check_versions_equal('0.0.0-0.0.0', '0-final-ga', '0')
+    self.check_versions_order('0', '1')
+
+    # actual case from com.graphql-java:graphql-java
+    self.check_versions_order('0.0.0-2021-05-17T01-01-51-5ec03a8b', '20.0.0')
+
 
 class MavenEcosystemTest(unittest.TestCase):
   """Maven ecosystem helper tests."""

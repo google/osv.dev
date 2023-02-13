@@ -7,6 +7,7 @@ To build the builder, run
 ```
 gcloud builds submit --project=oss-vdb --config=cloudbuild.yaml
 ```
+The build should take about 10 minutes to complete.
 
 Afterwards, can be used in Cloud Build as
 
@@ -17,12 +18,10 @@ steps:
 ```
 
 ## Updating Terraform Version
-`_TERRAFORM_VERSION` and `_TERRAFORM_VERSION_SHA256SUM` are defined in `cloudbuild.yaml`. Currently version 1.3.7
+`_TERRAFORM_VERSION` is defined in `cloudbuild.yaml`. Currently version 1.3.8
 
 This can be modified in place, or set in Cloud Build CLI:
 ```
 gcloud builds submit --project=oss-vdb --config=cloudbuild.yaml \
-  --substitutions=_TERRAFORM_VERSION="0.12.29",_TERRAFORM_VERSION_SHA256SUM="872245d9c6302b24dc0d98a1e010aef1e4ef60865a2d1f60102c8ad03e9d5a1d"
+  --substitutions=_TERRAFORM_VERSION="1.3.8"
 ```
-
-Checksums are listed on the [Terraform download page](https://developer.hashicorp.com/terraform/downloads) under 'Notes'. Checksum is for the `linux_amd64` version.

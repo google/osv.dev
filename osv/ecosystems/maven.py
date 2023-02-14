@@ -221,7 +221,7 @@ class Version:
     # Then, starting from the end of the version, the trailing "null" values
     # (0, "", "final", "ga") are trimmed.
     i = len(version.tokens) - 1
-    while i >= 0:
+    while i > 0:  # We always want at least one token for comparison
       if version.tokens[i].value in _TO_TRIM:
         version.tokens.pop(i)
         i -= 1

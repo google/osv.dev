@@ -1,5 +1,5 @@
 # Terraform Cloud Builder Image
-Used for running Terraform in Cloud Build. Contains the required `terraform`, `gcloud`, and `jq` executables.
+Used for running Terraform in Cloud Build. Contains the required `terraform` and `gcloud` executables.
 
 Taken and modified from https://github.com/GoogleCloudPlatform/cloud-builders-community/tree/master/terraform
 

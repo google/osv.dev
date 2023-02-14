@@ -53,8 +53,7 @@ resource "google_project_service" "grpc_service_api" {
 
 
 data "external" "esp_version" {
-  program = ["bash", "${path.module}/scripts/esp_full_version"]
-  query   = { esp_tag = var.esp_version }
+  program = ["bash", "${path.module}/scripts/esp_full_version", "${var.esp_version}"]
 }
 
 resource "null_resource" "grpc_proxy_image" {

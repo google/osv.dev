@@ -53,6 +53,7 @@ func RepoTags(repoURL string, repoTagsCache *RepoTagsMap) (versions Versions, e 
 		v := Version{Tag: ref.Name().Short(), Commit: ref.Hash().String()}
 		versions = append(versions, v)
 	}
+	// Sort so that we get consistently ordered output for test validation purposes.
 	sort.Sort(versions)
 	if repoTagsCache != nil {
 		*repoTagsCache = make(map[string]Versions)

@@ -37,7 +37,7 @@ class UpdateAffectedCommitsTests(unittest.TestCase):
 
     ndb_client = ndb.Client()
     cls._ndb_context = ndb_client.context()
-    context = cls._ndb_context.__enter__()
+    context = cls._ndb_context.__enter__()  # pylint: disable=unnecessary-dunder-call
     context.set_memcache_policy(False)
     context.set_cache_policy(False)
 
@@ -45,6 +45,7 @@ class UpdateAffectedCommitsTests(unittest.TestCase):
   def tearDownClass(cls):
     # TODO(ochang): Cleaner way of properly cleaning up processes.
     os.system('pkill -f datastore')
+    cls._ndb_context.__exit__(None, None, None)  # pylint: disable=unnecessary-dunder-call
 
   def test_update_single_page(self):
     """Test update_affected_commits with a single page."""

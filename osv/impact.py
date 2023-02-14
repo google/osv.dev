@@ -13,6 +13,7 @@
 # limitations under the License.
 """Impact analysis."""
 
+import codecs
 import collections
 import logging
 import os
@@ -38,8 +39,8 @@ AnalyzeResult = collections.namedtuple('AnalyzeResult', 'has_changes commits')
 
 TagsInfo = collections.namedtuple('TagsInfo', 'tags latest_tag')
 
-_DATASTORE_BATCH_SIZE = 10000
-_DATASTORE_BATCH_SLEEP = 5
+_DATASTORE_BATCH_SIZE = 5000
+_DATASTORE_BATCH_SLEEP = 10
 
 
 class ImpactError(Exception):
@@ -337,23 +338,54 @@ def _throttled_delete(to_delete):
       time.sleep(_DATASTORE_BATCH_SLEEP)
 
 
-def update_affected_commits(bug_id, commits, public):
+def update_affected_commits(bug_id, commits, public, write_legacy=True):
   """Update affected commits."""
   to_put = []
   to_delete = []
 
-  for commit in commits:
-    affected_commit = models.AffectedCommit(
-        id=bug_id + '-' + commit, bug_id=bug_id, commit=commit, public=public)
+  # TODO(ochang): Remove this completedly once AffectedCommits migration is
+  # done.
+  if write_legacy:
+    for commit in commits:
+      affected_commit = models.AffectedCommit(
+          id=bug_id + '-' + commit, bug_id=bug_id, commit=commit, public=public)
 
-    to_put.append(affected_commit)
+      to_put.append(affected_commit)
 
-  # Delete any affected commits that no longer apply. This can happen in cases
-  # where a FixResult comes in later and we had previously marked a commit prior
-  # to the fix commit as being affected by a vulnerability.
-  for existing in models.AffectedCommit.query(
-      models.AffectedCommit.bug_id == bug_id):
-    if existing.commit not in commits:
+    # Delete any affected commits that no longer apply. This can happen in
+    # cases where a FixResult comes in later and we had previously marked a
+    # commit prior to the fix commit as being affected by a vulnerability.
+    for existing in models.AffectedCommit.query(
+        models.AffectedCommit.bug_id == bug_id):
+      if existing.commit not in commits:
+        to_delete.append(existing.key)
+
+    _throttled_put(to_put)
+    _throttled_delete(to_delete)
+
+  to_put.clear()
+  to_delete.clear()
+
+  # Write batched commit indexes.
+  # Sort the commits for ordering consistency in tests.
+  num_pages = 0
+  for batch, _ in _batcher(
+      sorted(commits), models.AffectedCommits.MAX_COMMITS_PER_ENTITY):
+    affected_commits = models.AffectedCommits(
+        id=f'{bug_id}-{num_pages}',
+        bug_id=bug_id,
+        public=public,
+        page=num_pages)
+    affected_commits.commits = [
+        codecs.decode(commit, 'hex') for commit in batch
+    ]
+    to_put.append(affected_commits)
+    num_pages += 1
+
+  # Clear any previously written pages above our current page count.
+  for existing in models.AffectedCommits.query(
+      models.AffectedCommits.bug_id == bug_id):
+    if existing.page >= num_pages:
       to_delete.append(existing.key)
 
   _throttled_put(to_put)

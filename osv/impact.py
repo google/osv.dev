@@ -363,8 +363,8 @@ def update_affected_commits(bug_id, commits, public, write_legacy=True):
     _throttled_put(to_put)
     _throttled_delete(to_delete)
 
-  to_put.clear()
-  to_delete.clear()
+    to_put.clear()
+    to_delete.clear()
 
   # Write batched commit indexes.
   # Sort the commits for ordering consistency in tests.

@@ -5,91 +5,32 @@ steps:
 - name: gcr.io/cloud-builders/git
   args: ['checkout', '$COMMIT_SHA']
   dir: 'osv.dev'
-- name: gcr.io/cloud-builders/git
-  args: ['submodule', 'update', '--init']
-  dir: 'osv.dev'
-# Build/push worker-base image if there's an update.
-- name: 'gcr.io/cloud-builders/docker'
-  entrypoint: 'bash'
-  args: ['-c', 'docker pull gcr.io/$PROJECT_ID/worker-base:latest || exit 0']
-- name: 'gcr.io/cloud-builders/docker'
-  args: ['build', '-t', 'gcr.io/$PROJECT_ID/worker-base', '-t', 'gcr.io/$PROJECT_ID/worker-base:$COMMIT_SHA', '-f', 'docker/worker-base/Dockerfile', '--cache-from', 'gcr.io/$PROJECT_ID/worker-base:latest', '--pull', '.']
-  dir: 'osv.dev'
-- name: gcr.io/cloud-builders/docker
-  args: ['push', 'gcr.io/$PROJECT_ID/worker-base:$COMMIT_SHA']
-- name: gcr.io/cloud-builders/docker
-  args: ['push', 'gcr.io/$PROJECT_ID/worker-base']
-# Build/push core worker/importer/exporter images.
-- name: gcr.io/cloud-builders/docker
-  args: ['build', '-t', 'gcr.io/$PROJECT_ID/worker', '-t', 'gcr.io/$PROJECT_ID/worker:$COMMIT_SHA', '-f', 'docker/worker/Dockerfile', '--build-arg', 'PROJECT=$PROJECT_ID', '.']
-  dir: 'osv.dev'
-- name: gcr.io/cloud-builders/docker
-  args: ['build', '-t', 'gcr.io/$PROJECT_ID/importer', '-t', 'gcr.io/$PROJECT_ID/importer:$COMMIT_SHA', '--build-arg', 'PROJECT=$PROJECT_ID', '.']
-  dir: 'osv.dev/docker/importer'
-- name: gcr.io/cloud-builders/docker
-  args: ['build', '-t', 'gcr.io/$PROJECT_ID/exporter', '-t', 'gcr.io/$PROJECT_ID/exporter:$COMMIT_SHA', '--build-arg', 'PROJECT=$PROJECT_ID', '.']
-  dir: 'osv.dev/docker/exporter'
-- name: gcr.io/cloud-builders/docker
-  args: ['push', 'gcr.io/$PROJECT_ID/worker:$COMMIT_SHA']
-- name: gcr.io/cloud-builders/docker
-  args: ['push', 'gcr.io/$PROJECT_ID/worker']
-- name: gcr.io/cloud-builders/docker
-  args: ['push', 'gcr.io/$PROJECT_ID/importer:$COMMIT_SHA']
-- name: gcr.io/cloud-builders/docker
-  args: ['push', 'gcr.io/$PROJECT_ID/importer']
-- name: gcr.io/cloud-builders/docker
-  args: ['push', 'gcr.io/$PROJECT_ID/exporter:$COMMIT_SHA']
-- name: gcr.io/cloud-builders/docker
-  args: ['push', 'gcr.io/$PROJECT_ID/exporter']
-# Build/push vulnfeeds images
-- name: gcr.io/cloud-builders/docker
-  args: ['build', '-t', 'gcr.io/$PROJECT_ID/alpine-cve-convert', '-t', 'gcr.io/$PROJECT_ID/alpine-cve-convert:$COMMIT_SHA', '-f', 'cmd/alpine/Dockerfile', '--build-arg', 'PROJECT=$PROJECT_ID', '.']
-  dir: 'osv.dev/vulnfeeds'
-- name: gcr.io/cloud-builders/docker
-  args: ['build', '-t', 'gcr.io/$PROJECT_ID/combine-to-osv', '-t', 'gcr.io/$PROJECT_ID/combine-to-osv:$COMMIT_SHA', '-f', 'cmd/combine-to-osv/Dockerfile', '--build-arg', 'PROJECT=$PROJECT_ID', '.']
-  dir: 'osv.dev/vulnfeeds'
-- name: gcr.io/cloud-builders/docker
-  args: ['push', 'gcr.io/$PROJECT_ID/alpine-cve-convert:$COMMIT_SHA']
-- name: gcr.io/cloud-builders/docker
-  args: ['push', 'gcr.io/$PROJECT_ID/alpine-cve-convert']
-- name: gcr.io/cloud-builders/docker
-  args: ['push', 'gcr.io/$PROJECT_ID/combine-to-osv:$COMMIT_SHA']
-- name: gcr.io/cloud-builders/docker
-  args: ['push', 'gcr.io/$PROJECT_ID/combine-to-osv']
-# Build/push debian converter images
-- name: gcr.io/cloud-builders/docker
-  args: ['build', '-t', 'gcr.io/$PROJECT_ID/debian-convert', '-t', 'gcr.io/$PROJECT_ID/debian-convert:$COMMIT_SHA', '.']
-  dir: 'osv.dev/vulnfeeds/tools/debian'
-- name: gcr.io/cloud-builders/docker
-  args: ['push', 'gcr.io/$PROJECT_ID/debian-convert']
-- name: gcr.io/cloud-builders/docker
-  args: ['push', 'gcr.io/$PROJECT_ID/debian-convert:$COMMIT_SHA']
 # Apply GKE configs.
 - name: gcr.io/cloud-builders/gke-deploy
-  args: ['run', '--filename=workers', '--image=gcr.io/$PROJECT_ID/worker:$COMMIT_SHA', '--location=us-central1-f', '--cluster=workers', '--output=/tmp', '--timeout=10m0s']
+  args: ['run', '--filename=workers', '--image=gcr.io/oss-vdb/worker:$COMMIT_SHA', '--location=us-central1-f', '--cluster=workers', '--output=/tmp', '--timeout=10m0s']
   dir: 'gke'
 - name: gcr.io/cloud-builders/gke-deploy
-  args: ['run', '--filename=importer', '--image=gcr.io/$PROJECT_ID/importer:$COMMIT_SHA', '--location=us-central1-f', '--cluster=workers', '--output=/tmp']
+  args: ['run', '--filename=importer', '--image=gcr.io/oss-vdb/importer:$COMMIT_SHA', '--location=us-central1-f', '--cluster=workers', '--output=/tmp']
   dir: 'gke'
 - name: gcr.io/cloud-builders/gke-deploy
-  args: ['run', '--filename=exporter', '--image=gcr.io/$PROJECT_ID/exporter:$COMMIT_SHA', '--location=us-central1-f', '--cluster=workers', '--output=/tmp']
+  args: ['run', '--filename=exporter', '--image=gcr.io/oss-vdb/exporter:$COMMIT_SHA', '--location=us-central1-f', '--cluster=workers', '--output=/tmp']
   dir: 'gke'
 - name: gcr.io/cloud-builders/gke-deploy
-  args: ['run', '--filename=alpine-cve-convert', '--image=gcr.io/$PROJECT_ID/alpine-cve-convert:$COMMIT_SHA', '--location=us-central1-f', '--cluster=workers', '--output=/tmp']
+  args: ['run', '--filename=alpine-cve-convert', '--image=gcr.io/oss-vdb/alpine-cve-convert:$COMMIT_SHA', '--location=us-central1-f', '--cluster=workers', '--output=/tmp']
   dir: 'gke'
 - name: gcr.io/cloud-builders/gke-deploy
-  args: ['run', '--filename=combine-to-osv', '--image=gcr.io/$PROJECT_ID/combine-to-osv:$COMMIT_SHA', '--location=us-central1-f', '--cluster=workers', '--output=/tmp']
+  args: ['run', '--filename=combine-to-osv', '--image=gcr.io/oss-vdb/combine-to-osv:$COMMIT_SHA', '--location=us-central1-f', '--cluster=workers', '--output=/tmp']
   dir: 'gke'
 - name: gcr.io/cloud-builders/gke-deploy
-  args: ['run', '--filename=debian/debian-convert.yaml', '--image=gcr.io/$PROJECT_ID/debian-convert:$COMMIT_SHA', '--location=us-central1-f', '--cluster=workers', '--output=/tmp']
+  args: ['run', '--filename=debian/debian-convert.yaml', '--image=gcr.io/oss-vdb/debian-convert:$COMMIT_SHA', '--location=us-central1-f', '--cluster=workers', '--output=/tmp']
   dir: 'gke'
 - name: gcr.io/cloud-builders/gke-deploy
-  args: ['run', '--filename=debian/debian-first-version.yaml', '--image=gcr.io/$PROJECT_ID/debian-convert:$COMMIT_SHA', '--location=us-central1-f', '--cluster=workers', '--output=/tmp']
+  args: ['run', '--filename=debian/debian-first-version.yaml', '--image=gcr.io/oss-vdb/debian-convert:$COMMIT_SHA', '--location=us-central1-f', '--cluster=workers', '--output=/tmp']
   dir: 'gke'
 # TODO(ochang): Debian, indexer.
 # TODO(ochang): API deployment
 timeout: 2400s
-serviceAccount: 'projects/$PROJECT_ID/serviceAccounts/deployment@$PROJECT_ID.iam.gserviceaccount.com'
+serviceAccount: 'projects/oss-vdb-test/serviceAccounts/deployment@oss-vdb-test.iam.gserviceaccount.com'
 options:
   logging: CLOUD_LOGGING_ONLY
   machineType: N1_HIGHCPU_8

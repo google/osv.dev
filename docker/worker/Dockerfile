@@ -12,8 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-ARG PROJECT=oss-vdb
-FROM gcr.io/${PROJECT}/worker-base
+FROM gcr.io/oss-vdb/worker-base
 
 RUN apt-get update && apt-get upgrade -y
 
@@ -30,8 +29,4 @@ RUN cd /env/docker/worker && pip3 install pipenv && pipenv install --deploy --sy
 COPY docker/worker/oss_fuzz.py docker/worker/worker.py /usr/local/bin/
 RUN chmod 755 /usr/local/bin/worker.py
 
-# ARGs after a FROM are unusable without redeclaring
-# See: https://docs.docker.com/engine/reference/builder/#understand-how-arg-and-from-interact
-ARG PROJECT
-ENV GOOGLE_CLOUD_PROJECT ${PROJECT}
 ENTRYPOINT ["worker.py"]

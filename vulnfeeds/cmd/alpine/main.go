@@ -93,6 +93,16 @@ func getAlpineSecDBData() map[string][]VersionAndPkg {
 			for version, cveIds := range pkg.Pkg.SecFixes {
 				for _, cveId := range cveIds {
 					cveId = strings.Split(cveId, " ")[0]
+
+					if !validVersion(version) {
+						log.Printf("Invalid alpine version: '%s', on package: '%s', and alpine version: '%s'",
+							version,
+							pkg.Pkg.Name,
+							alpineVer,
+						)
+						continue
+					}
+
 					allAlpineSecDb[cveId] = append(allAlpineSecDb[cveId],
 						VersionAndPkg{
 							Pkg:       pkg.Pkg.Name,
@@ -116,7 +126,7 @@ func generateAlpineOSV(allAlpineSecDb map[string][]VersionAndPkg, alpineOutputPa
 				PkgName:      verPkg.Pkg,
 				FixedVersion: verPkg.Ver,
 				Ecosystem:    "Alpine:" + verPkg.AlpineVer,
-				PURL:         "pkg:alpine/" + verPkg.Pkg,
+				PURL:         "pkg:apk/alpine/" + verPkg.Pkg + "?arch=source",
 			}
 			pkgInfos = append(pkgInfos, pkgInfo)
 		}

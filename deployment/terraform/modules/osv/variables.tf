@@ -13,20 +13,22 @@ variable "vulnerabilities_export_bucket" {
   description = "Name of bucket to export vulnerabilities to."
 }
 
-variable "resource_location" {
+variable "cve_osv_conversion_bucket" {
   type        = string
-  description = "Location for multi-regional resources."
-  default     = "US"
+  description = "Name of bucket to store converted CVEs in."
 }
 
-variable "resource_region" {
+variable "api_url" {
   type        = string
-  description = "Region for regional resources."
-  default     = "us-central1"
+  description = "URL to serve the OSV API on. Domain ownership and DNS settings has to be set up manually."
 }
 
-variable "worker_zone" {
+variable "esp_version" {
   type        = string
-  description = "Zone to use for workers."
-  default     = "us-central1-f"
+  description = "ESP version to use for OSV API frontend image."
+}
+
+variable "api_backend_image_tag" {
+  type        = string
+  description = "Image tag of GRPC backend that should be deployed."
 }

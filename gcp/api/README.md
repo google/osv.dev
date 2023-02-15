@@ -15,11 +15,26 @@ https://cloud.google.com/container-registry/docs/advanced-authentication#gcloud-
 ## Staging
 
 ```
-./deploy_backend $(date +"%Y%m%d") osv-grpc-backend-staging
+./deploy_backend oss-vdb $(date +"%Y%m%d") osv-grpc-backend-staging
 ```
 
 ## Production
 
 ```
-./deploy_backend $(date +"%Y%m%d") osv-grpc-backend
+./deploy_backend oss-vdb $(date +"%Y%m%d") osv-grpc-backend
 ```
+
+## oss-vdb-test Project
+Building and deploying is now handled separately.
+
+To build, inside project root folder:
+```bash
+docker build -t "gcr.io/oss-vdb-test/osv-server:<TAG>" -f gcp/api/Dockerfile .
+docker push "gcr.io/oss-vdb-test/osv-server:<TAG>"
+```
+
+Use terraform to deploy - in `deployment/terraform/environments/oss-vdb-test/main.tf` modify the line
+```
+  api_backend_image_tag = "<TAG>"
+```
+Then use `terraform plan` and `terraform apply` to deploy.

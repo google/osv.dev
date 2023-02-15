@@ -22,6 +22,10 @@ import (
 	"regexp"
 	"strings"
 
+	"github.com/go-git/go-git/v5"
+	"github.com/go-git/go-git/v5/config"
+	"github.com/go-git/go-git/v5/plumbing/transport"
+	"github.com/go-git/go-git/v5/storage/memory"
 	"github.com/knqyf263/go-cpe/naming"
 	"golang.org/x/exp/slices"
 )
@@ -78,7 +82,7 @@ func Repo(u string) (string, error) {
 		}
 	}
 
-	// GitWeb URLs are structured another way, e.g.
+	// cGit URLs are structured another way, e.g.
 	// https://git.dpkg.org/cgit/dpkg/dpkg.git/commit/?id=faa4c92debe45412bfcf8a44f26e827800bb24be
 	// https://git.kernel.org/cgit/linux/kernel/git/torvalds/linux.git/commit/?id=817b8b9c5396d2b2d92311b46719aad5d3339dbe
 	if strings.HasPrefix(parsedURL.Path, "/cgit") &&
@@ -87,6 +91,20 @@ func Repo(u string) (string, error) {
 		repo := strings.TrimSuffix(parsedURL.Path, "/commit/")
 		return fmt.Sprintf("%s://%s%s", parsedURL.Scheme,
 			parsedURL.Hostname(), repo), nil
+	}
+
+	// GitWeb CGI URLs are structured very differently, e.g.
+	// https://git.gnupg.org/cgi-bin/gitweb.cgi?p=libksba.git;a=commit;h=f61a5ea4e0f6a80fd4b28ef0174bee77793cf070 is another variation seen in the wild
+	if strings.HasPrefix(parsedURL.Path, "/cgi-bin/gitweb.cgi") &&
+		strings.HasPrefix(parsedURL.RawQuery, "p=") {
+		params := strings.Split(parsedURL.RawQuery, ";")
+		for _, param := range params {
+			if !strings.HasPrefix(param, "p=") {
+				continue
+			}
+			repo := strings.Split(param, "=")[1]
+			return fmt.Sprintf("%s://%s/%s", parsedURL.Scheme, parsedURL.Hostname(), repo), nil
+		}
 	}
 
 	// cgit.freedesktop.org is a special snowflake with enough repos to warrant special handling
@@ -125,12 +143,16 @@ func Repo(u string) (string, error) {
 	// This also supports GitHub and Gitlab issue URLs, e.g.:
 	// https://github.com/axiomatic-systems/Bento4/issues/755
 	// https://gitlab.com/wireshark/wireshark/-/issues/18307
+	//
+	// This also supports GitHub Security Advisory URLs, e.g.
+	// https://github.com/ballcat-projects/ballcat-codegen/security/advisories/GHSA-fv3m-xhqw-9m79
 	if (parsedURL.Hostname() == "github.com" || strings.HasPrefix(parsedURL.Hostname(), "gitlab.")) &&
 		(strings.Contains(parsedURL.Path, "commit") ||
 			strings.Contains(parsedURL.Path, "blob") ||
 			strings.Contains(parsedURL.Path, "releases/tag") ||
 			strings.Contains(parsedURL.Path, "releases") ||
 			strings.Contains(parsedURL.Path, "tags") ||
+			strings.Contains(parsedURL.Path, "security/advisories") ||
 			strings.Contains(parsedURL.Path, "issues")) {
 		return fmt.Sprintf("%s://%s%s", parsedURL.Scheme,
 				parsedURL.Hostname(),
@@ -173,8 +195,16 @@ func Repo(u string) (string, error) {
 	// https://bitbucket.org/ianb/pastescript/changeset/a19e462769b4
 	// https://bitbucket.org/jespern/django-piston/commits/91bdaec89543/
 	// https://bitbucket.org/openpyxl/openpyxl/commits/3b4905f428e1
+	// https://bitbucket.org/snakeyaml/snakeyaml/pull-requests/35
+	// https://bitbucket.org/snakeyaml/snakeyaml/issues/566
+	// https://bitbucket.org/snakeyaml/snakeyaml/downloads/?tab=tags
 	if parsedURL.Hostname() == "bitbucket.org" &&
 		(strings.Contains(parsedURL.Path, "changeset") ||
+			strings.Contains(parsedURL.Path, "downloads") ||
+			strings.Contains(parsedURL.Path, "wiki") ||
+			strings.Contains(parsedURL.Path, "issues") ||
+			strings.Contains(parsedURL.Path, "security") ||
+			strings.Contains(parsedURL.Path, "pull-requests") ||
 			strings.Contains(parsedURL.Path, "commits")) {
 		return fmt.Sprintf("%s://%s%s", parsedURL.Scheme,
 				parsedURL.Hostname(),
@@ -193,13 +223,26 @@ func Commit(u string) (string, error) {
 		return "", err
 	}
 
-	// GitWeb URLs are structured another way, e.g.
+	// cGit URLs are structured another way, e.g.
 	// https://git.dpkg.org/cgit/dpkg/dpkg.git/commit/?id=faa4c92debe45412bfcf8a44f26e827800bb24be
 	// https://git.kernel.org/cgit/linux/kernel/git/torvalds/linux.git/commit/?id=817b8b9c5396d2b2d92311b46719aad5d3339dbe
 	if strings.HasPrefix(parsedURL.Path, "/cgit") &&
 		strings.HasSuffix(parsedURL.Path, "commit/") &&
 		strings.HasPrefix(parsedURL.RawQuery, "id=") {
 		return strings.Split(parsedURL.RawQuery, "=")[1], nil
+	}
+
+	// GitWeb cgi-bin URLs are structured another way, e.g.
+	// https://git.gnupg.org/cgi-bin/gitweb.cgi?p=libksba.git;a=commit;h=f61a5ea4e0f6a80fd4b28ef0174bee77793cf070
+	if strings.HasPrefix(parsedURL.Path, "/cgi-bin/gitweb.cgi") &&
+		strings.Contains(parsedURL.RawQuery, "a=commit") {
+		params := strings.Split(parsedURL.RawQuery, ";")
+		for _, param := range params {
+			if !strings.HasPrefix(param, "h=") {
+				continue
+			}
+			return strings.Split(param, "=")[1], nil
+		}
 	}
 
 	// GitHub and GitLab commit URLs are structured one way, e.g.
@@ -223,18 +266,35 @@ func Commit(u string) (string, error) {
 	return "", fmt.Errorf("Commit(): unsupported URL: %s", u)
 }
 
+// Validate the repo by attempting to query it's references.
+func ValidRepo(u string) (valid bool, e error) {
+	remoteConfig := &config.RemoteConfig{
+		Name: "source",
+		URLs: []string{
+			u,
+		},
+	}
+	r := git.NewRemote(memory.NewStorage(), remoteConfig)
+	_, err := r.List(&git.ListOptions{})
+	if err != nil && err == transport.ErrAuthenticationRequired {
+		// somewhat strangely, we get an authentication prompt via Git on non-existent repos.
+		return false, nil
+	}
+	if err != nil {
+		return false, nil
+	}
+	return true, nil
+}
+
 // For URLs referencing commits in supported Git repository hosts, return a FixCommit.
 func extractGitCommit(link string) *FixCommit {
-	// Example: https://github.com/google/osv/commit/cd4e934d0527e5010e373e7fed54ef5daefba2f5
 	r, err := Repo(link)
 	if err != nil {
-		log.Printf("Failed to get repo from %s: %+v", link, err)
 		return nil
 	}
 
 	c, err := Commit(link)
 	if err != nil {
-		log.Printf("Failed to get commit from %s: %+v", link, err)
 		return nil
 	}
 
@@ -245,6 +305,9 @@ func extractGitCommit(link string) *FixCommit {
 }
 
 func hasVersion(validVersions []string, version string) bool {
+	if validVersions == nil || len(validVersions) == 0 {
+		return true
+	}
 	return versionIndex(validVersions, version) != -1
 }
 
@@ -334,11 +397,8 @@ func cleanVersion(version string) string {
 	return strings.TrimRight(version, ":")
 }
 
-func ExtractVersionInfo(cve CVEItem, validVersions []string) (VersionInfo, []string) {
-	var notes []string
-	v := VersionInfo{}
+func ExtractVersionInfo(cve CVEItem, validVersions []string) (v VersionInfo, notes []string) {
 	for _, reference := range cve.CVE.References.ReferenceData {
-		// TODO(ochang): Support other common commit URLs.
 		if commit := extractGitCommit(reference.URL); commit != nil {
 			v.FixCommits = append(v.FixCommits, *commit)
 		}
@@ -396,7 +456,6 @@ func ExtractVersionInfo(cve CVEItem, validVersions []string) (VersionInfo, []str
 			})
 		}
 	}
-
 	if !gotVersions {
 		var extractNotes []string
 		v.AffectedVersions, extractNotes = extractVersionsFromDescription(validVersions, EnglishDescription(cve.CVE))

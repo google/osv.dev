@@ -1,4 +1,4 @@
-# Copyright 2022 Google LLC
+# Copyright 2021 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -12,18 +12,21 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-name: osv-scanner
-on: [pull_request]
-
-permissions: read-all
-
-jobs:
-  osv-scanner:
-    name: Scan for vulnerabilities
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v3
-      - name: osv scan step
-        id: osv-scanning
-        uses: ./tools/osv-scanner/
+type: google.api.Service
+config_version: 3
+name: ${service_name}
+title: OSV (v1)
+apis:
+  - name: osv.v1.OSV
+usage:
+  rules:
+    - selector: "*"
+      allow_unregistered_calls: true
+authentication:
+  rules:
+    - selector: "*"
+      allow_without_credential: true
+backend:
+  rules:
+    - selector: "*"
+      address: ${backend_url}

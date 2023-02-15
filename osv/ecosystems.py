@@ -38,6 +38,7 @@ from . import repos
 from . import maven
 from . import nuget
 from . import packagist_version
+from . import pub
 from . import semver_index
 from .cache import Cache
 from .cache import cached
@@ -431,7 +432,8 @@ class NuGet(Ecosystem):
 class Alpine(Ecosystem):
   """Alpine packages ecosystem"""
 
-  _APORTS_GIT_URL = 'https://gitlab.alpinelinux.org/alpine/aports.git'
+  # Use github mirror which supports more bandwidth.
+  _APORTS_GIT_URL = 'https://github.com/alpinelinux/aports.git'
   _BRANCH_SUFFIX = '-stable'
   alpine_release_ver: str
   _GIT_REPO_PATH = 'version_enum/aports/'
@@ -656,6 +658,40 @@ class Packagist(Ecosystem):
                                        last_affected, limits)
 
 
+class Pub(Ecosystem):
+  """Pub ecosystem"""
+
+  _API_PACKAGE_URL = 'https://pub.dev/api/packages/{package}'
+
+  def sort_key(self, version):
+    """Sort key."""
+    return pub.Version.from_string(version)
+
+  def enumerate_versions(self,
+                         package,
+                         introduced,
+                         fixed=None,
+                         last_affected=None,
+                         limits=None):
+    """Enumerate versions."""
+    url = self._API_PACKAGE_URL.format(package=package.lower())
+    request_helper = RequestHelper(shared_cache)
+    try:
+      text_response = request_helper.get(url)
+    except RequestError as ex:
+      if ex.response.status_code == 404:
+        raise EnumerateError(f'Package {package} not found') from ex
+      raise RuntimeError('Failed to get Pub versions for '
+                         f'{package} with: {ex.response.text}') from ex
+
+    response = json.loads(text_response)
+    versions: list[str] = [x['version'] for x in response['versions']]
+    self.sort_versions(versions)
+
+    return self._get_affected_versions(versions, introduced, fixed,
+                                       last_affected, limits)
+
+
 _ecosystems = {
     'crates.io': Crates(),
     'Go': Go(),
@@ -664,6 +700,7 @@ _ecosystems = {
     'npm': NPM(),
     'NuGet': NuGet(),
     'Packagist': Packagist(),
+    'Pub': Pub(),
     'PyPI': PyPI(),
     'RubyGems': RubyGems(),
     # Ecosystems missing implementations:
@@ -671,7 +708,6 @@ _ecosystems = {
     'GitHub Actions': OrderingUnsupportedEcosystem(),
     'Linux': OrderingUnsupportedEcosystem(),
     'OSS-Fuzz': OrderingUnsupportedEcosystem(),
-    'Pub': OrderingUnsupportedEcosystem(),
     # Alpine and Debian require a release version for enumeration, which is
     # handled separately in get().
     'Alpine': OrderingUnsupportedEcosystem(),

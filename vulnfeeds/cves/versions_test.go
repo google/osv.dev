@@ -151,6 +151,12 @@ func TestRepo(t *testing.T) {
 			expectedOk:      true,
 		},
 		{
+			description:     "GitHub advisory URL",
+			inputLink:       "https://github.com/ballcat-projects/ballcat-codegen/security/advisories/GHSA-fv3m-xhqw-9m79",
+			expectedRepoURL: "https://github.com/ballcat-projects/ballcat-codegen",
+			expectedOk:      true,
+		},
+		{
 			description:     "Ambiguous GitLab compare URL",
 			inputLink:       "https://git.drupalcode.org/project/views/-/compare/7.x-3.21...7.x-3.x",
 			expectedRepoURL: "https://git.drupalcode.org/project/views",
@@ -181,9 +187,61 @@ func TestRepo(t *testing.T) {
 			expectedOk:      true,
 		},
 		{
+			description: "cGit cgi-bin URL",
+			inputLink:   "https://git.gnupg.org/cgi-bin/gitweb.cgi?p=libksba.git;a=commit;h=f61a5ea4e0f6a80fd4b28ef0174bee77793cf070",
+			// Note to future selves: this isn't valid for this
+			// host, but we have no way of knowing this via purely
+			// URL mangling, so are probably going to need a
+			// mapping table for known odd cases
+			expectedRepoURL: "https://git.gnupg.org/libksba.git",
+			expectedOk:      true,
+		},
+		{
 			description:     "Exact repo URL with a trailing slash",
 			inputLink:       "https://github.com/pyca/pyopenssl/",
 			expectedRepoURL: "https://github.com/pyca/pyopenssl",
+			expectedOk:      true,
+		},
+		{
+			description:     "Bitbucket download URL",
+			inputLink:       "https://bitbucket.org/snakeyaml/snakeyaml/downloads/?tab=tags",
+			expectedRepoURL: "https://bitbucket.org/snakeyaml/snakeyaml",
+			expectedOk:      true,
+		},
+		{
+			description:     "Bitbucket wiki URL",
+			inputLink:       "https://bitbucket.org/snakeyaml/snakeyaml/wiki/Home",
+			expectedRepoURL: "https://bitbucket.org/snakeyaml/snakeyaml",
+			expectedOk:      true,
+		},
+		{
+			description:     "Bitbucket security URL",
+			inputLink:       "https://bitbucket.org/snakeyaml/snakeyaml/security",
+			expectedRepoURL: "https://bitbucket.org/snakeyaml/snakeyaml",
+			expectedOk:      true,
+		},
+		{
+			description:     "Bitbucket pull-request URL",
+			inputLink:       "https://bitbucket.org/snakeyaml/snakeyaml/pull-requests/35",
+			expectedRepoURL: "https://bitbucket.org/snakeyaml/snakeyaml",
+			expectedOk:      true,
+		},
+		{
+			description:     "Bitbucket commit URL",
+			inputLink:       "https://bitbucket.org/snakeyaml/snakeyaml/commits/6e8cd890716dfe22d5ba56f9a592225fb7fa2803",
+			expectedRepoURL: "https://bitbucket.org/snakeyaml/snakeyaml",
+			expectedOk:      true,
+		},
+		{
+			description:     "Bitbucket issue URL with title",
+			inputLink:       "https://bitbucket.org/snakeyaml/snakeyaml/issues/566/build-android",
+			expectedRepoURL: "https://bitbucket.org/snakeyaml/snakeyaml",
+			expectedOk:      true,
+		},
+		{
+			description:     "Bitbucket bare issue URL",
+			inputLink:       "https://bitbucket.org/snakeyaml/snakeyaml/issues/566",
+			expectedRepoURL: "https://bitbucket.org/snakeyaml/snakeyaml",
 			expectedOk:      true,
 		},
 	}
@@ -195,6 +253,37 @@ func TestRepo(t *testing.T) {
 		}
 		if !reflect.DeepEqual(got, tc.expectedRepoURL) {
 			t.Errorf("test %q: Repo(%q) was incorrect, got: %#v, expected: %#v", tc.description, tc.inputLink, got, tc.expectedRepoURL)
+		}
+	}
+}
+
+func TestValidRepo(t *testing.T) {
+	tests := []struct {
+		description    string
+		repoURL        string
+		expectedResult interface{}
+		expectedOk     bool
+	}{
+		{
+			description:    "Valid repository",
+			repoURL:        "https://github.com/torvalds/linux",
+			expectedResult: true,
+			expectedOk:     true,
+		},
+		{
+			description:    "Invalid repository",
+			repoURL:        "https://github.com/andrewpollock/mybogusrepo",
+			expectedResult: false,
+			expectedOk:     true,
+		},
+	}
+	for _, tc := range tests {
+		got, err := ValidRepo(tc.repoURL)
+		if err != nil && tc.expectedOk {
+			t.Errorf("test %q: ValidRepo(%q) unexpectedly failed: %#v", tc.description, tc.repoURL, err)
+		}
+		if !reflect.DeepEqual(got, tc.expectedResult) {
+			t.Errorf("test %q: ValidRepo(%q) was incorrect, got: %#v, expected: %#v", tc.description, tc.repoURL, got, tc.expectedResult)
 		}
 	}
 }
@@ -251,6 +340,14 @@ func TestExtractGitCommit(t *testing.T) {
 			expectedFixCommit: &FixCommit{
 				Repo:   "https://git.dpkg.org/cgit/dpkg/dpkg.git",
 				Commit: "faa4c92debe45412bfcf8a44f26e827800bb24be",
+			},
+		},
+		{
+			description: "Valid GitWeb commit URL",
+			inputLink:   "https://git.gnupg.org/cgi-bin/gitweb.cgi?p=libksba.git;a=commit;h=f61a5ea4e0f6a80fd4b28ef0174bee77793cf070",
+			expectedFixCommit: &FixCommit{
+				Repo:   "https://git.gnupg.org/libksba.git",
+				Commit: "f61a5ea4e0f6a80fd4b28ef0174bee77793cf070",
 			},
 		},
 		{

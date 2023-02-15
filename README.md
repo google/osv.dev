@@ -45,6 +45,13 @@ The following ecosystems have vulnerabilities encoded in this format:
     ([CC0 1.0](https://github.com/cloudsecurityalliance/gsd-database/blob/main/LICENSE))
 -   [OSS-Fuzz](https://github.com/google/oss-fuzz-vulns)
     ([CC-BY 4.0](https://github.com/google/oss-fuzz-vulns/blob/main/LICENSE))
+    
+Additionally, the OSV.dev team maintains a conversion pipeline for:
+
+- [Debian Security Advisories](https://storage.googleapis.com/debian-osv/index.html),
+  using the conversion tools [here](https://github.com/ossf/osv-schema/tree/main/tools/debian).
+- [Alpine SecDB](https://storage.googleapis.com/cve-osv-conversion/index.html?prefix=osv-output/),
+  using the conversion tools [here](https://github.com/google/osv.dev/tree/master/vulnfeeds/cmd/alpine).
 
 Together, these include vulnerabilities from:
 
@@ -156,6 +163,9 @@ tools and unsupported by the core OSV maintainers.
 -   [dep-scan](https://github.com/AppThreat/dep-scan)
 -   [bomber](https://github.com/devops-kung-fu/bomber)
 -   [it-depends](https://github.com/trailofbits/it-depends)
+-   [Packj](https://github.com/ossillate-inc/packj)
+-   [Trivy](https://github.com/aquasecurity/trivy)
+-   [Betterscan.io: Code Scanning/SAST/Static Analysis/Linting using many tools/Scanners with One Report (Code, IaC)](https://github.com/marcinguy/betterscan-ce) 
 
 Feel free to send a PR to add your project here.
 

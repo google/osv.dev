@@ -1,12 +1,26 @@
 #!/bin/bash -ex
 
+dir=$(dirname "$0")
+
 if [ $# -lt 1 ]; then
-  echo "Usage: $0 <project-id> <path to app.yaml> ..args.."
+  echo "Usage: $0 <project-id> <path-to-yaml-configs> ..args.."
   exit 1
 fi
 
 project_id=$1
 shift
+
+# `gcloud app deploy` requires that the app.yaml file lives in the application
+# root (i.e. the directory containing this script). We'll symlink in all
+# relevant yaml files from the given config dir here.
+configs_dir=$1
+shift
+
+for config in $configs_dir/*.yaml; do
+  ln -sf $(realpath "$config") $dir/$(basename "$config")
+done
+
+cd "$dir"
 
 pushd frontend3
 npm install

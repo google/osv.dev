@@ -1,0 +1,14 @@
+# Invalid versions present in data
+1.18.-r2
+2.15.r-r1
+57-1-r2
+1.7.5.-r1
+1.0.4.-r0
+1.11-20-r0
+4.10-1-r1
+
+# Made up invalid versions
+110.73-e0
+110.73/e0
+110.73/r0
+2.19.10.4_y8

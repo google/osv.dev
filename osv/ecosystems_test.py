@@ -38,6 +38,8 @@ class GetNextVersionTest(unittest.TestCase):
     with self.assertRaises(ecosystems.EnumerateError):
       ecosystem.next_version('doesnotexist123456', '1')
 
+  @unittest.skipIf(
+      os.getenv('DEPSDEV_API_KEY'), 'Unnecessary if using deps.dev')
   def test_maven(self):
     """Test Maven."""
     ecosystem = ecosystems.get('Maven')
@@ -47,6 +49,8 @@ class GetNextVersionTest(unittest.TestCase):
     with self.assertRaises(ecosystems.EnumerateError):
       ecosystem.next_version('blah:doesnotexist123456', '1')
 
+  @unittest.skipIf(
+      os.getenv('DEPSDEV_API_KEY'), 'Unnecessary if using deps.dev')
   @mock.patch('requests.Session.get', side_effect=requests.get)
   def test_maven_with_cache(self, mock_get):
     """Test Maven."""
@@ -187,6 +191,15 @@ class GetNextVersionTest(unittest.TestCase):
     # Second call should use cache, so call count should not increase
     self.assertEqual(ensure_updated_checkout_mock.call_count, 1)
 
+    # Should not throw exception
+    ecosystem.sort_key('1.9.5p2')
+    ecosystem.sort_key('1.9.5p2-r0')
+
+    self.assertGreater(
+        ecosystem.sort_key('1.9.5p3'), ecosystem.sort_key('1.9.5p2'))
+    self.assertGreater(
+        ecosystem.sort_key('1.9.5p1'), ecosystem.sort_key('1.9.5'))
+
     # Check letter suffixes clone correctly
     self.assertEqual('2.78c-r0', ecosystem.next_version('blender', '2.78a-r1'))
 
@@ -234,6 +247,32 @@ class GetNextVersionTest(unittest.TestCase):
           raise RuntimeError('Input not expected: ' + pieces[1])
 
         self.assertEqual(expected_value, sort_value, pieces)
+
+  def test_pub(self):
+    """Test Pub."""
+    ecosystem = ecosystems.get('Pub')
+
+    self.assertEqual('2.0.0-nullsafety.0',
+                     ecosystem.next_version('pub_semver', '1.4.4'))
+    self.assertEqual('2.0.0',
+                     ecosystem.next_version('pub_semver', '2.0.0-nullsafety.0'))
+    self.assertEqual('2.1.0', ecosystem.next_version('pub_semver', '2.0.0'))
+    self.assertEqual('2.1.1', ecosystem.next_version('pub_semver', '2.1.0'))
+
+    # Versions with pre-release and build suffixes.
+    self.assertEqual('3.0.0-alpha+2',
+                     ecosystem.next_version('mockito', '3.0.0-alpha'))
+    self.assertEqual('3.0.0-alpha+3',
+                     ecosystem.next_version('mockito', '3.0.0-alpha+2'))
+    self.assertEqual('3.0.0-beta',
+                     ecosystem.next_version('mockito', '3.0.0-alpha+5'))
+    self.assertEqual('3.0.0', ecosystem.next_version('mockito', '3.0.0-beta+3'))
+    self.assertEqual('4.1.1+1', ecosystem.next_version('mockito', '4.1.1'))
+    self.assertEqual('4.1.2', ecosystem.next_version('mockito', '4.1.1+1'))
+
+    # Version marked as retracted (go_router 4.2.1)
+    self.assertEqual('4.2.1', ecosystem.next_version('go_router', '4.2.0'))
+    self.assertEqual('4.2.2', ecosystem.next_version('go_router', '4.2.1'))
 
   def test_semver(self):
     """Test SemVer."""

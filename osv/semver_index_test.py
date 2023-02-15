@@ -17,7 +17,7 @@ import unittest
 
 import semver
 
-import semver_index
+from . import semver_index
 
 
 class SemverIndexTests(unittest.TestCase):
@@ -40,7 +40,7 @@ class SemverIndexTests(unittest.TestCase):
     self.assertEqual('a1.0.0', semver_index.coerce('a1.0.0'))
     self.assertEqual('1.0.0.0', semver_index.coerce('1.0.0.0'))
     self.assertEqual('1.0.0-foo', semver_index.coerce('1.0.0-foo'))
-    self.assertEqual('1-foo', semver_index.coerce('1-foo'))
+    self.assertEqual('1.0.0-foo', semver_index.coerce('1-foo'))
 
   def test_normalize(self):
     """Test version normalization."""

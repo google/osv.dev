@@ -6,6 +6,28 @@ export GOOGLE_CLOUD_PROJECT=<PROJECT_ID>
 ```
 The official project id of OSV is `oss-vdb`.
 
+## API Domain Name
+
+Due to [terraform complexities](https://github.com/hashicorp/terraform-provider-google/issues/5528),
+setting up the OSV API requires a custom domain to serve it on.
+
+For example, if you own `custom-domain.name` and wish to serve the api on `api.custom-domain.name`:
+
+1. Verify the ownership of your domain:
+  
+    Go to 
+
+    `https://www.google.com/webmasters/verification/verification?authuser=0&domain=custom-domain.name`
+
+    (Replace `custom-domain.name` in the url with the actual domain to be verified.)
+    
+    (This link is usually generated when adding a domain mapping to a service in Cloud Run.
+    I don't know how to navigate to that page otherwise. Trying to add a property from
+    [Webmaster Central](https://www.google.com/webmasters/verification/home)
+    adds it as a site, rather than as a domain.)
+
+2. Add DNS CNAME record mapping `api.custom-domain.name` to `ghs.googlehosted.com.`
+
 ## Terraform
 
 Go to the relevant directory `/deployment/terraform/environments/<PROJECT_ID>`:
@@ -57,7 +79,7 @@ kubectl apply -f https://raw.githubusercontent.com/GoogleCloudPlatform/k8s-stack
 Inside `deployment/oss-vdb-test/k8s/`, run
 
 ```bash
-gcloud beta builds submit . --project=oss-vdb-test --substitutions=COMMIT_SHA=<COMMIT_SHA>
+./deploy.sh <COMMIT_SHA>
 ```
 
 Replacing <COMMIT_SHA> with the hash of the commit in google/osv.dev to deploy.

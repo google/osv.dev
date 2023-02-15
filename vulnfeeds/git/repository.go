@@ -6,6 +6,7 @@ import (
 
 	"github.com/go-git/go-git/v5"
 	"github.com/go-git/go-git/v5/config"
+	"github.com/go-git/go-git/v5/plumbing/transport"
 	"github.com/go-git/go-git/v5/storage/memory"
 )
 
@@ -60,4 +61,24 @@ func RepoTags(repoURL string, repoTagsCache *RepoTagsMap) (versions Versions, e 
 		(*repoTagsCache)[repoURL] = versions
 	}
 	return versions, nil
+}
+
+// Validate the repo by attempting to query it's references.
+func ValidRepo(repoURL string) (valid bool, e error) {
+	remoteConfig := &config.RemoteConfig{
+		Name: "source",
+		URLs: []string{
+			repoURL,
+		},
+	}
+	r := git.NewRemote(memory.NewStorage(), remoteConfig)
+	_, err := r.List(&git.ListOptions{})
+	if err != nil && err == transport.ErrAuthenticationRequired {
+		// somewhat strangely, we get an authentication prompt via Git on non-existent repos.
+		return false, nil
+	}
+	if err != nil {
+		return false, nil
+	}
+	return true, nil
 }

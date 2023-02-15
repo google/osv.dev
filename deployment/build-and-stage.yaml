@@ -32,9 +32,8 @@ steps:
 # TODO(michaelkedar): Cloud Deploy
 
 timeout: 7200s
-# Set in Cloud Build:
-# serviceAccount: 'projects/oss-vdb/serviceAccounts/deployment@oss-vdb.iam.gserviceaccount.com'
-
+# Also set in Cloud Build:
+serviceAccount: 'projects/oss-vdb/serviceAccounts/deployment@oss-vdb.iam.gserviceaccount.com'
 logsBucket: gs://oss-vdb-tf/apply-logs
 
 # TODO(michaelkedar): uncomment when docker image building is implemented

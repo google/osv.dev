@@ -23,6 +23,6 @@ steps:
   dir:  deployment/terraform/environments/oss-vdb-test
 # TODO(michaelkedar): plan for oss-vdb
 
-# Set in Cloud Build:
-# serviceAccount: 'projects/oss-vdb/serviceAccounts/deployment@oss-vdb.iam.gserviceaccount.com'
+# Also set in Cloud Build:
+serviceAccount: 'projects/oss-vdb/serviceAccounts/terraform-plan@oss-vdb.iam.gserviceaccount.com'
 logsBucket: gs://oss-vdb-tf/plan-logs

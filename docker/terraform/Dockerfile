@@ -1,3 +1,5 @@
+# Taken and modified from https://github.com/GoogleCloudPlatform/cloud-builders-community/tree/master/terraform
+
 FROM golang:1.19 AS build
 
 ARG TERRAFORM_VERSION

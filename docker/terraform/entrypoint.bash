@@ -1,4 +1,7 @@
 #!/bin/bash
+#
+# Terraform cloud builder entry point.
+# From https://github.com/GoogleCloudPlatform/cloud-builders-community/tree/master/terraform
 set -e
 
 active_account=""

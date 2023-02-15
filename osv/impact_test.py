@@ -136,5 +136,14 @@ class UpdateAffectedCommitsTests(unittest.TestCase):
         [b'%08d' % i for i in range(20000, 26000)],
         [codecs.encode(c, 'hex') for c in affected_commits[2].commits])
 
-  def test_update_deletes_pages(self):
-    """Test deletion of pages."""
+  def test_update_no_commits(self):
+    """Test updates with no commits."""
+    # These pre-populated pages should be deleted.
+    for i in range(10):
+      models.AffectedCommits(
+          id=f'BUG-1-{i}', bug_id='BUG-1', commits=[], public=True,
+          page=i).put()
+
+    impact.update_affected_commits('BUG-1', set(), True, write_legacy=False)
+    affected_commits = list(models.AffectedCommits.query())
+    self.assertEqual(0, len(affected_commits))

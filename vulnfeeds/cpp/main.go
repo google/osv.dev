@@ -184,15 +184,9 @@ func CVEToOSV(CVE cves.CVEItem, repos []string, repobasedir string, directory st
 	}
 	Logger.Infof("Generated OSV record from %s for %q", CVE.CVE.CVEDataMeta.ID, CPE.Product)
 	if len(notes) > 0 {
-		f, err := os.Create(notesFile)
+		err = os.WriteFile(notesFile, []byte(strings.Join(notes, "\n")), 0660)
 		if err != nil {
-			Logger.Warnf("Failed to open %s for writing: %v", notesFile, err)
-		} else {
-			defer f.Close()
-			_, err = f.WriteString(strings.Join(notes, "\n"))
-			if err != nil {
-				Logger.Warnf("Failed to write %s: %v", notesFile, err)
-			}
+			Logger.Warnf("Failed to write %s: %v", notesFile, err)
 		}
 	}
 	return nil

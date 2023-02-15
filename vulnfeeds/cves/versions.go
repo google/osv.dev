@@ -460,7 +460,9 @@ func ExtractVersionInfo(cve CVEItem, validVersions []string) (v VersionInfo, not
 		var extractNotes []string
 		v.AffectedVersions, extractNotes = extractVersionsFromDescription(validVersions, EnglishDescription(cve.CVE))
 		notes = append(notes, extractNotes...)
-		log.Printf("Extracted versions from description = %+v", v.AffectedVersions)
+		if len(v.AffectedVersions) > 0 {
+			log.Printf("[%s] Extracted versions from description = %+v", cve.CVE.CVEDataMeta.ID, v.AffectedVersions)
+		}
 	}
 
 	if len(v.AffectedVersions) == 0 {

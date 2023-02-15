@@ -140,8 +140,9 @@ func CVEToOSV(CVE cves.CVEItem, repos []string, repobasedir string, directory st
 	if err != nil {
 		return fmt.Errorf("Can't generate an OSV record for %s without valid CPE data", CVE.CVE.CVEDataMeta.ID)
 	}
-	v, _ := vulns.FromCVE(CVE.CVE.CVEDataMeta.ID, CVE)
-	versions, _ := cves.ExtractVersionInfo(CVE, nil)
+	v, notes := vulns.FromCVE(CVE.CVE.CVEDataMeta.ID, CVE)
+	versions, versionNotes := cves.ExtractVersionInfo(CVE, nil)
+	notes = append(notes, versionNotes...)
 
 	if len(versions.FixCommits) == 0 && len(versions.AffectedVersions) != 0 {
 		// We have some versions to try and convert to commits
@@ -169,6 +170,7 @@ func CVEToOSV(CVE cves.CVEItem, repos []string, repobasedir string, directory st
 		return fmt.Errorf("Failed to create dir: %v", err)
 	}
 	outputFile := filepath.Join(vulnDir, v.ID+extension)
+	notesFile := filepath.Join(vulnDir, v.ID+".notes")
 	f, err := os.Create(outputFile)
 	if err != nil {
 		Logger.Warnf("Failed to open %s for writing: %v", outputFile, err)
@@ -181,6 +183,18 @@ func CVEToOSV(CVE cves.CVEItem, repos []string, repobasedir string, directory st
 		return fmt.Errorf("Failed to write %s: %v", outputFile, err)
 	}
 	Logger.Infof("Generated OSV record from %s for %q", CVE.CVE.CVEDataMeta.ID, CPE.Product)
+	if len(notes) > 0 {
+		f, err := os.Create(notesFile)
+		if err != nil {
+			Logger.Warnf("Failed to open %s for writing: %v", notesFile, err)
+		} else {
+			defer f.Close()
+			_, err = f.WriteString(strings.Join(notes, "\n"))
+			if err != nil {
+				Logger.Warnf("Failed to write %s: %v", notesFile, err)
+			}
+		}
+	}
 	return nil
 }
 

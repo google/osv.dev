@@ -39,7 +39,7 @@ RUN pip3 install pipenv
 # Install Docker.
 # Pin the version to an older one due to gVisor incompatibilities.
 # See https://github.com/google/osv.dev/issues/1019#issuecomment-1427418758
-ARG DOCKER_VERSION=5:20.10.23~3-0~ubuntu-bionic
+ARG DOCKER_VERSION=5:20.10.22~3-0~ubuntu-bionic
 RUN curl -fsSL https://download.docker.com/linux/ubuntu/gpg | apt-key add - && \
     add-apt-repository \
         "deb [arch=amd64] https://download.docker.com/linux/ubuntu bionic stable" && \

@@ -37,4 +37,6 @@ for tag in "${TAGS_ARRAY[@]}"; do
 done
 
 # Produce JSON object containing esp_full_version
-echo "{\"esp_full_version\":\"${ESP_FULL_VERSION}\"}"
+cat <<END
+{"esp_full_version": "${ESP_FULL_VERSION}"}
+END

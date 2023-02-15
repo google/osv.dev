@@ -27,6 +27,13 @@ resource "google_cloud_run_service" "api_backend" {
   }
 }
 
+variable "_api_descriptor_file" {
+  # This isn't actually sensitive, but it's outputted as a massive base64 string which really floods the plan output.
+  sensitive = true
+  type      = string
+  default   = "api/api_descriptor.pb"
+}
+
 resource "google_endpoints_service" "grpc_service" {
   project      = var.project_id
   service_name = var.api_url
@@ -36,7 +43,7 @@ resource "google_endpoints_service" "grpc_service" {
       service_name = var.api_url,
       backend_url  = replace(google_cloud_run_service.api_backend.status[0].url, "https://", "grpcs://")
   })
-  protoc_output_base64 = filebase64("api/api_descriptor.pb")
+  protoc_output_base64 = filebase64(var._api_descriptor_file)
 }
 
 resource "google_project_service" "grpc_service_api" {
@@ -46,8 +53,7 @@ resource "google_project_service" "grpc_service_api" {
 
 
 data "external" "esp_version" {
-  program = ["bash", "${path.module}/scripts/esp_full_version"]
-  query   = { esp_tag = var.esp_version }
+  program = ["bash", "${path.module}/scripts/esp_full_version", "${var.esp_version}"]
 }
 
 resource "null_resource" "grpc_proxy_image" {

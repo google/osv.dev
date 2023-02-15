@@ -43,7 +43,8 @@ ARG DOCKER_VERSION=5:20.10.22~3-0~ubuntu-bionic
 RUN curl -fsSL https://download.docker.com/linux/ubuntu/gpg | apt-key add - && \
     add-apt-repository \
         "deb [arch=amd64] https://download.docker.com/linux/ubuntu bionic stable" && \
-    apt-get install -y docker-ce=$DOCKER_VERSION docker-ce-cli=$DOCKER_VERSION
+    apt-get install -y docker-ce=$DOCKER_VERSION docker-ce-cli=$DOCKER_VERSION && \
+    apt-mark hold docker-ce docker-ce-cli  # Prevent subsequent upgrades from bumping the version.
 
 # Install gcloud
 RUN echo "deb [signed-by=/usr/share/keyrings/cloud.google.gpg] http://packages.cloud.google.com/apt cloud-sdk main" | tee -a /etc/apt/sources.list.d/google-cloud-sdk.list && \

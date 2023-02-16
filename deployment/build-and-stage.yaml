@@ -18,7 +18,7 @@
 
 steps:
 - name: gcr.io/cloud-builders/git
-  args: ['submodule', 'update', '--init']
+  args: ['submodule', 'update', '--init', '--recursive']
 
 # Docker Image creation and tagging
 # Build/push worker-base image if there's an update.

@@ -43,7 +43,7 @@ spec:
           # - "--ssh_key_public=/secrets/ssh.pub"
           # - "--ssh_key_private=/secrets/ssh"
           # TODO(michaelkedar): Somehow grab or enforce redis endpoint from terraform
-          - "--redis_host=10.102.25.213"
+          - "--redis_host=10.102.25.214"
           # - "--deps_dev_api_key=$(DEPS_DEV_API_KEY)"
         volumeMounts:
           - mountPath: "/work"

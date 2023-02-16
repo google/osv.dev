@@ -1,10 +1,4 @@
 steps:
-# Checkout at specified commit.
-- name: gcr.io/cloud-builders/git
-  args: ['clone', 'https://github.com/google/osv.dev.git']
-- name: gcr.io/cloud-builders/git
-  args: ['checkout', '$COMMIT_SHA']
-  dir: 'osv.dev'
 # Apply GKE configs.
 - name: gcr.io/cloud-builders/gke-deploy
   args: ['run', '--filename=workers', '--image=gcr.io/oss-vdb/worker:$COMMIT_SHA', '--location=us-central1-f', '--cluster=workers', '--output=/tmp', '--timeout=10m0s']
@@ -33,6 +27,5 @@ timeout: 2400s
 serviceAccount: 'projects/oss-vdb-test/serviceAccounts/deployment@oss-vdb-test.iam.gserviceaccount.com'
 options:
   logging: CLOUD_LOGGING_ONLY
-  machineType: N1_HIGHCPU_8
 tags:
-- prod-deploy
+- stage-deploy

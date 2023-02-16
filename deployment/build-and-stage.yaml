@@ -17,13 +17,6 @@
 # eventually, they can probably be combined
 
 steps:
-### TODO: REMOVE STEPS BEFORE PR
-- name: gcr.io/cloud-builders/git
-  args: ['clone', 'https://github.com/michaelkedar/osv.dev.git', '.']
-- name: gcr.io/cloud-builders/git
-  args: ['checkout', '$COMMIT_SHA']
-###############
-
 - name: gcr.io/cloud-builders/git
   args: ['submodule', 'update', '--init', '--recursive']
   id: 'setup'

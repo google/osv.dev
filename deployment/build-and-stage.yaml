@@ -19,48 +19,77 @@
 steps:
 - name: gcr.io/cloud-builders/git
   args: ['submodule', 'update', '--init', '--recursive']
+  id: 'setup'
 
 # Docker Image creation and tagging
 # Build/push worker-base image if there's an update.
 - name: 'gcr.io/cloud-builders/docker'
   entrypoint: 'bash'
   args: ['-c', 'docker pull gcr.io/oss-vdb/worker-base:latest || exit 0']
+  id: 'pull-worker-base'
+  waitFor: ['setup']
 - name: 'gcr.io/cloud-builders/docker'
   args: ['build', '-t', 'gcr.io/oss-vdb/worker-base:latest', '-t', 'gcr.io/oss-vdb/worker-base:$COMMIT_SHA', '-f', 'docker/worker-base/Dockerfile', '--cache-from', 'gcr.io/oss-vdb/worker-base:latest', '--pull', '.']
+  id: 'build-worker-base'
+  waitFor: ['pull-worker-base']
 - name: gcr.io/cloud-builders/docker
   args: ['push', '--all-tags', 'gcr.io/oss-vdb/worker-base']
+  waitFor: ['build-worker-base']
 # Build/push core worker/importer/exporter images.
 - name: gcr.io/cloud-builders/docker
   args: ['build', '-t', 'gcr.io/oss-vdb/worker:latest', '-t', 'gcr.io/oss-vdb/worker:$COMMIT_SHA', '-f', 'docker/worker/Dockerfile', '.']
+  id: 'build-worker'
+  waitFor: ['build-worker-base']
 - name: gcr.io/cloud-builders/docker
   args: ['push', '--all-tags', 'gcr.io/oss-vdb/worker']
+  waitFor: ['build-worker']
+
 - name: gcr.io/cloud-builders/docker
   args: ['build', '-t', 'gcr.io/oss-vdb/importer:latest', '-t', 'gcr.io/oss-vdb/importer:$COMMIT_SHA', '.']
   dir: 'docker/importer'
+  id: 'build-importer'
+  waitFor: ['build-worker']
 - name: gcr.io/cloud-builders/docker
   args: ['push', '--all-tags', 'gcr.io/oss-vdb/importer']
+  waitFor: ['build-importer']
+
 - name: gcr.io/cloud-builders/docker
   args: ['build', '-t', 'gcr.io/oss-vdb/exporter:latest', '-t', 'gcr.io/oss-vdb/exporter:$COMMIT_SHA', '.']
   dir: 'docker/exporter'
+  id: 'build-exporter'
+  waitFor: ['build-worker']
 - name: gcr.io/cloud-builders/docker
   args: ['push', '--all-tags', 'gcr.io/oss-vdb/exporter']
+  waitFor: ['build-exporter']
+
 # Build/push vulnfeeds images
 - name: gcr.io/cloud-builders/docker
   args: ['build', '-t', 'gcr.io/oss-vdb/alpine-cve-convert:latest', '-t', 'gcr.io/oss-vdb/alpine-cve-convert:$COMMIT_SHA', '-f', 'cmd/alpine/Dockerfile', '.']
   dir: 'vulnfeeds'
+  id: 'build-alpine-cve-convert'
+  waitFor: ['setup']
 - name: gcr.io/cloud-builders/docker
   args: ['push', '--all-tags', 'gcr.io/oss-vdb/alpine-cve-convert']
+  waitFor: ['build-alpine-cve-convert']
+
 - name: gcr.io/cloud-builders/docker
   args: ['build', '-t', 'gcr.io/oss-vdb/combine-to-osv:latest', '-t', 'gcr.io/oss-vdb/combine-to-osv:$COMMIT_SHA', '-f', 'cmd/combine-to-osv/Dockerfile', '.']
   dir: 'vulnfeeds'
+  id: 'build-combine-to-osv'
+  waitFor: ['setup']
 - name: gcr.io/cloud-builders/docker
   args: ['push', '--all-tags', 'gcr.io/oss-vdb/combine-to-osv']
+  waitFor: ['build-combine-to-osv']
+
 # Build/push debian converter image
 - name: gcr.io/cloud-builders/docker
   args: ['build', '-t', 'gcr.io/oss-vdb/debian-convert:latest', '-t', 'gcr.io/oss-vdb/debian-convert:$COMMIT_SHA', '.']
   dir: 'vulnfeeds/tools/debian'
+  id: 'build-debian-convert'
+  waitFor: ['setup']
 - name: gcr.io/cloud-builders/docker
   args: ['push', '--all-tags', 'gcr.io/oss-vdb/debian-convert']
+  wairFor: ['build-debian-convert']
 
 # Apply Terraform config to staging environment
 # TODO(michaelkedar): regenerate the api protobufs?
@@ -80,6 +109,8 @@ serviceAccount: 'projects/oss-vdb/serviceAccounts/deployment@oss-vdb.iam.gservic
 logsBucket: gs://oss-vdb-tf/apply-logs
 options:
   machineType: N1_HIGHCPU_8
+
+tags: ['build-and-stage']
 
 images:
   - 'gcr.io/oss-vdb/worker-base:$COMMIT_SHA'

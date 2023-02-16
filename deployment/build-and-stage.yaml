@@ -28,6 +28,26 @@ steps:
   args: ['submodule', 'update', '--init', '--recursive']
   id: 'setup'
 
+# Poll currently-running Cloud Builds until this is the earliest-started build from this trigger/tag.
+# This is to avoid potential misordering of docker images and staging deployments
+# in the case when multiple commits to master occur close to one another.
+- name: gcr.io/cloud-builders/gcloud
+  entrypoint: bash
+  args:
+    - "-c"
+    - |
+      read current_build _ <<< $(gcloud builds list --filter=tags="build-and-stage" --format="value(id,create_time)" --sort-by=create_time --ongoing)
+      if [ -z $current_build ]; then exit 1; fi
+      while [ $current_build != $BUILD_ID ]
+      do
+        echo "Waiting for build $current_build"
+        sleep 30
+        read current_build _ <<< $(gcloud builds list --filter=tags="build-and-stage" --format="value(id,create_time)" --sort-by=create_time  --ongoing)
+        if [ -z $current_build ]; then exit 1; fi
+      done
+  id: 'cloud-build-queue'
+  waitFor: ['-']
+
 # Docker Image creation and tagging
 # Build/push worker-base image if there's an update.
 - name: 'gcr.io/cloud-builders/docker'
@@ -41,7 +61,7 @@ steps:
   waitFor: ['pull-worker-base']
 - name: gcr.io/cloud-builders/docker
   args: ['push', '--all-tags', 'gcr.io/oss-vdb/worker-base']
-  waitFor: ['build-worker-base']
+  waitFor: ['build-worker-base', 'cloud-build-queue']
 # Build/push core worker/importer/exporter images.
 - name: gcr.io/cloud-builders/docker
   args: ['build', '-t', 'gcr.io/oss-vdb/worker:latest', '-t', 'gcr.io/oss-vdb/worker:$COMMIT_SHA', '-f', 'docker/worker/Dockerfile', '.']
@@ -49,7 +69,7 @@ steps:
   waitFor: ['build-worker-base']
 - name: gcr.io/cloud-builders/docker
   args: ['push', '--all-tags', 'gcr.io/oss-vdb/worker']
-  waitFor: ['build-worker']
+  waitFor: ['build-worker', 'cloud-build-queue']
 
 - name: gcr.io/cloud-builders/docker
   args: ['build', '-t', 'gcr.io/oss-vdb/importer:latest', '-t', 'gcr.io/oss-vdb/importer:$COMMIT_SHA', '.']
@@ -58,7 +78,7 @@ steps:
   waitFor: ['build-worker']
 - name: gcr.io/cloud-builders/docker
   args: ['push', '--all-tags', 'gcr.io/oss-vdb/importer']
-  waitFor: ['build-importer']
+  waitFor: ['build-importer', 'cloud-build-queue']
 
 - name: gcr.io/cloud-builders/docker
   args: ['build', '-t', 'gcr.io/oss-vdb/exporter:latest', '-t', 'gcr.io/oss-vdb/exporter:$COMMIT_SHA', '.']
@@ -67,7 +87,7 @@ steps:
   waitFor: ['build-worker']
 - name: gcr.io/cloud-builders/docker
   args: ['push', '--all-tags', 'gcr.io/oss-vdb/exporter']
-  waitFor: ['build-exporter']
+  waitFor: ['build-exporter', 'cloud-build-queue']
 
 # Build/push vulnfeeds images
 - name: gcr.io/cloud-builders/docker
@@ -77,7 +97,7 @@ steps:
   waitFor: ['setup']
 - name: gcr.io/cloud-builders/docker
   args: ['push', '--all-tags', 'gcr.io/oss-vdb/alpine-cve-convert']
-  waitFor: ['build-alpine-cve-convert']
+  waitFor: ['build-alpine-cve-convert', 'cloud-build-queue']
 
 - name: gcr.io/cloud-builders/docker
   args: ['build', '-t', 'gcr.io/oss-vdb/combine-to-osv:latest', '-t', 'gcr.io/oss-vdb/combine-to-osv:$COMMIT_SHA', '-f', 'cmd/combine-to-osv/Dockerfile', '.']
@@ -86,7 +106,7 @@ steps:
   waitFor: ['setup']
 - name: gcr.io/cloud-builders/docker
   args: ['push', '--all-tags', 'gcr.io/oss-vdb/combine-to-osv']
-  waitFor: ['build-combine-to-osv']
+  waitFor: ['build-combine-to-osv', 'cloud-build-queue']
 
 # Build/push debian converter image
 - name: gcr.io/cloud-builders/docker
@@ -96,13 +116,14 @@ steps:
   waitFor: ['setup']
 - name: gcr.io/cloud-builders/docker
   args: ['push', '--all-tags', 'gcr.io/oss-vdb/debian-convert']
-  waitFor: ['build-debian-convert']
+  waitFor: ['build-debian-convert', 'cloud-build-queue']
 
 # Apply Terraform config to staging environment
 # TODO(michaelkedar): regenerate the api protobufs?
 - name: gcr.io/oss-vdb/terraform
   args: ['init', '-no-color']
   dir:  deployment/terraform/environments/oss-vdb-test
+# no waitFor means wait for every previous step to complete
 - name: gcr.io/oss-vdb/terraform
   args: ['apply', '-no-color', '-auto-approve']
   dir:  deployment/terraform/environments/oss-vdb-test

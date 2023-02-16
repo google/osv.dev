@@ -62,6 +62,7 @@ steps:
 - name: gcr.io/cloud-builders/docker
   args: ['push', '--all-tags', 'gcr.io/oss-vdb/worker-base']
   waitFor: ['build-worker-base', 'cloud-build-queue']
+
 # Build/push core worker/importer/exporter images.
 - name: gcr.io/cloud-builders/docker
   args: ['build', '-t', 'gcr.io/oss-vdb/worker:latest', '-t', 'gcr.io/oss-vdb/worker:$COMMIT_SHA', '-f', 'docker/worker/Dockerfile', '.']
@@ -118,6 +119,16 @@ steps:
   args: ['push', '--all-tags', 'gcr.io/oss-vdb/debian-convert']
   waitFor: ['build-debian-convert', 'cloud-build-queue']
 
+# Build/push api backend
+# TODO(michaelkedar): This is also done in staging.yaml. They should end up pushing identical images.
+- name: 'gcr.io/cloud-builders/docker'
+  args: ['build', '-t', 'gcr.io/oss-vdb/osv-server:latest', 'gcr.io/oss-vdb/osv-server:$COMMIT_SHA', '-f', 'gcp/api/Dockerfile', '.']
+  id: 'build-osv-server'
+  waitFor: ['setup']
+- name: 'gcr.io/cloud-builders/docker'
+  args: ['push', '--all-tags', 'gcr.io/oss-vdb/osv-server']
+  waitFor: ['build-osv-server', 'cloud-build-queue']
+
 # Apply Terraform config to staging environment
 # TODO(michaelkedar): regenerate the api protobufs?
 - name: gcr.io/oss-vdb/terraform
@@ -148,3 +159,4 @@ images:
   - 'gcr.io/oss-vdb/alpine-cve-convert:$COMMIT_SHA'
   - 'gcr.io/oss-vdb/combine-to-osv:$COMMIT_SHA'
   - 'gcr.io/oss-vdb/debian-convert:$COMMIT_SHA'
+  - 'gcr.io/oss-vdb/osv-server:$COMMIT_SHA'

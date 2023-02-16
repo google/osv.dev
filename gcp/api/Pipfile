@@ -5,12 +5,12 @@ name = "pypi"
 
 [packages]
 google-cloud-logging = "==2.7.2"
-google-cloud-pubsub = "==2.13.11"
+google-cloud-pubsub = "==2.14.0"
 grpcio = "==1.51.1"
 osv = {editable = true, path = "../../"}
 packageurl-python = "==0.10.4"
 packaging = "==20.9"
-requests = "==2.28.1"
+requests = "==2.28.2"
 grpcio-reflection = "*"
 
 [dev-packages]

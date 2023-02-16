@@ -1,4 +1,3 @@
-"""Maven version parser."""
 # Copyright 2021 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -12,8 +11,18 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+"""Maven ecosystem helper."""
+
 import collections
+import json
 import re
+
+import urllib.parse
+from . import config
+from .helper_base import DepsDevMixin, EnumerateError
+from ..cache import cached
+from ..request_helper import RequestHelper
+
 
 # pylint: disable=line-too-long
 # Maven's very complicated spec:
@@ -212,7 +221,7 @@ class Version:
     # Then, starting from the end of the version, the trailing "null" values
     # (0, "", "final", "ga") are trimmed.
     i = len(version.tokens) - 1
-    while i >= 0:
+    while i > 0:  # We always want at least one token for comparison
       if version.tokens[i].value in _TO_TRIM:
         version.tokens.pop(i)
         i -= 1
@@ -225,3 +234,66 @@ class Version:
       i -= 1
 
     return version
+
+
+class Maven(DepsDevMixin):
+  """Maven ecosystem."""
+
+  _API_PACKAGE_URL = 'https://search.maven.org/solrsearch/select'
+
+  def sort_key(self, version):
+    """Sort key."""
+    return Version.from_string(version)
+
+  @staticmethod
+  def _get_versions(package):
+    """Get versions."""
+    versions = []
+    request_helper = RequestHelper()
+
+    group_id, artifact_id = package.split(':', 2)
+    start = 0
+
+    while True:
+      query = {
+          'q': f'g:"{group_id}" AND a:"{artifact_id}"',
+          'core': 'gav',
+          'rows': '20',
+          'wt': 'json',
+          'start': start
+      }
+      url = Maven._API_PACKAGE_URL + '?' + urllib.parse.urlencode(query)
+      response = request_helper.get(url)
+      response = json.loads(response)['response']
+      if response['numFound'] == 0:
+        raise EnumerateError(f'Package {package} not found')
+
+      for result in response['docs']:
+        versions.append(result['v'])
+
+      if len(versions) >= response['numFound']:
+        break
+
+      start = len(versions)
+
+    return versions
+
+  def enumerate_versions(self,
+                         package,
+                         introduced,
+                         fixed=None,
+                         last_affected=None,
+                         limits=None):
+    """Enumerate versions."""
+    if config.use_deps_dev:
+      return self._deps_dev_enumerate(
+          package, introduced, fixed, last_affected, limits=limits)
+
+    get_versions = self._get_versions
+    if config.shared_cache:
+      get_versions = cached(config.shared_cache)(get_versions)
+
+    versions = get_versions(package)
+    self.sort_versions(versions)
+    return self._get_affected_versions(versions, introduced, fixed,
+                                       last_affected, limits)

@@ -15,14 +15,15 @@
 # pylint: disable=line-too-long
 # Many tests are ported from
 # https://github.com/NuGet/NuGet.Client/blob/dev/test/NuGet.Core.Tests/NuGet.Versioning.Test/VersionComparerTests.cs
-"""NuGet version parser tests."""
+"""NuGet ecosystem helper tests."""
 
 import unittest
 
 from . import nuget
+from .. import ecosystems
 
 
-class NuGetTest(unittest.TestCase):
+class NuGetVersionTest(unittest.TestCase):
   """NuGet version tests."""
 
   def setUp(self):
@@ -80,6 +81,24 @@ class NuGetTest(unittest.TestCase):
     self.check_order(self.assertLess, '1.0.0-pre', '1.0.0.1-alpha')
     self.check_order(self.assertLess, '1.0.0', '1.0.0.1-alpha')
     self.check_order(self.assertLess, '0.9.9.1', '1.0.0')
+
+
+class NuGetEcosystemTest(unittest.TestCase):
+  """NuGet ecosystem helper tests."""
+
+  def test_next_version(self):
+    """Test next_version."""
+    ecosystem = ecosystems.get('NuGet')
+    self.assertEqual('3.0.1',
+                     ecosystem.next_version('NuGet.Server.Core', '3.0.0'))
+    self.assertEqual('3.0.0.4001',
+                     ecosystem.next_version('Castle.Core', '3.0.0.3001'))
+    self.assertEqual('3.1.0-RC',
+                     ecosystem.next_version('Castle.Core', '3.0.0.4001'))
+    self.assertEqual('2.1.0-dev-00668',
+                     ecosystem.next_version('Serilog', '2.1.0-dev-00666'))
+    with self.assertRaises(ecosystems.EnumerateError):
+      ecosystem.next_version('doesnotexist123456', '1')
 
 
 if __name__ == '__main__':

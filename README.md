@@ -45,13 +45,15 @@ The following ecosystems have vulnerabilities encoded in this format:
     ([CC0 1.0](https://github.com/cloudsecurityalliance/gsd-database/blob/main/LICENSE))
 -   [OSS-Fuzz](https://github.com/google/oss-fuzz-vulns)
     ([CC-BY 4.0](https://github.com/google/oss-fuzz-vulns/blob/main/LICENSE))
-    
+
 Additionally, the OSV.dev team maintains a conversion pipeline for:
 
-- [Debian Security Advisories](https://storage.googleapis.com/debian-osv/index.html),
-  using the conversion tools [here](https://github.com/ossf/osv-schema/tree/main/tools/debian).
-- [Alpine SecDB](https://storage.googleapis.com/cve-osv-conversion/index.html?prefix=osv-output/),
-  using the conversion tools [here](https://github.com/google/osv.dev/tree/master/vulnfeeds/cmd/alpine).
+-   [Debian Security Advisories](https://storage.googleapis.com/debian-osv/index.html),
+    using the conversion tools
+    [here](https://github.com/ossf/osv-schema/tree/main/tools/debian).
+-   [Alpine SecDB](https://storage.googleapis.com/cve-osv-conversion/index.html?prefix=osv-output/),
+    using the conversion tools
+    [here](https://github.com/google/osv.dev/tree/master/vulnfeeds/cmd/alpine).
 
 Together, these include vulnerabilities from:
 
@@ -148,24 +150,27 @@ See [CONTRIBUTING.md](CONTRIBUTING.md).
 There are also community tools that use OSV. Note that these are community built
 tools and unsupported by the core OSV maintainers.
 
--   [G-Rath/osv-detector](https://github.com/G-Rath/osv-detector): A scanner
-    that uses the OSV database.
--   [Rust client library](https://github.com/gcmurphy/osv)
--   [Golang support for the schema](https://pkg.go.dev/golang.org/x/vuln/osv)
--   [pip-audit](https://pypi.org/project/pip-audit/)
--   [.NET client library and support for the schema](https://github.com/JamieMagee/osv.net)
--   [EZE-CLI: The one stop shop for security testing in modern development](https://github.com/RiverSafeUK/eze-cli)
--   [OSS Review Toolkit](https://github.com/oss-review-toolkit/ort)
--   [Skjold: Security audit python project dependencies against several security
-    advisory databases](https://github.com/twu/skjold)
+-   [Betterscan.io: Code Scanning/SAST/Static Analysis/Linting using many
+    tools/Scanners with One Report (Code,
+    IaC)](https://github.com/marcinguy/betterscan-ce)
+-   [bomber](https://github.com/devops-kung-fu/bomber)
 -   [Cortex XSOAR](https://github.com/demisto/content)
 -   [Dependency-Track](https://github.com/DependencyTrack/dependency-track)
 -   [dep-scan](https://github.com/AppThreat/dep-scan)
--   [bomber](https://github.com/devops-kung-fu/bomber)
+-   [EZE-CLI: The one stop shop for security testing in modern development](https://github.com/RiverSafeUK/eze-cli)
+-   [Golang support for the schema](https://pkg.go.dev/golang.org/x/vuln/osv)
+-   [G-Rath/osv-detector](https://github.com/G-Rath/osv-detector): A scanner
+    that uses the OSV database.
 -   [it-depends](https://github.com/trailofbits/it-depends)
+-   [.NET client library and support for the schema](https://github.com/JamieMagee/osv.net)
+-   [OSS Review Toolkit](https://github.com/oss-review-toolkit/ort)
 -   [Packj](https://github.com/ossillate-inc/packj)
+-   [pip-audit](https://pypi.org/project/pip-audit/)
+-   [Renovate](https://github.com/renovatebot/renovate)
+-   [Rust client library](https://github.com/gcmurphy/osv)
+-   [Skjold: Security audit python project dependencies against several security
+    advisory databases](https://github.com/twu/skjold)
 -   [Trivy](https://github.com/aquasecurity/trivy)
--   [Betterscan.io: Code Scanning/SAST/Static Analysis/Linting using many tools/Scanners with One Report (Code, IaC)](https://github.com/marcinguy/betterscan-ce) 
 
 Feel free to send a PR to add your project here.
 

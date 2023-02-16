@@ -1,0 +1,13 @@
+[[source]]
+url = "https://pypi.python.org/simple"
+verify_ssl = true
+name = "pypi"
+
+[packages]
+markdownify = "0.11.6"
+pandas = "1.5.3"
+python-dateutil = "2.8.2"
+
+[dev-packages]
+pylint = "*"
+yapf = "*"

@@ -45,6 +45,7 @@ steps:
         read current_build _ <<< $(gcloud builds list --filter=tags="build-and-stage" --format="value(id,create_time)" --sort-by=create_time  --ongoing)
         if [ -z $current_build ]; then exit 1; fi
       done
+      echo "Done waiting!"
   id: 'cloud-build-queue'
   waitFor: ['-']
 
@@ -122,7 +123,7 @@ steps:
 # Build/push api backend
 # TODO(michaelkedar): This is also done in staging.yaml. They should end up pushing identical images.
 - name: 'gcr.io/cloud-builders/docker'
-  args: ['build', '-t', 'gcr.io/oss-vdb/osv-server:latest', 'gcr.io/oss-vdb/osv-server:$COMMIT_SHA', '-f', 'gcp/api/Dockerfile', '.']
+  args: ['build', '-t', 'gcr.io/oss-vdb/osv-server:latest', '-t', 'gcr.io/oss-vdb/osv-server:$COMMIT_SHA', '-f', 'gcp/api/Dockerfile', '.']
   id: 'build-osv-server'
   waitFor: ['setup']
 - name: 'gcr.io/cloud-builders/docker'

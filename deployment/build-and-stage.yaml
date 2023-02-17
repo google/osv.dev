@@ -30,15 +30,20 @@ steps:
     - "-c"
     - |
       read current_build _ <<< $(gcloud builds list --filter=tags="build-and-stage" --format="value(id,create_time)" --sort-by=create_time --ongoing)
-      if [ -z $current_build ]; then exit 1; fi
-      while [ $current_build != $BUILD_ID ]
-      do
-        echo "Waiting for build $current_build"
+      if [[ -z "${current_build}" ]]; then
+        echo "Could not find any matching builds."
+        exit 1
+      fi
+      while [[ "${current_build}" != "${BUILD_ID}" ]]; do
+        echo "Waiting for build ${current_build}"
         sleep 30
         read current_build _ <<< $(gcloud builds list --filter=tags="build-and-stage" --format="value(id,create_time)" --sort-by=create_time  --ongoing)
-        if [ -z $current_build ]; then exit 1; fi
+        if [[ -z "${current_build}" ]]; then
+          echo "Could not find any matching builds."
+          exit 1;
+        fi
       done
-      echo "Done waiting!"
+      echo "Finished waiting for other builds."
   id: 'cloud-build-queue'
   waitFor: ['-']
 

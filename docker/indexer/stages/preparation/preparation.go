@@ -53,6 +53,7 @@ type Result struct {
 	Version         string
 	CheckoutOptions *git.CheckoutOptions
 	Commit          plumbing.Hash
+	CommitTag       string
 	When            time.Time
 	Type            string
 	Addr            string
@@ -162,16 +163,19 @@ func (s *Stage) processGit(ctx context.Context, repoCfg *config.RepoConfig) erro
 			when = c.Author.When
 		}
 
-		var version string
+		var (
+			version   string
+			commitTag = ref.Name().String()
+		)
 		if repoCfg.VersionRE != "" {
 			versRE, err := regexp.Compile(repoCfg.VersionRE)
 			if err != nil {
 				return err
 			}
-			version = versRE.FindString(ref.Name().String())
+			version = versRE.FindString(commitTag)
 		}
 		if version == "" {
-			version = genericVersionRE.FindString(ref.Name().String())
+			version = genericVersionRE.FindString(commitTag)
 		}
 
 		if version == "" {
@@ -186,11 +190,12 @@ func (s *Stage) processGit(ctx context.Context, repoCfg *config.RepoConfig) erro
 			CheckoutOptions: &git.CheckoutOptions{
 				Branch: ref.Name(),
 			},
-			When:     when,
-			Commit:   ref.Hash(),
-			Type:     shared.Git,
-			Addr:     repoCfg.Address,
-			FileExts: repoCfg.FileExts,
+			When:      when,
+			Commit:    ref.Hash(),
+			CommitTag: commitTag,
+			Type:      shared.Git,
+			Addr:      repoCfg.Address,
+			FileExts:  repoCfg.FileExts,
 		}
 		commitTracker[ref.Hash()] = true
 		buf, err := json.Marshal(result)

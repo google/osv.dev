@@ -1,0 +1,19 @@
+id: LINUX-123
+summary: A vulnerability
+details: |
+  Blah blah blah
+  Blah
+modified: 2022-10-07T18:59:00Z
+references:
+- type: WEB
+  url: https://ref.com/ref
+affected:
+- package:
+    name: Kernel
+    ecosystem: Linux
+  ranges:
+  - type: GIT
+    repo: https://osv-test/repo/url
+    events:
+    - introduced: eefe8ec3f1f90d0e684890e810f3f21e8500a4cd
+    - fixed: 8d8242f545e9cec3e6d0d2e3f5bde8be1c659735

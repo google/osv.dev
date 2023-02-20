@@ -1210,6 +1210,45 @@ class UpdateTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
 
     self.mock_publish.assert_not_called()
 
+  def test_update_linux(self):
+    """Test a Linux entry."""
+    self.source_repo.ignore_git = False
+    self.source_repo.versions_from_repo = False
+    self.source_repo.detect_cherrypicks = False
+    self.source_repo.put()
+
+    self.mock_repo.add_file(
+        'LINUX-123.yaml',
+        self._load_test_data(os.path.join(TEST_DATA_DIR, 'LINUX-123.yaml')))
+    self.mock_repo.commit('User', 'user@email')
+    task_runner = worker.TaskRunner(ndb_client, None, self.tmp_dir.name, None,
+                                    None)
+    message = mock.Mock()
+    message.attributes = {
+        'source': 'source',
+        'path': 'LINUX-123.yaml',
+        'original_sha256': _sha256('LINUX-123.yaml'),
+        'deleted': 'false',
+    }
+    task_runner._source_update(message)
+
+    self.expect_dict_equal(
+        'update_linux',
+        ndb.Key(osv.Bug, 'source:LINUX-123').get()._to_dict())
+
+    affected_commits_legacy = list(osv.AffectedCommit.query())
+    # Should not be written.
+    self.assertEqual(0, len(affected_commits_legacy))
+
+    affected_commits = list(osv.AffectedCommits.query())
+    self.assertEqual(1, len(affected_commits))
+    affected_commits = affected_commits[0]
+
+    self.assertCountEqual([
+        b'b1c95a196f22d06fcf80df8c6691cd113d8fefff',
+        b'eefe8ec3f1f90d0e684890e810f3f21e8500a4cd',
+    ], [codecs.encode(commit, 'hex') for commit in affected_commits.commits])
+
   def test_update_bucket(self):
     """Test bucket entries."""
     self.source_repo.type = osv.SourceRepositoryType.BUCKET

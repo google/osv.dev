@@ -39,7 +39,13 @@ AnalyzeResult = collections.namedtuple('AnalyzeResult', 'has_changes commits')
 
 TagsInfo = collections.namedtuple('TagsInfo', 'tags latest_tag')
 
+# Limit for writing small entities.
 _DATASTORE_BATCH_SIZE = 5000
+# Limit for writing large entities that are close to the 1MiB max entity size.
+# There is additionally a request size limit of 10MiB for batched put()
+# requests. We conservatively set this to slightly under (8 as opposed to 10)
+# to leave some more breathing room.
+_DATASTORE_LARGE_BATCH_SIZE = 8
 _DATASTORE_BATCH_SLEEP = 10
 
 
@@ -322,17 +328,17 @@ def _batcher(entries, batch_size):
     yield entries[i:i + batch_size], i + batch_size >= len(entries)
 
 
-def _throttled_put(to_put):
+def _throttled_put(to_put, batch_size=_DATASTORE_BATCH_SIZE):
   """Throttled ndb put."""
-  for batch, is_last in _batcher(to_put, _DATASTORE_BATCH_SIZE):
+  for batch, is_last in _batcher(to_put, batch_size):
     ndb.put_multi(batch)
     if not is_last:
       time.sleep(_DATASTORE_BATCH_SLEEP)
 
 
-def _throttled_delete(to_delete):
+def _throttled_delete(to_delete, batch_size=_DATASTORE_BATCH_SIZE):
   """Throttled ndb delete."""
-  for batch, is_last in _batcher(to_delete, _DATASTORE_BATCH_SIZE):
+  for batch, is_last in _batcher(to_delete, batch_size):
     ndb.delete_multi(batch)
     if not is_last:
       time.sleep(_DATASTORE_BATCH_SLEEP)
@@ -388,8 +394,8 @@ def update_affected_commits(bug_id, commits, public, write_legacy=True):
     if existing.page >= num_pages:
       to_delete.append(existing.key)
 
-  _throttled_put(to_put)
-  _throttled_delete(to_delete)
+  _throttled_put(to_put, batch_size=_DATASTORE_LARGE_BATCH_SIZE)
+  _throttled_delete(to_delete, batch_size=_DATASTORE_LARGE_BATCH_SIZE)
 
 
 def enumerate_versions(package, ecosystem, affected_range):

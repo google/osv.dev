@@ -77,7 +77,7 @@ Together, these include vulnerabilities from:
 
 For convenience, these sources are aggregated and continuously exported to a GCS
 bucket maintained by OSV:
-[gs://osv-vulnerabilities](https://osv-vulnerabilities.storage.googleapis.com).
+`[gs://osv-vulnerabilities](https://osv-vulnerabilities.storage.googleapis.com)`.
 
 This bucket contains individual entries of the format
 `gs://osv-vulnerabilities/<ECOSYSTEM>/<ID>.json` as well as a zip containing all
@@ -90,6 +90,9 @@ E.g. for PyPI vulnerabilities:
 # Or download over HTTP via https://osv-vulnerabilities.storage.googleapis.com/PyPI/all.zip
 gsutil cp gs://osv-vulnerabilities/PyPI/all.zip .
 ```
+
+A list of all current ecosystems is available at 
+[`gs://osv-vulnerabilities.storage.googleapis.com/ecosystems.txt`](https://osv-vulnerabilities.storage.googleapis.com/ecosystems.txt)
 
 ## Viewing the web UI
 

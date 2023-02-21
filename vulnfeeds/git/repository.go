@@ -8,6 +8,7 @@ import (
 	"github.com/go-git/go-git/v5/config"
 	"github.com/go-git/go-git/v5/plumbing/transport"
 	"github.com/go-git/go-git/v5/storage/memory"
+	"github.com/google/osv/vulnfeeds/cves"
 )
 
 // A version holds a tag and corresponding commit hash.
@@ -25,6 +26,11 @@ func (v Versions) Swap(i, j int)      { v[i], v[j] = v[j], v[i] }
 
 // RepoTagsMap acts as a cache for RepoTags results, keyed on the repo's URL.
 type RepoTagsMap map[string]Versions
+
+// NormalizedRepoTagsMap allows for looking up a repo's tags by normalized values.
+// A composite struct key of repo and normalized tag is not used to allow for
+// fuzzy matches on all available normalized versions for a given repo
+type NormalizedRepoTagsMap map[string]map[string]Version
 
 // RepoTags returns an array of Versions being the tags and associated commits in repoURL.
 // An optional repoTagsCache can be supplied to reduce repeated remote connections to the same repo.
@@ -61,6 +67,29 @@ func RepoTags(repoURL string, repoTagsCache *RepoTagsMap) (versions Versions, e 
 		(*repoTagsCache)[repoURL] = versions
 	}
 	return versions, nil
+}
+
+// NormalizeRepoTags populates a durable mapping of tags to Versions for lookup by normalized tag.
+func NormalizeRepoTags(repoURL string, normalizedRepoTags NormalizedRepoTagsMap, repoTagsCache *RepoTagsMap) (e error) {
+	versions, err := RepoTags(repoURL, repoTagsCache)
+	if err != nil {
+		return err
+	}
+	repoVersion, ok := normalizedRepoTags[repoURL]
+	if !ok {
+		repoVersion = make(map[string]Version)
+		normalizedRepoTags[repoURL] = repoVersion
+	}
+	for _, v := range versions {
+		normalizedVersion, err := cves.Normalize(v.Tag)
+		if err != nil {
+			// It's conceivable that not all tags are normalizable or potentially versions.
+			continue
+		}
+		repoVersion, _ := normalizedRepoTags[repoURL]
+		repoVersion[normalizedVersion] = v
+	}
+	return nil
 }
 
 // Validate the repo by attempting to query it's references.

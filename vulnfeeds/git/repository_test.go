@@ -136,6 +136,47 @@ func TestRepoTags(t *testing.T) {
 	}
 }
 
+func TestNormalizeRepoTags(t *testing.T) {
+	tests := []struct {
+		description  string
+		inputRepoURL string
+		expectedOk   bool
+	}{
+		{
+			description:  "Valid repository, normalized versions exist",
+			inputRepoURL: "https://github.com/aide/aide",
+			expectedOk:   true,
+		},
+		{
+			description:  "Valid repository, no tags, normalized versions do not exist",
+			inputRepoURL: "https://github.com/andrewpollock/osv.dev.git",
+			expectedOk:   false,
+		},
+		{
+			description:  "Invalid repository",
+			inputRepoURL: "https://github.com/andrewpollock/mybogusrepo",
+			expectedOk:   false,
+		},
+	}
+	var cache *RepoTagsMap
+	var repoVersions NormalizedRepoTagsMap
+	repoVersions = make(NormalizedRepoTagsMap)
+	for _, tc := range tests {
+		err := NormalizeRepoTags(tc.inputRepoURL, repoVersions, cache)
+		if err != nil && tc.expectedOk {
+			t.Errorf("test %q: NormalizeRepoTags(%q) unexpectedly failed: %+v", tc.description, tc.inputRepoURL, err)
+		}
+		// Confirm a key for the repo exists
+		if _, ok := repoVersions[tc.inputRepoURL]; !ok && tc.expectedOk {
+			t.Errorf("test: %q: NormalizedRepoTags(%q): failed to find expected entry for repo in map: %#v", tc.description, tc.inputRepoURL, repoVersions)
+		}
+		// Confirm there are some normalized versions
+		if len(repoVersions[tc.inputRepoURL]) == 0 && tc.expectedOk {
+			t.Errorf("test %q: NormalizeRepoTags(%q): failed to find any normalized versions for repo in map: %#v", tc.description, tc.inputRepoURL, repoVersions)
+		}
+	}
+}
+
 func TestValidRepo(t *testing.T) {
 	tests := []struct {
 		description    string

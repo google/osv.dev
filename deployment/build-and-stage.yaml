@@ -138,7 +138,10 @@ steps:
   args: ['apply', '-no-color', '-auto-approve']
   dir:  deployment/terraform/environments/oss-vdb-test
 
-# TODO(michaelkedar): App Engine for oss-vdb-test
+# Deploy App Engine for staging environment
+- name: 'gcr.io/oss-vdb/deployment'
+  args: ['bash', '-ex', 'gcp/appengine/deploy.sh', 'oss-vdb-test', 'deployment/oss-vdb-test/gae', 'app.yaml']
+
 # TODO(michaelkedar): Cloud Deploy
 
 timeout: 7200s

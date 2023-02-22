@@ -181,4 +181,4 @@ Feel free to send a PR to add your project here.
 
 Contributions are welcome! We also have a
 [mailing list](https://groups.google.com/g/osv-discuss) and a
-[FAQ](https://osv.dev/docs/#tag/faq).
+[FAQ](https://osv.dev/about).

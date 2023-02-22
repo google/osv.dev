@@ -14,9 +14,6 @@ spec:
           - name: debian-first-version
             image: debian-convert
             imagePullPolicy: Always
-            env:
-            - name: OUTPUT_GCS_BUCKET
-              value: osv-test-debian-osv
             command:
               - "/src/run_first_package_finder.sh"
             volumeMounts:

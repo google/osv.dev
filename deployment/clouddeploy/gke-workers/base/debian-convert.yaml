@@ -1,7 +1,7 @@
 apiVersion: batch/v1
 kind: CronJob
 metadata:
-  name: alpine-cve-convert
+  name: debian-convert
 spec:
   schedule: "0 */1 * * *"
   concurrencyPolicy: Forbid
@@ -11,12 +11,14 @@ spec:
       template:
         spec:
           containers:
-          - name: alpine-cve-convert
-            image: alpine-cve-convert
+          - name: debian-convert
+            image: debian-convert
             imagePullPolicy: Always
-            env:
-            - name: OUTPUT_GCS_BUCKET
-              value: osv-test-cve-osv-conversion
+            command:
+              - "/src/run_convert_debian.sh"
+            volumeMounts:
+              - mountPath: "/work"
+                name: "ssd"
             securityContext:
               privileged: true
             resources:

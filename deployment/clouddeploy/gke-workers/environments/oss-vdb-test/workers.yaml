@@ -1,0 +1,16 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: workers
+spec:
+  template:
+    spec:
+      containers:
+      - name: worker-private
+        env:
+          - name: GOOGLE_CLOUD_PROJECT
+            value: oss-vdb-test
+        args:
+          # TODO(michaelkedar): deps.dev api key and ssh secrets
+          # TODO(michaelkedar): Somehow grab or enforce redis endpoint from terraform
+          - "--redis_host=10.102.25.214"

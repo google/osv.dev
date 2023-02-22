@@ -1,0 +1,15 @@
+apiVersion: skaffold/v2beta16
+kind: Config
+metadata:
+ name: gke-workers
+profiles:
+ - name: staging
+   deploy:
+     kubectl:
+       manifests:
+         - k8s/oss-vdb-test/*
+ - name: prod
+   deploy:
+     kubectl:
+       manifests:
+         - k8s/oss-vdb/*

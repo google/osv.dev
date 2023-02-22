@@ -162,7 +162,7 @@ func TestNormalizeRepoTags(t *testing.T) {
 	var repoVersions NormalizedRepoTagsMap
 	repoVersions = make(NormalizedRepoTagsMap)
 	for _, tc := range tests {
-		err := NormalizeRepoTags(tc.inputRepoURL, repoVersions, cache)
+		repoVersions, err := NormalizeRepoTags(tc.inputRepoURL, repoVersions, cache)
 		if err != nil && tc.expectedOk {
 			t.Errorf("test %q: NormalizeRepoTags(%q) unexpectedly failed: %+v", tc.description, tc.inputRepoURL, err)
 		}

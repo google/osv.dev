@@ -70,11 +70,11 @@ func RepoTags(repoURL string, repoTagsCache *RepoTagsMap) (versions Versions, e 
 	return versions, nil
 }
 
-// NormalizeRepoTags populates a durable mapping of tags to Versions for lookup by normalized tag.
-func NormalizeRepoTags(repoURL string, normalizedRepoTags NormalizedRepoTagsMap, repoTagsCache *RepoTagsMap) (e error) {
+// NormalizeRepoTags add to a persistent mapping, tags to Versions for lookup by normalized tag.
+func NormalizeRepoTags(repoURL string, normalizedRepoTags NormalizedRepoTagsMap, repoTagsCache *RepoTagsMap) (NormalizedRepoTagsMap, error) {
 	versions, err := RepoTags(repoURL, repoTagsCache)
 	if err != nil {
-		return err
+		return normalizedRepoTags, err
 	}
 	repoVersion, ok := normalizedRepoTags[repoURL]
 	if !ok {
@@ -90,7 +90,7 @@ func NormalizeRepoTags(repoURL string, normalizedRepoTags NormalizedRepoTagsMap,
 		repoVersion, _ := normalizedRepoTags[repoURL]
 		repoVersion[normalizedVersion] = v
 	}
-	return nil
+	return normalizedRepoTags, nil
 }
 
 // Validate the repo by attempting to query it's references.

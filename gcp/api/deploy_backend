@@ -11,8 +11,8 @@ name=$3
 
 if [ -z "$CLOUDBUILD" ]; then
   pushd ../../
-  docker build -t "gcr.io/$project_id/osv-server:$tag" -f gcp/api/Dockerfile .
-  docker push "gcr.io/$project_id/osv-server:$tag"
+  docker build -t "gcr.io/oss-vdb/osv-server:$tag" -f gcp/api/Dockerfile .
+  docker push "gcr.io/oss-vdb/osv-server:$tag"
   popd
 fi
 
@@ -21,4 +21,4 @@ gcloud run deploy $name \
   --project=$project_id \
   --region=us-central1 \
   --memory=4Gi \
-  --image="gcr.io/$project_id/osv-server:$tag"
+  --image="gcr.io/oss-vdb/osv-server:$tag"

@@ -13,9 +13,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-PROJECT=${GOOGLE_CLOUD_PROJECT:-oss-vdb}
-
-docker build -t gcr.io/$PROJECT/exporter:$1 . && \
-docker build -t gcr.io/$PROJECT/exporter:latest . && \
-docker push gcr.io/$PROJECT/exporter:$1 && \
-docker push gcr.io/$PROJECT/exporter:latest
+docker build -t gcr.io/oss-vdb/exporter:$1 . && \
+docker build -t gcr.io/oss-vdb/exporter:latest . && \
+docker push gcr.io/oss-vdb/exporter:$1 && \
+docker push gcr.io/oss-vdb/exporter:latest

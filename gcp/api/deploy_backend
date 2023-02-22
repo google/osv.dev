@@ -20,4 +20,5 @@ gcloud run deploy $name \
   --platform managed \
   --project=$project_id \
   --region=us-central1 \
+  --memory=4Gi \
   --image="gcr.io/$project_id/osv-server:$tag"

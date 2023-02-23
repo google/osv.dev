@@ -27,7 +27,7 @@ steps:
 - name: gcr.io/cloud-builders/gcloud
   entrypoint: bash
   args:
-    - "-c"
+    - '-c'
     - |
       read current_build _ <<< $(gcloud builds list --filter=tags="build-and-stage" --format="value(id,create_time)" --sort-by=create_time --ongoing)
       if [[ -z "${current_build}" ]]; then
@@ -145,21 +145,15 @@ steps:
 # Cloud Deploy
 # GKE Workers
 - name: 'gcr.io/cloud-builders/gcloud'
-  args:
-    - "deploy"
-    - "releases"
-    - "create"
-    - "osv-$SHORT_SHA"
-    - "--project=oss-vdb"
-    - "--region=us-central1"
-    - "--delivery-pipeline=gke-workers"
-    - "--images"
-    - "worker=gcr.io/oss-vdb/worker:$COMMIT_SHA,\
-      importer=gcr.io/oss-vdb/importer:$COMMIT_SHA,\
-      exporter=gcr.io/oss-vdb/exporter:$COMMIT_SHA,\
-      debian-convert=gcr.io/oss-vdb/debian-convert:$COMMIT_SHA,\
-      combine-to-osv=gcr.io/oss-vdb/combine-to-osv:$COMMIT_SHA,\
-      alpine-cve-convert=gcr.io/oss-vdb/alpine-cve-convert:$COMMIT_SHA"
+  args: ['deploy', 'releases', 'create', 'osv-$SHORT_SHA', '--project=oss-vdb', '--region=us-central1',
+    '--delivery-pipeline=gke-workers', '--images',
+    "worker=gcr.io/oss-vdb/worker:$COMMIT_SHA,\
+     importer=gcr.io/oss-vdb/importer:$COMMIT_SHA,\
+     exporter=gcr.io/oss-vdb/exporter:$COMMIT_SHA,\
+     debian-convert=gcr.io/oss-vdb/debian-convert:$COMMIT_SHA,\
+     combine-to-osv=gcr.io/oss-vdb/combine-to-osv:$COMMIT_SHA,\
+     alpine-cve-convert=gcr.io/oss-vdb/alpine-cve-convert:$COMMIT_SHA"
+  ]
   dir: deployment/clouddeploy/gke-workers
 
   # TODO(michaelkedar): API Backend

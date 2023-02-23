@@ -1,15 +1,16 @@
-apiVersion: skaffold/v2beta16
+apiVersion: skaffold/v3
 kind: Config
 metadata:
- name: gke-workers
+  name: gke-workers
 profiles:
- - name: staging
-   deploy:
-     kustomize:
-       paths:
-         - environments/oss-vdb-test
- - name: prod
-   deploy:
-     kustomize:
-       paths:
-         - environments/oss-vdb
+- name: staging
+  deploy:
+    kustomize:
+      paths:
+      - environments/oss-vdb-test
+
+- name: prod
+  deploy:
+    kustomize:
+      paths:
+      - environments/oss-vdb

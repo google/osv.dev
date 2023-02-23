@@ -1,0 +1,19 @@
+apiVersion: skaffold/v3
+kind: Config
+metadata:
+  name: osv-api
+
+# These profiles actually unnecessary since there is currently no difference between staging and production manifests.
+profiles:
+- name: staging
+  manifests:
+    rawYaml:
+    - run.yaml
+
+- name: prod
+  manifests:
+    rawYaml:
+    - run.yaml
+
+deploy:
+  cloudrun: {}

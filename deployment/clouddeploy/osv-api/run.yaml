@@ -1,0 +1,12 @@
+apiVersion: serving.knative.dev/v1
+kind: Service
+metadata:
+  name: osv-grpc-backend
+spec:
+  template:
+    spec:
+      containers:
+      - image: osv-server
+        resources:
+          limits:
+            memory: 4Gi

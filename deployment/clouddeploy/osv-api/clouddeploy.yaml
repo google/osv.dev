@@ -1,8 +1,8 @@
 apiVersion: deploy.cloud.google.com/v1
 kind: DeliveryPipeline
 metadata:
-  name: gke-workers
-description: worker, importer, exporter pipeline
+  name: osv-api
+description: osv api pipeline
 serialPipeline:
   stages:
   - targetId: staging
@@ -15,9 +15,9 @@ apiVersion: deploy.cloud.google.com/v1
 kind: Target
 metadata:
   name: staging
-description: oss-vdb-test worker cluster
-gke:
-  cluster: projects/oss-vdb-test/locations/us-central1-f/clusters/workers
+description: oss-vdb-test api instance
+run:
+  location: projects/oss-vdb-test/locations/us-central1
 executionConfigs:
 - usages:
   - RENDER
@@ -29,9 +29,9 @@ apiVersion: deploy.cloud.google.com/v1
 kind: Target
 metadata:
   name: production
-description: oss-vdb worker cluster
-gke:
-  cluster: projects/oss-vdb/locations/us-central1-f/clusters/workers
+description: oss-vdb api instance
+run:
+  location: projects/oss-vdb/locations/us-central1
 executionConfigs:
 - usages:
   - RENDER

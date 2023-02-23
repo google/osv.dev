@@ -47,8 +47,8 @@ setuptools.setup(
         '': '.',
     },
     package_data={
-      # Include any JSON schemas.
-      '': ['*.json'],
+        # Include any JSON schemas.
+        '': ['*.json'],
     },
     python_requires='>=3.7',
     zip_safe=False,

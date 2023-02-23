@@ -142,7 +142,27 @@ steps:
 - name: 'gcr.io/oss-vdb/deployment'
   args: ['bash', '-ex', 'gcp/appengine/deploy.sh', 'oss-vdb-test', 'deployment/oss-vdb-test/gae', 'app.yaml']
 
-# TODO(michaelkedar): Cloud Deploy
+# Cloud Deploy
+# GKE Workers
+- name: 'gcr.io/cloud-builders/gcloud'
+  args:
+    - "deploy"
+    - "releases"
+    - "create"
+    - "osv-$SHORT_SHA"
+    - "--project=oss-vdb"
+    - "--region=us-central1"
+    - "--delivery-pipeline=gke-workers"
+    - "--images"
+    - "worker=gcr.io/oss-vdb/worker:$COMMIT_SHA,\
+      importer=gcr.io/oss-vdb/importer:$COMMIT_SHA,\
+      exporter=gcr.io/oss-vdb/exporter:$COMMIT_SHA,\
+      debian-convert=gcr.io/oss-vdb/debian-convert:$COMMIT_SHA,\
+      combine-to-osv=gcr.io/oss-vdb/combine-to-osv:$COMMIT_SHA,\
+      alpine-cve-convert=gcr.io/oss-vdb/alpine-cve-convert:$COMMIT_SHA"
+  dir: deployment/clouddeploy/gke-workers
+
+  # TODO(michaelkedar): API Backend
 
 timeout: 7200s
 # Also set in Cloud Build:

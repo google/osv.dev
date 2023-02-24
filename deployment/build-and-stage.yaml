@@ -40,7 +40,7 @@ steps:
       read current_build _ <<< $(gcloud builds list --filter=tags="build-and-stage" --format="value(id,create_time)" --sort-by=create_time  --ongoing)
       if [[ -z "${current_build}" ]]; then
         echo "Could not find any matching builds."
-        exit 1;
+        exit 1
       fi
     done
     echo "Finished waiting for other builds."

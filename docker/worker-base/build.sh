@@ -16,8 +16,6 @@
 # Build from root context.
 cd ../../
 
-PROJECT=${GOOGLE_CLOUD_PROJECT:-oss-vdb}
-
-docker build -t gcr.io/$PROJECT/worker-base:$1 -t gcr.io/$PROJECT/worker-base:latest -f docker/worker-base/Dockerfile --pull . && \
-gcloud docker -- push gcr.io/$PROJECT/worker-base:$1 && \
-gcloud docker -- push gcr.io/$PROJECT/worker-base:latest
+docker build -t gcr.io/oss-vdb/worker-base:$1 -t gcr.io/oss-vdb/worker-base:latest -f docker/worker-base/Dockerfile --pull . && \
+gcloud docker -- push gcr.io/oss-vdb/worker-base:$1 && \
+gcloud docker -- push gcr.io/oss-vdb/worker-base:latest

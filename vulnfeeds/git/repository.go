@@ -94,7 +94,7 @@ func NormalizeRepoTags(repoURL string, repoTagsCache RepoTagsCache) (NormalizedT
 	}
 	NormalizedTags = make(map[string]NormalizedTag)
 	for _, t := range tags {
-		normalizedTag, err := cves.Normalize(t.Tag)
+		normalizedTag, err := cves.NormalizeVersion(t.Tag)
 		if err != nil {
 			// It's conceivable that not all tags are normalizable or potentially versions.
 			continue

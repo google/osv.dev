@@ -5,16 +5,16 @@ metadata:
 description: OSV API pipeline
 serialPipeline:
   stages:
-  - targetId: staging
+  - targetId: staging-api
     profiles: [ staging ]
-  - targetId: production
+  - targetId: production-api
     profiles: [ prod ]
 ---
 
 apiVersion: deploy.cloud.google.com/v1
 kind: Target
 metadata:
-  name: staging
+  name: staging-api
 description: oss-vdb-test API instance
 run:
   location: projects/oss-vdb-test/locations/us-central1
@@ -28,7 +28,7 @@ executionConfigs:
 apiVersion: deploy.cloud.google.com/v1
 kind: Target
 metadata:
-  name: production
+  name: production-api
 description: oss-vdb API instance
 run:
   location: projects/oss-vdb/locations/us-central1

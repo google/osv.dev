@@ -4,13 +4,16 @@ metadata:
   name: gke-workers
 profiles:
 - name: staging
-  deploy:
+  manifests:
     kustomize:
       paths:
       - environments/oss-vdb-test
 
 - name: prod
-  deploy:
+  manifests:
     kustomize:
       paths:
       - environments/oss-vdb
+
+deploy:
+  kubectl: {}

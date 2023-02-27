@@ -26,16 +26,16 @@ func (t Tags) Len() int           { return len(t) }
 func (t Tags) Less(i, j int) bool { return t[i].Tag < t[j].Tag }
 func (t Tags) Swap(i, j int)      { t[i], t[j] = t[j], t[i] }
 
+// NormalizedTag holds a normalized (as by NormalizeRepoTags) tag and corresponding commit hash.
 type NormalizedTag struct {
 	OriginalTag string
 	Commit      string
 }
 
-// RepoTagsMap acts as a cache for RepoTags results, keyed on the repo's URL.
-// repo URL -> Tag -> GitTag
+// RepoTagsMap holds all of the tags (naturally occurring and normalized) for a Git repo.
 type RepoTagsMap struct {
-	Tag           map[string]Tag
-	NormalizedTag map[string]NormalizedTag
+	Tag           map[string]Tag           // The key is the original tag as seen on the repo.
+	NormalizedTag map[string]NormalizedTag // The key is the normalized (as by NormalizeRepoTags) original tag.
 }
 
 // RepoTags acts as a cache for RepoTags results, keyed on the repo's URL.

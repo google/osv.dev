@@ -31,12 +31,15 @@ This project follows
 
 ### Prerequisites
 
-You must install: 1. Git 1. Python 3.8+ 1.
-[Make](https://www.gnu.org/software/make/) 1.
-[Pipenv](https://pipenv.pypa.io/en/latest/) 1.
-[Google Cloud SDK](https://cloud.google.com/sdk) 1.
-[Hugo](https://gohugo.io/installation/) 1.
-[Terraform](https://developer.hashicorp.com/terraform/downloads)
+You must install:
+
+1.  Git
+1.  Python 3.8+
+1.  [Make](https://www.gnu.org/software/make/)
+1.  [Pipenv](https://pipenv.pypa.io/en/latest/)
+1.  [Google Cloud SDK](https://cloud.google.com/sdk)
+1.  [Hugo](https://gohugo.io/installation/)
+1.  [Terraform](https://developer.hashicorp.com/terraform/downloads)
 
 Then you can set up the development environment by cloning the OSV repo and
 installing the Pipfile dependencies.

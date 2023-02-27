@@ -1,7 +1,7 @@
 ---
 title: "Renovate adds OSV database check"
-date: 2023-02-16T23:27:14Z
-draft: true
+date: 2023-02-27T21:00:00Z
+draft: false
 author: OSV Team
 ---
 We are pleased to announce that Renovate has incorporated an OSV database check as an experimental feature. 

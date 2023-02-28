@@ -15,13 +15,13 @@
 steps:
 # Promote App Engine
 - name: gcr.io/cloud-builders/gcloud
-  args: ['app', 'versions', 'migrate', '$COMMIT_SHA', '--service=default']
+  args: ['app', 'versions', 'migrate', '--quiet', '$COMMIT_SHA', '--service=default']
 
 # Promote Cloud Deploy
 - name: gcr.io/cloud-builders/gcloud
-  args: ['deploy', 'releases', 'promote', '--release=osv-$SHORT_SHA', '--region=us-central1', '--delivery-pipeline=gke-workers', '--annotations=tag=$TAG_NAME']
+  args: ['deploy', 'releases', 'promote', '--quiet', '--release=osv-$SHORT_SHA', '--region=us-central1', '--delivery-pipeline=gke-workers', '--annotations=tag=$TAG_NAME']
 - name: gcr.io/cloud-builders/gcloud
-  args: ['deploy', 'releases', 'promote', '--release=osv-$SHORT_SHA', '--region=us-central1', '--delivery-pipeline=osv-api', '--annotations=tag=$TAG_NAME']
+  args: ['deploy', 'releases', 'promote', '--quiet', '--release=osv-$SHORT_SHA', '--region=us-central1', '--delivery-pipeline=osv-api', '--annotations=tag=$TAG_NAME']
 
 # Tag the deployed images with the git tag
 - name: gcr.io/cloud-builders/gcloud

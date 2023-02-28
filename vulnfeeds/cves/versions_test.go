@@ -344,7 +344,7 @@ func TestExtractGitCommit(t *testing.T) {
 	}
 }
 
-func TestNormalize(t *testing.T) {
+func TestNormalizeVersion(t *testing.T) {
 	tests := []struct {
 		description               string
 		inputVersion              string
@@ -443,7 +443,7 @@ func TestNormalize(t *testing.T) {
 		},
 	}
 	for _, tc := range tests {
-		got, err := Normalize(tc.inputVersion)
+		got, err := NormalizeVersion(tc.inputVersion)
 		if err != nil && tc.expectedOk {
 			t.Errorf("test %q: Normalize(%q) unexpectedly errored: %#v", tc.description, tc.inputVersion, err)
 		}

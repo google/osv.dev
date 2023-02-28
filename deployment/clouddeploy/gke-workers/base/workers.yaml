@@ -28,28 +28,11 @@ spec:
     spec:
       containers:
       - name: worker-private
-        image: gcr.io/oss-vdb/worker:latest
+        image: worker
         imagePullPolicy: Always
-        env:
-          - name: GOOGLE_CLOUD_PROJECT
-            value: oss-vdb-test
-          # TODO(michaelkedar): secrets
-          # - name: DEPS_DEV_API_KEY
-          #   valueFrom:
-          #      secretKeyRef:
-          #       name: secrets
-          #       key: deps.dev
-        args:
-          # - "--ssh_key_public=/secrets/ssh.pub"
-          # - "--ssh_key_private=/secrets/ssh"
-          # TODO(michaelkedar): Somehow grab or enforce redis endpoint from terraform
-          - "--redis_host=10.102.25.214"
-          # - "--deps_dev_api_key=$(DEPS_DEV_API_KEY)"
         volumeMounts:
           - mountPath: "/work"
             name: "ssd"
-          # - mountPath: "/secrets"
-          #   name: "secrets"
         securityContext:
           privileged: true
         resources:
@@ -63,12 +46,3 @@ spec:
         - name: "ssd"
           hostPath:
             path: "/mnt/disks/ssd0"
-        # - name: secrets
-        #   secret:
-        #     secretName: secrets
-        #     items:
-        #       - key: ssh
-        #         path: ssh
-        #         mode: 0600
-        #       - key: ssh.pub
-        #         path: ssh.pub

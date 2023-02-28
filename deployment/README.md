@@ -1,11 +1,5 @@
 # GCP Project Setup (WIP)
 
-Ensure the `GOOGLE_CLOUD_PROJECT` environment variable is exported for the project:
-```bash
-export GOOGLE_CLOUD_PROJECT=<PROJECT_ID>
-```
-The official project id of OSV is `oss-vdb`.
-
 ## API Domain Name
 
 Due to [terraform complexities](https://github.com/hashicorp/terraform-provider-google/issues/5528),
@@ -59,6 +53,8 @@ recreate resources.
 
 Use `terraform plan` and `terraform apply` to deploy any configuration changes.
 
+Terraform is automatically run on `oss-vdb-test` in `build-and-stage.yaml`
+
 
 ## Setting up auto-scaler
 
@@ -75,70 +71,21 @@ kubectl create clusterrolebinding cluster-admin-binding \
 kubectl apply -f https://raw.githubusercontent.com/GoogleCloudPlatform/k8s-stackdriver/master/custom-metrics-stackdriver-adapter/deploy/production/adapter_new_resource_model.yaml
 ```
 
-## Build and deploy remote builds to oss-vdb-test
-Inside `deployment/oss-vdb-test/k8s/`, run
+## Build and deploy remote builds to `oss-vdb-test`
 
-```bash
-./deploy.sh <COMMIT_SHA>
-```
+Done automatically with Cloud Deploy, as part of `build-and-stage.yaml`, which is triggered on pushes to the master branch.
 
-Replacing <COMMIT_SHA> with the hash of the commit in google/osv.dev to deploy.
+The Cloud Deploy pipelines are set up in the `oss-vdb` project.
 
 
-## Submit local builds to container registry
+### Manual builds / deployment
 
-Currently, worker, importer and exporter are implemented.
+Not really supported, but theoretically possible.
 
-If `GOOGLE_CLOUD_PROJECT` is not set, the project ID will default to `oss-vdb`.
+Building locally would involve running `docker build` and `docker push` for the respective Dockerfiles, as in `build-and-stage.yaml`.
 
-Inside `docker/worker-base/`
-```bash
-./build.sh <TAG>
-```
+Manual deployment without Cloud Deploy would involve manually changing Kubernetes or Cloud Run manifests found in `clouddeploy/` to suit needs, replacing the Cloud Deploy image names with actual container images.
 
-Then, inside `docker/worker/`
-```bash
-./build.sh <TAG>
-```
-
-## Deploy builds to cluster
-
-First, edit the image path in `deployment/oss-vdb-test/k8s/gke/workers/workers.yaml`, `.../gke/importer/importer.yaml`, and `.../gke/exporter/exporter.yaml` to match the project ID:
-
-```yaml
-        # in worker.yaml
-        image: gcr.io/<PROJECT_ID>/worker:latest
-
-        # in importer.yaml
-        image: gcr.io/<PROJECT_ID>/importer:latest
-
-        # in exporter.yaml
-        image: gcr.io/<PROJECT_ID>/exporter:latest
-```
-
-e.g. for `oss-vdb-test`:
-```yaml
-        image: gcr.io/oss-vdb-test/worker:latest
-```
-
-(TODO: Do this automatically with [kustomize](https://kubernetes.io/docs/tasks/manage-kubernetes-objects/kustomization/))
-
-
-(Then, to deploy with gcloud builds)
-
-Then, inside `deployment/oss-vdb-test/k8s/`
-
-Manually modify `cloudbuild.yaml` to remove image building steps
-
-Then run
-
-```bash
-gcloud beta builds submit . --project=<PROJECT_ID> --substitutions=COMMIT_SHA=<TAG>
-```
-
-This might time out if running the first time on a newly-created cluster.
-It seems to trigger an auto-repair on the cluster. Running the command again
-after the auto-repair finishes should work correctly.
 
 ## Quotas
 
@@ -149,14 +96,3 @@ Things that have been manually set on `oss-vdb-test`:
   - CPUs => 1000
   - Local SSD => 100 TB
   - Pesistent Disk SSD => 50 TB
-
-## Still TODO
-- Refactor terraform files.
-  - https://cloud.google.com/docs/terraform/best-practices-for-terraform may be helpful
-- Investigate running terraform on existing GCP project.
-  - May require `terraform import`-ing all existing resources.
-- Deployments (and required terraform configs) for importer, indexer, etc.
-- Properly update existing build/deploy process to take project id as an input.
-- Configuring `SourceRepository` in datastore.
-- Configuring secrets.
-- Configuring Cloud Memorystore Redis instance

@@ -1,9 +1,9 @@
 apiVersion: batch/v1
 kind: CronJob
 metadata:
-  name: debian-first-version
+  name: combine-to-osv
 spec:
-  schedule: "0 1 * * *"
+  schedule: "30 */1 * * *"
   concurrencyPolicy: Forbid
   jobTemplate:
     spec:
@@ -11,17 +11,9 @@ spec:
       template:
         spec:
           containers:
-          - name: debian-first-version
-            image: gcr.io/oss-vdb-test/debian-convert
+          - name: combine-to-osv
+            image: combine-to-osv
             imagePullPolicy: Always
-            env:
-            - name: OUTPUT_GCS_BUCKET
-              value: osv-test-debian-osv
-            command:
-              - "/src/run_first_package_finder.sh"
-            volumeMounts:
-              - mountPath: "/work"
-                name: "ssd"
             securityContext:
               privileged: true
             resources:

@@ -1,31 +1,28 @@
 apiVersion: batch/v1
 kind: CronJob
 metadata:
-  name: combine-to-osv
+  name: exporter
 spec:
-  schedule: "30 */1 * * *"
+  schedule: "0 */6 * * *"
   concurrencyPolicy: Forbid
   jobTemplate:
     spec:
-      activeDeadlineSeconds: 3600
       template:
         spec:
           containers:
-          - name: combine-to-osv
-            image: gcr.io/oss-vdb-test/combine-to-osv:latest
+          - name: exporter
+            image: exporter
             imagePullPolicy: Always
-            env:
-            - name: OUTPUT_GCS_BUCKET
-              value: osv-test-cve-osv-conversion
-            securityContext:
-              privileged: true
+            volumeMounts:
+              - mountPath: "/work"
+                name: "ssd"
             resources:
               requests:
                 cpu: 1
-                memory: "1G"
+                memory: "3G"
               limits:
                 cpu: 1
-                memory: "2G"
+                memory: "4G"
           restartPolicy: OnFailure
           volumes:
             - name: "ssd"

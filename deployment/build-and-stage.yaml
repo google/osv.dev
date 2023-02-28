@@ -27,23 +27,23 @@ steps:
 - name: gcr.io/cloud-builders/gcloud
   entrypoint: bash
   args:
-    - "-c"
-    - |
-      read current_build _ <<< $(gcloud builds list --filter=tags="build-and-stage" --format="value(id,create_time)" --sort-by=create_time --ongoing)
+  - '-c'
+  - |
+    read current_build <<< $(gcloud builds list --filter=tags="build-and-stage" --format="value(id)" --sort-by=create_time --ongoing)
+    if [[ -z "${current_build}" ]]; then
+      echo "Could not find any matching builds."
+      exit 1
+    fi
+    while [[ "${current_build}" != "${BUILD_ID}" ]]; do
+      echo "Waiting for build ${current_build}"
+      sleep 30
+      read current_build <<< $(gcloud builds list --filter=tags="build-and-stage" --format="value(id)" --sort-by=create_time  --ongoing)
       if [[ -z "${current_build}" ]]; then
         echo "Could not find any matching builds."
         exit 1
       fi
-      while [[ "${current_build}" != "${BUILD_ID}" ]]; do
-        echo "Waiting for build ${current_build}"
-        sleep 30
-        read current_build _ <<< $(gcloud builds list --filter=tags="build-and-stage" --format="value(id,create_time)" --sort-by=create_time  --ongoing)
-        if [[ -z "${current_build}" ]]; then
-          echo "Could not find any matching builds."
-          exit 1;
-        fi
-      done
-      echo "Finished waiting for other builds."
+    done
+    echo "Finished waiting for other builds."
   id: 'cloud-build-queue'
   waitFor: ['-']
 
@@ -138,8 +138,31 @@ steps:
   args: ['apply', '-no-color', '-auto-approve']
   dir:  deployment/terraform/environments/oss-vdb-test
 
-# TODO(michaelkedar): App Engine for oss-vdb-test
-# TODO(michaelkedar): Cloud Deploy
+# Deploy App Engine for staging environment
+- name: 'gcr.io/oss-vdb/deployment'
+  args: ['bash', '-ex', 'gcp/appengine/deploy.sh', 'oss-vdb-test', 'deployment/oss-vdb-test/gae', 'app.yaml']
+
+# Cloud Deploy
+# GKE Workers
+- name: 'gcr.io/cloud-builders/gcloud'
+  args: ['deploy', 'releases', 'create', 'osv-$SHORT_SHA', '--project=oss-vdb', '--region=us-central1',
+    '--delivery-pipeline=gke-workers', '--images',
+    "worker=gcr.io/oss-vdb/worker:$COMMIT_SHA,\
+     importer=gcr.io/oss-vdb/importer:$COMMIT_SHA,\
+     exporter=gcr.io/oss-vdb/exporter:$COMMIT_SHA,\
+     debian-convert=gcr.io/oss-vdb/debian-convert:$COMMIT_SHA,\
+     combine-to-osv=gcr.io/oss-vdb/combine-to-osv:$COMMIT_SHA,\
+     alpine-cve-convert=gcr.io/oss-vdb/alpine-cve-convert:$COMMIT_SHA"
+  ]
+  dir: deployment/clouddeploy/gke-workers
+
+# API Backend
+- name: 'gcr.io/cloud-builders/gcloud'
+  args: ['deploy', 'releases', 'create', 'osv-$SHORT_SHA', '--project=oss-vdb', '--region=us-central1',
+    '--delivery-pipeline=osv-api', '--images',
+    "osv-server=gcr.io/oss-vdb/osv-server:$COMMIT_SHA"
+  ]
+  dir: deployment/clouddeploy/osv-api
 
 timeout: 7200s
 # Also set in Cloud Build:
@@ -151,11 +174,11 @@ options:
 tags: ['build-and-stage']
 
 images:
-  - 'gcr.io/oss-vdb/worker-base:$COMMIT_SHA'
-  - 'gcr.io/oss-vdb/worker:$COMMIT_SHA'
-  - 'gcr.io/oss-vdb/importer:$COMMIT_SHA'
-  - 'gcr.io/oss-vdb/exporter:$COMMIT_SHA'
-  - 'gcr.io/oss-vdb/alpine-cve-convert:$COMMIT_SHA'
-  - 'gcr.io/oss-vdb/combine-to-osv:$COMMIT_SHA'
-  - 'gcr.io/oss-vdb/debian-convert:$COMMIT_SHA'
-  - 'gcr.io/oss-vdb/osv-server:$COMMIT_SHA'
+- 'gcr.io/oss-vdb/worker-base:$COMMIT_SHA'
+- 'gcr.io/oss-vdb/worker:$COMMIT_SHA'
+- 'gcr.io/oss-vdb/importer:$COMMIT_SHA'
+- 'gcr.io/oss-vdb/exporter:$COMMIT_SHA'
+- 'gcr.io/oss-vdb/alpine-cve-convert:$COMMIT_SHA'
+- 'gcr.io/oss-vdb/combine-to-osv:$COMMIT_SHA'
+- 'gcr.io/oss-vdb/debian-convert:$COMMIT_SHA'
+- 'gcr.io/oss-vdb/osv-server:$COMMIT_SHA'

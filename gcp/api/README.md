@@ -26,6 +26,4 @@ https://cloud.google.com/container-registry/docs/advanced-authentication#gcloud-
 
 ## oss-vdb-test Project
 
-```
-./deploy_backend oss-vdb-test $(date +"%Y%m%d") osv-grpc-backend
-```
+Automatically built and deployed on pushes to master branch.

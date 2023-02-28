@@ -1,0 +1,46 @@
+# Copyright 2023 Google LLC
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#      http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+steps:
+# Promote App Engine
+- name: gcr.io/cloud-builders/gcloud
+  args: ['app', 'versions', 'migrate', '$COMMIT_SHA', '--service=default']
+
+# Promote Cloud Deploy
+- name: gcr.io/cloud-builders/gcloud
+  args: ['deploy', 'releases', 'promote', '--release=osv-$SHORT_SHA', '--region=us-central1', '--delivery-pipeline=gke-workers', '--annotations=tag=$TAG_NAME']
+- name: gcr.io/cloud-builders/gcloud
+  args: ['deploy', 'releases', 'promote', '--release=osv-$SHORT_SHA', '--region=us-central1', '--delivery-pipeline=osv-api', '--annotations=tag=$TAG_NAME']
+
+# Tag the deployed images with the git tag
+- name: gcr.io/cloud-builders/gcloud
+  args: ['container', 'images', 'add-tag', '--quiet', 'gcr.io/oss-vdb/worker-base:$COMMIT_SHA', 'gcr.io/oss-vdb/worker-base:$TAG_NAME']
+- name: gcr.io/cloud-builders/gcloud
+  args: ['container', 'images', 'add-tag', '--quiet', 'gcr.io/oss-vdb/worker:$COMMIT_SHA', 'gcr.io/oss-vdb/worker:$TAG_NAME']
+- name: gcr.io/cloud-builders/gcloud
+  args: ['container', 'images', 'add-tag', '--quiet', 'gcr.io/oss-vdb/importer:$COMMIT_SHA', 'gcr.io/oss-vdb/importer:$TAG_NAME']
+- name: gcr.io/cloud-builders/gcloud
+  args: ['container', 'images', 'add-tag', '--quiet', 'gcr.io/oss-vdb/exporter:$COMMIT_SHA', 'gcr.io/oss-vdb/exporter:$TAG_NAME']
+- name: gcr.io/cloud-builders/gcloud
+  args: ['container', 'images', 'add-tag', '--quiet', 'gcr.io/oss-vdb/alpine-cve-convert:$COMMIT_SHA', 'gcr.io/oss-vdb/alpine-cve-convert:$TAG_NAME']
+- name: gcr.io/cloud-builders/gcloud
+  args: ['container', 'images', 'add-tag', '--quiet', 'gcr.io/oss-vdb/combine-to-osv:$COMMIT_SHA', 'gcr.io/oss-vdb/combine-to-osv:$TAG_NAME']
+- name: gcr.io/cloud-builders/gcloud
+  args: ['container', 'images', 'add-tag', '--quiet', 'gcr.io/oss-vdb/debian-convert:$COMMIT_SHA', 'gcr.io/oss-vdb/debian-convert:$TAG_NAME']
+- name: gcr.io/cloud-builders/gcloud
+  args: ['container', 'images', 'add-tag', '--quiet', 'gcr.io/oss-vdb/osv-server:$COMMIT_SHA', 'gcr.io/oss-vdb/osv-server:$TAG_NAME']
+
+serviceAccount: 'projects/oss-vdb/serviceAccounts/deployment@oss-vdb.iam.gserviceaccount.com'
+options:
+  logging: CLOUD_LOGGING_ONLY

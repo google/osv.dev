@@ -17,8 +17,6 @@ steps:
   args: ['submodule', 'update', '--init', '--recursive']
 - name: 'gcr.io/oss-vdb/ci'
   args: ['make', 'all-tests']
-- name: 'gcr.io/cloud-builders/git'
-  args: ['clean', '-fdx']
 - name: 'gcr.io/cloud-builders/gcloud'
   entrypoint: 'bash'
   args: [ '-c', "gcloud secrets versions access latest --secret=integration-test-account --format='get(payload.data)' | tr '_-' '/+' | base64 -d > /workspace/service_account.json" ]
@@ -30,6 +28,8 @@ steps:
 - name: 'gcr.io/cloud-builders/gcloud'
   entrypoint: 'bash'
   args: [ '-c', "rm /workspace/service_account.json" ]
+- name: 'gcr.io/cloud-builders/git'
+  args: ['clean', '-fdx']
 - name: 'gcr.io/oss-vdb/deployment'
   args: ['bash', '-ex', 'gcp/appengine/deploy.sh', 'oss-vdb', 'deployment/oss-vdb/gae', 'app.yaml', '--no-promote']
 - name: 'gcr.io/oss-vdb/deployment'

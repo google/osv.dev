@@ -1,0 +1,14 @@
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: debian-first-version
+spec:
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          containers:
+          - name: debian-first-version
+            env:
+            - name: OUTPUT_GCS_BUCKET
+              value: debian-osv

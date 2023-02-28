@@ -29,7 +29,7 @@ steps:
   entrypoint: 'bash'
   args: [ '-c', "rm /workspace/service_account.json" ]
 - name: 'gcr.io/cloud-builders/git'
-  args: ['clean', '-fdx']
+  args: ['clean', '-ffdx']
 - name: 'gcr.io/oss-vdb/deployment'
   args: ['bash', '-ex', 'gcp/appengine/deploy.sh', 'oss-vdb', 'deployment/oss-vdb/gae', 'app.yaml', '--no-promote']
 - name: 'gcr.io/oss-vdb/deployment'

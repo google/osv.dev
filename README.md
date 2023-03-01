@@ -144,9 +144,12 @@ work:
 git submodule update --init --recursive
 ```
 
-## Development
+## Contributing
 
-See [CONTRIBUTING.md](CONTRIBUTING.md).
+Contributions are welcome! 
+
+Learn more about [code](CONTRIBUTING.md#code-contributions) and [data](CONTRIBUTING.md#data-contributions). 
+We also have a [mailing list](https://groups.google.com/g/osv-discuss) and an [FAQ](https://osv.dev/about).
 
 ## Third party tools and integrations
 
@@ -176,9 +179,3 @@ tools and unsupported by the core OSV maintainers.
 -   [Trivy](https://github.com/aquasecurity/trivy)
 
 Feel free to send a PR to add your project here.
-
-## Contributing
-
-Contributions are welcome! We also have a
-[mailing list](https://groups.google.com/g/osv-discuss) and a
-[FAQ](https://osv.dev/about).

@@ -112,3 +112,14 @@ Keep this safe.
 $ gcloud auth login --update-adc
 $ make SERVICE_ACCOUNT=/path/to/service_account.json run-api-server
 ```
+## Contributing Data
+
+Data contributions are also welcome! 
+
+If you a work with a project such as a Linux distribution and would like to contribute your security advisories, please follow these steps.
+
+1. Open an [issue](https://github.com/google/osv.dev/issues). Let us know about your project and we can help you figure out the remaining steps. Please tag the issue `datasource` so we can properly triage the issue. 
+
+2. Refer to [OSV Schema](https://ossf.github.io/osv-schema/) documentation for information on how to properly format the data so it can be accepted. 
+
+3. Data can be supplied either through a GitHub repo or a GCS bucket. 

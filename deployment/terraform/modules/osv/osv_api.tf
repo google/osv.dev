@@ -14,16 +14,17 @@ resource "google_cloud_run_service" "api_backend" {
     }
   }
 
+  traffic {
+  percent         = 100
+  latest_revision = true
+  }
+
   lifecycle {
     ignore_changes = [
       # To be managed by Cloud Deploy.
       template,
+      traffic,
     ]
-  }
-
-  traffic {
-    percent         = 100
-    latest_revision = true
   }
 }
 

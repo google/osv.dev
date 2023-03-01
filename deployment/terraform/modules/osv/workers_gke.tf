@@ -36,8 +36,9 @@ resource "google_container_node_pool" "default_pool" {
   location = google_container_cluster.workers.location
 
   autoscaling {
-    min_node_count = 1
-    max_node_count = 1000
+    min_node_count  = 1
+    max_node_count  = 1000
+    location_policy = "BALANCED"
   }
 
 
@@ -59,8 +60,9 @@ resource "google_container_node_pool" "highend" {
   location = google_container_cluster.workers.location
 
   autoscaling {
-    min_node_count = 0
-    max_node_count = 100
+    min_node_count  = 0
+    max_node_count  = 100
+    location_policy = "BALANCED"
   }
 
 

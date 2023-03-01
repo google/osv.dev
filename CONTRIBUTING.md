@@ -122,4 +122,4 @@ If you a work with a project such as a Linux distribution and would like to cont
 
 2. Refer to the [OSV Schema](https://ossf.github.io/osv-schema/) documentation for information on how to properly format the data so it can be accepted. 
 
-3. Data can be supplied either through a GitHub repo or a GCS bucket. 
+3. Data can be supplied either through a public Git repository or a public GCS bucket. 

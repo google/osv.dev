@@ -6,6 +6,10 @@
 The API currently accepts a git commit hash or a `(package, version number)` and returns the
 list of vulnerabilities that are present for that version.
 
+### Does the API have a rate limit? 
+
+No. Currently there is not a limit on the API. 
+
 # Getting Started
 ---
 

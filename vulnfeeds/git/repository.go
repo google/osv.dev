@@ -110,7 +110,7 @@ func NormalizeRepoTags(repoURL string, repoTagsCache RepoTagsCache) (NormalizedT
 }
 
 // Validate the repo by attempting to query it's references.
-func ValidRepo(repoURL string) (valid bool, e error) {
+func ValidRepo(repoURL string) (valid bool) {
 	remoteConfig := &config.RemoteConfig{
 		Name: "source",
 		URLs: []string{
@@ -121,10 +121,10 @@ func ValidRepo(repoURL string) (valid bool, e error) {
 	_, err := r.List(&git.ListOptions{})
 	if err != nil && err == transport.ErrAuthenticationRequired {
 		// somewhat strangely, we get an authentication prompt via Git on non-existent repos.
-		return false, nil
+		return false
 	}
 	if err != nil {
-		return false, nil
+		return false
 	}
-	return true, nil
+	return true
 }

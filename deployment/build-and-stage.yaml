@@ -140,7 +140,7 @@ steps:
 
 # Deploy App Engine for staging environment
 - name: 'gcr.io/oss-vdb/deployment'
-  args: ['bash', '-ex', 'gcp/appengine/deploy.sh', 'oss-vdb-test', 'deployment/oss-vdb-test/gae', 'app.yaml']
+  args: ['bash', '-ex', 'gcp/appengine/deploy.sh', 'oss-vdb-test', 'deployment/gae/oss-vdb-test', 'app.yaml']
 
 # Cloud Deploy
 # GKE Workers

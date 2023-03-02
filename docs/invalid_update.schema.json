@@ -1,0 +1,72 @@
+{
+    "$schema": "https://json-schema.org/draft/2019-09/schema",
+    "$id": "http://osv.dev/import_status.schema.json",
+    "type": "object",
+    "default": {},
+    "title": "OSV.dev import status",
+    "description": "A schema for describing an OSV.dev import failure of an OSV record.",
+    "required": [
+        "invalid_records"
+    ],
+    "properties": {
+        "invalid_records": {
+            "type": "array",
+            "default": [],
+            "title": "The invalid_records Schema",
+            "items": {
+                "type": "object",
+                "title": "A Schema",
+                "required": [
+                    "id",
+                    "reason"
+                ],
+                "properties": {
+                    "id": {
+                        "type": "string",
+                        "title": "The id Schema",
+                        "examples": [
+                            "GSD-2021-1001229",
+                            "GSD-2022-1003535"
+                        ]
+                    },
+                    "reason": {
+                        "type": "string",
+                        "title": "The reason Schema",
+                        "examples": [
+                            "INVALID_JSON",
+                            "DELETED"
+                        ]
+                    }
+                },
+                "examples": [{
+                    "id": "GSD-2021-1001229",
+                    "reason": "INVALID_JSON"
+                },
+                {
+                    "id": "GSD-2022-1003535",
+                    "reason": "DELETED"
+                }]
+            },
+            "examples": [
+                [{
+                    "id": "GSD-2021-1001229",
+                    "reason": "INVALID_JSON"
+                },
+                {
+                    "id": "GSD-2022-1003535",
+                    "reason": "DELETED"
+                }]
+            ]
+        }
+    },
+    "examples": [{
+        "invalid_records": [{
+            "id": "GSD-2021-1001229",
+            "reason": "INVALID_JSON"
+        },
+        {
+            "id": "GSD-2022-1003535",
+            "reason": "DELETED"
+        }]
+    }]
+}

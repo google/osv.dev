@@ -9,13 +9,13 @@ import (
 	"log"
 	"net/url"
 	"os"
-	"path"
 	"path/filepath"
 	"strings"
 
 	"cloud.google.com/go/logging"
-	"github.com/go-git/go-git/v5"
+
 	"github.com/google/osv/vulnfeeds/cves"
+	"github.com/google/osv/vulnfeeds/git"
 	"github.com/google/osv/vulnfeeds/utility"
 	"github.com/google/osv/vulnfeeds/vulns"
 )
@@ -40,6 +40,7 @@ const (
 )
 
 var Logger utility.LoggerWrapper
+var RepoTagsCache git.RepoTagsCache
 var Metrics struct {
 	TotalCVEs           int
 	CVEsForApplications int
@@ -75,6 +76,7 @@ func InScopeGitRepo(repoURL string) bool {
 	return true
 }
 
+<<<<<<< Updated upstream
 func GetRepoDir(repoURL string) string {
 	repobasedir := "/tmp/repos" // TODO: flag and parameterise
 	parsedURL, err := url.Parse(repoURL)
@@ -104,38 +106,80 @@ func GetRepo(repoURL string) (r *git.Repository, e error) {
 
 // Examines repos and tries to convert version tags to commits
 func GitVersionToCommit(versions cves.VersionInfo, repos []string) (v cves.VersionInfo, e error) {
+=======
+// Examines repos and tries to convert versions to commits by treating them as Git tags.
+// Takes a cves.VersionInfo with AffectedVersions and no FixCommits and attempts to add FixCommits.
+func GitVersionToCommit(versions cves.VersionInfo, repos []string, cache git.RepoTagsCache) (v cves.VersionInfo, e error) {
+>>>>>>> Stashed changes
 	// versions is a VersionInfo with AffectedVersions and no FixCommits
 	// v is a VersionInfo with FixCommits included
 	v = versions
 	for _, repo := range repos {
+<<<<<<< Updated upstream
 		r, err := GetRepo(repo)
+=======
+		normalizedTags, err := git.NormalizeRepoTags(repo, cache)
+>>>>>>> Stashed changes
 		if err != nil {
-			Logger.Warnf("Failed to get %s: %v", repo, err)
+			Logger.Warnf("Failed to normalize tags for %s: %v", repo, err)
 			continue
 		}
 		for _, av := range versions.AffectedVersions {
 			// We can't map a non-existent version to a tag and commit, so skip.
-			if av.Fixed == "" {
+			if av.Fixed == "" && av.LastAffected == "" {
 				continue
 			}
-			// TODO: add more sophisticated (fuzzy) version to tag matching.
-			ref, err := r.Tag("v" + av.Fixed)
-			if err != nil {
-				Logger.Warnf("Failed to find a tag for %q in %s: %v", av.Fixed, repo, err)
-				continue
+			if av.Fixed != "" {
+				normalizedFixed, err := cves.NormalizeVersion(av.Fixed)
+				if err != nil {
+					Logger.Warnf("Failed to normalize fixed version %q: %v", av.Fixed, err)
+					continue
+				}
+				// Try a straight out match first.
+				// TODO try fuzzy prefix matches also.
+				normalizedTag, ok := normalizedTags[normalizedFixed]
+				if !ok {
+					Logger.Warnf("Failed to find a commit for fixed version %q normalized as %q", av.Fixed, normalizedFixed)
+				} else {
+					fc := cves.FixCommit{
+						Repo:   repo,
+						Commit: normalizedTag.Commit,
+					}
+					Logger.Infof("Successfully derived %+v for fixed version %q", fc, av.Fixed)
+					v.FixCommits = append(v.FixCommits, fc)
+				}
 			}
-			fc := cves.FixCommit{
-				Repo:   repo,
-				Commit: ref.Hash().String(),
+			if av.LastAffected != "" {
+				normalizedLastAffected, err := cves.NormalizeVersion(av.LastAffected)
+				if err != nil {
+					Logger.Warnf("Failed to normalize last_affected version %q: %v", av.LastAffected, err)
+					continue
+				}
+				// Try a straight out match first.
+				normalizedTag, ok := normalizedTags[normalizedLastAffected]
+				if !ok {
+					Logger.Warnf("Failed to find a commit for last_affected version %q normalized as %q", av.LastAffected, normalizedLastAffected)
+				} else {
+					fc := cves.FixCommit{
+						Repo:   repo,
+						Commit: normalizedTag.Commit,
+					}
+					Logger.Infof("Successfully derived %+v for last_affected version %q", fc, av.LastAffected)
+					// This isn't a "fixed" commit, so we won't go appending it because vulns.AttachExtractedVersionInfo would go calling it an "fixed" event when it needs to be taught how to generate "last_affected" events.
+					// v.FixCommits = append(v.FixCommits, fc)
+				}
 			}
-			v.FixCommits = append(v.FixCommits, fc)
 		}
 	}
 	return v, nil
 }
 
 // Takes an NVD CVE record and outputs an OSV file in the specified directory.
+<<<<<<< Updated upstream
 func CVEToOSV(CVE cves.CVEItem, repos []string, directory string) error {
+=======
+func CVEToOSV(CVE cves.CVEItem, repos []string, cache git.RepoTagsCache, directory string) error {
+>>>>>>> Stashed changes
 	CPEs := cves.CPEs(CVE)
 	CPE, err := cves.ParseCPE(CPEs[0])
 	if err != nil {
@@ -150,7 +194,11 @@ func CVEToOSV(CVE cves.CVEItem, repos []string, directory string) error {
 			return fmt.Errorf("No affected ranges for %s for %q, and no repos to try and convert %+v to tags with", CVE.CVE.CVEDataMeta.ID, CPE.Product, versions.AffectedVersions)
 		}
 		Logger.Infof("[%s]: Trying to convert version tags %+v to commits using %v", CVE.CVE.CVEDataMeta.ID, versions.AffectedVersions, repos)
+<<<<<<< Updated upstream
 		versions, err = GitVersionToCommit(versions, repos)
+=======
+		versions, err = GitVersionToCommit(versions, repos, cache)
+>>>>>>> Stashed changes
 	}
 
 	affected := vulns.Affected{}
@@ -333,7 +381,11 @@ func main() {
 
 		Metrics.CVEsForKnownRepos++
 
+<<<<<<< Updated upstream
 		err := CVEToOSV(cve, ReposForCVE[cve.CVE.CVEDataMeta.ID], *outDir)
+=======
+		err := CVEToOSV(cve, ReposForCVE[cve.CVE.CVEDataMeta.ID], RepoTagsCache, *outDir)
+>>>>>>> Stashed changes
 		if err != nil {
 			Logger.Warnf("Failed to generate an OSV record for %s: %+v", cve.CVE.CVEDataMeta.ID, err)
 			continue

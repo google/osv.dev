@@ -13,29 +13,29 @@ oss_fuzz_time() {
   return 0
 }
 
-if [ $# -lt 1 ]; then
+if [[ $# -lt 1 ]]; then
   echo "Usage: $0 <tag>"
   exit 1
 fi
 
-if ! oss_fuzz_time && ! [ -n "$FORCE" ]; then
+if ! oss_fuzz_time && ! [[ -n "$FORCE" ]]; then
   echo "Now is not an advisable time to deploy, see http://go/osv-deploy"
   exit 1
 fi
 
 # Check upstream url master by creating a temporary remote.
-git remote add $UPSTREAM_REMOTE_NAME $UPSTREAM_URL
-git fetch $UPSTREAM_REMOTE_NAME --quiet
+git remote add "$UPSTREAM_REMOTE_NAME" "$UPSTREAM_URL"
+git fetch "$UPSTREAM_REMOTE_NAME" --quiet
 
-tag_name=$1
-commit_sha=$(git rev-parse --verify $tag_name)
-short_sha=$(git rev-parse --short $tag_name)
+tag_name="$1"
+commit_sha="$(git rev-parse --verify $tag_name)"
+short_sha="$(git rev-parse --short $tag_name)"
 
-git remote remove $UPSTREAM_REMOTE_NAME
+git remote remove "$UPSTREAM_REMOTE_NAME"
 
-if [[ -z $commit_sha || -z $short_sha ]]; then
+if [[ -z "$commit_sha" || -z "$short_sha" ]]; then
   echo "Unable to resolve commit for the tag $tag_name"
   exit 1
 fi
 
-gcloud beta builds submit --config=deploy-prod.yaml --project=oss-vdb --no-source --substitutions=COMMIT_SHA=$commit_sha,SHORT_SHA=$short_sha,TAG_NAME=$tag_name
+gcloud beta builds submit --config=deploy-prod.yaml --project=oss-vdb --no-source --substitutions="COMMIT_SHA=${commit_sha},SHORT_SHA=${short_sha},TAG_NAME=${tag_name}"

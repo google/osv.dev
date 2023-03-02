@@ -111,8 +111,7 @@ def main():
   spec['paths']['/v1/querybatch']['post']['x-code-samples'] = [{
       'lang':
           'Curl example',
-      'source':
-          ("""cat <<EOF | curl -d @- "https://api.osv.dev/v1/querybatch"
+      'source': """cat <<EOF | curl -d @- "https://api.osv.dev/v1/querybatch"
 {
   "queries": [
     {

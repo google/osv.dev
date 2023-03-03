@@ -151,6 +151,8 @@ Contributions are welcome!
 Learn more about [code](CONTRIBUTING.md#contributing-code) and [data](CONTRIBUTING.md#contributing-data) contributions. 
 We also have a [mailing list](https://groups.google.com/g/osv-discuss) and an [FAQ](https://osv.dev/about). 
 
+You can always [open an issue](https://github.com/google/osv.dev/issues) with questions or comments.
+
 ## Third party tools and integrations
 
 There are also community tools that use OSV. Note that these are community built

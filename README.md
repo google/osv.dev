@@ -149,7 +149,9 @@ git submodule update --init --recursive
 Contributions are welcome! 
 
 Learn more about [code](CONTRIBUTING.md#contributing-code) and [data](CONTRIBUTING.md#contributing-data) contributions. 
-We also have a [mailing list](https://groups.google.com/g/osv-discuss), an [FAQ](https://osv.dev/about), and a [slack channel](https://osvglobal.slack.com/archives/C02QDH1FNNA ).
+We also have a [mailing list](https://groups.google.com/g/osv-discuss) and an [FAQ](https://osv.dev/about). 
+
+Do you have a question or a suggestion? Please [open an issue](https://github.com/google/osv.dev/issues). 
 
 ## Third party tools and integrations
 

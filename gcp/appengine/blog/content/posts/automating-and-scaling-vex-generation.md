@@ -1,6 +1,6 @@
 ---
 title: "Automating and Scaling Vex Generation"
-date: 2023-03-03T16:46:51Z
+date: 2023-03-06T09:00:00Z
 draft: true
 author: Brandon Lum, Oliver Chang, and Meder Kydyraliev
 ---

@@ -1,7 +1,7 @@
 ---
 title: "Automating and Scaling Vex Generation"
 date: 2023-03-06T09:00:00Z
-draft: true
+draft: false
 author: Brandon Lum, Oliver Chang, and Meder Kydyraliev
 ---
 If you've recently been in the space of vulnerability management and the discussions around the White House [Executive Order on Improving the Nation's Cybersecurity (EO)](https://www.whitehouse.gov/briefing-room/presidential-actions/2021/05/12/executive-order-on-improving-the-nations-cybersecurity/), you're probably familiar with concepts such as Software Bill of Materials (SBOM) and Vulnerability Exploitability eXchange (VEX).

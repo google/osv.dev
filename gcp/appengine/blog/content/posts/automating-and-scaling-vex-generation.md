@@ -21,7 +21,7 @@ This manual process today results in a lot of duplicated work in the investigati
 
 So how can we make this better? 
 
-# Intermediate VEX statements
+## Intermediate VEX statements
 
 Say you're developing an application Foo, and a vulnerability CVE-2023-XXXX is reported in Package C. You run a vulnerability scanner on your dependency graph or SBOM and see the vulnerability reported. Now you have to triage the vulnerability and either patch, or create a VEX statement if the vulnerability does not actually affect the application. 
 
@@ -37,7 +37,7 @@ If at least one path to the vulnerable Package C has a VEX statement indicating 
 
 ![This image again shows the dependency tree for application Foo. This time there is a text box that indicates that Package A has a VEX statement that say their package is not impacted by CVE-2023-XXXX. Package B does not have a VEX statement and is assumed to be impacted. Because we don't know the status of Package B, Foo is assumed to be affected by CVE-2023-XXXX and the Final VEX statement reflects that.](/gcp/appengine/blog/resources/_gen/images/3rd_vex_image.png "Missing an intermediate VEX statement, final VEX shows Foo affected")
 
-# Intermediate VEX format and storage
+## Intermediate VEX format and storage
 
 What exactly would an intermediate VEX statement look like? It could just be an ["ignore file"-like mechanism](https://google.github.io/osv-scanner/configuration/#ignore-vulnerabilities-by-id) to encode false positives with justification for direct dependencies that gets passed to a vulnerability scanner. Library developers could also regularly run vulnerability scans on their dependencies, analyze the results and encode false positives in intermediate VEX statements.
 
@@ -55,7 +55,7 @@ Let's explore what it would look like from an application "myapp" using "mylib".
 
 This is a fairly simple example, but extrapolating to deeper nested dependencies, we can see how having each library maintainer create their individual intermediate VEX statements can make knowing the state of vulnerabilities in software better. This is distinct from most uses of VEX today, as the responsibility is focused on delivered products/services providing a VEX statement, and omits the scope of libraries and nested dependencies.
 
-# Automating VEX generation further
+## Automating VEX generation further
 
 VEX is still at its early stages and intermediate VEX will be one of many other ideas to make VEX usable through automation. Vulnerability databases such as [GHSA](https://github.com/advisories) and [Go](https://vuln.go.dev/) are moving towards encoding vulnerable function symbols in advisories. Having the function symbols allows tools performing call graphs analysis to automatically generate both intermediate and complete VEX statements. 
 
@@ -63,7 +63,7 @@ Manual VEX statements will still be necessary to encode other cases that do not 
 
 The OSV project is planning to explore automated VEX generation by utilizing call graph analysis to determine vulnerability impact. To aid with this, we'd also like to build automation to determine the vulnerable affected functions through analyzing source code. 
 
-# Conclusion
+## Conclusion
 
 Generating VEX statements today is still a costly task, both in the amount of time needed to collect the right information and the in-house expertise required to determine vulnerabilities statuses from externally used components.
 

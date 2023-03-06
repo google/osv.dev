@@ -15,8 +15,8 @@ resource "google_cloud_run_service" "api_backend" {
   }
 
   traffic {
-  percent         = 100
-  latest_revision = true
+    percent         = 100
+    latest_revision = true
   }
 
   lifecycle {
@@ -25,6 +25,7 @@ resource "google_cloud_run_service" "api_backend" {
       template,
       traffic,
     ]
+    prevent_destroy = true
   }
 }
 
@@ -113,6 +114,10 @@ resource "google_cloud_run_service" "api" {
   }
 
   autogenerate_revision_name = true
+
+  lifecycle {
+    prevent_destroy = true
+  }
 }
 
 resource "google_cloud_run_domain_mapping" "api" {

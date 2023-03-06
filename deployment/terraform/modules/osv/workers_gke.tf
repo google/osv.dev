@@ -33,6 +33,7 @@ resource "google_container_cluster" "workers" {
       # Updating this value in terraform forces a replacement, even though the default pool is destroyed. Ignore it to prevent disruption.
       initial_node_count,
     ]
+    prevent_destroy = true
   }
 }
 
@@ -43,7 +44,8 @@ resource "google_container_node_pool" "default_pool" {
   location = google_container_cluster.workers.location
 
   lifecycle {
-    # terraform automatically doesn't know to recreate node pools when the cluster is recreated.
+    # Terraform doesn't automatically know to recreate node pools when the cluster is recreated.
+    # Kind of moot since the cluster has prevent_destroy = true.
     replace_triggered_by = [
       google_container_cluster.workers.id,
     ]
@@ -74,7 +76,8 @@ resource "google_container_node_pool" "highend" {
   location = google_container_cluster.workers.location
 
   lifecycle {
-    # terraform automatically doesn't know to recreate node pools when the cluster is recreated.
+    # Terraform doesn't automatically know to recreate node pools when the cluster is recreated.
+    # Kind of moot since the cluster has prevent_destroy = true.
     replace_triggered_by = [
       google_container_cluster.workers.id,
     ]

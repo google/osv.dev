@@ -5,6 +5,10 @@ resource "google_app_engine_application" "app" {
   project       = var.project_id
   location_id   = "us-west2"
   database_type = "CLOUD_DATASTORE_COMPATIBILITY"
+
+  lifecycle {
+    prevent_destroy = true
+  }
 }
 
 # MemoryStore
@@ -19,6 +23,12 @@ resource "google_redis_instance" "west2" {
   replica_count      = 1
   tier               = "STANDARD_HA"
   reserved_ip_range  = "10.126.238.64/29"
+
+  # TODO(michaelkedar): This needs to be recreated on oss-vdb-test
+  # will uncomment this on a second PR after it's been applied
+  # lifecycle {
+  #   prevent_destroy = true
+  # }
 }
 
 resource "google_redis_instance" "central1" {
@@ -31,6 +41,10 @@ resource "google_redis_instance" "central1" {
   replica_count      = 2
   tier               = "STANDARD_HA"
   reserved_ip_range  = "10.102.25.208/28"
+
+  lifecycle {
+    prevent_destroy = true
+  }
 }
 
 # Serverless VPC connector

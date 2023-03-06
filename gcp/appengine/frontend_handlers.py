@@ -26,6 +26,9 @@ from flask import redirect
 from flask import render_template
 from flask import request
 from flask import url_for
+from flask import send_from_directory
+from werkzeug.utils import safe_join
+
 import markdown2
 from urllib import parse
 
@@ -40,7 +43,8 @@ blueprint = Blueprint('frontend_handlers', __name__)
 _PAGE_SIZE = 16
 _PAGE_LOOKAHEAD = 4
 _REQUESTS_PER_MIN = 30
-_WORD_CHARACTERS_OR_DASH = re.compile(r'^[\w-]+$')
+_WORD_CHARACTERS_OR_DASH = re.compile(r'^[\w\-]+$')
+_VALID_FILE_NAME = re.compile(r'^[\w\-_]+(\.\w+)*$')
 _VALID_BLOG_NAME = _WORD_CHARACTERS_OR_DASH
 _VALID_VULN_ID = _WORD_CHARACTERS_OR_DASH
 _BLOG_CONTENTS_DIR = 'blog'
@@ -120,12 +124,31 @@ def blog_rss():
 def blog_post(blog_name):
   if not _VALID_BLOG_NAME.match(blog_name):
     abort(404)
-    return None
+
+  path = safe_join('posts', blog_name, 'index.html')
+  if not path:
+    abort(404)
 
   return render_template(
       'blog_post.html',
-      content=_load_blog_content(
-          os.path.join('posts', blog_name, 'index.html')))
+      content=_load_blog_content(safe_join('posts', blog_name, 'index.html')))
+
+
+@blueprint.route('/blog/posts/<blog_name>/<file_name>', strict_slashes=False)
+def blog_post_static_files(blog_name: str, file_name: str):
+  print(file_name)
+  if not _VALID_BLOG_NAME.match(blog_name):
+    abort(404)
+
+  if not _VALID_FILE_NAME.match(file_name):
+    abort(404)
+
+  path = safe_join(current_app.static_folder, _BLOG_CONTENTS_DIR, 'posts',
+                   blog_name)
+  if not path:
+    abort(404)
+
+  return send_from_directory(path, file_name)
 
 
 @blueprint.route('/about')

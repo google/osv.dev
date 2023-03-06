@@ -12,12 +12,13 @@ resource "google_redis_instance" "west2" {
   project            = var.project_id
   memory_size_gb     = 5
   name               = "redis"
+  display_name       = "redis"
   read_replicas_mode = "READ_REPLICAS_ENABLED"
   redis_version      = "REDIS_6_X"
   region             = "us-west2"
   replica_count      = 1
   tier               = "STANDARD_HA"
-  reserved_ip_range  = "10.126.238.64/28"
+  reserved_ip_range  = "10.126.238.64/29"
 }
 
 resource "google_redis_instance" "central1" {

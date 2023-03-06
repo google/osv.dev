@@ -42,6 +42,13 @@ resource "google_container_node_pool" "default_pool" {
   cluster  = google_container_cluster.workers.name
   location = google_container_cluster.workers.location
 
+  lifecycle {
+    # terraform automatically doesn't know to recreate node pools when the cluster is recreated.
+    replace_triggered_by = [
+      google_container_cluster.workers.id,
+    ]
+  }
+
   autoscaling {
     min_node_count  = 1
     max_node_count  = 1000
@@ -65,6 +72,13 @@ resource "google_container_node_pool" "highend" {
   name     = "highend"
   cluster  = google_container_cluster.workers.name
   location = google_container_cluster.workers.location
+
+  lifecycle {
+    # terraform automatically doesn't know to recreate node pools when the cluster is recreated.
+    replace_triggered_by = [
+      google_container_cluster.workers.id,
+    ]
+  }
 
   autoscaling {
     min_node_count  = 0

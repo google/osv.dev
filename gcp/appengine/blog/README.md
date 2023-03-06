@@ -47,7 +47,7 @@ If you want to use images in your blog post, please do the following.
 3. Any images in your post should be included in `content/posts/desired-url-slug-for-post`
 4. Add images to your post in this format:
 ```
-![Alt text for screen readers.](image-name.png "The text appears when the mouse hovers over the image.")
+![Alt text for screen readers.](image-name.png "This text appears when the mouse hovers over the image.")
 ```
 
 ## Testing changes

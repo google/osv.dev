@@ -12,6 +12,7 @@ PyYAML = "*"
 google-cloud-storage = "*"
 redis = "*"
 osv = {editable = true, path = "./../.."}
+python-dateutil = "*"
 
 [dev-packages]
 yapf = "*"

@@ -51,6 +51,7 @@ libfoo, CVE-2022-123456, NOT_AFFECTED, inline_mitigations_already_exist
 libbar, CVE-2022-654321, NOT_AFFECTED, vulnerable_code_not_in_execute_path  
 ```
 
+
 Let's explore what it would look like from an application "myapp" using "mylib". Traditionally, without the .vex file, the user of "mylib" would see that they have two CVEs for "libfoo" and "libbar". To know if they truly are affected by the CVEs, they would need to understand and analyze the code of "mylib". However, now with the .vex file, they would now be able to reason that "myapp" isn't affected by the CVEs. 
 
 This is a fairly simple example, but extrapolating to deeper nested dependencies, we can see how having each library maintainer create their individual intermediate VEX statements can make knowing the state of vulnerabilities in software better. This is distinct from most uses of VEX today, as the responsibility is focused on delivered products/services providing a VEX statement, and omits the scope of libraries and nested dependencies.

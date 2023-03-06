@@ -45,7 +45,7 @@ resource "google_container_node_pool" "default_pool" {
 
   lifecycle {
     # Terraform doesn't automatically know to recreate node pools when the cluster is recreated.
-    # Kind of moot since the cluster has prevent_destroy = true.
+    # A bit redundant since the cluster has prevent_destroy = true.
     replace_triggered_by = [
       google_container_cluster.workers.id,
     ]
@@ -77,7 +77,7 @@ resource "google_container_node_pool" "highend" {
 
   lifecycle {
     # Terraform doesn't automatically know to recreate node pools when the cluster is recreated.
-    # Kind of moot since the cluster has prevent_destroy = true.
+    # A bit redundant since the cluster has prevent_destroy = true.
     replace_triggered_by = [
       google_container_cluster.workers.id,
     ]

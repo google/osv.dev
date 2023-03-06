@@ -136,7 +136,7 @@ def blog_post(blog_name):
 
 @blueprint.route('/blog/posts/<blog_name>/<file_name>', strict_slashes=False)
 def blog_post_static_files(blog_name: str, file_name: str):
-  print(file_name)
+  """Return static files under blog post directories"""
   if not _VALID_BLOG_NAME.match(blog_name):
     abort(404)
 

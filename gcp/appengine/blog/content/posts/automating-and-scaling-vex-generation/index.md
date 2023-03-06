@@ -25,7 +25,7 @@ So how can we make this better?
 
 Say you're developing an application Foo, and a vulnerability CVE-2023-XXXX is reported in Package C. You run a vulnerability scanner on your dependency graph or SBOM and see the vulnerability reported. Now you have to triage the vulnerability and either patch, or create a VEX statement if the vulnerability does not actually affect the application. 
 
-![Image diagrams a dependency tree for application Foo. Foo depends on Packages A and B, which both depend on C. Package C is affected by vulnerability CVE-2023-XXXX. The image asks if Application Foo is vulnerable to CVE-2023-XXXX](1st_vex_image.png "Dependency tree for aplication Foo")
+![Image diagrams a dependency tree for application Foo. Foo depends on Packages A and B, which both depend on C. Package C is affected by vulnerability CVE-2023-XXXX. The image asks if Application Foo is vulnerable to CVE-2023-XXXX](1st_vex_image.png "Dependency tree for application Foo")
 
 Package C is a transitive dependency of application Foo, but a direct dependency of Package A and B. If the authors of Package A and Package B ran a vulnerability scanner on their own dependencies, they would have also seen a vulnerability match on Package C. 
 

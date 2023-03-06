@@ -2,6 +2,12 @@
 # TODO(michaelkedar): Check whether any required apis are missing.
 # TODO(michaelkedar): Add depends_on to enable APIs before any resources are created.
 
+resource "google_project_service" "cloudapis" {
+  project            = var.project_id
+  service            = "cloudapis.googleapis.com"
+  disable_on_destroy = false
+}
+
 resource "google_project_service" "compute_engine_api" {
   project            = var.project_id
   service            = "compute.googleapis.com"
@@ -11,6 +17,18 @@ resource "google_project_service" "compute_engine_api" {
 resource "google_project_service" "kubernetes_engine_api" {
   project            = var.project_id
   service            = "container.googleapis.com"
+  disable_on_destroy = false
+}
+
+resource "google_project_service" "container_analysis" {
+  project            = var.project_id
+  service            = "containeranalysis.googleapis.com"
+  disable_on_destroy = false
+}
+
+resource "google_project_service" "container_scanning" {
+  project            = var.project_id
+  service            = "containerscanning.googleapis.com"
   disable_on_destroy = false
 }
 

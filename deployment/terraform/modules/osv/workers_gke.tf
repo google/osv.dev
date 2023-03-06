@@ -27,6 +27,13 @@ resource "google_container_cluster" "workers" {
   # node pool and immediately delete it.
   remove_default_node_pool = true
   initial_node_count       = 1
+  lifecycle {
+    ignore_changes = [
+      # importing from oss-vdb has initial_node_count set to 0, which is actually not a valid configuration for creating a cluster.
+      # Updating this value in terraform forces a replacement, even though the default pool is destroyed. Ignore it to prevent disruption.
+      initial_node_count,
+    ]
+  }
 }
 
 resource "google_container_node_pool" "default_pool" {

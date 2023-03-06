@@ -34,11 +34,12 @@ resource "google_redis_instance" "central1" {
 
 # Serverless VPC connector
 resource "google_vpc_access_connector" "connector" {
-  project       = var.project_id
-  name          = "connector"
-  network       = "default"
-  region        = "us-west2"
-  ip_cidr_range = "10.8.0.0/28"
+  project        = var.project_id
+  name           = "connector"
+  network        = "default"
+  region         = "us-west2"
+  ip_cidr_range  = "10.8.0.0/28"
+  max_throughput = 1000
 }
 
 # Storage Buckets
@@ -69,6 +70,10 @@ resource "google_storage_bucket" "osv_public_import_logs" {
     action {
       type = "Delete"
     }
+  }
+
+  versioning {
+    enabled = true
   }
 }
 

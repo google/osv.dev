@@ -43,8 +43,7 @@ blueprint = Blueprint('frontend_handlers', __name__)
 _PAGE_SIZE = 16
 _PAGE_LOOKAHEAD = 4
 _REQUESTS_PER_MIN = 30
-_WORD_CHARACTERS_OR_DASH = re.compile(r'^[\w\-]+$')
-_VALID_FILE_NAME = re.compile(r'^[\w\-_]+(\.\w+)*$')
+_WORD_CHARACTERS_OR_DASH = re.compile(r'^[\w-]+$')
 _VALID_BLOG_NAME = _WORD_CHARACTERS_OR_DASH
 _VALID_VULN_ID = _WORD_CHARACTERS_OR_DASH
 _BLOG_CONTENTS_DIR = 'blog'
@@ -138,9 +137,6 @@ def blog_post(blog_name):
 def blog_post_static_files(blog_name: str, file_name: str):
   """Return static files under blog post directories"""
   if not _VALID_BLOG_NAME.match(blog_name):
-    abort(404)
-
-  if not _VALID_FILE_NAME.match(file_name):
     abort(404)
 
   path = safe_join(current_app.static_folder, _BLOG_CONTENTS_DIR, 'posts',

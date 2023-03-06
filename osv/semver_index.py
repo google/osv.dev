@@ -39,6 +39,47 @@ def _remove_leading_zero(component):
   return str(int(component))
 
 
+def _coerce_suffix(suffix):
+  """Coerce a potentially invalid semver suffix into a valid semver suffix.
+
+  Removes leading zeros from the pre-release suffix and modifies empty
+  components to allow earlier SemVer specs (specifically 2.0.0-rc.1) to be
+  parsed.
+
+  Empty components are replaced with '-' (i.e 1.0.0-a..0 -> 1.0.0-a.-.0) which
+  mostly preserves ordering."""
+
+  if not suffix:
+    return suffix
+
+  suffix_pattern = re.compile(r'^(-[^+]*)?(\+.*)?(.*)$')
+  match = suffix_pattern.match(suffix)
+
+  pre = ''
+  if match.group(1):
+    pre_components = []
+    for component in match.group(1)[1:].split('.'):
+      if not component:
+        pre_components.append('-')
+      elif component.isdigit():
+        pre_components.append(_remove_leading_zero(component))
+      else:
+        pre_components.append(component)
+    pre = '-' + '.'.join(pre_components)
+
+  build = ''
+  if match.group(2):
+    build_components = []
+    for component in match.group(2)[1:].split('.'):
+      if not component:
+        build_components.append('-')
+      else:
+        build_components.append(component)
+    build = '+' + '.'.join(build_components)
+
+  return pre + build + match.group(3)
+
+
 def coerce(version):
   """Coerce a potentially invalid semver into valid semver."""
   version = _strip_leading_v(version)
@@ -49,7 +90,8 @@ def coerce(version):
 
   return (_remove_leading_zero(match.group(1)) +
           _remove_leading_zero(match.group(2) or '.0') +
-          _remove_leading_zero(match.group(3) or '.0') + match.group(4))
+          _remove_leading_zero(match.group(3) or '.0') +
+          _coerce_suffix(match.group(4)))
 
 
 def is_valid(version):
@@ -95,13 +137,20 @@ def normalize(version):
     pre = 'z' * _FAKE_PRE_WIDTH
     return f'{core_parts}-{pre}'
 
+  pre = normalize_prerelease(version.prerelease)
+  return f'{core_parts}-{pre}'
+
+
+def normalize_prerelease(prerelease):
+  """Normalize semver pre-release version suffix for indexing (to allow for
+  lexical sorting/filtering)."""
   # 4. Precedence for two pre-release versions with the same major, minor, and
   # patch version MUST be determined by comparing each dot separated identifier
   # from left to right until a difference is found as follows:
   #
   # Normalization: Pad the components.
   pre_components = []
-  for component in version.prerelease.split('.'):
+  for component in prerelease.split('.'):
     # 3. Numeric identifiers always have lower precedence than non-numeric
     # identifiers.
     #
@@ -119,6 +168,4 @@ def normalize(version):
   # set, if all of the preceding identifiers are equal.
   #
   # Consistent with lexical sorting after normalization.
-
-  pre = '.'.join(pre_components)
-  return f'{core_parts}-{pre}'
+  return '.'.join(pre_components)

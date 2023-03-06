@@ -44,6 +44,7 @@ type document struct {
 	BaseCPE      string    `datastore:"base_cpe"`
 	Version      string    `datastore:"version"`
 	Commit       []byte    `datastore:"commit"`
+	Tag          string    `datastore:"tag"`
 	When         time.Time `datastore:"when,omitempty"`
 	RepoType     string    `datastore:"repo_type"`
 	RepoAddr     string    `datastore:"repo_addr"`
@@ -53,8 +54,9 @@ type document struct {
 }
 
 type result struct {
-	Page        int                      `datastore:"page"`
-	FileResults []*processing.FileResult `datastore:"file_results,flatten"`
+	Page int      `datastore:"page"`
+	Path []string `datastore:"file_results.path"`
+	Hash [][]byte `datastores:"file_results.hash"`
 }
 
 func newDoc(repoInfo *preparation.Result, hashType string, fileResults []*processing.FileResult) (*document, []*result) {
@@ -63,6 +65,7 @@ func newDoc(repoInfo *preparation.Result, hashType string, fileResults []*proces
 		BaseCPE:      repoInfo.BaseCPE,
 		Version:      repoInfo.Version,
 		Commit:       repoInfo.Commit[:],
+		Tag:          repoInfo.CommitTag,
 		When:         repoInfo.When,
 		RepoType:     repoInfo.Type,
 		RepoAddr:     repoInfo.Addr,
@@ -71,27 +74,34 @@ func newDoc(repoInfo *preparation.Result, hashType string, fileResults []*proces
 		Pages:        1,
 	}
 	if len(fileResults) <= pageSize {
-		return doc, []*result{{FileResults: fileResults}}
+		return doc, []*result{newResult(1, fileResults)}
 	}
 	var r []*result
 	resultLen := len(fileResults)
 	pages := resultLen / pageSize
 	remainder := resultLen % pageSize
 	for i := 0; i < pages; i++ {
-		r = append(r, &result{
-			Page:        i,
-			FileResults: fileResults[i*pageSize : (i+1)*pageSize],
-		})
+		r = append(r, newResult(i, fileResults[i*pageSize:(i+1)*pageSize]))
 	}
 	if remainder != 0 {
-		r = append(r, &result{
-			Page:        pages,
-			FileResults: fileResults[pages*pageSize:],
-		})
+		r = append(r, newResult(pages, fileResults[pages*pageSize:]))
 	}
 	doc.Pages = len(r)
 	return doc, r
 
+}
+
+func newResult(page int, results []*processing.FileResult) *result {
+	var (
+		paths  []string
+		hashes [][]byte
+	)
+
+	for _, r := range results {
+		paths = append(paths, r.Path)
+		hashes = append(hashes, r.Hash)
+	}
+	return &result{Page: page, Path: paths, Hash: hashes}
 }
 
 // Store provides the functionality to check for existing documents

@@ -93,6 +93,20 @@ class AffectedCommit(ndb.Model):
   public = ndb.BooleanProperty()
 
 
+class AffectedCommits(ndb.Model):
+  """AffectedCommits entry."""
+  MAX_COMMITS_PER_ENTITY = 10000
+
+  # The main bug ID.
+  bug_id = ndb.StringProperty()
+  # The commit hash.
+  commits = ndb.BlobProperty(repeated=True, indexed=True)
+  # Whether or not the bug is public.
+  public = ndb.BooleanProperty()
+  # The page for this batch of commits.
+  page = ndb.IntegerProperty(indexed=False)
+
+
 class RegressResult(ndb.Model):
   """Regression results."""
   # The commit hash.

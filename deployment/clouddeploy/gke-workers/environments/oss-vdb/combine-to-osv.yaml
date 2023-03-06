@@ -1,0 +1,14 @@
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: combine-to-osv
+spec:
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          containers:
+          - name: combine-to-osv
+            env:
+            - name: OUTPUT_GCS_BUCKET
+              value: cve-osv-conversion

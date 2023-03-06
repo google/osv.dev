@@ -22,6 +22,9 @@ The flags are:
 	  --gcp_logging_project
 		The GCP project ID to utilise for Cloud Logging. Set to the empty string to log to stdout
 
+	  --validate
+	        Perform remote validation of repositories and only include ones that validate successfully
+
 	  --verbose
 		Output additional telemetry to stdout
 */
@@ -50,8 +53,11 @@ import (
 	"text/template"
 
 	"cloud.google.com/go/logging"
+
 	"github.com/google/osv/vulnfeeds/cves"
+	"github.com/google/osv/vulnfeeds/git"
 	"github.com/google/osv/vulnfeeds/utility"
+
 	"golang.org/x/exp/slices"
 )
 
@@ -77,15 +83,18 @@ type CPE23Item struct {
 	Name string `xml:"name,attr"`
 }
 
+// VendorProduct contains a CPE's Vendor and Product strings.
 type VendorProduct struct {
 	Vendor  string
 	Product string
 }
 
+// Helper for JSON rendering of a map with a struct key.
 func (vp VendorProduct) MarshalText() (text []byte, err error) {
 	return []byte(vp.Vendor + ":" + vp.Product), nil
 }
 
+// VendorProductToRepoMap maps a VendorProduct to a repo URL.
 type VendorProductToRepoMap map[VendorProduct][]string
 
 const (
@@ -184,6 +193,7 @@ var (
 	OutputDir          = flag.String("output_dir", OutputDirDefault, "Directory to output cpe_product_to_repo.json and cpe_reference_description_frequency.csv in")
 	GCPLoggingProject  = flag.String("gcp_logging_project", projectId, "GCP project ID to use for logging, set to an empty string to log locally only")
 	DebianMetadataPath = flag.String("debian_metadata_path", "", "Path to Debian copyright metadata")
+	Validate           = flag.Bool("validate", true, "Attempt to validate the repository is communicable")
 	Verbose            = flag.Bool("verbose", false, "Output some telemetry to stdout during execution")
 )
 
@@ -221,9 +231,9 @@ func outputProductToRepoMap(prm VendorProductToRepoMap, f io.Writer) error {
 	}
 
 	if *Verbose {
-		fmt.Printf("Loaded information about %d products, %d do not have repos\n", len(prm), productsWithoutRepos)
+		fmt.Printf("Output information about %d application products, %d do not have repos\n", len(prm), productsWithoutRepos)
 	}
-	Logger.Infof("Loaded information about %d application products, %d do not have repos", len(prm), productsWithoutRepos)
+	Logger.Infof("Output information about %d application products, %d do not have repos", len(prm), productsWithoutRepos)
 	return nil
 }
 
@@ -255,9 +265,9 @@ func outputDescriptionFrequency(df map[string]int, f io.Writer) error {
 	}
 
 	if *Verbose {
-		fmt.Printf("Seen %d descriptions \n", len(df))
+		fmt.Printf("Seen %d reference descriptions\n", len(df))
 	}
-	Logger.Infof("Seen %d descriptions", len(df))
+	Logger.Infof("Seen %d distinct reference descriptions", len(df))
 	return nil
 }
 
@@ -369,7 +379,7 @@ func MaybeGetSourceRepoFromDebian(mdir string, pkg string) string {
 	return ""
 }
 
-// Analyze CPE Dictionary
+// Analyze CPE Dictionary and return a product-to-repo map and a reference description frequency table.
 func analyzeCPEDictionary(d CPEDict) (ProductToRepo VendorProductToRepoMap, DescriptionFrequency map[string]int) {
 	ProductToRepo = make(VendorProductToRepoMap)
 	DescriptionFrequency = make(map[string]int)
@@ -391,37 +401,44 @@ func analyzeCPEDictionary(d CPEDict) (ProductToRepo VendorProductToRepoMap, Desc
 				Logger.Infof("Disregarding %q for %q/%q (%s) because %v", r.URL, CPE.Vendor, CPE.Product, r.Description, err)
 				continue
 			}
-			// Disregard the repos we know we don't like.
+			// Disregard the repos we know we don't like (by regex).
 			matched, _ := regexp.MatchString(InvalidRepoRegex, repo)
 			if matched {
 				Logger.Infof("Disliking %q for %q/%q (%s) (matched regexp)", repo, CPE.Vendor, CPE.Product, r.Description)
 				continue
 			}
+			// Disregard the repos we know we don't like (by denylist).
 			if slices.Contains(InvalidRepos, repo) {
 				Logger.Infof("Disliking %q for %q/%q (%s)", repo, CPE.Vendor, CPE.Product, r.Description)
 				continue
 			}
+			// If we already have an entry for this repo, don't add it again.
 			if slices.Contains(ProductToRepo[VendorProduct{CPE.Vendor, CPE.Product}], repo) {
 				continue
 			}
 			Logger.Infof("Liking %q for %q/%q (%s)", repo, CPE.Vendor, CPE.Product, r.Description)
 			ProductToRepo[VendorProduct{CPE.Vendor, CPE.Product}] = append(ProductToRepo[VendorProduct{CPE.Vendor, CPE.Product}], repo)
+			// If this was queued for trying to find via Debian, and subsequently found, dequeue it.
 			if *DebianMetadataPath != "" {
 				delete(MaybeTryDebian, VendorProduct{CPE.Vendor, CPE.Product})
 			}
 		}
 		// If we've arrived to this point, we've exhausted the
-		// references  and not calculated any repos for the product,
+		// references and not calculated any repos for the product,
 		// flag for trying Debian afterwards.
 		// We may encounter another CPE item that *does* have a viable reference in the meantime.
 		if len(ProductToRepo[VendorProduct{CPE.Vendor, CPE.Product}]) == 0 && *DebianMetadataPath != "" {
 			MaybeTryDebian[VendorProduct{CPE.Vendor, CPE.Product}] = true
 		}
 	}
-	// Try any Debian possible ones as a last resort
+	// Try any Debian possible ones as a last resort.
 	if len(MaybeTryDebian) > 0 && *DebianMetadataPath != "" {
+		Logger.Infof("Trying to derive repos from Debian for %d products", len(MaybeTryDebian))
+		// This is likely to be time consuming, so give an impatient log watcher something to gauge progress by.
+		entryCount := 0
 		for vp, _ := range MaybeTryDebian {
-			Logger.Infof("Trying to derive a repo from Debian for %q/%q", vp.Vendor, vp.Product)
+			entryCount++
+			Logger.Infof("%d/%d: Trying to derive a repo from Debian for %q/%q", entryCount, len(MaybeTryDebian), vp.Vendor, vp.Product)
 			repo := MaybeGetSourceRepoFromDebian(*DebianMetadataPath, vp.Product)
 			if repo != "" {
 				Logger.Infof("Derived repo: %s for %q/%q", repo, vp.Vendor, vp.Product)
@@ -438,6 +455,27 @@ func analyzeCPEDictionary(d CPEDict) (ProductToRepo VendorProductToRepoMap, Desc
 	return ProductToRepo, DescriptionFrequency
 }
 
+// validateRepos takes a VendorProductToRepoMap and removes any entries where the repository fails remote validation.
+func validateRepos(prm VendorProductToRepoMap) (validated VendorProductToRepoMap) {
+	validated = make(VendorProductToRepoMap)
+	Logger.Infof("Validating repos for %d products", len(prm))
+	// This is likely to be time consuming, so give an impatient log watcher something to gauge progress by.
+	entryCount := 0
+	for vp := range prm {
+		entryCount++
+		// As a side-effect, this also omits any with no repos.
+		for _, r := range prm[vp] {
+			if !git.ValidRepo(r) {
+				Logger.Infof("%d/%d: %q is not a valid repo for %q/%q", entryCount, len(prm), r, vp.Vendor, vp.Product)
+				continue
+			}
+			validated[vp] = append(validated[vp], r)
+		}
+	}
+	Logger.Infof("Before validation: %d, after: %d. Delta: %d", len(prm), len(validated), len(prm)-len(validated))
+	return validated
+}
+
 func main() {
 	flag.Usage = func() {
 		fmt.Fprint(flag.CommandLine.Output(), "Utility to analyze NVD CPE Dictionary\n\n")
@@ -449,7 +487,7 @@ func main() {
 	if *GCPLoggingProject != "" {
 		client, err := logging.NewClient(context.Background(), *GCPLoggingProject)
 		if err != nil {
-			log.Fatalf("Failed to create client: %v", err)
+			log.Fatalf("Failed to create loggin client: %v", err)
 		}
 		defer client.Close()
 		Logger.GCloudLogger = client.Logger("cperepos")
@@ -461,6 +499,9 @@ func main() {
 	}
 
 	productToRepo, descriptionFrequency := analyzeCPEDictionary(CPEDictionary)
+	if *Validate {
+		productToRepo = validateRepos(productToRepo)
+	}
 
 	mappingFile, err := os.Create(filepath.Join(*OutputDir, "cpe_product_to_repo.json"))
 	if err != nil {

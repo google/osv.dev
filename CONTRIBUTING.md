@@ -30,13 +30,16 @@ This project follows
 ## Contributing code
 
 ### Prerequisites
+
 You must install:
-1. Git
-1. Python 3.8+
-1. [Make](https://www.gnu.org/software/make/)
-1. [Pipenv](https://pipenv.pypa.io/en/latest/)
-1. [Google Cloud SDK](https://cloud.google.com/sdk)
-1. [Hugo](https://gohugo.io/installation/)
+
+1.  Git
+1.  Python 3.8+
+1.  [Make](https://www.gnu.org/software/make/)
+1.  [Pipenv](https://pipenv.pypa.io/en/latest/)
+1.  [Google Cloud SDK](https://cloud.google.com/sdk)
+1.  [Hugo](https://gohugo.io/installation/)
+1.  [Terraform](https://developer.hashicorp.com/terraform/downloads)
 
 Then you can set up the development environment by cloning the OSV repo and
 installing the Pipfile dependencies.
@@ -50,18 +53,16 @@ $ pipenv shell
 ```
 
 ### Running tests
-Certain tests require you to auth with the Google Cloud SDK and to install
-the Datastore Emulator:
+
+Certain tests require you to auth with the Google Cloud SDK and to install the
+Datastore Emulator:
 
 ```shell
 $ gcloud auth login --update-adc
 $ gcloud components install beta cloud-datastore-emulator
 ```
 
-To run tests:
-```shell
-$ make all-tests
-```
+To run tests: `shell $ make all-tests`
 
 #### Test result generation
 
@@ -80,16 +81,14 @@ $ TESTS_GENERATE=1 make all-tests
 ```
 
 ### Linting and formatting
+
 To lint your code, run
 
 ```shell
 $ make lint
 ```
 
-To format your code, run
-```shell
-$ yapf -i <file>.py
-```
+To format your code, run `shell $ yapf -i <file>.py`
 
 ### Running local UI and API instances (maintainers only)
 
@@ -102,13 +101,25 @@ $ make run-appengine
 
 #### API
 
-Running a local instance of the API server requires service account
-credentials.
+Running a local instance of the API server requires service account credentials.
 
-You will need to download a service account key for `esp-test@oss-vdb.iam.gserviceaccount.com` from
-<https://cloud.google.com/console/iam-admin/serviceaccounts?project=oss-vdb>. Keep this safe.
+You will need to download a service account key for
+`esp-test@oss-vdb.iam.gserviceaccount.com` from
+<https://cloud.google.com/console/iam-admin/serviceaccounts?project=oss-vdb>.
+Keep this safe.
 
 ```shell
 $ gcloud auth login --update-adc
 $ make SERVICE_ACCOUNT=/path/to/service_account.json run-api-server
 ```
+## Contributing Data
+
+Data contributions are also welcome! 
+
+If you a work with a project such as a Linux distribution and would like to contribute your security advisories, please follow these steps.
+
+1. Open an [issue](https://github.com/google/osv.dev/issues). Let us know about your project and we can help you figure out the remaining steps. Please tag the issue `datasource` so we can properly triage the issue. 
+
+2. Refer to the [OSV Schema](https://ossf.github.io/osv-schema/) documentation for information on how to properly format the data so it can be accepted. 
+
+3. Data can be supplied either through a public Git repository or a public GCS bucket. 

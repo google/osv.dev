@@ -46,4 +46,4 @@ Deployment is handled through terraform.
 `api_descriptor.pb` is symlinked to inside `deployment/terraform/environments/oss-vdb-test/api/`,
 Make any desired changes to `api_config.tftpl` in same folder.
 
-Then use `terraform plan` and `terraform apply` to deploy.
+`terraform plan` and `terraform apply` are automatically run on pushes to the master branch.

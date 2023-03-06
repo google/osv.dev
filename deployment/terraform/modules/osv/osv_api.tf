@@ -111,6 +111,8 @@ resource "google_cloud_run_service" "api" {
     percent         = 100
     latest_revision = true
   }
+
+  autogenerate_revision_name = true
 }
 
 resource "google_cloud_run_domain_mapping" "api" {

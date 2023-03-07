@@ -62,7 +62,7 @@ def aestnow() -> datetime:
   # - Then make datetime timezone unaware again to keep
   #   compatibility with ndb
   return utcnow().replace(tzinfo=datetime.timezone.utc).astimezone(
-      datetime.timezone(datetime.timedelta(hours=11))).replace(tzinfo=None)
+      datetime.timezone(datetime.timedelta(hours=10))).replace(tzinfo=None)
 
 
 def utcnow():

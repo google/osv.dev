@@ -22,8 +22,7 @@ from flask import abort
 from flask import current_app
 from flask import Blueprint
 from flask import make_response
-from flask import redirect
-from flask import render_template
+from flask import redirect from flask import render_template
 from flask import request
 from flask import url_for
 from flask import send_from_directory
@@ -148,6 +147,9 @@ def blog_post_static_files(blog_name: str, file_name: str):
 
 
 @blueprint.route('/about')
+def about():
+  return redirect('/faq')
+
 @blueprint.route('/faq')
 def faq():
   return render_template('faq.html')

@@ -56,8 +56,9 @@ def _is_vulnerability_file(source_repo, file_path):
   return file_path.endswith(source_repo.extension)
 
 
-def sydnow() -> datetime:
-  return utcnow().astimezone(tz.gettz('Australia/Sydney'))
+def aestnow() -> datetime:
+  """Get the current AEST time"""
+  return utcnow().astimezone(tz.gettz('AEST'))
 
 
 def utcnow():
@@ -199,8 +200,9 @@ class Importer:
   def schedule_regular_updates(self, repo, source_repo):
     """Schedule regular updates."""
     if (source_repo.last_update_date and
-        # OSV devs are mostly in located in australia, so only schedule update near midnight sydney time
-        source_repo.last_update_date >= sydnow().date()):
+        # OSV devs are mostly in located in australia,
+        # so only schedule update near midnight sydney time
+        source_repo.last_update_date >= aestnow().date()):
       return
 
     for bug in osv.Bug.query(
@@ -211,7 +213,7 @@ class Importer:
 
     # Re-compute existing Bugs for a period of time, as upstream changes may
     # affect results.
-    cutoff_time = (sydnow() - datetime.timedelta(days=_BUG_REDO_DAYS))
+    cutoff_time = (aestnow() - datetime.timedelta(days=_BUG_REDO_DAYS))
     query = osv.Bug.query(osv.Bug.status == osv.BugStatus.PROCESSED,
                           osv.Bug.source == source_repo.name,
                           osv.Bug.timestamp >= cutoff_time)
@@ -224,7 +226,7 @@ class Importer:
 
       self._request_analysis(bug, source_repo, repo)
 
-    source_repo.last_update_date = sydnow().date()
+    source_repo.last_update_date = aestnow().date()
     source_repo.put()
 
   def _sync_from_previous_commit(self, source_repo, repo):

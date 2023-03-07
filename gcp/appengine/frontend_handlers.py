@@ -147,9 +147,10 @@ def blog_post_static_files(blog_name: str, file_name: str):
   return send_from_directory(path, file_name)
 
 
+@blueprint.route('/faq')
 @blueprint.route('/about')
-def about():
-  return render_template('about.html')
+def faq():
+  return render_template('faq.html')
 
 
 @blueprint.route('/list')

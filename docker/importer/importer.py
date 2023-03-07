@@ -58,7 +58,13 @@ def _is_vulnerability_file(source_repo, file_path):
 
 def aestnow() -> datetime:
   """Get the current AEST time"""
-  return utcnow().astimezone(tz.gettz('AEST'))
+  # - First make datetime timezone aware
+  # - Then set timezone to AEST without DST (+10)
+  # - Then make datetime timezone unaware again to keep
+  #   compatibility with ndb
+  return utcnow().replace(tzinfo=tz.UTC).astimezone(
+      tz.tzoffset('AEST_NO_DST',
+                  datetime.timedelta(hours=10))).replace(tzinfo=None)
 
 
 def utcnow():

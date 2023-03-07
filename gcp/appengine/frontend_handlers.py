@@ -26,6 +26,9 @@ from flask import redirect
 from flask import render_template
 from flask import request
 from flask import url_for
+from flask import send_from_directory
+from werkzeug.utils import safe_join
+
 import markdown2
 from urllib import parse
 
@@ -120,12 +123,28 @@ def blog_rss():
 def blog_post(blog_name):
   if not _VALID_BLOG_NAME.match(blog_name):
     abort(404)
-    return None
+
+  path = safe_join('posts', blog_name, 'index.html')
+  if not path:
+    abort(404)
 
   return render_template(
       'blog_post.html',
-      content=_load_blog_content(
-          os.path.join('posts', blog_name, 'index.html')))
+      content=_load_blog_content(safe_join('posts', blog_name, 'index.html')))
+
+
+@blueprint.route('/blog/posts/<blog_name>/<file_name>', strict_slashes=False)
+def blog_post_static_files(blog_name: str, file_name: str):
+  """Return static files under blog post directories"""
+  if not _VALID_BLOG_NAME.match(blog_name):
+    abort(404)
+
+  path = safe_join(current_app.static_folder, _BLOG_CONTENTS_DIR, 'posts',
+                   blog_name)
+  if not path:
+    abort(404)
+
+  return send_from_directory(path, file_name)
 
 
 @blueprint.route('/about')

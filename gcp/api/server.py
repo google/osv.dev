@@ -163,9 +163,9 @@ def determine_version(version_query: osv_service_v1_pb2.VersionQuery,
     match_futures.append(match)
   results = []
   for f in match_futures:
-    match = f.result()
-    if match.score != 0.0:
-      results.append(match)
+    version_match = f.result()
+    if version_match.score != 0.0:
+      results.append(version_match)
   if len(results) == 0:
     context.abort(grpc.StatusCode.NOT_FOUND, 'no matches found')
     return None
@@ -191,10 +191,16 @@ def compare_hashes_from_commit(
           break
       total_files += 1
   score = matching_hashes / total_files if total_files != 0 else 0.0
-  return osv_service_v1_pb2.VersionMatch(
-      type=osv_service_v1_pb2.VersionMatch.VERSION,
-      value=idx.version,
-      score=score)
+  version_match = osv_service_v1_pb2.VersionMatch(
+      score=score,
+      repo_info=osv_service_v1_pb2.VersionRepositoryInformation(
+          type=osv_service_v1_pb2.VersionRepositoryInformation.GIT,
+          address=idx.repo_addr,
+          commit=idx.commit,
+          version=idx.version,
+      ),
+  )
+  return version_match
 
 
 def version_hashes_key(parent_key: ndb.Key, commit: bytes, hash_type: str,

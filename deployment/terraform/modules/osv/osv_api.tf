@@ -1,12 +1,6 @@
 # The OSV API on Cloud Run
 # Adapted from https://github.com/hashicorp/terraform-provider-google/issues/5528#issuecomment-1136040976
 
-data "google_container_registry_image" "api_backend" {
-  project = var.project_id
-  name    = "osv-server"
-  tag     = var.api_backend_image_tag
-}
-
 resource "google_cloud_run_service" "api_backend" {
   project  = var.project_id
   name     = "osv-grpc-backend"
@@ -15,15 +9,29 @@ resource "google_cloud_run_service" "api_backend" {
   template {
     spec {
       containers {
-        image = data.google_container_registry_image.api_backend.image_url
+        image = "us-docker.pkg.dev/cloudrun/container/hello:latest" # Placeholder image.
       }
     }
+  }
+
+  lifecycle {
+    ignore_changes = [
+      # To be managed by Cloud Deploy.
+      template,
+    ]
   }
 
   traffic {
     percent         = 100
     latest_revision = true
   }
+}
+
+variable "_api_descriptor_file" {
+  # This isn't actually sensitive, but it's outputted as a massive base64 string which really floods the plan output.
+  sensitive = true
+  type      = string
+  default   = "api/api_descriptor.pb"
 }
 
 resource "google_endpoints_service" "grpc_service" {
@@ -35,7 +43,7 @@ resource "google_endpoints_service" "grpc_service" {
       service_name = var.api_url,
       backend_url  = replace(google_cloud_run_service.api_backend.status[0].url, "https://", "grpcs://")
   })
-  protoc_output_base64 = filebase64("api/api_descriptor.pb")
+  protoc_output_base64 = filebase64(var._api_descriptor_file)
 }
 
 resource "google_project_service" "grpc_service_api" {
@@ -45,7 +53,7 @@ resource "google_project_service" "grpc_service_api" {
 
 
 data "external" "esp_version" {
-  program = ["bash", "${path.module}/scripts/esp_full_version"]
+  program = ["bash", "${path.module}/scripts/esp_full_version", "${var.esp_version}"]
 }
 
 resource "null_resource" "grpc_proxy_image" {
@@ -62,7 +70,8 @@ resource "null_resource" "grpc_proxy_image" {
       bash ${path.module}/scripts/gcloud_build_image \
         -s ${var.api_url} \
         -c ${google_endpoints_service.grpc_service.config_id} \
-        -p ${var.project_id}
+        -p ${var.project_id} \
+        -v ${var.esp_version}
     EOS
   }
 }

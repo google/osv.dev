@@ -20,7 +20,7 @@ import json
 import logging
 import os
 import threading
-from typing import Tuple, Optional
+from typing import List, Tuple, Optional
 
 from google.cloud import ndb
 from google.cloud import pubsub_v1
@@ -61,7 +61,7 @@ def utcnow():
 
 
 def replace_importer_log(client: storage.Client, source_name: str,
-                         bucket_name: str, import_failure_logs: [str]):
+                         bucket_name: str, import_failure_logs: List[str]):
   """Replace the public importer logs with the new one."""
   bucket: storage.Bucket = client.bucket(bucket_name)
   upload_string = '--- ' + datetime.datetime.utcnow().isoformat() + ' ---\n'

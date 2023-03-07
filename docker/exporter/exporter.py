@@ -91,7 +91,7 @@ class Exporter:
     zip_path = os.path.join(tmp_dir, 'all.zip')
     with zipfile.ZipFile(zip_path, 'w', zipfile.ZIP_DEFLATED) as zip_file:
       for bug in osv.Bug.query(osv.Bug.ecosystem == ecosystem):
-        if not bug.public or not bug.status == osv.BugStatus.PROCESSED:
+        if not bug.public or bug.status == osv.BugStatus.UNPROCESSED:
           continue
 
         file_path = os.path.join(tmp_dir, bug.id() + '.json')

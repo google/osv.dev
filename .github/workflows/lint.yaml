@@ -13,7 +13,15 @@
 # limitations under the License.
 
 name: lint
-on: [pull_request]
+
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+    # The branches below must be a subset of the branches above
+    branches: [ master ]
+  merge_group:
+    branches: [ master ]
 
 permissions: read-all
 
@@ -34,5 +42,7 @@ jobs:
         uses: actions/setup-go@v3
         with:
           go-version: '>=1.18.0'
+      - name: Set up terraform
+        uses: hashicorp/setup-terraform@v2
       - name: Run pylint and yapf, go vet
         run: ./tools/lint_and_format.sh

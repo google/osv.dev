@@ -16,15 +16,17 @@
 from urllib.parse import quote
 
 PURL_ECOSYSTEMS = {
+    'Alpine': 'apk',
     'crates.io': 'cargo',
     'Debian': 'deb',
-    'Hex': 'hex',
     'Go': 'golang',
+    'Hex': 'hex',
     'Maven': 'maven',
-    'NuGet': 'nuget',
     'npm': 'npm',
-    'Packagist': 'composer',
+    'NuGet': 'nuget',
     'OSS-Fuzz': 'generic',
+    'Packagist': 'composer',
+    'Pub': 'pub',
     'PyPI': 'pypi',
     'RubyGems': 'gem',
 }
@@ -48,8 +50,12 @@ def package_to_purl(ecosystem, package_name):
     # PURLs use / to separate the group ID and the artifact ID.
     package_name = package_name.replace(':', '/', 1)
 
-  if purl_type == 'deb':
+  if purl_type == 'deb' and ecosystem == 'Debian':
     package_name = 'debian/' + package_name
+    suffix = '?arch=source'
+
+  if purl_type == 'apk' and ecosystem == 'Alpine':
+    package_name = 'alpine/' + package_name
     suffix = '?arch=source'
 
   return f'pkg:{purl_type}/{_url_encode(package_name)}{suffix}'

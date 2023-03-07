@@ -1,9 +1,10 @@
 ---
 title: "Automating and Scaling Vex Generation"
-date: 2023-03-06T09:00:00Z
+date: 2023-03-05T01:00:00Z
 draft: false
 author: Brandon Lum, Oliver Chang, and Meder Kydyraliev
 ---
+
 If you've recently been in the space of vulnerability management and the discussions around the White House [Executive Order on Improving the Nation's Cybersecurity (EO)](https://www.whitehouse.gov/briefing-room/presidential-actions/2021/05/12/executive-order-on-improving-the-nations-cybersecurity/), you're probably familiar with concepts such as Software Bill of Materials (SBOM) and Vulnerability Exploitability eXchange (VEX).
 
 A VEX document/statement—a form of a security advisory that indicates whether a product or products are affected by a known vulnerability or vulnerabilities—provides a great starting point in prioritizing vulnerability response and automating risk evaluation of software, especially for software consumers. There has already been a lot of coverage on consuming and using VEX for vulnerability management. However, there has not been much conversation around the generation of VEX documents. For producers, the process of creating a VEX statement today is largely a manual and cost-intensive process.
@@ -25,17 +26,17 @@ So how can we make this better?
 
 Say you're developing an application Foo, and a vulnerability CVE-2023-XXXX is reported in Package C. You run a vulnerability scanner on your dependency graph or SBOM and see the vulnerability reported. Now you have to triage the vulnerability and either patch, or create a VEX statement if the vulnerability does not actually affect the application. 
 
-![Image diagrams a dependency tree for application Foo. Foo depends on Packages A and B, which both depend on C. Package C is affected by vulnerability CVE-2023-XXXX. The image asks if Application Foo is vulnerable to CVE-2023-XXXX](/gcp/appengine/blog/resources/_gen/images/1st_vex_image.png "Dependency tree for aplication Foo")
+![Image diagrams a dependency tree for application Foo. Foo depends on Packages A and B, which both depend on C. Package C is affected by vulnerability CVE-2023-XXXX. The image asks if Application Foo is vulnerable to CVE-2023-XXXX](1st_vex_image.png "Dependency tree for application Foo")
 
 Package C is a transitive dependency of application Foo, but a direct dependency of Package A and B. If the authors of Package A and Package B ran a vulnerability scanner on their own dependencies, they would have also seen a vulnerability match on Package C. 
 
 If Package A and B both publish a VEX statement declaring that they aren't directly affected by the vulnerability in Package C, then a Foo application developer could conclude that their project is similarly unaffected.
 
-![This image again shows the dependency tree for application Foo. This time there are two text boxes that indicate the Packages A and B both have VEX statements that say their packages are not impacted by CVE-2023-XXXX. Because these intermediate VEX statements declare the packages unaffected, the final VEX statement for application Foo will also have a VEX statement that states Foo is unaffected by CVE-2023-XXXX](/gcp/appengine/blog/resources/_gen/images/2nd_vex_image.png "Intermediate VEX statements, final VEX unaffected")
+![This image again shows the dependency tree for application Foo. This time there are two text boxes that indicate the Packages A and B both have VEX statements that say their packages are not impacted by CVE-2023-XXXX. Because these intermediate VEX statements declare the packages unaffected, the final VEX statement for application Foo will also have a VEX statement that states Foo is unaffected by CVE-2023-XXXX](2nd_vex_image.png "Intermediate VEX statements, final VEX unaffected")
 
 If at least one path to the vulnerable Package C has a VEX statement indicating that it's vulnerable, or does not provide an intermediate VEX, then the default should be to assume Foo is affected. Even if this does not turn out to be the case, the amount of investigation the authors of Foo have to do is reduced by every VEX statement that reports being unaffected. 
 
-![This image again shows the dependency tree for application Foo. This time there is a text box that indicates that Package A has a VEX statement that say their package is not impacted by CVE-2023-XXXX. Package B does not have a VEX statement and is assumed to be impacted. Because we don't know the status of Package B, Foo is assumed to be affected by CVE-2023-XXXX and the Final VEX statement reflects that.](/gcp/appengine/blog/resources/_gen/images/3rd_vex_image.png "Missing an intermediate VEX statement, final VEX shows Foo affected")
+![This image again shows the dependency tree for application Foo. This time there is a text box that indicates that Package A has a VEX statement that say their package is not impacted by CVE-2023-XXXX. Package B does not have a VEX statement and is assumed to be impacted. Because we don't know the status of Package B, Foo is assumed to be affected by CVE-2023-XXXX and the Final VEX statement reflects that.](3rd_vex_image.png "Missing an intermediate VEX statement, final VEX shows Foo affected")
 
 ## Intermediate VEX format and storage
 

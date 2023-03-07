@@ -76,50 +76,14 @@ func InScopeGitRepo(repoURL string) bool {
 	return true
 }
 
-<<<<<<< Updated upstream
-func GetRepoDir(repoURL string) string {
-	repobasedir := "/tmp/repos" // TODO: flag and parameterise
-	parsedURL, err := url.Parse(repoURL)
-	if err != nil {
-		return ""
-	}
-	return path.Join(repobasedir, parsedURL.Hostname(), parsedURL.Path)
-}
-
-// Either clones the repository or returns the one previously cloned.
-func GetRepo(repoURL string) (r *git.Repository, e error) {
-	repodir := GetRepoDir(repoURL)
-	// TODO: reorder to open, then clone, once behaviour and failure modes understood
-	Logger.Infof("Cloning %s", repoURL)
-	r, err := git.PlainClone(repodir, false, &git.CloneOptions{
-		URL: repoURL,
-	})
-	if err != nil && err != git.ErrRepositoryAlreadyExists {
-		return nil, err
-	}
-	r, err = git.PlainOpen(repodir)
-	if err != nil {
-		return nil, err
-	}
-	return r, nil
-}
-
-// Examines repos and tries to convert version tags to commits
-func GitVersionToCommit(versions cves.VersionInfo, repos []string) (v cves.VersionInfo, e error) {
-=======
 // Examines repos and tries to convert versions to commits by treating them as Git tags.
 // Takes a cves.VersionInfo with AffectedVersions and no FixCommits and attempts to add FixCommits.
 func GitVersionToCommit(versions cves.VersionInfo, repos []string, cache git.RepoTagsCache) (v cves.VersionInfo, e error) {
->>>>>>> Stashed changes
 	// versions is a VersionInfo with AffectedVersions and no FixCommits
 	// v is a VersionInfo with FixCommits included
 	v = versions
 	for _, repo := range repos {
-<<<<<<< Updated upstream
-		r, err := GetRepo(repo)
-=======
 		normalizedTags, err := git.NormalizeRepoTags(repo, cache)
->>>>>>> Stashed changes
 		if err != nil {
 			Logger.Warnf("Failed to normalize tags for %s: %v", repo, err)
 			continue
@@ -175,11 +139,7 @@ func GitVersionToCommit(versions cves.VersionInfo, repos []string, cache git.Rep
 }
 
 // Takes an NVD CVE record and outputs an OSV file in the specified directory.
-<<<<<<< Updated upstream
-func CVEToOSV(CVE cves.CVEItem, repos []string, directory string) error {
-=======
 func CVEToOSV(CVE cves.CVEItem, repos []string, cache git.RepoTagsCache, directory string) error {
->>>>>>> Stashed changes
 	CPEs := cves.CPEs(CVE)
 	CPE, err := cves.ParseCPE(CPEs[0])
 	if err != nil {
@@ -194,11 +154,7 @@ func CVEToOSV(CVE cves.CVEItem, repos []string, cache git.RepoTagsCache, directo
 			return fmt.Errorf("No affected ranges for %s for %q, and no repos to try and convert %+v to tags with", CVE.CVE.CVEDataMeta.ID, CPE.Product, versions.AffectedVersions)
 		}
 		Logger.Infof("[%s]: Trying to convert version tags %+v to commits using %v", CVE.CVE.CVEDataMeta.ID, versions.AffectedVersions, repos)
-<<<<<<< Updated upstream
-		versions, err = GitVersionToCommit(versions, repos)
-=======
 		versions, err = GitVersionToCommit(versions, repos, cache)
->>>>>>> Stashed changes
 	}
 
 	affected := vulns.Affected{}
@@ -381,11 +337,7 @@ func main() {
 
 		Metrics.CVEsForKnownRepos++
 
-<<<<<<< Updated upstream
-		err := CVEToOSV(cve, ReposForCVE[cve.CVE.CVEDataMeta.ID], *outDir)
-=======
 		err := CVEToOSV(cve, ReposForCVE[cve.CVE.CVEDataMeta.ID], RepoTagsCache, *outDir)
->>>>>>> Stashed changes
 		if err != nil {
 			Logger.Warnf("Failed to generate an OSV record for %s: %+v", cve.CVE.CVEDataMeta.ID, err)
 			continue

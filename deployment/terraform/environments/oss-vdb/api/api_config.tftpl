@@ -30,6 +30,7 @@ backend:
   rules:
     - selector: "*"
       address: ${backend_url}
+      deadline: 60
 documentation:
   summary: >
     OSV is a vulnerability database for open source projects. It exposes an API

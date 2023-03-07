@@ -13,7 +13,6 @@
 # limitations under the License.
 """Handlers for the OSV web frontend."""
 
-from collections import defaultdict
 import json
 import os
 import math

@@ -4,6 +4,7 @@ date: 2023-03-05T01:00:00Z
 draft: false
 author: Brandon Lum, Oliver Chang, and Meder Kydyraliev
 ---
+
 If you've recently been in the space of vulnerability management and the discussions around the White House [Executive Order on Improving the Nation's Cybersecurity (EO)](https://www.whitehouse.gov/briefing-room/presidential-actions/2021/05/12/executive-order-on-improving-the-nations-cybersecurity/), you're probably familiar with concepts such as Software Bill of Materials (SBOM) and Vulnerability Exploitability eXchange (VEX).
 
 A VEX document/statement—a form of a security advisory that indicates whether a product or products are affected by a known vulnerability or vulnerabilities—provides a great starting point in prioritizing vulnerability response and automating risk evaluation of software, especially for software consumers. There has already been a lot of coverage on consuming and using VEX for vulnerability management. However, there has not been much conversation around the generation of VEX documents. For producers, the process of creating a VEX statement today is largely a manual and cost-intensive process.

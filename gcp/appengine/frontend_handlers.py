@@ -150,6 +150,7 @@ def blog_post_static_files(blog_name: str, file_name: str):
 def about():
   return redirect('/faq')
 
+
 @blueprint.route('/faq')
 def faq():
   return render_template('faq.html')

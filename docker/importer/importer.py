@@ -27,7 +27,6 @@ from google.cloud import pubsub_v1
 from google.cloud import storage
 from google.cloud import logging as google_logging
 import pygit2
-from dateutil import tz
 
 import osv
 
@@ -63,8 +62,7 @@ def aestnow() -> datetime:
   # - Then make datetime timezone unaware again to keep
   #   compatibility with ndb
   return utcnow().replace(tzinfo=tz.UTC).astimezone(
-      tz.tzoffset('AEST_NO_DST',
-                  datetime.timedelta(hours=10))).replace(tzinfo=None)
+      datetime.timezone(datetime.timedelta(hours=11))).replace(tzinfo=None)
 
 
 def utcnow():

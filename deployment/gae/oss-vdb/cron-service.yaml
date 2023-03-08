@@ -12,7 +12,7 @@ basic_scaling:
 instance_class: B4_1G
 
 env_variables:
-  REDISHOST: 10.126.238.68
+  REDISHOST: 10.85.52.228
   REDISPORT: 6379
 
 vpc_access_connector:

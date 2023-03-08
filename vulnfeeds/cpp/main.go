@@ -77,15 +77,16 @@ func InScopeGitRepo(repoURL string) bool {
 }
 
 // Examines repos and tries to convert versions to commits by treating them as Git tags.
-// Takes a cves.VersionInfo with AffectedVersions and no FixCommits and attempts to add FixCommits.
-func GitVersionToCommit(versions cves.VersionInfo, repos []string, cache git.RepoTagsCache) (v cves.VersionInfo, e error) {
+// Takes a CVE string (for logging), cves.VersionInfo with AffectedVersions and
+// no FixCommits and attempts to add FixCommits.
+func GitVersionToCommit(CVE string, versions cves.VersionInfo, repos []string, cache git.RepoTagsCache) (v cves.VersionInfo, e error) {
 	// versions is a VersionInfo with AffectedVersions and no FixCommits
 	// v is a VersionInfo with FixCommits included
 	v = versions
 	for _, repo := range repos {
 		normalizedTags, err := git.NormalizeRepoTags(repo, cache)
 		if err != nil {
-			Logger.Warnf("Failed to normalize tags for %s: %v", repo, err)
+			Logger.Warnf("[%s]: Failed to normalize tags for %s: %v", CVE, repo, err)
 			continue
 		}
 		for _, av := range versions.AffectedVersions {
@@ -96,39 +97,39 @@ func GitVersionToCommit(versions cves.VersionInfo, repos []string, cache git.Rep
 			if av.Fixed != "" {
 				normalizedFixed, err := cves.NormalizeVersion(av.Fixed)
 				if err != nil {
-					Logger.Warnf("Failed to normalize fixed version %q: %v", av.Fixed, err)
+					Logger.Warnf("[%s]: Failed to normalize fixed version %q: %v", CVE, av.Fixed, err)
 					continue
 				}
 				// Try a straight out match first.
 				// TODO try fuzzy prefix matches also.
 				normalizedTag, ok := normalizedTags[normalizedFixed]
 				if !ok {
-					Logger.Warnf("Failed to find a commit for fixed version %q normalized as %q", av.Fixed, normalizedFixed)
+					Logger.Warnf("[%s]: Failed to find a commit for fixed version %q normalized as %q", CVE, av.Fixed, normalizedFixed)
 				} else {
 					fc := cves.FixCommit{
 						Repo:   repo,
 						Commit: normalizedTag.Commit,
 					}
-					Logger.Infof("Successfully derived %+v for fixed version %q", fc, av.Fixed)
+					Logger.Infof("[%s]: Successfully derived %+v for fixed version %q", CVE, fc, av.Fixed)
 					v.FixCommits = append(v.FixCommits, fc)
 				}
 			}
 			if av.LastAffected != "" {
 				normalizedLastAffected, err := cves.NormalizeVersion(av.LastAffected)
 				if err != nil {
-					Logger.Warnf("Failed to normalize last_affected version %q: %v", av.LastAffected, err)
+					Logger.Warnf("[%s]: Failed to normalize last_affected version %q: %v", CVE, av.LastAffected, err)
 					continue
 				}
 				// Try a straight out match first.
 				normalizedTag, ok := normalizedTags[normalizedLastAffected]
 				if !ok {
-					Logger.Warnf("Failed to find a commit for last_affected version %q normalized as %q", av.LastAffected, normalizedLastAffected)
+					Logger.Warnf("[%s]: Failed to find a commit for last_affected version %q normalized as %q", CVE, av.LastAffected, normalizedLastAffected)
 				} else {
 					fc := cves.FixCommit{
 						Repo:   repo,
 						Commit: normalizedTag.Commit,
 					}
-					Logger.Infof("Successfully derived %+v for last_affected version %q", fc, av.LastAffected)
+					Logger.Infof("[%s]: Successfully derived %+v for last_affected version %q", CVE, fc, av.LastAffected)
 					// This isn't a "fixed" commit, so we won't go appending it because vulns.AttachExtractedVersionInfo would go calling it an "fixed" event when it needs to be taught how to generate "last_affected" events.
 					// v.FixCommits = append(v.FixCommits, fc)
 				}
@@ -154,7 +155,7 @@ func CVEToOSV(CVE cves.CVEItem, repos []string, cache git.RepoTagsCache, directo
 			return fmt.Errorf("No affected ranges for %s for %q, and no repos to try and convert %+v to tags with", CVE.CVE.CVEDataMeta.ID, CPE.Product, versions.AffectedVersions)
 		}
 		Logger.Infof("[%s]: Trying to convert version tags %+v to commits using %v", CVE.CVE.CVEDataMeta.ID, versions.AffectedVersions, repos)
-		versions, err = GitVersionToCommit(versions, repos, cache)
+		versions, err = GitVersionToCommit(CVE.CVE.CVEDataMeta.ID, versions, repos, cache)
 	}
 
 	affected := vulns.Affected{}

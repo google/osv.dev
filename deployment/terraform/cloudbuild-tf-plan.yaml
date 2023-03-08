@@ -13,15 +13,27 @@
 # limitations under the License.
 
 steps:
-# run terraform plan for oss-vdb-test
 # TODO(michaelkedar): regenerate the api protobufs?
+# run terraform plan for oss-vdb-test
 - name: gcr.io/oss-vdb/terraform
   args: ['init', '-no-color']
   dir:  deployment/terraform/environments/oss-vdb-test
+  id:   oss-vdb-test init
 - name: gcr.io/oss-vdb/terraform
   args: ['plan', '-no-color']
   dir:  deployment/terraform/environments/oss-vdb-test
-# TODO(michaelkedar): plan for oss-vdb
+  id:   oss-vdb-test plan
+
+# run terraform plan for oss-vdb
+- name: gcr.io/oss-vdb/terraform
+  args: ['init', '-no-color']
+  dir:  deployment/terraform/environments/oss-vdb
+  id:   oss-vdb init
+- name: gcr.io/oss-vdb/terraform
+  args: ['plan', '-no-color']
+  dir:  deployment/terraform/environments/oss-vdb
+  id:   oss-vdb plan
+
 
 # Also set in Cloud Build:
 serviceAccount: 'projects/oss-vdb/serviceAccounts/terraform-plan@oss-vdb.iam.gserviceaccount.com'

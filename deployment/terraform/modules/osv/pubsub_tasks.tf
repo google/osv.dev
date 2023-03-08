@@ -7,6 +7,10 @@ resource "google_pubsub_topic" "tasks" {
   labels = {
     goog-dm = "pubsub"
   }
+
+  lifecycle {
+    prevent_destroy = true
+  }
 }
 
 resource "google_pubsub_topic" "failed_tasks" {

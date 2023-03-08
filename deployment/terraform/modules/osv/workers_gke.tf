@@ -27,6 +27,14 @@ resource "google_container_cluster" "workers" {
   # node pool and immediately delete it.
   remove_default_node_pool = true
   initial_node_count       = 1
+  lifecycle {
+    ignore_changes = [
+      # importing from oss-vdb has initial_node_count set to 0, which is actually not a valid configuration for creating a cluster.
+      # Updating this value in terraform forces a replacement, even though the default pool is destroyed. Ignore it to prevent disruption.
+      initial_node_count,
+    ]
+    prevent_destroy = true
+  }
 }
 
 resource "google_container_node_pool" "default_pool" {
@@ -35,9 +43,18 @@ resource "google_container_node_pool" "default_pool" {
   cluster  = google_container_cluster.workers.name
   location = google_container_cluster.workers.location
 
+  lifecycle {
+    # Terraform doesn't automatically know to recreate node pools when the cluster is recreated.
+    # A bit redundant since the cluster has prevent_destroy = true.
+    replace_triggered_by = [
+      google_container_cluster.workers.id,
+    ]
+  }
+
   autoscaling {
-    min_node_count = 1
-    max_node_count = 1000
+    min_node_count  = 1
+    max_node_count  = 1000
+    location_policy = "BALANCED"
   }
 
 
@@ -58,9 +75,18 @@ resource "google_container_node_pool" "highend" {
   cluster  = google_container_cluster.workers.name
   location = google_container_cluster.workers.location
 
+  lifecycle {
+    # Terraform doesn't automatically know to recreate node pools when the cluster is recreated.
+    # A bit redundant since the cluster has prevent_destroy = true.
+    replace_triggered_by = [
+      google_container_cluster.workers.id,
+    ]
+  }
+
   autoscaling {
-    min_node_count = 0
-    max_node_count = 100
+    min_node_count  = 0
+    max_node_count  = 100
+    location_policy = "BALANCED"
   }
 
 

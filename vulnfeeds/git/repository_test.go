@@ -112,6 +112,7 @@ func TestRepoTags(t *testing.T) {
 				{Tag: "v0.17.3", Commit: "b1fda5bdd5e74ab7874f5c93fecb35457cc68f78"},
 				{Tag: "v0.17.4", Commit: "49e8faad5e2ed9ab2de54f6858ee223f918abac4"},
 				{Tag: "v0.18", Commit: "8ed48ad5ba180cd3ce30a3c41d42bad3779d9f26"},
+				{Tag: "v0.18.1", Commit: "5ee3529c3014b4238231885b1403faa3e1affb5c"},
 			},
 			expectedOk: true,
 		},
@@ -189,20 +190,15 @@ func TestValidRepo(t *testing.T) {
 			description:    "Valid repository",
 			repoURL:        "https://github.com/torvalds/linux",
 			expectedResult: true,
-			expectedOk:     true,
 		},
 		{
 			description:    "Invalid repository",
 			repoURL:        "https://github.com/andrewpollock/mybogusrepo",
 			expectedResult: false,
-			expectedOk:     true,
 		},
 	}
 	for _, tc := range tests {
-		got, err := ValidRepo(tc.repoURL)
-		if err != nil && tc.expectedOk {
-			t.Errorf("test %q: ValidRepo(%q) unexpectedly failed: %#v", tc.description, tc.repoURL, err)
-		}
+		got := ValidRepo(tc.repoURL)
 		if !reflect.DeepEqual(got, tc.expectedResult) {
 			t.Errorf("test %q: ValidRepo(%q) was incorrect, got: %#v, expected: %#v", tc.description, tc.repoURL, got, tc.expectedResult)
 		}

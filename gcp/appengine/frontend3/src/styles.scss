@@ -1086,7 +1086,7 @@ dl.vulnerability-details,
   }
 }
 
-.about-page {
+.faq-page {
   .title,
   .faq-title {
     font-size: 60px;
@@ -1183,6 +1183,12 @@ dl.vulnerability-details,
     margin: 0 auto;
 
     font-size: 16px;
+
+    h2,
+    h3,
+    pre {
+      margin: 15px 0;
+    }
 
     .title {
       font-size: 48px;

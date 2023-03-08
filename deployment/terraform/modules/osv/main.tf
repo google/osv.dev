@@ -5,6 +5,10 @@ resource "google_app_engine_application" "app" {
   project       = var.project_id
   location_id   = "us-west2"
   database_type = "CLOUD_DATASTORE_COMPATIBILITY"
+
+  lifecycle {
+    prevent_destroy = true
+  }
 }
 
 # MemoryStore
@@ -12,12 +16,19 @@ resource "google_redis_instance" "west2" {
   project            = var.project_id
   memory_size_gb     = 5
   name               = "redis"
+  display_name       = "redis"
   read_replicas_mode = "READ_REPLICAS_ENABLED"
   redis_version      = "REDIS_6_X"
   region             = "us-west2"
   replica_count      = 1
   tier               = "STANDARD_HA"
-  reserved_ip_range  = "10.126.238.64/28"
+  reserved_ip_range  = "10.126.238.64/29"
+
+  # TODO(michaelkedar): This needs to be recreated on oss-vdb-test
+  # will uncomment this on a second PR after it's been applied
+  # lifecycle {
+  #   prevent_destroy = true
+  # }
 }
 
 resource "google_redis_instance" "central1" {
@@ -30,15 +41,20 @@ resource "google_redis_instance" "central1" {
   replica_count      = 2
   tier               = "STANDARD_HA"
   reserved_ip_range  = "10.102.25.208/28"
+
+  lifecycle {
+    prevent_destroy = true
+  }
 }
 
 # Serverless VPC connector
 resource "google_vpc_access_connector" "connector" {
-  project       = var.project_id
-  name          = "connector"
-  network       = "default"
-  region        = "us-west2"
-  ip_cidr_range = "10.8.0.0/28"
+  project        = var.project_id
+  name           = "connector"
+  network        = "default"
+  region         = "us-west2"
+  ip_cidr_range  = "10.8.0.0/28"
+  max_throughput = 1000
 }
 
 # Storage Buckets
@@ -69,6 +85,10 @@ resource "google_storage_bucket" "osv_public_import_logs" {
     action {
       type = "Delete"
     }
+  }
+
+  versioning {
+    enabled = true
   }
 }
 

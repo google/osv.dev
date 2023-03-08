@@ -101,11 +101,11 @@ An instance of OSV's web UI is deployed at <https://osv.dev>.
 ## Using the API
 
 ```bash
-  curl -X POST -d \
+  curl -d \
       '{"commit": "6879efc2c1596d11a6a6ad296f80063b558d5e0f"}' \
       "https://api.osv.dev/v1/query"
 
-  curl -X POST -d \
+  curl -d \
       '{"version": "2.4.1", "package": {"name": "jinja2", "ecosystem": "PyPI"}}' \
       "https://api.osv.dev/v1/query"
 ```
@@ -144,9 +144,14 @@ work:
 git submodule update --init --recursive
 ```
 
-## Development
+## Contributing
 
-See [CONTRIBUTING.md](CONTRIBUTING.md).
+Contributions are welcome! 
+
+Learn more about [code](CONTRIBUTING.md#contributing-code) and [data](CONTRIBUTING.md#contributing-data) contributions. 
+We also have a [mailing list](https://groups.google.com/g/osv-discuss) and an [FAQ](https://osv.dev/about). 
+
+Do you have a question or a suggestion? Please [open an issue](https://github.com/google/osv.dev/issues). 
 
 ## Third party tools and integrations
 
@@ -176,9 +181,3 @@ tools and unsupported by the core OSV maintainers.
 -   [Trivy](https://github.com/aquasecurity/trivy)
 
 Feel free to send a PR to add your project here.
-
-## Contributing
-
-Contributions are welcome! We also have a
-[mailing list](https://groups.google.com/g/osv-discuss) and a
-[FAQ](https://osv.dev/about).

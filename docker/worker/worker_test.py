@@ -529,6 +529,8 @@ class MarkBugInvalidTest(unittest.TestCase):
     osv.Bug(db_id='OSV-2021-1', source_id='oss-fuzz:1337').put()
     osv.AffectedCommit(bug_id='OSV-2021-1').put()
     osv.AffectedCommit(bug_id='OSV-2021-1').put()
+    osv.AffectedCommits(bug_id='OSV-2021-1').put()
+    osv.AffectedCommits(bug_id='OSV-2021-1').put()
 
     message = mock.Mock()
     message.attributes = {

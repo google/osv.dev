@@ -149,7 +149,12 @@ def blog_post_static_files(blog_name: str, file_name: str):
 
 @blueprint.route('/about')
 def about():
-  return render_template('about.html')
+  return redirect('/faq')
+
+
+@blueprint.route('/faq')
+def faq():
+  return render_template('faq.html')
 
 
 @blueprint.route('/list')

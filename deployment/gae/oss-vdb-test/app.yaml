@@ -48,7 +48,7 @@ automatic_scaling:
 instance_class: F4
 
 env_variables:
-  REDISHOST: 10.126.238.69
+  REDISHOST: 10.189.34.180
   REDISPORT: 6379
 
 vpc_access_connector:

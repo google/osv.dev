@@ -12,7 +12,7 @@ resource "google_app_engine_application" "app" {
 }
 
 # MemoryStore
-# TODO(michaelkedar): The way this was initially created on production is not (easily) reproducable in Terraform.
+# TODO(michaelkedar): The way this was initially created on production is not (easily) reproducible in Terraform.
 # A replacement redis server has been created to fix this, but this needs stay around to allow for potential rollbacks.
 # Delete this resource after 2023/04/11
 resource "google_redis_instance" "west2" {

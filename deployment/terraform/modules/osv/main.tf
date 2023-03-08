@@ -12,7 +12,14 @@ resource "google_app_engine_application" "app" {
 }
 
 # MemoryStore
+# TODO(michaelkedar): The way this was initially created on production is not (easily) reproducable in Terraform.
+# A replacement redis server has been created to fix this, but this needs stay around to allow for potential rollbacks.
+# Delete this resource after 2023/04/11
 resource "google_redis_instance" "west2" {
+  lifecycle {
+    ignore_changes = all
+  }
+
   project            = var.project_id
   memory_size_gb     = 5
   name               = "redis"
@@ -23,12 +30,22 @@ resource "google_redis_instance" "west2" {
   replica_count      = 1
   tier               = "STANDARD_HA"
   reserved_ip_range  = "10.126.238.64/29"
+  secondary_ip_range = "auto"
+}
 
-  # TODO(michaelkedar): This needs to be recreated on oss-vdb-test
-  # will uncomment this on a second PR after it's been applied
-  # lifecycle {
-  #   prevent_destroy = true
-  # }
+resource "google_redis_instance" "frontend" {
+  project            = var.project_id
+  memory_size_gb     = 5
+  name               = "redis-west2"
+  read_replicas_mode = "READ_REPLICAS_ENABLED"
+  redis_version      = "REDIS_6_X"
+  region             = "us-west2"
+  replica_count      = 1
+  tier               = "STANDARD_HA"
+
+  lifecycle {
+    prevent_destroy = true
+  }
 }
 
 resource "google_redis_instance" "central1" {
@@ -40,7 +57,6 @@ resource "google_redis_instance" "central1" {
   region             = "us-central1"
   replica_count      = 2
   tier               = "STANDARD_HA"
-  reserved_ip_range  = "10.102.25.208/28"
 
   lifecycle {
     prevent_destroy = true

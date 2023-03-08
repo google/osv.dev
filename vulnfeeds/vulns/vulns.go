@@ -352,12 +352,22 @@ func (v *Vulnerability) AddPkgInfo(pkgInfo PackageInfo) {
 // AttachExtractedVersionInfo adds version information extracted from CVEs onto
 // the affected field
 func (affected *Affected) AttachExtractedVersionInfo(version cves.VersionInfo) {
-	repoToCommits := map[string][]string{}
+	repoToFixCommits := map[string][]string{}
 	for _, fixCommit := range version.FixCommits {
-		repoToCommits[fixCommit.Repo] = append(repoToCommits[fixCommit.Repo], fixCommit.Commit)
+		repoToFixCommits[fixCommit.Repo] = append(repoToFixCommits[fixCommit.Repo], fixCommit.Commit)
 	}
 
-	for repo, commits := range repoToCommits {
+	repoToLimitCommits := map[string][]string{}
+	for _, limitCommit := range version.LimitCommits {
+		repoToLimitCommits[limitCommit.Repo] = append(repoToLimitCommits[limitCommit.Repo], limitCommit.Commit)
+	}
+
+	repoToLastAffectedCommits := map[string][]string{}
+	for _, lastAffectedCommit := range version.LastAffectedCommits {
+		repoToLastAffectedCommits[lastAffectedCommit.Repo] = append(repoToLastAffectedCommits[lastAffectedCommit.Repo], lastAffectedCommit.Commit)
+	}
+
+	for repo, commits := range repoToFixCommits {
 		gitRange := AffectedRange{
 			Type: "GIT",
 			Repo: repo,
@@ -365,6 +375,30 @@ func (affected *Affected) AttachExtractedVersionInfo(version cves.VersionInfo) {
 		gitRange.Events = append(gitRange.Events, Event{Introduced: "0"})
 		for _, commit := range commits {
 			gitRange.Events = append(gitRange.Events, Event{Fixed: commit})
+		}
+		affected.Ranges = append(affected.Ranges, gitRange)
+	}
+
+	for repo, commits := range repoToLimitCommits {
+		gitRange := AffectedRange{
+			Type: "GIT",
+			Repo: repo,
+		}
+		gitRange.Events = append(gitRange.Events, Event{Introduced: "0"})
+		for _, commit := range commits {
+			gitRange.Events = append(gitRange.Events, Event{Limit: commit})
+		}
+		affected.Ranges = append(affected.Ranges, gitRange)
+	}
+
+	for repo, commits := range repoToLastAffectedCommits {
+		gitRange := AffectedRange{
+			Type: "GIT",
+			Repo: repo,
+		}
+		gitRange.Events = append(gitRange.Events, Event{Introduced: "0"})
+		for _, commit := range commits {
+			gitRange.Events = append(gitRange.Events, Event{LastAffected: commit})
 		}
 		affected.Ranges = append(affected.Ranges, gitRange)
 	}

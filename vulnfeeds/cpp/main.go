@@ -123,7 +123,7 @@ func GitVersionToCommit(versions cves.VersionInfo, repos []string, repobasedir s
 				Logger.Warnf("Failed to find a tag for %q in %s: %v", av.Fixed, repo, err)
 				continue
 			}
-			fc := cves.FixCommit{
+			fc := cves.GitCommit{
 				Repo:   repo,
 				Commit: ref.Hash().String(),
 			}

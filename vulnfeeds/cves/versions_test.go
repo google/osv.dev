@@ -261,12 +261,12 @@ func TestExtractGitCommit(t *testing.T) {
 	tests := []struct {
 		description       string
 		inputLink         string
-		expectedFixCommit *FixCommit
+		expectedGitCommit *GitCommit
 	}{
 		{
 			description: "Valid GitHub commit URL",
 			inputLink:   "https://github.com/google/osv/commit/cd4e934d0527e5010e373e7fed54ef5daefba2f5",
-			expectedFixCommit: &FixCommit{
+			expectedGitCommit: &GitCommit{
 				Repo:   "https://github.com/google/osv",
 				Commit: "cd4e934d0527e5010e373e7fed54ef5daefba2f5",
 			},
@@ -274,7 +274,7 @@ func TestExtractGitCommit(t *testing.T) {
 		{
 			description: "Valid GitLab commit URL",
 			inputLink:   "https://gitlab.freedesktop.org/virgl/virglrenderer/-/commit/b05bb61f454eeb8a85164c8a31510aeb9d79129c",
-			expectedFixCommit: &FixCommit{
+			expectedGitCommit: &GitCommit{
 				Repo:   "https://gitlab.freedesktop.org/virgl/virglrenderer",
 				Commit: "b05bb61f454eeb8a85164c8a31510aeb9d79129c",
 			},
@@ -282,7 +282,7 @@ func TestExtractGitCommit(t *testing.T) {
 		{
 			description: "Valid GitLab.com commit URL",
 			inputLink:   "https://gitlab.com/mayan-edms/mayan-edms/commit/9ebe80595afe4fdd1e2c74358d6a9421f4ce130e",
-			expectedFixCommit: &FixCommit{
+			expectedGitCommit: &GitCommit{
 				Repo:   "https://gitlab.com/mayan-edms/mayan-edms",
 				Commit: "9ebe80595afe4fdd1e2c74358d6a9421f4ce130e",
 			},
@@ -290,7 +290,7 @@ func TestExtractGitCommit(t *testing.T) {
 		{
 			description: "Valid bitbucket.org commit URL",
 			inputLink:   "https://bitbucket.org/openpyxl/openpyxl/commits/3b4905f428e1",
-			expectedFixCommit: &FixCommit{
+			expectedGitCommit: &GitCommit{
 				Repo:   "https://bitbucket.org/openpyxl/openpyxl",
 				Commit: "3b4905f428e1",
 			},
@@ -298,7 +298,7 @@ func TestExtractGitCommit(t *testing.T) {
 		{
 			description: "Valid bitbucket.org commit URL with trailing slash",
 			inputLink:   "https://bitbucket.org/jespern/django-piston/commits/91bdaec89543/",
-			expectedFixCommit: &FixCommit{
+			expectedGitCommit: &GitCommit{
 				Repo:   "https://bitbucket.org/jespern/django-piston",
 				Commit: "91bdaec89543",
 			},
@@ -306,7 +306,7 @@ func TestExtractGitCommit(t *testing.T) {
 		{
 			description: "Valid cGit commit URL",
 			inputLink:   "https://git.dpkg.org/cgit/dpkg/dpkg.git/commit/?id=faa4c92debe45412bfcf8a44f26e827800bb24be",
-			expectedFixCommit: &FixCommit{
+			expectedGitCommit: &GitCommit{
 				Repo:   "https://git.dpkg.org/cgit/dpkg/dpkg.git",
 				Commit: "faa4c92debe45412bfcf8a44f26e827800bb24be",
 			},
@@ -314,7 +314,7 @@ func TestExtractGitCommit(t *testing.T) {
 		{
 			description: "Valid GitWeb commit URL",
 			inputLink:   "https://git.gnupg.org/cgi-bin/gitweb.cgi?p=libksba.git;a=commit;h=f61a5ea4e0f6a80fd4b28ef0174bee77793cf070",
-			expectedFixCommit: &FixCommit{
+			expectedGitCommit: &GitCommit{
 				Repo:   "https://git.gnupg.org/libksba.git",
 				Commit: "f61a5ea4e0f6a80fd4b28ef0174bee77793cf070",
 			},
@@ -322,24 +322,24 @@ func TestExtractGitCommit(t *testing.T) {
 		{
 			description:       "Unsupported GitHub PR URL",
 			inputLink:         "https://github.com/google/osv/pull/123",
-			expectedFixCommit: nil,
+			expectedGitCommit: nil,
 		},
 		{
 			description:       "Unsupported GitHub tag URL",
 			inputLink:         "https://github.com/google/osv.dev/releases/tag/v0.0.14",
-			expectedFixCommit: nil,
+			expectedGitCommit: nil,
 		},
 		{
 			description:       "Completely invalid input",
 			inputLink:         "",
-			expectedFixCommit: nil,
+			expectedGitCommit: nil,
 		},
 	}
 
 	for _, tc := range tests {
 		got := extractGitCommit(tc.inputLink)
-		if !reflect.DeepEqual(got, tc.expectedFixCommit) {
-			t.Errorf("test %q: extractGitCommit for %q was incorrect, got: %#v, expected: %#v", tc.description, tc.inputLink, got, tc.expectedFixCommit)
+		if !reflect.DeepEqual(got, tc.expectedGitCommit) {
+			t.Errorf("test %q: extractGitCommit for %q was incorrect, got: %#v, expected: %#v", tc.description, tc.inputLink, got, tc.expectedGitCommit)
 		}
 	}
 }

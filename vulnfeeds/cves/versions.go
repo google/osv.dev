@@ -26,7 +26,7 @@ import (
 	"golang.org/x/exp/slices"
 )
 
-type FixCommit struct {
+type GitCommit struct {
 	Repo   string
 	Commit string
 }
@@ -38,8 +38,10 @@ type AffectedVersion struct {
 }
 
 type VersionInfo struct {
-	FixCommits       []FixCommit
-	AffectedVersions []AffectedVersion
+	FixCommits          []GitCommit
+	LimitCommits        []GitCommit
+	LastAffectedCommits []GitCommit
+	AffectedVersions    []AffectedVersion
 }
 
 type CPE struct {
@@ -263,8 +265,8 @@ func Commit(u string) (string, error) {
 	return "", fmt.Errorf("Commit(): unsupported URL: %s", u)
 }
 
-// For URLs referencing commits in supported Git repository hosts, return a FixCommit.
-func extractGitCommit(link string) *FixCommit {
+// For URLs referencing commits in supported Git repository hosts, return a GitCommit.
+func extractGitCommit(link string) *GitCommit {
 	r, err := Repo(link)
 	if err != nil {
 		return nil
@@ -275,7 +277,7 @@ func extractGitCommit(link string) *FixCommit {
 		return nil
 	}
 
-	return &FixCommit{
+	return &GitCommit{
 		Repo:   r,
 		Commit: c,
 	}

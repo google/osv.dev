@@ -352,9 +352,31 @@ func (v *Vulnerability) AddPkgInfo(pkgInfo PackageInfo) {
 // AttachExtractedVersionInfo adds version information extracted from CVEs onto
 // the affected field
 func (affected *Affected) AttachExtractedVersionInfo(version cves.VersionInfo) {
-	repoToCommits := map[string][]string{}
+	// Synthetic enum of supported commit types.
+	type CommitType int
+	const (
+		Fixed CommitType = iota
+		Limit
+		LastAffected
+	)
+	// commit holds a commit hash of one of the supported commit types.
+	type commit struct {
+		commitType CommitType
+		hash       string
+	}
+	// Collect the commits of the supported types for each repo.
+	repoToCommits := map[string][]commit{}
+
 	for _, fixCommit := range version.FixCommits {
-		repoToCommits[fixCommit.Repo] = append(repoToCommits[fixCommit.Repo], fixCommit.Commit)
+		repoToCommits[fixCommit.Repo] = append(repoToCommits[fixCommit.Repo], commit{commitType: Fixed, hash: fixCommit.Commit})
+	}
+
+	for _, limitCommit := range version.LimitCommits {
+		repoToCommits[limitCommit.Repo] = append(repoToCommits[limitCommit.Repo], commit{commitType: Limit, hash: limitCommit.Commit})
+	}
+
+	for _, lastAffectedCommit := range version.LastAffectedCommits {
+		repoToCommits[lastAffectedCommit.Repo] = append(repoToCommits[lastAffectedCommit.Repo], commit{commitType: LastAffected, hash: lastAffectedCommit.Commit})
 	}
 
 	for repo, commits := range repoToCommits {
@@ -364,7 +386,15 @@ func (affected *Affected) AttachExtractedVersionInfo(version cves.VersionInfo) {
 		}
 		gitRange.Events = append(gitRange.Events, Event{Introduced: "0"})
 		for _, commit := range commits {
-			gitRange.Events = append(gitRange.Events, Event{Fixed: commit})
+			if commit.commitType == Fixed {
+				gitRange.Events = append(gitRange.Events, Event{Fixed: commit.hash})
+			}
+			if commit.commitType == Limit {
+				gitRange.Events = append(gitRange.Events, Event{Limit: commit.hash})
+			}
+			if commit.commitType == LastAffected {
+				gitRange.Events = append(gitRange.Events, Event{LastAffected: commit.hash})
+			}
 		}
 		affected.Ranges = append(affected.Ranges, gitRange)
 	}

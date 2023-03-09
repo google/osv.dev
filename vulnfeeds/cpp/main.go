@@ -106,12 +106,12 @@ func GitVersionToCommit(CVE string, versions cves.VersionInfo, repos []string, c
 				if !ok {
 					Logger.Warnf("[%s]: Failed to find a commit for fixed version %q normalized as %q", CVE, av.Fixed, normalizedFixed)
 				} else {
-					fc := cves.FixCommit{
+					gc := cves.GitCommit{
 						Repo:   repo,
 						Commit: normalizedTag.Commit,
 					}
-					Logger.Infof("[%s]: Successfully derived %+v for fixed version %q", CVE, fc, av.Fixed)
-					v.FixCommits = append(v.FixCommits, fc)
+					Logger.Infof("[%s]: Successfully derived %+v for fixed version %q", CVE, gc, av.Fixed)
+					v.FixCommits = append(v.FixCommits, gc)
 				}
 			}
 			if av.LastAffected != "" {
@@ -130,8 +130,7 @@ func GitVersionToCommit(CVE string, versions cves.VersionInfo, repos []string, c
 						Commit: normalizedTag.Commit,
 					}
 					Logger.Infof("[%s]: Successfully derived %+v for last_affected version %q", CVE, gc, av.LastAffected)
-					// This isn't a "fixed" commit, so we won't go appending it because vulns.AttachExtractedVersionInfo would go calling it an "fixed" event when it needs to be taught how to generate "last_affected" events.
-					// v.FixCommits = append(v.FixCommits, fc)
+					v.LastAffectedCommits = append(v.LastAffectedCommits, gc)
 				}
 			}
 		}

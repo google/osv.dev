@@ -12,7 +12,7 @@
         "invalid_records": {
             "type": "array",
             "default": [],
-            "title": "The invalid_records Schema",
+            "title": "An invalid_record Schema",
             "items": {
                 "type": "object",
                 "title": "A Schema",
@@ -23,40 +23,14 @@
                 "properties": {
                     "id": {
                         "type": "string",
-                        "title": "The id Schema",
-                        "examples": [
-                            "GSD-2021-1001229",
-                            "GSD-2022-1003535"
-                        ]
+                        "title": "The id Schema"
                     },
                     "reason": {
                         "type": "string",
-                        "title": "The reason Schema",
-                        "examples": [
-                            "INVALID_JSON",
-                            "DELETED"
-                        ]
+                        "title": "The reason Schema"
                     }
-                },
-                "examples": [{
-                    "id": "GSD-2021-1001229",
-                    "reason": "INVALID_JSON"
-                },
-                {
-                    "id": "GSD-2022-1003535",
-                    "reason": "DELETED"
-                }]
-            },
-            "examples": [
-                [{
-                    "id": "GSD-2021-1001229",
-                    "reason": "INVALID_JSON"
-                },
-                {
-                    "id": "GSD-2022-1003535",
-                    "reason": "DELETED"
-                }]
-            ]
+                }
+            }
         }
     },
     "examples": [{

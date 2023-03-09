@@ -4,17 +4,17 @@ verify_ssl = true
 name = "pypi"
 
 [packages]
-Flask = "==2.2.2"
+Flask = "==2.2.3"
 Flask-Caching = "==2.0.2"
 google-auth = "==1.35.0"
 google-cloud-logging = "==3.5.0"
-google-cloud-pubsub = "==2.14.0"
+google-cloud-pubsub = "==2.15.0"
 jinja2 = "==3.1.2"
-markdown2 = "==2.4.7"
+markdown2 = "==2.4.8"
 markupsafe = "==2.1.2"
 osv = {editable = true, path = "../../"}
 packaging = "==21.3"
-redis = "==4.4.2"
+redis = "==4.5.1"
 requests = "==2.28.2"
 
 [dev-packages]

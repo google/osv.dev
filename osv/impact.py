@@ -398,6 +398,14 @@ def update_affected_commits(bug_id, commits, public, write_legacy=True):
   _throttled_delete(to_delete, batch_size=_DATASTORE_LARGE_BATCH_SIZE)
 
 
+def delete_affected_commits(bug_id):
+  """Delete affected commits."""
+  affected_commits = models.AffectedCommits.query(
+      models.AffectedCommits.bug_id == bug_id)
+  _throttled_delete([commit.key for commit in affected_commits],
+                    batch_size=_DATASTORE_LARGE_BATCH_SIZE)
+
+
 def enumerate_versions(package, ecosystem, affected_range):
   """Enumerate versions from SEMVER and ECOSYSTEM input ranges."""
   versions = set()

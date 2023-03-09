@@ -77,7 +77,7 @@ Together, these include vulnerabilities from:
 
 For convenience, these sources are aggregated and continuously exported to a GCS
 bucket maintained by OSV:
-`[gs://osv-vulnerabilities](https://osv-vulnerabilities.storage.googleapis.com)`.
+[`gs://osv-vulnerabilities`](https://osv-vulnerabilities.storage.googleapis.com)
 
 This bucket contains individual entries of the format
 `gs://osv-vulnerabilities/<ECOSYSTEM>/<ID>.json` as well as a zip containing all

@@ -59,6 +59,7 @@ def make_affected_commits_public(bug):
   """Make related AffectedCommit entities public."""
   to_update = []
 
+  # TODO(ochang): Remove this once migration is complete.
   query = osv.AffectedCommit.query(osv.AffectedCommit.bug_id == bug.key.id())
   for affected_commit in query:
     affected_commit.public = True
@@ -66,6 +67,12 @@ def make_affected_commits_public(bug):
 
   if to_update:
     ndb.put_multi(to_update)
+
+  query = osv.AffectedCommits.query(osv.AffectedCommits.bug_id == bug.key.id())
+  for affected_commits in query:
+    affected_commits.public = True
+    # Write entities individually as they can be large.
+    affected_commits.put()
 
 
 @blueprint.route(_CRON_ROUTE + '/make-bugs-public')

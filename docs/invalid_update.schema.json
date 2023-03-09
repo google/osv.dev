@@ -12,10 +12,10 @@
         "invalid_records": {
             "type": "array",
             "default": [],
-            "title": "An invalid_record Schema",
+            "title": "An array of invalid OSV record objects.",
             "items": {
                 "type": "object",
-                "title": "A Schema",
+                "title": "An OSV ID and the reason it is considered invalid.",
                 "required": [
                     "id",
                     "reason"
@@ -23,11 +23,11 @@
                 "properties": {
                     "id": {
                         "type": "string",
-                        "title": "The id Schema"
+                        "title": "The OSV record ID that is considered invalid"
                     },
                     "reason": {
-                        "type": "string",
-                        "title": "The reason Schema"
+                        "enum": ["INVALID_JSON", "DELETED", "INVALID_PACKAGE", "INVALID_VERSION"],
+                        "title": "The reason the record ID is considered invalid"
                     }
                 }
             }

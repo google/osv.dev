@@ -447,7 +447,6 @@ class Bug(ndb.Model):
       self.status = bug.BugStatus.INVALID
 
   def update_from_vulnerability(self, vulnerability):
-    # TODO: this
     """Set fields from vulnerability. Does not set the ID."""
     self.summary = vulnerability.summary
     self.details = vulnerability.details
@@ -517,6 +516,13 @@ class Bug(ndb.Model):
             affected_package.ecosystem_specific,
             preserving_proto_field_name=True)
 
+      current.severities = []
+      for severity in affected_package.severity:
+        current.severities.append(
+          Severity(
+              type=vulnerability_pb2.Severity.Type.Name(severity.type),
+              score=severity.score))
+
       self.affected_packages.append(current)
 
     self.severities = []
@@ -528,8 +534,10 @@ class Bug(ndb.Model):
 
     self.credits = []
     for credit in vulnerability.credits:
-      self.credits.append(
-          Credit(name=credit.name, contact=list(credit.contact)))
+      cr = Credit(name=credit.name, contact=list(credit.contact))
+      if credit.type:
+        cr.type = vulnerability_pb2.Credit.Type.Name(credit.type)
+      self.credits.append(cr)
 
     if vulnerability.database_specific:
       self.database_specific = json_format.MessageToDict(
@@ -588,6 +596,12 @@ class Bug(ndb.Model):
         if affected_package.ecosystem_specific:
           current.ecosystem_specific.update(affected_package.ecosystem_specific)
 
+        for entry in affected_package.severities:
+          current.severity.append(
+              vulnerability_pb2.Severity(
+                  type=vulnerability_pb2.Severity.Type.Value(entry.type),
+                  score=entry.score))
+
         affected.append(current)
 
     details = self.details
@@ -623,8 +637,10 @@ class Bug(ndb.Model):
 
     credits_ = []
     for credit in self.credits:
-      credits_.append(
-          vulnerability_pb2.Credit(name=credit.name, contact=credit.contact))
+      cr = vulnerability_pb2.Credit(name=credit.name, contact=credit.contact)
+      if credit.type:
+        cr.type = vulnerability_pb2.Credit.Type.Value(credit.type)
+      credits_.append(cr)
 
     result = vulnerability_pb2.Vulnerability(
         schema_version=SCHEMA_VERSION,

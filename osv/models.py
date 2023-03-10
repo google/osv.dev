@@ -30,7 +30,7 @@ from . import semver_index
 from . import sources
 from . import vulnerability_pb2
 
-SCHEMA_VERSION = '1.3.0'
+SCHEMA_VERSION = '1.4.0'
 
 
 def _check_valid_severity(prop, value):
@@ -191,6 +191,12 @@ class Package(ndb.Model):
   purl = ndb.StringProperty()
 
 
+class Severity(ndb.Model):
+  """Severity."""
+  type = ndb.StringProperty()
+  score = ndb.StringProperty()
+
+
 class AffectedPackage(ndb.Model):
   """Affected packages."""
   # The affected package identifier.
@@ -203,18 +209,15 @@ class AffectedPackage(ndb.Model):
   database_specific = ndb.JsonProperty()
   # Ecosystem specific metadata.
   ecosystem_specific = ndb.JsonProperty()
+  # Severity of the bug.
+  severities = ndb.LocalStructuredProperty(Severity, repeated=True)
 
 
 class Credit(ndb.Model):
   """Credits."""
   name = ndb.StringProperty()
   contact = ndb.StringProperty(repeated=True)
-
-
-class Severity(ndb.Model):
-  """Severity."""
   type = ndb.StringProperty()
-  score = ndb.StringProperty()
 
 
 class Bug(ndb.Model):
@@ -444,6 +447,7 @@ class Bug(ndb.Model):
       self.status = bug.BugStatus.INVALID
 
   def update_from_vulnerability(self, vulnerability):
+    # TODO: this
     """Set fields from vulnerability. Does not set the ID."""
     self.summary = vulnerability.summary
     self.details = vulnerability.details

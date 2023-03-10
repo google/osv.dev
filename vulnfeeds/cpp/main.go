@@ -77,7 +77,7 @@ func InScopeGitRepo(repoURL string) bool {
 }
 
 // Examines repos and tries to convert versions to commits by treating them as Git tags.
-// Takes a CVE string (for logging), cves.VersionInfo with AffectedVersions and
+// Takes a CVE ID string (for logging), cves.VersionInfo with AffectedVersions and
 // no FixCommits and attempts to add FixCommits.
 func GitVersionToCommit(CVE string, versions cves.VersionInfo, repos []string, cache git.RepoTagsCache) (v cves.VersionInfo, e error) {
 	// versions is a VersionInfo with AffectedVersions and no FixCommits

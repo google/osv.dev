@@ -43,6 +43,49 @@ _BUCKET_THREAD_COUNT = 20
 _client_store = threading.local()
 
 
+def _setup_gcp_logging():
+  """Set up GCP logging and error reporting."""
+
+  logging_client = google_logging.Client()
+  logging_client.setup_logging()
+
+  old_factory = logging.getLogRecordFactory()
+
+  def record_factory(*args, **kwargs):
+    """Insert jsonPayload fields to all logs."""
+
+    record = old_factory(*args, **kwargs)
+    if not hasattr(record, 'json_fields'):
+      record.json_fields = {}
+
+    # Add jsonPayload fields to logs that don't contain stack traces to enable
+    # capturing and grouping by error reporting.
+    # https://cloud.google.com/error-reporting/docs/formatting-error-messages#log-text
+    if record.levelno >= logging.ERROR and not record.exc_info:
+      record.json_fields.update({
+          '@type':
+              'type.googleapis.com/google.devtools.clouderrorreporting.v1beta1.ReportedErrorEvent',  # pylint: disable=line-too-long
+          'serviceContext': {
+              'service': 'importer',
+          },
+          'context': {
+              'reportLocation': {
+                  'filePath': record.pathname,
+                  'lineNumber': record.lineno,
+                  'functionName': record.funcName,
+              }
+          },
+      })
+
+    return record
+
+  logging.setLogRecordFactory(record_factory)
+  logging.getLogger().setLevel(logging.INFO)
+  logging.getLogger('google.api_core.bidi').setLevel(logging.ERROR)
+  logging.getLogger('google.cloud.pubsub_v1.subscriber._protocol.'
+                    'streaming_pull_manager').setLevel(logging.ERROR)
+
+
 def _is_vulnerability_file(source_repo, file_path):
   """Return whether or not the file is a Vulnerability entry."""
   if (source_repo.directory_path and
@@ -473,11 +516,6 @@ class Importer:
 
 
 def main():
-  logging.getLogger().setLevel(logging.INFO)
-  logging.getLogger('google.api_core.bidi').setLevel(logging.ERROR)
-  logging.getLogger('google.cloud.pubsub_v1.subscriber._protocol.'
-                    'streaming_pull_manager').setLevel(logging.ERROR)
-
   parser = argparse.ArgumentParser(description='Importer')
   parser.add_argument(
       '--work_dir', help='Working directory', default=DEFAULT_WORK_DIR)
@@ -504,8 +542,7 @@ def main():
 
 
 if __name__ == '__main__':
+  _setup_gcp_logging()
   _ndb_client = ndb.Client()
-  logging_client = google_logging.Client()
-  logging_client.setup_logging()
   with _ndb_client.context():
     main()

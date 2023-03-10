@@ -42,7 +42,7 @@ def main() -> None:
       r['last_modified'] = r['withdrawn']
       xact.put(r)
     if args.dryrun:
-      raise Exception("Dry run mode. Preventing transaction from commiting")
+      raise Exception("Dry run mode. Preventing transaction from commiting")  # pylint: disable=broad-exception-raised
   if len(result_to_fix) > 0:
     print("Fixed!")
 

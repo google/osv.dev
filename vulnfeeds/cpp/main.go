@@ -94,6 +94,26 @@ func GitVersionToCommit(CVE string, versions cves.VersionInfo, repos []string, c
 			if av.Fixed == "" && av.LastAffected == "" {
 				continue
 			}
+			if av.Introduced != "" {
+				normalizedIntroduced, err := cves.NormalizeVersion(av.Introduced)
+				if err != nil {
+					Logger.Warnf("[%s]: Failed to normalize introduced version %q: %v", CVE, av.Introduced, err)
+					continue
+				}
+				// Try a straight out match first.
+				// TODO try fuzzy prefix matches also.
+				normalizedTag, ok := normalizedTags[normalizedIntroduced]
+				if !ok {
+					Logger.Warnf("[%s]: Failed to find a commit for introduced version %q normalized as %q", CVE, av.Introduced, normalizedIntroduced)
+				} else {
+					gc := cves.GitCommit{
+						Repo:   repo,
+						Commit: normalizedTag.Commit,
+					}
+					Logger.Infof("[%s]: Successfully derived %+v for introduced version %q", CVE, gc, av.Introduced)
+					v.IntroducedCommits = append(v.IntroducedCommits, gc)
+				}
+			}
 			if av.Fixed != "" {
 				normalizedFixed, err := cves.NormalizeVersion(av.Fixed)
 				if err != nil {
@@ -101,7 +121,6 @@ func GitVersionToCommit(CVE string, versions cves.VersionInfo, repos []string, c
 					continue
 				}
 				// Try a straight out match first.
-				// TODO try fuzzy prefix matches also.
 				normalizedTag, ok := normalizedTags[normalizedFixed]
 				if !ok {
 					Logger.Warnf("[%s]: Failed to find a commit for fixed version %q normalized as %q", CVE, av.Fixed, normalizedFixed)

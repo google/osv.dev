@@ -15,6 +15,7 @@
                                                                      'value': 'b9b3fd4732695b83c3068b7b6a14bb372ec31f98'}],
                                                    'repo_url': 'https://osv-test/repo/url',
                                                    'type': 'GIT'}],
+                                 'severities': [],
                                  'versions': [   'branch-v0.1.1',
                                                  'branch_1_cherrypick_regress',
                                                  'v0.1.1']}],

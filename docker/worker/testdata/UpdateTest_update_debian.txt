@@ -14,6 +14,7 @@
                                                                      'value': '1.2.1-2.2+wheezy3'}],
                                                    'repo_url': '',
                                                    'type': 'ECOSYSTEM'}],
+                                 'severities': [],
                                  'versions': [   '1.2.1-2.2',
                                                  '1.2.1-2.2+wheezy1',
                                                  '1.2.1-2.2+wheezy2',

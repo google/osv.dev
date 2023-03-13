@@ -76,10 +76,28 @@ func InScopeGitRepo(repoURL string) bool {
 	return true
 }
 
+// Take an unnormalized version string, a repo, the pre-normalized mapping of tags to commits and return a GitCommit.
+func GitVersionToCommit(version string, repo string, normalizedTags map[string]git.NormalizedTag) (gc cves.GitCommit, e error) {
+	normalizedVersion, err := cves.NormalizeVersion(version)
+	if err != nil {
+		return gc, err
+	}
+	// Try a straight out match first.
+	// TODO try fuzzy prefix matches also.
+	normalizedTag, ok := normalizedTags[normalizedVersion]
+	if !ok {
+		return gc, fmt.Errorf("Failed to find a commit for version %q normalized as %q", version, normalizedVersion)
+	}
+	return cves.GitCommit{
+		Repo:   repo,
+		Commit: normalizedTag.Commit,
+	}, nil
+}
+
 // Examines repos and tries to convert versions to commits by treating them as Git tags.
 // Takes a CVE ID string (for logging), cves.VersionInfo with AffectedVersions and
 // no FixCommits and attempts to add FixCommits.
-func GitVersionToCommit(CVE string, versions cves.VersionInfo, repos []string, cache git.RepoTagsCache) (v cves.VersionInfo, e error) {
+func GitVersionsToCommit(CVE string, versions cves.VersionInfo, repos []string, cache git.RepoTagsCache) (v cves.VersionInfo, e error) {
 	// versions is a VersionInfo with AffectedVersions and no FixCommits
 	// v is a VersionInfo with FixCommits included
 	v = versions
@@ -95,43 +113,22 @@ func GitVersionToCommit(CVE string, versions cves.VersionInfo, repos []string, c
 				continue
 			}
 			if av.Fixed != "" {
-				normalizedFixed, err := cves.NormalizeVersion(av.Fixed)
+				gc, err := GitVersionToCommit(av.Fixed, repo, normalizedTags)
 				if err != nil {
-					Logger.Warnf("[%s]: Failed to normalize fixed version %q: %v", CVE, av.Fixed, err)
+					Logger.Warnf("[%s]: Failed to get a Git commit for fixed version %q: %v", CVE, av.Fixed, err)
 					continue
 				}
-				// Try a straight out match first.
-				// TODO try fuzzy prefix matches also.
-				normalizedTag, ok := normalizedTags[normalizedFixed]
-				if !ok {
-					Logger.Warnf("[%s]: Failed to find a commit for fixed version %q normalized as %q", CVE, av.Fixed, normalizedFixed)
-				} else {
-					gc := cves.GitCommit{
-						Repo:   repo,
-						Commit: normalizedTag.Commit,
-					}
-					Logger.Infof("[%s]: Successfully derived %+v for fixed version %q", CVE, gc, av.Fixed)
-					v.FixCommits = append(v.FixCommits, gc)
-				}
+				Logger.Infof("[%s]: Successfully derived %+v for fixed version %q", CVE, gc, av.Fixed)
+				v.FixCommits = append(v.FixCommits, gc)
 			}
 			if av.LastAffected != "" {
-				normalizedLastAffected, err := cves.NormalizeVersion(av.LastAffected)
+				gc, err := GitVersionToCommit(av.LastAffected, repo, normalizedTags)
 				if err != nil {
-					Logger.Warnf("[%s]: Failed to normalize last_affected version %q: %v", CVE, av.LastAffected, err)
+					Logger.Warnf("[%s]: Failed to get a Git commit for last_affected version %q: %v", CVE, av.LastAffected, err)
 					continue
 				}
-				// Try a straight out match first.
-				normalizedTag, ok := normalizedTags[normalizedLastAffected]
-				if !ok {
-					Logger.Warnf("[%s]: Failed to find a commit for last_affected version %q normalized as %q", CVE, av.LastAffected, normalizedLastAffected)
-				} else {
-					gc := cves.GitCommit{
-						Repo:   repo,
-						Commit: normalizedTag.Commit,
-					}
-					Logger.Infof("[%s]: Successfully derived %+v for last_affected version %q", CVE, gc, av.LastAffected)
-					v.LastAffectedCommits = append(v.LastAffectedCommits, gc)
-				}
+				Logger.Infof("[%s]: Successfully derived %+v for last_affected version %q", CVE, gc, av.LastAffected)
+				v.LastAffectedCommits = append(v.LastAffectedCommits, gc)
 			}
 		}
 	}
@@ -154,7 +151,7 @@ func CVEToOSV(CVE cves.CVEItem, repos []string, cache git.RepoTagsCache, directo
 			return fmt.Errorf("No affected ranges for %s for %q, and no repos to try and convert %+v to tags with", CVE.CVE.CVEDataMeta.ID, CPE.Product, versions.AffectedVersions)
 		}
 		Logger.Infof("[%s]: Trying to convert version tags %+v to commits using %v", CVE.CVE.CVEDataMeta.ID, versions.AffectedVersions, repos)
-		versions, err = GitVersionToCommit(CVE.CVE.CVEDataMeta.ID, versions, repos, cache)
+		versions, err = GitVersionsToCommit(CVE.CVE.CVEDataMeta.ID, versions, repos, cache)
 	}
 
 	affected := vulns.Affected{}

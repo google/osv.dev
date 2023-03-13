@@ -13,7 +13,7 @@
 # limitations under the License.
 
 service: default
-runtime: python310
+runtime: python311
 
 handlers:
   - url: /static

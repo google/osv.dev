@@ -519,9 +519,9 @@ class Bug(ndb.Model):
       current.severities = []
       for severity in affected_package.severity:
         current.severities.append(
-          Severity(
-              type=vulnerability_pb2.Severity.Type.Name(severity.type),
-              score=severity.score))
+            Severity(
+                type=vulnerability_pb2.Severity.Type.Name(severity.type),
+                score=severity.score))
 
       self.affected_packages.append(current)
 

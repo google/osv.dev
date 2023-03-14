@@ -7,6 +7,7 @@ See https://github.com/google/osv.dev/issues/1098 for additional context.
 from google.cloud import datastore
 
 import argparse
+import sys
 
 
 def main() -> None:
@@ -34,9 +35,16 @@ def main() -> None:
 
   client = datastore.Client(project=args.project)
 
-  query = client.query(kind="Bug", filters=(("status", "=", 2),))
+  try:
+    source = args.source_id_prefix.split(":")[0]
+  except IndexError:
+    print(f"Unable to determine source from {args.source_id_prefix}")
+    sys.exit(1)
 
-  print(f"Running query {query.filters[0]} "
+  query = client.query(kind="Bug", filters=(("status", "=", 2),
+                                            ("source", "=", source)))
+
+  print(f"Running query {query.filters} "
         f"on {query.kind} (in {query.project})...")
 
   result = list(query.fetch())

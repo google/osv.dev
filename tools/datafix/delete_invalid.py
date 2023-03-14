@@ -41,8 +41,8 @@ def main() -> None:
     print(f"Unable to determine source from {args.source_id_prefix}")
     sys.exit(1)
 
-  query = client.query(kind="Bug", filters=(("status", "=", 2),
-                                            ("source", "=", source)))
+  query = client.query(
+      kind="Bug", filters=(("status", "=", 2), ("source", "=", source)))
 
   print(f"Running query {query.filters} "
         f"on {query.kind} (in {query.project})...")

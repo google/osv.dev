@@ -28,7 +28,7 @@ from google.cloud import storage
 import pygit2
 
 import osv
-import osv.logging_helper
+import osv.logs
 
 DEFAULT_WORK_DIR = '/work'
 DEFAULT_PUBLIC_LOGGING_BUCKET = 'osv-public-import-logs'
@@ -499,7 +499,7 @@ def main():
 
 
 if __name__ == '__main__':
-  osv.logging_helper.setup_gcp_logging('importer')
+  osv.logs.setup_gcp_logging('importer')
   _ndb_client = ndb.Client()
   with _ndb_client.context():
     main()

@@ -25,7 +25,7 @@ from google.cloud import ndb
 from google.cloud import storage
 
 import osv
-import osv.logging_helper
+import osv.logs
 
 DEFAULT_WORK_DIR = '/work'
 
@@ -127,6 +127,6 @@ def main():
 
 if __name__ == '__main__':
   _ndb_client = ndb.Client()
-  osv.logging_helper.setup_gcp_logging('exporter')
+  osv.logs.setup_gcp_logging('exporter')
   with _ndb_client.context():
     main()

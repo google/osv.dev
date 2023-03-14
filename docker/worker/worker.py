@@ -36,7 +36,7 @@ sys.path.append(os.path.dirname(os.path.realpath(__file__)))
 import osv
 import osv.ecosystems
 import osv.cache
-import osv.logging_helper
+import osv.logs
 from osv import vulnerability_pb2
 import oss_fuzz
 
@@ -683,6 +683,6 @@ def main():
 
 
 if __name__ == '__main__':
-  osv.logging_helper.setup_gcp_logging('worker')
+  osv.logs.setup_gcp_logging('worker')
   _setup_logging_extra_info()
   main()

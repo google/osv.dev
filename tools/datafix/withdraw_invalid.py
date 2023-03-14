@@ -9,8 +9,7 @@ from google.cloud import datastore
 import argparse
 import datetime
 
-
-MAX_BATCH_SIZE=500
+MAX_BATCH_SIZE = 500
 
 
 def main() -> None:
@@ -50,7 +49,7 @@ def main() -> None:
   for batch in range(0, len(result_to_fix), MAX_BATCH_SIZE):
     try:
       with client.transaction() as xact:
-        for r in result_to_fix[batch:batch+MAX_BATCH_SIZE]:
+        for r in result_to_fix[batch:batch + MAX_BATCH_SIZE]:
           r['withdrawn'] = datetime.datetime.now(tz=datetime.timezone.utc)
           r['last_modified'] = r['withdrawn']
           if args.verbose:

@@ -9,8 +9,7 @@ from google.cloud import datastore
 import argparse
 import sys
 
-
-MAX_BATCH_SIZE=500
+MAX_BATCH_SIZE = 500
 
 
 def main() -> None:
@@ -72,7 +71,7 @@ def main() -> None:
   for batch in range(0, len(result_to_delete), MAX_BATCH_SIZE):
     try:
       with client.transaction() as xact:
-        for r in result_to_delete[batch:batch+MAX_BATCH_SIZE]:
+        for r in result_to_delete[batch:batch + MAX_BATCH_SIZE]:
           if args.verbose:
             print(f"Deleting {r}")
           xact.delete(r.key)

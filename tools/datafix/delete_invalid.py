@@ -10,6 +10,9 @@ import argparse
 import sys
 
 
+MAX_BATCH_SIZE=500
+
+
 def main() -> None:
   parser = argparse.ArgumentParser(
       description="Delete bugs that are invalid and match specific criteria.")
@@ -19,6 +22,12 @@ def main() -> None:
       dest="dryrun",
       default=True,
       help="Abort before making changes")
+  parser.add_argument(
+      "--verbose",
+      action=argparse.BooleanOptionalAction,
+      dest="verbose",
+      default=False,
+      help="Display records being operated on")
   parser.add_argument(
       "--source_id_prefix",
       action="store",
@@ -59,12 +68,20 @@ def main() -> None:
 
   print(f"There are {len(result_to_delete)} bugs to delete...")
 
-  with client.transaction() as xact:
-    for r in result_to_delete:
-      xact.delete(r.key)
-    if args.dryrun:
-      raise Exception("Dry run mode. Preventing transaction from commiting")  # pylint: disable=broad-exception-raised
-  if len(result_to_delete) > 0:
+  # Chunk the results to delete in acceptibly sized batches for the API.
+  for batch in range(0, len(result_to_delete), MAX_BATCH_SIZE):
+    try:
+      with client.transaction() as xact:
+        for r in result_to_delete[batch:batch+MAX_BATCH_SIZE]:
+          if args.verbose:
+            print(f"Deleting {r}")
+          xact.delete(r.key)
+        if args.dryrun:
+          raise Exception("Dry run mode. Preventing transaction from commiting")  # pylint: disable=broad-exception-raised
+    except Exception as e:  # Don't have the first batch's transaction-aborting exception stop subsequent batches from being attempted.
+      if args.dryrun and e.args[0].startswith("Dry run mode"):
+        pass
+  if len(result_to_delete) > 0 and not args.dryrun:
     print("Deleted!")
 
 

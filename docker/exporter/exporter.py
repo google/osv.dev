@@ -25,6 +25,7 @@ from google.cloud import ndb
 from google.cloud import storage
 
 import osv
+import osv.logging_helper
 
 DEFAULT_WORK_DIR = '/work'
 

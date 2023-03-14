@@ -36,6 +36,7 @@ sys.path.append(os.path.dirname(os.path.realpath(__file__)))
 import osv
 import osv.ecosystems
 import osv.cache
+import osv.logging_helper
 from osv import vulnerability_pb2
 import oss_fuzz
 

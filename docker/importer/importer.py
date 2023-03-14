@@ -28,6 +28,7 @@ from google.cloud import storage
 import pygit2
 
 import osv
+import osv.logging_helper
 
 DEFAULT_WORK_DIR = '/work'
 DEFAULT_PUBLIC_LOGGING_BUCKET = 'osv-public-import-logs'

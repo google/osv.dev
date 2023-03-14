@@ -11,6 +11,7 @@
                                                                      'value': 'd3a117814d6acbf0dca3eff1a7626843b9b3734a'}],
                                                    'repo_url': 'https://github.com/vim/vim',
                                                    'type': 'GIT'}],
+                                 'severities': [],
                                  'versions': []}],
     'aliases': [],
     'credits': [],

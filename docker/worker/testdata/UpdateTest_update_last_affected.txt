@@ -52,6 +52,7 @@
                                                                      'value': '1.31.0'}],
                                                    'repo_url': '',
                                                    'type': 'ECOSYSTEM'}],
+                                 'severities': [],
                                  'versions': [   '1.14.2',
                                                  '1.15.0',
                                                  '1.15.0rc1',

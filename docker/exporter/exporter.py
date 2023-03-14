@@ -23,9 +23,9 @@ from typing import List
 
 from google.cloud import ndb
 from google.cloud import storage
-from google.cloud import logging as google_logging
 
 import osv
+import osv.logs
 
 DEFAULT_WORK_DIR = '/work'
 
@@ -108,7 +108,6 @@ class Exporter:
 
 
 def main():
-  logging.getLogger().setLevel(logging.INFO)
   parser = argparse.ArgumentParser(description='Exporter')
   parser.add_argument(
       '--work_dir', help='Working directory', default=DEFAULT_WORK_DIR)
@@ -128,7 +127,6 @@ def main():
 
 if __name__ == '__main__':
   _ndb_client = ndb.Client()
-  logging_client = google_logging.Client()
-  logging_client.setup_logging()
+  osv.logs.setup_gcp_logging('exporter')
   with _ndb_client.context():
     main()

@@ -18,7 +18,6 @@ import datetime
 import json
 import logging
 import os
-import math
 import re
 import redis
 import resource
@@ -37,6 +36,7 @@ sys.path.append(os.path.dirname(os.path.realpath(__file__)))
 import osv
 import osv.ecosystems
 import osv.cache
+import osv.logs
 from osv import vulnerability_pb2
 import oss_fuzz
 
@@ -62,6 +62,7 @@ _ECOSYSTEM_PUSH_TOPICS = {
 }
 
 _state = threading.local()
+_state.source_id = None
 
 
 class RedisCache(osv.cache.Cache):
@@ -87,47 +88,25 @@ class UpdateConflictError(Exception):
   """Update conflict exception."""
 
 
-class LogFilter(logging.Filter):
-  """Log filter."""
+def _setup_logging_extra_info():
+  """Set up extra GCP logging information."""
 
-  def filter(self, record):
-    """Add metadata to record."""
-    source_id = getattr(_state, 'source_id', None)
-    if source_id:
-      record.extras = {
-          'source_id': source_id,
-      }
+  old_factory = logging.getLogRecordFactory()
 
-    return True
+  def record_factory(*args, **kwargs):
+    """Insert jsonPayload fields to all logs."""
 
+    record = old_factory(*args, **kwargs)
+    if not hasattr(record, 'json_fields'):
+      record.json_fields = {}
 
-class GkeLogHandler(logging.StreamHandler):
-  """GKE log handler."""
+    if getattr(_state, 'source_id', None):
+      record.json_fields['source_id'] = _state.source_id
+    record.json_fields['thread'] = record.thread
 
-  def format_stackdriver_json(self, record, message):
-    """Helper to format a LogRecord in in Stackdriver fluentd format."""
-    subsecond, second = math.modf(record.created)
+    return record
 
-    payload = {
-        'message': message,
-        'timestamp': {
-            'seconds': int(second),
-            'nanos': int(subsecond * 1e9)
-        },
-        'thread': record.thread,
-        'severity': record.levelname,
-    }
-
-    extras = getattr(record, 'extras', None)
-    if extras:
-      payload.update(extras)
-
-    return json.dumps(payload)
-
-  def format(self, record):
-    """Format the message into JSON expected by fluentd."""
-    message = super().format(record)
-    return self.format_stackdriver_json(record, message)
+  logging.setLogRecordFactory(record_factory)
 
 
 class _PubSubLeaserThread(threading.Thread):
@@ -657,13 +636,6 @@ class TaskRunner:
 
 
 def main():
-  logging.getLogger().addFilter(LogFilter())
-  logging.getLogger().addHandler(GkeLogHandler())
-  logging.getLogger().setLevel(logging.INFO)
-  logging.getLogger('google.api_core.bidi').setLevel(logging.ERROR)
-  logging.getLogger('google.cloud.pubsub_v1.subscriber._protocol.'
-                    'streaming_pull_manager').setLevel(logging.ERROR)
-
   parser = argparse.ArgumentParser(description='Worker')
   parser.add_argument(
       '--work_dir', help='Working directory', default=DEFAULT_WORK_DIR)
@@ -711,4 +683,6 @@ def main():
 
 
 if __name__ == '__main__':
+  osv.logs.setup_gcp_logging('worker')
+  _setup_logging_extra_info()
   main()

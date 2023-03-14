@@ -248,6 +248,8 @@ class MavenVersionTest(unittest.TestCase):
     self.check_versions_equal('1m3', '1MILESTONE3')
 
     self.check_versions_equal('1', '01', '001')
+    self.check_versions_equal('1.1', '1.01', '1.001')
+    self.check_versions_equal('1-1', '1-01', '1-001')
 
   def test_version_zero(self):
     """Test comparison and equality with versions 0.0.0"""

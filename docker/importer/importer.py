@@ -25,10 +25,10 @@ from typing import List, Tuple, Optional
 from google.cloud import ndb
 from google.cloud import pubsub_v1
 from google.cloud import storage
-from google.cloud import logging as google_logging
 import pygit2
 
 import osv
+import osv.logs
 
 DEFAULT_WORK_DIR = '/work'
 DEFAULT_PUBLIC_LOGGING_BUCKET = 'osv-public-import-logs'
@@ -473,11 +473,6 @@ class Importer:
 
 
 def main():
-  logging.getLogger().setLevel(logging.INFO)
-  logging.getLogger('google.api_core.bidi').setLevel(logging.ERROR)
-  logging.getLogger('google.cloud.pubsub_v1.subscriber._protocol.'
-                    'streaming_pull_manager').setLevel(logging.ERROR)
-
   parser = argparse.ArgumentParser(description='Importer')
   parser.add_argument(
       '--work_dir', help='Working directory', default=DEFAULT_WORK_DIR)
@@ -504,8 +499,7 @@ def main():
 
 
 if __name__ == '__main__':
+  osv.logs.setup_gcp_logging('importer')
   _ndb_client = ndb.Client()
-  logging_client = google_logging.Client()
-  logging_client.setup_logging()
   with _ndb_client.context():
     main()

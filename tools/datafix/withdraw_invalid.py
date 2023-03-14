@@ -31,7 +31,7 @@ def main() -> None:
 
   query = client.query(kind="Bug", filters=(("status", "=", 2),))
   print(f"Running query {query.filters[0]} "
-        "on {query.kind} (in {query.project})...")
+        f"on {query.kind} (in {query.project})...")
   result = list(query.fetch())
   print(f"Retrieved {len(result)} bugs to examine for fixing")
   result_to_fix = [r for r in result if not r['withdrawn']]

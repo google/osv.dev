@@ -25,6 +25,7 @@
                                                                      'value': '1.14.2'}],
                                                    'repo_url': '',
                                                    'type': 'ECOSYSTEM'}],
+                                 'severities': [],
                                  'versions': [   'branch-v0.1.1',
                                                  '1.13.0',
                                                  '1.14.0',

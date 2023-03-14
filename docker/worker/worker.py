@@ -100,7 +100,7 @@ def _setup_logging_extra_info():
     if not hasattr(record, 'json_fields'):
       record.json_fields = {}
 
-    if _state.source_id:
+    if getattr(_state, 'source_id', None):
       record.json_fields['source_id'] = _state.source_id
     record.json_fields['thread'] = record.thread
 

@@ -57,6 +57,7 @@
                                                                      'value': '8d8242f545e9cec3e6d0d2e3f5bde8be1c659735'}],
                                                    'repo_url': 'https://osv-test/repo/url',
                                                    'type': 'GIT'}],
+                                 'severities': [],
                                  'versions': [   '1.14.2',
                                                  '1.15.0',
                                                  '1.15.0rc1',

@@ -55,6 +55,8 @@ def setup_gcp_logging(service_name):
 
   logging.setLogRecordFactory(record_factory)
   logging.getLogger().setLevel(logging.INFO)
+
+  # Suppress noisy logs in some of our dependencies.
   logging.getLogger('google.api_core.bidi').setLevel(logging.ERROR)
   logging.getLogger('google.cloud.pubsub_v1.subscriber._protocol.'
                     'streaming_pull_manager').setLevel(logging.ERROR)

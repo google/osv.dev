@@ -77,7 +77,9 @@ def main() -> None:
           xact.delete(r.key)
         if args.dryrun:
           raise Exception("Dry run mode. Preventing transaction from commiting")  # pylint: disable=broad-exception-raised
-    except Exception as e:  # Don't have the first batch's transaction-aborting exception stop subsequent batches from being attempted.
+    except Exception as e:
+      # Don't have the first batch's transaction-aborting exception stop
+      # subsequent batches from being attempted.
       if args.dryrun and e.args[0].startswith("Dry run mode"):
         pass
   if len(result_to_delete) > 0 and not args.dryrun:

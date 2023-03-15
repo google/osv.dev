@@ -355,7 +355,8 @@ func (affected *Affected) AttachExtractedVersionInfo(version cves.VersionInfo) {
 	// Synthetic enum of supported commit types.
 	type CommitType int
 	const (
-		Fixed CommitType = iota
+		Introduced CommitType = iota
+		Fixed
 		Limit
 		LastAffected
 	)
@@ -366,6 +367,10 @@ func (affected *Affected) AttachExtractedVersionInfo(version cves.VersionInfo) {
 	}
 	// Collect the commits of the supported types for each repo.
 	repoToCommits := map[string][]commit{}
+
+	for _, introducedCommit := range version.IntroducedCommits {
+		repoToCommits[introducedCommit.Repo] = append(repoToCommits[introducedCommit.Repo], commit{commitType: Introduced, hash: introducedCommit.Commit})
+	}
 
 	for _, fixCommit := range version.FixCommits {
 		repoToCommits[fixCommit.Repo] = append(repoToCommits[fixCommit.Repo], commit{commitType: Fixed, hash: fixCommit.Commit})
@@ -384,8 +389,13 @@ func (affected *Affected) AttachExtractedVersionInfo(version cves.VersionInfo) {
 			Type: "GIT",
 			Repo: repo,
 		}
-		gitRange.Events = append(gitRange.Events, Event{Introduced: "0"})
+		// We're not always able to determine when a vulnerability is introduced, and may need to default to the dawn of time.
+		addedIntroduced := false
 		for _, commit := range commits {
+			if commit.commitType == Introduced {
+				gitRange.Events = append(gitRange.Events, Event{Introduced: commit.hash})
+				addedIntroduced = true
+			}
 			if commit.commitType == Fixed {
 				gitRange.Events = append(gitRange.Events, Event{Fixed: commit.hash})
 			}
@@ -395,6 +405,10 @@ func (affected *Affected) AttachExtractedVersionInfo(version cves.VersionInfo) {
 			if commit.commitType == LastAffected {
 				gitRange.Events = append(gitRange.Events, Event{LastAffected: commit.hash})
 			}
+		}
+		if !addedIntroduced {
+			// Prepending not strictly necessary, but seems nicer to have the Introduced first in the list.
+			gitRange.Events = append([]Event{Event{Introduced: "0"}}, gitRange.Events...)
 		}
 		affected.Ranges = append(affected.Ranges, gitRange)
 	}

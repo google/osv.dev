@@ -108,10 +108,6 @@ func GitVersionsToCommit(CVE string, versions cves.VersionInfo, repos []string, 
 			continue
 		}
 		for _, av := range versions.AffectedVersions {
-			// We can't map a non-existent version to a tag and commit, so skip.
-			if av.Fixed == "" && av.LastAffected == "" {
-				continue
-			}
 			if av.Fixed != "" {
 				gc, err := GitVersionToCommit(av.Fixed, repo, normalizedTags)
 				if err != nil {

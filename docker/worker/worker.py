@@ -173,11 +173,6 @@ def mark_bug_invalid(message):
     bug.status = osv.BugStatus.INVALID
     bug.put()
 
-    # TODO(ochang): Delete this one migration is done.
-    affected_commits = osv.AffectedCommit.query(
-        osv.AffectedCommit.bug_id == bug.key.id())
-    ndb.delete_multi([commit.key for commit in affected_commits])
-
     osv.delete_affected_commits(bug.key.id())
 
 

@@ -515,12 +515,7 @@ class TaskRunner:
 
     bug.put()
 
-    # Temporary migration exclusion: Don't write legacy Linux AffectedComit
-    # entries as they cause Datastore scaling issues.
-    write_legacy = not _is_linux_ecosystem(vulnerability)
-
-    osv.update_affected_commits(
-        bug.key.id(), result.commits, bug.public, write_legacy=write_legacy)
+    osv.update_affected_commits(bug.key.id(), result.commits, bug.public)
     self._notify_ecosystem_bridge(vulnerability)
 
   def _notify_ecosystem_bridge(self, vulnerability):

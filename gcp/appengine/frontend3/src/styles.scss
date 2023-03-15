@@ -1172,6 +1172,7 @@ dl.vulnerability-details,
 
       p {
         padding-bottom: 16px;
+        line-height: 1.6;
       }
     }
   }
@@ -1181,8 +1182,9 @@ dl.vulnerability-details,
   .post {
     max-width: 800px;
     margin: 0 auto;
-
+    padding: 16px;
     font-size: 16px;
+    background: #585A5A;
 
     h2,
     h3,
@@ -1205,6 +1207,11 @@ dl.vulnerability-details,
 
     p {
       margin-bottom: 16px;
+      line-height: 1.6;
+    }
+    
+    a {
+      color: #C9F5F7
     }
   }
 }

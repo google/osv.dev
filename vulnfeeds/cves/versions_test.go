@@ -1,9 +1,31 @@
 package cves
 
 import (
+	"encoding/json"
+	"log"
+	"os"
 	"reflect"
 	"testing"
+
+	"github.com/go-test/deep"
 )
+
+// Helper function to load in a specific CVE from sample data.
+func loadTestData(CVEID string) CVEItem {
+	file, err := os.Open("../test_data/nvdcve-1.1-test-data.json")
+	if err != nil {
+		log.Fatalf("Failed to load test data")
+	}
+	var nvdCves NVDCVE
+	json.NewDecoder(file).Decode(&nvdCves)
+	for _, item := range nvdCves.CVEItems {
+		if item.CVE.CVEDataMeta.ID == CVEID {
+			return item
+		}
+	}
+	log.Fatalf("test data doesn't contain specified %q", CVEID)
+	return CVEItem{}
+}
 
 func TestParseCPE(t *testing.T) {
 	tests := []struct {
@@ -449,6 +471,80 @@ func TestNormalizeVersion(t *testing.T) {
 		}
 		if !reflect.DeepEqual(got, tc.expectedNormalizedVersion) {
 			t.Errorf("test %q: normalized version for %q was incorrect, got: %q, expected %q", tc.description, tc.inputVersion, got, tc.expectedNormalizedVersion)
+		}
+	}
+}
+
+func TestExtractVersionInfo(t *testing.T) {
+	tests := []struct {
+		description         string
+		inputCVEItem        CVEItem
+		inputValidVersions  []string
+		expectedVersionInfo VersionInfo
+		expectedNotes       []string
+	}{
+		{
+			description:        "A CVE with multiple affected versions",
+			inputCVEItem:       loadTestData("CVE-2022-32746"),
+			inputValidVersions: []string{},
+			expectedVersionInfo: VersionInfo{
+				FixCommits:          []GitCommit(nil),
+				LimitCommits:        []GitCommit(nil),
+				LastAffectedCommits: []GitCommit(nil),
+				AffectedVersions: []AffectedVersion{
+					AffectedVersion{
+						Introduced:   "4.16.0",
+						Fixed:        "4.16.4",
+						LastAffected: "",
+					},
+					AffectedVersion{
+						Introduced:   "4.15.0",
+						Fixed:        "4.15.9",
+						LastAffected: "",
+					},
+					AffectedVersion{
+						Introduced:   "4.3.0",
+						Fixed:        "4.14.14",
+						LastAffected: "",
+					},
+				},
+			},
+			expectedNotes: []string{},
+		},
+		{
+			description:        "A CVE with duplicate affected versions squashed",
+			inputCVEItem:       loadTestData("CVE-2022-0090"),
+			inputValidVersions: []string{},
+			expectedVersionInfo: VersionInfo{
+				FixCommits:          []GitCommit(nil),
+				LimitCommits:        []GitCommit(nil),
+				LastAffectedCommits: []GitCommit(nil),
+				AffectedVersions: []AffectedVersion{
+					AffectedVersion{
+						Introduced:   "14.6.0",
+						Fixed:        "14.6.1",
+						LastAffected: "",
+					},
+					AffectedVersion{
+						Introduced:   "14.5.0",
+						Fixed:        "14.5.3",
+						LastAffected: "",
+					},
+					AffectedVersion{
+						Introduced:   "",
+						Fixed:        "14.4.5",
+						LastAffected: "",
+					},
+				},
+			},
+			expectedNotes: []string{},
+		},
+	}
+
+	for _, tc := range tests {
+		gotVersionInfo, _ := ExtractVersionInfo(tc.inputCVEItem, tc.inputValidVersions)
+		if diff := deep.Equal(gotVersionInfo, tc.expectedVersionInfo); diff != nil {
+			t.Errorf("test %q: VersionInfo for %#v was incorrect: %s", tc.description, tc.inputCVEItem, diff)
 		}
 	}
 }

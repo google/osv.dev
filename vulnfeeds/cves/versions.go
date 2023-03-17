@@ -435,11 +435,16 @@ func ExtractVersionInfo(cve CVEItem, validVersions []string) (v VersionInfo, not
 			}
 
 			gotVersions = true
-			v.AffectedVersions = append(v.AffectedVersions, AffectedVersion{
+			possibleNewAffectedVersion := AffectedVersion{
 				Introduced:   introduced,
 				Fixed:        fixed,
 				LastAffected: lastaffected,
-			})
+			}
+			if slices.Contains(v.AffectedVersions, possibleNewAffectedVersion) {
+				// Avoid appending duplicates
+				continue
+			}
+			v.AffectedVersions = append(v.AffectedVersions, possibleNewAffectedVersion)
 		}
 	}
 	if !gotVersions {

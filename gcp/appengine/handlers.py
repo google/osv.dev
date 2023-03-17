@@ -56,18 +56,7 @@ def _get_counter(year=None):
 
 
 def make_affected_commits_public(bug):
-  """Make related AffectedCommit entities public."""
-  to_update = []
-
-  # TODO(ochang): Remove this once migration is complete.
-  query = osv.AffectedCommit.query(osv.AffectedCommit.bug_id == bug.key.id())
-  for affected_commit in query:
-    affected_commit.public = True
-    to_update.append(affected_commit)
-
-  if to_update:
-    ndb.put_multi(to_update)
-
+  """Make related AffectedCommits entities public."""
   query = osv.AffectedCommits.query(osv.AffectedCommits.bug_id == bug.key.id())
   for affected_commits in query:
     affected_commits.public = True

@@ -173,11 +173,6 @@ def mark_bug_invalid(message):
     bug.status = osv.BugStatus.INVALID
     bug.put()
 
-    # TODO(ochang): Delete this one migration is done.
-    affected_commits = osv.AffectedCommit.query(
-        osv.AffectedCommit.bug_id == bug.key.id())
-    ndb.delete_multi([commit.key for commit in affected_commits])
-
     osv.delete_affected_commits(bug.key.id())
 
 
@@ -309,12 +304,6 @@ def filter_unsupported_ecosystems(vulnerability):
       filtered.append(affected)
   del vulnerability.affected[:]
   vulnerability.affected.extend(filtered)
-
-
-def _is_linux_ecosystem(vulnerability):
-  """Return whether or not the vulnerability is for the Linux ecosystem."""
-  return any(affected.package.ecosystem == 'Linux'
-             for affected in vulnerability.affected)
 
 
 class TaskRunner:
@@ -520,12 +509,7 @@ class TaskRunner:
 
     bug.put()
 
-    # Temporary migration exclusion: Don't write legacy Linux AffectedComit
-    # entries as they cause Datastore scaling issues.
-    write_legacy = not _is_linux_ecosystem(vulnerability)
-
-    osv.update_affected_commits(
-        bug.key.id(), result.commits, bug.public, write_legacy=write_legacy)
+    osv.update_affected_commits(bug.key.id(), result.commits, bug.public)
     self._notify_ecosystem_bridge(vulnerability)
 
   def _notify_ecosystem_bridge(self, vulnerability):

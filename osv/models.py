@@ -79,20 +79,6 @@ class IDCounter(ndb.Model):
   next_id = ndb.IntegerProperty()
 
 
-class AffectedCommit(ndb.Model):
-  """AffectedCommit entry."""
-  # The main bug ID.
-  bug_id = ndb.StringProperty()
-  # The commit hash.
-  commit = ndb.StringProperty()
-  # Project for the bug.
-  project = ndb.StringProperty()
-  # Ecosystem for the affected commit.
-  ecosystem = ndb.StringProperty()
-  # Whether or not the bug is public.
-  public = ndb.BooleanProperty()
-
-
 class AffectedCommits(ndb.Model):
   """AffectedCommits entry."""
   MAX_COMMITS_PER_ENTITY = 10000

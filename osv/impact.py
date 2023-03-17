@@ -344,33 +344,10 @@ def _throttled_delete(to_delete, batch_size=_DATASTORE_BATCH_SIZE):
       time.sleep(_DATASTORE_BATCH_SLEEP)
 
 
-def update_affected_commits(bug_id, commits, public, write_legacy=True):
+def update_affected_commits(bug_id, commits, public):
   """Update affected commits."""
   to_put = []
   to_delete = []
-
-  # TODO(ochang): Remove this completedly once AffectedCommits migration is
-  # done.
-  if write_legacy:
-    for commit in commits:
-      affected_commit = models.AffectedCommit(
-          id=bug_id + '-' + commit, bug_id=bug_id, commit=commit, public=public)
-
-      to_put.append(affected_commit)
-
-    # Delete any affected commits that no longer apply. This can happen in
-    # cases where a FixResult comes in later and we had previously marked a
-    # commit prior to the fix commit as being affected by a vulnerability.
-    for existing in models.AffectedCommit.query(
-        models.AffectedCommit.bug_id == bug_id):
-      if existing.commit not in commits:
-        to_delete.append(existing.key)
-
-    _throttled_put(to_put)
-    _throttled_delete(to_delete)
-
-    to_put.clear()
-    to_delete.clear()
 
   # Write batched commit indexes.
   # Sort the commits for ordering consistency in tests.

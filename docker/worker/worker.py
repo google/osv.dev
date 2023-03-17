@@ -584,7 +584,7 @@ class TaskRunner:
     task_type = message.attributes['type']
     source_id = get_source_id(message)
 
-    logging.error('Task %s timed out (source_id=%s)', task_type, source_id)
+    logging.warning('Task %s timed out (source_id=%s)', task_type, source_id)
     if task_type in ('fixed', 'regressed'):
       oss_fuzz.handle_timeout(task_type, source_id, self._oss_fuzz_dir, message)
 
@@ -613,7 +613,7 @@ class TaskRunner:
       logging.info('Returned from task thread')
       if not done:
         self.handle_timeout(subscriber, subscription, ack_id, message)
-        logging.error('Timed out processing task')
+        logging.warning('Timed out processing task')
 
     while True:
       response = subscriber.pull(subscription=subscription, max_messages=1)

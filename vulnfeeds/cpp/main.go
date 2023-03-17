@@ -108,6 +108,15 @@ func GitVersionsToCommit(CVE string, versions cves.VersionInfo, repos []string, 
 			continue
 		}
 		for _, av := range versions.AffectedVersions {
+			if av.Introduced != "" {
+				gc, err := GitVersionToCommit(av.Introduced, repo, normalizedTags)
+				if err != nil {
+					Logger.Warnf("[%s]: Failed to get a Git commit for introduced version %q: %v", CVE, av.Introduced, err)
+					continue
+				}
+				Logger.Infof("[%s]: Successfully derived %+v for introduced version %q", CVE, gc, av.Introduced)
+				v.IntroducedCommits = append(v.IntroducedCommits, gc)
+			}
 			if av.Fixed != "" {
 				gc, err := GitVersionToCommit(av.Fixed, repo, normalizedTags)
 				if err != nil {

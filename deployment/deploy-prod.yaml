@@ -19,9 +19,9 @@ steps:
 
 # Promote Cloud Deploy
 - name: gcr.io/cloud-builders/gcloud
-  args: ['deploy', 'releases', 'promote', '--quiet', '--release=osv-$SHORT_SHA', '--region=us-central1', '--delivery-pipeline=gke-workers', '--annotations=tag=$TAG_NAME']
+  args: ['deploy', 'releases', 'promote', '--quiet', '--release=osv-$SHORT_SHA', '--region=us-central1', '--delivery-pipeline=gke-workers', '--to-target=production-workers', '--annotations=tag=$TAG_NAME']
 - name: gcr.io/cloud-builders/gcloud
-  args: ['deploy', 'releases', 'promote', '--quiet', '--release=osv-$SHORT_SHA', '--region=us-central1', '--delivery-pipeline=osv-api', '--annotations=tag=$TAG_NAME']
+  args: ['deploy', 'releases', 'promote', '--quiet', '--release=osv-$SHORT_SHA', '--region=us-central1', '--delivery-pipeline=osv-api', '--to-target=production-api', '--annotations=tag=$TAG_NAME']
 
 # Tag the deployed images with the git tag
 - name: gcr.io/cloud-builders/gcloud

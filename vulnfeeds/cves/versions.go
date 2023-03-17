@@ -38,6 +38,7 @@ type AffectedVersion struct {
 }
 
 type VersionInfo struct {
+	IntroducedCommits   []GitCommit
 	FixCommits          []GitCommit
 	LimitCommits        []GitCommit
 	LastAffectedCommits []GitCommit

@@ -55,7 +55,7 @@ class UpdateAffectedCommitsTests(unittest.TestCase):
         '02',
     }
 
-    impact.update_affected_commits('BUG-1', commits, True, write_legacy=False)
+    impact.update_affected_commits('BUG-1', commits, True)
     affected_commits = list(models.AffectedCommits.query())
     self.assertEqual(1, len(affected_commits))
     affected_commits = affected_commits[0]
@@ -79,7 +79,7 @@ class UpdateAffectedCommitsTests(unittest.TestCase):
         '02',
     }
 
-    impact.update_affected_commits('BUG-1', commits, False, write_legacy=False)
+    impact.update_affected_commits('BUG-1', commits, False)
     affected_commits = list(models.AffectedCommits.query())
     self.assertEqual(1, len(affected_commits))
     affected_commits = affected_commits[0]
@@ -109,7 +109,7 @@ class UpdateAffectedCommitsTests(unittest.TestCase):
 
     commits = {'%08d' % number for number in range(26000)}
 
-    impact.update_affected_commits('BUG-1', commits, True, write_legacy=False)
+    impact.update_affected_commits('BUG-1', commits, True)
     affected_commits = list(models.AffectedCommits.query())
     self.assertEqual(4, len(affected_commits))
 
@@ -144,6 +144,6 @@ class UpdateAffectedCommitsTests(unittest.TestCase):
           id=f'BUG-1-{i}', bug_id='BUG-1', commits=[], public=True,
           page=i).put()
 
-    impact.update_affected_commits('BUG-1', set(), True, write_legacy=False)
+    impact.update_affected_commits('BUG-1', set(), True)
     affected_commits = list(models.AffectedCommits.query())
     self.assertEqual(0, len(affected_commits))

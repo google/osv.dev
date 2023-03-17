@@ -145,6 +145,10 @@ class ImpactTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
         public=False)
     allocated_bug.put()
 
+    # This should be deleted and overwritten with the actual computed commits.
+    osv.AffectedCommits(
+        id='OSV-2020-1337-3', bug_id='OSV-2020-1337', page=3).put()
+
   def test_basic(self):
     """Basic test."""
     message = mock.Mock()

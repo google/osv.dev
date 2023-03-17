@@ -306,12 +306,6 @@ def filter_unsupported_ecosystems(vulnerability):
   vulnerability.affected.extend(filtered)
 
 
-def _is_linux_ecosystem(vulnerability):
-  """Return whether or not the vulnerability is for the Linux ecosystem."""
-  return any(affected.package.ecosystem == 'Linux'
-             for affected in vulnerability.affected)
-
-
 class TaskRunner:
   """Task runner."""
 

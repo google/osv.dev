@@ -25,10 +25,10 @@ from typing import List, Tuple, Optional
 from google.cloud import ndb
 from google.cloud import pubsub_v1
 from google.cloud import storage
-from google.cloud import logging as google_logging
 import pygit2
 
 import osv
+import osv.logs
 
 DEFAULT_WORK_DIR = '/work'
 DEFAULT_PUBLIC_LOGGING_BUCKET = 'osv-public-import-logs'
@@ -53,6 +53,16 @@ def _is_vulnerability_file(source_repo, file_path):
     return False
 
   return file_path.endswith(source_repo.extension)
+
+
+def aestnow() -> datetime:
+  """Get the current AEST time"""
+  # - First make datetime timezone aware
+  # - Then set timezone to AEST without DST (+10)
+  # - Then make datetime timezone unaware again to keep
+  #   compatibility with ndb
+  return utcnow().replace(tzinfo=datetime.timezone.utc).astimezone(
+      datetime.timezone(datetime.timedelta(hours=10))).replace(tzinfo=None)
 
 
 def utcnow():
@@ -194,7 +204,9 @@ class Importer:
   def schedule_regular_updates(self, repo, source_repo):
     """Schedule regular updates."""
     if (source_repo.last_update_date and
-        source_repo.last_update_date >= utcnow().date()):
+        # OSV devs are mostly in located in australia,
+        # so only schedule update near midnight sydney time
+        source_repo.last_update_date >= aestnow().date()):
       return
 
     for bug in osv.Bug.query(
@@ -205,7 +217,7 @@ class Importer:
 
     # Re-compute existing Bugs for a period of time, as upstream changes may
     # affect results.
-    cutoff_time = (utcnow() - datetime.timedelta(days=_BUG_REDO_DAYS))
+    cutoff_time = (aestnow() - datetime.timedelta(days=_BUG_REDO_DAYS))
     query = osv.Bug.query(osv.Bug.status == osv.BugStatus.PROCESSED,
                           osv.Bug.source == source_repo.name,
                           osv.Bug.timestamp >= cutoff_time)
@@ -218,7 +230,7 @@ class Importer:
 
       self._request_analysis(bug, source_repo, repo)
 
-    source_repo.last_update_date = utcnow().date()
+    source_repo.last_update_date = aestnow().date()
     source_repo.put()
 
   def _sync_from_previous_commit(self, source_repo, repo):
@@ -461,11 +473,6 @@ class Importer:
 
 
 def main():
-  logging.getLogger().setLevel(logging.INFO)
-  logging.getLogger('google.api_core.bidi').setLevel(logging.ERROR)
-  logging.getLogger('google.cloud.pubsub_v1.subscriber._protocol.'
-                    'streaming_pull_manager').setLevel(logging.ERROR)
-
   parser = argparse.ArgumentParser(description='Importer')
   parser.add_argument(
       '--work_dir', help='Working directory', default=DEFAULT_WORK_DIR)
@@ -492,8 +499,7 @@ def main():
 
 
 if __name__ == '__main__':
+  osv.logs.setup_gcp_logging('importer')
   _ndb_client = ndb.Client()
-  logging_client = google_logging.Client()
-  logging_client.setup_logging()
   with _ndb_client.context():
     main()

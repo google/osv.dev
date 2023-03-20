@@ -100,10 +100,10 @@ def main():
       'lang':
           'Curl example',
       'source':
-          ('curl -X POST -d \\\n'
+          ('curl -d \\\n'
            '  \'{"commit": "6879efc2c1596d11a6a6ad296f80063b558d5e0f"}\' \\\n'
            '  "https://api.osv.dev/v1/query"\n\n'
-           'curl -X POST -d \\\n'
+           'curl -d \\\n'
            '  \'{"package": {"name": "mruby"}, "version": "2.1.2rc"}\' \\\n'
            '  "https://api.osv.dev/v1/query"')
   }]
@@ -111,8 +111,7 @@ def main():
   spec['paths']['/v1/querybatch']['post']['x-code-samples'] = [{
       'lang':
           'Curl example',
-      'source':
-          ("""cat <<EOF | curl -X POST -d @- "https://api.osv.dev/v1/querybatch"
+      'source': ("""cat <<EOF | curl -d @- "https://api.osv.dev/v1/querybatch"
 {
   "queries": [
     {

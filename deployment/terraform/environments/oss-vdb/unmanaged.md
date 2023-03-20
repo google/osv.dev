@@ -1,0 +1,49 @@
+Resources that exist in the `oss-vdb` GCP Project that are currently unmanaged by Terraform (not exhaustive).
+Not everything here needs to be managed by Terraform, this is just for reference.
+
+- The GKE monitor
+  - `oss-vdb/us-central1-c/monitor`
+  - `service` service account
+- `pypi` Cloud Function
+- https://github.com/google/osv.dev/tree/master/vulnfeeds/pypi
+  - `pypa-triage` Cloud Build trigger
+  - `pypa-triage-schedule` Cloud Scheduler job
+  - `pypa-advisory-db` Cloud Bucket
+- Indexer
+  - `indexer-work` Pub/Sub topic & subscription
+    - `projects/oss-vdb/topics/indexer-work`
+    - `projects/oss-vdb/subscriptions/indexer-work-sub`
+  - Cloud Storage Buckets
+    - `osv-indexer-repos`
+    - `osv-indexer-configs`
+- Cloud DNS
+  - `projects/oss-vdb/managedZones/osv`
+- Cloud Build
+  - `cloud-build-trigger-scheduler` service account (created automatically?)
+  - `cloud-builds` Pub/Sub topic
+    - `projects/oss-vdb/topics/cloud-builds`
+  - All the Cloud Build triggers
+- Cloud Deploy
+- Cloud Buckets
+  - `android-osv`
+  - `ghsa-osv`
+  - `oss-fuzz-osv-mappings`
+  - `oss-fuzz-osv-vulns`
+  - `oss-vdb-tf` (which is where the terraform state is stored)
+  - `osv-backup`
+  - `test-python-vulns`
+  - `test-bucket-osv`
+  - `test-osv-source-bucket`
+- Test/Staging API
+  - `api-staging.osv.dev` & `api-test.osv.dev`
+  - Cloud Run (grpc & api frontend)
+  - Endpoints
+- Secret Manager secrets
+- Service Accounts:
+  - `esp-test`
+  - `osv-user` (unused?)
+  - `terraform-plan`
+  - `worker` (unused?)
+- A number of IAM permissions
+- `osv-vulnerabilities GCS bucket health` Monitoring Alert Policy
+- `gcf-pypi-us-central1-pypi-bridge` Pub/Sub Subscription

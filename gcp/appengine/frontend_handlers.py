@@ -26,6 +26,10 @@ from flask import redirect
 from flask import render_template
 from flask import request
 from flask import url_for
+from flask import send_from_directory
+from werkzeug.utils import safe_join
+from google.cloud import ndb
+
 import markdown2
 from urllib import parse
 
@@ -120,17 +124,38 @@ def blog_rss():
 def blog_post(blog_name):
   if not _VALID_BLOG_NAME.match(blog_name):
     abort(404)
-    return None
+
+  path = safe_join('posts', blog_name, 'index.html')
+  if not path:
+    abort(404)
 
   return render_template(
       'blog_post.html',
-      content=_load_blog_content(
-          os.path.join('posts', blog_name, 'index.html')))
+      content=_load_blog_content(safe_join('posts', blog_name, 'index.html')))
+
+
+@blueprint.route('/blog/posts/<blog_name>/<file_name>', strict_slashes=False)
+def blog_post_static_files(blog_name: str, file_name: str):
+  """Return static files under blog post directories"""
+  if not _VALID_BLOG_NAME.match(blog_name):
+    abort(404)
+
+  path = safe_join(current_app.static_folder, _BLOG_CONTENTS_DIR, 'posts',
+                   blog_name)
+  if not path:
+    abort(404)
+
+  return send_from_directory(path, file_name)
 
 
 @blueprint.route('/about')
 def about():
-  return render_template('about.html')
+  return redirect('/faq')
+
+
+@blueprint.route('/faq')
+def faq():
+  return render_template('faq.html')
 
 
 @blueprint.route('/list')
@@ -315,7 +340,7 @@ def osv_get_ecosystem_counts_cached():
   return osv_get_ecosystem_counts()
 
 
-def osv_get_ecosystem_counts():
+def osv_get_ecosystem_counts() -> dict[str, int]:
   """Get count of vulnerabilities per ecosystem."""
   counts = {}
   ecosystems = osv_get_ecosystems()
@@ -336,8 +361,8 @@ def osv_get_ecosystem_counts():
 
 def osv_query(search_string, page, affected_only, ecosystem):
   """Run an OSV query."""
-  query = osv.Bug.query(osv.Bug.status == osv.BugStatus.PROCESSED,
-                        osv.Bug.public == True)  # pylint: disable=singleton-comparison
+  query: ndb.Query = osv.Bug.query(osv.Bug.status == osv.BugStatus.PROCESSED,
+                                   osv.Bug.public == True)  # pylint: disable=singleton-comparison
 
   if search_string:
     query = query.filter(osv.Bug.search_indices == search_string.lower())
@@ -349,18 +374,35 @@ def osv_query(search_string, page, affected_only, ecosystem):
     query = query.filter(osv.Bug.ecosystem == ecosystem)
 
   query = query.order(-osv.Bug.last_modified)
-  total = query.count()
-  results = {
-      'total': total,
-      'items': [],
-  }
+
+  if not search_string and not affected_only:
+    # If no search string and not affected only, use the cached ecosystem counts
+    total_future = ndb.Future()
+    total_future.set_result(get_vuln_count_for_ecosystem(ecosystem))
+  else:
+    total_future = query.count_async()
+
+  result_items = []
 
   bugs, _, _ = query.fetch_page(
       page_size=_PAGE_SIZE, offset=(page - 1) * _PAGE_SIZE)
   for bug in bugs:
-    results['items'].append(bug_to_response(bug, detailed=False))
+    result_items.append(bug_to_response(bug, detailed=False))
+
+  results = {
+      'total': total_future.get_result(),
+      'items': result_items,
+  }
 
   return results
+
+
+def get_vuln_count_for_ecosystem(ecosystem: str) -> int:
+  ecosystem_counts = osv_get_ecosystem_counts_cached()
+  if not ecosystem:
+    return sum(ecosystem_counts.values())
+
+  return ecosystem_counts.get(ecosystem, 0)
 
 
 def osv_get_by_id(vuln_id):

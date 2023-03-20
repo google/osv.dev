@@ -1,0 +1,35 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: workers
+spec:
+  template:
+    spec:
+      containers:
+      - name: worker-private
+        env:
+          - name: GOOGLE_CLOUD_PROJECT
+            value: oss-vdb
+          - name: DEPS_DEV_API_KEY
+            valueFrom:
+               secretKeyRef:
+                name: secrets
+                key: deps.dev
+        args:
+          - "--ssh_key_public=/secrets/ssh.pub"
+          - "--ssh_key_private=/secrets/ssh"
+          - "--redis_host=10.102.25.213"
+          - "--deps_dev_api_key=$(DEPS_DEV_API_KEY)"
+        volumeMounts:
+          - mountPath: "/secrets"
+            name: "secrets"
+      volumes:
+        - name: secrets
+          secret:
+            secretName: secrets
+            items:
+              - key: ssh
+                path: ssh
+                mode: 0600
+              - key: ssh.pub
+                path: ssh.pub

@@ -67,7 +67,7 @@ def find_oss_fuzz_fix_via_commit(repo, start_commit, end_commit, source_id,
   try:
     walker = repo.walk(end_commit, pygit2.GIT_SORT_TOPOLOGICAL)
   except KeyError:
-    logging.error('Failed to walk repo with invalid commit: %s', end_commit)
+    logging.warning('Failed to walk repo with invalid commit: %s', end_commit)
     return None
 
   walker.hide(start_commit)
@@ -129,7 +129,8 @@ def do_bisect(bisect_type, source_id, project_name, engine, sanitizer,
       result = bisector.bisect(bisect_type, old_commit, new_commit, f.name,
                                fuzz_target, build_data)
     except bisector.BisectError as e:
-      logging.error('Bisect failed with exception:\n%s', traceback.format_exc())
+      logging.warning('Bisect failed with exception:\n%s',
+                      traceback.format_exc())
       return bisector.Result(e.repo_url, None)
     except Exception:
       logging.error('Bisect failed with unexpected exception:\n%s',
@@ -137,8 +138,8 @@ def do_bisect(bisect_type, source_id, project_name, engine, sanitizer,
       return None
 
     if result.commit == old_commit:
-      logging.error('Bisect failed for testcase %s, bisected to old_commit',
-                    source_id)
+      logging.warning('Bisect failed for testcase %s, bisected to old_commit',
+                      source_id)
       result = None
 
     return result

@@ -14,6 +14,7 @@
 """API server implementation."""
 
 import argparse
+import codecs
 import concurrent
 import functools
 import logging
@@ -242,7 +243,13 @@ def do_query(query, context, include_details=True):
   next_page_token = None
 
   if query.WhichOneof('param') == 'commit':
-    bugs = yield query_by_commit(query.commit, to_response=to_response)
+    try:
+      commit_bytes = codecs.decode(query.commit, 'hex')
+    except ValueError:
+      context.abort(grpc.StatusCode.INVALID_ARGUMENT, 'Invalid hash.')
+      return None
+
+    bugs = yield query_by_commit(commit_bytes, to_response=to_response)
   elif purl and purl_version:
     bugs = yield query_by_version(
         package_name, ecosystem, purl, purl_version, to_response=to_response)
@@ -301,13 +308,16 @@ def _clean_purl(purl):
 @ndb.tasklet
 def query_by_commit(commit, to_response=bug_to_response):
   """Query by commit."""
-  query = osv.AffectedCommit.query(osv.AffectedCommit.commit == commit,
-                                   osv.AffectedCommit.public == True)  # pylint: disable=singleton-comparison
+  query = osv.AffectedCommits.query(osv.AffectedCommits.commits == commit)
   bug_ids = []
   it = query.iter()
   while (yield it.has_next_async()):
-    affected_commit = it.next()
-    bug_ids.append(affected_commit.bug_id)
+    affected_commits = it.next()
+    # Avoid requiring a separate index to include this in the initial Datastore
+    # query. The number of these should be very little to just iterate through.
+    if not affected_commits.public:
+      continue
+    bug_ids.append(affected_commits.bug_id)
 
   return _get_bugs(bug_ids, to_response=to_response)
 

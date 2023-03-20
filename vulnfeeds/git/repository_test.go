@@ -1,26 +1,30 @@
 package git
 
 import (
+	"reflect"
 	"testing"
 
 	"github.com/go-test/deep"
+
+	"golang.org/x/exp/maps"
 )
 
 func TestRepoTags(t *testing.T) {
-	var cache *RepoTagsMap
+	var cache RepoTagsCache
+	cache = make(RepoTagsCache)
 
 	tests := []struct {
 		description    string
 		inputRepoURL   string
-		cache          *RepoTagsMap
-		expectedResult Versions
+		cache          RepoTagsCache
+		expectedResult Tags
 		expectedOk     bool
 	}{
 		{
 			description:  "Repo with only lightweight tags and no cacheing",
 			inputRepoURL: "https://github.com/zblogcn/zblogphp",
 			cache:        nil,
-			expectedResult: Versions{
+			expectedResult: Tags{
 				{Tag: "1.5.0.1525", Commit: "c8d47c25296ffda9f2083a813ed719b637f86c59"},
 				{Tag: "1.5.0.1525-2", Commit: "fc4579cade51e0a565e5bd83503e028a17675e9d"},
 				{Tag: "1.5.0.1525-3", Commit: "537c6000fe951d9e7719e204a4c324772ec28bcf"},
@@ -45,7 +49,7 @@ func TestRepoTags(t *testing.T) {
 			description:  "Repo with only lightweight tags and cacheing",
 			inputRepoURL: "https://github.com/zblogcn/zblogphp",
 			cache:        cache,
-			expectedResult: Versions{
+			expectedResult: Tags{
 				{Tag: "1.5.0.1525", Commit: "c8d47c25296ffda9f2083a813ed719b637f86c59"},
 				{Tag: "1.5.0.1525-2", Commit: "fc4579cade51e0a565e5bd83503e028a17675e9d"},
 				{Tag: "1.5.0.1525-3", Commit: "537c6000fe951d9e7719e204a4c324772ec28bcf"},
@@ -70,7 +74,7 @@ func TestRepoTags(t *testing.T) {
 			description:  "Repo with lightweight and annotated tags and no cacheing",
 			inputRepoURL: "https://github.com/aide/aide",
 			cache:        nil,
-			expectedResult: Versions{
+			expectedResult: Tags{
 				{Tag: "aide.0.10.release", Commit: "02961dda0a1f114802e107bad93108c9b9d092ed"},
 				{Tag: "aide.0.11.rc1.release", Commit: "050147df2f788ce25787754df0d8c47b9fc743e0"},
 				{Tag: "aide.0.11.rc2.release", Commit: "fd39909144f4a89d21748884610df2936ad2c46b"},
@@ -108,6 +112,7 @@ func TestRepoTags(t *testing.T) {
 				{Tag: "v0.17.3", Commit: "b1fda5bdd5e74ab7874f5c93fecb35457cc68f78"},
 				{Tag: "v0.17.4", Commit: "49e8faad5e2ed9ab2de54f6858ee223f918abac4"},
 				{Tag: "v0.18", Commit: "8ed48ad5ba180cd3ce30a3c41d42bad3779d9f26"},
+				{Tag: "v0.18.1", Commit: "5ee3529c3014b4238231885b1403faa3e1affb5c"},
 			},
 			expectedOk: true,
 		},
@@ -116,7 +121,7 @@ func TestRepoTags(t *testing.T) {
 	for _, tc := range tests {
 		var cache_before, cache_after int
 		if tc.cache != nil {
-			cache_before = len(*cache)
+			cache_before = len(tc.cache)
 		}
 		got, err := RepoTags(tc.inputRepoURL, tc.cache)
 		if err != nil && tc.expectedOk {
@@ -124,13 +129,78 @@ func TestRepoTags(t *testing.T) {
 		}
 		if diff := deep.Equal(got, tc.expectedResult); diff != nil {
 			t.Errorf("test %q: RepoTags(%q) incorrect result: %#v", tc.description, tc.inputRepoURL, diff)
-			// t.Errorf("test %q: RepoTags(%q) incorrect result: expected: %#v, got: %#v", tc.description, tc.inputRepoURL, tc.expectedResult, got)
 		}
 		if tc.cache != nil {
-			cache_after = len(*cache)
+			cache_after = len(tc.cache)
 		}
 		if tc.cache != nil && !(cache_after > cache_before) {
-			t.Errorf("test %q: RepoTags(%q) incorrect cache behaviour: size before: %d size after: %d", tc.description, tc.inputRepoURL, cache_before, cache_after)
+			t.Errorf("test %q: RepoTags(%q) incorrect cache behaviour: size before: %d size after: %d cache: %#v", tc.description, tc.inputRepoURL, cache_before, cache_after, tc.cache)
+		}
+	}
+}
+
+func TestNormalizeRepoTags(t *testing.T) {
+	tests := []struct {
+		description  string
+		inputRepoURL string
+		expectedOk   bool
+	}{
+		{
+			description:  "Valid repository, normalized versions exist",
+			inputRepoURL: "https://github.com/aide/aide",
+			expectedOk:   true,
+		},
+		{
+			description:  "Valid repository, no tags, normalized versions do not exist",
+			inputRepoURL: "https://github.com/andrewpollock/osv.dev.git",
+			expectedOk:   false,
+		},
+		{
+			description:  "Invalid repository",
+			inputRepoURL: "https://github.com/andrewpollock/mybogusrepo",
+			expectedOk:   false,
+		},
+	}
+	var cache RepoTagsCache
+	cache = make(RepoTagsCache)
+	for _, tc := range tests {
+		normalizedRepoTags := make(map[string]NormalizedTag)
+		normalizedRepoTags, err := NormalizeRepoTags(tc.inputRepoURL, cache)
+		if err != nil && tc.expectedOk {
+			t.Errorf("test %q: NormalizeRepoTags(%q) unexpectedly failed: %+v", tc.description, tc.inputRepoURL, err)
+		}
+		// Confirm there are some normalized versions
+		if len(maps.Keys(normalizedRepoTags)) == 0 && tc.expectedOk {
+			t.Errorf("test %q: NormalizeRepoTags(%q): failed to find any normalized versions for repo in map: %#v", tc.description, tc.inputRepoURL, normalizedRepoTags)
+		}
+		if len(maps.Keys(normalizedRepoTags)) > 0 && cache[tc.inputRepoURL].NormalizedTag == nil {
+			t.Errorf("test %q: NormalizeRepoTags(%q) incorrect cache behaviour: %#v", tc.description, tc.inputRepoURL, cache)
+		}
+	}
+}
+
+func TestValidRepo(t *testing.T) {
+	tests := []struct {
+		description    string
+		repoURL        string
+		expectedResult interface{}
+		expectedOk     bool
+	}{
+		{
+			description:    "Valid repository",
+			repoURL:        "https://github.com/torvalds/linux",
+			expectedResult: true,
+		},
+		{
+			description:    "Invalid repository",
+			repoURL:        "https://github.com/andrewpollock/mybogusrepo",
+			expectedResult: false,
+		},
+	}
+	for _, tc := range tests {
+		got := ValidRepo(tc.repoURL)
+		if !reflect.DeepEqual(got, tc.expectedResult) {
+			t.Errorf("test %q: ValidRepo(%q) was incorrect, got: %#v, expected: %#v", tc.description, tc.repoURL, got, tc.expectedResult)
 		}
 	}
 }

@@ -31,12 +31,15 @@ This project follows
 
 ### Prerequisites
 
-You must install: 1. Git 1. Python 3.8+ 1.
-[Make](https://www.gnu.org/software/make/) 1.
-[Pipenv](https://pipenv.pypa.io/en/latest/) 1.
-[Google Cloud SDK](https://cloud.google.com/sdk) 1.
-[Hugo](https://gohugo.io/installation/) 1.
-[Terraform](https://developer.hashicorp.com/terraform/downloads)
+You must install:
+
+1.  Git
+1.  Python 3.8+
+1.  [Make](https://www.gnu.org/software/make/)
+1.  [Pipenv](https://pipenv.pypa.io/en/latest/)
+1.  [Google Cloud SDK](https://cloud.google.com/sdk)
+1.  [Hugo](https://gohugo.io/installation/)
+1.  [Terraform](https://developer.hashicorp.com/terraform/downloads)
 
 Then you can set up the development environment by cloning the OSV repo and
 installing the Pipfile dependencies.
@@ -109,3 +112,14 @@ Keep this safe.
 $ gcloud auth login --update-adc
 $ make SERVICE_ACCOUNT=/path/to/service_account.json run-api-server
 ```
+## Contributing Data
+
+Data contributions are also welcome! 
+
+If you a work with a project such as a Linux distribution and would like to contribute your security advisories, please follow these steps.
+
+1. Open an [issue](https://github.com/google/osv.dev/issues). Let us know about your project and we can help you figure out the remaining steps. Please tag the issue `datasource` so we can properly triage the issue. 
+
+2. Refer to the [OSV Schema](https://ossf.github.io/osv-schema/) documentation for information on how to properly format the data so it can be accepted. 
+
+3. Data can be supplied either through a public Git repository or a public GCS bucket. 

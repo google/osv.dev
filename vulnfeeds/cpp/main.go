@@ -9,13 +9,13 @@ import (
 	"log"
 	"net/url"
 	"os"
-	"path"
 	"path/filepath"
 	"strings"
 
 	"cloud.google.com/go/logging"
-	"github.com/go-git/go-git/v5"
+
 	"github.com/google/osv/vulnfeeds/cves"
+	"github.com/google/osv/vulnfeeds/git"
 	"github.com/google/osv/vulnfeeds/utility"
 	"github.com/google/osv/vulnfeeds/vulns"
 )
@@ -40,6 +40,7 @@ const (
 )
 
 var Logger utility.LoggerWrapper
+var RepoTagsCache git.RepoTagsCache
 var Metrics struct {
 	TotalCVEs           int
 	CVEsForApplications int
@@ -75,66 +76,72 @@ func InScopeGitRepo(repoURL string) bool {
 	return true
 }
 
-func GetRepoDir(repoURL string, repobasedir string) string {
-	parsedURL, err := url.Parse(repoURL)
+// Take an unnormalized version string, a repo, the pre-normalized mapping of tags to commits and return a GitCommit.
+func GitVersionToCommit(version string, repo string, normalizedTags map[string]git.NormalizedTag) (gc cves.GitCommit, e error) {
+	normalizedVersion, err := cves.NormalizeVersion(version)
 	if err != nil {
-		return ""
+		return gc, err
 	}
-	return path.Join(repobasedir, parsedURL.Hostname(), parsedURL.Path)
+	// Try a straight out match first.
+	// TODO try fuzzy prefix matches also.
+	normalizedTag, ok := normalizedTags[normalizedVersion]
+	if !ok {
+		return gc, fmt.Errorf("Failed to find a commit for version %q normalized as %q", version, normalizedVersion)
+	}
+	return cves.GitCommit{
+		Repo:   repo,
+		Commit: normalizedTag.Commit,
+	}, nil
 }
 
-// Either clones the repository or returns the one previously cloned.
-func GetRepo(repoURL string, repobasedir string) (r *git.Repository, e error) {
-	repodir := GetRepoDir(repoURL, repobasedir)
-	// TODO: reorder to open, then clone, once behaviour and failure modes understood
-	Logger.Infof("Cloning %s", repoURL)
-	r, err := git.PlainClone(repodir, false, &git.CloneOptions{
-		URL: repoURL,
-	})
-	if err != nil && err != git.ErrRepositoryAlreadyExists {
-		return nil, err
-	}
-	r, err = git.PlainOpen(repodir)
-	if err != nil {
-		return nil, err
-	}
-	return r, nil
-}
-
-// Examines repos and tries to convert version tags to commits
-func GitVersionToCommit(versions cves.VersionInfo, repos []string, repobasedir string) (v cves.VersionInfo, e error) {
+// Examines repos and tries to convert versions to commits by treating them as Git tags.
+// Takes a CVE ID string (for logging), cves.VersionInfo with AffectedVersions and
+// no FixCommits and attempts to add FixCommits.
+func GitVersionsToCommit(CVE string, versions cves.VersionInfo, repos []string, cache git.RepoTagsCache) (v cves.VersionInfo, e error) {
 	// versions is a VersionInfo with AffectedVersions and no FixCommits
 	// v is a VersionInfo with FixCommits included
 	v = versions
 	for _, repo := range repos {
-		r, err := GetRepo(repo, repobasedir)
+		normalizedTags, err := git.NormalizeRepoTags(repo, cache)
 		if err != nil {
-			Logger.Warnf("Failed to get %s: %v", repo, err)
+			Logger.Warnf("[%s]: Failed to normalize tags for %s: %v", CVE, repo, err)
 			continue
 		}
 		for _, av := range versions.AffectedVersions {
-			// We can't map a non-existent version to a tag and commit, so skip.
-			if av.Fixed == "" {
-				continue
+			if av.Introduced != "" {
+				gc, err := GitVersionToCommit(av.Introduced, repo, normalizedTags)
+				if err != nil {
+					Logger.Warnf("[%s]: Failed to get a Git commit for introduced version %q: %v", CVE, av.Introduced, err)
+					continue
+				}
+				Logger.Infof("[%s]: Successfully derived %+v for introduced version %q", CVE, gc, av.Introduced)
+				v.IntroducedCommits = append(v.IntroducedCommits, gc)
 			}
-			// TODO: add more sophisticated (fuzzy) version to tag matching.
-			ref, err := r.Tag("v" + av.Fixed)
-			if err != nil {
-				Logger.Warnf("Failed to find a tag for %q in %s: %v", av.Fixed, repo, err)
-				continue
+			if av.Fixed != "" {
+				gc, err := GitVersionToCommit(av.Fixed, repo, normalizedTags)
+				if err != nil {
+					Logger.Warnf("[%s]: Failed to get a Git commit for fixed version %q: %v", CVE, av.Fixed, err)
+					continue
+				}
+				Logger.Infof("[%s]: Successfully derived %+v for fixed version %q", CVE, gc, av.Fixed)
+				v.FixCommits = append(v.FixCommits, gc)
 			}
-			fc := cves.FixCommit{
-				Repo:   repo,
-				Commit: ref.Hash().String(),
+			if av.LastAffected != "" {
+				gc, err := GitVersionToCommit(av.LastAffected, repo, normalizedTags)
+				if err != nil {
+					Logger.Warnf("[%s]: Failed to get a Git commit for last_affected version %q: %v", CVE, av.LastAffected, err)
+					continue
+				}
+				Logger.Infof("[%s]: Successfully derived %+v for last_affected version %q", CVE, gc, av.LastAffected)
+				v.LastAffectedCommits = append(v.LastAffectedCommits, gc)
 			}
-			v.FixCommits = append(v.FixCommits, fc)
 		}
 	}
 	return v, nil
 }
 
 // Takes an NVD CVE record and outputs an OSV file in the specified directory.
-func CVEToOSV(CVE cves.CVEItem, repos []string, repobasedir string, directory string) error {
+func CVEToOSV(CVE cves.CVEItem, repos []string, cache git.RepoTagsCache, directory string) error {
 	CPEs := cves.CPEs(CVE)
 	CPE, err := cves.ParseCPE(CPEs[0])
 	if err != nil {
@@ -149,10 +156,8 @@ func CVEToOSV(CVE cves.CVEItem, repos []string, repobasedir string, directory st
 		if len(repos) == 0 {
 			return fmt.Errorf("No affected ranges for %s for %q, and no repos to try and convert %+v to tags with", CVE.CVE.CVEDataMeta.ID, CPE.Product, versions.AffectedVersions)
 		}
-		if repobasedir != "" {
-			Logger.Infof("[%s]: Trying to convert version tags %+v to commits using %v", CVE.CVE.CVEDataMeta.ID, versions.AffectedVersions, repos)
-			versions, err = GitVersionToCommit(versions, repos, repobasedir)
-		}
+		Logger.Infof("[%s]: Trying to convert version tags %+v to commits using %v", CVE.CVE.CVEDataMeta.ID, versions.AffectedVersions, repos)
+		versions, err = GitVersionsToCommit(CVE.CVE.CVEDataMeta.ID, versions, repos, cache)
 	}
 
 	affected := vulns.Affected{}
@@ -203,7 +208,6 @@ func loadCPEDictionary(ProductToRepo *VendorProductToRepoMap, f string) error {
 func main() {
 	jsonPath := flag.String("nvd_json", "", "Path to NVD CVE JSON to examine.")
 	parsedCPEDictionary := flag.String("cpe_repos", "", "Path to JSON mapping of CPEs to repos generated by cperepos")
-	repoDir := flag.String("repo_dir", "", "Directory to use for repo clones.")
 	outDir := flag.String("out_dir", "", "Path to output results.")
 
 	flag.Parse()
@@ -343,7 +347,7 @@ func main() {
 
 		Metrics.CVEsForKnownRepos++
 
-		err := CVEToOSV(cve, ReposForCVE[cve.CVE.CVEDataMeta.ID], *repoDir, *outDir)
+		err := CVEToOSV(cve, ReposForCVE[cve.CVE.CVEDataMeta.ID], RepoTagsCache, *outDir)
 		if err != nil {
 			Logger.Warnf("Failed to generate an OSV record for %s: %+v", cve.CVE.CVEDataMeta.ID, err)
 			continue

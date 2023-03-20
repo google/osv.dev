@@ -460,7 +460,7 @@ func ExtractVersionInfo(cve CVEItem, validVersions []string) (v VersionInfo, not
 		notes = append(notes, "No versions detected.")
 	}
 
-	if len(notes) != 0 {
+	if len(notes) != 0 && len(validVersions) > 0 {
 		notes = append(notes, "Valid versions:")
 		for _, version := range validVersions {
 			notes = append(notes, "  - "+version)

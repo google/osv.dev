@@ -8,6 +8,7 @@
                                                 'name': 'Media Framework',
                                                 'purl': None},
                                  'ranges': [],
+                                 'severities': [],
                                  'versions': ['10', '11']}],
     'aliases': ['CVE-2021-0483'],
     'credits': [],

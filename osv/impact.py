@@ -13,6 +13,7 @@
 # limitations under the License.
 """Impact analysis."""
 
+import codecs
 import collections
 import logging
 import os
@@ -38,8 +39,14 @@ AnalyzeResult = collections.namedtuple('AnalyzeResult', 'has_changes commits')
 
 TagsInfo = collections.namedtuple('TagsInfo', 'tags latest_tag')
 
-_DATASTORE_BATCH_SIZE = 10000
-_DATASTORE_BATCH_SLEEP = 5
+# Limit for writing small entities.
+_DATASTORE_BATCH_SIZE = 5000
+# Limit for writing large entities that are close to the 1MiB max entity size.
+# There is additionally a request size limit of 10MiB for batched put()
+# requests. We conservatively set this to slightly under (8 as opposed to 10)
+# to leave some more breathing room.
+_DATASTORE_LARGE_BATCH_SIZE = 8
+_DATASTORE_BATCH_SLEEP = 10
 
 
 class ImpactError(Exception):
@@ -321,17 +328,17 @@ def _batcher(entries, batch_size):
     yield entries[i:i + batch_size], i + batch_size >= len(entries)
 
 
-def _throttled_put(to_put):
+def _throttled_put(to_put, batch_size=_DATASTORE_BATCH_SIZE):
   """Throttled ndb put."""
-  for batch, is_last in _batcher(to_put, _DATASTORE_BATCH_SIZE):
+  for batch, is_last in _batcher(to_put, batch_size):
     ndb.put_multi(batch)
     if not is_last:
       time.sleep(_DATASTORE_BATCH_SLEEP)
 
 
-def _throttled_delete(to_delete):
+def _throttled_delete(to_delete, batch_size=_DATASTORE_BATCH_SIZE):
   """Throttled ndb delete."""
-  for batch, is_last in _batcher(to_delete, _DATASTORE_BATCH_SIZE):
+  for batch, is_last in _batcher(to_delete, batch_size):
     ndb.delete_multi(batch)
     if not is_last:
       time.sleep(_DATASTORE_BATCH_SLEEP)
@@ -342,22 +349,38 @@ def update_affected_commits(bug_id, commits, public):
   to_put = []
   to_delete = []
 
-  for commit in commits:
-    affected_commit = models.AffectedCommit(
-        id=bug_id + '-' + commit, bug_id=bug_id, commit=commit, public=public)
+  # Write batched commit indexes.
+  # Sort the commits for ordering consistency in tests.
+  num_pages = 0
+  for batch, _ in _batcher(
+      sorted(commits), models.AffectedCommits.MAX_COMMITS_PER_ENTITY):
+    affected_commits = models.AffectedCommits(
+        id=f'{bug_id}-{num_pages}',
+        bug_id=bug_id,
+        public=public,
+        page=num_pages)
+    affected_commits.commits = [
+        codecs.decode(commit, 'hex') for commit in batch
+    ]
+    to_put.append(affected_commits)
+    num_pages += 1
 
-    to_put.append(affected_commit)
-
-  # Delete any affected commits that no longer apply. This can happen in cases
-  # where a FixResult comes in later and we had previously marked a commit prior
-  # to the fix commit as being affected by a vulnerability.
-  for existing in models.AffectedCommit.query(
-      models.AffectedCommit.bug_id == bug_id):
-    if existing.commit not in commits:
+  # Clear any previously written pages above our current page count.
+  for existing in models.AffectedCommits.query(
+      models.AffectedCommits.bug_id == bug_id):
+    if existing.page >= num_pages:
       to_delete.append(existing.key)
 
-  _throttled_put(to_put)
-  _throttled_delete(to_delete)
+  _throttled_put(to_put, batch_size=_DATASTORE_LARGE_BATCH_SIZE)
+  _throttled_delete(to_delete, batch_size=_DATASTORE_LARGE_BATCH_SIZE)
+
+
+def delete_affected_commits(bug_id):
+  """Delete affected commits."""
+  affected_commits = models.AffectedCommits.query(
+      models.AffectedCommits.bug_id == bug_id)
+  _throttled_delete([commit.key for commit in affected_commits],
+                    batch_size=_DATASTORE_LARGE_BATCH_SIZE)
 
 
 def enumerate_versions(package, ecosystem, affected_range):

@@ -7,6 +7,14 @@ resource "google_compute_subnetwork" "my_subnet_0" {
   ip_cidr_range            = "10.45.32.0/22"
   private_ip_google_access = true
   region                   = "us-central1"
+
+  lifecycle {
+    ignore_changes = [
+      # oss-vdb has an auto-generated description from when it was created externally.
+      # It can't be changed/removed without recreating the resource, so ignore it.
+      description,
+    ]
+  }
 }
 
 resource "google_compute_router" "router" {
@@ -24,4 +32,9 @@ resource "google_compute_router_nat" "nat_config" {
   nat_ip_allocate_option              = "AUTO_ONLY"
   region                              = google_compute_router.router.region
   enable_endpoint_independent_mapping = false
+
+  log_config {
+    enable = false
+    filter = "ALL"
+  }
 }

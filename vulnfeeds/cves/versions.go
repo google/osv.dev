@@ -22,27 +22,27 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/go-git/go-git/v5"
-	"github.com/go-git/go-git/v5/config"
-	"github.com/go-git/go-git/v5/plumbing/transport"
-	"github.com/go-git/go-git/v5/storage/memory"
 	"github.com/knqyf263/go-cpe/naming"
 	"golang.org/x/exp/slices"
 )
 
-type FixCommit struct {
+type GitCommit struct {
 	Repo   string
 	Commit string
 }
 
 type AffectedVersion struct {
-	Introduced string
-	Fixed      string
+	Introduced   string
+	Fixed        string
+	LastAffected string
 }
 
 type VersionInfo struct {
-	FixCommits       []FixCommit
-	AffectedVersions []AffectedVersion
+	IntroducedCommits   []GitCommit
+	FixCommits          []GitCommit
+	LimitCommits        []GitCommit
+	LastAffectedCommits []GitCommit
+	AffectedVersions    []AffectedVersion
 }
 
 type CPE struct {
@@ -266,28 +266,8 @@ func Commit(u string) (string, error) {
 	return "", fmt.Errorf("Commit(): unsupported URL: %s", u)
 }
 
-// Validate the repo by attempting to query it's references.
-func ValidRepo(u string) (valid bool, e error) {
-	remoteConfig := &config.RemoteConfig{
-		Name: "source",
-		URLs: []string{
-			u,
-		},
-	}
-	r := git.NewRemote(memory.NewStorage(), remoteConfig)
-	_, err := r.List(&git.ListOptions{})
-	if err != nil && err == transport.ErrAuthenticationRequired {
-		// somewhat strangely, we get an authentication prompt via Git on non-existent repos.
-		return false, nil
-	}
-	if err != nil {
-		return false, nil
-	}
-	return true, nil
-}
-
-// For URLs referencing commits in supported Git repository hosts, return a FixCommit.
-func extractGitCommit(link string) *FixCommit {
+// For URLs referencing commits in supported Git repository hosts, return a GitCommit.
+func extractGitCommit(link string) *GitCommit {
 	r, err := Repo(link)
 	if err != nil {
 		return nil
@@ -298,7 +278,7 @@ func extractGitCommit(link string) *FixCommit {
 		return nil
 	}
 
-	return &FixCommit{
+	return &GitCommit{
 		Repo:   r,
 		Commit: c,
 	}
@@ -417,6 +397,7 @@ func ExtractVersionInfo(cve CVEItem, validVersions []string) (v VersionInfo, not
 
 			introduced := ""
 			fixed := ""
+			lastaffected := ""
 			if match.VersionStartIncluding != "" {
 				introduced = cleanVersion(match.VersionStartIncluding)
 			} else if match.VersionStartExcluding != "" {
@@ -431,9 +412,13 @@ func ExtractVersionInfo(cve CVEItem, validVersions []string) (v VersionInfo, not
 				fixed = cleanVersion(match.VersionEndExcluding)
 			} else if match.VersionEndIncluding != "" {
 				var err error
+				// Infer the fixed version from the next version after.
 				fixed, err = nextVersion(validVersions, cleanVersion(match.VersionEndIncluding))
 				if err != nil {
 					notes = append(notes, err.Error())
+					// if that inference failed, we know this version was definitely still vulnerable.
+					lastaffected = cleanVersion(match.VersionEndIncluding)
+					notes = append(notes, fmt.Sprintf("Using %s as last_affected version instead", cleanVersion(match.VersionEndIncluding)))
 				}
 			}
 
@@ -450,10 +435,16 @@ func ExtractVersionInfo(cve CVEItem, validVersions []string) (v VersionInfo, not
 			}
 
 			gotVersions = true
-			v.AffectedVersions = append(v.AffectedVersions, AffectedVersion{
-				Introduced: introduced,
-				Fixed:      fixed,
-			})
+			possibleNewAffectedVersion := AffectedVersion{
+				Introduced:   introduced,
+				Fixed:        fixed,
+				LastAffected: lastaffected,
+			}
+			if slices.Contains(v.AffectedVersions, possibleNewAffectedVersion) {
+				// Avoid appending duplicates
+				continue
+			}
+			v.AffectedVersions = append(v.AffectedVersions, possibleNewAffectedVersion)
 		}
 	}
 	if !gotVersions {
@@ -525,7 +516,7 @@ func ParseCPE(formattedString string) (*CPE, error) {
 
 // Normalize version strings found in CVE CPE Match data or Git tags.
 // Use the same logic and behaviour as normalize_tag() osv/bug.py for consistency.
-func Normalize(version string) (normalizedVersion string, e error) {
+func NormalizeVersion(version string) (normalizedVersion string, e error) {
 	// Keep in sync with the intent of https://github.com/google/osv.dev/blob/26050deb42785bc5a4dc7d802eac8e7f95135509/osv/bug.py#L31
 	var validVersion = regexp.MustCompile(`(?i)(\d+|(?:rc|alpha|beta|preview)\d*)`)
 	var validVersionText = regexp.MustCompile(`(?i)(?:rc|alpha|beta|preview)\d*`)

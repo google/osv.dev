@@ -171,7 +171,10 @@ def reset_repo(repo, git_callbacks):
   """Reset repo."""
   env = _set_git_callback_env(git_callbacks)
   # Use git cli instead of pygit2 for performance
-  subprocess.check_call(['git', 'fetch', 'origin'], cwd=repo.workdir, env=env)
+  subprocess.check_call(['git', 'fetch', 'origin'],
+                        cwd=repo.workdir,
+                        env=env,
+                        stderr=subprocess.STDOUT)
   # Pygit2 equivalent of above call
   # repo.remotes['origin'].fetch(callbacks=git_callbacks)
   remote_branch = repo.lookup_branch(

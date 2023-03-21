@@ -1,6 +1,6 @@
 ---
 title: "Announcing OSV's Service Level Objectives"
-date: 2023-03-20T22:00:00Z
+date: 2023-03-27T22:00:00Z
 draft: false
 author: OSV Team
 ---

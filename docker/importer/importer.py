@@ -219,7 +219,7 @@ class Importer:
 
     # Re-compute existing Bugs for a period of time, as upstream changes may
     # affect results.
-    cutoff_time = (aest_time_now - datetime.timedelta(days=_BUG_REDO_DAYS))
+    cutoff_time = aest_time_now - datetime.timedelta(days=_BUG_REDO_DAYS)
     query = osv.Bug.query(osv.Bug.status == osv.BugStatus.PROCESSED,
                           osv.Bug.source == source_repo.name,
                           osv.Bug.timestamp >= cutoff_time)
@@ -361,9 +361,9 @@ class Importer:
     utc_last_update_date = source_repo.last_update_date.replace(
         tzinfo=datetime.timezone.utc)
 
-    listed_blob_names = [
-        blob for blob in storage_client.list_blobs(source_repo.bucket)
-    ]
+    # Convert to list to retrieve all information into memory
+    # This makes it's use in the concurrent map later faster
+    listed_blob_names = list(storage_client.list_blobs(source_repo.bucket))
 
     import_failure_logs = []
 
@@ -371,7 +371,8 @@ class Importer:
       """Download and parse gcs blob into [blob_hash, blob_name]"""
       if not _is_vulnerability_file(source_repo, blob.name):
         return None
-      if not ignore_last_import_time and not blob.time_created > utc_last_update_date:
+      if not ignore_last_import_time and \
+         not blob.time_created > utc_last_update_date:
         return None
 
       logging.info('Bucket entry triggered for %s/%s', source_repo.bucket,

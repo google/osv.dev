@@ -206,7 +206,7 @@ class Importer:
     aest_time_now = aestnow()
 
     if (source_repo.last_update_date and
-        # OSV devs are mostly in located in australia,
+        # OSV devs are mostly located in australia,
         # so only schedule update near midnight sydney time
         source_repo.last_update_date.date() >= aest_time_now.date()):
       return

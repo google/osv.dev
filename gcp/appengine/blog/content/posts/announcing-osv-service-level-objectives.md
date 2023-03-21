@@ -16,6 +16,6 @@ Even though OSV.dev is a free resource, we know that our users rely on us for ac
 
 Please refer to our [FAQ](https://osv.dev/about) for specific details.  
 
-Our performance will be shared via a quarterly blog post, with the hopes for a reporting dashboard in the future.  
+Performance against the SLO will be shared via a quarterly blog post, with the intention of a reporting dashboard in the future.  
 
 Thank you for your support of this [open source](https://github.com/google/osv.dev) project. If you have any ideas or questions, please feel free to [open an issue](https://github.com/google/osv.dev/issues/new).  

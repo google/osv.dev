@@ -112,10 +112,11 @@ resource "google_container_node_pool" "highend" {
 }
 
 resource "google_container_node_pool" "importer_pool" {
-  project  = var.project_id
-  name     = "importer-pool"
-  cluster  = google_container_cluster.workers.name
-  location = google_container_cluster.workers.location
+  project    = var.project_id
+  name       = "importer-pool"
+  cluster    = google_container_cluster.workers.name
+  location   = google_container_cluster.workers.location
+  node_count = 1
 
   lifecycle {
     # Terraform doesn't automatically know to recreate node pools when the cluster is recreated.

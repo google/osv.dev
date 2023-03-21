@@ -14,7 +14,7 @@ Even though OSV.dev is a free resource, we know that our users rely on us for ac
 2. Website and API latency.   
 3. Data freshness.  
 
-Please refer to our [FAQ](https://www.osv.dev/about) for specific details.  
+Please refer to our [FAQ](https://osv.dev/about) for specific details.  
 
 Our performance will be shared via a quarterly blog post, with the hopes for a reporting dashboard in the future.  
 

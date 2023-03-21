@@ -201,12 +201,14 @@ class Importer:
                                self._git_callbacks(oss_fuzz_source)):
       ndb.put_multi(exported)
 
-  def schedule_regular_updates(self, repo, source_repo):
+  def schedule_regular_updates(self, repo, source_repo: osv.SourceRepository):
     """Schedule regular updates."""
+    aest_time_now = aestnow()
+
     if (source_repo.last_update_date and
         # OSV devs are mostly in located in australia,
         # so only schedule update near midnight sydney time
-        source_repo.last_update_date >= aestnow().date()):
+        source_repo.last_update_date.date() >= aest_time_now.date()):
       return
 
     for bug in osv.Bug.query(
@@ -217,7 +219,7 @@ class Importer:
 
     # Re-compute existing Bugs for a period of time, as upstream changes may
     # affect results.
-    cutoff_time = (aestnow() - datetime.timedelta(days=_BUG_REDO_DAYS))
+    cutoff_time = (aest_time_now - datetime.timedelta(days=_BUG_REDO_DAYS))
     query = osv.Bug.query(osv.Bug.status == osv.BugStatus.PROCESSED,
                           osv.Bug.source == source_repo.name,
                           osv.Bug.timestamp >= cutoff_time)
@@ -230,7 +232,7 @@ class Importer:
 
       self._request_analysis(bug, source_repo, repo)
 
-    source_repo.last_update_date = aestnow().date()
+    source_repo.last_update_date = aest_time_now
     source_repo.put()
 
   def _sync_from_previous_commit(self, source_repo, repo):
@@ -337,13 +339,17 @@ class Importer:
     source_repo.last_synced_hash = str(repo.head.target)
     source_repo.put()
 
-    logging.info("Finish processing git: %s", source_repo.name)
+    logging.info("Finished processing git: %s", source_repo.name)
 
   def _process_updates_bucket(self, source_repo: osv.SourceRepository):
     """Process updates from bucket."""
     # TODO(ochang): Use Pub/Sub change notifications for more efficient
     # processing.
     logging.info("Begin processing bucket: %s", source_repo.name)
+
+    # Record import time at the start to avoid race conditions
+    # where a new record is added to the bucket while we are processing.
+    import_time_now = utcnow()
 
     ignore_last_import_time = source_repo.ignore_last_import_time
     if ignore_last_import_time:
@@ -352,31 +358,36 @@ class Importer:
 
     # First retrieve a list of files to parallel download
     storage_client = storage.Client()
+    utc_last_update_date = source_repo.last_update_date.replace(
+        tzinfo=datetime.timezone.utc)
+
     listed_blob_names = [
-        blob.name for blob in storage_client.list_blobs(source_repo.bucket)
+        blob for blob in storage_client.list_blobs(source_repo.bucket)
     ]
+
     import_failure_logs = []
 
-    def convert_blob_to_vuln(blob_name) -> Optional[Tuple[str, str]]:
+    def convert_blob_to_vuln(blob: storage.Blob) -> Optional[Tuple[str, str]]:
       """Download and parse gcs blob into [blob_hash, blob_name]"""
-      if not _is_vulnerability_file(source_repo, blob_name):
+      if not _is_vulnerability_file(source_repo, blob.name):
+        return None
+      if not ignore_last_import_time and not blob.time_created > utc_last_update_date:
         return None
 
       logging.info('Bucket entry triggered for %s/%s', source_repo.bucket,
-                   blob_name)
+                   blob.name)
       # Use the _client_store thread local variable
       # set in the thread pool initializer
-      bucket = _client_store.storage_client.bucket(source_repo.bucket)
-      blob_bytes = bucket.blob(blob_name).download_as_bytes()
+      blob_bytes = blob.download_as_bytes(_client_store.storage_client)
       if ignore_last_import_time:
         blob_hash = osv.sha256_bytes(blob_bytes)
-        return blob_hash, blob_name
+        return blob_hash, blob.name
 
       with _client_store.ndb_client.context():
         try:
           vulns = osv.parse_vulnerabilities_from_data(
               blob_bytes,
-              os.path.splitext(blob_name)[1],
+              os.path.splitext(blob.name)[1],
               strict=self._strict_validation)
           for vuln in vulns:
             bug = osv.Bug.get_by_id(vuln.id)
@@ -384,15 +395,15 @@ class Importer:
             if bug is None or \
                 bug.import_last_modified != vuln.modified.ToDatetime():
               blob_hash = osv.sha256_bytes(blob_bytes)
-              return blob_hash, blob_name
+              return blob_hash, blob.name
 
           return None
         except Exception as e:
-          logging.error('Failed to parse vulnerability %s: %s', blob_name, e)
+          logging.error('Failed to parse vulnerability %s: %s', blob.name, e)
           # Don't include error stack trace as that might leak sensitive info
           # List.append() is atomic and threadsafe.
           import_failure_logs.append('Failed to parse vulnerability "' +
-                                     blob_name + '"')
+                                     blob.name + '"')
           return None
 
     # Setup storage client
@@ -411,7 +422,8 @@ class Importer:
 
     replace_importer_log(storage_client, source_repo.name,
                          self._public_log_bucket, import_failure_logs)
-    source_repo.last_update_date = utcnow().date()
+
+    source_repo.last_update_date = import_time_now
     source_repo.put()
 
     logging.info("Finished processing bucket: %s", source_repo.name)

@@ -217,7 +217,7 @@ class Importer:
         osv.Bug.source == source_repo.name):
       self._request_analysis(bug, source_repo, repo)
 
-    # Re-compute existing Bugs for a period of time, as upstream changes may
+    # Re-compute existing Bugs after a period of time, as upstream changes may
     # affect results.
     cutoff_time = aest_time_now - datetime.timedelta(days=_BUG_REDO_DAYS)
     query = osv.Bug.query(osv.Bug.status == osv.BugStatus.PROCESSED,

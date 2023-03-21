@@ -18,4 +18,4 @@ Please refer to our [FAQ](https://www.osv.dev/about) for specific details.
 
 Our performance will be shared via a quarterly blog post, with the hopes for a reporting dashboard in the future.  
 
-Thank you for your support of this [open source](https://github.com/google/osv.dev) project. If you have any ideas or questions, please feel free to [open an issue](https://github.com/google/osv/issues/new).  
+Thank you for your support of this [open source](https://github.com/google/osv.dev) project. If you have any ideas or questions, please feel free to [open an issue](https://github.com/google/osv.dev/issues/new).  

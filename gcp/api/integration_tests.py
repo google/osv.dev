@@ -42,7 +42,7 @@ class IntegrationTests(unittest.TestCase):
 
   _VULN_744 = {
       'published': '2020-07-04T00:00:01.948828Z',
-      'schema_version': '1.3.0',
+      'schema_version': '1.4.0',
       'affected': [{
           'database_specific': {
               'source': 'https://github.com/google/oss-fuzz-vulns/'
@@ -312,9 +312,9 @@ class IntegrationTests(unittest.TestCase):
         timeout=_TIMEOUT)
 
     response_json = response.json()
-    self.assertEqual(2, len(response_json['vulns']))
-    self.assertCountEqual(['GO-2021-0061', 'GO-2020-0036'],
-                          [vuln['id'] for vuln in response_json['vulns']])
+    self.assertCountEqual(
+        ['GO-2021-0061', 'GO-2020-0036', 'GHSA-r88r-gmrh-7j83'],
+        [vuln['id'] for vuln in response_json['vulns']])
 
     response = requests.post(
         _api() + '/v1/query',

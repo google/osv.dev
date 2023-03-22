@@ -30,7 +30,7 @@ from . import semver_index
 from . import sources
 from . import vulnerability_pb2
 
-SCHEMA_VERSION = '1.3.0'
+SCHEMA_VERSION = '1.4.0'
 
 
 def _check_valid_severity(prop, value):
@@ -77,20 +77,6 @@ class IDCounter(ndb.Model):
   """Counter for ID allocations."""
   # Next ID to allocate.
   next_id = ndb.IntegerProperty()
-
-
-class AffectedCommit(ndb.Model):
-  """AffectedCommit entry."""
-  # The main bug ID.
-  bug_id = ndb.StringProperty()
-  # The commit hash.
-  commit = ndb.StringProperty()
-  # Project for the bug.
-  project = ndb.StringProperty()
-  # Ecosystem for the affected commit.
-  ecosystem = ndb.StringProperty()
-  # Whether or not the bug is public.
-  public = ndb.BooleanProperty()
 
 
 class AffectedCommits(ndb.Model):
@@ -191,6 +177,12 @@ class Package(ndb.Model):
   purl = ndb.StringProperty()
 
 
+class Severity(ndb.Model):
+  """Severity."""
+  type = ndb.StringProperty()
+  score = ndb.StringProperty()
+
+
 class AffectedPackage(ndb.Model):
   """Affected packages."""
   # The affected package identifier.
@@ -203,18 +195,15 @@ class AffectedPackage(ndb.Model):
   database_specific = ndb.JsonProperty()
   # Ecosystem specific metadata.
   ecosystem_specific = ndb.JsonProperty()
+  # Severity of the bug.
+  severities = ndb.LocalStructuredProperty(Severity, repeated=True)
 
 
 class Credit(ndb.Model):
   """Credits."""
   name = ndb.StringProperty()
   contact = ndb.StringProperty(repeated=True)
-
-
-class Severity(ndb.Model):
-  """Severity."""
   type = ndb.StringProperty()
-  score = ndb.StringProperty()
 
 
 class Bug(ndb.Model):
@@ -513,6 +502,13 @@ class Bug(ndb.Model):
             affected_package.ecosystem_specific,
             preserving_proto_field_name=True)
 
+      current.severities = []
+      for severity in affected_package.severity:
+        current.severities.append(
+            Severity(
+                type=vulnerability_pb2.Severity.Type.Name(severity.type),
+                score=severity.score))
+
       self.affected_packages.append(current)
 
     self.severities = []
@@ -524,8 +520,10 @@ class Bug(ndb.Model):
 
     self.credits = []
     for credit in vulnerability.credits:
-      self.credits.append(
-          Credit(name=credit.name, contact=list(credit.contact)))
+      cr = Credit(name=credit.name, contact=list(credit.contact))
+      if credit.type:
+        cr.type = vulnerability_pb2.Credit.Type.Name(credit.type)
+      self.credits.append(cr)
 
     if vulnerability.database_specific:
       self.database_specific = json_format.MessageToDict(
@@ -584,6 +582,12 @@ class Bug(ndb.Model):
         if affected_package.ecosystem_specific:
           current.ecosystem_specific.update(affected_package.ecosystem_specific)
 
+        for entry in affected_package.severities:
+          current.severity.append(
+              vulnerability_pb2.Severity(
+                  type=vulnerability_pb2.Severity.Type.Value(entry.type),
+                  score=entry.score))
+
         affected.append(current)
 
     details = self.details
@@ -619,8 +623,10 @@ class Bug(ndb.Model):
 
     credits_ = []
     for credit in self.credits:
-      credits_.append(
-          vulnerability_pb2.Credit(name=credit.name, contact=credit.contact))
+      cr = vulnerability_pb2.Credit(name=credit.name, contact=credit.contact)
+      if credit.type:
+        cr.type = vulnerability_pb2.Credit.Type.Value(credit.type)
+      credits_.append(cr)
 
     result = vulnerability_pb2.Vulnerability(
         schema_version=SCHEMA_VERSION,

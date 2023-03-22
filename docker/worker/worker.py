@@ -18,7 +18,6 @@ import datetime
 import json
 import logging
 import os
-import math
 import re
 import redis
 import resource
@@ -37,6 +36,7 @@ sys.path.append(os.path.dirname(os.path.realpath(__file__)))
 import osv
 import osv.ecosystems
 import osv.cache
+import osv.logs
 from osv import vulnerability_pb2
 import oss_fuzz
 
@@ -62,6 +62,7 @@ _ECOSYSTEM_PUSH_TOPICS = {
 }
 
 _state = threading.local()
+_state.source_id = None
 
 
 class RedisCache(osv.cache.Cache):
@@ -87,47 +88,25 @@ class UpdateConflictError(Exception):
   """Update conflict exception."""
 
 
-class LogFilter(logging.Filter):
-  """Log filter."""
+def _setup_logging_extra_info():
+  """Set up extra GCP logging information."""
 
-  def filter(self, record):
-    """Add metadata to record."""
-    source_id = getattr(_state, 'source_id', None)
-    if source_id:
-      record.extras = {
-          'source_id': source_id,
-      }
+  old_factory = logging.getLogRecordFactory()
 
-    return True
+  def record_factory(*args, **kwargs):
+    """Insert jsonPayload fields to all logs."""
 
+    record = old_factory(*args, **kwargs)
+    if not hasattr(record, 'json_fields'):
+      record.json_fields = {}
 
-class GkeLogHandler(logging.StreamHandler):
-  """GKE log handler."""
+    if getattr(_state, 'source_id', None):
+      record.json_fields['source_id'] = _state.source_id
+    record.json_fields['thread'] = record.thread
 
-  def format_stackdriver_json(self, record, message):
-    """Helper to format a LogRecord in in Stackdriver fluentd format."""
-    subsecond, second = math.modf(record.created)
+    return record
 
-    payload = {
-        'message': message,
-        'timestamp': {
-            'seconds': int(second),
-            'nanos': int(subsecond * 1e9)
-        },
-        'thread': record.thread,
-        'severity': record.levelname,
-    }
-
-    extras = getattr(record, 'extras', None)
-    if extras:
-      payload.update(extras)
-
-    return json.dumps(payload)
-
-  def format(self, record):
-    """Format the message into JSON expected by fluentd."""
-    message = super().format(record)
-    return self.format_stackdriver_json(record, message)
+  logging.setLogRecordFactory(record_factory)
 
 
 class _PubSubLeaserThread(threading.Thread):
@@ -193,11 +172,6 @@ def mark_bug_invalid(message):
     bug.withdrawn = datetime.datetime.utcnow()
     bug.status = osv.BugStatus.INVALID
     bug.put()
-
-    # TODO(ochang): Delete this one migration is done.
-    affected_commits = osv.AffectedCommit.query(
-        osv.AffectedCommit.bug_id == bug.key.id())
-    ndb.delete_multi([commit.key for commit in affected_commits])
 
     osv.delete_affected_commits(bug.key.id())
 
@@ -330,12 +304,6 @@ def filter_unsupported_ecosystems(vulnerability):
       filtered.append(affected)
   del vulnerability.affected[:]
   vulnerability.affected.extend(filtered)
-
-
-def _is_linux_ecosystem(vulnerability):
-  """Return whether or not the vulnerability is for the Linux ecosystem."""
-  return any(affected.package.ecosystem == 'Linux'
-             for affected in vulnerability.affected)
 
 
 class TaskRunner:
@@ -541,12 +509,7 @@ class TaskRunner:
 
     bug.put()
 
-    # Temporary migration exclusion: Don't write legacy Linux AffectedComit
-    # entries as they cause Datastore scaling issues.
-    write_legacy = not _is_linux_ecosystem(vulnerability)
-
-    osv.update_affected_commits(
-        bug.key.id(), result.commits, bug.public, write_legacy=write_legacy)
+    osv.update_affected_commits(bug.key.id(), result.commits, bug.public)
     self._notify_ecosystem_bridge(vulnerability)
 
   def _notify_ecosystem_bridge(self, vulnerability):
@@ -605,7 +568,7 @@ class TaskRunner:
     task_type = message.attributes['type']
     source_id = get_source_id(message)
 
-    logging.error('Task %s timed out (source_id=%s)', task_type, source_id)
+    logging.warning('Task %s timed out (source_id=%s)', task_type, source_id)
     if task_type in ('fixed', 'regressed'):
       oss_fuzz.handle_timeout(task_type, source_id, self._oss_fuzz_dir, message)
 
@@ -634,7 +597,7 @@ class TaskRunner:
       logging.info('Returned from task thread')
       if not done:
         self.handle_timeout(subscriber, subscription, ack_id, message)
-        logging.error('Timed out processing task')
+        logging.warning('Timed out processing task')
 
     while True:
       response = subscriber.pull(subscription=subscription, max_messages=1)
@@ -657,13 +620,6 @@ class TaskRunner:
 
 
 def main():
-  logging.getLogger().addFilter(LogFilter())
-  logging.getLogger().addHandler(GkeLogHandler())
-  logging.getLogger().setLevel(logging.INFO)
-  logging.getLogger('google.api_core.bidi').setLevel(logging.ERROR)
-  logging.getLogger('google.cloud.pubsub_v1.subscriber._protocol.'
-                    'streaming_pull_manager').setLevel(logging.ERROR)
-
   parser = argparse.ArgumentParser(description='Worker')
   parser.add_argument(
       '--work_dir', help='Working directory', default=DEFAULT_WORK_DIR)
@@ -711,4 +667,6 @@ def main():
 
 
 if __name__ == '__main__':
+  osv.logs.setup_gcp_logging('worker')
+  _setup_logging_extra_info()
   main()

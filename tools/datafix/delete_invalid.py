@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Utility to mark invalid bugs as withdrawn where they are not currently so.
+"""Utility to delete invalid bugs that match specific criteria.
 
 See https://github.com/google/osv.dev/issues/1098 for additional context.
 """
@@ -7,14 +7,14 @@ See https://github.com/google/osv.dev/issues/1098 for additional context.
 from google.cloud import datastore
 
 import argparse
-import datetime
+import sys
 
 MAX_BATCH_SIZE = 500
 
 
 def main() -> None:
   parser = argparse.ArgumentParser(
-      description="Fix bugs that are invalid but not marked as withdrawn")
+      description="Delete bugs that are invalid and match specific criteria.")
   parser.add_argument(
       "--dry-run",
       action=argparse.BooleanOptionalAction,
@@ -28,6 +28,12 @@ def main() -> None:
       default=False,
       help="Display records being operated on")
   parser.add_argument(
+      "--source_id_prefix",
+      action="store",
+      dest="source_id_prefix",
+      default="",
+      help="The prefix of source_id records to delete")
+  parser.add_argument(
       "--project",
       action="store",
       dest="project",
@@ -37,24 +43,38 @@ def main() -> None:
 
   client = datastore.Client(project=args.project)
 
-  query = client.query(kind="Bug", filters=(("status", "=", 2),))
-  print(f"Running query {query.filters[0]} "
-        f"on {query.kind} (in {query.project})...")
-  result = list(query.fetch())
-  print(f"Retrieved {len(result)} bugs to examine for fixing")
-  result_to_fix = [r for r in result if not r['withdrawn']]
-  print(f"There are {len(result_to_fix)} bugs to fix...")
+  try:
+    source = args.source_id_prefix.split(":")[0]
+  except IndexError:
+    print(f"Unable to determine source from {args.source_id_prefix}")
+    sys.exit(1)
 
-  # Chunk the results to modify in acceptibly sized batches for the API.
-  for batch in range(0, len(result_to_fix), MAX_BATCH_SIZE):
+  query = client.query(
+      kind="Bug", filters=(("status", "=", 2), ("source", "=", source)))
+
+  print(f"Running query {query.filters} "
+        f"on {query.kind} (in {query.project})...")
+
+  result = list(query.fetch())
+
+  print(f"Retrieved {len(result)} bugs to examine for deletion")
+
+  result = list(query.fetch())
+
+  result_to_delete = [
+      r for r in result if r['source_id'].startswith(args.source_id_prefix)
+  ]
+
+  print(f"There are {len(result_to_delete)} bugs to delete...")
+
+  # Chunk the results to delete in acceptibly sized batches for the API.
+  for batch in range(0, len(result_to_delete), MAX_BATCH_SIZE):
     try:
       with client.transaction() as xact:
-        for r in result_to_fix[batch:batch + MAX_BATCH_SIZE]:
-          r['withdrawn'] = datetime.datetime.now(tz=datetime.timezone.utc)
-          r['last_modified'] = r['withdrawn']
+        for r in result_to_delete[batch:batch + MAX_BATCH_SIZE]:
           if args.verbose:
-            print(f"Modifying {r}")
-          xact.put(r)
+            print(f"Deleting {r}")
+          xact.delete(r.key)
         if args.dryrun:
           raise Exception("Dry run mode. Preventing transaction from commiting")  # pylint: disable=broad-exception-raised
     except Exception as e:
@@ -62,8 +82,8 @@ def main() -> None:
       # subsequent batches from being attempted.
       if args.dryrun and e.args[0].startswith("Dry run mode"):
         pass
-  if len(result_to_fix) > 0 and not args.dryrun:
-    print("Fixed!")
+  if len(result_to_delete) > 0 and not args.dryrun:
+    print("Deleted!")
 
 
 if __name__ == "__main__":

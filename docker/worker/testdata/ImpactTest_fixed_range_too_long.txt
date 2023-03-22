@@ -11,6 +11,7 @@
                                                                      'value': 'b587c21c36a84e16cfc6b39eb68578d43b5281ad'}],
                                                    'repo_url': 'https://repo.com/repo',
                                                    'type': 'GIT'}],
+                                 'severities': [],
                                  'versions': [   'branch-v0.1.1',
                                                  'branch-v0.1.1-with-fix',
                                                  'branch_1_cherrypick_regress',

@@ -38,6 +38,7 @@ type AffectedVersion struct {
 }
 
 type VersionInfo struct {
+	IntroducedCommits   []GitCommit
 	FixCommits          []GitCommit
 	LimitCommits        []GitCommit
 	LastAffectedCommits []GitCommit
@@ -434,11 +435,16 @@ func ExtractVersionInfo(cve CVEItem, validVersions []string) (v VersionInfo, not
 			}
 
 			gotVersions = true
-			v.AffectedVersions = append(v.AffectedVersions, AffectedVersion{
+			possibleNewAffectedVersion := AffectedVersion{
 				Introduced:   introduced,
 				Fixed:        fixed,
 				LastAffected: lastaffected,
-			})
+			}
+			if slices.Contains(v.AffectedVersions, possibleNewAffectedVersion) {
+				// Avoid appending duplicates
+				continue
+			}
+			v.AffectedVersions = append(v.AffectedVersions, possibleNewAffectedVersion)
 		}
 	}
 	if !gotVersions {
@@ -454,7 +460,7 @@ func ExtractVersionInfo(cve CVEItem, validVersions []string) (v VersionInfo, not
 		notes = append(notes, "No versions detected.")
 	}
 
-	if len(notes) != 0 {
+	if len(notes) != 0 && len(validVersions) > 0 {
 		notes = append(notes, "Valid versions:")
 		for _, version := range validVersions {
 			notes = append(notes, "  - "+version)

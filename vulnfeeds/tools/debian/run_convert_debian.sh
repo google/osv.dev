@@ -46,5 +46,5 @@ popd
 echo "Begin Syncing with cloud"
 gsutil -m rsync -c -d $OSV_DSA_OUT gs://$OUTPUT_BUCKET/dsa-osv
 gsutil -m rsync -c -d "$OSV_DLA_OUT" "gs://${OUTPUT_BUCKET}/dla-osv"
-gsutil -m rsync -c -d $OSV_DTSA_OUT gs://$OUTPUT_BUCKET/dtsa-osv
+gsutil -m rsync -c -d "$OSV_DTSA_OUT" "gs://${OUTPUT_BUCKET}/dtsa-osv"
 echo "Successfully synced with cloud"

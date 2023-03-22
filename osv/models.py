@@ -712,7 +712,7 @@ class SourceRepository(ndb.Model):
   # Last synced hash.
   last_synced_hash = ndb.StringProperty()
   # Last date recurring updates were requested.
-  last_update_date = ndb.DateProperty()
+  last_update_date = ndb.DateTimeProperty()
   # Patterns of files to exclude (regex).
   ignore_patterns = ndb.StringProperty(repeated=True)
   # Whether this repository is editable.

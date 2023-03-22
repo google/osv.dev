@@ -16,5 +16,5 @@ rm -rf $OSV_PARTS_OUTPUT && mkdir -p $OSV_PARTS_OUTPUT
 
 ./alpine-osv
 echo "Begin Syncing with cloud"
-gsutil -q -m rsync -d $OSV_PARTS_OUTPUT "gs://$OUTPUT_BUCKET/$OSV_PARTS_OUTPUT"
+gsutil -q -m rsync -c -d $OSV_PARTS_OUTPUT "gs://$OUTPUT_BUCKET/$OSV_PARTS_OUTPUT"
 echo "Successfully synced with cloud"

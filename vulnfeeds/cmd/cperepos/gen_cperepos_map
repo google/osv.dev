@@ -42,4 +42,4 @@ fi
   ${MAYBE_USE_DEBIAN_COPYRIGHT_METADATA} \
   --output_dir "${WORK_DIR}"
 
-gsutil ${BE_VERBOSE="-q"} rsync -d -r "${WORK_DIR}/cpe_product_to_repo.json" "${CPEREPO_GCS_PATH}"
+gsutil ${BE_VERBOSE="-q"} rsync -c -d -r "${WORK_DIR}/cpe_product_to_repo.json" "${CPEREPO_GCS_PATH}"

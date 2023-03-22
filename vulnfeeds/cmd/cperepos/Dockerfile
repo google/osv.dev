@@ -12,21 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-FROM ubuntu:22.04
-
-ENV DEBIAN_FRONTEND noninteractive
-
-RUN apt-get update && \
-    apt-get dist-upgrade -y && \
-    apt-get install -y \
-    	apt-transport-https \
-	ca-certificates \
-	curl \
-	golang-go
-
-RUN echo "deb [signed-by=/usr/share/keyrings/cloud.google.gpg] https://packages.cloud.google.com/apt cloud-sdk main" | tee -a /etc/apt/sources.list.d/google-cloud-sdk.list && \
-	curl https://packages.cloud.google.com/apt/doc/apt-key.gpg -o /usr/share/keyrings/cloud.google.gpg && \
-        apt-get update && apt-get install -y google-cloud-sdk
+FROM golang:alpine@sha256:74a382917f6eaa7cc2d000dc2cd412a7f823f343b3b6268b20d84d057bc56718
 
 RUN mkdir /src
 WORKDIR /src
@@ -37,5 +23,7 @@ RUN go mod download
 
 COPY ./ /src/
 RUN go build -o cperepos ./cmd/cperepos
+
+FROM gcr.io/google.com/cloudsdktool/google-cloud-cli:alpine
 
 ENTRYPOINT ["/src/cmd/cperepos/gen_cperepos_map"]

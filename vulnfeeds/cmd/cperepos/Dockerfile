@@ -27,6 +27,6 @@ RUN go build -o cperepos ./cmd/cperepos
 FROM gcr.io/google.com/cloudsdktool/google-cloud-cli:alpine
 
 COPY --from=0 /src/cperepos ./
-COPY ./src/cmd/cperepos/gen_cperepos_map ./
+COPY ./cmd/cperepos/gen_cperepos_map ./
 
 ENTRYPOINT ["/gen_cperepos_map"]

@@ -24,10 +24,10 @@ gsutil -q -m rsync -r "gs://${INPUT_BUCKET}/parts/" $OSV_PARTS_ROOT
 echo "Successfully synced from GCS bucket"
 
 echo "Run download-cves"
-go run ./cmd/download-cves/ -cvePath $CVE_OUTPUT
+./download-cves -cvePath $CVE_OUTPUT
 
 echo "Run combine-to-osv"
-go run ./cmd/combine-to-osv/ -cvePath $CVE_OUTPUT -partsPath $OSV_PARTS_ROOT -osvOutputPath $OSV_OUTPUT
+./combine-to-osv -cvePath $CVE_OUTPUT -partsPath $OSV_PARTS_ROOT -osvOutputPath $OSV_OUTPUT
 
 echo "Begin syncing output to GCS bucket ${BUCKET}"
 gsutil -q -m rsync $OSV_OUTPUT "gs://${OUTPUT_BUCKET}/osv-output/"

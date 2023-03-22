@@ -7,11 +7,13 @@ cd "$(dirname "$0")"
 
 docker build -t gcr.io/oss-vdb/alpine-cve-convert -f cmd/alpine/Dockerfile .
 docker build -t gcr.io/oss-vdb/combine-to-osv -f cmd/combine-to-osv/Dockerfile .
+docker build -t gcr.io/oss-vdb/mirror-debian-copyright -f cmd/mirror-debian-copyright/Dockerfile .
 
 if [ "$1" = "deploy" ]
 then
   docker push gcr.io/oss-vdb/alpine-cve-convert:latest
   docker push gcr.io/oss-vdb/combine-to-osv:latest
+  docker push gcr.io/oss-vdb/mirror-debian-copyright:latest
 else
   echo "Run with the deploy command to push built images"
 fi

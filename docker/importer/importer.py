@@ -362,7 +362,7 @@ class Importer:
         tzinfo=datetime.timezone.utc)
 
     # Convert to list to retrieve all information into memory
-    # This makes it's use in the concurrent map later faster
+    # This makes its use in the concurrent map later faster
     listed_blob_names = list(storage_client.list_blobs(source_repo.bucket))
 
     import_failure_logs = []

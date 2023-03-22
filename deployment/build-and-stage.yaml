@@ -138,6 +138,16 @@ steps:
   args: ['push', '--all-tags', 'gcr.io/oss-vdb/debian-copyright-mirror']
   waitFor: ['build-debian-copyright-mirror', 'cloud-build-queue']
 
+# Build/push CPE repo map generating image
+- name: gcr.io/cloud-builders/docker
+  args: ['build', '-t', 'gcr.io/oss-vdb/cpe-repo-gen:latest', '-t', 'gcr.io/oss-vdb/cpe-repo-gen:$COMMIT_SHA', '.']
+  dir: 'vulnfeeds/cmd/cperepos'
+  id: 'build-cpe-repo-gen'
+  waitFor: ['setup']
+- name: gcr.io/cloud-builders/docker
+  args: ['push', '--all-tags', 'gcr.io/oss-vdb/cpe-repo-gen']
+  waitFor: ['build-cpe-repo-gen', 'cloud-build-queue']
+
 # Apply Terraform config to staging environment
 # TODO(michaelkedar): regenerate the api protobufs?
 - name: gcr.io/oss-vdb/terraform
@@ -162,8 +172,9 @@ steps:
      exporter=gcr.io/oss-vdb/exporter:$COMMIT_SHA,\
      debian-convert=gcr.io/oss-vdb/debian-convert:$COMMIT_SHA,\
      combine-to-osv=gcr.io/oss-vdb/combine-to-osv:$COMMIT_SHA,\
-     alpine-cve-convert=gcr.io/oss-vdb/alpine-cve-convert:$COMMIT_SHA", \
-     debian-copyright-mirror=gcr.io/oss-vdb/debian-copyright-mirror:$COMMIT_SHA"
+     alpine-cve-convert=gcr.io/oss-vdb/alpine-cve-convert:$COMMIT_SHA, \
+     debian-copyright-mirror=gcr.io/oss-vdb/debian-copyright-mirror:$COMMIT_SHA
+     cpe-repo-gen=gcr.io/oss-vdb/cpe-repo-gen:$COMMIT_SHA"
   ]
   dir: deployment/clouddeploy/gke-workers
 
@@ -194,3 +205,4 @@ images:
 - 'gcr.io/oss-vdb/debian-convert:$COMMIT_SHA'
 - 'gcr.io/oss-vdb/osv-server:$COMMIT_SHA'
 - 'gcr.io/oss-vdb/debian-copyright-mirror:$COMMIT_SHA'
+- 'gcr.io/oss-vdb/cpe-repo-gen:$COMMIT_SHA'

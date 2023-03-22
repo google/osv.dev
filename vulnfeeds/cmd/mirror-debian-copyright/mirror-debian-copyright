@@ -36,7 +36,7 @@ wget \
   --directory "${WORK_DIR}/debian_copyright" \
   --mirror \
   --accept debian_copyright \
-  --accept index_html \
+  --accept index.html \
   https://metadata.ftp-master.debian.org/changelogs/main
 
 gsutil ${BE_VERBOSE="-q"} -m rsync -d -r "${WORK_DIR}" "${GCS_PATH}"

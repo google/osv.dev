@@ -30,5 +30,5 @@ echo "Run combine-to-osv"
 go run ./cmd/combine-to-osv/ -cvePath $CVE_OUTPUT -partsPath $OSV_PARTS_ROOT -osvOutputPath $OSV_OUTPUT
 
 echo "Begin syncing output to GCS bucket ${BUCKET}"
-gsutil -q -m rsync $OSV_OUTPUT "gs://${OUTPUT_BUCKET}/osv-output/"
+gsutil -q -m rsync -c -d $OSV_OUTPUT "gs://${OUTPUT_BUCKET}/osv-output/"
 echo "Successfully synced to GCS bucket"

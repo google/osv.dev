@@ -363,7 +363,7 @@ class Importer:
 
     # Convert to list to retrieve all information into memory
     # This makes its use in the concurrent map later faster
-    listed_blob_names = list(storage_client.list_blobs(source_repo.bucket))
+    listed_blobs = list(storage_client.list_blobs(source_repo.bucket))
 
     import_failure_logs = []
 
@@ -414,7 +414,7 @@ class Importer:
 
     with ThreadPoolExecutor(
         _BUCKET_THREAD_COUNT, initializer=thread_init) as executor:
-      converted_vulns = executor.map(convert_blob_to_vuln, listed_blob_names)
+      converted_vulns = executor.map(convert_blob_to_vuln, listed_blobs)
       for cv in converted_vulns:
         if cv:
           logging.info('Requesting analysis of bucket entry: %s/%s',

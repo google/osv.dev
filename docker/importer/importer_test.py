@@ -312,12 +312,13 @@ class ImporterTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
     ])
 
     source_repo = osv.SourceRepository.get_by_id('oss-fuzz')
-    self.assertEqual(datetime.date(2021, 1, 1), source_repo.last_update_date)
+    self.assertEqual(
+        datetime.datetime(2021, 1, 1, 10, 0), source_repo.last_update_date)
 
   def test_scheduled_updates_already_done(self):
     """Scheduled updates already done."""
     source_repo = osv.SourceRepository.get_by_id('oss-fuzz')
-    source_repo.last_update_date = importer.utcnow().date()
+    source_repo.last_update_date = importer.utcnow()
     source_repo.put()
 
     self.mock_repo.add_file('proj/OSV-2021-1337.yaml', _MIN_VALID_VULNERABILITY)

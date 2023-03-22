@@ -352,6 +352,9 @@ class Importer:
     # where a new record is added to the bucket while we are processing.
     import_time_now = utcnow()
 
+    if not source_repo.last_update_date:
+      source_repo.last_update_date = datetime.datetime.min
+
     ignore_last_import_time = source_repo.ignore_last_import_time
     if ignore_last_import_time:
       source_repo.ignore_last_import_time = False

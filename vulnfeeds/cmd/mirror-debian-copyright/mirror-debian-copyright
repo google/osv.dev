@@ -1,0 +1,28 @@
+#!/bin/bash
+
+#
+# Maintain a GCS bucket mirror of Debian's copyright files
+#
+
+#
+# Inputs:
+# * A local work directory
+# * GCS bucket name + path
+#
+
+# Setting BE_VERBOSE to an empty string or null value suppresses silencing of
+# commands
+
+mkdir -p "${WORK_DIR}" || true
+
+gsutil ${BE_VERBOSE="-q"} -m rsync -d -r "${GCS_PATH}" "${WORK_DIR}"
+
+wget \
+  ${BE_VERBOSE="--quiet"} \
+  --directory "${WORK_DIR}/debian_copyright" \
+  --mirror \
+  --accept debian_copyright \
+  --accept index_html \
+  https://metadata.ftp-master.debian.org/changelogs/main
+
+gsutil ${BE_VERBOSE="-q"} -m rsync -d -r "${WORK_DIR}" "${GCS_PATH}"

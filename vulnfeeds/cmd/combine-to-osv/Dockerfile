@@ -12,23 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-FROM ubuntu:22.04
-
-ENV DEBIAN_FRONTEND noninteractive
-RUN apt-get update && apt-get upgrade -y && \
-    apt-get install -y \
-        apt-transport-https \
-        ca-certificates \
-        curl \
-        git \
-        gnupg-agent \
-        golang-go \
-        software-properties-common
-
-RUN echo "deb [signed-by=/usr/share/keyrings/cloud.google.gpg] https://packages.cloud.google.com/apt cloud-sdk main" | tee -a /etc/apt/sources.list.d/google-cloud-sdk.list && \
-    curl https://packages.cloud.google.com/apt/doc/apt-key.gpg | apt-key --keyring /usr/share/keyrings/cloud.google.gpg add - && \
-    apt-get update && apt-get install -y google-cloud-sdk
-
+FROM golang:alpine AS GO_BUILD
 
 RUN mkdir /src
 WORKDIR /src
@@ -38,5 +22,15 @@ COPY ./go.sum /src/go.sum
 RUN go mod download
 
 COPY ./ /src/
-RUN go build -o combine-to-osv-gen ./cmd/alpine/
-ENTRYPOINT ["/src/cmd/combine-to-osv/run_combine_to_osv_convert.sh"]
+RUN go build -o combine-to-osv ./cmd/combine-to-osv/
+RUN go build -o download-cves ./cmd/download-cves/
+
+
+FROM gcr.io/google.com/cloudsdktool/google-cloud-cli:alpine
+
+WORKDIR /root/
+COPY --from=GO_BUILD /src/combine-to-osv ./
+COPY --from=GO_BUILD /src/download-cves ./
+COPY ./cmd/combine-to-osv/run_combine_to_osv_convert.sh ./
+
+ENTRYPOINT ["/root/run_combine_to_osv_convert.sh"]

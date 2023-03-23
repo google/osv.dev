@@ -20,20 +20,20 @@
     "@material/mwc-textfield": "0.27.0",
     "@material/theme": "13.0.0",
     "highlight.js": "11.7.0",
-    "lit": "2.6.1",
+    "lit": "2.7.0",
     "spicy-sections": "git+https://github.com/tabvengers/spicy-sections.git#c3aae99dbf1e627cdf03a35c913d7f6e970de22b"
   },
   "devDependencies": {
     "copy-webpack-plugin": "10.2.4",
     "css-loader": "6.7.3",
     "html-webpack-plugin": "5.5.0",
-    "mini-css-extract-plugin": "2.7.2",
+    "mini-css-extract-plugin": "2.7.5",
     "raw-loader": "4.0.2",
-    "sass": "1.58.3",
+    "sass": "1.59.3",
     "sass-loader": "12.6.0",
-    "style-loader": "3.3.1",
-    "webpack": "5.76.0",
+    "style-loader": "3.3.2",
+    "webpack": "5.76.3",
     "webpack-cli": "4.10.0",
-    "webpack-dev-server": "4.11.1"
+    "webpack-dev-server": "4.13.1"
   }
 }

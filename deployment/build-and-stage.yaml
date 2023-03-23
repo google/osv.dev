@@ -96,7 +96,7 @@ steps:
   id: 'pull-alpine-cve-convert'
   waitFor: ['setup']
 - name: gcr.io/cloud-builders/docker
-  args: ['build', '-t', 'gcr.io/oss-vdb/alpine-cve-convert:latest', '-t', 'gcr.io/oss-vdb/alpine-cve-convert:$COMMIT_SHA', '-f', 'cmd/alpine/Dockerfile', '--cache-from', 'gcr.io/oss-vdb/alpine-cve-convert:latest', '--pull' '.']
+  args: ['build', '-t', 'gcr.io/oss-vdb/alpine-cve-convert:latest', '-t', 'gcr.io/oss-vdb/alpine-cve-convert:$COMMIT_SHA', '-f', 'cmd/alpine/Dockerfile', '--cache-from', 'gcr.io/oss-vdb/alpine-cve-convert:latest', '--pull', '.']
   dir: 'vulnfeeds'
   id: 'build-alpine-cve-convert'
   waitFor: ['pull-alpine-cve-convert']
@@ -110,7 +110,7 @@ steps:
   id: 'pull-combine-to-osv'
   waitFor: ['setup']
 - name: gcr.io/cloud-builders/docker
-  args: ['build', '-t', 'gcr.io/oss-vdb/combine-to-osv:latest', '-t', 'gcr.io/oss-vdb/combine-to-osv:$COMMIT_SHA', '-f', 'cmd/alpine/Dockerfile', '--cache-from', 'gcr.io/oss-vdb/combine-to-osv:latest', '--pull' '.']
+  args: ['build', '-t', 'gcr.io/oss-vdb/combine-to-osv:latest', '-t', 'gcr.io/oss-vdb/combine-to-osv:$COMMIT_SHA', '-f', 'cmd/alpine/Dockerfile', '--cache-from', 'gcr.io/oss-vdb/combine-to-osv:latest', '--pull', '.']
   dir: 'vulnfeeds'
   id: 'build-combine-to-osv'
   waitFor: ['pull-combine-to-osv']

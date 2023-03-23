@@ -1,7 +1,8 @@
-// Package git implements utility routines for operating on remote Git repositories.
+// Package git implements utility routines for operating on remote Git repositories and metadata.
 package git
 
 import (
+	"fmt"
 	"sort"
 
 	"github.com/go-git/go-git/v5"
@@ -127,4 +128,22 @@ func ValidRepo(repoURL string) (valid bool) {
 		return false
 	}
 	return true
+}
+
+// Take an unnormalized version string, a repo, the pre-normalized mapping of tags to commits and return a GitCommit.
+func VersionToCommit(version string, repo string, normalizedTags map[string]NormalizedTag) (gc cves.GitCommit, e error) {
+	normalizedVersion, err := cves.NormalizeVersion(version)
+	if err != nil {
+		return gc, err
+	}
+	// Try a straight out match first.
+	// TODO try fuzzy prefix matches also.
+	normalizedTag, ok := normalizedTags[normalizedVersion]
+	if !ok {
+		return gc, fmt.Errorf("Failed to find a commit for version %q normalized as %q", version, normalizedVersion)
+	}
+	return cves.GitCommit{
+		Repo:   repo,
+		Commit: normalizedTag.Commit,
+	}, nil
 }

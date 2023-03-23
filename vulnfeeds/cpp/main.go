@@ -76,24 +76,6 @@ func InScopeGitRepo(repoURL string) bool {
 	return true
 }
 
-// Take an unnormalized version string, a repo, the pre-normalized mapping of tags to commits and return a GitCommit.
-func GitVersionToCommit(version string, repo string, normalizedTags map[string]git.NormalizedTag) (gc cves.GitCommit, e error) {
-	normalizedVersion, err := cves.NormalizeVersion(version)
-	if err != nil {
-		return gc, err
-	}
-	// Try a straight out match first.
-	// TODO try fuzzy prefix matches also.
-	normalizedTag, ok := normalizedTags[normalizedVersion]
-	if !ok {
-		return gc, fmt.Errorf("Failed to find a commit for version %q normalized as %q", version, normalizedVersion)
-	}
-	return cves.GitCommit{
-		Repo:   repo,
-		Commit: normalizedTag.Commit,
-	}, nil
-}
-
 // Examines repos and tries to convert versions to commits by treating them as Git tags.
 // Takes a CVE ID string (for logging), cves.VersionInfo with AffectedVersions and
 // no FixCommits and attempts to add FixCommits.
@@ -109,7 +91,7 @@ func GitVersionsToCommit(CVE string, versions cves.VersionInfo, repos []string, 
 		}
 		for _, av := range versions.AffectedVersions {
 			if av.Introduced != "" {
-				gc, err := GitVersionToCommit(av.Introduced, repo, normalizedTags)
+				gc, err := git.VersionToCommit(av.Introduced, repo, normalizedTags)
 				if err != nil {
 					Logger.Warnf("[%s]: Failed to get a Git commit for introduced version %q from %q: %v", CVE, av.Introduced, repo, err)
 					continue
@@ -118,7 +100,7 @@ func GitVersionsToCommit(CVE string, versions cves.VersionInfo, repos []string, 
 				v.IntroducedCommits = append(v.IntroducedCommits, gc)
 			}
 			if av.Fixed != "" {
-				gc, err := GitVersionToCommit(av.Fixed, repo, normalizedTags)
+				gc, err := git.VersionToCommit(av.Fixed, repo, normalizedTags)
 				if err != nil {
 					Logger.Warnf("[%s]: Failed to get a Git commit for fixed version %q from %q: %v", CVE, av.Fixed, repo, err)
 					continue
@@ -127,7 +109,7 @@ func GitVersionsToCommit(CVE string, versions cves.VersionInfo, repos []string, 
 				v.FixCommits = append(v.FixCommits, gc)
 			}
 			if av.LastAffected != "" {
-				gc, err := GitVersionToCommit(av.LastAffected, repo, normalizedTags)
+				gc, err := git.VersionToCommit(av.LastAffected, repo, normalizedTags)
 				if err != nil {
 					Logger.Warnf("[%s]: Failed to get a Git commit for last_affected version %q from %q: %v", CVE, av.LastAffected, repo, err)
 					continue

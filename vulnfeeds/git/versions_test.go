@@ -24,6 +24,14 @@ func TestVersionToCommit(t *testing.T) {
 			expectedResult: "ecf535f6cb70c97beb7c44dceadc14423086ca0d",
 			expectedOk:     true,
 		},
+		{
+			description:    "A fuzzy version match",
+			inputRepoURL:   "https://gitlab.com/gitlab-org/gitlab",
+			cache:          cache,
+			inputVersion:   "12.0",
+			expectedResult: "1d73db751369085d05d939c798e7da086646696c",
+			expectedOk:     true,
+		},
 	}
 
 	for _, tc := range tests {
@@ -34,9 +42,12 @@ func TestVersionToCommit(t *testing.T) {
 		got, err := VersionToCommit(tc.inputVersion, tc.inputRepoURL, normalizedTags)
 		if err != nil && tc.expectedOk {
 			t.Errorf("test %q: VersionToCommit(%q, %q) unexpectedly failed: %#v", tc.description, tc.inputVersion, tc.inputRepoURL, err)
+			//t.Logf("%#v", normalizedTags)
+			continue
 		}
 		if got.Commit != tc.expectedResult {
 			t.Errorf("test %q: VersionToCommit(%q, %q) result incorrect, got: %q wanted: %q", tc.description, tc.inputVersion, tc.inputRepoURL, got.Commit, tc.expectedResult)
+			//t.Logf("%#v", normalizedTags)
 		}
 	}
 }

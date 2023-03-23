@@ -140,8 +140,8 @@ steps:
 
 # Build/push CPE repo map generating image
 - name: gcr.io/cloud-builders/docker
-  args: ['build', '-t', 'gcr.io/oss-vdb/cpe-repo-gen:latest', '-t', 'gcr.io/oss-vdb/cpe-repo-gen:$COMMIT_SHA', '.']
-  dir: 'vulnfeeds/cmd/cperepos'
+  args: ['build', '-t', 'gcr.io/oss-vdb/cpe-repo-gen:latest', '-t', 'gcr.io/oss-vdb/cpe-repo-gen:$COMMIT_SHA', '-f', 'cmd/cperepos/Dockerfile','.']
+  dir: 'vulnfeeds'
   id: 'build-cpe-repo-gen'
   waitFor: ['setup']
 - name: gcr.io/cloud-builders/docker

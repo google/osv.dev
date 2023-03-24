@@ -14,6 +14,8 @@ import (
 
 	"cloud.google.com/go/logging"
 
+	"golang.org/x/exp/slices"
+
 	"github.com/google/osv/vulnfeeds/cves"
 	"github.com/google/osv/vulnfeeds/git"
 	"github.com/google/osv/vulnfeeds/utility"
@@ -46,6 +48,13 @@ var Metrics struct {
 	CVEsForApplications int
 	CVEsForKnownRepos   int
 	OSVRecordsGenerated int
+}
+
+// References with these tags have been found to contain completely unrelated
+// repositories and can be misleading as to the software's true repository,
+var RefTagDenyList = [...]string{
+	"Exploit",
+	"Third Party Advisory",
 }
 
 // Looks at what the repo to determine if it contains code using an in-scope language
@@ -261,11 +270,7 @@ func main() {
 		if _, ok := ReposForCVE[cve.CVE.CVEDataMeta.ID]; !ok {
 			for _, ref := range refs {
 				for _, tag := range ref.Tags {
-					// Third Party Advisories often reference
-					// completely unrelated repositories and can be
-					// misleading as to the software's repository,
-					// so disregard these references.
-					if tag == "Third Party Advisory" {
+					if slices.Contains(RefTagDenyList, tag) {
 						continue
 					}
 					if !utility.IsRepoURL(ref.URL) {

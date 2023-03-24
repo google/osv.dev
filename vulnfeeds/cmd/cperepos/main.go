@@ -162,6 +162,7 @@ var (
 		"https://github.com/Orange-Cyberdefense/CVE-repository",
 		"https://github.com/passtheticket/vulnerability-research",
 		"https://github.com/post-cyberlabs/CVE-Advisory",
+		"https://github.com/rapid7/metasploit-framework",
 		"https://github.com/refi64/CVE-2020-25265-25266",
 		"https://github.com/riteshgohil/My_CVE_References",
 		"https://github.com/roughb8722/CVE-2021-3122-Details",

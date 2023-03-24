@@ -3,6 +3,7 @@ layout: page
 title: API
 permalink: /api/
 has_children: true
+nav_order: 1
 ---
 # API (1.0)
 
@@ -17,6 +18,6 @@ Please see the [quickstart](api-quickstart.md).
 **How does the API work?**  
 There are three different types of requests that can be made of the API. 
 
-1. You can request vuvlnerability information for a given package.
-2. You can request vulnerability information for several different packages.
-3. You can request information about a specific vulnerability. 
+1. You can request vuvlnerability information for a [given package](post-v1-query.md).
+2. You can request vulnerability information for [several different packages](post-v1-queryset.md).
+3. You can request information about a [specific vulnerability](get-v1-vulns.md). 

@@ -3,7 +3,7 @@ layout: page
 title: POST /v1/querybatch
 permalink: /post-v1-querybatch/
 parent: API
-nav_order: 2
+nav_order: 3
 ---
 
 ## POST /v1/querybatch

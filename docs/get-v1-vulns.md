@@ -3,7 +3,7 @@ layout: page
 title: GET /v1/vulns/{id}
 permalink: /get-v1-vulns/
 parent: API
-nav_order: 3
+nav_order: 4
 ---
 
 ## GET /v1/vulns/{id}

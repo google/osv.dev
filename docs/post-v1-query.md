@@ -3,7 +3,7 @@ layout: page
 title: POST /v1/query
 permalink: /post-v1-query/
 parent: API
-nav_order: 1
+nav_order: 2
 ---
 
 ## POST /v1/query

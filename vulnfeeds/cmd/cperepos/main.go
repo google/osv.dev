@@ -110,6 +110,7 @@ var (
 	InvalidRepos = []string{
 		"https://github.com/abhiunix/goo-blog-App-CVE",
 		"https://github.com/Accenture/AARO-Bugs",
+		"https://github.com/active-labs/Advisories",
 		"https://github.com/afeng2016-s/CVE-Request",
 		"https://github.com/agadient/SERVEEZ-CVE",
 		"https://github.com/AlwaysHereFight/YZMCMSxss",
@@ -120,6 +121,7 @@ var (
 		"https://github.com/BlackFan/client-side-prototype-pollution",
 		"https://github.com/blindkey/cve_like",
 		"https://github.com/ciph0x01/Simple-Exam-Reviewer-Management-System-CVE",
+		"https://github.com/cloudflare/advisories",
 		"https://github.com/CVEProject/cvelist", // Heavily in Advisory URLs, sometimes shows up elsewhere
 		"https://github.com/cve-vul/vul",
 		"https://github.com/daaaalllii/cve-s",
@@ -134,6 +136,7 @@ var (
 		"https://github.com/gitlabhq/gitlabhq",     // GitHub mirror, not canonical
 		"https://github.com/google/oss-fuzz-vulns", // 8^)
 		"https://github.com/Gr4y21/My-CVE-IDs",
+		"https://github.com/hashicorp/terraform-enterprise-release-notes",
 		"https://github.com/hemantsolo/CVE-Reference",
 		"https://github.com/huclilu/CVE_Add",
 		"https://github.com/i3umi3iei3ii/CentOS-Control-Web-Panel-CVE",
@@ -147,12 +150,15 @@ var (
 		"https://github.com/mandiant/Vulnerability-Disclosures",
 		"https://github.com/martinkubecka/CVE-References",
 		"https://github.com/mclab-hbrs/BBB-POC",
+		"https://github.com/metaredteam/external-disclosures",
 		"https://github.com/MrR3boot/CVE-Hunting",
 		"https://github.com/N1ce759/74cmsSE-Arbitrary-File-Reading",
 		"https://github.com/nepenthe0320/cve_poc",
 		"https://github.com/Netflix/security-bulletins",
+		"https://github.com/nextcloud/security-advisories",
 		"https://github.com/nikip72/CVE-2021-39273-CVE-2021-39274",
 		"https://github.com/nu11secur1ty/CVE-nu11secur1ty",
+		"https://github.com/orangecertcc/security-research",
 		"https://github.com/Orange-Cyberdefense/CVE-repository",
 		"https://github.com/passtheticket/vulnerability-research",
 		"https://github.com/post-cyberlabs/CVE-Advisory",

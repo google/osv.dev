@@ -3,6 +3,18 @@ layout: page
 title: Data
 permalink: /data/
 ---
+# Data
+{: .no_toc }
+
+<details open markdown="block">
+  <summary>
+    Table of contents
+  </summary>
+  {: .text-delta }
+- TOC
+{:toc}
+</details>
+
 ## Current data sources  
   
 **This is an ongoing project.**  

@@ -52,7 +52,7 @@ var Metrics struct {
 
 // References with these tags have been found to contain completely unrelated
 // repositories and can be misleading as to the software's true repository,
-var RefTagDenyList = [...]string{
+var RefTagDenyList = []string{
 	"Exploit",
 	"Third Party Advisory",
 }

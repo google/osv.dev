@@ -1,3 +1,7 @@
+#!/bin/bash
+
+set -ex
+
 # Copyright 2021 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -11,14 +15,11 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+#
 
-FROM golang:1.20 as GO_BUILD
-WORKDIR /build
-ADD ./ /build
-RUN chmod +x build.sh
-RUN ./build.sh
+cd ../..
 
-FROM gcr.io/distroless/base
-COPY --from=GO_BUILD build/indexer /indexer
-ENTRYPOINT ["/indexer"]
-CMD ["--help"]
+docker build \
+  -t gcr.io/oss-vdb/cpe-repo-gen:latest \
+  -f cmd/cperepos/Dockerfile --pull . && \
+gcloud docker -- push gcr.io/oss-vdb/cpe-repo-gen:latest

@@ -111,6 +111,31 @@ resource "google_container_node_pool" "highend" {
   }
 }
 
+resource "google_container_node_pool" "importer_pool" {
+  project    = var.project_id
+  name       = "importer-pool"
+  cluster    = google_container_cluster.workers.name
+  location   = google_container_cluster.workers.location
+  node_count = 1
+
+  lifecycle {
+    # Terraform doesn't automatically know to recreate node pools when the cluster is recreated.
+    # A bit redundant since the cluster has prevent_destroy = true.
+    replace_triggered_by = [
+      google_container_cluster.workers.id,
+    ]
+  }
+
+  node_config {
+    machine_type    = "n2-standard-2"
+    disk_type       = "pd-ssd"
+    disk_size_gb    = 64
+    local_ssd_count = 1
+
+    oauth_scopes = ["https://www.googleapis.com/auth/cloud-platform"]
+  }
+}
+
 # Service account permissions
 data "google_compute_default_service_account" "default" {
   project = var.project_id

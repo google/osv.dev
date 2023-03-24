@@ -12,10 +12,21 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+FROM golang:alpine@sha256:74a382917f6eaa7cc2d000dc2cd412a7f823f343b3b6268b20d84d057bc56718
+
+RUN mkdir /src
+WORKDIR /src
+
+COPY ./go.mod /src/go.mod
+COPY ./go.sum /src/go.sum
+RUN go mod download
+
+COPY ./ /src/
+RUN go build -o cperepos ./cmd/cperepos
+
 FROM gcr.io/google.com/cloudsdktool/google-cloud-cli:alpine
 
-RUN apk add wget
+COPY --from=0 /src/cperepos ./
+COPY ./cmd/cperepos/gen_cperepos_map ./
 
-COPY ./mirror-debian-copyright /
-
-ENTRYPOINT ["/mirror-debian-copyright"]
+ENTRYPOINT ["/gen_cperepos_map"]

@@ -12,13 +12,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-FROM golang:1.20 as GO_BUILD
-WORKDIR /build
-ADD ./ /build
-RUN chmod +x build.sh
-RUN ./build.sh
+FROM gcr.io/google.com/cloudsdktool/google-cloud-cli:alpine
 
-FROM gcr.io/distroless/base
-COPY --from=GO_BUILD build/indexer /indexer
-ENTRYPOINT ["/indexer"]
-CMD ["--help"]
+RUN apk add wget
+
+COPY ./debian-copyright-mirror /
+
+ENTRYPOINT ["/debian-copyright-mirror"]

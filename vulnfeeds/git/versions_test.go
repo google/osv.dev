@@ -32,6 +32,14 @@ func TestVersionToCommit(t *testing.T) {
 			expectedResult: "1d73db751369085d05d939c798e7da086646696c",
 			expectedOk:     true,
 		},
+		{
+			description:    "A failed version match (non-existent version)",
+			inputRepoURL:   "https://github.com/google/go-attestation",
+			cache:          cache,
+			inputVersion:   "0.3.3", // referred to in CVE-2022-0317
+			expectedResult: "",
+			expectedOk:     false,
+		},
 	}
 
 	for _, tc := range tests {

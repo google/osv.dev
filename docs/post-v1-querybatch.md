@@ -5,15 +5,31 @@ permalink: /post-v1-querybatch/
 parent: API
 nav_order: 3
 ---
+# POST /v1/querybatch
+{: .no_toc }
 
-## POST /v1/querybatch
+<details open markdown="block">
+  <summary>
+    Table of contents
+  </summary>
+  {: .text-delta }
+- TOC
+{:toc}
+</details>
 
-### Request samples
-
-#### Payload
+## Payload
 ```json
 {
   "queries": [
+    {
+      "commit": "string",
+      "version": "string",
+      "package": {
+        "name": "string",
+        "ecosystem": "string",
+        "purl": "string"
+      }
+    }, 
     {
       "commit": "string",
       "version": "string",
@@ -26,15 +42,19 @@ nav_order: 3
   ]
 }
 ```
+## Parameters
 
-#### Curl
+The parameters are the same as those in found [here](post-v1-query.md#parameters), but you can make multiple queries.
+
+## Request sample
+
 ```bash
 cat <<EOF | curl -d @- "https://api.osv.dev/v1/querybatch"
 {
   "queries": [
     {
       "package": {
-        "purl": "pkg:pypi/antlr4-python3-runtime@4.7.2"
+        "purl": "pkg:pypi/mlflow@0.4.0"
       }
     },
     {
@@ -52,88 +72,105 @@ cat <<EOF | curl -d @- "https://api.osv.dev/v1/querybatch"
 EOF
 ```
 
-### Response samples
+## Response samples
 
-#### 200
+### 200 response 
 ```json
 {
-  "results": [
-    {
-      "vulns": [
-        {
-          "schemaVersion": "string",
-          "id": "string",
-          "published": "2019-08-24T14:15:22Z",
-          "modified": "2019-08-24T14:15:22Z",
-          "withdrawn": "2019-08-24T14:15:22Z",
-          "aliases": [
-            "string"
-          ],
-          "related": [
-            "string"
-          ],
-          "summary": "string",
-          "details": "string",
-          "affected": [
+  "results":
+    [
+      {
+        "vulns":
+          [
             {
-              "package": {
-                "name": "string",
-                "ecosystem": "string",
-                "purl": "string"
-              },
-              "ranges": [
-                {
-                  "type": "UNSPECIFIED",
-                  "repo": "string",
-                  "events": [
-                    null
-                  ]
-                }
-              ],
-              "versions": [
-                "string"
-              ],
-              "ecosystemSpecific": {},
-              "databaseSpecific": {}
-            }
-          ],
-          "references": [
+              "id":"GHSA-vqj2-4v8m-8vrq",
+              "modified":"2023-03-14T05:47:39.989396Z"
+            },
             {
-              "type": "NONE",
-              "url": "string"
-            }
-          ],
-          "severity": [
+              "id":"GHSA-wp72-7hj9-5265",
+              "modified":"2023-03-24T22:28:29.389429Z"
+            },
             {
-              "type": "UNSPECIFIED",
-              "score": "string"
-            }
-          ],
-          "credits": [
+              "id":"GHSA-xg73-94fp-g449",
+              "modified":"2023-03-24T22:54:55.516821Z"
+            },
             {
-              "name": "string",
-              "contact": [
-                "string"
-              ]
+              "id":"PYSEC-2022-28",
+              "modified":"2022-03-02T06:39:30.836439Z"
             }
-          ],
-          "database_specific": {}
+          ]
+      },
+      {
+        "vulns":
+          [
+            {
+              "id":"OSV-2020-484",
+              "modified":"2022-04-13T03:04:32.842142Z"
+            }
+          ]
+      },
+      {
+        "vulns":
+          [
+            {
+              "id":"GHSA-462w-v97r-4m45",
+              "modified":"2023-03-10T05:23:41.874079Z"
+            },
+            {
+              "id":"GHSA-8r7q-cvjq-x353",
+              "modified":"2023-03-08T05:47:11.461578Z"
+            },
+            {
+              "id":"GHSA-fqh9-2qgg-h84h",
+              "modified":"2023-03-09T05:31:42.262435Z"
+            },
+            {
+              "id":"GHSA-g3rq-g295-4j3m",
+              "modified":"2023-03-12T05:29:26.243227Z"
+            },
+            {
+              "id":"GHSA-hj2j-77xm-mc5v",
+              "modified":"2023-03-12T05:32:53.675797Z"
+            },
+            {
+              "id":"PYSEC-2014-8",
+              "modified":"2021-07-05T00:01:22.043149Z"
+            },
+            {
+              "id":"PYSEC-2014-82",
+              "modified":"2021-08-27T03:22:05.027573Z"
+            },
+            {
+              "id":"PYSEC-2019-217",
+              "modified":"2021-11-22T04:57:52.862665Z"
+            },
+            {
+              "id":"PYSEC-2019-220",
+              "modified":"2021-11-22T04:57:52.929678Z"
+            },
+            {
+              "id":"PYSEC-2021-66",
+              "modified":"2021-03-22T16:34:00Z"
+            }
+          ]
         }
-      ]
-    }
-  ]
+    ]
 }
 ```
-#### Default
+### Default
 ```json
 {
-  "code": 0,
-  "message": "string",
-  "details": [
-    {
-      "typeUrl": "string",
-      "value": "string"
-    }
-  ]
+  "results":
+    [
+      {
+        "vulns":
+          [
+            {
+              "id": "string",
+              "modified": "string"
+            },
+          ]
+      },
+    ]
 }
 ```

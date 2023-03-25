@@ -5,12 +5,19 @@ permalink: /post-v1-query/
 parent: API
 nav_order: 2
 ---
+# POST /v1/query
+{: .no_toc }
 
-## POST /v1/query
+<details open markdown="block">
+  <summary>
+    Table of contents
+  </summary>
+  {: .text-delta }
+- TOC
+{:toc}
+</details>
 
-### Request samples
-
-#### Payload
+## Payload
 ```json
 {
   "commit": "string",
@@ -22,8 +29,26 @@ nav_order: 2
   }
 }
 ```
+## Parameters
+  
+|---
+| Parameter | Type | Description |
+| --- | --- | --- |
+| commit | string | The commit hash to query for. If specified, `version` should not be set. |
+| version | string | The version string to query for. A fuzzy match is done against upstream versions. If specified, `commit` should not be set. |
+| package | object | The package to query against. When a `commit` hash is given, this is optional. |
 
-#### Curl
+Package Objects have the following attributes:
+
+|---
+| Attribute | Type | Required or Optional? | Description |
+| --- | --- | --- | --- |
+| name | string | Required | Name of the package. Should match the name used in the package ecosystem (e.g. the npm package name). For C/C++ projects integrated in OSS-Fuzz, this is the name used for the integration.|
+| ecosystem | string | Required | The ecosystem for this package. For the complete list of valid ecosystem names, see [here](https://ossf.github.io/osv-schema/#affectedpackage-field). |
+| purl | string | Optional | The package URL for this package. |
+
+## Request samples
+
 ```bash
 curl -d \
   '{"commit": "6879efc2c1596d11a6a6ad296f80063b558d5e0f"}' \
@@ -34,9 +59,9 @@ curl -d \
   "https://api.osv.dev/v1/query"
   ```
 
-### Response samples
+## Response samples
 
-#### 200
+### 200
 ```json
 {
   "vulns": [
@@ -107,7 +132,7 @@ curl -d \
 }
 ```
 
-#### Default
+### Default
 ```json
 {
   "code": 0,

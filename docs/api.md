@@ -18,6 +18,6 @@ Please see the [quickstart](api-quickstart.md).
 **How does the API work?**  
 There are three different types of requests that can be made of the API. 
 
-1. You can request vuvlnerability information for a [given package](post-v1-query.md).
-2. You can request vulnerability information for [several different packages](post-v1-queryset.md).
-3. You can request information about a [specific vulnerability](get-v1-vulns.md). 
+1. Query vulnerabilities for a particular project at a given [commit or version](post-v1-query.md).
+2. Batched query vulnerabilities for given [package versions and commits](post-v1-queryset.md).
+3. Return a `Vulnerability` object for a given [OSV ID](get-v1-vulns.md). 

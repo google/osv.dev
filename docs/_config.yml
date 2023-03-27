@@ -22,7 +22,7 @@ title: OSV
 
 description: >-
   Information about the OSV database and API.
-baseurl: "/osv" # the subpath of your site, e.g. /blog
+baseurl: "/osv.dev" # the subpath of your site, e.g. /blog
 url: "" # the base hostname & protocol for your site, e.g. http://example.com
 github_username:  google
 heading_anchors: true

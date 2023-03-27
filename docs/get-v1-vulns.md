@@ -5,19 +5,34 @@ permalink: /get-v1-vulns/
 parent: API
 nav_order: 4
 ---
+# GET /v1/vulns/{id}
+{: .no_toc }
 
-## GET /v1/vulns/{id}
+<details open markdown="block">
+  <summary>
+    Table of contents
+  </summary>
+  {: .text-delta }
+- TOC
+{:toc}
+</details>
 
-### Request samples
+## Parameters
 
-#### Curl
+The only parameter you need for this API call is the vulnerability id, in order to construct the URL. 
+
+`https://api.osv.dev/v1/vulns/{id}`
+
+## Request samples
+
+### Curl
 ```bash
 curl "https://api.osv.dev/v1/vulns/OSV-2020-111"
 ```
 
-### Response samples
+## Response samples
 
-#### 200
+### 200
 ```json
 {
   "schemaVersion": "string",
@@ -84,7 +99,7 @@ curl "https://api.osv.dev/v1/vulns/OSV-2020-111"
 }
 ```
 
-#### Default
+### Default
 ```json
 {
   "code": 0,

@@ -35,6 +35,9 @@ plugins:
 color_scheme: better_contrast
 markdown: kramdown
 
+logo: "/assets/logo.png"
+favicon_ico: "/assets/icon.png"
+
 callouts_level: quiet # or loud
 callouts:
   highlight:

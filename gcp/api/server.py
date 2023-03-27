@@ -16,6 +16,8 @@
 import argparse
 import codecs
 import concurrent
+import cProfile
+import timeit
 import functools
 import logging
 import os
@@ -41,10 +43,11 @@ _SHUTDOWN_GRACE_DURATION = 5
 
 _MAX_BATCH_QUERY = 1000
 _MAX_VULNERABILITIES_LISTED = 16
-_MAX_HASHES_TO_TRY = 50
+_MAX_HASHES_TO_TRY = 100
 _MAX_COMMITS_TO_TRY = 10
 
 _ndb_client = ndb.Client()
+profiler = cProfile.Profile()
 
 
 def ndb_context(func):
@@ -110,13 +113,35 @@ class OSVServicer(osv_service_v1_pb2_grpc.OSVServicer):
   @ndb_context
   def DetermineVersion(self, request, context):
     """Determine the version of the provided hashes."""
-    return determine_version(request.query, context).result()
+    profiler.enable()
+    res = determine_version(request.query, context).result()
+    profiler.disable()
+    profiler.dump_stats("./someoutput.data")
+    # profiler.print_stats()
+    return res
+
+
+class Timer:
+
+  def __init__(self):
+    self.start_time = timeit.default_timer()
+    self.lap_time = timeit.default_timer()
+
+  def elapsed(self):
+    current_time = timeit.default_timer()
+    logging.info(
+        f"Elapsed: {current_time - self.lap_time}  -  From Start: {current_time - self.start_time}"
+    )
+    self.lap_time = current_time
 
 
 @ndb.tasklet
 def determine_version(version_query: osv_service_v1_pb2.VersionQuery,
                       context: grpc.ServicerContext) -> ndb.Future:
   """Identify fitting commits based on a subset of hashes"""
+
+  timer = Timer()
+  logging.info(len(version_query.file_hashes))
   if len(version_query.file_hashes) <= _MAX_HASHES_TO_TRY:
     hashes = [
         f.hash for f in version_query
@@ -129,30 +154,56 @@ def determine_version(version_query: osv_service_v1_pb2.VersionQuery,
     ]
   tracker = defaultdict(int)
 
-  hash_futures = []
+  hash_futures: list[ndb.Future] = []
   for h in hashes:
     query = osv.RepoIndexResult.query(
         osv.RepoIndexResult.file_results.hash == h)
+
     query.keys_only = True
-    hash_futures.append(query.fetch_async())
+    hash_futures.append(query.fetch_async(limit=75))
+
+  timer.elapsed()
+  counter = 0
 
   for f in hash_futures:
-    for r in f.result():
-      tracker[r.key.parent()] += 1
+    result = list(f.result())
+    logging.info(f'Stuff: {len(result)}')
+
+    for r in result:
+      r: osv.RepoIndexResult
+      # timer.elapsed()
+      if len(result) == 75:
+        # Set the repo as a potential element to test with, but don't increment weight to avoid unevenly
+        # changing the weightings
+        tracker[r.key.parent()] += 0
+      else:
+        tracker[r.key.parent()] += 1
+      counter += 1
+
+  # max_val = max(tracker.values())
+  timer.elapsed()
+  logging.info(f'Project counter: {counter}')
+  # logging.info(f'Result cap: {max_val}')
 
   idx_keys = []
-  for k, v in tracker.items():
-    if v == _MAX_HASHES_TO_TRY:
-      idx_keys.append(k)
-  if not idx_keys:
-    idx_keys = [
-        k for k, _ in sorted(
-            tracker.items(), key=lambda item: item[1], reverse=True)
-    ]
-    idx_keys = idx_keys[:min(_MAX_COMMITS_TO_TRY, len(idx_keys))]
+  # for k, v in tracker.items():
+  #   if v == max_val:
+  #     idx_keys.append(k)
+  # if not idx_keys:
+  idx_keys = [
+      k for k, _ in sorted(
+          tracker.items(), key=lambda item: item[1], reverse=True)
+  ]
+  idx_keys = idx_keys[:min(10, len(idx_keys))]
+
+  logging.info(f'idx keys: {len(idx_keys)}')
+
   if len(idx_keys) == 0:
     context.abort(grpc.StatusCode.NOT_FOUND, 'no matches found')
     return None
+
+  # context.abort(grpc.StatusCode.NOT_FOUND, 'no matches found')
+  # return None
 
   idx_futures = ndb.get_multi_async(idx_keys)
   match_futures = []
@@ -162,6 +213,9 @@ def determine_version(version_query: osv_service_v1_pb2.VersionQuery,
       continue
     match = compare_hashes_from_commit(idx, version_query.file_hashes)
     match_futures.append(match)
+
+  timer.elapsed()
+
   results = []
   for f in match_futures:
     version_match = f.result()
@@ -170,6 +224,9 @@ def determine_version(version_query: osv_service_v1_pb2.VersionQuery,
   if len(results) == 0:
     context.abort(grpc.StatusCode.NOT_FOUND, 'no matches found')
     return None
+
+  results.sort(key=lambda x: x.score)
+  logging.info(len(results))
 
   return osv_service_v1_pb2.VersionMatchList(matches=results)
 

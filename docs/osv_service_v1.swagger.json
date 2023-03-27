@@ -1,0 +1,505 @@
+{
+  "swagger": "2.0",
+  "info": {
+    "title": "OSV",
+    "version": "1.0",
+    "description": "# OSV API\n---\n\n### How does the API work?\n\nThe API currently accepts a git commit hash or a `(package, version number)` and returns the\nlist of vulnerabilities that are present for that version.\n\n# Getting Started\n---\n\n### Using the API\n\nBrowse the rest of the documentation for details on the\nAPI.\n\nFor some quick examples, run:\n\n```\ncurl -d '{\"commit\": \"6879efc2c1596d11a6a6ad296f80063b558d5e0f\"}' \\\n    \"https://api.osv.dev/v1/query\"\n```\n\n```\ncurl -d \\\n          '{\"version\": \"2.4.1\", \"package\": {\"name\": \"jinja2\", \"ecosystem\": \"PyPI\"}}' \\\n          \"https://api.osv.dev/v1/query\"\n```\n"
+  },
+  "consumes": [
+    "application/json"
+  ],
+  "produces": [
+    "application/json"
+  ],
+  "paths": {
+    "/v1/query": {
+      "post": {
+        "summary": "Query vulnerabilities for a particular project at a given commit or\nversion.",
+        "operationId": "OSV_QueryAffected",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1VulnerabilityList"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/v1Query"
+            }
+          }
+        ],
+        "tags": [
+          "api"
+        ],
+        "x-code-samples": [
+          {
+            "lang": "Curl example",
+            "source": "curl -d \\\n  '{\"commit\": \"6879efc2c1596d11a6a6ad296f80063b558d5e0f\"}' \\\n  \"https://api.osv.dev/v1/query\"\n\ncurl -d \\\n  '{\"package\": {\"name\": \"mruby\"}, \"version\": \"2.1.2rc\"}' \\\n  \"https://api.osv.dev/v1/query\""
+          }
+        ]
+      }
+    },
+    "/v1/querybatch": {
+      "post": {
+        "summary": "Query vulnerabilities (batched) for given package versions and commits.\nThis currently allows a maximum of 1000 package versions to be included in a single query.",
+        "operationId": "OSV_QueryAffectedBatch",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1BatchVulnerabilityList"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/v1BatchQuery"
+            }
+          }
+        ],
+        "tags": [
+          "api"
+        ],
+        "x-code-samples": [
+          {
+            "lang": "Curl example",
+            "source": "cat <<EOF | curl -d @- \"https://api.osv.dev/v1/querybatch\"\n{\n  \"queries\": [\n    {\n      \"package\": {\n        \"purl\": \"pkg:pypi/antlr4-python3-runtime@4.7.2\"\n      }\n    },\n    {\n      \"commit\": \"6879efc2c1596d11a6a6ad296f80063b558d5e0f\"\n    },\n    {\n      \"package\": {\n        \"ecosystem\": \"PyPI\",\n        \"name\": \"jinja2\"\n      },\n      \"version\": \"2.4.1\"\n    }\n  ]\n}\nEOF"
+          }
+        ]
+      }
+    },
+    "/v1/vulns/{id}": {
+      "get": {
+        "summary": "Return a `Vulnerability` object for a given OSV ID.",
+        "operationId": "OSV_GetVulnById",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/osvVulnerability"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "tags": [
+          "api"
+        ],
+        "x-code-samples": [
+          {
+            "lang": "Curl example",
+            "source": "curl \"https://api.osv.dev/v1/vulns/OSV-2020-111\""
+          }
+        ]
+      }
+    }
+  },
+  "definitions": {
+    "osvAffected": {
+      "type": "object",
+      "properties": {
+        "package": {
+          "$ref": "#/definitions/osvPackage",
+          "description": "Required. Package information."
+        },
+        "ranges": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/osvRange"
+          },
+          "description": "Required. Range information."
+        },
+        "versions": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Optional. List of affected versions."
+        },
+        "ecosystemSpecific": {
+          "type": "object",
+          "description": "Optional. JSON object holding additional information about the\nvulnerability as defined by the ecosystem for which the record applies."
+        },
+        "databaseSpecific": {
+          "type": "object",
+          "description": "Optional. JSON object holding additional information about the\nvulnerability as defined by the database for which the record applies."
+        }
+      },
+      "description": "Affected versions and commits."
+    },
+    "osvCredit": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "The name to give credit to."
+        },
+        "contact": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Contact methods (URLs)."
+        }
+      }
+    },
+    "osvEvent": {
+      "type": "object",
+      "properties": {
+        "introduced": {
+          "type": "string",
+          "description": "The earliest version/commit where this vulnerability\nwas introduced in."
+        },
+        "fixed": {
+          "type": "string",
+          "description": "The version/commit that this vulnerability was fixed in."
+        },
+        "limit": {
+          "type": "string",
+          "description": "The limit to apply to the range."
+        }
+      },
+      "description": "Version events."
+    },
+    "osvPackage": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "Required. Name of the package. Should match the name used in the package\necosystem (e.g. the npm package name). For C/C++ projects integrated in\nOSS-Fuzz, this is the name used for the integration."
+        },
+        "ecosystem": {
+          "type": "string",
+          "description": "Required. The ecosystem for this package. \nFor the complete list of valid ecosystem names, see\n<https://ossf.github.io/osv-schema/#affectedpackage-field>."
+        },
+        "purl": {
+          "type": "string",
+          "description": "Optional. The package URL for this package."
+        }
+      },
+      "description": "Package information and version."
+    },
+    "osvRange": {
+      "type": "object",
+      "properties": {
+        "type": {
+          "$ref": "#/definitions/osvRangeType",
+          "description": "Required. The type of version information."
+        },
+        "repo": {
+          "type": "string",
+          "description": "Required if type is GIT. The publicly accessible URL of the repo that can\nbe directly passed to clone commands."
+        },
+        "events": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/osvEvent"
+          },
+          "description": "Required. Version event information."
+        }
+      },
+      "description": "Affected ranges."
+    },
+    "osvRangeType": {
+      "type": "string",
+      "enum": [
+        "UNSPECIFIED",
+        "GIT",
+        "SEMVER",
+        "ECOSYSTEM"
+      ],
+      "default": "UNSPECIFIED",
+      "description": "Type of the version information."
+    },
+    "osvReference": {
+      "type": "object",
+      "properties": {
+        "type": {
+          "$ref": "#/definitions/osvReferenceType",
+          "description": "Required. The type of the reference."
+        },
+        "url": {
+          "type": "string",
+          "description": "Required. The URL."
+        }
+      },
+      "description": "Reference URL."
+    },
+    "osvReferenceType": {
+      "type": "string",
+      "enum": [
+        "NONE",
+        "WEB",
+        "ADVISORY",
+        "REPORT",
+        "FIX",
+        "PACKAGE",
+        "ARTICLE"
+      ],
+      "default": "NONE"
+    },
+    "osvSeverity": {
+      "type": "object",
+      "properties": {
+        "type": {
+          "$ref": "#/definitions/osvSeverityType",
+          "description": "The type of this severity entry."
+        },
+        "score": {
+          "type": "string",
+          "description": "The quantitative score."
+        }
+      }
+    },
+    "osvSeverityType": {
+      "type": "string",
+      "enum": [
+        "UNSPECIFIED",
+        "CVSS_V3"
+      ],
+      "default": "UNSPECIFIED",
+      "description": "Type of the severity."
+    },
+    "osvVulnerability": {
+      "type": "object",
+      "properties": {
+        "schemaVersion": {
+          "type": "string",
+          "description": "The OSV schema version."
+        },
+        "id": {
+          "type": "string",
+          "description": "The `id` field is a unique identifier for the vulnerability entry. It is a\nstring of the format `<DB>-<ENTRYID>`, where `DB` names the database and\n`ENTRYID` is in the format used by the database. For example:\n\u201cOSV-2020-111\u201d, \u201cCVE-2021-3114\u201d, or \u201cGHSA-vp9c-fpxx-744v\u201d."
+        },
+        "published": {
+          "type": "string",
+          "format": "date-time",
+          "description": "The RFC3339 timestamp indicating when this entry was published."
+        },
+        "modified": {
+          "type": "string",
+          "format": "date-time",
+          "description": "The RFC3339 timestamp indicating when this entry was last modified."
+        },
+        "withdrawn": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Optional. The RFC3339 timestamp indicating when this entry is considered to\nbe withdrawn."
+        },
+        "aliases": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Optional. IDs for the same vulnerability in other databases."
+        },
+        "related": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Optional. List of IDs of closely related vulnerabilities, such as the same\nproblem in alternate ecosystems."
+        },
+        "summary": {
+          "type": "string",
+          "description": "Required. One line human readable summary for the vulnerability. It is\nrecommended to keep this under 120 characters."
+        },
+        "details": {
+          "type": "string",
+          "description": "Required. Any additional human readable details for the vulnerability."
+        },
+        "affected": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/osvAffected"
+          },
+          "description": "Required. Affected commit ranges and versions."
+        },
+        "references": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/osvReference"
+          },
+          "description": "Optional. URLs to more information/advisories (including the\nscheme e.g \"https://\")."
+        },
+        "severity": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/osvSeverity"
+          },
+          "description": "Optional. Severity of the vulnerability."
+        },
+        "credits": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/osvCredit"
+          },
+          "description": "Optional. Credits for the vulnerability."
+        },
+        "database_specific": {
+          "type": "object",
+          "description": "Optional. JSON object holding additional information about the\nvulnerability as defined by the database for which the record applies."
+        }
+      },
+      "description": "A vulnerability entry.\nThe protobuf representation is *NOT* stable and only used for implementing\nthe JSON based API."
+    },
+    "protobufAny": {
+      "type": "object",
+      "properties": {
+        "typeUrl": {
+          "type": "string"
+        },
+        "value": {
+          "type": "string",
+          "format": "byte"
+        }
+      }
+    },
+    "protobufNullValue": {
+      "type": "string",
+      "enum": [
+        "NULL_VALUE"
+      ],
+      "default": "NULL_VALUE",
+      "description": "`NullValue` is a singleton enumeration to represent the null value for the\n`Value` type union.\n\n The JSON representation for `NullValue` is JSON `null`.\n\n - NULL_VALUE: Null value."
+    },
+    "rpcStatus": {
+      "type": "object",
+      "properties": {
+        "code": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "message": {
+          "type": "string"
+        },
+        "details": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/protobufAny"
+          }
+        }
+      }
+    },
+    "v1BatchQuery": {
+      "type": "object",
+      "properties": {
+        "queries": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/v1Query"
+          },
+          "description": "The queries that form this batch query."
+        }
+      },
+      "description": "Batch query format."
+    },
+    "v1BatchVulnerabilityList": {
+      "type": "object",
+      "properties": {
+        "results": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/v1VulnerabilityList"
+          }
+        }
+      },
+      "description": "Batched lists of Vulnerability entries."
+    },
+    "v1Query": {
+      "type": "object",
+      "properties": {
+        "commit": {
+          "type": "string",
+          "description": "The commit hash to query for. If specified, `version` should not be set."
+        },
+        "version": {
+          "type": "string",
+          "description": "The version string to query for. A fuzzy match is done against upstream\nversions. If specified, `commit` should not be set."
+        },
+        "package": {
+          "description": "The package to query against. When a `commit` hash is given, this is\noptional.",
+          "allOf": [
+            {
+              "$ref": "#/definitions/osvPackage"
+            }
+          ]
+        }
+      },
+      "description": "Query format."
+    },
+    "v1VulnerabilityList": {
+      "type": "object",
+      "properties": {
+        "vulns": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/osvVulnerability"
+          }
+        }
+      },
+      "description": "A list of Vulnerability entries."
+    }
+  },
+  "host": "api.osv.dev",
+  "tags": [
+    {
+      "name": "api",
+      "x-displayName": "API",
+      "description": "The API has 3 methods:"
+    },
+    {
+      "name": "vulnerability_schema",
+      "x-displayName": "Vulnerability schema",
+      "description": "Please see the [OpenSSF Open Source Vulnerability spec](https://ossf.github.io/osv-schema/)."
+    }
+  ],
+  "x-tagGroups": [
+    {
+      "name": "API",
+      "tags": [
+        "api"
+      ]
+    },
+    {
+      "name": "Schema",
+      "tags": [
+        "vulnerability_schema"
+      ]
+    }
+  ]
+}

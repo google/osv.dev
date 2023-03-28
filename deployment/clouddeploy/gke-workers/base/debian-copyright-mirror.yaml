@@ -7,7 +7,7 @@ spec:
   concurrencyPolicy: Forbid
   jobTemplate:
     spec:
-      activeDeadlineSeconds: 3600
+      activeDeadlineSeconds: 86400
       template:
         spec:
           containers:

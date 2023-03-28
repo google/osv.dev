@@ -133,7 +133,7 @@ func GitVersionsToCommit(CVE string, versions cves.VersionInfo, repos []string, 
 	return v, nil
 }
 
-func refAcceptable(ref cves.CVEReferenceData, tagDenyList []string) (acceptable bool) {
+func refAcceptable(ref cves.CVEReferenceData, tagDenyList []string) bool {
 	for _, deniedTag := range tagDenyList {
 		if slices.Contains(ref.Tags, deniedTag) {
 			return false

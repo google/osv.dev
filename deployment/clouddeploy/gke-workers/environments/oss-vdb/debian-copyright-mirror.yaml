@@ -1,0 +1,16 @@
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: debian-copyright-mirror
+spec:
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          containers:
+          - name: debian-copyright-mirror
+            env:
+            - name: GCS_PATH
+              value: gs://osv-cve-osv-conversion/debian_copyright
+            - name: WORK_DIR
+              value: /scratch

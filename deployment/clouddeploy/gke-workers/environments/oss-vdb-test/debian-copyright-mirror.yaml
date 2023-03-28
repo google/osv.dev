@@ -12,7 +12,5 @@ spec:
             env:
             - name: GCS_PATH
               value: gs://osv-test-cve-osv-conversion/debian_copyright
-            - name: WORK_DIR
-              value: /scratch
             - name: BE_VERBOSE
               value:

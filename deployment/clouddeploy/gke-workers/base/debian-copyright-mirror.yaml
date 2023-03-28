@@ -23,6 +23,9 @@ spec:
               limits:
                 cpu: 1
                 memory: "2G"
+            env:
+              - name: WORK_DIR
+                value: /scratch
           restartPolicy: OnFailure
           volumes:
             - name: "ssd"

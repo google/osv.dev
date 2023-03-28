@@ -145,8 +145,7 @@ func refAcceptable(ref cves.CVEReferenceData, tagDenyList []string) (acceptable 
 // Examines the CVE references for a CVE's CPE and derives repos for it.
 func ReposForCPE(CVE string, cache VendorProductToRepoMap, vp VendorProduct, refs []cves.CVEReferenceData, tagDenyList []string) (repos []string) {
 	// This currently only gets called for cache misses, but make it not rely on that assumption.
-	cachedRepos, ok := cache[vp]
-	if ok {
+	if cachedRepos, ok := cache[vp]; ok {
 		return cachedRepos
 	}
 	for _, ref := range refs {

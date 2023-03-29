@@ -52,9 +52,11 @@ var Metrics struct {
 
 // References with these tags have been found to contain completely unrelated
 // repositories and can be misleading as to the software's true repository,
+// Currently empty due to undesired false positives reducing the number of
+// valid records successfully converted.
 var RefTagDenyList = []string{
-	"Exploit",
-	"Third Party Advisory",
+	// "Exploit",
+	// "Third Party Advisory",
 }
 
 // Looks at what the repo to determine if it contains code using an in-scope language
@@ -131,6 +133,40 @@ func GitVersionsToCommit(CVE string, versions cves.VersionInfo, repos []string, 
 	return v, nil
 }
 
+func refAcceptable(ref cves.CVEReferenceData, tagDenyList []string) bool {
+	for _, deniedTag := range tagDenyList {
+		if slices.Contains(ref.Tags, deniedTag) {
+			return false
+		}
+	}
+	return true
+}
+
+// Examines the CVE references for a CVE's CPE and derives repos for it.
+func ReposForCPE(CVE string, cache VendorProductToRepoMap, vp VendorProduct, refs []cves.CVEReferenceData, tagDenyList []string) (repos []string) {
+	// This currently only gets called for cache misses, but make it not rely on that assumption.
+	if cachedRepos, ok := cache[vp]; ok {
+		return cachedRepos
+	}
+	for _, ref := range refs {
+		// If any of the denylist tags are in the ref's tag set, it's out of consideration.
+		if !refAcceptable(ref, tagDenyList) {
+			// Also remove it if previously added under an acceptable tag.
+			maybeRemoveFromVPRepoCache(cache, vp, ref.URL)
+			Logger.Infof("[%s]: disregarding %q for %q due to a denied tag in %q", CVE, ref.URL, vp, ref.Tags)
+			break
+		}
+		repo, err := cves.Repo(ref.URL)
+		if err != nil {
+			// Failed to parse as a valid repo.
+			continue
+		}
+		repos = append(repos, repo)
+		maybeUpdateVPRepoCache(cache, vp, repo)
+	}
+	return repos
+}
+
 // Takes an NVD CVE record and outputs an OSV file in the specified directory.
 func CVEToOSV(CVE cves.CVEItem, repos []string, cache git.RepoTagsCache, directory string) error {
 	CPEs := cves.CPEs(CVE)
@@ -194,6 +230,36 @@ func loadCPEDictionary(ProductToRepo *VendorProductToRepoMap, f string) error {
 		return err
 	}
 	return json.Unmarshal(data, &ProductToRepo)
+}
+
+// Adds the repo to the cache for the Vendor/Product combination if not already present.
+func maybeUpdateVPRepoCache(cache VendorProductToRepoMap, vp VendorProduct, repo string) {
+	if slices.Contains(cache[vp], repo) {
+		return
+	}
+	cache[vp] = append(cache[vp], repo)
+}
+
+// Removes the repo from the cache for the Vendor/Product combination if already present.
+func maybeRemoveFromVPRepoCache(cache VendorProductToRepoMap, vp VendorProduct, repo string) {
+	cacheEntry, ok := cache[vp]
+	if !ok {
+		return
+	}
+	if !slices.Contains(cacheEntry, repo) {
+		return
+	}
+	i := slices.Index(cacheEntry, repo)
+	if i == -1 {
+		return
+	}
+	// If there is only one entry, delete the entry cache entry.
+	if len(cacheEntry) == 1 {
+		delete(cache, vp)
+		return
+	}
+	slices.Delete(cacheEntry, i, i)
+	cache[vp] = cacheEntry
 }
 
 func main() {
@@ -260,50 +326,32 @@ func main() {
 		}
 
 		if appCPECount == 0 {
-			// Not software, skip.
+			// This CVE is not for software, skip.
 			continue
 		}
 
 		Metrics.CVEsForApplications++
 
 		// We only need to do this if we didn't get a repo from the CPE Dictionary.
-		if _, ok := ReposForCVE[cve.CVE.CVEDataMeta.ID]; !ok {
-			for _, ref := range refs {
-				for _, tag := range ref.Tags {
-					if slices.Contains(RefTagDenyList, tag) {
-						continue
-					}
-					if !utility.IsRepoURL(ref.URL) {
-						continue
-					}
-					Logger.Infof("[%s]: examining %q [%q]", cve.CVE.CVEDataMeta.ID, ref.URL, tag)
-					// CVE entries have one set of
-					// references, but can have multiple
-					// CPEs, so we have to consider them
-					// all for each reference.
-					for _, CPEstr := range cves.CPEs(cve) {
-						CPE, err := cves.ParseCPE(CPEstr)
-						if err != nil {
-							Logger.Warnf("[%s]: Failed to parse CPE %q: %+v", cve.CVE.CVEDataMeta.ID, CPEstr, err)
-							continue
-						}
-						// Continue to only focus on application CPEs.
-						if CPE.Part != "a" {
-							continue
-						}
-						// TODO: there's an opportunity to skip this
-						repo, err := cves.Repo(ref.URL)
-						if err != nil {
-							Logger.Warnf("[%s]: Failed to parse %q for %q: %+v", cve.CVE.CVEDataMeta.ID, ref.URL, CPE.Product, err)
-							continue
-						}
-						Logger.Infof("[%s]: Derived %q for %q %q from %q", cve.CVE.CVEDataMeta.ID, repo, CPE.Vendor, CPE.Product, ref.URL)
-						VPRepoCache[VendorProduct{CPE.Vendor, CPE.Product}] = append(VPRepoCache[VendorProduct{CPE.Vendor, CPE.Product}], repo)
-						if _, ok := ReposForCVE[cve.CVE.CVEDataMeta.ID]; !ok {
-							ReposForCVE[cve.CVE.CVEDataMeta.ID] = VPRepoCache[VendorProduct{CPE.Vendor, CPE.Product}]
-						}
-					}
+		// TODO: check if this can be merged into the CPE loop above.
+		if _, ok := ReposForCVE[cve.CVE.CVEDataMeta.ID]; !ok && len(refs) > 0 {
+			for _, CPEstr := range cves.CPEs(cve) {
+				CPE, err := cves.ParseCPE(CPEstr)
+				if err != nil {
+					Logger.Warnf("[%s]: Failed to parse CPE %q: %+v", cve.CVE.CVEDataMeta.ID, CPEstr, err)
+					continue
 				}
+				// Continue to only focus on application CPEs.
+				if CPE.Part != "a" {
+					continue
+				}
+				repos := ReposForCPE(cve.CVE.CVEDataMeta.ID, VPRepoCache, VendorProduct{CPE.Vendor, CPE.Product}, refs, RefTagDenyList)
+				if len(repos) == 0 {
+					Logger.Warnf("[%s]: Failed to derive any repos for %q %q", cve.CVE.CVEDataMeta.ID, CPE.Vendor, CPE.Product)
+					continue
+				}
+				Logger.Infof("[%s]: Derived %q for %q %q", cve.CVE.CVEDataMeta.ID, repos, CPE.Vendor, CPE.Product)
+				ReposForCVE[cve.CVE.CVEDataMeta.ID] = repos
 			}
 		}
 

@@ -1,0 +1,33 @@
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: debian-copyright-mirror
+spec:
+  schedule: "0 6 */1 * *"
+  concurrencyPolicy: Forbid
+  jobTemplate:
+    spec:
+      activeDeadlineSeconds: 86400
+      template:
+        spec:
+          containers:
+          - name: debian-copyright-mirror
+            image: debian-copyright-mirror
+            imagePullPolicy: Always
+            securityContext:
+              privileged: true
+            resources:
+              requests:
+                cpu: 1
+                memory: "1G"
+              limits:
+                cpu: 1
+                memory: "2G"
+            env:
+              - name: WORK_DIR
+                value: /scratch
+          restartPolicy: OnFailure
+          volumes:
+            - name: "ssd"
+              hostPath:
+                path: "/mnt/disks/ssd0"

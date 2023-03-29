@@ -17,6 +17,4 @@ version analysis.
 
 [osv.dev]: https://osv.dev
 [vulnerability database]: https://osv.dev/list
-<p align="center">
-  <img src="diagram.png" width="600">
-</p>
+![This is a diagram that shows the relationship between the vulnerability databases that use the OSV format and how all those entries are collated at OSV.dev. Open source users can query for known vulnerabilities by version number or commit hash.  ](diagram.png)

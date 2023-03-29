@@ -182,8 +182,8 @@ steps:
      exporter=gcr.io/oss-vdb/exporter:$COMMIT_SHA,\
      debian-convert=gcr.io/oss-vdb/debian-convert:$COMMIT_SHA,\
      combine-to-osv=gcr.io/oss-vdb/combine-to-osv:$COMMIT_SHA,\
-     alpine-cve-convert=gcr.io/oss-vdb/alpine-cve-convert:$COMMIT_SHA, \
-     debian-copyright-mirror=gcr.io/oss-vdb/debian-copyright-mirror:$COMMIT_SHA, \
+     alpine-cve-convert=gcr.io/oss-vdb/alpine-cve-convert:$COMMIT_SHA,\
+     debian-copyright-mirror=gcr.io/oss-vdb/debian-copyright-mirror:$COMMIT_SHA,\
      cpe-repo-gen=gcr.io/oss-vdb/cpe-repo-gen:$COMMIT_SHA"
   ]
   dir: deployment/clouddeploy/gke-workers

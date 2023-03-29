@@ -313,7 +313,7 @@ class IntegrationTests(unittest.TestCase):
 
     response_json = response.json()
     self.assertCountEqual(
-        ['GO-2021-0061', 'GO-2020-0036', 'GHSA-r88r-gmrh-7j83'],
+        ['GO-2021-0061', 'GO-2020-0036'],
         [vuln['id'] for vuln in response_json['vulns']])
 
     response = requests.post(

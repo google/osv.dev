@@ -5,6 +5,8 @@ nav_order: 1
 ---
 # Introduction to OSV
 
+[![OpenSSF Scorecard](https://api.securityscorecards.dev/projects/github.com/google/osv.dev/badge)](https://api.securityscorecards.dev/projects/github.com/google/osv.dev)
+
 [osv.dev](https://osv.dev) is a [vulnerability database](https://osv.dev/list) and triage infrastructure for open source projects aimed at helping both open source maintainers and consumers of open source.
 
 [This repository](https://github.com/google/osv.dev) contains the infrastructure code that serves [osv.dev](https://osv.dev) (and other user tooling). This infrastructure serves as an aggregator of vulnerability databases that have adopted the [OpenSSF Vulnerability format](https://github.com/ossf/osv-schema).

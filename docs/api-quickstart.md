@@ -5,18 +5,18 @@ permalink: /quickstart/
 parent: API
 nav_order: 1
 ---
-## Quick Start
+# Quick Start
 
 Here are a couple of examples that you can run to get an idea of the API. Additional details are available in the rest of the docs. 
 
-### Return a vulnerability associated with a commit hash
+## Return a vulnerability associated with a commit hash
   
 ```bash
 curl -d '{"commit": "6879efc2c1596d11a6a6ad296f80063b558d5e0f"}' \
     "https://api.osv.dev/v1/query"
 ```
 
-### Return all vulnerabilities for a given package
+## Return all vulnerabilities for a given package
   
 ```bash
 curl -d \

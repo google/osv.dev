@@ -5,9 +5,8 @@ permalink: /architecture/
 nav_order: 3
 ---
 # Architecture
-<p align="center">
-  <img src="architecture.png" width="600">
-</p>
+![Architecture diagram](architecture.png)
+
 ## Data source
 
 Our data is sourced from a variety of [sources](../data#current-data-sources), which we are looking to expand

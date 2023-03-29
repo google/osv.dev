@@ -43,7 +43,7 @@ _SHUTDOWN_GRACE_DURATION = 5
 
 _MAX_BATCH_QUERY = 1000
 _MAX_VULNERABILITIES_LISTED = 16
-_MAX_HASHES_TO_TRY = 100
+_MAX_HASHES_TO_TRY = 50
 _MAX_COMMITS_TO_TRY = 10
 
 _ndb_client = ndb.Client()
@@ -160,7 +160,7 @@ def determine_version(version_query: osv_service_v1_pb2.VersionQuery,
         osv.RepoIndexResult.file_results.hash == h)
 
     query.keys_only = True
-    hash_futures.append(query.fetch_async(limit=75))
+    hash_futures.append(query.fetch_async())
 
   timer.elapsed()
   counter = 0
@@ -172,12 +172,7 @@ def determine_version(version_query: osv_service_v1_pb2.VersionQuery,
     for r in result:
       r: osv.RepoIndexResult
       # timer.elapsed()
-      if len(result) == 75:
-        # Set the repo as a potential element to test with, but don't increment weight to avoid unevenly
-        # changing the weightings
-        tracker[r.key.parent()] += 0
-      else:
-        tracker[r.key.parent()] += 1
+      tracker[r.key.parent()] += 1
       counter += 1
 
   # max_val = max(tracker.values())
@@ -186,15 +181,15 @@ def determine_version(version_query: osv_service_v1_pb2.VersionQuery,
   # logging.info(f'Result cap: {max_val}')
 
   idx_keys = []
-  # for k, v in tracker.items():
-  #   if v == max_val:
-  #     idx_keys.append(k)
-  # if not idx_keys:
-  idx_keys = [
-      k for k, _ in sorted(
-          tracker.items(), key=lambda item: item[1], reverse=True)
-  ]
-  idx_keys = idx_keys[:min(10, len(idx_keys))]
+  for k, v in tracker.items():
+    if v == _MAX_HASHES_TO_TRY:
+      idx_keys.append(k)
+  if not idx_keys:
+    idx_keys = [
+        k for k, _ in sorted(
+            tracker.items(), key=lambda item: item[1], reverse=True)
+    ]
+    idx_keys = idx_keys[:min(_MAX_COMMITS_TO_TRY, len(idx_keys))]
 
   logging.info(f'idx keys: {len(idx_keys)}')
 

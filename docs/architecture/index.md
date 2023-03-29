@@ -2,8 +2,9 @@
 layout: page
 title: Architecture
 permalink: /architecture/
-nav_order: 2
+nav_order: 3
 ---
+# Architecture
 <p align="center">
   <img src="architecture.png" width="600">
 </p>

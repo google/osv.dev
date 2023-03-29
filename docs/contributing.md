@@ -2,8 +2,10 @@
 layout: page
 title: Contributing
 permalink: /contributing/
-nav_order: 6
+nav_order: 7
 ---
+# Contributing
+
 Contributions are welcome! 
 
 Learn more about [code](https://github.com/google/osv.dev/blob/master/CONTRIBUTING.md#contributing-code) and [data](https://github.com/google/osv.dev/blob/master/CONTRIBUTING.md#contributing-data) contributions. 

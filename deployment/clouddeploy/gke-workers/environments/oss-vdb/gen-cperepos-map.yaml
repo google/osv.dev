@@ -1,0 +1,16 @@
+
+kind: CronJob
+metadata:
+  name: gen-cperepos-map
+spec:
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          containers:
+          - name: gen-cperepos-map
+            env:
+            - name: DEBIAN_COPYRIGHT_GCS_PATH
+              value: gs://cve-osv-conversion/debian_copyright
+            - name: CPEREPO_GCS_PATH
+              value: gs://cve-osv-conversion/cpe_repos

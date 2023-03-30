@@ -8,3 +8,4 @@ resources:
 - debian-convert.yaml
 - debian-first-version.yaml
 - debian-copyright-mirror.yaml
+- gen-cperepos-map.yaml

@@ -86,3 +86,6 @@ If you have any questions, please feel free to create an issue!
 Yes!
 
 If you work on a project (like a Linux distribution) and would like to contribute security advisories, please see our data contribution [guide](https://github.com/google/osv.dev/blob/master/CONTRIBUTING.md#contributing-data) on GitHub.
+
+## Is the API rate limited?
+No. Currently there is not a limit on the API. 

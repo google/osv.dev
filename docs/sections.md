@@ -1,4 +1,4 @@
-# OSV API
+
 ---
 
 ### How does the API work?

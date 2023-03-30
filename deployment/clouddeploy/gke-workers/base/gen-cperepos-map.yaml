@@ -11,8 +11,8 @@ spec:
       template:
         spec:
           containers:
-          - name: gen-cperepos-map
-            image: gen-cperepos-map
+          - name: cpe-repo-gen
+            image: cpe-repo-gen
             imagePullPolicy: Always
             securityContext:
               privileged: true

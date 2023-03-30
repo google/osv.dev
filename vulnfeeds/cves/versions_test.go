@@ -266,6 +266,30 @@ func TestRepo(t *testing.T) {
 			expectedRepoURL: "https://bitbucket.org/snakeyaml/snakeyaml",
 			expectedOk:      true,
 		},
+		{
+			description:     "Valid URL but not wanted (by denylist)",
+			inputLink:       "https://github.com/orangecertcc/security-research/security/advisories/GHSA-px2c-q384-5wxc",
+			expectedRepoURL: "",
+			expectedOk:      false,
+		},
+		{
+			description:     "Valid URL but not wanted (by deny regexp)",
+			inputLink:       "https://github.com/Ko-kn3t/CVE-2020-29156",
+			expectedRepoURL: "",
+			expectedOk:      false,
+		},
+		{
+			description:     "Valid URL but not wanted (by deny regexp)",
+			inputLink:       "https://github.com/GitHubAssessments/CVE_Assessment_04_2018",
+			expectedRepoURL: "",
+			expectedOk:      false,
+		},
+		{
+			description:     "Valid URL but not wanted (by deny regexp)",
+			inputLink:       "https://github.com/jenaye/cve",
+			expectedRepoURL: "",
+			expectedOk:      false,
+		},
 	}
 
 	for _, tc := range tests {

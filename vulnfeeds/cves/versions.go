@@ -165,7 +165,6 @@ func Repo(u string) (string, error) {
 	}
 
 	// Disregard the repos we know we don't like (by regex).
-	// NOTE TO SELF THIS MAY NOT MATCH UNNORMALIZED URLS
 	matched, _ := regexp.MatchString(InvalidRepoRegex, u)
 	if matched {
 		return "", fmt.Errorf("%q matched invalid repo regexp", u)

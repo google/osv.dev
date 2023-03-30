@@ -5,7 +5,7 @@ permalink: /architecture/
 nav_order: 3
 ---
 # Architecture
-![Architecture diagram](architecture.png)
+![Architecture diagram](images/architecture.png)
 
 ## Data source
 

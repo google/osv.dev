@@ -157,7 +157,7 @@ def about():
 def faq():
   return redirect('https://google.github.io/osv.dev/faq')
 
-@blueprint.route('/docs')
+@blueprint.route('/docs', strict_slashes=False)
 def docs():
   return redirect('https://google.github.io/osv.dev/')
 

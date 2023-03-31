@@ -2,7 +2,7 @@
 
 ## Documentation
 
-Comprehensive documentation is available [here](https://osv.dev/docs). 
+Comprehensive documentation is available [here](https://google.github.io/osv.dev). 
 
 ## Viewing the web UI
 
@@ -14,7 +14,7 @@ We provide a Go based tool that will scan your dependencies, and check them agai
 
 Currently it is able to scan various lockfiles, debian docker containers, SPDX and CycloneDB SBOMs, and git repositories.
 
-The scanner is located in it's [own repository here](https://github.com/google/osv-scanner).
+The scanner is located in its [own repository here](https://github.com/google/osv-scanner).
 
 ## This repository
 

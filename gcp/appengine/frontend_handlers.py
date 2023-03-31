@@ -155,8 +155,11 @@ def about():
 
 @blueprint.route('/faq')
 def faq():
-  return render_template('faq.html')
+  return redirect('https://google.github.io/osv.dev/faq')
 
+@blueprint.route('/docs')
+def docs():
+  return redirect('https://google.github.io/osv.dev/')
 
 @blueprint.route('/list')
 def list_vulnerabilities():

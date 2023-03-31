@@ -7,7 +7,7 @@ nav_order: 1
 ---
 # Quickstart
 
-Here are a couple of examples that you can run to get an idea of the API. Additional details are available in the rest of the docs. 
+Here are a couple of examples that you can run to get an idea of the API. See [here](api.md#osv-api) for furthere information.  
 
 ## Return a vulnerability associated with a commit hash
   

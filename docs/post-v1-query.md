@@ -7,7 +7,9 @@ nav_order: 2
 ---
 # POST /v1/query
 
-Lists vulnerabilities for given package and version. May also be queried by commit hash. 
+Lists vulnerabilities for given package and version. May also be queried by commit hash.
+
+To query multiple packages at once, see further information [here](post-v1-querybatch.md). 
 
 {: .no_toc }
 

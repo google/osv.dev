@@ -29,7 +29,7 @@ mkdir -p "${WORK_DIR}" || true
 
 curl ${BE_VERBOSE="--silent"} \
   https://nvd.nist.gov/feeds/xml/cpe/dictionary/official-cpe-dictionary_v2.3.xml.gz \
-  | gzip -dc "${WORK_DIR}/official-cpe-dictionary_v2.3.xml"
+  | gzip -dc > "${WORK_DIR}/official-cpe-dictionary_v2.3.xml"
 
 MAYBE_USE_DEBIAN_COPYRIGHT_METADATA=""
 if [[ -n "${DEBIAN_COPYRIGHT_GCS_PATH}" ]]; then

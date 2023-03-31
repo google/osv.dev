@@ -31,14 +31,14 @@ To query multiple packages at once, see further information [here](post-v1-query
 | version | string | The version string to query for. A fuzzy match is done against upstream versions. If specified, `commit` should not be set. |
 | package | object | The package to query against. When a `commit` hash is given, this is optional. |
 
-Package Objects have the following attributes:
+Package Objects can be described by package name AND ecosystem OR by the package URL. 
 
 |---
-| Attribute | Type | Required or Optional? | Description |
-| --- | --- | --- | --- |
-| name | string | Required | Name of the package. Should match the name used in the package ecosystem (e.g. the npm package name). For C/C++ projects integrated in OSS-Fuzz, this is the name used for the integration.|
-| ecosystem | string | Required | The ecosystem for this package. For the complete list of valid ecosystem names, see [here](https://ossf.github.io/osv-schema/#affectedpackage-field). |
-| purl | string | Optional | The package URL for this package. |
+| Attribute | Type | Description |
+| --- | --- | --- |
+| name | string | Name of the package. Should match the name used in the package ecosystem (e.g. the npm package name). For C/C++ projects integrated in OSS-Fuzz, this is the name used for the integration. If using `name` to specify the package, `ecosystem` must also be used. You may leave `purl` blank.|
+| ecosystem | string | The ecosystem for this package. For the complete list of valid ecosystem names, see [here](https://ossf.github.io/osv-schema/#affectedpackage-field). Must be included if identifying the package by `name`. You may leave `purl` blank. |
+| purl | string | The package URL for this package. If `purl` is used to specify the package, you may leave `name` and `ecosystem` blank.  |
 
 ## Payload
 ```json

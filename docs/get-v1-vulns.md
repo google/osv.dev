@@ -25,9 +25,8 @@ The only parameter you need for this API call is the vulnerability id, in order 
 
 `https://api.osv.dev/v1/vulns/{id}`
 
-## Request samples
+## Request sample
 
-### Curl
 ```bash
 curl "https://api.osv.dev/v1/vulns/OSV-2020-111"
 ```

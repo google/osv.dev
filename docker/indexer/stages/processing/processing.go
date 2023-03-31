@@ -195,10 +195,10 @@ func processTree(fileResults []*FileResult) [][]*TreeNode {
 			hasher := md5.New()
 			childHashes := []Hash{}
 			filesContained := 0
-			log.Printf("height: %d, len: %d, %v\n", height, len(results[height-1]), results[height-1])
+			// log.Printf("height: %d, len: %d, %v\n", height, len(results[height-1]), results[height-1])
 
 			for _, v := range results[height-1][i : i+chunkSize] {
-				log.Printf("%v\n", v.NodeHash)
+				// log.Printf("%v\n", v.NodeHash)
 				_, err := hasher.Write(v.NodeHash)
 				childHashes = append(childHashes, v.NodeHash)
 				filesContained += v.FilesContained

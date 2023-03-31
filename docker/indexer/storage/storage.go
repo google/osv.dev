@@ -19,6 +19,7 @@ package storage
 import (
 	"context"
 	"fmt"
+	"log"
 	"sync"
 	"time"
 
@@ -156,16 +157,20 @@ func (s *Store) Store(ctx context.Context, repoInfo *preparation.Result, hashTyp
 				return err
 			}
 		}
+		log.Println("Writing tree")
 		for _, layer := range treeNodes {
+			putMultiKeys := []*datastore.Key{}
 			for _, node := range layer {
 				treeKey := datastore.NameKey(treeKind,
 					fmt.Sprintf(treeKeyFmt, repoInfo.Commit[:], hashType, node.FilesContained, node.Height),
 					docKey)
 
-				_, err := s.dsCl.Put(ctx, treeKey, node)
-				if err != nil {
-					return err
-				}
+				log.Printf("Tree key %v\n", treeKey)
+				putMultiKeys = append(putMultiKeys, treeKey)
+			}
+			_, err := tx.PutMulti(putMultiKeys, layer)
+			if err != nil {
+				return err
 			}
 		}
 		return nil

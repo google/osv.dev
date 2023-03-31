@@ -53,9 +53,9 @@ type FileResult struct {
 // FileResult holds the per file hash and path information.
 type TreeNode struct {
 	NodeHash       Hash   `datastore:"node_hash"`
-	ChildHashes    []Hash `datastore:"child_hashes"`
-	Height         int    `datastore:"depth"`
-	FilesContained int    `datastore:"files_contained"`
+	ChildHashes    []Hash `datastore:"child_hashes,noindex"`
+	Height         int    `datastore:"depth,noindex"`
+	FilesContained int    `datastore:"files_contained,noindex"`
 }
 
 // Stage holds the data structures necessary to perform the processing.
@@ -190,12 +190,15 @@ func processTree(fileResults []*FileResult) [][]*TreeNode {
 
 	// Start building the higher layers
 	for height := 1; height < len(results); height++ {
+		results[height] = make([]*TreeNode, len(results[height-1])/chunkSize)
 		for i := 0; i < len(results[height-1]); i += chunkSize {
 			hasher := md5.New()
 			childHashes := []Hash{}
 			filesContained := 0
+			log.Printf("height: %d, len: %d, %v\n", height, len(results[height-1]), results[height-1])
 
 			for _, v := range results[height-1][i : i+chunkSize] {
+				log.Printf("%v\n", v.NodeHash)
 				_, err := hasher.Write(v.NodeHash)
 				childHashes = append(childHashes, v.NodeHash)
 				filesContained += v.FilesContained
@@ -203,7 +206,7 @@ func processTree(fileResults []*FileResult) [][]*TreeNode {
 					log.Panicf("Hasher error: %v", err)
 				}
 			}
-			parentIdx := (i - 1) / chunkSize
+			parentIdx := i / chunkSize
 			results[height][parentIdx] = &TreeNode{
 				NodeHash:       hasher.Sum(nil),
 				ChildHashes:    childHashes,

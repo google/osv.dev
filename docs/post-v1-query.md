@@ -6,6 +6,9 @@ parent: API
 nav_order: 2
 ---
 # POST /v1/query
+
+Lists vulnerabilities for given package and version. May also be queried by commit hash. 
+
 {: .no_toc }
 
 <details open markdown="block">
@@ -17,18 +20,6 @@ nav_order: 2
 {:toc}
 </details>
 
-## Payload
-```json
-{
-  "commit": "string",
-  "version": "string",
-  "package": {
-    "name": "string",
-    "ecosystem": "string",
-    "purl": "string"
-  }
-}
-```
 ## Parameters
   
 |---
@@ -47,6 +38,19 @@ Package Objects have the following attributes:
 | ecosystem | string | Required | The ecosystem for this package. For the complete list of valid ecosystem names, see [here](https://ossf.github.io/osv-schema/#affectedpackage-field). |
 | purl | string | Optional | The package URL for this package. |
 
+## Payload
+```json
+{
+  "commit": "string",
+  "version": "string",
+  "package": {
+    "name": "string",
+    "ecosystem": "string",
+    "purl": "string"
+  }
+}
+```
+
 ## Request samples
 
 ```bash
@@ -61,7 +65,7 @@ curl -d \
 
 ## Response samples
 
-### 200
+### Sample 200 response
 ```json
 {
   "vulns": [
@@ -132,7 +136,7 @@ curl -d \
 }
 ```
 
-### Default
+### Default response
 ```json
 {
   "code": 0,

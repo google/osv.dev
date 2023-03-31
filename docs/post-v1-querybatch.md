@@ -6,6 +6,8 @@ parent: API
 nav_order: 3
 ---
 # POST /v1/querybatch
+Query for multiple packages (by either package and version or git commit hash) at once. Returns vulnerability ids and modified field only.  
+
 {: .no_toc }
 
 <details open markdown="block">
@@ -16,6 +18,10 @@ nav_order: 3
 - TOC
 {:toc}
 </details>
+
+## Parameters
+
+The parameters are the same as those in found [here](post-v1-query.md#parameters), but you can make multiple queries.
 
 ## Payload
 ```json
@@ -42,9 +48,6 @@ nav_order: 3
   ]
 }
 ```
-## Parameters
-
-The parameters are the same as those in found [here](post-v1-query.md#parameters), but you can make multiple queries.
 
 ## Request sample
 
@@ -74,7 +77,7 @@ EOF
 
 ## Response samples
 
-### 200 response 
+### Sample 200 response 
 ```json
 {
   "results":
@@ -157,7 +160,7 @@ EOF
     ]
 }
 ```
-### Default
+### Default response
 ```json
 {
   "results":

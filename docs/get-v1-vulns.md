@@ -6,6 +6,8 @@ parent: API
 nav_order: 4
 ---
 # GET /v1/vulns/{id}
+Returns vulnerability information for a given vulnerability id. 
+
 {: .no_toc }
 
 <details open markdown="block">
@@ -32,7 +34,7 @@ curl "https://api.osv.dev/v1/vulns/OSV-2020-111"
 
 ## Response samples
 
-### 200
+### Sample 200 response
 ```json
 {
   "schemaVersion": "string",
@@ -99,7 +101,7 @@ curl "https://api.osv.dev/v1/vulns/OSV-2020-111"
 }
 ```
 
-### Default
+### Default response
 ```json
 {
   "code": 0,

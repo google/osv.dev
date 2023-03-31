@@ -31,11 +31,14 @@ import (
 const (
 	docKind    = "RepoIndex"
 	resultKind = "RepoIndexResult"
+	treeKind   = "RepoIndexResultTree"
 	// Address-HashType-CommitHash
 	docKeyFmt = "%s-%s-%x"
 	// CommitHash-HashType-Page
 	resultKeyFmt = "%x-%s-%d"
-	pageSize     = 1000
+	// CommitHash-HashType-FilesContained-Height
+	treeKeyFmt = "%x-%s-%d-%d"
+	pageSize   = 1000
 )
 
 // document represents a single repository entry in datastore.
@@ -138,7 +141,7 @@ func (s *Store) Exists(ctx context.Context, addr string, hashType string, hash p
 }
 
 // Store stores a new entry in datastore.
-func (s *Store) Store(ctx context.Context, repoInfo *preparation.Result, hashType string, fileResults []*processing.FileResult) error {
+func (s *Store) Store(ctx context.Context, repoInfo *preparation.Result, hashType string, fileResults []*processing.FileResult, treeNodes [][]*processing.TreeNode) error {
 	docKey := datastore.NameKey(docKind, fmt.Sprintf(docKeyFmt, repoInfo.Addr, hashType, repoInfo.Commit[:]), nil)
 	doc, results := newDoc(repoInfo, hashType, fileResults)
 	_, err := s.dsCl.RunInTransaction(ctx, func(tx *datastore.Transaction) error {
@@ -151,6 +154,18 @@ func (s *Store) Store(ctx context.Context, repoInfo *preparation.Result, hashTyp
 			_, err := s.dsCl.Put(ctx, resultKey, r)
 			if err != nil {
 				return err
+			}
+		}
+		for _, layer := range treeNodes {
+			for _, node := range layer {
+				treeKey := datastore.NameKey(treeKind,
+					fmt.Sprintf(treeKeyFmt, repoInfo.Commit[:], hashType, node.FilesContained, node.Height),
+					docKey)
+
+				_, err := s.dsCl.Put(ctx, treeKey, node)
+				if err != nil {
+					return err
+				}
 			}
 		}
 		return nil

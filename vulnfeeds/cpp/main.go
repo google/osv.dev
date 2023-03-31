@@ -172,7 +172,7 @@ func CVEToOSV(CVE cves.CVEItem, repos []string, cache git.RepoTagsCache, directo
 	CPEs := cves.CPEs(CVE)
 	CPE, err := cves.ParseCPE(CPEs[0])
 	if err != nil {
-		return fmt.Errorf("Can't generate an OSV record for %s without valid CPE data", CVE.CVE.CVEDataMeta.ID)
+		return fmt.Errorf("[%s]: Can't generate an OSV record without valid CPE data", CVE.CVE.CVEDataMeta.ID)
 	}
 	v, notes := vulns.FromCVE(CVE.CVE.CVEDataMeta.ID, CVE)
 	versions, versionNotes := cves.ExtractVersionInfo(CVE, nil)
@@ -181,7 +181,7 @@ func CVEToOSV(CVE cves.CVEItem, repos []string, cache git.RepoTagsCache, directo
 	if len(versions.FixCommits) == 0 && len(versions.AffectedVersions) != 0 {
 		// We have some versions to try and convert to commits
 		if len(repos) == 0 {
-			return fmt.Errorf("No affected ranges for %s for %q, and no repos to try and convert %+v to tags with", CVE.CVE.CVEDataMeta.ID, CPE.Product, versions.AffectedVersions)
+			return fmt.Errorf("[%s]: No affected ranges for %q, and no repos to try and convert %+v to tags with", CVE.CVE.CVEDataMeta.ID, CPE.Product, versions.AffectedVersions)
 		}
 		Logger.Infof("[%s]: Trying to convert version tags %+v to commits using %v", CVE.CVE.CVEDataMeta.ID, versions.AffectedVersions, repos)
 		versions, err = GitVersionsToCommit(CVE.CVE.CVEDataMeta.ID, versions, repos, cache)
@@ -192,7 +192,7 @@ func CVEToOSV(CVE cves.CVEItem, repos []string, cache git.RepoTagsCache, directo
 	v.Affected = append(v.Affected, affected)
 
 	if len(v.Affected[0].Ranges) == 0 {
-		return fmt.Errorf("No affected ranges detected for %s for %q", CVE.CVE.CVEDataMeta.ID, CPE.Product)
+		return fmt.Errorf("[%s]: No affected ranges detected for %q", CVE.CVE.CVEDataMeta.ID, CPE.Product)
 	}
 
 	vulnDir := filepath.Join(directory, CPE.Vendor, CPE.Product)
@@ -214,11 +214,11 @@ func CVEToOSV(CVE cves.CVEItem, repos []string, cache git.RepoTagsCache, directo
 		Logger.Warnf("Failed to write %s: %v", outputFile, err)
 		return fmt.Errorf("Failed to write %s: %v", outputFile, err)
 	}
-	Logger.Infof("Generated OSV record from %s for %q", CVE.CVE.CVEDataMeta.ID, CPE.Product)
+	Logger.Infof("[%s]: Generated OSV record from for %q", CVE.CVE.CVEDataMeta.ID, CPE.Product)
 	if len(notes) > 0 {
 		err = os.WriteFile(notesFile, []byte(strings.Join(notes, "\n")), 0660)
 		if err != nil {
-			Logger.Warnf("Failed to write %s: %v", notesFile, err)
+			Logger.Warnf("[%s]: Failed to write %s: %v", CVE.CVE.CVEDataMeta.ID, notesFile, err)
 		}
 	}
 	return nil
@@ -355,7 +355,7 @@ func main() {
 			}
 		}
 
-		Logger.Infof("Summary for %s: [CPEs=%d AppCPEs=%d DerivedRepos=%d]", cve.CVE.CVEDataMeta.ID, len(CPEs), appCPECount, len(ReposForCVE[cve.CVE.CVEDataMeta.ID]))
+		Logger.Infof("[%s]: Summary: [CPEs=%d AppCPEs=%d DerivedRepos=%d]", cve.CVE.CVEDataMeta.ID, len(CPEs), appCPECount, len(ReposForCVE[cve.CVE.CVEDataMeta.ID]))
 		Logger.Infof("[%s]: Repos: %#v", cve.CVE.CVEDataMeta.ID, ReposForCVE)
 
 		// If we've made it to here, we may have a CVE:
@@ -370,7 +370,7 @@ func main() {
 
 		if _, ok := ReposForCVE[cve.CVE.CVEDataMeta.ID]; !ok {
 			// We have nothing useful to work with, so we'll assume it's out of scope
-			Logger.Infof("FYI: Passing on %s due to lack of viable repository", cve.CVE.CVEDataMeta.ID)
+			Logger.Infof("[%s]: Passing due to lack of viable repository", cve.CVE.CVEDataMeta.ID)
 			continue
 		}
 
@@ -384,7 +384,7 @@ func main() {
 
 		err := CVEToOSV(cve, ReposForCVE[cve.CVE.CVEDataMeta.ID], RepoTagsCache, *outDir)
 		if err != nil {
-			Logger.Warnf("Failed to generate an OSV record for %s: %+v", cve.CVE.CVEDataMeta.ID, err)
+			Logger.Warnf("[%s]: Failed to generate an OSV record: %+v", cve.CVE.CVEDataMeta.ID, err)
 			continue
 		}
 		Metrics.OSVRecordsGenerated++

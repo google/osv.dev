@@ -22,7 +22,7 @@ COPY ./go.sum /src/go.sum
 RUN go mod download
 
 COPY ./ /src/
-RUN go build -o cperepos ./cmd/cperepos
+RUN CGO_ENABLED=0 go build -o cperepos ./cmd/cperepos
 
 FROM gcr.io/google.com/cloudsdktool/google-cloud-cli:alpine
 

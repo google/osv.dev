@@ -356,7 +356,6 @@ func main() {
 		}
 
 		Logger.Infof("[%s]: Summary: [CPEs=%d AppCPEs=%d DerivedRepos=%d]", cve.CVE.CVEDataMeta.ID, len(CPEs), appCPECount, len(ReposForCVE[cve.CVE.CVEDataMeta.ID]))
-		Logger.Infof("[%s]: Repos: %#v", cve.CVE.CVEDataMeta.ID, ReposForCVE)
 
 		// If we've made it to here, we may have a CVE:
 		// * that has Application-related CPEs (so applies to software)
@@ -373,6 +372,8 @@ func main() {
 			Logger.Infof("[%s]: Passing due to lack of viable repository", cve.CVE.CVEDataMeta.ID)
 			continue
 		}
+
+		Logger.Infof("[%s]: Repos: %#v", cve.CVE.CVEDataMeta.ID, ReposForCVE)
 
 		for _, repo := range ReposForCVE[cve.CVE.CVEDataMeta.ID] {
 			if !InScopeRepo(repo) {

@@ -36,9 +36,9 @@ Package Objects can be described by package name AND ecosystem OR by the package
 |---
 | Attribute | Type | Description |
 | --- | --- | --- |
-| name | string | Name of the package. Should match the name used in the package ecosystem (e.g. the npm package name). For C/C++ projects integrated in OSS-Fuzz, this is the name used for the integration. If using `name` to specify the package, `ecosystem` must also be used. You may leave `purl` blank.|
-| ecosystem | string | The ecosystem for this package. For the complete list of valid ecosystem names, see [here](https://ossf.github.io/osv-schema/#affectedpackage-field). Must be included if identifying the package by `name`. You may leave `purl` blank. |
-| purl | string | The package URL for this package. If `purl` is used to specify the package, you may leave `name` and `ecosystem` blank.  |
+| name | string | Name of the package. Should match the name used in the package ecosystem (e.g. the npm package name). For C/C++ projects integrated in OSS-Fuzz, this is the name used for the integration. If using `name` to specify the package, `ecosystem` must also be used. `purl` should not be set.|
+| ecosystem | string | The ecosystem for this package. For the complete list of valid ecosystem names, see [here](https://ossf.github.io/osv-schema/#affectedpackage-field). Must be included if identifying the package by `name`. `purl` should not be set. |
+| purl | string | The package URL for this package. If `purl` is used to specify the package, `name` and `ecosystem` should not be set.  |
 
 ## Payload
 ```json

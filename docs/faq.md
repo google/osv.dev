@@ -22,7 +22,8 @@ OSV consists of:
 
 1. [The OSV Schema](https://ossf.github.io/osv-schema/): An easy-to-use data format that maps precisely to open source versioning schemes.
 2. Reference infrastructure (this site, API, and tooling) that aggregates and indexes vulnerability data from databases that use the OSV schema.
-3. We created OSV to address many of the shortcomings of dealing with vulnerabilities in open source software using existing solutions.
+
+We created OSV to address many of the shortcomings of dealing with vulnerabilities in open source software using existing solutions.
 
 See our blog posts for more details:
 

@@ -75,7 +75,7 @@ func (s *Stage) Run(ctx context.Context) error {
 		defer m.Ack()
 		repoInfo := &preparation.Result{}
 		if err := json.Unmarshal(m.Data, repoInfo); err != nil {
-			log.Fatalf("failed to unmarshal input: %v", err)
+			log.Printf("failed to unmarshal input: %v", err)
 			return
 		}
 		var err error
@@ -86,7 +86,7 @@ func (s *Stage) Run(ctx context.Context) error {
 			err = errors.New("unknown repository type")
 		}
 		if err != nil {
-			log.Fatalf("failed to process input: %v", err)
+			log.Printf("failed to process input: %v", err)
 		}
 	})
 }
@@ -98,7 +98,7 @@ func (s *Stage) processGit(ctx context.Context, repoInfo *preparation.Result) er
 	}
 	defer func() {
 		if err := os.RemoveAll(repoDir); err != nil {
-			log.Fatalf("failed to remove repo folder: %v", err)
+			log.Printf("failed to remove repo folder: %v", err)
 		}
 	}()
 	repo, err := git.PlainOpen(repoDir)

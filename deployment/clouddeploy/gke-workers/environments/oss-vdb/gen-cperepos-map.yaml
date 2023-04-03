@@ -1,4 +1,4 @@
-
+apiVersion: batch/v1
 kind: CronJob
 metadata:
   name: gen-cperepos-map

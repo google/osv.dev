@@ -8,7 +8,7 @@ require (
 	github.com/go-git/go-git/v5 v5.6.1
 	github.com/go-test/deep v1.1.0
 	github.com/knqyf263/go-cpe v0.0.0-20201213041631-54f6ab28673f
-	golang.org/x/exp v0.0.0-20230315142452-642cacee5cc0
+	golang.org/x/exp v0.0.0-20230321023759-10a507213a29
 	gopkg.in/yaml.v2 v2.4.0
 )
 

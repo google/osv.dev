@@ -145,13 +145,13 @@ func (s *Store) Store(ctx context.Context, repoInfo *preparation.Result, hashTyp
 	docKey := datastore.NameKey(docKind, fmt.Sprintf(docKeyFmt, repoInfo.Addr, hashType, repoInfo.Commit[:]), nil)
 	doc, results := newDoc(repoInfo, hashType, fileResults)
 	_, err := s.dsCl.RunInTransaction(ctx, func(tx *datastore.Transaction) error {
-		_, err := s.dsCl.Put(ctx, docKey, doc)
+		_, err := tx.Put(docKey, doc)
 		if err != nil {
 			return err
 		}
 		for _, r := range results {
 			resultKey := datastore.NameKey(resultKind, fmt.Sprintf(resultKeyFmt, repoInfo.Commit[:], hashType, r.Page), docKey)
-			_, err := s.dsCl.Put(ctx, resultKey, r)
+			_, err := tx.Put(resultKey, r)
 			if err != nil {
 				return err
 			}

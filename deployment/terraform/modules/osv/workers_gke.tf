@@ -91,7 +91,7 @@ resource "google_container_node_pool" "highend" {
 
 
   node_config {
-    machine_type    = "n1-standard-32"
+    machine_type    = "n2-highmem-32"
     disk_type       = "pd-standard"
     disk_size_gb    = 100
     local_ssd_count = 1

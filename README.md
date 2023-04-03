@@ -12,7 +12,7 @@ An instance of OSV's web UI is deployed at <https://osv.dev>.
 
 We provide a Go based tool that will scan your dependencies, and check them against the OSV database for known vulnerabilities via the OSV API.
 
-Currently it is able to scan various lockfiles, debian docker containers, SPDX and CycloneDB SBOMs, and git repositories.
+Currently it is able to scan various lockfiles, git repositories, SBOMs (SPDX and CycloneDX), and Debian Docker images.
 
 The scanner is located in its [own repository here](https://osv.dev/docs).
 

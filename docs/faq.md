@@ -64,7 +64,7 @@ Vulnerability databases can also benefit from easier interchange and vulnerabilt
 ## Is the database available to download?
 Yes!
 
-The database in available in a GCS bucket maintained by OSV: [gs://osv-vulnerabilities](https://osv-vulnerabilities.storage.googleapis.com/)
+The database in available in a GCS bucket maintained by OSV: [gs://osv-vulnerabilities](https://osv-vulnerabilities.storage.googleapis.com/) (also [publicly browseable via the Google Cloud Console](https://console.cloud.google.com/storage/browser/osv-vulnerabilities) with a login)
 
 More information about how to download the database is available [here](https://github.com/google/osv.dev#data-dumps).
 

@@ -37,13 +37,14 @@ from osv import semver_index
 import osv_service_v1_pb2
 import osv_service_v1_pb2_grpc
 
-from typing import List
+from typing import Iterable, List
 
 _SHUTDOWN_GRACE_DURATION = 5
 
 _MAX_BATCH_QUERY = 1000
 _MAX_VULNERABILITIES_LISTED = 16
 _MAX_HASHES_TO_TRY = 50
+_MAX_MATCHES_TO_CARE = 11
 _MAX_COMMITS_TO_TRY = 10
 
 _ndb_client = ndb.Client()
@@ -135,6 +136,72 @@ class Timer:
     self.lap_time = current_time
 
 
+# Following code straight from chatgpt converted from GO code, look over carefully
+from typing import List, Tuple
+import math
+import hashlib
+import functools
+
+chunk_size = 4
+bucket_count = 256
+
+
+def process_tree(
+    file_results: List[osv.FileResult]) -> List[List[osv.RepoIndexResultTree]]:
+  height_of_tree = log_with_base(((chunk_size - 1) * bucket_count) + 1,
+                                 chunk_size)
+  results = [[] for _ in range(height_of_tree)]
+  buckets = [[] for _ in range(bucket_count)]
+
+  for fr in file_results:
+    buckets[fr.hash[0]].append(fr.hash)
+
+  results[0] = [None] * bucket_count
+  for bucket_idx, bucket in enumerate(buckets):
+    buckets[bucket_idx].sort(
+        key=functools.cmp_to_key(lambda x, y: (x > y) - (x < y)))
+
+    hasher = hashlib.md5()
+    for v in buckets[bucket_idx]:
+      hasher.update(v)
+
+    results[0][bucket_idx] = osv.RepoIndexResultTree(
+        node_hash=hasher.digest(),
+        child_hashes=[],
+        height=0,
+        files_contained=len(buckets[bucket_idx]),
+    )
+
+  for height in range(1, len(results)):
+    results[height] = [None] * (len(results[height - 1]) // chunk_size)
+    for i in range(0, len(results[height - 1]), chunk_size):
+      hasher = hashlib.md5()
+      child_hashes = []
+      files_contained = 0
+
+      for v in results[height - 1][i:i + chunk_size]:
+        hasher.update(v.node_hash)
+        child_hashes.append(v.node_hash)
+        files_contained += v.files_contained
+
+      parent_idx = i // chunk_size
+      results[height][parent_idx] = osv.RepoIndexResultTree(
+          node_hash=hasher.digest(),
+          child_hashes=child_hashes,
+          height=height,
+          files_contained=files_contained,
+      )
+
+  return results
+
+
+def log_with_base(x: int, base: int) -> int:
+  return math.ceil(math.log(x) / math.log(base))
+
+
+# Above code straight from chatgpt converted from GO code, look over carefully
+
+
 @ndb.tasklet
 def determine_version(version_query: osv_service_v1_pb2.VersionQuery,
                       context: grpc.ServicerContext) -> ndb.Future:
@@ -142,88 +209,127 @@ def determine_version(version_query: osv_service_v1_pb2.VersionQuery,
 
   timer = Timer()
   logging.info(len(version_query.file_hashes))
-  if len(version_query.file_hashes) <= _MAX_HASHES_TO_TRY:
-    hashes = [
-        f.hash for f in version_query
-        .file_hashes[:min(_MAX_HASHES_TO_TRY, len(version_query.file_hashes))]
-    ]
-  else:
-    hashes = [
-        f.hash
-        for f in random.sample(version_query.file_hashes, _MAX_HASHES_TO_TRY)
-    ]
-  tracker = defaultdict(int)
 
-  hash_futures: list[ndb.Future] = []
-  for h in hashes:
-    query = osv.RepoIndexResult.query(
-        osv.RepoIndexResult.file_results.hash == h)
+  req_list = [osv.FileResult(hash=x.hash) for x in version_query.file_hashes]
 
-    query.keys_only = True
-    hash_futures.append(query.fetch_async())
+  tree = process_tree(req_list)
+  tree.reverse()
 
-  timer.elapsed()
-  counter = 0
+  candidates: dict[ndb.Key, int] = defaultdict()
+  valid_indexes = [0]
 
-  for f in hash_futures:
-    result = list(f.result())
-    logging.info(f'Stuff: {len(result)}')
+  for level in tree:
+    query_futures: list[tuple[ndb.Future, int]] = []
 
-    for r in result:
-      r: osv.RepoIndexResult
-      # timer.elapsed()
-      tracker[r.key.parent()] += 1
-      counter += 1
+    for i in valid_indexes:
+      query = osv.RepoIndexResultTree.query(
+          osv.RepoIndexResultTree.node_hash == level[i].node_hash)
+      query_futures.append((query.fetch_async(limit=_MAX_MATCHES_TO_CARE), i))
 
-  # max_val = max(tracker.values())
-  timer.elapsed()
-  logging.info(f'Project counter: {counter}')
-  # logging.info(f'Result cap: {max_val}')
+    valid_indexes.clear()
 
-  idx_keys = []
-  for k, v in tracker.items():
-    if v == _MAX_HASHES_TO_TRY:
-      idx_keys.append(k)
-  if not idx_keys:
-    idx_keys = [
-        k for k, _ in sorted(
-            tracker.items(), key=lambda item: item[1], reverse=True)
-    ]
-    idx_keys = idx_keys[:min(_MAX_COMMITS_TO_TRY, len(idx_keys))]
+    for future, idx in query_futures:
+      result: Iterable[osv.RepoIndexResultTree] = future.result()
+      if len(result) == 0:
+        valid_indexes.extend(range(idx * chunk_size, (idx + 1) * chunk_size))
+      else:
+        for x in result:
+          candidates[x.key.parent()] += x.files_contained
 
-  logging.info(f'idx keys: {len(idx_keys)}')
+  logging.info('Tree match complete:')
+  logging.info(
+      f'{len(valid_indexes) / chunk_size} of 256 buckets does not match')
+  logging.info(f'{len(candidates)} potential versions match')
 
-  if len(idx_keys) == 0:
-    context.abort(grpc.StatusCode.NOT_FOUND, 'no matches found')
-    return None
+  candidates_list = list(candidates.items())
+  candidates_list.sort(key=lambda x: x[1])
 
-  # context.abort(grpc.StatusCode.NOT_FOUND, 'no matches found')
-  # return None
+  for x in candidates_list[:min(5, len(candidates_list))]:
+    logging.info(x)
 
-  idx_futures = ndb.get_multi_async(idx_keys)
-  match_futures = []
-  for f in idx_futures:
-    idx = f.result()
-    if version_query.name not in ('', idx.name):
-      continue
-    match = compare_hashes_from_commit(idx, version_query.file_hashes)
-    match_futures.append(match)
+  return None
+  # if len(version_query.file_hashes) <= _MAX_HASHES_TO_TRY:
+  #   hashes = [
+  #       f.hash for f in version_query
+  #       .file_hashes[:min(_MAX_HASHES_TO_TRY, len(version_query.file_hashes))]
+  #   ]
+  # else:
+  #   hashes = [
+  #       f.hash
+  #       for f in random.sample(version_query.file_hashes, _MAX_HASHES_TO_TRY)
+  #   ]
+  # tracker = defaultdict(int)
 
-  timer.elapsed()
+  # hash_futures: list[ndb.Future] = []
+  # for h in hashes:
+  #   query = osv.RepoIndexResult.query(
+  #       osv.RepoIndexResult.file_results.hash == h)
 
-  results = []
-  for f in match_futures:
-    version_match = f.result()
-    if version_match.score != 0.0:
-      results.append(version_match)
-  if len(results) == 0:
-    context.abort(grpc.StatusCode.NOT_FOUND, 'no matches found')
-    return None
+  #   query.keys_only = True
+  #   hash_futures.append(query.fetch_async())
 
-  results.sort(key=lambda x: x.score)
-  logging.info(len(results))
+  # timer.elapsed()
+  # counter = 0
 
-  return osv_service_v1_pb2.VersionMatchList(matches=results)
+  # for f in hash_futures:
+  #   result = list(f.result())
+  #   logging.info(f'Stuff: {len(result)}')
+
+  #   for r in result:
+  #     r: osv.RepoIndexResult
+  #     # timer.elapsed()
+  #     tracker[r.key.parent()] += 1
+  #     counter += 1
+
+  # # max_val = max(tracker.values())
+  # timer.elapsed()
+  # logging.info(f'Project counter: {counter}')
+  # # logging.info(f'Result cap: {max_val}')
+
+  # idx_keys = []
+  # for k, v in tracker.items():
+  #   if v == _MAX_HASHES_TO_TRY:
+  #     idx_keys.append(k)
+  # if not idx_keys:
+  #   idx_keys = [
+  #       k for k, _ in sorted(
+  #           tracker.items(), key=lambda item: item[1], reverse=True)
+  #   ]
+  #   idx_keys = idx_keys[:min(_MAX_COMMITS_TO_TRY, len(idx_keys))]
+
+  # logging.info(f'idx keys: {len(idx_keys)}')
+
+  # if len(idx_keys) == 0:
+  #   context.abort(grpc.StatusCode.NOT_FOUND, 'no matches found')
+  #   return None
+
+  # # context.abort(grpc.StatusCode.NOT_FOUND, 'no matches found')
+  # # return None
+
+  # idx_futures = ndb.get_multi_async(idx_keys)
+  # match_futures = []
+  # for f in idx_futures:
+  #   idx = f.result()
+  #   if version_query.name not in ('', idx.name):
+  #     continue
+  #   match = compare_hashes_from_commit(idx, version_query.file_hashes)
+  #   match_futures.append(match)
+
+  # timer.elapsed()
+
+  # results = []
+  # for f in match_futures:
+  #   version_match = f.result()
+  #   if version_match.score != 0.0:
+  #     results.append(version_match)
+  # if len(results) == 0:
+  #   context.abort(grpc.StatusCode.NOT_FOUND, 'no matches found')
+  #   return None
+
+  # results.sort(key=lambda x: x.score)
+  # logging.info(len(results))
+
+  # return osv_service_v1_pb2.VersionMatchList(matches=results)
 
 
 @ndb.tasklet

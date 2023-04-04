@@ -215,13 +215,16 @@ def determine_version(version_query: osv_service_v1_pb2.VersionQuery,
   tree = process_tree(req_list)
   tree.reverse()
 
-  candidates: dict[ndb.Key, int] = defaultdict()
+  candidates: dict[ndb.Key, int] = defaultdict(int)
   valid_indexes = [0]
 
   for level in tree:
     query_futures: list[tuple[ndb.Future, int]] = []
 
     for i in valid_indexes:
+      if level[i].files_contained == 0:
+        continue
+
       query = osv.RepoIndexResultTree.query(
           osv.RepoIndexResultTree.node_hash == level[i].node_hash)
       query_futures.append((query.fetch_async(limit=_MAX_MATCHES_TO_CARE), i))
@@ -229,11 +232,12 @@ def determine_version(version_query: osv_service_v1_pb2.VersionQuery,
     valid_indexes.clear()
 
     for future, idx in query_futures:
-      result: Iterable[osv.RepoIndexResultTree] = future.result()
+      result: list[osv.RepoIndexResultTree] = list(future.result())
       if len(result) == 0:
         valid_indexes.extend(range(idx * chunk_size, (idx + 1) * chunk_size))
       else:
         for x in result:
+          logging.info(x.files_contained)
           candidates[x.key.parent()] += x.files_contained
 
   logging.info('Tree match complete:')
@@ -242,10 +246,11 @@ def determine_version(version_query: osv_service_v1_pb2.VersionQuery,
   logging.info(f'{len(candidates)} potential versions match')
 
   candidates_list = list(candidates.items())
-  candidates_list.sort(key=lambda x: x[1])
+  candidates_list.sort(key=lambda x: x[1], reverse=True)
 
   for x in candidates_list[:min(5, len(candidates_list))]:
-    logging.info(x)
+    logging.info(x[0].get())
+    logging.info(x[1])
 
   return None
   # if len(version_query.file_hashes) <= _MAX_HASHES_TO_TRY:

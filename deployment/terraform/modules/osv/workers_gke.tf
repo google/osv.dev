@@ -91,10 +91,9 @@ resource "google_container_node_pool" "highend" {
 
 
   node_config {
-    machine_type    = "n2-highmem-32"
-    disk_type       = "pd-standard"
-    disk_size_gb    = 100
-    local_ssd_count = 1
+    machine_type = "n2-highmem-32"
+    disk_type    = "pd-ssd"
+    disk_size_gb = 100
 
     oauth_scopes = ["https://www.googleapis.com/auth/cloud-platform"]
 

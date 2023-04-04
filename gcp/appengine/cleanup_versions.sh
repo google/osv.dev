@@ -19,4 +19,6 @@ VERSIONS="$(gcloud \
   --format="value(version.id)" --sort-by="~version.createTime" \
   | tail -n +106)"
 
-gcloud --project=$PROJECT_ID app versions delete --service=default --quiet $VERSIONS
+if [[ -n "$VERSIONS" ]]; then
+  gcloud --project=$PROJECT_ID app versions delete --service=default --quiet $VERSIONS
+fi

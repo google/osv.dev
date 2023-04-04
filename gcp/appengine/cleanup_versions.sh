@@ -1,7 +1,7 @@
 #!/bin/bash
 
-# Helper to clean up all but the most recent 5 versions of the default service
-# in the given project
+# Helper to clean up all but the most recent 105 versions of the default service
+# in the given project to avoid hitting the 210 maximum version ceiling.
 
 # Inspiration: https://stackoverflow.com/questions/34499875/how-to-automatically-delete-old-google-app-engine-version-instances
 

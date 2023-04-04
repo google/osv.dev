@@ -15,6 +15,7 @@ PROJECT_ID="$1"
 VERSIONS="$(gcloud \
   --project=$PROJECT_ID \
   app versions list --service=default \
+  --filter="traffic_split=0" \
   --format="value(version.id)" --sort-by="~version.createTime" \
   | tail -n +6)"
 

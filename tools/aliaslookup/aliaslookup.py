@@ -11,7 +11,7 @@ import argparse
 
 def LookupByAliases(client: datastore.Client,
                     identifiers: list[str],
-                    verbose=False) -> datastore.query.Query:
+                    verbose=False) -> datastore.query.Iterator:
   """Look up OSV records by alias.
 
   Args:
@@ -20,9 +20,12 @@ def LookupByAliases(client: datastore.Client,
     verbose: a boolean whether to emit more verbose processing information.
 
   Returns:
-    a datastore.query.Query object
+    a datastore.query.Iterator
   """
   query = client.query(kind="Bug")
+  # the "IN" operator only supports 30 identifiers as a maximum, so we need to
+  # batch into multiple a composite OR query
+  # This still caps out at 100 total filters, sadly
   query.add_filter(
       filter=datastore.query.PropertyFilter("aliases", "IN", identifiers))
   if verbose:
@@ -79,7 +82,7 @@ def main() -> None:
   if args.filename:
     with fileinput.input(files=args.filename) as f:
       for alias in f:
-        aliases.append(alias)
+        aliases.append(alias.strip())
 
   if aliases:
     bugs = LookupByAliases(client, aliases, args.verbose)

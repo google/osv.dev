@@ -29,7 +29,7 @@ See our blog posts for more details:
 
 1. [Launching OSV](https://security.googleblog.com/2021/02/launching-osv-better-vulnerability.html)
 2. [Announcing a unified vulnerability schema for open source](https://security.googleblog.com/2021/06/announcing-unified-vulnerability-schema.html)
-3. [[OSV and the Vulnerability Life Cycle](https://security.googleblog.com/2023/03/osv-and-vulnerability-life-cycle.html)](https://security.googleblog.com/2023/03/osv-and-vulnerability-life-cycle.html)
+3. [OSV and the Vulnerability Life Cycle](https://security.googleblog.com/2023/03/osv-and-vulnerability-life-cycle.html)
 
 ## Who is OSV for?
 OSV can be used by both:

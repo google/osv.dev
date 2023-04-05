@@ -12,16 +12,16 @@ import argparse
 def LookupByAliases(client: datastore.Client,
                     identifiers: list[str],
                     verbose=False) -> datastore.query.Query:
-"""Look up OSV records by alias.
+  """Look up OSV records by alias.
 
-Args:
-  client: a datastore.Client object.
-  identifiers: a list of strings being the aliases to look up.
-  verbose: a boolean whether to emit more verbose processing information.
+  Args:
+    client: a datastore.Client object.
+    identifiers: a list of strings being the aliases to look up.
+    verbose: a boolean whether to emit more verbose processing information.
 
-Returns:
-  a datastore.query.Query object
-"""
+  Returns:
+    a datastore.query.Query object
+  """
   query = client.query(kind="Bug")
   query.add_filter(
       filter=datastore.query.PropertyFilter("aliases", "IN", identifiers))

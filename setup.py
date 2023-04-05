@@ -34,7 +34,7 @@ setuptools.setup(
     ],
     install_requires=[
         # TODO(ochang): Get this from the Pipfile.
-        'google-cloud-ndb<2.0.0',
+        'google-cloud-ndb',
         'pygit2',
         'PyYAML',
         'semver',

@@ -20,7 +20,7 @@ Please see the [quickstart](api-quickstart.md).
 There are three different types of requests that can be made of the API.
 
 1. Query vulnerabilities for a particular project at a given [commit hash or version](post-v1-query.md).
-2. [Batched query vulnerabilities](post-v1-queryset.md) for given package versions and commit hashes.
+2. [Batched query vulnerabilities](post-v1-querybatch.md) for given package versions and commit hashes.
 3. Return a `Vulnerability` object for a given [OSV ID](get-v1-vulns.md). 
 
 ### Is the API rate limited?  

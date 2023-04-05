@@ -2,7 +2,6 @@
 """Utility to look up OSV records by alias.
 """
 
-
 from google.cloud import datastore
 
 import sys
@@ -10,9 +9,12 @@ import fileinput
 import argparse
 
 
-def LookupByAliases(client: datastore.Client, identifiers: list[str], verbose=False) -> str:
+def LookupByAliases(client: datastore.Client,
+                    identifiers: list[str],
+                    verbose=False) -> str:
   query = client.query(kind="Bug")
-  query.add_filter(filter=datastore.query.PropertyFilter("aliases", "IN", identifiers))
+  query.add_filter(
+      filter=datastore.query.PropertyFilter("aliases", "IN", identifiers))
   if verbose:
     print(f"Running query {query.filters[0]} "
           f"on {query.kind} (in {query.project})...")
@@ -25,26 +27,29 @@ def LookupByAliases(client: datastore.Client, identifiers: list[str], verbose=Fa
 
 
 def main() -> None:
-  parser = argparse.ArgumentParser(
-      description="Look up OSV records by alias")
-  parser.add_argument("--aliases",
-                      action="store",
-                      dest="aliases",
-                      help="comma-separated list of IDs to look up")
-  parser.add_argument("--filename",
-                      action="store",
-                      dest="filename",
-                      help="Filename of newline-separated IDs to look up")
-  parser.add_argument("--project",
-                      action="store",
-                      dest="project",
-                      default="oss-vdb-test",
-                      help="GCP project to operate on")
-  parser.add_argument("--verbose",
-                      action=argparse.BooleanOptionalAction,
-                      dest="verbose",
-                      default=False,
-                      help="Be more verbose")
+  parser = argparse.ArgumentParser(description="Look up OSV records by alias")
+  parser.add_argument(
+      "--aliases",
+      action="store",
+      dest="aliases",
+      help="comma-separated list of IDs to look up")
+  parser.add_argument(
+      "--filename",
+      action="store",
+      dest="filename",
+      help="Filename of newline-separated IDs to look up")
+  parser.add_argument(
+      "--project",
+      action="store",
+      dest="project",
+      default="oss-vdb-test",
+      help="GCP project to operate on")
+  parser.add_argument(
+      "--verbose",
+      action=argparse.BooleanOptionalAction,
+      dest="verbose",
+      default=False,
+      help="Be more verbose")
 
   args = parser.parse_args()
 

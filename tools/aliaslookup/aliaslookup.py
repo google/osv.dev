@@ -12,7 +12,8 @@ import argparse
 
 def LookupByAliases(client: datastore.Client, identifiers: list[str]) -> str:
   # TODO: change this to use an IN query and take all of them in one go
-  query = client.query(kind="Bug", filters=(("aliases", "IN", identifiers),))
+  query = client.query(kind="Bug")
+  query.add_filter(filter=datastore.query.PropertyFilter("aliases", "IN", identifiers))
   print(f"Running query {query.filters[0]} "
         f"on {query.kind} (in {query.project})...")
   result = list(query.fetch())
@@ -69,8 +70,9 @@ def main() -> None:
     bugs = LookupByAliases(client, aliases)
 
   if bugs:
+    print("aliases,bug")
     for bug in bugs:
-      print(f"{bug['aliases'][0]} => {bug['db_id']}")
+      print(f"{bug['aliases'][0]},{bug['db_id']}")
 
 
 if __name__ == "__main__":

@@ -11,7 +11,17 @@ import argparse
 
 def LookupByAliases(client: datastore.Client,
                     identifiers: list[str],
-                    verbose=False) -> str:
+                    verbose=False) -> datastore.query.Query:
+"""Look up OSV records by alias.
+
+Args:
+  client: a datastore.Client object.
+  identifiers: a list of strings being the aliases to look up.
+  verbose: a boolean whether to emit more verbose processing information.
+
+Returns:
+  a datastore.query.Query object
+"""
   query = client.query(kind="Bug")
   query.add_filter(
       filter=datastore.query.PropertyFilter("aliases", "IN", identifiers))
@@ -22,8 +32,7 @@ def LookupByAliases(client: datastore.Client,
   if verbose:
     print(f"Retrieved {len(result)} bugs")
 
-  if result:
-    return result
+  return result
 
 
 def main() -> None:
@@ -55,8 +64,8 @@ def main() -> None:
 
   client = datastore.Client(project=args.project)
 
-  aliases = list()
-  bugs = list()
+  aliases = []
+  bugs = []
 
   if not args.aliases and not args.filename:
     if sys.stdin.isatty():
@@ -77,6 +86,7 @@ def main() -> None:
 
   if bugs:
     print("aliases,bug")
+    # TODO: figure out if pagination needs to be handled here...
     for bug in bugs:
       print(f"{bug['aliases'][0]},{bug['db_id']}")
 

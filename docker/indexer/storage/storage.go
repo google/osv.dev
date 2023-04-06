@@ -150,6 +150,7 @@ func (s *Store) Store(ctx context.Context, repoInfo *preparation.Result, hashTyp
 
 		for _, layer := range treeNodes {
 			putMultiKeys := []*datastore.Key{}
+			putMultiNodes := []*processing.TreeNode{}
 			for _, node := range layer {
 				if node.FilesContained == 0 {
 					continue
@@ -160,8 +161,9 @@ func (s *Store) Store(ctx context.Context, repoInfo *preparation.Result, hashTyp
 					docKey)
 
 				putMultiKeys = append(putMultiKeys, treeKey)
+				putMultiNodes = append(putMultiNodes, node)
 			}
-			_, err := tx.PutMulti(putMultiKeys, layer)
+			_, err := tx.PutMulti(putMultiKeys, putMultiNodes)
 			if err != nil {
 				return err
 			}

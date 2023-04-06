@@ -39,6 +39,9 @@ steps:
 - name: gcr.io/cloud-builders/gcloud
   args: ['container', 'images', 'add-tag', '--quiet', 'gcr.io/oss-vdb/debian-convert:$COMMIT_SHA', 'gcr.io/oss-vdb/debian-convert:$TAG_NAME']
 - name: gcr.io/cloud-builders/gcloud
+  args: ['container', 'images', 'add-tag', '--quiet', 'gcr.io/oss-vdb/debian-copyright-mirror:$COMMIT_SHA', 'gcr.io/oss-vdb/debian-copyright-mirror:$TAG_NAME']
+  args: ['container', 'images', 'add-tag', '--quiet', 'gcr.io/oss-vdb/cpe-repo-gen:$COMMIT_SHA', 'gcr.io/oss-vdb/cpe-repo-gen:$TAG_NAME']
+- name: gcr.io/cloud-builders/gcloud
   args: ['container', 'images', 'add-tag', '--quiet', 'gcr.io/oss-vdb/osv-server:$COMMIT_SHA', 'gcr.io/oss-vdb/osv-server:$TAG_NAME']
 
 serviceAccount: 'projects/oss-vdb/serviceAccounts/deployment@oss-vdb.iam.gserviceaccount.com'

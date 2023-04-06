@@ -33,7 +33,7 @@ gsutil ${BE_VERBOSE="-q"} -m rsync -d -r "${GCS_PATH}" "${WORK_DIR}"
 
 wget \
   ${BE_VERBOSE="--quiet"} \
-  --directory "${WORK_DIR}/debian_copyright" \
+  --directory "${WORK_DIR}" \
   --mirror \
   --accept debian_copyright \
   --accept index.html \

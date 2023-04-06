@@ -76,6 +76,9 @@ func newDoc(repoInfo *preparation.Result, hashType string, bucketResults [][]*pr
 	}
 	result := []*result{}
 	for i, v := range bucketResults {
+		if len(bucketResults) == 0 {
+			continue
+		}
 		result = append(result, newResult(v, baseTreeLayer[i].NodeHash))
 	}
 	return doc, result
@@ -148,6 +151,10 @@ func (s *Store) Store(ctx context.Context, repoInfo *preparation.Result, hashTyp
 		for _, layer := range treeNodes {
 			putMultiKeys := []*datastore.Key{}
 			for _, node := range layer {
+				if node.FilesContained == 0 {
+					continue
+				}
+
 				treeKey := datastore.NameKey(treeKind,
 					fmt.Sprintf(treeKeyFmt, node.NodeHash, hashType, node.FilesContained, node.Height),
 					docKey)

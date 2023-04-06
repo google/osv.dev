@@ -91,7 +91,7 @@ def main() -> None:
     print('alias,bug')
     for bug in bugs:
       for alias in set(bug['aliases']).intersection(set(aliases)):
-        print(f'{alias},{bug['db_id']}')
+        print(f'{alias},{bug["db_id"]}')
 
 
 if __name__ == "__main__":

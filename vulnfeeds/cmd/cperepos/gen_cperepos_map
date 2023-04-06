@@ -33,7 +33,7 @@ curl ${BE_VERBOSE="--silent"} \
 
 MAYBE_USE_DEBIAN_COPYRIGHT_METADATA=""
 if [[ -n "${DEBIAN_COPYRIGHT_GCS_PATH}" ]]; then
-  gsutil ${BE_VERBOSE="-q"} -m rsync -d -r "${DEBIAN_COPYRIGHT_GCS_PATH}" "${WORK_DIR}"
+  gsutil ${BE_VERBOSE="-q"} -m rsync -r "${DEBIAN_COPYRIGHT_GCS_PATH}" "${WORK_DIR}"
   MAYBE_USE_DEBIAN_COPYRIGHT_METADATA="--debian_metadata_path ${WORK_DIR}/debian_copyright/metadata.ftp-master.debian.org"
 fi
 

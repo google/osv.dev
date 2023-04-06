@@ -23,25 +23,28 @@ import (
 	"errors"
 	"fmt"
 	"io/fs"
-	"log"
 	"math"
 	"os"
 	"path/filepath"
 	"sort"
 	"strings"
 
+	deflog "log"
+
 	"cloud.google.com/go/pubsub"
 	"cloud.google.com/go/storage"
 	"github.com/go-git/go-git/v5"
 	"github.com/google/osv.dev/docker/indexer/shared"
 	"github.com/google/osv.dev/docker/indexer/stages/preparation"
+
+	log "github.com/golang/glog"
 )
 
 type Hash = []byte
 
 // Storer is used to permanently store the results.
 type Storer interface {
-	Store(ctx context.Context, repoInfo *preparation.Result, hashType string, fileResults []*FileResult, treeNodes [][]*TreeNode) error
+	Store(ctx context.Context, repoInfo *preparation.Result, hashType string, bucketResults [][]*FileResult, treeNodes [][]*TreeNode) error
 }
 
 // FileResult holds the per file hash and path information.
@@ -75,9 +78,10 @@ func (s *Stage) Run(ctx context.Context) error {
 		defer m.Ack()
 		repoInfo := &preparation.Result{}
 		if err := json.Unmarshal(m.Data, repoInfo); err != nil {
-			log.Printf("failed to unmarshal input: %v", err)
+			log.Errorf("failed to unmarshal input: %v", err)
 			return
 		}
+		log.Infof("Begin processing: '%v' @ '%v'", repoInfo.Name, repoInfo.Version)
 		var err error
 		switch repoInfo.Type {
 		case shared.Git:
@@ -86,8 +90,10 @@ func (s *Stage) Run(ctx context.Context) error {
 			err = errors.New("unknown repository type")
 		}
 		if err != nil {
-			log.Printf("failed to process input: %v", err)
+			log.Errorf("failed to process input: %v", err)
 		}
+
+		log.Infof("Successfully processed: '%v' @ '%v'", repoInfo.Name, repoInfo.Version)
 	})
 }
 
@@ -98,7 +104,7 @@ func (s *Stage) processGit(ctx context.Context, repoInfo *preparation.Result) er
 	}
 	defer func() {
 		if err := os.RemoveAll(repoDir); err != nil {
-			log.Printf("failed to remove repo folder: %v", err)
+			log.Errorf("failed to remove repo folder: %v", err)
 		}
 	}()
 	repo, err := git.PlainOpen(repoDir)
@@ -107,11 +113,11 @@ func (s *Stage) processGit(ctx context.Context, repoInfo *preparation.Result) er
 	}
 	tree, err := repo.Worktree()
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to get work tree: %v", err)
 	}
 	repoInfo.CheckoutOptions.Force = true
 	if err := tree.Checkout(repoInfo.CheckoutOptions); err != nil {
-		return err
+		return fmt.Errorf("failed to checkout tree: %v", err)
 	}
 
 	var fileResults []*FileResult
@@ -134,25 +140,27 @@ func (s *Stage) processGit(ctx context.Context, repoInfo *preparation.Result) er
 		}
 		return nil
 	}); err != nil {
-		return err
+		return fmt.Errorf("failed during file walk: %v", err)
 	}
 
-	treeResults := processTree(fileResults)
-	return s.Storer.Store(ctx, repoInfo, shared.MD5, fileResults, treeResults)
+	log.Info("Begin processing tree")
+	treeResults, bucketResults := processTree(fileResults)
+	log.Info("Begin stroage")
+	return s.Storer.Store(ctx, repoInfo, shared.MD5, bucketResults, treeResults)
 }
 
 const chunkSize = 4
 const bucketCount = 256
 
-func processTree(fileResults []*FileResult) [][]*TreeNode {
+func processTree(fileResults []*FileResult) ([][]*TreeNode, [][]*FileResult) {
 	// This height includes the root node (height of 1 is just the root)
 	heightOfTree := logWithBase(((chunkSize-1)*bucketCount)+1, chunkSize)
 	// Tree, 0 is the leaf layer
 	var results = make([][]*TreeNode, heightOfTree)
-	buckets := make([][]Hash, bucketCount)
+	buckets := make([][]*FileResult, bucketCount)
 
 	for _, fr := range fileResults {
-		buckets[fr.Hash[0]] = append(buckets[fr.Hash[0]], fr.Hash)
+		buckets[fr.Hash[0]] = append(buckets[fr.Hash[0]], fr)
 	}
 
 	// Create base layer
@@ -161,11 +169,11 @@ func processTree(fileResults []*FileResult) [][]*TreeNode {
 	for bucketIdx := range buckets {
 		// Sort hashes
 		sort.Slice(buckets[bucketIdx], func(i, j int) bool {
-			for k := 0; k < len(buckets[bucketIdx][i]); k++ {
-				if buckets[bucketIdx][i][k] < buckets[bucketIdx][j][k] {
+			for k := 0; k < len(buckets[bucketIdx][i].Hash); k++ {
+				if buckets[bucketIdx][i].Hash[k] < buckets[bucketIdx][j].Hash[k] {
 					return true
 				}
-				if buckets[bucketIdx][i][k] > buckets[bucketIdx][j][k] {
+				if buckets[bucketIdx][i].Hash[k] > buckets[bucketIdx][j].Hash[k] {
 					return false
 				}
 			}
@@ -174,9 +182,9 @@ func processTree(fileResults []*FileResult) [][]*TreeNode {
 
 		hasher := md5.New()
 		for _, v := range buckets[bucketIdx] {
-			_, err := hasher.Write(v)
+			_, err := hasher.Write(v.Hash)
 			if err != nil {
-				log.Panicf("Hasher error: %v", err)
+				deflog.Panicf("Hasher error: %v", err)
 			}
 		}
 
@@ -203,7 +211,7 @@ func processTree(fileResults []*FileResult) [][]*TreeNode {
 				childHashes = append(childHashes, v.NodeHash)
 				filesContained += v.FilesContained
 				if err != nil {
-					log.Panicf("Hasher error: %v", err)
+					deflog.Panicf("Hasher error: %v", err)
 				}
 			}
 			parentIdx := i / chunkSize
@@ -216,7 +224,7 @@ func processTree(fileResults []*FileResult) [][]*TreeNode {
 		}
 	}
 
-	return results
+	return results, buckets
 }
 
 func logWithBase(x int, base int) int {

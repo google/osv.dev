@@ -173,6 +173,7 @@ func (s *Stage) processGit(ctx context.Context, repoCfg *config.RepoConfig) erro
 				return err
 			}
 			version = versRE.FindString(commitTag)
+			log.Info("version")
 		}
 		if version == "" {
 			version = genericVersionRE.FindString(commitTag)

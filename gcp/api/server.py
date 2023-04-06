@@ -250,7 +250,7 @@ def determine_version(version_query: osv_service_v1_pb2.VersionQuery,
 
   for x in candidates_list[:min(5, len(candidates_list))]:
     logging.info(x[0].get())
-    logging.info(x[1])
+    logging.info(f'{x[1]} out of {len(version_query.file_hashes)}')
 
   return None
   # if len(version_query.file_hashes) <= _MAX_HASHES_TO_TRY:

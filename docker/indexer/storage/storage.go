@@ -30,13 +30,13 @@ import (
 
 const (
 	docKind    = "RepoIndex"
-	resultKind = "RepoIndexResult"
+	resultKind = "RepoIndexBucket"
 	treeKind   = "RepoIndexResultTree"
 	// Address-HashType-CommitHash
 	docKeyFmt = "%s-%s-%x"
-	// CommitHash-HashType-Page
-	resultKeyFmt = "%x-%s-%d"
-	// CommitHash-HashType-FilesContained-Height
+	// BucketHash-HashType
+	resultKeyFmt = "%x-%s"
+	// NodeHash-HashType-FilesContained-Height
 	treeKeyFmt = "%x-%s-%d-%d"
 	pageSize   = 1000
 )
@@ -53,16 +53,15 @@ type document struct {
 	RepoAddr     string    `datastore:"repo_addr"`
 	FileExts     []string  `datastore:"file_exts"`
 	FileHashType string    `datastore:"file_hash_type"`
-	Pages        int       `datastore:"pages"`
 }
 
 type result struct {
-	Page int      `datastore:"page"`
-	Path []string `datastore:"file_results.path"`
-	Hash [][]byte `datastores:"file_results.hash"`
+	BucketHash []byte   `datastore:"bucket_hash"`
+	Path       []string `datastore:"bucket_results.path,noindex"`
+	Hash       [][]byte `datastore:"bucket_results.hash,noindex"`
 }
 
-func newDoc(repoInfo *preparation.Result, hashType string, fileResults []*processing.FileResult) (*document, []*result) {
+func newDoc(repoInfo *preparation.Result, hashType string, bucketResults [][]*processing.FileResult, baseTreeLayer []*processing.TreeNode) (*document, []*result) {
 	doc := &document{
 		Name:         repoInfo.Name,
 		BaseCPE:      repoInfo.BaseCPE,
@@ -74,27 +73,16 @@ func newDoc(repoInfo *preparation.Result, hashType string, fileResults []*proces
 		RepoAddr:     repoInfo.Addr,
 		FileExts:     repoInfo.FileExts,
 		FileHashType: hashType,
-		Pages:        1,
 	}
-	if len(fileResults) <= pageSize {
-		return doc, []*result{newResult(1, fileResults)}
+	result := []*result{}
+	for i, v := range bucketResults {
+		result = append(result, newResult(v, baseTreeLayer[i].NodeHash))
 	}
-	var r []*result
-	resultLen := len(fileResults)
-	pages := resultLen / pageSize
-	remainder := resultLen % pageSize
-	for i := 0; i < pages; i++ {
-		r = append(r, newResult(i, fileResults[i*pageSize:(i+1)*pageSize]))
-	}
-	if remainder != 0 {
-		r = append(r, newResult(pages, fileResults[pages*pageSize:]))
-	}
-	doc.Pages = len(r)
-	return doc, r
+	return doc, result
 
 }
 
-func newResult(page int, results []*processing.FileResult) *result {
+func newResult(results []*processing.FileResult, bucketHash []byte) *result {
 	var (
 		paths  []string
 		hashes [][]byte
@@ -104,7 +92,7 @@ func newResult(page int, results []*processing.FileResult) *result {
 		paths = append(paths, r.Path)
 		hashes = append(hashes, r.Hash)
 	}
-	return &result{Page: page, Path: paths, Hash: hashes}
+	return &result{Path: paths, Hash: hashes, BucketHash: bucketHash}
 }
 
 // Store provides the functionality to check for existing documents
@@ -141,30 +129,29 @@ func (s *Store) Exists(ctx context.Context, addr string, hashType string, hash p
 }
 
 // Store stores a new entry in datastore.
-func (s *Store) Store(ctx context.Context, repoInfo *preparation.Result, hashType string, fileResults []*processing.FileResult, treeNodes [][]*processing.TreeNode) error {
+func (s *Store) Store(ctx context.Context, repoInfo *preparation.Result, hashType string, bucketResults [][]*processing.FileResult, treeNodes [][]*processing.TreeNode) error {
 	docKey := datastore.NameKey(docKind, fmt.Sprintf(docKeyFmt, repoInfo.Addr, hashType, repoInfo.Commit[:]), nil)
-	doc, results := newDoc(repoInfo, hashType, fileResults)
+	doc, results := newDoc(repoInfo, hashType, bucketResults, treeNodes[0])
 	_, err := s.dsCl.RunInTransaction(ctx, func(tx *datastore.Transaction) error {
 		_, err := tx.Put(docKey, doc)
 		if err != nil {
 			return err
 		}
 		for _, r := range results {
-			resultKey := datastore.NameKey(resultKind, fmt.Sprintf(resultKeyFmt, repoInfo.Commit[:], hashType, r.Page), docKey)
+			resultKey := datastore.NameKey(resultKind, fmt.Sprintf(resultKeyFmt, r.BucketHash, hashType), docKey)
 			_, err := tx.Put(resultKey, r)
 			if err != nil {
 				return err
 			}
 		}
-		// log.Println("Writing tree")
+
 		for _, layer := range treeNodes {
 			putMultiKeys := []*datastore.Key{}
 			for _, node := range layer {
 				treeKey := datastore.NameKey(treeKind,
-					fmt.Sprintf(treeKeyFmt, repoInfo.Commit[:], hashType, node.FilesContained, node.Height),
+					fmt.Sprintf(treeKeyFmt, node.NodeHash, hashType, node.FilesContained, node.Height),
 					docKey)
 
-				// log.Printf("Tree key %v\n", treeKey)
 				putMultiKeys = append(putMultiKeys, treeKey)
 			}
 			_, err := tx.PutMulti(putMultiKeys, layer)

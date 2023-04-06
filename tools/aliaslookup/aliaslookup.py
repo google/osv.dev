@@ -10,8 +10,8 @@ import argparse
 
 
 def lookup_by_aliases(client: datastore.Client,
-                    identifiers: list[str],
-                    verbose=False) -> datastore.query.Iterator:
+                      identifiers: list[str],
+                      verbose=False) -> datastore.query.Iterator:
   """Look up OSV records by alias.
 
   Args:

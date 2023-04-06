@@ -9,7 +9,7 @@ import fileinput
 import argparse
 
 
-def LookupByAliases(client: datastore.Client,
+def lookup_by_aliases(client: datastore.Client,
                     identifiers: list[str],
                     verbose=False) -> datastore.query.Iterator:
   """Look up OSV records by alias.
@@ -85,13 +85,13 @@ def main() -> None:
         aliases.append(alias.strip())
 
   if aliases:
-    bugs = LookupByAliases(client, aliases, args.verbose)
+    bugs = lookup_by_aliases(client, aliases, args.verbose)
 
   if bugs:
-    print("aliases,bug")
-    # TODO: figure out if pagination needs to be handled here...
+    print("alias,bug")
     for bug in bugs:
-      print(f"{bug['aliases'][0]},{bug['db_id']}")
+      for alias in set(bug['aliases']).intersection(set(aliases)):
+        print(f"{alias},{bug['db_id']}")
 
 
 if __name__ == "__main__":

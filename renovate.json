@@ -45,10 +45,6 @@
       "groupName": "vulnfeeds"
     },
     {
-      "matchPaths": ["docs/"],
-      "groupName": "docs"
-    },
-    {
       "matchPaths": ["tools/"],
       "groupName": "tools"
     },

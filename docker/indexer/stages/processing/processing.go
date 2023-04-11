@@ -91,9 +91,9 @@ func (s *Stage) Run(ctx context.Context) error {
 		}
 		if err != nil {
 			log.Errorf("failed to process input: %v", err)
+		} else {
+			log.Infof("successfully processed: '%v' @ '%v'", repoInfo.Name, repoInfo.Version)
 		}
-
-		log.Infof("Successfully processed: '%v' @ '%v'", repoInfo.Name, repoInfo.Version)
 	})
 }
 

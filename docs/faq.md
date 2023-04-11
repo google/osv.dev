@@ -2,7 +2,7 @@
 layout: page
 title: FAQ
 permalink: /faq/
-nav_order: 5
+nav_order: 4
 ---
 # FAQ
 {: .no_toc }

@@ -2,7 +2,7 @@
 layout: page
 title: Third Party Tools
 permalink: /third-party/
-nav_order: 6
+nav_order: 5
 ---
 # Third party tools
 There are community tools that use OSV. Note that these are community built

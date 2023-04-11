@@ -137,17 +137,3 @@ curl -d \
   ]
 }
 ```
-
-### Default response
-```json
-{
-  "code": 0,
-  "message": "string",
-  "details": [
-    {
-      "typeUrl": "string",
-      "value": "string"
-    }
-  ]
-}
-```

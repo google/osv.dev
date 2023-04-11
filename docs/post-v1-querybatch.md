@@ -160,20 +160,3 @@ EOF
     ]
 }
 ```
-### Default response
-```json
-{
-  "results":
-    [
-      {
-        "vulns":
-          [
-            {
-              "id": "string",
-              "modified": "string"
-            },
-          ]
-      },
-    ]
-}
-```

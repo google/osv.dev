@@ -99,17 +99,3 @@ curl "https://api.osv.dev/v1/vulns/OSV-2020-111"
   "database_specific": {}
 }
 ```
-
-### Default response
-```json
-{
-  "code": 0,
-  "message": "string",
-  "details": [
-    {
-      "typeUrl": "string",
-      "value": "string"
-    }
-  ]
-}
-```

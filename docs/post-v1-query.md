@@ -65,75 +65,59 @@ curl -d \
   "https://api.osv.dev/v1/query"
   ```
 
-## Response samples
-
-### Sample 200 response
+## Sample 200 response
 ```json
 {
   "vulns": [
     {
-      "schemaVersion": "string",
-      "id": "string",
-      "published": "2019-08-24T14:15:22Z",
-      "modified": "2019-08-24T14:15:22Z",
-      "withdrawn": "2019-08-24T14:15:22Z",
-      "aliases": [
-        "string"
+      "id": "OSV-2020-744",
+      "summary": "Heap-double-free in mrb_default_allocf",
+      "details": "OSS-Fuzz report: https://bugs.chromium.org/p/oss-fuzz/issues/detail?id=23801\n\n```\nCrash type: Heap-double-free\nCrash state:\nmrb_default_allocf\nmrb_free\nobj_free\n```\n",
+      "modified": "2022-04-13T03:04:39.780694Z",
+      "published": "2020-07-04T00:00:01.948828Z",
+      "references": [
+        {
+          "type": "REPORT",
+          "url": "https://bugs.chromium.org/p/oss-fuzz/issues/detail?id=23801"
+        }
       ],
-      "related": [
-        "string"
-      ],
-      "summary": "string",
-      "details": "string",
       "affected": [
         {
           "package": {
-            "name": "string",
-            "ecosystem": "string",
-            "purl": "string"
+            "name": "mruby",
+            "ecosystem": "OSS-Fuzz",
+            "purl": "pkg:generic/mruby"
           },
           "ranges": [
             {
-              "type": "UNSPECIFIED",
-              "repo": "string",
+              "type": "GIT",
+              "repo": "https://github.com/mruby/mruby",
               "events": [
                 {
-                  "introduced": "string",
-                  "fixed": "string",
-                  "limit": "string"
+                  "introduced": "9cdf439db52b66447b4e37c61179d54fad6c8f33"
+                },
+                {
+                  "fixed": "97319697c8f9f6ff27b32589947e1918e3015503"
                 }
               ]
             }
           ],
           "versions": [
-            "string"
+            "2.1.2",
+            "2.1.2-rc",
+            "2.1.2-rc2"
           ],
-          "ecosystemSpecific": {},
-          "databaseSpecific": {}
+          "ecosystem_specific": {
+            "severity": "HIGH"
+          },
+          "database_specific": {
+            "source": "https://github.com/google/oss-fuzz-vulns/blob/main/vulns/mruby/OSV-2020-744.yaml"
+          }
         }
       ],
-      "references": [
-        {
-          "type": "NONE",
-          "url": "string"
-        }
-      ],
-      "severity": [
-        {
-          "type": "UNSPECIFIED",
-          "score": "string"
-        }
-      ],
-      "credits": [
-        {
-          "name": "string",
-          "contact": [
-            "string"
-          ]
-        }
-      ],
-      "database_specific": {}
+      "schema_version": "1.4.0"
     }
   ]
 }
+
 ```

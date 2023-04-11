@@ -75,9 +75,7 @@ cat <<EOF | curl -d @- "https://api.osv.dev/v1/querybatch"
 EOF
 ```
 
-## Response samples
-
-### Sample 200 response 
+## Sample 200 response 
 ```json
 {
   "results":

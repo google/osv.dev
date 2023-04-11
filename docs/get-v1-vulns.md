@@ -31,71 +31,49 @@ The only parameter you need for this API call is the vulnerability id, in order 
 curl "https://api.osv.dev/v1/vulns/OSV-2020-111"
 ```
 
-## Response samples
-
-### Sample 200 response
+## Sample 200 response
 ```json
 {
-  "schemaVersion": "string",
-  "id": "string",
-  "published": "2019-08-24T14:15:22Z",
-  "modified": "2019-08-24T14:15:22Z",
-  "withdrawn": "2019-08-24T14:15:22Z",
-  "aliases": [
-    "string"
+  "id": "OSV-2020-111",
+  "summary": "Heap-use-after-free in int std::__1::__cxx_atomic_fetch_sub<int>",
+  "details": "OSS-Fuzz report: https://bugs.chromium.org/p/oss-fuzz/issues/detail?id=21604\n\n```\nCrash type: Heap-use-after-free WRITE 4\nCrash state:\nint std::__1::__cxx_atomic_fetch_sub<int>\nstd::__1::__atomic_base<int, true>::operator--\nObject::free\n```\n",
+  "modified": "2022-04-13T03:04:37.331327Z",
+  "published": "2020-06-24T01:51:14.570467Z",
+  "references": [
+    {
+      "type": "REPORT",
+      "url": "https://bugs.chromium.org/p/oss-fuzz/issues/detail?id=21604"
+    }
   ],
-  "related": [
-    "string"
-  ],
-  "summary": "string",
-  "details": "string",
   "affected": [
     {
       "package": {
-        "name": "string",
-        "ecosystem": "string",
-        "purl": "string"
+        "name": "poppler",
+        "ecosystem": "OSS-Fuzz",
+        "purl": "pkg:generic/poppler"
       },
       "ranges": [
         {
-          "type": "UNSPECIFIED",
-          "repo": "string",
+          "type": "GIT",
+          "repo": "https://anongit.freedesktop.org/git/poppler/poppler.git",
           "events": [
             {
-              "introduced": "string",
-              "fixed": "string",
-              "limit": "string"
+              "introduced": "e4badf4d745b8e8f9a0a25b6c3cc97fbadbbb499"
+            },
+            {
+              "fixed": "155f73bdd261622323491df4aebb840cde8bfee1"
             }
           ]
         }
       ],
-      "versions": [
-        "string"
-      ],
-      "ecosystemSpecific": {},
-      "databaseSpecific": {}
+      "ecosystem_specific": {
+        "severity": "HIGH"
+      },
+      "database_specific": {
+        "source": "https://github.com/google/oss-fuzz-vulns/blob/main/vulns/poppler/OSV-2020-111.yaml"
+      }
     }
   ],
-  "references": [
-    {
-      "type": "NONE",
-      "url": "string"
-    }
-  ],
-  "severity": [
-    {
-      "type": "UNSPECIFIED",
-      "score": "string"
-    }
-  ],
-  "credits": [
-    {
-      "name": "string",
-      "contact": [
-        "string"
-      ]
-    }
-  ],
-  "database_specific": {}
+  "schema_version": "1.4.0"
 }
 ```

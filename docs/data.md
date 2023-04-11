@@ -1,10 +1,10 @@
 ---
 layout: page
-title: Data
+title: Data sources
 permalink: /data/
 nav_order: 4
 ---
-# Data
+# Data sources
 {: .no_toc }
 
 <details open markdown="block">

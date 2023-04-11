@@ -234,76 +234,63 @@ def determine_version(version_query: osv_service_v1_pb2.VersionQuery,
   req_list = [osv.FileResult(hash=x.hash) for x in version_query.file_hashes]
   req_set = {x.hash for x in version_query.file_hashes}
 
-  tree = process_tree(req_list)
+  layer = process_tree(req_list)
 
   candidates: dict[ndb.Key, int] = defaultdict(int)
-  valid_indexes = [0]
-  early_exit = False
+  not_matched_buckets = []
   logging.info('Begin query tree')
   timer.elapsed()
-  lvl_counter = 0
 
-  for level in tree:
-    query_futures: list[tuple[ndb.Future, int]] = []
-    lvl_counter += 1
-    for i in valid_indexes:
-      if level[i].files_contained == 0:
-        continue
+  query_futures: list[tuple[ndb.Future, int]] = []
 
-      query = osv.RepoIndexResultTree.query(
-          osv.RepoIndexResultTree.node_hash == level[i].node_hash)
-      query_futures.append((query.fetch_async(limit=_MAX_MATCHES_TO_CARE), i))
+  for idx, node in enumerate(layer):
+    if node.files_contained == 0:
+      continue
 
-    valid_indexes.clear()
+    query = osv.RepoIndexResultTree.query(
+        osv.RepoIndexResultTree.node_hash == node.node_hash)
+    query_futures.append((query.fetch_async(limit=_MAX_MATCHES_TO_CARE), idx))
 
-    if not query_futures:
-      early_exit = True
-      break
+  logging.info(len(query_futures))
+  for future, idx in query_futures:
+    result: list[osv.RepoIndexResultTree] = list(future.result())
+    if len(result) == 0:  # If no results, go deeper down the tree
+      not_matched_buckets.append(idx)
+    else:  # If there is a match, add it to list of potential versions
+      if len(result) == _MAX_MATCHES_TO_CARE:
+        logging.info("AHHHHHHHHHHHH")
 
-    for future, idx in query_futures:
-      result: list[osv.RepoIndexResultTree] = list(future.result())
-      if len(result) == 0:  # If no results, go deeper down the tree
-        logging.info(f'down the tree {idx}: Level {lvl_counter}')
-        # if level[idx].depth == 0:
-        #   logging.info(level[idx].child_hashes)
-        valid_indexes.extend(range(idx * chunk_size, (idx + 1) * chunk_size))
-      else:  # If there is a match, add it to list of potential versions
-        if len(result) == _MAX_MATCHES_TO_CARE:
-          logging.info("AHHHHHHHHHHHH")
-
-        for hash in result:
-          logging.info(hash)
-          candidates[hash.key.parent()] += hash.files_contained
+      for hash in result:
+        candidates[hash.key.parent()] += hash.files_contained
 
   logging.info('Tree match complete:')
-  logging.info(
-      f'{len(valid_indexes) // chunk_size} of 256 buckets does not match')
+  logging.info(f'{len(not_matched_buckets)} of 256 buckets does not match')
   logging.info(f'{len(candidates)} potential versions match')
   timer.elapsed()
 
-  if early_exit:
-    return build_determine_version_result(candidates,
-                                          len(version_query.file_hashes))
+  # if early_exit:
+  #   return build_determine_version_result(candidates,
+  #                                         len(version_query.file_hashes))
 
-  logging.info(valid_indexes)
-  # valid_indexes stores indexes of a level lower in the tree, we don't need that
-  # so just the the parent index
-  not_matching_bucket_idxes = [
-      valid_indexes[i] // chunk_size for i in range(0, len(valid_indexes), 4)
-  ]
+  # logging.info(valid_indexes)
+  # # valid_indexes stores indexes of a level lower in the tree, we don't need that
+  # # so just the the parent index
+  # not_matching_bucket_idxes = [
+  #     valid_indexes[i] // chunk_size for i in range(0, len(valid_indexes), 4)
+  # ]
 
-  not_matching_bucket_hashes = [
-      tree[-1][i].node_hash
-      for i in not_matching_bucket_idxes
-      if tree[-1][i].files_contained > 0
-  ]
+  # not_matching_bucket_hashes = [
+  #     tree[-1][i].node_hash
+  #     for i in not_matching_bucket_idxes
+  #     if tree[-1][i].files_contained > 0
+  # ]
 
-  logging.info(not_matching_bucket_idxes)
+  # logging.info(not_matching_bucket_idxes)
 
-  bucket_query_futures: list[ndb.Future] = []
-  for hash in not_matching_bucket_hashes:
-    query = osv.RepoIndexBucket.query(osv.RepoIndexBucket.bucket_hash == hash)
-    bucket_query_futures.append(query.get_async())
+  # bucket_query_futures: list[ndb.Future] = []
+  # for hash in not_matching_bucket_hashes:
+  #   query = osv.RepoIndexBucket.query(osv.RepoIndexBucket.bucket_hash==hash)
+  #   bucket_query_futures.append(query.get_async())
 
   # match_futures = []
   # for f in bucket_query_futures:
@@ -321,14 +308,15 @@ def determine_version(version_query: osv_service_v1_pb2.VersionQuery,
   #       candidates[parent_key] += 1
   #       logging.info('matched 1')
 
+  # timer.elapsed()
+  # candidates_list = list(candidates.items())
+  # candidates_list.sort(key=lambda x: x[1], reverse=True)
+
+  # for hash in candidates_list[:min(5, len(candidates_list))]:
+  #   logging.info(hash[0].get())
+  #   logging.info(f'{hash[1]} out of {len(version_query.file_hashes)}')
+
   timer.elapsed()
-  candidates_list = list(candidates.items())
-  candidates_list.sort(key=lambda x: x[1], reverse=True)
-
-  for hash in candidates_list[:min(5, len(candidates_list))]:
-    logging.info(hash[0].get())
-    logging.info(f'{hash[1]} out of {len(version_query.file_hashes)}')
-
   return build_determine_version_result(candidates,
                                         len(version_query.file_hashes))
 

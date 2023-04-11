@@ -9,11 +9,10 @@ import (
 	"log"
 	"math"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"sort"
 	"strings"
-
-	"github.com/kr/pretty"
 )
 
 var (
@@ -42,11 +41,11 @@ func main() {
 	flag.Parse()
 
 	fileRes := [][]*FileResult{}
-	file2Res := [][]*FileResult{}
-	buildGit(*repo2Dir, &file2Res)
+	// file2Res := [][]*FileResult{}
+	// buildGit(*repo2Dir, &file2Res)
 	buildGit(*repoDir, &fileRes)
 
-	log.Println(strings.Join(pretty.Diff(fileRes, file2Res), "\n"))
+	// log.Println(strings.Join(pretty.Diff(fileRes, file2Res), "\n"))
 }
 
 func buildGit(repoDir string, out *[][]*FileResult) error {
@@ -113,21 +112,33 @@ func buildGit(repoDir string, out *[][]*FileResult) error {
 	_, fileRes := processTree(fileResults)
 	*out = fileRes
 
-	for _, v := range fileRes {
-		log.Println(len(v))
-	}
 	log.Printf("%v", len(fileResults))
 
 	b := strings.Builder{}
 
 	b.WriteString(`grpcurl -plaintext -d '{"query": {"name":"protobuf", "file_hashes": [`)
-	b.WriteRune('\n')
-	for _, fr := range fileResults {
-		fmt.Fprintf(&b, "{\"hash\": \"%s\"},\n", base64.StdEncoding.EncodeToString(fr.Hash))
+	// b.WriteRune('\n')
+	for i, fr := range fileResults {
+		// strings.Join()
+		if i == len(fileResults)-1 {
+			fmt.Fprintf(&b, "{\"hash\": \"%s\"}", base64.StdEncoding.EncodeToString(fr.Hash))
+		} else {
+			fmt.Fprintf(&b, "{\"hash\": \"%s\"},", base64.StdEncoding.EncodeToString(fr.Hash))
+		}
 	}
 	b.WriteString(`]}}' -protoset api_descriptor.pb 127.0.0.1:8000 osv.v1.OSV/DetermineVersion`)
-	b.WriteRune('\n')
+	// b.WriteRune('\n')
 
+	cmd := exec.Command("bash")
+	cmd.Args = append(cmd.Args, "-c", b.String())
+	log.Printf("%v", cmd)
+	output, err := cmd.Output()
+	if err != nil {
+		log.Panicf("%s: %s", err.Error(), string(output))
+	}
+
+	log.Println(string(output))
+	// ("bash", []string{"-c", b.String()}, nil)
 	// fmt.Print(b.String())
 	return nil
 	// log.Info("Begin processing tree")

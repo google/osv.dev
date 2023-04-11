@@ -219,8 +219,9 @@ def build_determine_version_result(
     )
     output.append(version_match)
 
-  output.sort(key=lambda x: x.score)
-  return osv_service_v1_pb2.VersionMatchList(matches=output)
+  output.sort(reverse=True, key=lambda x: x.score)
+  return osv_service_v1_pb2.VersionMatchList(
+      matches=output[:min(5, len(output))])
 
 
 @ndb.tasklet
@@ -259,6 +260,7 @@ def determine_version(version_query: osv_service_v1_pb2.VersionQuery,
     else:  # If there is a match, add it to list of potential versions
       if len(result) == _MAX_MATCHES_TO_CARE:
         logging.info("AHHHHHHHHHHHH")
+        continue
 
       for hash in result:
         candidates[hash.key.parent()] += hash.files_contained

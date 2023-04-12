@@ -115,9 +115,8 @@ func buildGit(repoDir string, out *[][]*FileResult) error {
 	log.Printf("%v", len(fileResults))
 
 	b := strings.Builder{}
+	b.WriteString(`{"query": {"name":"protobuf", "file_hashes": [`)
 
-	b.WriteString(`grpcurl -plaintext -d '{"query": {"name":"protobuf", "file_hashes": [`)
-	// b.WriteRune('\n')
 	for i, fr := range fileResults {
 		// strings.Join()
 		if i == len(fileResults)-1 {
@@ -126,13 +125,20 @@ func buildGit(repoDir string, out *[][]*FileResult) error {
 			fmt.Fprintf(&b, "{\"hash\": \"%s\"},", base64.StdEncoding.EncodeToString(fr.Hash))
 		}
 	}
-	b.WriteString(`]}}' -protoset api_descriptor.pb 127.0.0.1:8000 osv.v1.OSV/DetermineVersion`)
+	b.WriteString("]}}")
 	// b.WriteRune('\n')
 
 	cmd := exec.Command("bash")
-	cmd.Args = append(cmd.Args, "-c", b.String())
+	cmd.Args = append(cmd.Args, "-c", `grpcurl -plaintext -d @ -protoset api_descriptor.pb 127.0.0.1:8000 osv.v1.OSV/DetermineVersion`)
 	// log.Printf("%v", cmd)
+	pipe, err := cmd.StdinPipe()
+	if err != nil {
+		log.Panicln(err)
+	}
+	pipe.Write([]byte(b.String()))
+	pipe.Close()
 	output, err := cmd.CombinedOutput()
+
 	if err != nil {
 		log.Panicf("%s: %s", err.Error(), string(output))
 	}

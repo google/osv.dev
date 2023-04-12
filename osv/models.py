@@ -686,7 +686,7 @@ class RepoIndexResultTree(ndb.Model):
   # The hashes of the direct children
   child_hashes = ndb.BlobProperty(repeated=True)
   # The height in the tree
-  height = ndb.IntegerProperty()
+  depth = ndb.IntegerProperty()
   # number of files this hash represents
   files_contained = ndb.IntegerProperty()
 

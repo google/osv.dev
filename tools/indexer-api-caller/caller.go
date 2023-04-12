@@ -132,7 +132,7 @@ func buildGit(repoDir string, out *[][]*FileResult) error {
 	cmd := exec.Command("bash")
 	cmd.Args = append(cmd.Args, "-c", b.String())
 	log.Printf("%v", cmd)
-	output, err := cmd.Output()
+	output, err := cmd.CombinedOutput()
 	if err != nil {
 		log.Panicf("%s: %s", err.Error(), string(output))
 	}

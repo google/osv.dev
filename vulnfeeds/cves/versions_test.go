@@ -7,7 +7,7 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/go-test/deep"
+	"github.com/google/go-cmp/cmp"
 )
 
 // Helper function to load in a specific CVE from sample data.
@@ -567,7 +567,7 @@ func TestExtractVersionInfo(t *testing.T) {
 
 	for _, tc := range tests {
 		gotVersionInfo, _ := ExtractVersionInfo(tc.inputCVEItem, tc.inputValidVersions)
-		if diff := deep.Equal(gotVersionInfo, tc.expectedVersionInfo); diff != nil {
+		if diff := cmp.Diff(gotVersionInfo, tc.expectedVersionInfo); diff != "" {
 			t.Errorf("test %q: VersionInfo for %#v was incorrect: %s", tc.description, tc.inputCVEItem, diff)
 		}
 	}

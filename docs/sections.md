@@ -1,3 +1,8 @@
+---
+layout: page
+nav_exclude: true
+---
+
 # OSV API
 ---
 

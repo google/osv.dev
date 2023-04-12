@@ -243,7 +243,7 @@ def determine_version(version_query: osv_service_v1_pb2.VersionQuery,
   timer.elapsed()
 
   query_futures: list[tuple[ndb.Future, int]] = []
-
+  not_match_count = 0
   for idx, node in enumerate(layer):
     if node.files_contained == 0:
       continue
@@ -257,6 +257,7 @@ def determine_version(version_query: osv_service_v1_pb2.VersionQuery,
     result: list[osv.RepoIndexResultTree] = list(future.result())
     if len(result) == 0:  # If no results, go deeper down the tree
       not_matched_buckets.append(idx)
+      not_match_count += layer[idx].files_contained
     else:  # If there is a match, add it to list of potential versions
       if len(result) == _MAX_MATCHES_TO_CARE:
         logging.info("AHHHHHHHHHHHH")
@@ -267,6 +268,7 @@ def determine_version(version_query: osv_service_v1_pb2.VersionQuery,
 
   logging.info('Tree match complete:')
   logging.info(f'{len(not_matched_buckets)} of 256 buckets does not match')
+  logging.info(f'{not_match_count} files potentially need to be scanned')
   logging.info(f'{len(candidates)} potential versions match')
   timer.elapsed()
 

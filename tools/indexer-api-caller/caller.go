@@ -135,6 +135,7 @@ func buildGit(repoDir string, out *[][]*FileResult) error {
 	if err != nil {
 		log.Panicln(err)
 	}
+	os.WriteFile("temp.txt", []byte(b.String()), 0644)
 	pipe.Write([]byte(b.String()))
 	pipe.Close()
 	output, err := cmd.CombinedOutput()

@@ -98,12 +98,19 @@ message VersionMatchList {
 message VersionMatch {
   // Score in the interval (0.0, 1.0] with 1.0 being a perfect match.
   double score = 1;
+
   // Information about the upstream repository.
   VersionRepositoryInformation repo_info = 2;
   // The OSV identifier.
   osv.Package osv_identifier = 3;
   // CPE dictionary. Keys are cpe version and values the CPE.
   map<string, string> cpes = 4;
+
+  // Definite number of files that have matched
+  int64 minimum_file_matches = 5;
+
+  // Estimated number of files that are different
+  int64 estimated_diff_files = 6;
 }
 
 message VersionRepositoryInformation {

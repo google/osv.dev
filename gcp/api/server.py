@@ -202,14 +202,18 @@ def log_with_base(x: int, base: int) -> int:
 
 
 def build_determine_version_result(
-    candidates: dict[ndb.Key, int],
+    candidate_files: dict[ndb.Key, int], candidate_buckets: dict[ndb.Key, int],
     max_files: int) -> osv_service_v1_pb2.VersionMatchList:
-  idx_futures = ndb.get_multi_async(candidates.keys())
+  idx_futures = ndb.get_multi_async(candidate_files.keys())
   output = []
   for f in idx_futures:
     idx: osv.RepoIndex = f.result()
+    logging.info(bucket_count - candidate_buckets[idx.key])
     version_match = osv_service_v1_pb2.VersionMatch(
-        score=candidates[idx.key] / max_files,
+        score=candidate_files[idx.key] / max_files,
+        minimum_file_matches=candidate_files[idx.key],
+        estimated_diff_files=estimate_diff(bucket_count -
+                                           candidate_buckets[idx.key]),
         repo_info=osv_service_v1_pb2.VersionRepositoryInformation(
             type=osv_service_v1_pb2.VersionRepositoryInformation.GIT,
             address=idx.repo_addr,
@@ -224,6 +228,12 @@ def build_determine_version_result(
       matches=output[:min(5, len(output))])
 
 
+def estimate_diff(num_of_bucket_change: int) -> int:
+  estimate = bucket_count * math.log(
+      (bucket_count + 1) / (bucket_count - num_of_bucket_change + 1))
+  return round(estimate / 2)
+
+
 @ndb.tasklet
 def determine_version(version_query: osv_service_v1_pb2.VersionQuery,
                       context: grpc.ServicerContext) -> ndb.Future:
@@ -233,17 +243,17 @@ def determine_version(version_query: osv_service_v1_pb2.VersionQuery,
   logging.info(len(version_query.file_hashes))
 
   req_list = [osv.FileResult(hash=x.hash) for x in version_query.file_hashes]
-  req_set = {x.hash for x in version_query.file_hashes}
+  # req_set = {x.hash for x in version_query.file_hashes}
 
   layer = process_tree(req_list)
 
-  candidates: dict[ndb.Key, int] = defaultdict(int)
-  not_matched_buckets = []
+  candidates_files: dict[ndb.Key, int] = defaultdict(int)
+  candidates_buckets: dict[ndb.Key, int] = defaultdict(int)
   logging.info('Begin query tree')
   timer.elapsed()
 
   query_futures: list[tuple[ndb.Future, int]] = []
-  not_match_count = 0
+  # not_match_count = 0
   for idx, node in enumerate(layer):
     if node.files_contained == 0:
       continue
@@ -255,73 +265,25 @@ def determine_version(version_query: osv_service_v1_pb2.VersionQuery,
   logging.info(len(query_futures))
   for future, idx in query_futures:
     result: list[osv.RepoIndexResultTree] = list(future.result())
-    if len(result) == 0:  # If no results, go deeper down the tree
-      not_matched_buckets.append(idx)
-      not_match_count += layer[idx].files_contained
-    else:  # If there is a match, add it to list of potential versions
+    if result:  # If there is a match, add it to list of potential versions
       if len(result) == _MAX_MATCHES_TO_CARE:
         logging.info("AHHHHHHHHHHHH")
         continue
 
       for hash in result:
-        candidates[hash.key.parent()] += hash.files_contained
+        parent_key = hash.key.parent()
+        candidates_files[parent_key] += hash.files_contained
+        candidates_buckets[parent_key] += 1
 
   logging.info('Tree match complete:')
-  logging.info(f'{len(not_matched_buckets)} of 256 buckets does not match')
-  logging.info(f'{not_match_count} files potentially need to be scanned')
-  logging.info(f'{len(candidates)} potential versions match')
-  timer.elapsed()
-
-  # if early_exit:
-  #   return build_determine_version_result(candidates,
-  #                                         len(version_query.file_hashes))
-
-  # logging.info(valid_indexes)
-  # # valid_indexes stores indexes of a level lower in the tree, we don't need that
-  # # so just the the parent index
-  # not_matching_bucket_idxes = [
-  #     valid_indexes[i] // chunk_size for i in range(0, len(valid_indexes), 4)
-  # ]
-
-  # not_matching_bucket_hashes = [
-  #     tree[-1][i].node_hash
-  #     for i in not_matching_bucket_idxes
-  #     if tree[-1][i].files_contained > 0
-  # ]
-
-  # logging.info(not_matching_bucket_idxes)
-
-  # bucket_query_futures: list[ndb.Future] = []
-  # for hash in not_matching_bucket_hashes:
-  #   query = osv.RepoIndexBucket.query(osv.RepoIndexBucket.bucket_hash==hash)
-  #   bucket_query_futures.append(query.get_async())
-
-  # match_futures = []
-  # for f in bucket_query_futures:
-  #   result: osv.RepoIndexBucket = f.result()
-  #   # if version_query.name not in ('', idx.name):
-  #   #   continue
-  #   match = compare_hashes_from_commit(idx, version_query.file_hashes)
-  # #   match_futures.append(match)
-  # for future in bucket_query_futures:
-  #   bucket_result: osv.RepoIndexBucket = future.result()
-  #   parent_key = bucket_result.key.parent()
-  #   for x in bucket_result.bucket_results:
-  #     logging.info(type(x))
-  #     if x.hash in req_set:
-  #       candidates[parent_key] += 1
-  #       logging.info('matched 1')
-
+  # logging.info(f'{len(not_matched_buckets)} of 256 buckets does not match')
+  # logging.info(f'{estimate_diff(len(not_matched_buckets))} estimated files changed')
+  # logging.info(f'{not_match_count} files potentially need to be scanned')
+  # logging.info(f'{len(candidates_files)} potential versions match')
   # timer.elapsed()
-  # candidates_list = list(candidates.items())
-  # candidates_list.sort(key=lambda x: x[1], reverse=True)
-
-  # for hash in candidates_list[:min(5, len(candidates_list))]:
-  #   logging.info(hash[0].get())
-  #   logging.info(f'{hash[1]} out of {len(version_query.file_hashes)}')
 
   timer.elapsed()
-  return build_determine_version_result(candidates,
+  return build_determine_version_result(candidates_files, candidates_buckets,
                                         len(version_query.file_hashes))
 
 

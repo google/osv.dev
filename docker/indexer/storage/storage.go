@@ -132,42 +132,42 @@ func (s *Store) Exists(ctx context.Context, addr string, hashType string, hash p
 }
 
 // Store stores a new entry in datastore.
-func (s *Store) Store(ctx context.Context, repoInfo *preparation.Result, hashType string, bucketResults [][]*processing.FileResult, treeNodes [][]*processing.TreeNode) error {
+func (s *Store) Store(ctx context.Context, repoInfo *preparation.Result, hashType string, bucketResults [][]*processing.FileResult, treeNodes []*processing.TreeNode) error {
 	docKey := datastore.NameKey(docKind, fmt.Sprintf(docKeyFmt, repoInfo.Addr, hashType, repoInfo.Commit[:]), nil)
-	doc, results := newDoc(repoInfo, hashType, bucketResults, treeNodes[0])
+	doc, _ := newDoc(repoInfo, hashType, bucketResults, treeNodes)
 
 	// TODO: Optimize with PutMulti, need to remove duplicates as well
-	for _, r := range results {
-		resultKey := datastore.NameKey(resultKind, fmt.Sprintf(resultKeyFmt, r.BucketHash, hashType), docKey)
-		_, err := s.dsCl.Put(ctx, resultKey, r)
-		if err != nil {
-			return err
+	// for _, r := range results {
+	// 	resultKey := datastore.NameKey(resultKind, fmt.Sprintf(resultKeyFmt, r.BucketHash, hashType), docKey)
+	// 	_, err := s.dsCl.Put(ctx, resultKey, r)
+	// 	if err != nil {
+	// 		return err
+	// 	}
+	// }
+
+	// for _, layer := range treeNodes {
+	putMultiKeys := []*datastore.Key{}
+	putMultiNodes := []*processing.TreeNode{}
+	for _, node := range treeNodes {
+		if node.FilesContained == 0 {
+			continue
 		}
+
+		treeKey := datastore.NameKey(treeKind,
+			fmt.Sprintf(treeKeyFmt, node.NodeHash, hashType, node.FilesContained, node.Height),
+			docKey)
+
+		putMultiKeys = append(putMultiKeys, treeKey)
+		putMultiNodes = append(putMultiNodes, node)
 	}
-
-	for _, layer := range treeNodes {
-		putMultiKeys := []*datastore.Key{}
-		putMultiNodes := []*processing.TreeNode{}
-		for _, node := range layer {
-			if node.FilesContained == 0 {
-				continue
-			}
-
-			treeKey := datastore.NameKey(treeKind,
-				fmt.Sprintf(treeKeyFmt, node.NodeHash, hashType, node.FilesContained, node.Height),
-				docKey)
-
-			putMultiKeys = append(putMultiKeys, treeKey)
-			putMultiNodes = append(putMultiNodes, node)
-		}
-		_, err := s.dsCl.PutMulti(ctx, putMultiKeys, putMultiNodes)
-		if err != nil {
-			return err
-		}
+	_, err := s.dsCl.PutMulti(ctx, putMultiKeys, putMultiNodes)
+	if err != nil {
+		return err
 	}
+	// }
 
 	// Leave the repoIndex entry to last
-	_, err := s.dsCl.Put(ctx, docKey, doc)
+	_, err = s.dsCl.Put(ctx, docKey, doc)
 	if err != nil {
 		return err
 	}

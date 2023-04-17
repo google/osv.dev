@@ -9,6 +9,10 @@ spec:
     spec:
       template:
         spec:
+          tolerations:
+          - key: workloadType
+            operator: Equal
+            value: importer-pool
           containers:
           - name: importer
             image: importer

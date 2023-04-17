@@ -93,13 +93,13 @@ resource "google_container_node_pool" "highend" {
 
 
   node_config {
-    machine_type    = "n2-highmem-32"
-    disk_type       = "pd-ssd"
-    disk_size_gb    = 100
+    machine_type = "n2-highmem-32"
+    disk_type    = "pd-ssd"
+    disk_size_gb = 100
     ephemeral_storage_config {
       local_ssd_count = 4
     }
-    
+
     oauth_scopes = ["https://www.googleapis.com/auth/cloud-platform"]
 
     labels = {
@@ -137,6 +137,12 @@ resource "google_container_node_pool" "importer_pool" {
     local_ssd_count = 1
 
     oauth_scopes = ["https://www.googleapis.com/auth/cloud-platform"]
+
+    taint = [{
+      effect = "NO_EXECUTE"
+      key    = "workloadType"
+      value  = "importer-pool"
+    }]
   }
 }
 

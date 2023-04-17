@@ -1,9 +1,31 @@
 package cves
 
 import (
+	"encoding/json"
+	"log"
+	"os"
 	"reflect"
 	"testing"
+
+	"github.com/google/go-cmp/cmp"
 )
+
+// Helper function to load in a specific CVE from sample data.
+func loadTestData(CVEID string) CVEItem {
+	file, err := os.Open("../test_data/nvdcve-1.1-test-data.json")
+	if err != nil {
+		log.Fatalf("Failed to load test data")
+	}
+	var nvdCves NVDCVE
+	json.NewDecoder(file).Decode(&nvdCves)
+	for _, item := range nvdCves.CVEItems {
+		if item.CVE.CVEDataMeta.ID == CVEID {
+			return item
+		}
+	}
+	log.Fatalf("test data doesn't contain specified %q", CVEID)
+	return CVEItem{}
+}
 
 func TestParseCPE(t *testing.T) {
 	tests := []struct {
@@ -244,6 +266,30 @@ func TestRepo(t *testing.T) {
 			expectedRepoURL: "https://bitbucket.org/snakeyaml/snakeyaml",
 			expectedOk:      true,
 		},
+		{
+			description:     "Valid URL but not wanted (by denylist)",
+			inputLink:       "https://github.com/orangecertcc/security-research/security/advisories/GHSA-px2c-q384-5wxc",
+			expectedRepoURL: "",
+			expectedOk:      false,
+		},
+		{
+			description:     "Valid URL but not wanted (by deny regexp)",
+			inputLink:       "https://github.com/Ko-kn3t/CVE-2020-29156",
+			expectedRepoURL: "",
+			expectedOk:      false,
+		},
+		{
+			description:     "Valid URL but not wanted (by deny regexp)",
+			inputLink:       "https://github.com/GitHubAssessments/CVE_Assessment_04_2018",
+			expectedRepoURL: "",
+			expectedOk:      false,
+		},
+		{
+			description:     "Valid URL but not wanted (by deny regexp)",
+			inputLink:       "https://github.com/jenaye/cve",
+			expectedRepoURL: "",
+			expectedOk:      false,
+		},
 	}
 
 	for _, tc := range tests {
@@ -449,6 +495,80 @@ func TestNormalizeVersion(t *testing.T) {
 		}
 		if !reflect.DeepEqual(got, tc.expectedNormalizedVersion) {
 			t.Errorf("test %q: normalized version for %q was incorrect, got: %q, expected %q", tc.description, tc.inputVersion, got, tc.expectedNormalizedVersion)
+		}
+	}
+}
+
+func TestExtractVersionInfo(t *testing.T) {
+	tests := []struct {
+		description         string
+		inputCVEItem        CVEItem
+		inputValidVersions  []string
+		expectedVersionInfo VersionInfo
+		expectedNotes       []string
+	}{
+		{
+			description:        "A CVE with multiple affected versions",
+			inputCVEItem:       loadTestData("CVE-2022-32746"),
+			inputValidVersions: []string{},
+			expectedVersionInfo: VersionInfo{
+				FixCommits:          []GitCommit(nil),
+				LimitCommits:        []GitCommit(nil),
+				LastAffectedCommits: []GitCommit(nil),
+				AffectedVersions: []AffectedVersion{
+					AffectedVersion{
+						Introduced:   "4.16.0",
+						Fixed:        "4.16.4",
+						LastAffected: "",
+					},
+					AffectedVersion{
+						Introduced:   "4.15.0",
+						Fixed:        "4.15.9",
+						LastAffected: "",
+					},
+					AffectedVersion{
+						Introduced:   "4.3.0",
+						Fixed:        "4.14.14",
+						LastAffected: "",
+					},
+				},
+			},
+			expectedNotes: []string{},
+		},
+		{
+			description:        "A CVE with duplicate affected versions squashed",
+			inputCVEItem:       loadTestData("CVE-2022-0090"),
+			inputValidVersions: []string{},
+			expectedVersionInfo: VersionInfo{
+				FixCommits:          []GitCommit(nil),
+				LimitCommits:        []GitCommit(nil),
+				LastAffectedCommits: []GitCommit(nil),
+				AffectedVersions: []AffectedVersion{
+					AffectedVersion{
+						Introduced:   "14.6.0",
+						Fixed:        "14.6.1",
+						LastAffected: "",
+					},
+					AffectedVersion{
+						Introduced:   "14.5.0",
+						Fixed:        "14.5.3",
+						LastAffected: "",
+					},
+					AffectedVersion{
+						Introduced:   "",
+						Fixed:        "14.4.5",
+						LastAffected: "",
+					},
+				},
+			},
+			expectedNotes: []string{},
+		},
+	}
+
+	for _, tc := range tests {
+		gotVersionInfo, _ := ExtractVersionInfo(tc.inputCVEItem, tc.inputValidVersions)
+		if diff := cmp.Diff(gotVersionInfo, tc.expectedVersionInfo); diff != "" {
+			t.Errorf("test %q: VersionInfo for %#v was incorrect: %s", tc.description, tc.inputCVEItem, diff)
 		}
 	}
 }

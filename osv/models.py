@@ -79,20 +79,6 @@ class IDCounter(ndb.Model):
   next_id = ndb.IntegerProperty()
 
 
-class AffectedCommit(ndb.Model):
-  """AffectedCommit entry."""
-  # The main bug ID.
-  bug_id = ndb.StringProperty()
-  # The commit hash.
-  commit = ndb.StringProperty()
-  # Project for the bug.
-  project = ndb.StringProperty()
-  # Ecosystem for the affected commit.
-  ecosystem = ndb.StringProperty()
-  # Whether or not the bug is public.
-  public = ndb.BooleanProperty()
-
-
 class AffectedCommits(ndb.Model):
   """AffectedCommits entry."""
   MAX_COMMITS_PER_ENTITY = 10000
@@ -726,7 +712,7 @@ class SourceRepository(ndb.Model):
   # Last synced hash.
   last_synced_hash = ndb.StringProperty()
   # Last date recurring updates were requested.
-  last_update_date = ndb.DateProperty()
+  last_update_date = ndb.DateTimeProperty()
   # Patterns of files to exclude (regex).
   ignore_patterns = ndb.StringProperty(repeated=True)
   # Whether this repository is editable.

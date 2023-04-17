@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-FROM golang:1.19 as GO_BUILD
+FROM golang:1.20 as GO_BUILD
 WORKDIR /build
 ADD ./ /build
 RUN chmod +x build.sh

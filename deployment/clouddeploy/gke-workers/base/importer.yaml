@@ -9,6 +9,10 @@ spec:
     spec:
       template:
         spec:
+          tolerations:
+          - key: workloadType
+            operator: Equal
+            value: importer-pool
           containers:
           - name: importer
             image: importer
@@ -25,6 +29,8 @@ spec:
               limits:
                 cpu: 1
                 memory: "2G"
+          nodeSelector:
+            cloud.google.com/gke-nodepool: importer-pool
           restartPolicy: OnFailure
           volumes:
             - name: "ssd"

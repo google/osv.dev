@@ -74,6 +74,8 @@ resource "google_container_node_pool" "highend" {
   name     = "highend"
   cluster  = google_container_cluster.workers.name
   location = google_container_cluster.workers.location
+  # For using the ephemeral storage local ssd config
+  provider = google-beta
 
   lifecycle {
     # Terraform doesn't automatically know to recreate node pools when the cluster is recreated.
@@ -91,10 +93,13 @@ resource "google_container_node_pool" "highend" {
 
 
   node_config {
-    machine_type    = "n1-standard-32"
-    disk_type       = "pd-standard"
-    disk_size_gb    = 100
-    local_ssd_count = 1
+    machine_type = "n2-highmem-32"
+    disk_type    = "pd-ssd"
+    disk_size_gb = 100
+    ephemeral_storage_config { // This is used for emptyDir storage in kubernetes
+      // Minimum is 4 ssds for n2-highmem-32, for 375GB * 4 = 1.5TB of storage
+      local_ssd_count = 4
+    }
 
     oauth_scopes = ["https://www.googleapis.com/auth/cloud-platform"]
 
@@ -108,6 +113,37 @@ resource "google_container_node_pool" "highend" {
       value  = "highend"
     }]
 
+  }
+}
+
+resource "google_container_node_pool" "importer_pool" {
+  project    = var.project_id
+  name       = "importer-pool"
+  cluster    = google_container_cluster.workers.name
+  location   = google_container_cluster.workers.location
+  node_count = 1
+
+  lifecycle {
+    # Terraform doesn't automatically know to recreate node pools when the cluster is recreated.
+    # A bit redundant since the cluster has prevent_destroy = true.
+    replace_triggered_by = [
+      google_container_cluster.workers.id,
+    ]
+  }
+
+  node_config {
+    machine_type    = "n2-standard-2"
+    disk_type       = "pd-ssd"
+    disk_size_gb    = 64
+    local_ssd_count = 1
+
+    oauth_scopes = ["https://www.googleapis.com/auth/cloud-platform"]
+
+    taint = [{
+      effect = "NO_EXECUTE"
+      key    = "workloadType"
+      value  = "importer-pool"
+    }]
   }
 }
 

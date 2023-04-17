@@ -312,7 +312,6 @@ class IntegrationTests(unittest.TestCase):
         timeout=_TIMEOUT)
 
     response_json = response.json()
-    self.assertEqual(2, len(response_json['vulns']))
     self.assertCountEqual(['GO-2021-0061', 'GO-2020-0036'],
                           [vuln['id'] for vuln in response_json['vulns']])
 

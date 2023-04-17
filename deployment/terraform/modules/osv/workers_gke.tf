@@ -96,7 +96,7 @@ resource "google_container_node_pool" "highend" {
     machine_type = "n2-highmem-32"
     disk_type    = "pd-ssd"
     disk_size_gb = 100
-    ephemeral_storage_config {
+    ephemeral_storage_config { // This is used for emptyDir storage in kubernetes
       // Minimum is 4 ssds for n2-highmem-32, for 375GB * 4 = 1.5TB of storage
       local_ssd_count = 4
     }

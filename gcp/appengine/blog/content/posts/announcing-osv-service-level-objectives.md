@@ -10,11 +10,11 @@ We are excited to announce that OSV has published our new service level objectiv
 
 Even though OSV.dev is a free resource, we know that our users rely on us for accurate, up-to-date vulnerability information and we want to provide that on a consistent basis. We will be tracking the following:  
 
-1. Website and API availability, measured across a seven day rolling window.   
-2. Website and API latency.   
-3. Data freshness.  
+- Website and API availability, measured across a seven day rolling window.   
+- Website and API latency.   
+- Data freshness.  
 
-Please refer to our [FAQ](https://osv.dev/about) for specific details.  
+Please refer to our [FAQ](https://google.github.io/osv.dev/faq/#what-are-osvs-service-level-objectives-slos) for specific details.  
 
 Performance against the SLO will be shared via a quarterly blog post, with the intention of a reporting dashboard in the future.  
 

@@ -82,8 +82,7 @@ message VersionQuery {
 // Information about the files in the repository
 // to identify the version.
 message FileHash {
-  // The file path inside the repository. 
-  // Can be empty but providing it increases matching quality.
+  // The file path inside the repository, relative to the repository root.
   string file_path = 1;
   string hash_type = 2;
   bytes hash = 3;
@@ -103,8 +102,8 @@ message VersionMatch {
   VersionRepositoryInformation repo_info = 2;
   // The OSV identifier.
   osv.Package osv_identifier = 3;
-  // CPE dictionary. Keys are cpe version and values the CPE.
-  map<string, string> cpes = 4;
+  // CPE 2.3.
+  string cpe23 = 5;
 
   // Definite number of files that have matched
   int64 minimum_file_matches = 5;

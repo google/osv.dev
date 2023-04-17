@@ -150,12 +150,17 @@ def blog_post_static_files(blog_name: str, file_name: str):
 
 @blueprint.route('/about')
 def about():
-  return redirect('/faq')
+  return redirect('https://google.github.io/osv.dev/faq')
 
 
 @blueprint.route('/faq')
 def faq():
-  return render_template('faq.html')
+  return redirect('https://google.github.io/osv.dev/faq')
+
+
+@blueprint.route('/docs', strict_slashes=False)
+def docs():
+  return redirect('https://google.github.io/osv.dev')
 
 
 @blueprint.route('/list')

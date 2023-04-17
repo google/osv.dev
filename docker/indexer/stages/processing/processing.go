@@ -56,10 +56,10 @@ type FileResult struct {
 
 // FileResult holds the per file hash and path information.
 type TreeNode struct {
-	NodeHash       Hash   `datastore:"node_hash"`
-	ChildHashes    []Hash `datastore:"child_hashes,noindex"`
-	Height         int    `datastore:"depth,noindex"`
-	FilesContained int    `datastore:"files_contained,noindex"`
+	NodeHash Hash `datastore:"node_hash"`
+	// ChildHashes    []Hash `datastore:"child_hashes,noindex"`
+	// Height         int    `datastore:"depth,noindex"`
+	FilesContained int `datastore:"files_contained,noindex"`
 }
 
 // Stage holds the data structures necessary to perform the processing.
@@ -161,7 +161,7 @@ func processTree(fileResults []*FileResult) ([]*TreeNode, [][]*FileResult) {
 	buckets := make([][]*FileResult, bucketCount)
 
 	for _, fr := range fileResults {
-		idx := binary.BigEndian.Uint16(fr.Hash[0:2]) / bucketCount
+		idx := binary.BigEndian.Uint16(fr.Hash[0:2]) % bucketCount
 		buckets[idx] = append(buckets[idx], fr)
 	}
 
@@ -191,9 +191,9 @@ func processTree(fileResults []*FileResult) ([]*TreeNode, [][]*FileResult) {
 		}
 
 		results[bucketIdx] = &TreeNode{
-			NodeHash:       hasher.Sum(nil),
-			ChildHashes:    nil,
-			Height:         0,
+			NodeHash: hasher.Sum(nil),
+			// ChildHashes:    nil,
+			// Height:         0,
 			FilesContained: len(buckets[bucketIdx]),
 		}
 	}

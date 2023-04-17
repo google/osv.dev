@@ -36,8 +36,8 @@ const (
 	docKeyFmt = "%s-%s-%x"
 	// BucketHash-HashType
 	resultKeyFmt = "%x-%s"
-	// NodeHash-HashType-FilesContained-Height
-	treeKeyFmt = "%x-%s-%d-%d"
+	// NodeHash-HashType-FilesContained
+	treeKeyFmt = "%x-%s-%d"
 	pageSize   = 1000
 )
 
@@ -154,7 +154,7 @@ func (s *Store) Store(ctx context.Context, repoInfo *preparation.Result, hashTyp
 		}
 
 		treeKey := datastore.NameKey(treeKind,
-			fmt.Sprintf(treeKeyFmt, node.NodeHash, hashType, node.FilesContained, node.Height),
+			fmt.Sprintf(treeKeyFmt, node.NodeHash, hashType, node.FilesContained),
 			docKey)
 
 		putMultiKeys = append(putMultiKeys, treeKey)

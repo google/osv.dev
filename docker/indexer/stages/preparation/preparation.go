@@ -150,6 +150,11 @@ func (s *Stage) processGit(ctx context.Context, repoCfg *config.RepoConfig) erro
 	commitTracker := make(map[plumbing.Hash]bool)
 	// repoInfo is used as the iterator function to create RepositoryInformation structs.
 	repoInfo := func(ref *plumbing.Reference) error {
+		commitRef, err := repo.Reference(ref.Name(), true)
+		if err != nil {
+			return err
+		}
+
 		found, err := s.Checker.Exists(ctx, repoCfg.Address, shared.MD5, ref.Hash())
 		if err != nil {
 			return err
@@ -159,7 +164,7 @@ func (s *Stage) processGit(ctx context.Context, repoCfg *config.RepoConfig) erro
 		}
 
 		var when time.Time
-		if c, ok := allCommits[ref.Hash()]; ok {
+		if c, ok := allCommits[commitRef.Hash()]; ok {
 			when = c.Author.When
 		}
 
@@ -190,9 +195,8 @@ func (s *Stage) processGit(ctx context.Context, repoCfg *config.RepoConfig) erro
 			CheckoutOptions: &git.CheckoutOptions{
 				Branch: ref.Name(),
 			},
-			When: when,
-			// This might not be the actual hash of the commit, but the hash of the tag
-			Commit:    ref.Hash(),
+			When:      when,
+			Commit:    commitRef.Hash(),
 			CommitTag: commitTag,
 			Type:      shared.Git,
 			Addr:      repoCfg.Address,

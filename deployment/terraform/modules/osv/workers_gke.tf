@@ -74,6 +74,8 @@ resource "google_container_node_pool" "highend" {
   name     = "highend"
   cluster  = google_container_cluster.workers.name
   location = google_container_cluster.workers.location
+  # For using the ephemeral storage local ssd config
+  provider = google-beta
 
   lifecycle {
     # Terraform doesn't automatically know to recreate node pools when the cluster is recreated.
@@ -94,8 +96,10 @@ resource "google_container_node_pool" "highend" {
     machine_type    = "n2-highmem-32"
     disk_type       = "pd-ssd"
     disk_size_gb    = 100
-    local_ssd_count = 4
-
+    ephemeral_storage_config {
+      local_ssd_count = 4
+    }
+    
     oauth_scopes = ["https://www.googleapis.com/auth/cloud-platform"]
 
     labels = {

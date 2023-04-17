@@ -18,6 +18,7 @@ import (
 var (
 	repoDir  = flag.String("repo", "", "repo directory")
 	repo2Dir = flag.String("repo2", "", "repo directory")
+	outfile  = flag.String("out", "temp.txt", "output file")
 	// tagName = flag.String("tag", "", "tag name to checkout")
 )
 
@@ -135,7 +136,7 @@ func buildGit(repoDir string, out *[][]*FileResult) error {
 	if err != nil {
 		log.Panicln(err)
 	}
-	os.WriteFile("temp.txt", []byte(b.String()), 0644)
+	os.WriteFile(*outfile, []byte(b.String()), 0644)
 	pipe.Write([]byte(b.String()))
 	pipe.Close()
 	output, err := cmd.CombinedOutput()

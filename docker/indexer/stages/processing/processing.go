@@ -45,7 +45,7 @@ type Hash = []byte
 
 // Storer is used to permanently store the results.
 type Storer interface {
-	Store(ctx context.Context, repoInfo *preparation.Result, hashType string, bucketResults [][]*FileResult, treeNodes []*TreeNode) error
+	Store(ctx context.Context, repoInfo *preparation.Result, hashType string, bucketResults [][]*FileResult, treeNodes []*BucketNode) error
 }
 
 // FileResult holds the per file hash and path information.
@@ -55,7 +55,7 @@ type FileResult struct {
 }
 
 // FileResult holds the per file hash and path information.
-type TreeNode struct {
+type BucketNode struct {
 	NodeHash Hash `datastore:"node_hash"`
 	// ChildHashes    []Hash `datastore:"child_hashes,noindex"`
 	// Height         int    `datastore:"depth,noindex"`
@@ -153,7 +153,7 @@ func (s *Stage) processGit(ctx context.Context, repoInfo *preparation.Result) er
 const chunkSize = 4
 const bucketCount = 512
 
-func processTree(fileResults []*FileResult) ([]*TreeNode, [][]*FileResult) {
+func processTree(fileResults []*FileResult) ([]*BucketNode, [][]*FileResult) {
 	// This height includes the root node (height of 1 is just the root)
 	// heightOfTree := logWithBase(((chunkSize-1)*bucketCount)+1, chunkSize)
 	// Tree, 0 is the leaf layer
@@ -166,7 +166,7 @@ func processTree(fileResults []*FileResult) ([]*TreeNode, [][]*FileResult) {
 	}
 
 	// Create base layer
-	results := make([]*TreeNode, bucketCount)
+	results := make([]*BucketNode, bucketCount)
 
 	for bucketIdx := range buckets {
 		// Sort hashes
@@ -190,7 +190,7 @@ func processTree(fileResults []*FileResult) ([]*TreeNode, [][]*FileResult) {
 			}
 		}
 
-		results[bucketIdx] = &TreeNode{
+		results[bucketIdx] = &BucketNode{
 			NodeHash: hasher.Sum(nil),
 			// ChildHashes:    nil,
 			// Height:         0,

@@ -190,7 +190,8 @@ func (s *Stage) processGit(ctx context.Context, repoCfg *config.RepoConfig) erro
 			CheckoutOptions: &git.CheckoutOptions{
 				Branch: ref.Name(),
 			},
-			When:      when,
+			When: when,
+			// This might not be the actual hash of the commit, but the hash of the tag
 			Commit:    ref.Hash(),
 			CommitTag: commitTag,
 			Type:      shared.Git,

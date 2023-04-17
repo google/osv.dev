@@ -44,7 +44,7 @@ _SHUTDOWN_GRACE_DURATION = 5
 _MAX_BATCH_QUERY = 1000
 _MAX_VULNERABILITIES_LISTED = 16
 _MAX_HASHES_TO_TRY = 50
-_MAX_MATCHES_TO_CARE = 1100
+_MAX_MATCHES_TO_CARE = 100
 _MAX_COMMITS_TO_TRY = 10
 
 _ndb_client = ndb.Client()
@@ -143,20 +143,21 @@ import hashlib
 import functools
 
 chunk_size = 4
-bucket_count = 256
+bucket_count = 512
 
 
 def process_tree(
-    file_results: List[osv.FileResult]) -> List[osv.RepoIndexResultTree]:
+    file_results: List[osv.FileResult]) -> List[osv.RepoIndexBucketNode]:
   # height_of_tree = log_with_base(((chunk_size - 1) * bucket_count) + 1,
   #                                chunk_size)
   # results: list[osv.RepoIndexResultTree]
   buckets: list[list[bytes]] = [[] for _ in range(bucket_count)]
 
   for fr in file_results:
-    buckets[fr.hash[0]].append(fr.hash)
+    buckets[int.from_bytes(fr.hash[:2], byteorder='big') % bucket_count].append(
+        fr.hash)
 
-  results: list[osv.RepoIndexResultTree] = [None] * bucket_count
+  results: list[osv.RepoIndexBucketNode] = [None] * bucket_count
   for bucket_idx, bucket in enumerate(buckets):
     buckets[bucket_idx].sort()
 
@@ -164,10 +165,10 @@ def process_tree(
     for v in buckets[bucket_idx]:
       hasher.update(v)
 
-    results[bucket_idx] = osv.RepoIndexResultTree(
+    results[bucket_idx] = osv.RepoIndexBucketNode(
         node_hash=hasher.digest(),
-        child_hashes=buckets[bucket_idx],
-        depth=0,
+        # child_hashes=buckets[bucket_idx],
+        # depth=0,
         files_contained=len(buckets[bucket_idx]),
     )
 
@@ -203,17 +204,18 @@ def log_with_base(x: int, base: int) -> int:
 
 def build_determine_version_result(
     candidate_files: dict[ndb.Key, int], candidate_buckets: dict[ndb.Key, int],
+    zero_match_offset: int,
     max_files: int) -> osv_service_v1_pb2.VersionMatchList:
   idx_futures = ndb.get_multi_async(candidate_files.keys())
   output = []
   for f in idx_futures:
     idx: osv.RepoIndex = f.result()
-    logging.info(bucket_count - candidate_buckets[idx.key])
+    # logging.info(idx.version + "  " + str(bucket_count - candidate_buckets[idx.key]))
     version_match = osv_service_v1_pb2.VersionMatch(
         score=candidate_files[idx.key] / max_files,
         minimum_file_matches=candidate_files[idx.key],
-        estimated_diff_files=estimate_diff(bucket_count -
-                                           candidate_buckets[idx.key]),
+        estimated_diff_files=estimate_diff(
+            bucket_count - candidate_buckets[idx.key], zero_match_offset),
         repo_info=osv_service_v1_pb2.VersionRepositoryInformation(
             type=osv_service_v1_pb2.VersionRepositoryInformation.GIT,
             address=idx.repo_addr,
@@ -225,13 +227,17 @@ def build_determine_version_result(
 
   output.sort(reverse=True, key=lambda x: x.score)
   return osv_service_v1_pb2.VersionMatchList(
-      matches=output[:min(5, len(output))])
+      matches=output[:min(20, len(output))])
 
 
-def estimate_diff(num_of_bucket_change: int) -> int:
+def estimate_diff(num_of_bucket_change: int, zero_match_offset: int) -> int:
   estimate = bucket_count * math.log(
-      (bucket_count + 1) / (bucket_count - num_of_bucket_change + 1))
-  return round(estimate / 2)
+      (bucket_count + 1) / (bucket_count -
+                            (num_of_bucket_change - zero_match_offset) + 1))
+  # Scale the "file change" denominator linearly by how many buckets are not considered
+  # Since if a lot of buckets are skipped, a file that's been changed might end up in one of them
+  # decreasing the chance it will be counted twice.
+  return round(estimate / (2 - zero_match_offset / bucket_count))
 
 
 @ndb.tasklet
@@ -249,6 +255,8 @@ def determine_version(version_query: osv_service_v1_pb2.VersionQuery,
 
   candidates_files: dict[ndb.Key, int] = defaultdict(int)
   candidates_buckets: dict[ndb.Key, int] = defaultdict(int)
+  zero_match_offset = 0
+  free_matches = 0
   logging.info('Begin query tree')
   timer.elapsed()
 
@@ -256,18 +264,22 @@ def determine_version(version_query: osv_service_v1_pb2.VersionQuery,
   # not_match_count = 0
   for idx, node in enumerate(layer):
     if node.files_contained == 0:
+      zero_match_offset += 1
       continue
 
-    query = osv.RepoIndexResultTree.query(
-        osv.RepoIndexResultTree.node_hash == node.node_hash)
-    query_futures.append((query.fetch_async(limit=_MAX_MATCHES_TO_CARE), idx))
+    query = osv.RepoIndexBucketNode.query(
+        osv.RepoIndexBucketNode.node_hash == node.node_hash)
+    query_futures.append((query.fetch_async(limit=_MAX_MATCHES_TO_CARE), idx,
+                          node.files_contained))
 
   logging.info(len(query_futures))
-  for future, idx in query_futures:
-    result: list[osv.RepoIndexResultTree] = list(future.result())
+  for future, idx, num_of_files in query_futures:
+    result: list[osv.RepoIndexBucketNode] = list(future.result())
     if result:  # If there is a match, add it to list of potential versions
       if len(result) == _MAX_MATCHES_TO_CARE:
         logging.info("AHHHHHHHHHHHH")
+        zero_match_offset += 1
+        free_matches += num_of_files
         continue
 
       for hash in result:
@@ -276,14 +288,20 @@ def determine_version(version_query: osv_service_v1_pb2.VersionQuery,
         candidates_buckets[parent_key] += 1
 
   logging.info('Tree match complete:')
+  logging.info(zero_match_offset)
   # logging.info(f'{len(not_matched_buckets)} of 256 buckets does not match')
   # logging.info(f'{estimate_diff(len(not_matched_buckets))} estimated files changed')
   # logging.info(f'{not_match_count} files potentially need to be scanned')
   # logging.info(f'{len(candidates_files)} potential versions match')
   # timer.elapsed()
 
+  # Up the matches by the ones that match too commonly
+  for key in candidates_files.keys():
+    candidates_files[key] += free_matches
+
   timer.elapsed()
   return build_determine_version_result(candidates_files, candidates_buckets,
+                                        zero_match_offset,
                                         len(version_query.file_hashes))
 
 

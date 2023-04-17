@@ -34,7 +34,7 @@ const (
 
 // CopyFromBucket copies a directory from a bucket to a temporary location.
 func CopyFromBucket(ctx context.Context, bucketHdl *storage.BucketHandle, name string) (string, error) {
-	tmpDir, err := os.MkdirTemp("", "")
+	tmpDir, err := os.MkdirTemp("", name)
 	if err != nil {
 		return "", err
 	}

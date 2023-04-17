@@ -31,7 +31,7 @@ import (
 const (
 	docKind    = "RepoIndex"
 	resultKind = "RepoIndexBucket"
-	treeKind   = "RepoIndexResultTree"
+	bucketKind = "RepoIndexBucketNode"
 	// Address-HashType-CommitHash
 	docKeyFmt = "%s-%s-%x"
 	// BucketHash-HashType
@@ -61,7 +61,7 @@ type result struct {
 	Hash       [][]byte `datastore:"bucket_results.hash,noindex"`
 }
 
-func newDoc(repoInfo *preparation.Result, hashType string, bucketResults [][]*processing.FileResult, baseTreeLayer []*processing.TreeNode) (*document, []*result) {
+func newDoc(repoInfo *preparation.Result, hashType string, bucketResults [][]*processing.FileResult, baseTreeLayer []*processing.BucketNode) (*document, []*result) {
 	doc := &document{
 		Name:         repoInfo.Name,
 		BaseCPE:      repoInfo.BaseCPE,
@@ -132,7 +132,7 @@ func (s *Store) Exists(ctx context.Context, addr string, hashType string, hash p
 }
 
 // Store stores a new entry in datastore.
-func (s *Store) Store(ctx context.Context, repoInfo *preparation.Result, hashType string, bucketResults [][]*processing.FileResult, treeNodes []*processing.TreeNode) error {
+func (s *Store) Store(ctx context.Context, repoInfo *preparation.Result, hashType string, bucketResults [][]*processing.FileResult, treeNodes []*processing.BucketNode) error {
 	docKey := datastore.NameKey(docKind, fmt.Sprintf(docKeyFmt, repoInfo.Addr, hashType, repoInfo.Commit[:]), nil)
 	doc, _ := newDoc(repoInfo, hashType, bucketResults, treeNodes)
 
@@ -147,20 +147,27 @@ func (s *Store) Store(ctx context.Context, repoInfo *preparation.Result, hashTyp
 
 	// for _, layer := range treeNodes {
 	putMultiKeys := []*datastore.Key{}
-	putMultiNodes := []*processing.TreeNode{}
+	putMultiNodes := []*processing.BucketNode{}
 	for _, node := range treeNodes {
 		if node.FilesContained == 0 {
 			continue
 		}
 
-		treeKey := datastore.NameKey(treeKind,
+		treeKey := datastore.NameKey(bucketKind,
 			fmt.Sprintf(treeKeyFmt, node.NodeHash, hashType, node.FilesContained),
 			docKey)
 
 		putMultiKeys = append(putMultiKeys, treeKey)
 		putMultiNodes = append(putMultiNodes, node)
 	}
-	_, err := s.dsCl.PutMulti(ctx, putMultiKeys, putMultiNodes)
+
+	halfwayPoint := len(putMultiKeys) / 2
+	_, err := s.dsCl.PutMulti(ctx, putMultiKeys[:halfwayPoint], putMultiNodes[:halfwayPoint])
+	if err != nil {
+		return err
+	}
+
+	_, err = s.dsCl.PutMulti(ctx, putMultiKeys[halfwayPoint:], putMultiNodes[halfwayPoint:])
 	if err != nil {
 		return err
 	}

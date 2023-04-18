@@ -139,6 +139,10 @@ resource "google_container_node_pool" "importer_pool" {
 
     oauth_scopes = ["https://www.googleapis.com/auth/cloud-platform"]
 
+    labels = {
+      workloadType = "importer-pool"
+    }
+
     taint = [{
       effect = "NO_EXECUTE"
       key    = "workloadType"

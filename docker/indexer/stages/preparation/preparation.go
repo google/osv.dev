@@ -53,6 +53,7 @@ type Result struct {
 	Version         string
 	CheckoutOptions *git.CheckoutOptions
 	Commit          plumbing.Hash
+	Reference       plumbing.Hash
 	CommitTag       string
 	When            time.Time
 	Type            string
@@ -157,7 +158,7 @@ func (s *Stage) processGit(ctx context.Context, repoCfg *config.RepoConfig) erro
 			return err
 		}
 
-		found, err := s.Checker.Exists(ctx, repoCfg.Address, shared.MD5, *commitHash)
+		found, err := s.Checker.Exists(ctx, repoCfg.Address, shared.MD5, ref.Hash())
 		if err != nil {
 			return err
 		}
@@ -199,6 +200,7 @@ func (s *Stage) processGit(ctx context.Context, repoCfg *config.RepoConfig) erro
 			},
 			When:      when,
 			Commit:    *commitHash,
+			Reference: ref.Hash(),
 			CommitTag: commitTag,
 			Type:      shared.Git,
 			Addr:      repoCfg.Address,
@@ -248,10 +250,11 @@ func (s *Stage) processGit(ctx context.Context, repoCfg *config.RepoConfig) erro
 						Hash:  h,
 						Force: true,
 					},
-					When:     c.Author.When,
-					Commit:   h,
-					Type:     shared.Git,
-					FileExts: repoCfg.FileExts,
+					Reference: h,
+					When:      c.Author.When,
+					Commit:    h,
+					Type:      shared.Git,
+					FileExts:  repoCfg.FileExts,
 				}
 				buf, err := json.Marshal(result)
 				if err != nil {

@@ -12,7 +12,8 @@ spec:
           tolerations:
           - key: workloadType
             operator: Equal
-            value: importer-pool
+            value: "importer-pool"
+            effect: NoSchedule
           containers:
           - name: importer
             image: importer

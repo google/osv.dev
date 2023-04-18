@@ -1,15 +1,17 @@
+---
+layout: page
+title: Architecture
+permalink: /architecture/
+nav_order: 1
+parent: Contributing
+---
 # Architecture
-
-<p align="center">
-  <img src="images/architecture.png" width="800">
-</p>
+![Architecture diagram](images/architecture.png)
 
 ## Data source
 
-Our data is sourced from a variety of [sources], which we are looking to expand
+Our data is sourced from a variety of [sources](../data#current-data-sources), which we are looking to expand
 on over time.
-
-[sources]: https://github.com/google/osv.dev#current-data-sources
 
 OSV runs on Google Cloud Platform, with the following main components:
 
@@ -19,8 +21,7 @@ All vulnerability data is stored in [Cloud Datastore], with the [models] defined
 [here].
 
 [Cloud Datastore]: https://cloud.google.com/datastore
-[models]:
-https://googleapis.dev/python/python-ndb/latest/index.html#defining-entities-keys-and-properties
+[models]: https://googleapis.dev/python/python-ndb/latest/index.html#defining-entities-keys-and-properties
 [here]: https://github.com/google/osv/blob/master/osv/models.py
 
 ## Google Kubernetes Engine (GKE)
@@ -46,9 +47,10 @@ The [API server] runs on [Cloud Run], and is served by [Cloud Endpoints].
 
 ## App Engine
 
-The main web UI (https://osv.dev) runs on [App Engine]. App Engine [cron jobs]
+The [main web UI] runs on [App Engine]. App Engine [cron jobs]
 also schedule recurring tasks for the workers, allocate OSV IDs, and make
 vulnerabilities public at the appropriate times.
 
+[main web UI]: https://osv.dev
 [App Engine]: https://github.com/google/osv/tree/master/gcp/appengine
 [cron jobs]: https://github.com/google/osv/blob/master/gcp/appengine/cron.yaml

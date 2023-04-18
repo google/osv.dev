@@ -145,31 +145,30 @@ func (s *Stage) processGit(ctx context.Context, repoInfo *preparation.Result) er
 	}
 
 	log.Info("Begin processing tree")
-	treeResults, bucketResults := processTree(fileResults)
-	log.Info("Begin stroage")
+	treeResults, bucketResults := processBuckets(fileResults)
+	log.Info("Begin storage")
 	return s.Storer.Store(ctx, repoInfo, shared.MD5, bucketResults, treeResults)
 }
 
 const chunkSize = 4
+
+// bucketCount should be a divisor of 2^16
 const bucketCount = 512
 
-func processTree(fileResults []*FileResult) ([]*BucketNode, [][]*FileResult) {
-	// This height includes the root node (height of 1 is just the root)
-	// heightOfTree := logWithBase(((chunkSize-1)*bucketCount)+1, chunkSize)
-	// Tree, 0 is the leaf layer
-	// var results = make([]*TreeNode, 1)
+// Returns bucket hashes and the individual file hashes of each bucket
+func processBuckets(fileResults []*FileResult) ([]*BucketNode, [][]*FileResult) {
 	buckets := make([][]*FileResult, bucketCount)
 
 	for _, fr := range fileResults {
+		// Evenly divide into bucketCount buckets,
 		idx := binary.BigEndian.Uint16(fr.Hash[0:2]) % bucketCount
 		buckets[idx] = append(buckets[idx], fr)
 	}
 
-	// Create base layer
 	results := make([]*BucketNode, bucketCount)
 
 	for bucketIdx := range buckets {
-		// Sort hashes
+		// Sort hashes to produce deterministic bucket hashes
 		sort.Slice(buckets[bucketIdx], func(i, j int) bool {
 			for k := 0; k < len(buckets[bucketIdx][i].Hash); k++ {
 				if buckets[bucketIdx][i].Hash[k] < buckets[bucketIdx][j].Hash[k] {
@@ -197,34 +196,6 @@ func processTree(fileResults []*FileResult) ([]*BucketNode, [][]*FileResult) {
 			FilesContained: len(buckets[bucketIdx]),
 		}
 	}
-
-	// Start building the higher layers
-	// for height := 1; height < len(results); height++ {
-	// 	results[height] = make([]*TreeNode, len(results[height-1])/chunkSize)
-	// 	for i := 0; i < len(results[height-1]); i += chunkSize {
-	// 		hasher := md5.New()
-	// 		childHashes := []Hash{}
-	// 		filesContained := 0
-	// 		// log.Printf("height: %d, len: %d, %v\n", height, len(results[height-1]), results[height-1])
-
-	// 		for _, v := range results[height-1][i : i+chunkSize] {
-	// 			// log.Printf("%v\n", v.NodeHash)
-	// 			_, err := hasher.Write(v.NodeHash)
-	// 			childHashes = append(childHashes, v.NodeHash)
-	// 			filesContained += v.FilesContained
-	// 			if err != nil {
-	// 				deflog.Panicf("Hasher error: %v", err)
-	// 			}
-	// 		}
-	// 		parentIdx := i / chunkSize
-	// 		results[height][parentIdx] = &TreeNode{
-	// 			NodeHash:       hasher.Sum(nil),
-	// 			ChildHashes:    childHashes,
-	// 			Height:         height,
-	// 			FilesContained: filesContained,
-	// 		}
-	// 	}
-	// }
 
 	return results, buckets
 }

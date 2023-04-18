@@ -150,12 +150,14 @@ func (s *Stage) processGit(ctx context.Context, repoCfg *config.RepoConfig) erro
 	commitTracker := make(map[plumbing.Hash]bool)
 	// repoInfo is used as the iterator function to create RepositoryInformation structs.
 	repoInfo := func(ref *plumbing.Reference) error {
-		commitRef, err := repo.Reference(ref.Name(), true)
+		// Resolve the real commit hash
+		commitHash, err := repo.ResolveRevision(plumbing.Revision(ref.Name().String()))
+
 		if err != nil {
 			return err
 		}
 
-		found, err := s.Checker.Exists(ctx, repoCfg.Address, shared.MD5, ref.Hash())
+		found, err := s.Checker.Exists(ctx, repoCfg.Address, shared.MD5, *commitHash)
 		if err != nil {
 			return err
 		}
@@ -164,7 +166,7 @@ func (s *Stage) processGit(ctx context.Context, repoCfg *config.RepoConfig) erro
 		}
 
 		var when time.Time
-		if c, ok := allCommits[commitRef.Hash()]; ok {
+		if c, ok := allCommits[*commitHash]; ok {
 			when = c.Author.When
 		}
 
@@ -196,13 +198,13 @@ func (s *Stage) processGit(ctx context.Context, repoCfg *config.RepoConfig) erro
 				Branch: ref.Name(),
 			},
 			When:      when,
-			Commit:    commitRef.Hash(),
+			Commit:    *commitHash,
 			CommitTag: commitTag,
 			Type:      shared.Git,
 			Addr:      repoCfg.Address,
 			FileExts:  repoCfg.FileExts,
 		}
-		commitTracker[ref.Hash()] = true
+		commitTracker[*commitHash] = true
 		buf, err := json.Marshal(result)
 		if err != nil {
 			return err

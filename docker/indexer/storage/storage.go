@@ -30,15 +30,12 @@ import (
 
 const (
 	docKind    = "RepoIndex"
-	resultKind = "RepoIndexBucket"
-	bucketKind = "RepoIndexBucketNode"
+	bucketKind = "RepoIndexBucket"
 	// Address-HashType-CommitHash
 	docKeyFmt = "%s-%s-%x"
-	// BucketHash-HashType
-	resultKeyFmt = "%x-%s"
 	// NodeHash-HashType-FilesContained
-	treeKeyFmt = "%x-%s-%d"
-	pageSize   = 1000
+	treeKeyFmt              = "%x-%s-%d"
+	datastoreMultiEntrySize = 490
 )
 
 // document represents a single repository entry in datastore.
@@ -136,16 +133,7 @@ func (s *Store) Store(ctx context.Context, repoInfo *preparation.Result, hashTyp
 	docKey := datastore.NameKey(docKind, fmt.Sprintf(docKeyFmt, repoInfo.Addr, hashType, repoInfo.Commit[:]), nil)
 	doc, _ := newDoc(repoInfo, hashType, bucketResults, treeNodes)
 
-	// TODO: Optimize with PutMulti, need to remove duplicates as well
-	// for _, r := range results {
-	// 	resultKey := datastore.NameKey(resultKind, fmt.Sprintf(resultKeyFmt, r.BucketHash, hashType), docKey)
-	// 	_, err := s.dsCl.Put(ctx, resultKey, r)
-	// 	if err != nil {
-	// 		return err
-	// 	}
-	// }
-
-	// for _, layer := range treeNodes {
+	// There are slightly too many items to put in a transaction (max 500 entries per transaction)
 	putMultiKeys := []*datastore.Key{}
 	putMultiNodes := []*processing.BucketNode{}
 	for _, node := range treeNodes {
@@ -161,20 +149,16 @@ func (s *Store) Store(ctx context.Context, repoInfo *preparation.Result, hashTyp
 		putMultiNodes = append(putMultiNodes, node)
 	}
 
-	halfwayPoint := len(putMultiKeys) / 2
-	_, err := s.dsCl.PutMulti(ctx, putMultiKeys[:halfwayPoint], putMultiNodes[:halfwayPoint])
-	if err != nil {
-		return err
+	// Batch Puts into datastoreMultiEntrySize chunks
+	for i := 0; i < len(putMultiKeys); i += datastoreMultiEntrySize {
+		_, err := s.dsCl.PutMulti(ctx, putMultiKeys[:i+datastoreMultiEntrySize], putMultiNodes[:i+datastoreMultiEntrySize])
+		if err != nil {
+			return err
+		}
 	}
-
-	_, err = s.dsCl.PutMulti(ctx, putMultiKeys[halfwayPoint:], putMultiNodes[halfwayPoint:])
-	if err != nil {
-		return err
-	}
-	// }
 
 	// Leave the repoIndex entry to last
-	_, err = s.dsCl.Put(ctx, docKey, doc)
+	_, err := s.dsCl.Put(ctx, docKey, doc)
 	if err != nil {
 		return err
 	}

@@ -131,7 +131,6 @@ func (s *Store) Exists(ctx context.Context, addr string, hashType string, hash p
 // Store stores a new entry in datastore.
 func (s *Store) Store(ctx context.Context, repoInfo *preparation.Result, hashType string, bucketResults [][]*processing.FileResult, treeNodes []*processing.BucketNode) error {
 	docKey := datastore.NameKey(docKind, fmt.Sprintf(docKeyFmt, repoInfo.Addr, hashType, repoInfo.Commit[:]), nil)
-	doc, _ := newDoc(repoInfo, hashType, bucketResults, treeNodes)
 
 	// There are slightly too many items to put in a transaction (max 500 entries per transaction)
 	putMultiKeys := []*datastore.Key{}
@@ -151,13 +150,20 @@ func (s *Store) Store(ctx context.Context, repoInfo *preparation.Result, hashTyp
 
 	// Batch Puts into datastoreMultiEntrySize chunks
 	for i := 0; i < len(putMultiKeys); i += datastoreMultiEntrySize {
-		_, err := s.dsCl.PutMulti(ctx, putMultiKeys[:i+datastoreMultiEntrySize], putMultiNodes[:i+datastoreMultiEntrySize])
+		end := i + datastoreMultiEntrySize
+		if end > len(putMultiKeys) {
+			end = len(putMultiKeys)
+		}
+
+		_, err := s.dsCl.PutMulti(ctx, putMultiKeys[i:end], putMultiNodes[i:end])
 		if err != nil {
 			return err
 		}
 	}
 
-	// Leave the repoIndex entry to last
+	// Leave the repoIndex entry to last so that if previous input fails
+	// the controller will try again
+	doc, _ := newDoc(repoInfo, hashType, bucketResults, treeNodes)
 	_, err := s.dsCl.Put(ctx, docKey, doc)
 	if err != nil {
 		return err

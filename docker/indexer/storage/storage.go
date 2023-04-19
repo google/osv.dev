@@ -107,7 +107,8 @@ func (s *Store) Exists(ctx context.Context, addr string, hashType string, hash p
 	if _, ok := s.cache.Load(fmt.Sprintf(docKeyFmt, addr, hashType, hash)); ok {
 		return true, nil
 	}
-	key := datastore.NameKey(docKind, fmt.Sprintf(docKeyFmt, addr, hashType, hash), nil)
+	// hash[:], the [:] is important, since the formatting uses %x, which will return a different result if not used
+	key := datastore.NameKey(docKind, fmt.Sprintf(docKeyFmt, addr, hashType, hash[:]), nil)
 	tmp := &document{}
 	if err := s.dsCl.Get(ctx, key, tmp); err != nil {
 		if err == datastore.ErrNoSuchEntity {

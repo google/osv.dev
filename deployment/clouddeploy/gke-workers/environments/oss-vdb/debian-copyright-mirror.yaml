@@ -11,4 +11,4 @@ spec:
           - name: debian-copyright-mirror
             env:
             - name: GCS_PATH
-              value: gs://cve-osv-conversion/debian_copyright
+              value: gs://cve-osv-conversion/debian_copyright.tar

@@ -12,27 +12,6 @@ resource "google_app_engine_application" "app" {
 }
 
 # MemoryStore
-# TODO(michaelkedar): The way this was initially created on production is not (easily) reproducible in Terraform.
-# A replacement redis server has been created to fix this, but this needs stay around to allow for potential rollbacks.
-# Delete this resource after 2023/04/11
-resource "google_redis_instance" "west2" {
-  lifecycle {
-    ignore_changes = all
-  }
-
-  project            = var.project_id
-  memory_size_gb     = 5
-  name               = "redis"
-  display_name       = "redis"
-  read_replicas_mode = "READ_REPLICAS_ENABLED"
-  redis_version      = "REDIS_6_X"
-  region             = "us-west2"
-  replica_count      = 1
-  tier               = "STANDARD_HA"
-  reserved_ip_range  = "10.126.238.64/29"
-  secondary_ip_range = "auto"
-}
-
 resource "google_redis_instance" "frontend" {
   project            = var.project_id
   memory_size_gb     = 5

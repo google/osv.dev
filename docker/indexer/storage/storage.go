@@ -31,9 +31,8 @@ import (
 const (
 	docKind    = "RepoIndex"
 	bucketKind = "RepoIndexBucket"
-	// Address-HashType-CommitHash
-	docKeyFmt = "%s-%s-%x"
-	// NodeHash-HashType-FilesContained
+	// Address-HashType-ReferenceHash
+	docKeyFmt               = "%s-%s-%x"
 	treeKeyFmt              = "%x-%s-%d"
 	datastoreMultiEntrySize = 490
 )
@@ -58,7 +57,7 @@ type result struct {
 	Hash       [][]byte `datastore:"bucket_results.hash,noindex"`
 }
 
-func newDoc(repoInfo *preparation.Result, hashType string, bucketResults [][]*processing.FileResult, baseTreeLayer []*processing.BucketNode) (*document, []*result) {
+func newDoc(repoInfo *preparation.Result, hashType string) *document {
 	doc := &document{
 		Name:         repoInfo.Name,
 		BaseCPE:      repoInfo.BaseCPE,
@@ -71,15 +70,7 @@ func newDoc(repoInfo *preparation.Result, hashType string, bucketResults [][]*pr
 		FileExts:     repoInfo.FileExts,
 		FileHashType: hashType,
 	}
-	result := []*result{}
-	for i, v := range bucketResults {
-		if len(bucketResults) == 0 {
-			continue
-		}
-		result = append(result, newResult(v, baseTreeLayer[i].NodeHash))
-	}
-	return doc, result
-
+	return doc
 }
 
 func newResult(results []*processing.FileResult, bucketHash []byte) *result {
@@ -130,7 +121,7 @@ func (s *Store) Exists(ctx context.Context, addr string, hashType string, hash p
 
 // Store stores a new entry in datastore.
 func (s *Store) Store(ctx context.Context, repoInfo *preparation.Result, hashType string, bucketResults [][]*processing.FileResult, treeNodes []*processing.BucketNode) error {
-	docKey := datastore.NameKey(docKind, fmt.Sprintf(docKeyFmt, repoInfo.Addr, hashType, repoInfo.Commit[:]), nil)
+	docKey := datastore.NameKey(docKind, fmt.Sprintf(docKeyFmt, repoInfo.Addr, hashType, repoInfo.Reference[:]), nil)
 
 	// There are slightly too many items to put in a transaction (max 500 entries per transaction)
 	putMultiKeys := []*datastore.Key{}
@@ -163,7 +154,7 @@ func (s *Store) Store(ctx context.Context, repoInfo *preparation.Result, hashTyp
 
 	// Leave the repoIndex entry to last so that if previous input fails
 	// the controller will try again
-	doc, _ := newDoc(repoInfo, hashType, bucketResults, treeNodes)
+	doc := newDoc(repoInfo, hashType)
 	_, err := s.dsCl.Put(ctx, docKey, doc)
 	if err != nil {
 		return err

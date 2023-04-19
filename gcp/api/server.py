@@ -147,7 +147,7 @@ bucket_count = 512
 
 
 def process_tree(
-    file_results: List[osv.FileResult]) -> List[osv.RepoIndexBucketNode]:
+    file_results: List[osv.FileResult]) -> List[osv.RepoIndexBucket]:
   # height_of_tree = log_with_base(((chunk_size - 1) * bucket_count) + 1,
   #                                chunk_size)
   # results: list[osv.RepoIndexResultTree]
@@ -157,7 +157,7 @@ def process_tree(
     buckets[int.from_bytes(fr.hash[:2], byteorder='big') % bucket_count].append(
         fr.hash)
 
-  results: list[osv.RepoIndexBucketNode] = [None] * bucket_count
+  results: list[osv.RepoIndexBucket] = [None] * bucket_count
   for bucket_idx, bucket in enumerate(buckets):
     buckets[bucket_idx].sort()
 
@@ -165,7 +165,7 @@ def process_tree(
     for v in buckets[bucket_idx]:
       hasher.update(v)
 
-    results[bucket_idx] = osv.RepoIndexBucketNode(
+    results[bucket_idx] = osv.RepoIndexBucket(
         node_hash=hasher.digest(),
         # child_hashes=buckets[bucket_idx],
         # depth=0,
@@ -267,14 +267,14 @@ def determine_version(version_query: osv_service_v1_pb2.VersionQuery,
       zero_match_offset += 1
       continue
 
-    query = osv.RepoIndexBucketNode.query(
-        osv.RepoIndexBucketNode.node_hash == node.node_hash)
+    query = osv.RepoIndexBucket.query(
+        osv.RepoIndexBucket.node_hash == node.node_hash)
     query_futures.append((query.fetch_async(limit=_MAX_MATCHES_TO_CARE), idx,
                           node.files_contained))
 
   logging.info(len(query_futures))
   for future, idx, num_of_files in query_futures:
-    result: list[osv.RepoIndexBucketNode] = list(future.result())
+    result: list[osv.RepoIndexBucket] = list(future.result())
     if result:  # If there is a match, add it to list of potential versions
       if len(result) == _MAX_MATCHES_TO_CARE:
         logging.info("AHHHHHHHHHHHH")

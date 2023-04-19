@@ -679,24 +679,12 @@ class FileResult(ndb.Model):
   path = ndb.TextProperty()
 
 
-class RepoIndexResultTree(ndb.Model):
-  """RepoIndexResult entries containing the actual hash values"""
-  # The file results per file
-  node_hash = ndb.BlobProperty(indexed=True)
-  # The hashes of the direct children
-  child_hashes = ndb.BlobProperty(repeated=True)
-  # The height in the tree
-  depth = ndb.IntegerProperty()
-  # number of files this hash represents
-  files_contained = ndb.IntegerProperty()
-
-
 class RepoIndexBucket(ndb.Model):
   """RepoIndexResult entries containing the actual hash values"""
   # The file results per file
-  bucket_hash = ndb.BlobProperty(indexed=True)
-  # The file results per file
-  bucket_results = ndb.StructuredProperty(FileResult, repeated=True)
+  node_hash = ndb.BlobProperty(indexed=True)
+  # number of files this hash represents
+  files_contained = ndb.IntegerProperty()
 
 
 class SourceRepositoryType(enum.IntEnum):

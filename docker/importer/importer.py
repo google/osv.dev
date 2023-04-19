@@ -222,8 +222,8 @@ class Importer:
     # already been merged into master/main
     cutoff_time = aest_time_now - datetime.timedelta(days=_BUG_REDO_DAYS)
     query = osv.Bug.query(osv.Bug.status == osv.BugStatus.PROCESSED,
-                          osv.Bug.source == source_repo.name,
-                          osv.Bug.timestamp >= cutoff_time)
+                          osv.Bug.source == source_repo.name, osv.Bug.timestamp
+                          >= cutoff_time)
 
     for bug in query:
       logging.info('Re-requesting impact for %s.', bug.key.id())

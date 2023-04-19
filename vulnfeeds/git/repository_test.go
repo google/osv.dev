@@ -1,11 +1,9 @@
 package git
 
 import (
-	"reflect"
 	"testing"
 
-	"github.com/go-test/deep"
-
+	"github.com/google/go-cmp/cmp"
 	"golang.org/x/exp/maps"
 )
 
@@ -113,6 +111,7 @@ func TestRepoTags(t *testing.T) {
 				{Tag: "v0.17.4", Commit: "49e8faad5e2ed9ab2de54f6858ee223f918abac4"},
 				{Tag: "v0.18", Commit: "8ed48ad5ba180cd3ce30a3c41d42bad3779d9f26"},
 				{Tag: "v0.18.1", Commit: "5ee3529c3014b4238231885b1403faa3e1affb5c"},
+				{Tag: "v0.18.2", Commit: "d5499cbd3bf4ce6183f5ae3ce18e6e153e48ac9b"},
 			},
 			expectedOk: true,
 		},
@@ -127,8 +126,8 @@ func TestRepoTags(t *testing.T) {
 		if err != nil && tc.expectedOk {
 			t.Errorf("test %q: RepoTags(%q) unexpectedly failed: %+v", tc.description, tc.inputRepoURL, err)
 		}
-		if diff := deep.Equal(got, tc.expectedResult); diff != nil {
-			t.Errorf("test %q: RepoTags(%q) incorrect result: %#v", tc.description, tc.inputRepoURL, diff)
+		if diff := cmp.Diff(got, tc.expectedResult); diff != "" {
+			t.Errorf("test %q: RepoTags(%q) incorrect result: %s", tc.description, tc.inputRepoURL, diff)
 		}
 		if tc.cache != nil {
 			cache_after = len(tc.cache)
@@ -199,8 +198,8 @@ func TestValidRepo(t *testing.T) {
 	}
 	for _, tc := range tests {
 		got := ValidRepo(tc.repoURL)
-		if !reflect.DeepEqual(got, tc.expectedResult) {
-			t.Errorf("test %q: ValidRepo(%q) was incorrect, got: %#v, expected: %#v", tc.description, tc.repoURL, got, tc.expectedResult)
+		if diff := cmp.Diff(got, tc.expectedResult); diff != "" {
+			t.Errorf("test %q: ValidRepo(%q) was incorrect: %s", tc.description, tc.repoURL, diff)
 		}
 	}
 }

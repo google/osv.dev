@@ -36,8 +36,10 @@ jobs:
         uses: actions/setup-python@v4
         with:
           python-version: '3.8'
-      - name: Install dependencies
-        run: python -m pip install --upgrade pylint yapf
+      - name: Install pipenv
+        run: pip install pipenv
+      - name: Set up pipenv
+        run: pipenv sync --dev
       - name: Set up Go
         uses: actions/setup-go@v3
         with:
@@ -45,4 +47,4 @@ jobs:
       - name: Set up terraform
         uses: hashicorp/setup-terraform@v2
       - name: Run pylint and yapf, go vet
-        run: ./tools/lint_and_format.sh
+        run: pipenv run ./tools/lint_and_format.sh

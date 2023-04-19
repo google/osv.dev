@@ -11,6 +11,6 @@ spec:
           - name: debian-copyright-mirror
             env:
             - name: GCS_PATH
-              value: gs://osv-test-cve-osv-conversion/debian_copyright.tar
+              value: gs://osv-test-cve-osv-conversion/debian_copyright/debian_copyright.tar
             - name: BE_VERBOSE
               value:

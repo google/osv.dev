@@ -205,6 +205,7 @@ def determine_version(version_query: osv_service_v1_pb2.VersionQuery,
 
     query = osv.RepoIndexBucket.query(
         osv.RepoIndexBucket.node_hash == bucket.node_hash)
+    # Limit the number of requests to prevent super long queries
     query_futures.append((query.fetch_async(limit=_MAX_MATCHES_TO_CARE), idx,
                           bucket.files_contained))
 
@@ -214,6 +215,8 @@ def determine_version(version_query: osv_service_v1_pb2.VersionQuery,
   for future, idx, num_of_files in query_futures:
     result: list[osv.RepoIndexBucket] = list(future.result())
     if result:  # If there is a match, add it to list of potential versions
+      # If it equals the limit, there probably is more versions beyond the limit
+      # so just ignore it completely since it's not a useful indicator
       if len(result) == _MAX_MATCHES_TO_CARE:
         num_skipped_buckets += 1
         skipped_files += num_of_files

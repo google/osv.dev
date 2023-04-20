@@ -24,7 +24,6 @@ import (
 	"errors"
 	"fmt"
 	"io/fs"
-	"math"
 	"os"
 	"path/filepath"
 	"sort"
@@ -198,8 +197,4 @@ func processBuckets(fileResults []*FileResult) ([]*BucketNode, [][]*FileResult) 
 	}
 
 	return results, buckets
-}
-
-func logWithBase(x int, base int) int {
-	return int(math.Ceil(math.Log(float64(x)) / math.Log(float64(base))))
 }

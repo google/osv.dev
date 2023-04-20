@@ -15,4 +15,3 @@ grpcio-reflection = "*"
 
 [dev-packages]
 grpcio-tools = "*"
-yapf = "*"

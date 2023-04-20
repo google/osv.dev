@@ -17,13 +17,15 @@ import argparse
 import codecs
 import concurrent
 import cProfile
-import timeit
+import math
+import hashlib
 import functools
 import logging
 import os
-import random
 import sys
 import time
+from typing import List
+
 from collections import defaultdict
 
 from google.cloud import ndb
@@ -37,15 +39,13 @@ from osv import semver_index
 import osv_service_v1_pb2
 import osv_service_v1_pb2_grpc
 
-from typing import Iterable, List
-
 _SHUTDOWN_GRACE_DURATION = 5
 
 _MAX_BATCH_QUERY = 1000
 _MAX_VULNERABILITIES_LISTED = 16
-_MAX_HASHES_TO_TRY = 50
 _MAX_MATCHES_TO_CARE = 100
-_MAX_COMMITS_TO_TRY = 10
+_MAX_RESULTS_TO_RETURN = 10
+_BUCKET_SIZE = 512
 
 _ndb_client = ndb.Client()
 profiler = cProfile.Profile()
@@ -114,108 +114,49 @@ class OSVServicer(osv_service_v1_pb2_grpc.OSVServicer):
   @ndb_context
   def DetermineVersion(self, request, context):
     """Determine the version of the provided hashes."""
-    profiler.enable()
     res = determine_version(request.query, context).result()
-    profiler.disable()
-    profiler.dump_stats("./someoutput.data")
-    # profiler.print_stats()
     return res
 
 
-class Timer:
-
-  def __init__(self):
-    self.start_time = timeit.default_timer()
-    self.lap_time = timeit.default_timer()
-
-  def elapsed(self):
-    current_time = timeit.default_timer()
-    logging.info(
-        f"Elapsed: {current_time - self.lap_time}  -  From Start: {current_time - self.start_time}"
-    )
-    self.lap_time = current_time
-
-
-# Following code straight from chatgpt converted from GO code, look over carefully
-from typing import List, Tuple
-import math
-import hashlib
-import functools
-
-chunk_size = 4
-bucket_count = 512
-
-
-def process_tree(
+def process_buckets(
     file_results: List[osv.FileResult]) -> List[osv.RepoIndexBucket]:
-  # height_of_tree = log_with_base(((chunk_size - 1) * bucket_count) + 1,
-  #                                chunk_size)
-  # results: list[osv.RepoIndexResultTree]
-  buckets: list[list[bytes]] = [[] for _ in range(bucket_count)]
+  """Create buckets in the same process as indexer to generate the same bucket hashes"""
+  buckets: list[list[bytes]] = [[] for _ in range(_BUCKET_SIZE)]
 
   for fr in file_results:
-    buckets[int.from_bytes(fr.hash[:2], byteorder='big') % bucket_count].append(
+    buckets[int.from_bytes(fr.hash[:2], byteorder='big') % _BUCKET_SIZE].append(
         fr.hash)
 
-  results: list[osv.RepoIndexBucket] = [None] * bucket_count
+  results: list[osv.RepoIndexBucket] = [None] * _BUCKET_SIZE
   for bucket_idx, bucket in enumerate(buckets):
-    buckets[bucket_idx].sort()
+    bucket.sort()
 
     hasher = hashlib.md5()
-    for v in buckets[bucket_idx]:
+    for v in bucket:
       hasher.update(v)
 
     results[bucket_idx] = osv.RepoIndexBucket(
         node_hash=hasher.digest(),
-        # child_hashes=buckets[bucket_idx],
-        # depth=0,
-        files_contained=len(buckets[bucket_idx]),
+        files_contained=len(bucket),
     )
-
-  # for height in range(1, len(results)):
-  #   results[height] = [None] * (len(results[height - 1]) // chunk_size)
-  #   for i in range(0, len(results[height - 1]), chunk_size):
-  #     hasher = hashlib.md5()
-  #     child_hashes = []
-  #     files_contained = 0
-
-  #     for v in results[height - 1][i:i + chunk_size]:
-  #       hasher.update(v.node_hash)
-  #       child_hashes.append(v.node_hash)
-  #       files_contained += v.files_contained
-
-  #     parent_idx = i // chunk_size
-  #     results[height][parent_idx] = osv.RepoIndexResultTree(
-  #         node_hash=hasher.digest(),
-  #         child_hashes=child_hashes,
-  #         depth=height,
-  #         files_contained=files_contained,
-  #     )
 
   return results
 
 
-def log_with_base(x: int, base: int) -> int:
-  return math.ceil(math.log(x) / math.log(base))
-
-
-# Above code straight from chatgpt converted from GO code, look over carefully
-
-
 def build_determine_version_result(
-    candidate_files: dict[ndb.Key, int], candidate_buckets: dict[ndb.Key, int],
-    zero_match_offset: int,
+    candidate_file_matches: dict[ndb.Key, int],
+    candidate_buckets: dict[ndb.Key, int], zero_match_offset: int,
     max_files: int) -> osv_service_v1_pb2.VersionMatchList:
-  idx_futures = ndb.get_multi_async(candidate_files.keys())
+  idx_futures = ndb.get_multi_async(candidate_file_matches.keys())
   output = []
+
   for f in idx_futures:
     idx: osv.RepoIndex = f.result()
-    # logging.info(idx.version + "  " + str(bucket_count - candidate_buckets[idx.key]))
     version_match = osv_service_v1_pb2.VersionMatch(
-        score=candidate_files[idx.key] / max_files,
-        minimum_file_matches=candidate_files[idx.key],
+        score=candidate_file_matches[idx.key] / max_files,
+        minimum_file_matches=candidate_file_matches[idx.key],
         estimated_diff_files=estimate_diff(
-            bucket_count - candidate_buckets[idx.key], zero_match_offset),
+            _BUCKET_SIZE - candidate_buckets[idx.key], zero_match_offset),
         repo_info=osv_service_v1_pb2.VersionRepositoryInformation(
             type=osv_service_v1_pb2.VersionRepositoryInformation.GIT,
             address=idx.repo_addr,
@@ -227,118 +168,70 @@ def build_determine_version_result(
 
   output.sort(reverse=True, key=lambda x: x.score)
   return osv_service_v1_pb2.VersionMatchList(
-      matches=output[:min(20, len(output))])
+      matches=output[:min(_MAX_RESULTS_TO_RETURN, len(output))])
 
 
 def estimate_diff(num_of_bucket_change: int, zero_match_offset: int) -> int:
-  estimate = bucket_count * math.log(
-      (bucket_count + 1) / (bucket_count -
+  estimate = _BUCKET_SIZE * math.log(
+      (_BUCKET_SIZE + 1) / (_BUCKET_SIZE -
                             (num_of_bucket_change - zero_match_offset) + 1))
   # Scale the "file change" denominator linearly by how many buckets are not considered
-  # Since if a lot of buckets are skipped, a file that's been changed might end up in one of them
-  # decreasing the chance it will be counted twice.
-  return round(estimate / (2 - zero_match_offset / bucket_count))
+  # Since if a lot of buckets are skipped, a file that's been changed might end up in
+  # one of them decreasing the chance it will be counted twice.
+  return round(estimate / (2 - zero_match_offset / _BUCKET_SIZE))
 
 
 @ndb.tasklet
 def determine_version(version_query: osv_service_v1_pb2.VersionQuery,
                       context: grpc.ServicerContext) -> ndb.Future:
   """Identify fitting commits based on a subset of hashes"""
-
-  timer = Timer()
-  logging.info(len(version_query.file_hashes))
-
   req_list = [osv.FileResult(hash=x.hash) for x in version_query.file_hashes]
-  # req_set = {x.hash for x in version_query.file_hashes}
 
-  layer = process_tree(req_list)
+  # Build all the buckets and query the bucket hash
+  buckets = process_buckets(req_list)
 
-  candidates_files: dict[ndb.Key, int] = defaultdict(int)
-  candidates_buckets: dict[ndb.Key, int] = defaultdict(int)
-  zero_match_offset = 0
-  free_matches = 0
-  logging.info('Begin query tree')
-  timer.elapsed()
+  file_match_count: dict[ndb.Key, int] = defaultdict(int)
+  bucket_match_count: dict[ndb.Key, int] = defaultdict(int)
+  num_skipped_buckets = 0
+  skipped_files = 0
 
-  query_futures: list[tuple[ndb.Future, int]] = []
-  # not_match_count = 0
-  for idx, node in enumerate(layer):
-    if node.files_contained == 0:
-      zero_match_offset += 1
+  # Tuple is (Future, index, number_of_files)
+  query_futures: list[tuple[ndb.Future, int, int]] = []
+
+  for idx, bucket in enumerate(buckets):
+    if bucket.files_contained == 0:
+      num_skipped_buckets += 1
       continue
 
     query = osv.RepoIndexBucket.query(
-        osv.RepoIndexBucket.node_hash == node.node_hash)
+        osv.RepoIndexBucket.node_hash == bucket.node_hash)
     query_futures.append((query.fetch_async(limit=_MAX_MATCHES_TO_CARE), idx,
-                          node.files_contained))
+                          bucket.files_contained))
 
-  logging.info(len(query_futures))
+  # Take the results and group the library versions,
+  # aggregating on the number of files matched
+
   for future, idx, num_of_files in query_futures:
     result: list[osv.RepoIndexBucket] = list(future.result())
     if result:  # If there is a match, add it to list of potential versions
       if len(result) == _MAX_MATCHES_TO_CARE:
-        logging.info("AHHHHHHHHHHHH")
-        zero_match_offset += 1
-        free_matches += num_of_files
+        num_skipped_buckets += 1
+        skipped_files += num_of_files
         continue
 
       for hash in result:
         parent_key = hash.key.parent()
-        candidates_files[parent_key] += hash.files_contained
-        candidates_buckets[parent_key] += 1
-
-  logging.info('Tree match complete:')
-  logging.info(zero_match_offset)
-  # logging.info(f'{len(not_matched_buckets)} of 256 buckets does not match')
-  # logging.info(f'{estimate_diff(len(not_matched_buckets))} estimated files changed')
-  # logging.info(f'{not_match_count} files potentially need to be scanned')
-  # logging.info(f'{len(candidates_files)} potential versions match')
-  # timer.elapsed()
+        file_match_count[parent_key] += hash.files_contained
+        bucket_match_count[parent_key] += 1
 
   # Up the matches by the ones that match too commonly
-  for key in candidates_files.keys():
-    candidates_files[key] += free_matches
+  # This is used to return 100% matches
+  for key in file_match_count.keys():
+    file_match_count[key] += skipped_files
 
-  timer.elapsed()
-  return build_determine_version_result(candidates_files, candidates_buckets,
-                                        zero_match_offset,
+  return build_determine_version_result(file_match_count, bucket_match_count,
+                                        num_skipped_buckets,
                                         len(version_query.file_hashes))
-
-
-@ndb.tasklet
-def compare_hashes_from_commit(
-    idx: osv.RepoIndex,
-    hashes: List[osv_service_v1_pb2.FileHash]) -> ndb.Future:
-  """"Retrieves the hashes from the provided index and compares
-      them to the input hashes."""
-  total_files = 0
-  matching_hashes = 0
-  for i in range(idx.pages):
-    key = version_hashes_key(idx.key, idx.commit, idx.file_hash_type, i)
-    result = key.get()
-    for f_result in result.file_results:
-      for in_hash in hashes:
-        if in_hash.hash == f_result.hash:
-          matching_hashes += 1
-          break
-      total_files += 1
-  score = matching_hashes / total_files if total_files != 0 else 0.0
-  version_match = osv_service_v1_pb2.VersionMatch(
-      score=score,
-      repo_info=osv_service_v1_pb2.VersionRepositoryInformation(
-          type=osv_service_v1_pb2.VersionRepositoryInformation.GIT,
-          address=idx.repo_addr,
-          commit=idx.commit,
-          version=idx.version,
-      ),
-  )
-  return version_match
-
-
-def version_hashes_key(parent_key: ndb.Key, commit: bytes, hash_type: str,
-                       page: int) -> ndb.Key:
-  return ndb.Key(parent_key.kind(), parent_key.id(), osv.RepoIndexResult,
-                 f"{commit.hex()}-{hash_type}-{page}")
 
 
 @ndb.tasklet

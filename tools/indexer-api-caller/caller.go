@@ -78,6 +78,7 @@ func buildGit(repoDir string) error {
 	}
 	b.WriteString("]}}")
 
+	// TODO: Use proper grpc library calls here
 	cmd := exec.Command("bash")
 	cmd.Args = append(cmd.Args, "-c", `grpcurl -plaintext -d @ -protoset api_descriptor.pb 127.0.0.1:8000 osv.v1.OSV/DetermineVersion`)
 

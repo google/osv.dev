@@ -10,16 +10,10 @@ spec:
         env:
           - name: GOOGLE_CLOUD_PROJECT
             value: oss-vdb
-          - name: DEPS_DEV_API_KEY
-            valueFrom:
-               secretKeyRef:
-                name: secrets
-                key: deps.dev
         args:
           - "--ssh_key_public=/secrets/ssh.pub"
           - "--ssh_key_private=/secrets/ssh"
           - "--redis_host=10.102.25.213"
-          - "--deps_dev_api_key=$(DEPS_DEV_API_KEY)"
         volumeMounts:
           - mountPath: "/secrets"
             name: "secrets"

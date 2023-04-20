@@ -4,7 +4,7 @@ verify_ssl = true
 name = "pypi"
 
 [packages]
-google-cloud-ndb = "<2.0.0"
+google-cloud-ndb = "*"
 google-cloud-logging = "*"
 semver = "*"
 pyyaml = "*"

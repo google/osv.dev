@@ -623,7 +623,6 @@ def main():
   parser = argparse.ArgumentParser(description='Worker')
   parser.add_argument(
       '--work_dir', help='Working directory', default=DEFAULT_WORK_DIR)
-  parser.add_argument('--deps_dev_api_key', help='deps.dev API key')
   parser.add_argument('--ssh_key_public', help='Public SSH key path')
   parser.add_argument('--ssh_key_private', help='Private SSH key path')
   parser.add_argument(
@@ -631,10 +630,6 @@ def main():
   parser.add_argument(
       '--redis_port', default=6379, help='Port of redis instance')
   args = parser.parse_args()
-
-  if args.deps_dev_api_key:
-    osv.ecosystems.config.use_deps_dev = True
-    osv.ecosystems.config.deps_dev_api_key = args.deps_dev_api_key
 
   if args.redis_host:
     osv.ecosystems.config.set_cache(

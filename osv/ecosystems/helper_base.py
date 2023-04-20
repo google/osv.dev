@@ -13,14 +13,12 @@
 # limitations under the License.
 """Ecosystem helpers base classes."""
 
-import bisect
 from abc import ABC, abstractmethod
-
-import grpc
+import bisect
+import requests
+from urllib.parse import quote
 
 from . import config
-from .. import deps_dev_pb2
-from .. import deps_dev_pb2_grpc
 
 
 class EnumerateError(Exception):
@@ -143,9 +141,12 @@ class OrderingUnsupportedEcosystem(Ecosystem):
 class DepsDevMixin(Ecosystem, ABC):
   """deps.dev mixin."""
 
+  _DEPS_DEV_PACKAGE_URL = \
+      'https://api.deps.dev/v3alpha/systems/{system}/packages/{package}'
+
   _DEPS_DEV_ECOSYSTEM_MAP = {
-      'Maven': deps_dev_pb2.System.SYSTEM_MAVEN,
-      'PyPI': deps_dev_pb2.System.SYSTEM_PYPI,
+      'Maven': 'maven',
+      'PyPI': 'pypi',
   }
 
   def _deps_dev_enumerate(self,
@@ -155,28 +156,18 @@ class DepsDevMixin(Ecosystem, ABC):
                           last_affected=None,
                           limits=None):
     """Use deps.dev to get list of versions."""
-    versions = []
     ecosystem = self._DEPS_DEV_ECOSYSTEM_MAP[self.name]
-    with grpc.secure_channel('api.deps.dev:443',
-                             grpc.ssl_channel_credentials()) as channel:
-      stub = deps_dev_pb2_grpc.InsightsStub(channel)
-      try:
-        stream = stub.Versions(
-            deps_dev_pb2.VersionsRequest(
-                package_key=deps_dev_pb2.PackageKey(
-                    name=package, system=ecosystem)),
-            metadata=(('x-depsdev-apikey', config.deps_dev_api_key),))
-
-        for response in stream:
-          versions.extend([v.version_key.version for v in response.versions])
-      except grpc.RpcError as ex:
-        if ex.code() == grpc.StatusCode.NOT_FOUND:
-          raise EnumerateError(f'Package {package} not found') from ex
-
-        raise RuntimeError(
-            f'Failed to get {ecosystem} versions for {package} with: '
-            f'{ex.details()}') from ex
-
+    url = self._DEPS_DEV_PACKAGE_URL.format(
+        system=ecosystem, package=quote(package, safe=''))
+    response = requests.get(url, timeout=config.timeout)
+    if response.status_code == 404:
+      raise EnumerateError(f'Package {package} not found')
+    if response.status_code != 200:
+      raise RuntimeError(
+          f'Failed to get {ecosystem} versions for {package} with: '
+          f'{response.status_code}')
+    response = response.json()
+    versions = [v['versionKey']['version'] for v in response['versions']]
     self.sort_versions(versions)
     return self._get_affected_versions(versions, introduced, fixed,
                                        last_affected, limits)

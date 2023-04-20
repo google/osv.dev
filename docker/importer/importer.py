@@ -217,6 +217,7 @@ class Importer:
         osv.Bug.source == source_repo.name):
       self._request_analysis(bug, source_repo, repo)
 
+    # yapf: disable
     # Perform a re-analysis on existing oss-fuzz bugs for a period of time,
     # more vulnerable releases might be made even though fixes have
     # already been merged into master/main
@@ -224,6 +225,7 @@ class Importer:
     query = osv.Bug.query(osv.Bug.status == osv.BugStatus.PROCESSED,
                           osv.Bug.source == source_repo.name,
                           osv.Bug.timestamp >= cutoff_time)
+    # yapf: enable
 
     for bug in query:
       logging.info('Re-requesting impact for %s.', bug.key.id())

@@ -19,10 +19,10 @@ spec:
             resources:
               requests:
                 cpu: 1
-                memory: "1G"
+                memory: "2G"
               limits:
                 cpu: 1
-                memory: "2G"
+                memory: "4G"
             env:
               - name: WORK_DIR
                 value: /scratch

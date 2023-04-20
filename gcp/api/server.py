@@ -16,7 +16,6 @@
 import argparse
 import codecs
 import concurrent
-import cProfile
 import math
 import hashlib
 import functools
@@ -48,7 +47,6 @@ _MAX_RESULTS_TO_RETURN = 10
 _BUCKET_SIZE = 512
 
 _ndb_client = ndb.Client()
-profiler = cProfile.Profile()
 
 
 def ndb_context(func):

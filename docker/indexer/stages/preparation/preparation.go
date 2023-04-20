@@ -212,7 +212,7 @@ func (s *Stage) processGit(ctx context.Context, repoCfg *config.RepoConfig) erro
 			return err
 		}
 
-		log.Infof("Publishing %s at version: %s", result.Name, result.Version)
+		log.Infof("publishing %s at version: %s", result.Name, result.Version)
 		pubRes := s.Output.Publish(ctx, &pubsub.Message{Data: buf})
 		_, err = pubRes.Get(ctx)
 		return err

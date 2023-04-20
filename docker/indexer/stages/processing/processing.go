@@ -69,6 +69,9 @@ type Stage struct {
 	PubSubOutstandingMessages int
 }
 
+// bucketCount should be a divisor of 2^16
+const bucketCount = 512
+
 // Run runs the stages and hashes all files for each incoming request.
 func (s *Stage) Run(ctx context.Context) error {
 	s.Input.ReceiveSettings.MaxOutstandingMessages = s.PubSubOutstandingMessages
@@ -81,7 +84,7 @@ func (s *Stage) Run(ctx context.Context) error {
 			log.Errorf("failed to unmarshal input: %v", err)
 			return
 		}
-		log.Infof("Begin processing: '%v' @ '%v'", repoInfo.Name, repoInfo.Version)
+		log.Infof("begin processing: '%v' @ '%v'", repoInfo.Name, repoInfo.Version)
 		var err error
 		switch repoInfo.Type {
 		case shared.Git:
@@ -107,6 +110,7 @@ func (s *Stage) processGit(ctx context.Context, repoInfo *preparation.Result) er
 			log.Errorf("failed to remove repo folder: %v", err)
 		}
 	}()
+
 	repo, err := git.PlainOpen(repoDir)
 	if err != nil {
 		return fmt.Errorf("failed to open repo: %v", err)
@@ -143,16 +147,11 @@ func (s *Stage) processGit(ctx context.Context, repoInfo *preparation.Result) er
 		return fmt.Errorf("failed during file walk: %v", err)
 	}
 
-	log.Info("Begin processing tree")
+	log.Info("begin processing tree")
 	treeResults, bucketResults := processBuckets(fileResults)
-	log.Info("Begin storage")
+	log.Info("begin storage")
 	return s.Storer.Store(ctx, repoInfo, shared.MD5, bucketResults, treeResults)
 }
-
-const chunkSize = 4
-
-// bucketCount should be a divisor of 2^16
-const bucketCount = 512
 
 // Returns bucket hashes and the individual file hashes of each bucket
 func processBuckets(fileResults []*FileResult) ([]*BucketNode, [][]*FileResult) {
@@ -189,9 +188,7 @@ func processBuckets(fileResults []*FileResult) ([]*BucketNode, [][]*FileResult) 
 		}
 
 		results[bucketIdx] = &BucketNode{
-			NodeHash: hasher.Sum(nil),
-			// ChildHashes:    nil,
-			// Height:         0,
+			NodeHash:       hasher.Sum(nil),
 			FilesContained: len(buckets[bucketIdx]),
 		}
 	}

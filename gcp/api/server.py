@@ -120,7 +120,10 @@ class OSVServicer(osv_service_v1_pb2_grpc.OSVServicer):
 
 def process_buckets(
     file_results: List[osv.FileResult]) -> List[osv.RepoIndexBucket]:
-  """Create buckets in the same process as indexer to generate the same bucket hashes"""
+  """
+  Create buckets in the same process as 
+  indexer to generate the same bucket hashes
+  """
   buckets: list[list[bytes]] = [[] for _ in range(_BUCKET_SIZE)]
 
   for fr in file_results:
@@ -175,9 +178,10 @@ def estimate_diff(num_of_bucket_change: int, zero_match_offset: int) -> int:
   estimate = _BUCKET_SIZE * math.log(
       (_BUCKET_SIZE + 1) / (_BUCKET_SIZE -
                             (num_of_bucket_change - zero_match_offset) + 1))
-  # Scale the "file change" denominator linearly by how many buckets are not considered
-  # Since if a lot of buckets are skipped, a file that's been changed might end up in
-  # one of them decreasing the chance it will be counted twice.
+  # Scale the "file change" denominator linearly by how many buckets are not
+  # considered, since if a lot of buckets are skipped, a file that's been
+  # changed might end up in one of them decreasing the chance it will
+  # be counted twice.
   return round(estimate / (2 - zero_match_offset / _BUCKET_SIZE))
 
 
@@ -508,12 +512,17 @@ def query_by_version(project: str,
   ecosystem_info = ecosystems.get(ecosystem)
   is_semver = ecosystem_info and ecosystem_info.is_semver
   if project:
-    query = osv.Bug.query(osv.Bug.status == osv.BugStatus.PROCESSED,
-                          osv.Bug.project == project, osv.Bug.public == True)  # pylint: disable=singleton-comparison
+    query = osv.Bug.query(
+        osv.Bug.status == osv.BugStatus.PROCESSED,
+        osv.Bug.project == project,
+        # pylint: disable=singleton-comparison
+        osv.Bug.public == True)  # noqa: E712
   elif purl:
-    query = osv.Bug.query(osv.Bug.status == osv.BugStatus.PROCESSED,
-                          osv.Bug.purl == purl.to_string(),
-                          osv.Bug.public == True)  # pylint: disable=singleton-comparison
+    query = osv.Bug.query(
+        osv.Bug.status == osv.BugStatus.PROCESSED,
+        osv.Bug.purl == purl.to_string(),
+        # pylint: disable=singleton-comparison
+        osv.Bug.public == True)  # noqa: E712
   else:
     return []
 
@@ -545,14 +554,18 @@ def query_by_package(project, ecosystem, purl: PackageURL, page_token,
   """Query by package."""
   bugs = []
   if project and ecosystem:
-    query = osv.Bug.query(osv.Bug.status == osv.BugStatus.PROCESSED,
-                          osv.Bug.project == project,
-                          osv.Bug.ecosystem == ecosystem,
-                          osv.Bug.public == True)  # pylint: disable=singleton-comparison
+    query = osv.Bug.query(
+        osv.Bug.status == osv.BugStatus.PROCESSED,
+        osv.Bug.project == project,
+        osv.Bug.ecosystem == ecosystem,
+        # pylint: disable=singleton-comparison
+        osv.Bug.public == True)  # noqa: E712
   elif purl:
-    query = osv.Bug.query(osv.Bug.status == osv.BugStatus.PROCESSED,
-                          osv.Bug.purl == purl.to_string(),
-                          osv.Bug.public == True)  # pylint: disable=singleton-comparison
+    query = osv.Bug.query(
+        osv.Bug.status == osv.BugStatus.PROCESSED,
+        osv.Bug.purl == purl.to_string(),
+        # pylint: disable=singleton-comparison
+        osv.Bug.public == True)  # noqa: E712
   else:
     return []
 

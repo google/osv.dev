@@ -19,7 +19,7 @@ with open('README.md', 'r') as fh:
 
 setuptools.setup(
     name='osv',
-    version='0.0.18',
+    version='0.0.19',
     author='OSV authors',
     author_email='osv-discuss@googlegroups.com',
     description='Open Source Vulnerabilities library',
@@ -35,9 +35,9 @@ setuptools.setup(
     install_requires=[
         # TODO(ochang): Get this from the Pipfile.
         'google-cloud-ndb',
-        'pygit2',
+        'pygit2>=1.9.2',
         'PyYAML',
-        'semver',
+        'semver>=3.0.0',
         'attrs',
         'jsonschema',
         'grpcio',

@@ -148,6 +148,7 @@ def build_determine_version_result(
     candidate_file_matches: dict[ndb.Key, int],
     candidate_buckets: dict[ndb.Key, int], zero_match_offset: int,
     max_files: int) -> osv_service_v1_pb2.VersionMatchList:
+  """Build sorted determine version result from the input"""
   idx_futures = ndb.get_multi_async(candidate_file_matches.keys())
   output = []
 

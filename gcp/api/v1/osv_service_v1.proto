@@ -104,10 +104,8 @@ message VersionMatch {
   osv.Package osv_identifier = 3;
   // CPE 2.3.
   string cpe23 = 5;
-
   // Definite number of files that have matched.
   int64 minimum_file_matches = 6;
-
   // Estimated number of files that are different.
   int64 estimated_diff_files = 7;
 }

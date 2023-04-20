@@ -17,6 +17,7 @@ limitations under the License.
 package processing
 
 import (
+	"bytes"
 	"context"
 	"crypto/md5"
 	"encoding/binary"
@@ -70,6 +71,8 @@ type Stage struct {
 }
 
 // bucketCount should be a divisor of 2^16
+// Changing this will require deleting all RepoIndex entries to
+// completely rebuild all entries
 const bucketCount = 512
 
 // Run runs the stages and hashes all files for each incoming request.
@@ -168,15 +171,7 @@ func processBuckets(fileResults []*FileResult) ([]*BucketNode, [][]*FileResult) 
 	for bucketIdx := range buckets {
 		// Sort hashes to produce deterministic bucket hashes
 		sort.Slice(buckets[bucketIdx], func(i, j int) bool {
-			for k := 0; k < len(buckets[bucketIdx][i].Hash); k++ {
-				if buckets[bucketIdx][i].Hash[k] < buckets[bucketIdx][j].Hash[k] {
-					return true
-				}
-				if buckets[bucketIdx][i].Hash[k] > buckets[bucketIdx][j].Hash[k] {
-					return false
-				}
-			}
-			return false
+			return bytes.Compare(buckets[bucketIdx][i].Hash, buckets[bucketIdx][j].Hash) < 0
 		})
 
 		hasher := md5.New()

@@ -30,8 +30,6 @@ import (
 	"sort"
 	"strings"
 
-	deflog "log"
-
 	"cloud.google.com/go/pubsub"
 	"cloud.google.com/go/storage"
 	"github.com/go-git/go-git/v5"
@@ -176,10 +174,8 @@ func processBuckets(fileResults []*FileResult) ([]*BucketNode, [][]*FileResult) 
 
 		hasher := md5.New()
 		for _, v := range buckets[bucketIdx] {
-			_, err := hasher.Write(v.Hash)
-			if err != nil {
-				deflog.Panicf("Hasher error: %v", err)
-			}
+			// md5.Write can never return a non nil error
+			_, _ = hasher.Write(v.Hash)
 		}
 
 		results[bucketIdx] = &BucketNode{

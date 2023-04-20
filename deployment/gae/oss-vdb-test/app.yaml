@@ -23,10 +23,6 @@ handlers:
     static_files: docs/osv_service_v1.swagger.json
     upload: docs/osv_service_v1.swagger.json
 
-  - url: /docs/.*
-    static_files: docs/index.html
-    upload: docs/index.html
-
   - url: /cron/.*
     script: auto
     secure: always

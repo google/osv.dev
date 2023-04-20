@@ -81,7 +81,7 @@ a {
   text-decoration: underline;
 }
 
-a:not([href^="https://osv.dev"]):not([href^="/"]):not([href^="#"])::after {
+a:not([href^="https://osv.dev"]):not([href^="/"]):not([href^="#"]):not([href^="https://google.github.io/osv.dev"])::after {
   display: inline-block;
   content: ' ';
   background-image: url('/static/img/external-link.svg');

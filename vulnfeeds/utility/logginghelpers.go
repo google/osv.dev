@@ -1,6 +1,7 @@
 package utility
 
 import (
+	"context"
 	"fmt"
 	"log"
 	"os"
@@ -8,6 +9,25 @@ import (
 
 	"cloud.google.com/go/logging"
 )
+
+// CreateLoggerWrapper creates and initializes the LoggerWrapper,
+// and also returns a cleanup function to be deferred
+func CreateLoggerWrapper(name string) (LoggerWrapper, func()) {
+	projectId, ok := os.LookupEnv("GOOGLE_CLOUD_PROJECT")
+	if !ok {
+		log.Fatalf("GOOGLE_CLOUD_PROJECT not set")
+	}
+	client, err := logging.NewClient(context.Background(), projectId)
+	if err != nil {
+		log.Fatalf("Failed to create client: %v", err)
+	}
+
+	wrapper := LoggerWrapper{
+		GCloudLogger: client.Logger(name),
+	}
+
+	return wrapper, func() { client.Close() }
+}
 
 // LoggerWrapper wraps the Logger provided by google cloud
 // Will default to the go stdout and stderr logging if GCP logger is not set

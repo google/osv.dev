@@ -2,7 +2,6 @@ package main
 
 import (
 	"compress/gzip"
-	"context"
 	"encoding/json"
 	"flag"
 	"fmt"
@@ -17,8 +16,6 @@ import (
 
 	"github.com/google/osv/vulnfeeds/cves"
 	"github.com/google/osv/vulnfeeds/utility"
-
-	"cloud.google.com/go/logging"
 )
 
 const (
@@ -28,7 +25,6 @@ const (
 	fileNameBase   = "nvdcve-1.1-"
 	startingYear   = 2002
 	CVEPathDefault = "cve_jsons"
-	projectId      = "oss-vdb"
 )
 
 var Logger utility.LoggerWrapper
@@ -36,12 +32,10 @@ var apiKey = flag.String("api_key", "", "API key for accessing NVD API 2.0")
 var CVEPath = flag.String("cvePath", CVEPathDefault, "Where to download CVEs to")
 
 func main() {
-	client, err := logging.NewClient(context.Background(), projectId)
-	if err != nil {
-		log.Fatalf("Failed to create client: %v", err)
-	}
-	defer client.Close()
-	Logger.GCloudLogger = client.Logger("download-cves")
+	var logCleanup func()
+	Logger, logCleanup = utility.CreateLoggerWrapper("download-cves")
+	defer logCleanup()
+
 	flag.Parse()
 	if *apiKey != "" {
 		downloadCVE2(*apiKey, *CVEPath)

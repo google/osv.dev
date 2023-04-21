@@ -196,7 +196,7 @@ class Importer:
       logging.info('No new entries, skipping committing.')
       return
 
-    logging.info('Commiting and pushing new entries')
+    logging.info('Committing and pushing new entries')
     if osv.push_source_changes(repo, 'Import from OSS-Fuzz',
                                self._git_callbacks(oss_fuzz_source)):
       ndb.put_multi(exported)
@@ -217,13 +217,15 @@ class Importer:
         osv.Bug.source == source_repo.name):
       self._request_analysis(bug, source_repo, repo)
 
+    # yapf: disable
     # Perform a re-analysis on existing oss-fuzz bugs for a period of time,
     # more vulnerable releases might be made even though fixes have
     # already been merged into master/main
     cutoff_time = aest_time_now - datetime.timedelta(days=_BUG_REDO_DAYS)
     query = osv.Bug.query(osv.Bug.status == osv.BugStatus.PROCESSED,
-                          osv.Bug.source == source_repo.name, osv.Bug.timestamp
-                          >= cutoff_time)
+                          osv.Bug.source == source_repo.name,
+                          osv.Bug.timestamp >= cutoff_time)
+    # yapf: enable
 
     for bug in query:
       logging.info('Re-requesting impact for %s.', bug.key.id())

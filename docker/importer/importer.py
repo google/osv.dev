@@ -196,7 +196,7 @@ class Importer:
       logging.info('No new entries, skipping committing.')
       return
 
-    logging.info('Commiting and pushing new entries')
+    logging.info('Committing and pushing new entries')
     if osv.push_source_changes(repo, 'Import from OSS-Fuzz',
                                self._git_callbacks(oss_fuzz_source)):
       ndb.put_multi(exported)

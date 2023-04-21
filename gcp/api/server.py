@@ -42,8 +42,15 @@ _SHUTDOWN_GRACE_DURATION = 5
 
 _MAX_BATCH_QUERY = 1000
 _MAX_VULNERABILITIES_LISTED = 16
+
+# Used in DetermineVersion
+# If there are more results for a bucket than this number,
+# ignore the bucket completely
 _MAX_MATCHES_TO_CARE = 100
+# Max results to return for DetermineVersion
 _MAX_RESULTS_TO_RETURN = 10
+# Size of buckets to divide hashes into in DetermineVersion
+# This should match the number in the indexer
 _BUCKET_SIZE = 512
 
 _ndb_client = ndb.Client()
@@ -154,11 +161,13 @@ def build_determine_version_result(
 
   for f in idx_futures:
     idx: osv.RepoIndex = f.result()
+    estimated_num_of_diff = estimate_diff(
+        _BUCKET_SIZE - candidate_buckets[idx.key], zero_match_offset)
+
     version_match = osv_service_v1_pb2.VersionMatch(
-        score=candidate_file_matches[idx.key] / max_files,
+        score=(max_files - estimated_num_of_diff) / max_files,
         minimum_file_matches=candidate_file_matches[idx.key],
-        estimated_diff_files=estimate_diff(
-            _BUCKET_SIZE - candidate_buckets[idx.key], zero_match_offset),
+        estimated_diff_files=estimated_num_of_diff,
         repo_info=osv_service_v1_pb2.VersionRepositoryInformation(
             type=osv_service_v1_pb2.VersionRepositoryInformation.GIT,
             address=idx.repo_addr,

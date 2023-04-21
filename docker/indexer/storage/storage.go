@@ -32,8 +32,9 @@ const (
 	docKind    = "RepoIndex"
 	bucketKind = "RepoIndexBucket"
 	// Address-HashType-ReferenceHash
-	docKeyFmt               = "%s-%s-%x"
-	treeKeyFmt              = "%x-%s-%d"
+	docKeyFmt = "%s-%s-%x"
+	// BucketHash-HashType-NumberOfFiles
+	bucketKeyFmt            = "%x-%s-%d"
 	datastoreMultiEntrySize = 490
 )
 
@@ -104,7 +105,7 @@ func New(ctx context.Context, projectID string) (*Store, error) {
 
 // Exists checks whether a name/hash pair already exists in datastore.
 func (s *Store) Exists(ctx context.Context, addr string, hashType string, hash plumbing.Hash) (bool, error) {
-	if _, ok := s.cache.Load(fmt.Sprintf(docKeyFmt, addr, hashType, hash)); ok {
+	if _, ok := s.cache.Load(fmt.Sprintf(docKeyFmt, addr, hashType, hash[:])); ok {
 		return true, nil
 	}
 	// hash[:], the [:] is important, since the formatting uses %x, which will return a different result if not used
@@ -116,7 +117,7 @@ func (s *Store) Exists(ctx context.Context, addr string, hashType string, hash p
 		}
 		return false, err
 	}
-	s.cache.Store(fmt.Sprintf(docKeyFmt, addr, hashType, hash), true)
+	s.cache.Store(fmt.Sprintf(docKeyFmt, addr, hashType, hash[:]), true)
 	return true, nil
 }
 
@@ -132,11 +133,11 @@ func (s *Store) Store(ctx context.Context, repoInfo *preparation.Result, hashTyp
 			continue
 		}
 
-		treeKey := datastore.NameKey(bucketKind,
-			fmt.Sprintf(treeKeyFmt, node.NodeHash, hashType, node.FilesContained),
+		bucketKey := datastore.NameKey(bucketKind,
+			fmt.Sprintf(bucketKeyFmt, node.NodeHash, hashType, node.FilesContained),
 			docKey)
 
-		putMultiKeys = append(putMultiKeys, treeKey)
+		putMultiKeys = append(putMultiKeys, bucketKey)
 		putMultiNodes = append(putMultiNodes, node)
 	}
 

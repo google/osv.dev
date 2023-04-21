@@ -54,10 +54,8 @@ type FileResult struct {
 
 // FileResult holds the per file hash and path information.
 type BucketNode struct {
-	NodeHash Hash `datastore:"node_hash"`
-	// ChildHashes    []Hash `datastore:"child_hashes,noindex"`
-	// Height         int    `datastore:"depth,noindex"`
-	FilesContained int `datastore:"files_contained,noindex"`
+	NodeHash       Hash `datastore:"node_hash"`
+	FilesContained int  `datastore:"files_contained,noindex"`
 }
 
 // Stage holds the data structures necessary to perform the processing.
@@ -148,10 +146,10 @@ func (s *Stage) processGit(ctx context.Context, repoInfo *preparation.Result) er
 		return fmt.Errorf("failed during file walk: %v", err)
 	}
 
-	log.Info("begin processing tree")
-	treeResults, bucketResults := processBuckets(fileResults)
+	log.Info("begin processing buckets")
+	treeResults, fileInBucketResults := processBuckets(fileResults)
 	log.Info("begin storage")
-	return s.Storer.Store(ctx, repoInfo, shared.MD5, bucketResults, treeResults)
+	return s.Storer.Store(ctx, repoInfo, shared.MD5, fileInBucketResults, treeResults)
 }
 
 // Returns bucket hashes and the individual file hashes of each bucket

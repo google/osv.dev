@@ -19,9 +19,6 @@ The flags are:
 	  --output_dir
 	        The directory to output cpe_product_to_repo.json and cpe_reference_description_frequency.csv in
 
-	  --gcp_logging_project
-		The GCP project ID to utilise for Cloud Logging. Set to the empty string to log to stdout
-
 	  --validate
 	        Perform remote validation of repositories and only include ones that validate successfully
 
@@ -33,7 +30,6 @@ package main
 import (
 	"bufio"
 	"bytes"
-	"context"
 	"encoding/csv"
 	"encoding/json"
 	"encoding/xml"
@@ -41,7 +37,6 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
-	"log"
 	"net/url"
 	"os"
 	"path"
@@ -51,8 +46,6 @@ import (
 	"strconv"
 	"strings"
 	"text/template"
-
-	"cloud.google.com/go/logging"
 
 	"github.com/google/osv/vulnfeeds/cves"
 	"github.com/google/osv/vulnfeeds/git"
@@ -391,14 +384,9 @@ func main() {
 	}
 	flag.Parse()
 
-	if *GCPLoggingProject != "" {
-		client, err := logging.NewClient(context.Background(), *GCPLoggingProject)
-		if err != nil {
-			log.Fatalf("Failed to create loggin client: %v", err)
-		}
-		defer client.Close()
-		Logger.GCloudLogger = client.Logger("cperepos")
-	}
+	var logCleanup func()
+	Logger, logCleanup = utility.CreateLoggerWrapper("cperepos")
+	defer logCleanup()
 
 	CPEDictionary, err := LoadCPEDictionary(*CPEDictionaryFile)
 	if err != nil {

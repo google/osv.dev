@@ -1,10 +1,8 @@
 package main
 
 import (
-	"context"
 	"encoding/json"
 	"flag"
-	"log"
 	"os"
 	"path"
 	"strings"
@@ -12,33 +10,27 @@ import (
 	"github.com/google/osv/vulnfeeds/cves"
 	"github.com/google/osv/vulnfeeds/utility"
 	"github.com/google/osv/vulnfeeds/vulns"
-
-	"cloud.google.com/go/logging"
 )
 
 const (
 	defaultCvePath        = "cve_jsons"
 	defaultPartsInputPath = "parts"
 	defaultOSVOutputPath  = "osv_output"
-	projectId             = "oss-vdb"
 )
 
 var Logger utility.LoggerWrapper
 
 func main() {
-	client, err := logging.NewClient(context.Background(), projectId)
-	if err != nil {
-		log.Fatalf("Failed to create client: %v", err)
-	}
-	defer client.Close()
-	Logger.GCloudLogger = client.Logger("combine-to-osv")
+	var logCleanup func()
+	Logger, logCleanup = utility.CreateLoggerWrapper("combine-to-osv")
+	defer logCleanup()
 
 	cvePath := flag.String("cvePath", defaultCvePath, "Path to CVE file")
 	partsInputPath := flag.String("partsPath", defaultPartsInputPath, "Path to CVE file")
 	osvOutputPath := flag.String("osvOutputPath", defaultOSVOutputPath, "Path to CVE file")
 	flag.Parse()
 
-	err = os.MkdirAll(*cvePath, 0755)
+	err := os.MkdirAll(*cvePath, 0755)
 	if err != nil {
 		Logger.Fatalf("Can't create output path: %s", err)
 	}

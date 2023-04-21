@@ -1,12 +1,10 @@
 package main
 
 import (
-	"context"
 	"encoding/json"
 	"flag"
 	"fmt"
 	"io"
-	"log"
 	"net/http"
 	"os"
 	"path"
@@ -15,26 +13,20 @@ import (
 
 	"github.com/google/osv/vulnfeeds/utility"
 	"github.com/google/osv/vulnfeeds/vulns"
-
-	"cloud.google.com/go/logging"
 )
 
 const (
 	alpineURLBase           = "https://secdb.alpinelinux.org/%s/main.json"
 	alpineIndexURL          = "https://secdb.alpinelinux.org/"
 	alpineOutputPathDefault = "parts/alpine"
-	projectId               = "oss-vdb"
 )
 
 var Logger utility.LoggerWrapper
 
 func main() {
-	client, err := logging.NewClient(context.Background(), projectId)
-	if err != nil {
-		log.Fatalf("Failed to create client: %v", err)
-	}
-	defer client.Close()
-	Logger.GCloudLogger = client.Logger("alpine-osv")
+	var logCleanup func()
+	Logger, logCleanup = utility.CreateLoggerWrapper("alpine-osv")
+	defer logCleanup()
 
 	alpineOutputPath := flag.String(
 		"alpineOutput",
@@ -42,7 +34,7 @@ func main() {
 		"path to output general alpine affected package information")
 	flag.Parse()
 
-	err = os.MkdirAll(*alpineOutputPath, 0755)
+	err := os.MkdirAll(*alpineOutputPath, 0755)
 	if err != nil {
 		Logger.Fatalf("Can't create output path: %s", err)
 	}
@@ -95,7 +87,7 @@ func getAlpineSecDBData() map[string][]VersionAndPkg {
 					cveId = strings.Split(cveId, " ")[0]
 
 					if !validVersion(version) {
-						log.Printf("Invalid alpine version: '%s', on package: '%s', and alpine version: '%s'",
+						Logger.Warnf("Invalid alpine version: '%s', on package: '%s', and alpine version: '%s'",
 							version,
 							pkg.Pkg.Name,
 							alpineVer,

@@ -195,7 +195,7 @@ def estimate_diff(num_of_bucket_change: int, zero_match_offset: int) -> int:
 
 @ndb.tasklet
 def determine_version(version_query: osv_service_v1_pb2.VersionQuery,
-                      context: grpc.ServicerContext) -> ndb.Future:
+                      _: grpc.ServicerContext) -> ndb.Future:
   """Identify fitting commits based on a subset of hashes"""
   req_list = [osv.FileResult(hash=x.hash) for x in version_query.file_hashes]
 
@@ -234,9 +234,9 @@ def determine_version(version_query: osv_service_v1_pb2.VersionQuery,
         skipped_files += num_of_files
         continue
 
-      for hash in result:
-        parent_key = hash.key.parent()
-        file_match_count[parent_key] += hash.files_contained
+      for index_bucket in result:
+        parent_key = index_bucket.key.parent()
+        file_match_count[parent_key] += index_bucket.files_contained
         bucket_match_count[parent_key] += 1
 
   # Up the matches by the ones that match too commonly

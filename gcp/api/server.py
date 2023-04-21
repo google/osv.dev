@@ -48,7 +48,7 @@ _MAX_VULNERABILITIES_LISTED = 16
 # ignore the bucket completely
 _MAX_MATCHES_TO_CARE = 100
 # Max results to return for DetermineVersion
-_MAX_RESULTS_TO_RETURN = 10
+_MAX_DETERMINE_VER_RESULTS_TO_RETURN = 10
 # Size of buckets to divide hashes into in DetermineVersion
 # This should match the number in the indexer
 _BUCKET_SIZE = 512
@@ -179,7 +179,7 @@ def build_determine_version_result(
 
   output.sort(reverse=True, key=lambda x: x.score)
   return osv_service_v1_pb2.VersionMatchList(
-      matches=output[:min(_MAX_RESULTS_TO_RETURN, len(output))])
+      matches=output[:min(_MAX_DETERMINE_VER_RESULTS_TO_RETURN, len(output))])
 
 
 def estimate_diff(num_of_bucket_change: int, zero_match_offset: int) -> int:

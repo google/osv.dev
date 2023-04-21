@@ -152,21 +152,27 @@ def process_buckets(
 
 
 def build_determine_version_result(
-    candidate_file_matches: dict[ndb.Key, int],
-    candidate_buckets: dict[ndb.Key, int], zero_match_offset: int,
+    file_matches_by_proj: dict[ndb.Key, int],
+    bucket_matches_by_proj: dict[ndb.Key, int], zero_match_offset: int,
     max_files: int) -> osv_service_v1_pb2.VersionMatchList:
   """Build sorted determine version result from the input"""
-  idx_futures = ndb.get_multi_async(candidate_file_matches.keys())
+  bucket_match_items = list(bucket_matches_by_proj.items())
+  # Sort by number of files matched
+  bucket_match_items.sort(key=lambda x: x[1], reverse=True)
+  # Only interested in our maximum number of results
+  bucket_match_items = bucket_match_items[:min(
+      _MAX_DETERMINE_VER_RESULTS_TO_RETURN, len(bucket_match_items))]
+  idx_futures = ndb.get_multi_async([b[0] for b in bucket_match_items])
   output = []
 
   for f in idx_futures:
     idx: osv.RepoIndex = f.result()
     estimated_num_of_diff = estimate_diff(
-        _BUCKET_SIZE - candidate_buckets[idx.key], zero_match_offset)
+        _BUCKET_SIZE - bucket_matches_by_proj[idx.key], zero_match_offset)
 
     version_match = osv_service_v1_pb2.VersionMatch(
         score=(max_files - estimated_num_of_diff) / max_files,
-        minimum_file_matches=candidate_file_matches[idx.key],
+        minimum_file_matches=file_matches_by_proj[idx.key],
         estimated_diff_files=estimated_num_of_diff,
         repo_info=osv_service_v1_pb2.VersionRepositoryInformation(
             type=osv_service_v1_pb2.VersionRepositoryInformation.GIT,
@@ -177,9 +183,8 @@ def build_determine_version_result(
     )
     output.append(version_match)
 
-  output.sort(reverse=True, key=lambda x: x.score)
-  return osv_service_v1_pb2.VersionMatchList(
-      matches=output[:min(_MAX_DETERMINE_VER_RESULTS_TO_RETURN, len(output))])
+  # output.sort(reverse=True, key=lambda x: x.score)
+  return osv_service_v1_pb2.VersionMatchList(matches=output)
 
 
 def estimate_diff(num_of_bucket_change: int, zero_match_offset: int) -> int:

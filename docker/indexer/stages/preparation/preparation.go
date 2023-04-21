@@ -1,17 +1,17 @@
 /*
 Copyright 2022 Google LLC
 
- Licensed under the Apache License, Version 2.0 (the "License");
- you may not use this file except in compliance with the License.
- You may obtain a copy of the License at
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
 
-      http://www.apache.org/licenses/LICENSE-2.0
+	http://www.apache.org/licenses/LICENSE-2.0
 
- Unless required by applicable law or agreed to in writing, software
- distributed under the License is distributed on an "AS IS" BASIS,
- WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- See the License for the specific language governing permissions and
- limitations under the License.
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
 */
 // Package preparation provides functionality to extract tags, branches and commits from repository configurations.
 package preparation
@@ -53,6 +53,7 @@ type Result struct {
 	Version         string
 	CheckoutOptions *git.CheckoutOptions
 	Commit          plumbing.Hash
+	Reference       plumbing.Hash
 	CommitTag       string
 	When            time.Time
 	Type            string
@@ -150,6 +151,13 @@ func (s *Stage) processGit(ctx context.Context, repoCfg *config.RepoConfig) erro
 	commitTracker := make(map[plumbing.Hash]bool)
 	// repoInfo is used as the iterator function to create RepositoryInformation structs.
 	repoInfo := func(ref *plumbing.Reference) error {
+		// Resolve the real commit hash
+		commitHash, err := repo.ResolveRevision(plumbing.Revision(ref.Name().String()))
+
+		if err != nil {
+			return err
+		}
+
 		found, err := s.Checker.Exists(ctx, repoCfg.Address, shared.MD5, ref.Hash())
 		if err != nil {
 			return err
@@ -159,7 +167,7 @@ func (s *Stage) processGit(ctx context.Context, repoCfg *config.RepoConfig) erro
 		}
 
 		var when time.Time
-		if c, ok := allCommits[ref.Hash()]; ok {
+		if c, ok := allCommits[*commitHash]; ok {
 			when = c.Author.When
 		}
 
@@ -191,17 +199,20 @@ func (s *Stage) processGit(ctx context.Context, repoCfg *config.RepoConfig) erro
 				Branch: ref.Name(),
 			},
 			When:      when,
-			Commit:    ref.Hash(),
+			Commit:    *commitHash,
+			Reference: ref.Hash(),
 			CommitTag: commitTag,
 			Type:      shared.Git,
 			Addr:      repoCfg.Address,
 			FileExts:  repoCfg.FileExts,
 		}
-		commitTracker[ref.Hash()] = true
+		commitTracker[*commitHash] = true
 		buf, err := json.Marshal(result)
 		if err != nil {
 			return err
 		}
+
+		log.Infof("publishing %s at version: %s", result.Name, result.Version)
 		pubRes := s.Output.Publish(ctx, &pubsub.Message{Data: buf})
 		_, err = pubRes.Get(ctx)
 		return err
@@ -241,10 +252,11 @@ func (s *Stage) processGit(ctx context.Context, repoCfg *config.RepoConfig) erro
 						Hash:  h,
 						Force: true,
 					},
-					When:     c.Author.When,
-					Commit:   h,
-					Type:     shared.Git,
-					FileExts: repoCfg.FileExts,
+					Reference: h,
+					When:      c.Author.When,
+					Commit:    h,
+					Type:      shared.Git,
+					FileExts:  repoCfg.FileExts,
 				}
 				buf, err := json.Marshal(result)
 				if err != nil {

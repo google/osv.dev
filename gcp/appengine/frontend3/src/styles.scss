@@ -1181,7 +1181,6 @@ dl.vulnerability-details,
   .post {
     max-width: 800px;
     margin: 0 auto;
-
     font-size: 16px;
 
     h2,
@@ -1205,6 +1204,11 @@ dl.vulnerability-details,
 
     p {
       margin-bottom: 16px;
+      line-height: 1.6;
+    }
+
+    a {
+      color: #C9F5F7
     }
   }
 }

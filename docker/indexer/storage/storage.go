@@ -1,17 +1,17 @@
 /*
 Copyright 2022 Google LLC
 
- Licensed under the Apache License, Version 2.0 (the "License");
- you may not use this file except in compliance with the License.
- You may obtain a copy of the License at
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
 
-      http://www.apache.org/licenses/LICENSE-2.0
+	http://www.apache.org/licenses/LICENSE-2.0
 
- Unless required by applicable law or agreed to in writing, software
- distributed under the License is distributed on an "AS IS" BASIS,
- WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- See the License for the specific language governing permissions and
- limitations under the License.
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
 */
 // Package storage provides functionality to interact with permanent storage.
 package storage
@@ -30,12 +30,12 @@ import (
 
 const (
 	docKind    = "RepoIndex"
-	resultKind = "RepoIndexResult"
-	// Address-HashType-CommitHash
+	bucketKind = "RepoIndexBucket"
+	// Address-HashType-ReferenceHash
 	docKeyFmt = "%s-%s-%x"
-	// CommitHash-HashType-Page
-	resultKeyFmt = "%x-%s-%d"
-	pageSize     = 1000
+	// BucketHash-HashType-NumberOfFiles
+	bucketKeyFmt            = "%x-%s-%d"
+	datastoreMultiEntrySize = 490
 )
 
 // document represents a single repository entry in datastore.
@@ -50,16 +50,15 @@ type document struct {
 	RepoAddr     string    `datastore:"repo_addr"`
 	FileExts     []string  `datastore:"file_exts"`
 	FileHashType string    `datastore:"file_hash_type"`
-	Pages        int       `datastore:"pages"`
 }
 
 type result struct {
-	Page int      `datastore:"page"`
-	Path []string `datastore:"file_results.path"`
-	Hash [][]byte `datastores:"file_results.hash"`
+	BucketHash []byte   `datastore:"bucket_hash"`
+	Path       []string `datastore:"bucket_results.path,noindex"`
+	Hash       [][]byte `datastore:"bucket_results.hash,noindex"`
 }
 
-func newDoc(repoInfo *preparation.Result, hashType string, fileResults []*processing.FileResult) (*document, []*result) {
+func newDoc(repoInfo *preparation.Result, hashType string) *document {
 	doc := &document{
 		Name:         repoInfo.Name,
 		BaseCPE:      repoInfo.BaseCPE,
@@ -71,27 +70,11 @@ func newDoc(repoInfo *preparation.Result, hashType string, fileResults []*proces
 		RepoAddr:     repoInfo.Addr,
 		FileExts:     repoInfo.FileExts,
 		FileHashType: hashType,
-		Pages:        1,
 	}
-	if len(fileResults) <= pageSize {
-		return doc, []*result{newResult(1, fileResults)}
-	}
-	var r []*result
-	resultLen := len(fileResults)
-	pages := resultLen / pageSize
-	remainder := resultLen % pageSize
-	for i := 0; i < pages; i++ {
-		r = append(r, newResult(i, fileResults[i*pageSize:(i+1)*pageSize]))
-	}
-	if remainder != 0 {
-		r = append(r, newResult(pages, fileResults[pages*pageSize:]))
-	}
-	doc.Pages = len(r)
-	return doc, r
-
+	return doc
 }
 
-func newResult(page int, results []*processing.FileResult) *result {
+func newResult(results []*processing.FileResult, bucketHash []byte) *result {
 	var (
 		paths  []string
 		hashes [][]byte
@@ -101,7 +84,7 @@ func newResult(page int, results []*processing.FileResult) *result {
 		paths = append(paths, r.Path)
 		hashes = append(hashes, r.Hash)
 	}
-	return &result{Page: page, Path: paths, Hash: hashes}
+	return &result{Path: paths, Hash: hashes, BucketHash: bucketHash}
 }
 
 // Store provides the functionality to check for existing documents
@@ -122,10 +105,13 @@ func New(ctx context.Context, projectID string) (*Store, error) {
 
 // Exists checks whether a name/hash pair already exists in datastore.
 func (s *Store) Exists(ctx context.Context, addr string, hashType string, hash plumbing.Hash) (bool, error) {
-	if _, ok := s.cache.Load(fmt.Sprintf(docKeyFmt, addr, hashType, hash)); ok {
+	if _, ok := s.cache.Load(fmt.Sprintf(docKeyFmt, addr, hashType, hash[:])); ok {
 		return true, nil
 	}
-	key := datastore.NameKey(docKind, fmt.Sprintf(docKeyFmt, addr, hashType, hash), nil)
+	// hash[:], the [:] is important, since the formatting uses %x, which will return a different result if not used
+	// This is because plumbing.Hash implements it's own String() method, and the %x will create a hex of the hex produced
+	// by plumbing.Hash String()
+	key := datastore.NameKey(docKind, fmt.Sprintf(docKeyFmt, addr, hashType, hash[:]), nil)
 	tmp := &document{}
 	if err := s.dsCl.Get(ctx, key, tmp); err != nil {
 		if err == datastore.ErrNoSuchEntity {
@@ -133,29 +119,52 @@ func (s *Store) Exists(ctx context.Context, addr string, hashType string, hash p
 		}
 		return false, err
 	}
-	s.cache.Store(fmt.Sprintf(docKeyFmt, addr, hashType, hash), true)
+	s.cache.Store(fmt.Sprintf(docKeyFmt, addr, hashType, hash[:]), true)
 	return true, nil
 }
 
 // Store stores a new entry in datastore.
-func (s *Store) Store(ctx context.Context, repoInfo *preparation.Result, hashType string, fileResults []*processing.FileResult) error {
-	docKey := datastore.NameKey(docKind, fmt.Sprintf(docKeyFmt, repoInfo.Addr, hashType, repoInfo.Commit[:]), nil)
-	doc, results := newDoc(repoInfo, hashType, fileResults)
-	_, err := s.dsCl.RunInTransaction(ctx, func(tx *datastore.Transaction) error {
-		_, err := s.dsCl.Put(ctx, docKey, doc)
+func (s *Store) Store(ctx context.Context, repoInfo *preparation.Result, hashType string, bucketResults [][]*processing.FileResult, treeNodes []*processing.BucketNode) error {
+	docKey := datastore.NameKey(docKind, fmt.Sprintf(docKeyFmt, repoInfo.Addr, hashType, repoInfo.Reference[:]), nil)
+
+	// There are slightly too many items to put in a transaction (max 500 entries per transaction)
+	putMultiKeys := []*datastore.Key{}
+	putMultiNodes := []*processing.BucketNode{}
+	for _, node := range treeNodes {
+		if node.FilesContained == 0 {
+			continue
+		}
+
+		bucketKey := datastore.NameKey(bucketKind,
+			fmt.Sprintf(bucketKeyFmt, node.NodeHash, hashType, node.FilesContained),
+			docKey)
+
+		putMultiKeys = append(putMultiKeys, bucketKey)
+		putMultiNodes = append(putMultiNodes, node)
+	}
+
+	// Batch Puts into datastoreMultiEntrySize chunks
+	for i := 0; i < len(putMultiKeys); i += datastoreMultiEntrySize {
+		end := i + datastoreMultiEntrySize
+		if end > len(putMultiKeys) {
+			end = len(putMultiKeys)
+		}
+
+		_, err := s.dsCl.PutMulti(ctx, putMultiKeys[i:end], putMultiNodes[i:end])
 		if err != nil {
 			return err
 		}
-		for _, r := range results {
-			resultKey := datastore.NameKey(resultKind, fmt.Sprintf(resultKeyFmt, repoInfo.Commit[:], hashType, r.Page), docKey)
-			_, err := s.dsCl.Put(ctx, resultKey, r)
-			if err != nil {
-				return err
-			}
-		}
-		return nil
-	})
-	return err
+	}
+
+	// Leave the repoIndex entry to last so that if previous input fails
+	// the controller will try again
+	doc := newDoc(repoInfo, hashType)
+	_, err := s.dsCl.Put(ctx, docKey, doc)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 // Close closes the datastore client.

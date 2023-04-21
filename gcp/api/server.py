@@ -16,12 +16,15 @@
 import argparse
 import codecs
 import concurrent
+import math
+import hashlib
 import functools
 import logging
 import os
-import random
 import sys
 import time
+from typing import List
+
 from collections import defaultdict
 
 from google.cloud import ndb
@@ -35,14 +38,20 @@ from osv import semver_index
 import osv_service_v1_pb2
 import osv_service_v1_pb2_grpc
 
-from typing import List
-
 _SHUTDOWN_GRACE_DURATION = 5
 
 _MAX_BATCH_QUERY = 1000
 _MAX_VULNERABILITIES_LISTED = 16
-_MAX_HASHES_TO_TRY = 50
-_MAX_COMMITS_TO_TRY = 10
+
+# Used in DetermineVersion
+# If there are more results for a bucket than this number,
+# ignore the bucket completely
+_MAX_MATCHES_TO_CARE = 100
+# Max results to return for DetermineVersion
+_MAX_DETERMINE_VER_RESULTS_TO_RETURN = 10
+# Size of buckets to divide hashes into in DetermineVersion
+# This should match the number in the indexer
+_BUCKET_SIZE = 512
 
 _ndb_client = ndb.Client()
 
@@ -110,104 +119,139 @@ class OSVServicer(osv_service_v1_pb2_grpc.OSVServicer):
   @ndb_context
   def DetermineVersion(self, request, context):
     """Determine the version of the provided hashes."""
-    return determine_version(request.query, context).result()
+    res = determine_version(request.query, context).result()
+    return res
+
+
+def process_buckets(
+    file_results: List[osv.FileResult]) -> List[osv.RepoIndexBucket]:
+  """
+  Create buckets in the same process as 
+  indexer to generate the same bucket hashes
+  """
+  buckets: list[list[bytes]] = [[] for _ in range(_BUCKET_SIZE)]
+
+  for fr in file_results:
+    buckets[int.from_bytes(fr.hash[:2], byteorder='big') % _BUCKET_SIZE].append(
+        fr.hash)
+
+  results: list[osv.RepoIndexBucket] = [None] * _BUCKET_SIZE
+  for bucket_idx, bucket in enumerate(buckets):
+    bucket.sort()
+
+    hasher = hashlib.md5()
+    for v in bucket:
+      hasher.update(v)
+
+    results[bucket_idx] = osv.RepoIndexBucket(
+        node_hash=hasher.digest(),
+        files_contained=len(bucket),
+    )
+
+  return results
+
+
+def build_determine_version_result(
+    file_matches_by_proj: dict[ndb.Key, int],
+    bucket_matches_by_proj: dict[ndb.Key, int], zero_match_offset: int,
+    max_files: int) -> osv_service_v1_pb2.VersionMatchList:
+  """Build sorted determine version result from the input"""
+  bucket_match_items = list(bucket_matches_by_proj.items())
+  # Sort by number of files matched
+  bucket_match_items.sort(key=lambda x: x[1], reverse=True)
+  # Only interested in our maximum number of results
+  bucket_match_items = bucket_match_items[:min(
+      _MAX_DETERMINE_VER_RESULTS_TO_RETURN, len(bucket_match_items))]
+  idx_futures = ndb.get_multi_async([b[0] for b in bucket_match_items])
+  output = []
+
+  for f in idx_futures:
+    idx: osv.RepoIndex = f.result()
+    estimated_num_of_diff = estimate_diff(
+        _BUCKET_SIZE - bucket_matches_by_proj[idx.key], zero_match_offset)
+
+    version_match = osv_service_v1_pb2.VersionMatch(
+        score=(max_files - estimated_num_of_diff) / max_files,
+        minimum_file_matches=file_matches_by_proj[idx.key],
+        estimated_diff_files=estimated_num_of_diff,
+        repo_info=osv_service_v1_pb2.VersionRepositoryInformation(
+            type=osv_service_v1_pb2.VersionRepositoryInformation.GIT,
+            address=idx.repo_addr,
+            commit=idx.commit,
+            version=idx.version,
+        ),
+    )
+    output.append(version_match)
+
+  # output.sort(reverse=True, key=lambda x: x.score)
+  return osv_service_v1_pb2.VersionMatchList(matches=output)
+
+
+def estimate_diff(num_of_bucket_change: int, zero_match_offset: int) -> int:
+  estimate = _BUCKET_SIZE * math.log(
+      (_BUCKET_SIZE + 1) / (_BUCKET_SIZE -
+                            (num_of_bucket_change - zero_match_offset) + 1))
+  # Scale the "file change" denominator linearly by how many buckets are not
+  # considered, since if a lot of buckets are skipped, a file that's been
+  # changed might end up in one of them decreasing the chance it will
+  # be counted twice.
+  return round(estimate / (2 - zero_match_offset / _BUCKET_SIZE))
 
 
 @ndb.tasklet
 def determine_version(version_query: osv_service_v1_pb2.VersionQuery,
-                      context: grpc.ServicerContext) -> ndb.Future:
+                      _: grpc.ServicerContext) -> ndb.Future:
   """Identify fitting commits based on a subset of hashes"""
-  if len(version_query.file_hashes) <= _MAX_HASHES_TO_TRY:
-    hashes = [
-        f.hash for f in version_query
-        .file_hashes[:min(_MAX_HASHES_TO_TRY, len(version_query.file_hashes))]
-    ]
-  else:
-    hashes = [
-        f.hash
-        for f in random.sample(version_query.file_hashes, _MAX_HASHES_TO_TRY)
-    ]
-  tracker = defaultdict(int)
+  req_list = [osv.FileResult(hash=x.hash) for x in version_query.file_hashes]
 
-  hash_futures = []
-  for h in hashes:
-    query = osv.RepoIndexResult.query(
-        osv.RepoIndexResult.file_results.hash == h)
-    query.keys_only = True
-    hash_futures.append(query.fetch_async())
+  # Build all the buckets and query the bucket hash
+  buckets = process_buckets(req_list)
 
-  for f in hash_futures:
-    for r in f.result():
-      tracker[r.key.parent()] += 1
+  file_match_count: dict[ndb.Key, int] = defaultdict(int)
+  bucket_match_count: dict[ndb.Key, int] = defaultdict(int)
+  num_skipped_buckets = 0
+  skipped_files = 0
 
-  idx_keys = []
-  for k, v in tracker.items():
-    if v == _MAX_HASHES_TO_TRY:
-      idx_keys.append(k)
-  if not idx_keys:
-    idx_keys = [
-        k for k, _ in sorted(
-            tracker.items(), key=lambda item: item[1], reverse=True)
-    ]
-    idx_keys = idx_keys[:min(_MAX_COMMITS_TO_TRY, len(idx_keys))]
-  if len(idx_keys) == 0:
-    context.abort(grpc.StatusCode.NOT_FOUND, 'no matches found')
-    return None
+  # Tuple is (Future, index, number_of_files)
+  query_futures: list[tuple[ndb.Future, int, int]] = []
 
-  idx_futures = ndb.get_multi_async(idx_keys)
-  match_futures = []
-  for f in idx_futures:
-    idx = f.result()
-    if version_query.name not in ('', idx.name):
+  for idx, bucket in enumerate(buckets):
+    if bucket.files_contained == 0:
+      num_skipped_buckets += 1
       continue
-    match = compare_hashes_from_commit(idx, version_query.file_hashes)
-    match_futures.append(match)
-  results = []
-  for f in match_futures:
-    version_match = f.result()
-    if version_match.score != 0.0:
-      results.append(version_match)
-  if len(results) == 0:
-    context.abort(grpc.StatusCode.NOT_FOUND, 'no matches found')
-    return None
 
-  return osv_service_v1_pb2.VersionMatchList(matches=results)
+    query = osv.RepoIndexBucket.query(
+        osv.RepoIndexBucket.node_hash == bucket.node_hash)
+    # Limit the number of requests to prevent super long queries
+    query_futures.append((query.fetch_async(limit=_MAX_MATCHES_TO_CARE), idx,
+                          bucket.files_contained))
 
+  # Take the results and group the library versions,
+  # aggregating on the number of files matched
 
-@ndb.tasklet
-def compare_hashes_from_commit(
-    idx: osv.RepoIndex,
-    hashes: List[osv_service_v1_pb2.FileHash]) -> ndb.Future:
-  """"Retrieves the hashes from the provided index and compares
-      them to the input hashes."""
-  total_files = 0
-  matching_hashes = 0
-  for i in range(idx.pages):
-    key = version_hashes_key(idx.key, idx.commit, idx.file_hash_type, i)
-    result = key.get()
-    for f_result in result.file_results:
-      for in_hash in hashes:
-        if in_hash.hash == f_result.hash:
-          matching_hashes += 1
-          break
-      total_files += 1
-  score = matching_hashes / total_files if total_files != 0 else 0.0
-  version_match = osv_service_v1_pb2.VersionMatch(
-      score=score,
-      repo_info=osv_service_v1_pb2.VersionRepositoryInformation(
-          type=osv_service_v1_pb2.VersionRepositoryInformation.GIT,
-          address=idx.repo_addr,
-          commit=idx.commit,
-          version=idx.version,
-      ),
-  )
-  return version_match
+  for future, idx, num_of_files in query_futures:
+    result: list[osv.RepoIndexBucket] = list(future.result())
+    if result:  # If there is a match, add it to list of potential versions
+      # If it equals the limit, there probably is more versions beyond the limit
+      # so just ignore it completely since it's not a useful indicator
+      if len(result) == _MAX_MATCHES_TO_CARE:
+        num_skipped_buckets += 1
+        skipped_files += num_of_files
+        continue
 
+      for index_bucket in result:
+        parent_key = index_bucket.key.parent()
+        file_match_count[parent_key] += index_bucket.files_contained
+        bucket_match_count[parent_key] += 1
 
-def version_hashes_key(parent_key: ndb.Key, commit: bytes, hash_type: str,
-                       page: int) -> ndb.Key:
-  return ndb.Key(parent_key.kind(), parent_key.id(), osv.RepoIndexResult,
-                 f"{commit.hex()}-{hash_type}-{page}")
+  # Up the matches by the ones that match too commonly
+  # This is used to return 100% matches
+  for key in file_match_count.keys():
+    file_match_count[key] += skipped_files
+
+  return build_determine_version_result(file_match_count, bucket_match_count,
+                                        num_skipped_buckets,
+                                        len(version_query.file_hashes))
 
 
 @ndb.tasklet
@@ -481,12 +525,17 @@ def query_by_version(project: str,
   ecosystem_info = ecosystems.get(ecosystem)
   is_semver = ecosystem_info and ecosystem_info.is_semver
   if project:
-    query = osv.Bug.query(osv.Bug.status == osv.BugStatus.PROCESSED,
-                          osv.Bug.project == project, osv.Bug.public == True)  # pylint: disable=singleton-comparison
+    query = osv.Bug.query(
+        osv.Bug.status == osv.BugStatus.PROCESSED,
+        osv.Bug.project == project,
+        # pylint: disable=singleton-comparison
+        osv.Bug.public == True)  # noqa: E712
   elif purl:
-    query = osv.Bug.query(osv.Bug.status == osv.BugStatus.PROCESSED,
-                          osv.Bug.purl == purl.to_string(),
-                          osv.Bug.public == True)  # pylint: disable=singleton-comparison
+    query = osv.Bug.query(
+        osv.Bug.status == osv.BugStatus.PROCESSED,
+        osv.Bug.purl == purl.to_string(),
+        # pylint: disable=singleton-comparison
+        osv.Bug.public == True)  # noqa: E712
   else:
     return []
 
@@ -518,14 +567,18 @@ def query_by_package(project, ecosystem, purl: PackageURL, page_token,
   """Query by package."""
   bugs = []
   if project and ecosystem:
-    query = osv.Bug.query(osv.Bug.status == osv.BugStatus.PROCESSED,
-                          osv.Bug.project == project,
-                          osv.Bug.ecosystem == ecosystem,
-                          osv.Bug.public == True)  # pylint: disable=singleton-comparison
+    query = osv.Bug.query(
+        osv.Bug.status == osv.BugStatus.PROCESSED,
+        osv.Bug.project == project,
+        osv.Bug.ecosystem == ecosystem,
+        # pylint: disable=singleton-comparison
+        osv.Bug.public == True)  # noqa: E712
   elif purl:
-    query = osv.Bug.query(osv.Bug.status == osv.BugStatus.PROCESSED,
-                          osv.Bug.purl == purl.to_string(),
-                          osv.Bug.public == True)  # pylint: disable=singleton-comparison
+    query = osv.Bug.query(
+        osv.Bug.status == osv.BugStatus.PROCESSED,
+        osv.Bug.purl == purl.to_string(),
+        # pylint: disable=singleton-comparison
+        osv.Bug.public == True)  # noqa: E712
   else:
     return []
 

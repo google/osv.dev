@@ -1,30 +1,33 @@
 /*
 Copyright 2022 Google LLC
 
- Licensed under the Apache License, Version 2.0 (the "License");
- you may not use this file except in compliance with the License.
- You may obtain a copy of the License at
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
 
-      http://www.apache.org/licenses/LICENSE-2.0
+http://www.apache.org/licenses/LICENSE-2.0
 
- Unless required by applicable law or agreed to in writing, software
- distributed under the License is distributed on an "AS IS" BASIS,
- WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- See the License for the specific language governing permissions and
- limitations under the License.
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
 */
 // Package processing implements the hashing step for each provide input.
 package processing
 
 import (
+	"bytes"
 	"context"
 	"crypto/md5"
+	"encoding/binary"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"io/fs"
 	"os"
 	"path/filepath"
+	"sort"
 	"strings"
 
 	"cloud.google.com/go/pubsub"
@@ -36,15 +39,23 @@ import (
 	log "github.com/golang/glog"
 )
 
+type Hash = []byte
+
 // Storer is used to permanently store the results.
 type Storer interface {
-	Store(ctx context.Context, repoInfo *preparation.Result, hashType string, fileResults []*FileResult) error
+	Store(ctx context.Context, repoInfo *preparation.Result, hashType string, fileInBucketResults [][]*FileResult, bucketNodes []*BucketNode) error
 }
 
 // FileResult holds the per file hash and path information.
 type FileResult struct {
 	Path string `datastore:"path,noindex"`
-	Hash []byte `datastore:"hash"`
+	Hash Hash   `datastore:"hash"`
+}
+
+// FileResult holds the per file hash and path information.
+type BucketNode struct {
+	NodeHash       Hash `datastore:"node_hash"`
+	FilesContained int  `datastore:"files_contained,noindex"`
 }
 
 // Stage holds the data structures necessary to perform the processing.
@@ -54,6 +65,11 @@ type Stage struct {
 	Input                     *pubsub.Subscription
 	PubSubOutstandingMessages int
 }
+
+// bucketCount should be a divisor of 2^16
+// Changing this will require deleting all RepoIndex entries to
+// completely rebuild all entries
+const bucketCount = 512
 
 // Run runs the stages and hashes all files for each incoming request.
 func (s *Stage) Run(ctx context.Context) error {
@@ -67,6 +83,7 @@ func (s *Stage) Run(ctx context.Context) error {
 			log.Errorf("failed to unmarshal input: %v", err)
 			return
 		}
+		log.Infof("begin processing: '%v' @ '%v'", repoInfo.Name, repoInfo.Version)
 		var err error
 		switch repoInfo.Type {
 		case shared.Git:
@@ -76,6 +93,8 @@ func (s *Stage) Run(ctx context.Context) error {
 		}
 		if err != nil {
 			log.Errorf("failed to process input: %v", err)
+		} else {
+			log.Infof("successfully processed: '%v' @ '%v'", repoInfo.Name, repoInfo.Version)
 		}
 	})
 }
@@ -90,17 +109,18 @@ func (s *Stage) processGit(ctx context.Context, repoInfo *preparation.Result) er
 			log.Errorf("failed to remove repo folder: %v", err)
 		}
 	}()
+
 	repo, err := git.PlainOpen(repoDir)
 	if err != nil {
 		return fmt.Errorf("failed to open repo: %v", err)
 	}
 	tree, err := repo.Worktree()
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to get work tree: %v", err)
 	}
 	repoInfo.CheckoutOptions.Force = true
 	if err := tree.Checkout(repoInfo.CheckoutOptions); err != nil {
-		return err
+		return fmt.Errorf("failed to checkout tree: %v", err)
 	}
 
 	var fileResults []*FileResult
@@ -123,7 +143,44 @@ func (s *Stage) processGit(ctx context.Context, repoInfo *preparation.Result) er
 		}
 		return nil
 	}); err != nil {
-		return err
+		return fmt.Errorf("failed during file walk: %v", err)
 	}
-	return s.Storer.Store(ctx, repoInfo, shared.MD5, fileResults)
+
+	log.Info("begin processing buckets")
+	bucketResults, filesInBucketResults := processBuckets(fileResults)
+	log.Info("begin storage")
+	return s.Storer.Store(ctx, repoInfo, shared.MD5, filesInBucketResults, bucketResults)
+}
+
+// Returns bucket hashes and the individual file hashes of each bucket
+func processBuckets(fileResults []*FileResult) ([]*BucketNode, [][]*FileResult) {
+	buckets := make([][]*FileResult, bucketCount)
+
+	for _, fr := range fileResults {
+		// Evenly divide into bucketCount buckets,
+		idx := binary.BigEndian.Uint16(fr.Hash[0:2]) % bucketCount
+		buckets[idx] = append(buckets[idx], fr)
+	}
+
+	results := make([]*BucketNode, bucketCount)
+
+	for bucketIdx := range buckets {
+		// Sort hashes to produce deterministic bucket hashes
+		sort.Slice(buckets[bucketIdx], func(i, j int) bool {
+			return bytes.Compare(buckets[bucketIdx][i].Hash, buckets[bucketIdx][j].Hash) < 0
+		})
+
+		hasher := md5.New()
+		for _, v := range buckets[bucketIdx] {
+			// md5.Write can never return a non nil error
+			_, _ = hasher.Write(v.Hash)
+		}
+
+		results[bucketIdx] = &BucketNode{
+			NodeHash:       hasher.Sum(nil),
+			FilesContained: len(buckets[bucketIdx]),
+		}
+	}
+
+	return results, buckets
 }

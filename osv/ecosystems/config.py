@@ -17,8 +17,7 @@ import typing
 from ..cache import Cache
 
 timeout = 30  # Timeout for HTTP(S) requests
-use_deps_dev = False
-deps_dev_api_key = ''
+
 # Used for checking out git repositories
 # Intended to be set in worker.py
 work_dir: typing.Optional[str] = None

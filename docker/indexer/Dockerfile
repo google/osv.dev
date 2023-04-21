@@ -14,8 +14,14 @@
 
 FROM golang:1.20 as GO_BUILD
 WORKDIR /build
-ADD ./ /build
-RUN chmod +x build.sh
+
+# Cache dependencies in these steps
+COPY ./go.mod /build/go.mod
+COPY ./go.sum /build/go.sum
+RUN go mod download
+
+# Do the build here
+COPY ./ /build
 RUN ./build.sh
 
 FROM gcr.io/distroless/base

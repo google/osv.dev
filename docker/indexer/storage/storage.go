@@ -109,6 +109,8 @@ func (s *Store) Exists(ctx context.Context, addr string, hashType string, hash p
 		return true, nil
 	}
 	// hash[:], the [:] is important, since the formatting uses %x, which will return a different result if not used
+	// This is because plumbing.Hash implements it's own String() method, and the %x will create a hex of the hex produced
+	// by plumbing.Hash String()
 	key := datastore.NameKey(docKind, fmt.Sprintf(docKeyFmt, addr, hashType, hash[:]), nil)
 	tmp := &document{}
 	if err := s.dsCl.Get(ctx, key, tmp); err != nil {

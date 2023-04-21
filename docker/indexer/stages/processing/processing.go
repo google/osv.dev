@@ -43,7 +43,7 @@ type Hash = []byte
 
 // Storer is used to permanently store the results.
 type Storer interface {
-	Store(ctx context.Context, repoInfo *preparation.Result, hashType string, bucketResults [][]*FileResult, treeNodes []*BucketNode) error
+	Store(ctx context.Context, repoInfo *preparation.Result, hashType string, fileInBucketResults [][]*FileResult, bucketNodes []*BucketNode) error
 }
 
 // FileResult holds the per file hash and path information.
@@ -147,9 +147,9 @@ func (s *Stage) processGit(ctx context.Context, repoInfo *preparation.Result) er
 	}
 
 	log.Info("begin processing buckets")
-	treeResults, fileInBucketResults := processBuckets(fileResults)
+	bucketResults, filesInBucketResults := processBuckets(fileResults)
 	log.Info("begin storage")
-	return s.Storer.Store(ctx, repoInfo, shared.MD5, fileInBucketResults, treeResults)
+	return s.Storer.Store(ctx, repoInfo, shared.MD5, filesInBucketResults, bucketResults)
 }
 
 // Returns bucket hashes and the individual file hashes of each bucket

@@ -96,12 +96,12 @@ def coerce(version):
 
 def is_valid(version):
   """Returns whether or not the version is a valid semver."""
-  return semver.VersionInfo.isvalid(_strip_leading_v(version))
+  return semver.Version.is_valid(_strip_leading_v(version))
 
 
 def parse(version):
   """Parse a SemVer."""
-  return semver.VersionInfo.parse(coerce(version))
+  return semver.Version.parse(coerce(version))
 
 
 def normalize(version):

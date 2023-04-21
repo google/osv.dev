@@ -98,7 +98,7 @@ class SemverIndexTests(unittest.TestCase):
 
     # Sanity check that the python semver library agrees.
     self.assertListEqual(
-        sorted(versions, key=semver.VersionInfo.parse),
+        sorted(versions, key=semver.Version.parse),
         sorted(versions, key=semver_index.normalize))
 
 

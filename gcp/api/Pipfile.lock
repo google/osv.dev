@@ -1,7 +1,7 @@
 {
     "_meta": {
         "hash": {
-            "sha256": "1156beb69edbb6b67d5a16eba95c0e86177e41c1591c49a4442795cf1b6b5cdf"
+            "sha256": "355cc412252c9dc98cd96833b4ad317f51a90eeb8e4232060551320894c29530"
         },
         "pipfile-spec": 6,
         "requires": {},
@@ -201,11 +201,11 @@
                 "grpc"
             ],
             "hashes": [
-                "sha256:6fb380f49d19ee1d09a9722d0379042b7edb06c0112e4796c7a395078a043e71",
-                "sha256:7421474c39d396a74dfa317dddbc69188f2336835f526087c7648f91105e32ff"
+                "sha256:4b9bb5d5a380a0befa0573b302651b8a9a89262c1730e37bf423cec511804c22",
+                "sha256:ce222e27b0de0d7bc63eb043b956996d6dccab14cc3b690aaea91c9cc99dc16e"
             ],
             "markers": "python_version >= '3.7'",
-            "version": "==1.34.0"
+            "version": "==2.11.0"
         },
         "google-auth": {
             "hashes": [
@@ -260,6 +260,7 @@
                 "sha256:95ea3504c397d7a4900aac7554a9a497b92a9e48b7e58e2bf0b32e1fa895f5ce",
                 "sha256:d0b90ca437640f3211ae5315cec02aad01a19178d4c730c0896d9eb6f658fc43"
             ],
+            "index": "pypi",
             "markers": "python_version >= '3.7'",
             "version": "==2.1.1"
         },
@@ -372,7 +373,7 @@
         },
         "osv": {
             "editable": true,
-            "path": "../../"
+            "path": "./../.."
         },
         "packageurl-python": {
             "hashes": [
@@ -770,11 +771,11 @@
         },
         "setuptools": {
             "hashes": [
-                "sha256:888be97fde8cc3afd60f7784e678fa29ee13c4e5362daa7104a93bba33646c50",
-                "sha256:b7e53a01c6c654d26d2999ee033d8c6125e5fa55f03b7b193f937ae7ac999f22"
+                "sha256:23aaf86b85ca52ceb801d32703f12d77517b2556af839621c641fca11287952b",
+                "sha256:f104fa03692a2602fa0fec6c6a9e63b6c8a968de13e17c026957dd1f53d80990"
             ],
             "markers": "python_version >= '3.7'",
-            "version": "==67.7.0"
+            "version": "==67.7.2"
         }
     }
 }

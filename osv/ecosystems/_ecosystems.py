@@ -38,13 +38,16 @@ _ecosystems = {
     'npm': SemverEcosystem(),
     # Ecosystems missing implementations:
     'Android': OrderingUnsupportedEcosystem(),
+    'ConanCenter': OrderingUnsupportedEcosystem(),
     'GitHub Actions': OrderingUnsupportedEcosystem(),
     'Linux': OrderingUnsupportedEcosystem(),
     'OSS-Fuzz': OrderingUnsupportedEcosystem(),
-    # Alpine and Debian require a release version for enumeration, which is
+    # Ecosystems which require a release version for enumeration, which is
     # handled separately in get().
+    'AlmaLinux': OrderingUnsupportedEcosystem(),
     'Alpine': OrderingUnsupportedEcosystem(),
     'Debian': OrderingUnsupportedEcosystem(),
+    'Rocky Linux': OrderingUnsupportedEcosystem(),
 }
 
 # Semver-based ecosystems, should correspond to _ecoystems above.
@@ -65,6 +68,14 @@ def get(name: str) -> Ecosystem:
 
   if name.startswith('Alpine:'):
     return Alpine(name.split(':')[1])
+
+  if name.startswith('AlmaLinux:'):
+    # TODO(michaelkedar)
+    return OrderingUnsupportedEcosystem()
+
+  if name.startswith('Rocky Linux:'):
+    # TODO(michaelkedar)
+    return OrderingUnsupportedEcosystem()
 
   return _ecosystems.get(name)
 

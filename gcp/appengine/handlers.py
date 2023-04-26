@@ -19,7 +19,7 @@ import logging
 from flask import abort
 from flask import Blueprint
 from flask import request
-from google.cloud.datastore_admin_v1.gapic import datastore_admin_client \
+from google.cloud.datastore_admin_v1.services.datastore_admin import client \
     as ds_admin
 from google.cloud import ndb
 from google.cloud import pubsub_v1

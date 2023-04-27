@@ -194,6 +194,10 @@ def build_determine_version_result(
 
 def estimate_diff(num_of_bucket_change: int,
                   num_of_skipped_buckets: int) -> int:
+  """
+  Estimates the number of files that have changed based on 
+  the number of buckets that changed.
+  """
   adjusted_bucket_size = _BUCKET_SIZE - num_of_skipped_buckets
   estimate = adjusted_bucket_size * math.log(
       (adjusted_bucket_size + 1) / (adjusted_bucket_size -

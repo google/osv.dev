@@ -261,7 +261,6 @@
                 "sha256:d0b90ca437640f3211ae5315cec02aad01a19178d4c730c0896d9eb6f658fc43"
             ],
             "index": "pypi",
-            "markers": "python_version >= '3.7'",
             "version": "==2.1.1"
         },
         "google-cloud-pubsub": {
@@ -373,7 +372,7 @@
         },
         "osv": {
             "editable": true,
-            "path": "./../.."
+            "path": "../../"
         },
         "packageurl-python": {
             "hashes": [

@@ -40,51 +40,34 @@ const (
 
 // document represents a single repository entry in datastore.
 type document struct {
-	Name         string    `datastore:"name"`
-	BaseCPE      string    `datastore:"base_cpe"`
-	Version      string    `datastore:"version"`
-	Commit       []byte    `datastore:"commit"`
-	Tag          string    `datastore:"tag"`
-	When         time.Time `datastore:"when,omitempty"`
-	RepoType     string    `datastore:"repo_type"`
-	RepoAddr     string    `datastore:"repo_addr"`
-	FileExts     []string  `datastore:"file_exts"`
-	FileHashType string    `datastore:"file_hash_type"`
-}
-
-type result struct {
-	BucketHash []byte   `datastore:"bucket_hash"`
-	Path       []string `datastore:"bucket_results.path,noindex"`
-	Hash       [][]byte `datastore:"bucket_results.hash,noindex"`
+	Name              string    `datastore:"name"`
+	BaseCPE           string    `datastore:"base_cpe"`
+	Version           string    `datastore:"version"`
+	Commit            []byte    `datastore:"commit"`
+	Tag               string    `datastore:"tag"`
+	When              time.Time `datastore:"when,omitempty"`
+	RepoType          string    `datastore:"repo_type"`
+	RepoAddr          string    `datastore:"repo_addr"`
+	FileExts          []string  `datastore:"file_exts"`
+	FileHashType      string    `datastore:"file_hash_type"`
+	EmptyBucketBitmap []byte    `datastore:"empty_bucket_bitmap"`
 }
 
 func newDoc(repoInfo *preparation.Result, hashType string) *document {
 	doc := &document{
-		Name:         repoInfo.Name,
-		BaseCPE:      repoInfo.BaseCPE,
-		Version:      repoInfo.Version,
-		Commit:       repoInfo.Commit[:],
-		Tag:          repoInfo.CommitTag,
-		When:         repoInfo.When,
-		RepoType:     repoInfo.Type,
-		RepoAddr:     repoInfo.Addr,
-		FileExts:     repoInfo.FileExts,
-		FileHashType: hashType,
+		Name:              repoInfo.Name,
+		BaseCPE:           repoInfo.BaseCPE,
+		Version:           repoInfo.Version,
+		Commit:            repoInfo.Commit[:],
+		Tag:               repoInfo.CommitTag,
+		When:              repoInfo.When,
+		RepoType:          repoInfo.Type,
+		RepoAddr:          repoInfo.Addr,
+		FileExts:          repoInfo.FileExts,
+		FileHashType:      hashType,
+		EmptyBucketBitmap: repoInfo.EmptyBucketBitmap,
 	}
 	return doc
-}
-
-func newResult(results []*processing.FileResult, bucketHash []byte) *result {
-	var (
-		paths  []string
-		hashes [][]byte
-	)
-
-	for _, r := range results {
-		paths = append(paths, r.Path)
-		hashes = append(hashes, r.Hash)
-	}
-	return &result{Path: paths, Hash: hashes, BucketHash: bucketHash}
 }
 
 // Store provides the functionality to check for existing documents
@@ -124,7 +107,7 @@ func (s *Store) Exists(ctx context.Context, addr string, hashType string, hash p
 }
 
 // Store stores a new entry in datastore.
-func (s *Store) Store(ctx context.Context, repoInfo *preparation.Result, hashType string, bucketResults [][]*processing.FileResult, treeNodes []*processing.BucketNode) error {
+func (s *Store) Store(ctx context.Context, repoInfo *preparation.Result, hashType string, treeNodes []*processing.BucketNode) error {
 	docKey := datastore.NameKey(docKind, fmt.Sprintf(docKeyFmt, repoInfo.Addr, hashType, repoInfo.Reference[:]), nil)
 
 	// There are slightly too many items to put in a transaction (max 500 entries per transaction)

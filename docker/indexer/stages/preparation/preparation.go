@@ -48,17 +48,18 @@ var (
 
 // Result is the data structure returned by the stage.
 type Result struct {
-	Name            string
-	BaseCPE         string
-	Version         string
-	CheckoutOptions *git.CheckoutOptions
-	Commit          plumbing.Hash
-	Reference       plumbing.Hash
-	CommitTag       string
-	When            time.Time
-	Type            string
-	Addr            string
-	FileExts        []string
+	Name              string
+	BaseCPE           string
+	Version           string
+	CheckoutOptions   *git.CheckoutOptions
+	Commit            plumbing.Hash
+	Reference         plumbing.Hash
+	CommitTag         string
+	When              time.Time
+	Type              string
+	Addr              string
+	FileExts          []string
+	EmptyBucketBitmap []byte
 }
 
 // Checker interface is used to check whether a name/hash pair already exists in storage.

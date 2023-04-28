@@ -200,9 +200,9 @@ def estimate_diff(num_of_bucket_change: int,
   """
   adjusted_bucket_size = _BUCKET_SIZE - num_of_skipped_buckets
   estimate = adjusted_bucket_size * math.log(
-      (adjusted_bucket_size + 1) / (adjusted_bucket_size -
-                                    (num_of_bucket_change -
-                                     (num_of_skipped_buckets)) + 1))
+      (adjusted_bucket_size + 1) /
+      (adjusted_bucket_size -
+       (num_of_bucket_change - num_of_skipped_buckets) + 1))
   # Scale the "file change" denominator linearly by how many buckets are not
   # considered, since if a lot of buckets are skipped, a file that's been
   # changed might end up in one of them, decreasing the chance it will

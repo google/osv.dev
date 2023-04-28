@@ -43,7 +43,7 @@ type Hash = []byte
 
 // Storer is used to permanently store the results.
 type Storer interface {
-	Store(ctx context.Context, repoInfo *preparation.Result, hashType string, fileInBucketResults [][]*FileResult, bucketNodes []*BucketNode) error
+	Store(ctx context.Context, repoInfo *preparation.Result, hashType string, bucketNodes []*BucketNode) error
 }
 
 // FileResult holds the per file hash and path information.
@@ -147,9 +147,25 @@ func (s *Stage) processGit(ctx context.Context, repoInfo *preparation.Result) er
 	}
 
 	log.Info("begin processing buckets")
-	bucketResults, filesInBucketResults := processBuckets(fileResults)
+	bucketResults, _ := processBuckets(fileResults)
+	// Build up a bitmap of filled in buckets
+	repoInfo.EmptyBucketBitmap = createFilledBucketBitmap(bucketResults)
 	log.Info("begin storage")
-	return s.Storer.Store(ctx, repoInfo, shared.MD5, filesInBucketResults, bucketResults)
+	return s.Storer.Store(ctx, repoInfo, shared.MD5, bucketResults)
+}
+
+func createFilledBucketBitmap(nodes []*BucketNode) []byte {
+	var bitmap = make([]byte, bucketCount/8)
+	for i, v := range nodes {
+		var val byte
+		if v.FilesContained == 0 {
+			val = 0
+		} else {
+			val = 1
+		}
+		bitmap[i/8] |= val << (i % 8)
+	}
+	return bitmap
 }
 
 // Returns bucket hashes and the individual file hashes of each bucket

@@ -49,7 +49,7 @@ const (
 )
 
 const (
-	// Set of enums of categorizing conversion outcomes.
+	// Set of enums for categorizing conversion outcomes.
 	ConversionUnknown ConversionOutcome = iota // Shouldn't happen
 	Successful                                 // It worked!
 	Rejected                                   // The CVE was rejected

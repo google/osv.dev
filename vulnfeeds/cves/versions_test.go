@@ -290,6 +290,12 @@ func TestRepo(t *testing.T) {
 			expectedRepoURL: "",
 			expectedOk:      false,
 		},
+		{
+			description:     "Valid URL (unnormalized) but not wanted (by deny regexp)",
+			inputLink:       "https://github.com/vlakhani28/CVE-2022-22296/blob/main/README.md",
+			expectedRepoURL: "",
+			expectedOk:      false,
+		},
 	}
 
 	for _, tc := range tests {

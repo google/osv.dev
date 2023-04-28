@@ -559,7 +559,7 @@ func ExtractVersionInfo(cve CVEItem, validVersions []string) (v VersionInfo, not
 				}
 			}
 
-			if lastaffected == "" {
+			if introduced == "" && fixed == "" && lastaffected == "" {
 				// See if a last affected version is inferable from the CPE string.
 				CPE, err := ParseCPE(match.CPE23URI)
 				if err != nil {

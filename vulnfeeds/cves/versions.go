@@ -182,7 +182,7 @@ var (
 		"https://gitlab.com/gitlab-org/omnibus-gitlab", // not the source
 		"https://gitlab.com/gitlab-org/release",        // not the source
 	}
-	InvalidRepoRegex = `(?i)/(?:(?:CVEs?)|(?:CVE-\d{4}-\d{4,})|bug_report|GitHubAssessments/.*)$`
+	InvalidRepoRegex = `(?i)/(?:(?:CVEs?)|(?:CVE-\d{4}-\d{4,}).*|bug_report|GitHubAssessments/.*)$`
 )
 
 // Returns the base repository URL for supported repository hosts.

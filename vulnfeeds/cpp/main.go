@@ -421,7 +421,7 @@ func main() {
 			continue
 		}
 
-		Logger.Infof("[%s]: Repos: %#v", cve.CVE.CVEDataMeta.ID, ReposForCVE)
+		Logger.Infof("[%s]: Repos: %#v", cve.CVE.CVEDataMeta.ID, ReposForCVE[cve.CVE.CVEDataMeta.ID])
 
 		for _, repo := range ReposForCVE[cve.CVE.CVEDataMeta.ID] {
 			if !InScopeRepo(repo) {

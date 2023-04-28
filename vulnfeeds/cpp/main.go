@@ -281,12 +281,13 @@ func maybeRemoveFromVPRepoCache(cache VendorProductToRepoMap, vp VendorProduct, 
 }
 
 // Output a CSV summarizing per-CVE how it was handled.
-func outputMetrics(outcomes map[string]ConversionOutcome, reposForCVE map[string][]string, directory string) error {
-	metricsFile, err := os.Create(filepath.Join(directory, "metrics.csv"))
-	defer metricsFile.Close()
-	w := csv.NewWriter(metricsFile)
+func outputOutcomes(outcomes map[string]ConversionOutcome, reposForCVE map[string][]string, directory string) error {
+	outcomesFile, err := os.Create(filepath.Join(directory, "outcomes.csv"))
+	defer outcomesFile.Close()
+	w := csv.NewWriter(outcomesFile)
 	w.Write([]string{"CVE", "outcome", "repos"})
 	for CVE, outcome := range outcomes {
+		// It's conceivable to have more than one repo for a CVE, so concatenate them.
 		r := ""
 		if repos, ok := reposForCVE[CVE]; ok {
 			r = strings.Join(repos, " ")
@@ -439,7 +440,7 @@ func main() {
 		Metrics.OSVRecordsGenerated++
 	}
 	Metrics.TotalCVEs = len(parsed.CVEItems)
-	err = outputMetrics(Metrics.Outcomes, ReposForCVE, *outDir)
+	err = outputOutcomes(Metrics.Outcomes, ReposForCVE, *outDir)
 	if err != nil {
 		// Log entry with size 1.15M exceeds maximum size of 256.0K
 		fmt.Fprintf(os.Stderr, "Failed to write out metrics: %v", err)

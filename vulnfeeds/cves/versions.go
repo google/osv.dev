@@ -559,7 +559,7 @@ func ExtractVersionInfo(cve CVEItem, validVersions []string) (v VersionInfo, not
 				}
 			}
 
-			if introduced == "" && fixed == "" {
+			if lastaffected == "" {
 				// See if a last affected version is inferable from the CPE string.
 				CPE, err := ParseCPE(match.CPE23URI)
 				if err != nil {
@@ -567,6 +567,10 @@ func ExtractVersionInfo(cve CVEItem, validVersions []string) (v VersionInfo, not
 				}
 				if CPE.Part != "a" {
 					// Skip operating system CPEs.
+					continue
+				}
+				if slices.Contains([]string{"NA", "ANY"}, lastaffected) {
+					// These are meaningless converting to commits.
 					continue
 				}
 				lastaffected = CPE.Version

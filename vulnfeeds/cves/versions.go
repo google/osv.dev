@@ -78,9 +78,11 @@ var (
 		"https://github.com/b17fr13nds/MPlayer_cve_poc",
 		"https://github.com/beicheng-maker/vulns",
 		"https://github.com/bigb0x/CVEs",
+		"https://github.com/BigTiger2020/2022",
 		"https://github.com/BigTiger2020/74CMS",
 		"https://github.com/BlackFan/client-side-prototype-pollution",
 		"https://github.com/blindkey/cve_like",
+		"https://github.com/ByteHackr/unzip_poc",
 		"https://github.com/ciph0x01/Simple-Exam-Reviewer-Management-System-CVE",
 		"https://github.com/cloudflare/advisories",
 		"https://github.com/Coalfire-Research/WinAPRS-Exploits",
@@ -126,6 +128,7 @@ var (
 		"https://github.com/martinkubecka/CVE-References",
 		"https://github.com/mclab-hbrs/BBB-POC",
 		"https://github.com/metaredteam/external-disclosures",
+		"https://github.com/Mirantis/security",
 		"https://github.com/MrR3boot/CVE-Hunting",
 		"https://github.com/N1ce759/74cmsSE-Arbitrary-File-Reading",
 		"https://github.com/nepenthe0320/cve_poc",
@@ -182,7 +185,7 @@ var (
 		"https://gitlab.com/gitlab-org/omnibus-gitlab", // not the source
 		"https://gitlab.com/gitlab-org/release",        // not the source
 	}
-	InvalidRepoRegex = `(?i)/(?:(?:CVEs?)|(?:CVE-\d{4}-\d{4,}).*|bug_report|GitHubAssessments/.*)$`
+	InvalidRepoRegex = `(?i)/(?:(?:CVEs?)|(?:CVE-\d{4}-\d{4,})(?:/.*)?|bug_report(?:/.*)?|GitHubAssessments/.*)$`
 )
 
 // Returns the base repository URL for supported repository hosts.

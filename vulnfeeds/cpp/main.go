@@ -161,6 +161,9 @@ func ReposForCPE(CVE string, cache VendorProductToRepoMap, vp VendorProduct, ref
 			// Failed to parse as a valid repo.
 			continue
 		}
+		if !git.ValidRepo(repo) {
+			continue
+		}
 		repos = append(repos, repo)
 		maybeUpdateVPRepoCache(cache, vp, repo)
 	}
@@ -332,8 +335,7 @@ func main() {
 
 		Metrics.CVEsForApplications++
 
-		// We only need to do this if we didn't get a repo from the CPE Dictionary.
-		// TODO: check if this can be merged into the CPE loop above.
+		// If there wasn't a repo from the CPE Dictionary, try and derive one from the CVE references.
 		if _, ok := ReposForCVE[cve.CVE.CVEDataMeta.ID]; !ok && len(refs) > 0 {
 			for _, CPEstr := range cves.CPEs(cve) {
 				CPE, err := cves.ParseCPE(CPEstr)

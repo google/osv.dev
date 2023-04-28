@@ -669,6 +669,8 @@ class RepoIndex(ndb.Model):
   file_hash_type = ndb.StringProperty()
   # The repository type
   repo_type = ndb.StringProperty()
+  # A bitmap of which buckets are empty
+  empty_bucket_bitmap = ndb.BlobProperty()
 
 
 class FileResult(ndb.Model):

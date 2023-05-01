@@ -205,7 +205,6 @@ def build_determine_version_result(
 
     output.append(version_match)
 
-  # output.sort(reverse=True, key=lambda x: x.score)
   return osv_service_v1_pb2.VersionMatchList(matches=output)
 
 
@@ -214,13 +213,9 @@ def estimate_diff(num_of_bucket_change: int, file_count_diff: int) -> int:
   Estimates the number of files that have changed based on 
   the number of buckets that changed.
   """
-  # adjusted_bucket_size = _BUCKET_SIZE - num_of_skipped_buckets
   estimate = _BUCKET_SIZE * math.log(
       (_BUCKET_SIZE + 1) / (_BUCKET_SIZE - num_of_bucket_change + 1))
-  # Scale the "file change" denominator linearly by how many buckets are not
-  # considered, since if a lot of buckets are skipped, a file that's been
-  # changed might end up in one of them, decreasing the chance it will
-  # be counted twice.
+
   return file_count_diff + round(max(estimate - file_count_diff, 0) / 2)
 
 

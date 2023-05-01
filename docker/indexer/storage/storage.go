@@ -51,6 +51,7 @@ type document struct {
 	FileExts          []string  `datastore:"file_exts"`
 	FileHashType      string    `datastore:"file_hash_type"`
 	EmptyBucketBitmap []byte    `datastore:"empty_bucket_bitmap"`
+	FileCount         int       `datastore:"file_count"`
 }
 
 func newDoc(repoInfo *preparation.Result, hashType string) *document {
@@ -66,6 +67,7 @@ func newDoc(repoInfo *preparation.Result, hashType string) *document {
 		FileExts:          repoInfo.FileExts,
 		FileHashType:      hashType,
 		EmptyBucketBitmap: repoInfo.EmptyBucketBitmap,
+		FileCount:         repoInfo.FileCount,
 	}
 	return doc
 }

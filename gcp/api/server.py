@@ -156,8 +156,8 @@ def build_determine_version_result(
     file_matches_by_proj: dict[ndb.Key, int],
     bucket_matches_by_proj: dict[ndb.Key, int],
     num_of_skipped_buckets: int,
-    # 0 means has items, 1 means empty
-    inverted_empty_bucket_bitmap: int,
+    # 1 means has items, 0 means empty
+    empty_bucket_bitmap: int,
     max_files: int) -> osv_service_v1_pb2.VersionMatchList:
   """Build sorted determine version result from the input"""
   bucket_match_items = list(bucket_matches_by_proj.items())
@@ -169,12 +169,14 @@ def build_determine_version_result(
   idx_futures = ndb.get_multi_async([b[0] for b in bucket_match_items])
   output = []
 
+  inverted_empty_bucket_bitmap = (1 << _BUCKET_SIZE) - 1 - empty_bucket_bitmap
   empty_bucket_count = inverted_empty_bucket_bitmap.bit_count()
   for f in idx_futures:
     idx: osv.RepoIndex = f.result()
 
     # Byte order little is how the bitmap is stored in the indexer originally
     bitmap = int.from_bytes(idx.empty_bucket_bitmap, byteorder='little')
+
     missed_empty_buckets = (inverted_empty_bucket_bitmap & bitmap).bit_count()
 
     estimated_num_of_diff = estimate_diff(
@@ -183,7 +185,8 @@ def build_determine_version_result(
         - empty_bucket_count  # Buckets that are empty are not changed
         + missed_empty_buckets  # Unless they don't match the bitmap
         - num_of_skipped_buckets,  # Buckets skipped are assumed unchanged
-        num_of_skipped_buckets)
+        abs(idx.file_count - max_files)  # The difference in file count
+    )
 
     version_match = osv_service_v1_pb2.VersionMatch(
         score=(max_files - estimated_num_of_diff) / max_files,
@@ -206,8 +209,7 @@ def build_determine_version_result(
   return osv_service_v1_pb2.VersionMatchList(matches=output)
 
 
-def estimate_diff(num_of_bucket_change: int,
-                  num_of_skipped_buckets: int) -> int:
+def estimate_diff(num_of_bucket_change: int, file_count_diff: int) -> int:
   """
   Estimates the number of files that have changed based on 
   the number of buckets that changed.
@@ -219,7 +221,7 @@ def estimate_diff(num_of_bucket_change: int,
   # considered, since if a lot of buckets are skipped, a file that's been
   # changed might end up in one of them, decreasing the chance it will
   # be counted twice.
-  return round(estimate / (2 - num_of_skipped_buckets / _BUCKET_SIZE))
+  return file_count_diff + round(max(estimate - file_count_diff, 0) / 2)
 
 
 @ndb.tasklet
@@ -236,17 +238,17 @@ def determine_version(version_query: osv_service_v1_pb2.VersionQuery,
   num_skipped_buckets = 0
   skipped_files = 0
 
-  # 0 means not empty, 1 means empty
-  inverted_empty_bucket_bitmap = 0
+  # 1 means not empty, 0 means empty
+  empty_bucket_bitmap = 0
 
   # Tuple is (Future, index, number_of_files)
   query_futures: list[tuple[ndb.Future, int, int]] = []
 
   for idx, bucket in enumerate(buckets):
     if bucket.files_contained == 0:
-      inverted_empty_bucket_bitmap |= 1 << idx
       continue
 
+    empty_bucket_bitmap |= 1 << idx
     query = osv.RepoIndexBucket.query(
         osv.RepoIndexBucket.node_hash == bucket.node_hash)
     # Limit the number of requests to prevent super long queries
@@ -278,7 +280,7 @@ def determine_version(version_query: osv_service_v1_pb2.VersionQuery,
 
   return build_determine_version_result(file_match_count, bucket_match_count,
                                         num_skipped_buckets,
-                                        inverted_empty_bucket_bitmap,
+                                        empty_bucket_bitmap,
                                         len(version_query.file_hashes))
 
 

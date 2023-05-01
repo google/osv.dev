@@ -149,6 +149,7 @@ func (s *Stage) processGit(ctx context.Context, repoInfo *preparation.Result) er
 	log.Info("begin processing buckets")
 	bucketResults, _ := processBuckets(fileResults)
 	// Build up a bitmap of filled in buckets
+	repoInfo.FileCount = len(fileResults)
 	repoInfo.EmptyBucketBitmap = createFilledBucketBitmap(bucketResults)
 	log.Info("begin storage")
 	return s.Storer.Store(ctx, repoInfo, shared.MD5, bucketResults)

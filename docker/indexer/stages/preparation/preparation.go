@@ -60,6 +60,7 @@ type Result struct {
 	Addr              string
 	FileExts          []string
 	EmptyBucketBitmap []byte
+	FileCount         int
 }
 
 // Checker interface is used to check whether a name/hash pair already exists in storage.

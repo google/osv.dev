@@ -671,6 +671,8 @@ class RepoIndex(ndb.Model):
   repo_type = ndb.StringProperty()
   # A bitmap of which buckets are empty
   empty_bucket_bitmap = ndb.BlobProperty()
+  # Number of files in this repo
+  file_count = ndb.IntegerProperty()
 
 
 class FileResult(ndb.Model):

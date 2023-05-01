@@ -38,7 +38,7 @@ func main() {
 	if scanner.Text() == "yes" {
 		client, _ := datastore.NewClient(ctx, *projectID)
 
-		keys, _ := client.GetAll(ctx, datastore.NewQuery(*kind).FilterField("name", "=", "zlib").KeysOnly(), nil)
+		keys, _ := client.GetAll(ctx, datastore.NewQuery(*kind).KeysOnly(), nil)
 		log.Printf("Retrieved %d keys", len(keys))
 		for i := 0; i < len(keys); i += 500 {
 			fmt.Printf("Deleting %d number now\n", i)

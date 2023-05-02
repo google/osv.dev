@@ -132,6 +132,7 @@ var (
 		"https://github.com/E1CHO/water_cve",
 		"https://github.com/eddietcc/CVEnotes",
 		"https://github.com/Edubr2020/RealPlayer_G2_RCE",
+		"https://github.com/Edubr2020/RP_DCP_Code_Exec",
 		"https://github.com/Edubr2020/RP_Import_RCE",
 		"https://github.com/enesozeser/Vulnerabilities",
 		"https://github.com/erengozaydin/College-Management-System-course_code-SQL-Injection-Authenticated",

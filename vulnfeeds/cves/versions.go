@@ -279,6 +279,7 @@ var (
 		"https://github.com/xunyang1/my-vulnerability",
 		"https://github.com/xxhzz1/74cmsSE-Arbitrary-file-upload-vulnerability",
 		"https://github.com/yangfar/CVE",
+		"https://github.com/yasinyildiz26/Badminton-Center-Management-System",
 		"https://github.com/YavuzSahbaz/Limbas-4.3.36.1319-is-vulnerable-to-Cross-Site-Scripting-XSS-",
 		"https://github.com/YavuzSahbaz/Red-Planet-Laundry-Management-System-1.0-is-vulnerable-to-SQL",
 		"https://github.com/ycdxsb/Vuln",

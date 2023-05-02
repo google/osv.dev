@@ -298,8 +298,10 @@ func (s *Stage) updateGitRepo(ctx context.Context, name string) (*git.Repository
 		log.Error(err)
 		return nil, "", err
 	}
-	if err := repo.Fetch(&git.FetchOptions{}); err != nil && err != git.NoErrAlreadyUpToDate {
-		log.Error(err)
+	if err := repo.Fetch(&git.FetchOptions{
+		Tags: git.AllTags,
+	}); err != nil && err != git.NoErrAlreadyUpToDate {
+		log.Errorf("failed to fetch '%s' with %v", name, err)
 		return nil, "", err
 	}
 	if err := s.copyToBucket(ctx, repoDir, name); err != nil {

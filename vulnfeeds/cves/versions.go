@@ -220,7 +220,6 @@ var (
 		"https://github.com/tremwil/ds3-nrssr-rce",
 		"https://github.com/upasvi/CVE-",
 		"https://github.com/verf1sh/Poc",
-		"https://github.com/verf1sh/Poc https://github.com/verf1sh/Poc",
 		"https://github.com/VivekPanday12/CVE-",
 		"https://github.com/vQAQv/Request-CVE-ID-PoC",
 		"https://github.com/vulnerabilities-cve/vulnerabilities",

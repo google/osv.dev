@@ -82,9 +82,13 @@ message VersionQuery {
 // Information about the files in the repository
 // to identify the version.
 message FileHash {
+  enum HashType {
+    MD5 = 0;
+  }
+
   // The file path inside the repository, relative to the repository root.
   string file_path = 1;
-  string hash_type = 2;
+  HashType hash_type = 2;
   bytes hash = 3;
 }
 

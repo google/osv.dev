@@ -179,6 +179,9 @@ func ReposForCPE(CVE string, cache VendorProductToRepoMap, vp VendorProduct, ref
 			// Failed to parse as a valid repo.
 			continue
 		}
+		if slices.Contains(repos, repo) {
+			continue
+		}
 		repos = append(repos, repo)
 		maybeUpdateVPRepoCache(cache, vp, repo)
 	}

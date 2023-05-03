@@ -181,8 +181,8 @@ func ReposForCPE(CVE string, cache VendorProductToRepoMap, vp VendorProduct, ref
 			continue
 		}
 		if !git.ValidRepo(repo) {
-      continue
-    }
+			continue
+		}
 		if slices.Contains(repos, repo) {
 			continue
 		}

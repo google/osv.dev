@@ -121,6 +121,7 @@ var (
 		"https://github.com/DayiliWaseem/CVE-2022-39196-",
 		"https://github.com/dhammon/pfBlockerNg-CVE-2022-40624",
 		"https://github.com/dhammon/pfBlockerNg-RCE",
+		"https://github.com/Dheeraj-Deshmukh/Hospital-s-patient-management-system",
 		"https://github.com/Dheeraj-Deshmukh/stored-xss-in-Hospital-s-Patient-Records-Management-System",
 		"https://github.com/Dir0x/Multiple-SQLi-in-Simple-Subscription-Company",
 		"https://github.com/Dir0x/SQLi-exploit---Simple-Client-Management-System",

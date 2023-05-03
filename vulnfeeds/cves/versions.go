@@ -218,6 +218,7 @@ var (
 		"https://github.com/Nguyen-Trung-Kien/CVE",
 		"https://github.com/nikip72/CVE-2021-39273-CVE-2021-39274",
 		"https://github.com/nsparker1337/OpenSource",
+		"https://github.com/nsparker1337/OpenSource",
 		"https://github.com/nu11secur1ty/CVE-nu11secur1ty",
 		"https://github.com/offsecin/bugsdisclose",
 		"https://github.com/orangecertcc/security-research",

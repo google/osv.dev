@@ -175,6 +175,7 @@ var (
 		"https://github.com/ianxtianxt/gitbook-xss",
 		"https://github.com/itodaro/doorGets_cve",
 		"https://github.com/JackyG0/Online-Accreditation-Management-System-v1.0-SQLi",
+		"https://github.com/Jamison2022/Company-Website-CMS",
 		"https://github.com/joinia/webray.com.cn",
 		"https://github.com/jvz/test-cvelist",
 		"https://github.com/k0xx11/Vulscve",

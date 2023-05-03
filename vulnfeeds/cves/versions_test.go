@@ -569,6 +569,24 @@ func TestExtractVersionInfo(t *testing.T) {
 			},
 			expectedNotes: []string{},
 		},
+		{
+			description:        "A CVE with no explicit versions",
+			inputCVEItem:       loadTestData("CVE-2022-1122"),
+			inputValidVersions: []string{},
+			expectedVersionInfo: VersionInfo{
+				FixCommits:          []GitCommit(nil),
+				LimitCommits:        []GitCommit(nil),
+				LastAffectedCommits: []GitCommit(nil),
+				AffectedVersions: []AffectedVersion{
+					AffectedVersion{
+						Introduced:   "",
+						Fixed:        "",
+						LastAffected: "2.4.0",
+					},
+				},
+			},
+			expectedNotes: []string{},
+		},
 	}
 
 	for _, tc := range tests {

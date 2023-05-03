@@ -18,9 +18,6 @@ if [ $# -lt 1 ]; then
   exit 1
 fi
 
-rm -rf osv
-cp -r ../../osv .
-
 pipenv requirements > requirements.txt
 virtualenv ENV
 . ENV/bin/activate

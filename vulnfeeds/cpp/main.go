@@ -78,6 +78,13 @@ var RefTagDenyList = []string{
 	"Broken Link", // Actively ignore these though.
 }
 
+// VendorProducts known not to be Open Source software and causing
+// cross-contamination of repo derivation between CVEs.
+var VendorProductDenyList = []VendorProduct{
+	// Causes a chain reaction of incorrect associations from CVE-2022-2068
+	VendorProduct{"netapp", "ontap_select_deploy_administration_utility"},
+}
+
 // Looks at what the repo to determine if it contains code using an in-scope language
 func InScopeRepo(repoURL string) bool {
 	parsedURL, err := url.Parse(repoURL)
@@ -396,6 +403,9 @@ func main() {
 				}
 				// Continue to only focus on application CPEs.
 				if CPE.Part != "a" {
+					continue
+				}
+				if slices.Contains(VendorProductDenyList, VendorProduct{CPE.Vendor, CPE.Product}) {
 					continue
 				}
 				repos := ReposForCPE(cve.CVE.CVEDataMeta.ID, VPRepoCache, VendorProduct{CPE.Vendor, CPE.Product}, refs, RefTagDenyList)

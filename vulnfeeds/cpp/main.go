@@ -70,11 +70,12 @@ var Metrics struct {
 
 // References with these tags have been found to contain completely unrelated
 // repositories and can be misleading as to the software's true repository,
-// Currently empty due to undesired false positives reducing the number of
-// valid records successfully converted.
+// Currently not used for this purpose due to undesired false positives
+// reducing the number of valid records successfully converted.
 var RefTagDenyList = []string{
 	// "Exploit",
 	// "Third Party Advisory",
+	"Broken Link", // Actively ignore these though.
 }
 
 // VendorProducts known not to be Open Source software and causing
@@ -184,6 +185,9 @@ func ReposForCPE(CVE string, cache VendorProductToRepoMap, vp VendorProduct, ref
 		repo, err := cves.Repo(ref.URL)
 		if err != nil {
 			// Failed to parse as a valid repo.
+			continue
+		}
+		if !git.ValidRepo(repo) {
 			continue
 		}
 		if slices.Contains(repos, repo) {
@@ -389,8 +393,7 @@ func main() {
 
 		Metrics.CVEsForApplications++
 
-		// We only need to do this if we didn't get a repo from the CPE Dictionary.
-		// TODO: check if this can be merged into the CPE loop above.
+		// If there wasn't a repo from the CPE Dictionary, try and derive one from the CVE references.
 		if _, ok := ReposForCVE[cve.CVE.CVEDataMeta.ID]; !ok && len(refs) > 0 {
 			for _, CPEstr := range cves.CPEs(cve) {
 				CPE, err := cves.ParseCPE(CPEstr)

@@ -454,6 +454,7 @@ func main() {
 			continue
 		}
 		Metrics.OSVRecordsGenerated++
+		Metrics.Outcomes[cve.CVE.CVEDataMeta.ID] = Successful
 	}
 	Metrics.TotalCVEs = len(parsed.CVEItems)
 	err = outputOutcomes(Metrics.Outcomes, ReposForCVE, *outDir)

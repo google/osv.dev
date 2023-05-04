@@ -107,7 +107,8 @@ def _parse_vulnerability_dict(path):
 @cache.cached(shared_cache)
 def load_schema():
   path = os.path.join(
-      os.path.dirname(os.path.abspath(__file__)), 'osv-schema', 'schema.json')
+      os.path.dirname(os.path.abspath(__file__)), 'osv-schema', 'validation',
+      'schema.json')
   with open(path, 'r') as schema:
     text = schema.read()
     return json.loads(text)

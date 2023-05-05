@@ -236,11 +236,14 @@ class IntegrationTests(unittest.TestCase):
     go_2021_0052 = self._get('GO-2021-0052')
     ghsa_6vm3_jj99_7229 = self._get('GHSA-6vm3-jj99-7229')
     ghsa_h395_qcrw_5vmq = self._get('GHSA-h395-qcrw-5vmq')
+    ghsa_3vp4_m3rf_835h = self._get('GHSA-3vp4-m3rf-835h')
+
     expected_vulns = [
         ghsa_6vm3_jj99_7229,
         go_2020_0001,
         ghsa_h395_qcrw_5vmq,
         go_2021_0052,
+        ghsa_3vp4_m3rf_835h,
     ]
 
     # Test that a SemVer (believed to be vulnerable) version and an ecosystem
@@ -276,7 +279,7 @@ class IntegrationTests(unittest.TestCase):
     response = requests.post(
         _api() + '/v1/query',
         data=json.dumps({
-            'version': '1.7.8',
+            'version': '2.7.8',
             'package': {
                 'name': package,
                 'ecosystem': ecosystem,

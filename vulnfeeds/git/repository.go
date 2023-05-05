@@ -17,6 +17,7 @@ package git
 
 import (
 	"sort"
+	"strings"
 
 	"github.com/go-git/go-git/v5"
 	"github.com/go-git/go-git/v5/config"
@@ -24,8 +25,13 @@ import (
 	"github.com/go-git/go-git/v5/storage/memory"
 
 	"golang.org/x/exp/maps"
+	"golang.org/x/exp/slices"
 
 	"github.com/google/osv/vulnfeeds/cves"
+)
+
+const (
+	peeledSuffix = "^{}"
 )
 
 // A GitTag holds a Git tag and corresponding commit hash.
@@ -55,7 +61,7 @@ type RepoTagsMap struct {
 // RepoTags acts as a cache for RepoTags results, keyed on the repo's URL.
 type RepoTagsCache map[string]RepoTagsMap
 
-// RepoTags returns an array of Tag being the tags and associated commits in repoURL.
+// RepoTags returns an array of Tag being the (unpeeled, if annotated) tags and associated commits in repoURL.
 // An optional repoTagsCache can be supplied to reduce repeated remote connections to the same repo.
 func RepoTags(repoURL string, repoTagsCache RepoTagsCache) (tags Tags, e error) {
 	if repoTagsCache != nil {
@@ -72,7 +78,7 @@ func RepoTags(repoURL string, repoTagsCache RepoTagsCache) (tags Tags, e error) 
 		},
 	}
 	repo := git.NewRemote(memory.NewStorage(), remoteConfig)
-	refs, err := repo.List(&git.ListOptions{})
+	refs, err := repo.List(&git.ListOptions{PeelingOption: git.AppendPeeled})
 	if err != nil {
 		return tags, err
 	}
@@ -81,8 +87,24 @@ func RepoTags(repoURL string, repoTagsCache RepoTagsCache) (tags Tags, e error) 
 		if !ref.Name().IsTag() {
 			continue
 		}
-		tags = append(tags, Tag{Tag: ref.Name().Short(), Commit: ref.Hash().String()})
+		// This is used for caching and direct lookup by tag name.
 		tagsMap[ref.Name().Short()] = Tag{Tag: ref.Name().Short(), Commit: ref.Hash().String()}
+	}
+	// Use the unpeeled tag commit where available.
+	for tagName, tagInfo := range tagsMap {
+		if _, ok := tagsMap[tagName+peeledSuffix]; ok {
+			// There exists an equivalent peeled tag, skip the unpeeled one.
+			continue
+		}
+		if strings.HasSuffix(tagName, peeledSuffix) {
+			// Use the peeled tag name, but the unpeeled tag's commit.
+			tags = append(tags, Tag{Tag: strings.TrimSuffix(tagInfo.Tag, peeledSuffix), Commit: tagInfo.Commit})
+			continue
+		}
+		// It's a lightweight tag, and if not already present (as an unpeeled tag, add it)
+		if !slices.Contains(tags, Tag{Tag: tagInfo.Tag, Commit: tagInfo.Commit}) {
+			tags = append(tags, Tag{Tag: tagInfo.Tag, Commit: tagInfo.Commit})
+		}
 	}
 	// Sort so that we get consistently ordered output for test validation purposes.
 	sort.Sort(tags)

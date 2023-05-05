@@ -652,6 +652,10 @@ def main():
   # Add oss-fuzz/infra to the import path so we can import from it.
   sys.path.append(os.path.join(oss_fuzz_dir, 'infra'))
 
+  # Suppress OSS-Fuzz build error logs. These are expected as part of
+  # bisection.
+  logging.getLogger('helper').setLevel(logging.CRITICAL)
+
   osv.ensure_updated_checkout(OSS_FUZZ_GIT_URL, oss_fuzz_dir)
 
   ndb_client = ndb.Client()

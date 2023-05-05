@@ -60,7 +60,3 @@ def setup_gcp_logging(service_name):
   logging.getLogger('google.api_core.bidi').setLevel(logging.ERROR)
   logging.getLogger('google.cloud.pubsub_v1.subscriber._protocol.'
                     'streaming_pull_manager').setLevel(logging.ERROR)
-
-  # Suppress OSS-Fuzz build error logs. These are expected as part of
-  # bisection.
-  logging.getLogger('helper').setLevel(logging.CRITICAL)

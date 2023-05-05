@@ -21,7 +21,7 @@ func TestVersionToCommit(t *testing.T) {
 			inputRepoURL:   "https://github.com/ARMmbed/mbedtls",
 			cache:          cache,
 			inputVersion:   "3.0.0",
-			expectedResult: "ecf535f6cb70c97beb7c44dceadc14423086ca0d",
+			expectedResult: "8df2f8e7b9c7bb9390ac74bb7bace27edca81a2b",
 			expectedOk:     true,
 		},
 		{
@@ -29,7 +29,7 @@ func TestVersionToCommit(t *testing.T) {
 			inputRepoURL:   "https://gitlab.com/gitlab-org/gitlab",
 			cache:          cache,
 			inputVersion:   "12.0",
-			expectedResult: "1d73db751369085d05d939c798e7da086646696c",
+			expectedResult: "3b13818e8330f68625d80d9bf5d8049c41fbe197",
 			expectedOk:     true,
 		},
 		{

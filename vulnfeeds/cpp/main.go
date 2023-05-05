@@ -83,6 +83,8 @@ var RefTagDenyList = []string{
 var VendorProductDenyList = []VendorProduct{
 	// Causes a chain reaction of incorrect associations from CVE-2022-2068
 	VendorProduct{"netapp", "ontap_select_deploy_administration_utility"},
+	// Causes misattribution for Python, e.g. CVE-2022-26488
+	VendorProduct{"netapp", "active_iq_unified_manager"},
 }
 
 // Looks at what the repo to determine if it contains code using an in-scope language

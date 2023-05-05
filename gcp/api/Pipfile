@@ -11,7 +11,7 @@ grpcio = "==1.54.0"
 osv = {editable = true, path = "../../"}
 packageurl-python = "==0.11.1"
 packaging = "==20.9"
-requests = "==2.28.2"
+requests = "==2.29.0"
 grpcio-reflection = "*"
 
 [dev-packages]

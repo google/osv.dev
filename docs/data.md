@@ -54,6 +54,8 @@ Additionally, the OSV.dev team maintains a conversion pipeline for:
 ## Covered Ecosystems
 Between the data served in OSV and the data converted to OSV the following ecosystems are covered.
 
+-   AlmaLinux
+-   Alpine
 -   Android
 -   crates.io
 -   Debian GNU/Linux
@@ -68,6 +70,7 @@ Between the data served in OSV and the data converted to OSV the following ecosy
 -   Packagist
 -   Pub
 -   PyPI
+-   Rocky Linux
 -   RubyGems
 
 ## Data dumps

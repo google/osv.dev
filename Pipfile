@@ -12,7 +12,7 @@ pygit2 = ">=1.9.2"
 attrs = "*"
 jsonschema = "*"
 grpcio = "*"
-packaging = "*"
+packaging = "<22.0"
 
 [dev-packages]
 yapf = "*"

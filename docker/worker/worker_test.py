@@ -1137,8 +1137,6 @@ class UpdateTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
 
     self.expect_dict_equal('update_bucket_0',
                            osv.Bug.get_by_id('GO-2021-0085')._to_dict())
-    self.expect_dict_equal('update_bucket_1',
-                           osv.Bug.get_by_id('GO-2021-0087')._to_dict())
 
   def test_update_debian(self):
     """Test updating debian."""

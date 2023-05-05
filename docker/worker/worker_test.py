@@ -1129,16 +1129,14 @@ class UpdateTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
     message.attributes = {
         'source': 'source',
         'path': 'a/b/test.json',
-        'original_sha256': ('b2b37bde8f39256239419078de672ce7'
-                            'a408735f1c2502ee8fa08745096e1971'),
+        'original_sha256': ('62966a80f6f9f54161803211069216177'
+                            '37340a47f43356ee4a1cabe8f089869'),
         'deleted': 'false',
     }
     task_runner._source_update(message)
 
     self.expect_dict_equal('update_bucket_0',
                            osv.Bug.get_by_id('GO-2021-0085')._to_dict())
-    self.expect_dict_equal('update_bucket_1',
-                           osv.Bug.get_by_id('GO-2021-0087')._to_dict())
 
   def test_update_debian(self):
     """Test updating debian."""

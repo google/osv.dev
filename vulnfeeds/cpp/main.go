@@ -133,28 +133,28 @@ func GitVersionsToCommit(CVE string, versions cves.VersionInfo, repos []string, 
 				gc, err := git.VersionToCommit(av.Introduced, repo, normalizedTags)
 				if err != nil {
 					Logger.Warnf("[%s]: Failed to get a Git commit for introduced version %q from %q: %v", CVE, av.Introduced, repo, err)
-					continue
+				} else {
+					Logger.Infof("[%s]: Successfully derived %+v for introduced version %q", CVE, gc, av.Introduced)
+					v.IntroducedCommits = append(v.IntroducedCommits, gc)
 				}
-				Logger.Infof("[%s]: Successfully derived %+v for introduced version %q", CVE, gc, av.Introduced)
-				v.IntroducedCommits = append(v.IntroducedCommits, gc)
 			}
 			if av.Fixed != "" {
 				gc, err := git.VersionToCommit(av.Fixed, repo, normalizedTags)
 				if err != nil {
 					Logger.Warnf("[%s]: Failed to get a Git commit for fixed version %q from %q: %v", CVE, av.Fixed, repo, err)
-					continue
+				} else {
+					Logger.Infof("[%s]: Successfully derived %+v for fixed version %q", CVE, gc, av.Fixed)
+					v.FixCommits = append(v.FixCommits, gc)
 				}
-				Logger.Infof("[%s]: Successfully derived %+v for fixed version %q", CVE, gc, av.Fixed)
-				v.FixCommits = append(v.FixCommits, gc)
 			}
 			if av.LastAffected != "" {
 				gc, err := git.VersionToCommit(av.LastAffected, repo, normalizedTags)
 				if err != nil {
 					Logger.Warnf("[%s]: Failed to get a Git commit for last_affected version %q from %q: %v", CVE, av.LastAffected, repo, err)
-					continue
+				} else {
+					Logger.Infof("[%s]: Successfully derived %+v for last_affected version %q", CVE, gc, av.LastAffected)
+					v.LastAffectedCommits = append(v.LastAffectedCommits, gc)
 				}
-				Logger.Infof("[%s]: Successfully derived %+v for last_affected version %q", CVE, gc, av.LastAffected)
-				v.LastAffectedCommits = append(v.LastAffectedCommits, gc)
 			}
 		}
 	}

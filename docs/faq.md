@@ -66,7 +66,7 @@ Yes!
 
 The database in available in a GCS bucket maintained by OSV: [gs://osv-vulnerabilities](https://osv-vulnerabilities.storage.googleapis.com/) (also [publicly browseable via the Google Cloud Console](https://console.cloud.google.com/storage/browser/osv-vulnerabilities) with a login)
 
-More information about how to download the database is available [here](https://github.com/google/osv.dev#data-dumps).
+More information about how to download the database is available [here](data.md#data-dumps).
 
 ## What are OSV's service level objectives (SLOs)?
 OSV strives to provide reliable vulnerability information to our users. To support that goal, target the following service level objectives:

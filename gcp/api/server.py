@@ -191,7 +191,7 @@ def build_determine_version_result(
     # this requirement.
     missed_empty_buckets = (inverted_empty_bucket_bitmap & bitmap).bit_count()
 
-    estimated_num_diff = estimate_diff(
+    estimated_diff_files = estimate_diff(
         _BUCKET_SIZE  # Starting with the total number of buckets
         - bucket_matches_by_proj[idx.key]  # Buckets that match are not changed
         - empty_bucket_count  # Buckets that are empty are not changed
@@ -201,9 +201,9 @@ def build_determine_version_result(
     )
 
     version_match = osv_service_v1_pb2.VersionMatch(
-        score=(max_files - estimated_num_diff) / max_files,
+        score=(max_files - estimated_diff_files) / max_files,
         minimum_file_matches=file_matches_by_proj[idx.key],
-        estimated_diff_files=estimated_num_diff,
+        estimated_diff_files=estimated_diff_files,
         repo_info=osv_service_v1_pb2.VersionRepositoryInformation(
             type=osv_service_v1_pb2.VersionRepositoryInformation.GIT,
             address=idx.repo_addr,

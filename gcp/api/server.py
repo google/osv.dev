@@ -208,7 +208,7 @@ def build_determine_version_result(
             type=osv_service_v1_pb2.VersionRepositoryInformation.GIT,
             address=idx.repo_addr,
             commit=idx.commit,
-            version=idx.tag.removeprefix(_TAG_PREFIX),
+            tag=idx.tag.removeprefix(_TAG_PREFIX),
         ),
     )
 

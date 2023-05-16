@@ -38,6 +38,7 @@ from osv import semver_index
 import osv_service_v1_pb2
 import osv_service_v1_pb2_grpc
 
+_MAX_TIMEOUT_SECONDS = 60
 _SHUTDOWN_GRACE_DURATION = 5
 
 _MAX_BATCH_QUERY = 1000
@@ -72,7 +73,7 @@ class OSVServicer(osv_service_v1_pb2_grpc.OSVServicer):
   """V1 OSV servicer."""
 
   @ndb_context
-  def GetVulnById(self, request, context):
+  def GetVulnById(self, request, context: grpc.ServicerContext):
     """Return a `Vulnerability` object for a given OSV ID."""
     bug = osv.Bug.get_by_id(request.id)
     if not bug or bug.status == osv.BugStatus.UNPROCESSED:
@@ -86,11 +87,12 @@ class OSVServicer(osv_service_v1_pb2_grpc.OSVServicer):
     return bug_to_response(bug)
 
   @ndb_context
-  def QueryAffected(self, request, context):
+  def QueryAffected(self, request, context: grpc.ServicerContext):
     """Query vulnerabilities for a particular project at a given commit or
 
     version.
     """
+    logging.info("Request time remaining: " + context.time_remaining())
     results, next_page_token = do_query(request.query, context).result()
     if results is not None:
       return osv_service_v1_pb2.VulnerabilityList(
@@ -99,7 +101,7 @@ class OSVServicer(osv_service_v1_pb2_grpc.OSVServicer):
     return None
 
   @ndb_context
-  def QueryAffectedBatch(self, request, context):
+  def QueryAffectedBatch(self, request, context: grpc.ServicerContext):
     """Query vulnerabilities (batch)."""
     batch_results = []
     futures = []
@@ -118,7 +120,7 @@ class OSVServicer(osv_service_v1_pb2_grpc.OSVServicer):
     return osv_service_v1_pb2.BatchVulnerabilityList(results=batch_results)
 
   @ndb_context
-  def DetermineVersion(self, request, context):
+  def DetermineVersion(self, request, context: grpc.ServicerContext):
     """Determine the version of the provided hashes."""
     res = determine_version(request.query, context).result()
     return res
@@ -289,7 +291,7 @@ def determine_version(version_query: osv_service_v1_pb2.VersionQuery,
 
 
 @ndb.tasklet
-def do_query(query, context, include_details=True):
+def do_query(query, context: grpc.ServicerContext, include_details=True):
   """Do a query."""
   if query.HasField('package'):
     package_name = query.package.name
@@ -330,10 +332,20 @@ def do_query(query, context, include_details=True):
     bugs = yield query_by_commit(commit_bytes, to_response=to_response)
   elif purl and purl_version:
     bugs = yield query_by_version(
-        package_name, ecosystem, purl, purl_version, to_response=to_response)
+        context,
+        package_name,
+        ecosystem,
+        purl,
+        purl_version,
+        to_response=to_response)
   elif query.WhichOneof('param') == 'version':
     bugs = yield query_by_version(
-        package_name, ecosystem, purl, query.version, to_response=to_response)
+        context,
+        package_name,
+        ecosystem,
+        purl,
+        query.version,
+        to_response=to_response)
   elif (package_name != '' and ecosystem != '') or (purl and not purl_version):
     # Package specified without version.
     bugs, next_page_token = yield query_by_package(
@@ -495,7 +507,8 @@ def _is_version_affected(affected_packages,
 
 
 @ndb.tasklet
-def _query_by_semver(query, package_name, ecosystem, purl: PackageURL, version):
+def _query_by_semver(query: ndb.Query, package_name, ecosystem,
+                     purl: PackageURL, version):
   """Query by semver."""
   if not semver_index.is_valid(version):
     return []
@@ -515,8 +528,8 @@ def _query_by_semver(query, package_name, ecosystem, purl: PackageURL, version):
 
 
 @ndb.tasklet
-def _query_by_generic_version(base_query, project, ecosystem, purl: PackageURL,
-                              version):
+def _query_by_generic_version(base_query: ndb.Query, project, ecosystem,
+                              purl: PackageURL, version):
   """Query by generic version."""
   # Try without normalizing.
   results = []
@@ -550,7 +563,8 @@ def _query_by_generic_version(base_query, project, ecosystem, purl: PackageURL,
 
 
 @ndb.tasklet
-def query_by_version(project: str,
+def query_by_version(context: grpc.ServicerContext,
+                     package_name: str,
                      ecosystem: str,
                      purl: PackageURL,
                      version,
@@ -558,18 +572,28 @@ def query_by_version(project: str,
   """Query by (fuzzy) version."""
   ecosystem_info = ecosystems.get(ecosystem)
   is_semver = ecosystem_info and ecosystem_info.is_semver
-  if project:
+
+  if package_name == "Kernel":
+    context.abort(
+        grpc.StatusCode.UNAVAILABLE,
+        "Linux Kernel queries are currently unavailable: " +
+        "See https://google.github.io/osv.dev/faq/#why-am-i-getting-an-error-message-for-my-linux-kernel-query"
+    )
+
+  if package_name:
     query = osv.Bug.query(
         osv.Bug.status == osv.BugStatus.PROCESSED,
-        osv.Bug.project == project,
+        osv.Bug.project == package_name,
         # pylint: disable=singleton-comparison
-        osv.Bug.public == True)  # noqa: E712
+        osv.Bug.public == True,  # noqa: E712
+        timeout=context.time_remaining())
   elif purl:
     query = osv.Bug.query(
         osv.Bug.status == osv.BugStatus.PROCESSED,
         osv.Bug.purl == purl.to_string(),
         # pylint: disable=singleton-comparison
-        osv.Bug.public == True)  # noqa: E712
+        osv.Bug.public == True,  # noqa: E712
+        timeout=context.time_remaining())
   else:
     return []
 
@@ -580,39 +604,41 @@ def query_by_version(project: str,
   if ecosystem:
     if is_semver:
       # Ecosystem supports semver only.
-      bugs.extend((yield _query_by_semver(query, project, ecosystem, purl,
+      bugs.extend((yield _query_by_semver(query, package_name, ecosystem, purl,
                                           version)))
     else:
-      bugs.extend((yield _query_by_generic_version(query, project, ecosystem,
-                                                   purl, version)))
+      bugs.extend((yield _query_by_generic_version(query, package_name,
+                                                   ecosystem, purl, version)))
   else:
     # Unspecified ecosystem. Try both.
-    bugs.extend((yield _query_by_semver(query, project, ecosystem, purl,
+    bugs.extend((yield _query_by_semver(query, package_name, ecosystem, purl,
                                         version)))
-    bugs.extend((yield _query_by_generic_version(query, project, ecosystem,
+    bugs.extend((yield _query_by_generic_version(query, package_name, ecosystem,
                                                  purl, version)))
 
   return [to_response(bug) for bug in bugs]
 
 
 @ndb.tasklet
-def query_by_package(project, ecosystem, purl: PackageURL, page_token,
-                     to_response):
+def query_by_package(context: grpc.ServicerContext, package_name: str,
+                     ecosystem: str, purl: PackageURL, page_token, to_response):
   """Query by package."""
   bugs = []
-  if project and ecosystem:
+  if package_name and ecosystem:
     query = osv.Bug.query(
         osv.Bug.status == osv.BugStatus.PROCESSED,
-        osv.Bug.project == project,
+        osv.Bug.project == package_name,
         osv.Bug.ecosystem == ecosystem,
         # pylint: disable=singleton-comparison
-        osv.Bug.public == True)  # noqa: E712
+        osv.Bug.public == True,  # noqa: E712
+        timeout=context.time_remaining())
   elif purl:
     query = osv.Bug.query(
         osv.Bug.status == osv.BugStatus.PROCESSED,
         osv.Bug.purl == purl.to_string(),
         # pylint: disable=singleton-comparison
-        osv.Bug.public == True)  # noqa: E712
+        osv.Bug.public == True,  # noqa: E712
+        timeout=context.time_remaining())
   else:
     return []
 

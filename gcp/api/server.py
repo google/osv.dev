@@ -91,7 +91,7 @@ class OSVServicer(osv_service_v1_pb2_grpc.OSVServicer):
 
     version.
     """
-    logging.info(f"Request time remaining: {context.time_remaining()}")
+    logging.info("Request time remaining: %s", context.time_remaining())
     results, next_page_token = do_query(request.query, context).result()
     if results is not None:
       return osv_service_v1_pb2.VulnerabilityList(

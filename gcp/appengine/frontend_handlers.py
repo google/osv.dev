@@ -388,9 +388,11 @@ def osv_query(search_string, page, affected_only, ecosystem):
     total_future = query.count_async()
 
   result_items = []
+  
+  offset = max((page - 1) * _PAGE_SIZE, 0)  # Ensure non-negative offset value
 
   bugs, _, _ = query.fetch_page(
-      page_size=_PAGE_SIZE, offset=(page - 1) * _PAGE_SIZE)
+      page_size=_PAGE_SIZE, offset=offset
   for bug in bugs:
     result_items.append(bug_to_response(bug, detailed=False))
 

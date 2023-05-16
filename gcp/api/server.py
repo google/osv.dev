@@ -91,7 +91,7 @@ class OSVServicer(osv_service_v1_pb2_grpc.OSVServicer):
 
     version.
     """
-    logging.info("Request time remaining: " + context.time_remaining())
+    logging.info(f"Request time remaining: {context.time_remaining()}")
     results, next_page_token = do_query(request.query, context).result()
     if results is not None:
       return osv_service_v1_pb2.VulnerabilityList(
@@ -348,7 +348,12 @@ def do_query(query, context: grpc.ServicerContext, include_details=True):
   elif (package_name != '' and ecosystem != '') or (purl and not purl_version):
     # Package specified without version.
     bugs, next_page_token = yield query_by_package(
-        package_name, ecosystem, purl, page_token, to_response=to_response)
+        context,
+        package_name,
+        ecosystem,
+        purl,
+        page_token,
+        to_response=to_response)
   else:
     context.abort(grpc.StatusCode.INVALID_ARGUMENT, 'Invalid query.')
     return None
@@ -576,8 +581,8 @@ def query_by_version(context: grpc.ServicerContext,
     context.abort(
         grpc.StatusCode.UNAVAILABLE,
         "Linux Kernel queries are currently unavailable: " +
-        "See https://google.github.io/osv.dev/faq/#why-am-i-getting-an-error-message-for-my-linux-kernel-query"
-    )
+        "See https://google.github.io/osv.dev/faq/" +
+        "#why-am-i-getting-an-error-message-for-my-linux-kernel-query")
 
   if package_name:
     query = osv.Bug.query(

@@ -11,7 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""API server implementation."""
+"""OSV API server implementation."""
 
 import argparse
 import codecs
@@ -639,7 +639,7 @@ def query_by_package(project, ecosystem, purl: PackageURL, page_token,
 
 
 def serve(port: int, local: bool):
-  """Configures and runs the bookstore API server."""
+  """Configures and runs the OSV API server."""
   server = grpc.server(concurrent.futures.ThreadPoolExecutor(max_workers=10))
   osv_service_v1_pb2_grpc.add_OSVServicer_to_server(OSVServicer(), server)
   if local:
@@ -656,6 +656,7 @@ def serve(port: int, local: bool):
     while True:
       time.sleep(3600)
   except KeyboardInterrupt:
+    print('Shutting down with {} grace period'.format(_SHUTDOWN_GRACE_DURATION))
     server.stop(_SHUTDOWN_GRACE_DURATION)
 
 

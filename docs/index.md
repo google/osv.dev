@@ -12,6 +12,6 @@ nav_order: 1
 
 [osv.dev](https://osv.dev) additionally provides infrastructure to ensure affected versions are accurately represented in each vulnerability entry, through bisection and version analysis.
 
-Further information on the project architecture is available [here](architecture.md).
+Further information on the infrastructure architecture is available [here](architecture.md).
 
 ![This is a diagram that shows the relationship between the vulnerability databases that use the OSV format and how all those entries are collated at OSV.dev. Open source users can query for known vulnerabilities by version number or commit hash.](images/diagram.png)

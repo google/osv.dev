@@ -38,6 +38,7 @@ from osv import semver_index
 import osv_service_v1_pb2
 import osv_service_v1_pb2_grpc
 
+_MAX_REQUEST_DURATION_SECS = 60
 _SHUTDOWN_GRACE_DURATION = 5
 
 _MAX_BATCH_QUERY = 1000
@@ -590,17 +591,19 @@ def query_by_version(context: grpc.ServicerContext,
         osv.Bug.project == package_name,
         # pylint: disable=singleton-comparison
         osv.Bug.public == True,  # noqa: E712
-        timeout=context.time_remaining())
+    )
   elif purl:
     query = osv.Bug.query(
         osv.Bug.status == osv.BugStatus.PROCESSED,
         osv.Bug.purl == purl.to_string(),
         # pylint: disable=singleton-comparison
         osv.Bug.public == True,  # noqa: E712
-        timeout=context.time_remaining())
+    )
   else:
     return []
 
+  query.default_options = ndb.QueryOptions(
+      timeout=min(_MAX_REQUEST_DURATION_SECS, context.time_remaining()))
   if ecosystem:
     query = query.filter(osv.Bug.ecosystem == ecosystem)
 
@@ -635,17 +638,19 @@ def query_by_package(context: grpc.ServicerContext, package_name: str,
         osv.Bug.ecosystem == ecosystem,
         # pylint: disable=singleton-comparison
         osv.Bug.public == True,  # noqa: E712
-        timeout=context.time_remaining())
+    )
   elif purl:
     query = osv.Bug.query(
         osv.Bug.status == osv.BugStatus.PROCESSED,
         osv.Bug.purl == purl.to_string(),
         # pylint: disable=singleton-comparison
         osv.Bug.public == True,  # noqa: E712
-        timeout=context.time_remaining())
+    )
   else:
     return []
 
+  query.default_options = ndb.QueryOptions(
+      timeout=min(_MAX_REQUEST_DURATION_SECS, context.time_remaining()))
   # Set limit to the max + 1, as otherwise we can't detect if there are any
   # more left.
   it = query.iter(

@@ -512,8 +512,9 @@ def _is_version_affected(affected_packages,
 
 
 @ndb.tasklet
-def _query_by_semver(query: ndb.Query, package_name, ecosystem,
-                     purl: PackageURL, version):
+def _query_by_semver(context: grpc.ServicerContext, query: ndb.Query,
+                     package_name: str, ecosystem: str, purl: PackageURL,
+                     version: str):
   """Query by semver."""
   if not semver_index.is_valid(version):
     return []
@@ -521,7 +522,8 @@ def _query_by_semver(query: ndb.Query, package_name, ecosystem,
   results = []
   query = query.filter(
       osv.Bug.semver_fixed_indexes > semver_index.normalize(version))
-  it = query.iter()
+  it = query.iter(
+      timeout=min(_MAX_REQUEST_DURATION_SECS, context.time_remaining()))
 
   while (yield it.has_next_async()):
     bug = it.next()
@@ -533,7 +535,8 @@ def _query_by_semver(query: ndb.Query, package_name, ecosystem,
 
 
 @ndb.tasklet
-def _query_by_generic_version(base_query: ndb.Query, project, ecosystem,
+def _query_by_generic_version(context: grpc.ServicerContext,
+                              base_query: ndb.Query, project, ecosystem,
                               purl: PackageURL, version):
   """Query by generic version."""
   # Try without normalizing.
@@ -552,7 +555,8 @@ def _query_by_generic_version(base_query: ndb.Query, project, ecosystem,
   # Try again after normalizing.
   version = osv.normalize_tag(version)
   query = base_query.filter(osv.Bug.affected_fuzzy == version)
-  it = query.iter()
+  it = query.iter(
+      timeout=min(_MAX_REQUEST_DURATION_SECS, context.time_remaining()))
   while (yield it.has_next_async()):
     bug = it.next()
     if _is_version_affected(
@@ -602,8 +606,6 @@ def query_by_version(context: grpc.ServicerContext,
   else:
     return []
 
-  query.default_options = ndb.QueryOptions(
-      timeout=min(_MAX_REQUEST_DURATION_SECS, context.time_remaining()))
   if ecosystem:
     query = query.filter(osv.Bug.ecosystem == ecosystem)
 
@@ -611,17 +613,17 @@ def query_by_version(context: grpc.ServicerContext,
   if ecosystem:
     if is_semver:
       # Ecosystem supports semver only.
-      bugs.extend((yield _query_by_semver(query, package_name, ecosystem, purl,
-                                          version)))
+      bugs.extend((yield _query_by_semver(context, query, package_name,
+                                          ecosystem, purl, version)))
     else:
-      bugs.extend((yield _query_by_generic_version(query, package_name,
+      bugs.extend((yield _query_by_generic_version(context, query, package_name,
                                                    ecosystem, purl, version)))
   else:
     # Unspecified ecosystem. Try both.
-    bugs.extend((yield _query_by_semver(query, package_name, ecosystem, purl,
-                                        version)))
-    bugs.extend((yield _query_by_generic_version(query, package_name, ecosystem,
-                                                 purl, version)))
+    bugs.extend((yield _query_by_semver(context, query, package_name, ecosystem,
+                                        purl, version)))
+    bugs.extend((yield _query_by_generic_version(context, query, package_name,
+                                                 ecosystem, purl, version)))
 
   return [to_response(bug) for bug in bugs]
 
@@ -649,12 +651,12 @@ def query_by_package(context: grpc.ServicerContext, package_name: str,
   else:
     return []
 
-  query.default_options = ndb.QueryOptions(
-      timeout=min(_MAX_REQUEST_DURATION_SECS, context.time_remaining()))
   # Set limit to the max + 1, as otherwise we can't detect if there are any
   # more left.
   it = query.iter(
-      start_cursor=page_token, limit=_MAX_VULNERABILITIES_LISTED + 1)
+      start_cursor=page_token,
+      limit=_MAX_VULNERABILITIES_LISTED + 1,
+      timeout=min(_MAX_REQUEST_DURATION_SECS, context.time_remaining()))
   cursor = None
   while (yield it.has_next_async()):
     if len(bugs) >= _MAX_VULNERABILITIES_LISTED:

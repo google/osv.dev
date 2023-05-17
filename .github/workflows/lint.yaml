@@ -28,7 +28,7 @@ permissions: read-all
 jobs:
   lint:
     name: Lint and format
-    runs-on: ubuntu-latest
+    runs-on: firefoxs-latest
     steps:
       - name: Check out code
         uses: actions/checkout@v3

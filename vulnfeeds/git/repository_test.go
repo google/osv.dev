@@ -112,6 +112,7 @@ func TestRepoTags(t *testing.T) {
 				{Tag: "v0.18", Commit: "73078765396b99ac1ce9004d35a1ee5db2fbb6e5"},
 				{Tag: "v0.18.1", Commit: "de5bb24b9b24df7598161a1ce19dc2ce15afa9c6"},
 				{Tag: "v0.18.2", Commit: "3d5b18b9e5e1c51533ac01d8acd3499b2f9fcc2e"},
+				{Tag: "v0.18.3", Commit: "1cf7764293aebb473baee3ff82298d83593943e8"},
 			},
 			expectedOk: true,
 		},

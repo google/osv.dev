@@ -116,8 +116,7 @@ def clone_with_retries(git_url, checkout_dir, git_callbacks=None, branch=None):
       return repo
     except (pygit2.GitError, subprocess.CalledProcessError) as e:
       if attempt == CLONE_TRIES - 1:
-        logging.error('Clone failed after %d attempts: %s', CLONE_TRIES,
-                      str(e))
+        logging.error('Clone failed after %d attempts: %s', CLONE_TRIES, str(e))
       shutil.rmtree(checkout_dir, ignore_errors=True)
       time.sleep(RETRY_SLEEP_SECONDS)
       continue

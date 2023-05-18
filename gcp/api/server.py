@@ -692,7 +692,7 @@ def serve(port: int, local: bool):
 
 
 def is_cloud_run() -> bool:
-  """Check if we are running in cloud run"""
+  """Check if we are running in Cloud Run."""
   # https://cloud.google.com/run/docs/container-contract#env-vars
   return os.getenv('K_SERVICE') is not None
 

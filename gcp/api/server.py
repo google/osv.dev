@@ -21,13 +21,15 @@ import hashlib
 import functools
 import logging
 import os
-import sys
 import time
 from typing import List
 
 from collections import defaultdict
 
 from google.cloud import ndb
+import google.cloud.logging
+import googlecloudprofiler
+
 import grpc
 from grpc_reflection.v1alpha import reflection
 from packageurl import PackageURL
@@ -92,7 +94,6 @@ class OSVServicer(osv_service_v1_pb2_grpc.OSVServicer):
 
     version.
     """
-    logging.info("Request time remaining: %s", context.time_remaining())
     results, next_page_token = do_query(request.query, context).result()
     if results is not None:
       return osv_service_v1_pb2.VulnerabilityList(
@@ -690,9 +691,18 @@ def serve(port: int, local: bool):
     server.stop(_SHUTDOWN_GRACE_DURATION)
 
 
+def is_cloud_run() -> bool:
+  """Check if we are running in cloud run"""
+  return os.getenv('K_SERVICE') is not None
+
+
 def main():
   """Entrypoint."""
-  logging.basicConfig(stream=sys.stderr)
+  if is_cloud_run():
+    logging_client = google.cloud.logging.Client()
+    logging_client.setup_logging()
+    googlecloudprofiler.start(service='backend-profiler')
+
   logging.getLogger().setLevel(logging.INFO)
 
   parser = argparse.ArgumentParser(

@@ -27,7 +27,6 @@ from typing import List
 from collections import defaultdict
 
 from google.cloud import ndb
-import google.cloud.logging
 import googlecloudprofiler
 
 import grpc

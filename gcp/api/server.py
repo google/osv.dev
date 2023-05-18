@@ -37,6 +37,7 @@ from packageurl import PackageURL
 import osv
 from osv import ecosystems
 from osv import semver_index
+from osv.logs import setup_gcp_logging
 import osv_service_v1_pb2
 import osv_service_v1_pb2_grpc
 
@@ -700,7 +701,7 @@ def is_cloud_run() -> bool:
 def main():
   """Entrypoint."""
   if is_cloud_run():
-    osv.logs.setup_gcp_logging('api-backend')
+    setup_gcp_logging('api-backend')
     googlecloudprofiler.start(service='backend-profiler')
 
   logging.getLogger().setLevel(logging.INFO)

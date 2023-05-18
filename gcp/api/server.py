@@ -700,8 +700,7 @@ def is_cloud_run() -> bool:
 def main():
   """Entrypoint."""
   if is_cloud_run():
-    logging_client = google.cloud.logging.Client()
-    logging_client.setup_logging()
+    osv.logs.setup_gcp_logging('api-backend')
     googlecloudprofiler.start(service='backend-profiler')
 
   logging.getLogger().setLevel(logging.INFO)

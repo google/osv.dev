@@ -18,12 +18,13 @@ if [ $# -lt 1 ]; then
   exit 1
 fi
 
-pipenv requirements > requirements.txt
-virtualenv ENV
-. ENV/bin/activate
-pip install -r requirements.txt
+# pipenv requirements > requirements.txt
+# virtualenv ENV
+# . ENV/bin/activate
+# pip install -r requirements.txt
+python3 -m pipenv sync
 service docker start
 
 export GOOGLE_CLOUD_PROJECT=oss-vdb
 export GOOGLE_APPLICATION_CREDENTIALS="$1"
-python integration_tests.py "$1"
+python3 -m pipenv run python integration_tests.py "$1"

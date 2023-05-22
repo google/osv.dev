@@ -17,7 +17,7 @@
 
 set -ex
 
-cd ../..
+cd ../
 
 docker build \
   -t gcr.io/oss-vdb/nvd-cve-osv:latest \

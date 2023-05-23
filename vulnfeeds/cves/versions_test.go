@@ -587,11 +587,82 @@ func TestExtractVersionInfo(t *testing.T) {
 			},
 			expectedNotes: []string{},
 		},
+		{
+			description:        "A CVE with fix commits in references and CPE match info",
+			inputCVEItem:       loadTestData("CVE-2022-25929"),
+			inputValidVersions: []string{},
+			expectedVersionInfo: VersionInfo{
+				FixCommits: []GitCommit{
+					GitCommit{
+						Repo:   "https://github.com/joewalnes/smoothie",
+						Commit: "8e0920d50da82f4b6e605d56f41b69fbb9606a98",
+					},
+				},
+				LimitCommits:        []GitCommit(nil),
+				LastAffectedCommits: []GitCommit(nil),
+				AffectedVersions: []AffectedVersion{
+					AffectedVersion{
+						Introduced:   "1.31.0",
+						Fixed:        "1.36.1",
+						LastAffected: "",
+					},
+				},
+			},
+			expectedNotes: []string{},
+		},
+		{
+			description:        "A CVE with fix commits in references and (more complex) CPE match info",
+			inputCVEItem:       loadTestData("CVE-2022-29194"),
+			inputValidVersions: []string{},
+			expectedVersionInfo: VersionInfo{
+				FixCommits: []GitCommit{
+					GitCommit{
+						Repo:   "https://github.com/tensorflow/tensorflow",
+						Commit: "cff267650c6a1b266e4b4500f69fbc49cdd773c5",
+					},
+				},
+				LimitCommits:        []GitCommit(nil),
+				LastAffectedCommits: []GitCommit(nil),
+				AffectedVersions: []AffectedVersion{
+					AffectedVersion{
+						Introduced:   "2.7.0",
+						Fixed:        "2.7.2",
+						LastAffected: "",
+					},
+					AffectedVersion{
+						Introduced:   "",
+						Fixed:        "2.6.4",
+						LastAffected: "",
+					},
+					AffectedVersion{
+						Introduced:   "2.8.0",
+						Fixed:        "2.8.1",
+						LastAffected: "",
+					},
+					AffectedVersion{
+						Introduced:   "",
+						Fixed:        "",
+						LastAffected: "2.9.0-rc1",
+					},
+					AffectedVersion{
+						Introduced:   "",
+						Fixed:        "",
+						LastAffected: "2.9.0-rc0",
+					},
+					AffectedVersion{
+						Introduced:   "",
+						Fixed:        "",
+						LastAffected: "2.9.0-rc2",
+					},
+				},
+			},
+			expectedNotes: []string{},
+		},
 	}
 
 	for _, tc := range tests {
 		gotVersionInfo, _ := ExtractVersionInfo(tc.inputCVEItem, tc.inputValidVersions)
-		if diff := cmp.Diff(gotVersionInfo, tc.expectedVersionInfo); diff != "" {
+		if diff := cmp.Diff(tc.expectedVersionInfo, gotVersionInfo); diff != "" {
 			t.Errorf("test %q: VersionInfo for %#v was incorrect: %s", tc.description, tc.inputCVEItem, diff)
 		}
 	}

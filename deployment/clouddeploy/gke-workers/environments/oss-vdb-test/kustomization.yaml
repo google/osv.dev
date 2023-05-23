@@ -1,5 +1,6 @@
 resources:
 - ../../base
+- base_nvd-cve-osv.yaml  # TODO: delete when we add this to production
 patches:
 - workers.yaml
 - scaler.yaml

@@ -27,7 +27,6 @@ from typing import List
 from collections import defaultdict
 
 from google.cloud import ndb
-import googlecloudprofiler
 
 import grpc
 from grpc_reflection.v1alpha import reflection
@@ -701,7 +700,6 @@ def main():
   """Entrypoint."""
   if is_cloud_run():
     setup_gcp_logging('api-backend')
-    googlecloudprofiler.start(service='backend-profiler')
 
   logging.getLogger().setLevel(logging.INFO)
 

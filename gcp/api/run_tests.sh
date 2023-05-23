@@ -18,10 +18,6 @@ if [ $# -lt 1 ]; then
   exit 1
 fi
 
-# pipenv requirements > requirements.txt
-# virtualenv ENV
-# . ENV/bin/activate
-# pip install -r requirements.txt
 python3 -m pipenv sync
 service docker start
 

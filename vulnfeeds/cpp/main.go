@@ -215,7 +215,7 @@ func CVEToOSV(CVE cves.CVEItem, repos []string, cache git.RepoTagsCache, directo
 	versions, versionNotes := cves.ExtractVersionInfo(CVE, nil)
 	notes = append(notes, versionNotes...)
 
-	if len(versions.FixCommits) == 0 && len(versions.AffectedVersions) != 0 {
+	if len(versions.AffectedVersions) != 0 {
 		// We have some versions to try and convert to commits
 		if len(repos) == 0 {
 			return fmt.Errorf("[%s]: No affected ranges for %q, and no repos to try and convert %+v to tags with", CVE.CVE.CVEDataMeta.ID, CPE.Product, versions.AffectedVersions)

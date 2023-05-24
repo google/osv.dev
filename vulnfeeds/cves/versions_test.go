@@ -658,6 +658,18 @@ func TestExtractVersionInfo(t *testing.T) {
 			},
 			expectedNotes: []string{},
 		},
+		{
+			description:        "A CVE with undesired wildcards and no versions",
+			inputCVEItem:       loadTestData("CVE-2022-2956"),
+			inputValidVersions: []string{},
+			expectedVersionInfo: VersionInfo{
+				FixCommits:          []GitCommit(nil),
+				LimitCommits:        []GitCommit(nil),
+				LastAffectedCommits: []GitCommit(nil),
+				AffectedVersions:    []AffectedVersion(nil),
+			},
+			expectedNotes: []string{},
+		},
 	}
 
 	for _, tc := range tests {

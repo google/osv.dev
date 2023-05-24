@@ -710,7 +710,7 @@ func ExtractVersionInfo(cve CVEItem, validVersions []string) (v VersionInfo, not
 					// Skip operating system CPEs.
 					continue
 				}
-				if slices.Contains([]string{"NA", "ANY"}, lastaffected) {
+				if slices.Contains([]string{"NA", "ANY"}, CPE.Version) {
 					// These are meaningless converting to commits.
 					continue
 				}

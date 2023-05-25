@@ -117,9 +117,9 @@ func InScopeGitRepo(repoURL string) bool {
 
 // Examines repos and tries to convert versions to commits by treating them as Git tags.
 // Takes a CVE ID string (for logging), cves.VersionInfo with AffectedVersions and
-// no FixCommits and attempts to add FixCommits.
+// typically no FixCommits and attempts to add FixCommits where there aren't any.
 func GitVersionsToCommit(CVE string, versions cves.VersionInfo, repos []string, cache git.RepoTagsCache) (v cves.VersionInfo, e error) {
-	// versions is a VersionInfo with AffectedVersions and no FixCommits
+	// versions is a VersionInfo with AffectedVersions and typically no FixCommits
 	// v is a VersionInfo with FixCommits included
 	v = versions
 	for _, repo := range repos {
@@ -138,7 +138,10 @@ func GitVersionsToCommit(CVE string, versions cves.VersionInfo, repos []string, 
 					v.IntroducedCommits = append(v.IntroducedCommits, gc)
 				}
 			}
-			if av.Fixed != "" {
+			// Only try and convert versions to commits via tags if there aren't any already.
+			// cves.ExtractVersionInfo() opportunistically returns
+			// FixCommits when the CVE has appropriate references.
+			if len(v.FixCommits) == 0 && av.Fixed != "" {
 				gc, err := git.VersionToCommit(av.Fixed, repo, normalizedTags)
 				if err != nil {
 					Logger.Warnf("[%s]: Failed to get a Git commit for fixed version %q from %q: %v", CVE, av.Fixed, repo, err)
@@ -212,7 +215,7 @@ func CVEToOSV(CVE cves.CVEItem, repos []string, cache git.RepoTagsCache, directo
 	versions, versionNotes := cves.ExtractVersionInfo(CVE, nil)
 	notes = append(notes, versionNotes...)
 
-	if len(versions.FixCommits) == 0 && len(versions.AffectedVersions) != 0 {
+	if len(versions.AffectedVersions) != 0 {
 		// We have some versions to try and convert to commits
 		if len(repos) == 0 {
 			return fmt.Errorf("[%s]: No affected ranges for %q, and no repos to try and convert %+v to tags with", CVE.CVE.CVEDataMeta.ID, CPE.Product, versions.AffectedVersions)

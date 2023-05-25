@@ -142,9 +142,9 @@ func outputProductToRepoMap(prm VendorProductToRepoMap, f io.Writer) error {
 	}
 
 	if *Verbose {
-		fmt.Printf("Output information about %d application products, %d do not have repos\n", len(prm), productsWithoutRepos)
+		fmt.Printf("Outputting information about %d application products, %d do not have repos\n", len(prm), productsWithoutRepos)
 	}
-	Logger.Infof("Output information about %d application products, %d do not have repos", len(prm), productsWithoutRepos)
+	Logger.Infof("Outputting information about %d application products, %d do not have repos", len(prm), productsWithoutRepos)
 	return nil
 }
 
@@ -270,7 +270,7 @@ func MaybeGetSourceRepoFromDebian(mdir string, pkg string) string {
 	}
 	if _, err := os.Stat(metadata); err == nil {
 		// parse the copyright file and go from here
-		Logger.Infof("FYI: Will look at %s", metadata)
+		Logger.Infof("FYI: Looking at %s for %s", metadata, pkg)
 		possibleRepo, ok := MaybeGetSourceFromDebianCopyright(metadata)
 		if !ok {
 			return ""
@@ -285,7 +285,7 @@ func MaybeGetSourceRepoFromDebian(mdir string, pkg string) string {
 				return repo
 			}
 		}
-		Logger.Infof("FYI: Disregarding %s", possibleRepo)
+		Logger.Infof("FYI: Disregarding %s for %s", possibleRepo, pkg)
 	}
 	return ""
 }
@@ -309,14 +309,14 @@ func analyzeCPEDictionary(d CPEDict) (ProductToRepo VendorProductToRepoMap, Desc
 			DescriptionFrequency[r.Description] += 1
 			repo, err := cves.Repo(r.URL)
 			if err != nil {
-				Logger.Infof("Disregarding %q for %q/%q (%s) because %v", r.URL, CPE.Vendor, CPE.Product, r.Description, err)
+				Logger.Infof("Disregarding %q for %s:%s (%s) because %v", r.URL, CPE.Vendor, CPE.Product, r.Description, err)
 				continue
 			}
 			// If we already have an entry for this repo, don't add it again.
 			if slices.Contains(ProductToRepo[VendorProduct{CPE.Vendor, CPE.Product}], repo) {
 				continue
 			}
-			Logger.Infof("Liking %q for %q/%q (%s)", repo, CPE.Vendor, CPE.Product, r.Description)
+			Logger.Infof("Liking %q for %s:%s (%s)", repo, CPE.Vendor, CPE.Product, r.Description)
 			ProductToRepo[VendorProduct{CPE.Vendor, CPE.Product}] = append(ProductToRepo[VendorProduct{CPE.Vendor, CPE.Product}], repo)
 			// If this was queued for trying to find via Debian, and subsequently found, dequeue it.
 			if *DebianMetadataPath != "" {
@@ -338,14 +338,14 @@ func analyzeCPEDictionary(d CPEDict) (ProductToRepo VendorProductToRepoMap, Desc
 		entryCount := 0
 		for vp, _ := range MaybeTryDebian {
 			entryCount++
-			Logger.Infof("%d/%d: Trying to derive a repo from Debian for %q/%q", entryCount, len(MaybeTryDebian), vp.Vendor, vp.Product)
+			Logger.Infof("%d/%d: Trying to derive a repo from Debian for %s:%s", entryCount, len(MaybeTryDebian), vp.Vendor, vp.Product)
 			repo := MaybeGetSourceRepoFromDebian(*DebianMetadataPath, vp.Product)
 			if repo != "" {
-				Logger.Infof("Derived repo: %s for %q/%q", repo, vp.Vendor, vp.Product)
+				Logger.Infof("Derived repo: %s for %s:%s", repo, vp.Vendor, vp.Product)
 				// Now check that what Debian gave us meets our expectations
 				repo, err := cves.Repo(repo)
 				if err != nil {
-					Logger.Infof("Disregarding derived repo for %q/%q because %v", vp.Vendor, vp.Product, err)
+					Logger.Infof("Disregarding derived repo %s for %s:%s because %v", repo, vp.Vendor, vp.Product, err)
 					continue
 				}
 				ProductToRepo[VendorProduct{vp.Vendor, vp.Product}] = append(ProductToRepo[VendorProduct{vp.Vendor, vp.Product}], repo)
@@ -366,7 +366,7 @@ func validateRepos(prm VendorProductToRepoMap) (validated VendorProductToRepoMap
 		// As a side-effect, this also omits any with no repos.
 		for _, r := range prm[vp] {
 			if !git.ValidRepo(r) {
-				Logger.Infof("%d/%d: %q is not a valid repo for %q/%q", entryCount, len(prm), r, vp.Vendor, vp.Product)
+				Logger.Infof("%d/%d: %q is not a valid repo for %s:%s", entryCount, len(prm), r, vp.Vendor, vp.Product)
 				continue
 			}
 			validated[vp] = append(validated[vp], r)

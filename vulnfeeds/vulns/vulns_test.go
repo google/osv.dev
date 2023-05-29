@@ -7,6 +7,7 @@ import (
 	"reflect"
 	"testing"
 
+	"github.com/google/go-cmp/cmp"
 	"github.com/google/osv/vulnfeeds/utility"
 
 	"github.com/google/osv/vulnfeeds/cves"
@@ -177,4 +178,38 @@ func TestAddPkgInfo(t *testing.T) {
 		t.Errorf("AddPkgInfo has not corrected added ranges fixed.")
 	}
 	// testPkgInfoCommits ^^^^^^^^^^^^^^^
+}
+
+func TestAddSeverity(t *testing.T) {
+	tests := []struct {
+		description    string
+		inputCVE       cves.CVEItem
+		expectedResult []Severity
+	}{
+		{
+			description: "Successful CVE severity extraction and attachment",
+			inputCVE:    loadTestData("CVE-2022-34668"),
+			expectedResult: []Severity{
+				{
+					Type:  "CVSS_V3",
+					Score: "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H",
+				},
+			},
+		},
+		{
+			description:    "CVE with no impact information",
+			inputCVE:       loadTestData("CVE-2022-36037"),
+			expectedResult: nil,
+		},
+	}
+
+	for _, tc := range tests {
+		vuln, _ := FromCVE(tc.inputCVE.CVE.CVEDataMeta.ID, tc.inputCVE)
+		vuln.AddSeverity(tc.inputCVE.Impact)
+
+		got := vuln.Severity
+		if diff := cmp.Diff(got, tc.expectedResult); diff != "" {
+			t.Errorf("test %q: Incorrect result: %s", tc.description, diff)
+		}
+	}
 }

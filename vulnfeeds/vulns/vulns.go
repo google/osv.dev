@@ -34,6 +34,11 @@ type Event struct {
 	LastAffected string `json:"last_affected,omitempty" yaml:"last_affected,omitempty"`
 }
 
+type Severity struct {
+	Type  string `json:"type" yaml:"type"`
+	Score string `json:"score" yaml:"score"`
+}
+
 type Affected struct {
 	Package  *AffectedPackage `json:"package,omitempty"`
 	Ranges   []AffectedRange  `json:"ranges" yaml:"ranges"`
@@ -60,6 +65,7 @@ type Reference struct {
 type Vulnerability struct {
 	ID         string      `json:"id" yaml:"id"`
 	Summary    string      `json:"summary,omitempty" yaml:"summary,omitempty"`
+	Severity   []Severity  `json:"severity,omitempty" yaml:"severity,omitempty"`
 	Details    string      `json:"details" yaml:"details"`
 	Affected   []Affected  `json:"affected" yaml:"affected"`
 	References []Reference `json:"references" yaml:"references"`
@@ -347,6 +353,20 @@ func (v *Vulnerability) AddPkgInfo(pkgInfo PackageInfo) {
 		affected.Ranges = append(affected.Ranges, versionRange)
 	}
 	v.Affected = append(v.Affected, affected)
+}
+
+// AddSeverity adds CVSS3 severity information to the OSV vulnerability object.
+func (v *Vulnerability) AddSeverity(CVEImpact cves.CVEImpact) {
+	if CVEImpact == (cves.CVEImpact{}) {
+		return
+	}
+
+	severity := Severity{
+		Type:  "CVSS_V3",
+		Score: CVEImpact.BaseMetricV3.CVSSV3.VectorString,
+	}
+
+	v.Severity = append(v.Severity, severity)
 }
 
 // AttachExtractedVersionInfo adds version information extracted from CVEs onto

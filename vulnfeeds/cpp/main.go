@@ -232,6 +232,8 @@ func CVEToOSV(CVE cves.CVEItem, repos []string, cache git.RepoTagsCache, directo
 		return fmt.Errorf("[%s]: No affected ranges detected for %q", CVE.CVE.CVEDataMeta.ID, CPE.Product)
 	}
 
+	v.AddSeverity(CVE.Impact)
+
 	vulnDir := filepath.Join(directory, CPE.Vendor, CPE.Product)
 	err = os.MkdirAll(vulnDir, 0755)
 	if err != nil {

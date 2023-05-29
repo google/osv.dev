@@ -8,6 +8,9 @@
   "labels": ["dependencies"],
   "postUpdateOptions": ["gomodTidy"],
   "osvVulnerabilityAlerts": true,
+  "constraints": {
+    "python": "3.10"
+  },
   "packageRules": [
     {
       "matchUpdateTypes": ["major"],

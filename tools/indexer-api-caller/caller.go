@@ -1,15 +1,15 @@
 package main
 
 import (
-	"bytes"
 	"crypto/md5"
 	"encoding/base64"
 	"flag"
 	"fmt"
+	"io"
 	"io/fs"
 	"log"
+	"net/http"
 	"os"
-	"os/exec"
 	"path/filepath"
 	"strings"
 )
@@ -67,7 +67,7 @@ func buildGit(repoDir string) error {
 	log.Printf("%v", len(fileResults))
 
 	b := strings.Builder{}
-	b.WriteString(`{"query": {"name":"protobuf", "file_hashes": [`)
+	b.WriteString(fmt.Sprintf(`{"name":"%s", "file_hashes": [`, filepath.Base(repoDir)))
 
 	for i, fr := range fileResults {
 		if i == len(fileResults)-1 {
@@ -76,20 +76,14 @@ func buildGit(repoDir string) error {
 			fmt.Fprintf(&b, "{\"hash\": \"%s\"},", base64.StdEncoding.EncodeToString(fr.Hash))
 		}
 	}
-	b.WriteString("]}}")
+	b.WriteString("]}")
 
-	// TODO: Use proper grpc library calls here
-	cmd := exec.Command("bash")
-	cmd.Args = append(cmd.Args, "-c", `grpcurl -plaintext -d @ -protoset api_descriptor.pb 127.0.0.1:8000 osv.v1.OSV/DetermineVersion`)
-
-	buffer := bytes.Buffer{}
-	_, err := buffer.Write([]byte(b.String()))
+	res, err := http.Post("https://api.osv.dev/v1experimental/determineversion", "application/json", strings.NewReader(b.String()))
 	if err != nil {
-		log.Panicln(err)
+		return fmt.Errorf("Failed to make request: %v", err)
 	}
 
-	cmd.Stdin = &buffer
-	output, err := cmd.CombinedOutput()
+	output, err := io.ReadAll(res.Body)
 
 	if err != nil {
 		log.Panicf("%s: %s", err.Error(), string(output))

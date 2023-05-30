@@ -274,12 +274,18 @@ class IntegrationTests(unittest.TestCase):
         timeout=_TIMEOUT)
     self.assert_results_equal({'vulns': expected_vulns}, response.json())
 
+  def test_query_semver_no_vulns(self):
+    """Test queries by SemVer with no vulnerabilities."""
+    package = 'github.com/justinas/nosurf'
+    ecosystem = 'Go'
+
     # Test that a SemVer with a (believed to be non-vulnerable) version and an
     # ecosystem returns no vulnerabilities.
+    # (This version does not exist)
     response = requests.post(
         _api() + '/v1/query',
         data=json.dumps({
-            'version': '2.7.8',
+            'version': '1.1.1',
             'package': {
                 'name': package,
                 'ecosystem': ecosystem,

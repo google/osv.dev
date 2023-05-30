@@ -47,6 +47,15 @@ type CVEReferences struct {
 	ReferenceData []CVEReferenceData `json:"reference_data"`
 }
 
+type CVEImpact struct {
+	BaseMetricV3 struct {
+		CVSSV3 struct {
+			VectorString string `json:"vectorString"`
+			BaseSeverity string `json:"baseSeverity"`
+		} `json:"cvssV3"`
+	} `json:"baseMetricV3"`
+}
+
 type CVEItem struct {
 	CVE            CVE `json:"cve"`
 	Configurations struct {
@@ -62,15 +71,9 @@ type CVEItem struct {
 			} `json:"cpe_match"`
 		} `json:"nodes"`
 	} `json:"configurations"`
-	Impact struct {
-		BaseMetricV3 struct {
-			CVSSV3 struct {
-				BaseSeverity string `json:"baseSeverity"`
-			} `json:"cvssV3"`
-		} `json:"baseMetricV3"`
-	} `json:"impact"`
-	PublishedDate    string `json:"publishedDate"`
-	LastModifiedDate string `json:"lastModifiedDate"`
+	Impact           CVEImpact `json:"impact"`
+	PublishedDate    string    `json:"publishedDate"`
+	LastModifiedDate string    `json:"lastModifiedDate"`
 }
 
 type NVDCVE struct {

@@ -10,3 +10,5 @@ spec:
         resources:
           limits:
             memory: 4Gi
+      timeoutSeconds: 60
+      containerConcurrency: 20

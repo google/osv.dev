@@ -1,5 +1,6 @@
 resources:
 - ../../base
+- base_nvd-cve-osv.yaml  # TODO: delete when we add this to production
 patches:
 - workers.yaml
 - scaler.yaml
@@ -11,3 +12,4 @@ patches:
 - debian-first-version.yaml
 - debian-copyright-mirror.yaml
 - gen-cperepos-map.yaml
+- nvd-cve-osv.yaml

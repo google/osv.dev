@@ -1,5 +1,4 @@
-#!/bin/sh
-# Copyright 2021 Google LLC
+# Copyright 2023 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -13,14 +12,19 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-if [ $# -lt 1 ]; then
-  echo "Usage: $0 /path/to/service_account.json"
-  exit 1
-fi
+FROM golang:alpine@sha256:0a03b591c358a0bb02e39b93c30e955358dadd18dc507087a3b7f3912c17fe13 AS buildenv
 
-python3 -m pipenv sync
-service docker start
+WORKDIR /go/src
 
-export GOOGLE_CLOUD_PROJECT=oss-vdb
-export GOOGLE_APPLICATION_CREDENTIALS="$1"
-python3 -m pipenv run python integration_tests.py "$1"
+COPY go.mod go.sum ./
+RUN go mod download && go mod verify
+
+COPY . .
+RUN CGO_ENABLED=0 go build -v -o /usr/local/bin ./cpp ./cmd/download-cves
+
+FROM gcr.io/google.com/cloudsdktool/google-cloud-cli:alpine AS runtime
+
+COPY --from=buildenv /usr/local/bin ./usr/local/bin
+COPY --from=buildenv /go/src/cpp/run_cve_to_osv_generation ./usr/local/bin
+
+CMD ["/usr/local/bin/run_cve_to_osv_generation"]

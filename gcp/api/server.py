@@ -179,8 +179,8 @@ def build_determine_version_result(
   for f in idx_futures:
     idx: osv.RepoIndex = f.result()
 
-    if idx.empty_bucket_bitmap == None:
-      logging.error(f'No empty bucket bitmap for: {idx.name}@{idx.tag}')
+    if idx.empty_bucket_bitmap is None:
+      logging.error('No empty bucket bitmap for: %s@%s', idx.name, idx.version)
       continue
 
     # Byte order little is how the bitmap is stored in the indexer originally

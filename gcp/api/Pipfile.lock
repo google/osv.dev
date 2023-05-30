@@ -364,7 +364,7 @@
         },
         "osv": {
             "editable": true,
-            "path": "../../"
+            "path": "./../.."
         },
         "packageurl-python": {
             "hashes": [

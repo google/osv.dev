@@ -51,10 +51,13 @@ _MAX_VULNERABILITIES_LISTED = 16
 _MAX_MATCHES_TO_CARE = 100
 # Max results to return for DetermineVersion
 _MAX_DETERMINE_VER_RESULTS_TO_RETURN = 10
-_DETERMINE_VER_MIN_SCORE_CUTOFF = 0.2
+_DETERMINE_VER_MIN_SCORE_CUTOFF = 0.05
 # Size of buckets to divide hashes into in DetermineVersion
 # This should match the number in the indexer
 _BUCKET_SIZE = 512
+
+# Prefix for the
+_TAG_PREFIX = "refs/tags/"
 
 _ndb_client = ndb.Client()
 
@@ -178,6 +181,10 @@ def build_determine_version_result(
   for f in idx_futures:
     idx: osv.RepoIndex = f.result()
 
+    if idx.empty_bucket_bitmap is None:
+      logging.error('No empty bucket bitmap for: %s@%s', idx.name, idx.version)
+      continue
+
     # Byte order little is how the bitmap is stored in the indexer originally
     bitmap = int.from_bytes(idx.empty_bucket_bitmap, byteorder='little')
 
@@ -190,9 +197,9 @@ def build_determine_version_result(
     # this requirement.
     missed_empty_buckets = (inverted_empty_bucket_bitmap & bitmap).bit_count()
 
-    estimated_num_diff = estimate_diff(
-        _BUCKET_SIZE -
-        bucket_matches_by_proj[idx.key]  # Buckets that match are not changed
+    estimated_diff_files = estimate_diff(
+        _BUCKET_SIZE  # Starting with the total number of buckets
+        - bucket_matches_by_proj[idx.key]  # Buckets that match are not changed
         - empty_bucket_count  # Buckets that are empty are not changed
         + missed_empty_buckets  # Unless they don't match the bitmap
         - num_skipped_buckets,  # Buckets skipped are assumed unchanged
@@ -200,14 +207,14 @@ def build_determine_version_result(
     )
 
     version_match = osv_service_v1_pb2.VersionMatch(
-        score=(max_files - estimated_num_diff) / max_files,
+        score=(max_files - estimated_diff_files) / max_files,
         minimum_file_matches=file_matches_by_proj[idx.key],
-        estimated_diff_files=estimated_num_diff,
+        estimated_diff_files=estimated_diff_files,
         repo_info=osv_service_v1_pb2.VersionRepositoryInformation(
             type=osv_service_v1_pb2.VersionRepositoryInformation.GIT,
             address=idx.repo_addr,
             commit=idx.commit,
-            version=idx.version,
+            tag=idx.tag.removeprefix(_TAG_PREFIX),
         ),
     )
 

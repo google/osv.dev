@@ -16,5 +16,3 @@ spec:
               value: gs://osv-test-cve-osv-conversion/debian_copyright/debian_copyright.tar
             - name: CPEREPO_GCS_PATH
               value: gs://osv-test-cve-osv-conversion/cpe_repos
-            - name: BE_VERBOSE
-              value:

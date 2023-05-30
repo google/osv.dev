@@ -11,3 +11,6 @@ python-dateutil = "2.8.2"
 [dev-packages]
 pylint = "*"
 yapf = "*"
+
+[requires]
+python_version = "3.10"

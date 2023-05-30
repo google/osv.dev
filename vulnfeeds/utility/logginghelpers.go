@@ -12,7 +12,7 @@ import (
 
 // CreateLoggerWrapper creates and initializes the LoggerWrapper,
 // and also returns a cleanup function to be deferred
-func CreateLoggerWrapper(name string) (LoggerWrapper, func()) {
+func CreateLoggerWrapper(logID string) (LoggerWrapper, func()) {
 	projectId, projectIdSet := os.LookupEnv("GOOGLE_CLOUD_PROJECT")
 	if !projectIdSet {
 		return LoggerWrapper{}, func() {}

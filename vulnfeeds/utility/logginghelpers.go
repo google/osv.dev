@@ -24,7 +24,7 @@ func CreateLoggerWrapper(logID string) (LoggerWrapper, func()) {
 		log.Fatalf("Failed to create client: %v", err)
 	}
 	wrapper := LoggerWrapper{
-		GCloudLogger: client.Logger(name),
+		GCloudLogger: client.Logger(logID),
 	}
 	return wrapper, func() { client.Close() }
 }

@@ -37,7 +37,7 @@ func main() {
 	if *searchDir != "" {
 		entries, err := os.ReadDir(*searchDir)
 		if err != nil {
-			log.Panicf("Failed to read dir: %w", err)
+			log.Panicf("Failed to read dir: %v", err)
 		}
 		for _, entry := range entries {
 			if entry.IsDir() {

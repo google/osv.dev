@@ -343,9 +343,15 @@ var (
 // Returns the base repository URL for supported repository hosts.
 func Repo(u string) (string, error) {
 	var supportedHosts = []string{
-		"github.com",
-		"gitlab.org",
 		"bitbucket.org",
+		"github.com",
+		"gitlab.com",
+		"gitlab.org",
+		"pagure.io",
+	}
+	var supportedHostPrefixes = []string{
+		"git",
+		"gitlab",
 	}
 	parsedURL, err := url.Parse(u)
 	if err != nil {
@@ -365,11 +371,18 @@ func Repo(u string) (string, error) {
 	}
 
 	// Were we handed a base repository URL from the get go?
-	if slices.Contains(supportedHosts, parsedURL.Hostname()) {
-		if len(strings.Split(strings.TrimSuffix(parsedURL.Path, "/"), "/")) == 3 {
+	if slices.Contains(supportedHosts, parsedURL.Hostname()) || slices.Contains(supportedHostPrefixes, strings.Split(parsedURL.Hostname(), ".")[0]) {
+		pathParts := strings.Split(strings.TrimSuffix(parsedURL.Path, "/"), "/")
+		if len(pathParts) == 3 && parsedURL.Path != "/cgi-bin/gitweb.cgi" {
 			return fmt.Sprintf("%s://%s%s", parsedURL.Scheme,
 					parsedURL.Hostname(),
 					strings.TrimSuffix(parsedURL.Path, "/")),
+				nil
+		}
+		if strings.HasSuffix(parsedURL.Path, ".git") {
+			return fmt.Sprintf("%s://%s%s", parsedURL.Scheme,
+					parsedURL.Hostname(),
+					parsedURL.Path),
 				nil
 		}
 	}

@@ -14,16 +14,19 @@ import (
 // and also returns a cleanup function to be deferred
 func CreateLoggerWrapper(name string) (LoggerWrapper, func()) {
 	projectId, ok := os.LookupEnv("GOOGLE_CLOUD_PROJECT")
+	var loggerOptions []logging.LoggerOption
 	if !ok {
-		log.Fatalf("GOOGLE_CLOUD_PROJECT not set")
+		log.Println("GOOGLE_CLOUD_PROJECT not set, routing logs to stdout")
+		loggerOptions = append(loggerOptions, logging.RedirectAsJSON(os.Stdout))
 	}
 	client, err := logging.NewClient(context.Background(), projectId)
+
 	if err != nil {
 		log.Fatalf("Failed to create client: %v", err)
 	}
 
 	wrapper := LoggerWrapper{
-		GCloudLogger: client.Logger(name),
+		GCloudLogger: client.Logger(name, loggerOptions...),
 	}
 
 	return wrapper, func() { client.Close() }

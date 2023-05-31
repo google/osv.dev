@@ -28,7 +28,7 @@ RUN apt-get update && apt-get upgrade -y && \
         libssl-dev \
         software-properties-common
 
-RUN curl -sS https://www.python.org/ftp/python/3.11.0/Python-3.11.1.tgz | tar -C /tmp -xzv && \
+RUN curl -sS https://www.python.org/ftp/python/3.11.1/Python-3.11.1.tgz | tar -C /tmp -xzv && \
     cd /tmp/Python-3.11.1 && \
     ./configure --enable-optimizations --with-lto --enable-loadable-sqlite-extensions && \
     make -j && \

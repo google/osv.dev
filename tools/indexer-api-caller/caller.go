@@ -15,7 +15,8 @@ import (
 )
 
 var (
-	repoDir = flag.String("repo", "", "repo directory")
+	repoDir   = flag.String("repo", "", "repo directory")
+	searchDir = flag.String("dir", "", "third party directory containing multiple libraries")
 )
 
 type Hash = []byte
@@ -28,7 +29,24 @@ type FileResult struct {
 
 func main() {
 	flag.Parse()
-	buildGit(*repoDir)
+
+	if *repoDir != "" {
+		buildGit(*repoDir)
+	}
+
+	if *searchDir != "" {
+		entries, err := os.ReadDir(*searchDir)
+		if err != nil {
+			log.Panicf("Failed to read dir: %w", err)
+		}
+		for _, entry := range entries {
+			if entry.IsDir() {
+				path := filepath.Join(*searchDir, entry.Name())
+				log.Printf("Scanning %s", path)
+				buildGit(path)
+			}
+		}
+	}
 }
 
 func buildGit(repoDir string) error {
@@ -64,7 +82,7 @@ func buildGit(repoDir string) error {
 		return fmt.Errorf("failed during file walk: %v", err)
 	}
 
-	log.Printf("%v", len(fileResults))
+	log.Printf("Hashed %v files", len(fileResults))
 
 	b := strings.Builder{}
 	b.WriteString(fmt.Sprintf(`{"name":"%s", "file_hashes": [`, filepath.Base(repoDir)))

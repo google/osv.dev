@@ -192,6 +192,11 @@ func TestValidRepo(t *testing.T) {
 			expectedResult: true,
 		},
 		{
+			description:    "Valid repository with a git:// protocol URL",
+			repoURL:        "git://git.infradead.org/mtd-utils.git",
+			expectedResult: true,
+		},
+		{
 			description:    "Invalid repository",
 			repoURL:        "https://github.com/andrewpollock/mybogusrepo",
 			expectedResult: false,

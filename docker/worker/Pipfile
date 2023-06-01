@@ -15,3 +15,6 @@ osv = {editable = true, path = "./../.."}
 [dev-packages]
 yapf = "*"
 pylint = "*"
+
+[requires]
+python_version = "3.11.1"

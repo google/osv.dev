@@ -22,3 +22,7 @@ grpcio-status = "==1.54.2"
 
 [dev-packages]
 pipenv = "==2022.12.19"
+
+[requires]
+# We can't control what patch version App Engine uses - it always uses the latest stable.
+python_version = "3.11"

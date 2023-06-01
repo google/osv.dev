@@ -347,7 +347,9 @@ func Repo(u string) (string, error) {
 		"github.com",
 		"gitlab.com",
 		"gitlab.org",
+		"opendev.org",
 		"pagure.io",
+		"xenbits.xen.org",
 	}
 	var supportedHostPrefixes = []string{
 		"git",
@@ -374,6 +376,27 @@ func Repo(u string) (string, error) {
 	if slices.Contains(supportedHosts, parsedURL.Hostname()) || slices.Contains(supportedHostPrefixes, strings.Split(parsedURL.Hostname(), ".")[0]) {
 		pathParts := strings.Split(strings.TrimSuffix(parsedURL.Path, "/"), "/")
 		if len(pathParts) == 3 && parsedURL.Path != "/cgi-bin/gitweb.cgi" {
+			return fmt.Sprintf("%s://%s%s", parsedURL.Scheme,
+					parsedURL.Hostname(),
+					strings.TrimSuffix(parsedURL.Path, "/")),
+				nil
+		}
+		// GitLab can have a deeper structure to a repo (projects can be within nested groups)
+		if len(pathParts) >= 3 && strings.HasPrefix(parsedURL.Hostname(), "gitlab.") &&
+			!(strings.Contains(parsedURL.Path, "commit") ||
+				strings.Contains(parsedURL.Path, "compare") ||
+				strings.Contains(parsedURL.Path, "blob") ||
+				strings.Contains(parsedURL.Path, "releases/tag") ||
+				strings.Contains(parsedURL.Path, "releases") ||
+				strings.Contains(parsedURL.Path, "tags") ||
+				strings.Contains(parsedURL.Path, "security/advisories") ||
+				strings.Contains(parsedURL.Path, "issues")) {
+			return fmt.Sprintf("%s://%s%s", parsedURL.Scheme,
+					parsedURL.Hostname(),
+					strings.TrimSuffix(parsedURL.Path, "/")),
+				nil
+		}
+		if len(pathParts) == 2 && parsedURL.Hostname() == "git.netfilter.org" {
 			return fmt.Sprintf("%s://%s%s", parsedURL.Scheme,
 					parsedURL.Hostname(),
 					strings.TrimSuffix(parsedURL.Path, "/")),

@@ -356,6 +356,30 @@ func TestRepo(t *testing.T) {
 			expectedRepoURL: "https://git.kernel.org/pub/scm/linux/kernel/git/jaegeuk/f2fs-tools.git",
 			expectedOk:      true,
 		},
+		{
+			description:     "Valid repo previously being discarded",
+			inputLink:       "https://xenbits.xen.org/git-http/xen.git",
+			expectedRepoURL: "https://xenbits.xen.org/git-http/xen.git",
+			expectedOk:      true,
+		},
+		{
+			description:     "Valid repo previously being discarded",
+			inputLink:       "https://opendev.org/x/sqlalchemy-migrate.git",
+			expectedRepoURL: "https://opendev.org/x/sqlalchemy-migrate.git",
+			expectedOk:      true,
+		},
+		{
+			description:     "Valid repo previously being discarded",
+			inputLink:       "https://git.netfilter.org/libnftnl",
+			expectedRepoURL: "https://git.netfilter.org/libnftnl",
+			expectedOk:      true,
+		},
+		{
+			description:     "Valid repo previously being discarded",
+			inputLink:       "https://gitlab.com/ubports/development/core/click/",
+			expectedRepoURL: "https://gitlab.com/ubports/development/core/click",
+			expectedOk:      true,
+		},
 	}
 
 	for _, tc := range tests {

@@ -43,7 +43,7 @@ import (
 const workers = 5
 
 var (
-	genericVersionRE = regexp.MustCompile(`(\d+\.\d+\.?\d?-?(rc|alpha|beta|preview)?\d?)`)
+	genericVersionRE = regexp.MustCompile(`(?i)(\d+|(?<![a-z])(?:rc|alpha|beta|preview)\d*)`)
 )
 
 // Result is the data structure returned by the stage.
@@ -177,16 +177,8 @@ func (s *Stage) processGit(ctx context.Context, repoCfg *config.RepoConfig) erro
 			version   string
 			commitTag = ref.Name().String()
 		)
-		if repoCfg.VersionRE != "" {
-			versRE, err := regexp.Compile(repoCfg.VersionRE)
-			if err != nil {
-				return err
-			}
-			version = versRE.FindString(commitTag)
-		}
-		if version == "" {
-			version = genericVersionRE.FindString(commitTag)
-		}
+		verComponents := genericVersionRE.FindAllString(commitTag, -1)
+		version = strings.Join(verComponents, "-")
 
 		if version == "" {
 			log.Warningf("failed to extract version for repo: %s\ttag/branch: %s", repoCfg.Address, ref.Name().String())

@@ -30,6 +30,9 @@ mkdir -p "${WORK_DIR}/nvd"
 echo "Downloading latest CPE Git repository map"
 gsutil -q cp "${CPEREPO_GCS_PATH}" "${WORK_DIR}"
 
+# Dirty hack to get around https://stackoverflow.com/questions/68528541/env-variable-array
+# https://stackoverflow.com/questions/9293887/reading-a-space-delimited-string-into-an-array-in-bash/9294015
+IN_SCOPE_YEARS=($IN_SCOPE_YEARS)
 for YEAR in "${IN_SCOPE_YEARS[@]}"; do
   # Run OSV record generation.
   echo "Converting NVD CVE records from ${YEAR} to OSV"

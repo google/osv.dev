@@ -187,7 +187,7 @@ func (s *Stage) processGit(ctx context.Context, repoCfg *config.RepoConfig) erro
 				flatComponents = append(flatComponents, v2)
 			}
 		}
-		version = strings.Join(flatComponents, "-")
+		version = strings.Join(flatComponents, ".")
 
 		if version == "" {
 			log.Warningf("failed to extract version for repo: %s\ttag/branch: %s", repoCfg.Address, ref.Name().String())

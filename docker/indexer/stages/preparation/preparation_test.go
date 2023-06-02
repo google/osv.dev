@@ -30,6 +30,27 @@ func Test_tagToStandardVersion(t *testing.T) {
 		{
 			name: "",
 			args: args{
+				tag: "cares-1_5_0",
+			},
+			want: "1.5.0",
+		},
+		{
+			name: "",
+			args: args{
+				tag: "cares-1_5_0_alpha",
+			},
+			want: "1.5.0.alpha",
+		},
+		{
+			name: "",
+			args: args{
+				tag: "cares-1_5_0-alpha4",
+			},
+			want: "1.5.0.alpha4",
+		},
+		{
+			name: "",
+			args: args{
 				tag: "cares-1_5_0-6alpha4",
 			},
 			want: "1.5.0.6.4",

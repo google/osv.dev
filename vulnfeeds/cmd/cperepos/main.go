@@ -87,10 +87,16 @@ type VendorProduct struct {
 // when resolved via Debian copyright metadata.
 var DebianCopyrightDenylist = []VendorProduct{
 	VendorProduct{"apple", "pdfkit"},
+	VendorProduct{"f-secure", "safe"},
+	VendorProduct{"ibm", "workflow"},
 	VendorProduct{"inductiveautomation", "ignition"},
 	VendorProduct{"jetbrains", "hub"},
 	VendorProduct{"microsoft", "onedrive"},
+	VendorProduct{"mirametrix", "glance"},
+	VendorProduct{"nintext", "workflow"},
+	VendorProduct{"oracle", "workflow"},
 	VendorProduct{"thrivethemes", "ignition"},
+	VendorProduct{"vmware", "horizon"},
 }
 
 // Helper for JSON rendering of a map with a struct key.

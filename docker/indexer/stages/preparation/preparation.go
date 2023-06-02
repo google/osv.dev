@@ -181,6 +181,9 @@ func (s *Stage) processGit(ctx context.Context, repoCfg *config.RepoConfig) erro
 		var flatComponents []string
 		for _, v := range verComponents {
 			for _, v2 := range v {
+				if len(v2) == 0 {
+					continue
+				}
 				flatComponents = append(flatComponents, v2)
 			}
 		}

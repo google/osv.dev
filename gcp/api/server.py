@@ -313,15 +313,6 @@ def do_query(query, context: grpc.ServicerContext, include_details=True):
   page_token = None
   if query.page_token:
     page_token = ndb.Cursor(urlsafe=query.page_token)
-  # if query.page_token:
-  #   # The page token will have -1 appended if the token represents the
-  #   url_page_token: str = query.page_token
-  #   if url_page_token.endswith('-1'):
-  #     page_token = ndb.Cursor(urlsafe=url_page_token[:-2])
-  #     skip_normalization = True
-  #   else:
-  #     page_token = ndb.Cursor(urlsafe=url_page_token)
-  #     skip_normalization = False
 
   purl = None
   purl_version = None

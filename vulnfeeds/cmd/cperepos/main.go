@@ -82,6 +82,23 @@ type VendorProduct struct {
 	Product string
 }
 
+// VendorProducts in this denylist are known non-OSS and/or have generic
+// product names, which cause undesired and incorrect repository attribution
+// when resolved via Debian copyright metadata.
+var DebianCopyrightDenylist = []VendorProduct{
+	VendorProduct{"apple", "pdfkit"},
+	VendorProduct{"f-secure", "safe"},
+	VendorProduct{"ibm", "workflow"},
+	VendorProduct{"inductiveautomation", "ignition"},
+	VendorProduct{"jetbrains", "hub"},
+	VendorProduct{"microsoft", "onedrive"},
+	VendorProduct{"mirametrix", "glance"},
+	VendorProduct{"nintext", "workflow"},
+	VendorProduct{"oracle", "workflow"},
+	VendorProduct{"thrivethemes", "ignition"},
+	VendorProduct{"vmware", "horizon"},
+}
+
 // Helper for JSON rendering of a map with a struct key.
 func (vp VendorProduct) MarshalText() (text []byte, err error) {
 	return []byte(vp.Vendor + ":" + vp.Product), nil
@@ -328,6 +345,10 @@ func analyzeCPEDictionary(d CPEDict) (ProductToRepo VendorProductToRepoMap, Desc
 		// flag for trying Debian afterwards.
 		// We may encounter another CPE item that *does* have a viable reference in the meantime.
 		if len(ProductToRepo[VendorProduct{CPE.Vendor, CPE.Product}]) == 0 && *DebianMetadataPath != "" {
+			// Check the denylist though.
+			if slices.Contains(DebianCopyrightDenylist, VendorProduct{CPE.Vendor, CPE.Product}) {
+				continue
+			}
 			MaybeTryDebian[VendorProduct{CPE.Vendor, CPE.Product}] = true
 		}
 	}

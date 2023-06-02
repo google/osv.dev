@@ -21,4 +21,4 @@ pipenv = ">=2022.9.4"
 grpcio-tools = "*"
 
 [requires]
-python_version = "3.11.1"
+python_version = "3.11"

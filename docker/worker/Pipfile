@@ -17,4 +17,4 @@ yapf = "*"
 pylint = "*"
 
 [requires]
-python_version = "3.11.1"
+python_version = "3.11"

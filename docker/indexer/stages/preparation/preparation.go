@@ -177,17 +177,7 @@ func (s *Stage) processGit(ctx context.Context, repoCfg *config.RepoConfig) erro
 			version   string
 			commitTag = ref.Name().String()
 		)
-		verComponents := genericVersionRE.FindAllStringSubmatch(commitTag, -1)
-		var flatComponents []string
-		for _, v := range verComponents {
-			for _, v2 := range v {
-				if len(v2) == 0 {
-					continue
-				}
-				flatComponents = append(flatComponents, v2)
-			}
-		}
-		version = strings.Join(flatComponents, ".")
+		version = tagToStandardVersion(commitTag)
 
 		if version == "" {
 			log.Warningf("failed to extract version for repo: %s\ttag/branch: %s", repoCfg.Address, ref.Name().String())
@@ -346,4 +336,22 @@ func (r *Stage) copyToBucket(ctx context.Context, dir, name string) error {
 		}
 	}
 	return nil
+}
+
+func tagToStandardVersion(tag string) string {
+	verComponents := genericVersionRE.FindAllStringSubmatch(tag, -1)
+	var flatComponents []string
+	for _, v := range verComponents {
+		for i, v2 := range v {
+			if i == 0 {
+				// First capture is the entire match, so ignore it
+				continue
+			}
+			if len(v2) == 0 {
+				continue
+			}
+			flatComponents = append(flatComponents, v2)
+		}
+	}
+	return strings.Join(flatComponents, ".")
 }

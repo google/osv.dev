@@ -26,7 +26,6 @@ address: "example.com/abc"
 name: "abc"
 type: "GIT"
 base_cpe: "cpe"
-version_regex: ".*"
 hash_all_commits: true
 branch_versioning: true
 file_extensions:

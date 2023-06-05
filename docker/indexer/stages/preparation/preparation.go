@@ -24,7 +24,6 @@ import (
 	"io/fs"
 	"os"
 	"path/filepath"
-	"regexp"
 	"strings"
 	"time"
 
@@ -42,15 +41,10 @@ import (
 
 const workers = 5
 
-var (
-	genericVersionRE = regexp.MustCompile(`(\d+\.\d+\.?\d?-?(rc|alpha|beta|preview)?\d?)`)
-)
-
 // Result is the data structure returned by the stage.
 type Result struct {
 	Name              string
 	BaseCPE           string
-	Version           string
 	CheckoutOptions   *git.CheckoutOptions
 	Commit            plumbing.Hash
 	Reference         plumbing.Hash
@@ -173,30 +167,11 @@ func (s *Stage) processGit(ctx context.Context, repoCfg *config.RepoConfig) erro
 			when = c.Author.When
 		}
 
-		var (
-			version   string
-			commitTag = ref.Name().String()
-		)
-		if repoCfg.VersionRE != "" {
-			versRE, err := regexp.Compile(repoCfg.VersionRE)
-			if err != nil {
-				return err
-			}
-			version = versRE.FindString(commitTag)
-		}
-		if version == "" {
-			version = genericVersionRE.FindString(commitTag)
-		}
-
-		if version == "" {
-			log.Warningf("failed to extract version for repo: %s\ttag/branch: %s", repoCfg.Address, ref.Name().String())
-			return nil
-		}
+		commitTag := ref.Name().String()
 
 		result := &Result{
 			Name:    repoCfg.Name,
 			BaseCPE: repoCfg.BaseCPE,
-			Version: version,
 			CheckoutOptions: &git.CheckoutOptions{
 				Branch: ref.Name(),
 			},
@@ -214,7 +189,7 @@ func (s *Stage) processGit(ctx context.Context, repoCfg *config.RepoConfig) erro
 			return err
 		}
 
-		log.Infof("publishing %s at version: %s", result.Name, result.Version)
+		log.Infof("publishing %s at version: %s", result.Name, commitTag)
 		pubRes := s.Output.Publish(ctx, &pubsub.Message{Data: buf})
 		_, err = pubRes.Get(ctx)
 		return err

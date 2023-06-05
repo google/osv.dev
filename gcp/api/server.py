@@ -188,7 +188,7 @@ def build_determine_version_result(
       continue
 
     if idx.empty_bucket_bitmap is None:
-      logging.warning('No empty bucket bitmap: %s@%s', idx.name, idx.version)
+      logging.warning('No empty bucket bitmap for: %s@%s', idx.name, idx.tag)
       continue
 
     # Byte order little is how the bitmap is stored in the indexer originally
@@ -212,6 +212,11 @@ def build_determine_version_result(
         abs(idx.file_count - max_files)  # The difference in file count
     )
 
+    version = osv.normalize_tag(idx.tag.removeprefix(_TAG_PREFIX))
+    version = version.replace('-', '.')
+    if not version:  # This tag actually isn't a version (rare)
+      continue
+
     version_match = osv_service_v1_pb2.VersionMatch(
         score=(max_files - estimated_diff_files) / max_files,
         minimum_file_matches=file_matches_by_proj[idx.key],
@@ -221,8 +226,8 @@ def build_determine_version_result(
             address=idx.repo_addr,
             commit=idx.commit.hex(),
             tag=idx.tag.removeprefix(_TAG_PREFIX),
-        ),
-    )
+            version=version,
+        ))
 
     if version_match.score < _DETERMINE_VER_MIN_SCORE_CUTOFF:
       continue

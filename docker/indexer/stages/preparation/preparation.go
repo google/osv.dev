@@ -24,7 +24,6 @@ import (
 	"io/fs"
 	"os"
 	"path/filepath"
-	"regexp"
 	"strings"
 	"time"
 
@@ -41,10 +40,6 @@ import (
 )
 
 const workers = 5
-
-var (
-	genericVersionRE = regexp.MustCompile(`(?i)(\d+)|(?:[^a-z])((?:rc|alpha|beta|preview)\d*)`)
-)
 
 // Result is the data structure returned by the stage.
 type Result struct {
@@ -325,22 +320,4 @@ func (r *Stage) copyToBucket(ctx context.Context, dir, name string) error {
 		}
 	}
 	return nil
-}
-
-func tagToStandardVersion(tag string) string {
-	verComponents := genericVersionRE.FindAllStringSubmatch(tag, -1)
-	var flatComponents []string
-	for _, v := range verComponents {
-		for i, v2 := range v {
-			if i == 0 {
-				// First capture is the entire match, so ignore it
-				continue
-			}
-			if len(v2) == 0 {
-				continue
-			}
-			flatComponents = append(flatComponents, v2)
-		}
-	}
-	return strings.Join(flatComponents, ".")
 }

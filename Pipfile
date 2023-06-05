@@ -19,3 +19,6 @@ yapf = "*"
 pylint = "*"
 pipenv = ">=2022.9.4"
 grpcio-tools = "*"
+
+[requires]
+python_version = "3.11"

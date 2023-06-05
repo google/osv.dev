@@ -16,3 +16,6 @@ grpcio-reflection = "*"
 
 [dev-packages]
 grpcio-tools = "*"
+
+[requires]
+python_version = "3.11"

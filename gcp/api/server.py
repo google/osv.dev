@@ -178,11 +178,17 @@ def build_determine_version_result(
   inverted_empty_bucket_bitmap = (1 << _BUCKET_SIZE) - 1 - empty_bucket_bitmap
   empty_bucket_count = inverted_empty_bucket_bitmap.bit_count()
 
-  for f in idx_futures:
+  for i, f in enumerate(idx_futures):
     idx: osv.RepoIndex = f.result()
 
+    if idx is None:
+      logging.warning(
+          'Bucket exists for project: %s, which does ' +
+          'not have a matching IndexRepo entry', bucket_match_items[i][0])
+      continue
+
     if idx.empty_bucket_bitmap is None:
-      logging.error('No empty bucket bitmap for: %s@%s', idx.name, idx.version)
+      logging.warning('No empty bucket bitmap: %s@%s', idx.name, idx.version)
       continue
 
     # Byte order little is how the bitmap is stored in the indexer originally
@@ -213,7 +219,7 @@ def build_determine_version_result(
         repo_info=osv_service_v1_pb2.VersionRepositoryInformation(
             type=osv_service_v1_pb2.VersionRepositoryInformation.GIT,
             address=idx.repo_addr,
-            commit=idx.commit,
+            commit=idx.commit.hex(),
             tag=idx.tag.removeprefix(_TAG_PREFIX),
         ),
     )

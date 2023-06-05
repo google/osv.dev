@@ -221,7 +221,7 @@ def build_determine_version_result(
             address=idx.repo_addr,
             commit=idx.commit.hex(),
             tag=idx.tag.removeprefix(_TAG_PREFIX),
-        ),
+            version=osv.normalize_tag(idx.tag.removeprefix(_TAG_PREFIX))),
     )
 
     if version_match.score < _DETERMINE_VER_MIN_SCORE_CUTOFF:

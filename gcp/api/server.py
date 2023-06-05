@@ -212,6 +212,10 @@ def build_determine_version_result(
         abs(idx.file_count - max_files)  # The difference in file count
     )
 
+    version = osv.normalize_tag(idx.tag.removeprefix(_TAG_PREFIX))
+    if not version: # This tag actually isn't a version (rare)
+      continue
+
     version_match = osv_service_v1_pb2.VersionMatch(
         score=(max_files - estimated_diff_files) / max_files,
         minimum_file_matches=file_matches_by_proj[idx.key],
@@ -221,7 +225,8 @@ def build_determine_version_result(
             address=idx.repo_addr,
             commit=idx.commit.hex(),
             tag=idx.tag.removeprefix(_TAG_PREFIX),
-            version=osv.normalize_tag(idx.tag.removeprefix(_TAG_PREFIX))),
+            version=version,
+        )
     )
 
     if version_match.score < _DETERMINE_VER_MIN_SCORE_CUTOFF:

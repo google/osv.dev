@@ -182,7 +182,7 @@ def build_determine_version_result(
     idx: osv.RepoIndex = f.result()
 
     if idx.empty_bucket_bitmap is None:
-      logging.error('No empty bucket bitmap for: %s@%s', idx.name, idx.version)
+      logging.error('No empty bucket bitmap for: %s@%s', idx.name, idx.tag)
       continue
 
     # Byte order little is how the bitmap is stored in the indexer originally

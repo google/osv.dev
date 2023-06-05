@@ -83,7 +83,7 @@ func (s *Stage) Run(ctx context.Context) error {
 			log.Errorf("failed to unmarshal input: %v", err)
 			return
 		}
-		log.Infof("begin processing: '%v' @ '%v'", repoInfo.Name, repoInfo.Version)
+		log.Infof("begin processing: '%v' @ '%v'", repoInfo.Name, repoInfo.CommitTag)
 		var err error
 		switch repoInfo.Type {
 		case shared.Git:
@@ -94,7 +94,7 @@ func (s *Stage) Run(ctx context.Context) error {
 		if err != nil {
 			log.Errorf("failed to process input: %v", err)
 		} else {
-			log.Infof("successfully processed: '%v' @ '%v'", repoInfo.Name, repoInfo.Version)
+			log.Infof("successfully processed: '%v' @ '%v'", repoInfo.Name, repoInfo.CommitTag)
 		}
 	})
 }

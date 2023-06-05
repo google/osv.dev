@@ -659,8 +659,6 @@ class RepoIndex(ndb.Model):
   commit = ndb.BlobProperty()
   # The source address
   repo_addr = ndb.StringProperty()
-  # The identified version
-  version = ndb.StringProperty()
   # The scanned file extensions
   file_exts = ndb.StringProperty(repeated=True)
   # The hash algorithm used

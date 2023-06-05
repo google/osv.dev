@@ -213,6 +213,7 @@ def build_determine_version_result(
     )
 
     version = osv.normalize_tag(idx.tag.removeprefix(_TAG_PREFIX))
+    version = version.replace('-', '.')
     if not version: # This tag actually isn't a version (rare)
       continue
 

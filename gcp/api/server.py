@@ -214,7 +214,7 @@ def build_determine_version_result(
 
     version = osv.normalize_tag(idx.tag.removeprefix(_TAG_PREFIX))
     version = version.replace('-', '.')
-    if not version: # This tag actually isn't a version (rare)
+    if not version:  # This tag actually isn't a version (rare)
       continue
 
     version_match = osv_service_v1_pb2.VersionMatch(
@@ -227,8 +227,7 @@ def build_determine_version_result(
             commit=idx.commit.hex(),
             tag=idx.tag.removeprefix(_TAG_PREFIX),
             version=version,
-        )
-    )
+        ))
 
     if version_match.score < _DETERMINE_VER_MIN_SCORE_CUTOFF:
       continue

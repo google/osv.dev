@@ -15,6 +15,7 @@
 import datetime
 import os
 import pprint
+from proto import datetime_helpers
 import requests
 import subprocess
 import tempfile
@@ -47,7 +48,7 @@ def ExpectationTest(test_data_dir):  # pylint: disable=invalid-name
       with open(expected_path) as f:
         eval_globals = globals()
         eval_globals['call'] = mock.call
-
+        eval_globals['DatetimeWithNanoseconds'] = datetime_helpers.DatetimeWithNanoseconds
         return eval(f.read(), eval_globals)  # pylint: disable=eval-used
 
     def expect_dict_equal(self, expected_name, actual):

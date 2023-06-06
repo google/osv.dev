@@ -280,7 +280,10 @@ class ImpactTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
         reference_urls=['https://url/'])
     fix_result.put()
 
-    oss_fuzz.process_impact_task('oss-fuzz:123', message)
+    with self.assertLogs(level='WARNING') as logs:
+        oss_fuzz.process_impact_task('oss-fuzz:123', message)
+    self.assertEqual(logs.output, ['WARNING:root:Too many commits in fix range.'])
+
     self.expect_dict_equal('fixed_range_too_long',
                            ndb.Key(osv.Bug, 'OSV-2020-1337').get()._to_dict())
 
@@ -407,7 +410,10 @@ class ImpactTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
         reference_urls=['https://url/'])
     regress_result.put()
 
-    oss_fuzz.process_impact_task('oss-fuzz:123', message)
+    with self.assertLogs(level='WARNING') as logs:
+      oss_fuzz.process_impact_task('oss-fuzz:123', message)
+    self.assertEqual(logs.output, ['WARNING:root:Missing FixResult for oss-fuzz:123'])
+
     self.expect_dict_equal('not_fixed',
                            ndb.Key(osv.Bug, 'OSV-2020-1337').get()._to_dict())
 
@@ -876,7 +882,10 @@ class UpdateTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
         'original_sha256': 'invalid',
         'deleted': 'false',
     }
-    task_runner._source_update(message)
+
+    with self.assertLogs(level='WARNING') as logs:
+        task_runner._source_update(message)
+    self.assertEqual(logs.output, [f'WARNING:root:sha256sum of BLAH-123.yaml no longer matches (expected=invalid vs current={_sha256("BLAH-123.yaml")}).'])
 
     repo = pygit2.Repository(self.remote_source_repo_path)
     commit = repo.head.peel()
@@ -908,7 +917,14 @@ class UpdateTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
         'original_sha256': _sha256('BLAH-123.yaml'),
         'deleted': 'false',
     }
-    task_runner._source_update(message)
+
+    with self.assertLogs(level='WARNING') as logs:
+        task_runner._source_update(message)
+    
+    # The second log would include the temp dir, skip checking it
+    self.assertEqual(len(logs.output), 3)
+    self.assertEqual(logs.output[0], 'WARNING:root:Failed to push: cannot push because a reference that you are trying to update on the remote contains commits that are not present locally.')
+    self.assertEqual(logs.output[2], 'WARNING:root:Discarding changes for BLAH-123 due to conflicts.')
 
     repo = pygit2.Repository(self.remote_source_repo_path)
     commit = repo.head.peel()

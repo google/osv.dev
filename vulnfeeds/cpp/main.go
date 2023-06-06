@@ -368,7 +368,7 @@ func main() {
 			}
 			if _, ok := VPRepoCache[cves.VendorProduct{Vendor: CPE.Vendor, Product: CPE.Product}]; ok {
 				Logger.Infof("[%s]: Pre-references, derived %q for %q %q using cache", cve.CVE.CVEDataMeta.ID, VPRepoCache[cves.VendorProduct{Vendor: CPE.Vendor, Product: CPE.Product}], CPE.Vendor, CPE.Product)
-				ReposForCVE[cve.CVE.CVEDataMeta.ID] = VPRepoCache[cves.VendorProduct{CPE.Vendor, CPE.Product}]
+				ReposForCVE[cve.CVE.CVEDataMeta.ID] = VPRepoCache[cves.VendorProduct{Vendor: CPE.Vendor, Product: CPE.Product}]
 			}
 		}
 

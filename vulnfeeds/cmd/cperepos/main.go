@@ -80,17 +80,17 @@ type CPE23Item struct {
 // product names, which cause undesired and incorrect repository attribution
 // when resolved via Debian copyright metadata.
 var DebianCopyrightDenylist = []cves.VendorProduct{
-	cves.VendorProduct{"apple", "pdfkit"},
-	cves.VendorProduct{"f-secure", "safe"},
-	cves.VendorProduct{"ibm", "workflow"},
-	cves.VendorProduct{"inductiveautomation", "ignition"},
-	cves.VendorProduct{"jetbrains", "hub"},
-	cves.VendorProduct{"microsoft", "onedrive"},
-	cves.VendorProduct{"mirametrix", "glance"},
-	cves.VendorProduct{"nintext", "workflow"},
-	cves.VendorProduct{"oracle", "workflow"},
-	cves.VendorProduct{"thrivethemes", "ignition"},
-	cves.VendorProduct{"vmware", "horizon"},
+	cves.VendorProduct{Vendor: "apple", Product: "pdfkit"},
+	cves.VendorProduct{Vendor: "f-secure", Product: "safe"},
+	cves.VendorProduct{Vendor: "ibm", Product: "workflow"},
+	cves.VendorProduct{Vendor: "inductiveautomation", Product: "ignition"},
+	cves.VendorProduct{Vendor: "jetbrains", Product: "hub"},
+	cves.VendorProduct{Vendor: "microsoft", Product: "onedrive"},
+	cves.VendorProduct{Vendor: "mirametrix", Product: "glance"},
+	cves.VendorProduct{Vendor: "nintext", Product: "workflow"},
+	cves.VendorProduct{Vendor: "oracle", Product: "workflow"},
+	cves.VendorProduct{Vendor: "thrivethemes", Product: "ignition"},
+	cves.VendorProduct{Vendor: "vmware", Product: "horizon"},
 }
 
 // VendorProductToRepoMap maps a VendorProduct to a repo URL.
@@ -319,26 +319,26 @@ func analyzeCPEDictionary(d CPEDict) (ProductToRepo VendorProductToRepoMap, Desc
 				continue
 			}
 			// If we already have an entry for this repo, don't add it again.
-			if slices.Contains(ProductToRepo[cves.VendorProduct{CPE.Vendor, CPE.Product}], repo) {
+			if slices.Contains(ProductToRepo[cves.VendorProduct{Vendor: CPE.Vendor, Product: CPE.Product}], repo) {
 				continue
 			}
 			Logger.Infof("Liking %q for %s:%s (%s)", repo, CPE.Vendor, CPE.Product, r.Description)
-			ProductToRepo[cves.VendorProduct{CPE.Vendor, CPE.Product}] = append(ProductToRepo[cves.VendorProduct{CPE.Vendor, CPE.Product}], repo)
+			ProductToRepo[cves.VendorProduct{Vendor: CPE.Vendor, Product: CPE.Product}] = append(ProductToRepo[cves.VendorProduct{Vendor: CPE.Vendor, Product: CPE.Product}], repo)
 			// If this was queued for trying to find via Debian, and subsequently found, dequeue it.
 			if *DebianMetadataPath != "" {
-				delete(MaybeTryDebian, cves.VendorProduct{CPE.Vendor, CPE.Product})
+				delete(MaybeTryDebian, cves.VendorProduct{Vendor: CPE.Vendor, Product: CPE.Product})
 			}
 		}
 		// If we've arrived to this point, we've exhausted the
 		// references and not calculated any repos for the product,
 		// flag for trying Debian afterwards.
 		// We may encounter another CPE item that *does* have a viable reference in the meantime.
-		if len(ProductToRepo[cves.VendorProduct{CPE.Vendor, CPE.Product}]) == 0 && *DebianMetadataPath != "" {
+		if len(ProductToRepo[cves.VendorProduct{Vendor: CPE.Vendor, Product: CPE.Product}]) == 0 && *DebianMetadataPath != "" {
 			// Check the denylist though.
-			if slices.Contains(DebianCopyrightDenylist, cves.VendorProduct{CPE.Vendor, CPE.Product}) {
+			if slices.Contains(DebianCopyrightDenylist, cves.VendorProduct{Vendor: CPE.Vendor, Product: CPE.Product}) {
 				continue
 			}
-			MaybeTryDebian[cves.VendorProduct{CPE.Vendor, CPE.Product}] = true
+			MaybeTryDebian[cves.VendorProduct{Vendor: CPE.Vendor, Product: CPE.Product}] = true
 		}
 	}
 	// Try any Debian possible ones as a last resort.
@@ -358,7 +358,7 @@ func analyzeCPEDictionary(d CPEDict) (ProductToRepo VendorProductToRepoMap, Desc
 					Logger.Infof("Disregarding derived repo %s for %s:%s because %v", repo, vp.Vendor, vp.Product, err)
 					continue
 				}
-				ProductToRepo[cves.VendorProduct{vp.Vendor, vp.Product}] = append(ProductToRepo[cves.VendorProduct{vp.Vendor, vp.Product}], repo)
+				ProductToRepo[cves.VendorProduct{Vendor: vp.Vendor, Product: vp.Product}] = append(ProductToRepo[cves.VendorProduct{Vendor: vp.Vendor, Product: vp.Product}], repo)
 			}
 		}
 	}

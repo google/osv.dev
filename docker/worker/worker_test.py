@@ -921,9 +921,9 @@ class UpdateTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
     with self.assertLogs(level='WARNING') as logs:
         task_runner._source_update(message)
     
-    # The second log would include the temp dir, skip checking it
     self.assertEqual(len(logs.output), 3)
     self.assertEqual(logs.output[0], 'WARNING:root:Failed to push: cannot push because a reference that you are trying to update on the remote contains commits that are not present locally.')
+    self.assertRegex(logs.output[1], r'WARNING:root:Upstream hash for .*/BLAH-123.yaml changed \(expected=.* vs current=.*\)')
     self.assertEqual(logs.output[2], 'WARNING:root:Discarding changes for BLAH-123 due to conflicts.')
 
     repo = pygit2.Repository(self.remote_source_repo_path)

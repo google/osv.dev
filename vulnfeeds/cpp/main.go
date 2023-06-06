@@ -70,9 +70,9 @@ var RefTagDenyList = []string{
 // cross-contamination of repo derivation between CVEs.
 var VendorProductDenyList = []cves.VendorProduct{
 	// Causes a chain reaction of incorrect associations from CVE-2022-2068
-	cves.VendorProduct{"netapp", "ontap_select_deploy_administration_utility"},
+	cves.VendorProduct{Vendor: "netapp", Product: "ontap_select_deploy_administration_utility"},
 	// Causes misattribution for Python, e.g. CVE-2022-26488
-	cves.VendorProduct{"netapp", "active_iq_unified_manager"},
+	cves.VendorProduct{Vendor: "netapp", Product: "active_iq_unified_manager"},
 }
 
 // Looks at what the repo to determine if it contains code using an in-scope language
@@ -366,8 +366,8 @@ func main() {
 			if CPE.Part == "a" {
 				appCPECount += 1
 			}
-			if _, ok := VPRepoCache[cves.VendorProduct{CPE.Vendor, CPE.Product}]; ok {
-				Logger.Infof("[%s]: Pre-references, derived %q for %q %q using cache", cve.CVE.CVEDataMeta.ID, VPRepoCache[cves.VendorProduct{CPE.Vendor, CPE.Product}], CPE.Vendor, CPE.Product)
+			if _, ok := VPRepoCache[cves.VendorProduct{Vendor: CPE.Vendor, Product: CPE.Product}]; ok {
+				Logger.Infof("[%s]: Pre-references, derived %q for %q %q using cache", cve.CVE.CVEDataMeta.ID, VPRepoCache[cves.VendorProduct{Vendor: CPE.Vendor, Product: CPE.Product}], CPE.Vendor, CPE.Product)
 				ReposForCVE[cve.CVE.CVEDataMeta.ID] = VPRepoCache[cves.VendorProduct{CPE.Vendor, CPE.Product}]
 			}
 		}
@@ -392,10 +392,10 @@ func main() {
 				if CPE.Part != "a" {
 					continue
 				}
-				if slices.Contains(VendorProductDenyList, cves.VendorProduct{CPE.Vendor, CPE.Product}) {
+				if slices.Contains(VendorProductDenyList, cves.VendorProduct{Vendor: CPE.Vendor, Product: CPE.Product}) {
 					continue
 				}
-				repos := ReposForCPE(cve.CVE.CVEDataMeta.ID, VPRepoCache, cves.VendorProduct{CPE.Vendor, CPE.Product}, refs, RefTagDenyList)
+				repos := ReposForCPE(cve.CVE.CVEDataMeta.ID, VPRepoCache, cves.VendorProduct{Vendor: CPE.Vendor, Product: CPE.Product}, refs, RefTagDenyList)
 				if len(repos) == 0 {
 					Logger.Warnf("[%s]: Failed to derive any repos for %q %q", cve.CVE.CVEDataMeta.ID, CPE.Vendor, CPE.Product)
 					continue

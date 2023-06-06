@@ -45,6 +45,23 @@ type VersionInfo struct {
 	AffectedVersions    []AffectedVersion
 }
 
+// VendorProduct contains a CPE's Vendor and Product strings.
+type VendorProduct struct {
+	Vendor  string
+	Product string
+}
+
+func (vp *VendorProduct) UnmarshalText(text []byte) error {
+	s := strings.Split(string(text), ":")
+	vp.Vendor = s[0]
+	vp.Product = s[1]
+	return nil
+}
+
+func (vp *VendorProduct) String() string {
+	return fmt.Sprintf("VendorProduct{Vendor: %q, Product: %q}", vp.Vendor, vp.Product)
+}
+
 type CPE struct {
 	CPEVersion string
 	Part       string
@@ -725,13 +742,22 @@ func cleanVersion(version string) string {
 }
 
 func ExtractVersionInfo(cve CVEItem, validVersions []string) (v VersionInfo, notes []string) {
+	// If a supported commit is in the references, the need to resolve a
+	// version to a commit has been addressed already, so preset it. These
+	// are assumed to be more precise than what a version to commit mapping
+	// will yield.
 	for _, reference := range cve.CVE.References.ReferenceData {
 		if commit := extractGitCommit(reference.URL); commit != nil {
 			v.FixCommits = append(v.FixCommits, *commit)
 		}
 	}
 
+	// Look for versions in the CPE Match information.
 	gotVersions := false
+
+	var currentVendorProduct VendorProduct
+	var previousVendorProduct VendorProduct
+
 	for _, node := range cve.Configurations.Nodes {
 		if node.Operator != "OR" {
 			continue
@@ -739,6 +765,28 @@ func ExtractVersionInfo(cve CVEItem, validVersions []string) (v VersionInfo, not
 
 		for _, match := range node.CPEMatch {
 			if !match.Vulnerable {
+				continue
+			}
+
+			CPE, err := ParseCPE(match.CPE23URI)
+			if err != nil {
+				continue
+			}
+			if CPE.Part != "a" {
+				// Skip operating system and hardware CPEs.
+				continue
+			}
+
+			// log.Printf("Examining %q", match.CPE23URI)
+
+			currentVendorProduct = VendorProduct{CPE.Vendor, CPE.Product}
+			if previousVendorProduct == (VendorProduct{}) {
+				previousVendorProduct = currentVendorProduct
+			}
+
+			// A secondary CPE has been encountered
+			if currentVendorProduct != previousVendorProduct {
+				// log.Printf("Skipping: %q because it's not %q", currentVendorProduct.String(), previousVendorProduct.String())
 				continue
 			}
 
@@ -772,14 +820,6 @@ func ExtractVersionInfo(cve CVEItem, validVersions []string) (v VersionInfo, not
 			if introduced == "" && fixed == "" && lastaffected == "" {
 				// See if a last affected version is inferable from the CPE string.
 				// In this situation there is no known introduced version.
-				CPE, err := ParseCPE(match.CPE23URI)
-				if err != nil {
-					continue
-				}
-				if CPE.Part != "a" {
-					// Skip operating system CPEs.
-					continue
-				}
 				if slices.Contains([]string{"NA", "ANY"}, CPE.Version) {
 					// These are meaningless converting to commits.
 					continue
@@ -812,6 +852,8 @@ func ExtractVersionInfo(cve CVEItem, validVersions []string) (v VersionInfo, not
 			v.AffectedVersions = append(v.AffectedVersions, possibleNewAffectedVersion)
 		}
 	}
+
+	// As a last resort, attempt to extract versions from the description itself.
 	if !gotVersions {
 		var extractNotes []string
 		v.AffectedVersions, extractNotes = extractVersionsFromDescription(validVersions, EnglishDescription(cve.CVE))

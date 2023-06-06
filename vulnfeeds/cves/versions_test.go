@@ -683,6 +683,22 @@ func TestExtractVersionInfo(t *testing.T) {
 			},
 			expectedNotes: []string{},
 		},
+		{
+			description:        "A CVE with multiple unrelated CPEs",
+			inputCVEItem:       loadTestData("CVE-2022-27778"),
+			inputValidVersions: []string{},
+			expectedVersionInfo: VersionInfo{
+				FixCommits:          []GitCommit(nil),
+				LimitCommits:        []GitCommit(nil),
+				LastAffectedCommits: []GitCommit(nil),
+				AffectedVersions: []AffectedVersion{
+					AffectedVersion{
+						LastAffected: "7.83.0",
+					},
+				},
+			},
+			expectedNotes: []string{},
+		},
 	}
 
 	for _, tc := range tests {

@@ -76,36 +76,25 @@ type CPE23Item struct {
 	Name string `xml:"name,attr"`
 }
 
-// VendorProduct contains a CPE's Vendor and Product strings.
-type VendorProduct struct {
-	Vendor  string
-	Product string
-}
-
 // VendorProducts in this denylist are known non-OSS and/or have generic
 // product names, which cause undesired and incorrect repository attribution
 // when resolved via Debian copyright metadata.
-var DebianCopyrightDenylist = []VendorProduct{
-	VendorProduct{"apple", "pdfkit"},
-	VendorProduct{"f-secure", "safe"},
-	VendorProduct{"ibm", "workflow"},
-	VendorProduct{"inductiveautomation", "ignition"},
-	VendorProduct{"jetbrains", "hub"},
-	VendorProduct{"microsoft", "onedrive"},
-	VendorProduct{"mirametrix", "glance"},
-	VendorProduct{"nintext", "workflow"},
-	VendorProduct{"oracle", "workflow"},
-	VendorProduct{"thrivethemes", "ignition"},
-	VendorProduct{"vmware", "horizon"},
-}
-
-// Helper for JSON rendering of a map with a struct key.
-func (vp VendorProduct) MarshalText() (text []byte, err error) {
-	return []byte(vp.Vendor + ":" + vp.Product), nil
+var DebianCopyrightDenylist = []cves.VendorProduct{
+	cves.VendorProduct{"apple", "pdfkit"},
+	cves.VendorProduct{"f-secure", "safe"},
+	cves.VendorProduct{"ibm", "workflow"},
+	cves.VendorProduct{"inductiveautomation", "ignition"},
+	cves.VendorProduct{"jetbrains", "hub"},
+	cves.VendorProduct{"microsoft", "onedrive"},
+	cves.VendorProduct{"mirametrix", "glance"},
+	cves.VendorProduct{"nintext", "workflow"},
+	cves.VendorProduct{"oracle", "workflow"},
+	cves.VendorProduct{"thrivethemes", "ignition"},
+	cves.VendorProduct{"vmware", "horizon"},
 }
 
 // VendorProductToRepoMap maps a VendorProduct to a repo URL.
-type VendorProductToRepoMap map[VendorProduct][]string
+type VendorProductToRepoMap map[cves.VendorProduct][]string
 
 const (
 	CPEDictionaryDefault = "cve_jsons/official-cpe-dictionary_v2.3.xml"
@@ -311,7 +300,7 @@ func MaybeGetSourceRepoFromDebian(mdir string, pkg string) string {
 func analyzeCPEDictionary(d CPEDict) (ProductToRepo VendorProductToRepoMap, DescriptionFrequency map[string]int) {
 	ProductToRepo = make(VendorProductToRepoMap)
 	DescriptionFrequency = make(map[string]int)
-	MaybeTryDebian := make(map[VendorProduct]bool)
+	MaybeTryDebian := make(map[cves.VendorProduct]bool)
 	for _, c := range d.CPEItems {
 		CPE, err := cves.ParseCPE(c.CPE23.Name)
 		if err != nil {
@@ -330,26 +319,26 @@ func analyzeCPEDictionary(d CPEDict) (ProductToRepo VendorProductToRepoMap, Desc
 				continue
 			}
 			// If we already have an entry for this repo, don't add it again.
-			if slices.Contains(ProductToRepo[VendorProduct{CPE.Vendor, CPE.Product}], repo) {
+			if slices.Contains(ProductToRepo[cves.VendorProduct{CPE.Vendor, CPE.Product}], repo) {
 				continue
 			}
 			Logger.Infof("Liking %q for %s:%s (%s)", repo, CPE.Vendor, CPE.Product, r.Description)
-			ProductToRepo[VendorProduct{CPE.Vendor, CPE.Product}] = append(ProductToRepo[VendorProduct{CPE.Vendor, CPE.Product}], repo)
+			ProductToRepo[cves.VendorProduct{CPE.Vendor, CPE.Product}] = append(ProductToRepo[cves.VendorProduct{CPE.Vendor, CPE.Product}], repo)
 			// If this was queued for trying to find via Debian, and subsequently found, dequeue it.
 			if *DebianMetadataPath != "" {
-				delete(MaybeTryDebian, VendorProduct{CPE.Vendor, CPE.Product})
+				delete(MaybeTryDebian, cves.VendorProduct{CPE.Vendor, CPE.Product})
 			}
 		}
 		// If we've arrived to this point, we've exhausted the
 		// references and not calculated any repos for the product,
 		// flag for trying Debian afterwards.
 		// We may encounter another CPE item that *does* have a viable reference in the meantime.
-		if len(ProductToRepo[VendorProduct{CPE.Vendor, CPE.Product}]) == 0 && *DebianMetadataPath != "" {
+		if len(ProductToRepo[cves.VendorProduct{CPE.Vendor, CPE.Product}]) == 0 && *DebianMetadataPath != "" {
 			// Check the denylist though.
-			if slices.Contains(DebianCopyrightDenylist, VendorProduct{CPE.Vendor, CPE.Product}) {
+			if slices.Contains(DebianCopyrightDenylist, cves.VendorProduct{CPE.Vendor, CPE.Product}) {
 				continue
 			}
-			MaybeTryDebian[VendorProduct{CPE.Vendor, CPE.Product}] = true
+			MaybeTryDebian[cves.VendorProduct{CPE.Vendor, CPE.Product}] = true
 		}
 	}
 	// Try any Debian possible ones as a last resort.
@@ -369,7 +358,7 @@ func analyzeCPEDictionary(d CPEDict) (ProductToRepo VendorProductToRepoMap, Desc
 					Logger.Infof("Disregarding derived repo %s for %s:%s because %v", repo, vp.Vendor, vp.Product, err)
 					continue
 				}
-				ProductToRepo[VendorProduct{vp.Vendor, vp.Product}] = append(ProductToRepo[VendorProduct{vp.Vendor, vp.Product}], repo)
+				ProductToRepo[cves.VendorProduct{vp.Vendor, vp.Product}] = append(ProductToRepo[cves.VendorProduct{vp.Vendor, vp.Product}], repo)
 			}
 		}
 	}

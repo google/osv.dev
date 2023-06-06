@@ -59,6 +59,10 @@ _BUCKET_SIZE = 512
 # Prefix for the
 _TAG_PREFIX = "refs/tags/"
 
+_LINUX_ERROR = ("Linux Kernel queries are currently unavailable: " +
+                "See https://google.github.io/osv.dev/faq/" +
+                "#why-am-i-getting-an-error-message-for-my-linux-kernel-query")
+
 _ndb_client = ndb.Client()
 
 
@@ -424,12 +428,23 @@ def query_by_commit(commit, to_response=bug_to_response):
   query = osv.AffectedCommits.query(osv.AffectedCommits.commits == commit)
   bug_ids = []
   it = query.iter()
+  gsd_count = 0
+
   while (yield it.has_next_async()):
     affected_commits = it.next()
     # Avoid requiring a separate index to include this in the initial Datastore
     # query. The number of these should be very little to just iterate through.
     if not affected_commits.public:
       continue
+
+    # Temporary mitigation.
+    if affected_commits.bug_id.startswith('GSD-'):
+      gsd_count += 1
+      if gsd_count >= 10:
+        context.abort(grpc.StatusCode.UNAVAILABLE, _LINUX_ERROR)
+
+      continue
+
     bug_ids.append(affected_commits.bug_id)
 
   return _get_bugs(bug_ids, to_response=to_response)
@@ -601,11 +616,7 @@ def query_by_version(context: grpc.ServicerContext,
   is_semver = ecosystem_info and ecosystem_info.is_semver
 
   if package_name == "Kernel":
-    context.abort(
-        grpc.StatusCode.UNAVAILABLE,
-        "Linux Kernel queries are currently unavailable: " +
-        "See https://google.github.io/osv.dev/faq/" +
-        "#why-am-i-getting-an-error-message-for-my-linux-kernel-query")
+    context.abort(grpc.StatusCode.UNAVAILABLE, _LINUX_ERROR)
 
   if package_name:
     query = osv.Bug.query(

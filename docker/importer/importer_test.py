@@ -209,11 +209,15 @@ class ImporterTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
                             importer.DEFAULT_PUBLIC_LOGGING_BUCKET, 'bucket',
                             True)
     with self.assertLogs(level='WARNING') as logs:
-        imp.run()
+      imp.run()
     self.assertEqual(3, len(logs.output))
-    self.assertEqual("WARNING:root:Failed to validate loaded OSV entry: 'modified' is a required property", logs.output[0])
+    self.assertEqual(
+        "WARNING:root:Failed to validate loaded OSV entry: 'modified' is a required property",  # pylint: disable=line-too-long
+        logs.output[0])
     self.assertIn('WARNING:root:Invalid data:', logs.output[1])
-    self.assertIn("ERROR:root:Failed to parse 2021-111.yaml: 'modified' is a required property", logs.output[2])
+    self.assertIn(
+        "ERROR:root:Failed to parse 2021-111.yaml: 'modified' is a required property",  # pylint: disable=line-too-long
+        logs.output[2])
 
     mock_publish.assert_not_called()
     bucket = self.mock_storage_client().bucket(
@@ -321,7 +325,7 @@ class ImporterTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
         datetime.datetime(2021, 1, 1, 10, 0), source_repo.last_update_date)
 
   @mock.patch('google.cloud.pubsub_v1.PublisherClient.publish')
-  def test_scheduled_updates_already_done(self, mock_publish):
+  def test_scheduled_updates_already_done(self, mock_publish):  # pylint: disable=unused-argument
     """Scheduled updates already done."""
     # TODO(michaelkedar): This test doesn't check anything
     self.skipTest("Not Implemented")
@@ -346,7 +350,7 @@ class ImporterTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
     imp.run()
 
   @mock.patch('google.cloud.pubsub_v1.PublisherClient.publish')
-  def test_no_updates(self, mock_publish):
+  def test_no_updates(self, mock_publish):  # pylint: disable=unused-argument
     """Test no update marker."""
     # TODO(michaelkedar): This test doesn't check anything
     self.skipTest("Not Implemented")
@@ -359,7 +363,7 @@ class ImporterTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
     imp.run()
 
   @mock.patch('google.cloud.pubsub_v1.PublisherClient.publish')
-  def test_ignore(self, mock_publish):
+  def test_ignore(self, mock_publish):  # pylint: disable=unused-argument
     """Test ignoring."""
     # TODO(michaelkedar): This test doesn't check anything
     self.skipTest("Not Implemented")
@@ -422,11 +426,15 @@ class BucketImporterTest(unittest.TestCase):
                             True)
 
     with self.assertLogs(level='WARNING') as logs:
-        imp.run()
+      imp.run()
     self.assertEqual(3, len(logs.output))
-    self.assertEqual("WARNING:root:Failed to validate loaded OSV entry: 'modified' is a required property", logs.output[0])
+    self.assertEqual(
+        "WARNING:root:Failed to validate loaded OSV entry: 'modified' is a required property",  # pylint: disable=line-too-long
+        logs.output[0])
     self.assertIn('WARNING:root:Invalid data:', logs.output[1])
-    self.assertIn("ERROR:root:Failed to parse vulnerability a/b/test-invalid.json: 'modified' is a required property", logs.output[2])
+    self.assertIn(
+        "ERROR:root:Failed to parse vulnerability a/b/test-invalid.json: 'modified' is a required property",  # pylint: disable=line-too-long
+        logs.output[2])
 
     mock_publish.assert_has_calls([
         mock.call(
@@ -471,7 +479,9 @@ class BucketImporterTest(unittest.TestCase):
         deleted=mock.ANY)
     self.assertNotIn(invalid_call, mock_publish.mock_calls)
     # Check if uploaded log str has the failed to parse vuln
-    self.assertTrue(any('Failed to parse vulnerability "a/b/test-invalid.json"' in x[0][0] for x in upload_from_str.call_args_list))
+    self.assertTrue(
+        any('Failed to parse vulnerability "a/b/test-invalid.json"' in x[0][0]
+            for x in upload_from_str.call_args_list))
 
   @mock.patch('google.cloud.storage.Blob.upload_from_string')
   @mock.patch('google.cloud.pubsub_v1.PublisherClient.publish')
@@ -503,11 +513,15 @@ class BucketImporterTest(unittest.TestCase):
     # Second run should not import it again, since each import run resets the
     # value of source_repo.ignore_last_import_time to False
     with self.assertLogs(level='WARNING') as logs:
-        imp.run()
+      imp.run()
     self.assertEqual(3, len(logs.output))
-    self.assertEqual("WARNING:root:Failed to validate loaded OSV entry: 'modified' is a required property", logs.output[0])
+    self.assertEqual(
+        "WARNING:root:Failed to validate loaded OSV entry: 'modified' is a required property",  # pylint: disable=line-too-long
+        logs.output[0])
     self.assertIn('WARNING:root:Invalid data:', logs.output[1])
-    self.assertIn("ERROR:root:Failed to parse vulnerability a/b/test-invalid.json: 'modified' is a required property", logs.output[2])
+    self.assertIn(
+        "ERROR:root:Failed to parse vulnerability a/b/test-invalid.json: 'modified' is a required property",  # pylint: disable=line-too-long
+        logs.output[2])
 
     dsa_call = mock.call(
         self.tasks_topic,
@@ -519,7 +533,9 @@ class BucketImporterTest(unittest.TestCase):
         deleted='false')
     self.assertNotIn(dsa_call, mock_publish.mock_calls)
     # Check if uploaded log str has the failed to parse vuln
-    self.assertTrue(any('Failed to parse vulnerability "a/b/test-invalid.json"' in x[0][0] for x in upload_from_str.call_args_list))
+    self.assertTrue(
+        any('Failed to parse vulnerability "a/b/test-invalid.json"' in x[0][0]
+            for x in upload_from_str.call_args_list))
 
 
 if __name__ == '__main__':

@@ -54,7 +54,7 @@ class DebianEcosystemTest(unittest.TestCase):
     with self.assertLogs(level='WARNING') as logs:
       self.assertEqual(
           ecosystem.enumerate_versions('nginx', '0', '<end-of-life>'), [])
-    self.assertEqual(logs.output, ['WARNING:root:Package nginx has invalid fixed version: <end-of-life>. In debian release 9'])
+    self.assertEqual(logs.output, ['WARNING:root:Package nginx has invalid fixed version: <end-of-life>. In debian release 9'])  # pylint: disable=line-too-long
 
     # Calls for first_version to the same ecosystem should be cached
     self.assertEqual(first_ver_requests_mock.call_count, 1)

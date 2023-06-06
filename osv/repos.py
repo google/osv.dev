@@ -84,8 +84,8 @@ def _checkout_branch(repo, branch):
 def _set_git_callback_env(git_callbacks):
   """Set the environment variable to set git callbacks for cli git"""
   env = {
-    # Prevent prompting for username if we don't have an ssh key
-    'GIT_TERMINAL_PROMPT': '0'
+      # Prevent prompting for username if we don't have an ssh key
+      'GIT_TERMINAL_PROMPT': '0'
   }
   if git_callbacks:
     env['GIT_SSH_COMMAND'] = (
@@ -102,7 +102,9 @@ def clone(git_url, checkout_dir, git_callbacks=None):
 
   subprocess.run(
       ['git', 'clone', _git_mirror(git_url), checkout_dir],
-      env=env, capture_output=True, check=True)
+      env=env,
+      capture_output=True,
+      check=True)
   return pygit2.Repository(checkout_dir)
 
 
@@ -122,7 +124,8 @@ def clone_with_retries(git_url, checkout_dir, git_callbacks=None, branch=None):
         if isinstance(e, subprocess.CalledProcessError):
           # add the git output to the log
           err_str = f'{err_str}\n{e.stderr.decode()}'
-        logging.error('Clone failed after %d attempts: %s', CLONE_TRIES, err_str)
+        logging.error('Clone failed after %d attempts: %s', CLONE_TRIES,
+                      err_str)
       shutil.rmtree(checkout_dir, ignore_errors=True)
       time.sleep(RETRY_SLEEP_SECONDS)
       continue
@@ -183,10 +186,10 @@ def reset_repo(repo, git_callbacks):
   env = _set_git_callback_env(git_callbacks)
   # Use git cli instead of pygit2 for performance
   subprocess.run(['git', 'fetch', 'origin'],
-                        cwd=repo.workdir,
-                        env=env,
-                        capture_output=True,
-                        check=True)
+                 cwd=repo.workdir,
+                 env=env,
+                 capture_output=True,
+                 check=True)
   # Pygit2 equivalent of above call
   # repo.remotes['origin'].fetch(callbacks=git_callbacks)
   remote_branch = repo.lookup_branch(

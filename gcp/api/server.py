@@ -351,7 +351,7 @@ def do_query(query, context: grpc.ServicerContext, include_details=True):
       context.abort(grpc.StatusCode.INVALID_ARGUMENT, 'Invalid hash.')
       return None
 
-    bugs = yield query_by_commit(commit_bytes, to_response=to_response)
+    bugs = yield query_by_commit(context, commit_bytes, to_response=to_response)
   elif purl and purl_version:
     bugs = yield query_by_version(
         context,
@@ -423,7 +423,9 @@ def _clean_purl(purl):
 
 
 @ndb.tasklet
-def query_by_commit(commit, to_response=bug_to_response):
+def query_by_commit(context: grpc.ServicerContext,
+                    commit,
+                    to_response=bug_to_response):
   """Query by commit."""
   query = osv.AffectedCommits.query(osv.AffectedCommits.commits == commit)
   bug_ids = []

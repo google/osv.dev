@@ -14,5 +14,3 @@ spec:
               value: oss-vdb-test
             - name: GCS_PATH
               value: gs://osv-test-cve-osv-conversion/debian_copyright/debian_copyright.tar
-            - name: BE_VERBOSE
-              value:

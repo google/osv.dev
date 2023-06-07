@@ -96,3 +96,10 @@ Things that have been manually set on `oss-vdb-test`:
   - CPUs => 1000
   - Local SSD => 100 TB
   - Pesistent Disk SSD => 50 TB
+
+## Setting up additional pipelines
+
+To setup additional pipelines, you need to create another directory, with a `clouddeploy.yaml` and `skaffold.yaml` file.
+Easiest method would be to copy the structure in `gke-indexer/`
+
+Then you need to add an entry to deploy-prod.yaml to do the promotion from staging to prod when releasing.

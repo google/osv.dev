@@ -97,9 +97,18 @@ Things that have been manually set on `oss-vdb-test`:
   - Local SSD => 100 TB
   - Pesistent Disk SSD => 50 TB
 
-## Setting up additional pipelines
+## Setting up additional Cloud Deploy pipelines
 
-To setup additional pipelines, you need to create another directory, with a `clouddeploy.yaml` and `skaffold.yaml` file.
-Easiest method would be to copy the structure in `gke-indexer/`
+To setup additional pipelines, you need to create another directory within `clouddeploy/`, with a `clouddeploy.yaml` and `skaffold.yaml` file, as well as the manifest files.
 
-Then you need to add an entry to deploy-prod.yaml to do the promotion from staging to prod when releasing.
+Easiest method would be to copy the structure in `gke-indexer/` (GKE) or `osv-api` (Cloud Run). You can also refer to the [Cloud Deploy quickstarts](https://cloud.google.com/deploy/docs/quickstarts)
+
+NOTE: The `targetId` fields in the `clouddeploy.yaml` files should be unique across all pipelines.
+
+To create the pipeline in GCP, run the following inside the new Cloud Deploy directory:
+
+```
+gcloud deploy apply --file=clouddeploy.yaml --region=us-central1 --project=oss-vdb
+```
+
+Then you need to add entries into `build-and-stage.yaml` to build/tag the required images and create a new deployment onto the staging environment (with the image name substitutions), as well as an entry to `deploy-prod.yaml` to do the promotion from staging to prod when releasing.

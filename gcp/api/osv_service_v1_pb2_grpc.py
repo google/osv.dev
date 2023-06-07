@@ -16,6 +16,16 @@ class OSVStub(object):
         Args:
             channel: A grpc.Channel.
         """
+        self.Check = channel.unary_unary(
+                '/osv.v1.OSV/Check',
+                request_serializer=osv__service__v1__pb2.HealthCheckRequest.SerializeToString,
+                response_deserializer=osv__service__v1__pb2.HealthCheckResponse.FromString,
+                )
+        self.Watch = channel.unary_stream(
+                '/osv.v1.OSV/Watch',
+                request_serializer=osv__service__v1__pb2.HealthCheckRequest.SerializeToString,
+                response_deserializer=osv__service__v1__pb2.HealthCheckResponse.FromString,
+                )
         self.GetVulnById = channel.unary_unary(
                 '/osv.v1.OSV/GetVulnById',
                 request_serializer=osv__service__v1__pb2.GetVulnByIdParameters.SerializeToString,
@@ -41,6 +51,20 @@ class OSVStub(object):
 class OSVServicer(object):
     """Open source vulnerability database.
     """
+
+    def Check(self, request, context):
+        """Per gRPC health check protocol:
+        https://github.com/grpc/grpc/blob/master/doc/health-checking.md
+        """
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+    def Watch(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
 
     def GetVulnById(self, request, context):
         """Return a `Vulnerability` object for a given OSV ID.
@@ -76,6 +100,16 @@ class OSVServicer(object):
 
 def add_OSVServicer_to_server(servicer, server):
     rpc_method_handlers = {
+            'Check': grpc.unary_unary_rpc_method_handler(
+                    servicer.Check,
+                    request_deserializer=osv__service__v1__pb2.HealthCheckRequest.FromString,
+                    response_serializer=osv__service__v1__pb2.HealthCheckResponse.SerializeToString,
+            ),
+            'Watch': grpc.unary_stream_rpc_method_handler(
+                    servicer.Watch,
+                    request_deserializer=osv__service__v1__pb2.HealthCheckRequest.FromString,
+                    response_serializer=osv__service__v1__pb2.HealthCheckResponse.SerializeToString,
+            ),
             'GetVulnById': grpc.unary_unary_rpc_method_handler(
                     servicer.GetVulnById,
                     request_deserializer=osv__service__v1__pb2.GetVulnByIdParameters.FromString,
@@ -106,6 +140,40 @@ def add_OSVServicer_to_server(servicer, server):
 class OSV(object):
     """Open source vulnerability database.
     """
+
+    @staticmethod
+    def Check(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(request, target, '/osv.v1.OSV/Check',
+            osv__service__v1__pb2.HealthCheckRequest.SerializeToString,
+            osv__service__v1__pb2.HealthCheckResponse.FromString,
+            options, channel_credentials,
+            insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
+
+    @staticmethod
+    def Watch(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_stream(request, target, '/osv.v1.OSV/Watch',
+            osv__service__v1__pb2.HealthCheckRequest.SerializeToString,
+            osv__service__v1__pb2.HealthCheckResponse.FromString,
+            options, channel_credentials,
+            insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
 
     @staticmethod
     def GetVulnById(request,

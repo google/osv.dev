@@ -399,7 +399,7 @@ def _get_bugs(bug_ids, to_response=bug_to_response):
   """Get bugs from bug ids."""
   bugs = ndb.get_multi_async([ndb.Key(osv.Bug, bug_id) for bug_id in bug_ids])
 
-  responses = list()
+  responses = []
   for future_bug in bugs:
     bug: osv.Bug = future_bug.result()
     if bug and bug.status == osv.BugStatus.PROCESSED and bug.public:

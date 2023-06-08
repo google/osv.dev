@@ -132,6 +132,22 @@ class OSVServicer(osv_service_v1_pb2_grpc.OSVServicer):
     res = determine_version(request.query, context).result()
     return res
 
+  @ndb_context
+  def Check(self, request, context: grpc.ServicerContext):
+    """Health check per the gRPC health check protocol."""
+    del request  # Unused.
+
+    # Read up to a single Bug entity from the DB. This should not cause an
+    # exception or time out.
+    osv.Bug.query().fetch(1)
+    return osv_service_v1_pb2.HealthCheckResponse(
+        status=osv_service_v1_pb2.HealthCheckResponse.ServingStatus.SERVING)
+
+  def Watch(self, request, context: grpc.ServicerContext):
+    """Health check per the gRPC health check protocol."""
+    del request  # Unused.
+    context.abort(grpc.StatusCode.UNIMPLEMENTED, "Unimplemented")
+
 
 def process_buckets(
     file_results: List[osv.FileResult]) -> List[osv.RepoIndexBucket]:

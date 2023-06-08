@@ -125,8 +125,8 @@ class OSVServicer(osv_service_v1_pb2_grpc.OSVServicer):
     for future in futures:
       result, next_page_token = future.result()
       batch_results.append(
-          osv_service_v1_pb2.VulnerabilityList(vulns=result, 
-                                               next_page_token=next_page_token))
+          osv_service_v1_pb2.VulnerabilityList(
+              vulns=result, next_page_token=next_page_token))
 
     return osv_service_v1_pb2.BatchVulnerabilityList(results=batch_results)
 
@@ -422,7 +422,7 @@ def _get_bugs(bug_ids, to_response=bug_to_response):
   """Get bugs from bug ids."""
   bugs = ndb.get_multi_async([ndb.Key(osv.Bug, bug_id) for bug_id in bug_ids])
 
-  responses = list()
+  responses = []
   for future_bug in bugs:
     bug = future_bug.result()
     if bug and bug.status == osv.BugStatus.PROCESSED and bug.public:
@@ -471,11 +471,11 @@ def query_by_commit(context: grpc.ServicerContext,
       cursor = it.cursor_after()
       break
 
-    # Affect commits key follows this format: 
+    # Affect commits key follows this format:
     # <BugID>-<PageNumber>
     affected_commits: ndb.Key = it.next()
     bug_id: str = affected_commits.id().rsplit("-", 1)[0]
-    
+
     # Temporary mitigation.
     if affected_commits.bug_id.startswith('GSD-'):
       gsd_count += 1
@@ -721,11 +721,13 @@ def query_by_version(context: grpc.ServicerContext,
     # TODO: Remove after testing how many consumers are
     # querying the API this way.
 
-    bugs.extend((yield _query_by_semver(context, query, package_name, ecosystem,
-                                        purl, version)))
-    bugs.extend((yield
-                 _query_by_generic_version(context, query, package_name,
-                                           ecosystem, purl, version, None)))
+    new_bugs, _ = yield _query_by_semver(context, query, package_name,
+                                         ecosystem, purl, version, None)
+    bugs.extend(new_bugs)
+    new_bugs, _ = (yield
+                   _query_by_generic_version(context, query, package_name,
+                                             ecosystem, purl, version, None))
+    bugs.extend(new_bugs)
 
     # Trying both is too difficult/ugly with paging
     # Our documentation states that this is an invalid query

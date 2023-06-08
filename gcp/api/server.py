@@ -16,12 +16,14 @@
 import argparse
 import codecs
 import concurrent
+from dataclasses import dataclass
 import math
 import hashlib
 import functools
 import logging
 import os
 import time
+from datetime import datetime
 from typing import Callable, List
 
 from collections import defaultdict
@@ -43,7 +45,7 @@ _MAX_REQUEST_DURATION_SECS = 60
 _SHUTDOWN_GRACE_DURATION = 5
 
 _MAX_BATCH_QUERY = 1000
-_MAX_VULNERABILITIES_LISTED = 16
+_MAX_VULNERABILITIES_LISTED = 3000
 
 # Used in DetermineVersion
 # If there are more results for a bucket than this number,
@@ -386,12 +388,15 @@ def bug_to_response(bug, include_details=True):
 
 def _get_bugs(bug_ids, to_response=bug_to_response):
   """Get bugs from bug ids."""
-  bugs = ndb.get_multi([ndb.Key(osv.Bug, bug_id) for bug_id in bug_ids])
-  return [
-      to_response(bug)
-      for bug in bugs
-      if bug and bug.status == osv.BugStatus.PROCESSED
-  ]
+  bugs = ndb.get_multi_async([ndb.Key(osv.Bug, bug_id) for bug_id in bug_ids])
+
+  responses = list()
+  for future_bug in bugs:
+    bug = future_bug.result()
+    if bug and bug.status == osv.BugStatus.PROCESSED and bug.public:
+      responses.append(to_response(bug))
+
+  return responses
 
 
 def _clean_purl(purl):
@@ -412,17 +417,19 @@ def _clean_purl(purl):
 
 
 @ndb.tasklet
-def query_by_commit(commit: str,
+def query_by_commit(commit: bytes,
                     page_token: ndb.Cursor,
                     to_response=bug_to_response) -> tuple[list, ndb.Cursor]:
   """Query by commit."""
   query = osv.AffectedCommits.query(osv.AffectedCommits.commits == commit)
-  bug_ids = []
 
+  bug_ids = []
   # Set limit to the max + 1, as otherwise we can't detect if there are any
   # more left.
   it: ndb.QueryIterator = query.iter(
-      start_cursor=page_token, limit=_MAX_VULNERABILITIES_LISTED + 1)
+      keys_only=True,
+      start_cursor=page_token,
+      limit=_MAX_VULNERABILITIES_LISTED + 1)
 
   cursor = None
   while (yield it.has_next_async()):
@@ -430,13 +437,11 @@ def query_by_commit(commit: str,
       cursor = it.cursor_after()
       break
 
-    affected_commits = it.next()
-
-    # Avoid requiring a separate index to include this in the initial Datastore
-    # query. The number of these should be very little to just iterate through.
-    if not affected_commits.public:
-      continue
-    bug_ids.append(affected_commits.bug_id)
+    # Affect commits key follows this format: 
+    # <BugID>-<PageNumber>
+    affected_commits: ndb.Key = it.next()
+    id_txt: str = affected_commits.id()
+    bug_ids.append(id_txt.rsplit("-", 1)[0])
 
   return _get_bugs(bug_ids, to_response=to_response), cursor
 
@@ -544,7 +549,6 @@ def _query_by_semver(_: grpc.ServicerContext, query: ndb.Query,
     return []
 
   results = []
-  page_token.curso
   query = query.filter(
       osv.Bug.semver_fixed_indexes > semver_index.normalize(version))
   it: ndb.QueryIterator = query.iter(
@@ -665,7 +669,19 @@ def query_by_version(context: grpc.ServicerContext,
       bugs, next_page_token = yield _query_by_generic_version(
           context, query, package_name, ecosystem, purl, version, page_token)
   else:
-    # Unspecified ecosystem. Trying both is too difficult/ugly with paging
+    # Unspecified ecosystem.
+    logging.warning("No ecosystem specified in query.")
+
+    # TODO: Remove after testing how many consumers are
+    # querying the API this way.
+
+    bugs.extend((yield _query_by_semver(context, query, package_name, ecosystem,
+                                        purl, version)))
+    bugs.extend((yield
+                 _query_by_generic_version(context, query, package_name,
+                                           ecosystem, purl, version, None)))
+
+    # Trying both is too difficult/ugly with paging
     # Our documentation states that this is an invalid query
     context.abort(grpc.StatusCode.INVALID_ARGUMENT, 'Ecosystem not specified')
 

@@ -45,7 +45,7 @@ _MAX_REQUEST_DURATION_SECS = 60
 _SHUTDOWN_GRACE_DURATION = 5
 
 _MAX_BATCH_QUERY = 1000
-_MAX_VULNERABILITIES_LISTED = 3000
+_MAX_VULNERABILITIES_LISTED = 1000
 
 # Used in DetermineVersion
 # If there are more results for a bucket than this number,
@@ -125,7 +125,8 @@ class OSVServicer(osv_service_v1_pb2_grpc.OSVServicer):
     for future in futures:
       result, next_page_token = future.result()
       batch_results.append(
-          osv_service_v1_pb2.VulnerabilityList(vulns=result or next_page_token))
+          osv_service_v1_pb2.VulnerabilityList(vulns=result, 
+                                               next_page_token=next_page_token))
 
     return osv_service_v1_pb2.BatchVulnerabilityList(results=batch_results)
 
@@ -463,6 +464,7 @@ def query_by_commit(context: grpc.ServicerContext,
       start_cursor=page_token,
       limit=_MAX_VULNERABILITIES_LISTED + 1)
 
+  gsd_count = 0
   cursor = None
   while (yield it.has_next_async()):
     if len(bug_ids) >= _MAX_VULNERABILITIES_LISTED:
@@ -472,8 +474,17 @@ def query_by_commit(context: grpc.ServicerContext,
     # Affect commits key follows this format: 
     # <BugID>-<PageNumber>
     affected_commits: ndb.Key = it.next()
-    id_txt: str = affected_commits.id()
-    bug_ids.append(id_txt.rsplit("-", 1)[0])
+    bug_id: str = affected_commits.id().rsplit("-", 1)[0]
+    
+    # Temporary mitigation.
+    if affected_commits.bug_id.startswith('GSD-'):
+      gsd_count += 1
+      if gsd_count >= 10:
+        context.abort(grpc.StatusCode.UNAVAILABLE, _LINUX_ERROR)
+
+      continue
+
+    bug_ids.append(bug_id)
 
   return _get_bugs(bug_ids, to_response=to_response), cursor
 
@@ -670,8 +681,8 @@ def query_by_version(context: grpc.ServicerContext,
   ecosystem_info = ecosystems.get(ecosystem)
   is_semver = ecosystem_info and ecosystem_info.is_semver
 
-  # if package_name == "Kernel":
-  #   context.abort(grpc.StatusCode.UNAVAILABLE, _LINUX_ERROR)
+  if package_name == "Kernel":
+    context.abort(grpc.StatusCode.UNAVAILABLE, _LINUX_ERROR)
 
   if package_name:
     query = osv.Bug.query(

@@ -118,6 +118,21 @@ steps:
   args: ['push', '--all-tags', 'gcr.io/oss-vdb/combine-to-osv']
   waitFor: ['build-combine-to-osv', 'cloud-build-queue']
 
+# Build/push indexer image
+- name: 'gcr.io/cloud-builders/docker'
+  entrypoint: 'bash'
+  args: ['-c', 'docker pull gcr.io/oss-vdb/indexer:latest || exit 0']
+  id: 'pull-indexer'
+  waitFor: ['setup']
+- name: gcr.io/cloud-builders/docker
+  args: ['build', '-t', 'gcr.io/oss-vdb/indexer:latest', '-t', 'gcr.io/oss-vdb/indexer:$COMMIT_SHA', '--cache-from', 'gcr.io/oss-vdb/indexer:latest', '--pull', '.']
+  dir: 'docker/indexer'
+  id: 'build-indexer'
+  waitFor: ['pull-indexer']
+- name: gcr.io/cloud-builders/docker
+  args: ['push', '--all-tags', 'gcr.io/oss-vdb/indexer']
+  waitFor: ['build-indexer', 'cloud-build-queue']
+  
 # Build/push debian converter image
 - name: gcr.io/cloud-builders/docker
   args: ['build', '-t', 'gcr.io/oss-vdb/debian-convert:latest', '-t', 'gcr.io/oss-vdb/debian-convert:$COMMIT_SHA', '.']
@@ -212,6 +227,14 @@ steps:
   ]
   dir: deployment/clouddeploy/osv-api
 
+# Indexer
+- name: 'gcr.io/cloud-builders/gcloud'
+  args: ['deploy', 'releases', 'create', 'osv-$SHORT_SHA', '--project=oss-vdb', '--region=us-central1',
+    '--delivery-pipeline=gke-indexer', '--images',
+    "indexer=gcr.io/oss-vdb/indexer:$COMMIT_SHA"
+  ]
+  dir: deployment/clouddeploy/gke-indexer
+
 timeout: 7200s
 # Also set in Cloud Build:
 serviceAccount: 'projects/oss-vdb/serviceAccounts/deployment@oss-vdb.iam.gserviceaccount.com'
@@ -228,6 +251,7 @@ images:
 - 'gcr.io/oss-vdb/exporter:$COMMIT_SHA'
 - 'gcr.io/oss-vdb/alpine-cve-convert:$COMMIT_SHA'
 - 'gcr.io/oss-vdb/combine-to-osv:$COMMIT_SHA'
+- 'gcr.io/oss-vdb/indexer:$COMMIT_SHA'
 - 'gcr.io/oss-vdb/debian-convert:$COMMIT_SHA'
 - 'gcr.io/oss-vdb/osv-server:$COMMIT_SHA'
 - 'gcr.io/oss-vdb/debian-copyright-mirror:$COMMIT_SHA'

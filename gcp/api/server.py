@@ -436,11 +436,11 @@ def query_by_commit(context: grpc.ServicerContext,
   gsd_count = 0
 
   while (yield it.has_next_async()):
-    # Affect commits key follows this format: 
+    # Affect commits key follows this format:
     # <BugID>-<PageNumber>
     affected_commit_key: ndb.Key = it.next()
     bug_id: str = affected_commit_key.id().rsplit("-", 1)[0]
-    
+
     # Temporary mitigation.
     if bug_id.startswith('GSD-'):
       gsd_count += 1

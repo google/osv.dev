@@ -58,7 +58,6 @@ func newDoc(repoInfo *preparation.Result, hashType string) *document {
 	doc := &document{
 		Name:              repoInfo.Name,
 		BaseCPE:           repoInfo.BaseCPE,
-		Version:           repoInfo.Version,
 		Commit:            repoInfo.Commit[:],
 		Tag:               repoInfo.CommitTag,
 		When:              repoInfo.When,

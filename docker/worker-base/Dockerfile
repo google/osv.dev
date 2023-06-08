@@ -28,12 +28,13 @@ RUN apt-get update && apt-get upgrade -y && \
         libssl-dev \
         software-properties-common
 
-RUN curl -sS https://www.python.org/ftp/python/3.11.0/Python-3.11.0.tgz | tar -C /tmp -xzv && \
-    cd /tmp/Python-3.11.0 && \
+ARG PYTHON_VERSION=3.11.3
+RUN curl -sS https://www.python.org/ftp/python/${PYTHON_VERSION}/Python-${PYTHON_VERSION}.tgz | tar -C /tmp -xzv && \
+    cd /tmp/Python-${PYTHON_VERSION} && \
     ./configure --enable-optimizations --with-lto --enable-loadable-sqlite-extensions && \
     make -j && \
     make install && \
-    rm -rf /tmp/Python-3.11.0
+    rm -rf /tmp/Python-${PYTHON_VERSION}
 RUN pip3 install pipenv
 
 # Install Docker.

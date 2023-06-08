@@ -36,7 +36,6 @@ type RepoConfig struct {
 	Name             string   `yaml:"name"`
 	Type             string   `yaml:"type"`
 	BaseCPE          string   `yaml:"base_cpe"`
-	VersionRE        string   `yaml:"version_regex,omitempty"`
 	BranchVersioning bool     `yaml:"branch_versioning,omitempty"`
 	HashAllCommits   bool     `yaml:"hash_all_commits,omitempty"`
 	FileExts         []string `yaml:"file_extensions"`

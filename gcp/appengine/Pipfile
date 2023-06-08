@@ -22,3 +22,6 @@ grpcio-status = "==1.54.2"
 
 [dev-packages]
 pipenv = "==2022.12.19"
+
+[requires]
+python_version = "3.11"

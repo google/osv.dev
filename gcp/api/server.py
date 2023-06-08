@@ -61,6 +61,10 @@ _BUCKET_SIZE = 512
 # Prefix for the
 _TAG_PREFIX = "refs/tags/"
 
+_LINUX_ERROR = ("Linux Kernel queries are currently unavailable: " +
+                "See https://google.github.io/osv.dev/faq/" +
+                "#why-am-i-getting-an-error-message-for-my-linux-kernel-query")
+
 _ndb_client = ndb.Client()
 
 
@@ -131,6 +135,22 @@ class OSVServicer(osv_service_v1_pb2_grpc.OSVServicer):
     res = determine_version(request.query, context).result()
     return res
 
+  @ndb_context
+  def Check(self, request, context: grpc.ServicerContext):
+    """Health check per the gRPC health check protocol."""
+    del request  # Unused.
+
+    # Read up to a single Bug entity from the DB. This should not cause an
+    # exception or time out.
+    osv.Bug.query().fetch(1)
+    return osv_service_v1_pb2.HealthCheckResponse(
+        status=osv_service_v1_pb2.HealthCheckResponse.ServingStatus.SERVING)
+
+  def Watch(self, request, context: grpc.ServicerContext):
+    """Health check per the gRPC health check protocol."""
+    del request  # Unused.
+    context.abort(grpc.StatusCode.UNIMPLEMENTED, "Unimplemented")
+
 
 def process_buckets(
     file_results: List[osv.FileResult]) -> List[osv.RepoIndexBucket]:
@@ -181,11 +201,17 @@ def build_determine_version_result(
   inverted_empty_bucket_bitmap = (1 << _BUCKET_SIZE) - 1 - empty_bucket_bitmap
   empty_bucket_count = inverted_empty_bucket_bitmap.bit_count()
 
-  for f in idx_futures:
+  for i, f in enumerate(idx_futures):
     idx: osv.RepoIndex = f.result()
 
+    if idx is None:
+      logging.warning(
+          'Bucket exists for project: %s, which does ' +
+          'not have a matching IndexRepo entry', bucket_match_items[i][0])
+      continue
+
     if idx.empty_bucket_bitmap is None:
-      logging.error('No empty bucket bitmap for: %s@%s', idx.name, idx.version)
+      logging.warning('No empty bucket bitmap for: %s@%s', idx.name, idx.tag)
       continue
 
     # Byte order little is how the bitmap is stored in the indexer originally
@@ -209,6 +235,11 @@ def build_determine_version_result(
         abs(idx.file_count - max_files)  # The difference in file count
     )
 
+    version = osv.normalize_tag(idx.tag.removeprefix(_TAG_PREFIX))
+    version = version.replace('-', '.')
+    if not version:  # This tag actually isn't a version (rare)
+      continue
+
     version_match = osv_service_v1_pb2.VersionMatch(
         score=(max_files - estimated_diff_files) / max_files,
         minimum_file_matches=file_matches_by_proj[idx.key],
@@ -216,10 +247,10 @@ def build_determine_version_result(
         repo_info=osv_service_v1_pb2.VersionRepositoryInformation(
             type=osv_service_v1_pb2.VersionRepositoryInformation.GIT,
             address=idx.repo_addr,
-            commit=idx.commit,
+            commit=idx.commit.hex(),
             tag=idx.tag.removeprefix(_TAG_PREFIX),
-        ),
-    )
+            version=version,
+        ))
 
     if version_match.score < _DETERMINE_VER_MIN_SCORE_CUTOFF:
       continue
@@ -340,7 +371,7 @@ def do_query(query, context: grpc.ServicerContext, include_details=True):
       return None
 
     bugs, next_page_token = yield query_by_commit(
-        commit_bytes, page_token, to_response=to_response)
+        context, commit_bytes, page_token, to_response=to_response)
   elif purl and purl_version:
     bugs, next_page_token = yield query_by_version(
         context,
@@ -417,7 +448,8 @@ def _clean_purl(purl):
 
 
 @ndb.tasklet
-def query_by_commit(commit: bytes,
+def query_by_commit(context: grpc.ServicerContext,
+                    commit: bytes,
                     page_token: ndb.Cursor,
                     to_response=bug_to_response) -> tuple[list, ndb.Cursor]:
   """Query by commit."""
@@ -637,6 +669,9 @@ def query_by_version(context: grpc.ServicerContext,
   """Query by (fuzzy) version."""
   ecosystem_info = ecosystems.get(ecosystem)
   is_semver = ecosystem_info and ecosystem_info.is_semver
+
+  # if package_name == "Kernel":
+  #   context.abort(grpc.StatusCode.UNAVAILABLE, _LINUX_ERROR)
 
   if package_name:
     query = osv.Bug.query(

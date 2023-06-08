@@ -296,6 +296,90 @@ func TestRepo(t *testing.T) {
 			expectedRepoURL: "",
 			expectedOk:      false,
 		},
+		{
+			description:     "Valid repo previously being discarded",
+			inputLink:       "https://gitlab.com/bgermann/unrar-free",
+			expectedRepoURL: "https://gitlab.com/bgermann/unrar-free",
+			expectedOk:      true,
+		},
+		{
+			description:     "Valid repo previously being discarded",
+			inputLink:       "https://gitlab.xiph.org/xiph/ezstream",
+			expectedRepoURL: "https://gitlab.xiph.org/xiph/ezstream",
+			expectedOk:      true,
+		},
+		{
+			description:     "Valid repo previously being discarded",
+			inputLink:       "https://gitlab.freedesktop.org/xdg/xdg-utils",
+			expectedRepoURL: "https://gitlab.freedesktop.org/xdg/xdg-utils",
+			expectedOk:      true,
+		},
+		{
+			description:     "Valid repo previously being discarded",
+			inputLink:       "http://git.linuxtv.org/xawtv3.git",
+			expectedRepoURL: "http://git.linuxtv.org/xawtv3.git",
+			expectedOk:      true,
+		},
+		{
+			description:     "Valid repo previously being discarded",
+			inputLink:       "https://git.savannah.gnu.org/git/emacs.git",
+			expectedRepoURL: "https://git.savannah.gnu.org/git/emacs.git",
+			expectedOk:      true,
+		},
+		{
+			description:     "Valid repo previously being discarded",
+			inputLink:       "https://git.libssh.org/projects/libssh.git",
+			expectedRepoURL: "https://git.libssh.org/projects/libssh.git",
+			expectedOk:      true,
+		},
+		{
+			description:     "Valid repo previously being discarded",
+			inputLink:       "https://pagure.io/libaio.git",
+			expectedRepoURL: "https://pagure.io/libaio.git",
+			expectedOk:      true,
+		},
+		{
+			description:     "Valid repo previously being discarded",
+			inputLink:       "git://git.infradead.org/mtd-utils.git",
+			expectedRepoURL: "git://git.infradead.org/mtd-utils.git",
+			expectedOk:      true,
+		},
+		{
+			description:     "Valid repo previously being discarded",
+			inputLink:       "https://git.savannah.nongnu.org/git/davfs2.git",
+			expectedRepoURL: "https://git.savannah.nongnu.org/git/davfs2.git",
+			expectedOk:      true,
+		},
+		{
+			description:     "Valid repo previously being discarded",
+			inputLink:       "https://git.kernel.org/pub/scm/linux/kernel/git/jaegeuk/f2fs-tools.git",
+			expectedRepoURL: "https://git.kernel.org/pub/scm/linux/kernel/git/jaegeuk/f2fs-tools.git",
+			expectedOk:      true,
+		},
+		{
+			description:     "Valid repo previously being discarded",
+			inputLink:       "https://xenbits.xen.org/git-http/xen.git",
+			expectedRepoURL: "https://xenbits.xen.org/git-http/xen.git",
+			expectedOk:      true,
+		},
+		{
+			description:     "Valid repo previously being discarded",
+			inputLink:       "https://opendev.org/x/sqlalchemy-migrate.git",
+			expectedRepoURL: "https://opendev.org/x/sqlalchemy-migrate.git",
+			expectedOk:      true,
+		},
+		{
+			description:     "Valid repo previously being discarded",
+			inputLink:       "https://git.netfilter.org/libnftnl",
+			expectedRepoURL: "https://git.netfilter.org/libnftnl",
+			expectedOk:      true,
+		},
+		{
+			description:     "Valid repo previously being discarded",
+			inputLink:       "https://gitlab.com/ubports/development/core/click/",
+			expectedRepoURL: "https://gitlab.com/ubports/development/core/click",
+			expectedOk:      true,
+		},
 	}
 
 	for _, tc := range tests {

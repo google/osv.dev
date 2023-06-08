@@ -11,3 +11,7 @@ python-dateutil = "2.8.2"
 [dev-packages]
 pylint = "*"
 yapf = "*"
+
+[requires]
+# debian_converter uses python3 from ubuntu:22.04, which is 3.10.6
+python_version = "3.10"

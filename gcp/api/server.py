@@ -424,7 +424,7 @@ def _get_bugs(bug_ids, to_response=bug_to_response):
 
   responses = []
   for future_bug in bugs:
-    bug = future_bug.result()
+    bug: osv.Bug = future_bug.result()
     if bug and bug.status == osv.BugStatus.PROCESSED and bug.public:
       responses.append(to_response(bug))
 
@@ -477,7 +477,7 @@ def query_by_commit(context: grpc.ServicerContext,
     bug_id: str = affected_commits.id().rsplit("-", 1)[0]
 
     # Temporary mitigation.
-    if affected_commits.bug_id.startswith('GSD-'):
+    if bug_id.startswith('GSD-'):
       gsd_count += 1
       if gsd_count >= 10:
         context.abort(grpc.StatusCode.UNAVAILABLE, _LINUX_ERROR)
@@ -715,8 +715,12 @@ def query_by_version(context: grpc.ServicerContext,
       bugs, next_page_token = yield _query_by_generic_version(
           context, query, package_name, ecosystem, purl, version, page_token)
   else:
-    # Unspecified ecosystem.
-    logging.warning("No ecosystem specified in query.")
+    logging.warning("Package query without ecosystem specified")
+    # Unspecified ecosystem. Try both.
+    bugs.extend((yield _query_by_semver(context, query, package_name, ecosystem,
+                                        purl, version)))
+    bugs.extend((yield _query_by_generic_version(context, query, package_name,
+                                                 ecosystem, purl, version)))
 
     # TODO: Remove after testing how many consumers are
     # querying the API this way.

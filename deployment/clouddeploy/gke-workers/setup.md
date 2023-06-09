@@ -7,6 +7,8 @@ The same command is used to update the pipeline if `clouddeploy.yaml` changes.
 
 Pipelines are uniquely identified by their `name` metadata field - if it's changed a new pipeline would be created and the old one would have to be deleted.
 
+`targetId` needs to be different between pipelines, otherwise it gets overwritten.
+
 ## Deletion
 To delete the pipeline:
 ```

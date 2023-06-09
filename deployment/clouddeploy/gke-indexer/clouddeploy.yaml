@@ -1,0 +1,39 @@
+apiVersion: deploy.cloud.google.com/v1
+kind: DeliveryPipeline
+metadata:
+  name: gke-indexer
+description: indexer pipeline
+serialPipeline:
+  stages:
+  - targetId: staging-indexer
+    profiles: [ staging ]
+  - targetId: production-indexer
+    profiles: [ prod ]
+---
+
+apiVersion: deploy.cloud.google.com/v1
+kind: Target
+metadata:
+  name: staging-indexer
+description: oss-vdb-test worker cluster
+gke:
+  cluster: projects/oss-vdb-test/locations/us-central1-f/clusters/workers
+executionConfigs:
+- usages:
+  - RENDER
+  - DEPLOY
+  serviceAccount: deployment@oss-vdb.iam.gserviceaccount.com
+---
+
+apiVersion: deploy.cloud.google.com/v1
+kind: Target
+metadata:
+  name: production-indexer
+description: oss-vdb worker cluster
+gke:
+  cluster: projects/oss-vdb/locations/us-central1-f/clusters/workers
+executionConfigs:
+- usages:
+  - RENDER
+  - DEPLOY
+  serviceAccount: deployment@oss-vdb.iam.gserviceaccount.com

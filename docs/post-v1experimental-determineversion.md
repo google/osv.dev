@@ -46,7 +46,7 @@ this endpoint attempts to find the closest library and version.
 
 ## Response
 Returns an array of potential library matches, sorted by how close the match is.
-```json5
+```json
 {
   "matches": [
     {
@@ -65,7 +65,7 @@ Returns an array of potential library matches, sorted by how close the match is.
 ```
 
 ## Sample 200 response
-```json5
+```json
 {
   "matches": [
     {

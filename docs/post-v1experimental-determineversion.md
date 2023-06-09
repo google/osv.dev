@@ -23,7 +23,7 @@ this endpoint attempts to find the closest library and version.
 
 ## Parameters
 
----
+|---
 | Parameter               | Type   | Description                                                                       |
 | ----------------------- | ------ | --------------------------------------------------------------------------------- |
 | `name`                  | string | Optional name to help hint the package search.                                    |
@@ -32,7 +32,7 @@ this endpoint attempts to find the closest library and version.
 | `file_hashes.file_path` | string | the path to the file that's hashed, relative to the root directory of the library |
 
 ## Payload
-```json
+```json5
 {
   "name": "string",
   "file_hashes": [
@@ -46,7 +46,7 @@ this endpoint attempts to find the closest library and version.
 
 ## Response
 Returns an array of potential library matches, sorted by how close the match is.
-```json
+```json5
 {
   "matches": [
     {
@@ -65,7 +65,7 @@ Returns an array of potential library matches, sorted by how close the match is.
 ```
 
 ## Sample 200 response
-```json
+```json5
 {
   "matches": [
     {

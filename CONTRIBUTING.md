@@ -137,5 +137,8 @@ Please follow these steps to successfully contribute documentation.
     - Set the github page to build from the "/docs" folder
     - Hit save and wait for your site to build
     - Once it is ready, click the link and preview the docs
+
+![Image shows the UI settings for building the GitHub page, which is described in step 3 of the contributing documentation instructions.](docs/images/github-page.png)
+
 4. If you are satisfied with the changes, open a PR
 5. In the PR link to your fork's GitHub page, so we can preview the changes

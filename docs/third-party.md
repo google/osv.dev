@@ -30,4 +30,4 @@ tools and unsupported by the core OSV maintainers.
     advisory databases](https://github.com/twu/skjold)
 -   [Trivy](https://github.com/aquasecurity/trivy)
 
-Feel free to [send a PR](https://github.com/google/osv.dev/docs/third-party.md) to add your project here.
+Feel free to [send a PR](https://github.com/google/osv.dev/blob/master/docs/third-party.md) to add your project here.

@@ -9,7 +9,11 @@ has_children: true
 
 Contributions are welcome! 
 
-Learn more about [code](https://github.com/google/osv.dev/blob/master/CONTRIBUTING.md#contributing-code) and [data](https://github.com/google/osv.dev/blob/master/CONTRIBUTING.md#contributing-data) contributions. 
+Learn more about how to contribute:
+- [Code](https://github.com/google/osv.dev/blob/master/CONTRIBUTING.md#contributing-code)
+- [Data](https://github.com/google/osv.dev/blob/master/CONTRIBUTING.md#contributing-data)
+- [Documentation](https://github.com/google/osv.dev/blob/master/CONTRIBUTING.md#contributing-documentation)
+
 We also have a [mailing list](https://groups.google.com/g/osv-discuss). 
 
 Do you have a question or a suggestion? Please [open an issue](https://github.com/google/osv.dev/issues). 

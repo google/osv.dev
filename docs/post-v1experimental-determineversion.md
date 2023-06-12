@@ -3,7 +3,7 @@ layout: page
 title: POST /v1experimental/determineversion
 permalink: /post-v1experimental-determineversion/
 parent: API
-nav_order: 2
+nav_order: 5
 ---
 # POST /v1experimental/determineversion
 

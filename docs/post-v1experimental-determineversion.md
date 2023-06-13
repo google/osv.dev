@@ -1,7 +1,7 @@
 ---
 layout: page
 title: POST /v1experimental/determineversion
-permalink: /post-v1experimental-determineversion/
+permalink: /post-v1-determineversion/
 parent: API
 nav_order: 5
 ---

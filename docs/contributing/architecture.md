@@ -6,7 +6,7 @@ nav_order: 1
 parent: Contributing
 ---
 # Architecture
-![Architecture diagram](images/architecture.png)
+![Architecture diagram](../images/architecture.png)
 
 ## Data source
 

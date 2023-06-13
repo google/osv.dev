@@ -15,7 +15,7 @@ import (
 )
 
 var (
-	repoDir   = flag.String("repo", "", "repo directory")
+	repoDir   = flag.String("lib", "", "library directory")
 	searchDir = flag.String("dir", "", "third party directory containing multiple libraries")
 	fileExts  = []string{
 		".hpp",

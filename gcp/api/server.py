@@ -45,7 +45,12 @@ _MAX_REQUEST_DURATION_SECS = 60
 _SHUTDOWN_GRACE_DURATION = 5
 
 _MAX_BATCH_QUERY = 1000
-_MAX_VULNERABILITIES_LISTED = 1000
+# Maximum number of responses to return before applying post exceeded limit
+_MAX_VULN_RESP_THRESH = 3000
+# Max responses after MAX_VULN_RESP_THRESH has been exceeded
+_MAX_VULN_LISTED_POST_EXCEEDED = 5
+# Max responses before MAX_VULN_RESP_THRESH been exceeded
+_MAX_VULN_LISTED_PRE_EXCEEDED = 500
 
 # Used in DetermineVersion
 # If there are more results for a bucket than this number,
@@ -172,8 +177,33 @@ class OSVServicer(osv_service_v1_pb2_grpc.OSVServicer):
 @dataclass
 class ResponsesCount:
   """Wraps responses count in a separate class 
-  to allow it to be passed by reference"""
+  to allow it to be passed by reference
+  
+  Also adds a interface to allow easy updating to a mutex
+  if necessary
+  """
   count: int
+
+  def change(self, amount):
+    # This is to prevent query `limit` parameter being smaller than
+    # the number that is checked later in the iter() loop for the last page
+    if amount < 0: 
+      raise ValueError("change amount must be positive")
+    self.count += amount
+  
+  def exceeded(self) -> bool:
+    return self.count > _MAX_VULN_RESP_THRESH
+  
+  def page_limit(self) -> int:
+    """
+    Returns the limit based on whether we have 
+    exceeded the _MAX_VULN_RESP_THRESH with the total number
+    of responses in the entire query batch
+    """
+    if self.exceeded():
+      return _MAX_VULN_LISTED_POST_EXCEEDED
+    else:
+      return _MAX_VULN_LISTED_PRE_EXCEEDED
 
 
 @dataclass
@@ -488,17 +518,14 @@ def query_by_commit(context: QueryContext,
   query = osv.AffectedCommits.query(osv.AffectedCommits.commits == commit)
 
   bug_ids = []
-  # Set limit to the max + 1, as otherwise we can't detect if there are any
-  # more left.
   it: ndb.QueryIterator = query.iter(
       keys_only=True,
-      start_cursor=context.page_token,
-      limit=_MAX_VULNERABILITIES_LISTED + 1)
+      start_cursor=context.page_token)
 
   gsd_count = 0
   cursor = None
   while (yield it.has_next_async()):
-    if len(bug_ids) >= _MAX_VULNERABILITIES_LISTED:
+    if len(bug_ids) >= context.total_responses.page_limit():
       cursor = it.cursor_after()
       break
 
@@ -516,6 +543,7 @@ def query_by_commit(context: QueryContext,
       continue
 
     bug_ids.append(bug_id)
+    context.total_responses.change(1)
 
   return _get_bugs(bug_ids, to_response=to_response), cursor
 
@@ -535,7 +563,7 @@ def _match_purl(purl_query: PackageURL, purl_db: PackageURL) -> bool:
 
 
 def _is_semver_affected(affected_packages, package_name, ecosystem,
-                        purl: PackageURL, version):
+                        purl: PackageURL | None, version):
   """Returns whether or not the given version is within an affected SEMVER
 
   range.
@@ -580,7 +608,7 @@ def _is_semver_affected(affected_packages, package_name, ecosystem,
 def _is_version_affected(affected_packages,
                          package_name,
                          ecosystem,
-                         purl: PackageURL,
+                         purl: PackageURL | None,
                          version,
                          normalize=False):
   """Returns whether or not the given version is within an affected ECOSYSTEM
@@ -616,7 +644,7 @@ def _is_version_affected(affected_packages,
 
 @ndb.tasklet
 def _query_by_semver(context: QueryContext, query: ndb.Query,
-                     package_name: str, ecosystem: str, purl: PackageURL,
+                     package_name: str, ecosystem: str, purl: PackageURL | None,
                      version: str):
   """Query by semver."""
   if not semver_index.is_valid(version):
@@ -626,11 +654,11 @@ def _query_by_semver(context: QueryContext, query: ndb.Query,
   query = query.filter(
       osv.Bug.semver_fixed_indexes > semver_index.normalize(version))
   it: ndb.QueryIterator = query.iter(
-      start_cursor=context.page_token, limit=_MAX_VULNERABILITIES_LISTED + 1)
+      start_cursor=context.page_token)
   cursor = None
 
   while (yield it.has_next_async()):
-    if len(results) >= _MAX_VULNERABILITIES_LISTED:
+    if len(results) >= context.total_responses.page_limit():
       cursor = it.cursor_after()
       break
 
@@ -638,6 +666,7 @@ def _query_by_semver(context: QueryContext, query: ndb.Query,
     if _is_semver_affected(bug.affected_packages, package_name, ecosystem, purl,
                            version):
       results.append(bug)
+      context.total_responses.change(1)
 
   return results, cursor
 
@@ -648,7 +677,7 @@ def _query_by_generic_version(
     base_query: ndb.Query,
     project: str,
     ecosystem: str,
-    purl: PackageURL,
+    purl: PackageURL | None,
     version: str,
 ):
   """Query by generic version."""
@@ -660,18 +689,18 @@ def _query_by_generic_version(
       # below. If the token is used for the normalized query below, this query
       # must have returned no results, so will still return no results, fall
       # through to the query below again.
-      start_cursor=context.page_token,
-      limit=_MAX_VULNERABILITIES_LISTED + 1)
+      start_cursor=context.page_token)
   cursor = None
 
   while (yield it.has_next_async()):
-    if len(results) >= _MAX_VULNERABILITIES_LISTED:
+    if len(results) >= context.total_responses.page_limit():
       cursor = it.cursor_after()
       break
     bug = it.next()
     if _is_version_affected(bug.affected_packages, project, ecosystem, purl,
                             version):
       results.append(bug)
+      context.total_responses.change(1)
 
   if results:
     return results, cursor
@@ -680,12 +709,13 @@ def _query_by_generic_version(
   version = osv.normalize_tag(version)
   query = base_query.filter(osv.Bug.affected_fuzzy == version)
   it = query.iter(
-      start_cursor=context.page_token, limit=_MAX_VULNERABILITIES_LISTED + 1)
+      start_cursor=context.page_token)
 
   while (yield it.has_next_async()):
-    if len(results) >= _MAX_VULNERABILITIES_LISTED:
+    if len(results) >= context.total_responses.page_limit():
       cursor = it.cursor_after()
       break
+    
     bug = it.next()
     if _is_version_affected(
         bug.affected_packages,
@@ -695,6 +725,8 @@ def _query_by_generic_version(
         version,
         normalize=True):
       results.append(bug)
+      context.total_responses.change(1)
+
 
   return results, cursor
 
@@ -795,17 +827,16 @@ def query_by_package(context: QueryContext, package_name: str, ecosystem: str,
   else:
     return []
 
-  # Set limit to the max + 1, as otherwise we can't detect if there are any
-  # more left.
   it: ndb.QueryIterator = query.iter(
-      start_cursor=context.page_token, limit=_MAX_VULNERABILITIES_LISTED + 1)
+      start_cursor=context.page_token)
   cursor = None
   while (yield it.has_next_async()):
-    if len(bugs) >= _MAX_VULNERABILITIES_LISTED:
+    if len(bugs) >= context.total_responses.page_limit():
       cursor = it.cursor_after()
       break
-
+    
     bugs.append(it.next())
+    context.total_responses.change(1)
 
   return [to_response(bug) for bug in bugs], cursor
 

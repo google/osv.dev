@@ -113,3 +113,8 @@ Returns an array of potential library matches, sorted by how close the match is.
 }
 
 ```
+
+## Example tooling:
+
+We provide a tool [indexer-api-caller](https://github.com/google/osv.dev/tree/master/tools/indexer-api-caller) which creates and sends the payload
+to the determine version endpoint and prints out the response.

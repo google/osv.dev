@@ -112,14 +112,45 @@ Keep this safe.
 $ gcloud auth login --update-adc
 $ make SERVICE_ACCOUNT=/path/to/service_account.json run-api-server
 ```
-## Contributing Data
 
-Data contributions are also welcome! 
+## Contributing data
 
-If you a work with a project such as a Linux distribution and would like to contribute your security advisories, please follow these steps.
+Data contributions are also welcome!
 
-1. Open an [issue](https://github.com/google/osv.dev/issues). Let us know about your project and we can help you figure out the remaining steps. Please tag the issue `datasource` so we can properly triage the issue. 
+If you a work with a project such as a Linux distribution and would like to
+contribute your security advisories, please follow these steps.
 
-2. Refer to the [OSV Schema](https://ossf.github.io/osv-schema/) documentation for information on how to properly format the data so it can be accepted. 
+1.  Open an [issue](https://github.com/google/osv.dev/issues). Let us know about
+    your project and we can help you figure out the remaining steps. Please tag
+    the issue `datasource` so we can properly triage the issue.
 
-3. Data can be supplied either through a public Git repository or a public GCS bucket. 
+2.  Refer to the [OSV Schema](https://ossf.github.io/osv-schema/) documentation
+    for information on how to properly format the data so it can be accepted.
+
+3.  Data can be supplied either through a public Git repository or a public GCS
+    bucket.
+
+## Contributing documentation
+
+Please follow these steps to successfully contribute documentation.
+
+1.  Fork the repository.
+2.  Make desired documentation changes.
+3.  Preview the changes by spinning up a GitHub page for your fork, building
+    from your working branch.
+    -   On your fork, go to the settings tab and then the GitHub page settings.
+        Sample URL: <!-- markdown-link-check-disable -->
+        https://github.com/{your-github-profile}/osv.dev/settings/pages
+        <!-- markdown-link-check-enable -->
+    -   Under "Build and deployment" select "Build from branch"
+    -   Set the branch to your working branch
+    -   Set the github page to build from the "/docs" folder
+    -   Hit save and wait for your site to build
+    -   Once it is ready, click the link and preview the docs
+
+![Image shows the UI settings for building the GitHub page, which is described
+in step 3 of the contributing documentation
+instructions.](docs/images/github-page.png)
+
+1.  If you are satisfied with the changes, open a PR
+2.  In the PR, link to your fork's GitHub page, so we can preview the changes

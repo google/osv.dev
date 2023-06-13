@@ -522,7 +522,6 @@ def query_by_commit(context: QueryContext,
       keys_only=True,
       start_cursor=context.page_token)
 
-  gsd_count = 0
   cursor = None
   while (yield it.has_next_async()):
     if len(bug_ids) >= context.total_responses.page_limit():
@@ -533,14 +532,6 @@ def query_by_commit(context: QueryContext,
     # <BugID>-<PageNumber>
     affected_commits: ndb.Key = it.next()
     bug_id: str = affected_commits.id().rsplit("-", 1)[0]
-
-    # Temporary mitigation.
-    if bug_id.startswith('GSD-'):
-      gsd_count += 1
-      if gsd_count >= 10:
-        context.abort(grpc.StatusCode.UNAVAILABLE, _LINUX_ERROR)
-
-      continue
 
     bug_ids.append(bug_id)
     context.total_responses.change(1)
@@ -715,7 +706,7 @@ def _query_by_generic_version(
     if len(results) >= context.total_responses.page_limit():
       cursor = it.cursor_after()
       break
-    
+
     bug = it.next()
     if _is_version_affected(
         bug.affected_packages,
@@ -741,9 +732,6 @@ def query_by_version(context: QueryContext,
   """Query by (fuzzy) version."""
   ecosystem_info = ecosystems.get(ecosystem)
   is_semver = ecosystem_info and ecosystem_info.is_semver
-
-  if package_name == "Kernel":
-    context.service_context.abort(grpc.StatusCode.UNAVAILABLE, _LINUX_ERROR)
 
   if package_name:
     query = osv.Bug.query(

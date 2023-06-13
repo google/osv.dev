@@ -17,6 +17,14 @@ import (
 var (
 	repoDir   = flag.String("repo", "", "repo directory")
 	searchDir = flag.String("dir", "", "third party directory containing multiple libraries")
+	fileExts  = []string{
+		".hpp",
+		".h",
+		".hh",
+		".cc",
+		".c",
+		".cpp",
+	}
 )
 
 type Hash = []byte
@@ -50,15 +58,6 @@ func main() {
 }
 
 func buildGit(repoDir string) error {
-	fileExts := []string{
-		".hpp",
-		".h",
-		".hh",
-		".cc",
-		".c",
-		".cpp",
-	}
-
 	var fileResults []*FileResult
 	if err := filepath.Walk(repoDir, func(p string, info fs.FileInfo, err error) error {
 		if info.IsDir() {
@@ -89,9 +88,9 @@ func buildGit(repoDir string) error {
 
 	for i, fr := range fileResults {
 		if i == len(fileResults)-1 {
-			fmt.Fprintf(&b, "{\"hash\": \"%s\"}", base64.StdEncoding.EncodeToString(fr.Hash))
+			fmt.Fprintf(&b, "{\"hash\": \"%s\", \"file_path\": \"%s\"}", base64.StdEncoding.EncodeToString(fr.Hash), fr.Path)
 		} else {
-			fmt.Fprintf(&b, "{\"hash\": \"%s\"},", base64.StdEncoding.EncodeToString(fr.Hash))
+			fmt.Fprintf(&b, "{\"hash\": \"%s\", \"file_path\": \"%s\"},", base64.StdEncoding.EncodeToString(fr.Hash), fr.Path)
 		}
 	}
 	b.WriteString("]}")

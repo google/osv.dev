@@ -21,6 +21,11 @@ this endpoint attempts to find the closest library and version.
 {:toc}
 </details>
 
+## Experimental endpoint
+
+This is a new, experimental API endpoint.  The purpose of the endpoint is to help determine the version of a given C/C++ library. It is difficult to know the correct version of C/C++ projects because there is not a centralized package manager within the ecosystem. This API endpoint helps bridge that gap. Once you have the likely version, you can use [POST v1/query](post-v1-query.md) or [POST v1/queryset](post-v1-queryset.md) to search for vulnerabilities. 
+
+As this is an experimental feature, we would love to hear about your experience using it. If you give this a try, please consider [opening an issue](https://github.com/google/osv.dev/issues/new) and letting us know about any pain points or highlights. 
 ## Parameters
 
 |---

@@ -200,7 +200,7 @@ class ResponsesCount:
     """
     if self.exceeded():
       return _MAX_VULN_LISTED_POST_EXCEEDED
-    
+
     return _MAX_VULN_LISTED_PRE_EXCEEDED
 
 

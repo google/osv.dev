@@ -10,7 +10,7 @@ parent: Contributing
 
 ## Data source
 
-Our data is sourced from a variety of [sources](../data#current-data-sources), which we are looking to expand
+Our data is sourced from a variety of [sources](../data.md#current-data-sources), which we are looking to expand
 on over time.
 
 OSV runs on Google Cloud Platform, with the following main components:

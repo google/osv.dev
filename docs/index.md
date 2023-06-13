@@ -1,9 +1,7 @@
---------------------------------------------------------------------------------
-
+---
 layout: home
-
-## nav_order: 1
-
+nav_order: 1
+---
 # Introduction to OSV
 
 [![OpenSSF Scorecard](https://api.securityscorecards.dev/projects/github.com/google/osv.dev/badge)](https://api.securityscorecards.dev/projects/github.com/google/osv.dev)

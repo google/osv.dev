@@ -1,9 +1,10 @@
---------------------------------------------------------------------------------
-
-layout: page title: Architecture permalink: /architecture/ nav_order: 1
-
-## parent: Contributing
-
+---
+layout: page
+title: Architecture
+permalink: /architecture/
+nav_order: 1
+parent: Contributing
+---
 # Architecture
 
 ![Architecture diagram](../images/architecture.png)

@@ -3,6 +3,9 @@ name: Check Markdown links
 on: 
   schedule:
     - cron: '30 22 * * *'
+  push:
+    branches-ignore:
+      - 'master'
 
 jobs:
   markdown-link-check:

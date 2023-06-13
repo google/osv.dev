@@ -1,8 +1,7 @@
-name: Scheduled link check
+name: Check links on push
 
-on: 
-  schedule:
-    - cron: '30 22 * * *'
+on: push
+
 jobs:
   markdown-link-check:
     runs-on: ubuntu-latest
@@ -11,5 +10,5 @@ jobs:
     - uses: gaurav-nelson/github-action-markdown-link-check@v1
       with:
         use-quiet-mode: "yes"
-        
+        check-modified-files-only: "yes"
 # Documentation available here: https://github.com/marketplace/actions/markdown-link-check

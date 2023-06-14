@@ -209,7 +209,7 @@ class QueryContext:
   service_context: grpc.ServicerContext
   page_token: ndb.Cursor | None
   request_start_time: datetime
-  # Use a list to copy by reference
+  # Use a dataclass to copy by reference
   total_responses: ResponsesCount
 
 

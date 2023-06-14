@@ -3,6 +3,8 @@ name: Scheduled link check
 on: 
   schedule:
     - cron: '30 22 * * *'
+permissions:  # added using https://github.com/step-security/secure-repo
+  contents: read
 jobs:
   markdown-link-check:
     runs-on: ubuntu-latest

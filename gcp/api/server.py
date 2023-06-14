@@ -113,7 +113,7 @@ class OSVServicer(osv_service_v1_pb2_grpc.OSVServicer):
         page_token=None,
         total_responses=ResponsesCount(0))
 
-    results, next_page_token = yield do_query(request.query, query_context)
+    results, next_page_token = do_query(request.query, query_context).result()
     if results is not None:
       return osv_service_v1_pb2.VulnerabilityList(
           vulns=results, next_page_token=next_page_token)
@@ -141,7 +141,7 @@ class OSVServicer(osv_service_v1_pb2_grpc.OSVServicer):
       futures.append(do_query(query, query_context, include_details=False))
 
     for future in futures:
-      result, next_page_token = yield future
+      result, next_page_token = future.result()
       batch_results.append(
           osv_service_v1_pb2.VulnerabilityList(
               vulns=result, next_page_token=next_page_token))

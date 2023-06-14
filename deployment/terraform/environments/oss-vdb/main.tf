@@ -7,6 +7,7 @@ module "osv" {
   vulnerabilities_export_bucket = "osv-vulnerabilities"
   cve_osv_conversion_bucket     = "cve-osv-conversion"
   debian_osv_conversion_bucket  = "debian-osv"
+  logs_bucket                   = "osv-logs"
 
   api_url     = "api.osv.dev"
   esp_version = "2.41.0"

@@ -51,8 +51,10 @@ class DebianEcosystemTest(unittest.TestCase):
         ecosystem.sort_key('<end-of-life>'), ecosystem.sort_key('1.13.6-1'))
 
     # Test that end-of-life enumeration is disabled
-    self.assertEqual(
-        ecosystem.enumerate_versions('nginx', '0', '<end-of-life>'), [])
+    with self.assertLogs(level='WARNING') as logs:
+      self.assertEqual(
+          ecosystem.enumerate_versions('nginx', '0', '<end-of-life>'), [])
+    self.assertEqual(logs.output, ['WARNING:root:Package nginx has invalid fixed version: <end-of-life>. In debian release 9'])  # pylint: disable=line-too-long
 
     # Calls for first_version to the same ecosystem should be cached
     self.assertEqual(first_ver_requests_mock.call_count, 1)

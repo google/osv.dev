@@ -1,12 +1,12 @@
 resources:
 - ../../base
 patches:
-- workers.yaml
-- importer.yaml
-- exporter.yaml
-- alpine-cve-convert.yaml
-- combine-to-osv.yaml
-- debian-convert.yaml
-- debian-first-version.yaml
-- debian-copyright-mirror.yaml
-- gen-cperepos-map.yaml
+- path: workers.yaml
+- path: importer.yaml
+- path: exporter.yaml
+- path: alpine-cve-convert.yaml
+- path: combine-to-osv.yaml
+- path: debian-convert.yaml
+- path: debian-first-version.yaml
+- path: debian-copyright-mirror.yaml
+- path: gen-cperepos-map.yaml

@@ -1,0 +1,15 @@
+name: Scheduled link check
+
+on: 
+  schedule:
+    - cron: '30 22 * * *'
+jobs:
+  markdown-link-check:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@master
+    - uses: gaurav-nelson/github-action-markdown-link-check@v1
+      with:
+        use-quiet-mode: "yes"
+        
+# Documentation available here: https://github.com/marketplace/actions/markdown-link-check

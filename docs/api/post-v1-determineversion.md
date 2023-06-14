@@ -29,14 +29,20 @@ As this is an experimental feature, we would love to hear about your experience 
 ## Purpose
 The purpose of the endpoint is to help determine the package and version of a given C/C++ library. This is difficult because there is not a centralized package manager within the ecosystem. This API endpoint helps bridge that gap. Once you have the likely version, you can use [POST v1/query](post-v1-query.md) or [POST v1/queryset](post-v1-queryset.md) to search for vulnerabilities.
 
-To determine the package and version, the API uses 
+## Try the API
 
+We recommend trying the API endpoint with our [indexer-api-caller](https://github.com/google/osv.dev/tree/master/tools/indexer-api-caller) tool. The index-api-caller will gather all of the data (file paths and MD5 hashes) that you need, make the API call for you, and return the response. 
 
-## Usage
+This API endpoint requires a lot of data and this tool allows you to easily make an API call, without manually constructing the file_hash parameter. 
 
-### Getting started
+### Steps to use the indexer-api-caller
 
+1. Have a local copy of this repostiory. 
+2. Navigate to `/osv.dev/tools/indexer-api-caller`
+3. Run the tool using `go run . -lib path/to/library`
+4. Evaluate the results
 
+The rest of the documentation for this endpoint is presented for the sake of clarity and in the case that a user wants to build their own tool
 
 ## Parameters
 
@@ -123,8 +129,3 @@ Returns an array of potential library matches, sorted by how close the match is.
 }
 
 ```
-
-## Example tooling:
-
-We provide a tool [indexer-api-caller](https://github.com/google/osv.dev/tree/master/tools/indexer-api-caller) which creates and sends the payload
-to the determine version endpoint and prints out the response.

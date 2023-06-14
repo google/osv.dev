@@ -29,6 +29,7 @@ from typing import Callable, List
 from collections import defaultdict
 
 from google.cloud import ndb
+from google.api_core.exceptions import InvalidArgument
 
 import grpc
 from grpc_reflection.v1alpha import reflection
@@ -113,7 +114,14 @@ class OSVServicer(osv_service_v1_pb2_grpc.OSVServicer):
         page_token=None,
         total_responses=ResponsesCount(0))
 
-    results, next_page_token = do_query(request.query, query_context).result()
+    try:
+      results, next_page_token = do_query(request.query, query_context).result()
+    except InvalidArgument:
+      # Currently cannot think of any other way
+      # this can be raised other than invalid cursor
+      context.abort(grpc.StatusCode.INVALID_ARGUMENT,
+                    'Invalid query, likely caused by invalid page token.')
+
     if results is not None:
       return osv_service_v1_pb2.VulnerabilityList(
           vulns=results, next_page_token=next_page_token)
@@ -138,10 +146,18 @@ class OSVServicer(osv_service_v1_pb2_grpc.OSVServicer):
           request_start_time=req_start_time,
           page_token=None,
           total_responses=total_responses)
+
       futures.append(do_query(query, query_context, include_details=False))
 
     for future in futures:
-      result, next_page_token = future.result()
+      try:
+        result, next_page_token = future.result()
+      except InvalidArgument:
+        # Currently cannot think of any other way
+        # this can be raised other than invalid cursor
+        context.abort(grpc.StatusCode.INVALID_ARGUMENT,
+                      'Invalid query, likely caused by invalid page token.')
+
       batch_results.append(
           osv_service_v1_pb2.VulnerabilityList(
               vulns=result, next_page_token=next_page_token))
@@ -406,7 +422,12 @@ def do_query(query, context: QueryContext, include_details=True):
 
   context.page_token = None
   if query.page_token:
-    context.page_token = ndb.Cursor(urlsafe=query.page_token)
+    try:
+      context.page_token = ndb.Cursor(urlsafe=query.page_token)
+    except ValueError as e:
+      logging.error(e)
+      context.service_context.abort(grpc.StatusCode.INVALID_ARGUMENT,
+                                    'Invalid page token.')
 
   purl = None
   purl_version = None
@@ -743,6 +764,7 @@ def query_by_version(context: QueryContext,
   if ecosystem:
     query = query.filter(osv.Bug.ecosystem == ecosystem)
 
+  # ecosystem = purl.namespace
   bugs = []
   next_page_token = None
   if ecosystem:
@@ -757,10 +779,6 @@ def query_by_version(context: QueryContext,
   else:
     logging.warning("Package query without ecosystem specified")
     # Unspecified ecosystem. Try both.
-    bugs.extend((yield _query_by_semver(context, query, package_name, ecosystem,
-                                        purl, version)))
-    bugs.extend((yield _query_by_generic_version(context, query, package_name,
-                                                 ecosystem, purl, version)))
 
     # TODO: Remove after testing how many consumers are
     # querying the API this way.
@@ -774,8 +792,8 @@ def query_by_version(context: QueryContext,
 
     # Trying both is too difficult/ugly with paging
     # Our documentation states that this is an invalid query
-    context.service_context.abort(grpc.StatusCode.INVALID_ARGUMENT,
-                                  'Ecosystem not specified')
+    # context.service_context.abort(grpc.StatusCode.INVALID_ARGUMENT,
+    #                               'Ecosystem not specified')
 
   return [to_response(bug) for bug in bugs], next_page_token
 

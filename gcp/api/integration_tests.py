@@ -269,6 +269,7 @@ class IntegrationTests(unittest.TestCase):
             'version': '1.1.4',
             'package': {
                 'name': package,
+                'ecosystem': 'Go'
             }
         }),
         timeout=_TIMEOUT)

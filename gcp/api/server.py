@@ -113,7 +113,7 @@ class OSVServicer(osv_service_v1_pb2_grpc.OSVServicer):
         page_token=None,
         total_responses=ResponsesCount(0))
 
-    results, next_page_token = do_query(request.query, query_context).result()
+    results, next_page_token = yield do_query(request.query, query_context)
     if results is not None:
       return osv_service_v1_pb2.VulnerabilityList(
           vulns=results, next_page_token=next_page_token)
@@ -141,7 +141,7 @@ class OSVServicer(osv_service_v1_pb2_grpc.OSVServicer):
       futures.append(do_query(query, query_context, include_details=False))
 
     for future in futures:
-      result, next_page_token = future.result()
+      result, next_page_token = yield future
       batch_results.append(
           osv_service_v1_pb2.VulnerabilityList(
               vulns=result, next_page_token=next_page_token))
@@ -182,7 +182,7 @@ class ResponsesCount:
   """
   count: int
 
-  def change(self, amount):
+  def add(self, amount):
     # This is to prevent query `limit` parameter being smaller than
     # the number that is checked later in the iter() loop for the last page
     if amount < 0:
@@ -528,7 +528,7 @@ def query_by_commit(
     bug_id: str = affected_commits.id().rsplit("-", 1)[0]
 
     bug_ids.append(bug_id)
-    context.total_responses.change(1)
+    context.total_responses.add(1)
 
   return _get_bugs(bug_ids, to_response=to_response), cursor
 
@@ -649,7 +649,7 @@ def _query_by_semver(context: QueryContext, query: ndb.Query, package_name: str,
     if _is_semver_affected(bug.affected_packages, package_name, ecosystem, purl,
                            version):
       results.append(bug)
-      context.total_responses.change(1)
+      context.total_responses.add(1)
 
   return results, cursor
 
@@ -683,7 +683,7 @@ def _query_by_generic_version(
     if _is_version_affected(bug.affected_packages, project, ecosystem, purl,
                             version):
       results.append(bug)
-      context.total_responses.change(1)
+      context.total_responses.add(1)
 
   if results:
     return results, cursor
@@ -707,7 +707,7 @@ def _query_by_generic_version(
         version,
         normalize=True):
       results.append(bug)
-      context.total_responses.change(1)
+      context.total_responses.add(1)
 
   return results, cursor
 
@@ -812,7 +812,7 @@ def query_by_package(context: QueryContext, package_name: str, ecosystem: str,
       break
 
     bugs.append(it.next())
-    context.total_responses.change(1)
+    context.total_responses.add(1)
 
   return [to_response(bug) for bug in bugs], cursor
 

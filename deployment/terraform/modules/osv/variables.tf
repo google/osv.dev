@@ -13,6 +13,11 @@ variable "vulnerabilities_export_bucket" {
   description = "Name of bucket to export vulnerabilities to."
 }
 
+variable "logs_bucket" {
+  type        = string
+  description = "Name of bucket to export logs to."
+}
+
 variable "cve_osv_conversion_bucket" {
   type        = string
   description = "Name of bucket to store converted CVEs in."

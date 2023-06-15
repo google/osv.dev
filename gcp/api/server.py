@@ -791,17 +791,17 @@ def query_by_version(context: QueryContext,
     # TODO: Remove after testing how many consumers are
     # querying the API this way.
     context.page_token = None
-    # new_bugs, _ = yield _query_by_semver(context, query, package_name,
-    #                                      ecosystem, purl, version)
-    # bugs.extend(new_bugs)
-    # new_bugs, _ = (yield _query_by_generic_version(context, query, package_name,
-    #                                                ecosystem, purl, version))
-    # bugs.extend(new_bugs)
+    new_bugs, _ = yield _query_by_semver(context, query, package_name,
+                                         ecosystem, purl, version)
+    bugs.extend(new_bugs)
+    new_bugs, _ = (yield _query_by_generic_version(context, query, package_name,
+                                                   ecosystem, purl, version))
+    bugs.extend(new_bugs)
 
     # Trying both is too difficult/ugly with paging
     # Our documentation states that this is an invalid query
-    context.service_context.abort(grpc.StatusCode.INVALID_ARGUMENT,
-                                  'Ecosystem not specified')
+    # context.service_context.abort(grpc.StatusCode.INVALID_ARGUMENT,
+    #                               'Ecosystem not specified')
 
   return [to_response(bug) for bug in bugs], next_page_token
 

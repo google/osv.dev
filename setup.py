@@ -42,6 +42,7 @@ setuptools.setup(
         'attrs',
         'jsonschema',
         'grpcio',
+        'packageurl-python',
         'packaging<22.0',
     ],
     package_dir={

@@ -171,10 +171,11 @@ class IntegrationTests(unittest.TestCase):
             }
         }),
         timeout=_TIMEOUT)
-    
-    self.assertEqual(
-      response.text,
-      '{"code":3,"message":"Ecosystem not specified"}')
+
+    self.assert_results_equal({'vulns': [self._VULN_744]}, response.json())
+    # self.assertEqual(
+    #   response.text,
+    #   '{"code":3,"message":"Ecosystem not specified"}')
 
   def test_query_debian(self):
     """Test querying Debian with sub ecosystem versions"""
@@ -467,12 +468,11 @@ class IntegrationTests(unittest.TestCase):
     """Test query by package."""
     response = requests.post(
         _api() + '/v1/query',
-        data=json.dumps({
-            'package': {
+        data=json.dumps(
+            {'package': {
                 'ecosystem': 'PyPI',
                 'name': 'tensorflow',
-            }
-        }),
+            }}),
         timeout=_TIMEOUT)
 
     result = response.json()
@@ -499,10 +499,9 @@ class IntegrationTests(unittest.TestCase):
     """Test query by package (purl)."""
     response = requests.post(
         _api() + '/v1/query',
-        data=json.dumps(
-            {'package': {
-                'purl': 'pkg:pypi/tensorflow',
-            }}),
+        data=json.dumps({'package': {
+            'purl': 'pkg:pypi/tensorflow',
+        }}),
         timeout=_TIMEOUT)
     result = response.json()
     vulns_first = set(v['id'] for v in result['vulns'])

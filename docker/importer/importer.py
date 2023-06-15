@@ -20,6 +20,8 @@ import json
 import logging
 import os
 import threading
+import time
+import atexit
 from typing import List, Tuple, Optional
 
 from google.cloud import ndb
@@ -77,6 +79,18 @@ def replace_importer_log(client: storage.Client, source_name: str,
   upload_string = '--- ' + datetime.datetime.utcnow().isoformat() + ' ---\n'
   upload_string += '\n'.join(import_failure_logs)
   bucket.blob(source_name).upload_from_string(upload_string)
+
+
+def log_run_duration(start: float):
+  """Log the elapsed wallclock duration at the end of the program.
+
+  This enables a log-based metric to be created.
+
+  Args:
+    start: the time the program started.
+  """
+  elapsed = time.time() - start
+  logging.info('Importer run duration: %d', elapsed)
 
 
 class Importer:
@@ -518,6 +532,7 @@ def main():
 
 
 if __name__ == '__main__':
+  atexit.register(log_run_duration, time.time())
   osv.logs.setup_gcp_logging('importer')
   _ndb_client = ndb.Client()
   with _ndb_client.context():

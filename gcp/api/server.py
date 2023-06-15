@@ -764,7 +764,7 @@ def query_by_version(context: QueryContext,
 
   # Don't filter by ecosystem if it's a purl query
   if purl and not ecosystem:
-    purl_ecosystem = purl_helpers.purl_to_ecosystem(purl)
+    purl_ecosystem = purl_helpers.purl_to_ecosystem(purl.type)
     if purl_ecosystem:
       ecosystem = purl_ecosystem
   else:

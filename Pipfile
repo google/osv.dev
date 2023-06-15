@@ -13,7 +13,6 @@ attrs = "*"
 jsonschema = "*"
 grpcio = "*"
 packaging = "<22.0"
-packageurl-python = "0.11.1"
 
 [dev-packages]
 yapf = "*"

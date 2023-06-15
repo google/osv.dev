@@ -171,7 +171,10 @@ class IntegrationTests(unittest.TestCase):
             }
         }),
         timeout=_TIMEOUT)
-    self.assert_results_equal({'vulns': [self._VULN_744]}, response.json())
+    
+    self.assertEqual(
+      response.text,
+      '{"code":3,"message":"Ecosystem not specified"}')
 
   def test_query_debian(self):
     """Test querying Debian with sub ecosystem versions"""
@@ -466,8 +469,8 @@ class IntegrationTests(unittest.TestCase):
         _api() + '/v1/query',
         data=json.dumps({
             'package': {
-                'ecosystem': 'Maven',
-                'name': 'org.apache.tomcat:tomcat',
+                'ecosystem': 'PyPI',
+                'name': 'tensorflow',
             }
         }),
         timeout=_TIMEOUT)
@@ -480,8 +483,8 @@ class IntegrationTests(unittest.TestCase):
         _api() + '/v1/query',
         data=json.dumps({
             'package': {
-                'ecosystem': 'Maven',
-                'name': 'org.apache.tomcat:tomcat',
+                'ecosystem': 'PyPI',
+                'name': 'tensorflow',
             },
             'page_token': result['next_page_token'],
         }),
@@ -498,7 +501,7 @@ class IntegrationTests(unittest.TestCase):
         _api() + '/v1/query',
         data=json.dumps(
             {'package': {
-                'purl': 'pkg:maven/org.apache.tomcat/tomcat',
+                'purl': 'pkg:pypi/tensorflow',
             }}),
         timeout=_TIMEOUT)
     result = response.json()
@@ -509,7 +512,7 @@ class IntegrationTests(unittest.TestCase):
         _api() + '/v1/query',
         data=json.dumps({
             'package': {
-                'purl': 'pkg:maven/org.apache.tomcat/tomcat',
+                'purl': 'pkg:pypi/tensorflow',
             },
             'page_token': result['next_page_token'],
         }),

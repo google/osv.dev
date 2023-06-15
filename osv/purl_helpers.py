@@ -15,6 +15,8 @@
 
 from urllib.parse import quote
 
+from packageurl import PackageURL
+
 PURL_ECOSYSTEMS = {
     'Alpine': 'apk',
     'crates.io': 'cargo',
@@ -38,7 +40,7 @@ def _url_encode(package_name):
   return '/'.join(quote(p) for p in parts)
 
 
-def package_to_purl(ecosystem, package_name):
+def package_to_purl(ecosystem: str, package_name: str) -> str | None:
   """Convert a ecosystem and package name to PURL."""
   purl_type = PURL_ECOSYSTEMS.get(ecosystem)
   if not purl_type:
@@ -59,3 +61,7 @@ def package_to_purl(ecosystem, package_name):
     suffix = '?arch=source'
 
   return f'pkg:{purl_type}/{_url_encode(package_name)}{suffix}'
+
+def purl_to_ecosystem(purl: PackageURL) -> str | None:
+  ecosystem_purl = {v: k for k, v in PURL_ECOSYSTEMS.items()}
+  return ecosystem_purl[purl.type]

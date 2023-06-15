@@ -38,6 +38,7 @@ from packageurl import PackageURL
 import osv
 from osv import ecosystems
 from osv import semver_index
+from osv import purl_helpers
 from osv.logs import setup_gcp_logging
 import osv_service_v1_pb2
 import osv_service_v1_pb2_grpc
@@ -741,9 +742,6 @@ def query_by_version(context: QueryContext,
                      version,
                      to_response: Callable = bug_to_response):
   """Query by (fuzzy) version."""
-  ecosystem_info = ecosystems.get(ecosystem)
-  is_semver = ecosystem_info and ecosystem_info.is_semver
-
   if package_name:
     query = osv.Bug.query(
         osv.Bug.status == osv.BugStatus.PROCESSED,
@@ -764,7 +762,17 @@ def query_by_version(context: QueryContext,
   if ecosystem:
     query = query.filter(osv.Bug.ecosystem == ecosystem)
 
-  # ecosystem = purl.namespace
+  # Don't filter by ecosystem if it's a purl query
+  if purl and not ecosystem:
+    purl_ecosystem = purl_helpers.purl_to_ecosystem(purl)
+    if purl_ecosystem:
+      ecosystem = purl_ecosystem
+  else:
+    logging.warning('ecosystem specified in a purl query')
+
+  ecosystem_info = ecosystems.get(ecosystem)
+  is_semver = ecosystem_info and ecosystem_info.is_semver
+
   bugs = []
   next_page_token = None
   if ecosystem:
@@ -783,17 +791,17 @@ def query_by_version(context: QueryContext,
     # TODO: Remove after testing how many consumers are
     # querying the API this way.
     context.page_token = None
-    new_bugs, _ = yield _query_by_semver(context, query, package_name,
-                                         ecosystem, purl, version)
-    bugs.extend(new_bugs)
-    new_bugs, _ = (yield _query_by_generic_version(context, query, package_name,
-                                                   ecosystem, purl, version))
-    bugs.extend(new_bugs)
+    # new_bugs, _ = yield _query_by_semver(context, query, package_name,
+    #                                      ecosystem, purl, version)
+    # bugs.extend(new_bugs)
+    # new_bugs, _ = (yield _query_by_generic_version(context, query, package_name,
+    #                                                ecosystem, purl, version))
+    # bugs.extend(new_bugs)
 
     # Trying both is too difficult/ugly with paging
     # Our documentation states that this is an invalid query
-    # context.service_context.abort(grpc.StatusCode.INVALID_ARGUMENT,
-    #                               'Ecosystem not specified')
+    context.service_context.abort(grpc.StatusCode.INVALID_ARGUMENT,
+                                  'Ecosystem not specified')
 
   return [to_response(bug) for bug in bugs], next_page_token
 

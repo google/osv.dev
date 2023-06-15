@@ -22,27 +22,43 @@ Given the source code of C/C++ libraries, this endpoint attempts to find the clo
 {:toc}
 </details>
 
-## Experimental endpoint
+## Overview
 
-As this is an experimental feature, we would love to hear about your experience using it. If you give this a try, please consider [opening an issue](https://github.com/google/osv.dev/issues/new) and letting us know about any pain points or highlights. 
+There are a few things you should know before using this API endpoint. 
 
-## Purpose
-The purpose of the endpoint is to help determine the package and version of a given C/C++ library. This is difficult because there is not a centralized package manager within the ecosystem. This API endpoint helps bridge that gap. Once you have the likely version, you can use [POST v1/query](post-v1-query.md) or [POST v1/queryset](post-v1-queryset.md) to search for vulnerabilities.
+### Experimental endpoint
+
+This API endpoint is still considered experimental. We would value any and all feedback. If you give this a try, please consider [opening an issue](https://github.com/google/osv.dev/issues/new) and letting us know about any pain points or highlights. 
+
+### Purpose
+The purpose of the endpoint is to help determine the package and version of a given C/C++ library. This is not as straightforward of a process compared to other ecosystems, because there is not a centralized package manager for C/C++. This API endpoint helps bridge that gap. Once you have the likely version, you can use [POST v1/query](post-v1-query.md) or [POST v1/queryset](post-v1-queryset.md) to search for vulnerabilities.
+
+### Available Packages
+Because there is no centralized package manager for C/C++, there is also no centralized vulnerability database for the ecosystem. We are working on getting a more comprehensive collection of C/C++ vulnerabilities, but the ones that are currently available were found through the [OSS-Fuzz](https://google.github.io/oss-fuzz/) project. This means that not all C/C++ packages are represented in our database. 
+
+To confirm if the package you are interested in can be versioned by the determineversion API, please check the following resources for your package:
+
+1. All available package information can be found [here](https://storage.googleapis.com/osv-indexer-configs).
+2. You can look up your specific package using a url in the form <!-- markdown-link-check-disable --> `https://storage.googleapis.com/osv-indexer-configs/generated/{your-package}.yaml` <!-- markdown-link-check-enable--> For example, if you are interested in the library `protobuf`, you can find information for it at [`https://storage.googleapis.com/osv-indexer-configs/generated/protobuf.yaml`](https://storage.googleapis.com/osv-indexer-configs/generated/protobuf.yaml). 
+3. You can use [gsutil](https://cloud.google.com/storage/docs/gsutil) to copy everything: `gsutil -m cp -r gs://osv-indexer-configs/ .`
 
 ## Try the API
 
 We recommend trying the API endpoint with our [indexer-api-caller](https://github.com/google/osv.dev/tree/master/tools/indexer-api-caller) tool. The index-api-caller will gather all of the data (file paths and MD5 hashes) that you need, make the API call for you, and return the response. 
-
-This API endpoint requires a lot of data and this tool allows you to easily make an API call, without manually constructing the file_hash parameter. 
 
 ### Steps to use the indexer-api-caller
 
 1. Have a local copy of this repostiory. 
 2. Navigate to `/osv.dev/tools/indexer-api-caller`
 3. Run the tool using `go run . -lib path/to/library`
-4. Evaluate the results
+4. Evaluate the response
 
-The rest of the documentation for this endpoint is presented for the sake of clarity and in the case that a user wants to build their own tool
+
+### Interpreting the API response
+
+{Insert discussion on how to interpret the API response and what to do next}
+
+
 
 ## Parameters
 

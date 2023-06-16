@@ -238,6 +238,8 @@ def build_determine_version_result(
 
     output.append(version_match)
 
+  output.sort(key=lambda x: x.score, reverse=True)
+
   return osv_service_v1_pb2.VersionMatchList(matches=output)
 
 

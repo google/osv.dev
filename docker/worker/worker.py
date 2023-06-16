@@ -572,6 +572,20 @@ class TaskRunner:
     if task_type in ('fixed', 'regressed'):
       oss_fuzz.handle_timeout(task_type, source_id, self._oss_fuzz_dir, message)
 
+  def _log_task_latency(self, message):
+    """Determine how long ago the task was requested.
+
+    Log how long it took to be serviced."""
+    request_time = message.attributes.get('timestamp')
+    if request_time:
+      request_time = int(request_time)
+      latency = request_time = int(time.time())
+      task_type = message.attributes['type']
+      source_id = get_source_id(message)
+
+      logging.info('Task %s (source_id=%s) latency %d', task_type, source_id,
+                   latency)
+
   def loop(self):
     """Task loop."""
     subscriber = pubsub_v1.SubscriberClient()
@@ -595,6 +609,7 @@ class TaskRunner:
 
       done = done_event.wait(timeout=MAX_LEASE_DURATION)
       logging.info('Returned from task thread')
+      self._log_task_latency(message)
       if not done:
         self.handle_timeout(subscriber, subscription, ack_id, message)
         logging.warning('Timed out processing task')

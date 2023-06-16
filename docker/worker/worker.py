@@ -579,7 +579,7 @@ class TaskRunner:
     request_time = message.attributes.get('timestamp')
     if request_time:
       request_time = int(request_time)
-      latency = request_time = int(time.time())
+      latency = int(time.time()) - request_time
       task_type = message.attributes['type']
       source_id = get_source_id(message)
 

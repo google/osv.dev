@@ -80,7 +80,9 @@ class ImporterTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
     shutil.rmtree(self.tmp_dir, ignore_errors=True)
 
   @mock.patch('google.cloud.pubsub_v1.PublisherClient.publish')
-  def test_basic(self, mock_publish):
+  @mock.patch('time.time', return_value=12345.0)
+  def test_basic(self, unused_mock_time: mock.MagicMock,
+                 mock_publish: mock.MagicMock):
     """Test basic run."""
     osv.Bug(
         db_id='OSV-2017-134',
@@ -178,7 +180,8 @@ class ImporterTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
                              '19a3cd03fc15360bf16187f54df92a75'),
             path='2021-111.yaml',
             source='oss-fuzz',
-            type='update')
+            type='update',
+            timestamp='12345')
     ])
     bug = osv.Bug.get_by_id('OSV-2017-134')
     self.assertEqual(osv.SourceOfTruth.SOURCE_REPO, bug.source_of_truth)
@@ -245,7 +248,9 @@ class ImporterTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
     mock_publish.assert_not_called()
 
   @mock.patch('google.cloud.pubsub_v1.PublisherClient.publish')
-  def test_scheduled_updates(self, mock_publish):
+  @mock.patch('time.time', return_value=12345.0)
+  def test_scheduled_updates(self, unused_mock_time: mock.MagicMock,
+                             mock_publish: mock.MagicMock):
     """Test scheduled updates."""
     self.mock_repo.add_file('proj/OSV-2021-1337.yaml', _MIN_VALID_VULNERABILITY)
     self.mock_repo.add_file('proj/OSV-2021-1339.yaml', _MIN_VALID_VULNERABILITY)
@@ -311,13 +316,15 @@ class ImporterTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
                              '19a3cd03fc15360bf16187f54df92a75'),
             path='proj/OSV-2021-1337.yaml',
             source='oss-fuzz',
-            type='update'),
+            type='update',
+            timestamp='12345'),
         mock.call(
             self.tasks_topic,
             allocated_id='OSV-2021-1339',
             data=b'',
             source_id='oss-fuzz:124',
-            type='impact'),
+            type='impact',
+            timestamp='12345'),
     ])
 
     source_repo = osv.SourceRepository.get_by_id('oss-fuzz')
@@ -418,7 +425,9 @@ class BucketImporterTest(unittest.TestCase):
 
   @mock.patch('google.cloud.storage.Blob.upload_from_string')
   @mock.patch('google.cloud.pubsub_v1.PublisherClient.publish')
-  def test_bucket(self, mock_publish: mock.MagicMock,
+  @mock.patch('time.time', return_value=12345.0)
+  def test_bucket(self, unused_mock_time: mock.MagicMock,
+                  mock_publish: mock.MagicMock,
                   upload_from_str: mock.MagicMock):
     """Test bucket updates."""
     imp = importer.Importer('fake_public_key', 'fake_private_key', self.tmp_dir,
@@ -445,7 +454,8 @@ class BucketImporterTest(unittest.TestCase):
             path='a/b/android-test.json',
             original_sha256=('12453f85cd87bc1d465e0d013db572c0'
                              '1f7fb7de3b3a33de94ebcc7bd0f23a14'),
-            deleted='false'),
+            deleted='false',
+            timestamp='12345'),
         mock.call(
             self.tasks_topic,
             data=b'',
@@ -454,7 +464,8 @@ class BucketImporterTest(unittest.TestCase):
             path='a/b/test.json',
             original_sha256=('62966a80f6f9f54161803211069216177'
                              '37340a47f43356ee4a1cabe8f089869'),
-            deleted='false'),
+            deleted='false',
+            timestamp='12345'),
     ])
 
     # Test this entry is not published
@@ -485,7 +496,9 @@ class BucketImporterTest(unittest.TestCase):
 
   @mock.patch('google.cloud.storage.Blob.upload_from_string')
   @mock.patch('google.cloud.pubsub_v1.PublisherClient.publish')
-  def test_import_override(self, mock_publish: mock.MagicMock,
+  @mock.patch('time.time', return_value=12345.0)
+  def test_import_override(self, unused_mock_time: mock.MagicMock,
+                           mock_publish: mock.MagicMock,
                            upload_from_str: mock.MagicMock):
     """Test bucket updates."""
 
@@ -506,7 +519,8 @@ class BucketImporterTest(unittest.TestCase):
             source='bucket',
             path='a/b/DSA-3029-1.json',
             original_sha256=mock.ANY,
-            deleted='false')
+            deleted='false',
+            timestamp='12345')
     ])
     mock_publish.reset_mock()
 
@@ -530,7 +544,8 @@ class BucketImporterTest(unittest.TestCase):
         source='bucket',
         path='a/b/DSA-3029-1.json',
         original_sha256=mock.ANY,
-        deleted='false')
+        deleted='false',
+        timestamp='12345')
     self.assertNotIn(dsa_call, mock_publish.mock_calls)
     # Check if uploaded log str has the failed to parse vuln
     self.assertTrue(

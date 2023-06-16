@@ -81,7 +81,8 @@ class ImporterTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
 
   @mock.patch('google.cloud.pubsub_v1.PublisherClient.publish')
   @mock.patch('time.time', return_value=12345.0)
-  def test_basic(self, mock_time: mock.MagicMock, mock_publish: mock.MagicMock):
+  def test_basic(self, unused_mock_time: mock.MagicMock,
+                 mock_publish: mock.MagicMock):
     """Test basic run."""
     osv.Bug(
         db_id='OSV-2017-134',
@@ -248,7 +249,7 @@ class ImporterTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
 
   @mock.patch('google.cloud.pubsub_v1.PublisherClient.publish')
   @mock.patch('time.time', return_value=12345.0)
-  def test_scheduled_updates(self, mock_time: mock.MagicMock,
+  def test_scheduled_updates(self, unused_mock_time: mock.MagicMock,
                              mock_publish: mock.MagicMock):
     """Test scheduled updates."""
     self.mock_repo.add_file('proj/OSV-2021-1337.yaml', _MIN_VALID_VULNERABILITY)
@@ -425,7 +426,8 @@ class BucketImporterTest(unittest.TestCase):
   @mock.patch('google.cloud.storage.Blob.upload_from_string')
   @mock.patch('google.cloud.pubsub_v1.PublisherClient.publish')
   @mock.patch('time.time', return_value=12345.0)
-  def test_bucket(self, mock_time: mock.MagicMock, mock_publish: mock.MagicMock,
+  def test_bucket(self, unused_mock_time: mock.MagicMock,
+                  mock_publish: mock.MagicMock,
                   upload_from_str: mock.MagicMock):
     """Test bucket updates."""
     imp = importer.Importer('fake_public_key', 'fake_private_key', self.tmp_dir,
@@ -495,7 +497,7 @@ class BucketImporterTest(unittest.TestCase):
   @mock.patch('google.cloud.storage.Blob.upload_from_string')
   @mock.patch('google.cloud.pubsub_v1.PublisherClient.publish')
   @mock.patch('time.time', return_value=12345.0)
-  def test_import_override(self, mock_time: mock.MagicMock,
+  def test_import_override(self, unused_mock_time: mock.MagicMock,
                            mock_publish: mock.MagicMock,
                            upload_from_str: mock.MagicMock):
     """Test bucket updates."""

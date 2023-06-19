@@ -5,7 +5,7 @@ details: |
   Blah
 severity:
 - type: CVSS_V3
-  score: '7.5'
+  score: CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:L/I:L/A:L
 credits:
 - name: Foo bar
   contact:

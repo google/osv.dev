@@ -16,7 +16,6 @@ tools and unsupported by the core OSV maintainers.
 -   [Dependency-Track](https://github.com/DependencyTrack/dependency-track)
 -   [dep-scan](https://github.com/AppThreat/dep-scan)
 -   [EZE-CLI: The one stop shop for security testing in modern development](https://github.com/RiverSafeUK/eze-cli)
--   [Golang support for the schema](https://pkg.go.dev/golang.org/x/vuln/osv)
 -   [G-Rath/osv-detector](https://github.com/G-Rath/osv-detector): A scanner
     that uses the OSV database.
 -   [it-depends](https://github.com/trailofbits/it-depends)
@@ -30,4 +29,4 @@ tools and unsupported by the core OSV maintainers.
     advisory databases](https://github.com/twu/skjold)
 -   [Trivy](https://github.com/aquasecurity/trivy)
 
-Feel free to [send a PR](https://github.com/google/osv.dev/docs/third-party.md) to add your project here.
+Feel free to [send a PR](https://github.com/google/osv.dev/blob/master/docs/third-party.md) to add your project here.

@@ -1,20 +1,17 @@
 {
+  "schema_version": "1.4.0",
   "id": "GHSA-838r-hvwh-24h8",
+  "modified": "2021-09-24T13:10:05Z",
   "published": "2021-09-13T20:06:31Z",
-  "modified": "2021-09-13T20:06:31Z",
   "aliases": [
     "CVE-2021-38555"
   ],
-  "description": "An XML external entity (XXE) injection vulnerability was discovered in the Any23 StreamUtils.java file and is known to affect Any23 versions < 2.5. XML external entity injection (also known as XXE) is a web security vulnerability that allows an attacker to interfere with an application's processing of XML data. It often allows an attacker to view files on the application server filesystem, and to interact with any back-end or external systems that the application itself can access.",
   "summary": "XML Injection in Any23",
-  "references": [
+  "details": "An XML external entity (XXE) injection vulnerability was discovered in the Any23 StreamUtils.java file and is known to affect Any23 versions < 2.5. XML external entity injection (also known as XXE) is a web security vulnerability that allows an attacker to interfere with an application's processing of XML data. It often allows an attacker to view files on the application server filesystem, and to interact with any back-end or external systems that the application itself can access.",
+  "severity": [
     {
-      "type": "ADVISORY",
-      "url": "https://nvd.nist.gov/vuln/detail/CVE-2021-38555"
-    },
-    {
-      "type": "ADVISORY",
-      "url": "https://github.com/advisories/GHSA-838r-hvwh-24h8"
+      "type": "CVSS_V3",
+      "score": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:N"
     }
   ],
   "affected": [
@@ -35,8 +32,30 @@
             }
           ]
         }
-      ],
-      "versions": []
+      ]
     }
-  ]
+  ],
+  "references": [
+    {
+      "type": "ADVISORY",
+      "url": "https://nvd.nist.gov/vuln/detail/CVE-2021-38555"
+    },
+    {
+      "type": "PACKAGE",
+      "url": "https://github.com/apache/any23"
+    },
+    {
+      "type": "WEB",
+      "url": "https://lists.apache.org/thread.html/r589d1a9f94dbeee7a0f5dbe8513a0e300dfe669bd964ba2fbfe28e07%40%3Cannounce.apache.org%3E"
+    }
+  ],
+  "database_specific": {
+    "cwe_ids": [
+      "CWE-611"
+    ],
+    "severity": "CRITICAL",
+    "github_reviewed": true,
+    "github_reviewed_at": "2021-09-13T19:31:01Z",
+    "nvd_published_at": "2021-09-11T11:15:00Z"
+  }
 }

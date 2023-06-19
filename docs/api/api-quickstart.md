@@ -3,11 +3,11 @@ layout: page
 title: API Quickstart
 permalink: /quickstart/
 parent: API
-nav_order: 1
+nav_order: 2
 ---
 # Quickstart
 
-Here are a couple of examples that you can run to get an idea of the API. See [here](api.md#osv-api) for furthere information.  
+Here are a couple of examples that you can run to get an idea of the API. See [here](index.md#osv-api) for furthere information.  
 
 ## Return a vulnerability associated with a commit hash
   

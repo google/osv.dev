@@ -54,4 +54,4 @@ If you want to use images in your blog post, please do the following.
 
 Run the appengine frontend by following the steps
 [here](https://github.com/google/osv.dev/blob/master/CONTRIBUTING.md#ui), and
-navigate to <http://localhost:8000/blog/>.
+navigate to <!-- markdown-link-check-disable-line --> <http://localhost:8000/blog/>.

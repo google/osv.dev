@@ -1,5 +1,5 @@
 ('diff --git a/BLAH-123.yaml b/BLAH-123.yaml\n'
- 'index 97638fe..177eda6 100644\n'
+ 'index 234fa5a..9305b68 100644\n'
  '--- a/BLAH-123.yaml\n'
  '+++ b/BLAH-123.yaml\n'
  '@@ -3,13 +3,9 @@ summary: A vulnerability\n'
@@ -8,7 +8,7 @@
  '   Blah\n'
  '-severity:\n'
  '-- type: CVSS_V3\n'
- "-  score: '7.5'\n"
+ '-  score: CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:L/I:L/A:L\n'
  '-credits:\n'
  '-- name: Foo bar\n'
  '-  contact:\n'
@@ -35,7 +35,7 @@
  '+  - v0.1.1\n'
  '+severity:\n'
  '+- type: CVSS_V3\n'
- "+  score: '7.5'\n"
+ '+  score: CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:L/I:L/A:L\n'
  '+credits:\n'
  '+- name: Foo bar\n'
  '+  contact:\n'

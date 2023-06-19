@@ -132,6 +132,22 @@ class OSVServicer(osv_service_v1_pb2_grpc.OSVServicer):
     res = determine_version(request.query, context).result()
     return res
 
+  @ndb_context
+  def Check(self, request, context: grpc.ServicerContext):
+    """Health check per the gRPC health check protocol."""
+    del request  # Unused.
+
+    # Read up to a single Bug entity from the DB. This should not cause an
+    # exception or time out.
+    osv.Bug.query().fetch(1)
+    return osv_service_v1_pb2.HealthCheckResponse(
+        status=osv_service_v1_pb2.HealthCheckResponse.ServingStatus.SERVING)
+
+  def Watch(self, request, context: grpc.ServicerContext):
+    """Health check per the gRPC health check protocol."""
+    del request  # Unused.
+    context.abort(grpc.StatusCode.UNIMPLEMENTED, "Unimplemented")
+
 
 def process_buckets(
     file_results: List[osv.FileResult]) -> List[osv.RepoIndexBucket]:
@@ -240,6 +256,8 @@ def build_determine_version_result(
       continue
 
     output.append(version_match)
+
+  output.sort(key=lambda x: x.score, reverse=True)
 
   return osv_service_v1_pb2.VersionMatchList(matches=output)
 
@@ -400,12 +418,15 @@ def bug_to_response(bug, include_details=True):
 
 def _get_bugs(bug_ids, to_response=bug_to_response):
   """Get bugs from bug ids."""
-  bugs = ndb.get_multi([ndb.Key(osv.Bug, bug_id) for bug_id in bug_ids])
-  return [
-      to_response(bug)
-      for bug in bugs
-      if bug and bug.status == osv.BugStatus.PROCESSED
-  ]
+  bugs = ndb.get_multi_async([ndb.Key(osv.Bug, bug_id) for bug_id in bug_ids])
+
+  responses = []
+  for future_bug in bugs:
+    bug: osv.Bug = future_bug.result()
+    if bug and bug.status == osv.BugStatus.PROCESSED and bug.public:
+      responses.append(to_response(bug))
+
+  return responses
 
 
 def _clean_purl(purl):
@@ -432,25 +453,24 @@ def query_by_commit(context: grpc.ServicerContext,
   """Query by commit."""
   query = osv.AffectedCommits.query(osv.AffectedCommits.commits == commit)
   bug_ids = []
-  it = query.iter()
+  it: ndb.QueryIterator = query.iter(keys_only=True)
   gsd_count = 0
 
   while (yield it.has_next_async()):
-    affected_commits = it.next()
-    # Avoid requiring a separate index to include this in the initial Datastore
-    # query. The number of these should be very little to just iterate through.
-    if not affected_commits.public:
-      continue
+    # Affect commits key follows this format:
+    # <BugID>-<PageNumber>
+    affected_commit_key: ndb.Key = it.next()
+    bug_id: str = affected_commit_key.id().rsplit("-", 1)[0]
 
     # Temporary mitigation.
-    if affected_commits.bug_id.startswith('GSD-'):
+    if bug_id.startswith('GSD-'):
       gsd_count += 1
       if gsd_count >= 10:
         context.abort(grpc.StatusCode.UNAVAILABLE, _LINUX_ERROR)
 
       continue
 
-    bug_ids.append(affected_commits.bug_id)
+    bug_ids.append(bug_id)
 
   return _get_bugs(bug_ids, to_response=to_response)
 
@@ -653,6 +673,7 @@ def query_by_version(context: grpc.ServicerContext,
       bugs.extend((yield _query_by_generic_version(context, query, package_name,
                                                    ecosystem, purl, version)))
   else:
+    logging.warning("Package query without ecosystem specified")
     # Unspecified ecosystem. Try both.
     bugs.extend((yield _query_by_semver(context, query, package_name, ecosystem,
                                         purl, version)))

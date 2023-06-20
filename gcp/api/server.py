@@ -51,7 +51,7 @@ _MAX_VULN_RESP_THRESH = 3000
 # Max responses after MAX_VULN_RESP_THRESH has been exceeded
 _MAX_VULN_LISTED_POST_EXCEEDED = 5
 # Max responses before MAX_VULN_RESP_THRESH has been exceeded
-_MAX_VULN_LISTED_PRE_EXCEEDED = 500
+_MAX_VULN_LISTED_PRE_EXCEEDED = 1000
 
 # Used in DetermineVersion
 # If there are more results for a bucket than this number,

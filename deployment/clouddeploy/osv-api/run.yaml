@@ -10,5 +10,8 @@ spec:
         resources:
           limits:
             memory: 4Gi
+        livenessProbe:
+          grpc:
+            service: osv.v1.OSV
       timeoutSeconds: 60
       containerConcurrency: 20

@@ -13,6 +13,7 @@ packageurl-python = "==0.11.1"
 packaging = "==20.9"
 requests = "==2.31.0"
 grpcio-reflection = "*"
+grpcio-health-checking = "*"
 
 [dev-packages]
 grpcio-tools = "*"

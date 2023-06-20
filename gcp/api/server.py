@@ -108,10 +108,19 @@ class OSVServicer(osv_service_v1_pb2_grpc.OSVServicer):
 
     version.
     """
+    page_token = None
+    if request.query.page_token:
+      try:
+        page_token = ndb.Cursor(urlsafe=request.query.page_token)
+      except ValueError as e:
+        logging.error(e)
+        context.service_context.abort(grpc.StatusCode.INVALID_ARGUMENT,
+                                      'Invalid page token.')
+
     query_context = QueryContext(
         service_context=context,
         request_start_time=datetime.now(),
-        page_token=None,
+        page_token=page_token,
         total_responses=ResponsesCount(0))
 
     try:
@@ -140,11 +149,19 @@ class OSVServicer(osv_service_v1_pb2_grpc.OSVServicer):
 
     total_responses = ResponsesCount(0)
     req_start_time = datetime.now()
-    for query in request.query.queries:
+    for i, query in enumerate(request.query.queries):
+      page_token = None
+      if query.page_token:
+        try:
+          page_token = ndb.Cursor(urlsafe=query.page_token)
+        except ValueError as e:
+          logging.error(e)
+          context.service_context.abort(grpc.StatusCode.INVALID_ARGUMENT,
+                                        f'Invalid page token at index: {i}.')
       query_context = QueryContext(
           service_context=context,
           request_start_time=req_start_time,
-          page_token=None,
+          page_token=page_token,
           total_responses=total_responses)
 
       futures.append(do_query(query, query_context, include_details=False))
@@ -424,15 +441,6 @@ def do_query(query, context: QueryContext, include_details=True):
     package_name = ''
     ecosystem = ''
     purl_str = ''
-
-  context.page_token = None
-  if query.page_token:
-    try:
-      context.page_token = ndb.Cursor(urlsafe=query.page_token)
-    except ValueError as e:
-      logging.error(e)
-      context.service_context.abort(grpc.StatusCode.INVALID_ARGUMENT,
-                                    'Invalid page token.')
 
   purl = None
   purl_version = None

@@ -79,7 +79,8 @@ def ndb_context(func):
   return wrapper
 
 
-class OSVServicer(osv_service_v1_pb2_grpc.OSVServicer, health_pb2_grpc.HealthServicer):
+class OSVServicer(osv_service_v1_pb2_grpc.OSVServicer,
+                  health_pb2_grpc.HealthServicer):
   """V1 OSV servicer."""
 
   @ndb_context
@@ -138,6 +139,7 @@ class OSVServicer(osv_service_v1_pb2_grpc.OSVServicer, health_pb2_grpc.HealthSer
   def Check(self, request, context: grpc.ServicerContext):
     """Health check per the gRPC health check protocol."""
     del request  # Unused.
+    del context  # Unused.
 
     # Read up to a single Bug entity from the DB. This should not cause an
     # exception or time out.

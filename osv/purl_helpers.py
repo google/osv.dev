@@ -64,4 +64,4 @@ def package_to_purl(ecosystem: str, package_name: str) -> str | None:
 def purl_to_ecosystem(purl_type: str) -> str | None:
   """Convert purl to a specific ecosystem string"""
   ecosystem_purl = {v: k for k, v in PURL_ECOSYSTEMS.items()}
-  return ecosystem_purl[purl_type]
+  return ecosystem_purl.get(purl_type)

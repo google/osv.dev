@@ -43,7 +43,6 @@ from osv.logs import setup_gcp_logging
 import osv_service_v1_pb2
 import osv_service_v1_pb2_grpc
 
-_MAX_REQUEST_DURATION_SECS = 60
 _SHUTDOWN_GRACE_DURATION = 5
 
 _MAX_BATCH_QUERY = 1000
@@ -51,7 +50,7 @@ _MAX_BATCH_QUERY = 1000
 _MAX_VULN_RESP_THRESH = 3000
 # Max responses after MAX_VULN_RESP_THRESH has been exceeded
 _MAX_VULN_LISTED_POST_EXCEEDED = 5
-# Max responses before MAX_VULN_RESP_THRESH been exceeded
+# Max responses before MAX_VULN_RESP_THRESH has been exceeded
 _MAX_VULN_LISTED_PRE_EXCEEDED = 500
 
 # Used in DetermineVersion
@@ -67,10 +66,6 @@ _BUCKET_SIZE = 512
 
 # Prefix for the
 _TAG_PREFIX = "refs/tags/"
-
-_LINUX_ERROR = ("Linux Kernel queries are currently unavailable: " +
-                "See https://google.github.io/osv.dev/faq/" +
-                "#why-am-i-getting-an-error-message-for-my-linux-kernel-query")
 
 _ndb_client = ndb.Client()
 
@@ -762,13 +757,16 @@ def query_by_version(context: QueryContext,
   if ecosystem:
     query = query.filter(osv.Bug.ecosystem == ecosystem)
 
-  # Don't filter by ecosystem if it's a purl query
-  if purl and not ecosystem:
+  if purl:
+    if ecosystem: # Purl's already include the ecosystem inside
+      context.service_context.abort(
+        grpc.StatusCode.INVALID_ARGUMENT, 
+        'Ecosystem specified in a purl query',
+      )
+  
     purl_ecosystem = purl_helpers.purl_to_ecosystem(purl.type)
     if purl_ecosystem:
-      ecosystem = purl_ecosystem
-  else:
-    logging.warning('ecosystem specified in a purl query')
+      ecosystem = purl_ecosystem    
 
   ecosystem_info = ecosystems.get(ecosystem)
   is_semver = ecosystem_info and ecosystem_info.is_semver
@@ -794,8 +792,8 @@ def query_by_version(context: QueryContext,
     new_bugs, _ = yield _query_by_semver(context, query, package_name,
                                          ecosystem, purl, version)
     bugs.extend(new_bugs)
-    new_bugs, _ = (yield _query_by_generic_version(context, query, package_name,
-                                                   ecosystem, purl, version))
+    new_bugs, _ = yield _query_by_generic_version(context, query, package_name,
+                                                   ecosystem, purl, version)
     bugs.extend(new_bugs)
 
     # Trying both is too difficult/ugly with paging

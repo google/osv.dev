@@ -758,15 +758,15 @@ def query_by_version(context: QueryContext,
     query = query.filter(osv.Bug.ecosystem == ecosystem)
 
   if purl:
-    if ecosystem: # Purl's already include the ecosystem inside
+    if ecosystem:  # Purl's already include the ecosystem inside
       context.service_context.abort(
-        grpc.StatusCode.INVALID_ARGUMENT, 
-        'Ecosystem specified in a purl query',
+          grpc.StatusCode.INVALID_ARGUMENT,
+          'Ecosystem specified in a purl query',
       )
-  
+
     purl_ecosystem = purl_helpers.purl_to_ecosystem(purl.type)
     if purl_ecosystem:
-      ecosystem = purl_ecosystem    
+      ecosystem = purl_ecosystem
 
   ecosystem_info = ecosystems.get(ecosystem)
   is_semver = ecosystem_info and ecosystem_info.is_semver
@@ -793,7 +793,7 @@ def query_by_version(context: QueryContext,
                                          ecosystem, purl, version)
     bugs.extend(new_bugs)
     new_bugs, _ = yield _query_by_generic_version(context, query, package_name,
-                                                   ecosystem, purl, version)
+                                                  ecosystem, purl, version)
     bugs.extend(new_bugs)
 
     # Trying both is too difficult/ugly with paging

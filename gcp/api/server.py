@@ -119,7 +119,7 @@ class OSVServicer(osv_service_v1_pb2_grpc.OSVServicer):
 
     query_context = QueryContext(
         service_context=context,
-        request_start_time=datetime.now(),
+        # request_start_time=datetime.now(),
         page_token=page_token,
         total_responses=ResponsesCount(0))
 
@@ -148,7 +148,7 @@ class OSVServicer(osv_service_v1_pb2_grpc.OSVServicer):
       return None
 
     total_responses = ResponsesCount(0)
-    req_start_time = datetime.now()
+    # req_start_time = datetime.now()
     for i, query in enumerate(request.query.queries):
       page_token = None
       if query.page_token:
@@ -160,7 +160,7 @@ class OSVServicer(osv_service_v1_pb2_grpc.OSVServicer):
                                         f'Invalid page token at index: {i}.')
       query_context = QueryContext(
           service_context=context,
-          request_start_time=req_start_time,
+          # request_start_time=req_start_time,
           page_token=page_token,
           total_responses=total_responses)
 
@@ -241,7 +241,7 @@ class ResponsesCount:
 class QueryContext:
   service_context: grpc.ServicerContext
   page_token: ndb.Cursor | None
-  request_start_time: datetime
+  # request_start_time: datetime
   # Use a dataclass to copy by reference
   total_responses: ResponsesCount
 

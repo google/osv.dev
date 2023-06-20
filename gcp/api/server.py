@@ -29,6 +29,8 @@ from collections import defaultdict
 from google.cloud import ndb
 
 import grpc
+from grpc_health.v1 import health_pb2
+from grpc_health.v1 import health_pb2_grpc
 from grpc_reflection.v1alpha import reflection
 from packageurl import PackageURL
 
@@ -77,7 +79,7 @@ def ndb_context(func):
   return wrapper
 
 
-class OSVServicer(osv_service_v1_pb2_grpc.OSVServicer):
+class OSVServicer(osv_service_v1_pb2_grpc.OSVServicer, health_pb2_grpc.HealthServicer):
   """V1 OSV servicer."""
 
   @ndb_context
@@ -140,8 +142,8 @@ class OSVServicer(osv_service_v1_pb2_grpc.OSVServicer):
     # Read up to a single Bug entity from the DB. This should not cause an
     # exception or time out.
     osv.Bug.query().fetch(1)
-    return osv_service_v1_pb2.HealthCheckResponse(
-        status=osv_service_v1_pb2.HealthCheckResponse.ServingStatus.SERVING)
+    return health_pb2.HealthCheckResponse(
+        status=health_pb2.HealthCheckResponse.ServingStatus.SERVING)
 
   def Watch(self, request, context: grpc.ServicerContext):
     """Health check per the gRPC health check protocol."""
@@ -726,10 +728,13 @@ def query_by_package(context: grpc.ServicerContext, package_name: str,
 def serve(port: int, local: bool):
   """Configures and runs the OSV API server."""
   server = grpc.server(concurrent.futures.ThreadPoolExecutor(max_workers=10))
-  osv_service_v1_pb2_grpc.add_OSVServicer_to_server(OSVServicer(), server)
+  servicer = OSVServicer()
+  osv_service_v1_pb2_grpc.add_OSVServicer_to_server(servicer, server)
+  health_pb2_grpc.add_HealthServicer_to_server(servicer, server)
   if local:
     service_names = (
         osv_service_v1_pb2.DESCRIPTOR.services_by_name['OSV'].full_name,
+        health_pb2.DESCRIPTOR.services_by_name['Health'].full_name,
         reflection.SERVICE_NAME,
     )
     reflection.enable_server_reflection(service_names, server)

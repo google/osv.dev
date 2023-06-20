@@ -464,7 +464,9 @@ class IntegrationTests(unittest.TestCase):
             ]
         }, response.json())
 
-  def test_query_package(self):
+  @unittest.skip("Run this test locally with " + 
+                 "MAX_VULN_LISTED_PRE_EXCEEDED at a lower value")
+  def test_query_pagination(self):
     """Test query by package."""
     response = requests.post(
         _api() + '/v1/query',

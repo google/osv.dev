@@ -110,7 +110,7 @@ steps:
   id: 'pull-combine-to-osv'
   waitFor: ['setup']
 - name: gcr.io/cloud-builders/docker
-  args: ['build', '-t', 'gcr.io/oss-vdb/combine-to-osv:latest', '-t', 'gcr.io/oss-vdb/combine-to-osv:$COMMIT_SHA', '-f', 'cmd/alpine/Dockerfile', '--cache-from', 'gcr.io/oss-vdb/combine-to-osv:latest', '--pull', '.']
+  args: ['build', '-t', 'gcr.io/oss-vdb/combine-to-osv:latest', '-t', 'gcr.io/oss-vdb/combine-to-osv:$COMMIT_SHA', '-f', 'cmd/combine-to-osv/Dockerfile', '--cache-from', 'gcr.io/oss-vdb/combine-to-osv:latest', '--pull', '.']
   dir: 'vulnfeeds'
   id: 'build-combine-to-osv'
   waitFor: ['pull-combine-to-osv']

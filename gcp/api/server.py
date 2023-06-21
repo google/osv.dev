@@ -496,7 +496,7 @@ def do_query(query, context: QueryContext, include_details=True):
 
   if next_page_token:
     next_page_token = next_page_token.urlsafe()
-    logging.warning(f'Page size limit hit, response size: {len(bugs)}')    
+    logging.warning(f'Page size limit hit, response size: {len(bugs)}')
 
   return bugs, next_page_token
 

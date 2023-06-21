@@ -679,7 +679,7 @@ def _query_by_semver(context: QueryContext, query: ndb.Query, package_name: str,
                      ecosystem: str, purl: PackageURL | None, version: str):
   """Query by semver."""
   if not semver_index.is_valid(version):
-    return []
+    return [], None
 
   results = []
   query = query.filter(

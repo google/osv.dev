@@ -279,6 +279,34 @@ class IntegrationTests(unittest.TestCase):
         timeout=_TIMEOUT)
     self.assert_results_equal({'vulns': expected_vulns}, response.json())
 
+  def test_query_unknown_purl_invalid_semver(self):
+    """Test an unknown purl query with an invalid semver"""
+    response = requests.post(
+        _api() + '/v1/query',
+        data=json.dumps({
+            'package': {
+                'purl':
+                    'pkg:golang/github.com/' +
+                    'tianon/gosu@(devel)?package-id=656546dcfdff37ca',
+            }
+        }),
+        timeout=_TIMEOUT)
+
+    self.assert_results_equal({}, response.json())
+
+    response = requests.post(
+        _api() + '/v1/query',
+        data=json.dumps({
+            'package': {
+                'purl':
+                    'pkg:yeet/github.com/' +
+                    'tianon/gosu@(devel)?package-id=656546dcfdff37ca',
+            }
+        }),
+        timeout=_TIMEOUT)
+
+    self.assert_results_equal({}, response.json())
+
   def test_query_semver_no_vulns(self):
     """Test queries by SemVer with no vulnerabilities."""
     package = 'github.com/justinas/nosurf'

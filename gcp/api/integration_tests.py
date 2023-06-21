@@ -171,7 +171,11 @@ class IntegrationTests(unittest.TestCase):
             }
         }),
         timeout=_TIMEOUT)
+
     self.assert_results_equal({'vulns': [self._VULN_744]}, response.json())
+    # self.assertEqual(
+    #   response.text,
+    #   '{"code":3,"message":"Ecosystem not specified"}')
 
   def test_query_debian(self):
     """Test querying Debian with sub ecosystem versions"""
@@ -269,6 +273,7 @@ class IntegrationTests(unittest.TestCase):
             'version': '1.1.4',
             'package': {
                 'name': package,
+                'ecosystem': 'Go'
             }
         }),
         timeout=_TIMEOUT)
@@ -459,16 +464,17 @@ class IntegrationTests(unittest.TestCase):
             ]
         }, response.json())
 
-  def test_query_package(self):
+  @unittest.skip("Run this test locally with " +
+                 "MAX_VULN_LISTED_PRE_EXCEEDED at a lower value")
+  def test_query_pagination(self):
     """Test query by package."""
     response = requests.post(
         _api() + '/v1/query',
-        data=json.dumps({
-            'package': {
-                'ecosystem': 'Maven',
-                'name': 'org.apache.tomcat:tomcat',
-            }
-        }),
+        data=json.dumps(
+            {'package': {
+                'ecosystem': 'PyPI',
+                'name': 'tensorflow',
+            }}),
         timeout=_TIMEOUT)
 
     result = response.json()
@@ -479,8 +485,8 @@ class IntegrationTests(unittest.TestCase):
         _api() + '/v1/query',
         data=json.dumps({
             'package': {
-                'ecosystem': 'Maven',
-                'name': 'org.apache.tomcat:tomcat',
+                'ecosystem': 'PyPI',
+                'name': 'tensorflow',
             },
             'page_token': result['next_page_token'],
         }),
@@ -491,14 +497,15 @@ class IntegrationTests(unittest.TestCase):
 
     self.assertEqual(set(), vulns_first.intersection(vulns_second))
 
+  @unittest.skip("Run this test locally with " +
+                 "MAX_VULN_LISTED_PRE_EXCEEDED at a lower value")
   def test_query_package_purl(self):
     """Test query by package (purl)."""
     response = requests.post(
         _api() + '/v1/query',
-        data=json.dumps(
-            {'package': {
-                'purl': 'pkg:maven/org.apache.tomcat/tomcat',
-            }}),
+        data=json.dumps({'package': {
+            'purl': 'pkg:pypi/tensorflow',
+        }}),
         timeout=_TIMEOUT)
     result = response.json()
     vulns_first = set(v['id'] for v in result['vulns'])
@@ -508,7 +515,7 @@ class IntegrationTests(unittest.TestCase):
         _api() + '/v1/query',
         data=json.dumps({
             'package': {
-                'purl': 'pkg:maven/org.apache.tomcat/tomcat',
+                'purl': 'pkg:pypi/tensorflow',
             },
             'page_token': result['next_page_token'],
         }),

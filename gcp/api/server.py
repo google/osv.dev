@@ -573,7 +573,6 @@ def query_by_commit(
       gsd_count += 1
       if gsd_count >= 10:
         context.service_context.abort(grpc.StatusCode.UNAVAILABLE, _LINUX_ERROR)
-        return
 
       continue
 

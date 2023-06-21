@@ -23,7 +23,6 @@ import functools
 import logging
 import os
 import time
-from datetime import datetime
 from typing import Callable, List
 
 from collections import defaultdict
@@ -496,7 +495,7 @@ def do_query(query, context: QueryContext, include_details=True):
 
   if next_page_token:
     next_page_token = next_page_token.urlsafe()
-    logging.warning(f'Page size limit hit, response size: {len(bugs)}')
+    logging.warning('Page size limit hit, response size: %s', len(bugs))
 
   return bugs, next_page_token
 

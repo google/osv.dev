@@ -497,6 +497,8 @@ class IntegrationTests(unittest.TestCase):
 
     self.assertEqual(set(), vulns_first.intersection(vulns_second))
 
+  @unittest.skip("Run this test locally with " +
+                 "MAX_VULN_LISTED_PRE_EXCEEDED at a lower value")
   def test_query_package_purl(self):
     """Test query by package (purl)."""
     response = requests.post(

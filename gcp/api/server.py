@@ -445,6 +445,10 @@ def do_query(query, context: QueryContext, include_details=True):
     ecosystem = ''
     purl_str = ''
 
+  # TODO: Remove this after paging is implemented
+  if package_name == "Kernel" and (not ecosystem or ecosystem == "Linux"):
+    context.service_context.abort(grpc.StatusCode.UNAVAILABLE, _LINUX_ERROR)
+
   purl = None
   purl_version = None
   if purl_str:
@@ -455,7 +459,6 @@ def do_query(query, context: QueryContext, include_details=True):
     except ValueError:
       context.service_context.abort(grpc.StatusCode.INVALID_ARGUMENT,
                                     'Invalid Package URL.')
-      return None
 
   def to_response(b):
     return bug_to_response(b, include_details)
@@ -495,7 +498,6 @@ def do_query(query, context: QueryContext, include_details=True):
   else:
     context.service_context.abort(grpc.StatusCode.INVALID_ARGUMENT,
                                   'Invalid query.')
-    return None
 
   if next_page_token:
     next_page_token = next_page_token.urlsafe()
@@ -570,7 +572,7 @@ def query_by_commit(
     if bug_id.startswith('GSD-'):
       gsd_count += 1
       if gsd_count >= 10:
-        context.abort(grpc.StatusCode.UNAVAILABLE, _LINUX_ERROR)
+        context.service_context.abort(grpc.StatusCode.UNAVAILABLE, _LINUX_ERROR)
 
       continue
 
@@ -679,7 +681,7 @@ def _query_by_semver(context: QueryContext, query: ndb.Query, package_name: str,
                      ecosystem: str, purl: PackageURL | None, version: str):
   """Query by semver."""
   if not semver_index.is_valid(version):
-    return []
+    return [], None
 
   results = []
   query = query.filter(
@@ -768,9 +770,6 @@ def query_by_version(context: QueryContext,
                      to_response: Callable = bug_to_response):
   """Query by (fuzzy) version."""
 
-  if package_name == "Kernel":
-    context.service_context.abort(grpc.StatusCode.UNAVAILABLE, _LINUX_ERROR)
-
   if package_name:
     query = osv.Bug.query(
         osv.Bug.status == osv.BugStatus.PROCESSED,
@@ -786,7 +785,7 @@ def query_by_version(context: QueryContext,
         osv.Bug.public == True,  # noqa: E712
     )
   else:
-    return []
+    return [], None
 
   if ecosystem:
     query = query.filter(osv.Bug.ecosystem == ecosystem)
@@ -860,7 +859,7 @@ def query_by_package(context: QueryContext, package_name: str, ecosystem: str,
         osv.Bug.public == True,  # noqa: E712
     )
   else:
-    return []
+    return [], None
 
   it: ndb.QueryIterator = query.iter(start_cursor=context.page_token)
   cursor = None

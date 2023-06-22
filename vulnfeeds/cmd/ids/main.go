@@ -7,16 +7,15 @@ import (
 	"fmt"
 	"io"
 	"io/fs"
-	"io/ioutil"
 	"math/rand"
 	"os"
 	"path/filepath"
-	"slices"
 	"strconv"
 	"strings"
 	"time"
 
 	"github.com/google/osv-scanner/pkg/models"
+	"golang.org/x/exp/slices"
 	"gopkg.in/yaml.v2"
 )
 
@@ -185,7 +184,7 @@ func assignIDs(prefix, dir string, format FileFormat) error {
 		return fmt.Errorf("failed to generate random string: %w", err)
 	}
 
-	return ioutil.WriteFile(filepath.Join(dir, conflictFile), []byte(hex.EncodeToString(b)), 0644)
+	return os.WriteFile(filepath.Join(dir, conflictFile), []byte(hex.EncodeToString(b)), 0644)
 }
 
 func ReadVulnWithFormat(r io.Reader, format FileFormat) (*models.Vulnerability, error) {

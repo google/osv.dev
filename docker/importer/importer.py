@@ -148,7 +148,7 @@ class Importer:
         path=path,
         original_sha256=original_sha256,
         deleted=str(deleted).lower(),
-        timestamp=str(int(time.time())))
+        req_timestamp=str(int(time.time())))
 
   def _request_internal_analysis(self, bug):
     """Request internal analysis."""
@@ -158,7 +158,7 @@ class Importer:
         type='impact',
         source_id=bug.source_id,
         allocated_id=bug.key.id(),
-        timestamp=str(int(time.time())))
+        req_timestamp=str(int(time.time())))
 
   def run(self):
     """Run importer."""

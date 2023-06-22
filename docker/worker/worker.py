@@ -576,7 +576,7 @@ class TaskRunner:
     """Determine how long ago the task was requested.
 
     Log how long it took to be serviced."""
-    request_time = message.attributes.get('timestamp')
+    request_time = message.attributes.get('req_timestamp')
     if request_time:
       request_time = int(request_time)
       latency = int(time.time()) - request_time

@@ -15,9 +15,17 @@ import (
 )
 
 var (
-	repoDir   = flag.String("repo", "", "repo directory")
-	repoDir2  = flag.String("repo2", "", "specify another directory to compare file hashes to the first")
+	repoDir   = flag.String("lib", "", "library directory")
+	repoDir2  = flag.String("lib2", "", "specify another directory to compare file hashes to the first")
 	searchDir = flag.String("dir", "", "third party directory containing multiple libraries")
+	fileExts  = []string{
+		".hpp",
+		".h",
+		".hh",
+		".cc",
+		".c",
+		".cpp",
+	}
 )
 
 type Hash = [16]byte
@@ -122,9 +130,9 @@ func buildGit(repoDir string) ([]*FileResult, error) {
 
 	for i, fr := range fileResults {
 		if i == len(fileResults)-1 {
-			fmt.Fprintf(&b, "{\"hash\": \"%s\"}", base64.StdEncoding.EncodeToString(fr.Hash[:]))
+			fmt.Fprintf(&b, "{\"hash\": \"%s\", \"file_path\": \"%s\"}", base64.StdEncoding.EncodeToString(fr.Hash[:]), fr.Path)
 		} else {
-			fmt.Fprintf(&b, "{\"hash\": \"%s\"},", base64.StdEncoding.EncodeToString(fr.Hash[:]))
+			fmt.Fprintf(&b, "{\"hash\": \"%s\", \"file_path\": \"%s\"},", base64.StdEncoding.EncodeToString(fr.Hash[:]), fr.Path)
 		}
 	}
 	b.WriteString("]}")

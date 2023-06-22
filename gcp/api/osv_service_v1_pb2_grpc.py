@@ -7,170 +7,193 @@ import osv_service_v1_pb2 as osv__service__v1__pb2
 
 
 class OSVStub(object):
-    """Open source vulnerability database.
+  """Open source vulnerability database.
     """
 
-    def __init__(self, channel):
-        """Constructor.
+  def __init__(self, channel):
+    """Constructor.
 
         Args:
             channel: A grpc.Channel.
         """
-        self.GetVulnById = channel.unary_unary(
-                '/osv.v1.OSV/GetVulnById',
-                request_serializer=osv__service__v1__pb2.GetVulnByIdParameters.SerializeToString,
-                response_deserializer=osv_dot_vulnerability__pb2.Vulnerability.FromString,
-                )
-        self.QueryAffected = channel.unary_unary(
-                '/osv.v1.OSV/QueryAffected',
-                request_serializer=osv__service__v1__pb2.QueryAffectedParameters.SerializeToString,
-                response_deserializer=osv__service__v1__pb2.VulnerabilityList.FromString,
-                )
-        self.QueryAffectedBatch = channel.unary_unary(
-                '/osv.v1.OSV/QueryAffectedBatch',
-                request_serializer=osv__service__v1__pb2.QueryAffectedBatchParameters.SerializeToString,
-                response_deserializer=osv__service__v1__pb2.BatchVulnerabilityList.FromString,
-                )
-        self.DetermineVersion = channel.unary_unary(
-                '/osv.v1.OSV/DetermineVersion',
-                request_serializer=osv__service__v1__pb2.DetermineVersionParameters.SerializeToString,
-                response_deserializer=osv__service__v1__pb2.VersionMatchList.FromString,
-                )
+    self.GetVulnById = channel.unary_unary(
+        '/osv.v1.OSV/GetVulnById',
+        request_serializer=osv__service__v1__pb2.GetVulnByIdParameters
+        .SerializeToString,
+        response_deserializer=osv_dot_vulnerability__pb2.Vulnerability
+        .FromString,
+    )
+    self.QueryAffected = channel.unary_unary(
+        '/osv.v1.OSV/QueryAffected',
+        request_serializer=osv__service__v1__pb2.QueryAffectedParameters
+        .SerializeToString,
+        response_deserializer=osv__service__v1__pb2.VulnerabilityList
+        .FromString,
+    )
+    self.QueryAffectedBatch = channel.unary_unary(
+        '/osv.v1.OSV/QueryAffectedBatch',
+        request_serializer=osv__service__v1__pb2.QueryAffectedBatchParameters
+        .SerializeToString,
+        response_deserializer=osv__service__v1__pb2.BatchVulnerabilityList
+        .FromString,
+    )
+    self.DetermineVersion = channel.unary_unary(
+        '/osv.v1.OSV/DetermineVersion',
+        request_serializer=osv__service__v1__pb2.DetermineVersionParameters
+        .SerializeToString,
+        response_deserializer=osv__service__v1__pb2.VersionMatchList.FromString,
+    )
 
 
 class OSVServicer(object):
-    """Open source vulnerability database.
+  """Open source vulnerability database.
     """
 
-    def GetVulnById(self, request, context):
-        """Return a `Vulnerability` object for a given OSV ID.
+  def GetVulnById(self, request, context):
+    """Return a `Vulnerability` object for a given OSV ID.
         """
-        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
-        context.set_details('Method not implemented!')
-        raise NotImplementedError('Method not implemented!')
+    context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+    context.set_details('Method not implemented!')
+    raise NotImplementedError('Method not implemented!')
 
-    def QueryAffected(self, request, context):
-        """Query vulnerabilities for a particular project at a given commit or
+  def QueryAffected(self, request, context):
+    """Query vulnerabilities for a particular project at a given commit or
         version.
         """
-        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
-        context.set_details('Method not implemented!')
-        raise NotImplementedError('Method not implemented!')
+    context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+    context.set_details('Method not implemented!')
+    raise NotImplementedError('Method not implemented!')
 
-    def QueryAffectedBatch(self, request, context):
-        """Query vulnerabilities (batched) for given package versions and commits.
+  def QueryAffectedBatch(self, request, context):
+    """Query vulnerabilities (batched) for given package versions and commits.
         This currently allows a maximum of 1000 package versions to be included in
         a single query.
         """
-        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
-        context.set_details('Method not implemented!')
-        raise NotImplementedError('Method not implemented!')
+    context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+    context.set_details('Method not implemented!')
+    raise NotImplementedError('Method not implemented!')
 
-    def DetermineVersion(self, request, context):
-        """Determine the version of the provided hash values.
+  def DetermineVersion(self, request, context):
+    """Determine the version of the provided hash values.
         """
-        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
-        context.set_details('Method not implemented!')
-        raise NotImplementedError('Method not implemented!')
+    context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+    context.set_details('Method not implemented!')
+    raise NotImplementedError('Method not implemented!')
 
 
 def add_OSVServicer_to_server(servicer, server):
-    rpc_method_handlers = {
-            'GetVulnById': grpc.unary_unary_rpc_method_handler(
-                    servicer.GetVulnById,
-                    request_deserializer=osv__service__v1__pb2.GetVulnByIdParameters.FromString,
-                    response_serializer=osv_dot_vulnerability__pb2.Vulnerability.SerializeToString,
-            ),
-            'QueryAffected': grpc.unary_unary_rpc_method_handler(
-                    servicer.QueryAffected,
-                    request_deserializer=osv__service__v1__pb2.QueryAffectedParameters.FromString,
-                    response_serializer=osv__service__v1__pb2.VulnerabilityList.SerializeToString,
-            ),
-            'QueryAffectedBatch': grpc.unary_unary_rpc_method_handler(
-                    servicer.QueryAffectedBatch,
-                    request_deserializer=osv__service__v1__pb2.QueryAffectedBatchParameters.FromString,
-                    response_serializer=osv__service__v1__pb2.BatchVulnerabilityList.SerializeToString,
-            ),
-            'DetermineVersion': grpc.unary_unary_rpc_method_handler(
-                    servicer.DetermineVersion,
-                    request_deserializer=osv__service__v1__pb2.DetermineVersionParameters.FromString,
-                    response_serializer=osv__service__v1__pb2.VersionMatchList.SerializeToString,
-            ),
-    }
-    generic_handler = grpc.method_handlers_generic_handler(
-            'osv.v1.OSV', rpc_method_handlers)
-    server.add_generic_rpc_handlers((generic_handler,))
+  rpc_method_handlers = {
+      'GetVulnById':
+          grpc.unary_unary_rpc_method_handler(
+              servicer.GetVulnById,
+              request_deserializer=osv__service__v1__pb2.GetVulnByIdParameters
+              .FromString,
+              response_serializer=osv_dot_vulnerability__pb2.Vulnerability
+              .SerializeToString,
+          ),
+      'QueryAffected':
+          grpc.unary_unary_rpc_method_handler(
+              servicer.QueryAffected,
+              request_deserializer=osv__service__v1__pb2.QueryAffectedParameters
+              .FromString,
+              response_serializer=osv__service__v1__pb2.VulnerabilityList
+              .SerializeToString,
+          ),
+      'QueryAffectedBatch':
+          grpc.unary_unary_rpc_method_handler(
+              servicer.QueryAffectedBatch,
+              request_deserializer=osv__service__v1__pb2
+              .QueryAffectedBatchParameters.FromString,
+              response_serializer=osv__service__v1__pb2.BatchVulnerabilityList
+              .SerializeToString,
+          ),
+      'DetermineVersion':
+          grpc.unary_unary_rpc_method_handler(
+              servicer.DetermineVersion,
+              request_deserializer=osv__service__v1__pb2
+              .DetermineVersionParameters.FromString,
+              response_serializer=osv__service__v1__pb2.VersionMatchList
+              .SerializeToString,
+          ),
+  }
+  generic_handler = grpc.method_handlers_generic_handler(
+      'osv.v1.OSV', rpc_method_handlers)
+  server.add_generic_rpc_handlers((generic_handler,))
 
 
- # This class is part of an EXPERIMENTAL API.
+# This class is part of an EXPERIMENTAL API.
 class OSV(object):
-    """Open source vulnerability database.
+  """Open source vulnerability database.
     """
 
-    @staticmethod
-    def GetVulnById(request,
-            target,
-            options=(),
-            channel_credentials=None,
-            call_credentials=None,
-            insecure=False,
-            compression=None,
-            wait_for_ready=None,
-            timeout=None,
-            metadata=None):
-        return grpc.experimental.unary_unary(request, target, '/osv.v1.OSV/GetVulnById',
-            osv__service__v1__pb2.GetVulnByIdParameters.SerializeToString,
-            osv_dot_vulnerability__pb2.Vulnerability.FromString,
-            options, channel_credentials,
-            insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
+  @staticmethod
+  def GetVulnById(request,
+                  target,
+                  options=(),
+                  channel_credentials=None,
+                  call_credentials=None,
+                  insecure=False,
+                  compression=None,
+                  wait_for_ready=None,
+                  timeout=None,
+                  metadata=None):
+    return grpc.experimental.unary_unary(
+        request, target, '/osv.v1.OSV/GetVulnById',
+        osv__service__v1__pb2.GetVulnByIdParameters.SerializeToString,
+        osv_dot_vulnerability__pb2.Vulnerability.FromString, options,
+        channel_credentials, insecure, call_credentials, compression,
+        wait_for_ready, timeout, metadata)
 
-    @staticmethod
-    def QueryAffected(request,
-            target,
-            options=(),
-            channel_credentials=None,
-            call_credentials=None,
-            insecure=False,
-            compression=None,
-            wait_for_ready=None,
-            timeout=None,
-            metadata=None):
-        return grpc.experimental.unary_unary(request, target, '/osv.v1.OSV/QueryAffected',
-            osv__service__v1__pb2.QueryAffectedParameters.SerializeToString,
-            osv__service__v1__pb2.VulnerabilityList.FromString,
-            options, channel_credentials,
-            insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
+  @staticmethod
+  def QueryAffected(request,
+                    target,
+                    options=(),
+                    channel_credentials=None,
+                    call_credentials=None,
+                    insecure=False,
+                    compression=None,
+                    wait_for_ready=None,
+                    timeout=None,
+                    metadata=None):
+    return grpc.experimental.unary_unary(
+        request, target, '/osv.v1.OSV/QueryAffected',
+        osv__service__v1__pb2.QueryAffectedParameters.SerializeToString,
+        osv__service__v1__pb2.VulnerabilityList.FromString, options,
+        channel_credentials, insecure, call_credentials, compression,
+        wait_for_ready, timeout, metadata)
 
-    @staticmethod
-    def QueryAffectedBatch(request,
-            target,
-            options=(),
-            channel_credentials=None,
-            call_credentials=None,
-            insecure=False,
-            compression=None,
-            wait_for_ready=None,
-            timeout=None,
-            metadata=None):
-        return grpc.experimental.unary_unary(request, target, '/osv.v1.OSV/QueryAffectedBatch',
-            osv__service__v1__pb2.QueryAffectedBatchParameters.SerializeToString,
-            osv__service__v1__pb2.BatchVulnerabilityList.FromString,
-            options, channel_credentials,
-            insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
+  @staticmethod
+  def QueryAffectedBatch(request,
+                         target,
+                         options=(),
+                         channel_credentials=None,
+                         call_credentials=None,
+                         insecure=False,
+                         compression=None,
+                         wait_for_ready=None,
+                         timeout=None,
+                         metadata=None):
+    return grpc.experimental.unary_unary(
+        request, target, '/osv.v1.OSV/QueryAffectedBatch',
+        osv__service__v1__pb2.QueryAffectedBatchParameters.SerializeToString,
+        osv__service__v1__pb2.BatchVulnerabilityList.FromString, options,
+        channel_credentials, insecure, call_credentials, compression,
+        wait_for_ready, timeout, metadata)
 
-    @staticmethod
-    def DetermineVersion(request,
-            target,
-            options=(),
-            channel_credentials=None,
-            call_credentials=None,
-            insecure=False,
-            compression=None,
-            wait_for_ready=None,
-            timeout=None,
-            metadata=None):
-        return grpc.experimental.unary_unary(request, target, '/osv.v1.OSV/DetermineVersion',
-            osv__service__v1__pb2.DetermineVersionParameters.SerializeToString,
-            osv__service__v1__pb2.VersionMatchList.FromString,
-            options, channel_credentials,
-            insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
+  @staticmethod
+  def DetermineVersion(request,
+                       target,
+                       options=(),
+                       channel_credentials=None,
+                       call_credentials=None,
+                       insecure=False,
+                       compression=None,
+                       wait_for_ready=None,
+                       timeout=None,
+                       metadata=None):
+    return grpc.experimental.unary_unary(
+        request, target, '/osv.v1.OSV/DetermineVersion',
+        osv__service__v1__pb2.DetermineVersionParameters.SerializeToString,
+        osv__service__v1__pb2.VersionMatchList.FromString, options,
+        channel_credentials, insecure, call_credentials, compression,
+        wait_for_ready, timeout, metadata)

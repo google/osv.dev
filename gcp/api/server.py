@@ -29,6 +29,8 @@ from collections import defaultdict
 from google.cloud import ndb
 
 import grpc
+from grpc_health.v1 import health_pb2
+from grpc_health.v1 import health_pb2_grpc
 from grpc_reflection.v1alpha import reflection
 from packageurl import PackageURL
 
@@ -77,7 +79,8 @@ def ndb_context(func):
   return wrapper
 
 
-class OSVServicer(osv_service_v1_pb2_grpc.OSVServicer):
+class OSVServicer(osv_service_v1_pb2_grpc.OSVServicer,
+                  health_pb2_grpc.HealthServicer):
   """V1 OSV servicer."""
 
   @ndb_context
@@ -136,12 +139,13 @@ class OSVServicer(osv_service_v1_pb2_grpc.OSVServicer):
   def Check(self, request, context: grpc.ServicerContext):
     """Health check per the gRPC health check protocol."""
     del request  # Unused.
+    del context  # Unused.
 
     # Read up to a single Bug entity from the DB. This should not cause an
     # exception or time out.
     osv.Bug.query().fetch(1)
-    return osv_service_v1_pb2.HealthCheckResponse(
-        status=osv_service_v1_pb2.HealthCheckResponse.ServingStatus.SERVING)
+    return health_pb2.HealthCheckResponse(
+        status=health_pb2.HealthCheckResponse.ServingStatus.SERVING)
 
   def Watch(self, request, context: grpc.ServicerContext):
     """Health check per the gRPC health check protocol."""
@@ -183,11 +187,12 @@ def build_determine_version_result(
     num_skipped_buckets: int,
     # 1 means has items, 0 means empty
     empty_bucket_bitmap: int,
-    max_files: int) -> osv_service_v1_pb2.VersionMatchList:
+    query_file_count: int) -> osv_service_v1_pb2.VersionMatchList:
   """Build sorted determine version result from the input"""
   bucket_match_items = list(bucket_matches_by_proj.items())
   # Sort by number of files matched
   bucket_match_items.sort(key=lambda x: x[1], reverse=True)
+
   # Only interested in our maximum number of results
   bucket_match_items = bucket_match_items[:min(
       _MAX_DETERMINE_VER_RESULTS_TO_RETURN, len(bucket_match_items))]
@@ -229,8 +234,10 @@ def build_determine_version_result(
         - empty_bucket_count  # Buckets that are empty are not changed
         + missed_empty_buckets  # Unless they don't match the bitmap
         - num_skipped_buckets,  # Buckets skipped are assumed unchanged
-        abs(idx.file_count - max_files)  # The difference in file count
+        abs(idx.file_count - query_file_count)  # The difference in file count
     )
+
+    max_files = max(idx.file_count, query_file_count)
 
     version = osv.normalize_tag(idx.tag.removeprefix(_TAG_PREFIX))
     version = version.replace('-', '.')
@@ -253,6 +260,8 @@ def build_determine_version_result(
       continue
 
     output.append(version_match)
+
+  output.sort(key=lambda x: x.score, reverse=True)
 
   return osv_service_v1_pb2.VersionMatchList(matches=output)
 
@@ -721,10 +730,13 @@ def query_by_package(context: grpc.ServicerContext, package_name: str,
 def serve(port: int, local: bool):
   """Configures and runs the OSV API server."""
   server = grpc.server(concurrent.futures.ThreadPoolExecutor(max_workers=10))
-  osv_service_v1_pb2_grpc.add_OSVServicer_to_server(OSVServicer(), server)
+  servicer = OSVServicer()
+  osv_service_v1_pb2_grpc.add_OSVServicer_to_server(servicer, server)
+  health_pb2_grpc.add_HealthServicer_to_server(servicer, server)
   if local:
     service_names = (
         osv_service_v1_pb2.DESCRIPTOR.services_by_name['OSV'].full_name,
+        health_pb2.DESCRIPTOR.services_by_name['Health'].full_name,
         reflection.SERVICE_NAME,
     )
     reflection.enable_server_reflection(service_names, server)

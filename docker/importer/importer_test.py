@@ -181,7 +181,7 @@ class ImporterTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
             path='2021-111.yaml',
             source='oss-fuzz',
             type='update',
-            timestamp='12345')
+            req_timestamp='12345')
     ])
     bug = osv.Bug.get_by_id('OSV-2017-134')
     self.assertEqual(osv.SourceOfTruth.SOURCE_REPO, bug.source_of_truth)
@@ -317,14 +317,14 @@ class ImporterTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
             path='proj/OSV-2021-1337.yaml',
             source='oss-fuzz',
             type='update',
-            timestamp='12345'),
+            req_timestamp='12345'),
         mock.call(
             self.tasks_topic,
             allocated_id='OSV-2021-1339',
             data=b'',
             source_id='oss-fuzz:124',
             type='impact',
-            timestamp='12345'),
+            req_timestamp='12345'),
     ])
 
     source_repo = osv.SourceRepository.get_by_id('oss-fuzz')
@@ -455,7 +455,7 @@ class BucketImporterTest(unittest.TestCase):
             original_sha256=('12453f85cd87bc1d465e0d013db572c0'
                              '1f7fb7de3b3a33de94ebcc7bd0f23a14'),
             deleted='false',
-            timestamp='12345'),
+            req_timestamp='12345'),
         mock.call(
             self.tasks_topic,
             data=b'',
@@ -465,7 +465,7 @@ class BucketImporterTest(unittest.TestCase):
             original_sha256=('62966a80f6f9f54161803211069216177'
                              '37340a47f43356ee4a1cabe8f089869'),
             deleted='false',
-            timestamp='12345'),
+            req_timestamp='12345'),
     ])
 
     # Test this entry is not published
@@ -520,7 +520,7 @@ class BucketImporterTest(unittest.TestCase):
             path='a/b/DSA-3029-1.json',
             original_sha256=mock.ANY,
             deleted='false',
-            timestamp='12345')
+            req_timestamp='12345')
     ])
     mock_publish.reset_mock()
 
@@ -545,7 +545,7 @@ class BucketImporterTest(unittest.TestCase):
         path='a/b/DSA-3029-1.json',
         original_sha256=mock.ANY,
         deleted='false',
-        timestamp='12345')
+        req_timestamp='12345')
     self.assertNotIn(dsa_call, mock_publish.mock_calls)
     # Check if uploaded log str has the failed to parse vuln
     self.assertTrue(

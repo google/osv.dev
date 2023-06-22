@@ -210,6 +210,7 @@ func writeVulnWithFormat(v *models.Vulnerability, w io.Writer, format fileFormat
 	switch format {
 	case fileFormatJSON:
 		enc := json.NewEncoder(w)
+		enc.SetIndent("", "  ")
 		return enc.Encode(v)
 	case fileFormatYAML:
 		enc := yaml.NewEncoder(w)

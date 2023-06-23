@@ -1,6 +1,6 @@
 ---
 layout: page
-title: Experimental determineversion
+title: POST /v1experimental/ determineversion
 permalink: /post-v1-determineversion/
 parent: API
 nav_order: 5
@@ -9,7 +9,7 @@ nav_order: 5
 Experimental
 {: .label }
 
-Given the source code of C/C++ libraries, this endpoint attempts to find the closest library and version. 
+Given the source code hashes of C/C++ libraries, this endpoint attempts to find the closest upstream library and version.
 
 {: .no_toc }
 
@@ -24,27 +24,28 @@ Given the source code of C/C++ libraries, this endpoint attempts to find the clo
 
 ## Experimental endpoint
 
-This API endpoint is still considered experimental. We would value any and all feedback. If you give this a try, please consider [opening an issue](https://github.com/google/osv.dev/issues/new) and letting us know about any pain points or highlights. 
+This API endpoint is still considered experimental. We would value any and all feedback. If you give this a try, please consider [opening an issue](https://github.com/google/osv.dev/issues/new) and letting us know about any pain points or highlights.
 
 ## Purpose
-The purpose of the endpoint is to help determine the package and version of a given C/C++ library. This is not as straightforward of a process compared to other ecosystems, because there is not a centralized package manager for C/C++. This API endpoint helps bridge that gap. Once you have the likely version, you can use [POST v1/query](post-v1-query.md) or [POST v1/queryset](post-v1-queryset.md) to search for vulnerabilities.
+The purpose of the endpoint is to help determine the package and version of a given C/C++ library. This is not as straightforward of a process compared to other ecosystems, because there is not a centralized package manager for C/C++. This API endpoint helps bridge that gap. Once you have the likely version, you can use [POST v1/query](post-v1-query.md) or [POST v1/querybatch](post-v1-querybatch.md) to search for vulnerabilities.
 
-## Available Packages
-Because there is no centralized package manager for C/C++, there is also no centralized vulnerability database for the ecosystem. We are working on getting a more comprehensive collection of C/C++ vulnerabilities, but the ones that are currently available were found through the [OSS-Fuzz](https://google.github.io/oss-fuzz/) project. This means that not all C/C++ packages are represented in our database. 
+## Available libraries
+The list of libraries that can currently be identified are the C/C++ projects integrated into the [OSS-Fuzz](https://google.github.io/oss-fuzz/) project.
+This means that not all C/C++ packages are represented in our database. We're actively working on increasing this coverage, and combining this effort with [building a comprehensive database](https://github.com/google/osv.dev/issues/783) of vulnerabilities for C/C++.
 
 To confirm if the package you are interested in can be versioned by the determineversion API, please check the following resources for your package:
 
 1. All available package information can be found [here](https://storage.googleapis.com/osv-indexer-configs).
-2. You can look up your specific package using a url in the form <!-- markdown-link-check-disable --> `https://storage.googleapis.com/osv-indexer-configs/generated/{your-package}.yaml` <!-- markdown-link-check-enable--> For example, if you are interested in the library `protobuf`, you can find information for it at [`https://storage.googleapis.com/osv-indexer-configs/generated/protobuf.yaml`](https://storage.googleapis.com/osv-indexer-configs/generated/protobuf.yaml). 
+2. You can look up your specific package using a url in the form <!-- markdown-link-check-disable --> `https://storage.googleapis.com/osv-indexer-configs/generated/{your-package}.yaml` <!-- markdown-link-check-enable--> For example, if you are interested in the library `protobuf`, you can find information for it at [`https://storage.googleapis.com/osv-indexer-configs/generated/protobuf.yaml`](https://storage.googleapis.com/osv-indexer-configs/generated/protobuf.yaml).
 3. You can use [gsutil](https://cloud.google.com/storage/docs/gsutil) to copy everything: `gsutil -m cp -r gs://osv-indexer-configs/ .`
 
 ## Try the API with our tool
 
-We recommend trying the API endpoint with our [indexer-api-caller](https://github.com/google/osv.dev/tree/master/tools/indexer-api-caller) tool. The index-api-caller will gather all of the data (file paths and MD5 hashes) that you need, make the API call for you, and return the response. 
+We recommend trying the API endpoint with our [indexer-api-caller](https://github.com/google/osv.dev/tree/master/tools/indexer-api-caller) tool. The index-api-caller will gather all of the data (file paths and MD5 hashes) that you need, make the API call for you, and return the response.
 
 ### Steps to use the indexer-api-caller
 
-1. Have a local copy of this repostiory. 
+1. Have a local copy of this repostiory.
 2. Navigate to `/osv.dev/tools/indexer-api-caller`
 3. Run the tool using `go run . -lib path/to/library`
 4. Evaluate the response
@@ -52,12 +53,12 @@ We recommend trying the API endpoint with our [indexer-api-caller](https://githu
 
 ### Interpreting the API response
 
-The API will return a number of possible versions for your package, ranked by how well the version matched your local copy. Depending on the needs of your project and how close your matches were, you may want to search for vulnerabilities for a few of the most likely versions. If you are searching for multiple versions, the [/v1/querybatch endpoint](post-v1-querybatch.md) is a good choice. 
+The API will return a number of possible versions for your package, ranked by how well the version matched your local copy. Depending on the needs of your project and how close your matches were, you may want to search for vulnerabilities for a few of the most likely versions. If you are searching for multiple versions, the [/v1/querybatch endpoint](post-v1-querybatch.md) is a good choice.
 
 
 ## Use the API manually
 
-If you want to use the API manually, or build your own tool to use the endpoint, the following information will help you do so. 
+If you want to use the API manually, or build your own tool to use the endpoint, the following information will help you do so.
 
 ### Parameters
 
@@ -73,12 +74,12 @@ If you want to use the API manually, or build your own tool to use the endpoint,
 ### Manual API calls
 After locating the library directory, walk through the directory, saving the MD5 hash of every file with the following extensions:
 
-- `.c`   
-- `.cc`  
-- `.h`   
-- `.hh`  
-- `.cpp` 
-- `.hpp` 
+- `.c`
+- `.cc`
+- `.h`
+- `.hh`
+- `.cpp`
+- `.hpp`
 
 And pass each file hash to the endpoint following the format below:
 

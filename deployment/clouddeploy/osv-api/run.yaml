@@ -10,6 +10,9 @@ spec:
         resources:
           limits:
             memory: 4Gi
+        startupProbe:
+          grpc:
+            service: osv.v1.OSV
         livenessProbe:
           grpc:
             service: osv.v1.OSV

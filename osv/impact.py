@@ -93,10 +93,10 @@ class RepoAnalyzer:
     self.detect_cherrypicks = detect_cherrypicks
 
   def get_affected(self,
-                   repo,
-                   regress_commits,
-                   fix_commits,
-                   limit_commits=None):
+                   repo: pygit2.Repository,
+                   regress_commits: list[str],
+                   fix_commits: list[str],
+                   limit_commits: list[str] = None):
     """"Get list of affected tags and commits for a bug given regressed and
     fixed commits."""
     affected_commits, affected_ranges, tags = self._get_affected_range(
@@ -105,10 +105,10 @@ class RepoAnalyzer:
     return AffectedResult(tags, affected_commits, affected_ranges)
 
   def _get_affected_range(self,
-                          repo,
-                          regress_commits,
-                          fix_commits,
-                          limit_commits=None):
+                          repo: pygit2.Repository,
+                          regress_commits: list[str],
+                          fix_commits: list[str],
+                          limit_commits: list[str] = None):
     """Get affected range."""
     range_collector = RangeCollector()
     commits = set()
@@ -116,6 +116,9 @@ class RepoAnalyzer:
     tags = set()
     commits_to_tags = _get_commit_to_tag_mappings(repo)
     branch_to_limit = {}
+    repo_url = None
+    if 'origin' in repo.remotes.names():
+      repo_url = repo.remotes['origin'].url
 
     branches = []
     detect_cherrypicks = self.detect_cherrypicks and not limit_commits
@@ -150,8 +153,8 @@ class RepoAnalyzer:
       # Get the earliest equivalent commit in the regression range.
       equivalent_regress_commit = None
       for regress_commit in regress_commits:
-        logging.info('Finding equivalent regress commit to %s in %s',
-                     regress_commit, ref)
+        logging.info('Finding equivalent regress commit to %s in %s in %s',
+                     regress_commit, ref, repo_url)
         equivalent_regress_commit = self._get_equivalent_commit(
             repo, ref, regress_commit, detect_cherrypicks=detect_cherrypicks)
         if equivalent_regress_commit:
@@ -164,8 +167,8 @@ class RepoAnalyzer:
       # Get the latest equivalent commit in the fix range.
       equivalent_fix_commit = None
       for fix_commit in fix_commits:
-        logging.info('Finding equivalent fix commit to %s in %s', fix_commit,
-                     ref)
+        logging.info('Finding equivalent fix commit to %s in %s in %s',
+                     fix_commit, ref, str(repo_url or 'UNKNOWN_REPO_URL'))
         equivalent_fix_commit = self._get_equivalent_commit(
             repo, ref, fix_commit, detect_cherrypicks=detect_cherrypicks)
         if equivalent_fix_commit:
@@ -247,7 +250,7 @@ class RepoAnalyzer:
     return None
 
 
-def _get_commit_to_tag_mappings(repo):
+def _get_commit_to_tag_mappings(repo: pygit2.Repository):
   """Get all commit to tag mappings"""
   mappings = {}
   for ref_name in repo.references:
@@ -276,7 +279,12 @@ def get_commit_and_tag_list(repo,
       include_end = False
       end_commit = limit_commit
 
-  logging.info('Getting commits %s..%s', start_commit, end_commit)
+  repo_url = None
+  if 'origin' in repo.remotes.names():
+    repo_url = repo.remotes['origin'].url
+
+  logging.info('Getting commits %s..%s from %s', start_commit, end_commit,
+               str(repo_url or 'UNKNOWN_REPO_URL'))
   try:
     walker = repo.walk(end_commit,
                        pygit2.GIT_SORT_TOPOLOGICAL | pygit2.GIT_SORT_REVERSE)
@@ -487,8 +495,8 @@ def _analyze_git_ranges(repo_analyzer, checkout_path, affected_range,
       result = repo_analyzer.get_affected(package_repo, all_introduced,
                                           all_fixed, all_limit)
     except ImpactError:
-      logging.warning('Got error while analyzing git range: %s',
-                      traceback.format_exc())
+      logging.warning('Got error while analyzing git range in %s: %s',
+                      affected_range.repo, traceback.format_exc())
       return new_versions, commits
 
     for introduced, fixed in result.affected_ranges:

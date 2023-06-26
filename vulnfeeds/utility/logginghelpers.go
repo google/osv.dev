@@ -12,23 +12,20 @@ import (
 
 // CreateLoggerWrapper creates and initializes the LoggerWrapper,
 // and also returns a cleanup function to be deferred
-func CreateLoggerWrapper(name string) (LoggerWrapper, func()) {
-	projectId, ok := os.LookupEnv("GOOGLE_CLOUD_PROJECT")
-	var loggerOptions []logging.LoggerOption
-	if !ok {
-		log.Println("GOOGLE_CLOUD_PROJECT not set, routing logs to stdout")
-		loggerOptions = append(loggerOptions, logging.RedirectAsJSON(os.Stdout))
+func CreateLoggerWrapper(logID string) (LoggerWrapper, func()) {
+	projectId, projectIdSet := os.LookupEnv("GOOGLE_CLOUD_PROJECT")
+	if !projectIdSet {
+		return LoggerWrapper{}, func() {}
 	}
-	client, err := logging.NewClient(context.Background(), projectId)
 
+	log.Println("Logging to project id: " + projectId)
+	client, err := logging.NewClient(context.Background(), projectId)
 	if err != nil {
 		log.Fatalf("Failed to create client: %v", err)
 	}
-
 	wrapper := LoggerWrapper{
-		GCloudLogger: client.Logger(name, loggerOptions...),
+		GCloudLogger: client.Logger(logID),
 	}
-
 	return wrapper, func() { client.Close() }
 }
 

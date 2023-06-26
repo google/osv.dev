@@ -116,7 +116,7 @@ class RepoAnalyzer:
     tags = set()
     commits_to_tags = _get_commit_to_tag_mappings(repo)
     branch_to_limit = {}
-    repo_url = 'UNKNOWN_URL'
+    repo_url = None
     if 'origin' in repo.remotes.names():
       repo_url = repo.remotes['origin'].url
 
@@ -168,7 +168,7 @@ class RepoAnalyzer:
       equivalent_fix_commit = None
       for fix_commit in fix_commits:
         logging.info('Finding equivalent fix commit to %s in %s in %s',
-                     fix_commit, ref, repo_url)
+                     fix_commit, ref, str(repo_url or 'UNKNOWN_REPO_URL'))
         equivalent_fix_commit = self._get_equivalent_commit(
             repo, ref, fix_commit, detect_cherrypicks=detect_cherrypicks)
         if equivalent_fix_commit:
@@ -279,12 +279,12 @@ def get_commit_and_tag_list(repo,
       include_end = False
       end_commit = limit_commit
 
-  repo_url = 'UNKNOWN_URL'
+  repo_url = None
   if 'origin' in repo.remotes.names():
     repo_url = repo.remotes['origin'].url
 
   logging.info('Getting commits %s..%s from %s', start_commit, end_commit,
-               repo_url)
+               str(repo_url or 'UNKNOWN_REPO_URL'))
   try:
     walker = repo.walk(end_commit,
                        pygit2.GIT_SORT_TOPOLOGICAL | pygit2.GIT_SORT_REVERSE)

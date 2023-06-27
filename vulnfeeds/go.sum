@@ -95,8 +95,12 @@ github.com/google/go-cmp v0.5.3/go.mod h1:v8dTdLbMG2kIc/vJvl+f65V22dbkXbowE6jgT/
 github.com/google/go-cmp v0.5.5/go.mod h1:v8dTdLbMG2kIc/vJvl+f65V22dbkXbowE6jgT/gNBxE=
 github.com/google/go-cmp v0.5.9 h1:O2Tfq5qg4qc4AmwVlvv0oLiVAGB7enBSJ2x2DqQFi38=
 github.com/google/go-cmp v0.5.9/go.mod h1:17dUlkBOakJ0+DkrSSNjCkIjxS6bF9zb3elmeNGIjoY=
+github.com/google/osv-scanner v1.3.4 h1:OHy7cazw2IDgqijnhTZFBV0jH9Xe3f/GvnK/F4aZQ0Y=
+github.com/google/osv-scanner v1.3.4/go.mod h1:lic9NGB9H6AF6XxDVGYg2guvjgfEbSXigOaSyrF93Vc=
 github.com/google/osv-scanner v1.3.5-0.20230621052926-e70f1920badf h1:hF2hzEWLjR0sc3XfP+QHMBka/Na1MW5mnTBFP6lG+VI=
 github.com/google/osv-scanner v1.3.5-0.20230621052926-e70f1920badf/go.mod h1:98THDtN4tR7xAvFdyeruBuJ4NCT0+jG2Q2Zni4sdCKY=
+github.com/google/osv-scanner v1.3.5-0.20230627070224-84ae17fa4c86 h1:kmTNL3enAPOlU5Ktx+Up8TMwOF2XS0SVn9ewU6TMQGk=
+github.com/google/osv-scanner v1.3.5-0.20230627070224-84ae17fa4c86/go.mod h1:4SNp5Uz1X4tFjBecqtTV/3KcmCBRaQ3haUMAJuD1ij0=
 github.com/google/s2a-go v0.1.4 h1:1kZ/sQM3srePvKs3tXAvQzo66XfcReoqFpIpIccE7Oc=
 github.com/google/s2a-go v0.1.4/go.mod h1:Ej+mSEMGRnqRzjc7VtF+jdBwYG5fuJfiZ8ELkjEwM0A=
 github.com/google/uuid v1.1.2/go.mod h1:TIyPZe4MgqvfeYDBFedMoGGpEw/LqOeaOT+nhxU+yHo=

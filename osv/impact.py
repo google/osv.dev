@@ -93,6 +93,7 @@ class RepoAnalyzer:
     self.detect_cherrypicks = detect_cherrypicks
 
   def get_affected(self,
+                   bug_id: str,
                    repo: pygit2.Repository,
                    regress_commits: list[str],
                    fix_commits: list[str],
@@ -100,11 +101,12 @@ class RepoAnalyzer:
     """"Get list of affected tags and commits for a bug given regressed and
     fixed commits."""
     affected_commits, affected_ranges, tags = self._get_affected_range(
-        repo, regress_commits, fix_commits, limit_commits=limit_commits)
+        bug_id, repo, regress_commits, fix_commits, limit_commits=limit_commits)
 
     return AffectedResult(tags, affected_commits, affected_ranges)
 
   def _get_affected_range(self,
+                          bug_id: str,
                           repo: pygit2.Repository,
                           regress_commits: list[str],
                           fix_commits: list[str],
@@ -153,8 +155,9 @@ class RepoAnalyzer:
       # Get the earliest equivalent commit in the regression range.
       equivalent_regress_commit = None
       for regress_commit in regress_commits:
-        logging.info('Finding equivalent regress commit to %s in %s in %s',
-                     regress_commit, ref, repo_url)
+        logging.info(
+            '[%s]: Finding equivalent regress commit to %s in %s in %s', bug_id,
+            regress_commit, ref, repo_url)
         equivalent_regress_commit = self._get_equivalent_commit(
             repo, ref, regress_commit, detect_cherrypicks=detect_cherrypicks)
         if equivalent_regress_commit:
@@ -167,8 +170,9 @@ class RepoAnalyzer:
       # Get the latest equivalent commit in the fix range.
       equivalent_fix_commit = None
       for fix_commit in fix_commits:
-        logging.info('Finding equivalent fix commit to %s in %s in %s',
-                     fix_commit, ref, str(repo_url or 'UNKNOWN_REPO_URL'))
+        logging.info('[%s]: Finding equivalent fix commit to %s in %s in %s',
+                     bug_id, fix_commit, ref, str(repo_url or
+                                                  'UNKNOWN_REPO_URL'))
         equivalent_fix_commit = self._get_equivalent_commit(
             repo, ref, fix_commit, detect_cherrypicks=detect_cherrypicks)
         if equivalent_fix_commit:
@@ -189,6 +193,7 @@ class RepoAnalyzer:
 
       seen_commits.add((equivalent_regress_commit, end_commit))
       cur_commits, cur_tags = get_commit_and_tag_list(
+          bug_id,
           repo,
           equivalent_regress_commit,
           end_commit,
@@ -264,13 +269,14 @@ def _get_commit_to_tag_mappings(repo: pygit2.Repository):
   return mappings
 
 
-def get_commit_and_tag_list(repo,
-                            start_commit,
-                            end_commit,
-                            commits_to_tags=None,
-                            include_start=False,
-                            include_end=True,
-                            limit_commit=None):
+def get_commit_and_tag_list(bug_id: str,
+                            repo: pygit2.Repository,
+                            start_commit: str,
+                            end_commit: str,
+                            commits_to_tags: dict = None,
+                            include_start: bool = False,
+                            include_end: bool = True,
+                            limit_commit: dict = None):
   """Given a commit range, return the list of commits and tags in the range."""
   if limit_commit:
     if str(repo.merge_base(end_commit, limit_commit)) == limit_commit:
@@ -283,8 +289,8 @@ def get_commit_and_tag_list(repo,
   if 'origin' in repo.remotes.names():
     repo_url = repo.remotes['origin'].url
 
-  logging.info('Getting commits %s..%s from %s', start_commit, end_commit,
-               str(repo_url or 'UNKNOWN_REPO_URL'))
+  logging.info('[%s]: Getting commits %s..%s from %s', bug_id, start_commit,
+               end_commit, str(repo_url or 'UNKNOWN_REPO_URL'))
   try:
     walker = repo.walk(end_commit,
                        pygit2.GIT_SORT_TOPOLOGICAL | pygit2.GIT_SORT_REVERSE)
@@ -459,7 +465,7 @@ def enumerate_versions(package, ecosystem, affected_range):
   return versions
 
 
-def _analyze_git_ranges(repo_analyzer, checkout_path, affected_range,
+def _analyze_git_ranges(repo_analyzer, bug_id, checkout_path, affected_range,
                         new_versions, commits, new_introduced, new_fixed):
   """Analyze git ranges."""
   package_repo = None
@@ -492,11 +498,11 @@ def _analyze_git_ranges(repo_analyzer, checkout_path, affected_range,
 
     try:
       # TODO(ochang): Support last_affected.
-      result = repo_analyzer.get_affected(package_repo, all_introduced,
+      result = repo_analyzer.get_affected(bug_id, package_repo, all_introduced,
                                           all_fixed, all_limit)
     except ImpactError:
-      logging.warning('Got error while analyzing git range in %s: %s',
-                      affected_range.repo, traceback.format_exc())
+      logging.warning('[%s]: Got error while analyzing git range in %s: %s',
+                      bug_id, affected_range.repo, traceback.format_exc())
       return new_versions, commits
 
     for introduced, fixed in result.affected_ranges:
@@ -542,8 +548,8 @@ def analyze(vulnerability,
             # package no longer exists).
             pass
         else:
-          logging.warning('No ecosystem helpers implemented for %s',
-                          affected_package.package.ecosystem)
+          logging.warning('[%s]: No ecosystem helpers implemented for %s',
+                          vulnerability.id, affected_package.package.ecosystem)
 
       new_git_versions = set()
       new_introduced = set()
@@ -553,9 +559,9 @@ def analyze(vulnerability,
       if (analyze_git and
           affected_range.type == vulnerability_pb2.Range.Type.GIT):
         repo_analyzer = RepoAnalyzer(detect_cherrypicks=detect_cherrypicks)
-        _analyze_git_ranges(repo_analyzer, checkout_path, affected_range,
-                            new_git_versions, commits, new_introduced,
-                            new_fixed)
+        _analyze_git_ranges(repo_analyzer, vulnerability.id, checkout_path,
+                            affected_range, new_git_versions, commits,
+                            new_introduced, new_fixed)
 
       # Add additional versions derived from commits and tags.
       if versions_from_repo:

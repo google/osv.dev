@@ -234,7 +234,7 @@ def set_bug_attributes(bug, regress_result, fix_result):
   bug.fixed = fix_result.commit or ''
 
 
-def _get_commit_range(repo, commit_or_range):
+def _get_commit_range(bug_id, repo, commit_or_range):
   """Get a commit range."""
   if not commit_or_range:
     return []
@@ -248,17 +248,18 @@ def _get_commit_range(repo, commit_or_range):
     # is the regressing commit as that's the best we can do.
     return [end_commit]
 
-  commits, _ = osv.get_commit_and_tag_list(repo, start_commit, end_commit)
+  commits, _ = osv.get_commit_and_tag_list(bug_id, repo, start_commit,
+                                           end_commit)
   return commits
 
 
-def _get_commits(repo, regress_commit_or_range, fix_commit_or_range):
+def _get_commits(bug_id, repo, regress_commit_or_range, fix_commit_or_range):
   """Get commits for analysis."""
-  regress_commits = _get_commit_range(repo, regress_commit_or_range)
+  regress_commits = _get_commit_range(bug_id, repo, regress_commit_or_range)
   if len(regress_commits) > COMMIT_RANGE_LIMIT:
     raise osv.ImpactError('Too many commits in regression range.')
 
-  fix_commits = _get_commit_range(repo, fix_commit_or_range)
+  fix_commits = _get_commit_range(bug_id, repo, fix_commit_or_range)
   if len(fix_commits) > COMMIT_RANGE_LIMIT:
     logging.warning('Too many commits in fix range.')
     # Rather than bail out here and potentially leaving a Bug as "unfixed"
@@ -328,7 +329,8 @@ def process_impact_task(source_id, message):
 
     # Actually compute the affected commits/tags.
     repo_analyzer = osv.RepoAnalyzer()
-    regress_commits, fix_commits = _get_commits(repo, regress_result.commit,
+    regress_commits, fix_commits = _get_commits(existing_bug.id, repo,
+                                                regress_result.commit,
                                                 fix_commit)
 
     # If multiple, assume the first commit in the regression range cause the
@@ -345,7 +347,8 @@ def process_impact_task(source_id, message):
     else:
       fix_commit_to_analyze = None
 
-    result = repo_analyzer.get_affected(repo, [regress_commit_to_analyze],
+    result = repo_analyzer.get_affected(existing_bug.id, repo,
+                                        [regress_commit_to_analyze],
                                         [fix_commit_to_analyze])
     affected_tags = sorted(list(result.tags))
     logging.info('Found affected %s', ', '.join(affected_tags))

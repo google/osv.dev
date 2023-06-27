@@ -581,7 +581,8 @@ class TaskRunner:
       request_time = int(request_time)
       latency = int(time.time()) - request_time
       task_type = message.attributes['type']
-      source_id = get_source_id(message)
+      source_id = get_source_id(message) or message.attributes.get(
+          'source', None)
 
       logging.info('Task %s (source_id=%s) latency %d', task_type, source_id,
                    latency)

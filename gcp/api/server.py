@@ -529,16 +529,14 @@ def _clean_purl(purl):
   """
   Clean a purl object.
 
-  Removes version, subpath, and qualifiers with the exception of
-  the 'arch' qualifier
+  Removes version, subpath, and qualifiers
   """
   values = purl.to_dict()
   values.pop('version', None)
   values.pop('subpath', None)
-  qualifiers = values.pop('qualifiers', None)
+  # Remove even the arch qualifier, as we currently only have "source"
+  # architectures, which should apply to all arch queries
   new_qualifiers = {}
-  if qualifiers and 'arch' in qualifiers:  # CPU arch for debian packages
-    new_qualifiers['arch'] = qualifiers['arch']
   return PackageURL(qualifiers=new_qualifiers, **values)
 
 

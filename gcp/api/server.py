@@ -593,9 +593,8 @@ def _match_purl(purl_query: PackageURL, purl_db: PackageURL) -> bool:
 
   if purl_db.qualifiers:
     # A arch of 'source' matches all other architectures
-    if purl_db.qualifiers['arch'] == 'source': 
+    if purl_db.qualifiers['arch'] == 'source':
       purl_db.qualifiers['arch'] = purl_query.qualifiers['arch']
-  
 
   return purl_query == purl_db
 
@@ -663,7 +662,7 @@ def _is_version_affected(affected_packages,
           ecosystems.normalize(
               affected_package.package.ecosystem) != ecosystem):
         continue
-      
+
     if purl and not (affected_package.package.purl and _match_purl(
         purl, PackageURL.from_string(affected_package.package.purl))):
       continue

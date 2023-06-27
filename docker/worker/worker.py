@@ -566,7 +566,7 @@ class TaskRunner:
     """Handle a timeout."""
     subscriber.acknowledge(subscription=subscription, ack_ids=[ack_id])
     task_type = message.attributes['type']
-    source_id = get_source_id(message)
+    source_id = get_source_id(message) or message.attributes.get('source', None)
 
     logging.warning('Task %s timed out (source_id=%s)', task_type, source_id)
     if task_type in ('fixed', 'regressed'):

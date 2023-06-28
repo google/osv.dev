@@ -95,12 +95,8 @@ github.com/google/go-cmp v0.5.3/go.mod h1:v8dTdLbMG2kIc/vJvl+f65V22dbkXbowE6jgT/
 github.com/google/go-cmp v0.5.5/go.mod h1:v8dTdLbMG2kIc/vJvl+f65V22dbkXbowE6jgT/gNBxE=
 github.com/google/go-cmp v0.5.9 h1:O2Tfq5qg4qc4AmwVlvv0oLiVAGB7enBSJ2x2DqQFi38=
 github.com/google/go-cmp v0.5.9/go.mod h1:17dUlkBOakJ0+DkrSSNjCkIjxS6bF9zb3elmeNGIjoY=
-github.com/google/osv-scanner v1.3.4 h1:OHy7cazw2IDgqijnhTZFBV0jH9Xe3f/GvnK/F4aZQ0Y=
-github.com/google/osv-scanner v1.3.4/go.mod h1:lic9NGB9H6AF6XxDVGYg2guvjgfEbSXigOaSyrF93Vc=
-github.com/google/osv-scanner v1.3.5-0.20230621052926-e70f1920badf h1:hF2hzEWLjR0sc3XfP+QHMBka/Na1MW5mnTBFP6lG+VI=
-github.com/google/osv-scanner v1.3.5-0.20230621052926-e70f1920badf/go.mod h1:98THDtN4tR7xAvFdyeruBuJ4NCT0+jG2Q2Zni4sdCKY=
-github.com/google/osv-scanner v1.3.5-0.20230627070224-84ae17fa4c86 h1:kmTNL3enAPOlU5Ktx+Up8TMwOF2XS0SVn9ewU6TMQGk=
-github.com/google/osv-scanner v1.3.5-0.20230627070224-84ae17fa4c86/go.mod h1:4SNp5Uz1X4tFjBecqtTV/3KcmCBRaQ3haUMAJuD1ij0=
+github.com/google/osv-scanner v1.3.5 h1:c0Qysr565PEWouwm48QEY5GyS3tfgcT4aKqjOUTqGqU=
+github.com/google/osv-scanner v1.3.5/go.mod h1:4SNp5Uz1X4tFjBecqtTV/3KcmCBRaQ3haUMAJuD1ij0=
 github.com/google/s2a-go v0.1.4 h1:1kZ/sQM3srePvKs3tXAvQzo66XfcReoqFpIpIccE7Oc=
 github.com/google/s2a-go v0.1.4/go.mod h1:Ej+mSEMGRnqRzjc7VtF+jdBwYG5fuJfiZ8ELkjEwM0A=
 github.com/google/uuid v1.1.2/go.mod h1:TIyPZe4MgqvfeYDBFedMoGGpEw/LqOeaOT+nhxU+yHo=
@@ -115,8 +111,8 @@ github.com/jbenet/go-context v0.0.0-20150711004518-d14ea06fba99 h1:BQSFePA1RWJOl
 github.com/jbenet/go-context v0.0.0-20150711004518-d14ea06fba99/go.mod h1:1lJo3i6rXxKeerYnT8Nvf0QmHCRC1n8sfWVwXF2Frvo=
 github.com/kevinburke/ssh_config v1.2.0 h1:x584FjTGwHzMwvHx18PXxbBVzfnxogHaAReU4gf13a4=
 github.com/kevinburke/ssh_config v1.2.0/go.mod h1:CT57kijsi8u/K/BOFA39wgDQJ9CxiF4nAY/ojJ6r6mM=
-github.com/knqyf263/go-cpe v0.0.0-20201213041631-54f6ab28673f h1:vZP1dTKPOR7zSAbgqNbnTnYX77+gj3eu0QK+UmANZqE=
-github.com/knqyf263/go-cpe v0.0.0-20201213041631-54f6ab28673f/go.mod h1:4cVhzV/TndScEg4xMtSo3TTz3cMFhEAvhAA4igAyXZY=
+github.com/knqyf263/go-cpe v0.0.0-20230627041855-cb0794d06872 h1:snH0nDYi3kizy9vxYBhZm5KXkGt9VXdGEtr6/1SGUqY=
+github.com/knqyf263/go-cpe v0.0.0-20230627041855-cb0794d06872/go.mod h1:4cVhzV/TndScEg4xMtSo3TTz3cMFhEAvhAA4igAyXZY=
 github.com/kr/pretty v0.1.0/go.mod h1:dAy3ld7l9f0ibDNOQOHHMYYIIbhfbHSm3C4ZsoJORNo=
 github.com/kr/pretty v0.2.1/go.mod h1:ipq/a2n7PKx3OHsz4KJII5eveXtPO4qwEXGdVfWzfnI=
 github.com/kr/pretty v0.3.1 h1:flRD4NNwYAUpkphVc1HcthR4KEIFJ65n8Mw5qdRn3LE=
@@ -172,8 +168,8 @@ golang.org/x/crypto v0.7.0/go.mod h1:pYwdfH91IfpZVANVyUOhSIPZaFoJGxTFbZhFTx+dXZU
 golang.org/x/crypto v0.10.0 h1:LKqV2xt9+kDzSTfOhx4FrkEBcMrAgHSYgzywV9zcGmM=
 golang.org/x/crypto v0.10.0/go.mod h1:o4eNf7Ede1fv+hwOwZsTHl9EsPFO6q6ZvYR8vYfY45I=
 golang.org/x/exp v0.0.0-20190121172915-509febef88a4/go.mod h1:CJ0aWSM057203Lf6IL+f9T1iT9GByDxfZKAQTCR3kQA=
-golang.org/x/exp v0.0.0-20230522175609-2e198f4a06a1 h1:k/i9J1pBpvlfR+9QsetwPyERsqu1GIbi967PQMq3Ivc=
-golang.org/x/exp v0.0.0-20230522175609-2e198f4a06a1/go.mod h1:V1LtkGg67GoY2N1AnLN78QLrzxkLyJw7RJb1gzOOz9w=
+golang.org/x/exp v0.0.0-20230626212559-97b1e661b5df h1:UA2aFVmmsIlefxMk29Dp2juaUSth8Pyn3Tq5Y5mJGME=
+golang.org/x/exp v0.0.0-20230626212559-97b1e661b5df/go.mod h1:FXUEEKJgO7OQYeo8N01OfiKP8RXMtf6e8aTskBGqWdc=
 golang.org/x/lint v0.0.0-20181026193005-c67002cb31c3/go.mod h1:UVdnD1Gm6xHRNCYTkRU2/jEulfH38KcIWyp/GAMgvoE=
 golang.org/x/lint v0.0.0-20190227174305-5b3e6a55c961/go.mod h1:wehouNa3lNwaWXcvxsM5YxQ5yQlVC4a0KAMCusXpPoU=
 golang.org/x/lint v0.0.0-20190313153728-d0100b6bd8b3/go.mod h1:6SW0HCj/g11FgYtHlgUYUwCkIfeOF89ocIRzGO/8vkc=

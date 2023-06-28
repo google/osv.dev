@@ -18,6 +18,7 @@ import unittest
 from server import _match_purl
 from packageurl import PackageURL
 
+
 class ServerTest(unittest.TestCase):
   """Server tests."""
 
@@ -25,26 +26,25 @@ class ServerTest(unittest.TestCase):
     """Test PURL generation for PyPI."""
 
     testCases = [
-      # Version diffs are ignored
-      ('pkg:pypi/django', 'pkg:pypi/django@1.2.3', True),
-      ('pkg:deb/debian/nginx@1.14.2-2+deb10u3', 
-       'pkg:deb/debian/nginx@1.14.2-2+deb10u4', True),
+        # Version diffs are ignored
+        ('pkg:pypi/django', 'pkg:pypi/django@1.2.3', True),
+        ('pkg:deb/debian/nginx@1.14.2-2+deb10u3',
+         'pkg:deb/debian/nginx@1.14.2-2+deb10u4', True),
         # Different packages do not match
-      ('pkg:deb/debian/busybox@1.14.2-2+deb10u3', 
-       'pkg:deb/debian/nginx@1.14.2-2+deb10u3', False),
-      ('pkg:deb/debian/nginx@1.14.2-2+deb10u3?arch=amd64', 
-       'pkg:deb/debian/nginx@1.14.2-2?arch=source', True),
-      ('pkg:deb/debian/nginx@1.14.2-2+deb10u3?distro=debian-10', 
-       'pkg:deb/debian/nginx@1.14.2-2?arch=source', True),
+        ('pkg:deb/debian/busybox@1.14.2-2+deb10u3',
+         'pkg:deb/debian/nginx@1.14.2-2+deb10u3', False),
+        ('pkg:deb/debian/nginx@1.14.2-2+deb10u3?arch=amd64',
+         'pkg:deb/debian/nginx@1.14.2-2?arch=source', True),
+        ('pkg:deb/debian/nginx@1.14.2-2+deb10u3?distro=debian-10',
+         'pkg:deb/debian/nginx@1.14.2-2?arch=source', True),
     ]
 
     for a, b, expected in testCases:
-      self.assertEqual(expected,
-                     _match_purl(PackageURL.from_string(a), 
-                                 PackageURL.from_string(b)),
-                                 a + ' == ' + b)
+      self.assertEqual(
+          expected,
+          _match_purl(PackageURL.from_string(a), PackageURL.from_string(b)),
+          a + ' == ' + b)
 
-    
 
 if __name__ == '__main__':
   unittest.main()

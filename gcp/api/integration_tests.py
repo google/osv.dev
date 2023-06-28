@@ -408,7 +408,7 @@ class IntegrationTests(unittest.TestCase):
         }),
         timeout=_TIMEOUT)
 
-    self.assert_results_equal(expected_deb, response.json())
+    self.assert_results_equal({'vulns': expected_deb}, response.json())
 
     # A non arch qualifier should be ignored
     response = requests.post(

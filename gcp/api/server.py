@@ -455,7 +455,7 @@ def do_query(query, context: QueryContext, include_details=True):
     try:
       parsed_purl = PackageURL.from_string(purl_str)
       purl_version = parsed_purl.version
-      purl = _clean_purl(parsed_purl)
+      purl = parsed_purl
     except ValueError:
       context.service_context.abort(grpc.StatusCode.INVALID_ARGUMENT,
                                     'Invalid Package URL.')
@@ -527,21 +527,15 @@ def _get_bugs(bug_ids, to_response=bug_to_response):
   return responses
 
 
-def _clean_purl(purl):
+def _datastore_normalized_purl(purl: PackageURL):
   """
-  Clean a purl object.
-
-  Removes version, subpath, and qualifiers with the exception of
-  the 'arch' qualifier
+  Returns a new PURL with most attributes removed, used for datastore queries
   """
   values = purl.to_dict()
   values.pop('version', None)
   values.pop('subpath', None)
-  qualifiers = values.pop('qualifiers', None)
-  new_qualifiers = {}
-  if qualifiers and 'arch' in qualifiers:  # CPU arch for debian packages
-    new_qualifiers['arch'] = qualifiers['arch']
-  return PackageURL(qualifiers=new_qualifiers, **values)
+  values.pop('qualifiers', None)
+  return PackageURL(**values)
 
 
 @ndb.tasklet
@@ -589,9 +583,35 @@ def _match_purl(purl_query: PackageURL, purl_db: PackageURL) -> bool:
   without qualifiers, otherwise match with qualifiers
   """
 
+  # Define _clean_purl inside to make sure it's only used within _match_purl
+  def _clean_purl(purl: PackageURL):
+    """
+    Clean a purl object for matching
+
+    Removes version, subpath, and qualifiers with the exception of
+    the 'arch' qualifier
+    """
+    values = purl.to_dict()
+    values.pop('version', None)
+    values.pop('subpath', None)
+    qualifiers = values.pop('qualifiers', None)
+    new_qualifiers = {}
+    if qualifiers and 'arch' in qualifiers:  # CPU arch for debian packages
+      new_qualifiers['arch'] = qualifiers['arch']
+    return PackageURL(qualifiers=new_qualifiers, **values)
+
+  purl_query = _clean_purl(purl_query)
+  # Most of the time this will have no effect, since PURLs in the db
+  # are already cleaned
+  purl_db = _clean_purl(purl_db)
   if not purl_query.qualifiers:
     # No qualifiers, and our PURLs never have versions, so just match name
     return purl_query.name == purl_db.name
+
+  if purl_db.qualifiers:
+    # A arch of 'source' matches all other architectures
+    if purl_db.qualifiers['arch'] == 'source':
+      purl_db.qualifiers['arch'] = purl_query.qualifiers['arch']
 
   return purl_query == purl_db
 
@@ -780,7 +800,7 @@ def query_by_version(context: QueryContext,
   elif purl:
     query = osv.Bug.query(
         osv.Bug.status == osv.BugStatus.PROCESSED,
-        osv.Bug.purl == purl.to_string(),
+        osv.Bug.purl == _datastore_normalized_purl(purl).to_string(),
         # pylint: disable=singleton-comparison
         osv.Bug.public == True,  # noqa: E712
     )
@@ -854,7 +874,7 @@ def query_by_package(context: QueryContext, package_name: str, ecosystem: str,
   elif purl:
     query = osv.Bug.query(
         osv.Bug.status == osv.BugStatus.PROCESSED,
-        osv.Bug.purl == purl.to_string(),
+        osv.Bug.purl == _datastore_normalized_purl(purl).to_string(),
         # pylint: disable=singleton-comparison
         osv.Bug.public == True,  # noqa: E712
     )
@@ -868,8 +888,25 @@ def query_by_package(context: QueryContext, package_name: str, ecosystem: str,
       cursor = it.cursor_after()
       break
 
-    bugs.append(it.next())
-    context.total_responses.add(1)
+    bug: osv.Bug = it.next()
+
+    if purl:
+      affected = False
+      # Check if any affected packages actually match _match_purl
+      for affected_package in bug.affected_packages:
+        affected_package: osv.AffectedPackage
+        if not (affected_package.package.purl and _match_purl(
+            purl, PackageURL.from_string(affected_package.package.purl))):
+          continue
+
+        affected = True
+        break
+    else:
+      affected = True
+
+    if affected:
+      bugs.append(it.next())
+      context.total_responses.add(1)
 
   return [to_response(bug) for bug in bugs], cursor
 

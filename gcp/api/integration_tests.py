@@ -426,7 +426,7 @@ class IntegrationTests(unittest.TestCase):
 
     self.assert_results_equal({'vulns': expected_deb}, response.json())
 
-    # A non source arch should return nothing, as we don't index them
+    # A non source arch should also return the same item
     response = requests.post(
         _api() + '/v1/query',
         data=json.dumps({
@@ -436,7 +436,7 @@ class IntegrationTests(unittest.TestCase):
         }),
         timeout=_TIMEOUT)
 
-    self.assert_results_equal({}, response.json())
+    self.assert_results_equal({'vulns': expected_deb}, response.json())
 
     # A non arch qualifier should be ignored
     response = requests.post(

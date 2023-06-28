@@ -25,7 +25,7 @@ class ServerTest(unittest.TestCase):
   def test_match_purl(self):
     """Test PURL generation for PyPI."""
 
-    testCases = [
+    test_cases = [
         # Version diffs are ignored
         ('pkg:pypi/django', 'pkg:pypi/django@1.2.3', True),
         ('pkg:deb/debian/nginx@1.14.2-2+deb10u3',
@@ -39,7 +39,7 @@ class ServerTest(unittest.TestCase):
          'pkg:deb/debian/nginx@1.14.2-2?arch=source', True),
     ]
 
-    for a, b, expected in testCases:
+    for a, b, expected in test_cases:
       self.assertEqual(
           expected,
           _match_purl(PackageURL.from_string(a), PackageURL.from_string(b)),

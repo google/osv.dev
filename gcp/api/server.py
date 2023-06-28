@@ -599,6 +599,9 @@ def _match_purl(purl_query: PackageURL, purl_db: PackageURL) -> bool:
     return PackageURL(qualifiers=new_qualifiers, **values)
 
   purl_query = _clean_purl(purl_query)
+  # Most of the time this will have no effect, since PURLs in the db
+  # are already cleaned
+  purl_db = _clean_purl(purl_db)
   if not purl_query.qualifiers:
     # No qualifiers, and our PURLs never have versions, so just match name
     return purl_query.name == purl_db.name

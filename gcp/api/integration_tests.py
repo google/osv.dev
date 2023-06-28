@@ -405,10 +405,9 @@ class IntegrationTests(unittest.TestCase):
     another_expected = [self._get('GHSA-j8xg-fqg3-53r7')]
     response = requests.post(
         _api() + '/v1/query',
-        data=json.dumps(
-            {'package': {
-                'purl': 'pkg:npm/word-wrap@1.2.2',
-            }}),
+        data=json.dumps({'package': {
+            'purl': 'pkg:npm/word-wrap@1.2.2',
+        }}),
         timeout=_TIMEOUT)
 
     self.assert_results_equal({'vulns': another_expected}, response.json())

@@ -63,6 +63,7 @@ _ECOSYSTEM_PUSH_TOPICS = {
 
 _state = threading.local()
 _state.source_id = None
+_state.bug_id = None
 
 
 class RedisCache(osv.cache.Cache):
@@ -102,6 +103,10 @@ def _setup_logging_extra_info():
 
     if getattr(_state, 'source_id', None):
       record.json_fields['source_id'] = _state.source_id
+
+    if getattr(_state, 'bug_id', None):
+      record.json_fields['bug_id'] = _state.bug_id
+
     record.json_fields['thread'] = record.thread
 
     return record
@@ -535,8 +540,10 @@ class TaskRunner:
     """Process task with timeout."""
     try:
       with self._ndb_client.context():
-        source_id = get_source_id(message)
+        source_id = get_source_id(message) or message.attributes.get(
+            'source', None)
         _state.source_id = source_id
+        _state.bug_id = message.attributes.get('allocated_bug_id', None)
 
         task_type = message.attributes['type']
         if task_type in ('regressed', 'fixed'):

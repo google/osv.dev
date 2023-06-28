@@ -25,11 +25,12 @@ To query multiple packages at once, see further information [here](post-v1-query
 ## Parameters
   
 |---
-| Parameter | Type   | Description                                                                                                                 |
-| --------- | ------ | --------------------------------------------------------------------------------------------------------------------------- |
-| `commit`  | string | The commit hash to query for. If specified, `version` should not be set.                                                    |
-| `version` | string | The version string to query for. A fuzzy match is done against upstream versions. If specified, `commit` should not be set. |
-| `package` | object | The package to query against. When a `commit` hash is given, this is optional.                                              |
+| Parameter         | Type   | Description                                                                                                                                                |
+| ----------------- | ------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `commit`          | string | The commit hash to query for. If specified, `version` should not be set.                                                                                   |
+| `version`         | string | The version string to query for. A fuzzy match is done against upstream versions. If specified, `commit` should not be set.                                |
+| `package`         | object | The package to query against. When a `commit` hash is given, this is optional.                                                                             |
+| `next_page_token` | string | If your previous query fetched a large number of results, you will be provided a 'next_page-token' to page through the results. This is an optional field. |
 
 Package Objects can be described by package name AND ecosystem OR by the package URL. 
 
@@ -49,7 +50,8 @@ Package Objects can be described by package name AND ecosystem OR by the package
     "name": "string",
     "ecosystem": "string",
     "purl": "string"
-  }
+  },
+  "next_page_token": "string",
 }
 ```
 

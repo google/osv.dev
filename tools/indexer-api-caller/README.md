@@ -6,6 +6,10 @@ to attempt to identify the given library and its version.
 
 ## Usage
 
-Run with the following command:
+To scan a single library, run with the following command:
 
 `go run . -lib path/to/library`
+
+If you have multiple libraries that you would like to version within a directory, use the following command:
+
+`go run . -dir /path/to/libs/dir`

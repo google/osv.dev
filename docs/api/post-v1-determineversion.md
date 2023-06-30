@@ -49,7 +49,7 @@ We recommend trying the API endpoint with our [indexer-api-caller](https://githu
 2. Navigate to `/osv.dev/tools/indexer-api-caller`
 3. Run the tool with the following commands:
   - For a single library: `go run . -lib path/to/library`
-  - For a directory with multiple libraries: `go run . -dir /path/to/libs/dir`
+  - For a directory with multiple libraries as top level subdirectories: `go run . -dir /path/to/libs/dir`
 4. Evaluate the response
 
 

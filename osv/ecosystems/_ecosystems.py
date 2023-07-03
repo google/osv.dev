@@ -42,6 +42,8 @@ _ecosystems = {
     'GitHub Actions': OrderingUnsupportedEcosystem(),
     'Linux': OrderingUnsupportedEcosystem(),
     'OSS-Fuzz': OrderingUnsupportedEcosystem(),
+    'Hackage': OrderingUnsupportedEcosystem(),
+    'GHC': OrderingUnsupportedEcosystem(),
     # Ecosystems which require a release version for enumeration, which is
     # handled separately in get().
     'AlmaLinux': OrderingUnsupportedEcosystem(),

@@ -60,24 +60,24 @@ class RangeCollector:
   def __init__(self):
     self.grouped_ranges = {}
 
-  def add(self, introduced_in, fixed_in):
+  def add(self, introduced_in, fixed_in, affected_in):
     """Add a new commit range."""
     if introduced_in in self.grouped_ranges:
-      if fixed_in is None:
+      if fixed_in is None and affected_in is None:
         # New range doesn't add anything new.
         return
 
       # Remove in-place as we need to preserve insertion order.
       ranges = self.grouped_ranges[introduced_in]
-      ranges.append((introduced_in, fixed_in))
+      ranges.append((introduced_in, fixed_in, affected_in))
       for value in ranges.copy():
         if value[1] is None:
           ranges.remove(value)
     else:
-      self.grouped_ranges[introduced_in] = [(introduced_in, fixed_in)]
+      self.grouped_ranges[introduced_in] = [(introduced_in, fixed_in, affected_in)]
 
   def ranges(self):
-    """Return a set representing the collected commit ranges."""
+    """Return a list representing the collected commit ranges."""
     ranges = []
     for grouped_range in self.grouped_ranges.values():
       for commit_range in grouped_range:
@@ -184,10 +184,24 @@ class RepoAnalyzer:
         if equivalent_fix_commit:
           break
 
-      range_collector.add(equivalent_regress_commit, equivalent_fix_commit)
+      # Get the latest equivalent commit in the last_affected range.
+      equivalent_last_affected_commit = None
+      for last_affected_commit in last_affected_commits:
+        logging.info('Finding equivalent last_affected commit to %s in %s in %s',
+                     last_affected_commit, ref, str(repo_url or 'UNKNOWN_REPO_URL'))
+        equivalent_last_affected_commit = self._get_equivalent_commit(
+            repo, ref, last_affected_commit, detect_cherrypicks=detect_cherrypicks)
+        if equivalent_last_affected_commit:
+          break
+
+      range_collector.add(equivalent_regress_commit, equivalent_fix_commit,
+                          last_affected_commit)
 
       if equivalent_fix_commit:
         end_commit = equivalent_fix_commit
+        include_end = False
+      elif equivalent_last_affected_commit:
+        end_commit = equivalent_last_affected_commit
         include_end = False
       else:
         # Not fixed in this branch. Everything is still vulnerabile.

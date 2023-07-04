@@ -74,7 +74,8 @@ class RangeCollector:
         if value[1] is None:
           ranges.remove(value)
     else:
-      self.grouped_ranges[introduced_in] = [(introduced_in, fixed_in, affected_in)]
+      self.grouped_ranges[introduced_in] = [(introduced_in, fixed_in,
+                                             affected_in)]
 
   def ranges(self):
     """Return a list representing the collected commit ranges."""
@@ -187,10 +188,14 @@ class RepoAnalyzer:
       # Get the latest equivalent commit in the last_affected range.
       equivalent_last_affected_commit = None
       for last_affected_commit in last_affected_commits:
-        logging.info('Finding equivalent last_affected commit to %s in %s in %s',
-                     last_affected_commit, ref, str(repo_url or 'UNKNOWN_REPO_URL'))
+        logging.info(
+            'Finding equivalent last_affected commit to %s in %s in %s',
+            last_affected_commit, ref, str(repo_url or 'UNKNOWN_REPO_URL'))
         equivalent_last_affected_commit = self._get_equivalent_commit(
-            repo, ref, last_affected_commit, detect_cherrypicks=detect_cherrypicks)
+            repo,
+            ref,
+            last_affected_commit,
+            detect_cherrypicks=detect_cherrypicks)
         if equivalent_last_affected_commit:
           break
 

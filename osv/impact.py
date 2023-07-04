@@ -631,8 +631,8 @@ def analyze(vulnerability: vulnerability_pb2.Vulnerability,
           affected_range.events.add(introduced=introduced)
 
       for last_affected in new_last_affected:
-        if (not any(event.last_affected == last_affected for event in
-                    affected_range.events)):
+        if (not any(event.last_affected == last_affected
+                    for event in affected_range.events)):
           has_changes = True
           affected_range.events.add(last_affected=last_affected)
 

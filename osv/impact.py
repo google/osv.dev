@@ -185,22 +185,24 @@ class RepoAnalyzer:
         if equivalent_fix_commit:
           break
 
-      # Get the latest equivalent commit in the last_affected range.
+      # Get the latest equivalent commit in the last_affected range (if
+      # present).
       equivalent_last_affected_commit = None
-      for last_affected_commit in last_affected_commits:
-        logging.info(
-            'Finding equivalent last_affected commit to %s in %s in %s',
-            last_affected_commit, ref, str(repo_url or 'UNKNOWN_REPO_URL'))
-        equivalent_last_affected_commit = self._get_equivalent_commit(
-            repo,
-            ref,
-            last_affected_commit,
-            detect_cherrypicks=detect_cherrypicks)
-        if equivalent_last_affected_commit:
-          break
+      if last_affected_commits:
+        for last_affected_commit in last_affected_commits:
+          logging.info(
+              'Finding equivalent last_affected commit to %s in %s in %s',
+              last_affected_commit, ref, str(repo_url or 'UNKNOWN_REPO_URL'))
+          equivalent_last_affected_commit = self._get_equivalent_commit(
+              repo,
+              ref,
+              last_affected_commit,
+              detect_cherrypicks=detect_cherrypicks)
+          if equivalent_last_affected_commit:
+            break
 
-      range_collector.add(equivalent_regress_commit, equivalent_fix_commit,
-                          last_affected_commit)
+        range_collector.add(equivalent_regress_commit, equivalent_fix_commit,
+                            equivalent_last_affected_commit)
 
       if equivalent_fix_commit:
         end_commit = equivalent_fix_commit

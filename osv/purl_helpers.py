@@ -20,6 +20,7 @@ PURL_ECOSYSTEMS = {
     'crates.io': 'cargo',
     'Debian': 'deb',
     'Go': 'golang',
+    'Hackage': 'hackage',
     'Hex': 'hex',
     'Maven': 'maven',
     'npm': 'npm',

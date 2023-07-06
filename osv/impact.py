@@ -209,7 +209,7 @@ class RepoAnalyzer:
         include_end = False
       elif equivalent_last_affected_commit:
         end_commit = equivalent_last_affected_commit
-        include_end = False
+        include_end = True
       else:
         # Not fixed in this branch. Everything is still vulnerabile.
         end_commit = str(repo.revparse_single(ref).id)

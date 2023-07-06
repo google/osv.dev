@@ -201,8 +201,8 @@ class RepoAnalyzer:
           if equivalent_last_affected_commit:
             break
 
-        range_collector.add(equivalent_regress_commit, equivalent_fix_commit,
-                            equivalent_last_affected_commit)
+      range_collector.add(equivalent_regress_commit, equivalent_fix_commit,
+                          equivalent_last_affected_commit)
 
       if equivalent_fix_commit:
         end_commit = equivalent_fix_commit

@@ -38,7 +38,7 @@ AffectedResult = collections.namedtuple('AffectedResult',
 AnalyzeResult = collections.namedtuple('AnalyzeResult',
                                        ['has_changes', 'commits'])
 
-TagsInfo = collections.namedtuple('TagsInfo', 'tags latest_tag')
+TagsInfo = collections.namedtuple('TagsInfo', ['tags', 'latest_tag'])
 
 # Limit for writing small entities.
 _DATASTORE_BATCH_SIZE = 5000

@@ -62,17 +62,22 @@ class RangeCollector:
 
   def add(self, introduced_in, fixed_in, affected_in):
     """Add a new commit range."""
+    # last_affected is redundant if fixed is available
+    if fixed_in and affected_in:
+      affected_in = None
+
     if introduced_in in self.grouped_ranges:
       if fixed_in is None and affected_in is None:
         # New range doesn't add anything new.
         return
 
       # Remove in-place as we need to preserve insertion order.
-      ranges = self.grouped_ranges[introduced_in]
-      ranges.append((introduced_in, fixed_in, affected_in))
-      for value in ranges.copy():
-        if value[1] is None:
-          ranges.remove(value)
+      existing_ranges = self.grouped_ranges[introduced_in]
+      existing_ranges.append((introduced_in, fixed_in, affected_in))
+      for value in existing_ranges.copy():
+        # No fixed or last_affected commits
+        if value[1] is None and value[2] is None:
+          existing_ranges.remove(value)
     else:
       self.grouped_ranges[introduced_in] = [(introduced_in, fixed_in,
                                              affected_in)]

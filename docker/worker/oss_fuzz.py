@@ -419,7 +419,8 @@ def process_impact_task(source_id, message):
     # Allow sorting of None values.
     return (value[0] or '', value[1] or '')
 
-  for introduced_in, fixed_in, last_affected_in in sorted(result.affected_ranges, key=_sort_key):
+  for introduced_in, fixed_in, last_affected_in in sorted(
+      result.affected_ranges, key=_sort_key):
     if not fixed_in:
       fixed_in = ''  # convert NoneType to str for next comparison
 
@@ -433,7 +434,8 @@ def process_impact_task(source_id, message):
       git_range.events.append(introduced)
 
     if last_affected_in:
-      last_affected = osv.AffectedEvent(type='last_affected', value=last_affected_in)
+      last_affected = osv.AffectedEvent(
+          type='last_affected', value=last_affected_in)
       if last_affected not in git_range.events:
         git_range.events.append(last_affected)
 

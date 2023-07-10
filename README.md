@@ -3,6 +3,7 @@
 ## Documentation
 
 Comprehensive documentation is available [here](https://google.github.io/osv.dev).
+API documentation is available [here](https://google.github.io/osv.dev/api/).
 
 ## Viewing the web UI
 

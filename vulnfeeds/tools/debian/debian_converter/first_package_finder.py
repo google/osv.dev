@@ -20,11 +20,12 @@ from datetime import datetime, timedelta
 import json
 import gzip
 from urllib import request
+import logging
 
 import pandas as pd
 
 DEBIAN_RELEASE_VERSIONS_URL = \
-  'https://debian.pages.debian.net/distro-info-data/debian.csv'
+  'https://salsa.debian.org/debian/distro-info-data/-/raw/main/debian.csv'
 DEBIAN_SNAPSHOT_URL = 'https://snapshot.debian.org/archive/debian/{date}/dists/'
 # `.gz` format always exist for all snapshots
 DEBIAN_SOURCES_URL_EXTENSION = '{version}/main/source/Sources.gz'
@@ -104,7 +105,7 @@ def load_sources(date: datetime, dist: str) -> typing.Dict[str, str]:
 def load_first_packages() -> pd.DataFrame:
   """Loads the dataframe containing the first version of packages per distro"""
   codename_to_version: pd.DataFrame = retrieve_codename_to_version()
-
+  logging.info('Retrieved codename_to_version:\n%s', codename_to_version)
   first_release_dates = zip(
       codename_to_version.index,
       codename_to_version['release'].map(parse_created_dates_and_set_time))
@@ -117,8 +118,17 @@ def load_first_packages() -> pd.DataFrame:
     for i in range(FIRST_RELEASE_LOOKAHEAD_DAYS + 1):
       actual_date = date + timedelta(days=i)
       try:
-        codename_to_version.loc[version].sources = load_sources(
-            actual_date, version)
+        logging.info('attempting load of version %s at %s', version,
+                     actual_date)
+        # Select both row (version) and column ('sources') at the same time
+        # to avoid SettingOnCopy issues
+        # Also wrapping the output of load_sources in an array to avoid pandas
+        # attempting to parse the dictionary, but just insert it as is into the
+        # cell, remember to unwrap it later when using it.
+        codename_to_version.loc[version, 'sources'] = [
+            load_sources(actual_date, version)
+        ]
+        logging.info('loaded version %s at %s', version, actual_date)
         break
       except urllib.error.HTTPError as http_error:
         if http_error.code != 404:
@@ -145,6 +155,7 @@ def get_first_package_version(first_pkg_data: pd.DataFrame, package_name: str,
 
 
 def main():
+  logging.basicConfig(level=logging.INFO)
   parser = argparse.ArgumentParser(description='Detects all first versions')
   parser.add_argument(
       '-o',
@@ -154,13 +165,17 @@ def main():
   args = parser.parse_args()
 
   dataframe = load_first_packages()
+  logging.info('first_package loaded, begin writing out data')
   version_to_sources = dict(zip(dataframe['version'], dataframe['sources']))
 
   os.makedirs(args.output_dir, exist_ok=True)
   for version, sources in version_to_sources.items():
     versions_path = os.path.join(args.output_dir, version + '.json')
     with open(versions_path, 'w') as handle:
-      handle.write(json.dumps(sources))
+      if sources:
+        # Unwrap the source dict from the list that we wrapped it in
+        # when inserting into dataframe
+        handle.write(json.dumps(sources[0]))
 
 
 if __name__ == '__main__':

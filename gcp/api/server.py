@@ -66,6 +66,8 @@ _DETERMINE_VER_MIN_SCORE_CUTOFF = 0.05
 # This should match the number in the indexer
 _BUCKET_SIZE = 512
 
+MAX_PACKAGE_NAME_LENGTH = 100  # Maximum allowed package name length
+
 # Prefix for the
 _TAG_PREFIX = "refs/tags/"
 
@@ -785,6 +787,10 @@ def _query_by_generic_version(
       context.total_responses.add(1)
 
   return results, cursor
+
+def validate_package_name(package_name):
+    if len(package_name) > MAX_PACKAGE_NAME_LENGTH:
+        raise ValueError("Package name exceeds the maximum allowed length.")
 
 
 @ndb.tasklet

@@ -422,7 +422,9 @@ func (affected *Affected) AttachExtractedVersionInfo(version cves.VersionInfo) {
 			if commit.commitType == Limit {
 				gitRange.Events = append(gitRange.Events, Event{Limit: commit.hash})
 			}
-			if commit.commitType == LastAffected {
+			// Only add any LastAffectedCommits in the absence of
+			// any FixCommits to maintain schema compliance.
+			if commit.commitType == LastAffected && len(version.FixCommits) == 0 {
 				gitRange.Events = append(gitRange.Events, Event{LastAffected: commit.hash})
 			}
 		}

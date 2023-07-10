@@ -29,6 +29,7 @@ from collections import defaultdict
 
 from google.cloud import ndb
 from google.api_core.exceptions import InvalidArgument
+import google.cloud.ndb.exceptions as ndb_exceptions
 
 import grpc
 from grpc_health.v1 import health_pb2
@@ -115,9 +116,8 @@ class OSVServicer(osv_service_v1_pb2_grpc.OSVServicer,
       try:
         page_token = ndb.Cursor(urlsafe=request.query.page_token)
       except ValueError as e:
-        logging.error(e)
-        context.service_context.abort(grpc.StatusCode.INVALID_ARGUMENT,
-                                      'Invalid page token.')
+        logging.warning(e)
+        context.abort(grpc.StatusCode.INVALID_ARGUMENT, 'Invalid page token.')
 
     query_context = QueryContext(
         service_context=context,
@@ -132,6 +132,9 @@ class OSVServicer(osv_service_v1_pb2_grpc.OSVServicer,
       # this can be raised other than invalid cursor
       context.abort(grpc.StatusCode.INVALID_ARGUMENT,
                     'Invalid query, likely caused by invalid page token.')
+    except ndb_exceptions.BadValueError as e:
+      context.abort(grpc.StatusCode.INVALID_ARGUMENT,
+                    f'Bad parameter value: {e}')
 
     if results is not None:
       return osv_service_v1_pb2.VulnerabilityList(
@@ -157,9 +160,9 @@ class OSVServicer(osv_service_v1_pb2_grpc.OSVServicer,
         try:
           page_token = ndb.Cursor(urlsafe=query.page_token)
         except ValueError as e:
-          logging.error(e)
-          context.service_context.abort(grpc.StatusCode.INVALID_ARGUMENT,
-                                        f'Invalid page token at index: {i}.')
+          logging.warning(e)
+          context.abort(grpc.StatusCode.INVALID_ARGUMENT,
+                        f'Invalid page token at index: {i}.')
       query_context = QueryContext(
           service_context=context,
           # request_start_time=req_start_time,
@@ -176,6 +179,9 @@ class OSVServicer(osv_service_v1_pb2_grpc.OSVServicer,
         # this can be raised other than invalid cursor
         context.abort(grpc.StatusCode.INVALID_ARGUMENT,
                       'Invalid query, likely caused by invalid page token.')
+      except ndb_exceptions.BadValueError as e:
+        context.abort(grpc.StatusCode.INVALID_ARGUMENT,
+                      f'Bad parameter value: {e}')
 
       batch_results.append(
           osv_service_v1_pb2.VulnerabilityList(

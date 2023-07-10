@@ -792,7 +792,6 @@ def validate_package_name(package_name):
     if len(package_name) > MAX_PACKAGE_NAME_LENGTH:
         raise ValueError("Package name exceeds the maximum allowed length.")
 
-
 @ndb.tasklet
 def query_by_version(context: QueryContext,
                      package_name: str,
@@ -801,6 +800,7 @@ def query_by_version(context: QueryContext,
                      version,
                      to_response: Callable = bug_to_response):
   """Query by (fuzzy) version."""
+  validate_package_name(package_name)
 
   if package_name:
     query = osv.Bug.query(

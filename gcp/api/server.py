@@ -911,7 +911,7 @@ def query_by_package(context: QueryContext, package_name: str, ecosystem: str,
       affected = True
 
     if affected:
-      bugs.append(it.next())
+      bugs.append(bug)
       context.total_responses.add(1)
 
   return [to_response(bug) for bug in bugs], cursor

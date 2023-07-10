@@ -561,15 +561,17 @@ def _analyze_git_ranges(repo_analyzer: RepoAnalyzer, checkout_path: str,
                       affected_range.repo, traceback.format_exc())
       return new_versions, commits
 
-    for introduced, last_affected, fixed in result.affected_ranges:
+    for introduced, fixed, last_affected in result.affected_ranges:
       if introduced and introduced not in all_introduced:
         new_introduced.add(introduced)
 
-      if last_affected and last_affected not in all_last_affected:
-        new_last_affected.add(last_affected)
-
       if fixed and fixed not in all_fixed:
         new_fixed.add(fixed)
+        # avoid adding last_affected as it's redundant and violates the schema
+        break
+
+      if last_affected and last_affected not in all_last_affected:
+        new_last_affected.add(last_affected)
 
     new_versions.update(result.tags)
     commits.update(result.commits)

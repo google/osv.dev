@@ -122,11 +122,14 @@ pre {
 .tooltip .tooltiptext {
   visibility: hidden;
   width: 120px;
-  background-color: white;
-  color: #000;
+  background: #11111199;
+  color: #fff;
   text-align: center;
-  padding: 5px 0;
-  border-radius: 6px;
+  padding: 5px;
+  border-radius: 4px;
+
+  max-width: 250px;
+  line-height: 16px;
 
   top: -5px;
   left: 105%;

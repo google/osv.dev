@@ -534,6 +534,7 @@ def display_json(data):
 def logarithm(n):
   return math.log(n)
 
+
 @blueprint.app_template_filter('strip_scheme')
 def strip_scheme(url):
   parsed_result = parse.urlparse(url)

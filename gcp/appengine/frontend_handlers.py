@@ -533,3 +533,9 @@ def display_json(data):
 @blueprint.app_template_filter('log')
 def logarithm(n):
   return math.log(n)
+
+@blueprint.app_template_filter('strip_scheme')
+def strip_scheme(url):
+  parsed_result = parse.urlparse(url)
+  scheme = f"{parsed_result.scheme}://"
+  return parsed_result.geturl().replace(scheme, '', 1)

@@ -173,7 +173,7 @@ def process_bisect_task(oss_fuzz_dir, bisect_type, source_id, message):
                        architecture, fuzz_target, old_commit, new_commit,
                        testcase)
 
-  if result.repo_url in REPO_DENYLIST:
+  if result and result.repo_url in REPO_DENYLIST:
     logging.info('Skipping because of denylisted repo %s.', result.repo_url)
     return
 

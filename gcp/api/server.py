@@ -527,7 +527,7 @@ def _get_bugs(bug_ids, to_response=bug_to_response):
 
   responses = []
   for future_bug in bugs:
-    bug = yield future_bug
+    bug: osv.Bug = yield future_bug
     if bug and bug.status == osv.BugStatus.PROCESSED and bug.public:
       responses.append(to_response(bug))
 

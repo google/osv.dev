@@ -23,6 +23,8 @@ Query for multiple packages (by either package and version or git commit hash) a
 
 The parameters are the same as those in found [here](post-v1-query.md#parameters), but you can make multiple queries.
 
+Information on paginated results for querybatch requests is available [here](#pagination).
+
 ## Payload
 ```json
 {
@@ -157,4 +159,61 @@ EOF
         }
     ]
 }
+```
+
+## Pagination
+
+Pagination for the querybatch API works similarly to the individual query, with the distinction that not all queries in the querybatch are likely to return a `next_page_token`. 
+
+A queryset response with paginated results will be in this form:
+
+```json
+{
+  "results": [
+    {
+      "vulns": [
+        ...
+      ],
+      "next_page_token": "token for query 1"
+    },
+    {
+      "vulns": [
+        ...
+      ],
+      "next_page_token": "token for query 2"
+    },
+    {
+      "vulns": [
+        ...
+      ],
+    },
+    ...
+  ]
+}
+```
+Notice that each result has a distinct "next_page_token" and that the third result does not include a `next_page_token`. This is because all of the vulnerabilities for the third query have been returned. 
+
+To get the next page of results, your next request should be in the form:
+
+```bash
+cat <<EOF | curl -d @- "https://api.osv.dev/v1/querybatch"
+{
+  "queries": [
+    {
+      "package": {
+        ...
+      },
+      "version": ..., 
+      "page_token": next_page_token from query 1,
+    },
+    {
+      "package": {
+        ...
+      },
+      "version": ...,
+      "page_token": next_page_token from query 2,
+    },
+  ]
+}
+EOF
 ```

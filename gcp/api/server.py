@@ -520,13 +520,14 @@ def bug_to_response(bug, include_details=True):
   return bug.to_vulnerability_minimal()
 
 
+@ndb.tasklet
 def _get_bugs(bug_ids, to_response=bug_to_response):
   """Get bugs from bug ids."""
   bugs = ndb.get_multi_async([ndb.Key(osv.Bug, bug_id) for bug_id in bug_ids])
 
   responses = []
   for future_bug in bugs:
-    bug: osv.Bug = future_bug.result()
+    bug = yield future_bug
     if bug and bug.status == osv.BugStatus.PROCESSED and bug.public:
       responses.append(to_response(bug))
 
@@ -579,7 +580,8 @@ def query_by_commit(
     bug_ids.append(bug_id)
     context.total_responses.add(1)
 
-  return _get_bugs(bug_ids, to_response=to_response), cursor
+  bugs = yield _get_bugs(bug_ids, to_response=to_response)
+  return bugs, cursor
 
 
 def _match_purl(purl_query: PackageURL, purl_db: PackageURL) -> bool:

@@ -9,7 +9,7 @@ require (
 	github.com/go-git/go-git/v5 v5.7.0
 	github.com/google/go-cmp v0.5.9
 	github.com/google/osv-scanner v1.3.6-0.20230707005317-d93d6b73e90a
-	github.com/knqyf263/go-cpe v0.0.0-20201213041631-54f6ab28673f
+	github.com/knqyf263/go-cpe v0.0.0-20230627041855-cb0794d06872
 	golang.org/x/exp v0.0.0-20230626212559-97b1e661b5df
 	gopkg.in/yaml.v2 v2.4.0
 )

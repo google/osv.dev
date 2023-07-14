@@ -191,7 +191,7 @@ A queryset response with paginated results will be in this form:
   ]
 }
 ```
-Notice that each result has a distinct "next_page_token" and that the third result does not include a `next_page_token`. This is because all of the vulnerabilities for the third query have been returned. 
+Notice that each result has a distinct "next_page_token" and that the third result does not include a `next_page_token`. This indicates that all of the vulnerabilities for the third query have been returned. 
 
 To get the next page of results, your next request should be in the form:
 

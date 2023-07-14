@@ -23,7 +23,7 @@ Query for multiple packages (by either package and version or git commit hash) a
 
 The parameters are the same as those in found [here](post-v1-query.md#parameters), but you can make multiple queries.
 
-Information on paginated results for querybatch requests is available [here](#pagination).
+[Instructions are available](#pagination) for handling pagination for querybatch requests. 
 
 ## Payload
 ```json

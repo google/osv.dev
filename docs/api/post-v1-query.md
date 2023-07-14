@@ -137,7 +137,7 @@ A response indicating pagination will be in this form:
 }
 ```
 
-To get the next page of results, your next request should be in the form:
+To get the next page of results, your next request must include page_token:
 ```bash
 
 curl -d \

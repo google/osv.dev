@@ -127,7 +127,7 @@ curl -d \
 ## Pagination
 For queries that result in a large number of vulnerabilities, the response will be paginated. In this case, the "next_page_token" is given in the response, indicating that there are more results to return. You will need to run additional queries using the `page_token` to see the remaining results, repeating queries until the `next_page_token` is no longer included in the response. 
 
-The response will be in this form:
+A response indicating pagination will be in this form:
 ```json
 {
   "vulns": [

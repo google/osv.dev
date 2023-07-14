@@ -163,7 +163,7 @@ EOF
 
 ## Pagination
 
-Pagination for the querybatch API works similarly to the individual query, with the distinction that not all queries in the querybatch are likely to return a `next_page_token`. 
+Pagination for the querybatch API works similarly to the individual query. However, a querybatch request may return results with a `next_page_token` for only a few of the total queries. In this situation, you will need to run additional requests  for those specific queries to see the remaining results.
 
 A queryset response with paginated results will be in this form:
 

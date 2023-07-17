@@ -92,5 +92,3 @@ If you work on a project (like a Linux distribution) and would like to contribut
 ## Is the API rate limited?
 No. Currently there is not a limit on the API. 
 
-## Why am I getting an error message for my Linux Kernel query?
-Currently the results from API queries for vulnerabilities from the Linux kernel are so large they cause timeouts. [While we optimize this use case](https://github.com/google/osv.dev/issues/151), we are failing fast and returning an error message for all Linux Kernel queries. You can always search for vulnerabilities on [our website](https://osv.dev/list?ecosystem=Linux) or [download a full export](#is-the-database-available-to-download) for offline analysis. We apologize for the inconvenience.

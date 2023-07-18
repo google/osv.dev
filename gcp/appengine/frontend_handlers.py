@@ -540,3 +540,15 @@ def strip_scheme(url):
   parsed_result = parse.urlparse(url)
   scheme = f"{parsed_result.scheme}://"
   return parsed_result.geturl().replace(scheme, '', 1)
+
+
+@blueprint.app_template_filter('git_repo')
+def git_repo(affected):
+  git_repos = []
+  for a in affected:
+    git_repos.extend([
+        r.get('repo', '')
+        for r in a.get('ranges', [])
+        if r.get('type', '') == 'GIT'
+    ])
+  return git_repos

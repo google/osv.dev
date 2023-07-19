@@ -7,7 +7,7 @@ author: OSV Team
 
 With the increasing incidence of software supply chain attacks, it is more important than ever for developers to understand the known vulnerabilities in their open source dependencies, regardless of the ecosystem of origin. The determineversion API is OSV's newest tool that will help C/C++ developers match their dependencies to known vulnerabilities. 
 
-Within the C/C++ ecosystem it is difficult to match dependencies to vulnerabilities for a few of reasons:
+Within the C/C++ ecosystem it is difficult to match dependencies to vulnerabilities for a few reasons:
 
 - C/C++ does not have a centralized package manager like npm or pyPI
 - Software projects typically pull in C/C++ by submodules or vendoring

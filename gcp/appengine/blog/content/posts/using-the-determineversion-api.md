@@ -34,7 +34,7 @@ You can follow along with this post, or consult our [documentation](https://goog
 
 For this example, we are going to use the library [libxml2](https://github.com/GNOME/libxml2). First we are going to estimate which version of libxml2 is on my machine and then determine whether it has any known vulnerabilities.
 
-To determine the version of libxml2:
+To determine the version of libxml2 and find the associated vulnerabilities:
 
 1. Navigate to the indexer-api-caller folder in your local copy of the osv.dev repository. It is located in `osv.dev/tools/indexer-api-caller/`
 2. While in that folder, run the command `go run . -lib /path/to/library` where `path/to/library` is the path to your copy of libxml2. On my machine, the command looks like this: `go run . -lib ../../../libxml2`. 

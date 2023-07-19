@@ -175,7 +175,6 @@ To determine the version of libxml2:
 
     By running our tool and making one additional API call, we now are fairly confident that my local version of libxml2 has known vulnerability OSV-2021-777.
 
-
 ## Try for yourself
 Want to find vulnerabilities in your C/C++ packages? Try the determineversion API for yourself! (This blog covered how to scan an individual project, but it is also possible to [scan a directory](https://google.github.io/osv.dev/post-v1-determineversion/#steps-to-use-the-indexer-api-caller) with multiple libraries.) The determineversion API is a new, experimental feature and we would love to [hear your feedback](https://github.com/google/osv.dev/issues/new). 
 

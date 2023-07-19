@@ -26,7 +26,7 @@ The OSV team is also working on expanding C/C++ coverage by including commit-lev
 ## Let's try the determineversion API
 To try the determineversion API, you will first need the following:
 
-1. A local copy of the [osv.dev repository](https://github.com/google/osv.dev). This includes a tool that will simplify the use of the API.
+- A local copy of the [osv.dev repository](https://github.com/google/osv.dev). This includes a tool that will simplify the use of the API.
 2. A local copy of the C/C++ project or projects for which you want to determine the version(s). This local copy can be vendored, submoduled, or you can clone a copy of our example project, [libxml2](https://github.com/GNOME/libxml2).
 
 You can follow along with this post, or consult our [documentation](https://google.github.io/osv.dev/post-v1-determineversion/) for information on how to use the API. 

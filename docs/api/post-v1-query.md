@@ -25,11 +25,12 @@ To query multiple packages at once, see further information [here](post-v1-query
 ## Parameters
   
 |---
-| Parameter | Type   | Description                                                                                                                 |
-| --------- | ------ | --------------------------------------------------------------------------------------------------------------------------- |
-| `commit`  | string | The commit hash to query for. If specified, `version` should not be set.                                                    |
-| `version` | string | The version string to query for. A fuzzy match is done against upstream versions. If specified, `commit` should not be set. |
-| `package` | object | The package to query against. When a `commit` hash is given, this is optional.                                              |
+| Parameter         | Type   | Description                                                                                                                                                    |
+| ----------------- | ------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `commit`          | string | The commit hash to query for. If specified, `version` should not be set.                                                                                       |
+| `version`         | string | The version string to query for. A fuzzy match is done against upstream versions. If specified, `commit` should not be set.                                    |
+| `package`         | object | The package to query against. When a `commit` hash is given, this is optional.                                                                                 |
+| `page_token`      | string | If your previous query fetched a large number of results, the response will be paginated. This is an optional field. Please see the [pagination section](#pagination) for more information. |
 
 Package Objects can be described by package name AND ecosystem OR by the package URL. 
 
@@ -49,7 +50,8 @@ Package Objects can be described by package name AND ecosystem OR by the package
     "name": "string",
     "ecosystem": "string",
     "purl": "string"
-  }
+  },
+  "next_page_token": "string",
 }
 ```
 
@@ -121,3 +123,26 @@ curl -d \
 }
 
 ```
+
+## Pagination
+For queries that result in a large number of vulnerabilities, the response will be paginated. In this case, the "next_page_token" is given in the response, indicating that there are more results to return. You will need to run additional queries using the `page_token` to see the remaining results, repeating queries until the `next_page_token` is no longer included in the response. 
+
+A response indicating pagination will be in this form:
+```json
+{
+  "vulns": [
+    ...
+  ],
+  "next_page_token": "a base64 string here"
+}
+```
+
+To get the next page of results, your next request must include page_token:
+```bash
+
+curl -d \
+  '{"package": {...}, "version": ..., "page_token": next_page_token from response}' \
+  "https://api.osv.dev/v1/query"
+
+```
+

@@ -29,6 +29,7 @@ from collections import defaultdict
 
 from google.cloud import ndb
 from google.api_core.exceptions import InvalidArgument
+import google.cloud.ndb.exceptions as ndb_exceptions
 
 import grpc
 from grpc_health.v1 import health_pb2
@@ -111,9 +112,8 @@ class OSVServicer(osv_service_v1_pb2_grpc.OSVServicer,
       try:
         page_token = ndb.Cursor(urlsafe=request.query.page_token)
       except ValueError as e:
-        logging.error(e)
-        context.service_context.abort(grpc.StatusCode.INVALID_ARGUMENT,
-                                      'Invalid page token.')
+        logging.warning(e)
+        context.abort(grpc.StatusCode.INVALID_ARGUMENT, 'Invalid page token.')
 
     query_context = QueryContext(
         service_context=context,
@@ -128,6 +128,9 @@ class OSVServicer(osv_service_v1_pb2_grpc.OSVServicer,
       # this can be raised other than invalid cursor
       context.abort(grpc.StatusCode.INVALID_ARGUMENT,
                     'Invalid query, likely caused by invalid page token.')
+    except ndb_exceptions.BadValueError as e:
+      context.abort(grpc.StatusCode.INVALID_ARGUMENT,
+                    f'Bad parameter value: {e}')
 
     if results is not None:
       return osv_service_v1_pb2.VulnerabilityList(
@@ -153,9 +156,9 @@ class OSVServicer(osv_service_v1_pb2_grpc.OSVServicer,
         try:
           page_token = ndb.Cursor(urlsafe=query.page_token)
         except ValueError as e:
-          logging.error(e)
-          context.service_context.abort(grpc.StatusCode.INVALID_ARGUMENT,
-                                        f'Invalid page token at index: {i}.')
+          logging.warning(e)
+          context.abort(grpc.StatusCode.INVALID_ARGUMENT,
+                        f'Invalid page token at index: {i}.')
       query_context = QueryContext(
           service_context=context,
           # request_start_time=req_start_time,
@@ -172,6 +175,9 @@ class OSVServicer(osv_service_v1_pb2_grpc.OSVServicer,
         # this can be raised other than invalid cursor
         context.abort(grpc.StatusCode.INVALID_ARGUMENT,
                       'Invalid query, likely caused by invalid page token.')
+      except ndb_exceptions.BadValueError as e:
+        context.abort(grpc.StatusCode.INVALID_ARGUMENT,
+                      f'Bad parameter value: {e}')
 
       batch_results.append(
           osv_service_v1_pb2.VulnerabilityList(
@@ -506,13 +512,14 @@ def bug_to_response(bug, include_details=True):
   return bug.to_vulnerability_minimal()
 
 
+@ndb.tasklet
 def _get_bugs(bug_ids, to_response=bug_to_response):
   """Get bugs from bug ids."""
   bugs = ndb.get_multi_async([ndb.Key(osv.Bug, bug_id) for bug_id in bug_ids])
 
   responses = []
   for future_bug in bugs:
-    bug: osv.Bug = future_bug.result()
+    bug: osv.Bug = yield future_bug
     if bug and bug.status == osv.BugStatus.PROCESSED and bug.public:
       responses.append(to_response(bug))
 
@@ -556,7 +563,8 @@ def query_by_commit(
     bug_ids.append(bug_id)
     context.total_responses.add(1)
 
-  return _get_bugs(bug_ids, to_response=to_response), cursor
+  bugs = yield _get_bugs(bug_ids, to_response=to_response)
+  return bugs, cursor
 
 
 def _match_purl(purl_query: PackageURL, purl_db: PackageURL) -> bool:
@@ -888,7 +896,7 @@ def query_by_package(context: QueryContext, package_name: str, ecosystem: str,
       affected = True
 
     if affected:
-      bugs.append(it.next())
+      bugs.append(bug)
       context.total_responses.add(1)
 
   return [to_response(bug) for bug in bugs], cursor

@@ -2,10 +2,11 @@ package main
 
 import (
 	"encoding/hex"
+	"encoding/json"
 	"flag"
 	"fmt"
+	"io"
 	"io/fs"
-	"io/ioutil"
 	"math/rand"
 	"os"
 	"path/filepath"
@@ -13,19 +14,37 @@ import (
 	"strings"
 	"time"
 
-	"github.com/google/osv/vulnfeeds/vulns"
+	"github.com/google/osv-scanner/pkg/models"
+	"golang.org/x/exp/slices"
+	"gopkg.in/yaml.v2"
 )
 
 const (
 	conflictFile       = ".id-allocator"
 	conflictMarkerSize = 32
-	extension          = ".yaml"
+)
+
+type fileFormat string
+
+const (
+	fileFormatJSON = fileFormat("json")
+	fileFormatYAML = fileFormat("yaml")
+)
+
+var (
+	validFormats      = []fileFormat{fileFormatYAML, fileFormatJSON}
+	formatToExtension = map[fileFormat]string{
+		fileFormatYAML: ".yaml",
+		fileFormatJSON: ".json",
+	}
 )
 
 func main() {
 	rand.Seed(time.Now().Unix())
 	prefix := flag.String("prefix", "", "Vulnerability prefix (e.g. \"PYSEC\".")
 	dir := flag.String("dir", "", "Path to vulnerabilites.")
+	format := flag.String("format", string(fileFormatYAML), "Format of OSV reports in the repository. Must be \"json\" or \"yaml\".")
+
 	flag.Parse()
 
 	if *prefix == "" || *dir == "" {
@@ -33,15 +52,20 @@ func main() {
 		return
 	}
 
-	if err := assignIDs(*prefix, *dir); err != nil {
+	if !slices.Contains(validFormats, fileFormat(*format)) {
+		flag.Usage()
+		return
+	}
+
+	if err := assignIDs(*prefix, *dir, fileFormat(*format)); err != nil {
 		fmt.Printf("Failed to assign IDs: %v", err)
 		os.Exit(1)
 	}
 }
 
-func extractYearAndNum(prefix, filename string) (int, int) {
+func extractYearAndNum(prefix, filename string, format fileFormat) (int, int) {
 	// Extract year and num from "PREFIX-YEAR-NUM"
-	parts := strings.Split(strings.TrimSuffix(filename, extension), "-")
+	parts := strings.Split(strings.TrimSuffix(filename, formatToExtension[format]), "-")
 	if len(parts) != 3 {
 		return 0, 0
 	}
@@ -67,7 +91,7 @@ func isUnassigned(prefix, filename string) bool {
 	return strings.HasPrefix(filename, prefix+"-0000-")
 }
 
-func assignID(path, prefix string, yearCounters map[int]int, defaultYear int) error {
+func assignID(prefix, path string, format fileFormat, yearCounters map[int]int, defaultYear int) error {
 	// Parse the existing vulnerability.
 	readf, err := os.Open(path)
 	if err != nil {
@@ -75,21 +99,17 @@ func assignID(path, prefix string, yearCounters map[int]int, defaultYear int) er
 	}
 	defer readf.Close()
 
-	vuln, err := vulns.FromYAML(readf)
+	vuln, err := readVulnWithFormat(readf, format)
 	if err != nil {
-		return fmt.Errorf("failed to parse YAML: %w", err)
+		return fmt.Errorf("failed to parse %s: %w", format, err)
 	}
 	readf.Close()
 
 	// If the vulnerability has a published date, use the year from that.
 	// Otherwise, just default to the current year.
 	year := defaultYear
-	if vuln.Published != "" {
-		published, err := time.Parse(time.RFC3339, vuln.Published)
-		if err != nil {
-			return fmt.Errorf("failed to parse published date: %w", err)
-		}
-		year = published.Year()
+	if !vuln.Published.IsZero() {
+		year = vuln.Published.Year()
 	}
 
 	// Allocate a new ID and write the new file.
@@ -97,7 +117,7 @@ func assignID(path, prefix string, yearCounters map[int]int, defaultYear int) er
 	yearCounters[year] = id
 
 	vuln.ID = fmt.Sprintf("%s-%d-%d", prefix, year, id)
-	newPath := filepath.Join(filepath.Dir(path), vuln.ID+extension)
+	newPath := filepath.Join(filepath.Dir(path), vuln.ID+formatToExtension[format])
 
 	writef, err := os.Create(newPath)
 	if err != nil {
@@ -105,7 +125,7 @@ func assignID(path, prefix string, yearCounters map[int]int, defaultYear int) er
 	}
 	defer writef.Close()
 
-	if err := vuln.ToYAML(writef); err != nil {
+	if err := writeVulnWithFormat(vuln, writef, format); err != nil {
 		return fmt.Errorf("failed to serialize: %w", err)
 	}
 
@@ -113,7 +133,7 @@ func assignID(path, prefix string, yearCounters map[int]int, defaultYear int) er
 	return os.Remove(path)
 }
 
-func assignIDs(prefix, dir string) error {
+func assignIDs(prefix, dir string, format fileFormat) error {
 	defaultYear := time.Now().Year()
 	var unassigned []string
 	yearCounters := map[int]int{}
@@ -133,7 +153,7 @@ func assignIDs(prefix, dir string) error {
 			return nil
 		}
 
-		year, num := extractYearAndNum(prefix, filename)
+		year, num := extractYearAndNum(prefix, filename, format)
 		if year == 0 || num == 0 {
 			return nil
 		}
@@ -154,7 +174,7 @@ func assignIDs(prefix, dir string) error {
 
 	fmt.Printf("Assigning IDs using detected maximums: %v\n", yearCounters)
 	for _, path := range unassigned {
-		if err := assignID(path, prefix, yearCounters, defaultYear); err != nil {
+		if err := assignID(prefix, path, format, yearCounters, defaultYear); err != nil {
 			return fmt.Errorf("failed to assign ID: %w", err)
 		}
 	}
@@ -164,5 +184,38 @@ func assignIDs(prefix, dir string) error {
 		return fmt.Errorf("failed to generate random string: %w", err)
 	}
 
-	return ioutil.WriteFile(filepath.Join(dir, conflictFile), []byte(hex.EncodeToString(b)), 0644)
+	return os.WriteFile(filepath.Join(dir, conflictFile), []byte(hex.EncodeToString(b)), 0644)
+}
+
+func readVulnWithFormat(r io.Reader, format fileFormat) (*models.Vulnerability, error) {
+	var v models.Vulnerability
+	switch format {
+	case fileFormatJSON:
+		dec := json.NewDecoder(r)
+		if err := dec.Decode(&v); err != nil {
+			return nil, err
+		}
+	case fileFormatYAML:
+		dec := yaml.NewDecoder(r)
+		if err := dec.Decode(&v); err != nil {
+			return nil, err
+		}
+	default:
+		return nil, fmt.Errorf("unknown file format: %v", format)
+	}
+	return &v, nil
+}
+
+func writeVulnWithFormat(v *models.Vulnerability, w io.Writer, format fileFormat) error {
+	switch format {
+	case fileFormatJSON:
+		enc := json.NewEncoder(w)
+		enc.SetIndent("", "  ")
+		return enc.Encode(v)
+	case fileFormatYAML:
+		enc := yaml.NewEncoder(w)
+		return enc.Encode(v)
+	default:
+		return fmt.Errorf("unknown file format: %v", format)
+	}
 }

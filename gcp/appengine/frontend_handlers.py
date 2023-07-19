@@ -236,6 +236,8 @@ def bug_to_response(bug, detailed=True):
 def add_links(bug):
   """Add VCS links where possible."""
 
+  repo_url = None
+
   for entry in bug.get('affected', []):
     for i, affected_range in enumerate(entry.get('ranges', [])):
       affected_range['id'] = i
@@ -247,9 +249,14 @@ def add_links(bug):
         continue
 
       for event in affected_range.get('events', []):
-        if event.get('introduced'):
+        if event.get('introduced') and event['introduced'] != '0':
           event['introduced_link'] = _commit_to_link(repo_url,
                                                      event['introduced'])
+          continue
+
+        if event.get('last_affected'):
+          event['last_affected_link'] = _commit_to_link(repo_url,
+                                                        event['last_affected'])
           continue
 
         if event.get('fixed'):
@@ -259,6 +266,9 @@ def add_links(bug):
         if event.get('limit'):
           event['limit_link'] = _commit_to_link(repo_url, event['limit'])
           continue
+
+  if repo_url:
+    bug['repo'] = repo_url
 
 
 def add_source_info(bug, response):
@@ -523,3 +533,10 @@ def display_json(data):
 @blueprint.app_template_filter('log')
 def logarithm(n):
   return math.log(n)
+
+
+@blueprint.app_template_filter('strip_scheme')
+def strip_scheme(url):
+  parsed_result = parse.urlparse(url)
+  scheme = f"{parsed_result.scheme}://"
+  return parsed_result.geturl().replace(scheme, '', 1)

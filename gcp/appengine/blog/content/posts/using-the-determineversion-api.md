@@ -10,16 +10,18 @@ With the increasing incidence of software supply chain attacks, it is more impor
 - Software projects typically pull in C/C++ by submodules or vendoring
 - Source code identifiers (e.g. git hashes) are the best way to identify libraries, but vulnerabilities are typically associated to versions, not git hashes
 
-OSV has had C/C++ vulnerability data from OSS-Fuzz keyed on git hashes from day 1. However, a remaining challenge for C/C++ users is being able to accurately identify the closest upstream git hash of their C/C++ dependencies in order to make use of this vulnerability data.The OSV team is committed to bridging the gap between what C/C++ users need and the constraints of the ecosystem and today we are announcing a tool that can help–the determineversion API. 
+OSV has had C/C++ vulnerability data from OSS-Fuzz keyed on git hashes from day 1. However, a remaining challenge for C/C++ users is being able to accurately identify the closest upstream git hash of their C/C++ dependencies in order to make use of this vulnerability data. The OSV team is committed to bridging the gap between what C/C++ users need and the constraints of the ecosystem and today we are announcing a tool that can help–the determineversion API. 
 <!--more-->
 
 ## What is the determineversion API?
 The [determineversion API](https://google.github.io/osv.dev/post-v1-determineversion/) is a new, experimental API endpoint for OSV’s API. The goal of the determineversion API is to help users determine the likely version of their vendored C/C++ dependencies. Once dependency versions are known, our other API endpoints can return reliable vulnerability information. 
 
-## What projects can use the determineversion API?
-The set of C/C++ repositories currently supported by the determineversion API are the ones being fuzzed in OSS-Fuzz. This is because OSV currently only contains commit-level vulnerability information for C/C++ projects via OSS-Fuzz. If a project has been fuzzed by OSS-Fuzz, you’ll be able to use the tool, but you should understand that there may be additional vulnerabilities in your dependencies that weren’t found by or reported through OSS-Fuzz. You can check a project’s eligibility by following the steps in our [docs](https://google.github.io/osv.dev/post-v1-determineversion/#available-libraries). 
+We are actively seeking feedback on the determineversion API. If you have a project that you would like to scan for vulnerabilities, please follow along with this walkthrough and let us [know about your experience](https://github.com/google/osv.dev/issues/new). Your feedback can help us improve the vulnerability matching experience for other C/C++ developers. 
 
-The OSV team is also working on expanding C/C++ coverage by attaching commit-level details to the NVC/CVE database.Once released, we are hopeful that many of these gaps will no longer exist. Even small security steps can make a positive difference, and we hope that the current limitations will not prevent you from trying the new API endpoint. 
+## What projects can use the determineversion API?
+The set of C/C++ repositories currently supported by the determineversion API are the ones being fuzzed in OSS-Fuzz. This is because OSV currently only contains commit-level vulnerability information for C/C++ projects via OSS-Fuzz. If a project has been fuzzed by OSS-Fuzz, you’ll be able to use the tool, but you should understand that there may be additional vulnerabilities in your dependencies that weren’t found by or reported through OSS-Fuzz. You can check a project against the API's current limitations by following the steps in our [documentation](https://google.github.io/osv.dev/post-v1-determineversion/#available-libraries). 
+
+The OSV team is also working on expanding C/C++ coverage by including commit-level details for vulnerabilities from CVEs in the National Vulnerability Database(NVD). Once these are included, we expect that many of these gaps will no longer exist. Even small security steps can make a positive difference, and we hope that the current limitations will not prevent you from trying the new API endpoint. 
 
 ## Let's try the determineversion API
 To try the determineversion API, you will first need the following:
@@ -180,5 +182,5 @@ By running one Go module and making one additional API call, we now are fairly c
 ## Try for yourself
 Want to find vulnerabilities in your C/C++ packages? Try the determineversion API for yourself! (This blog covered how to scan an individual project, but it is also possible to [scan a directory](https://google.github.io/osv.dev/post-v1-determineversion/#steps-to-use-the-indexer-api-caller) with multiple libraries.) The determineversion API is a new, experimental feature and we would love to [hear your feedback](https://github.com/google/osv.dev/issues/new). 
 
-The OSV team is building tools to help C/C++ developers find vulnerabilities in their dependencies. The determineversion API is the first step, but later this year we will introduce commit level details from the NVD/CVE database. Subscribe to our [RSS feed](https://osv.dev/blog/index.xml) to hear the latest news. 
+The OSV team is building tools to help C/C++ developers find vulnerabilities in their dependencies. The determineversion API is the first step, but later this year we will introduce commit level details from CVEs in the NVD. Subscribe to our [RSS feed](https://osv.dev/blog/index.xml) to hear the latest news. 
 

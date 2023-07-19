@@ -92,7 +92,10 @@ To determine the version of libxml2:
         ]
         }
         ```
-        The best match indicates that the likely libxml2 version is 2.11.3 based on 113 matching files. 
+        The best match indicates that the likely libxml2 version is `2.11.3` based on 113 matching files. 
+
+        The confidence scores for versions `2.11.3`, `2.11.4`, `2.11.2`, and `2.11.0` are very close but we shouldn't think of them as equally likely to be the actual version. We recommend considering the version with the highest confidence score to be the project's version. When scores are equivalent, consider the number of matching files--which is why `2.11.3` is preferred in this case over `2.11.4`. `2.11.3` has one more matching file. 
+
 4. Now that we have the likely version, we can use the `/v1/query` endpoint to find known vulnerabilities. The request is as follows:
         ```
         curl -d \
@@ -165,18 +168,12 @@ To determine the version of libxml2:
             }
             ```
 5. Finally, we consider the response and draw conclusions. 
+    
+    To be sure we have caught any potential vulnerabilities, we could make further queries for other versions with similar scores. It is our opinion that this is generally unnecessary, but it could be done. 
 
-Our copy of libxml2 returned a number of versions with similar confidence scores. 
-- Version 2.11.3, 0.718
-- Version 2.11.4, 0.718
-- Version 2.11.2, 0.707
-- Version 2.11.0, 0.697
+    In this case, even if the actual version is not `2.11.3`, we can be fairly confident that the vulnerability that we found in our sample API call ([OSV-2021-777](https://osv.dev/vulnerability/OSV-2021-777)) is in our local copy of libxml2. This is because there is overlap between the other likely versions of libxml2 and the versions vulnerable to OSV-2021-777.
 
-To be sure we have caught any potential vulnerabilities, we could make further queries for these other versions and see if any other vulnerabilities are found. 
-
-Additionally, we can be fairly confident that the vulnerability that we found in our sample API call ([OSV-2021-777](https://osv.dev/vulnerability/OSV-2021-777)) is in our local copy of libxml2. This is because there is overlap between the other likely versions of libxml2 and the versions vulnerable to OSV-2021-777.
-
-By running our tool and making one additional API call, we now are fairly confident that my local version of libxml2 has known vulnerability OSV-2021-777.
+    By running our tool and making one additional API call, we now are fairly confident that my local version of libxml2 has known vulnerability OSV-2021-777.
 
 
 ## Try for yourself

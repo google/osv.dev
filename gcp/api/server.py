@@ -70,10 +70,6 @@ _TAG_PREFIX = "refs/tags/"
 
 _ndb_client = ndb.Client()
 
-_LINUX_ERROR = ("Linux Kernel queries are currently unavailable: " +
-                "See https://google.github.io/osv.dev/faq/" +
-                "#why-am-i-getting-an-error-message-for-my-linux-kernel-query")
-
 
 def ndb_context(func):
   """Wrapper to create an NDB context."""
@@ -445,10 +441,6 @@ def do_query(query, context: QueryContext, include_details=True):
     ecosystem = ''
     purl_str = ''
 
-  # TODO: Remove this after paging is implemented
-  if package_name == "Kernel" and (not ecosystem or ecosystem == "Linux"):
-    context.service_context.abort(grpc.StatusCode.UNAVAILABLE, _LINUX_ERROR)
-
   purl = None
   purl_version = None
   if purl_str:
@@ -546,7 +538,6 @@ def query_by_commit(
   """Query by commit."""
   query = osv.AffectedCommits.query(osv.AffectedCommits.commits == commit)
 
-  gsd_count = 0
   bug_ids = []
   it: ndb.QueryIterator = query.iter(
       keys_only=True, start_cursor=context.page_token)
@@ -561,14 +552,6 @@ def query_by_commit(
     # <BugID>-<PageNumber>
     affected_commits: ndb.Key = it.next()
     bug_id: str = affected_commits.id().rsplit("-", 1)[0]
-
-    # Temporary mitigation.
-    if bug_id.startswith('GSD-'):
-      gsd_count += 1
-      if gsd_count >= 10:
-        context.service_context.abort(grpc.StatusCode.UNAVAILABLE, _LINUX_ERROR)
-
-      continue
 
     bug_ids.append(bug_id)
     context.total_responses.add(1)

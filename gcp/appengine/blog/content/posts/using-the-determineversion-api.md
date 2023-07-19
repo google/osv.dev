@@ -95,7 +95,7 @@ To determine the version of libxml2 and find the associated vulnerabilities:
         ```
         The best match indicates that the likely libxml2 version is `2.11.3` based on 113 matching files. The confidence scores for versions `2.11.3`, `2.11.4`, `2.11.2`, and `2.11.0` are very close but we shouldn't think of them as equally likely to be the actual version. We recommend considering the version with the highest confidence score to be the project's version. When scores are equivalent, consider the number of matching files--which is why `2.11.3` is preferred in this case over `2.11.4`. `2.11.3` has one more matching file. 
 
-4. Now that we have the likely version, we can use the `/v1/query` endpoint to find known vulnerabilities. The request is as follows:
+4. Now that we have the likely version, we can use the [`/v1/query` endpoint](https://google.github.io/osv.dev/post-v1-query/) to find known vulnerabilities. The request is as follows:
         ```
         curl -d \
         '{"package": {"name": "libxml2"}, "version":"2.11.3"}' \

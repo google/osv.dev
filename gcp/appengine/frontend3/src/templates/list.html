@@ -3,7 +3,7 @@
 
 {% macro table_header_cell(column_id, column_name, is_sortable, is_sorted, is_descending, hide_on_mobile) %}
 <span
-class="vuln-table-cell mdc-data-table__header-cell
+class="vuln-table-cell mdc-data-table__header-cell vuln-table-header
     {% if is_sortable %}mdc-data-table__header-cell--with-sort__DISABLED{% endif %}
     {% if is_sorted %}mdc-data-table__header-cell--sorted{% endif %}
     {% if is_descending %}mdc-data-table__header-cell--sorted-descending{% endif %}
@@ -76,12 +76,12 @@ data-column-id="{{ column_id }}"
   <div role="table" class="vuln-table mdc-data-table__table" aria-label="Vulnerability table">
     <div role="rowgroup" class="vuln-table-header">
       <div role="row" class="vuln-table-row mdc-data-table__header-row">
-        {{ table_header_cell('id', 'ID', False, False, False, False) }}
-        {{ table_header_cell('package', 'Packages', False, False, False, False) }}
-        {{ table_header_cell('summary', 'Summary', False, False, False, True) }}
-        {{ table_header_cell('affected-versions', 'Affected versions', False, False, False, True) }}
-        {{ table_header_cell('last-modified', 'Last modified', True, True, True, True) }}
-        {{ table_header_cell('fixed', 'Fix', False, False, False, True) }}
+        {{ table_header_cell('id', 'ID', is_sortable=False, is_sorted=False, is_descending=False, hide_on_mobile=False) }}
+        {{ table_header_cell('package', 'Packages', is_sortable=False, is_sorted=False, is_descending=False, hide_on_mobile=False) }}
+        {{ table_header_cell('summary', 'Summary', is_sortable=False, is_sorted=False, is_descending=False, hide_on_mobile=True) }}
+        {{ table_header_cell('affected-versions', 'Affected versions', is_sortable=False, is_sorted=False, is_descending=False, hide_on_mobile=True) }}
+        {{ table_header_cell('last-modified', 'Last modified', is_sortable=True, is_sorted=True, is_descending=True, hide_on_mobile=True) }}
+        {{ table_header_cell('fixed', 'Fix', is_sortable=False, is_sorted=False, is_descending=False, hide_on_mobile=True) }}
       </div>
     </div>
     <div role="rowgroup" class="vuln-table-rows mdc-data-table__content">
@@ -93,25 +93,38 @@ data-column-id="{{ column_id }}"
           </span>
           <span role="cell" class="vuln-table-cell vuln-packages mdc-data-table__cell">
             <ul class="packages">
-            {% for affected in vulnerability.affected %}
+            {%- if vulnerability.affected | map(attribute='package', default=[]) | list == [{}] -%}
+              {%- for repo in vulnerability.affected | git_repo | map('strip_scheme') -%}
+                {%- if loop.index < 8 -%}
+                  <li>{{ repo }}</li>
+                {%- elif loop.index == 8 -%}
+                  <li>...</li>
+                {%- endif -%}
+              {%- else -%}
+                <li>See details.</li>
+              {%- endfor -%}
+            {%- else -%}
+            {%- for affected in vulnerability.affected -%}
               <li>{{ affected.package.ecosystem }}/{{ affected.package.name }}</li>
-            {% endfor %}
+            {%- endfor -%}
+            {%- endif -%}
             </ul>
           </span>
           <span role="cell" class="vuln-table-cell vuln-summary mdc-data-table__cell hide-on-mobile">
-            {{ vulnerability.summary }}
+            {{ vulnerability.summary or "Not available, see record for full details" }}
           </span>
           <span role="cell" class="vuln-table-cell vuln-versions mdc-data-table__cell hide-on-mobile">
             <ul class="versions">
-            {% for version in vulnerability.affected | map(attribute='versions', default=[]) | sum(start=[]) %}
+            {#- https://stackoverflow.com/questions/31876069/is-it-possible-to-flatten-a-lists-of-lists-with-ansible-jinja2 -#}
+            {%- for version in vulnerability.affected | map(attribute='versions', default=[]) | sum(start=[]) -%}
               {% if loop.index < 8 %}
               <li class="version">{{ version }}</li>
-              {% elif loop.index == 8 %}
+              {%- elif loop.index == 8 -%}
               <li class="version">...</li>
-              {% endif %}
-            {% else %}
+              {%- endif -%}
+            {%- else -%}
               <li class="version">See details.</li>
-            {% endfor %}
+            {%- endfor -%}
           </ul>
           </span>
           <span role="cell" class="vuln-table-cell mdc-data-table__cell hide-on-mobile">
@@ -120,18 +133,18 @@ data-column-id="{{ column_id }}"
             </relative-time>
           </span>
           <span role="cell" class="vuln-table-cell vuln-fix-status mdc-data-table__cell hide-on-mobile">
-            {% if vulnerability.isFixed %}
+            {%- if vulnerability.isFixed -%}
             <span class="tag fix-available">Fix available</span>
-            {% else %}
+            {%- else -%}
             <span class="tag fix-unavailable">No fix available</span>
-            {% endif %}
+            {%- endif -%}
           </span>
         </div>
-        {% endfor %}
-        {% if vulnerabilities | length == 0 %}
+        {%- endfor -%}
+        {%- if vulnerabilities | length == 0 -%}
           <span class="no-results">No results</span>
-        {% endif %}
-        {% if page < total_pages %}
+        {%- endif -%}
+        {%- if page < total_pages -%}
           <turbo-frame id="vulnerability-table-page{{ page + 1 }}" data-turbo-action="advance" target="_top"
                        class="next-page-frame">
           <div class="next-page-container">
@@ -140,14 +153,14 @@ data-column-id="{{ column_id }}"
                   {%- if query %}&q={{ query }}{% endif %}
                   {%- if selected_ecosystem %}&ecosystem={{ selected_ecosystem }}{% endif %}">
             <span>Load more...</span>
-            {% if total_pages - page <= 3 %}
+            {%- if total_pages - page <= 3 -%}
               <span style="margin-left: 5px">({{ total_pages - page }} page{% if total_pages - page > 1 %}s{% endif %} left)</span>
-            {% endif %}
+            {%- endif -%}
           </a>
           <mwc-circular-progress class="next-page-indicator" indeterminate density="-4"></mwc-circular-progress>
           </div>
           </turbo-frame>
-        {% endif %}
+        {%- endif -%}
       </turbo-frame>
     </div>
   </div>

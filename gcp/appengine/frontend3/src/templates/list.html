@@ -3,7 +3,7 @@
 
 {% macro table_header_cell(column_id, column_name, is_sortable, is_sorted, is_descending, hide_on_mobile) %}
 <span
-class="vuln-table-cell mdc-data-table__header-cell
+class="vuln-table-cell mdc-data-table__header-cell vuln-table-header
     {% if is_sortable %}mdc-data-table__header-cell--with-sort__DISABLED{% endif %}
     {% if is_sorted %}mdc-data-table__header-cell--sorted{% endif %}
     {% if is_descending %}mdc-data-table__header-cell--sorted-descending{% endif %}

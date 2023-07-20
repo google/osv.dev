@@ -1250,5 +1250,19 @@ dl.vulnerability-details,
       list-style-type: decimal;
       margin-bottom: 16px;
     }
+
+    code {
+      background:lightgrey;
+      color: black;
+    }
+
+    .API {
+      border-radius: 15px;
+      background: lightgrey;
+      color: black;
+      padding: 15px;
+      overflow-y: hidden;
+      overflow-x: auto;
+    }
   }
 }

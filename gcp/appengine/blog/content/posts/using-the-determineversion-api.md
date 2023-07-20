@@ -40,11 +40,18 @@ To determine the version of libxml2 and find the associated vulnerabilities:
 Navigate to the indexer-api-caller folder in your local copy of the osv.dev repository. It is located in `osv.dev/tools/indexer-api-caller/`
 
 ### Step 2: Run the indexer-api-caller tool to access the determineversion API
-While in that folder, run the command `go run . -lib /path/to/library` where `path/to/library` is the path to your copy of libxml2. On my machine, the command looks like this: `go run . -lib ../../../libxml2`. 
+While in that folder, run the command:
+<div class="API"><code> `go run . -lib /path/to/library`</code></div> 
+
+where `path/to/library` is the path to your copy of libxml2. 
+
+On my machine, the command looks like this: 
+
+<div class="API"><code>go run . -lib ../../../libxml2</code></div> 
 
 ### Step 3: Inspect the response and choose the likely version
 The indexer-api-caller returns the determineversion API response, which we are now going to inspect. In order to save space in the post, I have cut the response to the top 4 potential libxml2 versions (out of 10 in the response). 
-    ```json
+<div class="API"><code>
     {
     "matches": [
         {
@@ -97,19 +104,20 @@ The indexer-api-caller returns the determineversion API response, which we are n
         },
     ]
     }
-    ```
+</code></div>
+
 The best match indicates that the likely libxml2 version is `2.11.3` based on 113 matching files. The confidence scores for versions `2.11.3`, `2.11.4`, `2.11.2`, and `2.11.0` are very close but we shouldn't think of them as equally likely to be the actual version. We recommend considering the version with the highest confidence score to be the project's version. When scores are equivalent, consider the number of matching files--which is why `2.11.3` is preferred in this case over `2.11.4`. `2.11.3` has one more matching file. 
 
 ### Step 4: Query for known vulnerabilities
 Now that we have the likely version, we can use the [`/v1/query` endpoint](https://google.github.io/osv.dev/post-v1-query/) to find known vulnerabilities. The request is as follows:
-    ```
+<div class="API"><code>
     curl -d \
     '{"package": {"name": "libxml2"}, "version":"2.11.3"}' \
     "https://api.osv.dev/v1/query"
-    ```
-    And we get a response:
+</code></div>
 
-        ```json
+And we get a response:
+<div class="API"><code>
         {
         "vulns": [
             {
@@ -171,7 +179,7 @@ Now that we have the likely version, we can use the [`/v1/query` endpoint](https
             }
         ]
         }
-        ```
+</code></div>
         
 ### Step 5: Consider the response
 Finally, we consider the response and draw conclusions. 

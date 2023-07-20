@@ -44,6 +44,7 @@ While in that folder, run the command:
 
 <div class="API"><code> `go run . -lib /path/to/library`</code></div> 
 
+
 where `path/to/library` is the path to your copy of libxml2. 
 
 On my machine, the command looks like this: 
@@ -52,7 +53,7 @@ On my machine, the command looks like this:
 
 ### Step 3: Inspect the response and choose the likely version
 The indexer-api-caller returns the determineversion API response, which we are now going to inspect. In order to save space in the post, I have cut the response to the top 4 potential libxml2 versions (out of 10 in the response). 
-<div class="API"><code>
+<div class="API"><pre>
     {
     "matches": [
         {
@@ -105,7 +106,7 @@ The indexer-api-caller returns the determineversion API response, which we are n
         },
     ]
     }
-</code></div>
+</pre></div>
 
 The best match indicates that the likely libxml2 version is `2.11.3` based on 113 matching files. The confidence scores for versions `2.11.3`, `2.11.4`, `2.11.2`, and `2.11.0` are very close but we shouldn't think of them as equally likely to be the actual version. We recommend considering the version with the highest confidence score to be the project's version. When scores are equivalent, consider the number of matching files--which is why `2.11.3` is preferred in this case over `2.11.4`. `2.11.3` has one more matching file. 
 
@@ -120,7 +121,7 @@ Now that we have the likely version, we can use the [/v1/query endpoint](https:/
 
 And we get a response:
 
-<div class="API"><code>
+<div class="API"><pre>
     {
     "vulns": [
         {
@@ -182,7 +183,7 @@ And we get a response:
         }
     ]
     }
-</code></div>
+</pre></div>
         
 ### Step 5: Consider the response
 Finally, we consider the response and draw conclusions. 

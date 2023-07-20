@@ -1,7 +1,7 @@
 ---
 title: "Using the determineversion API to find C/C++ vulnerabilities"
-date: 2023-07-24T16:00:00Z
-draft: true
+date: 2023-07-20T11:00:00+10:00
+draft: false
 author: OSV Team
 ---
 

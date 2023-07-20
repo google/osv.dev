@@ -41,6 +41,7 @@ Navigate to the indexer-api-caller folder in your local copy of the osv.dev repo
 
 ### Step 2: Run the indexer-api-caller tool to access the determineversion API
 While in that folder, run the command:
+
 <div class="API"><code> `go run . -lib /path/to/library`</code></div> 
 
 where `path/to/library` is the path to your copy of libxml2. 
@@ -109,7 +110,8 @@ The indexer-api-caller returns the determineversion API response, which we are n
 The best match indicates that the likely libxml2 version is `2.11.3` based on 113 matching files. The confidence scores for versions `2.11.3`, `2.11.4`, `2.11.2`, and `2.11.0` are very close but we shouldn't think of them as equally likely to be the actual version. We recommend considering the version with the highest confidence score to be the project's version. When scores are equivalent, consider the number of matching files--which is why `2.11.3` is preferred in this case over `2.11.4`. `2.11.3` has one more matching file. 
 
 ### Step 4: Query for known vulnerabilities
-Now that we have the likely version, we can use the [`/v1/query` endpoint](https://google.github.io/osv.dev/post-v1-query/) to find known vulnerabilities. The request is as follows:
+Now that we have the likely version, we can use the [/v1/query endpoint](https://google.github.io/osv.dev/post-v1-query/) to find known vulnerabilities. The request is as follows:
+
 <div class="API"><code>
     curl -d \
     '{"package": {"name": "libxml2"}, "version":"2.11.3"}' \
@@ -117,68 +119,69 @@ Now that we have the likely version, we can use the [`/v1/query` endpoint](https
 </code></div>
 
 And we get a response:
+
 <div class="API"><code>
+    {
+    "vulns": [
         {
-        "vulns": [
+        "id": "OSV-2021-777",
+        "summary": "Heap-use-after-free in xmlAddNextSibling",
+        "details": "OSS-Fuzz report: https://bugs.chromium.org/p/oss-fuzz/issues/detail?id=34461\n\n```\nCrash type: Heap-use-after-free READ 4\nCrash state:\nxmlAddNextSibling\nxmlXIncludeCopyRange\nxmlXIncludeCopyXPointer\n```\n",
+        "modified": "2023-05-19T14:06:37.864410Z",
+        "published": "2021-05-20T00:00:30.166614Z",
+        "references": [
             {
-            "id": "OSV-2021-777",
-            "summary": "Heap-use-after-free in xmlAddNextSibling",
-            "details": "OSS-Fuzz report: https://bugs.chromium.org/p/oss-fuzz/issues/detail?id=34461\n\n```\nCrash type: Heap-use-after-free READ 4\nCrash state:\nxmlAddNextSibling\nxmlXIncludeCopyRange\nxmlXIncludeCopyXPointer\n```\n",
-            "modified": "2023-05-19T14:06:37.864410Z",
-            "published": "2021-05-20T00:00:30.166614Z",
-            "references": [
-                {
-                "type": "REPORT",
-                "url": "https://bugs.chromium.org/p/oss-fuzz/issues/detail?id=34461"
-                }
-            ],
-            "affected": [
-                {
-                "package": {
-                    "name": "libxml2",
-                    "ecosystem": "OSS-Fuzz",
-                    "purl": "pkg:generic/libxml2"
-                },
-                "ranges": [
-                    {
-                    "type": "GIT",
-                    "repo": "https://gitlab.gnome.org/GNOME/libxml2.git",
-                    "events": [
-                        {
-                        "introduced": "6c128fd58a0e4641c23a345d413672494622db1b"
-                        }
-                    ]
-                    }
-                ],
-                "versions": [
-                    "CVE-2021-3541",
-                    "v2.9.11",
-                    "v2.9.12",
-                    "v2.9.13",
-                    "v2.9.14",
-                    "v2.10.0",
-                    "v2.10.1",
-                    "v2.10.2",
-                    "v2.10.3",
-                    "v2.10.4",
-                    "v2.11.0",
-                    "v2.11.1",
-                    "v2.11.2",
-                    "v2.11.3",
-                    "v2.11.4"
-                ],
-                "ecosystem_specific": {
-                    "severity": "HIGH"
-                },
-                "database_specific": {
-                    "source": "https://github.com/google/oss-fuzz-vulns/blob/main/vulns/libxml2/OSV-2021-777.yaml"
-                }
-                }
-            ],
-            "schema_version": "1.4.0"
+            "type": "REPORT",
+            "url": "https://bugs.chromium.org/p/oss-fuzz/issues/detail?id=34461"
             }
-        ]
+        ],
+        "affected": [
+            {
+            "package": {
+                "name": "libxml2",
+                "ecosystem": "OSS-Fuzz",
+                "purl": "pkg:generic/libxml2"
+            },
+            "ranges": [
+                {
+                "type": "GIT",
+                "repo": "https://gitlab.gnome.org/GNOME/libxml2.git",
+                "events": [
+                    {
+                    "introduced": "6c128fd58a0e4641c23a345d413672494622db1b"
+                    }
+                ]
+                }
+            ],
+            "versions": [
+                "CVE-2021-3541",
+                "v2.9.11",
+                "v2.9.12",
+                "v2.9.13",
+                "v2.9.14",
+                "v2.10.0",
+                "v2.10.1",
+                "v2.10.2",
+                "v2.10.3",
+                "v2.10.4",
+                "v2.11.0",
+                "v2.11.1",
+                "v2.11.2",
+                "v2.11.3",
+                "v2.11.4"
+            ],
+            "ecosystem_specific": {
+                "severity": "HIGH"
+            },
+            "database_specific": {
+                "source": "https://github.com/google/oss-fuzz-vulns/blob/main/vulns/libxml2/OSV-2021-777.yaml"
+            }
+            }
+        ],
+        "schema_version": "1.4.0"
         }
+    ]
+    }
 </code></div>
         
 ### Step 5: Consider the response

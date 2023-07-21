@@ -14,6 +14,7 @@ $osv-heading-size-mobile: 40px;
 $osv-heading-line-height: 70px;
 $osv-heading-line-height-mobile: 50px;
 $osv-mobile-breakpoint: 500px;
+$osv-border-radius-small: 4px;
 
 @use '@material/theme' with ($surface: $osv-background,
 );
@@ -113,7 +114,7 @@ pre {
   height: 36px;
   background: $osv-accent-color;
   color: $osv-text-color;
-  border-radius: 4px;
+  border-radius: $osv-border-radius-small;
   align-items: center;
   text-decoration: none;
 }
@@ -134,7 +135,7 @@ pre {
   color: #fff;
   text-align: center;
   padding: 5px;
-  border-radius: 4px;
+  border-radius: $osv-border-radius-small;
 
   max-width: 250px;
   line-height: 16px;
@@ -519,7 +520,7 @@ mwc-icon-button.mdc-data-table__sort-icon-button {
     background: $osv-text-color;
     color: $osv-background;
     padding: 0 7px;
-    border-radius: 4px;
+    border-radius: $osv-border-radius-small;
 
     &.fix-unavailable {
       background: $osv-red-300;
@@ -983,7 +984,7 @@ dl.vulnerability-details,
           max-width: 250px;
           line-height: 16px;
           padding: 5px;
-          border-radius: 4px;
+          border-radius: $osv-border-radius-small;
         }
       }
 
@@ -1297,8 +1298,12 @@ dl.vulnerability-details,
 
     pre {
       &>code {
+        // Hugo code gen embeds a code block, which will cause problems with padding
         padding: 0;
       }
+
+      border-radius: $osv-border-radius-small;
+      padding: 15px;
     }
 
     // .API {
@@ -1317,5 +1322,5 @@ code {
   font-family: $osv-heading-font-family;
   background: $osv-grey-800;
   padding: 2px 4px;
-  border-radius: 4px;
+  border-radius: $osv-border-radius-small;
 }

@@ -1164,6 +1164,7 @@ dl.vulnerability-details,
 .blog-page {
   .posts {
     max-width: 800px;
+    width: 100%;
     margin: 0 auto;
 
     .blog-entry {
@@ -1198,10 +1199,11 @@ dl.vulnerability-details,
   }
 
   .title {
-    font-size: 48px;
     display: block;
     font-family: $osv-heading-font-family;
     padding-bottom: 16px;
+    // 3rem is 3x16px=48px
+    font-size: clamp(1.8rem, 9vw, 3rem);
   }
 
   h2,
@@ -1250,6 +1252,7 @@ dl.vulnerability-details,
 .blog-post-page {
   .post {
     max-width: 800px;
+    width: 100%;
     margin: 0 auto;
     font-size: 16px;
   }

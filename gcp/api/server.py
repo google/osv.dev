@@ -439,7 +439,7 @@ def determine_version(version_query: osv_service_v1_pb2.VersionQuery,
 def valid_ecosystems():
   """Return the list of ecosystems considered valid."""
   query = osv.Bug.query(projection=[osv.Bug.ecosystem], distinct=True)
-  return [bug.ecosystem[0] for bug in query if bug.ecosystem]
+  yield [bug.ecosystem[0] for bug in query if bug.ecosystem]
 
 
 @ndb.tasklet

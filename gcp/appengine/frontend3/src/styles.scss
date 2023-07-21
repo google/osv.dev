@@ -1204,6 +1204,15 @@ dl.vulnerability-details,
     padding-bottom: 16px;
   }
 
+  h2,
+  h3,
+  h4 {
+    line-height: 1.1;
+    font-weight: 700;
+    margin-top: 3rem;
+    margin-bottom: 1.5rem;
+  }
+
   p {
     margin-bottom: 16px;
     line-height: 1.6;
@@ -1215,12 +1224,6 @@ dl.vulnerability-details,
     max-width: 800px;
     margin: 0 auto;
     font-size: 16px;
-
-    h2,
-    h3,
-    pre {
-      margin: 15px 0;
-    }
 
     .author {
       font-size: 18px;

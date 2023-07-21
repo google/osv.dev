@@ -436,6 +436,13 @@ def determine_version(version_query: osv_service_v1_pb2.VersionQuery,
 
 
 @ndb.tasklet
+def valid_ecosystems():
+  """Return the list of ecosystems considered valid."""
+  query = osv.Bug.query(project=[osv.Bug.ecosystem], distinct=True)
+  return [bug.ecosystems[0] for bug in query if bug.ecosystem]
+
+
+@ndb.tasklet
 def do_query(query, context: QueryContext, include_details=True):
   """Do a query."""
   if query.HasField('package'):
@@ -446,6 +453,10 @@ def do_query(query, context: QueryContext, include_details=True):
     package_name = ''
     ecosystem = ''
     purl_str = ''
+
+  if ecosystem and ecosystem not in valid_ecosystems():
+    context.service_context.abort(grpc.StatusCode.INVALID_ARGUMENT,
+                                  'Invalid ecosystem.')
 
   purl = None
   purl_version = None

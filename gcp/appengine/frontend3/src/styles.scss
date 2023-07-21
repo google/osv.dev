@@ -1217,6 +1217,33 @@ dl.vulnerability-details,
     margin-bottom: 16px;
     line-height: 1.6;
   }
+
+  a {
+    color: #C9F5F7
+  }
+
+  pre {
+    &>code {
+      // Hugo code gen embeds a code block, which will cause problems with padding
+      padding: 0;
+      background-color: unset;
+
+      // Default is display grid for some reason?
+      display: flex;
+      flex-direction: column;
+      overflow-x: auto;
+    }
+
+    border-radius: $osv-border-radius-small;
+    padding: 15px;
+  }
+
+  .author {
+    font-size: 18px;
+    font-family: $osv-body-font-family;
+    font-weight: bold;
+    padding-bottom: 20px;
+  }
 }
 
 .blog-post-page {
@@ -1224,27 +1251,6 @@ dl.vulnerability-details,
     max-width: 800px;
     margin: 0 auto;
     font-size: 16px;
-
-    .author {
-      font-size: 18px;
-      font-family: $osv-body-font-family;
-      font-weight: bold;
-      padding-bottom: 20px;
-    }
-
-    a {
-      color: #C9F5F7
-    }
-
-    pre {
-      &>code {
-        // Hugo code gen embeds a code block, which will cause problems with padding
-        padding: 0;
-      }
-
-      border-radius: $osv-border-radius-small;
-      padding: 15px;
-    }
 
     // .API {
     //   border-radius: 15px;

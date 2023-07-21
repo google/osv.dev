@@ -1236,6 +1236,7 @@ dl.vulnerability-details,
 
     border-radius: $osv-border-radius-small;
     padding: 15px;
+    margin-bottom: 16px;
   }
 
   .author {
@@ -1251,16 +1252,6 @@ dl.vulnerability-details,
     max-width: 800px;
     margin: 0 auto;
     font-size: 16px;
-
-    // .API {
-    //   border-radius: 15px;
-    //   background: lightgrey;
-    //   color: black;
-    //   padding: 15px;
-    //   overflow-y: hidden;
-    //   overflow-x: auto;
-    //   margin: 10px;
-    // }
   }
 }
 

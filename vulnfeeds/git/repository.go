@@ -65,6 +65,7 @@ type RepoTagsMap struct {
 // RepoTags acts as a cache for RepoTags results, keyed on the repo's URL.
 type RepoTagsCache map[string]RepoTagsMap
 
+// RemoteRepoRefsWithRetry will exponentially retry listing the peeled references of the repoURL up to retries times.
 func RemoteRepoRefsWithRetry(repoURL string, retries uint64) (refs []*plumbing.Reference, err error) {
 	remoteConfig := &config.RemoteConfig{
 		Name: "source",

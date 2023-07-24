@@ -447,6 +447,10 @@ def do_query(query, context: QueryContext, include_details=True):
     ecosystem = ''
     purl_str = ''
 
+  if ecosystem and not ecosystems.get(ecosystem):
+    context.service_context.abort(grpc.StatusCode.INVALID_ARGUMENT,
+                                  'Invalid ecosystem.')
+
   purl = None
   purl_version = None
   if purl_str:

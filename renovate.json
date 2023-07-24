@@ -15,12 +15,12 @@
     },
     {
       "matchPaths": ["gcp/appengine/"],
-      "matchLanguages": ["python"],
+      "matchCategories": ["python"],
       "groupName": "appengine-backend"
     },
     {
       "matchPaths": ["gcp/appengine/"],
-      "matchLanguages": ["js"],
+      "matchCategories": ["js"],
       "groupName": "appengine-frontend"
     },
     {
@@ -33,12 +33,12 @@
     },
     {
       "matchPaths": ["docker/"],
-      "matchLanguages": ["python"],
+      "matchCategories": ["python"],
       "groupName": "workers"
     },
     {
       "matchPaths": ["docker/"],
-      "matchLanguages": ["golang"],
+      "matchCategories": ["golang"],
       "groupName": "indexer"
     },
     {

@@ -115,7 +115,7 @@ And we get a response:
 		{
 		"id": "OSV-2021-777",
 		"summary": "Heap-use-after-free in xmlAddNextSibling",
-		"details": "OSS-Fuzz report: https://bugs.chromium.org/p/oss-fuzz/issues/detail?id=34461\n\n```\nCrash type: Heap-use-after-free  READ4\nCrashstate:\nxmlAddNextSibling\nxmlXIncludeCopyRange\nxmlXIncludeCopyXPointer\n```\n",
+		"details": "OSS-Fuzz report: https://bugs.chromium.org/p/oss-fuzz/issues/detail?id=34461\n\n```\nCrash type: Heap-use-after-free  READ4\nCrash state:\nxmlAddNextSibling\nxmlXIncludeCopyRange\nxmlXIncludeCopyXPointer\n```\n",
 		"modified": "2023-05-19T14:06:37.864410Z",
 		"published": "2021-05-20T00:00:30.166614Z",
 		"references": [
@@ -175,7 +175,7 @@ And we get a response:
 		
 ### Step 5: Consider the response
 Finally, we consider the response and draw conclusions. 
-	
+
 To be sure we have caught any potential vulnerabilities, we could make further queries for other versions with similar scores. It is our opinion that this is generally unnecessary, but it could be done. 
 
 In this case, even if the actual version is not `2.11.3`, we can be fairly confident that the vulnerability that we found ([OSV-2021-777](https://osv.dev/vulnerability/OSV-2021-777)) is in our local copy of libxml2. This is because there is overlap between the other likely versions of libxml2 and the versions vulnerable to OSV-2021-777.

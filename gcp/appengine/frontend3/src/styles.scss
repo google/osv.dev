@@ -14,9 +14,9 @@ $osv-heading-size-mobile: 40px;
 $osv-heading-line-height: 70px;
 $osv-heading-line-height-mobile: 50px;
 $osv-mobile-breakpoint: 500px;
+$osv-border-radius-small: 4px;
 
-@use '@material/theme' with (
-  $surface: $osv-background,
+@use '@material/theme' with ($surface: $osv-background,
 );
 @use '@material/layout-grid/mdc-layout-grid';
 @use '@material/data-table/data-table';
@@ -35,7 +35,9 @@ $osv-mobile-breakpoint: 500px;
 
 /** Reset */
 
-*, *::before, *::after {
+*,
+*::before,
+*::after {
   box-sizing: border-box;
 }
 
@@ -43,16 +45,23 @@ $osv-mobile-breakpoint: 500px;
   margin: 0;
 }
 
-html, body {
+html,
+body {
   height: 100%;
   scroll-behavior: smooth;
 }
 
-ol, ul, menu {
+ol,
+ul,
+menu {
   list-style: none;
 }
 
-img, picture, video, canvas, svg {
+img,
+picture,
+video,
+canvas,
+svg {
   max-width: 100%;
 }
 
@@ -105,7 +114,7 @@ pre {
   height: 36px;
   background: $osv-accent-color;
   color: $osv-text-color;
-  border-radius: 4px;
+  border-radius: $osv-border-radius-small;
   align-items: center;
   text-decoration: none;
 }
@@ -126,7 +135,7 @@ pre {
   color: #fff;
   text-align: center;
   padding: 5px;
-  border-radius: 4px;
+  border-radius: $osv-border-radius-small;
 
   max-width: 250px;
   line-height: 16px;
@@ -170,6 +179,7 @@ pre {
   }
 
   .tabs {
+
     // Remove external link indicator.
     a.logo-img::after {
       display: none;
@@ -196,18 +206,22 @@ pre {
         margin: -$active-spacing 0;
         padding: $active-spacing 0;
         border-bottom: 8px solid #fff0;
+
         a {
           text-decoration: none;
         }
+
         &.active {
           border-bottom: 8px solid $osv-text-color;
         }
+
         &:hover {
           border-bottom: 8px solid $osv-text-color;
           opacity: 70%;
         }
       }
     }
+
     .hamburger {
       display: none;
     }
@@ -266,20 +280,20 @@ pre {
 
     // Show menu when clicked.
     #hamburger-checkbox:checked {
-      ~ .tabs {
+      ~.tabs {
         transform: translateY(0%);
         transition: transform 0.5s ease;
       }
 
-      ~ .hamburger span:nth-child(1) {
+      ~.hamburger span:nth-child(1) {
         transform: translateY(4px) rotate(45deg);
       }
 
-      ~ .hamburger span:nth-child(2) {
+      ~.hamburger span:nth-child(2) {
         opacity: 0;
       }
 
-      ~ .hamburger span:nth-child(3) {
+      ~.hamburger span:nth-child(3) {
         transform: translateY(-6px) rotate(-45deg);
       }
     }
@@ -302,18 +316,20 @@ pre {
 
     // We use <spicy-sections> to collapse the ecosystem list only on mobile.
     // On desktop, display the full list.
-    --const-mq-affordances:
-      [screen and (max-width: #{$osv-mobile-breakpoint}) ] collapse;
+    --const-mq-affordances: [screen and (max-width: #{$osv-mobile-breakpoint})] collapse;
+
     &::part(tab-bar) {
       // The tab bar affordance isn't used, so hide it.
       display: none;
     }
+
     &::part(content-panels) {
       // Because the shadow root of <spicy-sections> actually wraps our content
       // we need to use display: contents; in order for flex to apply as if the
       // child elements are direct descendants of the parent flex container.
       display: contents;
     }
+
     .spicy-content {
       // Expanded contents also should act as if they were direct descendants
       // of our flex container.
@@ -325,6 +341,7 @@ pre {
     [affordance=collapse] {
       display: flex;
       align-items: center;
+
       // The ::before on the collapsible is used to display the chevron.
       &::before {
         display: block;
@@ -355,7 +372,7 @@ pre {
       border-right: 1px solid $osv-grey-600;
     }
 
-    input[type=radio]:checked + .ecosystem-label {
+    input[type=radio]:checked+.ecosystem-label {
       background: $osv-text-color;
       color: $osv-accent-color;
     }
@@ -386,6 +403,7 @@ pre {
   // Hax: Use our own icon because mwc-textfield supplies a dark gray one. Maybe M3 will fix it:
   // https://github.com/material-components/material-web/commit/0c200ecf04a533b1dc56932c3979e3e5d8fb7d73
   position: relative;
+
   .search-icon {
     position: absolute;
     top: 50%;
@@ -393,7 +411,9 @@ pre {
   }
 
   // Hax: Get rid of the material underline.
-  overflow: hidden; /* The underline would otherwise show underneath the border radius. */
+  overflow: hidden;
+
+  /* The underline would otherwise show underneath the border radius. */
   &::after {
     margin-bottom: -4px;
     background: #fff;
@@ -423,12 +443,14 @@ mwc-icon-button.mdc-data-table__sort-icon-button {
 
   // Override MDC table styling.
   border-width: 0;
+
   .mdc-data-table__header-cell {
     border-bottom-color: $osv-text-color;
     border-bottom-style: solid;
     font-family: $osv-heading-font-family;
     font-weight: bold;
   }
+
   .mdc-data-table__cell {
     border-bottom-style: dashed;
   }
@@ -437,15 +459,19 @@ mwc-icon-button.mdc-data-table__sort-icon-button {
   .vuln-table {
     display: table;
   }
+
   .vuln-table-header {
     display: table-header-group;
   }
+
   .vuln-table-rows {
     display: table-row-group;
   }
+
   .vuln-table-row {
     display: table-row;
   }
+
   .vuln-table-cell {
     display: table-cell;
   }
@@ -454,14 +480,17 @@ mwc-icon-button.mdc-data-table__sort-icon-button {
   .vuln-table {
     white-space: normal;
   }
+
   .vuln-table-cell {
     vertical-align: top;
     padding-top: 16px;
     padding-bottom: 16px;
+
     &.vuln-table-header {
       vertical-align: middle;
     }
   }
+
   .vuln-versions,
   .vuln-fix-status {
     white-space: nowrap;
@@ -480,6 +509,7 @@ mwc-icon-button.mdc-data-table__sort-icon-button {
     display: grid;
     grid-template-columns: 50% 50%;
   }
+
   .version {
     display: block;
   }
@@ -490,7 +520,7 @@ mwc-icon-button.mdc-data-table__sort-icon-button {
     background: $osv-text-color;
     color: $osv-background;
     padding: 0 7px;
-    border-radius: 4px;
+    border-radius: $osv-border-radius-small;
 
     &.fix-unavailable {
       background: $osv-red-300;
@@ -501,6 +531,7 @@ mwc-icon-button.mdc-data-table__sort-icon-button {
   .vuln-table-rows {
     transition: filter .3s;
   }
+
   &[busy] .vuln-table-rows {
     filter: blur(4px);
   }
@@ -515,6 +546,7 @@ mwc-icon-button.mdc-data-table__sort-icon-button {
   turbo-frame[busy] .next-page-button {
     display: none;
   }
+
   turbo-frame[busy] .next-page-indicator {
     display: block;
   }
@@ -545,9 +577,11 @@ mwc-icon-button.mdc-data-table__sort-icon-button {
 
 .vulnerability-page {
   font-size: 15px;
+
   .title {
     font-size: $osv-heading-size;
   }
+
   max-width: 1200px;
   margin: 0 auto;
 
@@ -580,7 +614,10 @@ dl.vulnerability-details,
   dd.details {
     overflow-wrap: break-word;
 
-    h1, h2, h3, h4 {
+    h1,
+    h2,
+    h3,
+    h4 {
       font-family: $osv-body-font-family;
       font-weight: bold;
       margin-bottom: 16px;
@@ -590,7 +627,8 @@ dl.vulnerability-details,
       margin-bottom: 16px;
     }
 
-    ol, ul {
+    ol,
+    ul {
       margin-bottom: 16px;
     }
 
@@ -602,13 +640,8 @@ dl.vulnerability-details,
       list-style: circle;
     }
 
-    code {
-      font-family: $osv-heading-font-family;
-      background: #333;
-    }
-
     pre {
-      background: #333;
+      background: $osv-grey-800;
       padding: 8px;
       border-radius: 8px;
       white-space: pre;
@@ -647,9 +680,7 @@ dl.vulnerability-details,
   }
 
   // Tab bar styling.
-  --const-mq-affordances:
-    [screen and (max-width: #{$osv-mobile-breakpoint}) ] collapse |
-    [screen and (min-width: #{$osv-mobile-breakpoint+1}) ] tab-bar;
+  --const-mq-affordances: [screen and (max-width: #{$osv-mobile-breakpoint})] collapse | [screen and (min-width: #{$osv-mobile-breakpoint+1})] tab-bar;
 
   .force-collapse {
     --const-mq-affordances: [screen] collapse;
@@ -741,6 +772,7 @@ dl.vulnerability-details,
       font-weight: bold;
       text-transform: uppercase;
     }
+
     .vuln-name {
       display: inline;
       font-weight: normal;
@@ -759,6 +791,7 @@ dl.vulnerability-details,
 
     // Default tab spacing of 20px. First tab should match grid margin.
     margin-left: 20px;
+
     &:first-of-type {
       margin-left: var(--mdc-layout-grid-margin-desktop);
     }
@@ -775,10 +808,12 @@ dl.vulnerability-details,
       font-weight: bold;
       text-transform: uppercase;
     }
+
     .vuln-name {
       display: block;
       font-weight: normal;
     }
+
     .vuln-title-divider {
       display: none;
     }
@@ -845,6 +880,7 @@ dl.vulnerability-details,
     p {
       margin-bottom: 20px;
     }
+
     margin-bottom: 24px;
   }
 
@@ -871,19 +907,24 @@ dl.vulnerability-details,
         position: absolute;
         z-index: 1;
       }
+
       .ecosystems-line-mid {
         top: 105px;
         border-top-style: solid;
       }
+
       .ecosystems-line-0 {
         top: 0px;
       }
+
       .ecosystems-line-1 {
         top: 52px;
       }
+
       .ecosystems-line-2 {
         top: 157px;
       }
+
       .ecosystems-line-3 {
         top: 207px;
       }
@@ -911,6 +952,7 @@ dl.vulnerability-details,
         text-align: center;
         font-family: $osv-heading-font-family;
       }
+
       .ecosystem-count-wrapper {
         position: relative;
         top: -$ecosystem-name-height;
@@ -920,6 +962,7 @@ dl.vulnerability-details,
           color: inherit;
         }
       }
+
       .ecosystem-count {
         font-family: $osv-heading-font-family;
         position: absolute;
@@ -941,7 +984,7 @@ dl.vulnerability-details,
           max-width: 250px;
           line-height: 16px;
           padding: 5px;
-          border-radius: 4px;
+          border-radius: $osv-border-radius-small;
         }
       }
 
@@ -950,6 +993,7 @@ dl.vulnerability-details,
         cursor: pointer;
 
         z-index: 2;
+
         .tooltip {
           display: block;
         }
@@ -1099,6 +1143,7 @@ dl.vulnerability-details,
       line-height: 26px;
       text-align: center;
     }
+
     .cta {
       margin: 32px 0;
       display: flex;
@@ -1116,78 +1161,14 @@ dl.vulnerability-details,
   }
 }
 
-.faq-page {
-  .title,
-  .faq-title {
-    font-size: 60px;
-  }
-
-  .faq-title {
-    margin-top: 40px;
-    margin-bottom: 48px;
-  }
-
-  .questions {
-    max-width: 800px;
-    margin: 0 auto;
-
-    --const-mq-affordances:
-      [screen] collapse
-    ;
-
-    .question {
-      border-top: 1px dotted #a0a0a0;
-      cursor: pointer;
-      padding: 20px 10px;
-      font-family: $osv-body-font-family;
-      font-size: 20px;
-      font-weight: bold;
-
-      &:hover {
-        background-color: $osv-grey-800;
-      }
-    }
-
-    [affordance=collapse] {
-      &::before {
-        padding: 0 8px;
-        // HACK: Invert the black chevron to white. The chevron is set using
-        // background-image, so we can't use the CSS fill property on it.
-        filter: invert(100%);
-      }
-    }
-
-    .answer {
-      margin-left: 20px;
-      padding-bottom: 20px;
-      padding-top: 20px;
-      font-size: 16px;
-
-      p {
-        margin-bottom: 16px;
-      }
-
-      li {
-        list-style-type: decimal;
-      }
-    }
-  }
-}
-
 .blog-page {
   .posts {
     max-width: 800px;
+    width: 100%;
     margin: 0 auto;
 
     .blog-entry {
-      padding-bottom: 48px;
-
-      .title {
-        font-size: 48px;
-        display: block;
-        font-family: $osv-heading-font-family;
-        padding-bottom: 16px;
-      }
+      padding-bottom: 24px;
 
       .author {
         font-size: 18px;
@@ -1200,45 +1181,86 @@ dl.vulnerability-details,
         font-size: 16px;
       }
 
-      p {
-        padding-bottom: 16px;
-      }
     }
+  }
+}
+
+.blog-post-page,
+.blog-page {
+
+  ul,
+  ol {
+    list-style-type: initial;
+    margin-bottom: 16px;
+  }
+
+  li {
+    margin-bottom: 6px;
+  }
+
+  .title {
+    display: block;
+    font-family: $osv-heading-font-family;
+    padding-bottom: 16px;
+    // 3rem is 3x16px=48px
+    font-size: clamp(1.8rem, 9vw, 3rem);
+  }
+
+  h2,
+  h3,
+  h4 {
+    line-height: 1.1;
+    font-weight: 700;
+    margin-top: 3rem;
+    margin-bottom: 1.5rem;
+  }
+
+  p {
+    margin-bottom: 16px;
+    line-height: 1.6;
+  }
+
+  a {
+    color: #C9F5F7
+  }
+
+  pre {
+    &>code {
+      // Hugo code gen embeds a code block, which will cause problems with padding
+      padding: 0;
+      background-color: unset;
+
+      // Default is display grid for some reason?
+      display: flex;
+      flex-direction: column;
+      overflow-x: auto;
+    }
+
+    border-radius: $osv-border-radius-small;
+    padding: 15px;
+    margin-bottom: 16px;
+  }
+
+  .author {
+    font-size: 18px;
+    font-family: $osv-body-font-family;
+    font-weight: bold;
+    padding-bottom: 20px;
   }
 }
 
 .blog-post-page {
   .post {
     max-width: 800px;
+    width: 100%;
     margin: 0 auto;
     font-size: 16px;
-
-    h2,
-    h3,
-    pre {
-      margin: 15px 0;
-    }
-
-    .title {
-      font-size: 48px;
-      font-family: $osv-heading-font-family;
-      padding-bottom: 16px;
-    }
-
-    .author {
-      font-size: 18px;
-      font-family: $osv-body-font-family;
-      font-weight: bold;
-      padding-bottom: 20px;
-    }
-
-    p {
-      margin-bottom: 16px;
-      line-height: 1.6;
-    }
-
-    a {
-      color: #C9F5F7
-    }
   }
+}
+
+code {
+  font-family: $osv-heading-font-family;
+  background: $osv-grey-800;
+  padding: 2px 4px;
+  border-radius: $osv-border-radius-small;
 }

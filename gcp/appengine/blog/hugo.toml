@@ -1,3 +1,7 @@
 baseURL = 'http://osv.dev/blog/'
 languageCode = 'en-us'
 title = 'OSV Blog'
+[markup]
+[markup.highlight]
+style = 'native'
+tabWidth = 2

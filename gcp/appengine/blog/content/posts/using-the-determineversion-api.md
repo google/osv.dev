@@ -44,138 +44,138 @@ While in that folder, run the command `go run . -lib /path/to/library` where `pa
 
 ### Step 3: Inspect the response and choose the likely version
 The indexer-api-caller returns the determineversion API response, which we are now going to inspect. In order to save space in the post, I have cut the response to the top 4 potential libxml2 versions (out of 10 in the response). 
-    ```json
-    {
-    "matches": [
-        {
-        "score": 0.7180851063829787,
-        "repo_info": {
-            "type": "GIT",
-            "address": "https://gitlab.gnome.org/GNOME/libxml2.git",
-            "tag": "v2.11.3",
-            "version": "2.11.3",
-            "commit": "787ae0390a3b90a76c2c54d6a18d7f1abe888c64"
-        },
-        "minimum_file_matches": "113",
-        "estimated_diff_files": "53"
-        },
-        {
-        "score": 0.7180851063829787,
-        "repo_info": {
-            "type": "GIT",
-            "address": "https://gitlab.gnome.org/GNOME/libxml2.git",
-            "tag": "v2.11.4",
-            "version": "2.11.4",
-            "commit": "2e9f7860a9cb8be29eca90b7409ef0278d30ef10"
-        },
-        "minimum_file_matches": "112",
-        "estimated_diff_files": "53"
-        },
-        {
-        "score": 0.7074468085106383,
-        "repo_info": {
-            "type": "GIT",
-            "address": "https://gitlab.gnome.org/GNOME/libxml2.git",
-            "tag": "v2.11.2",
-            "version": "2.11.2",
-            "commit": "838bf42d54f94c8ff99b6e5022899a32875ed5d7"
-        },
-        "minimum_file_matches": "112",
-        "estimated_diff_files": "55"
-        },
-        {
-        "score": 0.6968085106382979,
-        "repo_info": {
-            "type": "GIT",
-            "address": "https://gitlab.gnome.org/GNOME/libxml2.git",
-            "tag": "v2.11.0",
-            "version": "2.11.0",
-            "commit": "f296934ade688baab79caf1c62a82149ad78accf"
-        },
-        "minimum_file_matches": "110",
-        "estimated_diff_files": "57"
-        },
-    ]
-    }
-    ```
+```json
+{
+	"matches": [
+		{
+		"score": 0.7180851063829787,
+		"repo_info": {
+			"type": "GIT",
+			"address": "https://gitlab.gnome.org/GNOME/libxml2.git",
+			"tag": "v2.11.3",
+			"version": "2.11.3",
+			"commit": "787ae0390a3b90a76c2c54d6a18d7f1abe888c64"
+		},
+		"minimum_file_matches": "113",
+		"estimated_diff_files": "53"
+		},
+		{
+		"score": 0.7180851063829787,
+		"repo_info": {
+			"type": "GIT",
+			"address": "https://gitlab.gnome.org/GNOME/libxml2.git",
+			"tag": "v2.11.4",
+			"version": "2.11.4",
+			"commit": "2e9f7860a9cb8be29eca90b7409ef0278d30ef10"
+		},
+		"minimum_file_matches": "112",
+		"estimated_diff_files": "53"
+		},
+		{
+		"score": 0.7074468085106383,
+		"repo_info": {
+			"type": "GIT",
+			"address": "https://gitlab.gnome.org/GNOME/libxml2.git",
+			"tag": "v2.11.2",
+			"version": "2.11.2",
+			"commit": "838bf42d54f94c8ff99b6e5022899a32875ed5d7"
+		},
+		"minimum_file_matches": "112",
+		"estimated_diff_files": "55"
+		},
+		{
+		"score": 0.6968085106382979,
+		"repo_info": {
+			"type": "GIT",
+			"address": "https://gitlab.gnome.org/GNOME/libxml2.git",
+			"tag": "v2.11.0",
+			"version": "2.11.0",
+			"commit": "f296934ade688baab79caf1c62a82149ad78accf"
+		},
+		"minimum_file_matches": "110",
+		"estimated_diff_files": "57"
+		},
+	]
+}
+```
 The best match indicates that the likely libxml2 version is `2.11.3` based on 113 matching files. The confidence scores for versions `2.11.3`, `2.11.4`, `2.11.2`, and `2.11.0` are very close but we shouldn't think of them as equally likely to be the actual version. We recommend considering the version with the highest confidence score to be the project's version. When scores are equivalent, consider the number of matching files--which is why `2.11.3` is preferred in this case over `2.11.4`. `2.11.3` has one more matching file. 
 
 ### Step 4: Query for known vulnerabilities
 Now that we have the likely version, we can use the [`/v1/query` endpoint](https://google.github.io/osv.dev/post-v1-query/) to find known vulnerabilities. The request is as follows:
-    ```
-    curl -d \
-    '{"package": {"name": "libxml2"}, "version":"2.11.3"}' \
-    "https://api.osv.dev/v1/query"
-    ```
-    And we get a response:
+```bash
+curl -d \
+	'{"package": {"name": "libxml2"}, "version":"2.11.3"}' \
+	"https://api.osv.dev/v1/query"
+```
+And we get a response:
 
-        ```json
-        {
-        "vulns": [
-            {
-            "id": "OSV-2021-777",
-            "summary": "Heap-use-after-free in xmlAddNextSibling",
-            "details": "OSS-Fuzz report: https://bugs.chromium.org/p/oss-fuzz/issues/detail?id=34461\n\n```\nCrash type: Heap-use-after-free READ 4\nCrash state:\nxmlAddNextSibling\nxmlXIncludeCopyRange\nxmlXIncludeCopyXPointer\n```\n",
-            "modified": "2023-05-19T14:06:37.864410Z",
-            "published": "2021-05-20T00:00:30.166614Z",
-            "references": [
-                {
-                "type": "REPORT",
-                "url": "https://bugs.chromium.org/p/oss-fuzz/issues/detail?id=34461"
-                }
-            ],
-            "affected": [
-                {
-                "package": {
-                    "name": "libxml2",
-                    "ecosystem": "OSS-Fuzz",
-                    "purl": "pkg:generic/libxml2"
-                },
-                "ranges": [
-                    {
-                    "type": "GIT",
-                    "repo": "https://gitlab.gnome.org/GNOME/libxml2.git",
-                    "events": [
-                        {
-                        "introduced": "6c128fd58a0e4641c23a345d413672494622db1b"
-                        }
-                    ]
-                    }
-                ],
-                "versions": [
-                    "CVE-2021-3541",
-                    "v2.9.11",
-                    "v2.9.12",
-                    "v2.9.13",
-                    "v2.9.14",
-                    "v2.10.0",
-                    "v2.10.1",
-                    "v2.10.2",
-                    "v2.10.3",
-                    "v2.10.4",
-                    "v2.11.0",
-                    "v2.11.1",
-                    "v2.11.2",
-                    "v2.11.3",
-                    "v2.11.4"
-                ],
-                "ecosystem_specific": {
-                    "severity": "HIGH"
-                },
-                "database_specific": {
-                    "source": "https://github.com/google/oss-fuzz-vulns/blob/main/vulns/libxml2/OSV-2021-777.yaml"
-                }
-                }
-            ],
-            "schema_version": "1.4.0"
-            }
-        ]
-        }
-        ```
-        
+```json
+{
+	"vulns": [
+		{
+		"id": "OSV-2021-777",
+		"summary": "Heap-use-after-free in xmlAddNextSibling",
+		"details": "OSS-Fuzz report: https://bugs.chromium.org/p/oss-fuzz/issues/detail?id=34461\n\n```\nCrash type: Heap-use-after-free  READ4\nCrashstate:\nxmlAddNextSibling\nxmlXIncludeCopyRange\nxmlXIncludeCopyXPointer\n```\n",
+		"modified": "2023-05-19T14:06:37.864410Z",
+		"published": "2021-05-20T00:00:30.166614Z",
+		"references": [
+			{
+			"type": "REPORT",
+			"url": "https://bugs.chromium.org/p/oss-fuzz/issues/detail?id=34461"
+			}
+		],
+		"affected": [
+			{
+			"package": {
+				"name": "libxml2",
+				"ecosystem": "OSS-Fuzz",
+				"purl": "pkg:generic/libxml2"
+			},
+			"ranges": [
+				{
+				"type": "GIT",
+				"repo": "https://gitlab.gnome.org/GNOME/libxml2.git",
+				"events": [
+					{
+					"introduced": "6c128fd58a0e4641c23a345d413672494622db1b"
+					}
+				]
+				}
+			],
+			"versions": [
+				"CVE-2021-3541",
+				"v2.9.11",
+				"v2.9.12",
+				"v2.9.13",
+				"v2.9.14",
+				"v2.10.0",
+				"v2.10.1",
+				"v2.10.2",
+				"v2.10.3",
+				"v2.10.4",
+				"v2.11.0",
+				"v2.11.1",
+				"v2.11.2",
+				"v2.11.3",
+				"v2.11.4"
+			],
+			"ecosystem_specific": {
+				"severity": "HIGH"
+			},
+			"database_specific": {
+				"source": "https://github.com/google/oss-fuzz-vulns/blob/main/vulns/libxml2/OSV-2021-777.yaml"
+			}
+			}
+		],
+		"schema_version": "1.4.0"
+		}
+	]
+}
+```
+		
 ### Step 5: Consider the response
 Finally, we consider the response and draw conclusions. 
-    
+	
 To be sure we have caught any potential vulnerabilities, we could make further queries for other versions with similar scores. It is our opinion that this is generally unnecessary, but it could be done. 
 
 In this case, even if the actual version is not `2.11.3`, we can be fairly confident that the vulnerability that we found ([OSV-2021-777](https://osv.dev/vulnerability/OSV-2021-777)) is in our local copy of libxml2. This is because there is overlap between the other likely versions of libxml2 and the versions vulnerable to OSV-2021-777.

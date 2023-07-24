@@ -1,4 +1,5 @@
-# Copyright 2021 Google LLC
+#!/bin/bash -x
+# Copyright 2023 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -12,20 +13,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-FROM gcr.io/oss-vdb/worker
 
-RUN apt-get update && \
-    apt-get install -y \
-    wget \
-    google-cloud-sdk-datastore-emulator \
-    openjdk-11-jre  # Needed for Datastore emulator.
-
-COPY daemon.json /etc/docker/daemon.json
-COPY install_go.sh /tmp/install_go.sh
-
-RUN "/tmp/install_go.sh" "/tmp"
-ENV PATH "$PATH:/root/.go/bin:/root/go/bin"
-
-RUN go install -tags extended github.com/gohugoio/hugo@v0.111.3
-
-ENTRYPOINT []
+docker build -t gcr.io/oss-vdb/deployment:$1 -t gcr.io/oss-vdb/deployment:latest . && \
+gcloud docker -- push gcr.io/oss-vdb/deployment:$1 && \
+gcloud docker -- push gcr.io/oss-vdb/deployment:latest

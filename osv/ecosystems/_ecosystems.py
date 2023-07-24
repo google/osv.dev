@@ -21,7 +21,7 @@ from .nuget import NuGet
 from .packagist import Packagist
 from .pub import Pub
 from .pypi import PyPI
-from .r import R
+from .cran import CRAN
 from .rubygems import RubyGems
 from .semver_ecosystem_helper import SemverEcosystem
 
@@ -31,7 +31,7 @@ _ecosystems = {
     'Packagist': Packagist(),
     'Pub': Pub(),
     'PyPI': PyPI(),
-    'R': R(),
+    'CRAN': CRAN(),
     'RubyGems': RubyGems(),
     # SemVer-based ecosystems (remember keep synced with SEMVER_ECOSYSTEMS):
     'crates.io': SemverEcosystem(),

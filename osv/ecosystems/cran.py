@@ -11,7 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""CRAN and Bioconductor helpers."""
+"""CRAN helpers."""
 
 import packaging.version
 import requests
@@ -19,8 +19,8 @@ import requests
 from . import config
 from .helper_base import Ecosystem, EnumerateError
 
-class R(Ecosystem):
-  """R ecosystem helpers."""
+class CRAN(Ecosystem):
+  """CRAN ecosystem helpers."""
 
   # Use the Posit Public Package Manager API to pull both the current and archived versions for a specific package
   # since CRAN doesn't natively support this functionality.

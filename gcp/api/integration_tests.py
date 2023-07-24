@@ -292,7 +292,10 @@ class IntegrationTests(unittest.TestCase):
         }),
         timeout=_TIMEOUT)
 
-    self.assert_results_equal({}, response.json())
+    self.assert_results_equal({
+        'code': 3,
+        'message': 'Invalid ecosystem.'
+    }, response.json())
 
   def test_query_unknown_purl_invalid_semver(self):
     """Test an unknown purl query with an invalid semver"""

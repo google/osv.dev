@@ -16,13 +16,17 @@
 package git
 
 import (
+	"context"
 	"sort"
 	"strings"
+	"time"
 
 	"github.com/go-git/go-git/v5"
 	"github.com/go-git/go-git/v5/config"
+	"github.com/go-git/go-git/v5/plumbing"
 	"github.com/go-git/go-git/v5/plumbing/transport"
 	"github.com/go-git/go-git/v5/storage/memory"
+	"github.com/sethvargo/go-retry"
 
 	"golang.org/x/exp/maps"
 	"golang.org/x/exp/slices"
@@ -61,6 +65,35 @@ type RepoTagsMap struct {
 // RepoTags acts as a cache for RepoTags results, keyed on the repo's URL.
 type RepoTagsCache map[string]RepoTagsMap
 
+func RemoteRepoRefsWithRetry(repoURL string, retries uint64) (refs []*plumbing.Reference, err error) {
+	remoteConfig := &config.RemoteConfig{
+		Name: "source",
+		URLs: []string{
+			repoURL,
+		},
+	}
+	repo := git.NewRemote(memory.NewStorage(), remoteConfig)
+
+	ctx := context.Background()
+
+	backoff := retry.NewExponential(1 * time.Second)
+	backoff = retry.WithMaxRetries(retries, backoff)
+
+	if err := retry.Do(ctx, backoff, func(ctx context.Context) error {
+		refs, err = repo.List(&git.ListOptions{PeelingOption: git.AppendPeeled})
+		if err != nil {
+			if err == context.DeadlineExceeded {
+				return retry.RetryableError(err)
+			}
+			return err
+		}
+		return nil
+	}); err != nil {
+		return refs, err
+	}
+	return refs, nil
+}
+
 // RepoTags returns an array of Tag being the (unpeeled, if annotated) tags and associated commits in repoURL.
 // An optional repoTagsCache can be supplied to reduce repeated remote connections to the same repo.
 func RepoTags(repoURL string, repoTagsCache RepoTagsCache) (tags Tags, e error) {
@@ -71,14 +104,7 @@ func RepoTags(repoURL string, repoTagsCache RepoTagsCache) (tags Tags, e error) 
 		}
 	}
 	// Cache miss.
-	remoteConfig := &config.RemoteConfig{
-		Name: "source",
-		URLs: []string{
-			repoURL,
-		},
-	}
-	repo := git.NewRemote(memory.NewStorage(), remoteConfig)
-	refs, err := repo.List(&git.ListOptions{PeelingOption: git.AppendPeeled})
+	refs, err := RemoteRepoRefsWithRetry(repoURL, 3)
 	if err != nil {
 		return tags, err
 	}

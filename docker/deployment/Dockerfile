@@ -7,5 +7,5 @@ RUN echo "deb [signed-by=/usr/share/keyrings/cloud.google.gpg] http://packages.c
     curl https://packages.cloud.google.com/apt/doc/apt-key.gpg | gpg --dearmor -o /usr/share/keyrings/cloud.google.gpg && \
     apt-get update && apt-get install -y google-cloud-sdk
 
-RUN pip3 install pipenv
+RUN pip3 install pipenv==2023.6.12
 COPY --from=gcr.io/oss-vdb/ci /root/go/bin/hugo /usr/local/bin/hugo

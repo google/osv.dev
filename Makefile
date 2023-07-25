@@ -33,16 +33,16 @@ lint:
 run-appengine:
 	cd gcp/appengine/frontend3 && npm run build
 	cd gcp/appengine/blog && hugo -d ../dist/static/blog
-	cd gcp/appengine && GOOGLE_CLOUD_PROJECT=oss-vdb pipenv run python main.py
+	cd gcp/appengine && pipenv sync && GOOGLE_CLOUD_PROJECT=oss-vdb pipenv run python main.py
 
 run-appengine-staging:
 	cd gcp/appengine/frontend3 && npm run build
 	cd gcp/appengine/blog && hugo -d ../dist/static/blog
-	cd gcp/appengine && GOOGLE_CLOUD_PROJECT=oss-vdb-test pipenv run python main.py
+	cd gcp/appengine && pipenv sync && GOOGLE_CLOUD_PROJECT=oss-vdb-test pipenv run python main.py
 
 run-api-server:
 	test $(SERVICE_ACCOUNT) || (echo "SERVICE_ACCOUNT variable not set"; exit 1)
-	cd gcp/api && GOOGLE_CLOUD_PROJECT=oss-vdb pipenv run python test_server.py $(SERVICE_ACCOUNT)
+	cd gcp/api && pipenv sync && GOOGLE_CLOUD_PROJECT=oss-vdb pipenv run python test_server.py $(SERVICE_ACCOUNT)
 
 # TODO: API integration tests.
 all-tests: lib-tests worker-tests importer-tests appengine-tests vulnfeed-tests

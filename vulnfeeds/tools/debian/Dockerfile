@@ -31,7 +31,7 @@ RUN echo "deb [signed-by=/usr/share/keyrings/cloud.google.gpg] https://packages.
     curl https://packages.cloud.google.com/apt/doc/apt-key.gpg | gpg --dearmor -o /usr/share/keyrings/cloud.google.gpg && \
     apt-get update && apt-get install -y google-cloud-sdk
 
-RUN pip install pipenv==2022.11.5
+RUN pip install pipenv==2023.6.12
 
 RUN mkdir /src
 WORKDIR /src

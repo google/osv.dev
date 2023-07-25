@@ -194,8 +194,23 @@ steps:
   dir:  deployment/terraform/environments/oss-vdb-test
 
 # Deploy App Engine for staging environment
-- name: 'gcr.io/oss-vdb/deployment'
-  args: ['bash', '-ex', 'gcp/appengine/deploy.sh', 'oss-vdb-test', 'deployment/gae/oss-vdb-test', 'app.yaml']
+# Build & push Docker image
+# TODO(michaelkedar): Move with rest of docker image creation when migrating to Cloud Run
+- name: 'gcr.io/cloud-builders/docker'
+  args: ['build', '--build-arg', 'BUILDKIT_INLINE_CACHE=1',
+         '-t', 'gcr.io/oss-vdb-test/osv-website:latest', '-t', 'gcr.io/oss-vdb-test/osv-website:$COMMIT_SHA',
+         '-f', 'gcp/appengine/Dockerfile, '--cache-from', 'gcr.io/oss-vdb-test/osv-website:latest', '--pull', '.']
+  env:
+  - DOCKER_BUILDKIT=1
+  - BUILDKIT_PROGRESS=plain
+- name: 'gcr.io/cloud-builders/docker'
+  args: ['push', '--all-tags', 'gcr.io/oss-vdb-test/osv-website']
+
+- name: 'gcr.io/cloud-builders/gcloud'
+  entrypoint: bash
+  args: ['-ex', 'gcp/appengine/deploy.sh', 'oss-vdb-test', '$COMMIT_SHA', 'deployment/gae/oss-vdb-test', 'app.yaml']
+  env:
+  - CLOUDBUILD=1
 
 # Clean up older, non-serving App Engine versions to avoid hitting the ceiling on versions
 - name: 'gcr.io/cloud-builders/gcloud'

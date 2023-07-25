@@ -3,11 +3,14 @@
 dir=$(dirname "$0")
 
 if [ $# -lt 1 ]; then
-  echo "Usage: $0 <project-id> <path-to-yaml-configs> ..args.."
+  echo "Usage: $0 <project-id> <version-tag> <path-to-yaml-configs> ..args.."
   exit 1
 fi
 
 project_id=$1
+shift
+
+version=$1
 shift
 
 # `gcloud app deploy` requires that the app.yaml file lives in the application
@@ -21,17 +24,14 @@ for config in $configs_dir/*.yaml; do
 done
 
 cd "$dir"
+image="gcr.io/$project_id/osv-website"
 
-pushd frontend3
-npm install
-npm run build:prod
-popd
+if [ -z "$CLOUDBUILD" ]; then
+  pushd ../../
+  # Using BuildKit allows us to cache the multi-stage builds
+  DOCKER_BUILDKIT=1 docker build --build-arg=BUILDKIT_INLINE_CACHE=1 -t $image:$version -f gcp/appengine/Dockerfile --cache-from=$image .
+  docker push $image:$version
+  popd
+fi
 
-pushd blog
-hugo -d ../dist/static/blog
-popd
-
-# Skip the '-e' editable library install as we copy in the "osv" library
-# directly instead for deployment.
-python3 -m pipenv requirements | grep -v '^-e '  > requirements.txt
-gcloud app deploy --quiet --project=$project_id --version=$(git rev-parse HEAD) "$@"
+gcloud app deploy --quiet --project=$project_id --version=$version --image-url=$image:$version "$@"

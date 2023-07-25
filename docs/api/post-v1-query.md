@@ -125,7 +125,10 @@ curl -d \
 ```
 
 ## Pagination
-For queries that result in a large number of vulnerabilities, the response will be paginated. In this case, the "next_page_token" is given in the response, indicating that there are more results to return. You will need to run additional queries using the `page_token` to see the remaining results, repeating queries until the `next_page_token` is no longer included in the response. 
+
+The OSV.dev API uses pagination for queries that result in a large number of vulnerabilities. When pagination is used, the "next_page_token" is given in the response, indicating that there are more results to return. You will need to run additional queries using the `page_token` to see the remaining results, repeating queries until the `next_page_token` is no longer included in the response. 
+
+For the `v1/query` endpoint pagination will occur when there more than 1,000 vulnerabilities in the response. This number can vary slightly because of threading and the page size may change in the future. 
 
 A response indicating pagination will be in this form:
 ```json

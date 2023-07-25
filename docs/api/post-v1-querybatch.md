@@ -163,7 +163,13 @@ EOF
 
 ## Pagination
 
-Pagination for the querybatch API works similarly to the individual query. However, a querybatch request may return results with a `next_page_token` for only a few of the total queries. In this situation, you will need to run additional requests  for those specific queries to see the remaining results.
+Pagination for the querybatch API works similarly to the `v1/query` endpoint. However, a querybatch request may return results with a `next_page_token` for only a few of the total queries. In this situation, you will need to run additional requests  for those specific queries to see the remaining results.
+
+For the `v1/querybatch` endpoint pagination will occur when at least one of the following conditions are met:
+- An individual query within the queryset returns more than 1,000 vulnerabilities
+- The entire queryset returns more than 3,000 vulnerabilities total
+
+These numbers can vary slightly because of threading and the page size may change in the future. 
 
 A queryset response with paginated results will be in this form:
 

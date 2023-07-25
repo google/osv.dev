@@ -205,7 +205,6 @@ func TestAddSeverity(t *testing.T) {
 
 	for _, tc := range tests {
 		vuln, _ := FromCVE(tc.inputCVE.CVE.CVEDataMeta.ID, tc.inputCVE)
-		vuln.AddSeverity(tc.inputCVE.Impact)
 
 		got := vuln.Severity
 		if diff := cmp.Diff(got, tc.expectedResult); diff != "" {

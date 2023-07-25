@@ -298,7 +298,7 @@ func ClassifyReferences(refs cves.CVEReferences) []Reference {
 	return unique(references)
 }
 
-// FromCVE creates a bare minimum OSV object from a given CVEItem and id.
+// FromCVE creates a minimal OSV object from a given CVEItem and id.
 // Leaves affected and version fields empty to be filled in later with AddPkgInfo
 func FromCVE(id string, cve cves.CVEItem) (*Vulnerability, []string) {
 	v := Vulnerability{
@@ -319,6 +319,7 @@ func FromCVE(id string, cve cves.CVEItem) (*Vulnerability, []string) {
 	}
 
 	v.References = ClassifyReferences(cve.CVE.References)
+	v.AddSeverity(cve.Impact)
 	return &v, notes
 }
 

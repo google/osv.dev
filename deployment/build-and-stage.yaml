@@ -197,9 +197,12 @@ steps:
 # Build & push Docker image
 # TODO(michaelkedar): Move with rest of docker image creation when migrating to Cloud Run
 - name: 'gcr.io/cloud-builders/docker'
+  entrypoint: 'bash'
+  args: ['-c', 'docker pull gcr.io/oss-vdb-test/osv-website:latest || exit 0']
+- name: 'gcr.io/cloud-builders/docker'
   args: ['build', '--build-arg', 'BUILDKIT_INLINE_CACHE=1',
          '-t', 'gcr.io/oss-vdb-test/osv-website:latest', '-t', 'gcr.io/oss-vdb-test/osv-website:$COMMIT_SHA',
-         '-f', 'gcp/appengine/Dockerfile, '--cache-from', 'gcr.io/oss-vdb-test/osv-website:latest', '--pull', '.']
+         '-f', 'gcp/appengine/Dockerfile', '--cache-from', 'gcr.io/oss-vdb-test/osv-website:latest', '--pull', '.']
   env:
   - DOCKER_BUILDKIT=1
   - BUILDKIT_PROGRESS=plain

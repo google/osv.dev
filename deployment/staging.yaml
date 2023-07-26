@@ -30,8 +30,26 @@ steps:
   args: [ '-c', "rm /workspace/service_account.json" ]
 - name: 'gcr.io/cloud-builders/git'
   args: ['clean', '-ffdx']
-- name: 'gcr.io/oss-vdb/deployment'
-  args: ['bash', '-ex', 'gcp/appengine/deploy.sh', 'oss-vdb', 'deployment/gae/oss-vdb', 'app.yaml', '--no-promote']
+# Build & push App engine Docker image
+# TODO(michaelkedar): Move with rest of docker image creation when migrating to Cloud Run
+- name: 'gcr.io/cloud-builders/docker'
+  entrypoint: 'bash'
+  args: ['-c', 'docker pull gcr.io/oss-vdb/osv-website:latest || exit 0']
+- name: 'gcr.io/cloud-builders/docker'
+  args: ['build', '--build-arg', 'BUILDKIT_INLINE_CACHE=1',
+         '-t', 'gcr.io/oss-vdb/osv-website:latest', '-t', 'gcr.io/oss-vdb/osv-website:$COMMIT_SHA',
+         '-f', 'gcp/appengine/Dockerfile', '--cache-from', 'gcr.io/oss-vdb/osv-website:latest', '--pull', '.']
+  env:
+  - DOCKER_BUILDKIT=1
+  - BUILDKIT_PROGRESS=plain
+- name: 'gcr.io/cloud-builders/docker'
+  args: ['push', '--all-tags', 'gcr.io/oss-vdb/osv-website']
+
+- name: 'gcr.io/cloud-builders/gcloud'
+  entrypoint: bash
+  args: ['-ex', 'gcp/appengine/deploy.sh', 'oss-vdb', '$COMMIT_SHA', 'deployment/gae/oss-vdb', 'app.yaml', '--no-promote']
+  env:
+  - CLOUDBUILD=1
 - name: 'gcr.io/oss-vdb/deployment'
   args: ['bash', '-ex', '../deploy_service_proxy', 'oss-vdb', 'api-staging.osv.dev', 'osv-grpc-v1-staging', '../../../deployment/api/oss-vdb/api_config_staging.yaml']
   dir: gcp/api/v1

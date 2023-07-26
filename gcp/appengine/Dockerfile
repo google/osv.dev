@@ -13,8 +13,7 @@ COPY gcp/appengine/frontend3/src src
 RUN npm run build:prod
 
 # Build hugo blogs
-# The ci image is a bit heavy for this, but it keeps the hugo version we use in one place
-FROM gcr.io/oss-vdb/ci:latest AS HUGO_BUILD
+FROM klakegg/hugo:0.111.3 AS HUGO_BUILD
 WORKDIR /build/blog
 COPY gcp/appengine/blog ./
 

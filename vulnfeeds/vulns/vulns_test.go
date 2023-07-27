@@ -144,10 +144,10 @@ func TestAddPkgInfo(t *testing.T) {
 	}
 	testPkgInfoCommits := PackageInfo{
 		VersionInfo: cves.VersionInfo{
-			FixCommits: []cves.GitCommit{
+			AffectedCommits: []cves.AffectedCommit{
 				{
-					Commit: "dsafwefwfe370a9e65d68d62ef37345597e4100b0e87021dfb",
-					Repo:   "github.com/foo/bar",
+					Fixed: "dsafwefwfe370a9e65d68d62ef37345597e4100b0e87021dfb",
+					Repo:  "github.com/foo/bar",
 				},
 			},
 		},
@@ -158,31 +158,31 @@ func TestAddPkgInfo(t *testing.T) {
 
 	// testPkgInfoNameEco vvvvvvvvvvvvvvv
 	if vuln.Affected[0].Package.Name != testPkgInfoNameEco.PkgName {
-		t.Errorf("AddPkgInfo has not corrected added package name.")
+		t.Errorf("AddPkgInfo has not correctly added package name.")
 	}
 
 	if vuln.Affected[0].Package.Ecosystem != testPkgInfoNameEco.Ecosystem {
-		t.Errorf("AddPkgInfo has not corrected added package ecosystem.")
+		t.Errorf("AddPkgInfo has not correctly added package ecosystem.")
 	}
 
 	if vuln.Affected[0].Ranges[0].Type != "ECOSYSTEM" {
-		t.Errorf("AddPkgInfo has not corrected added ranges type.")
+		t.Errorf("AddPkgInfo has not correctly added ranges type.")
 	}
 
 	if vuln.Affected[0].Ranges[0].Events[1].Fixed != testPkgInfoNameEco.VersionInfo.AffectedVersions[0].Fixed {
-		t.Errorf("AddPkgInfo has not corrected added ranges fixed.")
+		t.Errorf("AddPkgInfo has not correctly added ranges fixed.")
 	}
 	// testPkgInfoNameEco ^^^^^^^^^^^^^^^
 
 	// testPkgInfoPURL vvvvvvvvvvvvvvv
 	if vuln.Affected[1].Package.Purl != testPkgInfoPURL.PURL {
-		t.Errorf("AddPkgInfo has not corrected added package PURL.")
+		t.Errorf("AddPkgInfo has not correctly added package PURL.")
 	}
 	if vuln.Affected[1].Ranges[0].Type != "ECOSYSTEM" {
-		t.Errorf("AddPkgInfo has not corrected added ranges type.")
+		t.Errorf("AddPkgInfo has not correctly added ranges type.")
 	}
 	if vuln.Affected[1].Ranges[0].Events[1].Fixed != testPkgInfoPURL.VersionInfo.AffectedVersions[0].Fixed {
-		t.Errorf("AddPkgInfo has not corrected added ranges fixed.")
+		t.Errorf("AddPkgInfo has not correctly added ranges fixed.")
 	}
 	// testPkgInfoPURL ^^^^^^^^^^^^^^^
 
@@ -190,10 +190,10 @@ func TestAddPkgInfo(t *testing.T) {
 	// TODO: Where is the Repo field suppose to go?
 
 	if vuln.Affected[2].Ranges[0].Type != "GIT" {
-		t.Errorf("AddPkgInfo has not corrected added ranges type.")
+		t.Errorf("AddPkgInfo has not correctly added ranges type.")
 	}
-	if vuln.Affected[2].Ranges[0].Events[1].Fixed != testPkgInfoCommits.VersionInfo.FixCommits[0].Commit {
-		t.Errorf("AddPkgInfo has not corrected added ranges fixed.")
+	if vuln.Affected[2].Ranges[0].Events[1].Fixed != testPkgInfoCommits.VersionInfo.AffectedCommits[0].Fixed {
+		t.Errorf("AddPkgInfo has not correctly added ranges fixed.")
 	}
 	// testPkgInfoCommits ^^^^^^^^^^^^^^^
 }

@@ -74,6 +74,15 @@ func (vi *VersionInfo) HasFixedVersions() bool {
 	return false
 }
 
+func (vi *VersionInfo) HasIntroducedCommits(repo string) bool {
+	for _, av := range vi.AffectedCommits {
+		if av.Repo == repo && av.Introduced != "" {
+			return true
+		}
+	}
+	return false
+}
+
 func (vi *VersionInfo) HasFixedCommits(repo string) bool {
 	for _, av := range vi.AffectedCommits {
 		if av.Repo == repo && av.Fixed != "" {

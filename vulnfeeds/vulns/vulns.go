@@ -329,87 +329,37 @@ func (v *Vulnerability) AddPkgInfo(pkgInfo PackageInfo) {
 		Purl:      pkgInfo.PURL,
 	}
 
-	if len(pkgInfo.VersionInfo.FixCommits) > 0 ||
-		len(pkgInfo.VersionInfo.IntroducedCommits) > 0 ||
-		len(pkgInfo.VersionInfo.LimitCommits) > 0 ||
-		len(pkgInfo.VersionInfo.LastAffectedCommits) > 0 {
+	if len(pkgInfo.VersionInfo.AffectedCommits) > 0 {
 		gitVersionRangesByRepo := map[string]AffectedRange{}
 
-		for _, gc := range pkgInfo.VersionInfo.IntroducedCommits {
-			entry, ok := gitVersionRangesByRepo[gc.Repo]
+		for _, ac := range pkgInfo.VersionInfo.AffectedCommits {
+			entry, ok := gitVersionRangesByRepo[ac.Repo]
 			if !ok {
 				entry = AffectedRange{
 					Type:   "GIT",
 					Events: []Event{},
-					Repo:   gc.Repo,
+					Repo:   ac.Repo,
 				}
 			}
 
-			entry.Events = append(entry.Events,
-				Event{
-					Introduced: gc.Commit,
-				},
-			)
-			gitVersionRangesByRepo[gc.Repo] = entry
-		}
-
-		for _, gc := range pkgInfo.VersionInfo.FixCommits {
-			entry, ok := gitVersionRangesByRepo[gc.Repo]
-			if !ok {
-				// this entry was not in IntroducedCommits, so create an introduced commit at 0
-				entry = AffectedRange{
-					Type: "GIT",
-					Events: []Event{{
+			if !pkgInfo.VersionInfo.HasIntroducedCommits(ac.Repo) {
+				// There was no explicitly defined introduced commit, so create one at 0
+				entry.Events = append(entry.Events,
+					Event{
 						Introduced: "0",
-					}},
-					Repo: gc.Repo,
-				}
+					},
+				)
 			}
 
 			entry.Events = append(entry.Events,
 				Event{
-					Fixed: gc.Commit,
+					Introduced:   ac.Introduced,
+					Fixed:        ac.Fixed,
+					LastAffected: ac.LastAffected,
+					Limit:        ac.Limit,
 				},
 			)
-			gitVersionRangesByRepo[gc.Repo] = entry
-		}
-
-		for _, gc := range pkgInfo.VersionInfo.LastAffectedCommits {
-			entry, ok := gitVersionRangesByRepo[gc.Repo]
-			if !ok {
-				entry = AffectedRange{
-					Type: "GIT",
-					Events: []Event{{
-						Introduced: "0",
-					}}, Repo: gc.Repo,
-				}
-			}
-
-			entry.Events = append(entry.Events,
-				Event{
-					LastAffected: gc.Commit,
-				},
-			)
-			gitVersionRangesByRepo[gc.Repo] = entry
-		}
-
-		for _, gc := range pkgInfo.VersionInfo.LimitCommits {
-			entry, ok := gitVersionRangesByRepo[gc.Repo]
-			if !ok {
-				entry = AffectedRange{
-					Type: "GIT",
-					Events: []Event{{
-						Introduced: "0",
-					}}, Repo: gc.Repo,
-				}
-			}
-
-			entry.Events = append(entry.Events,
-				Event{
-					Limit: gc.Commit,
-				},
-			)
-			gitVersionRangesByRepo[gc.Repo] = entry
+			gitVersionRangesByRepo[ac.Repo] = entry
 		}
 
 		for _, ar := range gitVersionRangesByRepo {

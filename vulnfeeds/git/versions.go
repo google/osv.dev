@@ -23,8 +23,8 @@ import (
 	"github.com/google/osv/vulnfeeds/cves"
 )
 
-// Take an already normalized version, repo and the pre-normalized mapping of tags to commits and do fuzzy matchingon the version, returning a GitCommit and a bool if successful.
-func fuzzyVersionToCommit(normalizedVersion string, repo string, normalizedTags map[string]NormalizedTag) (gc cves.GitCommit, b bool) {
+// Take an already normalized version, repo and the pre-normalized mapping of tags to commits and do fuzzy matching on the version, returning a GitCommit and a bool if successful.
+func fuzzyVersionToCommit(normalizedVersion string, repo string, commitType string, normalizedTags map[string]NormalizedTag) (ac cves.AffectedCommit, b bool) {
 	candidateTags := []string{}
 	for _, k := range maps.Keys(normalizedTags) {
 		if strings.HasPrefix(k, normalizedVersion) {
@@ -33,44 +33,69 @@ func fuzzyVersionToCommit(normalizedVersion string, repo string, normalizedTags 
 	}
 	// We may now have one or more tags to further examine for a best choice.
 	if len(candidateTags) == 0 {
-		return gc, false
+		return ac, false
 	}
 	if len(candidateTags) == 1 {
-		return cves.GitCommit{
-			Repo:   repo,
-			Commit: normalizedTags[candidateTags[0]].Commit,
-		}, true
+		ac.SetRepo(repo)
+		switch commitType {
+		case "Introduced":
+			ac.SetIntroduced(normalizedTags[candidateTags[0]].Commit)
+		case "LastAffected":
+			ac.SetLastAffected(normalizedTags[candidateTags[0]].Commit)
+		case "Limit":
+			ac.SetLimit(normalizedTags[candidateTags[0]].Commit)
+		case "Fixed":
+			ac.SetFixed(normalizedTags[candidateTags[0]].Commit)
+		}
+		return ac, true
 	}
+
 	for i, t := range candidateTags {
 		// Handle the case where we were given say "12.0", but what we have is "12.0.0"
 		if strings.TrimPrefix(t, normalizedVersion) == "-0" {
-			return cves.GitCommit{
-				Repo:   repo,
-				Commit: normalizedTags[candidateTags[i]].Commit,
-			}, true
+			ac.SetRepo(repo)
+			switch commitType {
+			case "Introduced":
+				ac.SetIntroduced(normalizedTags[candidateTags[i]].Commit)
+			case "LastAffected":
+				ac.SetLastAffected(normalizedTags[candidateTags[i]].Commit)
+			case "Limit":
+				ac.SetLimit(normalizedTags[candidateTags[i]].Commit)
+			case "Fixed":
+				ac.SetFixed(normalizedTags[candidateTags[i]].Commit)
+			}
+			return ac, true
 		}
 	}
-	return gc, false
+	return ac, false
 }
 
-// Take an unnormalized version string, a repo, the pre-normalized mapping of tags to commits and return a GitCommit.
-func VersionToCommit(version string, repo string, normalizedTags map[string]NormalizedTag) (gc cves.GitCommit, e error) {
+// Take an unnormalized version string, a repo, the pre-normalized mapping of tags to commits and return an AffectedCommit.
+func VersionToCommit(version string, repo string, commitType string, normalizedTags map[string]NormalizedTag) (ac cves.AffectedCommit, e error) {
 	normalizedVersion, err := cves.NormalizeVersion(version)
 	if err != nil {
-		return gc, err
+		return ac, err
 	}
 	// Try a straight out match first.
 	normalizedTag, ok := normalizedTags[normalizedVersion]
 	if !ok {
 		// Then try to fuzzy-match.
-		gc, ok = fuzzyVersionToCommit(normalizedVersion, repo, normalizedTags)
+		ac, ok = fuzzyVersionToCommit(normalizedVersion, repo, commitType, normalizedTags)
 		if !ok {
-			return gc, fmt.Errorf("Failed to find a commit for version %q normalized as %q", version, normalizedVersion)
+			return ac, fmt.Errorf("Failed to find a commit for version %q normalized as %q", version, normalizedVersion)
 		}
-		return gc, nil
+		return ac, nil
 	}
-	return cves.GitCommit{
-		Repo:   repo,
-		Commit: normalizedTag.Commit,
-	}, nil
+	ac.SetRepo(repo)
+	switch commitType {
+	case "Introduced":
+		ac.SetIntroduced(normalizedTag.Commit)
+	case "LastAffected":
+		ac.SetLastAffected(normalizedTag.Commit)
+	case "Limit":
+		ac.SetLimit(normalizedTag.Commit)
+	case "Fixed":
+		ac.SetFixed(normalizedTag.Commit)
+	}
+	return ac, nil
 }

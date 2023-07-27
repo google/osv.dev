@@ -26,9 +26,32 @@ import (
 	"golang.org/x/exp/slices"
 )
 
-type GitCommit struct {
-	Repo   string
-	Commit string
+type AffectedCommit struct {
+	Repo         string
+	Introduced   string
+	Fixed        string
+	Limit        string
+	LastAffected string
+}
+
+func (ac *AffectedCommit) SetRepo(repo string) {
+	ac.Repo = repo
+}
+
+func (ac *AffectedCommit) SetIntroduced(commit string) {
+	ac.Introduced = commit
+}
+
+func (ac *AffectedCommit) SetFixed(commit string) {
+	ac.Fixed = commit
+}
+
+func (ac *AffectedCommit) SetLimit(commit string) {
+	ac.Limit = commit
+}
+
+func (ac *AffectedCommit) SetLastAffected(commit string) {
+	ac.LastAffected = commit
 }
 
 type AffectedVersion struct {
@@ -38,11 +61,26 @@ type AffectedVersion struct {
 }
 
 type VersionInfo struct {
-	IntroducedCommits   []GitCommit
-	FixCommits          []GitCommit
-	LimitCommits        []GitCommit
-	LastAffectedCommits []GitCommit
-	AffectedVersions    []AffectedVersion
+	AffectedCommits  []AffectedCommit
+	AffectedVersions []AffectedVersion
+}
+
+func (vi *VersionInfo) HasFixedVersions() bool {
+	for _, av := range vi.AffectedVersions {
+		if av.Fixed != "" {
+			return true
+		}
+	}
+	return false
+}
+
+func (vi *VersionInfo) HasFixedCommits(repo string) bool {
+	for _, av := range vi.AffectedCommits {
+		if av.Repo == repo && av.Fixed != "" {
+			return true
+		}
+	}
+	return false
 }
 
 type CPE struct {
@@ -613,22 +651,37 @@ func Commit(u string) (string, error) {
 	return "", fmt.Errorf("Commit(): unsupported URL: %s", u)
 }
 
-// For URLs referencing commits in supported Git repository hosts, return a GitCommit.
-func extractGitCommit(link string) *GitCommit {
+// For URLs referencing commits in supported Git repository hosts, return an AffectedCommit.
+// TODO(andrewpollock): do something better aligned with the OSV schema definition once https://github.com/ossf/osv-schema/issues/187
+func extractGitCommit(link string, commitType string) (ac AffectedCommit, err error) {
+	if !slices.Contains([]string{"Introduced", "LastAffected", "Limit", "Fixed"}, commitType) {
+		return ac, fmt.Errorf("Invalid commitType: %s", commitType)
+	}
+
 	r, err := Repo(link)
 	if err != nil {
-		return nil
+		return ac, err
 	}
 
 	c, err := Commit(link)
 	if err != nil {
-		return nil
+		return ac, err
 	}
 
-	return &GitCommit{
-		Repo:   r,
-		Commit: c,
+	ac.SetRepo(r)
+
+	switch commitType {
+	case "Introduced":
+		ac.SetIntroduced(c)
+	case "LastAffected":
+		ac.SetLastAffected(c)
+	case "Limit":
+		ac.SetLimit(c)
+	case "Fixed":
+		ac.SetFixed(c)
 	}
+
+	return ac, nil
 }
 
 func hasVersion(validVersions []string, version string) bool {
@@ -726,8 +779,9 @@ func cleanVersion(version string) string {
 
 func ExtractVersionInfo(cve CVEItem, validVersions []string) (v VersionInfo, notes []string) {
 	for _, reference := range cve.CVE.References.ReferenceData {
-		if commit := extractGitCommit(reference.URL); commit != nil {
-			v.FixCommits = append(v.FixCommits, *commit)
+		// (Potentially faulty) Assumption: All viable Git commit reference links are fix commits.
+		if commit, err := extractGitCommit(reference.URL, "Fixed"); err == nil {
+			v.AffectedCommits = append(v.AffectedCommits, commit)
 		}
 	}
 

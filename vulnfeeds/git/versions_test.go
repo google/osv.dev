@@ -47,15 +47,13 @@ func TestVersionToCommit(t *testing.T) {
 		if err != nil {
 			t.Errorf("test %q: unexpected failure normalizing repo tags: %#v", tc.description, err)
 		}
-		got, err := VersionToCommit(tc.inputVersion, tc.inputRepoURL, normalizedTags)
+		got, err := VersionToCommit(tc.inputVersion, tc.inputRepoURL, "Fixed", normalizedTags)
 		if err != nil && tc.expectedOk {
 			t.Errorf("test %q: VersionToCommit(%q, %q) unexpectedly failed: %#v", tc.description, tc.inputVersion, tc.inputRepoURL, err)
-			//t.Logf("%#v", normalizedTags)
 			continue
 		}
-		if got.Commit != tc.expectedResult {
-			t.Errorf("test %q: VersionToCommit(%q, %q) result incorrect, got: %q wanted: %q", tc.description, tc.inputVersion, tc.inputRepoURL, got.Commit, tc.expectedResult)
-			//t.Logf("%#v", normalizedTags)
+		if got.Fixed != tc.expectedResult {
+			t.Errorf("test %q: VersionToCommit(%q, %q) result incorrect, got: %q wanted: %q", tc.description, tc.inputVersion, tc.inputRepoURL, got.Fixed, tc.expectedResult)
 		}
 	}
 }

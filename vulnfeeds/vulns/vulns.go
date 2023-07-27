@@ -388,20 +388,21 @@ func (affected *Affected) AttachExtractedVersionInfo(version cves.VersionInfo) {
 	// Collect the commits of the supported types for each repo.
 	repoToCommits := map[string][]commit{}
 
-	for _, introducedCommit := range version.IntroducedCommits {
-		repoToCommits[introducedCommit.Repo] = append(repoToCommits[introducedCommit.Repo], commit{commitType: Introduced, hash: introducedCommit.Commit})
-	}
-
-	for _, fixCommit := range version.FixCommits {
-		repoToCommits[fixCommit.Repo] = append(repoToCommits[fixCommit.Repo], commit{commitType: Fixed, hash: fixCommit.Commit})
-	}
-
-	for _, limitCommit := range version.LimitCommits {
-		repoToCommits[limitCommit.Repo] = append(repoToCommits[limitCommit.Repo], commit{commitType: Limit, hash: limitCommit.Commit})
-	}
-
-	for _, lastAffectedCommit := range version.LastAffectedCommits {
-		repoToCommits[lastAffectedCommit.Repo] = append(repoToCommits[lastAffectedCommit.Repo], commit{commitType: LastAffected, hash: lastAffectedCommit.Commit})
+	unfixed := true
+	for _, ac := range version.AffectedCommits {
+		if ac.Introduced != "" {
+			repoToCommits[ac.Repo] = append(repoToCommits[ac.Repo], commit{commitType: Introduced, hash: ac.Introduced})
+		}
+		if ac.Fixed != "" {
+			repoToCommits[ac.Repo] = append(repoToCommits[ac.Repo], commit{commitType: Fixed, hash: ac.Fixed})
+			unfixed = false
+		}
+		if ac.Limit != "" {
+			repoToCommits[ac.Repo] = append(repoToCommits[ac.Repo], commit{commitType: Fixed, hash: ac.Limit})
+		}
+		if ac.LastAffected != "" {
+			repoToCommits[ac.Repo] = append(repoToCommits[ac.Repo], commit{commitType: LastAffected, hash: ac.LastAffected})
+		}
 	}
 
 	for repo, commits := range repoToCommits {
@@ -424,13 +425,13 @@ func (affected *Affected) AttachExtractedVersionInfo(version cves.VersionInfo) {
 			}
 			// Only add any LastAffectedCommits in the absence of
 			// any FixCommits to maintain schema compliance.
-			if commit.commitType == LastAffected && len(version.FixCommits) == 0 {
+			if commit.commitType == LastAffected && unfixed {
 				gitRange.Events = append(gitRange.Events, Event{LastAffected: commit.hash})
 			}
 		}
 		if !addedIntroduced {
 			// Prepending not strictly necessary, but seems nicer to have the Introduced first in the list.
-			gitRange.Events = append([]Event{Event{Introduced: "0"}}, gitRange.Events...)
+			gitRange.Events = append([]Event{{Introduced: "0"}}, gitRange.Events...)
 		}
 		affected.Ranges = append(affected.Ranges, gitRange)
 	}

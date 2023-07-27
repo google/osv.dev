@@ -257,12 +257,10 @@ func extractAliases(id string, cve cves.CVE) []string {
 }
 
 type PackageInfo struct {
-	PkgName      string `json:"pkg_name"`
-	Ecosystem    string `json:"ecosystem"`
-	PURL         string `json:"purl"`
-	FixedVersion string `json:"fixed_version"`
-	FixedCommit  string `json:"fixed_commit"`
-	Repo         string `json:"repo"`
+	PkgName     string           `json:"pkg_name"`
+	Ecosystem   string           `json:"ecosystem"`
+	PURL        string           `json:"purl"`
+	VersionInfo cves.VersionInfo `json:"fixed_version"`
 }
 
 func unique[T comparable](s []T) []T {
@@ -330,28 +328,123 @@ func (v *Vulnerability) AddPkgInfo(pkgInfo PackageInfo) {
 		Ecosystem: pkgInfo.Ecosystem,
 		Purl:      pkgInfo.PURL,
 	}
-	if pkgInfo.FixedVersion != "" {
-		versionRange := AffectedRange{
-			Type: "ECOSYSTEM",
-			Events: []Event{
-				{Introduced: "0"},
-				{Fixed: pkgInfo.FixedVersion},
-			},
+
+	if len(pkgInfo.VersionInfo.FixCommits) > 0 ||
+		len(pkgInfo.VersionInfo.IntroducedCommits) > 0 ||
+		len(pkgInfo.VersionInfo.LimitCommits) > 0 ||
+		len(pkgInfo.VersionInfo.LastAffectedCommits) > 0 {
+		gitVersionRangesByRepo := map[string]AffectedRange{}
+
+		for _, gc := range pkgInfo.VersionInfo.IntroducedCommits {
+			entry, ok := gitVersionRangesByRepo[gc.Repo]
+			if !ok {
+				entry = AffectedRange{
+					Type:   "GIT",
+					Events: []Event{},
+					Repo:   gc.Repo,
+				}
+			}
+
+			entry.Events = append(entry.Events,
+				Event{
+					Introduced: gc.Commit,
+				},
+			)
+			gitVersionRangesByRepo[gc.Repo] = entry
 		}
-		affected.Ranges = append(affected.Ranges, versionRange)
+
+		for _, gc := range pkgInfo.VersionInfo.FixCommits {
+			entry, ok := gitVersionRangesByRepo[gc.Repo]
+			if !ok {
+				// this entry was not in IntroducedCommits, so create an introduced commit at 0
+				entry = AffectedRange{
+					Type: "GIT",
+					Events: []Event{{
+						Introduced: "0",
+					}},
+					Repo: gc.Repo,
+				}
+			}
+
+			entry.Events = append(entry.Events,
+				Event{
+					Fixed: gc.Commit,
+				},
+			)
+			gitVersionRangesByRepo[gc.Repo] = entry
+		}
+
+		for _, gc := range pkgInfo.VersionInfo.LastAffectedCommits {
+			entry, ok := gitVersionRangesByRepo[gc.Repo]
+			if !ok {
+				entry = AffectedRange{
+					Type: "GIT",
+					Events: []Event{{
+						Introduced: "0",
+					}}, Repo: gc.Repo,
+				}
+			}
+
+			entry.Events = append(entry.Events,
+				Event{
+					LastAffected: gc.Commit,
+				},
+			)
+			gitVersionRangesByRepo[gc.Repo] = entry
+		}
+
+		for _, gc := range pkgInfo.VersionInfo.LimitCommits {
+			entry, ok := gitVersionRangesByRepo[gc.Repo]
+			if !ok {
+				entry = AffectedRange{
+					Type: "GIT",
+					Events: []Event{{
+						Introduced: "0",
+					}}, Repo: gc.Repo,
+				}
+			}
+
+			entry.Events = append(entry.Events,
+				Event{
+					Limit: gc.Commit,
+				},
+			)
+			gitVersionRangesByRepo[gc.Repo] = entry
+		}
+
+		for _, ar := range gitVersionRangesByRepo {
+			affected.Ranges = append(affected.Ranges, ar)
+		}
 	}
 
-	if pkgInfo.FixedCommit != "" {
+	if len(pkgInfo.VersionInfo.AffectedVersions) > 0 {
 		versionRange := AffectedRange{
-			Type: "GIT",
-			Repo: pkgInfo.Repo,
-			Events: []Event{
-				{Introduced: "0"},
-				{Fixed: pkgInfo.FixedCommit},
-			},
+			Type:   "ECOSYSTEM",
+			Events: []Event{},
+		}
+		hasIntroduced := false
+		for _, av := range pkgInfo.VersionInfo.AffectedVersions {
+			if av.Introduced != "" {
+				hasIntroduced = true
+			}
+			versionRange.Events = append(versionRange.Events, Event{
+				Introduced:   av.Introduced,
+				Fixed:        av.Fixed,
+				LastAffected: av.LastAffected,
+			})
+		}
+
+		if !hasIntroduced {
+			// If no introduced entry, add one with special value of 0 to indicate
+			// all versions before fixed is affected
+			versionRange.Events = append([]Event{{
+				Introduced: "0",
+			}}, versionRange.Events...)
 		}
 		affected.Ranges = append(affected.Ranges, versionRange)
+
 	}
+
 	v.Affected = append(v.Affected, affected)
 }
 

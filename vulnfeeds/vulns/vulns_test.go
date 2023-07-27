@@ -122,17 +122,35 @@ func TestAddPkgInfo(t *testing.T) {
 		ID: cveItem.CVE.CVEDataMeta.ID,
 	}
 	testPkgInfoNameEco := PackageInfo{
-		PkgName:      "TestName",
-		Ecosystem:    "TestEco",
-		FixedVersion: "1.2.3-4",
+		PkgName:   "TestName",
+		Ecosystem: "TestEco",
+		VersionInfo: cves.VersionInfo{
+			AffectedVersions: []cves.AffectedVersion{
+				{
+					Fixed: "1.2.3-4",
+				},
+			},
+		},
 	}
 	testPkgInfoPURL := PackageInfo{
-		PURL:         "pkg:deb/debian/nginx@1.1.2-1",
-		FixedVersion: "1.2.3-4",
+		PURL: "pkg:deb/debian/nginx@1.1.2-1",
+		VersionInfo: cves.VersionInfo{
+			AffectedVersions: []cves.AffectedVersion{
+				{
+					Fixed: "1.2.3-4",
+				},
+			},
+		},
 	}
 	testPkgInfoCommits := PackageInfo{
-		Repo:        "github.com/foo/bar",
-		FixedCommit: "dsafwefwfe370a9e65d68d62ef37345597e4100b0e87021dfb",
+		VersionInfo: cves.VersionInfo{
+			FixCommits: []cves.GitCommit{
+				{
+					Commit: "dsafwefwfe370a9e65d68d62ef37345597e4100b0e87021dfb",
+					Repo:   "github.com/foo/bar",
+				},
+			},
+		},
 	}
 	vuln.AddPkgInfo(testPkgInfoNameEco)
 	vuln.AddPkgInfo(testPkgInfoPURL)
@@ -151,7 +169,7 @@ func TestAddPkgInfo(t *testing.T) {
 		t.Errorf("AddPkgInfo has not corrected added ranges type.")
 	}
 
-	if vuln.Affected[0].Ranges[0].Events[1].Fixed != testPkgInfoNameEco.FixedVersion {
+	if vuln.Affected[0].Ranges[0].Events[1].Fixed != testPkgInfoNameEco.VersionInfo.AffectedVersions[0].Fixed {
 		t.Errorf("AddPkgInfo has not corrected added ranges fixed.")
 	}
 	// testPkgInfoNameEco ^^^^^^^^^^^^^^^
@@ -163,7 +181,7 @@ func TestAddPkgInfo(t *testing.T) {
 	if vuln.Affected[1].Ranges[0].Type != "ECOSYSTEM" {
 		t.Errorf("AddPkgInfo has not corrected added ranges type.")
 	}
-	if vuln.Affected[1].Ranges[0].Events[1].Fixed != testPkgInfoPURL.FixedVersion {
+	if vuln.Affected[1].Ranges[0].Events[1].Fixed != testPkgInfoPURL.VersionInfo.AffectedVersions[0].Fixed {
 		t.Errorf("AddPkgInfo has not corrected added ranges fixed.")
 	}
 	// testPkgInfoPURL ^^^^^^^^^^^^^^^
@@ -174,7 +192,7 @@ func TestAddPkgInfo(t *testing.T) {
 	if vuln.Affected[2].Ranges[0].Type != "GIT" {
 		t.Errorf("AddPkgInfo has not corrected added ranges type.")
 	}
-	if vuln.Affected[2].Ranges[0].Events[1].Fixed != testPkgInfoCommits.FixedCommit {
+	if vuln.Affected[2].Ranges[0].Events[1].Fixed != testPkgInfoCommits.VersionInfo.FixCommits[0].Commit {
 		t.Errorf("AddPkgInfo has not corrected added ranges fixed.")
 	}
 	// testPkgInfoCommits ^^^^^^^^^^^^^^^

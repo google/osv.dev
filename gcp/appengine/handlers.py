@@ -182,7 +182,7 @@ def backup():
   return 'done'
 
 
-@blueprint.route('/_ah/warmup')
-def warmup():
-  """Warmup handler."""
+@blueprint.route('/health')
+def health():
+  """Health check handler for liveness probes."""
   return 'OK'

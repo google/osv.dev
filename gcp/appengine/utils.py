@@ -17,4 +17,5 @@ import os
 
 
 def is_prod():
-  return os.getenv('GAE_ENV', '').startswith('standard')
+  # TODO(michaelkedar): Need a check that works for Cloud Run
+  return os.getenv('GAE_SERVICE') is not None

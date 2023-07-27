@@ -42,7 +42,18 @@ inbound_services:
 automatic_scaling:
   min_num_instances: 1
 
-instance_class: F4
+resources:
+  cpu: 4
+  memory_gb: 3.6
+
+liveness_check:
+  path: "/health"
+
+readiness_check:
+  path: "/"
+  # App Engine Flex runs multiple redundant readiness checks
+  # The default value (5) was hitting our rate limiting and failing...
+  check_interval_sec: 15
 
 env_variables:
   REDISHOST: 10.85.52.228

@@ -13,7 +13,10 @@ COPY gcp/appengine/frontend3/src src
 RUN npm run build:prod
 
 # Build hugo blogs
-FROM klakegg/hugo:0.111.3 AS HUGO_BUILD
+FROM golang:1.20 AS HUGO_BUILD
+# Build hugo from source - this should usually be cached.
+RUN go install -tags extended github.com/gohugoio/hugo@v0.111.3
+
 WORKDIR /build/blog
 COPY gcp/appengine/blog ./
 
@@ -44,8 +47,8 @@ COPY --from=HUGO_BUILD /build/dist dist
 
 
 # Run the web service on container startup. Here we use the gunicorn
-# webserver, with one worker process and 8 threads.
+# webserver, with 4 worker processes and 8 threads.
 # For environments with multiple CPU cores, increase the number of workers
 # to be equal to the cores available.
 # Timeout is set to 0 to disable the timeouts of the workers to allow Cloud Run to handle instance scaling.
-CMD exec gunicorn --bind :$PORT --workers 1 --threads 8 --timeout 0 main:app
+CMD exec gunicorn --bind :$PORT --workers 4 --threads 8 --timeout 0 main:app

@@ -42,8 +42,8 @@ COPY gcp/appengine/*.py ./
 # JS/hugo builds
 COPY gcp/appengine/dist/public_keys dist/public_keys
 COPY gcp/appengine/docs docs
-COPY --from=FRONTEND3_BUILD --link /build/dist/ dist/
-COPY --from=HUGO_BUILD --link /build/dist dist/
+COPY --from=FRONTEND3_BUILD /build/dist/ dist/
+COPY --from=HUGO_BUILD /build/dist dist/
 
 
 # Run the web service on container startup. Here we use the gunicorn

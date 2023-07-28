@@ -92,6 +92,16 @@ func (vi *VersionInfo) HasFixedCommits(repo string) bool {
 	return false
 }
 
+// Synthetic enum of supported commit types.
+type CommitType int
+
+const (
+	Introduced CommitType = iota
+	Fixed
+	Limit
+	LastAffected
+)
+
 type CPE struct {
 	CPEVersion string
 	Part       string
@@ -661,12 +671,7 @@ func Commit(u string) (string, error) {
 }
 
 // For URLs referencing commits in supported Git repository hosts, return an AffectedCommit.
-// TODO(andrewpollock): do something better aligned with the OSV schema definition once https://github.com/ossf/osv-schema/issues/187
-func extractGitCommit(link string, commitType string) (ac AffectedCommit, err error) {
-	if !slices.Contains([]string{"Introduced", "LastAffected", "Limit", "Fixed"}, commitType) {
-		return ac, fmt.Errorf("Invalid commitType: %s", commitType)
-	}
-
+func extractGitCommit(link string, commitType CommitType) (ac AffectedCommit, err error) {
 	r, err := Repo(link)
 	if err != nil {
 		return ac, err
@@ -680,13 +685,13 @@ func extractGitCommit(link string, commitType string) (ac AffectedCommit, err er
 	ac.SetRepo(r)
 
 	switch commitType {
-	case "Introduced":
+	case Introduced:
 		ac.SetIntroduced(c)
-	case "LastAffected":
+	case LastAffected:
 		ac.SetLastAffected(c)
-	case "Limit":
+	case Limit:
 		ac.SetLimit(c)
-	case "Fixed":
+	case Fixed:
 		ac.SetFixed(c)
 	}
 
@@ -789,7 +794,7 @@ func cleanVersion(version string) string {
 func ExtractVersionInfo(cve CVEItem, validVersions []string) (v VersionInfo, notes []string) {
 	for _, reference := range cve.CVE.References.ReferenceData {
 		// (Potentially faulty) Assumption: All viable Git commit reference links are fix commits.
-		if commit, err := extractGitCommit(reference.URL, "Fixed"); err == nil {
+		if commit, err := extractGitCommit(reference.URL, Fixed); err == nil {
 			v.AffectedCommits = append(v.AffectedCommits, commit)
 		}
 	}

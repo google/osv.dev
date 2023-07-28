@@ -416,17 +416,9 @@ func (v *Vulnerability) AddSeverity(CVEImpact cves.CVEImpact) {
 // AttachExtractedVersionInfo adds version information extracted from CVEs onto
 // the affected field
 func (affected *Affected) AttachExtractedVersionInfo(version cves.VersionInfo) {
-	// Synthetic enum of supported commit types.
-	type CommitType int
-	const (
-		Introduced CommitType = iota
-		Fixed
-		Limit
-		LastAffected
-	)
 	// commit holds a commit hash of one of the supported commit types.
 	type commit struct {
-		commitType CommitType
+		commitType cves.CommitType
 		hash       string
 	}
 	// Collect the commits of the supported types for each repo.
@@ -435,17 +427,17 @@ func (affected *Affected) AttachExtractedVersionInfo(version cves.VersionInfo) {
 	unfixed := true
 	for _, ac := range version.AffectedCommits {
 		if ac.Introduced != "" {
-			repoToCommits[ac.Repo] = append(repoToCommits[ac.Repo], commit{commitType: Introduced, hash: ac.Introduced})
+			repoToCommits[ac.Repo] = append(repoToCommits[ac.Repo], commit{commitType: cves.Introduced, hash: ac.Introduced})
 		}
 		if ac.Fixed != "" {
-			repoToCommits[ac.Repo] = append(repoToCommits[ac.Repo], commit{commitType: Fixed, hash: ac.Fixed})
+			repoToCommits[ac.Repo] = append(repoToCommits[ac.Repo], commit{commitType: cves.Fixed, hash: ac.Fixed})
 			unfixed = false
 		}
 		if ac.Limit != "" {
-			repoToCommits[ac.Repo] = append(repoToCommits[ac.Repo], commit{commitType: Fixed, hash: ac.Limit})
+			repoToCommits[ac.Repo] = append(repoToCommits[ac.Repo], commit{commitType: cves.Limit, hash: ac.Limit})
 		}
 		if ac.LastAffected != "" {
-			repoToCommits[ac.Repo] = append(repoToCommits[ac.Repo], commit{commitType: LastAffected, hash: ac.LastAffected})
+			repoToCommits[ac.Repo] = append(repoToCommits[ac.Repo], commit{commitType: cves.LastAffected, hash: ac.LastAffected})
 		}
 	}
 
@@ -457,19 +449,19 @@ func (affected *Affected) AttachExtractedVersionInfo(version cves.VersionInfo) {
 		// We're not always able to determine when a vulnerability is introduced, and may need to default to the dawn of time.
 		addedIntroduced := false
 		for _, commit := range commits {
-			if commit.commitType == Introduced {
+			if commit.commitType == cves.Introduced {
 				gitRange.Events = append(gitRange.Events, Event{Introduced: commit.hash})
 				addedIntroduced = true
 			}
-			if commit.commitType == Fixed {
+			if commit.commitType == cves.Fixed {
 				gitRange.Events = append(gitRange.Events, Event{Fixed: commit.hash})
 			}
-			if commit.commitType == Limit {
+			if commit.commitType == cves.Limit {
 				gitRange.Events = append(gitRange.Events, Event{Limit: commit.hash})
 			}
 			// Only add any LastAffectedCommits in the absence of
 			// any FixCommits to maintain schema compliance.
-			if commit.commitType == LastAffected && unfixed {
+			if commit.commitType == cves.LastAffected && unfixed {
 				gitRange.Events = append(gitRange.Events, Event{LastAffected: commit.hash})
 			}
 		}

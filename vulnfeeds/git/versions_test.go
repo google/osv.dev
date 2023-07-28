@@ -2,6 +2,8 @@ package git
 
 import (
 	"testing"
+
+	"github.com/google/osv/vulnfeeds/cves"
 )
 
 func TestVersionToCommit(t *testing.T) {
@@ -47,7 +49,7 @@ func TestVersionToCommit(t *testing.T) {
 		if err != nil {
 			t.Errorf("test %q: unexpected failure normalizing repo tags: %#v", tc.description, err)
 		}
-		got, err := VersionToCommit(tc.inputVersion, tc.inputRepoURL, "Fixed", normalizedTags)
+		got, err := VersionToCommit(tc.inputVersion, tc.inputRepoURL, cves.Fixed, normalizedTags)
 		if err != nil && tc.expectedOk {
 			t.Errorf("test %q: VersionToCommit(%q, %q) unexpectedly failed: %#v", tc.description, tc.inputVersion, tc.inputRepoURL, err)
 			continue

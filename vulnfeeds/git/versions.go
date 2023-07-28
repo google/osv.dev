@@ -38,13 +38,13 @@ func fuzzyVersionToCommit(normalizedVersion string, repo string, commitType cves
 	if len(candidateTags) == 1 {
 		ac.SetRepo(repo)
 		switch commitType {
-		case Introduced:
+		case cves.Introduced:
 			ac.SetIntroduced(normalizedTags[candidateTags[0]].Commit)
-		case LastAffected:
+		case cves.LastAffected:
 			ac.SetLastAffected(normalizedTags[candidateTags[0]].Commit)
-		case Limit:
+		case cves.Limit:
 			ac.SetLimit(normalizedTags[candidateTags[0]].Commit)
-		case Fixed:
+		case cves.Fixed:
 			ac.SetFixed(normalizedTags[candidateTags[0]].Commit)
 		}
 		return ac, true
@@ -55,13 +55,13 @@ func fuzzyVersionToCommit(normalizedVersion string, repo string, commitType cves
 		if strings.TrimPrefix(t, normalizedVersion) == "-0" {
 			ac.SetRepo(repo)
 			switch commitType {
-			case Introduced:
+			case cves.Introduced:
 				ac.SetIntroduced(normalizedTags[candidateTags[i]].Commit)
-			case LastAffected:
+			case cves.LastAffected:
 				ac.SetLastAffected(normalizedTags[candidateTags[i]].Commit)
-			case Limit:
+			case cves.Limit:
 				ac.SetLimit(normalizedTags[candidateTags[i]].Commit)
-			case Fixed:
+			case cves.Fixed:
 				ac.SetFixed(normalizedTags[candidateTags[i]].Commit)
 			}
 			return ac, true
@@ -88,13 +88,13 @@ func VersionToCommit(version string, repo string, commitType cves.CommitType, no
 	}
 	ac.SetRepo(repo)
 	switch commitType {
-	case Introduced:
+	case cves.Introduced:
 		ac.SetIntroduced(normalizedTag.Commit)
-	case LastAffected:
+	case cves.LastAffected:
 		ac.SetLastAffected(normalizedTag.Commit)
-	case Limit:
+	case cves.Limit:
 		ac.SetLimit(normalizedTag.Commit)
-	case Fixed:
+	case cves.Fixed:
 		ac.SetFixed(normalizedTag.Commit)
 	}
 	return ac, nil

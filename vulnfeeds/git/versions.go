@@ -24,7 +24,7 @@ import (
 )
 
 // Take an already normalized version, repo and the pre-normalized mapping of tags to commits and do fuzzy matching on the version, returning a GitCommit and a bool if successful.
-func fuzzyVersionToCommit(normalizedVersion string, repo string, commitType string, normalizedTags map[string]NormalizedTag) (ac cves.AffectedCommit, b bool) {
+func fuzzyVersionToCommit(normalizedVersion string, repo string, commitType cves.CommitType, normalizedTags map[string]NormalizedTag) (ac cves.AffectedCommit, b bool) {
 	candidateTags := []string{}
 	for _, k := range maps.Keys(normalizedTags) {
 		if strings.HasPrefix(k, normalizedVersion) {
@@ -38,13 +38,13 @@ func fuzzyVersionToCommit(normalizedVersion string, repo string, commitType stri
 	if len(candidateTags) == 1 {
 		ac.SetRepo(repo)
 		switch commitType {
-		case "Introduced":
+		case Introduced:
 			ac.SetIntroduced(normalizedTags[candidateTags[0]].Commit)
-		case "LastAffected":
+		case LastAffected:
 			ac.SetLastAffected(normalizedTags[candidateTags[0]].Commit)
-		case "Limit":
+		case Limit:
 			ac.SetLimit(normalizedTags[candidateTags[0]].Commit)
-		case "Fixed":
+		case Fixed:
 			ac.SetFixed(normalizedTags[candidateTags[0]].Commit)
 		}
 		return ac, true
@@ -55,13 +55,13 @@ func fuzzyVersionToCommit(normalizedVersion string, repo string, commitType stri
 		if strings.TrimPrefix(t, normalizedVersion) == "-0" {
 			ac.SetRepo(repo)
 			switch commitType {
-			case "Introduced":
+			case Introduced:
 				ac.SetIntroduced(normalizedTags[candidateTags[i]].Commit)
-			case "LastAffected":
+			case LastAffected:
 				ac.SetLastAffected(normalizedTags[candidateTags[i]].Commit)
-			case "Limit":
+			case Limit:
 				ac.SetLimit(normalizedTags[candidateTags[i]].Commit)
-			case "Fixed":
+			case Fixed:
 				ac.SetFixed(normalizedTags[candidateTags[i]].Commit)
 			}
 			return ac, true
@@ -71,7 +71,7 @@ func fuzzyVersionToCommit(normalizedVersion string, repo string, commitType stri
 }
 
 // Take an unnormalized version string, a repo, the pre-normalized mapping of tags to commits and return an AffectedCommit.
-func VersionToCommit(version string, repo string, commitType string, normalizedTags map[string]NormalizedTag) (ac cves.AffectedCommit, e error) {
+func VersionToCommit(version string, repo string, commitType cves.CommitType, normalizedTags map[string]NormalizedTag) (ac cves.AffectedCommit, e error) {
 	normalizedVersion, err := cves.NormalizeVersion(version)
 	if err != nil {
 		return ac, err
@@ -88,13 +88,13 @@ func VersionToCommit(version string, repo string, commitType string, normalizedT
 	}
 	ac.SetRepo(repo)
 	switch commitType {
-	case "Introduced":
+	case Introduced:
 		ac.SetIntroduced(normalizedTag.Commit)
-	case "LastAffected":
+	case LastAffected:
 		ac.SetLastAffected(normalizedTag.Commit)
-	case "Limit":
+	case Limit:
 		ac.SetLimit(normalizedTag.Commit)
-	case "Fixed":
+	case Fixed:
 		ac.SetFixed(normalizedTag.Commit)
 	}
 	return ac, nil

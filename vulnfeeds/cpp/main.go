@@ -435,11 +435,12 @@ func main() {
 	for _, cve := range parsed.CVEItems {
 		refs := cve.CVE.References.ReferenceData
 		CPEs := cves.CPEs(cve)
+		CVEID := CVEIDString(cve.CVE.CVEDataMeta.ID)
 
 		if len(refs) == 0 && len(CPEs) == 0 {
-			Logger.Infof("[%s]: skipping due to lack of CPEs and lack of references", cve.CVE.CVEDataMeta.ID)
+			Logger.Infof("[%s]: skipping due to lack of CPEs and lack of references", CVEID)
 			// 100% of these in 2022 were rejected CVEs
-			Metrics.Outcomes[CVEIDString(cve.CVE.CVEDataMeta.ID)] = Rejected
+			Metrics.Outcomes[CVEID] = Rejected
 			continue
 		}
 
@@ -449,32 +450,32 @@ func main() {
 			CPE, err := cves.ParseCPE(CPEstr)
 			if err != nil {
 				Logger.Warnf("[%s]: Failed to parse CPE %q: %+v", cve.CVE.CVEDataMeta.ID, CPEstr, err)
-				Metrics.Outcomes[CVEIDString(cve.CVE.CVEDataMeta.ID)] = ConversionUnknown
+				Metrics.Outcomes[CVEID] = ConversionUnknown
 				continue
 			}
 			if CPE.Part == "a" {
 				appCPECount += 1
 			}
 			if _, ok := VPRepoCache[VendorProduct{CPE.Vendor, CPE.Product}]; ok {
-				Logger.Infof("[%s]: Pre-references, derived %q for %q %q using cache", cve.CVE.CVEDataMeta.ID, VPRepoCache[VendorProduct{CPE.Vendor, CPE.Product}], CPE.Vendor, CPE.Product)
-				ReposForCVE[CVEIDString(cve.CVE.CVEDataMeta.ID)] = VPRepoCache[VendorProduct{CPE.Vendor, CPE.Product}]
+				Logger.Infof("[%s]: Pre-references, derived %q for %q %q using cache", CVEID, VPRepoCache[VendorProduct{CPE.Vendor, CPE.Product}], CPE.Vendor, CPE.Product)
+				ReposForCVE[CVEID] = VPRepoCache[VendorProduct{CPE.Vendor, CPE.Product}]
 			}
 		}
 
 		if appCPECount == 0 {
 			// This CVE is not for software, skip.
-			Metrics.Outcomes[CVEIDString(cve.CVE.CVEDataMeta.ID)] = NoSoftware
+			Metrics.Outcomes[CVEID] = NoSoftware
 			continue
 		}
 
 		Metrics.CVEsForApplications++
 
 		// If there wasn't a repo from the CPE Dictionary, try and derive one from the CVE references.
-		if _, ok := ReposForCVE[CVEIDString(cve.CVE.CVEDataMeta.ID)]; !ok && len(refs) > 0 {
+		if _, ok := ReposForCVE[CVEID]; !ok && len(refs) > 0 {
 			for _, CPEstr := range cves.CPEs(cve) {
 				CPE, err := cves.ParseCPE(CPEstr)
 				if err != nil {
-					Logger.Warnf("[%s]: Failed to parse CPE %q: %+v", cve.CVE.CVEDataMeta.ID, CPEstr, err)
+					Logger.Warnf("[%s]: Failed to parse CPE %q: %+v", CVEID, CPEstr, err)
 					continue
 				}
 				// Continue to only focus on application CPEs.
@@ -484,17 +485,17 @@ func main() {
 				if slices.Contains(VendorProductDenyList, VendorProduct{CPE.Vendor, CPE.Product}) {
 					continue
 				}
-				repos := ReposForCPE(cve.CVE.CVEDataMeta.ID, VPRepoCache, VendorProduct{CPE.Vendor, CPE.Product}, refs, RefTagDenyList)
+				repos := ReposForCPE(string(CVEID), VPRepoCache, VendorProduct{CPE.Vendor, CPE.Product}, refs, RefTagDenyList)
 				if len(repos) == 0 {
-					Logger.Warnf("[%s]: Failed to derive any repos for %q %q", cve.CVE.CVEDataMeta.ID, CPE.Vendor, CPE.Product)
+					Logger.Warnf("[%s]: Failed to derive any repos for %q %q", CVEID, CPE.Vendor, CPE.Product)
 					continue
 				}
-				Logger.Infof("[%s]: Derived %q for %q %q", cve.CVE.CVEDataMeta.ID, repos, CPE.Vendor, CPE.Product)
-				ReposForCVE[CVEIDString(cve.CVE.CVEDataMeta.ID)] = repos
+				Logger.Infof("[%s]: Derived %q for %q %q", CVEID, repos, CPE.Vendor, CPE.Product)
+				ReposForCVE[CVEID] = repos
 			}
 		}
 
-		Logger.Infof("[%s]: Summary: [CPEs=%d AppCPEs=%d DerivedRepos=%d]", cve.CVE.CVEDataMeta.ID, len(CPEs), appCPECount, len(ReposForCVE[CVEIDString(cve.CVE.CVEDataMeta.ID)]))
+		Logger.Infof("[%s]: Summary: [CPEs=%d AppCPEs=%d DerivedRepos=%d]", CVEID, len(CPEs), appCPECount, len(ReposForCVE[CVEID]))
 
 		// If we've made it to here, we may have a CVE:
 		// * that has Application-related CPEs (so applies to software)
@@ -506,16 +507,16 @@ func main() {
 		// * any knowledge of the language used
 		// * definitive version information
 
-		if _, ok := ReposForCVE[CVEIDString(cve.CVE.CVEDataMeta.ID)]; !ok {
+		if _, ok := ReposForCVE[CVEID]; !ok {
 			// We have nothing useful to work with, so we'll assume it's out of scope
-			Logger.Infof("[%s]: Passing due to lack of viable repository", cve.CVE.CVEDataMeta.ID)
-			Metrics.Outcomes[CVEIDString(cve.CVE.CVEDataMeta.ID)] = NoRepos
+			Logger.Infof("[%s]: Passing due to lack of viable repository", CVEID)
+			Metrics.Outcomes[CVEID] = NoRepos
 			continue
 		}
 
-		Logger.Infof("[%s]: Repos: %#v", cve.CVE.CVEDataMeta.ID, ReposForCVE[CVEIDString(cve.CVE.CVEDataMeta.ID)])
+		Logger.Infof("[%s]: Repos: %#v", CVEID, ReposForCVE[CVEID])
 
-		for _, repo := range ReposForCVE[CVEIDString(cve.CVE.CVEDataMeta.ID)] {
+		for _, repo := range ReposForCVE[CVEID] {
 			if !InScopeRepo(repo) {
 				continue
 			}
@@ -525,17 +526,17 @@ func main() {
 
 		switch *outFormat {
 		case "OSV":
-			err = CVEToOSV(cve, ReposForCVE[CVEIDString(cve.CVE.CVEDataMeta.ID)], RepoTagsCache, *outDir)
+			err = CVEToOSV(cve, ReposForCVE[CVEID], RepoTagsCache, *outDir)
 		case "PackageInfo":
-			err = CVEToPackageInfo(cve, ReposForCVE[CVEIDString(cve.CVE.CVEDataMeta.ID)], RepoTagsCache, *outDir)
+			err = CVEToPackageInfo(cve, ReposForCVE[CVEID], RepoTagsCache, *outDir)
 		}
 		if err != nil {
-			Logger.Warnf("[%s]: Failed to generate an OSV record: %+v", cve.CVE.CVEDataMeta.ID, err)
-			Metrics.Outcomes[CVEIDString(cve.CVE.CVEDataMeta.ID)] = NoRanges
+			Logger.Warnf("[%s]: Failed to generate an OSV record: %+v", CVEID, err)
+			Metrics.Outcomes[CVEID] = NoRanges
 			continue
 		}
 		Metrics.OSVRecordsGenerated++
-		Metrics.Outcomes[CVEIDString(cve.CVE.CVEDataMeta.ID)] = Successful
+		Metrics.Outcomes[CVEID] = Successful
 	}
 	Metrics.TotalCVEs = len(parsed.CVEItems)
 	err = outputOutcomes(Metrics.Outcomes, ReposForCVE, *outDir)

@@ -330,87 +330,37 @@ func (v *Vulnerability) AddPkgInfo(pkgInfo PackageInfo) {
 		Purl:      pkgInfo.PURL,
 	}
 
-	if len(pkgInfo.VersionInfo.FixCommits) > 0 ||
-		len(pkgInfo.VersionInfo.IntroducedCommits) > 0 ||
-		len(pkgInfo.VersionInfo.LimitCommits) > 0 ||
-		len(pkgInfo.VersionInfo.LastAffectedCommits) > 0 {
+	if len(pkgInfo.VersionInfo.AffectedCommits) > 0 {
 		gitVersionRangesByRepo := map[string]AffectedRange{}
 
-		for _, gc := range pkgInfo.VersionInfo.IntroducedCommits {
-			entry, ok := gitVersionRangesByRepo[gc.Repo]
+		for _, ac := range pkgInfo.VersionInfo.AffectedCommits {
+			entry, ok := gitVersionRangesByRepo[ac.Repo]
 			if !ok {
 				entry = AffectedRange{
 					Type:   "GIT",
 					Events: []Event{},
-					Repo:   gc.Repo,
+					Repo:   ac.Repo,
 				}
 			}
 
-			entry.Events = append(entry.Events,
-				Event{
-					Introduced: gc.Commit,
-				},
-			)
-			gitVersionRangesByRepo[gc.Repo] = entry
-		}
-
-		for _, gc := range pkgInfo.VersionInfo.FixCommits {
-			entry, ok := gitVersionRangesByRepo[gc.Repo]
-			if !ok {
-				// this entry was not in IntroducedCommits, so create an introduced commit at 0
-				entry = AffectedRange{
-					Type: "GIT",
-					Events: []Event{{
+			if !pkgInfo.VersionInfo.HasIntroducedCommits(ac.Repo) {
+				// There was no explicitly defined introduced commit, so create one at 0
+				entry.Events = append(entry.Events,
+					Event{
 						Introduced: "0",
-					}},
-					Repo: gc.Repo,
-				}
+					},
+				)
 			}
 
 			entry.Events = append(entry.Events,
 				Event{
-					Fixed: gc.Commit,
+					Introduced:   ac.Introduced,
+					Fixed:        ac.Fixed,
+					LastAffected: ac.LastAffected,
+					Limit:        ac.Limit,
 				},
 			)
-			gitVersionRangesByRepo[gc.Repo] = entry
-		}
-
-		for _, gc := range pkgInfo.VersionInfo.LastAffectedCommits {
-			entry, ok := gitVersionRangesByRepo[gc.Repo]
-			if !ok {
-				entry = AffectedRange{
-					Type: "GIT",
-					Events: []Event{{
-						Introduced: "0",
-					}}, Repo: gc.Repo,
-				}
-			}
-
-			entry.Events = append(entry.Events,
-				Event{
-					LastAffected: gc.Commit,
-				},
-			)
-			gitVersionRangesByRepo[gc.Repo] = entry
-		}
-
-		for _, gc := range pkgInfo.VersionInfo.LimitCommits {
-			entry, ok := gitVersionRangesByRepo[gc.Repo]
-			if !ok {
-				entry = AffectedRange{
-					Type: "GIT",
-					Events: []Event{{
-						Introduced: "0",
-					}}, Repo: gc.Repo,
-				}
-			}
-
-			entry.Events = append(entry.Events,
-				Event{
-					Limit: gc.Commit,
-				},
-			)
-			gitVersionRangesByRepo[gc.Repo] = entry
+			gitVersionRangesByRepo[ac.Repo] = entry
 		}
 
 		for _, ar := range gitVersionRangesByRepo {
@@ -466,36 +416,29 @@ func (v *Vulnerability) AddSeverity(CVEImpact cves.CVEImpact) {
 // AttachExtractedVersionInfo adds version information extracted from CVEs onto
 // the affected field
 func (affected *Affected) AttachExtractedVersionInfo(version cves.VersionInfo) {
-	// Synthetic enum of supported commit types.
-	type CommitType int
-	const (
-		Introduced CommitType = iota
-		Fixed
-		Limit
-		LastAffected
-	)
 	// commit holds a commit hash of one of the supported commit types.
 	type commit struct {
-		commitType CommitType
+		commitType cves.CommitType
 		hash       string
 	}
 	// Collect the commits of the supported types for each repo.
 	repoToCommits := map[string][]commit{}
 
-	for _, introducedCommit := range version.IntroducedCommits {
-		repoToCommits[introducedCommit.Repo] = append(repoToCommits[introducedCommit.Repo], commit{commitType: Introduced, hash: introducedCommit.Commit})
-	}
-
-	for _, fixCommit := range version.FixCommits {
-		repoToCommits[fixCommit.Repo] = append(repoToCommits[fixCommit.Repo], commit{commitType: Fixed, hash: fixCommit.Commit})
-	}
-
-	for _, limitCommit := range version.LimitCommits {
-		repoToCommits[limitCommit.Repo] = append(repoToCommits[limitCommit.Repo], commit{commitType: Limit, hash: limitCommit.Commit})
-	}
-
-	for _, lastAffectedCommit := range version.LastAffectedCommits {
-		repoToCommits[lastAffectedCommit.Repo] = append(repoToCommits[lastAffectedCommit.Repo], commit{commitType: LastAffected, hash: lastAffectedCommit.Commit})
+	unfixed := true
+	for _, ac := range version.AffectedCommits {
+		if ac.Introduced != "" {
+			repoToCommits[ac.Repo] = append(repoToCommits[ac.Repo], commit{commitType: cves.Introduced, hash: ac.Introduced})
+		}
+		if ac.Fixed != "" {
+			repoToCommits[ac.Repo] = append(repoToCommits[ac.Repo], commit{commitType: cves.Fixed, hash: ac.Fixed})
+			unfixed = false
+		}
+		if ac.Limit != "" {
+			repoToCommits[ac.Repo] = append(repoToCommits[ac.Repo], commit{commitType: cves.Limit, hash: ac.Limit})
+		}
+		if ac.LastAffected != "" {
+			repoToCommits[ac.Repo] = append(repoToCommits[ac.Repo], commit{commitType: cves.LastAffected, hash: ac.LastAffected})
+		}
 	}
 
 	for repo, commits := range repoToCommits {
@@ -506,25 +449,25 @@ func (affected *Affected) AttachExtractedVersionInfo(version cves.VersionInfo) {
 		// We're not always able to determine when a vulnerability is introduced, and may need to default to the dawn of time.
 		addedIntroduced := false
 		for _, commit := range commits {
-			if commit.commitType == Introduced {
+			if commit.commitType == cves.Introduced {
 				gitRange.Events = append(gitRange.Events, Event{Introduced: commit.hash})
 				addedIntroduced = true
 			}
-			if commit.commitType == Fixed {
+			if commit.commitType == cves.Fixed {
 				gitRange.Events = append(gitRange.Events, Event{Fixed: commit.hash})
 			}
-			if commit.commitType == Limit {
+			if commit.commitType == cves.Limit {
 				gitRange.Events = append(gitRange.Events, Event{Limit: commit.hash})
 			}
 			// Only add any LastAffectedCommits in the absence of
 			// any FixCommits to maintain schema compliance.
-			if commit.commitType == LastAffected && len(version.FixCommits) == 0 {
+			if commit.commitType == cves.LastAffected && unfixed {
 				gitRange.Events = append(gitRange.Events, Event{LastAffected: commit.hash})
 			}
 		}
 		if !addedIntroduced {
 			// Prepending not strictly necessary, but seems nicer to have the Introduced first in the list.
-			gitRange.Events = append([]Event{Event{Introduced: "0"}}, gitRange.Events...)
+			gitRange.Events = append([]Event{{Introduced: "0"}}, gitRange.Events...)
 		}
 		affected.Ranges = append(affected.Ranges, gitRange)
 	}

@@ -82,9 +82,9 @@ var RefTagDenyList = []string{
 // cross-contamination of repo derivation between CVEs.
 var VendorProductDenyList = []VendorProduct{
 	// Causes a chain reaction of incorrect associations from CVE-2022-2068
-	VendorProduct{"netapp", "ontap_select_deploy_administration_utility"},
+	{"netapp", "ontap_select_deploy_administration_utility"},
 	// Causes misattribution for Python, e.g. CVE-2022-26488
-	VendorProduct{"netapp", "active_iq_unified_manager"},
+	{"netapp", "active_iq_unified_manager"},
 }
 
 // Looks at what the repo to determine if it contains code using an in-scope language
@@ -117,10 +117,10 @@ func InScopeGitRepo(repoURL string) bool {
 
 // Examines repos and tries to convert versions to commits by treating them as Git tags.
 // Takes a CVE ID string (for logging), cves.VersionInfo with AffectedVersions and
-// typically no FixCommits and attempts to add FixCommits where there aren't any.
-func GitVersionsToCommit(CVE string, versions cves.VersionInfo, repos []string, cache git.RepoTagsCache) (v cves.VersionInfo, e error) {
-	// versions is a VersionInfo with AffectedVersions and typically no FixCommits
-	// v is a VersionInfo with FixCommits included
+// typically no AffectedCommits and attempts to add AffectedCommits (including Fixed commits) where there aren't any.
+func GitVersionsToCommits(CVE string, versions cves.VersionInfo, repos []string, cache git.RepoTagsCache) (v cves.VersionInfo, e error) {
+	// versions is a VersionInfo with AffectedVersions and typically no AffectedCommits
+	// v is a VersionInfo with AffectedCommits (containing Fixed commits) included
 	v = versions
 	for _, repo := range repos {
 		normalizedTags, err := git.NormalizeRepoTags(repo, cache)
@@ -130,33 +130,33 @@ func GitVersionsToCommit(CVE string, versions cves.VersionInfo, repos []string, 
 		}
 		for _, av := range versions.AffectedVersions {
 			if av.Introduced != "" {
-				gc, err := git.VersionToCommit(av.Introduced, repo, normalizedTags)
+				ac, err := git.VersionToCommit(av.Introduced, repo, cves.Introduced, normalizedTags)
 				if err != nil {
 					Logger.Warnf("[%s]: Failed to get a Git commit for introduced version %q from %q: %v", CVE, av.Introduced, repo, err)
 				} else {
-					Logger.Infof("[%s]: Successfully derived %+v for introduced version %q", CVE, gc, av.Introduced)
-					v.IntroducedCommits = append(v.IntroducedCommits, gc)
+					Logger.Infof("[%s]: Successfully derived %+v for introduced version %q", CVE, ac, av.Introduced)
+					v.AffectedCommits = append(v.AffectedCommits, ac)
 				}
 			}
 			// Only try and convert versions to commits via tags if there aren't any already.
 			// cves.ExtractVersionInfo() opportunistically returns
-			// FixCommits when the CVE has appropriate references.
-			if len(v.FixCommits) == 0 && av.Fixed != "" {
-				gc, err := git.VersionToCommit(av.Fixed, repo, normalizedTags)
+			// AffectedCommits (with Fixed commits) when the CVE has appropriate references.
+			if v.HasFixedCommits(repo) && av.Fixed != "" {
+				ac, err := git.VersionToCommit(av.Fixed, repo, cves.Fixed, normalizedTags)
 				if err != nil {
 					Logger.Warnf("[%s]: Failed to get a Git commit for fixed version %q from %q: %v", CVE, av.Fixed, repo, err)
 				} else {
-					Logger.Infof("[%s]: Successfully derived %+v for fixed version %q", CVE, gc, av.Fixed)
-					v.FixCommits = append(v.FixCommits, gc)
+					Logger.Infof("[%s]: Successfully derived %+v for fixed version %q", CVE, ac, av.Fixed)
+					v.AffectedCommits = append(v.AffectedCommits, ac)
 				}
 			}
 			if av.LastAffected != "" {
-				gc, err := git.VersionToCommit(av.LastAffected, repo, normalizedTags)
+				ac, err := git.VersionToCommit(av.LastAffected, repo, cves.LastAffected, normalizedTags)
 				if err != nil {
 					Logger.Warnf("[%s]: Failed to get a Git commit for last_affected version %q from %q: %v", CVE, av.LastAffected, repo, err)
 				} else {
-					Logger.Infof("[%s]: Successfully derived %+v for last_affected version %q", CVE, gc, av.LastAffected)
-					v.LastAffectedCommits = append(v.LastAffectedCommits, gc)
+					Logger.Infof("[%s]: Successfully derived %+v for last_affected version %q", CVE, ac, av.LastAffected)
+					v.AffectedCommits = append(v.AffectedCommits, ac)
 				}
 			}
 		}
@@ -221,7 +221,7 @@ func CVEToOSV(CVE cves.CVEItem, repos []string, cache git.RepoTagsCache, directo
 			return fmt.Errorf("[%s]: No affected ranges for %q, and no repos to try and convert %+v to tags with", CVE.CVE.CVEDataMeta.ID, CPE.Product, versions.AffectedVersions)
 		}
 		Logger.Infof("[%s]: Trying to convert version tags %+v to commits using %v", CVE.CVE.CVEDataMeta.ID, versions.AffectedVersions, repos)
-		versions, err = GitVersionsToCommit(CVE.CVE.CVEDataMeta.ID, versions, repos, cache)
+		versions, err = GitVersionsToCommits(CVE.CVE.CVEDataMeta.ID, versions, repos, cache)
 	}
 
 	affected := vulns.Affected{}

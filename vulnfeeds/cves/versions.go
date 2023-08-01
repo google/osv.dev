@@ -27,11 +27,11 @@ import (
 )
 
 type AffectedCommit struct {
-	Repo         string
-	Introduced   string
-	Fixed        string
-	Limit        string
-	LastAffected string
+	Repo         string `json:"repo,omitempty" yaml:"repo,omitempty"`
+	Introduced   string `json:"introduced,omitempty" yaml:"introduced,omit"`
+	Fixed        string `json:"fixed,omitempty" yaml:"fixed,omitempty"`
+	Limit        string `json:"limit,omitempty" yaml:"limit,omitempty"`
+	LastAffected string `json:"last_affected,omitempty" yaml:"last_affected,omitempty"`
 }
 
 func (ac *AffectedCommit) SetRepo(repo string) {
@@ -55,14 +55,14 @@ func (ac *AffectedCommit) SetLastAffected(commit string) {
 }
 
 type AffectedVersion struct {
-	Introduced   string
-	Fixed        string
-	LastAffected string
+	Introduced   string `json:"introduced,omitempty" yaml:"introduced,omitempty"`
+	Fixed        string `json:"fixed,omitempty" yaml:"fixed,omitempty"`
+	LastAffected string `json:"last_affected,omitempty" yaml:"last_affected,omitempty"`
 }
 
 type VersionInfo struct {
-	AffectedCommits  []AffectedCommit
-	AffectedVersions []AffectedVersion
+	AffectedCommits  []AffectedCommit  `json:"affect_commits,omitempty" yaml:"affected_commits,omitempty"`
+	AffectedVersions []AffectedVersion `json:"affected_versions,omitempty" yaml:"affected_versions,omitempty"`
 }
 
 func (vi *VersionInfo) HasFixedVersions() bool {

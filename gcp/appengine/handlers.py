@@ -13,6 +13,8 @@
 # limitations under the License.
 """OSV cron handlers."""
 
+# TODO(michaelkedar): Cloud Run
+
 import datetime
 import logging
 
@@ -182,6 +184,7 @@ def backup():
   return 'done'
 
 
+# TODO(michaelkedar): Cloud Run
 @blueprint.route('/_ah/warmup')
 def warmup():
   """Warmup handler."""

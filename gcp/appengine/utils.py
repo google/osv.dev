@@ -17,4 +17,5 @@ import os
 
 
 def is_prod():
-  return os.getenv('GAE_ENV', '').startswith('standard')
+  # TODO(michaelkedar): Cloud Run
+  return 'GAE_ENV' in os.environ or 'K_SERVICE' in os.environ

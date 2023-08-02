@@ -18,18 +18,36 @@ import requests
 
 from . import config
 from .helper_base import Ecosystem, EnumerateError
+from .. import semver_index
 
 class Bioconductor(Ecosystem):
   """Bioconductor ecosystem helpers."""
 
-  # Use the Posit Public Package Manager API to pull both the current and archived versions for a specific package
-  # since CRAN doesn't natively support this functionality.
+  # Use the Posit Public Package Manager API to pull both the current and older versions for a specific package
+  # since Bioconductor doesn't natively support this functionality.
   _API_PACKAGE_URL_POSIT_BIOCONDUCTOR = 'https://packagemanager.posit.co/__api__/repos/4/packages/{package}?bioc_version={bioc_version}'
+  _API_BIOC_VERSIONS_URL = 'https://packagemanager.posit.co/__api__/status'
   _BIOC_VERSIONS = ['3.18', '3.17', '3.16', '3.15', '3.14', '3.13', '3.12', '3.11', '3.10', '3.9', '3.8', '3.7', '3.6', '3.5', '3.4', '3.3', '3.2', '3.1']
+
+  def __init__(self, *args, **kwargs):
+    # Call the init of Ecosystem class
+    super().__init__(*args, **kwargs)
+
+    # Refresh the versions
+    self.refresh_bioc_versions()
+
+  def refresh_bioc_versions(self):
+    """
+    Pull latest Bioconductor versions
+    """
+    response = requests.get(self._API_BIOC_VERSIONS_URL)
+    data = response.json()
+
+    self._BIOC_VERSIONS = [bioc['bioc_version'] for bioc in data['bioc_versions']]
 
   def sort_key(self, version):
     """Sort key."""
-    return packaging.version.parse(version)
+    return semver_index.parse(version)
 
   def _enumerate_versions(self, url, package, introduced, fixed=None, last_affected=None, limits=None):
     """Helper method to enumerate versions from a specific URL."""
@@ -38,6 +56,7 @@ class Bioconductor(Ecosystem):
     for version in self._BIOC_VERSIONS:
       response = requests.get(url.format(package=package, bioc_version=version), timeout=config.timeout)
       if response.status_code == 404:
+        # Break here as we're starting at latest and going back as packages won't disappear.
         break
       elif response.status_code != 200:
         raise RuntimeError(f'Failed to get R versions for {package} with: {response.text}')

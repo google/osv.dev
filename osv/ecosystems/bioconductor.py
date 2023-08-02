@@ -13,7 +13,6 @@
 # limitations under the License.
 """Bioconductor helpers."""
 
-import packaging.version
 import requests
 
 from . import config

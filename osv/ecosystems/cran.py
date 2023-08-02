@@ -13,8 +13,8 @@
 # limitations under the License.
 """CRAN helpers."""
 
-import packaging.version
 import requests
+from .. import semver_index
 
 from . import config
 from .helper_base import Ecosystem, EnumerateError
@@ -28,7 +28,7 @@ class CRAN(Ecosystem):
 
   def sort_key(self, version):
     """Sort key."""
-    return packaging.version.parse(version)
+    return semver_index.parse(version)
 
   def _enumerate_versions(self, url, package, introduced, fixed=None, last_affected=None, limits=None):
     """Helper method to enumerate versions from a specific URL."""

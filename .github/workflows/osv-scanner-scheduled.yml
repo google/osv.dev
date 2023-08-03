@@ -1,4 +1,4 @@
-# Copyright 2021 Google LLC
+# Copyright 2023 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -12,10 +12,19 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-apiVersion: autoscaling/v2
-kind: HorizontalPodAutoscaler
-metadata:
-  name: pubsub
-spec:
-  # oss-vdb-test does not have local SSD quota to support 400 workers
-  maxReplicas: 250
+name: osv-scanner
+
+on:
+  schedule:
+    - cron: '12 12 * * 1'
+  push:
+    branches: [ "main" ]
+
+# Declare default permissions as read only.
+permissions: 
+  security-events: write
+  contents: read
+
+jobs:
+  scan-pr-attempt:
+    uses: "google/osv-scanner/.github/workflows/osv-scanner-reusable-scheduled.yml@main"

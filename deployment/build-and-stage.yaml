@@ -240,7 +240,7 @@ timeout: 7200s
 serviceAccount: 'projects/oss-vdb/serviceAccounts/deployment@oss-vdb.iam.gserviceaccount.com'
 logsBucket: gs://oss-vdb-tf/apply-logs
 options:
-  machineType: N1_HIGHCPU_8
+  machineType: E2_HIGHCPU_8
 
 tags: ['build-and-stage']
 

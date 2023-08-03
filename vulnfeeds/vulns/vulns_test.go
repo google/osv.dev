@@ -2,6 +2,7 @@ package vulns
 
 import (
 	"encoding/json"
+	"errors"
 	"log"
 	"os"
 	"reflect"
@@ -228,5 +229,60 @@ func TestAddSeverity(t *testing.T) {
 		if diff := cmp.Diff(got, tc.expectedResult); diff != "" {
 			t.Errorf("test %q: Incorrect result: %s", tc.description, diff)
 		}
+	}
+}
+
+func TestMarkDisputedCVEWithdrawn(t *testing.T) {
+	tests := []struct {
+		description       string
+		inputVulnId       string
+		expectedResult    *Vulnerability
+		expectedWithdrawn bool
+		expectedError     error
+	}{
+		{
+			description:       "A non-CVE vulnerability",
+			inputVulnId:       "OSV-1234",
+			expectedWithdrawn: false,
+			expectedError:     ErrVulnNotACVE,
+		},
+		{
+			description:       "A disputed CVE vulnerability",
+			inputVulnId:       "CVE-2023-23127",
+			expectedWithdrawn: true,
+			expectedError:     nil,
+		},
+		{
+			description:       "An undisputed CVE vulnerability",
+			inputVulnId:       "CVE-2023-38408",
+			expectedWithdrawn: false,
+			expectedError:     nil,
+		},
+	}
+
+	for _, tc := range tests {
+		inputVuln := &Vulnerability{}
+		inputVuln = &Vulnerability{
+			ID: tc.inputVulnId,
+		}
+
+		err := inputVuln.MarkDisputedCVEWithdrawn()
+
+		if err != nil && err != tc.expectedError {
+			var verr *VulnsCVEListError
+			if errors.As(err, &verr) {
+				t.Errorf("test %q: unexpected errored: %#v", tc.description, verr.Err)
+			} else {
+				t.Errorf("test %q: unexpectedly errored: %#v", tc.description, err)
+			}
+		}
+
+		if err == nil && tc.expectedError != nil {
+			t.Errorf("test %q: did not error as expected, wanted: %#v", tc.description, tc.expectedError)
+		}
+
+		if inputVuln.Withdrawn == "" && tc.expectedWithdrawn {
+			t.Errorf("test: %q: withdrawn (%s) not set as expected", tc.description, inputVuln.Withdrawn)
+		} 
 	}
 }

@@ -15,17 +15,35 @@
 package vulns
 
 import (
+	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
+	"net/http"
 	"net/url"
 	"strings"
 	"time"
 
+	"golang.org/x/exp/slices"
 	"gopkg.in/yaml.v2"
 
 	"github.com/google/osv/vulnfeeds/cves"
+	"github.com/sethvargo/go-retry"
 )
+
+const CVEListBaseURL = "https://raw.githubusercontent.com/CVEProject/cvelistV5/main/cves"
+
+var ErrVulnNotACVE = errors.New("not a CVE")
+
+type VulnsCVEListError struct {
+	URL string
+	Err error
+}
+
+func (e *VulnsCVEListError) Error() string {
+	return e.URL + ": " + e.Err.Error()
+}
 
 type Event struct {
 	Introduced   string `json:"introduced,omitempty" yaml:"introduced,omitempty"`
@@ -173,6 +191,7 @@ type Reference struct {
 
 type Vulnerability struct {
 	ID         string      `json:"id" yaml:"id"`
+	Withdrawn  string      `json:"withdrawn,omitempty" yaml:"modified,omitempty"`
 	Summary    string      `json:"summary,omitempty" yaml:"summary,omitempty"`
 	Severity   []Severity  `json:"severity,omitempty" yaml:"severity,omitempty"`
 	Details    string      `json:"details" yaml:"details"`
@@ -275,6 +294,82 @@ func (v *Vulnerability) AddSeverity(CVEImpact cves.CVEImpact) {
 	v.Severity = append(v.Severity, severity)
 }
 
+// MarkDisputedCVEWithdrawn will set the Vulnerability "withdrawn" field based on the CVEList tag, if determinable.
+func (v *Vulnerability) MarkDisputedCVEWithdrawn() error {
+	// iff the v.ID starts with a CVE...
+	// 	Try to make an HTTP request for the CVE record in the CVE List
+	// 	iff .containers.cna.tags contains "disputed".
+	//		set v.Withdrawn to .containers.cna.providerMetadata.dateUpdated
+	if !strings.HasPrefix(v.ID, "CVE-") {
+		return ErrVulnNotACVE
+	}
+
+	CVEParts := strings.Split(v.ID, "-")[1:3]
+	// Replace the last three digits of the CVE ID with "xxx".
+	CVEYear, CVEIndexShard := CVEParts[0], CVEParts[1][:len(CVEParts[1])-3]+"xxx"
+
+	// https://raw.githubusercontent.com/CVEProject/cvelistV5/main/cves/2023/23xxx/CVE-2023-23127.json
+	CVEListURL, err := url.JoinPath(CVEListBaseURL, CVEYear, CVEIndexShard, v.ID+".json")
+
+	if err != nil {
+		return &VulnsCVEListError{"", err}
+	}
+
+	gitHubClient := http.Client{
+		Timeout: 5 * time.Second,
+	}
+
+	req, err := http.NewRequest(http.MethodGet, CVEListURL, nil)
+
+	if err != nil {
+		return &VulnsCVEListError{CVEListURL, err}
+	}
+
+	req.Header.Set("User-Agent", "osv.dev")
+
+	// Retry on timeout or 5xx
+	ctx := context.Background()
+	backoff := retry.NewFibonacci(1 * time.Second)
+	var CVERawJSON []byte
+	if err := retry.Do(ctx, retry.WithMaxRetries(3, backoff), func(ctx context.Context) error {
+		res, err := gitHubClient.Do(req)
+		if err != nil {
+			if err == http.ErrHandlerTimeout {
+				return retry.RetryableError(fmt.Errorf("timeout: %#v", err))
+			}
+			return &VulnsCVEListError{CVEListURL, err}
+		}
+		if res.StatusCode/100 == 5 {
+			return retry.RetryableError(fmt.Errorf("bad response: %v", res.StatusCode))
+		}
+		if res.Body != nil {
+			defer res.Body.Close()
+		}
+		CVERawJSON, err = io.ReadAll(res.Body)
+		if err != nil {
+			return &VulnsCVEListError{CVEListURL, err}
+		}
+		return nil
+	}); err != nil {
+		return &VulnsCVEListError{CVEListURL, err}
+	}
+
+	CVE := &cves.CVE5{}
+
+	err = json.Unmarshal(CVERawJSON, &CVE)
+
+	if err != nil {
+		return &VulnsCVEListError{CVEListURL, err}
+	}
+
+	if slices.Contains(CVE.Containers.CNA.Tags, "disputed") {
+		v.Withdrawn, err = CVE5timestampToRFC3339(CVE.Containers.CNA.ProviderMetadata.DateUpdated)
+		return err
+	}
+
+	return nil
+}
+
 func (v *Vulnerability) ToJSON(w io.Writer) error {
 	encoder := json.NewEncoder(w)
 	return encoder.Encode(v)
@@ -287,6 +382,15 @@ func (v *Vulnerability) ToYAML(w io.Writer) error {
 
 func timestampToRFC3339(timestamp string) (string, error) {
 	t, err := cves.ParseTimestamp(timestamp)
+	if err != nil {
+		return "", err
+	}
+
+	return t.Format(time.RFC3339), nil
+}
+
+func CVE5timestampToRFC3339(timestamp string) (string, error) {
+	t, err := cves.ParseCVE5Timestamp(timestamp)
 	if err != nil {
 		return "", err
 	}

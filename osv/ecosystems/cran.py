@@ -14,7 +14,7 @@
 """CRAN helpers."""
 
 import requests
-from .. import semver_index
+import packaging.version
 
 from . import config
 from .helper_base import Ecosystem, EnumerateError
@@ -28,7 +28,11 @@ class CRAN(Ecosystem):
 
   def sort_key(self, version):
     """Sort key."""
-    return semver_index.parse(version)
+    # Some documentation on CRAN versioning and the R numeric_version method:
+    # - https://cran.r-project.org/doc/manuals/R-exts.html#The-DESCRIPTION-file
+    # - https://stat.ethz.ch/R-manual/R-devel/library/base/html/numeric_version.html
+    # The packaging.version appears to work for the typical X.Y.Z and X.Y-Z cases
+    return packaging.version.parse(version)
 
   def _enumerate_versions(self, url, package, introduced, fixed=None, last_affected=None, limits=None):
     """Helper method to enumerate versions from a specific URL."""

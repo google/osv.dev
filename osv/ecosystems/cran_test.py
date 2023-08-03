@@ -24,7 +24,13 @@ class CRANEcosystemTest(unittest.TestCase):
   def test_next_version(self):
     """Test next_version."""
     ecosystem = ecosystems.get('CRAN')
+    # Test typical semver X.Y.Z version
     self.assertEqual('0.1.1', ecosystem.next_version('readxl', '0.1.0'))
     self.assertEqual('1.0.0', ecosystem.next_version('readxl', '0.1.1'))
+
     with self.assertRaises(ecosystems.EnumerateError):
       ecosystem.next_version('doesnotexist123456', '1')
+
+    # Test versions with the X.Y-Z format
+    self.assertEqual('0.1-18', ecosystem.next_version('abd', '0.1-12'))
+    self.assertEqual('0.2-2', ecosystem.next_version('abd', '0.1-22'))

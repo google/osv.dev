@@ -42,7 +42,10 @@ run-appengine-staging:
 
 run-api-server:
 	test $(SERVICE_ACCOUNT) || (echo "SERVICE_ACCOUNT variable not set"; exit 1)
-	cd gcp/api && pipenv sync && GOOGLE_CLOUD_PROJECT=oss-vdb pipenv run python test_server.py $(SERVICE_ACCOUNT)
+	# Required for ESP container to be able to read the credential, the configured alpine image doesn't respect the volume mapping args.
+	chmod 644 $(SERVICE_ACCOUNT)
+	# This will change permissions back to secure default if the program is interrupted or exits.
+	bash -c "trap 'chmod 600 $(SERVICE_ACCOUNT)' EXIT; cd gcp/api && pipenv sync && GOOGLE_CLOUD_PROJECT=oss-vdb pipenv run python test_server.py $(SERVICE_ACCOUNT)"
 
 # TODO: API integration tests.
 all-tests: lib-tests worker-tests importer-tests appengine-tests vulnfeed-tests

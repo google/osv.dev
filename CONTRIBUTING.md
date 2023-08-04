@@ -108,7 +108,7 @@ to download API configuration.
 
 ```shell
 $ gcloud auth login --update-adc
-$ make SERVICE_ACCOUNT=~/.config/gcloud/application_default_credentials.json run-api-server
+$ make CREDENTIAL=~/.config/gcloud/application_default_credentials.json run-api-server
 ```
 
 ## Contributing data

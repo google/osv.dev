@@ -32,6 +32,7 @@ class CRAN(Ecosystem):
     # - https://cran.r-project.org/doc/manuals/R-exts.html#The-DESCRIPTION-file
     # - https://stat.ethz.ch/R-manual/R-devel/library/base/html/numeric_version.html
     # The packaging.version appears to work for the typical X.Y.Z and X.Y-Z cases
+    version = version.replace("-", ".")
     return packaging.version.parse(version)
 
   def _enumerate_versions(self, url, package, introduced, fixed=None, last_affected=None, limits=None):

@@ -28,13 +28,6 @@ class Bioconductor(Ecosystem):
   _API_BIOC_VERSIONS_URL = 'https://packagemanager.posit.co/__api__/status'
   _BIOC_VERSIONS = ['3.18', '3.17', '3.16', '3.15', '3.14', '3.13', '3.12', '3.11', '3.10', '3.9', '3.8', '3.7', '3.6', '3.5', '3.4', '3.3', '3.2', '3.1']
 
-  def __init__(self, *args, **kwargs):
-    # Call the init of Ecosystem class
-    super().__init__(*args, **kwargs)
-
-    # Refresh the versions
-    self.refresh_bioc_versions()
-
   def refresh_bioc_versions(self):
     """
     Pull latest Bioconductor versions
@@ -77,6 +70,8 @@ class Bioconductor(Ecosystem):
                          last_affected=None,
                          limits=None):
     """Enumerate versions."""
+    # Refresh to ensure any new Bioconductor versions are included
+    self.refresh_bioc_versions()
     versions = self._enumerate_versions(
         self._API_PACKAGE_URL_POSIT_BIOCONDUCTOR,
         package,

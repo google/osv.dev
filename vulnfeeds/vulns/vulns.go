@@ -613,7 +613,7 @@ func CVEIsDisputed(v *Vulnerability) (modified string, e error) {
 	// Retry on timeout or 5xx
 	ctx := context.Background()
 	backoff := retry.NewFibonacci(1 * time.Second)
-	var CVERawJSON []byte
+	CVE := &cves.CVE5{}
 	if err := retry.Do(ctx, retry.WithMaxRetries(3, backoff), func(ctx context.Context) error {
 		res, err := gitHubClient.Do(req)
 		if err != nil {
@@ -628,18 +628,20 @@ func CVEIsDisputed(v *Vulnerability) (modified string, e error) {
 		if res.Body != nil {
 			defer res.Body.Close()
 		}
-		CVERawJSON, err = io.ReadAll(res.Body)
-		if err != nil {
-			return err
+
+		decoder := json.NewDecoder(res.Body)
+
+		for {
+			if err := decoder.Decode(&CVE); err == io.EOF {
+				break
+			} else if err != nil {
+				return err
+			}
 		}
 		return nil
 	}); err != nil {
 		return "", &VulnsCVEListError{CVEListURL, err}
 	}
-
-	CVE := &cves.CVE5{}
-
-	err = json.Unmarshal(CVERawJSON, &CVE)
 
 	if err != nil {
 		return "", &VulnsCVEListError{CVEListURL, err}

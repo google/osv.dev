@@ -92,9 +92,11 @@ def start_esp(port, backend_port, service_account_path, log_path):
   if os.getenv('CLOUDBUILD'):
     network = '--network=cloudbuild'
     host = get_ip()
+    docker_image = 'gcr.io/endpoints-release/endpoints-runtime:2'
   else:
     network = '--network=host'
     host = 'localhost'
+    docker_image = 'osv/esp:latest'
 
   # Stop existing osv-esp processes that weren't killed properly.
   subprocess.run(['docker', 'stop', 'osv-esp'], check=False)
@@ -109,7 +111,7 @@ def start_esp(port, backend_port, service_account_path, log_path):
       '-v',
       f'{service_account_dir}:/esp:ro',
       f'--publish={port}',
-      'osv/esp:latest',
+      f'{docker_image}',
       '--disable_tracing',
       '--service=api-test.osv.dev',
       '--rollout_strategy=managed',

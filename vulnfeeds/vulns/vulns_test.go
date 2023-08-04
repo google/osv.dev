@@ -232,11 +232,10 @@ func TestAddSeverity(t *testing.T) {
 	}
 }
 
-func TestMarkDisputedCVEWithdrawn(t *testing.T) {
+func TestCVEIsDisputed(t *testing.T) {
 	tests := []struct {
 		description       string
 		inputVulnId       string
-		expectedResult    *Vulnerability
 		expectedWithdrawn bool
 		expectedError     error
 	}{
@@ -261,12 +260,11 @@ func TestMarkDisputedCVEWithdrawn(t *testing.T) {
 	}
 
 	for _, tc := range tests {
-		inputVuln := &Vulnerability{}
-		inputVuln = &Vulnerability{
+		inputVuln := &Vulnerability{
 			ID: tc.inputVulnId,
 		}
 
-		err := inputVuln.MarkDisputedCVEWithdrawn()
+		modified, err := CVEIsDisputed(inputVuln)
 
 		if err != nil && err != tc.expectedError {
 			var verr *VulnsCVEListError
@@ -281,8 +279,8 @@ func TestMarkDisputedCVEWithdrawn(t *testing.T) {
 			t.Errorf("test %q: did not error as expected, wanted: %#v", tc.description, tc.expectedError)
 		}
 
-		if inputVuln.Withdrawn == "" && tc.expectedWithdrawn {
-			t.Errorf("test: %q: withdrawn (%s) not set as expected", tc.description, inputVuln.Withdrawn)
-		} 
+		if modified == "" && tc.expectedWithdrawn {
+			t.Errorf("test: %q: withdrawn (%s) not set as expected", tc.description, modified)
+		}
 	}
 }

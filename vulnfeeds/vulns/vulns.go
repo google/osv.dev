@@ -294,82 +294,6 @@ func (v *Vulnerability) AddSeverity(CVEImpact cves.CVEImpact) {
 	v.Severity = append(v.Severity, severity)
 }
 
-// MarkDisputedCVEWithdrawn will set the Vulnerability "withdrawn" field based on the CVEList tag, if determinable.
-func (v *Vulnerability) MarkDisputedCVEWithdrawn() error {
-	// iff the v.ID starts with a CVE...
-	// 	Try to make an HTTP request for the CVE record in the CVE List
-	// 	iff .containers.cna.tags contains "disputed".
-	//		set v.Withdrawn to .containers.cna.providerMetadata.dateUpdated
-	if !strings.HasPrefix(v.ID, "CVE-") {
-		return ErrVulnNotACVE
-	}
-
-	CVEParts := strings.Split(v.ID, "-")[1:3]
-	// Replace the last three digits of the CVE ID with "xxx".
-	CVEYear, CVEIndexShard := CVEParts[0], CVEParts[1][:len(CVEParts[1])-3]+"xxx"
-
-	// https://raw.githubusercontent.com/CVEProject/cvelistV5/main/cves/2023/23xxx/CVE-2023-23127.json
-	CVEListURL, err := url.JoinPath(CVEListBaseURL, CVEYear, CVEIndexShard, v.ID+".json")
-
-	if err != nil {
-		return &VulnsCVEListError{"", err}
-	}
-
-	gitHubClient := http.Client{
-		Timeout: 5 * time.Second,
-	}
-
-	req, err := http.NewRequest(http.MethodGet, CVEListURL, nil)
-
-	if err != nil {
-		return &VulnsCVEListError{CVEListURL, err}
-	}
-
-	req.Header.Set("User-Agent", "osv.dev")
-
-	// Retry on timeout or 5xx
-	ctx := context.Background()
-	backoff := retry.NewFibonacci(1 * time.Second)
-	var CVERawJSON []byte
-	if err := retry.Do(ctx, retry.WithMaxRetries(3, backoff), func(ctx context.Context) error {
-		res, err := gitHubClient.Do(req)
-		if err != nil {
-			if err == http.ErrHandlerTimeout {
-				return retry.RetryableError(fmt.Errorf("timeout: %#v", err))
-			}
-			return &VulnsCVEListError{CVEListURL, err}
-		}
-		if res.StatusCode/100 == 5 {
-			return retry.RetryableError(fmt.Errorf("bad response: %v", res.StatusCode))
-		}
-		if res.Body != nil {
-			defer res.Body.Close()
-		}
-		CVERawJSON, err = io.ReadAll(res.Body)
-		if err != nil {
-			return &VulnsCVEListError{CVEListURL, err}
-		}
-		return nil
-	}); err != nil {
-		return &VulnsCVEListError{CVEListURL, err}
-	}
-
-	CVE := &cves.CVE5{}
-
-	err = json.Unmarshal(CVERawJSON, &CVE)
-
-	if err != nil {
-		return &VulnsCVEListError{CVEListURL, err}
-	}
-
-	if slices.Contains(CVE.Containers.CNA.Tags, "disputed") {
-		v.Withdrawn, err = CVE5timestampToRFC3339(CVE.Containers.CNA.ProviderMetadata.DateUpdated)
-		return err
-	}
-
-	return nil
-}
-
 func (v *Vulnerability) ToJSON(w io.Writer) error {
 	encoder := json.NewEncoder(w)
 	return encoder.Encode(v)
@@ -649,4 +573,82 @@ func FromJSON(r io.Reader) (*Vulnerability, error) {
 	}
 
 	return &vuln, nil
+}
+
+// CVEIsDisputed will return if the underlying CVE is disputed.
+// It returns the CVE's CNA container's dateUpdated value if it is disputed.
+// This can be used to set the Withdrawn field.
+func CVEIsDisputed(v *Vulnerability) (modified string, e error) {
+	// iff the v.ID starts with a CVE...
+	// 	Try to make an HTTP request for the CVE record in the CVE List
+	// 	iff .containers.cna.tags contains "disputed"
+	//		return .containers.cna.providerMetadata.dateUpdated, formatted for use in the Withdrawn field.
+	if !strings.HasPrefix(v.ID, "CVE-") {
+		return "", ErrVulnNotACVE
+	}
+
+	CVEParts := strings.Split(v.ID, "-")[1:3]
+	// Replace the last three digits of the CVE ID with "xxx".
+	CVEYear, CVEIndexShard := CVEParts[0], CVEParts[1][:len(CVEParts[1])-3]+"xxx"
+
+	// https://raw.githubusercontent.com/CVEProject/cvelistV5/main/cves/2023/23xxx/CVE-2023-23127.json
+	CVEListURL, err := url.JoinPath(CVEListBaseURL, CVEYear, CVEIndexShard, v.ID+".json")
+
+	if err != nil {
+		return "", &VulnsCVEListError{"", err}
+	}
+
+	gitHubClient := http.Client{
+		Timeout: 5 * time.Second,
+	}
+
+	req, err := http.NewRequest(http.MethodGet, CVEListURL, nil)
+
+	if err != nil {
+		return "", &VulnsCVEListError{CVEListURL, err}
+	}
+
+	req.Header.Set("User-Agent", "osv.dev")
+
+	// Retry on timeout or 5xx
+	ctx := context.Background()
+	backoff := retry.NewFibonacci(1 * time.Second)
+	var CVERawJSON []byte
+	if err := retry.Do(ctx, retry.WithMaxRetries(3, backoff), func(ctx context.Context) error {
+		res, err := gitHubClient.Do(req)
+		if err != nil {
+			if err == http.ErrHandlerTimeout {
+				return retry.RetryableError(fmt.Errorf("timeout: %#v", err))
+			}
+			return err
+		}
+		if res.StatusCode/100 == 5 {
+			return retry.RetryableError(fmt.Errorf("bad response: %v", res.StatusCode))
+		}
+		if res.Body != nil {
+			defer res.Body.Close()
+		}
+		CVERawJSON, err = io.ReadAll(res.Body)
+		if err != nil {
+			return err
+		}
+		return nil
+	}); err != nil {
+		return "", &VulnsCVEListError{CVEListURL, err}
+	}
+
+	CVE := &cves.CVE5{}
+
+	err = json.Unmarshal(CVERawJSON, &CVE)
+
+	if err != nil {
+		return "", &VulnsCVEListError{CVEListURL, err}
+	}
+
+	if slices.Contains(CVE.Containers.CNA.Tags, "disputed") {
+		modified, err = CVE5timestampToRFC3339(CVE.Containers.CNA.ProviderMetadata.DateUpdated)
+		return modified, err
+	}
+
+	return "", nil
 }

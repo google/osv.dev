@@ -41,9 +41,9 @@ run-appengine-staging:
 	cd gcp/appengine && pipenv sync && GOOGLE_CLOUD_PROJECT=oss-vdb-test pipenv run python main.py
 
 run-api-server:
-	test $(CREDENTIAL) || (echo "CREDENTIAL variable not set"; exit 1)
+	test $(HOME)/.config/gcloud/application_default_credentials.json || (echo "GCP Application Default Credentials not set."; exit 1)
 	cd gcp/api && docker build -f Dockerfile.esp -t osv/esp:latest .
-	cd gcp/api && pipenv sync && GOOGLE_CLOUD_PROJECT=oss-vdb pipenv run python test_server.py $(CREDENTIAL)
+	cd gcp/api && pipenv sync && GOOGLE_CLOUD_PROJECT=oss-vdb pipenv run python test_server.py $(HOME)/.config/gcloud/application_default_credentials.json
 
 # TODO: API integration tests.
 all-tests: lib-tests worker-tests importer-tests appengine-tests vulnfeed-tests

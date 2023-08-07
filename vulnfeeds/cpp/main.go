@@ -296,7 +296,9 @@ func CVEToPackageInfo(CVE cves.CVEItem, repos []string, cache git.RepoTagsCache,
 		return fmt.Errorf("[%s]: No affected commit ranges determined for %q", CVEID, CPE.Product)
 	}
 
+	var pkgInfos []vulns.PackageInfo
 	pi := vulns.PackageInfo{VersionInfo: versions}
+	pkgInfos = append(pkgInfos, pi) // combine-to-osv expects a serialised *array* of PackageInfo
 
 	vulnDir := filepath.Join(directory, CPE.Vendor, CPE.Product)
 	err = os.MkdirAll(vulnDir, 0755)
@@ -314,11 +316,13 @@ func CVEToPackageInfo(CVE cves.CVEItem, repos []string, cache git.RepoTagsCache,
 	}
 	defer f.Close()
 
-	err = pi.ToJSON(f)
+	encoder := json.NewEncoder(f)
+	encoder.SetIndent("", "  ")
+	err = encoder.Encode(&pkgInfos)
 
 	if err != nil {
-		Logger.Warnf("Failed to write %s: %v", outputFile, err)
-		return fmt.Errorf("failed to write %s: %v", outputFile, err)
+		Logger.Warnf("Failed to encode PackageInfo to %s: %v", outputFile, err)
+		return fmt.Errorf("failed to encode PackageInfo to %s: %v", outputFile, err)
 	}
 
 	Logger.Infof("[%s]: Generated PackageInfo record from for %q", CVEID, CPE.Product)

@@ -12,10 +12,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-apiVersion: autoscaling/v2
-kind: HorizontalPodAutoscaler
-metadata:
-  name: pubsub
-spec:
-  # oss-vdb-test does not have local SSD quota to support 400 workers
-  maxReplicas: 250
+FROM gcr.io/endpoints-release/endpoints-runtime:2
+
+USER root
+
+# Context: https://github.com/mhart/alpine-node/issues/48#issuecomment-370171836
+# The UID needs to be set to 1000 in order to map files without permission issues.
+RUN addgroup -g 1000 -S osv && \
+    adduser --no-create-home -u 1000 -S osv -G osv
+
+USER osv

@@ -52,7 +52,7 @@ func loadInnerParts(innerPartInputPath string, output map[string][]vulns.Package
 		Logger.Fatalf("Failed to read dir? %s", err)
 	}
 	for _, entryInner := range dirInner {
-		if !(strings.HasSuffix(entryInner.Name(), ".json")) {
+		if !strings.HasSuffix(entryInner.Name(), ".json") {
 			continue
 		}
 		file, err := os.Open(path.Join(innerPartInputPath, entryInner.Name()))

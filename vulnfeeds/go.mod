@@ -11,7 +11,7 @@ require (
 	github.com/google/osv-scanner v1.3.6-0.20230707005317-d93d6b73e90a
 	github.com/knqyf263/go-cpe v0.0.0-20230627041855-cb0794d06872
 	github.com/sethvargo/go-retry v0.2.4
-	golang.org/x/exp v0.0.0-20230725093048-515e97ebf090
+	golang.org/x/exp v0.0.0-20230807204917-050eac23e9de
 	gopkg.in/yaml.v2 v2.4.0
 )
 

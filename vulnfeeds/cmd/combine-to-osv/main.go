@@ -111,6 +111,14 @@ func combineIntoOSV(loadedCves map[string]cves.CVEItem, allParts map[string][]vu
 			continue
 		}
 		convertedCve, _ := vulns.FromCVE(cveId, cve)
+		// Best-effort attempt to mark a disputed CVE as withdrawn.
+		modified, err := vulns.CVEIsDisputed(convertedCve)
+		if err != nil {
+			Logger.Warnf("Unable to determine CVE dispute status of %s: %v", convertedCve.ID, err)
+		}
+		if err == nil && modified != "" {
+			convertedCve.Withdrawn = modified
+		}
 		for _, pkgInfo := range allParts[cveId] {
 			convertedCve.AddPkgInfo(pkgInfo)
 		}

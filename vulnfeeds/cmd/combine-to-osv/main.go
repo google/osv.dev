@@ -52,14 +52,18 @@ func loadInnerParts(innerPartInputPath string, output map[string][]vulns.Package
 		Logger.Fatalf("Failed to read dir? %s", err)
 	}
 	for _, entryInner := range dirInner {
+		if !strings.HasSuffix(entryInner.Name(), ".json") {
+			continue
+		}
 		file, err := os.Open(path.Join(innerPartInputPath, entryInner.Name()))
 		if err != nil {
-			Logger.Fatalf("Failed to open cve json: %s", err)
+			Logger.Fatalf("Failed to open PackageInfo JSON: %s", err)
 		}
+		defer file.Close()
 		var pkgInfos []vulns.PackageInfo
 		err = json.NewDecoder(file).Decode(&pkgInfos)
 		if err != nil {
-			Logger.Fatalf("Failed to decode json: %s", err)
+			Logger.Fatalf("Failed to decode %q: %s", file.Name(), err)
 		}
 
 		// Turns CVE-2022-12345.alpine.json into CVE-2022-12345
@@ -67,8 +71,7 @@ func loadInnerParts(innerPartInputPath string, output map[string][]vulns.Package
 		output[cveId] = append(output[cveId], pkgInfos...)
 
 		Logger.Infof(
-			"Loaded Alpine Item: %s", entryInner.Name())
-		file.Close()
+			"Loaded Item: %s", entryInner.Name())
 	}
 }
 

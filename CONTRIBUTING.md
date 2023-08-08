@@ -40,6 +40,7 @@ You must install:
 1.  [Google Cloud SDK](https://cloud.google.com/sdk)
 1.  [Hugo](https://gohugo.io/installation/)
 1.  [Terraform](https://developer.hashicorp.com/terraform/downloads)
+1.  [Node JS](https://nodejs.org/) >= 18.17.x
 
 Then you can set up the development environment by cloning the OSV repo and
 installing the Pipfile dependencies.
@@ -101,16 +102,13 @@ $ make run-appengine
 
 #### API
 
-Running a local instance of the API server requires service account credentials.
-
-You will need to download a service account key for
-`esp-test@oss-vdb.iam.gserviceaccount.com` from
-<https://cloud.google.com/console/iam-admin/serviceaccounts?project=oss-vdb>.
-Keep this safe.
+Running a local instance of the API server requires the path to application
+default credentials. The is required so that the ESP container has credentials 
+to download API configuration.
 
 ```shell
 $ gcloud auth login --update-adc
-$ make SERVICE_ACCOUNT=/path/to/service_account.json run-api-server
+$ make run-api-server
 ```
 
 ## Contributing data

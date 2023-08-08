@@ -296,6 +296,8 @@ func CVEToPackageInfo(CVE cves.CVEItem, repos []string, cache git.RepoTagsCache,
 		return fmt.Errorf("[%s]: No affected commit ranges determined for %q", CVEID, CPE.Product)
 	}
 
+	versions.AffectedVersions = nil // these have served their purpose and are not required in the resulting output.
+
 	var pkgInfos []vulns.PackageInfo
 	pi := vulns.PackageInfo{VersionInfo: versions}
 	pkgInfos = append(pkgInfos, pi) // combine-to-osv expects a serialised *array* of PackageInfo

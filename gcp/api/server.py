@@ -66,7 +66,7 @@ _DETERMINE_VER_MIN_SCORE_CUTOFF = 0.05
 # This should match the number in the indexer
 _BUCKET_SIZE = 512
 
-MAX_PACKAGE_NAME_LENGTH = 100  # Maximum allowed package name length
+MAX_PACKAGE_NAME_LENGTH = 1500  # Maximum allowed package name length
 
 # Prefix for the
 _TAG_PREFIX = "refs/tags/"
@@ -436,12 +436,18 @@ def determine_version(version_query: osv_service_v1_pb2.VersionQuery,
                                         empty_bucket_bitmap,
                                         len(version_query.file_hashes))
 
+def validate_package_name(package_name):
+    if len(package_name) > MAX_PACKAGE_NAME_LENGTH:
+        raise ValueError("Package name exceeds the maximum allowed length.")
+    
+
 
 @ndb.tasklet
 def do_query(query, context: QueryContext, include_details=True):
   """Do a query."""
   if query.HasField('package'):
     package_name = query.package.name
+    validate_package_name(package_name)
     ecosystem = query.package.ecosystem
     purl_str = query.package.purl
   else:
@@ -777,10 +783,6 @@ def _query_by_generic_version(
 
   return results, cursor
 
-def validate_package_name(package_name):
-    if len(package_name) > MAX_PACKAGE_NAME_LENGTH:
-        raise ValueError("Package name exceeds the maximum allowed length.")
-
 @ndb.tasklet
 def query_by_version(context: QueryContext,
                      package_name: str,
@@ -789,7 +791,7 @@ def query_by_version(context: QueryContext,
                      version,
                      to_response: Callable = bug_to_response):
   """Query by (fuzzy) version."""
-  validate_package_name(package_name)
+  
 
   if package_name:
     query = osv.Bug.query(

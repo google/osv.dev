@@ -15,14 +15,10 @@
 #
 ################################################################################
 
-# Install go on x86_64, don't do anything on ARM.
 set -eux
 
-# Download and install the latest stable Go.
+# Download and install Go
 wget https://storage.googleapis.com/golang/getgo/installer_linux -O $1/installer_linux
 chmod +x $1/installer_linux
-SHELL="bash" $1/installer_linux -version 1.18
+SHELL="bash" $1/installer_linux -version 1.20
 rm $1/installer_linux
-# # Set up Golang coverage modules.
-# printf $(find . -name gocoverage)
-# cd $GOPATH/gocoverage && go install ./...

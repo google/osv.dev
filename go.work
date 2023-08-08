@@ -1,0 +1,8 @@
+go 1.21
+
+use (
+	./docker/indexer
+	./tools/datastore-remover
+	./tools/indexer-api-caller
+	./vulnfeeds
+)

@@ -12,5 +12,7 @@ spec:
             env:
             - name: GOOGLE_CLOUD_PROJECT
               value: oss-vdb-test
+            - name: INPUT_GCS_BUCKET
+              value: osv-test-cve-osv-conversion
             - name: OUTPUT_GCS_BUCKET
               value: osv-test-cve-osv-conversion

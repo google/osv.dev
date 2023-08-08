@@ -29,7 +29,7 @@ steps:
   args:
   - '-c'
   - |
-    read current_build <<< $(gcloud builds list --filter=tags="build-and-stage" --format="value(id)" --sort-by=create_time --ongoing)
+    read current_build <<< $(gcloud builds list --region=us-west1 --filter=tags="build-and-stage" --format="value(id)" --sort-by=create_time --ongoing)
     if [[ -z "${current_build}" ]]; then
       echo "Could not find any matching builds."
       exit 1
@@ -37,7 +37,7 @@ steps:
     while [[ "${current_build}" != "${BUILD_ID}" ]]; do
       echo "Waiting for build ${current_build}"
       sleep 30
-      read current_build <<< $(gcloud builds list --filter=tags="build-and-stage" --format="value(id)" --sort-by=create_time  --ongoing)
+      read current_build <<< $(gcloud builds list --region=us-west1 --filter=tags="build-and-stage" --format="value(id)" --sort-by=create_time  --ongoing)
       if [[ -z "${current_build}" ]]; then
         echo "Could not find any matching builds."
         exit 1
@@ -240,7 +240,7 @@ timeout: 7200s
 serviceAccount: 'projects/oss-vdb/serviceAccounts/deployment@oss-vdb.iam.gserviceaccount.com'
 logsBucket: gs://oss-vdb-tf/apply-logs
 options:
-  machineType: N1_HIGHCPU_8
+  machineType: E2_HIGHCPU_8
 
 tags: ['build-and-stage']
 

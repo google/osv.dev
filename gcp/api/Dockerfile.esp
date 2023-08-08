@@ -14,4 +14,6 @@
 
 FROM gcr.io/endpoints-release/endpoints-runtime:2
 
+# Required to run ESP and map files without encountering permissions
+# issues on glinux. Intended for local development only.
 USER root

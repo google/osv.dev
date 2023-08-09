@@ -34,3 +34,6 @@ class CRANEcosystemTest(unittest.TestCase):
     # Test versions with the X.Y-Z format
     self.assertEqual('0.1-18', ecosystem.next_version('abd', '0.1-12'))
     self.assertEqual('0.2-2', ecosystem.next_version('abd', '0.1-22'))
+
+    # Test atypical versioned package
+    self.assertEqual('0.99-8.47', ecosystem.next_version('aqp', '0.99-8.1'))

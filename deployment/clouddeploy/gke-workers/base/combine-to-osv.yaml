@@ -18,10 +18,10 @@ spec:
               privileged: true
             resources:
               requests:
-                cpu: 1
+                cpu: 2
                 memory: "1G"
               limits:
-                cpu: 1
+                cpu: 2
                 memory: "2G"
           restartPolicy: OnFailure
           volumes:

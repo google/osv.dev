@@ -191,7 +191,7 @@ type Reference struct {
 
 type Vulnerability struct {
 	ID         string      `json:"id" yaml:"id"`
-	Withdrawn  string      `json:"withdrawn,omitempty" yaml:"modified,omitempty"`
+	Withdrawn  string      `json:"withdrawn,omitempty" yaml:"withdrawn,omitempty"`
 	Summary    string      `json:"summary,omitempty" yaml:"summary,omitempty"`
 	Severity   []Severity  `json:"severity,omitempty" yaml:"severity,omitempty"`
 	Details    string      `json:"details" yaml:"details"`

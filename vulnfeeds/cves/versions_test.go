@@ -702,3 +702,29 @@ func TestExtractVersionInfo(t *testing.T) {
 		}
 	}
 }
+
+func TestCPEs(t *testing.T) {
+	tests := []struct {
+		description  string
+		inputCVEItem CVEItem
+		expectedCPEs []string
+	}{
+		{
+			description:  "A CVE with child CPEs",
+			inputCVEItem: loadTestData("CVE-2023-24256"),
+			expectedCPEs: []string{"cpe:2.3:o:nio:aspen:*:*:*:*:*:*:*:*", "cpe:2.3:h:nio:ec6:-:*:*:*:*:*:*:*"},
+		},
+		{
+			description:  "A CVE without child CPEs",
+			inputCVEItem: loadTestData("CVE-2022-33745"),
+			expectedCPEs: []string{"cpe:2.3:o:xen:xen:*:*:*:*:*:*:x86:*", "cpe:2.3:o:fedoraproject:fedora:36:*:*:*:*:*:*:*"},
+		},
+	}
+
+	for _, tc := range tests {
+		gotCPEs := CPEs(tc.inputCVEItem)
+		if diff := cmp.Diff(gotCPEs, tc.expectedCPEs); diff != "" {
+			t.Errorf("test %q: CPEs for %#v were incorrect: %s", tc.description, tc.inputCVEItem.Configurations, diff)
+		}
+	}
+}

@@ -19,7 +19,7 @@ func TestRepoTags(t *testing.T) {
 		expectedOk     bool
 	}{
 		{
-			description:  "Repo with only lightweight tags and no cacheing",
+			description:  "Repo with only lightweight tags and no caching",
 			inputRepoURL: "https://github.com/zblogcn/zblogphp",
 			cache:        nil,
 			expectedResult: Tags{
@@ -45,7 +45,7 @@ func TestRepoTags(t *testing.T) {
 			expectedOk: true,
 		},
 		{
-			description:  "Repo with only lightweight tags and cacheing",
+			description:  "Repo with only lightweight tags and caching",
 			inputRepoURL: "https://github.com/zblogcn/zblogphp",
 			cache:        cache,
 			expectedResult: Tags{
@@ -71,8 +71,8 @@ func TestRepoTags(t *testing.T) {
 			expectedOk: true,
 		},
 		{
-			description:  "Repo with lightweight and annotated tags and no cacheing",
-			inputRepoURL: "https://github.com/aide/aide",
+			description:  "Repo with lightweight and annotated tags and no caching",
+			inputRepoURL: "https://github.com/andrewpollock/aide",
 			cache:        nil,
 			expectedResult: Tags{
 				{Tag: "aide.0.10.release", Commit: "02961dda0a1f114802e107bad93108c9b9d092ed"},

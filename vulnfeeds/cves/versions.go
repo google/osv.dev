@@ -699,7 +699,7 @@ func extractGitCommit(link string, commitType CommitType) (ac AffectedCommit, er
 }
 
 func hasVersion(validVersions []string, version string) bool {
-	if validVersions == nil || len(validVersions) == 0 {
+	if len(validVersions) == 0 {
 		return true
 	}
 	return versionIndex(validVersions, version) != -1
@@ -717,12 +717,12 @@ func versionIndex(validVersions []string, version string) int {
 func nextVersion(validVersions []string, version string) (string, error) {
 	idx := versionIndex(validVersions, version)
 	if idx == -1 {
-		return "", fmt.Errorf("Warning: %s is not a valid version", version)
+		return "", fmt.Errorf("warning: %s is not a valid version", version)
 	}
 
 	idx += 1
 	if idx >= len(validVersions) {
-		return "", fmt.Errorf("Warning: %s does not have a version that comes after.", version)
+		return "", fmt.Errorf("warning: %s does not have a version that comes after", version)
 	}
 
 	return validVersions[idx], nil
@@ -907,6 +907,11 @@ func CPEs(cve CVEItem) []string {
 	for _, node := range cve.Configurations.Nodes {
 		for _, match := range node.CPEMatch {
 			cpes = append(cpes, match.CPE23URI)
+		}
+		for _, child := range node.Children {
+			for _, match := range child.CPEMatch {
+				cpes = append(cpes, match.CPE23URI)
+			}
 		}
 	}
 

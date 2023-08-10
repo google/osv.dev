@@ -6,12 +6,14 @@ nav_order: 1
 parent: Contributing
 ---
 # Architecture
-![Architecture diagram](images/architecture.png)
+
+![Architecture diagram](../images/architecture.png)
 
 ## Data source
 
-Our data is sourced from a variety of [sources](../data#current-data-sources), which we are looking to expand
-on over time.
+Our data is sourced from a variety of
+[sources](../data.md#current-data-sources), which we are looking to expand on
+over time.
 
 OSV runs on Google Cloud Platform, with the following main components:
 
@@ -47,9 +49,9 @@ The [API server] runs on [Cloud Run], and is served by [Cloud Endpoints].
 
 ## App Engine
 
-The [main web UI] runs on [App Engine]. App Engine [cron jobs]
-also schedule recurring tasks for the workers, allocate OSV IDs, and make
-vulnerabilities public at the appropriate times.
+The [main web UI] runs on [App Engine]. App Engine [cron jobs] also schedule
+recurring tasks for the workers, allocate OSV IDs, and make vulnerabilities
+public at the appropriate times.
 
 [main web UI]: https://osv.dev
 [App Engine]: https://github.com/google/osv/tree/master/gcp/appengine

@@ -20,6 +20,8 @@ import json
 import logging
 import os
 import threading
+import time
+import atexit
 from typing import List, Tuple, Optional
 
 from google.cloud import ndb
@@ -79,6 +81,18 @@ def replace_importer_log(client: storage.Client, source_name: str,
   bucket.blob(source_name).upload_from_string(upload_string)
 
 
+def log_run_duration(start: float):
+  """Log the elapsed wallclock duration at the end of the program.
+
+  This enables a log-based metric to be created.
+
+  Args:
+    start: the time the program started.
+  """
+  elapsed = time.time() - start
+  logging.info('Importer run duration: %d', elapsed)
+
+
 class Importer:
   """Importer."""
 
@@ -133,7 +147,8 @@ class Importer:
         source=source_repo.name,
         path=path,
         original_sha256=original_sha256,
-        deleted=str(deleted).lower())
+        deleted=str(deleted).lower(),
+        req_timestamp=str(int(time.time())))
 
   def _request_internal_analysis(self, bug):
     """Request internal analysis."""
@@ -142,7 +157,8 @@ class Importer:
         data=b'',
         type='impact',
         source_id=bug.source_id,
-        allocated_id=bug.key.id())
+        allocated_id=bug.key.id(),
+        req_timestamp=str(int(time.time())))
 
   def run(self):
     """Run importer."""
@@ -518,6 +534,7 @@ def main():
 
 
 if __name__ == '__main__':
+  atexit.register(log_run_duration, time.time())
   osv.logs.setup_gcp_logging('importer')
   _ndb_client = ndb.Client()
   with _ndb_client.context():

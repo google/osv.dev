@@ -34,12 +34,13 @@ This project follows
 You must install:
 
 1.  Git
-1.  Python 3.8+
+1.  Python 3.11
 1.  [Make](https://www.gnu.org/software/make/)
 1.  [Pipenv](https://pipenv.pypa.io/en/latest/)
 1.  [Google Cloud SDK](https://cloud.google.com/sdk)
 1.  [Hugo](https://gohugo.io/installation/)
 1.  [Terraform](https://developer.hashicorp.com/terraform/downloads)
+1.  [Node JS](https://nodejs.org/) >= 18.17.x
 
 Then you can set up the development environment by cloning the OSV repo and
 installing the Pipfile dependencies.
@@ -101,25 +102,53 @@ $ make run-appengine
 
 #### API
 
-Running a local instance of the API server requires service account credentials.
-
-You will need to download a service account key for
-`esp-test@oss-vdb.iam.gserviceaccount.com` from
-<https://cloud.google.com/console/iam-admin/serviceaccounts?project=oss-vdb>.
-Keep this safe.
+Running a local instance of the API server requires the path to application
+default credentials. The is required so that the ESP container has credentials 
+to download API configuration.
 
 ```shell
 $ gcloud auth login --update-adc
-$ make SERVICE_ACCOUNT=/path/to/service_account.json run-api-server
+$ make run-api-server
 ```
-## Contributing Data
 
-Data contributions are also welcome! 
+## Contributing data
 
-If you a work with a project such as a Linux distribution and would like to contribute your security advisories, please follow these steps.
+Data contributions are also welcome!
 
-1. Open an [issue](https://github.com/google/osv.dev/issues). Let us know about your project and we can help you figure out the remaining steps. Please tag the issue `datasource` so we can properly triage the issue. 
+If you a work with a project such as a Linux distribution and would like to
+contribute your security advisories, please follow these steps.
 
-2. Refer to the [OSV Schema](https://ossf.github.io/osv-schema/) documentation for information on how to properly format the data so it can be accepted. 
+1.  Open an [issue](https://github.com/google/osv.dev/issues). Let us know about
+    your project and we can help you figure out the remaining steps. Please tag
+    the issue `datasource` so we can properly triage the issue.
 
-3. Data can be supplied either through a public Git repository or a public GCS bucket. 
+2.  Refer to the [OSV Schema](https://ossf.github.io/osv-schema/) documentation
+    for information on how to properly format the data so it can be accepted.
+
+3.  Data can be supplied either through a public Git repository or a public GCS
+    bucket.
+
+## Contributing documentation
+
+Please follow these steps to successfully contribute documentation.
+
+1.  Fork the repository.
+2.  Make desired documentation changes.
+3.  Preview the changes by spinning up a GitHub page for your fork, building
+    from your working branch.
+    -   On your fork, go to the settings tab and then the GitHub page settings.
+        Sample URL: <!-- markdown-link-check-disable -->
+        https://github.com/{your-github-profile}/osv.dev/settings/pages
+        <!-- markdown-link-check-enable -->
+    -   Under "Build and deployment" select "Build from branch"
+    -   Set the branch to your working branch
+    -   Set the github page to build from the "/docs" folder
+    -   Hit save and wait for your site to build
+    -   Once it is ready, click the link and preview the docs
+
+![Image shows the UI settings for building the GitHub page, which is described
+in step 3 of the contributing documentation
+instructions.](docs/images/github-page.png)
+
+1.  If you are satisfied with the changes, open a PR
+2.  In the PR, link to your fork's GitHub page, so we can preview the changes

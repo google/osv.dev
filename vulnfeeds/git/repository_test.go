@@ -19,7 +19,7 @@ func TestRepoTags(t *testing.T) {
 		expectedOk     bool
 	}{
 		{
-			description:  "Repo with only lightweight tags and no cacheing",
+			description:  "Repo with only lightweight tags and no caching",
 			inputRepoURL: "https://github.com/zblogcn/zblogphp",
 			cache:        nil,
 			expectedResult: Tags{
@@ -40,11 +40,12 @@ func TestRepoTags(t *testing.T) {
 				{Tag: "v1.7.0-beta", Commit: "08c5e0ac49c9520585eebfe25be0f51239733891"},
 				{Tag: "v1.7.1-2960", Commit: "44b73602ab5518a213e0128a04f57239988847cf"},
 				{Tag: "v1.7.2-3030", Commit: "302e57b5703d92d2f43bbfe86a8d4080647a4ba9"},
+				{Tag: "v1.7.3-3230", Commit: "96a5fcdc3c958268559ec63c8fbd0a60e3c7e1c8"},
 			},
 			expectedOk: true,
 		},
 		{
-			description:  "Repo with only lightweight tags and cacheing",
+			description:  "Repo with only lightweight tags and caching",
 			inputRepoURL: "https://github.com/zblogcn/zblogphp",
 			cache:        cache,
 			expectedResult: Tags{
@@ -65,12 +66,13 @@ func TestRepoTags(t *testing.T) {
 				{Tag: "v1.7.0-beta", Commit: "08c5e0ac49c9520585eebfe25be0f51239733891"},
 				{Tag: "v1.7.1-2960", Commit: "44b73602ab5518a213e0128a04f57239988847cf"},
 				{Tag: "v1.7.2-3030", Commit: "302e57b5703d92d2f43bbfe86a8d4080647a4ba9"},
+				{Tag: "v1.7.3-3230", Commit: "96a5fcdc3c958268559ec63c8fbd0a60e3c7e1c8"},
 			},
 			expectedOk: true,
 		},
 		{
-			description:  "Repo with lightweight and annotated tags and no cacheing",
-			inputRepoURL: "https://github.com/aide/aide",
+			description:  "Repo with lightweight and annotated tags and no caching",
+			inputRepoURL: "https://github.com/andrewpollock/aide",
 			cache:        nil,
 			expectedResult: Tags{
 				{Tag: "aide.0.10.release", Commit: "02961dda0a1f114802e107bad93108c9b9d092ed"},
@@ -113,6 +115,9 @@ func TestRepoTags(t *testing.T) {
 				{Tag: "v0.18.1", Commit: "de5bb24b9b24df7598161a1ce19dc2ce15afa9c6"},
 				{Tag: "v0.18.2", Commit: "3d5b18b9e5e1c51533ac01d8acd3499b2f9fcc2e"},
 				{Tag: "v0.18.3", Commit: "1cf7764293aebb473baee3ff82298d83593943e8"},
+				{Tag: "v0.18.4", Commit: "c03255688a13cf7089eeb7a292c1de2abf1d3a9d"},
+				{Tag: "v0.18.5", Commit: "a164c35a217579b1eec3b548f9421cd030160c5b"},
+				{Tag: "v0.18.6", Commit: "82fd64038788942aef8a394d6d4b802cb529f71b"},
 			},
 			expectedOk: true,
 		},
@@ -189,6 +194,11 @@ func TestValidRepo(t *testing.T) {
 		{
 			description:    "Valid repository",
 			repoURL:        "https://github.com/torvalds/linux",
+			expectedResult: true,
+		},
+		{
+			description:    "Valid repository with a git:// protocol URL",
+			repoURL:        "git://git.infradead.org/mtd-utils.git",
 			expectedResult: true,
 		},
 		{

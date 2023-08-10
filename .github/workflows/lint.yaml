@@ -35,9 +35,9 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v4
         with:
-          python-version: '3.8'
+          python-version: '3.11'
       - name: Install pipenv
-        run: pip install pipenv
+        run: pip install pipenv==2023.6.12
       - name: Set up pipenv
         run: pipenv sync --dev
       - name: Set up Go

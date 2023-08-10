@@ -5,6 +5,7 @@ module "osv_test" {
 
   public_import_logs_bucket     = "osv-test-public-import-logs"
   vulnerabilities_export_bucket = "osv-test-vulnerabilities"
+  logs_bucket                   = "osv-test-logs"
   cve_osv_conversion_bucket     = "osv-test-cve-osv-conversion"
   debian_osv_conversion_bucket  = "osv-test-debian-osv"
 

@@ -6,13 +6,17 @@ name = "pypi"
 [packages]
 google-cloud-ndb = "==2.1.1"
 google-cloud-logging = "==3.5.0"
-google-cloud-pubsub = "==2.17.0"
+google-cloud-pubsub = "==2.17.1"
 grpcio = "==1.54.2"
 osv = {editable = true, path = "../../"}
-packageurl-python = "==0.11.1"
+packageurl-python = "==0.11.2"
 packaging = "==20.9"
-requests = "==2.30.0"
+requests = "==2.31.0"
 grpcio-reflection = "*"
+grpcio-health-checking = "*"
 
 [dev-packages]
 grpcio-tools = "*"
+
+[requires]
+python_version = "3.11"

@@ -6,6 +6,8 @@ import (
 	"os"
 	"testing"
 
+	"golang.org/x/exp/maps"
+
 	"github.com/google/osv/vulnfeeds/cves"
 	"github.com/google/osv/vulnfeeds/utility"
 )
@@ -28,9 +30,11 @@ func loadTestData(cveName string) cves.CVEItem {
 
 func TestLoadParts(t *testing.T) {
 	allParts := loadParts("../../test_data/parts")
+	expectedPartCount := 12
+	actualPartCount := len(allParts)
 
-	if len(allParts) != 10 {
-		t.Errorf("Expected 10 entries, got %d entries", len(allParts["Alpine"]))
+	if actualPartCount != expectedPartCount {
+		t.Errorf("Expected %d entries, got %d entries: %#v", expectedPartCount, actualPartCount, maps.Keys(allParts))
 	}
 
 	tests := map[string]struct {
@@ -47,7 +51,9 @@ func TestLoadParts(t *testing.T) {
 				"Alpine:v3.5",
 				"Alpine:v3.6",
 				"Alpine:v3.7",
-				"Alpine:v3.8"},
+				"Alpine:v3.8",
+				"", // NVD converted CVEs have no ecosystem
+			},
 		},
 	}
 
@@ -59,7 +65,7 @@ func TestLoadParts(t *testing.T) {
 				ecosystemArray = append(ecosystemArray, elem.Ecosystem)
 			}
 			if !utility.SliceEqualUnordered(elem.ecosystems, ecosystemArray) {
-				t.Errorf("Expected ecosystem to have: %v, got %v.", elem.ecosystems, ecosystemArray)
+				t.Errorf("Expected ecosystem for %s to have: %#v, got %#v.", id, elem.ecosystems, ecosystemArray)
 			}
 			hasCve++
 		}
@@ -73,14 +79,21 @@ func TestLoadParts(t *testing.T) {
 func TestCombineIntoOSV(t *testing.T) {
 	cveStuff := map[string]cves.CVEItem{
 		"CVE-2022-33745": loadTestData("CVE-2022-33745"),
+		"CVE-2022-32746": loadTestData("CVE-2022-32746"),
 	}
 	allParts := loadParts("../../test_data/parts")
 
 	combinedOSV := combineIntoOSV(cveStuff, allParts)
-	if len(combinedOSV) != 1 {
-		t.Errorf("Expected 1 combination, got %v", combinedOSV)
+
+	expectedCombined := 2
+	actualCombined := len(combinedOSV)
+
+	if actualCombined != expectedCombined {
+		t.Errorf("Expected %d in combination, got %d: %#v", expectedCombined, actualCombined, combinedOSV)
 	}
-	if len(combinedOSV["CVE-2022-33745"].Affected) != len(allParts["CVE-2022-33745"]) {
-		t.Errorf("Affected lengths do not match")
+	for cve := range cveStuff {
+		if len(combinedOSV[cve].Affected) != len(allParts[cve]) {
+			t.Errorf("Affected lengths for %s do not match", cve)
+		}
 	}
 }

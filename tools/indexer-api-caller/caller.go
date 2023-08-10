@@ -1,24 +1,34 @@
 package main
 
 import (
-	"bytes"
 	"crypto/md5"
 	"encoding/base64"
 	"flag"
 	"fmt"
+	"io"
 	"io/fs"
 	"log"
+	"net/http"
 	"os"
-	"os/exec"
 	"path/filepath"
 	"strings"
 )
 
 var (
-	repoDir = flag.String("repo", "", "repo directory")
+	repoDir   = flag.String("lib", "", "library directory")
+	repoDir2  = flag.String("lib2", "", "specify another directory to compare file hashes to the first")
+	searchDir = flag.String("dir", "", "third party directory containing multiple libraries")
+	fileExts  = []string{
+		".hpp",
+		".h",
+		".hh",
+		".cc",
+		".c",
+		".cpp",
+	}
 )
 
-type Hash = []byte
+type Hash = [16]byte
 
 // FileResult holds the per file hash and path information.
 type FileResult struct {
@@ -28,10 +38,59 @@ type FileResult struct {
 
 func main() {
 	flag.Parse()
-	buildGit(*repoDir)
+
+	if *repoDir != "" {
+		aRes, err := buildGit(*repoDir)
+		if err != nil {
+			log.Fatal(err)
+		}
+		if *repoDir2 != "" {
+			bRes, err := buildGit(*repoDir2)
+			if err != nil {
+				log.Fatal(err)
+			}
+
+			matchCount := 0
+
+			a := fileResToMap(aRes)
+			for _, fr := range bRes {
+				_, ok := a[fr.Hash]
+				if ok {
+					matchCount += 1
+				}
+			}
+
+			log.Printf("Number of matched file hashes: %d", matchCount)
+		}
+	}
+
+	if *searchDir != "" {
+		entries, err := os.ReadDir(*searchDir)
+		if err != nil {
+			log.Panicf("Failed to read dir: %v", err)
+		}
+		for _, entry := range entries {
+			if entry.IsDir() {
+				path := filepath.Join(*searchDir, entry.Name())
+				log.Printf("Scanning %s", path)
+				_, err := buildGit(path)
+				if err != nil {
+					log.Printf("Error when scanning %v: %v", entry.Name(), err)
+				}
+			}
+		}
+	}
 }
 
-func buildGit(repoDir string) error {
+func fileResToMap(input []*FileResult) map[Hash]bool {
+	a := map[Hash]bool{}
+	for _, fr := range input {
+		a[fr.Hash] = true
+	}
+	return a
+}
+
+func buildGit(repoDir string) ([]*FileResult, error) {
 	fileExts := []string{
 		".hpp",
 		".h",
@@ -55,46 +114,40 @@ func buildGit(repoDir string) error {
 				hash := md5.Sum(buf)
 				fileResults = append(fileResults, &FileResult{
 					Path: strings.ReplaceAll(p, repoDir, ""),
-					Hash: hash[:],
+					Hash: hash,
 				})
 			}
 		}
 		return nil
 	}); err != nil {
-		return fmt.Errorf("failed during file walk: %v", err)
+		return nil, fmt.Errorf("failed during file walk: %v", err)
 	}
 
-	log.Printf("%v", len(fileResults))
+	log.Printf("Hashed %v files", len(fileResults))
 
 	b := strings.Builder{}
-	b.WriteString(`{"query": {"name":"protobuf", "file_hashes": [`)
+	b.WriteString(fmt.Sprintf(`{"name":"%s", "file_hashes": [`, filepath.Base(repoDir)))
 
 	for i, fr := range fileResults {
 		if i == len(fileResults)-1 {
-			fmt.Fprintf(&b, "{\"hash\": \"%s\"}", base64.StdEncoding.EncodeToString(fr.Hash))
+			fmt.Fprintf(&b, "{\"hash\": \"%s\", \"file_path\": \"%s\"}", base64.StdEncoding.EncodeToString(fr.Hash[:]), fr.Path)
 		} else {
-			fmt.Fprintf(&b, "{\"hash\": \"%s\"},", base64.StdEncoding.EncodeToString(fr.Hash))
+			fmt.Fprintf(&b, "{\"hash\": \"%s\", \"file_path\": \"%s\"},", base64.StdEncoding.EncodeToString(fr.Hash[:]), fr.Path)
 		}
 	}
-	b.WriteString("]}}")
+	b.WriteString("]}")
 
-	// TODO: Use proper grpc library calls here
-	cmd := exec.Command("bash")
-	cmd.Args = append(cmd.Args, "-c", `grpcurl -plaintext -d @ -protoset api_descriptor.pb 127.0.0.1:8000 osv.v1.OSV/DetermineVersion`)
-
-	buffer := bytes.Buffer{}
-	_, err := buffer.Write([]byte(b.String()))
+	res, err := http.Post("https://api.osv.dev/v1experimental/determineversion", "application/json", strings.NewReader(b.String()))
 	if err != nil {
-		log.Panicln(err)
+		return nil, fmt.Errorf("Failed to make request: %v", err)
 	}
 
-	cmd.Stdin = &buffer
-	output, err := cmd.CombinedOutput()
+	output, err := io.ReadAll(res.Body)
 
 	if err != nil {
 		log.Panicf("%s: %s", err.Error(), string(output))
 	}
 
 	log.Println(string(output))
-	return nil
+	return fileResults, nil
 }

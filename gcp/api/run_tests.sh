@@ -23,4 +23,5 @@ service docker start
 
 export GOOGLE_CLOUD_PROJECT=oss-vdb
 export GOOGLE_APPLICATION_CREDENTIALS="$1"
+python3 -m pipenv run python server_test.py
 python3 -m pipenv run python integration_tests.py "$1"

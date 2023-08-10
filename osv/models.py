@@ -657,12 +657,8 @@ class RepoIndex(ndb.Model):
   base_cpe = ndb.StringProperty()
   # The repository commit
   commit = ndb.BlobProperty()
-  # Number of hash pages
-  pages = ndb.IntegerProperty()
   # The source address
   repo_addr = ndb.StringProperty()
-  # The identified version
-  version = ndb.StringProperty()
   # The scanned file extensions
   file_exts = ndb.StringProperty(repeated=True)
   # The hash algorithm used
@@ -673,6 +669,8 @@ class RepoIndex(ndb.Model):
   empty_bucket_bitmap = ndb.BlobProperty()
   # Number of files in this repo
   file_count = ndb.IntegerProperty()
+  # Tag name of the source
+  tag = ndb.StringProperty()
 
 
 class FileResult(ndb.Model):

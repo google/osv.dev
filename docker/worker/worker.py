@@ -63,6 +63,7 @@ _ECOSYSTEM_PUSH_TOPICS = {
 
 _state = threading.local()
 _state.source_id = None
+_state.bug_id = None
 
 
 class RedisCache(osv.cache.Cache):
@@ -102,6 +103,10 @@ def _setup_logging_extra_info():
 
     if getattr(_state, 'source_id', None):
       record.json_fields['source_id'] = _state.source_id
+
+    if getattr(_state, 'bug_id', None):
+      record.json_fields['bug_id'] = _state.bug_id
+
     record.json_fields['thread'] = record.thread
 
     return record
@@ -535,8 +540,10 @@ class TaskRunner:
     """Process task with timeout."""
     try:
       with self._ndb_client.context():
-        source_id = get_source_id(message)
+        source_id = get_source_id(message) or message.attributes.get(
+            'source', None)
         _state.source_id = source_id
+        _state.bug_id = message.attributes.get('allocated_bug_id', None)
 
         task_type = message.attributes['type']
         if task_type in ('regressed', 'fixed'):
@@ -566,11 +573,26 @@ class TaskRunner:
     """Handle a timeout."""
     subscriber.acknowledge(subscription=subscription, ack_ids=[ack_id])
     task_type = message.attributes['type']
-    source_id = get_source_id(message)
+    source_id = get_source_id(message) or message.attributes.get('source', None)
 
     logging.warning('Task %s timed out (source_id=%s)', task_type, source_id)
     if task_type in ('fixed', 'regressed'):
       oss_fuzz.handle_timeout(task_type, source_id, self._oss_fuzz_dir, message)
+
+  def _log_task_latency(self, message):
+    """Determine how long ago the task was requested.
+
+    Log how long it took to be serviced."""
+    request_time = message.attributes.get('req_timestamp')
+    if request_time:
+      request_time = int(request_time)
+      latency = int(time.time()) - request_time
+      task_type = message.attributes['type']
+      source_id = get_source_id(message) or message.attributes.get(
+          'source', None)
+
+      logging.info('Task %s (source_id=%s) latency %d', task_type, source_id,
+                   latency)
 
   def loop(self):
     """Task loop."""
@@ -595,6 +617,7 @@ class TaskRunner:
 
       done = done_event.wait(timeout=MAX_LEASE_DURATION)
       logging.info('Returned from task thread')
+      self._log_task_latency(message)
       if not done:
         self.handle_timeout(subscriber, subscription, ack_id, message)
         logging.warning('Timed out processing task')

@@ -16,34 +16,44 @@
 import argparse
 import codecs
 import concurrent
+from dataclasses import dataclass
 import math
 import hashlib
 import functools
 import logging
 import os
 import time
-from typing import List
+from typing import Callable, List
 
 from collections import defaultdict
 
 from google.cloud import ndb
+from google.api_core.exceptions import InvalidArgument
+import google.cloud.ndb.exceptions as ndb_exceptions
 
 import grpc
+from grpc_health.v1 import health_pb2
+from grpc_health.v1 import health_pb2_grpc
 from grpc_reflection.v1alpha import reflection
 from packageurl import PackageURL
 
 import osv
 from osv import ecosystems
 from osv import semver_index
+from osv import purl_helpers
 from osv.logs import setup_gcp_logging
 import osv_service_v1_pb2
 import osv_service_v1_pb2_grpc
 
-_MAX_REQUEST_DURATION_SECS = 60
 _SHUTDOWN_GRACE_DURATION = 5
 
 _MAX_BATCH_QUERY = 1000
-_MAX_VULNERABILITIES_LISTED = 16
+# Maximum number of responses to return before applying post exceeded limit
+_MAX_VULN_RESP_THRESH = 3000
+# Max responses after MAX_VULN_RESP_THRESH has been exceeded
+_MAX_VULN_LISTED_POST_EXCEEDED = 5
+# Max responses before MAX_VULN_RESP_THRESH has been exceeded
+_MAX_VULN_LISTED_PRE_EXCEEDED = 1000
 
 # Used in DetermineVersion
 # If there are more results for a bucket than this number,
@@ -51,10 +61,13 @@ _MAX_VULNERABILITIES_LISTED = 16
 _MAX_MATCHES_TO_CARE = 100
 # Max results to return for DetermineVersion
 _MAX_DETERMINE_VER_RESULTS_TO_RETURN = 10
-_DETERMINE_VER_MIN_SCORE_CUTOFF = 0.2
+_DETERMINE_VER_MIN_SCORE_CUTOFF = 0.05
 # Size of buckets to divide hashes into in DetermineVersion
 # This should match the number in the indexer
 _BUCKET_SIZE = 512
+
+# Prefix for the
+_TAG_PREFIX = "refs/tags/"
 
 _ndb_client = ndb.Client()
 
@@ -70,13 +83,14 @@ def ndb_context(func):
   return wrapper
 
 
-class OSVServicer(osv_service_v1_pb2_grpc.OSVServicer):
+class OSVServicer(osv_service_v1_pb2_grpc.OSVServicer,
+                  health_pb2_grpc.HealthServicer):
   """V1 OSV servicer."""
 
   @ndb_context
   def GetVulnById(self, request, context: grpc.ServicerContext):
     """Return a `Vulnerability` object for a given OSV ID."""
-    bug = osv.Bug.get_by_id(request.id)
+    bug: osv.Bug = osv.Bug.get_by_id(request.id)
     if not bug or bug.status == osv.BugStatus.UNPROCESSED:
       context.abort(grpc.StatusCode.NOT_FOUND, 'Bug not found.')
       return None
@@ -93,7 +107,31 @@ class OSVServicer(osv_service_v1_pb2_grpc.OSVServicer):
 
     version.
     """
-    results, next_page_token = do_query(request.query, context).result()
+    page_token = None
+    if request.query.page_token:
+      try:
+        page_token = ndb.Cursor(urlsafe=request.query.page_token)
+      except ValueError as e:
+        logging.warning(e)
+        context.abort(grpc.StatusCode.INVALID_ARGUMENT, 'Invalid page token.')
+
+    query_context = QueryContext(
+        service_context=context,
+        # request_start_time=datetime.now(),
+        page_token=page_token,
+        total_responses=ResponsesCount(0))
+
+    try:
+      results, next_page_token = do_query(request.query, query_context).result()
+    except InvalidArgument:
+      # Currently cannot think of any other way
+      # this can be raised other than invalid cursor
+      context.abort(grpc.StatusCode.INVALID_ARGUMENT,
+                    'Invalid query, likely caused by invalid page token.')
+    except ndb_exceptions.BadValueError as e:
+      context.abort(grpc.StatusCode.INVALID_ARGUMENT,
+                    f'Bad parameter value: {e}')
+
     if results is not None:
       return osv_service_v1_pb2.VulnerabilityList(
           vulns=results, next_page_token=next_page_token)
@@ -110,12 +148,40 @@ class OSVServicer(osv_service_v1_pb2_grpc.OSVServicer):
       context.abort(grpc.StatusCode.INVALID_ARGUMENT, 'Too many queries.')
       return None
 
-    for query in request.query.queries:
-      futures.append(do_query(query, context, include_details=False))
+    total_responses = ResponsesCount(0)
+    # req_start_time = datetime.now()
+    for i, query in enumerate(request.query.queries):
+      page_token = None
+      if query.page_token:
+        try:
+          page_token = ndb.Cursor(urlsafe=query.page_token)
+        except ValueError as e:
+          logging.warning(e)
+          context.abort(grpc.StatusCode.INVALID_ARGUMENT,
+                        f'Invalid page token at index: {i}.')
+      query_context = QueryContext(
+          service_context=context,
+          # request_start_time=req_start_time,
+          page_token=page_token,
+          total_responses=total_responses)
+
+      futures.append(do_query(query, query_context, include_details=False))
 
     for future in futures:
+      try:
+        result, next_page_token = future.result()
+      except InvalidArgument:
+        # Currently cannot think of any other way
+        # this can be raised other than invalid cursor
+        context.abort(grpc.StatusCode.INVALID_ARGUMENT,
+                      'Invalid query, likely caused by invalid page token.')
+      except ndb_exceptions.BadValueError as e:
+        context.abort(grpc.StatusCode.INVALID_ARGUMENT,
+                      f'Bad parameter value: {e}')
+
       batch_results.append(
-          osv_service_v1_pb2.VulnerabilityList(vulns=future.result()[0] or []))
+          osv_service_v1_pb2.VulnerabilityList(
+              vulns=result, next_page_token=next_page_token))
 
     return osv_service_v1_pb2.BatchVulnerabilityList(results=batch_results)
 
@@ -124,6 +190,65 @@ class OSVServicer(osv_service_v1_pb2_grpc.OSVServicer):
     """Determine the version of the provided hashes."""
     res = determine_version(request.query, context).result()
     return res
+
+  @ndb_context
+  def Check(self, request, context: grpc.ServicerContext):
+    """Health check per the gRPC health check protocol."""
+    del request  # Unused.
+    del context  # Unused.
+
+    # Read up to a single Bug entity from the DB. This should not cause an
+    # exception or time out.
+    osv.Bug.query().fetch(1)
+    return health_pb2.HealthCheckResponse(
+        status=health_pb2.HealthCheckResponse.ServingStatus.SERVING)
+
+  def Watch(self, request, context: grpc.ServicerContext):
+    """Health check per the gRPC health check protocol."""
+    del request  # Unused.
+    context.abort(grpc.StatusCode.UNIMPLEMENTED, "Unimplemented")
+
+
+# Wrapped in a separate class
+@dataclass
+class ResponsesCount:
+  """Wraps responses count in a separate class 
+  to allow it to be passed by reference
+  
+  Also adds a interface to allow easy updating to a mutex
+  if necessary
+  """
+  count: int
+
+  def add(self, amount):
+    # This is to prevent query `limit` parameter being smaller than
+    # the number that is checked later in the iter() loop for the last page
+    if amount < 0:
+      raise ValueError("change amount must be positive")
+    self.count += amount
+
+  def exceeded(self) -> bool:
+    return self.count > _MAX_VULN_RESP_THRESH
+
+  def page_limit(self) -> int:
+    """
+    Returns the limit based on whether we have 
+    exceeded the _MAX_VULN_RESP_THRESH with the total number
+    of responses in the entire query batch
+    """
+    if self.exceeded():
+      return _MAX_VULN_LISTED_POST_EXCEEDED
+
+    return _MAX_VULN_LISTED_PRE_EXCEEDED
+
+
+@dataclass
+class QueryContext:
+  service_context: grpc.ServicerContext
+  page_token: ndb.Cursor | None
+  # request_start_time: datetime
+  # Use a dataclass to copy by reference
+  total_responses: ResponsesCount
 
 
 def process_buckets(
@@ -160,11 +285,12 @@ def build_determine_version_result(
     num_skipped_buckets: int,
     # 1 means has items, 0 means empty
     empty_bucket_bitmap: int,
-    max_files: int) -> osv_service_v1_pb2.VersionMatchList:
+    query_file_count: int) -> osv_service_v1_pb2.VersionMatchList:
   """Build sorted determine version result from the input"""
   bucket_match_items = list(bucket_matches_by_proj.items())
   # Sort by number of files matched
   bucket_match_items.sort(key=lambda x: x[1], reverse=True)
+
   # Only interested in our maximum number of results
   bucket_match_items = bucket_match_items[:min(
       _MAX_DETERMINE_VER_RESULTS_TO_RETURN, len(bucket_match_items))]
@@ -175,8 +301,18 @@ def build_determine_version_result(
   inverted_empty_bucket_bitmap = (1 << _BUCKET_SIZE) - 1 - empty_bucket_bitmap
   empty_bucket_count = inverted_empty_bucket_bitmap.bit_count()
 
-  for f in idx_futures:
+  for i, f in enumerate(idx_futures):
     idx: osv.RepoIndex = f.result()
+
+    if idx is None:
+      logging.warning(
+          'Bucket exists for project: %s, which does ' +
+          'not have a matching IndexRepo entry', bucket_match_items[i][0])
+      continue
+
+    if idx.empty_bucket_bitmap is None:
+      logging.warning('No empty bucket bitmap for: %s@%s', idx.name, idx.tag)
+      continue
 
     # Byte order little is how the bitmap is stored in the indexer originally
     bitmap = int.from_bytes(idx.empty_bucket_bitmap, byteorder='little')
@@ -190,31 +326,40 @@ def build_determine_version_result(
     # this requirement.
     missed_empty_buckets = (inverted_empty_bucket_bitmap & bitmap).bit_count()
 
-    estimated_num_diff = estimate_diff(
-        _BUCKET_SIZE -
-        bucket_matches_by_proj[idx.key]  # Buckets that match are not changed
+    estimated_diff_files = estimate_diff(
+        _BUCKET_SIZE  # Starting with the total number of buckets
+        - bucket_matches_by_proj[idx.key]  # Buckets that match are not changed
         - empty_bucket_count  # Buckets that are empty are not changed
         + missed_empty_buckets  # Unless they don't match the bitmap
         - num_skipped_buckets,  # Buckets skipped are assumed unchanged
-        abs(idx.file_count - max_files)  # The difference in file count
+        abs(idx.file_count - query_file_count)  # The difference in file count
     )
 
+    max_files = max(idx.file_count, query_file_count)
+
+    version = osv.normalize_tag(idx.tag.removeprefix(_TAG_PREFIX))
+    version = version.replace('-', '.')
+    if not version:  # This tag actually isn't a version (rare)
+      continue
+
     version_match = osv_service_v1_pb2.VersionMatch(
-        score=(max_files - estimated_num_diff) / max_files,
+        score=(max_files - estimated_diff_files) / max_files,
         minimum_file_matches=file_matches_by_proj[idx.key],
-        estimated_diff_files=estimated_num_diff,
+        estimated_diff_files=estimated_diff_files,
         repo_info=osv_service_v1_pb2.VersionRepositoryInformation(
             type=osv_service_v1_pb2.VersionRepositoryInformation.GIT,
             address=idx.repo_addr,
-            commit=idx.commit,
-            version=idx.version,
-        ),
-    )
+            commit=idx.commit.hex(),
+            tag=idx.tag.removeprefix(_TAG_PREFIX),
+            version=version,
+        ))
 
     if version_match.score < _DETERMINE_VER_MIN_SCORE_CUTOFF:
       continue
 
     output.append(version_match)
+
+  output.sort(key=lambda x: x.score, reverse=True)
 
   return osv_service_v1_pb2.VersionMatchList(matches=output)
 
@@ -291,7 +436,7 @@ def determine_version(version_query: osv_service_v1_pb2.VersionQuery,
 
 
 @ndb.tasklet
-def do_query(query, context: grpc.ServicerContext, include_details=True):
+def do_query(query, context: QueryContext, include_details=True):
   """Do a query."""
   if query.HasField('package'):
     package_name = query.package.name
@@ -302,9 +447,9 @@ def do_query(query, context: grpc.ServicerContext, include_details=True):
     ecosystem = ''
     purl_str = ''
 
-  page_token = None
-  if query.page_token:
-    page_token = ndb.Cursor(urlsafe=query.page_token)
+  if ecosystem and not ecosystems.get(ecosystem):
+    context.service_context.abort(grpc.StatusCode.INVALID_ARGUMENT,
+                                  'Invalid ecosystem.')
 
   purl = None
   purl_version = None
@@ -312,10 +457,10 @@ def do_query(query, context: grpc.ServicerContext, include_details=True):
     try:
       parsed_purl = PackageURL.from_string(purl_str)
       purl_version = parsed_purl.version
-      purl = _clean_purl(parsed_purl)
+      purl = parsed_purl
     except ValueError:
-      context.abort(grpc.StatusCode.INVALID_ARGUMENT, 'Invalid Package URL.')
-      return None
+      context.service_context.abort(grpc.StatusCode.INVALID_ARGUMENT,
+                                    'Invalid Package URL.')
 
   def to_response(b):
     return bug_to_response(b, include_details)
@@ -326,12 +471,14 @@ def do_query(query, context: grpc.ServicerContext, include_details=True):
     try:
       commit_bytes = codecs.decode(query.commit, 'hex')
     except ValueError:
-      context.abort(grpc.StatusCode.INVALID_ARGUMENT, 'Invalid hash.')
+      context.service_context.abort(grpc.StatusCode.INVALID_ARGUMENT,
+                                    'Invalid hash.')
       return None
 
-    bugs = yield query_by_commit(commit_bytes, to_response=to_response)
+    bugs, next_page_token = yield query_by_commit(
+        context, commit_bytes, to_response=to_response)
   elif purl and purl_version:
-    bugs = yield query_by_version(
+    bugs, next_page_token = yield query_by_version(
         context,
         package_name,
         ecosystem,
@@ -339,7 +486,7 @@ def do_query(query, context: grpc.ServicerContext, include_details=True):
         purl_version,
         to_response=to_response)
   elif query.WhichOneof('param') == 'version':
-    bugs = yield query_by_version(
+    bugs, next_page_token = yield query_by_version(
         context,
         package_name,
         ecosystem,
@@ -349,18 +496,14 @@ def do_query(query, context: grpc.ServicerContext, include_details=True):
   elif (package_name != '' and ecosystem != '') or (purl and not purl_version):
     # Package specified without version.
     bugs, next_page_token = yield query_by_package(
-        context,
-        package_name,
-        ecosystem,
-        purl,
-        page_token,
-        to_response=to_response)
+        context, package_name, ecosystem, purl, to_response=to_response)
   else:
-    context.abort(grpc.StatusCode.INVALID_ARGUMENT, 'Invalid query.')
-    return None
+    context.service_context.abort(grpc.StatusCode.INVALID_ARGUMENT,
+                                  'Invalid query.')
 
   if next_page_token:
     next_page_token = next_page_token.urlsafe()
+    logging.warning('Page size limit hit, response size: %s', len(bugs))
 
   return bugs, next_page_token
 
@@ -373,48 +516,59 @@ def bug_to_response(bug, include_details=True):
   return bug.to_vulnerability_minimal()
 
 
+@ndb.tasklet
 def _get_bugs(bug_ids, to_response=bug_to_response):
   """Get bugs from bug ids."""
-  bugs = ndb.get_multi([ndb.Key(osv.Bug, bug_id) for bug_id in bug_ids])
-  return [
-      to_response(bug)
-      for bug in bugs
-      if bug and bug.status == osv.BugStatus.PROCESSED
-  ]
+  bugs = ndb.get_multi_async([ndb.Key(osv.Bug, bug_id) for bug_id in bug_ids])
+
+  responses = []
+  for future_bug in bugs:
+    bug: osv.Bug = yield future_bug
+    if bug and bug.status == osv.BugStatus.PROCESSED and bug.public:
+      responses.append(to_response(bug))
+
+  return responses
 
 
-def _clean_purl(purl):
+def _datastore_normalized_purl(purl: PackageURL):
   """
-  Clean a purl object.
-
-  Removes version, subpath, and qualifiers with the exception of
-  the 'arch' qualifier
+  Returns a new PURL with most attributes removed, used for datastore queries
   """
   values = purl.to_dict()
   values.pop('version', None)
   values.pop('subpath', None)
-  qualifiers = values.pop('qualifiers', None)
-  new_qualifiers = {}
-  if qualifiers and 'arch' in qualifiers:  # CPU arch for debian packages
-    new_qualifiers['arch'] = qualifiers['arch']
-  return PackageURL(qualifiers=new_qualifiers, **values)
+  values.pop('qualifiers', None)
+  return PackageURL(**values)
 
 
 @ndb.tasklet
-def query_by_commit(commit, to_response=bug_to_response):
+def query_by_commit(
+    context: QueryContext,
+    commit: bytes,
+    to_response: Callable = bug_to_response) -> tuple[list, ndb.Cursor]:
   """Query by commit."""
   query = osv.AffectedCommits.query(osv.AffectedCommits.commits == commit)
-  bug_ids = []
-  it = query.iter()
-  while (yield it.has_next_async()):
-    affected_commits = it.next()
-    # Avoid requiring a separate index to include this in the initial Datastore
-    # query. The number of these should be very little to just iterate through.
-    if not affected_commits.public:
-      continue
-    bug_ids.append(affected_commits.bug_id)
 
-  return _get_bugs(bug_ids, to_response=to_response)
+  bug_ids = []
+  it: ndb.QueryIterator = query.iter(
+      keys_only=True, start_cursor=context.page_token)
+
+  cursor = None
+  while (yield it.has_next_async()):
+    if len(bug_ids) >= context.total_responses.page_limit():
+      cursor = it.cursor_after()
+      break
+
+    # Affect commits key follows this format:
+    # <BugID>-<PageNumber>
+    affected_commits: ndb.Key = it.next()
+    bug_id: str = affected_commits.id().rsplit("-", 1)[0]
+
+    bug_ids.append(bug_id)
+    context.total_responses.add(1)
+
+  bugs = yield _get_bugs(bug_ids, to_response=to_response)
+  return bugs, cursor
 
 
 def _match_purl(purl_query: PackageURL, purl_db: PackageURL) -> bool:
@@ -424,15 +578,41 @@ def _match_purl(purl_query: PackageURL, purl_db: PackageURL) -> bool:
   without qualifiers, otherwise match with qualifiers
   """
 
+  # Define _clean_purl inside to make sure it's only used within _match_purl
+  def _clean_purl(purl: PackageURL):
+    """
+    Clean a purl object for matching
+
+    Removes version, subpath, and qualifiers with the exception of
+    the 'arch' qualifier
+    """
+    values = purl.to_dict()
+    values.pop('version', None)
+    values.pop('subpath', None)
+    qualifiers = values.pop('qualifiers', None)
+    new_qualifiers = {}
+    if qualifiers and 'arch' in qualifiers:  # CPU arch for debian packages
+      new_qualifiers['arch'] = qualifiers['arch']
+    return PackageURL(qualifiers=new_qualifiers, **values)
+
+  purl_query = _clean_purl(purl_query)
+  # Most of the time this will have no effect, since PURLs in the db
+  # are already cleaned
+  purl_db = _clean_purl(purl_db)
   if not purl_query.qualifiers:
     # No qualifiers, and our PURLs never have versions, so just match name
     return purl_query.name == purl_db.name
+
+  if purl_db.qualifiers:
+    # A arch of 'source' matches all other architectures
+    if purl_db.qualifiers['arch'] == 'source':
+      purl_db.qualifiers['arch'] = purl_query.qualifiers['arch']
 
   return purl_query == purl_db
 
 
 def _is_semver_affected(affected_packages, package_name, ecosystem,
-                        purl: PackageURL, version):
+                        purl: PackageURL | None, version):
   """Returns whether or not the given version is within an affected SEMVER
 
   range.
@@ -477,7 +657,7 @@ def _is_semver_affected(affected_packages, package_name, ecosystem,
 def _is_version_affected(affected_packages,
                          package_name,
                          ecosystem,
-                         purl: PackageURL,
+                         purl: PackageURL | None,
                          version,
                          normalize=False):
   """Returns whether or not the given version is within an affected ECOSYSTEM
@@ -512,52 +692,76 @@ def _is_version_affected(affected_packages,
 
 
 @ndb.tasklet
-def _query_by_semver(context: grpc.ServicerContext, query: ndb.Query,
-                     package_name: str, ecosystem: str, purl: PackageURL,
-                     version: str):
+def _query_by_semver(context: QueryContext, query: ndb.Query, package_name: str,
+                     ecosystem: str, purl: PackageURL | None, version: str):
   """Query by semver."""
   if not semver_index.is_valid(version):
-    return []
+    return [], None
 
   results = []
   query = query.filter(
       osv.Bug.semver_fixed_indexes > semver_index.normalize(version))
-  it = query.iter(
-      timeout=min(_MAX_REQUEST_DURATION_SECS, context.time_remaining()))
+  it: ndb.QueryIterator = query.iter(start_cursor=context.page_token)
+  cursor = None
 
   while (yield it.has_next_async()):
-    bug = it.next()
+    if len(results) >= context.total_responses.page_limit():
+      cursor = it.cursor_after()
+      break
+
+    bug: osv.Bug = it.next()  # type: ignore
     if _is_semver_affected(bug.affected_packages, package_name, ecosystem, purl,
                            version):
       results.append(bug)
+      context.total_responses.add(1)
 
-  return results
+  return results, cursor
 
 
 @ndb.tasklet
-def _query_by_generic_version(context: grpc.ServicerContext,
-                              base_query: ndb.Query, project, ecosystem,
-                              purl: PackageURL, version):
+def _query_by_generic_version(
+    context: QueryContext,
+    base_query: ndb.Query,
+    project: str,
+    ecosystem: str,
+    purl: PackageURL | None,
+    version: str,
+):
   """Query by generic version."""
   # Try without normalizing.
   results = []
-  query = base_query.filter(osv.Bug.affected_fuzzy == version)
-  it = query.iter()
+  query: ndb.Query = base_query.filter(osv.Bug.affected_fuzzy == version)
+  it: ndb.QueryIterator = query.iter(
+      # page_token can be the token for this query, or the token for the one
+      # below. If the token is used for the normalized query below, this query
+      # must have returned no results, so will still return no results, fall
+      # through to the query below again.
+      start_cursor=context.page_token)
+  cursor = None
+
   while (yield it.has_next_async()):
+    if len(results) >= context.total_responses.page_limit():
+      cursor = it.cursor_after()
+      break
     bug = it.next()
     if _is_version_affected(bug.affected_packages, project, ecosystem, purl,
                             version):
       results.append(bug)
+      context.total_responses.add(1)
 
   if results:
-    return results
+    return results, cursor
 
   # Try again after normalizing.
   version = osv.normalize_tag(version)
   query = base_query.filter(osv.Bug.affected_fuzzy == version)
-  it = query.iter(
-      timeout=min(_MAX_REQUEST_DURATION_SECS, context.time_remaining()))
+  it = query.iter(start_cursor=context.page_token)
+
   while (yield it.has_next_async()):
+    if len(results) >= context.total_responses.page_limit():
+      cursor = it.cursor_after()
+      break
+
     bug = it.next()
     if _is_version_affected(
         bug.affected_packages,
@@ -567,27 +771,19 @@ def _query_by_generic_version(context: grpc.ServicerContext,
         version,
         normalize=True):
       results.append(bug)
+      context.total_responses.add(1)
 
-  return results
+  return results, cursor
 
 
 @ndb.tasklet
-def query_by_version(context: grpc.ServicerContext,
+def query_by_version(context: QueryContext,
                      package_name: str,
                      ecosystem: str,
-                     purl: PackageURL,
+                     purl: PackageURL | None,
                      version,
-                     to_response=bug_to_response):
+                     to_response: Callable = bug_to_response):
   """Query by (fuzzy) version."""
-  ecosystem_info = ecosystems.get(ecosystem)
-  is_semver = ecosystem_info and ecosystem_info.is_semver
-
-  if package_name == "Kernel":
-    context.abort(
-        grpc.StatusCode.UNAVAILABLE,
-        "Linux Kernel queries are currently unavailable: " +
-        "See https://google.github.io/osv.dev/faq/" +
-        "#why-am-i-getting-an-error-message-for-my-linux-kernel-query")
 
   if package_name:
     query = osv.Bug.query(
@@ -599,38 +795,67 @@ def query_by_version(context: grpc.ServicerContext,
   elif purl:
     query = osv.Bug.query(
         osv.Bug.status == osv.BugStatus.PROCESSED,
-        osv.Bug.purl == purl.to_string(),
+        osv.Bug.purl == _datastore_normalized_purl(purl).to_string(),
         # pylint: disable=singleton-comparison
         osv.Bug.public == True,  # noqa: E712
     )
   else:
-    return []
+    return [], None
 
   if ecosystem:
     query = query.filter(osv.Bug.ecosystem == ecosystem)
 
+  if purl:
+    if ecosystem:  # Purl's already include the ecosystem inside
+      context.service_context.abort(
+          grpc.StatusCode.INVALID_ARGUMENT,
+          'Ecosystem specified in a purl query',
+      )
+
+    purl_ecosystem = purl_helpers.purl_to_ecosystem(purl.type)
+    if purl_ecosystem:
+      ecosystem = purl_ecosystem
+
+  ecosystem_info = ecosystems.get(ecosystem)
+  is_semver = ecosystem_info and ecosystem_info.is_semver
+
   bugs = []
+  next_page_token = None
   if ecosystem:
     if is_semver:
       # Ecosystem supports semver only.
-      bugs.extend((yield _query_by_semver(context, query, package_name,
-                                          ecosystem, purl, version)))
+      bugs, next_page_token = yield _query_by_semver(context, query,
+                                                     package_name, ecosystem,
+                                                     purl, version)
     else:
-      bugs.extend((yield _query_by_generic_version(context, query, package_name,
-                                                   ecosystem, purl, version)))
+      bugs, next_page_token = yield _query_by_generic_version(
+          context, query, package_name, ecosystem, purl, version)
   else:
+    logging.warning("Package query without ecosystem specified")
     # Unspecified ecosystem. Try both.
-    bugs.extend((yield _query_by_semver(context, query, package_name, ecosystem,
-                                        purl, version)))
-    bugs.extend((yield _query_by_generic_version(context, query, package_name,
-                                                 ecosystem, purl, version)))
 
-  return [to_response(bug) for bug in bugs]
+    # TODO: Remove after testing how many consumers are
+    # querying the API this way.
+    context.page_token = None
+    new_bugs, _ = yield _query_by_semver(context, query, package_name,
+                                         ecosystem, purl, version)
+    bugs.extend(new_bugs)
+    new_bugs, _ = yield _query_by_generic_version(context, query, package_name,
+                                                  ecosystem, purl, version)
+    bugs.extend(new_bugs)
+
+    # Trying both is too difficult/ugly with paging
+    # Our documentation states that this is an invalid query
+    # context.service_context.abort(grpc.StatusCode.INVALID_ARGUMENT,
+    #                               'Ecosystem not specified')
+
+  return [to_response(bug) for bug in bugs], next_page_token
 
 
 @ndb.tasklet
-def query_by_package(context: grpc.ServicerContext, package_name: str,
-                     ecosystem: str, purl: PackageURL, page_token, to_response):
+def query_by_package(context: QueryContext, package_name: str, ecosystem: str,
+                     purl: PackageURL | None,
+                     to_response: Callable) -> tuple[list, ndb.Cursor]:
   """Query by package."""
   bugs = []
   if package_name and ecosystem:
@@ -644,26 +869,39 @@ def query_by_package(context: grpc.ServicerContext, package_name: str,
   elif purl:
     query = osv.Bug.query(
         osv.Bug.status == osv.BugStatus.PROCESSED,
-        osv.Bug.purl == purl.to_string(),
+        osv.Bug.purl == _datastore_normalized_purl(purl).to_string(),
         # pylint: disable=singleton-comparison
         osv.Bug.public == True,  # noqa: E712
     )
   else:
-    return []
+    return [], None
 
-  # Set limit to the max + 1, as otherwise we can't detect if there are any
-  # more left.
-  it = query.iter(
-      start_cursor=page_token,
-      limit=_MAX_VULNERABILITIES_LISTED + 1,
-      timeout=min(_MAX_REQUEST_DURATION_SECS, context.time_remaining()))
+  it: ndb.QueryIterator = query.iter(start_cursor=context.page_token)
   cursor = None
   while (yield it.has_next_async()):
-    if len(bugs) >= _MAX_VULNERABILITIES_LISTED:
+    if len(bugs) >= context.total_responses.page_limit():
       cursor = it.cursor_after()
       break
 
-    bugs.append(it.next())
+    bug: osv.Bug = it.next()
+
+    if purl:
+      affected = False
+      # Check if any affected packages actually match _match_purl
+      for affected_package in bug.affected_packages:
+        affected_package: osv.AffectedPackage
+        if not (affected_package.package.purl and _match_purl(
+            purl, PackageURL.from_string(affected_package.package.purl))):
+          continue
+
+        affected = True
+        break
+    else:
+      affected = True
+
+    if affected:
+      bugs.append(bug)
+      context.total_responses.add(1)
 
   return [to_response(bug) for bug in bugs], cursor
 
@@ -671,10 +909,13 @@ def query_by_package(context: grpc.ServicerContext, package_name: str,
 def serve(port: int, local: bool):
   """Configures and runs the OSV API server."""
   server = grpc.server(concurrent.futures.ThreadPoolExecutor(max_workers=10))
-  osv_service_v1_pb2_grpc.add_OSVServicer_to_server(OSVServicer(), server)
+  servicer = OSVServicer()
+  osv_service_v1_pb2_grpc.add_OSVServicer_to_server(servicer, server)
+  health_pb2_grpc.add_HealthServicer_to_server(servicer, server)
   if local:
     service_names = (
         osv_service_v1_pb2.DESCRIPTOR.services_by_name['OSV'].full_name,
+        health_pb2.DESCRIPTOR.services_by_name['Health'].full_name,
         reflection.SERVICE_NAME,
     )
     reflection.enable_server_reflection(service_names, server)

@@ -21,7 +21,8 @@ import (
 )
 
 const (
-	CVETimeFormat = "2006-01-02T15:04Z07:00"
+	CVETimeFormat  = "2006-01-02T15:04Z07:00"
+	CVE5TimeFormat = "2006-01-02T00:00:00"
 )
 
 type CVE struct {
@@ -36,6 +37,7 @@ type CVE struct {
 		} `json:"description_data"`
 	} `json:"description"`
 }
+
 type CVEReferenceData struct {
 	URL       string   `json:"url"`
 	Name      string   `json:"name"`
@@ -47,30 +49,40 @@ type CVEReferences struct {
 	ReferenceData []CVEReferenceData `json:"reference_data"`
 }
 
+type CVEImpact struct {
+	BaseMetricV3 struct {
+		CVSSV3 struct {
+			VectorString string `json:"vectorString"`
+			BaseSeverity string `json:"baseSeverity"`
+		} `json:"cvssV3"`
+	} `json:"baseMetricV3"`
+}
+
 type CVEItem struct {
-	CVE            CVE `json:"cve"`
-	Configurations struct {
-		Nodes []struct {
-			Operator string `json:"operator"`
-			CPEMatch []struct {
-				Vulnerable            bool   `json:"vulnerable"`
-				CPE23URI              string `json:"cpe23Uri"`
-				VersionStartExcluding string `json:"versionStartExcluding"`
-				VersionStartIncluding string `json:"versionStartIncluding"`
-				VersionEndExcluding   string `json:"versionEndExcluding"`
-				VersionEndIncluding   string `json:"versionEndIncluding"`
-			} `json:"cpe_match"`
-		} `json:"nodes"`
-	} `json:"configurations"`
-	Impact struct {
-		BaseMetricV3 struct {
-			CVSSV3 struct {
-				BaseSeverity string `json:"baseSeverity"`
-			} `json:"cvssV3"`
-		} `json:"baseMetricV3"`
-	} `json:"impact"`
-	PublishedDate    string `json:"publishedDate"`
-	LastModifiedDate string `json:"lastModifiedDate"`
+	CVE              CVE           `json:"cve"`
+	Configurations   Configuration `json:"configurations"`
+	Impact           CVEImpact     `json:"impact"`
+	PublishedDate    string        `json:"publishedDate"`
+	LastModifiedDate string        `json:"lastModifiedDate"`
+}
+
+type Configuration struct {
+	Nodes []Node `json:"nodes"`
+}
+
+type Node struct {
+	Operator string     `json:"operator"`
+	Children []Node     `json:"children"`
+	CPEMatch []CPEMatch `json:"cpe_match"`
+}
+
+type CPEMatch struct {
+	Vulnerable            bool   `json:"vulnerable"`
+	CPE23URI              string `json:"cpe23Uri"`
+	VersionStartExcluding string `json:"versionStartExcluding"`
+	VersionStartIncluding string `json:"versionStartIncluding"`
+	VersionEndExcluding   string `json:"versionEndExcluding"`
+	VersionEndIncluding   string `json:"versionEndIncluding"`
 }
 
 type NVDCVE struct {
@@ -93,6 +105,52 @@ func (n *NVDCVE2) ToJSON(w io.Writer) error {
 	return encoder.Encode(n)
 }
 
+type CVE5 struct {
+	DataType    string `json:"dataType"`
+	DataVersion string `json:"dataVersion"`
+	Metadata    struct {
+		State             string `json:"state"`
+		ID                string `json:"cveId"`
+		AssignerOrgId     string `json:"assignerOrgId"`
+		AssignerShortName string `json:"assignerShortName"`
+		DateUpdated       string `json:"dateUpdated"`
+		DateReserved      string `json:"dateReserved"`
+		DatePublished     string `json:"datePublished"`
+	}
+	Containers struct {
+		CNA struct {
+			ProviderMetadata struct {
+				OrgID       string `json:"orgId"`
+				ShortName   string `json:"shortName"`
+				DateUpdated string `json:"dateUpdated"`
+			}
+			Descriptions []struct {
+				Lang  string `json:"lang"`
+				Value string `json:"value"`
+			}
+			Tags     []string `json:"tags"`
+			Affected []struct {
+				Vendor   string `json:"vendor"`
+				Product  string `json:"product"`
+				Versions []struct {
+					Version string `json:"version"`
+					Status  string `json:"status"`
+				}
+			}
+			References []struct {
+				URL string `json:"url"`
+			}
+			ProblemTypes []struct {
+				Descriptions []struct {
+					Type        string `json:"type"`
+					Lang        string `json:"lang"`
+					Description string `json:"description"`
+				}
+			}
+		}
+	}
+}
+
 func EnglishDescription(cve CVE) string {
 	for _, desc := range cve.Description.DescriptionData {
 		if desc.Lang == "en" {
@@ -104,4 +162,8 @@ func EnglishDescription(cve CVE) string {
 
 func ParseTimestamp(timestamp string) (time.Time, error) {
 	return time.Parse(CVETimeFormat, timestamp)
+}
+
+func ParseCVE5Timestamp(timestamp string) (time.Time, error) {
+	return time.Parse(CVE5TimeFormat, timestamp)
 }

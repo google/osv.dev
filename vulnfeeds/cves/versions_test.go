@@ -296,6 +296,90 @@ func TestRepo(t *testing.T) {
 			expectedRepoURL: "",
 			expectedOk:      false,
 		},
+		{
+			description:     "Valid repo previously being discarded",
+			inputLink:       "https://gitlab.com/bgermann/unrar-free",
+			expectedRepoURL: "https://gitlab.com/bgermann/unrar-free",
+			expectedOk:      true,
+		},
+		{
+			description:     "Valid repo previously being discarded",
+			inputLink:       "https://gitlab.xiph.org/xiph/ezstream",
+			expectedRepoURL: "https://gitlab.xiph.org/xiph/ezstream",
+			expectedOk:      true,
+		},
+		{
+			description:     "Valid repo previously being discarded",
+			inputLink:       "https://gitlab.freedesktop.org/xdg/xdg-utils",
+			expectedRepoURL: "https://gitlab.freedesktop.org/xdg/xdg-utils",
+			expectedOk:      true,
+		},
+		{
+			description:     "Valid repo previously being discarded",
+			inputLink:       "http://git.linuxtv.org/xawtv3.git",
+			expectedRepoURL: "http://git.linuxtv.org/xawtv3.git",
+			expectedOk:      true,
+		},
+		{
+			description:     "Valid repo previously being discarded",
+			inputLink:       "https://git.savannah.gnu.org/git/emacs.git",
+			expectedRepoURL: "https://git.savannah.gnu.org/git/emacs.git",
+			expectedOk:      true,
+		},
+		{
+			description:     "Valid repo previously being discarded",
+			inputLink:       "https://git.libssh.org/projects/libssh.git",
+			expectedRepoURL: "https://git.libssh.org/projects/libssh.git",
+			expectedOk:      true,
+		},
+		{
+			description:     "Valid repo previously being discarded",
+			inputLink:       "https://pagure.io/libaio.git",
+			expectedRepoURL: "https://pagure.io/libaio.git",
+			expectedOk:      true,
+		},
+		{
+			description:     "Valid repo previously being discarded",
+			inputLink:       "git://git.infradead.org/mtd-utils.git",
+			expectedRepoURL: "git://git.infradead.org/mtd-utils.git",
+			expectedOk:      true,
+		},
+		{
+			description:     "Valid repo previously being discarded",
+			inputLink:       "https://git.savannah.nongnu.org/git/davfs2.git",
+			expectedRepoURL: "https://git.savannah.nongnu.org/git/davfs2.git",
+			expectedOk:      true,
+		},
+		{
+			description:     "Valid repo previously being discarded",
+			inputLink:       "https://git.kernel.org/pub/scm/linux/kernel/git/jaegeuk/f2fs-tools.git",
+			expectedRepoURL: "https://git.kernel.org/pub/scm/linux/kernel/git/jaegeuk/f2fs-tools.git",
+			expectedOk:      true,
+		},
+		{
+			description:     "Valid repo previously being discarded",
+			inputLink:       "https://xenbits.xen.org/git-http/xen.git",
+			expectedRepoURL: "https://xenbits.xen.org/git-http/xen.git",
+			expectedOk:      true,
+		},
+		{
+			description:     "Valid repo previously being discarded",
+			inputLink:       "https://opendev.org/x/sqlalchemy-migrate.git",
+			expectedRepoURL: "https://opendev.org/x/sqlalchemy-migrate.git",
+			expectedOk:      true,
+		},
+		{
+			description:     "Valid repo previously being discarded",
+			inputLink:       "https://git.netfilter.org/libnftnl",
+			expectedRepoURL: "https://git.netfilter.org/libnftnl",
+			expectedOk:      true,
+		},
+		{
+			description:     "Valid repo previously being discarded",
+			inputLink:       "https://gitlab.com/ubports/development/core/click/",
+			expectedRepoURL: "https://gitlab.com/ubports/development/core/click",
+			expectedOk:      true,
+		},
 	}
 
 	for _, tc := range tests {
@@ -311,87 +395,105 @@ func TestRepo(t *testing.T) {
 
 func TestExtractGitCommit(t *testing.T) {
 	tests := []struct {
-		description       string
-		inputLink         string
-		expectedGitCommit *GitCommit
+		description            string
+		inputLink              string
+		inputCommitType        CommitType
+		expectedAffectedCommit AffectedCommit
+		expectFailure          bool
 	}{
 		{
-			description: "Valid GitHub commit URL",
-			inputLink:   "https://github.com/google/osv/commit/cd4e934d0527e5010e373e7fed54ef5daefba2f5",
-			expectedGitCommit: &GitCommit{
-				Repo:   "https://github.com/google/osv",
-				Commit: "cd4e934d0527e5010e373e7fed54ef5daefba2f5",
+			description:     "Valid GitHub commit URL",
+			inputLink:       "https://github.com/google/osv/commit/cd4e934d0527e5010e373e7fed54ef5daefba2f5",
+			inputCommitType: Fixed,
+			expectedAffectedCommit: AffectedCommit{
+				Repo:  "https://github.com/google/osv",
+				Fixed: "cd4e934d0527e5010e373e7fed54ef5daefba2f5",
 			},
 		},
 		{
-			description: "Valid GitLab commit URL",
-			inputLink:   "https://gitlab.freedesktop.org/virgl/virglrenderer/-/commit/b05bb61f454eeb8a85164c8a31510aeb9d79129c",
-			expectedGitCommit: &GitCommit{
-				Repo:   "https://gitlab.freedesktop.org/virgl/virglrenderer",
-				Commit: "b05bb61f454eeb8a85164c8a31510aeb9d79129c",
+			description:     "Valid GitLab commit URL",
+			inputLink:       "https://gitlab.freedesktop.org/virgl/virglrenderer/-/commit/b05bb61f454eeb8a85164c8a31510aeb9d79129c",
+			inputCommitType: Fixed,
+			expectedAffectedCommit: AffectedCommit{
+				Repo:  "https://gitlab.freedesktop.org/virgl/virglrenderer",
+				Fixed: "b05bb61f454eeb8a85164c8a31510aeb9d79129c",
 			},
 		},
 		{
-			description: "Valid GitLab.com commit URL",
-			inputLink:   "https://gitlab.com/mayan-edms/mayan-edms/commit/9ebe80595afe4fdd1e2c74358d6a9421f4ce130e",
-			expectedGitCommit: &GitCommit{
-				Repo:   "https://gitlab.com/mayan-edms/mayan-edms",
-				Commit: "9ebe80595afe4fdd1e2c74358d6a9421f4ce130e",
+			description:     "Valid GitLab.com commit URL",
+			inputLink:       "https://gitlab.com/mayan-edms/mayan-edms/commit/9ebe80595afe4fdd1e2c74358d6a9421f4ce130e",
+			inputCommitType: Fixed,
+			expectedAffectedCommit: AffectedCommit{
+				Repo:  "https://gitlab.com/mayan-edms/mayan-edms",
+				Fixed: "9ebe80595afe4fdd1e2c74358d6a9421f4ce130e",
 			},
 		},
 		{
-			description: "Valid bitbucket.org commit URL",
-			inputLink:   "https://bitbucket.org/openpyxl/openpyxl/commits/3b4905f428e1",
-			expectedGitCommit: &GitCommit{
-				Repo:   "https://bitbucket.org/openpyxl/openpyxl",
-				Commit: "3b4905f428e1",
+			description:     "Valid bitbucket.org commit URL",
+			inputLink:       "https://bitbucket.org/openpyxl/openpyxl/commits/3b4905f428e1",
+			inputCommitType: Fixed,
+			expectedAffectedCommit: AffectedCommit{
+				Repo:  "https://bitbucket.org/openpyxl/openpyxl",
+				Fixed: "3b4905f428e1",
 			},
 		},
 		{
-			description: "Valid bitbucket.org commit URL with trailing slash",
-			inputLink:   "https://bitbucket.org/jespern/django-piston/commits/91bdaec89543/",
-			expectedGitCommit: &GitCommit{
-				Repo:   "https://bitbucket.org/jespern/django-piston",
-				Commit: "91bdaec89543",
+			description:     "Valid bitbucket.org commit URL with trailing slash",
+			inputLink:       "https://bitbucket.org/jespern/django-piston/commits/91bdaec89543/",
+			inputCommitType: Fixed,
+			expectedAffectedCommit: AffectedCommit{
+				Repo:  "https://bitbucket.org/jespern/django-piston",
+				Fixed: "91bdaec89543",
 			},
 		},
 		{
-			description: "Valid cGit commit URL",
-			inputLink:   "https://git.dpkg.org/cgit/dpkg/dpkg.git/commit/?id=faa4c92debe45412bfcf8a44f26e827800bb24be",
-			expectedGitCommit: &GitCommit{
-				Repo:   "https://git.dpkg.org/cgit/dpkg/dpkg.git",
-				Commit: "faa4c92debe45412bfcf8a44f26e827800bb24be",
+			description:     "Valid cGit commit URL",
+			inputLink:       "https://git.dpkg.org/cgit/dpkg/dpkg.git/commit/?id=faa4c92debe45412bfcf8a44f26e827800bb24be",
+			inputCommitType: Fixed,
+			expectedAffectedCommit: AffectedCommit{
+				Repo:  "https://git.dpkg.org/cgit/dpkg/dpkg.git",
+				Fixed: "faa4c92debe45412bfcf8a44f26e827800bb24be",
 			},
 		},
 		{
-			description: "Valid GitWeb commit URL",
-			inputLink:   "https://git.gnupg.org/cgi-bin/gitweb.cgi?p=libksba.git;a=commit;h=f61a5ea4e0f6a80fd4b28ef0174bee77793cf070",
-			expectedGitCommit: &GitCommit{
-				Repo:   "https://git.gnupg.org/libksba.git",
-				Commit: "f61a5ea4e0f6a80fd4b28ef0174bee77793cf070",
+			description:     "Valid GitWeb commit URL",
+			inputLink:       "https://git.gnupg.org/cgi-bin/gitweb.cgi?p=libksba.git;a=commit;h=f61a5ea4e0f6a80fd4b28ef0174bee77793cf070",
+			inputCommitType: Fixed,
+			expectedAffectedCommit: AffectedCommit{
+				Repo:  "https://git.gnupg.org/libksba.git",
+				Fixed: "f61a5ea4e0f6a80fd4b28ef0174bee77793cf070",
 			},
 		},
 		{
-			description:       "Unsupported GitHub PR URL",
-			inputLink:         "https://github.com/google/osv/pull/123",
-			expectedGitCommit: nil,
+			description:            "Unsupported GitHub PR URL",
+			inputLink:              "https://github.com/google/osv/pull/123",
+			inputCommitType:        Fixed,
+			expectedAffectedCommit: AffectedCommit{},
+			expectFailure:          true,
 		},
 		{
-			description:       "Unsupported GitHub tag URL",
-			inputLink:         "https://github.com/google/osv.dev/releases/tag/v0.0.14",
-			expectedGitCommit: nil,
+			description:            "Unsupported GitHub tag URL",
+			inputLink:              "https://github.com/google/osv.dev/releases/tag/v0.0.14",
+			inputCommitType:        Fixed,
+			expectedAffectedCommit: AffectedCommit{},
+			expectFailure:          true,
 		},
 		{
-			description:       "Completely invalid input",
-			inputLink:         "",
-			expectedGitCommit: nil,
+			description:            "Completely invalid input",
+			inputLink:              "",
+			inputCommitType:        Fixed,
+			expectedAffectedCommit: AffectedCommit{},
+			expectFailure:          true,
 		},
 	}
 
 	for _, tc := range tests {
-		got := extractGitCommit(tc.inputLink)
-		if !reflect.DeepEqual(got, tc.expectedGitCommit) {
-			t.Errorf("test %q: extractGitCommit for %q was incorrect, got: %#v, expected: %#v", tc.description, tc.inputLink, got, tc.expectedGitCommit)
+		got, err := extractGitCommit(tc.inputLink, tc.inputCommitType)
+		if err != nil && !tc.expectFailure {
+			t.Errorf("test %q: extractGitCommit for %q (%q) errored unexpectedly: %#v", tc.description, tc.inputLink, tc.inputCommitType, err)
+		}
+		if !reflect.DeepEqual(got, tc.expectedAffectedCommit) {
+			t.Errorf("test %q: extractGitCommit for %q was incorrect, got: %#v, expected: %#v", tc.description, tc.inputLink, got, tc.expectedAffectedCommit)
 		}
 	}
 }
@@ -518,21 +620,19 @@ func TestExtractVersionInfo(t *testing.T) {
 			inputCVEItem:       loadTestData("CVE-2022-32746"),
 			inputValidVersions: []string{},
 			expectedVersionInfo: VersionInfo{
-				FixCommits:          []GitCommit(nil),
-				LimitCommits:        []GitCommit(nil),
-				LastAffectedCommits: []GitCommit(nil),
+				AffectedCommits: []AffectedCommit(nil),
 				AffectedVersions: []AffectedVersion{
-					AffectedVersion{
+					{
 						Introduced:   "4.16.0",
 						Fixed:        "4.16.4",
 						LastAffected: "",
 					},
-					AffectedVersion{
+					{
 						Introduced:   "4.15.0",
 						Fixed:        "4.15.9",
 						LastAffected: "",
 					},
-					AffectedVersion{
+					{
 						Introduced:   "4.3.0",
 						Fixed:        "4.14.14",
 						LastAffected: "",
@@ -546,21 +646,19 @@ func TestExtractVersionInfo(t *testing.T) {
 			inputCVEItem:       loadTestData("CVE-2022-0090"),
 			inputValidVersions: []string{},
 			expectedVersionInfo: VersionInfo{
-				FixCommits:          []GitCommit(nil),
-				LimitCommits:        []GitCommit(nil),
-				LastAffectedCommits: []GitCommit(nil),
+				AffectedCommits: []AffectedCommit(nil),
 				AffectedVersions: []AffectedVersion{
-					AffectedVersion{
+					{
 						Introduced:   "14.6.0",
 						Fixed:        "14.6.1",
 						LastAffected: "",
 					},
-					AffectedVersion{
+					{
 						Introduced:   "14.5.0",
 						Fixed:        "14.5.3",
 						LastAffected: "",
 					},
-					AffectedVersion{
+					{
 						Introduced:   "",
 						Fixed:        "14.4.5",
 						LastAffected: "",
@@ -574,11 +672,9 @@ func TestExtractVersionInfo(t *testing.T) {
 			inputCVEItem:       loadTestData("CVE-2022-1122"),
 			inputValidVersions: []string{},
 			expectedVersionInfo: VersionInfo{
-				FixCommits:          []GitCommit(nil),
-				LimitCommits:        []GitCommit(nil),
-				LastAffectedCommits: []GitCommit(nil),
+				AffectedCommits: []AffectedCommit(nil),
 				AffectedVersions: []AffectedVersion{
-					AffectedVersion{
+					{
 						Introduced:   "",
 						Fixed:        "",
 						LastAffected: "2.4.0",
@@ -663,10 +759,8 @@ func TestExtractVersionInfo(t *testing.T) {
 			inputCVEItem:       loadTestData("CVE-2022-2956"),
 			inputValidVersions: []string{},
 			expectedVersionInfo: VersionInfo{
-				FixCommits:          []GitCommit(nil),
-				LimitCommits:        []GitCommit(nil),
-				LastAffectedCommits: []GitCommit(nil),
-				AffectedVersions:    []AffectedVersion(nil),
+				AffectedCommits:  []AffectedCommit(nil),
+				AffectedVersions: []AffectedVersion(nil),
 			},
 			expectedNotes: []string{},
 		},
@@ -676,6 +770,32 @@ func TestExtractVersionInfo(t *testing.T) {
 		gotVersionInfo, _ := ExtractVersionInfo(tc.inputCVEItem, tc.inputValidVersions)
 		if diff := cmp.Diff(tc.expectedVersionInfo, gotVersionInfo); diff != "" {
 			t.Errorf("test %q: VersionInfo for %#v was incorrect: %s", tc.description, tc.inputCVEItem, diff)
+		}
+	}
+}
+
+func TestCPEs(t *testing.T) {
+	tests := []struct {
+		description  string
+		inputCVEItem CVEItem
+		expectedCPEs []string
+	}{
+		{
+			description:  "A CVE with child CPEs",
+			inputCVEItem: loadTestData("CVE-2023-24256"),
+			expectedCPEs: []string{"cpe:2.3:o:nio:aspen:*:*:*:*:*:*:*:*", "cpe:2.3:h:nio:ec6:-:*:*:*:*:*:*:*"},
+		},
+		{
+			description:  "A CVE without child CPEs",
+			inputCVEItem: loadTestData("CVE-2022-33745"),
+			expectedCPEs: []string{"cpe:2.3:o:xen:xen:*:*:*:*:*:*:x86:*", "cpe:2.3:o:fedoraproject:fedora:36:*:*:*:*:*:*:*"},
+		},
+	}
+
+	for _, tc := range tests {
+		gotCPEs := CPEs(tc.inputCVEItem)
+		if diff := cmp.Diff(gotCPEs, tc.expectedCPEs); diff != "" {
+			t.Errorf("test %q: CPEs for %#v were incorrect: %s", tc.description, tc.inputCVEItem.Configurations, diff)
 		}
 	}
 }

@@ -24,7 +24,7 @@ VOLUME /var/lib/docker
 COPY docker/worker/Pipfile* /env/docker/worker/
 COPY setup.py Pipfile* README.md /env/
 COPY osv /env/osv
-RUN cd /env/docker/worker && pip3 install pipenv && pipenv install --deploy --system
+RUN cd /env/docker/worker && pipenv install --deploy --system
 
 COPY docker/worker/oss_fuzz.py docker/worker/worker.py /usr/local/bin/
 RUN chmod 755 /usr/local/bin/worker.py

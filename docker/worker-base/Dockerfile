@@ -28,19 +28,20 @@ RUN apt-get update && apt-get upgrade -y && \
         libssl-dev \
         software-properties-common
 
-RUN curl -sS https://www.python.org/ftp/python/3.11.0/Python-3.11.0.tgz | tar -C /tmp -xzv && \
-    cd /tmp/Python-3.11.0 && \
+ARG PYTHON_VERSION=3.11.4
+RUN curl -sS https://www.python.org/ftp/python/${PYTHON_VERSION}/Python-${PYTHON_VERSION}.tgz | tar -C /tmp -xzv && \
+    cd /tmp/Python-${PYTHON_VERSION} && \
     ./configure --enable-optimizations --with-lto --enable-loadable-sqlite-extensions && \
     make -j && \
     make install && \
-    rm -rf /tmp/Python-3.11.0
-RUN pip3 install pipenv
+    rm -rf /tmp/Python-${PYTHON_VERSION}
+RUN pip3 install pipenv==2023.6.12
 
 # Install Docker.
 # Pin the version to an older one due to gVisor incompatibilities.
 # See https://github.com/google/osv.dev/issues/1019#issuecomment-1427418758
 ARG DOCKER_VERSION=5:20.10.22~3-0~ubuntu-bionic
-RUN curl -fsSL https://download.docker.com/linux/ubuntu/gpg | apt-key add - && \
+RUN curl -fsSL https://download.docker.com/linux/ubuntu/gpg | gpg --dearmor -o /etc/apt/trusted.gpg.d/docker.gpg && \
     add-apt-repository \
         "deb [arch=amd64] https://download.docker.com/linux/ubuntu bionic stable" && \
     apt-get install -y docker-ce=$DOCKER_VERSION docker-ce-cli=$DOCKER_VERSION && \
@@ -48,11 +49,11 @@ RUN curl -fsSL https://download.docker.com/linux/ubuntu/gpg | apt-key add - && \
 
 # Install gcloud
 RUN echo "deb [signed-by=/usr/share/keyrings/cloud.google.gpg] http://packages.cloud.google.com/apt cloud-sdk main" | tee -a /etc/apt/sources.list.d/google-cloud-sdk.list && \
-    curl https://packages.cloud.google.com/apt/doc/apt-key.gpg | apt-key --keyring /usr/share/keyrings/cloud.google.gpg add - && \
+    curl https://packages.cloud.google.com/apt/doc/apt-key.gpg | gpg --dearmor -o /usr/share/keyrings/cloud.google.gpg && \
     apt-get update && apt-get install -y google-cloud-sdk
 
 # Install gVisor.
-RUN curl -fsSL https://gvisor.dev/archive.key | apt-key add - && \
+RUN curl -fsSL https://gvisor.dev/archive.key | gpg --dearmor -o /etc/apt/trusted.gpg.d/gvisor.gpg && \
     # Pinning the version as the latest has a hash sum mismatch.
     add-apt-repository "deb https://storage.googleapis.com/gvisor/releases 20220621 main" && \
     apt-get update && apt-get install -y runsc

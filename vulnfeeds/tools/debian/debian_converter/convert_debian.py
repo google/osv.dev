@@ -128,15 +128,17 @@ class AdvisoryInfo:
   details: str
   published: str
   modified: str
-  affected: [AffectedInfo]
-  aliases: [str]
-  references: [Reference]
+  affected: list[AffectedInfo]
+  aliases: list[str]
+  related: list[str]
+  references: list[Reference]
 
   def __init__(self, adv_id: str, summary: str, published: str):
     self.id = adv_id
     self.summary = summary
     self.affected = []
     self.aliases = []
+    self.related = []
     # Set a placeholder value for published and modified, if there is wml files
     # this will be replaced
     self.published = published
@@ -199,7 +201,7 @@ def parse_security_tracker_file(advisories: Advisories,
         # {CVE-XXXX-XXXX CVE-XXXX-XXXX}
         line = line.lstrip()
         if line.startswith('{'):
-          advisories[current_advisory].aliases = line.strip('{}').split()
+          advisories[current_advisory].related = line.strip('{}').split()
           continue
 
         if line.startswith('NOTE:'):

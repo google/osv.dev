@@ -92,4 +92,4 @@ gsutil cp gs://osv-vulnerabilities/PyPI/all.zip .
 ```
 
 A list of all current ecosystems is available at 
-[`gs://osv-vulnerabilities.storage.googleapis.com/ecosystems.txt`](https://osv-vulnerabilities.storage.googleapis.com/ecosystems.txt)
+[`gs://osv-vulnerabilities/ecosystems.txt`](https://osv-vulnerabilities.storage.googleapis.com/ecosystems.txt)

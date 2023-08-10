@@ -1,0 +1,5 @@
+resources:
+- ../../base
+patches:
+- path: indexer-controller.yaml
+- path: indexer-worker.yaml

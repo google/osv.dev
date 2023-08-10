@@ -26,24 +26,81 @@ import (
 	"golang.org/x/exp/slices"
 )
 
-type GitCommit struct {
-	Repo   string
-	Commit string
+type AffectedCommit struct {
+	Repo         string `json:"repo,omitempty" yaml:"repo,omitempty"`
+	Introduced   string `json:"introduced,omitempty" yaml:"introduced,omit"`
+	Fixed        string `json:"fixed,omitempty" yaml:"fixed,omitempty"`
+	Limit        string `json:"limit,omitempty" yaml:"limit,omitempty"`
+	LastAffected string `json:"last_affected,omitempty" yaml:"last_affected,omitempty"`
+}
+
+func (ac *AffectedCommit) SetRepo(repo string) {
+	ac.Repo = repo
+}
+
+func (ac *AffectedCommit) SetIntroduced(commit string) {
+	ac.Introduced = commit
+}
+
+func (ac *AffectedCommit) SetFixed(commit string) {
+	ac.Fixed = commit
+}
+
+func (ac *AffectedCommit) SetLimit(commit string) {
+	ac.Limit = commit
+}
+
+func (ac *AffectedCommit) SetLastAffected(commit string) {
+	ac.LastAffected = commit
 }
 
 type AffectedVersion struct {
-	Introduced   string
-	Fixed        string
-	LastAffected string
+	Introduced   string `json:"introduced,omitempty" yaml:"introduced,omitempty"`
+	Fixed        string `json:"fixed,omitempty" yaml:"fixed,omitempty"`
+	LastAffected string `json:"last_affected,omitempty" yaml:"last_affected,omitempty"`
 }
 
 type VersionInfo struct {
-	IntroducedCommits   []GitCommit
-	FixCommits          []GitCommit
-	LimitCommits        []GitCommit
-	LastAffectedCommits []GitCommit
-	AffectedVersions    []AffectedVersion
+	AffectedCommits  []AffectedCommit  `json:"affect_commits,omitempty" yaml:"affected_commits,omitempty"`
+	AffectedVersions []AffectedVersion `json:"affected_versions,omitempty" yaml:"affected_versions,omitempty"`
 }
+
+func (vi *VersionInfo) HasFixedVersions() bool {
+	for _, av := range vi.AffectedVersions {
+		if av.Fixed != "" {
+			return true
+		}
+	}
+	return false
+}
+
+func (vi *VersionInfo) HasIntroducedCommits(repo string) bool {
+	for _, av := range vi.AffectedCommits {
+		if av.Repo == repo && av.Introduced != "" {
+			return true
+		}
+	}
+	return false
+}
+
+func (vi *VersionInfo) HasFixedCommits(repo string) bool {
+	for _, av := range vi.AffectedCommits {
+		if av.Repo == repo && av.Fixed != "" {
+			return true
+		}
+	}
+	return false
+}
+
+// Synthetic enum of supported commit types.
+type CommitType int
+
+const (
+	Introduced CommitType = iota
+	Fixed
+	Limit
+	LastAffected
+)
 
 type CPE struct {
 	CPEVersion string
@@ -64,6 +121,7 @@ var (
 	// TODO(apollock): read this from an external file
 	InvalidRepos = []string{
 		"https://github.com/0day1/g1ory",
+		"https://github.com/0x14dli/ffos-SQL-injection-vulnerability-exists",
 		"https://github.com/0xLUC4S/CVEs",
 		"https://github.com/10cks/inkdropPoc",
 		"https://github.com/1security/Vulnerability",
@@ -82,6 +140,7 @@ var (
 		"https://github.com/anx0ing/CVE_demo",
 		"https://github.com/APTX-4879/CVE",
 		"https://github.com/ArianeBlow/Axelor_Stored_XSS",
+		"https://github.com/As4ki/CVE-report",
 		"https://github.com/A-TGAO/MxsDocVul",
 		"https://github.com/atredispartners/advisories",
 		"https://github.com/awillix/research",
@@ -114,6 +173,7 @@ var (
 		"https://github.com/cve-vul/vul",
 		"https://github.com/Cvjark/Poc",
 		"https://github.com/cxaqhq/Loan-Management-System-Sqlinjection",
+		"https://github.com/cyb3r-n3rd/cve-request",
 		"https://github.com/CyberThoth/CVE",
 		"https://github.com/D4rkP0w4r/AeroCMS-Add_Posts-Stored_XSS-Poc",
 		"https://github.com/D4rkP0w4r/AeroCMS-Comment-Stored_XSS-Poc",
@@ -137,6 +197,7 @@ var (
 		"https://github.com/draco1725/POC",
 		"https://github.com/draco1725/Stored-XSS",
 		"https://github.com/Drun1baby/CVE_Pentest",
+		"https://github.com/dtssec/CVE-Disclosures",
 		"https://github.com/Durian1546/vul",
 		"https://github.com/Dyrandy/BugBounty",
 		"https://github.com/E1CHO/water_cve",
@@ -154,6 +215,7 @@ var (
 		"https://github.com/fireeye/Vulnerability-Disclosures",
 		"https://github.com/frame84/vulns",
 		"https://github.com/Frank-Z7/z-vulnerabilitys",
+		"https://github.com/FusionAuth/fusionauth-issues",
 		"https://github.com/gdianq/Gym-Management-Exercises-Sqlinjection",
 		"https://github.com/gdianq/Gym-Management-System-loginpage-Sqlinjection",
 		"https://github.com/gdianq/Gym-Management-System-Sqlinjection",
@@ -167,7 +229,9 @@ var (
 		"https://github.com/Gr4y21/My-CVE-IDs",
 		"https://github.com/grymer/CVE",
 		"https://github.com/guyinatuxedo/sqlite3_record_leaking",
+		"https://github.com/h4md153v63n/CVE-2022-40032_Simple-Task-Managing-System-V1.0-SQL-Injection-Vulnerability-Unauthenticated",
 		"https://github.com/h4md153v63n/CVE-2022-40347_Intern-Record-System-phone-V1.0-SQL-Injection-Vulnerability-Unauthenticated",
+		"https://github.com/h4md153v63n/CVE-2022-40348_Intern-Record-System-Cross-site-Scripting-V1.0-Vulnerability-Unauthenticated",
 		"https://github.com/H4rk3nz0/PenTesting",
 		"https://github.com/Ha0Liu/cveAdd",
 		"https://github.com/Hakcoder/Simple-Online-Public-Access-Catalog-OPAC---SQL-injection",
@@ -178,8 +242,10 @@ var (
 		"https://github.com/haxpunk1337/Enterprise-Survey-Software",
 		"https://github.com/haxpunk1337/MDaemon-",
 		"https://github.com/hemantsolo/CVE-Reference",
+		"https://github.com/HH1F/KbaseDoc-v1.0-Arbitrary-file-deletion-vulnerability",
 		"https://github.com/HuangYuHsiangPhone/CVEs",
 		"https://github.com/huclilu/CVE_Add",
+		"https://github.com/Hyperkopite/Roothub_vulns",
 		"https://github.com/i3umi3iei3ii/CentOS-Control-Web-Panel-CVE",
 		"https://github.com/ianxtianxt/gitbook-xss",
 		"https://github.com/IthacaLabs/DevExpress",
@@ -190,6 +256,8 @@ var (
 		"https://github.com/JackyG0/Online-Accreditation-Management-System-v1.0-SQLi",
 		"https://github.com/Jamison2022/Company-Website-CMS",
 		"https://github.com/Jamison2022/Wedding-Hall-Booking-System",
+		"https://github.com/jcarabantes/Bus-Vulnerabilities",
+		"https://github.com/JiuBanSec/CVE",
 		"https://github.com/joinia/webray.com.cn",
 		"https://github.com/jusstSahil/CSRF-",
 		"https://github.com/jvz/test-cvelist",
@@ -210,7 +278,9 @@ var (
 		"https://github.com/lohyt/web-shell-via-file-upload-in-hocms",
 		"https://github.com/luelueking/ruoyi-4.7.5-vuln-poc",
 		"https://github.com/lukaszstu/SmartAsset-CORS-CVE-2020-26527",
+		"https://github.com/ly1g3/Mailcow-CVE-2022-31138",
 		"https://github.com/MacherCS/CVE_Evoh_Contract",
+		"https://github.com/MaherAzzouzi/CVE-2022-37706-LPE-exploit",
 		"https://github.com/mandiant/Vulnerability-Disclosures",
 		"https://github.com/martinkubecka/CVE-References",
 		"https://github.com/Matrix07ksa/ALLMediaServer-1.6-Buffer-Overflow",
@@ -218,6 +288,7 @@ var (
 		"https://github.com/metaredteam/external-disclosures",
 		"https://github.com/metaStor/Vuls",
 		"https://github.com/mikeccltt/0525",
+		"https://github.com/mikeccltt/0724",
 		"https://github.com/mikeccltt/automotive",
 		"https://github.com/mikeccltt/badminton-center-management-system",
 		"https://github.com/mikeccltt/bug_report_CVE",
@@ -249,6 +320,7 @@ var (
 		"https://github.com/post-cyberlabs/CVE-Advisory",
 		"https://github.com/prismbreak/vulnerabilities",
 		"https://github.com/purplededa/EasyoneCRM-5.50.02-SQLinjection",
+		"https://github.com/PurplePetrus/MxCC_Credential-Storage_issue",
 		"https://github.com/Q2Flc2FySec/CVE-List",
 		"https://github.com/Qrayyy/CVE",
 		"https://github.com/Rajeshwar40/CVE",
@@ -290,7 +362,9 @@ var (
 		"https://github.com/tomerpeled92/CVE",
 		"https://github.com/toyydsBT123/One_of_my_take_on_SourceCodester",
 		"https://github.com/Tr0e/CVE_Hunter",
+		"https://github.com/transcendent-group/advisories",
 		"https://github.com/tremwil/ds3-nrssr-rce",
+		"https://github.com/uBlockOrigin/uBlock-issues",
 		"https://github.com/upasvi/CVE-",
 		"https://github.com/verf1sh/Poc",
 		"https://github.com/vickysuper/Cve_report",
@@ -299,6 +373,7 @@ var (
 		"https://github.com/vulnerabilities-cve/vulnerabilities",
 		"https://github.com/vuls/vuls",
 		"https://github.com/wagnerdracha/ProofOfConcept",
+		"https://github.com/wandera/public-disclosures",
 		"https://github.com/Wh04m1001/ZoneAlarmEoP",
 		"https://github.com/whiex/c2Rhc2Rhc2Q-",
 		"https://github.com/whitehatl/Vulnerability",
@@ -336,6 +411,7 @@ var (
 		"https://gitlab.com/gitlab-org/gitlab-foss",    // not the canonical source
 		"https://gitlab.com/gitlab-org/omnibus-gitlab", // not the source
 		"https://gitlab.com/gitlab-org/release",        // not the source
+		"https://gitlab.com/kop316/vvm-disclosure",
 	}
 	InvalidRepoRegex = `(?i)/(?:(?:CVEs?)|(?:CVE-\d{4}-\d{4,})(?:/.*)?|bug_report(?:/.*)?|GitHubAssessments/.*)$`
 )
@@ -343,9 +419,17 @@ var (
 // Returns the base repository URL for supported repository hosts.
 func Repo(u string) (string, error) {
 	var supportedHosts = []string{
-		"github.com",
-		"gitlab.org",
 		"bitbucket.org",
+		"github.com",
+		"gitlab.com",
+		"gitlab.org",
+		"opendev.org",
+		"pagure.io",
+		"xenbits.xen.org",
+	}
+	var supportedHostPrefixes = []string{
+		"git",
+		"gitlab",
 	}
 	parsedURL, err := url.Parse(u)
 	if err != nil {
@@ -365,11 +449,39 @@ func Repo(u string) (string, error) {
 	}
 
 	// Were we handed a base repository URL from the get go?
-	if slices.Contains(supportedHosts, parsedURL.Hostname()) {
-		if len(strings.Split(strings.TrimSuffix(parsedURL.Path, "/"), "/")) == 3 {
+	if slices.Contains(supportedHosts, parsedURL.Hostname()) || slices.Contains(supportedHostPrefixes, strings.Split(parsedURL.Hostname(), ".")[0]) {
+		pathParts := strings.Split(strings.TrimSuffix(parsedURL.Path, "/"), "/")
+		if len(pathParts) == 3 && parsedURL.Path != "/cgi-bin/gitweb.cgi" {
 			return fmt.Sprintf("%s://%s%s", parsedURL.Scheme,
 					parsedURL.Hostname(),
 					strings.TrimSuffix(parsedURL.Path, "/")),
+				nil
+		}
+		// GitLab can have a deeper structure to a repo (projects can be within nested groups)
+		if len(pathParts) >= 3 && strings.HasPrefix(parsedURL.Hostname(), "gitlab.") &&
+			!(strings.Contains(parsedURL.Path, "commit") ||
+				strings.Contains(parsedURL.Path, "compare") ||
+				strings.Contains(parsedURL.Path, "blob") ||
+				strings.Contains(parsedURL.Path, "releases/tag") ||
+				strings.Contains(parsedURL.Path, "releases") ||
+				strings.Contains(parsedURL.Path, "tags") ||
+				strings.Contains(parsedURL.Path, "security/advisories") ||
+				strings.Contains(parsedURL.Path, "issues")) {
+			return fmt.Sprintf("%s://%s%s", parsedURL.Scheme,
+					parsedURL.Hostname(),
+					strings.TrimSuffix(parsedURL.Path, "/")),
+				nil
+		}
+		if len(pathParts) == 2 && parsedURL.Hostname() == "git.netfilter.org" {
+			return fmt.Sprintf("%s://%s%s", parsedURL.Scheme,
+					parsedURL.Hostname(),
+					strings.TrimSuffix(parsedURL.Path, "/")),
+				nil
+		}
+		if strings.HasSuffix(parsedURL.Path, ".git") {
+			return fmt.Sprintf("%s://%s%s", parsedURL.Scheme,
+					parsedURL.Hostname(),
+					parsedURL.Path),
 				nil
 		}
 	}
@@ -558,26 +670,36 @@ func Commit(u string) (string, error) {
 	return "", fmt.Errorf("Commit(): unsupported URL: %s", u)
 }
 
-// For URLs referencing commits in supported Git repository hosts, return a GitCommit.
-func extractGitCommit(link string) *GitCommit {
+// For URLs referencing commits in supported Git repository hosts, return an AffectedCommit.
+func extractGitCommit(link string, commitType CommitType) (ac AffectedCommit, err error) {
 	r, err := Repo(link)
 	if err != nil {
-		return nil
+		return ac, err
 	}
 
 	c, err := Commit(link)
 	if err != nil {
-		return nil
+		return ac, err
 	}
 
-	return &GitCommit{
-		Repo:   r,
-		Commit: c,
+	ac.SetRepo(r)
+
+	switch commitType {
+	case Introduced:
+		ac.SetIntroduced(c)
+	case LastAffected:
+		ac.SetLastAffected(c)
+	case Limit:
+		ac.SetLimit(c)
+	case Fixed:
+		ac.SetFixed(c)
 	}
+
+	return ac, nil
 }
 
 func hasVersion(validVersions []string, version string) bool {
-	if validVersions == nil || len(validVersions) == 0 {
+	if len(validVersions) == 0 {
 		return true
 	}
 	return versionIndex(validVersions, version) != -1
@@ -595,12 +717,12 @@ func versionIndex(validVersions []string, version string) int {
 func nextVersion(validVersions []string, version string) (string, error) {
 	idx := versionIndex(validVersions, version)
 	if idx == -1 {
-		return "", fmt.Errorf("Warning: %s is not a valid version", version)
+		return "", fmt.Errorf("warning: %s is not a valid version", version)
 	}
 
 	idx += 1
 	if idx >= len(validVersions) {
-		return "", fmt.Errorf("Warning: %s does not have a version that comes after.", version)
+		return "", fmt.Errorf("warning: %s does not have a version that comes after", version)
 	}
 
 	return validVersions[idx], nil
@@ -671,8 +793,9 @@ func cleanVersion(version string) string {
 
 func ExtractVersionInfo(cve CVEItem, validVersions []string) (v VersionInfo, notes []string) {
 	for _, reference := range cve.CVE.References.ReferenceData {
-		if commit := extractGitCommit(reference.URL); commit != nil {
-			v.FixCommits = append(v.FixCommits, *commit)
+		// (Potentially faulty) Assumption: All viable Git commit reference links are fix commits.
+		if commit, err := extractGitCommit(reference.URL, Fixed); err == nil {
+			v.AffectedCommits = append(v.AffectedCommits, commit)
 		}
 	}
 
@@ -787,6 +910,11 @@ func CPEs(cve CVEItem) []string {
 	for _, node := range cve.Configurations.Nodes {
 		for _, match := range node.CPEMatch {
 			cpes = append(cpes, match.CPE23URI)
+		}
+		for _, child := range node.Children {
+			for _, match := range child.CPEMatch {
+				cpes = append(cpes, match.CPE23URI)
+			}
 		}
 	}
 

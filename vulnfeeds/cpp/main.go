@@ -175,11 +175,13 @@ func refAcceptable(ref cves.CVEReferenceData, tagDenyList []string) bool {
 	return true
 }
 
-// Examines the CVE references for a CVE's CPE and derives repos for it.
-func ReposForCPE(CVE string, cache VendorProductToRepoMap, vp VendorProduct, refs []cves.CVEReferenceData, tagDenyList []string) (repos []string) {
+// Examines the CVE references for a CVE and derives repos for it, optionally caching it.
+func ReposFromReferences(CVE string, cache VendorProductToRepoMap, vp *VendorProduct, refs []cves.CVEReferenceData, tagDenyList []string) (repos []string) {
 	// This currently only gets called for cache misses, but make it not rely on that assumption.
-	if cachedRepos, ok := cache[vp]; ok {
-		return cachedRepos
+	if vp != nil {
+		if cachedRepos, ok := cache[*vp]; ok {
+			return cachedRepos
+		}
 	}
 	for _, ref := range refs {
 		// If any of the denylist tags are in the ref's tag set, it's out of consideration.
@@ -210,9 +212,17 @@ func ReposForCPE(CVE string, cache VendorProductToRepoMap, vp VendorProduct, ref
 func CVEToOSV(CVE cves.CVEItem, repos []string, cache git.RepoTagsCache, directory string) error {
 	CVEID := CVE.CVE.CVEDataMeta.ID // For brevity.
 	CPEs := cves.CPEs(CVE)
-	CPE, err := cves.ParseCPE(CPEs[0]) // For naming the subdirectory used for output.
-	if err != nil {
-		return fmt.Errorf("[%s]: Can't generate an OSV record without valid CPE data", CVEID)
+	// The vendor name and product name are used to construct the output `vulnDir` below, so need to be set to *something* to keep the output tidy.
+	maybeVendorName := "ENOCPE"
+	maybeProductName := "ENOCPE"
+
+	if len(CPEs) > 0 {
+		CPE, err := cves.ParseCPE(CPEs[0]) // For naming the subdirectory used for output.
+		maybeVendorName = CPE.Vendor
+		maybeProductName = CPE.Product
+		if err != nil {
+			return fmt.Errorf("[%s]: Can't generate an OSV record without valid CPE data", CVEID)
+		}
 	}
 
 	v, notes := vulns.FromCVE(CVEID, CVE)
@@ -220,9 +230,10 @@ func CVEToOSV(CVE cves.CVEItem, repos []string, cache git.RepoTagsCache, directo
 	notes = append(notes, versionNotes...)
 
 	if len(versions.AffectedVersions) != 0 {
+		var err error
 		// There are some AffectedVersions to try and resolve to AffectedCommits.
 		if len(repos) == 0 {
-			return fmt.Errorf("[%s]: No affected ranges for %q, and no repos to try and convert %+v to tags with", CVEID, CPE.Product, versions.AffectedVersions)
+			return fmt.Errorf("[%s]: No affected ranges for %q, and no repos to try and convert %+v to tags with", CVEID, maybeProductName, versions.AffectedVersions)
 		}
 		Logger.Infof("[%s]: Trying to convert version tags %+v to commits using %v", CVEID, versions.AffectedVersions, repos)
 		versions, err = GitVersionsToCommits(CVEID, versions, repos, cache)
@@ -236,11 +247,11 @@ func CVEToOSV(CVE cves.CVEItem, repos []string, cache git.RepoTagsCache, directo
 	v.Affected = append(v.Affected, affected)
 
 	if len(v.Affected[0].Ranges) == 0 {
-		return fmt.Errorf("[%s]: No affected ranges detected for %q", CVEID, CPE.Product)
+		return fmt.Errorf("[%s]: No affected ranges detected for %q", CVEID, maybeProductName)
 	}
 
-	vulnDir := filepath.Join(directory, CPE.Vendor, CPE.Product)
-	err = os.MkdirAll(vulnDir, 0755)
+	vulnDir := filepath.Join(directory, maybeVendorName, maybeProductName)
+	err := os.MkdirAll(vulnDir, 0755)
 	if err != nil {
 		Logger.Warnf("Failed to create dir: %v", err)
 		return fmt.Errorf("failed to create dir: %v", err)
@@ -258,7 +269,7 @@ func CVEToOSV(CVE cves.CVEItem, repos []string, cache git.RepoTagsCache, directo
 		Logger.Warnf("Failed to write %s: %v", outputFile, err)
 		return fmt.Errorf("failed to write %s: %v", outputFile, err)
 	}
-	Logger.Infof("[%s]: Generated OSV record from for %q", CVEID, CPE.Product)
+	Logger.Infof("[%s]: Generated OSV record for %q", CVEID, maybeProductName)
 	if len(notes) > 0 {
 		err = os.WriteFile(notesFile, []byte(strings.Join(notes, "\n")), 0660)
 		if err != nil {
@@ -272,18 +283,27 @@ func CVEToOSV(CVE cves.CVEItem, repos []string, cache git.RepoTagsCache, directo
 func CVEToPackageInfo(CVE cves.CVEItem, repos []string, cache git.RepoTagsCache, directory string) error {
 	CVEID := CVE.CVE.CVEDataMeta.ID // For brevity.
 	CPEs := cves.CPEs(CVE)
-	CPE, err := cves.ParseCPE(CPEs[0]) // For naming the subdirectory used for output.
-	if err != nil {
-		return fmt.Errorf("[%s]: Can't generate an OSV record without valid CPE data", CVEID)
+	// The vendor name and product name are used to construct the output `vulnDir` below, so need to be set to *something* to keep the output tidy.
+	maybeVendorName := "ENOCPE"
+	maybeProductName := "ENOCPE"
+
+	if len(CPEs) > 0 {
+		CPE, err := cves.ParseCPE(CPEs[0]) // For naming the subdirectory used for output.
+		maybeVendorName = CPE.Vendor
+		maybeProductName = CPE.Product
+		if err != nil {
+			return fmt.Errorf("[%s]: Can't generate an OSV record without valid CPE data", CVEID)
+		}
 	}
 
 	// more often than not, this yields a VersionInfo with AffectedVersions and no AffectedCommits.
 	versions, notes := cves.ExtractVersionInfo(CVE, nil)
 
 	if len(versions.AffectedVersions) != 0 {
+		var err error
 		// There are some AffectedVersions to try and resolve to AffectedCommits.
 		if len(repos) == 0 {
-			return fmt.Errorf("[%s]: No affected ranges for %q, and no repos to try and convert %+v to tags with", CVEID, CPE.Product, versions.AffectedVersions)
+			return fmt.Errorf("[%s]: No affected ranges for %q, and no repos to try and convert %+v to tags with", CVEID, maybeProductName, versions.AffectedVersions)
 		}
 		Logger.Infof("[%s]: Trying to convert version tags %+v to commits using %v", CVEID, versions.AffectedVersions, repos)
 		versions, err = GitVersionsToCommits(CVEID, versions, repos, cache)
@@ -293,15 +313,17 @@ func CVEToPackageInfo(CVE cves.CVEItem, repos []string, cache git.RepoTagsCache,
 	}
 
 	if len(versions.AffectedCommits) == 0 {
-		return fmt.Errorf("[%s]: No affected commit ranges determined for %q", CVEID, CPE.Product)
+		return fmt.Errorf("[%s]: No affected commit ranges determined for %q", CVEID, maybeProductName)
 	}
+
+	versions.AffectedVersions = nil // these have served their purpose and are not required in the resulting output.
 
 	var pkgInfos []vulns.PackageInfo
 	pi := vulns.PackageInfo{VersionInfo: versions}
 	pkgInfos = append(pkgInfos, pi) // combine-to-osv expects a serialised *array* of PackageInfo
 
-	vulnDir := filepath.Join(directory, CPE.Vendor, CPE.Product)
-	err = os.MkdirAll(vulnDir, 0755)
+	vulnDir := filepath.Join(directory, maybeVendorName, maybeProductName)
+	err := os.MkdirAll(vulnDir, 0755)
 	if err != nil {
 		Logger.Warnf("Failed to create dir: %v", err)
 		return fmt.Errorf("failed to create dir: %v", err)
@@ -325,7 +347,7 @@ func CVEToPackageInfo(CVE cves.CVEItem, repos []string, cache git.RepoTagsCache,
 		return fmt.Errorf("failed to encode PackageInfo to %s: %v", outputFile, err)
 	}
 
-	Logger.Infof("[%s]: Generated PackageInfo record from for %q", CVEID, CPE.Product)
+	Logger.Infof("[%s]: Generated PackageInfo record for %q", CVEID, maybeProductName)
 
 	if len(notes) > 0 {
 		err = os.WriteFile(notesFile, []byte(strings.Join(notes, "\n")), 0660)
@@ -346,16 +368,22 @@ func loadCPEDictionary(ProductToRepo *VendorProductToRepoMap, f string) error {
 }
 
 // Adds the repo to the cache for the Vendor/Product combination if not already present.
-func maybeUpdateVPRepoCache(cache VendorProductToRepoMap, vp VendorProduct, repo string) {
-	if slices.Contains(cache[vp], repo) {
+func maybeUpdateVPRepoCache(cache VendorProductToRepoMap, vp *VendorProduct, repo string) {
+	if vp == nil {
 		return
 	}
-	cache[vp] = append(cache[vp], repo)
+	if slices.Contains(cache[*vp], repo) {
+		return
+	}
+	cache[*vp] = append(cache[*vp], repo)
 }
 
 // Removes the repo from the cache for the Vendor/Product combination if already present.
-func maybeRemoveFromVPRepoCache(cache VendorProductToRepoMap, vp VendorProduct, repo string) {
-	cacheEntry, ok := cache[vp]
+func maybeRemoveFromVPRepoCache(cache VendorProductToRepoMap, vp *VendorProduct, repo string) {
+	if vp == nil {
+		return
+	}
+	cacheEntry, ok := cache[*vp]
 	if !ok {
 		return
 	}
@@ -368,11 +396,11 @@ func maybeRemoveFromVPRepoCache(cache VendorProductToRepoMap, vp VendorProduct, 
 	}
 	// If there is only one entry, delete the entry cache entry.
 	if len(cacheEntry) == 1 {
-		delete(cache, vp)
+		delete(cache, *vp)
 		return
 	}
 	slices.Delete(cacheEntry, i, i)
-	cache[vp] = cacheEntry
+	cache[*vp] = cacheEntry
 }
 
 // Output a CSV summarizing per-CVE how it was handled.
@@ -448,7 +476,18 @@ func main() {
 			continue
 		}
 
-		// Does it have any application CPEs? Look for pre-computed repos.
+		// Edge case: No CPEs, but perhaps usable references.
+		if len(refs) > 0 && len(CPEs) == 0 {
+			repos := ReposFromReferences(string(CVEID), nil, nil, refs, RefTagDenyList)
+			if len(repos) == 0 {
+				Logger.Warnf("[%s]: Failed to derive any repos and there were no CPEs", CVEID)
+				continue
+			}
+			Logger.Infof("[%s]: Derived %q for CVE with no CPEs", CVEID, repos)
+			ReposForCVE[CVEID] = repos
+		}
+
+		// Does it have any application CPEs? Look for pre-computed repos based on VendorProduct.
 		appCPECount := 0
 		for _, CPEstr := range cves.CPEs(cve) {
 			CPE, err := cves.ParseCPE(CPEstr)
@@ -466,13 +505,15 @@ func main() {
 			}
 		}
 
-		if appCPECount == 0 {
-			// This CVE is not for software, skip.
+		if len(CPEs) > 0 && appCPECount == 0 {
+			// This CVE is not for software (based on there being CPEs but not any application ones), skip.
 			Metrics.Outcomes[CVEID] = NoSoftware
 			continue
 		}
 
-		Metrics.CVEsForApplications++
+		if appCPECount > 0 {
+			Metrics.CVEsForApplications++
+		}
 
 		// If there wasn't a repo from the CPE Dictionary, try and derive one from the CVE references.
 		if _, ok := ReposForCVE[CVEID]; !ok && len(refs) > 0 {
@@ -489,7 +530,7 @@ func main() {
 				if slices.Contains(VendorProductDenyList, VendorProduct{CPE.Vendor, CPE.Product}) {
 					continue
 				}
-				repos := ReposForCPE(string(CVEID), VPRepoCache, VendorProduct{CPE.Vendor, CPE.Product}, refs, RefTagDenyList)
+				repos := ReposFromReferences(string(CVEID), VPRepoCache, &VendorProduct{CPE.Vendor, CPE.Product}, refs, RefTagDenyList)
 				if len(repos) == 0 {
 					Logger.Warnf("[%s]: Failed to derive any repos for %q %q", CVEID, CPE.Vendor, CPE.Product)
 					continue

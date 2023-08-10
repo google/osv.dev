@@ -59,23 +59,30 @@ type CVEImpact struct {
 }
 
 type CVEItem struct {
-	CVE            CVE `json:"cve"`
-	Configurations struct {
-		Nodes []struct {
-			Operator string `json:"operator"`
-			CPEMatch []struct {
-				Vulnerable            bool   `json:"vulnerable"`
-				CPE23URI              string `json:"cpe23Uri"`
-				VersionStartExcluding string `json:"versionStartExcluding"`
-				VersionStartIncluding string `json:"versionStartIncluding"`
-				VersionEndExcluding   string `json:"versionEndExcluding"`
-				VersionEndIncluding   string `json:"versionEndIncluding"`
-			} `json:"cpe_match"`
-		} `json:"nodes"`
-	} `json:"configurations"`
-	Impact           CVEImpact `json:"impact"`
-	PublishedDate    string    `json:"publishedDate"`
-	LastModifiedDate string    `json:"lastModifiedDate"`
+	CVE              CVE           `json:"cve"`
+	Configurations   Configuration `json:"configurations"`
+	Impact           CVEImpact     `json:"impact"`
+	PublishedDate    string        `json:"publishedDate"`
+	LastModifiedDate string        `json:"lastModifiedDate"`
+}
+
+type Configuration struct {
+	Nodes []Node `json:"nodes"`
+}
+
+type Node struct {
+	Operator string     `json:"operator"`
+	Children []Node     `json:"children"`
+	CPEMatch []CPEMatch `json:"cpe_match"`
+}
+
+type CPEMatch struct {
+	Vulnerable            bool   `json:"vulnerable"`
+	CPE23URI              string `json:"cpe23Uri"`
+	VersionStartExcluding string `json:"versionStartExcluding"`
+	VersionStartIncluding string `json:"versionStartIncluding"`
+	VersionEndExcluding   string `json:"versionEndExcluding"`
+	VersionEndIncluding   string `json:"versionEndIncluding"`
 }
 
 type NVDCVE struct {

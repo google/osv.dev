@@ -853,6 +853,9 @@ func ExtractVersionInfo(cve CVEItem, validVersions []string) (v VersionInfo, not
 					continue
 				}
 				lastaffected = CPE.Version
+				if CPE.Update != "ANY" {
+					lastaffected += "-" + CPE.Update
+				}
 			}
 
 			if introduced == "" && fixed == "" && lastaffected == "" {

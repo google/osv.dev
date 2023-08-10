@@ -10,6 +10,10 @@ spec:
       activeDeadlineSeconds: 7200
       template:
         spec:
+          tolerations:
+          - key: workloadType
+            operator: Equal
+            value: importer-pool
           containers:
           - name: combine-to-osv
             image: combine-to-osv
@@ -23,6 +27,8 @@ spec:
               limits:
                 cpu: 2
                 memory: "2G"
+          nodeSelector:
+            cloud.google.com/gke-nodepool: importer-pool
           restartPolicy: OnFailure
           volumes:
             - name: "ssd"

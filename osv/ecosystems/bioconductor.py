@@ -35,10 +35,10 @@ class Bioconductor(Ecosystem):
     """
     get latest Bioconductor versions
     """
-    response = requests.get(self._API_BIOC_VERSIONS_UR, timeout=60)
+    response = requests.get(self._API_BIOC_VERSIONS_URL, timeout=60)
     data = response.json()
     if response.status_code == 404:
-      raise RuntimeError('Failed to get Bioconducot versions')
+      raise RuntimeError('Failed to get Bioconductor versions')
 
     return [bioc['bioc_version'] for bioc in data['bioc_versions']]
 

@@ -252,6 +252,12 @@ func TestCVEIsDisputed(t *testing.T) {
 			expectedError:     nil,
 		},
 		{
+			description:       "A disputed CVE vulnerability",
+			inputVulnId:       "CVE-2021-26917",
+			expectedWithdrawn: true,
+			expectedError:     nil,
+		},
+		{
 			description:       "An undisputed CVE vulnerability",
 			inputVulnId:       "CVE-2023-38408",
 			expectedWithdrawn: false,
@@ -269,7 +275,7 @@ func TestCVEIsDisputed(t *testing.T) {
 		if err != nil && err != tc.expectedError {
 			var verr *VulnsCVEListError
 			if errors.As(err, &verr) {
-				t.Errorf("test %q: unexpected errored: %#v", tc.description, verr.Err)
+				t.Errorf("test %q: unexpectedly errored: %#v", tc.description, verr.Err)
 			} else {
 				t.Errorf("test %q: unexpectedly errored: %#v", tc.description, err)
 			}

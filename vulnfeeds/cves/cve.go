@@ -22,7 +22,7 @@ import (
 
 const (
 	CVETimeFormat  = "2006-01-02T15:04Z07:00"
-	CVE5TimeFormat = "2006-01-02T00:00:00"
+	CVE5TimeFormat = "2006-01-02T15:04:05"
 )
 
 type CVE struct {

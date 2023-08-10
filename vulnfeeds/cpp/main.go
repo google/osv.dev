@@ -212,6 +212,7 @@ func ReposFromReferences(CVE string, cache VendorProductToRepoMap, vp *VendorPro
 func CVEToOSV(CVE cves.CVEItem, repos []string, cache git.RepoTagsCache, directory string) error {
 	CVEID := CVE.CVE.CVEDataMeta.ID // For brevity.
 	CPEs := cves.CPEs(CVE)
+	// The vendor name and product name are used to construct the output `vulnDir` below, so need to be set to *something* to keep the output tidy.
 	maybeVendorName := "ENOCPE"
 	maybeProductName := "ENOCPE"
 
@@ -282,6 +283,7 @@ func CVEToOSV(CVE cves.CVEItem, repos []string, cache git.RepoTagsCache, directo
 func CVEToPackageInfo(CVE cves.CVEItem, repos []string, cache git.RepoTagsCache, directory string) error {
 	CVEID := CVE.CVE.CVEDataMeta.ID // For brevity.
 	CPEs := cves.CPEs(CVE)
+	// The vendor name and product name are used to construct the output `vulnDir` below, so need to be set to *something* to keep the output tidy.
 	maybeVendorName := "ENOCPE"
 	maybeProductName := "ENOCPE"
 

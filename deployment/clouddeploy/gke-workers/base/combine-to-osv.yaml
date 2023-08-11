@@ -22,10 +22,10 @@ spec:
               privileged: true
             resources:
               requests:
-                cpu: 2
+                cpu: 30
                 memory: "1G"
               limits:
-                cpu: 2
+                cpu: 30
                 memory: "2G"
           nodeSelector:
             cloud.google.com/gke-nodepool: highend

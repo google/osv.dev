@@ -27,6 +27,19 @@ IN_SCOPE_GO_MODULES="$(git ls-files | fgrep go.mod | fgrep -v docs | xargs dirna
 
 IN_SCOPE_TERRAFORM_FILES="$script_dir/../deployment/terraform/"
 
+check_prerequisites() {
+  readonly PREREQUISITES="pylint yapf go terraform"
+  for preqrequisite in $PREREQUISITES
+  do
+    if ! which $preqrequisite >/dev/null 2>&1; then
+      echo "Prerequisite tool "${preqrequisite}" not found, please review https://github.com/google/osv.dev/blob/master/CONTRIBUTING.md#contributing-code"
+      return 1
+    fi
+  done
+}
+
+check_prerequisites || exit 1
+
 python_lint_findings=""
 if ! echo "$IN_SCOPE_PYTHON_FILES" | xargs pylint --rcfile="$script_dir/../.pylintrc"; then
   python_lint_findings="python_lint_findings"

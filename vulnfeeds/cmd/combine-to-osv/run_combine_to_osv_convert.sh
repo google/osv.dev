@@ -20,7 +20,7 @@ rm -rf $OSV_OUTPUT && mkdir -p $OSV_OUTPUT
 rm -rf $CVE_OUTPUT && mkdir -p $CVE_OUTPUT
 
 echo "Begin syncing from parts in GCS bucket ${INPUT_BUCKET}"
-gcloud storage -q rsync "gs://${INPUT_BUCKET}/parts/" "$OSV_PARTS_ROOT" -r
+gcloud storage rsync "gs://${INPUT_BUCKET}/parts/" "$OSV_PARTS_ROOT" -r -q
 echo "Successfully synced from GCS bucket"
 
 echo "Run download-cves"
@@ -30,5 +30,5 @@ echo "Run combine-to-osv"
 ./combine-to-osv -cvePath $CVE_OUTPUT -partsPath $OSV_PARTS_ROOT -osvOutputPath $OSV_OUTPUT
 
 echo "Begin syncing output to GCS bucket ${OUTPUT_BUCKET}"
-gcloud storage -q rsync "$OSV_OUTPUT" "gs://${OUTPUT_BUCKET}/osv-output/" -c --delete-unmatched-destination-objects
+gcloud storage rsync "$OSV_OUTPUT" "gs://${OUTPUT_BUCKET}/osv-output/" -c --delete-unmatched-destination-objects -q
 echo "Successfully synced to GCS bucket"

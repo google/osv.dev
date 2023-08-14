@@ -50,7 +50,6 @@ _VALID_VULN_ID = _WORD_CHARACTERS_OR_DASH
 _BLOG_CONTENTS_DIR = 'blog'
 
 if utils.is_prod():
-  # TODO(michaelkedar): Cloud Run
   redis_host = os.environ.get('REDISHOST', 'localhost')
   redis_port = int(os.environ.get('REDISPORT', 6379))
   limiter = rate_limiter.RateLimiter(
@@ -58,7 +57,8 @@ if utils.is_prod():
 
   @blueprint.before_request
   def check_rate_limit():
-    # TODO(michaelkedar): Cloud Run
+    # TODO(michaelkedar): Cloud Run/App Engine have different ways to check this
+    # remove the App Engine header check when moving away from App Engine
     ip_addr = request.headers.get('X-Appengine-User-Ip')
     if ip_addr is None:
       ip_addr = request.headers.get('X-Forwarded-For', 'unknown').split(',')[0]

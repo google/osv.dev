@@ -13,7 +13,8 @@
 # limitations under the License.
 """OSV cron handlers."""
 
-# TODO(michaelkedar): Cloud Run
+# TODO(michaelkedar): Cloud Run equivalents need to be made for these.
+# This cron logic should probably be removed from the website entirely.
 
 import datetime
 import logging
@@ -184,7 +185,8 @@ def backup():
   return 'done'
 
 
-# TODO(michaelkedar): Cloud Run
+# TODO(michaelkedar): Cloud Run is currently using this its health checks.
+# Should replace this with the conventional /healthz endpoint.
 @blueprint.route('/_ah/warmup')
 def warmup():
   """Warmup handler."""

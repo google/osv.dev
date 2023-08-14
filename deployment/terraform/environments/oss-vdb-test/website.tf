@@ -29,14 +29,6 @@ resource "google_cloud_run_service" "website" {
   }
 }
 
-resource "google_cloud_run_domain_mapping" "website" {
-  project  = "oss-vdb-test"
-  name     = "site.test.osv.dev"
-  location = google_cloud_run_service.website.location
-  metadata {
-    namespace = "oss-vdb-test"
-  }
-  spec {
-    route_name = google_cloud_run_service.website.name
-  }
-}
+# TODO(michaelkedar): Native Cloud Run domain mapping does not work on us-west2
+# Need to set up Google Cloud Load Balancing + Network Endpoint Group (NEG)
+# (or move website + redis to a supported region)

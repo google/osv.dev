@@ -15,6 +15,7 @@
 
 # TODO(michaelkedar): Cloud Run equivalents need to be made for these.
 # This cron logic should probably be removed from the website entirely.
+# https://github.com/google/osv.dev/issues/1249
 
 import datetime
 import logging

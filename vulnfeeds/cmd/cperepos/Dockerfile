@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-FROM golang:alpine@sha256:7839c9f01b5502d7cb5198b2c032857023424470b3e31ae46a8261ffca72912a
+FROM golang:1.21-alpine@sha256:445f34008a77b0b98bf1821bf7ef5e37bb63cc42d22ee7c21cc17041070d134f AS GO_BUILD
 
 RUN mkdir /src
 WORKDIR /src
@@ -26,7 +26,7 @@ RUN CGO_ENABLED=0 go build -o cperepos ./cmd/cperepos
 
 FROM gcr.io/google.com/cloudsdktool/google-cloud-cli:alpine
 
-COPY --from=0 /src/cperepos ./
+COPY --from=GO_BUILD /src/cperepos ./
 COPY ./cmd/cperepos/gen_cperepos_map ./
 
 ENTRYPOINT ["/gen_cperepos_map"]

@@ -205,10 +205,13 @@ type Vulnerability struct {
 // AddPkgInfo converts a PackageInfo struct to the corresponding AffectedRanges and adds them to the OSV vulnerability object.
 func (v *Vulnerability) AddPkgInfo(pkgInfo PackageInfo) {
 	affected := Affected{}
-	affected.Package = &AffectedPackage{
-		Name:      pkgInfo.PkgName,
-		Ecosystem: pkgInfo.Ecosystem,
-		Purl:      pkgInfo.PURL,
+
+	if pkgInfo.PkgName != "" && pkgInfo.Ecosystem != "" {
+		affected.Package = &AffectedPackage{
+			Name:      pkgInfo.PkgName,
+			Ecosystem: pkgInfo.Ecosystem,
+			Purl:      pkgInfo.PURL,
+		}
 	}
 
 	if len(pkgInfo.VersionInfo.AffectedCommits) > 0 {

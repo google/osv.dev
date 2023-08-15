@@ -7,16 +7,9 @@ resource "google_cloud_run_v2_service" "website" {
   location = "us-west2"
 
   template {
-    spec {
-      containers {
-        image = "us-docker.pkg.dev/cloudrun/container/hello:latest" # Placeholder image.
-      }
+    containers {
+      image = "us-docker.pkg.dev/cloudrun/container/hello:latest" # Placeholder image.
     }
-  }
-
-  traffic {
-    percent         = 100
-    latest_revision = true
   }
 
   lifecycle {
@@ -31,6 +24,7 @@ resource "google_cloud_run_v2_service" "website" {
 
 # Allow unauthenticated access
 resource "google_cloud_run_service_iam_binding" "website" {
+  project  = "oss-vdb-test"
   location = google_cloud_run_v2_service.website.location
   service  = google_cloud_run_v2_service.website.name
   role     = "roles/run.invoker"

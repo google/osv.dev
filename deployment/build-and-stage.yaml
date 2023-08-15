@@ -183,6 +183,25 @@ steps:
   args: ['push', '--all-tags', 'gcr.io/oss-vdb/nvd-cve-osv']
   waitFor: ['build-nvd-cve-osv', 'cloud-build-queue']
 
+# Build/push Website image
+# TODO(michaelkedar): The image gets saved on oss-vdb-test while we experiment with migration
+- name: 'gcr.io/cloud-builders/docker'
+  entrypoint: 'bash'
+  args: ['-c', 'docker pull gcr.io/oss-vdb-test/osv-website:latest || exit 0']
+  id: 'pull-website'
+  waitFor: ['setup']
+- name: 'gcr.io/cloud-builders/docker'
+  args: ['buildx', 'build', '--build-arg', 'BUILDKIT_INLINE_CACHE=1',
+         '-t', 'gcr.io/oss-vdb-test/osv-website:latest', '-t', 'gcr.io/oss-vdb-test/osv-website:$COMMIT_SHA',
+         '-f', 'gcp/appengine/Dockerfile', '--cache-from', 'gcr.io/oss-vdb-test/osv-website:latest', '--pull', '.']
+  env:
+  - BUILDKIT_PROGRESS=plain
+  id: 'build-website'
+  waitFor: ['pull-website']
+- name: 'gcr.io/cloud-builders/docker'
+  args: ['push', '--all-tags', 'gcr.io/oss-vdb-test/osv-website']
+  waitFor: ['build-website', 'cloud-build-queue']
+
 # Apply Terraform config to staging environment
 # TODO(michaelkedar): regenerate the api protobufs?
 - name: gcr.io/oss-vdb/terraform
@@ -234,6 +253,15 @@ steps:
     "indexer=gcr.io/oss-vdb/indexer:$COMMIT_SHA"
   ]
   dir: deployment/clouddeploy/gke-indexer
+
+# Website
+# TODO(michaelkedar): Move off of oss-vdb-test for prod
+- name: 'gcr.io/cloud-builders/gcloud'
+  args: ['deploy', 'releases', 'create', 'osv-$SHORT_SHA', '--project=oss-vdb-test', '--region=us-central1',
+    '--delivery-pipeline=osv-website', '--images',
+    "osv-website=gcr.io/oss-vdb-test/osv-website:$COMMIT_SHA"
+  ]
+  dir: deployment/clouddeploy/osv-website
 
 timeout: 7200s
 # Also set in Cloud Build:

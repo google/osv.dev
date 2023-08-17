@@ -235,11 +235,11 @@
         },
         "google-cloud-datastore": {
             "hashes": [
-                "sha256:153d8dac05f0248d7f7d6f0986a31f8fb22d3cdfb764718eac0f28e3cadc8144",
-                "sha256:710ef27ebdfb50340f4671c532ad4c1525665985e9421984ffcd6b96b57e34bb"
+                "sha256:1beb0cfbfa577218d9a7f95949068ae0afb7dfdd311ec3640a92d06b45367abb",
+                "sha256:feafad874ed376a9d1f0899eafc9650d21fdb2228f90de9b8741a806c213b422"
             ],
             "markers": "python_version >= '3.7'",
-            "version": "==2.16.1"
+            "version": "==2.17.0"
         },
         "google-cloud-logging": {
             "hashes": [
@@ -840,11 +840,11 @@
         },
         "setuptools": {
             "hashes": [
-                "sha256:11e52c67415a381d10d6b462ced9cfb97066179f0e871399e006c4ab101fc85f",
-                "sha256:baf1fdb41c6da4cd2eae722e135500da913332ab3f2f5c7d33af9b492acb5235"
+                "sha256:d59c97e7b774979a5ccb96388efc9eb65518004537e85d52e81eaee89ab6dd91",
+                "sha256:e13e1b0bc760e9b0127eda042845999b2f913e12437046e663b833aa96d89715"
             ],
-            "markers": "python_version >= '3.7'",
-            "version": "==68.0.0"
+            "markers": "python_version >= '3.8'",
+            "version": "==68.1.0"
         }
     }
 }

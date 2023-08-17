@@ -573,6 +573,11 @@ class Bug(ndb.Model):
             ranges=ranges,
             versions=affected_package.versions)
 
+        # Converted CVE records have no package defined.
+        # Avoid exporting an empty package field.
+        if not current.package.ListFields():
+          current.ClearField("package")
+
         if affected_package.database_specific:
           current.database_specific.update(affected_package.database_specific)
 

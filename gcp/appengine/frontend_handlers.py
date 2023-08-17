@@ -57,7 +57,11 @@ if utils.is_prod():
 
   @blueprint.before_request
   def check_rate_limit():
-    ip_addr = request.headers.get('X-Appengine-User-Ip', 'unknown')
+    # TODO(michaelkedar): Cloud Run/App Engine have different ways to check this
+    # remove the App Engine header check when moving away from App Engine
+    ip_addr = request.headers.get('X-Appengine-User-Ip')
+    if ip_addr is None:
+      ip_addr = request.headers.get('X-Forwarded-For', 'unknown').split(',')[0]
     if not limiter.check_request(ip_addr):
       abort(429)
 

@@ -17,4 +17,9 @@ import os
 
 
 def is_prod():
-  return os.getenv('GAE_ENV', '').startswith('standard')
+  # TODO(michaelkedar): Cloud Run/App Engine have different ways to check this
+  # remove the App Engine header check when moving away from App Engine.
+  # This function actually checks if it's running on gcp (on prod OR staging)
+  # and it's only used for Redis cache (which has its own env vars) and logging.
+  # Consider removing this altogether.
+  return 'GAE_ENV' in os.environ or 'K_SERVICE' in os.environ

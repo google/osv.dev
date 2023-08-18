@@ -144,6 +144,8 @@ func GitVersionsToCommits(CVE string, versions cves.VersionInfo, repos []string,
 			// cves.ExtractVersionInfo() opportunistically returns
 			// AffectedCommits (with Fixed commits) when the CVE has appropriate references.
 			if v.HasFixedCommits(repo) && av.Fixed != "" {
+				Logger.Infof("[%s]: Using preassumed fixed commits %+v instead of deriving from fixed version %q", CVE, v.FixedCommits(repo), av.Fixed)
+			} else if av.Fixed != "" {
 				ac, err := git.VersionToCommit(av.Fixed, repo, cves.Fixed, normalizedTags)
 				if err != nil {
 					Logger.Warnf("[%s]: Failed to get a Git commit for fixed version %q from %q: %v", CVE, av.Fixed, repo, err)

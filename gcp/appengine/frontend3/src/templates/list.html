@@ -97,20 +97,15 @@
             </span>
             <span role="cell" class="vuln-table-cell vuln-packages mdc-data-table__cell">
               <ul class="packages">
-                {%- if vulnerability.affected | map(attribute='package', default=[]) | list == [{}] -%}
-                {%- for repo in vulnerability.affected | git_repo | map('strip_scheme') -%}
-                {%- if loop.index < 8 -%} <li>{{ repo }}</li>
-                  {%- elif loop.index == 8 -%}
-                  <li>...</li>
-                  {%- endif -%}
-                  {%- else -%}
-                  <li>See details.</li>
-                  {%- endfor -%}
-                  {%- else -%}
-                  {%- for affected in vulnerability.affected -%}
-                  <li>{{ affected.package.ecosystem }}/{{ affected.package.name }}</li>
-                  {%- endfor -%}
-                  {%- endif -%}
+                {% for affected in vulnerability.affected %}
+                {%- for range in affected.ranges -%}
+                {%- if range.type in ('ECOSYSTEM', 'SEMVER') -%}
+                <li>{{ affected.package.ecosystem }}/{{ affected.package.name }}</li>
+                {%- elif range.type == 'GIT' -%}
+                <li>{{ range.repo | strip_scheme }}</li>
+                {%- endif -%}
+                {%- endfor -%}
+                {% endfor %}
               </ul>
             </span>
             <span role="cell" class="vuln-table-cell vuln-summary mdc-data-table__cell hide-on-mobile">

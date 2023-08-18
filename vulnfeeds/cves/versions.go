@@ -92,6 +92,15 @@ func (vi *VersionInfo) HasFixedCommits(repo string) bool {
 	return false
 }
 
+func (vi *VersionInfo) FixedCommits(repo string) (FixedCommits []string) {
+	for _, av := range vi.AffectedCommits {
+		if av.Repo == repo && av.Fixed != "" {
+			FixedCommits = append(FixedCommits, av.Fixed)
+		}
+	}
+	return FixedCommits
+}
+
 // Synthetic enum of supported commit types.
 type CommitType int
 

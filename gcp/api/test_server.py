@@ -103,7 +103,6 @@ def start_esp(port, backend_port, service_account_path, log_path):
   esp_proc = subprocess.Popen([
       'docker',
       'run',
-      '--privileged',
       '--name',
       'osv-esp',
       network,

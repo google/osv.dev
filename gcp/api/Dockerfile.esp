@@ -14,11 +14,6 @@
 
 FROM gcr.io/endpoints-release/endpoints-runtime:2
 
+# Required to run ESP and map files without encountering permissions
+# issues on glinux. Intended for local development only.
 USER root
-
-# Context: https://github.com/mhart/alpine-node/issues/48#issuecomment-370171836
-# The UID needs to be set to 1000 in order to map files without permission issues.
-RUN addgroup -g 1000 -S osv && \
-    adduser --no-create-home -u 1000 -S osv -G osv
-
-USER osv

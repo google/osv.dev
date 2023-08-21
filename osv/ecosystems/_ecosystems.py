@@ -66,6 +66,24 @@ SEMVER_ECOSYSTEMS = {
     'npm',
 }
 
+package_urls = {
+    'Android': 'https://android.googlesource.com/',
+    'CRAN': 'https://cran.r-project.org/web/packages/',
+    'crates.io': 'https://crates.io/crates/',
+    'Debian': 'https://packages.debian.org/src:',
+    'GitHub Actions': 'https://github.com/marketplace/actions/',
+    'Go': 'https://',
+    'Hackage': 'https://hackage.haskell.org/package/',
+    'Hex': 'https://hex.pm/packages/',
+    'npm': 'https://www.npmjs.com/package/',
+    'NuGet': 'https://www.nuget.org/packages/',
+    'Packagist': 'https://packagist.org/packages/',
+    'Pub': 'https://pub-web.flutter-io.cn/packages/',
+    'PyPI': 'https://pypi.org/project/',
+    'Rocky Linux': 'https://pkgs.org/download/',
+    'RubyGems': 'https://rubygems.org/gems/',
+}
+
 
 def get(name: str) -> Ecosystem:
   """Get ecosystem helpers for a given ecosystem."""

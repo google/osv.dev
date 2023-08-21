@@ -556,3 +556,11 @@ def git_repo(affected):
         if r.get('type', '') == 'GIT'
     ])
   return git_repos
+
+
+@blueprint.app_template_filter('package_in_ecosystem')
+def package_in_ecosystem(package):
+  ecosystem = osv.ecosystems.normalize(package['ecosystem'])
+  if ecosystem in osv.ecosystems.package_urls:
+    return osv.ecosystems.package_urls[ecosystem] + package['name']
+  return ''

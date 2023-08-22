@@ -91,3 +91,9 @@ resource "google_project_service" "resource_manager" {
   service            = "cloudresourcemanager.googleapis.com"
   disable_on_destroy = false
 }
+
+resource "google_project_service" "cloud_build" {
+  project            = var.project_id
+  service            = "cloudbuild.googleapis.com"
+  disable_on_destroy = false
+}

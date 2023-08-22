@@ -57,7 +57,11 @@ if utils.is_prod():
 
   @blueprint.before_request
   def check_rate_limit():
-    ip_addr = request.headers.get('X-Appengine-User-Ip', 'unknown')
+    # TODO(michaelkedar): Cloud Run/App Engine have different ways to check this
+    # remove the App Engine header check when moving away from App Engine
+    ip_addr = request.headers.get('X-Appengine-User-Ip')
+    if ip_addr is None:
+      ip_addr = request.headers.get('X-Forwarded-For', 'unknown').split(',')[0]
     if not limiter.check_request(ip_addr):
       abort(429)
 
@@ -552,3 +556,11 @@ def git_repo(affected):
         if r.get('type', '') == 'GIT'
     ])
   return git_repos
+
+
+@blueprint.app_template_filter('package_in_ecosystem')
+def package_in_ecosystem(package):
+  ecosystem = osv.ecosystems.normalize(package['ecosystem'])
+  if ecosystem in osv.ecosystems.package_urls:
+    return osv.ecosystems.package_urls[ecosystem] + package['name']
+  return ''

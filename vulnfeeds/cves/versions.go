@@ -92,6 +92,15 @@ func (vi *VersionInfo) HasFixedCommits(repo string) bool {
 	return false
 }
 
+func (vi *VersionInfo) FixedCommits(repo string) (FixedCommits []string) {
+	for _, av := range vi.AffectedCommits {
+		if av.Repo == repo && av.Fixed != "" {
+			FixedCommits = append(FixedCommits, av.Fixed)
+		}
+	}
+	return FixedCommits
+}
+
 // Synthetic enum of supported commit types.
 type CommitType int
 
@@ -699,7 +708,7 @@ func extractGitCommit(link string, commitType CommitType) (ac AffectedCommit, er
 }
 
 func hasVersion(validVersions []string, version string) bool {
-	if validVersions == nil || len(validVersions) == 0 {
+	if len(validVersions) == 0 {
 		return true
 	}
 	return versionIndex(validVersions, version) != -1
@@ -717,12 +726,12 @@ func versionIndex(validVersions []string, version string) int {
 func nextVersion(validVersions []string, version string) (string, error) {
 	idx := versionIndex(validVersions, version)
 	if idx == -1 {
-		return "", fmt.Errorf("Warning: %s is not a valid version", version)
+		return "", fmt.Errorf("warning: %s is not a valid version", version)
 	}
 
 	idx += 1
 	if idx >= len(validVersions) {
-		return "", fmt.Errorf("Warning: %s does not have a version that comes after.", version)
+		return "", fmt.Errorf("warning: %s does not have a version that comes after", version)
 	}
 
 	return validVersions[idx], nil
@@ -853,6 +862,9 @@ func ExtractVersionInfo(cve CVEItem, validVersions []string) (v VersionInfo, not
 					continue
 				}
 				lastaffected = CPE.Version
+				if CPE.Update != "ANY" {
+					lastaffected += "-" + CPE.Update
+				}
 			}
 
 			if introduced == "" && fixed == "" && lastaffected == "" {
@@ -907,6 +919,11 @@ func CPEs(cve CVEItem) []string {
 	for _, node := range cve.Configurations.Nodes {
 		for _, match := range node.CPEMatch {
 			cpes = append(cpes, match.CPE23URI)
+		}
+		for _, child := range node.Children {
+			for _, match := range child.CPEMatch {
+				cpes = append(cpes, match.CPE23URI)
+			}
 		}
 	}
 

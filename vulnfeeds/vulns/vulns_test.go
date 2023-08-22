@@ -2,6 +2,7 @@ package vulns
 
 import (
 	"encoding/json"
+	"errors"
 	"log"
 	"os"
 	"reflect"
@@ -133,7 +134,9 @@ func TestAddPkgInfo(t *testing.T) {
 		},
 	}
 	testPkgInfoPURL := PackageInfo{
-		PURL: "pkg:deb/debian/nginx@1.1.2-1",
+		PkgName:   "nginx",
+		Ecosystem: "Debian",
+		PURL:      "pkg:deb/debian/nginx@1.1.2-1",
 		VersionInfo: cves.VersionInfo{
 			AffectedVersions: []cves.AffectedVersion{
 				{
@@ -187,13 +190,18 @@ func TestAddPkgInfo(t *testing.T) {
 	// testPkgInfoPURL ^^^^^^^^^^^^^^^
 
 	// testPkgInfoCommits vvvvvvvvvvvvvv
-	// TODO: Where is the Repo field suppose to go?
+	if vuln.Affected[2].Ranges[0].Repo != "github.com/foo/bar" {
+		t.Errorf("AddPkgInfo has not corrected add ranges repo. %#v", vuln.Affected[2])
+	}
 
 	if vuln.Affected[2].Ranges[0].Type != "GIT" {
 		t.Errorf("AddPkgInfo has not correctly added ranges type.")
 	}
 	if vuln.Affected[2].Ranges[0].Events[1].Fixed != testPkgInfoCommits.VersionInfo.AffectedCommits[0].Fixed {
 		t.Errorf("AddPkgInfo has not correctly added ranges fixed.")
+	}
+	if vuln.Affected[2].Package != nil {
+		t.Errorf("AddPkgInfo has not correctly avoided setting a package field for an ecosystem-less vulnerability.")
 	}
 	// testPkgInfoCommits ^^^^^^^^^^^^^^^
 }
@@ -227,6 +235,65 @@ func TestAddSeverity(t *testing.T) {
 		got := vuln.Severity
 		if diff := cmp.Diff(got, tc.expectedResult); diff != "" {
 			t.Errorf("test %q: Incorrect result: %s", tc.description, diff)
+		}
+	}
+}
+
+func TestCVEIsDisputed(t *testing.T) {
+	tests := []struct {
+		description       string
+		inputVulnId       string
+		expectedWithdrawn bool
+		expectedError     error
+	}{
+		{
+			description:       "A non-CVE vulnerability",
+			inputVulnId:       "OSV-1234",
+			expectedWithdrawn: false,
+			expectedError:     ErrVulnNotACVE,
+		},
+		{
+			description:       "A disputed CVE vulnerability",
+			inputVulnId:       "CVE-2023-23127",
+			expectedWithdrawn: true,
+			expectedError:     nil,
+		},
+		{
+			description:       "A disputed CVE vulnerability",
+			inputVulnId:       "CVE-2021-26917",
+			expectedWithdrawn: true,
+			expectedError:     nil,
+		},
+		{
+			description:       "An undisputed CVE vulnerability",
+			inputVulnId:       "CVE-2023-38408",
+			expectedWithdrawn: false,
+			expectedError:     nil,
+		},
+	}
+
+	for _, tc := range tests {
+		inputVuln := &Vulnerability{
+			ID: tc.inputVulnId,
+		}
+
+		modified, err := CVEIsDisputed(inputVuln)
+
+		if err != nil && err != tc.expectedError {
+			var verr *VulnsCVEListError
+			if errors.As(err, &verr) {
+				t.Errorf("test %q: unexpectedly errored: %#v", tc.description, verr.Err)
+			} else {
+				t.Errorf("test %q: unexpectedly errored: %#v", tc.description, err)
+			}
+		}
+
+		if err == nil && tc.expectedError != nil {
+			t.Errorf("test %q: did not error as expected, wanted: %#v", tc.description, tc.expectedError)
+		}
+
+		if modified == "" && tc.expectedWithdrawn {
+			t.Errorf("test: %q: withdrawn (%s) not set as expected", tc.description, modified)
 		}
 	}
 }

@@ -60,6 +60,7 @@ tools and unsupported by the core OSV maintainers.
 -   [it-depends](https://github.com/trailofbits/it-depends)
 -   [.NET client library and support for the schema](https://github.com/JamieMagee/osv.net)
 -   [OSS Review Toolkit](https://github.com/oss-review-toolkit/ort)
+-   [OSV4k: a Java/Kotlin MPP library for serialization and deserialization of OSV schema](https://github.com/saveourtool/osv4k)
 -   [Packj](https://github.com/ossillate-inc/packj)
 -   [pip-audit](https://pypi.org/project/pip-audit/)
 -   [Renovate](https://github.com/renovatebot/renovate)

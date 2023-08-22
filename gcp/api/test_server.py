@@ -93,37 +93,59 @@ def start_esp(port, backend_port, service_account_path, log_path):
     network = '--network=cloudbuild'
     host = get_ip()
     docker_image = 'gcr.io/endpoints-release/endpoints-runtime:2'
+    # Use standard endpoints container and GCP credentials.
+    docker_cmd = [
+        'docker',
+        'run',
+        '--name',
+        'osv-esp',
+        network,
+        '--rm',
+        '-v',
+        f'--publish={port}',
+        f'{docker_image}',
+        '--disable_tracing',
+        '--service=api-test.osv.dev',
+        '--rollout_strategy=managed',
+        f'--listener_port={port}',
+        f'--backend=grpc://{host}:{backend_port}',
+        '--enable_debug',
+        '--transcoding_preserve_proto_field_names',
+        '--envoy_connection_buffer_limit_bytes=10485760',
+    ]
   else:
     network = '--network=host'
     host = 'localhost'
     docker_image = 'osv/esp:latest'
+    # Use custom container and local ADC credential by mapping files
+    # into container.
+    docker_cmd = [
+        'docker',
+        'run',
+        '--name',
+        'osv-esp',
+        network,
+        '--rm',
+        '-v',
+        f'{service_account_dir}:/esp:ro',
+        f'--publish={port}',
+        f'{docker_image}',
+        '--disable_tracing',
+        '--service=api-test.osv.dev',
+        '--rollout_strategy=managed',
+        f'--listener_port={port}',
+        f'--backend=grpc://{host}:{backend_port}',
+        f'--service_account_key=/esp/{service_account_name}',
+        '--non_gcp',
+        '--enable_debug',
+        '--transcoding_preserve_proto_field_names',
+        '--envoy_connection_buffer_limit_bytes=10485760',
+    ]
 
   # Stop existing osv-esp processes that weren't killed properly.
   subprocess.run(['docker', 'stop', 'osv-esp'], check=False)
-  esp_proc = subprocess.Popen([
-      'docker',
-      'run',
-      '--name',
-      'osv-esp',
-      network,
-      '--rm',
-      '-v',
-      f'{service_account_dir}:/esp:ro',
-      f'--publish={port}',
-      f'{docker_image}',
-      '--disable_tracing',
-      '--service=api-test.osv.dev',
-      '--rollout_strategy=managed',
-      f'--listener_port={port}',
-      f'--backend=grpc://{host}:{backend_port}',
-      f'--service_account_key=/esp/{service_account_name}',
-      '--non_gcp',
-      '--enable_debug',
-      '--transcoding_preserve_proto_field_names',
-      '--envoy_connection_buffer_limit_bytes=10485760',
-  ],
-                              stdout=log_handle,
-                              stderr=subprocess.STDOUT)
+  esp_proc = subprocess.Popen(
+      docker_cmd, stdout=log_handle, stderr=subprocess.STDOUT)
   return esp_proc
 
 

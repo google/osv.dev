@@ -92,6 +92,7 @@ def start_esp(port, backend_port, service_account_path, log_path):
   if os.getenv('CLOUDBUILD'):
     network = '--network=cloudbuild'
     host = get_ip()
+    docker_image = 'gcr.io/endpoints-release/endpoints-runtime:2'
     # Use standard endpoints container and GCP credentials.
     docker_cmd = [
       'docker',
@@ -102,7 +103,7 @@ def start_esp(port, backend_port, service_account_path, log_path):
       '--rm',
       '-v',
       f'--publish={port}',
-      'gcr.io/endpoints-release/endpoints-runtime:2',
+      f'{docker_image}',
       '--disable_tracing',
       '--service=api-test.osv.dev',
       '--rollout_strategy=managed',
@@ -116,7 +117,8 @@ def start_esp(port, backend_port, service_account_path, log_path):
     network = '--network=host'
     host = 'localhost'
     docker_image = 'osv/esp:latest'
-    # Use custom container and local ADC credential by mapping files into container.
+    # Use custom container and local ADC credential by mapping files
+    # into container.
     docker_cmd = [
       'docker',
       'run',

@@ -134,13 +134,6 @@ class RepoAnalyzer:
             branch_to_limit[branch] = limit_commit
 
           branches.extend(current_branches)
-      elif fix_commits:
-        # TODO(ochang): Remove this check. This behaviour should only be keyed
-        # on `limit_commits`.
-        # If not detecting cherry picks, take only branches that contain the fix
-        # commit. Otherwise we may have false positives.
-        for fix_commit in fix_commits:
-          branches.extend(_branches_with_commit(repo, fix_commit))
       elif regress_commits:
         # If only a regress commit is available, we need to find all branches
         # that it reaches.

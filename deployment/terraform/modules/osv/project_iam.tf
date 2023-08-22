@@ -7,6 +7,6 @@ data "google_project" "vdb" {
 resource "google_project_iam_member" "project" {
   project    = var.project_id
   role       = "roles/servicemanagement.serviceController"
-  member     = "user:${data.google_project.vdb.number}@cloudbuild.gserviceaccount.com"
+  member     = "serviceAccount:${data.google_project.vdb.number}@cloudbuild.gserviceaccount.com"
   depends_on = [google_project_service.cloud_build] // If the API is not enabled the default service account above does not exist yet.
 }

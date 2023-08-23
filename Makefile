@@ -28,7 +28,7 @@ vulnfeed-tests:
 	cd vulnfeeds && ./run_tests.sh
 
 api-server-tests:
-	test $(HOME)/.config/gcloud/application_default_credentials.json || (echo "GCP Application Default Credentials not set, try 'gcloud auth login --update-adc'"; exit 1)
+	test -f $(HOME)/.config/gcloud/application_default_credentials.json || (echo "GCP Application Default Credentials not set, try 'gcloud auth login --update-adc'"; exit 1)
 	cd gcp/api && ./run_tests.sh $(HOME)/.config/gcloud/application_default_credentials.json
 
 lint:
@@ -45,7 +45,7 @@ run-appengine-staging:
 	cd gcp/appengine && pipenv sync && GOOGLE_CLOUD_PROJECT=oss-vdb-test pipenv run python main.py
 
 run-api-server:
-	test $(HOME)/.config/gcloud/application_default_credentials.json || (echo "GCP Application Default Credentials not set."; exit 1)
+	test -f $(HOME)/.config/gcloud/application_default_credentials.json || (echo "GCP Application Default Credentials not set, try 'gcloud auth login --update-adc'"; exit 1)
 	cd gcp/api && docker build -f Dockerfile.esp -t osv/esp:latest .
 	cd gcp/api && pipenv sync && GOOGLE_CLOUD_PROJECT=oss-vdb pipenv run python test_server.py $(HOME)/.config/gcloud/application_default_credentials.json
 

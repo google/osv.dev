@@ -27,6 +27,10 @@ appengine-tests:
 vulnfeed-tests:
 	cd vulnfeeds && ./run_tests.sh
 
+api-server-tests:
+	test $(HOME)/.config/gcloud/application_default_credentials.json || (echo "GCP Application Default Credentials not set."; exit 1)
+	cd gcp/api && ./run_tests.sh $(HOME)/.config/gcloud/application_default_credentials.json
+
 lint:
 	tools/lint_and_format.sh
 

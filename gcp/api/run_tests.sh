@@ -14,7 +14,7 @@
 # limitations under the License.
 
 if [ $# -lt 1 ]; then
-  echo "Usage: $0 /path/to/service_account.json"
+  echo "Usage: $0 /path/to/credential.json"
   exit 1
 fi
 

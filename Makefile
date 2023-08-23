@@ -28,7 +28,7 @@ vulnfeed-tests:
 	cd vulnfeeds && ./run_tests.sh
 
 api-server-tests:
-	test $(HOME)/.config/gcloud/application_default_credentials.json || (echo "GCP Application Default Credentials not set."; exit 1)
+	test $(HOME)/.config/gcloud/application_default_credentials.json || (echo "GCP Application Default Credentials not set, try 'gcloud auth login --update-adc'"; exit 1)
 	cd gcp/api && ./run_tests.sh $(HOME)/.config/gcloud/application_default_credentials.json
 
 lint:

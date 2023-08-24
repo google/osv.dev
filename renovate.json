@@ -15,51 +15,51 @@
       "enabled": false
     },
     {
-      "matchRepositories": ["gcp/appengine/"],
+      "matchFileNames": ["gcp/appengine/**"],
       "matchCategories": ["python"],
       "groupName": "appengine-backend"
     },
     {
-      "matchRepositories": ["gcp/appengine/"],
+      "matchFileNames": ["gcp/appengine/**"],
       "matchCategories": ["js"],
       "groupName": "appengine-frontend"
     },
     {
-      "matchRepositories": ["gcp/api/"],
+      "matchFileNames": ["gcp/api/**"],
       "groupName": "api"
     },
     {
-      "matchRepositories": ["gcp/functions/"],
+      "matchFileNames": ["gcp/functions/**"],
       "groupName": "functions"
     },
     {
-      "matchRepositories": ["docker/"],
+      "matchFileNames": ["docker/**"],
       "matchCategories": ["python"],
       "groupName": "workers"
     },
     {
-      "matchRepositories": ["docker/"],
+      "matchFileNames": ["docker/**"],
       "matchCategories": ["golang"],
       "groupName": "indexer"
     },
     {
-      "matchRepositories": ["vulnfeeds/"],
+      "matchFileNames": ["vulnfeeds/**"],
       "groupName": "vulnfeeds"
     },
     {
-      "matchRepositories": ["docs/"],
+      "matchFileNames": ["docs/**"],
       "groupName": "docs"
     },
     {
-      "matchRepositories": ["tools/"],
+      "matchFileNames": ["tools/**"],
       "groupName": "tools"
     },
     {
-      "matchRepositories": [".github/"],
+      "matchFileNames": [".github/**"],
       "groupName": "workflows"
     },
     {
-      "matchFiles": ["Pipfile"],
+      "matchFileNames": ["Pipfile"],
       "groupName": "osv-lib"
     }
   ]

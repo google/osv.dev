@@ -15,47 +15,47 @@
       "enabled": false
     },
     {
-      "matchPaths": ["gcp/appengine/"],
+      "matchRepositories": ["gcp/appengine/"],
       "matchCategories": ["python"],
       "groupName": "appengine-backend"
     },
     {
-      "matchPaths": ["gcp/appengine/"],
+      "matchRepositories": ["gcp/appengine/"],
       "matchCategories": ["js"],
       "groupName": "appengine-frontend"
     },
     {
-      "matchPaths": ["gcp/api/"],
+      "matchRepositories": ["gcp/api/"],
       "groupName": "api"
     },
     {
-      "matchPaths": ["gcp/functions/"],
+      "matchRepositories": ["gcp/functions/"],
       "groupName": "functions"
     },
     {
-      "matchPaths": ["docker/"],
+      "matchRepositories": ["docker/"],
       "matchCategories": ["python"],
       "groupName": "workers"
     },
     {
-      "matchPaths": ["docker/"],
+      "matchRepositories": ["docker/"],
       "matchCategories": ["golang"],
       "groupName": "indexer"
     },
     {
-      "matchPaths": ["vulnfeeds/"],
+      "matchRepositories": ["vulnfeeds/"],
       "groupName": "vulnfeeds"
     },
     {
-      "matchPaths": ["docs/"],
+      "matchRepositories": ["docs/"],
       "groupName": "docs"
     },
     {
-      "matchPaths": ["tools/"],
+      "matchRepositories": ["tools/"],
       "groupName": "tools"
     },
     {
-      "matchPaths": [".github/"],
+      "matchRepositories": [".github/"],
       "groupName": "workflows"
     },
     {

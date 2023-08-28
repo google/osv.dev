@@ -29,6 +29,7 @@ from collections import defaultdict
 
 from google.cloud import ndb
 from google.api_core.exceptions import InvalidArgument
+import google.cloud.ndb.exceptions as ndb_exceptions
 
 import grpc
 from grpc_health.v1 import health_pb2
@@ -69,10 +70,6 @@ _BUCKET_SIZE = 512
 _TAG_PREFIX = "refs/tags/"
 
 _ndb_client = ndb.Client()
-
-_LINUX_ERROR = ("Linux Kernel queries are currently unavailable: " +
-                "See https://google.github.io/osv.dev/faq/" +
-                "#why-am-i-getting-an-error-message-for-my-linux-kernel-query")
 
 
 def ndb_context(func):
@@ -115,9 +112,8 @@ class OSVServicer(osv_service_v1_pb2_grpc.OSVServicer,
       try:
         page_token = ndb.Cursor(urlsafe=request.query.page_token)
       except ValueError as e:
-        logging.error(e)
-        context.service_context.abort(grpc.StatusCode.INVALID_ARGUMENT,
-                                      'Invalid page token.')
+        logging.warning(e)
+        context.abort(grpc.StatusCode.INVALID_ARGUMENT, 'Invalid page token.')
 
     query_context = QueryContext(
         service_context=context,
@@ -132,6 +128,9 @@ class OSVServicer(osv_service_v1_pb2_grpc.OSVServicer,
       # this can be raised other than invalid cursor
       context.abort(grpc.StatusCode.INVALID_ARGUMENT,
                     'Invalid query, likely caused by invalid page token.')
+    except ndb_exceptions.BadValueError as e:
+      context.abort(grpc.StatusCode.INVALID_ARGUMENT,
+                    f'Bad parameter value: {e}')
 
     if results is not None:
       return osv_service_v1_pb2.VulnerabilityList(
@@ -157,9 +156,9 @@ class OSVServicer(osv_service_v1_pb2_grpc.OSVServicer,
         try:
           page_token = ndb.Cursor(urlsafe=query.page_token)
         except ValueError as e:
-          logging.error(e)
-          context.service_context.abort(grpc.StatusCode.INVALID_ARGUMENT,
-                                        f'Invalid page token at index: {i}.')
+          logging.warning(e)
+          context.abort(grpc.StatusCode.INVALID_ARGUMENT,
+                        f'Invalid page token at index: {i}.')
       query_context = QueryContext(
           service_context=context,
           # request_start_time=req_start_time,
@@ -176,6 +175,9 @@ class OSVServicer(osv_service_v1_pb2_grpc.OSVServicer,
         # this can be raised other than invalid cursor
         context.abort(grpc.StatusCode.INVALID_ARGUMENT,
                       'Invalid query, likely caused by invalid page token.')
+      except ndb_exceptions.BadValueError as e:
+        context.abort(grpc.StatusCode.INVALID_ARGUMENT,
+                      f'Bad parameter value: {e}')
 
       batch_results.append(
           osv_service_v1_pb2.VulnerabilityList(
@@ -445,9 +447,9 @@ def do_query(query, context: QueryContext, include_details=True):
     ecosystem = ''
     purl_str = ''
 
-  # TODO: Remove this after paging is implemented
-  if package_name == "Kernel" and (not ecosystem or ecosystem == "Linux"):
-    context.service_context.abort(grpc.StatusCode.UNAVAILABLE, _LINUX_ERROR)
+  if ecosystem and not ecosystems.get(ecosystem):
+    context.service_context.abort(grpc.StatusCode.INVALID_ARGUMENT,
+                                  'Invalid ecosystem.')
 
   purl = None
   purl_version = None
@@ -514,13 +516,14 @@ def bug_to_response(bug, include_details=True):
   return bug.to_vulnerability_minimal()
 
 
+@ndb.tasklet
 def _get_bugs(bug_ids, to_response=bug_to_response):
   """Get bugs from bug ids."""
   bugs = ndb.get_multi_async([ndb.Key(osv.Bug, bug_id) for bug_id in bug_ids])
 
   responses = []
   for future_bug in bugs:
-    bug: osv.Bug = future_bug.result()
+    bug: osv.Bug = yield future_bug
     if bug and bug.status == osv.BugStatus.PROCESSED and bug.public:
       responses.append(to_response(bug))
 
@@ -546,7 +549,6 @@ def query_by_commit(
   """Query by commit."""
   query = osv.AffectedCommits.query(osv.AffectedCommits.commits == commit)
 
-  gsd_count = 0
   bug_ids = []
   it: ndb.QueryIterator = query.iter(
       keys_only=True, start_cursor=context.page_token)
@@ -562,18 +564,11 @@ def query_by_commit(
     affected_commits: ndb.Key = it.next()
     bug_id: str = affected_commits.id().rsplit("-", 1)[0]
 
-    # Temporary mitigation.
-    if bug_id.startswith('GSD-'):
-      gsd_count += 1
-      if gsd_count >= 10:
-        context.service_context.abort(grpc.StatusCode.UNAVAILABLE, _LINUX_ERROR)
-
-      continue
-
     bug_ids.append(bug_id)
     context.total_responses.add(1)
 
-  return _get_bugs(bug_ids, to_response=to_response), cursor
+  bugs = yield _get_bugs(bug_ids, to_response=to_response)
+  return bugs, cursor
 
 
 def _match_purl(purl_query: PackageURL, purl_db: PackageURL) -> bool:

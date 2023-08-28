@@ -28,14 +28,14 @@ RUN apt-get update && apt-get upgrade -y && \
         libssl-dev \
         software-properties-common
 
-ARG PYTHON_VERSION=3.11.3
+ARG PYTHON_VERSION=3.11.4
 RUN curl -sS https://www.python.org/ftp/python/${PYTHON_VERSION}/Python-${PYTHON_VERSION}.tgz | tar -C /tmp -xzv && \
     cd /tmp/Python-${PYTHON_VERSION} && \
     ./configure --enable-optimizations --with-lto --enable-loadable-sqlite-extensions && \
     make -j && \
     make install && \
     rm -rf /tmp/Python-${PYTHON_VERSION}
-RUN pip3 install pipenv
+RUN pip3 install pipenv==2023.6.12
 
 # Install Docker.
 # Pin the version to an older one due to gVisor incompatibilities.

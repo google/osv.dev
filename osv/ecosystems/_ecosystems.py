@@ -16,11 +16,14 @@
 from .helper_base import Ecosystem, OrderingUnsupportedEcosystem
 from .alpine import Alpine
 from .debian import Debian
+from .haskell import Hackage, GHC
 from .maven import Maven
 from .nuget import NuGet
 from .packagist import Packagist
 from .pub import Pub
 from .pypi import PyPI
+from .cran import CRAN
+from .bioconductor import Bioconductor
 from .rubygems import RubyGems
 from .semver_ecosystem_helper import SemverEcosystem
 
@@ -30,6 +33,8 @@ _ecosystems = {
     'Packagist': Packagist(),
     'Pub': Pub(),
     'PyPI': PyPI(),
+    'CRAN': CRAN(),
+    'Bioconductor': Bioconductor(),
     'RubyGems': RubyGems(),
     # SemVer-based ecosystems (remember keep synced with SEMVER_ECOSYSTEMS):
     'crates.io': SemverEcosystem(),
@@ -42,8 +47,8 @@ _ecosystems = {
     'GitHub Actions': OrderingUnsupportedEcosystem(),
     'Linux': OrderingUnsupportedEcosystem(),
     'OSS-Fuzz': OrderingUnsupportedEcosystem(),
-    'Hackage': OrderingUnsupportedEcosystem(),
-    'GHC': OrderingUnsupportedEcosystem(),
+    'Hackage': Hackage(),
+    'GHC': GHC(),
     # Ecosystems which require a release version for enumeration, which is
     # handled separately in get().
     'AlmaLinux': OrderingUnsupportedEcosystem(),
@@ -59,6 +64,24 @@ SEMVER_ECOSYSTEMS = {
     'Go',
     'Hex',
     'npm',
+}
+
+package_urls = {
+    'Android': 'https://android.googlesource.com/',
+    'CRAN': 'https://cran.r-project.org/web/packages/',
+    'crates.io': 'https://crates.io/crates/',
+    'Debian': 'https://packages.debian.org/src:',
+    'GitHub Actions': 'https://github.com/marketplace/actions/',
+    'Go': 'https://',
+    'Hackage': 'https://hackage.haskell.org/package/',
+    'Hex': 'https://hex.pm/packages/',
+    'npm': 'https://www.npmjs.com/package/',
+    'NuGet': 'https://www.nuget.org/packages/',
+    'Packagist': 'https://packagist.org/packages/',
+    'Pub': 'https://pub-web.flutter-io.cn/packages/',
+    'PyPI': 'https://pypi.org/project/',
+    'Rocky Linux': 'https://pkgs.org/download/',
+    'RubyGems': 'https://rubygems.org/gems/',
 }
 
 

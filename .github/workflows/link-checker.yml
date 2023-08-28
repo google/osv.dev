@@ -2,7 +2,7 @@ name: Scheduled link check
 
 on: 
   schedule:
-    - cron: '30 22 * * *'
+    - cron: '30 22 * * 1,4'
 permissions:  # added using https://github.com/step-security/secure-repo
   contents: read
 jobs:
@@ -10,7 +10,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@master
-    - uses: gaurav-nelson/github-action-markdown-link-check@v1
+    - uses: gaurav-nelson/github-action-markdown-link-check@46e442156b8161bfd0913357c7a411e0e610d2ad
       with:
         use-quiet-mode: "yes"
         

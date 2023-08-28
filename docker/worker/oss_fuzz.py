@@ -417,7 +417,7 @@ def process_impact_task(source_id, message):
 
   def _sort_key(value):
     # Allow sorting of None values.
-    return (value[0] or '', value[1] or '')
+    return (value[0] or '', value[1] or '', value[2] or '')
 
   for introduced_in, fixed_in, last_affected_in in sorted(
       result.affected_ranges, key=_sort_key):

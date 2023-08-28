@@ -279,6 +279,24 @@ class IntegrationTests(unittest.TestCase):
         timeout=_TIMEOUT)
     self.assert_results_equal({'vulns': expected_vulns}, response.json())
 
+  def test_query_invalid_ecosystem(self):
+    """Test a query with an invalid ecosystem fails validation."""
+    response = requests.post(
+        _api() + '/v1/query',
+        data=json.dumps({
+            'version': '1.0.0',
+            'package': {
+                'name': 'a_package_name_of_no_consequence',
+                'ecosystem': 'Bogus',
+            }
+        }),
+        timeout=_TIMEOUT)
+
+    self.assert_results_equal({
+        'code': 3,
+        'message': 'Invalid ecosystem.'
+    }, response.json())
+
   def test_query_unknown_purl_invalid_semver(self):
     """Test an unknown purl query with an invalid semver"""
     response = requests.post(
@@ -577,15 +595,15 @@ def print_logs(filename):
 
 if __name__ == '__main__':
   if len(sys.argv) < 2:
-    print(f'Usage: {sys.argv[0]} path/to/service_account.json')
+    print(f'Usage: {sys.argv[0]} path/to/credential.json')
     sys.exit(1)
 
   subprocess.run(
       ['docker', 'pull', 'gcr.io/endpoints-release/endpoints-runtime:2'],
       check=True)
 
-  service_account_path = sys.argv.pop()
-  server = test_server.start(service_account_path, port=_PORT)
+  credential_path = sys.argv.pop()
+  server = test_server.start(credential_path, port=_PORT)
   time.sleep(30)
 
   try:

@@ -17,7 +17,7 @@ kind: Deployment
 metadata:
   name: workers
 spec:
-  replicas: 30
+  replicas: 1
   selector:
     matchLabels:
       name: worker-private

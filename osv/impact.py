@@ -14,7 +14,7 @@
 """Impact analysis."""
 
 import codecs
-import collections
+from dataclasses import dataclass
 import logging
 import os
 import subprocess
@@ -32,14 +32,6 @@ from . import vulnerability_pb2
 
 TAG_PREFIX = 'refs/tags/'
 
-AffectedResult = collections.namedtuple('AffectedResult',
-                                        ['tags', 'commits', 'affected_ranges'])
-
-AnalyzeResult = collections.namedtuple('AnalyzeResult',
-                                       ['has_changes', 'commits'])
-
-TagsInfo = collections.namedtuple('TagsInfo', ['tags', 'latest_tag'])
-
 # Limit for writing small entities.
 _DATASTORE_BATCH_SIZE = 5000
 # Limit for writing large entities that are close to the 1MiB max entity size.
@@ -48,6 +40,31 @@ _DATASTORE_BATCH_SIZE = 5000
 # to leave some more breathing room.
 _DATASTORE_LARGE_BATCH_SIZE = 8
 _DATASTORE_BATCH_SLEEP = 10
+
+
+@dataclass
+class AffectedResult:
+  """The tags, commits and affected ranges of a vulnerability."""
+
+  tags: set[str]
+  commits: set[str]
+  affected_ranges: list[str]
+
+
+@dataclass
+class AnalyzeResult:
+  """Capturing if an analysis has any changes and what those changes are."""
+
+  has_changes: bool
+  commits: set[str]
+
+
+@dataclass
+class TagsInfo:
+  """A repository's tags and the one considered to be the latest version."""
+
+  tags: set[str]
+  latest_tag: str
 
 
 class ImpactError(Exception):
@@ -608,7 +625,7 @@ def analyze(vulnerability: vulnerability_pb2.Vulnerability,
     affected.versions field.
 
   Returns:
-    An AnalyzeResult named tuple, indicating if anything changed the relevant
+    An AnalyzeResult dataclass, indicating if anything changed the relevant
     commits.
   """
   commits = set()

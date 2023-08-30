@@ -16,6 +16,7 @@
 import logging
 
 from flask import Flask
+from flask_compress import Compress
 import google.cloud.logging
 from google.cloud import ndb
 from whitenoise import WhiteNoise
@@ -50,7 +51,7 @@ def create_app():
       __name__, template_folder='dist', static_folder='dist/static')
   flask_app.register_blueprint(handlers.blueprint)
   flask_app.register_blueprint(frontend_handlers.blueprint)
-  flask_app.config["TEMPLATES_AUTO_RELOAD"] = True
+  flask_app.config['TEMPLATES_AUTO_RELOAD'] = True
 
   return flask_app
 
@@ -62,6 +63,9 @@ app.wsgi_app = WhiteNoise(app.wsgi_app,
                           prefix='static',
                           max_age=60*60*24)
 cache.instance.init_app(app)
+app.config['COMPRESS_MIMETYPES'] = ['text/html']
+compress = Compress()
+compress.init_app(app)
 
 if __name__ == '__main__':
   app.run(host='127.0.0.1', port=8000, debug=False)

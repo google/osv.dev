@@ -194,10 +194,15 @@ def warmup():
   """Warmup handler."""
   return 'OK'
 
+
 @blueprint.route('/public_keys/<path:filename>')
 def public_keys(filename):
-  return send_from_directory('dist/public_keys', filename, mimetype='text/plain')
+  """Public keys handler."""
+  return send_from_directory(
+      'dist/public_keys', filename, mimetype='text/plain')
+
 
 @blueprint.route('/docs/osv_service_v1.swagger.json')
 def swagger():
+  """Swagger file handler."""
   return send_file('docs/osv_service_v1.swagger.json')

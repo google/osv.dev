@@ -1,14 +1,13 @@
 import './styles.scss';
 import '@github/clipboard-copy-element';
-import '@github/time-elements';
+import '@github/relative-time-element';
 import '@material/mwc-circular-progress';
 import '@material/mwc-icon';
 import '@material/mwc-icon-button';
 import '@hotwired/turbo';
 import 'spicy-sections/src/SpicySections';
 import { TextField as MwcTextField } from '@material/mwc-textfield';
-import { LitElement, html, css, unsafeCSS } from 'lit';
-import { unsafeHTML } from 'lit/directives/unsafe-html.js';
+import { LitElement, html } from 'lit';
 
 // Submits a form in a way such that Turbo can intercept the event.
 // Triggering submit on the form directly would still give a correct resulting

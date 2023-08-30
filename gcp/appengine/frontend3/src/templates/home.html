@@ -66,49 +66,46 @@
       <div class="mdc-layout-grid__inner">
         <div class="mdc-layout-grid__cell--span-12">
           <!-- This is built with hugo -->
-          <div class="highlight">
-            <pre tabindex="0" style="color:#d0d0d0;background-color:#202020;-moz-tab-size:2;-o-tab-size:2;tab-size:2;"><code class="language-json" data-lang="json"><span style="display:flex;"><span>{
-</span></span><span style="display:flex;"><span>  <span style="color:#6ab825;font-weight:bold">&#34;schema_version&#34;</span>: <span style="color:#ed9d13">&#34;1.3.0&#34;</span>,
-</span></span><span style="display:flex;"><span>  <span style="color:#6ab825;font-weight:bold">&#34;id&#34;</span>: <span style="color:#ed9d13">&#34;GHSA-c3g4-w6cv-6v7h&#34;</span>,
-</span></span><span style="display:flex;"><span>  <span style="color:#6ab825;font-weight:bold">&#34;modified&#34;</span>: <span style="color:#ed9d13">&#34;2022-04-01T13:56:42Z&#34;</span>,
-</span></span><span style="display:flex;"><span>  <span style="color:#6ab825;font-weight:bold">&#34;published&#34;</span>: <span style="color:#ed9d13">&#34;2022-04-01T13:56:42Z&#34;</span>,
-</span></span><span style="display:flex;"><span>  <span style="color:#6ab825;font-weight:bold">&#34;aliases&#34;</span>: [ <span style="color:#ed9d13">&#34;CVE-2022-27651&#34;</span> ],
-</span></span><span style="display:flex;"><span>  <span style="color:#6ab825;font-weight:bold">&#34;summary&#34;</span>: <span style="color:#ed9d13">&#34;Non-empty default inheritable capabilities for linux container in Buildah&#34;</span>,
-</span></span><span style="display:flex;"><span>  <span style="color:#6ab825;font-weight:bold">&#34;details&#34;</span>: <span style="color:#ed9d13">&#34;A bug was found in Buildah where containers were created ...&#34;</span>,
-</span></span><span style="display:flex;"><span>  <span style="color:#6ab825;font-weight:bold">&#34;affected&#34;</span>: [
-</span></span><span style="display:flex;"><span>    {
-</span></span><span style="display:flex;"><span>      <span style="color:#6ab825;font-weight:bold">&#34;package&#34;</span>: {
-</span></span><span style="display:flex;"><span>        <span style="color:#6ab825;font-weight:bold">&#34;ecosystem&#34;</span>: <span style="color:#ed9d13">&#34;Go&#34;</span>,
-</span></span><span style="display:flex;"><span>        <span style="color:#6ab825;font-weight:bold">&#34;name&#34;</span>: <span style="color:#ed9d13">&#34;github.com/containers/buildah&#34;</span>
-</span></span><span style="display:flex;"><span>      },
-</span></span><span style="display:flex;"><span>      <span style="color:#6ab825;font-weight:bold">&#34;ranges&#34;</span>: [
-</span></span><span style="display:flex;"><span>        {
-</span></span><span style="display:flex;"><span>          <span style="color:#6ab825;font-weight:bold">&#34;type&#34;</span>: <span style="color:#ed9d13">&#34;SEMVER&#34;</span>,
-</span></span><span style="display:flex;"><span>          <span style="color:#6ab825;font-weight:bold">&#34;events&#34;</span>: [
-</span></span><span style="display:flex;"><span>            {
-</span></span><span style="display:flex;"><span>              <span style="color:#6ab825;font-weight:bold">&#34;introduced&#34;</span>: <span style="color:#ed9d13">&#34;0&#34;</span>
-</span></span><span style="display:flex;"><span>            },
-</span></span><span style="display:flex;"><span>            {
-</span></span><span style="display:flex;"><span>              <span style="color:#6ab825;font-weight:bold">&#34;fixed&#34;</span>: <span style="color:#ed9d13">&#34;1.25.0&#34;</span>
-</span></span><span style="display:flex;"><span>            }
-</span></span><span style="display:flex;"><span>          ]
-</span></span><span style="display:flex;"><span>        }
-</span></span><span style="display:flex;"><span>      ]
-</span></span><span style="display:flex;"><span>    }
-</span></span><span style="display:flex;"><span>  ],
-</span></span><span style="display:flex;"><span>  <span style="color:#6ab825;font-weight:bold">&#34;references&#34;</span>: [
-</span></span><span style="display:flex;"><span>    {
-</span></span><span style="display:flex;"><span>      <span style="color:#6ab825;font-weight:bold">&#34;type&#34;</span>: <span style="color:#ed9d13">&#34;WEB&#34;</span>,
-</span></span><span style="display:flex;"><span>      <span style="color:#6ab825;font-weight:bold">&#34;url&#34;</span>: <span style="color:#ed9d13">&#34;https://github.com/containers/buildah/commit/...&#34;</span>
-</span></span><span style="display:flex;"><span>    },
-</span></span><span style="display:flex;"><span>    {
-</span></span><span style="display:flex;"><span>      <span style="color:#6ab825;font-weight:bold">&#34;type&#34;</span>: <span style="color:#ed9d13">&#34;PACKAGE&#34;</span>,
-</span></span><span style="display:flex;"><span>      <span style="color:#6ab825;font-weight:bold">&#34;url&#34;</span>: <span style="color:#ed9d13">&#34;https://github.com/containers/buildah&#34;</span>
-</span></span><span style="display:flex;"><span>    }
-</span></span><span style="display:flex;"><span>  ]
-</span></span><span style="display:flex;"><span>}
-</span></span></code></pre>
-          </div>
+          <pre class="big-code-block"><code>{
+  "schema_version": "1.3.0",
+  "id": "GHSA-c3g4-w6cv-6v7h",
+  "modified": "2022-04-01T13:56:42Z",
+  "published": "2022-04-01T13:56:42Z",
+  "aliases": [ "CVE-2022-27651" ],
+  "summary": "Non-empty default inheritable capabilities for linux container in Buildah",
+  "details": "A bug was found in Buildah where containers were created ...",
+  "affected": [
+    {
+      "package": {
+        "ecosystem": "Go",
+        "name": "github.com/containers/buildah"
+      },
+      "ranges": [
+        {
+          "type": "SEMVER",
+          "events": [
+            {
+              "introduced": "0"
+            },
+            {
+              "fixed": "1.25.0"
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "references": [
+    {
+      "type": "WEB",
+      "url": "https://github.com/containers/buildah/commit/..."
+    },
+    {
+      "type": "PACKAGE",
+      "url": "https://github.com/containers/buildah"
+    }
+  ]
+}</code></pre>
         </div>
       </div>
       <div class="cta">

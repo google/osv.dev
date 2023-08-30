@@ -43,7 +43,6 @@ module.exports = {
     new MiniCssExtractPlugin({
       filename: 'static/[name].css'
     }),
-    new BundleAnalyzerPlugin(),
   ],
   module: {
     rules: [

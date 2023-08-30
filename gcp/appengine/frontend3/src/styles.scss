@@ -1194,6 +1194,11 @@ dl.vulnerability-details,
   }
 }
 
+pre.big-code-block {
+  padding: 10px;
+  background-color: #202020;
+}
+
 // Hugo highlighted code blocks
 div.highlight {
   pre {

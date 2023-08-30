@@ -35,6 +35,14 @@ func TestVersionToCommit(t *testing.T) {
 			expectedOk:     true,
 		},
 		{
+			description:    "A fuzzy version match",
+			inputRepoURL:   "https://github.com/eclipse-openj9/openj9",
+			cache:          cache,
+			inputVersion:   "0.38.0",
+			expectedResult: "d57d05932008a14605bf6cd729bb22dd6f49162c",
+			expectedOk:     true,
+		},
+		{
 			description:    "A failed version match (non-existent version)",
 			inputRepoURL:   "https://github.com/google/go-attestation",
 			cache:          cache,

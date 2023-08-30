@@ -3,6 +3,7 @@ const path = require('path');
 const CopyPlugin = require('copy-webpack-plugin');
 const HtmlWebpackPlugin = require('html-webpack-plugin');
 const MiniCssExtractPlugin = require('mini-css-extract-plugin');
+const { BundleAnalyzerPlugin } = require('webpack-bundle-analyzer');
 
 module.exports = {
   mode: 'production',
@@ -43,6 +44,7 @@ module.exports = {
     new MiniCssExtractPlugin({
       filename: 'static/[name].[contenthash].css'
     }),
+    // new BundleAnalyzerPlugin(),
   ],
   module: {
     rules: [
@@ -53,7 +55,7 @@ module.exports = {
           // `styleloader` so that CSS is in a separate file, not bundled with
           // JS. Improves caching, performance (e.g. FOUC) concerns.
           MiniCssExtractPlugin.loader,
-          { 
+          {
             loader: 'css-loader',
             options: {
               url: false

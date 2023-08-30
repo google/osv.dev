@@ -18,6 +18,7 @@ import logging
 from flask import Flask
 import google.cloud.logging
 from google.cloud import ndb
+from whitenoise import WhiteNoise
 
 import cache
 import frontend_handlers
@@ -56,6 +57,10 @@ def create_app():
 
 app = create_app()
 app.wsgi_app = ndb_wsgi_middleware(app.wsgi_app)
+app.wsgi_app = WhiteNoise(app.wsgi_app, 
+                          root='dist/static/', 
+                          prefix='static',
+                          max_age=60*60*24)
 cache.instance.init_app(app)
 
 if __name__ == '__main__':

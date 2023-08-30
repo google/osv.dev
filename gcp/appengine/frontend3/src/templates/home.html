@@ -7,10 +7,12 @@
     <div class="mdc-layout-grid__cell--span-12 hero">
       <h1 class="title">A distributed vulnerability database for Open Source</h1>
       <div class="explainer">
-        <p>An open, precise, and distributed approach to producing and consuming vulnerability information for open source.
+        <p>An open, precise, and distributed approach to producing and consuming vulnerability information for open
+          source.
       </div>
       <div class="cta">
-        <a class="cta-primary link-button" href="{{ url_for('frontend_handlers.list_vulnerabilities') }}">Search Vulnerability Database</a>
+        <a class="cta-primary link-button" href="{{ url_for('frontend_handlers.list_vulnerabilities') }}">Search
+          Vulnerability Database</a>
         <a class="cta-primary link-button" href="#use-the-api">Use the API</a>
         <a class="cta-primary link-button" href="#use-the-cli">CLI Tools</a>
       </div>
@@ -25,25 +27,25 @@
         <div class="ecosystems-line-3"></div>
         <dl class="ecosystem-counts">
           {% if ecosystem_counts %}
-            {% set total = ecosystem_counts.values() | sum %}
-            {% for ecosystem, count in ecosystem_counts.items() %}
-              {% if count > 30 %}
-                <dt class="ecosystem-name">{{ ecosystem }}</dt>
-                <dd class="ecosystem-count-wrapper">
-                  {% set radius = [(count | log) / (total | log) * 100, 30] | max %}
-                  <a href="{{ url_for('frontend_handlers.list_vulnerabilities', ecosystem=ecosystem) }}">
-                    <span class="ecosystem-count" style="
+          {% set total = ecosystem_counts.values() | sum %}
+          {% for ecosystem, count in ecosystem_counts.items() %}
+          {% if count > 30 %}
+          <dt class="ecosystem-name">{{ ecosystem }}</dt>
+          <dd class="ecosystem-count-wrapper">
+            {% set radius = [(count | log) / (total | log) * 100, 30] | max %}
+            <a href="{{ url_for('frontend_handlers.list_vulnerabilities', ecosystem=ecosystem) }}">
+              <span class="ecosystem-count" style="
                       width: {{ radius }}px; height: {{ radius }}px; line-height: {{ radius }}px">
-                      {{ count }}
-                      <span class="tooltip" style="
+                {{ count }}
+                <span class="tooltip" style="
                        top: -{{ (radius / 2) + 5}}px;">
-                        View {{ ecosystem }} vulnerabilities
-                      </span>
-                    </span>
-                  </a>
-                </dd>
-              {% endif %}
-            {% endfor %}
+                  View {{ ecosystem }} vulnerabilities
+                </span>
+              </span>
+            </a>
+          </dd>
+          {% endif %}
+          {% endfor %}
           {% endif %}
         </dl>
       </div>
@@ -63,51 +65,56 @@
       </p>
       <div class="mdc-layout-grid__inner">
         <div class="mdc-layout-grid__cell--span-12">
-          <code-block>{
-  "schema_version": "1.3.0",
-  "id": "GHSA-c3g4-w6cv-6v7h",
-  "modified": "2022-04-01T13:56:42Z",
-  "published": "2022-04-01T13:56:42Z",
-  "aliases": [ "CVE-2022-27651" ],
-  "summary": "Non-empty default inheritable capabilities for linux container in Buildah",
-  "details": "A bug was found in Buildah where containers were created ...",
-  "affected": [
-    {
-      "package": {
-        "ecosystem": "Go",
-        "name": "github.com/containers/buildah"
-      },
-      "ranges": [
-        {
-          "type": "SEMVER",
-          "events": [
-            {
-              "introduced": "0"
-            },
-            {
-              "fixed": "1.25.0"
-            }
-          ]
-        }
-      ]
-    }
-  ],
-  "references": [
-    {
-      "type": "WEB",
-      "url": "https://github.com/containers/buildah/commit/..."
-    },
-    {
-      "type": "PACKAGE",
-      "url": "https://github.com/containers/buildah"
-    }
-  ]
-}</code-block>
+          <!-- This is built with hugo -->
+          <div class="highlight">
+            <pre tabindex="0" style="color:#d0d0d0;background-color:#202020;-moz-tab-size:2;-o-tab-size:2;tab-size:2;"><code class="language-json" data-lang="json"><span style="display:flex;"><span>{
+</span></span><span style="display:flex;"><span>  <span style="color:#6ab825;font-weight:bold">&#34;schema_version&#34;</span>: <span style="color:#ed9d13">&#34;1.3.0&#34;</span>,
+</span></span><span style="display:flex;"><span>  <span style="color:#6ab825;font-weight:bold">&#34;id&#34;</span>: <span style="color:#ed9d13">&#34;GHSA-c3g4-w6cv-6v7h&#34;</span>,
+</span></span><span style="display:flex;"><span>  <span style="color:#6ab825;font-weight:bold">&#34;modified&#34;</span>: <span style="color:#ed9d13">&#34;2022-04-01T13:56:42Z&#34;</span>,
+</span></span><span style="display:flex;"><span>  <span style="color:#6ab825;font-weight:bold">&#34;published&#34;</span>: <span style="color:#ed9d13">&#34;2022-04-01T13:56:42Z&#34;</span>,
+</span></span><span style="display:flex;"><span>  <span style="color:#6ab825;font-weight:bold">&#34;aliases&#34;</span>: [ <span style="color:#ed9d13">&#34;CVE-2022-27651&#34;</span> ],
+</span></span><span style="display:flex;"><span>  <span style="color:#6ab825;font-weight:bold">&#34;summary&#34;</span>: <span style="color:#ed9d13">&#34;Non-empty default inheritable capabilities for linux container in Buildah&#34;</span>,
+</span></span><span style="display:flex;"><span>  <span style="color:#6ab825;font-weight:bold">&#34;details&#34;</span>: <span style="color:#ed9d13">&#34;A bug was found in Buildah where containers were created ...&#34;</span>,
+</span></span><span style="display:flex;"><span>  <span style="color:#6ab825;font-weight:bold">&#34;affected&#34;</span>: [
+</span></span><span style="display:flex;"><span>    {
+</span></span><span style="display:flex;"><span>      <span style="color:#6ab825;font-weight:bold">&#34;package&#34;</span>: {
+</span></span><span style="display:flex;"><span>        <span style="color:#6ab825;font-weight:bold">&#34;ecosystem&#34;</span>: <span style="color:#ed9d13">&#34;Go&#34;</span>,
+</span></span><span style="display:flex;"><span>        <span style="color:#6ab825;font-weight:bold">&#34;name&#34;</span>: <span style="color:#ed9d13">&#34;github.com/containers/buildah&#34;</span>
+</span></span><span style="display:flex;"><span>      },
+</span></span><span style="display:flex;"><span>      <span style="color:#6ab825;font-weight:bold">&#34;ranges&#34;</span>: [
+</span></span><span style="display:flex;"><span>        {
+</span></span><span style="display:flex;"><span>          <span style="color:#6ab825;font-weight:bold">&#34;type&#34;</span>: <span style="color:#ed9d13">&#34;SEMVER&#34;</span>,
+</span></span><span style="display:flex;"><span>          <span style="color:#6ab825;font-weight:bold">&#34;events&#34;</span>: [
+</span></span><span style="display:flex;"><span>            {
+</span></span><span style="display:flex;"><span>              <span style="color:#6ab825;font-weight:bold">&#34;introduced&#34;</span>: <span style="color:#ed9d13">&#34;0&#34;</span>
+</span></span><span style="display:flex;"><span>            },
+</span></span><span style="display:flex;"><span>            {
+</span></span><span style="display:flex;"><span>              <span style="color:#6ab825;font-weight:bold">&#34;fixed&#34;</span>: <span style="color:#ed9d13">&#34;1.25.0&#34;</span>
+</span></span><span style="display:flex;"><span>            }
+</span></span><span style="display:flex;"><span>          ]
+</span></span><span style="display:flex;"><span>        }
+</span></span><span style="display:flex;"><span>      ]
+</span></span><span style="display:flex;"><span>    }
+</span></span><span style="display:flex;"><span>  ],
+</span></span><span style="display:flex;"><span>  <span style="color:#6ab825;font-weight:bold">&#34;references&#34;</span>: [
+</span></span><span style="display:flex;"><span>    {
+</span></span><span style="display:flex;"><span>      <span style="color:#6ab825;font-weight:bold">&#34;type&#34;</span>: <span style="color:#ed9d13">&#34;WEB&#34;</span>,
+</span></span><span style="display:flex;"><span>      <span style="color:#6ab825;font-weight:bold">&#34;url&#34;</span>: <span style="color:#ed9d13">&#34;https://github.com/containers/buildah/commit/...&#34;</span>
+</span></span><span style="display:flex;"><span>    },
+</span></span><span style="display:flex;"><span>    {
+</span></span><span style="display:flex;"><span>      <span style="color:#6ab825;font-weight:bold">&#34;type&#34;</span>: <span style="color:#ed9d13">&#34;PACKAGE&#34;</span>,
+</span></span><span style="display:flex;"><span>      <span style="color:#6ab825;font-weight:bold">&#34;url&#34;</span>: <span style="color:#ed9d13">&#34;https://github.com/containers/buildah&#34;</span>
+</span></span><span style="display:flex;"><span>    }
+</span></span><span style="display:flex;"><span>  ]
+</span></span><span style="display:flex;"><span>}
+</span></span></code></pre>
+          </div>
         </div>
       </div>
       <div class="cta">
         <a class="cta-primary link-button" href="https://ossf.github.io/osv-schema/">OSV Schema</a>
-        <a class="cta-primary link-button" href="https://security.googleblog.com/2021/06/announcing-unified-vulnerability-schema.html">Blog post</a>
+        <a class="cta-primary link-button"
+          href="https://security.googleblog.com/2021/06/announcing-unified-vulnerability-schema.html">Blog post</a>
       </div>
     </div>
     <div class="mdc-layout-grid__cell--span-12 text-info data-sources">
@@ -122,7 +129,8 @@
         more.
       </p>
       <div class="cta">
-        <a class="cta-primary link-button" href="https://google.github.io/osv.dev/data/#current-data-sources">Learn more</a>
+        <a class="cta-primary link-button" href="https://google.github.io/osv.dev/data/#current-data-sources">Learn
+          more</a>
       </div>
     </div>
     <div id="use-the-api" class="mdc-layout-grid__cell--span-12 usage-examples">
@@ -202,7 +210,8 @@ osv-scanner -r path/to/your/project
     <div class="mdc-layout-grid__cell--span-12 open-source-banner">
       <h2 class="heading">Open source</h2>
       <p class="description">
-        This project is <a href="https://github.com/google/osv">open source</a>. If you have any ideas or questions, please feel free to
+        This project is <a href="https://github.com/google/osv">open source</a>. If you have any ideas or questions,
+        please feel free to
         reach out by <a href="https://github.com/google/osv/issues/new">creating an issue</a>!
       </p>
       <div class="cta">

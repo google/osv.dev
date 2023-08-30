@@ -111,7 +111,7 @@ class NuGet(Ecosystem):
         if items_response.status_code != 200:
           raise RuntimeError(
               f'Failed to get NuGet versions page for {package} with: '
-              f'{response.text}')
+              f'{items_response.text}')
 
         items = items_response.json()['items']
 

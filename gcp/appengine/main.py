@@ -58,10 +58,8 @@ def create_app():
 
 app = create_app()
 app.wsgi_app = ndb_wsgi_middleware(app.wsgi_app)
-app.wsgi_app = WhiteNoise(app.wsgi_app, 
-                          root='dist/static/', 
-                          prefix='static',
-                          max_age=60*60*24)
+app.wsgi_app = WhiteNoise(
+    app.wsgi_app, root='dist/static/', prefix='static', max_age=60 * 60 * 24)
 cache.instance.init_app(app)
 app.config['COMPRESS_MIMETYPES'] = ['text/html']
 compress = Compress()

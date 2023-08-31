@@ -204,6 +204,20 @@ func TestAddPkgInfo(t *testing.T) {
 		t.Errorf("AddPkgInfo has not correctly avoided setting a package field for an ecosystem-less vulnerability.")
 	}
 	// testPkgInfoCommits ^^^^^^^^^^^^^^^
+
+	zeroIntroducedCommitHashCount := 0
+	for _, a := range vuln.Affected {
+		for _, r := range a.Ranges {
+			for _, e := range r.Events {
+				if r.Type == "GIT" && e.Introduced == "0" {
+					zeroIntroducedCommitHashCount++
+				}
+			}
+		}
+	}
+	if zeroIntroducedCommitHashCount > 1 {
+		t.Errorf("AddPkgInfo has synthesized more than one zero-valued introduced field.")
+	}
 }
 
 func TestAddSeverity(t *testing.T) {

@@ -29,6 +29,9 @@ echo "Run download-cves"
 echo "Run combine-to-osv"
 ./combine-to-osv -cvePath $CVE_OUTPUT -partsPath $OSV_PARTS_ROOT -osvOutputPath $OSV_OUTPUT
 
+echo "Override"
+gcloud --no-user-output-enabled storage rsync "gs://${INPUT_BUCKET}/overrides/" $OSV_OUTPUT
+
 echo "Begin syncing output to GCS bucket ${OUTPUT_BUCKET}"
 gcloud --no-user-output-enabled storage rsync "$OSV_OUTPUT" "gs://${OUTPUT_BUCKET}/osv-output/" -c --delete-unmatched-destination-objects -q
 echo "Successfully synced to GCS bucket"

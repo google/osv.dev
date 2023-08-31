@@ -17,7 +17,8 @@ resource "google_cloud_run_v2_service" "website" {
       # To be managed by Cloud Deploy.
       template,
       traffic,
-      labels
+      labels,
+      client
     ]
     # prevent_destroy = true
   }

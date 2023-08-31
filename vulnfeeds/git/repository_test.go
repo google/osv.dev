@@ -7,9 +7,46 @@ import (
 	"golang.org/x/exp/maps"
 )
 
+func TestRepoName(t *testing.T) {
+	tests := []struct {
+		description string
+		input       string
+		want        string
+		expectedOk  bool
+	}{
+		// Fun fact: url.Parse() doesn't seem to reliably return errors...
+		// {
+		// 	description: "A totally bogus URL",
+		// 	input:       "hkjfdshhkjgfdhjkgfd",
+		// 	want:        "",
+		// 	expectedOk:  false,
+		// },
+		{
+			description: "A GitHub URL",
+			input:       "https://github.com/eclipse-openj9/openj9",
+			want:        "openj9",
+			expectedOk:  true,
+		},
+		{
+			description: "A cGit URL",
+			input:       "https://git.libssh.org/projects/libssh.git",
+			want:        "libssh",
+			expectedOk:  true,
+		},
+	}
+	for _, tc := range tests {
+		got, err := RepoName(tc.input)
+		if err != nil && tc.expectedOk {
+			t.Errorf("test %q: RepoName(%q) unexpectedly failed: %+v", tc.description, tc.input, err)
+		}
+		if got != tc.want {
+			t.Errorf("test %q: RepoName(%q) unexpected result = %q, want %q", tc.description, tc.input, got, tc.want)
+		}
+	}
+}
+
 func TestRepoTags(t *testing.T) {
-	var cache RepoTagsCache
-	cache = make(RepoTagsCache)
+	cache := make(RepoTagsCache)
 
 	tests := []struct {
 		description    string
@@ -156,6 +193,11 @@ func TestNormalizeRepoTags(t *testing.T) {
 			expectedOk:   true,
 		},
 		{
+			description:  "Valid repository, edge-case normalized versions exist",
+			inputRepoURL: "https://github.com/eclipse-openj9/openj9",
+			expectedOk:   true,
+		},
+		{
 			description:  "Valid repository, no tags, normalized versions do not exist",
 			inputRepoURL: "https://github.com/andrewpollock/osv.dev.git",
 			expectedOk:   false,
@@ -166,10 +208,8 @@ func TestNormalizeRepoTags(t *testing.T) {
 			expectedOk:   false,
 		},
 	}
-	var cache RepoTagsCache
-	cache = make(RepoTagsCache)
+	cache := make(RepoTagsCache)
 	for _, tc := range tests {
-		normalizedRepoTags := make(map[string]NormalizedTag)
 		normalizedRepoTags, err := NormalizeRepoTags(tc.inputRepoURL, cache)
 		if err != nil && tc.expectedOk {
 			t.Errorf("test %q: NormalizeRepoTags(%q) unexpectedly failed: %+v", tc.description, tc.inputRepoURL, err)
@@ -181,6 +221,7 @@ func TestNormalizeRepoTags(t *testing.T) {
 		if len(maps.Keys(normalizedRepoTags)) > 0 && cache[tc.inputRepoURL].NormalizedTag == nil {
 			t.Errorf("test %q: NormalizeRepoTags(%q) incorrect cache behaviour: %#v", tc.description, tc.inputRepoURL, cache)
 		}
+		t.Logf("test %q: NormalizedRepoTags(%q): %#v", tc.description, tc.inputRepoURL, normalizedRepoTags)
 	}
 }
 

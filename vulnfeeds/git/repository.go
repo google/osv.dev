@@ -103,7 +103,7 @@ func RepoName(repoURL string) (name string, e error) {
 	if err != nil {
 		return "", err
 	}
-	assumedReponame := path.Base(u.Path)
+	assumedReponame := strings.ToLower(path.Base(u.Path))
 	name = strings.TrimSuffix(assumedReponame, ".git")
 	return name, nil
 }
@@ -176,7 +176,7 @@ func NormalizeRepoTags(repoURL string, repoTagsCache RepoTagsCache) (NormalizedT
 	for _, t := range tags {
 		// Opportunistically remove parts determined to match the repo name,
 		// to ease particularly difficult to normalize cases like 'openj9-0.38.0'.
-		prenormalizedTag := strings.TrimPrefix(t.Tag, assumedReponame)
+		prenormalizedTag := strings.TrimPrefix(strings.ToLower(t.Tag), assumedReponame)
 		prenormalizedTag = strings.TrimPrefix(prenormalizedTag, "-")
 		normalizedTag, err := cves.NormalizeVersion(prenormalizedTag)
 		if err != nil {

@@ -23,6 +23,7 @@ import logging
 from flask import abort
 from flask import Blueprint
 from flask import request
+from flask import send_file, send_from_directory
 from google.cloud.datastore_admin_v1.services.datastore_admin import client \
     as ds_admin
 from google.cloud import ndb
@@ -192,3 +193,16 @@ def backup():
 def warmup():
   """Warmup handler."""
   return 'OK'
+
+
+@blueprint.route('/public_keys/<path:filename>')
+def public_keys(filename):
+  """Public keys handler."""
+  return send_from_directory(
+      'dist/public_keys', filename, mimetype='text/plain')
+
+
+@blueprint.route('/docs/osv_service_v1.swagger.json')
+def swagger():
+  """Swagger file handler."""
+  return send_file('docs/osv_service_v1.swagger.json')

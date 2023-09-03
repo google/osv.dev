@@ -40,7 +40,6 @@ The following ecosystems have vulnerabilities encoded in this format:
     ([CC0 1.0](https://github.com/cloudsecurityalliance/gsd-database/blob/main/LICENSE))
 -   [OSS-Fuzz](https://github.com/google/oss-fuzz-vulns)
     ([CC-BY 4.0](https://github.com/google/oss-fuzz-vulns/blob/main/LICENSE))
-    ([MIT](https://github.com/loopbackio/security/blob/main/LICENSE))
 -   [Rocky Linux](https://distro-tools.rocky.page/apollo/openapi/#osv)
     ([BSD](https://rockylinux.org/licensing))
 -   [AlmaLinux](https://github.com/AlmaLinux/osv-database)

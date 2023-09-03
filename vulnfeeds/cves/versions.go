@@ -210,6 +210,7 @@ var (
 		"https://github.com/Durian1546/vul",
 		"https://github.com/Dyrandy/BugBounty",
 		"https://github.com/E1CHO/water_cve",
+		"https://github.com/eclipse/openj9", // Redirects to https://github.com/eclipse-openj9/openj9
 		"https://github.com/eddietcc/CVEnotes",
 		"https://github.com/Edubr2020/RealPlayer_G2_RCE",
 		"https://github.com/Edubr2020/RP_DCP_Code_Exec",

@@ -79,7 +79,6 @@ Between the data served in OSV and the data converted to OSV the following ecosy
 -   NuGet
 -   OSS-Fuzz
 -   Packagist
--   Photon OS
 -   Pub
 -   PyPI
 -   Python

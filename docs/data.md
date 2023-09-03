@@ -67,7 +67,6 @@ Between the data served in OSV and the data converted to OSV the following ecosy
 -   AlmaLinux
 -   Alpine
 -   Android
--   Bitnami
 -   crates.io
 -   Debian GNU/Linux
 -   GitHub Actions

@@ -46,7 +46,6 @@ The following ecosystems have vulnerabilities encoded in this format:
     ([MIT](https://github.com/AlmaLinux/osv-database/blob/master/LICENSE))
 -   [Haskell Security Advisories](https://github.com/haskell/security-advisories)
     ([CC0 1.0](https://github.com/haskell/security-advisories/blob/main/LICENSE.txt))
-    ([Apache 2.0](https://github.com/bitnami/vulndb/blob/main/LICENSE.md))
 -   [RConsortium Advisory Database](https://github.com/RConsortium/r-advisory-database)
     ([Apache 2.0](https://github.com/RConsortium/r-advisory-database/blob/main/LICENSE))
 -   [Python Software Foundation Database](https://github.com/psf/advisory-database)

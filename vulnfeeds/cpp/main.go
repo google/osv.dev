@@ -140,7 +140,7 @@ func GitVersionsToCommits(CVE string, versions cves.VersionInfo, repos []string,
 					v.AffectedCommits = append(v.AffectedCommits, ac)
 				}
 			}
-			// Only try and convert versions to commits via tags if there aren't any already.
+			// Only try and convert fixed versions to commits via tags if there aren't any Fixed commits already.
 			// cves.ExtractVersionInfo() opportunistically returns
 			// AffectedCommits (with Fixed commits) when the CVE has appropriate references.
 			if v.HasFixedCommits(repo) && av.Fixed != "" {
@@ -154,7 +154,10 @@ func GitVersionsToCommits(CVE string, versions cves.VersionInfo, repos []string,
 					v.AffectedCommits = append(v.AffectedCommits, ac)
 				}
 			}
-			if av.LastAffected != "" {
+			// Only try and convert last_affected versions to commits via tags if there aren't any Fixed commits already (to maintain schema compliance).
+			// cves.ExtractVersionInfo() opportunistically returns
+			// AffectedCommits (with Fixed commits) when the CVE has appropriate references.
+			if !v.HasFixedCommits(repo) && av.LastAffected != "" {
 				ac, err := git.VersionToCommit(av.LastAffected, repo, cves.LastAffected, normalizedTags)
 				if err != nil {
 					Logger.Warnf("[%s]: Failed to get a Git commit for last_affected version %q from %q: %v", CVE, av.LastAffected, repo, err)

@@ -217,7 +217,7 @@ func (v *Vulnerability) AddPkgInfo(pkgInfo PackageInfo) {
 	if len(pkgInfo.VersionInfo.AffectedCommits) > 0 {
 		gitVersionRangesByRepo := map[string]AffectedRange{}
 
-		hasAddedZeroIntroduced := false
+		hasAddedZeroIntroduced := make(map[string]bool)
 
 		for _, ac := range pkgInfo.VersionInfo.AffectedCommits {
 			entry, ok := gitVersionRangesByRepo[ac.Repo]
@@ -229,14 +229,14 @@ func (v *Vulnerability) AddPkgInfo(pkgInfo PackageInfo) {
 				}
 			}
 
-			if !pkgInfo.VersionInfo.HasIntroducedCommits(ac.Repo) && !hasAddedZeroIntroduced {
+			if !pkgInfo.VersionInfo.HasIntroducedCommits(ac.Repo) && !hasAddedZeroIntroduced[ac.Repo] {
 				// There was no explicitly defined introduced commit, so create one at 0
 				entry.Events = append(entry.Events,
 					Event{
 						Introduced: "0",
 					},
 				)
-				hasAddedZeroIntroduced = true
+				hasAddedZeroIntroduced[ac.Repo] = true
 			}
 
 			entry.Events = append(entry.Events,
@@ -250,8 +250,8 @@ func (v *Vulnerability) AddPkgInfo(pkgInfo PackageInfo) {
 			gitVersionRangesByRepo[ac.Repo] = entry
 		}
 
-		for _, ar := range gitVersionRangesByRepo {
-			affected.Ranges = append(affected.Ranges, ar)
+		for repo := range gitVersionRangesByRepo {
+			affected.Ranges = append(affected.Ranges, gitVersionRangesByRepo[repo])
 		}
 	}
 

@@ -28,7 +28,7 @@ mkdir -p "${WORK_DIR}/nvd"
 
 # Download latest CPE repo map.
 echo "Downloading latest CPE Git repository map"
-gcloud storage -q cp "${CPEREPO_GCS_PATH}" "${WORK_DIR}"
+gcloud --no-user-output-enabled storage -q cp "${CPEREPO_GCS_PATH}" "${WORK_DIR}"
 
 # Dirty hack to get around https://stackoverflow.com/questions/68528541/env-variable-array
 # https://stackoverflow.com/questions/9293887/reading-a-space-delimited-string-into-an-array-in-bash/9294015
@@ -44,11 +44,12 @@ for YEAR in "${IN_SCOPE_YEARS[@]}"; do
 
   # Copy results to GCS bucket.
   echo "Copying NVD CVE records from ${YEAR} successfully converted to OSV to GCS"
-  find "${WORK_DIR}/nvd2osv/${YEAR}" -type f -name \*.json | gcloud storage -q cp -I "${OSV_OUTPUT_GCS_PATH}"
+  find "${WORK_DIR}/nvd2osv/${YEAR}" -type f -name \*.json \
+    | gcloud --no-user-output-enabled storage -q cp -I "${OSV_OUTPUT_GCS_PATH}"
 
   # Copy conversion summary to GCS bucket.
   DURABLE_OUTCOMES_CSV="${OSV_OUTPUT_GCS_PATH}/nvd-conversion-outcomes-${YEAR}-$(date -Iminutes).csv"
-  gcloud storage -q cp "${WORK_DIR}/nvd2osv/${YEAR}/outcomes.csv" "$DURABLE_OUTCOMES_CSV"
+  gcloud --no-user-output-enabled storage -q cp "${WORK_DIR}/nvd2osv/${YEAR}/outcomes.csv" "$DURABLE_OUTCOMES_CSV"
 
   echo "Results summary available at $DURABLE_OUTCOMES_CSV"
 done

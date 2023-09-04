@@ -351,6 +351,12 @@ class Bug(ndb.Model):
     self.ecosystem = list(ecosystems_set)
     self.ecosystem.sort()
 
+    # Store an empty ecosystem list as null in Datastore to allow for searching
+    # by this value. (It is not possible to search Datastore for an empty array
+    # value).
+    if not self.ecosystem:
+      self.ecosystem = None
+
     self.purl = _get_purl_indexes(self.affected_packages)
     self.purl.sort()
 

@@ -13,6 +13,8 @@ OUTPUT_BUCKET="${OUTPUT_GCS_BUCKET:=cve-osv-conversion}"
 OSV_PARTS_ROOT="parts/"
 OSV_OUTPUT="osv_output/"
 CVE_OUTPUT="cve_jsons/"
+CVELIST=""
+# CVELIST="cvelistV5/"
 
 echo "Setup initial directories"
 rm -rf $OSV_PARTS_ROOT && mkdir -p $OSV_PARTS_ROOT
@@ -26,8 +28,13 @@ echo "Successfully synced from GCS bucket"
 echo "Run download-cves"
 ./download-cves -cvePath $CVE_OUTPUT
 
+if [[ -n "$CVELIST" ]]; then
+    echo "Clone CVE List"
+    git clone --quiet https://github.com/CVEProject/cvelistV5
+fi
+
 echo "Run combine-to-osv"
-./combine-to-osv -cvePath $CVE_OUTPUT -partsPath $OSV_PARTS_ROOT -osvOutputPath $OSV_OUTPUT
+./combine-to-osv -cvePath "$CVE_OUTPUT" -partsPath "$OSV_PARTS_ROOT" -osvOutputPath "$OSV_OUTPUT" -cveListPath "$CVELIST"
 
 echo "Override"
 gcloud --no-user-output-enabled storage rsync "gs://${INPUT_BUCKET}/osv-output-overrides/" $OSV_OUTPUT

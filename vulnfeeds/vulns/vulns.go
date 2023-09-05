@@ -584,7 +584,8 @@ func FromJSON(r io.Reader) (*Vulnerability, error) {
 // CVEIsDisputed will return if the underlying CVE is disputed.
 // It returns the CVE's CNA container's dateUpdated value if it is disputed.
 // This can be used to set the Withdrawn field.
-func CVEIsDisputed(v *Vulnerability) (modified string, e error) {
+// It consults a local clone of https://github.com/CVEProject/cvelistV5 found in the location specified by cveList
+func CVEIsDisputed(v *Vulnerability)  (modified string, e error) {
 	// iff the v.ID starts with a CVE...
 	// 	Try to make an HTTP request for the CVE record in the CVE List
 	// 	iff .containers.cna.tags contains "disputed"

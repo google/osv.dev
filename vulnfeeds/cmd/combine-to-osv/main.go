@@ -16,6 +16,7 @@ const (
 	defaultCvePath        = "cve_jsons"
 	defaultPartsInputPath = "parts"
 	defaultOSVOutputPath  = "osv_output"
+	defaultCVEListPath    = "cvelistV5"
 )
 
 var Logger utility.LoggerWrapper
@@ -28,6 +29,7 @@ func main() {
 	cvePath := flag.String("cvePath", defaultCvePath, "Path to CVE file")
 	partsInputPath := flag.String("partsPath", defaultPartsInputPath, "Path to CVE file")
 	osvOutputPath := flag.String("osvOutputPath", defaultOSVOutputPath, "Path to CVE file")
+	cveListPath := flag.String("cveListPath", defaultCVEListPath, "Path to clone of https://github.com/CVEProject/cvelistV5")
 	flag.Parse()
 
 	err := os.MkdirAll(*cvePath, 0755)
@@ -41,7 +43,7 @@ func main() {
 
 	allCves := loadAllCVEs(*cvePath)
 	allParts := loadParts(*partsInputPath)
-	combinedData := combineIntoOSV(allCves, allParts)
+	combinedData := combineIntoOSV(allCves, allParts, *cveListPath)
 	writeOSVFile(combinedData, *osvOutputPath)
 }
 
@@ -106,7 +108,7 @@ func loadParts(partsInputPath string) map[string][]vulns.PackageInfo {
 }
 
 // combineIntoOSV creates OSV entry by combining loaded CVEs from NVD and PackageInfo information from security advisories.
-func combineIntoOSV(loadedCves map[string]cves.CVEItem, allParts map[string][]vulns.PackageInfo) map[string]*vulns.Vulnerability {
+func combineIntoOSV(loadedCves map[string]cves.CVEItem, allParts map[string][]vulns.PackageInfo, cveList string) map[string]*vulns.Vulnerability {
 	Logger.Infof("Begin writing OSV files")
 	convertedCves := map[string]*vulns.Vulnerability{}
 	for cveId, cve := range loadedCves {
@@ -114,13 +116,17 @@ func combineIntoOSV(loadedCves map[string]cves.CVEItem, allParts map[string][]vu
 			continue
 		}
 		convertedCve, _ := vulns.FromCVE(cveId, cve)
-		// Best-effort attempt to mark a disputed CVE as withdrawn.
-		modified, err := vulns.CVEIsDisputed(convertedCve)
-		if err != nil {
-			Logger.Warnf("Unable to determine CVE dispute status of %s: %v", convertedCve.ID, err)
-		}
-		if err == nil && modified != "" {
-			convertedCve.Withdrawn = modified
+		if len(cveList) > 0 {
+			// Best-effort attempt to mark a disputed CVE as withdrawn.
+			modified, err := vulns.CVEIsDisputed(convertedCve)
+			// TODO(apollock): This will become:
+			// modified, err := vulns.CVEIsDisputed(convertedCve, cveList)
+			if err != nil {
+				Logger.Warnf("Unable to determine CVE dispute status of %s: %v", convertedCve.ID, err)
+			}
+			if err == nil && modified != "" {
+				convertedCve.Withdrawn = modified
+			}
 		}
 		for _, pkgInfo := range allParts[cveId] {
 			convertedCve.AddPkgInfo(pkgInfo)

@@ -40,6 +40,16 @@ The following ecosystems have vulnerabilities encoded in this format:
     ([CC0 1.0](https://github.com/cloudsecurityalliance/gsd-database/blob/main/LICENSE))
 -   [OSS-Fuzz](https://github.com/google/oss-fuzz-vulns)
     ([CC-BY 4.0](https://github.com/google/oss-fuzz-vulns/blob/main/LICENSE))
+-   [Rocky Linux](https://distro-tools.rocky.page/apollo/openapi/#osv)
+    ([BSD](https://rockylinux.org/licensing))
+-   [AlmaLinux](https://github.com/AlmaLinux/osv-database)
+    ([MIT](https://github.com/AlmaLinux/osv-database/blob/master/LICENSE))
+-   [Haskell Security Advisories](https://github.com/haskell/security-advisories)
+    ([CC0 1.0](https://github.com/haskell/security-advisories/blob/main/LICENSE.txt))
+-   [RConsortium Advisory Database](https://github.com/RConsortium/r-advisory-database)
+    ([Apache 2.0](https://github.com/RConsortium/r-advisory-database/blob/main/LICENSE))
+-   [Python Software Foundation Database](https://github.com/psf/advisory-database)
+    ([CC-BY 4.0](https://github.com/psf/advisory-database/blob/main/LICENSE))
 
 ## Converted data
 Additionally, the OSV.dev team maintains a conversion pipeline for:
@@ -61,6 +71,7 @@ Between the data served in OSV and the data converted to OSV the following ecosy
 -   Debian GNU/Linux
 -   GitHub Actions
 -   Go
+-   Haskell
 -   Hex
 -   Linux kernel
 -   Maven
@@ -70,6 +81,8 @@ Between the data served in OSV and the data converted to OSV the following ecosy
 -   Packagist
 -   Pub
 -   PyPI
+-   Python
+-   R (CRAN and Bioconductor)
 -   Rocky Linux
 -   RubyGems
 

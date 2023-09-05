@@ -118,9 +118,7 @@ func combineIntoOSV(loadedCves map[string]cves.CVEItem, allParts map[string][]vu
 		convertedCve, _ := vulns.FromCVE(cveId, cve)
 		if len(cveList) > 0 {
 			// Best-effort attempt to mark a disputed CVE as withdrawn.
-			modified, err := vulns.CVEIsDisputed(convertedCve)
-			// TODO(apollock): This will become:
-			// modified, err := vulns.CVEIsDisputed(convertedCve, cveList)
+			modified, err := vulns.CVEIsDisputed(convertedCve, cveList)
 			if err != nil {
 				Logger.Warnf("Unable to determine CVE dispute status of %s: %v", convertedCve.ID, err)
 			}

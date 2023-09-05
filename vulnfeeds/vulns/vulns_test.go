@@ -291,7 +291,7 @@ func TestCVEIsDisputed(t *testing.T) {
 			ID: tc.inputVulnId,
 		}
 
-		modified, err := CVEIsDisputed(inputVuln)
+		modified, err := CVEIsDisputed(inputVuln, "../test_data/")
 
 		if err != nil && err != tc.expectedError {
 			var verr *VulnsCVEListError

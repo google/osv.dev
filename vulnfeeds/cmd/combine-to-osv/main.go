@@ -16,7 +16,7 @@ const (
 	defaultCvePath        = "cve_jsons"
 	defaultPartsInputPath = "parts"
 	defaultOSVOutputPath  = "osv_output"
-	defaultCVEListPath    = "cvelistV5"
+	defaultCVEListPath    = "."
 )
 
 var Logger utility.LoggerWrapper

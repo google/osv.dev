@@ -31,7 +31,7 @@ import (
 	"github.com/google/osv/vulnfeeds/cves"
 )
 
-const CVEListBasePath = "cvelistV5/cves"
+const CVEListBasePath = "cves"
 
 var ErrVulnNotACVE = errors.New("not a CVE")
 

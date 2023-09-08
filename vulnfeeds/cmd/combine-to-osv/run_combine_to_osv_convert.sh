@@ -13,7 +13,7 @@ OUTPUT_BUCKET="${OUTPUT_GCS_BUCKET:=cve-osv-conversion}"
 OSV_PARTS_ROOT="parts/"
 OSV_OUTPUT="osv_output/"
 CVE_OUTPUT="cve_jsons/"
-CVELIST="${CVELIST_PATH:=./}"
+CVELIST="${CVELIST_PATH:=cvelistV5/}"
 
 echo "Setup initial directories"
 rm -rf $OSV_PARTS_ROOT && mkdir -p $OSV_PARTS_ROOT

@@ -16,9 +16,9 @@ nav_order: 3
 {:toc}
 </details>
 
-## Current data sources  
-  
-**This is an ongoing project.**  
+## Current data sources
+
+**This is an ongoing project.**
 We encourage open source ecosystems to adopt the
 [Open Source Vulnerability format](https://ossf.github.io/osv-schema/) to enable
 open source users to easily aggregate and consume vulnerabilities across all
@@ -90,7 +90,7 @@ Between the data served in OSV and the data converted to OSV the following ecosy
 
 For convenience, these sources are aggregated and continuously exported to a GCS
 bucket maintained by OSV:
-[`gs://osv-vulnerabilities`](https://osv-vulnerabilities.storage.googleapis.com)
+[`gs://osv-vulnerabilities`](https://storage.googleapis.com/osv-vulnerabilities/index.html)
 
 This bucket contains individual entries of the format
 `gs://osv-vulnerabilities/<ECOSYSTEM>/<ID>.json` as well as a zip containing all
@@ -104,5 +104,5 @@ E.g. for PyPI vulnerabilities:
 gsutil cp gs://osv-vulnerabilities/PyPI/all.zip .
 ```
 
-A list of all current ecosystems is available at 
+A list of all current ecosystems is available at
 [`gs://osv-vulnerabilities/ecosystems.txt`](https://osv-vulnerabilities.storage.googleapis.com/ecosystems.txt)

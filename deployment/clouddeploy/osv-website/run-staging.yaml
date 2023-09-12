@@ -6,6 +6,7 @@ spec:
   template:
     metadata:
       annotations:
+        autoscaling.knative.dev/minScale: '1'
         run.googleapis.com/vpc-access-connector: projects/oss-vdb-test/locations/us-west2/connectors/connector
     spec:
       containers:

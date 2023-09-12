@@ -28,7 +28,7 @@ import (
 
 type AffectedCommit struct {
 	Repo         string `json:"repo,omitempty" yaml:"repo,omitempty"`
-	Introduced   string `json:"introduced,omitempty" yaml:"introduced,omit"`
+	Introduced   string `json:"introduced,omitempty" yaml:"introduced,omitempty"`
 	Fixed        string `json:"fixed,omitempty" yaml:"fixed,omitempty"`
 	Limit        string `json:"limit,omitempty" yaml:"limit,omitempty"`
 	LastAffected string `json:"last_affected,omitempty" yaml:"last_affected,omitempty"`

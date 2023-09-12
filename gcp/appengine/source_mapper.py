@@ -67,9 +67,11 @@ class GitHubVCS(VCSViewer):
   VCS_REVISION_DIFF_SUB = r'\1/compare/{start_revision}...{end_revision}'
 
 
-class GitLabVCS(GitHubVCS):
+class GitLabVCS(VCSViewer):
   VCS_URL_REGEX = re.compile(
       r'(https://gitlab(\.[\w\.\-]+)?\.(com|org)/(.*?))(\.git)?$')
+  VCS_REVISION_SUB = r'\1/-/commit/{revision}'
+  VCS_REVISION_DIFF_SUB = r'\1/-/compare/{start_revision}...{end_revision}'
 
 
 class GoogleSourceVCS(VCSViewer):

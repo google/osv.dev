@@ -598,7 +598,6 @@ dl.vulnerability-details,
   grid-template-columns: max-content minmax(0, auto);
   grid-row-gap: 5px;
   gap: 8px;
-  margin-bottom: 15px;
 
   dt {
     grid-column: 1;
@@ -668,6 +667,10 @@ dl.vulnerability-details,
   .aliases {
     padding: 0;
   }
+}
+
+.vulnerability-package-subsection dl:not(:last-child) {
+  margin-bottom: 15px;
 }
 
 .vulnerability-packages-container {

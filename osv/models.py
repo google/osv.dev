@@ -19,6 +19,7 @@ import re
 import os
 
 from urllib.parse import urlparse
+from typing import List
 
 from google.cloud import ndb
 from google.protobuf import json_format
@@ -75,7 +76,7 @@ def _get_purl_indexes(affected_packages):
   return list(resulting_set)
 
 
-def _repo_name(repo_url: AffectedRange2.repo_url) -> str:
+def _repo_name(repo_url: str) -> str:
   # https://github.com/eclipse-openj9/openj9 -> openj9
   url = urlparse(repo_url)
   assumed_reponame = os.path.dirname(url.path).lstrip("/")
@@ -83,9 +84,8 @@ def _repo_name(repo_url: AffectedRange2.repo_url) -> str:
   return name
 
 
-def _maybe_strip_repo_prefixes(versions: list(
-    AffectedPackage.versions), repo_urls: list(
-        AffectedRange2.repo_url)) -> AffectedPackage.versions:
+def _maybe_strip_repo_prefixes(versions: List[str],
+                               repo_urls: List[str]) -> str:
   """Try to strip the repo name from tags prior to normalizing.
 
   There are some particularly regex-unfriendly tag names that prefix the

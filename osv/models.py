@@ -96,7 +96,7 @@ def _maybe_strip_repo_prefixes(versions: List[str],
   repo_stripped_versions = versions
 
   for repo_url in repo_urls:
-    assumed_reponame = _repo_name(repo_url).tolower()
+    assumed_reponame = _repo_name(repo_url).lower()
     repo_stripped_versions = [
         v.lstrip(assumed_reponame).lstrip("-") for v in versions
     ]

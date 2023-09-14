@@ -18,6 +18,8 @@ import enum
 import re
 import os
 
+from urllib.parse import urlparse
+
 from google.cloud import ndb
 from google.protobuf import json_format
 from google.protobuf import timestamp_pb2
@@ -71,6 +73,35 @@ def _get_purl_indexes(affected_packages):
       if '?' in pkg.package.purl:
         resulting_set.add(pkg.package.purl.split('?')[0])
   return list(resulting_set)
+
+
+def _repo_name(repo_url: AffectedRange2.repo_url) -> str:
+  # https://github.com/eclipse-openj9/openj9 -> openj9
+  url = urlparse(repo_url)
+  assumed_reponame = os.path.dirname(url.path).lstrip("/")
+  name = assumed_reponame.rstrip(".git")
+  return name
+
+
+def _maybe_strip_repo_prefixes(versions: list(
+    AffectedPackage.versions), repo_urls: list(
+        AffectedRange2.repo_url)) -> AffectedPackage.versions:
+  """Try to strip the repo name from tags prior to normalizing.
+
+  There are some particularly regex-unfriendly tag names that prefix the
+  reponame that end in a number, like "openj9-0.8.0", resulting in an
+  incorrectly normalized version.
+  """
+
+  repo_stripped_versions = versions
+
+  for repo_url in repo_urls:
+    assumed_reponame = _repo_name(repo_url).tolower()
+    repo_stripped_versions = [
+        v.lstrip(assumed_reponame).lstrip("-") for v in versions
+    ]
+
+  return repo_stripped_versions
 
 
 class IDCounter(ndb.Model):
@@ -379,7 +410,10 @@ class Bug(ndb.Model):
         self.affected_fuzzy.extend(affected_package.versions)
       else:
         self.affected_fuzzy.extend(
-            bug.normalize_tags(affected_package.versions))
+            bug.normalize_tags(
+                _maybe_strip_repo_prefixes(
+                    affected_package.versions,
+                    [range.repo_url for range in affected_package.ranges])))
 
       self.has_affected |= bool(affected_package.versions)
 

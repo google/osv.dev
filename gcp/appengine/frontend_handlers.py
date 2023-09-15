@@ -30,6 +30,9 @@ from flask import send_from_directory
 from werkzeug.utils import safe_join
 from google.cloud import ndb
 
+from distutils.version import LooseVersion
+from packaging import version
+
 import markdown2
 from urllib import parse
 
@@ -504,7 +507,7 @@ def group_versions(versions):
   """Group versions by prefix."""
   groups = {}
 
-  for version in sorted(versions):
+  for version in sort_version(versions):
     if '.' not in version:
       groups.setdefault('Other', []).append(version)
       continue
@@ -513,6 +516,16 @@ def group_versions(versions):
     groups.setdefault(label, []).append(version)
 
   return groups
+
+
+def sort_version(versions):
+  """Sorts a list of version numbers in natural order."""
+  try:
+    return sorted(versions, key=LooseVersion)
+  except TypeError:
+    # If the version format does not match the format expected by `LooseVersion`,
+    # the versions are sorted lexicographically.
+    return sorted(versions)
 
 
 @blueprint.app_template_filter('markdown')

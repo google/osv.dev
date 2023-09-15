@@ -30,10 +30,9 @@ from flask import send_from_directory
 from werkzeug.utils import safe_join
 from google.cloud import ndb
 
-from distutils.version import LooseVersion
-from packaging import version
-
 import markdown2
+from packaging.version import Version
+from packaging.version import InvalidVersion
 from urllib import parse
 
 import cache
@@ -521,9 +520,9 @@ def group_versions(versions):
 def sort_version(versions):
   """Sorts a list of version numbers in natural order."""
   try:
-    return sorted(versions, key=LooseVersion)
-  except TypeError:
-    # If the version format does not match the format expected by `LooseVersion`,
+    return sorted(versions, key=Version)
+  except InvalidVersion:
+    # If the version format does not match the format expected by `Version`,
     # the versions are sorted lexicographically.
     return sorted(versions)
 

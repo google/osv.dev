@@ -31,8 +31,6 @@ from werkzeug.utils import safe_join
 from google.cloud import ndb
 
 import markdown2
-from packaging.version import Version
-from packaging.version import InvalidVersion
 from urllib import parse
 
 import cache
@@ -502,11 +500,11 @@ def should_collapse(affected):
 
 
 @blueprint.app_template_filter('group_versions')
-def group_versions(versions):
+def group_versions(versions, ecosystem):
   """Group versions by prefix."""
   groups = {}
 
-  for version in sort_version(versions):
+  for version in sort_versions(versions, ecosystem):
     if '.' not in version:
       groups.setdefault('Other', []).append(version)
       continue
@@ -517,12 +515,13 @@ def group_versions(versions):
   return groups
 
 
-def sort_version(versions):
-  """Sorts a list of version numbers in natural order."""
+def sort_versions(versions: list[str], ecosystem: str) -> list[str]:
+  """Sorts a list of version numbers in the given ecosystem's sorting order."""
   try:
-    return sorted(versions, key=Version)
-  except InvalidVersion:
-    # If the version format does not match the format expected by `Version`,
+    return sorted(
+        versions, key=lambda e: osv.ecosystems.get(ecosystem).sort_key(e))
+  except NotImplementedError:
+    # If the ecosystem doesn't support ordering,
     # the versions are sorted lexicographically.
     return sorted(versions)
 

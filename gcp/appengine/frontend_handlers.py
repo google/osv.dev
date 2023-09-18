@@ -500,11 +500,11 @@ def should_collapse(affected):
 
 
 @blueprint.app_template_filter('group_versions')
-def group_versions(versions):
+def group_versions(versions, ecosystem):
   """Group versions by prefix."""
   groups = {}
 
-  for version in sorted(versions):
+  for version in sort_versions(versions, ecosystem):
     if '.' not in version:
       groups.setdefault('Other', []).append(version)
       continue
@@ -513,6 +513,16 @@ def group_versions(versions):
     groups.setdefault(label, []).append(version)
 
   return groups
+
+
+def sort_versions(versions: list[str], ecosystem: str) -> list[str]:
+  """Sorts a list of version numbers in the given ecosystem's sorting order."""
+  try:
+    return sorted(versions, key=osv.ecosystems.get(ecosystem).sort_key)
+  except (NotImplementedError, AttributeError):
+    # If the ecosystem doesn't support ordering,
+    # the versions are sorted lexicographically.
+    return sorted(versions)
 
 
 @blueprint.app_template_filter('markdown')

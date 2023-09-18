@@ -392,7 +392,7 @@ def osv_query(search_string, page, affected_only, ecosystem):
   if ecosystem:
     query = query.filter(osv.Bug.ecosystem == ecosystem)
 
-  query = query.order(-osv.Bug.last_modified)
+  query = query.order(-osv.Bug.timestamp)
 
   if not search_string and not affected_only:
     # If no search string and not affected only, use the cached ecosystem counts

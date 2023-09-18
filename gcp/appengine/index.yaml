@@ -117,6 +117,13 @@ indexes:
 
   - kind: Bug
     properties:
+    - name: public
+    - name: status
+    - name: timestamp
+      direction: desc
+
+  - kind: Bug
+    properties:
     - name: status
     - name: source
     - name: timestamp

@@ -281,6 +281,7 @@ class ImporterTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
                 ranges=[
                     osv.AffectedRange2(
                         type='GIT',
+                        repo_url='https://example.com/some/repo',
                         events=[
                             osv.AffectedEvent(type='introduced', value='0'),
                             osv.AffectedEvent(type='fixed', value='fix'),

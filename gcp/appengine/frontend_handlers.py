@@ -518,9 +518,8 @@ def group_versions(versions, ecosystem):
 def sort_versions(versions: list[str], ecosystem: str) -> list[str]:
   """Sorts a list of version numbers in the given ecosystem's sorting order."""
   try:
-    return sorted(
-        versions, key=lambda e: osv.ecosystems.get(ecosystem).sort_key(e))
-  except NotImplementedError:
+    return sorted(versions, key=osv.ecosystems.get(ecosystem).sort_key)
+  except (NotImplementedError, AttributeError):
     # If the ecosystem doesn't support ordering,
     # the versions are sorted lexicographically.
     return sorted(versions)

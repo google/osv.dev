@@ -107,13 +107,13 @@ class RangeCollector:
 
   def ranges(self):
     """Return a list representing the collected commit ranges."""
-    ranges = []
+    commit_ranges = []
     for grouped_range in self.grouped_ranges.values():
       for commit_range in grouped_range:
-        if commit_range not in ranges:
-          ranges.append(commit_range)
+        if commit_range not in commit_ranges:
+          commit_ranges.append(commit_range)
 
-    return ranges
+    return commit_ranges
 
 
 class RepoAnalyzer:

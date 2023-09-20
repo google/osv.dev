@@ -309,7 +309,7 @@ def filter_unsupported_ecosystems(vulnerability):
       filtered.append(affected)
     else:
       logging.warning('%s contains unsupported ecosystem "%s"',
-                   vulnerability.id, affected.package.ecosystem)
+                      vulnerability.id, affected.package.ecosystem)
   del vulnerability.affected[:]
   vulnerability.affected.extend(filtered)
 

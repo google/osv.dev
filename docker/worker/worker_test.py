@@ -1282,10 +1282,10 @@ class UpdateTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
         'original_sha256': _sha256('BLAH-129.yaml'),
         'deleted': 'false',
     }
-    
+
     with self.assertLogs(level='WARNING'):
       task_runner._source_update(message)
-    
+
     bug = osv.Bug.get_by_id('BLAH-129')
     self.assertEqual(osv.BugStatus.INVALID, bug.status)
 

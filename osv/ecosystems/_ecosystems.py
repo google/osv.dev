@@ -28,42 +28,47 @@ from .rubygems import RubyGems
 from .semver_ecosystem_helper import SemverEcosystem
 
 _ecosystems = {
+    'Bioconductor': Bioconductor(),
+    'CRAN': CRAN(),
+    'GHC': GHC(),
+    'Hackage': Hackage(),
     'Maven': Maven(),
     'NuGet': NuGet(),
     'Packagist': Packagist(),
     'Pub': Pub(),
     'PyPI': PyPI(),
-    'CRAN': CRAN(),
-    'Bioconductor': Bioconductor(),
     'RubyGems': RubyGems(),
     # SemVer-based ecosystems (remember keep synced with SEMVER_ECOSYSTEMS):
+    'Bitnami': SemverEcosystem(),
     'crates.io': SemverEcosystem(),
     'Go': SemverEcosystem(),
     'Hex': SemverEcosystem(),
     'npm': SemverEcosystem(),
+    'SwiftURL': SemverEcosystem(),
     # Ecosystems missing implementations:
     'Android': OrderingUnsupportedEcosystem(),
     'ConanCenter': OrderingUnsupportedEcosystem(),
     'GitHub Actions': OrderingUnsupportedEcosystem(),
     'Linux': OrderingUnsupportedEcosystem(),
     'OSS-Fuzz': OrderingUnsupportedEcosystem(),
-    'Hackage': Hackage(),
-    'GHC': GHC(),
     # Ecosystems which require a release version for enumeration, which is
     # handled separately in get().
     'AlmaLinux': OrderingUnsupportedEcosystem(),
     'Alpine': OrderingUnsupportedEcosystem(),
     'Debian': OrderingUnsupportedEcosystem(),
+    'Photon OS': OrderingUnsupportedEcosystem(),
     'Rocky Linux': OrderingUnsupportedEcosystem(),
 }
 
 # Semver-based ecosystems, should correspond to _ecoystems above.
 # TODO(michaelkedar): Avoid need to keep in sync with above.
 SEMVER_ECOSYSTEMS = {
+    'Bitnami',
     'crates.io',
     'Go',
     'Hex',
     'npm',
+    'SwiftURL',
 }
 
 package_urls = {
@@ -99,6 +104,10 @@ def get(name: str) -> Ecosystem:
     return OrderingUnsupportedEcosystem()
 
   if name.startswith('Rocky Linux:'):
+    # TODO(michaelkedar)
+    return OrderingUnsupportedEcosystem()
+
+  if name.startswith('Photon OS:'):
     # TODO(michaelkedar)
     return OrderingUnsupportedEcosystem()
 

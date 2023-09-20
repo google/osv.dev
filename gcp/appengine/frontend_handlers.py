@@ -288,6 +288,8 @@ def add_source_info(bug, response):
   source_path = osv.source_path(source_repo, bug)
   response['source'] = source_repo.link + source_path
   response['source_link'] = response['source']
+  if source_repo.human_link:
+    response['human_source_link'] = source_repo.human_link + bug.id()
 
 
 def add_related_aliases(bug: osv.Bug, response):

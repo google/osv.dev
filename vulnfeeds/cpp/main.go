@@ -404,7 +404,7 @@ func maybeRemoveFromVPRepoCache(cache VendorProductToRepoMap, vp *VendorProduct,
 		delete(cache, *vp)
 		return
 	}
-	slices.Delete(cacheEntry, i, i)
+	cacheEntry = slices.Delete(cacheEntry, i, i)
 	cache[*vp] = cacheEntry
 }
 

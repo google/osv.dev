@@ -302,11 +302,14 @@ def filter_unsupported_ecosystems(vulnerability):
   """Remove unsupported ecosystems from vulnerability."""
   filtered = []
   for affected in vulnerability.affected:
-    if osv.ecosystems.get(affected.package.ecosystem):
-      filtered.append(affected)
     # CVE-converted OSV records have no package information.
     if not affected.HasField('package'):
       filtered.append(affected)
+    elif osv.ecosystems.get(affected.package.ecosystem):
+      filtered.append(affected)
+    else:
+      logging.warning('%s contains unsupported ecosystem "%s"',
+                   vulnerability.id, affected.package.ecosystem)
   del vulnerability.affected[:]
   vulnerability.affected.extend(filtered)
 

@@ -124,6 +124,14 @@ indexes:
 
   - kind: Bug
     properties:
+    - name: public
+    - name: status
+    - name: ecosystem
+    - name: timestamp
+      direction: desc
+
+  - kind: Bug
+    properties:
     - name: status
     - name: source
     - name: timestamp

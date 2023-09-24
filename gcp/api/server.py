@@ -16,29 +16,34 @@
 import argparse
 import codecs
 import concurrent
-import functools
-import hashlib
-import logging
+from dataclasses import dataclass
 import math
+import hashlib
+import functools
+import logging
 import os
 import time
-from collections import defaultdict
-from dataclasses import dataclass
 from typing import Callable, List
 
-import google.cloud.ndb.exceptions as ndb_exceptions
-import grpc
-import osv_service_v1_pb2
-import osv_service_v1_pb2_grpc
-from google.api_core.exceptions import InvalidArgument
+from collections import defaultdict
+
 from google.cloud import ndb
-from grpc_health.v1 import health_pb2, health_pb2_grpc
+from google.api_core.exceptions import InvalidArgument
+import google.cloud.ndb.exceptions as ndb_exceptions
+
+import grpc
+from grpc_health.v1 import health_pb2
+from grpc_health.v1 import health_pb2_grpc
 from grpc_reflection.v1alpha import reflection
 from packageurl import PackageURL
 
 import osv
-from osv import ecosystems, purl_helpers, semver_index
+from osv import ecosystems
+from osv import semver_index
+from osv import purl_helpers
 from osv.logs import setup_gcp_logging
+import osv_service_v1_pb2
+import osv_service_v1_pb2_grpc
 
 _SHUTDOWN_GRACE_DURATION = 5
 

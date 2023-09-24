@@ -5,5 +5,3 @@ __pycache__/
 build/lib
 .vscode
 *.tfstate*
-
-osvdev/

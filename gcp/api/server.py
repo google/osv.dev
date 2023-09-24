@@ -16,34 +16,29 @@
 import argparse
 import codecs
 import concurrent
-from dataclasses import dataclass
-import math
-import hashlib
 import functools
+import hashlib
 import logging
+import math
 import os
 import time
+from collections import defaultdict
+from dataclasses import dataclass
 from typing import Callable, List
 
-from collections import defaultdict
-
-from google.cloud import ndb
-from google.api_core.exceptions import InvalidArgument
 import google.cloud.ndb.exceptions as ndb_exceptions
-
 import grpc
-from grpc_health.v1 import health_pb2
-from grpc_health.v1 import health_pb2_grpc
+import osv_service_v1_pb2
+import osv_service_v1_pb2_grpc
+from google.api_core.exceptions import InvalidArgument
+from google.cloud import ndb
+from grpc_health.v1 import health_pb2, health_pb2_grpc
 from grpc_reflection.v1alpha import reflection
 from packageurl import PackageURL
 
 import osv
-from osv import ecosystems
-from osv import semver_index
-from osv import purl_helpers
+from osv import ecosystems, purl_helpers, semver_index
 from osv.logs import setup_gcp_logging
-import osv_service_v1_pb2
-import osv_service_v1_pb2_grpc
 
 _SHUTDOWN_GRACE_DURATION = 5
 
@@ -461,12 +456,18 @@ def do_query(query, context: QueryContext, include_details=True):
       context.service_context.abort(grpc.StatusCode.INVALID_ARGUMENT,
                                     'Invalid Package URL.')
 
-  if purl and package_name:
+  if purl and package_name:  # Purls already include the package name
     context.service_context.abort(
         grpc.StatusCode.INVALID_ARGUMENT,
         'name specified in a purl query',
     )
+  if purl and ecosystem:  # Purls already include the ecosystem inside
+    context.service_context.abort(
+        grpc.StatusCode.INVALID_ARGUMENT,
+        'Ecosystem specified in a purl query',
+    )
   if purl_version and query.WhichOneof('param') == 'version':
+    # version included both in purl and query
     context.service_context.abort(
         grpc.StatusCode.INVALID_ARGUMENT,
         'version specified in params and purl query',
@@ -816,12 +817,6 @@ def query_by_version(context: QueryContext,
     query = query.filter(osv.Bug.ecosystem == ecosystem)
 
   if purl:
-    if ecosystem:  # Purl's already include the ecosystem inside
-      context.service_context.abort(
-          grpc.StatusCode.INVALID_ARGUMENT,
-          'Ecosystem specified in a purl query',
-      )
-
     purl_ecosystem = purl_helpers.purl_to_ecosystem(purl.type)
     if purl_ecosystem:
       ecosystem = purl_ecosystem

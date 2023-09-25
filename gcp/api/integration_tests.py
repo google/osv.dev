@@ -14,7 +14,6 @@
 """API server integration tests."""
 
 import copy
-import difflib
 import functools
 import json
 import itertools
@@ -27,11 +26,12 @@ import unittest
 import requests
 
 import test_server
+from osv import tests 
 
 _PORT = 8080
 _TIMEOUT = 10  # Timeout for HTTP(S) requests
-_LONG_TESTS = False
-
+_LONG_TESTS = os.getenv('LONG_TESTS')
+_TEST_DATA_DIR = 'fixtures'
 
 def _api():
   if os.getenv('CLOUDBUILD'):
@@ -42,7 +42,8 @@ def _api():
   return f'http://{host}:{_PORT}'
 
 
-class IntegrationTests(unittest.TestCase):
+class IntegrationTests(unittest.TestCase, 
+                       tests.ExpectationTest(_TEST_DATA_DIR)):
   """Server integration tests."""
 
   _VULN_744 = {
@@ -641,8 +642,6 @@ class IntegrationTests(unittest.TestCase):
       combined_product.add(json.dumps(elem[0], sort_keys=True))
 
     self.assertEqual(len(combined_product), 120)
-    with open('fixtures/api_query_response.txt') as h:
-      exp_lines = h.readlines()
 
     actual_lines = []
     for query in sorted(list(combined_product)):
@@ -653,10 +652,7 @@ class IntegrationTests(unittest.TestCase):
       self.assertLess(response.status_code, 500)
       actual_lines.append(str(response.status_code) + ':' + query + '\n')
 
-    if exp_lines != actual_lines:
-      diff = difflib.unified_diff(exp_lines, actual_lines, 'expected', 'actual')
-      print(''.join(diff))
-      self.fail()
+    self.expect_lines_equal('api_query_response', actual_lines)
 
 # Merge two nested dictionaries
 # From: https://stackoverflow.com/questions/7204805/how-to-merge-dictionaries-of-dictionaries

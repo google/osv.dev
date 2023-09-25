@@ -30,6 +30,7 @@ import test_server
 
 _PORT = 8080
 _TIMEOUT = 10  # Timeout for HTTP(S) requests
+_LONG_TESTS = False
 
 
 def _api():
@@ -586,7 +587,8 @@ class IntegrationTests(unittest.TestCase):
 
     self.assertEqual(set(), vulns_first.intersection(vulns_second))
 
-#   @unittest.skip("Takes around 45 seconds running locally, enable when making a big change")
+  @unittest.skipUnless(_LONG_TESTS, "Takes around 45 seconds running locally," +
+                       "enable when making a big change")
   def test_all_possible_queries(self):
     """Test all combinations of valid and invalid queries"""
     semver_package = {'package': {'purl': 'pkg:cargo/crossbeam-utils'}}
@@ -641,7 +643,7 @@ class IntegrationTests(unittest.TestCase):
     self.assertEqual(len(combined_product), 120)
     with open('fixtures/api_query_response.txt') as h:
       exp_lines = h.readlines()
-    
+
     actual_lines = []
     for query in sorted(list(combined_product)):
       response = requests.post(
@@ -652,9 +654,9 @@ class IntegrationTests(unittest.TestCase):
       actual_lines.append(str(response.status_code) + ':' + query + '\n')
 
     if exp_lines != actual_lines:
-        diff = difflib.unified_diff(exp_lines, actual_lines, "expected", "actual")
-        print("".join(diff))
-        self.fail()
+      diff = difflib.unified_diff(exp_lines, actual_lines, 'expected', 'actual')
+      print(''.join(diff))
+      self.fail()
 
 # Merge two nested dictionaries
 # From: https://stackoverflow.com/questions/7204805/how-to-merge-dictionaries-of-dictionaries

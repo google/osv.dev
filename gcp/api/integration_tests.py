@@ -13,7 +13,11 @@
 # limitations under the License.
 """API server integration tests."""
 
+import copy
+import difflib
+import functools
 import json
+import itertools
 import os
 import sys
 import subprocess
@@ -581,6 +585,89 @@ class IntegrationTests(unittest.TestCase):
     vulns_second = set(v['id'] for v in result['vulns'])
 
     self.assertEqual(set(), vulns_first.intersection(vulns_second))
+
+#   @unittest.skip("Takes around 45 seconds running locally, enable when making a big change")
+  def test_all_possible_queries(self):
+    """Test all combinations of valid and invalid queries"""
+    semver_package = {'package': {'purl': 'pkg:cargo/crossbeam-utils'}}
+
+    semver_package_with_version = {
+        'package': {
+            'purl': 'pkg:cargo/crossbeam-utils@0.8.5'
+        }
+    }
+
+    nonsemver_package = {'package': {'purl': 'pkg:pypi/numpy'}}
+
+    nonsemver_package_with_version = {
+        'package': {
+            'purl': 'pkg:pypi/numpy@8.24.0'
+        }
+    }
+
+    pkg_ecosystem = [{'package': {'ecosystem': 'crates.io'}}, {}]
+
+    pkg_name = [{
+        'package': {
+            'name': 'crossbeam-utils'
+        }
+    }, {
+        'package': {
+            'name': 'numpy'
+        }
+    }, {}]
+
+    pkg_version = [{'package': {'version': '0.8.5'}}, {}]
+
+    commit = [{'commit': 'd374094d8c49b6b7d288f307e11217ec5a502391'}, {}]
+
+    purl_fields = [
+        semver_package, semver_package_with_version, nonsemver_package,
+        nonsemver_package_with_version, {}
+    ]
+
+    product = itertools.product(purl_fields, commit, pkg_version, pkg_name,
+                                pkg_ecosystem)
+
+    # itertools.product will produce duplicates, use set over the json to de-dup
+    combined_product = set()
+    for elem in product:
+      # Deep copy elem required since merge merges
+      # in-place to the first argument
+      elem = copy.deepcopy(elem)
+      functools.reduce(merge, elem)
+      combined_product.add(json.dumps(elem[0], sort_keys=True))
+
+    self.assertEqual(len(combined_product), 120)
+    with open('fixtures/api_query_response.txt') as h:
+      exp_lines = h.readlines()
+    
+    actual_lines = []
+    for query in sorted(list(combined_product)):
+      response = requests.post(
+          _api() + '/v1/query', data=query, timeout=_TIMEOUT)
+
+      # No possible queries should cause a server error
+      self.assertLess(response.status_code, 500)
+      actual_lines.append(str(response.status_code) + ':' + query + '\n')
+
+    if exp_lines != actual_lines:
+        diff = difflib.unified_diff(exp_lines, actual_lines, "expected", "actual")
+        print("".join(diff))
+        self.fail()
+
+# Merge two nested dictionaries
+# From: https://stackoverflow.com/questions/7204805/how-to-merge-dictionaries-of-dictionaries
+def merge(a: dict, b: dict, path=[]):
+  for key in b:
+    if key in a:
+      if isinstance(a[key], dict) and isinstance(b[key], dict):
+        merge(a[key], b[key], path + [str(key)])
+      elif a[key] != b[key]:
+        raise Exception('Conflict at ' + '.'.join(path + [str(key)]))
+    else:
+      a[key] = b[key]
+  return a
 
 
 def print_logs(filename):

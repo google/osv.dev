@@ -26,12 +26,13 @@ import unittest
 import requests
 
 import test_server
-from osv import tests 
+from osv import tests
 
 _PORT = 8080
 _TIMEOUT = 10  # Timeout for HTTP(S) requests
 _LONG_TESTS = os.getenv('LONG_TESTS')
 _TEST_DATA_DIR = 'fixtures'
+
 
 def _api():
   if os.getenv('CLOUDBUILD'):
@@ -42,7 +43,7 @@ def _api():
   return f'http://{host}:{_PORT}'
 
 
-class IntegrationTests(unittest.TestCase, 
+class IntegrationTests(unittest.TestCase,
                        tests.ExpectationTest(_TEST_DATA_DIR)):
   """Server integration tests."""
 
@@ -654,14 +655,19 @@ class IntegrationTests(unittest.TestCase,
 
     self.expect_lines_equal('api_query_response', actual_lines)
 
-# Merge two nested dictionaries
-# From: https://stackoverflow.com/questions/7204805/how-to-merge-dictionaries-of-dictionaries
-def merge(a: dict, b: dict, path=[]):
+
+# From: https://stackoverflow.com/questions/7204805/how-to-merge-dictionaries-of-dictionaries  # pylint: disable=line-too-long
+def merge(a: dict, b: dict, path=None):
+  """Merge two nested dictionaries"""
+  if path is None:
+    path = []
+
   for key in b:
     if key in a:
       if isinstance(a[key], dict) and isinstance(b[key], dict):
         merge(a[key], b[key], path + [str(key)])
       elif a[key] != b[key]:
+        # pylint: disable=broad-exception-raised
         raise Exception('Conflict at ' + '.'.join(path + [str(key)]))
     else:
       a[key] = b[key]

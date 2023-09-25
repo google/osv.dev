@@ -61,9 +61,9 @@ def ExpectationTest(test_data_dir):  # pylint: disable=invalid-name
       printing a diff when it is different."""
       expected_lines = self._load_expected(expected_name, actual_lines)
       if expected_lines != actual_lines:
-        diff = difflib.unified_diff(expected_lines, 
-                                    actual_lines, 
-                                    'expected', 
+        diff = difflib.unified_diff(expected_lines,
+                                    actual_lines,
+                                    'expected',
                                     'actual')
         print(''.join(diff))
         self.fail()

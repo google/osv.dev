@@ -677,7 +677,7 @@ def main():
   # Manually clear the tmp_dir folder of any leftover files
   # TODO(michaelkedar): use an ephemeral disk for temp storage.
   if os.path.exists(tmp_dir):
-    os.rmdir(tmp_dir)
+    shutil.rmtree(tmp_dir)
   os.makedirs(tmp_dir, exist_ok=True)
   os.environ['TMPDIR'] = tmp_dir
 

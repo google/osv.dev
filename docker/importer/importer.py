@@ -524,6 +524,12 @@ def main():
   args = parser.parse_args()
 
   tmp_dir = os.path.join(args.work_dir, 'tmp')
+  # Temp files are on the persistent SSD,
+  # and they do not get removed when GKE sends a SIGTERM to stop the pod.
+  # Manually clear the tmp_dir folder of any leftover files
+  # TODO(michaelkedar): use an ephemeral disk for temp storage.
+  if os.path.exists(tmp_dir):
+    os.rmdir(tmp_dir)
   os.makedirs(tmp_dir, exist_ok=True)
   os.environ['TMPDIR'] = tmp_dir
 

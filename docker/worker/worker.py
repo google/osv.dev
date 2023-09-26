@@ -672,7 +672,7 @@ def main():
   oss_fuzz_dir = os.path.join(args.work_dir, 'oss-fuzz')
 
   tmp_dir = os.path.join(args.work_dir, 'tmp')
-  # Temp files are on the persistent SSD,
+  # Temp files are on the persistent local SSD,
   # and they do not get removed when GKE sends a SIGTERM to stop the pod.
   # Manually clear the tmp_dir folder of any leftover files
   # TODO(michaelkedar): use an ephemeral disk for temp storage.

@@ -35,6 +35,7 @@ You must install:
 
 1.  Git
 1.  Python 3.11
+1.  [Docker](https://www.docker.com/)
 1.  [Pylint](https://pypi.org/project/pylint)
 1.  [Yapf](https://github.com/google/yapf)
 1.  [Make](https://www.gnu.org/software/make/)

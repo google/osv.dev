@@ -469,7 +469,7 @@ def do_query(query, context: QueryContext, include_details=True):
   if purl and ecosystem:  # Purls already include the ecosystem inside
     context.service_context.abort(
         grpc.StatusCode.INVALID_ARGUMENT,
-        'Ecosystem specified in a purl query',
+        'ecosystem specified in a purl query',
     )
   if purl_version and query.WhichOneof('param') == 'version':
     # version included both in purl and query

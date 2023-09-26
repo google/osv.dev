@@ -271,6 +271,9 @@ def add_links(bug):
           event['limit_link'] = _commit_to_link(repo_url, event['limit'])
           continue
 
+  if repo_url:
+    bug['repo'] = repo_url
+
 
 def add_source_info(bug, response):
   """Add source information to `response`."""

@@ -42,7 +42,9 @@ def main() -> None:
 
   query = client.query(kind="Bug")
   query.add_filter(filter=PropertyFilter("source", "=", args.source))
-  query.keys_only()
+
+  if not args.verbose:
+    query.keys_only()
 
   print(f"Running query {query.filters} "
         f"on {query.kind} (in {query.project})...")

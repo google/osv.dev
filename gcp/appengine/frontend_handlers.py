@@ -240,7 +240,7 @@ def bug_to_response(bug, detailed=True):
 def add_links(bug):
   """Add VCS links where possible."""
 
-  repo_url = None
+  first_repo_url = None
 
   for entry in bug.get('affected', []):
     for i, affected_range in enumerate(entry.get('ranges', [])):
@@ -251,6 +251,9 @@ def add_links(bug):
       repo_url = affected_range.get('repo')
       if not repo_url:
         continue
+
+      if not first_repo_url:
+        first_repo_url = repo_url
 
       for event in affected_range.get('events', []):
         if event.get('introduced') and event['introduced'] != '0':
@@ -271,8 +274,8 @@ def add_links(bug):
           event['limit_link'] = _commit_to_link(repo_url, event['limit'])
           continue
 
-  if repo_url:
-    bug['repo'] = repo_url
+  if first_repo_url:
+    bug['repo'] = first_repo_url
 
 
 def add_source_info(bug, response):

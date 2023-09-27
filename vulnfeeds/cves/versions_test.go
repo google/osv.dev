@@ -191,6 +191,12 @@ func TestRepo(t *testing.T) {
 			expectedOk:      true,
 		},
 		{
+			description: "Freedesktop GitLab commit URL observed in CVE-2022-46285",
+			inputLink: "https://gitlab.freedesktop.org/xorg/lib/libxpm/-/commit/a3a7c6dcc3b629d7650148",
+			expectedRepoURL: "https://gitlab.freedesktop.org/xorg/lib/libxpm",
+			expectedOk: true,
+		},
+		{
 			description:     "Freedesktop cGit mirror",
 			inputLink:       "https://cgit.freedesktop.org/xorg/lib/libXRes/commit/?id=c05c6d918b0e2011d4bfa370c321482e34630b17",
 			expectedRepoURL: "https://gitlab.freedesktop.org/xorg/lib/libXRes",
@@ -757,6 +763,16 @@ func TestExtractVersionInfo(t *testing.T) {
 			expectedVersionInfo: VersionInfo{
 				AffectedCommits:  []AffectedCommit(nil),
 				AffectedVersions: []AffectedVersion(nil),
+			},
+			expectedNotes: []string{},
+		},
+		{
+			description:        "A CVE with a weird GitLab reference that breaks version enumeration in the worker",
+			inputCVEItem:       loadTestData("CVE-2022-46285"),
+			inputValidVersions: []string{},
+			expectedVersionInfo: VersionInfo{
+				AffectedCommits:  []AffectedCommit{{Repo: "https://gitlab.freedesktop.org/xorg/lib/libxpm", Fixed: "a3a7c6dcc3b629d7650148"}},
+				AffectedVersions: []AffectedVersion{{Fixed: "3.5.15"}},
 			},
 			expectedNotes: []string{},
 		},

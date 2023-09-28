@@ -326,6 +326,7 @@ class TaskRunner:
     self._ssh_key_public_path = ssh_key_public_path
     self._ssh_key_private_path = ssh_key_private_path
     os.makedirs(self._sources_dir, exist_ok=True)
+    logging.info('Created task runner')
 
   def _git_callbacks(self, source_repo):
     """Get git auth callbacks."""

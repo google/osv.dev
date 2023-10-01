@@ -543,12 +543,30 @@ func Repo(u string) (string, error) {
 		}
 	}
 
-	// GitHub and GitLab commit and blob URLs are structured one way, e.g.
-	// https://github.com/MariaDB/server/commit/b1351c15946349f9daa7e5297fb2ac6f3139e4a8
-	// https://github.com/tensorflow/tensorflow/blob/master/tensorflow/core/ops/math_ops.cc
+	// GitLab URLs with hyphens in them may have an arbitrary path to the final repo, e.g.
+	// https://gitlab.com/mayan-edms/mayan-edms/-/commit/9ebe80595afe4fdd1e2c74358d6a9421f4ce130e
+	// https://gitlab.freedesktop.org/xorg/lib/libxpm/-/commit/a3a7c6dcc3b629d7650148
 	// https://gitlab.freedesktop.org/virgl/virglrenderer/-/commit/b05bb61f454eeb8a85164c8a31510aeb9d79129c
 	// https://gitlab.com/qemu-project/qemu/-/commit/4367a20cc4
 	// https://gitlab.com/gitlab-org/cves/-/blob/master/2022/CVE-2022-2501.json
+	if strings.HasPrefix(parsedURL.Hostname(), "gitlab.") && strings.Contains(parsedURL.Path, "/-/") &&
+		(strings.Contains(parsedURL.Path, "commit") ||
+			strings.Contains(parsedURL.Path, "blob") ||
+			strings.Contains(parsedURL.Path, "releases/tag") ||
+			strings.Contains(parsedURL.Path, "releases") ||
+			strings.Contains(parsedURL.Path, "tags") ||
+			strings.Contains(parsedURL.Path, "security/advisories") ||
+			strings.Contains(parsedURL.Path, "issues")) {
+		return fmt.Sprintf("%s://%s%s", parsedURL.Scheme,
+				parsedURL.Hostname(),
+				strings.TrimSuffix(strings.Split(parsedURL.Path, "/-/")[0], "/")),
+			nil
+	}
+
+	// GitHub and GitLab URLs not matching the previous e.g.
+	// https://github.com/MariaDB/server/commit/b1351c15946349f9daa7e5297fb2ac6f3139e4a8
+	// https://github.com/tensorflow/tensorflow/blob/master/tensorflow/core/ops/math_ops.cc
+	// https://gitlab.com/mayan-edms/mayan-edms/commit/9ebe80595afe4fdd1e2c74358d6a9421f4ce130e (this assumes "two-directory" deep repos)
 	//
 	// This also supports GitHub tag URLs, e.g.
 	// https://github.com/JonMagon/KDiskMark/releases/tag/3.1.0
@@ -559,6 +577,7 @@ func Repo(u string) (string, error) {
 	//
 	// This also supports GitHub Security Advisory URLs, e.g.
 	// https://github.com/ballcat-projects/ballcat-codegen/security/advisories/GHSA-fv3m-xhqw-9m79
+
 	if (parsedURL.Hostname() == "github.com" || strings.HasPrefix(parsedURL.Hostname(), "gitlab.")) &&
 		(strings.Contains(parsedURL.Path, "commit") ||
 			strings.Contains(parsedURL.Path, "blob") ||

@@ -466,7 +466,8 @@ def do_query(query, context: QueryContext, include_details=True):
         grpc.StatusCode.INVALID_ARGUMENT,
         'name specified in a purl query',
     )
-  if purl and ecosystem:  # Purls already include the ecosystem inside
+  if purl and getattr(purl, "ecosystem", None) and ecosystem:
+    # Purls already include the ecosystem inside
     context.service_context.abort(
         grpc.StatusCode.INVALID_ARGUMENT,
         'ecosystem specified in a purl query',

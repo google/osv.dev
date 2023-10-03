@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-FROM python:3.12-slim
+FROM python:3.11-slim
 
 # TODO(ochang): Just copy the entire project (needs a clean checkout).
 COPY setup.py Pipfile* README.md /osv/

@@ -617,6 +617,11 @@ dl.vulnerability-details,
     padding-right: 18px;
   }
 
+  dt.withdrawn, dd.withdrawn {
+    color: $osv-red-300;
+    font-weight: bold;
+  }
+
   dd {
     grid-column: 2;
   }

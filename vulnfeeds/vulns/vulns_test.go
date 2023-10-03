@@ -1,6 +1,7 @@
 package vulns
 
 import (
+	"cmp"
 	"encoding/json"
 	"errors"
 	"log"
@@ -8,7 +9,9 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/google/go-cmp/cmp"
+	"golang.org/x/exp/slices"
+
+	gocmp "github.com/google/go-cmp/cmp"
 	"github.com/google/osv/vulnfeeds/utility"
 
 	"github.com/google/osv/vulnfeeds/cves"
@@ -155,9 +158,32 @@ func TestAddPkgInfo(t *testing.T) {
 			},
 		},
 	}
+	testPkgInfoHybrid := PackageInfo{
+		PkgName:   "apackage",
+		Ecosystem: "Debian",
+		PURL:      "pkg:deb/debian/apackage@1.2.3-4",
+		VersionInfo: cves.VersionInfo{
+			AffectedVersions: []cves.AffectedVersion{
+				{
+					Fixed: "1.2.3-4",
+				},
+			},
+			AffectedCommits: []cves.AffectedCommit{
+				{
+					Fixed: "0xdeadbeef",
+					Repo:  "github.com/foo/bar",
+				},
+				{
+					Fixed: "0xdeadbeef",
+					Repo:  "github.com/baz/quux",
+				},
+			},
+		},
+	}
 	vuln.AddPkgInfo(testPkgInfoNameEco)
 	vuln.AddPkgInfo(testPkgInfoPURL)
 	vuln.AddPkgInfo(testPkgInfoCommits)
+	vuln.AddPkgInfo(testPkgInfoHybrid)
 
 	// testPkgInfoNameEco vvvvvvvvvvvvvvv
 	if vuln.Affected[0].Package.Name != testPkgInfoNameEco.PkgName {
@@ -203,20 +229,35 @@ func TestAddPkgInfo(t *testing.T) {
 	if vuln.Affected[2].Package != nil {
 		t.Errorf("AddPkgInfo has not correctly avoided setting a package field for an ecosystem-less vulnerability.")
 	}
+	if !slices.IsSortedFunc(vuln.Affected[3].Ranges, func(a, b AffectedRange) int {
+		if n := cmp.Compare(a.Type, b.Type); n != 0 {
+			return n
+		}
+		return cmp.Compare(a.Repo, b.Repo)
+	}) {
+		t.Errorf("AddPkgInfo has not generated a correctly sorted range.")
+	}
 	// testPkgInfoCommits ^^^^^^^^^^^^^^^
 
-	zeroIntroducedCommitHashCount := 0
 	for _, a := range vuln.Affected {
+		perRepoZeroIntroducedCommitHashCount := make(map[string]int)
 		for _, r := range a.Ranges {
 			for _, e := range r.Events {
 				if r.Type == "GIT" && e.Introduced == "0" {
-					zeroIntroducedCommitHashCount++
+					// zeroIntroducedCommitHashCount++
+					if _, ok := perRepoZeroIntroducedCommitHashCount[r.Repo]; !ok {
+						perRepoZeroIntroducedCommitHashCount[r.Repo] = 1
+					} else {
+						perRepoZeroIntroducedCommitHashCount[r.Repo]++
+					}
 				}
 			}
 		}
-	}
-	if zeroIntroducedCommitHashCount > 1 {
-		t.Errorf("AddPkgInfo has synthesized more than one zero-valued introduced field.")
+		for repo, zeroIntroducedCommitHashCount := range perRepoZeroIntroducedCommitHashCount {
+			if zeroIntroducedCommitHashCount > 1 {
+				t.Errorf("AddPkgInfo has synthesized more than one zero-valued introduced field for the repo %s.", repo)
+			}
+		}
 	}
 }
 
@@ -247,7 +288,7 @@ func TestAddSeverity(t *testing.T) {
 		vuln, _ := FromCVE(tc.inputCVE.CVE.CVEDataMeta.ID, tc.inputCVE)
 
 		got := vuln.Severity
-		if diff := cmp.Diff(got, tc.expectedResult); diff != "" {
+		if diff := gocmp.Diff(got, tc.expectedResult); diff != "" {
 			t.Errorf("test %q: Incorrect result: %s", tc.description, diff)
 		}
 	}

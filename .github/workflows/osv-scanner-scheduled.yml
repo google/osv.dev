@@ -27,4 +27,4 @@ permissions:
 
 jobs:
   scan-scheduled:
-    uses: "google/osv-scanner/.github/workflows/osv-scanner-reusable-scheduled.yml@main"
+    uses: "google/osv-scanner/.github/workflows/osv-scanner-reusable.yml@main"

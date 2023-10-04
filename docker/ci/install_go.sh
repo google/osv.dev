@@ -20,5 +20,5 @@ set -eux
 # Download and install Go
 wget https://storage.googleapis.com/golang/getgo/installer_linux -O $1/installer_linux
 chmod +x $1/installer_linux
-SHELL="bash" $1/installer_linux -version 1.21
+SHELL="bash" $1/installer_linux -version 1.21.1
 rm $1/installer_linux

@@ -617,6 +617,7 @@ class TaskRunner:
           target=self._do_process_task,
           args=(subscriber, subscription, ack_id, message, done_event),
           daemon=True)
+      logging.info('Creating task thread for %s', message)
       thread.start()
 
       done = done_event.wait(timeout=MAX_LEASE_DURATION)

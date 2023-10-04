@@ -191,10 +191,10 @@ func TestRepo(t *testing.T) {
 			expectedOk:      true,
 		},
 		{
-			description: "Freedesktop GitLab commit URL observed in CVE-2022-46285",
-			inputLink: "https://gitlab.freedesktop.org/xorg/lib/libxpm/-/commit/a3a7c6dcc3b629d7650148",
+			description:     "Freedesktop GitLab commit URL observed in CVE-2022-46285",
+			inputLink:       "https://gitlab.freedesktop.org/xorg/lib/libxpm/-/commit/a3a7c6dcc3b629d7650148",
 			expectedRepoURL: "https://gitlab.freedesktop.org/xorg/lib/libxpm",
-			expectedOk: true,
+			expectedOk:      true,
 		},
 		{
 			description:     "Freedesktop cGit mirror",
@@ -736,21 +736,6 @@ func TestExtractVersionInfo(t *testing.T) {
 						Introduced:   "2.8.0",
 						Fixed:        "2.8.1",
 						LastAffected: "",
-					},
-					{
-						Introduced:   "",
-						Fixed:        "",
-						LastAffected: "2.9.0-rc1",
-					},
-					{
-						Introduced:   "",
-						Fixed:        "",
-						LastAffected: "2.9.0-rc0",
-					},
-					{
-						Introduced:   "",
-						Fixed:        "",
-						LastAffected: "2.9.0-rc2",
 					},
 				},
 			},

@@ -4,10 +4,10 @@ verify_ssl = true
 name = "pypi"
 
 [packages]
-google-cloud-ndb = "==2.2.0"
-google-cloud-logging = "==3.6.0"
+google-cloud-ndb = "==2.2.2"
+google-cloud-logging = "==3.7.0"
 google-cloud-pubsub = "==2.18.4"
-grpcio = "==1.58.0"
+grpcio = "==1.59.0"
 osv = {editable = true, path = "../../"}
 packageurl-python = "==0.11.2"
 packaging = "==20.9"

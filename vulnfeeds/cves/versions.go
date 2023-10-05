@@ -685,7 +685,7 @@ func Commit(u string) (string, error) {
 	parsedURL.Path = strings.TrimSuffix(parsedURL.Path, "/")
 	directory, possibleCommitHash := path.Split(parsedURL.Path)
 	if strings.HasSuffix(directory, "commit/") {
-		return possibleCommitHash, nil
+		return strings.TrimSuffix(possibleCommitHash, ".patch"), nil
 	}
 
 	// and Bitbucket.org commit URLs are similiar yet slightly different:

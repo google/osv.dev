@@ -18,7 +18,5 @@
 set -eux
 
 # Download and install Go
-wget https://storage.googleapis.com/golang/getgo/installer_linux -O $1/installer_linux
-chmod +x $1/installer_linux
-SHELL="bash" $1/installer_linux -version 1.21
-rm $1/installer_linux
+# https://pkg.go.dev/golang.org/x/tools/cmd/getgo#section-readme
+curl -LO https://get.golang.org/$(uname)/go_installer && chmod +x go_installer && SHELL="bash" ./go_installer -version 1.21.1 && rm go_installer

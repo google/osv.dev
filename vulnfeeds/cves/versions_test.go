@@ -417,6 +417,12 @@ func TestExtractGitCommit(t *testing.T) {
 			},
 		},
 		{
+			description:     "Undesired GitHub commit URL", // TODO(apollock): be able to parse this a a LastAffected commit
+			inputLink:       "https://github.com/Budibase/budibase/commits/develop?after=93d6939466aec192043d8ac842e754f65fdf2e8a+594\u0026branch=develop\u0026qualified_name=refs%2Fheads%2Fdevelop",
+			inputCommitType: Fixed,
+			expectFailure:   true,
+		},
+		{
 			description:     "Valid GitLab commit URL",
 			inputLink:       "https://gitlab.freedesktop.org/virgl/virglrenderer/-/commit/b05bb61f454eeb8a85164c8a31510aeb9d79129c",
 			inputCommitType: Fixed,

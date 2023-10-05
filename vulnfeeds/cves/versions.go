@@ -681,15 +681,24 @@ func Commit(u string) (string, error) {
 	// https://github.com/MariaDB/server/commit/b1351c15946349f9daa7e5297fb2ac6f3139e4a8
 	// https://gitlab.freedesktop.org/virgl/virglrenderer/-/commit/b05bb61f454eeb8a85164c8a31510aeb9d79129c
 	// https://gitlab.com/qemu-project/qemu/-/commit/4367a20cc4
+
+	parsedURL.Path = strings.TrimSuffix(parsedURL.Path, "/")
+	directory, possibleCommitHash := path.Split(parsedURL.Path)
+	if strings.HasSuffix(directory, "commit/") {
+		return possibleCommitHash, nil
+	}
+
 	// and Bitbucket.org commit URLs are similiar yet slightly different:
 	// https://bitbucket.org/openpyxl/openpyxl/commits/3b4905f428e1
 	//
 	// Some bitbucket.org commit URLs have been observed in the wild with a trailing /, which will
 	// change the behaviour of path.Split(), so normalize the path to be tolerant of this.
-	parsedURL.Path = strings.TrimSuffix(parsedURL.Path, "/")
-	directory, possibleCommitHash := path.Split(parsedURL.Path)
-	if strings.HasSuffix(directory, "commit/") || strings.HasSuffix(directory, "commits/") {
-		return possibleCommitHash, nil
+	if parsedURL.Host == "bitbucket.org" {
+		parsedURL.Path = strings.TrimSuffix(parsedURL.Path, "/")
+		directory, possibleCommitHash := path.Split(parsedURL.Path)
+		if strings.HasSuffix(directory, "commits/") {
+			return possibleCommitHash, nil
+		}
 	}
 
 	// TODO(apollock): add support for resolving a GitHub PR to a commit hash

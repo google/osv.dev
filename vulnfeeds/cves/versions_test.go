@@ -417,12 +417,30 @@ func TestExtractGitCommit(t *testing.T) {
 			},
 		},
 		{
+			description:     "Valid GitHub commit URL with .patch extension",
+			inputLink:       "https://github.com/pimcore/customer-data-framework/commit/e3f333391582d9309115e6b94e875367d0ea7163.patch",
+			inputCommitType: Fixed,
+			expectedAffectedCommit: AffectedCommit{
+				Repo:  "https://github.com/pimcore/customer-data-framework",
+				Fixed: "e3f333391582d9309115e6b94e875367d0ea7163",
+			},
+		},
+		{
 			description:     "Valid GitLab commit URL",
 			inputLink:       "https://gitlab.freedesktop.org/virgl/virglrenderer/-/commit/b05bb61f454eeb8a85164c8a31510aeb9d79129c",
 			inputCommitType: Fixed,
 			expectedAffectedCommit: AffectedCommit{
 				Repo:  "https://gitlab.freedesktop.org/virgl/virglrenderer",
 				Fixed: "b05bb61f454eeb8a85164c8a31510aeb9d79129c",
+			},
+		},
+		{
+			description:     "Valid GitLab commit URL with .patch extension",
+			inputLink:       "https://gitlab.com/muttmua/mutt/-/commit/452ee330e094bfc7c9a68555e5152b1826534555.patch",
+			inputCommitType: Fixed,
+			expectedAffectedCommit: AffectedCommit{
+				Repo:  "https://gitlab.com/muttmua/mutt",
+				Fixed: "452ee330e094bfc7c9a68555e5152b1826534555",
 			},
 		},
 		{

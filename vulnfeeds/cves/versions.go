@@ -689,7 +689,7 @@ func Commit(u string) (string, error) {
 	parsedURL.Path = strings.TrimSuffix(parsedURL.Path, "/")
 	directory, possibleCommitHash := path.Split(parsedURL.Path)
 	if strings.HasSuffix(directory, "commit/") || strings.HasSuffix(directory, "commits/") {
-		return possibleCommitHash, nil
+		return strings.TrimSuffix(possibleCommitHash, ".patch"), nil
 	}
 
 	// TODO(apollock): add support for resolving a GitHub PR to a commit hash

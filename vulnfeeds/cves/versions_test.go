@@ -432,6 +432,12 @@ func TestExtractGitCommit(t *testing.T) {
 			},
 		},
 		{
+			description: "Undesired GitHub PR commit URL",
+			inputLink: "https://github.com/OpenZeppelin/cairo-contracts/pull/542/commits/6d4cb750478fca2fd916f73297632f899aca9299",
+			inputCommitType: Fixed,
+			expectFailure: true,
+		},
+		{
 			description:     "Valid GitLab commit URL",
 			inputLink:       "https://gitlab.freedesktop.org/virgl/virglrenderer/-/commit/b05bb61f454eeb8a85164c8a31510aeb9d79129c",
 			inputCommitType: Fixed,

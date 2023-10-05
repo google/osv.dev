@@ -15,6 +15,7 @@
 package vulns
 
 import (
+	"cmp"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -26,6 +27,7 @@ import (
 	"time"
 
 	"golang.org/x/exp/slices"
+
 	"gopkg.in/yaml.v2"
 
 	"github.com/google/osv/vulnfeeds/cves"
@@ -214,12 +216,12 @@ func (v *Vulnerability) AddPkgInfo(pkgInfo PackageInfo) {
 	}
 
 	if len(pkgInfo.VersionInfo.AffectedCommits) > 0 {
-		gitVersionRangesByRepo := map[string]AffectedRange{}
+		gitCommitRangesByRepo := map[string]AffectedRange{}
 
 		hasAddedZeroIntroduced := make(map[string]bool)
 
 		for _, ac := range pkgInfo.VersionInfo.AffectedCommits {
-			entry, ok := gitVersionRangesByRepo[ac.Repo]
+			entry, ok := gitCommitRangesByRepo[ac.Repo]
 			if !ok {
 				entry = AffectedRange{
 					Type:   "GIT",
@@ -246,11 +248,11 @@ func (v *Vulnerability) AddPkgInfo(pkgInfo PackageInfo) {
 					Limit:        ac.Limit,
 				},
 			)
-			gitVersionRangesByRepo[ac.Repo] = entry
+			gitCommitRangesByRepo[ac.Repo] = entry
 		}
 
-		for repo := range gitVersionRangesByRepo {
-			affected.Ranges = append(affected.Ranges, gitVersionRangesByRepo[repo])
+		for repo := range gitCommitRangesByRepo {
+			affected.Ranges = append(affected.Ranges, gitCommitRangesByRepo[repo])
 		}
 	}
 
@@ -279,8 +281,17 @@ func (v *Vulnerability) AddPkgInfo(pkgInfo PackageInfo) {
 			}}, versionRange.Events...)
 		}
 		affected.Ranges = append(affected.Ranges, versionRange)
-
 	}
+
+	// Sort affected[].ranges (by type) for stability.
+	// https://ossf.github.io/osv-schema/#requirements
+	slices.SortFunc(affected.Ranges, func(a, b AffectedRange) int {
+		if n := cmp.Compare(a.Type, b.Type); n != 0 {
+			return n
+		}
+		// Sort by repo within the same (GIT) typed range.
+		return cmp.Compare(a.Repo, b.Repo)
+	})
 
 	v.Affected = append(v.Affected, affected)
 }

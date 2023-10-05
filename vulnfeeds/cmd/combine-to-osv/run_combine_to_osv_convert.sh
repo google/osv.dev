@@ -39,5 +39,5 @@ echo "Override"
 gcloud --no-user-output-enabled storage rsync "gs://${INPUT_BUCKET}/osv-output-overrides/" $OSV_OUTPUT
 
 echo "Begin syncing output to GCS bucket ${OUTPUT_BUCKET}"
-gcloud --no-user-output-enabled storage rsync "$OSV_OUTPUT" "gs://${OUTPUT_BUCKET}/osv-output/" -c --delete-unmatched-destination-objects -q
+gcloud --no-user-output-enabled storage rsync "$OSV_OUTPUT" "gs://${OUTPUT_BUCKET}/osv-output/" --checksums-only -c --delete-unmatched-destination-objects -q
 echo "Successfully synced to GCS bucket"

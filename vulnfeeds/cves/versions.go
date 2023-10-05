@@ -930,6 +930,18 @@ func ExtractVersionInfo(cve CVEItem, validVersions []string) (v VersionInfo, not
 			notes = append(notes, "  - "+version)
 		}
 	}
+
+	// Remove any lastaffected versions in favour of fixed versions.
+	if v.HasFixedVersions() {
+		affectedVersionsWithoutLastAffected := []AffectedVersion{}
+		for _, av := range v.AffectedVersions {
+			if av.LastAffected != "" {
+				continue
+			}
+			affectedVersionsWithoutLastAffected = append(affectedVersionsWithoutLastAffected, av)
+		}
+		v.AffectedVersions = affectedVersionsWithoutLastAffected
+	}
 	return v, notes
 }
 

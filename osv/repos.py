@@ -101,7 +101,8 @@ def clone(git_url, checkout_dir, git_callbacks=None):
   env = _set_git_callback_env(git_callbacks)
 
   subprocess.run(
-      ['git', 'clone', _git_mirror(git_url), checkout_dir],
+      ['git', 'clone', '--filter=tree:0',
+       _git_mirror(git_url), checkout_dir],
       env=env,
       capture_output=True,
       check=True)

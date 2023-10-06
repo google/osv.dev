@@ -63,6 +63,7 @@ DSA_OR_DLA_WITH_NO_EXT = re.compile(r'd[sl]a-\d+')
 
 NOT_AFFECTED_VERSION = '<not-affected>'
 UNFIXED_VERSION = '<unfixed>'
+END_OF_LIFE_VERSION = '<end-of-life>'
 
 # Prefix used to identify a new date line
 GIT_DATE_PREFIX = '-----'
@@ -104,7 +105,7 @@ class AffectedInfo:
         }],
     }
 
-    if self.fixed != UNFIXED_VERSION:
+    if self.fixed not in [UNFIXED_VERSION, END_OF_LIFE_VERSION]:
       result['ranges'][0]['events'].append({'fixed': self.fixed})
 
     return result

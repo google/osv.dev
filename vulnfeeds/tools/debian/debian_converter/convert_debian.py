@@ -62,6 +62,8 @@ WML_REPORT_DATE_PATTERN = re.compile(
 DSA_OR_DLA_WITH_NO_EXT = re.compile(r'd[sl]a-\d+')
 
 NOT_AFFECTED_VERSION = '<not-affected>'
+UNFIXED_VERSION = '<unfixed>'
+END_OF_LIFE_VERSION = '<end-of-life>'
 
 # Prefix used to identify a new date line
 GIT_DATE_PREFIX = '-----'
@@ -90,7 +92,8 @@ class AffectedInfo:
     self.debian_release_version = version
 
   def to_dict(self):
-    return {
+    """Convert to dict for output"""
+    result = {
         'package': {
             'ecosystem': 'Debian:' + self.debian_release_version,
             'name': self.package
@@ -99,11 +102,14 @@ class AffectedInfo:
             'type': 'ECOSYSTEM',
             'events': [{
                 'introduced': '0'
-            }, {
-                'fixed': self.fixed
             }]
         }],
     }
+
+    if self.fixed:
+      result['ranges'][0]['events'].append({'fixed': self.fixed})
+
+    return result
 
   def __repr__(self):
     return json.dumps(self, default=dumper)
@@ -214,7 +220,14 @@ def parse_security_tracker_file(advisories: Advisories,
         release_name = version_match.group(1)
         package_name = version_match.group(2)
         fixed_ver = version_match.group(3)
+
+        # Only create advisory if the version is affected.
         if fixed_ver != NOT_AFFECTED_VERSION:
+          # If fixed version is one of the following special values
+          # fixed version essentially doesn't exist, so blank it
+          if fixed_ver in [UNFIXED_VERSION, END_OF_LIFE_VERSION]:
+            fixed_ver = ''
+
           advisories[current_advisory].affected.append(
               AffectedInfo(codename_to_version[release_name], package_name,
                            fixed_ver))

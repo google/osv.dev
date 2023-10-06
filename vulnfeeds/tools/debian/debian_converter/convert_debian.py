@@ -106,7 +106,7 @@ class AffectedInfo:
         }],
     }
 
-    if self.fixed not in [UNFIXED_VERSION, END_OF_LIFE_VERSION]:
+    if self.fixed:
       result['ranges'][0]['events'].append({'fixed': self.fixed})
 
     return result
@@ -220,7 +220,14 @@ def parse_security_tracker_file(advisories: Advisories,
         release_name = version_match.group(1)
         package_name = version_match.group(2)
         fixed_ver = version_match.group(3)
+
+        # Only create advisory if the version is affected.
         if fixed_ver != NOT_AFFECTED_VERSION:
+          # If fixed version is one of the following special values
+          # fixed version essentially doesn't exist, so blank it
+          if fixed_ver in [UNFIXED_VERSION, END_OF_LIFE_VERSION]:
+            fixed_ver = ''
+
           advisories[current_advisory].affected.append(
               AffectedInfo(codename_to_version[release_name], package_name,
                            fixed_ver))

@@ -92,6 +92,7 @@ class AffectedInfo:
     self.debian_release_version = version
 
   def to_dict(self):
+    """Convert to dict for output"""
     result = {
         'package': {
             'ecosystem': 'Debian:' + self.debian_release_version,

@@ -417,6 +417,12 @@ func TestExtractGitCommit(t *testing.T) {
 			},
 		},
 		{
+			description:     "Undesired GitHub commit URL", // TODO(apollock): be able to parse this a a LastAffected commit
+			inputLink:       "https://github.com/Budibase/budibase/commits/develop?after=93d6939466aec192043d8ac842e754f65fdf2e8a+594\u0026branch=develop\u0026qualified_name=refs%2Fheads%2Fdevelop",
+			inputCommitType: Fixed,
+			expectFailure:   true,
+		},
+		{
 			description:     "Valid GitHub commit URL with .patch extension",
 			inputLink:       "https://github.com/pimcore/customer-data-framework/commit/e3f333391582d9309115e6b94e875367d0ea7163.patch",
 			inputCommitType: Fixed,
@@ -424,6 +430,12 @@ func TestExtractGitCommit(t *testing.T) {
 				Repo:  "https://github.com/pimcore/customer-data-framework",
 				Fixed: "e3f333391582d9309115e6b94e875367d0ea7163",
 			},
+		},
+		{
+			description: "Undesired GitHub PR commit URL",
+			inputLink: "https://github.com/OpenZeppelin/cairo-contracts/pull/542/commits/6d4cb750478fca2fd916f73297632f899aca9299",
+			inputCommitType: Fixed,
+			expectFailure: true,
 		},
 		{
 			description:     "Valid GitLab commit URL",

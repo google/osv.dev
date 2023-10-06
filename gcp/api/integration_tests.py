@@ -486,6 +486,56 @@ class IntegrationTests(unittest.TestCase,
 
     self.assert_results_equal({'vulns': expected_deb}, response.json())
 
+  def test_query_with_redundant_ecosystem(self):
+    """Test purl with redundant ecosystem raises error"""
+    response = requests.post(
+        _api() + '/v1/query',
+        data=json.dumps({
+            "package": {
+                "ecosystem": "PyPI",
+                "purl": "pkg:pypi/mlflow@0.4.0",
+            }
+        }),
+        timeout=_TIMEOUT)
+    self.assert_results_equal(
+        {
+            'code': 3,
+            'message': 'ecosystem specified in a purl query'
+        }, response.json())
+
+  def test_query_with_redundant_version(self):
+    """Test purl with redundant version raises error"""
+    response = requests.post(
+        _api() + '/v1/query',
+        data=json.dumps({
+            "version": "0.4.0",
+            "package": {
+                "purl": "pkg:pypi/mlflow@0.4.0",
+            }
+        }),
+        timeout=_TIMEOUT)
+    self.assert_results_equal(
+        {
+            'code': 3,
+            'message': 'version specified in params and purl query'
+        }, response.json())
+
+  def test_query_with_redundant_package_name(self):
+    """Test purl with redundant name raises error"""
+    response = requests.post(
+        _api() + '/v1/query',
+        data=json.dumps(
+            {"package": {
+                "name": "mlflow",
+                "purl": "pkg:pypi/mlflow@0.4.0",
+            }}),
+        timeout=_TIMEOUT)
+    self.assert_results_equal(
+        {
+            'code': 3,
+            'message': 'name specified in a purl query'
+        }, response.json())
+
   def test_query_batch(self):
     """Test batch query."""
     response = requests.post(

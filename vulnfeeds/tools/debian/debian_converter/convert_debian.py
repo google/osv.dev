@@ -62,6 +62,7 @@ WML_REPORT_DATE_PATTERN = re.compile(
 DSA_OR_DLA_WITH_NO_EXT = re.compile(r'd[sl]a-\d+')
 
 NOT_AFFECTED_VERSION = '<not-affected>'
+UNFIXED_VERSION = '<unfixed>'
 
 # Prefix used to identify a new date line
 GIT_DATE_PREFIX = '-----'
@@ -90,7 +91,7 @@ class AffectedInfo:
     self.debian_release_version = version
 
   def to_dict(self):
-    return {
+    result = {
         'package': {
             'ecosystem': 'Debian:' + self.debian_release_version,
             'name': self.package
@@ -99,11 +100,14 @@ class AffectedInfo:
             'type': 'ECOSYSTEM',
             'events': [{
                 'introduced': '0'
-            }, {
-                'fixed': self.fixed
             }]
         }],
     }
+
+    if self.fixed != UNFIXED_VERSION:
+      result['ranges'][0]['events'].append({'fixed': self.fixed})
+
+    return result
 
   def __repr__(self):
     return json.dumps(self, default=dumper)

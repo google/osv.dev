@@ -87,6 +87,8 @@ var VendorProductDenyList = []VendorProduct{
 	{"netapp", "ontap_select_deploy_administration_utility"},
 	// Causes misattribution for Python, e.g. CVE-2022-26488
 	{"netapp", "active_iq_unified_manager"},
+	// Causes misattribution for OpenSSH, e.g. CVE-2021-28375
+	{"netapp", "cloud_backup"},
 }
 
 // Looks at what the repo to determine if it contains code using an in-scope language

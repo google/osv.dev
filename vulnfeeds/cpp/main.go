@@ -619,9 +619,11 @@ func main() {
 			Logger.Warnf("[%s]: Failed to generate an OSV record: %+v", CVEID, err)
 			if errors.Is(err, ErrNoRanges) {
 				Metrics.Outcomes[CVEID] = NoRanges
+				continue
 			}
 			if errors.Is(err, ErrUnresolvedFix) {
-				Metrics.Outcomes[CVEID] = NoRanges
+				Metrics.Outcomes[CVEID] = FixUnresolvable
+				continue
 			}
 			Metrics.Outcomes[CVEID] = ConversionUnknown
 			continue

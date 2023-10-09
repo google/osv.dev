@@ -84,11 +84,13 @@ var RefTagDenyList = []string{
 // cross-contamination of repo derivation between CVEs.
 var VendorProductDenyList = []VendorProduct{
 	// Causes a chain reaction of incorrect associations from CVE-2022-2068
-	{"netapp", "ontap_select_deploy_administration_utility"},
+	// {"netapp", "ontap_select_deploy_administration_utility"},
 	// Causes misattribution for Python, e.g. CVE-2022-26488
-	{"netapp", "active_iq_unified_manager"},
+	// {"netapp", "active_iq_unified_manager"},
 	// Causes misattribution for OpenSSH, e.g. CVE-2021-28375
-	{"netapp", "cloud_backup"},
+	// {"netapp", "cloud_backup"},
+	// Three strikes and the entire netapp vendor is out...
+	{"netapp", ""},
 }
 
 // Looks at what the repo to determine if it contains code using an in-scope language
@@ -532,6 +534,9 @@ func main() {
 				}
 				// Continue to only focus on application CPEs.
 				if CPE.Part != "a" {
+					continue
+				}
+				if slices.Contains(VendorProductDenyList, VendorProduct{CPE.Vendor, ""}) {
 					continue
 				}
 				if slices.Contains(VendorProductDenyList, VendorProduct{CPE.Vendor, CPE.Product}) {

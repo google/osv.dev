@@ -729,52 +729,6 @@ func Commit(u string) (string, error) {
 	return "", fmt.Errorf("Commit(): unsupported URL: %s", u)
 }
 
-// Some Git hosting has different human-accessible URLs for Git web interfaces to what is cloneable by Git and requires translation.
-// e.g.
-// the cGit-hosted repo:
-//
-//	https://git.kernel.org/cgit/linux/kernel/git/torvalds/linux.git [web browseable]
-//	https://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git [cloneable]
-//
-// the cGit-hosted repo:
-//
-//	https://git.savannah.gnu.org/cgit/emacs.git [web browseable]
-//	https://git.savannah.gnu.org/git/emacs.git [cloneable]
-//
-// the GitWeb-hosted repo:
-//
-//	https://git.gnupg.org/cgi-bin/gitweb.cgi?p=libksba.git [web browseable]
-//	git://git.gnupg.org/libksba.git [cloneable]
-func maybeRemapRepository(repo string, link string) (remappedRepo string) {
-	remappedRepo = repo
-
-	u, err := url.Parse(link)
-	if err != nil {
-		return repo
-	}
-
-	// cGit.
-	// Maybe use a map (hostname -> remapped path) instead of a switch for this?
-	if strings.HasPrefix(u.Path, "/cgit") {
-		switch u.Hostname() {
-		case "git.kernel.org":
-			u.Path = strings.Replace(u.Path, "/cgit", "/pub/scm", 1)
-
-		case "git.savannah.gnu.org":
-			u.Path = strings.Replace(u.Path, "/cgit", "/git", 1)
-		}
-
-		return u.String()
-	}
-
-	// GitWeb behaviour, TBD
-	// if strings.HasPrefix(u.Path, "/cgi-bin/gitweb.cgi") {
-
-	// }
-
-	return remappedRepo
-}
-
 // For URLs referencing commits in supported Git repository hosts, return a cloneable AffectedCommit.
 func extractGitCommit(link string, commitType CommitType) (ac AffectedCommit, err error) {
 	r, err := Repo(link)

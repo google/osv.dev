@@ -554,8 +554,8 @@ def _analyze_git_ranges(repo_analyzer: RepoAnalyzer, checkout_path: str,
       package_repo = repos.ensure_updated_checkout(
           affected_range.repo, os.path.join(checkout_path, repo_name))
     else:
-      package_repo = repos.clone_with_retries(affected_range.repo,
-                                              package_repo_dir)
+      package_repo = repos.clone_with_retries(
+          affected_range.repo, package_repo_dir, treeless=True)
 
     all_introduced = []
     all_fixed = []

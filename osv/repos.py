@@ -95,13 +95,18 @@ def _set_git_callback_env(git_callbacks):
   return env
 
 
-def clone(git_url, checkout_dir, git_callbacks=None):
+def clone(git_url, checkout_dir, git_callbacks=None, treeless=False):
   """Perform a clone."""
   # Use 'git' CLI here as it's much faster than libgit2's clone.
   env = _set_git_callback_env(git_callbacks)
 
+  if treeless:
+    filter='--filter=tree:0'
+  else:
+    filter=''
+
   subprocess.run(
-      ['git', 'clone', '--filter=tree:0',
+      ['git', 'clone', filter,
        _git_mirror(git_url), checkout_dir],
       env=env,
       capture_output=True,

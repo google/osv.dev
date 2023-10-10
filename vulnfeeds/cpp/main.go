@@ -253,7 +253,7 @@ func CVEToOSV(CVE cves.CVEItem, repos []string, cache git.RepoTagsCache, directo
 		Logger.Infof("[%s]: Trying to convert version tags %+v to commits using %v", CVEID, versions.AffectedVersions, repos)
 		versions, err = GitVersionsToCommits(CVEID, versions, repos, cache)
 		if err != nil {
-			return fmt.Errorf("[%s]: Failed to convert version tags to commits: %w", CVEID, ErrNoRanges)
+			return fmt.Errorf("[%s]: Failed to convert version tags to commits: %#v", CVEID)
 		}
 		hasAnyFixedCommits := false
 		for _, repo := range repos {
@@ -272,7 +272,7 @@ func CVEToOSV(CVE cves.CVEItem, repos []string, cache git.RepoTagsCache, directo
 	v.Affected = append(v.Affected, affected)
 
 	if len(v.Affected[0].Ranges) == 0 {
-		return fmt.Errorf("[%s]: No affected ranges detected for %q", CVEID, maybeProductName)
+		return fmt.Errorf("[%s]: No affected ranges detected for %q %w", CVEID, maybeProductName, ErrNoRanges)
 	}
 
 	vulnDir := filepath.Join(directory, maybeVendorName, maybeProductName)
@@ -333,7 +333,7 @@ func CVEToPackageInfo(CVE cves.CVEItem, repos []string, cache git.RepoTagsCache,
 		Logger.Infof("[%s]: Trying to convert version tags %+v to commits using %v", CVEID, versions.AffectedVersions, repos)
 		versions, err = GitVersionsToCommits(CVEID, versions, repos, cache)
 		if err != nil {
-			return fmt.Errorf("[%s]: Failed to convert version tags to commits: %w", CVEID, ErrNoRanges)
+			return fmt.Errorf("[%s]: Failed to convert version tags to commits: %#v", CVEID, err)
 		}
 	}
 
@@ -349,7 +349,7 @@ func CVEToPackageInfo(CVE cves.CVEItem, repos []string, cache git.RepoTagsCache,
 	}
 
 	if len(versions.AffectedCommits) == 0 {
-		return fmt.Errorf("[%s]: No affected commit ranges determined for %q", CVEID, maybeProductName)
+		return fmt.Errorf("[%s]: No affected commit ranges determined for %q %w", CVEID, maybeProductName, ErrNoRanges)
 	}
 
 	versions.AffectedVersions = nil // these have served their purpose and are not required in the resulting output.

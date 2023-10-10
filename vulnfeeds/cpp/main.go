@@ -253,7 +253,7 @@ func CVEToOSV(CVE cves.CVEItem, repos []string, cache git.RepoTagsCache, directo
 		Logger.Infof("[%s]: Trying to convert version tags %+v to commits using %v", CVEID, versions.AffectedVersions, repos)
 		versions, err = GitVersionsToCommits(CVEID, versions, repos, cache)
 		if err != nil {
-			return fmt.Errorf("[%s]: Failed to convert version tags to commits: %#v", CVEID)
+			return fmt.Errorf("[%s]: Failed to convert version tags to commits: %#v", CVEID, err)
 		}
 		hasAnyFixedCommits := false
 		for _, repo := range repos {

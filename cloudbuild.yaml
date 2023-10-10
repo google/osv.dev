@@ -27,17 +27,12 @@ steps:
 - name: 'gcr.io/oss-vdb/ci'
   dir: vulnfeeds
   args: ['bash', '-ex', 'run_tests.sh']
-- name: 'gcr.io/cloud-builders/gcloud'
-  entrypoint: 'bash'
-  args: [ '-c', "gcloud secrets versions access latest --secret=integration-test-account --format='get(payload.data)' | tr '_-' '/+' | base64 -d > /workspace/service_account.json" ]
 - name: 'gcr.io/oss-vdb/ci'
   dir: gcp/api
-  args: ['bash', '-ex', 'run_tests.sh', '/workspace/service_account.json']
+  #TODO: Update test scripts to support not supplying a credential.
+  args: ['bash', '-ex', 'run_tests.sh', '/workspace/dummy.json']
   env:
     - CLOUDBUILD=1
-- name: 'gcr.io/cloud-builders/gcloud'
-  entrypoint: 'bash'
-  args: [ '-c', "rm /workspace/service_account.json" ]
 timeout: 7200s
 options:
   machineType: E2_HIGHCPU_8

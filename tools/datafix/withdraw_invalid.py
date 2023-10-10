@@ -5,6 +5,7 @@ See https://github.com/google/osv.dev/issues/1098 for additional context.
 """
 
 from google.cloud import datastore
+from google.cloud.datastore.query import PropertyFilter
 
 import argparse
 import datetime
@@ -37,7 +38,8 @@ def main() -> None:
 
   client = datastore.Client(project=args.project)
 
-  query = client.query(kind="Bug", filters=(("status", "=", 2),))
+  query = client.query(kind="Bug")
+  query.add_filter(filter=PropertyFilter("status", "=", 2))
   print(f"Running query {query.filters[0]} "
         f"on {query.kind} (in {query.project})...")
   result = list(query.fetch())

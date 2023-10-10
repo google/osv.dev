@@ -13,7 +13,10 @@
 # limitations under the License.
 """API server integration tests."""
 
+import copy
+import functools
 import json
+import itertools
 import os
 import sys
 import subprocess
@@ -23,9 +26,12 @@ import unittest
 import requests
 
 import test_server
+from osv import tests
 
 _PORT = 8080
 _TIMEOUT = 10  # Timeout for HTTP(S) requests
+_LONG_TESTS = os.getenv('LONG_TESTS')
+_TEST_DATA_DIR = 'fixtures'
 
 
 def _api():
@@ -37,12 +43,13 @@ def _api():
   return f'http://{host}:{_PORT}'
 
 
-class IntegrationTests(unittest.TestCase):
+class IntegrationTests(unittest.TestCase,
+                       tests.ExpectationTest(_TEST_DATA_DIR)):
   """Server integration tests."""
 
   _VULN_744 = {
       'published': '2020-07-04T00:00:01.948828Z',
-      'schema_version': '1.4.0',
+      'schema_version': '1.6.0',
       'affected': [{
           'database_specific': {
               'source': 'https://github.com/google/oss-fuzz-vulns/'
@@ -479,6 +486,56 @@ class IntegrationTests(unittest.TestCase):
 
     self.assert_results_equal({'vulns': expected_deb}, response.json())
 
+  def test_query_with_redundant_ecosystem(self):
+    """Test purl with redundant ecosystem raises error"""
+    response = requests.post(
+        _api() + '/v1/query',
+        data=json.dumps({
+            "package": {
+                "ecosystem": "PyPI",
+                "purl": "pkg:pypi/mlflow@0.4.0",
+            }
+        }),
+        timeout=_TIMEOUT)
+    self.assert_results_equal(
+        {
+            'code': 3,
+            'message': 'ecosystem specified in a purl query'
+        }, response.json())
+
+  def test_query_with_redundant_version(self):
+    """Test purl with redundant version raises error"""
+    response = requests.post(
+        _api() + '/v1/query',
+        data=json.dumps({
+            "version": "0.4.0",
+            "package": {
+                "purl": "pkg:pypi/mlflow@0.4.0",
+            }
+        }),
+        timeout=_TIMEOUT)
+    self.assert_results_equal(
+        {
+            'code': 3,
+            'message': 'version specified in params and purl query'
+        }, response.json())
+
+  def test_query_with_redundant_package_name(self):
+    """Test purl with redundant name raises error"""
+    response = requests.post(
+        _api() + '/v1/query',
+        data=json.dumps(
+            {"package": {
+                "name": "mlflow",
+                "purl": "pkg:pypi/mlflow@0.4.0",
+            }}),
+        timeout=_TIMEOUT)
+    self.assert_results_equal(
+        {
+            'code': 3,
+            'message': 'name specified in a purl query'
+        }, response.json())
+
   def test_query_batch(self):
     """Test batch query."""
     response = requests.post(
@@ -582,6 +639,91 @@ class IntegrationTests(unittest.TestCase):
 
     self.assertEqual(set(), vulns_first.intersection(vulns_second))
 
+  @unittest.skipUnless(
+      _LONG_TESTS, "Takes around 45 seconds running locally," +
+      "enable when making a big change")
+  def test_all_possible_queries(self):
+    """Test all combinations of valid and invalid queries"""
+    semver_package = {'package': {'purl': 'pkg:cargo/crossbeam-utils'}}
+
+    semver_package_with_version = {
+        'package': {
+            'purl': 'pkg:cargo/crossbeam-utils@0.8.5'
+        }
+    }
+
+    nonsemver_package = {'package': {'purl': 'pkg:pypi/numpy'}}
+
+    nonsemver_package_with_version = {
+        'package': {
+            'purl': 'pkg:pypi/numpy@8.24.0'
+        }
+    }
+
+    pkg_ecosystem = [{'package': {'ecosystem': 'crates.io'}}, {}]
+
+    pkg_name = [{
+        'package': {
+            'name': 'crossbeam-utils'
+        }
+    }, {
+        'package': {
+            'name': 'numpy'
+        }
+    }, {}]
+
+    pkg_version = [{'package': {'version': '0.8.5'}}, {}]
+
+    commit = [{'commit': 'd374094d8c49b6b7d288f307e11217ec5a502391'}, {}]
+
+    purl_fields = [
+        semver_package, semver_package_with_version, nonsemver_package,
+        nonsemver_package_with_version, {}
+    ]
+
+    product = itertools.product(purl_fields, commit, pkg_version, pkg_name,
+                                pkg_ecosystem)
+
+    # itertools.product will produce duplicates, use set over the json to de-dup
+    combined_product = set()
+    for elem in product:
+      # Deep copy elem required since merge merges
+      # in-place to the first argument
+      elem = copy.deepcopy(elem)
+      functools.reduce(merge, elem)
+      combined_product.add(json.dumps(elem[0], sort_keys=True))
+
+    self.assertEqual(len(combined_product), 120)
+
+    actual_lines = []
+    for query in sorted(list(combined_product)):
+      response = requests.post(
+          _api() + '/v1/query', data=query, timeout=_TIMEOUT)
+
+      # No possible queries should cause a server error
+      self.assertLess(response.status_code, 500)
+      actual_lines.append(str(response.status_code) + ':' + query + '\n')
+
+    self.expect_lines_equal('api_query_response', actual_lines)
+
+
+# From: https://stackoverflow.com/questions/7204805/how-to-merge-dictionaries-of-dictionaries  # pylint: disable=line-too-long
+def merge(a: dict, b: dict, path=None):
+  """Merge two nested dictionaries"""
+  if path is None:
+    path = []
+
+  for key in b:
+    if key in a:
+      if isinstance(a[key], dict) and isinstance(b[key], dict):
+        merge(a[key], b[key], path + [str(key)])
+      elif a[key] != b[key]:
+        # pylint: disable=broad-exception-raised
+        raise Exception('Conflict at ' + '.'.join(path + [str(key)]))
+    else:
+      a[key] = b[key]
+  return a
+
 
 def print_logs(filename):
   """Print logs."""
@@ -595,15 +737,15 @@ def print_logs(filename):
 
 if __name__ == '__main__':
   if len(sys.argv) < 2:
-    print(f'Usage: {sys.argv[0]} path/to/service_account.json')
+    print(f'Usage: {sys.argv[0]} path/to/credential.json')
     sys.exit(1)
 
   subprocess.run(
       ['docker', 'pull', 'gcr.io/endpoints-release/endpoints-runtime:2'],
       check=True)
 
-  service_account_path = sys.argv.pop()
-  server = test_server.start(service_account_path, port=_PORT)
+  credential_path = sys.argv.pop()
+  server = test_server.start(credential_path, port=_PORT)
   time.sleep(30)
 
   try:

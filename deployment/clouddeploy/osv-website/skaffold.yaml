@@ -1,0 +1,18 @@
+apiVersion: skaffold/v3
+kind: Config
+metadata:
+  name: osv-website
+
+profiles:
+- name: staging
+  manifests:
+    rawYaml:
+    - run-staging.yaml
+
+# - name: prod
+#   manifests:
+#     rawYaml:
+#     - run-prod.yaml
+
+deploy:
+  cloudrun: {}

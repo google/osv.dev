@@ -302,11 +302,14 @@ def filter_unsupported_ecosystems(vulnerability):
   """Remove unsupported ecosystems from vulnerability."""
   filtered = []
   for affected in vulnerability.affected:
-    if osv.ecosystems.get(affected.package.ecosystem):
-      filtered.append(affected)
     # CVE-converted OSV records have no package information.
     if not affected.HasField('package'):
       filtered.append(affected)
+    elif osv.ecosystems.get(affected.package.ecosystem):
+      filtered.append(affected)
+    else:
+      logging.warning('%s contains unsupported ecosystem "%s"',
+                      vulnerability.id, affected.package.ecosystem)
   del vulnerability.affected[:]
   vulnerability.affected.extend(filtered)
 
@@ -323,6 +326,7 @@ class TaskRunner:
     self._ssh_key_public_path = ssh_key_public_path
     self._ssh_key_private_path = ssh_key_private_path
     os.makedirs(self._sources_dir, exist_ok=True)
+    logging.info('Created task runner')
 
   def _git_callbacks(self, source_repo):
     """Get git auth callbacks."""
@@ -613,6 +617,7 @@ class TaskRunner:
           target=self._do_process_task,
           args=(subscriber, subscription, ack_id, message, done_event),
           daemon=True)
+      logging.info('Creating task thread for %s', message)
       thread.start()
 
       done = done_event.wait(timeout=MAX_LEASE_DURATION)
@@ -669,6 +674,12 @@ def main():
   oss_fuzz_dir = os.path.join(args.work_dir, 'oss-fuzz')
 
   tmp_dir = os.path.join(args.work_dir, 'tmp')
+  # Temp files are on the persistent local SSD,
+  # and they do not get removed when GKE sends a SIGTERM to stop the pod.
+  # Manually clear the tmp_dir folder of any leftover files
+  # TODO(michaelkedar): use an ephemeral disk for temp storage.
+  if os.path.exists(tmp_dir):
+    shutil.rmtree(tmp_dir)
   os.makedirs(tmp_dir, exist_ok=True)
   os.environ['TMPDIR'] = tmp_dir
 

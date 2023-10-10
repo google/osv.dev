@@ -13,12 +13,17 @@
 # limitations under the License.
 """OSV cron handlers."""
 
+# TODO(michaelkedar): Cloud Run equivalents need to be made for these.
+# This cron logic should probably be removed from the website entirely.
+# https://github.com/google/osv.dev/issues/1249
+
 import datetime
 import logging
 
 from flask import abort
 from flask import Blueprint
 from flask import request
+from flask import send_file, send_from_directory
 from google.cloud.datastore_admin_v1.services.datastore_admin import client \
     as ds_admin
 from google.cloud import ndb
@@ -182,7 +187,22 @@ def backup():
   return 'done'
 
 
+# TODO(michaelkedar): Cloud Run is currently using this its health checks.
+# Should replace this with the conventional /healthz endpoint.
 @blueprint.route('/_ah/warmup')
 def warmup():
   """Warmup handler."""
   return 'OK'
+
+
+@blueprint.route('/public_keys/<path:filename>')
+def public_keys(filename):
+  """Public keys handler."""
+  return send_from_directory(
+      'dist/public_keys', filename, mimetype='text/plain')
+
+
+@blueprint.route('/docs/osv_service_v1.swagger.json')
+def swagger():
+  """Swagger file handler."""
+  return send_file('docs/osv_service_v1.swagger.json')

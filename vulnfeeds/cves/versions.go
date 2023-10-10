@@ -28,7 +28,7 @@ import (
 
 type AffectedCommit struct {
 	Repo         string `json:"repo,omitempty" yaml:"repo,omitempty"`
-	Introduced   string `json:"introduced,omitempty" yaml:"introduced,omit"`
+	Introduced   string `json:"introduced,omitempty" yaml:"introduced,omitempty"`
 	Fixed        string `json:"fixed,omitempty" yaml:"fixed,omitempty"`
 	Limit        string `json:"limit,omitempty" yaml:"limit,omitempty"`
 	LastAffected string `json:"last_affected,omitempty" yaml:"last_affected,omitempty"`
@@ -90,6 +90,15 @@ func (vi *VersionInfo) HasFixedCommits(repo string) bool {
 		}
 	}
 	return false
+}
+
+func (vi *VersionInfo) FixedCommits(repo string) (FixedCommits []string) {
+	for _, av := range vi.AffectedCommits {
+		if av.Repo == repo && av.Fixed != "" {
+			FixedCommits = append(FixedCommits, av.Fixed)
+		}
+	}
+	return FixedCommits
 }
 
 // Synthetic enum of supported commit types.
@@ -489,25 +498,48 @@ func Repo(u string) (string, error) {
 	// cGit URLs are structured another way, e.g.
 	// https://git.dpkg.org/cgit/dpkg/dpkg.git/commit/?id=faa4c92debe45412bfcf8a44f26e827800bb24be
 	// https://git.kernel.org/cgit/linux/kernel/git/torvalds/linux.git/commit/?id=817b8b9c5396d2b2d92311b46719aad5d3339dbe
+	//
+	// They also sometimes have characteristics to map from a web-friendly URL to a clone-friendly repo, on a host-by-host basis.
+	//
+	//	https://git.kernel.org/cgit/linux/kernel/git/torvalds/linux.git [web browseable]
+	//	https://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git [cloneable]
+	//
+	//	https://git.savannah.gnu.org/cgit/emacs.git [web browseable]
+	//	https://git.savannah.gnu.org/git/emacs.git [cloneable]
+	//
 	if strings.HasPrefix(parsedURL.Path, "/cgit") &&
 		strings.HasSuffix(parsedURL.Path, "commit/") &&
 		strings.HasPrefix(parsedURL.RawQuery, "id=") {
 		repo := strings.TrimSuffix(parsedURL.Path, "/commit/")
+
+		switch parsedURL.Hostname() {
+		case "git.kernel.org":
+			repo = strings.Replace(repo, "/cgit", "/pub/scm", 1)
+
+		case "git.savannah.gnu.org":
+		case "git.savannah.nongnu.org":
+			repo = strings.Replace(repo, "/cgit", "/git", 1)
+		}
+
 		return fmt.Sprintf("%s://%s%s", parsedURL.Scheme,
 			parsedURL.Hostname(), repo), nil
 	}
 
-	// GitWeb CGI URLs are structured very differently, e.g.
-	// https://git.gnupg.org/cgi-bin/gitweb.cgi?p=libksba.git;a=commit;h=f61a5ea4e0f6a80fd4b28ef0174bee77793cf070 is another variation seen in the wild
-	if strings.HasPrefix(parsedURL.Path, "/cgi-bin/gitweb.cgi") &&
+	// GitWeb CGI URLs are structured very differently, and require significant translation to get a cloneable URL, e.g.
+	// https://git.gnupg.org/cgi-bin/gitweb.cgi?p=libksba.git;a=commit;h=f61a5ea4e0f6a80fd4b28ef0174bee77793cf070 -> git://git.gnupg.org/libksba.git
+	// https://sourceware.org/git/gitweb.cgi?p=binutils-gdb.git;h=11d171f1910b508a81d21faa087ad1af573407d8 -> git://sourceware.org/git/binutils-gdb.git
+	if strings.HasSuffix(parsedURL.Path, "/gitweb.cgi") &&
 		strings.HasPrefix(parsedURL.RawQuery, "p=") {
 		params := strings.Split(parsedURL.RawQuery, ";")
 		for _, param := range params {
 			if !strings.HasPrefix(param, "p=") {
 				continue
 			}
-			repo := strings.Split(param, "=")[1]
-			return fmt.Sprintf("%s://%s/%s", parsedURL.Scheme, parsedURL.Hostname(), repo), nil
+			repo, err := url.JoinPath(strings.TrimSuffix(strings.TrimSuffix(parsedURL.Path, "/gitweb.cgi"), "cgi-bin"), strings.Split(param, "=")[1])
+			if err != nil {
+				return "", err
+			}
+			return fmt.Sprintf("git://%s%s", parsedURL.Hostname(), repo), nil
 		}
 	}
 
@@ -534,12 +566,30 @@ func Repo(u string) (string, error) {
 		}
 	}
 
-	// GitHub and GitLab commit and blob URLs are structured one way, e.g.
-	// https://github.com/MariaDB/server/commit/b1351c15946349f9daa7e5297fb2ac6f3139e4a8
-	// https://github.com/tensorflow/tensorflow/blob/master/tensorflow/core/ops/math_ops.cc
+	// GitLab URLs with hyphens in them may have an arbitrary path to the final repo, e.g.
+	// https://gitlab.com/mayan-edms/mayan-edms/-/commit/9ebe80595afe4fdd1e2c74358d6a9421f4ce130e
+	// https://gitlab.freedesktop.org/xorg/lib/libxpm/-/commit/a3a7c6dcc3b629d7650148
 	// https://gitlab.freedesktop.org/virgl/virglrenderer/-/commit/b05bb61f454eeb8a85164c8a31510aeb9d79129c
 	// https://gitlab.com/qemu-project/qemu/-/commit/4367a20cc4
 	// https://gitlab.com/gitlab-org/cves/-/blob/master/2022/CVE-2022-2501.json
+	if strings.HasPrefix(parsedURL.Hostname(), "gitlab.") && strings.Contains(parsedURL.Path, "/-/") &&
+		(strings.Contains(parsedURL.Path, "commit") ||
+			strings.Contains(parsedURL.Path, "blob") ||
+			strings.Contains(parsedURL.Path, "releases/tag") ||
+			strings.Contains(parsedURL.Path, "releases") ||
+			strings.Contains(parsedURL.Path, "tags") ||
+			strings.Contains(parsedURL.Path, "security/advisories") ||
+			strings.Contains(parsedURL.Path, "issues")) {
+		return fmt.Sprintf("%s://%s%s", parsedURL.Scheme,
+				parsedURL.Hostname(),
+				strings.TrimSuffix(strings.Split(parsedURL.Path, "/-/")[0], "/")),
+			nil
+	}
+
+	// GitHub and GitLab URLs not matching the previous e.g.
+	// https://github.com/MariaDB/server/commit/b1351c15946349f9daa7e5297fb2ac6f3139e4a8
+	// https://github.com/tensorflow/tensorflow/blob/master/tensorflow/core/ops/math_ops.cc
+	// https://gitlab.com/mayan-edms/mayan-edms/commit/9ebe80595afe4fdd1e2c74358d6a9421f4ce130e (this assumes "two-directory" deep repos)
 	//
 	// This also supports GitHub tag URLs, e.g.
 	// https://github.com/JonMagon/KDiskMark/releases/tag/3.1.0
@@ -550,6 +600,7 @@ func Repo(u string) (string, error) {
 	//
 	// This also supports GitHub Security Advisory URLs, e.g.
 	// https://github.com/ballcat-projects/ballcat-codegen/security/advisories/GHSA-fv3m-xhqw-9m79
+
 	if (parsedURL.Hostname() == "github.com" || strings.HasPrefix(parsedURL.Hostname(), "gitlab.")) &&
 		(strings.Contains(parsedURL.Path, "commit") ||
 			strings.Contains(parsedURL.Path, "blob") ||
@@ -653,15 +704,24 @@ func Commit(u string) (string, error) {
 	// https://github.com/MariaDB/server/commit/b1351c15946349f9daa7e5297fb2ac6f3139e4a8
 	// https://gitlab.freedesktop.org/virgl/virglrenderer/-/commit/b05bb61f454eeb8a85164c8a31510aeb9d79129c
 	// https://gitlab.com/qemu-project/qemu/-/commit/4367a20cc4
+
+	parsedURL.Path = strings.TrimSuffix(parsedURL.Path, "/")
+	directory, possibleCommitHash := path.Split(parsedURL.Path)
+	if strings.HasSuffix(directory, "commit/") {
+		return strings.TrimSuffix(possibleCommitHash, ".patch"), nil
+	}
+
 	// and Bitbucket.org commit URLs are similiar yet slightly different:
 	// https://bitbucket.org/openpyxl/openpyxl/commits/3b4905f428e1
 	//
 	// Some bitbucket.org commit URLs have been observed in the wild with a trailing /, which will
 	// change the behaviour of path.Split(), so normalize the path to be tolerant of this.
-	parsedURL.Path = strings.TrimSuffix(parsedURL.Path, "/")
-	directory, possibleCommitHash := path.Split(parsedURL.Path)
-	if strings.HasSuffix(directory, "commit/") || strings.HasSuffix(directory, "commits/") {
-		return possibleCommitHash, nil
+	if parsedURL.Host == "bitbucket.org" {
+		parsedURL.Path = strings.TrimSuffix(parsedURL.Path, "/")
+		directory, possibleCommitHash := path.Split(parsedURL.Path)
+		if strings.HasSuffix(directory, "commits/") {
+			return possibleCommitHash, nil
+		}
 	}
 
 	// TODO(apollock): add support for resolving a GitHub PR to a commit hash
@@ -670,7 +730,7 @@ func Commit(u string) (string, error) {
 	return "", fmt.Errorf("Commit(): unsupported URL: %s", u)
 }
 
-// For URLs referencing commits in supported Git repository hosts, return an AffectedCommit.
+// For URLs referencing commits in supported Git repository hosts, return a cloneable AffectedCommit.
 func extractGitCommit(link string, commitType CommitType) (ac AffectedCommit, err error) {
 	r, err := Repo(link)
 	if err != nil {
@@ -901,6 +961,18 @@ func ExtractVersionInfo(cve CVEItem, validVersions []string) (v VersionInfo, not
 		for _, version := range validVersions {
 			notes = append(notes, "  - "+version)
 		}
+	}
+
+	// Remove any lastaffected versions in favour of fixed versions.
+	if v.HasFixedVersions() {
+		affectedVersionsWithoutLastAffected := []AffectedVersion{}
+		for _, av := range v.AffectedVersions {
+			if av.LastAffected != "" {
+				continue
+			}
+			affectedVersionsWithoutLastAffected = append(affectedVersionsWithoutLastAffected, av)
+		}
+		v.AffectedVersions = affectedVersionsWithoutLastAffected
 	}
 	return v, notes
 }

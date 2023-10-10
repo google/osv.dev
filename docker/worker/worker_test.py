@@ -1282,7 +1282,10 @@ class UpdateTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
         'original_sha256': _sha256('BLAH-129.yaml'),
         'deleted': 'false',
     }
-    task_runner._source_update(message)
+
+    with self.assertLogs(level='WARNING'):
+      task_runner._source_update(message)
+
     bug = osv.Bug.get_by_id('BLAH-129')
     self.assertEqual(osv.BugStatus.INVALID, bug.status)
 
@@ -1302,7 +1305,9 @@ class UpdateTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
         'original_sha256': _sha256('BLAH-130.yaml'),
         'deleted': 'false',
     }
-    task_runner._source_update(message)
+
+    with self.assertLogs(level='WARNING'):
+      task_runner._source_update(message)
 
     repo = pygit2.Repository(self.remote_source_repo_path)
     commit = repo.head.peel()
@@ -1327,7 +1332,9 @@ class UpdateTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
         'original_sha256': _sha256('BLAH-131.yaml'),
         'deleted': 'false',
     }
-    task_runner._source_update(message)
+
+    with self.assertLogs(level='WARNING'):
+      task_runner._source_update(message)
 
     bug = osv.Bug.get_by_id('BLAH-131')
     self.assertEqual(osv.BugStatus.INVALID, bug.status)
@@ -1361,6 +1368,52 @@ class UpdateTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
     del actual_result.affected_fuzzy
 
     self.expect_dict_equal('update_bucket_cve', actual_result._to_dict())
+
+  def test_last_affected_git(self):
+    """Basic last_affected GIT enumeration."""
+    self.source_repo.ignore_git = False
+    self.source_repo.versions_from_repo = True
+    # detect_cherrypicks should not cause result in cherrypick detection for
+    # `last_affected`, since equivalent `last_affected` across different
+    # branches likely no have relation to the actual vulnerable range.
+    self.source_repo.detect_cherrypicks = True
+    self.source_repo.put()
+
+    self.mock_repo.add_file(
+        'TEST-last-affected-01.yaml',
+        self._load_test_data(
+            os.path.join(TEST_DATA_DIR, 'TEST-last-affected-01.yaml')))
+    self.mock_repo.commit('User', 'user@email')
+    task_runner = worker.TaskRunner(ndb_client, None, self.tmp_dir.name, None,
+                                    None)
+    message = mock.Mock()
+    message.attributes = {
+        'source': 'source',
+        'path': 'TEST-last-affected-01.yaml',
+        'original_sha256': _sha256('TEST-last-affected-01.yaml'),
+        'deleted': 'false',
+    }
+    task_runner._source_update(message)
+
+    repo = pygit2.Repository(self.remote_source_repo_path)
+    commit = repo.head.peel()
+    diff = repo.diff(commit.parents[0], commit)
+
+    self.expect_equal('diff_last_affected_git', diff.patch)
+
+    self.expect_dict_equal(
+        'last_affected_git',
+        ndb.Key(osv.Bug, 'source:TEST-last-affected-01').get()._to_dict())
+
+    affected_commits = list(osv.AffectedCommits.query())
+    self.assertEqual(1, len(affected_commits))
+    affected_commits = affected_commits[0]
+
+    self.assertCountEqual([
+        b'b1c95a196f22d06fcf80df8c6691cd113d8fefff',
+        b'eefe8ec3f1f90d0e684890e810f3f21e8500a4cd',
+        b'8d8242f545e9cec3e6d0d2e3f5bde8be1c659735',
+    ], [codecs.encode(commit, 'hex') for commit in affected_commits.commits])
 
 
 if __name__ == '__main__':

@@ -7,10 +7,12 @@
     <div class="mdc-layout-grid__cell--span-12 hero">
       <h1 class="title">A distributed vulnerability database for Open Source</h1>
       <div class="explainer">
-        <p>An open, precise, and distributed approach to producing and consuming vulnerability information for open source.
+        <p>An open, precise, and distributed approach to producing and consuming vulnerability information for open
+          source.
       </div>
       <div class="cta">
-        <a class="cta-primary link-button" href="{{ url_for('frontend_handlers.list_vulnerabilities') }}">Search Vulnerability Database</a>
+        <a class="cta-primary link-button" href="{{ url_for('frontend_handlers.list_vulnerabilities') }}">Search
+          Vulnerability Database</a>
         <a class="cta-primary link-button" href="#use-the-api">Use the API</a>
         <a class="cta-primary link-button" href="#use-the-cli">CLI Tools</a>
       </div>
@@ -25,25 +27,25 @@
         <div class="ecosystems-line-3"></div>
         <dl class="ecosystem-counts">
           {% if ecosystem_counts %}
-            {% set total = ecosystem_counts.values() | sum %}
-            {% for ecosystem, count in ecosystem_counts.items() %}
-              {% if count > 30 %}
-                <dt class="ecosystem-name">{{ ecosystem }}</dt>
-                <dd class="ecosystem-count-wrapper">
-                  {% set radius = [(count | log) / (total | log) * 100, 30] | max %}
-                  <a href="{{ url_for('frontend_handlers.list_vulnerabilities', ecosystem=ecosystem) }}">
-                    <span class="ecosystem-count" style="
+          {% set total = ecosystem_counts.values() | sum %}
+          {% for ecosystem, count in ecosystem_counts.items() %}
+          {% if count > 30 %}
+          <dt class="ecosystem-name">{{ ecosystem }}</dt>
+          <dd class="ecosystem-count-wrapper">
+            {% set radius = [(count | log) / (total | log) * 100, 30] | max %}
+            <a href="{{ url_for('frontend_handlers.list_vulnerabilities', ecosystem=ecosystem) }}">
+              <span class="ecosystem-count" style="
                       width: {{ radius }}px; height: {{ radius }}px; line-height: {{ radius }}px">
-                      {{ count }}
-                      <span class="tooltip" style="
+                {{ count }}
+                <span class="tooltip" style="
                        top: -{{ (radius / 2) + 5}}px;">
-                        View {{ ecosystem }} vulnerabilities
-                      </span>
-                    </span>
-                  </a>
-                </dd>
-              {% endif %}
-            {% endfor %}
+                  View {{ ecosystem }} vulnerabilities
+                </span>
+              </span>
+            </a>
+          </dd>
+          {% endif %}
+          {% endfor %}
           {% endif %}
         </dl>
       </div>
@@ -63,7 +65,7 @@
       </p>
       <div class="mdc-layout-grid__inner">
         <div class="mdc-layout-grid__cell--span-12">
-          <code-block>{
+          <pre class="big-code-block"><code>{
   "schema_version": "1.3.0",
   "id": "GHSA-c3g4-w6cv-6v7h",
   "modified": "2022-04-01T13:56:42Z",
@@ -102,12 +104,13 @@
       "url": "https://github.com/containers/buildah"
     }
   ]
-}</code-block>
+}</code></pre>
         </div>
       </div>
       <div class="cta">
         <a class="cta-primary link-button" href="https://ossf.github.io/osv-schema/">OSV Schema</a>
-        <a class="cta-primary link-button" href="https://security.googleblog.com/2021/06/announcing-unified-vulnerability-schema.html">Blog post</a>
+        <a class="cta-primary link-button"
+          href="https://security.googleblog.com/2021/06/announcing-unified-vulnerability-schema.html">Blog post</a>
       </div>
     </div>
     <div class="mdc-layout-grid__cell--span-12 text-info data-sources">
@@ -122,7 +125,8 @@
         more.
       </p>
       <div class="cta">
-        <a class="cta-primary link-button" href="https://google.github.io/osv.dev/data/#current-data-sources">Learn more</a>
+        <a class="cta-primary link-button" href="https://google.github.io/osv.dev/data/#current-data-sources"
+          aria-label="Learn more about our data sources">Learn more</a>
       </div>
     </div>
     <div id="use-the-api" class="mdc-layout-grid__cell--span-12 usage-examples">
@@ -202,11 +206,13 @@ osv-scanner -r path/to/your/project
     <div class="mdc-layout-grid__cell--span-12 open-source-banner">
       <h2 class="heading">Open source</h2>
       <p class="description">
-        This project is <a href="https://github.com/google/osv">open source</a>. If you have any ideas or questions, please feel free to
+        This project is <a href="https://github.com/google/osv">open source</a>. If you have any ideas or questions,
+        please feel free to
         reach out by <a href="https://github.com/google/osv/issues/new">creating an issue</a>!
       </p>
       <div class="cta">
-        <a class="cta-primary link-button" href="https://google.github.io/osv.dev/faq/">Learn more</a>
+        <a class="cta-primary link-button" href="https://google.github.io/osv.dev/faq/"
+          aria-label="Learn more on our FAQ">Learn more</a>
       </div>
     </div>
   </div>

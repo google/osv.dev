@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-FROM golang:alpine@sha256:6f592e0689192b7e477313264bb190024d654ef0a08fb1732af4f4b498a2e8ad AS buildenv
+FROM golang:1.21-alpine@sha256:445f34008a77b0b98bf1821bf7ef5e37bb63cc42d22ee7c21cc17041070d134f AS GO_BUILD
 
 WORKDIR /go/src
 
@@ -24,7 +24,7 @@ RUN CGO_ENABLED=0 go build -v -o /usr/local/bin ./cpp ./cmd/download-cves
 
 FROM gcr.io/google.com/cloudsdktool/google-cloud-cli:alpine AS runtime
 
-COPY --from=buildenv /usr/local/bin ./usr/local/bin
-COPY --from=buildenv /go/src/cpp/run_cve_to_osv_generation ./usr/local/bin
+COPY --from=GO_BUILD /usr/local/bin ./usr/local/bin
+COPY --from=GO_BUILD /go/src/cpp/run_cve_to_osv_generation ./usr/local/bin
 
 CMD ["/usr/local/bin/run_cve_to_osv_generation"]

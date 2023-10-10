@@ -15,24 +15,25 @@
 package vulns
 
 import (
-	"context"
+	"cmp"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
-	"net/http"
 	"net/url"
+	"os"
+	"path"
 	"strings"
 	"time"
 
 	"golang.org/x/exp/slices"
+
 	"gopkg.in/yaml.v2"
 
 	"github.com/google/osv/vulnfeeds/cves"
-	"github.com/sethvargo/go-retry"
 )
 
-const CVEListBaseURL = "https://raw.githubusercontent.com/CVEProject/cvelistV5/main/cves"
+const CVEListBasePath = "cves"
 
 var ErrVulnNotACVE = errors.New("not a CVE")
 
@@ -215,10 +216,12 @@ func (v *Vulnerability) AddPkgInfo(pkgInfo PackageInfo) {
 	}
 
 	if len(pkgInfo.VersionInfo.AffectedCommits) > 0 {
-		gitVersionRangesByRepo := map[string]AffectedRange{}
+		gitCommitRangesByRepo := map[string]AffectedRange{}
+
+		hasAddedZeroIntroduced := make(map[string]bool)
 
 		for _, ac := range pkgInfo.VersionInfo.AffectedCommits {
-			entry, ok := gitVersionRangesByRepo[ac.Repo]
+			entry, ok := gitCommitRangesByRepo[ac.Repo]
 			if !ok {
 				entry = AffectedRange{
 					Type:   "GIT",
@@ -227,13 +230,14 @@ func (v *Vulnerability) AddPkgInfo(pkgInfo PackageInfo) {
 				}
 			}
 
-			if !pkgInfo.VersionInfo.HasIntroducedCommits(ac.Repo) {
+			if !pkgInfo.VersionInfo.HasIntroducedCommits(ac.Repo) && !hasAddedZeroIntroduced[ac.Repo] {
 				// There was no explicitly defined introduced commit, so create one at 0
 				entry.Events = append(entry.Events,
 					Event{
 						Introduced: "0",
 					},
 				)
+				hasAddedZeroIntroduced[ac.Repo] = true
 			}
 
 			entry.Events = append(entry.Events,
@@ -244,11 +248,11 @@ func (v *Vulnerability) AddPkgInfo(pkgInfo PackageInfo) {
 					Limit:        ac.Limit,
 				},
 			)
-			gitVersionRangesByRepo[ac.Repo] = entry
+			gitCommitRangesByRepo[ac.Repo] = entry
 		}
 
-		for _, ar := range gitVersionRangesByRepo {
-			affected.Ranges = append(affected.Ranges, ar)
+		for repo := range gitCommitRangesByRepo {
+			affected.Ranges = append(affected.Ranges, gitCommitRangesByRepo[repo])
 		}
 	}
 
@@ -277,8 +281,17 @@ func (v *Vulnerability) AddPkgInfo(pkgInfo PackageInfo) {
 			}}, versionRange.Events...)
 		}
 		affected.Ranges = append(affected.Ranges, versionRange)
-
 	}
+
+	// Sort affected[].ranges (by type) for stability.
+	// https://ossf.github.io/osv-schema/#requirements
+	slices.SortFunc(affected.Ranges, func(a, b AffectedRange) int {
+		if n := cmp.Compare(a.Type, b.Type); n != 0 {
+			return n
+		}
+		// Sort by repo within the same (GIT) typed range.
+		return cmp.Compare(a.Repo, b.Repo)
+	})
 
 	v.Affected = append(v.Affected, affected)
 }
@@ -581,7 +594,8 @@ func FromJSON(r io.Reader) (*Vulnerability, error) {
 // CVEIsDisputed will return if the underlying CVE is disputed.
 // It returns the CVE's CNA container's dateUpdated value if it is disputed.
 // This can be used to set the Withdrawn field.
-func CVEIsDisputed(v *Vulnerability) (modified string, e error) {
+// It consults a local clone of https://github.com/CVEProject/cvelistV5 found in the location specified by cveList
+func CVEIsDisputed(v *Vulnerability, cveList string) (modified string, e error) {
 	// iff the v.ID starts with a CVE...
 	// 	Try to make an HTTP request for the CVE record in the CVE List
 	// 	iff .containers.cna.tags contains "disputed"
@@ -594,60 +608,23 @@ func CVEIsDisputed(v *Vulnerability) (modified string, e error) {
 	// Replace the last three digits of the CVE ID with "xxx".
 	CVEYear, CVEIndexShard := CVEParts[0], CVEParts[1][:len(CVEParts[1])-3]+"xxx"
 
-	// https://raw.githubusercontent.com/CVEProject/cvelistV5/main/cves/2023/23xxx/CVE-2023-23127.json
-	CVEListURL, err := url.JoinPath(CVEListBaseURL, CVEYear, CVEIndexShard, v.ID+".json")
+	// cvelistV5/cves/2023/23xxx/CVE-2023-23127.json
+	CVEListFile := path.Join(cveList, CVEListBasePath, CVEYear, CVEIndexShard, v.ID+".json")
+
+	f, err := os.Open(CVEListFile)
 
 	if err != nil {
 		return "", &VulnsCVEListError{"", err}
 	}
 
-	gitHubClient := http.Client{
-		Timeout: 5 * time.Second,
-	}
+	defer f.Close()
 
-	req, err := http.NewRequest(http.MethodGet, CVEListURL, nil)
+	decoder := json.NewDecoder(f)
 
-	if err != nil {
-		return "", &VulnsCVEListError{CVEListURL, err}
-	}
-
-	req.Header.Set("User-Agent", "osv.dev")
-
-	// Retry on timeout or 5xx
-	ctx := context.Background()
-	backoff := retry.NewFibonacci(1 * time.Second)
 	CVE := &cves.CVE5{}
-	if err := retry.Do(ctx, retry.WithMaxRetries(3, backoff), func(ctx context.Context) error {
-		res, err := gitHubClient.Do(req)
-		if err != nil {
-			if err == http.ErrHandlerTimeout {
-				return retry.RetryableError(fmt.Errorf("timeout: %#v", err))
-			}
-			return err
-		}
-		if res.StatusCode/100 == 5 {
-			return retry.RetryableError(fmt.Errorf("bad response: %v", res.StatusCode))
-		}
-		if res.Body != nil {
-			defer res.Body.Close()
-		}
 
-		decoder := json.NewDecoder(res.Body)
-
-		for {
-			if err := decoder.Decode(&CVE); err == io.EOF {
-				break
-			} else if err != nil {
-				return err
-			}
-		}
-		return nil
-	}); err != nil {
-		return "", &VulnsCVEListError{CVEListURL, err}
-	}
-
-	if err != nil {
-		return "", &VulnsCVEListError{CVEListURL, err}
+	if err := decoder.Decode(&CVE); err != nil {
+		return "", &VulnsCVEListError{"", err}
 	}
 
 	if slices.Contains(CVE.Containers.CNA.Tags, "disputed") {

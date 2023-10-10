@@ -17,6 +17,8 @@ package git
 
 import (
 	"context"
+	"net/url"
+	"path"
 	"sort"
 	"strings"
 	"time"
@@ -95,6 +97,17 @@ func RemoteRepoRefsWithRetry(repoURL string, retries uint64) (refs []*plumbing.R
 	return refs, nil
 }
 
+// RepoName returns name of a repo based off the URL for it.
+func RepoName(repoURL string) (name string, e error) {
+	u, err := url.Parse(repoURL)
+	if err != nil {
+		return "", err
+	}
+	assumedReponame := strings.ToLower(path.Base(u.Path))
+	name = strings.TrimSuffix(assumedReponame, ".git")
+	return name, nil
+}
+
 // RepoTags returns an array of Tag being the (unpeeled, if annotated) tags and associated commits in repoURL.
 // An optional repoTagsCache can be supplied to reduce repeated remote connections to the same repo.
 func RepoTags(repoURL string, repoTagsCache RepoTagsCache) (tags Tags, e error) {
@@ -151,13 +164,21 @@ func NormalizeRepoTags(repoURL string, repoTagsCache RepoTagsCache) (NormalizedT
 		}
 	}
 	// Cache miss.
+	assumedReponame, err := RepoName(repoURL)
+	if err != nil {
+		return nil, err
+	}
 	tags, err := RepoTags(repoURL, repoTagsCache)
 	if err != nil {
 		return nil, err
 	}
 	NormalizedTags = make(map[string]NormalizedTag)
 	for _, t := range tags {
-		normalizedTag, err := cves.NormalizeVersion(t.Tag)
+		// Opportunistically remove parts determined to match the repo name,
+		// to ease particularly difficult to normalize cases like 'openj9-0.38.0'.
+		prenormalizedTag := strings.TrimPrefix(strings.ToLower(t.Tag), assumedReponame)
+		prenormalizedTag = strings.TrimPrefix(prenormalizedTag, "-")
+		normalizedTag, err := cves.NormalizeVersion(prenormalizedTag)
 		if err != nil {
 			// It's conceivable that not all tags are normalizable or potentially versions.
 			continue

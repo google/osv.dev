@@ -460,12 +460,29 @@ def do_query(query, context: QueryContext, include_details=True):
   purl_version = None
   if purl_str:
     try:
-      parsed_purl = PackageURL.from_string(purl_str)
-      purl_version = parsed_purl.version
-      purl = parsed_purl
+      purl = PackageURL.from_string(purl_str)
+      purl_version = purl.version
     except ValueError:
       context.service_context.abort(grpc.StatusCode.INVALID_ARGUMENT,
                                     'Invalid Package URL.')
+
+  if purl and package_name:  # Purls already include the package name
+    context.service_context.abort(
+        grpc.StatusCode.INVALID_ARGUMENT,
+        'name specified in a purl query',
+    )
+  if purl and ecosystem:
+    # Purls already include the ecosystem inside
+    context.service_context.abort(
+        grpc.StatusCode.INVALID_ARGUMENT,
+        'ecosystem specified in a purl query',
+    )
+  if purl_version and query.WhichOneof('param') == 'version':
+    # version included both in purl and query
+    context.service_context.abort(
+        grpc.StatusCode.INVALID_ARGUMENT,
+        'version specified in params and purl query',
+    )
 
   def to_response(b):
     return bug_to_response(b, include_details)
@@ -809,12 +826,6 @@ def query_by_version(context: QueryContext,
     query = query.filter(osv.Bug.ecosystem == ecosystem)
 
   if purl:
-    if ecosystem:  # Purl's already include the ecosystem inside
-      context.service_context.abort(
-          grpc.StatusCode.INVALID_ARGUMENT,
-          'Ecosystem specified in a purl query',
-      )
-
     purl_ecosystem = purl_helpers.purl_to_ecosystem(purl.type)
     if purl_ecosystem:
       ecosystem = purl_ecosystem

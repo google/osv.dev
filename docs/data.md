@@ -16,11 +16,11 @@ nav_order: 3
 {:toc}
 </details>
 
-## Current data sources  
-  
-**This is an ongoing project.**  
+## Current data sources
+
+**This is an ongoing project.**
 We encourage open source ecosystems to adopt the
-[OpenSSF Vulnerability format](https://ossf.github.io/osv-schema/) to enable
+[Open Source Vulnerability format](https://ossf.github.io/osv-schema/) to enable
 open source users to easily aggregate and consume vulnerabilities across all
 ecosystems. See our
 [blog post](https://security.googleblog.com/2021/06/announcing-unified-vulnerability-schema.html)
@@ -40,13 +40,23 @@ The following ecosystems have vulnerabilities encoded in this format:
     ([CC0 1.0](https://github.com/cloudsecurityalliance/gsd-database/blob/main/LICENSE))
 -   [OSS-Fuzz](https://github.com/google/oss-fuzz-vulns)
     ([CC-BY 4.0](https://github.com/google/oss-fuzz-vulns/blob/main/LICENSE))
+-   [Rocky Linux](https://distro-tools.rocky.page/apollo/openapi/#osv)
+    ([BSD](https://rockylinux.org/licensing))
+-   [AlmaLinux](https://github.com/AlmaLinux/osv-database)
+    ([MIT](https://github.com/AlmaLinux/osv-database/blob/master/LICENSE))
+-   [Haskell Security Advisories](https://github.com/haskell/security-advisories)
+    ([CC0 1.0](https://github.com/haskell/security-advisories/blob/main/LICENSE.txt))
+-   [RConsortium Advisory Database](https://github.com/RConsortium/r-advisory-database)
+    ([Apache 2.0](https://github.com/RConsortium/r-advisory-database/blob/main/LICENSE))
+-   [Python Software Foundation Database](https://github.com/psf/advisory-database)
+    ([CC-BY 4.0](https://github.com/psf/advisory-database/blob/main/LICENSE))
 
 ## Converted data
 Additionally, the OSV.dev team maintains a conversion pipeline for:
 
 -   [Debian Security Advisories](https://storage.googleapis.com/debian-osv/index.html),
     using the conversion tools
-    [here](https://github.com/ossf/osv-schema/tree/main/tools/debian).
+    [here](https://github.com/google/osv.dev/tree/master/vulnfeeds/tools/debian).
 -   [Alpine SecDB](https://storage.googleapis.com/cve-osv-conversion/index.html?prefix=osv-output/),
     using the conversion tools
     [here](https://github.com/google/osv.dev/tree/master/vulnfeeds/cmd/alpine).
@@ -61,6 +71,7 @@ Between the data served in OSV and the data converted to OSV the following ecosy
 -   Debian GNU/Linux
 -   GitHub Actions
 -   Go
+-   Haskell
 -   Hex
 -   Linux kernel
 -   Maven
@@ -70,6 +81,8 @@ Between the data served in OSV and the data converted to OSV the following ecosy
 -   Packagist
 -   Pub
 -   PyPI
+-   Python
+-   R (CRAN and Bioconductor)
 -   Rocky Linux
 -   RubyGems
 
@@ -77,7 +90,7 @@ Between the data served in OSV and the data converted to OSV the following ecosy
 
 For convenience, these sources are aggregated and continuously exported to a GCS
 bucket maintained by OSV:
-[`gs://osv-vulnerabilities`](https://osv-vulnerabilities.storage.googleapis.com)
+[`gs://osv-vulnerabilities`](https://storage.googleapis.com/osv-vulnerabilities/index.html)
 
 This bucket contains individual entries of the format
 `gs://osv-vulnerabilities/<ECOSYSTEM>/<ID>.json` as well as a zip containing all
@@ -91,5 +104,5 @@ E.g. for PyPI vulnerabilities:
 gsutil cp gs://osv-vulnerabilities/PyPI/all.zip .
 ```
 
-A list of all current ecosystems is available at 
+A list of all current ecosystems is available at
 [`gs://osv-vulnerabilities/ecosystems.txt`](https://osv-vulnerabilities.storage.googleapis.com/ecosystems.txt)

@@ -18,6 +18,9 @@ import enum
 import re
 import os
 
+from urllib.parse import urlparse
+from typing import List
+
 from google.cloud import ndb
 from google.protobuf import json_format
 from google.protobuf import timestamp_pb2
@@ -30,7 +33,7 @@ from . import semver_index
 from . import sources
 from . import vulnerability_pb2
 
-SCHEMA_VERSION = '1.4.0'
+SCHEMA_VERSION = '1.6.0'
 
 
 def _check_valid_severity(prop, value):
@@ -71,6 +74,34 @@ def _get_purl_indexes(affected_packages):
       if '?' in pkg.package.purl:
         resulting_set.add(pkg.package.purl.split('?')[0])
   return list(resulting_set)
+
+
+def _repo_name(repo_url: str) -> str:
+  # https://github.com/eclipse-openj9/openj9 -> openj9
+  url = urlparse(repo_url)
+  assumed_reponame = os.path.dirname(url.path).lstrip("/")
+  name = assumed_reponame.rstrip(".git")
+  return name
+
+
+def _maybe_strip_repo_prefixes(versions: List[str],
+                               repo_urls: List[str]) -> str:
+  """Try to strip the repo name from tags prior to normalizing.
+
+  There are some particularly regex-unfriendly tag names that prefix the
+  reponame that end in a number, like "openj9-0.8.0", resulting in an
+  incorrectly normalized version.
+  """
+
+  repo_stripped_versions = versions
+
+  for repo_url in repo_urls:
+    assumed_reponame = _repo_name(repo_url).lower()
+    repo_stripped_versions = [
+        v.lstrip(assumed_reponame).lstrip("-") for v in versions
+    ]
+
+  return repo_stripped_versions
 
 
 class IDCounter(ndb.Model):
@@ -379,7 +410,10 @@ class Bug(ndb.Model):
         self.affected_fuzzy.extend(affected_package.versions)
       else:
         self.affected_fuzzy.extend(
-            bug.normalize_tags(affected_package.versions))
+            bug.normalize_tags(
+                _maybe_strip_repo_prefixes(
+                    affected_package.versions,
+                    [range.repo_url for range in affected_package.ranges])))
 
       self.has_affected |= bool(affected_package.versions)
 
@@ -573,6 +607,11 @@ class Bug(ndb.Model):
             ranges=ranges,
             versions=affected_package.versions)
 
+        # Converted CVE records have no package defined.
+        # Avoid exporting an empty package field.
+        if not current.package.ListFields():
+          current.ClearField("package")
+
         if affected_package.database_specific:
           current.database_specific.update(affected_package.database_specific)
 
@@ -697,21 +736,21 @@ class SourceRepositoryType(enum.IntEnum):
 
 class SourceRepository(ndb.Model):
   """Source repository."""
-  # The type of the repository.
+  # The SourceRepositoryType of the repository.
   type = ndb.IntegerProperty()
   # The name of the source.
   name = ndb.StringProperty()
-  # The repo URL for the source.
+  # The repo URL for the source for SourceRepositoryType.GIT.
   repo_url = ndb.StringProperty()
-  # The username to use for SSH auth.
+  # The username to use for SSH auth for SourceRepositoryType.GIT.
   repo_username = ndb.StringProperty()
-  # Optional branch for repo.
+  # Optional branch for repo for SourceRepositoryType.GIT.
   repo_branch = ndb.StringProperty()
-  # Bucket name.
+  # Bucket name for SourceRepositoryType.BUCKET.
   bucket = ndb.StringProperty()
-  # The directory in the repo where Vulnerability data is stored.
+  # Vulnerability data not under this path is ignored by the importer.
   directory_path = ndb.StringProperty()
-  # Last synced hash.
+  # Last synced hash for SourceRepositoryType.GIT.
   last_synced_hash = ndb.StringProperty()
   # Last date recurring updates were requested.
   last_update_date = ndb.DateTimeProperty()
@@ -723,17 +762,20 @@ class SourceRepository(ndb.Model):
   extension = ndb.StringProperty(default='.yaml')
   # Key path within each file to store the vulnerability.
   key_path = ndb.StringProperty()
-  # It true, don't analyze any git ranges.
+  # It true, don't analyze any Git ranges.
   ignore_git = ndb.BooleanProperty(default=False)
   # Whether to detect cherypicks or not (slow for large repos).
   detect_cherrypicks = ndb.BooleanProperty(default=True)
-  # Whether to populate "versions" from git ranges.
+  # Whether to populate "affected[].versions" from Git ranges.
   versions_from_repo = ndb.BooleanProperty(default=True)
-  # Ignore last import time once.
+  # Ignore last import time once (SourceRepositoryType.BUCKET).
   ignore_last_import_time = ndb.BooleanProperty(default=False)
-  # HTTP link prefix.
+  # HTTP link prefix to individual OSV source records.
   link = ndb.StringProperty()
+  # HTTP link prefix to individual vulnerability records for humans.
+  human_link = ndb.StringProperty()
   # DB prefix, if the database allocates its own.
+  # https://ossf.github.io/osv-schema/#id-modified-fields
   db_prefix = ndb.StringProperty()
 
   def ignore_file(self, file_path):

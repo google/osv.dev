@@ -14,7 +14,7 @@
 """Impact analysis."""
 
 import codecs
-import collections
+from dataclasses import dataclass
 import logging
 import os
 import subprocess
@@ -32,13 +32,6 @@ from . import vulnerability_pb2
 
 TAG_PREFIX = 'refs/tags/'
 
-AffectedResult = collections.namedtuple('AffectedResult',
-                                        'tags commits affected_ranges')
-
-AnalyzeResult = collections.namedtuple('AnalyzeResult', 'has_changes commits')
-
-TagsInfo = collections.namedtuple('TagsInfo', 'tags latest_tag')
-
 # Limit for writing small entities.
 _DATASTORE_BATCH_SIZE = 5000
 # Limit for writing large entities that are close to the 1MiB max entity size.
@@ -47,6 +40,31 @@ _DATASTORE_BATCH_SIZE = 5000
 # to leave some more breathing room.
 _DATASTORE_LARGE_BATCH_SIZE = 8
 _DATASTORE_BATCH_SLEEP = 10
+
+
+@dataclass
+class AffectedResult:
+  """The tags, commits and affected ranges of a vulnerability."""
+
+  tags: set[str]
+  commits: set[str]
+  affected_ranges: list[str]
+
+
+@dataclass
+class AnalyzeResult:
+  """Capturing if an analysis has any changes and what those changes are."""
+
+  has_changes: bool
+  commits: set[str]
+
+
+@dataclass
+class TagsInfo:
+  """A repository's tags and the one considered to be the latest version."""
+
+  tags: set[str]
+  latest_tag: str
 
 
 class ImpactError(Exception):
@@ -59,31 +77,43 @@ class RangeCollector:
   def __init__(self):
     self.grouped_ranges = {}
 
-  def add(self, introduced_in, fixed_in):
+  def add(self, introduced_in, fixed_in, affected_in):
     """Add a new commit range."""
+    # last_affected is redundant if fixed is available
+    if fixed_in and affected_in:
+      affected_in = None
+
     if introduced_in in self.grouped_ranges:
-      if fixed_in is None:
+      if fixed_in is None and affected_in is None:
         # New range doesn't add anything new.
         return
 
       # Remove in-place as we need to preserve insertion order.
-      ranges = self.grouped_ranges[introduced_in]
-      ranges.append((introduced_in, fixed_in))
-      for value in ranges.copy():
-        if value[1] is None:
-          ranges.remove(value)
+      existing_ranges = self.grouped_ranges[introduced_in]
+      existing_ranges.append((introduced_in, fixed_in, affected_in))
+      for value in existing_ranges.copy():
+        # No fixed or last_affected commits
+        if value[1] is None and value[2] is None:
+          existing_ranges.remove(value)
+          continue
+
+        # Existing last_affected range which is no longer necessary. Now that we
+        # have a fixed commit, use that instead.
+        if fixed_in and value[1] is None and value[2] is not None:
+          existing_ranges.remove(value)
     else:
-      self.grouped_ranges[introduced_in] = [(introduced_in, fixed_in)]
+      self.grouped_ranges[introduced_in] = [(introduced_in, fixed_in,
+                                             affected_in)]
 
   def ranges(self):
-    """Return a set representing the collected commit ranges."""
-    ranges = []
+    """Return a list representing the collected commit ranges."""
+    commit_ranges = []
     for grouped_range in self.grouped_ranges.values():
       for commit_range in grouped_range:
-        if commit_range not in ranges:
-          ranges.append(commit_range)
+        if commit_range not in commit_ranges:
+          commit_ranges.append(commit_range)
 
-    return ranges
+    return commit_ranges
 
 
 class RepoAnalyzer:
@@ -96,17 +126,23 @@ class RepoAnalyzer:
                    repo: pygit2.Repository,
                    regress_commits: list[str],
                    fix_commits: list[str],
-                   limit_commits: list[str] = None):
+                   limit_commits: list[str] = None,
+                   last_affected_commits: list[str] = None):
     """"Get list of affected tags and commits for a bug given regressed and
     fixed commits."""
     affected_commits, affected_ranges, tags = self._get_affected_range(
-        repo, regress_commits, fix_commits, limit_commits=limit_commits)
+        repo,
+        regress_commits,
+        last_affected_commits,
+        fix_commits,
+        limit_commits=limit_commits)
 
     return AffectedResult(tags, affected_commits, affected_ranges)
 
   def _get_affected_range(self,
                           repo: pygit2.Repository,
                           regress_commits: list[str],
+                          last_affected_commits: list[str],
                           fix_commits: list[str],
                           limit_commits: list[str] = None):
     """Get affected range."""
@@ -122,9 +158,12 @@ class RepoAnalyzer:
 
     branches = []
     detect_cherrypicks = self.detect_cherrypicks and not limit_commits
-    if detect_cherrypicks:
+    if detect_cherrypicks and not last_affected_commits:
       # Check all branches for cherry picked regress/fix commits (sorted for
       # determinism).
+      # If `last_affected` is provided at all, we can't do this, as we
+      # cherry-pick detection does not make sense when it comes to
+      # the `last_affected` commit.
       branches = sorted(repo.branches.remote)
     else:
       if limit_commits:
@@ -134,6 +173,9 @@ class RepoAnalyzer:
             branch_to_limit[branch] = limit_commit
 
           branches.extend(current_branches)
+      elif last_affected_commits:
+        for last_affected_commit in last_affected_commits:
+          branches.extend(_branches_with_commit(repo, last_affected_commit))
       elif fix_commits:
         # TODO(ochang): Remove this check. This behaviour should only be keyed
         # on `limit_commits`.
@@ -174,11 +216,34 @@ class RepoAnalyzer:
         if equivalent_fix_commit:
           break
 
-      range_collector.add(equivalent_regress_commit, equivalent_fix_commit)
+      # Get the latest equivalent commit in the last_affected range (if
+      # present).
+      equivalent_last_affected_commit = None
+      if last_affected_commits:
+        for last_affected_commit in last_affected_commits:
+          logging.info(
+              'Finding equivalent last_affected commit to %s in %s in %s',
+              last_affected_commit, ref, str(repo_url or 'UNKNOWN_REPO_URL'))
+          equivalent_last_affected_commit = self._get_equivalent_commit(
+              repo,
+              ref,
+              last_affected_commit,
+              # last_affected does not work for cherrypick detection.
+              detect_cherrypicks=False)
+          if equivalent_last_affected_commit:
+            break
+
+      range_collector.add(equivalent_regress_commit, equivalent_fix_commit,
+                          equivalent_last_affected_commit)
 
       if equivalent_fix_commit:
         end_commit = equivalent_fix_commit
         include_end = False
+      elif equivalent_last_affected_commit:
+        # Note: It's invalid to have both fix and last_affected. In such cases,
+        # we prefer the fix due to it coming first in the if statements.
+        end_commit = equivalent_last_affected_commit
+        include_end = True
       else:
         # Not fixed in this branch. Everything is still vulnerabile.
         end_commit = str(repo.revparse_single(ref).id)
@@ -459,9 +524,27 @@ def enumerate_versions(package, ecosystem, affected_range):
   return versions
 
 
-def _analyze_git_ranges(repo_analyzer, checkout_path, affected_range,
-                        new_versions, commits, new_introduced, new_fixed):
-  """Analyze git ranges."""
+def _analyze_git_ranges(repo_analyzer: RepoAnalyzer, checkout_path: str,
+                        affected_range: vulnerability_pb2.Range,
+                        new_versions: set, commits: set, new_introduced: set,
+                        new_fixed: set) -> tuple[set, set]:
+  """Analyze Git ranges.
+
+  Args:
+    repo_analyzer: an instance of RepoAnalyzer to use.
+    checkout_path: If defined, used in lieu of cloning the repo.
+    affected_range: the GIT range from the vulnerability.
+    new_versions: a set that will be in-place modified to contain any new
+    versions detected by analysis.
+    commits: a set that will be in-place modified to contain any commits???
+    new_introduced: a set that will be in-place modified to contain additional
+    introduced commits determined by cherry-pick detection.
+    new_fixed: a set that will be in-place modified to contain additional fixed
+    commits determined determined by cherry-pick detection.
+
+  Returns:
+    A tuple of the set of new_versions and commits
+  """
   package_repo = None
 
   with tempfile.TemporaryDirectory() as package_repo_dir:
@@ -476,10 +559,15 @@ def _analyze_git_ranges(repo_analyzer, checkout_path, affected_range,
 
     all_introduced = []
     all_fixed = []
+    all_last_affected = []
     all_limit = []
     for event in affected_range.events:
       if event.introduced and event.introduced != '0':
         all_introduced.append(event.introduced)
+        continue
+
+      if event.last_affected:
+        all_last_affected.append(event.last_affected)
         continue
 
       if event.fixed:
@@ -491,15 +579,15 @@ def _analyze_git_ranges(repo_analyzer, checkout_path, affected_range,
         continue
 
     try:
-      # TODO(ochang): Support last_affected.
       result = repo_analyzer.get_affected(package_repo, all_introduced,
-                                          all_fixed, all_limit)
+                                          all_fixed, all_limit,
+                                          all_last_affected)
     except ImpactError:
       logging.warning('Got error while analyzing git range in %s: %s',
                       affected_range.repo, traceback.format_exc())
       return new_versions, commits
 
-    for introduced, fixed in result.affected_ranges:
+    for introduced, fixed, _ in result.affected_ranges:
       if introduced and introduced not in all_introduced:
         new_introduced.add(introduced)
 
@@ -512,38 +600,60 @@ def _analyze_git_ranges(repo_analyzer, checkout_path, affected_range,
   return new_versions, commits
 
 
-def analyze(vulnerability,
-            analyze_git=True,
-            checkout_path=None,
-            detect_cherrypicks=True,
-            versions_from_repo=True):
-  """Update and analyze a vulnerability based on its input ranges."""
+def analyze(vulnerability: vulnerability_pb2.Vulnerability,
+            analyze_git: bool = True,
+            checkout_path: str = None,
+            detect_cherrypicks: bool = True,
+            versions_from_repo: bool = True) -> AnalyzeResult:
+  """Analyze and possibly update a vulnerability based on its input ranges.
+
+  The behaviour varies by the vulnerability's affected field.
+
+  If there's package information for a supported ecosystem, versions are
+  enumerated.
+  If there's GIT ranges and analyze_git and versions_from_repo are True,
+  versions are enumerated from the associated Git repo.
+
+  Args:
+    vulnerability: A vulnerability_pb2.Vulnerability message.
+    analyze_git: If True and there is a GIT range, the related repo is analyzed
+    further.
+    checkout_path: If defined, used in lieu of cloning the repo.
+    detect_cherrypicks: If True, cherrypick detection is performed during repo
+    analysis.
+    versions_from_repo: add the versions derived from the Git repo to the
+    affected.versions field.
+
+  Returns:
+    An AnalyzeResult dataclass, indicating if anything changed the relevant
+    commits.
+  """
   commits = set()
   has_changes = False
-  for affected_package in vulnerability.affected:
+  for affected in vulnerability.affected:
     versions = []
-    for affected_range in affected_package.ranges:
+    for affected_range in affected.ranges:
       if (affected_range.type == vulnerability_pb2.Range.ECOSYSTEM and
-          affected_package.package.ecosystem in ecosystems.SEMVER_ECOSYSTEMS):
+          affected.package.ecosystem in ecosystems.SEMVER_ECOSYSTEMS):
         # Replace erroneous range type.
         affected_range.type = vulnerability_pb2.Range.SEMVER
 
       if affected_range.type in (vulnerability_pb2.Range.ECOSYSTEM,
                                  vulnerability_pb2.Range.SEMVER):
         # Enumerate ECOSYSTEM and SEMVER ranges.
-        ecosystem_helpers = ecosystems.get(affected_package.package.ecosystem)
+        ecosystem_helpers = ecosystems.get(affected.package.ecosystem)
         if ecosystem_helpers and ecosystem_helpers.supports_ordering:
           try:
             versions.extend(
-                enumerate_versions(affected_package.package.name,
-                                   ecosystem_helpers, affected_range))
+                enumerate_versions(affected.package.name, ecosystem_helpers,
+                                   affected_range))
           except ecosystems.EnumerateError:
             # Allow non-retryable enumeration errors to occur (e.g. if the
             # package no longer exists).
             pass
         else:
           logging.warning('No ecosystem helpers implemented for %s',
-                          affected_package.package.ecosystem)
+                          affected.package.ecosystem)
 
       new_git_versions = set()
       new_introduced = set()
@@ -574,12 +684,12 @@ def analyze(vulnerability,
           affected_range.events.add(fixed=fixed)
 
     for version in sorted(versions):
-      if version not in affected_package.versions:
+      if version not in affected.versions:
         has_changes = True
-        affected_package.versions.append(version)
+        affected.versions.append(version)
 
   if not has_changes:
-    return AnalyzeResult(False, commits)
+    return AnalyzeResult(has_changes=False, commits=commits)
 
   vulnerability.modified.FromDatetime(models.utcnow())
-  return AnalyzeResult(True, commits)
+  return AnalyzeResult(has_changes=True, commits=commits)

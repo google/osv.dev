@@ -83,58 +83,79 @@ def get_ip():
   return ip
 
 
-def start_esp(port, backend_port, service_account_path, log_path):
+def start_esp(port, backend_port, credential_path, log_path):
   """Start ESPv2 frontend."""
   log_handle = open(log_path, 'w')
-  service_account_dir = os.path.dirname(os.path.abspath(service_account_path))
-  service_account_name = os.path.basename(service_account_path)
 
   if os.getenv('CLOUDBUILD'):
     network = '--network=cloudbuild'
     host = get_ip()
     docker_image = 'gcr.io/endpoints-release/endpoints-runtime:2'
+    # Use standard endpoints container and GCP credentials.
+    docker_cmd = [
+        'docker',
+        'run',
+        '--name',
+        'osv-esp',
+        network,
+        '--rm',
+        '-v',
+        f'--publish={port}',
+        f'{docker_image}',
+        '--disable_tracing',
+        '--service=api-test.osv.dev',
+        '--rollout_strategy=managed',
+        f'--listener_port={port}',
+        f'--backend=grpc://{host}:{backend_port}',
+        '--enable_debug',
+        '--transcoding_preserve_proto_field_names',
+        '--envoy_connection_buffer_limit_bytes=10485760',
+    ]
   else:
+    # Use custom container and local ADC credential by mapping files
+    # into container.
+    credential_dir = os.path.dirname(os.path.abspath(credential_path))
+    credential_name = os.path.basename(credential_path)
     network = '--network=host'
     host = 'localhost'
     docker_image = 'osv/esp:latest'
+    docker_cmd = [
+        'docker',
+        'run',
+        '--name',
+        'osv-esp',
+        network,
+        '--rm',
+        '-v',
+        f'{credential_dir}:/esp:ro',
+        f'--publish={port}',
+        f'{docker_image}',
+        '--disable_tracing',
+        '--service=api-test.osv.dev',
+        '--rollout_strategy=managed',
+        f'--listener_port={port}',
+        f'--backend=grpc://{host}:{backend_port}',
+        f'--service_account_key=/esp/{credential_name}',
+        '--non_gcp',
+        '--enable_debug',
+        '--transcoding_preserve_proto_field_names',
+        '--envoy_connection_buffer_limit_bytes=10485760',
+    ]
 
   # Stop existing osv-esp processes that weren't killed properly.
   subprocess.run(['docker', 'stop', 'osv-esp'], check=False)
-  esp_proc = subprocess.Popen([
-      'docker',
-      'run',
-      '--privileged',
-      '--name',
-      'osv-esp',
-      network,
-      '--rm',
-      '-v',
-      f'{service_account_dir}:/esp:ro',
-      f'--publish={port}',
-      f'{docker_image}',
-      '--disable_tracing',
-      '--service=api-test.osv.dev',
-      '--rollout_strategy=managed',
-      f'--listener_port={port}',
-      f'--backend=grpc://{host}:{backend_port}',
-      f'--service_account_key=/esp/{service_account_name}',
-      '--non_gcp',
-      '--enable_debug',
-      '--transcoding_preserve_proto_field_names',
-      '--envoy_connection_buffer_limit_bytes=10485760',
-  ],
-                              stdout=log_handle,
-                              stderr=subprocess.STDOUT)
+  esp_proc = subprocess.Popen(
+      docker_cmd, stdout=log_handle, stderr=subprocess.STDOUT)
   return esp_proc
 
 
-def start(service_account_path, port=_ESP_PORT, backend_port=_BACKEND_PORT):
+def start(credential_path, port=_ESP_PORT, backend_port=_BACKEND_PORT):
   """Start the test server."""
   backend = None
   esp = None
   try:
     backend = start_backend(_BACKEND_PORT, 'backend.log')
-    esp = start_esp(port, backend_port, service_account_path, 'esp.log')
+    esp = start_esp(port, backend_port, credential_path, 'esp.log')
   except Exception:
     if esp:
       esp.kill()
@@ -149,7 +170,7 @@ def start(service_account_path, port=_ESP_PORT, backend_port=_BACKEND_PORT):
 
 if __name__ == '__main__':
   if len(sys.argv) < 2:
-    print(f'Usage: {sys.argv[0]} path/to/service_account.json')
+    print(f'Usage: {sys.argv[0]} path/to/credential.json')
     sys.exit(1)
 
   server = start(sys.argv[1])

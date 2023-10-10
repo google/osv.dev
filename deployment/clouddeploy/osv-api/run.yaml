@@ -17,4 +17,4 @@ spec:
           grpc:
             service: osv.v1.OSV
       timeoutSeconds: 60
-      containerConcurrency: 20
+      containerConcurrency: 10

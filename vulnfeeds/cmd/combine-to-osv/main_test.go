@@ -83,7 +83,7 @@ func TestCombineIntoOSV(t *testing.T) {
 	}
 	allParts := loadParts("../../test_data/parts")
 
-	combinedOSV := combineIntoOSV(cveStuff, allParts)
+	combinedOSV := combineIntoOSV(cveStuff, allParts, "")
 
 	expectedCombined := 2
 	actualCombined := len(combinedOSV)

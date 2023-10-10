@@ -417,11 +417,12 @@ def process_impact_task(source_id, message):
 
   def _sort_key(value):
     # Allow sorting of None values.
-    return (value[0] or '', value[1] or '')
+    return (value[0] or '', value[1] or '', value[2] or '')
 
-  for introduced_in, fixed_in in sorted(result.affected_ranges, key=_sort_key):
+  for introduced_in, fixed_in, last_affected_in in sorted(
+      result.affected_ranges, key=_sort_key):
     if not fixed_in:
-      fixed_in = ''
+      fixed_in = ''  # convert NoneType to str for next comparison
 
     if (introduced_in == existing_bug.regressed and
         fixed_in == existing_bug.fixed):
@@ -431,6 +432,12 @@ def process_impact_task(source_id, message):
     introduced = osv.AffectedEvent(type='introduced', value=introduced_in)
     if introduced not in git_range.events:
       git_range.events.append(introduced)
+
+    if last_affected_in:
+      last_affected = osv.AffectedEvent(
+          type='last_affected', value=last_affected_in)
+      if last_affected not in git_range.events:
+        git_range.events.append(last_affected)
 
     if fixed_in:
       fixed = osv.AffectedEvent(type='fixed', value=fixed_in)

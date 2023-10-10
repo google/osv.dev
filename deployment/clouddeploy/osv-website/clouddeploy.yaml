@@ -1,0 +1,39 @@
+apiVersion: deploy.cloud.google.com/v1
+kind: DeliveryPipeline
+metadata:
+  name: osv-website
+description: OSV.dev website pipeline
+serialPipeline:
+  stages:
+  - targetId: staging-website
+    profiles: [ staging ]
+  # - targetId: production-website
+  #   profiles: [ prod ]
+---
+
+apiVersion: deploy.cloud.google.com/v1
+kind: Target
+metadata:
+  name: staging-website
+description: oss-vdb-test website instance
+run:
+  location: projects/oss-vdb-test/locations/us-west2
+executionConfigs:
+- usages:
+  - RENDER
+  - DEPLOY
+  serviceAccount: deployment@oss-vdb-test.iam.gserviceaccount.com # TODO(michaelkedar): remember to change service account back
+# ---
+
+# apiVersion: deploy.cloud.google.com/v1
+# kind: Target
+# metadata:
+#   name: production-website
+# description: oss-vdb website instance
+# run:
+#   location: projects/oss-vdb/locations/us-west2
+# executionConfigs:
+# - usages:
+#   - RENDER
+#   - DEPLOY
+#   serviceAccount: deployment@oss-vdb.iam.gserviceaccount.com

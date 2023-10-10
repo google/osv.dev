@@ -82,7 +82,7 @@ func VersionToCommit(version string, repo string, commitType cves.CommitType, no
 		// Then try to fuzzy-match.
 		ac, ok = fuzzyVersionToCommit(normalizedVersion, repo, commitType, normalizedTags)
 		if !ok {
-			return ac, fmt.Errorf("Failed to find a commit for version %q normalized as %q", version, normalizedVersion)
+			return ac, fmt.Errorf("failed to find a commit for version %q normalized as %q in %+v", version, normalizedVersion, normalizedTags)
 		}
 		return ac, nil
 	}

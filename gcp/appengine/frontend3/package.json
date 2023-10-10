@@ -10,7 +10,7 @@
   },
   "dependencies": {
     "@github/clipboard-copy-element": "1.2.1",
-    "@github/time-elements": "3.6.0",
+    "@github/relative-time-element": "4.3.0",
     "@hotwired/turbo": "7.3.0",
     "@material/data-table": "13.0.0",
     "@material/layout-grid": "13.0.0",
@@ -19,7 +19,6 @@
     "@material/mwc-icon-button": "0.27.0",
     "@material/mwc-textfield": "0.27.0",
     "@material/theme": "13.0.0",
-    "highlight.js": "11.8.0",
     "lit": "2.8.0",
     "spicy-sections": "git+https://github.com/tabvengers/spicy-sections.git#c3aae99dbf1e627cdf03a35c913d7f6e970de22b"
   },
@@ -33,6 +32,7 @@
     "sass-loader": "12.6.0",
     "style-loader": "3.3.3",
     "webpack": "5.87.0",
+    "webpack-bundle-analyzer": "4.9.1",
     "webpack-cli": "4.10.0",
     "webpack-dev-server": "4.15.1"
   }

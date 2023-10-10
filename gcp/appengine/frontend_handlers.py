@@ -57,7 +57,11 @@ if utils.is_prod():
 
   @blueprint.before_request
   def check_rate_limit():
-    ip_addr = request.headers.get('X-Appengine-User-Ip', 'unknown')
+    # TODO(michaelkedar): Cloud Run/App Engine have different ways to check this
+    # remove the App Engine header check when moving away from App Engine
+    ip_addr = request.headers.get('X-Appengine-User-Ip')
+    if ip_addr is None:
+      ip_addr = request.headers.get('X-Forwarded-For', 'unknown').split(',')[0]
     if not limiter.check_request(ip_addr):
       abort(429)
 
@@ -236,7 +240,7 @@ def bug_to_response(bug, detailed=True):
 def add_links(bug):
   """Add VCS links where possible."""
 
-  repo_url = None
+  first_repo_url = None
 
   for entry in bug.get('affected', []):
     for i, affected_range in enumerate(entry.get('ranges', [])):
@@ -247,6 +251,9 @@ def add_links(bug):
       repo_url = affected_range.get('repo')
       if not repo_url:
         continue
+
+      if not first_repo_url:
+        first_repo_url = repo_url
 
       for event in affected_range.get('events', []):
         if event.get('introduced') and event['introduced'] != '0':
@@ -267,8 +274,8 @@ def add_links(bug):
           event['limit_link'] = _commit_to_link(repo_url, event['limit'])
           continue
 
-  if repo_url:
-    bug['repo'] = repo_url
+  if first_repo_url:
+    bug['repo'] = first_repo_url
 
 
 def add_source_info(bug, response):
@@ -284,6 +291,8 @@ def add_source_info(bug, response):
   source_path = osv.source_path(source_repo, bug)
   response['source'] = source_repo.link + source_path
   response['source_link'] = response['source']
+  if source_repo.human_link:
+    response['human_source_link'] = source_repo.human_link + bug.id()
 
 
 def add_related_aliases(bug: osv.Bug, response):
@@ -388,7 +397,7 @@ def osv_query(search_string, page, affected_only, ecosystem):
   if ecosystem:
     query = query.filter(osv.Bug.ecosystem == ecosystem)
 
-  query = query.order(-osv.Bug.last_modified)
+  query = query.order(-osv.Bug.timestamp)
 
   if not search_string and not affected_only:
     # If no search string and not affected only, use the cached ecosystem counts
@@ -496,11 +505,11 @@ def should_collapse(affected):
 
 
 @blueprint.app_template_filter('group_versions')
-def group_versions(versions):
+def group_versions(versions, ecosystem):
   """Group versions by prefix."""
   groups = {}
 
-  for version in sorted(versions):
+  for version in sort_versions(versions, ecosystem):
     if '.' not in version:
       groups.setdefault('Other', []).append(version)
       continue
@@ -509,6 +518,16 @@ def group_versions(versions):
     groups.setdefault(label, []).append(version)
 
   return groups
+
+
+def sort_versions(versions: list[str], ecosystem: str) -> list[str]:
+  """Sorts a list of version numbers in the given ecosystem's sorting order."""
+  try:
+    return sorted(versions, key=osv.ecosystems.get(ecosystem).sort_key)
+  except (NotImplementedError, AttributeError):
+    # If the ecosystem doesn't support ordering,
+    # the versions are sorted lexicographically.
+    return sorted(versions)
 
 
 @blueprint.app_template_filter('markdown')
@@ -552,3 +571,11 @@ def git_repo(affected):
         if r.get('type', '') == 'GIT'
     ])
   return git_repos
+
+
+@blueprint.app_template_filter('package_in_ecosystem')
+def package_in_ecosystem(package):
+  ecosystem = osv.ecosystems.normalize(package['ecosystem'])
+  if ecosystem in osv.ecosystems.package_urls:
+    return osv.ecosystems.package_urls[ecosystem] + package['name']
+  return ''

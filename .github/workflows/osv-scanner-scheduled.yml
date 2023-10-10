@@ -18,7 +18,7 @@ on:
   schedule:
     - cron: '12 12 * * 1'
   push:
-    branches: [ "main" ]
+    branches: [ "master" ]
 
 # Declare default permissions as read only.
 permissions: 
@@ -26,5 +26,5 @@ permissions:
   contents: read
 
 jobs:
-  scan-pr-attempt:
-    uses: "google/osv-scanner/.github/workflows/osv-scanner-reusable-scheduled.yml@main"
+  scan-scheduled:
+    uses: "google/osv-scanner/.github/workflows/osv-scanner-reusable.yml@main"

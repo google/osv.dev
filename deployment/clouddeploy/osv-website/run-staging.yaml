@@ -1,0 +1,24 @@
+apiVersion: serving.knative.dev/v1
+kind: Service
+metadata:
+  name: osv-website
+spec:
+  template:
+    metadata:
+      annotations:
+        autoscaling.knative.dev/minScale: '1'
+        run.googleapis.com/vpc-access-connector: projects/oss-vdb-test/locations/us-west2/connectors/connector
+    spec:
+      containers:
+      - image: osv-website
+        env:
+        - name: REDISHOST
+          value: '10.189.34.180'
+        - name: REDISPORT
+          value: '6379'
+        startupProbe:
+          httpGet:
+            path: /_ah/warmup  # TODO(michaelkedar): Better endpoint for these
+        livenessProbe:
+          httpGet:
+            path: /_ah/warmup

@@ -43,6 +43,7 @@ $osv-border-radius-small: 4px;
 
 * {
   margin: 0;
+  font-variant-ligatures: none;
 }
 
 html,
@@ -585,6 +586,13 @@ mwc-icon-button.mdc-data-table__sort-icon-button {
   max-width: 1200px;
   margin: 0 auto;
 
+  code {
+    font-family: $osv-heading-font-family;
+    background: $osv-grey-800;
+    padding: 2px 4px;
+    border-radius: $osv-border-radius-small;
+  }
+
   @media (max-width: $osv-mobile-breakpoint) {
     .title {
       font-size: $osv-heading-size-mobile;
@@ -598,12 +606,20 @@ dl.vulnerability-details,
   grid-template-columns: max-content minmax(0, auto);
   grid-row-gap: 5px;
   gap: 8px;
+  &:not(:last-child) {
+    margin-bottom: 15px;
+  }
 
   dt {
     grid-column: 1;
     font-weight: bold;
     font-size: 15px;
     padding-right: 18px;
+  }
+
+  dt.withdrawn, dd.withdrawn {
+    color: $osv-red-300;
+    font-weight: bold;
   }
 
   dd {
@@ -625,6 +641,7 @@ dl.vulnerability-details,
 
     p {
       margin-bottom: 16px;
+      line-height: 1.6;
     }
 
     ol,
@@ -1185,6 +1202,31 @@ dl.vulnerability-details,
   }
 }
 
+pre.big-code-block {
+  padding: 10px;
+  background-color: #202020;
+}
+
+// Hugo highlighted code blocks
+div.highlight {
+  pre {
+    &>code {
+      // Hugo code gen embeds a code block, which will cause problems with padding
+      padding: 0;
+      background-color: unset;
+
+      // Default is display grid for some reason?
+      display: flex;
+      flex-direction: column;
+      overflow-x: auto;
+    }
+
+    border-radius: $osv-border-radius-small;
+    padding: 15px;
+    margin-bottom: 16px;
+  }
+}
+
 .blog-post-page,
 .blog-page {
 
@@ -1224,23 +1266,6 @@ dl.vulnerability-details,
     color: #C9F5F7
   }
 
-  pre {
-    &>code {
-      // Hugo code gen embeds a code block, which will cause problems with padding
-      padding: 0;
-      background-color: unset;
-
-      // Default is display grid for some reason?
-      display: flex;
-      flex-direction: column;
-      overflow-x: auto;
-    }
-
-    border-radius: $osv-border-radius-small;
-    padding: 15px;
-    margin-bottom: 16px;
-  }
-
   .author {
     font-size: 18px;
     font-family: $osv-body-font-family;
@@ -1256,11 +1281,4 @@ dl.vulnerability-details,
     margin: 0 auto;
     font-size: 16px;
   }
-}
-
-code {
-  font-family: $osv-heading-font-family;
-  background: $osv-grey-800;
-  padding: 2px 4px;
-  border-radius: $osv-border-radius-small;
 }

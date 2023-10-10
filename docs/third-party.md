@@ -18,6 +18,7 @@ tools and unsupported by the core OSV maintainers.
 -   [EZE-CLI: The one stop shop for security testing in modern development](https://github.com/RiverSafeUK/eze-cli)
 -   [G-Rath/osv-detector](https://github.com/G-Rath/osv-detector): A scanner
     that uses the OSV database.
+-   [GUAC](https://guac.sh)
 -   [it-depends](https://github.com/trailofbits/it-depends)
 -   [.NET client library and support for the schema](https://github.com/JamieMagee/osv.net)
 -   [OSS Review Toolkit](https://github.com/oss-review-toolkit/ort)

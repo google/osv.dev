@@ -3,6 +3,7 @@ package main
 import (
 	"encoding/csv"
 	"encoding/json"
+	"errors"
 	"flag"
 	"fmt"
 	"net/url"
@@ -36,8 +37,12 @@ type CVEIDString string
 
 type ConversionOutcome int
 
+var ErrNoRanges = errors.New("no ranges")
+
+var ErrUnresolvedFix = errors.New("fixes not resolved to commits")
+
 func (c ConversionOutcome) String() string {
-	return [...]string{"ConversionUnknown", "Successful", "Rejected", "NoSoftware", "NoRepos", "NoRanges"}[c]
+	return [...]string{"ConversionUnknown", "Successful", "Rejected", "NoSoftware", "NoRepos", "NoRanges", "FixUnresolvable"}[c]
 }
 
 const (
@@ -52,6 +57,7 @@ const (
 	NoSoftware                                 // The CVE had no CPEs relating to software (i.e. Operating Systems or Hardware).
 	NoRepos                                    // The CPE Vendor/Product had no repositories derived for it.
 	NoRanges                                   // No viable commit ranges could be calculated from the repository for the CVE's CPE(s).
+	FixUnresolvable                            // Partial resolution of versions, resulting in a false positive.
 )
 
 var (
@@ -84,9 +90,13 @@ var RefTagDenyList = []string{
 // cross-contamination of repo derivation between CVEs.
 var VendorProductDenyList = []VendorProduct{
 	// Causes a chain reaction of incorrect associations from CVE-2022-2068
-	{"netapp", "ontap_select_deploy_administration_utility"},
+	// {"netapp", "ontap_select_deploy_administration_utility"},
 	// Causes misattribution for Python, e.g. CVE-2022-26488
-	{"netapp", "active_iq_unified_manager"},
+	// {"netapp", "active_iq_unified_manager"},
+	// Causes misattribution for OpenSSH, e.g. CVE-2021-28375
+	// {"netapp", "cloud_backup"},
+	// Three strikes and the entire netapp vendor is out...
+	{"netapp", ""},
 }
 
 // Looks at what the repo to determine if it contains code using an in-scope language
@@ -140,10 +150,12 @@ func GitVersionsToCommits(CVE string, versions cves.VersionInfo, repos []string,
 					v.AffectedCommits = append(v.AffectedCommits, ac)
 				}
 			}
-			// Only try and convert versions to commits via tags if there aren't any already.
+			// Only try and convert fixed versions to commits via tags if there aren't any Fixed commits already.
 			// cves.ExtractVersionInfo() opportunistically returns
 			// AffectedCommits (with Fixed commits) when the CVE has appropriate references.
 			if v.HasFixedCommits(repo) && av.Fixed != "" {
+				Logger.Infof("[%s]: Using preassumed fixed commits %+v instead of deriving from fixed version %q", CVE, v.FixedCommits(repo), av.Fixed)
+			} else if av.Fixed != "" {
 				ac, err := git.VersionToCommit(av.Fixed, repo, cves.Fixed, normalizedTags)
 				if err != nil {
 					Logger.Warnf("[%s]: Failed to get a Git commit for fixed version %q from %q: %v", CVE, av.Fixed, repo, err)
@@ -152,7 +164,10 @@ func GitVersionsToCommits(CVE string, versions cves.VersionInfo, repos []string,
 					v.AffectedCommits = append(v.AffectedCommits, ac)
 				}
 			}
-			if av.LastAffected != "" {
+			// Only try and convert last_affected versions to commits via tags if there aren't any Fixed commits already (to maintain schema compliance).
+			// cves.ExtractVersionInfo() opportunistically returns
+			// AffectedCommits (with Fixed commits) when the CVE has appropriate references.
+			if !v.HasFixedCommits(repo) && av.LastAffected != "" {
 				ac, err := git.VersionToCommit(av.LastAffected, repo, cves.LastAffected, normalizedTags)
 				if err != nil {
 					Logger.Warnf("[%s]: Failed to get a Git commit for last_affected version %q from %q: %v", CVE, av.LastAffected, repo, err)
@@ -240,6 +255,16 @@ func CVEToOSV(CVE cves.CVEItem, repos []string, cache git.RepoTagsCache, directo
 		if err != nil {
 			return fmt.Errorf("[%s]: Failed to convert version tags to commits: %#v", CVEID, err)
 		}
+		hasAnyFixedCommits := false
+		for _, repo := range repos {
+			if versions.HasFixedCommits(repo) {
+				hasAnyFixedCommits = true
+			}
+		}
+
+		if versions.HasFixedVersions() && !hasAnyFixedCommits {
+			return fmt.Errorf("[%s]: Failed to convert fixed version tags to commits: %#v %w", CVEID, versions, ErrUnresolvedFix)
+		}
 	}
 
 	affected := vulns.Affected{}
@@ -247,7 +272,7 @@ func CVEToOSV(CVE cves.CVEItem, repos []string, cache git.RepoTagsCache, directo
 	v.Affected = append(v.Affected, affected)
 
 	if len(v.Affected[0].Ranges) == 0 {
-		return fmt.Errorf("[%s]: No affected ranges detected for %q", CVEID, maybeProductName)
+		return fmt.Errorf("[%s]: No affected ranges detected for %q %w", CVEID, maybeProductName, ErrNoRanges)
 	}
 
 	vulnDir := filepath.Join(directory, maybeVendorName, maybeProductName)
@@ -312,8 +337,19 @@ func CVEToPackageInfo(CVE cves.CVEItem, repos []string, cache git.RepoTagsCache,
 		}
 	}
 
+	hasAnyFixedCommits := false
+	for _, repo := range repos {
+		if versions.HasFixedCommits(repo) {
+			hasAnyFixedCommits = true
+		}
+	}
+
+	if versions.HasFixedVersions() && !hasAnyFixedCommits {
+		return fmt.Errorf("[%s]: Failed to convert fixed version tags to commits: %#v %w", CVEID, versions, ErrUnresolvedFix)
+	}
+
 	if len(versions.AffectedCommits) == 0 {
-		return fmt.Errorf("[%s]: No affected commit ranges determined for %q", CVEID, maybeProductName)
+		return fmt.Errorf("[%s]: No affected commit ranges determined for %q %w", CVEID, maybeProductName, ErrNoRanges)
 	}
 
 	versions.AffectedVersions = nil // these have served their purpose and are not required in the resulting output.
@@ -399,7 +435,7 @@ func maybeRemoveFromVPRepoCache(cache VendorProductToRepoMap, vp *VendorProduct,
 		delete(cache, *vp)
 		return
 	}
-	slices.Delete(cacheEntry, i, i)
+	cacheEntry = slices.Delete(cacheEntry, i, i+1)
 	cache[*vp] = cacheEntry
 }
 
@@ -527,6 +563,9 @@ func main() {
 				if CPE.Part != "a" {
 					continue
 				}
+				if slices.Contains(VendorProductDenyList, VendorProduct{CPE.Vendor, ""}) {
+					continue
+				}
 				if slices.Contains(VendorProductDenyList, VendorProduct{CPE.Vendor, CPE.Product}) {
 					continue
 				}
@@ -575,9 +614,18 @@ func main() {
 		case "PackageInfo":
 			err = CVEToPackageInfo(cve, ReposForCVE[CVEID], RepoTagsCache, *outDir)
 		}
+		// Parse this error to determine which failure mode it was
 		if err != nil {
 			Logger.Warnf("[%s]: Failed to generate an OSV record: %+v", CVEID, err)
-			Metrics.Outcomes[CVEID] = NoRanges
+			if errors.Is(err, ErrNoRanges) {
+				Metrics.Outcomes[CVEID] = NoRanges
+				continue
+			}
+			if errors.Is(err, ErrUnresolvedFix) {
+				Metrics.Outcomes[CVEID] = FixUnresolvable
+				continue
+			}
+			Metrics.Outcomes[CVEID] = ConversionUnknown
 			continue
 		}
 		Metrics.OSVRecordsGenerated++

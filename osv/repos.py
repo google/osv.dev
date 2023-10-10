@@ -112,9 +112,9 @@ def clone(git_url, checkout_dir, git_callbacks=None):
         check=True)
     return pygit2.Repository(checkout_dir)
   except subprocess.CalledProcessError as e:
-    raise GitCloneError(f"Failed to clone repo:\n{e.stderr.decode()}") from e
+    raise GitCloneError(f'Failed to clone repo:\n{e.stderr.decode()}') from e
   except pygit2.GitError as e:
-    raise GitCloneError("Failed to open cloned repo") from e
+    raise GitCloneError('Failed to open cloned repo') from e
 
 
 def clone_with_retries(git_url, checkout_dir, git_callbacks=None, branch=None):

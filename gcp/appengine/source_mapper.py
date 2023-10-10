@@ -90,10 +90,9 @@ class MercurialVCS(VCSViewer):
 
 
 class SavannahVCS(VCSViewer):
-  VCS_URL_REGEX = re.compile(r'https?://git\.savannah\.gnu\.org/git/(.*\.git)$')
-  VCS_REVISION_SUB = (r'https://git.savannah.gnu.org/cgit/'
-                      r'\1/commit?id={revision}')
-  VCS_REVISION_DIFF_SUB = (r'https://git.savannah.gnu.org/cgit/\1/diff/'
+  VCS_URL_REGEX = re.compile(r'(https?://git\.savannah\.(?:non)?gnu\.org)/git/(.*\.git)$')
+  VCS_REVISION_SUB = (r'\1/cgit/\2/commit?id={revision}')
+  VCS_REVISION_DIFF_SUB = (r'\1/cgit/\2/diff/'
                            r'?id={end_revision}&id2={start_revision}')
 
 

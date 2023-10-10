@@ -436,9 +436,12 @@ def determine_version(version_query: osv_service_v1_pb2.VersionQuery,
                                         empty_bucket_bitmap,
                                         len(version_query.file_hashes))
 
+
 def validate_package_name(package_name):
   if len(package_name) > MAX_PACKAGE_NAME_LENGTH:
     raise ValueError("Package name exceeds the maximum allowed length.")
+
+
 @ndb.tasklet
 def do_query(query, context: QueryContext, include_details=True):
   """Do a query."""

@@ -111,11 +111,11 @@ def clone(git_url, checkout_dir, git_callbacks=None, treeless=False):
       git_filter = '--no-filter'
 
     subprocess.run(
-          ['git', 'clone', git_filter,
-        _git_mirror(git_url), checkout_dir],
-          env=env,
-          capture_output=True,
-          check=True)
+        ['git', 'clone', git_filter,
+         _git_mirror(git_url), checkout_dir],
+        env=env,
+        capture_output=True,
+        check=True)
     return pygit2.Repository(checkout_dir)
   except subprocess.CalledProcessError as e:
     raise GitCloneError(f'Failed to clone repo:\n{e.stderr.decode()}') from e
@@ -123,7 +123,11 @@ def clone(git_url, checkout_dir, git_callbacks=None, treeless=False):
     raise GitCloneError('Failed to open cloned repo') from e
 
 
-def clone_with_retries(git_url, checkout_dir, git_callbacks=None, branch=None, treeless=False):
+def clone_with_retries(git_url,
+                       checkout_dir,
+                       git_callbacks=None,
+                       branch=None,
+                       treeless=False):
   """Clone with retries."""
   logging.info('Cloning %s to %s', git_url, checkout_dir)
   for attempt in range(CLONE_TRIES):

@@ -103,7 +103,7 @@ def clone(git_url, checkout_dir, git_callbacks=None, treeless=False):
   if treeless:
     git_filter = '--filter=tree:0'
   else:
-    git_filter = ''
+    git_filter = '--no-filter'
 
   subprocess.run(
       ['git', 'clone', git_filter,

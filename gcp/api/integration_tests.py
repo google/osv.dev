@@ -183,7 +183,7 @@ class IntegrationTests(unittest.TestCase,
 
   def test_get(self):
     """Test getting a vulnerability."""
-    response = requests.get(_api() + '/v1/vulns/OSV-2023-744', timeout=_TIMEOUT)
+    response = requests.get(_api() + '/v1/vulns/OSV-2020-744', timeout=_TIMEOUT)
     self.assert_vuln_equal(self._VULN_744, response.json())
 
   def test_get_with_multiple(self):

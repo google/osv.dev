@@ -47,48 +47,54 @@ class IntegrationTests(unittest.TestCase,
                        tests.ExpectationTest(_TEST_DATA_DIR)):
   """Server integration tests."""
 
-  _VULN_744 = {
-      'published': '2020-07-04T00:00:01.948828Z',
+  _VULN_970 = {
+      'published': '2023-10-06T13:02:56.047818Z',
       'schema_version': '1.6.0',
       'affected': [{
           'database_specific': {
               'source': 'https://github.com/google/oss-fuzz-vulns/'
-                        'blob/main/vulns/mruby/OSV-2020-744.yaml'
+                        'blob/main/vulns/ghostscript/OSV-2023-970.yaml'
           },
           'ecosystem_specific': {
               'severity': 'HIGH'
           },
           'package': {
               'ecosystem': 'OSS-Fuzz',
-              'name': 'mruby',
-              'purl': 'pkg:generic/mruby'
+              'name': 'ghostscript',
+              'purl': 'pkg:generic/ghostscript'
           },
           'ranges': [{
               'events': [{
-                  'introduced': '9cdf439db52b66447b4e37c61179d54fad6c8f33'
+                  'introduced': '205d4f51cba82bc7cfa6a64b3d82b77baebf91b4'
               }, {
-                  'fixed': '97319697c8f9f6ff27b32589947e1918e3015503'
+                  'fixed': '6a3097e2262b61a953651b6280247705945f4c82'
               }],
-              'repo': 'https://github.com/mruby/mruby',
+              'repo': 'git://git.ghostscript.com/ghostpdl.git',
               'type': 'GIT'
           }],
-          'versions': ['2.1.2', '2.1.2-rc', '2.1.2-rc2']
+          'versions': [
+              'ghostpdl-10.01.0', 'ghostpdl-10.01.0rc1', 'ghostpdl-10.01.0rc2',
+              'ghostpdl-10.01.1', 'ghostpdl-10.01.1-gse-10174',
+              'ghostpdl-10.01.2', 'ghostpdl-10.02.0',
+              'ghostpdl-10.02.0-test-base-001', 'ghostpdl-10.02.0rc1',
+              'ghostpdl-10.02.0rc2'
+          ]
       }],
       'details': 'OSS-Fuzz report: '
-                 'https://bugs.chromium.org/p/oss-fuzz/issues/detail?id=23801\n'
+                 'https://bugs.chromium.org/p/oss-fuzz/issues/detail?id=63013\n'
                  '\n'
                  '```\n'
-                 'Crash type: Heap-double-free\n'
+                 'Crash type: Heap-use-after-free READ 8\n'
                  'Crash state:\n'
-                 'mrb_default_allocf\n'
-                 'mrb_free\n'
-                 'obj_free\n```\n',
-      'id': 'OSV-2020-744',
+                 'gx_device_forward_finalize\n'
+                 'gx_device_finalize\n'
+                 'alloc_restore_step_in\n```\n',
+      'id': 'OSV-2023-970',
       'references': [{
           'type': 'REPORT',
-          'url': 'https://bugs.chromium.org/p/oss-fuzz/issues/detail?id=23801',
+          'url': 'https://bugs.chromium.org/p/oss-fuzz/issues/detail?id=63013',
       }],
-      'summary': 'Heap-double-free in mrb_default_allocf',
+      'summary': 'Heap-use-after-free in gx_device_forward_finalize',
   }
 
   def _get(self, vuln_id):
@@ -136,8 +142,8 @@ class IntegrationTests(unittest.TestCase,
 
   def test_get(self):
     """Test getting a vulnerability."""
-    response = requests.get(_api() + '/v1/vulns/OSV-2020-744', timeout=_TIMEOUT)
-    self.assert_vuln_equal(self._VULN_744, response.json())
+    response = requests.get(_api() + '/v1/vulns/OSV-2023-970', timeout=_TIMEOUT)
+    self.assert_vuln_equal(self._VULN_970, response.json())
 
   def test_get_with_multiple(self):
     """Test getting a vulnerability with multiple packages."""
@@ -150,7 +156,7 @@ class IntegrationTests(unittest.TestCase,
     response = requests.post(
         _api() + '/v1/query',
         data=json.dumps({
-            'commit': '233cb49903fa17637bd51f4a16b4ca61e0750f24',
+            'commit': '8add3bf87045b3f83130160462dd8e8299f3a81d',
         }),
         timeout=_TIMEOUT)
     self.assert_results_equal({'vulns': [self._VULN_744]}, response.json())
@@ -571,6 +577,60 @@ class IntegrationTests(unittest.TestCase,
                 {},
                 {
                     'vulns': [{
+                        'id': 'CVE-2020-15866',
+                    }, {
+                        'id': 'CVE-2020-36401',
+                    }, {
+                        'id': 'CVE-2021-4110',
+                    }, {
+                        'id': 'CVE-2021-4188',
+                    }, {
+                        'id': 'CVE-2021-46020',
+                    }, {
+                        'id': 'CVE-2021-46023',
+                    }, {
+                        'id': 'CVE-2022-0080',
+                    }, {
+                        'id': 'CVE-2022-0240',
+                    }, {
+                        'id': 'CVE-2022-0326',
+                    }, {
+                        'id': 'CVE-2022-0481',
+                    }, {
+                        'id': 'CVE-2022-0525',
+                    }, {
+                        'id': 'CVE-2022-0570',
+                    }, {
+                        'id': 'CVE-2022-0614',
+                    }, {
+                        'id': 'CVE-2022-0623',
+                    }, {
+                        'id': 'CVE-2022-0630',
+                    }, {
+                        'id': 'CVE-2022-0631',
+                    }, {
+                        'id': 'CVE-2022-0632',
+                    }, {
+                        'id': 'CVE-2022-0717',
+                    }, {
+                        'id': 'CVE-2022-0890',
+                    }, {
+                        'id': 'CVE-2022-1071',
+                    }, {
+                        'id': 'CVE-2022-1106',
+                    }, {
+                        'id': 'CVE-2022-1201',
+                    }, {
+                        'id': 'CVE-2022-1212',
+                    }, {
+                        'id': 'CVE-2022-1276',
+                    }, {
+                        'id': 'CVE-2022-1286',
+                    }, {
+                        'id': 'CVE-2022-1427',
+                    }, {
+                        'id': 'CVE-2022-1934',
+                    }, {
                         'id': 'OSV-2020-744',
                     }]
                 },

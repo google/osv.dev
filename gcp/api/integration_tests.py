@@ -97,6 +97,50 @@ class IntegrationTests(unittest.TestCase,
       'summary': 'Heap-use-after-free in gx_device_forward_finalize',
   }
 
+  _VULN_744 = {
+      'published': '2020-07-04T00:00:01.948828Z',
+      'schema_version': '1.6.0',
+      'affected': [{
+          'database_specific': {
+              'source': 'https://github.com/google/oss-fuzz-vulns/'
+                        'blob/main/vulns/mruby/OSV-2020-744.yaml'
+          },
+          'ecosystem_specific': {
+              'severity': 'HIGH'
+          },
+          'package': {
+              'ecosystem': 'OSS-Fuzz',
+              'name': 'mruby',
+              'purl': 'pkg:generic/mruby'
+          },
+          'ranges': [{
+              'events': [{
+                  'introduced': '9cdf439db52b66447b4e37c61179d54fad6c8f33'
+              }, {
+                  'fixed': '97319697c8f9f6ff27b32589947e1918e3015503'
+              }],
+              'repo': 'https://github.com/mruby/mruby',
+              'type': 'GIT'
+          }],
+          'versions': ['2.1.2', '2.1.2-rc', '2.1.2-rc2']
+      }],
+      'details': 'OSS-Fuzz report: '
+                 'https://bugs.chromium.org/p/oss-fuzz/issues/detail?id=23801\n'
+                 '\n'
+                 '```\n'
+                 'Crash type: Heap-double-free\n'
+                 'Crash state:\n'
+                 'mrb_default_allocf\n'
+                 'mrb_free\n'
+                 'obj_free\n```\n',
+      'id': 'OSV-2020-744',
+      'references': [{
+          'type': 'REPORT',
+          'url': 'https://bugs.chromium.org/p/oss-fuzz/issues/detail?id=23801',
+      }],
+      'summary': 'Heap-double-free in mrb_default_allocf',
+  }
+
   def _get(self, vuln_id):
     """Get a vulnerability."""
     response = requests.get(_api() + '/v1/vulns/' + vuln_id, timeout=_TIMEOUT)
@@ -166,26 +210,26 @@ class IntegrationTests(unittest.TestCase,
     response = requests.post(
         _api() + '/v1/query',
         data=json.dumps({
-            'version': '10.02.0',
+            'version': '2.1.2-rc',
             'package': {
-                'name': 'ghostscript',
+                'name': 'mruby',
                 'ecosystem': 'OSS-Fuzz',
             }
         }),
         timeout=_TIMEOUT)
-    self.assert_results_equal({'vulns': [self._VULN_970]}, response.json())
+    self.assert_results_equal({'vulns': [self._VULN_744]}, response.json())
 
     response = requests.post(
         _api() + '/v1/query',
         data=json.dumps({
-            'version': '10.02.0',
+            'version': '2.1.2-rc',
             'package': {
-                'name': 'ghostscript',
+                'name': 'mruby',
             }
         }),
         timeout=_TIMEOUT)
 
-    self.assert_results_equal({'vulns': [self._VULN_970]}, response.json())
+    self.assert_results_equal({'vulns': [self._VULN_744]}, response.json())
     # self.assertEqual(
     #   response.text,
     #   '{"code":3,"message":"Ecosystem not specified"}')

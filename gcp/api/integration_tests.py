@@ -159,33 +159,33 @@ class IntegrationTests(unittest.TestCase,
             'commit': '8add3bf87045b3f83130160462dd8e8299f3a81d',
         }),
         timeout=_TIMEOUT)
-    self.assert_results_equal({'vulns': [self._VULN_744]}, response.json())
+    self.assert_results_equal({'vulns': [self._VULN_970]}, response.json())
 
   def test_query_version(self):
     """Test querying by version."""
     response = requests.post(
         _api() + '/v1/query',
         data=json.dumps({
-            'version': '2.1.2rc',
+            'version': '10.02.0',
             'package': {
-                'name': 'mruby',
+                'name': 'ghostscript',
                 'ecosystem': 'OSS-Fuzz',
             }
         }),
         timeout=_TIMEOUT)
-    self.assert_results_equal({'vulns': [self._VULN_744]}, response.json())
+    self.assert_results_equal({'vulns': [self._VULN_970]}, response.json())
 
     response = requests.post(
         _api() + '/v1/query',
         data=json.dumps({
-            'version': '2.1.2-rc',
+            'version': '10.02.0',
             'package': {
-                'name': 'mruby',
+                'name': 'ghostscript',
             }
         }),
         timeout=_TIMEOUT)
 
-    self.assert_results_equal({'vulns': [self._VULN_744]}, response.json())
+    self.assert_results_equal({'vulns': [self._VULN_970]}, response.json())
     # self.assertEqual(
     #   response.text,
     #   '{"code":3,"message":"Ecosystem not specified"}')

@@ -47,54 +47,51 @@ class IntegrationTests(unittest.TestCase,
                        tests.ExpectationTest(_TEST_DATA_DIR)):
   """Server integration tests."""
 
-  _VULN_970 = {
-      'published': '2023-10-06T13:02:56.047818Z',
+  _VULN_890 = {
+      'published': '2023-09-21T14:01:03.576514Z',
       'schema_version': '1.6.0',
       'affected': [{
           'database_specific': {
               'source': 'https://github.com/google/oss-fuzz-vulns/'
-                        'blob/main/vulns/ghostscript/OSV-2023-970.yaml'
+                        'blob/main/vulns/libdwarf/OSV-2023-890.yaml'
           },
           'ecosystem_specific': {
               'severity': 'HIGH'
           },
           'package': {
               'ecosystem': 'OSS-Fuzz',
-              'name': 'ghostscript',
-              'purl': 'pkg:generic/ghostscript'
+              'name': 'libdwarf',
+              'purl': 'pkg:generic/libdwarf'
           },
           'ranges': [{
               'events': [{
-                  'introduced': '205d4f51cba82bc7cfa6a64b3d82b77baebf91b4'
+                  'introduced': 'b55ce0185528bf0a99e375cf8f3c84b76b6881a3'
               }, {
-                  'fixed': '6a3097e2262b61a953651b6280247705945f4c82'
+                  'fixed': 'cd741379bd0203a0875b413542d5f982606ae637'
               }],
-              'repo': 'git://git.ghostscript.com/ghostpdl.git',
+              'repo': 'https://github.com/davea42/libdwarf-code',
               'type': 'GIT'
           }],
           'versions': [
-              'ghostpdl-10.01.0', 'ghostpdl-10.01.0rc1', 'ghostpdl-10.01.0rc2',
-              'ghostpdl-10.01.1', 'ghostpdl-10.01.1-gse-10174',
-              'ghostpdl-10.01.2', 'ghostpdl-10.02.0',
-              'ghostpdl-10.02.0-test-base-001', 'ghostpdl-10.02.0rc1',
-              'ghostpdl-10.02.0rc2'
+              'libdwarf-0.7.0', 'libdwarf-0.8.0-fixedtag', 'v0.7.0',
+              'v0.8.0-fixedtag'
           ]
       }],
       'details': 'OSS-Fuzz report: '
-                 'https://bugs.chromium.org/p/oss-fuzz/issues/detail?id=63013\n'
+                 'https://bugs.chromium.org/p/oss-fuzz/issues/detail?id=62547\n'
                  '\n'
                  '```\n'
-                 'Crash type: Heap-use-after-free READ 8\n'
+                 'Crash type: Heap-use-after-free READ 2\n'
                  'Crash state:\n'
-                 'gx_device_forward_finalize\n'
-                 'gx_device_finalize\n'
-                 'alloc_restore_step_in\n```\n',
-      'id': 'OSV-2023-970',
+                 'dwarf_dealloc\n'
+                 '_dwarf_fde_destructor\n'
+                 'tdestroy_free_node\n```\n',
+      'id': 'OSV-2023-890',
       'references': [{
           'type': 'REPORT',
-          'url': 'https://bugs.chromium.org/p/oss-fuzz/issues/detail?id=63013',
+          'url': 'https://bugs.chromium.org/p/oss-fuzz/issues/detail?id=62547',
       }],
-      'summary': 'Heap-use-after-free in gx_device_forward_finalize',
+      'summary': 'Heap-use-after-free in dwarf_dealloc',
   }
 
   _VULN_744 = {
@@ -186,8 +183,8 @@ class IntegrationTests(unittest.TestCase,
 
   def test_get(self):
     """Test getting a vulnerability."""
-    response = requests.get(_api() + '/v1/vulns/OSV-2023-970', timeout=_TIMEOUT)
-    self.assert_vuln_equal(self._VULN_970, response.json())
+    response = requests.get(_api() + '/v1/vulns/OSV-2023-744', timeout=_TIMEOUT)
+    self.assert_vuln_equal(self._VULN_744, response.json())
 
   def test_get_with_multiple(self):
     """Test getting a vulnerability with multiple packages."""
@@ -200,10 +197,10 @@ class IntegrationTests(unittest.TestCase,
     response = requests.post(
         _api() + '/v1/query',
         data=json.dumps({
-            'commit': '8add3bf87045b3f83130160462dd8e8299f3a81d',
+            'commit': '60e572dbf7b4ded66b488f54773f66aaf6184321',
         }),
         timeout=_TIMEOUT)
-    self.assert_results_equal({'vulns': [self._VULN_970]}, response.json())
+    self.assert_results_equal({'vulns': [self._VULN_890]}, response.json())
 
   def test_query_version(self):
     """Test querying by version."""

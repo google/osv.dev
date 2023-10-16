@@ -3,7 +3,7 @@ kind: CronJob
 metadata:
   name: exporter
 spec:
-  schedule: "0 */6 * * *"
+  schedule: "0 */1 * * *"
   concurrencyPolicy: Forbid
   jobTemplate:
     spec:

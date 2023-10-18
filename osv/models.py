@@ -666,6 +666,15 @@ class Bug(ndb.Model):
       if credit.type:
         cr.type = vulnerability_pb2.Credit.Type.Value(credit.type)
       credits_.append(cr)
+    related_bugs = Bug.query(Bug.related == self.db_id).fetch()
+    if related_bugs:
+      related_bug_ids = [bug.db_id for bug in related_bugs]
+      self.related = sorted(list(set(related_bug_ids + self.related)))
+
+    alias_group = AliasGroup.query(AliasGroup.bug_ids == self.db_id).get()
+    if alias_group:
+      self.aliases = sorted(list(set(alias_group.bug_ids) - {self.db_id}))
+      modified = max(self.last_modified, alias_group.last_modified)
 
     result = vulnerability_pb2.Vulnerability(
         schema_version=SCHEMA_VERSION,
@@ -794,6 +803,11 @@ class SourceRepository(ndb.Model):
     """Pre-put hook for validation."""
     if self.type == SourceRepositoryType.BUCKET and self.editable:
       raise ValueError('BUCKET SourceRepository cannot be editable.')
+
+
+class AliasGroup(ndb.Model):
+  bug_ids = ndb.StringProperty(repeated=True)
+  last_modified = ndb.DateTimeProperty()
 
 
 def get_source_repository(source_name):

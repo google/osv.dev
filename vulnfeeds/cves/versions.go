@@ -498,25 +498,48 @@ func Repo(u string) (string, error) {
 	// cGit URLs are structured another way, e.g.
 	// https://git.dpkg.org/cgit/dpkg/dpkg.git/commit/?id=faa4c92debe45412bfcf8a44f26e827800bb24be
 	// https://git.kernel.org/cgit/linux/kernel/git/torvalds/linux.git/commit/?id=817b8b9c5396d2b2d92311b46719aad5d3339dbe
+	//
+	// They also sometimes have characteristics to map from a web-friendly URL to a clone-friendly repo, on a host-by-host basis.
+	//
+	//	https://git.kernel.org/cgit/linux/kernel/git/torvalds/linux.git [web browseable]
+	//	https://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git [cloneable]
+	//
+	//	https://git.savannah.gnu.org/cgit/emacs.git [web browseable]
+	//	https://git.savannah.gnu.org/git/emacs.git [cloneable]
+	//
 	if strings.HasPrefix(parsedURL.Path, "/cgit") &&
 		strings.HasSuffix(parsedURL.Path, "commit/") &&
 		strings.HasPrefix(parsedURL.RawQuery, "id=") {
 		repo := strings.TrimSuffix(parsedURL.Path, "/commit/")
+
+		switch parsedURL.Hostname() {
+		case "git.kernel.org":
+			repo = strings.Replace(repo, "/cgit", "/pub/scm", 1)
+
+		case "git.savannah.gnu.org":
+		case "git.savannah.nongnu.org":
+			repo = strings.Replace(repo, "/cgit", "/git", 1)
+		}
+
 		return fmt.Sprintf("%s://%s%s", parsedURL.Scheme,
 			parsedURL.Hostname(), repo), nil
 	}
 
-	// GitWeb CGI URLs are structured very differently, e.g.
-	// https://git.gnupg.org/cgi-bin/gitweb.cgi?p=libksba.git;a=commit;h=f61a5ea4e0f6a80fd4b28ef0174bee77793cf070 is another variation seen in the wild
-	if strings.HasPrefix(parsedURL.Path, "/cgi-bin/gitweb.cgi") &&
+	// GitWeb CGI URLs are structured very differently, and require significant translation to get a cloneable URL, e.g.
+	// https://git.gnupg.org/cgi-bin/gitweb.cgi?p=libksba.git;a=commit;h=f61a5ea4e0f6a80fd4b28ef0174bee77793cf070 -> git://git.gnupg.org/libksba.git
+	// https://sourceware.org/git/gitweb.cgi?p=binutils-gdb.git;h=11d171f1910b508a81d21faa087ad1af573407d8 -> git://sourceware.org/git/binutils-gdb.git
+	if strings.HasSuffix(parsedURL.Path, "/gitweb.cgi") &&
 		strings.HasPrefix(parsedURL.RawQuery, "p=") {
 		params := strings.Split(parsedURL.RawQuery, ";")
 		for _, param := range params {
 			if !strings.HasPrefix(param, "p=") {
 				continue
 			}
-			repo := strings.Split(param, "=")[1]
-			return fmt.Sprintf("%s://%s/%s", parsedURL.Scheme, parsedURL.Hostname(), repo), nil
+			repo, err := url.JoinPath(strings.TrimSuffix(strings.TrimSuffix(parsedURL.Path, "/gitweb.cgi"), "cgi-bin"), strings.Split(param, "=")[1])
+			if err != nil {
+				return "", err
+			}
+			return fmt.Sprintf("git://%s%s", parsedURL.Hostname(), repo), nil
 		}
 	}
 
@@ -681,15 +704,24 @@ func Commit(u string) (string, error) {
 	// https://github.com/MariaDB/server/commit/b1351c15946349f9daa7e5297fb2ac6f3139e4a8
 	// https://gitlab.freedesktop.org/virgl/virglrenderer/-/commit/b05bb61f454eeb8a85164c8a31510aeb9d79129c
 	// https://gitlab.com/qemu-project/qemu/-/commit/4367a20cc4
+
+	parsedURL.Path = strings.TrimSuffix(parsedURL.Path, "/")
+	directory, possibleCommitHash := path.Split(parsedURL.Path)
+	if strings.HasSuffix(directory, "commit/") {
+		return strings.TrimSuffix(possibleCommitHash, ".patch"), nil
+	}
+
 	// and Bitbucket.org commit URLs are similiar yet slightly different:
 	// https://bitbucket.org/openpyxl/openpyxl/commits/3b4905f428e1
 	//
 	// Some bitbucket.org commit URLs have been observed in the wild with a trailing /, which will
 	// change the behaviour of path.Split(), so normalize the path to be tolerant of this.
-	parsedURL.Path = strings.TrimSuffix(parsedURL.Path, "/")
-	directory, possibleCommitHash := path.Split(parsedURL.Path)
-	if strings.HasSuffix(directory, "commit/") || strings.HasSuffix(directory, "commits/") {
-		return possibleCommitHash, nil
+	if parsedURL.Host == "bitbucket.org" {
+		parsedURL.Path = strings.TrimSuffix(parsedURL.Path, "/")
+		directory, possibleCommitHash := path.Split(parsedURL.Path)
+		if strings.HasSuffix(directory, "commits/") {
+			return possibleCommitHash, nil
+		}
 	}
 
 	// TODO(apollock): add support for resolving a GitHub PR to a commit hash
@@ -698,7 +730,7 @@ func Commit(u string) (string, error) {
 	return "", fmt.Errorf("Commit(): unsupported URL: %s", u)
 }
 
-// For URLs referencing commits in supported Git repository hosts, return an AffectedCommit.
+// For URLs referencing commits in supported Git repository hosts, return a cloneable AffectedCommit.
 func extractGitCommit(link string, commitType CommitType) (ac AffectedCommit, err error) {
 	r, err := Repo(link)
 	if err != nil {

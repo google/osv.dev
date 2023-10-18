@@ -12,26 +12,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-FROM ubuntu:22.04
+FROM google/cloud-sdk:449.0.0-alpine
 
-ENV DEBIAN_FRONTEND noninteractive
-RUN apt-get update && apt-get upgrade -y && \
-    apt-get install -y \
-    apt-transport-https \
-    ca-certificates \
-    curl \
-    git \
-    gnupg-agent \
-    golang-go \
-    software-properties-common \
-    python3 \
-    python3-pip
-
-RUN echo "deb [signed-by=/usr/share/keyrings/cloud.google.gpg] https://packages.cloud.google.com/apt cloud-sdk main" | tee -a /etc/apt/sources.list.d/google-cloud-sdk.list && \
-    curl https://packages.cloud.google.com/apt/doc/apt-key.gpg | gpg --dearmor -o /usr/share/keyrings/cloud.google.gpg && \
-    apt-get update && apt-get install -y google-cloud-sdk
-
-RUN pip install pipenv==2023.6.12
+RUN apk --no-cache add py3-pip \
+    && pip install pipenv==2023.6.12
 
 RUN mkdir /src
 WORKDIR /src

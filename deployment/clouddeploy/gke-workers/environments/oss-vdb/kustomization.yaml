@@ -10,3 +10,4 @@ patches:
 - path: debian-first-version.yaml
 - path: debian-copyright-mirror.yaml
 - path: gen-cperepos-map.yaml
+- path: nvd-cve-osv.yaml

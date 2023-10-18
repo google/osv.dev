@@ -215,13 +215,15 @@ func TestRepo(t *testing.T) {
 			expectedOk:      true,
 		},
 		{
-			description: "cGit cgi-bin URL",
-			inputLink:   "https://git.gnupg.org/cgi-bin/gitweb.cgi?p=libksba.git;a=commit;h=f61a5ea4e0f6a80fd4b28ef0174bee77793cf070",
-			// Note to future selves: this isn't valid for this
-			// host, but we have no way of knowing this via purely
-			// URL mangling, so are probably going to need a
-			// mapping table for known odd cases
-			expectedRepoURL: "https://git.gnupg.org/libksba.git",
+			description:     "GitWeb URL, remapped to something cloneable (CVE-2022-47629)",
+			inputLink:       "https://git.gnupg.org/cgi-bin/gitweb.cgi?p=libksba.git;a=commit;h=f61a5ea4e0f6a80fd4b28ef0174bee77793cf070",
+			expectedRepoURL: "git://git.gnupg.org/libksba.git",
+			expectedOk:      true,
+		},
+		{
+			description:     "GitWeb URL, remapped to something cloneable (CVE-2023-1579)",
+			inputLink:       "https://sourceware.org/git/gitweb.cgi?p=binutils-gdb.git;h=11d171f1910b508a81d21faa087ad1af573407d8",
+			expectedRepoURL: "git://sourceware.org/git/binutils-gdb.git",
 			expectedOk:      true,
 		},
 		{
@@ -386,6 +388,12 @@ func TestRepo(t *testing.T) {
 			expectedRepoURL: "https://gitlab.com/ubports/development/core/click",
 			expectedOk:      true,
 		},
+		{
+			description:     "cGit URL on git.kernel.org remapped to be cloneable",
+			inputLink:       "https://git.kernel.org/cgit/linux/kernel/git/torvalds/linux.git/commit/?id=ee1fee900537b5d9560e9f937402de5ddc8412f3",
+			expectedRepoURL: "https://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git",
+			expectedOk:      true,
+		},
 	}
 
 	for _, tc := range tests {
@@ -417,12 +425,42 @@ func TestExtractGitCommit(t *testing.T) {
 			},
 		},
 		{
+			description:     "Undesired GitHub commit URL", // TODO(apollock): be able to parse this a a LastAffected commit
+			inputLink:       "https://github.com/Budibase/budibase/commits/develop?after=93d6939466aec192043d8ac842e754f65fdf2e8a+594\u0026branch=develop\u0026qualified_name=refs%2Fheads%2Fdevelop",
+			inputCommitType: Fixed,
+			expectFailure:   true,
+		},
+		{
+			description:     "Valid GitHub commit URL with .patch extension",
+			inputLink:       "https://github.com/pimcore/customer-data-framework/commit/e3f333391582d9309115e6b94e875367d0ea7163.patch",
+			inputCommitType: Fixed,
+			expectedAffectedCommit: AffectedCommit{
+				Repo:  "https://github.com/pimcore/customer-data-framework",
+				Fixed: "e3f333391582d9309115e6b94e875367d0ea7163",
+			},
+		},
+		{
+			description:     "Undesired GitHub PR commit URL",
+			inputLink:       "https://github.com/OpenZeppelin/cairo-contracts/pull/542/commits/6d4cb750478fca2fd916f73297632f899aca9299",
+			inputCommitType: Fixed,
+			expectFailure:   true,
+		},
+		{
 			description:     "Valid GitLab commit URL",
 			inputLink:       "https://gitlab.freedesktop.org/virgl/virglrenderer/-/commit/b05bb61f454eeb8a85164c8a31510aeb9d79129c",
 			inputCommitType: Fixed,
 			expectedAffectedCommit: AffectedCommit{
 				Repo:  "https://gitlab.freedesktop.org/virgl/virglrenderer",
 				Fixed: "b05bb61f454eeb8a85164c8a31510aeb9d79129c",
+			},
+		},
+		{
+			description:     "Valid GitLab commit URL with .patch extension",
+			inputLink:       "https://gitlab.com/muttmua/mutt/-/commit/452ee330e094bfc7c9a68555e5152b1826534555.patch",
+			inputCommitType: Fixed,
+			expectedAffectedCommit: AffectedCommit{
+				Repo:  "https://gitlab.com/muttmua/mutt",
+				Fixed: "452ee330e094bfc7c9a68555e5152b1826534555",
 			},
 		},
 		{
@@ -466,7 +504,7 @@ func TestExtractGitCommit(t *testing.T) {
 			inputLink:       "https://git.gnupg.org/cgi-bin/gitweb.cgi?p=libksba.git;a=commit;h=f61a5ea4e0f6a80fd4b28ef0174bee77793cf070",
 			inputCommitType: Fixed,
 			expectedAffectedCommit: AffectedCommit{
-				Repo:  "https://git.gnupg.org/libksba.git",
+				Repo:  "git://git.gnupg.org/libksba.git",
 				Fixed: "f61a5ea4e0f6a80fd4b28ef0174bee77793cf070",
 			},
 		},
@@ -490,6 +528,16 @@ func TestExtractGitCommit(t *testing.T) {
 			inputCommitType:        Fixed,
 			expectedAffectedCommit: AffectedCommit{},
 			expectFailure:          true,
+		},
+		{
+			description:     "cGit reference from CVE-2022-30594, remapped to be cloneable",
+			inputLink:       "https://git.kernel.org/cgit/linux/kernel/git/torvalds/linux.git/commit/?id=ee1fee900537b5d9560e9f937402de5ddc8412f3",
+			inputCommitType: Fixed,
+			expectedAffectedCommit: AffectedCommit{
+				Repo:  "https://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git",
+				Fixed: "ee1fee900537b5d9560e9f937402de5ddc8412f3",
+			},
+			expectFailure: true,
 		},
 	}
 

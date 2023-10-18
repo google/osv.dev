@@ -47,6 +47,53 @@ class IntegrationTests(unittest.TestCase,
                        tests.ExpectationTest(_TEST_DATA_DIR)):
   """Server integration tests."""
 
+  _VULN_890 = {
+      'published': '2023-09-21T14:01:03.576514Z',
+      'schema_version': '1.6.0',
+      'affected': [{
+          'database_specific': {
+              'source': 'https://github.com/google/oss-fuzz-vulns/'
+                        'blob/main/vulns/libdwarf/OSV-2023-890.yaml'
+          },
+          'ecosystem_specific': {
+              'severity': 'HIGH'
+          },
+          'package': {
+              'ecosystem': 'OSS-Fuzz',
+              'name': 'libdwarf',
+              'purl': 'pkg:generic/libdwarf'
+          },
+          'ranges': [{
+              'events': [{
+                  'introduced': 'b55ce0185528bf0a99e375cf8f3c84b76b6881a3'
+              }, {
+                  'fixed': 'cd741379bd0203a0875b413542d5f982606ae637'
+              }],
+              'repo': 'https://github.com/davea42/libdwarf-code',
+              'type': 'GIT'
+          }],
+          'versions': [
+              'libdwarf-0.7.0', 'libdwarf-0.8.0-fixedtag', 'v0.7.0',
+              'v0.8.0-fixedtag'
+          ]
+      }],
+      'details': 'OSS-Fuzz report: '
+                 'https://bugs.chromium.org/p/oss-fuzz/issues/detail?id=62547\n'
+                 '\n'
+                 '```\n'
+                 'Crash type: Heap-use-after-free READ 2\n'
+                 'Crash state:\n'
+                 'dwarf_dealloc\n'
+                 '_dwarf_fde_destructor\n'
+                 'tdestroy_free_node\n```\n',
+      'id': 'OSV-2023-890',
+      'references': [{
+          'type': 'REPORT',
+          'url': 'https://bugs.chromium.org/p/oss-fuzz/issues/detail?id=62547',
+      }],
+      'summary': 'Heap-use-after-free in dwarf_dealloc',
+  }
+
   _VULN_744 = {
       'published': '2020-07-04T00:00:01.948828Z',
       'schema_version': '1.6.0',
@@ -150,17 +197,17 @@ class IntegrationTests(unittest.TestCase,
     response = requests.post(
         _api() + '/v1/query',
         data=json.dumps({
-            'commit': '233cb49903fa17637bd51f4a16b4ca61e0750f24',
+            'commit': '60e572dbf7b4ded66b488f54773f66aaf6184321',
         }),
         timeout=_TIMEOUT)
-    self.assert_results_equal({'vulns': [self._VULN_744]}, response.json())
+    self.assert_results_equal({'vulns': [self._VULN_890]}, response.json())
 
   def test_query_version(self):
     """Test querying by version."""
     response = requests.post(
         _api() + '/v1/query',
         data=json.dumps({
-            'version': '2.1.2rc',
+            'version': '2.1.2-rc',
             'package': {
                 'name': 'mruby',
                 'ecosystem': 'OSS-Fuzz',
@@ -486,6 +533,56 @@ class IntegrationTests(unittest.TestCase,
 
     self.assert_results_equal({'vulns': expected_deb}, response.json())
 
+  def test_query_with_redundant_ecosystem(self):
+    """Test purl with redundant ecosystem raises error"""
+    response = requests.post(
+        _api() + '/v1/query',
+        data=json.dumps({
+            "package": {
+                "ecosystem": "PyPI",
+                "purl": "pkg:pypi/mlflow@0.4.0",
+            }
+        }),
+        timeout=_TIMEOUT)
+    self.assert_results_equal(
+        {
+            'code': 3,
+            'message': 'ecosystem specified in a purl query'
+        }, response.json())
+
+  def test_query_with_redundant_version(self):
+    """Test purl with redundant version raises error"""
+    response = requests.post(
+        _api() + '/v1/query',
+        data=json.dumps({
+            "version": "0.4.0",
+            "package": {
+                "purl": "pkg:pypi/mlflow@0.4.0",
+            }
+        }),
+        timeout=_TIMEOUT)
+    self.assert_results_equal(
+        {
+            'code': 3,
+            'message': 'version specified in params and purl query'
+        }, response.json())
+
+  def test_query_with_redundant_package_name(self):
+    """Test purl with redundant name raises error"""
+    response = requests.post(
+        _api() + '/v1/query',
+        data=json.dumps(
+            {"package": {
+                "name": "mlflow",
+                "purl": "pkg:pypi/mlflow@0.4.0",
+            }}),
+        timeout=_TIMEOUT)
+    self.assert_results_equal(
+        {
+            'code': 3,
+            'message': 'name specified in a purl query'
+        }, response.json())
+
   def test_query_batch(self):
     """Test batch query."""
     response = requests.post(
@@ -521,6 +618,60 @@ class IntegrationTests(unittest.TestCase,
                 {},
                 {
                     'vulns': [{
+                        'id': 'CVE-2020-15866',
+                    }, {
+                        'id': 'CVE-2020-36401',
+                    }, {
+                        'id': 'CVE-2021-4110',
+                    }, {
+                        'id': 'CVE-2021-4188',
+                    }, {
+                        'id': 'CVE-2021-46020',
+                    }, {
+                        'id': 'CVE-2021-46023',
+                    }, {
+                        'id': 'CVE-2022-0080',
+                    }, {
+                        'id': 'CVE-2022-0240',
+                    }, {
+                        'id': 'CVE-2022-0326',
+                    }, {
+                        'id': 'CVE-2022-0481',
+                    }, {
+                        'id': 'CVE-2022-0525',
+                    }, {
+                        'id': 'CVE-2022-0570',
+                    }, {
+                        'id': 'CVE-2022-0614',
+                    }, {
+                        'id': 'CVE-2022-0623',
+                    }, {
+                        'id': 'CVE-2022-0630',
+                    }, {
+                        'id': 'CVE-2022-0631',
+                    }, {
+                        'id': 'CVE-2022-0632',
+                    }, {
+                        'id': 'CVE-2022-0717',
+                    }, {
+                        'id': 'CVE-2022-0890',
+                    }, {
+                        'id': 'CVE-2022-1071',
+                    }, {
+                        'id': 'CVE-2022-1106',
+                    }, {
+                        'id': 'CVE-2022-1201',
+                    }, {
+                        'id': 'CVE-2022-1212',
+                    }, {
+                        'id': 'CVE-2022-1276',
+                    }, {
+                        'id': 'CVE-2022-1286',
+                    }, {
+                        'id': 'CVE-2022-1427',
+                    }, {
+                        'id': 'CVE-2022-1934',
+                    }, {
                         'id': 'OSV-2020-744',
                     }]
                 },

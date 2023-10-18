@@ -95,17 +95,26 @@ def _set_git_callback_env(git_callbacks):
   return env
 
 
+class GitCloneError(Exception):
+  """Git repository clone exception."""
+
+
 def clone(git_url, checkout_dir, git_callbacks=None):
   """Perform a clone."""
-  # Use 'git' CLI here as it's much faster than libgit2's clone.
-  env = _set_git_callback_env(git_callbacks)
+  try:
+    # Use 'git' CLI here as it's much faster than libgit2's clone.
+    env = _set_git_callback_env(git_callbacks)
 
-  subprocess.run(
-      ['git', 'clone', _git_mirror(git_url), checkout_dir],
-      env=env,
-      capture_output=True,
-      check=True)
-  return pygit2.Repository(checkout_dir)
+    subprocess.run(
+        ['git', 'clone', _git_mirror(git_url), checkout_dir],
+        env=env,
+        capture_output=True,
+        check=True)
+    return pygit2.Repository(checkout_dir)
+  except subprocess.CalledProcessError as e:
+    raise GitCloneError(f'Failed to clone repo:\n{e.stderr.decode()}') from e
+  except pygit2.GitError as e:
+    raise GitCloneError('Failed to open cloned repo') from e
 
 
 def clone_with_retries(git_url, checkout_dir, git_callbacks=None, branch=None):
@@ -118,17 +127,12 @@ def clone_with_retries(git_url, checkout_dir, git_callbacks=None, branch=None):
       if branch:
         _checkout_branch(repo, branch)
       return repo
-    except (pygit2.GitError, subprocess.CalledProcessError) as e:
-      if attempt == CLONE_TRIES - 1:
-        err_str = str(e)
-        if isinstance(e, subprocess.CalledProcessError):
-          # add the git output to the log
-          err_str = f'{err_str}\n{e.stderr.decode()}'
-        logging.error('Clone failed after %d attempts: %s', CLONE_TRIES,
-                      err_str)
+    except GitCloneError:
       shutil.rmtree(checkout_dir, ignore_errors=True)
+      if attempt == CLONE_TRIES - 1:
+        logging.error('Clone failed after %d attempts', CLONE_TRIES)
+        raise
       time.sleep(RETRY_SLEEP_SECONDS)
-      continue
 
   return None
 

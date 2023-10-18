@@ -13,5 +13,5 @@ pylint = "*"
 yapf = "*"
 
 [requires]
-# debian_converter uses python3 from ubuntu:22.04, which is 3.10.6
-python_version = "3.10"
+# debian_converter uses python3 from alpine-3.18, which is 3.11
+python_version = "3.11"

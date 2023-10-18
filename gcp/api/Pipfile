@@ -5,7 +5,7 @@ name = "pypi"
 
 [packages]
 google-cloud-ndb = "==2.2.2"
-google-cloud-logging = "==3.7.0"
+google-cloud-logging = "==3.8.0"
 google-cloud-pubsub = "==2.18.4"
 grpcio = "==1.59.0"
 osv = {editable = true, path = "../../"}

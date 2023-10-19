@@ -579,3 +579,9 @@ def package_in_ecosystem(package):
   if ecosystem in osv.ecosystems.package_urls:
     return osv.ecosystems.package_urls[ecosystem] + package['name']
   return ''
+
+
+@blueprint.app_template_filter('osv_has_vuln')
+def osv_has_vuln(vuln_id):
+  """Checks if an osv vulnerability exists for the given ID."""
+  return osv.Bug.get_by_id(vuln_id)

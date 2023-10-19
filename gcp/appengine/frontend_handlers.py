@@ -581,7 +581,7 @@ def package_in_ecosystem(package):
   return ''
 
 
-@blueprint.app_template_filter('osv_has_bug')
-def osv_has_bug(vuln_id):
-  """Checks if an osv bug exists for the given ID."""
+@blueprint.app_template_filter('osv_has_vuln')
+def osv_has_vuln(vuln_id):
+  """Checks if an osv vulnerability exists for the given ID."""
   return osv.Bug.get_by_id(vuln_id)

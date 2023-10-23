@@ -95,7 +95,8 @@ def main():
       logging.info('%s has too many listed aliases, skipping computation.',
                    bug.db_id)
       continue
-
+    if bug.withdrawn:
+      continue
     bugs_map[bug.db_id] = bug.aliases
     for alias in bug.aliases:
       aliases_map.setdefault(alias, []).append(bug.db_id)

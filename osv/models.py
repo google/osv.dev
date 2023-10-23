@@ -669,11 +669,11 @@ class Bug(ndb.Model):
     related_bugs = Bug.query(Bug.related == self.db_id).fetch()
     if related_bugs:
       related_bug_ids = [bug.db_id for bug in related_bugs]
-      self.related = sorted(list(set(related_bug_ids + self.related)))
+      related = sorted(list(set(related_bug_ids + self.related)))
 
     alias_group = AliasGroup.query(AliasGroup.bug_ids == self.db_id).get()
     if alias_group:
-      self.aliases = sorted(list(set(alias_group.bug_ids) - {self.db_id}))
+      aliases = sorted(list(set(alias_group.bug_ids) - {self.db_id}))
       modified = max(self.last_modified, alias_group.last_modified)
 
     result = vulnerability_pb2.Vulnerability(
@@ -681,8 +681,8 @@ class Bug(ndb.Model):
         id=self.id(),
         published=published,
         modified=modified,
-        aliases=self.aliases,
-        related=self.related,
+        aliases=aliases,
+        related=related,
         withdrawn=withdrawn,
         summary=self.summary,
         details=details,
@@ -806,8 +806,19 @@ class SourceRepository(ndb.Model):
 
 
 class AliasGroup(ndb.Model):
+  """Alias group."""
   bug_ids = ndb.StringProperty(repeated=True)
   last_modified = ndb.DateTimeProperty()
+
+
+class AliasAllowListEntry(ndb.Model):
+  """Alias group allow list entry."""
+  bug_id = ndb.StringProperty()
+
+
+class AliasDenyListEntry(ndb.Model):
+  """Alias group deny list entry."""
+  bug_id = ndb.StringProperty()
 
 
 def get_source_repository(source_name):

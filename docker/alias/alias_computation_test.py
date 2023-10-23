@@ -31,6 +31,23 @@ class AliasTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
 
   def test_basic(self):
     """Tests basic case."""
+    osv.Bug(
+        id='aaa-123',
+        db_id='aaa-123',
+        aliases=['aaa-124'],
+        status=1,
+        source='test',
+        public=True,
+        import_last_modified=datetime.datetime(2023, 1, 1),
+    ).put()
+    osv.Bug(
+        id='aaa-124',
+        db_id='aaa-124',
+        status=1,
+        source='test',
+        public=True,
+        import_last_modified=datetime.datetime(2023, 1, 1),
+    ).put()
     osv.AliasGroup(
         bug_ids=['aaa-123', 'aaa-124'],
         last_modified=datetime.datetime(2023, 1, 1),
@@ -39,6 +56,24 @@ class AliasTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
     bug_ids = osv.AliasGroup.query(
         osv.AliasGroup.bug_ids == 'aaa-123').get().bug_ids
     self.assertEqual(['aaa-123', 'aaa-124'], bug_ids)
+
+  def test_bug_reaches_limit(self):
+    """Tests bug reaches limit."""
+    osv.Bug(
+        id='aaa-111',
+        db_id='aaa-111',
+        aliases=[
+            'aaa-222', 'aaa-333', 'aaa-444', 'aaa-555', 'aaa-666', 'aaa-777'
+        ],
+        status=1,
+        source='test',
+        public=True,
+        import_last_modified=datetime.datetime(2023, 1, 1),
+    ).put()
+    alias_computation.main()
+    alias_group = osv.AliasGroup.query(
+        osv.AliasGroup.bug_ids == 'aaa-111').get()
+    self.assertIsNone(alias_group)
 
   def test_update_alias_group(self):
     """Tests updating an existing alias group."""
@@ -50,6 +85,15 @@ class AliasTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
         id='bbb-123',
         db_id='bbb-123',
         aliases=['bbb-345', 'bbb-456'],
+        status=1,
+        source='test',
+        public=True,
+        import_last_modified=datetime.datetime(2023, 1, 1),
+    ).put()
+    osv.Bug(
+        id='bbb-234',
+        db_id='bbb-234',
+        aliases=['bbb-123'],
         status=1,
         source='test',
         public=True,
@@ -116,6 +160,58 @@ class AliasTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
     alias_group = osv.AliasGroup.query(
         osv.AliasGroup.bug_ids == 'ccc-123').get()
     self.assertIsNone(alias_group)
+
+  def test_split_alias_group(self):
+    """Tests split an existing alias group into two.
+    AliasGroup A -> B -> C -> D, remove the B -> C alias
+    to get AliasGroups A -> B and C -> D."""
+    osv.Bug(
+        id='ddd-123',
+        db_id='ddd-123',
+        aliases=['ddd-124'],
+        status=1,
+        source='test',
+        public=True,
+        import_last_modified=datetime.datetime(2023, 1, 1),
+    ).put()
+    osv.Bug(
+        id='ddd-124',
+        db_id='ddd-124',
+        status=1,
+        source='test',
+        public=True,
+        import_last_modified=datetime.datetime(2023, 1, 1),
+    ).put()
+    osv.Bug(
+        id='ddd-125',
+        db_id='ddd-125',
+        aliases=['ddd-126'],
+        status=1,
+        source='test',
+        public=True,
+        import_last_modified=datetime.datetime(2023, 1, 1),
+    ).put()
+    osv.Bug(
+        id='ddd-126',
+        db_id='ddd-126',
+        status=1,
+        source='test',
+        public=True,
+        import_last_modified=datetime.datetime(2023, 1, 1),
+    ).put()
+    osv.AliasGroup(
+        bug_ids=['ddd-123', 'ddd-124', 'ddd-125', 'ddd-126'],
+        last_modified=datetime.datetime(2023, 1, 1),
+    ).put()
+    alias_computation.main()
+    alias_group = osv.AliasGroup.query(
+        osv.AliasGroup.bug_ids == 'ddd-123').get()
+    self.assertIsNotNone(alias_group)
+    self.assertEqual(['ddd-123', 'ddd-124'], alias_group.bug_ids)
+    alias_group = osv.AliasGroup.query(
+        osv.AliasGroup.bug_ids == 'ddd-125').get()
+    self.assertIsNotNone(alias_group)
+    self.assertEqual(['ddd-125', 'ddd-126'], alias_group.bug_ids)
 
 
 if __name__ == '__main__':

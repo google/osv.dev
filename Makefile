@@ -21,6 +21,9 @@ worker-tests:
 importer-tests:
 	cd docker/importer && ./run_tests.sh
 
+alias-tests:
+	cd docker/alias && ./run_tests.sh
+
 appengine-tests:
 	cd gcp/appengine && ./run_tests.sh
 

@@ -107,11 +107,11 @@ resource "google_container_node_pool" "highend" {
       workloadType = "highend"
     }
 
-    taint = [{
+    taint {
       effect = "NO_EXECUTE"
       key    = "workloadType"
       value  = "highend"
-    }]
+    }
 
   }
 }
@@ -143,11 +143,11 @@ resource "google_container_node_pool" "importer_pool" {
       workloadType = "importer-pool"
     }
 
-    taint = [{
+    taint {
       effect = "NO_EXECUTE"
       key    = "workloadType"
       value  = "importer-pool"
-    }]
+    }
   }
 }
 

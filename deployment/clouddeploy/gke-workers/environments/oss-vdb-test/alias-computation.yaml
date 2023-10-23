@@ -12,6 +12,3 @@ spec:
             env:
             - name: GOOGLE_CLOUD_PROJECT
               value: oss-vdb-test
-            args:
-              # TODO(michaelkedar): single source of truth w/ terraform config
-              - "--bucket=osv-test-vulnerabilities"

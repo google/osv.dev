@@ -34,15 +34,14 @@ def _update_group(bug_ids, alias_group):
     logging.info('Deleting alias group due to invalid number of bugs: %s',
                  bug_ids)
     alias_group.key.delete()
-    return True
+    return
 
   if bug_ids == alias_group.bug_ids:
-    return False
+    return
 
   alias_group.bug_ids = bug_ids
   alias_group.last_modified = datetime.datetime.utcnow()
   alias_group.put()
-  return True
 
 
 def _create_alias_group(bug_ids):
@@ -105,18 +104,14 @@ def main():
 
   # For each alias group, re-compute the bug IDs in the group and update the
   # group with the computed bug IDs.
-  # If the group has already been updated, create new alias groups for others.
-  # (It happens when splitting an alias group into multiple).
   for alias_group in all_alias_group:
-    updated = False
-    for bug_id in alias_group.bug_ids:
-      if bug_id in visited:
-        continue
-      bug_ids = _compute_aliases(bug_id, visited)
-      if not updated:
-        updated = _update_group(bug_ids, alias_group)
-      else:
-        _create_alias_group(bug_ids)
+    if not alias_group:
+      continue
+    bug_id = alias_group.bug_ids[0]
+    if bug_id in visited:
+      continue
+    bug_ids = _compute_aliases(bug_id, visited)
+    _update_group(bug_ids, alias_group)
 
   # For each bug ID that has not been visited, create new alias groups.
   for bug_id in bugs_map:

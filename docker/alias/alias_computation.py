@@ -30,9 +30,12 @@ aliases_map = {}
 
 def _update_group(bug_ids, alias_group):
   """Updates the alias group in the datastore."""
-  if len(bug_ids) <= 1 or len(bug_ids) > ALIAS_GROUP_VULN_LIMIT:
-    logging.info('Deleting alias group due to invalid number of bugs: %s',
-                 bug_ids)
+  if len(bug_ids) <= 1:
+    logging.info('Deleting alias group due to too few bugs: %s', bug_ids)
+    alias_group.key.delete()
+    return
+  if len(bug_ids) > ALIAS_GROUP_VULN_LIMIT:
+    logging.info('Deleting alias group due to too many bugs: %s', bug_ids)
     alias_group.key.delete()
     return
 
@@ -46,11 +49,15 @@ def _update_group(bug_ids, alias_group):
 
 def _create_alias_group(bug_ids):
   """Creates a new alias group in the datastore."""
-  if len(bug_ids) <= 1 or len(bug_ids) > ALIAS_GROUP_VULN_LIMIT:
-    logging.info(
-        'Skipping alias group creation due to invalid number of bugs: %s',
-        bug_ids)
+  if len(bug_ids) <= 1:
+    logging.info('Skipping alias group creation due to too few bugs: %s',
+                 bug_ids)
     return
+  if len(bug_ids) > ALIAS_GROUP_VULN_LIMIT:
+    logging.info('Skipping alias group creation due to too many bugs: %s',
+                 bug_ids)
+    return
+
   new_group = osv.AliasGroup(bug_ids=bug_ids)
   new_group.last_modified = datetime.datetime.utcnow()
   new_group.put()
@@ -84,8 +91,10 @@ def main():
   # Query for all bugs that have aliases.
   bugs = osv.Bug.query(osv.Bug.aliases > '')
   all_alias_group = osv.AliasGroup.query()
-  allow_list = set(osv.AliasAllowListEntry.query())
-  deny_list = set(osv.AliasDenyListEntry.query())
+  allow_list_query = osv.AliasAllowListEntry.query()
+  deny_list_query = osv.AliasDenyListEntry.query()
+  allow_list = {allow_entry.bug_id for allow_entry in allow_list_query}
+  deny_list = {deny_entry.bug_id for deny_entry in deny_list_query}
 
   # For each bug, add its aliases to the maps and ignore invalid bugs.
   for bug in bugs:
@@ -105,10 +114,9 @@ def main():
   # For each alias group, re-compute the bug IDs in the group and update the
   # group with the computed bug IDs.
   for alias_group in all_alias_group:
-    if not alias_group:
-      continue
-    bug_id = alias_group.bug_ids[0]
+    bug_id = alias_group.bug_ids[0]  # AliasGroups contain more than one bug.
     if bug_id in visited:
+      alias_group.key.delete()
       continue
     bug_ids = _compute_aliases(bug_id, visited)
     _update_group(bug_ids, alias_group)

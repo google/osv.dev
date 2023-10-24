@@ -213,6 +213,174 @@ class AliasTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
     self.assertIsNotNone(alias_group)
     self.assertEqual(['ddd-125', 'ddd-126'], alias_group.bug_ids)
 
+  def test_allow_list(self):
+    """Test allow list."""
+    osv.Bug(
+        id='eee-111',
+        db_id='eee-111',
+        aliases=[
+            'eee-222', 'eee-333', 'eee-444', 'eee-555', 'eee-666', 'eee-777'
+        ],
+        status=1,
+        source='test',
+        public=True,
+        import_last_modified=datetime.datetime(2023, 1, 1),
+    ).put()
+    osv.AliasAllowListEntry(bug_id='eee-111',).put()
+    alias_computation.main()
+    alias_group = osv.AliasGroup.query(
+        osv.AliasGroup.bug_ids == 'eee-111').get()
+    self.assertEqual(7, len(alias_group.bug_ids))
+
+  def test_deny_list(self):
+    """Tests deny list."""
+    osv.Bug(
+        id='fff-123',
+        db_id='fff-123',
+        aliases=['fff-124'],
+        status=1,
+        source='test',
+        public=True,
+        import_last_modified=datetime.datetime(2023, 1, 1),
+    ).put()
+    osv.Bug(
+        id='fff-124',
+        db_id='fff-124',
+        aliases=['fff-125'],
+        status=1,
+        source='test',
+        public=True,
+        import_last_modified=datetime.datetime(2023, 1, 1),
+    ).put()
+    osv.AliasGroup(
+        bug_ids=['fff-124', 'fff-125'],
+        last_modified=datetime.datetime(2023, 1, 1),
+    ).put()
+    osv.AliasDenyListEntry(bug_id='fff-123',).put()
+    alias_computation.main()
+    bug_ids = osv.AliasGroup.query(
+        osv.AliasGroup.bug_ids == 'fff-124').get().bug_ids
+    self.assertEqual(['fff-124', 'fff-125'], bug_ids)
+
+  def test_merge_alias_group(self):
+    """Tests all bugs of one alias group have been
+    merged to other alias group."""
+    osv.Bug(
+        id='ggg-123',
+        db_id='ggg-123',
+        aliases=['ggg-124', 'ggg-125', 'ggg-126'],
+        status=1,
+        source='test',
+        public=True,
+        import_last_modified=datetime.datetime(2023, 1, 1),
+    ).put()
+    osv.AliasGroup(
+        bug_ids=['ggg-123', 'ggg-124'],
+        last_modified=datetime.datetime(2023, 1, 1),
+    ).put()
+    osv.AliasGroup(
+        bug_ids=['ggg-125', 'ggg-126'],
+        last_modified=datetime.datetime(2023, 1, 1),
+    ).put()
+    alias_computation.main()
+    alias_group = osv.AliasGroup.query(
+        osv.AliasGroup.bug_ids == 'ggg-125').fetch()
+    self.assertEqual(1, len(alias_group))
+    self.assertEqual(['ggg-123', 'ggg-124', 'ggg-125', 'ggg-126'],
+                     alias_group[0].bug_ids)
+
+  def test_partial_merge_alias_group(self):
+    """Tests merging some bugs of one alias group to another alias group."""
+    osv.Bug(
+        id='hhh-123',
+        db_id='hhh-123',
+        aliases=['hhh-124', 'hhh-125'],
+        status=1,
+        source='test',
+        public=True,
+        import_last_modified=datetime.datetime(2023, 1, 1),
+    ).put()
+    osv.Bug(
+        id='hhh-126',
+        db_id='hhh-126',
+        aliases=['hhh-127'],
+        status=1,
+        source='test',
+        public=True,
+        import_last_modified=datetime.datetime(2023, 1, 1),
+    ).put()
+    osv.AliasGroup(
+        bug_ids=['hhh-123', 'hhh-124'],
+        last_modified=datetime.datetime(2023, 1, 1),
+    ).put()
+    osv.AliasGroup(
+        bug_ids=['hhh-125', 'hhh-126', 'hhh-127'],
+        last_modified=datetime.datetime(2023, 1, 1),
+    ).put()
+    alias_computation.main()
+    alias_group = osv.AliasGroup.query(
+        osv.AliasGroup.bug_ids == 'hhh-125').fetch()
+    self.assertEqual(1, len(alias_group))
+    self.assertEqual(['hhh-123', 'hhh-124', 'hhh-125'], alias_group[0].bug_ids)
+    alias_group = osv.AliasGroup.query(
+        osv.AliasGroup.bug_ids == 'hhh-127').fetch()
+    self.assertEqual(1, len(alias_group))
+    self.assertEqual(['hhh-126', 'hhh-127'], alias_group[0].bug_ids)
+
+
+def test_alias_group_reaches_limit(self):
+  """Tests a alias group reaches limit."""
+  osv.Bug(
+      id='iii-111',
+      db_id='iii-111',
+      aliases=[
+          'iii-222',
+          'iii-333',
+          'iii-444',
+          'iii-555',
+          'iii-666',
+          'iii-777',
+          'iii-888',
+          'iii-999',
+          'iii-123',
+          'iii-124',
+          'iii-125',
+          'iii-126',
+          'iii-322',
+          'iii-333',
+          'iii-344',
+          'iii-355',
+          'iii-366',
+          'iii-377',
+          'iii-488',
+          'iii-499',
+          'iii-423',
+          'iii-424',
+          'iii-425',
+          'iii-426',
+          'iii-522',
+          'iii-533',
+          'iii-544',
+          'iii-655',
+          'iii-566',
+          'iii-577',
+          'iii-688',
+          'iii-699',
+          'iii-623',
+          'iii-624',
+          'iii-625',
+          'iii-626',
+      ],
+      status=1,
+      source='test',
+      public=True,
+      import_last_modified=datetime.datetime(2023, 1, 1),
+  ).put()
+  osv.AliasAllowListEntry(bug_id='iii-111',).put()
+  alias_computation.main()
+  alias_group = osv.AliasGroup.query(osv.AliasGroup.bug_ids == 'iii-111').get()
+  self.assertIsNone(alias_group)
+
 
 if __name__ == '__main__':
   os.system('pkill -f datastore')

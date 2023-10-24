@@ -672,6 +672,8 @@ class Bug(ndb.Model):
         id=self.id(),
         published=published,
         modified=modified,
+        aliases=self.aliases,
+        related=self.related,
         withdrawn=withdrawn,
         summary=self.summary,
         details=details,

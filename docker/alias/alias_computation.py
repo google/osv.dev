@@ -116,8 +116,8 @@ def main():
   # group with the computed bug IDs.
   for alias_group in all_alias_group:
     bug_id = alias_group.bug_ids[0]  # AliasGroups contain more than one bug.
-    # If the bug has already been counted in a different aliasGroup,
-    # we delete the original one.
+    # If the bug has already been counted in a different alias group,
+    # we delete the original one to merge two alias groups.
     if bug_id in visited:
       alias_group.key.delete()
       continue

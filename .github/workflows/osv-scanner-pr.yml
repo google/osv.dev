@@ -28,11 +28,6 @@ jobs:
   scan-pr:
     uses: "google/osv-scanner/.github/workflows/osv-scanner-reusable-pr.yml@main"
     with:
-      # Just scan the root directory and docs, since everything else is fixtures
-      scan-args: |-
-          --skip-git
-          ./
-          ./docs/
     permissions:
       security-events: write
       contents: read

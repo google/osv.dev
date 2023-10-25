@@ -25,5 +25,14 @@ on:
 permissions: read-all
 
 jobs:
-  scan-pr-attempt:
-    uses: "google/osv-scanner/.github/workflows/osv-scanner-reusable-pr.yml@main"
+  scan-pr:
+    uses: "./.github/workflows/osv-scanner-reusable-pr.yml"
+    with:
+      # Just scan the root directory and docs, since everything else is fixtures
+      scan-args: |-
+          --skip-git
+          ./
+          ./docs/
+    permissions:
+      security-events: write
+      contents: read

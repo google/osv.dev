@@ -21,7 +21,7 @@ from google.cloud import ndb
 import osv
 import osv.logs
 
-ALIAS_GROUP_VULN_LIMIT = 32
+ALIAS_GROUP_VULN_LIMIT = 16
 VULN_ALIASES_LIMIT = 5
 
 bugs_map = {}
@@ -98,8 +98,9 @@ def main():
 
   # For each bug, add its aliases to the maps and ignore invalid bugs.
   for bug in bugs:
-    if bug.db_id not in allow_list and (bug.db_id in deny_list or
-                                        len(bug.aliases) > VULN_ALIASES_LIMIT):
+    if bug.db_id in deny_list:
+      continue
+    if len(bug.aliases) > VULN_ALIASES_LIMIT and bug.db_id not in allow_list:
       logging.info('%s has too many listed aliases, skipping computation.',
                    bug.db_id)
       continue
@@ -115,6 +116,8 @@ def main():
   # group with the computed bug IDs.
   for alias_group in all_alias_group:
     bug_id = alias_group.bug_ids[0]  # AliasGroups contain more than one bug.
+    # If the bug has already been counted in a different aliasGroup,
+    # we delete the original one.
     if bug_id in visited:
       alias_group.key.delete()
       continue

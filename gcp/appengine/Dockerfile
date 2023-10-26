@@ -1,5 +1,5 @@
 # Build the Javascript frontend
-FROM node:latest AS FRONTEND3_BUILD
+FROM node:20.9 AS FRONTEND3_BUILD
 WORKDIR /build/frontend3
 
 # Install dependencies first for better caching

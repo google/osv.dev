@@ -585,3 +585,24 @@ def package_in_ecosystem(package):
 def osv_has_vuln(vuln_id):
   """Checks if an osv vulnerability exists for the given ID."""
   return osv.Bug.get_by_id(vuln_id)
+
+
+@blueprint.app_template_filter('list_packages')
+def list_packages(vuln_affected: list[dict]):
+  """Lists all affected package names without duplicates,
+  remaining the original order."""
+  packages = []
+
+  for affected in vuln_affected:
+    for affected_range in affected['ranges']:
+      if affected_range['type'] in ('ECOSYSTEM', 'SEMVER'):
+        package_entry = affected['package']['ecosystem'] + '/' + affected[
+            'package']['name']
+        if package_entry not in packages:
+          packages.append(package_entry)
+      elif affected_range['repo'] == 'GIT':
+        parsed_scheme = strip_scheme(affected_range['repo'])
+        if parsed_scheme not in packages:
+          packages.append(parsed_scheme)
+
+  return packages

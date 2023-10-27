@@ -31,7 +31,7 @@ Matching C/C++ dependencies to known vulnerabilities has been one of the final p
 
 ### Submoduled C/C++ dependencies
 
-Submoduled dependencies retain their git histories. With a few simple git commands, it’s possible to know the current git commit hash for every dependency. Once the relevant git hash is known, we can use the [OSV API](https://google.github.io/osv.dev/post-v1-query/) to find any corresponding vulnerabilities. 
+Submoduled dependencies retain their Git histories. With a few simple Git commands, it’s possible to know the current Git commit hash for every dependency. Once the relevant Git hash is known, we can use the [OSV API](https://google.github.io/osv.dev/post-v1-query/) to find any corresponding vulnerabilities. 
 
 For example, let’s take a look at the dependencies for the [pd-server](https://github.com/charlesneimog/pd-server) project and see if we can find any vulnerabilities. Pd-server is a PureData interface to cpp-httplib and includes cpp-httplib as a submoduled dependency. 
 

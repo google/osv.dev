@@ -76,7 +76,7 @@ This result shows that the pd-server project is vulnerable to [CVE-2023-26130](h
 
 Vendored dependencies are included in a project by simply copying the code into the repository. Git commit information is not retained, so we need another way to determine whether a vulnerability is present. 
 
-The determineversion API estimates your dependency’s version by comparing files hashes from your local project to known hashes for a given version. Once your dependency version is known, you can find the relevant vulnerabilities through searching our database or using our API.
+The determineversion API estimates your dependency’s version by comparing file hashes from your local project to known hashes for a given version. Once your dependency version is known, you can find the relevant vulnerabilities through searching our database or using our API.
 
 When we released the API in July, its use was limited to vulnerabilities found by [OSS-Fuzz](https://google.github.io/oss-fuzz/). Not all C/C++ projects are part of OSS-Fuzz, nor are all vulnerabilities for a given dependency found by OSS-Fuzz, so a number of vulnerabilities were left on the table. With the addition of the commit level vulnerability data from the NVD, this gap has been significantly narrowed. **This means that the determineversion API may now be used for the majority of vendored C/C++ dependencies.** 
 

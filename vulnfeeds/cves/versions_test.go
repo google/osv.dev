@@ -394,6 +394,12 @@ func TestRepo(t *testing.T) {
 			expectedRepoURL: "https://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git",
 			expectedOk:      true,
 		},
+		{
+			description:     "Valid Gitweb repo",
+			inputLink:       "https://git.ffmpeg.org/gitweb/ffmpeg.git/commitdiff/c94875471e3ba3dc396c6919ff3ec9b14539cd71",
+			expectedRepoURL: "https://git.ffmpeg.org/ffmpeg.git",
+			expectedOk:      true,
+		},
 	}
 
 	for _, tc := range tests {
@@ -538,6 +544,15 @@ func TestExtractGitCommit(t *testing.T) {
 				Fixed: "ee1fee900537b5d9560e9f937402de5ddc8412f3",
 			},
 			expectFailure: true,
+		},
+		{
+			description:     "Valid GitWeb commit URL",
+			inputLink:       "https://git.ffmpeg.org/gitweb/ffmpeg.git/commitdiff/c94875471e3ba3dc396c6919ff3ec9b14539cd71",
+			inputCommitType: Fixed,
+			expectedAffectedCommit: AffectedCommit{
+				Repo:  "https://git.ffmpeg.org/ffmpeg.git",
+				Fixed: "c94875471e3ba3dc396c6919ff3ec9b14539cd71",
+			},
 		},
 	}
 

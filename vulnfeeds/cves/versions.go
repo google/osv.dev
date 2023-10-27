@@ -487,6 +487,9 @@ func Repo(u string) (string, error) {
 					strings.TrimSuffix(parsedURL.Path, "/")),
 				nil
 		}
+		if len(pathParts) >= 2 && parsedURL.Hostname() == "git.ffmpeg.org" {
+			return fmt.Sprintf("%s://%s/%s", parsedURL.Scheme, parsedURL.Hostname(), pathParts[2]), nil
+		}
 		if strings.HasSuffix(parsedURL.Path, ".git") {
 			return fmt.Sprintf("%s://%s%s", parsedURL.Scheme,
 					parsedURL.Hostname(),
@@ -698,6 +701,12 @@ func Commit(u string) (string, error) {
 			}
 			return strings.Split(param, "=")[1], nil
 		}
+	}
+
+	// FFMpeg's GitWeb seems to be it's own unique snowflake, e.g.
+	// https://git.ffmpeg.org/gitweb/ffmpeg.git/commit/c94875471e3ba3dc396c6919ff3ec9b14539cd71
+	if strings.HasPrefix(parsedURL.Path, "/gitweb/") && len(strings.Split(parsedURL.Path, "/")) == 4 {
+		return strings.Split(parsedURL.Path, "/")[3], nil
 	}
 
 	// GitHub and GitLab commit URLs are structured one way, e.g.

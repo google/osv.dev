@@ -18,7 +18,7 @@ Vulnerable commit ranges provide a granular approach that more closely follows t
 
 ## How are vulnerable commit ranges included in the OSV database?
 
-We’ve enriched over 30,000 advisories based on the [NVD CVE database](https://nvd.nist.gov/vuln/search). We’ve added vulnerable commit ranges to these advisories by using algorithmic analysis to match git repository tag information to patch information supplied by the NVD CVE entry. 
+We’ve enriched over 30,000 advisories based on the [NVD CVE database](https://nvd.nist.gov/vuln/search). We’ve added vulnerable commit ranges to these advisories by using algorithmic analysis to match Git repository tag information to patch information supplied by the NVD CVE entry. 
 
 As part of our work in this area, we've established working relationships with the NVD via data quality fixes and longer term systematic improvements.
 

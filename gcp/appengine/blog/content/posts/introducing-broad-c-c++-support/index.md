@@ -39,7 +39,7 @@ For this example, we’ll be working from the commit `cf3f15a841ca21b53c6de654c9
 
 To determine whether pd-server’s cpp-httplib copy has any known vulnerabilities, first determine the copy’s most recent commit hash by following these steps in your terminal:
 
-1. Recursively clone the pd-server project to your local machine using `git clone --recursive https://github.com/charlesneimog/pd-server`
+1. Clone the pd-server project repository, including its submodules, to your local machine using `git clone --recursive https://github.com/charlesneimog/pd-server`
 2. Navigate into the pd-server project folder using `cd pd-server`
 3. Checkout relevant commit using `git checkout cf3f15a841ca21b53c6de654c9981a30ae0b590c`
 4. Update submodules using `git submodule update` to update submodules to relevant commit

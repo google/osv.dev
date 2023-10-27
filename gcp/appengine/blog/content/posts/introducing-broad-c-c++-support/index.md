@@ -70,7 +70,7 @@ curl -d \
   "CVE-2023-26130"
 ]
 ```
-This result shows that the pd-server project is vulnerable to [CVE-2023-26130](https://osv.dev/vulnerability/CVE-2023-26130) at git commit ‘cf3f15a841ca21b53c6de654c9981a30ae0b590c’ through its use of cpp-httplib. Fortunately cpp-httplib has [a fix](https://github.com/yhirose/cpp-httplib/commit/5b397d455d25a391ba346863830c1949627b4d08) and pd-server updated their copy of cpp-httplib. The pd-server project is no longer be vulnerable to CVE-2023-26130. 
+This result shows that the pd-server project is vulnerable to [CVE-2023-26130](https://osv.dev/vulnerability/CVE-2023-26130) at Git commit ‘cf3f15a841ca21b53c6de654c9981a30ae0b590c’ through its use of cpp-httplib. Fortunately cpp-httplib has [a fix](https://github.com/yhirose/cpp-httplib/commit/5b397d455d25a391ba346863830c1949627b4d08) and pd-server updated their copy of cpp-httplib. The pd-server project is no longer be vulnerable to CVE-2023-26130. 
 
 ### Vendored C/C++ dependencies
 

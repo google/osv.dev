@@ -35,17 +35,21 @@ Submoduled dependencies retain their git histories. With a few simple git comman
 
 For example, let’s take a look at the dependencies for the [pd-server](https://github.com/charlesneimog/pd-server) project and see if we can find any vulnerabilities. Pd-server is a PureData interface to cpp-httplib and includes cpp-httplib as a submoduled dependency. 
 
-For this example, we’ll be working from the commit `cf3f15a841ca21b53c6de654c9981a30ae0b590c`. To follow along with this example, make sure that HEAD is pointed to this specific commit in the pd-server directory. 
+For this example, we’ll be working from the commit `cf3f15a841ca21b53c6de654c9981a30ae0b590c`.
 
 To determine whether pd-server’s cpp-httplib copy has any known vulnerabilities, first determine the copy’s most recent commit hash by following these steps in your terminal:
 
 1. Recursively clone the pd-server project to your local machine using `git clone --recursive https://github.com/charlesneimog/pd-server`
 2. Navigate into the pd-server project folder using `cd pd-server`
-3. Use `git submodule status` to determine the most recent commits for each submodule. 
+3. Checkout relevant commit using `git checkout cf3f15a841ca21b53c6de654c9981a30ae0b590c`
+4. Update submodules using `git submodule update` to update submodules to relevant commit
+5. Determine the most recent commits for each submodule `git submodule status` 
 
 ```
 git clone --recursive https://github.com/charlesneimog/pd-server
 cd pd-server
+git checkout cf3f15a841ca21b53c6de654c9981a30ae0b590c
+git submodule update
 git submodule status
  5c2e137f7a7a03f4007494954ccb3e23753e7807 pd-lib-builder (v0.6.0-28-g5c2e137)
  227d2c20509f85a394133e2be6d0b0fc1fda54b2 src/cpp-httplib (v0.11.3-6-g227d2c2)
@@ -66,7 +70,7 @@ curl -d \
   "CVE-2023-26130"
 ]
 ```
-This result shows that the pd-server project is vulnerable to [CVE-2023-26130](https://osv.dev/vulnerability/CVE-2023-26130) through its use of cpp-httplib. Fortunately cpp-httplib has a fix. If pd-server updated their copy of cpp-httplib to [this commit](https://github.com/yhirose/cpp-httplib/commit/5b397d455d25a391ba346863830c1949627b4d08), the project would no longer be vulnerable to CVE-2023-26130. 
+This result shows that the pd-server project is vulnerable to [CVE-2023-26130](https://osv.dev/vulnerability/CVE-2023-26130) at git commit ‘cf3f15a841ca21b53c6de654c9981a30ae0b590c’ through its use of cpp-httplib. Fortunately cpp-httplib has [a fix](https://github.com/yhirose/cpp-httplib/commit/5b397d455d25a391ba346863830c1949627b4d08) and pd-server updated their copy of cpp-httplib. The pd-server project is no longer be vulnerable to CVE-2023-26130. 
 
 ### Vendored C/C++ dependencies
 
@@ -78,7 +82,7 @@ When we released the API in July, its use was limited to vulnerabilities found b
 
 For more information on how to use the determineversion API, please see our [documentation](https://google.github.io/osv.dev/post-v1-determineversion/) or this [walkthrough](https://google.github.io/osv.dev/post-v1-determineversion/). 
 
-Within the next few months, support will be added to OSV-Scanner to make this a seamless out of the box experience for developers. 
+Within the next few months, support will be added to OSV-Scanner to make this a seamless out of the box experience for developers. Follow [this issue](https://github.com/google/osv-scanner/issues/82) for updates.
 
 ## Try it yourself!
 

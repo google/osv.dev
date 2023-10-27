@@ -57,7 +57,7 @@ git submodule status
  1b11fd301531e6df35a6107c1e8665b1e77a2d8e src/websocketpp (0.8.2-1-g1b11fd3)
 ```
 
-Cpp-httplib’s most recent commit hash is `227d2c20509f85a394133e2be6d0b0fc1fda54b2`. We can now use this information to construct an API call. It will be in this form:
+cpp-httplib’s most recent commit hash is `227d2c20509f85a394133e2be6d0b0fc1fda54b2`. We can now use this information to construct an API call. It will be in this form:
 
 ```
 curl -d \

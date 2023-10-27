@@ -12,7 +12,7 @@ OSV is committed to bringing our users comprehensive, accurate and timely open s
 Today we are announcing that OSV advisories now include vulnerable commit ranges. **Vulnerable commit ranges, along with the previously announced experimental determineversion API, will enable vulnerability management for software with C and C++ dependencies, which has been one of the last gaps in coverage in OSV.dev’s database.**
 <!--more-->
 
-Because the C/C++ ecosystem doesn’t have a centralized package register, source code identifiers (e.g. git hashes) are the best way to identify C/C++ libraries. Typically vulnerabilities are associated with versions, not git hashes, making C/C++ vulnerability matching difficult. The new commit level vulnerability information will allow users to confidently match their dependencies to known vulnerabilities within the OSV database. 
+Because the C/C++ ecosystem doesn’t have a centralized package register, source code identifiers (e.g. git hashes) are the best way to identify C/C++ libraries. Typically, vulnerabilities are associated with versions, not Git hashes, making C/C++ vulnerability matching difficult. The new commit level vulnerability information will allow users to confidently match their dependencies to known vulnerabilities within the OSV database. 
 
 Vulnerable commit ranges provide a granular approach that more closely follows the development process, matching vulnerabilities to a range of upstream commits instead of matching vulnerabilities to a package version. This precise information allows for accurate identification of git branches cut from known vulnerable commits and leads to more accurate vulnerability information.
 

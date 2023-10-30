@@ -26,4 +26,6 @@ permissions: read-all
 
 jobs:
   scan-pr-attempt:
+    permissions:
+      security-events: write
     uses: "google/osv-scanner/.github/workflows/osv-scanner-reusable-pr.yml@main"

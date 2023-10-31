@@ -97,6 +97,8 @@ var VendorProductDenyList = []VendorProduct{
 	// {"netapp", "cloud_backup"},
 	// Three strikes and the entire netapp vendor is out...
 	{"netapp", ""},
+	// [CVE-2021-28957]: Incorrectly associates with github.com/lxml/lxml
+	{"oracle", "zfs_storage_appliance_kit"},
 }
 
 // Looks at what the repo to determine if it contains code using an in-scope language

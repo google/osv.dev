@@ -24,9 +24,6 @@ import osv.logs
 ALIAS_GROUP_VULN_LIMIT = 16
 VULN_ALIASES_LIMIT = 5
 
-bugs_map = {}
-aliases_map = {}
-
 
 def _update_group(bug_ids, alias_group):
   """Updates the alias group in the datastore."""
@@ -63,7 +60,7 @@ def _create_alias_group(bug_ids):
   new_group.put()
 
 
-def _compute_aliases(bug_id, visited):
+def _compute_aliases(bug_id, visited, bug_aliases):
   """Computes all aliases for the given bug ID.
   The returned list contains the bug ID itself, all the IDs from the bug's
   raw aliases, all the IDs of bugs that have the current bug as an alias,
@@ -77,9 +74,8 @@ def _compute_aliases(bug_id, visited):
     visited.add(bug_id)
     bug_ids.append(bug_id)
 
-    aliases = bugs_map.get(bug_id, [])
-    bugs_of_alias = aliases_map.get(bug_id, [])
-    to_visit.update(set(bugs_of_alias + aliases) - visited)
+    aliases = bug_aliases.get(bug_id, set())
+    to_visit.update(aliases - visited)
 
   return sorted(bug_ids)
 
@@ -96,6 +92,10 @@ def main():
   allow_list = {allow_entry.bug_id for allow_entry in allow_list_query}
   deny_list = {deny_entry.bug_id for deny_entry in deny_list_query}
 
+  # Mapping of ID to a set of all aliases for that bug,
+  # including its raw aliases and bugs that it is referenced in as an alias.
+  bug_aliases = {}
+
   # For each bug, add its aliases to the maps and ignore invalid bugs.
   for bug in bugs:
     if bug.db_id in deny_list:
@@ -104,11 +104,11 @@ def main():
       logging.info('%s has too many listed aliases, skipping computation.',
                    bug.db_id)
       continue
-    if bug.withdrawn:
+    if bug.status != osv.BugStatus.PROCESSED:
       continue
-    bugs_map[bug.db_id] = bug.aliases
     for alias in bug.aliases:
-      aliases_map.setdefault(alias, []).append(bug.db_id)
+      bug_aliases.setdefault(bug.db_id, set()).add(alias)
+      bug_aliases.setdefault(alias, set()).add(bug.db_id)
 
   visited = set()
 
@@ -121,13 +121,13 @@ def main():
     if bug_id in visited:
       alias_group.key.delete()
       continue
-    bug_ids = _compute_aliases(bug_id, visited)
+    bug_ids = _compute_aliases(bug_id, visited, bug_aliases)
     _update_group(bug_ids, alias_group)
 
   # For each bug ID that has not been visited, create new alias groups.
-  for bug_id in bugs_map:
+  for bug_id in bug_aliases:
     if bug_id not in visited:
-      bug_ids = _compute_aliases(bug_id, visited)
+      bug_ids = _compute_aliases(bug_id, visited, bug_aliases)
       _create_alias_group(bug_ids)
 
 

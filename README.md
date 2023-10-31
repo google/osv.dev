@@ -65,6 +65,7 @@ tools and unsupported by the core OSV maintainers.
 -   [Packj](https://github.com/ossillate-inc/packj)
 -   [pip-audit](https://pypi.org/project/pip-audit/)
 -   [Renovate](https://github.com/renovatebot/renovate)
+-   [rosv: an R package to access the OSV database and help administer Posit Package Manager](https://github.com/al-obrien/rosv)
 -   [Rust client library](https://github.com/gcmurphy/osv)
 -   [Skjold: Security audit python project dependencies against several security
     advisory databases](https://github.com/twu/skjold)

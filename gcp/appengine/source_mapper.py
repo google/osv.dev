@@ -98,7 +98,7 @@ class SavannahVCS(VCSViewer):
 
 
 class FFMpegVCS(VCSViewer):
-  VCS_URL_REGEX = re.compile(r'(https?://git\.ffmpeg\.org)/(.*)\.git$')
+  VCS_URL_REGEX = re.compile(r'(https?://git\.ffmpeg\.org)/(.*\.git)$')
   VCS_REVISION_SUB = r'\1/gitweb/\2/commit/{revision}'
   VCS_REVISION_DIFF_SUB = (r'\1/gitweb/\2/commitdiff/'
                            r'{start_revision}..{end_version}')

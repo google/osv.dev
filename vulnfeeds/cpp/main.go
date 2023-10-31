@@ -539,7 +539,16 @@ func main() {
 			}
 			if _, ok := VPRepoCache[VendorProduct{CPE.Vendor, CPE.Product}]; ok {
 				Logger.Infof("[%s]: Pre-references, derived %q for %q %q using cache", CVEID, VPRepoCache[VendorProduct{CPE.Vendor, CPE.Product}], CPE.Vendor, CPE.Product)
-				ReposForCVE[CVEID] = VPRepoCache[VendorProduct{CPE.Vendor, CPE.Product}]
+				if _, ok := ReposForCVE[CVEID]; !ok {
+					ReposForCVE[CVEID] = VPRepoCache[VendorProduct{CPE.Vendor, CPE.Product}]
+					continue
+				}
+				// Don't append duplicates.
+				for _, repo := range VPRepoCache[VendorProduct{CPE.Vendor, CPE.Product}] {
+					if !slices.Contains(ReposForCVE[CVEID], repo) {
+						ReposForCVE[CVEID] = append(ReposForCVE[CVEID], repo)
+					}
+				}
 			}
 		}
 

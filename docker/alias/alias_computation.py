@@ -77,6 +77,8 @@ def _compute_aliases(bug_id, visited, bug_aliases):
     aliases = bug_aliases.get(bug_id, set())
     to_visit.update(aliases - visited)
 
+  # Returns a sorted list of bug IDs, which ensures deterministic behaviour
+  # and avoids unnecessary updates to the groups.
   return sorted(bug_ids)
 
 
@@ -87,10 +89,12 @@ def main():
   # Query for all bugs that have aliases.
   bugs = osv.Bug.query(osv.Bug.aliases > '')
   all_alias_group = osv.AliasGroup.query()
-  allow_list_query = osv.AliasAllowListEntry.query()
-  deny_list_query = osv.AliasDenyListEntry.query()
-  allow_list = {allow_entry.bug_id for allow_entry in allow_list_query}
-  deny_list = {deny_entry.bug_id for deny_entry in deny_list_query}
+  allow_list = {
+      allow_entry.bug_id for allow_entry in osv.AliasAllowListEntry.query()
+  }
+  deny_list = {
+      deny_entry.bug_id for deny_entry in osv.AliasDenyListEntry.query()
+  }
 
   # Mapping of ID to a set of all aliases for that bug,
   # including its raw aliases and bugs that it is referenced in as an alias.

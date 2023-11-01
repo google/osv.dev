@@ -14,6 +14,6 @@
 
 FROM gcr.io/oss-vdb/worker
 
-COPY alias.py /usr/local/bin
+COPY alias_computation.py /usr/local/bin
 RUN chmod 755 /usr/local/bin/alias_computation.py
 ENTRYPOINT ["alias_computation.py"]

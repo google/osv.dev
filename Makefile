@@ -21,6 +21,9 @@ worker-tests:
 importer-tests:
 	cd docker/importer && ./run_tests.sh
 
+alias-tests:
+	cd docker/alias && ./run_tests.sh
+
 appengine-tests:
 	cd gcp/appengine && ./run_tests.sh
 
@@ -51,4 +54,4 @@ run-api-server:
 	cd gcp/api && pipenv sync && GOOGLE_CLOUD_PROJECT=oss-vdb pipenv run python test_server.py $(HOME)/.config/gcloud/application_default_credentials.json
 
 # TODO: API integration tests.
-all-tests: lib-tests worker-tests importer-tests appengine-tests vulnfeed-tests
+all-tests: lib-tests worker-tests importer-tests alias-tests appengine-tests vulnfeed-tests

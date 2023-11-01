@@ -796,6 +796,22 @@ class SourceRepository(ndb.Model):
       raise ValueError('BUCKET SourceRepository cannot be editable.')
 
 
+class AliasGroup(ndb.Model):
+  """Alias group."""
+  bug_ids = ndb.StringProperty(repeated=True)
+  last_modified = ndb.DateTimeProperty()
+
+
+class AliasAllowListEntry(ndb.Model):
+  """Alias group allow list entry."""
+  bug_id = ndb.StringProperty()
+
+
+class AliasDenyListEntry(ndb.Model):
+  """Alias group deny list entry."""
+  bug_id = ndb.StringProperty()
+
+
 def get_source_repository(source_name):
   """Get source repository."""
   return SourceRepository.get_by_id(source_name)

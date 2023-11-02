@@ -9,7 +9,7 @@ OSV is committed to bringing our users comprehensive, accurate and timely open s
 - Adding six new ecosystems to the database
 - [The determineversion API](https://osv.dev/blog/posts/using-the-determineversion-api/), which expanded access to C/C++ vulnerabilities for OSS-Fuzz projects 
 
-Today we are announcing that OSV advisories now include vulnerable commit ranges. **Vulnerable commit ranges, along with the previously announced experimental determineversion API, will enable vulnerability management for software with C and C++ dependencies, which has been one of the last gaps in coverage in OSV.dev’s database.**
+Today we are announcing that OSV advisories now include vulnerable commit ranges. **Vulnerable commit ranges, along with the previously announced experimental determineversion API, will enable vulnerability management for software with C and C++ dependencies, which has been one of the last gaps in coverage in OSV.dev’s database. Additionally OSV-Scanner is now compatible with C and C++ projects. **
 <!--more-->
 
 Because the C/C++ ecosystem doesn’t have a centralized package register, source code identifiers (e.g. git hashes) are the best way to identify C/C++ libraries. Typically, vulnerabilities are associated with versions, not Git hashes, making C/C++ vulnerability matching difficult. The new commit level vulnerability information will allow users to confidently match their dependencies to known vulnerabilities within the OSV database. 
@@ -31,58 +31,37 @@ Matching C/C++ dependencies to known vulnerabilities has been one of the final p
 
 ### Submoduled C/C++ dependencies
 
-Submoduled dependencies retain their Git histories. With a few simple Git commands, it’s possible to know the current Git commit hash for every dependency. Once the relevant Git hash is known, we can use the [OSV API](https://google.github.io/osv.dev/post-v1-query/) to find any corresponding vulnerabilities. 
+Submoduled dependencies retain their Git histories. OSV-Scanner v1.4.3+ is able to determine the most recent Git commits for the submoduled dependencies and return any associated vulnerabilities. 
 
-For example, let’s take a look at the dependencies for the [pd-server](https://github.com/charlesneimog/pd-server) project and see if we can find any vulnerabilities. Pd-server is a PureData interface to cpp-httplib and includes cpp-httplib as a submoduled dependency. 
+For example, let’s consider the [yuzu](https://github.com/yuzu-emu/yuzu) project and see if we can find any vulnerabilities in the project dependencies. We’ll be working from commit `43be2bfe332d5537041262eb08037993239eaf5f` for this example. 
 
-For this example, we’ll be working from the commit `cf3f15a841ca21b53c6de654c9981a30ae0b590c`.
+Follow these steps:
 
-To determine whether pd-server’s cpp-httplib copy has any known vulnerabilities, first determine the copy’s most recent commit hash by following these steps in your terminal:
+1. Clone the yuzu project to your local machine using `git clone https://github.com/yuzu-emu/yuzu’. It is not necessary to use `git clone –recursive`. OSV-Scanner will be able to determine the appropriate Git commits without the recursive flag. 
+2. Checkout the relevant commit using `git -C yuzu checkout 43be2bfe332d5537041262eb08037993239eaf5f`
+3. Run `osv-scanner yuzu/`
 
-1. Clone the pd-server project repository, including its submodules, to your local machine using `git clone --recursive https://github.com/charlesneimog/pd-server`
-2. Navigate into the pd-server project folder using `cd pd-server`
-3. Checkout relevant commit using `git checkout cf3f15a841ca21b53c6de654c9981a30ae0b590c`
-4. Update submodules using `git submodule update` to update submodules to relevant commit
-5. Determine the most recent commits for each submodule `git submodule status` 
+OSV-Scanner returns the following vulnerabilities from the submoduled dependencies:
 
-```
-git clone --recursive https://github.com/charlesneimog/pd-server
-cd pd-server
-git checkout cf3f15a841ca21b53c6de654c9981a30ae0b590c
-git submodule update
-git submodule status
- 5c2e137f7a7a03f4007494954ccb3e23753e7807 pd-lib-builder (v0.6.0-28-g5c2e137)
- 227d2c20509f85a394133e2be6d0b0fc1fda54b2 src/cpp-httplib (v0.11.3-6-g227d2c2)
- 4c6cde72e533158e044252718c013a48bcff346c src/json (v3.11.2-39-g4c6cde72)
- 1b11fd301531e6df35a6107c1e8665b1e77a2d8e src/websocketpp (0.8.2-1-g1b11fd3)
-```
+- [CVE-2023-26130](https://osv.dev/vulnerability/CVE-2023-26130) from cpp-httplib
+- [CVE-2021-28429](https://osv.dev/vulnerability/CVE-2021-28429) from ffmpeg
 
-cpp-httplib’s most recent commit hash is `227d2c20509f85a394133e2be6d0b0fc1fda54b2`. We can now use this information to construct an API call. It will be in this form:
-
-```
-curl -d \
-  '{"commit": "227d2c20509f85a394133e2be6d0b0fc1fda54b2"}' \
-  "https://api.osv.dev/v1/query" | jq '.vulns | map(.id)'
-```
- Which returns:
-```
-[
-  "CVE-2023-26130"
-]
-```
-This result shows that the pd-server project is vulnerable to [CVE-2023-26130](https://osv.dev/vulnerability/CVE-2023-26130) at Git commit ‘cf3f15a841ca21b53c6de654c9981a30ae0b590c’ through its use of cpp-httplib. Fortunately cpp-httplib has [a fix](https://github.com/yhirose/cpp-httplib/commit/5b397d455d25a391ba346863830c1949627b4d08) and pd-server updated their copy of cpp-httplib. The pd-server project is no longer be vulnerable to CVE-2023-26130. 
+Fortunately both cpp-httplib and ffmpeg have fixes for these vulnerabilities and yuzu has updated its copies of these dependencies. The yuzu project is no longer vulnerable to CVE-2023-26130 or CVE-2021-28429.
 
 ### Vendored C/C++ dependencies
 
-Vendored dependencies are included in a project by simply copying the code into the repository. Git commit information is not retained, so we need another way to determine whether a vulnerability is present. 
+Vendored dependencies are included in a project by simply copying the code into the repository. Git commit information is not retained, so we need another way to determine whether a vulnerability is present. In these cases, OSV-Scanner uses the [determineversion API](https://google.github.io/osv.dev/post-v1-determineversion/) to estimate each dependency’s version (and associated commit), and match it to any known vulnerabilities. 
 
-The determineversion API estimates your dependency’s version by comparing file hashes from your local project to known hashes for a given version. Once your dependency version is known, you can find the relevant vulnerabilities through searching our database or using our API.
+When we [released the API](https://osv.dev/blog/posts/using-the-determineversion-api/) in July, its use was limited to vulnerabilities found by [OSS-Fuzz](https://google.github.io/oss-fuzz/). Not all C/C++ projects are part of OSS-Fuzz, nor are all vulnerabilities for a given dependency found by OSS-Fuzz, so a number of vulnerabilities were left on the table. With the addition of the commit level vulnerability data from the NVD, this gap has been significantly narrowed. **This means that the determineversion API, and the associated OSV-Scanner functionality, can now be used for the majority of vendored C/C++ dependencies.** 
 
-When we released the API in July, its use was limited to vulnerabilities found by [OSS-Fuzz](https://google.github.io/oss-fuzz/). Not all C/C++ projects are part of OSS-Fuzz, nor are all vulnerabilities for a given dependency found by OSS-Fuzz, so a number of vulnerabilities were left on the table. With the addition of the commit level vulnerability data from the NVD, this gap has been significantly narrowed. **This means that the determineversion API may now be used for the majority of vendored C/C++ dependencies.** 
+Let’s consider the [OpenCV](https://github.com/opencv/opencv) project, which uses vendored dependencies. Working from commit `e9e6b1e22c1a966a81aca1217b16a51fe7311b3b`, OSV-Scanner is able to find a number of vulnerabilities from the vendored dependencies including:
 
-For more information on how to use the determineversion API, please see our [documentation](https://google.github.io/osv.dev/post-v1-determineversion/) or this [walkthrough](https://google.github.io/osv.dev/post-v1-determineversion/). 
-
-Within the next few months, support will be added to OSV-Scanner to make this a seamless out of the box experience for developers. Follow [this issue](https://github.com/google/osv-scanner/issues/82) for updates.
+- [CVE-2021-29390](https://osv.dev/vulnerability/CVE-2021-29390) from libjpeg 
+- [CVE-2022-3857](https://osv.dev/vulnerability/CVE-2022-3857) from libpng 
+- [CVE-2023-3618](https://osv.dev/vulnerability/CVE-2023-3618) from libtiff 
+- [CVE-2020-11760](https://osv.dev/vulnerability/CVE-2020-11760) from openexr
+- [OSV-2022-416](https://osv.dev/vulnerability/OSV-2022-416) from openjpeg
+- [CVE-2022-3509](https://osv.dev/vulnerability/CVE-2022-3509) from protobuf
 
 ## Try it yourself!
 

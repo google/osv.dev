@@ -31,7 +31,7 @@ Matching C/C++ dependencies to known vulnerabilities has been one of the final p
 
 ### Submoduled C/C++ dependencies
 
-Submoduled dependencies retain their Git histories. OSV-Scanner v1.4.3+ is able to determine the most recent Git commits for the submoduled dependencies and return any associated vulnerabilities. 
+Submoduled dependencies retain their Git histories. [OSV-Scanner](https://google.github.io/osv-scanner/) [v1.4.3](https://github.com/google/osv-scanner/releases/tag/v1.4.3) is able to determine the most recent Git commits for the submoduled dependencies and return any associated vulnerabilities. 
 
 For example, let’s consider the [yuzu](https://github.com/yuzu-emu/yuzu) project and see if we can find any vulnerabilities in the project dependencies. We’ll be working from commit `43be2bfe332d5537041262eb08037993239eaf5f` for this example. 
 

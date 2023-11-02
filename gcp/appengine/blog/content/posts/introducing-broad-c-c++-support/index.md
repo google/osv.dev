@@ -27,7 +27,7 @@ Sample OSV advisory with commit range information.
 
 ## Finding C/C++ vulnerabilities with vulnerable commit ranges
 
-Matching C/C++ dependencies to known vulnerabilities has been one of the final pieces in the puzzle of a truly comprehensive open source vulnerability database. Most projects with C/C++ dependencies include a copy of those dependencies bundled with the project, either by using submodules or by vendoring dependencies. Whether dependencies are submoduled or vendored, Vulnerable commit ranges allow OSV users to match their dependencies to known vulnerabilities. 
+Matching C/C++ dependencies to known vulnerabilities has been one of the final pieces in the puzzle of a truly comprehensive open source vulnerability database. Most projects with C/C++ dependencies include a copy of those dependencies bundled with the project, either by using submodules or by vendoring dependencies. Whether dependencies are submoduled or vendored, vulnerable commit ranges allow OSV users to match their dependencies to known vulnerabilities. 
 
 ### Submoduled C/C++ dependencies
 

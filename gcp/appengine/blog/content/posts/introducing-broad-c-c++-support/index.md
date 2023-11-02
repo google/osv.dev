@@ -37,7 +37,7 @@ For example, let’s consider the [yuzu](https://github.com/yuzu-emu/yuzu) proje
 
 Follow these steps:
 
-1. Clone the yuzu project to your local machine using `git clone https://github.com/yuzu-emu/yuzu’. It is not necessary to use `git clone –recursive`. OSV-Scanner will be able to determine the appropriate Git commits without the recursive flag. 
+1. Clone the yuzu project to your local machine using `git clone https://github.com/yuzu-emu/yuzu`. It is not necessary to use `git clone –recursive`. OSV-Scanner will be able to determine the appropriate Git commits without the recursive flag. 
 2. Checkout the relevant commit using `git -C yuzu checkout 43be2bfe332d5537041262eb08037993239eaf5f`
 3. Run `osv-scanner yuzu/`
 

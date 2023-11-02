@@ -71,6 +71,22 @@ type Stage struct {
 // completely rebuild all entries
 const bucketCount = 512
 
+var (
+	vendoredLibNames = map[string]struct{}{
+		"3rdparty":    {},
+		"dep":         {},
+		"deps":        {},
+		"thirdparty":  {},
+		"third-party": {},
+		"third_party": {},
+		"libs":        {},
+		"external":    {},
+		"externals":   {},
+		"vendor":      {},
+		"vendored":    {},
+	}
+)
+
 // Run runs the stages and hashes all files for each incoming request.
 func (s *Stage) Run(ctx context.Context) error {
 	s.Input.ReceiveSettings.MaxOutstandingMessages = s.PubSubOutstandingMessages
@@ -126,8 +142,14 @@ func (s *Stage) processGit(ctx context.Context, repoInfo *preparation.Result) er
 	var fileResults []*FileResult
 	if err := filepath.Walk(repoDir, func(p string, info fs.FileInfo, err error) error {
 		if info.IsDir() {
+			if _, ok := vendoredLibNames[strings.ToLower(info.Name())]; ok {
+				// Ignore vendored libraries, as they can cause bad matches.
+				return filepath.SkipDir
+			}
+
 			return nil
 		}
+
 		for _, ext := range repoInfo.FileExts {
 			if filepath.Ext(p) == ext {
 				buf, err := os.ReadFile(p)

@@ -1,6 +1,6 @@
 ---
 title: "Introducing broad C/C++ vulnerability management support"
-date: 2023-10-31T01:00:00Z
+date: 2023-11-06T17:00:00Z
 draft: true
 author: Andrew Pollock and Oliver Chang
 ---

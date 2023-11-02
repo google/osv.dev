@@ -1,4 +1,5 @@
-# Copyright 2023 Google LLC
+#!/bin/bash -x
+# Copyright 2021 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -12,21 +13,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-name: osv-scanner
-
-on:
-  pull_request:
-    # The branches below must be a subset of the branches above
-    branches: [ master ]
-  merge_group:
-    branches: [ master ]
-
-# Declare default permissions as read only.
-permissions: read-all
-
-jobs:
-  scan-pr:
-    permissions:
-      contents: read
-      security-events: write
-    uses: "google/osv-scanner/.github/workflows/osv-scanner-reusable-pr.yml@main"
+docker build -t gcr.io/oss-vdb/alias-computation:$1 . && \
+docker build -t gcr.io/oss-vdb/alias-computation:latest . && \
+docker push gcr.io/oss-vdb/alias-computation:$1 && \
+docker push gcr.io/oss-vdb/alias-computation:latest

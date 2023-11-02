@@ -6,6 +6,7 @@ name = "pypi"
 [packages]
 google-cloud-ndb = "*"
 google-cloud-logging = "*"
+google-cloud-storage = "*"
 semver = ">=3.0.0"
 pyyaml = "*"
 pygit2 = ">=1.9.2"

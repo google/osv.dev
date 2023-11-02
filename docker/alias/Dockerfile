@@ -12,21 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-name: osv-scanner
+FROM gcr.io/oss-vdb/worker
 
-on:
-  pull_request:
-    # The branches below must be a subset of the branches above
-    branches: [ master ]
-  merge_group:
-    branches: [ master ]
-
-# Declare default permissions as read only.
-permissions: read-all
-
-jobs:
-  scan-pr:
-    permissions:
-      contents: read
-      security-events: write
-    uses: "google/osv-scanner/.github/workflows/osv-scanner-reusable-pr.yml@main"
+COPY alias_computation.py /usr/local/bin
+RUN chmod 755 /usr/local/bin/alias_computation.py
+ENTRYPOINT ["alias_computation.py"]

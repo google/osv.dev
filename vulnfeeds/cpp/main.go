@@ -97,6 +97,8 @@ var VendorProductDenyList = []VendorProduct{
 	// {"netapp", "cloud_backup"},
 	// Three strikes and the entire netapp vendor is out...
 	{"netapp", ""},
+	// [CVE-2021-28957]: Incorrectly associates with github.com/lxml/lxml
+	{"oracle", "zfs_storage_appliance_kit"},
 }
 
 // Looks at what the repo to determine if it contains code using an in-scope language
@@ -537,7 +539,16 @@ func main() {
 			}
 			if _, ok := VPRepoCache[VendorProduct{CPE.Vendor, CPE.Product}]; ok {
 				Logger.Infof("[%s]: Pre-references, derived %q for %q %q using cache", CVEID, VPRepoCache[VendorProduct{CPE.Vendor, CPE.Product}], CPE.Vendor, CPE.Product)
-				ReposForCVE[CVEID] = VPRepoCache[VendorProduct{CPE.Vendor, CPE.Product}]
+				if _, ok := ReposForCVE[CVEID]; !ok {
+					ReposForCVE[CVEID] = VPRepoCache[VendorProduct{CPE.Vendor, CPE.Product}]
+					continue
+				}
+				// Don't append duplicates.
+				for _, repo := range VPRepoCache[VendorProduct{CPE.Vendor, CPE.Product}] {
+					if !slices.Contains(ReposForCVE[CVEID], repo) {
+						ReposForCVE[CVEID] = append(ReposForCVE[CVEID], repo)
+					}
+				}
 			}
 		}
 
@@ -639,5 +650,5 @@ func main() {
 	}
 	// Outcomes is too big to log, so zero it out.
 	Metrics.Outcomes = nil
-	Logger.Infof("Metrics: %+v", Metrics)
+	Logger.Infof("%s Metrics: %+v", filepath.Base(*jsonPath), Metrics)
 }

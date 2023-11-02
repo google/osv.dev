@@ -1,0 +1,23 @@
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: alias-computation
+spec:
+  schedule: "10/15 * * * *"
+  concurrencyPolicy: Forbid
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          containers:
+          - name: alias-computation
+            image: alias-computation
+            imagePullPolicy: Always
+            resources:
+              requests:
+                cpu: 1
+                memory: "3G"
+              limits:
+                cpu: 1
+                memory: "4G"
+          restartPolicy: OnFailure

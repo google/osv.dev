@@ -824,6 +824,14 @@ func TestExtractVersionInfo(t *testing.T) {
 			},
 			expectedNotes: []string{},
 		},
+		{
+			description:  "A CVE with a different GitWeb reference URL that was not previously being extracted successfully",
+			inputCVEItem: loadTestData("CVE-2021-28429"),
+			expectedVersionInfo: VersionInfo{
+				AffectedCommits:  []AffectedCommit{{Repo: "https://git.ffmpeg.org/ffmpeg.git", Fixed: "c94875471e3ba3dc396c6919ff3ec9b14539cd71"}},
+				AffectedVersions: []AffectedVersion{{LastAffected: "4.3.2"}},
+			},
+		},
 	}
 
 	for _, tc := range tests {

@@ -10,3 +10,4 @@ resources:
 - debian-copyright-mirror.yaml
 - gen-cperepos-map.yaml
 - nvd-cve-osv.yaml
+- alias-computation.yaml

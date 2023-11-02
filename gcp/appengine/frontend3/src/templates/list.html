@@ -34,7 +34,7 @@
             <div class="mdc-layout-grid__inner">
               <div class="query-container mdc-layout-grid__cell--span-8">
                 <mwc-icon class="search-icon">search</mwc-icon>
-                <mwc-textfield-with-enter label="Package or ID search" icon="a" class="query-field" name="q"
+                <mwc-textfield-with-enter label="Package or ID search" icon="a" class="query-field" id="search-input" name="q"
                   value="{{ query }}"></mwc-textfield-with-enter>
               </div>
             </div>
@@ -169,5 +169,10 @@
 <script>
   import { MDCDataTable } from '@material/data-table';
   const dataTable = new MDCDataTable(document.querySelector('.mdc-data-table'));
+  // Remove extra spaces from search query
+  document.getElementById('search-form').addEventListener('submit', function (e) {
+    const searchInput = document.getElementById('search-input');
+    searchInput.value = searchInput.value.trim().replace(/\s+/g, ' ');
+  });
 </script>
 {% endblock %}

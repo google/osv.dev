@@ -1,7 +1,7 @@
 ---
 title: "Introducing broad C/C++ vulnerability management support"
 date: 2023-11-06T17:00:00Z
-draft: true
+draft: false
 author: Andrew Pollock and Oliver Chang
 ---
 OSV is committed to bringing our users comprehensive, accurate and timely open source vulnerability information. Over the last year, we’ve released a number of new features in pursuit of this goal including:

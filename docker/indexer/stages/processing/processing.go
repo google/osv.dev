@@ -57,7 +57,7 @@ type FileResult struct {
 type BucketNode struct {
 	NodeHash        Hash `datastore:"node_hash"`
 	FilesContained  int  `datastore:"files_contained,noindex"`
-	DocumentVersion int
+	DocumentVersion int  `datastore:"document_version,noindex"`
 }
 
 // Stage holds the data structures necessary to perform the processing.

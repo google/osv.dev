@@ -24,6 +24,7 @@ import (
 
 	"cloud.google.com/go/datastore"
 	"github.com/go-git/go-git/v5/plumbing"
+	"github.com/google/osv.dev/docker/indexer/shared"
 	"github.com/google/osv.dev/docker/indexer/stages/preparation"
 	"github.com/google/osv.dev/docker/indexer/stages/processing"
 )
@@ -42,7 +43,6 @@ const (
 type document struct {
 	Name              string    `datastore:"name"`
 	BaseCPE           string    `datastore:"base_cpe"`
-	Version           string    `datastore:"version"`
 	Commit            []byte    `datastore:"commit"`
 	Tag               string    `datastore:"tag"`
 	When              time.Time `datastore:"when,omitempty"`
@@ -52,6 +52,7 @@ type document struct {
 	FileHashType      string    `datastore:"file_hash_type"`
 	EmptyBucketBitmap []byte    `datastore:"empty_bucket_bitmap"`
 	FileCount         int       `datastore:"file_count"`
+	DocumentVersion   int       `datastore:"document_version"`
 }
 
 func newDoc(repoInfo *preparation.Result, hashType string) *document {
@@ -67,6 +68,7 @@ func newDoc(repoInfo *preparation.Result, hashType string) *document {
 		FileHashType:      hashType,
 		EmptyBucketBitmap: repoInfo.EmptyBucketBitmap,
 		FileCount:         repoInfo.FileCount,
+		DocumentVersion:   shared.LatestDocumentVersion,
 	}
 	return doc
 }
@@ -90,6 +92,7 @@ func New(ctx context.Context, projectID string) (*Store, error) {
 // Exists checks whether a name/hash pair already exists in datastore.
 func (s *Store) Exists(ctx context.Context, addr string, hashType string, hash plumbing.Hash) (bool, error) {
 	if _, ok := s.cache.Load(fmt.Sprintf(docKeyFmt, addr, hashType, hash[:])); ok {
+		// The cache is per instance, so if it has loaded it before, it always has the latest version
 		return true, nil
 	}
 	// hash[:], the [:] is important, since the formatting uses %x, which will return a different result if not used
@@ -104,7 +107,7 @@ func (s *Store) Exists(ctx context.Context, addr string, hashType string, hash p
 		return false, err
 	}
 	s.cache.Store(fmt.Sprintf(docKeyFmt, addr, hashType, hash[:]), true)
-	return true, nil
+	return tmp.DocumentVersion == shared.LatestDocumentVersion, nil
 }
 
 // Store stores a new entry in datastore.
@@ -119,9 +122,11 @@ func (s *Store) Store(ctx context.Context, repoInfo *preparation.Result, hashTyp
 			continue
 		}
 
-		bucketKey := datastore.NameKey(bucketKind,
+		bucketKey := datastore.NameKey(
+			bucketKind,
 			fmt.Sprintf(bucketKeyFmt, node.NodeHash, hashType, node.FilesContained),
-			docKey)
+			docKey,
+		)
 
 		putMultiKeys = append(putMultiKeys, bucketKey)
 		putMultiNodes = append(putMultiNodes, node)
@@ -149,6 +154,31 @@ func (s *Store) Store(ctx context.Context, repoInfo *preparation.Result, hashTyp
 	}
 
 	return nil
+}
+
+// Cleans old buckets from the datastore
+func (s *Store) Clean(ctx context.Context, repoInfo *preparation.Result, hashType string) error {
+	docKey := datastore.NameKey(docKind, fmt.Sprintf(docKeyFmt, repoInfo.Addr, hashType, repoInfo.Reference[:]), nil)
+
+	query := datastore.NewQuery(bucketKind).Ancestor(docKey)
+
+	bucketHashes := []*processing.BucketNode{}
+	// GetAll should never return more than 2x the max number of buckets (512*2 = 1024) results.
+	bucketKeys, err := s.dsCl.GetAll(ctx, query, &bucketHashes)
+
+	if err != nil {
+		return err
+	}
+
+	keysToDelete := []*datastore.Key{}
+	for i, key := range bucketKeys {
+		if bucketHashes[i].DocumentVersion != shared.LatestDocumentVersion {
+			keysToDelete = append(keysToDelete, key)
+		}
+	}
+	err = s.dsCl.DeleteMulti(ctx, keysToDelete)
+
+	return err
 }
 
 // Close closes the datastore client.

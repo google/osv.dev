@@ -44,6 +44,7 @@ type Hash = []byte
 // Storer is used to permanently store the results.
 type Storer interface {
 	Store(ctx context.Context, repoInfo *preparation.Result, hashType string, bucketNodes []*BucketNode) error
+	Clean(ctx context.Context, repoInfo *preparation.Result, hashType string) error
 }
 
 // FileResult holds the per file hash and path information.
@@ -54,8 +55,9 @@ type FileResult struct {
 
 // FileResult holds the per file hash and path information.
 type BucketNode struct {
-	NodeHash       Hash `datastore:"node_hash"`
-	FilesContained int  `datastore:"files_contained,noindex"`
+	NodeHash        Hash `datastore:"node_hash"`
+	FilesContained  int  `datastore:"files_contained,noindex"`
+	DocumentVersion int
 }
 
 // Stage holds the data structures necessary to perform the processing.
@@ -70,6 +72,22 @@ type Stage struct {
 // Changing this will require deleting all RepoIndex entries to
 // completely rebuild all entries
 const bucketCount = 512
+
+var (
+	vendoredLibNames = map[string]struct{}{
+		"3rdparty":    {},
+		"dep":         {},
+		"deps":        {},
+		"thirdparty":  {},
+		"third-party": {},
+		"third_party": {},
+		"libs":        {},
+		"external":    {},
+		"externals":   {},
+		"vendor":      {},
+		"vendored":    {},
+	}
+)
 
 // Run runs the stages and hashes all files for each incoming request.
 func (s *Stage) Run(ctx context.Context) error {
@@ -126,8 +144,14 @@ func (s *Stage) processGit(ctx context.Context, repoInfo *preparation.Result) er
 	var fileResults []*FileResult
 	if err := filepath.Walk(repoDir, func(p string, info fs.FileInfo, err error) error {
 		if info.IsDir() {
+			if _, ok := vendoredLibNames[strings.ToLower(info.Name())]; ok {
+				// Ignore vendored libraries, as they can cause bad matches.
+				return filepath.SkipDir
+			}
+
 			return nil
 		}
+
 		for _, ext := range repoInfo.FileExts {
 			if filepath.Ext(p) == ext {
 				buf, err := os.ReadFile(p)
@@ -152,7 +176,13 @@ func (s *Stage) processGit(ctx context.Context, repoInfo *preparation.Result) er
 	repoInfo.FileCount = len(fileResults)
 	repoInfo.EmptyBucketBitmap = createFilledBucketBitmap(bucketResults)
 	log.Info("begin storage")
-	return s.Storer.Store(ctx, repoInfo, shared.MD5, bucketResults)
+	err = s.Storer.Store(ctx, repoInfo, shared.MD5, bucketResults)
+	if err != nil {
+		return err
+	}
+
+	log.Info("begin cleaning old versions")
+	return s.Storer.Clean(ctx, repoInfo, shared.MD5)
 }
 
 func createFilledBucketBitmap(nodes []*BucketNode) []byte {
@@ -194,8 +224,9 @@ func processBuckets(fileResults []*FileResult) ([]*BucketNode, [][]*FileResult) 
 		}
 
 		results[bucketIdx] = &BucketNode{
-			NodeHash:       hasher.Sum(nil),
-			FilesContained: len(buckets[bucketIdx]),
+			NodeHash:        hasher.Sum(nil),
+			FilesContained:  len(buckets[bucketIdx]),
+			DocumentVersion: shared.LatestDocumentVersion,
 		}
 	}
 

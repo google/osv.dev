@@ -851,7 +851,7 @@ def query_by_version(context: QueryContext,
 
   # Try querying by generic version for all cases.
   new_bugs, _ = yield _query_by_generic_version(context, query, package_name,
-                                                  ecosystem, purl, version)
+                                                ecosystem, purl, version)
   for bug in new_bugs:
     if bug not in bugs:
       bugs.append(bug)

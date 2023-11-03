@@ -44,6 +44,7 @@ type Hash = []byte
 // Storer is used to permanently store the results.
 type Storer interface {
 	Store(ctx context.Context, repoInfo *preparation.Result, hashType string, bucketNodes []*BucketNode) error
+	Clean(ctx context.Context, repoInfo *preparation.Result, hashType string) error
 }
 
 // FileResult holds the per file hash and path information.
@@ -54,8 +55,9 @@ type FileResult struct {
 
 // FileResult holds the per file hash and path information.
 type BucketNode struct {
-	NodeHash       Hash `datastore:"node_hash"`
-	FilesContained int  `datastore:"files_contained,noindex"`
+	NodeHash        Hash `datastore:"node_hash"`
+	FilesContained  int  `datastore:"files_contained,noindex"`
+	DocumentVersion int
 }
 
 // Stage holds the data structures necessary to perform the processing.
@@ -174,7 +176,13 @@ func (s *Stage) processGit(ctx context.Context, repoInfo *preparation.Result) er
 	repoInfo.FileCount = len(fileResults)
 	repoInfo.EmptyBucketBitmap = createFilledBucketBitmap(bucketResults)
 	log.Info("begin storage")
-	return s.Storer.Store(ctx, repoInfo, shared.MD5, bucketResults)
+	err = s.Storer.Store(ctx, repoInfo, shared.MD5, bucketResults)
+	if err != nil {
+		return err
+	}
+
+	log.Info("begin cleaning old versions")
+	return s.Storer.Clean(ctx, repoInfo, shared.MD5)
 }
 
 func createFilledBucketBitmap(nodes []*BucketNode) []byte {
@@ -216,8 +224,9 @@ func processBuckets(fileResults []*FileResult) ([]*BucketNode, [][]*FileResult) 
 		}
 
 		results[bucketIdx] = &BucketNode{
-			NodeHash:       hasher.Sum(nil),
-			FilesContained: len(buckets[bucketIdx]),
+			NodeHash:        hasher.Sum(nil),
+			FilesContained:  len(buckets[bucketIdx]),
+			DocumentVersion: shared.LatestDocumentVersion,
 		}
 	}
 

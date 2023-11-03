@@ -30,6 +30,8 @@ const (
 	TarExt = ".tar"
 	Git    = "GIT"
 	MD5    = "MD5"
+	// Update this to force reindexing and updating of all entries with lesser version number
+	LatestDocumentVersion = 2
 )
 
 // CopyFromBucket copies a directory from a bucket to a temporary location.

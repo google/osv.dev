@@ -181,6 +181,8 @@ def list_vulnerabilities():
           url_for(request.endpoint) + '?' + parse.urlencode(q, True))
 
   query = request.args.get('q', '')
+  # Remove leading and trailing spaces
+  query = query.strip()
   page = int(request.args.get('page', 1))
   ecosystem = request.args.get('ecosystem')
   results = osv_query(query, page, False, ecosystem)

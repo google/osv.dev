@@ -12,7 +12,9 @@ OSV is committed to bringing our users comprehensive, accurate and timely open s
 Today we are announcing that OSV advisories now include vulnerable commit ranges. **Vulnerable commit ranges, along with the previously announced experimental determineversion API, will enable vulnerability management for software with C and C++ dependencies, which has been one of the last gaps in coverage in OSV.dev’s database. Additionally OSV-Scanner is now compatible with C and C++ projects.**
 <!--more-->
 
-Because the C/C++ ecosystem doesn’t have a centralized package registry, source code identifiers (e.g. git hashes) are the best way to identify C/C++ libraries. Typically, vulnerabilities are associated with versions, not Git hashes, making C/C++ vulnerability matching difficult. The new commit level vulnerability information will allow users to confidently match their dependencies to known vulnerabilities within the OSV database. 
+## Why are vulnerable commit ranges helpful for matching vulnerabilities?
+
+Because the C/C++ ecosystem doesn’t have a centralized package registry, source code identifiers (e.g. Git hashes) are the best way to identify C/C++ libraries. Typically, vulnerabilities are associated with versions, not Git hashes, making C/C++ vulnerability matching difficult. The new commit level vulnerability information will allow users to confidently match their dependencies to known vulnerabilities within the OSV database. 
 
 Vulnerable commit ranges provide a granular approach that more closely follows the development process, matching vulnerabilities to a range of upstream commits instead of matching vulnerabilities to a package version. This precise information allows for accurate identification of Git branches cut from known vulnerable commits and leads to more accurate vulnerability information.
 
@@ -52,7 +54,7 @@ Fortunately both cpp-httplib and ffmpeg have fixes for these vulnerabilities and
 
 Vendored dependencies are included in a project by simply copying the code into the repository. Git commit information is not retained, so we need another way to determine whether a vulnerability is present. In these cases, OSV-Scanner uses the [determineversion API](https://google.github.io/osv.dev/post-v1-determineversion/) to estimate each dependency’s version (and associated commit), and match it to any known vulnerabilities. 
 
-When we [released the API](https://osv.dev/blog/posts/using-the-determineversion-api/) in July, its use was limited to vulnerabilities found by [OSS-Fuzz](https://google.github.io/oss-fuzz/). Not all C/C++ projects are part of OSS-Fuzz, nor are all vulnerabilities for a given dependency found by OSS-Fuzz, so a number of vulnerabilities were left on the table. With the addition of the commit level vulnerability data from the NVD, this gap has been significantly narrowed. **This means that the determineversion API, and the associated OSV-Scanner functionality, can now be used for the majority of vendored C/C++ dependencies.** 
+When we [released the API](https://osv.dev/blog/posts/using-the-determineversion-api/) in July, its use was limited to vulnerabilities found by [OSS-Fuzz](https://google.github.io/oss-fuzz/). Not all C/C++ projects are part of OSS-Fuzz, nor are all vulnerabilities for a given dependency found by OSS-Fuzz, so users may not find all the vulnerabilities associated with their project.  With the addition of the commit level vulnerability data from the NVD, this gap has been significantly narrowed. **The determineversion API, and the associated OSV-Scanner functionality, can now be used for the majority of vendored C/C++ dependencies.** 
 
 Let’s consider the [OpenCV](https://github.com/opencv/opencv) project, which uses vendored dependencies. Working from commit `e9e6b1e22c1a966a81aca1217b16a51fe7311b3b`, OSV-Scanner is able to find a number of vulnerabilities from the vendored dependencies including:
 

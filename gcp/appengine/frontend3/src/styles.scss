@@ -1205,6 +1205,8 @@ dl.vulnerability-details,
 pre.big-code-block {
   padding: 10px;
   background-color: #202020;
+  overflow-x: scroll;
+  width: 100%;
 }
 
 // Hugo highlighted code blocks

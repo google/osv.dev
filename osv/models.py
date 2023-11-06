@@ -667,13 +667,24 @@ class Bug(ndb.Model):
         cr.type = vulnerability_pb2.Credit.Type.Value(credit.type)
       credits_.append(cr)
 
+    related_bugs = Bug.query(Bug.related == self.db_id).fetch()
+    related_bug_ids = [bug.db_id for bug in related_bugs]
+    related = sorted(list(set(related_bug_ids + self.related)))
+
+    alias_group = AliasGroup.query(AliasGroup.bug_ids == self.db_id).get()
+    aliases = self.aliases
+    if alias_group:
+      aliases = sorted(list(set(alias_group.bug_ids) - {self.db_id}))
+      modified = timestamp_pb2.Timestamp()
+      modified.FromDatetime(max(self.last_modified, alias_group.last_modified))
+
     result = vulnerability_pb2.Vulnerability(
         schema_version=SCHEMA_VERSION,
         id=self.id(),
         published=published,
         modified=modified,
-        aliases=self.aliases,
-        related=self.related,
+        aliases=aliases,
+        related=related,
         withdrawn=withdrawn,
         summary=self.summary,
         details=details,

@@ -86,7 +86,6 @@ class AliasTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
         id='bbb-123',
         db_id='bbb-123',
         aliases=['bbb-345', 'bbb-456'],
-        related=['bbb-111'],
         status=1,
         source='test',
         public=True,

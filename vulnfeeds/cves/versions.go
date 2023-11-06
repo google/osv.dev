@@ -15,14 +15,18 @@
 package cves
 
 import (
+	"context"
 	"fmt"
 	"log"
+	"net/http"
 	"net/url"
 	"path"
 	"regexp"
 	"strings"
+	"time"
 
 	"github.com/knqyf263/go-cpe/naming"
+	"github.com/sethvargo/go-retry"
 	"golang.org/x/exp/slices"
 )
 
@@ -739,6 +743,33 @@ func Commit(u string) (string, error) {
 	return "", fmt.Errorf("Commit(): unsupported URL: %s", u)
 }
 
+// Detect linkrot via HEAD request with exponential backoff.
+func ValidateLink(link string) (err error) {
+	backoff := retry.NewExponential(1 * time.Second)
+	if err := retry.Do(context.Background(), retry.WithMaxRetries(3, backoff), func(ctx context.Context) error {
+		resp, err := http.Head(link)
+		if err != nil {
+			return err
+		}
+		defer resp.Body.Close()
+
+		switch resp.StatusCode / 100 {
+		// 4xx response codes are an instant fail.
+		case 4:
+			return fmt.Errorf("bad response: %v", resp.StatusCode)
+		// 5xx response codes are retriable.
+		case 5:
+			return retry.RetryableError(fmt.Errorf("bad response: %v", resp.StatusCode))
+		// Anything else is acceptable.
+		default:
+			return nil
+		}
+	}); err != nil {
+		return fmt.Errorf("unable to determine validity of %q: %v", link, err)
+	}
+	return nil
+}
+
 // For URLs referencing commits in supported Git repository hosts, return a cloneable AffectedCommit.
 func extractGitCommit(link string, commitType CommitType) (ac AffectedCommit, err error) {
 	r, err := Repo(link)
@@ -747,6 +778,12 @@ func extractGitCommit(link string, commitType CommitType) (ac AffectedCommit, er
 	}
 
 	c, err := Commit(link)
+	if err != nil {
+		return ac, err
+	}
+
+	// If URL doesn't validate, treat it as linkrot.
+	err = ValidateLink(link)
 	if err != nil {
 		return ac, err
 	}

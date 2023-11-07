@@ -650,5 +650,5 @@ func main() {
 	}
 	// Outcomes is too big to log, so zero it out.
 	Metrics.Outcomes = nil
-	Logger.Infof("Metrics: %+v", Metrics)
+	Logger.Infof("%s Metrics: %+v", filepath.Base(*jsonPath), Metrics)
 }

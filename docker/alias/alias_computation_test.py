@@ -327,7 +327,6 @@ class AliasTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
     self.assertEqual(1, len(alias_group))
     self.assertEqual(['hhh-126', 'hhh-127'], alias_group[0].bug_ids)
 
-
   def test_alias_group_reaches_limit(self):
     """Tests a alias group reaches limit."""
     aliases = []

@@ -489,11 +489,11 @@ func TestExtractGitCommit(t *testing.T) {
 		},
 		{
 			description:     "Valid bitbucket.org commit URL with trailing slash",
-			inputLink:       "https://bitbucket.org/jespern/django-piston/commits/91bdaec89543/",
+			inputLink:       "https://bitbucket.org/utmandrew/pcrs/commits/5f18bcb/",
 			inputCommitType: Fixed,
 			expectedAffectedCommit: AffectedCommit{
-				Repo:  "https://bitbucket.org/jespern/django-piston",
-				Fixed: "91bdaec89543",
+				Repo:  "https://bitbucket.org/utmandrew/pcrs",
+				Fixed: "5f18bcb",
 			},
 		},
 		{

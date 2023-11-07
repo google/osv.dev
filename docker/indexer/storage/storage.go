@@ -45,6 +45,7 @@ type document struct {
 	BaseCPE           string    `datastore:"base_cpe"`
 	Commit            []byte    `datastore:"commit"`
 	Tag               string    `datastore:"tag"`
+	Version           string    `datastore:"version,omitempty"` // Deprecated: version is no longer used in favour of tags
 	When              time.Time `datastore:"when,omitempty"`
 	RepoType          string    `datastore:"repo_type"`
 	RepoAddr          string    `datastore:"repo_addr"`

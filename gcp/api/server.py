@@ -31,6 +31,7 @@ from google.cloud import ndb
 from google.api_core.exceptions import InvalidArgument
 import google.cloud.ndb.exceptions as ndb_exceptions
 from google.protobuf import timestamp_pb2
+from google.protobuf import text_format
 
 import grpc
 from grpc_health.v1 import health_pb2
@@ -100,7 +101,7 @@ class OSVServicer(osv_service_v1_pb2_grpc.OSVServicer,
       context.abort(grpc.StatusCode.PERMISSION_DENIED, 'Permission denied.')
       return None
 
-    return bug_to_response(bug)
+    return bug.to_vulnerability(include_source=True)
 
   @ndb_context
   def QueryAffected(self, request, context: grpc.ServicerContext):
@@ -519,25 +520,27 @@ def do_query(query, context: QueryContext, include_details=True):
     context.service_context.abort(grpc.StatusCode.INVALID_ARGUMENT,
                                   'Invalid query.')
 
-  aliases = []
-  related = []
-  for bug in bugs:
-    aliases.append(osv.get_aliases_async(bug.id))
-    related.append(osv.get_related_async(bug.id))
+  if include_details:
+    aliases = []
+    related = []
+    for bug in bugs:
+      aliases.append(osv.get_aliases_async(bug.id))
+      related.append(osv.get_related_async(bug.id))
 
-  for i, alias in enumerate(aliases):
-    alias_group = yield alias
-    if not alias_group:
-      continue
-    alias_ids = sorted(list(set(alias_group.bug_ids) - {bugs[i].id}))
-    modified = timestamp_pb2.Timestamp()
-    modified.FromDatetime(alias_group.last_modified)
-    bugs[i].aliases = alias_ids
-    bugs[i].modified = max(modified, bugs[i].modified)
+    for i, alias in enumerate(aliases):
+      alias_group = yield alias
+      if not alias_group:
+        continue
+      alias_ids = sorted(list(set(alias_group.bug_ids) - {bugs[i].id}))
+      bugs[i].aliases[:] = alias_ids
+      modified_time = bugs[i].modified.ToDatetime()
+      modified_time = max(alias_group.last_modified, modified_time)
+      bugs[i].modified.FromDatetime(modified_time)
 
-  for i, related_ids in enumerate(related):
-    related_bug_ids = yield related_ids
-    bugs[i].related = sorted(list(set(related_bug_ids + bugs[i].related)))
+    for i, related_ids in enumerate(related):
+      related_bug_ids = yield related_ids
+      bugs[i].related[:] = sorted(
+          list(set(related_bug_ids + list(bugs[i].related))))
 
   if next_page_token:
     next_page_token = next_page_token.urlsafe()

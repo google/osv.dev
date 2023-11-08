@@ -6,3 +6,4 @@ build/lib
 .vscode
 *.tfstate*
 .history/*
+**/.history/*

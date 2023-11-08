@@ -573,7 +573,7 @@ class Bug(ndb.Model):
 
     return vulnerability_pb2.Vulnerability(id=self.id(), modified=modified)
 
-  def to_vulnerability(self, include_source=False):
+  def to_vulnerability(self, include_source=False, include_alias=True):
     """Convert to Vulnerability proto."""
     affected = []
 
@@ -667,16 +667,20 @@ class Bug(ndb.Model):
         cr.type = vulnerability_pb2.Credit.Type.Value(credit.type)
       credits_.append(cr)
 
-    related_bugs = Bug.query(Bug.related == self.db_id).fetch()
-    related_bug_ids = [bug.db_id for bug in related_bugs]
-    related = sorted(list(set(related_bug_ids + self.related)))
+    related = self.related
+    aliases = []
 
-    alias_group = AliasGroup.query(AliasGroup.bug_ids == self.db_id).get()
-    aliases = self.aliases
-    if alias_group:
-      aliases = sorted(list(set(alias_group.bug_ids) - {self.db_id}))
-      modified = timestamp_pb2.Timestamp()
-      modified.FromDatetime(max(self.last_modified, alias_group.last_modified))
+    if include_alias:
+      related_bugs = Bug.query(Bug.related == self.db_id).fetch()
+      related_bug_ids = [bug.db_id for bug in related_bugs]
+      related = sorted(list(set(related_bug_ids + self.related)))
+
+      alias_group = AliasGroup.query(AliasGroup.bug_ids == self.db_id).get()
+      if alias_group:
+        aliases = sorted(list(set(alias_group.bug_ids) - {self.db_id}))
+        modified = timestamp_pb2.Timestamp()
+        modified.FromDatetime(
+            max(self.last_modified, alias_group.last_modified))
 
     result = vulnerability_pb2.Vulnerability(
         schema_version=SCHEMA_VERSION,
@@ -857,3 +861,18 @@ def sorted_events(ecosystem, range_type, events):
     sorted_copy.insert(0, zero_event)
 
   return sorted_copy
+
+
+@ndb.tasklet
+def get_aliases_async(bug_id):
+  """Gets aliases asynchronously."""
+  alias_group = yield AliasGroup.query(AliasGroup.bug_ids == bug_id).get_async()
+  return alias_group
+
+
+@ndb.tasklet
+def get_related_async(bug_id):
+  """Gets related bugs asynchronously."""
+  related_bugs = yield Bug.query(Bug.related == bug_id).fetch_async()
+  related_bug_ids = [bug.db_id for bug in related_bugs]
+  return related_bug_ids

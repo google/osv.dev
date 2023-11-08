@@ -30,8 +30,6 @@ from collections import defaultdict
 from google.cloud import ndb
 from google.api_core.exceptions import InvalidArgument
 import google.cloud.ndb.exceptions as ndb_exceptions
-from google.protobuf import timestamp_pb2
-from google.protobuf import text_format
 
 import grpc
 from grpc_health.v1 import health_pb2

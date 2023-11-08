@@ -181,8 +181,10 @@ func (s *Stage) processGit(ctx context.Context, repoInfo *preparation.Result) er
 		return err
 	}
 
-	log.Info("begin cleaning old versions")
-	return s.Storer.Clean(ctx, repoInfo, shared.MD5)
+	// Skip cleaning section
+	return nil
+	// log.Info("begin cleaning old versions")
+	// return s.Storer.Clean(ctx, repoInfo, shared.MD5)
 }
 
 func createFilledBucketBitmap(nodes []*BucketNode) []byte {

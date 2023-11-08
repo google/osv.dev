@@ -21,7 +21,7 @@ from google.cloud import ndb
 import osv
 import osv.logs
 
-ALIAS_GROUP_VULN_LIMIT = 16
+ALIAS_GROUP_VULN_LIMIT = 32
 VULN_ALIASES_LIMIT = 5
 
 
@@ -87,7 +87,7 @@ def main():
   AliasGroups and creating new AliasGroups for un-computed bugs."""
 
   # Query for all bugs that have aliases.
-  bugs = osv.Bug.query(osv.Bug.aliases > '')
+  bugs = osv.Bug.query(osv.Bug.aliases != '')
   all_alias_group = osv.AliasGroup.query()
   allow_list = {
       allow_entry.bug_id for allow_entry in osv.AliasAllowListEntry.query()

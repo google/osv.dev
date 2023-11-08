@@ -15,14 +15,18 @@
 package cves
 
 import (
+	"context"
 	"fmt"
 	"log"
+	"net/http"
 	"net/url"
 	"path"
 	"regexp"
 	"strings"
+	"time"
 
 	"github.com/knqyf263/go-cpe/naming"
+	"github.com/sethvargo/go-retry"
 	"golang.org/x/exp/slices"
 )
 
@@ -133,6 +137,7 @@ var (
 		"https://github.com/0x14dli/ffos-SQL-injection-vulnerability-exists",
 		"https://github.com/0xLUC4S/CVEs",
 		"https://github.com/10cks/inkdropPoc",
+		"https://github.com/10cksyiqiyinhangzhoutechnology/elf-parser_segments_poc",
 		"https://github.com/1security/Vulnerability",
 		"https://github.com/202ecommerce/security-advisories",
 		"https://github.com/abhiunix/goo-blog-App-CVE",
@@ -147,6 +152,7 @@ var (
 		"https://github.com/anhdq201/rukovoditel",
 		"https://github.com/anhdq201/webtareas",
 		"https://github.com/anx0ing/CVE_demo",
+		"https://github.com/apriorit/pentesting",
 		"https://github.com/APTX-4879/CVE",
 		"https://github.com/ArianeBlow/Axelor_Stored_XSS",
 		"https://github.com/As4ki/CVE-report",
@@ -157,6 +163,7 @@ var (
 		"https://github.com/badboycxcc/Student-Admission-Sqlinjection",
 		"https://github.com/badboycxcc/Student-Admission-Xss",
 		"https://github.com/beicheng-maker/vulns",
+		"https://github.com/benjaminpsinclair/netdisco-2023-advisory",
 		"https://github.com/bigb0x/CVEs",
 		"https://github.com/BigTiger2020/2022",
 		"https://github.com/BigTiger2020/74CMS",
@@ -169,6 +176,7 @@ var (
 		"https://github.com/blockomat2100/PoCs",
 		"https://github.com/bosslabdcu/Vulnerability-Reporting",
 		"https://github.com/ByteHackr/unzip_poc",
+		"https://github.com/capgeminicisredteam/disclosure",
 		"https://github.com/ch0ing/vul",
 		"https://github.com/Ch0pin/security-advisories",
 		"https://github.com/Chu1z1/Chuizi",
@@ -177,12 +185,14 @@ var (
 		"https://github.com/cloudflare/advisories",
 		"https://github.com/Coalfire-Research/WinAPRS-Exploits",
 		"https://github.com/ComparedArray/printix-CVE-2022-25089",
+		"https://github.com/cribdragg3r/offensive_research",
 		"https://github.com/ctflearner/Vulnerability",
 		"https://github.com/CVEProject/cvelist", // Heavily in Advisory URLs, sometimes shows up elsewhere
 		"https://github.com/cve-vul/vul",
 		"https://github.com/Cvjark/Poc",
 		"https://github.com/cxaqhq/Loan-Management-System-Sqlinjection",
 		"https://github.com/cyb3r-n3rd/cve-request",
+		"https://github.com/cybersecurityworks/disclosed",
 		"https://github.com/CyberThoth/CVE",
 		"https://github.com/D4rkP0w4r/AeroCMS-Add_Posts-Stored_XSS-Poc",
 		"https://github.com/D4rkP0w4r/AeroCMS-Comment-Stored_XSS-Poc",
@@ -219,6 +229,7 @@ var (
 		"https://github.com/erengozaydin/College-Management-System-course_code-SQL-Injection-Authenticated",
 		"https://github.com/erengozaydin/Microfinance-Management-System-V1.0-SQL-Injection-Vulnerability-Unauthenticated",
 		"https://github.com/erengozaydin/Royal-Event-Management-System-todate-SQL-Injection-Authenticated",
+		"https://github.com/esp0xdeadbeef/rce_webmin",
 		"https://github.com/Fadavvi/CVE-2018-17431-PoC",
 		"https://github.com/FCncdn/Appsmith-Js-Injection-POC",
 		"https://github.com/fireeye/Vulnerability-Disclosures",
@@ -236,6 +247,7 @@ var (
 		"https://github.com/google/oss-fuzz-vulns", // 8^)
 		"https://github.com/gou-web/Parking-management-systemXSS-",
 		"https://github.com/Gr4y21/My-CVE-IDs",
+		"https://github.com/grafana/bugbounty",
 		"https://github.com/grymer/CVE",
 		"https://github.com/guyinatuxedo/sqlite3_record_leaking",
 		"https://github.com/h4md153v63n/CVE-2022-40032_Simple-Task-Managing-System-V1.0-SQL-Injection-Vulnerability-Unauthenticated",
@@ -252,11 +264,14 @@ var (
 		"https://github.com/haxpunk1337/MDaemon-",
 		"https://github.com/hemantsolo/CVE-Reference",
 		"https://github.com/HH1F/KbaseDoc-v1.0-Arbitrary-file-deletion-vulnerability",
+		"https://github.com/hkerma/opa-gatekeeper-concurrency-issue",
+		"https://github.com/hmsec/advisories",
 		"https://github.com/HuangYuHsiangPhone/CVEs",
 		"https://github.com/huclilu/CVE_Add",
 		"https://github.com/Hyperkopite/Roothub_vulns",
 		"https://github.com/i3umi3iei3ii/CentOS-Control-Web-Panel-CVE",
 		"https://github.com/ianxtianxt/gitbook-xss",
+		"https://github.com/imsebao/404team",
 		"https://github.com/IthacaLabs/DevExpress",
 		"https://github.com/IthacaLabs/Parallels",
 		"https://github.com/IthacaLabs/Vsourz-Digital",
@@ -267,17 +282,22 @@ var (
 		"https://github.com/Jamison2022/Wedding-Hall-Booking-System",
 		"https://github.com/jcarabantes/Bus-Vulnerabilities",
 		"https://github.com/JiuBanSec/CVE",
+		"https://github.com/jlleitschuh/security-research",
+		"https://github.com/jlleitschuh/security-research",
 		"https://github.com/joinia/webray.com.cn",
 		"https://github.com/jusstSahil/CSRF-",
 		"https://github.com/jvz/test-cvelist",
 		"https://github.com/k0xx11/Vulscve",
 		"https://github.com/k0xx11/vul-wiki",
+		"https://github.com/kaoudis/advisories",
+		"https://github.com/kaoudis/advisories",
 		"https://github.com/Kenun99/CVE-batdappboomx",
 		"https://github.com/Keyvanhardani/Exploit-eShop-Multipurpose-Ecommerce-Store-Website-3.0.4-Cross-Site-Scripting-XSS",
 		"https://github.com/killmonday/isic.lk-RCE",
 		"https://github.com/KingBridgeSS/Online_Driving_School_Project_In_PHP_With_Source_Code_Vulnerabilities",
 		"https://github.com/Kitsun3Sec/exploits",
 		"https://github.com/kk98kk0/exploit",
+		"https://github.com/kmkz/exploit",
 		"https://github.com/kyrie403/Vuln",
 		"https://github.com/L1917/Fast-Food-Ordering-System",
 		"https://github.com/l1nk3rlin/php_code_audit_project",
@@ -287,6 +307,7 @@ var (
 		"https://github.com/lohyt/web-shell-via-file-upload-in-hocms",
 		"https://github.com/luelueking/ruoyi-4.7.5-vuln-poc",
 		"https://github.com/lukaszstu/SmartAsset-CORS-CVE-2020-26527",
+		"https://github.com/luoshaokai/cve",
 		"https://github.com/ly1g3/Mailcow-CVE-2022-31138",
 		"https://github.com/MacherCS/CVE_Evoh_Contract",
 		"https://github.com/MaherAzzouzi/CVE-2022-37706-LPE-exploit",
@@ -304,6 +325,9 @@ var (
 		"https://github.com/mikeccltt/chatbot",
 		"https://github.com/mikeccltt/wbms_bug_report",
 		"https://github.com/Mirantis/security",
+		"https://github.com/mirchr/security-research",
+		"https://github.com/moemion233/cve",
+		"https://github.com/mrojz/rconfig-exploit",
 		"https://github.com/MrR3boot/CVE-Hunting",
 		"https://github.com/MrTuxracer/advisories",
 		"https://github.com/mudassiruddin/CVE-2022-43144-Stored-XSS",
@@ -325,6 +349,7 @@ var (
 		"https://github.com/palantir/security-bulletins",
 		"https://github.com/passtheticket/vulnerability-research",
 		"https://github.com/Peanut886/Vulnerability",
+		"https://github.com/piuppi/proof-of-concepts",
 		"https://github.com/playZG/Exploit-",
 		"https://github.com/post-cyberlabs/CVE-Advisory",
 		"https://github.com/prismbreak/vulnerabilities",
@@ -334,12 +359,14 @@ var (
 		"https://github.com/Qrayyy/CVE",
 		"https://github.com/Rajeshwar40/CVE",
 		"https://github.com/Ramansh123454/POCs",
+		"https://github.com/rand0midas/randomideas",
 		"https://github.com/rapid7/metasploit-framework",
 		"https://github.com/refi64/CVE-2020-25265-25266",
 		"https://github.com/riteshgohil/My_CVE_References",
 		"https://github.com/rohit0x5/poc",
 		"https://github.com/roughb8722/CVE-2021-3122-Details",
 		"https://github.com/rsrahulsingh05/POC",
+		"https://github.com/rtcrowley/poc",
 		"https://github.com/Ryan0lb/EC-cloud-e-commerce-system-CVE-application",
 		"https://github.com/s1kr10s/EasyChatServer-DOS",
 		"https://github.com/saitamang/POC-DUMP",
@@ -356,6 +383,7 @@ var (
 		"https://github.com/Serces-X/vul_report",
 		"https://github.com/shellshok3/Cross-Site-Scripting-XSS",
 		"https://github.com/sickcodes/security",
+		"https://github.com/silence-silence/xxl-job-lateral-privilege-escalation-vulnerability-",
 		"https://github.com/sinemsahn/POC",
 		"https://github.com/Snakinya/Vuln",
 		"https://github.com/snyk/zip-slip-vulnerability",
@@ -363,19 +391,25 @@ var (
 		"https://github.com/soheilsamanabadi/vulnerabilitys",
 		"https://github.com/souravkr529/CSRF-in-Cold-Storage-Management-System",
 		"https://github.com/sT0wn-nl/CVEs",
+		"https://github.com/starnightcyber/miscellaneous",
+		"https://github.com/strangebeecorp/security",
 		"https://github.com/sunset-move/EasyImages2.0-arbitrary-file-download-vulnerability",
+		"https://github.com/syz913/cve-reports",
 		"https://github.com/TCSWT/Baby-Care-System",
 		"https://github.com/the-emmons/CVE-Disclosures",
 		"https://github.com/thehackingverse/Stored-xss-",
 		"https://github.com/theyiyibest/Reflected-XSS-on-SockJS",
 		"https://github.com/tomerpeled92/CVE",
+		"https://github.com/toolmaninside/cves",
 		"https://github.com/toyydsBT123/One_of_my_take_on_SourceCodester",
 		"https://github.com/Tr0e/CVE_Hunter",
 		"https://github.com/transcendent-group/advisories",
 		"https://github.com/tremwil/ds3-nrssr-rce",
+		"https://github.com/trinity-syt-security/xss_vuln_issue",
 		"https://github.com/uBlockOrigin/uBlock-issues",
 		"https://github.com/upasvi/CVE-",
 		"https://github.com/verf1sh/Poc",
+		"https://github.com/versprite/research",
 		"https://github.com/vickysuper/Cve_report",
 		"https://github.com/VivekPanday12/CVE-",
 		"https://github.com/vQAQv/Request-CVE-ID-PoC",
@@ -391,9 +425,11 @@ var (
 		"https://github.com/wsummerhill/BSA-Radar_CVE-Vulnerabilities",
 		"https://github.com/WULINPIN/CVE",
 		"https://github.com/WYB-signal/Bug_report",
+		"https://github.com/xf1les/cve-advisories",
 		"https://github.com/xiahao90/CVEproject",
 		"https://github.com/xidaner/CVE_HUNTER",
 		"https://github.com/xiumulty/CVE",
+		"https://github.com/xnobody12/jaws-cms-rce",
 		"https://github.com/Xor-Gerke/webray.com.cn",
 		"https://github.com/xunyang1/my-vulnerability",
 		"https://github.com/xxhzz1/74cmsSE-Arbitrary-file-upload-vulnerability",
@@ -421,6 +457,7 @@ var (
 		"https://gitlab.com/gitlab-org/omnibus-gitlab", // not the source
 		"https://gitlab.com/gitlab-org/release",        // not the source
 		"https://gitlab.com/kop316/vvm-disclosure",
+		"https://gitlab.com/-/snippets/1937042",
 	}
 	InvalidRepoRegex = `(?i)/(?:(?:CVEs?)|(?:CVE-\d{4}-\d{4,})(?:/.*)?|bug_report(?:/.*)?|GitHubAssessments/.*)$`
 )
@@ -739,6 +776,33 @@ func Commit(u string) (string, error) {
 	return "", fmt.Errorf("Commit(): unsupported URL: %s", u)
 }
 
+// Detect linkrot via HEAD request with exponential backoff.
+func ValidateLink(link string) (err error) {
+	backoff := retry.NewExponential(1 * time.Second)
+	if err := retry.Do(context.Background(), retry.WithMaxRetries(3, backoff), func(ctx context.Context) error {
+		resp, err := http.Head(link)
+		if err != nil {
+			return err
+		}
+		defer resp.Body.Close()
+
+		switch resp.StatusCode / 100 {
+		// 4xx response codes are an instant fail.
+		case 4:
+			return fmt.Errorf("bad response: %v", resp.StatusCode)
+		// 5xx response codes are retriable.
+		case 5:
+			return retry.RetryableError(fmt.Errorf("bad response: %v", resp.StatusCode))
+		// Anything else is acceptable.
+		default:
+			return nil
+		}
+	}); err != nil {
+		return fmt.Errorf("unable to determine validity of %q: %v", link, err)
+	}
+	return nil
+}
+
 // For URLs referencing commits in supported Git repository hosts, return a cloneable AffectedCommit.
 func extractGitCommit(link string, commitType CommitType) (ac AffectedCommit, err error) {
 	r, err := Repo(link)
@@ -747,6 +811,12 @@ func extractGitCommit(link string, commitType CommitType) (ac AffectedCommit, er
 	}
 
 	c, err := Commit(link)
+	if err != nil {
+		return ac, err
+	}
+
+	// If URL doesn't validate, treat it as linkrot.
+	err = ValidateLink(link)
 	if err != nil {
 		return ac, err
 	}

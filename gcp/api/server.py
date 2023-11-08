@@ -851,9 +851,12 @@ def query_by_version(context: QueryContext,
     new_bugs, _ = yield _query_by_semver(context, query, package_name,
                                          ecosystem, purl, version)
     bugs.extend(new_bugs)
+
     new_bugs, _ = yield _query_by_generic_version(context, query, package_name,
                                                   ecosystem, purl, version)
-    bugs.extend(new_bugs)
+    for bug in new_bugs:
+      if bug not in bugs:
+        bugs.append(bug)
 
     # Trying both is too difficult/ugly with paging
     # Our documentation states that this is an invalid query

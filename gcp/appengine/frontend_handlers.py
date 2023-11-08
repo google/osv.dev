@@ -44,7 +44,7 @@ blueprint = Blueprint('frontend_handlers', __name__)
 _PAGE_SIZE = 16
 _PAGE_LOOKAHEAD = 4
 _REQUESTS_PER_MIN = 30
-_WORD_CHARACTERS_OR_DASH = re.compile(r'^[\w-]+$')
+_WORD_CHARACTERS_OR_DASH = re.compile(r'^[+\w-]+$')
 _VALID_BLOG_NAME = _WORD_CHARACTERS_OR_DASH
 _VALID_VULN_ID = _WORD_CHARACTERS_OR_DASH
 _BLOG_CONTENTS_DIR = 'blog'
@@ -181,6 +181,8 @@ def list_vulnerabilities():
           url_for(request.endpoint) + '?' + parse.urlencode(q, True))
 
   query = request.args.get('q', '')
+  # Remove leading and trailing spaces
+  query = query.strip()
   page = int(request.args.get('page', 1))
   ecosystem = request.args.get('ecosystem')
   results = osv_query(query, page, False, ecosystem)

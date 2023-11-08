@@ -86,17 +86,17 @@ type VendorProduct struct {
 // product names, which cause undesired and incorrect repository attribution
 // when resolved via Debian copyright metadata.
 var DebianCopyrightDenylist = []VendorProduct{
-	VendorProduct{"apple", "pdfkit"},
-	VendorProduct{"f-secure", "safe"},
-	VendorProduct{"ibm", "workflow"},
-	VendorProduct{"inductiveautomation", "ignition"},
-	VendorProduct{"jetbrains", "hub"},
-	VendorProduct{"microsoft", "onedrive"},
-	VendorProduct{"mirametrix", "glance"},
-	VendorProduct{"nintext", "workflow"},
-	VendorProduct{"oracle", "workflow"},
-	VendorProduct{"thrivethemes", "ignition"},
-	VendorProduct{"vmware", "horizon"},
+	{"apple", "pdfkit"},
+	{"f-secure", "safe"},
+	{"ibm", "workflow"},
+	{"inductiveautomation", "ignition"},
+	{"jetbrains", "hub"},
+	{"microsoft", "onedrive"},
+	{"mirametrix", "glance"},
+	{"nintext", "workflow"},
+	{"oracle", "workflow"},
+	{"thrivethemes", "ignition"},
+	{"vmware", "horizon"},
 }
 
 // Helper for JSON rendering of a map with a struct key.
@@ -206,6 +206,10 @@ func IsGNUURL(url string) bool {
 	return re.MatchString(url)
 }
 
+func IsGitHubURL(url string) bool {
+	return strings.HasPrefix(strings.ToLower(url), "https://github.com/")
+}
+
 // Tries to translate Savannah URLs to their corresponding Git repository URL.
 func MaybeTranslateSavannahURL(u string) (string, bool) {
 	type GNUPlaceholder struct {
@@ -240,6 +244,9 @@ func MaybeTranslateSavannahURL(u string) (string, bool) {
 			panic(err)
 		}
 		err = savannahGitRepoTemplate.Execute(&tpl, domain)
+		if err != nil {
+			panic(err)
+		}
 		return tpl.String(), true
 	}
 
@@ -329,6 +336,9 @@ func analyzeCPEDictionary(d CPEDict) (ProductToRepo VendorProductToRepoMap, Desc
 				Logger.Infof("Disregarding %q for %s:%s (%s) because %v", r.URL, CPE.Vendor, CPE.Product, r.Description, err)
 				continue
 			}
+			if IsGitHubURL(repo) {
+				repo = strings.ToLower(repo)
+			}
 			// If we already have an entry for this repo, don't add it again.
 			if slices.Contains(ProductToRepo[VendorProduct{CPE.Vendor, CPE.Product}], repo) {
 				continue
@@ -357,7 +367,7 @@ func analyzeCPEDictionary(d CPEDict) (ProductToRepo VendorProductToRepoMap, Desc
 		Logger.Infof("Trying to derive repos from Debian for %d products", len(MaybeTryDebian))
 		// This is likely to be time consuming, so give an impatient log watcher something to gauge progress by.
 		entryCount := 0
-		for vp, _ := range MaybeTryDebian {
+		for vp := range MaybeTryDebian {
 			entryCount++
 			Logger.Infof("%d/%d: Trying to derive a repo from Debian for %s:%s", entryCount, len(MaybeTryDebian), vp.Vendor, vp.Product)
 			repo := MaybeGetSourceRepoFromDebian(*DebianMetadataPath, vp.Product)

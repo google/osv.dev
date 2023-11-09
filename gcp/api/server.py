@@ -518,6 +518,9 @@ def do_query(query, context: QueryContext, include_details=True):
     context.service_context.abort(grpc.StatusCode.INVALID_ARGUMENT,
                                   'Invalid query.')
 
+  # Asynchronously retrieve computed aliases and related ids here
+  # to prevent significant query time increase for packages with
+  # numerous vulnerabilities.
   if include_details:
     aliases = []
     related = []

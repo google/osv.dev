@@ -99,7 +99,7 @@ class OSVServicer(osv_service_v1_pb2_grpc.OSVServicer,
       context.abort(grpc.StatusCode.PERMISSION_DENIED, 'Permission denied.')
       return None
 
-    return bug.to_vulnerability(include_source=True)
+    return bug_to_response(bug, include_alias=True)
 
   @ndb_context
   def QueryAffected(self, request, context: grpc.ServicerContext):
@@ -550,10 +550,11 @@ def do_query(query, context: QueryContext, include_details=True):
   return bugs, next_page_token
 
 
-def bug_to_response(bug, include_details=True):
+def bug_to_response(bug, include_details=True, include_alias=False):
   """Convert a Bug entity to a response object."""
   if include_details:
-    return bug.to_vulnerability(include_source=True, include_alias=False)
+    return bug.to_vulnerability(
+        include_source=True, include_alias=include_alias)
 
   return bug.to_vulnerability_minimal()
 

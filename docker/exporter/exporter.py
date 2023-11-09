@@ -91,14 +91,34 @@ class Exporter:
 
     zip_path = os.path.join(tmp_dir, 'all.zip')
     with zipfile.ZipFile(zip_path, 'w', zipfile.ZIP_DEFLATED) as zip_file:
-      for bug in osv.Bug.query(osv.Bug.ecosystem == ecosystem):
+
+      @ndb.tasklet
+      def _exporter_file(bug):
         if not bug.public or bug.status == osv.BugStatus.UNPROCESSED:
-          continue
+          return
 
         file_path = os.path.join(tmp_dir, bug.id() + '.json')
-        osv.write_vulnerability(
-            bug.to_vulnerability(include_source=True), file_path)
+        vulnerability = bug.to_vulnerability(
+            include_source=True, include_alias=False)
+        alias_group = yield osv.get_aliases_async(vulnerability.id)
+        if alias_group:
+          alias_ids = sorted(
+              list(set(alias_group.bug_ids) - {vulnerability.id}))
+          vulnerability.aliases[:] = alias_ids
+          modified_time = vulnerability.modified.ToDatetime()
+          modified_time = max(alias_group.last_modified, modified_time)
+          vulnerability.modified.FromDatetime(modified_time)
+        related_bug_ids = yield osv.get_related_async(vulnerability.id)
+        vulnerability.related[:] = sorted(
+            list(set(related_bug_ids + list(vulnerability.related))))
+        osv.write_vulnerability(vulnerability, file_path)
+        # Tasklets are not truly multiple threads;they are actually
+        # event loops, which makes it safe to write to ZIP files."
+        # Details: https://cloud.google.com/appengine/docs/legacy/
+        # standard/python/ndb/async#tasklets
         zip_file.write(file_path, os.path.basename(file_path))
+
+      osv.Bug.query(osv.Bug.ecosystem == ecosystem).map(_exporter_file)
 
     with concurrent.futures.ThreadPoolExecutor(
         max_workers=_EXPORT_WORKERS) as executor:

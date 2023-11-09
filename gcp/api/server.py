@@ -835,8 +835,9 @@ def query_by_version(context: QueryContext,
   if ecosystem:
     if is_semver:
       # Ecosystem supports semver only.
-      bugs, _ = yield _query_by_semver(context, query, package_name, ecosystem,
-                                       purl, version)
+      bugs, next_page_token = yield _query_by_semver(context, query,
+                                                     package_name, ecosystem,
+                                                     purl, version)
   else:
     logging.warning("Package query without ecosystem specified")
     # Unspecified ecosystem. Try semver first.

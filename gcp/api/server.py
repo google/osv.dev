@@ -99,7 +99,7 @@ class OSVServicer(osv_service_v1_pb2_grpc.OSVServicer,
       context.abort(grpc.StatusCode.PERMISSION_DENIED, 'Permission denied.')
       return None
 
-    return bug_to_response(bug)
+    return bug_to_response(bug, include_alias=True)
 
   @ndb_context
   def QueryAffected(self, request, context: grpc.ServicerContext):
@@ -518,6 +518,31 @@ def do_query(query, context: QueryContext, include_details=True):
     context.service_context.abort(grpc.StatusCode.INVALID_ARGUMENT,
                                   'Invalid query.')
 
+  # Asynchronously retrieve computed aliases and related ids here
+  # to prevent significant query time increase for packages with
+  # numerous vulnerabilities.
+  if include_details:
+    aliases = []
+    related = []
+    for bug in bugs:
+      aliases.append(osv.get_aliases_async(bug.id))
+      related.append(osv.get_related_async(bug.id))
+
+    for i, alias in enumerate(aliases):
+      alias_group = yield alias
+      if not alias_group:
+        continue
+      alias_ids = sorted(list(set(alias_group.bug_ids) - {bugs[i].id}))
+      bugs[i].aliases[:] = alias_ids
+      modified_time = bugs[i].modified.ToDatetime()
+      modified_time = max(alias_group.last_modified, modified_time)
+      bugs[i].modified.FromDatetime(modified_time)
+
+    for i, related_ids in enumerate(related):
+      related_bug_ids = yield related_ids
+      bugs[i].related[:] = sorted(
+          list(set(related_bug_ids + list(bugs[i].related))))
+
   if next_page_token:
     next_page_token = next_page_token.urlsafe()
     logging.warning('Page size limit hit, response size: %s', len(bugs))
@@ -525,10 +550,11 @@ def do_query(query, context: QueryContext, include_details=True):
   return bugs, next_page_token
 
 
-def bug_to_response(bug, include_details=True):
+def bug_to_response(bug, include_details=True, include_alias=False):
   """Convert a Bug entity to a response object."""
   if include_details:
-    return bug.to_vulnerability(include_source=True)
+    return bug.to_vulnerability(
+        include_source=True, include_alias=include_alias)
 
   return bug.to_vulnerability_minimal()
 

@@ -849,8 +849,13 @@ def query_by_version(context: QueryContext,
     bugs.extend(new_bugs)
 
   # Try querying by generic version for all cases.
-  new_bugs, next_page_token = yield _query_by_generic_version(
+
+  new_bugs, generic_page_token = yield _query_by_generic_version(
       context, query, package_name, ecosystem, purl, version)
+
+  if ecosystem and not is_semver:
+    next_page_token = generic_page_token
+
   for bug in new_bugs:
     if bug not in bugs:
       bugs.append(bug)

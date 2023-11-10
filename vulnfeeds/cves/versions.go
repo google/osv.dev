@@ -952,30 +952,42 @@ func extractVersionsFromDescription(validVersions []string, description string) 
 		// Trim periods that are part of sentences.
 		introduced := processExtractedVersion(match[1])
 		fixed := processExtractedVersion(match[3])
+		lastaffected := ""
 		if match[2] == "through" {
 			// "Through" implies inclusive range, so the fixed version is the one that comes after.
 			var err error
 			fixed, err = nextVersion(validVersions, fixed)
 			if err != nil {
 				notes = append(notes, err.Error())
+				// if that inference failed, we know this version was definitely still vulnerable.
+				lastaffected = cleanVersion(match[3])
+				notes = append(notes, fmt.Sprintf("Using %s as last_affected version instead", cleanVersion(match[3])))
 			}
 		}
 
-		if introduced == "" && fixed == "" {
+		if introduced == "" && fixed == "" && lastaffected == "" {
 			notes = append(notes, "Failed to match version range from description")
 			continue
 		}
 
 		if introduced != "" && !hasVersion(validVersions, introduced) {
-			notes = append(notes, fmt.Sprintf("Extracted version %s is not a valid version", introduced))
+			notes = append(notes, fmt.Sprintf("Extracted introduced version %s is not a valid version", introduced))
 		}
 		if fixed != "" && !hasVersion(validVersions, fixed) {
-			notes = append(notes, fmt.Sprintf("Extracted version %s is not a valid version", fixed))
+			notes = append(notes, fmt.Sprintf("Extracted fixed version %s is not a valid version", fixed))
+		}
+		if lastaffected != "" && !hasVersion(validVersions, lastaffected) {
+			notes = append(notes, fmt.Sprintf("Extracted last_affected version %s is not a valid version", lastaffected))
+		}
+		// Favour fixed over last_affected for schema compliance.
+		if fixed != "" && lastaffected != "" {
+			lastaffected = ""
 		}
 
 		versions = append(versions, AffectedVersion{
-			Introduced: introduced,
-			Fixed:      fixed,
+			Introduced:   introduced,
+			Fixed:        fixed,
+			LastAffected: lastaffected,
 		})
 	}
 

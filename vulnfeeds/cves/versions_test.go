@@ -859,6 +859,13 @@ func TestExtractVersionInfo(t *testing.T) {
 				AffectedVersions: []AffectedVersion{{LastAffected: "4.3.2"}},
 			},
 		},
+		{
+			description:  "A CVE with a configuration unsupported by ExtractVersionInfo and a limit version in the description",
+			inputCVEItem: loadTestData("CVE-2020-13595"),
+			expectedVersionInfo: VersionInfo{
+				AffectedVersions: []AffectedVersion{{Introduced: "4.0", LastAffected: "4.2"}},
+			},
+		},
 	}
 
 	for _, tc := range tests {

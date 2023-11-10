@@ -400,6 +400,24 @@ func TestRepo(t *testing.T) {
 			expectedRepoURL: "https://git.ffmpeg.org/ffmpeg.git",
 			expectedOk:      true,
 		},
+		{
+			description:     "Undesired researcher repo (by denylist)",
+			inputLink:       "https://github.com/chenan224/webchess_sqli_poc",
+			expectedRepoURL: "",
+			expectedOk:      false,
+		},
+		{
+			description:     "Undesired researcher repo (by deny regex)",
+			inputLink:       "https://github.com/bigzooooz/CVE-2023-26692#readme",
+			expectedRepoURL: "",
+			expectedOk:      false,
+		},
+		{
+			description:     "Undesired repo (by deny regex)",
+			inputLink:       "https://gitlab.com/gitlab-org/cves/-/blob/master/2023/CVE-2023-0413.json",
+			expectedRepoURL: "",
+			expectedOk:      false,
+		},
 	}
 
 	for _, tc := range tests {

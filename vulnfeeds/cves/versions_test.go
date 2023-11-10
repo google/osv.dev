@@ -444,7 +444,7 @@ func TestExtractGitCommit(t *testing.T) {
 			inputLink:       "https://github.com/google/osv/commit/cd4e934d0527e5010e373e7fed54ef5daefba2f5",
 			inputCommitType: Fixed,
 			expectedAffectedCommit: AffectedCommit{
-				Repo:  "https://github.com/google/osv",
+				Repo:  "https://github.com/google/osv.dev",
 				Fixed: "cd4e934d0527e5010e373e7fed54ef5daefba2f5",
 			},
 		},
@@ -570,6 +570,15 @@ func TestExtractGitCommit(t *testing.T) {
 			expectedAffectedCommit: AffectedCommit{
 				Repo:  "https://git.ffmpeg.org/ffmpeg.git",
 				Fixed: "c94875471e3ba3dc396c6919ff3ec9b14539cd71",
+			},
+		},
+		{
+			description:     "A GitHub repo that has been renamed (as seen on CVE-2016-10544)",
+			inputLink:       "https://github.com/uWebSockets/uWebSockets/commit/37deefd01f0875e133ea967122e3a5e421b8fcd9",
+			inputCommitType: Fixed,
+			expectedAffectedCommit: AffectedCommit{
+				Repo:  "https://github.com/uNetworking/uWebSockets",
+				Fixed: "37deefd01f0875e133ea967122e3a5e421b8fcd9",
 			},
 		},
 	}

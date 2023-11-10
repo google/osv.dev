@@ -776,8 +776,13 @@ func Commit(u string) (string, error) {
 	return "", fmt.Errorf("Commit(): unsupported URL: %s", u)
 }
 
-// Detect linkrot via HEAD request with exponential backoff.
-func ValidateLink(link string) (err error) {
+// Detect linkrot and handle link decay in HTTP(S) links via HEAD request with exponential backoff.
+func ValidateAndCanonicalizeLink(link string) (canonicalLink string, err error) {
+	u, err := url.Parse(link)
+	if !slices.Contains([]string{"http", "https"}, u.Scheme) {
+		// Handle what's presumably a git:// URL.
+		return link, err
+	}
 	backoff := retry.NewExponential(1 * time.Second)
 	if err := retry.Do(context.Background(), retry.WithMaxRetries(3, backoff), func(ctx context.Context) error {
 		resp, err := http.Head(link)
@@ -795,12 +800,13 @@ func ValidateLink(link string) (err error) {
 			return retry.RetryableError(fmt.Errorf("bad response: %v", resp.StatusCode))
 		// Anything else is acceptable.
 		default:
+			canonicalLink = resp.Request.URL.String()
 			return nil
 		}
 	}); err != nil {
-		return fmt.Errorf("unable to determine validity of %q: %v", link, err)
+		return link, fmt.Errorf("unable to determine validity of %q: %v", link, err)
 	}
-	return nil
+	return canonicalLink, nil
 }
 
 // For URLs referencing commits in supported Git repository hosts, return a cloneable AffectedCommit.
@@ -816,7 +822,10 @@ func extractGitCommit(link string, commitType CommitType) (ac AffectedCommit, er
 	}
 
 	// If URL doesn't validate, treat it as linkrot.
-	err = ValidateLink(link)
+	// Possible TODO(apollock): restart the entire extraction process when the
+	// repo changes (i.e. handle a redirect to a completely different host,
+	// instead of a redirect within GitHub)
+	r, err = ValidateAndCanonicalizeLink(r)
 	if err != nil {
 		return ac, err
 	}

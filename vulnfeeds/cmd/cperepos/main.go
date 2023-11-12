@@ -62,6 +62,7 @@ type CPEDict struct {
 type CPEItem struct {
 	XMLName    xml.Name    `xml:"cpe-item" json:"-"`
 	Name       string      `xml:"name,attr" json:"name"`
+	Deprecated bool        `xml:"deprecated,attr" json:"deprecated"`
 	Title      string      `xml:"title" json:"title"`
 	References []Reference `xml:"references>reference" json:"references"`
 	CPE23      CPE23Item   `xml:"cpe23-item" json:"cpe23-item"`
@@ -320,6 +321,10 @@ func analyzeCPEDictionary(d CPEDict) (ProductToRepo VendorProductToRepoMap, Desc
 	DescriptionFrequency = make(map[string]int)
 	MaybeTryDebian := make(map[VendorProduct]bool)
 	for _, c := range d.CPEItems {
+		if c.Deprecated {
+			Logger.Infof("Skipping deprecated %q", c.Name)
+			continue
+		}
 		CPE, err := cves.ParseCPE(c.CPE23.Name)
 		if err != nil {
 			Logger.Infof("Failed to parse %q", c.CPE23.Name)

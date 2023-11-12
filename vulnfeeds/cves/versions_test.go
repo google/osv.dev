@@ -400,6 +400,24 @@ func TestRepo(t *testing.T) {
 			expectedRepoURL: "https://git.ffmpeg.org/ffmpeg.git",
 			expectedOk:      true,
 		},
+		{
+			description:     "Undesired researcher repo (by denylist)",
+			inputLink:       "https://github.com/chenan224/webchess_sqli_poc",
+			expectedRepoURL: "",
+			expectedOk:      false,
+		},
+		{
+			description:     "Undesired researcher repo (by deny regex)",
+			inputLink:       "https://github.com/bigzooooz/CVE-2023-26692#readme",
+			expectedRepoURL: "",
+			expectedOk:      false,
+		},
+		{
+			description:     "Undesired repo (by deny regex)",
+			inputLink:       "https://gitlab.com/gitlab-org/cves/-/blob/master/2023/CVE-2023-0413.json",
+			expectedRepoURL: "",
+			expectedOk:      false,
+		},
 	}
 
 	for _, tc := range tests {
@@ -426,7 +444,7 @@ func TestExtractGitCommit(t *testing.T) {
 			inputLink:       "https://github.com/google/osv/commit/cd4e934d0527e5010e373e7fed54ef5daefba2f5",
 			inputCommitType: Fixed,
 			expectedAffectedCommit: AffectedCommit{
-				Repo:  "https://github.com/google/osv",
+				Repo:  "https://github.com/google/osv.dev",
 				Fixed: "cd4e934d0527e5010e373e7fed54ef5daefba2f5",
 			},
 		},
@@ -552,6 +570,15 @@ func TestExtractGitCommit(t *testing.T) {
 			expectedAffectedCommit: AffectedCommit{
 				Repo:  "https://git.ffmpeg.org/ffmpeg.git",
 				Fixed: "c94875471e3ba3dc396c6919ff3ec9b14539cd71",
+			},
+		},
+		{
+			description:     "A GitHub repo that has been renamed (as seen on CVE-2016-10544)",
+			inputLink:       "https://github.com/uWebSockets/uWebSockets/commit/37deefd01f0875e133ea967122e3a5e421b8fcd9",
+			inputCommitType: Fixed,
+			expectedAffectedCommit: AffectedCommit{
+				Repo:  "https://github.com/uNetworking/uWebSockets",
+				Fixed: "37deefd01f0875e133ea967122e3a5e421b8fcd9",
 			},
 		},
 	}
@@ -830,6 +857,13 @@ func TestExtractVersionInfo(t *testing.T) {
 			expectedVersionInfo: VersionInfo{
 				AffectedCommits:  []AffectedCommit{{Repo: "https://git.ffmpeg.org/ffmpeg.git", Fixed: "c94875471e3ba3dc396c6919ff3ec9b14539cd71"}},
 				AffectedVersions: []AffectedVersion{{LastAffected: "4.3.2"}},
+			},
+		},
+		{
+			description:  "A CVE with a configuration unsupported by ExtractVersionInfo and a limit version in the description",
+			inputCVEItem: loadTestData("CVE-2020-13595"),
+			expectedVersionInfo: VersionInfo{
+				AffectedVersions: []AffectedVersion{{Introduced: "4.0", LastAffected: "4.2"}},
 			},
 		},
 	}

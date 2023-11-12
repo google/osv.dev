@@ -17,6 +17,7 @@ import os
 import unittest
 
 from google.cloud import ndb
+from google.protobuf import timestamp_pb2
 
 import osv
 from docker.alias import alias_computation
@@ -346,6 +347,40 @@ class AliasTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
     alias_computation.main()
     alias_group = osv.AliasGroup.query(osv.AliasGroup.bug_ids == 'iii-1').get()
     self.assertIsNone(alias_group)
+
+  def test_to_vulnerability(self):
+    """Tests OSV bug to vulnerability function."""
+    bug = osv.Bug(
+        id='jjj-123',
+        db_id='jjj-123',
+        related=['jjj-111'],
+        status=1,
+        source='test',
+        public=True,
+        import_last_modified=datetime.datetime(2023, 1, 1),
+        last_modified=datetime.datetime(2023, 1, 1),
+        timestamp=datetime.datetime(2023, 1, 1))
+    bug.put()
+    alias_group_last_modified = datetime.datetime(2023, 10, 1)
+    osv.AliasGroup(
+        bug_ids=['jjj-123', 'jjj-234', 'jjj-456'],
+        last_modified=alias_group_last_modified,
+    ).put()
+    osv.Bug(
+        id='jjj-222',
+        db_id='jjj-222',
+        related=['jjj-123'],
+        status=1,
+        source='test',
+        public=True,
+        import_last_modified=datetime.datetime(2023, 1, 1),
+    ).put()
+    vuln = bug.to_vulnerability()
+    self.assertEqual(vuln.related, ['jjj-111', 'jjj-222'])
+    self.assertEqual(vuln.aliases, ['jjj-234', 'jjj-456'])
+    modified = timestamp_pb2.Timestamp()
+    modified.FromDatetime(alias_group_last_modified)
+    self.assertEqual(modified, vuln.modified)
 
 
 if __name__ == '__main__':

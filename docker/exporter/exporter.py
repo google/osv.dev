@@ -98,19 +98,7 @@ class Exporter:
           return
 
         file_path = os.path.join(tmp_dir, bug.id() + '.json')
-        vulnerability = bug.to_vulnerability(
-            include_source=True, include_alias=False)
-        alias_group = yield osv.get_aliases_async(vulnerability.id)
-        if alias_group:
-          alias_ids = sorted(
-              list(set(alias_group.bug_ids) - {vulnerability.id}))
-          vulnerability.aliases[:] = alias_ids
-          modified_time = vulnerability.modified.ToDatetime()
-          modified_time = max(alias_group.last_modified, modified_time)
-          vulnerability.modified.FromDatetime(modified_time)
-        related_bug_ids = yield osv.get_related_async(vulnerability.id)
-        vulnerability.related[:] = sorted(
-            list(set(related_bug_ids + list(vulnerability.related))))
+        vulnerability = yield bug.to_vulnerability_async(include_source=True)
         osv.write_vulnerability(vulnerability, file_path)
         # Tasklets are not truly multiple threads;they are actually
         # event loops, which makes it safe to write to ZIP files."

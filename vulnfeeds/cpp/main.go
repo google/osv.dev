@@ -99,6 +99,7 @@ var VendorProductDenyList = []VendorProduct{
 	{"netapp", ""},
 	// [CVE-2021-28957]: Incorrectly associates with github.com/lxml/lxml
 	{"oracle", "zfs_storage_appliance_kit"},
+	{"gradle", "enterprise"}, // The OSS repo gets mis-attributed via CVE-2020-15767
 }
 
 // Looks at what the repo to determine if it contains code using an in-scope language

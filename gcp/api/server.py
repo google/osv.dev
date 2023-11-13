@@ -884,9 +884,11 @@ def query_by_version(context: QueryContext,
       # Both queries returned results, we can't support a page token.
       next_page_token = None
     elif new_bugs:
-      # The semver query returned no results, so we can return a page token here.
+      # The semver query returned no results, so we can return a page token
+      # here.
       next_page_token = generic_page_token
-    # Otherwise, the semver query returned results and the generic query returned no result.
+    # Otherwise, the semver query returned results and the generic query
+    # returned no result.
     # The page token should already be set to the one from the semver query.
   else:
     # We don't support a page token if ecosystem is not set.

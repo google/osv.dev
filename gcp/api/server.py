@@ -864,8 +864,9 @@ def query_by_version(context: QueryContext,
       bugs, _ = yield _query_by_semver(context, query, package_name, ecosystem,
                                        purl, version)
 
-      new_bugs, _ = yield _query_by_generic_version(context, query, package_name,
-                                                ecosystem, purl, version)
+      new_bugs, _ = yield _query_by_generic_version(context, query,
+                                                    package_name, ecosystem,
+                                                    purl, version)
       for bug in new_bugs:
         if bug not in bugs:
           bugs.append(bug)

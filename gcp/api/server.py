@@ -861,9 +861,16 @@ def query_by_version(context: QueryContext,
   if ecosystem:
     if is_semver:
       # Ecosystem supports semver only.
-      bugs, next_page_token = yield _query_by_semver(context, query,
-                                                     package_name, ecosystem,
-                                                     purl, version)
+      bugs, _ = yield _query_by_semver(context, query, package_name, ecosystem,
+                                       purl, version)
+
+      bugs, _ = yield _query_by_generic_version(context, query, package_name,
+                                                ecosystem, purl, version)
+
+    else:
+      bugs, next_page_token = yield _query_by_generic_version(
+          context, query, package_name, ecosystem, purl, version)
+
   else:
     logging.warning("Package query without ecosystem specified")
     # Unspecified ecosystem. Try semver first.
@@ -875,33 +882,16 @@ def query_by_version(context: QueryContext,
                                          ecosystem, purl, version)
     bugs.extend(new_bugs)
 
-  # Try querying by generic version for all cases.
-  new_bugs, generic_page_token = yield _query_by_generic_version(
-      context, query, package_name, ecosystem, purl, version)
+    new_bugs, _ = yield _query_by_generic_version(context, query, package_name,
+                                                  ecosystem, purl, version)
+    for bug in new_bugs:
+      if bug not in bugs:
+        bugs.append(bug)
 
-  if ecosystem:
-    if bugs and new_bugs:
-      # Both queries returned results, we can't support a page token.
-      next_page_token = None
-    elif new_bugs:
-      # The semver query returned no results, so we can return a page token
-      # here.
-      next_page_token = generic_page_token
-    # Otherwise, the semver query returned results and the generic query
-    # returned no result.
-    # The page token should already be set to the one from the semver query.
-  else:
-    # We don't support a page token if ecosystem is not set.
-    next_page_token = None
-
-  for bug in new_bugs:
-    if bug not in bugs:
-      bugs.append(bug)
-
-  # Trying both is too difficult/ugly with paging
-  # Our documentation states that this is an invalid query
-  # context.service_context.abort(grpc.StatusCode.INVALID_ARGUMENT,
-  #                               'Ecosystem not specified')
+    # Trying both is too difficult/ugly with paging
+    # Our documentation states that this is an invalid query
+    # context.service_context.abort(grpc.StatusCode.INVALID_ARGUMENT,
+    #                               'Ecosystem not specified')
 
   return [to_response(bug) for bug in bugs], next_page_token
 

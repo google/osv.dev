@@ -480,6 +480,8 @@ def do_query(query, context: QueryContext, include_details=True):
     )
 
   def to_response(b):
+    # Skip retrieving aliases from to_vulnerability().
+    # Retrieve it asynchronously later.
     return bug_to_response(b, include_details)
 
   next_page_token = None

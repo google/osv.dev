@@ -33,8 +33,11 @@ func fuzzyVersionToCommit(normalizedVersion string, repo string, commitType cves
 	var validVersionText = regexp.MustCompile(`(?i)(?:rc|alpha|beta|preview)\d*`)
 
 	for _, k := range maps.Keys(normalizedTags) {
-		// "1.8.0-RC0" shouldn't be considered a fuzzy match for "1.8.0"
-		if strings.HasPrefix(k, normalizedVersion) && !validVersionText.MatchString(k) {
+		// "1-8-0-RC0" (normalized from "1.8.0-RC0") shouldn't be considered a fuzzy match for "1-8-0" (normalized from "1.8.0")
+		if (validVersionText.MatchString(k) && validVersionText.MatchString(normalizedVersion)) && strings.HasPrefix(k, normalizedVersion) {
+			candidateTags = append(candidateTags, k)
+		}
+		if (!validVersionText.MatchString(k) && !validVersionText.MatchString(normalizedVersion)) && strings.HasPrefix(k, normalizedVersion) {
 			candidateTags = append(candidateTags, k)
 		}
 	}
@@ -91,8 +94,8 @@ func VersionToCommit(version string, repo string, commitType cves.CommitType, no
 	if err != nil {
 		return ac, err
 	}
-	// Try a straight out match first.
-	normalizedTag, ok := normalizedTags[normalizedVersion]
+	// Try a straight out (case-insensitive) match first.
+	normalizedTag, ok := normalizedTags[strings.ToLower(normalizedVersion)]
 	if !ok {
 		// Then try to fuzzy-match.
 		ac, ok = fuzzyVersionToCommit(normalizedVersion, repo, commitType, normalizedTags)

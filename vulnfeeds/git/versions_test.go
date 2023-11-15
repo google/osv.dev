@@ -17,7 +17,8 @@ func TestVersionToCommit(t *testing.T) {
 		expectedResult string
 		expectedOk     bool
 	}{
-		{   description:    "An exact match",
+		{
+			description:    "An exact match",
 			inputRepoURL:   "https://github.com/ARMmbed/mbedtls",
 			cache:          cache,
 			inputVersion:   "3.0.0",
@@ -49,10 +50,26 @@ func TestVersionToCommit(t *testing.T) {
 			expectedOk:     false,
 		},
 		{
+			description:    "A fuzzy version match for a tag with a different format to the others in the repo",
+			inputRepoURL:   "https://github.com/yui/yui2",
+			cache:          cache,
+			inputVersion:   "2800",
+			expectedResult: "159208465da41a4796716d8a5bf833c6778b3f61",
+			expectedOk:     true,
+		},
+		{
 			description:    "A version that should not fuzzy match to a release candidate",
 			inputRepoURL:   "https://github.com/apache/inlong",
 			cache:          cache,
 			inputVersion:   "1.4.0",
+			expectedResult: "",
+			expectedOk:     false,
+		},
+		{
+			description:    "An RC version that should match to one of many prefixed release candidates",
+			inputRepoURL:   "https://github.com/apache/inlong",
+			cache:          cache,
+			inputVersion:   "1.8.0",
 			expectedResult: "",
 			expectedOk:     false,
 		},

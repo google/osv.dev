@@ -7,8 +7,7 @@ import (
 )
 
 func TestVersionToCommit(t *testing.T) {
-	var cache RepoTagsCache
-	cache = make(RepoTagsCache)
+	cache := make(RepoTagsCache)
 
 	tests := []struct {
 		description    string
@@ -47,6 +46,22 @@ func TestVersionToCommit(t *testing.T) {
 			inputRepoURL:   "https://github.com/google/go-attestation",
 			cache:          cache,
 			inputVersion:   "0.3.3", // referred to in CVE-2022-0317
+			expectedResult: "",
+			expectedOk:     false,
+		},
+		{
+			description:    "A version that should not fuzzy match to a release candidate",
+			inputRepoURL:   "https://github.com/apache/inlong",
+			cache:          cache,
+			inputVersion:   "1.4.0",
+			expectedResult: "",
+			expectedOk:     false,
+		},
+		{
+			description:    "A version that should not fuzzy match to a release candidate",
+			inputRepoURL:   "https://github.com/apache/inlong",
+			cache:          cache,
+			inputVersion:   "1.8.0",
 			expectedResult: "",
 			expectedOk:     false,
 		},

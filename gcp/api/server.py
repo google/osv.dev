@@ -863,9 +863,20 @@ def query_by_version(context: QueryContext,
   if ecosystem:
     if is_semver:
       # Ecosystem supports semver only.
-      bugs, next_page_token = yield _query_by_semver(context, query,
-                                                     package_name, ecosystem,
-                                                     purl, version)
+      bugs, _ = yield _query_by_semver(context, query, package_name, ecosystem,
+                                       purl, version)
+
+      new_bugs, _ = yield _query_by_generic_version(context, query,
+                                                    package_name, ecosystem,
+                                                    purl, version)
+      for bug in new_bugs:
+        if bug not in bugs:
+          bugs.append(bug)
+
+    else:
+      bugs, next_page_token = yield _query_by_generic_version(
+          context, query, package_name, ecosystem, purl, version)
+
   else:
     logging.warning("Package query without ecosystem specified")
     # Unspecified ecosystem. Try semver first.
@@ -877,17 +888,16 @@ def query_by_version(context: QueryContext,
                                          ecosystem, purl, version)
     bugs.extend(new_bugs)
 
-  # Try querying by generic version for all cases.
-  new_bugs, _ = yield _query_by_generic_version(context, query, package_name,
-                                                ecosystem, purl, version)
-  for bug in new_bugs:
-    if bug not in bugs:
-      bugs.append(bug)
+    new_bugs, _ = yield _query_by_generic_version(context, query, package_name,
+                                                  ecosystem, purl, version)
+    for bug in new_bugs:
+      if bug not in bugs:
+        bugs.append(bug)
 
-  # Trying both is too difficult/ugly with paging
-  # Our documentation states that this is an invalid query
-  # context.service_context.abort(grpc.StatusCode.INVALID_ARGUMENT,
-  #                               'Ecosystem not specified')
+    # Trying both is too difficult/ugly with paging
+    # Our documentation states that this is an invalid query
+    # context.service_context.abort(grpc.StatusCode.INVALID_ARGUMENT,
+    #                               'Ecosystem not specified')
 
   return [to_response(bug) for bug in bugs], next_page_token
 

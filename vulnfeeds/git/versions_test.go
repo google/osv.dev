@@ -7,8 +7,7 @@ import (
 )
 
 func TestVersionToCommit(t *testing.T) {
-	var cache RepoTagsCache
-	cache = make(RepoTagsCache)
+	cache := make(RepoTagsCache)
 
 	tests := []struct {
 		description    string
@@ -18,8 +17,7 @@ func TestVersionToCommit(t *testing.T) {
 		expectedResult string
 		expectedOk     bool
 	}{
-		{
-			description:    "An exact match",
+		{   description:    "An exact match",
 			inputRepoURL:   "https://github.com/ARMmbed/mbedtls",
 			cache:          cache,
 			inputVersion:   "3.0.0",
@@ -48,6 +46,30 @@ func TestVersionToCommit(t *testing.T) {
 			cache:          cache,
 			inputVersion:   "0.3.3", // referred to in CVE-2022-0317
 			expectedResult: "",
+			expectedOk:     false,
+		},
+		{
+			description:    "A version that should not fuzzy match to a release candidate",
+			inputRepoURL:   "https://github.com/apache/inlong",
+			cache:          cache,
+			inputVersion:   "1.4.0",
+			expectedResult: "",
+			expectedOk:     false,
+		},
+		{
+			description:    "An RC version that should match to a (single) release candidate",
+			inputRepoURL:   "https://github.com/apache/inlong",
+			cache:          cache,
+			inputVersion:   "1.4.0-RC0",
+			expectedResult: "8c8145974548568a68bb81720cabdafbefe545be",
+			expectedOk:     false,
+		},
+		{
+			description:    "An RC version that should match to one of many prefixed release candidates",
+			inputRepoURL:   "https://github.com/apache/inlong",
+			cache:          cache,
+			inputVersion:   "1.8.0-RC0",
+			expectedResult: "15d9fd922ef314977c7ce47c1fdf5e1655efd945",
 			expectedOk:     false,
 		},
 	}

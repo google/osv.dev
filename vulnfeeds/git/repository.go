@@ -19,6 +19,7 @@ import (
 	"context"
 	"net/url"
 	"path"
+	"regexp"
 	"sort"
 	"strings"
 	"time"
@@ -154,6 +155,34 @@ func RepoTags(repoURL string, repoTagsCache RepoTagsCache) (tags Tags, e error) 
 	return tags, nil
 }
 
+// normalizeRepoTag returns a repo tag normalized.
+// It is:
+//   - lowercased,
+//   - the repo name, if present is removed
+//   - any Java package name prefix, if present is removed
+//
+// finally, it is run through the standard version normalizing treatment
+func normalizeRepoTag(tag string, reponame string) (normalizedTag string, err error) {
+	// Match the likes of "org.apache.sling.i18n-2.0.2" as seen in github.com/apache/sling-org-apache-sling-i18n
+	var javaPackageRegex = regexp.MustCompile(`(?i)^(?:[a-z][a-z0-9_]*(?:\.[a-z0-9_]+)+[0-9a-z_])(.*)$`)
+	// Opportunistically remove parts determined to match the repo name,
+	// to ease particularly difficult to normalize cases like 'openj9-0.38.0'.
+	prenormalizedTag := strings.TrimPrefix(strings.ToLower(tag), reponame)
+	// Deal with the reponame being in the *middle* of the tag like 'hudson-yui2-2800'
+	if strings.Contains(prenormalizedTag, reponame) {
+		_, after, found := strings.Cut(prenormalizedTag, reponame)
+		if found {
+			prenormalizedTag = after
+		}
+	}
+	if javaPackageRegex.MatchString(prenormalizedTag) {
+		prenormalizedTag = javaPackageRegex.FindStringSubmatch(prenormalizedTag)[1]
+	}
+	prenormalizedTag = strings.TrimPrefix(prenormalizedTag, "-")
+	normalizedTag, err = cves.NormalizeVersion(prenormalizedTag)
+	return normalizedTag, err
+}
+
 // NormalizeRepoTags returns a map of normalized tags mapping back to original tags and also commit hashes.
 // An optional repoTagsCache can be supplied to reduce repeated remote connections to the same repo.
 func NormalizeRepoTags(repoURL string, repoTagsCache RepoTagsCache) (NormalizedTags map[string]NormalizedTag, e error) {
@@ -174,11 +203,7 @@ func NormalizeRepoTags(repoURL string, repoTagsCache RepoTagsCache) (NormalizedT
 	}
 	NormalizedTags = make(map[string]NormalizedTag)
 	for _, t := range tags {
-		// Opportunistically remove parts determined to match the repo name,
-		// to ease particularly difficult to normalize cases like 'openj9-0.38.0'.
-		prenormalizedTag := strings.TrimPrefix(strings.ToLower(t.Tag), assumedReponame)
-		prenormalizedTag = strings.TrimPrefix(prenormalizedTag, "-")
-		normalizedTag, err := cves.NormalizeVersion(prenormalizedTag)
+		normalizedTag, err := normalizeRepoTag(strings.ToLower(t.Tag), assumedReponame)
 		if err != nil {
 			// It's conceivable that not all tags are normalizable or potentially versions.
 			continue

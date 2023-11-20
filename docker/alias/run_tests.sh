@@ -1,3 +1,4 @@
+#!/bin/bash -x
 # Copyright 2023 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -12,21 +13,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-name: osv-scanner
+cd ../worker
 
-on:
-  pull_request:
-    # The branches below must be a subset of the branches above
-    branches: [ master ]
-  merge_group:
-    branches: [ master ]
-
-# Declare default permissions as read only.
-permissions: read-all
-
-jobs:
-  scan-pr:
-    permissions:
-      contents: read
-      security-events: write
-    uses: "google/osv-scanner/.github/workflows/osv-scanner-reusable-pr.yml@main"
+export PIPENV_IGNORE_VIRTUALENVS=1
+pipenv sync
+pipenv run python ../alias/alias_computation_test.py

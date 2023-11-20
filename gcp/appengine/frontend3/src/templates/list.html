@@ -97,14 +97,8 @@
             </span>
             <span role="cell" class="vuln-table-cell vuln-packages mdc-data-table__cell">
               <ul class="packages">
-                {% for affected in vulnerability.affected %}
-                {%- for range in affected.ranges -%}
-                {%- if range.type in ('ECOSYSTEM', 'SEMVER') -%}
-                <li>{{ affected.package.ecosystem }}/{{ affected.package.name }}</li>
-                {%- elif range.type == 'GIT' -%}
-                <li>{{ range.repo | strip_scheme }}</li>
-                {%- endif -%}
-                {%- endfor -%}
+                {% for package in (vulnerability.affected | list_packages) %}
+                <li>{{ package }}</li>
                 {% endfor %}
               </ul>
             </span>

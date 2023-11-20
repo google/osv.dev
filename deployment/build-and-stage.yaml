@@ -62,7 +62,7 @@ steps:
   args: ['push', '--all-tags', 'gcr.io/oss-vdb/worker-base']
   waitFor: ['build-worker-base', 'cloud-build-queue']
 
-# Build/push core worker/importer/exporter images.
+# Build/push core worker/importer/exporter/alias images.
 - name: gcr.io/cloud-builders/docker
   args: ['build', '-t', 'gcr.io/oss-vdb/worker:latest', '-t', 'gcr.io/oss-vdb/worker:$COMMIT_SHA', '-f', 'docker/worker/Dockerfile', '.']
   id: 'build-worker'
@@ -88,6 +88,15 @@ steps:
 - name: gcr.io/cloud-builders/docker
   args: ['push', '--all-tags', 'gcr.io/oss-vdb/exporter']
   waitFor: ['build-exporter', 'cloud-build-queue']
+
+- name: gcr.io/cloud-builders/docker
+  args: ['build', '-t', 'gcr.io/oss-vdb/alias-computation:latest', '-t', 'gcr.io/oss-vdb/alias-computation:$COMMIT_SHA', '.']
+  dir: 'docker/alias'
+  id: 'build-alias-computation'
+  waitFor: ['build-worker']
+- name: gcr.io/cloud-builders/docker
+  args: ['push', '--all-tags', 'gcr.io/oss-vdb/alias-computation']
+  waitFor: ['build-alias-computation', 'cloud-build-queue']
 
 # Build/push vulnfeeds images
 - name: 'gcr.io/cloud-builders/docker'
@@ -229,6 +238,7 @@ steps:
     "worker=gcr.io/oss-vdb/worker:$COMMIT_SHA,\
      importer=gcr.io/oss-vdb/importer:$COMMIT_SHA,\
      exporter=gcr.io/oss-vdb/exporter:$COMMIT_SHA,\
+     alias-computation=gcr.io/oss-vdb/alias-computation:$COMMIT_SHA,\
      debian-convert=gcr.io/oss-vdb/debian-convert:$COMMIT_SHA,\
      combine-to-osv=gcr.io/oss-vdb/combine-to-osv:$COMMIT_SHA,\
      alpine-cve-convert=gcr.io/oss-vdb/alpine-cve-convert:$COMMIT_SHA,\
@@ -277,6 +287,7 @@ images:
 - 'gcr.io/oss-vdb/worker:$COMMIT_SHA'
 - 'gcr.io/oss-vdb/importer:$COMMIT_SHA'
 - 'gcr.io/oss-vdb/exporter:$COMMIT_SHA'
+- 'gcr.io/oss-vdb/alias-computation:$COMMIT_SHA'
 - 'gcr.io/oss-vdb/alpine-cve-convert:$COMMIT_SHA'
 - 'gcr.io/oss-vdb/combine-to-osv:$COMMIT_SHA'
 - 'gcr.io/oss-vdb/indexer:$COMMIT_SHA'

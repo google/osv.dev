@@ -1,0 +1,14 @@
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: alias-computation
+spec:
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          containers:
+          - name: alias-computation
+            env:
+            - name: GOOGLE_CLOUD_PROJECT
+              value: oss-vdb

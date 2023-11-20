@@ -47,7 +47,7 @@ performance and reliability, to ensure we maintain our [Service Level
 Objectives](https://google.github.io/osv.dev/faq/#what-are-osvs-service-level-objectives-slos),
 which we also defined this year.
 
-We saw a peak API usage of 4k QPS in November.
+We saw peaks in API usage of over 250 QPS in November.
 
 ![Image shows the GitHub star history for all OSV-related GitHub repositories taken at November 17, 2023](star-history-20231117.png "GitHub star history for all OSV repos, as at 2023/11/17")
 

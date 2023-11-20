@@ -116,5 +116,5 @@ vulnerabilities that matter in an easy way.
 
 Here’s a quick preview of what we have been working on: 
 
-![](guided_remediation1.png "A screenshot of the guided remediation tooling under development")
-![](guided_remediation2.png "A screenshot of the guided remediation tooling under development")
+![A sneak preview of the current UX of the guided remediation tooling under development](guided_remediation1.png "A screenshot of the guided remediation tooling under development")
+![A sneak preview of the current UX of the guided remediation tooling under development](guided_remediation2.png "A screenshot of the guided remediation tooling under development")

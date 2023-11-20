@@ -23,6 +23,7 @@ import (
 	"net/url"
 	"os"
 	"path"
+	"sort"
 	"strings"
 	"time"
 
@@ -190,6 +191,12 @@ type Reference struct {
 	URL  string `json:"url" yaml:"url"`
 }
 
+type References []Reference
+
+func (r References) Len() int           { return len(r) }
+func (r References) Less(i, j int) bool { return r[i].Type < r[j].Type }
+func (r References) Swap(i, j int)      { r[i], r[j] = r[j], r[i] }
+
 type Vulnerability struct {
 	ID         string      `json:"id" yaml:"id"`
 	Withdrawn  string      `json:"withdrawn,omitempty" yaml:"withdrawn,omitempty"`
@@ -297,14 +304,47 @@ func (v *Vulnerability) AddPkgInfo(pkgInfo PackageInfo) {
 }
 
 // AddSeverity adds CVSS3 severity information to the OSV vulnerability object.
-func (v *Vulnerability) AddSeverity(CVEImpact cves.CVEImpact) {
-	if CVEImpact == (cves.CVEImpact{}) {
+// It uses the highest available CVSS 3.x Primary score from the underlying CVE record.
+func (v *Vulnerability) AddSeverity(CVEImpact *cves.CveItemMetrics) {
+	if CVEImpact == nil {
+		return
+	}
+
+	// Use the highest available of CvssMetric31, CvssMetric30
+	// from the Primary scorer.
+	var bestVectorString string
+
+	for _, metric := range CVEImpact.CvssMetricV31 {
+		if bestVectorString != "" {
+			break
+		}
+		if metric.Type != "Primary" {
+			continue
+		}
+		bestVectorString = metric.CvssData.VectorString
+	}
+
+	// No CVSS 3.1, try falling back to CVSS 3.0 if available.
+	if bestVectorString == "" {
+		for _, metric := range CVEImpact.CvssMetricV30 {
+			if bestVectorString != "" {
+				break
+			}
+			if metric.Type != "Primary" {
+				continue
+			}
+			bestVectorString = metric.CvssData.VectorString
+		}
+	}
+
+	// No luck, nothing to add.
+	if bestVectorString == "" {
 		return
 	}
 
 	severity := Severity{
 		Type:  "CVSS_V3",
-		Score: CVEImpact.BaseMetricV3.CVSSV3.VectorString,
+		Score: bestVectorString,
 	}
 
 	v.Severity = append(v.Severity, severity)
@@ -320,14 +360,14 @@ func (v *Vulnerability) ToYAML(w io.Writer) error {
 	return encoder.Encode(v)
 }
 
-func timestampToRFC3339(timestamp string) (string, error) {
-	t, err := cves.ParseTimestamp(timestamp)
-	if err != nil {
-		return "", err
-	}
+// func timestampToRFC3339(timestamp string) (string, error) {
+// 	t, err := cves.ParseTimestamp(timestamp)
+// 	if err != nil {
+// 		return "", err
+// 	}
 
-	return t.Format(time.RFC3339), nil
-}
+// 	return t.Format(time.RFC3339), nil
+// }
 
 func CVE5timestampToRFC3339(timestamp string) (string, error) {
 	t, err := cves.ParseCVE5Timestamp(timestamp)
@@ -469,14 +509,14 @@ func ClassifyReferenceLink(link string, tag string) string {
 	return "WEB"
 }
 
-func extractAliases(id string, cve cves.CVE) []string {
+func extractAliases(id string, cve cves.CveItem) []string {
 	var aliases []string
-	if id != cve.CVEDataMeta.ID {
-		aliases = append(aliases, cve.CVEDataMeta.ID)
+	if id != string(cve.Id) {
+		aliases = append(aliases, string(cve.Id))
 	}
 
-	for _, reference := range cve.References.ReferenceData {
-		u, err := url.Parse(reference.URL)
+	for _, reference := range cve.References {
+		u, err := url.Parse(reference.Url)
 		if err == nil {
 			pathParts := strings.Split(u.Path, "/")
 
@@ -524,48 +564,49 @@ func unique[T comparable](s []T) []T {
 }
 
 // Annotates reference links based on their tags or the shape of them.
-func ClassifyReferences(refs cves.CVEReferences) []Reference {
-	references := []Reference{}
-	for _, reference := range refs.ReferenceData {
+func ClassifyReferences(refs []cves.Reference) (references References) {
+	for _, reference := range refs {
 		if len(reference.Tags) > 0 {
 			for _, tag := range reference.Tags {
 				references = append(references, Reference{
-					Type: ClassifyReferenceLink(reference.URL, tag),
-					URL:  reference.URL,
+					Type: ClassifyReferenceLink(reference.Url, tag),
+					URL:  reference.Url,
 				})
 			}
 		} else {
 			references = append(references, Reference{
-				Type: ClassifyReferenceLink(reference.URL, ""),
-				URL:  reference.URL,
+				Type: ClassifyReferenceLink(reference.Url, ""),
+				URL:  reference.Url,
 			})
 		}
 	}
-	return unique(references)
+	references = unique(references)
+	sort.Stable(references)
+	return references
 }
 
 // FromCVE creates a minimal OSV object from a given CVEItem and id.
 // Leaves affected and version fields empty to be filled in later with AddPkgInfo
-func FromCVE(id string, cve cves.CVEItem) (*Vulnerability, []string) {
+func FromCVE(id string, cve cves.CveItem) (*Vulnerability, []string) {
 	v := Vulnerability{
 		ID:      id,
-		Details: cves.EnglishDescription(cve.CVE),
-		Aliases: extractAliases(id, cve.CVE),
+		Details: cves.EnglishDescription(cve),
+		Aliases: extractAliases(id, cve),
 	}
 	var err error
 	var notes []string
-	v.Published, err = timestampToRFC3339(cve.PublishedDate)
+	v.Published = cve.Published.Format(time.RFC3339)
 	if err != nil {
 		notes = append(notes, fmt.Sprintf("Failed to parse published date: %v\n", err))
 	}
 
-	v.Modified, err = timestampToRFC3339(cve.LastModifiedDate)
+	v.Modified = cve.LastModified.Format(time.RFC3339)
 	if err != nil {
 		notes = append(notes, fmt.Sprintf("Failed to parse modified date: %v\n", err))
 	}
 
-	v.References = ClassifyReferences(cve.CVE.References)
-	v.AddSeverity(cve.Impact)
+	v.References = ClassifyReferences(cve.References)
+	v.AddSeverity(cve.Metrics)
 	return &v, notes
 }
 

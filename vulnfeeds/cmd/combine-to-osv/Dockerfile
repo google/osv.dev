@@ -27,6 +27,7 @@ RUN go build -o download-cves ./cmd/download-cves/
 
 
 FROM gcr.io/google.com/cloudsdktool/google-cloud-cli:alpine
+RUN apk --no-cache add jq
 
 WORKDIR /root/
 COPY --from=GO_BUILD /src/combine-to-osv ./

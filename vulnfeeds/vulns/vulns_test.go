@@ -4,6 +4,7 @@ import (
 	"cmp"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"log"
 	"os"
 	"reflect"
@@ -52,27 +53,33 @@ func TestClassifyReferenceLink(t *testing.T) {
 
 func TestClassifyReferences(t *testing.T) {
 	testcases := []struct {
-		refData    cves.CVEReferences
-		references []Reference
+		refData    []cves.Reference
+		references References
 	}{
-		{cves.CVEReferences{
-			ReferenceData: []cves.CVEReferenceData{
-				{URL: "https://example.com", Name: "https://example.com", RefSource: "MISC", Tags: nil},
+		{
+			refData: []cves.Reference{
+				{
+					Source: "https://example.com", Tags: []string{"MISC"}, Url: "https://example.com",
+				},
 			},
+			references: References{{URL: "https://example.com", Type: "WEB"}},
 		},
-			[]Reference{{URL: "https://example.com", Type: "WEB"}}},
-		{cves.CVEReferences{
-			ReferenceData: []cves.CVEReferenceData{
-				{URL: "https://github.com/Netflix/lemur/issues/117", Name: "https://github.com/Netflix/lemur/issues/117", RefSource: "MISC", Tags: []string{"Issue Tracking"}},
+		{
+			refData: []cves.Reference{
+				{
+					Source: "https://github.com/Netflix/lemur/issues/117", Url: "https://github.com/Netflix/lemur/issues/117", Tags: []string{"MISC", "Issue Tracking"},
+				},
 			},
+			references: References{{URL: "https://github.com/Netflix/lemur/issues/117", Type: "REPORT"}},
 		},
-			[]Reference{{URL: "https://github.com/Netflix/lemur/issues/117", Type: "REPORT"}}},
-		{cves.CVEReferences{
-			ReferenceData: []cves.CVEReferenceData{
-				{URL: "https://github.com/curl/curl/issues/9271", Name: "https://github.com/curl/curl/issues/9271", RefSource: "MISC", Tags: []string{"Exploit", "Issue Tracking", "Third Party Advisory"}},
+		{
+			refData: []cves.Reference{
+				{
+					Source: "https://github.com/curl/curl/issues/9271", Url: "https://github.com/curl/curl/issues/9271", Tags: []string{"MISC", "Exploit", "Issue Tracking", "Third Party Advisory"},
+				},
 			},
+			references: References{{URL: "https://github.com/curl/curl/issues/9271", Type: "EVIDENCE"}, {URL: "https://github.com/curl/curl/issues/9271", Type: "REPORT"}},
 		},
-			[]Reference{{URL: "https://github.com/curl/curl/issues/9271", Type: "EVIDENCE"}, {URL: "https://github.com/curl/curl/issues/9271", Type: "REPORT"}}},
 	}
 	for _, tc := range testcases {
 		references := ClassifyReferences(tc.refData)
@@ -82,38 +89,43 @@ func TestClassifyReferences(t *testing.T) {
 	}
 }
 
-func loadTestData(cveName string) cves.CVEItem {
-	file, err := os.Open("../test_data/nvdcve-1.1-test-data.json")
+func loadTestData2(cveName string) cves.Cve {
+	fileName := fmt.Sprintf("../test_data/nvdcve-2.0/%s.json", cveName)
+	file, err := os.Open(fileName)
 	if err != nil {
-		log.Fatalf("Failed to load test data")
+		log.Fatalf("Failed to load test data from %q", fileName)
 	}
-	var nvdCves cves.NVDCVE
-	json.NewDecoder(file).Decode(&nvdCves)
-	for _, item := range nvdCves.CVEItems {
-		if item.CVE.CVEDataMeta.ID == cveName {
-			return item
+	var nvdCves cves.CveApiJson20Schema
+	err = json.NewDecoder(file).Decode(&nvdCves)
+	if err != nil {
+		log.Fatalf("Failed to decode %q: %+v", fileName, err)
+	}
+	for _, vulnerability := range nvdCves.Vulnerabilities {
+		if string(vulnerability.Cve.Id) == cveName {
+			return vulnerability
 		}
 	}
-	log.Fatalf("test data doesn't contain specified CVE")
-	return cves.CVEItem{}
+	log.Fatalf("test data doesn't contain %q", cveName)
+	return cves.Cve{}
 }
 
 func TestExtractAliases(t *testing.T) {
-	cveItem := loadTestData("CVE-2022-36037")
-	aliases := extractAliases(cveItem.CVE.CVEDataMeta.ID, cveItem.CVE)
+	// TODO: convert to table based test
+	cveItem := loadTestData2("CVE-2022-36037")
+	aliases := extractAliases(string(cveItem.Cve.Id), cveItem.Cve)
 	if !utility.SliceEqual(aliases, []string{"GHSA-3f89-869f-5w76"}) {
 		t.Errorf("Aliases not extracted, got %v, but expected %v.", aliases, []string{"GHSA-3f89-869f-5w76"})
 	}
-	cveItem = loadTestData("CVE-2022-36749")
-	aliases = extractAliases(cveItem.CVE.CVEDataMeta.ID, cveItem.CVE)
+	cveItem = loadTestData2("CVE-2022-36749")
+	aliases = extractAliases(string(cveItem.Cve.Id), cveItem.Cve)
 	if !utility.SliceEqual(aliases, []string{}) {
 		t.Errorf("Aliases not extracted, got %v, but expected %v.", aliases, []string{"GHSA-3f89-869f-5w76"})
 	}
 }
 
 func TestEnglishDescription(t *testing.T) {
-	cveItem := loadTestData("CVE-2022-36037")
-	description := cves.EnglishDescription(cveItem.CVE)
+	cveItem := loadTestData2("CVE-2022-36037")
+	description := cves.EnglishDescription(cveItem.Cve)
 	expectedDescription := "kirby is a content management system (CMS) that adapts to many different projects and helps you build your own ideal interface. Cross-site scripting (XSS) is a type of vulnerability that allows execution of any kind of JavaScript code inside the Panel session of the same or other users. In the Panel, a harmful script can for example trigger requests to Kirby's API with the permissions of the victim. If bad actors gain access to your group of authenticated Panel users they can escalate their privileges via the Panel session of an admin user. Depending on your site, other JavaScript-powered attacks are possible. The multiselect field allows selection of tags from an autocompleted list. Unfortunately, the Panel in Kirby 3.5 used HTML rendering for the raw option value. This allowed **attackers with influence on the options source** to store HTML code. The browser of the victim who visited a page with manipulated multiselect options in the Panel will then have rendered this malicious HTML code when the victim opened the autocomplete dropdown. Users are *not* affected by this vulnerability if you don't use the multiselect field or don't use it with options that can be manipulated by attackers. The problem has been patched in Kirby 3.5.8.1."
 	if description != expectedDescription {
 		t.Errorf("Description not extracted, got %v, but expected %v", description, expectedDescription)
@@ -121,9 +133,9 @@ func TestEnglishDescription(t *testing.T) {
 }
 
 func TestAddPkgInfo(t *testing.T) {
-	cveItem := loadTestData("CVE-2022-36037")
+	cveItem := loadTestData2("CVE-2022-36037")
 	vuln := Vulnerability{
-		ID: cveItem.CVE.CVEDataMeta.ID,
+		ID: string(cveItem.Cve.Id),
 	}
 	testPkgInfoNameEco := PackageInfo{
 		PkgName:   "TestName",
@@ -264,12 +276,12 @@ func TestAddPkgInfo(t *testing.T) {
 func TestAddSeverity(t *testing.T) {
 	tests := []struct {
 		description    string
-		inputCVE       cves.CVEItem
+		inputCVE       cves.Cve
 		expectedResult []Severity
 	}{
 		{
 			description: "Successful CVE severity extraction and attachment",
-			inputCVE:    loadTestData("CVE-2022-34668"),
+			inputCVE:    loadTestData2("CVE-2022-34668"),
 			expectedResult: []Severity{
 				{
 					Type:  "CVSS_V3",
@@ -279,13 +291,13 @@ func TestAddSeverity(t *testing.T) {
 		},
 		{
 			description:    "CVE with no impact information",
-			inputCVE:       loadTestData("CVE-2022-36037"),
+			inputCVE:       loadTestData2("CVE-2023-5341"),
 			expectedResult: nil,
 		},
 	}
 
 	for _, tc := range tests {
-		vuln, _ := FromCVE(tc.inputCVE.CVE.CVEDataMeta.ID, tc.inputCVE)
+		vuln, _ := FromCVE(string(tc.inputCVE.Cve.Id), tc.inputCVE.Cve)
 
 		got := vuln.Severity
 		if diff := gocmp.Diff(got, tc.expectedResult); diff != "" {
@@ -351,4 +363,9 @@ func TestCVEIsDisputed(t *testing.T) {
 			t.Errorf("test: %q: withdrawn (%s) not set as expected", tc.description, modified)
 		}
 	}
+}
+
+func TestNVD2(t *testing.T) {
+	cve := loadTestData2("CVE-2023-4863")
+	t.Logf("Loaded CVE: %#v", cve)
 }

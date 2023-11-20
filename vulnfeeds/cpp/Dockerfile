@@ -23,6 +23,7 @@ COPY . .
 RUN CGO_ENABLED=0 go build -v -o /usr/local/bin ./cpp ./cmd/download-cves
 
 FROM gcr.io/google.com/cloudsdktool/google-cloud-cli:alpine AS runtime
+RUN apk --no-cache add jq
 
 COPY --from=GO_BUILD /usr/local/bin ./usr/local/bin
 COPY --from=GO_BUILD /go/src/cpp/run_cve_to_osv_generation ./usr/local/bin

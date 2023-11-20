@@ -235,12 +235,12 @@ func New(pypiLinksPath string, pypiVersionsPath string) *PyPI {
 	}
 }
 
-func (p *PyPI) Matches(cve cves.CVEItem, falsePositives *triage.FalsePositives) []string {
+func (p *PyPI) Matches(cve cves.CveItem, falsePositives *triage.FalsePositives) []string {
 	matches := []string{}
-	for _, reference := range cve.CVE.References.ReferenceData {
+	for _, reference := range cve.References {
 		// If there is a PyPI link, it must be a Python package. These take precedence.
-		if pkg := extractPyPIProject(reference.URL); pkg != "" {
-			log.Printf("Matched via PyPI link: %s", reference.URL)
+		if pkg := extractPyPIProject(reference.Url); pkg != "" {
+			log.Printf("Matched via PyPI link: %s", reference.Url)
 			matches = append(matches, pkg)
 		}
 	}
@@ -248,9 +248,9 @@ func (p *PyPI) Matches(cve cves.CVEItem, falsePositives *triage.FalsePositives) 
 		return processMatches(matches)
 	}
 
-	for _, reference := range cve.CVE.References.ReferenceData {
+	for _, reference := range cve.References {
 		// Otherwise try to cross-reference the link against our set of known links.
-		pkgs := p.matchesPackage(reference.URL, cve.CVE, falsePositives)
+		pkgs := p.matchesPackage(reference.Url, cve, falsePositives)
 		matches = append(matches, pkgs...)
 	}
 	if len(matches) != 0 {
@@ -272,7 +272,7 @@ func (p *PyPI) Matches(cve cves.CVEItem, falsePositives *triage.FalsePositives) 
 	vendorProduct := cpe[3] + "/" + cpe[4]
 	if pkgs, exists := p.vendorProductToPkg[vendorProduct]; exists {
 		for _, pkg := range pkgs {
-			if p.finalPkgCheck(cve.CVE, pkg, falsePositives) {
+			if p.finalPkgCheck(cve, pkg, falsePositives) {
 				matches = append(matches, pkg)
 			}
 		}
@@ -334,7 +334,7 @@ func (p *PyPI) packageExists(pkg string) bool {
 	return result
 }
 
-func (p *PyPI) finalPkgCheck(cve cves.CVE, pkg string, falsePositives *triage.FalsePositives) bool {
+func (p *PyPI) finalPkgCheck(cve cves.CveItem, pkg string, falsePositives *triage.FalsePositives) bool {
 	// To avoid false positives, check that the pkg name is mentioned in the description.
 	desc := strings.ToLower(cves.EnglishDescription(cve))
 	pkgNameParts := strings.Split(pkg, "-")
@@ -361,7 +361,7 @@ func (p *PyPI) finalPkgCheck(cve cves.CVE, pkg string, falsePositives *triage.Fa
 }
 
 // matchesPackage checks if a given reference link matches a PyPI package.
-func (p *PyPI) matchesPackage(link string, cve cves.CVE, falsePositives *triage.FalsePositives) []string {
+func (p *PyPI) matchesPackage(link string, cve cves.CveItem, falsePositives *triage.FalsePositives) []string {
 	pkgs := []string{}
 	u, err := url.Parse(strings.ToLower(link))
 	if err != nil {

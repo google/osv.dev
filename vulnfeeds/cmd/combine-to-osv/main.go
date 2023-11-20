@@ -108,14 +108,14 @@ func loadParts(partsInputPath string) map[string][]vulns.PackageInfo {
 }
 
 // combineIntoOSV creates OSV entry by combining loaded CVEs from NVD and PackageInfo information from security advisories.
-func combineIntoOSV(loadedCves map[string]cves.CVEItem, allParts map[string][]vulns.PackageInfo, cveList string) map[string]*vulns.Vulnerability {
+func combineIntoOSV(loadedCves map[string]cves.Cve, allParts map[string][]vulns.PackageInfo, cveList string) map[string]*vulns.Vulnerability {
 	Logger.Infof("Begin writing OSV files")
 	convertedCves := map[string]*vulns.Vulnerability{}
 	for cveId, cve := range loadedCves {
 		if len(allParts[cveId]) == 0 {
 			continue
 		}
-		convertedCve, _ := vulns.FromCVE(cveId, cve)
+		convertedCve, _ := vulns.FromCVE(cveId, cve.Cve)
 		if len(cveList) > 0 {
 			// Best-effort attempt to mark a disputed CVE as withdrawn.
 			modified, err := vulns.CVEIsDisputed(convertedCve, cveList)
@@ -154,13 +154,13 @@ func writeOSVFile(osvData map[string]*vulns.Vulnerability, osvOutputPath string)
 }
 
 // loadAllCVEs loads the downloaded CVE's from the NVD database into memory.
-func loadAllCVEs(cvePath string) map[string]cves.CVEItem {
+func loadAllCVEs(cvePath string) map[string]cves.Cve {
 	dir, err := os.ReadDir(cvePath)
 	if err != nil {
 		Logger.Fatalf("Failed to read dir %s: %s", cvePath, err)
 	}
 
-	result := make(map[string]cves.CVEItem)
+	result := make(map[string]cves.Cve)
 
 	for _, entry := range dir {
 		if !strings.HasSuffix(entry.Name(), ".json") {
@@ -170,14 +170,14 @@ func loadAllCVEs(cvePath string) map[string]cves.CVEItem {
 		if err != nil {
 			Logger.Fatalf("Failed to open CVE JSON %q: %s", path.Join(cvePath, entry.Name()), err)
 		}
-		var nvdcve cves.NVDCVE
+		var nvdcve cves.CveApiJson20Schema
 		err = json.NewDecoder(file).Decode(&nvdcve)
 		if err != nil {
 			Logger.Fatalf("Failed to decode JSON in %q: %s", file.Name(), err)
 		}
 
-		for _, item := range nvdcve.CVEItems {
-			result[item.CVE.CVEDataMeta.ID] = item
+		for _, item := range nvdcve.Vulnerabilities {
+			result[string(item.Cve.Id)] = item
 		}
 		Logger.Infof("Loaded CVE: %s", entry.Name())
 		file.Close()

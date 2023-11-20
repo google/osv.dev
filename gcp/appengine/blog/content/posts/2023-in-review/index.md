@@ -49,7 +49,7 @@ which we also defined this year.
 
 We saw peaks in API usage of over 250 QPS in November.
 
-![Image shows the GitHub star history for all OSV-related GitHub repositories taken at November 17, 2023](star-history-20231117.png "GitHub star history for all OSV repos, as at 2023/11/17")
+![Image shows the GitHub star history for all OSV-related GitHub repositories taken at November 17, 2023. osv-schema has approximately 150 stars, osv.dev has approximately 1,300 stars, and osv-scanner has approximately 5,400 stars.](star-history-20231117.png "GitHub star history for all OSV repos, as of 2023/11/17")
 
 ## Community
 

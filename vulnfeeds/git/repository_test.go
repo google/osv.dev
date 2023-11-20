@@ -181,6 +181,62 @@ func TestRepoTags(t *testing.T) {
 	}
 }
 
+func TestNormalizeRepoTag(t *testing.T) {
+	tests := []struct {
+		description    string
+		inputTag       string
+		repoName       string
+		expectedResult string
+		expectedOk     bool
+	}{
+		{
+			description:    "A tag that is perfectly fine just the way it is",
+			inputTag:       "1.2.3",
+			repoName:       "acme",
+			expectedResult: "1-2-3",
+			expectedOk:     true,
+		},
+		{
+			description:    "A tag with a reponame prepended",
+			inputTag:       "acme-2000",
+			repoName:       "acme",
+			expectedResult: "2000",
+			expectedOk:     true,
+		},
+		{
+			description:    "A tag with a reponame containing a number prepended",
+			inputTag:       "yui2-2000",
+			repoName:       "yui2",
+			expectedResult: "2000",
+			expectedOk:     true,
+		},
+		{
+			description:    "A tag with a reponame containing a number in the middle",
+			inputTag:       "hudson-yui2-2800",
+			repoName:       "yui2",
+			expectedResult: "2800",
+			expectedOk:     true,
+		},
+		{
+			description:    "A tag with a Java package name prefix",
+			inputTag:       "org.apache.sling.i18n-2.0.2",
+			repoName:       "sling-org-apache-sling-i18n",
+			expectedResult: "2-0-2",
+			expectedOk:     true,
+		},
+	}
+
+	for _, tc := range tests {
+		got, err := normalizeRepoTag(tc.inputTag, tc.repoName)
+		if err != nil && tc.expectedOk {
+			t.Errorf("test %q: normalizeRepoTag(%q, %q): %q unexpectedly failed: %+v", tc.description, tc.inputTag, tc.repoName, got, err)
+		}
+		if diff := cmp.Diff(got, tc.expectedResult); diff != "" {
+			t.Errorf("test %q: normalizeRepoTag(%q, %q) incorrect result: %s", tc.description, tc.inputTag, tc.repoName, diff)
+		}
+	}
+}
+
 func TestNormalizeRepoTags(t *testing.T) {
 	tests := []struct {
 		description  string

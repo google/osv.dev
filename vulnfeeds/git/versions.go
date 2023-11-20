@@ -64,6 +64,7 @@ func fuzzyVersionToCommit(normalizedVersion string, repo string, commitType cves
 		return ac, true
 	}
 
+	// Find the most suitable tag from multiple.
 	for i, t := range candidateTags {
 		// Handle the case where where the
 		// normalizedVersion is "12-0" (i.e. was "12.0") but the normalizedTags

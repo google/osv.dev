@@ -1,0 +1,14 @@
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: backup
+spec:
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          containers:
+          - name: backup
+            env:
+            - name: GOOGLE_CLOUD_PROJECT
+              value: oss-vdb-test

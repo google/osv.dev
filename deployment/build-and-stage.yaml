@@ -98,6 +98,16 @@ steps:
   args: ['push', '--all-tags', 'gcr.io/oss-vdb/alias-computation']
   waitFor: ['build-alias-computation', 'cloud-build-queue']
 
+# Build/push cron job images.
+- name: gcr.io/cloud-builders/docker
+  args: ['build', '-t', 'gcr.io/oss-vdb/backup:latest', '-t', 'gcr.io/oss-vdb/backup:$COMMIT_SHA', '.']
+  dir: 'docker/backup'
+  id: 'build-backup'
+  waitFor: ['build-worker']
+- name: gcr.io/cloud-builders/docker
+  args: ['push', '--all-tags', 'gcr.io/oss-vdb/backup']
+  waitFor: ['build-backup', 'cloud-build-queue']
+
 # Build/push vulnfeeds images
 - name: 'gcr.io/cloud-builders/docker'
   entrypoint: 'bash'

@@ -13,6 +13,7 @@
 # limitations under the License.
 """Datastore backup."""
 
+import sys
 from google.cloud.datastore_admin_v1.services.datastore_admin import client \
     as ds_admin
 
@@ -26,4 +27,8 @@ def main():
   client.export_entities(
       project_id=_PROJECT, output_url_prefix=f'gs://testing-{_BACKUP_BUCKET}')
 
-  return True
+  return 0
+
+
+if __name__ == '__main__':
+  sys.exit(main())

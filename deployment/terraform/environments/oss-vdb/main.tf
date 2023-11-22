@@ -8,6 +8,8 @@ module "osv" {
   cve_osv_conversion_bucket     = "cve-osv-conversion"
   debian_osv_conversion_bucket  = "debian-osv"
   logs_bucket                   = "osv-logs"
+  backups_bucket                = "osv-backup"
+  backups_bucket_retention_days = 60
 
   api_url     = "api.osv.dev"
   esp_version = "2.41.0"

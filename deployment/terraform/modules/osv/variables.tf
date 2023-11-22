@@ -18,6 +18,16 @@ variable "logs_bucket" {
   description = "Name of bucket to export logs to."
 }
 
+variable "backups_bucket" {
+  type        = string
+  description = "Name of bucket to backup osv entries to."
+}
+
+variable "backups_bucket_retention_days" {
+  type        = number
+  description = "Number of days to retain osv backups"
+}
+
 variable "cve_osv_conversion_bucket" {
   type        = string
   description = "Name of bucket to store converted CVEs in."

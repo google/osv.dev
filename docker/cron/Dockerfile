@@ -14,6 +14,5 @@
 
 FROM gcr.io/oss-vdb/worker
 
-COPY backup.py /usr/local/bin
-RUN chmod 755 /usr/local/bin/backup.py
-ENTRYPOINT ["backup.py"]
+COPY . /usr/local/bin/
+RUN chmod 755 /usr/local/bin/*.py

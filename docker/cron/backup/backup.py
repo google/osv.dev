@@ -13,19 +13,19 @@
 # limitations under the License.
 """Datastore backup."""
 
+import os
 import sys
 from google.cloud.datastore_admin_v1.services.datastore_admin import client \
     as ds_admin
-
-_PROJECT = 'oss-vdb-test'
-_BACKUP_BUCKET = 'osv-backup'
 
 
 def main():
   """Create a Datastore backup."""
   client = ds_admin.DatastoreAdminClient()
+  backup_bucket = os.environ['BACKUP_BUCKET']
+  project_id = os.environ['GOOGLE_CLOUD_PROJECT']
   client.export_entities(
-      project_id=_PROJECT, output_url_prefix=f'gs://testing-{_BACKUP_BUCKET}')
+      project_id=project_id, output_url_prefix=f'gs://testing-{backup_bucket}')
 
   return 0
 

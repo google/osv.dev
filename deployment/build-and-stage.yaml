@@ -100,13 +100,13 @@ steps:
 
 # Build/push cron job images.
 - name: gcr.io/cloud-builders/docker
-  args: ['build', '-t', 'gcr.io/oss-vdb/backup:latest', '-t', 'gcr.io/oss-vdb/backup:$COMMIT_SHA', '.']
-  dir: 'docker/backup'
-  id: 'build-backup'
+  args: ['build', '-t', 'gcr.io/oss-vdb/cron:latest', '-t', 'gcr.io/oss-vdb/cron:$COMMIT_SHA', '.']
+  dir: 'docker/cron'
+  id: 'build-cron'
   waitFor: ['build-worker']
 - name: gcr.io/cloud-builders/docker
-  args: ['push', '--all-tags', 'gcr.io/oss-vdb/backup']
-  waitFor: ['build-backup', 'cloud-build-queue']
+  args: ['push', '--all-tags', 'gcr.io/oss-vdb/cron']
+  waitFor: ['build-cron', 'cloud-build-queue']
 
 # Build/push vulnfeeds images
 - name: 'gcr.io/cloud-builders/docker'
@@ -249,6 +249,7 @@ steps:
      importer=gcr.io/oss-vdb/importer:$COMMIT_SHA,\
      exporter=gcr.io/oss-vdb/exporter:$COMMIT_SHA,\
      alias-computation=gcr.io/oss-vdb/alias-computation:$COMMIT_SHA,\
+     cron=gcr.io/oss-vdb/cron:$COMMIT_SHA,\
      debian-convert=gcr.io/oss-vdb/debian-convert:$COMMIT_SHA,\
      combine-to-osv=gcr.io/oss-vdb/combine-to-osv:$COMMIT_SHA,\
      alpine-cve-convert=gcr.io/oss-vdb/alpine-cve-convert:$COMMIT_SHA,\
@@ -298,6 +299,7 @@ images:
 - 'gcr.io/oss-vdb/importer:$COMMIT_SHA'
 - 'gcr.io/oss-vdb/exporter:$COMMIT_SHA'
 - 'gcr.io/oss-vdb/alias-computation:$COMMIT_SHA'
+- 'gcr.io/oss-vdb/cron:$COMMIT_SHA'
 - 'gcr.io/oss-vdb/alpine-cve-convert:$COMMIT_SHA'
 - 'gcr.io/oss-vdb/combine-to-osv:$COMMIT_SHA'
 - 'gcr.io/oss-vdb/indexer:$COMMIT_SHA'

@@ -3,12 +3,28 @@ kind: CronJob
 metadata:
   name: backup
 spec:
+  schedule: "0 18 * * *"
+  concurrencyPolicy: Forbid
   jobTemplate:
     spec:
       template:
         spec:
           containers:
-          - name: backup
+          - name: cron
+            image: cron
+            imagePullPolicy: Always
             env:
             - name: GOOGLE_CLOUD_PROJECT
-              value: oss-vdb-test
+              value: "oss-vdb-test"
+            - name: BACKUP_BUCKET
+              value: "osv-test-backup"
+            - name: ENTRYPOINT
+              value: "./backup/backup.py"
+            resources:
+              requests:
+                cpu: 1
+                memory: "3G"
+              limits:
+                cpu: 1
+                memory: "4G"
+          restartPolicy: OnFailure

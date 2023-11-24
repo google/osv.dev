@@ -15,4 +15,4 @@
 FROM gcr.io/oss-vdb/worker
 
 COPY . /usr/local/bin/
-RUN chmod 755 /usr/local/bin/*.py
+RUN chmod -R 755 /usr/local/bin/

@@ -1,5 +1,6 @@
 resources:
 - ../../base
+- backup.yaml
 patches:
 - path: workers.yaml
 - path: scaler.yaml
@@ -13,4 +14,3 @@ patches:
 - path: gen-cperepos-map.yaml
 - path: nvd-cve-osv.yaml
 - path: alias-computation.yaml
-- path: backup.yaml

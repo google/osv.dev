@@ -13,13 +13,12 @@ spec:
           - name: cron
             image: cron
             imagePullPolicy: Always
+            command: ["/usr/local/bin/backup/backup.py"]
             env:
             - name: GOOGLE_CLOUD_PROJECT
               value: "oss-vdb-test"
             - name: BACKUP_BUCKET
               value: "osv-test-backup"
-            - name: ENTRYPOINT
-              value: "./backup/backup.py"
             resources:
               requests:
                 cpu: 1

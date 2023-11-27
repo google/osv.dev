@@ -89,7 +89,7 @@ func TestClassifyReferences(t *testing.T) {
 	}
 }
 
-func loadTestData2(cveName string) cves.Cve {
+func loadTestData2(cveName string) cves.DefCveItem {
 	fileName := fmt.Sprintf("../test_data/nvdcve-2.0/%s.json", cveName)
 	file, err := os.Open(fileName)
 	if err != nil {
@@ -106,7 +106,7 @@ func loadTestData2(cveName string) cves.Cve {
 		}
 	}
 	log.Fatalf("test data doesn't contain %q", cveName)
-	return cves.Cve{}
+	return cves.DefCveItem{}
 }
 
 func TestExtractAliases(t *testing.T) {
@@ -276,7 +276,7 @@ func TestAddPkgInfo(t *testing.T) {
 func TestAddSeverity(t *testing.T) {
 	tests := []struct {
 		description    string
-		inputCVE       cves.Cve
+		inputCVE       cves.DefCveItem
 		expectedResult []Severity
 	}{
 		{

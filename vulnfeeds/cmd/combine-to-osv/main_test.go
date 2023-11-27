@@ -13,7 +13,7 @@ import (
 	"github.com/google/osv/vulnfeeds/utility"
 )
 
-func loadTestData2(cveName string) cves.Cve {
+func loadTestData2(cveName string) cves.DefCveItem {
 	fileName := fmt.Sprintf("../../test_data/nvdcve-2.0/%s.json", cveName)
 	file, err := os.Open(fileName)
 	if err != nil {
@@ -30,7 +30,7 @@ func loadTestData2(cveName string) cves.Cve {
 		}
 	}
 	log.Fatalf("test data doesn't contain %q", cveName)
-	return cves.Cve{}
+	return cves.DefCveItem{}
 }
 
 func TestLoadParts(t *testing.T) {
@@ -82,7 +82,7 @@ func TestLoadParts(t *testing.T) {
 }
 
 func TestCombineIntoOSV(t *testing.T) {
-	cveStuff := map[string]cves.Cve{
+	cveStuff := map[string]cves.DefCveItem{
 		"CVE-2022-33745": loadTestData2("CVE-2022-33745"),
 		"CVE-2022-32746": loadTestData2("CVE-2022-32746"),
 	}

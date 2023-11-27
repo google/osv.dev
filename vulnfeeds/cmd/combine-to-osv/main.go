@@ -108,7 +108,7 @@ func loadParts(partsInputPath string) map[string][]vulns.PackageInfo {
 }
 
 // combineIntoOSV creates OSV entry by combining loaded CVEs from NVD and PackageInfo information from security advisories.
-func combineIntoOSV(loadedCves map[string]cves.Cve, allParts map[string][]vulns.PackageInfo, cveList string) map[string]*vulns.Vulnerability {
+func combineIntoOSV(loadedCves map[string]cves.DefCveItem, allParts map[string][]vulns.PackageInfo, cveList string) map[string]*vulns.Vulnerability {
 	Logger.Infof("Begin writing OSV files")
 	convertedCves := map[string]*vulns.Vulnerability{}
 	for cveId, cve := range loadedCves {
@@ -154,13 +154,13 @@ func writeOSVFile(osvData map[string]*vulns.Vulnerability, osvOutputPath string)
 }
 
 // loadAllCVEs loads the downloaded CVE's from the NVD database into memory.
-func loadAllCVEs(cvePath string) map[string]cves.Cve {
+func loadAllCVEs(cvePath string) map[string]cves.DefCveItem {
 	dir, err := os.ReadDir(cvePath)
 	if err != nil {
 		Logger.Fatalf("Failed to read dir %s: %s", cvePath, err)
 	}
 
-	result := make(map[string]cves.Cve)
+	result := make(map[string]cves.DefCveItem)
 
 	for _, entry := range dir {
 		if !strings.HasSuffix(entry.Name(), ".json") {

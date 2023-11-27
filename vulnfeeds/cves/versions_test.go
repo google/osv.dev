@@ -11,7 +11,7 @@ import (
 	"github.com/google/go-cmp/cmp"
 )
 
-func loadTestData2(cveName string) Cve {
+func loadTestData2(cveName string) DefCveItem {
 	fileName := fmt.Sprintf("../test_data/nvdcve-2.0/%s.json", cveName)
 	file, err := os.Open(fileName)
 	if err != nil {
@@ -28,7 +28,7 @@ func loadTestData2(cveName string) Cve {
 		}
 	}
 	log.Fatalf("test data doesn't contain %q", cveName)
-	return Cve{}
+	return DefCveItem{}
 }
 
 func TestParseCPE(t *testing.T) {
@@ -710,7 +710,7 @@ func TestNormalizeVersion(t *testing.T) {
 func TestExtractVersionInfo(t *testing.T) {
 	tests := []struct {
 		description         string
-		inputCVEItem        Cve
+		inputCVEItem        DefCveItem
 		inputValidVersions  []string
 		expectedVersionInfo VersionInfo
 		expectedNotes       []string
@@ -883,7 +883,7 @@ func TestExtractVersionInfo(t *testing.T) {
 func TestCPEs(t *testing.T) {
 	tests := []struct {
 		description  string
-		inputCVEItem Cve
+		inputCVEItem DefCveItem
 		expectedCPEs []string
 	}{
 		{

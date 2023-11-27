@@ -214,7 +214,7 @@ type CVSSV30 struct {
 type CVSSV31 struct {
 	Source              string `json:"source" yaml:"source" mapstructure:"source"`
 	Type                string `json:"type" yaml:"type" mapstructure:"type"`
-	CVSSData            cvss31.CvssV31
+	CVSSData            cvss31.CVSSV31
 	ExploitabilityScore *DefSubscore `json:"exploitabilityScore,omitempty" yaml:"exploitabilityScore,omitempty" mapstructure:"exploitabilityScore,omitempty"`
 	ImpactScore         *DefSubscore `json:"impactScore,omitempty" yaml:"impactScore,omitempty" mapstructure:"impactScore,omitempty"`
 }

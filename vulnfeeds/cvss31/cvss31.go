@@ -47,7 +47,7 @@ const ConfidenceTypeNOTDEFINED ConfidenceType = "NOT_DEFINED"
 const ConfidenceTypeREASONABLE ConfidenceType = "REASONABLE"
 const ConfidenceTypeUNKNOWN ConfidenceType = "UNKNOWN"
 
-type CvssV31 struct {
+type CVSSV31 struct {
 	// AttackComplexity corresponds to the JSON schema field "attackComplexity".
 	AttackComplexity *AttackComplexityType `json:"attackComplexity,omitempty" yaml:"attackComplexity,omitempty" mapstructure:"attackComplexity,omitempty"`
 
@@ -713,7 +713,7 @@ var enumValues_AttackComplexityType = []interface{}{
 }
 
 // UnmarshalJSON implements json.Unmarshaler.
-func (j *CvssV31) UnmarshalJSON(b []byte) error {
+func (j *CVSSV31) UnmarshalJSON(b []byte) error {
 	var raw map[string]interface{}
 	if err := json.Unmarshal(b, &raw); err != nil {
 		return err
@@ -730,11 +730,11 @@ func (j *CvssV31) UnmarshalJSON(b []byte) error {
 	if v, ok := raw["version"]; !ok || v == nil {
 		return fmt.Errorf("field version in CvssV31: required")
 	}
-	type Plain CvssV31
+	type Plain CVSSV31
 	var plain Plain
 	if err := json.Unmarshal(b, &plain); err != nil {
 		return err
 	}
-	*j = CvssV31(plain)
+	*j = CVSSV31(plain)
 	return nil
 }

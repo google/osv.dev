@@ -27,7 +27,7 @@ further growth in adoption in 2024.
 
 ### C/C++
 
-C and C++ dependencies remain a critical pillar of our open source supply
+C and C++ dependencies remain a critical pillar of open source supply
 chains. OSV.dev's coverage of C and C++ vulnerabilities with vulnerable commit
 ranges expanded significantly, with the [introduction of OSV records generated
 from CVE records in the

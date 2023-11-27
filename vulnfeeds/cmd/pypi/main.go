@@ -39,7 +39,7 @@ func loadExisting(vulnsDir string) (map[string]bool, error) {
 	ids := map[string]bool{}
 	err := filepath.Walk(vulnsDir, func(path string, info fs.FileInfo, err error) error {
 		if err != nil {
-			return fmt.Errorf("Failed to access %s: %w", path, err)
+			return fmt.Errorf("failed to access %s: %w", path, err)
 		}
 		if info.IsDir() {
 			return nil
@@ -51,13 +51,13 @@ func loadExisting(vulnsDir string) (map[string]bool, error) {
 
 		f, err := os.Open(path)
 		if err != nil {
-			return fmt.Errorf("Failed to open %s: %w", path, err)
+			return fmt.Errorf("failed to open %s: %w", path, err)
 		}
 		defer f.Close()
 
 		vuln, err := vulns.FromYAML(f)
 		if err != nil {
-			return fmt.Errorf("Failed to parse %s: %w", path, err)
+			return fmt.Errorf("failed to parse %s: %w", path, err)
 		}
 
 		ids[vuln.ID+"/"+vuln.Affected[0].Package.Name] = true
@@ -67,7 +67,7 @@ func loadExisting(vulnsDir string) (map[string]bool, error) {
 		return nil
 	})
 	if err != nil {
-		return nil, fmt.Errorf("Failed to walk: %w", err)
+		return nil, fmt.Errorf("failed to walk: %w", err)
 	}
 
 	return ids, nil
@@ -87,7 +87,7 @@ func main() {
 	if err != nil {
 		log.Fatalf("Failed to open file: %v", err)
 	}
-	var parsed cves.NVDCVE
+	var parsed cves.CVEAPIJSON20Schema
 	err = json.Unmarshal(data, &parsed)
 	if err != nil {
 		log.Fatalf("Failed to parse NVD CVE JSON: %v", err)
@@ -104,24 +104,24 @@ func main() {
 		log.Fatalf("Failed to load existing IDs: %v", err)
 	}
 
-	for _, cve := range parsed.CVEItems {
-		if falsePositives.CheckID(cve.CVE.CVEDataMeta.ID) {
-			log.Printf("Skipping %s as a false positive.", cve.CVE.CVEDataMeta.ID)
+	for _, cve := range parsed.Vulnerabilities {
+		if falsePositives.CheckID(string(cve.CVE.ID)) {
+			log.Printf("Skipping %s as a false positive.", cve.CVE.ID)
 			continue
 		}
 
-		pkgs := ecosystem.Matches(cve, falsePositives)
+		pkgs := ecosystem.Matches(cve.CVE, falsePositives)
 		if len(pkgs) == 0 {
 			continue
 		}
 
 		for _, pkg := range pkgs {
-			if _, exists := existingIDs[cve.CVE.CVEDataMeta.ID+"/"+pkg]; exists {
-				log.Printf("Skipping %s match for %s as it already exists.", cve.CVE.CVEDataMeta.ID, pkg)
+			if _, exists := existingIDs[string(cve.CVE.ID)+"/"+pkg]; exists {
+				log.Printf("Skipping %s match for %s as it already exists.", cve.CVE.ID, pkg)
 				continue
 			}
 
-			log.Printf("Matched %s to %s.", cve.CVE.CVEDataMeta.ID, pkg)
+			log.Printf("Matched %s to %s.", cve.CVE.ID, pkg)
 			validVersions := ecosystem.Versions(pkg)
 			if validVersions == nil {
 				log.Printf("pkg %s does not have valid versions, skipping", pkg)
@@ -129,7 +129,7 @@ func main() {
 			}
 			log.Printf("Valid versions = %v\n", validVersions)
 
-			id := "PYSEC-0000-" + cve.CVE.CVEDataMeta.ID // To be assigned later.
+			id := "PYSEC-0000-" + cve.CVE.ID // To be assigned later.
 			purl := ecosystem.PackageURL(pkg)
 			pkgInfo := vulns.PackageInfo{
 				PkgName:   pkg,
@@ -137,9 +137,9 @@ func main() {
 				PURL:      purl,
 			}
 
-			v, notes := vulns.FromCVE(id, cve)
+			v, notes := vulns.FromCVE(id, cve.CVE)
 			v.AddPkgInfo(pkgInfo)
-			versions, versionNotes := cves.ExtractVersionInfo(cve, validVersions)
+			versions, versionNotes := cves.ExtractVersionInfo(cve.CVE, validVersions)
 			notes = append(notes, versionNotes...)
 			v.Affected[0].AttachExtractedVersionInfo(versions)
 			if len(v.Affected[0].Ranges) == 0 {

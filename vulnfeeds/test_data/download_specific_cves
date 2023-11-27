@@ -1,0 +1,13 @@
+#!/bin/bash
+
+APIKEY="$(gcloud --project oss-vdb secrets versions access latest --secret=nvd-api --format='get(payload.data)' | base64 -d)"
+
+for CVE in "${@}"
+do
+  curl \
+    -H "apiKey: ${APIKEY}" \
+    --retry-delay 6 \
+    --retry 3 \
+    --output "nvdcve-2.0/${CVE}.json" \
+    "https://services.nvd.nist.gov/rest/json/cves/2.0?cveId=${CVE}" || echo "Failed to retrieve $CVE"
+done

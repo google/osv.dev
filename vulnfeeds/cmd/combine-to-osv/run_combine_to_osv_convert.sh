@@ -19,18 +19,33 @@ echo "Setup initial directories"
 rm -rf $OSV_PARTS_ROOT && mkdir -p $OSV_PARTS_ROOT
 rm -rf $OSV_OUTPUT && mkdir -p $OSV_OUTPUT
 rm -rf $CVE_OUTPUT && mkdir -p $CVE_OUTPUT
+[[ -n "$CVELIST" ]] && rm -rf $CVELIST
 
 echo "Begin syncing from parts in GCS bucket ${INPUT_BUCKET}"
 gcloud --no-user-output-enabled storage rsync "gs://${INPUT_BUCKET}/parts/" "$OSV_PARTS_ROOT" -r -q
 echo "Successfully synced from GCS bucket"
 
 echo "Run download-cves"
-./download-cves -cvePath $CVE_OUTPUT
+APIKEY="$(gcloud --project "$GOOGLE_CLOUD_PROJECT" secrets versions access latest --secret=nvd-api --format=' get(payload.data)' | base64 -d)"
+./download-cves -api_key "$APIKEY" -cvePath $CVE_OUTPUT
+
+echo "Splitting monolithic file into years"
+for (( YEAR = 2002 ; YEAR <= $(date +%Y) ; YEAR++ ))
+do
+  cat "${CVE_OUTPUT}/nvdcve-2.0.json" \
+    | jq \
+      --arg year $YEAR \
+      '{ "resultsPerPage": .vulnerabilities | map(select(.cve?.id? | startswith("CVE-" + $year + "-"))) | length, "startIndex": 0, "totalResults": .vulnerabilities | map(select(.cve?.id? | startswith("CVE-" + $year + "-"))) | length, "format": .format, "version": .version, "timestamp": .timestamp, "vulnerabilities": .vulnerabilities | map(select(.cve?.id? | startswith("CVE-" + $year + "-"))) }' > "${CVE_OUTPUT}/nvdcve-2.0-${YEAR}.json" &
+done
 
 if [[ -n "$CVELIST" ]]; then
     echo "Clone CVE List"
     git clone --quiet https://github.com/CVEProject/cvelistV5
 fi
+
+wait  # for all of the jq background jobs to complete splitting into years
+
+rm "${CVE_OUTPUT}/nvdcve-2.0.json"
 
 echo "Run combine-to-osv"
 ./combine-to-osv -cvePath "$CVE_OUTPUT" -partsPath "$OSV_PARTS_ROOT" -osvOutputPath "$OSV_OUTPUT" -cveListPath "$CVELIST"

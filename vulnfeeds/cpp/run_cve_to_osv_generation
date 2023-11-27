@@ -24,11 +24,23 @@ echo "Commencing conversion run"
 # Download NVD CVE dumps.
 echo "Downloading NVD CVE dumps"
 mkdir -p "${WORK_DIR}/nvd"
-/usr/local/bin/download-cves --cvePath "${WORK_DIR}/nvd"
+APIKEY="$(gcloud --project "$GOOGLE_CLOUD_PROJECT" secrets versions access latest --secret=nvd-api --format='get(payload.data)' | base64 -d)"
+/usr/local/bin/download-cves --api_key "$APIKEY" --cvePath "${WORK_DIR}/nvd"
+
+echo "Splitting monolithic file into years"
+for (( YEAR = 2002 ; YEAR <= $(date +%Y) ; YEAR++ ))
+do
+  cat "${WORK_DIR}/nvd/nvdcve-2.0.json" \
+    | jq \
+      --arg year $YEAR \
+      '{ "resultsPerPage": .vulnerabilities | map(select(.cve?.id? | startswith("CVE-" + $year + "-"))) | length, "startIndex": 0, "totalResults": .vulnerabilities | map(select(.cve?.id? | startswith("CVE-" + $year + "-"))) | length, "format": .format, "version": .version, "timestamp": .timestamp, "vulnerabilities": .vulnerabilities | map(select(.cve?.id? | startswith("CVE-" + $year + "-"))) }' > "${WORK_DIR}/nvd/nvdcve-2.0-${YEAR}.json" &
+done
 
 # Download latest CPE repo map.
 echo "Downloading latest CPE Git repository map"
 gcloud --no-user-output-enabled storage -q cp "${CPEREPO_GCS_PATH}" "${WORK_DIR}"
+
+wait # for year-splitting to complete
 
 # Dirty hack to get around https://stackoverflow.com/questions/68528541/env-variable-array
 # https://stackoverflow.com/questions/9293887/reading-a-space-delimited-string-into-an-array-in-bash/9294015
@@ -38,7 +50,7 @@ for YEAR in "${IN_SCOPE_YEARS[@]}"; do
   echo "Converting NVD CVE records from ${YEAR} to OSV"
   /usr/local/bin/cpp \
     --cpe_repos "${WORK_DIR}/cpe_product_to_repo.json" \
-    --nvd_json "${WORK_DIR}/nvd/nvdcve-1.1-${YEAR}.json" \
+    --nvd_json "${WORK_DIR}/nvd/nvdcve-2.0-${YEAR}.json" \
     --out_dir "${WORK_DIR}/nvd2osv/${YEAR}" \
     --out_format PackageInfo
 

@@ -136,6 +136,24 @@ resource "google_storage_bucket" "logs_bucket" {
   }
 }
 
+resource "google_storage_bucket" "backups_bucket" {
+  project                     = var.project_id
+  name                        = var.backups_bucket
+  location                    = "US"
+  uniform_bucket_level_access = true
+  lifecycle_rule {
+    action {
+      type = "Delete"
+    }
+    condition {
+      age = var.backups_bucket_retention_days
+    }
+  }
+  lifecycle {
+    prevent_destroy = true
+  }
+}
+
 # Service account permissions
 resource "google_service_account" "deployment_service" {
   project      = var.project_id

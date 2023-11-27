@@ -1,5 +1,6 @@
 resources:
 - ../../base
+- backup.yaml
 patches:
 - path: workers.yaml
 - path: scaler.yaml

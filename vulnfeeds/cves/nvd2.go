@@ -15,7 +15,7 @@ import "github.com/atombender/go-jsonschema/pkg/types"
 type Config struct {
 	Operator string `json:"operator,omitempty" yaml:"operator,omitempty" mapstructure:"operator,omitempty"`
 	Negate bool `json:"negate,omitempty" yaml:"negate,omitempty" mapstructure:"negate,omitempty"`
-	Nodes []Node2 `json:"nodes" yaml:"nodes" mapstructure:"nodes"`
+	Nodes []Node `json:"nodes" yaml:"nodes" mapstructure:"nodes"`
 }
 
 // CPE match string or range
@@ -332,7 +332,7 @@ type Cve struct {
 type DefSubscore float64
 
 // Defines a configuration node in an NVD applicability statement.
-type Node2 struct {
+type Node struct {
 	Operator string `json:"operator" yaml:"operator" mapstructure:"operator"`
 	Negate bool `json:"negate,omitempty" yaml:"negate,omitempty" mapstructure:"negate,omitempty"`
 	CpeMatch []CpeMatch `json:"cpeMatch" yaml:"cpeMatch" mapstructure:"cpeMatch"`

@@ -167,18 +167,24 @@ def docs():
   return redirect('https://google.github.io/osv.dev')
 
 
+_LIST_ARGS = ['q', 'ecosystem', 'page']
+
+
 @blueprint.route('/list')
 def list_vulnerabilities():
   """Main page."""
-  is_turbo_frame = request.headers.get('Turbo-Frame')
+
+  # Remove unknown query parameters
+  args = {k: v for k, v in request.args.lists() if k in _LIST_ARGS}
 
   # Remove page parameter if not from turbo frame
-  if not is_turbo_frame:
-    if request.args.get('page', 1) != 1:
-      q = parse.parse_qs(request.query_string)
-      q.pop(b'page', None)
-      return redirect(
-          url_for(request.endpoint) + '?' + parse.urlencode(q, True))
+  is_turbo_frame = request.headers.get('Turbo-Frame')
+  if not is_turbo_frame and args.get('page', 1) != 1:
+    args.pop('page', None)
+
+  # redirect if any query parameters were filtered
+  if args.keys() != request.args.keys():
+    return redirect(url_for(request.endpoint, **args))
 
   query = request.args.get('q', '')
   # Remove leading and trailing spaces

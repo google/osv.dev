@@ -25,7 +25,7 @@ echo "Commencing conversion run"
 echo "Downloading NVD CVE dumps"
 mkdir -p "${WORK_DIR}/nvd"
 APIKEY="$(gcloud --project "$GOOGLE_CLOUD_PROJECT" secrets versions access latest --secret=nvd-api --format='get(payload.data)' | base64 -d)"
-/usr/local/bin/download-cves --apiKey "$APIKEY" --cvePath "${WORK_DIR}/nvd"
+/usr/local/bin/download-cves --api_key "$APIKEY" --cvePath "${WORK_DIR}/nvd"
 
 echo "Splitting monolithic file into years"
 for (( YEAR = 2002 ; YEAR <= $(date +%Y) ; YEAR++ ))

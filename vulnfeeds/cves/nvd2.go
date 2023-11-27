@@ -185,17 +185,17 @@ func (j *VendorComment) UnmarshalJSON(b []byte) error {
 
 // CVSS V2.0 score. (hand-generated)
 type CVSSV2 struct {
-	Source                  string      `json:"source" yaml:"source" mapstructure:"source"`
-	Type                    string      `json:"type" yaml:"type" mapstructure:"type"`
-	BaseSeverity            string      `json:"baseSeverity,omitempty" yaml:"baseSeverity,omitempty" mapstructure:"baseSeverity,omitempty"`
-	CVSSData                CVSS        `json:"cvssData" yaml:"cvssData" mapstructure:"cvssData"`
-	ExploitabilityScore     DefSubscore `json:"exploitabilityScore,omitempty" yaml:"exploitabilityScore,omitempty" mapstructure:"exploitabilityScore,omitempty"`
-	ImpactScore             DefSubscore `json:"impactScore,omitempty" yaml:"impactScore,omitempty" mapstructure:"impactScore,omitempty"`
-	AcInsufInfo             bool        `json:"acInsufInfo,omitempty" yaml:"acInsufInfo,omitempty" mapstructure:"acInsufInfo,omitempty"`
-	ObtainAllPrivilege      bool        `json:"obtainAllPrivilege,omitempty" yaml:"obtainAllPrivilege,omitempty" mapstructure:"obtainAllPrivilege,omitempty"`
-	ObtainUserPrivilege     bool        `json:"obtainUserPrivilege,omitempty" yaml:"obtainUserPrivilege,omitempty" mapstructure:"obtainUserPrivilege,omitempty"`
-	ObtainOtherPrivilege    bool        `json:"obtainOtherPrivilege,omitempty" yaml:"obtainOtherPrivilege,omitempty" mapstructure:"obtainOtherPrivilege,omitempty"`
-	UserInteractionRequired bool        `json:"userInteractionRequired,omitempty" yaml:"userInteractionRequired,omitempty" mapstructure:"userInteractionRequired,omitempty"`
+	Source                  string       `json:"source" yaml:"source" mapstructure:"source"`
+	Type                    string       `json:"type" yaml:"type" mapstructure:"type"`
+	BaseSeverity            string       `json:"baseSeverity,omitempty" yaml:"baseSeverity,omitempty" mapstructure:"baseSeverity,omitempty"`
+	CVSSData                CVSS         `json:"cvssData" yaml:"cvssData" mapstructure:"cvssData"`
+	ExploitabilityScore     *DefSubscore `json:"exploitabilityScore,omitempty" yaml:"exploitabilityScore,omitempty" mapstructure:"exploitabilityScore,omitempty"`
+	ImpactScore             *DefSubscore `json:"impactScore,omitempty" yaml:"impactScore,omitempty" mapstructure:"impactScore,omitempty"`
+	AcInsufInfo             bool         `json:"acInsufInfo,omitempty" yaml:"acInsufInfo,omitempty" mapstructure:"acInsufInfo,omitempty"`
+	ObtainAllPrivilege      bool         `json:"obtainAllPrivilege,omitempty" yaml:"obtainAllPrivilege,omitempty" mapstructure:"obtainAllPrivilege,omitempty"`
+	ObtainUserPrivilege     bool         `json:"obtainUserPrivilege,omitempty" yaml:"obtainUserPrivilege,omitempty" mapstructure:"obtainUserPrivilege,omitempty"`
+	ObtainOtherPrivilege    bool         `json:"obtainOtherPrivilege,omitempty" yaml:"obtainOtherPrivilege,omitempty" mapstructure:"obtainOtherPrivilege,omitempty"`
+	UserInteractionRequired bool         `json:"userInteractionRequired,omitempty" yaml:"userInteractionRequired,omitempty" mapstructure:"userInteractionRequired,omitempty"`
 }
 
 // CVSS V3.0 score. (hand-generated)

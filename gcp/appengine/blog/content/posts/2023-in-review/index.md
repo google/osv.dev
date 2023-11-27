@@ -9,7 +9,7 @@ author: The OSV Team
 ## New ecosystems support
 
 [OSV Schema](https://github.com/ossf/osv-schema) adoption continues to grow!
-This year alone, 8 new ecosystems have adopted the schema, enabling them to be
+This year alone, 8 new ecosystems have adopted the schema, and are now
 included in our [OSV.dev](https://osv.dev/list) database:
 
 * [AlmaLinux](https://osv.dev/blog/posts/almalinux-and-rocky-linux-join-osv/)

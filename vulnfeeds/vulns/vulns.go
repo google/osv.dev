@@ -360,15 +360,6 @@ func (v *Vulnerability) ToYAML(w io.Writer) error {
 	return encoder.Encode(v)
 }
 
-// func timestampToRFC3339(timestamp string) (string, error) {
-// 	t, err := cves.ParseTimestamp(timestamp)
-// 	if err != nil {
-// 		return "", err
-// 	}
-
-// 	return t.Format(time.RFC3339), nil
-// }
-
 func CVE5timestampToRFC3339(timestamp string) (string, error) {
 	t, err := cves.ParseCVE5Timestamp(timestamp)
 	if err != nil {

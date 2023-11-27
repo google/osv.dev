@@ -305,7 +305,7 @@ func (v *Vulnerability) AddPkgInfo(pkgInfo PackageInfo) {
 
 // AddSeverity adds CVSS3 severity information to the OSV vulnerability object.
 // It uses the highest available CVSS 3.x Primary score from the underlying CVE record.
-func (v *Vulnerability) AddSeverity(CVEImpact *cves.CveItemMetrics) {
+func (v *Vulnerability) AddSeverity(CVEImpact *cves.CVEItemMetrics) {
 	if CVEImpact == nil {
 		return
 	}
@@ -314,26 +314,26 @@ func (v *Vulnerability) AddSeverity(CVEImpact *cves.CveItemMetrics) {
 	// from the Primary scorer.
 	var bestVectorString string
 
-	for _, metric := range CVEImpact.CvssMetricV31 {
+	for _, metric := range CVEImpact.CVSSMetricV31 {
 		if bestVectorString != "" {
 			break
 		}
 		if metric.Type != "Primary" {
 			continue
 		}
-		bestVectorString = metric.CvssData.VectorString
+		bestVectorString = metric.CVSSData.VectorString
 	}
 
 	// No CVSS 3.1, try falling back to CVSS 3.0 if available.
 	if bestVectorString == "" {
-		for _, metric := range CVEImpact.CvssMetricV30 {
+		for _, metric := range CVEImpact.CVSSMetricV30 {
 			if bestVectorString != "" {
 				break
 			}
 			if metric.Type != "Primary" {
 				continue
 			}
-			bestVectorString = metric.CvssData.VectorString
+			bestVectorString = metric.CVSSData.VectorString
 		}
 	}
 
@@ -509,10 +509,10 @@ func ClassifyReferenceLink(link string, tag string) string {
 	return "WEB"
 }
 
-func extractAliases(id string, cve cves.CveItem) []string {
+func extractAliases(id string, cve cves.CVEItem) []string {
 	var aliases []string
-	if id != string(cve.Id) {
-		aliases = append(aliases, string(cve.Id))
+	if id != string(cve.ID) {
+		aliases = append(aliases, string(cve.ID))
 	}
 
 	for _, reference := range cve.References {
@@ -587,7 +587,7 @@ func ClassifyReferences(refs []cves.Reference) (references References) {
 
 // FromCVE creates a minimal OSV object from a given CVEItem and id.
 // Leaves affected and version fields empty to be filled in later with AddPkgInfo
-func FromCVE(id string, cve cves.CveItem) (*Vulnerability, []string) {
+func FromCVE(id string, cve cves.CVEItem) (*Vulnerability, []string) {
 	v := Vulnerability{
 		ID:      id,
 		Details: cves.EnglishDescription(cve),

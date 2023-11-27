@@ -19,13 +19,13 @@ func loadTestData2(cveName string) cves.DefCveItem {
 	if err != nil {
 		log.Fatalf("Failed to load test data from %q: %#v", fileName, err)
 	}
-	var nvdCves cves.CveApiJson20Schema
+	var nvdCves cves.CVEAPIJSON20Schema
 	err = json.NewDecoder(file).Decode(&nvdCves)
 	if err != nil {
 		log.Fatalf("Failed to decode %q: %+v", fileName, err)
 	}
 	for _, vulnerability := range nvdCves.Vulnerabilities {
-		if string(vulnerability.Cve.Id) == cveName {
+		if string(vulnerability.CVE.ID) == cveName {
 			return vulnerability
 		}
 	}

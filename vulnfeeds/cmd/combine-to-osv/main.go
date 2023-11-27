@@ -115,7 +115,7 @@ func combineIntoOSV(loadedCves map[string]cves.DefCveItem, allParts map[string][
 		if len(allParts[cveId]) == 0 {
 			continue
 		}
-		convertedCve, _ := vulns.FromCVE(cveId, cve.Cve)
+		convertedCve, _ := vulns.FromCVE(cveId, cve.CVE)
 		if len(cveList) > 0 {
 			// Best-effort attempt to mark a disputed CVE as withdrawn.
 			modified, err := vulns.CVEIsDisputed(convertedCve, cveList)
@@ -170,14 +170,14 @@ func loadAllCVEs(cvePath string) map[string]cves.DefCveItem {
 		if err != nil {
 			Logger.Fatalf("Failed to open CVE JSON %q: %s", path.Join(cvePath, entry.Name()), err)
 		}
-		var nvdcve cves.CveApiJson20Schema
+		var nvdcve cves.CVEAPIJSON20Schema
 		err = json.NewDecoder(file).Decode(&nvdcve)
 		if err != nil {
 			Logger.Fatalf("Failed to decode JSON in %q: %s", file.Name(), err)
 		}
 
 		for _, item := range nvdcve.Vulnerabilities {
-			result[string(item.Cve.Id)] = item
+			result[string(item.CVE.ID)] = item
 		}
 		Logger.Infof("Loaded CVE: %s", entry.Name())
 		file.Close()

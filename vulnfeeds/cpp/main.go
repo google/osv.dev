@@ -71,7 +71,7 @@ var Metrics struct {
 	CVEsForApplications int
 	CVEsForKnownRepos   int
 	OSVRecordsGenerated int
-	Outcomes            map[cves.CveId]ConversionOutcome // Per-CVE-ID record of conversion result.
+	Outcomes            map[cves.CVEID]ConversionOutcome // Per-CVE-ID record of conversion result.
 }
 
 // References with these tags have been found to contain completely unrelated
@@ -225,8 +225,8 @@ func ReposFromReferences(CVE string, cache VendorProductToRepoMap, vp *VendorPro
 }
 
 // Takes an NVD CVE record and outputs an OSV file in the specified directory.
-func CVEToOSV(CVE cves.CveItem, repos []string, cache git.RepoTagsCache, directory string) error {
-	CVEID := string(CVE.Id) // For brevity.
+func CVEToOSV(CVE cves.CVEItem, repos []string, cache git.RepoTagsCache, directory string) error {
+	CVEID := string(CVE.ID) // For brevity.
 	CPEs := cves.CPEs(CVE)
 	// The vendor name and product name are used to construct the output `vulnDir` below, so need to be set to *something* to keep the output tidy.
 	maybeVendorName := "ENOCPE"
@@ -306,8 +306,8 @@ func CVEToOSV(CVE cves.CveItem, repos []string, cache git.RepoTagsCache, directo
 }
 
 // Takes an NVD CVE record and outputs a PackageInfo struct in a file in the specified directory.
-func CVEToPackageInfo(CVE cves.CveItem, repos []string, cache git.RepoTagsCache, directory string) error {
-	CVEID := string(CVE.Id) // For brevity.
+func CVEToPackageInfo(CVE cves.CVEItem, repos []string, cache git.RepoTagsCache, directory string) error {
+	CVEID := string(CVE.ID) // For brevity.
 	CPEs := cves.CPEs(CVE)
 	// The vendor name and product name are used to construct the output `vulnDir` below, so need to be set to *something* to keep the output tidy.
 	maybeVendorName := "ENOCPE"
@@ -441,7 +441,7 @@ func maybeRemoveFromVPRepoCache(cache VendorProductToRepoMap, vp *VendorProduct,
 }
 
 // Output a CSV summarizing per-CVE how it was handled.
-func outputOutcomes(outcomes map[cves.CveId]ConversionOutcome, reposForCVE map[cves.CveId][]string, directory string) error {
+func outputOutcomes(outcomes map[cves.CVEID]ConversionOutcome, reposForCVE map[cves.CVEID][]string, directory string) error {
 	outcomesFile, err := os.Create(filepath.Join(directory, "outcomes.csv"))
 	if err != nil {
 		return err
@@ -472,7 +472,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	Metrics.Outcomes = make(map[cves.CveId]ConversionOutcome)
+	Metrics.Outcomes = make(map[cves.CVEID]ConversionOutcome)
 
 	var logCleanup func()
 	Logger, logCleanup = utility.CreateLoggerWrapper("cpp-osv")
@@ -483,7 +483,7 @@ func main() {
 		Logger.Fatalf("Failed to open file: %v", err) // double check this is best practice output
 	}
 
-	var parsed cves.CveApiJson20Schema
+	var parsed cves.CVEAPIJSON20Schema
 	err = json.Unmarshal(data, &parsed)
 	if err != nil {
 		Logger.Fatalf("Failed to parse NVD CVE JSON: %v", err)
@@ -499,12 +499,12 @@ func main() {
 		Logger.Infof("VendorProductToRepoMap cache has %d entries preloaded", len(VPRepoCache))
 	}
 
-	ReposForCVE := make(map[cves.CveId][]string)
+	ReposForCVE := make(map[cves.CVEID][]string)
 
 	for _, cve := range parsed.Vulnerabilities {
-		refs := cve.Cve.References
-		CPEs := cves.CPEs(cve.Cve)
-		CVEID := cve.Cve.Id
+		refs := cve.CVE.References
+		CPEs := cves.CPEs(cve.CVE)
+		CVEID := cve.CVE.ID
 
 		if len(refs) == 0 && len(CPEs) == 0 {
 			Logger.Infof("[%s]: skipping due to lack of CPEs and lack of references", CVEID)
@@ -526,7 +526,7 @@ func main() {
 
 		// Does it have any application CPEs? Look for pre-computed repos based on VendorProduct.
 		appCPECount := 0
-		for _, CPEstr := range cves.CPEs(cve.Cve) {
+		for _, CPEstr := range cves.CPEs(cve.CVE) {
 			CPE, err := cves.ParseCPE(CPEstr)
 			if err != nil {
 				Logger.Warnf("[%s]: Failed to parse CPE %q: %+v", CVEID, CPEstr, err)
@@ -563,7 +563,7 @@ func main() {
 
 		// If there wasn't a repo from the CPE Dictionary, try and derive one from the CVE references.
 		if _, ok := ReposForCVE[CVEID]; !ok && len(refs) > 0 {
-			for _, CPEstr := range cves.CPEs(cve.Cve) {
+			for _, CPEstr := range cves.CPEs(cve.CVE) {
 				CPE, err := cves.ParseCPE(CPEstr)
 				if err != nil {
 					Logger.Warnf("[%s]: Failed to parse CPE %q: %+v", CVEID, CPEstr, err)
@@ -620,9 +620,9 @@ func main() {
 
 		switch *outFormat {
 		case "OSV":
-			err = CVEToOSV(cve.Cve, ReposForCVE[CVEID], RepoTagsCache, *outDir)
+			err = CVEToOSV(cve.CVE, ReposForCVE[CVEID], RepoTagsCache, *outDir)
 		case "PackageInfo":
-			err = CVEToPackageInfo(cve.Cve, ReposForCVE[CVEID], RepoTagsCache, *outDir)
+			err = CVEToPackageInfo(cve.CVE, ReposForCVE[CVEID], RepoTagsCache, *outDir)
 		}
 		// Parse this error to determine which failure mode it was
 		if err != nil {

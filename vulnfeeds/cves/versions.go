@@ -999,7 +999,7 @@ func cleanVersion(version string) string {
 	return strings.TrimRight(version, ":")
 }
 
-func ExtractVersionInfo(cve CveItem, validVersions []string) (v VersionInfo, notes []string) {
+func ExtractVersionInfo(cve CVEItem, validVersions []string) (v VersionInfo, notes []string) {
 	for _, reference := range cve.References {
 		// (Potentially faulty) Assumption: All viable Git commit reference links are fix commits.
 		if commit, err := extractGitCommit(reference.Url, Fixed); err == nil {
@@ -1014,7 +1014,7 @@ func ExtractVersionInfo(cve CveItem, validVersions []string) (v VersionInfo, not
 				continue
 			}
 
-			for _, match := range node.CpeMatch {
+			for _, match := range node.CPEMatch {
 				if !match.Vulnerable {
 					continue
 				}
@@ -1098,7 +1098,7 @@ func ExtractVersionInfo(cve CveItem, validVersions []string) (v VersionInfo, not
 		v.AffectedVersions, extractNotes = extractVersionsFromDescription(validVersions, EnglishDescription(cve))
 		notes = append(notes, extractNotes...)
 		if len(v.AffectedVersions) > 0 {
-			log.Printf("[%s] Extracted versions from description = %+v", cve.Id, v.AffectedVersions)
+			log.Printf("[%s] Extracted versions from description = %+v", cve.ID, v.AffectedVersions)
 		}
 	}
 
@@ -1127,11 +1127,11 @@ func ExtractVersionInfo(cve CveItem, validVersions []string) (v VersionInfo, not
 	return v, notes
 }
 
-func CPEs(cve CveItem) []string {
+func CPEs(cve CVEItem) []string {
 	var cpes []string
 	for _, config := range cve.Configurations {
 		for _, node := range config.Nodes {
-			for _, match := range node.CpeMatch {
+			for _, match := range node.CPEMatch {
 				cpes = append(cpes, match.Criteria)
 			}
 		}

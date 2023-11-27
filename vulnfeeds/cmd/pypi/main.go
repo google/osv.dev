@@ -87,7 +87,7 @@ func main() {
 	if err != nil {
 		log.Fatalf("Failed to open file: %v", err)
 	}
-	var parsed cves.CveApiJson20Schema
+	var parsed cves.CVEAPIJSON20Schema
 	err = json.Unmarshal(data, &parsed)
 	if err != nil {
 		log.Fatalf("Failed to parse NVD CVE JSON: %v", err)
@@ -105,23 +105,23 @@ func main() {
 	}
 
 	for _, cve := range parsed.Vulnerabilities {
-		if falsePositives.CheckID(string(cve.Cve.Id)) {
-			log.Printf("Skipping %s as a false positive.", cve.Cve.Id)
+		if falsePositives.CheckID(string(cve.CVE.ID)) {
+			log.Printf("Skipping %s as a false positive.", cve.CVE.ID)
 			continue
 		}
 
-		pkgs := ecosystem.Matches(cve.Cve, falsePositives)
+		pkgs := ecosystem.Matches(cve.CVE, falsePositives)
 		if len(pkgs) == 0 {
 			continue
 		}
 
 		for _, pkg := range pkgs {
-			if _, exists := existingIDs[string(cve.Cve.Id)+"/"+pkg]; exists {
-				log.Printf("Skipping %s match for %s as it already exists.", cve.Cve.Id, pkg)
+			if _, exists := existingIDs[string(cve.CVE.ID)+"/"+pkg]; exists {
+				log.Printf("Skipping %s match for %s as it already exists.", cve.CVE.ID, pkg)
 				continue
 			}
 
-			log.Printf("Matched %s to %s.", cve.Cve.Id, pkg)
+			log.Printf("Matched %s to %s.", cve.CVE.ID, pkg)
 			validVersions := ecosystem.Versions(pkg)
 			if validVersions == nil {
 				log.Printf("pkg %s does not have valid versions, skipping", pkg)
@@ -129,7 +129,7 @@ func main() {
 			}
 			log.Printf("Valid versions = %v\n", validVersions)
 
-			id := "PYSEC-0000-" + string(cve.Cve.Id) // To be assigned later.
+			id := "PYSEC-0000-" + string(cve.CVE.ID) // To be assigned later.
 			purl := ecosystem.PackageURL(pkg)
 			pkgInfo := vulns.PackageInfo{
 				PkgName:   pkg,
@@ -137,9 +137,9 @@ func main() {
 				PURL:      purl,
 			}
 
-			v, notes := vulns.FromCVE(id, cve.Cve)
+			v, notes := vulns.FromCVE(id, cve.CVE)
 			v.AddPkgInfo(pkgInfo)
-			versions, versionNotes := cves.ExtractVersionInfo(cve.Cve, validVersions)
+			versions, versionNotes := cves.ExtractVersionInfo(cve.CVE, validVersions)
 			notes = append(notes, versionNotes...)
 			v.Affected[0].AttachExtractedVersionInfo(versions)
 			if len(v.Affected[0].Ranges) == 0 {

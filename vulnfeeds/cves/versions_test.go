@@ -17,13 +17,13 @@ func loadTestData2(cveName string) DefCveItem {
 	if err != nil {
 		log.Fatalf("Failed to load test data from %q", fileName)
 	}
-	var nvdCves CveApiJson20Schema
+	var nvdCves CVEAPIJSON20Schema
 	err = json.NewDecoder(file).Decode(&nvdCves)
 	if err != nil {
 		log.Fatalf("Failed to decode %q: %+v", fileName, err)
 	}
 	for _, vulnerability := range nvdCves.Vulnerabilities {
-		if string(vulnerability.Cve.Id) == cveName {
+		if string(vulnerability.CVE.ID) == cveName {
 			return vulnerability
 		}
 	}
@@ -873,7 +873,7 @@ func TestExtractVersionInfo(t *testing.T) {
 	}
 
 	for _, tc := range tests {
-		gotVersionInfo, _ := ExtractVersionInfo(tc.inputCVEItem.Cve, tc.inputValidVersions)
+		gotVersionInfo, _ := ExtractVersionInfo(tc.inputCVEItem.CVE, tc.inputValidVersions)
 		if diff := cmp.Diff(tc.expectedVersionInfo, gotVersionInfo); diff != "" {
 			t.Errorf("test %q: VersionInfo for %#v was incorrect: %s", tc.description, tc.inputCVEItem, diff)
 		}
@@ -899,9 +899,9 @@ func TestCPEs(t *testing.T) {
 	}
 
 	for _, tc := range tests {
-		gotCPEs := CPEs(tc.inputCVEItem.Cve)
+		gotCPEs := CPEs(tc.inputCVEItem.CVE)
 		if diff := cmp.Diff(gotCPEs, tc.expectedCPEs); diff != "" {
-			t.Errorf("test %q: CPEs for %#v were incorrect: %s", tc.description, tc.inputCVEItem.Cve.Configurations, diff)
+			t.Errorf("test %q: CPEs for %#v were incorrect: %s", tc.description, tc.inputCVEItem.CVE.Configurations, diff)
 		}
 	}
 }

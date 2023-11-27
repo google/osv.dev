@@ -97,3 +97,8 @@ func EnglishDescription(cve CVEItem) string {
 func ParseCVE5Timestamp(timestamp string) (time.Time, error) {
 	return time.Parse(CVE5TimeFormat, timestamp)
 }
+
+type CVSS struct {
+	// VectorString corresponds to the JSON schema field "vectorString".
+	VectorString string `json:"vectorString" yaml:"vectorString" mapstructure:"vectorString"`
+}

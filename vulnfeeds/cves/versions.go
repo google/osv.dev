@@ -999,7 +999,7 @@ func cleanVersion(version string) string {
 	return strings.TrimRight(version, ":")
 }
 
-func ExtractVersionInfo(cve CVEItem, validVersions []string) (v VersionInfo, notes []string) {
+func ExtractVersionInfo(cve CVE, validVersions []string) (v VersionInfo, notes []string) {
 	for _, reference := range cve.References {
 		// (Potentially faulty) Assumption: All viable Git commit reference links are fix commits.
 		if commit, err := extractGitCommit(reference.Url, Fixed); err == nil {
@@ -1127,7 +1127,7 @@ func ExtractVersionInfo(cve CVEItem, validVersions []string) (v VersionInfo, not
 	return v, notes
 }
 
-func CPEs(cve CVEItem) []string {
+func CPEs(cve CVE) []string {
 	var cpes []string
 	for _, config := range cve.Configurations {
 		for _, node := range config.Nodes {

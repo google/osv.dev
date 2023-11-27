@@ -129,7 +129,7 @@ func main() {
 			}
 			log.Printf("Valid versions = %v\n", validVersions)
 
-			id := "PYSEC-0000-" + string(cve.CVE.ID) // To be assigned later.
+			id := "PYSEC-0000-" + cve.CVE.ID // To be assigned later.
 			purl := ecosystem.PackageURL(pkg)
 			pkgInfo := vulns.PackageInfo{
 				PkgName:   pkg,

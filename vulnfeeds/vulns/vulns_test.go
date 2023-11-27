@@ -89,7 +89,7 @@ func TestClassifyReferences(t *testing.T) {
 	}
 }
 
-func loadTestData2(cveName string) cves.DefCveItem {
+func loadTestData2(cveName string) cves.Vulnerability {
 	fileName := fmt.Sprintf("../test_data/nvdcve-2.0/%s.json", cveName)
 	file, err := os.Open(fileName)
 	if err != nil {
@@ -106,18 +106,18 @@ func loadTestData2(cveName string) cves.DefCveItem {
 		}
 	}
 	log.Fatalf("test data doesn't contain %q", cveName)
-	return cves.DefCveItem{}
+	return cves.Vulnerability{}
 }
 
 func TestExtractAliases(t *testing.T) {
 	// TODO: convert to table based test
 	cveItem := loadTestData2("CVE-2022-36037")
-	aliases := extractAliases(string(cveItem.CVE.ID), cveItem.CVE)
+	aliases := extractAliases(cveItem.CVE.ID, cveItem.CVE)
 	if !utility.SliceEqual(aliases, []string{"GHSA-3f89-869f-5w76"}) {
 		t.Errorf("Aliases not extracted, got %v, but expected %v.", aliases, []string{"GHSA-3f89-869f-5w76"})
 	}
 	cveItem = loadTestData2("CVE-2022-36749")
-	aliases = extractAliases(string(cveItem.CVE.ID), cveItem.CVE)
+	aliases = extractAliases(cveItem.CVE.ID, cveItem.CVE)
 	if !utility.SliceEqual(aliases, []string{}) {
 		t.Errorf("Aliases not extracted, got %v, but expected %v.", aliases, []string{"GHSA-3f89-869f-5w76"})
 	}
@@ -276,7 +276,7 @@ func TestAddPkgInfo(t *testing.T) {
 func TestAddSeverity(t *testing.T) {
 	tests := []struct {
 		description    string
-		inputCVE       cves.DefCveItem
+		inputCVE       cves.Vulnerability
 		expectedResult []Severity
 	}{
 		{
@@ -297,7 +297,7 @@ func TestAddSeverity(t *testing.T) {
 	}
 
 	for _, tc := range tests {
-		vuln, _ := FromCVE(string(tc.inputCVE.CVE.ID), tc.inputCVE.CVE)
+		vuln, _ := FromCVE(tc.inputCVE.CVE.ID, tc.inputCVE.CVE)
 
 		got := vuln.Severity
 		if diff := gocmp.Diff(got, tc.expectedResult); diff != "" {

@@ -97,12 +97,12 @@ type CVEAPIJSON20Schema struct {
 	Version string `json:"version" yaml:"version" mapstructure:"version"`
 
 	// NVD feed array of CVE
-	Vulnerabilities []DefCveItem `json:"vulnerabilities" yaml:"vulnerabilities" mapstructure:"vulnerabilities"`
+	Vulnerabilities []Vulnerability `json:"vulnerabilities" yaml:"vulnerabilities" mapstructure:"vulnerabilities"`
 }
 
 type CVEID string
 
-type CVEItem struct {
+type CVE struct {
 	// CISAActionDue corresponds to the JSON schema field "cisaActionDue".
 	CISAActionDue *types.SerializableDate `json:"cisaActionDue,omitempty" yaml:"cisaActionDue,omitempty" mapstructure:"cisaActionDue,omitempty"`
 
@@ -307,7 +307,7 @@ type LangString struct {
 }
 
 // UnmarshalJSON implements json.Unmarshaler.
-func (j *CVEItem) UnmarshalJSON(b []byte) error {
+func (j *CVE) UnmarshalJSON(b []byte) error {
 	var raw map[string]interface{}
 	if err := json.Unmarshal(b, &raw); err != nil {
 		return err
@@ -327,7 +327,7 @@ func (j *CVEItem) UnmarshalJSON(b []byte) error {
 	if v, ok := raw["references"]; !ok || v == nil {
 		return fmt.Errorf("field references in CveItem: required")
 	}
-	type Plain CVEItem
+	type Plain CVE
 	var plain Plain
 	if err := json.Unmarshal(b, &plain); err != nil {
 		return err
@@ -338,13 +338,13 @@ func (j *CVEItem) UnmarshalJSON(b []byte) error {
 	if len(plain.References) > 500 {
 		return fmt.Errorf("field %s length: must be <= %d", "references", 500)
 	}
-	*j = CVEItem(plain)
+	*j = CVE(plain)
 	return nil
 }
 
-// (hand generated).
-type DefCveItem struct {
-	CVE CVEItem `json:"cve" yaml:"cve" mapstructure:"cve"`
+// (hand generated), see https://github.com/omissis/go-jsonschema/issues/171
+type Vulnerability struct {
+	CVE CVE `json:"cve" yaml:"cve" mapstructure:"cve"`
 }
 
 // CVSS subscore.

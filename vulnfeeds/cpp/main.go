@@ -225,8 +225,7 @@ func ReposFromReferences(CVE string, cache VendorProductToRepoMap, vp *VendorPro
 }
 
 // Takes an NVD CVE record and outputs an OSV file in the specified directory.
-func CVEToOSV(CVE cves.CVEItem, repos []string, cache git.RepoTagsCache, directory string) error {
-	CVEID := string(CVE.ID) // For brevity.
+func CVEToOSV(CVE cves.CVE, repos []string, cache git.RepoTagsCache, directory string) error {
 	CPEs := cves.CPEs(CVE)
 	// The vendor name and product name are used to construct the output `vulnDir` below, so need to be set to *something* to keep the output tidy.
 	maybeVendorName := "ENOCPE"
@@ -237,11 +236,11 @@ func CVEToOSV(CVE cves.CVEItem, repos []string, cache git.RepoTagsCache, directo
 		maybeVendorName = CPE.Vendor
 		maybeProductName = CPE.Product
 		if err != nil {
-			return fmt.Errorf("[%s]: Can't generate an OSV record without valid CPE data", CVEID)
+			return fmt.Errorf("[%s]: Can't generate an OSV record without valid CPE data", CVE.ID)
 		}
 	}
 
-	v, notes := vulns.FromCVE(CVEID, CVE)
+	v, notes := vulns.FromCVE(CVE.ID, CVE)
 	versions, versionNotes := cves.ExtractVersionInfo(CVE, nil)
 	notes = append(notes, versionNotes...)
 
@@ -249,12 +248,12 @@ func CVEToOSV(CVE cves.CVEItem, repos []string, cache git.RepoTagsCache, directo
 		var err error
 		// There are some AffectedVersions to try and resolve to AffectedCommits.
 		if len(repos) == 0 {
-			return fmt.Errorf("[%s]: No affected ranges for %q, and no repos to try and convert %+v to tags with", CVEID, maybeProductName, versions.AffectedVersions)
+			return fmt.Errorf("[%s]: No affected ranges for %q, and no repos to try and convert %+v to tags with", CVE.ID, maybeProductName, versions.AffectedVersions)
 		}
-		Logger.Infof("[%s]: Trying to convert version tags %+v to commits using %v", CVEID, versions.AffectedVersions, repos)
-		versions, err = GitVersionsToCommits(string(CVEID), versions, repos, cache)
+		Logger.Infof("[%s]: Trying to convert version tags %+v to commits using %v", CVE.ID, versions.AffectedVersions, repos)
+		versions, err = GitVersionsToCommits(string(CVE.ID), versions, repos, cache)
 		if err != nil {
-			return fmt.Errorf("[%s]: Failed to convert version tags to commits: %#v", CVEID, err)
+			return fmt.Errorf("[%s]: Failed to convert version tags to commits: %#v", CVE.ID, err)
 		}
 		hasAnyFixedCommits := false
 		for _, repo := range repos {
@@ -264,7 +263,7 @@ func CVEToOSV(CVE cves.CVEItem, repos []string, cache git.RepoTagsCache, directo
 		}
 
 		if versions.HasFixedVersions() && !hasAnyFixedCommits {
-			return fmt.Errorf("[%s]: Failed to convert fixed version tags to commits: %#v %w", CVEID, versions, ErrUnresolvedFix)
+			return fmt.Errorf("[%s]: Failed to convert fixed version tags to commits: %#v %w", CVE.ID, versions, ErrUnresolvedFix)
 		}
 	}
 
@@ -273,7 +272,7 @@ func CVEToOSV(CVE cves.CVEItem, repos []string, cache git.RepoTagsCache, directo
 	v.Affected = append(v.Affected, affected)
 
 	if len(v.Affected[0].Ranges) == 0 {
-		return fmt.Errorf("[%s]: No affected ranges detected for %q %w", CVEID, maybeProductName, ErrNoRanges)
+		return fmt.Errorf("[%s]: No affected ranges detected for %q %w", CVE.ID, maybeProductName, ErrNoRanges)
 	}
 
 	vulnDir := filepath.Join(directory, maybeVendorName, maybeProductName)
@@ -295,18 +294,18 @@ func CVEToOSV(CVE cves.CVEItem, repos []string, cache git.RepoTagsCache, directo
 		Logger.Warnf("Failed to write %s: %v", outputFile, err)
 		return fmt.Errorf("failed to write %s: %v", outputFile, err)
 	}
-	Logger.Infof("[%s]: Generated OSV record for %q", CVEID, maybeProductName)
+	Logger.Infof("[%s]: Generated OSV record for %q", CVE.ID, maybeProductName)
 	if len(notes) > 0 {
 		err = os.WriteFile(notesFile, []byte(strings.Join(notes, "\n")), 0660)
 		if err != nil {
-			Logger.Warnf("[%s]: Failed to write %s: %v", CVEID, notesFile, err)
+			Logger.Warnf("[%s]: Failed to write %s: %v", CVE.ID, notesFile, err)
 		}
 	}
 	return nil
 }
 
 // Takes an NVD CVE record and outputs a PackageInfo struct in a file in the specified directory.
-func CVEToPackageInfo(CVE cves.CVEItem, repos []string, cache git.RepoTagsCache, directory string) error {
+func CVEToPackageInfo(CVE cves.CVE, repos []string, cache git.RepoTagsCache, directory string) error {
 	CVEID := string(CVE.ID) // For brevity.
 	CPEs := cves.CPEs(CVE)
 	// The vendor name and product name are used to construct the output `vulnDir` below, so need to be set to *something* to keep the output tidy.

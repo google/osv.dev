@@ -26,7 +26,7 @@ def main():
   backup_bucket = os.environ['BACKUP_BUCKET']
   project_id = os.environ['GOOGLE_CLOUD_PROJECT']
   client.export_entities(
-      project_id=project_id, output_url_prefix=f'gs://testing-{backup_bucket}')
+      project_id=project_id, output_url_prefix=f'gs://{backup_bucket}')
 
   return 0
 

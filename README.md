@@ -25,7 +25,7 @@ consists of:
 | directory       | what |
 |-----------------|------|
 | `deployment/`   | Terraform, Cloud Deploy & App Engine config files <br /> A few Cloud Build config yamls <br /> Old (no longer used?) `api-staging` and `api-test` Cloud Run configs  |
-| `docker/`       | CI docker files (`ci`, `deployment`, `terraform`) <br /> Workers for bisection and impact analysis (`worker`, `importer`, `exporter`, `alias`, `worker-base`) <br /> The determine version `indexer`|
+| `docker/`       | CI docker files (`ci`, `deployment`, `terraform`) <br /> Workers for bisection and impact analysis (`worker`, `importer`, `exporter`, `alias`, `worker-base`) <br /> The determine version `indexer`<br /> `cron/` jobs for database backups and processing oss-fuzz records |
 | `docs/`         | Jekyll files for https://google.github.io/osv.dev/ <br /> `build_swagger.py` and `tools.go` |
 | `gcp/api`       | OSV API server files (including files for the local ESP server) <br /> protobuf files in `/v1`|
 | `gcp/appengine` | The backend of the osv.dev web interface, with the frontend in `frontend3` <br /> Blog posts (in `blog`) <br /> App Engine Cron Handlers (to be removed) <br /> The  datastore indexes file (`index.yaml`) | 

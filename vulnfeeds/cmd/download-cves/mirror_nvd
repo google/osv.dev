@@ -19,6 +19,8 @@
 # discontinued by the NVD.
 # They are saved to GCS for use by combine-to-osv and the NVD to OSV conversion.
 
+set -e
+
 echo "Downloading the entire NVD"
 mkdir -p "${WORK_DIR}/nvd"
 APIKEY="$(gcloud --project "$GOOGLE_CLOUD_PROJECT" secrets versions access latest --secret=nvd-api --format='get(payload.data)' | base64 -d)"

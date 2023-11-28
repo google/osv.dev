@@ -23,11 +23,11 @@ spec:
               privileged: true
             resources:
               requests:
-                cpu: 30
-                memory: "4G"
-              limits:
-                cpu: 30
+                cpu: "30"
                 memory: "8G"
+              limits:
+                cpu: "30"
+                memory: "16G"
           nodeSelector:
             cloud.google.com/gke-nodepool: highend
           restartPolicy: OnFailure

@@ -18,7 +18,7 @@ spec:
           containers:
           - name: nvd-mirror
             env:
-            - name: WORKDIR
+            - name: WORK_DIR
               value: /tmp
             image: nvd-mirror
             imagePullPolicy: Always

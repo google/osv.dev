@@ -34,4 +34,4 @@ do
 done
 
 echo "Copying files to GCS bucket"
-gcloud --no-user-output-enabled storage rsync "$OSV_OUTPUT" "gs://${BUCKET}/nvd/" --checksums-only -c --delete-unmatched-destination-objects -q
+gcloud --no-user-output-enabled storage rsync "${WORK_DIR}/nvd/" "gs://${BUCKET}/nvd/" --checksums-only -c --delete-unmatched-destination-objects -q

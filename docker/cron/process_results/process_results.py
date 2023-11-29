@@ -42,7 +42,7 @@ def _get_counter(year=None):
 
 
 def main():
-  """Mark bugs public."""
+  """Generate impact requests."""
   publisher = pubsub_v1.PublisherClient()
   counters = {}
 

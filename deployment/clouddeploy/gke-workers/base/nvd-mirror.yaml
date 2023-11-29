@@ -3,7 +3,7 @@ kind: CronJob
 metadata:
   name: nvd-mirror
 spec:
-  schedule: "* */2 * * *"
+  schedule: "0 */2 * * *"
   concurrencyPolicy: Forbid
   failedJobsHistoryLimit: 3
   jobTemplate:

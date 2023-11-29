@@ -3,7 +3,7 @@ kind: CronJob
 metadata:
   name: process-results
 spec:
-  schedule: "0 1 * * *"
+  schedule: "0 0 * * *"
   concurrencyPolicy: Forbid
   jobTemplate:
     spec:

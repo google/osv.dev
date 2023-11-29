@@ -1,9 +1,9 @@
 apiVersion: batch/v1
 kind: CronJob
 metadata:
-  name: make-bugs-public
+  name: backup
 spec:
-  schedule: "0 12 * * *"
+  schedule: "0 18 * * *"
   concurrencyPolicy: Forbid
   jobTemplate:
     spec:
@@ -13,7 +13,7 @@ spec:
           - name: cron
             image: cron
             imagePullPolicy: Always
-            command: ["/usr/local/bin/make_bugs_public/make_bugs_public.py"]
+            command: ["/usr/local/bin/backup/backup.py"]
             resources:
               requests:
                 cpu: 1

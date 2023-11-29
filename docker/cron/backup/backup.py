@@ -15,8 +15,11 @@
 
 import os
 import sys
+from google.cloud import ndb
 from google.cloud.datastore_admin_v1.services.datastore_admin import client \
     as ds_admin
+
+import osv
 
 
 def main():

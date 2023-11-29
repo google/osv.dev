@@ -223,7 +223,7 @@ steps:
 
 # Build/push NVD mirror image
 - name: gcr.io/cloud-builders/docker
-  args: ['build', '-t', 'gcr.io/oss-vdb/nvd-mirror:latest', '-t', 'gcr.io/oss-vdb/mirror:$COMMIT_SHA', '-f', 'cmd/download-cves/Dockerfile','.']
+  args: ['build', '-t', 'gcr.io/oss-vdb/nvd-mirror:latest', '-t', 'gcr.io/oss-vdb/nvd-mirror:$COMMIT_SHA', '-f', 'cmd/download-cves/Dockerfile','.']
   dir: 'vulnfeeds'
   id: 'build-nvd-mirror'
   waitFor: ['setup']

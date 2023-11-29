@@ -26,7 +26,7 @@ gcloud --no-user-output-enabled storage rsync "gs://${INPUT_BUCKET}/parts/" "$OS
 echo "Successfully synced from GCS bucket"
 
 echo "Begin syncing NVD data from GCS bucket ${INPUT_BUCKET}"
-gcloud --no-user-output-enabled storage -q cp "${INPUT_BUCKET}/nvd/*-????.json" "${CVE_OUTPUT}"
+gcloud --no-user-output-enabled storage -q cp "gs://${INPUT_BUCKET}/nvd/*-????.json" "${CVE_OUTPUT}"
 echo "Successfully synced from GCS bucket"
 
 if [[ -n "$CVELIST" ]]; then

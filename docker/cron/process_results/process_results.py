@@ -108,4 +108,7 @@ def main():
 
 
 if __name__ == '__main__':
-  sys.exit(main())
+  _ndb_client = ndb.Client()
+  osv.logs.setup_gcp_logging('process_results')
+  with _ndb_client.context():
+    sys.exit(main())

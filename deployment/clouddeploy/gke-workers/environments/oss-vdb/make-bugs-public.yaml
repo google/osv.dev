@@ -14,6 +14,9 @@ spec:
             image: cron
             imagePullPolicy: Always
             command: ["/usr/local/bin/make_bugs_public/make_bugs_public.py"]
+            env:
+            - name: GOOGLE_CLOUD_PROJECT
+              value: "oss-vdb"
             resources:
               requests:
                 cpu: 1

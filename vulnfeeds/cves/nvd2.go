@@ -22,6 +22,7 @@ package cves
 import (
 	"encoding/json"
 	"fmt"
+	"io"
 	"strings"
 	"time"
 
@@ -379,6 +380,11 @@ func (j *CPEMatch) UnmarshalJSON(b []byte) error {
 	}
 	*j = CPEMatch(plain)
 	return nil
+}
+
+func (n *CVEAPIJSON20Schema) ToJSON(w io.Writer) error {
+	encoder := json.NewEncoder(w)
+	return encoder.Encode(n)
 }
 
 // UnmarshalJSON implements json.Unmarshaler.

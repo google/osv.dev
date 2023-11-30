@@ -15,29 +15,12 @@
 package cves
 
 import (
-	"encoding/json"
-	"io"
 	"time"
 )
 
 const (
 	CVE5TimeFormat = "2006-01-02T15:04:05"
 )
-
-type NVDCVE2 struct {
-	ResultsPerPage  *int              `json:"resultsPerPage"`
-	StartIndex      *int              `json:"startIndex"`
-	TotalResults    *int              `json:"totalResults"`
-	Format          *string           `json:"format"`
-	Version         *string           `json:"version"`
-	Timestamp       *string           `json:"timestamp"`
-	Vulnerabilities []json.RawMessage `json:"vulnerabilities"`
-}
-
-func (n *NVDCVE2) ToJSON(w io.Writer) error {
-	encoder := json.NewEncoder(w)
-	return encoder.Encode(n)
-}
 
 type CVE5 struct {
 	DataType    string `json:"dataType"`

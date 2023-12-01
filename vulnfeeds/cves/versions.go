@@ -78,6 +78,15 @@ func (vi *VersionInfo) HasFixedVersions() bool {
 	return false
 }
 
+func (vi *VersionInfo) HasLastAffectedVersions() bool {
+	for _, av := range vi.AffectedVersions {
+		if av.LastAffected != "" {
+			return true
+		}
+	}
+	return false
+}
+
 func (vi *VersionInfo) HasIntroducedCommits(repo string) bool {
 	for _, av := range vi.AffectedCommits {
 		if av.Repo == repo && av.Introduced != "" {
@@ -96,6 +105,15 @@ func (vi *VersionInfo) HasFixedCommits(repo string) bool {
 	return false
 }
 
+func (vi *VersionInfo) HasLastAffectedCommits(repo string) bool {
+	for _, av := range vi.AffectedCommits {
+		if av.Repo == repo && av.LastAffected != "" {
+			return true
+		}
+	}
+	return false
+}
+
 func (vi *VersionInfo) FixedCommits(repo string) (FixedCommits []string) {
 	for _, av := range vi.AffectedCommits {
 		if av.Repo == repo && av.Fixed != "" {
@@ -103,6 +121,15 @@ func (vi *VersionInfo) FixedCommits(repo string) (FixedCommits []string) {
 		}
 	}
 	return FixedCommits
+}
+
+func (vi *VersionInfo) LastAffectedCommits(repo string) (LastAffectedCommits []string) {
+	for _, av := range vi.AffectedCommits {
+		if av.Repo == repo && av.LastAffected != "" {
+			LastAffectedCommits = append(LastAffectedCommits, av.Fixed)
+		}
+	}
+	return LastAffectedCommits
 }
 
 // Synthetic enum of supported commit types.

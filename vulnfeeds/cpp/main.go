@@ -131,7 +131,7 @@ func InScopeGitRepo(repoURL string) bool {
 // Examines repos and tries to convert versions to commits by treating them as Git tags.
 // Takes a CVE ID string (for logging), cves.VersionInfo with AffectedVersions and
 // typically no AffectedCommits and attempts to add AffectedCommits (including Fixed commits) where there aren't any.
-func GitVersionsToCommits(CVE string, versions cves.VersionInfo, repos []string, cache git.RepoTagsCache) (v cves.VersionInfo, e error) {
+func GitVersionsToCommits(CVE cves.CVEID, versions cves.VersionInfo, repos []string, cache git.RepoTagsCache) (v cves.VersionInfo, e error) {
 	// versions is a VersionInfo with AffectedVersions and typically no AffectedCommits
 	// v is a VersionInfo with AffectedCommits (containing Fixed commits) included
 	v = versions
@@ -153,7 +153,8 @@ func GitVersionsToCommits(CVE string, versions cves.VersionInfo, repos []string,
 			}
 			// Only try and convert fixed versions to commits via tags if there aren't any Fixed commits already.
 			// cves.ExtractVersionInfo() opportunistically returns
-			// AffectedCommits (with Fixed commits) when the CVE has appropriate references.
+			// AffectedCommits (with Fixed commits) when the CVE has appropriate references, and assuming these references are indeed
+			// Fixed commits, they're also assumed to be more precise than what may be derived from tag to commit mapping.
 			if v.HasFixedCommits(repo) && av.Fixed != "" {
 				Logger.Infof("[%s]: Using preassumed fixed commits %+v instead of deriving from fixed version %q", CVE, v.FixedCommits(repo), av.Fixed)
 			} else if av.Fixed != "" {
@@ -251,7 +252,7 @@ func CVEToOSV(CVE cves.CVE, repos []string, cache git.RepoTagsCache, directory s
 			return fmt.Errorf("[%s]: No affected ranges for %q, and no repos to try and convert %+v to tags with", CVE.ID, maybeProductName, versions.AffectedVersions)
 		}
 		Logger.Infof("[%s]: Trying to convert version tags %+v to commits using %v", CVE.ID, versions.AffectedVersions, repos)
-		versions, err = GitVersionsToCommits(string(CVE.ID), versions, repos, cache)
+		versions, err = GitVersionsToCommits(CVE.ID, versions, repos, cache)
 		if err != nil {
 			return fmt.Errorf("[%s]: Failed to convert version tags to commits: %#v", CVE.ID, err)
 		}
@@ -264,6 +265,17 @@ func CVEToOSV(CVE cves.CVE, repos []string, cache git.RepoTagsCache, directory s
 
 		if versions.HasFixedVersions() && !hasAnyFixedCommits {
 			return fmt.Errorf("[%s]: Failed to convert fixed version tags to commits: %#v %w", CVE.ID, versions, ErrUnresolvedFix)
+		}
+
+		hasAnyLastAffectedCommits := false
+		for _, repo := range repos {
+			if versions.HasLastAffectedCommits(repo) {
+				hasAnyLastAffectedCommits = true
+			}
+		}
+
+		if versions.HasLastAffectedVersions() && !hasAnyLastAffectedCommits {
+			return fmt.Errorf("[%s]: Failed to convert last_affected version tags to commits: %#v %w", CVE.ID, versions, ErrUnresolvedFix)
 		}
 	}
 
@@ -306,7 +318,6 @@ func CVEToOSV(CVE cves.CVE, repos []string, cache git.RepoTagsCache, directory s
 
 // Takes an NVD CVE record and outputs a PackageInfo struct in a file in the specified directory.
 func CVEToPackageInfo(CVE cves.CVE, repos []string, cache git.RepoTagsCache, directory string) error {
-	CVEID := string(CVE.ID) // For brevity.
 	CPEs := cves.CPEs(CVE)
 	// The vendor name and product name are used to construct the output `vulnDir` below, so need to be set to *something* to keep the output tidy.
 	maybeVendorName := "ENOCPE"
@@ -317,7 +328,7 @@ func CVEToPackageInfo(CVE cves.CVE, repos []string, cache git.RepoTagsCache, dir
 		maybeVendorName = CPE.Vendor
 		maybeProductName = CPE.Product
 		if err != nil {
-			return fmt.Errorf("[%s]: Can't generate an OSV record without valid CPE data", CVEID)
+			return fmt.Errorf("[%s]: Can't generate an OSV record without valid CPE data", CVE.ID)
 		}
 	}
 
@@ -328,12 +339,12 @@ func CVEToPackageInfo(CVE cves.CVE, repos []string, cache git.RepoTagsCache, dir
 		var err error
 		// There are some AffectedVersions to try and resolve to AffectedCommits.
 		if len(repos) == 0 {
-			return fmt.Errorf("[%s]: No affected ranges for %q, and no repos to try and convert %+v to tags with", CVEID, maybeProductName, versions.AffectedVersions)
+			return fmt.Errorf("[%s]: No affected ranges for %q, and no repos to try and convert %+v to tags with", CVE.ID, maybeProductName, versions.AffectedVersions)
 		}
-		Logger.Infof("[%s]: Trying to convert version tags %+v to commits using %v", CVEID, versions.AffectedVersions, repos)
-		versions, err = GitVersionsToCommits(CVEID, versions, repos, cache)
+		Logger.Infof("[%s]: Trying to convert version tags %+v to commits using %v", CVE.ID, versions.AffectedVersions, repos)
+		versions, err = GitVersionsToCommits(CVE.ID, versions, repos, cache)
 		if err != nil {
-			return fmt.Errorf("[%s]: Failed to convert version tags to commits: %#v", CVEID, err)
+			return fmt.Errorf("[%s]: Failed to convert version tags to commits: %#v", CVE.ID, err)
 		}
 	}
 
@@ -344,12 +355,23 @@ func CVEToPackageInfo(CVE cves.CVE, repos []string, cache git.RepoTagsCache, dir
 		}
 	}
 
+	hasAnyLastAffectedCommits := false
+	for _, repo := range repos {
+		if versions.HasLastAffectedCommits(repo) {
+			hasAnyLastAffectedCommits = true
+		}
+	}
+
 	if versions.HasFixedVersions() && !hasAnyFixedCommits {
-		return fmt.Errorf("[%s]: Failed to convert fixed version tags to commits: %#v %w", CVEID, versions, ErrUnresolvedFix)
+		return fmt.Errorf("[%s]: Failed to convert fixed version tags to commits: %#v %w", CVE.ID, versions, ErrUnresolvedFix)
+	}
+
+	if versions.HasLastAffectedVersions() && !hasAnyLastAffectedCommits {
+		return fmt.Errorf("[%s]: Failed to convert last_affected version tags to commits: %#v %w", CVE.ID, versions, ErrUnresolvedFix)
 	}
 
 	if len(versions.AffectedCommits) == 0 {
-		return fmt.Errorf("[%s]: No affected commit ranges determined for %q %w", CVEID, maybeProductName, ErrNoRanges)
+		return fmt.Errorf("[%s]: No affected commit ranges determined for %q %w", CVE.ID, maybeProductName, ErrNoRanges)
 	}
 
 	versions.AffectedVersions = nil // these have served their purpose and are not required in the resulting output.
@@ -365,8 +387,8 @@ func CVEToPackageInfo(CVE cves.CVE, repos []string, cache git.RepoTagsCache, dir
 		return fmt.Errorf("failed to create dir: %v", err)
 	}
 
-	outputFile := filepath.Join(vulnDir, CVEID+".nvd"+extension)
-	notesFile := filepath.Join(vulnDir, CVEID+".nvd.notes")
+	outputFile := filepath.Join(vulnDir, string(CVE.ID)+".nvd"+extension)
+	notesFile := filepath.Join(vulnDir, string(CVE.ID)+".nvd.notes")
 	f, err := os.Create(outputFile)
 	if err != nil {
 		Logger.Warnf("Failed to open %s for writing: %v", outputFile, err)
@@ -383,12 +405,12 @@ func CVEToPackageInfo(CVE cves.CVE, repos []string, cache git.RepoTagsCache, dir
 		return fmt.Errorf("failed to encode PackageInfo to %s: %v", outputFile, err)
 	}
 
-	Logger.Infof("[%s]: Generated PackageInfo record for %q", CVEID, maybeProductName)
+	Logger.Infof("[%s]: Generated PackageInfo record for %q", CVE.ID, maybeProductName)
 
 	if len(notes) > 0 {
 		err = os.WriteFile(notesFile, []byte(strings.Join(notes, "\n")), 0660)
 		if err != nil {
-			Logger.Warnf("[%s]: Failed to write %s: %v", CVEID, notesFile, err)
+			Logger.Warnf("[%s]: Failed to write %s: %v", CVE.ID, notesFile, err)
 		}
 	}
 

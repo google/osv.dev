@@ -54,7 +54,7 @@ func main() {
 // Pages are offset based, this assumes the default (and maximum) page size of PageSize
 // Maintaining the recommended 6 seconds betweens calls is left to the caller.
 // See https://nvd.nist.gov/developers/vulnerabilities
-func downloadCVE2WithOffset(APIKey string, offset int) (page *cves.NVDCVE2, err error) {
+func downloadCVE2WithOffset(APIKey string, offset int) (page *cves.CVEAPIJSON20Schema, err error) {
 	client := &http.Client{}
 	APIURL, err := url.Parse(NVDAPIEndpoint)
 	if err != nil {
@@ -103,7 +103,7 @@ func downloadCVE2WithOffset(APIKey string, offset int) (page *cves.NVDCVE2, err 
 		Logger.Warnf("Unable to retrieve %q: %v", APIURL, err)
 		return page, fmt.Errorf("unable to retrieve %q: %v", APIURL, err)
 	}
-	Logger.Infof("Retrieved offset %d of %d total results", *page.StartIndex, *page.TotalResults)
+	Logger.Infof("Retrieved offset %d of %d total results", page.StartIndex, page.TotalResults)
 	return page, nil
 }
 
@@ -115,8 +115,8 @@ func downloadCVE2(APIKey string, CVEPath string) {
 		Logger.Fatalf("Something went wrong when creating/opening file: %+v", err)
 	}
 	defer file.Close()
-	var vulnerabilities []json.RawMessage
-	page := &cves.NVDCVE2{}
+	var vulnerabilities []cves.Vulnerability
+	page := &cves.CVEAPIJSON20Schema{}
 	offset := 0
 	for {
 		page, err = downloadCVE2WithOffset(APIKey, offset)
@@ -125,14 +125,14 @@ func downloadCVE2(APIKey string, CVEPath string) {
 		}
 		vulnerabilities = append(vulnerabilities, page.Vulnerabilities...)
 		offset += PageSize
-		if offset > *page.TotalResults {
+		if offset > page.TotalResults {
 			break
 		}
 		time.Sleep(6 * time.Second)
 	}
 	// Make this look like one giant page of results from the API call
 	page.Vulnerabilities = vulnerabilities
-	*page.StartIndex = 0
+	page.StartIndex = 0
 	page.ResultsPerPage = page.TotalResults
 	err = page.ToJSON(file)
 	if err != nil {

@@ -36,6 +36,7 @@ from grpc_health.v1 import health_pb2
 from grpc_health.v1 import health_pb2_grpc
 from grpc_reflection.v1alpha import reflection
 from packageurl import PackageURL
+from packaging.utils import canonicalize_version
 
 import osv
 from osv import ecosystems
@@ -797,11 +798,34 @@ def _query_by_generic_version(
   if results:
     return results, cursor
 
+  temp_version = version
   # Try again after normalizing.
   version = osv.normalize_tag(version)
   query = base_query.filter(osv.Bug.affected_fuzzy == version)
   it = query.iter(start_cursor=context.page_token)
+  while (yield it.has_next_async()):
+    if len(results) >= context.total_responses.page_limit():
+      cursor = it.cursor_after()
+      break
 
+    bug = it.next()
+    if _is_version_affected(
+        bug.affected_packages,
+        project,
+        ecosystem,
+        purl,
+        version,
+        normalize=True):
+      results.append(bug)
+      context.total_responses.add(1)
+
+  if results:
+    return results, cursor
+  
+  # Try again after canonicalizing + normalizing.
+  version = canonicalize_version(temp_version)
+  query = base_query.filter(osv.Bug.affected_fuzzy == version)
+  it = query.iter(start_cursor=context.page_token)
   while (yield it.has_next_async()):
     if len(results) >= context.total_responses.page_limit():
       cursor = it.cursor_after()

@@ -221,6 +221,16 @@ steps:
   args: ['push', '--all-tags', 'gcr.io/oss-vdb-test/osv-website']
   waitFor: ['build-website', 'cloud-build-queue']
 
+# Build/push NVD mirror image
+- name: gcr.io/cloud-builders/docker
+  args: ['build', '-t', 'gcr.io/oss-vdb/nvd-mirror:latest', '-t', 'gcr.io/oss-vdb/nvd-mirror:$COMMIT_SHA', '-f', 'cmd/download-cves/Dockerfile','.']
+  dir: 'vulnfeeds'
+  id: 'build-nvd-mirror'
+  waitFor: ['setup']
+- name: gcr.io/cloud-builders/docker
+  args: ['push', '--all-tags', 'gcr.io/oss-vdb/nvd-mirror']
+  waitFor: ['build-nvd-mirror', 'cloud-build-queue']
+
 # Apply Terraform config to staging environment
 # TODO(michaelkedar): regenerate the api protobufs?
 - name: gcr.io/oss-vdb/terraform
@@ -255,7 +265,8 @@ steps:
      alpine-cve-convert=gcr.io/oss-vdb/alpine-cve-convert:$COMMIT_SHA,\
      debian-copyright-mirror=gcr.io/oss-vdb/debian-copyright-mirror:$COMMIT_SHA,\
      cpe-repo-gen=gcr.io/oss-vdb/cpe-repo-gen:$COMMIT_SHA,\
-     nvd-cve-osv=gcr.io/oss-vdb/nvd-cve-osv:$COMMIT_SHA"
+     nvd-cve-osv=gcr.io/oss-vdb/nvd-cve-osv:$COMMIT_SHA,\
+     nvd-mirror=gcr.io/oss-vdb/nvd-mirror:$COMMIT_SHA"
   ]
   dir: deployment/clouddeploy/gke-workers
 
@@ -308,3 +319,4 @@ images:
 - 'gcr.io/oss-vdb/debian-copyright-mirror:$COMMIT_SHA'
 - 'gcr.io/oss-vdb/cpe-repo-gen:$COMMIT_SHA'
 - 'gcr.io/oss-vdb/nvd-cve-osv:$COMMIT_SHA'
+- 'gcr.io/oss-vdb/nvd-mirror:$COMMIT_SHA'

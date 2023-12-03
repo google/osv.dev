@@ -22,16 +22,13 @@ COPY ./go.sum /src/go.sum
 RUN go mod download
 
 COPY ./ /src/
-RUN go build -o combine-to-osv ./cmd/combine-to-osv/
 RUN go build -o download-cves ./cmd/download-cves/
-
 
 FROM gcr.io/google.com/cloudsdktool/google-cloud-cli:alpine
 RUN apk --no-cache add jq
 
-WORKDIR /root/
-COPY --from=GO_BUILD /src/combine-to-osv ./
+WORKDIR /usr/local/bin
 COPY --from=GO_BUILD /src/download-cves ./
-COPY ./cmd/combine-to-osv/run_combine_to_osv_convert.sh ./
+COPY ./cmd/download-cves/mirror_nvd ./
 
-ENTRYPOINT ["/root/run_combine_to_osv_convert.sh"]
+ENTRYPOINT ["/usr/local/bin/mirror_nvd"]

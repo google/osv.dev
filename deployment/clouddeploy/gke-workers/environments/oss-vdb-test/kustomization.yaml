@@ -13,4 +13,5 @@ patches:
 - path: debian-copyright-mirror.yaml
 - path: gen-cperepos-map.yaml
 - path: nvd-cve-osv.yaml
+- path: nvd-mirror.yaml
 - path: alias-computation.yaml

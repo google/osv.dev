@@ -16,8 +16,11 @@
 
 import os
 import sys
+from google.cloud import ndb
 from google.cloud.datastore_admin_v1.services.datastore_admin import client \
     as ds_admin
+
+import osv
 
 
 def main():
@@ -32,4 +35,7 @@ def main():
 
 
 if __name__ == '__main__':
-  sys.exit(main())
+  _ndb_client = ndb.Client()
+  osv.logs.setup_gcp_logging('backup')
+  with _ndb_client.context():
+    sys.exit(main())

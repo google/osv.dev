@@ -821,7 +821,7 @@ def _query_by_generic_version(
 
   if results:
     return results, cursor
-  
+
   # Try again after canonicalizing + normalizing.
   version = canonicalize_version(temp_version)
   query = base_query.filter(osv.Bug.affected_fuzzy == version)

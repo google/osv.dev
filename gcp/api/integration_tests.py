@@ -568,7 +568,7 @@ class IntegrationTests(unittest.TestCase,
 
     self.assert_results_equal(expected.json(), response.json())
 
-    expected= requests.post(
+    expected = requests.post(
         _api() + _BASE_QUERY,
         data=json.dumps({'package': {
             'purl': 'pkg:pypi/django@4.2',

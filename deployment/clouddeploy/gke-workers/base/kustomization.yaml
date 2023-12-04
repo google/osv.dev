@@ -12,3 +12,4 @@ resources:
 - nvd-cve-osv.yaml
 - alias-computation.yaml
 - nvd-mirror.yaml
+- backup.yaml

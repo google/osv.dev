@@ -811,14 +811,9 @@ def _query_by_generic_version(
 
 
 @ndb.tasklet
-def query_by_generic_helper(results: list,
-                            cursor,
-                            context: QueryContext,
-                            base_query: ndb.Query,
-                            project: str,
-                            ecosystem: str,
-                            purl: PackageURL | None,
-                            version: str,
+def query_by_generic_helper(results: list, cursor, context: QueryContext,
+                            base_query: ndb.Query, project: str, ecosystem: str,
+                            purl: PackageURL | None, version: str,
                             is_normalized):
   """Helper function for query_by_generic."""
   query: ndb.Query = base_query.filter(osv.Bug.affected_fuzzy == version)

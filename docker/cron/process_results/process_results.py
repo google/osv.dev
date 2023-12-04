@@ -22,6 +22,7 @@ from google.cloud import ndb
 from google.cloud import pubsub_v1
 
 import osv
+import osv.logs
 
 _TASKS_TOPIC = 'projects/{project}/topics/{topic}'.format(
     project=os.environ['GOOGLE_CLOUD_PROJECT'], topic='tasks')

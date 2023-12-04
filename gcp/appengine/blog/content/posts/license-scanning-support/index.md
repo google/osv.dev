@@ -7,7 +7,7 @@ author: Josie Anugerah
 
 [OSV-Scanner’s](https://google.github.io/osv-scanner/) primary goal is to help developers match project dependencies to known vulnerabilities. But vulnerability information is not the only metric used to determine packages (and versions) to include in a project. Understanding which licenses your dependencies use can help you decide whether to include a particular package in your project. [Packages can](https://thenewstack.io/hashicorp-abandons-open-source-for-business-source-license/) [also be relicensed](https://www.zdnet.com/article/elastic-changes-open-source-license-to-monetize-cloud-service-use/), which means that license checking is important not only at ingestion, but as part of long-term dependency maintenance and management.
 
-Today we are introducing [OSV-Scanner license compliance scanning](https://google.github.io/osv-scanner/usage/#license-scanning). 
+Today we are introducing [OSV-Scanner license compliance scanning](https://google.github.io/osv-scanner/experimental/#license-scanning). 
 
 With this new, experimental flag in OSV-Scanner, you can now view the license composition of the packages in your project and filter for packages license violations based on a user-provided set of allowable licenses. The license data comes from the [deps.dev](http://deps.dev) API.
 

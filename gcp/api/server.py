@@ -781,15 +781,16 @@ def _query_by_generic_version(
   # Try without normalizing.
   results, cursor = yield query_by_generic_helper(results, cursor, context,
                                                   base_query, project,
-                                                  ecosystem, purl, version)
+                                                  ecosystem, purl, version,
+                                                  False)
 
   if results:
     return results, cursor
 
-    # page_token can be the token for this query, or the token for the one
-    # below. If the token is used for the normalized query below, this query
-    # must have returned no results, so will still return no results, fall
-    # through to the query below again.
+  # page_token can be the token for this query, or the token for the one
+  # below. If the token is used for the normalized query below, this query
+  # must have returned no results, so will still return no results, fall
+  # through to the query below again.
   # Try again after normalizing.
   results, cursor = yield query_by_generic_helper(results, cursor, context,
                                                   base_query, project,
@@ -810,7 +811,7 @@ def _query_by_generic_version(
 
 
 @ndb.tasklet
-def query_by_generic_helper(results,
+def query_by_generic_helper(results: list,
                             cursor,
                             context: QueryContext,
                             base_query: ndb.Query,
@@ -818,7 +819,7 @@ def query_by_generic_helper(results,
                             ecosystem: str,
                             purl: PackageURL | None,
                             version: str,
-                            is_normalized=False):
+                            is_normalized):
   """Helper function for query_by_generic."""
   query: ndb.Query = base_query.filter(osv.Bug.affected_fuzzy == version)
   it: ndb.QueryIterator = query.iter(start_cursor=context.page_token)

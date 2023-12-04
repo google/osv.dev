@@ -536,18 +536,29 @@ class IntegrationTests(unittest.TestCase,
 
   def test_query_purl_with_version_trailing_zeroes(self):
     """Test purl with trailing zeroes in version."""
-    expected_1 = [self._get('GHSA-jfhm-5ghh-2f97')]
+    expected = requests.post(
+        _api() + _BASE_QUERY,
+        data=json.dumps({'package': {
+            'purl': 'pkg:pypi/cryptography@3.1',
+        }}),
+        timeout=_TIMEOUT)
 
     response = requests.post(
         _api() + _BASE_QUERY,
         data=json.dumps({'package': {
-            'purl': 'pkg:pypi/cryptography@38.0.0',
+            'purl': 'pkg:pypi/cryptography@3.1.0',
         }}),
         timeout=_TIMEOUT)
 
-    self.assert_results_equal({'vulns': expected_1}, response.json())
+    self.assert_results_equal(expected.json(), response.json())
 
-    expected_2 = [self._get('GHSA-j7hp-h8jx-5ppr')]
+    expected = requests.post(
+        _api() + _BASE_QUERY,
+        data=json.dumps({'package': {
+            'purl': 'pkg:nuget/SkiaSharp@2.80.3',
+        }}),
+        timeout=_TIMEOUT)
+
     response = requests.post(
         _api() + _BASE_QUERY,
         data=json.dumps({'package': {
@@ -555,9 +566,14 @@ class IntegrationTests(unittest.TestCase,
         }}),
         timeout=_TIMEOUT)
 
-    self.assert_results_equal({'vulns': expected_2}, response.json())
+    self.assert_results_equal(expected.json(), response.json())
 
-    expected_3 = [self._get('GHSA-7h4p-27mh-hmrw')]
+    expected= requests.post(
+        _api() + _BASE_QUERY,
+        data=json.dumps({'package': {
+            'purl': 'pkg:pypi/django@4.2',
+        }}),
+        timeout=_TIMEOUT)
     response = requests.post(
         _api() + _BASE_QUERY,
         data=json.dumps({'package': {
@@ -565,7 +581,7 @@ class IntegrationTests(unittest.TestCase,
         }}),
         timeout=_TIMEOUT)
 
-    self.assert_results_equal({'vulns': expected_3}, response.json())
+    self.assert_results_equal(expected.json(), response.json())
 
   def test_query_with_redundant_ecosystem(self):
     """Test purl with redundant ecosystem raises error"""

@@ -11,6 +11,6 @@ spec:
           - name: cron
             env:
             - name: GOOGLE_CLOUD_PROJECT
-              value: "oss-vdb-test"
+              value: "oss-vdb"
             - name: BACKUP_BUCKET
-              value: "osv-test-backup"
+              value: "osv-backup"

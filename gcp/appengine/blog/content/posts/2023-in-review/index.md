@@ -1,7 +1,7 @@
 ---
 title: "The Year in Review"
 date: 2023-12-11T17:00:00Z
-draft: true
+draft: false
 author: The OSV Team
 ---
 2023 has been a *very* eventful year for OSV.

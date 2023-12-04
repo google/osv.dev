@@ -31,7 +31,7 @@ Our commit level vulnerability information paired with the [experimental determi
 
 Behind the scenes, we've optimized OSV.dev's API for performance and reliability, to ensure we maintain our [recently defined](https://osv.dev/blog/posts/announcing-osv-service-level-objectives/) [Service Level Objectives](https://google.github.io/osv.dev/faq/#what-are-osvs-service-level-objectives-slos).
 
-We saw peaks in API usage of over 250 QPS in November.
+We saw peaks in API usage of over 300 QPS in November.
 
 ![Image shows the GitHub star history for all OSV-related GitHub repositories taken at November 17, 2023. osv-schema has approximately 150 stars, osv.dev has approximately 1,300 stars, and osv-scanner has approximately 5,400 stars.](star-history-20231117.png "GitHub star history for all OSV repos, as of 2023/11/17")
 
@@ -43,7 +43,8 @@ to both OSV.dev ([23 total contributors](https://github.com/google/osv.dev/graph
 We also gave an [update on OSV at the OpenSSF Day Europe](https://www.youtube.com/watch?v=WvMXsm_BEf4), in Bilbao, Spain in September.
 
 ## Tooling
-Since OSV-Scanner's launch [one year ago](https://security.googleblog.com/2022/12/announcing-osv-scanner-vulnerability.html), it has grown to account for at least TBD% of OSV.dev's API traffic and now includes the following features:
+Since OSV-Scanner's launch [one year ago](https://security.googleblog.com/2022/12/announcing-osv-scanner-vulnerability.html), we've added
+several significant new features. 
 
 * [Reachability analysis](https://google.github.io/osv-scanner/experimental/#scanning-with-call-analysis) to reduce false positives
   * [GoVulnCheck] integration to enable reachability analysis of Go vulnerabilities
@@ -61,14 +62,15 @@ Since OSV-Scanner's launch [one year ago](https://security.googleblog.com/2022/1
 
 ## More to come in 2024
 
-The team is looking forward to much more to come in 2024 and the OSV schema and OSV.dev’s third birthday in February, and OSV-Scanner’s first birthday in December. 
+The team is looking forward to much more to come in 2024 and the OSV Schema and OSV.dev’s third birthday in February, and OSV-Scanner’s first birthday in December. 
 
-We have a lot more exciting work planned in 2024, that we’ll share more details soon. Our main priorities for 2024 are centered around improving data quality and supporting efficient vulnerability remediation.
+We have a lot more exciting work planned in 2024, that we’ll share more details soon. Our main priorities for 2024 are centered around improving data quality and providing
+accurate and actionable results that lead to easy remediation.
 
 We will support these priorities in the following ways:
 
 ### 1. Building validation and feedback mechanisms for OSV sources to ensure high data quality
-As OSV schema adoption grows, it’s become even more important to ensure consistency and high data quality across all data sources. We plan to provide better validation tools, and build feedback channels to  make it easier for OSV data sources to ensure high quality of data.
+As OSV Schema adoption grows, it’s become even more important to ensure consistency and high data quality across all data sources. We plan to provide better validation tools, and build feedback channels to  make it easier for OSV data sources to ensure high quality of data.
 
 ### 2. Ensuring accurate and comprehensive scanning
 A continuing focus for OSV-Scanner is making sure that our scanning is comprehensive and accurate. Accuracy is especially important for us, as one of our core goals is to minimize false positives and vulnerability noise for developers at the receiving end of the scanners.
@@ -79,7 +81,7 @@ OSV-Scanner has so far focused on source repository scanning. One important gap 
 ### 4. Releasing remediation tools 
 Developers are often faced with an overwhelming number of vulnerabilities reported against their dependencies. We are currently building tooling to enable developers to both interactively and automatically prioritize and fix the vulnerabilities that matter in an easy way.
 
-Here’s a quick preview of what we have been working on: 
+Here’s a [quick preview](https://github.com/google/osv-scanner/issues/352#issuecomment-1820008675) of what we have been working on: 
 
 ![A sneak preview of the current UX of the guided remediation tooling under development. The screenshot shows a number of options the user can take to remediate vulnerabilities.](guided_remediation1.png "A screenshot of the guided remediation tooling under development")
 ![A sneak preview of the current UX of the guided remediation tooling under development. This screen shot shows a summary of the vulnerabilities and a proposed action.](guided_remediation2.png "A screenshot of the guided remediation tooling under development")

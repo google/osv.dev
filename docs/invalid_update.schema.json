@@ -1,0 +1,46 @@
+{
+    "$schema": "https://json-schema.org/draft/2019-09/schema",
+    "$id": "http://osv.dev/import_status.schema.json",
+    "type": "object",
+    "default": {},
+    "title": "OSV.dev import status",
+    "description": "A schema for describing an OSV.dev import failure of an OSV record.",
+    "required": [
+        "invalid_records"
+    ],
+    "properties": {
+        "invalid_records": {
+            "type": "array",
+            "default": [],
+            "title": "An array of invalid OSV record objects.",
+            "items": {
+                "type": "object",
+                "title": "An OSV ID and the reason it is considered invalid.",
+                "required": [
+                    "id",
+                    "reason"
+                ],
+                "properties": {
+                    "id": {
+                        "type": "string",
+                        "title": "The OSV record ID that is considered invalid"
+                    },
+                    "reason": {
+                        "enum": ["INVALID_JSON", "DELETED", "INVALID_PACKAGE", "INVALID_VERSION"],
+                        "title": "The reason the record ID is considered invalid"
+                    }
+                }
+            }
+        }
+    },
+    "examples": [{
+        "invalid_records": [{
+            "id": "GSD-2021-1001229",
+            "reason": "INVALID_JSON"
+        },
+        {
+            "id": "GSD-2022-1003535",
+            "reason": "DELETED"
+        }]
+    }]
+}

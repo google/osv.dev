@@ -1,6 +1,6 @@
 ---
 title: "License scanning support"
-date: 2023-12-06T01:00:00Z
+date: 2023-12-05T01:00:00Z
 draft: false
 author: Josie Anugerah
 ---

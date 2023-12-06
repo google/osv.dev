@@ -13,19 +13,26 @@ With this new, experimental flag in OSV-Scanner, you can now view the license co
 
 ## Using the tool
 
-The experimental license scanner is run using the following command: `osv-scanner –experimental-licenses-summary path/to/directory`.
+The experimental license scanner is run using the following command:
+```
+osv-scanner --experimental-licenses-summary path/to/directory`
+```
 
 OSV-Scanner will print out a table with a package version count for each license. This is helpful to get an overview of what kinds of licenses are in your dependencies. 
 
 ![This image shows the terminal output from running OSV-Scanner in summary mode](licenses_summary.png "OSV-Scanner license scanning in summary mode")
 
-You can specify allowed licenses using: `osv-scanner –experimental-licenses='<comma-separated list of allowed spdx licenses>' path/to/directory`. When specifying allowed licenses, OSV-Scanner will show a more detailed view of each package that has a license outside of the allowed license set.
+You can specify allowed licenses through the `--experimental-licenses` flag.
+```
+osv-scanner --experimental-licenses='<comma-separated list of allowed spdx licenses>' path/to/directory
+```
+ When specifying allowed licenses, OSV-Scanner will show a more detailed view of each package that has a license outside of the allowed license set.
 
 ![This image shows the terminal output from running OSV-Scanner with an allowlist.](licenses_allowlist.png "OSV-Scanner license scanning with a provided allowlist")
 
 ## Deps.dev
 
-The license data for this feature is sourced from the deps.dev API. Deps.dev computes and collects metadata and insights into millions of open source packages and exposes this data through a [website](https://deps.dev/), a free [API](https://docs.deps.dev/api/v3alpha/), and a [BigQuery dataset](https://docs.deps.dev/bigquery/).
+The license data for this feature is sourced from the deps.dev API. Deps.dev computes and collects metadata and insights into millions of open source packages and exposes this data through a [website](https://deps.dev/), a free [API](https://docs.deps.dev/api/), and a [BigQuery dataset](https://docs.deps.dev/bigquery/).
 
 Deps.dev reads Cargo, Maven, npm, NuGet and PyPI licenses from the package metadata. For Go, licenses are determined by deps.dev using the [licensecheck package](https://github.com/google/licensecheck). For more information on where deps.dev gets this data from, see our [license FAQ](https://docs.deps.dev/faq/#how-are-licenses-determined).
 

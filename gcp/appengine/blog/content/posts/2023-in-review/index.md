@@ -58,7 +58,7 @@ several significant new features.
   * ConanCenter
 * An experimental [offline mode](https://google.github.io/osv-scanner/experimental/#offline-mode)
 * An experimental [GitHub Action](https://google.github.io/osv-scanner/github-action/) (including SARIF output support)
-* An experimental license scanning feature.
+* An experimental [license scanning feature](https://osv.dev/blog/posts/introducing-license-scanning-with-osv-scanner/)
 
 ## More to come in 2024
 

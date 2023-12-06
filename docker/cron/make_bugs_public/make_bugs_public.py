@@ -21,6 +21,7 @@ import requests
 
 import monorail
 import osv
+import osv.logs
 
 _MONORAIL_ACCOUNT = 'service@oss-vdb.iam.gserviceaccount.com'
 

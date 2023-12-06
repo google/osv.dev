@@ -14,7 +14,7 @@ With this new, experimental flag in OSV-Scanner, you can now view the license co
 ## Using the tool
 
 The experimental license scanner is run using the following command:
-```bash
+```console
 osv-scanner --experimental-licenses-summary path/to/directory
 ```
 
@@ -23,8 +23,10 @@ OSV-Scanner will print out a table with a package version count for each license
 ![This image shows the terminal output from running OSV-Scanner in summary mode](licenses_summary.png "OSV-Scanner license scanning in summary mode")
 
 You can specify allowed licenses through the `--experimental-licenses` flag.
-```bash
-osv-scanner --experimental-licenses='<comma-separated list of allowed spdx licenses>' path/to/directory
+```console
+osv-scanner \
+  --experimental-licenses='<comma-separated list of allowed spdx licenses>' \
+  path/to/directory
 ```
  When specifying allowed licenses, OSV-Scanner will show a more detailed view of each package that has a license outside of the allowed license set.
 

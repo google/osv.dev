@@ -31,6 +31,8 @@ Our commit level vulnerability information paired with the [experimental determi
 
 Behind the scenes, we've optimized OSV.dev's API for performance and reliability, to ensure we maintain our [recently defined](https://osv.dev/blog/posts/announcing-osv-service-level-objectives/) [Service Level Objectives](https://google.github.io/osv.dev/faq/#what-are-osvs-service-level-objectives-slos).
 
+We've also made changes to make our API easier to use, such as returning the transitive closure of [`aliases`](https://ossf.github.io/osv-schema/#aliases-field) to make it easier for users to deduplicate OSV entries across different databases.
+
 We saw peaks in API usage of over 300 QPS in November.
 
 ![Image shows the GitHub star history for all OSV-related GitHub repositories taken at November 17, 2023. osv-schema has approximately 150 stars, osv.dev has approximately 1,300 stars, and osv-scanner has approximately 5,400 stars.](star-history-20231117.png "GitHub star history for all OSV repos, as of 2023/11/17")
@@ -47,11 +49,11 @@ Since OSV-Scanner's launch [one year ago](https://security.googleblog.com/2022/1
 several significant new features. 
 
 * [Reachability analysis](https://google.github.io/osv-scanner/experimental/#scanning-with-call-analysis) to reduce false positives
-  * [GoVulnCheck] integration to enable reachability analysis of Go vulnerabilities
-  * Experimental Rust call analysis to enable reachability analysis of Rust vulnerabilities
+  * [Govulncheck](https://pkg.go.dev/golang.org/x/vuln/cmd/govulncheck) integration to enable reachability analysis of Go vulnerabilities
+  * [Experimental Rust call analysis](https://google.github.io/osv-scanner/usage/#call-analysis-in-rust) to enable reachability analysis of Rust vulnerabilities
 * Comprehensive [C/C++ vulnerability management support](https://osv.dev/blog/posts/introducing-broad-c-c++-support/)
   * Git submodule scanning
-  * Vendored dependency detection
+  * [Vendored dependency detection](https://osv.dev/blog/posts/using-the-determineversion-api/)
 * Improved ecosystem and scanning format support
   * Improved SBOM support
   * NuGet

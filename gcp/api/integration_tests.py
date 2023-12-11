@@ -32,6 +32,7 @@ _PORT = 8080
 _TIMEOUT = 10  # Timeout for HTTP(S) requests
 _LONG_TESTS = os.getenv('LONG_TESTS')
 _TEST_DATA_DIR = 'fixtures'
+_BASE_QUERY = '/v1/query'
 
 
 def _api():
@@ -195,7 +196,7 @@ class IntegrationTests(unittest.TestCase,
   def test_query_commit(self):
     """Test querying by commit."""
     response = requests.post(
-        _api() + '/v1/query',
+        _api() + _BASE_QUERY,
         data=json.dumps({
             'commit': '60e572dbf7b4ded66b488f54773f66aaf6184321',
         }),
@@ -205,7 +206,7 @@ class IntegrationTests(unittest.TestCase,
   def test_query_version(self):
     """Test querying by version."""
     response = requests.post(
-        _api() + '/v1/query',
+        _api() + _BASE_QUERY,
         data=json.dumps({
             'version': '2.1.2-rc',
             'package': {
@@ -217,7 +218,7 @@ class IntegrationTests(unittest.TestCase,
     self.assert_results_equal({'vulns': [self._VULN_744]}, response.json())
 
     response = requests.post(
-        _api() + '/v1/query',
+        _api() + _BASE_QUERY,
         data=json.dumps({
             'version': '2.1.2-rc',
             'package': {
@@ -236,7 +237,7 @@ class IntegrationTests(unittest.TestCase,
     dsa_2665_1 = self._get('DSA-710-1')
 
     response = requests.post(
-        _api() + '/v1/query',
+        _api() + _BASE_QUERY,
         data=json.dumps({
             'version': '1.0.2-1',
             'package': {
@@ -248,7 +249,7 @@ class IntegrationTests(unittest.TestCase,
     self.assert_results_equal({'vulns': [dsa_2665_1]}, response.json())
 
     response = requests.post(
-        _api() + '/v1/query',
+        _api() + _BASE_QUERY,
         data=json.dumps({
             'version': '1.0.2-1',
             'package': {
@@ -262,7 +263,7 @@ class IntegrationTests(unittest.TestCase,
     # The vulnerbility does not exist in 4.0 release, so this should return
     # with nothing
     response = requests.post(
-        _api() + '/v1/query',
+        _api() + _BASE_QUERY,
         data=json.dumps({
             'version': '1.0.2-1',
             'package': {
@@ -274,7 +275,7 @@ class IntegrationTests(unittest.TestCase,
     self.assert_results_equal({}, response.json())
 
     response = requests.post(
-        _api() + '/v1/query',
+        _api() + _BASE_QUERY,
         data=json.dumps({
             'version': '1.0.2-1',
             'package': {
@@ -307,7 +308,7 @@ class IntegrationTests(unittest.TestCase,
     # Test that a SemVer (believed to be vulnerable) version and an ecosystem
     # returns expected vulnerabilities.
     response = requests.post(
-        _api() + '/v1/query',
+        _api() + _BASE_QUERY,
         data=json.dumps({
             'version': '1.1.4',
             'package': {
@@ -322,7 +323,7 @@ class IntegrationTests(unittest.TestCase,
     # ecosystem returns expected vulnerabilities to test the fallback logic to
     # try semver matching in the case that an ecosystem isn't specified.
     response = requests.post(
-        _api() + '/v1/query',
+        _api() + _BASE_QUERY,
         data=json.dumps({
             'version': '1.1.4',
             'package': {
@@ -336,7 +337,7 @@ class IntegrationTests(unittest.TestCase,
   def test_query_invalid_ecosystem(self):
     """Test a query with an invalid ecosystem fails validation."""
     response = requests.post(
-        _api() + '/v1/query',
+        _api() + _BASE_QUERY,
         data=json.dumps({
             'version': '1.0.0',
             'package': {
@@ -354,7 +355,7 @@ class IntegrationTests(unittest.TestCase,
   def test_query_unknown_purl_invalid_semver(self):
     """Test an unknown purl query with an invalid semver"""
     response = requests.post(
-        _api() + '/v1/query',
+        _api() + _BASE_QUERY,
         data=json.dumps({
             'package': {
                 'purl':
@@ -367,7 +368,7 @@ class IntegrationTests(unittest.TestCase,
     self.assert_results_equal({}, response.json())
 
     response = requests.post(
-        _api() + '/v1/query',
+        _api() + _BASE_QUERY,
         data=json.dumps({
             'package': {
                 'purl':
@@ -388,7 +389,7 @@ class IntegrationTests(unittest.TestCase,
     # ecosystem returns no vulnerabilities.
     # (This version does not exist)
     response = requests.post(
-        _api() + '/v1/query',
+        _api() + _BASE_QUERY,
         data=json.dumps({
             'version': '1.1.1',
             'package': {
@@ -402,7 +403,7 @@ class IntegrationTests(unittest.TestCase,
   def test_query_semver_multiple_package(self):
     """Test query by SemVer (with multiple packages)."""
     response = requests.post(
-        _api() + '/v1/query',
+        _api() + _BASE_QUERY,
         data=json.dumps({
             'version': '2.4.0',
             'package': {
@@ -415,7 +416,7 @@ class IntegrationTests(unittest.TestCase,
     self.assert_results_equal({}, response.json())
 
     response = requests.post(
-        _api() + '/v1/query',
+        _api() + _BASE_QUERY,
         data=json.dumps({
             'version': '2.4.0',
             'package': {
@@ -430,7 +431,7 @@ class IntegrationTests(unittest.TestCase,
                           [vuln['id'] for vuln in response_json['vulns']])
 
     response = requests.post(
-        _api() + '/v1/query',
+        _api() + _BASE_QUERY,
         data=json.dumps({
             'version': '7.1.1',
             'package': {
@@ -453,7 +454,7 @@ class IntegrationTests(unittest.TestCase,
     ]
 
     response = requests.post(
-        _api() + '/v1/query',
+        _api() + _BASE_QUERY,
         data=json.dumps({
             'version': '0.8.6',
             'package': {
@@ -465,7 +466,7 @@ class IntegrationTests(unittest.TestCase,
     self.assert_results_equal({'vulns': expected}, response.json())
 
     response = requests.post(
-        _api() + '/v1/query',
+        _api() + _BASE_QUERY,
         data=json.dumps(
             {'package': {
                 'purl': 'pkg:cargo/crossbeam-utils@0.8.6',
@@ -476,7 +477,7 @@ class IntegrationTests(unittest.TestCase,
 
     another_expected = [self._get('GHSA-j8xg-fqg3-53r7')]
     response = requests.post(
-        _api() + '/v1/query',
+        _api() + _BASE_QUERY,
         data=json.dumps({'package': {
             'purl': 'pkg:npm/word-wrap@1.2.2',
         }}),
@@ -487,7 +488,7 @@ class IntegrationTests(unittest.TestCase,
     expected_deb = [self._get('DLA-3203-1'), self._get('DSA-4921-1')]
 
     response = requests.post(
-        _api() + '/v1/query',
+        _api() + _BASE_QUERY,
         data=json.dumps(
             {'package': {
                 'purl': 'pkg:deb/debian/nginx@1.14.2-2+deb10u3',
@@ -498,7 +499,7 @@ class IntegrationTests(unittest.TestCase,
 
     # Source arch should return the same as above
     response = requests.post(
-        _api() + '/v1/query',
+        _api() + _BASE_QUERY,
         data=json.dumps({
             'package': {
                 'purl': 'pkg:deb/debian/nginx@1.14.2-2+deb10u3?arch=source',
@@ -510,7 +511,7 @@ class IntegrationTests(unittest.TestCase,
 
     # A non source arch should also return the same item
     response = requests.post(
-        _api() + '/v1/query',
+        _api() + _BASE_QUERY,
         data=json.dumps({
             'package': {
                 'purl': 'pkg:deb/debian/nginx@1.14.2-2+deb10u3?arch=x64',
@@ -522,7 +523,7 @@ class IntegrationTests(unittest.TestCase,
 
     # A non arch qualifier should be ignored
     response = requests.post(
-        _api() + '/v1/query',
+        _api() + _BASE_QUERY,
         data=json.dumps({
             'package': {
                 'purl': ('pkg:deb/debian/nginx@1.14.2-2+deb10u3?'
@@ -533,10 +534,59 @@ class IntegrationTests(unittest.TestCase,
 
     self.assert_results_equal({'vulns': expected_deb}, response.json())
 
+  def test_query_purl_with_version_trailing_zeroes(self):
+    """Test purl with trailing zeroes in version."""
+    expected = requests.post(
+        _api() + _BASE_QUERY,
+        data=json.dumps({'package': {
+            'purl': 'pkg:pypi/cryptography@3.1',
+        }}),
+        timeout=_TIMEOUT)
+
+    response = requests.post(
+        _api() + _BASE_QUERY,
+        data=json.dumps({'package': {
+            'purl': 'pkg:pypi/cryptography@3.1.0',
+        }}),
+        timeout=_TIMEOUT)
+
+    self.assert_results_equal(expected.json(), response.json())
+
+    expected = requests.post(
+        _api() + _BASE_QUERY,
+        data=json.dumps({'package': {
+            'purl': 'pkg:nuget/SkiaSharp@2.80.3',
+        }}),
+        timeout=_TIMEOUT)
+
+    response = requests.post(
+        _api() + _BASE_QUERY,
+        data=json.dumps({'package': {
+            'purl': 'pkg:nuget/SkiaSharp@2.80.3.0',
+        }}),
+        timeout=_TIMEOUT)
+
+    self.assert_results_equal(expected.json(), response.json())
+
+    expected = requests.post(
+        _api() + _BASE_QUERY,
+        data=json.dumps({'package': {
+            'purl': 'pkg:pypi/django@4.2',
+        }}),
+        timeout=_TIMEOUT)
+    response = requests.post(
+        _api() + _BASE_QUERY,
+        data=json.dumps({'package': {
+            'purl': 'pkg:pypi/django@4.2.0',
+        }}),
+        timeout=_TIMEOUT)
+
+    self.assert_results_equal(expected.json(), response.json())
+
   def test_query_with_redundant_ecosystem(self):
     """Test purl with redundant ecosystem raises error"""
     response = requests.post(
-        _api() + '/v1/query',
+        _api() + _BASE_QUERY,
         data=json.dumps({
             "package": {
                 "ecosystem": "PyPI",
@@ -553,7 +603,7 @@ class IntegrationTests(unittest.TestCase,
   def test_query_with_redundant_version(self):
     """Test purl with redundant version raises error"""
     response = requests.post(
-        _api() + '/v1/query',
+        _api() + _BASE_QUERY,
         data=json.dumps({
             "version": "0.4.0",
             "package": {
@@ -570,7 +620,7 @@ class IntegrationTests(unittest.TestCase,
   def test_query_with_redundant_package_name(self):
     """Test purl with redundant name raises error"""
     response = requests.post(
-        _api() + '/v1/query',
+        _api() + _BASE_QUERY,
         data=json.dumps(
             {"package": {
                 "name": "mlflow",
@@ -683,7 +733,7 @@ class IntegrationTests(unittest.TestCase,
   def test_query_pagination(self):
     """Test query by package."""
     response = requests.post(
-        _api() + '/v1/query',
+        _api() + _BASE_QUERY,
         data=json.dumps(
             {'package': {
                 'ecosystem': 'PyPI',
@@ -696,7 +746,7 @@ class IntegrationTests(unittest.TestCase,
     self.assertIn('next_page_token', result)
 
     response = requests.post(
-        _api() + '/v1/query',
+        _api() + _BASE_QUERY,
         data=json.dumps({
             'package': {
                 'ecosystem': 'PyPI',
@@ -716,7 +766,7 @@ class IntegrationTests(unittest.TestCase,
   def test_query_package_purl(self):
     """Test query by package (purl)."""
     response = requests.post(
-        _api() + '/v1/query',
+        _api() + _BASE_QUERY,
         data=json.dumps({'package': {
             'purl': 'pkg:pypi/tensorflow',
         }}),
@@ -726,7 +776,7 @@ class IntegrationTests(unittest.TestCase,
     self.assertIn('next_page_token', result)
 
     response = requests.post(
-        _api() + '/v1/query',
+        _api() + _BASE_QUERY,
         data=json.dumps({
             'package': {
                 'purl': 'pkg:pypi/tensorflow',
@@ -799,7 +849,7 @@ class IntegrationTests(unittest.TestCase,
     actual_lines = []
     for query in sorted(list(combined_product)):
       response = requests.post(
-          _api() + '/v1/query', data=query, timeout=_TIMEOUT)
+          _api() + _BASE_QUERY, data=query, timeout=_TIMEOUT)
 
       # No possible queries should cause a server error
       self.assertLess(response.status_code, 500)

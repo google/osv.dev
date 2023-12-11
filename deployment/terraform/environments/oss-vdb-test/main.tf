@@ -8,6 +8,8 @@ module "osv_test" {
   logs_bucket                   = "osv-test-logs"
   cve_osv_conversion_bucket     = "osv-test-cve-osv-conversion"
   debian_osv_conversion_bucket  = "osv-test-debian-osv"
+  backups_bucket                = "osv-test-backup"
+  backups_bucket_retention_days = 5
 
   api_url     = "api.test.osv.dev"
   esp_version = "2.41.0"
@@ -23,7 +25,7 @@ terraform {
   required_providers {
     google = {
       source  = "hashicorp/google"
-      version = "~> 5.2.0"
+      version = "~> 5.8.0"
     }
     google-beta = {
       source  = "hashicorp/google-beta"

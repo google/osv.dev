@@ -19,13 +19,15 @@ echo "Setup initial directories"
 rm -rf $OSV_PARTS_ROOT && mkdir -p $OSV_PARTS_ROOT
 rm -rf $OSV_OUTPUT && mkdir -p $OSV_OUTPUT
 rm -rf $CVE_OUTPUT && mkdir -p $CVE_OUTPUT
+[[ -n "$CVELIST" ]] && rm -rf $CVELIST
 
 echo "Begin syncing from parts in GCS bucket ${INPUT_BUCKET}"
 gcloud --no-user-output-enabled storage rsync "gs://${INPUT_BUCKET}/parts/" "$OSV_PARTS_ROOT" -r -q
 echo "Successfully synced from GCS bucket"
 
-echo "Run download-cves"
-./download-cves -cvePath $CVE_OUTPUT
+echo "Begin syncing NVD data from GCS bucket ${INPUT_BUCKET}"
+gcloud --no-user-output-enabled storage -q cp "gs://${INPUT_BUCKET}/nvd/*-????.json" "${CVE_OUTPUT}"
+echo "Successfully synced from GCS bucket"
 
 if [[ -n "$CVELIST" ]]; then
     echo "Clone CVE List"

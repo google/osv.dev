@@ -161,3 +161,9 @@ resource "google_project_iam_member" "compute_service" {
   role    = "roles/editor"
   member  = "serviceAccount:${data.google_compute_default_service_account.default.email}"
 }
+
+resource "google_project_iam_member" "compute_service_datastore" {
+  project = var.project_id
+  role    = "roles/datastore.importExportAdmin"
+  member  = "serviceAccount:${data.google_compute_default_service_account.default.email}"
+}

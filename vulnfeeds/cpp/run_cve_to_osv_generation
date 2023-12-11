@@ -24,7 +24,7 @@ echo "Commencing conversion run"
 # Download NVD CVE dumps.
 echo "Downloading NVD CVE dumps"
 mkdir -p "${WORK_DIR}/nvd"
-/usr/local/bin/download-cves --cvePath "${WORK_DIR}/nvd"
+gcloud --no-user-output-enabled storage -q cp "${NVD_GCS_PATH}/*-????.json" "${WORK_DIR}/nvd"
 
 # Download latest CPE repo map.
 echo "Downloading latest CPE Git repository map"
@@ -38,7 +38,7 @@ for YEAR in "${IN_SCOPE_YEARS[@]}"; do
   echo "Converting NVD CVE records from ${YEAR} to OSV"
   /usr/local/bin/cpp \
     --cpe_repos "${WORK_DIR}/cpe_product_to_repo.json" \
-    --nvd_json "${WORK_DIR}/nvd/nvdcve-1.1-${YEAR}.json" \
+    --nvd_json "${WORK_DIR}/nvd/nvdcve-2.0-${YEAR}.json" \
     --out_dir "${WORK_DIR}/nvd2osv/${YEAR}" \
     --out_format PackageInfo
 

@@ -59,7 +59,7 @@ OSV provides an easy-to-use API for querying against the aggregated database of 
 ## How do I use OSV as a vulnerability database maintainer?
 By making your vulnerability database available in the OSV format, open source users will have a consistent way to consume vulnerabilities across all open source ecosystems.
 
-Vulnerability databases can also benefit from easier interchange and vulnerabiltiy sharing from other databases that use the OSV format.
+Vulnerability databases can also benefit from easier interchange and vulnerability sharing from other databases that use the OSV format.
 
 ## Is the database available to download?
 Yes!

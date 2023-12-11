@@ -21,7 +21,7 @@ from google.cloud import ndb
 import osv
 import osv.logs
 
-ALIAS_GROUP_VULN_LIMIT = 16
+ALIAS_GROUP_VULN_LIMIT = 32
 VULN_ALIASES_LIMIT = 5
 
 

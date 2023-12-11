@@ -2,6 +2,7 @@ package cves
 
 import (
 	"encoding/json"
+	"fmt"
 	"log"
 	"os"
 	"reflect"
@@ -10,21 +11,24 @@ import (
 	"github.com/google/go-cmp/cmp"
 )
 
-// Helper function to load in a specific CVE from sample data.
-func loadTestData(CVEID string) CVEItem {
-	file, err := os.Open("../test_data/nvdcve-1.1-test-data.json")
+func loadTestData2(cveName string) Vulnerability {
+	fileName := fmt.Sprintf("../test_data/nvdcve-2.0/%s.json", cveName)
+	file, err := os.Open(fileName)
 	if err != nil {
-		log.Fatalf("Failed to load test data")
+		log.Fatalf("Failed to load test data from %q", fileName)
 	}
-	var nvdCves NVDCVE
-	json.NewDecoder(file).Decode(&nvdCves)
-	for _, item := range nvdCves.CVEItems {
-		if item.CVE.CVEDataMeta.ID == CVEID {
-			return item
+	var nvdCves CVEAPIJSON20Schema
+	err = json.NewDecoder(file).Decode(&nvdCves)
+	if err != nil {
+		log.Fatalf("Failed to decode %q: %+v", fileName, err)
+	}
+	for _, vulnerability := range nvdCves.Vulnerabilities {
+		if string(vulnerability.CVE.ID) == cveName {
+			return vulnerability
 		}
 	}
-	log.Fatalf("test data doesn't contain specified %q", CVEID)
-	return CVEItem{}
+	log.Fatalf("test data doesn't contain %q", cveName)
+	return Vulnerability{}
 }
 
 func TestParseCPE(t *testing.T) {
@@ -400,6 +404,24 @@ func TestRepo(t *testing.T) {
 			expectedRepoURL: "https://git.ffmpeg.org/ffmpeg.git",
 			expectedOk:      true,
 		},
+		{
+			description:     "Undesired researcher repo (by denylist)",
+			inputLink:       "https://github.com/chenan224/webchess_sqli_poc",
+			expectedRepoURL: "",
+			expectedOk:      false,
+		},
+		{
+			description:     "Undesired researcher repo (by deny regex)",
+			inputLink:       "https://github.com/bigzooooz/CVE-2023-26692#readme",
+			expectedRepoURL: "",
+			expectedOk:      false,
+		},
+		{
+			description:     "Undesired repo (by deny regex)",
+			inputLink:       "https://gitlab.com/gitlab-org/cves/-/blob/master/2023/CVE-2023-0413.json",
+			expectedRepoURL: "",
+			expectedOk:      false,
+		},
 	}
 
 	for _, tc := range tests {
@@ -426,7 +448,7 @@ func TestExtractGitCommit(t *testing.T) {
 			inputLink:       "https://github.com/google/osv/commit/cd4e934d0527e5010e373e7fed54ef5daefba2f5",
 			inputCommitType: Fixed,
 			expectedAffectedCommit: AffectedCommit{
-				Repo:  "https://github.com/google/osv",
+				Repo:  "https://github.com/google/osv.dev",
 				Fixed: "cd4e934d0527e5010e373e7fed54ef5daefba2f5",
 			},
 		},
@@ -489,11 +511,11 @@ func TestExtractGitCommit(t *testing.T) {
 		},
 		{
 			description:     "Valid bitbucket.org commit URL with trailing slash",
-			inputLink:       "https://bitbucket.org/jespern/django-piston/commits/91bdaec89543/",
+			inputLink:       "https://bitbucket.org/utmandrew/pcrs/commits/5f18bcb/",
 			inputCommitType: Fixed,
 			expectedAffectedCommit: AffectedCommit{
-				Repo:  "https://bitbucket.org/jespern/django-piston",
-				Fixed: "91bdaec89543",
+				Repo:  "https://bitbucket.org/utmandrew/pcrs",
+				Fixed: "5f18bcb",
 			},
 		},
 		{
@@ -552,6 +574,15 @@ func TestExtractGitCommit(t *testing.T) {
 			expectedAffectedCommit: AffectedCommit{
 				Repo:  "https://git.ffmpeg.org/ffmpeg.git",
 				Fixed: "c94875471e3ba3dc396c6919ff3ec9b14539cd71",
+			},
+		},
+		{
+			description:     "A GitHub repo that has been renamed (as seen on CVE-2016-10544)",
+			inputLink:       "https://github.com/uWebSockets/uWebSockets/commit/37deefd01f0875e133ea967122e3a5e421b8fcd9",
+			inputCommitType: Fixed,
+			expectedAffectedCommit: AffectedCommit{
+				Repo:  "https://github.com/uNetworking/uWebSockets",
+				Fixed: "37deefd01f0875e133ea967122e3a5e421b8fcd9",
 			},
 		},
 	}
@@ -679,21 +710,21 @@ func TestNormalizeVersion(t *testing.T) {
 func TestExtractVersionInfo(t *testing.T) {
 	tests := []struct {
 		description         string
-		inputCVEItem        CVEItem
+		inputCVEItem        Vulnerability
 		inputValidVersions  []string
 		expectedVersionInfo VersionInfo
 		expectedNotes       []string
 	}{
 		{
 			description:        "A CVE with multiple affected versions",
-			inputCVEItem:       loadTestData("CVE-2022-32746"),
+			inputCVEItem:       loadTestData2("CVE-2022-32746"),
 			inputValidVersions: []string{},
 			expectedVersionInfo: VersionInfo{
 				AffectedCommits: []AffectedCommit(nil),
 				AffectedVersions: []AffectedVersion{
 					{
-						Introduced:   "4.16.0",
-						Fixed:        "4.16.4",
+						Introduced:   "4.3.0",
+						Fixed:        "4.14.14",
 						LastAffected: "",
 					},
 					{
@@ -702,8 +733,8 @@ func TestExtractVersionInfo(t *testing.T) {
 						LastAffected: "",
 					},
 					{
-						Introduced:   "4.3.0",
-						Fixed:        "4.14.14",
+						Introduced:   "4.16.0",
+						Fixed:        "4.16.4",
 						LastAffected: "",
 					},
 				},
@@ -712,14 +743,14 @@ func TestExtractVersionInfo(t *testing.T) {
 		},
 		{
 			description:        "A CVE with duplicate affected versions squashed",
-			inputCVEItem:       loadTestData("CVE-2022-0090"),
+			inputCVEItem:       loadTestData2("CVE-2022-0090"),
 			inputValidVersions: []string{},
 			expectedVersionInfo: VersionInfo{
 				AffectedCommits: []AffectedCommit(nil),
 				AffectedVersions: []AffectedVersion{
 					{
-						Introduced:   "14.6.0",
-						Fixed:        "14.6.1",
+						Introduced:   "",
+						Fixed:        "14.4.5",
 						LastAffected: "",
 					},
 					{
@@ -728,8 +759,8 @@ func TestExtractVersionInfo(t *testing.T) {
 						LastAffected: "",
 					},
 					{
-						Introduced:   "",
-						Fixed:        "14.4.5",
+						Introduced:   "14.6.0",
+						Fixed:        "14.6.1",
 						LastAffected: "",
 					},
 				},
@@ -738,7 +769,7 @@ func TestExtractVersionInfo(t *testing.T) {
 		},
 		{
 			description:        "A CVE with no explicit versions",
-			inputCVEItem:       loadTestData("CVE-2022-1122"),
+			inputCVEItem:       loadTestData2("CVE-2022-1122"),
 			inputValidVersions: []string{},
 			expectedVersionInfo: VersionInfo{
 				AffectedCommits: []AffectedCommit(nil),
@@ -754,7 +785,7 @@ func TestExtractVersionInfo(t *testing.T) {
 		},
 		{
 			description:        "A CVE with fix commits in references and CPE match info",
-			inputCVEItem:       loadTestData("CVE-2022-25929"),
+			inputCVEItem:       loadTestData2("CVE-2022-25929"),
 			inputValidVersions: []string{},
 			expectedVersionInfo: VersionInfo{
 				AffectedCommits: []AffectedCommit{
@@ -775,7 +806,7 @@ func TestExtractVersionInfo(t *testing.T) {
 		},
 		{
 			description:        "A CVE with fix commits in references and (more complex) CPE match info",
-			inputCVEItem:       loadTestData("CVE-2022-29194"),
+			inputCVEItem:       loadTestData2("CVE-2022-29194"),
 			inputValidVersions: []string{},
 			expectedVersionInfo: VersionInfo{
 				AffectedCommits: []AffectedCommit{
@@ -786,13 +817,13 @@ func TestExtractVersionInfo(t *testing.T) {
 				},
 				AffectedVersions: []AffectedVersion{
 					{
-						Introduced:   "2.7.0",
-						Fixed:        "2.7.2",
+						Introduced:   "",
+						Fixed:        "2.6.4",
 						LastAffected: "",
 					},
 					{
-						Introduced:   "",
-						Fixed:        "2.6.4",
+						Introduced:   "2.7.0",
+						Fixed:        "2.7.2",
 						LastAffected: "",
 					},
 					{
@@ -806,7 +837,7 @@ func TestExtractVersionInfo(t *testing.T) {
 		},
 		{
 			description:        "A CVE with undesired wildcards and no versions",
-			inputCVEItem:       loadTestData("CVE-2022-2956"),
+			inputCVEItem:       loadTestData2("CVE-2022-2956"),
 			inputValidVersions: []string{},
 			expectedVersionInfo: VersionInfo{
 				AffectedCommits:  []AffectedCommit(nil),
@@ -816,7 +847,7 @@ func TestExtractVersionInfo(t *testing.T) {
 		},
 		{
 			description:        "A CVE with a weird GitLab reference that breaks version enumeration in the worker",
-			inputCVEItem:       loadTestData("CVE-2022-46285"),
+			inputCVEItem:       loadTestData2("CVE-2022-46285"),
 			inputValidVersions: []string{},
 			expectedVersionInfo: VersionInfo{
 				AffectedCommits:  []AffectedCommit{{Repo: "https://gitlab.freedesktop.org/xorg/lib/libxpm", Fixed: "a3a7c6dcc3b629d7650148"}},
@@ -826,16 +857,23 @@ func TestExtractVersionInfo(t *testing.T) {
 		},
 		{
 			description:  "A CVE with a different GitWeb reference URL that was not previously being extracted successfully",
-			inputCVEItem: loadTestData("CVE-2021-28429"),
+			inputCVEItem: loadTestData2("CVE-2021-28429"),
 			expectedVersionInfo: VersionInfo{
 				AffectedCommits:  []AffectedCommit{{Repo: "https://git.ffmpeg.org/ffmpeg.git", Fixed: "c94875471e3ba3dc396c6919ff3ec9b14539cd71"}},
 				AffectedVersions: []AffectedVersion{{LastAffected: "4.3.2"}},
 			},
 		},
+		{
+			description:  "A CVE with a configuration unsupported by ExtractVersionInfo and a limit version in the description",
+			inputCVEItem: loadTestData2("CVE-2020-13595"),
+			expectedVersionInfo: VersionInfo{
+				AffectedVersions: []AffectedVersion{{Introduced: "4.0.0", LastAffected: "4.2"}},
+			},
+		},
 	}
 
 	for _, tc := range tests {
-		gotVersionInfo, _ := ExtractVersionInfo(tc.inputCVEItem, tc.inputValidVersions)
+		gotVersionInfo, _ := ExtractVersionInfo(tc.inputCVEItem.CVE, tc.inputValidVersions)
 		if diff := cmp.Diff(tc.expectedVersionInfo, gotVersionInfo); diff != "" {
 			t.Errorf("test %q: VersionInfo for %#v was incorrect: %s", tc.description, tc.inputCVEItem, diff)
 		}
@@ -845,25 +883,25 @@ func TestExtractVersionInfo(t *testing.T) {
 func TestCPEs(t *testing.T) {
 	tests := []struct {
 		description  string
-		inputCVEItem CVEItem
+		inputCVEItem Vulnerability
 		expectedCPEs []string
 	}{
 		{
 			description:  "A CVE with child CPEs",
-			inputCVEItem: loadTestData("CVE-2023-24256"),
+			inputCVEItem: loadTestData2("CVE-2023-24256"),
 			expectedCPEs: []string{"cpe:2.3:o:nio:aspen:*:*:*:*:*:*:*:*", "cpe:2.3:h:nio:ec6:-:*:*:*:*:*:*:*"},
 		},
 		{
 			description:  "A CVE without child CPEs",
-			inputCVEItem: loadTestData("CVE-2022-33745"),
-			expectedCPEs: []string{"cpe:2.3:o:xen:xen:*:*:*:*:*:*:x86:*", "cpe:2.3:o:fedoraproject:fedora:36:*:*:*:*:*:*:*"},
+			inputCVEItem: loadTestData2("CVE-2022-33745"),
+			expectedCPEs: []string{"cpe:2.3:o:xen:xen:*:*:*:*:*:*:x86:*", "cpe:2.3:o:debian:debian_linux:11.0:*:*:*:*:*:*:*", "cpe:2.3:o:fedoraproject:fedora:35:*:*:*:*:*:*:*", "cpe:2.3:o:fedoraproject:fedora:36:*:*:*:*:*:*:*"},
 		},
 	}
 
 	for _, tc := range tests {
-		gotCPEs := CPEs(tc.inputCVEItem)
+		gotCPEs := CPEs(tc.inputCVEItem.CVE)
 		if diff := cmp.Diff(gotCPEs, tc.expectedCPEs); diff != "" {
-			t.Errorf("test %q: CPEs for %#v were incorrect: %s", tc.description, tc.inputCVEItem.Configurations, diff)
+			t.Errorf("test %q: CPEs for %#v were incorrect: %s", tc.description, tc.inputCVEItem.CVE.Configurations, diff)
 		}
 	}
 }

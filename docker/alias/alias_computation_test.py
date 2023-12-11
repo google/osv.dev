@@ -17,6 +17,7 @@ import os
 import unittest
 
 from google.cloud import ndb
+from google.protobuf import timestamp_pb2
 
 import osv
 from docker.alias import alias_computation
@@ -327,39 +328,59 @@ class AliasTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
     self.assertEqual(1, len(alias_group))
     self.assertEqual(['hhh-126', 'hhh-127'], alias_group[0].bug_ids)
 
+  def test_alias_group_reaches_limit(self):
+    """Tests a alias group reaches limit."""
+    aliases = []
+    for i in range(33):
+      aliases.append(f'iii-{i}')
 
-def test_alias_group_reaches_limit(self):
-  """Tests a alias group reaches limit."""
-  osv.Bug(
-      id='iii-111',
-      db_id='iii-111',
-      aliases=[
-          'iii-222',
-          'iii-333',
-          'iii-444',
-          'iii-555',
-          'iii-666',
-          'iii-777',
-          'iii-888',
-          'iii-999',
-          'iii-123',
-          'iii-124',
-          'iii-125',
-          'iii-126',
-          'iii-322',
-          'iii-333',
-          'iii-344',
-          'iii-355',
-      ],
-      status=1,
-      source='test',
-      public=True,
-      import_last_modified=datetime.datetime(2023, 1, 1),
-  ).put()
-  osv.AliasAllowListEntry(bug_id='iii-111',).put()
-  alias_computation.main()
-  alias_group = osv.AliasGroup.query(osv.AliasGroup.bug_ids == 'iii-111').get()
-  self.assertIsNone(alias_group)
+    osv.Bug(
+        id='iii-1',
+        db_id='iii-1',
+        aliases=aliases,
+        status=1,
+        source='test',
+        public=True,
+        import_last_modified=datetime.datetime(2023, 1, 1),
+    ).put()
+    osv.AliasAllowListEntry(bug_id='iii-1',).put()
+    alias_computation.main()
+    alias_group = osv.AliasGroup.query(osv.AliasGroup.bug_ids == 'iii-1').get()
+    self.assertIsNone(alias_group)
+
+  def test_to_vulnerability(self):
+    """Tests OSV bug to vulnerability function."""
+    bug = osv.Bug(
+        id='jjj-123',
+        db_id='jjj-123',
+        related=['jjj-111'],
+        status=1,
+        source='test',
+        public=True,
+        import_last_modified=datetime.datetime(2023, 1, 1),
+        last_modified=datetime.datetime(2023, 1, 1),
+        timestamp=datetime.datetime(2023, 1, 1))
+    bug.put()
+    alias_group_last_modified = datetime.datetime(2023, 10, 1)
+    osv.AliasGroup(
+        bug_ids=['jjj-123', 'jjj-234', 'jjj-456'],
+        last_modified=alias_group_last_modified,
+    ).put()
+    osv.Bug(
+        id='jjj-222',
+        db_id='jjj-222',
+        related=['jjj-123'],
+        status=1,
+        source='test',
+        public=True,
+        import_last_modified=datetime.datetime(2023, 1, 1),
+    ).put()
+    vuln = bug.to_vulnerability()
+    self.assertEqual(vuln.related, ['jjj-111', 'jjj-222'])
+    self.assertEqual(vuln.aliases, ['jjj-234', 'jjj-456'])
+    modified = timestamp_pb2.Timestamp()
+    modified.FromDatetime(alias_group_last_modified)
+    self.assertEqual(modified, vuln.modified)
 
 
 if __name__ == '__main__':

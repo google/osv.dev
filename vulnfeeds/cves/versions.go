@@ -15,14 +15,18 @@
 package cves
 
 import (
+	"context"
 	"fmt"
 	"log"
+	"net/http"
 	"net/url"
 	"path"
 	"regexp"
 	"strings"
+	"time"
 
 	"github.com/knqyf263/go-cpe/naming"
+	"github.com/sethvargo/go-retry"
 	"golang.org/x/exp/slices"
 )
 
@@ -74,6 +78,15 @@ func (vi *VersionInfo) HasFixedVersions() bool {
 	return false
 }
 
+func (vi *VersionInfo) HasLastAffectedVersions() bool {
+	for _, av := range vi.AffectedVersions {
+		if av.LastAffected != "" {
+			return true
+		}
+	}
+	return false
+}
+
 func (vi *VersionInfo) HasIntroducedCommits(repo string) bool {
 	for _, av := range vi.AffectedCommits {
 		if av.Repo == repo && av.Introduced != "" {
@@ -92,6 +105,15 @@ func (vi *VersionInfo) HasFixedCommits(repo string) bool {
 	return false
 }
 
+func (vi *VersionInfo) HasLastAffectedCommits(repo string) bool {
+	for _, av := range vi.AffectedCommits {
+		if av.Repo == repo && av.LastAffected != "" {
+			return true
+		}
+	}
+	return false
+}
+
 func (vi *VersionInfo) FixedCommits(repo string) (FixedCommits []string) {
 	for _, av := range vi.AffectedCommits {
 		if av.Repo == repo && av.Fixed != "" {
@@ -99,6 +121,15 @@ func (vi *VersionInfo) FixedCommits(repo string) (FixedCommits []string) {
 		}
 	}
 	return FixedCommits
+}
+
+func (vi *VersionInfo) LastAffectedCommits(repo string) (LastAffectedCommits []string) {
+	for _, av := range vi.AffectedCommits {
+		if av.Repo == repo && av.LastAffected != "" {
+			LastAffectedCommits = append(LastAffectedCommits, av.Fixed)
+		}
+	}
+	return LastAffectedCommits
 }
 
 // Synthetic enum of supported commit types.
@@ -131,14 +162,20 @@ var (
 	InvalidRepos = []string{
 		"https://github.com/0day1/g1ory",
 		"https://github.com/0x14dli/ffos-SQL-injection-vulnerability-exists",
-		"https://github.com/0xLUC4S/CVEs",
+		"https://github.com/0x72303074/cve-disclosures",
+		"https://github.com/0xdea/exploits",
+		"https://github.com/0xxtoby/Vuldb",
 		"https://github.com/10cks/inkdropPoc",
+		"https://github.com/10cksyiqiyinhangzhoutechnology/elf-parser_segments_poc",
+		"https://github.com/1MurasaKi/Eyewear_Shop_XSS",
+		"https://github.com/1MurasaKi/PizzeXSS_Report",
+		"https://github.com/1MurasaKi/STMS_CSRF",
 		"https://github.com/1security/Vulnerability",
 		"https://github.com/202ecommerce/security-advisories",
 		"https://github.com/abhiunix/goo-blog-App-CVE",
-		"https://github.com/accellion/CVEs",
 		"https://github.com/Accenture/AARO-Bugs",
 		"https://github.com/active-labs/Advisories",
+		"https://github.com/ae6e361b/online-job-portal-forget",
 		"https://github.com/afeng2016-s/CVE-Request",
 		"https://github.com/agadient/SERVEEZ-CVE",
 		"https://github.com/Airrudder/vuls",
@@ -146,8 +183,10 @@ var (
 		"https://github.com/alwentiu/COVIDSafe-CVE-2020-12856",
 		"https://github.com/anhdq201/rukovoditel",
 		"https://github.com/anhdq201/webtareas",
+		"https://github.com/anvilsecure/garmin-ciq-app-research",
 		"https://github.com/anx0ing/CVE_demo",
-		"https://github.com/APTX-4879/CVE",
+		"https://github.com/Anza2001/IOT_VULN",
+		"https://github.com/apriorit/pentesting",
 		"https://github.com/ArianeBlow/Axelor_Stored_XSS",
 		"https://github.com/As4ki/CVE-report",
 		"https://github.com/A-TGAO/MxsDocVul",
@@ -157,8 +196,9 @@ var (
 		"https://github.com/badboycxcc/Student-Admission-Sqlinjection",
 		"https://github.com/badboycxcc/Student-Admission-Xss",
 		"https://github.com/beicheng-maker/vulns",
-		"https://github.com/bigb0x/CVEs",
+		"https://github.com/benjaminpsinclair/netdisco-2023-advisory",
 		"https://github.com/BigTiger2020/2022",
+		"https://github.com/BigTiger2020/2023-1",
 		"https://github.com/BigTiger2020/74CMS",
 		"https://github.com/BigTiger2020/Fantastic-Blog-CMS-",
 		"https://github.com/BigTiger2020/Theme-Park-Ticketing-System",
@@ -169,25 +209,29 @@ var (
 		"https://github.com/blockomat2100/PoCs",
 		"https://github.com/bosslabdcu/Vulnerability-Reporting",
 		"https://github.com/ByteHackr/unzip_poc",
+		"https://github.com/capgeminicisredteam/disclosure",
+		"https://github.com/CapgeminiCisRedTeam/Disclosure",
+		"https://github.com/Castle1984/CveRecord",
 		"https://github.com/ch0ing/vul",
 		"https://github.com/Ch0pin/security-advisories",
+		"https://github.com/chenan224/webchess_sqli_poc",
 		"https://github.com/Chu1z1/Chuizi",
 		"https://github.com/ciph0x01/poc",
 		"https://github.com/ciph0x01/Simple-Exam-Reviewer-Management-System-CVE",
 		"https://github.com/cloudflare/advisories",
 		"https://github.com/Coalfire-Research/WinAPRS-Exploits",
 		"https://github.com/ComparedArray/printix-CVE-2022-25089",
+		"https://github.com/cribdragg3r/offensive_research",
 		"https://github.com/ctflearner/Vulnerability",
 		"https://github.com/CVEProject/cvelist", // Heavily in Advisory URLs, sometimes shows up elsewhere
 		"https://github.com/cve-vul/vul",
 		"https://github.com/Cvjark/Poc",
 		"https://github.com/cxaqhq/Loan-Management-System-Sqlinjection",
 		"https://github.com/cyb3r-n3rd/cve-request",
-		"https://github.com/CyberThoth/CVE",
+		"https://github.com/cybersecurityworks/disclosed",
 		"https://github.com/D4rkP0w4r/AeroCMS-Add_Posts-Stored_XSS-Poc",
 		"https://github.com/D4rkP0w4r/AeroCMS-Comment-Stored_XSS-Poc",
 		"https://github.com/D4rkP0w4r/AeroCMS-Unrestricted-File-Upload-POC",
-		"https://github.com/D4rkP0w4r/CVEs",
 		"https://github.com/D4rkP0w4r/Full-Ecommece-Website-Add_Product-Unrestricted-File-Upload-RCE-POC",
 		"https://github.com/D4rkP0w4r/Full-Ecommece-Website-Add_User-Stored-XSS-POC",
 		"https://github.com/D4rkP0w4r/Full-Ecommece-Website-Slides-Unrestricted-File-Upload-RCE-POC",
@@ -199,9 +243,13 @@ var (
 		"https://github.com/dhammon/pfBlockerNg-RCE",
 		"https://github.com/Dheeraj-Deshmukh/Hospital-s-patient-management-system",
 		"https://github.com/Dheeraj-Deshmukh/stored-xss-in-Hospital-s-Patient-Records-Management-System",
+		"https://github.com/digitemis/advisory",
+		"https://github.com/DiliLearngent/BugReport",
 		"https://github.com/Dir0x/Multiple-SQLi-in-Simple-Subscription-Company",
 		"https://github.com/Dir0x/SQLi-exploit---Simple-Client-Management-System",
 		"https://github.com/DisguisedRoot/Exploit",
+		"https://github.com/dodge-mptc/cve-2023-35793-csrf-on-web-ssh",
+		"https://github.com/Don-H50/wp-vul",
 		"https://github.com/dota-st/Vulnerability",
 		"https://github.com/draco1725/POC",
 		"https://github.com/draco1725/Stored-XSS",
@@ -209,6 +257,7 @@ var (
 		"https://github.com/dtssec/CVE-Disclosures",
 		"https://github.com/Durian1546/vul",
 		"https://github.com/Dyrandy/BugBounty",
+		"https://github.com/E1CHO/cve_hub",
 		"https://github.com/E1CHO/water_cve",
 		"https://github.com/eddietcc/CVEnotes",
 		"https://github.com/Edubr2020/RealPlayer_G2_RCE",
@@ -219,8 +268,12 @@ var (
 		"https://github.com/erengozaydin/College-Management-System-course_code-SQL-Injection-Authenticated",
 		"https://github.com/erengozaydin/Microfinance-Management-System-V1.0-SQL-Injection-Vulnerability-Unauthenticated",
 		"https://github.com/erengozaydin/Royal-Event-Management-System-todate-SQL-Injection-Authenticated",
+		"https://github.com/esp0xdeadbeef/rce_webmin",
+		"https://github.com/etn0tw/cmscve_test",
+		"https://github.com/f4cky0u/security-vulnerabilities",
 		"https://github.com/Fadavvi/CVE-2018-17431-PoC",
 		"https://github.com/FCncdn/Appsmith-Js-Injection-POC",
+		"https://github.com/Filiplain/LFI-to-RCE-SE-Suite-2.0",
 		"https://github.com/fireeye/Vulnerability-Disclosures",
 		"https://github.com/frame84/vulns",
 		"https://github.com/Frank-Z7/z-vulnerabilitys",
@@ -229,65 +282,84 @@ var (
 		"https://github.com/gdianq/Gym-Management-System-loginpage-Sqlinjection",
 		"https://github.com/gdianq/Gym-Management-System-Sqlinjection",
 		"https://github.com/gdianq/Sparkz-Hotel-Management-loginpage-Sqlinjection",
-		"https://github.com/GitHubAssessments/CVE_Assessments_11_2019",
 		"https://github.com/github/cvelist", // Fork of https://github.com/CVEProject/cvelist
 		"https://github.com/github/securitylab",
 		"https://github.com/gitlabhq/gitlabhq",     // GitHub mirror, not canonical
 		"https://github.com/google/oss-fuzz-vulns", // 8^)
 		"https://github.com/gou-web/Parking-management-systemXSS-",
 		"https://github.com/Gr4y21/My-CVE-IDs",
-		"https://github.com/grymer/CVE",
+		"https://github.com/grafana/bugbounty",
 		"https://github.com/guyinatuxedo/sqlite3_record_leaking",
+		"https://github.com/GZRsecurity/Cve-System",
 		"https://github.com/h4md153v63n/CVE-2022-40032_Simple-Task-Managing-System-V1.0-SQL-Injection-Vulnerability-Unauthenticated",
 		"https://github.com/h4md153v63n/CVE-2022-40347_Intern-Record-System-phone-V1.0-SQL-Injection-Vulnerability-Unauthenticated",
 		"https://github.com/h4md153v63n/CVE-2022-40348_Intern-Record-System-Cross-site-Scripting-V1.0-Vulnerability-Unauthenticated",
 		"https://github.com/H4rk3nz0/PenTesting",
 		"https://github.com/Ha0Liu/cveAdd",
+		"https://github.com/hackerzyq/mycve",
 		"https://github.com/Hakcoder/Simple-Online-Public-Access-Catalog-OPAC---SQL-injection",
 		"https://github.com/Hanfu-l/Cve-vulnerability-mining",
 		"https://github.com/Hanfu-l/POC-Exp",
+		"https://github.com/Hanwengao/CVERequests",
 		"https://github.com/hashicorp/terraform-enterprise-release-notes",
-		"https://github.com/hax3xploit/CVEs",
 		"https://github.com/haxpunk1337/Enterprise-Survey-Software",
 		"https://github.com/haxpunk1337/MDaemon-",
 		"https://github.com/hemantsolo/CVE-Reference",
 		"https://github.com/HH1F/KbaseDoc-v1.0-Arbitrary-file-deletion-vulnerability",
-		"https://github.com/HuangYuHsiangPhone/CVEs",
+		"https://github.com/hkerma/opa-gatekeeper-concurrency-issue",
+		"https://github.com/hmsec/advisories",
+		"https://github.com/hnsecurity/vulns",
+		"https://github.com/hotencode/CveHub",
+		"https://github.com/hubenlab/hubenvullist",
 		"https://github.com/huclilu/CVE_Add",
 		"https://github.com/Hyperkopite/Roothub_vulns",
 		"https://github.com/i3umi3iei3ii/CentOS-Control-Web-Panel-CVE",
 		"https://github.com/ianxtianxt/gitbook-xss",
+		"https://github.com/imsebao/404team",
+		"https://github.com/InfoSecWarrior/Offensive-Payloads",
 		"https://github.com/IthacaLabs/DevExpress",
 		"https://github.com/IthacaLabs/Parallels",
 		"https://github.com/IthacaLabs/Vsourz-Digital",
-		"https://github.com/IthacaLabs/Vsourz-Digital",
 		"https://github.com/itodaro/doorGets_cve",
 		"https://github.com/JackyG0/Online-Accreditation-Management-System-v1.0-SQLi",
+		"https://github.com/jacky-y/vuls",
 		"https://github.com/Jamison2022/Company-Website-CMS",
 		"https://github.com/Jamison2022/Wedding-Hall-Booking-System",
 		"https://github.com/jcarabantes/Bus-Vulnerabilities",
-		"https://github.com/JiuBanSec/CVE",
+		"https://github.com/jingping911/exshopbug",
+		"https://github.com/jiy2020/bugReport",
+		"https://github.com/jlleitschuh/security-research",
 		"https://github.com/joinia/webray.com.cn",
+		"https://github.com/JunyanYip/itsourcecode_justines_xss_vul",
 		"https://github.com/jusstSahil/CSRF-",
 		"https://github.com/jvz/test-cvelist",
 		"https://github.com/k0xx11/Vulscve",
 		"https://github.com/k0xx11/vul-wiki",
+		"https://github.com/kaoudis/advisories",
 		"https://github.com/Kenun99/CVE-batdappboomx",
 		"https://github.com/Keyvanhardani/Exploit-eShop-Multipurpose-Ecommerce-Store-Website-3.0.4-Cross-Site-Scripting-XSS",
 		"https://github.com/killmonday/isic.lk-RCE",
 		"https://github.com/KingBridgeSS/Online_Driving_School_Project_In_PHP_With_Source_Code_Vulnerabilities",
+		"https://github.com/kirra-max/bug_reports",
 		"https://github.com/Kitsun3Sec/exploits",
 		"https://github.com/kk98kk0/exploit",
+		"https://github.com/KLSEHB/vulnerability-report",
+		"https://github.com/kmkz/exploit",
 		"https://github.com/kyrie403/Vuln",
 		"https://github.com/L1917/Fast-Food-Ordering-System",
 		"https://github.com/l1nk3rlin/php_code_audit_project",
 		"https://github.com/lakshaya0557/POCs",
 		"https://github.com/laotun-s/POC",
+		"https://github.com/leekenghwa/CVE-2023-33817---SQL-Injection-found-in-HotelDruid-3.0.5",
+		"https://github.com/leekenghwa/CVE-2023-34830---Reflected-XSS-found-in-I-doit-Open-v24-and-below",
 		"https://github.com/Lemon4044/Fast-Food-Ordering-System",
+		"https://github.com/LeozhangCA/CVEReport",
+		"https://github.com/lohyt/Persistent-Cross-Site-Scripting-found-in-Online-Jewellery-Store-from-Sourcecodester-website.",
 		"https://github.com/lohyt/web-shell-via-file-upload-in-hocms",
 		"https://github.com/luelueking/ruoyi-4.7.5-vuln-poc",
 		"https://github.com/lukaszstu/SmartAsset-CORS-CVE-2020-26527",
 		"https://github.com/ly1g3/Mailcow-CVE-2022-31138",
+		"https://github.com/M9KJ-TEAM/CVEReport",
 		"https://github.com/MacherCS/CVE_Evoh_Contract",
 		"https://github.com/MaherAzzouzi/CVE-2022-37706-LPE-exploit",
 		"https://github.com/mandiant/Vulnerability-Disclosures",
@@ -303,43 +375,58 @@ var (
 		"https://github.com/mikeccltt/bug_report_CVE",
 		"https://github.com/mikeccltt/chatbot",
 		"https://github.com/mikeccltt/wbms_bug_report",
+		"https://github.com/mikeisastar/counter-strike-arbitrary-file-read",
 		"https://github.com/Mirantis/security",
+		"https://github.com/mirchr/security-research",
+		"https://github.com/MiserablefaithL/CVERequestReport",
+		"https://github.com/mrojz/rconfig-exploit",
 		"https://github.com/MrR3boot/CVE-Hunting",
+		"https://github.com/Mr-Secure-Code/My-CVE",
 		"https://github.com/MrTuxracer/advisories",
 		"https://github.com/mudassiruddin/CVE-2022-43144-Stored-XSS",
 		"https://github.com/N1ce759/74cmsSE-Arbitrary-File-Reading",
 		"https://github.com/nam3lum/msi-central_privesc",
+		"https://github.com/navaidzansari/cve_demo",
+		"https://github.com/navaidzansari/CVE_Demo",
 		"https://github.com/nepenthe0320/cve_poc",
 		"https://github.com/Netflix/security-bulletins",
 		"https://github.com/nextcloud/security-advisories",
-		"https://github.com/Nguyen-Trung-Kien/CVE",
 		"https://github.com/nikip72/CVE-2021-39273-CVE-2021-39274",
+		"https://github.com/novysodope/vulreq",
 		"https://github.com/nsparker1337/OpenSource",
 		"https://github.com/nu11secur1ty/CVE-nu11secur1ty",
 		"https://github.com/offsecin/bugsdisclose",
 		"https://github.com/orangecertcc/security-research",
 		"https://github.com/Orange-Cyberdefense/CVE-repository",
+		"https://github.com/oV201/cve_report",
 		"https://github.com/Ozozuz/Qlik-View-Stored-XSS",
 		"https://github.com/p0dalirius/CVE-2022-26159-Ametys-Autocompletion-XML",
 		"https://github.com/PabloMK7/ENLBufferPwn",
 		"https://github.com/palantir/security-bulletins",
 		"https://github.com/passtheticket/vulnerability-research",
 		"https://github.com/Peanut886/Vulnerability",
+		"https://github.com/piuppi/proof-of-concepts",
 		"https://github.com/playZG/Exploit-",
+		"https://github.com/PostalBlab/Vulnerabilities",
 		"https://github.com/post-cyberlabs/CVE-Advisory",
 		"https://github.com/prismbreak/vulnerabilities",
 		"https://github.com/purplededa/EasyoneCRM-5.50.02-SQLinjection",
 		"https://github.com/PurplePetrus/MxCC_Credential-Storage_issue",
 		"https://github.com/Q2Flc2FySec/CVE-List",
-		"https://github.com/Qrayyy/CVE",
-		"https://github.com/Rajeshwar40/CVE",
+		"https://github.com/qwegz/CveList",
+		"https://github.com/qyhmsys/cve-list",
 		"https://github.com/Ramansh123454/POCs",
+		"https://github.com/rand0midas/randomideas",
+		"https://github.com/raozhir/CVERequest",
 		"https://github.com/rapid7/metasploit-framework",
 		"https://github.com/refi64/CVE-2020-25265-25266",
 		"https://github.com/riteshgohil/My_CVE_References",
 		"https://github.com/rohit0x5/poc",
 		"https://github.com/roughb8722/CVE-2021-3122-Details",
 		"https://github.com/rsrahulsingh05/POC",
+		"https://github.com/rtcrowley/poc",
+		"https://github.com/rumble773/sec-research",
+		"https://github.com/RupturaInfoSec/CVE-2023-26563-26564-26565",
 		"https://github.com/Ryan0lb/EC-cloud-e-commerce-system-CVE-application",
 		"https://github.com/s1kr10s/EasyChatServer-DOS",
 		"https://github.com/saitamang/POC-DUMP",
@@ -356,26 +443,46 @@ var (
 		"https://github.com/Serces-X/vul_report",
 		"https://github.com/shellshok3/Cross-Site-Scripting-XSS",
 		"https://github.com/sickcodes/security",
+		"https://github.com/silence-silence/xxl-job-lateral-privilege-escalation-vulnerability-",
 		"https://github.com/sinemsahn/POC",
+		"https://github.com/sleepyvv/vul_report",
 		"https://github.com/Snakinya/Vuln",
 		"https://github.com/snyk/zip-slip-vulnerability",
 		"https://github.com/soheilsamanabadi/vulnerability",
 		"https://github.com/soheilsamanabadi/vulnerabilitys",
+		"https://github.com/soundarkutty/stored-xss",
 		"https://github.com/souravkr529/CSRF-in-Cold-Storage-Management-System",
-		"https://github.com/sT0wn-nl/CVEs",
+		"https://github.com/spwpun/ntp-4.2.8p15-cves",
+		"https://github.com/sromanhu/Cmsmadesimple-CMS-Stored-XSS",
+		"https://github.com/sromanhu/CSZ-CMS-Stored-XSS---Pages-Content",
+		"https://github.com/sromanhu/CVE-2023-43339-CMSmadesimple-Reflected-XSS---Installation",
+		"https://github.com/sromanhu/CVE-2023-43878-RiteCMS-Stored-XSS---MainMenu",
+		"https://github.com/sromanhu/e107-CMS-Stored-XSS---Manage",
+		"https://github.com/sromanhu/RiteCMS-Stored-XSS---Home",
+		"https://github.com/starnightcyber/miscellaneous",
+		"https://github.com/strangebeecorp/security",
 		"https://github.com/sunset-move/EasyImages2.0-arbitrary-file-download-vulnerability",
+		"https://github.com/SunshineOtaku/Report-CVE",
+		"https://github.com/superkojiman/vulnerabilities",
+		"https://github.com/syz913/cve-reports",
 		"https://github.com/TCSWT/Baby-Care-System",
 		"https://github.com/the-emmons/CVE-Disclosures",
 		"https://github.com/thehackingverse/Stored-xss-",
 		"https://github.com/theyiyibest/Reflected-XSS-on-SockJS",
-		"https://github.com/tomerpeled92/CVE",
+		"https://github.com/tht1997/CVE_2023",
+		"https://github.com/TishaManandhar/Superstore-sql-poc",
 		"https://github.com/toyydsBT123/One_of_my_take_on_SourceCodester",
 		"https://github.com/Tr0e/CVE_Hunter",
 		"https://github.com/transcendent-group/advisories",
 		"https://github.com/tremwil/ds3-nrssr-rce",
+		"https://github.com/trinity-syt-security/xss_vuln_issue",
+		"https://github.com/Trinity-SYT-SECURITY/XSS_vuln_issue",
 		"https://github.com/uBlockOrigin/uBlock-issues",
+		"https://github.com/umarfarook882/avast_multiple_vulnerability_disclosure",
 		"https://github.com/upasvi/CVE-",
+		"https://github.com/v2ish1yan/mycve",
 		"https://github.com/verf1sh/Poc",
+		"https://github.com/versprite/research",
 		"https://github.com/vickysuper/Cve_report",
 		"https://github.com/VivekPanday12/CVE-",
 		"https://github.com/vQAQv/Request-CVE-ID-PoC",
@@ -389,24 +496,26 @@ var (
 		"https://github.com/wind-cyber/LJCMS-UserTraversal-Vulnerability",
 		"https://github.com/wkeyi0x1/vul-report",
 		"https://github.com/wsummerhill/BSA-Radar_CVE-Vulnerabilities",
-		"https://github.com/WULINPIN/CVE",
-		"https://github.com/WYB-signal/Bug_report",
+		"https://github.com/wucwu1/CVEApplication",
+		"https://github.com/xcodeOn1/xcode0x-CVEs",
+		"https://github.com/xf1les/cve-advisories",
 		"https://github.com/xiahao90/CVEproject",
+		"https://github.com/XIAONIGM/CVEReport",
 		"https://github.com/xidaner/CVE_HUNTER",
-		"https://github.com/xiumulty/CVE",
+		"https://github.com/xnobody12/jaws-cms-rce",
 		"https://github.com/Xor-Gerke/webray.com.cn",
 		"https://github.com/xunyang1/my-vulnerability",
 		"https://github.com/xxhzz1/74cmsSE-Arbitrary-file-upload-vulnerability",
 		"https://github.com/y1s3m0/vulnfind",
-		"https://github.com/yangfar/CVE",
 		"https://github.com/yasinyildiz26/Badminton-Center-Management-System",
 		"https://github.com/YavuzSahbaz/Limbas-4.3.36.1319-is-vulnerable-to-Cross-Site-Scripting-XSS-",
 		"https://github.com/YavuzSahbaz/Red-Planet-Laundry-Management-System-1.0-is-vulnerable-to-SQL",
 		"https://github.com/ycdxsb/Vuln",
 		"https://github.com/ykosan1/Simple-Task-Scheduling-System-id-SQL-Injection-Unauthenticated",
 		"https://github.com/YLoiK/74cmsSE-Arbitrary-file-upload-vulnerability",
-		"https://github.com/yogeshshe1ke/CVE",
 		"https://github.com/YorkLee53645349/Cve_report",
+		"https://github.com/Yp1oneer/cve_hub",
+		"https://github.com/YZLCQX/Mailbox-remote-command-execution",
 		"https://github.com/z00z00z00/Safenet_SAC_CVE-2021-42056",
 		"https://github.com/zer0yu/CVE_Request",
 		"https://github.com/zerrr0/Zerrr0_Vulnerability",
@@ -414,15 +523,18 @@ var (
 		"https://github.com/zhao1231/cve_payload",
 		"https://github.com/ZhuoNiBa/Delta-DIAEnergie-XSS",
 		"https://github.com/Zoe0427/YJCMS",
-		"https://gitlab.com/gitlab-org/cves",
+		"https://github.com/zzh-newlearner/record",
+		"https://gitlab.com/FallFur/exploiting-unprotected-admin-funcionalities-on-besder-ip-cameras",
 		"https://gitlab.com/gitlab-org/gitlab-ce",      // redirects to gitlab-foss
 		"https://gitlab.com/gitlab-org/gitlab-ee",      // redirects to gitlab
 		"https://gitlab.com/gitlab-org/gitlab-foss",    // not the canonical source
 		"https://gitlab.com/gitlab-org/omnibus-gitlab", // not the source
 		"https://gitlab.com/gitlab-org/release",        // not the source
 		"https://gitlab.com/kop316/vvm-disclosure",
+		"https://gitlab.com/-/snippets/1937042",
+		"https://gitlab.com/yongchuank/avast-aswsnx-ioctl-82ac0060-oob-write",
 	}
-	InvalidRepoRegex = `(?i)/(?:(?:CVEs?)|(?:CVE-\d{4}-\d{4,})(?:/.*)?|bug_report(?:/.*)?|GitHubAssessments/.*)$`
+	InvalidRepoRegex = `(?i)/(?:(?:CVEs?)|(?:CVE-\d{4}-\d{4,})(?:/?.*)?|bug_report(?:/.*)?|GitHubAssessments/.*)$`
 )
 
 // Returns the base repository URL for supported repository hosts.
@@ -739,6 +851,39 @@ func Commit(u string) (string, error) {
 	return "", fmt.Errorf("Commit(): unsupported URL: %s", u)
 }
 
+// Detect linkrot and handle link decay in HTTP(S) links via HEAD request with exponential backoff.
+func ValidateAndCanonicalizeLink(link string) (canonicalLink string, err error) {
+	u, err := url.Parse(link)
+	if !slices.Contains([]string{"http", "https"}, u.Scheme) {
+		// Handle what's presumably a git:// URL.
+		return link, err
+	}
+	backoff := retry.NewExponential(1 * time.Second)
+	if err := retry.Do(context.Background(), retry.WithMaxRetries(3, backoff), func(ctx context.Context) error {
+		resp, err := http.Head(link)
+		if err != nil {
+			return err
+		}
+		defer resp.Body.Close()
+
+		switch resp.StatusCode / 100 {
+		// 4xx response codes are an instant fail.
+		case 4:
+			return fmt.Errorf("bad response: %v", resp.StatusCode)
+		// 5xx response codes are retriable.
+		case 5:
+			return retry.RetryableError(fmt.Errorf("bad response: %v", resp.StatusCode))
+		// Anything else is acceptable.
+		default:
+			canonicalLink = resp.Request.URL.String()
+			return nil
+		}
+	}); err != nil {
+		return link, fmt.Errorf("unable to determine validity of %q: %v", link, err)
+	}
+	return canonicalLink, nil
+}
+
 // For URLs referencing commits in supported Git repository hosts, return a cloneable AffectedCommit.
 func extractGitCommit(link string, commitType CommitType) (ac AffectedCommit, err error) {
 	r, err := Repo(link)
@@ -747,6 +892,15 @@ func extractGitCommit(link string, commitType CommitType) (ac AffectedCommit, er
 	}
 
 	c, err := Commit(link)
+	if err != nil {
+		return ac, err
+	}
+
+	// If URL doesn't validate, treat it as linkrot.
+	// Possible TODO(apollock): restart the entire extraction process when the
+	// repo changes (i.e. handle a redirect to a completely different host,
+	// instead of a redirect within GitHub)
+	r, err = ValidateAndCanonicalizeLink(r)
 	if err != nil {
 		return ac, err
 	}
@@ -825,30 +979,42 @@ func extractVersionsFromDescription(validVersions []string, description string) 
 		// Trim periods that are part of sentences.
 		introduced := processExtractedVersion(match[1])
 		fixed := processExtractedVersion(match[3])
+		lastaffected := ""
 		if match[2] == "through" {
 			// "Through" implies inclusive range, so the fixed version is the one that comes after.
 			var err error
 			fixed, err = nextVersion(validVersions, fixed)
 			if err != nil {
 				notes = append(notes, err.Error())
+				// if that inference failed, we know this version was definitely still vulnerable.
+				lastaffected = cleanVersion(match[3])
+				notes = append(notes, fmt.Sprintf("Using %s as last_affected version instead", cleanVersion(match[3])))
 			}
 		}
 
-		if introduced == "" && fixed == "" {
+		if introduced == "" && fixed == "" && lastaffected == "" {
 			notes = append(notes, "Failed to match version range from description")
 			continue
 		}
 
 		if introduced != "" && !hasVersion(validVersions, introduced) {
-			notes = append(notes, fmt.Sprintf("Extracted version %s is not a valid version", introduced))
+			notes = append(notes, fmt.Sprintf("Extracted introduced version %s is not a valid version", introduced))
 		}
 		if fixed != "" && !hasVersion(validVersions, fixed) {
-			notes = append(notes, fmt.Sprintf("Extracted version %s is not a valid version", fixed))
+			notes = append(notes, fmt.Sprintf("Extracted fixed version %s is not a valid version", fixed))
+		}
+		if lastaffected != "" && !hasVersion(validVersions, lastaffected) {
+			notes = append(notes, fmt.Sprintf("Extracted last_affected version %s is not a valid version", lastaffected))
+		}
+		// Favour fixed over last_affected for schema compliance.
+		if fixed != "" && lastaffected != "" {
+			lastaffected = ""
 		}
 
 		versions = append(versions, AffectedVersion{
-			Introduced: introduced,
-			Fixed:      fixed,
+			Introduced:   introduced,
+			Fixed:        fixed,
+			LastAffected: lastaffected,
 		})
 	}
 
@@ -860,104 +1026,106 @@ func cleanVersion(version string) string {
 	return strings.TrimRight(version, ":")
 }
 
-func ExtractVersionInfo(cve CVEItem, validVersions []string) (v VersionInfo, notes []string) {
-	for _, reference := range cve.CVE.References.ReferenceData {
+func ExtractVersionInfo(cve CVE, validVersions []string) (v VersionInfo, notes []string) {
+	for _, reference := range cve.References {
 		// (Potentially faulty) Assumption: All viable Git commit reference links are fix commits.
-		if commit, err := extractGitCommit(reference.URL, Fixed); err == nil {
+		if commit, err := extractGitCommit(reference.Url, Fixed); err == nil {
 			v.AffectedCommits = append(v.AffectedCommits, commit)
 		}
 	}
 
 	gotVersions := false
-	for _, node := range cve.Configurations.Nodes {
-		if node.Operator != "OR" {
-			continue
-		}
-
-		for _, match := range node.CPEMatch {
-			if !match.Vulnerable {
+	for _, config := range cve.Configurations {
+		for _, node := range config.Nodes {
+			if node.Operator != "OR" {
 				continue
 			}
 
-			introduced := ""
-			fixed := ""
-			lastaffected := ""
-			if match.VersionStartIncluding != "" {
-				introduced = cleanVersion(match.VersionStartIncluding)
-			} else if match.VersionStartExcluding != "" {
-				var err error
-				introduced, err = nextVersion(validVersions, cleanVersion(match.VersionStartExcluding))
-				if err != nil {
-					notes = append(notes, err.Error())
-				}
-			}
-
-			if match.VersionEndExcluding != "" {
-				fixed = cleanVersion(match.VersionEndExcluding)
-			} else if match.VersionEndIncluding != "" {
-				var err error
-				// Infer the fixed version from the next version after.
-				fixed, err = nextVersion(validVersions, cleanVersion(match.VersionEndIncluding))
-				if err != nil {
-					notes = append(notes, err.Error())
-					// if that inference failed, we know this version was definitely still vulnerable.
-					lastaffected = cleanVersion(match.VersionEndIncluding)
-					notes = append(notes, fmt.Sprintf("Using %s as last_affected version instead", cleanVersion(match.VersionEndIncluding)))
-				}
-			}
-
-			if introduced == "" && fixed == "" && lastaffected == "" {
-				// See if a last affected version is inferable from the CPE string.
-				// In this situation there is no known introduced version.
-				CPE, err := ParseCPE(match.CPE23URI)
-				if err != nil {
+			for _, match := range node.CPEMatch {
+				if !match.Vulnerable {
 					continue
 				}
-				if CPE.Part != "a" {
-					// Skip operating system CPEs.
+
+				introduced := ""
+				fixed := ""
+				lastaffected := ""
+				if match.VersionStartIncluding != nil {
+					introduced = cleanVersion(*match.VersionStartIncluding)
+				} else if match.VersionStartExcluding != nil {
+					var err error
+					introduced, err = nextVersion(validVersions, cleanVersion(*match.VersionStartExcluding))
+					if err != nil {
+						notes = append(notes, err.Error())
+					}
+				}
+
+				if match.VersionEndExcluding != nil {
+					fixed = cleanVersion(*match.VersionEndExcluding)
+				} else if match.VersionEndIncluding != nil {
+					var err error
+					// Infer the fixed version from the next version after.
+					fixed, err = nextVersion(validVersions, cleanVersion(*match.VersionEndIncluding))
+					if err != nil {
+						notes = append(notes, err.Error())
+						// if that inference failed, we know this version was definitely still vulnerable.
+						lastaffected = cleanVersion(*match.VersionEndIncluding)
+						notes = append(notes, fmt.Sprintf("Using %s as last_affected version instead", cleanVersion(*match.VersionEndIncluding)))
+					}
+				}
+
+				if introduced == "" && fixed == "" && lastaffected == "" {
+					// See if a last affected version is inferable from the CPE string.
+					// In this situation there is no known introduced version.
+					CPE, err := ParseCPE(match.Criteria)
+					if err != nil {
+						continue
+					}
+					if CPE.Part != "a" {
+						// Skip operating system CPEs.
+						continue
+					}
+					if slices.Contains([]string{"NA", "ANY"}, CPE.Version) {
+						// These are meaningless converting to commits.
+						continue
+					}
+					lastaffected = CPE.Version
+					if CPE.Update != "ANY" {
+						lastaffected += "-" + CPE.Update
+					}
+				}
+
+				if introduced == "" && fixed == "" && lastaffected == "" {
 					continue
 				}
-				if slices.Contains([]string{"NA", "ANY"}, CPE.Version) {
-					// These are meaningless converting to commits.
+
+				if introduced != "" && !hasVersion(validVersions, introduced) {
+					notes = append(notes, fmt.Sprintf("Warning: %s is not a valid introduced version", introduced))
+				}
+
+				if fixed != "" && !hasVersion(validVersions, fixed) {
+					notes = append(notes, fmt.Sprintf("Warning: %s is not a valid fixed version", fixed))
+				}
+
+				gotVersions = true
+				possibleNewAffectedVersion := AffectedVersion{
+					Introduced:   introduced,
+					Fixed:        fixed,
+					LastAffected: lastaffected,
+				}
+				if slices.Contains(v.AffectedVersions, possibleNewAffectedVersion) {
+					// Avoid appending duplicates
 					continue
 				}
-				lastaffected = CPE.Version
-				if CPE.Update != "ANY" {
-					lastaffected += "-" + CPE.Update
-				}
+				v.AffectedVersions = append(v.AffectedVersions, possibleNewAffectedVersion)
 			}
-
-			if introduced == "" && fixed == "" && lastaffected == "" {
-				continue
-			}
-
-			if introduced != "" && !hasVersion(validVersions, introduced) {
-				notes = append(notes, fmt.Sprintf("Warning: %s is not a valid introduced version", introduced))
-			}
-
-			if fixed != "" && !hasVersion(validVersions, fixed) {
-				notes = append(notes, fmt.Sprintf("Warning: %s is not a valid fixed version", fixed))
-			}
-
-			gotVersions = true
-			possibleNewAffectedVersion := AffectedVersion{
-				Introduced:   introduced,
-				Fixed:        fixed,
-				LastAffected: lastaffected,
-			}
-			if slices.Contains(v.AffectedVersions, possibleNewAffectedVersion) {
-				// Avoid appending duplicates
-				continue
-			}
-			v.AffectedVersions = append(v.AffectedVersions, possibleNewAffectedVersion)
 		}
 	}
 	if !gotVersions {
 		var extractNotes []string
-		v.AffectedVersions, extractNotes = extractVersionsFromDescription(validVersions, EnglishDescription(cve.CVE))
+		v.AffectedVersions, extractNotes = extractVersionsFromDescription(validVersions, EnglishDescription(cve))
 		notes = append(notes, extractNotes...)
 		if len(v.AffectedVersions) > 0 {
-			log.Printf("[%s] Extracted versions from description = %+v", cve.CVE.CVEDataMeta.ID, v.AffectedVersions)
+			log.Printf("[%s] Extracted versions from description = %+v", cve.ID, v.AffectedVersions)
 		}
 	}
 
@@ -986,15 +1154,12 @@ func ExtractVersionInfo(cve CVEItem, validVersions []string) (v VersionInfo, not
 	return v, notes
 }
 
-func CPEs(cve CVEItem) []string {
+func CPEs(cve CVE) []string {
 	var cpes []string
-	for _, node := range cve.Configurations.Nodes {
-		for _, match := range node.CPEMatch {
-			cpes = append(cpes, match.CPE23URI)
-		}
-		for _, child := range node.Children {
-			for _, match := range child.CPEMatch {
-				cpes = append(cpes, match.CPE23URI)
+	for _, config := range cve.Configurations {
+		for _, node := range config.Nodes {
+			for _, match := range node.CPEMatch {
+				cpes = append(cpes, match.Criteria)
 			}
 		}
 	}

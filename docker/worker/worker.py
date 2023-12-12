@@ -27,6 +27,8 @@ import sys
 import threading
 import time
 
+import requests
+
 import google.cloud.exceptions
 from google.cloud import ndb
 from google.cloud import pubsub_v1
@@ -389,6 +391,24 @@ class TaskRunner:
         return
 
       repo = None
+    elif source_repo.type == osv.SourceRepositoryType.REST_ENDPOINT:
+      url = source_repo.rest_api_url
+      request = requests.get(source_repo.rest_api_url, timeout=60)
+
+      if request.status_code != 200:
+        logging.error('Failed to fetch REST API: %s', request.status_code)
+        return
+      try:
+        vulns= request.json()
+        vulnerabilities = osv.parse_vulnerabilities_from_dict(
+            vulns, key_path=source_repo.key_path)
+      except Exception as e:
+        logging.exception('Failed to parse endpoint %s:%s', url, e)
+        return
+      current_sha256 = osv.sha256_bytes(request.content)
+
+      repo = None
+
     else:
       raise RuntimeError('Unsupported SourceRepository type.')
 

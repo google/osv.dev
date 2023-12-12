@@ -19,6 +19,7 @@ import datetime
 import json
 import logging
 import os
+import requests
 import shutil
 import threading
 import time
@@ -452,6 +453,50 @@ class Importer:
 
     logging.info("Finished processing bucket: %s", source_repo.name)
 
+  def _process_updates_rest(self, source_repo: osv.SourceRepository):
+    """Process updates from REST API."""
+    logging.info("Begin processing REST: %s", source_repo.name)
+    import_time_now = utcnow()
+    # check whether endpoint has been modified since last update
+    request = requests.head(source_repo.rest_api_url, timeout=60)
+    if request.status_code != 200:
+      logging.error('Failed to fetch REST API: %s', request.status_code)
+      return
+    last_modified = datetime.datetime.strptime(
+          request.headers['Last-Modified'], '%a, %d %b %Y %H:%M:%S %Z')  
+
+    if last_modified < source_repo.last_update_date:
+      logging.info('No changes since last update.')
+      return
+    request = requests.get(source_repo.rest_api_url, timeout=60)  
+    # Get all vulnerabilities from the REST API. (CURL approach)
+    vulns = request.json()
+    # Create tasks for changed files.
+    for vuln in vulns:
+      import_failure_logs = []
+      last_modified = vuln['modified']
+      if last_modified >= import_time_now: #This doesn't work as it is the last update date of the repo, not the last update date of the vulnerability
+        try:
+          _ = osv.parse_vulnerability_from_dict(vulns, source_repo.key_path, self._strict_validation)
+        except osv.sources.KeyPathError:
+          # Key path doesn't exist in the vulnerability.
+          # No need to log a full error, as this is expected result.
+          logging.info('Entry does not have an OSV entry: %s', vuln)
+          continue
+        except Exception as e:
+          logging.error('Failed to parse %s: %s', vuln['id'], str(e))
+          import_failure_logs.append('Failed to parse vulnerability "' + vuln['id'] +'"')
+          continue
+    
+    replace_importer_log(storage.Client(), source_repo.name,
+                         self._public_log_bucket, import_failure_logs)
+
+    source_repo.last_update_date = import_time_now
+    source_repo.put()
+
+    logging.info("Finished processing REST: %s", source_repo.name)
+
+
   def process_updates(self, source_repo: osv.SourceRepository):
     """Process user changes and updates."""
     if source_repo.type == osv.SourceRepositoryType.GIT:
@@ -460,6 +505,10 @@ class Importer:
 
     if source_repo.type == osv.SourceRepositoryType.BUCKET:
       self._process_updates_bucket(source_repo)
+      return
+
+    if source_repo.type == osv.SourceRepositoryType.REST:
+      self._process_updates_rest(source_repo)
       return
 
     raise RuntimeError('Invalid repo type.')

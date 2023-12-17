@@ -62,7 +62,7 @@ type CPEMatch struct {
 }
 
 // Vexingly, the timestamps used are not RFC 3339, but part of the (much) broader ISO 8601.
-const NVDISO8601Time = "2006-01-02T15:04:05.999"
+const NVDISO8601Time = "2006-01-02T15:04:05.999Z"
 
 type NVDTime struct {
 	time.Time

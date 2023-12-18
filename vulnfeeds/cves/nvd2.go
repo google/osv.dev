@@ -62,7 +62,7 @@ type CPEMatch struct {
 }
 
 // Vexingly, the timestamps used are not RFC 3339, but part of the (much) broader ISO 8601.
-const NVDISO8601Time = "2006-01-02T15:04:05.999Z"
+const NVDISO8601Time = "2006-01-02T15:04:05.999"
 
 type NVDTime struct {
 	time.Time
@@ -74,6 +74,12 @@ func (t *NVDTime) UnmarshalJSON(b []byte) (err error) {
 		t.Time = time.Time{}
 		return
 	}
+
+	// Some timestamps have a trailing Z. Some don't.
+	if strings.HasSuffix(s, "Z") {
+		s = s[:len(s)-1]
+	}
+
 	t.Time, err = time.Parse(NVDISO8601Time, s)
 	return
 }

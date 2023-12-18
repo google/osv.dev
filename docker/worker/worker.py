@@ -393,19 +393,37 @@ class TaskRunner:
       repo = None
     elif source_repo.type == osv.SourceRepositoryType.REST_ENDPOINT:
       url = source_repo.rest_api_url
-      request = requests.get(source_repo.rest_api_url, timeout=60)
-
-      if request.status_code != 200:
-        logging.error('Failed to fetch REST API: %s', request.status_code)
-        return
-      try:
+      testing = message.attributes['testing'] == 'true'
+      
+      if testing:
+        with open(url) as f:
+          vulns = json.loads(f.read())
+      else:
+        request = requests.get(source_repo.rest_api_url, timeout=60)
+        if request.status_code != 200:
+          logging.error('Failed to fetch REST API: %s', request.status_code)
         vulns= request.json()
-        vulnerabilities = osv.parse_vulnerabilities_from_dict(
-            vulns, key_path=source_repo.key_path)
+        return
+
+      
+      try:
+        
+        vulnerabilities = []
+        for vuln in vulns:
+            try:
+              for affected in vuln['affected']:
+                affected['package'] = {'name':'curl','ecosystem': 'curl'}
+              
+              filtered_vuln = osv.parse_vulnerability_from_dict(vuln)
+            except Exception as e:
+              logging.exception('Failed to parse %s:%s', vuln['id'], e)
+              #logging.error('vuln: %s', vuln)
+              continue
+            vulnerabilities.append(filtered_vuln)
       except Exception as e:
         logging.exception('Failed to parse endpoint %s:%s', url, e)
         return
-      current_sha256 = osv.sha256_bytes(request.content)
+      current_sha256 = osv.sha256_bytes(source_repo.rest_api_url.encode())
 
       repo = None
 

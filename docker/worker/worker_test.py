@@ -531,6 +531,22 @@ class FindOssFuzzFixViaCommitTest(unittest.TestCase):
         '949f182716f037e25394bbb98d39b3295d230a29', 'oss-fuzz:7331', '54321')
     self.assertIsNone(commit)
 
+# class RestTest(unittest.TestCase):
+#   def setUp(self):
+#     tests.reset_emulator()
+#     tests.mock_datetime(self)
+#     osv.SourceRepository(id='curl', name='curl', db_prefix='CURL-').put()
+#     allocated_bug = osv.Bug(
+    
+#     )
+#     allocated_bug.put()
+  
+#   def test_basic(self):
+#     """Basic test."""
+#     message = mock.Mock()
+#     message.attributes = {
+        
+#     }
 
 class UpdateTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
   """Vulnerability update tests."""
@@ -1368,6 +1384,47 @@ class UpdateTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
     del actual_result.affected_fuzzy
 
     self.expect_dict_equal('update_bucket_cve', actual_result._to_dict())
+
+  def test_update_rest(self):
+    """Test updating rest."""
+    self.source_repo.ignore_git = True
+    self.source_repo.type = osv.SourceRepositoryType.REST_ENDPOINT
+    # self.source_repo.rest_api_url = 'https://curl.se/docs/vuln.json'
+    self.source_repo.rest_api_url = os.path.join(TEST_DATA_DIR, 'curl.json')
+    self.source_repo.put()
+    sha = osv.sha256_bytes(self.source_repo.rest_api_url.encode())
+    task_runner = worker.TaskRunner(ndb_client, None, self.tmp_dir.name, None,
+                                    None)
+    message = mock.Mock()
+    message.attributes = {
+        'source': 'source',
+        'path': 'curl.json',
+        'original_sha256': sha,
+        'deleted': 'false',
+        'testing': 'true',
+    }
+    task_runner._source_update(message)
+    self.assertEqual(3, 1+1)
+
+  def test_update_rest_external(self):
+    """Test updating rest."""
+    self.source_repo.ignore_git = True
+    self.source_repo.type = osv.SourceRepositoryType.REST_ENDPOINT
+    self.source_repo.rest_api_url = 'https://curl.se/docs/vuln.json'
+    self.source_repo.put()
+    sha = osv.sha256_bytes(self.source_repo.rest_api_url.encode())
+    task_runner = worker.TaskRunner(ndb_client, None, self.tmp_dir.name, None,
+                                    None)
+    message = mock.Mock()
+    message.attributes = {
+        'source': 'source',
+        'path': 'curl.json',
+        'original_sha256': sha,
+        'deleted': 'false',
+        'testing': 'true',
+    }
+    task_runner._source_update(message)
+    self.assertEqual(3, 1+1)
 
   def test_last_affected_git(self):
     """Basic last_affected GIT enumeration."""

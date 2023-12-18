@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/json"
+	"fmt"
 	"log"
 	"os"
 	"testing"
@@ -12,20 +13,24 @@ import (
 	"github.com/google/osv/vulnfeeds/utility"
 )
 
-func loadTestData(cveName string) cves.CVEItem {
-	file, err := os.Open("../../test_data/nvdcve-1.1-test-data.json")
+func loadTestData2(cveName string) cves.Vulnerability {
+	fileName := fmt.Sprintf("../../test_data/nvdcve-2.0/%s.json", cveName)
+	file, err := os.Open(fileName)
 	if err != nil {
-		log.Fatalf("Failed to load test data")
+		log.Fatalf("Failed to load test data from %q: %#v", fileName, err)
 	}
-	var nvdCves cves.NVDCVE
-	json.NewDecoder(file).Decode(&nvdCves)
-	for _, item := range nvdCves.CVEItems {
-		if item.CVE.CVEDataMeta.ID == cveName {
-			return item
+	var nvdCves cves.CVEAPIJSON20Schema
+	err = json.NewDecoder(file).Decode(&nvdCves)
+	if err != nil {
+		log.Fatalf("Failed to decode %q: %+v", fileName, err)
+	}
+	for _, vulnerability := range nvdCves.Vulnerabilities {
+		if string(vulnerability.CVE.ID) == cveName {
+			return vulnerability
 		}
 	}
-	log.Fatalf("test data doesn't contain specified CVE")
-	return cves.CVEItem{}
+	log.Fatalf("test data doesn't contain %q", cveName)
+	return cves.Vulnerability{}
 }
 
 func TestLoadParts(t *testing.T) {
@@ -37,7 +42,7 @@ func TestLoadParts(t *testing.T) {
 		t.Errorf("Expected %d entries, got %d entries: %#v", expectedPartCount, actualPartCount, maps.Keys(allParts))
 	}
 
-	tests := map[string]struct {
+	tests := map[cves.CVEID]struct {
 		ecosystems []string
 	}{
 		"CVE-2015-9251": {
@@ -77,9 +82,9 @@ func TestLoadParts(t *testing.T) {
 }
 
 func TestCombineIntoOSV(t *testing.T) {
-	cveStuff := map[string]cves.CVEItem{
-		"CVE-2022-33745": loadTestData("CVE-2022-33745"),
-		"CVE-2022-32746": loadTestData("CVE-2022-32746"),
+	cveStuff := map[cves.CVEID]cves.Vulnerability{
+		"CVE-2022-33745": loadTestData2("CVE-2022-33745"),
+		"CVE-2022-32746": loadTestData2("CVE-2022-32746"),
 	}
 	allParts := loadParts("../../test_data/parts")
 

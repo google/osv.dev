@@ -30,7 +30,6 @@ Not everything here needs to be managed by Terraform, this is just for reference
   - `oss-fuzz-osv-mappings`
   - `oss-fuzz-osv-vulns`
   - `oss-vdb-tf` (which is where the terraform state is stored)
-  - `osv-backup`
   - `test-python-vulns`
   - `test-bucket-osv`
   - `test-osv-source-bucket`

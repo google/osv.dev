@@ -1,0 +1,40 @@
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: nvd-mirror
+spec:
+  schedule: "0 */2 * * *"
+  concurrencyPolicy: Forbid
+  failedJobsHistoryLimit: 3
+  jobTemplate:
+    spec:
+      activeDeadlineSeconds: 2100
+      template:
+        spec:
+          tolerations:
+          - key: workloadType
+            operator: Equal
+            value: highend
+          containers:
+          - name: nvd-mirror
+            env:
+            - name: WORK_DIR
+              value: /tmp
+            image: nvd-mirror
+            imagePullPolicy: Always
+            securityContext:
+              privileged: true
+            resources:
+              requests:
+                cpu: "30"
+                memory: "192G"
+              limits:
+                cpu: "30"
+                memory: "192G"
+          nodeSelector:
+            cloud.google.com/gke-nodepool: highend
+          restartPolicy: OnFailure
+          volumes:
+            - name: "ssd"
+              hostPath:
+                path: "/mnt/disks/ssd0"

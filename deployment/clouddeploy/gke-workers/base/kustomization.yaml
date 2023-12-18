@@ -11,3 +11,5 @@ resources:
 - gen-cperepos-map.yaml
 - nvd-cve-osv.yaml
 - alias-computation.yaml
+- nvd-mirror.yaml
+- backup.yaml

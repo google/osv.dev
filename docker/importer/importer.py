@@ -151,6 +151,23 @@ class Importer:
         original_sha256=original_sha256,
         deleted=str(deleted).lower(),
         req_timestamp=str(int(time.time())))
+  # def _request_analysis_external_rest(self,
+  #                                source_repo,
+  #                                original_sha256,
+  #                                path,
+  #                                message,
+  #                                deleted=False):
+  #   """Request analysis."""
+  #   self._publisher.publish(
+  #       self._tasks_topic,
+  #       data=b'',
+  #       type='update',
+  #       source=source_repo.name,
+  #       path=path,
+  #       original_sha256=original_sha256,
+  #       deleted=str(deleted).lower(),
+  #       message=message,
+  #       req_timestamp=str(int(time.time())))
 
   def _request_internal_analysis(self, bug):
     """Request internal analysis."""
@@ -456,37 +473,44 @@ class Importer:
   def _process_updates_rest(self, source_repo: osv.SourceRepository):
     """Process updates from REST API."""
     logging.info("Begin processing REST: %s", source_repo.name)
-    import_time_now = utcnow()
-    # check whether endpoint has been modified since last update
+    import_time_now = utcnow()   
+   # if source_repo.rest_api_url[0:4] == 'http':
     request = requests.head(source_repo.rest_api_url, timeout=60)
     if request.status_code != 200:
       logging.error('Failed to fetch REST API: %s', request.status_code)
       return
     last_modified = datetime.datetime.strptime(
-          request.headers['Last-Modified'], '%a, %d %b %Y %H:%M:%S %Z')  
-
+          request.headers['Last-Modified'], '%a, %d %b %Y %H:%M:%S %Z')
+    # Check whether endpoint has been modified since last update
     if last_modified < source_repo.last_update_date:
       logging.info('No changes since last update.')
       return
     request = requests.get(source_repo.rest_api_url, timeout=60)  
     # Get all vulnerabilities from the REST API. (CURL approach)
     vulns = request.json()
+    #else:
+   #   with open(source_repo.rest_api_url) as f:
+  #      vulns = json.loads(f.read())
     # Create tasks for changed files.
     for vuln in vulns:
       import_failure_logs = []
-      last_modified = vuln['modified']
-      if last_modified >= import_time_now: #This doesn't work as it is the last update date of the repo, not the last update date of the vulnerability
-        try:
-          _ = osv.parse_vulnerability_from_dict(vulns, source_repo.key_path, self._strict_validation)
-        except osv.sources.KeyPathError:
-          # Key path doesn't exist in the vulnerability.
-          # No need to log a full error, as this is expected result.
-          logging.info('Entry does not have an OSV entry: %s', vuln)
-          continue
-        except Exception as e:
-          logging.error('Failed to parse %s: %s', vuln['id'], str(e))
-          import_failure_logs.append('Failed to parse vulnerability "' + vuln['id'] +'"')
-          continue
+      last_modified = datetime.datetime.strptime(
+          vuln['modified'], '%Y-%m-%dT%H:%M:%S.%fZ')
+     
+      if last_modified < source_repo.last_update_date:
+        continue
+      try:
+        _ = osv.parse_vulnerability_from_dict(vulns, source_repo.key_path, self._strict_validation)
+        self._request_analysis_external(source_repo, osv.sha256_bytes(source_repo.rest_api_url.encode()), vuln['id'])
+      except osv.sources.KeyPathError:
+        # Key path doesn't exist in the vulnerability.
+        # No need to log a full error, as this is expected result.
+        logging.info('Entry does not have an OSV entry: %s', vuln['id'])
+        continue
+      except Exception as e:
+        logging.error('Failed to parse %s: %s', vuln['id'], str(e))
+        import_failure_logs.append('Failed to parse vulnerability "' + vuln['id'] +'"')
+        continue
     
     replace_importer_log(storage.Client(), source_repo.name,
                          self._public_log_bucket, import_failure_logs)
@@ -507,7 +531,7 @@ class Importer:
       self._process_updates_bucket(source_repo)
       return
 
-    if source_repo.type == osv.SourceRepositoryType.REST:
+    if source_repo.type == osv.SourceRepositoryType.REST_ENDPOINT:
       self._process_updates_rest(source_repo)
       return
 

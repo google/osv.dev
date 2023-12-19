@@ -15,8 +15,14 @@
 import datetime
 import os
 import shutil
+import logging
 import tempfile
 import unittest
+import http.server
+import socketserver
+import json
+import threading
+
 from unittest import mock
 
 from google.cloud import ndb
@@ -40,7 +46,36 @@ _MIN_INVALID_VULNERABILITY = '''{
    "id":"OSV-2017-145",
    "schema_version":"1.3.0",
 }'''
+PORT = 8080
+SERVER_ADDRESS = ('localhost', PORT)
 
+
+class MockDataHandler(http.server.BaseHTTPRequestHandler):
+
+    def do_GET(self):
+        try:
+            with open('testdata/curl.json', 'r') as f:
+                data = json.load(f)
+            self.send_response(200)
+            self.send_header('Content-Type', 'application/json')
+            self.send_header('Last-Modified', 'Fri, 01 Jan 2021 00:00:00 GMT')
+            self.end_headers()
+            self.wfile.write(json.dumps(data).encode('utf-8'))
+        except:
+            self.send_error(404, 'File not found')
+    def do_HEAD(self):
+        print(self.path)
+        try:
+            with open('testdata/curl.json', 'r') as f:
+                json.load(f)
+            self.send_response(200)
+            logging.error("here")
+            self.send_header('Content-Type', 'application/json')
+            self.send_header('Last-Modified', 'Fri, 01 Jan 2021 00:00:00 GMT')
+            self.end_headers()
+        except:
+           self.send_error(404, 'File not found')
+            
 
 @mock.patch('importer.utcnow', lambda: datetime.datetime(2021, 1, 1))
 class ImporterTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
@@ -553,6 +588,78 @@ class BucketImporterTest(unittest.TestCase):
         any('Failed to parse vulnerability "a/b/test-invalid.json"' in x[0][0]
             for x in upload_from_str.call_args_list))
 
+@mock.patch('importer.utcnow', lambda: datetime.datetime(2021, 1, 1))
+class RESTImporterTest(unittest.TestCase):
+    """REST importer tests."""
+    httpd = None
+    def _load_test_data(self, name):
+        """Load test data."""
+        with open(os.path.join(TEST_DATA_DIR, name)) as f:
+            return f.read()
+    
+    def setUp(self):
+        tests.reset_emulator()
+        self.maxDiff = None  # pylint: disable=invalid-name
+        self.tmp_dir = tempfile.mkdtemp()
+        
+        tests.mock_datetime(self)
+        self.mock_repo = tests.mock_repository(self)
+
+        storage_patcher = mock.patch('google.cloud.storage.Client')
+        self.addCleanup(storage_patcher.stop)
+        self.mock_storage_client = storage_patcher.start()
+
+        self.remote_source_repo_path = self.mock_repo.path
+        
+        date = datetime.datetime(2021, 1, 1)
+        self.source_repo = osv.SourceRepository(
+            type= osv.SourceRepositoryType.REST_ENDPOINT,
+            id='curl',
+            name='curl',
+            #rest_api_url=os.path.join(TEST_DATA_DIR, 'curl.json'),
+            rest_api_url = f'http://{SERVER_ADDRESS[0]}:{SERVER_ADDRESS[1]}',
+            # rest_api_url = 'https://curl.se/docs/vuln.json',
+            db_prefix='CURL-',
+            editable=False,
+            last_update_date=date)
+        self.source_repo.put()
+        self.tasks_topic = f'projects/{tests.TEST_PROJECT_ID}/topics/tasks'
+        
+        self.httpd =  http.server.HTTPServer(SERVER_ADDRESS, MockDataHandler)
+        print(f'Serving mock data at http://{SERVER_ADDRESS[0]}:{SERVER_ADDRESS[1]}...')
+        thread = threading.Thread(target=self.httpd.serve_forever)
+        thread.start()
+
+    def tearDown(self):
+        shutil.rmtree(self.tmp_dir, ignore_errors=True)
+        self.httpd.shutdown()
+
+    @mock.patch('google.cloud.pubsub_v1.PublisherClient.publish')
+    @mock.patch('time.time', return_value=12345.0)
+    def test_basic(self,unused_mock_time: mock.MagicMock,
+                 mock_publish: mock.MagicMock):
+        "Testing basic rest endpoint import"
+        logging.error("test_basic")
+        osv.Bug(
+            db_id='CURL-CVE-2023-46219',
+            source='curl',
+            public=True,
+            affected_packages=[{
+                'package': {
+                    'ecosystem': 'curl',
+                    'name': 'curl',
+                },
+            }],
+            import_last_modified= datetime.datetime.utcnow(),
+        ).put()
+        imp = importer.Importer('fake_public_key', 'fake_private_key', self.tmp_dir,
+                                importer.DEFAULT_PUBLIC_LOGGING_BUCKET, 'bucket',
+                                True)
+        imp.run()
+        bug = osv.Bug.get_by_id('CURL-CVE-2023-46219')
+        logging.error(bug)
+        self.assertEqual(1, len(osv.Bug.query().fetch()))
+        
 
 if __name__ == '__main__':
   os.system('pkill -f datastore')

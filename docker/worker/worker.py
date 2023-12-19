@@ -404,20 +404,16 @@ class TaskRunner:
           logging.error('Failed to fetch REST API: %s', request.status_code)
         vulns= request.json()
         return
-
-      
       try:
-        
         vulnerabilities = []
         for vuln in vulns:
             try:
-              for affected in vuln['affected']:
-                affected['package'] = {'name':'curl','ecosystem': 'curl'}
+              # for affected in vuln['affected']:
+              #   affected['package'] = {'name':'curl','ecosystem': 'curl'}
               
               filtered_vuln = osv.parse_vulnerability_from_dict(vuln)
             except Exception as e:
               logging.exception('Failed to parse %s:%s', vuln['id'], e)
-              #logging.error('vuln: %s', vuln)
               continue
             vulnerabilities.append(filtered_vuln)
       except Exception as e:

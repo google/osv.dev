@@ -314,7 +314,7 @@ class Bug(ndb.Model):
     """Get the bug ID."""
     if self.db_id:
       return self.db_id
-    
+
     # TODO(ochang): Remove once all existing bugs have IDs migrated.
     if re.match(r'^\d+', self.key.id()):
       return self.OSV_ID_PREFIX + self.key.id()
@@ -348,7 +348,7 @@ class Bug(ndb.Model):
     """Tokenize value for indexing."""
     if not value:
       return []
- 
+
     value_lower = value.lower()
     return re.split(r'\W+', value_lower) + [value_lower]
 
@@ -783,8 +783,6 @@ class SourceRepository(ndb.Model):
   rest_api_url = ndb.StringProperty()
   # Bucket name for SourceRepositoryType.BUCKET.
   bucket = ndb.StringProperty()
-  # API endpoint for SourceRepositoryType.REST_ENDPOINT.
-  rest_api_url = ndb.StringProperty()
   # Vulnerability data not under this path is ignored by the importer.
   directory_path = ndb.StringProperty()
   # Last synced hash for SourceRepositoryType.GIT.

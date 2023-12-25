@@ -7,7 +7,7 @@ API documentation is available [here](https://google.github.io/osv.dev/api/).
 
 ## Viewing the web UI
 
-An instance of OSV's web UI is deployed at <https://osv.dev>.
+An instance of OSV's web U I is deployed at <https://osv.dev>.
 
 ## Using the scanner
 

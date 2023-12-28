@@ -465,7 +465,7 @@ class Importer:
                                                '%a, %d %b %Y %H:%M:%S %Z')
     # Check whether endpoint has been modified since last update
     if last_modified < source_repo.last_update_date:
-      logging.info('No changes since last update.')
+      print('No changes since last update.')
       return
     request = requests.get(source_repo.rest_api_url, timeout=60)
     # Get all vulnerabilities from the REST API. (CURL approach)
@@ -480,7 +480,7 @@ class Importer:
       if last_modified < source_repo.last_update_date:
         continue
       try:
-        _ = osv.parse_vulnerability_from_dict(vulns, source_repo.key_path,
+        _ = osv.parse_vulnerability_from_dict(vuln, source_repo.key_path,
                                               self._strict_validation)
         self._request_analysis_external(
             source_repo, osv.sha256_bytes(source_repo.rest_api_url.encode()),
@@ -491,7 +491,7 @@ class Importer:
         logging.info('Entry does not have an OSV entry: %s', vuln['id'])
         continue
       except Exception as e:
-        logging.error('Failed to parse %s: %s', vuln['id'], str(e))
+        logging.error('Failed to parse %s', vuln['id'])
         import_failure_logs.append('Failed to parse vulnerability "' +
                                    vuln['id'] + '"')
         continue

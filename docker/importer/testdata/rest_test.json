@@ -1,0 +1,317 @@
+
+   [{
+        "schema_version": "1.5.0",
+        "id": "CURL-CVE-2023-46219",
+        "aliases": [
+            "CVE-2023-46219"
+        ],
+        "summary": "HSTS long file name clears contents",
+        "modified": "2023-12-04T10:12:08.00Z",
+        "database_specific": {
+            "package": "curl",
+            "URL": "https://curl.se/docs/CVE-2023-46219.json",
+            "www": "https://curl.se/docs/CVE-2023-46219.html",
+            "issue": "https://hackerone.com/reports/2236133",
+            "CWE": {
+                "id": "CWE-311",
+                "desc": "Missing Encryption of Sensitive Data"
+            },
+            "award": {
+                "amount": "540",
+                "currency": "USD"
+            },
+            "last_affected": "8.4.0",
+            "severity": "Low"
+        },
+        "published": "2023-12-06T08:00:00.00Z",
+        "affected": [
+            {
+                "ranges": [
+                    {
+                        "type": "SEMVER",
+                        "events": [
+                            {
+                                "introduced": "7.84.0"
+                            },
+                            {
+                                "fixed": "8.5.0"
+                            }
+                        ]
+                    },
+                    {
+                        "type": "GIT",
+                        "repo": "https://github.com/curl/curl.git",
+                        "events": [
+                            {
+                                "introduced": "20f9dd6bae50b7223171b17ba7798946e74f877f"
+                            },
+                            {
+                                "fixed": "73b65e94f3531179de45c6f3c836a610e3d0a846"
+                            }
+                        ]
+                    }
+                ],
+                "versions": [
+                    "8.4.0",
+                    "8.3.0",
+                    "8.2.1",
+                    "8.2.0",
+                    "8.1.2",
+                    "8.1.1",
+                    "8.1.0",
+                    "8.0.1",
+                    "8.0.0",
+                    "7.88.1",
+                    "7.88.0",
+                    "7.87.0",
+                    "7.86.0",
+                    "7.85.0",
+                    "7.84.0"
+                ]
+            }
+        ],
+        "credits": [
+            {
+                "name": "Maksymilian Arciemowicz",
+                "type": "FINDER"
+            },
+            {
+                "name": "Daniel Stenberg",
+                "type": "REMEDIATION_DEVELOPER"
+            }
+        ],
+        "details": "When saving HSTS data to an excessively long file name, curl could end up\nremoving all contents, making subsequent requests using that file unaware of\nthe HSTS status they should otherwise use."
+    },
+    {
+        "schema_version": "1.5.0",
+        "id": "CURL-CVE-2023-46218",
+        "aliases": [
+            "CVE-2023-46218"
+        ],
+        "summary": "cookie mixed case PSL bypass",
+        "modified": "2023-12-04T10:16:25.00Z",
+        "database_specific": {
+            "package": "curl",
+            "URL": "https://curl.se/docs/CVE-2023-46218.json",
+            "www": "https://curl.se/docs/CVE-2023-46218.html",
+            "issue": "https://hackerone.com/reports/2212193",
+            "CWE": {
+                "id": "CWE-201",
+                "desc": "Information Exposure Through Sent Data"
+            },
+            "award": {
+                "amount": "2540",
+                "currency": "USD"
+            },
+            "last_affected": "8.4.0",
+            "severity": "Medium"
+        },
+        "published": "2023-12-06T08:00:00.00Z",
+        "affected": [
+            {
+                "ranges": [
+                    {
+                        "type": "SEMVER",
+                        "events": [
+                            {
+                                "introduced": "7.46.0"
+                            },
+                            {
+                                "fixed": "8.5.0"
+                            }
+                        ]
+                    },
+                    {
+                        "type": "GIT",
+                        "repo": "https://github.com/curl/curl.git",
+                        "events": [
+                            {
+                                "introduced": "e77b5b7453c1e8ccd7ec0816890d98e2f392e465"
+                            },
+                            {
+                                "fixed": "2b0994c29a721c91c572cff7808c572a24d251eb"
+                            }
+                        ]
+                    }
+                ],
+                "versions": [
+                    "8.4.0",
+                    "8.3.0",
+                    "8.2.1"
+                ]
+            }
+        ],
+        "credits": [
+            {
+                "name": "Harry Sintonen",
+                "type": "FINDER"
+            },
+            {
+                "name": "Daniel Stenberg",
+                "type": "REMEDIATION_DEVELOPER"
+            }
+        ],
+        "details": "This flaw allows a malicious HTTP server to set \"super cookies\" in curl that\nare then passed back to more origins than what is otherwise allowed or\npossible. This allows a site to set cookies that then would get sent to\ndifferent and unrelated sites and domains.\n\nIt could do this by exploiting a mixed case flaw in curl's function that\nverifies a given cookie domain against the Public Suffix List (PSL). For\nexample a cookie could be set with `domain=co.UK` when the URL used a\nlowercase hostname `curl.co.uk`, even though `co.uk` is listed as a PSL\ndomain."
+    },
+    {
+        "schema_version": "1.5.0",
+        "id": "CURL-CVE-2023-23915",
+        "aliases": [
+            "CVE-2023-23915"
+        ],
+        "summary": "HSTS amnesia with --parallel",
+        "modified": "2023-05-09T13:59:45.00Z",
+        "database_specific": {
+            "package": "curl",
+            "URL": "https://curl.se/docs/CVE-2023-23915.json",
+            "www": "https://curl.se/docs/CVE-2023-23915.html",
+            "issue": "https://hackerone.com/reports/1814333",
+            "CWE": {
+                "id": "CWE-319",
+                "desc": "Cleartext Transmission of Sensitive Information"
+            },
+            "award": {
+                "amount": "480",
+                "currency": "USD"
+            },
+            "last_affected": "7.87.0",
+            "severity": "Low"
+        },
+        "published": "2023-02-15T08:00:00.00Z",
+        "affected": [
+            {
+                "ranges": [
+                    {
+                        "type": "SEMVER",
+                        "events": [
+                            {
+                                "introduced": "7.77.0"
+                            },
+                            {
+                                "fixed": "7.88.0"
+                            }
+                        ]
+                    },
+                    {
+                        "type": "GIT",
+                        "repo": "https://github.com/curl/curl.git",
+                        "events": [
+                            {
+                                "introduced": "7385610d0c74c6a254fea5e4cd6e1d559d848c8c"
+                            },
+                            {
+                                "fixed": "076a2f629119222aeeb50f5a03bf9f9052fabb9a"
+                            }
+                        ]
+                    }
+                ],
+                "versions": [
+                    "7.87.0",
+                    "7.86.0",
+                    "7.85.0",
+                    "7.84.0",
+                    "7.83.1",
+                    "7.83.0",
+                    "7.82.0",
+                    "7.81.0",
+                    "7.80.0",
+                    "7.79.1",
+                    "7.79.0",
+                    "7.78.0",
+                    "7.77.0"
+                ]
+            }
+        ],
+        "credits": [
+            {
+                "name": "Harry Sintonen",
+                "type": "FINDER"
+            },
+            {
+                "name": "Daniel Stenberg",
+                "type": "REMEDIATION_DEVELOPER"
+            }
+        ],
+        "details": "curl's HSTS cache saving behaves wrongly when multiple URLs are requested in\nparallel.\n\nUsing its HSTS support, curl can be instructed to use HTTPS instead of using\nan insecure clear-text HTTP step even when HTTP is provided in the URL. This\nHSTS mechanism would however surprisingly fail when multiple transfers are done\nin parallel as the HSTS cache file gets overwritten by the most recently\ncompleted transfer.\n\nA later HTTP-only transfer to the earlier host name would then *not* get\nupgraded properly to HSTS.\n\nReproducible like this:\n\n1. `curl --hsts hsts.txt --parallel https://curl.se https://example.com`\n2. `curl --hsts hsts.txt http://curl.se`"
+    },
+    {
+        "schema_version": "1.5.0",
+        "id": "CURL-CVE-2023-23914",
+        "aliases": [
+            "CVE-2023-23914"
+        ],
+        "summary": "HSTS ignored on multiple requests",
+        "modified": "2023-05-09T13:59:45.00Z",
+        "database_specific": {
+            "package": "curl",
+            "URL": "https://curl.se/docs/CVE-2023-23914.json",
+            "www": "https://curl.se/docs/CVE-2023-23914.html",
+            "issue": "https://hackerone.com/reports/1813864",
+            "CWE": {
+                "id": "CWE-319",
+                "desc": "Cleartext Transmission of Sensitive Information"
+            },
+            "award": {
+                "amount": "480",
+                "currency": "USD"
+            },
+            "last_affected": "7.87.0",
+            "severity": "Low"
+        },
+        "published": "2023-02-15T08:00:00.00Z",
+        "affected": [
+            {
+                "ranges": [
+                    {
+                        "type": "SEMVER",
+                        "events": [
+                            {
+                                "introduced": "7.77.0"
+                            },
+                            {
+                                "fixed": "7.88.0"
+                            }
+                        ]
+                    },
+                    {
+                        "type": "GIT",
+                        "repo": "https://github.com/curl/curl.git",
+                        "events": [
+                            {
+                                "introduced": "7385610d0c74c6a254fea5e4cd6e1d559d848c8c"
+                            },
+                            {
+                                "fixed": "076a2f629119222aeeb50f5a03bf9f9052fabb9a"
+                            }
+                        ]
+                    }
+                ],
+                "versions": [
+                    "7.87.0",
+                    "7.86.0",
+                    "7.85.0",
+                    "7.84.0",
+                    "7.83.1",
+                    "7.83.0",
+                    "7.82.0",
+                    "7.81.0",
+                    "7.80.0",
+                    "7.79.1",
+                    "7.79.0",
+                    "7.78.0",
+                    "7.77.0"
+                ]
+            }
+        ],
+        "credits": [
+            {
+                "name": "Harry Sintonen",
+                "type": "FINDER"
+            },
+            {
+                "name": "Daniel Stenberg",
+                "type": "REMEDIATION_DEVELOPER"
+            }
+        ],
+        "details": "curl's HSTS functionality fail when multiple URLs are requested serially.\n\nUsing its HSTS support, curl can be instructed to use HTTPS instead of using\nan insecure clear-text HTTP step even when HTTP is provided in the URL. This\nHSTS mechanism would however surprisingly be ignored by subsequent transfers\nwhen done on the same command line because the state would not be properly\ncarried on.\n\nReproducible like this:\n\n    curl --hsts \"\" https://curl.se http://curl.se\n\nThe first URL returns HSTS information that the second URL fails to take\nadvantage of."
+    }]

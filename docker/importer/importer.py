@@ -462,7 +462,7 @@ class Importer:
       self._process_updates_bucket(source_repo)
       return
 
-    raise RuntimeError('Invalid repo type.')
+    logging.error('Invalid repo type: %s - %d', source_repo.name, source_repo.type)
 
   def process_oss_fuzz(self, oss_fuzz_source):
     """Process OSS-Fuzz source data."""

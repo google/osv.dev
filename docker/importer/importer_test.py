@@ -573,7 +573,7 @@ class RESTImporterTest(unittest.TestCase):
     tests.mock_datetime(self)
     self.mock_repo = tests.mock_repository(self)
     warnings.filterwarnings("ignore", "unclosed", ResourceWarning)
-            
+
     storage_patcher = mock.patch('google.cloud.storage.Client')
     self.addCleanup(storage_patcher.stop)
     self.mock_storage_client = storage_patcher.start()
@@ -586,7 +586,7 @@ class RESTImporterTest(unittest.TestCase):
         name='curl',
         rest_api_url=f'http://{SERVER_ADDRESS[0]}:{SERVER_ADDRESS[1]}',
         db_prefix='CURL-',
-        editable=False,)
+        editable=False)
     self.source_repo.put()
     self.tasks_topic = f'projects/{tests.TEST_PROJECT_ID}/topics/tasks'
 
@@ -597,7 +597,7 @@ class RESTImporterTest(unittest.TestCase):
   @mock.patch('google.cloud.pubsub_v1.PublisherClient.publish')
   @mock.patch('time.time', return_value=12345.0)
   def test_basic(self, unused_mock_time: mock.MagicMock,
-                 mock_publish: mock.MagicMock):
+                mock_publish: mock.MagicMock):
     "Testing basic rest endpoint import"
     self.httpd = http.server.HTTPServer(SERVER_ADDRESS, MockDataHandler)
     # print(f'Serving mock at http://{SERVER_ADDRESS[0]}:{SERVER_ADDRESS[1]}')
@@ -626,9 +626,9 @@ class RESTImporterTest(unittest.TestCase):
   @mock.patch('google.cloud.pubsub_v1.PublisherClient.publish')
   @mock.patch('time.time', return_value=12345.0)
   def test_time(self, unused_mock_time: mock.MagicMock,
-                 mock_publish: mock.MagicMock):
-    "Testing basic time after"
-    
+                mock_publish: mock.MagicMock):
+    """Testing none last modified"""
+
     MockDataHandler.last_modified = 'Fri, 01 Jan 2021 00:00:00 GMT'
     self.httpd = http.server.HTTPServer(SERVER_ADDRESS, MockDataHandler)
     # print(f'Serving mock at http://{SERVER_ADDRESS[0]}:{SERVER_ADDRESS[1]}')
@@ -656,8 +656,9 @@ class RESTImporterTest(unittest.TestCase):
 
   @mock.patch('google.cloud.pubsub_v1.PublisherClient.publish')
   @mock.patch('time.time', return_value=12345.0)
-  def test_dates_between(self, unused_mock_time: mock.MagicMock, mock_publish: mock.MagicMock):
-    "Testing basic time after"
+  def test_dates_between(self, unused_mock_time: mock.MagicMock,
+                         mock_publish: mock.MagicMock):
+    "Testing from date in between entries"
     self.httpd = http.server.HTTPServer(SERVER_ADDRESS, MockDataHandler)
     #print(f'Serving mock at http://{SERVER_ADDRESS[0]}:{SERVER_ADDRESS[1]}')
     thread = threading.Thread(target=self.httpd.serve_forever)
@@ -681,7 +682,6 @@ class RESTImporterTest(unittest.TestCase):
                             False)
     imp.run()
     mock_publish.assert_called()
-
 
 
 if __name__ == '__main__':

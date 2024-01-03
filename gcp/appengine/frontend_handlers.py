@@ -508,8 +508,13 @@ def sort_versions(versions: list[str], ecosystem: str) -> list[str]:
 def markdown(text):
   """Render markdown."""
   if text:
-    return markdown2.markdown(
+    md = markdown2.markdown(
         text, safe_mode='escape', extras=['fenced-code-blocks'])
+    # TODO(michaelkedar): Seems like there's a bug with markdown2 not escaping
+    # unclosed HTML comments <!--, which ends up commenting out the whole page
+    # See: https://github.com/trentm/python-markdown2/issues/563
+    # For now, manually replace any leftover comments with the escaped form
+    return md.replace('<!--', '&lt;!--') 
 
   return ''
 

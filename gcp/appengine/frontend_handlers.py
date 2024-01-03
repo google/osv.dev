@@ -514,7 +514,7 @@ def markdown(text):
     # unclosed HTML comments <!--, which ends up commenting out the whole page
     # See: https://github.com/trentm/python-markdown2/issues/563
     # For now, manually replace any leftover comments with the escaped form
-    return md.replace('<!--', '&lt;!--') 
+    return md.replace('<!--', '&lt;!--')
 
   return ''
 

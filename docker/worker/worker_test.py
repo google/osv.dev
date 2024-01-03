@@ -1554,47 +1554,6 @@ class UpdateTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
 
     self.expect_dict_equal("update_bucket_cve", actual_result._to_dict())
 
-  # def test_update_rest(self):
-  #   """Test updating rest."""
-  #   self.source_repo.ignore_git = True
-  #   self.source_repo.type = osv.SourceRepositoryType.REST_ENDPOINT
-  #   # self.source_repo.rest_api_url = 'https://curl.se/docs/vuln.json'
-  #   self.source_repo.rest_api_url = os.path.join(TEST_DATA_DIR, 'curl.json')
-  #   self.source_repo.put()
-  #   sha = osv.sha256_bytes(self.source_repo.rest_api_url.encode())
-  #   task_runner = worker.TaskRunner(ndb_client, None, self.tmp_dir.name, None,
-  #                                   None)
-  #   message = mock.Mock()
-  #   message.attributes = {
-  #       'source': 'source',
-  #       'path': 'curl.json',
-  #       'original_sha256': sha,
-  #       'deleted': 'false',
-  #       'testing': 'true',
-  #   }
-  #   task_runner._source_update(message)
-  #   self.assertEqual(3, 1+1)
-
-  # def test_update_rest_external(self):
-  #   """Test updating rest."""
-  #   self.source_repo.ignore_git = True
-  #   self.source_repo.type = osv.SourceRepositoryType.REST_ENDPOINT
-  #   self.source_repo.rest_api_url = 'https://curl.se/docs/vuln.json'
-  #   self.source_repo.put()
-  #   sha = osv.sha256_bytes(self.source_repo.rest_api_url.encode())
-  #   task_runner = worker.TaskRunner(ndb_client, None, self.tmp_dir.name, None,
-  #                                   None)
-  #   message = mock.Mock()
-  #   message.attributes = {
-  #       'source': 'source',
-  #       'path': 'curl.json',
-  #       'original_sha256': sha,
-  #       'deleted': 'false',
-  #       'testing': 'true',
-  #   }
-  #   task_runner._source_update(message)
-  #   self.assertEqual(3, 1+1)
-
   def test_last_affected_git(self):
     """Basic last_affected GIT enumeration."""
     self.source_repo.ignore_git = False

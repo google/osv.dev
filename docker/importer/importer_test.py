@@ -597,7 +597,7 @@ class RESTImporterTest(unittest.TestCase):
   @mock.patch('google.cloud.pubsub_v1.PublisherClient.publish')
   @mock.patch('time.time', return_value=12345.0)
   def test_basic(self, unused_mock_time: mock.MagicMock,
-                mock_publish: mock.MagicMock):
+                 mock_publish: mock.MagicMock):
     "Testing basic rest endpoint import"
     self.httpd = http.server.HTTPServer(SERVER_ADDRESS, MockDataHandler)
     # print(f'Serving mock at http://{SERVER_ADDRESS[0]}:{SERVER_ADDRESS[1]}')

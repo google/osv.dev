@@ -17,17 +17,17 @@ class MockDataHandler(http.server.BaseHTTPRequestHandler):
       self.send_header('Last-Modified', self.last_modified)
       self.end_headers()
       self.wfile.write(json.dumps(data).encode('utf-8'))
-    except:
+    except Exception:
       self.send_error(404, 'File not found')
 
   def do_HEAD(self):
     """Serve a mock HEAD request."""
     try:
       with open(self.file_path, 'r') as f:
-          json.load(f)
+        json.load(f)
       self.send_response(200)
       self.send_header('Content-Type', 'application/json')
       self.send_header('Last-Modified', self.last_modified)
       self.end_headers()
-    except:
+    except Exception:
       self.send_error(404, 'File not found')

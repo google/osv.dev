@@ -67,6 +67,8 @@ _DETERMINE_VER_MIN_SCORE_CUTOFF = 0.05
 # This should match the number in the indexer
 _BUCKET_SIZE = 512
 
+MAX_PACKAGE_NAME_LENGTH = 1500  # Maximum allowed package name length
+
 # Prefix for the
 _TAG_PREFIX = "refs/tags/"
 
@@ -213,9 +215,9 @@ class OSVServicer(osv_service_v1_pb2_grpc.OSVServicer,
 # Wrapped in a separate class
 @dataclass
 class ResponsesCount:
-  """Wraps responses count in a separate class 
+  """Wraps responses count in a separate class
   to allow it to be passed by reference
-  
+
   Also adds a interface to allow easy updating to a mutex
   if necessary
   """
@@ -233,7 +235,7 @@ class ResponsesCount:
 
   def page_limit(self) -> int:
     """
-    Returns the limit based on whether we have 
+    Returns the limit based on whether we have
     exceeded the _MAX_VULN_RESP_THRESH with the total number
     of responses in the entire query batch
     """
@@ -255,7 +257,7 @@ class QueryContext:
 def process_buckets(
     file_results: List[osv.FileResult]) -> List[osv.RepoIndexBucket]:
   """
-  Create buckets in the same process as 
+  Create buckets in the same process as
   indexer to generate the same bucket hashes
   """
   buckets: list[list[bytes]] = [[] for _ in range(_BUCKET_SIZE)]
@@ -367,7 +369,7 @@ def build_determine_version_result(
 
 def estimate_diff(num_bucket_change: int, file_count_diff: int) -> int:
   """
-  Estimates the number of files that have changed based on 
+  Estimates the number of files that have changed based on
   the number of buckets that changed.
   """
   estimate = _BUCKET_SIZE * math.log(
@@ -436,11 +438,17 @@ def determine_version(version_query: osv_service_v1_pb2.VersionQuery,
                                         len(version_query.file_hashes))
 
 
+def validate_package_name(package_name):
+  if len(package_name) > MAX_PACKAGE_NAME_LENGTH:
+    raise ValueError("Package name exceeds the maximum allowed length.")
+
+
 @ndb.tasklet
 def do_query(query, context: QueryContext, include_details=True):
   """Do a query."""
   if query.HasField('package'):
     package_name = query.package.name
+    validate_package_name(package_name)
     ecosystem = query.package.ecosystem
     purl_str = query.package.purl
   else:
@@ -834,7 +842,6 @@ def query_by_generic_helper(results: list, cursor, context: QueryContext,
       context.total_responses.add(1)
   return results, cursor
 
-
 @ndb.tasklet
 def query_by_version(context: QueryContext,
                      package_name: str,
@@ -843,7 +850,6 @@ def query_by_version(context: QueryContext,
                      version,
                      to_response: Callable = bug_to_response):
   """Query by (fuzzy) version."""
-
   if package_name:
     query = osv.Bug.query(
         osv.Bug.status == osv.BugStatus.PROCESSED,

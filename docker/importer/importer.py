@@ -470,7 +470,7 @@ class Importer:
     request = requests.get(source_repo.rest_api_url, timeout=60)
     # Get all vulnerabilities from the REST API. (CURL approach)
     vulns = request.json()
-
+    vulns_to_update = []
     # Create tasks for changed files.
     for vuln in vulns:
       import_failure_logs = []
@@ -482,9 +482,7 @@ class Importer:
       try:
         _ = osv.parse_vulnerability_from_dict(vuln, source_repo.key_path,
                                               self._strict_validation)
-        self._request_analysis_external(
-            source_repo, osv.sha256_bytes(source_repo.rest_api_url.encode()),
-            vuln['id'])
+        vulns_to_update.append(vuln['id'])
       except osv.sources.KeyPathError:
         # Key path doesn't exist in the vulnerability.
         # No need to log a full error, as this is expected result.
@@ -495,7 +493,10 @@ class Importer:
         import_failure_logs.append('Failed to parse vulnerability "' +
                                    vuln['id'] + '"')
         continue
-
+    if vulns_to_update != []:
+      self._request_analysis_external(
+            source_repo, osv.sha256_bytes(source_repo.rest_api_url.encode()),
+            vulns_to_update)
     replace_importer_log(storage.Client(), source_repo.name,
                          self._public_log_bucket, import_failure_logs)
 

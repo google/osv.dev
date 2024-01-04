@@ -392,26 +392,24 @@ class TaskRunner:
 
       repo = None
     elif source_repo.type == osv.SourceRepositoryType.REST_ENDPOINT:
-      url = source_repo.rest_api_url
-      request = requests.get(url, timeout=60)
-      if request.status_code != 200:
-        logging.error('Failed to fetch REST API: %s', request.status_code)
-        return
-      vulns = request.json()
-      try:
-        vulnerabilities = []
-        for vuln in vulns:
-          try:
-            filtered_vuln = osv.parse_vulnerability_from_dict(vuln)
-          except Exception as e:
+      vulnerabilities = []
+      for vuln in path:
+        url = source_repo.repo_url + vuln + '.json'
+        print(url)
+        request = requests.get(url, timeout=60)
+        if request.status_code != 200:
+            logging.error('Failed to fetch REST API: %s', request.status_code)
+            return
+        vuln = request.json()
+        try:
+          filtered_vuln = osv.parse_vulnerability_from_dict(vuln)
+        except Exception as e:
             logging.exception('Failed to parse %s:%s', vuln['id'], e)
             continue
-          vulnerabilities.append(filtered_vuln)
-      except Exception as e:
-        logging.exception('Failed to parse endpoint %s:%s', url, e)
-        return
+        vulnerabilities.append(filtered_vuln)
+     
       current_sha256 = osv.sha256_bytes(source_repo.rest_api_url.encode())
-
+      path = source_repo.rest_api_url
       repo = None
 
     else:

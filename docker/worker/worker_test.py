@@ -645,17 +645,23 @@ class RESTUpdateTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
     self.source_repo.type = osv.SourceRepositoryType.REST_ENDPOINT
     self.source_repo.rest_api_url = (
         f"http://{SERVER_ADDRESS[0]}:{SERVER_ADDRESS[1]}")
+    self.source_repo.repo_url= (
+        f"http://{SERVER_ADDRESS[0]}:{SERVER_ADDRESS[1]}/")
+    # self.source_repo.repo_url = 'https://curl.se/docs/'
+    # self.source_repo.rest_api_url = 'https://curl.se/docs/vulns.json'
     self.source_repo.put()
     sha = osv.sha256_bytes(self.source_repo.rest_api_url.encode())
     task_runner = worker.TaskRunner(ndb_client, None, self.tmp_dir.name, None,
                                     None)
+    vulns = []
+    vulns.append('CURL-CVE-2022-32221')
+    vulns.append('CURL-CVE-2023-38546')
     message = mock.Mock()
     message.attributes = {
         "source": "source",
-        "path": "curl.json",
+        "path": vulns,
         "original_sha256": sha,
         "deleted": "false",
-        "testing": "true",
     }
     task_runner._source_update(message)
     self.assertEqual(3, 1 + 1)

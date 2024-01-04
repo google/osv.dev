@@ -584,6 +584,7 @@ class RESTImporterTest(unittest.TestCase):
         type=osv.SourceRepositoryType.REST_ENDPOINT,
         id='curl',
         name='curl',
+        repo_url=f'http://{SERVER_ADDRESS[0]}:{SERVER_ADDRESS[1]}',
         rest_api_url=f'http://{SERVER_ADDRESS[0]}:{SERVER_ADDRESS[1]}',
         db_prefix='CURL-',
         editable=False)

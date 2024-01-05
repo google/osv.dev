@@ -493,10 +493,10 @@ class Importer:
         import_failure_logs.append('Failed to parse vulnerability "' +
                                    vuln['id'] + '"')
         continue
-    if vulns_to_update != []:
+    if vulns_to_update:
       self._request_analysis_external(
-            source_repo, osv.sha256_bytes(source_repo.rest_api_url.encode()),
-            vulns_to_update)
+          source_repo, osv.sha256_bytes(source_repo.rest_api_url.encode()),
+          vulns_to_update)
     replace_importer_log(storage.Client(), source_repo.name,
                          self._public_log_bucket, import_failure_logs)
 

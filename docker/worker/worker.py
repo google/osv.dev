@@ -398,16 +398,16 @@ class TaskRunner:
         print(url)
         request = requests.get(url, timeout=60)
         if request.status_code != 200:
-            logging.error('Failed to fetch REST API: %s', request.status_code)
-            return
+          logging.error('Failed to fetch REST API: %s', request.status_code)
+          return
         vuln = request.json()
         try:
           filtered_vuln = osv.parse_vulnerability_from_dict(vuln)
         except Exception as e:
-            logging.exception('Failed to parse %s:%s', vuln['id'], e)
-            continue
+          logging.exception('Failed to parse %s:%s', vuln['id'], e)
+          continue
         vulnerabilities.append(filtered_vuln)
-     
+
       current_sha256 = osv.sha256_bytes(source_repo.rest_api_url.encode())
       path = source_repo.rest_api_url
       repo = None

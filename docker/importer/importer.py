@@ -465,7 +465,7 @@ class Importer:
                                                '%a, %d %b %Y %H:%M:%S %Z')
     # Check whether endpoint has been modified since last update
     if last_modified < source_repo.last_update_date:
-      print('No changes since last update.')
+      logging.info('No changes since last update.')
       return
     request = requests.get(source_repo.rest_api_url, timeout=60)
     # Get all vulnerabilities from the REST API. (CURL approach)

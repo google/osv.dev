@@ -579,7 +579,6 @@ class RESTImporterTest(unittest.TestCase):
     self.mock_storage_client = storage_patcher.start()
 
     self.remote_source_repo_path = self.mock_repo.path
-
     self.source_repo = osv.SourceRepository(
         type=osv.SourceRepositoryType.REST_ENDPOINT,
         id='curl',
@@ -601,21 +600,8 @@ class RESTImporterTest(unittest.TestCase):
                  mock_publish: mock.MagicMock):
     "Testing basic rest endpoint import"
     self.httpd = http.server.HTTPServer(SERVER_ADDRESS, MockDataHandler)
-    # print(f'Serving mock at http://{SERVER_ADDRESS[0]}:{SERVER_ADDRESS[1]}')
     thread = threading.Thread(target=self.httpd.serve_forever)
     thread.start()
-    osv.Bug(
-        db_id='CURL-CVE-2023-46219',
-        source='curl',
-        public=True,
-        affected_packages=[{
-            'package': {
-                'ecosystem': 'curl',
-                'name': 'curl',
-            },
-        }],
-        import_last_modified=datetime.datetime.utcnow(),
-    ).put()
     self.source_repo.last_update_date = datetime.datetime(2020, 1, 1)
     self.source_repo.put()
     imp = importer.Importer('fake_public_key', 'fake_private_key', self.tmp_dir,
@@ -632,21 +618,8 @@ class RESTImporterTest(unittest.TestCase):
 
     MockDataHandler.last_modified = 'Fri, 01 Jan 2021 00:00:00 GMT'
     self.httpd = http.server.HTTPServer(SERVER_ADDRESS, MockDataHandler)
-    # print(f'Serving mock at http://{SERVER_ADDRESS[0]}:{SERVER_ADDRESS[1]}')
     thread = threading.Thread(target=self.httpd.serve_forever)
     thread.start()
-    # osv.Bug(
-    #     db_id='CURL-CVE-2023-46219',
-    #     source='curl',
-    #     public=True,
-    #     affected_packages=[{
-    #         'package': {
-    #             'ecosystem': 'curl',
-    #             'name': 'curl',
-    #         },
-    #     }],
-    #     import_last_modified=datetime.datetime.utcnow(),
-    # ).put()
     self.source_repo.last_update_date = datetime.datetime(2024, 1, 1)
     self.source_repo.put()
     imp = importer.Importer('fake_public_key', 'fake_private_key', self.tmp_dir,
@@ -661,21 +634,8 @@ class RESTImporterTest(unittest.TestCase):
                          mock_publish: mock.MagicMock):
     "Testing from date in between entries"
     self.httpd = http.server.HTTPServer(SERVER_ADDRESS, MockDataHandler)
-    #print(f'Serving mock at http://{SERVER_ADDRESS[0]}:{SERVER_ADDRESS[1]}')
     thread = threading.Thread(target=self.httpd.serve_forever)
     thread.start()
-    osv.Bug(
-        db_id='CURL-CVE-2023-46219',
-        source='curl',
-        public=True,
-        affected_packages=[{
-            'package': {
-                'ecosystem': 'curl',
-                'name': 'curl',
-            },
-        }],
-        import_last_modified=datetime.datetime.utcnow(),
-    ).put()
     self.source_repo.last_update_date = datetime.datetime(2023, 6, 6)
     self.source_repo.put()
     imp = importer.Importer('fake_public_key', 'fake_private_key', self.tmp_dir,

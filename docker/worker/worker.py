@@ -393,6 +393,8 @@ class TaskRunner:
       repo = None
     elif source_repo.type == osv.SourceRepositoryType.REST_ENDPOINT:
       vulnerabilities = []
+      if source_repo.repo_url[-1] != '/':
+        source_repo.repo_url += '/'
       for vuln in path:
         url = source_repo.repo_url + vuln + '.json'
         request = requests.get(url, timeout=60)

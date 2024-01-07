@@ -41,7 +41,6 @@ _ecosystems = {
     # SemVer-based ecosystems (remember keep synced with SEMVER_ECOSYSTEMS):
     'Bitnami': SemverEcosystem(),
     'crates.io': SemverEcosystem(),
-    'curl': SemverEcosystem(),
     'Go': SemverEcosystem(),
     'Hex': SemverEcosystem(),
     'npm': SemverEcosystem(),
@@ -64,7 +63,7 @@ _ecosystems = {
 # Semver-based ecosystems, should correspond to _ecosystems above.
 # TODO(michaelkedar): Avoid need to keep in sync with above.
 SEMVER_ECOSYSTEMS = {
-    'Bitnami', 'crates.io', 'Go', 'Hex', 'npm', 'SwiftURL', 'curl'
+    'Bitnami', 'crates.io', 'Go', 'Hex', 'npm', 'SwiftURL',
 }
 
 package_urls = {

@@ -22,6 +22,7 @@ import os
 import shutil
 import tempfile
 import threading
+import warnings
 import unittest
 from unittest import mock
 
@@ -620,14 +621,7 @@ class RESTUpdateTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
     mock_publish = mock.patch("google.cloud.pubsub_v1.PublisherClient.publish")
     self.mock_publish = mock_publish.start()
     self.addCleanup(mock_publish.stop)
-
-    osv.ecosystems.config.work_dir = os.path.join(
-        os.path.dirname(os.path.abspath(__file__)), "testdata/tmp/")
-
-    # Add fake ecosystems used in tests to supported ecosystems.
-    osv.ecosystems._ecosystems._ecosystems.update({
-        "ecosystem": osv.ecosystems.OrderingUnsupportedEcosystem(),
-    })
+    warnings.filterwarnings("ignore", "unclosed", ResourceWarning)
     self.httpd = http.server.HTTPServer(SERVER_ADDRESS, MockDataHandler)
     print(
         f"Serving mock data at http://{SERVER_ADDRESS[0]}:{SERVER_ADDRESS[1]}..."
@@ -662,7 +656,8 @@ class RESTUpdateTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
         "deleted": "false",
     }
     task_runner._source_update(message)
-    self.assertEqual(3, 1 + 1)
+    expected_vulns = ['CURL-CVE-2022-32221', 'CURL-CVE-2023-38546']
+    self.assertListEqual(vulns, expected_vulns)
 
 
 class UpdateTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):

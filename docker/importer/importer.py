@@ -480,9 +480,11 @@ class Importer:
       if last_modified < source_repo.last_update_date:
         continue
       try:
-        _ = osv.parse_vulnerability_from_dict(vuln, source_repo.key_path,
+        single_request = requests.get(source_repo.repo_url + vuln['ic'] + '.json', timeout=60)
+        single_vuln = single_request.json()
+        _ = osv.parse_vulnerability_from_dict(single_vuln, source_repo.key_path,
                                               self._strict_validation)
-        vulns_to_update.append(vuln['id'])
+        vulns_to_update.append(single_vuln['id'])
       except osv.sources.KeyPathError:
         # Key path doesn't exist in the vulnerability.
         # No need to log a full error, as this is expected result.

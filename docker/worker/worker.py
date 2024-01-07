@@ -395,7 +395,6 @@ class TaskRunner:
       vulnerabilities = []
       for vuln in path:
         url = source_repo.repo_url + vuln + '.json'
-        print(url)
         request = requests.get(url, timeout=60)
         if request.status_code != 200:
           logging.error('Failed to fetch REST API: %s', request.status_code)

@@ -13,7 +13,6 @@ class MockDataHandler(http.server.BaseHTTPRequestHandler):
     try:
       with open(self.file_path, 'r') as f:
         data = json.load(f)
-
       if self.path != '/':
         found = False
         # find the vulnerability to mock serve the new page

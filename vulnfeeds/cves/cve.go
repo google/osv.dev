@@ -15,6 +15,7 @@
 package cves
 
 import (
+	"strings"
 	"time"
 )
 
@@ -78,6 +79,9 @@ func EnglishDescription(cve CVE) string {
 }
 
 func ParseCVE5Timestamp(timestamp string) (time.Time, error) {
+	if strings.HasSuffix(timestamp, "Z") {
+		timestamp = timestamp[:len(timestamp)-1]
+	}
 	return time.Parse(CVE5TimeFormat, timestamp)
 }
 

@@ -585,7 +585,7 @@ class RESTImporterTest(unittest.TestCase):
         id='curl',
         name='curl',
         repo_url=f'http://{SERVER_ADDRESS[0]}:{SERVER_ADDRESS[1]}',
-        rest_api_url=f'http://{SERVER_ADDRESS[0]}:{SERVER_ADDRESS[1]}',
+        rest_api_url=f'http://{SERVER_ADDRESS[0]}:{SERVER_ADDRESS[1]}/',
         db_prefix='CURL-',
         editable=False)
     self.source_repo.put()
@@ -635,18 +635,18 @@ class RESTImporterTest(unittest.TestCase):
     # print(f'Serving mock at http://{SERVER_ADDRESS[0]}:{SERVER_ADDRESS[1]}')
     thread = threading.Thread(target=self.httpd.serve_forever)
     thread.start()
-    osv.Bug(
-        db_id='CURL-CVE-2023-46219',
-        source='curl',
-        public=True,
-        affected_packages=[{
-            'package': {
-                'ecosystem': 'curl',
-                'name': 'curl',
-            },
-        }],
-        import_last_modified=datetime.datetime.utcnow(),
-    ).put()
+    # osv.Bug(
+    #     db_id='CURL-CVE-2023-46219',
+    #     source='curl',
+    #     public=True,
+    #     affected_packages=[{
+    #         'package': {
+    #             'ecosystem': 'curl',
+    #             'name': 'curl',
+    #         },
+    #     }],
+    #     import_last_modified=datetime.datetime.utcnow(),
+    # ).put()
     self.source_repo.last_update_date = datetime.datetime(2024, 1, 1)
     self.source_repo.put()
     imp = importer.Importer('fake_public_key', 'fake_private_key', self.tmp_dir,

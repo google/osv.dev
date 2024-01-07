@@ -480,7 +480,10 @@ class Importer:
       if last_modified < source_repo.last_update_date:
         continue
       try:
-        single_request = requests.get(source_repo.repo_url + vuln['ic'] + '.json', timeout=60)
+        if source_repo.repo_url[-1] != '/':
+          source_repo.repo_url += '/'
+        single_request = requests.get(
+            source_repo.repo_url + vuln['id'] + '.json', timeout=60)
         single_vuln = single_request.json()
         _ = osv.parse_vulnerability_from_dict(single_vuln, source_repo.key_path,
                                               self._strict_validation)

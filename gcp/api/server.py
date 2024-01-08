@@ -36,6 +36,7 @@ from grpc_health.v1 import health_pb2
 from grpc_health.v1 import health_pb2_grpc
 from grpc_reflection.v1alpha import reflection
 from packageurl import PackageURL
+from packaging.utils import canonicalize_version
 
 import osv
 from osv import ecosystems
@@ -773,40 +774,54 @@ def _query_by_generic_version(
     version: str,
 ):
   """Query by generic version."""
-  # Try without normalizing.
-  results = []
-  query: ndb.Query = base_query.filter(osv.Bug.affected_fuzzy == version)
-  it: ndb.QueryIterator = query.iter(
-      # page_token can be the token for this query, or the token for the one
-      # below. If the token is used for the normalized query below, this query
-      # must have returned no results, so will still return no results, fall
-      # through to the query below again.
-      start_cursor=context.page_token)
-  cursor = None
 
-  while (yield it.has_next_async()):
-    if len(results) >= context.total_responses.page_limit():
-      cursor = it.cursor_after()
-      break
-    bug = it.next()
-    if _is_version_affected(bug.affected_packages, project, ecosystem, purl,
-                            version):
-      results.append(bug)
-      context.total_responses.add(1)
+  results = []
+
+  cursor = None
+  # Try without normalizing.
+  results, cursor = yield query_by_generic_helper(results, cursor, context,
+                                                  base_query, project,
+                                                  ecosystem, purl, version,
+                                                  False)
 
   if results:
     return results, cursor
 
+  # page_token can be the token for this query, or the token for the one
+  # below. If the token is used for the normalized query below, this query
+  # must have returned no results, so will still return no results, fall
+  # through to the query below again.
   # Try again after normalizing.
-  version = osv.normalize_tag(version)
-  query = base_query.filter(osv.Bug.affected_fuzzy == version)
-  it = query.iter(start_cursor=context.page_token)
+  results, cursor = yield query_by_generic_helper(results, cursor, context,
+                                                  base_query, project,
+                                                  ecosystem, purl,
+                                                  osv.normalize_tag(version),
+                                                  True)
 
+  if results:
+    return results, cursor
+
+  # Try again after canonicalizing + normalizing version.
+  results, cursor = yield query_by_generic_helper(results, cursor, context,
+                                                  base_query, project,
+                                                  ecosystem, purl,
+                                                  canonicalize_version(version),
+                                                  True)
+  return results, cursor
+
+
+@ndb.tasklet
+def query_by_generic_helper(results: list, cursor, context: QueryContext,
+                            base_query: ndb.Query, project: str, ecosystem: str,
+                            purl: PackageURL | None, version: str,
+                            is_normalized):
+  """Helper function for query_by_generic."""
+  query: ndb.Query = base_query.filter(osv.Bug.affected_fuzzy == version)
+  it: ndb.QueryIterator = query.iter(start_cursor=context.page_token)
   while (yield it.has_next_async()):
     if len(results) >= context.total_responses.page_limit():
       cursor = it.cursor_after()
       break
-
     bug = it.next()
     if _is_version_affected(
         bug.affected_packages,
@@ -814,10 +829,9 @@ def _query_by_generic_version(
         ecosystem,
         purl,
         version,
-        normalize=True):
+        normalize=is_normalized):
       results.append(bug)
       context.total_responses.add(1)
-
   return results, cursor
 
 

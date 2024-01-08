@@ -1,6 +1,5 @@
 resources:
 - ../../base
-- backup.yaml
 patches:
 - path: workers.yaml
 - path: scaler.yaml
@@ -15,3 +14,4 @@ patches:
 - path: nvd-cve-osv.yaml
 - path: nvd-mirror.yaml
 - path: alias-computation.yaml
+- path: backup.yaml

@@ -37,3 +37,5 @@ Full vulnerability information in the osv format should be posted at the endpoin
 ### 3. The extension used for the individual vulnerability endpoints:
 The ``.json`` extension is preferred, but discuss in your issue if you need to use a different extension.
 
+
+### Open an issue [here](https://github.com/google/osv.dev/issues).

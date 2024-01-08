@@ -615,6 +615,7 @@ class RESTUpdateTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
         rest_api_url=f"http://{SERVER_ADDRESS[0]}:{SERVER_ADDRESS[1]}",
         editable=False,
         repo_username="",
+        extension=".json",
     )
     self.source_repo.put()
 

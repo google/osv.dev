@@ -586,6 +586,7 @@ class RESTImporterTest(unittest.TestCase):
         link=f'http://{SERVER_ADDRESS[0]}:{SERVER_ADDRESS[1]}',
         rest_api_url=f'http://{SERVER_ADDRESS[0]}:{SERVER_ADDRESS[1]}/',
         db_prefix='CURL-',
+        extension='.json',
         editable=False)
     self.source_repo.put()
     self.tasks_topic = f'projects/{tests.TEST_PROJECT_ID}/topics/tasks'

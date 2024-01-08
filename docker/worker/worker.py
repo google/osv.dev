@@ -395,7 +395,7 @@ class TaskRunner:
       if source_repo.link[-1] != '/':
         source_repo.link += '/'
       for vuln in path:
-        url = source_repo.link + vuln + '.json'
+        url = source_repo.link + vuln + source_repo.extension
         request = requests.get(url, timeout=60)
         if request.status_code != 200:
           logging.error('Failed to fetch REST API: %s', request.status_code)

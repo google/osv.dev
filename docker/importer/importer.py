@@ -483,7 +483,7 @@ class Importer:
         if source_repo.link[-1] != '/':
           source_repo.link += '/'
         single_request = requests.get(
-            source_repo.link + vuln['id'] + '.json', timeout=60)
+            source_repo.link + vuln['id'] + source_repo.extension, timeout=60)
         single_vuln = single_request.json()
         _ = osv.parse_vulnerability_from_dict(single_vuln, source_repo.key_path,
                                               self._strict_validation)

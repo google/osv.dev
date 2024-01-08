@@ -20,14 +20,13 @@ import logging
 import os
 import re
 import redis
+import requests
 import resource
 import shutil
 import subprocess
 import sys
 import threading
 import time
-
-import requests
 
 import google.cloud.exceptions
 from google.cloud import ndb

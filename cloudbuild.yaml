@@ -16,23 +16,29 @@ steps:
 - name: 'gcr.io/cloud-builders/git'
   dir: docker/worker
   args: ['submodule', 'update', '--init']
+  id: 'init'
 - name: 'gcr.io/oss-vdb/ci'
   args: ['bash', '-ex', 'run_tests.sh']
+  waitFor: ['init']
 - name: 'gcr.io/oss-vdb/ci'
   dir: docker/worker
   args: ['bash', '-ex', 'run_tests.sh']
+  waitFor: ['init']
 - name: 'gcr.io/oss-vdb/ci'
   dir: docker/importer
   args: ['bash', '-ex', 'run_tests.sh']
+  waitFor: ['init']
 - name: 'gcr.io/oss-vdb/ci'
   dir: vulnfeeds
   args: ['bash', '-ex', 'run_tests.sh']
+  waitFor: ['init']
 - name: 'gcr.io/oss-vdb/ci'
   dir: gcp/api
   #TODO: Update test scripts to support not supplying a credential.
   args: ['bash', '-ex', 'run_tests.sh', '/workspace/dummy.json']
   env:
     - CLOUDBUILD=1
+  waitFor: ['init']
 timeout: 7200s
 options:
   machineType: E2_HIGHCPU_8

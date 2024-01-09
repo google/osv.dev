@@ -15,13 +15,13 @@ To contribute, we will need to know the following information:
 
 **For example:** ``https://osv.dev/advisories/all.json``
 ```json
-{
+[{
  "id": "OSV-CVE-2020-1111",
  "modified": "2023-12-04T10:12:08.00Z",
 },{
  "id": "OSV-CVE-2020-1112",
  "modified": "2023-12-04T10:16:25.00Z"
-}
+}]
 ```
 The endpoint may contain more information, but at a minimum it must contain the ID and modified date of each vulnerability.
 

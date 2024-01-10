@@ -15,7 +15,7 @@
 steps:
 # noop to pull the ci image once before the tests try to run concurrently
 - name: 'gcr.io/oss-vdb/ci'
-  args: [':']
+  args: ['echo']
 
 - name: 'gcr.io/cloud-builders/git'
   id: 'init'

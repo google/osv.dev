@@ -5,11 +5,11 @@ name = "pypi"
 
 [packages]
 google-cloud-ndb = "==2.2.2"
-google-cloud-logging = "==3.7.0"
-google-cloud-pubsub = "==2.18.4"
-grpcio = "==1.59.0"
+google-cloud-logging = "==3.9.0"
+google-cloud-pubsub = "==2.19.0"
+grpcio = "==1.60.0"
 osv = {editable = true, path = "../../"}
-packageurl-python = "==0.11.2"
+packageurl-python = "==0.13.1"
 packaging = "==20.9"
 requests = "==2.31.0"
 grpcio-reflection = "*"

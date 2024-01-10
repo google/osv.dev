@@ -164,6 +164,7 @@ def reset_emulator():
       'http://localhost:{}/reset'.format(port), timeout=_EMULATOR_TIMEOUT)
   resp.raise_for_status()
 
+
 def stop_emulator():
   """Stops emulator."""
   try:

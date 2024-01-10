@@ -1417,7 +1417,6 @@ class UpdateTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
 
 
 if __name__ == '__main__':
-  os.system('pkill -f datastore')
   ds_emulator = tests.start_datastore_emulator()
   try:
     ndb_client = ndb.Client()
@@ -1426,5 +1425,4 @@ if __name__ == '__main__':
       context.set_cache_policy(False)
       unittest.main()
   finally:
-    # TODO(ochang): Cleaner way of properly cleaning up processes.
-    os.system('pkill -f datastore')
+    ds_emulator.kill()

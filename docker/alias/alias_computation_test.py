@@ -384,7 +384,6 @@ class AliasTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
 
 
 if __name__ == '__main__':
-  os.system('pkill -f datastore')
   ds_emulator = tests.start_datastore_emulator()
   try:
     with ndb.Client().context() as context:
@@ -392,4 +391,4 @@ if __name__ == '__main__':
       context.set_cache_policy(False)
       unittest.main()
   finally:
-    os.system('pkill -f datastore')
+    ds_emulator.kill()

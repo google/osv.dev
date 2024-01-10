@@ -12,7 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Frontend handler tests."""
-import os
 import shutil
 import tempfile
 import unittest
@@ -115,7 +114,6 @@ class FrontendHandlerTest(unittest.TestCase):
 
 
 if __name__ == '__main__':
-  os.system('pkill -f datastore')
   ds_emulator = tests.start_datastore_emulator()
   try:
     with ndb.Client().context() as context:
@@ -123,5 +121,4 @@ if __name__ == '__main__':
       context.set_cache_policy(False)
       unittest.main()
   finally:
-    # TODO(ochang): Cleaner way of properly cleaning up processes.
-    os.system('pkill -f datastore')
+    ds_emulator.kill()

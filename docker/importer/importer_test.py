@@ -46,6 +46,7 @@ _MIN_INVALID_VULNERABILITY = '''{
 }'''
 PORT = 8888
 SERVER_ADDRESS = ('localhost', PORT)
+MOCK_ADDRESS_FORMAT = f"http://{SERVER_ADDRESS[0]}:{SERVER_ADDRESS[1]}/"
 
 
 @mock.patch('importer.utcnow', lambda: datetime.datetime(2021, 1, 1))
@@ -583,8 +584,8 @@ class RESTImporterTest(unittest.TestCase):
         type=osv.SourceRepositoryType.REST_ENDPOINT,
         id='curl',
         name='curl',
-        link=f'http://{SERVER_ADDRESS[0]}:{SERVER_ADDRESS[1]}',
-        rest_api_url=f'http://{SERVER_ADDRESS[0]}:{SERVER_ADDRESS[1]}/',
+        link=MOCK_ADDRESS_FORMAT,
+        rest_api_url=MOCK_ADDRESS_FORMAT,
         db_prefix='CURL-',
         extension='.json',
         editable=False)

@@ -41,6 +41,7 @@ TEST_DATA_DIR = os.path.join(
 ndb_client = None
 PORT = 8000
 SERVER_ADDRESS = ("localhost", PORT)
+MOCK_ADDRESS_FORMAT = f"http://{SERVER_ADDRESS[0]}:{SERVER_ADDRESS[1]}/"
 # pylint: disable=protected-access,invalid-name
 
 
@@ -624,9 +625,7 @@ class RESTUpdateTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
     self.addCleanup(mock_publish.stop)
     warnings.filterwarnings("ignore", "unclosed", ResourceWarning)
     self.httpd = http.server.HTTPServer(SERVER_ADDRESS, MockDataHandler)
-    print(
-        f"Serving mock data at http://{SERVER_ADDRESS[0]}:{SERVER_ADDRESS[1]}..."
-    )
+    print(f"Serving mock data at "+ MOCK_ADDRESS_FORMAT)
     thread = threading.Thread(target=self.httpd.serve_forever)
     thread.start()
 
@@ -636,28 +635,25 @@ class RESTUpdateTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
 
   def test_update(self):
     """Test updating rest."""
+    solo_endpoint = MOCK_ADDRESS_FORMAT + 'CURL-CVE-2022-32221'+'.json'
     self.source_repo.ignore_git = True
     self.source_repo.type = osv.SourceRepositoryType.REST_ENDPOINT
-    self.source_repo.rest_api_url = (
-        f"http://{SERVER_ADDRESS[0]}:{SERVER_ADDRESS[1]}")
-    self.source_repo.link = f"http://{SERVER_ADDRESS[0]}:{SERVER_ADDRESS[1]}/"
+    self.source_repo.rest_api_url = MOCK_ADDRESS_FORMAT
+    self.source_repo.link = MOCK_ADDRESS_FORMAT
     self.source_repo.put()
-    sha = osv.sha256_bytes(self.source_repo.rest_api_url.encode())
+    sha = osv.sha256_bytes(solo_endpoint.encode())
     task_runner = worker.TaskRunner(ndb_client, None, self.tmp_dir.name, None,
                                     None)
-    vulns = []
-    vulns.append('CURL-CVE-2022-32221')
-    vulns.append('CURL-CVE-2023-38546')
+
     message = mock.Mock()
     message.attributes = {
         "source": "source",
-        "path": vulns,
+        "path": solo_endpoint,
         "original_sha256": sha,
         "deleted": "false",
     }
     task_runner._source_update(message)
-    expected_vulns = ['CURL-CVE-2022-32221', 'CURL-CVE-2023-38546']
-    self.assertListEqual(vulns, expected_vulns)
+    self.assertTrue(os.path.exists(os.path.join(self.tmp_dir.name, 'CURL-CVE-2022-32221'+'.json')))
 
 
 class UpdateTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):

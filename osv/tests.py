@@ -161,8 +161,7 @@ def reset_emulator():
   """Resets emulator."""
   port = os.environ.get('DATASTORE_EMULATOR_PORT', _DATASTORE_EMULATOR_PORT)
   resp = requests.post(
-      'http://localhost:{}/reset'.format(port),
-      timeout=_EMULATOR_TIMEOUT)
+      'http://localhost:{}/reset'.format(port), timeout=_EMULATOR_TIMEOUT)
   resp.raise_for_status()
 
 

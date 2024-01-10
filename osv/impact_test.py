@@ -41,7 +41,7 @@ class UpdateAffectedCommitsTests(unittest.TestCase):
 
   @classmethod
   def tearDownClass(cls):
-    cls._ds_emulator.kill()
+    tests.stop_emulator()
     cls._ndb_context.__exit__(None, None, None)  # pylint: disable=unnecessary-dunder-call
 
   def test_update_single_page(self):

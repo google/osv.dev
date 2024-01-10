@@ -391,4 +391,4 @@ if __name__ == '__main__':
       context.set_cache_policy(False)
       unittest.main()
   finally:
-    ds_emulator.kill()
+    tests.stop_emulator()

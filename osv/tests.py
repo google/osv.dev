@@ -164,6 +164,18 @@ def reset_emulator():
       'http://localhost:{}/reset'.format(port), timeout=_EMULATOR_TIMEOUT)
   resp.raise_for_status()
 
+def stop_emulator():
+  """Stops emulator."""
+  try:
+    port = os.environ.get('DATASTORE_EMULATOR_PORT', _DATASTORE_EMULATOR_PORT)
+    resp = requests.post(
+        'http://localhost:{}/shutdown'.format(port), timeout=_EMULATOR_TIMEOUT)
+    resp.raise_for_status()
+  except Exception as e:
+    # Something went wrong, manually kill all datastore processes instead.
+    os.system('pkill -f datastore')
+    raise e
+
 
 def mock_datetime(test):
   """Mocks datetime."""

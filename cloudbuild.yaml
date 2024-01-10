@@ -19,14 +19,37 @@ steps:
   id: 'init'
 - name: 'gcr.io/oss-vdb/ci'
   args: ['bash', '-ex', 'run_tests.sh']
+  env:
+    # Each test that uses the datastore emulator must have a unique port number
+    - DATASTORE_EMULATOR_PORT=8002
   waitFor: ['init']
 - name: 'gcr.io/oss-vdb/ci'
   dir: docker/worker
   args: ['bash', '-ex', 'run_tests.sh']
+  env:
+    # Each test that uses the datastore emulator must have a unique port number
+    - DATASTORE_EMULATOR_PORT=8003
   waitFor: ['init']
 - name: 'gcr.io/oss-vdb/ci'
   dir: docker/importer
   args: ['bash', '-ex', 'run_tests.sh']
+  env:
+    # Each test that uses the datastore emulator must have a unique port number
+    - DATASTORE_EMULATOR_PORT=8004
+  waitFor: ['init']
+- name: 'gcr.io/oss-vdb/ci'
+  dir: docker/alias
+  args: ['bash', '-ex', 'run_tests.sh']
+  env:
+    # Each test that uses the datastore emulator must have a unique port number
+    - DATASTORE_EMULATOR_PORT=8005
+  waitFor: ['init']
+- name: 'gcr.io/oss-vdb/ci'
+  dir: gcp/appengine
+  args: ['bash', '-ex', 'run_tests.sh']
+  env:
+    # Each test that uses the datastore emulator must have a unique port number
+    - DATASTORE_EMULATOR_PORT=8006
   waitFor: ['init']
 - name: 'gcr.io/oss-vdb/ci'
   dir: vulnfeeds

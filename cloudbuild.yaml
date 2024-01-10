@@ -13,6 +13,10 @@
 # limitations under the License.
 
 steps:
+# noop to pull the ci image once before the tests try to run concurrently
+- name: 'gcr.io/oss-vdb/ci'
+  args: [':']
+
 - name: 'gcr.io/cloud-builders/git'
   id: 'init'
   args: ['submodule', 'update', '--init']

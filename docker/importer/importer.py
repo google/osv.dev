@@ -43,6 +43,9 @@ _OSS_FUZZ_EXPORT_BUCKET = 'oss-fuzz-osv-vulns'
 _EXPORT_WORKERS = 32
 _NO_UPDATE_MARKER = 'OSV-NO-UPDATE'
 _BUCKET_THREAD_COUNT = 20
+_HTTP_LAST_MODIFIED_FORMAT =  '%a, %d %b %Y %H:%M:%S %Z'
+_OSV_MODIFIED_FORMAT = '%Y-%m-%dT%H:%M:%S.%fZ'
+_TIMEOUT_SECONDS = 60
 
 _client_store = threading.local()
 
@@ -455,19 +458,19 @@ class Importer:
 
   def _process_updates_rest(self, source_repo: osv.SourceRepository):
     """Process updates from REST API."""
-    logging.info("Begin processing REST: %s", source_repo.name)
+    logging.info('Begin processing REST: %s', source_repo.name)
     import_time_now = utcnow()
-    request = requests.head(source_repo.rest_api_url, timeout=60)
+    request = requests.head(source_repo.rest_api_url, timeout=_TIMEOUT_SECONDS)
     if request.status_code != 200:
       logging.error('Failed to fetch REST API: %s', request.status_code)
       return
     last_modified = datetime.datetime.strptime(request.headers['Last-Modified'],
-                                               '%a, %d %b %Y %H:%M:%S %Z')
+                                               _HTTP_LAST_MODIFIED_FORMAT)
     # Check whether endpoint has been modified since last update
     if last_modified < source_repo.last_update_date:
       logging.info('No changes since last update.')
       return
-    request = requests.get(source_repo.rest_api_url, timeout=60)
+    request = requests.get(source_repo.rest_api_url, timeout=_TIMEOUT_SECONDS)
     # Get all vulnerabilities from the REST API. (CURL approach)
     vulns = request.json()
     vulns_to_update = []
@@ -475,15 +478,13 @@ class Importer:
     for vuln in vulns:
       import_failure_logs = []
       last_modified = datetime.datetime.strptime(vuln['modified'],
-                                                 '%Y-%m-%dT%H:%M:%S.%fZ')
+                                        _OSV_MODIFIED_FORMAT)
 
       if last_modified < source_repo.last_update_date:
         continue
       try:
-        if source_repo.link[-1] != '/':
-          source_repo.link += '/'
         single_request = requests.get(
-            source_repo.link + vuln['id'] + source_repo.extension, timeout=60)
+            source_repo.link + vuln['id'] + source_repo.extension, timeout=_TIMEOUT_SECONDS)
         single_vuln = single_request.json()
         _ = osv.parse_vulnerability_from_dict(single_vuln, source_repo.key_path,
                                               self._strict_validation)
@@ -512,6 +513,8 @@ class Importer:
 
   def process_updates(self, source_repo: osv.SourceRepository):
     """Process user changes and updates."""
+    if source_repo.link[-1] != '/':
+      raise ValueError('Invalid link: %s', source_repo.link)
     if source_repo.type == osv.SourceRepositoryType.GIT:
       self._process_updates_git(source_repo)
       return

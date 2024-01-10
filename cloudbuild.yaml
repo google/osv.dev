@@ -14,54 +14,70 @@
 
 steps:
 - name: 'gcr.io/cloud-builders/git'
-  dir: docker/worker
-  args: ['submodule', 'update', '--init']
   id: 'init'
+  args: ['submodule', 'update', '--init']
+
 - name: 'gcr.io/oss-vdb/ci'
+  id: 'lib-tests'
   args: ['bash', '-ex', 'run_tests.sh']
   env:
-    # Each test that uses the datastore emulator must have a unique port number
+    # Each concurrent test that uses the datastore emulator must have a unique port number
     - DATASTORE_EMULATOR_PORT=8002
   waitFor: ['init']
+
 - name: 'gcr.io/oss-vdb/ci'
+  id: 'worker-tests'
   dir: docker/worker
   args: ['bash', '-ex', 'run_tests.sh']
   env:
-    # Each test that uses the datastore emulator must have a unique port number
+    # Each concurrent test that uses the datastore emulator must have a unique port number
     - DATASTORE_EMULATOR_PORT=8003
   waitFor: ['init']
+
 - name: 'gcr.io/oss-vdb/ci'
+  id: 'importer-tests'
   dir: docker/importer
   args: ['bash', '-ex', 'run_tests.sh']
   env:
-    # Each test that uses the datastore emulator must have a unique port number
-    - DATASTORE_EMULATOR_PORT=8004
-  waitFor: ['init']
+    # same as worker
+    - DATASTORE_EMULATOR_PORT=8003
+  # importer uses same pipenv as worker, 'pipenv sync' may break if run concurrently
+  waitFor: ['init', 'worker-tests']
+
 - name: 'gcr.io/oss-vdb/ci'
+  id: 'alias-tests'
   dir: docker/alias
   args: ['bash', '-ex', 'run_tests.sh']
   env:
-    # Each test that uses the datastore emulator must have a unique port number
-    - DATASTORE_EMULATOR_PORT=8005
-  waitFor: ['init']
+    # same as worker/importer
+    - DATASTORE_EMULATOR_PORT=8003
+  # alias uses same pipenv as worker, 'pipenv sync' may break if run concurrently
+  waitFor: ['init', 'importer-tests']
+
 - name: 'gcr.io/oss-vdb/ci'
+  id: 'appengine-tests'
   dir: gcp/appengine
   args: ['bash', '-ex', 'run_tests.sh']
   env:
-    # Each test that uses the datastore emulator must have a unique port number
-    - DATASTORE_EMULATOR_PORT=8006
+    # Each concurrent test that uses the datastore emulator must have a unique port number
+    - DATASTORE_EMULATOR_PORT=8004
   waitFor: ['init']
+
 - name: 'gcr.io/oss-vdb/ci'
+  id: 'vulnfeed-tests'
   dir: vulnfeeds
   args: ['bash', '-ex', 'run_tests.sh']
   waitFor: ['init']
+
 - name: 'gcr.io/oss-vdb/ci'
+  id: 'api-tests'
   dir: gcp/api
   #TODO: Update test scripts to support not supplying a credential.
   args: ['bash', '-ex', 'run_tests.sh', '/workspace/dummy.json']
   env:
     - CLOUDBUILD=1
   waitFor: ['init']
+
 timeout: 7200s
 options:
   machineType: E2_HIGHCPU_8

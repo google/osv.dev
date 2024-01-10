@@ -609,10 +609,9 @@ class RESTUpdateTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
     self.tmp_dir = tempfile.TemporaryDirectory()
 
     self.source_repo = osv.SourceRepository(
-        type=osv.SourceRepositoryType.GIT,
+        type=osv.SourceRepositoryType.REST_ENDPOINT,
         id="source",
         name="source",
-        db_prefix="CURL-",
         rest_api_url=f"http://{SERVER_ADDRESS[0]}:{SERVER_ADDRESS[1]}",
         editable=False,
         repo_username="",
@@ -653,7 +652,7 @@ class RESTUpdateTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
         "deleted": "false",
     }
     task_runner._source_update(message)
-    self.assertTrue(os.path.exists(os.path.join(self.tmp_dir.name, 'CURL-CVE-2022-32221'+'.json')))
+    self.mock_publish.assert_not_called()
 
 
 class UpdateTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):

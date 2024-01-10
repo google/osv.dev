@@ -512,8 +512,8 @@ class Importer:
   def process_updates(self, source_repo: osv.SourceRepository):
     """Process user changes and updates."""
     if source_repo.link and source_repo.link[-1] != '/':
-       raise ValueError('Source repository link must end with /')
-    
+      raise ValueError('Source repository link must end with /')
+
     if source_repo.type == osv.SourceRepositoryType.GIT:
       self._process_updates_git(source_repo)
       return

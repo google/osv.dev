@@ -43,7 +43,7 @@ _OSS_FUZZ_EXPORT_BUCKET = 'oss-fuzz-osv-vulns'
 _EXPORT_WORKERS = 32
 _NO_UPDATE_MARKER = 'OSV-NO-UPDATE'
 _BUCKET_THREAD_COUNT = 20
-_HTTP_LAST_MODIFIED_FORMAT =  '%a, %d %b %Y %H:%M:%S %Z'
+_HTTP_LAST_MODIFIED_FORMAT = '%a, %d %b %Y %H:%M:%S %Z'
 _OSV_MODIFIED_FORMAT = '%Y-%m-%dT%H:%M:%S.%fZ'
 _TIMEOUT_SECONDS = 60
 
@@ -477,18 +477,19 @@ class Importer:
     for vuln in vulns:
       import_failure_logs = []
       last_modified = datetime.datetime.strptime(vuln['modified'],
-                                        _OSV_MODIFIED_FORMAT)
+                                                 _OSV_MODIFIED_FORMAT)
 
       if last_modified < source_repo.last_update_date:
         continue
       try:
         vuln_location = source_repo.link + vuln['id'] + source_repo.extension
         single_request = requests.get(vuln_location, timeout=_TIMEOUT_SECONDS)
-        _ = osv.parse_vulnerability_from_dict(single_request.json(), source_repo.key_path,
+        _ = osv.parse_vulnerability_from_dict(single_request.json(),
+                                              source_repo.key_path,
                                               self._strict_validation)
         self._request_analysis_external(
-          source_repo, osv.sha256_bytes(vuln_location.encode()),
-          vuln_location)
+            source_repo, osv.sha256_bytes(vuln_location.encode()),
+            vuln_location)
       except osv.sources.KeyPathError:
         # Key path doesn't exist in the vulnerability.
         # No need to log a full error, as this is expected result.
@@ -499,7 +500,7 @@ class Importer:
         import_failure_logs.append('Failed to parse vulnerability "' +
                                    vuln['id'] + '"')
         continue
-      
+
     replace_importer_log(storage.Client(), source_repo.name,
                          self._public_log_bucket, import_failure_logs)
 
@@ -510,8 +511,8 @@ class Importer:
 
   def process_updates(self, source_repo: osv.SourceRepository):
     """Process user changes and updates."""
-    if source_repo.link[-1] != '/':
-      raise ValueError('Invalid link: %s', source_repo.link)
+    if not source_repo.link.endswith('/'):
+      raise ValueError('Source repository link must end with /')
     if source_repo.type == osv.SourceRepositoryType.GIT:
       self._process_updates_git(source_repo)
       return

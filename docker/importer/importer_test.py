@@ -611,44 +611,47 @@ class RESTImporterTest(unittest.TestCase):
                             False)
     imp.run()
     mock_publish.assert_has_calls([
-      mock.call(
-        self.tasks_topic,
-        data=b'',
-        type='update',
-        source='curl',
-        path='http://localhost:8888/CURL-CVE-2023-46219.json',
-        original_sha256='fdd6f5b7078094bcad3ab6fb74fd1cd60705328dd27d08494c945e291994dd2b',
-        deleted='false',
-        req_timestamp='12345'),
-      mock.call(
-        self.tasks_topic,
-        data=b'',
-        type='update',
-        source='curl',
-        path='http://localhost:8888/CURL-CVE-2023-46218.json',
-        original_sha256='ef7a34fe462b5ec95da22e5af0c4fb52d162b78118c616f159b1d9e207d07028',
-        deleted='false',
-        req_timestamp='12345'),
-      mock.call(
-        self.tasks_topic,
-        data=b'',
-        type='update',
-        source='curl',
-        path='http://localhost:8888/CURL-CVE-2023-23915.json',
-        original_sha256='cb5961685e7be31ad40ec98636ac6e36dd1328f8a89ee1f4bcfec9e5a2f46dbf',
-        deleted='false',
-        req_timestamp='12345'),
-      mock.call(
-        self.tasks_topic,
-        data=b'',
-        type='update',
-        source='curl',
-        path='http://localhost:8888/CURL-CVE-2023-23914.json',
-        original_sha256='f3592f93cb12ca2b38e7a5db5d96e0c419696f74c32901b7208c07e5096236ac',
-        deleted='false',
-        req_timestamp='12345')
-      ])
-    
+        mock.call(
+            self.tasks_topic,
+            data=b'',
+            type='update',
+            source='curl',
+            path='http://localhost:8888/CURL-CVE-2023-46219.json',
+            original_sha256='fdd6f5b7078094bcad3ab6fb74fd1cd6'
+            '0705328dd27d08494c945e291994dd2b',
+            deleted='false',
+            req_timestamp='12345'),
+        mock.call(
+            self.tasks_topic,
+            data=b'',
+            type='update',
+            source='curl',
+            path='http://localhost:8888/CURL-CVE-2023-46218.json',
+            original_sha256='ef7a34fe462b5ec95da22e5af0c4fb52'
+            'd162b78118c616f159b1d9e207d07028',
+            deleted='false',
+            req_timestamp='12345'),
+        mock.call(
+            self.tasks_topic,
+            data=b'',
+            type='update',
+            source='curl',
+            path='http://localhost:8888/CURL-CVE-2023-23915.json',
+            original_sha256='cb5961685e7be31ad40ec98636ac6e36'
+            'dd1328f8a89ee1f4bcfec9e5a2f46dbf',
+            deleted='false',
+            req_timestamp='12345'),
+        mock.call(
+            self.tasks_topic,
+            data=b'',
+            type='update',
+            source='curl',
+            path='http://localhost:8888/CURL-CVE-2023-23914.json',
+            original_sha256='f3592f93cb12ca2b38e7a5db5d96e0c4'
+            '19696f74c32901b7208c07e5096236ac',
+            deleted='false',
+            req_timestamp='12345')
+    ])
 
   @mock.patch('google.cloud.pubsub_v1.PublisherClient.publish')
   @mock.patch('time.time', return_value=12345.0)
@@ -684,25 +687,27 @@ class RESTImporterTest(unittest.TestCase):
     imp.run()
 
     mock_publish.assert_has_calls([
-      mock.call(
-        self.tasks_topic,
-        data=b'',
-        type='update',
-        source='curl',
-        path='http://localhost:8888/CURL-CVE-2023-46219.json',
-        original_sha256='fdd6f5b7078094bcad3ab6fb74fd1cd60705328dd27d08494c945e291994dd2b',
-        deleted='false', 
-        req_timestamp='12345'),
-      mock.call(
-        self.tasks_topic,
-        data=b'',
-        type='update',
-        source='curl',
-        path='http://localhost:8888/CURL-CVE-2023-46218.json',
-        original_sha256='ef7a34fe462b5ec95da22e5af0c4fb52d162b78118c616f159b1d9e207d07028',
-        deleted='false',
-        req_timestamp='12345')]
-    )
+        mock.call(
+            self.tasks_topic,
+            data=b'',
+            type='update',
+            source='curl',
+            path='http://localhost:8888/CURL-CVE-2023-46219.json',
+            original_sha256='fdd6f5b7078094bcad3ab6fb74fd1cd6'
+            '0705328dd27d08494c945e291994dd2b',
+            deleted='false',
+            req_timestamp='12345'),
+        mock.call(
+            self.tasks_topic,
+            data=b'',
+            type='update',
+            source='curl',
+            path='http://localhost:8888/CURL-CVE-2023-46218.json',
+            original_sha256='ef7a34fe462b5ec95da22e5af0c4fb52'
+            'd162b78118c616f159b1d9e207d07028',
+            deleted='false',
+            req_timestamp='12345')
+    ])
 
 
 if __name__ == '__main__':

@@ -647,7 +647,6 @@ class RESTImporterTest(unittest.TestCase):
                             importer.DEFAULT_PUBLIC_LOGGING_BUCKET, 'bucket',
                             False)
     imp.run()
-
     mock_publish.assert_has_calls([
         mock.call(
             self.tasks_topic,
@@ -667,6 +666,46 @@ class RESTImporterTest(unittest.TestCase):
             path='http://localhost:8888/CURL-CVE-2023-46218.json',
             original_sha256='ef7a34fe462b5ec95da22e5af0c4fb52'
             'd162b78118c616f159b1d9e207d07028',
+            deleted='false',
+            req_timestamp='12345'),
+        mock.call(
+            self.tasks_topic,
+            data=b'',
+            type='update',
+            source='curl',
+            path='http://localhost:8888/CURL-CVE-2023-38546.json',
+            original_sha256='f6517f3155e8367ef46c7493f389a192'
+            '23eeda07901d72b072e5ff286cc2c343',
+            deleted='false',
+            req_timestamp='12345'),
+        mock.call(
+            self.tasks_topic,
+            data=b'',
+            type='update',
+            source='curl',
+            path='http://localhost:8888/CURL-CVE-2023-38545.json',
+            original_sha256='237460cde67901377b4935dc9c1f2501'
+            'f270f9a165854aff17d65042bd205950',
+            deleted='false',
+            req_timestamp='12345'),
+        mock.call(
+            self.tasks_topic,
+            data=b'',
+            type='update',
+            source='curl',
+            path='http://localhost:8888/CURL-CVE-2023-38039.json',
+            original_sha256='2ea72047d47e02167d84e46d9f07d755'
+            '2891585e3e679b319ce37b96e536edb1',
+            deleted='false',
+            req_timestamp='12345'),
+        mock.call(
+            self.tasks_topic,
+            data=b'',
+            type='update',
+            source='curl',
+            path='http://localhost:8888/CURL-CVE-2023-28321.json',
+            original_sha256='65cf6b4d4e87c0f6f96ff18be772824a'
+            '452adb41cec64975dff76b4664742d42',
             deleted='false',
             req_timestamp='12345')
     ])

@@ -16,7 +16,7 @@
 import codecs
 import datetime
 import hashlib
-from docker.mock_test_handler import MockDataHandler
+from docker.mock_test.mock_test_handler import MockDataHandler
 import http.server
 import os
 import shutil

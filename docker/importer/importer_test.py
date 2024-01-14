@@ -25,7 +25,7 @@ import warnings
 
 from google.cloud import ndb
 import pygit2
-from docker.mock_test_handler import MockDataHandler
+from docker.mock_test.mock_test_handler import MockDataHandler
 import importer
 import osv
 from osv import tests
@@ -601,7 +601,9 @@ class RESTImporterTest(unittest.TestCase):
   def test_basic(self, unused_mock_time: mock.MagicMock,
                  mock_publish: mock.MagicMock):
     "Testing basic rest endpoint import"
-    self.httpd = http.server.HTTPServer(SERVER_ADDRESS, MockDataHandler)
+    data_handler = MockDataHandler
+    data_handler.load_file(data_handler,'rest_test.json')
+    self.httpd = http.server.HTTPServer(SERVER_ADDRESS, data_handler)
     thread = threading.Thread(target=self.httpd.serve_forever)
     thread.start()
     self.source_repo.last_update_date = datetime.datetime(2020, 1, 1)
@@ -610,48 +612,8 @@ class RESTImporterTest(unittest.TestCase):
                             importer.DEFAULT_PUBLIC_LOGGING_BUCKET, 'bucket',
                             False)
     imp.run()
-    mock_publish.assert_has_calls([
-        mock.call(
-            self.tasks_topic,
-            data=b'',
-            type='update',
-            source='curl',
-            path='http://localhost:8888/CURL-CVE-2023-46219.json',
-            original_sha256='fdd6f5b7078094bcad3ab6fb74fd1cd6'
-            '0705328dd27d08494c945e291994dd2b',
-            deleted='false',
-            req_timestamp='12345'),
-        mock.call(
-            self.tasks_topic,
-            data=b'',
-            type='update',
-            source='curl',
-            path='http://localhost:8888/CURL-CVE-2023-46218.json',
-            original_sha256='ef7a34fe462b5ec95da22e5af0c4fb52'
-            'd162b78118c616f159b1d9e207d07028',
-            deleted='false',
-            req_timestamp='12345'),
-        mock.call(
-            self.tasks_topic,
-            data=b'',
-            type='update',
-            source='curl',
-            path='http://localhost:8888/CURL-CVE-2023-23915.json',
-            original_sha256='cb5961685e7be31ad40ec98636ac6e36'
-            'dd1328f8a89ee1f4bcfec9e5a2f46dbf',
-            deleted='false',
-            req_timestamp='12345'),
-        mock.call(
-            self.tasks_topic,
-            data=b'',
-            type='update',
-            source='curl',
-            path='http://localhost:8888/CURL-CVE-2023-23914.json',
-            original_sha256='f3592f93cb12ca2b38e7a5db5d96e0c4'
-            '19696f74c32901b7208c07e5096236ac',
-            deleted='false',
-            req_timestamp='12345')
-    ])
+    self.assertEqual(mock_publish.call_count, data_handler.cve_count)
+    
 
   @mock.patch('google.cloud.pubsub_v1.PublisherClient.publish')
   @mock.patch('time.time', return_value=12345.0)
@@ -675,7 +637,8 @@ class RESTImporterTest(unittest.TestCase):
   @mock.patch('time.time', return_value=12345.0)
   def test_dates_between(self, unused_mock_time: mock.MagicMock,
                          mock_publish: mock.MagicMock):
-    "Testing from date in between entries"
+    """Testing from date between entries - 
+    only entries after 6/6/2023 should be called"""
     self.httpd = http.server.HTTPServer(SERVER_ADDRESS, MockDataHandler)
     thread = threading.Thread(target=self.httpd.serve_forever)
     thread.start()

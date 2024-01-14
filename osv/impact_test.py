@@ -14,7 +14,6 @@
 """Impact tests."""
 
 import codecs
-import os
 import unittest
 
 from . import impact
@@ -32,7 +31,6 @@ class UpdateAffectedCommitsTests(unittest.TestCase):
 
   @classmethod
   def setUpClass(cls):
-    os.system('pkill -f datastore')
     cls._ds_emulator = tests.start_datastore_emulator()
 
     ndb_client = ndb.Client()
@@ -43,8 +41,7 @@ class UpdateAffectedCommitsTests(unittest.TestCase):
 
   @classmethod
   def tearDownClass(cls):
-    # TODO(ochang): Cleaner way of properly cleaning up processes.
-    os.system('pkill -f datastore')
+    tests.stop_emulator()
     cls._ndb_context.__exit__(None, None, None)  # pylint: disable=unnecessary-dunder-call
 
   def test_update_single_page(self):

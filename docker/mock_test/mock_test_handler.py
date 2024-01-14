@@ -2,11 +2,9 @@
 import http.server
 import json
 import os
-#/usr/local/google/home/jesslowe/jess-osv/osv.dev/docker/mock_test/rest_test.json
-#https://github.com/jess-lowe/osv.dev/blob/rest-message-pass/docker/mock_test/rest_test.json
-#docker/mock_test/rest_test.json
 
 TEST_DATA_DIR = os.path.dirname(os.path.abspath(__file__))
+
 
 class MockDataHandler(http.server.BaseHTTPRequestHandler):
   """Mock data handler for testing."""
@@ -18,16 +16,16 @@ class MockDataHandler(http.server.BaseHTTPRequestHandler):
   def load_file(self, path=file_path):
     """Load the file."""
     try:
-        with open(os.path.join(TEST_DATA_DIR, path), 'r') as f:
-            self.data = json.load(f)
-            self.cve_count = len(self.data)
+      with open(os.path.join(TEST_DATA_DIR, path), 'r') as f:
+        self.data = json.load(f)
+        self.cve_count = len(self.data)
     except Exception:
-        self.send_error(404, 'File not found')  
-  
+      self.send_error(404, 'File not found')
+
   def do_GET(self):  # pylint: disable=invalid-name
     """Serve a mock GET request."""
     if self.cve_count == -1:
-        self.load_file(self.file_path)
+      self.load_file(self.file_path)
     try:
       if self.path != '/':
         found = False

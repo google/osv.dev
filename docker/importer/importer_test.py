@@ -602,7 +602,7 @@ class RESTImporterTest(unittest.TestCase):
                  mock_publish: mock.MagicMock):
     "Testing basic rest endpoint import"
     data_handler = MockDataHandler
-    data_handler.load_file(data_handler,'rest_test.json')
+    data_handler.load_file(data_handler, 'rest_test.json')
     self.httpd = http.server.HTTPServer(SERVER_ADDRESS, data_handler)
     thread = threading.Thread(target=self.httpd.serve_forever)
     thread.start()
@@ -613,7 +613,6 @@ class RESTImporterTest(unittest.TestCase):
                             False)
     imp.run()
     self.assertEqual(mock_publish.call_count, data_handler.cve_count)
-    
 
   @mock.patch('google.cloud.pubsub_v1.PublisherClient.publish')
   @mock.patch('time.time', return_value=12345.0)

@@ -44,7 +44,6 @@ _EXPORT_WORKERS = 32
 _NO_UPDATE_MARKER = 'OSV-NO-UPDATE'
 _BUCKET_THREAD_COUNT = 20
 _HTTP_LAST_MODIFIED_FORMAT = '%a, %d %b %Y %H:%M:%S %Z'
-_OSV_MODIFIED_FORMAT = '%Y-%m-%dT%H:%M:%S.%fZ'
 _TIMEOUT_SECONDS = 60
 
 _client_store = threading.local()
@@ -363,7 +362,7 @@ class Importer:
     source_repo.last_synced_hash = str(repo.head.target)
     source_repo.put()
 
-    logging.info("Finished processing git: %s", source_repo.name)
+    logging.info('Finished processing git: %s', source_repo.name)
 
   def _process_updates_bucket(self, source_repo: osv.SourceRepository):
     """Process updates from bucket."""
@@ -454,7 +453,7 @@ class Importer:
     source_repo.last_update_date = import_time_now
     source_repo.put()
 
-    logging.info("Finished processing bucket: %s", source_repo.name)
+    logging.info('Finished processing bucket: %s', source_repo.name)
 
   def _process_updates_rest(self, source_repo: osv.SourceRepository):
     """Process updates from REST API."""
@@ -471,35 +470,34 @@ class Importer:
       logging.info('No changes since last update.')
       return
     request = requests.get(source_repo.rest_api_url, timeout=_TIMEOUT_SECONDS)
-    # Get all vulnerabilities from the REST API. (CURL approach)
-    vulns = request.json()
+    # Parse vulns into Vulnerability objects from the REST API request.
+    vulns = osv.parse_vulnerabilities_from_data(
+        request.text, source_repo.extension, strict=self._strict_validation)
     # Create tasks for changed files.
     for vuln in vulns:
       import_failure_logs = []
-      last_modified = datetime.datetime.strptime(vuln['modified'],
-                                                 _OSV_MODIFIED_FORMAT)
-
-      if last_modified < source_repo.last_update_date:
+      if vuln.modified.ToDatetime() < source_repo.last_update_date:
         continue
       try:
         #TODO(jesslowe): Use a ThreadPoolExecutor to parallelize this
-        vuln_location = source_repo.link + vuln['id'] + source_repo.extension
-        single_request = requests.get(vuln_location, timeout=_TIMEOUT_SECONDS)
-        _ = osv.parse_vulnerability_from_dict(single_request.json(),
+        vuln_location = source_repo.link + vuln.id + source_repo.extension
+        single_vuln = requests.get(vuln_location, timeout=_TIMEOUT_SECONDS)
+        # Validate the individual request
+        _ = osv.parse_vulnerability_from_dict(single_vuln.json(),
                                               source_repo.key_path,
                                               self._strict_validation)
         self._request_analysis_external(
-            source_repo, osv.sha256_bytes(single_request.text.encode()),
+            source_repo, osv.sha256_bytes(single_vuln.text.encode()),
             vuln_location)
       except osv.sources.KeyPathError:
         # Key path doesn't exist in the vulnerability.
         # No need to log a full error, as this is expected result.
-        logging.info('Entry does not have an OSV entry: %s', vuln['id'])
+        logging.info('Entry does not have an OSV entry: %s', vuln.id)
         continue
       except Exception:
-        logging.error('Failed to parse %s', vuln['id'])
-        import_failure_logs.append('Failed to parse vulnerability "' +
-                                   vuln['id'] + '"')
+        logging.error('Failed to parse %s', vuln.id)
+        import_failure_logs.append('Failed to parse vulnerability "' + vuln.id +
+                                   '"')
         continue
 
     replace_importer_log(storage.Client(), source_repo.name,
@@ -508,7 +506,7 @@ class Importer:
     source_repo.last_update_date = import_time_now
     source_repo.put()
 
-    logging.info("Finished processing REST: %s", source_repo.name)
+    logging.info('Finished processing REST: %s', source_repo.name)
 
   def process_updates(self, source_repo: osv.SourceRepository):
     """Process user changes and updates."""

@@ -640,7 +640,7 @@ class RESTUpdateTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
     self.source_repo.rest_api_url = MOCK_ADDRESS_FORMAT
     self.source_repo.link = MOCK_ADDRESS_FORMAT
     self.source_repo.put()
-    sha = osv.sha256_bytes(solo_endpoint.encode())
+    sha = '6138604b5537caab2afc0ee3e2b11f1574fdd5d8f3c6173f64048341cf55aee4'
     task_runner = worker.TaskRunner(ndb_client, None, self.tmp_dir.name, None,
                                     None)
 

@@ -595,9 +595,9 @@ class RESTImporterTest(unittest.TestCase):
 
   @mock.patch('google.cloud.pubsub_v1.PublisherClient.publish')
   @mock.patch('time.time', return_value=12345.0)
-  def test_basic(self, unused_mock_time: mock.MagicMock,
-                 mock_publish: mock.MagicMock):
-    "Testing basic rest endpoint import"
+  def test_all_updated(self, unused_mock_time: mock.MagicMock,
+                       mock_publish: mock.MagicMock):
+    """Testing basic rest endpoint import"""
     data_handler = MockDataHandler
     data_handler.load_file(data_handler, 'rest_test.json')
     self.httpd = http.server.HTTPServer(SERVER_ADDRESS, data_handler)
@@ -613,10 +613,9 @@ class RESTImporterTest(unittest.TestCase):
 
   @mock.patch('google.cloud.pubsub_v1.PublisherClient.publish')
   @mock.patch('time.time', return_value=12345.0)
-  def test_time(self, unused_mock_time: mock.MagicMock,
-                mock_publish: mock.MagicMock):
+  def test_no_updates(self, unused_mock_time: mock.MagicMock,
+                      mock_publish: mock.MagicMock):
     """Testing none last modified"""
-
     MockDataHandler.last_modified = 'Fri, 01 Jan 2021 00:00:00 GMT'
     self.httpd = http.server.HTTPServer(SERVER_ADDRESS, MockDataHandler)
     thread = threading.Thread(target=self.httpd.serve_forever)
@@ -626,13 +625,15 @@ class RESTImporterTest(unittest.TestCase):
     imp = importer.Importer('fake_public_key', 'fake_private_key', self.tmp_dir,
                             importer.DEFAULT_PUBLIC_LOGGING_BUCKET, 'bucket',
                             True)
-    imp.run()
+    with self.assertLogs() as logs:
+      imp.run()
     mock_publish.assert_not_called()
+    self.assertIn('INFO:root:No changes since last update.', logs.output[1])
 
   @mock.patch('google.cloud.pubsub_v1.PublisherClient.publish')
   @mock.patch('time.time', return_value=12345.0)
-  def test_dates_between(self, unused_mock_time: mock.MagicMock,
-                         mock_publish: mock.MagicMock):
+  def test_few_updates(self, unused_mock_time: mock.MagicMock,
+                       mock_publish: mock.MagicMock):
     """Testing from date between entries - 
     only entries after 6/6/2023 should be called"""
     self.httpd = http.server.HTTPServer(SERVER_ADDRESS, MockDataHandler)

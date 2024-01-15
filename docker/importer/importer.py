@@ -488,7 +488,7 @@ class Importer:
                                               source_repo.key_path,
                                               self._strict_validation)
         self._request_analysis_external(
-            source_repo, osv.sha256_bytes(vuln_location.encode()),
+            source_repo, osv.sha256_bytes(single_request.text.encode()),
             vuln_location)
       except osv.sources.KeyPathError:
         # Key path doesn't exist in the vulnerability.

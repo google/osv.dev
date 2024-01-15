@@ -654,8 +654,8 @@ class RESTImporterTest(unittest.TestCase):
             type='update',
             source='curl',
             path='http://localhost:8888/CURL-CVE-2023-46219.json',
-            original_sha256='fdd6f5b7078094bcad3ab6fb74fd1cd6'
-            '0705328dd27d08494c945e291994dd2b',
+            original_sha256='dd4766773f12e14912d7c930669a2650'
+            '2a83c80151815cb49400462067ab704e',
             deleted='false',
             req_timestamp='12345'),
         mock.call(
@@ -664,8 +664,8 @@ class RESTImporterTest(unittest.TestCase):
             type='update',
             source='curl',
             path='http://localhost:8888/CURL-CVE-2023-46218.json',
-            original_sha256='ef7a34fe462b5ec95da22e5af0c4fb52'
-            'd162b78118c616f159b1d9e207d07028',
+            original_sha256='ed5d9ee8fad738687254138fdbfd6da0'
+            'f6a3eccbc9ffcda12fb484d63448a22f',
             deleted='false',
             req_timestamp='12345'),
         mock.call(
@@ -674,8 +674,8 @@ class RESTImporterTest(unittest.TestCase):
             type='update',
             source='curl',
             path='http://localhost:8888/CURL-CVE-2023-38546.json',
-            original_sha256='f6517f3155e8367ef46c7493f389a192'
-            '23eeda07901d72b072e5ff286cc2c343',
+            original_sha256='61425ff4651524a71daa90c66235a2af'
+            'b09a06faa839fe4af010a5a02f3dafb7',
             deleted='false',
             req_timestamp='12345'),
         mock.call(
@@ -684,8 +684,8 @@ class RESTImporterTest(unittest.TestCase):
             type='update',
             source='curl',
             path='http://localhost:8888/CURL-CVE-2023-38545.json',
-            original_sha256='237460cde67901377b4935dc9c1f2501'
-            'f270f9a165854aff17d65042bd205950',
+            original_sha256='f76bcb2dedf63b51b3195f2f27942dc2'
+            '3c87f2bc3a93dec79ea838b4c1ffb412',
             deleted='false',
             req_timestamp='12345'),
         mock.call(
@@ -694,8 +694,8 @@ class RESTImporterTest(unittest.TestCase):
             type='update',
             source='curl',
             path='http://localhost:8888/CURL-CVE-2023-38039.json',
-            original_sha256='2ea72047d47e02167d84e46d9f07d755'
-            '2891585e3e679b319ce37b96e536edb1',
+            original_sha256='fcac007c2f0d2685fa56c5910a0e24bc'
+            '0587efc409878fcb0df5b096db5d205f',
             deleted='false',
             req_timestamp='12345'),
         mock.call(
@@ -704,8 +704,8 @@ class RESTImporterTest(unittest.TestCase):
             type='update',
             source='curl',
             path='http://localhost:8888/CURL-CVE-2023-28321.json',
-            original_sha256='65cf6b4d4e87c0f6f96ff18be772824a'
-            '452adb41cec64975dff76b4664742d42',
+            original_sha256='f8bf8e7e18662ca0c1ddd4a3f90ac4a9'
+            '6fc730f09e3bff00c63d99d61b0697b2',
             deleted='false',
             req_timestamp='12345')
     ])

@@ -402,7 +402,7 @@ class TaskRunner:
         vulnerabilities.append(osv.parse_vulnerability_from_dict(vuln))
       except Exception as e:
         logging.exception('Failed to parse %s:%s', vuln['id'], e)
-      current_sha256 = osv.sha256_bytes(path.encode())
+      current_sha256 = osv.sha256_bytes(request.text.encode())
       repo = None
 
     else:

@@ -568,18 +568,15 @@ class RESTImporterTest(unittest.TestCase):
 
   def setUp(self):
     tests.reset_emulator()
-    self.maxDiff = None  # pylint: disable=invalid-name
     self.tmp_dir = tempfile.mkdtemp()
 
     tests.mock_datetime(self)
-    self.mock_repo = tests.mock_repository(self)
     warnings.filterwarnings("ignore", "unclosed", ResourceWarning)
 
     storage_patcher = mock.patch('google.cloud.storage.Client')
     self.addCleanup(storage_patcher.stop)
     self.mock_storage_client = storage_patcher.start()
 
-    self.remote_source_repo_path = self.mock_repo.path
     self.source_repo = osv.SourceRepository(
         type=osv.SourceRepositoryType.REST_ENDPOINT,
         id='curl',

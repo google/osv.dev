@@ -482,6 +482,7 @@ class Importer:
       if last_modified < source_repo.last_update_date:
         continue
       try:
+        #TODO(jesslowe): Use a ThreadPoolExecutor to parallelize this
         vuln_location = source_repo.link + vuln['id'] + source_repo.extension
         single_request = requests.get(vuln_location, timeout=_TIMEOUT_SECONDS)
         _ = osv.parse_vulnerability_from_dict(single_request.json(),

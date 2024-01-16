@@ -60,7 +60,7 @@ _ecosystems = {
     'Rocky Linux': OrderingUnsupportedEcosystem(),
 }
 
-# Semver-based ecosystems, should correspond to _ecoystems above.
+# Semver-based ecosystems, should correspond to _ecosystems above.
 # TODO(michaelkedar): Avoid need to keep in sync with above.
 SEMVER_ECOSYSTEMS = {
     'Bitnami',

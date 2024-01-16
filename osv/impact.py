@@ -652,8 +652,8 @@ def analyze(vulnerability: vulnerability_pb2.Vulnerability,
             # package no longer exists).
             pass
         else:
-          logging.warning('No ecosystem helpers implemented for %s',
-                          affected.package.ecosystem)
+          logging.warning('No ecosystem helpers implemented for %s: %s',
+                          affected.package.ecosystem, vulnerability.id)
 
       new_git_versions = set()
       new_introduced = set()

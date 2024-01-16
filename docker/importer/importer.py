@@ -19,6 +19,7 @@ import datetime
 import json
 import logging
 import os
+import requests
 import shutil
 import threading
 import time
@@ -42,6 +43,8 @@ _OSS_FUZZ_EXPORT_BUCKET = 'oss-fuzz-osv-vulns'
 _EXPORT_WORKERS = 32
 _NO_UPDATE_MARKER = 'OSV-NO-UPDATE'
 _BUCKET_THREAD_COUNT = 20
+_HTTP_LAST_MODIFIED_FORMAT = '%a, %d %b %Y %H:%M:%S %Z'
+_TIMEOUT_SECONDS = 60
 
 _client_store = threading.local()
 
@@ -359,7 +362,7 @@ class Importer:
     source_repo.last_synced_hash = str(repo.head.target)
     source_repo.put()
 
-    logging.info("Finished processing git: %s", source_repo.name)
+    logging.info('Finished processing git: %s', source_repo.name)
 
   def _process_updates_bucket(self, source_repo: osv.SourceRepository):
     """Process updates from bucket."""
@@ -450,16 +453,76 @@ class Importer:
     source_repo.last_update_date = import_time_now
     source_repo.put()
 
-    logging.info("Finished processing bucket: %s", source_repo.name)
+    logging.info('Finished processing bucket: %s', source_repo.name)
+
+  def _process_updates_rest(self, source_repo: osv.SourceRepository):
+    """Process updates from REST API."""
+    logging.info('Begin processing REST: %s', source_repo.name)
+    import_time_now = utcnow()
+    request = requests.head(source_repo.rest_api_url, timeout=_TIMEOUT_SECONDS)
+    if request.status_code != 200:
+      logging.error('Failed to fetch REST API: %s', request.status_code)
+      return
+    last_modified = datetime.datetime.strptime(request.headers['Last-Modified'],
+                                               _HTTP_LAST_MODIFIED_FORMAT)
+    # Check whether endpoint has been modified since last update
+    if last_modified < source_repo.last_update_date:
+      logging.info('No changes since last update.')
+      return
+    request = requests.get(source_repo.rest_api_url, timeout=_TIMEOUT_SECONDS)
+    # Parse vulns into Vulnerability objects from the REST API request.
+    vulns = osv.parse_vulnerabilities_from_data(
+        request.text, source_repo.extension, strict=self._strict_validation)
+    # Create tasks for changed files.
+    for vuln in vulns:
+      import_failure_logs = []
+      if vuln.modified.ToDatetime() < source_repo.last_update_date:
+        continue
+      try:
+        #TODO(jesslowe): Use a ThreadPoolExecutor to parallelize this
+        vuln_location = source_repo.link + vuln.id + source_repo.extension
+        single_vuln = requests.get(vuln_location, timeout=_TIMEOUT_SECONDS)
+        # Validate the individual request
+        _ = osv.parse_vulnerability_from_dict(single_vuln.json(),
+                                              source_repo.key_path,
+                                              self._strict_validation)
+        self._request_analysis_external(
+            source_repo, osv.sha256_bytes(single_vuln.text.encode()),
+            vuln_location)
+      except osv.sources.KeyPathError:
+        # Key path doesn't exist in the vulnerability.
+        # No need to log a full error, as this is expected result.
+        logging.info('Entry does not have an OSV entry: %s', vuln.id)
+        continue
+      except Exception:
+        logging.error('Failed to parse %s', vuln.id)
+        import_failure_logs.append('Failed to parse vulnerability "' + vuln.id +
+                                   '"')
+        continue
+
+    replace_importer_log(storage.Client(), source_repo.name,
+                         self._public_log_bucket, import_failure_logs)
+
+    source_repo.last_update_date = import_time_now
+    source_repo.put()
+
+    logging.info('Finished processing REST: %s', source_repo.name)
 
   def process_updates(self, source_repo: osv.SourceRepository):
     """Process user changes and updates."""
+    if source_repo.link and source_repo.link[-1] != '/':
+      raise ValueError('Source repository link must end with /')
+
     if source_repo.type == osv.SourceRepositoryType.GIT:
       self._process_updates_git(source_repo)
       return
 
     if source_repo.type == osv.SourceRepositoryType.BUCKET:
       self._process_updates_bucket(source_repo)
+      return
+
+    if source_repo.type == osv.SourceRepositoryType.REST_ENDPOINT:
+      self._process_updates_rest(source_repo)
       return
 
     logging.error('Invalid repo type: %s - %d', source_repo.name,

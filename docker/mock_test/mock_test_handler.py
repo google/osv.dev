@@ -58,5 +58,4 @@ class MockDataHandler(http.server.BaseHTTPRequestHandler):
     # Disable logging messages if the response is 200
     if args[1] != '200':
       super().log_message(format, *args)
-    else:
-      pass
+

@@ -134,8 +134,8 @@ contribute your security advisories, please follow these steps.
 2.  Refer to the [OSV Schema](https://ossf.github.io/osv-schema/) documentation
     for information on how to properly format the data so it can be accepted.
 
-3.  Data can be supplied either through a public Git repository or a public GCS
-    bucket.
+3.  Data can be supplied either through a public Git repository, a public GCS
+    bucket or to [REST API endpoints](https://google.github.io/osv.dev/rest-api-contribution/).
 
 ## Contributing documentation
 

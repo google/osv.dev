@@ -499,6 +499,13 @@ class TaskRunner:
           source_of_truth=osv.SourceOfTruth.SOURCE_REPO)
 
     bug.update_from_vulnerability(vulnerability)
+    if "GIT" not in bug.ecosystem:
+        for pkg in bug.affected_packages:
+            pkg: osv.AffectedPackage
+            for r in pkg.ranges:
+                r: osv.AffectedRange2
+                if r.type == "GIT":
+                    bug.ecosystem.append("GIT")
     bug.public = True
     bug.import_last_modified = orig_modified_date
 

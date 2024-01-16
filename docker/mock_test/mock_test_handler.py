@@ -53,3 +53,10 @@ class MockDataHandler(http.server.BaseHTTPRequestHandler):
     self.send_header('Content-Type', 'application/json')
     self.send_header('Last-Modified', self.last_modified)
     self.end_headers()
+
+  def log_message(self, format: str, *args) -> None:  # pylint: disable=redefined-builtin
+    # Disable logging messages if the response is 200
+    if args[1] != '200':
+      super().log_message(format, *args)
+    else:
+      pass

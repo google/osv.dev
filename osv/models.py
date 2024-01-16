@@ -764,6 +764,7 @@ class SourceRepositoryType(enum.IntEnum):
   """SourceRepository type."""
   GIT = 0
   BUCKET = 1
+  REST_ENDPOINT = 2
 
 
 class SourceRepository(ndb.Model):
@@ -778,6 +779,8 @@ class SourceRepository(ndb.Model):
   repo_username = ndb.StringProperty()
   # Optional branch for repo for SourceRepositoryType.GIT.
   repo_branch = ndb.StringProperty()
+  # The API endpoint for SourceRepositoryType.REST_ENDPOINT.
+  rest_api_url = ndb.StringProperty()
   # Bucket name for SourceRepositoryType.BUCKET.
   bucket = ndb.StringProperty()
   # Vulnerability data not under this path is ignored by the importer.
@@ -794,7 +797,7 @@ class SourceRepository(ndb.Model):
   extension = ndb.StringProperty(default='.yaml')
   # Key path within each file to store the vulnerability.
   key_path = ndb.StringProperty()
-  # It true, don't analyze any Git ranges.
+  # If true, don't analyze any Git ranges.
   ignore_git = ndb.BooleanProperty(default=False)
   # Whether to detect cherypicks or not (slow for large repos).
   detect_cherrypicks = ndb.BooleanProperty(default=True)

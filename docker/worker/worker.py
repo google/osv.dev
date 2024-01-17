@@ -515,16 +515,8 @@ class TaskRunner:
           source_of_truth=osv.SourceOfTruth.SOURCE_REPO)
 
     bug.update_from_vulnerability(vulnerability)
-    if "GIT" not in bug.ecosystem:
-      for pkg in bug.affected_packages:
-        pkg: osv.AffectedPackage
-        for r in pkg.ranges:
-          r: osv.AffectedRange2
-          if r.type == "GIT":
-            bug.ecosystem.append("GIT")
     bug.public = True
     bug.import_last_modified = orig_modified_date
-
     # OSS-Fuzz sourced bugs use a different format for source_id.
     if source_repo.name != 'oss-fuzz' or not bug.source_id:
       bug.source_id = f'{source_repo.name}:{relative_path}'
@@ -538,7 +530,6 @@ class TaskRunner:
       logging.info('%s does not affect any packages. Marking as invalid.',
                    vulnerability.id)
       bug.status = osv.BugStatus.INVALID
-
     bug.put()
 
     osv.update_affected_commits(bug.key.id(), result.commits, bug.public)

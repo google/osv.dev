@@ -375,6 +375,14 @@ class Bug(ndb.Model):
         if pkg.package.ecosystem
     }
 
+    for pkg in self.affected_packages:
+      for r in pkg.ranges:
+        if r.type == 'GIT':
+          ecosystems_set.add('GIT')
+          break
+      if 'GIT' in ecosystems_set:
+        break
+
     # For all ecosystems that specify a specific version with colon,
     # also add the base name
     ecosystems_set.update({ecosystems.normalize(x) for x in ecosystems_set})

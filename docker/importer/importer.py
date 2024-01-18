@@ -458,6 +458,10 @@ class Importer:
   def _process_updates_rest(self, source_repo: osv.SourceRepository):
     """Process updates from REST API."""
     logging.info('Begin processing REST: %s', source_repo.name)
+
+    ignore_last_import_time = source_repo.ignore_last_import_time
+    
+
     import_time_now = utcnow()
     request = requests.head(source_repo.rest_api_url, timeout=_TIMEOUT_SECONDS)
     if request.status_code != 200:
@@ -466,7 +470,7 @@ class Importer:
     last_modified = datetime.datetime.strptime(request.headers['Last-Modified'],
                                                _HTTP_LAST_MODIFIED_FORMAT)
     # Check whether endpoint has been modified since last update
-    if last_modified < source_repo.last_update_date:
+    if  not ignore_last_import_time and last_modified < source_repo.last_update_date:
       logging.info('No changes since last update.')
       return
     request = requests.get(source_repo.rest_api_url, timeout=_TIMEOUT_SECONDS)
@@ -476,7 +480,7 @@ class Importer:
     # Create tasks for changed files.
     for vuln in vulns:
       import_failure_logs = []
-      if vuln.modified.ToDatetime() < source_repo.last_update_date:
+      if not ignore_last_import_time and vuln.modified.ToDatetime() < source_repo.last_update_date:
         continue
       try:
         #TODO(jesslowe): Use a ThreadPoolExecutor to parallelize this
@@ -502,7 +506,8 @@ class Importer:
 
     replace_importer_log(storage.Client(), source_repo.name,
                          self._public_log_bucket, import_failure_logs)
-
+    if ignore_last_import_time:
+      source_repo.ignore_last_import_time = False
     source_repo.last_update_date = import_time_now
     source_repo.put()
 

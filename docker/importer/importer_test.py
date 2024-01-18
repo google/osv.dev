@@ -610,6 +610,25 @@ class RESTImporterTest(unittest.TestCase):
                             False)
     imp.run()
     self.assertEqual(mock_publish.call_count, data_handler.cve_count)
+  
+  @mock.patch('google.cloud.pubsub_v1.PublisherClient.publish')
+  @mock.patch('time.time', return_value=12345.0)
+  def test_last_update_ignored(self, unused_mock_time: mock.MagicMock,
+                      mock_publish: mock.MagicMock):
+    """Testing last update ignored"""
+    data_handler = MockDataHandler
+    data_handler.load_file(data_handler, 'rest_test.json')
+    self.httpd = http.server.HTTPServer(SERVER_ADDRESS, data_handler)
+    thread = threading.Thread(target=self.httpd.serve_forever)
+    thread.start()
+    self.source_repo.last_update_date = datetime.datetime(2023, 6, 6)
+    self.source_repo.ignore_last_import_time = True
+    self.source_repo.put()
+    imp = importer.Importer('fake_public_key', 'fake_private_key', self.tmp_dir,
+                            importer.DEFAULT_PUBLIC_LOGGING_BUCKET, 'bucket',
+                            False)
+    imp.run()
+    self.assertEqual(mock_publish.call_count, data_handler.cve_count)
 
   @mock.patch('google.cloud.pubsub_v1.PublisherClient.publish')
   @mock.patch('time.time', return_value=12345.0)

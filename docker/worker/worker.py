@@ -517,7 +517,6 @@ class TaskRunner:
     bug.update_from_vulnerability(vulnerability)
     bug.public = True
     bug.import_last_modified = orig_modified_date
-
     # OSS-Fuzz sourced bugs use a different format for source_id.
     if source_repo.name != 'oss-fuzz' or not bug.source_id:
       bug.source_id = f'{source_repo.name}:{relative_path}'
@@ -531,7 +530,6 @@ class TaskRunner:
       logging.info('%s does not affect any packages. Marking as invalid.',
                    vulnerability.id)
       bug.status = osv.BugStatus.INVALID
-
     bug.put()
 
     osv.update_affected_commits(bug.key.id(), result.commits, bug.public)

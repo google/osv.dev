@@ -612,19 +612,22 @@ class RESTUpdateTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
         type=osv.SourceRepositoryType.REST_ENDPOINT,
         id='source',
         name='source',
-        rest_api_url=f'http://{SERVER_ADDRESS[0]}:{SERVER_ADDRESS[1]}',
+        rest_api_url=MOCK_ADDRESS_FORMAT,
+        link=MOCK_ADDRESS_FORMAT,
         editable=False,
         repo_username='',
         extension='.json',
+        ignore_git=True,
     )
     self.source_repo.put()
+    osv.ecosystems.config.work_dir = os.path.join(
+        os.path.dirname(os.path.abspath(__file__)), 'testdata/tmp/')
 
     mock_publish = mock.patch('google.cloud.pubsub_v1.PublisherClient.publish')
     self.mock_publish = mock_publish.start()
     self.addCleanup(mock_publish.stop)
     warnings.filterwarnings('ignore', 'unclosed', ResourceWarning)
     self.httpd = http.server.HTTPServer(SERVER_ADDRESS, MockDataHandler)
-    print(f'Serving mock data at {MOCK_ADDRESS_FORMAT}')
     thread = threading.Thread(target=self.httpd.serve_forever)
     thread.start()
 
@@ -635,15 +638,9 @@ class RESTUpdateTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
   def test_update(self):
     """Test updating rest."""
     solo_endpoint = MOCK_ADDRESS_FORMAT + 'CURL-CVE-2022-32221' + '.json'
-    self.source_repo.ignore_git = True
-    self.source_repo.type = osv.SourceRepositoryType.REST_ENDPOINT
-    self.source_repo.rest_api_url = MOCK_ADDRESS_FORMAT
-    self.source_repo.link = MOCK_ADDRESS_FORMAT
-    self.source_repo.put()
     sha = '6138604b5537caab2afc0ee3e2b11f1574fdd5d8f3c6173f64048341cf55aee4'
     task_runner = worker.TaskRunner(ndb_client, None, self.tmp_dir.name, None,
                                     None)
-
     message = mock.Mock()
     message.attributes = {
         'source': 'source',
@@ -653,6 +650,30 @@ class RESTUpdateTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
     }
     task_runner._source_update(message)
     self.mock_publish.assert_not_called()
+
+  def test_git_ranges(self):
+    """Test updating rest."""
+    solo_endpoint = MOCK_ADDRESS_FORMAT + 'CURL-CVE-2022-32221' + '.json'
+    sha = '6138604b5537caab2afc0ee3e2b11f1574fdd5d8f3c6173f64048341cf55aee4'
+    task_runner = worker.TaskRunner(ndb_client, None, self.tmp_dir.name, None,
+                                    None)
+    osv.Bug(
+        db_id='CURL-CVE-2022-32221',
+        ecosystem=[''],
+        source_id='source:CURL-CVE-2022-32221.json',
+        import_last_modified=datetime.datetime(2020, 1, 1, 0, 0),
+    ).put()
+    message = mock.Mock()
+    message.attributes = {
+        'source': 'source',
+        'path': solo_endpoint,
+        'original_sha256': sha,
+        'deleted': 'false',
+    }
+    task_runner._source_update(message)
+
+    self.expect_dict_equal('update_no_introduced',
+                           osv.Bug.get_by_id('CURL-CVE-2022-32221')._to_dict())
 
 
 class UpdateTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):

@@ -575,6 +575,8 @@ def list_packages(vuln_affected: list[dict]):
   for affected in vuln_affected:
     for affected_range in affected.get('ranges', []):
       if affected_range['type'] in ['ECOSYSTEM', 'SEMVER']:
+        if 'package' not in affected:
+          continue
         package_entry = affected['package']['ecosystem'] + '/' + affected[
             'package']['name']
         if package_entry not in packages:

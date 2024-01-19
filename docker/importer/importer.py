@@ -460,7 +460,6 @@ class Importer:
     logging.info('Begin processing REST: %s', source_repo.name)
 
     ignore_last_import_time = source_repo.ignore_last_import_time
-    
 
     import_time_now = utcnow()
     request = requests.head(source_repo.rest_api_url, timeout=_TIMEOUT_SECONDS)
@@ -470,7 +469,8 @@ class Importer:
     last_modified = datetime.datetime.strptime(request.headers['Last-Modified'],
                                                _HTTP_LAST_MODIFIED_FORMAT)
     # Check whether endpoint has been modified since last update
-    if  not ignore_last_import_time and last_modified < source_repo.last_update_date:
+    if not ignore_last_import_time and (last_modified
+                                        < source_repo.last_update_date):
       logging.info('No changes since last update.')
       return
     request = requests.get(source_repo.rest_api_url, timeout=_TIMEOUT_SECONDS)
@@ -480,7 +480,8 @@ class Importer:
     # Create tasks for changed files.
     for vuln in vulns:
       import_failure_logs = []
-      if not ignore_last_import_time and vuln.modified.ToDatetime() < source_repo.last_update_date:
+      if not ignore_last_import_time and vuln.modified.ToDatetime(
+      ) < source_repo.last_update_date:
         continue
       try:
         #TODO(jesslowe): Use a ThreadPoolExecutor to parallelize this

@@ -610,11 +610,11 @@ class RESTImporterTest(unittest.TestCase):
                             False)
     imp.run()
     self.assertEqual(mock_publish.call_count, data_handler.cve_count)
-  
+
   @mock.patch('google.cloud.pubsub_v1.PublisherClient.publish')
   @mock.patch('time.time', return_value=12345.0)
   def test_last_update_ignored(self, unused_mock_time: mock.MagicMock,
-                      mock_publish: mock.MagicMock):
+                               mock_publish: mock.MagicMock):
     """Testing last update ignored"""
     data_handler = MockDataHandler
     data_handler.load_file(data_handler, 'rest_test.json')

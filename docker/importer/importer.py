@@ -460,7 +460,8 @@ class Importer:
     logging.info('Begin processing REST: %s', source_repo.name)
 
     ignore_last_import_time = source_repo.ignore_last_import_time
-
+    if ignore_last_import_time:
+      source_repo.ignore_last_import_time = False
     import_time_now = utcnow()
     request = requests.head(source_repo.rest_api_url, timeout=_TIMEOUT_SECONDS)
     if request.status_code != 200:
@@ -507,8 +508,7 @@ class Importer:
 
     replace_importer_log(storage.Client(), source_repo.name,
                          self._public_log_bucket, import_failure_logs)
-    if ignore_last_import_time:
-      source_repo.ignore_last_import_time = False
+
     source_repo.last_update_date = import_time_now
     source_repo.put()
 

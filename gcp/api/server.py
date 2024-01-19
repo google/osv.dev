@@ -67,6 +67,24 @@ _DETERMINE_VER_MIN_SCORE_CUTOFF = 0.05
 # This should match the number in the indexer
 _BUCKET_SIZE = 512
 
+# This needs to be kept in sync with
+# https://github.com/google/osv.dev/blob/
+# 666a43e6ae7690fbfa283e9a6f0b08a986be4d32/
+# docker/indexer/stages/processing/processing.go#L77
+_VENDORED_LIB_NAMES = frozenset((
+    '3rdparty',
+    'dep',
+    'deps',
+    'thirdparty',
+    'third-party',
+    'third_party',
+    'libs',
+    'external',
+    'externals',
+    'vendor',
+    'vendored',
+))
+
 # Prefix for the
 _TAG_PREFIX = "refs/tags/"
 
@@ -252,6 +270,20 @@ class QueryContext:
   total_responses: ResponsesCount
 
 
+def should_skip_bucket(path: str) -> bool:
+  """Returns whether or not the given file path should be skipped for the
+  determineversions bucket computation."""
+  if not path:
+    return False
+
+  # Check for a nested vendored directory, as this could mess with results. The
+  # API expects the file path passed to be relative to the potential library
+  # path, so any vendored library names found here would imply it's a nested
+  # vendored library.
+  components = path.split('/')
+  return any(c in _VENDORED_LIB_NAMES for c in components)
+
+
 def process_buckets(
     file_results: List[osv.FileResult]) -> List[osv.RepoIndexBucket]:
   """
@@ -261,6 +293,9 @@ def process_buckets(
   buckets: list[list[bytes]] = [[] for _ in range(_BUCKET_SIZE)]
 
   for fr in file_results:
+    if should_skip_bucket(fr.path):
+      continue
+
     buckets[int.from_bytes(fr.hash[:2], byteorder='big') % _BUCKET_SIZE].append(
         fr.hash)
 

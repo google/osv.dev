@@ -462,6 +462,7 @@ class Importer:
     ignore_last_import_time = source_repo.ignore_last_import_time
     if ignore_last_import_time:
       source_repo.ignore_last_import_time = False
+      source_repo.put()
     import_time_now = utcnow()
     request = requests.head(source_repo.rest_api_url, timeout=_TIMEOUT_SECONDS)
     if request.status_code != 200:

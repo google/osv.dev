@@ -393,7 +393,7 @@ class TaskRunner:
       repo = None
     elif source_repo.type == osv.SourceRepositoryType.REST_ENDPOINT:
       vulnerabilities = []
-      request = requests.get(path, timeout=_TIMEOUT_SECONDS)
+      request = requests.get(source_repo.link + path, timeout=_TIMEOUT_SECONDS)
       if request.status_code != 200:
         logging.error('Failed to fetch REST API: %s', request.status_code)
         return

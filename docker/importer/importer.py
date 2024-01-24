@@ -487,15 +487,16 @@ class Importer:
         continue
       try:
         #TODO(jesslowe): Use a ThreadPoolExecutor to parallelize this
-        vuln_location = source_repo.link + vuln.id + source_repo.extension
-        single_vuln = requests.get(vuln_location, timeout=_TIMEOUT_SECONDS)
+        single_vuln = requests.get(
+            source_repo.link + vuln.id + source_repo.extension,
+            timeout=_TIMEOUT_SECONDS)
         # Validate the individual request
         _ = osv.parse_vulnerability_from_dict(single_vuln.json(),
                                               source_repo.key_path,
                                               self._strict_validation)
         self._request_analysis_external(
             source_repo, osv.sha256_bytes(single_vuln.text.encode()),
-            vuln_location)
+            vuln.id + source_repo.extension)
       except osv.sources.KeyPathError:
         # Key path doesn't exist in the vulnerability.
         # No need to log a full error, as this is expected result.

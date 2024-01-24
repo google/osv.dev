@@ -481,8 +481,8 @@ class Importer:
       try:
         #TODO(jesslowe): Use a ThreadPoolExecutor to parallelize this
         single_vuln = requests.get(
-          source_repo.link + vuln.id + source_repo.extension,
-          timeout=_TIMEOUT_SECONDS)
+            source_repo.link + vuln.id + source_repo.extension,
+            timeout=_TIMEOUT_SECONDS)
         # Validate the individual request
         _ = osv.parse_vulnerability_from_dict(single_vuln.json(),
                                               source_repo.key_path,

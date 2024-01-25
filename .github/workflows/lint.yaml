@@ -23,7 +23,8 @@ on:
   merge_group:
     branches: [ master ]
 
-permissions: read-all
+permissions:
+  contents: read
 
 jobs:
   lint:

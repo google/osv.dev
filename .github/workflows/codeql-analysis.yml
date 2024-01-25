@@ -21,7 +21,7 @@ on:
     branches: [ master ]
 
 
-permissions: read-all
+permissions: {}
 
 jobs:
   analyze:

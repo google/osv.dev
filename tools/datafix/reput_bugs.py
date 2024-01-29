@@ -61,6 +61,8 @@ def main() -> None:
   for batch in range(0, len(result), MAX_BATCH_SIZE):
     try:
       with client.transaction():
+        # Reputting the bug runs the Bug _pre_put_hook() in models.py
+        # which will give the bug the 'GIT' ecosystem if it has a git range.
         ndb.put_multi_async([
             osv.Bug.get_by_id(r.key.name)
             for r in result[batch:batch + MAX_BATCH_SIZE]

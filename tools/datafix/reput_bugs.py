@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
-
-""" Utility to reput bugs so that those with git ranges are classified with the GIT ecosystem. """
+""" Utility to reput bugs so that those with git ranges 
+    are classified with the GIT ecosystem. """
 
 from google.cloud import datastore
 
@@ -12,6 +12,7 @@ import argparse
 
 ndb_client = None
 MAX_BATCH_SIZE = 500
+
 
 def main() -> None:
   parser = argparse.ArgumentParser(
@@ -59,8 +60,11 @@ def main() -> None:
   # Chunk the results to reput in acceptibly sized batches for the API.
   for batch in range(0, len(result), MAX_BATCH_SIZE):
     try:
-      with client.transaction() as xact:
-        ndb.put_multi_async([osv.Bug.get_by_id(r.key.name) for r in result[batch:batch + MAX_BATCH_SIZE]])
+      with client.transaction():
+        ndb.put_multi_async([
+            osv.Bug.get_by_id(r.key.name)
+            for r in result[batch:batch + MAX_BATCH_SIZE]
+        ])
         print(f"Reputting {len(result[batch:batch + MAX_BATCH_SIZE])} bugs...")
         if args.dryrun:
           raise Exception("Dry run mode. Preventing transaction from commiting")  # pylint: disable=broad-exception-raised
@@ -70,6 +74,7 @@ def main() -> None:
       if args.dryrun and e.args[0].startswith("Dry run mode"):
         pass
   print("Reputted!")
+
 
 if __name__ == "__main__":
   ndb_client = ndb.Client(project='oss-vdb-test')

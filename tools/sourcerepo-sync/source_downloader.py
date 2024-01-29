@@ -1,6 +1,6 @@
 
 from google.cloud import datastore
-import yaml
+
 import os
 import sys
 
@@ -10,24 +10,23 @@ local_sourcerepos = []
 client = datastore.Client(project='oss-vdb-test')
 query = client.query(kind='SourceRepository')
 results = list(query.fetch())
-# print(f'Retrieved {len(results)} sourcerepos')
-
+print(f'Retrieved {len(results)} sourcerepos')
+sources = ''
 for result in results:
   name = result['name']
-  sourcerepo = f'- name: \'{name}\'\n'
+  sourcerepo = f'- name: {name}\n'
   for attr in result:
     if attr == 'name':
       continue
-      # print(f'{attr}: \'{result[attr]}\'')
-    elif result[attr] != '' and result[attr] is not None:
-      sourcerepo += f' {attr}: \'{result[attr]}\'\n'
-      # print(f'{attr}: \'{result[attr]}\'')
+    # Skip dynamic attribute
+    if attr == 'last_update_date' or attr == 'ignore_last_import_time':
+      continue
+
+    elif result[attr] != '' and result[attr] is not None and result[attr] != []:
+      sourcerepo += f'  {attr}: {result[attr]}\n'
+
   print(sourcerepo)
-# yaml.dump(sourcerepo, open(
-#   os.path.join(sys.path[-1]+'/', file), 'w'), default_flow_style=True)
+  sources += sourcerepo + '\n'
 
-
-# Write a new yaml file with the sourcerepos from the datastore
-# with open(os.path.join(sys.path[-1]+'/', file), 'w') as f:
-#   local_sourcerepos = yaml.load(f, Loader=yaml.FullLoader)
-# print(f'Loaded {len(local_sourcerepos)} sourcerepos')
+with open(os.path.join(sys.path[-1]+'/', file), 'w') as f:
+  f.write(sources)

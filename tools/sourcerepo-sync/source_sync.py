@@ -25,9 +25,8 @@ def main() -> None:
       "--kind",
       action="store",
       dest="kind",
-      default="SourceRepositoryTest", # Change to SourceRepository
-      help="The datastore kind to operate on"
-  )
+      default="SourceRepositoryTest",  # Change to SourceRepository
+      help="The datastore kind to operate on")
   parser.add_argument(
       "--project",
       action="store",
@@ -40,7 +39,7 @@ def main() -> None:
 
   file = 'source_repo_test_db.yaml'
   local_sourcerepos = []
-  with open(os.path.join(sys.path[-1]+'/', file), 'r') as f:
+  with open(os.path.join(sys.path[-1] + '/', file), 'r') as f:
     local_sourcerepos = yaml.load(f, Loader=yaml.FullLoader)
   if args.verbose:
     print(f'Loaded {len(local_sourcerepos)} local source repositories')
@@ -63,16 +62,8 @@ def main() -> None:
         local_sourcerepos.pop(local_sourcerepos.index(repo))
         ds_repos.pop(ds_repos.index(ds_repo))
         change_flag = False
-        for attr in repo:
-          if attr in ds_repo:
-            if repo[attr] != ds_repo[attr]:
-              if change_flag is False:
-                key = client.key(kind, ds_repo['name'])
-                entity = client.get(key)
-                change_flag = True
-              if args.verbose:
-                print(f'Found diff in {attr} - {repo[attr]} != {ds_repo[attr]}')
-              entity.update({attr: repo[attr]})
+        change_flag, entity = update_attr(repo, ds_repo, change_flag, args,
+                                          client, kind)
         if change_flag and not args.dryrun:
           client.put(entity)
         break
@@ -94,6 +85,22 @@ def main() -> None:
       key = client.key(kind, ds_repo['name'])
       if not args.dryrun:
         client.delete(key)
+
+
+def update_attr(repo, ds_repo, change_flag, args, client, kind):
+  """Check the attributes of the source repo and update if needed."""
+  for attr in repo:
+    if attr in ds_repo:
+      if repo[attr] != ds_repo[attr]:
+        if change_flag is False:
+          key = client.key(kind, ds_repo['name'])
+          entity = client.get(key)
+          change_flag = True
+        if args.verbose:
+          print(f'Found diff in {attr} - {repo[attr]} != {ds_repo[attr]}')
+        entity.update({attr: repo[attr]})
+  return change_flag, entity
+
 
 if __name__ == "__main__":
   main()

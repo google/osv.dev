@@ -1,4 +1,4 @@
-
+""" Download source repository data from datastore and write to yaml file"""
 from google.cloud import datastore
 
 import os
@@ -19,14 +19,14 @@ for result in results:
     if attr == 'name':
       continue
     # Skip dynamic attribute
-    if attr == 'last_update_date' or attr == 'ignore_last_import_time':
+    if attr in ('last_update_date', 'ignore_last_import_time'):
       continue
 
-    elif result[attr] != '' and result[attr] is not None and result[attr] != []:
+    if result[attr] != '' and result[attr] is not None and result[attr] != []:
       sourcerepo += f'  {attr}: {result[attr]}\n'
 
   print(sourcerepo)
   sources += sourcerepo + '\n'
 
-with open(os.path.join(sys.path[-1]+'/', file), 'w') as f:
+with open(os.path.join(sys.path[-1] + '/', file), 'w') as f:
   f.write(sources)

@@ -613,6 +613,25 @@ class RESTImporterTest(unittest.TestCase):
 
   @mock.patch('google.cloud.pubsub_v1.PublisherClient.publish')
   @mock.patch('time.time', return_value=12345.0)
+  def test_last_update_ignored(self, unused_mock_time: mock.MagicMock,
+                               mock_publish: mock.MagicMock):
+    """Testing last update ignored"""
+    data_handler = MockDataHandler
+    data_handler.load_file(data_handler, 'rest_test.json')
+    self.httpd = http.server.HTTPServer(SERVER_ADDRESS, data_handler)
+    thread = threading.Thread(target=self.httpd.serve_forever)
+    thread.start()
+    self.source_repo.last_update_date = datetime.datetime(2023, 6, 6)
+    self.source_repo.ignore_last_import_time = True
+    self.source_repo.put()
+    imp = importer.Importer('fake_public_key', 'fake_private_key', self.tmp_dir,
+                            importer.DEFAULT_PUBLIC_LOGGING_BUCKET, 'bucket',
+                            False)
+    imp.run()
+    self.assertEqual(mock_publish.call_count, data_handler.cve_count)
+
+  @mock.patch('google.cloud.pubsub_v1.PublisherClient.publish')
+  @mock.patch('time.time', return_value=12345.0)
   def test_no_updates(self, unused_mock_time: mock.MagicMock,
                       mock_publish: mock.MagicMock):
     """Testing none last modified"""
@@ -651,7 +670,7 @@ class RESTImporterTest(unittest.TestCase):
             data=b'',
             type='update',
             source='curl',
-            path='http://localhost:8888/CURL-CVE-2023-46219.json',
+            path='CURL-CVE-2023-46219.json',
             original_sha256='dd4766773f12e14912d7c930669a2650'
             '2a83c80151815cb49400462067ab704e',
             deleted='false',
@@ -661,7 +680,7 @@ class RESTImporterTest(unittest.TestCase):
             data=b'',
             type='update',
             source='curl',
-            path='http://localhost:8888/CURL-CVE-2023-46218.json',
+            path='CURL-CVE-2023-46218.json',
             original_sha256='ed5d9ee8fad738687254138fdbfd6da0'
             'f6a3eccbc9ffcda12fb484d63448a22f',
             deleted='false',
@@ -671,7 +690,7 @@ class RESTImporterTest(unittest.TestCase):
             data=b'',
             type='update',
             source='curl',
-            path='http://localhost:8888/CURL-CVE-2023-38546.json',
+            path='CURL-CVE-2023-38546.json',
             original_sha256='61425ff4651524a71daa90c66235a2af'
             'b09a06faa839fe4af010a5a02f3dafb7',
             deleted='false',
@@ -681,7 +700,7 @@ class RESTImporterTest(unittest.TestCase):
             data=b'',
             type='update',
             source='curl',
-            path='http://localhost:8888/CURL-CVE-2023-38545.json',
+            path='CURL-CVE-2023-38545.json',
             original_sha256='f76bcb2dedf63b51b3195f2f27942dc2'
             '3c87f2bc3a93dec79ea838b4c1ffb412',
             deleted='false',
@@ -691,7 +710,7 @@ class RESTImporterTest(unittest.TestCase):
             data=b'',
             type='update',
             source='curl',
-            path='http://localhost:8888/CURL-CVE-2023-38039.json',
+            path='CURL-CVE-2023-38039.json',
             original_sha256='fcac007c2f0d2685fa56c5910a0e24bc'
             '0587efc409878fcb0df5b096db5d205f',
             deleted='false',
@@ -701,7 +720,7 @@ class RESTImporterTest(unittest.TestCase):
             data=b'',
             type='update',
             source='curl',
-            path='http://localhost:8888/CURL-CVE-2023-28321.json',
+            path='CURL-CVE-2023-28321.json',
             original_sha256='f8bf8e7e18662ca0c1ddd4a3f90ac4a9'
             '6fc730f09e3bff00c63d99d61b0697b2',
             deleted='false',

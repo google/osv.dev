@@ -6,7 +6,7 @@ parent: API
 nav_order: 3
 ---
 # POST /v1/querybatch
-Query for multiple packages (by either package and version or git commit hash) at once. Returns vulnerability ids and modified field only. 
+Query for multiple packages (by either package and version or git commit hash) at once. Returns vulnerability ids and modified field only. The response ordering will be guaranteed to match the input.
 
 {: .no_toc }
 

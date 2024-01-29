@@ -35,16 +35,20 @@ def main() -> None:
       help="GCP project to operate on")
   args = parser.parse_args()
 
-  kind = 'SourceRepositoryTest'
-
-  file = 'source_repo_test_db.yaml'
+  if args.project == 'oss-vdb-test':
+    file = 'source_test.yaml'
+  elif args.project == 'oss-vdb':
+    file = 'source.yaml'
+  else:
+    print('Invalid project')
+    return
   local_sourcerepos = []
   with open(os.path.join(sys.path[-1] + '/', file), 'r') as f:
     local_sourcerepos = yaml.load(f, Loader=yaml.FullLoader)
   if args.verbose:
     print(f'Loaded {len(local_sourcerepos)} local source repositories')
 
-  client = datastore.Client(project='oss-vdb-test')
+  client = datastore.Client(project=args.project)
   query = client.query(kind=args.kind)
 
   ds_repos = list(query.fetch())
@@ -63,7 +67,7 @@ def main() -> None:
         ds_repos.pop(ds_repos.index(ds_repo))
         change_flag = False
         change_flag, entity = update_attr(repo, ds_repo, change_flag, args,
-                                          client, kind)
+                                          client, args.kind)
         if change_flag and not args.dryrun:
           client.put(entity)
         break
@@ -71,7 +75,7 @@ def main() -> None:
     if not repo_found:
       if args.verbose:
         print(f'New source repository {repo["name"]}')
-      key = client.key(kind, repo['name'])
+      key = client.key(args.kind, repo['name'])
       entity = datastore.Entity(key=key)
       entity.update(repo)
       if not args.dryrun:
@@ -82,7 +86,7 @@ def main() -> None:
     if ds_repo['name'] not in [repo['name'] for repo in local_sourcerepos]:
       if args.verbose:
         print(f'Deleting source repository {ds_repo["name"]}')
-      key = client.key(kind, ds_repo['name'])
+      key = client.key(args.kind, ds_repo['name'])
       if not args.dryrun:
         client.delete(key)
 

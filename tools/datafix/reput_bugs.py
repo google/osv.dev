@@ -45,7 +45,7 @@ def main() -> None:
   client = datastore.Client(project=args.project)
 
   query = client.query(kind="Bug")
-  # query.add_filter(filter=PropertyFilter("source", "=", args.source))
+  query.add_filter(filter=PropertyFilter("source", "=", args.source))
   if not args.verbose:
     query.keys_only()
 
@@ -75,4 +75,3 @@ if __name__ == "__main__":
   ndb_client = ndb.Client(project='oss-vdb-test')
   with ndb_client.context() as context:
     main()
-

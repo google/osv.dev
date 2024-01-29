@@ -637,7 +637,7 @@ class RESTUpdateTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
 
   def test_update(self):
     """Test updating rest."""
-    solo_endpoint = MOCK_ADDRESS_FORMAT + 'CURL-CVE-2022-32221' + '.json'
+    solo_endpoint = 'CURL-CVE-2022-32221' + '.json'
     sha = '6138604b5537caab2afc0ee3e2b11f1574fdd5d8f3c6173f64048341cf55aee4'
     task_runner = worker.TaskRunner(ndb_client, None, self.tmp_dir.name, None,
                                     None)
@@ -653,7 +653,7 @@ class RESTUpdateTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
 
   def test_git_ranges(self):
     """Test updating rest."""
-    solo_endpoint = MOCK_ADDRESS_FORMAT + 'CURL-CVE-2022-32221' + '.json'
+    solo_endpoint = 'CURL-CVE-2022-32221' + '.json'
     sha = '6138604b5537caab2afc0ee3e2b11f1574fdd5d8f3c6173f64048341cf55aee4'
     task_runner = worker.TaskRunner(ndb_client, None, self.tmp_dir.name, None,
                                     None)

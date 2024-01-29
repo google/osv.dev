@@ -458,6 +458,11 @@ class Importer:
   def _process_updates_rest(self, source_repo: osv.SourceRepository):
     """Process updates from REST API."""
     logging.info('Begin processing REST: %s', source_repo.name)
+
+    ignore_last_import_time = source_repo.ignore_last_import_time
+    if ignore_last_import_time:
+      source_repo.ignore_last_import_time = False
+      source_repo.put()
     import_time_now = utcnow()
     request = requests.head(source_repo.rest_api_url, timeout=_TIMEOUT_SECONDS)
     if request.status_code != 200:
@@ -466,7 +471,8 @@ class Importer:
     last_modified = datetime.datetime.strptime(request.headers['Last-Modified'],
                                                _HTTP_LAST_MODIFIED_FORMAT)
     # Check whether endpoint has been modified since last update
-    if last_modified < source_repo.last_update_date:
+    if not ignore_last_import_time and (last_modified
+                                        < source_repo.last_update_date):
       logging.info('No changes since last update.')
       return
     request = requests.get(source_repo.rest_api_url, timeout=_TIMEOUT_SECONDS)
@@ -476,19 +482,21 @@ class Importer:
     # Create tasks for changed files.
     for vuln in vulns:
       import_failure_logs = []
-      if vuln.modified.ToDatetime() < source_repo.last_update_date:
+      if not ignore_last_import_time and vuln.modified.ToDatetime(
+      ) < source_repo.last_update_date:
         continue
       try:
         #TODO(jesslowe): Use a ThreadPoolExecutor to parallelize this
-        vuln_location = source_repo.link + vuln.id + source_repo.extension
-        single_vuln = requests.get(vuln_location, timeout=_TIMEOUT_SECONDS)
+        single_vuln = requests.get(
+            source_repo.link + vuln.id + source_repo.extension,
+            timeout=_TIMEOUT_SECONDS)
         # Validate the individual request
         _ = osv.parse_vulnerability_from_dict(single_vuln.json(),
                                               source_repo.key_path,
                                               self._strict_validation)
         self._request_analysis_external(
             source_repo, osv.sha256_bytes(single_vuln.text.encode()),
-            vuln_location)
+            vuln.id + source_repo.extension)
       except osv.sources.KeyPathError:
         # Key path doesn't exist in the vulnerability.
         # No need to log a full error, as this is expected result.

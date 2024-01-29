@@ -1,0 +1,315 @@
+- name: 'almalinux-alba'
+ versions_from_repo: False
+ last_update_date: '2023-05-02 01:13:00+00:00'
+ type: 0
+ ignore_patterns: '['ALSA-.*', 'ALEA-.*']'
+ directory_path: 'advisories'
+ last_synced_hash: '368923a51ec74479bc69ee9eef917cc10eb2c101'
+ repo_url: 'https://github.com/AlmaLinux/osv-database.git'
+ detect_cherrypicks: False
+ extension: '.json'
+ db_prefix: 'ALBA-'
+ ignore_git: False
+ link: 'https://github.com/AlmaLinux/osv-database/blob/master/'
+ editable: False
+
+- name: 'almalinux-alea'
+ versions_from_repo: False
+ last_update_date: '2023-05-02 01:17:00+00:00'
+ type: 0
+ ignore_patterns: '['ALSA-.*', 'ALBA-.*']'
+ directory_path: 'advisories'
+ last_synced_hash: '368923a51ec74479bc69ee9eef917cc10eb2c101'
+ repo_url: 'https://github.com/AlmaLinux/osv-database.git'
+ detect_cherrypicks: False
+ extension: '.json'
+ db_prefix: 'ALEA-'
+ ignore_git: False
+ link: 'https://github.com/AlmaLinux/osv-database/blob/master/'
+ editable: False
+
+- name: 'almalinux-alsa'
+ versions_from_repo: False
+ last_update_date: '2023-05-02 01:05:00+00:00'
+ type: 0
+ ignore_patterns: '['ALBA-.*', 'ALEA-.*']'
+ directory_path: 'advisories'
+ last_synced_hash: '368923a51ec74479bc69ee9eef917cc10eb2c101'
+ repo_url: 'https://github.com/AlmaLinux/osv-database.git'
+ detect_cherrypicks: False
+ extension: '.json'
+ db_prefix: 'ALSA-'
+ ignore_git: False
+ link: 'https://github.com/AlmaLinux/osv-database/blob/master/'
+ editable: False
+
+- name: 'android'
+ versions_from_repo: False
+ last_update_date: '2024-01-29 03:00:03.346567+00:00'
+ type: 1
+ ignore_patterns: '[]'
+ detect_cherrypicks: False
+ extension: '.json'
+ bucket: 'android-osv'
+ db_prefix: 'A-'
+ ignore_git: True
+ link: 'https://storage.googleapis.com/android-osv/'
+ editable: False
+
+- name: 'bitnami'
+ versions_from_repo: False
+ last_update_date: '2023-09-17 11:14:00+00:00'
+ type: 0
+ ignore_patterns: '[]'
+ directory_path: 'data'
+ last_synced_hash: 'cf4e4e8b1e2d145423b9465bc2c13b3199e602b3'
+ repo_url: 'https://github.com/bitnami/vulndb.git'
+ detect_cherrypicks: False
+ extension: '.json'
+ db_prefix: 'BIT-'
+ ignore_git: False
+ link: 'https://github.com/bitnami/vulndb/tree/main/'
+ editable: False
+
+- name: 'curl'
+ versions_from_repo: False
+ last_update_date: '2024-01-24 23:45:23.762357+00:00'
+ rest_api_url: 'https://curl.se/docs/vuln.json'
+ type: 2
+ ignore_patterns: '['propertyValue']'
+ directory_path: 'docs'
+ detect_cherrypicks: False
+ extension: '.json'
+ db_prefix: 'CURL-'
+ ignore_git: True
+ link: 'https://curl.se/docs/'
+ editable: False
+
+- name: 'cve-osv'
+ versions_from_repo: True
+ last_update_date: '2024-01-29 03:00:04.840175+00:00'
+ type: 1
+ ignore_patterns: '[]'
+ 
+ directory_path: 'osv-output'
+ detect_cherrypicks: False
+ extension: '.json'
+ bucket: 'osv-test-cve-osv-conversion'
+ db_prefix: 'CVE-'
+ ignore_git: False
+ human_link: 'https://nvd.nist.gov/vuln/detail/'
+ link: 'https://storage.googleapis.com/osv-test-cve-osv-conversion/'
+ editable: False
+- name: 'debian-dla'
+ versions_from_repo: False
+ last_update_date: '2024-01-29 03:00:15.756324+00:00'
+ type: 1
+ ignore_patterns: '[]'
+ 
+ directory_path: 'dla-osv'
+ detect_cherrypicks: False
+ extension: '.json'
+ bucket: 'osv-test-debian-osv'
+ db_prefix: 'DLA-'
+ ignore_git: True
+ link: 'https://storage.googleapis.com/debian-osv/'
+ editable: False
+
+- name: 'debian-dsa'
+ versions_from_repo: False
+ last_update_date: '2024-01-29 03:00:17.485951+00:00'
+ type: 1
+ ignore_patterns: '[]'
+ directory_path: 'dsa-osv'
+ detect_cherrypicks: False
+ extension: '.json'
+ bucket: 'osv-test-debian-osv'
+ db_prefix: 'DSA-'
+ ignore_git: True
+ human_link: 'https://security-tracker.debian.org/tracker/'
+ link: 'https://storage.googleapis.com/debian-osv/'
+ editable: False
+
+- name: 'debian-dtsa'
+ versions_from_repo: False
+ last_update_date: '2024-01-29 03:00:19.082055+00:00'
+ type: 1
+ ignore_patterns: '[]'
+ directory_path: 'dtsa-osv'
+ detect_cherrypicks: False
+ extension: '.json'
+ bucket: 'osv-test-debian-osv'
+ db_prefix: 'DTSA-'
+ ignore_git: True
+ link: 'https://storage.googleapis.com/debian-osv/'
+ editable: False
+
+- name: 'ghsa'
+ versions_from_repo: False
+ last_update_date: '2022-10-11 00:00:00+00:00'
+ type: 0
+ ignore_patterns: '[]'
+ ignore_last_import_time: True
+ directory_path: 'advisories/github-reviewed'
+ last_synced_hash: '4649de4b3717bc79d26728c8a238e43989fb70bd'
+ repo_url: 'https://github.com/github/advisory-database.git'
+ detect_cherrypicks: False
+ extension: '.json'
+ db_prefix: 'GHSA-'
+ ignore_git: True
+ human_link: 'https://github.com/advisories/'
+ link: 'https://github.com/github/advisory-database/blob/main/'
+ editable: False
+
+- name: 'go'
+ versions_from_repo: True
+ last_update_date: '2024-01-29 03:00:32.876409+00:00'
+ type: 1
+ ignore_patterns: '['index.json']'
+ directory_path: 'ID'
+ detect_cherrypicks: True
+ extension: '.json'
+ bucket: 'go-vulndb'
+ db_prefix: 'GO-'
+ ignore_git: True
+ human_link: 'https://pkg.go.dev/vuln/'
+ link: 'https://vuln.go.dev/'
+ editable: False
+
+- name: 'haskell'
+ versions_from_repo: False
+ last_update_date: '2023-07-03 01:41:00+00:00'
+ type: 0
+ ignore_patterns: '[]'
+ repo_branch: 'generated/osv-export'
+ last_synced_hash: '275ac5a76b92d5efd0422bb62c61677883daad91'
+ repo_url: 'https://github.com/haskell/security-advisories.git'
+ detect_cherrypicks: False
+ extension: '.json'
+ db_prefix: 'HSEC-'
+ ignore_git: False
+ link: 'https://github.com/haskell/security-advisories/blob/generated/osv-export/'
+ editable: False
+ repo_username: 'git'
+
+- name: 'malicious-packages'
+ versions_from_repo: False
+ last_update_date: '2023-07-31 04:01:00+00:00'
+ type: 0
+ ignore_patterns: '['MAL-0000.*', 'config.yaml']'
+ directory_path: 'osv'
+ last_synced_hash: 'e1ed7f2be6b3b3f8d0e932584482d45ea2e7b706'
+ repo_url: 'https://github.com/ossf/malicious-packages.git'
+ detect_cherrypicks: False
+ extension: '.json'
+ db_prefix: 'MAL-'
+ ignore_git: False
+ link: 'https://github.com/ossf/malicious-packages/blob/main/'
+ editable: False
+
+- name: 'psf'
+ versions_from_repo: True
+ last_update_date: '2023-08-24 22:54:00+00:00'
+ type: 0
+ ignore_patterns: '[]'
+ directory_path: 'advisories'
+ last_synced_hash: '7547bf83a71563a0a215809e43f3afd2f16d1ba5'
+ repo_url: 'https://github.com/psf/advisory-database.git'
+ detect_cherrypicks: False
+ extension: '.json'
+ db_prefix: 'PSF-'
+ ignore_git: False
+ link: 'https://github.com/psf/advisory-database/blob/main/'
+ editable: False
+
+- name: 'python'
+ versions_from_repo: False
+ last_update_date: '2022-10-11 00:00:00+00:00'
+ type: 0
+ ignore_patterns: '['PYSEC-0000.*', 'false_positives.yaml']'
+ directory_path: 'vulns'
+ last_synced_hash: 'e6e852e45ea3b2786354798c20225de5f1240831'
+ repo_url: 'https://github.com/pypa/advisory-database.git'
+ detect_cherrypicks: False
+ extension: '.yaml'
+ db_prefix: 'PYSEC-'
+ ignore_git: False
+ link: 'https://github.com/pypa/advisory-database/blob/main/'
+ editable: False
+
+- name: 'r'
+ versions_from_repo: False
+ last_update_date: '2023-07-31 04:11:00+00:00'
+ type: 0
+ ignore_patterns: '[]'
+ directory_path: 'vulns'
+ last_synced_hash: 'a80f6bffe03ed5574a0aa8a8b032e67f43893165'
+ repo_url: 'https://github.com/RConsortium/r-advisory-database.git'
+ detect_cherrypicks: False
+ extension: '.yaml'
+ db_prefix: 'RSEC-'
+ ignore_git: False
+ link: 'https://github.com/RConsortium/r-advisory-database/blob/main/'
+ editable: False
+
+- name: 'rockylinux'
+ versions_from_repo: False
+ last_update_date: '2024-01-29 03:00:37.135957+00:00'
+ type: 1
+ ignore_patterns: '['propertyValue']'
+ detect_cherrypicks: False
+ extension: '.json'
+ bucket: 'resf-osv-data'
+ db_prefix: 'RLSA-'
+ ignore_git: False
+ link: 'https://storage.googleapis.com/resf-osv-data/'
+ editable: False
+
+- name: 'rust'
+ versions_from_repo: True
+ last_update_date: '2022-10-11 00:00:00+00:00'
+ type: 0
+ ignore_patterns: '[]'
+ repo_branch: 'osv'
+ directory_path: 'crates'
+ last_synced_hash: '047d970d5413ef100a99daacc838562b6ad495f4'
+ repo_url: 'https://github.com/rustsec/advisory-db.git'
+ detect_cherrypicks: False
+ extension: '.json'
+ db_prefix: 'RUSTSEC-'
+ ignore_git: False
+ human_link: 'https://rustsec.org/advisories/'
+ link: 'https://github.com/rustsec/advisory-db/blob/osv/'
+ editable: False
+ repo_username: 'git'
+
+- name: 'test-oss-fuzz'
+ versions_from_repo: True
+ last_update_date: '2023-02-19 23:02:00+00:00'
+ type: 0
+ ignore_patterns: '[]'
+ directory_path: 'vulns'
+ last_synced_hash: '1037c48e9dc3ac9f36a8e27b27faa7bbc5719719'
+ repo_url: 'https://github.com/google/oss-fuzz-vulns.git'
+ detect_cherrypicks: False
+ db_prefix: 'OSV-'
+ ignore_git: False
+ link: 'https://github.com/google/oss-fuzz-vulns/blob/main/'
+ editable: False
+
+- name: 'uvi'
+ versions_from_repo: True
+ last_update_date: '2022-10-11 00:00:00+00:00'
+ type: 0
+ ignore_patterns: '['allowlist.json']'
+ last_synced_hash: '3a36783f41ea13303cef2c997c86149d29c4e8ff'
+ repo_url: 'https://github.com/cloudsecurityalliance/gsd-database.git'
+ detect_cherrypicks: False
+ extension: '.json'
+ db_prefix: 'GSD-'
+ ignore_git: False
+ link: 'https://github.com/cloudsecurityalliance/gsd-database/blob/main/'
+ editable: False
+ key_path: 'OSV'
+ repo_username: 'git'
+

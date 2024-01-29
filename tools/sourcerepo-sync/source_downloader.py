@@ -5,9 +5,10 @@ import os
 import sys
 import argparse
 
+
 def main() -> None:
   parser = argparse.ArgumentParser(
-    description="Sync source repositories from local yaml to datastore.")
+      description="Sync source repositories from local yaml to datastore.")
   parser.add_argument(
       "--verbose",
       action=argparse.BooleanOptionalAction,
@@ -18,7 +19,7 @@ def main() -> None:
       "--kind",
       action="store",
       dest="kind",
-      default="SourceRepository", 
+      default="SourceRepository",
       help="The datastore kind to operate on")
   parser.add_argument(
       "--project",
@@ -29,7 +30,7 @@ def main() -> None:
   args = parser.parse_args()
 
   if args.project == 'oss-vdb-test':
-    file = 'sourcerepo_test.yaml'
+    file = 'source_test.yaml'
   elif args.project == 'oss-vdb':
     file = 'source.yaml'
   else:

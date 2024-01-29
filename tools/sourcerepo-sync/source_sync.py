@@ -63,14 +63,11 @@ def main() -> None:
         repo_found = True
         if args.verbose:
           print(f'Found source repository {repo["name"]}')
-        local_sourcerepos.pop(local_sourcerepos.index(repo))
         ds_repos.pop(ds_repos.index(ds_repo))
-        change_flag = False
-        change_flag, entity = update_attr(repo, ds_repo, change_flag, args,
-                                          client, args.kind)
-        if change_flag and not args.dryrun:
-          client.put(entity)
-        break
+        update_sourcerepo(repo, ds_repo, args, client, args.kind)
+
+      if repo_found:
+        continue
     # if it doesn't exist in the datastore, create it
     if not repo_found:
       if args.verbose:
@@ -91,8 +88,9 @@ def main() -> None:
         client.delete(key)
 
 
-def update_attr(repo, ds_repo, change_flag, args, client, kind):
+def update_sourcerepo(repo, ds_repo, args, client, kind):
   """Check the attributes of the source repo and update if needed."""
+  change_flag = False
   for attr in repo:
     if attr in ds_repo:
       if repo[attr] != ds_repo[attr]:
@@ -103,7 +101,8 @@ def update_attr(repo, ds_repo, change_flag, args, client, kind):
         if args.verbose:
           print(f'Found diff in {attr} - {repo[attr]} != {ds_repo[attr]}')
         entity.update({attr: repo[attr]})
-  return change_flag, entity
+  if change_flag and not args.dryrun:
+    client.put(entity)
 
 
 if __name__ == "__main__":

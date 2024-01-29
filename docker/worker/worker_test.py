@@ -1,13 +1,13 @@
 # Copyright 2021 Google LLC
 #
-# Licensed under the Apache License, Version 2.0 (the "License");
+# Licensed under the Apache License, Version 2.0 (the 'License');
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
 #
 #      http://www.apache.org/licenses/LICENSE-2.0
 #
 # Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
+# distributed under the License is distributed on an 'AS IS' BASIS,
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
@@ -16,9 +16,13 @@
 import codecs
 import datetime
 import hashlib
+from docker.mock_test.mock_test_handler import MockDataHandler
+import http.server
 import os
 import shutil
 import tempfile
+import threading
+import warnings
 import unittest
 from unittest import mock
 
@@ -35,7 +39,9 @@ TEST_DATA_DIR = os.path.join(
     os.path.dirname(os.path.abspath(__file__)), 'testdata')
 
 ndb_client = None
-
+PORT = 8000
+SERVER_ADDRESS = ('localhost', PORT)
+MOCK_ADDRESS_FORMAT = f'http://{SERVER_ADDRESS[0]}:{SERVER_ADDRESS[1]}/'
 # pylint: disable=protected-access,invalid-name
 
 
@@ -69,7 +75,9 @@ class OssFuzzDetailsTest(unittest.TestCase):
         'Crash state:\n'
         'Foo\n'
         'Bar\n'
-        'Blah\n```\n', details)
+        'Blah\n```\n',
+        details,
+    )
 
   def test_no_issue(self):
     """Test generating details without an issue ID."""
@@ -83,7 +91,9 @@ class OssFuzzDetailsTest(unittest.TestCase):
         'Crash state:\n'
         'Foo\n'
         'Bar\n'
-        'Blah\n```\n', details)
+        'Blah\n```\n',
+        details,
+    )
 
   def test_assert(self):
     """Basic assertion failures."""
@@ -102,7 +112,9 @@ class OssFuzzDetailsTest(unittest.TestCase):
         'Crash state:\n'
         'idx < length\n'
         'Foo\n'
-        'Bar\n```\n', details)
+        'Bar\n```\n',
+        details,
+    )
 
   def test_bad_cast(self):
     """Basic bad casts."""
@@ -121,7 +133,9 @@ class OssFuzzDetailsTest(unittest.TestCase):
         'Crash state:\n'
         'Bad-cast to A from B\n'
         'Foo\n'
-        'Bar\n```\n', details)
+        'Bar\n```\n',
+        details,
+    )
 
 
 class ImpactTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
@@ -141,7 +155,8 @@ class ImpactTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
         timestamp=datetime.datetime(2020, 1, 1),
         source_id='oss-fuzz:123',
         status=osv.BugStatus.UNPROCESSED,
-        public=False)
+        public=False,
+    )
     allocated_bug.put()
 
     # This should be deleted and overwritten with the actual computed commits.
@@ -165,7 +180,8 @@ class ImpactTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
         ecosystem='ecosystem',
         summary='Heap-buffer-overflow in Foo',
         severity='MEDIUM',
-        reference_urls=['https://url/'])
+        reference_urls=['https://url/'],
+    )
     regress_result.put()
 
     fix_result = osv.FixResult(
@@ -177,7 +193,8 @@ class ImpactTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
         summary='Heap-buffer-overflow in Foo',
         details='DETAILS',
         severity='MEDIUM',
-        reference_urls=['https://url/'])
+        reference_urls=['https://url/'],
+    )
     fix_result.put()
 
     oss_fuzz.process_impact_task('oss-fuzz:123', message)
@@ -188,13 +205,16 @@ class ImpactTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
     self.assertEqual(1, len(affected_commits))
     affected_commits = affected_commits[0]
 
-    self.assertCountEqual([
-        b'4c155795426727ea05575bd5904321def23c03f4',
-        b'b1c95a196f22d06fcf80df8c6691cd113d8fefff',
-        b'eefe8ec3f1f90d0e684890e810f3f21e8500a4cd',
-        b'febfac1940086bc1f6d3dc33fda0a1d1ba336209',
-        b'ff8cc32ba60ad9cbb3b23f0a82aad96ebe9ff76b',
-    ], [codecs.encode(commit, 'hex') for commit in affected_commits.commits])
+    self.assertCountEqual(
+        [
+            b'4c155795426727ea05575bd5904321def23c03f4',
+            b'b1c95a196f22d06fcf80df8c6691cd113d8fefff',
+            b'eefe8ec3f1f90d0e684890e810f3f21e8500a4cd',
+            b'febfac1940086bc1f6d3dc33fda0a1d1ba336209',
+            b'ff8cc32ba60ad9cbb3b23f0a82aad96ebe9ff76b',
+        ],
+        [codecs.encode(commit, 'hex') for commit in affected_commits.commits],
+    )
 
   def test_range(self):
     """Test commit range."""
@@ -213,7 +233,8 @@ class ImpactTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
         ecosystem='ecosystem',
         summary='Heap-buffer-overflow in Foo',
         severity='MEDIUM',
-        reference_urls=['https://url/'])
+        reference_urls=['https://url/'],
+    )
     regress_result.put()
 
     fix_result = osv.FixResult(
@@ -226,7 +247,8 @@ class ImpactTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
         summary='Heap-buffer-overflow in Foo',
         details='DETAILS',
         severity='MEDIUM',
-        reference_urls=['https://url/'])
+        reference_urls=['https://url/'],
+    )
     fix_result.put()
 
     oss_fuzz.process_impact_task('oss-fuzz:123', message)
@@ -237,15 +259,18 @@ class ImpactTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
     self.assertEqual(1, len(affected_commits))
     affected_commits = affected_commits[0]
 
-    self.assertCountEqual([
-        b'4c155795426727ea05575bd5904321def23c03f4',
-        b'8d8242f545e9cec3e6d0d2e3f5bde8be1c659735',
-        b'b1c95a196f22d06fcf80df8c6691cd113d8fefff',
-        b'b9b3fd4732695b83c3068b7b6a14bb372ec31f98',
-        b'eefe8ec3f1f90d0e684890e810f3f21e8500a4cd',
-        b'febfac1940086bc1f6d3dc33fda0a1d1ba336209',
-        b'ff8cc32ba60ad9cbb3b23f0a82aad96ebe9ff76b',
-    ], [codecs.encode(commit, 'hex') for commit in affected_commits.commits])
+    self.assertCountEqual(
+        [
+            b'4c155795426727ea05575bd5904321def23c03f4',
+            b'8d8242f545e9cec3e6d0d2e3f5bde8be1c659735',
+            b'b1c95a196f22d06fcf80df8c6691cd113d8fefff',
+            b'b9b3fd4732695b83c3068b7b6a14bb372ec31f98',
+            b'eefe8ec3f1f90d0e684890e810f3f21e8500a4cd',
+            b'febfac1940086bc1f6d3dc33fda0a1d1ba336209',
+            b'ff8cc32ba60ad9cbb3b23f0a82aad96ebe9ff76b',
+        ],
+        [codecs.encode(commit, 'hex') for commit in affected_commits.commits],
+    )
 
   def test_fixed_range_too_long(self):
     """Test fixed range that's too long."""
@@ -264,7 +289,8 @@ class ImpactTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
         ecosystem='ecosystem',
         summary='Heap-buffer-overflow in Foo',
         severity='MEDIUM',
-        reference_urls=['https://url/'])
+        reference_urls=['https://url/'],
+    )
     regress_result.put()
 
     fix_result = osv.FixResult(
@@ -277,7 +303,8 @@ class ImpactTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
         summary='Heap-buffer-overflow in Foo',
         details='DETAILS',
         severity='MEDIUM',
-        reference_urls=['https://url/'])
+        reference_urls=['https://url/'],
+    )
     fix_result.put()
 
     with self.assertLogs(level='WARNING') as logs:
@@ -285,27 +312,32 @@ class ImpactTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
     self.assertEqual(logs.output,
                      ['WARNING:root:Too many commits in fix range.'])
 
-    self.expect_dict_equal('fixed_range_too_long',
-                           ndb.Key(osv.Bug, 'OSV-2020-1337').get()._to_dict())
+    self.expect_dict_equal(
+        'fixed_range_too_long',
+        ndb.Key(osv.Bug, 'OSV-2020-1337').get()._to_dict(),
+    )
 
     affected_commits = list(osv.AffectedCommits.query())
     self.assertEqual(1, len(affected_commits))
     affected_commits = affected_commits[0]
 
-    self.assertCountEqual([
-        b'36f0bd9549298b44f9ff2496c9dd1326b3a9d0e2',
-        b'3ea6feea9bb853596c727abab309476cc07d1505',
-        b'4c155795426727ea05575bd5904321def23c03f4',
-        b'8d8242f545e9cec3e6d0d2e3f5bde8be1c659735',
-        b'b1c95a196f22d06fcf80df8c6691cd113d8fefff',
-        b'b9b3fd4732695b83c3068b7b6a14bb372ec31f98',
-        b'eefe8ec3f1f90d0e684890e810f3f21e8500a4cd',
-        b'febfac1940086bc1f6d3dc33fda0a1d1ba336209',
-        b'ff8cc32ba60ad9cbb3b23f0a82aad96ebe9ff76b',
-    ], [codecs.encode(commit, 'hex') for commit in affected_commits.commits])
+    self.assertCountEqual(
+        [
+            b'36f0bd9549298b44f9ff2496c9dd1326b3a9d0e2',
+            b'3ea6feea9bb853596c727abab309476cc07d1505',
+            b'4c155795426727ea05575bd5904321def23c03f4',
+            b'8d8242f545e9cec3e6d0d2e3f5bde8be1c659735',
+            b'b1c95a196f22d06fcf80df8c6691cd113d8fefff',
+            b'b9b3fd4732695b83c3068b7b6a14bb372ec31f98',
+            b'eefe8ec3f1f90d0e684890e810f3f21e8500a4cd',
+            b'febfac1940086bc1f6d3dc33fda0a1d1ba336209',
+            b'ff8cc32ba60ad9cbb3b23f0a82aad96ebe9ff76b',
+        ],
+        [codecs.encode(commit, 'hex') for commit in affected_commits.commits],
+    )
 
   def test_zero_regression_range(self):
-    """Test regression range with "0:X"."""
+    """Test regression range with '0:X'."""
     message = mock.Mock()
     message.attributes = {
         'source_id': 'oss-fuzz:123',
@@ -321,7 +353,8 @@ class ImpactTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
         ecosystem='ecosystem',
         summary='Heap-buffer-overflow in Foo',
         severity='MEDIUM',
-        reference_urls=['https://url/'])
+        reference_urls=['https://url/'],
+    )
     regress_result.put()
 
     fix_result = osv.FixResult(
@@ -333,24 +366,30 @@ class ImpactTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
         summary='Heap-buffer-overflow in Foo',
         details='DETAILS',
         severity='MEDIUM',
-        reference_urls=['https://url/'])
+        reference_urls=['https://url/'],
+    )
     fix_result.put()
 
     oss_fuzz.process_impact_task('oss-fuzz:123', message)
-    self.expect_dict_equal('zero_regression_range',
-                           ndb.Key(osv.Bug, 'OSV-2020-1337').get()._to_dict())
+    self.expect_dict_equal(
+        'zero_regression_range',
+        ndb.Key(osv.Bug, 'OSV-2020-1337').get()._to_dict(),
+    )
 
     affected_commits = list(osv.AffectedCommits.query())
     self.assertEqual(1, len(affected_commits))
     affected_commits = affected_commits[0]
 
-    self.assertCountEqual([
-        b'4c155795426727ea05575bd5904321def23c03f4',
-        b'b1c95a196f22d06fcf80df8c6691cd113d8fefff',
-        b'eefe8ec3f1f90d0e684890e810f3f21e8500a4cd',
-        b'febfac1940086bc1f6d3dc33fda0a1d1ba336209',
-        b'ff8cc32ba60ad9cbb3b23f0a82aad96ebe9ff76b',
-    ], [codecs.encode(commit, 'hex') for commit in affected_commits.commits])
+    self.assertCountEqual(
+        [
+            b'4c155795426727ea05575bd5904321def23c03f4',
+            b'b1c95a196f22d06fcf80df8c6691cd113d8fefff',
+            b'eefe8ec3f1f90d0e684890e810f3f21e8500a4cd',
+            b'febfac1940086bc1f6d3dc33fda0a1d1ba336209',
+            b'ff8cc32ba60ad9cbb3b23f0a82aad96ebe9ff76b',
+        ],
+        [codecs.encode(commit, 'hex') for commit in affected_commits.commits],
+    )
 
   def test_simplify_range(self):
     """Test simplifying commit range."""
@@ -370,7 +409,8 @@ class ImpactTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
         ecosystem='ecosystem',
         summary='Heap-buffer-overflow in Foo',
         severity='MEDIUM',
-        reference_urls=['https://url/'])
+        reference_urls=['https://url/'],
+    )
     regress_result.put()
 
     fix_result = osv.FixResult(
@@ -383,7 +423,8 @@ class ImpactTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
         summary='Heap-buffer-overflow in Foo',
         details='DETAILS',
         severity='MEDIUM',
-        reference_urls=['https://url/'])
+        reference_urls=['https://url/'],
+    )
     fix_result.put()
 
     oss_fuzz.process_impact_task('oss-fuzz:123', message)
@@ -408,7 +449,8 @@ class ImpactTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
         summary='Heap-buffer-overflow in Foo',
         details='DETAILS',
         severity='MEDIUM',
-        reference_urls=['https://url/'])
+        reference_urls=['https://url/'],
+    )
     regress_result.put()
 
     with self.assertLogs(level='WARNING') as logs:
@@ -423,19 +465,22 @@ class ImpactTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
     self.assertEqual(1, len(affected_commits))
     affected_commits = affected_commits[0]
 
-    self.assertCountEqual([
-        b'36f0bd9549298b44f9ff2496c9dd1326b3a9d0e2',
-        b'3ea6feea9bb853596c727abab309476cc07d1505',
-        b'4c155795426727ea05575bd5904321def23c03f4',
-        b'88e5ae3c40c85b702ba89a34c29f233048abb12b',
-        b'8d8242f545e9cec3e6d0d2e3f5bde8be1c659735',
-        b'b1c95a196f22d06fcf80df8c6691cd113d8fefff',
-        b'b587c21c36a84e16cfc6b39eb68578d43b5281ad',
-        b'b9b3fd4732695b83c3068b7b6a14bb372ec31f98',
-        b'eefe8ec3f1f90d0e684890e810f3f21e8500a4cd',
-        b'febfac1940086bc1f6d3dc33fda0a1d1ba336209',
-        b'ff8cc32ba60ad9cbb3b23f0a82aad96ebe9ff76b',
-    ], [codecs.encode(commit, 'hex') for commit in affected_commits.commits])
+    self.assertCountEqual(
+        [
+            b'36f0bd9549298b44f9ff2496c9dd1326b3a9d0e2',
+            b'3ea6feea9bb853596c727abab309476cc07d1505',
+            b'4c155795426727ea05575bd5904321def23c03f4',
+            b'88e5ae3c40c85b702ba89a34c29f233048abb12b',
+            b'8d8242f545e9cec3e6d0d2e3f5bde8be1c659735',
+            b'b1c95a196f22d06fcf80df8c6691cd113d8fefff',
+            b'b587c21c36a84e16cfc6b39eb68578d43b5281ad',
+            b'b9b3fd4732695b83c3068b7b6a14bb372ec31f98',
+            b'eefe8ec3f1f90d0e684890e810f3f21e8500a4cd',
+            b'febfac1940086bc1f6d3dc33fda0a1d1ba336209',
+            b'ff8cc32ba60ad9cbb3b23f0a82aad96ebe9ff76b',
+        ],
+        [codecs.encode(commit, 'hex') for commit in affected_commits.commits],
+    )
 
 
 class EcosystemTest(unittest.TestCase):
@@ -454,9 +499,13 @@ class EcosystemTest(unittest.TestCase):
     self.assertEqual('PyPI',
                      oss_fuzz.get_ecosystem(self.oss_fuzz_checkout, 'pillow'))
     self.assertEqual(
-        'Go', oss_fuzz.get_ecosystem(self.oss_fuzz_checkout, 'golang-protobuf'))
-    self.assertEqual('OSS-Fuzz',
-                     oss_fuzz.get_ecosystem(self.oss_fuzz_checkout, 'openssl'))
+        'Go',
+        oss_fuzz.get_ecosystem(self.oss_fuzz_checkout, 'golang-protobuf'),
+    )
+    self.assertEqual(
+        'OSS-Fuzz',
+        oss_fuzz.get_ecosystem(self.oss_fuzz_checkout, 'openssl'),
+    )
 
 
 class MarkBugInvalidTest(unittest.TestCase):
@@ -496,40 +545,135 @@ class FindOssFuzzFixViaCommitTest(unittest.TestCase):
   def test_has_issue_id(self):
     """Test identifying the commit that has the issue ID."""
     commit = oss_fuzz.find_oss_fuzz_fix_via_commit(
-        self.repo, 'e1b045257bc5ca2a11d0476474f45ef77a0366c7',
-        '949f182716f037e25394bbb98d39b3295d230a29', 'oss-fuzz:133713371337',
-        '12345')
+        self.repo,
+        'e1b045257bc5ca2a11d0476474f45ef77a0366c7',
+        '949f182716f037e25394bbb98d39b3295d230a29',
+        'oss-fuzz:133713371337',
+        '12345',
+    )
     self.assertEqual('57e58a5d7c2bb3ce0f04f17ec0648b92ee82531f', commit)
 
     commit = oss_fuzz.find_oss_fuzz_fix_via_commit(
-        self.repo, 'e1b045257bc5ca2a11d0476474f45ef77a0366c7',
-        '25147a74d8aeb27b43665530ee121a2a1b19dc58', 'oss-fuzz:133713371337',
-        '12345')
+        self.repo,
+        'e1b045257bc5ca2a11d0476474f45ef77a0366c7',
+        '25147a74d8aeb27b43665530ee121a2a1b19dc58',
+        'oss-fuzz:133713371337',
+        '12345',
+    )
     self.assertEqual('25147a74d8aeb27b43665530ee121a2a1b19dc58', commit)
 
   def test_has_testcase_id(self):
     """Test identifying the commit that has the testcase ID."""
     commit = oss_fuzz.find_oss_fuzz_fix_via_commit(
-        self.repo, 'e1b045257bc5ca2a11d0476474f45ef77a0366c7',
-        '00514d6f244f696e750a37083163992c6a50cfd3', 'oss-fuzz:133713371337',
-        '12345')
+        self.repo,
+        'e1b045257bc5ca2a11d0476474f45ef77a0366c7',
+        '00514d6f244f696e750a37083163992c6a50cfd3',
+        'oss-fuzz:133713371337',
+        '12345',
+    )
 
     self.assertEqual('90aa4127295b2c37b5f7fcf6a9772b12c99a5212', commit)
 
   def test_has_oss_fuzz_reference(self):
     """Test identifying the commit that has the testcase ID."""
     commit = oss_fuzz.find_oss_fuzz_fix_via_commit(
-        self.repo, 'e1b045257bc5ca2a11d0476474f45ef77a0366c7',
-        'b1fa81a5d59e9b4d6e276d82fc17058f3cf139d9', 'oss-fuzz:133713371337',
-        '12345')
+        self.repo,
+        'e1b045257bc5ca2a11d0476474f45ef77a0366c7',
+        'b1fa81a5d59e9b4d6e276d82fc17058f3cf139d9',
+        'oss-fuzz:133713371337',
+        '12345',
+    )
 
     self.assertEqual('3c5dcf6a5bec14baab3b247d369a7270232e1b83', commit)
 
   def test_has_multiple_oss_fuzz_reference(self):
     commit = oss_fuzz.find_oss_fuzz_fix_via_commit(
-        self.repo, 'e1b045257bc5ca2a11d0476474f45ef77a0366c7',
-        '949f182716f037e25394bbb98d39b3295d230a29', 'oss-fuzz:7331', '54321')
+        self.repo,
+        'e1b045257bc5ca2a11d0476474f45ef77a0366c7',
+        '949f182716f037e25394bbb98d39b3295d230a29',
+        'oss-fuzz:7331',
+        '54321',
+    )
     self.assertIsNone(commit)
+
+
+class RESTUpdateTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
+  """Vulnerability update tests."""
+
+  def setUp(self):
+    self.maxDiff = None
+    tests.reset_emulator()
+    tests.mock_datetime(self)
+
+    # Initialise fake source_repo.
+    self.tmp_dir = tempfile.TemporaryDirectory()
+
+    self.source_repo = osv.SourceRepository(
+        type=osv.SourceRepositoryType.REST_ENDPOINT,
+        id='source',
+        name='source',
+        rest_api_url=MOCK_ADDRESS_FORMAT,
+        link=MOCK_ADDRESS_FORMAT,
+        editable=False,
+        repo_username='',
+        extension='.json',
+        ignore_git=True,
+    )
+    self.source_repo.put()
+    osv.ecosystems.config.work_dir = os.path.join(
+        os.path.dirname(os.path.abspath(__file__)), 'testdata/tmp/')
+
+    mock_publish = mock.patch('google.cloud.pubsub_v1.PublisherClient.publish')
+    self.mock_publish = mock_publish.start()
+    self.addCleanup(mock_publish.stop)
+    warnings.filterwarnings('ignore', 'unclosed', ResourceWarning)
+    self.httpd = http.server.HTTPServer(SERVER_ADDRESS, MockDataHandler)
+    thread = threading.Thread(target=self.httpd.serve_forever)
+    thread.start()
+
+  def tearDown(self):
+    self.httpd.shutdown()
+    self.tmp_dir.cleanup()
+
+  def test_update(self):
+    """Test updating rest."""
+    solo_endpoint = MOCK_ADDRESS_FORMAT + 'CURL-CVE-2022-32221' + '.json'
+    sha = '6138604b5537caab2afc0ee3e2b11f1574fdd5d8f3c6173f64048341cf55aee4'
+    task_runner = worker.TaskRunner(ndb_client, None, self.tmp_dir.name, None,
+                                    None)
+    message = mock.Mock()
+    message.attributes = {
+        'source': 'source',
+        'path': solo_endpoint,
+        'original_sha256': sha,
+        'deleted': 'false',
+    }
+    task_runner._source_update(message)
+    self.mock_publish.assert_not_called()
+
+  def test_git_ranges(self):
+    """Test updating rest."""
+    solo_endpoint = MOCK_ADDRESS_FORMAT + 'CURL-CVE-2022-32221' + '.json'
+    sha = '6138604b5537caab2afc0ee3e2b11f1574fdd5d8f3c6173f64048341cf55aee4'
+    task_runner = worker.TaskRunner(ndb_client, None, self.tmp_dir.name, None,
+                                    None)
+    osv.Bug(
+        db_id='CURL-CVE-2022-32221',
+        ecosystem=[''],
+        source_id='source:CURL-CVE-2022-32221.json',
+        import_last_modified=datetime.datetime(2020, 1, 1, 0, 0),
+    ).put()
+    message = mock.Mock()
+    message.attributes = {
+        'source': 'source',
+        'path': solo_endpoint,
+        'original_sha256': sha,
+        'deleted': 'false',
+    }
+    task_runner._source_update(message)
+
+    self.expect_dict_equal('update_no_introduced',
+                           osv.Bug.get_by_id('CURL-CVE-2022-32221')._to_dict())
 
 
 class UpdateTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
@@ -562,22 +706,28 @@ class UpdateTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
     self.remote_source_repo_path = self.mock_repo.path
     self.mock_repo.add_file(
         'BLAH-123.yaml',
-        self._load_test_data(os.path.join(TEST_DATA_DIR, 'BLAH-123.yaml')))
+        self._load_test_data(os.path.join(TEST_DATA_DIR, 'BLAH-123.yaml')),
+    )
     self.mock_repo.add_file(
         'BLAH-124.yaml',
-        self._load_test_data(os.path.join(TEST_DATA_DIR, 'BLAH-124.yaml')))
+        self._load_test_data(os.path.join(TEST_DATA_DIR, 'BLAH-124.yaml')),
+    )
     self.mock_repo.add_file(
         'BLAH-125.yaml',
-        self._load_test_data(os.path.join(TEST_DATA_DIR, 'BLAH-125.yaml')))
+        self._load_test_data(os.path.join(TEST_DATA_DIR, 'BLAH-125.yaml')),
+    )
     self.mock_repo.add_file(
         'BLAH-127.yaml',
-        self._load_test_data(os.path.join(TEST_DATA_DIR, 'BLAH-127.yaml')))
+        self._load_test_data(os.path.join(TEST_DATA_DIR, 'BLAH-127.yaml')),
+    )
     self.mock_repo.add_file(
         'BLAH-128.yaml',
-        self._load_test_data(os.path.join(TEST_DATA_DIR, 'BLAH-128.yaml')))
+        self._load_test_data(os.path.join(TEST_DATA_DIR, 'BLAH-128.yaml')),
+    )
     self.mock_repo.add_file(
         'BLAH-131.yaml',
-        self._load_test_data(os.path.join(TEST_DATA_DIR, 'BLAH-131.yaml')))
+        self._load_test_data(os.path.join(TEST_DATA_DIR, 'BLAH-131.yaml')),
+    )
     self.mock_repo.commit('User', 'user@email')
 
     self.source_repo = osv.SourceRepository(
@@ -587,7 +737,8 @@ class UpdateTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
         db_prefix='BLAH-',
         repo_url='file://' + self.remote_source_repo_path,
         editable=True,
-        repo_username='')
+        repo_username='',
+    )
     self.source_repo.put()
 
     osv.Bug(
@@ -596,7 +747,8 @@ class UpdateTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
         ecosystem=['Go'],
         source_id='source:BLAH-123.yaml',
         import_last_modified=datetime.datetime(2021, 1, 1, 0, 0),
-        source_of_truth=osv.SourceOfTruth.SOURCE_REPO).put()
+        source_of_truth=osv.SourceOfTruth.SOURCE_REPO,
+    ).put()
     osv.Bug(
         db_id='BLAH-124',
         regressed='eefe8ec3f1f90d0e684890e810f3f21e8500a4cd',
@@ -604,7 +756,8 @@ class UpdateTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
         ecosystem=['Go'],
         source_id='source:BLAH-124.yaml',
         import_last_modified=datetime.datetime(2021, 1, 1, 0, 0),
-        source_of_truth=osv.SourceOfTruth.SOURCE_REPO).put()
+        source_of_truth=osv.SourceOfTruth.SOURCE_REPO,
+    ).put()
     osv.Bug(
         db_id='BLAH-125',
         regressed='eefe8ec3f1f90d0e684890e810f3f21e8500a4cd',
@@ -613,21 +766,24 @@ class UpdateTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
         ecosystem=['Go'],
         source_id='source:BLAH-125.yaml',
         import_last_modified=datetime.datetime(2021, 1, 1, 0, 0),
-        source_of_truth=osv.SourceOfTruth.SOURCE_REPO).put()
+        source_of_truth=osv.SourceOfTruth.SOURCE_REPO,
+    ).put()
     osv.Bug(
         db_id='BLAH-127',
         project=['blah.com/package'],
         ecosystem=['Go'],
         source_id='source:BLAH-127.yaml',
         import_last_modified=datetime.datetime(2021, 1, 1, 0, 0),
-        source_of_truth=osv.SourceOfTruth.SOURCE_REPO).put()
+        source_of_truth=osv.SourceOfTruth.SOURCE_REPO,
+    ).put()
     osv.Bug(
         db_id='BLAH-131',
         project=['blah.com/package'],
         ecosystem=['ecosystem'],
         source_id='source:BLAH-131.yaml',
         import_last_modified=datetime.datetime(2021, 1, 1, 0, 0),
-        source_of_truth=osv.SourceOfTruth.SOURCE_REPO).put()
+        source_of_truth=osv.SourceOfTruth.SOURCE_REPO,
+    ).put()
 
     mock_publish = mock.patch('google.cloud.pubsub_v1.PublisherClient.publish')
     self.mock_publish = mock_publish.start()
@@ -672,13 +828,16 @@ class UpdateTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
     self.assertEqual(1, len(affected_commits))
     affected_commits = affected_commits[0]
 
-    self.assertCountEqual([
-        b'4c155795426727ea05575bd5904321def23c03f4',
-        b'b1c95a196f22d06fcf80df8c6691cd113d8fefff',
-        b'eefe8ec3f1f90d0e684890e810f3f21e8500a4cd',
-        b'febfac1940086bc1f6d3dc33fda0a1d1ba336209',
-        b'ff8cc32ba60ad9cbb3b23f0a82aad96ebe9ff76b',
-    ], [codecs.encode(commit, 'hex') for commit in affected_commits.commits])
+    self.assertCountEqual(
+        [
+            b'4c155795426727ea05575bd5904321def23c03f4',
+            b'b1c95a196f22d06fcf80df8c6691cd113d8fefff',
+            b'eefe8ec3f1f90d0e684890e810f3f21e8500a4cd',
+            b'febfac1940086bc1f6d3dc33fda0a1d1ba336209',
+            b'ff8cc32ba60ad9cbb3b23f0a82aad96ebe9ff76b',
+        ],
+        [codecs.encode(commit, 'hex') for commit in affected_commits.commits],
+    )
 
     self.mock_publish.assert_not_called()
 
@@ -711,19 +870,23 @@ class UpdateTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
     self.assertEqual(1, len(affected_commits))
     affected_commits = affected_commits[0]
 
-    self.assertCountEqual([
-        b'a2ba949290915d445d34d0e8e9de2e7ce38198fc',
-        b'b1c95a196f22d06fcf80df8c6691cd113d8fefff',
-        b'e1b045257bc5ca2a11d0476474f45ef77a0366c7',
-        b'eefe8ec3f1f90d0e684890e810f3f21e8500a4cd',
-    ], [codecs.encode(commit, 'hex') for commit in affected_commits.commits])
+    self.assertCountEqual(
+        [
+            b'a2ba949290915d445d34d0e8e9de2e7ce38198fc',
+            b'b1c95a196f22d06fcf80df8c6691cd113d8fefff',
+            b'e1b045257bc5ca2a11d0476474f45ef77a0366c7',
+            b'eefe8ec3f1f90d0e684890e810f3f21e8500a4cd',
+        ],
+        [codecs.encode(commit, 'hex') for commit in affected_commits.commits],
+    )
 
   def test_update_add_fix(self):
     """Test basic update adding a fix."""
     fix_result = osv.FixResult(
         id='source:BLAH-124.yaml',
         repo_url='https://osv-test/repo/url',
-        commit='8d8242f545e9cec3e6d0d2e3f5bde8be1c659735')
+        commit='8d8242f545e9cec3e6d0d2e3f5bde8be1c659735',
+    )
     fix_result.put()
     task_runner = worker.TaskRunner(ndb_client, None, self.tmp_dir.name, None,
                                     None)
@@ -752,13 +915,16 @@ class UpdateTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
     self.assertEqual(1, len(affected_commits))
     affected_commits = affected_commits[0]
 
-    self.assertCountEqual([
-        b'4c155795426727ea05575bd5904321def23c03f4',
-        b'b1c95a196f22d06fcf80df8c6691cd113d8fefff',
-        b'eefe8ec3f1f90d0e684890e810f3f21e8500a4cd',
-        b'febfac1940086bc1f6d3dc33fda0a1d1ba336209',
-        b'ff8cc32ba60ad9cbb3b23f0a82aad96ebe9ff76b',
-    ], [codecs.encode(commit, 'hex') for commit in affected_commits.commits])
+    self.assertCountEqual(
+        [
+            b'4c155795426727ea05575bd5904321def23c03f4',
+            b'b1c95a196f22d06fcf80df8c6691cd113d8fefff',
+            b'eefe8ec3f1f90d0e684890e810f3f21e8500a4cd',
+            b'febfac1940086bc1f6d3dc33fda0a1d1ba336209',
+            b'ff8cc32ba60ad9cbb3b23f0a82aad96ebe9ff76b',
+        ],
+        [codecs.encode(commit, 'hex') for commit in affected_commits.commits],
+    )
 
   def test_update_no_introduced(self):
     """Test update vulnerability with no introduced commit."""
@@ -790,29 +956,33 @@ class UpdateTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
     self.assertEqual(1, len(affected_commits))
     affected_commits = affected_commits[0]
 
-    self.assertCountEqual([
-        b'00514d6f244f696e750a37083163992c6a50cfd3',
-        b'25147a74d8aeb27b43665530ee121a2a1b19dc58',
-        b'3c5dcf6a5bec14baab3b247d369a7270232e1b83',
-        b'4c155795426727ea05575bd5904321def23c03f4',
-        b'57e58a5d7c2bb3ce0f04f17ec0648b92ee82531f',
-        b'90aa4127295b2c37b5f7fcf6a9772b12c99a5212',
-        b'949f182716f037e25394bbb98d39b3295d230a29',
-        b'a2ba949290915d445d34d0e8e9de2e7ce38198fc',
-        b'b1c95a196f22d06fcf80df8c6691cd113d8fefff',
-        b'b1fa81a5d59e9b4d6e276d82fc17058f3cf139d9',
-        b'e1b045257bc5ca2a11d0476474f45ef77a0366c7',
-        b'eefe8ec3f1f90d0e684890e810f3f21e8500a4cd',
-        b'f0cc40d8c3dabb27c2cfe26f1764305abc91a0b9',
-        b'febfac1940086bc1f6d3dc33fda0a1d1ba336209',
-        b'ff8cc32ba60ad9cbb3b23f0a82aad96ebe9ff76b',
-    ], [codecs.encode(commit, 'hex') for commit in affected_commits.commits])
+    self.assertCountEqual(
+        [
+            b'00514d6f244f696e750a37083163992c6a50cfd3',
+            b'25147a74d8aeb27b43665530ee121a2a1b19dc58',
+            b'3c5dcf6a5bec14baab3b247d369a7270232e1b83',
+            b'4c155795426727ea05575bd5904321def23c03f4',
+            b'57e58a5d7c2bb3ce0f04f17ec0648b92ee82531f',
+            b'90aa4127295b2c37b5f7fcf6a9772b12c99a5212',
+            b'949f182716f037e25394bbb98d39b3295d230a29',
+            b'a2ba949290915d445d34d0e8e9de2e7ce38198fc',
+            b'b1c95a196f22d06fcf80df8c6691cd113d8fefff',
+            b'b1fa81a5d59e9b4d6e276d82fc17058f3cf139d9',
+            b'e1b045257bc5ca2a11d0476474f45ef77a0366c7',
+            b'eefe8ec3f1f90d0e684890e810f3f21e8500a4cd',
+            b'f0cc40d8c3dabb27c2cfe26f1764305abc91a0b9',
+            b'febfac1940086bc1f6d3dc33fda0a1d1ba336209',
+            b'ff8cc32ba60ad9cbb3b23f0a82aad96ebe9ff76b',
+        ],
+        [codecs.encode(commit, 'hex') for commit in affected_commits.commits],
+    )
 
   def test_update_new(self):
     """Test update with new vulnerability added."""
     self.mock_repo.add_file(
         'BLAH-126.yaml',
-        self._load_test_data(os.path.join(TEST_DATA_DIR, 'BLAH-126.yaml')))
+        self._load_test_data(os.path.join(TEST_DATA_DIR, 'BLAH-126.yaml')),
+    )
     self.mock_repo.commit('User', 'user@email')
 
     task_runner = worker.TaskRunner(ndb_client, None, self.tmp_dir.name, None,
@@ -887,9 +1057,12 @@ class UpdateTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
 
     with self.assertLogs(level='WARNING') as logs:
       task_runner._source_update(message)
-    self.assertEqual(logs.output, [
-        f'WARNING:root:sha256sum of BLAH-123.yaml no longer matches (expected=invalid vs current={_sha256("BLAH-123.yaml")}).'
-    ])
+    self.assertEqual(
+        logs.output,
+        [
+            f'WARNING:root:sha256sum of BLAH-123.yaml no longer matches (expected=invalid vs current={_sha256("BLAH-123.yaml")}).'
+        ],
+    )
 
     repo = pygit2.Repository(self.remote_source_repo_path)
     commit = repo.head.peel()
@@ -928,15 +1101,16 @@ class UpdateTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
     self.assertEqual(len(logs.output), 3)
     self.assertEqual(
         logs.output[0],
-        'WARNING:root:Failed to push: cannot push because a reference that you are trying to update on the remote contains commits that are not present locally.'
+        'WARNING:root:Failed to push: cannot push because a reference that you are trying to update on the remote contains commits that are not present locally.',
     )
     self.assertRegex(
         logs.output[1],
-        r'WARNING:root:Upstream hash for .*/BLAH-123.yaml changed \(expected=.* vs current=.*\)'
+        r'WARNING:root:Upstream hash for .*/BLAH-123.yaml changed \(expected=.* vs current=.*\)',
     )
     self.assertEqual(
         logs.output[2],
-        'WARNING:root:Discarding changes for BLAH-123 due to conflicts.')
+        'WARNING:root:Discarding changes for BLAH-123 due to conflicts.',
+    )
 
     repo = pygit2.Repository(self.remote_source_repo_path)
     commit = repo.head.peel()
@@ -954,7 +1128,8 @@ class UpdateTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
 
     self.mock_repo.add_file(
         'PYSEC-123.yaml',
-        self._load_test_data(os.path.join(TEST_DATA_DIR, 'PYSEC-123.yaml')))
+        self._load_test_data(os.path.join(TEST_DATA_DIR, 'PYSEC-123.yaml')),
+    )
     self.mock_repo.commit('User', 'user@email')
     task_runner = worker.TaskRunner(ndb_client, None, self.tmp_dir.name, None,
                                     None)
@@ -984,10 +1159,13 @@ class UpdateTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
     self.assertEqual(1, len(affected_commits))
     affected_commits = affected_commits[0]
 
-    self.assertCountEqual([
-        b'b1c95a196f22d06fcf80df8c6691cd113d8fefff',
-        b'eefe8ec3f1f90d0e684890e810f3f21e8500a4cd',
-    ], [codecs.encode(commit, 'hex') for commit in affected_commits.commits])
+    self.assertCountEqual(
+        [
+            b'b1c95a196f22d06fcf80df8c6691cd113d8fefff',
+            b'eefe8ec3f1f90d0e684890e810f3f21e8500a4cd',
+        ],
+        [codecs.encode(commit, 'hex') for commit in affected_commits.commits],
+    )
 
     self.expect_equal('pypi_pubsub_calls', self.mock_publish.mock_calls)
 
@@ -1000,7 +1178,8 @@ class UpdateTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
 
     self.mock_repo.add_file(
         'PYSEC-456.yaml',
-        self._load_test_data(os.path.join(TEST_DATA_DIR, 'PYSEC-456.yaml')))
+        self._load_test_data(os.path.join(TEST_DATA_DIR, 'PYSEC-456.yaml')),
+    )
     self.mock_repo.commit('User', 'user@email')
     task_runner = worker.TaskRunner(ndb_client, None, self.tmp_dir.name, None,
                                     None)
@@ -1021,16 +1200,20 @@ class UpdateTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
 
     self.expect_dict_equal(
         'normalized_pypi',
-        ndb.Key(osv.Bug, 'source:PYSEC-456').get()._to_dict())
+        ndb.Key(osv.Bug, 'source:PYSEC-456').get()._to_dict(),
+    )
 
     affected_commits = list(osv.AffectedCommits.query())
     self.assertEqual(1, len(affected_commits))
     affected_commits = affected_commits[0]
 
-    self.assertCountEqual([
-        b'b1c95a196f22d06fcf80df8c6691cd113d8fefff',
-        b'eefe8ec3f1f90d0e684890e810f3f21e8500a4cd',
-    ], [codecs.encode(commit, 'hex') for commit in affected_commits.commits])
+    self.assertCountEqual(
+        [
+            b'b1c95a196f22d06fcf80df8c6691cd113d8fefff',
+            b'eefe8ec3f1f90d0e684890e810f3f21e8500a4cd',
+        ],
+        [codecs.encode(commit, 'hex') for commit in affected_commits.commits],
+    )
 
     self.expect_equal('normalized_pypi_pubsub_calls',
                       self.mock_publish.mock_calls)
@@ -1044,7 +1227,8 @@ class UpdateTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
 
     self.mock_repo.add_file(
         'PYSEC-124.yaml',
-        self._load_test_data(os.path.join(TEST_DATA_DIR, 'PYSEC-124.yaml')))
+        self._load_test_data(os.path.join(TEST_DATA_DIR, 'PYSEC-124.yaml')),
+    )
     self.mock_repo.commit('User', 'user@email')
     task_runner = worker.TaskRunner(ndb_client, None, self.tmp_dir.name, None,
                                     None)
@@ -1068,7 +1252,8 @@ class UpdateTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
 
     self.expect_dict_equal(
         'update_last_affected',
-        ndb.Key(osv.Bug, 'source:PYSEC-124').get()._to_dict())
+        ndb.Key(osv.Bug, 'source:PYSEC-124').get()._to_dict(),
+    )
 
   def test_update_maven(self):
     """Test updating maven."""
@@ -1080,7 +1265,8 @@ class UpdateTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
     self.mock_repo.add_file(
         'GHSA-838r-hvwh-24h8.json',
         self._load_test_data(
-            os.path.join(TEST_DATA_DIR, 'GHSA-838r-hvwh-24h8.json')))
+            os.path.join(TEST_DATA_DIR, 'GHSA-838r-hvwh-24h8.json')),
+    )
     self.mock_repo.commit('User', 'user@email')
     task_runner = worker.TaskRunner(ndb_client, None, self.tmp_dir.name, None,
                                     None)
@@ -1104,7 +1290,8 @@ class UpdateTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
 
     self.expect_dict_equal(
         'update_maven',
-        ndb.Key(osv.Bug, 'source:GHSA-838r-hvwh-24h8').get()._to_dict())
+        ndb.Key(osv.Bug, 'source:GHSA-838r-hvwh-24h8').get()._to_dict(),
+    )
 
     self.mock_publish.assert_not_called()
 
@@ -1117,7 +1304,8 @@ class UpdateTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
 
     self.mock_repo.add_file(
         'LINUX-123.yaml',
-        self._load_test_data(os.path.join(TEST_DATA_DIR, 'LINUX-123.yaml')))
+        self._load_test_data(os.path.join(TEST_DATA_DIR, 'LINUX-123.yaml')),
+    )
     self.mock_repo.commit('User', 'user@email')
     task_runner = worker.TaskRunner(ndb_client, None, self.tmp_dir.name, None,
                                     None)
@@ -1132,16 +1320,20 @@ class UpdateTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
 
     self.expect_dict_equal(
         'update_linux',
-        ndb.Key(osv.Bug, 'source:LINUX-123').get()._to_dict())
+        ndb.Key(osv.Bug, 'source:LINUX-123').get()._to_dict(),
+    )
 
     affected_commits = list(osv.AffectedCommits.query())
     self.assertEqual(1, len(affected_commits))
     affected_commits = affected_commits[0]
 
-    self.assertCountEqual([
-        b'b1c95a196f22d06fcf80df8c6691cd113d8fefff',
-        b'eefe8ec3f1f90d0e684890e810f3f21e8500a4cd',
-    ], [codecs.encode(commit, 'hex') for commit in affected_commits.commits])
+    self.assertCountEqual(
+        [
+            b'b1c95a196f22d06fcf80df8c6691cd113d8fefff',
+            b'eefe8ec3f1f90d0e684890e810f3f21e8500a4cd',
+        ],
+        [codecs.encode(commit, 'hex') for commit in affected_commits.commits],
+    )
 
   def test_update_bucket(self):
     """Test bucket entries."""
@@ -1175,7 +1367,8 @@ class UpdateTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
 
     self.mock_repo.add_file(
         'DSA-3029-1.json',
-        self._load_test_data(os.path.join(TEST_DATA_DIR, 'DSA-3029-1.json')))
+        self._load_test_data(os.path.join(TEST_DATA_DIR, 'DSA-3029-1.json')),
+    )
     self.mock_repo.commit('User', 'user@email')
     task_runner = worker.TaskRunner(ndb_client, None, self.tmp_dir.name, None,
                                     None)
@@ -1200,7 +1393,8 @@ class UpdateTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
 
     self.expect_dict_equal(
         'update_debian',
-        ndb.Key(osv.Bug, 'source:DSA-3029-1').get()._to_dict())
+        ndb.Key(osv.Bug, 'source:DSA-3029-1').get()._to_dict(),
+    )
 
     self.mock_publish.assert_not_called()
 
@@ -1214,7 +1408,8 @@ class UpdateTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
     self.mock_repo.add_file(
         'CVE-2022-27449.json',
         self._load_test_data(
-            os.path.join(TEST_DATA_DIR, 'CVE-2022-27449.json')))
+            os.path.join(TEST_DATA_DIR, 'CVE-2022-27449.json')),
+    )
     self.mock_repo.commit('User', 'user@email')
     task_runner = worker.TaskRunner(ndb_client, None, self.tmp_dir.name, None,
                                     None)
@@ -1239,7 +1434,8 @@ class UpdateTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
 
     self.expect_dict_equal(
         'update_alpine',
-        ndb.Key(osv.Bug, 'source:CVE-2022-27449').get()._to_dict())
+        ndb.Key(osv.Bug, 'source:CVE-2022-27449').get()._to_dict(),
+    )
 
     self.mock_publish.assert_not_called()
 
@@ -1270,7 +1466,8 @@ class UpdateTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
     """Test adding from an unsupported ecosystem."""
     self.mock_repo.add_file(
         'BLAH-129.yaml',
-        self._load_test_data(os.path.join(TEST_DATA_DIR, 'BLAH-129.yaml')))
+        self._load_test_data(os.path.join(TEST_DATA_DIR, 'BLAH-129.yaml')),
+    )
     self.mock_repo.commit('User', 'user@email')
 
     task_runner = worker.TaskRunner(ndb_client, None, self.tmp_dir.name, None,
@@ -1293,7 +1490,8 @@ class UpdateTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
     """Test adding vuln with both supported and unsupported ecosystem."""
     self.mock_repo.add_file(
         'BLAH-130.yaml',
-        self._load_test_data(os.path.join(TEST_DATA_DIR, 'BLAH-130.yaml')))
+        self._load_test_data(os.path.join(TEST_DATA_DIR, 'BLAH-130.yaml')),
+    )
     self.mock_repo.commit('User', 'user@email')
 
     task_runner = worker.TaskRunner(ndb_client, None, self.tmp_dir.name, None,
@@ -1316,13 +1514,15 @@ class UpdateTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
     self.assertEqual('OSV', commit.author.name)
     self.assertEqual('Update BLAH-130', commit.message)
 
-    self.expect_dict_equal('update_partly_bad_ecosystem_new',
-                           osv.Bug.get_by_id('BLAH-130')._to_dict())
+    self.expect_dict_equal(
+        'update_partly_bad_ecosystem_new',
+        osv.Bug.get_by_id('BLAH-130')._to_dict(),
+    )
 
   def test_update_partly_bad_ecosystem_delete(self):
     """Test removal of only supported ecosystem in vulnerability with
-    unsupported and supported ecosystems.
-    """
+        unsupported and supported ecosystems.
+        """
     task_runner = worker.TaskRunner(ndb_client, None, self.tmp_dir.name, None,
                                     None)
     message = mock.Mock()
@@ -1382,7 +1582,8 @@ class UpdateTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
     self.mock_repo.add_file(
         'TEST-last-affected-01.yaml',
         self._load_test_data(
-            os.path.join(TEST_DATA_DIR, 'TEST-last-affected-01.yaml')))
+            os.path.join(TEST_DATA_DIR, 'TEST-last-affected-01.yaml')),
+    )
     self.mock_repo.commit('User', 'user@email')
     task_runner = worker.TaskRunner(ndb_client, None, self.tmp_dir.name, None,
                                     None)
@@ -1403,21 +1604,24 @@ class UpdateTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
 
     self.expect_dict_equal(
         'last_affected_git',
-        ndb.Key(osv.Bug, 'source:TEST-last-affected-01').get()._to_dict())
+        ndb.Key(osv.Bug, 'source:TEST-last-affected-01').get()._to_dict(),
+    )
 
     affected_commits = list(osv.AffectedCommits.query())
     self.assertEqual(1, len(affected_commits))
     affected_commits = affected_commits[0]
 
-    self.assertCountEqual([
-        b'b1c95a196f22d06fcf80df8c6691cd113d8fefff',
-        b'eefe8ec3f1f90d0e684890e810f3f21e8500a4cd',
-        b'8d8242f545e9cec3e6d0d2e3f5bde8be1c659735',
-    ], [codecs.encode(commit, 'hex') for commit in affected_commits.commits])
+    self.assertCountEqual(
+        [
+            b'b1c95a196f22d06fcf80df8c6691cd113d8fefff',
+            b'eefe8ec3f1f90d0e684890e810f3f21e8500a4cd',
+            b'8d8242f545e9cec3e6d0d2e3f5bde8be1c659735',
+        ],
+        [codecs.encode(commit, 'hex') for commit in affected_commits.commits],
+    )
 
 
 if __name__ == '__main__':
-  os.system('pkill -f datastore')
   ds_emulator = tests.start_datastore_emulator()
   try:
     ndb_client = ndb.Client()
@@ -1426,5 +1630,4 @@ if __name__ == '__main__':
       context.set_cache_policy(False)
       unittest.main()
   finally:
-    # TODO(ochang): Cleaner way of properly cleaning up processes.
-    os.system('pkill -f datastore')
+    tests.stop_emulator()

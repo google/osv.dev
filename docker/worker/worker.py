@@ -20,6 +20,7 @@ import logging
 import os
 import re
 import redis
+import requests
 import resource
 import shutil
 import subprocess
@@ -44,6 +45,7 @@ DEFAULT_WORK_DIR = '/work'
 OSS_FUZZ_GIT_URL = 'https://github.com/google/oss-fuzz.git'
 TASK_SUBSCRIPTION = 'tasks'
 MAX_LEASE_DURATION = 6 * 60 * 60  # 4 hours.
+_TIMEOUT_SECONDS = 60
 
 # Large projects which take way too long to build.
 # TODO(ochang): Don't hardcode this.
@@ -389,6 +391,20 @@ class TaskRunner:
         return
 
       repo = None
+    elif source_repo.type == osv.SourceRepositoryType.REST_ENDPOINT:
+      vulnerabilities = []
+      request = requests.get(path, timeout=_TIMEOUT_SECONDS)
+      if request.status_code != 200:
+        logging.error('Failed to fetch REST API: %s', request.status_code)
+        return
+      vuln = request.json()
+      try:
+        vulnerabilities.append(osv.parse_vulnerability_from_dict(vuln))
+      except Exception as e:
+        logging.exception('Failed to parse %s:%s', vuln['id'], e)
+      current_sha256 = osv.sha256_bytes(request.text.encode())
+      repo = None
+
     else:
       raise RuntimeError('Unsupported SourceRepository type.')
 
@@ -501,7 +517,6 @@ class TaskRunner:
     bug.update_from_vulnerability(vulnerability)
     bug.public = True
     bug.import_last_modified = orig_modified_date
-
     # OSS-Fuzz sourced bugs use a different format for source_id.
     if source_repo.name != 'oss-fuzz' or not bug.source_id:
       bug.source_id = f'{source_repo.name}:{relative_path}'
@@ -515,7 +530,6 @@ class TaskRunner:
       logging.info('%s does not affect any packages. Marking as invalid.',
                    vulnerability.id)
       bug.status = osv.BugStatus.INVALID
-
     bug.put()
 
     osv.update_affected_commits(bug.key.id(), result.commits, bug.public)

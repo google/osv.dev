@@ -14,7 +14,43 @@ ndb_client = None
 MAX_BATCH_SIZE = 500
 
 
-def main() -> None:
+def main(arg) -> None:
+  client = datastore.Client(project=arg.project)
+
+  query = client.query(kind="Bug")
+  query.add_filter(filter=PropertyFilter("source", "=", args.source))
+  if not arg.verbose:
+    query.keys_only()
+
+  print(f"Running query {query.filters} "
+        f"on {query.kind} (in {query.project})...")
+
+  result = list(query.fetch())
+
+  print(f"Retrieved {len(result)} bugs to examine for reputting")
+
+  # Chunk the results to reput in acceptibly sized batches for the API.
+  for batch in range(0, len(result), MAX_BATCH_SIZE):
+    try:
+      with client.transaction():
+        # Reputting the bug runs the Bug _pre_put_hook() in models.py
+        # which will give the bug the 'GIT' ecosystem if it has a git range.
+        ndb.put_multi_async([
+            osv.Bug.get_by_id(r.key.name)
+            for r in result[batch:batch + MAX_BATCH_SIZE]
+        ])
+        print(f"Reputting {len(result[batch:batch + MAX_BATCH_SIZE])} bugs...")
+        if arg.dryrun:
+          raise Exception("Dry run mode. Preventing transaction from commiting")  # pylint: disable=broad-exception-raised
+    except Exception as e:
+      # Don't have the first batch's transaction-aborting exception stop
+      # subsequent batches from being attempted.
+      if arg.dryrun and e.args[0].startswith("Dry run mode"):
+        pass
+  print("Reputted!")
+
+
+if __name__ == "__main__":
   parser = argparse.ArgumentParser(
       description="Reput all bugs from a given source.")
   parser.add_argument(
@@ -42,43 +78,6 @@ def main() -> None:
       default="oss-vdb-test",
       help="GCP project to operate on")
   args = parser.parse_args()
-
-  client = datastore.Client(project=args.project)
-
-  query = client.query(kind="Bug")
-  query.add_filter(filter=PropertyFilter("source", "=", args.source))
-  if not args.verbose:
-    query.keys_only()
-
-  print(f"Running query {query.filters} "
-        f"on {query.kind} (in {query.project})...")
-
-  result = list(query.fetch())
-
-  print(f"Retrieved {len(result)} bugs to examine for reputting")
-
-  # Chunk the results to reput in acceptibly sized batches for the API.
-  for batch in range(0, len(result), MAX_BATCH_SIZE):
-    try:
-      with client.transaction():
-        # Reputting the bug runs the Bug _pre_put_hook() in models.py
-        # which will give the bug the 'GIT' ecosystem if it has a git range.
-        ndb.put_multi_async([
-            osv.Bug.get_by_id(r.key.name)
-            for r in result[batch:batch + MAX_BATCH_SIZE]
-        ])
-        print(f"Reputting {len(result[batch:batch + MAX_BATCH_SIZE])} bugs...")
-        if args.dryrun:
-          raise Exception("Dry run mode. Preventing transaction from commiting")  # pylint: disable=broad-exception-raised
-    except Exception as e:
-      # Don't have the first batch's transaction-aborting exception stop
-      # subsequent batches from being attempted.
-      if args.dryrun and e.args[0].startswith("Dry run mode"):
-        pass
-  print("Reputted!")
-
-
-if __name__ == "__main__":
-  ndb_client = ndb.Client(project='oss-vdb-test')
+  ndb_client = ndb.Client(project=args.project)
   with ndb_client.context() as context:
-    main()
+    main(args)

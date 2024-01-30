@@ -50,7 +50,7 @@ def main() -> None:
       if attr == 'name':
         continue
       # Skip dynamic attribute
-      if attr in ('last_update_date', 'ignore_last_import_time'):
+      if attr in ('last_update_date', 'ignore_last_import_time', 'last_synced_hash'):
         continue
       if result[attr] != '' and result[attr] is not None and result[attr] != []:
         sourcerepo += f'  {attr}: {result[attr]}\n'

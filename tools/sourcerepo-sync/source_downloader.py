@@ -4,6 +4,7 @@ from google.cloud import datastore
 import os
 import sys
 import argparse
+import yaml
 
 
 def main() -> None:
@@ -30,9 +31,9 @@ def main() -> None:
   args = parser.parse_args()
 
   if args.project == 'oss-vdb-test':
-    file = 'source_test.yaml'
+    file = 'source_test_copy.yaml'
   elif args.project == 'oss-vdb':
-    file = 'source.yaml'
+    file = 'source_copy.yaml'
   else:
     print('Invalid project')
     return
@@ -42,25 +43,23 @@ def main() -> None:
   results = list(query.fetch())
   if args.verbose:
     print(f'Retrieved {len(results)} sourcerepos')
-  sources = ''
+  sources = []
   for result in results:
-    name = result['name']
-    sourcerepo = f'- name: {name}\n'
+    source = {'name': result['name']}
     for attr in result:
-      if attr == 'name':
-        continue
-      # Skip dynamic attribute
-      if attr in ('last_update_date', 'ignore_last_import_time', 'last_synced_hash'):
+      # Skip dynamic attribute and name
+      if attr in ('name', 'last_update_date', 'ignore_last_import_time',
+                  'last_synced_hash'):
         continue
       if result[attr] != '' and result[attr] is not None and result[attr] != []:
-        sourcerepo += f'  {attr}: {result[attr]}\n'
-
-    if args.verbose:
-      print(sourcerepo)
-    sources += sourcerepo + '\n'
-
-  with open(os.path.join(sys.path[-1] + '/', file), 'w') as f:
-    f.write(sources)
+        source[attr] = result[attr]
+    sources.append(source)
+  if args.verbose:
+    print(sources)
+  yaml.dump(
+      sources,
+      open(os.path.join(sys.path[-1] + '/', file), 'w'),
+      default_flow_style=False)
 
 
 if __name__ == "__main__":

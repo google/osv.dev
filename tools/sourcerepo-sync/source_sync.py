@@ -44,7 +44,7 @@ def main() -> None:
     return
   local_sourcerepos = []
   with open(os.path.join(sys.path[-1] + '/', file), 'r') as f:
-    local_sourcerepos = yaml.load(f, Loader= yaml.CLoader)
+    local_sourcerepos = yaml.load(f, Loader=yaml.CLoader)
   if args.verbose:
     print(f'Loaded {len(local_sourcerepos)} local source repositories')
 
@@ -52,11 +52,10 @@ def main() -> None:
   sourcerepo_names = []
   for repo in local_sourcerepos:
     if repo['name'] == '' or repo['name'] is None or repo['name'] == 'null':
-      raise Exception(f'Empty sourcerepo name in {file}')
+      raise ValueError(f'Empty sourcerepo name in {file}')
     if repo['name'] in sourcerepo_names:
-      raise Exception(f'Duplicate sourcerepo name {repo["name"]} in {file}')
-    else:
-      sourcerepo_names.append(repo['name'])
+      raise ImportError(f'Duplicate sourcerepo name {repo["name"]} in {file}')
+    sourcerepo_names.append(repo['name'])
 
   client = datastore.Client(project=args.project)
   query = client.query(kind=args.kind)
@@ -76,11 +75,9 @@ def main() -> None:
         ds_repos.pop(ds_repos.index(ds_repo))
         update_sourcerepo(repo, ds_repo, args, client, args.kind)
 
-      if repo_found:
-        continue
-    # if it doesn't exist in the datastore, create it
-    if not repo_found:
-      create_sourcerepo(repo, args, client, args.kind)
+    if repo_found:
+      continue
+    create_sourcerepo(repo, args, client, args.kind)
 
   local_sourcerepos_names = {repo['name'] for repo in local_sourcerepos}
   # If the source repo is not in the local yaml, delete it
@@ -92,12 +89,13 @@ def main() -> None:
       if not args.dryrun:
         client.delete(key)
 
+
 def create_sourcerepo(repo, args, client, kind):
   """Create a new source repo."""
   with open('source_repo_default.yaml', 'r') as f:
     default_entity = yaml.load(f, Loader=yaml.CLoader)
   if args.verbose:
-        print(f'New source repository {repo["name"]}')
+    print(f'New source repository {repo["name"]}')
   key = client.key(kind, repo['name'])
   entity = datastore.Entity(key=key)
   # Set defaults if not given in yaml
@@ -109,7 +107,7 @@ def create_sourcerepo(repo, args, client, kind):
   if not args.dryrun:
     client.put(entity)
 
-  
+
 def update_sourcerepo(repo, ds_repo, args, client, kind):
   """Check the attributes of the source repo and update if needed."""
   change_flag = False
@@ -123,7 +121,8 @@ def update_sourcerepo(repo, ds_repo, args, client, kind):
         entity = client.get(key)
         change_flag = True
       if args.verbose:
-        print(f'Found diff in {attr} - {repo[attr]} != {ds_repo[attr]}')
+        name = repo['name']
+        print(f'Found diff in {name}: {attr} - {repo[attr]} != {ds_repo[attr]}')
       entity.update({attr: repo[attr]})
   if change_flag and not args.dryrun:
     client.put(entity)

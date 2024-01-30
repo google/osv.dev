@@ -21,5 +21,5 @@ cd ../..
 
 docker build \
   -t gcr.io/oss-vdb/cpe-repo-gen:latest \
-  -f cmd/cperepos/Dockerfile --pull . && \
+  -f cmd/cpe-repo-gen/Dockerfile --pull . && \
 gcloud docker -- push gcr.io/oss-vdb/cpe-repo-gen:latest

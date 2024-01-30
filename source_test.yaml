@@ -4,7 +4,6 @@
   type: 0
   ignore_patterns: ['ALSA-.*', 'ALEA-.*']
   directory_path: 'advisories'
-  last_synced_hash: '368923a51ec74479bc69ee9eef917cc10eb2c101'
   repo_url: 'https://github.com/AlmaLinux/osv-database.git'
   detect_cherrypicks: False
   extension: '.json'
@@ -18,7 +17,6 @@
   type: 0
   ignore_patterns: ['ALSA-.*', 'ALBA-.*']
   directory_path: 'advisories'
-  last_synced_hash: '368923a51ec74479bc69ee9eef917cc10eb2c101'
   repo_url: 'https://github.com/AlmaLinux/osv-database.git'
   detect_cherrypicks: False
   extension: '.json'
@@ -32,7 +30,6 @@
   type: 0
   ignore_patterns: ['ALBA-.*', 'ALEA-.*']
   directory_path: 'advisories'
-  last_synced_hash: '368923a51ec74479bc69ee9eef917cc10eb2c101'
   repo_url: 'https://github.com/AlmaLinux/osv-database.git'
   detect_cherrypicks: False
   extension: '.json'
@@ -56,7 +53,6 @@
   versions_from_repo: False
   type: 0
   directory_path: 'data'
-  last_synced_hash: 'cf4e4e8b1e2d145423b9465bc2c13b3199e602b3'
   repo_url: 'https://github.com/bitnami/vulndb.git'
   detect_cherrypicks: False
   extension: '.json'
@@ -133,7 +129,6 @@
   type: 0
   ignore_last_import_time: True
   directory_path: 'advisories/github-reviewed'
-  last_synced_hash: '4649de4b3717bc79d26728c8a238e43989fb70bd'
   repo_url: 'https://github.com/github/advisory-database.git'
   detect_cherrypicks: False
   extension: '.json'
@@ -161,7 +156,6 @@
   versions_from_repo: False
   type: 0
   repo_branch: 'generated/osv-export'
-  last_synced_hash: '275ac5a76b92d5efd0422bb62c61677883daad91'
   repo_url: 'https://github.com/haskell/security-advisories.git'
   detect_cherrypicks: False
   extension: '.json'
@@ -176,7 +170,6 @@
   type: 0
   ignore_patterns: ['MAL-0000.*', 'config.yaml']
   directory_path: 'osv'
-  last_synced_hash: 'e1ed7f2be6b3b3f8d0e932584482d45ea2e7b706'
   repo_url: 'https://github.com/ossf/malicious-packages.git'
   detect_cherrypicks: False
   extension: '.json'
@@ -189,7 +182,6 @@
   versions_from_repo: True
   type: 0
   directory_path: 'advisories'
-  last_synced_hash: '7547bf83a71563a0a215809e43f3afd2f16d1ba5'
   repo_url: 'https://github.com/psf/advisory-database.git'
   detect_cherrypicks: False
   extension: '.json'
@@ -203,7 +195,6 @@
   type: 0
   ignore_patterns: ['PYSEC-0000.*', 'false_positives.yaml']
   directory_path: 'vulns'
-  last_synced_hash: 'e6e852e45ea3b2786354798c20225de5f1240831'
   repo_url: 'https://github.com/pypa/advisory-database.git'
   detect_cherrypicks: False
   extension: '.yaml'
@@ -216,7 +207,6 @@
   versions_from_repo: False
   type: 0
   directory_path: 'vulns'
-  last_synced_hash: 'a80f6bffe03ed5574a0aa8a8b032e67f43893165'
   repo_url: 'https://github.com/RConsortium/r-advisory-database.git'
   detect_cherrypicks: False
   extension: '.yaml'
@@ -242,7 +232,6 @@
   type: 0
   repo_branch: 'osv'
   directory_path: 'crates'
-  last_synced_hash: '047d970d5413ef100a99daacc838562b6ad495f4'
   repo_url: 'https://github.com/rustsec/advisory-db.git'
   detect_cherrypicks: False
   extension: '.json'
@@ -257,7 +246,6 @@
   versions_from_repo: True
   type: 0
   directory_path: 'vulns'
-  last_synced_hash: '1037c48e9dc3ac9f36a8e27b27faa7bbc5719719'
   repo_url: 'https://github.com/google/oss-fuzz-vulns.git'
   detect_cherrypicks: False
   db_prefix: 'OSV-'
@@ -269,7 +257,6 @@
   versions_from_repo: True
   type: 0
   ignore_patterns: ['allowlist.json']
-  last_synced_hash: '3a36783f41ea13303cef2c997c86149d29c4e8ff'
   repo_url: 'https://github.com/cloudsecurityalliance/gsd-database.git'
   detect_cherrypicks: False
   extension: '.json'

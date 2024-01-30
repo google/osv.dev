@@ -1,0 +1,21 @@
+---
+  bucket: 
+  detect_cherrypicks: false
+  versions_from_repo:
+  directory_path:
+  editable: False
+  extension: 
+  human_link: null
+  ignore_git: False
+  ignore_last_import_time: False
+  ignore_patterns: ["propertyValue"]
+  key_path: null
+  last_synced_hash:
+  last_update_date:
+  link:
+  repo_branch: null
+  repo_url:
+  repo_username: null
+  rest_api_url: null
+  type: 0
+  versions_from_repo: False

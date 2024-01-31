@@ -9,7 +9,6 @@ import osv
 
 import argparse
 
-ndb_client = None
 MAX_BATCH_SIZE = 500
 
 

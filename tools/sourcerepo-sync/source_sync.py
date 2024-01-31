@@ -112,14 +112,9 @@ def update_sourcerepo(repo, ds_repo, args, client, kind):
   """Check the attributes of the source repo and update if needed."""
   change_flag = False
   for attr in repo:
-    if attr not in ds_repo:
-      continue
     #Check whether the attribute has changed
-    if repo[attr] == ds_repo[attr]:
-      if args.verbose:
-        name = repo['name']
-        print(f'No diff in {name}: {attr} - {repo[attr]} == {ds_repo[attr]}')
-        continue
+    if attr not in ds_repo or repo[attr] == ds_repo[attr]:
+      continue
     if change_flag is False:
       key = client.key(kind, ds_repo['name'])
       entity = client.get(key)
@@ -129,7 +124,6 @@ def update_sourcerepo(repo, ds_repo, args, client, kind):
       print(f'Found diff in {name}: {attr} - {repo[attr]} != {ds_repo[attr]}')
     entity.update({attr: repo[attr]})
 
-    
   if change_flag and not args.dryrun:
     client.put(entity)
 

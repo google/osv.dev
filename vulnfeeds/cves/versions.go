@@ -164,7 +164,6 @@ var (
 		"https://github.com/0x14dli/ffos-SQL-injection-vulnerability-exists",
 		"https://github.com/0x72303074/cve-disclosures",
 		"https://github.com/0xdea/exploits",
-		"https://github.com/0xjacky/nginx-ui",
 		"https://github.com/0xxtoby/Vuldb",
 		"https://github.com/10cks/inkdropPoc",
 		"https://github.com/10cksyiqiyinhangzhoutechnology/elf-parser_segments_poc",

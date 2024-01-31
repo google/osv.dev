@@ -1,6 +1,9 @@
 #!/usr/bin/env python3
-""" Utility to reput bugs so that those with git ranges 
-    are classified with the GIT ecosystem. """
+""" Utility to reput bugs, triggering the Bug _pre_put_hook() in models.py
+
+    This is useful, for example, adding the GIT ecosystem to existing bugs with
+    Git ranges.
+"""
 
 from google.cloud import datastore
 
@@ -62,7 +65,6 @@ def main() -> None:
     try:
       with client.transaction():
         # Reputting the bug runs the Bug _pre_put_hook() in models.py
-        # which will give the bug the 'GIT' ecosystem if it has a git range.
         ndb.put_multi_async([
             osv.Bug.get_by_id(r.key.name)
             for r in result[batch:batch + MAX_BATCH_SIZE]

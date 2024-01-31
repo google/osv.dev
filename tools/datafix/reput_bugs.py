@@ -4,12 +4,8 @@
     This is useful, for example, adding the GIT ecosystem to existing bugs with
     Git ranges.
 """
-
-# from google.cloud import datastore
-
 from google.cloud import ndb
 import osv
-# from google.cloud.datastore.query import PropertyFilter
 
 import argparse
 
@@ -17,14 +13,15 @@ ndb_client = None
 MAX_BATCH_SIZE = 500
 
 
-def reput_bugs(dryrun: bool, source: str,client) -> None:
+def reput_bugs(dryrun: bool, source: str) -> None:
+  """ Reput all bugs from a given source."""
   query = osv.Bug.query().filter(osv.Bug.source == source)
   print(f"Running query {query.filters} "
         f"on {query.kind}...")
 
   result = list(query.fetch(keys_only=True))
   print(f"Retrieved {len(result)} bugs to examine for reputting")
-  
+
   # This handles the actual transaction of reputting the bugs with ndb
   def _reput_ndb():
     # Reputting the bug runs the Bug _pre_put_hook() in models.py
@@ -34,8 +31,7 @@ def reput_bugs(dryrun: bool, source: str,client) -> None:
       raise Exception("Dry run mode")  # pylint: disable=broad-exception-raised
 
     ndb.put_multi_async([
-        osv.Bug.get_by_id(r.id())
-        for r in result[batch:batch + MAX_BATCH_SIZE]
+        osv.Bug.get_by_id(r.id()) for r in result[batch:batch + MAX_BATCH_SIZE]
     ])
 
   # Chunk the results to reput in acceptibly sized batches for the API.
@@ -51,6 +47,7 @@ def reput_bugs(dryrun: bool, source: str,client) -> None:
         print(f"Exception {e} occurred. Continuing to next batch.")
 
   print("Reputted!")
+
 
 def main() -> None:
   parser = argparse.ArgumentParser(
@@ -77,7 +74,7 @@ def main() -> None:
 
   client = ndb.Client(project=args.project)
   with client.context():
-    reput_bugs(args.dryrun, args.source, client)
+    reput_bugs(args.dryrun, args.source)
 
 
 if __name__ == "__main__":

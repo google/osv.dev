@@ -44,7 +44,7 @@ def main() -> None:
     return
   local_sourcerepos = []
   with open(os.path.join(sys.path[-1] + '/', file), 'r') as f:
-    local_sourcerepos = yaml.load(f, Loader=yaml.CLoader)
+    local_sourcerepos = yaml.safe_load(f)
   if args.verbose:
     print(f'Loaded {len(local_sourcerepos)} local source repositories')
 
@@ -93,7 +93,7 @@ def main() -> None:
 def create_sourcerepo(repo, args, client, kind):
   """Create a new source repo."""
   with open('source_repo_default.yaml', 'r') as f:
-    default_entity = yaml.load(f, Loader=yaml.CLoader)
+    default_entity = yaml.safe_load(f)
   if args.verbose:
     print(f'New source repository {repo["name"]}')
   key = client.key(kind, repo['name'])
@@ -115,15 +115,21 @@ def update_sourcerepo(repo, ds_repo, args, client, kind):
     if attr not in ds_repo:
       continue
     #Check whether the attribute has changed
-    if repo[attr] != ds_repo[attr]:
-      if change_flag is False:
-        key = client.key(kind, ds_repo['name'])
-        entity = client.get(key)
-        change_flag = True
+    if repo[attr] == ds_repo[attr]:
       if args.verbose:
         name = repo['name']
-        print(f'Found diff in {name}: {attr} - {repo[attr]} != {ds_repo[attr]}')
-      entity.update({attr: repo[attr]})
+        print(f'No diff in {name}: {attr} - {repo[attr]} == {ds_repo[attr]}')
+        continue
+    if change_flag is False:
+      key = client.key(kind, ds_repo['name'])
+      entity = client.get(key)
+      change_flag = True
+    if args.verbose:
+      name = repo['name']
+      print(f'Found diff in {name}: {attr} - {repo[attr]} != {ds_repo[attr]}')
+    entity.update({attr: repo[attr]})
+
+    
   if change_flag and not args.dryrun:
     client.put(entity)
 

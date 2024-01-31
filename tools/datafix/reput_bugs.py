@@ -1,12 +1,15 @@
 #!/usr/bin/env python3
-""" Utility to reput bugs so that those with git ranges 
-    are classified with the GIT ecosystem. """
+""" Utility to reput bugs, triggering the Bug _pre_put_hook() in models.py
 
-from google.cloud import datastore
+    This is useful, for example, adding the GIT ecosystem to existing bugs with
+    Git ranges.
+"""
+
+# from google.cloud import datastore
 
 from google.cloud import ndb
 import osv
-from google.cloud.datastore.query import PropertyFilter
+# from google.cloud.datastore.query import PropertyFilter
 
 import argparse
 
@@ -14,43 +17,42 @@ ndb_client = None
 MAX_BATCH_SIZE = 500
 
 
-def main(arg) -> None:
-  client = datastore.Client(project=arg.project)
-
-  query = client.query(kind="Bug")
-  query.add_filter(filter=PropertyFilter("source", "=", args.source))
-  if not arg.verbose:
-    query.keys_only()
-
+def reput_bugs(dryrun: bool, source: str,client) -> None:
+  query = osv.Bug.query().filter(osv.Bug.source == source)
   print(f"Running query {query.filters} "
-        f"on {query.kind} (in {query.project})...")
+        f"on {query.kind}...")
 
-  result = list(query.fetch())
-
+  result = list(query.fetch(keys_only=True))
   print(f"Retrieved {len(result)} bugs to examine for reputting")
+  
+  # This handles the actual transaction of reputting the bugs with ndb
+  def _reput_ndb():
+    # Reputting the bug runs the Bug _pre_put_hook() in models.py
+    print(f"Reputting {len(result[batch:batch + MAX_BATCH_SIZE])} bugs...")
+    if dryrun:
+      print("Dry run mode. Preventing transaction from commiting")
+      raise Exception("Dry run mode")  # pylint: disable=broad-exception-raised
+
+    ndb.put_multi_async([
+        osv.Bug.get_by_id(r.id())
+        for r in result[batch:batch + MAX_BATCH_SIZE]
+    ])
 
   # Chunk the results to reput in acceptibly sized batches for the API.
   for batch in range(0, len(result), MAX_BATCH_SIZE):
     try:
-      with client.transaction():
-        # Reputting the bug runs the Bug _pre_put_hook() in models.py
-        # which will give the bug the 'GIT' ecosystem if it has a git range.
-        ndb.put_multi_async([
-            osv.Bug.get_by_id(r.key.name)
-            for r in result[batch:batch + MAX_BATCH_SIZE]
-        ])
-        print(f"Reputting {len(result[batch:batch + MAX_BATCH_SIZE])} bugs...")
-        if arg.dryrun:
-          raise Exception("Dry run mode. Preventing transaction from commiting")  # pylint: disable=broad-exception-raised
+      ndb.transaction(_reput_ndb)
     except Exception as e:
       # Don't have the first batch's transaction-aborting exception stop
       # subsequent batches from being attempted.
-      if arg.dryrun and e.args[0].startswith("Dry run mode"):
-        pass
+      if dryrun and e.args[0].startswith("Dry run mode"):
+        print("Dry run mode. Preventing transaction from commiting")
+      else:
+        print(f"Exception {e} occurred. Continuing to next batch.")
+
   print("Reputted!")
 
-
-if __name__ == "__main__":
+def main() -> None:
   parser = argparse.ArgumentParser(
       description="Reput all bugs from a given source.")
   parser.add_argument(
@@ -59,12 +61,6 @@ if __name__ == "__main__":
       dest="dryrun",
       default=True,
       help="Abort before making changes")
-  parser.add_argument(
-      "--verbose",
-      action=argparse.BooleanOptionalAction,
-      dest="verbose",
-      default=False,
-      help="Display records being operated on")
   parser.add_argument(
       "--source",
       action="store",
@@ -78,6 +74,11 @@ if __name__ == "__main__":
       default="oss-vdb-test",
       help="GCP project to operate on")
   args = parser.parse_args()
-  ndb_client = ndb.Client(project=args.project)
-  with ndb_client.context() as context:
-    main(args)
+
+  client = ndb.Client(project=args.project)
+  with client.context():
+    reput_bugs(args.dryrun, args.source, client)
+
+
+if __name__ == "__main__":
+  main()

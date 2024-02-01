@@ -38,7 +38,7 @@ if [[ -n "${DEBIAN_COPYRIGHT_GCS_PATH}" ]]; then
   MAYBE_USE_DEBIAN_COPYRIGHT_METADATA="--debian_metadata_path ${WORK_DIR}/metadata.ftp-master.debian.org"
 fi
 
-/cperepos \
+/cpe-repo-gen \
   --cpe_dictionary "${WORK_DIR}/official-cpe-dictionary_v2.3.xml" \
   ${MAYBE_USE_DEBIAN_COPYRIGHT_METADATA} \
   --output_dir "${WORK_DIR}"

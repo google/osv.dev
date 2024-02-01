@@ -1,7 +1,7 @@
 apiVersion: batch/v1
 kind: CronJob
 metadata:
-  name: gen-cperepos-map
+  name: cpe-repo-gen
 spec:
   schedule: "0 6 */1 * *"
   concurrencyPolicy: Forbid
@@ -11,7 +11,7 @@ spec:
       template:
         spec:
           containers:
-          - name: gen-cperepos-map
+          - name: cpe-repo-gen
             image: cpe-repo-gen
             imagePullPolicy: Always
             securityContext:

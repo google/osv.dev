@@ -1,6 +1,4 @@
-#!/bin/bash
-
-# Copyright 2023 Google LLC
+# Copyright 2021 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -13,13 +11,22 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-#
 
-set -ex
+FROM golang:1.21.5-alpine@sha256:101168f254556b660b19fd7c542cde4cdc963053573e67825ed16b8fe20e1ff8 AS GO_BUILD
 
-cd ../
+RUN mkdir /src
+WORKDIR /src
 
-docker build \
-  -t gcr.io/oss-vdb/nvd-cve-osv:latest \
-  -f cpp/Dockerfile --pull . && \
-gcloud docker -- push gcr.io/oss-vdb/nvd-cve-osv:latest
+COPY ./go.mod /src/go.mod
+COPY ./go.sum /src/go.sum
+RUN go mod download
+
+COPY ./ /src/
+RUN CGO_ENABLED=0 go build -o cpe-repo-gen ./cmd/cpe-repo-gen
+
+FROM gcr.io/google.com/cloudsdktool/google-cloud-cli:alpine
+
+COPY --from=GO_BUILD /src/cpe-repo-gen ./
+COPY ./cmd/cpe-repo-gen/cpe-repo-gen_map.sh ./
+
+ENTRYPOINT ["/cpe-repo-gen_map.sh"]

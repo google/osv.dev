@@ -15,7 +15,7 @@ wget \
 ```
 
 ```
-cperepos analyzes the NVD CPE Dictionary for Open Source repository information.
+cpe-repo-gen analyzes the NVD CPE Dictionary for Open Source repository information.
 It reads the NVD CPE Dictionary XML file and outputs a JSON map of CPE products
 to discovered repository URLs.
 
@@ -23,7 +23,7 @@ It can also output on stdout additional data about colliding CPE package names.
 
 Usage:
 
-    go run cmd/cperepos/main.go [flags]
+    go run cmd/cpe-repo-gen/main.go [flags]
 
 The flags are:
 

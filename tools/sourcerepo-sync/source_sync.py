@@ -112,6 +112,10 @@ def update_sourcerepo(repo, ds_repo, args, client, kind):
   """Check the attributes of the source repo and update if needed."""
   change_flag = False
   for attr in repo:
+    #Check for a dynamic field being mistakenly pushed
+    if attr in {'last_update_date', 'ignore_last_import_time',
+                  'last_synced_hash'}:
+      raise ValueError(f'Dynamic attribute {attr} found in {repo["name"]}')
     #Check whether the attribute has changed
     if attr not in ds_repo or repo[attr] == ds_repo[attr]:
       continue

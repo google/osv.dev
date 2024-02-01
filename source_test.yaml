@@ -127,7 +127,6 @@
 - name: 'ghsa'
   versions_from_repo: False
   type: 0
-  ignore_last_import_time: True
   directory_path: 'advisories/github-reviewed'
   repo_url: 'https://github.com/github/advisory-database.git'
   detect_cherrypicks: False

@@ -1,8 +1,6 @@
 """Utility to sync sourcerepos from local yaml to datastore."""
 from google.cloud import datastore
 import yaml
-import os
-import sys
 import argparse
 
 
@@ -33,17 +31,17 @@ def main() -> None:
       dest="project",
       default="oss-vdb-test",
       help="GCP project to operate on")
+  parser.add_argument(
+      "--file",
+      action="store",
+      dest="file",
+      default="../../source_test.yaml",
+      help="Source of 'truth' yaml file - if at root use ../../<file.yaml>")
   args = parser.parse_args()
 
-  if args.project == 'oss-vdb-test':
-    file = 'source_test.yaml'
-  elif args.project == 'oss-vdb':
-    file = 'source.yaml'
-  else:
-    print('Invalid project')
-    return
+  file = args.file
   local_sourcerepos = []
-  with open(os.path.join(sys.path[-1] + '/', file), 'r') as f:
+  with open(file, 'r') as f:
     local_sourcerepos = yaml.safe_load(f)
   if args.verbose:
     print(f'Loaded {len(local_sourcerepos)} local source repositories')

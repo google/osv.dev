@@ -266,7 +266,7 @@
   key_path: 'OSV'
   repo_username: 'git'
 
-  - name: 'test'
+- name: 'test'
   versions_from_repo: True
   type: 0
   ignore_patterns: ['allowlist.json']

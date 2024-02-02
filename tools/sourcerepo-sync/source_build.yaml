@@ -15,7 +15,7 @@ steps:
   - name: 'gcr.io/oss-vdb/ci'
     dir: 'tools/sourcerepo-sync'
     args: ['bash', '-ex', 'run_source_update.sh']
-timeout: 60s
+timeout: 600s
 # Also set in Cloud Build:
 serviceAccount: 'projects/oss-vdb/serviceAccounts/deployment@oss-vdb.iam.gserviceaccount.com'
 logsBucket: gs://oss-vdb-tf/source-sync-logs

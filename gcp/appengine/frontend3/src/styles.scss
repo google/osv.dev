@@ -91,15 +91,19 @@ a {
   text-decoration: underline;
 }
 
-a:not([href^="https://osv.dev"]):not([href^="/"]):not([href^="#"]):not([href^="https://google.github.io/osv.dev"]):not([href^="https://github.com/google/osv.dev"])::after {
-  display: inline-block;
-  content: ' ';
-  background-image: url('/static/img/external-link.svg');
-  width: 16px;
-  height: 16px;
-  margin-left: 3px;
-  vertical-align: middle;
+.home-page,
+.vulnerability-page {
+  a:not([href^="https://osv.dev"]):not([href^="/"]):not([href^="#"]):not([href^="https://google.github.io/osv.dev"]):not([href^="https://github.com/google/osv.dev"])::after {
+    display: inline-block;
+    content: ' ';
+    background-image: url('/static/img/external-link.svg');
+    width: 16px;
+    height: 16px;
+    margin-left: 3px;
+    vertical-align: middle;
+  }
 }
+
 
 h1,
 h2,
@@ -607,6 +611,7 @@ dl.vulnerability-details,
   grid-template-columns: max-content minmax(0, auto);
   grid-row-gap: 5px;
   gap: 8px;
+
   &:not(:last-child) {
     margin-bottom: 15px;
   }
@@ -618,7 +623,8 @@ dl.vulnerability-details,
     padding-right: 18px;
   }
 
-  dt.withdrawn, dd.withdrawn {
+  dt.withdrawn,
+  dd.withdrawn {
     color: $osv-red-300;
     font-weight: bold;
   }

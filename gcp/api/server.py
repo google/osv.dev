@@ -36,6 +36,7 @@ from grpc_health.v1 import health_pb2
 from grpc_health.v1 import health_pb2_grpc
 from grpc_reflection.v1alpha import reflection
 from packageurl import PackageURL
+from packaging.utils import canonicalize_version
 
 import osv
 from osv import ecosystems
@@ -65,6 +66,24 @@ _DETERMINE_VER_MIN_SCORE_CUTOFF = 0.05
 # Size of buckets to divide hashes into in DetermineVersion
 # This should match the number in the indexer
 _BUCKET_SIZE = 512
+
+# This needs to be kept in sync with
+# https://github.com/google/osv.dev/blob/
+# 666a43e6ae7690fbfa283e9a6f0b08a986be4d32/
+# docker/indexer/stages/processing/processing.go#L77
+_VENDORED_LIB_NAMES = frozenset((
+    '3rdparty',
+    'dep',
+    'deps',
+    'thirdparty',
+    'third-party',
+    'third_party',
+    'libs',
+    'external',
+    'externals',
+    'vendor',
+    'vendored',
+))
 
 # Prefix for the
 _TAG_PREFIX = "refs/tags/"
@@ -99,7 +118,7 @@ class OSVServicer(osv_service_v1_pb2_grpc.OSVServicer,
       context.abort(grpc.StatusCode.PERMISSION_DENIED, 'Permission denied.')
       return None
 
-    return bug_to_response(bug)
+    return bug_to_response(bug, include_alias=True)
 
   @ndb_context
   def QueryAffected(self, request, context: grpc.ServicerContext):
@@ -251,6 +270,20 @@ class QueryContext:
   total_responses: ResponsesCount
 
 
+def should_skip_bucket(path: str) -> bool:
+  """Returns whether or not the given file path should be skipped for the
+  determineversions bucket computation."""
+  if not path:
+    return False
+
+  # Check for a nested vendored directory, as this could mess with results. The
+  # API expects the file path passed to be relative to the potential library
+  # path, so any vendored library names found here would imply it's a nested
+  # vendored library.
+  components = path.split('/')
+  return any(c in _VENDORED_LIB_NAMES for c in components)
+
+
 def process_buckets(
     file_results: List[osv.FileResult]) -> List[osv.RepoIndexBucket]:
   """
@@ -260,6 +293,9 @@ def process_buckets(
   buckets: list[list[bytes]] = [[] for _ in range(_BUCKET_SIZE)]
 
   for fr in file_results:
+    if should_skip_bucket(fr.path):
+      continue
+
     buckets[int.from_bytes(fr.hash[:2], byteorder='big') % _BUCKET_SIZE].append(
         fr.hash)
 
@@ -480,6 +516,8 @@ def do_query(query, context: QueryContext, include_details=True):
     )
 
   def to_response(b):
+    # Skip retrieving aliases from to_vulnerability().
+    # Retrieve it asynchronously later.
     return bug_to_response(b, include_details)
 
   next_page_token = None
@@ -518,6 +556,31 @@ def do_query(query, context: QueryContext, include_details=True):
     context.service_context.abort(grpc.StatusCode.INVALID_ARGUMENT,
                                   'Invalid query.')
 
+  # Asynchronously retrieve computed aliases and related ids here
+  # to prevent significant query time increase for packages with
+  # numerous vulnerabilities.
+  if include_details:
+    aliases = []
+    related = []
+    for bug in bugs:
+      aliases.append(osv.get_aliases_async(bug.id))
+      related.append(osv.get_related_async(bug.id))
+
+    for i, alias in enumerate(aliases):
+      alias_group = yield alias
+      if not alias_group:
+        continue
+      alias_ids = sorted(list(set(alias_group.bug_ids) - {bugs[i].id}))
+      bugs[i].aliases[:] = alias_ids
+      modified_time = bugs[i].modified.ToDatetime()
+      modified_time = max(alias_group.last_modified, modified_time)
+      bugs[i].modified.FromDatetime(modified_time)
+
+    for i, related_ids in enumerate(related):
+      related_bug_ids = yield related_ids
+      bugs[i].related[:] = sorted(
+          list(set(related_bug_ids + list(bugs[i].related))))
+
   if next_page_token:
     next_page_token = next_page_token.urlsafe()
     logging.warning('Page size limit hit, response size: %s', len(bugs))
@@ -525,10 +588,11 @@ def do_query(query, context: QueryContext, include_details=True):
   return bugs, next_page_token
 
 
-def bug_to_response(bug, include_details=True):
+def bug_to_response(bug, include_details=True, include_alias=False):
   """Convert a Bug entity to a response object."""
   if include_details:
-    return bug.to_vulnerability(include_source=True)
+    return bug.to_vulnerability(
+        include_source=True, include_alias=include_alias)
 
   return bug.to_vulnerability_minimal()
 
@@ -745,40 +809,54 @@ def _query_by_generic_version(
     version: str,
 ):
   """Query by generic version."""
-  # Try without normalizing.
-  results = []
-  query: ndb.Query = base_query.filter(osv.Bug.affected_fuzzy == version)
-  it: ndb.QueryIterator = query.iter(
-      # page_token can be the token for this query, or the token for the one
-      # below. If the token is used for the normalized query below, this query
-      # must have returned no results, so will still return no results, fall
-      # through to the query below again.
-      start_cursor=context.page_token)
-  cursor = None
 
-  while (yield it.has_next_async()):
-    if len(results) >= context.total_responses.page_limit():
-      cursor = it.cursor_after()
-      break
-    bug = it.next()
-    if _is_version_affected(bug.affected_packages, project, ecosystem, purl,
-                            version):
-      results.append(bug)
-      context.total_responses.add(1)
+  results = []
+
+  cursor = None
+  # Try without normalizing.
+  results, cursor = yield query_by_generic_helper(results, cursor, context,
+                                                  base_query, project,
+                                                  ecosystem, purl, version,
+                                                  False)
 
   if results:
     return results, cursor
 
+  # page_token can be the token for this query, or the token for the one
+  # below. If the token is used for the normalized query below, this query
+  # must have returned no results, so will still return no results, fall
+  # through to the query below again.
   # Try again after normalizing.
-  version = osv.normalize_tag(version)
-  query = base_query.filter(osv.Bug.affected_fuzzy == version)
-  it = query.iter(start_cursor=context.page_token)
+  results, cursor = yield query_by_generic_helper(results, cursor, context,
+                                                  base_query, project,
+                                                  ecosystem, purl,
+                                                  osv.normalize_tag(version),
+                                                  True)
 
+  if results:
+    return results, cursor
+
+  # Try again after canonicalizing + normalizing version.
+  results, cursor = yield query_by_generic_helper(results, cursor, context,
+                                                  base_query, project,
+                                                  ecosystem, purl,
+                                                  canonicalize_version(version),
+                                                  True)
+  return results, cursor
+
+
+@ndb.tasklet
+def query_by_generic_helper(results: list, cursor, context: QueryContext,
+                            base_query: ndb.Query, project: str, ecosystem: str,
+                            purl: PackageURL | None, version: str,
+                            is_normalized):
+  """Helper function for query_by_generic."""
+  query: ndb.Query = base_query.filter(osv.Bug.affected_fuzzy == version)
+  it: ndb.QueryIterator = query.iter(start_cursor=context.page_token)
   while (yield it.has_next_async()):
     if len(results) >= context.total_responses.page_limit():
       cursor = it.cursor_after()
       break
-
     bug = it.next()
     if _is_version_affected(
         bug.affected_packages,
@@ -786,10 +864,9 @@ def _query_by_generic_version(
         ecosystem,
         purl,
         version,
-        normalize=True):
+        normalize=is_normalized):
       results.append(bug)
       context.total_responses.add(1)
-
   return results, cursor
 
 
@@ -835,15 +912,23 @@ def query_by_version(context: QueryContext,
   if ecosystem:
     if is_semver:
       # Ecosystem supports semver only.
-      bugs, next_page_token = yield _query_by_semver(context, query,
-                                                     package_name, ecosystem,
-                                                     purl, version)
+      bugs, _ = yield _query_by_semver(context, query, package_name, ecosystem,
+                                       purl, version)
+
+      new_bugs, _ = yield _query_by_generic_version(context, query,
+                                                    package_name, ecosystem,
+                                                    purl, version)
+      for bug in new_bugs:
+        if bug not in bugs:
+          bugs.append(bug)
+
     else:
       bugs, next_page_token = yield _query_by_generic_version(
           context, query, package_name, ecosystem, purl, version)
+
   else:
     logging.warning("Package query without ecosystem specified")
-    # Unspecified ecosystem. Try both.
+    # Unspecified ecosystem. Try semver first.
 
     # TODO: Remove after testing how many consumers are
     # querying the API this way.

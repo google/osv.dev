@@ -49,11 +49,11 @@ Then you can set up the development environment by cloning the OSV repo and
 installing the Pipfile dependencies.
 
 ```shell
-$ git clone https://github.com/google/osv.dev
-$ cd osv.dev
-$ git submodule update --init --recursive
-$ pipenv sync --dev
-$ pipenv shell
+git clone https://github.com/google/osv.dev
+cd osv.dev
+git submodule update --init --recursive
+pipenv sync --dev
+pipenv shell
 ```
 
 ### Running tests
@@ -62,11 +62,14 @@ Certain tests require you to auth with the Google Cloud SDK and to install the
 Datastore Emulator:
 
 ```shell
-$ gcloud auth login --update-adc
-$ gcloud components install beta cloud-datastore-emulator
+gcloud auth login --update-adc
+gcloud components install beta cloud-datastore-emulator
 ```
 
-To run tests: `shell $ make all-tests`
+To run tests: 
+```shell 
+make all-tests
+```
 
 #### Test result generation
 
@@ -81,7 +84,7 @@ If a change is made that requires these outputs to be regenerated, you can set
 the environment variable `TESTS_GENERATE=1` and run the tests:
 
 ```shell
-$ TESTS_GENERATE=1 make all-tests
+TESTS_GENERATE=1 make all-tests
 ```
 
 ### Linting and formatting
@@ -89,18 +92,21 @@ $ TESTS_GENERATE=1 make all-tests
 To lint your code, run
 
 ```shell
-$ make lint
+make lint
 ```
 
-To format your code, run `shell $ yapf -i <file>.py`
+To format your code, run 
+```shell 
+yapf -i <file>.py
+```
 
 ### Running local UI and API instances (maintainers only)
 
 #### UI
 
 ```shell
-$ gcloud auth login --update-adc
-$ make run-appengine
+gcloud auth login --update-adc
+make run-appengine
 ```
 
 #### API
@@ -110,8 +116,8 @@ default credentials. The is required so that the ESP container has credentials
 to download API configuration.
 
 ```shell
-$ gcloud auth login --update-adc
-$ make run-api-server
+gcloud auth login --update-adc
+make run-api-server
 ```
 
 ## Contributing data
@@ -128,8 +134,8 @@ contribute your security advisories, please follow these steps.
 2.  Refer to the [OSV Schema](https://ossf.github.io/osv-schema/) documentation
     for information on how to properly format the data so it can be accepted.
 
-3.  Data can be supplied either through a public Git repository or a public GCS
-    bucket.
+3.  Data can be supplied either through a public Git repository, a public GCS
+    bucket or to [REST API endpoints](https://google.github.io/osv.dev/rest-api-contribution/).
 
 ## Contributing documentation
 

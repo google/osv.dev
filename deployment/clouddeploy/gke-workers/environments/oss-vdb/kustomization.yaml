@@ -1,5 +1,7 @@
 resources:
 - ../../base
+- make-bugs-public.yaml
+- process-results.yaml
 patches:
 - path: workers.yaml
 - path: importer.yaml
@@ -9,6 +11,8 @@ patches:
 - path: debian-convert.yaml
 - path: debian-first-version.yaml
 - path: debian-copyright-mirror.yaml
-- path: gen-cperepos-map.yaml
+- path: cpe-repo-gen.yaml
 - path: nvd-cve-osv.yaml
+- path: nvd-mirror.yaml
 - path: alias-computation.yaml
+- path: backup.yaml

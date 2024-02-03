@@ -16,6 +16,7 @@
 import unittest
 
 from server import _match_purl
+from server import should_skip_bucket
 from packageurl import PackageURL
 
 
@@ -44,6 +45,26 @@ class ServerTest(unittest.TestCase):
           expected,
           _match_purl(PackageURL.from_string(a), PackageURL.from_string(b)),
           a + ' == ' + b)
+
+  def test_should_skip_bucket(self):
+    """Test should_skip_bucket."""
+    test_cases = [
+        (None, False),
+        ('', False),
+        ('/a', False),
+        ('a', False),
+        ('a/b', False),
+        ('a/b/c', False),
+        ('/a/b/c', False),
+        ('/a/3rdparty/c', True),
+        ('/a/third_party/c/d', True),
+        ('/third_party/c/d', True),
+        ('vendor/c/d', True),
+        ('/a/3rdpartyy/c', False),
+    ]
+
+    for path, expected in test_cases:
+      self.assertEqual(expected, should_skip_bucket(path))
 
 
 if __name__ == '__main__':

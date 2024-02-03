@@ -375,6 +375,14 @@ class Bug(ndb.Model):
         if pkg.package.ecosystem
     }
 
+    for pkg in self.affected_packages:
+      for r in pkg.ranges:
+        if r.type == 'GIT':
+          ecosystems_set.add('GIT')
+          break
+      if 'GIT' in ecosystems_set:
+        break
+
     # For all ecosystems that specify a specific version with colon,
     # also add the base name
     ecosystems_set.update({ecosystems.normalize(x) for x in ecosystems_set})
@@ -573,7 +581,7 @@ class Bug(ndb.Model):
 
     return vulnerability_pb2.Vulnerability(id=self.id(), modified=modified)
 
-  def to_vulnerability(self, include_source=False):
+  def to_vulnerability(self, include_source=False, include_alias=True):
     """Convert to Vulnerability proto."""
     affected = []
 
@@ -667,13 +675,28 @@ class Bug(ndb.Model):
         cr.type = vulnerability_pb2.Credit.Type.Value(credit.type)
       credits_.append(cr)
 
+    related = self.related
+    aliases = []
+
+    if include_alias:
+      related_bugs = Bug.query(Bug.related == self.db_id).fetch()
+      related_bug_ids = [bug.db_id for bug in related_bugs]
+      related = sorted(list(set(related_bug_ids + self.related)))
+
+      alias_group = AliasGroup.query(AliasGroup.bug_ids == self.db_id).get()
+      if alias_group:
+        aliases = sorted(list(set(alias_group.bug_ids) - {self.db_id}))
+        modified = timestamp_pb2.Timestamp()
+        modified.FromDatetime(
+            max(self.last_modified, alias_group.last_modified))
+
     result = vulnerability_pb2.Vulnerability(
         schema_version=SCHEMA_VERSION,
         id=self.id(),
         published=published,
         modified=modified,
-        aliases=self.aliases,
-        related=self.related,
+        aliases=aliases,
+        related=related,
         withdrawn=withdrawn,
         summary=self.summary,
         details=details,
@@ -686,6 +709,23 @@ class Bug(ndb.Model):
       result.database_specific.update(self.database_specific)
 
     return result
+
+  @ndb.tasklet
+  def to_vulnerability_async(self, include_source=False):
+    """Converts to Vulnerability proto and retrieves aliases asynchronously."""
+    vulnerability = self.to_vulnerability(
+        include_source=include_source, include_alias=False)
+    alias_group = yield get_aliases_async(vulnerability.id)
+    if alias_group:
+      alias_ids = sorted(list(set(alias_group.bug_ids) - {vulnerability.id}))
+      vulnerability.aliases[:] = alias_ids
+      modified_time = vulnerability.modified.ToDatetime()
+      modified_time = max(alias_group.last_modified, modified_time)
+      vulnerability.modified.FromDatetime(modified_time)
+    related_bug_ids = yield get_related_async(vulnerability.id)
+    vulnerability.related[:] = sorted(
+        list(set(related_bug_ids + list(vulnerability.related))))
+    return vulnerability
 
 
 class RepoIndex(ndb.Model):
@@ -732,6 +772,7 @@ class SourceRepositoryType(enum.IntEnum):
   """SourceRepository type."""
   GIT = 0
   BUCKET = 1
+  REST_ENDPOINT = 2
 
 
 class SourceRepository(ndb.Model):
@@ -746,6 +787,8 @@ class SourceRepository(ndb.Model):
   repo_username = ndb.StringProperty()
   # Optional branch for repo for SourceRepositoryType.GIT.
   repo_branch = ndb.StringProperty()
+  # The API endpoint for SourceRepositoryType.REST_ENDPOINT.
+  rest_api_url = ndb.StringProperty()
   # Bucket name for SourceRepositoryType.BUCKET.
   bucket = ndb.StringProperty()
   # Vulnerability data not under this path is ignored by the importer.
@@ -762,7 +805,7 @@ class SourceRepository(ndb.Model):
   extension = ndb.StringProperty(default='.yaml')
   # Key path within each file to store the vulnerability.
   key_path = ndb.StringProperty()
-  # It true, don't analyze any Git ranges.
+  # If true, don't analyze any Git ranges.
   ignore_git = ndb.BooleanProperty(default=False)
   # Whether to detect cherypicks or not (slow for large repos).
   detect_cherrypicks = ndb.BooleanProperty(default=True)
@@ -846,3 +889,18 @@ def sorted_events(ecosystem, range_type, events):
     sorted_copy.insert(0, zero_event)
 
   return sorted_copy
+
+
+@ndb.tasklet
+def get_aliases_async(bug_id):
+  """Gets aliases asynchronously."""
+  alias_group = yield AliasGroup.query(AliasGroup.bug_ids == bug_id).get_async()
+  return alias_group
+
+
+@ndb.tasklet
+def get_related_async(bug_id):
+  """Gets related bugs asynchronously."""
+  related_bugs = yield Bug.query(Bug.related == bug_id).fetch_async()
+  related_bug_ids = [bug.db_id for bug in related_bugs]
+  return related_bug_ids

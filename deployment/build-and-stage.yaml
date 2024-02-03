@@ -98,6 +98,16 @@ steps:
   args: ['push', '--all-tags', 'gcr.io/oss-vdb/alias-computation']
   waitFor: ['build-alias-computation', 'cloud-build-queue']
 
+# Build/push cron job images.
+- name: gcr.io/cloud-builders/docker
+  args: ['build', '-t', 'gcr.io/oss-vdb/cron:latest', '-t', 'gcr.io/oss-vdb/cron:$COMMIT_SHA', '.']
+  dir: 'docker/cron'
+  id: 'build-cron'
+  waitFor: ['build-worker']
+- name: gcr.io/cloud-builders/docker
+  args: ['push', '--all-tags', 'gcr.io/oss-vdb/cron']
+  waitFor: ['build-cron', 'cloud-build-queue']
+
 # Build/push vulnfeeds images
 - name: 'gcr.io/cloud-builders/docker'
   entrypoint: 'bash'
@@ -174,7 +184,7 @@ steps:
 
 # Build/push CPE repo map generating image
 - name: gcr.io/cloud-builders/docker
-  args: ['build', '-t', 'gcr.io/oss-vdb/cpe-repo-gen:latest', '-t', 'gcr.io/oss-vdb/cpe-repo-gen:$COMMIT_SHA', '-f', 'cmd/cperepos/Dockerfile','.']
+  args: ['build', '-t', 'gcr.io/oss-vdb/cpe-repo-gen:latest', '-t', 'gcr.io/oss-vdb/cpe-repo-gen:$COMMIT_SHA', '-f', 'cmd/cpe-repo-gen/Dockerfile','.']
   dir: 'vulnfeeds'
   id: 'build-cpe-repo-gen'
   waitFor: ['setup']
@@ -184,7 +194,7 @@ steps:
 
 # Build/push NVD CVE to OSV conversion image
 - name: gcr.io/cloud-builders/docker
-  args: ['build', '-t', 'gcr.io/oss-vdb/nvd-cve-osv:latest', '-t', 'gcr.io/oss-vdb/nvd-cve-osv:$COMMIT_SHA', '-f', 'cpp/Dockerfile','.']
+  args: ['build', '-t', 'gcr.io/oss-vdb/nvd-cve-osv:latest', '-t', 'gcr.io/oss-vdb/nvd-cve-osv:$COMMIT_SHA', '-f', 'cmd/nvd-cve-osv/Dockerfile','.']
   dir: 'vulnfeeds'
   id: 'build-nvd-cve-osv'
   waitFor: ['setup']
@@ -210,6 +220,16 @@ steps:
 - name: 'gcr.io/cloud-builders/docker'
   args: ['push', '--all-tags', 'gcr.io/oss-vdb-test/osv-website']
   waitFor: ['build-website', 'cloud-build-queue']
+
+# Build/push NVD mirror image
+- name: gcr.io/cloud-builders/docker
+  args: ['build', '-t', 'gcr.io/oss-vdb/nvd-mirror:latest', '-t', 'gcr.io/oss-vdb/nvd-mirror:$COMMIT_SHA', '-f', 'cmd/download-cves/Dockerfile','.']
+  dir: 'vulnfeeds'
+  id: 'build-nvd-mirror'
+  waitFor: ['setup']
+- name: gcr.io/cloud-builders/docker
+  args: ['push', '--all-tags', 'gcr.io/oss-vdb/nvd-mirror']
+  waitFor: ['build-nvd-mirror', 'cloud-build-queue']
 
 # Apply Terraform config to staging environment
 # TODO(michaelkedar): regenerate the api protobufs?
@@ -239,12 +259,14 @@ steps:
      importer=gcr.io/oss-vdb/importer:$COMMIT_SHA,\
      exporter=gcr.io/oss-vdb/exporter:$COMMIT_SHA,\
      alias-computation=gcr.io/oss-vdb/alias-computation:$COMMIT_SHA,\
+     cron=gcr.io/oss-vdb/cron:$COMMIT_SHA,\
      debian-convert=gcr.io/oss-vdb/debian-convert:$COMMIT_SHA,\
      combine-to-osv=gcr.io/oss-vdb/combine-to-osv:$COMMIT_SHA,\
      alpine-cve-convert=gcr.io/oss-vdb/alpine-cve-convert:$COMMIT_SHA,\
      debian-copyright-mirror=gcr.io/oss-vdb/debian-copyright-mirror:$COMMIT_SHA,\
      cpe-repo-gen=gcr.io/oss-vdb/cpe-repo-gen:$COMMIT_SHA,\
-     nvd-cve-osv=gcr.io/oss-vdb/nvd-cve-osv:$COMMIT_SHA"
+     nvd-cve-osv=gcr.io/oss-vdb/nvd-cve-osv:$COMMIT_SHA,\
+     nvd-mirror=gcr.io/oss-vdb/nvd-mirror:$COMMIT_SHA"
   ]
   dir: deployment/clouddeploy/gke-workers
 
@@ -288,6 +310,7 @@ images:
 - 'gcr.io/oss-vdb/importer:$COMMIT_SHA'
 - 'gcr.io/oss-vdb/exporter:$COMMIT_SHA'
 - 'gcr.io/oss-vdb/alias-computation:$COMMIT_SHA'
+- 'gcr.io/oss-vdb/cron:$COMMIT_SHA'
 - 'gcr.io/oss-vdb/alpine-cve-convert:$COMMIT_SHA'
 - 'gcr.io/oss-vdb/combine-to-osv:$COMMIT_SHA'
 - 'gcr.io/oss-vdb/indexer:$COMMIT_SHA'
@@ -296,3 +319,4 @@ images:
 - 'gcr.io/oss-vdb/debian-copyright-mirror:$COMMIT_SHA'
 - 'gcr.io/oss-vdb/cpe-repo-gen:$COMMIT_SHA'
 - 'gcr.io/oss-vdb/nvd-cve-osv:$COMMIT_SHA'
+- 'gcr.io/oss-vdb/nvd-mirror:$COMMIT_SHA'

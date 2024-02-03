@@ -1,0 +1,18 @@
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: cpe-repo-gen
+spec:
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          containers:
+          - name: cpe-repo-gen
+            env:
+            - name: GOOGLE_CLOUD_PROJECT
+              value: oss-vdb
+            - name: DEBIAN_COPYRIGHT_GCS_PATH
+              value: gs://cve-osv-conversion/debian_copyright/debian_copyright.tar
+            - name: CPEREPO_GCS_PATH
+              value: gs://cve-osv-conversion/cpe_repos

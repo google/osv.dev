@@ -167,18 +167,24 @@ def docs():
   return redirect('https://google.github.io/osv.dev')
 
 
+_LIST_ARGS = ['q', 'ecosystem', 'page']
+
+
 @blueprint.route('/list')
 def list_vulnerabilities():
   """Main page."""
-  is_turbo_frame = request.headers.get('Turbo-Frame')
+
+  # Remove unknown query parameters
+  args = {k: v for k, v in request.args.lists() if k in _LIST_ARGS}
 
   # Remove page parameter if not from turbo frame
-  if not is_turbo_frame:
-    if request.args.get('page', 1) != 1:
-      q = parse.parse_qs(request.query_string)
-      q.pop(b'page', None)
-      return redirect(
-          url_for(request.endpoint) + '?' + parse.urlencode(q, True))
+  is_turbo_frame = request.headers.get('Turbo-Frame')
+  if not is_turbo_frame and args.get('page', 1) != 1:
+    args.pop('page', None)
+
+  # redirect if any query parameters were filtered
+  if args.keys() != request.args.keys():
+    return redirect(url_for(request.endpoint, **args))
 
   query = request.args.get('q', '')
   # Remove leading and trailing spaces
@@ -226,7 +232,8 @@ def vulnerability_redirector(potential_vuln_id):
 
 def bug_to_response(bug, detailed=True):
   """Convert a Bug entity to a response object."""
-  response = osv.vulnerability_to_dict(bug.to_vulnerability())
+  response = osv.vulnerability_to_dict(
+      bug.to_vulnerability(include_alias=detailed))
   response.update({
       'isFixed': bug.is_fixed,
       'invalid': bug.status == osv.BugStatus.INVALID
@@ -235,7 +242,6 @@ def bug_to_response(bug, detailed=True):
   if detailed:
     add_links(response)
     add_source_info(bug, response)
-    add_related_aliases(bug, response)
   return response
 
 
@@ -295,40 +301,6 @@ def add_source_info(bug, response):
   response['source_link'] = response['source']
   if source_repo.human_link:
     response['human_source_link'] = source_repo.human_link + bug.id()
-
-
-def add_related_aliases(bug: osv.Bug, response):
-  """Add links to other osv entries that's related through aliases"""
-  # Add links to other entries if they exist
-  aliases = {}
-  if bug.aliases:
-    directly_refed = osv.Bug.query(osv.Bug.db_id.IN(bug.aliases))
-    is_directly_refed = {dr.db_id for dr in directly_refed}
-    for alias in bug.aliases:
-      aliases[alias] = {
-          'exists': alias in is_directly_refed,
-          'same_alias_entries': []
-      }
-
-  # Add links to other entries that have the same alias or references this
-  query = osv.Bug.query(osv.Bug.aliases.IN(bug.aliases + [bug.id()]))
-  for other in query:
-    if other.id() == bug.id():
-      continue
-    for other_alias in other.aliases:
-      if other_alias in aliases:
-        aliases[other_alias]['same_alias_entries'].append(other.id())
-    if bug.id() in other.aliases:
-      aliases[other.id()] = {'exists': True, 'same_alias_entries': []}
-
-  # Remove self if it was added
-  aliases.pop(bug.id(), None)
-
-  response['aliases'] = [{
-      'alias_id': aid,
-      'exists': ex['exists'],
-      'same_alias_entries': ex['same_alias_entries']
-  } for aid, ex in aliases.items()]
 
 
 def _commit_to_link(repo_url, commit):
@@ -536,8 +508,13 @@ def sort_versions(versions: list[str], ecosystem: str) -> list[str]:
 def markdown(text):
   """Render markdown."""
   if text:
-    return markdown2.markdown(
+    md = markdown2.markdown(
         text, safe_mode='escape', extras=['fenced-code-blocks'])
+    # TODO(michaelkedar): Seems like there's a bug with markdown2 not escaping
+    # unclosed HTML comments <!--, which ends up commenting out the whole page
+    # See: https://github.com/trentm/python-markdown2/issues/563
+    # For now, manually replace any leftover comments with the escaped form
+    return md.replace('<!--', '&lt;!--')
 
   return ''
 
@@ -598,6 +575,8 @@ def list_packages(vuln_affected: list[dict]):
   for affected in vuln_affected:
     for affected_range in affected.get('ranges', []):
       if affected_range['type'] in ['ECOSYSTEM', 'SEMVER']:
+        if 'package' not in affected:
+          continue
         package_entry = affected['package']['ecosystem'] + '/' + affected[
             'package']['name']
         if package_entry not in packages:

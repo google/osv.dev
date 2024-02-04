@@ -793,7 +793,7 @@ class SourceRepository(ndb.Model):
   bucket = ndb.StringProperty()
   # Vulnerability data not under this path is ignored by the importer.
   directory_path = ndb.StringProperty()
-  # Last synced hash for SourceRepositoryType.GIT.
+  # Last synced hash for SourceRepositoryType.GIT & REST.
   last_synced_hash = ndb.StringProperty()
   # Last date recurring updates were requested.
   last_update_date = ndb.DateTimeProperty()

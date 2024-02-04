@@ -1,21 +1,41 @@
 ---
+# Source Repository Default Configuration
+  # Bucket name for SourceRepositoryType.BUCKET.
   bucket: 
+  # Whether to detect cherypicks or not (slow for large repos).
   detect_cherrypicks: false
-  versions_from_repo:
+  # Vulnerability data not under this path is ignored by the importer.
   directory_path:
+  # Whether this repository is editable.
   editable: False
+  # Default extension (e.g. .yaml, .json) for vulnerability data files.
   extension: 
+  # HTTP link prefix to individual vulnerability records for humans.
   human_link: null
+  # If true, don't analyze any Git ranges.
   ignore_git: False
+  # Ignore last import time once (SourceRepositoryType.BUCKET & REST)
   ignore_last_import_time: False
+  # Patterns of files to exclude (regex).
   ignore_patterns: ["propertyValue"]
+  # Key path within each file to store the vulnerability.
   key_path: null
+  # Last synced hash of the repository. (GIT and REST)
   last_synced_hash:
+  # Last date recurring updates were requested.
   last_update_date:
+  # HTTP link prefix to individual OSV source records.
   link:
+  # Optional branch for repo for SourceRepositoryType.GIT.
   repo_branch: null
+  # The repo URL for the source for SourceRepositoryType.GIT.
   repo_url:
+  # The username to use for SSH auth for SourceRepositoryType.GIT.
   repo_username: null
+  # The API endpoint for SourceRepositoryType.REST_ENDPOINT that 
+  # returns all of the vulnerability files to be updated (minimum id and modified dates)
   rest_api_url: null
+  # SourceRepositoryType - 0 for git, 1 for GCS, 2 for REST API
   type: 0
-  versions_from_repo: False
+  # Whether to populate "affected[].versions" from Git ranges.
+  versions_from_repo:

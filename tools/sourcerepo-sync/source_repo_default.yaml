@@ -38,4 +38,4 @@
   # SourceRepositoryType - 0 for git, 1 for GCS, 2 for REST API
   type: 0
   # Whether to populate "affected[].versions" from Git ranges.
-  versions_from_repo:
+  versions_from_repo: False

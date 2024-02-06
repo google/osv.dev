@@ -404,10 +404,11 @@ class Bug(ndb.Model):
 
     for affected_package in self.affected_packages:
       for affected_range in affected_package.ranges:
-        if affected_range.repo_url:
-          repo_url_indices = affected_range.repo_url.split('/')
+        if affected_range.repo_url and affected_range.repo_url != '':
+          url_no_https = affected_range.repo_url.split('//')[1]
+          repo_url_indices = url_no_https.split('/')[1:]
           repo_url_indices.append(affected_range.repo_url)
-          repo_url_indices = repo_url_indices[2:]
+          repo_url_indices.append(url_no_https)
           search_indices.update(repo_url_indices)
   
     self.search_indices = list(set(search_indices))

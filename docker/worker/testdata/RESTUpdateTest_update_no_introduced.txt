@@ -37,7 +37,7 @@
           'reference_url_types': {}, 
           'regressed': '', 
           'related': [], 
-          'search_indices': ['2022', '32221', 'curl', 'curl-cve-2022-32221', 'curl.git', 'cve', 'cve-2022-32221', 'git', 'github.com', 'https://github.com/curl/curl.git'], 
+          'search_indices': ['2022', '32221', 'curl', 'curl-cve-2022-32221', 'curl.git', 'cve', 'cve-2022-32221', 'git', 'github.com/curl/curl.git', 'https://github.com/curl/curl.git'], 
           'semver_fixed_indexes': ['00000007.00000086.00000000-zzzzzzzzzzzzzzzz'], 
           'severities': [], 
           'source': 'source', 

@@ -410,7 +410,7 @@ class Bug(ndb.Model):
           repo_url_indices.append(affected_range.repo_url)
           repo_url_indices.append(url_no_https)
           search_indices.update(repo_url_indices)
-  
+
     self.search_indices = list(set(search_indices))
     self.search_indices.sort()
 

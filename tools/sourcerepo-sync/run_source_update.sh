@@ -15,7 +15,6 @@
 
 export PIPENV_IGNORE_VIRTUALENVS=1
 pipenv sync
-pipenv run python source_sync.py --verbose #testing
 
-#pipenv run python source_sync.py --kind SourceRepository --project oss-vdb 
-#pipenv run python source_sync.py --kind SourceRepository --project oss-vdb-test
+pipenv run python source_sync.py --kind SourceRepository --project oss-vdb --file ../../source.yaml --no-dry-run --verbose
+pipenv run python source_sync.py --kind SourceRepository --project oss-vdb-test --file ../../source_test.yaml --no-dry-run --verbose

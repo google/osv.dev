@@ -402,6 +402,14 @@ class Bug(ndb.Model):
     for alias in self.aliases:
       search_indices.update(self._tokenize(alias))
 
+    for affected_package in self.affected_packages:
+      for affected_range in affected_package.ranges:
+        if affected_range.repo_url:
+          repo_url_indices = affected_range.repo_url.split('/')
+          repo_url_indices.append(affected_range.repo_url)
+          repo_url_indices = repo_url_indices[2:]
+          search_indices.update(repo_url_indices)
+  
     self.search_indices = list(set(search_indices))
     self.search_indices.sort()
 

@@ -167,6 +167,11 @@ def docs():
   return redirect('https://google.github.io/osv.dev')
 
 
+@blueprint.route('/ecosystems')
+def ecosystems():
+  return redirect('https://osv-vulnerabilities.storage.googleapis.com/ecosystems.txt')  # pylint: disable=line-too-long
+
+
 _LIST_ARGS = ['q', 'ecosystem', 'page']
 
 
@@ -341,8 +346,8 @@ def osv_get_ecosystem_counts_cached():
 def osv_get_ecosystem_counts() -> dict[str, int]:
   """Get count of vulnerabilities per ecosystem."""
   counts = {}
-  ecosystems = osv_get_ecosystems()
-  for ecosystem in ecosystems:
+  ecosystem_names = osv_get_ecosystems()
+  for ecosystem in ecosystem_names:
     if ':' in ecosystem:
       # Count by the base ecosystem index. Otherwise we'll overcount as a
       # single entry may refer to multiple sub-ecosystems.

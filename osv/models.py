@@ -405,10 +405,10 @@ class Bug(ndb.Model):
     for affected_package in self.affected_packages:
       for affected_range in affected_package.ranges:
         if affected_range.repo_url and affected_range.repo_url != '':
-          url_no_https = affected_range.repo_url.split('//')[1]
-          repo_url_indices = url_no_https.split('/')[1:]
-          repo_url_indices.append(affected_range.repo_url)
-          repo_url_indices.append(url_no_https)
+          url_no_https = affected_range.repo_url.split('//')[1]  # remove https
+          repo_url_indices = url_no_https.split('/')[1:]  # remove domain
+          repo_url_indices.append(affected_range.repo_url)  # add full url
+          repo_url_indices.append(url_no_https)  # add url without https://
           search_indices.update(repo_url_indices)
 
     self.search_indices = list(set(search_indices))

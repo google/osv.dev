@@ -266,16 +266,3 @@
   key_path: 'OSV'
   repo_username: 'git'
 
-- name: 'test'
-  versions_from_repo: True
-  type: 0
-  ignore_patterns: ['allowlist.json']
-  repo_url: 'blah'
-  detect_cherrypicks: False
-  extension: '.json'
-  db_prefix: 'TEST-'
-  ignore_git: False
-  link: 'blah'
-  editable: False
-  key_path: 'OSV'
-  repo_username: 'git'

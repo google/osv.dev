@@ -118,7 +118,7 @@ def update_sourcerepo(repo, ds_repo, args, client, kind):
     }:
       raise ValueError(f'Dynamic attribute {attr} found in {repo["name"]}')
     if attr == 'link' and repo[attr][-1] != '/':
-        raise ValueError(f'Link in {repo["name"]} missing ending /')
+      raise ValueError(f'Link in {repo["name"]} missing ending /')
     #Check whether the attribute has changed
     if attr not in ds_repo or repo[attr] == ds_repo[attr]:
       continue

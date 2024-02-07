@@ -99,6 +99,8 @@ def create_sourcerepo(repo, args, client, kind):
   # Set defaults if not given in yaml
   for attr in default_entity:
     if attr in repo:
+      if attr == 'link' and repo[attr][-1] != '/':
+        raise ValueError(f'Link in {repo["name"]} missing ending /')
       entity.update({attr: repo[attr]})
     else:
       entity.update({attr: default_entity[attr]})
@@ -115,6 +117,8 @@ def update_sourcerepo(repo, ds_repo, args, client, kind):
         'last_update_date', 'ignore_last_import_time', 'last_synced_hash'
     }:
       raise ValueError(f'Dynamic attribute {attr} found in {repo["name"]}')
+    if attr == 'link' and repo[attr][-1] != '/':
+        raise ValueError(f'Link in {repo["name"]} missing ending /')
     #Check whether the attribute has changed
     if attr not in ds_repo or repo[attr] == ds_repo[attr]:
       continue

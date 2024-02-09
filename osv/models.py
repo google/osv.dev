@@ -374,6 +374,9 @@ class Bug(ndb.Model):
         for pkg in self.affected_packages
         if pkg.package.ecosystem
     }
+
+    # Only attempt to add the Git ecosystem if
+    # there are no existing ecosystems present
     if not ecosystems_set:
       for pkg in self.affected_packages:
         for r in pkg.ranges:

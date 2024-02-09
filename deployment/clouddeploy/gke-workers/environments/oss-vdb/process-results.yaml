@@ -1,0 +1,27 @@
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: process-results
+spec:
+  schedule: "0 0 * * *"
+  concurrencyPolicy: Forbid
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          containers:
+          - name: cron
+            image: cron
+            imagePullPolicy: Always
+            command: ["/usr/local/bin/process_results/process_results.py"]
+            env:
+            - name: GOOGLE_CLOUD_PROJECT
+              value: "oss-vdb"
+            resources:
+              requests:
+                cpu: 1
+                memory: "3G"
+              limits:
+                cpu: 1
+                memory: "4G"
+          restartPolicy: OnFailure

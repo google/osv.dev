@@ -16,5 +16,8 @@ spec:
         livenessProbe:
           grpc:
             service: osv.v1.OSV
+          timeoutSeconds: 5
+          failureThreshold: 3
+          periodSeconds: 10
       timeoutSeconds: 60
       containerConcurrency: 10

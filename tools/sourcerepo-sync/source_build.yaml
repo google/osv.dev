@@ -11,22 +11,13 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+steps:
+  - name: 'gcr.io/oss-vdb/ci'
+    dir: 'tools/sourcerepo-sync'
+    args: ['bash', '-ex', 'run_source_update.sh']
+timeout: 600s
+# Also set in Cloud Build:
+serviceAccount: 'projects/oss-vdb/serviceAccounts/deployment@oss-vdb.iam.gserviceaccount.com'
+logsBucket: gs://oss-vdb-tf/source-sync-logs
 
-FROM golang:1.21-alpine@sha256:f475434ea2047a83e9ba02a1da8efc250fa6b2ed0e9e8e4eb8c5322ea6997795 AS GO_BUILD
-
-RUN mkdir /src
-WORKDIR /src
-
-COPY ./go.mod /src/go.mod
-COPY ./go.sum /src/go.sum
-RUN go mod download
-
-COPY ./ /src/
-RUN CGO_ENABLED=0 go build -o cperepos ./cmd/cperepos
-
-FROM gcr.io/google.com/cloudsdktool/google-cloud-cli:alpine
-
-COPY --from=GO_BUILD /src/cperepos ./
-COPY ./cmd/cperepos/gen_cperepos_map ./
-
-ENTRYPOINT ["/gen_cperepos_map"]
+tags: ['sync-source-repo']

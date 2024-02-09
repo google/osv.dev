@@ -8,7 +8,7 @@ cd "$(dirname "$0")"
 docker build -t gcr.io/oss-vdb/alpine-cve-convert -f cmd/alpine/Dockerfile .
 docker build -t gcr.io/oss-vdb/combine-to-osv -f cmd/combine-to-osv/Dockerfile .
 docker build -t gcr.io/oss-vdb/debian-copyright-mirror -f cmd/debian-copyright-mirror/Dockerfile .
-docker build -t gcr.io/oss-vdb/cpe-repo-gen -f cmd/cperepos/Dockerfile .
+docker build -t gcr.io/oss-vdb/cpe-repo-gen -f cmd/cpe-repo-gen/Dockerfile .
 
 if [ "$1" = "deploy" ]
 then

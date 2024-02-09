@@ -74,6 +74,12 @@ func (t *NVDTime) UnmarshalJSON(b []byte) (err error) {
 		t.Time = time.Time{}
 		return
 	}
+
+	// Some timestamps have a trailing Z. Some don't.
+	if strings.HasSuffix(s, "Z") {
+		s = s[:len(s)-1]
+	}
+
 	t.Time, err = time.Parse(NVDISO8601Time, s)
 	return
 }

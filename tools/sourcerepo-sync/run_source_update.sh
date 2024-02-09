@@ -1,4 +1,5 @@
-# Copyright 2023 Google LLC
+#!/bin/bash -x
+# Copyright 2024 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -12,19 +13,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-name: osv-scanner
+export PIPENV_IGNORE_VIRTUALENVS=1
+pipenv sync
 
-on:
-  schedule:
-    - cron: '12 12 * * 1'
-  push:
-    branches: [ "master" ]
-
-# Declare default permissions as read only.
-permissions: 
-  security-events: write
-  contents: read
-
-jobs:
-  scan-scheduled:
-    uses: "google/osv-scanner/.github/workflows/osv-scanner-reusable.yml@main"
+pipenv run python source_sync.py --kind SourceRepository --project oss-vdb --file ../../source.yaml --no-dry-run --verbose
+pipenv run python source_sync.py --kind SourceRepository --project oss-vdb-test --file ../../source_test.yaml --no-dry-run --verbose

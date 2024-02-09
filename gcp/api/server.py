@@ -36,6 +36,7 @@ from grpc_health.v1 import health_pb2
 from grpc_health.v1 import health_pb2_grpc
 from grpc_reflection.v1alpha import reflection
 from packageurl import PackageURL
+from packaging.utils import canonicalize_version
 
 import osv
 from osv import ecosystems
@@ -65,6 +66,24 @@ _DETERMINE_VER_MIN_SCORE_CUTOFF = 0.05
 # Size of buckets to divide hashes into in DetermineVersion
 # This should match the number in the indexer
 _BUCKET_SIZE = 512
+
+# This needs to be kept in sync with
+# https://github.com/google/osv.dev/blob/
+# 666a43e6ae7690fbfa283e9a6f0b08a986be4d32/
+# docker/indexer/stages/processing/processing.go#L77
+_VENDORED_LIB_NAMES = frozenset((
+    '3rdparty',
+    'dep',
+    'deps',
+    'thirdparty',
+    'third-party',
+    'third_party',
+    'libs',
+    'external',
+    'externals',
+    'vendor',
+    'vendored',
+))
 
 # Prefix for the
 _TAG_PREFIX = "refs/tags/"
@@ -251,6 +270,20 @@ class QueryContext:
   total_responses: ResponsesCount
 
 
+def should_skip_bucket(path: str) -> bool:
+  """Returns whether or not the given file path should be skipped for the
+  determineversions bucket computation."""
+  if not path:
+    return False
+
+  # Check for a nested vendored directory, as this could mess with results. The
+  # API expects the file path passed to be relative to the potential library
+  # path, so any vendored library names found here would imply it's a nested
+  # vendored library.
+  components = path.split('/')
+  return any(c in _VENDORED_LIB_NAMES for c in components)
+
+
 def process_buckets(
     file_results: List[osv.FileResult]) -> List[osv.RepoIndexBucket]:
   """
@@ -260,6 +293,9 @@ def process_buckets(
   buckets: list[list[bytes]] = [[] for _ in range(_BUCKET_SIZE)]
 
   for fr in file_results:
+    if should_skip_bucket(fr.path):
+      continue
+
     buckets[int.from_bytes(fr.hash[:2], byteorder='big') % _BUCKET_SIZE].append(
         fr.hash)
 
@@ -773,40 +809,54 @@ def _query_by_generic_version(
     version: str,
 ):
   """Query by generic version."""
-  # Try without normalizing.
-  results = []
-  query: ndb.Query = base_query.filter(osv.Bug.affected_fuzzy == version)
-  it: ndb.QueryIterator = query.iter(
-      # page_token can be the token for this query, or the token for the one
-      # below. If the token is used for the normalized query below, this query
-      # must have returned no results, so will still return no results, fall
-      # through to the query below again.
-      start_cursor=context.page_token)
-  cursor = None
 
-  while (yield it.has_next_async()):
-    if len(results) >= context.total_responses.page_limit():
-      cursor = it.cursor_after()
-      break
-    bug = it.next()
-    if _is_version_affected(bug.affected_packages, project, ecosystem, purl,
-                            version):
-      results.append(bug)
-      context.total_responses.add(1)
+  results = []
+
+  cursor = None
+  # Try without normalizing.
+  results, cursor = yield query_by_generic_helper(results, cursor, context,
+                                                  base_query, project,
+                                                  ecosystem, purl, version,
+                                                  False)
 
   if results:
     return results, cursor
 
+  # page_token can be the token for this query, or the token for the one
+  # below. If the token is used for the normalized query below, this query
+  # must have returned no results, so will still return no results, fall
+  # through to the query below again.
   # Try again after normalizing.
-  version = osv.normalize_tag(version)
-  query = base_query.filter(osv.Bug.affected_fuzzy == version)
-  it = query.iter(start_cursor=context.page_token)
+  results, cursor = yield query_by_generic_helper(results, cursor, context,
+                                                  base_query, project,
+                                                  ecosystem, purl,
+                                                  osv.normalize_tag(version),
+                                                  True)
 
+  if results:
+    return results, cursor
+
+  # Try again after canonicalizing + normalizing version.
+  results, cursor = yield query_by_generic_helper(results, cursor, context,
+                                                  base_query, project,
+                                                  ecosystem, purl,
+                                                  canonicalize_version(version),
+                                                  True)
+  return results, cursor
+
+
+@ndb.tasklet
+def query_by_generic_helper(results: list, cursor, context: QueryContext,
+                            base_query: ndb.Query, project: str, ecosystem: str,
+                            purl: PackageURL | None, version: str,
+                            is_normalized):
+  """Helper function for query_by_generic."""
+  query: ndb.Query = base_query.filter(osv.Bug.affected_fuzzy == version)
+  it: ndb.QueryIterator = query.iter(start_cursor=context.page_token)
   while (yield it.has_next_async()):
     if len(results) >= context.total_responses.page_limit():
       cursor = it.cursor_after()
       break
-
     bug = it.next()
     if _is_version_affected(
         bug.affected_packages,
@@ -814,10 +864,9 @@ def _query_by_generic_version(
         ecosystem,
         purl,
         version,
-        normalize=True):
+        normalize=is_normalized):
       results.append(bug)
       context.total_responses.add(1)
-
   return results, cursor
 
 

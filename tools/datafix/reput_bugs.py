@@ -26,6 +26,7 @@ def reput_bugs(dryrun: bool, source: str) -> None:
   print(f"Retrieved {len(result)} bugs to examine for reputting")
   num_reputted = 0
   time_start = time.perf_counter()
+
   # This handles the actual transaction of reputting the bugs with ndb
   def _reput_ndb():
     # Reputting the bug runs the Bug _pre_put_hook() in models.py
@@ -41,7 +42,8 @@ def reput_bugs(dryrun: bool, source: str) -> None:
   for batch in range(0, len(result), MAX_BATCH_SIZE):
     try:
       num_reputted += len(result[batch:batch + MAX_BATCH_SIZE])
-      print(f"Reput {num_reputted} bugs... - {num_reputted/len(result)*100:.2f}%")
+      print(
+          f"Reput {num_reputted} bugs... - {num_reputted/len(result)*100:.2f}%")
       ndb.transaction(_reput_ndb)
     except Exception as e:
       # Don't have the first batch's transaction-aborting exception stop

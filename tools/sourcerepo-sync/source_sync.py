@@ -90,13 +90,18 @@ def main() -> None:
 
 def create_sourcerepo(repo, args, client, kind):
   """Create a new source repo."""
-  with open('source_repo_default.yaml', 'r') as f:
+  if args.file.startswith('../../'):
+    default_file = 'source_repo_default.yaml'
+  else:
+    default_file = 'tools/sourcerepo-sync/source_repo_default.yaml'
+  with open(default_file, 'r') as f:
     default_entity = yaml.safe_load(f)
   if args.verbose:
     print(f'New source repository {repo["name"]}')
   key = client.key(kind, repo['name'])
   entity = datastore.Entity(key=key)
   # Set defaults if not given in yaml
+  entity.update({'name': repo['name']})
   for attr in default_entity:
     if attr in repo:
       if attr == 'link' and repo[attr][-1] != '/':

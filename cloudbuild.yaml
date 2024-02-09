@@ -82,6 +82,11 @@ steps:
     - CLOUDBUILD=1
   waitFor: ['init']
 
+- name: 'gcr.io/oss-vdb/ci'
+  dir: 'tools/sourcerepo-sync'
+  args: ['bash', '-ex', 'run_tests.sh']
+  waitFor: ['init']
+
 timeout: 7200s
 options:
   machineType: E2_HIGHCPU_8

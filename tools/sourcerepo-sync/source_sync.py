@@ -77,7 +77,7 @@ def main() -> None:
             raise ValueError(f'Dynamic field {field} found in {repo["name"]}')
     if args.verbose:
       print(f'Validated {len(repository)} source repositories')
-  
+
   def create_sourcerepo():
     """Create a new source repo."""
     if args.file.startswith('../../'):

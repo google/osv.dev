@@ -83,6 +83,7 @@ steps:
   waitFor: ['init']
 
 - name: 'gcr.io/oss-vdb/ci'
+  id: 'sourcerepo-sync-tests'
   dir: 'tools/sourcerepo-sync'
   args: ['bash', '-ex', 'run_tests.sh']
   waitFor: ['init']

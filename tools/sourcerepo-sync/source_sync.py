@@ -78,7 +78,7 @@ def main() -> None:
     if args.verbose:
       print(f'Validated {len(repository)} source repositories')
 
-  def create_sourcerepo():
+  def create_sourcerepo(repo):
     """Create a new source repo."""
     if args.file.startswith('../../'):
       default_file = 'source_repo_default.yaml'
@@ -102,7 +102,7 @@ def main() -> None:
     if not args.dryrun:
       client.put(entity)
 
-  def update_sourcerepo():
+  def update_sourcerepo(repo, ds_repo):
     """Check the attributes of the source repo and update if needed."""
     change_flag = False
     for attr in repo:
@@ -139,11 +139,11 @@ def main() -> None:
           if args.verbose:
             print(f'Found source repository {repo["name"]}')
           ds_repos.pop(ds_repos.index(ds_repo))
-          update_sourcerepo()
+          update_sourcerepo(repo, ds_repo)
 
       if repo_found:
         continue
-      create_sourcerepo()
+      create_sourcerepo(repo)
 
     local_sourcerepos_names = {repo['name'] for repo in local_sourcerepos}
     # If the source repo is not in the local yaml, delete it

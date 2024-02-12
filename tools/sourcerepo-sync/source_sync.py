@@ -124,38 +124,39 @@ def main() -> None:
       client.put(entity)
 
   validate_repository(local_sourcerepos)
+  if args.validate:
+    return
 
-  if not args.validate:
-    client = datastore.Client(project=args.project)
-    query = client.query(kind=args.kind)
-    ds_repos = list(query.fetch())
-    if args.verbose:
-      print(f'Retrieved {len(ds_repos)} source repositories from datastore')
-    validate_repository(ds_repos, False)
-    for repo in local_sourcerepos:
-      repo_found = False
-      for ds_repo in ds_repos:
-        # if it exists, check if it needs to be updated
-        if repo['name'] == ds_repo['name']:
-          repo_found = True
-          if args.verbose:
-            print(f'Found source repository {repo["name"]}')
-          ds_repos.pop(ds_repos.index(ds_repo))
-          update_sourcerepo(repo, ds_repo)
-
-      if repo_found:
-        continue
-      create_sourcerepo(repo)
-
-    local_sourcerepos_names = {repo['name'] for repo in local_sourcerepos}
-    # If the source repo is not in the local yaml, delete it
+  client = datastore.Client(project=args.project)
+  query = client.query(kind=args.kind)
+  ds_repos = list(query.fetch())
+  if args.verbose:
+    print(f'Retrieved {len(ds_repos)} source repositories from datastore')
+  validate_repository(ds_repos, False)
+  for repo in local_sourcerepos:
+    repo_found = False
     for ds_repo in ds_repos:
-      if ds_repo['name'] not in local_sourcerepos_names:
+      # if it exists, check if it needs to be updated
+      if repo['name'] == ds_repo['name']:
+        repo_found = True
         if args.verbose:
-          print(f'Deleting source repository {ds_repo["name"]}')
-        key = client.key(args.kind, ds_repo['name'])
-        if not args.dryrun:
-          client.delete(key)
+          print(f'Found source repository {repo["name"]}')
+        ds_repos.pop(ds_repos.index(ds_repo))
+        update_sourcerepo(repo, ds_repo)
+
+    if repo_found:
+      continue
+    create_sourcerepo(repo)
+
+  local_sourcerepos_names = {repo['name'] for repo in local_sourcerepos}
+  # If the source repo is not in the local yaml, delete it
+  for ds_repo in ds_repos:
+    if ds_repo['name'] not in local_sourcerepos_names:
+      if args.verbose:
+        print(f'Deleting source repository {ds_repo["name"]}')
+      key = client.key(args.kind, ds_repo['name'])
+      if not args.dryrun:
+        client.delete(key)
 
 
 if __name__ == "__main__":

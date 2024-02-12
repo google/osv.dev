@@ -29,6 +29,7 @@ steps:
     - DATASTORE_EMULATOR_PORT=8002
   waitFor: ['init']
 
+# Sourcerepo-sync-tests and lib-tests use the same env so have a race condition. 
 - name: 'gcr.io/oss-vdb/ci'
   id: 'sourcerepo-sync-tests'
   dir: 'tools/sourcerepo-sync'

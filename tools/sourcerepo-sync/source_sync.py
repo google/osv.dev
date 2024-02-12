@@ -4,6 +4,7 @@ import yaml
 import argparse
 import os
 
+
 def main() -> None:
   parser = argparse.ArgumentParser(
       description="Sync source repositories from local yaml to datastore.")

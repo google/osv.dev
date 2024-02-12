@@ -2,7 +2,7 @@
 from google.cloud import datastore
 import yaml
 import argparse
-
+import os
 
 def main() -> None:
   parser = argparse.ArgumentParser(
@@ -80,7 +80,8 @@ def main() -> None:
 
   def create_sourcerepo(repo):
     """Create a new source repo."""
-    if args.file.startswith('../../'):
+    # check whether the working directory is tools/sourcerepo-sync
+    if os.getcwd().endswith('tools/sourcerepo-sync'):
       default_file = 'source_repo_default.yaml'
     else:
       default_file = 'tools/sourcerepo-sync/source_repo_default.yaml'

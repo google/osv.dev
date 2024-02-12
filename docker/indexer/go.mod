@@ -1,6 +1,6 @@
 module github.com/google/osv.dev/docker/indexer
 
-go 1.22
+go 1.22.0
 
 require (
 	cloud.google.com/go/datastore v1.15.0

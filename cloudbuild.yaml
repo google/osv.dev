@@ -30,6 +30,12 @@ steps:
   waitFor: ['init']
 
 - name: 'gcr.io/oss-vdb/ci'
+  id: 'sourcerepo-sync-tests'
+  dir: 'tools/sourcerepo-sync'
+  args: ['bash', '-ex', 'run_tests.sh']
+  waitFor: ['init', 'lib-tests']
+
+- name: 'gcr.io/oss-vdb/ci'
   id: 'worker-tests'
   dir: docker/worker
   args: ['bash', '-ex', 'run_tests.sh']
@@ -80,12 +86,6 @@ steps:
   args: ['bash', '-ex', 'run_tests.sh', '/workspace/dummy.json']
   env:
     - CLOUDBUILD=1
-  waitFor: ['init']
-
-- name: 'gcr.io/oss-vdb/ci'
-  id: 'sourcerepo-sync-tests'
-  dir: 'tools/sourcerepo-sync'
-  args: ['bash', '-ex', 'run_tests.sh']
   waitFor: ['init']
 
 timeout: 7200s

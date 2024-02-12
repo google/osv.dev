@@ -151,7 +151,9 @@ func (s *Stage) processGit(ctx context.Context, repoCfg *config.RepoConfig) erro
 		commitHash, err := repo.ResolveRevision(plumbing.Revision(ref.Name().String()))
 
 		if err != nil {
-			return err
+			log.Errorf("Failed to resolve %s: %v", ref.Name().String(), err)
+			// Ignore errors as this will block the iteration otherwise.
+			return nil
 		}
 
 		found, err := s.Checker.Exists(ctx, repoCfg.Address, shared.MD5, ref.Hash())

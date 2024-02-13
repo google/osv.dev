@@ -98,7 +98,7 @@ func (s *Stage) Run(ctx context.Context, cfgs []*config.RepoConfig) error {
 				log.Errorf("unsupported config type: %s", repoCfg.Type)
 			}
 			if err != nil {
-				log.Errorf("preparation failed: %v", err)
+				log.Errorf("preparation failed for %s: %v", repoCfg.Name, err)
 			}
 		}(wCtx, repoCfg)
 	}
@@ -131,12 +131,12 @@ func (s *Stage) processGit(ctx context.Context, repoCfg *config.RepoConfig) erro
 	}
 
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to clone/update repo: %w", err)
 	}
 
 	comItr, err := repo.CommitObjects()
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to get commit objects: %w", err)
 	}
 	allCommits := make(map[plumbing.Hash]*object.Commit)
 	comItr.ForEach(func(c *object.Commit) error {

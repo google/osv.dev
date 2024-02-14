@@ -42,9 +42,9 @@ jobs:
       - name: Set up pipenv
         run: pipenv sync --dev
       - name: Set up Go
-        uses: actions/setup-go@v3
+        uses: actions/setup-go@v5
         with:
-          go-version: '>=1.18.0'
+          go-version: '>=1.22.0'
       - name: Set up terraform
         uses: hashicorp/setup-terraform@v2
       - name: Run pylint and yapf, go vet

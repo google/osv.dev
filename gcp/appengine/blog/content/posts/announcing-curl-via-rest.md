@@ -1,8 +1,8 @@
 ---
 title: "CURL joins OSV thanks to new REST API Contribution Support"
-date: 2024-02-15T22:00:00Z
+date: 2024-02-14T22:00:00Z
 draft: false
-author: OSV Team
+author: Jess Lowe
 ---
 As part of OSV’s strategy to be a comprehensive, accurate and timely database of known vulnerabilities, we're excited to announce that we now support CURL advisories in the OSV database, thanks to REST API contribution support. CURL has been providing vulnerability records in the OSV format for a while, but they haven’t been able to be imported until now.
 <!-- more -->
@@ -41,4 +41,4 @@ This endpoint should contain information in this format:
 
 Ready to contribute? Simply open an issue on our GitHub repository: https://github.com/google/osv.dev/issues, provide the necessary information outlined above, and our team will work with you to integrate your data smoothly.
 
-**Together, we can strengthen the open source ecosystem by making vulnerability information more accessible and actionable. Let's continue building a more secure future for open source software.**
+Together, we can strengthen the open source ecosystem by making vulnerability information more accessible and actionable. Let's continue building a more secure future for open source software.

@@ -99,14 +99,20 @@ class GitCloneError(Exception):
   """Git repository clone exception."""
 
 
-def clone(git_url, checkout_dir, git_callbacks=None):
+def clone(git_url, checkout_dir, git_callbacks=None, treeless=False):
   """Perform a clone."""
   try:
     # Use 'git' CLI here as it's much faster than libgit2's clone.
     env = _set_git_callback_env(git_callbacks)
 
+    if treeless:
+      git_filter = '--filter=tree:0'
+    else:
+      git_filter = '--no-filter'
+
     subprocess.run(
-        ['git', 'clone', _git_mirror(git_url), checkout_dir],
+        ['git', 'clone', git_filter,
+         _git_mirror(git_url), checkout_dir],
         env=env,
         capture_output=True,
         check=True)
@@ -117,12 +123,16 @@ def clone(git_url, checkout_dir, git_callbacks=None):
     raise GitCloneError('Failed to open cloned repo') from e
 
 
-def clone_with_retries(git_url, checkout_dir, git_callbacks=None, branch=None):
+def clone_with_retries(git_url,
+                       checkout_dir,
+                       git_callbacks=None,
+                       branch=None,
+                       treeless=False):
   """Clone with retries."""
   logging.info('Cloning %s to %s', git_url, checkout_dir)
   for attempt in range(CLONE_TRIES):
     try:
-      repo = clone(git_url, checkout_dir, git_callbacks)
+      repo = clone(git_url, checkout_dir, git_callbacks, treeless)
       repo.cache = {}
       if branch:
         _checkout_branch(repo, branch)

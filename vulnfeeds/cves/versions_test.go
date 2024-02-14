@@ -422,6 +422,18 @@ func TestRepo(t *testing.T) {
 			expectedRepoURL: "",
 			expectedOk:      false,
 		},
+		{
+			description:     "GNU glibc GitWeb repo (with no distinguishing marks)",
+			inputLink:       "https://sourceware.org/git/?p=glibc.git",
+			expectedRepoURL: "git://sourceware.org/git/glibc.git",
+			expectedOk:      true,
+		},
+		{
+			description:     "GNU glibc GitWeb repo (with distinguishing marks)",
+			inputLink:       "https://sourceware.org/git/gitweb.cgi?p=glibc.git",
+			expectedRepoURL: "git://sourceware.org/git/glibc.git",
+			expectedOk:      true,
+		},
 	}
 
 	for _, tc := range tests {

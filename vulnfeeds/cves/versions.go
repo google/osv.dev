@@ -491,6 +491,21 @@ var (
 	InvalidRepoRegex = `(?i)/(?:(?:CVEs?)|(?:CVE-\d{4}-\d{4,})(?:/?.*)?|bug_report(?:/.*)?|GitHubAssessments/.*)`
 )
 
+func repoGitWeb(parsedURL *url.URL) (string, error) {
+		params := strings.Split(parsedURL.RawQuery, ";")
+		for _, param := range params {
+			if !strings.HasPrefix(param, "p=") {
+				continue
+			}
+			repo, err := url.JoinPath(strings.TrimSuffix(strings.TrimSuffix(parsedURL.Path, "/gitweb.cgi"), "cgi-bin"), strings.Split(param, "=")[1])
+			if err != nil {
+				return "", err
+			}
+			return fmt.Sprintf("git://%s%s", parsedURL.Hostname(), repo), nil
+		}
+		return "", fmt.Errorf("unsupported GitWeb URL: %s", parsedURL.String())
+}
+
 // Returns the base repository URL for supported repository hosts.
 func Repo(u string) (string, error) {
 	var supportedHosts = []string{
@@ -500,6 +515,7 @@ func Repo(u string) (string, error) {
 		"gitlab.org",
 		"opendev.org",
 		"pagure.io",
+		"sourceware.org",
 		"xenbits.xen.org",
 	}
 	var supportedHostPrefixes = []string{
@@ -526,7 +542,7 @@ func Repo(u string) (string, error) {
 	// Were we handed a base repository URL from the get go?
 	if slices.Contains(supportedHosts, parsedURL.Hostname()) || slices.Contains(supportedHostPrefixes, strings.Split(parsedURL.Hostname(), ".")[0]) {
 		pathParts := strings.Split(strings.TrimSuffix(parsedURL.Path, "/"), "/")
-		if len(pathParts) == 3 && parsedURL.Path != "/cgi-bin/gitweb.cgi" {
+		if len(pathParts) == 3 && parsedURL.Path != "/cgi-bin/gitweb.cgi" && parsedURL.Hostname() != "sourceware.org" {
 			return fmt.Sprintf("%s://%s%s", parsedURL.Scheme,
 					parsedURL.Hostname(),
 					strings.TrimSuffix(parsedURL.Path, "/")),
@@ -555,6 +571,10 @@ func Repo(u string) (string, error) {
 		}
 		if len(pathParts) >= 2 && parsedURL.Hostname() == "git.ffmpeg.org" {
 			return fmt.Sprintf("%s://%s/%s", parsedURL.Scheme, parsedURL.Hostname(), pathParts[2]), nil
+		}
+		if parsedURL.Hostname() == "sourceware.org" {
+			// Call out to common function for GitWeb URLs
+			return repoGitWeb(parsedURL)
 		}
 		if strings.HasSuffix(parsedURL.Path, ".git") {
 			return fmt.Sprintf("%s://%s%s", parsedURL.Scheme,
@@ -599,17 +619,7 @@ func Repo(u string) (string, error) {
 	// https://sourceware.org/git/gitweb.cgi?p=binutils-gdb.git;h=11d171f1910b508a81d21faa087ad1af573407d8 -> git://sourceware.org/git/binutils-gdb.git
 	if strings.HasSuffix(parsedURL.Path, "/gitweb.cgi") &&
 		strings.HasPrefix(parsedURL.RawQuery, "p=") {
-		params := strings.Split(parsedURL.RawQuery, ";")
-		for _, param := range params {
-			if !strings.HasPrefix(param, "p=") {
-				continue
-			}
-			repo, err := url.JoinPath(strings.TrimSuffix(strings.TrimSuffix(parsedURL.Path, "/gitweb.cgi"), "cgi-bin"), strings.Split(param, "=")[1])
-			if err != nil {
-				return "", err
-			}
-			return fmt.Sprintf("git://%s%s", parsedURL.Hostname(), repo), nil
-		}
+		return repoGitWeb(parsedURL)
 	}
 
 	// cgit.freedesktop.org is a special snowflake with enough repos to warrant special handling

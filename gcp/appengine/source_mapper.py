@@ -105,7 +105,7 @@ class FFMpegVCS(VCSViewer):
 
 
 class SourcewareVCS(VCSViewer):
-  VCS_URL_REGEX = re.compile(r'(git(://sourceware\.org)/git/(.*\.git)$')
+  VCS_URL_REGEX = re.compile(r'git(://sourceware\.org)/git/(.*\.git)$')
   VCS_REVISION_SUB = r'https\1?p=\2;a=commit;h={revision}'
   VCS_REVISION_DIFF_SUB = (r'https\1?p=\2;a=commitdiff;h={start_revision};'
                            r'hp={end_revision}')

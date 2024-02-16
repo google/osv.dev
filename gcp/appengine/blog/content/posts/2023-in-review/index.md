@@ -6,6 +6,8 @@ author: The OSV Team
 ---
 2023 has been a *very* eventful year for OSV.
 
+<!-- more -->
+
 ## New ecosystems support
 
 [OSV Schema](https://github.com/ossf/osv-schema) adoption continues to grow! This year alone, 8 new ecosystems have adopted the schema, and are now included in our [OSV.dev](https://osv.dev/list) database:

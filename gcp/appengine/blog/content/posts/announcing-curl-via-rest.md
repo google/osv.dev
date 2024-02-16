@@ -15,26 +15,27 @@ Have data you want to contribute through REST endpoints? Keep reading the quick 
 
 1. **Provide a GET endpoint for listing all available vulnerabilities.**
 
-    Share a URL pointing to a REST endpoint that lists, at minimum, all vulnerability IDs and their last modified dates.
+Share a URL pointing to a REST endpoint that lists, at minimum, all vulnerability IDs and their last modified dates.
 This endpoint should contain information in this format:
 
-    ```
-    [{
-        "id": "OSV-CVE-2020-1111",
-        "modified": "2023-12-04T10:12:08.00Z"
-    }, {
-        "id": "OSV-CVE-2020-1112",
-        "modified": "2023-12-04T10:16:25.00Z"
-    }]
-    ```
+```json
+[{
+    "id": "OSV-CVE-2020-1111",
+    "modified": "2023-12-04T10:12:08.00Z"
+}, {
+    "id": "OSV-CVE-2020-1112",
+    "modified": "2023-12-04T10:16:25.00Z"
+}]
+```
+
 2. **Specify the Base URL for Full Vulnerability Endpoints**
 
-    Indicate the base URL where full vulnerability details can be accessed in OSV format.
-    Individual vulnerability endpoints should follow this structure: ``https://{base_url}/{id}.json``
+Indicate the base URL where full vulnerability details can be accessed in OSV format.
+Individual vulnerability endpoints should follow this structure: `https://{base_url}/{id}.json`
 
 3. **Indicate Extension for Individual Endpoints:**
 
-    While .json is preferred, let us know if you need to use a different extension.
+While .json is preferred, let us know if you need to use a different extension.
 
 
 **Open an Issue to Get Started!**

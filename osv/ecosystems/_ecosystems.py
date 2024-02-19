@@ -58,6 +58,7 @@ _ecosystems = {
     'Debian': OrderingUnsupportedEcosystem(),
     'Photon OS': OrderingUnsupportedEcosystem(),
     'Rocky Linux': OrderingUnsupportedEcosystem(),
+    'Ubuntu': OrderingUnsupportedEcosystem(),
 }
 
 # Semver-based ecosystems, should correspond to _ecosystems above.
@@ -108,6 +109,10 @@ def get(name: str) -> Ecosystem:
     return OrderingUnsupportedEcosystem()
 
   if name.startswith('Photon OS:'):
+    # TODO(michaelkedar)
+    return OrderingUnsupportedEcosystem()
+
+  if name.startswith('Ubuntu:'):
     # TODO(michaelkedar)
     return OrderingUnsupportedEcosystem()
 

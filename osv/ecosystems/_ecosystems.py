@@ -101,19 +101,19 @@ def get(name: str) -> Ecosystem:
     return Alpine(name.split(':')[1])
 
   if name.startswith('AlmaLinux:'):
-    # TODO(michaelkedar)
+    # TODO(unassigned)
     return OrderingUnsupportedEcosystem()
 
   if name.startswith('Rocky Linux:'):
-    # TODO(michaelkedar)
+    # TODO(unassigned)
     return OrderingUnsupportedEcosystem()
 
   if name.startswith('Photon OS:'):
-    # TODO(michaelkedar)
+    # TODO(unassigned)
     return OrderingUnsupportedEcosystem()
 
   if name.startswith('Ubuntu:'):
-    # TODO(michaelkedar)
+    # TODO(unassigned)
     return OrderingUnsupportedEcosystem()
 
   return _ecosystems.get(name)

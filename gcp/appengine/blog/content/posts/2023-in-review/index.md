@@ -6,7 +6,7 @@ author: The OSV Team
 ---
 2023 has been a *very* eventful year for OSV.
 
-<!-- more -->
+<!--more-->
 
 ## New ecosystems support
 

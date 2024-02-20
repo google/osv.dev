@@ -7,4 +7,4 @@ build/lib
 *.tfstate*
 .history/*
 **/.history/*
-datastore-helper
+*/datastore-helper/

@@ -4,8 +4,9 @@ date: 2024-02-14T22:00:00Z
 draft: false
 author: Jess Lowe
 ---
-As part of OSV’s strategy to be a comprehensive, accurate and timely database of known vulnerabilities, we're excited to announce that we now support CURL advisories in the OSV database, thanks to REST API contribution support. CURL has been providing vulnerability records in the OSV format for a while, but they haven’t been able to be imported until now.
-<!-- more -->
+As part of OSV’s strategy to be a comprehensive, accurate and timely database of known vulnerabilities, we're excited to announce that we now support [CURL advisories in the OSV database](https://osv.dev/list?ecosystem=GIT&q=curl), thanks to REST API contribution support. CURL has been providing vulnerability records in the OSV format for a while, but they haven’t been able to be imported until now.
+
+<!--more-->
 
 Adding REST API support to our existing contribution methods (Git repository and public GCS bucket) now offers contributors three convenient ways to share vulnerability data with OSV.
 

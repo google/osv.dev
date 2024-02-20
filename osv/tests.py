@@ -86,8 +86,7 @@ class MockRepo:
 
   def add_file(self, path, contents):
     """Adds a file."""
-    # As of pygit2==1.14.1 there is no enum for GIT_OBJ_BLOB
-    oid = self._repo.write(pygit2.GIT_OBJ_BLOB, contents)
+    oid = self._repo.write(pygit2.enums.ObjectType.BLOB, contents)
     self._repo.index.add(
         pygit2.IndexEntry(path, oid, pygit2.enums.FileMode.BLOB))
     self._repo.index.write()

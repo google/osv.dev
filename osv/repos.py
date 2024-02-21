@@ -48,7 +48,7 @@ class GitRemoteCallback(pygit2.RemoteCallbacks):
     del url
     del username_from_url
     if allowed_types & pygit2.enums.CredentialType.USERNAME:
-      return pygit2.enums.Username(self.username)
+      return pygit2.Username(self.username)
 
     if allowed_types & pygit2.CredentialType.SSH_KEY:
       return pygit2.Keypair(self.username, self.ssh_key_public_path,

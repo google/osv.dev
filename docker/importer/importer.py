@@ -102,7 +102,7 @@ class Importer:
 
   def __init__(self, ssh_key_public_path, ssh_key_private_path, work_dir,
                public_log_bucket, oss_fuzz_export_bucket,
-               strict_validation: bool):
+               strict_validation: bool, delete: bool):
     self._ssh_key_public_path = ssh_key_public_path
     self._ssh_key_private_path = ssh_key_private_path
     self._work_dir = work_dir
@@ -114,6 +114,7 @@ class Importer:
 
     self._sources_dir = os.path.join(self._work_dir, 'sources')
     self._strict_validation = strict_validation
+    self._delete = delete
     os.makedirs(self._sources_dir, exist_ok=True)
 
   def _git_callbacks(self, source_repo):
@@ -170,7 +171,10 @@ class Importer:
       if source_repo.name == 'oss-fuzz':
         self.process_oss_fuzz(source_repo)
 
+      self.validate_source_repo(source_repo)
       self.process_updates(source_repo)
+      if self._delete:
+        self.process_deletions(source_repo)
 
   def checkout(self, source_repo):
     """Check out a source repo."""
@@ -368,7 +372,7 @@ class Importer:
     """Process updates from bucket."""
     # TODO(ochang): Use Pub/Sub change notifications for more efficient
     # processing.
-    logging.info("Begin processing bucket: %s", source_repo.name)
+    logging.info("Begin processing bucket for updates: %s", source_repo.name)
 
     # Record import time at the start to avoid race conditions
     # where a new record is added to the bucket while we are processing.
@@ -389,12 +393,14 @@ class Importer:
 
     # Convert to list to retrieve all information into memory
     # This makes its use in the concurrent map later faster
-    listed_blobs = list(storage_client.list_blobs(source_repo.bucket))
+    listed_blobs = list(
+        storage_client.list_blobs(
+            source_repo.bucket, prefix=source_repo.directory_path))
 
     import_failure_logs = []
 
     def convert_blob_to_vuln(blob: storage.Blob) -> Optional[Tuple[str, str]]:
-      """Download and parse gcs blob into [blob_hash, blob_name]"""
+      """Download and parse GCS blob into [blob_hash, blob.name]"""
       if not _is_vulnerability_file(source_repo, blob.name):
         return None
       if not ignore_last_import_time and \
@@ -405,9 +411,24 @@ class Importer:
                    blob.name)
       # Use the _client_store thread local variable
       # set in the thread pool initializer
-      blob_bytes = blob.download_as_bytes(_client_store.storage_client)
+      # Download in a blob generation agnostic way to cope with the file
+      # changing between when it was listed and now.
+      blob_bytes = storage.Blob(
+          blob.name, blob.bucket,
+          generation=None).download_as_bytes(_client_store.storage_client)
       if ignore_last_import_time:
         blob_hash = osv.sha256_bytes(blob_bytes)
+        if self._strict_validation:
+          try:
+            _ = osv.parse_vulnerabilities_from_data(
+                blob_bytes,
+                os.path.splitext(blob.name)[1],
+                strict=self._strict_validation)
+          except Exception as e:
+            logging.error('Failed to parse vulnerability %s: %s', blob.name, e)
+            import_failure_logs.append('Failed to parse vulnerability "' +
+                                       blob.name + '"')
+            return None
         return blob_hash, blob.name
 
       with _client_store.ndb_client.context():
@@ -420,7 +441,7 @@ class Importer:
             bug = osv.Bug.get_by_id(vuln.id)
             # Check if the bug has been modified since last import
             if bug is None or \
-                bug.import_last_modified != vuln.modified.ToDatetime():
+                    bug.import_last_modified != vuln.modified.ToDatetime():
               blob_hash = osv.sha256_bytes(blob_bytes)
               return blob_hash, blob.name
 
@@ -455,6 +476,98 @@ class Importer:
 
     logging.info('Finished processing bucket: %s', source_repo.name)
 
+  def _process_deletions_bucket(self, source_repo: osv.SourceRepository):
+    """Process deletions from a GCS bucket source.
+
+    This validates the continued existence of every Bug in Datastore (for the
+    given source) against every bug currently in that source's GCS bucket,
+    calculating the delta. The bugs determined to have been
+    deleted from GCS are then flagged for deletion from Datastore by the worker.
+
+    If the delta is too large, something undesirable has been assumed to have
+    happened and deletion is aborted.
+    """
+
+    logging.info("Begin processing bucket for deletions: %s", source_repo.name)
+
+    # Get all the existing non-withdrawn Bug IDs for
+    # source_repo.name in Datastore
+    query = osv.Bug.query()
+    query = query.filter(osv.Bug.source == source_repo.name)
+    result = list(query.fetch(keys_only=False))
+    result.sort(key=lambda r: r.id())
+    vuln_ids_for_source = [
+        (r.id(), r.source_id.split(':')[1]) for r in result if not r.withdrawn
+    ]
+
+    storage_client = storage.Client()
+    # Get all of the existing records in the GCS bucket
+    # (to get their IDs for checking against Datastore)
+    listed_blobs = list(
+        storage_client.list_blobs(
+            source_repo.bucket, prefix=source_repo.directory_path))
+
+    import_failure_logs = []
+
+    def convert_blob_to_vuln(blob: storage.Blob) -> Optional[Tuple[str]]:
+      """Download and parse GCS blob into [vuln.id]"""
+      if not _is_vulnerability_file(source_repo, blob.name):
+        return None
+
+      # Use the _client_store thread local variable
+      # set in the thread pool initializer
+      # Download in a blob generation agnostic way to cope with the file
+      # changing between when it was listed and now.
+      blob_bytes = storage.Blob(
+          blob.name, blob.bucket,
+          generation=None).download_as_bytes(_client_store.storage_client)
+
+      try:
+        vulns = osv.parse_vulnerabilities_from_data(
+            blob_bytes,
+            os.path.splitext(blob.name)[1],
+            strict=self._strict_validation)
+        for vuln in vulns:
+          return vuln.id
+
+        return None
+      except Exception as e:
+        logging.error('Failed to parse vulnerability %s: %s', blob.name, e)
+        # Don't include error stack trace as that might leak sensitive info
+        # List.append() is atomic and threadsafe.
+        import_failure_logs.append('Failed to parse vulnerability "' +
+                                   blob.name + '"')
+        return None
+
+    # Setup storage client
+    def thread_init():
+      _client_store.storage_client = storage.Client()
+
+    with ThreadPoolExecutor(
+        _BUCKET_THREAD_COUNT, initializer=thread_init) as executor:
+      vulns_in_gcs = [
+          v for v in executor.map(convert_blob_to_vuln, listed_blobs) if v
+      ]
+
+      # diff
+      vulns_to_delete = list(
+          filter(lambda v: v[0] not in vulns_in_gcs, vuln_ids_for_source))
+
+      # sanity check: deleting >10% of the records for source in Datastore is
+      # probably worth flagging for review.
+      if len(vulns_to_delete) / len(vuln_ids_for_source) > 10.0:
+        logging.error(
+            'Cowardly refusing to delete %d missing records from '
+            'GCS for: %s', len(vulns_to_delete), source_repo.name)
+      else:
+        # Request deletion.
+        for v in vulns_to_delete:
+          self._request_analysis_external(
+              source_repo, original_sha256='', path=v[1], deleted=True)
+
+    replace_importer_log(storage_client, source_repo.name,
+                         self._public_log_bucket, import_failure_logs)
+
   def _process_updates_rest(self, source_repo: osv.SourceRepository):
     """Process updates from REST API."""
     logging.info('Begin processing REST: %s', source_repo.name)
@@ -486,7 +599,7 @@ class Importer:
       ) < source_repo.last_update_date:
         continue
       try:
-        #TODO(jesslowe): Use a ThreadPoolExecutor to parallelize this
+        # TODO(jesslowe): Use a ThreadPoolExecutor to parallelize this
         single_vuln = requests.get(
             source_repo.link + vuln.id + source_repo.extension,
             timeout=_TIMEOUT_SECONDS)
@@ -516,11 +629,17 @@ class Importer:
 
     logging.info('Finished processing REST: %s', source_repo.name)
 
-  def process_updates(self, source_repo: osv.SourceRepository):
-    """Process user changes and updates."""
+  def _process_deletions_rest(self, source_repo: osv.SourceRepository):
+    """Process deletions from a REST bucket source."""
+    raise NotImplementedError
+
+  def validate_source_repo(self, source_repo: osv.SourceRepository):
+    """Validate the source_repo for correctness."""
     if source_repo.link and source_repo.link[-1] != '/':
       raise ValueError('Source repository link must end with /')
 
+  def process_updates(self, source_repo: osv.SourceRepository):
+    """Process source record changes and updates."""
     if source_repo.type == osv.SourceRepositoryType.GIT:
       self._process_updates_git(source_repo)
       return
@@ -531,6 +650,23 @@ class Importer:
 
     if source_repo.type == osv.SourceRepositoryType.REST_ENDPOINT:
       self._process_updates_rest(source_repo)
+      return
+
+    logging.error('Invalid repo type: %s - %d', source_repo.name,
+                  source_repo.type)
+
+  def process_deletions(self, source_repo: osv.SourceRepository):
+    """Process source record deletions by withdrawing them."""
+    if source_repo.type == osv.SourceRepositoryType.GIT:
+      # TODO: To be implemented.
+      return
+
+    if source_repo.type == osv.SourceRepositoryType.BUCKET:
+      self._process_deletions_bucket(source_repo)
+      return
+
+    if source_repo.type == osv.SourceRepositoryType.REST_ENDPOINT:
+      # TODO: To be implemented.
       return
 
     logging.error('Invalid repo type: %s - %d', source_repo.name,
@@ -594,6 +730,10 @@ def main():
       '--strict_validation',
       help='Fail to import entries that does not pass validation',
       default=False)
+  parser.add_argument(
+      '--delete',
+      help='Propagate record deletions from source to Datastore',
+      default=False)
   args = parser.parse_args()
 
   tmp_dir = os.path.join(args.work_dir, 'tmp')
@@ -608,7 +748,7 @@ def main():
 
   importer = Importer(args.ssh_key_public, args.ssh_key_private, args.work_dir,
                       args.public_log_bucket, _OSS_FUZZ_EXPORT_BUCKET,
-                      args.strict_validation)
+                      args.strict_validation, args.delete)
   importer.run()
 
 

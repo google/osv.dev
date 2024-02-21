@@ -372,6 +372,9 @@ class TaskRunner:
 
       current_sha256 = osv.sha256(vuln_path)
     elif source_repo.type == osv.SourceRepositoryType.BUCKET:
+      if deleted:
+        self._handle_deleted(source_repo, path)
+        return
       storage_client = storage.Client()
       bucket = storage_client.bucket(source_repo.bucket)
       try:

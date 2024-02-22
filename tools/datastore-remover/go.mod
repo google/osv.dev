@@ -1,8 +1,11 @@
 module github.com/google/datastore-remover
 
-go 1.21.5
+go 1.22.0
 
-require cloud.google.com/go/datastore v1.15.0
+require (
+	cloud.google.com/go/datastore v1.15.0
+	google.golang.org/api v0.149.0
+)
 
 require (
 	cloud.google.com/go v0.110.8 // indirect
@@ -21,7 +24,6 @@ require (
 	golang.org/x/sys v0.15.0 // indirect
 	golang.org/x/text v0.14.0 // indirect
 	golang.org/x/xerrors v0.0.0-20220907171357-04be3eba64a2 // indirect
-	google.golang.org/api v0.149.0 // indirect
 	google.golang.org/appengine v1.6.8 // indirect
 	google.golang.org/genproto v0.0.0-20231016165738-49dd2c1f3d0b // indirect
 	google.golang.org/genproto/googleapis/api v0.0.0-20231016165738-49dd2c1f3d0b // indirect

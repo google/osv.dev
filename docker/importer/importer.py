@@ -29,7 +29,7 @@ from typing import List, Tuple, Optional
 from google.cloud import ndb
 from google.cloud import pubsub_v1
 from google.cloud import storage
-import pygit2
+import pygit2.enums
 
 import osv
 import osv.logs
@@ -275,7 +275,7 @@ class Importer:
     changed_entries = set()
     deleted_entries = set()
 
-    walker = repo.walk(repo.head.target, pygit2.GIT_SORT_TOPOLOGICAL)
+    walker = repo.walk(repo.head.target, pygit2.enums.SortMode.TOPOLOGICAL)
     walker.hide(source_repo.last_synced_hash)
 
     for commit in walker:
@@ -294,7 +294,7 @@ class Importer:
         for delta in diff.deltas:
           if delta.old_file and _is_vulnerability_file(source_repo,
                                                        delta.old_file.path):
-            if delta.status == pygit2.GIT_DELTA_DELETED:
+            if delta.status == pygit2.enums.DeltaStatus.DELETED:
               deleted_entries.add(delta.old_file.path)
               continue
 

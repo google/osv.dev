@@ -1,4 +1,5 @@
-# Copyright 2021 Google LLC
+#!/bin/bash -x
+# Copyright 2024 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -12,23 +13,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-FROM golang:1.22.0-alpine@sha256:3325c5593767d8f1fd580e224707ca5e847a1679470a027aaa3c71711ce16613 AS GO_BUILD
+export PIPENV_IGNORE_VIRTUALENVS=1
+pipenv sync
 
-RUN mkdir /src
-WORKDIR /src
-
-COPY ./go.mod /src/go.mod
-COPY ./go.sum /src/go.sum
-RUN go mod download
-
-COPY ./ /src/
-RUN go build -o download-cves ./cmd/download-cves/
-
-FROM gcr.io/google.com/cloudsdktool/google-cloud-cli:alpine
-RUN apk --no-cache add jq
-
-WORKDIR /usr/local/bin
-COPY --from=GO_BUILD /src/download-cves ./
-COPY ./cmd/download-cves/mirror_nvd ./
-
-ENTRYPOINT ["/usr/local/bin/mirror_nvd"]
+pipenv run python source_sync.py --kind SourceRepository --project oss-vdb --file ../../source.yaml --verbose --validate
+pipenv run python source_sync.py --kind SourceRepository --project oss-vdb-test --file ../../source_test.yaml --verbose --validate

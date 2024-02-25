@@ -80,6 +80,6 @@ tools and unsupported by the core OSV maintainers.
 -   [Skjold: Security audit python project dependencies against several security
     advisory databases](https://github.com/twu/skjold)
 -   [Trivy](https://github.com/aquasecurity/trivy)
--   [IronDome](https://rubygems.org/gems/iron_dome)
+-   [IronDome: SCA scanner for Ruby applications](https://rubygems.org/gems/iron_dome)
 
 Feel free to send a PR to add your project here.

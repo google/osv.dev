@@ -24,9 +24,10 @@ import threading
 from unittest import mock
 
 import pygit2
+import pygit2.enums
 
 _EMULATOR_TIMEOUT = 30
-_DATASTORE_EMULATOR_PORT = 8002
+_DATASTORE_EMULATOR_PORT = '8002'
 _DATASTORE_READY_INDICATOR = b'is now running'
 TEST_PROJECT_ID = 'test-osv'
 
@@ -85,8 +86,9 @@ class MockRepo:
 
   def add_file(self, path, contents):
     """Adds a file."""
-    oid = self._repo.write(pygit2.GIT_OBJ_BLOB, contents)
-    self._repo.index.add(pygit2.IndexEntry(path, oid, pygit2.GIT_FILEMODE_BLOB))
+    oid = self._repo.write(pygit2.enums.ObjectType.BLOB, contents)
+    self._repo.index.add(
+        pygit2.IndexEntry(path, oid, pygit2.enums.FileMode.BLOB))
     self._repo.index.write()
 
   def delete_file(self, path):
@@ -104,8 +106,8 @@ class MockRepo:
 
 def start_datastore_emulator():
   """Starts Datastore emulator."""
-  os.environ['DATASTORE_EMULATOR_HOST'] = 'localhost:' + str(
-      _DATASTORE_EMULATOR_PORT)
+  port = os.environ.get('DATASTORE_EMULATOR_PORT', _DATASTORE_EMULATOR_PORT)
+  os.environ['DATASTORE_EMULATOR_HOST'] = 'localhost:' + port
   os.environ['DATASTORE_PROJECT_ID'] = TEST_PROJECT_ID
   os.environ['GOOGLE_CLOUD_PROJECT'] = TEST_PROJECT_ID
   proc = subprocess.Popen([
@@ -115,7 +117,7 @@ def start_datastore_emulator():
       'datastore',
       'start',
       '--consistency=1.0',
-      '--host-port=localhost:' + str(_DATASTORE_EMULATOR_PORT),
+      '--host-port=localhost:' + port,
       '--project=' + TEST_PROJECT_ID,
       '--no-store-on-disk',
   ],
@@ -159,10 +161,23 @@ def _wait_for_emulator_ready(proc,
 
 def reset_emulator():
   """Resets emulator."""
+  port = os.environ.get('DATASTORE_EMULATOR_PORT', _DATASTORE_EMULATOR_PORT)
   resp = requests.post(
-      'http://localhost:{}/reset'.format(_DATASTORE_EMULATOR_PORT),
-      timeout=_EMULATOR_TIMEOUT)
+      'http://localhost:{}/reset'.format(port), timeout=_EMULATOR_TIMEOUT)
   resp.raise_for_status()
+
+
+def stop_emulator():
+  """Stops emulator."""
+  try:
+    port = os.environ.get('DATASTORE_EMULATOR_PORT', _DATASTORE_EMULATOR_PORT)
+    resp = requests.post(
+        'http://localhost:{}/shutdown'.format(port), timeout=_EMULATOR_TIMEOUT)
+    resp.raise_for_status()
+  except Exception as e:
+    # Something went wrong, manually kill all datastore processes instead.
+    os.system('pkill -f datastore')
+    raise e
 
 
 def mock_datetime(test):

@@ -1,6 +1,5 @@
-#!/bin/bash
-
-# Copyright 2023 Google LLC
+#!/bin/bash -x
+# Copyright 2024 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -13,13 +12,9 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-#
 
-set -ex
+export PIPENV_IGNORE_VIRTUALENVS=1
+pipenv sync
 
-cd ../
-
-docker build \
-  -t gcr.io/oss-vdb/nvd-cve-osv:latest \
-  -f cpp/Dockerfile --pull . && \
-gcloud docker -- push gcr.io/oss-vdb/nvd-cve-osv:latest
+pipenv run python source_sync.py --kind SourceRepository --project oss-vdb --file ../../source.yaml --verbose --validate
+pipenv run python source_sync.py --kind SourceRepository --project oss-vdb-test --file ../../source_test.yaml --verbose --validate

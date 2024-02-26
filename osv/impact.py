@@ -24,6 +24,7 @@ import traceback
 
 from google.cloud import ndb
 import pygit2
+import pygit2.enums
 
 from . import ecosystems
 from . import repos
@@ -351,8 +352,9 @@ def get_commit_and_tag_list(repo,
   logging.info('Getting commits %s..%s from %s', start_commit, end_commit,
                str(repo_url or 'UNKNOWN_REPO_URL'))
   try:
-    walker = repo.walk(end_commit,
-                       pygit2.GIT_SORT_TOPOLOGICAL | pygit2.GIT_SORT_REVERSE)
+    walker = repo.walk(
+        end_commit,
+        pygit2.enums.SortMode.TOPOLOGICAL | pygit2.enums.SortMode.REVERSE)
   except KeyError as e:
     raise ImpactError('Invalid commit.') from e
 
@@ -652,8 +654,8 @@ def analyze(vulnerability: vulnerability_pb2.Vulnerability,
             # package no longer exists).
             pass
         else:
-          logging.warning('No ecosystem helpers implemented for %s',
-                          affected.package.ecosystem)
+          logging.warning('No ecosystem helpers implemented for %s: %s',
+                          affected.package.ecosystem, vulnerability.id)
 
       new_git_versions = set()
       new_introduced = set()

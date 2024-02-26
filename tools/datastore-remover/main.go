@@ -7,21 +7,19 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"time"
 
 	"cloud.google.com/go/datastore"
+	"google.golang.org/api/iterator"
 )
 
 var (
-	kind      = flag.String("kind", "", "kind to delete")
-	projectID = flag.String("project_id", "", "the gcp project ID")
+	kind       = flag.String("kind", "", "kind to delete")
+	projectID  = flag.String("project_id", "", "the gcp project ID")
+	batchSize  = flag.Int("batch_size", 500, "batch size for deletions")
+	waitTimeMS = flag.Int("wait_ms", 500, "wait time in between batch deletions")
+	total      = 0
 )
-
-func min(a, b int) int {
-	if a < b {
-		return a
-	}
-	return b
-}
 
 func main() {
 	flag.Parse()
@@ -35,21 +33,45 @@ func main() {
 	scanner := bufio.NewScanner(os.Stdin)
 	fmt.Printf("Deleting kind: %s, in project: %s\nEnter yes to confirm: \n", *kind, *projectID)
 	scanner.Scan()
-	if scanner.Text() == "yes" {
-		client, _ := datastore.NewClient(ctx, *projectID)
-
-		keys, _ := client.GetAll(ctx, datastore.NewQuery(*kind).KeysOnly(), nil)
-		log.Printf("Retrieved %d keys", len(keys))
-		for i := 0; i < len(keys); i += 500 {
-			fmt.Printf("Deleting %d number now\n", i)
-			err := client.DeleteMulti(ctx, keys[i:min(i+500, len(keys))])
-			if err != nil {
-				log.Fatalf("%v", err)
-			}
-		}
-		fmt.Printf("%v\n", len(keys))
-	} else {
+	if scanner.Text() != "yes" {
 		fmt.Println("Not yes entered, exiting")
 		os.Exit(1)
 	}
+
+	client, _ := datastore.NewClient(ctx, *projectID)
+	it := client.Run(ctx, datastore.NewQuery(*kind).KeysOnly())
+
+	var batch []*datastore.Key
+	for {
+		key, err := it.Next(nil)
+		if err == iterator.Done {
+			break
+		}
+		if err != nil {
+			log.Fatalf("%v", err)
+		}
+		batch = append(batch, key)
+
+		if len(batch) >= *batchSize {
+			deleteBatch(ctx, client, batch)
+			batch = nil
+		}
+	}
+
+	if len(batch) > 0 {
+		deleteBatch(ctx, client, batch)
+		batch = nil
+	}
+}
+
+func deleteBatch(ctx context.Context, client *datastore.Client, keys []*datastore.Key) {
+	err := client.DeleteMulti(ctx, keys)
+	if err != nil {
+		log.Fatalf("%v", err)
+	}
+	total += len(keys)
+	if total%(*batchSize*10) == 0 {
+		log.Printf("Deleted %d.\n", total)
+	}
+	time.Sleep(time.Duration(*waitTimeMS) * time.Millisecond)
 }

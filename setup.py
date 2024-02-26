@@ -36,7 +36,7 @@ setuptools.setup(
         # TODO(ochang): Get this from the Pipfile.
         'google-cloud-ndb',
         'google-cloud-logging',
-        'pygit2>=1.9.2',
+        'pygit2>=1.14.0',
         'PyYAML',
         'semver>=3.0.0',
         'attrs',

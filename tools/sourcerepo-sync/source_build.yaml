@@ -1,7 +1,3 @@
-#!/bin/bash
-
-set -ex
-
 # Copyright 2021 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -15,11 +11,13 @@ set -ex
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-#
+steps:
+  - name: 'gcr.io/oss-vdb/ci'
+    dir: 'tools/sourcerepo-sync'
+    args: ['bash', '-ex', 'run_source_update.sh']
+timeout: 600s
+# Also set in Cloud Build:
+serviceAccount: 'projects/oss-vdb/serviceAccounts/deployment@oss-vdb.iam.gserviceaccount.com'
+logsBucket: gs://oss-vdb-tf/source-sync-logs
 
-cd ../..
-
-docker build \
-  -t gcr.io/oss-vdb/cpe-repo-gen:latest \
-  -f cmd/cperepos/Dockerfile --pull . && \
-gcloud docker -- push gcr.io/oss-vdb/cpe-repo-gen:latest
+tags: ['sync-source-repo']

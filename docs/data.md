@@ -106,3 +106,8 @@ gsutil cp gs://osv-vulnerabilities/PyPI/all.zip .
 
 A list of all current ecosystems is available at
 [`gs://osv-vulnerabilities/ecosystems.txt`](https://osv-vulnerabilities.storage.googleapis.com/ecosystems.txt)
+
+## Contributing Data
+If you a work with a project such as a Linux distribution and would like to contribute your security advisories, please follow the steps outlined in [CONTRIBUTING.md](https://github.com/google/osv.dev/blob/master/CONTRIBUTING.md#contributing-data)
+
+Data can be supplied either through a public Git repository, a public GCS bucket or to [REST API endpoints](contributing/rest-api-contribution.md).

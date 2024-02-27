@@ -17,6 +17,7 @@
 import os
 import sys
 from google.cloud import ndb
+from google.cloud import datastore_admin_v1
 from google.cloud.datastore_admin_v1.services.datastore_admin import client \
     as ds_admin
 
@@ -27,9 +28,17 @@ def main():
   """Create a Datastore backup."""
   client = ds_admin.DatastoreAdminClient()
   backup_bucket = os.environ['BACKUP_BUCKET']
+  affected_commits_backup_bucket = os.environ['AFFECTED_COMMITS_BACKUP_BUCKET']
   project_id = os.environ['GOOGLE_CLOUD_PROJECT']
   client.export_entities(
       project_id=project_id, output_url_prefix=f'gs://{backup_bucket}')
+
+  entity_filter = datastore_admin_v1.EntityFilter()
+  entity_filter.kinds = ['AffectedCommits']
+  client.export_entities(
+      project_id=project_id,
+      output_url_prefix=f'gs://{affected_commits_backup_bucket}',
+      entity_filter=entity_filter)
 
   return 0
 

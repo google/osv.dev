@@ -12,7 +12,7 @@ module "osv_test" {
   backups_bucket_retention_days = 5
 
   api_url     = "api.test.osv.dev"
-  esp_version = "2.41.0"
+  esp_version = "2.47.0"
 }
 
 
@@ -25,19 +25,19 @@ terraform {
   required_providers {
     google = {
       source  = "hashicorp/google"
-      version = "~> 5.8.0"
+      version = "~> 5.18.0"
     }
     google-beta = {
       source  = "hashicorp/google-beta"
-      version = "~> 5.2.0"
+      version = "~> 5.18.0"
     }
     external = {
       source  = "hashicorp/external"
-      version = "~> 2.3.1"
+      version = "~> 2.3.3"
     }
     null = {
       source  = "hashicorp/null"
-      version = "~> 3.2.1"
+      version = "~> 3.2.2"
     }
   }
 }

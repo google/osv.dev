@@ -3,13 +3,15 @@ module "osv_test" {
 
   project_id = "oss-vdb-test"
 
-  public_import_logs_bucket     = "osv-test-public-import-logs"
-  vulnerabilities_export_bucket = "osv-test-vulnerabilities"
-  logs_bucket                   = "osv-test-logs"
-  cve_osv_conversion_bucket     = "osv-test-cve-osv-conversion"
-  debian_osv_conversion_bucket  = "osv-test-debian-osv"
-  backups_bucket                = "osv-test-backup"
-  backups_bucket_retention_days = 5
+  public_import_logs_bucket                      = "osv-test-public-import-logs"
+  vulnerabilities_export_bucket                  = "osv-test-vulnerabilities"
+  logs_bucket                                    = "osv-test-logs"
+  cve_osv_conversion_bucket                      = "osv-test-cve-osv-conversion"
+  debian_osv_conversion_bucket                   = "osv-test-debian-osv"
+  backups_bucket                                 = "osv-test-backup"
+  backups_bucket_retention_days                  = 5
+  affected_commits_backups_bucket                = "osv-test-affected-commits"
+  affected_commits_backups_bucket_retention_days = 2
 
   api_url     = "api.test.osv.dev"
   esp_version = "2.41.0"

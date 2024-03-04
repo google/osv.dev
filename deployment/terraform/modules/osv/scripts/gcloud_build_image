@@ -96,7 +96,7 @@ if [ -z "${ESP_FULL_VERSION}" ]; then
 fi
 echo "Building image for ESP version: ${ESP_FULL_VERSION}"
 
-tempdir="$(mktemp -d /tmp/docker.XXXX)"
+tempdir="$(mktemp -d /tmp/docker.XXXXXX)"
 cd "${tempdir}"
 
 # Be careful about exposing the access token.

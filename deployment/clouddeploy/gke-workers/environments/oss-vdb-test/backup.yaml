@@ -14,3 +14,5 @@ spec:
               value: "oss-vdb-test"
             - name: BACKUP_BUCKET
               value: "osv-test-backup"
+            - name: AFFECTED_COMMITS_BACKUP_BUCKET
+              value: "osv-test-affected-commits"

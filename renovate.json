@@ -61,6 +61,11 @@
     {
       "matchFileNames": ["Pipfile"],
       "groupName": "osv-lib"
+    },
+    {
+      "matchDatasources": ["docker"],
+      "matchPackageNames": ["python"],
+      "enabled": false
     }
   ]
 }

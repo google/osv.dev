@@ -1,12 +1,11 @@
 {% extends 'base.html' %}
 {% set active_section = 'vulnerabilities' %}
 
-{% macro table_header_cell(column_id, column_name, is_sortable, is_sorted, is_descending, hide_on_mobile) %}
+{% macro table_header_cell(column_id, column_name, is_sortable, is_sorted, is_descending) %}
 <span class="vuln-table-cell mdc-data-table__header-cell vuln-table-header
     {% if is_sortable %}mdc-data-table__header-cell--with-sort__DISABLED{% endif %}
     {% if is_sorted %}mdc-data-table__header-cell--sorted{% endif %}
-    {% if is_descending %}mdc-data-table__header-cell--sorted-descending{% endif %}
-    {% if hide_on_mobile%}hide-on-mobile{% endif %}" role="columnheader" scope="col"
+    {% if is_descending %}mdc-data-table__header-cell--sorted-descending{% endif %}" role="columnheader" scope="col"
   aria-sort="{% if is_sorted %}{% if is_descending %}descending{% else %}ascending{% endif %}{% else %}none{% endif %}"
   data-column-id="{{ column_id }}">
   <div class="mdc-data-table__header-cell-wrapper">
@@ -73,18 +72,13 @@
     <div role="table" class="vuln-table mdc-data-table__table" aria-label="Vulnerability table">
       <div role="rowgroup" class="vuln-table-header">
         <div role="row" class="vuln-table-row mdc-data-table__header-row">
-          {{ table_header_cell('id', 'ID', is_sortable=False, is_sorted=False, is_descending=False,
-          hide_on_mobile=False) }}
-          {{ table_header_cell('package', 'Packages', is_sortable=False, is_sorted=False, is_descending=False,
-          hide_on_mobile=False) }}
-          {{ table_header_cell('summary', 'Summary', is_sortable=False, is_sorted=False, is_descending=False,
-          hide_on_mobile=True) }}
+          {{ table_header_cell('id', 'ID', is_sortable=False, is_sorted=False, is_descending=False) }}
+          {{ table_header_cell('package', 'Packages', is_sortable=False, is_sorted=False, is_descending=False) }}
+          {{ table_header_cell('summary', 'Summary', is_sortable=False, is_sorted=False, is_descending=False) }}
           {{ table_header_cell('affected-versions', 'Affected versions', is_sortable=False, is_sorted=False,
-          is_descending=False, hide_on_mobile=True) }}
-          {{ table_header_cell('published', 'Published', is_sortable=True, is_sorted=True, is_descending=True,
-          hide_on_mobile=True) }}
-          {{ table_header_cell('fixed', 'Fix', is_sortable=False, is_sorted=False, is_descending=False,
-          hide_on_mobile=True) }}
+          is_descending=False) }}
+          {{ table_header_cell('published', 'Published', is_sortable=True, is_sorted=True, is_descending=True) }}
+          {{ table_header_cell('fixed', 'Fix', is_sortable=False, is_sorted=False, is_descending=False) }}
         </div>
       </div>
       <div role="rowgroup" class="vuln-table-rows mdc-data-table__content">
@@ -102,10 +96,10 @@
                 {% endfor %}
               </ul>
             </span>
-            <span role="cell" class="vuln-table-cell vuln-summary mdc-data-table__cell hide-on-mobile">
+            <span role="cell" class="vuln-table-cell vuln-summary mdc-data-table__cell">
               {{ vulnerability.summary or "See record for full details" }}
             </span>
-            <span role="cell" class="vuln-table-cell vuln-versions mdc-data-table__cell hide-on-mobile">
+            <span role="cell" class="vuln-table-cell vuln-versions mdc-data-table__cell">
               <ul class="versions">
                 {#-
                 https://stackoverflow.com/questions/31876069/is-it-possible-to-flatten-a-lists-of-lists-with-ansible-jinja2
@@ -120,12 +114,12 @@
                   {%- endfor -%}
               </ul>
             </span>
-            <span role="cell" class="vuln-table-cell mdc-data-table__cell hide-on-mobile">
+            <span role="cell" class="vuln-table-cell mdc-data-table__cell">
               <relative-time datetime="{{ vulnerability.published }}">
                 {{ vulnerability.published }}
               </relative-time>
             </span>
-            <span role="cell" class="vuln-table-cell vuln-fix-status mdc-data-table__cell hide-on-mobile">
+            <span role="cell" class="vuln-table-cell vuln-fix-status mdc-data-table__cell">
               {%- if vulnerability.isFixed -%}
               <span class="tag fix-available">Fix available</span>
               {%- else -%}

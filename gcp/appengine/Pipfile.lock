@@ -1,7 +1,7 @@
 {
     "_meta": {
         "hash": {
-            "sha256": "3c22d0099a445a60a335ac2082acd1ad2aa1f7132f8d2283b11c23e27c51d4a6"
+            "sha256": "91cadaeda4c90b9fea43c041f38e79c954a51c23494a626ca649432583c7be55"
         },
         "pipfile-spec": 6,
         "requires": {
@@ -131,11 +131,11 @@
         },
         "cachetools": {
             "hashes": [
-                "sha256:086ee420196f7b2ab9ca2db2520aca326318b68fe5ba8bc4d49cca91add450f2",
-                "sha256:861f35a13a451f94e301ce2bec7cac63e881232ccce7ed67fab9b5df4d3beaa1"
+                "sha256:0abad1021d3f8325b2fc1d2e9c8b9c9d57b04c3932657a72465447332c24d945",
+                "sha256:ba29e2dfa0b8b556606f097407ed1aa62080ee108ab0dc5ec9d6a723a007d105"
             ],
             "markers": "python_version >= '3.7'",
-            "version": "==5.3.2"
+            "version": "==5.3.3"
         },
         "certifi": {
             "hashes": [
@@ -392,19 +392,19 @@
         },
         "google-cloud-ndb": {
             "hashes": [
-                "sha256:39268ab29244035f68d35177ebafc7c89760e956171b8495d2640050682c228e",
-                "sha256:a23fb6754ee8b8cd6b6a8bc9bd39cae858b9e8000882c1041f133429226e610b"
+                "sha256:04a7c0950ac1ad867af66b57c344ff067dd6ecef3ff8f244a70ce9d1991c1dd8",
+                "sha256:135e0e7766b0b29be8dbcf68f294981057942654c94bcf7faa974677c4e6ab27"
             ],
             "index": "pypi",
-            "version": "==2.2.2"
+            "version": "==2.3.0"
         },
         "google-cloud-pubsub": {
             "hashes": [
-                "sha256:4eae4bc98463dbdaead7597f7666ffe14fc62aabed10e3e322c95cb050fa7dbe",
-                "sha256:9edf5ce5642a19567dd71e47b50e63f12ad8072174c01a027d4b52864c74b27d"
+                "sha256:0e302ec702832a9aaf83ad24c0bf56940ab84f90600e45bb6142f70f23f54986",
+                "sha256:598b944ef6345ab1e881816f5667f0f14244d6a8605be37acc0fae7059602be2"
             ],
             "index": "pypi",
-            "version": "==2.19.6"
+            "version": "==2.19.8"
         },
         "googleapis-common-protos": {
             "hashes": [

@@ -23,7 +23,7 @@ from flask import current_app
 from flask import Blueprint
 from flask import make_response
 from flask import redirect
-from flask import render_template
+from flask import render_template, render_template_string
 from flask import request
 from flask import url_for
 from flask import send_from_directory
@@ -300,7 +300,8 @@ def add_source_info(bug, response):
   response['source'] = source_repo.link + source_path
   response['source_link'] = response['source']
   if source_repo.human_link:
-    response['human_source_link'] = source_repo.human_link + bug.id()
+    response['human_source_link'] = render_template_string(
+        source_repo.human_link, bug=bug)
 
 
 def _commit_to_link(repo_url, commit):
@@ -366,7 +367,7 @@ def osv_query(search_string, page, affected_only, ecosystem):
     query = query.filter(osv.Bug.search_indices == search_string.lower())
 
   if affected_only:
-    query = query.filter(osv.Bug.has_affected == True)  # pylint: disable=singleton-comparison
+    query = query.filter(osv.Bug.has_affected is True)  # pylint: disable=singleton-comparison
 
   if ecosystem:
     query = query.filter(osv.Bug.ecosystem == ecosystem)

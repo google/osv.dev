@@ -19,6 +19,7 @@
 
 import argparse
 from concurrent.futures import ThreadPoolExecutor
+from collections import namedtuple
 import datetime
 import json
 import logging
@@ -500,8 +501,11 @@ class Importer:
     query = query.filter(osv.Bug.source == source_repo.name)
     result = list(query.fetch(keys_only=False))
     result.sort(key=lambda r: r.id())
+    VulnAndSource = namedtuple('VulnAndSource', ['id', 'path'])
     vuln_ids_for_source = [
-        (r.id(), r.source_id.split(':')[1]) for r in result if not r.withdrawn
+        VulnAndSource(id=r.id(), path=r.source_id.split(':')[1])
+        for r in result
+        if not r.withdrawn
     ]
 
     storage_client = storage.Client()
@@ -555,7 +559,7 @@ class Importer:
 
       # diff
       vulns_to_delete = [
-          v for v in vuln_ids_for_source if v[0] not in vulns_in_gcs
+          v for v in vuln_ids_for_source if v.id not in vulns_in_gcs
       ]
 
       # sanity check: deleting >10% of the records for source in Datastore is
@@ -569,7 +573,7 @@ class Importer:
       # Request deletion.
       for v in vulns_to_delete:
         self._request_analysis_external(
-            source_repo, original_sha256='', path=v[1], deleted=True)
+            source_repo, original_sha256='', path=v.path, deleted=True)
 
     replace_importer_log(storage_client, source_repo.name,
                          self._public_log_bucket, import_failure_logs)

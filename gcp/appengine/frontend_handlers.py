@@ -23,7 +23,7 @@ from flask import current_app
 from flask import Blueprint
 from flask import make_response
 from flask import redirect
-from flask import render_template
+from flask import render_template, render_template_string
 from flask import request
 from flask import url_for
 from flask import send_from_directory
@@ -300,7 +300,10 @@ def add_source_info(bug, response):
   response['source'] = source_repo.link + source_path
   response['source_link'] = response['source']
   if source_repo.human_link:
-    response['human_source_link'] = source_repo.human_link + bug.id()
+    ecosystems = bug.ecosystem
+    bug_id = bug.id()
+    response['human_source_link'] = render_template_string(
+        source_repo.human_link, ECOSYSTEMS=ecosystems, BUG_ID=bug_id)
 
 
 def _commit_to_link(repo_url, commit):

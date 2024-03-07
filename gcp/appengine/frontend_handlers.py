@@ -300,8 +300,15 @@ def add_source_info(bug, response):
   response['source'] = source_repo.link + source_path
   response['source_link'] = response['source']
   if source_repo.human_link:
+    base_ecosystem = bug.ecosystem[0]
+    bug_id = bug.id()
+    if base_ecosystem == 'AlmaLinux':
+      base_ecosystem = bug.ecosystem[1].split(':')[1]
+      bug_id = bug_id.replace(':', '-', 1)
+    if base_ecosystem == 'GIT' and bug_id.startswith('CURL-'):
+      bug_id = bug_id.removeprefix('CURL-')
     response['human_source_link'] = render_template_string(
-        source_repo.human_link, bug=bug)
+        source_repo.human_link, BASE_ECOSYSTEM=base_ecosystem, BUG_ID=bug_id)
 
 
 def _commit_to_link(repo_url, commit):

@@ -482,10 +482,10 @@ class Importer:
     This validates the continued existence of every Bug in Datastore (for the
     given source) against every bug currently in that source's GCS bucket,
     calculating the delta. The bugs determined to have been
-    deleted from GCS are then flagged for deletion from Datastore by the worker.
+    deleted from GCS are then flagged for treatment by the worker.
 
     If the delta is too large, something undesirable has been assumed to have
-    happened and deletion is aborted.
+    happened and treatment is aborted.
     """
 
     logging.info("Begin processing bucket for deletions: %s", source_repo.name)

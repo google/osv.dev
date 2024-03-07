@@ -559,11 +559,12 @@ class Importer:
         logging.error(
             'Cowardly refusing to delete %d missing records from '
             'GCS for: %s', len(vulns_to_delete), source_repo.name)
-      else:
-        # Request deletion.
-        for v in vulns_to_delete:
-          self._request_analysis_external(
-              source_repo, original_sha256='', path=v[1], deleted=True)
+        return
+
+      # Request deletion.
+      for v in vulns_to_delete:
+        self._request_analysis_external(
+            source_repo, original_sha256='', path=v[1], deleted=True)
 
     replace_importer_log(storage_client, source_repo.name,
                          self._public_log_bucket, import_failure_logs)

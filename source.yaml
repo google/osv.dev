@@ -94,6 +94,7 @@
   bucket: debian-osv
   db_prefix: DLA-
   ignore_git: True
+  human_link: 'https://security-tracker.debian.org/tracker/'
   link: https://storage.googleapis.com/debian-osv/
   editable: False
 
@@ -119,6 +120,7 @@
   bucket: debian-osv
   db_prefix: DTSA-
   ignore_git: True
+  human_link: 'https://security-tracker.debian.org/tracker/'
   link: https://storage.googleapis.com/debian-osv/
   editable: False
 

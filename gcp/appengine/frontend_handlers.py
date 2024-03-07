@@ -367,7 +367,7 @@ def osv_query(search_string, page, affected_only, ecosystem):
     query = query.filter(osv.Bug.search_indices == search_string.lower())
 
   if affected_only:
-    query = query.filter(osv.Bug.has_affected is True)  # pylint: disable=singleton-comparison
+    query = query.filter(osv.Bug.has_affected == True)  # pylint: disable=singleton-comparison
 
   if ecosystem:
     query = query.filter(osv.Bug.ecosystem == ecosystem)

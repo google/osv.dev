@@ -557,23 +557,23 @@ class Importer:
           v for v in executor.map(convert_blob_to_vuln, listed_blobs) if v
       ]
 
-      # diff
-      vulns_to_delete = [
-          v for v in vuln_ids_for_source if v.id not in vulns_in_gcs
-      ]
+    # diff
+    vulns_to_delete = [
+        v for v in vuln_ids_for_source if v.id not in vulns_in_gcs
+    ]
 
-      # sanity check: deleting >10% of the records for source in Datastore is
-      # probably worth flagging for review.
-      if len(vulns_to_delete) / len(vuln_ids_for_source) > 10.0:
-        logging.error(
-            'Cowardly refusing to delete %d missing records from '
-            'GCS for: %s', len(vulns_to_delete), source_repo.name)
-        return
+    # sanity check: deleting >10% of the records for source in Datastore is
+    # probably worth flagging for review.
+    if len(vulns_to_delete) / len(vuln_ids_for_source) > 10.0:
+      logging.error(
+          'Cowardly refusing to delete %d missing records from '
+          'GCS for: %s', len(vulns_to_delete), source_repo.name)
+      return
 
-      # Request deletion.
-      for v in vulns_to_delete:
-        self._request_analysis_external(
-            source_repo, original_sha256='', path=v.path, deleted=True)
+    # Request deletion.
+    for v in vulns_to_delete:
+      self._request_analysis_external(
+          source_repo, original_sha256='', path=v.path, deleted=True)
 
     replace_importer_log(storage_client, source_repo.name,
                          self._public_log_bucket, import_failure_logs)

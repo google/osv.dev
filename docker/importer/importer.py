@@ -13,6 +13,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """OSV Importer."""
+
+# TODO: Refactor per
+# https://github.com/google/osv.dev/pull/2030#discussion_r1513861856
+
 import argparse
 from concurrent.futures import ThreadPoolExecutor
 import datetime
@@ -550,8 +554,9 @@ class Importer:
       ]
 
       # diff
-      vulns_to_delete = list(
-          filter(lambda v: v[0] not in vulns_in_gcs, vuln_ids_for_source))
+      vulns_to_delete = [
+          v for v in vuln_ids_for_source if v[0] not in vulns_in_gcs
+      ]
 
       # sanity check: deleting >10% of the records for source in Datastore is
       # probably worth flagging for review.

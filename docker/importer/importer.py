@@ -517,7 +517,7 @@ class Importer:
 
     import_failure_logs = []
 
-    def convert_blob_to_vuln(blob: storage.Blob) -> Optional[Tuple[str]]:
+    def convert_blob_to_vulns(blob: storage.Blob) -> Tuple[str]:
       """Download and parse GCS blob into [vuln.id]"""
       if not _is_vulnerability_file(source_repo, blob.name):
         return None
@@ -530,22 +530,23 @@ class Importer:
           blob.name, blob.bucket,
           generation=None).download_as_bytes(_client_store.storage_client)
 
+      vuln_ids = []
       try:
         vulns = osv.parse_vulnerabilities_from_data(
             blob_bytes,
             os.path.splitext(blob.name)[1],
             strict=self._strict_validation)
         for vuln in vulns:
-          return vuln.id
+          vuln_ids.append(vuln.id)
 
-        return None
+        return vuln_ids
       except Exception as e:
         logging.error('Failed to parse vulnerability %s: %s', blob.name, e)
         # Don't include error stack trace as that might leak sensitive info
         # List.append() is atomic and threadsafe.
         import_failure_logs.append('Failed to parse vulnerability "' +
                                    blob.name + '"')
-        return None
+        return vuln_ids
 
     # Setup storage client
     def thread_init():
@@ -554,7 +555,7 @@ class Importer:
     with ThreadPoolExecutor(
         _BUCKET_THREAD_COUNT, initializer=thread_init) as executor:
       vulns_in_gcs = [
-          v for v in executor.map(convert_blob_to_vuln, listed_blobs) if v
+          v for v in executor.map(convert_blob_to_vulns, listed_blobs) if v
       ]
 
     # diff

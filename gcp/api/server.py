@@ -126,6 +126,24 @@ class OSVServicer(osv_service_v1_pb2_grpc.OSVServicer,
 
     version.
     """
+
+    # Log some information about the query with structured logging
+    qtype, ecosystem, versioned = query_info(request.query)
+    if qtype == 'ecosystem':
+      logging.info(
+          'QueryAffected for ecosystem "%s"',
+          ecosystem,
+          extra={
+              'json_fields': {
+                  'details': {
+                      'ecosystem': ecosystem,
+                      'versioned': versioned == 'versioned'
+                  }
+              }
+          })
+    else:
+      logging.info('QueryAffected for %s', qtype)
+
     page_token = None
     if request.query.page_token:
       try:
@@ -162,6 +180,42 @@ class OSVServicer(osv_service_v1_pb2_grpc.OSVServicer,
     """Query vulnerabilities (batch)."""
     batch_results = []
     futures = []
+
+    # Log some information about the query with structured logging e.g.
+    # "message": "QueryAffectedBatch with 15 queries",
+    # "details": {
+    #   "commit": 1,
+    #   "purl": 2,
+    #   "ecosystem": {
+    #     "PyPI": {
+    #       "versioned": 4,
+    #       "versionless": 5
+    #      },
+    #     "": {  // no ecosystem specified
+    #       "versioned": 1,
+    #     }
+    #   },
+    #   "invalid": 2
+    # }
+    # Fields are not included if the value is 0
+    query_details = defaultdict(int)
+    query_details['ecosystem'] = defaultdict(lambda: defaultdict(int))
+    for query in request.query.queries:
+      qtype, ecosystem, versioned = query_info(query)
+      if qtype == 'ecosystem':
+        query_details['ecosystem'][ecosystem][versioned] += 1
+      else:
+        query_details[qtype] += 1
+
+    if len(query_details['ecosystem']) == 0:
+      del query_details['ecosystem']
+
+    logging.info(
+        'QueryAffectedBatch with %d queries',
+        len(request.query.queries),
+        extra={'json_fields': {
+            'details': query_details
+        }})
 
     if len(request.query.queries) > _MAX_BATCH_QUERY:
       context.abort(grpc.StatusCode.INVALID_ARGUMENT, 'Too many queries.')
@@ -226,6 +280,23 @@ class OSVServicer(osv_service_v1_pb2_grpc.OSVServicer,
     """Health check per the gRPC health check protocol."""
     del request  # Unused.
     context.abort(grpc.StatusCode.UNIMPLEMENTED, "Unimplemented")
+
+
+def query_info(query) -> tuple[str, str, str]:
+  """Returns information about a query, for logging purposes.
+  First return value is one of 'commit', 'purl', 'ecosystem', 'invalid'.
+  If 'ecosystem', second two return values are the ecosystem name,
+  then 'versioned' or 'versionless' depending if the 'version' field is set.
+  Otherwise, last two return values are None.
+  """
+  if query.WhichOneof('param') == 'commit':
+    return 'commit', None, None
+  if not query.HasField('package'):
+    return 'invalid', None, None
+  if query.package.purl:
+    return 'purl', None, None
+  versioned = 'versioned' if query.version else 'versionless'
+  return 'ecosystem', query.package.ecosystem, versioned
 
 
 # Wrapped in a separate class

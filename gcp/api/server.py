@@ -129,9 +129,10 @@ class OSVServicer(osv_service_v1_pb2_grpc.OSVServicer,
 
     # Log some information about the query with structured logging
     qtype, ecosystem, versioned = query_info(request.query)
-    if qtype == 'ecosystem':
+    if ecosystem is not None:
       logging.info(
-          'QueryAffected for ecosystem "%s"',
+          'QueryAffected for %s "%s"',
+          qtype,
           ecosystem,
           extra={
               'json_fields': {
@@ -185,7 +186,6 @@ class OSVServicer(osv_service_v1_pb2_grpc.OSVServicer,
     # "message": "QueryAffectedBatch with 15 queries",
     # "details": {
     #   "commit": 1,
-    #   "purl": 2,
     #   "ecosystem": {
     #     "PyPI": {
     #       "versioned": 4,
@@ -195,20 +195,29 @@ class OSVServicer(osv_service_v1_pb2_grpc.OSVServicer,
     #       "versioned": 1,
     #     }
     #   },
+    #   "purl": {
+    #     "golang": {  // purl type, not OSV ecosystem
+    #       "versionless": 1
+    #     }
+    #   }
     #   "invalid": 2
     # }
-    # Fields are not included if the value is 0
-    query_details = defaultdict(int)
-    query_details['ecosystem'] = defaultdict(lambda: defaultdict(int))
+    # Fields are not included if the value is empty/0
+    query_details = {
+        'commit': 0,
+        'ecosystem': defaultdict(lambda: defaultdict(int)),
+        'purl': defaultdict(lambda: defaultdict(int)),
+        'invalid': 0,
+    }
     for query in request.query.queries:
       qtype, ecosystem, versioned = query_info(query)
-      if qtype == 'ecosystem':
-        query_details['ecosystem'][ecosystem][versioned] += 1
+      if ecosystem is not None:
+        query_details[qtype][ecosystem][versioned] += 1
       else:
         query_details[qtype] += 1
 
-    if len(query_details['ecosystem']) == 0:
-      del query_details['ecosystem']
+    # Filter out empty fields
+    query_details = {k: v for k, v in query_details.items() if v}
 
     logging.info(
         'QueryAffectedBatch with %d queries',
@@ -285,7 +294,7 @@ class OSVServicer(osv_service_v1_pb2_grpc.OSVServicer,
 def query_info(query) -> tuple[str, str, str]:
   """Returns information about a query, for logging purposes.
   First return value is one of 'commit', 'purl', 'ecosystem', 'invalid'.
-  If 'ecosystem', second two return values are the ecosystem name,
+  If 'ecosystem' or 'purl', second two return values are the ecosystem name,
   then 'versioned' or 'versionless' depending if the 'version' field is set.
   Otherwise, last two return values are None.
   """
@@ -293,10 +302,25 @@ def query_info(query) -> tuple[str, str, str]:
     return 'commit', None, None
   if not query.HasField('package'):
     return 'invalid', None, None
+  if not query.package.purl and not query.package.name:
+    return 'invalid', None, None
+  qtype = 'ecosystem'
+  ecosystem = query.package.ecosystem
+  version = query.version
   if query.package.purl:
-    return 'purl', None, None
-  versioned = 'versioned' if query.version else 'versionless'
-  return 'ecosystem', query.package.ecosystem, versioned
+    try:
+      purl = PackageURL.from_string(query.package.purl)  # can raise ValueError
+      if query.package.ecosystem or query.package.name:
+        raise ValueError('purl and name/ecosystem cannot both be specified')
+      if purl.version and query.version:
+        raise ValueError('purl version and version cannot both be specified')
+      qtype = 'purl'
+      ecosystem = purl.type
+      version = purl.version or version
+    except ValueError:
+      return 'invalid', None, None
+
+  return qtype, ecosystem, 'versioned' if version else 'versionless'
 
 
 # Wrapped in a separate class

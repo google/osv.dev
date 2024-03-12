@@ -20,4 +20,4 @@ spec:
           failureThreshold: 3
           periodSeconds: 10
       timeoutSeconds: 60
-      containerConcurrency: 10
+      containerConcurrency: 5

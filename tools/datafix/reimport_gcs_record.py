@@ -112,7 +112,7 @@ def reset_object_creation(bucket_name: str,
   bucket = gcs_client.bucket(bucket_name)
   blob = bucket.blob(blob_name)
   blob.download_to_filename(local_tmp_file)
-  blob.upload_from_filename(local_tmp_file)
+  blob.upload_from_filename(local_tmp_file, retry=DEFAULT_RETRY)
   os.unlink(local_tmp_file)
 
 

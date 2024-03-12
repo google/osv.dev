@@ -59,7 +59,7 @@ class Exporter:
     logging.info('Uploading %s', target_path)
     try:
       blob = bucket.blob(target_path)
-      blob.upload_from_filename(source_path)
+      blob.upload_from_filename(source_path, retry=storage.DEFAULT_RETRY)
     except Exception as e:
       logging.exception('Failed to export: %s', e)
 

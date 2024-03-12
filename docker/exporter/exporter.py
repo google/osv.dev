@@ -24,6 +24,7 @@ from typing import List
 
 from google.cloud import ndb
 from google.cloud import storage
+from google.cloud.storage import retry
 
 import osv
 import osv.logs
@@ -59,7 +60,7 @@ class Exporter:
     logging.info('Uploading %s', target_path)
     try:
       blob = bucket.blob(target_path)
-      blob.upload_from_filename(source_path, retry=storage.DEFAULT_RETRY)
+      blob.upload_from_filename(source_path, retry=retry.DEFAULT_RETRY)
     except Exception as e:
       logging.exception('Failed to export: %s', e)
 

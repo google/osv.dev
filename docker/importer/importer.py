@@ -517,7 +517,7 @@ class Importer:
 
     import_failure_logs = []
 
-    def convert_blob_to_vulns(blob: storage.Blob) -> Tuple[str]:
+    def convert_blob_to_vulns(blob: storage.Blob) -> Optional[Tuple[str]]:
       """Download and parse GCS blob into [vuln.id]"""
       if not _is_vulnerability_file(source_repo, blob.name):
         return None
@@ -546,7 +546,7 @@ class Importer:
         # List.append() is atomic and threadsafe.
         import_failure_logs.append('Failed to parse vulnerability "' +
                                    blob.name + '"')
-        return vuln_ids
+        return None
 
     # Setup storage client
     def thread_init():

@@ -130,18 +130,16 @@ class OSVServicer(osv_service_v1_pb2_grpc.OSVServicer,
     # Log some information about the query with structured logging
     qtype, ecosystem, versioned = query_info(request.query)
     if ecosystem is not None:
+      # TODO(michaelkedar): work out how to combine json_fields with osv/logs.py
+      import json
       logging.info(
-          'QueryAffected for %s "%s"',
-          qtype,
-          ecosystem,
-          extra={
-              'json_fields': {
-                  'details': {
-                      'ecosystem': ecosystem,
-                      'versioned': versioned == 'versioned'
-                  }
+          'QueryAffected for %s "%s"\n%s', qtype, ecosystem,
+          json.dumps({
+              'details': {
+                  'ecosystem': ecosystem,
+                  'versioned': versioned == 'versioned'
               }
-          })
+          }))
     else:
       logging.info('QueryAffected for %s', qtype)
 
@@ -219,12 +217,11 @@ class OSVServicer(osv_service_v1_pb2_grpc.OSVServicer,
     # Filter out empty fields
     query_details = {k: v for k, v in query_details.items() if v}
 
-    logging.info(
-        'QueryAffectedBatch with %d queries',
-        len(request.query.queries),
-        extra={'json_fields': {
-            'details': query_details
-        }})
+    # TODO(michaelkedar): work out how to combine json_fields with osv/logs.py
+    import json
+    logging.info('QueryAffectedBatch with %d queries\n%s',
+                 len(request.query.queries),
+                 json.dumps({'details': query_details}))
 
     if len(request.query.queries) > _MAX_BATCH_QUERY:
       context.abort(grpc.StatusCode.INVALID_ARGUMENT, 'Too many queries.')

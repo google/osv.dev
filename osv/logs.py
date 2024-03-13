@@ -17,30 +17,29 @@ import logging
 from google.cloud import logging as google_logging
 
 
-def setup_gcp_logging(service_name):
-  """Set up GCP logging and error reporting."""
+class _ErrorReportingFilter:
+  """
+  A logging filter that adds necessary json fields to error logs so that they
+  can be picked up by Error Reporting.
+  
+  https://cloud.google.com/error-reporting/docs/formatting-error-messages#log-text
+  https://docs.python.org/3/howto/logging-cookbook.html#using-filters-to-impart-contextual-information
+  """
 
-  logging_client = google_logging.Client()
-  logging_client.setup_logging()
+  def __init__(self, service_name: str) -> None:
+    self.service_name = service_name
 
-  old_factory = logging.getLogRecordFactory()
-
-  def record_factory(*args, **kwargs):
-    """Insert jsonPayload fields to all logs."""
-
-    record = old_factory(*args, **kwargs)
+  def filter(self, record: logging.LogRecord) -> bool:
+    """Add the error reporting fields to json_fields."""
     if not hasattr(record, 'json_fields'):
       record.json_fields = {}
 
-    # Add jsonPayload fields to logs that don't contain stack traces to enable
-    # capturing and grouping by error reporting.
-    # https://cloud.google.com/error-reporting/docs/formatting-error-messages#log-text
     if record.levelno >= logging.ERROR and not record.exc_info:
       record.json_fields.update({
           '@type':
               'type.googleapis.com/google.devtools.clouderrorreporting.v1beta1.ReportedErrorEvent',  # pylint: disable=line-too-long
           'serviceContext': {
-              'service': service_name,
+              'service': self.service_name,
           },
           'context': {
               'reportLocation': {
@@ -51,9 +50,16 @@ def setup_gcp_logging(service_name):
           },
       })
 
-    return record
+    return True
 
-  logging.setLogRecordFactory(record_factory)
+
+def setup_gcp_logging(service_name):
+  """Set up GCP logging and error reporting."""
+
+  logging_client = google_logging.Client()
+  logging_client.setup_logging()
+
+  logging.getLogger().addFilter(_ErrorReportingFilter(service_name))
   logging.getLogger().setLevel(logging.INFO)
 
   # Suppress noisy logs in some of our dependencies.

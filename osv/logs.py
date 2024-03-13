@@ -19,7 +19,7 @@ from google.cloud import logging as google_logging
 
 class _ErrorReportingFilter:
   """
-  A logging filter that adds necessary json fields to error logs so that they
+  A logging filter that adds necessary JSON fields to error logs so that they
   can be picked up by Error Reporting.
   
   https://cloud.google.com/error-reporting/docs/formatting-error-messages#log-text

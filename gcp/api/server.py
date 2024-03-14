@@ -102,6 +102,31 @@ def ndb_context(func):
   return wrapper
 
 
+def trace_log_fields(context: grpc.ServicerContext) -> dict:
+  """Makes the json_field needed to associate a log with the request trace."""
+  fields = {}
+  trace_context = dict(
+      context.invocation_metadata()).get('x-cloud-trace-context')
+  if trace_context is None:
+    return fields
+
+  parts = trace_context.split('/')
+  trace_id = parts[0]
+  # We don't set the GOOGLE_CLOUD_PROJECT env var explicitly, and I can't find
+  # any confirmation on whether Cloud Run will set automatically.
+  # Grab the project name from the (undocumented?) field on ndb.Client().
+  # The most correct way to do this would be to use the instance metadata server
+  # https://cloud.google.com/run/docs/container-contract#metadata-server
+  project = getattr(_ndb_client, 'project', 'oss-vdb')  # fall back to oss-vdb
+  fields[
+      'logging.googleapis.com/trace'] = f'projects/{project}/traces/{trace_id}'
+  if len(parts) > 1:
+    span_id = parts[1].split(';')[0]
+    fields['logging.googleapis.com/spanId'] = span_id
+
+  return fields
+
+
 class OSVServicer(osv_service_v1_pb2_grpc.OSVServicer,
                   health_pb2_grpc.HealthServicer):
   """V1 OSV servicer."""
@@ -128,6 +153,7 @@ class OSVServicer(osv_service_v1_pb2_grpc.OSVServicer,
     """
 
     # Log some information about the query with structured logging
+    logging_trace = trace_log_fields(context)
     qtype, ecosystem, versioned = query_info(request.query)
     if ecosystem is not None:
       logging.info(
@@ -139,18 +165,20 @@ class OSVServicer(osv_service_v1_pb2_grpc.OSVServicer,
                   'details': {
                       'ecosystem': ecosystem,
                       'versioned': versioned == 'versioned'
-                  }
+                  },
+                  **trace_log_fields(context)
               }
           })
     else:
-      logging.info('QueryAffected for %s', qtype)
+      logging.info(
+          'QueryAffected for %s', qtype, extra={'json_fields': logging_trace})
 
     page_token = None
     if request.query.page_token:
       try:
         page_token = ndb.Cursor(urlsafe=request.query.page_token)
       except ValueError as e:
-        logging.warning(e)
+        logging.warning(e, extra={'json_fields': logging_trace})
         context.abort(grpc.StatusCode.INVALID_ARGUMENT, 'Invalid page token.')
 
     query_context = QueryContext(
@@ -182,6 +210,7 @@ class OSVServicer(osv_service_v1_pb2_grpc.OSVServicer,
     batch_results = []
     futures = []
 
+    logging_trace = trace_log_fields(context)
     # Log some information about the query with structured logging e.g.
     # "message": "QueryAffectedBatch with 15 queries",
     # "details": {
@@ -223,7 +252,8 @@ class OSVServicer(osv_service_v1_pb2_grpc.OSVServicer,
         'QueryAffectedBatch with %d queries',
         len(request.query.queries),
         extra={'json_fields': {
-            'details': query_details
+            'details': query_details,
+            **logging_trace
         }})
 
     if len(request.query.queries) > _MAX_BATCH_QUERY:
@@ -238,7 +268,7 @@ class OSVServicer(osv_service_v1_pb2_grpc.OSVServicer,
         try:
           page_token = ndb.Cursor(urlsafe=query.page_token)
         except ValueError as e:
-          logging.warning(e)
+          logging.warning(e, extra={'json_fields': logging_trace})
           context.abort(grpc.StatusCode.INVALID_ARGUMENT,
                         f'Invalid page token at index: {i}.')
       query_context = QueryContext(
@@ -678,7 +708,10 @@ def do_query(query, context: QueryContext, include_details=True):
 
   if next_page_token:
     next_page_token = next_page_token.urlsafe()
-    logging.warning('Page size limit hit, response size: %s', len(bugs))
+    logging.warning(
+        'Page size limit hit, response size: %s',
+        len(bugs),
+        extra={'json_fields': trace_log_fields(context.service_context)})
 
   return bugs, next_page_token
 
@@ -1022,7 +1055,9 @@ def query_by_version(context: QueryContext,
           context, query, package_name, ecosystem, purl, version)
 
   else:
-    logging.warning("Package query without ecosystem specified")
+    logging.warning(
+        "Package query without ecosystem specified",
+        extra={'json_fields': trace_log_fields(context.service_context)})
     # Unspecified ecosystem. Try semver first.
 
     # TODO: Remove after testing how many consumers are

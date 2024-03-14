@@ -4,6 +4,9 @@ metadata:
   name: osv-grpc-backend
 spec:
   template:
+    metadata:
+      annotations:
+        autoscaling.knative.dev/maxScale: '300'
     spec:
       containers:
       - image: osv-server
@@ -20,4 +23,4 @@ spec:
           failureThreshold: 3
           periodSeconds: 10
       timeoutSeconds: 60
-      containerConcurrency: 10
+      containerConcurrency: 5

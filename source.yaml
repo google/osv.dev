@@ -8,6 +8,7 @@
   extension: .json
   db_prefix: ALBA-
   ignore_git: False
+  human_link: 'https://errata.almalinux.org/{{ ECOSYSTEMS[1].split(":")[1] }}/{{ BUG_ID | replace(":", "-", 1) }}.html'
   link: https://github.com/AlmaLinux/osv-database/blob/master/
   editable: False
 
@@ -21,6 +22,7 @@
   extension: .json
   db_prefix: ALEA-
   ignore_git: False
+  human_link: 'https://errata.almalinux.org/{{ ECOSYSTEMS[1].split(":")[1] }}/{{ BUG_ID | replace(":", "-", 1) }}.html'
   link: https://github.com/AlmaLinux/osv-database/blob/master/
   editable: False
 
@@ -34,6 +36,7 @@
   extension: .json
   db_prefix: ALSA-
   ignore_git: False
+  human_link: 'https://errata.almalinux.org/{{ ECOSYSTEMS[1].split(":")[1] }}/{{ BUG_ID | replace(":", "-", 1) }}.html'
   link: https://github.com/AlmaLinux/osv-database/blob/master/
   editable: False
 
@@ -69,6 +72,7 @@
   extension: .json
   db_prefix: CURL-
   ignore_git: True
+  human_link: 'https://curl.se/docs/{{ BUG_ID | replace("CURL-", "") }}.html'
   link: https://curl.se/docs/
   editable: False
 
@@ -81,7 +85,7 @@
   bucket: cve-osv-conversion
   db_prefix: CVE-
   ignore_git: False
-  human_link: https://nvd.nist.gov/vuln/detail/
+  human_link: 'https://nvd.nist.gov/vuln/detail/{{ BUG_ID }}'
   link: https://storage.googleapis.com/cve-osv-conversion/
   editable: False
 
@@ -94,7 +98,7 @@
   bucket: debian-osv
   db_prefix: DLA-
   ignore_git: True
-  human_link: 'https://security-tracker.debian.org/tracker/'
+  human_link: 'https://security-tracker.debian.org/tracker/{{ BUG_ID }}'
   link: https://storage.googleapis.com/debian-osv/
   editable: False
 
@@ -107,7 +111,7 @@
   bucket: debian-osv
   db_prefix: DSA-
   ignore_git: True
-  human_link: https://security-tracker.debian.org/tracker/
+  human_link: 'https://security-tracker.debian.org/tracker/{{ BUG_ID }}'
   link: https://storage.googleapis.com/debian-osv/
   editable: False
 
@@ -120,7 +124,7 @@
   bucket: debian-osv
   db_prefix: DTSA-
   ignore_git: True
-  human_link: 'https://security-tracker.debian.org/tracker/'
+  human_link: 'https://security-tracker.debian.org/tracker/{{ BUG_ID }}'
   link: https://storage.googleapis.com/debian-osv/
   editable: False
 
@@ -133,7 +137,7 @@
   extension: .json
   db_prefix: GHSA-
   ignore_git: True
-  human_link: https://github.com/advisories/
+  human_link: 'https://github.com/advisories/{{ BUG_ID }}'
   link: https://github.com/github/advisory-database/blob/main/
   editable: False
 
@@ -147,7 +151,7 @@
   bucket: go-vulndb
   db_prefix: GO-
   ignore_git: True
-  human_link: https://pkg.go.dev/vuln/
+  human_link: 'https://pkg.go.dev/vuln/{{ BUG_ID }}'
   link: https://vuln.go.dev/
   editable: False
 
@@ -262,7 +266,7 @@
   extension: .json
   db_prefix: RUSTSEC-
   ignore_git: False
-  human_link: https://rustsec.org/advisories/
+  human_link: 'https://rustsec.org/advisories/{{ BUG_ID }}'
   link: https://github.com/rustsec/advisory-db/blob/osv/
   editable: False
   repo_username: git

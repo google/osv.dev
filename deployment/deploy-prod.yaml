@@ -21,7 +21,7 @@ steps:
 - name: gcr.io/cloud-builders/gcloud
   args: ['deploy', 'releases', 'promote', '--quiet', '--release=osv-$SHORT_SHA', '--region=us-central1', '--delivery-pipeline=gke-workers', '--to-target=production-workers', '--annotations=tag=$TAG_NAME']
 - name: gcr.io/cloud-builders/gcloud
-  args: ['deploy', 'releases', 'promote', '--quiet', '--release=osv-$SHORT_SHA', '--region=us-central1', '--delivery-pipeline=osv-api', '--to-target=production-api', '--annotations=tag=$TAG_NAME']
+  args: ['deploy', 'releases', 'promote', '--quiet', '--release=osv-$SHORT_SHA', '--region=us-central1', '--delivery-pipeline=osv-api', '--to-target=production-api-multi', '--annotations=tag=$TAG_NAME']
 - name: gcr.io/cloud-builders/gcloud
   args: ['deploy', 'releases', 'promote', '--quiet', '--release=osv-$SHORT_SHA', '--region=us-central1', '--delivery-pipeline=gke-indexer', '--to-target=production-indexer', '--annotations=tag=$TAG_NAME']
 

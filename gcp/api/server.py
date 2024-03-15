@@ -110,6 +110,7 @@ def trace_log_fields(context: grpc.ServicerContext) -> dict:
   if trace_context is None:
     return fields
 
+# Trace context header example: "X-Cloud-Trace-Context: TRACE_ID/SPAN_ID;o=TRACE_TRUE"
   parts = trace_context.split('/')
   trace_id = parts[0]
   # We don't set the GOOGLE_CLOUD_PROJECT env var explicitly, and I can't find

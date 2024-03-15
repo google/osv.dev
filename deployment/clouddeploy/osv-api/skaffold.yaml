@@ -9,11 +9,13 @@ profiles:
   manifests:
     rawYaml:
     - run.yaml
+    - run-batch.yaml
 
 - name: prod
   manifests:
     rawYaml:
     - run.yaml
+    - run-batch.yaml
 
 deploy:
   cloudrun: {}

@@ -29,6 +29,29 @@ resource "google_cloud_run_service" "api_backend" {
   }
 }
 
+resource "google_cloud_run_v2_service" "api_backend_batch" {
+  project  = var.project_id
+  name     = "osv-grpc-backend-batch"
+  location = "us-central1"
+
+  template {
+    containers {
+      image = "us-docker.pkg.dev/cloudrun/container/hello:latest" # Placeholder image.
+    }
+  }
+
+  lifecycle {
+    ignore_changes = [
+      # To be managed by Cloud Deploy.
+      template,
+      traffic,
+      labels,
+      client
+    ]
+    prevent_destroy = true
+  }
+}
+
 variable "_api_descriptor_file" {
   # This isn't actually sensitive, but it's outputted as a massive base64 string which really floods the plan output.
   sensitive = true

@@ -120,11 +120,10 @@ def trace_log_fields(context: grpc.ServicerContext) -> dict:
   # The most correct way to do this would be to use the instance metadata server
   # https://cloud.google.com/run/docs/container-contract#metadata-server
   project = getattr(_ndb_client, 'project', 'oss-vdb')  # fall back to oss-vdb
-  fields[
-      'logging.googleapis.com/trace'] = f'projects/{project}/traces/{trace_id}'
+  fields['trace'] = f'projects/{project}/traces/{trace_id}'
   if len(parts) > 1:
     span_id = parts[1].split(';')[0]
-    fields['logging.googleapis.com/spanId'] = span_id
+    fields['span_id'] = span_id
 
   return fields
 

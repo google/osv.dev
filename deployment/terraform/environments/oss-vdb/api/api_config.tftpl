@@ -31,6 +31,9 @@ backend:
     - selector: "*"
       address: ${backend_url}
       deadline: 60
+    - selector: "osv.v1.OSV.QueryAffectedBatch"
+      address: ${backend_batch_url}
+      deadline: 60
 documentation:
   summary: >
     OSV is a vulnerability database for open source projects. It exposes an API

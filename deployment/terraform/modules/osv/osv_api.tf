@@ -65,8 +65,9 @@ resource "google_endpoints_service" "grpc_service" {
   grpc_config = templatefile(
     "api/api_config.tftpl",
     {
-      service_name = var.api_url,
-      backend_url  = replace(google_cloud_run_service.api_backend.status[0].url, "https://", "grpcs://")
+      service_name      = var.api_url,
+      backend_url       = replace(google_cloud_run_service.api_backend.status[0].url, "https://", "grpcs://")
+      backend_batch_url = replace(google_cloud_run_v2_service.api_backend_batch.uri, "https://", "grpcs://")
   })
   protoc_output_base64 = filebase64(var._api_descriptor_file)
 }

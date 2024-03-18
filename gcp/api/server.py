@@ -167,20 +167,19 @@ class OSVServicer(osv_service_v1_pb2_grpc.OSVServicer,
                   'details': {
                       'ecosystem': ecosystem,
                       'versioned': versioned == 'versioned'
-                  },
-                  **trace_log_fields(context)
-              }
+                  }
+              },
+              **logging_trace
           })
     else:
-      logging.info(
-          'QueryAffected for %s', qtype, extra={'json_fields': logging_trace})
+      logging.info('QueryAffected for %s', qtype, extra=logging_trace)
 
     page_token = None
     if request.query.page_token:
       try:
         page_token = ndb.Cursor(urlsafe=request.query.page_token)
       except ValueError as e:
-        logging.warning(e, extra={'json_fields': logging_trace})
+        logging.warning(e, extra=logging_trace)
         context.abort(grpc.StatusCode.INVALID_ARGUMENT, 'Invalid page token.')
 
     query_context = QueryContext(
@@ -253,10 +252,12 @@ class OSVServicer(osv_service_v1_pb2_grpc.OSVServicer,
     logging.info(
         'QueryAffectedBatch with %d queries',
         len(request.query.queries),
-        extra={'json_fields': {
-            'details': query_details,
+        extra={
+            'json_fields': {
+                'details': query_details
+            },
             **logging_trace
-        }})
+        })
 
     if len(request.query.queries) > _MAX_BATCH_QUERY:
       context.abort(grpc.StatusCode.INVALID_ARGUMENT, 'Too many queries.')
@@ -270,7 +271,7 @@ class OSVServicer(osv_service_v1_pb2_grpc.OSVServicer,
         try:
           page_token = ndb.Cursor(urlsafe=query.page_token)
         except ValueError as e:
-          logging.warning(e, extra={'json_fields': logging_trace})
+          logging.warning(e, extra=logging_trace)
           context.abort(grpc.StatusCode.INVALID_ARGUMENT,
                         f'Invalid page token at index: {i}.')
       query_context = QueryContext(
@@ -713,7 +714,7 @@ def do_query(query, context: QueryContext, include_details=True):
     logging.warning(
         'Page size limit hit, response size: %s',
         len(bugs),
-        extra={'json_fields': trace_log_fields(context.service_context)})
+        extra=trace_log_fields(context.service_context))
 
   return bugs, next_page_token
 
@@ -1059,7 +1060,7 @@ def query_by_version(context: QueryContext,
   else:
     logging.warning(
         "Package query without ecosystem specified",
-        extra={'json_fields': trace_log_fields(context.service_context)})
+        extra=trace_log_fields(context.service_context))
     # Unspecified ecosystem. Try semver first.
 
     # TODO: Remove after testing how many consumers are

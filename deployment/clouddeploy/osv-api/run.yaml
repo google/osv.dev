@@ -1,9 +1,12 @@
 apiVersion: serving.knative.dev/v1
 kind: Service
 metadata:
-  name: osv-grpc-backend
+  name: osv-grpc-backend # from-param: ${serviceName}
 spec:
   template:
+    metadata:
+      annotations:
+        autoscaling.knative.dev/maxScale: '300'
     spec:
       containers:
       - image: osv-server
@@ -20,4 +23,4 @@ spec:
           failureThreshold: 3
           periodSeconds: 10
       timeoutSeconds: 60
-      containerConcurrency: 5
+      containerConcurrency: 5 # from-param: ${containerConcurrency}

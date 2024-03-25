@@ -22,6 +22,7 @@ import hashlib
 import functools
 import logging
 import os
+import threading
 import time
 from typing import Callable, List
 
@@ -102,11 +103,55 @@ def ndb_context(func):
   return wrapper
 
 
+class LogTraceFilter:
+  """Class for adding the trace information from the grpc requests into logs."""
+
+  def __init__(self):
+    self.thread_local = threading.local()
+
+  def log_trace(self, func):
+    """Wrapper for grpc method to capture trace from header metadata"""
+
+    @functools.wraps(func)
+    def wrapper(s, r, context: grpc.ServicerContext):
+      self.thread_local.trace = dict(
+          context.invocation_metadata()).get('x-cloud-trace-context')
+      return func(s, r, context)
+
+    return wrapper
+
+  def filter(self, record: logging.LogRecord) -> bool:
+    """logging.Filter method to add trace into log data."""
+    trace = getattr(self.thread_local, 'trace', None)
+    if not trace:
+      return True
+
+    # Trace context header example:
+    # "X-Cloud-Trace-Context: TRACE_ID/SPAN_ID;o=TRACE_TRUE"
+    parts = trace.split('/')
+    trace_id = parts[0]
+    # We don't set the GOOGLE_CLOUD_PROJECT env var explicitly, and I can't find
+    # any confirmation on whether Cloud Run will set automatically.
+    # Grab the project name from the (undocumented?) field on ndb.Client().
+    # Most correct way to do this would be to use the instance metadata server
+    # https://cloud.google.com/run/docs/container-contract#metadata-server
+    project = getattr(_ndb_client, 'project', 'oss-vdb')  # fall back to oss-vdb
+    record.trace = f'projects/{project}/traces/{trace_id}'
+    if len(parts) > 1:
+      record.span_id = parts[1].split(';')[0]
+
+    return True
+
+
+trace_filter = LogTraceFilter()
+
+
 class OSVServicer(osv_service_v1_pb2_grpc.OSVServicer,
                   health_pb2_grpc.HealthServicer):
   """V1 OSV servicer."""
 
   @ndb_context
+  @trace_filter.log_trace
   def GetVulnById(self, request, context: grpc.ServicerContext):
     """Return a `Vulnerability` object for a given OSV ID."""
     bug: osv.Bug = osv.Bug.get_by_id(request.id)
@@ -121,25 +166,27 @@ class OSVServicer(osv_service_v1_pb2_grpc.OSVServicer,
     return bug_to_response(bug, include_alias=True)
 
   @ndb_context
+  @trace_filter.log_trace
   def QueryAffected(self, request, context: grpc.ServicerContext):
     """Query vulnerabilities for a particular project at a given commit or
 
     version.
     """
-
     # Log some information about the query with structured logging
     qtype, ecosystem, versioned = query_info(request.query)
     if ecosystem is not None:
-      # TODO(michaelkedar): work out how to combine json_fields with osv/logs.py
-      import json
       logging.info(
-          'QueryAffected for %s "%s"\n%s', qtype, ecosystem,
-          json.dumps({
-              'details': {
-                  'ecosystem': ecosystem,
-                  'versioned': versioned == 'versioned'
+          'QueryAffected for %s "%s"',
+          qtype,
+          ecosystem,
+          extra={
+              'json_fields': {
+                  'details': {
+                      'ecosystem': ecosystem,
+                      'versioned': versioned == 'versioned'
+                  }
               }
-          }))
+          })
     else:
       logging.info('QueryAffected for %s', qtype)
 
@@ -175,6 +222,7 @@ class OSVServicer(osv_service_v1_pb2_grpc.OSVServicer,
     return None
 
   @ndb_context
+  @trace_filter.log_trace
   def QueryAffectedBatch(self, request, context: grpc.ServicerContext):
     """Query vulnerabilities (batch)."""
     batch_results = []
@@ -217,11 +265,12 @@ class OSVServicer(osv_service_v1_pb2_grpc.OSVServicer,
     # Filter out empty fields
     query_details = {k: v for k, v in query_details.items() if v}
 
-    # TODO(michaelkedar): work out how to combine json_fields with osv/logs.py
-    import json
-    logging.info('QueryAffectedBatch with %d queries\n%s',
-                 len(request.query.queries),
-                 json.dumps({'details': query_details}))
+    logging.info(
+        'QueryAffectedBatch with %d queries',
+        len(request.query.queries),
+        extra={'json_fields': {
+            'details': query_details
+        }})
 
     if len(request.query.queries) > _MAX_BATCH_QUERY:
       context.abort(grpc.StatusCode.INVALID_ARGUMENT, 'Too many queries.')
@@ -265,6 +314,7 @@ class OSVServicer(osv_service_v1_pb2_grpc.OSVServicer,
     return osv_service_v1_pb2.BatchVulnerabilityList(results=batch_results)
 
   @ndb_context
+  @trace_filter.log_trace
   def DetermineVersion(self, request, context: grpc.ServicerContext):
     """Determine the version of the provided hashes."""
     res = determine_version(request.query, context).result()
@@ -1132,6 +1182,7 @@ def main():
   """Entrypoint."""
   if is_cloud_run():
     setup_gcp_logging('api-backend')
+    logging.getLogger().addFilter(trace_filter)
 
   logging.getLogger().setLevel(logging.INFO)
 

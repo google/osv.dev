@@ -5,10 +5,19 @@ metadata:
 description: OSV API pipeline
 serialPipeline:
   stages:
-  - targetId: staging-api
+  - targetId: staging-api-multi
     profiles: [ staging ]
-  - targetId: production-api
+  - targetId: production-api-multi
     profiles: [ prod ]
+---
+
+apiVersion: deploy.cloud.google.com/v1
+kind: Target
+metadata:
+  name: staging-api-multi
+description: multi-target oss-vdb-test API instances
+multiTarget:
+  targetIds: [staging-api, staging-api-batch]
 ---
 
 apiVersion: deploy.cloud.google.com/v1
@@ -28,10 +37,53 @@ executionConfigs:
 apiVersion: deploy.cloud.google.com/v1
 kind: Target
 metadata:
+  name: staging-api-batch
+description: oss-vdb-test API batch query instance
+run:
+  location: projects/oss-vdb-test/locations/us-central1
+deployParameters:
+  serviceName: "osv-grpc-backend-batch"
+  containerConcurrency: "1"
+executionConfigs:
+- usages:
+  - RENDER
+  - DEPLOY
+  serviceAccount: deployment@oss-vdb.iam.gserviceaccount.com
+---
+
+apiVersion: deploy.cloud.google.com/v1
+kind: Target
+metadata:
+  name: production-api-multi
+description: multi-target oss-vdb API instances
+multiTarget:
+  targetIds: [production-api, production-api-batch]
+---
+
+apiVersion: deploy.cloud.google.com/v1
+kind: Target
+metadata:
   name: production-api
 description: oss-vdb API instance
 run:
   location: projects/oss-vdb/locations/us-central1
+executionConfigs:
+- usages:
+  - RENDER
+  - DEPLOY
+  serviceAccount: deployment@oss-vdb.iam.gserviceaccount.com
+---
+
+apiVersion: deploy.cloud.google.com/v1
+kind: Target
+metadata:
+  name: production-api-batch
+description: oss-vdb API batch query instance
+run:
+  location: projects/oss-vdb/locations/us-central1
+deployParameters:
+  serviceName: "osv-grpc-backend-batch"
+  containerConcurrency: "1"
 executionConfigs:
 - usages:
   - RENDER

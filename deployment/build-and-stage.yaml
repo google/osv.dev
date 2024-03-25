@@ -125,6 +125,20 @@ steps:
 
 - name: 'gcr.io/cloud-builders/docker'
   entrypoint: 'bash'
+  args: ['-c', 'docker pull gcr.io/oss-vdb/debian-cve-convert:latest || exit 0']
+  id: 'pull-debian-cve-convert'
+  waitFor: ['setup']
+- name: gcr.io/cloud-builders/docker
+  args: ['build', '-t', 'gcr.io/oss-vdb/debian-cve-convert:latest', '-t', 'gcr.io/oss-vdb/debian-cve-convert:$COMMIT_SHA', '-f', 'cmd/alpine/Dockerfile', '--cache-from', 'gcr.io/oss-vdb/debian-cve-convert:latest', '--pull', '.']
+  dir: 'vulnfeeds'
+  id: 'build-debian-cve-convert'
+  waitFor: ['pull-debian-cve-convert']
+- name: gcr.io/cloud-builders/docker
+  args: ['push', '--all-tags', 'gcr.io/oss-vdb/debian-cve-convert']
+  waitFor: ['build-debian-cve-convert', 'cloud-build-queue']
+
+- name: 'gcr.io/cloud-builders/docker'
+  entrypoint: 'bash'
   args: ['-c', 'docker pull gcr.io/oss-vdb/combine-to-osv:latest || exit 0']
   id: 'pull-combine-to-osv'
   waitFor: ['setup']

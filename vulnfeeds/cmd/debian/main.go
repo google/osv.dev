@@ -42,6 +42,7 @@ func main() {
 	writeToOutput(cvePkgInfos)
 }
 
+// Gets the Debian version number, excluding EOL and testing.
 func getDebianVersion(releaseName string) string {
 	if _, ok := debianReleaseMap[releaseName]; ok {
 		return debianReleaseMap[releaseName]
@@ -60,7 +61,7 @@ func generateDebianSecurityTrackerOSV(debianData DebianSecurityTrackerData) map[
 			}
 
 			for releaseName, release := range cve.Releases {
-				if release.Urgency == "not yet assigned" {
+				if release.Urgency == "not yet assigned" || release.Urgency == "end-of-life" {
 					continue
 				}
 				debianVersion := getDebianVersion(releaseName)
@@ -70,8 +71,10 @@ func generateDebianSecurityTrackerOSV(debianData DebianSecurityTrackerData) map[
 
 				pkgInfo := vulns.PackageInfo{
 					PkgName:   pkgName,
-					Ecosystem: "Debian" + debianVersion,
+					Ecosystem: "Debian:" + debianVersion,
 				}
+				pkgInfo.EcosystemSpecific = make(map[string]string)
+
 				if release.Status == "resolved" {
 					if release.FixedVersion == "0" { // not affected
 						continue
@@ -80,9 +83,11 @@ func generateDebianSecurityTrackerOSV(debianData DebianSecurityTrackerData) map[
 						AffectedVersions: []cves.AffectedVersion{{Fixed: release.FixedVersion}},
 					}
 				}
-				pkgInfo.EcosystemSpecific = make(map[string]string)
 				pkgInfo.EcosystemSpecific["urgency"] = release.Urgency
 				pkgInfos = append(pkgInfos, pkgInfo)
+			}
+
+			if pkgInfos != nil {
 				osvPkgInfos[cveId] = pkgInfos
 			}
 		}

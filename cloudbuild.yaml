@@ -50,6 +50,7 @@ steps:
   dir: docker/importer
   args: ['bash', '-ex', 'run_tests.sh']
   env:
+    - CLOUD_BUILD=1
     # same as worker
     - DATASTORE_EMULATOR_PORT=8003
   # importer uses same pipenv as worker, 'pipenv sync' may break if run concurrently

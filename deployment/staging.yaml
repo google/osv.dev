@@ -17,6 +17,8 @@ steps:
   args: ['submodule', 'update', '--init', '--recursive']
 - name: 'gcr.io/oss-vdb/ci'
   args: ['make', 'all-tests']
+  env:
+  - CLOUDBUILD=1
 - name: 'gcr.io/cloud-builders/gcloud'
   entrypoint: 'bash'
   args: [ '-c', "gcloud secrets versions access latest --secret=integration-test-account --format='get(payload.data)' | tr '_-' '/+' | base64 -d > /workspace/service_account.json" ]

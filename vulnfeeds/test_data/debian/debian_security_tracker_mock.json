@@ -1,0 +1,184 @@
+{
+  "busybox": {
+    "CVE-2018-1000500": {
+      "description": "Busybox contains a Missing SSL certificate validation vulnerability in The \"busybox wget\" applet that can result in arbitrary code execution. This attack appear to be exploitable via Simply download any file over HTTPS using \"busybox wget https://compromised-domain.com/important-file\".",
+      "scope": "local",
+      "releases": {
+        "bookworm": {
+          "status": "open",
+          "repositories": {
+            "bookworm": "1:1.35.0-4"
+          },
+          "urgency": "unimportant"
+        },
+        "bullseye": {
+          "status": "open",
+          "repositories": {
+            "bullseye": "1:1.30.1-6"
+          },
+          "urgency": "unimportant"
+        },
+        "buster": {
+          "status": "open",
+          "repositories": {
+            "buster": "1:1.30.1-4"
+          },
+          "urgency": "unimportant"
+        },
+        "sid": {
+          "status": "open",
+          "repositories": {
+            "sid": "1:1.36.1-6"
+          },
+          "urgency": "unimportant"
+        },
+        "trixie": {
+          "status": "open",
+          "repositories": {
+            "trixie": "1:1.36.1-6"
+          },
+          "urgency": "unimportant"
+        }
+      }
+    }
+  },
+  "apparmor": {
+    "CVE-2014-1424": {
+      "description": "apparmor_parser in the apparmor package before 2.8.95~2430-0ubuntu5.1 in Ubuntu 14.04 allows attackers to bypass AppArmor policies via unspecified vectors, related to a \"miscompilation flaw.\"",
+      "scope": "local",
+      "releases": {
+        "bookworm": {
+          "status": "resolved",
+          "repositories": {
+            "bookworm": "3.0.8-3"
+          },
+          "fixed_version": "0",
+          "urgency": "unimportant"
+        },
+        "bullseye": {
+          "status": "resolved",
+          "repositories": {
+            "bullseye": "2.13.6-10"
+          },
+          "fixed_version": "0",
+          "urgency": "unimportant"
+        },
+        "buster": {
+          "status": "resolved",
+          "repositories": {
+            "buster": "2.13.2-10"
+          },
+          "fixed_version": "0",
+          "urgency": "unimportant"
+        },
+        "sid": {
+          "status": "resolved",
+          "repositories": {
+            "sid": "3.0.12-1"
+          },
+          "fixed_version": "0",
+          "urgency": "unimportant"
+        },
+        "trixie": {
+          "status": "resolved",
+          "repositories": {
+            "trixie": "3.0.12-1"
+          },
+          "fixed_version": "0",
+          "urgency": "unimportant"
+        }
+      }
+    },
+    "CVE-2016-1585": {
+      "description": "In all versions of AppArmor mount rules are accidentally widened when compiled.",
+      "debianbug": 929990,
+      "scope": "local",
+      "releases": {
+        "bookworm": {
+          "status": "open",
+          "repositories": {
+            "bookworm": "3.0.8-3"
+          },
+          "urgency": "unimportant"
+        },
+        "bullseye": {
+          "status": "open",
+          "repositories": {
+            "bullseye": "2.13.6-10"
+          },
+          "urgency": "unimportant"
+        },
+        "buster": {
+          "status": "open",
+          "repositories": {
+            "buster": "2.13.2-10"
+          },
+          "urgency": "unimportant"
+        },
+        "sid": {
+          "status": "resolved",
+          "repositories": {
+            "sid": "3.0.12-1"
+          },
+          "fixed_version": "3.0.12-1",
+          "urgency": "unimportant"
+        },
+        "trixie": {
+          "status": "resolved",
+          "repositories": {
+            "trixie": "3.0.12-1"
+          },
+          "fixed_version": "3.0.12-1",
+          "urgency": "unimportant"
+        }
+      }
+    },
+    "CVE-2017-6507": {
+      "description": "An issue was discovered in AppArmor before 2.12. Incorrect handling of unknown AppArmor profiles in AppArmor init scripts, upstart jobs, and/or systemd unit files allows an attacker to possibly have increased attack surfaces of processes that were intended to be confined by AppArmor. This is due to the common logic to handle 'restart' operations removing AppArmor profiles that aren't found in the typical filesystem locations, such as /etc/apparmor.d/. Userspace projects that manage their own AppArmor profiles in atypical directories, such as what's done by LXD and Docker, are affected by this flaw in the AppArmor init script logic.",
+      "debianbug": 858768,
+      "scope": "local",
+      "releases": {
+        "bookworm": {
+          "status": "resolved",
+          "repositories": {
+            "bookworm": "3.0.8-3"
+          },
+          "fixed_version": "2.11.0-3",
+          "urgency": "not yet assigned"
+        },
+        "bullseye": {
+          "status": "resolved",
+          "repositories": {
+            "bullseye": "2.13.6-10"
+          },
+          "fixed_version": "2.11.0-3",
+          "urgency": "not yet assigned"
+        },
+        "buster": {
+          "status": "resolved",
+          "repositories": {
+            "buster": "2.13.2-10"
+          },
+          "fixed_version": "2.11.0-3",
+          "urgency": "not yet assigned"
+        },
+        "sid": {
+          "status": "resolved",
+          "repositories": {
+            "sid": "3.0.12-1"
+          },
+          "fixed_version": "2.11.0-3",
+          "urgency": "not yet assigned"
+        },
+        "trixie": {
+          "status": "resolved",
+          "repositories": {
+            "trixie": "3.0.12-1"
+          },
+          "fixed_version": "2.11.0-3",
+          "urgency": "not yet assigned"
+        }
+      }
+    }
+  }
+}

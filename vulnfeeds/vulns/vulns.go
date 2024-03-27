@@ -60,9 +60,10 @@ type Severity struct {
 }
 
 type Affected struct {
-	Package  *AffectedPackage `json:"package,omitempty"`
-	Ranges   []AffectedRange  `json:"ranges" yaml:"ranges"`
-	Versions []string         `json:"versions,omitempty" yaml:"versions,omitempty"`
+	Package           *AffectedPackage  `json:"package,omitempty"`
+	Ranges            []AffectedRange   `json:"ranges" yaml:"ranges"`
+	Versions          []string          `json:"versions,omitempty" yaml:"versions,omitempty"`
+	EcosystemSpecific map[string]string `json:"ecosystem_specific,omitempty" yaml:"ecosystem_specific,omitempty"`
 }
 
 // AttachExtractedVersionInfo converts the cves.VersionInfo struct to OSV GIT and ECOSYSTEM AffectedRanges and AffectedPackage.
@@ -163,10 +164,11 @@ func (affected *Affected) AttachExtractedVersionInfo(version cves.VersionInfo) {
 
 // PackageInfo is an intermediate struct to ease generating Vulnerability structs.
 type PackageInfo struct {
-	PkgName     string           `json:"pkg_name,omitempty" yaml:"pkg_name,omitempty"`
-	Ecosystem   string           `json:"ecosystem,omitempty" yaml:"ecosystem,omitempty"`
-	PURL        string           `json:"purl,omitempty" yaml:"purl,omitempty"`
-	VersionInfo cves.VersionInfo `json:"fixed_version,omitempty" yaml:"fixed_version,omitempty"`
+	PkgName           string            `json:"pkg_name,omitempty" yaml:"pkg_name,omitempty"`
+	Ecosystem         string            `json:"ecosystem,omitempty" yaml:"ecosystem,omitempty"`
+	PURL              string            `json:"purl,omitempty" yaml:"purl,omitempty"`
+	VersionInfo       cves.VersionInfo  `json:"fixed_version,omitempty" yaml:"fixed_version,omitempty"`
+	EcosystemSpecific map[string]string `json:"ecosystem_specific,omitempty" yaml:"ecosystem_specific,omitempty"`
 }
 
 func (pi *PackageInfo) ToJSON(w io.Writer) error {
@@ -300,6 +302,7 @@ func (v *Vulnerability) AddPkgInfo(pkgInfo PackageInfo) {
 		return cmp.Compare(a.Repo, b.Repo)
 	})
 
+	affected.EcosystemSpecific = pkgInfo.EcosystemSpecific
 	v.Affected = append(v.Affected, affected)
 }
 

@@ -37,6 +37,8 @@ steps:
 - name: gcr.io/cloud-builders/gcloud
   args: ['container', 'images', 'add-tag', '--quiet', 'gcr.io/oss-vdb/alpine-cve-convert:$COMMIT_SHA', 'gcr.io/oss-vdb/alpine-cve-convert:$TAG_NAME']
 - name: gcr.io/cloud-builders/gcloud
+  args: ['container', 'images', 'add-tag', '--quiet', 'gcr.io/oss-vdb/debian-cve-convert:$COMMIT_SHA', 'gcr.io/oss-vdb/debian-cve-convert:$TAG_NAME']
+- name: gcr.io/cloud-builders/gcloud
   args: ['container', 'images', 'add-tag', '--quiet', 'gcr.io/oss-vdb/combine-to-osv:$COMMIT_SHA', 'gcr.io/oss-vdb/combine-to-osv:$TAG_NAME']
 - name: gcr.io/cloud-builders/gcloud
   args: ['container', 'images', 'add-tag', '--quiet', 'gcr.io/oss-vdb/indexer:$COMMIT_SHA', 'gcr.io/oss-vdb/indexer:$TAG_NAME']

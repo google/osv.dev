@@ -35,7 +35,7 @@ func loadTestData2(cveName string) cves.Vulnerability {
 
 func TestLoadParts(t *testing.T) {
 	allParts := loadParts("../../test_data/parts")
-	expectedPartCount := 12
+	expectedPartCount := 14
 	actualPartCount := len(allParts)
 
 	if actualPartCount != expectedPartCount {
@@ -83,14 +83,15 @@ func TestLoadParts(t *testing.T) {
 
 func TestCombineIntoOSV(t *testing.T) {
 	cveStuff := map[cves.CVEID]cves.Vulnerability{
-		"CVE-2022-33745": loadTestData2("CVE-2022-33745"),
-		"CVE-2022-32746": loadTestData2("CVE-2022-32746"),
+		"CVE-2022-33745":   loadTestData2("CVE-2022-33745"),
+		"CVE-2022-32746":   loadTestData2("CVE-2022-32746"),
+		"CVE-2018-1000500": loadTestData2("CVE-2018-1000500"),
 	}
 	allParts := loadParts("../../test_data/parts")
 
 	combinedOSV := combineIntoOSV(cveStuff, allParts, "")
 
-	expectedCombined := 2
+	expectedCombined := 3
 	actualCombined := len(combinedOSV)
 
 	if actualCombined != expectedCombined {

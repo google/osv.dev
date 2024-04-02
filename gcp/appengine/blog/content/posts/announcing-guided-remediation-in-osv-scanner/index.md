@@ -1,6 +1,6 @@
 ---
 title: "Announcing Guided Remediation in OSV-Scanner"
-date: 2024-03-26T00:00:00Z
+date: 2024-04-02T00:00:00Z
 draft: false
 author: Michael Kedar
 ---
@@ -15,7 +15,9 @@ Guided Remediation scans your project's manifest and lockfile, identifying vulne
 - In-place lockfile modification, which does targetted updates to vulnerable packages while still maintaining compatibility with the existing constraints in your dependency graph.
 - Relocking and relaxing requirements, to install the most up-to-date versions of your dependencies and upgrade your direct requirements to remove vulnerable packages from the dependency graph.
 
-In conjunction with these strategies, the tool also allows you to filter vulnerabilities based on metrics like CVSS severity, dependency depth, and whether they affect production or development dependencies. This allows you to control which vulnerabilities you wish to target.
+The tool prioritizes its suggested upgrades to maximize your return on investment for a given change, focusing first on upgrades that resolve the most vulnerabilities with the least amount of changed dependencies.
+
+In conjunction with the different strategies, Guided Remediation also allows you to filter vulnerabilities based on metrics like CVSS severity, dependency depth, and whether they affect production or development dependencies. This allows you to control which vulnerabilities you wish to target.
 
 ## Using Guided Remediation
 For basic usage, you can attempt to resolve as many vulnerabilities as possible in your manifest/lockfile with one of the following commands:

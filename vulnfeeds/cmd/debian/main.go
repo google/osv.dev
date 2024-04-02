@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/csv"
 	"encoding/json"
 	"net/http"
 	"os"
@@ -18,15 +19,6 @@ const (
 
 var Logger utility.LoggerWrapper
 
-// Debian old stable, latest and future versions
-var debianReleaseMap = map[string]string{
-	"buster":   "10",
-	"bullseye": "11",
-	"bookworm": "12",
-	"trixie":   "13",
-	"forky":    "14",
-}
-
 func main() {
 	var logCleanup func()
 	Logger, logCleanup = utility.CreateLoggerWrapper("debian-osv")
@@ -42,16 +34,52 @@ func main() {
 	writeToOutput(cvePkgInfos)
 }
 
-// Gets the Debian version number, excluding EOL and testing.
-func getDebianVersion(releaseName string) string {
-	if _, ok := debianReleaseMap[releaseName]; ok {
-		return debianReleaseMap[releaseName]
+// Gets the Debian version number, excluding sid and experimental versions.
+func getDebianReleaseMap() map[string]string {
+	releaseMap := make(map[string]string)
+	res, err := http.Get("https://debian.pages.debian.net/distro-info-data/debian.csv")
+	if err != nil {
+		Logger.Fatalf("Failed to get Debian release info data: %s", err)
 	}
-	return ""
+	defer res.Body.Close()
+
+	reader := csv.NewReader(res.Body)
+	reader.FieldsPerRecord = -1
+	data, err := reader.ReadAll()
+	if err != nil {
+		Logger.Fatalf("Failed to load Debian release info csv: %s", err)
+	}
+
+	versionIndex := -1
+	seriesIndex := -1
+
+	// Get the index number of version and series.
+	for i, col := range data[0] {
+		if col == "version" {
+			versionIndex = i
+		} else if col == "series" {
+			seriesIndex = i
+		}
+	}
+
+	if seriesIndex == -1 || versionIndex == -1 {
+		Logger.Fatalf("Failed to get Debian release info: %s", err)
+	}
+
+	for _, row := range data[1:] {
+		if row[seriesIndex] == "experimental" || row[seriesIndex] == "sid" {
+			continue
+		}
+
+		releaseMap[row[seriesIndex]] = row[versionIndex]
+	}
+
+	return releaseMap
 }
 
 // Convert Debian Security Tracker entries to OSV PackageInfo format.
 func generateDebianSecurityTrackerOSV(debianData DebianSecurityTrackerData) map[string][]vulns.PackageInfo {
+	debianReleaseMap := getDebianReleaseMap()
 	osvPkgInfos := make(map[string][]vulns.PackageInfo)
 	for pkgName, pkg := range debianData {
 		for cveId, cve := range pkg {
@@ -64,8 +92,8 @@ func generateDebianSecurityTrackerOSV(debianData DebianSecurityTrackerData) map[
 				if release.Urgency == "not yet assigned" || release.Urgency == "end-of-life" {
 					continue
 				}
-				debianVersion := getDebianVersion(releaseName)
-				if debianVersion == "" {
+				debianVersion, ok := debianReleaseMap[releaseName]
+				if !ok {
 					continue
 				}
 

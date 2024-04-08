@@ -17,7 +17,14 @@ func Test_generateDebianSecurityTrackerOSV(t *testing.T) {
 	defer file.Close()
 	_ = json.NewDecoder(file).Decode(&decodedDebianData)
 
-	osvPkgInfos := generateDebianSecurityTrackerOSV(decodedDebianData)
+	debianReleaseMap := make(map[string]string)
+	debianReleaseMap["buster"] = "10"
+	debianReleaseMap["bullseye"] = "11"
+	debianReleaseMap["bookworm"] = "12"
+	debianReleaseMap["trixie"] = "13"
+	debianReleaseMap["forky"] = "14"
+
+	osvPkgInfos := generateDebianSecurityTrackerOSV(decodedDebianData, debianReleaseMap)
 	expectedCount := 2
 	if len(osvPkgInfos) != expectedCount {
 		t.Errorf("Expected %v Debian OSV entries , got %v", expectedCount, osvPkgInfos)

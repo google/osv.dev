@@ -1,5 +1,6 @@
 resources:
 - ../../base
+- debian-cve-convert.yaml
 patches:
 - path: workers.yaml
 - path: scaler.yaml

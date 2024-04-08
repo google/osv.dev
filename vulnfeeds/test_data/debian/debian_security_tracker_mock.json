@@ -23,7 +23,7 @@
           "repositories": {
             "buster": "1:1.30.1-4"
           },
-          "urgency": "unimportant"
+          "urgency": "end-of-life"
         },
         "sid": {
           "status": "open",

@@ -13,8 +13,9 @@ import (
 )
 
 const (
-	debianSecurityTrackerURL = "https://security-tracker.debian.org/tracker/data/json"
 	debianOutputPathDefault  = "parts/debian"
+	debianDistroInfoURL      = "https://debian.pages.debian.net/distro-info-data/debian.csv"
+	debianSecurityTrackerURL = "https://security-tracker.debian.org/tracker/data/json"
 )
 
 var Logger utility.LoggerWrapper
@@ -34,10 +35,10 @@ func main() {
 	writeToOutput(cvePkgInfos)
 }
 
-// Gets the Debian version number, excluding sid and experimental versions.
+// getDebianReleaseMap gets the Debian version number, excluding testing and experimental versions.
 func getDebianReleaseMap() map[string]string {
 	releaseMap := make(map[string]string)
-	res, err := http.Get("https://debian.pages.debian.net/distro-info-data/debian.csv")
+	res, err := http.Get(debianDistroInfoURL)
 	if err != nil {
 		Logger.Fatalf("Failed to get Debian release info data: %s", err)
 	}
@@ -77,47 +78,52 @@ func getDebianReleaseMap() map[string]string {
 	return releaseMap
 }
 
-// Convert Debian Security Tracker entries to OSV PackageInfo format.
+// updateOSVPkgInfos adds new release entries to osvPkgInfos.
+func updateOSVPkgInfos(pkgName string, cveId string, releases map[string]Release, osvPkgInfos map[string][]vulns.PackageInfo, debianReleaseMap map[string]string) {
+	var pkgInfos []vulns.PackageInfo
+	if value, ok := osvPkgInfos[cveId]; ok {
+		pkgInfos = value
+	}
+	for releaseName, release := range releases {
+		// Skips 'not yet assigned' entries because their status may change in the future.
+		// For reference on urgency levels, see: https://security-team.debian.org/security_tracker.html#severity-levels
+		if release.Urgency == "not yet assigned" {
+			continue
+		}
+		debianVersion, ok := debianReleaseMap[releaseName]
+		if !ok {
+			continue
+		}
+
+		pkgInfo := vulns.PackageInfo{
+			PkgName:   pkgName,
+			Ecosystem: "Debian:" + debianVersion,
+		}
+		pkgInfo.EcosystemSpecific = make(map[string]string)
+
+		if release.Status == "resolved" {
+			if release.FixedVersion == "0" { // not affected
+				continue
+			}
+			pkgInfo.VersionInfo = cves.VersionInfo{
+				AffectedVersions: []cves.AffectedVersion{{Fixed: release.FixedVersion}},
+			}
+		}
+		pkgInfo.EcosystemSpecific["urgency"] = release.Urgency
+		pkgInfos = append(pkgInfos, pkgInfo)
+	}
+	if pkgInfos != nil {
+		osvPkgInfos[cveId] = pkgInfos
+	}
+}
+
+// generateDebianSecurityTrackerOSV converts Debian Security Tracker entries to OSV PackageInfo format.
 func generateDebianSecurityTrackerOSV(debianData DebianSecurityTrackerData) map[string][]vulns.PackageInfo {
 	debianReleaseMap := getDebianReleaseMap()
 	osvPkgInfos := make(map[string][]vulns.PackageInfo)
 	for pkgName, pkg := range debianData {
 		for cveId, cve := range pkg {
-			var pkgInfos []vulns.PackageInfo
-			if value, ok := osvPkgInfos[cveId]; ok {
-				pkgInfos = value
-			}
-
-			for releaseName, release := range cve.Releases {
-				if release.Urgency == "not yet assigned" || release.Urgency == "end-of-life" {
-					continue
-				}
-				debianVersion, ok := debianReleaseMap[releaseName]
-				if !ok {
-					continue
-				}
-
-				pkgInfo := vulns.PackageInfo{
-					PkgName:   pkgName,
-					Ecosystem: "Debian:" + debianVersion,
-				}
-				pkgInfo.EcosystemSpecific = make(map[string]string)
-
-				if release.Status == "resolved" {
-					if release.FixedVersion == "0" { // not affected
-						continue
-					}
-					pkgInfo.VersionInfo = cves.VersionInfo{
-						AffectedVersions: []cves.AffectedVersion{{Fixed: release.FixedVersion}},
-					}
-				}
-				pkgInfo.EcosystemSpecific["urgency"] = release.Urgency
-				pkgInfos = append(pkgInfos, pkgInfo)
-			}
-
-			if pkgInfos != nil {
-				osvPkgInfos[cveId] = pkgInfos
-			}
+			updateOSVPkgInfos(pkgName, cveId, cve.Releases, osvPkgInfos, debianReleaseMap)
 		}
 	}
 
@@ -141,7 +147,7 @@ func writeToOutput(cvePkgInfos map[string][]vulns.PackageInfo) {
 	}
 }
 
-// Download json file
+// downloadDebianSecurityTracker download Debian json file
 func downloadDebianSecurityTracker() DebianSecurityTrackerData {
 	res, err := http.Get(debianSecurityTrackerURL)
 	if err != nil {

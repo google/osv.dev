@@ -243,7 +243,19 @@ var (
 	InvalidRepoRegex = `(?i)/(?:(?:CVEs?)|(?:CVE-\d{4}-\d{4,})(?:/?.*)?|bug_report(?:/.*)?|GitHubAssessments/.*)`
 )
 
+// Rewrites known GitWeb URLs to their base repository.
 func repoGitWeb(parsedURL *url.URL) (string, error) {
+	// These repos seem to only be cloneable over git:// not https://
+	//
+	// The frontend code needs to be taught how to rewrite these back to
+	// something clickable for humans in
+	// https://github.com/google/osv.dev/blob/master/gcp/appengine/source_mapper.py
+	//
+	var gitProtocolHosts = []string{
+		"git.code-call-cc.org",
+		"git.gnupg.org",
+		"git.infradead.org",
+	}
 	params := strings.Split(parsedURL.RawQuery, ";")
 	for _, param := range params {
 		if !strings.HasPrefix(param, "p=") {
@@ -253,7 +265,10 @@ func repoGitWeb(parsedURL *url.URL) (string, error) {
 		if err != nil {
 			return "", err
 		}
-		return fmt.Sprintf("git://%s%s", parsedURL.Hostname(), repo), nil
+		if slices.Contains(gitProtocolHosts, parsedURL.Hostname()) {
+			return fmt.Sprintf("git://%s%s", parsedURL.Hostname(), repo), nil
+		}
+		return fmt.Sprintf("https://%s%s", parsedURL.Hostname(), repo), nil
 	}
 	return "", fmt.Errorf("unsupported GitWeb URL: %s", parsedURL.String())
 }
@@ -371,6 +386,15 @@ func Repo(u string) (string, error) {
 	// https://sourceware.org/git/gitweb.cgi?p=binutils-gdb.git;h=11d171f1910b508a81d21faa087ad1af573407d8 -> git://sourceware.org/git/binutils-gdb.git
 	if strings.HasSuffix(parsedURL.Path, "/gitweb.cgi") &&
 		strings.HasPrefix(parsedURL.RawQuery, "p=") {
+		return repoGitWeb(parsedURL)
+	}
+
+	// Variations of Git Web URLs, e.g.
+	// https://git.tukaani.org/?p=xz.git;a=tags
+
+	// starts with a supported host and querystring contains p=\*.git
+	if (slices.Contains(supportedHosts, parsedURL.Hostname()) || slices.Contains(supportedHostPrefixes, strings.Split(parsedURL.Hostname(), ".")[0])) &&
+		(strings.HasPrefix(parsedURL.RawQuery, "p=") && strings.Contains(parsedURL.RawQuery, ".git")) {
 		return repoGitWeb(parsedURL)
 	}
 

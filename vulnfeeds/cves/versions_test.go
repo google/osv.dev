@@ -227,7 +227,7 @@ func TestRepo(t *testing.T) {
 		{
 			description:     "GitWeb URL, remapped to something cloneable (CVE-2023-1579)",
 			inputLink:       "https://sourceware.org/git/gitweb.cgi?p=binutils-gdb.git;h=11d171f1910b508a81d21faa087ad1af573407d8",
-			expectedRepoURL: "git://sourceware.org/git/binutils-gdb.git",
+			expectedRepoURL: "https://sourceware.org/git/binutils-gdb.git",
 			expectedOk:      true,
 		},
 		{
@@ -407,13 +407,25 @@ func TestRepo(t *testing.T) {
 		{
 			description:     "GNU glibc GitWeb repo (with no distinguishing marks)",
 			inputLink:       "https://sourceware.org/git/?p=glibc.git",
-			expectedRepoURL: "git://sourceware.org/git/glibc.git",
+			expectedRepoURL: "https://sourceware.org/git/glibc.git",
 			expectedOk:      true,
 		},
 		{
 			description:     "GNU glibc GitWeb repo (with distinguishing marks)",
 			inputLink:       "https://sourceware.org/git/gitweb.cgi?p=glibc.git",
-			expectedRepoURL: "git://sourceware.org/git/glibc.git",
+			expectedRepoURL: "https://sourceware.org/git/glibc.git",
+			expectedOk:      true,
+		},
+		{
+			description:     "GnuPG GitWeb repo that doesn't talk https",
+			inputLink:       "https://git.gnupg.org/cgi-bin/gitweb.cgi?p=libksba.git;a=commit;h=f61a5ea4e0f6a80fd4b28ef0174bee77793cf070",
+			expectedRepoURL: "git://git.gnupg.org/libksba.git",
+			expectedOk:      true,
+		},
+		{
+			description:     "high profile repo encountered on CVE-2024-3094",
+			inputLink:       "https://git.tukaani.org/?p=xz.git;a=tags",
+			expectedRepoURL: "https://git.tukaani.org/xz.git",
 			expectedOk:      true,
 		},
 	}

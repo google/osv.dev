@@ -530,6 +530,7 @@ func TestExtractGitCommit(t *testing.T) {
 				Fixed: "5f18bcb",
 			},
 		},
+		/* Disabled due to https://github.com/google/osv.dev/issues/2095. 
 		{
 			description:     "Valid cGit commit URL",
 			inputLink:       "https://git.dpkg.org/cgit/dpkg/dpkg.git/commit/?id=faa4c92debe45412bfcf8a44f26e827800bb24be",
@@ -539,6 +540,7 @@ func TestExtractGitCommit(t *testing.T) {
 				Fixed: "faa4c92debe45412bfcf8a44f26e827800bb24be",
 			},
 		},
+  		*/
 		{
 			description:     "Valid GitWeb commit URL",
 			inputLink:       "https://git.gnupg.org/cgi-bin/gitweb.cgi?p=libksba.git;a=commit;h=f61a5ea4e0f6a80fd4b28ef0174bee77793cf070",

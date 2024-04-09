@@ -15,6 +15,6 @@ echo "Setup initial directories ${OSV_PARTS_OUTPUT}"
 rm -rf $OSV_PARTS_OUTPUT && mkdir -p $OSV_PARTS_OUTPUT
 
 ./debian-osv
-echo "Begin Syncing with cloud, GSC bucket: ${OUTPUT_BUCKET}"
+echo "Begin Syncing with cloud, GCS bucket: ${OUTPUT_BUCKET}"
 gsutil -q -m rsync -c -d $OSV_PARTS_OUTPUT "gs://$OUTPUT_BUCKET/$OSV_PARTS_OUTPUT"
 echo "Successfully synced with cloud"

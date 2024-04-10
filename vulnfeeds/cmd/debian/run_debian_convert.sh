@@ -1,6 +1,6 @@
 #!/bin/bash
 
-## Converts alpine security advisory into general affected package information
+## Converts Debian security tracker into general affected package information
 ## Then uploads the results to google cloud store.
 ##
 ## This script is intended to be the entrypoint of the docker image.

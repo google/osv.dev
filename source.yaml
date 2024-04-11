@@ -281,6 +281,7 @@
   extension: '.json'
   db_prefix: 'USN-'
   ignore_git: False
+  human_link: 'https://ubuntu.com/security/notices/{{ BUG_ID }}'
   link: 'https://github.com/canonical/ubuntu-security-notices/blob/main/'
   editable: False
 

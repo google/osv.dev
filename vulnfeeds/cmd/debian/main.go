@@ -119,7 +119,11 @@ func updateOSVPkgInfos(pkgName string, cveId string, releases map[string]Release
 				continue
 			}
 			pkgInfo.VersionInfo = cves.VersionInfo{
-				AffectedVersions: []cves.AffectedVersion{{Fixed: release.FixedVersion}},
+				AffectedVersions: []cves.AffectedVersion{{Introduced: "0", Fixed: release.FixedVersion}},
+			}
+		} else {
+			pkgInfo.VersionInfo = cves.VersionInfo{
+				AffectedVersions: []cves.AffectedVersion{{Introduced: "0"}},
 			}
 		}
 		pkgInfo.EcosystemSpecific["urgency"] = release.Urgency

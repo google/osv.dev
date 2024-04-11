@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"os"
 	"path"
+	"sort"
 
 	"github.com/google/osv/vulnfeeds/cves"
 	"github.com/google/osv/vulnfeeds/utility"
@@ -97,9 +98,18 @@ func updateOSVPkgInfos(pkgName string, cveId string, releases map[string]Release
 	if value, ok := osvPkgInfos[cveId]; ok {
 		pkgInfos = value
 	}
-	for releaseName, release := range releases {
+
+	// Sorts releases to ensure pkgInfos remain consistent between runs.
+	var keys []string
+	for name := range releases {
+		keys = append(keys, name)
+	}
+	sort.Strings(keys)
+
+	for _, releaseName := range keys {
 		// Skips 'not yet assigned' entries because their status may change in the future.
 		// For reference on urgency levels, see: https://security-team.debian.org/security_tracker.html#severity-levels
+		release := releases[releaseName]
 		if release.Urgency == "not yet assigned" {
 			continue
 		}
@@ -119,7 +129,7 @@ func updateOSVPkgInfos(pkgName string, cveId string, releases map[string]Release
 				continue
 			}
 			pkgInfo.VersionInfo = cves.VersionInfo{
-				AffectedVersions: []cves.AffectedVersion{{Introduced: "0", Fixed: release.FixedVersion}},
+				AffectedVersions: []cves.AffectedVersion{{Introduced: "0"}, {Fixed: release.FixedVersion}},
 			}
 		} else {
 			pkgInfo.VersionInfo = cves.VersionInfo{

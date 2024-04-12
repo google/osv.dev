@@ -85,7 +85,9 @@ func getDebianReleaseMap() (map[string]string, error) {
 		if row[seriesIndex] == "experimental" || row[seriesIndex] == "sid" {
 			continue
 		}
-
+		if row[versionIndex] == "13" || row[versionIndex] == "14" {
+			continue
+		}
 		releaseMap[row[seriesIndex]] = row[versionIndex]
 	}
 

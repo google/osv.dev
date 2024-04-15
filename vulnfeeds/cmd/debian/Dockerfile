@@ -1,4 +1,4 @@
-# Copyright 2021 Google LLC
+# Copyright 2024 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -12,25 +12,25 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-type: google.api.Service
-config_version: 3
-name: ${service_name}
-title: OSV (v1)
-apis:
-  - name: osv.v1.OSV
-usage:
-  rules:
-    - selector: "*"
-      allow_unregistered_calls: true
-authentication:
-  rules:
-    - selector: "*"
-      allow_without_credential: true
-backend:
-  rules:
-    - selector: "*"
-      address: ${backend_url}
-      deadline: 60
-    - selector: "osv.v1.OSV.QueryAffectedBatch"
-      address: ${backend_batch_url}
-      deadline: 60
+FROM golang:1.22.1-alpine@sha256:5a99b4049412cd34ad6b4e0c9527ae6beb9ae82d787b4bf3f4eff7aa13fc577a AS GO_BUILD
+
+RUN mkdir /src
+WORKDIR /src
+
+COPY ./go.mod /src/go.mod
+COPY ./go.sum /src/go.sum
+RUN go mod download
+
+COPY ./ /src/
+RUN go build -o debian-osv ./cmd/debian/
+
+
+FROM gcr.io/google.com/cloudsdktool/google-cloud-cli:alpine
+
+WORKDIR /root/
+COPY --from=GO_BUILD /src/debian-osv ./
+COPY ./cmd/debian/run_debian_convert.sh ./
+
+RUN chmod 755 ./run_debian_convert.sh
+
+ENTRYPOINT ["/root/run_debian_convert.sh"]

@@ -21,7 +21,7 @@ steps:
 - name: gcr.io/cloud-builders/gcloud
   args: ['deploy', 'releases', 'promote', '--quiet', '--release=osv-$SHORT_SHA', '--region=us-central1', '--delivery-pipeline=gke-workers', '--to-target=production-workers', '--annotations=tag=$TAG_NAME']
 - name: gcr.io/cloud-builders/gcloud
-  args: ['deploy', 'releases', 'promote', '--quiet', '--release=osv-$SHORT_SHA', '--region=us-central1', '--delivery-pipeline=osv-api', '--to-target=production-api', '--annotations=tag=$TAG_NAME']
+  args: ['deploy', 'releases', 'promote', '--quiet', '--release=osv-$SHORT_SHA', '--region=us-central1', '--delivery-pipeline=osv-api', '--to-target=production-api-multi', '--annotations=tag=$TAG_NAME']
 - name: gcr.io/cloud-builders/gcloud
   args: ['deploy', 'releases', 'promote', '--quiet', '--release=osv-$SHORT_SHA', '--region=us-central1', '--delivery-pipeline=gke-indexer', '--to-target=production-indexer', '--annotations=tag=$TAG_NAME']
 
@@ -36,6 +36,8 @@ steps:
   args: ['container', 'images', 'add-tag', '--quiet', 'gcr.io/oss-vdb/exporter:$COMMIT_SHA', 'gcr.io/oss-vdb/exporter:$TAG_NAME']
 - name: gcr.io/cloud-builders/gcloud
   args: ['container', 'images', 'add-tag', '--quiet', 'gcr.io/oss-vdb/alpine-cve-convert:$COMMIT_SHA', 'gcr.io/oss-vdb/alpine-cve-convert:$TAG_NAME']
+- name: gcr.io/cloud-builders/gcloud
+  args: ['container', 'images', 'add-tag', '--quiet', 'gcr.io/oss-vdb/debian-cve-convert:$COMMIT_SHA', 'gcr.io/oss-vdb/debian-cve-convert:$TAG_NAME']
 - name: gcr.io/cloud-builders/gcloud
   args: ['container', 'images', 'add-tag', '--quiet', 'gcr.io/oss-vdb/combine-to-osv:$COMMIT_SHA', 'gcr.io/oss-vdb/combine-to-osv:$TAG_NAME']
 - name: gcr.io/cloud-builders/gcloud

@@ -36,7 +36,7 @@ See our blog posts for more details:
 
 The OSV schema and OSV.dev can be used by both:
 
-1. Open source consumers: By querying [OSV.dev's API](./api/) and using our tooling to find known vulnerabilities in their dependencies.
+1. Open source consumers: By querying [OSV.dev's API](../api/) and using our tooling to find known vulnerabilities in their dependencies.
 2. Vulnerability database producers: By making the database available in the OSV format.
 
 ## Why a new format to describe vulnerability?
@@ -66,7 +66,7 @@ present (but empty) in the [data exports](#is-the-database-available-to-download
 
 ## How do I use OSV as an open source user?
 
-OSV.dev provides an [easy-to-use API](./api/) for querying against the aggregated database of vulnerabilities.
+OSV.dev provides an [easy-to-use API](../api/) for querying against the aggregated database of vulnerabilities.
 
 [Command line tooling](https://github.com/google/osv-scanner) is also available for vulnerability scanning of SBOMs, language manifests, and container images.
 

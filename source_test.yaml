@@ -268,6 +268,7 @@
   extension: '.json'
   db_prefix: 'USN-'
   ignore_git: False
+  human_link: 'https://ubuntu.com/security/notices/{{ BUG_ID }}'
   link: 'https://github.com/canonical/ubuntu-security-notices/blob/main/'
   editable: False
 
@@ -284,3 +285,16 @@
   editable: False
   key_path: 'OSV'
   repo_username: 'git'
+
+- name: 'wolfi'
+  versions_from_repo: False
+  rest_api_url: 'https://packages.wolfi.dev/os/osv/all.json'
+  type: 2
+  ignore_patterns: ['propertyValue']
+  directory_path: 'os/osv'
+  detect_cherrypicks: False
+  extension: '.json'
+  db_prefix: 'WOLFI-'
+  ignore_git: True
+  link: 'https://packages.wolfi.dev/os/osv/'
+  editable: False

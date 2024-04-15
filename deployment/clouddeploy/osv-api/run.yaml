@@ -1,7 +1,7 @@
 apiVersion: serving.knative.dev/v1
 kind: Service
 metadata:
-  name: osv-grpc-backend
+  name: osv-grpc-backend # from-param: ${serviceName}
 spec:
   template:
     metadata:
@@ -16,6 +16,8 @@ spec:
         startupProbe:
           grpc:
             service: osv.v1.OSV
+          initialDelaySeconds: 5
+          timeoutSeconds: 5
         livenessProbe:
           grpc:
             service: osv.v1.OSV
@@ -23,4 +25,4 @@ spec:
           failureThreshold: 3
           periodSeconds: 10
       timeoutSeconds: 60
-      containerConcurrency: 5
+      containerConcurrency: 5 # from-param: ${containerConcurrency}

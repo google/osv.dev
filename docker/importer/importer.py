@@ -481,7 +481,9 @@ class Importer:
 
     logging.info('Finished processing bucket: %s', source_repo.name)
 
-  def _process_deletions_bucket(self, source_repo: osv.SourceRepository):
+  def _process_deletions_bucket(self,
+                                source_repo: osv.SourceRepositoray,
+                                threshold=10):
     """Process deletions from a GCS bucket source.
 
     This validates the continued existence of every Bug in Datastore (for the
@@ -565,7 +567,7 @@ class Importer:
 
     # sanity check: deleting >10% of the records for source in Datastore is
     # probably worth flagging for review.
-    if len(vulns_to_delete) / len(vuln_ids_for_source) > 10.0:
+    if (len(vulns_to_delete) / len(vuln_ids_for_source) * 100) >= threshold:
       logging.error(
           'Cowardly refusing to delete %d missing records from '
           'GCS for: %s', len(vulns_to_delete), source_repo.name)

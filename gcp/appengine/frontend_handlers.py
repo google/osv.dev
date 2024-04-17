@@ -38,6 +38,7 @@ import osv
 import rate_limiter
 import source_mapper
 import utils
+from werkzeug import exceptions
 
 blueprint = Blueprint('frontend_handlers', __name__)
 
@@ -590,3 +591,8 @@ def list_packages(vuln_affected: list[dict]):
           packages.append(parsed_scheme)
 
   return packages
+
+
+@blueprint.app_errorhandler(404)
+def not_found_error(error: exceptions.HTTPException):
+  return render_template('404.html'), 404

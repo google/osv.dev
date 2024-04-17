@@ -7,6 +7,7 @@ $osv-accent-color-hover: #c5221fb2;
 $osv-red-300: #ec928e;
 $osv-grey-600: #80868b;
 $osv-grey-800: #3C4043;
+$osv-cyan-300: #C9F5F7;
 $osv-body-font-family: string.unquote('Overpass, sans-serif');
 $osv-heading-font-family: string.unquote('"Overpass Mono", monospace');
 $osv-heading-size: 60px;
@@ -1271,7 +1272,7 @@ div.highlight {
   }
 
   a {
-    color: #C9F5F7
+    color: $osv-cyan-300
   }
 
   .author {
@@ -1288,5 +1289,80 @@ div.highlight {
     width: 100%;
     margin: 0 auto;
     font-size: 16px;
+  }
+}
+
+/** 404 page */
+.not-found-page {
+  height: 100%;
+  margin: 0;
+  align-items: center;
+  justify-content: center;
+  font-family: $osv-heading-font-family;
+  color: $osv-text-color;
+  font-size: 15px;
+  max-width: 1200px;
+  margin: 0 auto;
+
+  .mdc-layout-grid__cell--span-12 {
+    margin: 0 24px;
+  }
+
+  .text-info {
+    max-width: 900px;
+    margin: 20px auto 0;
+
+    .heading {
+      font-size: $osv-heading-size;
+      text-align: center;
+      margin-bottom: 32px;
+    }
+
+    @media (max-width: $osv-mobile-breakpoint) {
+      .heading {
+        font-size: $osv-heading-size-mobile;
+      }
+    }
+
+    .description {
+      font-size: 20px;
+      line-height: 26px;
+      margin-bottom: 24px;
+      margin-left: 8px;
+      margin-right: 8px;
+      text-align: center;
+    }
+
+    .cta {
+      margin: 32px 0;
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 4px;
+    }
+
+    h2,h3,h4 {
+      line-height: 1.1;
+      font-weight: 300;
+      margin-top: 3rem;
+      margin-bottom: 1.5rem;
+    }
+    
+    p {
+      margin-bottom: 16px;
+      line-height: 1.6;
+    }
+    
+    a {
+      color: $osv-cyan-300;
+    }
+  }
+
+  footer {
+    background: url('/static/img/footer-decoration.png');
+    background-repeat: no-repeat;
+    background-position: center;
+    min-height: 500px;
+    width: 100%;
   }
 }

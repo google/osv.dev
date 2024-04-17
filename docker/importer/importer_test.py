@@ -902,6 +902,6 @@ if __name__ == '__main__':
         del os.environ[env]
     loader = unittest.TestLoader()
     suite = loader.loadTestsFromTestCase(BucketImporterMassDeletionTest)
-    runner = unittest.TextTestRunner()
+    runner = unittest.TextTestRunner(verbosity=2)
     with ndb.Client(project='oss-vdb-test').context() as context:
       runner.run(suite)

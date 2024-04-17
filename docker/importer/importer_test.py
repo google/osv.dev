@@ -698,9 +698,15 @@ class BucketImporterMassDeletionTest(unittest.TestCase):
   def test_deletions_in_staging(self, mock_publish: mock.MagicMock,
                                 unused_upload_from_str: mock.MagicMock):
     """Load test against staging bucket and (non-emulated) staging Datastore."""
-    imp = importer.Importer('fake_public_key', 'fake_private_key', self.tmp_dir,
-                            importer.DEFAULT_PUBLIC_LOGGING_BUCKET, 'bucket',
-                            True, False)
+    imp = importer.Importer(
+        'fake_public_key',
+        'fake_private_key',
+        self.tmp_dir,
+        importer.DEFAULT_PUBLIC_LOGGING_BUCKET,
+        'bucket',
+        True,
+        False,
+        deletion_safety_threshold_pct=100)
 
     imp.process_deletions(self.source_repo)
     # This will start to fail once relevant records are actually deleted out of
@@ -897,6 +903,7 @@ if __name__ == '__main__':
   finally:
     tests.stop_emulator()
   if run_slow_tests:
+    import time
     print('Please stand by for the slow tests')
     for env in [
         'DATASTORE_DATASET', 'DATASTORE_EMULATOR_HOST',
@@ -908,4 +915,7 @@ if __name__ == '__main__':
     suite = loader.loadTestsFromTestCase(BucketImporterMassDeletionTest)
     runner = unittest.TextTestRunner(verbosity=2)
     with ndb.Client(project='oss-vdb-test').context() as context:
+      start = time.perf_counter()
       runner.run(suite)
+      end = time.perf_counter()
+    print('Duration: %f', end - start)

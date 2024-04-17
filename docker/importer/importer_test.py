@@ -471,9 +471,16 @@ class BucketImporterTest(unittest.TestCase):
                   mock_publish: mock.MagicMock,
                   upload_from_str: mock.MagicMock):
     """Test bucket updates."""
-    imp = importer.Importer('fake_public_key', 'fake_private_key', self.tmp_dir,
-                            importer.DEFAULT_PUBLIC_LOGGING_BUCKET, 'bucket',
-                            True, True)
+    imp = importer.Importer(
+        'fake_public_key',
+        'fake_private_key',
+        self.tmp_dir,
+        importer.DEFAULT_PUBLIC_LOGGING_BUCKET,
+        'bucket',
+        True,
+        True,
+        # The test dataset is too small for the safety threshold.
+        deletion_safety_threshold_pct=100)
 
     with self.assertLogs(level='WARNING') as logs:
       imp.run()
@@ -552,6 +559,34 @@ class BucketImporterTest(unittest.TestCase):
         any('Failed to parse vulnerability "a/b/test-invalid.json"' in x[0][0]
             for x in upload_from_str.call_args_list))
 
+    # Run again with a 10% threshold and confirm the safeguards work as
+    # intended.
+    imp = importer.Importer(
+        'fake_public_key',
+        'fake_private_key',
+        self.tmp_dir,
+        importer.DEFAULT_PUBLIC_LOGGING_BUCKET,
+        'bucket',
+        True,
+        True,
+        # The test dataset is so small this safety threshold triggers.
+        deletion_safety_threshold_pct=10)
+
+    mock_publish.reset_mock()
+
+    with self.assertLogs(level='WARNING') as logs:
+      imp.run()
+    # The second schema validation of files in GCS by
+    # _process_deletions_bucket() causes 2x the errors to be logged, plus an
+    # extra one from the safeguard.
+    self.assertEqual(7, len(logs.output))
+    self.assertEqual(
+        "ERROR:root:Cowardly refusing to delete 1 missing records from GCS for: test",  # pylint: disable=line-too-long
+        logs.output[-1])
+
+    # No deletions should have been requested.
+    self.assertNotIn(deletion_call, mock_publish.mock_calls)
+
   @mock.patch('google.cloud.storage.Blob.upload_from_string')
   @mock.patch('google.cloud.pubsub_v1.PublisherClient.publish')
   @mock.patch('time.time', return_value=12345.0)
@@ -629,8 +664,8 @@ class BucketImporterMassDeletionTest(unittest.TestCase):
   """Rigorous deletion testing against production data (in staging)."""
 
   def setUp(self):
-    # Note: This runs against the real live (non-emulated) staging datastore and
-    # GCS bucket.
+    # Note: This runs (non-destructively) against the real live (non-emulated)
+    # staging datastore and GCS bucket.
     if os.environ.get('DATASTORE_PROJECT_ID', None) is not None:
       self.skipTest('This needs to be run outside of the Datastore Emulator')
 

@@ -18,7 +18,7 @@
 # https://github.com/google/osv.dev/pull/2030#discussion_r1513861856
 
 import argparse
-from concurrent.futures import ThreadPoolExecutor
+import concurrent.futures
 from collections import namedtuple
 import datetime
 import json
@@ -105,9 +105,15 @@ def log_run_duration(start: float):
 class Importer:
   """Importer."""
 
-  def __init__(self, ssh_key_public_path, ssh_key_private_path, work_dir,
-               public_log_bucket, oss_fuzz_export_bucket,
-               strict_validation: bool, delete: bool):
+  def __init__(self,
+               ssh_key_public_path,
+               ssh_key_private_path,
+               work_dir,
+               public_log_bucket,
+               oss_fuzz_export_bucket,
+               strict_validation: bool,
+               delete: bool,
+               deletion_safety_threshold_pct=10):
     self._ssh_key_public_path = ssh_key_public_path
     self._ssh_key_private_path = ssh_key_private_path
     self._work_dir = work_dir
@@ -120,6 +126,7 @@ class Importer:
     self._sources_dir = os.path.join(self._work_dir, 'sources')
     self._strict_validation = strict_validation
     self._delete = delete
+    self._deletion_safety_threshold_pct = deletion_safety_threshold_pct
     os.makedirs(self._sources_dir, exist_ok=True)
 
   def _git_callbacks(self, source_repo):
@@ -267,6 +274,46 @@ class Importer:
     source_repo.last_update_date = aest_time_now
     source_repo.put()
 
+  def _vuln_ids_from_gcs_blob(self, client: storage.Client,
+                              source_repo: osv.SourceRepository,
+                              blob: storage.Blob) -> Optional[Tuple[str]]:
+    """Returns a list of the vulnerability IDs from a parsable OSV file in GCS.
+
+    Usually an OSV file has a single vulnerability in it, but it is permissible
+    to have more than one, hence it returns a list.
+
+    This is runnable in parallel using concurrent.futures.ThreadPoolExecutor
+
+    Args:
+      client: a storage.Client() to use for retrieval of the blob
+      source_repo: the osv.SourceRepository the blob relates to
+      blob: the storage.Blob object to operate on
+
+    Returns:
+      a list of one or more vulnerability IDs (from the Vulnerability proto) or
+      None when the blob has an unexpected name or fails to parse
+    """
+    if not _is_vulnerability_file(source_repo, blob.name):
+      return None
+
+    # Download in a blob generation agnostic way to cope with the blob
+    # changing between when it was listed and now (if the generation doesn't
+    # match, retrieval fails otherwise).
+    blob_bytes = storage.Blob(
+        blob.name, blob.bucket, generation=None).download_as_bytes(client)
+
+    vuln_ids = []
+    try:
+      vulns = osv.parse_vulnerabilities_from_data(
+          blob_bytes,
+          os.path.splitext(blob.name)[1],
+          strict=self._strict_validation)
+    except Exception:
+      return None
+    for vuln in vulns:
+      vuln_ids.append(vuln.id)
+    return vuln_ids
+
   def _sync_from_previous_commit(self, source_repo, repo):
     """Sync the repository from the previous commit.
 
@@ -404,6 +451,7 @@ class Importer:
 
     import_failure_logs = []
 
+    # TODO(andrewpollock): externalise like _vuln_ids_from_gcs_blob()
     def convert_blob_to_vuln(blob: storage.Blob) -> Optional[Tuple[str, str]]:
       """Download and parse GCS blob into [blob_hash, blob.name]"""
       if not _is_vulnerability_file(source_repo, blob.name):
@@ -464,7 +512,8 @@ class Importer:
       _client_store.storage_client = storage.Client()
       _client_store.ndb_client = ndb.Client()
 
-    with ThreadPoolExecutor(
+    # TODO(andrewpollock): switch to using c.f.submit() like in _process_deletions_bucket()
+    with concurrent.futures.ThreadPoolExecutor(
         _BUCKET_THREAD_COUNT, initializer=thread_init) as executor:
       converted_vulns = executor.map(convert_blob_to_vuln, listed_blobs)
       for cv in converted_vulns:
@@ -482,7 +531,7 @@ class Importer:
     logging.info('Finished processing bucket: %s', source_repo.name)
 
   def _process_deletions_bucket(self,
-                                source_repo: osv.SourceRepositoray,
+                                source_repo: osv.SourceRepository,
                                 threshold=10):
     """Process deletions from a GCS bucket source.
 
@@ -492,7 +541,11 @@ class Importer:
     deleted from GCS are then flagged for treatment by the worker.
 
     If the delta is too large, something undesirable has been assumed to have
-    happened and treatment is aborted.
+    happened and further processing is aborted.
+
+    Args:
+      source_repo: the osv.SourceRepository being operated on
+      threshold: the percentage delta considered safe to delete
     """
 
     logging.info("Begin processing bucket for deletions: %s", source_repo.name)
@@ -519,53 +572,34 @@ class Importer:
 
     import_failure_logs = []
 
-    def convert_blob_to_vulns(blob: storage.Blob) -> Optional[Tuple[str]]:
-      """Download and parse GCS blob into [vuln.id]"""
-      if not _is_vulnerability_file(source_repo, blob.name):
-        return None
+    # Get the vulnerability ID from every GCS object that parses as an OSV
+    # record. Do this in parallel for a degree of expedience.
+    with concurrent.futures.ThreadPoolExecutor(
+        max_workers=_BUCKET_THREAD_COUNT) as executor:
+      future_to_blob = {
+          executor.submit(self._vuln_ids_from_gcs_blob, storage.Client(),
+                          source_repo, blob):
+              blob for blob in listed_blobs
+      }
+      vuln_ids_in_gcs = []
+      for future in concurrent.futures.as_completed(future_to_blob):
+        blob = future_to_blob[future]
+        try:
+          vuln_ids_in_gcs.extend(
+              [vuln_id for vuln_id in future.result() if vuln_id])
+        except Exception as e:
+          # Don't include error stack trace as that might leak sensitive info
+          logging.error('Failed to parse vulnerability %s: %s', blob.name, e)
+          # List.append() is atomic and threadsafe.
+          import_failure_logs.append('Failed to parse vulnerability "' +
+                                     blob.name + '"')
 
-      # Use the _client_store thread local variable
-      # set in the thread pool initializer
-      # Download in a blob generation agnostic way to cope with the file
-      # changing between when it was listed and now.
-      blob_bytes = storage.Blob(
-          blob.name, blob.bucket,
-          generation=None).download_as_bytes(_client_store.storage_client)
-
-      vuln_ids = []
-      try:
-        vulns = osv.parse_vulnerabilities_from_data(
-            blob_bytes,
-            os.path.splitext(blob.name)[1],
-            strict=self._strict_validation)
-        for vuln in vulns:
-          vuln_ids.append(vuln.id)
-
-        return vuln_ids
-      except Exception as e:
-        logging.error('Failed to parse vulnerability %s: %s', blob.name, e)
-        # Don't include error stack trace as that might leak sensitive info
-        # List.append() is atomic and threadsafe.
-        import_failure_logs.append('Failed to parse vulnerability "' +
-                                   blob.name + '"')
-        return None
-
-    # Setup storage client
-    def thread_init():
-      _client_store.storage_client = storage.Client()
-
-    with ThreadPoolExecutor(
-        _BUCKET_THREAD_COUNT, initializer=thread_init) as executor:
-      vulns_in_gcs = [
-          v for v in executor.map(convert_blob_to_vulns, listed_blobs) if v
-      ]
-
-    # diff
+    # diff what's in Datastore with what was seen in GCS.
     vulns_to_delete = [
-        v for v in vuln_ids_for_source if v.id not in vulns_in_gcs
+        v for v in vuln_ids_for_source if v.id not in vuln_ids_in_gcs
     ]
 
-    # sanity check: deleting >10% of the records for source in Datastore is
+    # sanity check: deleting a lot/all of the records for source in Datastore is
     # probably worth flagging for review.
     if (len(vulns_to_delete) / len(vuln_ids_for_source) * 100) >= threshold:
       logging.error(
@@ -575,6 +609,8 @@ class Importer:
 
     # Request deletion.
     for v in vulns_to_delete:
+      logging.info('Requesting deletion of bucket entry: %s/%s for %s',
+                   source_repo.bucket, v.path, v.id)
       self._request_analysis_external(
           source_repo, original_sha256='', path=v.path, deleted=True)
 
@@ -679,7 +715,8 @@ class Importer:
       return
 
     if source_repo.type == osv.SourceRepositoryType.BUCKET:
-      self._process_deletions_bucket(source_repo)
+      self._process_deletions_bucket(source_repo,
+                                     self._deletion_safety_threshold_pct)
       return
 
     if source_repo.type == osv.SourceRepositoryType.REST_ENDPOINT:
@@ -723,7 +760,8 @@ class Importer:
       except Exception as e:
         logging.error('Failed to export: %s', e)
 
-    with ThreadPoolExecutor(max_workers=_EXPORT_WORKERS) as executor:
+    with concurrent.futures.ThreadPoolExecutor(
+        max_workers=_EXPORT_WORKERS) as executor:
       for bug in osv.Bug.query(osv.Bug.ecosystem == 'OSS-Fuzz'):
         if not bug.public:
           continue

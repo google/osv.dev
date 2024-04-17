@@ -584,6 +584,8 @@ class Importer:
                           source_repo, blob):
               blob for blob in listed_blobs
       }
+      logging.info('Parallel-parsing %d blobs in %s', len(listed_blobs),
+                   source_repo.name)
       vuln_ids_in_gcs = []
       for future in concurrent.futures.as_completed(future_to_blob):
         blob = future_to_blob[future]

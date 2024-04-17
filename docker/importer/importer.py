@@ -569,6 +569,8 @@ class Importer:
     storage_client = storage.Client()
     # Get all of the existing records in the GCS bucket
     # (to get their IDs for checking against Datastore)
+    logging.info('Listing blobs in gs://%s',
+                 os.path.join(source_repo.bucket, source_repo.directory_path))
     listed_blobs = list(
         storage_client.list_blobs(
             source_repo.bucket, prefix=source_repo.directory_path))
@@ -579,14 +581,16 @@ class Importer:
     # record. Do this in parallel for a degree of expedience.
     with concurrent.futures.ThreadPoolExecutor(
         max_workers=_BUCKET_THREAD_COUNT) as executor:
+      logging.info('Parallel-parsing %d blobs in %s', len(listed_blobs),
+                   source_repo.name)
       future_to_blob = {
           executor.submit(self._vuln_ids_from_gcs_blob, storage.Client(),
                           source_repo, blob):
               blob for blob in listed_blobs
       }
-      logging.info('Parallel-parsing %d blobs in %s', len(listed_blobs),
-                   source_repo.name)
       vuln_ids_in_gcs = []
+      logging.info('Processing %d parallel-parsed blobs in %s',
+                   len(future_to_blob), source_repo.name)
       for future in concurrent.futures.as_completed(future_to_blob):
         blob = future_to_blob[future]
         try:
@@ -599,7 +603,8 @@ class Importer:
           import_failure_logs.append(
               'Failed to parse vulnerability (when considering for deletion)"' +
               blob.name + '"')
-    logging.info('Counted %d vulnerabilities in %s', len(), source_repo.name)
+    logging.info('Counted %d parsed vulnerabilities (from %d blobs) for %s',
+                 len(vuln_ids_in_gcs), len(listed_blobs), source_repo.name)
 
     # diff what's in Datastore with what was seen in GCS.
     vulns_to_delete = [

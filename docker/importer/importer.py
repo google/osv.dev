@@ -563,6 +563,8 @@ class Importer:
         for r in result
         if not r.withdrawn
     ]
+    logging.info('Counted %d Bugs for %s in Datastore',
+                 len(vuln_ids_for_source), source_repo.name)
 
     storage_client = storage.Client()
     # Get all of the existing records in the GCS bucket
@@ -592,8 +594,10 @@ class Importer:
           # Don't include error stack trace as that might leak sensitive info
           logging.error('Failed to parse vulnerability %s: %s', blob.name, e)
           # List.append() is atomic and threadsafe.
-          import_failure_logs.append('Failed to parse vulnerability "' +
-                                     blob.name + '"')
+          import_failure_logs.append(
+              'Failed to parse vulnerability (when considering for deletion)"' +
+              blob.name + '"')
+    logging.info('Counted %d vulnerabilities in %s', len(), source_repo.name)
 
     # diff what's in Datastore with what was seen in GCS.
     vulns_to_delete = [
@@ -790,6 +794,11 @@ def main():
       '--delete',
       help='Propagate record deletions from source to Datastore',
       default=False)
+  parser.add_argument(
+      '--delete_threshold_pct',
+      help='More than this percent of records for a given source '
+      'being deleted triggers an error',
+      default=10)
   args = parser.parse_args()
 
   tmp_dir = os.path.join(args.work_dir, 'tmp')
@@ -804,7 +813,8 @@ def main():
 
   importer = Importer(args.ssh_key_public, args.ssh_key_private, args.work_dir,
                       args.public_log_bucket, _OSS_FUZZ_EXPORT_BUCKET,
-                      args.strict_validation, args.delete)
+                      args.strict_validation, args.delete,
+                      args.delete_threshold_pct)
   importer.run()
 
 

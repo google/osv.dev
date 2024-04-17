@@ -16,6 +16,8 @@ spec:
         startupProbe:
           grpc:
             service: osv.v1.OSV
+          initialDelaySeconds: 5
+          timeoutSeconds: 5
         livenessProbe:
           grpc:
             service: osv.v1.OSV

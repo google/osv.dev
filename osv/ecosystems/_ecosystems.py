@@ -59,6 +59,7 @@ _ecosystems = {
     'Photon OS': OrderingUnsupportedEcosystem(),
     'Rocky Linux': OrderingUnsupportedEcosystem(),
     'Ubuntu': OrderingUnsupportedEcosystem(),
+    'Wolfi': OrderingUnsupportedEcosystem(),
 }
 
 # Semver-based ecosystems, should correspond to _ecosystems above.

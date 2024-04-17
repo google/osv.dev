@@ -549,7 +549,7 @@ class Importer:
       threshold: the percentage delta considered safe to delete
     """
 
-    logging.info("Begin processing bucket for deletions: %s", source_repo.name)
+    logging.info('Begin processing bucket for deletions: %s', source_repo.name)
 
     # Get all the existing non-withdrawn Bug IDs for
     # source_repo.name in Datastore

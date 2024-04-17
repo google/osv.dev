@@ -19,7 +19,6 @@ import tempfile
 import unittest
 import http.server
 import logging
-import sys
 import threading
 
 from unittest import mock

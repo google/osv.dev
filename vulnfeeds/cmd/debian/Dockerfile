@@ -31,4 +31,6 @@ WORKDIR /root/
 COPY --from=GO_BUILD /src/debian-osv ./
 COPY ./cmd/debian/run_debian_convert.sh ./
 
+RUN chmod 755 ./run_debian_convert.sh
+
 ENTRYPOINT ["/root/run_debian_convert.sh"]

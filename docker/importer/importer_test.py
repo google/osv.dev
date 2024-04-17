@@ -18,6 +18,8 @@ import shutil
 import tempfile
 import unittest
 import http.server
+import logging
+import sys
 import threading
 
 from unittest import mock
@@ -686,8 +688,14 @@ class BucketImporterMassDeletionTest(unittest.TestCase):
 
     tests.mock_datetime(self)
 
+    self.logger = logging.getLogger()
+    self.logger.level = logging.INFO
+    self.stream_handler = logging.StreamHandler(sys.stdout)
+    self.logger.addHandler(self.stream_handler)
+
   def tearDown(self):
     shutil.rmtree(self.tmp_dir, ignore_errors=True)
+    self.logger.removeHandler(self.stream_handler)
 
   @mock.patch('google.cloud.storage.Blob.upload_from_string')
   @mock.patch('google.cloud.pubsub_v1.PublisherClient.publish')

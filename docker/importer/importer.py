@@ -611,6 +611,9 @@ class Importer:
         v for v in vuln_ids_for_source if v.id not in vuln_ids_in_gcs
     ]
 
+    logging.info('%d Bugs in Datastore considered deleted from GCS for %s',
+                 len(vulns_to_delete), source_repo.name)
+
     # sanity check: deleting a lot/all of the records for source in Datastore is
     # probably worth flagging for review.
     if (len(vulns_to_delete) / len(vuln_ids_for_source) * 100) >= threshold:

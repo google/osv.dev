@@ -512,7 +512,8 @@ class Importer:
       _client_store.storage_client = storage.Client()
       _client_store.ndb_client = ndb.Client()
 
-    # TODO(andrewpollock): switch to using c.f.submit() like in _process_deletions_bucket()
+    # TODO(andrewpollock): switch to using c.f.submit() like in
+    # _process_deletions_bucket()
     with concurrent.futures.ThreadPoolExecutor(
         _BUCKET_THREAD_COUNT, initializer=thread_init) as executor:
       converted_vulns = executor.map(convert_blob_to_vuln, listed_blobs)

@@ -104,6 +104,8 @@ E.g. for PyPI vulnerabilities:
 gsutil cp gs://osv-vulnerabilities/PyPI/all.zip .
 ```
 
+Some ecosystems contain a `:` separator in the name (e.g. `Alpine:v3.17`). For these ecosystems, the data dump will always contain an ecosystem directory without the `:.*` suffix (e.g. `Alpine`). This will contain all the advisories of the ecosystem with the same prefix (e.g. All `Alpine:.*`).
+
 A list of all current ecosystems is available at
 [`gs://osv-vulnerabilities/ecosystems.txt`](https://osv-vulnerabilities.storage.googleapis.com/ecosystems.txt)
 

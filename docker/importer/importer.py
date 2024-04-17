@@ -459,7 +459,8 @@ class Importer:
     """Process updates from REST API."""
     logging.info('Begin processing REST: %s', source_repo.name)
 
-    ignore_last_import_time = source_repo.ignore_last_import_time
+    ignore_last_import_time = (
+        source_repo.ignore_last_import_time or not source_repo.last_update_date)
     if ignore_last_import_time:
       source_repo.ignore_last_import_time = False
       source_repo.put()
@@ -468,13 +469,16 @@ class Importer:
     if request.status_code != 200:
       logging.error('Failed to fetch REST API: %s', request.status_code)
       return
-    last_modified = datetime.datetime.strptime(request.headers['Last-Modified'],
-                                               _HTTP_LAST_MODIFIED_FORMAT)
-    # Check whether endpoint has been modified since last update
-    if not ignore_last_import_time and (last_modified
-                                        < source_repo.last_update_date):
-      logging.info('No changes since last update.')
-      return
+
+    if 'Last-Modified' in request.headers:
+      last_modified = datetime.datetime.strptime(
+          request.headers['Last-Modified'], _HTTP_LAST_MODIFIED_FORMAT)
+      # Check whether endpoint has been modified since last update
+      if not ignore_last_import_time and (last_modified
+                                          < source_repo.last_update_date):
+        logging.info('No changes since last update.')
+        return
+
     request = requests.get(source_repo.rest_api_url, timeout=_TIMEOUT_SECONDS)
     # Parse vulns into Vulnerability objects from the REST API request.
     vulns = osv.parse_vulnerabilities_from_data(

@@ -29,6 +29,29 @@ resource "google_cloud_run_service" "api_backend" {
   }
 }
 
+resource "google_cloud_run_v2_service" "api_backend_batch" {
+  project  = var.project_id
+  name     = "osv-grpc-backend-batch"
+  location = "us-central1"
+
+  template {
+    containers {
+      image = "us-docker.pkg.dev/cloudrun/container/hello:latest" # Placeholder image.
+    }
+  }
+
+  lifecycle {
+    ignore_changes = [
+      # To be managed by Cloud Deploy.
+      template,
+      traffic,
+      labels,
+      client
+    ]
+    prevent_destroy = true
+  }
+}
+
 variable "_api_descriptor_file" {
   # This isn't actually sensitive, but it's outputted as a massive base64 string which really floods the plan output.
   sensitive = true
@@ -42,8 +65,9 @@ resource "google_endpoints_service" "grpc_service" {
   grpc_config = templatefile(
     "api/api_config.tftpl",
     {
-      service_name = var.api_url,
-      backend_url  = replace(google_cloud_run_service.api_backend.status[0].url, "https://", "grpcs://")
+      service_name      = var.api_url,
+      backend_url       = replace(google_cloud_run_service.api_backend.status[0].url, "https://", "grpcs://")
+      backend_batch_url = replace(google_cloud_run_v2_service.api_backend_batch.uri, "https://", "grpcs://")
   })
   protoc_output_base64 = filebase64(var._api_descriptor_file)
 }

@@ -16,6 +16,7 @@ supports an arbitrary number of vulnerability IDs on the command line.
 
 from google.cloud import datastore
 from google.cloud import storage
+from google.cloud.storage import retry
 from google.cloud.datastore.query import PropertyFilter
 
 import argparse
@@ -112,7 +113,7 @@ def reset_object_creation(bucket_name: str,
   bucket = gcs_client.bucket(bucket_name)
   blob = bucket.blob(blob_name)
   blob.download_to_filename(local_tmp_file)
-  blob.upload_from_filename(local_tmp_file)
+  blob.upload_from_filename(local_tmp_file, retry=retry.DEFAULT_RETRY)
   os.unlink(local_tmp_file)
 
 

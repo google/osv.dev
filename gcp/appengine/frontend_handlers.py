@@ -17,6 +17,7 @@ import json
 import os
 import math
 import re
+import logging
 
 from flask import abort
 from flask import current_app
@@ -595,4 +596,5 @@ def list_packages(vuln_affected: list[dict]):
 
 @blueprint.app_errorhandler(404)
 def not_found_error(error: exceptions.HTTPException):
+  logging.info('Handled %s - Path attempted: %s', error, request.path)
   return render_template('404.html'), 404

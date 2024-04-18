@@ -20,7 +20,7 @@ packaging = "==21.3"
 redis = "==4.6.0"
 requests = "==2.31.0"
 grpcio-status = "==1.62.0"
-gunicorn = "==21.2.0"
+gunicorn = "==22.0.0"
 whitenoise = "6.5.0"
 
 [dev-packages]

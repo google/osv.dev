@@ -85,9 +85,6 @@ func getDebianReleaseMap() (map[string]string, error) {
 		if row[seriesIndex] == "experimental" || row[seriesIndex] == "sid" {
 			continue
 		}
-		if row[versionIndex] == "13" || row[versionIndex] == "14" {
-			continue
-		}
 		releaseMap[row[seriesIndex]] = row[versionIndex]
 	}
 
@@ -126,17 +123,14 @@ func updateOSVPkgInfos(pkgName string, cveId string, releases map[string]Release
 		}
 		pkgInfo.EcosystemSpecific = make(map[string]string)
 
+		pkgInfo.VersionInfo = cves.VersionInfo{
+			AffectedVersions: []cves.AffectedVersion{{Introduced: "0"}},
+		}
 		if release.Status == "resolved" {
 			if release.FixedVersion == "0" { // not affected
 				continue
 			}
-			pkgInfo.VersionInfo = cves.VersionInfo{
-				AffectedVersions: []cves.AffectedVersion{{Introduced: "0"}, {Fixed: release.FixedVersion}},
-			}
-		} else {
-			pkgInfo.VersionInfo = cves.VersionInfo{
-				AffectedVersions: []cves.AffectedVersion{{Introduced: "0"}},
-			}
+			pkgInfo.VersionInfo.AffectedVersions = append(pkgInfo.VersionInfo.AffectedVersions, cves.AffectedVersion{Fixed: release.FixedVersion})
 		}
 		pkgInfo.EcosystemSpecific["urgency"] = release.Urgency
 		pkgInfos = append(pkgInfos, pkgInfo)
@@ -150,7 +144,15 @@ func updateOSVPkgInfos(pkgName string, cveId string, releases map[string]Release
 func generateDebianSecurityTrackerOSV(debianData DebianSecurityTrackerData, debianReleaseMap map[string]string) map[string][]vulns.PackageInfo {
 	Logger.Infof("Converting Debian Security Tracker data to OSV package infos.")
 	osvPkgInfos := make(map[string][]vulns.PackageInfo)
-	for pkgName, pkg := range debianData {
+	// Sorts packages to ensure results remain consistent between runs.
+	var keys []string
+	for name := range debianData {
+		keys = append(keys, name)
+	}
+	sort.Strings(keys)
+
+	for _, pkgName := range keys {
+		pkg := debianData[pkgName]
 		for cveId, cve := range pkg {
 			updateOSVPkgInfos(pkgName, cveId, cve.Releases, osvPkgInfos, debianReleaseMap)
 		}

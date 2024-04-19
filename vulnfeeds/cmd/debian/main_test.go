@@ -22,7 +22,6 @@ func Test_generateDebianSecurityTrackerOSV(t *testing.T) {
 	debianReleaseMap["bullseye"] = "11"
 	debianReleaseMap["bookworm"] = "12"
 	debianReleaseMap["trixie"] = "13"
-	debianReleaseMap["forky"] = "14"
 
 	osvPkgInfos := generateDebianSecurityTrackerOSV(decodedDebianData, debianReleaseMap)
 	expectedCount := 2

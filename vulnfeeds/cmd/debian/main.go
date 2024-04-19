@@ -7,6 +7,7 @@ import (
 	"os"
 	"path"
 	"sort"
+	"strconv"
 
 	"github.com/google/osv/vulnfeeds/cves"
 	"github.com/google/osv/vulnfeeds/utility"
@@ -82,7 +83,7 @@ func getDebianReleaseMap() (map[string]string, error) {
 	}
 
 	for _, row := range data[1:] {
-		if row[seriesIndex] == "experimental" || row[seriesIndex] == "sid" {
+		if row[versionIndex] == "" {
 			continue
 		}
 		releaseMap[row[seriesIndex]] = row[versionIndex]
@@ -92,23 +93,19 @@ func getDebianReleaseMap() (map[string]string, error) {
 }
 
 // updateOSVPkgInfos adds new release entries to osvPkgInfos.
-func updateOSVPkgInfos(pkgName string, cveId string, releases map[string]Release, osvPkgInfos map[string][]vulns.PackageInfo, debianReleaseMap map[string]string) {
+func updateOSVPkgInfos(pkgName string, cveId string, releases map[string]Release, osvPkgInfos map[string][]vulns.PackageInfo, debianReleaseMap map[string]string, releaseNames []string) {
 	var pkgInfos []vulns.PackageInfo
 	if value, ok := osvPkgInfos[cveId]; ok {
 		pkgInfos = value
 	}
 
-	// Sorts releases to ensure pkgInfos remain consistent between runs.
-	var keys []string
-	for name := range releases {
-		keys = append(keys, name)
-	}
-	sort.Strings(keys)
-
-	for _, releaseName := range keys {
+	for _, releaseName := range releaseNames {
 		// Skips 'not yet assigned' entries because their status may change in the future.
 		// For reference on urgency levels, see: https://security-team.debian.org/security_tracker.html#severity-levels
-		release := releases[releaseName]
+		release, ok := releases[releaseName]
+		if !ok {
+			continue
+		}
 		if release.Urgency == "not yet assigned" {
 			continue
 		}
@@ -144,17 +141,30 @@ func updateOSVPkgInfos(pkgName string, cveId string, releases map[string]Release
 func generateDebianSecurityTrackerOSV(debianData DebianSecurityTrackerData, debianReleaseMap map[string]string) map[string][]vulns.PackageInfo {
 	Logger.Infof("Converting Debian Security Tracker data to OSV package infos.")
 	osvPkgInfos := make(map[string][]vulns.PackageInfo)
-	// Sorts packages to ensure results remain consistent between runs.
-	var keys []string
-	for name := range debianData {
-		keys = append(keys, name)
-	}
-	sort.Strings(keys)
 
-	for _, pkgName := range keys {
+	// Sorts packages to ensure results remain consistent between runs.
+	var pkgNames []string
+	for name := range debianData {
+		pkgNames = append(pkgNames, name)
+	}
+	sort.Strings(pkgNames)
+
+	// Sorts releases to ensure pkgInfos remain consistent between runs.
+	releaseNames := make([]string, 0, len(debianReleaseMap))
+	for k := range debianReleaseMap {
+		releaseNames = append(releaseNames, k)
+	}
+
+	sort.Slice(releaseNames, func(i, j int) bool {
+		vi, _ := strconv.ParseFloat(debianReleaseMap[releaseNames[i]], 64)
+		vj, _ := strconv.ParseFloat(debianReleaseMap[releaseNames[j]], 64)
+		return vi < vj
+	})
+
+	for _, pkgName := range pkgNames {
 		pkg := debianData[pkgName]
 		for cveId, cve := range pkg {
-			updateOSVPkgInfos(pkgName, cveId, cve.Releases, osvPkgInfos, debianReleaseMap)
+			updateOSVPkgInfos(pkgName, cveId, cve.Releases, osvPkgInfos, debianReleaseMap, releaseNames)
 		}
 	}
 

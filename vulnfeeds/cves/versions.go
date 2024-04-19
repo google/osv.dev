@@ -21,6 +21,7 @@ import (
 	"net/http"
 	"net/url"
 	"path"
+	"reflect"
 	"regexp"
 	"strings"
 	"time"
@@ -64,6 +65,14 @@ type AffectedVersion struct {
 	LastAffected string `json:"last_affected,omitempty" yaml:"last_affected,omitempty"`
 }
 
+type DuplicateCommitError struct {
+	Field string
+}
+
+func (err *DuplicateCommitError) Error() string {
+	return fmt.Sprintf("commit found in %s field", err.Field)
+}
+
 type VersionInfo struct {
 	AffectedCommits  []AffectedCommit  `json:"affect_commits,omitempty" yaml:"affected_commits,omitempty"`
 	AffectedVersions []AffectedVersion `json:"affected_versions,omitempty" yaml:"affected_versions,omitempty"`
@@ -88,8 +97,8 @@ func (vi *VersionInfo) HasLastAffectedVersions() bool {
 }
 
 func (vi *VersionInfo) HasIntroducedCommits(repo string) bool {
-	for _, av := range vi.AffectedCommits {
-		if av.Repo == repo && av.Introduced != "" {
+	for _, ac := range vi.AffectedCommits {
+		if ac.Repo == repo && ac.Introduced != "" {
 			return true
 		}
 	}
@@ -97,8 +106,8 @@ func (vi *VersionInfo) HasIntroducedCommits(repo string) bool {
 }
 
 func (vi *VersionInfo) HasFixedCommits(repo string) bool {
-	for _, av := range vi.AffectedCommits {
-		if av.Repo == repo && av.Fixed != "" {
+	for _, ac := range vi.AffectedCommits {
+		if ac.Repo == repo && ac.Fixed != "" {
 			return true
 		}
 	}
@@ -106,8 +115,8 @@ func (vi *VersionInfo) HasFixedCommits(repo string) bool {
 }
 
 func (vi *VersionInfo) HasLastAffectedCommits(repo string) bool {
-	for _, av := range vi.AffectedCommits {
-		if av.Repo == repo && av.LastAffected != "" {
+	for _, ac := range vi.AffectedCommits {
+		if ac.Repo == repo && ac.LastAffected != "" {
 			return true
 		}
 	}
@@ -115,21 +124,53 @@ func (vi *VersionInfo) HasLastAffectedCommits(repo string) bool {
 }
 
 func (vi *VersionInfo) FixedCommits(repo string) (FixedCommits []string) {
-	for _, av := range vi.AffectedCommits {
-		if av.Repo == repo && av.Fixed != "" {
-			FixedCommits = append(FixedCommits, av.Fixed)
+	for _, ac := range vi.AffectedCommits {
+		if ac.Repo == repo && ac.Fixed != "" {
+			FixedCommits = append(FixedCommits, ac.Fixed)
 		}
 	}
 	return FixedCommits
 }
 
 func (vi *VersionInfo) LastAffectedCommits(repo string) (LastAffectedCommits []string) {
-	for _, av := range vi.AffectedCommits {
-		if av.Repo == repo && av.LastAffected != "" {
-			LastAffectedCommits = append(LastAffectedCommits, av.Fixed)
+	for _, ac := range vi.AffectedCommits {
+		if ac.Repo == repo && ac.LastAffected != "" {
+			LastAffectedCommits = append(LastAffectedCommits, ac.Fixed)
 		}
 	}
 	return LastAffectedCommits
+}
+
+// Check if the same commit appears in multiple elements of the AffectedCommits array.
+// See https://github.com/google/osv.dev/issues/1984 for more context.
+func (vi *VersionInfo) Duplicated(candidate AffectedCommit) (err error) {
+	fieldsToCheck := []string{"Introduced", "LastAffected", "Limit", "Fixed"}
+
+	// Get the commit hash to look for.
+	v := reflect.ValueOf(&candidate).Elem()
+
+	commit := ""
+	for _, field := range fieldsToCheck {
+		commit = v.FieldByName(field).String()
+		if commit != "" {
+			break
+		}
+	}
+	if commit == "" {
+		return nil
+	}
+
+	// Look through what is already present.
+	for _, ac := range vi.AffectedCommits {
+		v = reflect.ValueOf(&ac).Elem()
+		for _, field := range fieldsToCheck {
+			existingCommit := v.FieldByName(field).String()
+			if existingCommit == commit {
+				return &DuplicateCommitError{Field: field}
+			}
+		}
+	}
+	return nil
 }
 
 // Synthetic enum of supported commit types.
@@ -492,18 +533,18 @@ var (
 )
 
 func repoGitWeb(parsedURL *url.URL) (string, error) {
-		params := strings.Split(parsedURL.RawQuery, ";")
-		for _, param := range params {
-			if !strings.HasPrefix(param, "p=") {
-				continue
-			}
-			repo, err := url.JoinPath(strings.TrimSuffix(strings.TrimSuffix(parsedURL.Path, "/gitweb.cgi"), "cgi-bin"), strings.Split(param, "=")[1])
-			if err != nil {
-				return "", err
-			}
-			return fmt.Sprintf("git://%s%s", parsedURL.Hostname(), repo), nil
+	params := strings.Split(parsedURL.RawQuery, ";")
+	for _, param := range params {
+		if !strings.HasPrefix(param, "p=") {
+			continue
 		}
-		return "", fmt.Errorf("unsupported GitWeb URL: %s", parsedURL.String())
+		repo, err := url.JoinPath(strings.TrimSuffix(strings.TrimSuffix(parsedURL.Path, "/gitweb.cgi"), "cgi-bin"), strings.Split(param, "=")[1])
+		if err != nil {
+			return "", err
+		}
+		return fmt.Sprintf("git://%s%s", parsedURL.Hostname(), repo), nil
+	}
+	return "", fmt.Errorf("unsupported GitWeb URL: %s", parsedURL.String())
 }
 
 // Returns the base repository URL for supported repository hosts.

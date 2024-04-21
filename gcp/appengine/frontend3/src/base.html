@@ -24,6 +24,7 @@
 
 <body>
   <div class="wrapper {{'decorated' if active_section == 'home'}}">
+    {% block top_bar %}
     <header class="top-bar">
       <div class="logo">
         <a href="{{ url_for('frontend_handlers.index') }}" aria-label="Home page">
@@ -63,6 +64,7 @@
         </li>
       </ul>
     </header>
+    {% endblock %}
     {% block content %}{% endblock %}
   </div>
   <link href="https://fonts.googleapis.com/css?family=Material+Icons&display=block" rel="stylesheet">

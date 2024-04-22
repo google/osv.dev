@@ -95,6 +95,64 @@ class IntegrationTests(unittest.TestCase,
       'summary': 'Heap-use-after-free in dwarf_dealloc',
   }
 
+  _VULN_31745 = {
+      'id': 'CVE-2024-31745',
+      'details':
+          ('Libdwarf v0.9.1 was discovered to contain a heap use-after-free '
+           'via the dw_empty_errlist_item function at /libdwarf/dwarf_alloc.c.'
+          ),
+      'modified': '2024-04-20T01:04:38.640360Z',
+      'published': '2024-04-19T13:15:13Z',
+      'references': [{
+          'type':
+              'FIX',
+          'url': ('https://github.com/davea42/libdwarf-code/commit/'
+                  '404e6b1b14f60c81388d50b4239f81d461b3c3ad')
+      }, {
+          'type': 'REPORT',
+          'url': 'https://github.com/davea42/libdwarf-code/issues/238'
+      }],
+      'affected': [{
+          'ranges': [{
+              'type':
+                  'GIT',
+              'repo':
+                  'https://github.com/davea42/libdwarf-code',
+              'events': [{
+                  'introduced': '0'
+              }, {
+                  'fixed': '404e6b1b14f60c81388d50b4239f81d461b3c3ad'
+              }]
+          }],
+          'versions': [
+              '20110113', '20110605', '20110607', '20110612', '20110908',
+              '20111009', '20111030', '20111214', '20120410', '20121127',
+              '20121130', '20130125', '20130126', '20130207', '20130729',
+              '20130729-b', '20140131', '20140208', '20140413', '20140519',
+              '20140805', '20150112', '20150115', '20150310', '20150507',
+              '20150913', '20150915', '20151114', '20160116', '20160507',
+              '20160613', '20160923', '20160929', '20161001', '20161021',
+              '20161124', '20170416', '20170709', '20180129', '20180527',
+              '20180723', '20180724', '20180809', '20181024', '20190104',
+              '20190110', '20190505', '20190529', '20191002', '20191104',
+              '20200114', '20200703', '20200719', '20200825', '20201020',
+              '20201201', '20210305', '20210528', 'libdwarf-0.1.1',
+              'libdwarf-0.2.0', 'libdwarf-0.3.0', 'libdwarf-0.3.1',
+              'libdwarf-0.3.2', 'libdwarf-0.3.3', 'libdwarf-0.3.4',
+              'libdwarf-0.4.0', 'libdwarf-0.4.1', 'libdwarf-0.4.2',
+              'libdwarf-0.5.0', 'libdwarf-0.6.0', 'libdwarf-0.7.0',
+              'libdwarf-0.8.0-fixedtag', 'libdwarf-0.9.0', 'libdwarf-0.9.1',
+              'v0.3.4', 'v0.4.0', 'v0.4.1', 'v0.4.2', 'v0.5.0', 'v0.6.0',
+              'v0.7.0', 'v0.8.0', 'v0.8.0-fixedtag', 'v0.9.0', 'v0.9.1'
+          ],
+          'database_specific': {
+              'source': ('https://storage.googleapis.com/cve-osv-conversion/'
+                         'osv-output/CVE-2024-31745.json')
+          }
+      }],
+      'schema_version': '1.6.0'
+  }
+
   _VULN_744 = {
       'published': '2020-07-04T00:00:01.948828Z',
       'schema_version': '1.6.0',
@@ -201,7 +259,8 @@ class IntegrationTests(unittest.TestCase,
             'commit': '60e572dbf7b4ded66b488f54773f66aaf6184321',
         }),
         timeout=_TIMEOUT)
-    self.assert_results_equal({'vulns': [self._VULN_890]}, response.json())
+    self.assert_results_equal({'vulns': [self._VULN_890, self._VULN_31745]},
+                              response.json())
 
   def test_query_version(self):
     """Test querying by version."""

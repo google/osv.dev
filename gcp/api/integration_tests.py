@@ -259,7 +259,7 @@ class IntegrationTests(unittest.TestCase,
             'commit': '60e572dbf7b4ded66b488f54773f66aaf6184321',
         }),
         timeout=_TIMEOUT)
-    self.assert_results_equal({'vulns': [self._VULN_890, self._VULN_31745]},
+    self.assert_results_equal({'vulns': [self._VULN_31745, self._VULN_890]},
                               response.json())
 
   def test_query_version(self):

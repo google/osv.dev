@@ -59,7 +59,7 @@ class Bioconductor(Ecosystem):
     versions = []
     # Currently breaking on 3.19,
     # see https://github.com/google/osv.dev/pull/1477/files#r1575458933
-    bioc_versions = bioc_versions[1:]
+    bioc_versions = bioc_versions.remove('3.19')
     for version in bioc_versions:
       response = requests.get(
           url.format(package=package, bioc_version=version),

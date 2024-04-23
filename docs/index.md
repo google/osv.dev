@@ -24,7 +24,7 @@ through bisection and version analysis.
 Further information on the infrastructure architecture is available
 [here](contributing/architecture.md).
 
-[OSV-Scanner](https://google.github.io/osv-scanner/), is the first-party tool
+[OSV-Scanner](https://google.github.io/osv-scanner/) is the first-party tool
 that leverages OSV.dev's data, using its API.
 
 ![This is a diagram that shows the relationship between the vulnerability

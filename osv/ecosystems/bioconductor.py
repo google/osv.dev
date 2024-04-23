@@ -60,7 +60,7 @@ class Bioconductor(Ecosystem):
     # Currently breaking on 3.19,
     # see https://github.com/google/osv.dev/pull/1477/files#r1575458933
     try:
-      bioc_versions = bioc_versions.remove('3.19')
+      bioc_versions.remove('3.19')
     except ValueError:
       pass
     for version in bioc_versions:

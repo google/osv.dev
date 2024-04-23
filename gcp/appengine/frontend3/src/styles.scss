@@ -687,7 +687,10 @@ dl.vulnerability-details,
     }
   }
 
-
+  .purl{
+    font-family: $osv-heading-font-family;
+  }
+  
   pre {
     white-space: pre-wrap;
     overflow: auto;

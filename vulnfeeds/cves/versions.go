@@ -65,14 +65,6 @@ type AffectedVersion struct {
 	LastAffected string `json:"last_affected,omitempty" yaml:"last_affected,omitempty"`
 }
 
-type DuplicateCommitError struct {
-	Field string
-}
-
-func (err *DuplicateCommitError) Error() string {
-	return fmt.Sprintf("commit found in %s field", err.Field)
-}
-
 type VersionInfo struct {
 	AffectedCommits  []AffectedCommit  `json:"affect_commits,omitempty" yaml:"affected_commits,omitempty"`
 	AffectedVersions []AffectedVersion `json:"affected_versions,omitempty" yaml:"affected_versions,omitempty"`
@@ -141,9 +133,9 @@ func (vi *VersionInfo) LastAffectedCommits(repo string) (LastAffectedCommits []s
 	return LastAffectedCommits
 }
 
-// Check if the same commit appears in multiple elements of the AffectedCommits array.
+// Check if the same commit appears in multiple fields of the AffectedCommits array.
 // See https://github.com/google/osv.dev/issues/1984 for more context.
-func (vi *VersionInfo) Duplicated(candidate AffectedCommit) (err error) {
+func (vi *VersionInfo) Duplicated(candidate AffectedCommit) bool {
 	fieldsToCheck := []string{"Introduced", "LastAffected", "Limit", "Fixed"}
 
 	// Get the commit hash to look for.
@@ -157,7 +149,7 @@ func (vi *VersionInfo) Duplicated(candidate AffectedCommit) (err error) {
 		}
 	}
 	if commit == "" {
-		return nil
+		return false
 	}
 
 	// Look through what is already present.
@@ -166,11 +158,11 @@ func (vi *VersionInfo) Duplicated(candidate AffectedCommit) (err error) {
 		for _, field := range fieldsToCheck {
 			existingCommit := v.FieldByName(field).String()
 			if existingCommit == commit {
-				return &DuplicateCommitError{Field: field}
+				return true
 			}
 		}
 	}
-	return nil
+	return false
 }
 
 // Synthetic enum of supported commit types.

@@ -687,21 +687,39 @@ dl.vulnerability-details,
     }
   }
 
-  .purl{
-    font-family: $osv-heading-font-family;
+  dd.credits {
+    ul {
+      padding: 0;
+    }
+    
+    li.credit {
+      margin: 0 0 10px 0;
+    }
+    
+    .contact li {
+      margin: 5px 40px 10px 0;
+      display: inline-flex;
+      flex-direction: row;
+      overflow-wrap: break-word;
+    }
   }
   
   pre {
     white-space: pre-wrap;
     overflow: auto;
   }
-
+  
+  .purl{
+    font-family: $osv-heading-font-family;
+  }
+  
   .links {
     padding: 0;
     display: flex;
     flex-direction: column;
     gap: 10px;
     overflow-wrap: break-word;
+    margin-bottom: 20px;
   }
 
   .aliases {

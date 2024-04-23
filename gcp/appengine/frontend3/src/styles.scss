@@ -707,6 +707,11 @@ dl.vulnerability-details,
   .aliases {
     padding: 0;
   }
+
+  .severity {
+    padding: 0;
+    font-family: $osv-heading-font-family;
+  }
 }
 
 .vulnerability-packages-container {

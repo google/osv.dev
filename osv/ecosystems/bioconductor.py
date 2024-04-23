@@ -57,6 +57,12 @@ class Bioconductor(Ecosystem):
     """Helper method to enumerate versions from a specific URL."""
 
     versions = []
+    # Currently breaking on 3.19,
+    # see https://github.com/google/osv.dev/pull/1477/files#r1575458933
+    try:
+      bioc_versions.remove('3.19')
+    except ValueError:
+      pass
     for version in bioc_versions:
       response = requests.get(
           url.format(package=package, bioc_version=version),

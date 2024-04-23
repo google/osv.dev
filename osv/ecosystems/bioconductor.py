@@ -61,7 +61,7 @@ class Bioconductor(Ecosystem):
     # see https://github.com/google/osv.dev/pull/1477/files#r1575458933
     try:
       bioc_versions = bioc_versions.remove('3.19')
-    except ValueError
+    except ValueError:
       pass
     for version in bioc_versions:
       response = requests.get(

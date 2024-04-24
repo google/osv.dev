@@ -918,4 +918,4 @@ if __name__ == '__main__':
       start = time.perf_counter()
       runner.run(suite)
       end = time.perf_counter()
-    print('Duration: %f', end - start)
+    print(f'Duration: {end - start}')

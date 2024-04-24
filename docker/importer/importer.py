@@ -184,7 +184,8 @@ class Importer:
         self.process_oss_fuzz(source_repo)
 
       self.validate_source_repo(source_repo)
-      self.process_updates(source_repo)
+      if not self._delete:
+        self.process_updates(source_repo)
       if self._delete:
         self.process_deletions(source_repo)
 

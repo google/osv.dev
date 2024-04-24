@@ -2,6 +2,7 @@ resources:
 - workers.yaml
 - scaler.yaml
 - importer.yaml
+- importer-deleter.yaml
 - exporter.yaml
 - alpine-cve-convert.yaml
 - combine-to-osv.yaml

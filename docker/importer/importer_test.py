@@ -472,22 +472,13 @@ class BucketImporterTest(unittest.TestCase):
                   mock_publish: mock.MagicMock,
                   upload_from_str: mock.MagicMock):
     """Test bucket updates."""
-    imp = importer.Importer(
-        'fake_public_key',
-        'fake_private_key',
-        self.tmp_dir,
-        importer.DEFAULT_PUBLIC_LOGGING_BUCKET,
-        'bucket',
-        True,
-        True,
-        # The test dataset is too small for the safety threshold.
-        deletion_safety_threshold_pct=100)
+    imp = importer.Importer('fake_public_key', 'fake_private_key', self.tmp_dir,
+                            importer.DEFAULT_PUBLIC_LOGGING_BUCKET, 'bucket',
+                            True, False)
 
     with self.assertLogs(level='WARNING') as logs:
       imp.run()
-    # The second schema validation of files in GCS by
-    # _process_deletions_bucket() causes 2x the errors to be logged.
-    self.assertEqual(6, len(logs.output))
+    self.assertEqual(3, len(logs.output))
     self.assertEqual(
         "WARNING:root:Failed to validate loaded OSV entry: 'modified' is a required property",  # pylint: disable=line-too-long
         logs.output[0])
@@ -495,6 +486,11 @@ class BucketImporterTest(unittest.TestCase):
     self.assertIn(
         "ERROR:root:Failed to parse vulnerability a/b/test-invalid.json: 'modified' is a required property",  # pylint: disable=line-too-long
         logs.output[2])
+
+    # Check if vulnerability parse failure was logged correctly.
+    self.assertTrue(
+        any('Failed to parse vulnerability "a/b/test-invalid.json"' in x[0][0]
+            for x in upload_from_str.call_args_list))
 
     # Expected pubsub calls for validly imported records.
     mock_publish.assert_has_calls([
@@ -542,6 +538,30 @@ class BucketImporterTest(unittest.TestCase):
         deleted=mock.ANY)
     self.assertNotIn(invalid_call, mock_publish.mock_calls)
 
+  @mock.patch('google.cloud.pubsub_v1.PublisherClient.publish')
+  @mock.patch('time.time', return_value=12345.0)
+  def test_bucket_deletion(self, unused_mock_time: mock.MagicMock,
+                           mock_publish: mock.MagicMock):
+    """Test bucket deletion."""
+    imp = importer.Importer(
+        'fake_public_key',
+        'fake_private_key',
+        self.tmp_dir,
+        importer.DEFAULT_PUBLIC_LOGGING_BUCKET,
+        'bucket',
+        True,
+        True,
+        # The test dataset is too small for the safety threshold.
+        deletion_safety_threshold_pct=100)
+
+    with self.assertLogs(level='WARNING') as logs:
+      imp.run()
+    self.assertEqual(2, len(logs.output))
+    self.assertEqual(
+        "WARNING:root:Failed to validate loaded OSV entry: 'modified' is a required property",  # pylint: disable=line-too-long
+        logs.output[0])
+    self.assertIn('WARNING:root:Invalid data:', logs.output[1])
+
     # Test existing record in Datastore no longer present in GCS has been
     # requested to be deleted.
     deletion_call = mock.call(
@@ -554,11 +574,6 @@ class BucketImporterTest(unittest.TestCase):
         deleted='true',
         req_timestamp='12345')
     mock_publish.assert_has_calls([deletion_call])
-
-    # Check if vulnerability parse failure was logged correctly.
-    self.assertTrue(
-        any('Failed to parse vulnerability "a/b/test-invalid.json"' in x[0][0]
-            for x in upload_from_str.call_args_list))
 
     # Run again with a 10% threshold and confirm the safeguards work as
     # intended.
@@ -577,10 +592,9 @@ class BucketImporterTest(unittest.TestCase):
 
     with self.assertLogs(level='WARNING') as logs:
       imp.run()
-    # The second schema validation of files in GCS by
-    # _process_deletions_bucket() causes 2x the errors to be logged, plus an
-    # extra one from the safeguard.
-    self.assertEqual(7, len(logs.output))
+    # The schema validation of failures of the files in GCS by
+    # _process_deletions_bucket() causes, plus an extra one from the safeguard.
+    self.assertEqual(3, len(logs.output))
     self.assertEqual(
         "ERROR:root:Cowardly refusing to delete 1 missing records from GCS for: test",  # pylint: disable=line-too-long
         logs.output[-1])

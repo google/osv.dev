@@ -595,8 +595,9 @@ class Importer:
       for future in concurrent.futures.as_completed(future_to_blob):
         blob = future_to_blob[future]
         try:
-          vuln_ids_in_gcs.extend(
-              [vuln_id for vuln_id in future.result() if vuln_id])
+          if future.result():
+            vuln_ids_in_gcs.extend(
+                [vuln_id for vuln_id in future.result() if vuln_id])
         except Exception as e:
           # Don't include error stack trace as that might leak sensitive info
           logging.error('Failed to parse vulnerability %s: %s', blob.name, e)

@@ -217,22 +217,21 @@ steps:
   waitFor: ['build-nvd-cve-osv', 'cloud-build-queue']
 
 # Build/push Website image
-# TODO(michaelkedar): The image gets saved on oss-vdb-test while we experiment with migration
 - name: 'gcr.io/cloud-builders/docker'
   entrypoint: 'bash'
-  args: ['-c', 'docker pull gcr.io/oss-vdb-test/osv-website:latest || exit 0']
+  args: ['-c', 'docker pull gcr.io/oss-vdb/osv-website:latest || exit 0']
   id: 'pull-website'
   waitFor: ['setup']
 - name: 'gcr.io/cloud-builders/docker'
   args: ['buildx', 'build', '--build-arg', 'BUILDKIT_INLINE_CACHE=1',
-         '-t', 'gcr.io/oss-vdb-test/osv-website:latest', '-t', 'gcr.io/oss-vdb-test/osv-website:$COMMIT_SHA',
-         '-f', 'gcp/appengine/Dockerfile', '--cache-from', 'gcr.io/oss-vdb-test/osv-website:latest', '--pull', '.']
+         '-t', 'gcr.io/oss-vdb/osv-website:latest', '-t', 'gcr.io/oss-vdb/osv-website:$COMMIT_SHA',
+         '-f', 'gcp/appengine/Dockerfile', '--cache-from', 'gcr.io/oss-vdb/osv-website:latest', '--pull', '.']
   env:
   - BUILDKIT_PROGRESS=plain
   id: 'build-website'
   waitFor: ['pull-website']
 - name: 'gcr.io/cloud-builders/docker'
-  args: ['push', '--all-tags', 'gcr.io/oss-vdb-test/osv-website']
+  args: ['push', '--all-tags', 'gcr.io/oss-vdb/osv-website']
   waitFor: ['build-website', 'cloud-build-queue']
 
 # Build/push NVD mirror image
@@ -306,7 +305,7 @@ steps:
 - name: 'gcr.io/cloud-builders/gcloud'
   args: ['deploy', 'releases', 'create', 'osv-$SHORT_SHA', '--project=oss-vdb-test', '--region=us-central1',
     '--delivery-pipeline=osv-website', '--images',
-    "osv-website=gcr.io/oss-vdb-test/osv-website:$COMMIT_SHA"
+    "osv-website=gcr.io/oss-vdb/osv-website:$COMMIT_SHA"
   ]
   dir: deployment/clouddeploy/osv-website
 

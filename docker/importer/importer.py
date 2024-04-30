@@ -805,7 +805,8 @@ def main():
       default=False)
   parser.add_argument(
       '--delete',
-      help='Propagate record deletions from source to Datastore',
+      help=('Bypass importing and propagate record deletions from source to '
+            'Datastore'),
       default=False)
   parser.add_argument(
       '--delete_threshold_pct',

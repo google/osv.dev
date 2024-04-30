@@ -5,7 +5,7 @@ resource "google_cloud_run_v2_service" "website" {
 
   template {
     containers {
-      image = "gcr.io/oss-vdb-test/osv-website:latest" # Placeholder image.
+      image = "gcr.io/oss-vdb/osv-website:latest" # Placeholder image.
     }
   }
 

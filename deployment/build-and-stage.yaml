@@ -301,9 +301,8 @@ steps:
   dir: deployment/clouddeploy/gke-indexer
 
 # Website
-# TODO(michaelkedar): Move off of oss-vdb-test for prod
 - name: 'gcr.io/cloud-builders/gcloud'
-  args: ['deploy', 'releases', 'create', 'osv-$SHORT_SHA', '--project=oss-vdb-test', '--region=us-central1',
+  args: ['deploy', 'releases', 'create', 'osv-$SHORT_SHA', '--project=oss-vdb', '--region=us-central1',
     '--delivery-pipeline=osv-website', '--images',
     "osv-website=gcr.io/oss-vdb/osv-website:$COMMIT_SHA"
   ]

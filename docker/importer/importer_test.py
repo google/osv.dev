@@ -556,11 +556,14 @@ class BucketImporterTest(unittest.TestCase):
 
     with self.assertLogs(level='WARNING') as logs:
       imp.run()
-    self.assertEqual(2, len(logs.output))
+    self.assertEqual(3, len(logs.output))
     self.assertEqual(
         "WARNING:root:Failed to validate loaded OSV entry: 'modified' is a required property",  # pylint: disable=line-too-long
         logs.output[0])
     self.assertIn('WARNING:root:Invalid data:', logs.output[1])
+    self.assertIn(
+        "ERROR:root:Failed to parse vulnerability a/b/test-invalid.json: 'modified' is a required property",  # pylint: disable=line-too-long
+        logs.output[2])
 
     # Test existing record in Datastore no longer present in GCS has been
     # requested to be deleted.
@@ -594,7 +597,7 @@ class BucketImporterTest(unittest.TestCase):
       imp.run()
     # The schema validation of failures of the files in GCS by
     # _process_deletions_bucket() causes, plus an extra one from the safeguard.
-    self.assertEqual(3, len(logs.output))
+    self.assertEqual(4, len(logs.output))
     self.assertEqual(
         "ERROR:root:Cowardly refusing to delete 1 missing records from GCS for: test",  # pylint: disable=line-too-long
         logs.output[-1])

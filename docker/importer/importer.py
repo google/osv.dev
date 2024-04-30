@@ -309,7 +309,8 @@ class Importer:
           blob_bytes,
           os.path.splitext(blob.name)[1],
           strict=self._strict_validation)
-    except Exception:
+    except Exception as e:
+      logging.error('Failed to parse vulnerability %s: %s', blob.name, e)
       return None
     for vuln in vulns:
       vuln_ids.append(vuln.id)

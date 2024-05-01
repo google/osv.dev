@@ -99,6 +99,18 @@ def add_cors_headers(response):
   return response
 
 
+@blueprint.after_request
+def add_cache_control_headers(response):
+  """Add Cache-Control headers."""
+  if 'static' in request.path:
+    response.headers['Cache-Control'] = 'public, max-age=604800'  # 1 week
+  elif 'blog' in request.path:
+    response.headers['Cache-Control'] = 'public, max-age=86400'  # 1 day
+  else:
+    response.headers['Cache-Control'] = 'public, max-age=3600'  # 1 hour
+  return response
+
+
 @blueprint.route('/v2/')
 def index_v2():
   return redirect('/')

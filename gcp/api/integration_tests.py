@@ -97,21 +97,13 @@ class IntegrationTests(unittest.TestCase,
 
   _VULN_31745 = {
       'id': 'CVE-2024-31745',
-      'details':
-          ('Libdwarf v0.9.1 was discovered to contain a heap use-after-free '
-           'via the dw_empty_errlist_item function at /libdwarf/dwarf_alloc.c.'
-          ),
+      'details': ('Rejected reason: DO NOT USE THIS CANDIDATE NUMBER. '
+                  'ConsultIDs: CVE-2024-2002. Reason: This candidate is a '
+                  'duplicate of CVE-2024-2002. Notes: All CVE users '
+                  'should reference CVE-2024-2002 instead of this '
+                  'candidate.'),
       'modified': '2024-04-20T01:04:38.640360Z',
       'published': '2024-04-19T13:15:13Z',
-      'references': [{
-          'type':
-              'FIX',
-          'url': ('https://github.com/davea42/libdwarf-code/commit/'
-                  '404e6b1b14f60c81388d50b4239f81d461b3c3ad')
-      }, {
-          'type': 'REPORT',
-          'url': 'https://github.com/davea42/libdwarf-code/issues/238'
-      }],
       'affected': [{
           'ranges': [{
               'type':

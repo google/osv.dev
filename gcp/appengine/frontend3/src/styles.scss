@@ -637,6 +637,10 @@ dl.vulnerability-details,
     margin-top: 16px;
   }
 
+  dd.muted {
+    color: $osv-grey-600;
+  }
+
   dd.details {
     overflow-wrap: break-word;
 

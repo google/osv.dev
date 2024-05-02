@@ -16,7 +16,7 @@ spec:
           containers:
           - name: importer-deleter
             image: importer
-            args: ["--delete", "--deletion_threshold=10"]
+            args: ["--delete", "--deletion_threshold=10", "--public_log_bucket=osv-test-public-import-logs"]
             imagePullPolicy: Always
             volumeMounts:
               - mountPath: "/work"

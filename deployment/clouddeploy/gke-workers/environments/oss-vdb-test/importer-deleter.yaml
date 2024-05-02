@@ -12,7 +12,6 @@ spec:
             env:
             - name: GOOGLE_CLOUD_PROJECT
               value: oss-vdb-test
-            args:
               # TODO(michaelkedar): ssh secrets
               # TODO(michaelkedar): single source of truth w/ terraform config
-              - "--public_log_bucket=osv-test-public-import-logs"
+            args: ["--delete", "--deletion_threshold=10", "--public_log_bucket=osv-test-public-import-logs"]

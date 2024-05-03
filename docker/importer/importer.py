@@ -730,6 +730,8 @@ class Importer:
     """Process source record deletions by withdrawing them."""
     if source_repo.type == osv.SourceRepositoryType.GIT:
       # TODO: To be implemented.
+      # NOTE: this may require reintroducing special node GKE node treatment
+      # see discussion on https://github.com/google/osv.dev/pull/2133
       return
 
     if source_repo.type == osv.SourceRepositoryType.BUCKET:

@@ -19,7 +19,10 @@ spec:
             - name: GOOGLE_CLOUD_PROJECT
               value: oss-vdb-test
             image: importer
-            args: ["--delete", "--deletion_threshold=10", "--public_log_bucket=osv-test-public-import-logs"]
+            args:
+              - --delete
+              - --deletion_threshold_pct=10
+              - --public_log_bucket=osv-test-public-import-logs
             imagePullPolicy: Always
             volumeMounts:
               - mountPath: "/work"

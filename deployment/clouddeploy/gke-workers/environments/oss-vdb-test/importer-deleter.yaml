@@ -21,7 +21,7 @@ spec:
             image: importer
             args:
               - --delete
-              - --deletion_threshold_pct=10
+              - --delete_threshold_pct=10
               - --public_log_bucket=osv-test-public-import-logs
             imagePullPolicy: Always
             volumeMounts:

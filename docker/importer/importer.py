@@ -801,10 +801,12 @@ def main():
   parser.add_argument('--ssh_key_private', help='Private SSH key path')
   parser.add_argument(
       '--strict_validation',
+      action='store_true',
       help='Fail to import entries that does not pass validation',
       default=False)
   parser.add_argument(
       '--delete',
+      action='store_true',
       help=('Bypass importing and propagate record deletions from source to '
             'Datastore'),
       default=False)

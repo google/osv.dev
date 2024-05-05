@@ -571,8 +571,11 @@ class Importer:
     storage_client = storage.Client()
     # Get all of the existing records in the GCS bucket
     # (to get their IDs for checking against Datastore)
-    logging.info('Listing blobs in gs://%s',
-                 os.path.join(source_repo.bucket, source_repo.directory_path))
+    logging.info(
+        'Listing blobs in gs://%s',
+        os.path.join(source_repo.bucket,
+                     ('' if source_repo.directory_path is None else
+                      source_repo.directory_path)))
     listed_blobs = list(
         storage_client.list_blobs(
             source_repo.bucket, prefix=source_repo.directory_path))

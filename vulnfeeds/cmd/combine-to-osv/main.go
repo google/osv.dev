@@ -3,9 +3,13 @@ package main
 import (
 	"encoding/json"
 	"flag"
+	"fmt"
+	"net/http"
+	"net/url"
 	"os"
 	"path"
 	"strings"
+	"time"
 
 	"github.com/google/osv/vulnfeeds/cves"
 	"github.com/google/osv/vulnfeeds/utility"
@@ -17,6 +21,7 @@ const (
 	defaultPartsInputPath = "parts"
 	defaultOSVOutputPath  = "osv_output"
 	defaultCVEListPath    = "."
+	defaultInputBucket    = "osv-test-cve-osv-conversion"
 )
 
 var Logger utility.LoggerWrapper
@@ -30,6 +35,7 @@ func main() {
 	partsInputPath := flag.String("partsPath", defaultPartsInputPath, "Path to CVE file")
 	osvOutputPath := flag.String("osvOutputPath", defaultOSVOutputPath, "Path to CVE file")
 	cveListPath := flag.String("cveListPath", defaultCVEListPath, "Path to clone of https://github.com/CVEProject/cvelistV5")
+	inputBucket := flag.String("inputBucket", defaultInputBucket, "Input bucket")
 	flag.Parse()
 
 	err := os.MkdirAll(*cvePath, 0755)
@@ -42,13 +48,46 @@ func main() {
 	}
 
 	allCves := loadAllCVEs(*cvePath)
-	allParts := loadParts(*partsInputPath)
-	combinedData := combineIntoOSV(allCves, allParts, *cveListPath)
+	allParts, cveModifiedMap := loadParts(*partsInputPath, *inputBucket)
+	combinedData := combineIntoOSV(allCves, allParts, *cveListPath, cveModifiedMap)
 	writeOSVFile(combinedData, *osvOutputPath)
 }
 
+// getModifiedTime gets the modification time of a given GCS file
+func getModifiedTime(innerPath string, bucket string) (time.Time, error) {
+	// Uses the GCS JSON API to get the modified date, details: https://cloud.google.com/storage/docs/json_api/v1/objects/get
+	baseUrl := "https://storage.googleapis.com/storage/v1"
+	filePath := fmt.Sprintf("%s/b/%s/o/%s", baseUrl, bucket, url.PathEscape(innerPath))
+	var emptyTime time.Time
+	response, err := http.Get(filePath)
+
+	if err != nil {
+		return emptyTime, err
+	}
+	defer response.Body.Close()
+
+	if response.StatusCode != http.StatusOK {
+		return emptyTime, fmt.Errorf("Failed to request GCS JSON API: %s", response.Status)
+	}
+
+	type Metadata struct {
+		Updated string `json:"updated"`
+	}
+
+	var jsonData Metadata
+	if err := json.NewDecoder(response.Body).Decode(&jsonData); err != nil {
+		return emptyTime, err
+	}
+
+	modifiedTime, err := time.Parse(time.RFC3339, jsonData.Updated)
+	if err != nil {
+		return emptyTime, err
+	}
+	return modifiedTime, err
+}
+
 // loadInnerParts loads second level folder for the loadParts function
-func loadInnerParts(innerPartInputPath string, output map[cves.CVEID][]vulns.PackageInfo) {
+func loadInnerParts(innerPartInputPath string, output map[cves.CVEID][]vulns.PackageInfo, inputBucket string, cvePartsModifiedTime map[cves.CVEID]time.Time) {
 	dirInner, err := os.ReadDir(innerPartInputPath)
 	if err != nil {
 		Logger.Fatalf("Failed to read dir %q: %s", innerPartInputPath, err)
@@ -57,7 +96,8 @@ func loadInnerParts(innerPartInputPath string, output map[cves.CVEID][]vulns.Pac
 		if !strings.HasSuffix(entryInner.Name(), ".json") {
 			continue
 		}
-		file, err := os.Open(path.Join(innerPartInputPath, entryInner.Name()))
+		filePath := path.Join(innerPartInputPath, entryInner.Name())
+		file, err := os.Open(filePath)
 		if err != nil {
 			Logger.Fatalf("Failed to open PackageInfo JSON %q: %s", path.Join(innerPartInputPath, entryInner.Name()), err)
 		}
@@ -74,6 +114,17 @@ func loadInnerParts(innerPartInputPath string, output map[cves.CVEID][]vulns.Pac
 
 		Logger.Infof(
 			"Loaded Item: %s", entryInner.Name())
+
+		// Updates the latest OSV parts modified time of each CVE
+		modifiedTime, err := getModifiedTime(filePath, inputBucket)
+		if err != nil {
+			Logger.Warnf("Failed to get modified time of %s: %s", filePath, err)
+			continue
+		}
+		existingDate, exists := cvePartsModifiedTime[cveId]
+		if !exists || modifiedTime.After(existingDate) {
+			cvePartsModifiedTime[cveId] = modifiedTime
+		}
 	}
 }
 
@@ -90,25 +141,26 @@ func loadInnerParts(innerPartInputPath string, output map[cves.CVEID][]vulns.Pac
 //
 // ## Returns
 // A mapping of "CVE-ID": []<Affected Package Information>
-func loadParts(partsInputPath string) map[cves.CVEID][]vulns.PackageInfo {
+func loadParts(partsInputPath string, inputBucket string) (map[cves.CVEID][]vulns.PackageInfo, map[cves.CVEID]time.Time) {
 	dir, err := os.ReadDir(partsInputPath)
 	if err != nil {
 		Logger.Fatalf("Failed to read dir %q: %s", partsInputPath, err)
 	}
 	output := map[cves.CVEID][]vulns.PackageInfo{}
+	cvePartsModifiedTime := make(map[cves.CVEID]time.Time)
 	for _, entry := range dir {
 		if !entry.IsDir() {
 			Logger.Warnf("Unexpected file entry %q in %s", entry.Name(), partsInputPath)
 			continue
 		}
 		// map is already a reference type, so no need to pass in a pointer
-		loadInnerParts(path.Join(partsInputPath, entry.Name()), output)
+		loadInnerParts(path.Join(partsInputPath, entry.Name()), output, inputBucket, cvePartsModifiedTime)
 	}
-	return output
+	return output, cvePartsModifiedTime
 }
 
 // combineIntoOSV creates OSV entry by combining loaded CVEs from NVD and PackageInfo information from security advisories.
-func combineIntoOSV(loadedCves map[cves.CVEID]cves.Vulnerability, allParts map[cves.CVEID][]vulns.PackageInfo, cveList string) map[cves.CVEID]*vulns.Vulnerability {
+func combineIntoOSV(loadedCves map[cves.CVEID]cves.Vulnerability, allParts map[cves.CVEID][]vulns.PackageInfo, cveList string, cvePartsModifiedTime map[cves.CVEID]time.Time) map[cves.CVEID]*vulns.Vulnerability {
 	Logger.Infof("Begin writing OSV files")
 	convertedCves := map[cves.CVEID]*vulns.Vulnerability{}
 	for cveId, cve := range loadedCves {
@@ -129,6 +181,10 @@ func combineIntoOSV(loadedCves map[cves.CVEID]cves.Vulnerability, allParts map[c
 		for _, pkgInfo := range allParts[cveId] {
 			convertedCve.AddPkgInfo(pkgInfo)
 		}
+		cveModified, _ := time.Parse(time.RFC3339, convertedCve.Modified)
+		if cvePartsModifiedTime[cveId].After(cveModified) {
+			convertedCve.Modified = cvePartsModifiedTime[cveId].String()
+		}
 		convertedCves[cveId] = convertedCve
 	}
 	return convertedCves
@@ -137,7 +193,7 @@ func combineIntoOSV(loadedCves map[cves.CVEID]cves.Vulnerability, allParts map[c
 // writeOSVFile writes out the given osv objects into individual json files
 func writeOSVFile(osvData map[cves.CVEID]*vulns.Vulnerability, osvOutputPath string) {
 	for vId, osv := range osvData {
-		file, err := os.OpenFile(path.Join(osvOutputPath, string(vId) + ".json"), os.O_CREATE|os.O_RDWR, 0644)
+		file, err := os.OpenFile(path.Join(osvOutputPath, string(vId)+".json"), os.O_CREATE|os.O_RDWR, 0644)
 		if err != nil {
 			Logger.Fatalf("Failed to create/open file to write: %s", err)
 		}

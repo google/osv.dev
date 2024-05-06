@@ -3,9 +3,6 @@ package main
 import (
 	"encoding/json"
 	"flag"
-	"fmt"
-	"net/http"
-	"net/url"
 	"os"
 	"path"
 	"strings"
@@ -21,7 +18,6 @@ const (
 	defaultPartsInputPath = "parts"
 	defaultOSVOutputPath  = "osv_output"
 	defaultCVEListPath    = "."
-	defaultInputBucket    = "osv-test-cve-osv-conversion"
 )
 
 var Logger utility.LoggerWrapper
@@ -35,7 +31,6 @@ func main() {
 	partsInputPath := flag.String("partsPath", defaultPartsInputPath, "Path to CVE file")
 	osvOutputPath := flag.String("osvOutputPath", defaultOSVOutputPath, "Path to CVE file")
 	cveListPath := flag.String("cveListPath", defaultCVEListPath, "Path to clone of https://github.com/CVEProject/cvelistV5")
-	inputBucket := flag.String("inputBucket", defaultInputBucket, "Input bucket")
 	flag.Parse()
 
 	err := os.MkdirAll(*cvePath, 0755)
@@ -48,46 +43,30 @@ func main() {
 	}
 
 	allCves := loadAllCVEs(*cvePath)
-	allParts, cveModifiedMap := loadParts(*partsInputPath, *inputBucket)
+	allParts, cveModifiedMap := loadParts(*partsInputPath)
 	combinedData := combineIntoOSV(allCves, allParts, *cveListPath, cveModifiedMap)
 	writeOSVFile(combinedData, *osvOutputPath)
 }
 
-// getModifiedTime gets the modification time of a given GCS file
-func getModifiedTime(innerPath string, bucket string) (time.Time, error) {
-	// Uses the GCS JSON API to get the modified date, details: https://cloud.google.com/storage/docs/json_api/v1/objects/get
-	baseUrl := "https://storage.googleapis.com/storage/v1"
-	filePath := fmt.Sprintf("%s/b/%s/o/%s", baseUrl, bucket, url.PathEscape(innerPath))
+// getModifiedTime gets the modification time of a given file
+func getModifiedTime(filePath string) (time.Time, error) {
 	var emptyTime time.Time
-	response, err := http.Get(filePath)
-
+	fileInfo, err := os.Stat(filePath)
 	if err != nil {
 		return emptyTime, err
 	}
-	defer response.Body.Close()
+	parsedTime := fileInfo.ModTime()
 
-	if response.StatusCode != http.StatusOK {
-		return emptyTime, fmt.Errorf("Failed to request GCS JSON API: %s", response.Status)
-	}
-
-	type Metadata struct {
-		Updated string `json:"updated"`
-	}
-
-	var jsonData Metadata
-	if err := json.NewDecoder(response.Body).Decode(&jsonData); err != nil {
-		return emptyTime, err
-	}
-
-	modifiedTime, err := time.Parse(time.RFC3339, jsonData.Updated)
-	if err != nil {
-		return emptyTime, err
-	}
-	return modifiedTime, err
+	return parsedTime, err
 }
 
 // loadInnerParts loads second level folder for the loadParts function
-func loadInnerParts(innerPartInputPath string, output map[cves.CVEID][]vulns.PackageInfo, inputBucket string, cvePartsModifiedTime map[cves.CVEID]time.Time) {
+//
+// Parameters:
+//   - innerPartInputPath: The inner part path, such as "parts/alpine"
+//   - output: A map to store all PackageInfos for each CVE ID
+//   - cvePartsModifiedTime: A map tracking the latest modification time of each CVE part files
+func loadInnerParts(innerPartInputPath string, output map[cves.CVEID][]vulns.PackageInfo, cvePartsModifiedTime map[cves.CVEID]time.Time) {
 	dirInner, err := os.ReadDir(innerPartInputPath)
 	if err != nil {
 		Logger.Fatalf("Failed to read dir %q: %s", innerPartInputPath, err)
@@ -116,7 +95,7 @@ func loadInnerParts(innerPartInputPath string, output map[cves.CVEID][]vulns.Pac
 			"Loaded Item: %s", entryInner.Name())
 
 		// Updates the latest OSV parts modified time of each CVE
-		modifiedTime, err := getModifiedTime(filePath, inputBucket)
+		modifiedTime, err := getModifiedTime(filePath)
 		if err != nil {
 			Logger.Warnf("Failed to get modified time of %s: %s", filePath, err)
 			continue
@@ -141,7 +120,8 @@ func loadInnerParts(innerPartInputPath string, output map[cves.CVEID][]vulns.Pac
 //
 // ## Returns
 // A mapping of "CVE-ID": []<Affected Package Information>
-func loadParts(partsInputPath string, inputBucket string) (map[cves.CVEID][]vulns.PackageInfo, map[cves.CVEID]time.Time) {
+// A mapping of "CVE-ID": time.Time (the latest modified time of its part files)
+func loadParts(partsInputPath string) (map[cves.CVEID][]vulns.PackageInfo, map[cves.CVEID]time.Time) {
 	dir, err := os.ReadDir(partsInputPath)
 	if err != nil {
 		Logger.Fatalf("Failed to read dir %q: %s", partsInputPath, err)
@@ -154,7 +134,7 @@ func loadParts(partsInputPath string, inputBucket string) (map[cves.CVEID][]vuln
 			continue
 		}
 		// map is already a reference type, so no need to pass in a pointer
-		loadInnerParts(path.Join(partsInputPath, entry.Name()), output, inputBucket, cvePartsModifiedTime)
+		loadInnerParts(path.Join(partsInputPath, entry.Name()), output, cvePartsModifiedTime)
 	}
 	return output, cvePartsModifiedTime
 }

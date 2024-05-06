@@ -35,7 +35,7 @@ func loadTestData2(cveName string) cves.Vulnerability {
 }
 
 func TestLoadParts(t *testing.T) {
-	allParts, _ := loadParts("../../test_data/parts", "")
+	allParts, _ := loadParts("../../test_data/parts")
 	expectedPartCount := 14
 	actualPartCount := len(allParts)
 
@@ -88,7 +88,7 @@ func TestCombineIntoOSV(t *testing.T) {
 		"CVE-2022-32746":   loadTestData2("CVE-2022-32746"),
 		"CVE-2018-1000500": loadTestData2("CVE-2018-1000500"),
 	}
-	allParts, cveModifiedTime := loadParts("../../test_data/parts", "")
+	allParts, cveModifiedTime := loadParts("../../test_data/parts")
 
 	combinedOSV := combineIntoOSV(cveStuff, allParts, "", cveModifiedTime)
 
@@ -105,6 +105,14 @@ func TestCombineIntoOSV(t *testing.T) {
 	}
 }
 
+func TestGetModifiedTime(t *testing.T) {
+	_, err := getModifiedTime("../../test_data/parts/debian/CVE-2016-1585.debian.json")
+	if err != nil {
+		t.Errorf("Failed to get modified time.")
+	}
+
+}
+
 func TestUpdateModifiedDate(t *testing.T) {
 	var cveId1, cveId2 cves.CVEID
 	cveId1 = "CVE-2022-33745"
@@ -114,7 +122,7 @@ func TestUpdateModifiedDate(t *testing.T) {
 		cveId1: loadTestData2("CVE-2022-33745"),
 		cveId2: loadTestData2("CVE-2022-32746"),
 	}
-	allParts, _ := loadParts("../../test_data/parts", "")
+	allParts, _ := loadParts("../../test_data/parts")
 
 	cveModifiedTimeMock := make(map[cves.CVEID]time.Time)
 	time1 := "0001-00-00T00:00:00.000Z"

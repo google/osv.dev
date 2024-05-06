@@ -35,7 +35,7 @@ if [[ -n "$CVELIST" ]]; then
 fi
 
 echo "Run combine-to-osv"
-./combine-to-osv -cvePath "$CVE_OUTPUT" -partsPath "$OSV_PARTS_ROOT" -osvOutputPath "$OSV_OUTPUT" -cveListPath "$CVELIST" -inputBucket "$INPUT_BUCKET"
+./combine-to-osv -cvePath "$CVE_OUTPUT" -partsPath "$OSV_PARTS_ROOT" -osvOutputPath "$OSV_OUTPUT" -cveListPath "$CVELIST"
 
 echo "Override"
 gcloud --no-user-output-enabled storage rsync "gs://${INPUT_BUCKET}/osv-output-overrides/" $OSV_OUTPUT

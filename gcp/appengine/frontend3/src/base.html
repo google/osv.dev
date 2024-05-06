@@ -5,6 +5,10 @@
   <meta name="description"
     content="Comprehensive vulnerability database for your open source projects and dependencies.">
   <meta name="viewport" content="width=device-width, initial-scale=1">
+  <!-- Disable this for vulnerability list page as the weird Turbo cache bug happens when click on browser's back button -->
+  {% if disable_turbo_cache %}
+  <meta name="turbo-cache-control" content="no-cache">
+  {% endif %}
   <link rel="icon" type="image/png" href="/static/img/favicon-32x32.png" sizes="32x32">
   <link rel="icon" type="image/png" href="/static/img/favicon-16x16.png" sizes="16x16">
   <link rel="preconnect" href="https://fonts.googleapis.com">

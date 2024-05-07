@@ -192,6 +192,12 @@ pre {
       background-image: none;
       content: '';
     }
+
+    .social-icons {
+      padding: 0;
+      display: flex;
+      gap: 20px;
+    }
   }
 
   @media (min-width: $osv-mobile-breakpoint+1) {
@@ -202,7 +208,7 @@ pre {
       margin: 0;
       gap: 40px;
       font-size: 16px;
-
+  
       .push {
         margin-left: auto;
       }
@@ -1364,5 +1370,7 @@ div.highlight {
     background-position: center;
     min-height: 500px;
     width: 100%;
+    position: absolute;
+    left: 0;
   }
 }

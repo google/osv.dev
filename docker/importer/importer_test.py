@@ -18,6 +18,7 @@ import shutil
 import tempfile
 import unittest
 import http.server
+import logging
 import threading
 
 from unittest import mock
@@ -166,7 +167,7 @@ class ImporterTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
 
     imp = importer.Importer('fake_public_key', 'fake_private_key', self.tmp_dir,
                             importer.DEFAULT_PUBLIC_LOGGING_BUCKET, 'bucket',
-                            True)
+                            True, False)
     imp.run()
 
     repo = pygit2.Repository(self.remote_source_repo_path)
@@ -217,7 +218,7 @@ class ImporterTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
 
     imp = importer.Importer('fake_public_key', 'fake_private_key', self.tmp_dir,
                             importer.DEFAULT_PUBLIC_LOGGING_BUCKET, 'bucket',
-                            True)
+                            True, False)
     with self.assertLogs(level='WARNING') as logs:
       imp.run()
     self.assertEqual(3, len(logs.output))
@@ -249,7 +250,7 @@ class ImporterTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
 
     imp = importer.Importer('fake_public_key', 'fake_private_key', self.tmp_dir,
                             importer.DEFAULT_PUBLIC_LOGGING_BUCKET, 'bucket',
-                            True)
+                            True, False)
     imp.run()
 
     mock_publish.assert_not_called()
@@ -312,7 +313,7 @@ class ImporterTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
 
     imp = importer.Importer('fake_public_key', 'fake_private_key', self.tmp_dir,
                             importer.DEFAULT_PUBLIC_LOGGING_BUCKET, 'bucket',
-                            True)
+                            True, False)
     imp.run()
 
     mock_publish.assert_has_calls([
@@ -361,7 +362,7 @@ class ImporterTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
 
     imp = importer.Importer('fake_public_key', 'fake_private_key', self.tmp_dir,
                             importer.DEFAULT_PUBLIC_LOGGING_BUCKET, 'bucket',
-                            True)
+                            True, False)
     imp.run()
 
   @mock.patch('google.cloud.pubsub_v1.PublisherClient.publish')
@@ -374,7 +375,7 @@ class ImporterTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
 
     imp = importer.Importer('fake_public_key', 'fake_private_key', self.tmp_dir,
                             importer.DEFAULT_PUBLIC_LOGGING_BUCKET, 'bucket',
-                            True)
+                            True, False)
     imp.run()
 
   @mock.patch('google.cloud.pubsub_v1.PublisherClient.publish')
@@ -387,13 +388,13 @@ class ImporterTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
 
     imp = importer.Importer('fake_public_key', 'fake_private_key', self.tmp_dir,
                             importer.DEFAULT_PUBLIC_LOGGING_BUCKET, 'bucket',
-                            True)
+                            True, False)
     imp.run()
 
 
 @mock.patch('importer.utcnow', lambda: datetime.datetime(2021, 1, 1))
 class BucketImporterTest(unittest.TestCase):
-  """Bucket importer tests."""
+  """GCS bucket importer tests."""
 
   def setUp(self):
     tests.reset_emulator()
@@ -404,17 +405,20 @@ class BucketImporterTest(unittest.TestCase):
 
     self.source_repo = osv.SourceRepository(
         type=osv.SourceRepositoryType.BUCKET,
-        id='bucket',
-        name='bucket',
+        id='test',
+        name='test',
         bucket=TEST_BUCKET,
+        directory_path='a/b',
         extension='.json')
     self.source_repo.put()
 
+    # Preexisting Bug that exists in GCS.
     osv.Bug(
         id='DSA-3029-1',
         db_id='DSA-3029-1',
         status=1,
         source='test',
+        source_id='test:a/b/DSA-3029-1.json',
         public=True,
         affected_packages=[{
             'package': {
@@ -422,8 +426,38 @@ class BucketImporterTest(unittest.TestCase):
                 'name': 'test',
             },
         }],
-        # Same timestamp as the DSA-3029-1 modified file
+        # Same timestamp as the gs://TEST_BUCKET/a/b/DSA-3029-1.json modified
+        # file
         import_last_modified=datetime.datetime(2014, 9, 20, 8, 18, 7, 0),
+    ).put()
+
+    # Preexisting Bug that does not exist in GCS.
+    osv.Bug(
+        id='CVE-2018-1000030',
+        db_id='CVE-2018-1000030',
+        status=1,
+        source='test',
+        source_id='test:a/b/CVE-2018-1000030.json',
+        public=True,
+        affected_packages=[{
+            'package': {
+                'ecosystem': '',
+                'name': '',
+                'purl': None,
+            },
+            'ranges': [{
+                'events': [{
+                    'value': '0',
+                    'type': 'introduced'
+                }, {
+                    'value': '84471935ed2f62b8c5758fd544c7d37076fe0fa5',
+                    'type': 'last_affected',
+                }],
+                "type": "GIT",
+                "repo_url": "https://github.com/python/cpython"
+            }]
+        }],
+        import_last_modified=datetime.datetime(2018, 2, 9, 3, 29, 0, 0),
     ).put()
 
     self.tasks_topic = f'projects/{tests.TEST_PROJECT_ID}/topics/tasks'
@@ -440,7 +474,7 @@ class BucketImporterTest(unittest.TestCase):
     """Test bucket updates."""
     imp = importer.Importer('fake_public_key', 'fake_private_key', self.tmp_dir,
                             importer.DEFAULT_PUBLIC_LOGGING_BUCKET, 'bucket',
-                            True)
+                            True, False)
 
     with self.assertLogs(level='WARNING') as logs:
       imp.run()
@@ -453,12 +487,18 @@ class BucketImporterTest(unittest.TestCase):
         "ERROR:root:Failed to parse vulnerability a/b/test-invalid.json: 'modified' is a required property",  # pylint: disable=line-too-long
         logs.output[2])
 
+    # Check if vulnerability parse failure was logged correctly.
+    self.assertTrue(
+        any('Failed to parse vulnerability "a/b/test-invalid.json"' in x[0][0]
+            for x in upload_from_str.call_args_list))
+
+    # Expected pubsub calls for validly imported records.
     mock_publish.assert_has_calls([
         mock.call(
             self.tasks_topic,
             data=b'',
             type='update',
-            source='bucket',
+            source='test',
             path='a/b/android-test.json',
             original_sha256=('12453f85cd87bc1d465e0d013db572c0'
                              '1f7fb7de3b3a33de94ebcc7bd0f23a14'),
@@ -468,7 +508,7 @@ class BucketImporterTest(unittest.TestCase):
             self.tasks_topic,
             data=b'',
             type='update',
-            source='bucket',
+            source='test',
             path='a/b/test.json',
             original_sha256=('62966a80f6f9f54161803211069216177'
                              '37340a47f43356ee4a1cabe8f089869'),
@@ -476,64 +516,44 @@ class BucketImporterTest(unittest.TestCase):
             req_timestamp='12345'),
     ])
 
-    # Test this entry is not published
+    # Test this entry is not published, as it is preexisting and not newer.
     dsa_call = mock.call(
         self.tasks_topic,
         data=b'',
-        type='update',
+        type='test',
         source='bucket',
         path='a/b/DSA-3029-1.json',
         original_sha256=mock.ANY,
         deleted='false')
     self.assertNotIn(dsa_call, mock_publish.mock_calls)
 
-    # Test invalid entry is not published
+    # Test invalid entry is not published, as it failed validation.
     invalid_call = mock.call(
         self.tasks_topic,
         data=b'',
         type='update',
-        source='bucket',
+        source='test',
         path='a/b/test-invalid.json',
         original_sha256=mock.ANY,
         deleted=mock.ANY)
     self.assertNotIn(invalid_call, mock_publish.mock_calls)
-    # Check if uploaded log str has the failed to parse vuln
-    self.assertTrue(
-        any('Failed to parse vulnerability "a/b/test-invalid.json"' in x[0][0]
-            for x in upload_from_str.call_args_list))
 
-  @mock.patch('google.cloud.storage.Blob.upload_from_string')
   @mock.patch('google.cloud.pubsub_v1.PublisherClient.publish')
   @mock.patch('time.time', return_value=12345.0)
-  def test_import_override(self, unused_mock_time: mock.MagicMock,
-                           mock_publish: mock.MagicMock,
-                           upload_from_str: mock.MagicMock):
-    """Test bucket updates."""
+  def test_bucket_deletion(self, unused_mock_time: mock.MagicMock,
+                           mock_publish: mock.MagicMock):
+    """Test bucket deletion."""
+    imp = importer.Importer(
+        'fake_public_key',
+        'fake_private_key',
+        self.tmp_dir,
+        importer.DEFAULT_PUBLIC_LOGGING_BUCKET,
+        'bucket',
+        True,
+        True,
+        # The test dataset is too small for the safety threshold.
+        deletion_safety_threshold_pct=100)
 
-    self.source_repo.ignore_last_import_time = True
-    self.source_repo.put()
-
-    imp = importer.Importer('fake_public_key', 'fake_private_key', self.tmp_dir,
-                            importer.DEFAULT_PUBLIC_LOGGING_BUCKET, 'bucket',
-                            True)
-
-    imp.run()  # TODO(michaelkedar): Why does this run not generate logs?
-
-    mock_publish.assert_has_calls([
-        mock.call(
-            self.tasks_topic,
-            data=b'',
-            type='update',
-            source='bucket',
-            path='a/b/DSA-3029-1.json',
-            original_sha256=mock.ANY,
-            deleted='false',
-            req_timestamp='12345')
-    ])
-    mock_publish.reset_mock()
-
-    # Second run should not import it again, since each import run resets the
-    # value of source_repo.ignore_last_import_time to False
     with self.assertLogs(level='WARNING') as logs:
       imp.run()
     self.assertEqual(3, len(logs.output))
@@ -545,20 +565,180 @@ class BucketImporterTest(unittest.TestCase):
         "ERROR:root:Failed to parse vulnerability a/b/test-invalid.json: 'modified' is a required property",  # pylint: disable=line-too-long
         logs.output[2])
 
-    dsa_call = mock.call(
+    # Test existing record in Datastore no longer present in GCS has been
+    # requested to be deleted.
+    deletion_call = mock.call(
         self.tasks_topic,
         data=b'',
         type='update',
-        source='bucket',
+        source='test',
+        path='a/b/CVE-2018-1000030.json',
+        original_sha256='',
+        deleted='true',
+        req_timestamp='12345')
+    mock_publish.assert_has_calls([deletion_call])
+
+    # Run again with a 10% threshold and confirm the safeguards work as
+    # intended.
+    imp = importer.Importer(
+        'fake_public_key',
+        'fake_private_key',
+        self.tmp_dir,
+        importer.DEFAULT_PUBLIC_LOGGING_BUCKET,
+        'bucket',
+        True,
+        True,
+        # The test dataset is so small this safety threshold triggers.
+        deletion_safety_threshold_pct=10)
+
+    mock_publish.reset_mock()
+
+    with self.assertLogs(level='WARNING') as logs:
+      imp.run()
+    # The schema validation of failures of the files in GCS by
+    # _process_deletions_bucket() causes, plus an extra one from the safeguard.
+    self.assertEqual(4, len(logs.output))
+    self.assertEqual(
+        "ERROR:root:Cowardly refusing to delete 1 missing records from GCS for: test",  # pylint: disable=line-too-long
+        logs.output[-1])
+
+    # No deletions should have been requested.
+    self.assertNotIn(deletion_call, mock_publish.mock_calls)
+
+  @mock.patch('google.cloud.storage.Blob.upload_from_string')
+  @mock.patch('google.cloud.pubsub_v1.PublisherClient.publish')
+  @mock.patch('time.time', return_value=12345.0)
+  def test_import_override(self, unused_mock_time: mock.MagicMock,
+                           mock_publish: mock.MagicMock,
+                           upload_from_str: mock.MagicMock):
+    """Test behavior of ignore_last_import_time source setting."""
+
+    self.source_repo.ignore_last_import_time = True
+    self.source_repo.put()
+
+    imp = importer.Importer('fake_public_key', 'fake_private_key', self.tmp_dir,
+                            importer.DEFAULT_PUBLIC_LOGGING_BUCKET, 'bucket',
+                            True, False)
+
+    expected_pubsub_message = mock.call(
+        self.tasks_topic,
+        data=b'',
+        type='update',
+        source='test',
         path='a/b/DSA-3029-1.json',
         original_sha256=mock.ANY,
         deleted='false',
         req_timestamp='12345')
-    self.assertNotIn(dsa_call, mock_publish.mock_calls)
-    # Check if uploaded log str has the failed to parse vuln
+
+    with self.assertLogs(level='WARNING') as logs:
+      imp.run()
+
+    # Confirm invalid records were treated as expected.
+    self.assertEqual(3, len(logs.output))
+    self.assertEqual(
+        "WARNING:root:Failed to validate loaded OSV entry: 'modified' is a required property",  # pylint: disable=line-too-long
+        logs.output[0])
+    self.assertIn('WARNING:root:Invalid data:', logs.output[1])
+    self.assertIn(
+        "ERROR:root:Failed to parse vulnerability a/b/test-invalid.json: 'modified' is a required property",  # pylint: disable=line-too-long
+        logs.output[2])
+
+    # Check if vulnerability parse failure was logged correctly.
     self.assertTrue(
         any('Failed to parse vulnerability "a/b/test-invalid.json"' in x[0][0]
             for x in upload_from_str.call_args_list))
+
+    # Confirm a pubsub message was emitted for record reimported.
+    mock_publish.assert_has_calls([
+        expected_pubsub_message,
+    ])
+    mock_publish.reset_mock()
+
+    # Second run should not reimport existing records again, since each import
+    # run resets the value of source_repo.ignore_last_import_time to False
+    with self.assertLogs(level='WARNING') as logs:
+      imp.run()
+
+    # Confirm invalid records were (again) treated as expected.
+    self.assertEqual(3, len(logs.output))
+    self.assertEqual(
+        "WARNING:root:Failed to validate loaded OSV entry: 'modified' is a required property",  # pylint: disable=line-too-long
+        logs.output[0])
+    self.assertIn('WARNING:root:Invalid data:', logs.output[1])
+    self.assertIn(
+        "ERROR:root:Failed to parse vulnerability a/b/test-invalid.json: 'modified' is a required property",  # pylint: disable=line-too-long
+        logs.output[2])
+
+    # Check if vulnerability parse failure was logged correctly.
+    self.assertTrue(
+        any('Failed to parse vulnerability "a/b/test-invalid.json"' in x[0][0]
+            for x in upload_from_str.call_args_list))
+
+    # Confirm second run didn't reprocess any existing records.
+    self.assertNotIn(expected_pubsub_message, mock_publish.mock_calls)
+
+
+class BucketImporterMassDeletionTest(unittest.TestCase):
+  """Rigorous deletion testing against production data (in staging)."""
+
+  def setUp(self):
+    # Note: This runs (non-destructively) against the real live (non-emulated)
+    # staging datastore and GCS bucket.
+    if os.environ.get('DATASTORE_PROJECT_ID', None) is not None:
+      self.skipTest('This needs to be run outside of the Datastore Emulator')
+
+    self.maxDiff = None  # pylint: disable=invalid-name
+    self.tmp_dir = tempfile.mkdtemp()
+
+    self.tasks_topic = f'projects/{tests.TEST_PROJECT_ID}/topics/tasks'
+
+    # The live bucket in staging.
+    self.source_repo = osv.SourceRepository(
+        type=osv.SourceRepositoryType.BUCKET,
+        id='cve-osv',
+        name='cve-osv',
+        bucket='osv-test-cve-osv-conversion',
+        directory_path='osv-output',
+        extension='.json',
+        db_prefix='CVE-')
+
+    tests.mock_datetime(self)
+
+    self.logger = logging.getLogger()
+    self.logger.level = logging.INFO
+
+  def tearDown(self):
+    shutil.rmtree(self.tmp_dir, ignore_errors=True)
+
+  @mock.patch('google.cloud.storage.Blob.upload_from_string')
+  @mock.patch('google.cloud.pubsub_v1.PublisherClient.publish')
+  def test_deletions_in_staging(self, mock_publish: mock.MagicMock,
+                                unused_upload_from_str: mock.MagicMock):
+    """Load test against staging bucket and (non-emulated) staging Datastore."""
+    imp = importer.Importer(
+        'fake_public_key',
+        'fake_private_key',
+        self.tmp_dir,
+        importer.DEFAULT_PUBLIC_LOGGING_BUCKET,
+        'bucket',
+        True,
+        False,
+        deletion_safety_threshold_pct=100)
+
+    imp.process_deletions(self.source_repo)
+    # This will start to fail once relevant records are actually deleted out of
+    # Datastore in staging.
+    mock_publish.assert_has_calls([
+        mock.call(
+            self.tasks_topic,
+            data=b'',
+            type='update',
+            source='cve-osv',
+            path=mock.ANY,
+            original_sha256=mock.ANY,
+            deleted='true',
+            req_timestamp=mock.ANY)
+    ])
 
 
 @mock.patch('importer.utcnow', lambda: datetime.datetime(2024, 1, 1))
@@ -607,7 +787,7 @@ class RESTImporterTest(unittest.TestCase):
     self.source_repo.put()
     imp = importer.Importer('fake_public_key', 'fake_private_key', self.tmp_dir,
                             importer.DEFAULT_PUBLIC_LOGGING_BUCKET, 'bucket',
-                            False)
+                            False, False)
     imp.run()
     self.assertEqual(mock_publish.call_count, data_handler.cve_count)
 
@@ -626,7 +806,7 @@ class RESTImporterTest(unittest.TestCase):
     self.source_repo.put()
     imp = importer.Importer('fake_public_key', 'fake_private_key', self.tmp_dir,
                             importer.DEFAULT_PUBLIC_LOGGING_BUCKET, 'bucket',
-                            False)
+                            False, False)
     imp.run()
     self.assertEqual(mock_publish.call_count, data_handler.cve_count)
 
@@ -643,7 +823,7 @@ class RESTImporterTest(unittest.TestCase):
     self.source_repo.put()
     imp = importer.Importer('fake_public_key', 'fake_private_key', self.tmp_dir,
                             importer.DEFAULT_PUBLIC_LOGGING_BUCKET, 'bucket',
-                            True)
+                            True, False)
     with self.assertLogs() as logs:
       imp.run()
     mock_publish.assert_not_called()
@@ -662,7 +842,7 @@ class RESTImporterTest(unittest.TestCase):
     self.source_repo.put()
     imp = importer.Importer('fake_public_key', 'fake_private_key', self.tmp_dir,
                             importer.DEFAULT_PUBLIC_LOGGING_BUCKET, 'bucket',
-                            False)
+                            False, False)
     imp.run()
     mock_publish.assert_has_calls([
         mock.call(
@@ -729,11 +909,30 @@ class RESTImporterTest(unittest.TestCase):
 
 
 if __name__ == '__main__':
+  run_slow_tests = (
+      os.environ.get('CLOUD_BUILD', 0) != 1 and 'RUN_SLOW_TESTS' in os.environ)
   ds_emulator = tests.start_datastore_emulator()
   try:
     with ndb.Client().context() as context:
       context.set_memcache_policy(False)
       context.set_cache_policy(False)
-      unittest.main()
+      unittest.main(exit=not run_slow_tests)
   finally:
     tests.stop_emulator()
+  if run_slow_tests:
+    import time
+    print('Please stand by for the slow tests')
+    for env in [
+        'DATASTORE_DATASET', 'DATASTORE_EMULATOR_HOST',
+        'DATASTORE_EMULATOR_HOST_PATH', 'DATASTORE_HOST', 'DATASTORE_PROJECT_ID'
+    ]:
+      if env in os.environ:
+        del os.environ[env]
+    loader = unittest.TestLoader()
+    suite = loader.loadTestsFromTestCase(BucketImporterMassDeletionTest)
+    runner = unittest.TextTestRunner(verbosity=2)
+    with ndb.Client(project='oss-vdb-test').context() as context:
+      start = time.perf_counter()
+      runner.run(suite)
+      end = time.perf_counter()
+    print(f'Duration: {end - start}')

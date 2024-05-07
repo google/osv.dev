@@ -39,8 +39,9 @@ def main():
       default=DEFAULT_EXPORT_BUCKET)
   parser.add_argument(
       '--processes',
-      help='Maximum number of parallel exports',
-      default=DEFAULT_EXPORT_PROCESSES)
+      help='Maximum number of parallel exports, default to number of cpu cores',
+      # If 0 or None, use the DEFAULT_EXPORT_PROCESSES value
+      default=os.cpu_count() or DEFAULT_EXPORT_PROCESSES)
   args = parser.parse_args()
 
   tmp_dir = os.path.join(args.work_dir, 'tmp')

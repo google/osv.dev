@@ -17,8 +17,6 @@ import argparse
 import concurrent.futures
 import logging
 import os
-import shutil
-import sys
 import tempfile
 import zipfile
 from typing import List
@@ -140,7 +138,11 @@ def main():
       '--bucket',
       help='Bucket name to export to',
       default=DEFAULT_EXPORT_BUCKET)
-  parser.add_argument('--ecosystem', required=True, help='Ecosystem to upload')
+  parser.add_argument(
+      '--ecosystem',
+      required=True,
+      help='Ecosystem to upload, pass the value "list" to export the ecosystem.txt file'
+  )
   args = parser.parse_args()
 
   tmp_dir = os.path.join(args.work_dir, 'tmp')

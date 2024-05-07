@@ -620,6 +620,11 @@ class Importer:
     logging.info('%d Bugs in Datastore considered deleted from GCS for %s',
                  len(vulns_to_delete), source_repo.name)
 
+    if len(vulns_to_delete) == 0:
+      replace_importer_log(storage_client, source_repo.name,
+                           self._public_log_bucket, import_failure_logs)
+      return
+
     # sanity check: deleting a lot/all of the records for source in Datastore is
     # probably worth flagging for review.
     if (len(vulns_to_delete) / len(vuln_ids_for_source) * 100) >= threshold:

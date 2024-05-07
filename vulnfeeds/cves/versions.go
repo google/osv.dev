@@ -15,6 +15,7 @@
 package cves
 
 import (
+	"cmp"
 	"context"
 	"fmt"
 	"log"
@@ -57,6 +58,21 @@ func (ac *AffectedCommit) SetLimit(commit string) {
 
 func (ac *AffectedCommit) SetLastAffected(commit string) {
 	ac.LastAffected = commit
+}
+
+// Helper function for sorting AffectedCommit for stability.
+// Sorts by Repo, then Fixed, then LastAffected, then Introduced.
+func AffectedCommitCompare(i, j AffectedCommit) int {
+	if n := cmp.Compare(i.Repo, j.Repo); n != 0 {
+		return n
+	}
+	if n := cmp.Compare(i.Fixed, j.Fixed); n != 0 {
+		return n
+	}
+	if n := cmp.Compare(i.LastAffected, j.LastAffected); n != 0 {
+		return n
+	}
+	return cmp.Compare(i.Introduced, j.Introduced)
 }
 
 type AffectedVersion struct {

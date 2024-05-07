@@ -141,8 +141,8 @@ def main():
   parser.add_argument(
       '--ecosystem',
       required=True,
-      help='Ecosystem to upload, pass the value "list" to export the ecosystem.txt file'
-  )
+      help='Ecosystem to upload, pass the value "list" ' +
+      'to export the ecosystem.txt file')
   args = parser.parse_args()
 
   tmp_dir = os.path.join(args.work_dir, 'tmp')

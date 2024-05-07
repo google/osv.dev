@@ -68,7 +68,7 @@ def spawn_ecosystem_exporter(work_dir: str, bucket: str, eco: str):
   ])
   return_code = proc.wait()
   if return_code != 0:
-    logging.error(f"Export of {eco} failed with Exit Code: {return_code}")
+    logging.error("Export of %s failed with Exit Code: %d", eco, return_code)
 
 
 if __name__ == '__main__':

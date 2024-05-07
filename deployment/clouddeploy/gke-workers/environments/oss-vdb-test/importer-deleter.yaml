@@ -12,7 +12,7 @@ spec:
           tolerations:
           - key: workloadType
             operator: Equal
-            value: importer-pool
+            value: default-pool
           containers:
           - name: importer-deleter
             env:
@@ -32,10 +32,12 @@ spec:
             resources:
               requests:
                 cpu: 1
-                memory: "1G"
+                memory: "10G"
               limits:
                 cpu: 1
-                memory: "2G"
+                memory: "11G"
+          nodeSelector:
+-           cloud.google.com/gke-nodepool: default-pool
           restartPolicy: OnFailure
           volumes:
             - name: "ssd"

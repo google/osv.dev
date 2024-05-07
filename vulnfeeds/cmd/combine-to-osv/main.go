@@ -49,6 +49,7 @@ func main() {
 }
 
 // getModifiedTime gets the modification time of a given file
+// This function assumes that the modified time on disk matches with it in GCS
 func getModifiedTime(filePath string) (time.Time, error) {
 	var emptyTime time.Time
 	fileInfo, err := os.Stat(filePath)

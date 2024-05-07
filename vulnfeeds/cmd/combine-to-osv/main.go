@@ -164,7 +164,7 @@ func combineIntoOSV(loadedCves map[cves.CVEID]cves.Vulnerability, allParts map[c
 		}
 		cveModified, _ := time.Parse(time.RFC3339, convertedCve.Modified)
 		if cvePartsModifiedTime[cveId].After(cveModified) {
-			convertedCve.Modified = cvePartsModifiedTime[cveId].String()
+			convertedCve.Modified = cvePartsModifiedTime[cveId].Format(time.RFC3339)
 		}
 		convertedCves[cveId] = convertedCve
 	}

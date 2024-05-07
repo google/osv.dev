@@ -113,7 +113,7 @@ class Importer:
                oss_fuzz_export_bucket,
                strict_validation: bool,
                delete: bool,
-               deletion_safety_threshold_pct=10):
+               deletion_safety_threshold_pct: float = 10.0):
     self._ssh_key_public_path = ssh_key_public_path
     self._ssh_key_private_path = ssh_key_private_path
     self._work_dir = work_dir
@@ -535,7 +535,7 @@ class Importer:
 
   def _process_deletions_bucket(self,
                                 source_repo: osv.SourceRepository,
-                                threshold=10):
+                                threshold: float = 10.0):
     """Process deletions from a GCS bucket source.
 
     This validates the continued existence of every Bug in Datastore (for the
@@ -815,6 +815,7 @@ def main():
       default=False)
   parser.add_argument(
       '--delete_threshold_pct',
+      type=float,
       help='More than this percent of records for a given source '
       'being deleted triggers an error',
       default=10)

@@ -24,12 +24,12 @@ jobs:
     name: Publish
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v3 # v2.3.4
+    - uses: actions/checkout@0ad4b8fadaa221de15dcec353f45205ec38ea70b # v4.1.4
       with:
         fetch-depth: 0
         submodules: recursive
     - name: Set up Python 3
-      uses: actions/setup-python@v4 # v2.2.2
+      uses: actions/setup-python@82c7e631bb3cdc910f68e0081d67478d79c6982d # v5.1.0
       with:
         python-version: 3.7
     - name: Install pypa/build

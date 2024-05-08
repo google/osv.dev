@@ -113,7 +113,7 @@ class Importer:
                oss_fuzz_export_bucket,
                strict_validation: bool,
                delete: bool,
-               deletion_safety_threshold_pct=10):
+               deletion_safety_threshold_pct: float = 10.0):
     self._ssh_key_public_path = ssh_key_public_path
     self._ssh_key_private_path = ssh_key_private_path
     self._work_dir = work_dir
@@ -535,7 +535,7 @@ class Importer:
 
   def _process_deletions_bucket(self,
                                 source_repo: osv.SourceRepository,
-                                threshold=10):
+                                threshold: float = 10.0):
     """Process deletions from a GCS bucket source.
 
     This validates the continued existence of every Bug in Datastore (for the
@@ -571,8 +571,11 @@ class Importer:
     storage_client = storage.Client()
     # Get all of the existing records in the GCS bucket
     # (to get their IDs for checking against Datastore)
-    logging.info('Listing blobs in gs://%s',
-                 os.path.join(source_repo.bucket, source_repo.directory_path))
+    logging.info(
+        'Listing blobs in gs://%s',
+        os.path.join(source_repo.bucket,
+                     ('' if source_repo.directory_path is None else
+                      source_repo.directory_path)))
     listed_blobs = list(
         storage_client.list_blobs(
             source_repo.bucket, prefix=source_repo.directory_path))
@@ -616,6 +619,11 @@ class Importer:
 
     logging.info('%d Bugs in Datastore considered deleted from GCS for %s',
                  len(vulns_to_delete), source_repo.name)
+
+    if len(vulns_to_delete) == 0:
+      replace_importer_log(storage_client, source_repo.name,
+                           self._public_log_bucket, import_failure_logs)
+      return
 
     # sanity check: deleting a lot/all of the records for source in Datastore is
     # probably worth flagging for review.
@@ -803,15 +811,18 @@ def main():
   parser.add_argument('--ssh_key_private', help='Private SSH key path')
   parser.add_argument(
       '--strict_validation',
+      action='store_true',
       help='Fail to import entries that does not pass validation',
       default=False)
   parser.add_argument(
       '--delete',
+      action='store_true',
       help=('Bypass importing and propagate record deletions from source to '
             'Datastore'),
       default=False)
   parser.add_argument(
       '--delete_threshold_pct',
+      type=float,
       help='More than this percent of records for a given source '
       'being deleted triggers an error',
       default=10)

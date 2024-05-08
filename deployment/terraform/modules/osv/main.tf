@@ -154,6 +154,24 @@ resource "google_storage_bucket" "backups_bucket" {
   }
 }
 
+resource "google_storage_bucket" "affected_commits_backups_bucket" {
+  project                     = var.project_id
+  name                        = var.affected_commits_backups_bucket
+  location                    = "US"
+  uniform_bucket_level_access = true
+  lifecycle_rule {
+    action {
+      type = "Delete"
+    }
+    condition {
+      age = var.affected_commits_backups_bucket_retention_days
+    }
+  }
+  lifecycle {
+    prevent_destroy = true
+  }
+}
+
 # Service account permissions
 resource "google_service_account" "deployment_service" {
   project      = var.project_id

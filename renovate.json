@@ -8,7 +8,10 @@
   "labels": ["dependencies"],
   "postUpdateOptions": ["gomodTidy"],
   "osvVulnerabilityAlerts": true,
-  "lockFileMaintenance": { "enabled": true },
+  "lockFileMaintenance": { 
+    "enabled": true,
+    "schedule": ["before 6am on wednesday"]
+  },
   "packageRules": [
     {
       "matchUpdateTypes": ["major"],
@@ -61,6 +64,11 @@
     {
       "matchFileNames": ["Pipfile"],
       "groupName": "osv-lib"
+    },
+    {
+      "matchDatasources": ["docker"],
+      "matchPackageNames": ["python"],
+      "enabled": false
     }
   ]
 }

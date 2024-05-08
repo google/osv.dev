@@ -24,6 +24,7 @@ from typing import List
 
 from google.cloud import ndb
 from google.cloud import storage
+from google.cloud.storage import retry
 
 import osv
 import osv.logs
@@ -55,13 +56,13 @@ class Exporter:
       self._export_ecosystem_list_to_bucket(ecosystems, tmp_dir)
 
   def upload_single(self, bucket, source_path, target_path):
-    """Upload a single file to a bucket."""
+    """Upload a single file to a GCS bucket."""
     logging.info('Uploading %s', target_path)
     try:
       blob = bucket.blob(target_path)
-      blob.upload_from_filename(source_path)
+      blob.upload_from_filename(source_path, retry=retry.DEFAULT_RETRY)
     except Exception as e:
-      logging.error('Failed to export: %s', e)
+      logging.exception('Failed to export: %s', e)
 
   def _export_ecosystem_list_to_bucket(self, ecosystems: List[str],
                                        tmp_dir: str):
@@ -83,8 +84,19 @@ class Exporter:
 
     self.upload_single(bucket, ecosystems_file_path, ECOSYSTEMS_FILE)
 
-  def _export_ecosystem_to_bucket(self, ecosystem, tmp_dir):
-    """Export ecosystem vulns to bucket."""
+  def _export_ecosystem_to_bucket(self, ecosystem: str, tmp_dir: str):
+    """Export the vulnerabilities in an ecosystem to GCS.
+
+    Args:
+      ecosystem: the ecosystem name
+      tmp_dir: temporary directory for scratch
+
+    This simultaneously exports every Bug for the given ecosystem to individual
+    files in the scratch filesystem, and a zip file in the scratch filesystem.
+
+    At the conclusion of this export, all of the files in the scratch filesystem
+    (including the zip file) are uploaded to the GCS bucket.
+    """
     logging.info('Exporting vulnerabilities for ecosystem %s', ecosystem)
     storage_client = storage.Client()
     bucket = storage_client.get_bucket(self._export_bucket)
@@ -93,7 +105,8 @@ class Exporter:
     with zipfile.ZipFile(zip_path, 'w', zipfile.ZIP_DEFLATED) as zip_file:
 
       @ndb.tasklet
-      def _exporter_file(bug):
+      def _export_to_file_and_zipfile(bug):
+        """Write out a bug record to both a single file and the zip file."""
         if not bug.public or bug.status == osv.BugStatus.UNPROCESSED:
           return
 
@@ -106,10 +119,12 @@ class Exporter:
         # standard/python/ndb/async#tasklets
         zip_file.write(file_path, os.path.basename(file_path))
 
-      osv.Bug.query(osv.Bug.ecosystem == ecosystem).map(_exporter_file)
+      osv.Bug.query(
+          osv.Bug.ecosystem == ecosystem).map(_export_to_file_and_zipfile)
 
     with concurrent.futures.ThreadPoolExecutor(
         max_workers=_EXPORT_WORKERS) as executor:
+      # Note: all.zip is included here
       for filename in os.listdir(tmp_dir):
         executor.submit(self.upload_single, bucket,
                         os.path.join(tmp_dir, filename),

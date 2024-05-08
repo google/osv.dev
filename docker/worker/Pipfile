@@ -11,6 +11,7 @@ PyYAML = "*"
 google-cloud-storage = "*"
 redis = "*"
 osv = {editable = true, path = "./../.."}
+pygit2 = ">=1.14.0"
 
 [dev-packages]
 yapf = "*"

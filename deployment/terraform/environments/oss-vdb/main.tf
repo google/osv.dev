@@ -3,16 +3,18 @@ module "osv" {
 
   project_id = "oss-vdb"
 
-  public_import_logs_bucket     = "osv-public-import-logs"
-  vulnerabilities_export_bucket = "osv-vulnerabilities"
-  cve_osv_conversion_bucket     = "cve-osv-conversion"
-  debian_osv_conversion_bucket  = "debian-osv"
-  logs_bucket                   = "osv-logs"
-  backups_bucket                = "osv-backup"
-  backups_bucket_retention_days = 60
+  public_import_logs_bucket                      = "osv-public-import-logs"
+  vulnerabilities_export_bucket                  = "osv-vulnerabilities"
+  cve_osv_conversion_bucket                      = "cve-osv-conversion"
+  debian_osv_conversion_bucket                   = "debian-osv"
+  logs_bucket                                    = "osv-logs"
+  backups_bucket                                 = "osv-backup"
+  backups_bucket_retention_days                  = 60
+  affected_commits_backups_bucket                = "osv-affected-commits"
+  affected_commits_backups_bucket_retention_days = 3
 
   api_url     = "api.osv.dev"
-  esp_version = "2.41.0"
+  esp_version = "2.47.0"
 }
 
 
@@ -24,19 +26,19 @@ terraform {
   required_providers {
     google = {
       source  = "hashicorp/google"
-      version = "~> 5.8.0"
+      version = "~> 5.18.0"
     }
     google-beta = {
       source  = "hashicorp/google-beta"
-      version = "~> 5.2.0"
+      version = "~> 5.18.0"
     }
     external = {
       source  = "hashicorp/external"
-      version = "~> 2.3.1"
+      version = "~> 2.3.3"
     }
     null = {
       source  = "hashicorp/null"
-      version = "~> 3.2.1"
+      version = "~> 3.2.2"
     }
   }
 }

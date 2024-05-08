@@ -58,6 +58,8 @@ _ecosystems = {
     'Debian': OrderingUnsupportedEcosystem(),
     'Photon OS': OrderingUnsupportedEcosystem(),
     'Rocky Linux': OrderingUnsupportedEcosystem(),
+    'Ubuntu': OrderingUnsupportedEcosystem(),
+    'Wolfi': OrderingUnsupportedEcosystem(),
 }
 
 # Semver-based ecosystems, should correspond to _ecosystems above.
@@ -83,7 +85,7 @@ package_urls = {
     'npm': 'https://www.npmjs.com/package/',
     'NuGet': 'https://www.nuget.org/packages/',
     'Packagist': 'https://packagist.org/packages/',
-    'Pub': 'https://pub-web.flutter-io.cn/packages/',
+    'Pub': 'https://pub.dev/packages/',
     'PyPI': 'https://pypi.org/project/',
     'Rocky Linux': 'https://pkgs.org/download/',
     'RubyGems': 'https://rubygems.org/gems/',
@@ -100,15 +102,19 @@ def get(name: str) -> Ecosystem:
     return Alpine(name.split(':')[1])
 
   if name.startswith('AlmaLinux:'):
-    # TODO(michaelkedar)
+    # TODO(unassigned)
     return OrderingUnsupportedEcosystem()
 
   if name.startswith('Rocky Linux:'):
-    # TODO(michaelkedar)
+    # TODO(unassigned)
     return OrderingUnsupportedEcosystem()
 
   if name.startswith('Photon OS:'):
-    # TODO(michaelkedar)
+    # TODO(unassigned)
+    return OrderingUnsupportedEcosystem()
+
+  if name.startswith('Ubuntu:'):
+    # TODO(unassigned)
     return OrderingUnsupportedEcosystem()
 
   return _ecosystems.get(name)

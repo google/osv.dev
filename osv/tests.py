@@ -24,6 +24,7 @@ import threading
 from unittest import mock
 
 import pygit2
+import pygit2.enums
 
 _EMULATOR_TIMEOUT = 30
 _DATASTORE_EMULATOR_PORT = '8002'
@@ -85,8 +86,9 @@ class MockRepo:
 
   def add_file(self, path, contents):
     """Adds a file."""
-    oid = self._repo.write(pygit2.GIT_OBJ_BLOB, contents)
-    self._repo.index.add(pygit2.IndexEntry(path, oid, pygit2.GIT_FILEMODE_BLOB))
+    oid = self._repo.write(pygit2.enums.ObjectType.BLOB, contents)
+    self._repo.index.add(
+        pygit2.IndexEntry(path, oid, pygit2.enums.FileMode.BLOB))
     self._repo.index.write()
 
   def delete_file(self, path):

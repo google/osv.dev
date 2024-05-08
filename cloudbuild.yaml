@@ -29,6 +29,13 @@ steps:
     - DATASTORE_EMULATOR_PORT=8002
   waitFor: ['init']
 
+# Sourcerepo-sync-tests and lib-tests use the same env so have a race condition. 
+- name: 'gcr.io/oss-vdb/ci'
+  id: 'sourcerepo-sync-tests'
+  dir: 'tools/sourcerepo-sync'
+  args: ['bash', '-ex', 'run_tests.sh']
+  waitFor: ['init', 'lib-tests']
+
 - name: 'gcr.io/oss-vdb/ci'
   id: 'worker-tests'
   dir: docker/worker
@@ -43,6 +50,7 @@ steps:
   dir: docker/importer
   args: ['bash', '-ex', 'run_tests.sh']
   env:
+    - CLOUD_BUILD=1
     # same as worker
     - DATASTORE_EMULATOR_PORT=8003
   # importer uses same pipenv as worker, 'pipenv sync' may break if run concurrently

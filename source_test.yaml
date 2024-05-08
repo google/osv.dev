@@ -9,6 +9,7 @@
   extension: '.json'
   db_prefix: 'ALBA-'
   ignore_git: False
+  human_link: 'https://errata.almalinux.org/{{ ECOSYSTEMS[1].split(":")[1] }}/{{ BUG_ID | replace(":", "-", 1) }}.html'
   link: 'https://github.com/AlmaLinux/osv-database/blob/master/'
   editable: False
 
@@ -22,6 +23,7 @@
   extension: '.json'
   db_prefix: 'ALEA-'
   ignore_git: False
+  human_link: 'https://errata.almalinux.org/{{ ECOSYSTEMS[1].split(":")[1] }}/{{ BUG_ID | replace(":", "-", 1) }}.html'
   link: 'https://github.com/AlmaLinux/osv-database/blob/master/'
   editable: False
 
@@ -35,6 +37,7 @@
   extension: '.json'
   db_prefix: 'ALSA-'
   ignore_git: False
+  human_link: 'https://errata.almalinux.org/{{ ECOSYSTEMS[1].split(":")[1] }}/{{ BUG_ID | replace(":", "-", 1) }}.html'
   link: 'https://github.com/AlmaLinux/osv-database/blob/master/'
   editable: False
 
@@ -65,12 +68,13 @@
   versions_from_repo: False
   rest_api_url: 'https://curl.se/docs/vuln.json'
   type: 2
-  ignore_patterns: ['']
+  ignore_patterns: ['propertyValue']
   directory_path: 'docs'
   detect_cherrypicks: False
   extension: '.json'
   db_prefix: 'CURL-'
   ignore_git: True
+  human_link: 'https://curl.se/docs/{{ BUG_ID | replace("CURL-", "") }}.html'
   link: 'https://curl.se/docs/'
   editable: False
 
@@ -83,7 +87,7 @@
   bucket: 'osv-test-cve-osv-conversion'
   db_prefix: 'CVE-'
   ignore_git: False
-  human_link: 'https://nvd.nist.gov/vuln/detail/'
+  human_link: 'https://nvd.nist.gov/vuln/detail/{{ BUG_ID }}'
   link: 'https://storage.googleapis.com/osv-test-cve-osv-conversion/'
   editable: False
 
@@ -96,6 +100,7 @@
   bucket: 'osv-test-debian-osv'
   db_prefix: 'DLA-'
   ignore_git: True
+  human_link: 'https://security-tracker.debian.org/tracker/{{ BUG_ID }}'
   link: 'https://storage.googleapis.com/debian-osv/'
   editable: False
 
@@ -108,7 +113,7 @@
   bucket: 'osv-test-debian-osv'
   db_prefix: 'DSA-'
   ignore_git: True
-  human_link: 'https://security-tracker.debian.org/tracker/'
+  human_link: 'https://security-tracker.debian.org/tracker/{{ BUG_ID }}'
   link: 'https://storage.googleapis.com/debian-osv/'
   editable: False
 
@@ -121,6 +126,7 @@
   bucket: 'osv-test-debian-osv'
   db_prefix: 'DTSA-'
   ignore_git: True
+  human_link: 'https://security-tracker.debian.org/tracker/{{ BUG_ID }}'
   link: 'https://storage.googleapis.com/debian-osv/'
   editable: False
 
@@ -133,7 +139,7 @@
   extension: '.json'
   db_prefix: 'GHSA-'
   ignore_git: True
-  human_link: 'https://github.com/advisories/'
+  human_link: 'https://github.com/advisories/{{ BUG_ID }}'
   link: 'https://github.com/github/advisory-database/blob/main/'
   editable: False
 
@@ -147,7 +153,7 @@
   bucket: 'go-vulndb'
   db_prefix: 'GO-'
   ignore_git: True
-  human_link: 'https://pkg.go.dev/vuln/'
+  human_link: 'https://pkg.go.dev/vuln/{{ BUG_ID }}'
   link: 'https://vuln.go.dev/'
   editable: False
 
@@ -236,7 +242,7 @@
   extension: '.json'
   db_prefix: 'RUSTSEC-'
   ignore_git: False
-  human_link: 'https://rustsec.org/advisories/'
+  human_link: 'https://rustsec.org/advisories/{{ BUG_ID }}'
   link: 'https://github.com/rustsec/advisory-db/blob/osv/'
   editable: False
   repo_username: 'git'
@@ -250,6 +256,20 @@
   db_prefix: 'OSV-'
   ignore_git: False
   link: 'https://github.com/google/oss-fuzz-vulns/blob/main/'
+  editable: False
+
+- name: 'ubuntu'
+  versions_from_repo: False
+  type: 0
+  ignore_patterns: []
+  directory_path: 'osv'
+  repo_url: 'https://github.com/canonical/ubuntu-security-notices.git'
+  detect_cherrypicks: False
+  extension: '.json'
+  db_prefix: 'USN-'
+  ignore_git: False
+  human_link: 'https://ubuntu.com/security/notices/{{ BUG_ID }}'
+  link: 'https://github.com/canonical/ubuntu-security-notices/blob/main/'
   editable: False
 
 - name: 'uvi'
@@ -266,17 +286,15 @@
   key_path: 'OSV'
   repo_username: 'git'
 
-- name: 'test'
-  versions_from_repo: True
-  type: 0
-  ignore_patterns: ['allowlist.json']
-  repo_url: 'blah'
+- name: 'wolfi'
+  versions_from_repo: False
+  rest_api_url: 'https://packages.wolfi.dev/os/osv/all.json'
+  type: 2
+  ignore_patterns: ['propertyValue']
+  directory_path: 'os/osv'
   detect_cherrypicks: False
   extension: '.json'
-  db_prefix: 'TEST-'
-  ignore_git: False
-  link: 'blah'
+  db_prefix: 'WOLFI-'
+  ignore_git: True
+  link: 'https://packages.wolfi.dev/os/osv/'
   editable: False
-  key_path: 'OSV'
-  repo_username: 'git'
-

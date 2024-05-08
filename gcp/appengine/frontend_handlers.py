@@ -17,13 +17,14 @@ import json
 import os
 import math
 import re
+import logging
 
 from flask import abort
 from flask import current_app
 from flask import Blueprint
 from flask import make_response
 from flask import redirect
-from flask import render_template
+from flask import render_template, render_template_string
 from flask import request
 from flask import url_for
 from flask import send_from_directory
@@ -38,6 +39,7 @@ import osv
 import rate_limiter
 import source_mapper
 import utils
+from werkzeug import exceptions
 
 blueprint = Blueprint('frontend_handlers', __name__)
 
@@ -305,7 +307,10 @@ def add_source_info(bug, response):
   response['source'] = source_repo.link + source_path
   response['source_link'] = response['source']
   if source_repo.human_link:
-    response['human_source_link'] = source_repo.human_link + bug.id()
+    ecosystems = bug.ecosystem
+    bug_id = bug.id()
+    response['human_source_link'] = render_template_string(
+        source_repo.human_link, ECOSYSTEMS=ecosystems, BUG_ID=bug_id)
 
 
 def _commit_to_link(repo_url, commit):
@@ -592,3 +597,9 @@ def list_packages(vuln_affected: list[dict]):
           packages.append(parsed_scheme)
 
   return packages
+
+
+@blueprint.app_errorhandler(404)
+def not_found_error(error: exceptions.HTTPException):
+  logging.info('Handled %s - Path attempted: %s', error, request.path)
+  return render_template('404.html'), 404

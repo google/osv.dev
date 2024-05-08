@@ -44,7 +44,7 @@ jobs:
         build
         --sdist --wheel --outdir dist/ .
     - name: Publish distribution to PyPI
-      uses: pypa/gh-action-pypi-publish@2f6f737ca5f74c637829c0f5c3acd0e29ea5e8bf # v1.8.11
+      uses: pypa/gh-action-pypi-publish@81e9d935c883d0b210363ab89cf05f3894778450 # v1.8.14
       with:
         password: ${{ secrets.PYPI_API_TOKEN }}
         packages_dir: dist/

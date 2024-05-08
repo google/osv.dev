@@ -19,10 +19,10 @@ spec:
             resources:
               requests:
                 cpu: 1
-                memory: "3G"
+                memory: "6G"
               limits:
                 cpu: 1
-                memory: "4G"
+                memory: "8G"
           restartPolicy: OnFailure
           volumes:
             - name: "ssd"

@@ -87,7 +87,9 @@ def main():
   AliasGroups and creating new AliasGroups for un-computed bugs."""
 
   # Query for all bugs that have aliases.
-  bugs = osv.Bug.query(osv.Bug.aliases != '')
+  # Use (> '' OR < '') instead of (!= '') / (> '') to de-duplicate results
+  # and avoid datastore emulator problems, see issue #2093
+  bugs = osv.Bug.query(ndb.OR(osv.Bug.aliases > '', osv.Bug.aliases < ''))
   all_alias_group = osv.AliasGroup.query()
   allow_list = {
       allow_entry.bug_id for allow_entry in osv.AliasAllowListEntry.query()

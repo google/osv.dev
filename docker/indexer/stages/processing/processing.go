@@ -110,7 +110,7 @@ func (s *Stage) Run(ctx context.Context) error {
 			err = errors.New("unknown repository type")
 		}
 		if err != nil {
-			log.Errorf("failed to process input: %v", err)
+			log.Errorf("failed to process input ('%v' @ '%v'): %v", repoInfo.Name, repoInfo.CommitTag, err)
 		} else {
 			log.Infof("successfully processed: '%v' @ '%v'", repoInfo.Name, repoInfo.CommitTag)
 		}

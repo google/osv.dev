@@ -1,5 +1,6 @@
 {% extends 'base.html' %}
 {% set active_section = 'vulnerabilities' %}
+{% set disable_turbo_cache = 'true' %}
 
 {% macro table_header_cell(column_id, column_name, is_sortable, is_sorted, is_descending, hide_on_mobile) %}
 <span class="vuln-table-cell mdc-data-table__header-cell vuln-table-header

@@ -307,10 +307,10 @@ def add_source_info(bug, response):
   response['source'] = source_repo.link + source_path
   response['source_link'] = response['source']
   if source_repo.human_link:
-    ecosystems = bug.ecosystem
+    bug_ecosystems = bug.ecosystem
     bug_id = bug.id()
     response['human_source_link'] = render_template_string(
-        source_repo.human_link, ECOSYSTEMS=ecosystems, BUG_ID=bug_id)
+        source_repo.human_link, ECOSYSTEMS=bug_ecosystems, BUG_ID=bug_id)
 
 
 def _commit_to_link(repo_url, commit):

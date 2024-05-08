@@ -31,7 +31,7 @@ spec:
                 memory: "8G"
               limits:
                 cpu: "6"
-                memory: "10G"
+                memory: "12G"
           restartPolicy: OnFailure
           volumes:
             - name: "ssd"

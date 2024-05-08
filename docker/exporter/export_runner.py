@@ -49,7 +49,7 @@ def main():
   os.environ['TMPDIR'] = tmp_dir
 
   query = osv.Bug.query(projection=[osv.Bug.ecosystem], distinct=True)
-  ecosystems = [bug.ecosystem[0] for bug in query if bug.ecosystem] + ["list"]
+  ecosystems = [bug.ecosystem[0] for bug in query if bug.ecosystem] + ['list']
 
   with concurrent.futures.ThreadPoolExecutor(
       max_workers=args.processes) as executor:
@@ -61,14 +61,14 @@ def spawn_ecosystem_exporter(work_dir: str, bucket: str, eco: str):
   """
   Spawns the ecosystem specific exporter.
   """
-  logging.info("Starting export of ecosystem: %s", eco)
+  logging.info('Starting export of ecosystem: %s', eco)
   proc = subprocess.Popen([
-      "exporter.py", "--work_dir", work_dir, "--bucket", bucket, "--ecosystem",
+      'exporter.py', '--work_dir', work_dir, '--bucket', bucket, '--ecosystem',
       eco
   ])
   return_code = proc.wait()
   if return_code != 0:
-    logging.error("Export of %s failed with Exit Code: %d", eco, return_code)
+    logging.error('Export of %s failed with Exit Code: %d', eco, return_code)
 
 
 if __name__ == '__main__':

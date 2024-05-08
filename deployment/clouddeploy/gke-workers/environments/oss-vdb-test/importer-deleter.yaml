@@ -1,0 +1,39 @@
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: importer-deleter
+spec:
+  schedule: "* */6 * * *"
+  concurrencyPolicy: Forbid
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          containers:
+          - name: importer-deleter
+            env:
+            - name: GOOGLE_CLOUD_PROJECT
+              value: oss-vdb-test
+            image: importer
+            args:
+              - --delete
+              - --delete_threshold_pct=20
+              - --public_log_bucket=osv-test-public-import-logs
+            imagePullPolicy: Always
+            volumeMounts:
+              - mountPath: "/work"
+                name: "ssd"
+            securityContext:
+              privileged: true
+            resources:
+              requests:
+                cpu: 1
+                memory: "10G"
+              limits:
+                cpu: 1
+                memory: "11G"
+          restartPolicy: OnFailure
+          volumes:
+            - name: "ssd"
+              hostPath:
+                path: "/mnt/disks/ssd0"

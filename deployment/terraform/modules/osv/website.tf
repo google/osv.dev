@@ -90,11 +90,13 @@ module "gclb" {
 
   load_balancing_scheme = "EXTERNAL_MANAGED"
 
+  create_url_map = false
+  url_map        = google_compute_url_map.website.id
+
   backends = {
-    default = {
+    appengine = {
       groups = [
         {
-          # TODO(michaelkedar): Replace with Cloud Run when ready
           group = google_compute_region_network_endpoint_group.appengine_neg.id
         }
       ]
@@ -108,6 +110,32 @@ module "gclb" {
         }
         signed_url_cache_max_age_sec = 0
       }
+
+      iap_config = {
+        enable = false
+      }
+      log_config = {
+        enable = false
+      }
+    }
+
+    cloudrun = {
+      groups = [
+        {
+          group = google_compute_region_network_endpoint_group.serverless_neg.id
+        }
+      ]
+      protocol   = "HTTPS"
+      enable_cdn = true
+      cdn_policy = {
+        cache_key_policy = {
+          include_host         = true
+          include_protocol     = true
+          include_query_string = true
+        }
+        signed_url_cache_max_age_sec = 0
+      }
+      connection_draining_timeout_sec = 1
 
       iap_config = {
         enable = false
@@ -135,6 +163,39 @@ resource "google_compute_region_network_endpoint_group" "appengine_neg" {
   network_endpoint_type = "SERVERLESS"
   region                = google_app_engine_application.app.location_id
   app_engine {}
+}
+
+resource "google_compute_url_map" "website" {
+  project         = var.project_id
+  name            = "website-url-map"
+  default_service = module.gclb.backend_services.appengine.id
+
+  host_rule {
+    hosts        = ["*"]
+    path_matcher = "allpaths"
+  }
+
+  path_matcher {
+    name            = "allpaths"
+    default_service = module.gclb.backend_services.appengine.id
+    route_rules {
+      priority = 1
+      match_rules {
+        prefix_match = "/"
+      }
+      route_action {
+        # TODO(michaelkedar): adjust weights, then remove appengine fully migrated
+        weighted_backend_services {
+          backend_service = module.gclb.backend_services.appengine.id
+          weight          = 100
+        }
+        weighted_backend_services {
+          backend_service = module.gclb.backend_services.cloudrun.id
+          weight          = 0
+        }
+      }
+    }
+  }
 }
 
 # Output all the DNS records required for the website in one place. 

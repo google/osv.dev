@@ -1,6 +1,6 @@
 module github.com/google/osv/vulnfeeds
 
-go 1.22.1
+go 1.22.2
 
 require (
 	cloud.google.com/go/logging v1.8.1

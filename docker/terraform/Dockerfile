@@ -1,6 +1,6 @@
 # Taken and modified from https://github.com/GoogleCloudPlatform/cloud-builders-community/tree/master/terraform
 
-FROM golang:1.22.1-alpine@sha256:5a99b4049412cd34ad6b4e0c9527ae6beb9ae82d787b4bf3f4eff7aa13fc577a AS GO_BUILD
+FROM golang:1.22.2-alpine@sha256:cdc86d9f363e8786845bea2040312b4efa321b828acdeb26f393faa864d887b0 AS GO_BUILD
 
 ARG TERRAFORM_VERSION
 WORKDIR /build/

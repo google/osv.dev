@@ -9,10 +9,6 @@ spec:
     spec:
       template:
         spec:
-          tolerations:
-          - key: workloadType
-            operator: Equal
-            value: default-pool
           containers:
           - name: importer-deleter
             env:

@@ -62,6 +62,7 @@ Additionally, the OSV.dev team maintains a conversion pipeline for:
     [here](https://github.com/google/osv.dev/tree/master/vulnfeeds/cmd/alpine).
 
 ## Covered Ecosystems
+
 Between the data served in OSV and the data converted to OSV the following ecosystems are covered.
 
 -   AlmaLinux
@@ -88,6 +89,10 @@ Between the data served in OSV and the data converted to OSV the following ecosy
 -   Rocky Linux
 -   RubyGems
 -   SwiftURL
+
+## Data Quality
+
+The quality of the data in OSV.dev [is very important to us](https://google.github.io/osv.dev/faq/#ive-found-something-wrong-with-the-data). The minimum quality bar for OSV records acceptable for import is documented [here](data_quality.md)
 
 ## Data dumps
 

@@ -67,8 +67,10 @@ Between the data served in OSV and the data converted to OSV the following ecosy
 -   AlmaLinux
 -   Alpine
 -   Android
+-   Bitnami
 -   crates.io
 -   Debian GNU/Linux
+-   Git ([including C/C++](https://osv.dev/blog/posts/introducing-broad-c-c++-support/))
 -   GitHub Actions
 -   Go
 -   Haskell
@@ -85,6 +87,7 @@ Between the data served in OSV and the data converted to OSV the following ecosy
 -   R (CRAN and Bioconductor)
 -   Rocky Linux
 -   RubyGems
+-   SwiftURL
 
 ## Data dumps
 

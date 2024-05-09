@@ -15,5 +15,7 @@
 FROM gcr.io/oss-vdb/worker
 
 COPY exporter.py /usr/local/bin
+COPY export_runner.py /usr/local/bin
 RUN chmod 755 /usr/local/bin/exporter.py
-ENTRYPOINT ["exporter.py"]
+RUN chmod 755 /usr/local/bin/export_runner.py
+ENTRYPOINT ["export_runner.py"]

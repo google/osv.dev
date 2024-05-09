@@ -34,6 +34,7 @@ from typing import List, Tuple, Optional
 from google.cloud import ndb
 from google.cloud import pubsub_v1
 from google.cloud import storage
+from google.cloud.storage import retry
 import pygit2.enums
 
 import osv
@@ -87,7 +88,8 @@ def replace_importer_log(client: storage.Client, source_name: str,
   bucket: storage.Bucket = client.bucket(bucket_name)
   upload_string = '--- ' + datetime.datetime.utcnow().isoformat() + ' ---\n'
   upload_string += '\n'.join(import_failure_logs)
-  bucket.blob(source_name).upload_from_string(upload_string)
+  bucket.blob(source_name).upload_from_string(
+      upload_string, retry=retry.DEFAULT_RETRY)
 
 
 def log_run_duration(start: float):

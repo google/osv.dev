@@ -1,0 +1,22 @@
+name: Add comments to specifically labeled issues
+on:
+  issues:
+    types:
+      - labeled
+jobs:
+  add-comment:
+    if: github.event.label.name == 'data quality'
+    runs-on: ubuntu-latest
+    permissions:
+      issues: write
+    steps:
+      - name: Add comment signposting to FAQ
+        run: gh issue comment "$NUMBER" --body "$BODY"
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
+          NUMBER: ${{ github.event.issue.number }}
+          BODY: >
+            :sparkles: Thank you for your interest in OSV.dev's data quality! :sparkles:
+            **Please review our [FAQ entry](https://google.github.io/osv.dev/faq/#ive-found-something-wrong-with-the-data) on how to most efficiently have this addressed.**
+

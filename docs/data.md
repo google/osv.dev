@@ -92,6 +92,10 @@ Between the data served in OSV and the data converted to OSV the following ecosy
 -   RubyGems
 -   SwiftURL
 
+## Data Quality
+
+The quality of the data in OSV.dev [is very important to us](https://google.github.io/osv.dev/faq/#ive-found-something-wrong-with-the-data). The minimum quality bar for OSV records acceptable for import is documented [here](data_quality.md)
+
 ## Data dumps
 
 For convenience, these sources are aggregated and continuously exported to a GCS

@@ -122,7 +122,7 @@ module "gclb" {
     cloudrun = {
       groups = [
         {
-          group = google_compute_region_network_endpoint_group.serverless_neg.id
+          group = google_compute_region_network_endpoint_group.website_neg.id
         }
       ]
       protocol   = "HTTPS"
@@ -147,9 +147,9 @@ module "gclb" {
   }
 }
 
-resource "google_compute_region_network_endpoint_group" "serverless_neg" {
+resource "google_compute_region_network_endpoint_group" "website_neg" {
   project               = var.project_id
-  name                  = "serverless-neg"
+  name                  = "website-neg"
   network_endpoint_type = "SERVERLESS"
   region                = google_cloud_run_v2_service.website.location
   cloud_run {

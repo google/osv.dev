@@ -639,6 +639,13 @@ dl.vulnerability-details,
     grid-column: 2;
   }
 
+  dt.summary, dd.summary {
+    margin-top: 16px;
+  }
+
+  dd.muted {
+    color: $osv-grey-600;
+  }
 
   dd.details {
     overflow-wrap: break-word;

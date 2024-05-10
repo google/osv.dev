@@ -593,7 +593,7 @@ func TestExtractGitCommit(t *testing.T) {
 			inputLink:       "https://github.com/uWebSockets/uWebSockets/commit/37deefd01f0875e133ea967122e3a5e421b8fcd9",
 			inputCommitType: Fixed,
 			expectedAffectedCommit: AffectedCommit{
-				Repo:  "https://github.com/uNetworking/uWebSockets",
+				Repo:  "https://github.com/unetworking/uwebsockets",
 				Fixed: "37deefd01f0875e133ea967122e3a5e421b8fcd9",
 			},
 		},

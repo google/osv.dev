@@ -41,6 +41,13 @@ type AffectedCommit struct {
 }
 
 func (ac *AffectedCommit) SetRepo(repo string) {
+	// GitHub.com repos are demonstrably case-insensitive, and frequently
+	// expressed in URLs with varying cases, so normalize them to lowercase.
+	// vulns.AddPkgInfo() treats repos case sensitively, and this can result in
+	// incorrect behaviour.
+	if strings.Contains(strings.ToLower(repo), "github.com") {
+		repo = strings.ToLower(repo)
+	}
 	ac.Repo = repo
 }
 

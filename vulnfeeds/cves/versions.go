@@ -41,6 +41,13 @@ type AffectedCommit struct {
 }
 
 func (ac *AffectedCommit) SetRepo(repo string) {
+	// GitHub.com repos are demonstrably case-insensitive, and frequently
+	// expressed in URLs with varying cases, so normalize them to lowercase.
+	// vulns.AddPkgInfo() treats repos case sensitively, and this can result in
+	// incorrect behaviour.
+	if strings.Contains(strings.ToLower(repo), "github.com") {
+		repo = strings.ToLower(repo)
+	}
 	ac.Repo = repo
 }
 
@@ -106,7 +113,7 @@ func (vi *VersionInfo) HasLastAffectedVersions() bool {
 
 func (vi *VersionInfo) HasIntroducedCommits(repo string) bool {
 	for _, ac := range vi.AffectedCommits {
-		if ac.Repo == repo && ac.Introduced != "" {
+		if strings.EqualFold(ac.Repo, repo) && ac.Introduced != "" {
 			return true
 		}
 	}
@@ -115,7 +122,7 @@ func (vi *VersionInfo) HasIntroducedCommits(repo string) bool {
 
 func (vi *VersionInfo) HasFixedCommits(repo string) bool {
 	for _, ac := range vi.AffectedCommits {
-		if ac.Repo == repo && ac.Fixed != "" {
+		if strings.EqualFold(ac.Repo, repo) && ac.Fixed != "" {
 			return true
 		}
 	}
@@ -124,7 +131,7 @@ func (vi *VersionInfo) HasFixedCommits(repo string) bool {
 
 func (vi *VersionInfo) HasLastAffectedCommits(repo string) bool {
 	for _, ac := range vi.AffectedCommits {
-		if ac.Repo == repo && ac.LastAffected != "" {
+		if strings.EqualFold(ac.Repo, repo) && ac.LastAffected != "" {
 			return true
 		}
 	}
@@ -133,7 +140,7 @@ func (vi *VersionInfo) HasLastAffectedCommits(repo string) bool {
 
 func (vi *VersionInfo) FixedCommits(repo string) (FixedCommits []string) {
 	for _, ac := range vi.AffectedCommits {
-		if ac.Repo == repo && ac.Fixed != "" {
+		if strings.EqualFold(ac.Repo, repo) && ac.Fixed != "" {
 			FixedCommits = append(FixedCommits, ac.Fixed)
 		}
 	}
@@ -142,7 +149,7 @@ func (vi *VersionInfo) FixedCommits(repo string) (FixedCommits []string) {
 
 func (vi *VersionInfo) LastAffectedCommits(repo string) (LastAffectedCommits []string) {
 	for _, ac := range vi.AffectedCommits {
-		if ac.Repo == repo && ac.LastAffected != "" {
+		if strings.EqualFold(ac.Repo, repo) && ac.LastAffected != "" {
 			LastAffectedCommits = append(LastAffectedCommits, ac.Fixed)
 		}
 	}

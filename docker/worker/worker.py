@@ -48,18 +48,6 @@ TASK_SUBSCRIPTION = 'tasks'
 MAX_LEASE_DURATION = 6 * 60 * 60  # 4 hours.
 _TIMEOUT_SECONDS = 60
 
-# Large projects which take way too long to build.
-# TODO(ochang): Don't hardcode this.
-PROJECT_DENYLIST = {
-    'ffmpeg',
-    'imagemagick',
-    'libreoffice',
-}
-
-REPO_DENYLIST = {
-    'https://github.com/google/AFL.git',
-}
-
 _ECOSYSTEM_PUSH_TOPICS = {
     'PyPI': 'pypi-bridge',
 }

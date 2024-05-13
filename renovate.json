@@ -58,6 +58,10 @@
       "groupName": "tools"
     },
     {
+      "matchFileNames": ["deployment/terraform/**"],
+      "groupName": "terraform"
+    },
+    {
       "matchFileNames": [".github/**"],
       "groupName": "workflows"
     },

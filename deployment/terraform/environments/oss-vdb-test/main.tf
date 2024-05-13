@@ -13,8 +13,14 @@ module "osv_test" {
   affected_commits_backups_bucket                = "osv-test-affected-commits"
   affected_commits_backups_bucket_retention_days = 2
 
-  api_url     = "api.test.osv.dev"
-  esp_version = "2.47.0"
+  website_domain = "test.osv.dev"
+  api_url        = "api.test.osv.dev"
+  esp_version    = "2.47.0"
+}
+
+output "website_dns_records" {
+  description = "DNS records that need to be created for the osv.dev website"
+  value       = module.osv_test.website_dns_records
 }
 
 

@@ -184,14 +184,14 @@ resource "google_compute_url_map" "website" {
         prefix_match = "/"
       }
       route_action {
-        # TODO(michaelkedar): adjust weights, then remove appengine fully migrated
+        # TODO(michaelkedar): remove appengine when fully migrated
         weighted_backend_services {
           backend_service = module.gclb.backend_services.appengine.id
-          weight          = 100
+          weight          = 90
         }
         weighted_backend_services {
           backend_service = module.gclb.backend_services.cloudrun.id
-          weight          = 0
+          weight          = 10
         }
       }
     }

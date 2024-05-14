@@ -260,11 +260,15 @@ def vulnerability_json_redirector(potential_vuln_id):
     return None
 
   vuln = osv_get_by_id(potential_vuln_id)
-  if vuln:
-    return redirect(f'https://api.osv.dev/v1/vulns/{potential_vuln_id}')
+  if not vuln:
+    abort(404)
+    return None
 
-  abort(404)
-  return None
+  if utils.is_prod():
+    api_url = 'api.osv.dev'
+  else:
+    api_url = 'api.test.osv.dev'
+  return redirect(f'https://{api_url}/v1/vulns/{potential_vuln_id}')
 
 
 def bug_to_response(bug, detailed=True):

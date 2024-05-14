@@ -34,6 +34,7 @@ from typing import List, Tuple, Optional
 from google.cloud import ndb
 from google.cloud import pubsub_v1
 from google.cloud import storage
+from google.cloud.storage import retry
 import pygit2.enums
 
 import osv
@@ -87,7 +88,8 @@ def replace_importer_log(client: storage.Client, source_name: str,
   bucket: storage.Bucket = client.bucket(bucket_name)
   upload_string = '--- ' + datetime.datetime.utcnow().isoformat() + ' ---\n'
   upload_string += '\n'.join(import_failure_logs)
-  bucket.blob(source_name).upload_from_string(upload_string)
+  bucket.blob(source_name).upload_from_string(
+      upload_string, retry=retry.DEFAULT_RETRY)
 
 
 def log_run_duration(start: float):
@@ -180,7 +182,7 @@ class Importer:
   def run(self):
     """Run importer."""
     for source_repo in osv.SourceRepository.query():
-      if source_repo.name == 'oss-fuzz':
+      if not self._delete and source_repo.name == 'oss-fuzz':
         self.process_oss_fuzz(source_repo)
 
       self.validate_source_repo(source_repo)
@@ -738,6 +740,8 @@ class Importer:
     """Process source record deletions by withdrawing them."""
     if source_repo.type == osv.SourceRepositoryType.GIT:
       # TODO: To be implemented.
+      # NOTE: this may require reintroducing special node GKE node treatment
+      # see discussion on https://github.com/google/osv.dev/pull/2133
       return
 
     if source_repo.type == osv.SourceRepositoryType.BUCKET:

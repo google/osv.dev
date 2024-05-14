@@ -639,6 +639,13 @@ dl.vulnerability-details,
     grid-column: 2;
   }
 
+  dt.summary, dd.summary {
+    margin-top: 16px;
+  }
+
+  dd.muted {
+    color: $osv-grey-600;
+  }
 
   dd.details {
     overflow-wrap: break-word;
@@ -888,6 +895,7 @@ dl.vulnerability-details,
       flex-wrap: wrap;
       justify-content: center;
       gap: 4px;
+      margin-bottom: 4px;
     }
   }
 
@@ -1082,6 +1090,53 @@ dl.vulnerability-details,
     padding-top: 205px;
   }
 
+  .github-action {
+    margin-top: 100px;
+    display:grid;
+    justify-items: center;
+    
+    .heading {
+      font-size: $osv-heading-size;
+      text-align: center;
+      margin-bottom: 32px;
+    }
+    
+    @media (max-width: $osv-mobile-breakpoint) {
+      .heading {
+        font-size: $osv-heading-size-mobile;
+      }
+    }
+    
+    .description {
+      font-size: 20px;
+      line-height: 26px;
+      margin-bottom: 24px;
+      margin-left: 8px;
+      margin-right: 8px;
+      max-width: 900px;
+    }
+    
+    img {
+      max-width: 900px;
+    }
+
+    .image-container{
+      display: flex;
+      width: 100%;
+      max-width: 900px;
+      overflow-x: auto;
+      overflow-y: hidden;
+      margin-bottom: 24px;
+    }
+
+    .cta {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 4px;
+    }
+  }
+
   .usage-examples {
     margin-top: 100px;
 
@@ -1131,7 +1186,7 @@ dl.vulnerability-details,
     margin-bottom: 32px;
 
     .code-card-title {
-      font-size: 32px;
+      font-size: 28px;
     }
 
     .code-card-content {

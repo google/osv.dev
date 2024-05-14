@@ -39,6 +39,7 @@ UNKNOWN_COMMIT = 'unknown'
 # Large projects which take way too long to build.
 # TODO(ochang): Don't hardcode this.
 PROJECT_DENYLIST = {
+    'boringssl',  # https://github.com/google/osv.dev/issues/2178
     'ffmpeg',
     'imagemagick',
     'libreoffice',

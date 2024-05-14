@@ -14,7 +14,11 @@
         <a class="cta-primary link-button" href="{{ url_for('frontend_handlers.list_vulnerabilities') }}">Search
           Vulnerability Database</a>
         <a class="cta-primary link-button" href="#use-the-api">Use the API</a>
-        <a class="cta-primary link-button" href="#use-the-cli">CLI Tools</a>
+      </div>
+      <div class="cta">
+        <a class="cta-primary link-button" href="#use-vulnerability-scanner">Vulnerability Scanner</a>
+        <a class="cta-primary link-button" href="#use-remediation-tools">Remediation Tools</a>
+        <a class="cta-primary link-button" href="#use-the-github-workflows">GitHub Workflows</a>
       </div>
     </div>
     <div class="mdc-layout-grid__cell--span-12 ecosystems-section">
@@ -162,9 +166,9 @@
         </div>
       </div>
     </div>
-    <div id="use-the-cli" class="mdc-layout-grid__cell--span-12 usage-examples">
+    <div id="use-vulnerability-scanner" class="mdc-layout-grid__cell--span-12 usage-examples">
       <!-- &#8209; is a non breaking hyphen -->
-      <h2 class="heading">Command Line Tools (OSV&#8209;Scanner)</h2>
+      <h2 class="heading">Vulnerability Scanner</h2>
       <div class="code-card-container mdc-layout-grid__inner">
         <div class="mobile-spacer mdc-layout-grid__cell--span-3"></div>
         <div class="code-card mdc-layout-grid__cell--span-6 mdc-layout-grid__cell--span-12-tablet">
@@ -199,8 +203,52 @@ osv-scanner -r path/to/your/project
       </div>
       <div class="mdc-layout-grid__cell--span-12">
         <div class="cta">
-          <a class="cta-primary link-button" href="https://github.com/google/osv-scanner">More details</a>
+          <a class="cta-primary link-button" href="https://google.github.io/osv-scanner/">More details</a>
         </div>
+      </div>
+    </div>
+    <div id="use-remediation-tools" class="mdc-layout-grid__cell--span-12 usage-examples">
+      <!-- &#8209; is a non breaking hyphen -->
+      <h2 class="heading">Remediation Tools</h2>
+      <div class="code-card-container mdc-layout-grid__inner">
+        <div class="code-card mdc-layout-grid__cell--span-6 mdc-layout-grid__cell--span-12-tablet">
+          <h3 class="code-card-title">Guided Remediation (basic)</h3>
+          <pre class="code-card-content" id="example-guided-remediation-basic">
+osv-scanner fix --non-interactive --strategy=in-place -L path/to/package-lock.json
+osv-scanner fix --non-interactive --strategy=relock -M path/to/package.json -L path/to/package-lock.json
+          </pre>
+          <clipboard-copy class="code-card-copy" for="example-guided-remediation-basic">
+            <mwc-icon-button class="icon" icon="content_copy"></mwc-icon-button>
+          </clipboard-copy>
+        </div>
+        <div class="code-card mdc-layout-grid__cell--span-6 mdc-layout-grid__cell--span-12-tablet">
+          <h3 class="code-card-title">Guided Remediation (interactive)</h3>
+          <pre class="code-card-content" id="example-guided-remediation-advanced">
+osv-scanner fix -M path/to/package.json -L path/to/package-lock.json
+          </pre>
+          <clipboard-copy class="code-card-copy" for="example-guided-remediation-advanced">
+            <mwc-icon-button class="icon" icon="content_copy"></mwc-icon-button>
+          </clipboard-copy>
+        </div>
+      </div>
+      <div class="mdc-layout-grid__cell--span-12">
+        <div class="cta">
+          <a class="cta-primary link-button" href="https://google.github.io/osv-scanner/experimental/guided-remediation/">More details</a>
+        </div>
+      </div>
+    </div>
+    <div id="use-the-github-workflows" class="mdc-layout-grid__cell--span-12 github-action">
+      <h2 class="heading">GitHub Workflows</h2>
+      <p class="description">
+        OSV-Scanner also provides reusable GitHub workflows that can be easily integrated into CI/CD pipelines to provide
+        continuous vulnerability scanning coverage. This can scan newly added dependencies in pull requests for introduced
+        vulnerabilities, as well as perform regular vulnerability scans for the entire project.</p>
+      <div class="image-container">
+        <img src="/static/img/github-action-scan-output.png" alt="Screenshot of OSV-Scanner GitHub Action">
+      </div>
+      <div class="cta">
+        <a class="cta-primary link-button" href="https://google.github.io/osv-scanner/github-action/"
+          aria-label="Learn more about osv scanner github action">Learn more</a>
       </div>
     </div>
     <div class="mdc-layout-grid__cell--span-12 open-source-banner">

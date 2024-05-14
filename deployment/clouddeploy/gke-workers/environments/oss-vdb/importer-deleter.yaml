@@ -3,6 +3,7 @@ kind: CronJob
 metadata:
   name: importer-deleter
 spec:
+  suspend: true
   jobTemplate:
     spec:
       template:
@@ -11,9 +12,9 @@ spec:
           - name: importer-deleter
             env:
             - name: GOOGLE_CLOUD_PROJECT
-              value: oss-vdb-test
+              value: oss-vdb
             image: importer
             args:
               - --delete
               - --delete_threshold_pct=20
-              - --public_log_bucket=osv-test-public-import-logs
+              - --public_log_bucket=osv-public-import-logs

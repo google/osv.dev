@@ -32,6 +32,7 @@ import google.cloud.exceptions
 from google.cloud import ndb
 from google.cloud import pubsub_v1
 from google.cloud import storage
+from google.cloud.storage import retry
 
 sys.path.append(os.path.dirname(os.path.realpath(__file__)))
 import osv
@@ -46,18 +47,6 @@ OSS_FUZZ_GIT_URL = 'https://github.com/google/oss-fuzz.git'
 TASK_SUBSCRIPTION = 'tasks'
 MAX_LEASE_DURATION = 6 * 60 * 60  # 4 hours.
 _TIMEOUT_SECONDS = 60
-
-# Large projects which take way too long to build.
-# TODO(ochang): Don't hardcode this.
-PROJECT_DENYLIST = {
-    'ffmpeg',
-    'imagemagick',
-    'libreoffice',
-}
-
-REPO_DENYLIST = {
-    'https://github.com/google/AFL.git',
-}
 
 _ECOSYSTEM_PUSH_TOPICS = {
     'PyPI': 'pypi-bridge',
@@ -378,7 +367,7 @@ class TaskRunner:
       storage_client = storage.Client()
       bucket = storage_client.bucket(source_repo.bucket)
       try:
-        blob = bucket.blob(path).download_as_bytes()
+        blob = bucket.blob(path).download_as_bytes(retry=retry.DEFAULT_RETRY)
       except google.cloud.exceptions.NotFound:
         logging.exception('Bucket path %s does not exist.', path)
         return

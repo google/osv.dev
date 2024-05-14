@@ -57,3 +57,8 @@ variable "esp_version" {
   type        = string
   description = "ESP version to use for OSV API frontend image."
 }
+
+variable "website_domain" {
+  type        = string
+  description = "Domain to serve the OSV website on. Domain ownership and DNS settings must be manually configured."
+}

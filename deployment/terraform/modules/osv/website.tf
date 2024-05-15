@@ -168,7 +168,7 @@ resource "google_compute_region_network_endpoint_group" "appengine_neg" {
 resource "google_compute_url_map" "website" {
   project         = var.project_id
   name            = "website-url-map"
-  default_service = module.gclb.backend_services.appengine.id
+  default_service = module.gclb.backend_services.cloudrun.id
 
   host_rule {
     hosts        = ["*"]
@@ -177,21 +177,21 @@ resource "google_compute_url_map" "website" {
 
   path_matcher {
     name            = "allpaths"
-    default_service = module.gclb.backend_services.appengine.id
+    default_service = module.gclb.backend_services.cloudrun.id
     route_rules {
       priority = 1
       match_rules {
         prefix_match = "/"
       }
       route_action {
-        # TODO(michaelkedar): remove appengine when fully migrated
+        # TODO(michaelkedar): remove appengine
         weighted_backend_services {
           backend_service = module.gclb.backend_services.appengine.id
-          weight          = 50
+          weight          = 0
         }
         weighted_backend_services {
           backend_service = module.gclb.backend_services.cloudrun.id
-          weight          = 50
+          weight          = 100
         }
       }
     }

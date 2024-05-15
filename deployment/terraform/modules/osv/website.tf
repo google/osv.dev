@@ -187,11 +187,11 @@ resource "google_compute_url_map" "website" {
         # TODO(michaelkedar): remove appengine when fully migrated
         weighted_backend_services {
           backend_service = module.gclb.backend_services.appengine.id
-          weight          = 90
+          weight          = 50
         }
         weighted_backend_services {
           backend_service = module.gclb.backend_services.cloudrun.id
-          weight          = 10
+          weight          = 50
         }
       }
     }

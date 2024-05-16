@@ -1,6 +1,12 @@
 {% extends 'base.html' %}
 {% set active_section = 'home' %}
 
+{% block extra_head %}
+<link rel="preload" fetchpriority="high" as="image" href="/static/img/background-1.webp" type="image/webp">
+<link rel="preload" fetchpriority="high" as="image" href="/static/img/background-2.webp" type="image/webp">
+<link rel="preload" fetchpriority="high" as="image" href="/static/img/footer-decoration.webp" type="image/webp">
+{% endblock %}
+
 {% block content %}
 <div class="mdc-layout-grid home-page">
   <div class="mdc-layout-grid__inner">

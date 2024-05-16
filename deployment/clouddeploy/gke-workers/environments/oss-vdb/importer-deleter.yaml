@@ -3,7 +3,6 @@ kind: CronJob
 metadata:
   name: importer-deleter
 spec:
-  suspend: true
   jobTemplate:
     spec:
       template:

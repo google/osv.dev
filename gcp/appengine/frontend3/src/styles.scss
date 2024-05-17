@@ -891,6 +891,11 @@ dl.vulnerability-details,
     padding: 14px 0;
     border-bottom: 1px dashed #fff;
   }
+
+  .severity {
+    padding: 0;
+    font-family: $osv-heading-font-family;
+  }
 }
 
 /** Home page */

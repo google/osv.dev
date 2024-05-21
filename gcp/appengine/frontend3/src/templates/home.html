@@ -4,8 +4,13 @@
 {% block extra_head %}
 <link rel="preload" fetchpriority="high" as="image" href="/static/img/background-1.webp" type="image/webp">
 <link rel="preload" fetchpriority="high" as="image" href="/static/img/background-2.webp" type="image/webp">
-<link rel="preload" fetchpriority="high" as="image" href="/static/img/footer-decoration.webp" type="image/webp">
 <link rel="preload" fetchpriority="high" as="image" href="/static/img/external-link.svg" type="image/webp">
+<!-- Defer offscreen images on mobile screens -->
+<link rel="preload" fetchpriority="high" as="image" href="/static/img/footer-decoration.webp" type="image/webp"
+  media="(min-width: 768px)" onload="this.media='all'">
+<noscript>
+  <link rel="stylesheet" href="/static/img/footer-decoration.webp" type="image/webp">
+</noscript>
 {% endblock %}
 
 {% block content %}

@@ -18,7 +18,7 @@ markupsafe = "==2.1.5"
 osv = {editable = true, path = "../../"}
 packaging = "==21.3"
 redis = "==4.6.0"
-requests = "==2.31.0"
+requests = "==2.32.0"
 grpcio-status = "==1.62.2"
 gunicorn = "==22.0.0"
 whitenoise = "6.5.0"

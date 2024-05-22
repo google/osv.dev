@@ -597,6 +597,15 @@ func TestExtractGitCommit(t *testing.T) {
 				Fixed: "37deefd01f0875e133ea967122e3a5e421b8fcd9",
 			},
 		},
+		{
+			description:     "A GitHub repo that should be working (as seen on CVE-2021-23568)",
+			inputLink:       "https://github.com/eggjs/extend2/commit/aa332a59116c8398976434b57ea477c6823054f8",
+			inputCommitType: Fixed,
+			expectedAffectedCommit: AffectedCommit{
+				Repo:  "https://github.com/eggjs/extend2",
+				Fixed: "aa332a59116c8398976434b57ea477c6823054f8",
+			},
+		},
 	}
 
 	for _, tc := range tests {

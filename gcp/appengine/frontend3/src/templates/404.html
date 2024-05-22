@@ -1,5 +1,14 @@
 {% extends 'base.html' %}
 
+{% block extra_head %}
+<!-- Defer offscreen images on mobile screens -->
+<link rel="preload" fetchpriority="high" as="image" href="/static/img/footer-decoration.webp" type="image/webp"
+    media="(min-width: 768px)" onload="this.media='all'">
+<noscript>
+    <link rel="stylesheet" href="/static/img/footer-decoration.webp" type="image/webp">
+</noscript>
+{% endblock %}
+
 {% block top_bar %} {% endblock %}
 
 {% block content %}

@@ -917,3 +917,106 @@ func TestCPEs(t *testing.T) {
 		}
 	}
 }
+
+func TestVersionInfoDuplicateDetection(t *testing.T) {
+	tests := []struct {
+		description         string
+		inputVersionInfo    VersionInfo
+		inputAffectedCommit AffectedCommit
+		expectedResult      bool
+	}{
+		{
+			description:         "An empty VersionInfo and AffectedCommit",
+			inputVersionInfo:    VersionInfo{},
+			inputAffectedCommit: AffectedCommit{},
+			expectedResult:      false,
+		},
+		{
+			description:         "A populated VersionInfo and empty AffectedCommit",
+			inputVersionInfo:    VersionInfo{AffectedCommits: []AffectedCommit{{Repo: "https://github.com/foo/bar", Introduced: "4089bd6080d41450adab1e0ac0d63cfeab4a78e7", Fixed: "4089bd6080d41450adab1e0ac0d63cfeab4a78e7"}}},
+			inputAffectedCommit: AffectedCommit{},
+			expectedResult:      false,
+		},
+		{
+			description:         "An empty VersionInfo and a populated AffectedCommit",
+			inputVersionInfo:    VersionInfo{},
+			inputAffectedCommit: AffectedCommit{Repo: "https://github.com/foo/bar", Introduced: "4089bd6080d41450adab1e0ac0d63cfeab4a78e7", Fixed: "4089bd6080d41450adab1e0ac0d63cfeab4a78e7"},
+			expectedResult:      false,
+		},
+		{
+			description:         "A bonafide full duplicate",
+			inputVersionInfo:    VersionInfo{AffectedCommits: []AffectedCommit{{Repo: "https://github.com/foo/bar", Introduced: "4089bd6080d41450adab1e0ac0d63cfeab4a78e7", Fixed: "4089bd6080d41450adab1e0ac0d63cfeab4a78e7"}}},
+			inputAffectedCommit: AffectedCommit{Repo: "https://github.com/foo/bar", Introduced: "4089bd6080d41450adab1e0ac0d63cfeab4a78e7", Fixed: "4089bd6080d41450adab1e0ac0d63cfeab4a78e7"},
+			expectedResult:      true,
+		},
+		{
+			description:         "Duplication across introduced and fixed",
+			inputVersionInfo:    VersionInfo{AffectedCommits: []AffectedCommit{{Repo: "https://github.com/foo/bar", Introduced: "4089bd6080d41450adab1e0ac0d63cfeab4a78e7"}}},
+			inputAffectedCommit: AffectedCommit{Repo: "https://github.com/foo/bar", Fixed: "4089bd6080d41450adab1e0ac0d63cfeab4a78e7"},
+			expectedResult:      true,
+		},
+	}
+
+	for _, tc := range tests {
+		result := tc.inputVersionInfo.Duplicated(tc.inputAffectedCommit)
+		if diff := cmp.Diff(result, tc.expectedResult); diff != "" {
+			t.Errorf("test %q: HasDuplicateAffectedVersions for %#v was incorrect: %s", tc.description, tc.inputVersionInfo, diff)
+		}
+	}
+}
+
+func TestOverlappingRangeDetection(t *testing.T) {
+	tests := []struct {
+		description         string
+		inputAffectedCommit AffectedCommit
+		expectedResult      bool
+	}{
+		{
+			description:         "An empty AffectedCommit",
+			inputAffectedCommit: AffectedCommit{},
+			expectedResult:      false,
+		},
+		{
+			description:         "Only an introduced commit",
+			inputAffectedCommit: AffectedCommit{Repo: "https://github.com/foo/bar", Introduced: "4089bd6080d41450adab1e0ac0d63cfeab4a78e7"},
+			expectedResult:      false,
+		},
+		{
+			description:         "Only a fixed commit",
+			inputAffectedCommit: AffectedCommit{Repo: "https://github.com/foo/bar", Fixed: "4089bd6080d41450adab1e0ac0d63cfeab4a78e7"},
+			expectedResult:      false,
+		},
+		{
+			description:         "Only a last_affected commit",
+			inputAffectedCommit: AffectedCommit{Repo: "https://github.com/foo/bar", LastAffected: "4089bd6080d41450adab1e0ac0d63cfeab4a78e7"},
+			expectedResult:      false,
+		},
+		{
+			description:         "Non-overlapping introduced and fixed range",
+			inputAffectedCommit: AffectedCommit{Repo: "https://github.com/foo/bar", Introduced: "4089bd6080d41450adab1e0ac0d63cfeab4a78e7", Fixed: "b48ff2aa1e57e761fa0825e3dc78105a0d016e16"},
+			expectedResult:      false,
+		},
+		{
+			description:         "Non-overlapping introduced and last_affected range",
+			inputAffectedCommit: AffectedCommit{Repo: "https://github.com/foo/bar", Introduced: "4089bd6080d41450adab1e0ac0d63cfeab4a78e7", LastAffected: "b48ff2aa1e57e761fa0825e3dc78105a0d016e16"},
+			expectedResult:      false,
+		},
+		{
+			description:         "Overlapping introduced and fixed range",
+			inputAffectedCommit: AffectedCommit{Repo: "https://github.com/foo/bar", Introduced: "4089bd6080d41450adab1e0ac0d63cfeab4a78e7", Fixed: "4089bd6080d41450adab1e0ac0d63cfeab4a78e7"},
+			expectedResult:      true,
+		},
+		{
+			description:         "Overlapping introduced and last_affected range",
+			inputAffectedCommit: AffectedCommit{Repo: "https://github.com/foo/bar", Introduced: "4089bd6080d41450adab1e0ac0d63cfeab4a78e7", LastAffected: "4089bd6080d41450adab1e0ac0d63cfeab4a78e7"},
+			expectedResult:      true,
+		},
+	}
+
+	for _, tc := range tests {
+		result := tc.inputAffectedCommit.Overlaps()
+		if diff := cmp.Diff(result, tc.expectedResult); diff != "" {
+			t.Errorf("test %q: Duplicated() for %#v was incorrect: %s", tc.description, tc.inputAffectedCommit, diff)
+		}
+	}
+}

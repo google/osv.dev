@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
+	"github.com/google/osv/vulnfeeds/cves"
 	"golang.org/x/exp/maps"
 )
 
@@ -319,5 +320,17 @@ func TestValidRepo(t *testing.T) {
 		if diff := cmp.Diff(got, tc.expectedResult); diff != "" {
 			t.Errorf("test %q: ValidRepo(%q) was incorrect: %s", tc.description, tc.repoURL, diff)
 		}
+	}
+}
+
+func TestInvalidRepos(t *testing.T) {
+	redundantRepos := []string{}
+	for _, repo := range cves.InvalidRepos {
+		if !ValidRepo(repo) {
+			redundantRepos = append(redundantRepos, repo)
+		}
+	}
+	if diff := cmp.Diff([]string{}, redundantRepos); diff != "" {
+		t.Errorf("These redundant repos are in InvalidRepos: %s", diff)
 	}
 }

@@ -279,12 +279,6 @@ func TestRepo(t *testing.T) {
 			expectedOk:      true,
 		},
 		{
-			description:     "Valid URL but not wanted (by denylist)",
-			inputLink:       "https://github.com/orangecertcc/security-research/security/advisories/GHSA-px2c-q384-5wxc",
-			expectedRepoURL: "",
-			expectedOk:      false,
-		},
-		{
 			description:     "Valid URL but not wanted (by deny regexp)",
 			inputLink:       "https://github.com/Ko-kn3t/CVE-2020-29156",
 			expectedRepoURL: "",
@@ -405,20 +399,8 @@ func TestRepo(t *testing.T) {
 			expectedOk:      true,
 		},
 		{
-			description:     "Undesired researcher repo (by denylist)",
-			inputLink:       "https://github.com/chenan224/webchess_sqli_poc",
-			expectedRepoURL: "",
-			expectedOk:      false,
-		},
-		{
 			description:     "Undesired researcher repo (by deny regex)",
 			inputLink:       "https://github.com/bigzooooz/CVE-2023-26692#readme",
-			expectedRepoURL: "",
-			expectedOk:      false,
-		},
-		{
-			description:     "Undesired repo (by deny regex)",
-			inputLink:       "https://gitlab.com/gitlab-org/cves/-/blob/master/2023/CVE-2023-0413.json",
 			expectedRepoURL: "",
 			expectedOk:      false,
 		},

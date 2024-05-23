@@ -1,6 +1,18 @@
 {% extends 'base.html' %}
 {% set active_section = 'home' %}
 
+{% block extra_head %}
+<link rel="preload" fetchpriority="high" as="image" href="/static/img/background-1.webp" type="image/webp">
+<link rel="preload" fetchpriority="high" as="image" href="/static/img/background-2.webp" type="image/webp">
+<link rel="preload" fetchpriority="high" as="image" href="/static/img/external-link.svg" type="image/webp">
+<!-- Defer offscreen images on mobile screens -->
+<link rel="preload" fetchpriority="high" as="image" href="/static/img/footer-decoration.webp" type="image/webp"
+  media="(min-width: 768px)" onload="this.media='all'">
+<noscript>
+  <link rel="stylesheet" href="/static/img/footer-decoration.webp" type="image/webp">
+</noscript>
+{% endblock %}
+
 {% block content %}
 <div class="mdc-layout-grid home-page">
   <div class="mdc-layout-grid__inner">
@@ -244,7 +256,7 @@ osv-scanner fix -M path/to/package.json -L path/to/package-lock.json
         continuous vulnerability scanning coverage. This can scan newly added dependencies in pull requests for introduced
         vulnerabilities, as well as perform regular vulnerability scans for the entire project.</p>
       <div class="image-container">
-        <img src="/static/img/github-action-scan-output.png" alt="Screenshot of OSV-Scanner GitHub Action">
+        <img src="/static/img/github-action-scan-output.webp" alt="Screenshot of OSV-Scanner GitHub Action" loading="lazy">
       </div>
       <div class="cta">
         <a class="cta-primary link-button" href="https://google.github.io/osv-scanner/github-action/"

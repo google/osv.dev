@@ -6,9 +6,6 @@ resource "google_app_engine_application" "app" {
   location_id   = "us-west2"
   database_type = "CLOUD_DATASTORE_COMPATIBILITY"
 
-  lifecycle {
-    prevent_destroy = true
-  }
 }
 
 # MemoryStore

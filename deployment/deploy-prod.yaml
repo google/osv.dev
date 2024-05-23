@@ -13,10 +13,6 @@
 # limitations under the License.
 
 steps:
-# Promote App Engine
-- name: gcr.io/cloud-builders/gcloud
-  args: ['app', 'versions', 'migrate', '--quiet', '$COMMIT_SHA', '--service=default']
-
 # Promote Cloud Deploy
 - name: gcr.io/cloud-builders/gcloud
   args: ['deploy', 'releases', 'promote', '--quiet', '--release=osv-$SHORT_SHA', '--region=us-central1', '--delivery-pipeline=gke-workers', '--to-target=production-workers', '--annotations=tag=$TAG_NAME']

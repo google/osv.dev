@@ -124,10 +124,7 @@ func RepoTags(repoURL string, repoTagsCache RepoTagsCache) (tags Tags, e error) 
 		return tags, err
 	}
 	tagsMap := make(map[string]Tag)
-	for _, ref := range refs {
-		if !ref.Name().IsTag() {
-			continue
-		}
+	for _, ref := range RefTags(refs) {
 		// This is used for caching and direct lookup by tag name.
 		tagsMap[ref.Name().Short()] = Tag{Tag: ref.Name().Short(), Commit: ref.Hash().String()}
 	}
@@ -219,23 +216,23 @@ func NormalizeRepoTags(repoURL string, repoTagsCache RepoTagsCache) (NormalizedT
 }
 
 // Return a list of just the references that are tags.
-func RefTags(refs []*plumbing.Reference) (tags []string) {
+func RefTags(refs []*plumbing.Reference) (tags []*plumbing.Reference) {
 	for _, ref := range refs {
 		if ref.Name().IsTag() {
-			tags = append(tags, ref.Name().Short())
+			tags = append(tags, ref)
 		}
 	}
 	return tags
 }
 
 // Return a list of just the references that are branches.
-func RefBranches(refs []*plumbing.Reference) (heads []string) {
+func RefBranches(refs []*plumbing.Reference) (branches []*plumbing.Reference) {
 	for _, ref := range refs {
 		if ref.Name().IsBranch() {
-			heads = append(heads, ref.Name().Short())
+			branches = append(branches, ref)
 		}
 	}
-	return heads
+	return branches
 }
 
 // Validate the repo by attempting to query it's references.

@@ -94,31 +94,6 @@ module "gclb" {
   url_map        = google_compute_url_map.website.id
 
   backends = {
-    appengine = {
-      groups = [
-        {
-          group = google_compute_region_network_endpoint_group.appengine_neg.id
-        }
-      ]
-      protocol   = "HTTPS"
-      enable_cdn = true
-      cdn_policy = {
-        cache_key_policy = {
-          include_host         = true
-          include_protocol     = true
-          include_query_string = true
-        }
-        signed_url_cache_max_age_sec = 0
-      }
-
-      iap_config = {
-        enable = false
-      }
-      log_config = {
-        enable = false
-      }
-    }
-
     cloudrun = {
       groups = [
         {
@@ -184,11 +159,6 @@ resource "google_compute_url_map" "website" {
         prefix_match = "/"
       }
       route_action {
-        # TODO(michaelkedar): remove appengine
-        weighted_backend_services {
-          backend_service = module.gclb.backend_services.appengine.id
-          weight          = 0
-        }
         weighted_backend_services {
           backend_service = module.gclb.backend_services.cloudrun.id
           weight          = 100

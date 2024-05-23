@@ -303,6 +303,16 @@ func TestValidRepo(t *testing.T) {
 			repoURL:        "https://github.com/andrewpollock/mybogusrepo",
 			expectedResult: false,
 		},
+		{
+			description:    "Legitimate repository with no tags and two branches",
+			repoURL:        "https://github.com/202ecommerce/security-advisories",
+			expectedResult: false,
+		},
+		{
+			description:    "Legitimate repository with no tags and one branch",
+			repoURL:        "https://github.com/active-labs/Advisories",
+			expectedResult: false,
+		},
 	}
 	for _, tc := range tests {
 		got := ValidRepo(tc.repoURL)

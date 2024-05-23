@@ -218,21 +218,42 @@ func NormalizeRepoTags(repoURL string, repoTagsCache RepoTagsCache) (NormalizedT
 	return NormalizedTags, nil
 }
 
-// Validate the repo by attempting to query it's references.
-func ValidRepo(repoURL string) (valid bool) {
-	remoteConfig := &config.RemoteConfig{
-		Name: "source",
-		URLs: []string{
-			repoURL,
-		},
+// Return a list of just the references that are tags.
+func RefTags(refs []*plumbing.Reference) (tags []string) {
+	for _, ref := range refs {
+		if ref.Name().IsTag() {
+			tags = append(tags, ref.Name().Short())
+		}
 	}
-	r := git.NewRemote(memory.NewStorage(), remoteConfig)
-	_, err := r.List(&git.ListOptions{})
+	return tags
+}
+
+// Return a list of just the references that are branches.
+func RefBranches(refs []*plumbing.Reference) (heads []string) {
+	for _, ref := range refs {
+		if ref.Name().IsBranch() {
+			heads = append(heads, ref.Name().Short())
+		}
+	}
+	return heads
+}
+
+// Validate the repo by attempting to query it's references.
+// Repos that don't have any tags are not valid.
+func ValidRepo(repoURL string) (valid bool) {
+	refs, err := RemoteRepoRefsWithRetry(repoURL, 3)
 	if err != nil && err == transport.ErrAuthenticationRequired {
 		// somewhat strangely, we get an authentication prompt via Git on non-existent repos.
 		return false
 	}
 	if err != nil {
+		return false
+	}
+	if len(refs) == 0 {
+		return false
+	}
+	// Repos with no tags aren't useful.
+	if len(RefTags(refs)) == 0 {
 		return false
 	}
 	return true

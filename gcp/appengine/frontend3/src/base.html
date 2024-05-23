@@ -14,6 +14,12 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="alternate" type="application/rss+xml" title="RSS Feed" href="{{ url_for('frontend_handlers.blog_rss') }}">
+  <link rel="preload" href="https://fonts.googleapis.com/css?family=Material+Icons&display=block" as="style" onload="this.onload=null;this.rel='stylesheet'">
+  <link rel="preload" href="https://fonts.googleapis.com/css2?family=Overpass+Mono:wght@400;700&family=Overpass:ital,wght@0,400;0,700;1,400&display=swap" as="style" onload="this.onload=null;this.rel='stylesheet'">
+  <noscript>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Material+Icons&display=block">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Overpass+Mono:wght@400;700&family=Overpass:ital,wght@0,400;0,700;1,400&display=swap">
+  </noscript>
   <meta charset="utf-8">
   <title id="title">OSV - Open Source Vulnerabilities</title>
   <!-- Global site tag (gtag.js) - Google Analytics -->
@@ -25,6 +31,7 @@
 
     gtag('config', 'G-ZXG9G6HTBR', { 'anonymize_ip': true });
   </script>
+  {% block extra_head %}{% endblock %}
 </head>
 
 <body>
@@ -82,10 +89,6 @@
     {% endblock %}
     {% block content %}{% endblock %}
   </div>
-  <link href="https://fonts.googleapis.com/css?family=Material+Icons&display=block" rel="stylesheet">
-  <link
-    href="https://fonts.googleapis.com/css2?family=Overpass+Mono:wght@400;700&family=Overpass:ital,wght@0,400;0,700;1,400&display=swap"
-    rel="stylesheet">
 </body>
 
 </html>

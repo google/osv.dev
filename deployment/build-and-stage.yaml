@@ -254,15 +254,6 @@ steps:
   args: ['apply', '-no-color', '-auto-approve']
   dir:  deployment/terraform/environments/oss-vdb-test
 
-# Deploy App Engine for staging environment
-- name: 'gcr.io/oss-vdb/deployment'
-  args: ['bash', '-ex', 'gcp/appengine/deploy.sh', 'oss-vdb-test', 'deployment/gae/oss-vdb-test', 'app.yaml']
-
-# Clean up older, non-serving App Engine versions to avoid hitting the ceiling on versions
-- name: 'gcr.io/cloud-builders/gcloud'
-  entrypoint: bash
-  args: ['-ex', 'gcp/appengine/cleanup_versions.sh', 'oss-vdb-test']
-
 # Cloud Deploy
 # GKE Workers
 - name: 'gcr.io/cloud-builders/gcloud'

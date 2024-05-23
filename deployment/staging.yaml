@@ -33,8 +33,6 @@ steps:
 - name: 'gcr.io/cloud-builders/git'
   args: ['clean', '-ffdx']
 - name: 'gcr.io/oss-vdb/deployment'
-  args: ['bash', '-ex', 'gcp/appengine/deploy.sh', 'oss-vdb', 'deployment/gae/oss-vdb', 'app.yaml', '--no-promote']
-- name: 'gcr.io/oss-vdb/deployment'
   args: ['bash', '-ex', '../deploy_service_proxy', 'oss-vdb', 'api-staging.osv.dev', 'osv-grpc-v1-staging', '../../../deployment/api/oss-vdb/api_config_staging.yaml']
   dir: gcp/api/v1
 - name: 'gcr.io/cloud-builders/docker'

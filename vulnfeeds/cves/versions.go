@@ -67,11 +67,13 @@ func (ac *AffectedCommit) SetLastAffected(commit string) {
 	ac.LastAffected = commit
 }
 
-func (ac *AffectedCommit) Overlaps() bool {
-	if (ac.Introduced != "" || ac.Fixed != "") && (ac.Introduced == ac.Fixed) {
+// Check if the commit range actually spans any commits.
+// A range that starts and ends with the same commit is not considered a valid range.
+func (ac *AffectedCommit) InvalidRange() bool {
+	if ac.Introduced == ac.Fixed && ac.Introduced != "" {
 		return true
 	}
-	if (ac.Introduced != "" || ac.LastAffected != "") && (ac.Introduced == ac.LastAffected) {
+	if ac.Introduced == ac.LastAffected && ac.Introduced != "" {
 		return true
 	}
 	return false

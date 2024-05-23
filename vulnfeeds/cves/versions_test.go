@@ -974,7 +974,7 @@ func TestVersionInfoDuplicateDetection(t *testing.T) {
 	}
 }
 
-func TestOverlappingRangeDetection(t *testing.T) {
+func TestInvalidRangeDetection(t *testing.T) {
 	tests := []struct {
 		description         string
 		inputAffectedCommit AffectedCommit
@@ -1023,7 +1023,7 @@ func TestOverlappingRangeDetection(t *testing.T) {
 	}
 
 	for _, tc := range tests {
-		result := tc.inputAffectedCommit.Overlaps()
+		result := tc.inputAffectedCommit.InvalidRange()
 		if diff := cmp.Diff(result, tc.expectedResult); diff != "" {
 			t.Errorf("test %q: Duplicated() for %#v was incorrect: %s", tc.description, tc.inputAffectedCommit, diff)
 		}

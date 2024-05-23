@@ -67,6 +67,18 @@ func (ac *AffectedCommit) SetLastAffected(commit string) {
 	ac.LastAffected = commit
 }
 
+// Check if the commit range actually spans any commits.
+// A range that starts and ends with the same commit is not considered a valid range.
+func (ac *AffectedCommit) InvalidRange() bool {
+	if ac.Introduced == ac.Fixed && ac.Introduced != "" {
+		return true
+	}
+	if ac.Introduced == ac.LastAffected && ac.Introduced != "" {
+		return true
+	}
+	return false
+}
+
 // Helper function for sorting AffectedCommit for stability.
 // Sorts by Repo, then Fixed, then LastAffected, then Introduced.
 func AffectedCommitCompare(i, j AffectedCommit) int {
@@ -219,6 +231,7 @@ var (
 		"https://github.com/0day1/g1ory",
 		"https://github.com/0x14dli/ffos-SQL-injection-vulnerability-exists",
 		"https://github.com/0xdea/exploits",
+		"https://github.com/0xQRx/VulnerabilityResearch",
 		"https://github.com/0xxtoby/Vuldb",
 		"https://github.com/10cks/inkdropPoc",
 		"https://github.com/10cksyiqiyinhangzhoutechnology/elf-parser_segments_poc",
@@ -226,10 +239,13 @@ var (
 		"https://github.com/1MurasaKi/PboostCMS_XSS",
 		"https://github.com/1MurasaKi/PizzeXSS_Report",
 		"https://github.com/1MurasaKi/STMS_CSRF",
+		"https://github.com/1s1and123/Vulnerabilities",
 		"https://github.com/1security/Vulnerability",
 		"https://github.com/202ecommerce/security-advisories",
 		"https://github.com/594238758/mycve",
+		"https://github.com/777erp/cms",
 		"https://github.com/A-TGAO/MxsDocVul",
+		"https://github.com/abcdefg-png/IoT-vulnerable",
 		"https://github.com/abhiunix/goo-blog-App-CVE",
 		"https://github.com/Accenture/AARO-Bugs",
 		"https://github.com/active-labs/Advisories",
@@ -286,9 +302,11 @@ var (
 		"https://github.com/ComparedArray/printix-CVE-2022-25089",
 		"https://github.com/cribdragg3r/offensive_research",
 		"https://github.com/ctflearner/Vulnerability",
+		"https://github.com/cvdyfbwa/IoT_LBT_Router",
 		"https://github.com/CVEProject/cvelist", // Heavily in Advisory URLs, sometimes shows up elsewhere
 		"https://github.com/Cvjark/Poc",
 		"https://github.com/cxaqhq/Loan-Management-System-Sqlinjection",
+		"https://github.com/cxcxcxcxcxcxcxc/cxcxcxcxcxcxcxc",
 		"https://github.com/cybersecurityworks/disclosed",
 		"https://github.com/D4rkP0w4r/AeroCMS-Add_Posts-Stored_XSS-Poc",
 		"https://github.com/D4rkP0w4r/AeroCMS-Comment-Stored_XSS-Poc",
@@ -298,6 +316,7 @@ var (
 		"https://github.com/D4rkP0w4r/Full-Ecommece-Website-Slides-Unrestricted-File-Upload-RCE-POC",
 		"https://github.com/D4rkP0w4r/sms-Add_Student-Stored_XSS-POC",
 		"https://github.com/D4rkP0w4r/sms-Unrestricted-File-Upload-RCE-POC",
+		"https://github.com/dhabaleshwar/Open-Source-Vulnerabilities",
 		"https://github.com/dhammon/pfBlockerNg-CVE-2022-40624",
 		"https://github.com/dhammon/pfBlockerNg-RCE",
 		"https://github.com/Dheeraj-Deshmukh/Hospital-s-patient-management-system",
@@ -330,6 +349,7 @@ var (
 		"https://github.com/fireeye/Vulnerability-Disclosures",
 		"https://github.com/frame84/vulns",
 		"https://github.com/Frank-Z7/z-vulnerabilitys",
+		"https://github.com/friends-of-presta/security-advisories",
 		"https://github.com/funny-mud-peee/IoT-vuls",
 		"https://github.com/FusionAuth/fusionauth-issues",
 		"https://github.com/g1an123/poc",
@@ -353,6 +373,7 @@ var (
 		"https://github.com/hashicorp/terraform-enterprise-release-notes",
 		"https://github.com/haxpunk1337/Enterprise-Survey-Software",
 		"https://github.com/haxpunk1337/MDaemon-",
+		"https://github.com/Hckwzh/cms",
 		"https://github.com/HH1F/KbaseDoc-v1.0-Arbitrary-file-deletion-vulnerability",
 		"https://github.com/hkerma/opa-gatekeeper-concurrency-issue",
 		"https://github.com/hmsec/advisories",
@@ -399,6 +420,7 @@ var (
 		"https://github.com/l1nk3rlin/php_code_audit_project",
 		"https://github.com/lakshaya0557/POCs",
 		"https://github.com/laoquanshi/BILLING-SOFTWARE-SQL-injection-vulnerability",
+		"https://github.com/laoquanshi/PHPGurukul-Hospital-Management-System",
 		"https://github.com/laotun-s/POC",
 		"https://github.com/Lemon4044/Fast-Food-Ordering-System",
 		"https://github.com/lohyt/Persistent-Cross-Site-Scripting-found-in-Online-Jewellery-Store-from-Sourcecodester-website.",
@@ -444,6 +466,7 @@ var (
 		"https://github.com/prismbreak/vulnerabilities",
 		"https://github.com/purplededa/EasyoneCRM-5.50.02-SQLinjection",
 		"https://github.com/PurplePetrus/MxCC_Credential-Storage_issue",
+		"https://github.com/qqqyc/vlun1",
 		"https://github.com/Ramansh123454/POCs",
 		"https://github.com/rand0midas/randomideas",
 		"https://github.com/rapid7/metasploit-framework",
@@ -468,10 +491,12 @@ var (
 		"https://github.com/silence-silence/xxl-job-lateral-privilege-escalation-vulnerability-",
 		"https://github.com/sinemsahn/POC",
 		"https://github.com/sleepyvv/vul_report",
+		"https://github.com/smurf-reigz/security",
 		"https://github.com/Snakinya/Vuln",
 		"https://github.com/snyk/zip-slip-vulnerability",
 		"https://github.com/soheilsamanabadi/vulnerability",
 		"https://github.com/soheilsamanabadi/vulnerabilitys",
+		"https://github.com/Sospiro014/zday1",
 		"https://github.com/soundarkutty/stored-xss",
 		"https://github.com/souravkr529/CSRF-in-Cold-Storage-Management-System",
 		"https://github.com/spwpun/ntp-4.2.8p15-cves",
@@ -482,6 +507,7 @@ var (
 		"https://github.com/sromanhu/RiteCMS-Stored-XSS---Home",
 		"https://github.com/starnightcyber/miscellaneous",
 		"https://github.com/strangebeecorp/security",
+		"https://github.com/strik3r0x1/Vulns",
 		"https://github.com/sunset-move/EasyImages2.0-arbitrary-file-download-vulnerability",
 		"https://github.com/SunshineOtaku/Report-CVE",
 		"https://github.com/superkojiman/vulnerabilities",
@@ -489,6 +515,8 @@ var (
 		"https://github.com/TCSWT/Baby-Care-System",
 		"https://github.com/thehackingverse/Stored-xss-",
 		"https://github.com/theyiyibest/Reflected-XSS-on-SockJS",
+		"https://github.com/thisissuperann/Vul",
+		"https://github.com/TimeSeg/IOT_CVE",
 		"https://github.com/TishaManandhar/Superstore-sql-poc",
 		"https://github.com/toyydsBT123/One_of_my_take_on_SourceCodester",
 		"https://github.com/transcendent-group/advisories",
@@ -514,8 +542,10 @@ var (
 		"https://github.com/wkeyi0x1/vul-report",
 		"https://github.com/wsummerhill/BSA-Radar_CVE-Vulnerabilities",
 		"https://github.com/xcodeOn1/xcode0x-CVEs",
+		"https://github.com/XiLitter/CMS_vulnerability-discovery",
 		"https://github.com/xnobody12/jaws-cms-rce",
 		"https://github.com/Xor-Gerke/webray.com.cn",
+		"https://github.com/xuanluansec/vul",
 		"https://github.com/xunyang1/my-vulnerability",
 		"https://github.com/xxhzz1/74cmsSE-Arbitrary-file-upload-vulnerability",
 		"https://github.com/y1s3m0/vulnfind",

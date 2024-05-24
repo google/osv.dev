@@ -124,10 +124,7 @@ func RepoTags(repoURL string, repoTagsCache RepoTagsCache) (tags Tags, e error) 
 		return tags, err
 	}
 	tagsMap := make(map[string]Tag)
-	for _, ref := range refs {
-		if !ref.Name().IsTag() {
-			continue
-		}
+	for _, ref := range RefTags(refs) {
 		// This is used for caching and direct lookup by tag name.
 		tagsMap[ref.Name().Short()] = Tag{Tag: ref.Name().Short(), Commit: ref.Hash().String()}
 	}
@@ -218,21 +215,42 @@ func NormalizeRepoTags(repoURL string, repoTagsCache RepoTagsCache) (NormalizedT
 	return NormalizedTags, nil
 }
 
-// Validate the repo by attempting to query it's references.
-func ValidRepo(repoURL string) (valid bool) {
-	remoteConfig := &config.RemoteConfig{
-		Name: "source",
-		URLs: []string{
-			repoURL,
-		},
+// Return a list of just the references that are tags.
+func RefTags(refs []*plumbing.Reference) (tags []*plumbing.Reference) {
+	for _, ref := range refs {
+		if ref.Name().IsTag() {
+			tags = append(tags, ref)
+		}
 	}
-	r := git.NewRemote(memory.NewStorage(), remoteConfig)
-	_, err := r.List(&git.ListOptions{})
+	return tags
+}
+
+// Return a list of just the references that are branches.
+func RefBranches(refs []*plumbing.Reference) (branches []*plumbing.Reference) {
+	for _, ref := range refs {
+		if ref.Name().IsBranch() {
+			branches = append(branches, ref)
+		}
+	}
+	return branches
+}
+
+// Validate the repo by attempting to query it's references.
+// Repos that don't have any tags are not valid.
+func ValidRepo(repoURL string) (valid bool) {
+	refs, err := RemoteRepoRefsWithRetry(repoURL, 3)
 	if err != nil && err == transport.ErrAuthenticationRequired {
 		// somewhat strangely, we get an authentication prompt via Git on non-existent repos.
 		return false
 	}
 	if err != nil {
+		return false
+	}
+	if len(refs) == 0 {
+		return false
+	}
+	// Repos with no tags aren't useful.
+	if len(RefTags(refs)) == 0 {
 		return false
 	}
 	return true

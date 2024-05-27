@@ -227,7 +227,7 @@ func TestRepo(t *testing.T) {
 		{
 			description:     "GitWeb URL, remapped to something cloneable (CVE-2023-1579)",
 			inputLink:       "https://sourceware.org/git/gitweb.cgi?p=binutils-gdb.git;h=11d171f1910b508a81d21faa087ad1af573407d8",
-			expectedRepoURL: "git://sourceware.org/git/binutils-gdb.git",
+			expectedRepoURL: "https://sourceware.org/git/binutils-gdb.git",
 			expectedOk:      true,
 		},
 		{
@@ -277,12 +277,6 @@ func TestRepo(t *testing.T) {
 			inputLink:       "https://bitbucket.org/snakeyaml/snakeyaml/issues/566",
 			expectedRepoURL: "https://bitbucket.org/snakeyaml/snakeyaml",
 			expectedOk:      true,
-		},
-		{
-			description:     "Valid URL but not wanted (by denylist)",
-			inputLink:       "https://github.com/orangecertcc/security-research/security/advisories/GHSA-px2c-q384-5wxc",
-			expectedRepoURL: "",
-			expectedOk:      false,
 		},
 		{
 			description:     "Valid URL but not wanted (by deny regexp)",
@@ -405,33 +399,33 @@ func TestRepo(t *testing.T) {
 			expectedOk:      true,
 		},
 		{
-			description:     "Undesired researcher repo (by denylist)",
-			inputLink:       "https://github.com/chenan224/webchess_sqli_poc",
-			expectedRepoURL: "",
-			expectedOk:      false,
-		},
-		{
 			description:     "Undesired researcher repo (by deny regex)",
 			inputLink:       "https://github.com/bigzooooz/CVE-2023-26692#readme",
 			expectedRepoURL: "",
 			expectedOk:      false,
 		},
 		{
-			description:     "Undesired repo (by deny regex)",
-			inputLink:       "https://gitlab.com/gitlab-org/cves/-/blob/master/2023/CVE-2023-0413.json",
-			expectedRepoURL: "",
-			expectedOk:      false,
-		},
-		{
 			description:     "GNU glibc GitWeb repo (with no distinguishing marks)",
 			inputLink:       "https://sourceware.org/git/?p=glibc.git",
-			expectedRepoURL: "git://sourceware.org/git/glibc.git",
+			expectedRepoURL: "https://sourceware.org/git/glibc.git",
 			expectedOk:      true,
 		},
 		{
 			description:     "GNU glibc GitWeb repo (with distinguishing marks)",
 			inputLink:       "https://sourceware.org/git/gitweb.cgi?p=glibc.git",
-			expectedRepoURL: "git://sourceware.org/git/glibc.git",
+			expectedRepoURL: "https://sourceware.org/git/glibc.git",
+			expectedOk:      true,
+		},
+		{
+			description:     "GnuPG GitWeb repo that doesn't talk https",
+			inputLink:       "https://git.gnupg.org/cgi-bin/gitweb.cgi?p=libksba.git;a=commit;h=f61a5ea4e0f6a80fd4b28ef0174bee77793cf070",
+			expectedRepoURL: "git://git.gnupg.org/libksba.git",
+			expectedOk:      true,
+		},
+		{
+			description:     "high profile repo encountered on CVE-2024-3094",
+			inputLink:       "https://git.tukaani.org/?p=xz.git;a=tags",
+			expectedRepoURL: "https://git.tukaani.org/xz.git",
 			expectedOk:      true,
 		},
 	}
@@ -595,6 +589,15 @@ func TestExtractGitCommit(t *testing.T) {
 			expectedAffectedCommit: AffectedCommit{
 				Repo:  "https://github.com/unetworking/uwebsockets",
 				Fixed: "37deefd01f0875e133ea967122e3a5e421b8fcd9",
+			},
+		},
+		{
+			description:     "A GitHub repo that should be working (as seen on CVE-2021-23568)",
+			inputLink:       "https://github.com/eggjs/extend2/commit/aa332a59116c8398976434b57ea477c6823054f8",
+			inputCommitType: Fixed,
+			expectedAffectedCommit: AffectedCommit{
+				Repo:  "https://github.com/eggjs/extend2",
+				Fixed: "aa332a59116c8398976434b57ea477c6823054f8",
 			},
 		},
 	}
@@ -914,6 +917,109 @@ func TestCPEs(t *testing.T) {
 		gotCPEs := CPEs(tc.inputCVEItem.CVE)
 		if diff := cmp.Diff(gotCPEs, tc.expectedCPEs); diff != "" {
 			t.Errorf("test %q: CPEs for %#v were incorrect: %s", tc.description, tc.inputCVEItem.CVE.Configurations, diff)
+		}
+	}
+}
+
+func TestVersionInfoDuplicateDetection(t *testing.T) {
+	tests := []struct {
+		description         string
+		inputVersionInfo    VersionInfo
+		inputAffectedCommit AffectedCommit
+		expectedResult      bool
+	}{
+		{
+			description:         "An empty VersionInfo and AffectedCommit",
+			inputVersionInfo:    VersionInfo{},
+			inputAffectedCommit: AffectedCommit{},
+			expectedResult:      false,
+		},
+		{
+			description:         "A populated VersionInfo and empty AffectedCommit",
+			inputVersionInfo:    VersionInfo{AffectedCommits: []AffectedCommit{{Repo: "https://github.com/foo/bar", Introduced: "4089bd6080d41450adab1e0ac0d63cfeab4a78e7", Fixed: "4089bd6080d41450adab1e0ac0d63cfeab4a78e7"}}},
+			inputAffectedCommit: AffectedCommit{},
+			expectedResult:      false,
+		},
+		{
+			description:         "An empty VersionInfo and a populated AffectedCommit",
+			inputVersionInfo:    VersionInfo{},
+			inputAffectedCommit: AffectedCommit{Repo: "https://github.com/foo/bar", Introduced: "4089bd6080d41450adab1e0ac0d63cfeab4a78e7", Fixed: "4089bd6080d41450adab1e0ac0d63cfeab4a78e7"},
+			expectedResult:      false,
+		},
+		{
+			description:         "A bonafide full duplicate",
+			inputVersionInfo:    VersionInfo{AffectedCommits: []AffectedCommit{{Repo: "https://github.com/foo/bar", Introduced: "4089bd6080d41450adab1e0ac0d63cfeab4a78e7", Fixed: "4089bd6080d41450adab1e0ac0d63cfeab4a78e7"}}},
+			inputAffectedCommit: AffectedCommit{Repo: "https://github.com/foo/bar", Introduced: "4089bd6080d41450adab1e0ac0d63cfeab4a78e7", Fixed: "4089bd6080d41450adab1e0ac0d63cfeab4a78e7"},
+			expectedResult:      true,
+		},
+		{
+			description:         "Duplication across introduced and fixed",
+			inputVersionInfo:    VersionInfo{AffectedCommits: []AffectedCommit{{Repo: "https://github.com/foo/bar", Introduced: "4089bd6080d41450adab1e0ac0d63cfeab4a78e7"}}},
+			inputAffectedCommit: AffectedCommit{Repo: "https://github.com/foo/bar", Fixed: "4089bd6080d41450adab1e0ac0d63cfeab4a78e7"},
+			expectedResult:      true,
+		},
+	}
+
+	for _, tc := range tests {
+		result := tc.inputVersionInfo.Duplicated(tc.inputAffectedCommit)
+		if diff := cmp.Diff(result, tc.expectedResult); diff != "" {
+			t.Errorf("test %q: HasDuplicateAffectedVersions for %#v was incorrect: %s", tc.description, tc.inputVersionInfo, diff)
+		}
+	}
+}
+
+func TestInvalidRangeDetection(t *testing.T) {
+	tests := []struct {
+		description         string
+		inputAffectedCommit AffectedCommit
+		expectedResult      bool
+	}{
+		{
+			description:         "An empty AffectedCommit",
+			inputAffectedCommit: AffectedCommit{},
+			expectedResult:      false,
+		},
+		{
+			description:         "Only an introduced commit",
+			inputAffectedCommit: AffectedCommit{Repo: "https://github.com/foo/bar", Introduced: "4089bd6080d41450adab1e0ac0d63cfeab4a78e7"},
+			expectedResult:      false,
+		},
+		{
+			description:         "Only a fixed commit",
+			inputAffectedCommit: AffectedCommit{Repo: "https://github.com/foo/bar", Fixed: "4089bd6080d41450adab1e0ac0d63cfeab4a78e7"},
+			expectedResult:      false,
+		},
+		{
+			description:         "Only a last_affected commit",
+			inputAffectedCommit: AffectedCommit{Repo: "https://github.com/foo/bar", LastAffected: "4089bd6080d41450adab1e0ac0d63cfeab4a78e7"},
+			expectedResult:      false,
+		},
+		{
+			description:         "Non-overlapping introduced and fixed range",
+			inputAffectedCommit: AffectedCommit{Repo: "https://github.com/foo/bar", Introduced: "4089bd6080d41450adab1e0ac0d63cfeab4a78e7", Fixed: "b48ff2aa1e57e761fa0825e3dc78105a0d016e16"},
+			expectedResult:      false,
+		},
+		{
+			description:         "Non-overlapping introduced and last_affected range",
+			inputAffectedCommit: AffectedCommit{Repo: "https://github.com/foo/bar", Introduced: "4089bd6080d41450adab1e0ac0d63cfeab4a78e7", LastAffected: "b48ff2aa1e57e761fa0825e3dc78105a0d016e16"},
+			expectedResult:      false,
+		},
+		{
+			description:         "Overlapping introduced and fixed range",
+			inputAffectedCommit: AffectedCommit{Repo: "https://github.com/foo/bar", Introduced: "4089bd6080d41450adab1e0ac0d63cfeab4a78e7", Fixed: "4089bd6080d41450adab1e0ac0d63cfeab4a78e7"},
+			expectedResult:      true,
+		},
+		{
+			description:         "Overlapping introduced and last_affected range",
+			inputAffectedCommit: AffectedCommit{Repo: "https://github.com/foo/bar", Introduced: "4089bd6080d41450adab1e0ac0d63cfeab4a78e7", LastAffected: "4089bd6080d41450adab1e0ac0d63cfeab4a78e7"},
+			expectedResult:      true,
+		},
+	}
+
+	for _, tc := range tests {
+		result := tc.inputAffectedCommit.InvalidRange()
+		if diff := cmp.Diff(result, tc.expectedResult); diff != "" {
+			t.Errorf("test %q: Duplicated() for %#v was incorrect: %s", tc.description, tc.inputAffectedCommit, diff)
 		}
 	}
 }

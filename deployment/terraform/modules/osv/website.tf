@@ -184,11 +184,6 @@ resource "google_compute_url_map" "website" {
         prefix_match = "/"
       }
       route_action {
-        # TODO(michaelkedar): remove appengine
-        weighted_backend_services {
-          backend_service = module.gclb.backend_services.appengine.id
-          weight          = 0
-        }
         weighted_backend_services {
           backend_service = module.gclb.backend_services.cloudrun.id
           weight          = 100

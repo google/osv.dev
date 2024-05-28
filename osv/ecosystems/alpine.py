@@ -74,7 +74,7 @@ class Alpine(Ecosystem):
       return ver
 
     for line in lines:
-      if not line:
+      if not line:  # Don't save anything until commit is finished
         if not current_ver or not current_rel:
           continue
 
@@ -141,14 +141,16 @@ class Alpine(Ecosystem):
 
     relative_path = os.path.relpath(directories[0], checkout_dir)
 
-    regex_test = '\\|'.join([
-        '\\(' + x.removeprefix('+') + '\\)'
-        for x in Alpine._PKGVER_ALIASES + Alpine._PKGREL_ALIASES
-    ])
+    regex_test_aliases = '\\|'.join(
+        ['\\(' + x.removeprefix('+') + '\\)' for x in Alpine._PKGVER_ALIASES])
+
+    regex_test_revisions = '\\|'.join(
+        ['\\(' + x.removeprefix('+') + '\\)' for x in Alpine._PKGREL_ALIASES])
 
     stdout_data = subprocess.check_output([
         'git', 'log', '--oneline', '-L',
-        '/' + regex_test + '/,+1:' + relative_path
+        '/' + regex_test_aliases + '/,+1:' + relative_path, '-L',
+        '/' + regex_test_revisions + '/,+1:' + relative_path
     ],
                                           cwd=checkout_dir).decode('utf-8')
 

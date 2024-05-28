@@ -401,7 +401,7 @@ func validateRepos(prm VendorProductToRepoMap) (validated VendorProductToRepoMap
 		entryCount++
 		// As a side-effect, this also omits any with no repos.
 		for _, r := range prm[vp] {
-			if !git.ValidRepo(r) {
+			if !git.ValidRepoAndHasUsableRefs(r) {
 				Logger.Infof("%d/%d: %q is not a valid repo for %s:%s", entryCount, len(prm), r, vp.Vendor, vp.Product)
 				continue
 			}

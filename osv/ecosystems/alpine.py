@@ -82,8 +82,8 @@ class Alpine(Ecosystem):
       return ver
 
     for line in lines:
-      if not line:  # Don't add any versions until the entire commit block is finished
-        # This line ends a commit block
+      if not line:  # This line ends a commit block
+        # Don't add any versions until the entire commit block is finished
         if not current_ver or not current_rel:
           continue
 
@@ -122,7 +122,7 @@ class Alpine(Ecosystem):
                          fixed=None,
                          last_affected=None,
                          limits=None):
-    """We use Alpines aports git repository history to enumerate all versions of a package"""
+    """We use Alpines aports git repository history to do version enum"""
 
     if config.work_dir is None:
       logging.error(

@@ -316,7 +316,7 @@ func TestValidRepo(t *testing.T) {
 		},
 	}
 	for _, tc := range tests {
-		got := ValidRepo(tc.repoURL)
+		got := ValidRepoAndHasUsableRefs(tc.repoURL)
 		if diff := cmp.Diff(got, tc.expectedResult); diff != "" {
 			t.Errorf("test %q: ValidRepo(%q) was incorrect: %s", tc.description, tc.repoURL, diff)
 		}
@@ -326,7 +326,7 @@ func TestValidRepo(t *testing.T) {
 func TestInvalidRepos(t *testing.T) {
 	redundantRepos := []string{}
 	for _, repo := range cves.InvalidRepos {
-		if !ValidRepo(repo) {
+		if !ValidRepoAndHasUsableRefs(repo) {
 			redundantRepos = append(redundantRepos, repo)
 		}
 	}

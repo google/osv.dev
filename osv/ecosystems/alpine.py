@@ -141,19 +141,20 @@ class Alpine(Ecosystem):
 
     relative_path = os.path.relpath(directories[0], checkout_dir)
 
-    regex_test_aliases = '\\|'.join(
+    regex_test_versions = '\\|'.join(
         ['\\(' + x.removeprefix('+') + '\\)' for x in Alpine._PKGVER_ALIASES])
 
     regex_test_revisions = '\\|'.join(
         ['\\(' + x.removeprefix('+') + '\\)' for x in Alpine._PKGREL_ALIASES])
 
+    # fmt: off
     # https://git-scm.com/docs/git-log/2.33.1#Documentation/git-log.txt--Lltstartgtltendgtltfilegt
     stdout_data = subprocess.check_output([
-        'git', 'log', '--oneline', '-L',
-        '^/' + regex_test_aliases + '/,+1:' + relative_path, '-L',
-        '^/' + regex_test_revisions + '/,+1:' + relative_path
-    ],
-                                          cwd=checkout_dir).decode('utf-8')
+        'git', 'log', '--oneline',
+        '-L', '^/' + regex_test_versions + '/,+1:' + relative_path,
+        '-L', '^/' + regex_test_revisions + '/,+1:' + relative_path
+    ], cwd=checkout_dir).decode('utf-8')
+    # fmt: on
 
     versions = Alpine._process_git_log(stdout_data)
     return versions

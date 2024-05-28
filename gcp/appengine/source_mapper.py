@@ -111,6 +111,14 @@ class SourcewareVCS(VCSViewer):
                            r'hp={end_revision}')
 
 
+class GnuPGVCS(VCSViewer):
+  VCS_URL_REGEX = re.compile(r'git(://git\.gnupg\.org)/(.*\.git)$')
+  VCS_REVISION_SUB = r'https\1/cgi-bin/gitweb.cgi?p=\2;a=commit;h={revision}'
+  VCS_REVISION_DIFF_SUB = (
+      r'https\1/cgi-bin/gitweb.cgi?p=\2;a=commitdiff;h={start_revision};'
+      r'hp={end_revision}')
+
+
 VCS_LIST = [
     FreeDesktopVCS,
     GitHubVCS,
@@ -120,6 +128,7 @@ VCS_LIST = [
     SavannahVCS,
     FFMpegVCS,
     SourcewareVCS,
+    GnuPGVCS,
 ]
 
 

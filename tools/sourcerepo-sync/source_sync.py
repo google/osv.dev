@@ -106,21 +106,20 @@ def main() -> None:
 
   def update_sourcerepo(repo, ds_repo):
     """Check the attributes of the source repo and update if needed."""
-    change_flag = False
+    entity = None
     for attr in repo:
       #Check whether the attribute has changed
       if attr not in ds_repo or repo[attr] == ds_repo[attr]:
         continue
-      if change_flag is False:
+      if entity is None:
         key = client.key(args.kind, ds_repo['name'])
         entity = client.get(key)
-        change_flag = True
       if args.verbose:
         name = repo['name']
         print(f'Found diff in {name}: {attr} - {repo[attr]} != {ds_repo[attr]}')
       entity.update({attr: repo[attr]})
 
-    if change_flag and not args.dryrun:
+    if entity is not None and not args.dryrun:
       client.put(entity)
 
   validate_repository(local_sourcerepos)

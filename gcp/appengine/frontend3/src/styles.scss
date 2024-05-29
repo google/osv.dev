@@ -609,6 +609,22 @@ mwc-icon-button.mdc-data-table__sort-icon-button {
       font-size: $osv-heading-size-mobile;
     }
   }
+
+  .vulnerability-title {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+
+    .vulnerability-improvement-link {
+      font-family: $osv-heading-font-family;
+    }
+
+    @media (max-width: $osv-mobile-breakpoint) {
+      .vulnerability-improvement-link {
+        display: none;
+      }
+    }
+  }
 }
 
 dl.vulnerability-details,

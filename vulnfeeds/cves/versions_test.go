@@ -606,6 +606,9 @@ func TestExtractGitCommit(t *testing.T) {
 		if err != nil && !tc.expectFailure {
 			t.Errorf("test %q: extractGitCommit for %q (%q) errored unexpectedly: %#v", tc.description, tc.inputLink, tc.inputCommitType, err)
 		}
+		if err == nil && tc.expectFailure {
+			t.Errorf("test %q: extractGitCommit for %q (%q) did not error as unexpected!", tc.description, tc.inputLink, tc.inputCommitType)
+		}
 		if !reflect.DeepEqual(got, tc.expectedAffectedCommit) {
 			t.Errorf("test %q: extractGitCommit for %q was incorrect, got: %#v, expected: %#v", tc.description, tc.inputLink, got, tc.expectedAffectedCommit)
 		}

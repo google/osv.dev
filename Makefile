@@ -30,6 +30,7 @@ appengine-tests:
 vulnfeed-tests:
 	cd vulnfeeds && ./run_tests.sh
 
+# Requires gcloud auth login --update-adc
 api-server-tests:
 	test -f $(HOME)/.config/gcloud/application_default_credentials.json || (echo "GCP Application Default Credentials not set, try 'gcloud auth login --update-adc'"; exit 1)
 	cd gcp/api && docker build -f Dockerfile.esp -t osv/esp:latest .

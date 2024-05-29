@@ -571,7 +571,6 @@ func TestExtractGitCommit(t *testing.T) {
 				Repo:  "https://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git",
 				Fixed: "ee1fee900537b5d9560e9f937402de5ddc8412f3",
 			},
-			expectFailure: true,
 		},
 		{
 			description:     "Valid GitWeb commit URL",

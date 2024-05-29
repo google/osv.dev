@@ -378,10 +378,14 @@ func analyzeCPEDictionary(d CPEDict) (ProductToRepo VendorProductToRepoMap, Desc
 			repo := MaybeGetSourceRepoFromDebian(*DebianMetadataPath, vp.Product)
 			if repo != "" {
 				Logger.Infof("Derived repo: %s for %s:%s", repo, vp.Vendor, vp.Product)
-				// Now check that what Debian gave us meets our expectations
+				// Now check that what Debian gave us meets our expectations and is valid.
 				repo, err := cves.Repo(repo)
 				if err != nil {
 					Logger.Infof("Disregarding derived repo %s for %s:%s because %v", repo, vp.Vendor, vp.Product, err)
+					continue
+				}
+				if !git.ValidRepoAndHasUsableRefs(repo) {
+					Logger.Infof("Disregarding derived repo %s for %s:%s because it is unusable for version resolution", repo, vp.Vendor, vp.Product)
 					continue
 				}
 				ProductToRepo[VendorProduct{vp.Vendor, vp.Product}] = append(ProductToRepo[VendorProduct{vp.Vendor, vp.Product}], repo)
@@ -401,7 +405,7 @@ func validateRepos(prm VendorProductToRepoMap) (validated VendorProductToRepoMap
 		entryCount++
 		// As a side-effect, this also omits any with no repos.
 		for _, r := range prm[vp] {
-			if !git.ValidRepo(r) {
+			if !git.ValidRepoAndHasUsableRefs(r) {
 				Logger.Infof("%d/%d: %q is not a valid repo for %s:%s", entryCount, len(prm), r, vp.Vendor, vp.Product)
 				continue
 			}

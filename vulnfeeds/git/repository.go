@@ -236,8 +236,20 @@ func RefBranches(refs []*plumbing.Reference) (branches []*plumbing.Reference) {
 }
 
 // Validate the repo by attempting to query it's references.
-// Repos that don't have any tags are not valid.
 func ValidRepo(repoURL string) (valid bool) {
+	_, err := RemoteRepoRefsWithRetry(repoURL, 3)
+	if err != nil && err == transport.ErrAuthenticationRequired {
+		// somewhat strangely, we get an authentication prompt via Git on non-existent repos.
+		return false
+	}
+	if err != nil {
+		return false
+	}
+	return true
+}
+
+// Otherwise functional repos that don't have any tags are not valid.
+func ValidRepoAndHasUsableRefs(repoURL string) (valid bool) {
 	refs, err := RemoteRepoRefsWithRetry(repoURL, 3)
 	if err != nil && err == transport.ErrAuthenticationRequired {
 		// somewhat strangely, we get an authentication prompt via Git on non-existent repos.

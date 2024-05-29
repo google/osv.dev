@@ -3,6 +3,7 @@ package main
 import (
 	"encoding/csv"
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"os"
 	"path"
@@ -58,6 +59,10 @@ func getDebianReleaseMap() (map[string]string, error) {
 		return releaseMap, err
 	}
 	defer res.Body.Close()
+
+	if res.StatusCode != http.StatusOK {
+		return releaseMap, fmt.Errorf("HTTP request failed: %s", res.Status)
+	}
 
 	reader := csv.NewReader(res.Body)
 	reader.FieldsPerRecord = -1
@@ -196,6 +201,12 @@ func downloadDebianSecurityTracker() (DebianSecurityTrackerData, error) {
 	res, err := http.Get(debianSecurityTrackerURL)
 	if err != nil {
 		return nil, err
+	}
+
+	defer res.Body.Close()
+
+	if res.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("HTTP request failed: %s", res.Status)
 	}
 
 	var decodedDebianData DebianSecurityTrackerData

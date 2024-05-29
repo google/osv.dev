@@ -17,7 +17,6 @@ import argparse
 import concurrent.futures
 import logging
 import os
-import shutil
 import tempfile
 import zipfile
 from typing import List
@@ -39,21 +38,21 @@ ECOSYSTEMS_FILE = 'ecosystems.txt'
 class Exporter:
   """Exporter."""
 
-  def __init__(self, work_dir, export_bucket):
+  def __init__(self, work_dir, export_bucket, ecosystem):
     self._work_dir = work_dir
     self._export_bucket = export_bucket
+    self._ecosystem = ecosystem
 
   def run(self):
     """Run exporter."""
-    query = osv.Bug.query(projection=[osv.Bug.ecosystem], distinct=True)
-    ecosystems = [bug.ecosystem[0] for bug in query if bug.ecosystem]
-
-    for ecosystem in ecosystems:
+    if self._ecosystem == "list":
+      query = osv.Bug.query(projection=[osv.Bug.ecosystem], distinct=True)
+      ecosystems = [bug.ecosystem[0] for bug in query if bug.ecosystem]
       with tempfile.TemporaryDirectory() as tmp_dir:
-        self._export_ecosystem_to_bucket(ecosystem, tmp_dir)
-
-    with tempfile.TemporaryDirectory() as tmp_dir:
-      self._export_ecosystem_list_to_bucket(ecosystems, tmp_dir)
+        self._export_ecosystem_list_to_bucket(ecosystems, tmp_dir)
+    else:
+      with tempfile.TemporaryDirectory() as tmp_dir:
+        self._export_ecosystem_to_bucket(self._ecosystem, tmp_dir)
 
   def upload_single(self, bucket, source_path, target_path):
     """Upload a single file to a GCS bucket."""
@@ -139,19 +138,17 @@ def main():
       '--bucket',
       help='Bucket name to export to',
       default=DEFAULT_EXPORT_BUCKET)
+  parser.add_argument(
+      '--ecosystem',
+      required=True,
+      help='Ecosystem to upload, pass the value "list" ' +
+      'to export the ecosystem.txt file')
   args = parser.parse_args()
 
   tmp_dir = os.path.join(args.work_dir, 'tmp')
-  # Temp files are on the persistent local SSD,
-  # and they do not get removed when GKE sends a SIGTERM to stop the pod.
-  # Manually clear the tmp_dir folder of any leftover files
-  # TODO(michaelkedar): use an ephemeral disk for temp storage.
-  if os.path.exists(tmp_dir):
-    shutil.rmtree(tmp_dir)
-  os.makedirs(tmp_dir, exist_ok=True)
   os.environ['TMPDIR'] = tmp_dir
 
-  exporter = Exporter(args.work_dir, args.bucket)
+  exporter = Exporter(args.work_dir, args.bucket, args.ecosystem)
   exporter.run()
 
 

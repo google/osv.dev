@@ -6,6 +6,7 @@ import (
 	"log"
 	"os"
 	"testing"
+	"time"
 
 	"golang.org/x/exp/maps"
 
@@ -34,7 +35,7 @@ func loadTestData2(cveName string) cves.Vulnerability {
 }
 
 func TestLoadParts(t *testing.T) {
-	allParts := loadParts("../../test_data/parts")
+	allParts, _ := loadParts("../../test_data/parts")
 	expectedPartCount := 14
 	actualPartCount := len(allParts)
 
@@ -87,9 +88,9 @@ func TestCombineIntoOSV(t *testing.T) {
 		"CVE-2022-32746":   loadTestData2("CVE-2022-32746"),
 		"CVE-2018-1000500": loadTestData2("CVE-2018-1000500"),
 	}
-	allParts := loadParts("../../test_data/parts")
+	allParts, cveModifiedTime := loadParts("../../test_data/parts")
 
-	combinedOSV := combineIntoOSV(cveStuff, allParts, "")
+	combinedOSV := combineIntoOSV(cveStuff, allParts, "", cveModifiedTime)
 
 	expectedCombined := 3
 	actualCombined := len(combinedOSV)
@@ -101,5 +102,52 @@ func TestCombineIntoOSV(t *testing.T) {
 		if len(combinedOSV[cve].Affected) != len(allParts[cve]) {
 			t.Errorf("Affected lengths for %s do not match", cve)
 		}
+	}
+}
+
+func TestGetModifiedTime(t *testing.T) {
+	_, err := getModifiedTime("../../test_data/parts/debian/CVE-2016-1585.debian.json")
+	if err != nil {
+		t.Errorf("Failed to get modified time.")
+	}
+
+}
+
+func TestUpdateModifiedDate(t *testing.T) {
+	var cveId1, cveId2 cves.CVEID
+	cveId1 = "CVE-2022-33745"
+	cveId2 = "CVE-2022-32746"
+
+	cveStuff := map[cves.CVEID]cves.Vulnerability{
+		cveId1: loadTestData2("CVE-2022-33745"),
+		cveId2: loadTestData2("CVE-2022-32746"),
+	}
+	allParts, _ := loadParts("../../test_data/parts")
+
+	cveModifiedTimeMock := make(map[cves.CVEID]time.Time)
+	time1 := "0001-00-00T00:00:00Z"
+	time2 := "2024-04-30T00:38:53Z"
+	modifiedTime1, _ := time.Parse(time.RFC3339, time1)
+	modifiedTime2, _ := time.Parse(time.RFC3339, time2)
+	cveModifiedTimeMock[cveId1] = modifiedTime1
+	cveModifiedTimeMock[cveId2] = modifiedTime2
+
+	combinedOSV := combineIntoOSV(cveStuff, allParts, "", cveModifiedTimeMock)
+
+	expectedCombined := 2
+	actualCombined := len(combinedOSV)
+
+	if actualCombined != expectedCombined {
+		t.Errorf("Expected %d in combination, got %d: %#v", expectedCombined, actualCombined, combinedOSV)
+	}
+
+	// Keeps CVE modified time if none of its parts have a later modification time
+	if combinedOSV[cveId1].Modified == time1 {
+		t.Errorf("Wrong modified time: %s", combinedOSV["CVE-2022-33745"].Modified)
+	}
+
+	// Updates the CVE's modified time if any of its parts have a later modification time
+	if combinedOSV[cveId2].Modified != time2 {
+		t.Errorf("Wrong modified time, expected: %s, got: %s", time2, combinedOSV["CVE-2022-32746"].Modified)
 	}
 }

@@ -52,6 +52,7 @@ The following ecosystems have vulnerabilities encoded in this format:
     ([CC-BY 4.0](https://github.com/psf/advisory-database/blob/main/LICENSE))
 
 ## Converted data
+
 Additionally, the OSV.dev team maintains a conversion pipeline for:
 
 -   [Debian Security Advisories](https://storage.googleapis.com/debian-osv/index.html),
@@ -59,16 +60,20 @@ Additionally, the OSV.dev team maintains a conversion pipeline for:
     [here](https://github.com/google/osv.dev/tree/master/vulnfeeds/tools/debian).
 -   [Alpine SecDB](https://storage.googleapis.com/cve-osv-conversion/index.html?prefix=osv-output/),
     using the conversion tools
-    [here](https://github.com/google/osv.dev/tree/master/vulnfeeds/cmd/alpine).
+    [here](https://github.com/google/osv.dev/tree/master/vulnfeeds/cmd/alpine),
+-   [NVD CVEs for open source software](https://storage.googleapis.com/cve-osv-conversion/index.html?prefix=osv-output/) using the conversion tools [here](https://github.com/google/osv.dev/tree/master/vulnfeeds/cmd/nvd-cve-osv)
 
 ## Covered Ecosystems
+
 Between the data served in OSV and the data converted to OSV the following ecosystems are covered.
 
 -   AlmaLinux
 -   Alpine
 -   Android
+-   Bitnami
 -   crates.io
 -   Debian GNU/Linux
+-   Git ([including C/C++](https://osv.dev/blog/posts/introducing-broad-c-c++-support/))
 -   GitHub Actions
 -   Go
 -   Haskell
@@ -85,6 +90,7 @@ Between the data served in OSV and the data converted to OSV the following ecosy
 -   R (CRAN and Bioconductor)
 -   Rocky Linux
 -   RubyGems
+-   SwiftURL
 
 ## Data dumps
 

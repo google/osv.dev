@@ -571,7 +571,6 @@ func TestExtractGitCommit(t *testing.T) {
 				Repo:  "https://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git",
 				Fixed: "ee1fee900537b5d9560e9f937402de5ddc8412f3",
 			},
-			expectFailure: true,
 		},
 		{
 			description:     "Valid GitWeb commit URL",
@@ -606,6 +605,9 @@ func TestExtractGitCommit(t *testing.T) {
 		got, err := extractGitCommit(tc.inputLink, tc.inputCommitType)
 		if err != nil && !tc.expectFailure {
 			t.Errorf("test %q: extractGitCommit for %q (%q) errored unexpectedly: %#v", tc.description, tc.inputLink, tc.inputCommitType, err)
+		}
+		if err == nil && tc.expectFailure {
+			t.Errorf("test %q: extractGitCommit for %q (%q) did not error as unexpected!", tc.description, tc.inputLink, tc.inputCommitType)
 		}
 		if !reflect.DeepEqual(got, tc.expectedAffectedCommit) {
 			t.Errorf("test %q: extractGitCommit for %q was incorrect, got: %#v, expected: %#v", tc.description, tc.inputLink, got, tc.expectedAffectedCommit)

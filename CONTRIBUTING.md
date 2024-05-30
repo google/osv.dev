@@ -97,8 +97,6 @@ the environment variable `TESTS_GENERATE=1` and run the tests:
 TESTS_GENERATE=1 make all-tests
 ```
 
-To enable long tests
-
 ### Linting and formatting
 
 To lint your code, run

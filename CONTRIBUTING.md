@@ -71,6 +71,16 @@ To run tests:
 make all-tests
 ```
 
+To run integration tests for the API is a separate command
+```shell
+make integration-tests
+```
+
+By default, this skips long tests, enable them by setting the `LONG_TESTS` variable
+```shell
+LONG_TESTS=1 make integration-tests
+```
+
 #### Test result generation
 
 Many tests are written using a
@@ -86,6 +96,8 @@ the environment variable `TESTS_GENERATE=1` and run the tests:
 ```shell
 TESTS_GENERATE=1 make all-tests
 ```
+
+To enable long tests
 
 ### Linting and formatting
 

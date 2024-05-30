@@ -43,7 +43,7 @@ def ExpectationTest(test_data_dir):  # pylint: disable=invalid-name
       expected_path = os.path.join(
           test_data_dir, f'{self.__class__.__name__}_{expected_name}.txt')
       if os.getenv('TESTS_GENERATE'):
-        pp = pprint.PrettyPrinter(indent=4, width=200)
+        pp = pprint.PrettyPrinter(indent=4)
         with open(expected_path, 'w') as f:
           f.write(pp.pformat(actual))
 

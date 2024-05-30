@@ -609,6 +609,22 @@ mwc-icon-button.mdc-data-table__sort-icon-button {
       font-size: $osv-heading-size-mobile;
     }
   }
+
+  .vulnerability-title {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+
+    .vulnerability-improvement-link {
+      font-family: $osv-heading-font-family;
+    }
+
+    @media (max-width: $osv-mobile-breakpoint) {
+      .vulnerability-improvement-link {
+        display: none;
+      }
+    }
+  }
 }
 
 dl.vulnerability-details,
@@ -687,22 +703,48 @@ dl.vulnerability-details,
     }
   }
 
-
+  dd.credits {
+    ul {
+      padding: 0;
+    }
+    
+    li.credit {
+      margin: 0 0 10px 0;
+    }
+    
+    .contact li {
+      margin: 5px 40px 10px 0;
+      display: inline-flex;
+      flex-direction: row;
+      overflow-wrap: break-word;
+    }
+  }
+  
   pre {
     white-space: pre-wrap;
     overflow: auto;
   }
-
+  
+  .purl {
+    font-family: $osv-heading-font-family;
+  }
+  
   .links {
     padding: 0;
     display: flex;
     flex-direction: column;
     gap: 10px;
     overflow-wrap: break-word;
+    margin-bottom: 20px;
   }
 
   .aliases {
     padding: 0;
+  }
+
+  .severity {
+    padding: 0;
+    font-family: $osv-heading-font-family;
   }
 }
 
@@ -807,7 +849,6 @@ dl.vulnerability-details,
     .vuln-ecosystem {
       display: inline;
       font-weight: bold;
-      text-transform: uppercase;
     }
 
     .vuln-name {
@@ -843,7 +884,6 @@ dl.vulnerability-details,
     .vuln-ecosystem {
       display: block;
       font-weight: bold;
-      text-transform: uppercase;
     }
 
     .vuln-name {
@@ -865,12 +905,22 @@ dl.vulnerability-details,
     padding: 14px 0;
     border-bottom: 1px dashed #fff;
   }
+
+  .severity {
+    padding: 0;
+    font-family: $osv-heading-font-family;
+  }
+}
+
+.showmore {
+	cursor: pointer;
+	font-weight: bold;
 }
 
 /** Home page */
 
 .wrapper.decorated {
-  background: url('/static/img/background-1.png');
+  background: url('/static/img/background-1.webp');
   background-repeat: no-repeat;
   background-position: calc(50% - 70px) top;
 }
@@ -1083,7 +1133,7 @@ dl.vulnerability-details,
   }
 
   .data-sources {
-    background: url('/static/img/background-2.png');
+    background: url('/static/img/background-2.webp');
     background-position: calc(50% - 70px) top;
     background-repeat: no-repeat;
     margin-top: 0;
@@ -1239,7 +1289,7 @@ dl.vulnerability-details,
   }
 
   footer {
-    background: url('/static/img/footer-decoration.png');
+    background: url('/static/img/footer-decoration.webp');
     background-repeat: no-repeat;
     background-position: center;
     min-height: 500px;
@@ -1420,7 +1470,7 @@ div.highlight {
   }
 
   footer {
-    background: url('/static/img/footer-decoration.png');
+    background: url('/static/img/footer-decoration.webp');
     background-repeat: no-repeat;
     background-position: center;
     min-height: 500px;

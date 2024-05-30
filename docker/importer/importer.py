@@ -451,7 +451,9 @@ class Importer:
     # This makes its use in the concurrent map later faster
     listed_blobs = list(
         storage_client.list_blobs(
-            source_repo.bucket, prefix=source_repo.directory_path))
+            source_repo.bucket,
+            prefix=source_repo.directory_path,
+            retry=retry.DEFAULT_RETRY))
 
     import_failure_logs = []
 
@@ -580,7 +582,9 @@ class Importer:
                       source_repo.directory_path)))
     listed_blobs = list(
         storage_client.list_blobs(
-            source_repo.bucket, prefix=source_repo.directory_path))
+            source_repo.bucket,
+            prefix=source_repo.directory_path,
+            retry=retry.DEFAULT_RETRY))
 
     import_failure_logs = []
 

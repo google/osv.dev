@@ -198,6 +198,11 @@ def list_vulnerabilities():
   query = query.strip()
   page = int(request.args.get('page', 1))
   ecosystem = request.args.get('ecosystem')
+
+  if page < 0:
+    args.pop('page', None)
+    return redirect(url_for(request.endpoint, **args))
+
   results = osv_query(query, page, False, ecosystem)
 
   # Fetch ecosystems by default. As an optimization, skip when rendering page

@@ -56,8 +56,6 @@ The definition of “impact” will vary depending on how fine-grained the infor
 
 ### Identifiable
 
-#### Properties
-
 * Where relevant, an `alias` to the equivalent CVE record is present
 * Where an OSV record consolidates multiple vulnerabilities in another ecosystem (or universe), multiple `related` identifiers are present
 

@@ -33,8 +33,9 @@ As a prerequisite, it is assumed that a record passes [JSON Schema validation](#
 
 A high quality OSV record allows a consumer of that record to be able to answer the following questions in an **automated** way, at scale:
 
-* “Does this vulnerability, as described, impact me?
-  * “What version do I need to upgrade to for it not to impact me?” 
+* "Does this vulnerability, as described, impact me?"
+  * "What version do I need to upgrade to for it not to impact me?"
+  * "Should I replace or remove this (potentially orphaned) package with known unfixed vulnerabilities?"
 
 The definition of “impact” will vary depending on how fine-grained the information available is (i.e. package-level or symbol-level for software library packages). Package-level precision is the minimum standard.
 

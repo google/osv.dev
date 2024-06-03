@@ -10,10 +10,10 @@ resource "google_app_engine_application" "app" {
 
 # Datastore
 resource "google_firestore_database" "datastore" {
-  project = var.project_id
-  name = "(default)"
+  project     = var.project_id
+  name        = "(default)"
   location_id = "us-west2"
-  type = "DATASTORE_MODE"
+  type        = "DATASTORE_MODE"
 
   lifecycle {
     prevent_destroy = true

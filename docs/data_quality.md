@@ -16,12 +16,12 @@ Deferred to a future iteration: validating the existence of vulnerable functions
 
 ## Audience
 
-1. Current and aspiring OSV record producers
+1. OSV record producers
 2. Downstream OSV.dev record consumers
 
 ## Rationale
 
-OSV.dev seeks to be an comprehensive, accurate and timely database of known vulnerabilities (that is highly automation friendly). In order to meet this accuracy goal, a quality bar needs to be both defined and sustainably enforced.
+OSV.dev seeks to be a comprehensive, accurate and timely database of known vulnerabilities that is highly automation friendly. In order to meet this accuracy goal, a quality bar needs to be both defined and sustainably enforced.
 
 ## Properties of a High Quality OSV Record
 
@@ -39,26 +39,22 @@ A high quality OSV record allows a consumer of that record to be able to answer 
 
 The definition of “impact” will vary depending on how fine-grained the information available is (i.e. package-level or symbol-level for software library packages). Package-level precision is the minimum standard.
 
-#### Properties
-
 * for version and commit ranges
   * `affected[]`.`ranges[]`.`introduced` is defined
   * prefer `affected[]`.`ranges[]`.`fixed` over `affected[]`.`ranges[]`.`last_affected`
     * this minimizes false negatives
   * distinct ranges for `introduced..fixed` and/or `introduced..last_affected` *(i.e. introduced and fixed commits can't be the same)*
-  * values in `introduced` are before/less than `fixed`/`last_affected`
-* for version (`ECOSYSTEM` and `SEMVER`) ranges
-  * the versions exist in the specific package ecosystem
-* for commit (`GIT`) ranges
-  * the commits exist in the specified `repo` *(i.e. they are not from another GitHub fork)*
+  * values in `introduced` are before/less than `fixed`/`last_affected` according to the canonical package registry
+  * for version (`ECOSYSTEM` and `SEMVER`) ranges
+    * the versions exist in the specific package ecosystem
+  * for commit (`GIT`) ranges
+    * the commits exist in the specified `repo` *(i.e. they are not from another GitHub fork)*
 * the `package.ecosystem`, and a unique `identifier` prefix for it, are defined in the OSV Schema
-* the `package.name` exists within the defined `package.ecosystem, and is canonically encoded for unambiguity *(i.e. normalized)*
-* Package URLs in the `package.url` field in conform to the [specification](https://github.com/package-url/purl-spec)
-* `reference` URLs return a 2xx or 3xx response
+* the `package.name` exists within the defined `package.ecosystem`, and is canonically encoded to be unambiguous *(i.e. normalized)*
+* Package URLs in the `package.url` field conform to the [specification](https://github.com/package-url/purl-spec)
+* `reference` URLs return a 2xx or 3xx response at the time of publication
 
 ### Identifiable
-
-#### Properties
 
 * Where relevant, an `alias` to the equivalent CVE record is present
 * Where an OSV record consolidates multiple vulnerabilities in another ecosystem (or universe), multiple `related` identifiers are present

@@ -94,31 +94,6 @@ module "gclb" {
   url_map        = google_compute_url_map.website.id
 
   backends = {
-    appengine = {
-      groups = [
-        {
-          group = google_compute_region_network_endpoint_group.appengine_neg.id
-        }
-      ]
-      protocol   = "HTTPS"
-      enable_cdn = true
-      cdn_policy = {
-        cache_key_policy = {
-          include_host         = true
-          include_protocol     = true
-          include_query_string = true
-        }
-        signed_url_cache_max_age_sec = 0
-      }
-
-      iap_config = {
-        enable = false
-      }
-      log_config = {
-        enable = false
-      }
-    }
-
     cloudrun = {
       groups = [
         {
@@ -155,14 +130,6 @@ resource "google_compute_region_network_endpoint_group" "website_neg" {
   cloud_run {
     service = google_cloud_run_v2_service.website.name
   }
-}
-
-resource "google_compute_region_network_endpoint_group" "appengine_neg" {
-  project               = var.project_id
-  name                  = "appengine-neg"
-  network_endpoint_type = "SERVERLESS"
-  region                = google_app_engine_application.app.location_id
-  app_engine {}
 }
 
 resource "google_compute_url_map" "website" {

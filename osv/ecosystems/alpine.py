@@ -28,7 +28,13 @@ from ..cache import cached
 
 
 class Alpine(Ecosystem):
-  """Alpine packages ecosystem"""
+  """
+  Alpine packages ecosystem
+  
+  Args:
+      alpine_release_ver: is used to configure which branch 
+      in alpines git repo is used for version enumeration
+  """
 
   # Use github mirror which supports more bandwidth.
   _APORTS_GIT_URL = 'https://github.com/alpinelinux/aports.git'
@@ -51,10 +57,12 @@ class Alpine(Ecosystem):
 
   @staticmethod
   def _process_git_log(output: str) -> list:
-    """Takes git log diff output,
-    finds all changes to pkgver and outputs that in an unsorted list
+    """
+    Takes git log diff output,
+    finds all changes to pkgver and pkgrel and outputs that in an unsorted list
     """
     all_versions = set()
+    # Filter out the relevant lines
     lines = [
         x for x in output.splitlines()
         if len(x) == 0 or x.startswith(Alpine._PKGVER_ALIASES) or
@@ -74,7 +82,8 @@ class Alpine(Ecosystem):
       return ver
 
     for line in lines:
-      if not line:
+      if not line:  # This line ends a commit block
+        # Don't add any versions until the entire commit block is finished
         if not current_ver or not current_rel:
           continue
 
@@ -88,6 +97,8 @@ class Alpine(Ecosystem):
                           current_ver, current_rel)
         continue
 
+      # Within a commit block, parse all lines and save it till the end
+      # of the block
       x_split = line.split('=', 1)
       if len(x_split) != 2:
         # Skip the occasional invalid versions
@@ -102,7 +113,7 @@ class Alpine(Ecosystem):
         current_rel = num
         continue
 
-    # Return unsorted list of versions
+    # Return unsorted list of versions (as it's converted from a set)
     return list(all_versions)
 
   def enumerate_versions(self,
@@ -111,6 +122,8 @@ class Alpine(Ecosystem):
                          fixed=None,
                          last_affected=None,
                          limits=None):
+    """We use Alpines aports git repository history to do version enum"""
+
     if config.work_dir is None:
       logging.error(
           "Tried to enumerate alpine version without workdir being set")
@@ -129,6 +142,8 @@ class Alpine(Ecosystem):
   @staticmethod
   def _get_versions(branch: str, package: str) -> typing.List[str]:
     """Get all versions for a package from aports repo"""
+
+    # Checkout the repo at the alpine version branch
     checkout_dir = os.path.join(config.work_dir, Alpine._GIT_REPO_PATH)
     repos.ensure_updated_checkout(
         Alpine._APORTS_GIT_URL, checkout_dir, branch=branch)
@@ -141,16 +156,22 @@ class Alpine(Ecosystem):
 
     relative_path = os.path.relpath(directories[0], checkout_dir)
 
-    regex_test = '\\|'.join([
-        '\\(' + x.removeprefix('+') + '\\)'
-        for x in Alpine._PKGVER_ALIASES + Alpine._PKGREL_ALIASES
-    ])
+    # Run git log -L to get a list of all changes to the package APKBUILD file
+    # Specifically changes to "pkgver=" and "pkgrel="
+    regex_test_versions = '\\|'.join(
+        ['\\(' + x.removeprefix('+') + '\\)' for x in Alpine._PKGVER_ALIASES])
 
+    regex_test_revisions = '\\|'.join(
+        ['\\(' + x.removeprefix('+') + '\\)' for x in Alpine._PKGREL_ALIASES])
+
+    # yapf: disable
+    # https://git-scm.com/docs/git-log/2.33.1#Documentation/git-log.txt--Lltstartgtltendgtltfilegt
     stdout_data = subprocess.check_output([
-        'git', 'log', '--oneline', '-L',
-        '/' + regex_test + '/,+1:' + relative_path
-    ],
-                                          cwd=checkout_dir).decode('utf-8')
+        'git', 'log', '--oneline',
+        '-L', '^/' + regex_test_versions  + '/,+1:' + relative_path,
+        '-L', '^/' + regex_test_revisions + '/,+1:' + relative_path
+    ], cwd=checkout_dir).decode('utf-8')
+    # yapf: enable
 
     versions = Alpine._process_git_log(stdout_data)
     return versions

@@ -15,7 +15,7 @@
 FROM google/cloud-sdk:449.0.0-alpine
 
 RUN apk --no-cache add py3-pip \
-    && pip install pipenv==2023.6.12
+    && pip install pipenv==2023.12.1
 
 RUN mkdir /src
 WORKDIR /src

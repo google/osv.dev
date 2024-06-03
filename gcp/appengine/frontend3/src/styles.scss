@@ -609,6 +609,22 @@ mwc-icon-button.mdc-data-table__sort-icon-button {
       font-size: $osv-heading-size-mobile;
     }
   }
+
+  .vulnerability-title {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+
+    .vulnerability-improvement-link {
+      font-family: $osv-heading-font-family;
+    }
+
+    @media (max-width: $osv-mobile-breakpoint) {
+      .vulnerability-improvement-link {
+        display: none;
+      }
+    }
+  }
 }
 
 dl.vulnerability-details,
@@ -833,7 +849,6 @@ dl.vulnerability-details,
     .vuln-ecosystem {
       display: inline;
       font-weight: bold;
-      text-transform: uppercase;
     }
 
     .vuln-name {
@@ -869,7 +884,6 @@ dl.vulnerability-details,
     .vuln-ecosystem {
       display: block;
       font-weight: bold;
-      text-transform: uppercase;
     }
 
     .vuln-name {
@@ -896,6 +910,11 @@ dl.vulnerability-details,
     padding: 0;
     font-family: $osv-heading-font-family;
   }
+}
+
+.showmore {
+	cursor: pointer;
+	font-weight: bold;
 }
 
 /** Home page */

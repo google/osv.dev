@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
+	"github.com/google/osv/vulnfeeds/cves"
 	"golang.org/x/exp/maps"
 )
 
@@ -303,11 +304,33 @@ func TestValidRepo(t *testing.T) {
 			repoURL:        "https://github.com/andrewpollock/mybogusrepo",
 			expectedResult: false,
 		},
+		{
+			description:    "Legitimate repository with no tags and two branches",
+			repoURL:        "https://github.com/202ecommerce/security-advisories",
+			expectedResult: false,
+		},
+		{
+			description:    "Legitimate repository with no tags and one branch",
+			repoURL:        "https://github.com/active-labs/Advisories",
+			expectedResult: false,
+		},
 	}
 	for _, tc := range tests {
-		got := ValidRepo(tc.repoURL)
+		got := ValidRepoAndHasUsableRefs(tc.repoURL)
 		if diff := cmp.Diff(got, tc.expectedResult); diff != "" {
 			t.Errorf("test %q: ValidRepo(%q) was incorrect: %s", tc.description, tc.repoURL, diff)
 		}
+	}
+}
+
+func TestInvalidRepos(t *testing.T) {
+	redundantRepos := []string{}
+	for _, repo := range cves.InvalidRepos {
+		if !ValidRepoAndHasUsableRefs(repo) {
+			redundantRepos = append(redundantRepos, repo)
+		}
+	}
+	if diff := cmp.Diff([]string{}, redundantRepos); diff != "" {
+		t.Errorf("These redundant repos are in InvalidRepos: %s", diff)
 	}
 }

@@ -36,7 +36,7 @@ See our blog posts for more details:
 
 The OSV schema and OSV.dev can be used by both:
 
-1. Open source consumers: By querying [OSV.dev's API](./api/) and using our tooling to find known vulnerabilities in their dependencies.
+1. Open source consumers: By querying [OSV.dev's API](../api/) and using our tooling to find known vulnerabilities in their dependencies.
 2. Vulnerability database producers: By making the database available in the OSV format.
 
 ## Why a new format to describe vulnerability?
@@ -66,7 +66,7 @@ present (but empty) in the [data exports](#is-the-database-available-to-download
 
 ## How do I use OSV as an open source user?
 
-OSV.dev provides an [easy-to-use API](./api/) for querying against the aggregated database of vulnerabilities.
+OSV.dev provides an [easy-to-use API](../api/) for querying against the aggregated database of vulnerabilities.
 
 [Command line tooling](https://github.com/google/osv-scanner) is also available for vulnerability scanning of SBOMs, language manifests, and container images.
 
@@ -80,7 +80,7 @@ Vulnerability databases can also benefit from easier interchange and vulnerabili
 
 Yes!
 
-The database in available in a GCS bucket maintained by OSV: [gs://osv-vulnerabilities](https://osv-vulnerabilities.storage.googleapis.com/) (also [publicly browseable via the Google Cloud Console](https://console.cloud.google.com/storage/browser/osv-vulnerabilities) with a login)
+The database in available in a GCS bucket maintained by OSV: [gs://osv-vulnerabilities](https://storage.googleapis.com/osv-vulnerabilities/index.html) (also [publicly browseable via the Google Cloud Console](https://console.cloud.google.com/storage/browser/osv-vulnerabilities) with a login)
 
 More information about how to download the database is available [here](data.md#data-dumps).
 
@@ -111,3 +111,23 @@ If you work on a project (like a Linux distribution) and would like to contribut
 ## Is the API rate limited?
 
 No. Currently there is not a limit on the API.
+
+## I've found something wrong with the data
+
+Data quality is very important to us. Please remember that OSV.dev is an
+aggregator of OSV records from a [variety of
+sources](https://github.com/google/osv.dev/blob/master/source.yaml) and the most
+appropriate place to correct the data is at the source.
+
+We prefer to avoid needing to act as a broker between downstream consumers of
+the data and upstream sources, as this adds limited value, and only adds delays.
+
+Where available, a human-friendly link to the authoritative record source is
+available as the `Source` field on the individual vulnerability page. You should
+follow the source-specific process for updating the data.
+
+For sources that are a Git repository, the `Import Source` field points to the
+authoritative source of the data, and you may be able to create a pull/merge
+request or file an issue against the repository.
+
+If you are not able to get satisfaction after dealing directly with the source of the data, please [file an issue](https://github.com/google/osv.dev/issues?q=is%3Aissue+is%3Aopen+label%3A%22data+quality%22) tagged with `data quality`.

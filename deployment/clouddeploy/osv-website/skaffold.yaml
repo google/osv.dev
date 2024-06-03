@@ -9,10 +9,10 @@ profiles:
     rawYaml:
     - run-staging.yaml
 
-# - name: prod
-#   manifests:
-#     rawYaml:
-#     - run-prod.yaml
+- name: prod
+  manifests:
+    rawYaml:
+    - run-prod.yaml
 
 deploy:
   cloudrun: {}

@@ -24,12 +24,12 @@ jobs:
     name: Publish
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v3 # v2.3.4
+    - uses: actions/checkout@a5ac7e51b41094c92402da3b24376905380afc29 # v4.1.6
       with:
         fetch-depth: 0
         submodules: recursive
     - name: Set up Python 3
-      uses: actions/setup-python@v4 # v2.2.2
+      uses: actions/setup-python@82c7e631bb3cdc910f68e0081d67478d79c6982d # v5.1.0
       with:
         python-version: 3.7
     - name: Install pypa/build
@@ -44,7 +44,7 @@ jobs:
         build
         --sdist --wheel --outdir dist/ .
     - name: Publish distribution to PyPI
-      uses: pypa/gh-action-pypi-publish@2f6f737ca5f74c637829c0f5c3acd0e29ea5e8bf # v1.8.11
+      uses: pypa/gh-action-pypi-publish@81e9d935c883d0b210363ab89cf05f3894778450 # v1.8.14
       with:
         password: ${{ secrets.PYPI_API_TOKEN }}
         packages_dir: dist/

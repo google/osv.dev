@@ -1399,7 +1399,7 @@ class UpdateTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
     self.mock_publish.assert_not_called()
 
   def test_update_alpine(self):
-    """Test updating debian."""
+    """Test updating alpine."""
     self.source_repo.ignore_git = False
     self.source_repo.versions_from_repo = False
     self.source_repo.detect_cherrypicks = False

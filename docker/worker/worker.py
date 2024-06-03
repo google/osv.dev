@@ -32,6 +32,7 @@ import google.cloud.exceptions
 from google.cloud import ndb
 from google.cloud import pubsub_v1
 from google.cloud import storage
+from google.cloud.storage import retry
 
 sys.path.append(os.path.dirname(os.path.realpath(__file__)))
 import osv
@@ -46,18 +47,6 @@ OSS_FUZZ_GIT_URL = 'https://github.com/google/oss-fuzz.git'
 TASK_SUBSCRIPTION = 'tasks'
 MAX_LEASE_DURATION = 6 * 60 * 60  # 4 hours.
 _TIMEOUT_SECONDS = 60
-
-# Large projects which take way too long to build.
-# TODO(ochang): Don't hardcode this.
-PROJECT_DENYLIST = {
-    'ffmpeg',
-    'imagemagick',
-    'libreoffice',
-}
-
-REPO_DENYLIST = {
-    'https://github.com/google/AFL.git',
-}
 
 _ECOSYSTEM_PUSH_TOPICS = {
     'PyPI': 'pypi-bridge',
@@ -372,10 +361,13 @@ class TaskRunner:
 
       current_sha256 = osv.sha256(vuln_path)
     elif source_repo.type == osv.SourceRepositoryType.BUCKET:
+      if deleted:
+        self._handle_deleted(source_repo, path)
+        return
       storage_client = storage.Client()
       bucket = storage_client.bucket(source_repo.bucket)
       try:
-        blob = bucket.blob(path).download_as_bytes()
+        blob = bucket.blob(path).download_as_bytes(retry=retry.DEFAULT_RETRY)
       except google.cloud.exceptions.NotFound:
         logging.exception('Bucket path %s does not exist.', path)
         return
@@ -418,7 +410,14 @@ class TaskRunner:
       self._do_update(source_repo, repo, vulnerability, path, original_sha256)
 
   def _handle_deleted(self, source_repo, vuln_path):
-    """Handle deleted source."""
+    """Handle existing bugs that have been subsequently deleted at their source.
+
+    Args:
+      source_repo: Source repository.
+      vuln_path: Path to vulnerability.
+
+    This marks the Bug as INVALID and as withdrawn.
+    """
     vuln_id = os.path.splitext(os.path.basename(vuln_path))[0]
     bug = osv.Bug.get_by_id(vuln_id)
     if not bug:
@@ -427,12 +426,13 @@ class TaskRunner:
 
     bug_source_path = osv.source_path(source_repo, bug)
     if bug_source_path != vuln_path:
-      logging.info('Request path %s does not match %s, not marking as invalid.',
-                   vuln_path, bug_source_path)
+      logging.error('Request path %s does not match %s, aborting.', vuln_path,
+                    bug_source_path)
       return
 
-    logging.info('Marking %s as invalid.', vuln_id)
+    logging.info('Marking %s as invalid and withdrawn.', vuln_id)
     bug.status = osv.BugStatus.INVALID
+    bug.withdrawn = datetime.datetime.utcnow()
     bug.put()
 
   def _push_new_ranges_and_versions(self, source_repo, repo, vulnerability,

@@ -1,9 +1,11 @@
 resources:
 - ../../base
+- debian-cve-convert.yaml
 patches:
 - path: workers.yaml
 - path: scaler.yaml
 - path: importer.yaml
+- path: importer-deleter.yaml
 - path: exporter.yaml
 - path: alpine-cve-convert.yaml
 - path: combine-to-osv.yaml

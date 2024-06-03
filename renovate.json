@@ -8,7 +8,10 @@
   "labels": ["dependencies"],
   "postUpdateOptions": ["gomodTidy"],
   "osvVulnerabilityAlerts": true,
-  "lockFileMaintenance": { "enabled": true },
+  "lockFileMaintenance": { 
+    "enabled": true,
+    "schedule": ["before 6am on wednesday"]
+  },
   "packageRules": [
     {
       "matchUpdateTypes": ["major"],
@@ -55,12 +58,21 @@
       "groupName": "tools"
     },
     {
+      "matchFileNames": ["deployment/terraform/**"],
+      "groupName": "terraform"
+    },
+    {
       "matchFileNames": [".github/**"],
       "groupName": "workflows"
     },
     {
       "matchFileNames": ["Pipfile"],
       "groupName": "osv-lib"
+    },
+    {
+      "matchDatasources": ["docker"],
+      "matchPackageNames": ["python"],
+      "enabled": false
     }
   ]
 }

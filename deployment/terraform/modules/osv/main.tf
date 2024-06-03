@@ -6,9 +6,6 @@ resource "google_app_engine_application" "app" {
   location_id   = "us-west2"
   database_type = "CLOUD_DATASTORE_COMPATIBILITY"
 
-  lifecycle {
-    prevent_destroy = true
-  }
 }
 
 # MemoryStore
@@ -147,6 +144,24 @@ resource "google_storage_bucket" "backups_bucket" {
     }
     condition {
       age = var.backups_bucket_retention_days
+    }
+  }
+  lifecycle {
+    prevent_destroy = true
+  }
+}
+
+resource "google_storage_bucket" "affected_commits_backups_bucket" {
+  project                     = var.project_id
+  name                        = var.affected_commits_backups_bucket
+  location                    = "US"
+  uniform_bucket_level_access = true
+  lifecycle_rule {
+    action {
+      type = "Delete"
+    }
+    condition {
+      age = var.affected_commits_backups_bucket_retention_days
     }
   }
   lifecycle {

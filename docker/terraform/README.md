@@ -18,10 +18,10 @@ steps:
 ```
 
 ## Updating Terraform Version
-`_TERRAFORM_VERSION` is defined in `cloudbuild.yaml`. Currently version 1.3.8
+`_TERRAFORM_VERSION` is defined in `cloudbuild.yaml`. Currently version 1.5.7
 
 This can be modified in place, or set in Cloud Build CLI:
 ```
 gcloud builds submit --project=oss-vdb --config=cloudbuild.yaml \
-  --substitutions=_TERRAFORM_VERSION="1.3.8"
+  --substitutions=_TERRAFORM_VERSION="1.5.7"
 ```

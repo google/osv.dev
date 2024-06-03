@@ -35,7 +35,7 @@ RUN curl -sS https://www.python.org/ftp/python/${PYTHON_VERSION}/Python-${PYTHON
     make -j && \
     make install && \
     rm -rf /tmp/Python-${PYTHON_VERSION}
-RUN pip3 install pipenv==2023.6.12
+RUN pip3 install pipenv==2023.12.1
 
 # Install Docker.
 # Pin the version to an older one due to gVisor incompatibilities.

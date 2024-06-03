@@ -16,6 +16,7 @@ supports an arbitrary number of vulnerability IDs on the command line.
 
 from google.cloud import datastore
 from google.cloud import storage
+from google.cloud.storage import retry
 from google.cloud.datastore.query import PropertyFilter
 
 import argparse
@@ -23,6 +24,7 @@ import os
 import functools
 
 MAX_BATCH_SIZE = 500
+MAX_QUERY_SIZE = 30
 
 
 class UnexpectedSituation(Exception):
@@ -112,7 +114,7 @@ def reset_object_creation(bucket_name: str,
   bucket = gcs_client.bucket(bucket_name)
   blob = bucket.blob(blob_name)
   blob.download_to_filename(local_tmp_file)
-  blob.upload_from_filename(local_tmp_file)
+  blob.upload_from_filename(local_tmp_file, retry=retry.DEFAULT_RETRY)
   os.unlink(local_tmp_file)
 
 
@@ -120,7 +122,10 @@ def main() -> None:
   parser = argparse.ArgumentParser(
       description="Trigger the reimport of individual GCS-sourced records")
   parser.add_argument(
-      "bugs", action="append", nargs="+", help="The bug IDs to operate on")
+      "bugs",
+      action="append",
+      nargs="+",
+      help=f"The bug IDs to operate on ({MAX_QUERY_SIZE} at most)")
   parser.add_argument(
       "--dry-run",
       action=argparse.BooleanOptionalAction,
@@ -146,6 +151,10 @@ def main() -> None:
       default="/tmp",
       help="Local directory to copy to from GCS")
   args = parser.parse_args()
+
+  if len(args.bugs[0]) > MAX_QUERY_SIZE:
+    parser.error(f"Only {MAX_QUERY_SIZE} bugs can be supplied. "
+                 f"Try running with xargs -n {MAX_QUERY_SIZE}")
 
   ds_client = datastore.Client(project=args.project)
   url_base = url_for_project(args.project)

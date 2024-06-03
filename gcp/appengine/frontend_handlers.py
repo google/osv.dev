@@ -17,13 +17,14 @@ import json
 import os
 import math
 import re
+import logging
 
 from flask import abort
 from flask import current_app
 from flask import Blueprint
 from flask import make_response
 from flask import redirect
-from flask import render_template
+from flask import render_template, render_template_string
 from flask import request
 from flask import url_for
 from flask import send_from_directory
@@ -38,6 +39,7 @@ import osv
 import rate_limiter
 import source_mapper
 import utils
+from werkzeug import exceptions
 
 blueprint = Blueprint('frontend_handlers', __name__)
 
@@ -167,6 +169,11 @@ def docs():
   return redirect('https://google.github.io/osv.dev')
 
 
+@blueprint.route('/ecosystems')
+def ecosystems():
+  return redirect('https://osv-vulnerabilities.storage.googleapis.com/ecosystems.txt')  # pylint: disable=line-too-long
+
+
 _LIST_ARGS = ['q', 'ecosystem', 'page']
 
 
@@ -191,6 +198,11 @@ def list_vulnerabilities():
   query = query.strip()
   page = int(request.args.get('page', 1))
   ecosystem = request.args.get('ecosystem')
+
+  if page < 0:
+    args.pop('page', None)
+    return redirect(url_for(request.endpoint, **args))
+
   results = osv_query(query, page, False, ecosystem)
 
   # Fetch ecosystems by default. As an optimization, skip when rendering page
@@ -300,7 +312,10 @@ def add_source_info(bug, response):
   response['source'] = source_repo.link + source_path
   response['source_link'] = response['source']
   if source_repo.human_link:
-    response['human_source_link'] = source_repo.human_link + bug.id()
+    bug_ecosystems = bug.ecosystem
+    bug_id = bug.id()
+    response['human_source_link'] = render_template_string(
+        source_repo.human_link, ECOSYSTEMS=bug_ecosystems, BUG_ID=bug_id)
 
 
 def _commit_to_link(repo_url, commit):
@@ -341,8 +356,8 @@ def osv_get_ecosystem_counts_cached():
 def osv_get_ecosystem_counts() -> dict[str, int]:
   """Get count of vulnerabilities per ecosystem."""
   counts = {}
-  ecosystems = osv_get_ecosystems()
-  for ecosystem in ecosystems:
+  ecosystem_names = osv_get_ecosystems()
+  for ecosystem in ecosystem_names:
     if ':' in ecosystem:
       # Count by the base ecosystem index. Otherwise we'll overcount as a
       # single entry may refer to multiple sub-ecosystems.
@@ -587,3 +602,9 @@ def list_packages(vuln_affected: list[dict]):
           packages.append(parsed_scheme)
 
   return packages
+
+
+@blueprint.app_errorhandler(404)
+def not_found_error(error: exceptions.HTTPException):
+  logging.info('Handled %s - Path attempted: %s', error, request.path)
+  return render_template('404.html'), 404

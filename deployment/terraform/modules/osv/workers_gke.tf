@@ -15,7 +15,6 @@ resource "google_container_cluster" "workers" {
   # We need to define this for private clusters, but all fields are optional.
   ip_allocation_policy {}
 
-  provider = google-beta
   addons_config {
     gce_persistent_disk_csi_driver_config {
       enabled = true

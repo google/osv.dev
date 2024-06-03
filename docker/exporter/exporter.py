@@ -17,13 +17,13 @@ import argparse
 import concurrent.futures
 import logging
 import os
-import shutil
 import tempfile
 import zipfile
 from typing import List
 
 from google.cloud import ndb
 from google.cloud import storage
+from google.cloud.storage import retry
 
 import osv
 import osv.logs
@@ -38,30 +38,30 @@ ECOSYSTEMS_FILE = 'ecosystems.txt'
 class Exporter:
   """Exporter."""
 
-  def __init__(self, work_dir, export_bucket):
+  def __init__(self, work_dir, export_bucket, ecosystem):
     self._work_dir = work_dir
     self._export_bucket = export_bucket
+    self._ecosystem = ecosystem
 
   def run(self):
     """Run exporter."""
-    query = osv.Bug.query(projection=[osv.Bug.ecosystem], distinct=True)
-    ecosystems = [bug.ecosystem[0] for bug in query if bug.ecosystem]
-
-    for ecosystem in ecosystems:
+    if self._ecosystem == "list":
+      query = osv.Bug.query(projection=[osv.Bug.ecosystem], distinct=True)
+      ecosystems = [bug.ecosystem[0] for bug in query if bug.ecosystem]
       with tempfile.TemporaryDirectory() as tmp_dir:
-        self._export_ecosystem_to_bucket(ecosystem, tmp_dir)
-
-    with tempfile.TemporaryDirectory() as tmp_dir:
-      self._export_ecosystem_list_to_bucket(ecosystems, tmp_dir)
+        self._export_ecosystem_list_to_bucket(ecosystems, tmp_dir)
+    else:
+      with tempfile.TemporaryDirectory() as tmp_dir:
+        self._export_ecosystem_to_bucket(self._ecosystem, tmp_dir)
 
   def upload_single(self, bucket, source_path, target_path):
-    """Upload a single file to a bucket."""
+    """Upload a single file to a GCS bucket."""
     logging.info('Uploading %s', target_path)
     try:
       blob = bucket.blob(target_path)
-      blob.upload_from_filename(source_path)
+      blob.upload_from_filename(source_path, retry=retry.DEFAULT_RETRY)
     except Exception as e:
-      logging.error('Failed to export: %s', e)
+      logging.exception('Failed to export: %s', e)
 
   def _export_ecosystem_list_to_bucket(self, ecosystems: List[str],
                                        tmp_dir: str):
@@ -83,8 +83,19 @@ class Exporter:
 
     self.upload_single(bucket, ecosystems_file_path, ECOSYSTEMS_FILE)
 
-  def _export_ecosystem_to_bucket(self, ecosystem, tmp_dir):
-    """Export ecosystem vulns to bucket."""
+  def _export_ecosystem_to_bucket(self, ecosystem: str, tmp_dir: str):
+    """Export the vulnerabilities in an ecosystem to GCS.
+
+    Args:
+      ecosystem: the ecosystem name
+      tmp_dir: temporary directory for scratch
+
+    This simultaneously exports every Bug for the given ecosystem to individual
+    files in the scratch filesystem, and a zip file in the scratch filesystem.
+
+    At the conclusion of this export, all of the files in the scratch filesystem
+    (including the zip file) are uploaded to the GCS bucket.
+    """
     logging.info('Exporting vulnerabilities for ecosystem %s', ecosystem)
     storage_client = storage.Client()
     bucket = storage_client.get_bucket(self._export_bucket)
@@ -93,7 +104,8 @@ class Exporter:
     with zipfile.ZipFile(zip_path, 'w', zipfile.ZIP_DEFLATED) as zip_file:
 
       @ndb.tasklet
-      def _exporter_file(bug):
+      def _export_to_file_and_zipfile(bug):
+        """Write out a bug record to both a single file and the zip file."""
         if not bug.public or bug.status == osv.BugStatus.UNPROCESSED:
           return
 
@@ -106,10 +118,12 @@ class Exporter:
         # standard/python/ndb/async#tasklets
         zip_file.write(file_path, os.path.basename(file_path))
 
-      osv.Bug.query(osv.Bug.ecosystem == ecosystem).map(_exporter_file)
+      osv.Bug.query(
+          osv.Bug.ecosystem == ecosystem).map(_export_to_file_and_zipfile)
 
     with concurrent.futures.ThreadPoolExecutor(
         max_workers=_EXPORT_WORKERS) as executor:
+      # Note: all.zip is included here
       for filename in os.listdir(tmp_dir):
         executor.submit(self.upload_single, bucket,
                         os.path.join(tmp_dir, filename),
@@ -124,19 +138,17 @@ def main():
       '--bucket',
       help='Bucket name to export to',
       default=DEFAULT_EXPORT_BUCKET)
+  parser.add_argument(
+      '--ecosystem',
+      required=True,
+      help='Ecosystem to upload, pass the value "list" ' +
+      'to export the ecosystem.txt file')
   args = parser.parse_args()
 
   tmp_dir = os.path.join(args.work_dir, 'tmp')
-  # Temp files are on the persistent local SSD,
-  # and they do not get removed when GKE sends a SIGTERM to stop the pod.
-  # Manually clear the tmp_dir folder of any leftover files
-  # TODO(michaelkedar): use an ephemeral disk for temp storage.
-  if os.path.exists(tmp_dir):
-    shutil.rmtree(tmp_dir)
-  os.makedirs(tmp_dir, exist_ok=True)
   os.environ['TMPDIR'] = tmp_dir
 
-  exporter = Exporter(args.work_dir, args.bucket)
+  exporter = Exporter(args.work_dir, args.bucket, args.ecosystem)
   exporter.run()
 
 

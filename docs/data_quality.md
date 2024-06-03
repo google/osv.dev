@@ -47,10 +47,10 @@ The definition of “impact” will vary depending on how fine-grained the infor
     * this minimizes false negatives
   * distinct ranges for `introduced..fixed` and/or `introduced..last_affected` *(i.e. introduced and fixed commits can't be the same)*
   * values in `introduced` are before/less than `fixed`/`last_affected` according to the canonical package registry
-* for version (`ECOSYSTEM` and `SEMVER`) ranges
-  * the versions exist in the specific package ecosystem
-* for commit (`GIT`) ranges
-  * the commits exist in the specified `repo` *(i.e. they are not from another GitHub fork)*
+  * for version (`ECOSYSTEM` and `SEMVER`) ranges
+    * the versions exist in the specific package ecosystem
+  * for commit (`GIT`) ranges
+    * the commits exist in the specified `repo` *(i.e. they are not from another GitHub fork)*
 * the `package.ecosystem`, and a unique `identifier` prefix for it, are defined in the OSV Schema
 * the `package.name` exists within the defined `package.ecosystem, and is canonically encoded for unambiguity *(i.e. normalized)*
 * Package URLs in the `package.url` field in conform to the [specification](https://github.com/package-url/purl-spec)

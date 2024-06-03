@@ -21,7 +21,7 @@ Deferred to a future iteration: validating the existence of vulnerable functions
 
 ## Rationale
 
-OSV.dev seeks to be an comprehensive, accurate and timely database of known vulnerabilities (that is highly automation friendly). In order to meet this accuracy goal, a quality bar needs to be both defined and sustainably enforced.
+OSV.dev seeks to be a comprehensive, accurate and timely database of known vulnerabilities that is highly automation friendly. In order to meet this accuracy goal, a quality bar needs to be both defined and sustainably enforced.
 
 ## Properties of a High Quality OSV Record
 

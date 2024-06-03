@@ -27,7 +27,7 @@ OSV.dev seeks to be an comprehensive, accurate and timely database of known vuln
 
 ### Valid
 
-As a prerequisite, it is assumed that a record passes [JSON Schema validation](#appendix-a-osv-schema-validation) for the version of the OSV Schema it declares itself to comply with in the `schema_version` field, or 1.0.0 if it does not. It is also assumed that the vulnerability discussed in the OSV record is valid and affects the software described.
+As a prerequisite, it is assumed that a record passes [JSON Schema validation](#appendix-a-osv-schema-validation) for the version of the [OSV Schema](https://ossf.github.io/osv-schema/) it declares itself to comply with in the `schema_version` field, or 1.0.0 if it does not. It is also assumed that the vulnerability discussed in the OSV record is valid and affects the software described.
 
 ### Precise
 

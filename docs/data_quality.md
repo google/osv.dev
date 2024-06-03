@@ -54,7 +54,7 @@ The definition of “impact” will vary depending on how fine-grained the infor
 * the `package.ecosystem`, and a unique `identifier` prefix for it, are defined in the OSV Schema
 * the `package.name` exists within the defined `package.ecosystem`, and is canonically encoded to be unambiguous *(i.e. normalized)*
 * Package URLs in the `package.url` field conform to the [specification](https://github.com/package-url/purl-spec)
-* `reference` URLs return a 2xx or 3xx response
+* `reference` URLs return a 2xx or 3xx response at the time of publication
 
 ### Identifiable
 

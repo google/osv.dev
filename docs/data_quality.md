@@ -39,8 +39,6 @@ A high quality OSV record allows a consumer of that record to be able to answer 
 
 The definition of “impact” will vary depending on how fine-grained the information available is (i.e. package-level or symbol-level for software library packages). Package-level precision is the minimum standard.
 
-#### Properties
-
 * for version and commit ranges
   * `affected[]`.`ranges[]`.`introduced` is defined
   * prefer `affected[]`.`ranges[]`.`fixed` over `affected[]`.`ranges[]`.`last_affected`

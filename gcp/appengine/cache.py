@@ -80,7 +80,8 @@ def smart_cache(
                                                      _should_refresh_suffix)
       future = _future_map.get(key)
       if should_refresh_cached_value and (future is None or future.done()):
-        # Store the future to make sure it executes. (Dropped futures are not executed)
+        # Store the future to make sure it executes.
+        # (Dropped futures are not executed)
         # Also for reference to prevent queueing up multiple updates
         _future_map[key] = _executor_map[key].submit(update_func)
 

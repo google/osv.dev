@@ -16,7 +16,7 @@ Deferred to a future iteration: validating the existence of vulnerable functions
 
 ## Audience
 
-1. Current and aspiring OSV record producers
+1. OSV record producers
 2. Downstream OSV.dev record consumers
 
 ## Rationale

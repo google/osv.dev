@@ -53,7 +53,7 @@ The definition of “impact” will vary depending on how fine-grained the infor
     * the commits exist in the specified `repo` *(i.e. they are not from another GitHub fork)*
 * the `package.ecosystem`, and a unique `identifier` prefix for it, are defined in the OSV Schema
 * the `package.name` exists within the defined `package.ecosystem`, and is canonically encoded to be unambiguous *(i.e. normalized)*
-* Package URLs in the `package.url` field in conform to the [specification](https://github.com/package-url/purl-spec)
+* Package URLs in the `package.url` field conform to the [specification](https://github.com/package-url/purl-spec)
 * `reference` URLs return a 2xx or 3xx response
 
 ### Identifiable

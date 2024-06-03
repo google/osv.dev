@@ -10,7 +10,7 @@ Describe the “good enough” OSV record that will be imported by OSV.dev
 
 ### Out of scope
 
-This does not discuss the problem of record bit rot over time, after initial successful import. The problem of continuous revalidation and treatment of records that have been successfully imported will be dealt with separately in .
+This does not discuss the problem of record bit rot over time, after initial successful import. The problem of continuous revalidation and treatment of records that have been successfully imported will be dealt with separately in the companion to this, *Managing the Perishability of OSV Records*.
 
 Deferred to a future iteration: validating the existence of vulnerable functions in the `ecosystem_specific` field, if supplied.
 

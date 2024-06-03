@@ -33,7 +33,7 @@ WORKDIR /osv/gcp/appengine
 COPY setup.py Pipfile* README.md /osv/
 COPY osv /osv/osv
 COPY gcp/appengine/Pipfile* ./
-RUN pip3 install -U pipenv==2023.6.12 && python3 -m pipenv install --deploy --system
+RUN pip3 install -U pipenv==2023.12.1 && python3 -m pipenv install --deploy --system
 
 # Website Python code
 COPY gcp/appengine/*.py ./

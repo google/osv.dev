@@ -349,7 +349,8 @@ def osv_get_ecosystems():
 def osv_get_ecosystem_counts_cached():
   """Get count of vulnerabilities per ecosystem, cached"""
   # Check if we're already in ndb context, if not, put us in one
-  # We can sometimes not be in ndb context because caching runs in a separate thread
+  # We can sometimes not be in ndb context because caching
+  # runs in a separate thread
   if ndb.get_context(raise_context_error=False) is None:
     # Make sure this ndb.Client is the same as the one defined in main.py
     with ndb.Client().context():

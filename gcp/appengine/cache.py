@@ -46,14 +46,14 @@ def smart_cache(
   """
   The decorated function will be cached with the given key. 
 
-  If the decorated function is called any time after half the timeout of the cache,
-  the cached value will still be returned, but the cache will be refreshed in an 
-  asynchronous background thread.
+  If the decorated function is called any time after half the timeout 
+  of the cache, the cached value will still be returned, but the cache 
+  will be refreshed in an asynchronous background thread.
 
   Currently this decorator does not support differing arguments.
   """
   if key in _executor_map:
-    raise Exception('key already exists')
+    raise ValueError('key already exists')
 
   # Only require one background thread to run per cache key
   # since we check whether an existing update task is already running

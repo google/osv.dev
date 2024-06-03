@@ -1,7 +1,7 @@
 {
     "_meta": {
         "hash": {
-            "sha256": "0d89cfb43f148b64df865bfdf65579e84c441c83f19b0e80e2ab9b9f763934ba"
+            "sha256": "240619547f891be54f53c119bf3555fa120e4d6a61cd2b35d192968d5d7e563b"
         },
         "pipfile-spec": 6,
         "requires": {
@@ -307,12 +307,21 @@
             "markers": "python_version >= '3.7'",
             "version": "==8.1.7"
         },
+        "cvss": {
+            "hashes": [
+                "sha256:092dafc14f9f1c1ac09e25d0d38410e178cf0009479faecff7f585c968f21688",
+                "sha256:54789edd255d1bc26cc04919f5795e250e9ce2da33b2fc0e8e709f22cb88c5fc"
+            ],
+            "index": "pypi",
+            "version": "==3.1"
+        },
         "flask": {
             "hashes": [
                 "sha256:09c347a92aa7ff4a8e7f3206795f30d826654baf38b873d0744cd571ca609efc",
                 "sha256:f69fcd559dc907ed196ab9df0e48471709175e696d6e698dd4dbe940f96ce66b"
             ],
             "index": "pypi",
+            "markers": "python_version >= '3.8'",
             "version": "==2.3.3"
         },
         "flask-caching": {
@@ -321,15 +330,16 @@
                 "sha256:f02645a629a8c89800d96dc8f690a574a0d49dcd66c7536badc6d362ba46b716"
             ],
             "index": "pypi",
+            "markers": "python_version >= '3.7'",
             "version": "==2.1.0"
         },
         "flask-compress": {
             "hashes": [
-                "sha256:5d6efe3584c89516c3ab9d94adabe08c218517b957a9bd5cd0c3955dd3834c51",
-                "sha256:b7b66cd5d08fc46bbcc71561e13ca64321590b0ca4c172f8001bf5374f8f5c58"
+                "sha256:1128f71fbd788393ce26830c51f8b5a1a7a4d085e79a21a5cddf4c057dcd559b",
+                "sha256:ee96f18bf9b00f2deb4e3406ca4a05093aa80e2ef0578525a3b4d32ecdff129d"
             ],
             "index": "pypi",
-            "version": "==1.15"
+            "version": "==1.13"
         },
         "google-api-core": {
             "extras": [
@@ -348,6 +358,7 @@
                 "sha256:d452ad095688cd52bae0ad6fafe027f6a6d6f560e810fec20914e17a09526415"
             ],
             "index": "pypi",
+            "markers": "python_version >= '3.7'",
             "version": "==2.29.0"
         },
         "google-cloud-appengine-logging": {
@@ -388,6 +399,7 @@
                 "sha256:d93d347351240ddb14cfe201987a2d32cf9d7f478b8b2fabed3015b425b3274f"
             ],
             "index": "pypi",
+            "markers": "python_version >= '3.7'",
             "version": "==3.10.0"
         },
         "google-cloud-ndb": {
@@ -396,6 +408,7 @@
                 "sha256:a6a2f6c58bd14febb92c0e569ca6a4e1d14c4a70935c28f3681e33c67402428f"
             ],
             "index": "pypi",
+            "markers": "python_version >= '3.7'",
             "version": "==2.3.1"
         },
         "google-cloud-pubsub": {
@@ -404,9 +417,13 @@
                 "sha256:55a3602ec45bc09626604d712032288a8ee3566145cb83523cff908938f69a4b"
             ],
             "index": "pypi",
+            "markers": "python_version >= '3.7'",
             "version": "==2.21.1"
         },
         "googleapis-common-protos": {
+            "extras": [
+                "grpc"
+            ],
             "hashes": [
                 "sha256:27a2499c7e8aff199665b22741997e485eccc8645aa9176c7c988e6fae507945",
                 "sha256:27c5abdffc4911f28101e635de1533fb4cfd2c37fbaa9174587c799fac90aa87"
@@ -480,6 +497,7 @@
                 "sha256:62e1bfcb02025a1cd73732a2d33672d3e9d0df4d21c12c51e0bbcaf09bab742a"
             ],
             "index": "pypi",
+            "markers": "python_version >= '3.6'",
             "version": "==1.62.2"
         },
         "gunicorn": {
@@ -488,6 +506,7 @@
                 "sha256:4a0b436239ff76fb33f11c07a16482c521a7e09c1ce3cc293c2330afe01bec63"
             ],
             "index": "pypi",
+            "markers": "python_version >= '3.7'",
             "version": "==22.0.0"
         },
         "idna": {
@@ -512,6 +531,7 @@
                 "sha256:bc5dd2abb727a5319567b7a813e6a2e7318c39f4f487cfe6c89c6f9c7d25197d"
             ],
             "index": "pypi",
+            "markers": "python_version >= '3.7'",
             "version": "==3.1.4"
         },
         "jsonschema": {
@@ -536,6 +556,7 @@
                 "sha256:855bde5cbcceb9beda7c80efdf7f406c23e6079172c497fcfce22fdce998e892"
             ],
             "index": "pypi",
+            "markers": "python_version >= '3.5' and python_version < '4'",
             "version": "==2.4.13"
         },
         "markupsafe": {
@@ -602,6 +623,7 @@
                 "sha256:ffee1f21e5ef0d712f9033568f8344d5da8cc2869dbd08d87c84656e6a2d2f68"
             ],
             "index": "pypi",
+            "markers": "python_version >= '3.7'",
             "version": "==2.1.5"
         },
         "osv": {
@@ -614,6 +636,7 @@
                 "sha256:ef103e05f519cdc783ae24ea4e2e0f508a9c99b2d4969652eed6a2e1ea5bd522"
             ],
             "index": "pypi",
+            "markers": "python_version >= '3.6'",
             "version": "==21.3"
         },
         "proto-plus": {
@@ -786,6 +809,7 @@
                 "sha256:e2b03db868160ee4591de3cb90d40ebb50a90dd302138775937f6a42b7ed183c"
             ],
             "index": "pypi",
+            "markers": "python_version >= '3.7'",
             "version": "==4.6.0"
         },
         "referencing": {
@@ -802,6 +826,7 @@
                 "sha256:fc06670dd0ed212426dfeb94fc1b983d917c4f9847c863f313c9dfaaffb7c23c"
             ],
             "index": "pypi",
+            "markers": "python_version >= '3.8'",
             "version": "==2.32.2"
         },
         "rpds-py": {
@@ -939,6 +964,7 @@
                 "sha256:fc9645dc43e03e4d630d23143a04a7f947a9a3b5727cd535fdfe155a17cc48c8"
             ],
             "index": "pypi",
+            "markers": "python_version >= '3.8'",
             "version": "==3.0.3"
         },
         "whitenoise": {
@@ -1032,6 +1058,7 @@
                 "sha256:eed9c479d918a809deec23a4136f2b66091f035c849012acca3a9898d5f0938f"
             ],
             "index": "pypi",
+            "markers": "python_version >= '3.7'",
             "version": "==2022.12.19"
         },
         "platformdirs": {

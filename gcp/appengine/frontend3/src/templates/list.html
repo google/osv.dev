@@ -89,6 +89,8 @@
           hide_on_mobile=True) }}
           {{ table_header_cell('fixed', 'Fix', is_sortable=False, is_sorted=False, is_descending=False,
           hide_on_mobile=True) }}
+          {{ table_header_cell('severity-score', 'Severity score', is_sortable=True, is_sorted=False,
+          is_descending=False, hide_on_mobile=True) }}
         </div>
       </div>
       <div role="rowgroup" class="vuln-table-rows mdc-data-table__content">
@@ -135,6 +137,9 @@
               {%- else -%}
               <span class="tag fix-unavailable">No fix available</span>
               {%- endif -%}
+            </span>
+            <span role="cell" class="vuln-table-cell mdc-data-table__cell hide-on-mobile">
+              <span class="tag severity-{{ vulnerability.severity_rating }}">{{ vulnerability.severity_score }}</span>
             </span>
           </div>
           {%- endfor -%}

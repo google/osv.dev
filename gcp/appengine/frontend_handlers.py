@@ -31,6 +31,7 @@ from flask import send_from_directory
 from werkzeug.security import safe_join
 from werkzeug import exceptions
 from google.cloud import ndb
+from cvss import CVSS2, CVSS3, CVSS4
 
 import markdown2
 from urllib import parse
@@ -288,10 +289,47 @@ def bug_to_response(bug, detailed=True):
       'invalid': bug.status == osv.BugStatus.INVALID
   })
 
+  add_cvss_score(response)
+
   if detailed:
     add_links(response)
     add_source_info(bug, response)
   return response
+
+
+def add_cvss_score(bug):
+  """Add severity score where possible."""
+  severity_score = {}
+
+  for severity in bug.get('severity', []):
+    severity_type = severity.get('type')
+    score = severity.get('score')
+
+    if severity_type == 'CVSS_V2':
+      c = CVSS2(score)
+      priority = 0
+      rating = c.severities()[0]
+    elif severity_type == 'CVSS_V3':
+      c = CVSS3(score)
+      priority = 1
+      rating = c.severities()[0]
+    elif severity_type == 'CVSS_V4':
+      c = CVSS4(score)
+      priority = 2
+      rating = c.severity
+    else:
+      continue
+
+    existing_priority = severity_score.get('priority')
+
+    if existing_priority is None or existing_priority < priority:
+      severity_score['priority'] = priority
+      severity_score['score'] = c.base_score
+      severity_score['rating'] = rating
+
+  if severity_score.get('score') is not None:
+    bug['severity_score'] = severity_score['score']
+    bug['severity_rating'] = severity_score['rating'].lower()
 
 
 def add_links(bug):

@@ -22,6 +22,7 @@ requests = "==2.32.2"
 grpcio-status = "==1.62.2"
 gunicorn = "==22.0.0"
 whitenoise = "6.5.0"
+cvss = "*"
 
 [dev-packages]
 pipenv = "==2022.12.19"

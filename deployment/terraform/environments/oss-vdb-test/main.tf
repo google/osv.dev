@@ -18,6 +18,11 @@ module "osv_test" {
   esp_version    = "2.47.0"
 }
 
+import {
+  to = module.osv_test.google_firestore_database.datastore
+  id = "oss-vdb-test/(default)"
+}
+
 output "website_dns_records" {
   description = "DNS records that need to be created for the osv.dev website"
   value       = module.osv_test.website_dns_records

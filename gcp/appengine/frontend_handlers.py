@@ -352,7 +352,8 @@ def osv_get_ecosystem_counts_cached():
   # We can sometimes not be in ndb context because caching
   # runs in a separate thread
   if ndb.get_context(raise_context_error=False) is None:
-    # IMPORTANT: Ensure this ndb.Client remains consistent with the one defined in main.py
+    # IMPORTANT: Ensure this ndb.Client remains consistent 
+    # with the one defined in main.py
     with ndb.Client().context():
       return osv_get_ecosystem_counts()
 

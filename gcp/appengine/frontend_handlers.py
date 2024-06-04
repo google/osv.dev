@@ -224,7 +224,14 @@ def list_vulnerabilities():
 def vulnerability(vuln_id):
   """Vulnerability page."""
   vuln = osv_get_by_id(vuln_id)
-  return render_template('vulnerability.html', vulnerability=vuln)
+
+  if utils.is_prod():
+    api_url = 'api.osv.dev'
+  else:
+    api_url = 'api.test.osv.dev'
+
+  return render_template(
+      'vulnerability.html', vulnerability=vuln, api_url=api_url)
 
 
 @blueprint.route('/<potential_vuln_id>')
@@ -240,6 +247,28 @@ def vulnerability_redirector(potential_vuln_id):
 
   abort(404)
   return None
+
+
+@blueprint.route('/<potential_vuln_id>.json')
+@blueprint.route('/vulnerability/<potential_vuln_id>.json')
+def vulnerability_json_redirector(potential_vuln_id):
+  """Convenience redirector for /VULN-ID.json and /vulnerability/VULN-ID.json to
+  https://api.osv.dev/v1/vulns/VULN-ID.
+  """
+  if not _VALID_VULN_ID.match(potential_vuln_id):
+    abort(404)
+    return None
+
+  vuln = osv_get_by_id(potential_vuln_id)
+  if not vuln:
+    abort(404)
+    return None
+
+  if utils.is_prod():
+    api_url = 'api.osv.dev'
+  else:
+    api_url = 'api.test.osv.dev'
+  return redirect(f'https://{api_url}/v1/vulns/{potential_vuln_id}')
 
 
 def bug_to_response(bug, detailed=True):

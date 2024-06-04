@@ -28,7 +28,8 @@ from flask import render_template, render_template_string
 from flask import request
 from flask import url_for
 from flask import send_from_directory
-from werkzeug.utils import safe_join
+from werkzeug.security import safe_join
+from werkzeug import exceptions
 from google.cloud import ndb
 
 import markdown2
@@ -39,7 +40,6 @@ import osv
 import rate_limiter
 import source_mapper
 import utils
-from werkzeug import exceptions
 
 blueprint = Blueprint('frontend_handlers', __name__)
 
@@ -345,11 +345,18 @@ def osv_get_ecosystems():
                 key=str.lower)
 
 
-# TODO: Figure out how to skip cache when testing
-@cache.instance.cached(
-    timeout=24 * 60 * 60, key_prefix='osv_get_ecosystem_counts')
+@cache.smart_cache("osv_get_ecosystem_counts", timeout=24 * 60 * 60)
 def osv_get_ecosystem_counts_cached():
   """Get count of vulnerabilities per ecosystem, cached"""
+  # Check if we're already in ndb context, if not, put us in one
+  # We can sometimes not be in ndb context because caching
+  # runs in a separate thread
+  if ndb.get_context(raise_context_error=False) is None:
+    # IMPORTANT: Ensure this ndb.Client remains consistent
+    # with the one defined in main.py
+    with ndb.Client().context():
+      return osv_get_ecosystem_counts()
+
   return osv_get_ecosystem_counts()
 
 

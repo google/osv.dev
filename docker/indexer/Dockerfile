@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-FROM golang:1.22.3-alpine@sha256:7e788330fa9ae95c68784153b7fd5d5076c79af47651e992a3cdeceeb5dd1df0 AS GO_BUILD
+FROM golang:1.22.4-alpine@sha256:9d8429ee88687b18c0f681ce2ad60446c7a1a3472d455f031e2317802ca9fbc4 AS GO_BUILD
 WORKDIR /build
 
 # Cache dependencies in these steps

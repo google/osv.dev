@@ -192,7 +192,6 @@ func TestAddPkgInfo(t *testing.T) {
 			},
 		},
 	}
-
 	testPkgInfoCommitsMultiple := PackageInfo{
 		VersionInfo: cves.VersionInfo{
 			AffectedCommits: []cves.AffectedCommit{
@@ -204,11 +203,26 @@ func TestAddPkgInfo(t *testing.T) {
 			},
 		},
 	}
+	testPkgInfoEcoMultiple := PackageInfo{
+		PkgName:   "TestNameWithIntroduced",
+		Ecosystem: "TestEco",
+		VersionInfo: cves.VersionInfo{
+			AffectedVersions: []cves.AffectedVersion{
+				{
+					Introduced: "1.0.0-1",
+				},
+				{
+					Fixed: "1.2.3-4",
+				},
+			},
+		},
+	}
 	vuln.AddPkgInfo(testPkgInfoNameEco)         // This will end up in vuln.Affected[0]
 	vuln.AddPkgInfo(testPkgInfoPURL)            // This will end up in vuln.Affected[1]
 	vuln.AddPkgInfo(testPkgInfoCommits)         // This will end up in vuln.Affected[2]
 	vuln.AddPkgInfo(testPkgInfoHybrid)          // This will end up in vuln.Affected[3]
 	vuln.AddPkgInfo(testPkgInfoCommitsMultiple) // This will end up in vuln.Affected[4]
+	vuln.AddPkgInfo(testPkgInfoEcoMultiple) 	// This will end up in vuln.Affected[5]
 
 	t.Logf("Resulting vuln: %+v", vuln)
 
@@ -268,10 +282,20 @@ func TestAddPkgInfo(t *testing.T) {
 	}) {
 		t.Errorf("AddPkgInfo has not generated a correctly sorted range.")
 	}
-	if len(vuln.Affected[4].Ranges[0].Events) != 2 {
-		t.Errorf("AddPkgInfo has not correctly added distinct range events: %+v", vuln.Affected[4].Ranges)
-	}
 	// testPkgInfoCommits ^^^^^^^^^^^^^^^
+
+	// testPkgInfoCommitsMultiple vvvvvvvvvvvvv
+	if len(vuln.Affected[4].Ranges[0].Events) != 2 {
+		t.Errorf("AddPkgInfo has not correctly added distinct range events from commits: %+v", vuln.Affected[4].Ranges)
+	}
+	// testPkgInfoCommitsMultiple ^^^^^^^^^^^^^
+
+	// testPkgInfoEcoMultiple vvvvvvvvvvvvv
+	if len(vuln.Affected[5].Ranges[0].Events) != 2 {
+		t.Errorf("AddPkgInfo has not correctly added distinct range events from versions: %+v", vuln.Affected[5].Ranges)
+	}
+	// testPkgInfoEcoMultiple ^^^^^^^^^^^^^
+
 
 	for _, a := range vuln.Affected {
 		perRepoZeroIntroducedCommitHashCount := make(map[string]int)

@@ -210,8 +210,6 @@ func TestAddPkgInfo(t *testing.T) {
 			AffectedVersions: []cves.AffectedVersion{
 				{
 					Introduced: "1.0.0-1",
-				},
-				{
 					Fixed: "1.2.3-4",
 				},
 			},

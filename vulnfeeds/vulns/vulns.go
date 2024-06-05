@@ -278,12 +278,20 @@ func (v *Vulnerability) AddPkgInfo(pkgInfo PackageInfo) {
 		for _, av := range pkgInfo.VersionInfo.AffectedVersions {
 			if av.Introduced != "" {
 				hasIntroduced = true
+				versionRange.Events = append(versionRange.Events, Event{
+					Introduced: av.Introduced,
+				})
 			}
-			versionRange.Events = append(versionRange.Events, Event{
-				Introduced:   av.Introduced,
-				Fixed:        av.Fixed,
-				LastAffected: av.LastAffected,
-			})
+			if av.Fixed != "" {
+				versionRange.Events = append(versionRange.Events, Event{
+					Fixed: av.Fixed,
+				})
+			}
+			if av.LastAffected != "" {
+				versionRange.Events = append(versionRange.Events, Event{
+					LastAffected: av.LastAffected,
+				})
+			}
 		}
 
 		if !hasIntroduced {

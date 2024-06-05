@@ -485,7 +485,12 @@ class IntegrationTests(unittest.TestCase,
 
     self.assert_results_equal({'vulns': another_expected}, response.json())
 
-    expected_deb = [self._get('DLA-3203-1'), self._get('DSA-4921-1')]
+    expected_deb = [
+        self._get('CVE-2009-4487'),
+        self._get('CVE-2013-0337'),
+        self._get('DLA-3203-1'),
+        self._get('DSA-4921-1')
+    ]
 
     response = requests.post(
         _api() + _BASE_QUERY,

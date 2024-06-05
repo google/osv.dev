@@ -50,6 +50,15 @@ _WORD_CHARACTERS_OR_DASH = re.compile(r'^[+\w-]+$')
 _VALID_BLOG_NAME = _WORD_CHARACTERS_OR_DASH
 _VALID_VULN_ID = _WORD_CHARACTERS_OR_DASH
 _BLOG_CONTENTS_DIR = 'blog'
+_DEPS_BASE_URL = 'https://deps.dev'
+_OSV_TO_DEPS_ECOSYSTEMS_MAP = {
+    'npm': 'npm',
+    'Go': 'go',
+    'Maven': 'maven',
+    'PyPI': 'pypi',
+    'NuGet': 'nuget',
+    'crates.io': 'cargo'
+}
 
 if utils.is_prod():
   redis_host = os.environ.get('REDISHOST', 'localhost')
@@ -651,3 +660,34 @@ def list_packages(vuln_affected: list[dict]):
 def not_found_error(error: exceptions.HTTPException):
   logging.info('Handled %s - Path attempted: %s', error, request.path)
   return render_template('404.html'), 404
+
+
+@blueprint.app_template_filter('has_link_to_deps_dev')
+def has_link_to_deps_dev(ecosystem):
+  """
+  Check if a given ecosystem has a corresponding link in deps.dev.
+
+  Returns:
+      bool: True if the ecosystem has a corresponding link in deps.dev,
+            False otherwise.
+  """
+  return ecosystem in _OSV_TO_DEPS_ECOSYSTEMS_MAP
+
+
+@blueprint.app_template_filter('link_to_deps_dev')
+def link_to_deps_dev(package, ecosystem):
+  """
+  Generate a link to the deps.dev page for a given package in the specified
+  ecosystem.
+
+  Args:
+      package (str): The name of the package.
+      ecosystem (str): The ecosystem name.
+  Returns:
+      str or None: The URL to the deps.dev page for the package if the
+      ecosystem is supported, None otherwise.
+  """
+  system = _OSV_TO_DEPS_ECOSYSTEMS_MAP.get(ecosystem)
+  if not system:
+    return None
+  return f"{_DEPS_BASE_URL}/{system}/{package}"

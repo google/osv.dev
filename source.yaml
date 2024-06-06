@@ -63,6 +63,19 @@
   link: https://github.com/bitnami/vulndb/tree/main/
   editable: False
 
+- name: 'chainguard'
+  versions_from_repo: False
+  rest_api_url: 'https://packages.cgr.dev/chainguard/osv/all.json'
+  type: 2
+  ignore_patterns: ['propertyValue']
+  directory_path: 'chainguard/osv'
+  detect_cherrypicks: False
+  extension: '.json'
+  db_prefix: 'CGA-'
+  ignore_git: True
+  link: 'https://packages.cgr.dev/chainguard/osv/'
+  editable: False
+
 - name: curl
   versions_from_repo: False
   rest_api_url: https://curl.se/docs/vuln.json

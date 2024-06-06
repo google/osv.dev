@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-FROM golang:1.22.1-alpine@sha256:5a99b4049412cd34ad6b4e0c9527ae6beb9ae82d787b4bf3f4eff7aa13fc577a AS GO_BUILD
+FROM golang:1.22.4-alpine@sha256:9d8429ee88687b18c0f681ce2ad60446c7a1a3472d455f031e2317802ca9fbc4 AS GO_BUILD
 
 RUN mkdir /src
 WORKDIR /src

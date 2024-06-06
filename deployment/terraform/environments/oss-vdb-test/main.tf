@@ -13,8 +13,19 @@ module "osv_test" {
   affected_commits_backups_bucket                = "osv-test-affected-commits"
   affected_commits_backups_bucket_retention_days = 2
 
-  api_url     = "api.test.osv.dev"
-  esp_version = "2.47.0"
+  website_domain = "test.osv.dev"
+  api_url        = "api.test.osv.dev"
+  esp_version    = "2.47.0"
+}
+
+import {
+  to = module.osv_test.google_firestore_database.datastore
+  id = "oss-vdb-test/(default)"
+}
+
+output "website_dns_records" {
+  description = "DNS records that need to be created for the osv.dev website"
+  value       = module.osv_test.website_dns_records
 }
 
 
@@ -27,11 +38,11 @@ terraform {
   required_providers {
     google = {
       source  = "hashicorp/google"
-      version = "~> 5.18.0"
+      version = "~> 5.27.0"
     }
     google-beta = {
       source  = "hashicorp/google-beta"
-      version = "~> 5.18.0"
+      version = "~> 5.27.0"
     }
     external = {
       source  = "hashicorp/external"

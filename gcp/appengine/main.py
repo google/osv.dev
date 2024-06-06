@@ -52,18 +52,22 @@ def create_app():
   flask_app.register_blueprint(handlers.blueprint)
   flask_app.register_blueprint(frontend_handlers.blueprint)
   flask_app.config['TEMPLATES_AUTO_RELOAD'] = True
+  flask_app.config['COMPRESS_MIMETYPES'] = ['text/html']
 
+  flask_app.wsgi_app = ndb_wsgi_middleware(flask_app.wsgi_app)
+  flask_app.wsgi_app = WhiteNoise(
+      flask_app.wsgi_app,
+      root='dist/static/',
+      prefix='static',
+      max_age=60 * 60 * 24)
+
+  cache.instance.init_app(flask_app)
+  compress = Compress()
+  compress.init_app(flask_app)
   return flask_app
 
 
 app = create_app()
-app.wsgi_app = ndb_wsgi_middleware(app.wsgi_app)
-app.wsgi_app = WhiteNoise(
-    app.wsgi_app, root='dist/static/', prefix='static', max_age=60 * 60 * 24)
-cache.instance.init_app(app)
-app.config['COMPRESS_MIMETYPES'] = ['text/html']
-compress = Compress()
-compress.init_app(app)
 
 if __name__ == '__main__':
   app.run(host='127.0.0.1', port=8000, debug=False)

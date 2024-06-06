@@ -2,8 +2,10 @@ resources:
 - workers.yaml
 - scaler.yaml
 - importer.yaml
+- importer-deleter.yaml
 - exporter.yaml
 - alpine-cve-convert.yaml
+- debian-cve-convert.yaml
 - combine-to-osv.yaml
 - debian-convert.yaml
 - debian-first-version.yaml

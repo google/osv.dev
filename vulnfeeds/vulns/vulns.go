@@ -249,14 +249,18 @@ func (v *Vulnerability) AddPkgInfo(pkgInfo PackageInfo) {
 				hasAddedZeroIntroduced[ac.Repo] = true
 			}
 
-			entry.Events = append(entry.Events,
-				Event{
-					Introduced:   ac.Introduced,
-					Fixed:        ac.Fixed,
-					LastAffected: ac.LastAffected,
-					Limit:        ac.Limit,
-				},
-			)
+			if pkgInfo.VersionInfo.HasIntroducedCommits(ac.Repo) {
+				entry.Events = append(entry.Events, Event{Introduced: ac.Introduced})
+			}
+			if pkgInfo.VersionInfo.HasFixedCommits(ac.Repo) {
+				entry.Events = append(entry.Events, Event{Fixed: ac.Fixed})
+			}
+			if pkgInfo.VersionInfo.HasLastAffectedCommits(ac.Repo) {
+				entry.Events = append(entry.Events, Event{LastAffected: ac.LastAffected})
+			}
+			if pkgInfo.VersionInfo.HasLimitCommits(ac.Repo) {
+				entry.Events = append(entry.Events, Event{Limit: ac.Limit})
+			}
 			gitCommitRangesByRepo[ac.Repo] = entry
 		}
 
@@ -274,12 +278,20 @@ func (v *Vulnerability) AddPkgInfo(pkgInfo PackageInfo) {
 		for _, av := range pkgInfo.VersionInfo.AffectedVersions {
 			if av.Introduced != "" {
 				hasIntroduced = true
+				versionRange.Events = append(versionRange.Events, Event{
+					Introduced: av.Introduced,
+				})
 			}
-			versionRange.Events = append(versionRange.Events, Event{
-				Introduced:   av.Introduced,
-				Fixed:        av.Fixed,
-				LastAffected: av.LastAffected,
-			})
+			if av.Fixed != "" {
+				versionRange.Events = append(versionRange.Events, Event{
+					Fixed: av.Fixed,
+				})
+			}
+			if av.LastAffected != "" {
+				versionRange.Events = append(versionRange.Events, Event{
+					LastAffected: av.LastAffected,
+				})
+			}
 		}
 
 		if !hasIntroduced {

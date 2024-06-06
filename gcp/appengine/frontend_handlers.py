@@ -28,7 +28,8 @@ from flask import render_template, render_template_string
 from flask import request
 from flask import url_for
 from flask import send_from_directory
-from werkzeug.utils import safe_join
+from werkzeug.security import safe_join
+from werkzeug import exceptions
 from google.cloud import ndb
 
 import markdown2
@@ -39,7 +40,6 @@ import osv
 import rate_limiter
 import source_mapper
 import utils
-from werkzeug import exceptions
 
 blueprint = Blueprint('frontend_handlers', __name__)
 
@@ -169,6 +169,11 @@ def docs():
   return redirect('https://google.github.io/osv.dev')
 
 
+@blueprint.route('/ecosystems')
+def ecosystems():
+  return redirect('https://osv-vulnerabilities.storage.googleapis.com/ecosystems.txt')  # pylint: disable=line-too-long
+
+
 _LIST_ARGS = ['q', 'ecosystem', 'page']
 
 
@@ -193,6 +198,11 @@ def list_vulnerabilities():
   query = query.strip()
   page = int(request.args.get('page', 1))
   ecosystem = request.args.get('ecosystem')
+
+  if page < 0:
+    args.pop('page', None)
+    return redirect(url_for(request.endpoint, **args))
+
   results = osv_query(query, page, False, ecosystem)
 
   # Fetch ecosystems by default. As an optimization, skip when rendering page
@@ -214,7 +224,14 @@ def list_vulnerabilities():
 def vulnerability(vuln_id):
   """Vulnerability page."""
   vuln = osv_get_by_id(vuln_id)
-  return render_template('vulnerability.html', vulnerability=vuln)
+
+  if utils.is_prod():
+    api_url = 'api.osv.dev'
+  else:
+    api_url = 'api.test.osv.dev'
+
+  return render_template(
+      'vulnerability.html', vulnerability=vuln, api_url=api_url)
 
 
 @blueprint.route('/<potential_vuln_id>')
@@ -230,6 +247,28 @@ def vulnerability_redirector(potential_vuln_id):
 
   abort(404)
   return None
+
+
+@blueprint.route('/<potential_vuln_id>.json')
+@blueprint.route('/vulnerability/<potential_vuln_id>.json')
+def vulnerability_json_redirector(potential_vuln_id):
+  """Convenience redirector for /VULN-ID.json and /vulnerability/VULN-ID.json to
+  https://api.osv.dev/v1/vulns/VULN-ID.
+  """
+  if not _VALID_VULN_ID.match(potential_vuln_id):
+    abort(404)
+    return None
+
+  vuln = osv_get_by_id(potential_vuln_id)
+  if not vuln:
+    abort(404)
+    return None
+
+  if utils.is_prod():
+    api_url = 'api.osv.dev'
+  else:
+    api_url = 'api.test.osv.dev'
+  return redirect(f'https://{api_url}/v1/vulns/{potential_vuln_id}')
 
 
 def bug_to_response(bug, detailed=True):
@@ -302,10 +341,10 @@ def add_source_info(bug, response):
   response['source'] = source_repo.link + source_path
   response['source_link'] = response['source']
   if source_repo.human_link:
-    ecosystems = bug.ecosystem
+    bug_ecosystems = bug.ecosystem
     bug_id = bug.id()
     response['human_source_link'] = render_template_string(
-        source_repo.human_link, ECOSYSTEMS=ecosystems, BUG_ID=bug_id)
+        source_repo.human_link, ECOSYSTEMS=bug_ecosystems, BUG_ID=bug_id)
 
 
 def _commit_to_link(repo_url, commit):
@@ -335,19 +374,26 @@ def osv_get_ecosystems():
                 key=str.lower)
 
 
-# TODO: Figure out how to skip cache when testing
-@cache.instance.cached(
-    timeout=24 * 60 * 60, key_prefix='osv_get_ecosystem_counts')
+@cache.smart_cache("osv_get_ecosystem_counts", timeout=24 * 60 * 60)
 def osv_get_ecosystem_counts_cached():
   """Get count of vulnerabilities per ecosystem, cached"""
+  # Check if we're already in ndb context, if not, put us in one
+  # We can sometimes not be in ndb context because caching
+  # runs in a separate thread
+  if ndb.get_context(raise_context_error=False) is None:
+    # IMPORTANT: Ensure this ndb.Client remains consistent
+    # with the one defined in main.py
+    with ndb.Client().context():
+      return osv_get_ecosystem_counts()
+
   return osv_get_ecosystem_counts()
 
 
 def osv_get_ecosystem_counts() -> dict[str, int]:
   """Get count of vulnerabilities per ecosystem."""
   counts = {}
-  ecosystems = osv_get_ecosystems()
-  for ecosystem in ecosystems:
+  ecosystem_names = osv_get_ecosystems()
+  for ecosystem in ecosystem_names:
     if ':' in ecosystem:
       # Count by the base ecosystem index. Otherwise we'll overcount as a
       # single entry may refer to multiple sub-ecosystems.

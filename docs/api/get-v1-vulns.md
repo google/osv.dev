@@ -25,6 +25,8 @@ The only parameter you need for this API call is the vulnerability id, in order 
 
 `https://api.osv.dev/v1/vulns/{id}`
 
+Case Sensitivity: API requests are case-sensitive. Please ensure that you use the correct case for parameter names and values. For example, use 'GHSA' instead of 'ghsa'.
+
 ## Request sample
 
 ```bash

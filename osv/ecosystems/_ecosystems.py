@@ -55,6 +55,7 @@ _ecosystems = {
     # handled separately in get().
     'AlmaLinux': OrderingUnsupportedEcosystem(),
     'Alpine': OrderingUnsupportedEcosystem(),
+    'Chainguard': OrderingUnsupportedEcosystem(),
     'Debian': OrderingUnsupportedEcosystem(),
     'Photon OS': OrderingUnsupportedEcosystem(),
     'Rocky Linux': OrderingUnsupportedEcosystem(),

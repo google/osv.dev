@@ -53,18 +53,18 @@ def objname_for_bug(client: datastore.Client,
 
 def url_for_project(project: str) -> str:
   """Returns the base URL for referencing a vulnerability in the project.
-  
+
   Args:
     project: a string representing the project ID.
-    
+
   Returns:
     A string URL base for appending vulnerability IDs to.
-    
+
   Raises:
     UnexpectedSituation if called with an unsupported project ID.
   """
   if project == "oss-vdb-test":
-    return "https://oss-vdb-test.wl.r.appspot.com/"
+    return "https://test.osv.dev/"
   if project == "oss-vdb":
     return "https://osv.dev/"
   raise UnexpectedSituation(f"Unexpected project {project}")

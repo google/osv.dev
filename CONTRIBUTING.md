@@ -42,8 +42,8 @@ You must install:
 1.  [Pipenv](https://pipenv.pypa.io/en/latest/)
 1.  [Google Cloud SDK](https://cloud.google.com/sdk)
 1.  [Hugo](https://gohugo.io/installation/)
-1.  [Terraform](https://developer.hashicorp.com/terraform/downloads)
 1.  [Node JS](https://nodejs.org/) >= 18.17.x
+1.  [Terraform](https://developer.hashicorp.com/terraform/downloads) >= 1.5 (for infrastructure changes)
 
 Then you can set up the development environment by cloning the OSV repo and
 installing the Pipfile dependencies.

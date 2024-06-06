@@ -150,6 +150,15 @@ func (vi *VersionInfo) HasLastAffectedCommits(repo string) bool {
 	return false
 }
 
+func (vi *VersionInfo) HasLimitCommits(repo string) bool {
+	for _, ac := range vi.AffectedCommits {
+		if strings.EqualFold(ac.Repo, repo) && ac.Limit != "" {
+			return true
+		}
+	}
+	return false
+}
+
 func (vi *VersionInfo) FixedCommits(repo string) (FixedCommits []string) {
 	for _, ac := range vi.AffectedCommits {
 		if strings.EqualFold(ac.Repo, repo) && ac.Fixed != "" {

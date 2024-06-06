@@ -8,6 +8,7 @@ patches:
 - path: importer-deleter.yaml
 - path: exporter.yaml
 - path: alpine-cve-convert.yaml
+- path: debian-cve-convert.yaml
 - path: combine-to-osv.yaml
 - path: debian-convert.yaml
 - path: debian-first-version.yaml

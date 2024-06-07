@@ -64,6 +64,24 @@ In some cases, there may be no applicable versions, so the `affected.versions[]`
 array is empty. This field, when empty, is omitted in the API output, and
 present (but empty) in the [data exports](#is-the-database-available-to-download).
 
+## How does OSV.dev handle withdrawn records?
+
+Records that have the [`withdrawn`](https://ossf.github.io/osv-schema/#withdrawn-field) field set will be excluded from:
+* the responses to POST API queries
+* the main [list page](https://osv.dev/list) and related search results
+
+The entry remains in the database, and is:
+* returned by the `/vulns/<ID>` GET API
+* visible at `https://osv.dev/vulnerability/<ID>` page (and clearly visibly marked as "withdrawn")
+* still exported in the [GCS exports](#is-the-database-available-to-download) (including the `withdrawn` field)
+
+## How does OSV.dev handle deleted records?
+
+When a record is deleted from an upstream source, OSV.dev currently handles them differently, depending on where they're imported from:
+
+- GCS sources: OSV.dev marks deleted records as [`withdrawn`](https://ossf.github.io/osv-schema/#withdrawn-field). There is additionally a safety threshold in the case of feed availability issues: if more than 10% of records are about to be marked as `withdrawn`, OSV.dev aborts and does not proceed.
+- REST and Git sources: OSV.dev leaves the existing records valid but orphaned. This behaviour will be changed to match the GCS source. See <https://github.com/google/osv.dev/issues/2101> and <https://github.com/google/osv.dev/issues/2294>.
+
 ## How do I use OSV as an open source user?
 
 OSV.dev provides an [easy-to-use API](../api/) for querying against the aggregated database of vulnerabilities.

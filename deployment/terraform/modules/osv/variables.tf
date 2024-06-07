@@ -48,6 +48,11 @@ variable "debian_osv_conversion_bucket" {
   description = "Name of bucket to store converted debian advisories in."
 }
 
+variable "osv_dev_sitemap_bucket" {
+  type        = string
+  description = "Name of bucket to store the osv.dev sitemap."
+}
+
 variable "api_url" {
   type        = string
   description = "URL to serve the OSV API on. Domain ownership and DNS settings has to be set up manually."

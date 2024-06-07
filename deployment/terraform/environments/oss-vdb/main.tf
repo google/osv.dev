@@ -8,6 +8,7 @@ module "osv" {
   cve_osv_conversion_bucket                      = "cve-osv-conversion"
   debian_osv_conversion_bucket                   = "debian-osv"
   logs_bucket                                    = "osv-logs"
+  osv_dev_sitemap_bucket                         = "osv-dev-sitemap"
   backups_bucket                                 = "osv-backup"
   backups_bucket_retention_days                  = 60
   affected_commits_backups_bucket                = "osv-affected-commits"

@@ -54,7 +54,7 @@ def get_sitemap_filename_for_ecosystem(ecosystem: str) -> str:
 
 def get_sitemap_url_for_ecosystem(ecosystem: str, base_url: str) -> str:
   ecosystem_name = ecosystem.replace(' ', '_').replace('.', '__').strip()
-  return f'{base_url}/sitemap/{ecosystem_name}.xml'
+  return f'{base_url}/{_SITEMAPS_PREFIX}{ecosystem_name}.xml'
 
 
 def generate_sitemap_for_ecosystem(ecosystem: str, base_url: str) -> None:

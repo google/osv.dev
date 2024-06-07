@@ -70,9 +70,9 @@ Records that have the [`withdrawn`](https://ossf.github.io/osv-schema/#withdrawn
 * the responses to POST API queries
 * the main [list page](https://osv.dev/list) and related search results
 
-The entry remains in the database, and:
-* is returned by the `/vulns/<ID>` GET API
-* is visible at `https://osv.dev/vulnerability/<ID>` page (and clearly visibly marked as "withdrawn")
+The entry remains in the database, and is:
+* returned by the `/vulns/<ID>` GET API
+* visible at `https://osv.dev/vulnerability/<ID>` page (and clearly visibly marked as "withdrawn")
 * still exported in the [GCS exports](#is-the-database-available-to-download) (including the `withdrawn` field)
 
 ## How does OSV.dev handle deleted records?

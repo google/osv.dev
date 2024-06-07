@@ -66,7 +66,9 @@ present (but empty) in the [data exports](#is-the-database-available-to-download
 
 ## How does OSV.dev handle withdrawn records?
 
-Records that have the [`withdrawn`](https://ossf.github.io/osv-schema/#withdrawn-field) field set will be excluded from the responses of POST API queries and from the main [list page](https://osv.dev/list).
+Records that have the [`withdrawn`](https://ossf.github.io/osv-schema/#withdrawn-field) field set will be excluded from:
+* the responses to POST API queries
+* the main [list page](https://osv.dev/list) and related search results
 The entry remains and will be served via either the `/vulns/<ID>` GET API, or the `https://osv.dev/vulnerability/<ID>` page.
 
 ## How does OSV.dev handle deleted records?

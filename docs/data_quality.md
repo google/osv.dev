@@ -40,11 +40,11 @@ A high quality OSV record allows a consumer of that record to be able to answer 
 The definition of “impact” will vary depending on how fine-grained the information available is (i.e. package-level or symbol-level for software library packages). Package-level precision is the minimum standard.
 
 * for version and commit ranges
-  * `affected[]`.`ranges[]`.`introduced` is defined
-  * prefer `affected[]`.`ranges[]`.`fixed` over `affected[]`.`ranges[]`.`last_affected`
+  * `affected[]`.`ranges[]`.`events[]`.`introduced` is defined
+  * prefer `affected[]`.`ranges[]`.`events[]`.`fixed` over `affected[]`.`ranges[]`.`events`.`last_affected`
     * this minimizes false negatives
-  * distinct ranges for `introduced..fixed` and/or `introduced..last_affected` *(i.e. introduced and fixed commits can't be the same)*
-  * values in `introduced` are before/less than `fixed`/`last_affected` according to the canonical package registry
+  * distinct ranges for `introduced..fixed` and/or `introduced..last_affected` *(i.e. introduced and fixed versions or commits can't be the same)*
+  * values in `introduced` are before/less than `fixed`/`last_affected` according to the canonical package registry or repository
   * for version (`ECOSYSTEM` and `SEMVER`) ranges
     * the versions exist in the specific package ecosystem
   * for commit (`GIT`) ranges

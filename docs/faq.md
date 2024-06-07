@@ -74,7 +74,7 @@ The entry remains and will be served via either the `/vulns/<ID>` GET API, or th
 When a record is deleted from an upstream source, OSV.dev handles them differently depending on where they're imported from:
 
 - GCS sources: OSV.dev marks deleted records as [`withdrawn`](https://ossf.github.io/osv-schema/#withdrawn-field). There is additionally a safety threshold in the case of feed availability issues: if more than 10% of records are about to be marked as `withdrawn`, OSV.dev aborts and does not proceed.
-- REST and Git sources: OSV.dev leaves the existing records valid but orphaned. This behaviour will be changed to match the GCS source. See <https://github.com/google/osv.dev/issues/2110> and <https://github.com/google/osv.dev/issues/2294>.
+- REST and Git sources: OSV.dev leaves the existing records valid but orphaned. This behaviour will be changed to match the GCS source. See <https://github.com/google/osv.dev/issues/2101> and <https://github.com/google/osv.dev/issues/2294>.
 
 ## How do I use OSV as an open source user?
 

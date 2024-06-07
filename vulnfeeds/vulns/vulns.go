@@ -18,7 +18,6 @@ import (
 	"cmp"
 	"encoding/json"
 	"errors"
-	"fmt"
 	"io"
 	"net/url"
 	"os"
@@ -249,16 +248,16 @@ func (v *Vulnerability) AddPkgInfo(pkgInfo PackageInfo) {
 				hasAddedZeroIntroduced[ac.Repo] = true
 			}
 
-			if pkgInfo.VersionInfo.HasIntroducedCommits(ac.Repo) {
+			if ac.Introduced != "" && pkgInfo.VersionInfo.HasIntroducedCommits(ac.Repo) {
 				entry.Events = append(entry.Events, Event{Introduced: ac.Introduced})
 			}
-			if pkgInfo.VersionInfo.HasFixedCommits(ac.Repo) {
+			if ac.Fixed != "" && pkgInfo.VersionInfo.HasFixedCommits(ac.Repo) {
 				entry.Events = append(entry.Events, Event{Fixed: ac.Fixed})
 			}
-			if pkgInfo.VersionInfo.HasLastAffectedCommits(ac.Repo) {
+			if ac.LastAffected != "" && pkgInfo.VersionInfo.HasLastAffectedCommits(ac.Repo) {
 				entry.Events = append(entry.Events, Event{LastAffected: ac.LastAffected})
 			}
-			if pkgInfo.VersionInfo.HasLimitCommits(ac.Repo) {
+			if ac.Limit != "" && pkgInfo.VersionInfo.HasLimitCommits(ac.Repo) {
 				entry.Events = append(entry.Events, Event{Limit: ac.Limit})
 			}
 			gitCommitRangesByRepo[ac.Repo] = entry
@@ -599,18 +598,9 @@ func FromCVE(id cves.CVEID, cve cves.CVE) (*Vulnerability, []string) {
 		Details: cves.EnglishDescription(cve),
 		Aliases: extractAliases(id, cve),
 	}
-	var err error
 	var notes []string
 	v.Published = cve.Published.Format(time.RFC3339)
-	if err != nil {
-		notes = append(notes, fmt.Sprintf("Failed to parse published date: %v\n", err))
-	}
-
 	v.Modified = cve.LastModified.Format(time.RFC3339)
-	if err != nil {
-		notes = append(notes, fmt.Sprintf("Failed to parse modified date: %v\n", err))
-	}
-
 	v.References = ClassifyReferences(cve.References)
 	v.AddSeverity(cve.Metrics)
 	return &v, notes

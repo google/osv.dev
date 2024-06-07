@@ -69,6 +69,7 @@ present (but empty) in the [data exports](#is-the-database-available-to-download
 Records that have the [`withdrawn`](https://ossf.github.io/osv-schema/#withdrawn-field) field set will be excluded from:
 * the responses to POST API queries
 * the main [list page](https://osv.dev/list) and related search results
+
 The entry remains in the database, and:
 * is returned by the `/vulns/<ID>` GET API
 * is visible at `https://osv.dev/vulnerability/<ID>` page (and clearly visibly marked as "withdrawn")

@@ -41,6 +41,8 @@ Package Objects can be described by package name AND ecosystem OR by the package
 | `ecosystem` | string | The ecosystem for this package. For the complete list of valid ecosystem names, see [here](https://ossf.github.io/osv-schema/#affectedpackage-field). Must be included if identifying the package by `name`. If specifying by `name` and `ecosystem`, `purl` should not be set.                 |
 | `purl`      | string | The package URL for this package. If `purl` is used to specify the package, `name` and `ecosystem` should not be set.                                                                                                                                                                           |
 
+Case Sensitivity: API requests are case-sensitive. Please ensure that you use the correct case for parameter names and values. For example, use 'PyPI' instead of 'pypi'.
+
 ## Payload
 ```json
 {

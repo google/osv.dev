@@ -115,6 +115,13 @@ def index():
       'home.html', ecosystem_counts=osv_get_ecosystem_counts_cached())
 
 
+@blueprint.route('/robots.txt')
+def robots():
+  response = make_response(f"Sitemap: {request.host_url}sitemap_index.xml\n")
+  response.mimetype = "text/plain"
+  return response
+
+
 @blueprint.route('/blog/', strict_slashes=False)
 def blog():
   return render_template('blog.html', index=_load_blog_content('index.html'))

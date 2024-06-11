@@ -25,8 +25,8 @@ from google.cloud import ndb
 from xml.etree.ElementTree import Element, SubElement, ElementTree
 
 _OUTPUT_DIRECTORY = './sitemap_output'
-_SITEMAPS_PREFIX = './sitemap_'
-_SITEMAP_INDEX_PATH = f'{_SITEMAPS_PREFIX}index.xml'
+_SITEMAPS_PREFIX = 'sitemap_'
+_SITEMAP_INDEX_PATH = f'./{_SITEMAPS_PREFIX}index.xml'
 _SITEMAP_URL_LIMIT = 49999
 
 
@@ -49,7 +49,7 @@ def osv_get_ecosystems():
 
 def get_sitemap_filename_for_ecosystem(ecosystem: str) -> str:
   ecosystem_name = ecosystem.replace(' ', '_').replace('.', '__').strip()
-  return f'{_SITEMAPS_PREFIX}{ecosystem_name}.xml'
+  return f'./{_SITEMAPS_PREFIX}{ecosystem_name}.xml'
 
 
 def get_sitemap_url_for_ecosystem(ecosystem: str, base_url: str) -> str:

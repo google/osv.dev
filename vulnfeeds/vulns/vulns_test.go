@@ -200,6 +200,14 @@ func TestAddPkgInfo(t *testing.T) {
 					Fixed:      "dsafwefwfe370a9e65d68d62ef37345597e4100b0e87021dfb",
 					Repo:       "github.com/foo/bar",
 				},
+				{
+					Fixed: "658fe213",
+					Repo:  "github.com/foo/bar",
+				},
+				{
+					LastAffected: "0xdeadf00d",
+					Repo:  "github.com/foo/baz",
+				},
 			},
 		},
 	}
@@ -210,7 +218,7 @@ func TestAddPkgInfo(t *testing.T) {
 			AffectedVersions: []cves.AffectedVersion{
 				{
 					Introduced: "1.0.0-1",
-					Fixed: "1.2.3-4",
+					Fixed:      "1.2.3-4",
 				},
 			},
 		},
@@ -220,7 +228,7 @@ func TestAddPkgInfo(t *testing.T) {
 	vuln.AddPkgInfo(testPkgInfoCommits)         // This will end up in vuln.Affected[2]
 	vuln.AddPkgInfo(testPkgInfoHybrid)          // This will end up in vuln.Affected[3]
 	vuln.AddPkgInfo(testPkgInfoCommitsMultiple) // This will end up in vuln.Affected[4]
-	vuln.AddPkgInfo(testPkgInfoEcoMultiple) 	// This will end up in vuln.Affected[5]
+	vuln.AddPkgInfo(testPkgInfoEcoMultiple)     // This will end up in vuln.Affected[5]
 
 	t.Logf("Resulting vuln: %+v", vuln)
 
@@ -283,7 +291,7 @@ func TestAddPkgInfo(t *testing.T) {
 	// testPkgInfoCommits ^^^^^^^^^^^^^^^
 
 	// testPkgInfoCommitsMultiple vvvvvvvvvvvvv
-	if len(vuln.Affected[4].Ranges[0].Events) != 2 {
+	if len(vuln.Affected[4].Ranges[0].Events) != 3 {
 		t.Errorf("AddPkgInfo has not correctly added distinct range events from commits: %+v", vuln.Affected[4].Ranges)
 	}
 	// testPkgInfoCommitsMultiple ^^^^^^^^^^^^^
@@ -293,7 +301,6 @@ func TestAddPkgInfo(t *testing.T) {
 		t.Errorf("AddPkgInfo has not correctly added distinct range events from versions: %+v", vuln.Affected[5].Ranges)
 	}
 	// testPkgInfoEcoMultiple ^^^^^^^^^^^^^
-
 
 	for _, a := range vuln.Affected {
 		perRepoZeroIntroducedCommitHashCount := make(map[string]int)
@@ -306,6 +313,9 @@ func TestAddPkgInfo(t *testing.T) {
 					} else {
 						perRepoZeroIntroducedCommitHashCount[r.Repo]++
 					}
+				}
+				if e == (Event{}) {
+					t.Errorf("Empty event detected for the repo %s", r.Repo)
 				}
 			}
 		}

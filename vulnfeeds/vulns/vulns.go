@@ -223,6 +223,7 @@ func (v *Vulnerability) AddPkgInfo(pkgInfo PackageInfo) {
 		}
 	}
 
+	// Aggregate commits by their repo, and synthesize a zero introduced commit if necessary.
 	if len(pkgInfo.VersionInfo.AffectedCommits) > 0 {
 		gitCommitRangesByRepo := map[string]AffectedRange{}
 
@@ -230,22 +231,23 @@ func (v *Vulnerability) AddPkgInfo(pkgInfo PackageInfo) {
 
 		for _, ac := range pkgInfo.VersionInfo.AffectedCommits {
 			entry, ok := gitCommitRangesByRepo[ac.Repo]
+			// Create the stub for the repo if necessary.
 			if !ok {
 				entry = AffectedRange{
 					Type:   "GIT",
 					Events: []Event{},
 					Repo:   ac.Repo,
 				}
-			}
 
-			if !pkgInfo.VersionInfo.HasIntroducedCommits(ac.Repo) && !hasAddedZeroIntroduced[ac.Repo] {
-				// There was no explicitly defined introduced commit, so create one at 0
-				entry.Events = append(entry.Events,
-					Event{
-						Introduced: "0",
-					},
-				)
-				hasAddedZeroIntroduced[ac.Repo] = true
+				if !pkgInfo.VersionInfo.HasIntroducedCommits(ac.Repo) && !hasAddedZeroIntroduced[ac.Repo] {
+					// There was no explicitly defined introduced commit, so create one at 0.
+					entry.Events = append(entry.Events,
+						Event{
+							Introduced: "0",
+						},
+					)
+					hasAddedZeroIntroduced[ac.Repo] = true
+				}
 			}
 
 			if ac.Introduced != "" && pkgInfo.VersionInfo.HasIntroducedCommits(ac.Repo) {

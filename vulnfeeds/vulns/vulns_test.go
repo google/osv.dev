@@ -204,6 +204,10 @@ func TestAddPkgInfo(t *testing.T) {
 					Fixed: "658fe213",
 					Repo:  "github.com/foo/bar",
 				},
+				{
+					LastAffected: "0xdeadf00d",
+					Repo:  "github.com/foo/baz",
+				},
 			},
 		},
 	}

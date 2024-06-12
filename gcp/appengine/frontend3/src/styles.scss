@@ -7,6 +7,7 @@ $osv-accent-color-hover: #c5221fb2;
 $osv-red-300: #ec928e;
 $osv-grey-600: #80868b;
 $osv-grey-800: #3C4043;
+$osv-cyan-300: #C9F5F7;
 $osv-body-font-family: string.unquote('Overpass, sans-serif');
 $osv-heading-font-family: string.unquote('"Overpass Mono", monospace');
 $osv-heading-size: 60px;
@@ -191,6 +192,12 @@ pre {
       background-image: none;
       content: '';
     }
+
+    .social-icons {
+      padding: 0;
+      display: flex;
+      gap: 20px;
+    }
   }
 
   @media (min-width: $osv-mobile-breakpoint+1) {
@@ -201,7 +208,7 @@ pre {
       margin: 0;
       gap: 40px;
       font-size: 16px;
-
+  
       .push {
         margin-left: auto;
       }
@@ -602,6 +609,22 @@ mwc-icon-button.mdc-data-table__sort-icon-button {
       font-size: $osv-heading-size-mobile;
     }
   }
+
+  .vulnerability-title {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+
+    .vulnerability-improvement-link {
+      font-family: $osv-heading-font-family;
+    }
+
+    @media (max-width: $osv-mobile-breakpoint) {
+      .vulnerability-improvement-link {
+        display: none;
+      }
+    }
+  }
 }
 
 dl.vulnerability-details,
@@ -632,6 +655,13 @@ dl.vulnerability-details,
     grid-column: 2;
   }
 
+  dt.summary, dd.summary {
+    margin-top: 16px;
+  }
+
+  dd.muted {
+    color: $osv-grey-600;
+  }
 
   dd.details {
     overflow-wrap: break-word;
@@ -673,22 +703,48 @@ dl.vulnerability-details,
     }
   }
 
-
+  dd.credits {
+    ul {
+      padding: 0;
+    }
+    
+    li.credit {
+      margin: 0 0 10px 0;
+    }
+    
+    .contact li {
+      margin: 5px 40px 10px 0;
+      display: inline-flex;
+      flex-direction: row;
+      overflow-wrap: break-word;
+    }
+  }
+  
   pre {
     white-space: pre-wrap;
     overflow: auto;
   }
-
+  
+  .purl {
+    font-family: $osv-heading-font-family;
+  }
+  
   .links {
     padding: 0;
     display: flex;
     flex-direction: column;
     gap: 10px;
     overflow-wrap: break-word;
+    margin-bottom: 20px;
   }
 
   .aliases {
     padding: 0;
+  }
+
+  .severity {
+    padding: 0;
+    font-family: $osv-heading-font-family;
   }
 }
 
@@ -793,7 +849,6 @@ dl.vulnerability-details,
     .vuln-ecosystem {
       display: inline;
       font-weight: bold;
-      text-transform: uppercase;
     }
 
     .vuln-name {
@@ -829,7 +884,6 @@ dl.vulnerability-details,
     .vuln-ecosystem {
       display: block;
       font-weight: bold;
-      text-transform: uppercase;
     }
 
     .vuln-name {
@@ -851,12 +905,22 @@ dl.vulnerability-details,
     padding: 14px 0;
     border-bottom: 1px dashed #fff;
   }
+
+  .severity {
+    padding: 0;
+    font-family: $osv-heading-font-family;
+  }
+}
+
+.showmore {
+	cursor: pointer;
+	font-weight: bold;
 }
 
 /** Home page */
 
 .wrapper.decorated {
-  background: url('/static/img/background-1.png');
+  background: url('/static/img/background-1.webp');
   background-repeat: no-repeat;
   background-position: calc(50% - 70px) top;
 }
@@ -881,6 +945,7 @@ dl.vulnerability-details,
       flex-wrap: wrap;
       justify-content: center;
       gap: 4px;
+      margin-bottom: 4px;
     }
   }
 
@@ -1068,11 +1133,58 @@ dl.vulnerability-details,
   }
 
   .data-sources {
-    background: url('/static/img/background-2.png');
+    background: url('/static/img/background-2.webp');
     background-position: calc(50% - 70px) top;
     background-repeat: no-repeat;
     margin-top: 0;
     padding-top: 205px;
+  }
+
+  .github-action {
+    margin-top: 100px;
+    display:grid;
+    justify-items: center;
+    
+    .heading {
+      font-size: $osv-heading-size;
+      text-align: center;
+      margin-bottom: 32px;
+    }
+    
+    @media (max-width: $osv-mobile-breakpoint) {
+      .heading {
+        font-size: $osv-heading-size-mobile;
+      }
+    }
+    
+    .description {
+      font-size: 20px;
+      line-height: 26px;
+      margin-bottom: 24px;
+      margin-left: 8px;
+      margin-right: 8px;
+      max-width: 900px;
+    }
+    
+    img {
+      max-width: 900px;
+    }
+
+    .image-container{
+      display: flex;
+      width: 100%;
+      max-width: 900px;
+      overflow-x: auto;
+      overflow-y: hidden;
+      margin-bottom: 24px;
+    }
+
+    .cta {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 4px;
+    }
   }
 
   .usage-examples {
@@ -1124,7 +1236,7 @@ dl.vulnerability-details,
     margin-bottom: 32px;
 
     .code-card-title {
-      font-size: 32px;
+      font-size: 28px;
     }
 
     .code-card-content {
@@ -1177,7 +1289,7 @@ dl.vulnerability-details,
   }
 
   footer {
-    background: url('/static/img/footer-decoration.png');
+    background: url('/static/img/footer-decoration.webp');
     background-repeat: no-repeat;
     background-position: center;
     min-height: 500px;
@@ -1271,7 +1383,7 @@ div.highlight {
   }
 
   a {
-    color: #C9F5F7
+    color: $osv-cyan-300
   }
 
   .author {
@@ -1288,5 +1400,82 @@ div.highlight {
     width: 100%;
     margin: 0 auto;
     font-size: 16px;
+  }
+}
+
+/** 404 page */
+.not-found-page {
+  height: 100%;
+  margin: 0;
+  align-items: center;
+  justify-content: center;
+  font-family: $osv-heading-font-family;
+  color: $osv-text-color;
+  font-size: 15px;
+  max-width: 1200px;
+  margin: 0 auto;
+
+  .mdc-layout-grid__cell--span-12 {
+    margin: 0 24px;
+  }
+
+  .text-info {
+    max-width: 900px;
+    margin: 20px auto 0;
+
+    .heading {
+      font-size: $osv-heading-size;
+      text-align: center;
+      margin-bottom: 32px;
+    }
+
+    @media (max-width: $osv-mobile-breakpoint) {
+      .heading {
+        font-size: $osv-heading-size-mobile;
+      }
+    }
+
+    .description {
+      font-size: 20px;
+      line-height: 26px;
+      margin-bottom: 24px;
+      margin-left: 8px;
+      margin-right: 8px;
+      text-align: center;
+    }
+
+    .cta {
+      margin: 32px 0;
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 4px;
+    }
+
+    h2,h3,h4 {
+      line-height: 1.1;
+      font-weight: 300;
+      margin-top: 3rem;
+      margin-bottom: 1.5rem;
+    }
+    
+    p {
+      margin-bottom: 16px;
+      line-height: 1.6;
+    }
+    
+    a {
+      color: $osv-cyan-300;
+    }
+  }
+
+  footer {
+    background: url('/static/img/footer-decoration.webp');
+    background-repeat: no-repeat;
+    background-position: center;
+    min-height: 500px;
+    width: 100%;
+    position: absolute;
+    left: 0;
   }
 }

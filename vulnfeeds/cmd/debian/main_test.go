@@ -18,11 +18,12 @@ func Test_generateDebianSecurityTrackerOSV(t *testing.T) {
 	_ = json.NewDecoder(file).Decode(&decodedDebianData)
 
 	debianReleaseMap := make(map[string]string)
+	debianReleaseMap["sarge"] = "3.1"
+	debianReleaseMap["stretch"] = "9"
 	debianReleaseMap["buster"] = "10"
 	debianReleaseMap["bullseye"] = "11"
 	debianReleaseMap["bookworm"] = "12"
 	debianReleaseMap["trixie"] = "13"
-	debianReleaseMap["forky"] = "14"
 
 	osvPkgInfos := generateDebianSecurityTrackerOSV(decodedDebianData, debianReleaseMap)
 	expectedCount := 2

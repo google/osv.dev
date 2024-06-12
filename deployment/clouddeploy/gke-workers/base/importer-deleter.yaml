@@ -1,0 +1,32 @@
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: importer-deleter
+spec:
+  schedule: "* */3 * * *"
+  concurrencyPolicy: Forbid
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          containers:
+          - name: importer-deleter
+            image: importer
+            imagePullPolicy: Always
+            volumeMounts:
+              - mountPath: "/work"
+                name: "ssd"
+            securityContext:
+              privileged: true
+            resources:
+              requests:
+                cpu: 1
+                memory: "10G"
+              limits:
+                cpu: 1
+                memory: "11G"
+          restartPolicy: OnFailure
+          volumes:
+            - name: "ssd"
+              hostPath:
+                path: "/mnt/disks/ssd0"

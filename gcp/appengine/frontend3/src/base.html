@@ -5,10 +5,21 @@
   <meta name="description"
     content="Comprehensive vulnerability database for your open source projects and dependencies.">
   <meta name="viewport" content="width=device-width, initial-scale=1">
+  <!-- Disable this for vulnerability list page as the weird Turbo cache bug happens when click on browser's back button -->
+  {% if disable_turbo_cache %}
+  <meta name="turbo-cache-control" content="no-cache">
+  {% endif %}
   <link rel="icon" type="image/png" href="/static/img/favicon-32x32.png" sizes="32x32">
   <link rel="icon" type="image/png" href="/static/img/favicon-16x16.png" sizes="16x16">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="alternate" type="application/rss+xml" title="RSS Feed" href="{{ url_for('frontend_handlers.blog_rss') }}">
+  <link rel="preload" href="https://fonts.googleapis.com/css?family=Material+Icons&display=block" as="style" onload="this.onload=null;this.rel='stylesheet'">
+  <link rel="preload" href="https://fonts.googleapis.com/css2?family=Overpass+Mono:wght@400;700&family=Overpass:ital,wght@0,400;0,700;1,400&display=swap" as="style" onload="this.onload=null;this.rel='stylesheet'">
+  <noscript>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Material+Icons&display=block">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Overpass+Mono:wght@400;700&family=Overpass:ital,wght@0,400;0,700;1,400&display=swap">
+  </noscript>
   <meta charset="utf-8">
   <title id="title">OSV - Open Source Vulnerabilities</title>
   <!-- Global site tag (gtag.js) - Google Analytics -->
@@ -20,10 +31,12 @@
 
     gtag('config', 'G-ZXG9G6HTBR', { 'anonymize_ip': true });
   </script>
+  {% block extra_head %}{% endblock %}
 </head>
 
 <body>
   <div class="wrapper {{'decorated' if active_section == 'home'}}">
+    {% block top_bar %}
     <header class="top-bar">
       <div class="logo">
         <a href="{{ url_for('frontend_handlers.index') }}" aria-label="Home page">
@@ -55,20 +68,27 @@
           <a href="https://google.github.io/osv.dev/">Docs</a>
         </li>
         
-        <li class="push">
-          <a class="logo-img" href="https://github.com/google/osv.dev" target="_blank"
-            aria-label="Go to our github page">
-            <img class="logo-link" src="/static/img/github-mark-white.svg" alt="Github Logo" width="24" height="24">
-          </a>
-        </li>
+        <ul class="push social-icons">
+          {% if active_section == 'blog' %}
+            <li>
+              <a class="logo-img" href="{{ url_for('frontend_handlers.blog_rss') }}" target="_blank"
+                aria-label="RRS Feed">
+                <img class="logo-link" src="/static/img/feed.svg" alt="RSS Feed" width="24" height="24">
+              </a>
+            </li>
+          {% endif %}
+          <li>
+            <a class="logo-img" href="https://github.com/google/osv.dev" target="_blank"
+              aria-label="Go to our github page">
+              <img class="logo-link" src="/static/img/github-mark-white.svg" alt="Github Logo" width="24" height="24">
+            </a>
+          </li>
+        </ul>
       </ul>
     </header>
+    {% endblock %}
     {% block content %}{% endblock %}
   </div>
-  <link href="https://fonts.googleapis.com/css?family=Material+Icons&display=block" rel="stylesheet">
-  <link
-    href="https://fonts.googleapis.com/css2?family=Overpass+Mono:wght@400;700&family=Overpass:ital,wght@0,400;0,700;1,400&display=swap"
-    rel="stylesheet">
 </body>
 
 </html>

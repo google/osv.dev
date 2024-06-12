@@ -43,7 +43,7 @@ def ExpectationTest(test_data_dir):  # pylint: disable=invalid-name
       expected_path = os.path.join(
           test_data_dir, f'{self.__class__.__name__}_{expected_name}.txt')
       if os.getenv('TESTS_GENERATE'):
-        pp = pprint.PrettyPrinter(indent=4, width=200)
+        pp = pprint.PrettyPrinter(indent=4)
         with open(expected_path, 'w') as f:
           f.write(pp.pformat(actual))
 
@@ -58,7 +58,7 @@ def ExpectationTest(test_data_dir):  # pylint: disable=invalid-name
       self.assertDictEqual(self._load_expected(expected_name, actual), actual)
 
     def expect_lines_equal(self, expected_name, actual_lines):
-      """Check if the output lines is equal to the expected value, 
+      """Check if the output lines is equal to the expected value,
       printing a diff when it is different."""
       expected_lines = self._load_expected(expected_name, actual_lines)
       if expected_lines != actual_lines:
@@ -101,7 +101,7 @@ class MockRepo:
     tree = self._repo.index.write_tree()
     author = pygit2.Signature(author_name, author_email)
     self._repo.create_commit('HEAD', author, author, message, tree,
-                             [self._repo.head.peel().oid])
+                             [self._repo.head.peel().id])
 
 
 def start_datastore_emulator():

@@ -286,15 +286,15 @@
   key_path: 'OSV'
   repo_username: 'git'
 
-- name: 'wolfi'
+- name: 'chainguard'
   versions_from_repo: False
-  rest_api_url: 'https://packages.wolfi.dev/os/osv/all.json'
+  rest_api_url: 'https://packages.cgr.dev/chainguard/osv/all.json'
   type: 2
   ignore_patterns: ['propertyValue']
-  directory_path: 'os/osv'
+  directory_path: 'chainguard/osv'
   detect_cherrypicks: False
   extension: '.json'
-  db_prefix: 'WOLFI-'
+  db_prefix: 'CGA-'
   ignore_git: True
-  link: 'https://packages.wolfi.dev/os/osv/'
+  link: 'https://packages.cgr.dev/chainguard/osv/'
   editable: False

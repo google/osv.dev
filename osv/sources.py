@@ -267,7 +267,7 @@ def push_source_changes(repo,
   tree = repo.index.write_tree()
   author = git_author()
   repo.create_commit(repo.head.name, author, author, commit_message, tree,
-                     [repo.head.peel().oid])
+                     [repo.head.peel().id])
 
   for retry_num in range(1 + PUSH_RETRIES):
     try:
@@ -305,7 +305,7 @@ def push_source_changes(repo,
       # Success, commit and try pushing again.
       tree = repo.index.write_tree()
       repo.create_commit(repo.head.name, commit.author, commit.author,
-                         commit.message, tree, [repo.head.peel().oid])
+                         commit.message, tree, [repo.head.peel().id])
       repo.state_cleanup()
 
   return True

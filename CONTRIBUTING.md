@@ -42,8 +42,8 @@ You must install:
 1.  [Pipenv](https://pipenv.pypa.io/en/latest/)
 1.  [Google Cloud SDK](https://cloud.google.com/sdk)
 1.  [Hugo](https://gohugo.io/installation/)
-1.  [Terraform](https://developer.hashicorp.com/terraform/downloads)
 1.  [Node JS](https://nodejs.org/) >= 18.17.x
+1.  [Terraform](https://developer.hashicorp.com/terraform/downloads) >= 1.5 (for infrastructure changes)
 
 Then you can set up the development environment by cloning the OSV repo and
 installing the Pipfile dependencies.
@@ -69,6 +69,16 @@ gcloud components install beta cloud-datastore-emulator
 To run tests: 
 ```shell 
 make all-tests
+```
+
+To run integration tests for the API is a separate command
+```shell
+make integration-tests
+```
+
+By default, this skips long tests, enable them by setting the `LONG_TESTS` variable
+```shell
+LONG_TESTS=1 make integration-tests
 ```
 
 #### Test result generation

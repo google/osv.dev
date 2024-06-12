@@ -1,0 +1,16 @@
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: generate-sitemap
+spec:
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          containers:
+          - name: generate-sitemap-cron
+            env:
+            - name: BASE_URL
+              value: "https://test.osv.dev"
+            - name: GOOGLE_CLOUD_PROJECT
+              value: oss-vdb-test

@@ -1,4 +1,6 @@
-# Copyright 2021 Google LLC
+#!/usr/bin/env python3
+
+# Copyright 2024 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -12,8 +14,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Generate sitemap."""
-import gzip
-import shutil
 import sys
 import os
 import osv
@@ -24,8 +24,9 @@ from google.cloud import ndb
 
 from xml.etree.ElementTree import Element, SubElement, ElementTree
 
-_SITEMAPS_DIRECTORY = './sitemap'
-_SITEMAP_INDEX_PATH = f'{_SITEMAPS_DIRECTORY}/index.xml'
+_OUTPUT_DIRECTORY = './sitemap_output'
+_SITEMAPS_PREFIX = 'sitemap_'
+_SITEMAP_INDEX_PATH = f'./{_SITEMAPS_PREFIX}index.xml'
 _SITEMAP_URL_LIMIT = 49999
 
 
@@ -48,18 +49,16 @@ def osv_get_ecosystems():
 
 def get_sitemap_filename_for_ecosystem(ecosystem: str) -> str:
   ecosystem_name = ecosystem.replace(' ', '_').replace('.', '__').strip()
-  return f'{_SITEMAPS_DIRECTORY}/{ecosystem_name}.xml'
+  return f'./{_SITEMAPS_PREFIX}{ecosystem_name}.xml'
 
 
 def get_sitemap_url_for_ecosystem(ecosystem: str, base_url: str) -> str:
   ecosystem_name = ecosystem.replace(' ', '_').replace('.', '__').strip()
-  return f'{base_url}/sitemap/{ecosystem_name}.xml'
+  return f'{base_url}/{_SITEMAPS_PREFIX}{ecosystem_name}.xml'
 
 
 def generate_sitemap_for_ecosystem(ecosystem: str, base_url: str) -> None:
   """Generate a sitemap for the give n ecosystem."""
-  os.makedirs(_SITEMAPS_DIRECTORY, exist_ok=True)
-
   vulnerability_ids = fetch_vulnerability_ids(ecosystem)
   filename = get_sitemap_filename_for_ecosystem(ecosystem)
   urlset = Element(
@@ -78,22 +77,8 @@ def generate_sitemap_for_ecosystem(ecosystem: str, base_url: str) -> None:
   tree.write(filename, encoding='utf-8', xml_declaration=True)
 
 
-def compress_file(file_path: str) -> str:
-  """Compress the file using gzip and return the path to the compressed file."""
-  base, _ = os.path.splitext(file_path)
-  compressed_file_path = f"{base}.gz"
-  with open(file_path, 'rb') as f_in:
-    with gzip.open(compressed_file_path, 'wb') as f_out:
-      shutil.copyfileobj(f_in, f_out)
-  # Remove the original uncompressed file
-  os.remove(file_path)
-  return compressed_file_path
-
-
 def generate_sitemap_index(ecosystems: set[str], base_url: str) -> None:
   """Generate a sitemap index."""
-  os.makedirs(_SITEMAPS_DIRECTORY, exist_ok=True)
-
   sitemapindex = Element(
       'sitemapindex', xmlns="http://www.sitemaps.org/schemas/sitemap/0.9")
 
@@ -118,17 +103,21 @@ def generate_sitemaps(base_url: str) -> None:
   }
   for ecosystem in base_ecosystems:
     generate_sitemap_for_ecosystem(ecosystem, base_url)
-    compress_file(get_sitemap_filename_for_ecosystem(ecosystem))
 
   generate_sitemap_index(base_ecosystems, base_url)
-  compress_file(_SITEMAP_INDEX_PATH)
 
 
 def main() -> int:
   parser = argparse.ArgumentParser(description='Generate sitemaps.')
   parser.add_argument(
-      '--base_url', required=True, help='The base URL for the sitemap entries.')
+      '--base_url',
+      required=True,
+      help='The base URL for the sitemap entries (without trailing /).')
   args = parser.parse_args()
+
+  os.makedirs(_OUTPUT_DIRECTORY, exist_ok=True)
+  os.chdir(_OUTPUT_DIRECTORY)
+
   generate_sitemaps(args.base_url)
   return 0
 

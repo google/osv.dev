@@ -1,0 +1,24 @@
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: generate-sitemap
+spec:
+  schedule: "30 8 * * *"
+  concurrencyPolicy: Forbid
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          containers:
+          - name: generate-sitemap-cron
+            image: cron
+            imagePullPolicy: Always
+            command: ["/usr/local/bin/generate_sitemap/generate_sitemap.py", "--base_url", "$BASE_URL"]
+            resources:
+              requests:
+                cpu: 1
+                memory: "4G"
+              limits:
+                cpu: 1
+                memory: "6G"
+          restartPolicy: OnFailure

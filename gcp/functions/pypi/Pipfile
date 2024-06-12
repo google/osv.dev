@@ -4,7 +4,7 @@ verify_ssl = true
 name = "pypi"
 
 [packages]
-cryptography = "==42.0.4"
-google-cloud-secret-manager = "==2.18.2"
-osv = "==0.0.18"
-requests = "==2.32.2"
+cryptography = "==42.0.8"
+google-cloud-secret-manager = "==2.20.0"
+osv = "==0.0.21"
+requests = "==2.32.3"

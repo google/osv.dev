@@ -14,6 +14,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Generate sitemap."""
+import logging
 import sys
 import os
 import osv
@@ -59,17 +60,18 @@ def get_sitemap_url_for_ecosystem(ecosystem: str, base_url: str) -> str:
 
 def generate_sitemap_for_ecosystem(ecosystem: str, base_url: str) -> None:
   """Generate a sitemap for the give n ecosystem."""
+  logging.info('Generating sitemap for ecosystem "%s".', ecosystem)
   vulnerability_ids = fetch_vulnerability_ids(ecosystem)
   filename = get_sitemap_filename_for_ecosystem(ecosystem)
   urlset = Element(
-      'urlset', xmlns="http://www.sitemaps.org/schemas/sitemap/0.9")
+      'urlset', xmlns='http://www.sitemaps.org/schemas/sitemap/0.9')
 
   # TODO: For large ecosystems with over 50,000 vulnerabilities, generate
   # multiple sitemaps.
   for vuln in vulnerability_ids[:_SITEMAP_URL_LIMIT]:
     url = SubElement(urlset, 'url')
     loc = SubElement(url, 'loc')
-    loc.text = f"{base_url}/vulnerability/{vuln}"
+    loc.text = f'{base_url}/vulnerability/{vuln}'
     lastmod = SubElement(url, 'lastmod')
     lastmod.text = datetime.datetime.now().isoformat()
 
@@ -79,11 +81,12 @@ def generate_sitemap_for_ecosystem(ecosystem: str, base_url: str) -> None:
 
 def generate_sitemap_index(ecosystems: set[str], base_url: str) -> None:
   """Generate a sitemap index."""
+  logging.info('Generating sitemap index.')
   sitemapindex = Element(
-      'sitemapindex', xmlns="http://www.sitemaps.org/schemas/sitemap/0.9")
+      'sitemapindex', xmlns='http://www.sitemaps.org/schemas/sitemap/0.9')
 
   for ecosystem in ecosystems:
-    sitemap = SubElement(sitemapindex, "sitemap")
+    sitemap = SubElement(sitemapindex, 'sitemap')
     loc = SubElement(sitemap, 'loc')
     loc.text = get_sitemap_url_for_ecosystem(ecosystem, base_url)
     lastmod = SubElement(sitemap, 'lastmod')

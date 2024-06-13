@@ -117,8 +117,8 @@ def index():
 
 @blueprint.route('/robots.txt')
 def robots():
-  response = make_response(f"Sitemap: {request.host_url}sitemap_index.xml\n")
-  response.mimetype = "text/plain"
+  response = make_response(f'Sitemap: {request.host_url}sitemap_index.xml\n')
+  response.mimetype = 'text/plain'
   return response
 
 

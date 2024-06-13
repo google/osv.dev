@@ -13,7 +13,7 @@ spec:
           - name: generate-sitemap-cron
             image: cron
             imagePullPolicy: Always
-            command: ["/usr/local/bin/generate_sitemap/generate_sitemap.py", "--base_url", "$BASE_URL"]
+            command: ["/usr/local/bin/generate_sitemap/generate_and_upload.sh"]
             resources:
               requests:
                 cpu: 1

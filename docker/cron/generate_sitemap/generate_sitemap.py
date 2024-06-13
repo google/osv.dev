@@ -14,6 +14,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Generate sitemap."""
+import logging
 import sys
 import os
 import osv
@@ -59,6 +60,7 @@ def get_sitemap_url_for_ecosystem(ecosystem: str, base_url: str) -> str:
 
 def generate_sitemap_for_ecosystem(ecosystem: str, base_url: str) -> None:
   """Generate a sitemap for the give n ecosystem."""
+  logging.info("Generating sitemap for ecosystem '%s'.", ecosystem)
   vulnerability_ids = fetch_vulnerability_ids(ecosystem)
   filename = get_sitemap_filename_for_ecosystem(ecosystem)
   urlset = Element(
@@ -79,6 +81,7 @@ def generate_sitemap_for_ecosystem(ecosystem: str, base_url: str) -> None:
 
 def generate_sitemap_index(ecosystems: set[str], base_url: str) -> None:
   """Generate a sitemap index."""
+  logging.info("Generating sitemap index.")
   sitemapindex = Element(
       'sitemapindex', xmlns="http://www.sitemaps.org/schemas/sitemap/0.9")
 

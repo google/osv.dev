@@ -116,6 +116,7 @@ class Exporter:
 
         files_to_zip.append(file_path)
 
+      # This *should* pause here until all the exports have been written to disk.
       osv.Bug.query(
           osv.Bug.ecosystem == ecosystem).map(_export_to_file_and_zipfile)
 

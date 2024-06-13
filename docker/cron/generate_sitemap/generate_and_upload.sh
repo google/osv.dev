@@ -8,7 +8,7 @@ BASE_URL_PATH="${BASE_URL:=https://test.osv.dev}"
 
 echo "Begin sitemap generation for $BASE_URL_PATH"
 
-./generate_sitemap.py --base_url $BASE_URL_PATH
+generate_sitemap.py --base_url $BASE_URL_PATH
 
 echo "Begin Syncing with cloud to $OUTPUT_BUCKET"
 

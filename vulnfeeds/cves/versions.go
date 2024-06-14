@@ -352,6 +352,11 @@ func Repo(u string) (string, error) {
 			// Call out to common function for GitWeb URLs
 			return repoGitWeb(parsedURL)
 		}
+		if parsedURL.Hostname() == "git.postgresql.org" {
+			// PostgresSQL's GitWeb is at a different path to its Git repo.
+			parsedURL.Path = strings.Replace(parsedURL.Path, "gitweb", "git", 1)
+			return repoGitWeb(parsedURL)
+		}
 		if strings.HasSuffix(parsedURL.Path, ".git") {
 			return fmt.Sprintf("%s://%s%s", parsedURL.Scheme,
 					parsedURL.Hostname(),

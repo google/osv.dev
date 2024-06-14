@@ -682,4 +682,9 @@ def link_to_deps_dev(package, ecosystem):
   system = osv.ecosystems.map_ecosystem_to_deps_dev(ecosystem)
   if not system:
     return None
-  return f"{_DEPS_BASE_URL}/{system}/{package}"
+  # This ensures that special characters such as / are properly encoded,
+  # preventing invalid paths and 404 errors.
+  # e.g. for the package name github.com/rancher/wrangler,
+  # return https://deps.dev/go/github.com%2Francher%2Fwrangler
+  encoded_package = parse.quote(package, safe='')
+  return f"{_DEPS_BASE_URL}/{system}/{encoded_package}"

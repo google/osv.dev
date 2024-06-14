@@ -28,7 +28,7 @@ To maintain accuracy while expanding our database, we've made the following deci
 - **Unimportant vulnerabilities:** Vulnerabilities marked as "unimportant" are also added into our database but are hidden by default in OSV-Scanner results. This is because those vulnerabilities typically do not affect users, but in some rare cases, they might. In the future, when container scanning for Debian Docker images is fully implemented, users can choose whether to include these vulnerabilities in their reports.
 - **Untriaged vulnerabilities:** Vulnerabilities marked as "not yet assigned" are not added to our database, as the Debian team may soon evaluate and update their status.
 
-## Coming Soon: More comprehensive Container Scanner in OSV-Scanner
+## Coming Soon: More comprehensive Container Image Scanning in OSV-Scanner
 OSV-Scanner has previously focused on being a vulnerability scanner that scans code repositories, with limited support for Docker containers. This year, we’re focusing on providing more full featured support for Docker container scanning.
 
 While working on this, we've noticed some interesting findings regarding how popular scanners produce different container scanning results. These differences aren't just limited to Debian related data, but also extend to language packages, like Go, npm and others. Stay tuned for an upcoming blog post where we will dive into this topic, comparing scanner results and exploring the nuanced reasons behind these differences.

@@ -82,8 +82,7 @@ body {
   --mdc-theme-surface: $osv-background;
   --mdc-theme-background: $osv-background;
   --mdc-typography-font-family: $osv-body-font-family;
-  --mdc-text-field-fill-color: #696969;
-  --mdc-text-field-ink-color: $osv-text-color;
+  --md-icon-font: "Material Icons"
 }
 
 a {
@@ -404,8 +403,21 @@ pre {
   margin-top: 22px;
   border: 2px solid $osv-text-color;
   border-radius: 8px;
-  --mdc-text-field-fill-color: rgba(255, 255, 255, 0.3);
-  --mdc-text-field-label-ink-color: $osv-text-color;
+  --md-filled-text-field-container-color: #696969;
+  --md-filled-text-field-label-text-font: $osv-body-font-family;
+  --md-filled-text-field-input-text-font: $osv-body-font-family;
+  --md-filled-text-field-input-text-weight: 100;
+  --md-filled-text-field-label-text-color: $osv-text-color;
+  --md-filled-text-field-input-text-color: $osv-text-color;
+  --md-filled-text-field-leading-icon-color: $osv-text-color;
+  --md-filled-text-field-focus-label-text-color: $osv-text-color;
+  --md-filled-text-field-focus-input-text-color: $osv-text-color;
+  --md-filled-text-field-focus-leading-icon-color: $osv-text-color;
+  --md-filled-text-field-hover-label-text-color: $osv-text-color;
+  --md-filled-text-field-hover-input-text-color: $osv-text-color;
+  --md-filled-text-field-hover-leading-icon-color: $osv-text-color;
+  --md-filled-text-field-caret-color: $osv-text-color;
+  --md-filled-text-field-focus-caret-color: $osv-text-color;
 
   // Make the inner search field full-width.
   .query-field {
@@ -415,12 +427,6 @@ pre {
   // Hax: Use our own icon because mwc-textfield supplies a dark gray one. Maybe M3 will fix it:
   // https://github.com/material-components/material-web/commit/0c200ecf04a533b1dc56932c3979e3e5d8fb7d73
   position: relative;
-
-  .search-icon {
-    position: absolute;
-    top: 50%;
-    transform: translate(50%, -50%);
-  }
 
   // Hax: Get rid of the material underline.
   overflow: hidden;
@@ -437,11 +443,13 @@ pre {
   }
 }
 
-// Hax: Make @material/mwc-icon-button play well with @material/data-table.
-mwc-icon-button.mdc-data-table__sort-icon-button {
+// Hax: Make @material/md-icon-button play well with @material/data-table.
+md-icon-button.mdc-data-table__sort-icon-button {
   width: auto;
   height: auto;
-  --mdc-icon-button-size: 36px;
+  --md-icon-button-icon-size: 18px;
+  --md-icon-button-icon-color: $osv-text-color;
+  --md-icon-button-disabled-icon-color: $osv-grey-600;
 }
 
 .vuln-table-container {
@@ -561,6 +569,8 @@ mwc-icon-button.mdc-data-table__sort-icon-button {
 
   turbo-frame[busy] .next-page-indicator {
     display: block;
+    --md-circular-progress-active-indicator-color: white;
+    --md-circular-progress-size: 36px;
   }
 
   // Center the next page button.
@@ -1252,7 +1262,10 @@ dl.vulnerability-details,
       .icon {
         background: #fff;
         border-radius: 999px;
-        color: #d46d59;
+        --md-icon-button-icon-color: #d46d59;
+        --md-icon-button-hover-icon-color: #d46d59;
+        --md-icon-button-focus-icon-color: #d46d59;
+        --md-icon-button-pressed-icon-color: #d46d59;
       }
     }
   }

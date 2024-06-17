@@ -428,6 +428,12 @@ func TestRepo(t *testing.T) {
 			expectedRepoURL: "https://git.tukaani.org/xz.git",
 			expectedOk:      true,
 		},
+		{
+			description:     "PostgreSQL repo",
+			inputLink:       "https://git.postgresql.org/gitweb/?p=postgresql.git;a=summary",
+			expectedRepoURL: "https://git.postgresql.org/git/postgresql.git",
+			expectedOk:      true,
+		},
 	}
 
 	for _, tc := range tests {

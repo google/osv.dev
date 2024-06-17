@@ -15,7 +15,7 @@ This highly requested [feature](https://github.com/google/osv-scanner/issues/35)
 
 OSV-Scanner uses [deps.dev’s Maven parser library](https://pkg.go.dev/deps.dev/util/maven) to generate an effective POM which includes project inheritance, importing managed dependencies and project interpolation. This may involve fetching Maven projects from Maven Central repository.
 
-OSV-Scanner then invokes [deps.dev’s Maven resolver library](https://pkg.go.dev/deps.dev/util/resolve) to compute a dependency graph for the processed project. This graph includes all of the direct and transitive dependencies of your project. Maven requirements are provided by [deps.dev API](https://docs.deps.dev/api/v3/#getrequirements).
+OSV-Scanner then invokes [deps.dev’s resolver library](https://pkg.go.dev/deps.dev/util/resolve) to compute a dependency graph for the processed project. This graph includes all the direct and transitive dependencies of your project. Maven requirements are provided by [deps.dev API](https://docs.deps.dev/api/v3/#getrequirements).
 
 After the dependency resolution, OSV-Scanner queries the OSV database for vulnerabilities associated with these dependencies.
 
@@ -23,21 +23,21 @@ After the dependency resolution, OSV-Scanner queries the OSV database for vulner
 
 This feature is enabled by default in OSV-Scanner when you scan a file or a directory.
 
-```
+```bash
 osv-scanner -r path/to/your/directory
 ```
 
-```
+```bash
 osv-scanner -L path/to/your/pom.xml
 ```
 
-```
+```bash
 osv-scanner -L pom.xml:path/to/your/file
 ```
 
-For example, a project only declares the following direct dependency in pom.xml, but vulnerabilities of the transitive dependencies are still reported by OSV-Scanner.
+For example, a project only declares the following direct dependency in pom.xml, but vulnerabilities of the transitive dependencies are also reported by OSV-Scanner.
 
-```
+```xml
 <dependency>
     <groupId>org.apache.logging.log4j</groupId>
     <artifactId>log4j-web</artifactId>
@@ -47,9 +47,9 @@ For example, a project only declares the following direct dependency in pom.xml,
 
 ![Vulnerabilities reported scanning transitive dependencies in Maven pom.xml](transitive-scan-maven.png "Vulnerabilities reported scanning transitive dependencies in Maven pom.xml")
 
-However, transitive dependency support is disabled with the [experimental offline mode](https://google.github.io/osv-scanner/experimental/offline-mode/).
+Transitive dependency support is disabled in the [experimental offline mode](https://google.github.io/osv-scanner/experimental/offline-mode/).
 
-See our [detailed documentation](https://google.github.io/osv-scanner/supported-languages-and-lockfiles/#transitive-dependency-scanning) for more usage information.
+See our detailed documentation for more usage information on [transitive dependency scanning]((https://google.github.io/osv-scanner/supported-languages-and-lockfiles/#transitive-dependency-scanning)).
 
 ## Try it today!
 

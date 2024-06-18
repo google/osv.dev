@@ -34,6 +34,8 @@ _SITEMAP_URL_LIMIT = 49999
 def fetch_vulnerabilities_and_dates(
     ecosystem: str) -> list[tuple[str, datetime.datetime]]:
   """Fetch vulnerabilities' id for the given ecosystem."""
+  # Query with projection to reduce data returned
+  # Order does not matter, other than to keep things consistent
   bugs = osv.Bug.query(
       osv.Bug.status == osv.BugStatus.PROCESSED,
       osv.Bug.public == True,  # pylint: disable=singleton-comparison
@@ -84,6 +86,7 @@ def generate_sitemap_for_ecosystem(ecosystem: str,
     loc = SubElement(url, 'loc')
     loc.text = f'{base_url}/vulnerability/{vuln_id}'
     lastmod = SubElement(url, 'lastmod')
+    # Make sure to set the timezone to UTC to add +00:00 when outputting iso
     lastmod.text = last_modified.astimezone(datetime.UTC).isoformat()
 
   tree = ElementTree(urlset)
@@ -107,6 +110,7 @@ def generate_sitemap_index(ecosystems: set[str], base_url: str,
     loc = SubElement(sitemap, 'loc')
     loc.text = get_sitemap_url_for_ecosystem(ecosystem, base_url)
     lastmod = SubElement(sitemap, 'lastmod')
+    # Make sure to set the timezone to UTC to add +00:00 when outputting iso
     lastmod.text = last_mod_dict[ecosystem].astimezone(datetime.UTC).isoformat()
 
   tree = ElementTree(sitemapindex)

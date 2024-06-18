@@ -18,6 +18,7 @@ import tempfile
 from unittest.mock import patch, MagicMock
 import generate_sitemap
 import osv
+from datetime import datetime
 
 
 class TestSitemapGeneration(unittest.TestCase):
@@ -31,16 +32,21 @@ class TestSitemapGeneration(unittest.TestCase):
     return self.test_file.name
 
   @patch.object(osv.Bug, 'query')
-  def test_fetch_vulnerability_ids(self, mock_query):
+  def test_fetch_vulnerabilities_and_dates(self, mock_query):
     """Test it returns the vulnerability ids for ecosystem"""
     # Mock the returned query
     mock_query.return_value.order.return_value = [
-        MagicMock(db_id='vuln1'),
-        MagicMock(db_id='vuln2')
+        MagicMock(
+            last_modified=datetime.fromordinal(10),
+            key=MagicMock(id=MagicMock(return_value='vuln1'))),
+        MagicMock(
+            last_modified=datetime.fromordinal(20),
+            key=MagicMock(id=MagicMock(return_value='vuln2'))),
     ]
 
     result = generate_sitemap.fetch_vulnerabilities_and_dates('Go')
-    self.assertEqual(result, ['vuln1', 'vuln2'])
+    self.assertEqual(result, [('vuln1', datetime.fromordinal(10)),
+                              ('vuln2', datetime.fromordinal(20))])
 
   @patch.object(osv.Bug, 'query')
   def test_osv_get_ecosystems(self, mock_query):
@@ -54,12 +60,13 @@ class TestSitemapGeneration(unittest.TestCase):
     result = generate_sitemap.osv_get_ecosystems()
     self.assertEqual(result, ['Go', 'UVI'])
 
-  @patch('generate_sitemap.fetch_vulnerability_ids')
+  @patch('generate_sitemap.fetch_vulnerabilities_and_dates')
   @patch('generate_sitemap.ElementTree')
   def test_generate_sitemap_for_ecosystem(self, mock_element_tree,
                                           mock_fetch_vulns):
     """Check it generates the sitemap for ecosystem"""
-    mock_fetch_vulns.return_value = ['vuln1', 'vuln2']
+    mock_fetch_vulns.return_value = [('vuln1', datetime.fromordinal(10)),
+                                     ('vuln2', datetime.fromordinal(20))]
     mock_tree = MagicMock()
     mock_element_tree.return_value = mock_tree
 
@@ -68,7 +75,7 @@ class TestSitemapGeneration(unittest.TestCase):
     mock_tree.write.assert_called_once_with(
         './sitemap_Go.xml', encoding='utf-8', xml_declaration=True)
 
-  @patch('generate_sitemap.fetch_vulnerability_ids')
+  @patch('generate_sitemap.fetch_vulnerabilities_and_dates')
   @patch('generate_sitemap.ElementTree')
   def test_generate_sitemap_for_ecosystem_with_space(self, mock_element_tree,
                                                      mock_fetch_vulns):
@@ -76,7 +83,8 @@ class TestSitemapGeneration(unittest.TestCase):
     Check it creates the sitemap correctly where there is a space in the
     ecosystem name.
     """
-    mock_fetch_vulns.return_value = ['vuln1', 'vuln2']
+    mock_fetch_vulns.return_value = [('vuln1', datetime.fromordinal(10)),
+                                     ('vuln2', datetime.fromordinal(20))]
     mock_tree = MagicMock()
     mock_element_tree.return_value = mock_tree
 
@@ -86,7 +94,7 @@ class TestSitemapGeneration(unittest.TestCase):
     mock_tree.write.assert_called_once_with(
         './sitemap_Rocky_Linux.xml', encoding='utf-8', xml_declaration=True)
 
-  @patch('generate_sitemap.fetch_vulnerability_ids')
+  @patch('generate_sitemap.fetch_vulnerabilities_and_dates')
   @patch('generate_sitemap.ElementTree')
   def test_generate_sitemap_for_ecosystem_with_period(self, mock_element_tree,
                                                       mock_fetch_vulns):
@@ -94,7 +102,8 @@ class TestSitemapGeneration(unittest.TestCase):
     Check it creates the sitemap correctly where there is a period in the
     ecosystem name.
     """
-    mock_fetch_vulns.return_value = ['vuln1', 'vuln2']
+    mock_fetch_vulns.return_value = [('vuln1', datetime.fromordinal(10)),
+                                     ('vuln2', datetime.fromordinal(20))]
     mock_tree = MagicMock()
     mock_element_tree.return_value = mock_tree
 
@@ -110,7 +119,11 @@ class TestSitemapGeneration(unittest.TestCase):
     mock_tree = MagicMock()
     mock_element_tree.return_value = mock_tree
 
-    generate_sitemap.generate_sitemap_index({'Go', 'UVI'}, 'http://example.com')
+    generate_sitemap.generate_sitemap_index({'Go', 'UVI'}, 'http://example.com',
+                                            {
+                                                'Go': datetime.fromordinal(10),
+                                                'UVI': datetime.fromordinal(20)
+                                            })
 
     mock_tree.write.assert_called_once_with(
         './sitemap_index.xml', encoding='utf-8', xml_declaration=True)
@@ -125,15 +138,18 @@ class TestSitemapGeneration(unittest.TestCase):
     sitemap index.
     """
     mock_get_ecosystems.return_value = ['Go', 'UVI:Library', 'Android']
-
+    mock_generate_sitemap.return_value = datetime.fromordinal(10)
     generate_sitemap.generate_sitemaps('http://example.com')
 
     self.assertEqual(mock_generate_sitemap.call_count, 2)
     mock_generate_sitemap.assert_any_call('Go', 'http://example.com')
     mock_generate_sitemap.assert_any_call('Android', 'http://example.com')
 
-    mock_generate_index.assert_called_once_with({'Android', 'Go'},
-                                                'http://example.com')
+    mock_generate_index.assert_called_once_with(
+        {'Android', 'Go'}, 'http://example.com', {
+            'Android': datetime.fromordinal(10),
+            'Go': datetime.fromordinal(10),
+        })
 
 
 if __name__ == '__main__':

@@ -126,7 +126,7 @@ def generate_sitemaps(base_url: str) -> None:
       ecosystem for ecosystem in osv_get_ecosystems() if ':' not in ecosystem
   }
 
-  ecosystem_last_mod_dates = dict()
+  ecosystem_last_mod_dates = {}
   for ecosystem in base_ecosystems:
     ecosystem_last_mod_dates[ecosystem] = generate_sitemap_for_ecosystem(
         ecosystem, base_url)

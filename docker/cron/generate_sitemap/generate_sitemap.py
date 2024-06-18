@@ -31,18 +31,21 @@ _SITEMAP_INDEX_PATH = f'./{_SITEMAPS_PREFIX}index.xml'
 _SITEMAP_URL_LIMIT = 49999
 
 
-def fetch_vulnerability_ids(ecosystem: str) -> list[str]:
+def fetch_vulnerabilities_and_dates(
+    ecosystem: str) -> list[tuple[str, datetime.datetime]]:
   """Fetch vulnerabilities' id for the given ecosystem."""
   bugs = osv.Bug.query(
       osv.Bug.status == osv.BugStatus.PROCESSED,
       osv.Bug.public == True,  # pylint: disable=singleton-comparison
-      osv.Bug.ecosystem == ecosystem).order(-osv.Bug.timestamp)
-  bug_ids = [bug.db_id for bug in bugs]
-  return bug_ids
+      osv.Bug.ecosystem == ecosystem,
+      projection=[osv.Bug.last_modified]).order(-osv.Bug.last_modified)
+  bug_and_dates = [(bug.key.id(), bug.last_modified) for bug in bugs]
+  return bug_and_dates
 
 
 def osv_get_ecosystems():
   """Get list of ecosystems."""
+  # This includes ecosystems with only non processed/public entries
   query = osv.Bug.query(projection=[osv.Bug.ecosystem], distinct=True)
   return sorted([bug.ecosystem[0] for bug in query if bug.ecosystem],
                 key=str.lower)
@@ -58,28 +61,42 @@ def get_sitemap_url_for_ecosystem(ecosystem: str, base_url: str) -> str:
   return f'{base_url}/{_SITEMAPS_PREFIX}{ecosystem_name}.xml'
 
 
-def generate_sitemap_for_ecosystem(ecosystem: str, base_url: str) -> None:
-  """Generate a sitemap for the give n ecosystem."""
+def generate_sitemap_for_ecosystem(ecosystem: str,
+                                   base_url: str) -> datetime.datetime:
+  """
+  Generate a sitemap for the give n ecosystem.
+  
+  Returns the latest modified date of it's entries.
+  """
   logging.info('Generating sitemap for ecosystem "%s".', ecosystem)
-  vulnerability_ids = fetch_vulnerability_ids(ecosystem)
+  vulnerability_and_dates = fetch_vulnerabilities_and_dates(ecosystem)
   filename = get_sitemap_filename_for_ecosystem(ecosystem)
   urlset = Element(
       'urlset', xmlns='http://www.sitemaps.org/schemas/sitemap/0.9')
 
+  if len(vulnerability_and_dates) > _SITEMAP_URL_LIMIT:
+    logging.warning('Ecosystem "%s" Exceeded sitemap size limit', ecosystem)
+
   # TODO: For large ecosystems with over 50,000 vulnerabilities, generate
   # multiple sitemaps.
-  for vuln in vulnerability_ids[:_SITEMAP_URL_LIMIT]:
+  for vuln_id, last_modified in vulnerability_and_dates[:_SITEMAP_URL_LIMIT]:
     url = SubElement(urlset, 'url')
     loc = SubElement(url, 'loc')
-    loc.text = f'{base_url}/vulnerability/{vuln}'
+    loc.text = f'{base_url}/vulnerability/{vuln_id}'
     lastmod = SubElement(url, 'lastmod')
-    lastmod.text = datetime.datetime.now().isoformat()
+    lastmod.text = last_modified.astimezone(datetime.UTC).isoformat()
 
   tree = ElementTree(urlset)
   tree.write(filename, encoding='utf-8', xml_declaration=True)
 
+  # Addition of year 2000 for edge cases where vulnerability is empty
+  return max([
+      last_mod for _, last_mod in vulnerability_and_dates[:_SITEMAP_URL_LIMIT]
+  ] + [datetime.datetime.fromisocalendar(2000, 1, 1)])
 
-def generate_sitemap_index(ecosystems: set[str], base_url: str) -> None:
+
+def generate_sitemap_index(ecosystems: set[str], base_url: str,
+                           last_mod_dict: dict[str, datetime.datetime]) -> None:
   """Generate a sitemap index."""
   logging.info('Generating sitemap index.')
   sitemapindex = Element(
@@ -90,7 +107,7 @@ def generate_sitemap_index(ecosystems: set[str], base_url: str) -> None:
     loc = SubElement(sitemap, 'loc')
     loc.text = get_sitemap_url_for_ecosystem(ecosystem, base_url)
     lastmod = SubElement(sitemap, 'lastmod')
-    lastmod.text = datetime.datetime.now().isoformat()
+    lastmod.text = last_mod_dict[ecosystem].astimezone(datetime.UTC).isoformat()
 
   tree = ElementTree(sitemapindex)
   tree.write(_SITEMAP_INDEX_PATH, encoding='utf-8', xml_declaration=True)
@@ -104,10 +121,13 @@ def generate_sitemaps(base_url: str) -> None:
   base_ecosystems = {
       ecosystem for ecosystem in osv_get_ecosystems() if ':' not in ecosystem
   }
-  for ecosystem in base_ecosystems:
-    generate_sitemap_for_ecosystem(ecosystem, base_url)
 
-  generate_sitemap_index(base_ecosystems, base_url)
+  ecosystem_last_mod_dates = dict()
+  for ecosystem in base_ecosystems:
+    ecosystem_last_mod_dates[ecosystem] = generate_sitemap_for_ecosystem(
+        ecosystem, base_url)
+
+  generate_sitemap_index(base_ecosystems, base_url, ecosystem_last_mod_dates)
 
 
 def main() -> int:

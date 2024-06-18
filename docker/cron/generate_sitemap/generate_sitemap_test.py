@@ -39,7 +39,7 @@ class TestSitemapGeneration(unittest.TestCase):
         MagicMock(db_id='vuln2')
     ]
 
-    result = generate_sitemap.fetch_vulnerability_ids('Go')
+    result = generate_sitemap.fetch_vulnerabilities_and_dates('Go')
     self.assertEqual(result, ['vuln1', 'vuln2'])
 
   @patch.object(osv.Bug, 'query')

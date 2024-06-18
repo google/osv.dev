@@ -7,21 +7,21 @@ author: Xueqin Cui
 
 We are excited to announce that OSV-Scanner now supports transitive dependency scanning for Maven pom.xml.
 
-This highly requested [feature](https://github.com/google/osv-scanner/issues/35) empowers you to detect vulnerabilities in both your direct and indirect dependencies, giving you a complete picture of your project's open source security. With this feature, OSV-Scanner fixes one out of two ecosystems/formats when it comes to transitive scanning capabilities.
+This highly requested [feature](https://github.com/google/osv-scanner/issues/35) empowers you to detect vulnerabilities in both your direct and indirect dependencies in the Maven ecosystem, giving you a complete picture of your project's open source security. With this feature, OSV-Scanner fixes one out of two ecosystems/formats when it comes to transitive scanning capabilities.
 
 <!--more-->
 
-## How it works?
+## How does it work?
 
-OSV-Scanner uses [deps.dev’s Maven parser library](https://pkg.go.dev/deps.dev/util/maven) to generate an effective POM which includes project inheritance, importing managed dependencies and project interpolation. This may involve fetching Maven projects from Maven Central repository.
+OSV-Scanner first uses [deps.dev’s Maven parser library](https://pkg.go.dev/deps.dev/util/maven) to generate an effective POM which includes project inheritance, importing managed dependencies and project interpolation. This may involve fetching Maven projects from Maven Central repository.
 
-OSV-Scanner then invokes [deps.dev’s resolver library](https://pkg.go.dev/deps.dev/util/resolve) to compute a dependency graph for the processed project. This graph includes all the direct and transitive dependencies of your project. Maven requirements are provided by [deps.dev API](https://docs.deps.dev/api/v3/#getrequirements).
+OSV-Scanner then invokes [deps.dev’s resolver library](https://pkg.go.dev/deps.dev/util/resolve) to compute a dependency graph for the processed project. This graph includes all the direct and transitive dependencies of your project. Maven requirements are provided by the [deps.dev API](https://docs.deps.dev/api/v3/#getrequirements).
 
-After the dependency resolution, OSV-Scanner queries the OSV database for vulnerabilities associated with these dependencies.
+After the dependency resolution, OSV-Scanner queries the OSV.dev database for vulnerabilities associated with these dependencies.
 
 ## Using transitive dependency support
 
-This feature is enabled by default in OSV-Scanner when you scan a file or a directory.
+This feature is enabled by default in OSV-Scanner when you scan a file or a directory of your Maven project.
 
 ```bash
 osv-scanner -r path/to/your/directory
@@ -53,4 +53,4 @@ See our detailed documentation for more usage information on [transitive depende
 
 ## Try it today!
 
-Transitive dependency support for Maven is available in [OSV-Scanner version 1.8.0](https://github.com/google/osv-scanner/releases/tag/v1.8.0). We believe this is a valuable addition to OSV-Scanner. This feature can help you to improve the security of your Maven projects so give it a try, and we would love your feedback.
+Transitive dependency support for Maven is available in [OSV-Scanner version 1.8.0](https://github.com/google/osv-scanner/releases/tag/v1.8.0). This feature can help you to improve the security of your Maven projects so give it a try, and we would love your [feedback](https://github.com/google/osv-scanner/issues/new).

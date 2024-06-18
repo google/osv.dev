@@ -7,7 +7,7 @@ author: Holly Gong
 
 OSV.dev aims to be a comprehensive database for all known vulnerabilities in open source ecosystems. One of the more recent areas of focus is Linux distributions, which are important in the context of container image scanning. To enable comprehensive scanning support for Debian based container images, we've integrated more vulnerability data from Debian Security Tracker into our OSV database.
 
-![Screenshot of Debian Security Tracker data on OSV.dev](debian.png "Screenshot of Debian Security Tracker data on OSV.dev")
+![Screenshot of Debian Security Tracker data on OSV.dev](debian.png "Screenshot of Debian Security Tracker data on OSV.dev")  
 A [sample CVE entry](https://osv.dev/vulnerability/CVE-2024-2466) with Debian information. 
 
 

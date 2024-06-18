@@ -7,7 +7,7 @@ author: Xueqin Cui
 
 We are excited to announce that OSV-Scanner now supports transitive dependency scanning for Maven pom.xml.
 
-This highly requested [feature](https://github.com/google/osv-scanner/issues/35) empowers you to detect vulnerabilities in both your direct and indirect dependencies in the Maven ecosystem, giving you a complete picture of your project's open source security. With this feature, OSV-Scanner fixes one out of two ecosystems/formats when it comes to transitive scanning capabilities.
+This highly requested [feature](https://github.com/google/osv-scanner/issues/35) empowers you to detect vulnerabilities in both your direct and indirect dependencies in the Maven ecosystem, giving you a complete picture of your Maven-based project's known vulnerable dependencies. With this feature, OSV-Scanner fixes one out of two ecosystems/formats when it comes to transitive scanning capabilities.
 
 <!--more-->
 
@@ -21,7 +21,7 @@ After the dependency resolution, OSV-Scanner queries the OSV.dev database for vu
 
 ## Using transitive dependency support
 
-This feature is enabled by default in OSV-Scanner when you scan a file or a directory of your Maven project.
+This feature is enabled by default in OSV-Scanner when you scan a `pom.xml` file or a directory of your Maven project.
 
 ```bash
 osv-scanner -r path/to/your/directory

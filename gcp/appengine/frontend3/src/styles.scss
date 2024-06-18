@@ -407,17 +407,9 @@ pre {
   --md-filled-text-field-label-text-font: $osv-body-font-family;
   --md-filled-text-field-input-text-font: $osv-body-font-family;
   --md-filled-text-field-input-text-weight: 100;
-  --md-filled-text-field-label-text-color: $osv-text-color;
-  --md-filled-text-field-input-text-color: $osv-text-color;
-  --md-filled-text-field-leading-icon-color: $osv-text-color;
-  --md-filled-text-field-focus-label-text-color: $osv-text-color;
-  --md-filled-text-field-focus-input-text-color: $osv-text-color;
-  --md-filled-text-field-focus-leading-icon-color: $osv-text-color;
-  --md-filled-text-field-hover-label-text-color: $osv-text-color;
-  --md-filled-text-field-hover-input-text-color: $osv-text-color;
-  --md-filled-text-field-hover-leading-icon-color: $osv-text-color;
-  --md-filled-text-field-caret-color: $osv-text-color;
-  --md-filled-text-field-focus-caret-color: $osv-text-color;
+  --md-sys-color-primary: $osv-text-color;
+  --md-sys-color-on-surface: $osv-text-color;
+  --md-sys-color-on-surface-variant: $osv-text-color;
 
   // Make the inner search field full-width.
   .query-field {
@@ -1262,10 +1254,7 @@ dl.vulnerability-details,
       .icon {
         background: #fff;
         border-radius: 999px;
-        --md-icon-button-icon-color: #d46d59;
-        --md-icon-button-hover-icon-color: #d46d59;
-        --md-icon-button-focus-icon-color: #d46d59;
-        --md-icon-button-pressed-icon-color: #d46d59;
+        --md-sys-color-on-surface-variant: #d46d59;
       }
     }
   }

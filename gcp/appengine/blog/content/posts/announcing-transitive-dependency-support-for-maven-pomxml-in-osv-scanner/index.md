@@ -49,7 +49,7 @@ For example, a project only declares the following direct dependency in pom.xml,
 
 Transitive dependency support is disabled in the [experimental offline mode](https://google.github.io/osv-scanner/experimental/offline-mode/).
 
-See our detailed documentation for more usage information on [transitive dependency scanning]((https://google.github.io/osv-scanner/supported-languages-and-lockfiles/#transitive-dependency-scanning)).
+See our detailed documentation for more usage information on [transitive dependency scanning](https://google.github.io/osv-scanner/supported-languages-and-lockfiles/#transitive-dependency-scanning).
 
 ## Try it today!
 

@@ -108,7 +108,7 @@ def generate_sitemap_for_ecosystem(ecosystem: str,
   tree = ElementTree(urlset)
   tree.write(filename, encoding='utf-8', xml_declaration=True)
 
-  # Addition of year 2000 for edge cases where vulnerability is empty
+  # Addition of epoch for edge cases where vulnerability is empty
   return max([
       last_mod for _, last_mod in vulnerability_and_dates[:_SITEMAP_URL_LIMIT]
   ] + [epoch()])

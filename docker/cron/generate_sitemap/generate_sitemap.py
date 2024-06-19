@@ -21,6 +21,7 @@ import osv
 import osv.logs
 import datetime
 import argparse
+from collections import defaultdict
 from google.cloud import ndb
 
 from xml.etree.ElementTree import Element, SubElement, ElementTree
@@ -29,6 +30,13 @@ _OUTPUT_DIRECTORY = './sitemap_output'
 _SITEMAPS_PREFIX = 'sitemap_'
 _SITEMAP_INDEX_PATH = f'./{_SITEMAPS_PREFIX}index.xml'
 _SITEMAP_URL_LIMIT = 49999
+
+alias_to_last_modified: defaultdict[str, datetime.datetime] = defaultdict(
+    lambda: epoch())
+
+
+def epoch() -> datetime.datetime:
+  return datetime.datetime.fromtimestamp(0).astimezone(datetime.UTC)
 
 
 def fetch_vulnerabilities_and_dates(
@@ -41,7 +49,16 @@ def fetch_vulnerabilities_and_dates(
       osv.Bug.public == True,  # pylint: disable=singleton-comparison
       osv.Bug.ecosystem == ecosystem,
       projection=[osv.Bug.last_modified]).order(-osv.Bug.last_modified)
-  bug_and_dates = [(bug.key.id(), bug.last_modified) for bug in bugs]
+
+  bug_and_dates = []
+  for bug in bugs:
+    key = bug.key.id()
+    # Make sure to set the timezone to UTC to add +00:00 when outputting iso
+    last_mod_date = max(
+        bug.last_modified.replace(tzinfo=datetime.UTC),
+        alias_to_last_modified[bug.key.id()])
+    bug_and_dates.append((key, last_mod_date))
+
   return bug_and_dates
 
 
@@ -86,8 +103,7 @@ def generate_sitemap_for_ecosystem(ecosystem: str,
     loc = SubElement(url, 'loc')
     loc.text = f'{base_url}/vulnerability/{vuln_id}'
     lastmod = SubElement(url, 'lastmod')
-    # Make sure to set the timezone to UTC to add +00:00 when outputting iso
-    lastmod.text = last_modified.astimezone(datetime.UTC).isoformat()
+    lastmod.text = last_modified.isoformat()
 
   tree = ElementTree(urlset)
   tree.write(filename, encoding='utf-8', xml_declaration=True)
@@ -95,7 +111,7 @@ def generate_sitemap_for_ecosystem(ecosystem: str,
   # Addition of year 2000 for edge cases where vulnerability is empty
   return max([
       last_mod for _, last_mod in vulnerability_and_dates[:_SITEMAP_URL_LIMIT]
-  ] + [datetime.datetime.fromisocalendar(2000, 1, 1)])
+  ] + [epoch()])
 
 
 def generate_sitemap_index(ecosystems: set[str], base_url: str,
@@ -110,8 +126,7 @@ def generate_sitemap_index(ecosystems: set[str], base_url: str,
     loc = SubElement(sitemap, 'loc')
     loc.text = get_sitemap_url_for_ecosystem(ecosystem, base_url)
     lastmod = SubElement(sitemap, 'lastmod')
-    # Make sure to set the timezone to UTC to add +00:00 when outputting iso
-    lastmod.text = last_mod_dict[ecosystem].astimezone(datetime.UTC).isoformat()
+    lastmod.text = last_mod_dict[ecosystem].isoformat()
 
   tree = ElementTree(sitemapindex)
   tree.write(_SITEMAP_INDEX_PATH, encoding='utf-8', xml_declaration=True)
@@ -119,7 +134,7 @@ def generate_sitemap_index(ecosystems: set[str], base_url: str,
 
 def generate_sitemaps(base_url: str) -> None:
   """Generate sitemaps including all vulnerabilities, split by ecosystem."""
-
+  logging.info("Begin generating sitemaps.")
   # Go over the base ecosystems index. Otherwise we'll have duplicated
   # vulnerabilities in the sitemap.
   base_ecosystems = {
@@ -134,6 +149,17 @@ def generate_sitemaps(base_url: str) -> None:
   generate_sitemap_index(base_ecosystems, base_url, ecosystem_last_mod_dates)
 
 
+def preload_alias_groups():
+  """Fetch all alias groups, as we will be querying all of them anyway"""
+  logging.info("Preloading alias groups into memory.")
+  aliases = osv.AliasGroup.query()
+  for al in aliases:
+    al: osv.AliasGroup
+    for id in al.bug_ids:  # type: ignore
+      alias_to_last_modified[id] = al.last_modified.replace(  # type: ignore
+          tzinfo=datetime.UTC)
+
+
 def main() -> int:
   parser = argparse.ArgumentParser(description='Generate sitemaps.')
   parser.add_argument(
@@ -145,6 +171,7 @@ def main() -> int:
   os.makedirs(_OUTPUT_DIRECTORY, exist_ok=True)
   os.chdir(_OUTPUT_DIRECTORY)
 
+  preload_alias_groups()
   generate_sitemaps(args.base_url)
   return 0
 

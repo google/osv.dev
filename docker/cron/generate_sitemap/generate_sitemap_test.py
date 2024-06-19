@@ -19,6 +19,7 @@ from unittest.mock import patch, MagicMock
 import generate_sitemap
 import osv
 from datetime import datetime
+from datetime import UTC
 
 
 class TestSitemapGeneration(unittest.TestCase):
@@ -37,16 +38,17 @@ class TestSitemapGeneration(unittest.TestCase):
     # Mock the returned query
     mock_query.return_value.order.return_value = [
         MagicMock(
-            last_modified=datetime.fromordinal(10),
+            last_modified=datetime.fromtimestamp(10).astimezone(UTC),
             key=MagicMock(id=MagicMock(return_value='vuln1'))),
         MagicMock(
-            last_modified=datetime.fromordinal(20),
+            last_modified=datetime.fromtimestamp(20).astimezone(UTC),
             key=MagicMock(id=MagicMock(return_value='vuln2'))),
     ]
 
     result = generate_sitemap.fetch_vulnerabilities_and_dates('Go')
-    self.assertEqual(result, [('vuln1', datetime.fromordinal(10)),
-                              ('vuln2', datetime.fromordinal(20))])
+    self.assertEqual(result,
+                     [('vuln1', datetime.fromtimestamp(10).astimezone(UTC)),
+                      ('vuln2', datetime.fromtimestamp(20).astimezone(UTC))])
 
   @patch.object(osv.Bug, 'query')
   def test_osv_get_ecosystems(self, mock_query):
@@ -65,8 +67,10 @@ class TestSitemapGeneration(unittest.TestCase):
   def test_generate_sitemap_for_ecosystem(self, mock_element_tree,
                                           mock_fetch_vulns):
     """Check it generates the sitemap for ecosystem"""
-    mock_fetch_vulns.return_value = [('vuln1', datetime.fromordinal(10)),
-                                     ('vuln2', datetime.fromordinal(20))]
+    mock_fetch_vulns.return_value = [
+        ('vuln1', datetime.fromtimestamp(10).astimezone(UTC)),
+        ('vuln2', datetime.fromtimestamp(20).astimezone(UTC))
+    ]
     mock_tree = MagicMock()
     mock_element_tree.return_value = mock_tree
 
@@ -83,8 +87,10 @@ class TestSitemapGeneration(unittest.TestCase):
     Check it creates the sitemap correctly where there is a space in the
     ecosystem name.
     """
-    mock_fetch_vulns.return_value = [('vuln1', datetime.fromordinal(10)),
-                                     ('vuln2', datetime.fromordinal(20))]
+    mock_fetch_vulns.return_value = [
+        ('vuln1', datetime.fromtimestamp(10).astimezone(UTC)),
+        ('vuln2', datetime.fromtimestamp(20).astimezone(UTC))
+    ]
     mock_tree = MagicMock()
     mock_element_tree.return_value = mock_tree
 
@@ -102,8 +108,10 @@ class TestSitemapGeneration(unittest.TestCase):
     Check it creates the sitemap correctly where there is a period in the
     ecosystem name.
     """
-    mock_fetch_vulns.return_value = [('vuln1', datetime.fromordinal(10)),
-                                     ('vuln2', datetime.fromordinal(20))]
+    mock_fetch_vulns.return_value = [
+        ('vuln1', datetime.fromtimestamp(10).astimezone(UTC)),
+        ('vuln2', datetime.fromtimestamp(20).astimezone(UTC))
+    ]
     mock_tree = MagicMock()
     mock_element_tree.return_value = mock_tree
 
@@ -119,11 +127,11 @@ class TestSitemapGeneration(unittest.TestCase):
     mock_tree = MagicMock()
     mock_element_tree.return_value = mock_tree
 
-    generate_sitemap.generate_sitemap_index({'Go', 'UVI'}, 'http://example.com',
-                                            {
-                                                'Go': datetime.fromordinal(10),
-                                                'UVI': datetime.fromordinal(20)
-                                            })
+    generate_sitemap.generate_sitemap_index(
+        {'Go', 'UVI'}, 'http://example.com', {
+            'Go': datetime.fromtimestamp(10).astimezone(UTC),
+            'UVI': datetime.fromtimestamp(20).astimezone(UTC)
+        })
 
     mock_tree.write.assert_called_once_with(
         './sitemap_index.xml', encoding='utf-8', xml_declaration=True)
@@ -138,7 +146,8 @@ class TestSitemapGeneration(unittest.TestCase):
     sitemap index.
     """
     mock_get_ecosystems.return_value = ['Go', 'UVI:Library', 'Android']
-    mock_generate_sitemap.return_value = datetime.fromordinal(10)
+    mock_generate_sitemap.return_value = datetime.fromtimestamp(10).astimezone(
+        UTC)
     generate_sitemap.generate_sitemaps('http://example.com')
 
     self.assertEqual(mock_generate_sitemap.call_count, 2)
@@ -147,8 +156,8 @@ class TestSitemapGeneration(unittest.TestCase):
 
     mock_generate_index.assert_called_once_with(
         {'Android', 'Go'}, 'http://example.com', {
-            'Android': datetime.fromordinal(10),
-            'Go': datetime.fromordinal(10),
+            'Android': datetime.fromtimestamp(10).astimezone(UTC),
+            'Go': datetime.fromtimestamp(10).astimezone(UTC),
         })
 
 

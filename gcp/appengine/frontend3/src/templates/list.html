@@ -83,8 +83,6 @@
           hide_on_mobile=False) }}
           {{ table_header_cell('summary', 'Summary', is_sortable=False, is_sorted=False, is_descending=False,
           hide_on_mobile=True) }}
-          {{ table_header_cell('affected-versions', 'Affected versions', is_sortable=False, is_sorted=False,
-          is_descending=False, hide_on_mobile=True) }}
           {{ table_header_cell('published', 'Published', is_sortable=True, is_sorted=True, is_descending=True,
           hide_on_mobile=True) }}
           {{ table_header_cell('fixed', 'Fix', is_sortable=False, is_sorted=False, is_descending=False,
@@ -110,21 +108,6 @@
             </span>
             <span role="cell" class="vuln-table-cell vuln-summary mdc-data-table__cell hide-on-mobile">
               {{ vulnerability.summary or "See record for full details" }}
-            </span>
-            <span role="cell" class="vuln-table-cell vuln-versions mdc-data-table__cell hide-on-mobile">
-              <ul class="versions">
-                {#-
-                https://stackoverflow.com/questions/31876069/is-it-possible-to-flatten-a-lists-of-lists-with-ansible-jinja2
-                -#}
-                {%- for version in vulnerability.affected | map(attribute='versions', default=[]) | sum(start=[]) -%}
-                {% if loop.index < 8 %} <li class="version">{{ version }}</li>
-                  {%- elif loop.index == 8 -%}
-                  <li class="version">...</li>
-                  {%- endif -%}
-                  {%- else -%}
-                  <li class="version">See details.</li>
-                  {%- endfor -%}
-              </ul>
             </span>
             <span role="cell" class="vuln-table-cell mdc-data-table__cell hide-on-mobile">
               <relative-time datetime="{{ vulnerability.published }}">

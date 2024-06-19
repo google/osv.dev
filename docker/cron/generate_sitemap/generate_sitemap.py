@@ -31,12 +31,12 @@ _SITEMAPS_PREFIX = 'sitemap_'
 _SITEMAP_INDEX_PATH = f'./{_SITEMAPS_PREFIX}index.xml'
 _SITEMAP_URL_LIMIT = 49999
 
-alias_to_last_modified: defaultdict[str, datetime.datetime] = defaultdict(
-    lambda: epoch())
-
 
 def epoch() -> datetime.datetime:
   return datetime.datetime.fromtimestamp(0).astimezone(datetime.UTC)
+
+
+alias_to_last_modified: defaultdict[str, datetime.datetime] = defaultdict(epoch)
 
 
 def fetch_vulnerabilities_and_dates(
@@ -155,8 +155,8 @@ def preload_alias_groups():
   aliases = osv.AliasGroup.query()
   for al in aliases:
     al: osv.AliasGroup
-    for id in al.bug_ids:  # type: ignore
-      alias_to_last_modified[id] = al.last_modified.replace(  # type: ignore
+    for bug_id in al.bug_ids:  # type: ignore
+      alias_to_last_modified[bug_id] = al.last_modified.replace(  # type: ignore
           tzinfo=datetime.UTC)
 
 

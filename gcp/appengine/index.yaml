@@ -80,6 +80,15 @@ indexes:
       direction: desc
 
   # ecosystem + search_indices queries is served by merging the two indexes above
+  
+  # To allow sitemap generation to project and sort on last_modified
+  - kind: Bug
+    properties:
+    - name: ecosystem
+    - name: public
+    - name: status
+    - name: last_modified
+      direction: desc
 
   # TODO: See if this can be removed
   - kind: Bug

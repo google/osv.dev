@@ -294,11 +294,12 @@ func TestValidRepo(t *testing.T) {
 			repoURL:        "https://github.com/torvalds/linux",
 			expectedResult: true,
 		},
-		{
-			description:    "Valid repository with a git:// protocol URL",
-			repoURL:        "git://git.infradead.org/mtd-utils.git",
-			expectedResult: true,
-		},
+		// Seems to be having an outage at 2024-06-19
+		// {
+		// 	description:    "Valid repository with a git:// protocol URL",
+		// 	repoURL:        "git://git.infradead.org/mtd-utils.git",
+		// 	expectedResult: true,
+		// },
 		{
 			description:    "Invalid repository",
 			repoURL:        "https://github.com/andrewpollock/mybogusrepo",
@@ -316,9 +317,11 @@ func TestValidRepo(t *testing.T) {
 		},
 	}
 	for _, tc := range tests {
+		// This tests against Internet hosts and may have intermittent failures.
 		got := ValidRepoAndHasUsableRefs(tc.repoURL)
 		if diff := cmp.Diff(got, tc.expectedResult); diff != "" {
 			t.Errorf("test %q: ValidRepo(%q) was incorrect: %s", tc.description, tc.repoURL, diff)
+			t.Logf("Confirm that %s is reachable with `git ls-remote %s`", tc.repoURL, tc.repoURL)
 		}
 	}
 }

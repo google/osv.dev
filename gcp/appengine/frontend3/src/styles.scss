@@ -526,6 +526,14 @@ md-icon-button.mdc-data-table__sort-icon-button {
   }
 
   // Tag styling.
+  .tags {
+    margin: 0;
+    padding: 0;
+
+    li {
+      margin-bottom: 5px;
+    }
+  }
   .tag {
     display: inline-block;
     background: $osv-text-color;
@@ -535,19 +543,6 @@ md-icon-button.mdc-data-table__sort-icon-button {
 
     &.fix-unavailable {
       background: $osv-red-300;
-    }
-
-    &.severity-low {
-      background: #53aa33;
-    }
-    &.severity-medium {
-      background: #f9a009;
-    }
-    &.severity-high {
-      background: #df3d03;
-    }
-    &.severity-critical {
-      background: #cc0500;
     }
   }
 

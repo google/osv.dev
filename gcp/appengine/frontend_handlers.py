@@ -329,7 +329,7 @@ def add_cvss_score(bug):
 
   if severity_score.get('score') is not None:
     bug['severity_score'] = severity_score['score']
-    bug['severity_rating'] = severity_score['rating'].lower()
+    bug['severity_rating'] = severity_score['rating']
 
 
 def add_links(bug):

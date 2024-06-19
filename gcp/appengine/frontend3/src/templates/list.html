@@ -14,9 +14,11 @@
     <div class="mdc-data-table__header-cell-label">
       {{ column_name }}
     </div>
-    {% if is_sortable %}
-    <mwc-icon-button class="mdc-data-table__sort-icon-button" icon="arrow_upward" disabled
-      aria-label="Sort by {{ column_name }}" aria-describedby="{{ column_id }}-status-label"></mwc-icon-button>
+    {% if is_sorted %}
+    <md-icon-button class="mdc-data-table__sort-icon-button" disabled
+      aria-label="Sorted by {{ column_name }}" aria-describedby="{{ column_id }}-status-label">
+      <md-icon aria-hidden="false">arrow_upward</md-icon>
+    </md-icon-button>
     <div class="mdc-data-table__sort-status-label" aria-hidden="true" id="{{ column_id }}-status-label">
     </div>
     {% endif %}
@@ -34,9 +36,10 @@
           <form action="{{ url_for('frontend_handlers.list_vulnerabilities') }}" data-turbo-frame="vulnerability-table">
             <div class="mdc-layout-grid__inner">
               <div class="query-container mdc-layout-grid__cell--span-8">
-                <mwc-icon class="search-icon">search</mwc-icon>
-                <mwc-textfield-with-enter label="Package or ID search" icon="a" class="query-field" name="q"
-                  value="{{ query }}"></mwc-textfield-with-enter>
+                <md-textfield-with-enter label="Package or ID search" class="query-field" type="search" name="q"
+                  value="{{ query }}">
+                  <md-icon slot="leading-icon" aria-hidden="false">search</md-icon>
+                </md-textfield-with-enter>
               </div>
             </div>
             <submit-radios>
@@ -149,7 +152,7 @@
                   total_pages - page > 1 %}s{% endif %} left)</span>
                   {%- endif -%}
               </a>
-              <mwc-circular-progress class="next-page-indicator" indeterminate density="-4"></mwc-circular-progress>
+              <md-circular-progress class="next-page-indicator" indeterminate density="-4" aria-label="Page loading progress"></md-circular-progress>
             </div>
         </turbo-frame>
         {%- endif -%}

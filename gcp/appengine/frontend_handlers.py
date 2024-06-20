@@ -728,3 +728,10 @@ def link_to_deps_dev(package, ecosystem):
   # return https://deps.dev/go/github.com%2Francher%2Fwrangler
   encoded_package = parse.quote(package, safe='')
   return f"{_DEPS_BASE_URL}/{system}/{encoded_package}"
+
+
+@blueprint.app_template_filter('display_severity_rating')
+def display_severity_rating(severity: dict) -> str:
+  """Return base score and rating of the severity."""
+  severity_base_score, severity_rating = calculate_severity_details(severity)
+  return f"{severity_base_score} ({severity_rating})"

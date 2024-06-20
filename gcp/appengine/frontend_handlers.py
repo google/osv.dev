@@ -52,6 +52,7 @@ _VALID_BLOG_NAME = _WORD_CHARACTERS_OR_DASH
 _VALID_VULN_ID = _WORD_CHARACTERS_OR_DASH
 _BLOG_CONTENTS_DIR = 'blog'
 _DEPS_BASE_URL = 'https://deps.dev'
+_FIRST_CVSS_CALCULATOR_BASE_URL = 'https://www.first.org/cvss/calculator'
 
 if utils.is_prod():
   redis_host = os.environ.get('REDISHOST', 'localhost')
@@ -735,3 +736,14 @@ def display_severity_rating(severity: dict) -> str:
   """Return base score and rating of the severity."""
   severity_base_score, severity_rating = calculate_severity_details(severity)
   return f"{severity_base_score} ({severity_rating})"
+
+
+@blueprint.app_template_filter('cvss_calculator_url')
+def cvss_calculator_url(severity):
+  """Generate the FIRST CVSS calculator URL from a CVSS string."""
+  score = severity.get('score')
+
+  # Extract CVSS version from the vector string
+  version = score.split('/')[0].split(':')[1]
+
+  return f"{_FIRST_CVSS_CALCULATOR_BASE_URL}/{version}#{score}"

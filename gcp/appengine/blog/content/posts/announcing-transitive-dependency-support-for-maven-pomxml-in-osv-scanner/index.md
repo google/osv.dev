@@ -53,4 +53,4 @@ See our detailed documentation for more usage information on [transitive depende
 
 ## Try it today!
 
-Transitive dependency support for Maven is available in [OSV-Scanner version 1.8.0](https://github.com/google/osv-scanner/releases/tag/v1.8.0). This feature can help you to improve the security of your Maven projects so give it a try, and we would love your [feedback](https://github.com/google/osv-scanner/issues/new).
+Transitive dependency support for Maven is available in [OSV-Scanner version 1.8.1](https://github.com/google/osv-scanner/releases/tag/v1.8.1). This feature can help you to improve the security of your Maven projects so give it a try, and we would love your [feedback](https://github.com/google/osv-scanner/issues/new).

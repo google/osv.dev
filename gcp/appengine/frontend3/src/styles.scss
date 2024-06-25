@@ -544,6 +544,26 @@ md-icon-button.mdc-data-table__sort-icon-button {
     &.fix-unavailable {
       background: $osv-red-300;
     }
+
+    &.severity-low {
+      background: #53aa33;
+      color: black;
+    }
+
+    &.severity-medium {
+      background: #ffd700;
+      color: black;
+    }
+
+    &.severity-high {
+      background: #ffa500;
+      color: black;
+    }
+
+    &.severity-critical {
+      background: #ad0300;
+      color: white;
+    }
   }
 
   // Busy effect.

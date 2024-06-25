@@ -123,7 +123,7 @@
                 </li>
                 {%- if vulnerability.severity_score and vulnerability.severity_rating -%}
                 <li>
-                  <span class="tag">Severity - {{ vulnerability.severity_score }} ({{ vulnerability.severity_rating }})</span>
+                  <span class="tag severity-{{ vulnerability.severity_rating | lower }}">Severity - {{ vulnerability.severity_score }} ({{ vulnerability.severity_rating }})</span>
                 </li>
                 {%- endif -%}
               </ul>

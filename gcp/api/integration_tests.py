@@ -442,8 +442,8 @@ class IntegrationTests(unittest.TestCase,
         timeout=_TIMEOUT)
 
     response_json = response.json()
-    self.assertEqual(1, len(response_json['vulns']))
-    self.assertCountEqual(['GHSA-6fc8-4gx4-v693'],
+    self.assertEqual(2, len(response_json['vulns']))
+    self.assertCountEqual(['GHSA-6fc8-4gx4-v693', 'GHSA-3h5v-q93c-6h6q'],
                           [vuln['id'] for vuln in response_json['vulns']])
 
   def test_query_purl(self):
@@ -795,9 +795,8 @@ class IntegrationTests(unittest.TestCase,
 
     self.assertEqual(set(), vulns_first.intersection(vulns_second))
 
-  @unittest.skipUnless(
-      _LONG_TESTS, "Takes around 45 seconds running locally," +
-      "enable when making a big change")
+  @unittest.skipUnless(_LONG_TESTS, "Takes around 45 seconds running locally," +
+                       "enable when making a big change")
   def test_all_possible_queries(self):
     """Test all combinations of valid and invalid queries"""
     semver_package = {'package': {'purl': 'pkg:cargo/crossbeam-utils'}}

@@ -143,7 +143,11 @@ def start_esp(port, backend_port, credential_path, log_path):
     ]
 
   # Stop existing osv-esp processes that weren't killed properly.
-  subprocess.run(['docker', 'stop', 'osv-esp'], check=False)
+  result = subprocess.run(['docker', 'stop', 'osv-esp'], check=False)
+  if result.returncode == 0:
+    print("Killed process, waiting 5 seconds before starting again")
+    # If the subprocess actually stopped an instance, wait a bit before trying to run the command
+    time.sleep(5)
   esp_proc = subprocess.Popen(
       docker_cmd, stdout=log_handle, stderr=subprocess.STDOUT)
   return esp_proc

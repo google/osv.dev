@@ -795,8 +795,9 @@ class IntegrationTests(unittest.TestCase,
 
     self.assertEqual(set(), vulns_first.intersection(vulns_second))
 
-  @unittest.skipUnless(_LONG_TESTS, "Takes around 45 seconds running locally," +
-                       "enable when making a big change")
+  @unittest.skipUnless(
+      _LONG_TESTS, "Takes around 45 seconds running locally," +
+      "enable when making a big change")
   def test_all_possible_queries(self):
     """Test all combinations of valid and invalid queries"""
     semver_package = {'package': {'purl': 'pkg:cargo/crossbeam-utils'}}

@@ -14,6 +14,10 @@
 """Utils."""
 
 import os
+from datetime import datetime
+from dateutil.relativedelta import relativedelta
+from dateutil import tz
+from dateutil.parser import isoparse
 
 
 def is_prod():
@@ -23,3 +27,36 @@ def is_prod():
   # and it's only used for Redis cache (which has its own env vars) and logging.
   # Consider removing this altogether.
   return 'GAE_ENV' in os.environ or 'K_SERVICE' in os.environ
+
+
+def relative_time(value: datetime | str) -> str:
+  """
+    Convert a datetime or ISO 8601 string to a human-readable relative time.
+
+    Args:
+        value: The input datetime as an ISO 8601 string or a datetime object.
+
+    Returns:
+        str: A human-readable string representing the relative time 
+             (e.g., '2 days ago').
+    """
+  # Parse the ISO 8601 string to a datetime object
+  if isinstance(value, str):
+    value = isoparse(value)
+
+  now = datetime.now(tz=tz.tzutc())
+  diff = relativedelta(now, value)
+
+  if diff.years > 0:
+    return f"{diff.years} year{'s' if diff.years > 1 else ''} ago"
+  if diff.months > 0:
+    return f"{diff.months} month{'s' if diff.months > 1 else ''} ago"
+  if diff.days > 0:
+    return f"{diff.days} day{'s' if diff.days > 1 else ''} ago"
+  if diff.hours > 0:
+    return f"{diff.hours} hour{'s' if diff.hours > 1 else ''} ago"
+  if diff.minutes > 0:
+    return f"{diff.minutes} minute{'s' if diff.minutes > 1 else ''} ago"
+  if diff.seconds > 0:
+    return f"{diff.seconds} second{'s' if diff.seconds > 1 else ''} ago"
+  return "just now"

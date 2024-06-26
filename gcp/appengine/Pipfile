@@ -23,6 +23,7 @@ grpcio-status = "==1.62.2"
 gunicorn = "==22.0.0"
 whitenoise = "6.7.0"
 cvss = "3.1"
+python-dateutil = "2.9.0"
 
 [dev-packages]
 pipenv = "==2022.12.19"

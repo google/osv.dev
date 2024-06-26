@@ -164,6 +164,7 @@ pre {
   $left-padding: 40px;
   display: flex;
   padding: 34px $left-padding;
+  height: 98px;
 
   .logo {
     $logo-width: 53px;
@@ -316,6 +317,7 @@ pre {
 .list-page {
   .title {
     font-size: 20px;
+    height: 25px;
   }
 
   .ecosystem-buttons {
@@ -370,6 +372,7 @@ pre {
       padding: 10px 20px;
       background: #696969;
       border-radius: 999px;
+      height: 38px;
 
       .ecosystem-count {
         font-weight: bold;

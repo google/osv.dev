@@ -438,8 +438,8 @@ pre {
 
 // Hax: Make @material/md-icon-button play well with @material/data-table.
 md-icon-button.mdc-data-table__sort-icon-button {
-  width: auto;
-  height: auto;
+  width: 18px;
+  height: 18px;
   --md-icon-button-icon-size: 18px;
   --md-icon-button-icon-color: $osv-text-color;
   --md-icon-button-disabled-icon-color: $osv-grey-600;

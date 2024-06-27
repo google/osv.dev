@@ -738,6 +738,13 @@ def display_severity_rating(severity: dict) -> str:
   return f"{severity_base_score} ({severity_rating})"
 
 
+@blueprint.app_template_filter('severity_level')
+def severity_level(severity: dict) -> str:
+  """Return rating of the severity."""
+  _, rating = calculate_severity_details(severity)
+  return rating.lower()
+
+
 @blueprint.app_template_filter('cvss_calculator_url')
 def cvss_calculator_url(severity):
   """Generate the FIRST CVSS calculator URL from a CVSS string."""

@@ -782,6 +782,34 @@ dl.vulnerability-details,
   .severity {
     padding: 0;
     font-family: $osv-heading-font-family;
+    font-size: 14px;
+
+    .tag {
+      display: inline-block;
+      padding: 2px 7px;
+      border-radius: $osv-border-radius-small;
+      margin-bottom: 4px;
+
+      &.severity-low {
+        background: $osv-green;
+        color: black;
+      }
+
+      &.severity-medium {
+        background: $osv-yellow;
+        color: black;
+      }
+
+      &.severity-high {
+        background: $osv-orange;
+        color: black;
+      }
+
+      &.severity-critical {
+        background: $osv-red-700;
+        color: white;
+      }
+    }
   }
 }
 
@@ -946,6 +974,32 @@ dl.vulnerability-details,
   .severity {
     padding: 0;
     font-family: $osv-heading-font-family;
+    .tag {
+      display: inline-block;
+      padding: 2px 7px;
+      border-radius: $osv-border-radius-small;
+      margin-bottom: 4px;
+
+      &.severity-low {
+        background: $osv-green;
+        color: black;
+      }
+
+      &.severity-medium {
+        background: $osv-yellow;
+        color: black;
+      }
+
+      &.severity-high {
+        background: $osv-orange;
+        color: black;
+      }
+
+      &.severity-critical {
+        background: $osv-red-700;
+        color: white;
+      }
+    }
   }
 }
 

@@ -8,6 +8,10 @@ $osv-red-300: #ec928e;
 $osv-grey-600: #80868b;
 $osv-grey-800: #3C4043;
 $osv-cyan-300: #C9F5F7;
+$osv-green: #53aa33;
+$osv-yellow: #ffd700;
+$osv-orange: #ffa500;
+$osv-red-700: #ad0300;
 $osv-body-font-family: string.unquote('Overpass, sans-serif');
 $osv-heading-font-family: string.unquote('"Overpass Mono", monospace');
 $osv-heading-size: 60px;
@@ -131,6 +135,7 @@ pre {
 .tooltip {
   position: relative;
   display: inline-block;
+  width: 650px;
 }
 
 .tooltip .tooltiptext {
@@ -142,7 +147,7 @@ pre {
   padding: 5px;
   border-radius: $osv-border-radius-small;
 
-  max-width: 250px;
+  max-width: 700px;
   line-height: 16px;
 
   top: -5px;
@@ -164,6 +169,7 @@ pre {
   $left-padding: 40px;
   display: flex;
   padding: 34px $left-padding;
+  height: 98px;
 
   .logo {
     $logo-width: 53px;
@@ -316,6 +322,7 @@ pre {
 .list-page {
   .title {
     font-size: 20px;
+    height: 25px;
   }
 
   .ecosystem-buttons {
@@ -370,6 +377,7 @@ pre {
       padding: 10px 20px;
       background: #696969;
       border-radius: 999px;
+      height: 38px;
 
       .ecosystem-count {
         font-weight: bold;
@@ -410,6 +418,7 @@ pre {
   --md-sys-color-primary: $osv-text-color;
   --md-sys-color-on-surface: $osv-text-color;
   --md-sys-color-on-surface-variant: $osv-text-color;
+  height: 56px;
 
   // Make the inner search field full-width.
   .query-field {
@@ -437,8 +446,8 @@ pre {
 
 // Hax: Make @material/md-icon-button play well with @material/data-table.
 md-icon-button.mdc-data-table__sort-icon-button {
-  width: auto;
-  height: auto;
+  width: 18px;
+  height: 18px;
   --md-icon-button-icon-size: 18px;
   --md-icon-button-icon-color: $osv-text-color;
   --md-icon-button-disabled-icon-color: $osv-grey-600;
@@ -504,8 +513,7 @@ md-icon-button.mdc-data-table__sort-icon-button {
     }
   }
 
-  .vuln-versions,
-  .vuln-fix-status {
+  .vuln-attributes {
     white-space: nowrap;
   }
 
@@ -528,6 +536,14 @@ md-icon-button.mdc-data-table__sort-icon-button {
   }
 
   // Tag styling.
+  .tags {
+    margin: 0;
+    padding: 0;
+
+    li {
+      margin-bottom: 5px;
+    }
+  }
   .tag {
     display: inline-block;
     background: $osv-text-color;
@@ -537,6 +553,26 @@ md-icon-button.mdc-data-table__sort-icon-button {
 
     &.fix-unavailable {
       background: $osv-red-300;
+    }
+
+    &.severity-low {
+      background: $osv-green;
+      color: black;
+    }
+
+    &.severity-medium {
+      background: $osv-yellow;
+      color: black;
+    }
+
+    &.severity-high {
+      background: $osv-orange;
+      color: black;
+    }
+
+    &.severity-critical {
+      background: $osv-red-700;
+      color: white;
     }
   }
 

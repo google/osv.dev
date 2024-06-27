@@ -1,21 +1,21 @@
-id: BLAH-126
+id: OSV-127
 summary: A vulnerability
 details: |
   Blah blah blah
   Blah
+references:
+- type: WEB
+  url: https://ref.com/ref
 affected:
 - package:
     name: blah.com/package
     ecosystem: Go
+  versions:
+  - branch-v0.1.1
   ranges:
   - type: GIT
     repo: https://osv-test/repo/url
     events:
-    - introduced: eefe8ec3f1f90d0e684890e810f3f21e8500a4cd
+    - introduced: '0'
     - fixed: 8d8242f545e9cec3e6d0d2e3f5bde8be1c659735
-  versions:
-  - branch-v0.1.1
-references:
-- type: WEB
-  url: https://ref.com/ref
 modified: '2020-01-01T00:00:00Z'

@@ -6,10 +6,10 @@ name = "pypi"
 [packages]
 google-cloud-ndb = "==2.3.1"
 google-cloud-logging = "==3.10.0"
-google-cloud-pubsub = "==2.21.3"
+google-cloud-pubsub = "==2.21.5"
 grpcio = "==1.64.1"
 osv = {editable = true, path = "../../"}
-packageurl-python = "==0.15.0"
+packageurl-python = "==0.15.1"
 packaging = "==20.9"
 requests = "==2.32.3"
 grpcio-reflection = "*"

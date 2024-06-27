@@ -3,7 +3,7 @@ kind: CronJob
 metadata:
   name: exporter
 spec:
-  schedule: "0 */1 * * *"
+  schedule: "*/30 * * * *"
   concurrencyPolicy: Forbid
   # If the previous job overruns by more than a minute,
   # Don't try to immediately queue up the next job

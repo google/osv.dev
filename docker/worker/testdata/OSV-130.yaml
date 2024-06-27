@@ -1,9 +1,20 @@
-id: BLAH-129
+id: OSV-130
 summary: A vulnerability
 details: |
   Blah blah blah
   Blah
 affected:
+- package:
+    name: blah.com/package
+    ecosystem: ecosystem
+  ranges:
+  - type: GIT
+    repo: https://osv-test/repo/url
+    events:
+    - introduced: eefe8ec3f1f90d0e684890e810f3f21e8500a4cd
+    - fixed: 8d8242f545e9cec3e6d0d2e3f5bde8be1c659735
+  versions:
+  - branch-v0.1.1
 - package:
     name: blah.com/package
     ecosystem: not a supported ecosystem
@@ -15,6 +26,9 @@ affected:
     - fixed: 8d8242f545e9cec3e6d0d2e3f5bde8be1c659735
   versions:
   - branch-v0.1.1
+references:
+- type: WEB
+  url: https://ref.com/ref
 references:
 - type: WEB
   url: https://ref.com/ref

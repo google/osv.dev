@@ -37,8 +37,14 @@ def relative_time(value: datetime | str) -> str:
         value: The input datetime as an ISO 8601 string or a datetime object.
 
     Returns:
-        str: A human-readable string representing the relative time 
-             (e.g., '2 days ago').
+        str: A human-readable string representing the relative time as:
+             - < 1 minute: Just now
+             - < 1 hour: x minutes ago
+             - < 1 day: x days ago
+             - < 2 day: yesterday
+             - < 7 days: x days ago
+             - >= 7 days: DD MMM
+             - Year is not current year: DD MMM YYYY
     """
   # Parse the ISO 8601 string to a datetime object
   if isinstance(value, str):
@@ -46,17 +52,18 @@ def relative_time(value: datetime | str) -> str:
 
   now = datetime.now(tz=tz.tzutc())
   diff = relativedelta(now, value)
+  diff_seconds = (now - value).total_seconds()
 
-  if diff.years > 0:
-    return f"{diff.years} year{'s' if diff.years > 1 else ''} ago"
-  if diff.months > 0:
-    return f"{diff.months} month{'s' if diff.months > 1 else ''} ago"
-  if diff.days > 0:
-    return f"{diff.days} day{'s' if diff.days > 1 else ''} ago"
-  if diff.hours > 0:
-    return f"{diff.hours} hour{'s' if diff.hours > 1 else ''} ago"
-  if diff.minutes > 0:
+  if diff_seconds < 60:
+    return "just now"
+  if diff_seconds < 3600:
     return f"{diff.minutes} minute{'s' if diff.minutes > 1 else ''} ago"
-  if diff.seconds > 0:
-    return f"{diff.seconds} second{'s' if diff.seconds > 1 else ''} ago"
-  return "just now"
+  if diff_seconds < 86400:
+    return f"{diff.hours} hour{'s' if diff.hours > 1 else ''} ago"
+  if diff_seconds < 172800:
+    return "yesterday"
+  if diff_seconds < 604800:
+    return f"{diff.days} day{'s' if diff.days > 1 else ''} ago"
+  if value.year == now.year:
+    return value.strftime("%d %b")
+  return value.strftime("%d %b %Y")

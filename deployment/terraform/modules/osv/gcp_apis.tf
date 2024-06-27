@@ -80,12 +80,6 @@ resource "google_project_service" "service_usage" {
   disable_on_destroy = false
 }
 
-resource "google_project_service" "app_engine" {
-  project            = var.project_id
-  service            = "appengine.googleapis.com"
-  disable_on_destroy = false
-}
-
 resource "google_project_service" "resource_manager" {
   project            = var.project_id
   service            = "cloudresourcemanager.googleapis.com"

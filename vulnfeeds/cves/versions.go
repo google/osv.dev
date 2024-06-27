@@ -150,6 +150,15 @@ func (vi *VersionInfo) HasLastAffectedCommits(repo string) bool {
 	return false
 }
 
+func (vi *VersionInfo) HasLimitCommits(repo string) bool {
+	for _, ac := range vi.AffectedCommits {
+		if strings.EqualFold(ac.Repo, repo) && ac.Limit != "" {
+			return true
+		}
+	}
+	return false
+}
+
 func (vi *VersionInfo) FixedCommits(repo string) (FixedCommits []string) {
 	for _, ac := range vi.AffectedCommits {
 		if strings.EqualFold(ac.Repo, repo) && ac.Fixed != "" {
@@ -341,6 +350,11 @@ func Repo(u string) (string, error) {
 		}
 		if parsedURL.Hostname() == "sourceware.org" {
 			// Call out to common function for GitWeb URLs
+			return repoGitWeb(parsedURL)
+		}
+		if parsedURL.Hostname() == "git.postgresql.org" {
+			// PostgreSQL's GitWeb is at a different path to its Git repo.
+			parsedURL.Path = strings.Replace(parsedURL.Path, "gitweb", "git", 1)
 			return repoGitWeb(parsedURL)
 		}
 		if strings.HasSuffix(parsedURL.Path, ".git") {

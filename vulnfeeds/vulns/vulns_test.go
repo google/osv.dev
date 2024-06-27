@@ -192,10 +192,45 @@ func TestAddPkgInfo(t *testing.T) {
 			},
 		},
 	}
-	vuln.AddPkgInfo(testPkgInfoNameEco)
-	vuln.AddPkgInfo(testPkgInfoPURL)
-	vuln.AddPkgInfo(testPkgInfoCommits)
-	vuln.AddPkgInfo(testPkgInfoHybrid)
+	testPkgInfoCommitsMultiple := PackageInfo{
+		VersionInfo: cves.VersionInfo{
+			AffectedCommits: []cves.AffectedCommit{
+				{
+					Introduced: "0xdeadbeef",
+					Fixed:      "dsafwefwfe370a9e65d68d62ef37345597e4100b0e87021dfb",
+					Repo:       "github.com/foo/bar",
+				},
+				{
+					Fixed: "658fe213",
+					Repo:  "github.com/foo/bar",
+				},
+				{
+					LastAffected: "0xdeadf00d",
+					Repo:  "github.com/foo/baz",
+				},
+			},
+		},
+	}
+	testPkgInfoEcoMultiple := PackageInfo{
+		PkgName:   "TestNameWithIntroduced",
+		Ecosystem: "TestEco",
+		VersionInfo: cves.VersionInfo{
+			AffectedVersions: []cves.AffectedVersion{
+				{
+					Introduced: "1.0.0-1",
+					Fixed:      "1.2.3-4",
+				},
+			},
+		},
+	}
+	vuln.AddPkgInfo(testPkgInfoNameEco)         // This will end up in vuln.Affected[0]
+	vuln.AddPkgInfo(testPkgInfoPURL)            // This will end up in vuln.Affected[1]
+	vuln.AddPkgInfo(testPkgInfoCommits)         // This will end up in vuln.Affected[2]
+	vuln.AddPkgInfo(testPkgInfoHybrid)          // This will end up in vuln.Affected[3]
+	vuln.AddPkgInfo(testPkgInfoCommitsMultiple) // This will end up in vuln.Affected[4]
+	vuln.AddPkgInfo(testPkgInfoEcoMultiple)     // This will end up in vuln.Affected[5]
+
+	t.Logf("Resulting vuln: %+v", vuln)
 
 	// testPkgInfoNameEco vvvvvvvvvvvvvvv
 	if vuln.Affected[0].Package.Name != testPkgInfoNameEco.PkgName {
@@ -212,6 +247,10 @@ func TestAddPkgInfo(t *testing.T) {
 
 	if vuln.Affected[0].Ranges[0].Events[1].Fixed != testPkgInfoNameEco.VersionInfo.AffectedVersions[0].Fixed {
 		t.Errorf("AddPkgInfo has not correctly added ranges fixed.")
+	}
+
+	if vuln.Affected[0].Ranges[0].Events[0].Introduced != "0" {
+		t.Errorf("AddPkgInfo has not correctly added zero introduced commit.")
 	}
 	// testPkgInfoNameEco ^^^^^^^^^^^^^^^
 
@@ -251,6 +290,18 @@ func TestAddPkgInfo(t *testing.T) {
 	}
 	// testPkgInfoCommits ^^^^^^^^^^^^^^^
 
+	// testPkgInfoCommitsMultiple vvvvvvvvvvvvv
+	if len(vuln.Affected[4].Ranges[0].Events) != 3 {
+		t.Errorf("AddPkgInfo has not correctly added distinct range events from commits: %+v", vuln.Affected[4].Ranges)
+	}
+	// testPkgInfoCommitsMultiple ^^^^^^^^^^^^^
+
+	// testPkgInfoEcoMultiple vvvvvvvvvvvvv
+	if len(vuln.Affected[5].Ranges[0].Events) != 2 {
+		t.Errorf("AddPkgInfo has not correctly added distinct range events from versions: %+v", vuln.Affected[5].Ranges)
+	}
+	// testPkgInfoEcoMultiple ^^^^^^^^^^^^^
+
 	for _, a := range vuln.Affected {
 		perRepoZeroIntroducedCommitHashCount := make(map[string]int)
 		for _, r := range a.Ranges {
@@ -262,6 +313,9 @@ func TestAddPkgInfo(t *testing.T) {
 					} else {
 						perRepoZeroIntroducedCommitHashCount[r.Repo]++
 					}
+				}
+				if e == (Event{}) {
+					t.Errorf("Empty event detected for the repo %s", r.Repo)
 				}
 			}
 		}

@@ -72,6 +72,7 @@ If you want to use the API manually, or build your own tool to use the endpoint,
 | `file_hashes.hash`      | string | the MD5 hash bytes encoded in base64.                                             |
 | `file_hashes.file_path` | string | the path to the file that's hashed, relative to the root directory of the library |
 
+Case Sensitivity: API requests are case-sensitive. Please ensure that you use the correct case for parameter names and values. For example, use 'stdlib' instead of 'Stdlib'.
 
 ### Manual API calls
 After locating the library directory, walk through the directory, saving the MD5 hash of every file with the following extensions:

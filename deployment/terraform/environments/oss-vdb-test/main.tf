@@ -8,6 +8,7 @@ module "osv_test" {
   logs_bucket                                    = "osv-test-logs"
   cve_osv_conversion_bucket                      = "osv-test-cve-osv-conversion"
   debian_osv_conversion_bucket                   = "osv-test-debian-osv"
+  osv_dev_sitemap_bucket                         = "test-osv-dev-sitemap"
   backups_bucket                                 = "osv-test-backup"
   backups_bucket_retention_days                  = 5
   affected_commits_backups_bucket                = "osv-test-affected-commits"
@@ -16,6 +17,11 @@ module "osv_test" {
   website_domain = "test.osv.dev"
   api_url        = "api.test.osv.dev"
   esp_version    = "2.47.0"
+}
+
+import {
+  to = module.osv_test.google_firestore_database.datastore
+  id = "oss-vdb-test/(default)"
 }
 
 output "website_dns_records" {

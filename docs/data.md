@@ -94,8 +94,8 @@ Between the data served in OSV and the data converted to OSV the following ecosy
 
 ## Data dumps
 
-For convenience, these sources are aggregated and continuously exported to a GCS
-bucket maintained by OSV:
+For convenience, these sources are aggregated and [continuously](https://github.com/google/osv.dev/blob/master/deployment/clouddeploy/gke-workers/base/exporter.yaml) 
+exported to a GCS bucket maintained by OSV:
 [`gs://osv-vulnerabilities`](https://storage.googleapis.com/osv-vulnerabilities/index.html)
 
 This bucket contains individual entries of the format

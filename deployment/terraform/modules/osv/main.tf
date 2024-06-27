@@ -1,11 +1,16 @@
 # osv.dev terraform configuration
 
-# App Engine
-resource "google_app_engine_application" "app" {
-  project       = var.project_id
-  location_id   = "us-west2"
-  database_type = "CLOUD_DATASTORE_COMPATIBILITY"
+# Datastore
+resource "google_firestore_database" "datastore" {
+  project     = var.project_id
+  name        = "(default)"
+  location_id = "us-west2"
+  type        = "DATASTORE_MODE"
 
+  lifecycle {
+    # Destroying the resource doesn't seem to delete the database
+    prevent_destroy = true
+  }
 }
 
 # MemoryStore
@@ -169,6 +174,17 @@ resource "google_storage_bucket" "affected_commits_backups_bucket" {
   }
 }
 
+resource "google_storage_bucket" "osv_dev_sitemap_bucket" {
+  project                     = var.project_id
+  name                        = var.osv_dev_sitemap_bucket
+  location                    = "US"
+  storage_class               = "STANDARD"
+  uniform_bucket_level_access = true
+  lifecycle {
+    prevent_destroy = true
+  }
+}
+
 # Service account permissions
 resource "google_service_account" "deployment_service" {
   project      = var.project_id
@@ -180,14 +196,4 @@ resource "google_project_iam_member" "deployment_service" {
   project = var.project_id
   role    = "roles/editor"
   member  = "serviceAccount:${google_service_account.deployment_service.email}"
-}
-
-data "google_app_engine_default_service_account" "default" {
-  project = var.project_id
-}
-
-resource "google_project_iam_member" "app_engine_service" {
-  project = var.project_id
-  role    = "roles/editor"
-  member  = "serviceAccount:${data.google_app_engine_default_service_account.default.email}"
 }

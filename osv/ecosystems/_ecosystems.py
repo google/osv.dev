@@ -55,6 +55,7 @@ _ecosystems = {
     # handled separately in get().
     'AlmaLinux': OrderingUnsupportedEcosystem(),
     'Alpine': OrderingUnsupportedEcosystem(),
+    'Chainguard': OrderingUnsupportedEcosystem(),
     'Debian': OrderingUnsupportedEcosystem(),
     'Photon OS': OrderingUnsupportedEcosystem(),
     'Rocky Linux': OrderingUnsupportedEcosystem(),
@@ -91,6 +92,15 @@ package_urls = {
     'RubyGems': 'https://rubygems.org/gems/',
 }
 
+_OSV_TO_DEPS_ECOSYSTEMS_MAP = {
+    'npm': 'npm',
+    'Go': 'go',
+    'Maven': 'maven',
+    'PyPI': 'pypi',
+    'NuGet': 'nuget',
+    'crates.io': 'cargo'
+}
+
 
 def get(name: str) -> Ecosystem:
   """Get ecosystem helpers for a given ecosystem."""
@@ -122,3 +132,11 @@ def get(name: str) -> Ecosystem:
 
 def normalize(ecosystem_name: str):
   return ecosystem_name.split(':')[0]
+
+
+def is_supported_in_deps_dev(ecosystem_name: str) -> bool:
+  return ecosystem_name in _OSV_TO_DEPS_ECOSYSTEMS_MAP
+
+
+def map_ecosystem_to_deps_dev(ecosystem_name: str) -> str:
+  return _OSV_TO_DEPS_ECOSYSTEMS_MAP.get(ecosystem_name)

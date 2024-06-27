@@ -64,6 +64,8 @@ def main() -> None:
       # subsequent batches from being attempted.
       if args.dryrun and e.args[0].startswith("Dry run mode"):
         pass
+      else:
+        raise
   if len(result_to_fix) > 0 and not args.dryrun:
     print("Fixed!")
 

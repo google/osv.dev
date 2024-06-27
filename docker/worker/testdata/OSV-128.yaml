@@ -1,4 +1,4 @@
-id: BLAH-127
+id: OSV-128
 summary: A vulnerability
 details: |
   Blah blah blah
@@ -8,14 +8,18 @@ references:
   url: https://ref.com/ref
 affected:
 - package:
-    name: blah.com/package
-    ecosystem: Go
+    name: grpcio
+    ecosystem: PyPI
   versions:
-    - branch-v0.1.1
+  - branch-v0.1.1
   ranges:
   - type: GIT
     repo: https://osv-test/repo/url
     events:
     - introduced: '0'
-    - fixed: 8d8242f545e9cec3e6d0d2e3f5bde8be1c659735
+    - limit: 8d8242f545e9cec3e6d0d2e3f5bde8be1c659735
+  - type: ECOSYSTEM
+    events:
+    - introduced: 1.13.0
+    - limit: 1.14.2
 modified: '2020-01-01T00:00:00Z'

@@ -457,8 +457,9 @@ md-icon-button.mdc-data-table__sort-icon-button {
   width: 100%;
 
   @media (max-width: $osv-mobile-breakpoint) {
-    .hide-on-mobile {
-      display: none !important;
+    .vuln-table-container {
+      overflow-x: scroll;
+      overflow-y: hidden;
     }
   }
 

@@ -705,28 +705,28 @@ class UpdateTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
     self.mock_repo = tests.mock_repository(self)
     self.remote_source_repo_path = self.mock_repo.path
     self.mock_repo.add_file(
-        'BLAH-123.yaml',
-        self._load_test_data(os.path.join(TEST_DATA_DIR, 'BLAH-123.yaml')),
+        'OSV-123.yaml',
+        self._load_test_data(os.path.join(TEST_DATA_DIR, 'OSV-123.yaml')),
     )
     self.mock_repo.add_file(
-        'BLAH-124.yaml',
-        self._load_test_data(os.path.join(TEST_DATA_DIR, 'BLAH-124.yaml')),
+        'OSV-124.yaml',
+        self._load_test_data(os.path.join(TEST_DATA_DIR, 'OSV-124.yaml')),
     )
     self.mock_repo.add_file(
-        'BLAH-125.yaml',
-        self._load_test_data(os.path.join(TEST_DATA_DIR, 'BLAH-125.yaml')),
+        'OSV-125.yaml',
+        self._load_test_data(os.path.join(TEST_DATA_DIR, 'OSV-125.yaml')),
     )
     self.mock_repo.add_file(
-        'BLAH-127.yaml',
-        self._load_test_data(os.path.join(TEST_DATA_DIR, 'BLAH-127.yaml')),
+        'OSV-127.yaml',
+        self._load_test_data(os.path.join(TEST_DATA_DIR, 'OSV-127.yaml')),
     )
     self.mock_repo.add_file(
-        'BLAH-128.yaml',
-        self._load_test_data(os.path.join(TEST_DATA_DIR, 'BLAH-128.yaml')),
+        'OSV-128.yaml',
+        self._load_test_data(os.path.join(TEST_DATA_DIR, 'OSV-128.yaml')),
     )
     self.mock_repo.add_file(
-        'BLAH-131.yaml',
-        self._load_test_data(os.path.join(TEST_DATA_DIR, 'BLAH-131.yaml')),
+        'OSV-131.yaml',
+        self._load_test_data(os.path.join(TEST_DATA_DIR, 'OSV-131.yaml')),
     )
     self.mock_repo.commit('User', 'user@email')
 
@@ -742,45 +742,45 @@ class UpdateTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
     self.source_repo.put()
 
     osv.Bug(
-        db_id='BLAH-123',
+        db_id='OSV-123',
         project=['blah.com/package'],
         ecosystem=['Go'],
-        source_id='source:BLAH-123.yaml',
+        source_id='source:OSV-123.yaml',
         import_last_modified=datetime.datetime(2021, 1, 1, 0, 0),
         source_of_truth=osv.SourceOfTruth.SOURCE_REPO,
     ).put()
     osv.Bug(
-        db_id='BLAH-124',
+        db_id='OSV-124',
         regressed='eefe8ec3f1f90d0e684890e810f3f21e8500a4cd',
         project=['blah.com/package'],
         ecosystem=['Go'],
-        source_id='source:BLAH-124.yaml',
+        source_id='source:OSV-124.yaml',
         import_last_modified=datetime.datetime(2021, 1, 1, 0, 0),
         source_of_truth=osv.SourceOfTruth.SOURCE_REPO,
     ).put()
     osv.Bug(
-        db_id='BLAH-125',
+        db_id='OSV-125',
         regressed='eefe8ec3f1f90d0e684890e810f3f21e8500a4cd',
         fixed='8d8242f545e9cec3e6d0d2e3f5bde8be1c659735',
         project=['blah.com/package'],
         ecosystem=['Go'],
-        source_id='source:BLAH-125.yaml',
+        source_id='source:OSV-125.yaml',
         import_last_modified=datetime.datetime(2021, 1, 1, 0, 0),
         source_of_truth=osv.SourceOfTruth.SOURCE_REPO,
     ).put()
     osv.Bug(
-        db_id='BLAH-127',
+        db_id='OSV-127',
         project=['blah.com/package'],
         ecosystem=['Go'],
-        source_id='source:BLAH-127.yaml',
+        source_id='source:OSV-127.yaml',
         import_last_modified=datetime.datetime(2021, 1, 1, 0, 0),
         source_of_truth=osv.SourceOfTruth.SOURCE_REPO,
     ).put()
     osv.Bug(
-        db_id='BLAH-131',
+        db_id='OSV-131',
         project=['blah.com/package'],
         ecosystem=['ecosystem'],
-        source_id='source:BLAH-131.yaml',
+        source_id='source:OSV-131.yaml',
         import_last_modified=datetime.datetime(2021, 1, 1, 0, 0),
         source_of_truth=osv.SourceOfTruth.SOURCE_REPO,
     ).put()
@@ -807,8 +807,8 @@ class UpdateTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
     message = mock.Mock()
     message.attributes = {
         'source': 'source',
-        'path': 'BLAH-123.yaml',
-        'original_sha256': _sha256('BLAH-123.yaml'),
+        'path': 'OSV-123.yaml',
+        'original_sha256': _sha256('OSV-123.yaml'),
         'deleted': 'false',
     }
     task_runner._source_update(message)
@@ -818,11 +818,11 @@ class UpdateTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
 
     self.assertEqual('infra@osv.dev', commit.author.email)
     self.assertEqual('OSV', commit.author.name)
-    self.assertEqual('Update BLAH-123', commit.message)
+    self.assertEqual('Update OSV-123', commit.message)
     diff = repo.diff(commit.parents[0], commit)
 
     self.expect_equal('diff_update', diff.patch)
-    self.expect_dict_equal('update', osv.Bug.get_by_id('BLAH-123')._to_dict())
+    self.expect_dict_equal('update', osv.Bug.get_by_id('OSV-123')._to_dict())
 
     affected_commits = list(osv.AffectedCommits.query())
     self.assertEqual(1, len(affected_commits))
@@ -848,8 +848,8 @@ class UpdateTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
     message = mock.Mock()
     message.attributes = {
         'source': 'source',
-        'path': 'BLAH-128.yaml',
-        'original_sha256': _sha256('BLAH-128.yaml'),
+        'path': 'OSV-128.yaml',
+        'original_sha256': _sha256('OSV-128.yaml'),
         'deleted': 'false',
     }
     task_runner._source_update(message)
@@ -859,12 +859,12 @@ class UpdateTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
 
     self.assertEqual('infra@osv.dev', commit.author.email)
     self.assertEqual('OSV', commit.author.name)
-    self.assertEqual('Update BLAH-128', commit.message)
+    self.assertEqual('Update OSV-128', commit.message)
     diff = repo.diff(commit.parents[0], commit)
 
     self.expect_equal('diff_update_limit', diff.patch)
     self.expect_dict_equal('update_limit',
-                           osv.Bug.get_by_id('BLAH-128')._to_dict())
+                           osv.Bug.get_by_id('OSV-128')._to_dict())
 
     affected_commits = list(osv.AffectedCommits.query())
     self.assertEqual(1, len(affected_commits))
@@ -883,7 +883,7 @@ class UpdateTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
   def test_update_add_fix(self):
     """Test basic update adding a fix."""
     fix_result = osv.FixResult(
-        id='source:BLAH-124.yaml',
+        id='source:OSV-124.yaml',
         repo_url='https://osv-test/repo/url',
         commit='8d8242f545e9cec3e6d0d2e3f5bde8be1c659735',
     )
@@ -893,8 +893,8 @@ class UpdateTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
     message = mock.Mock()
     message.attributes = {
         'source': 'source',
-        'path': 'BLAH-124.yaml',
-        'original_sha256': _sha256('BLAH-124.yaml'),
+        'path': 'OSV-124.yaml',
+        'original_sha256': _sha256('OSV-124.yaml'),
         'deleted': 'false',
     }
     task_runner._source_update(message)
@@ -904,12 +904,12 @@ class UpdateTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
 
     self.assertEqual('infra@osv.dev', commit.author.email)
     self.assertEqual('OSV', commit.author.name)
-    self.assertEqual('Update BLAH-124', commit.message)
+    self.assertEqual('Update OSV-124', commit.message)
     diff = repo.diff(commit.parents[0], commit)
 
     self.expect_equal('diff_update_add_fix', diff.patch)
     self.expect_dict_equal('update_add_fix',
-                           osv.Bug.get_by_id('BLAH-124')._to_dict())
+                           osv.Bug.get_by_id('OSV-124')._to_dict())
 
     affected_commits = list(osv.AffectedCommits.query())
     self.assertEqual(1, len(affected_commits))
@@ -934,8 +934,8 @@ class UpdateTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
     message = mock.Mock()
     message.attributes = {
         'source': 'source',
-        'path': 'BLAH-127.yaml',
-        'original_sha256': _sha256('BLAH-127.yaml'),
+        'path': 'OSV-127.yaml',
+        'original_sha256': _sha256('OSV-127.yaml'),
         'deleted': 'false',
     }
     task_runner._source_update(message)
@@ -945,11 +945,11 @@ class UpdateTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
 
     self.assertEqual('infra@osv.dev', commit.author.email)
     self.assertEqual('OSV', commit.author.name)
-    self.assertEqual('Update BLAH-127', commit.message)
+    self.assertEqual('Update OSV-127', commit.message)
     diff = repo.diff(commit.parents[0], commit)
 
     self.expect_dict_equal('update_no_introduced',
-                           osv.Bug.get_by_id('BLAH-127')._to_dict())
+                           osv.Bug.get_by_id('OSV-127')._to_dict())
     self.expect_equal('diff_update_no_introduced', diff.patch)
 
     affected_commits = list(osv.AffectedCommits.query())
@@ -980,8 +980,8 @@ class UpdateTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
   def test_update_new(self):
     """Test update with new vulnerability added."""
     self.mock_repo.add_file(
-        'BLAH-126.yaml',
-        self._load_test_data(os.path.join(TEST_DATA_DIR, 'BLAH-126.yaml')),
+        'OSV-126.yaml',
+        self._load_test_data(os.path.join(TEST_DATA_DIR, 'OSV-126.yaml')),
     )
     self.mock_repo.commit('User', 'user@email')
 
@@ -990,8 +990,8 @@ class UpdateTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
     message = mock.Mock()
     message.attributes = {
         'source': 'source',
-        'path': 'BLAH-126.yaml',
-        'original_sha256': _sha256('BLAH-126.yaml'),
+        'path': 'OSV-126.yaml',
+        'original_sha256': _sha256('OSV-126.yaml'),
         'deleted': 'false',
     }
     task_runner._source_update(message)
@@ -1001,27 +1001,27 @@ class UpdateTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
 
     self.assertEqual('infra@osv.dev', commit.author.email)
     self.assertEqual('OSV', commit.author.name)
-    self.assertEqual('Update BLAH-126', commit.message)
+    self.assertEqual('Update OSV-126', commit.message)
 
     self.expect_dict_equal('update_new',
-                           osv.Bug.get_by_id('BLAH-126')._to_dict())
+                           osv.Bug.get_by_id('OSV-126')._to_dict())
 
   def test_update_delete(self):
     """Test deletion."""
     task_runner = worker.TaskRunner(ndb_client, None, self.tmp_dir.name, None,
                                     None)
-    self.mock_repo.delete_file('BLAH-123.yaml')
+    self.mock_repo.delete_file('OSV-123.yaml')
     self.mock_repo.commit('User', 'user@email')
 
     message = mock.Mock()
     message.attributes = {
         'source': 'source',
-        'path': 'BLAH-123.yaml',
-        'original_sha256': _sha256('BLAH-123.yaml'),
+        'path': 'OSV-123.yaml',
+        'original_sha256': _sha256('OSV-123.yaml'),
         'deleted': 'true',
     }
     task_runner._source_update(message)
-    bug = osv.Bug.get_by_id('BLAH-123')
+    bug = osv.Bug.get_by_id('OSV-123')
     self.assertEqual(osv.BugStatus.INVALID, bug.status)
 
   def test_update_no_changes(self):
@@ -1031,8 +1031,8 @@ class UpdateTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
     message = mock.Mock()
     message.attributes = {
         'source': 'source',
-        'path': 'BLAH-125.yaml',
-        'original_sha256': _sha256('BLAH-125.yaml'),
+        'path': 'OSV-125.yaml',
+        'original_sha256': _sha256('OSV-125.yaml'),
         'deleted': 'false',
     }
     task_runner._source_update(message)
@@ -1050,7 +1050,7 @@ class UpdateTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
     message = mock.Mock()
     message.attributes = {
         'source': 'source',
-        'path': 'BLAH-123.yaml',
+        'path': 'OSV-123.yaml',
         'original_sha256': 'invalid',
         'deleted': 'false',
     }
@@ -1060,7 +1060,7 @@ class UpdateTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
     self.assertEqual(
         logs.output,
         [
-            f'WARNING:root:sha256sum of BLAH-123.yaml no longer matches (expected=invalid vs current={_sha256("BLAH-123.yaml")}).'
+            f'WARNING:root:sha256sum of OSV-123.yaml no longer matches (expected=invalid vs current={_sha256("OSV-123.yaml")}).'
         ],
     )
 
@@ -1076,7 +1076,7 @@ class UpdateTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
     original_push_source_changes = osv.push_source_changes
 
     def mock_push_source_changes(*args, **kwargs):
-      self.mock_repo.add_file('BLAH-123.yaml', 'changed')
+      self.mock_repo.add_file('OSV-123.yaml', 'changed')
       self.mock_repo.commit('Another user', 'user@email')
 
       original_push_source_changes(*args, **kwargs)
@@ -1090,8 +1090,8 @@ class UpdateTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
     message = mock.Mock()
     message.attributes = {
         'source': 'source',
-        'path': 'BLAH-123.yaml',
-        'original_sha256': _sha256('BLAH-123.yaml'),
+        'path': 'OSV-123.yaml',
+        'original_sha256': _sha256('OSV-123.yaml'),
         'deleted': 'false',
     }
 
@@ -1105,11 +1105,11 @@ class UpdateTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
     )
     self.assertRegex(
         logs.output[1],
-        r'WARNING:root:Upstream hash for .*/BLAH-123.yaml changed \(expected=.* vs current=.*\)',
+        r'WARNING:root:Upstream hash for .*/OSV-123.yaml changed \(expected=.* vs current=.*\)',
     )
     self.assertEqual(
         logs.output[2],
-        'WARNING:root:Discarding changes for BLAH-123 due to conflicts.',
+        'WARNING:root:Discarding changes for OSV-123 due to conflicts.',
     )
 
     repo = pygit2.Repository(self.remote_source_repo_path)
@@ -1465,8 +1465,8 @@ class UpdateTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
   def test_update_bad_ecosystem_new(self):
     """Test adding from an unsupported ecosystem."""
     self.mock_repo.add_file(
-        'BLAH-129.yaml',
-        self._load_test_data(os.path.join(TEST_DATA_DIR, 'BLAH-129.yaml')),
+        'OSV-129.yaml',
+        self._load_test_data(os.path.join(TEST_DATA_DIR, 'OSV-129.yaml')),
     )
     self.mock_repo.commit('User', 'user@email')
 
@@ -1475,22 +1475,22 @@ class UpdateTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
     message = mock.Mock()
     message.attributes = {
         'source': 'source',
-        'path': 'BLAH-129.yaml',
-        'original_sha256': _sha256('BLAH-129.yaml'),
+        'path': 'OSV-129.yaml',
+        'original_sha256': _sha256('OSV-129.yaml'),
         'deleted': 'false',
     }
 
     with self.assertLogs(level='WARNING'):
       task_runner._source_update(message)
 
-    bug = osv.Bug.get_by_id('BLAH-129')
+    bug = osv.Bug.get_by_id('OSV-129')
     self.assertEqual(osv.BugStatus.INVALID, bug.status)
 
   def test_update_partly_bad_ecosystem_new(self):
     """Test adding vuln with both supported and unsupported ecosystem."""
     self.mock_repo.add_file(
-        'BLAH-130.yaml',
-        self._load_test_data(os.path.join(TEST_DATA_DIR, 'BLAH-130.yaml')),
+        'OSV-130.yaml',
+        self._load_test_data(os.path.join(TEST_DATA_DIR, 'OSV-130.yaml')),
     )
     self.mock_repo.commit('User', 'user@email')
 
@@ -1499,8 +1499,8 @@ class UpdateTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
     message = mock.Mock()
     message.attributes = {
         'source': 'source',
-        'path': 'BLAH-130.yaml',
-        'original_sha256': _sha256('BLAH-130.yaml'),
+        'path': 'OSV-130.yaml',
+        'original_sha256': _sha256('OSV-130.yaml'),
         'deleted': 'false',
     }
 
@@ -1512,11 +1512,11 @@ class UpdateTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
 
     self.assertEqual('infra@osv.dev', commit.author.email)
     self.assertEqual('OSV', commit.author.name)
-    self.assertEqual('Update BLAH-130', commit.message)
+    self.assertEqual('Update OSV-130', commit.message)
 
     self.expect_dict_equal(
         'update_partly_bad_ecosystem_new',
-        osv.Bug.get_by_id('BLAH-130')._to_dict(),
+        osv.Bug.get_by_id('OSV-130')._to_dict(),
     )
 
   def test_update_partly_bad_ecosystem_delete(self):
@@ -1528,15 +1528,15 @@ class UpdateTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
     message = mock.Mock()
     message.attributes = {
         'source': 'source',
-        'path': 'BLAH-131.yaml',
-        'original_sha256': _sha256('BLAH-131.yaml'),
+        'path': 'OSV-131.yaml',
+        'original_sha256': _sha256('OSV-131.yaml'),
         'deleted': 'false',
     }
 
     with self.assertLogs(level='WARNING'):
       task_runner._source_update(message)
 
-    bug = osv.Bug.get_by_id('BLAH-131')
+    bug = osv.Bug.get_by_id('OSV-131')
     self.assertEqual(osv.BugStatus.INVALID, bug.status)
 
   def test_update_bucket_cve(self):
@@ -1580,9 +1580,9 @@ class UpdateTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
     self.source_repo.put()
 
     self.mock_repo.add_file(
-        'TEST-last-affected-01.yaml',
+        'OSV-TEST-last-affected-01.yaml',
         self._load_test_data(
-            os.path.join(TEST_DATA_DIR, 'TEST-last-affected-01.yaml')),
+            os.path.join(TEST_DATA_DIR, 'OSV-TEST-last-affected-01.yaml')),
     )
     self.mock_repo.commit('User', 'user@email')
     task_runner = worker.TaskRunner(ndb_client, None, self.tmp_dir.name, None,
@@ -1590,8 +1590,8 @@ class UpdateTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
     message = mock.Mock()
     message.attributes = {
         'source': 'source',
-        'path': 'TEST-last-affected-01.yaml',
-        'original_sha256': _sha256('TEST-last-affected-01.yaml'),
+        'path': 'OSV-TEST-last-affected-01.yaml',
+        'original_sha256': _sha256('OSV-TEST-last-affected-01.yaml'),
         'deleted': 'false',
     }
     task_runner._source_update(message)
@@ -1604,7 +1604,7 @@ class UpdateTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
 
     self.expect_dict_equal(
         'last_affected_git',
-        ndb.Key(osv.Bug, 'source:TEST-last-affected-01').get()._to_dict(),
+        ndb.Key(osv.Bug, 'source:OSV-TEST-last-affected-01').get()._to_dict(),
     )
 
     affected_commits = list(osv.AffectedCommits.query())

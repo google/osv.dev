@@ -8,6 +8,10 @@ $osv-red-300: #ec928e;
 $osv-grey-600: #80868b;
 $osv-grey-800: #3C4043;
 $osv-cyan-300: #C9F5F7;
+$osv-green: #53aa33;
+$osv-yellow: #ffd700;
+$osv-orange: #ffa500;
+$osv-red-700: #ad0300;
 $osv-body-font-family: string.unquote('Overpass, sans-serif');
 $osv-heading-font-family: string.unquote('"Overpass Mono", monospace');
 $osv-heading-size: 60px;
@@ -503,8 +507,7 @@ md-icon-button.mdc-data-table__sort-icon-button {
     }
   }
 
-  .vuln-versions,
-  .vuln-fix-status {
+  .vuln-attributes {
     white-space: nowrap;
   }
 
@@ -527,6 +530,14 @@ md-icon-button.mdc-data-table__sort-icon-button {
   }
 
   // Tag styling.
+  .tags {
+    margin: 0;
+    padding: 0;
+
+    li {
+      margin-bottom: 5px;
+    }
+  }
   .tag {
     display: inline-block;
     background: $osv-text-color;
@@ -536,6 +547,26 @@ md-icon-button.mdc-data-table__sort-icon-button {
 
     &.fix-unavailable {
       background: $osv-red-300;
+    }
+
+    &.severity-low {
+      background: $osv-green;
+      color: black;
+    }
+
+    &.severity-medium {
+      background: $osv-yellow;
+      color: black;
+    }
+
+    &.severity-high {
+      background: $osv-orange;
+      color: black;
+    }
+
+    &.severity-critical {
+      background: $osv-red-700;
+      color: white;
     }
   }
 

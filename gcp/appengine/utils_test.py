@@ -14,8 +14,7 @@
 """Utils tests."""
 import utils
 import unittest
-from datetime import datetime, timedelta
-from dateutil.tz import tzutc
+from datetime import datetime, timedelta, UTC
 from unittest import mock
 
 
@@ -23,7 +22,7 @@ class TestRelativeTime(unittest.TestCase):
   """Check utils.relative_time() functionality"""
 
   def setUp(self):
-    self.now = datetime.now(tz=tzutc())
+    self.now = datetime.now(tz=UTC)
 
   def test_just_now(self):
     """Check when the value is less than 1 min"""
@@ -49,27 +48,28 @@ class TestRelativeTime(unittest.TestCase):
     self.assertEqual(
         utils.relative_time(self.now - timedelta(days=3)), "3 days ago")
 
-  def test_last_week(self):
+  @mock.patch("utils.datetime")
+  def test_last_week(self, mock_datetime):
     """Check when the value is 7 days"""
-    last_week = self.now - timedelta(days=7)
-    self.assertEqual(
-        utils.relative_time(last_week), last_week.strftime("%d %b"))
+    now = datetime(2024, 6, 27, tzinfo=UTC)
+    mock_datetime.now.return_value = now
+    last_week = now - timedelta(days=7)
+    self.assertEqual(utils.relative_time(last_week), '20 Jun')
 
   @mock.patch("utils.datetime")
   def test_date_without_year(self, mock_datetime):
     """Check when the value is longer than 7 days but in the same year"""
-    now = datetime(2024, 6, 27, tzinfo=tzutc())
+    now = datetime(2024, 6, 27, tzinfo=UTC)
     mock_datetime.now.return_value = now
     date_within_year = now - timedelta(days=10)
-    self.assertEqual(
-        utils.relative_time(date_within_year),
-        date_within_year.strftime("%d %b"))
+    self.assertEqual(utils.relative_time(date_within_year), '17 Jun')
 
-  def test_date_with_year(self):
-    date_outside_year = self.now - timedelta(days=400)
-    self.assertEqual(
-        utils.relative_time(date_outside_year),
-        date_outside_year.strftime("%d %b %Y"))
+  @mock.patch("utils.datetime")
+  def test_date_with_year(self, mock_datetime):
+    now = datetime(2024, 1, 10, tzinfo=UTC)
+    mock_datetime.now.return_value = now
+    date_outside_year = now - timedelta(days=30)
+    self.assertEqual(utils.relative_time(date_outside_year), '11 Dec 2023')
 
   def test_iso_string(self):
     iso_string = (self.now - timedelta(days=3)).isoformat()

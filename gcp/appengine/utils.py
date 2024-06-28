@@ -14,10 +14,7 @@
 """Utils."""
 
 import os
-from datetime import datetime
-from dateutil.relativedelta import relativedelta
-from dateutil import tz
-from dateutil.parser import isoparse
+from datetime import datetime, UTC
 
 
 def is_prod():
@@ -48,22 +45,26 @@ def relative_time(value: datetime | str) -> str:
     """
   # Parse the ISO 8601 string to a datetime object
   if isinstance(value, str):
-    value = isoparse(value)
+    value = datetime.fromisoformat(value)
 
-  now = datetime.now(tz=tz.tzutc())
-  diff = relativedelta(now, value)
-  diff_seconds = (now - value).total_seconds()
+  now = datetime.now(tz=UTC)
+  diff = now - value
+  diff_seconds = diff.total_seconds()
+  diff_minutes = diff_seconds // 60
+  diff_hours = diff_seconds // (60 * 60)
+  diff_days = diff_seconds // ((60 * 60) * 24)
+  diff_weeks = diff_seconds // (((60 * 60) * 24) * 7)
 
-  if diff_seconds < 60:
+  if diff_minutes == 0:
     return "just now"
-  if diff_seconds < 3600:
-    return f"{diff.minutes} minute{'s' if diff.minutes > 1 else ''} ago"
-  if diff_seconds < 86400:
-    return f"{diff.hours} hour{'s' if diff.hours > 1 else ''} ago"
-  if diff_seconds < 172800:
+  if diff_hours == 0:
+    return f"{int(diff_minutes)} minute{'s' if diff_minutes > 1 else ''} ago"
+  if diff_days == 0:
+    return f"{int(diff_hours)} hour{'s' if diff_hours > 1 else ''} ago"
+  if diff_days == 1:
     return "yesterday"
-  if diff_seconds < 604800:
-    return f"{diff.days} day{'s' if diff.days > 1 else ''} ago"
+  if diff_weeks == 0:
+    return f"{int(diff_days)} day{'s' if diff_days > 1 else ''} ago"
   if value.year == now.year:
     return value.strftime("%d %b")
   return value.strftime("%d %b %Y")

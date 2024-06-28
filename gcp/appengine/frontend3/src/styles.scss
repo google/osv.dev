@@ -163,6 +163,40 @@ pre {
   opacity: 1;
 }
 
+.tag {
+  display: inline-block;
+  background: $osv-text-color;
+  color: $osv-background;
+  padding: 0 7px;
+  border-radius: $osv-border-radius-small;
+
+  &.severity-low {
+    background: $osv-green;
+    color: black;
+  }
+
+  &.severity-medium {
+    background: $osv-yellow;
+    color: black;
+  }
+
+  &.severity-high {
+    background: $osv-orange;
+    color: black;
+  }
+
+  &.severity-critical {
+    background: $osv-red-700;
+    color: white;
+  }
+}
+
+.severity-level {
+  @extend .tag;
+  padding: 2px 7px;
+  margin-bottom: 4px;
+}
+
 /** Top bar */
 
 .top-bar {
@@ -545,34 +579,10 @@ md-icon-button.mdc-data-table__sort-icon-button {
     }
   }
   .tag {
-    display: inline-block;
-    background: $osv-text-color;
-    color: $osv-background;
-    padding: 0 7px;
-    border-radius: $osv-border-radius-small;
+    @extend .tag;
 
     &.fix-unavailable {
       background: $osv-red-300;
-    }
-
-    &.severity-low {
-      background: $osv-green;
-      color: black;
-    }
-
-    &.severity-medium {
-      background: $osv-yellow;
-      color: black;
-    }
-
-    &.severity-high {
-      background: $osv-orange;
-      color: black;
-    }
-
-    &.severity-critical {
-      background: $osv-red-700;
-      color: white;
     }
   }
 
@@ -785,33 +795,6 @@ dl.vulnerability-details,
     padding: 0;
     font-family: $osv-heading-font-family;
     font-size: 14px;
-
-    .tag {
-      display: inline-block;
-      padding: 2px 7px;
-      border-radius: $osv-border-radius-small;
-      margin-bottom: 4px;
-
-      &.severity-low {
-        background: $osv-green;
-        color: black;
-      }
-
-      &.severity-medium {
-        background: $osv-yellow;
-        color: black;
-      }
-
-      &.severity-high {
-        background: $osv-orange;
-        color: black;
-      }
-
-      &.severity-critical {
-        background: $osv-red-700;
-        color: white;
-      }
-    }
   }
 }
 
@@ -976,32 +959,6 @@ dl.vulnerability-details,
   .severity {
     padding: 0;
     font-family: $osv-heading-font-family;
-    .tag {
-      display: inline-block;
-      padding: 2px 7px;
-      border-radius: $osv-border-radius-small;
-      margin-bottom: 4px;
-
-      &.severity-low {
-        background: $osv-green;
-        color: black;
-      }
-
-      &.severity-medium {
-        background: $osv-yellow;
-        color: black;
-      }
-
-      &.severity-high {
-        background: $osv-orange;
-        color: black;
-      }
-
-      &.severity-critical {
-        background: $osv-red-700;
-        color: white;
-      }
-    }
   }
 }
 

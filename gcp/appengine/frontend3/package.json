@@ -10,7 +10,6 @@
   },
   "dependencies": {
     "@github/clipboard-copy-element": "1.3.0",
-    "@github/relative-time-element": "4.4.2",
     "@hotwired/turbo": "7.3.0",
     "@material/data-table": "13.0.0",
     "@material/layout-grid": "13.0.0",

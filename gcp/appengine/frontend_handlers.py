@@ -728,3 +728,9 @@ def link_to_deps_dev(package, ecosystem):
   # return https://deps.dev/go/github.com%2Francher%2Fwrangler
   encoded_package = parse.quote(package, safe='')
   return f"{_DEPS_BASE_URL}/{system}/{encoded_package}"
+
+
+@blueprint.app_template_filter('relative_time')
+def relative_time(timestamp: str) -> str:
+  """Convert the input to a human-readable relative time."""
+  return utils.relative_time(timestamp)

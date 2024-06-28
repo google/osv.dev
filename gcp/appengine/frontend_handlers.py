@@ -754,3 +754,9 @@ def cvss_calculator_url(severity):
   version = score.split('/')[0].split(':')[1]
 
   return f"{_FIRST_CVSS_CALCULATOR_BASE_URL}/{version}#{score}"
+
+
+@blueprint.app_template_filter('relative_time')
+def relative_time(timestamp: str) -> str:
+  """Convert the input to a human-readable relative time."""
+  return utils.relative_time(timestamp)

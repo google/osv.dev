@@ -103,7 +103,7 @@
             </span>
             <span role="cell" class="vuln-table-cell mdc-data-table__cell">
               <relative-time datetime="{{ vulnerability.published }}">
-                {{ vulnerability.published }}
+                {{ vulnerability.published | relative_time }}
               </relative-time>
             </span>
             <span role="cell" class="vuln-table-cell vuln-attributes mdc-data-table__cell">

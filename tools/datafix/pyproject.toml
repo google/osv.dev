@@ -1,0 +1,20 @@
+[tool.poetry]
+name = "datafix"
+package-mode = false
+
+[tool.poetry.dependencies]
+python = "^3.11"
+
+google-cloud-ndb = "^2.3"
+google-cloud-storage = "^2.17"
+PyYAML = "^6"
+
+osv = { path = "../../", develop = true }
+
+[tool.poetry.dev-dependencies]
+yapf = "*"
+pylint = "*"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"

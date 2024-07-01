@@ -5,6 +5,7 @@ name = "pypi"
 
 [packages]
 google-cloud-ndb = "*"
+google-cloud-storage = "*"
 PyYAML = "*"
 osv = {editable = true, path = "./../.."}
 

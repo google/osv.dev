@@ -298,7 +298,6 @@ class IntegrationTests(unittest.TestCase,
     ghsa_h395_qcrw_5vmq = self._get('GHSA-h395-qcrw-5vmq')
     ghsa_3vp4_m3rf_835h = self._get('GHSA-3vp4-m3rf-835h')
 
-
     expected_vulns = [
         ghsa_6vm3_jj99_7229,
         ghsa_869c_j7wc_8jqv,
@@ -488,10 +487,7 @@ class IntegrationTests(unittest.TestCase,
 
     self.assert_results_equal({'vulns': another_expected}, response.json())
 
-    expected_deb = [
-        self._get('DLA-3203-1'),
-        self._get('DSA-4921-1')
-    ]
+    expected_deb = [self._get('DLA-3203-1'), self._get('DSA-4921-1')]
 
     response = requests.post(
         _api() + _BASE_QUERY,

@@ -64,7 +64,6 @@ tools and unsupported by the core OSV maintainers.
 -   [dependency-management-data](https://dmd.tanna.dev)
 -   [Dependency-Track](https://github.com/DependencyTrack/dependency-track)
 -   [dep-scan](https://github.com/AppThreat/dep-scan)
--   [EZE-CLI: The one stop shop for security testing in modern development](https://github.com/RiverSafeUK/eze-cli)
 -   [G-Rath/osv-detector](https://github.com/G-Rath/osv-detector): A scanner
     that uses the OSV database.
 -   [GUAC](https://guac.sh)

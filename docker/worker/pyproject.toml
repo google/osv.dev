@@ -1,0 +1,25 @@
+[tool.poetry]
+name = "worker"
+package-mode = false
+
+[tool.poetry.dependencies]
+python = "^3.11"
+
+google-cloud-pubsub = "^2.21"
+google-cloud-ndb = "^2.3"
+google-cloud-storage = "^2.17"
+PyYAML = "^6"
+redis = "^5"
+pygit2 = "^1.15.0"
+requests = "^2.32.2"
+jsonschema = "^4.22"
+
+osv = { path = "../../", develop = true }
+
+[tool.poetry.dev-dependencies]
+yapf = "*"
+pylint = "*"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"

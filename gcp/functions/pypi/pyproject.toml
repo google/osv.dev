@@ -1,0 +1,15 @@
+[tool.poetry]
+name = "pypi-publish"
+package-mode = false
+
+[tool.poetry.dependencies]
+python = "^3.11"
+
+cryptography = "==42.0.8"
+google-cloud-secret-manager = "==2.20.0"
+osv = "==0.0.21"
+requests = "==2.32.3"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"

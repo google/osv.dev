@@ -118,6 +118,10 @@ class Ecosystem(ABC):
   def supports_ordering(self):
     return True
 
+  @property
+  def supports_comparing(self):
+    return False
+
 
 class OrderingUnsupportedEcosystem(Ecosystem):
   """Placeholder ecosystem helper for unimplemented ecosystems."""

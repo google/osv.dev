@@ -46,6 +46,7 @@ from osv import purl_helpers
 from osv.logs import setup_gcp_logging
 import osv_service_v1_pb2
 import osv_service_v1_pb2_grpc
+from osv.ecosystems.helper_base import Ecosystem
 
 _SHUTDOWN_GRACE_DURATION = 5
 
@@ -90,6 +91,7 @@ _VENDORED_LIB_NAMES = frozenset((
 _TAG_PREFIX = "refs/tags/"
 
 _ndb_client = ndb.Client()
+
 
 
 def ndb_context(func):
@@ -1064,7 +1066,10 @@ def query_by_version(context: QueryContext,
       for bug in new_bugs:
         if bug not in bugs:
           bugs.append(bug)
-
+    elif ecosystem_info.supports_comparing:
+      # Query for non-enumerated ecosystems.
+      bugs, next_page_token = yield _query_by_comparing_versions(
+        context, query, ecosystem_info, version)
     else:
       bugs, next_page_token = yield _query_by_generic_version(
           context, query, package_name, ecosystem, purl, version)
@@ -1093,6 +1098,28 @@ def query_by_version(context: QueryContext,
 
   return [to_response(bug) for bug in bugs], next_page_token
 
+@ndb.tasklet
+def _query_by_comparing_versions(context: QueryContext, query: ndb.Query, ecosystem_info: Ecosystem, version: str) -> tuple[list, ndb.Cursor]:
+  """Query by package."""
+  bugs = []
+  it: ndb.QueryIterator = query.iter(start_cursor=context.page_token)
+  cursor = None
+
+  while (yield it.has_next_async()):
+    if len(bugs) >= context.total_responses.page_limit():
+      cursor = it.cursor_after()
+      break
+
+    bug: osv.Bug = it.next()
+    for affected_package in bug.affected_packages:
+      affected_package: osv.AffectedPackage
+      if _is_affected(ecosystem_info, version, affected_package):
+        bugs.append(bug)
+        context.total_responses.add(1)
+        break
+
+  logging.info(f"[QUERY_BY_PACKAGE] version {version} has total {len(bugs)} bugs in {ecosystem_info.name}")  # DEBUG ONLY, WILL BE REMOVED
+  return bugs, cursor
 
 @ndb.tasklet
 def query_by_package(context: QueryContext, package_name: str, ecosystem: str,
@@ -1177,6 +1204,25 @@ def is_cloud_run() -> bool:
   """Check if we are running in Cloud Run."""
   # https://cloud.google.com/run/docs/container-contract#env-vars
   return os.getenv('K_SERVICE') is not None
+
+
+def _is_affected(ecosystem: Ecosystem, version: str, affected_package: osv.AffectedPackage) -> bool:
+  for range in affected_package.ranges:
+    range: osv.AffectedRange2
+
+    introduced_version = '0'
+    fixed_version = '99999'
+    for event in range.events:
+      event: osv.AffectedEvent
+      if event.type == 'introduced':
+        introduced_version = event.value
+      elif event.type == 'fixed':
+        fixed_version = event.value
+
+    if ecosystem.sort_key(version) >= ecosystem.sort_key(introduced_version) and ecosystem.sort_key(version) < ecosystem.sort_key(fixed_version):
+      return True
+
+  return False
 
 
 def main():

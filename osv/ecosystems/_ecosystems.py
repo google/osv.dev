@@ -16,6 +16,9 @@
 from .helper_base import Ecosystem, OrderingUnsupportedEcosystem
 from .alpine import Alpine
 from .debian import Debian
+from .ubuntu import Ubuntu
+from .alma_linux import AlmaLinux
+from .rocky_linux import RockyLinux
 from .haskell import Hackage, GHC
 from .maven import Maven
 from .nuget import NuGet
@@ -101,31 +104,28 @@ _OSV_TO_DEPS_ECOSYSTEMS_MAP = {
     'crates.io': 'cargo'
 }
 
-
 def get(name: str) -> Ecosystem:
   """Get ecosystem helpers for a given ecosystem."""
 
-  if name.startswith('Debian:'):
-    return Debian(name.split(':')[1])
+  if name.startswith('Debian'):
+    release_ver = name.split(':')[1] if len(name.split(':')) > 1 else ''
+    return Debian(release_ver)
 
   if name.startswith('Alpine:'):
     return Alpine(name.split(':')[1])
 
-  if name.startswith('AlmaLinux:'):
-    # TODO(unassigned)
-    return OrderingUnsupportedEcosystem()
+  if name.startswith('AlmaLinux'):
+    return AlmaLinux()
 
-  if name.startswith('Rocky Linux:'):
-    # TODO(unassigned)
-    return OrderingUnsupportedEcosystem()
+  if name.startswith('Rocky Linux'):
+    return RockyLinux()
 
   if name.startswith('Photon OS:'):
     # TODO(unassigned)
     return OrderingUnsupportedEcosystem()
 
-  if name.startswith('Ubuntu:'):
-    # TODO(unassigned)
-    return OrderingUnsupportedEcosystem()
+  if name.startswith('Ubuntu'):
+    return Ubuntu()
 
   return _ecosystems.get(name)
 
@@ -140,3 +140,4 @@ def is_supported_in_deps_dev(ecosystem_name: str) -> bool:
 
 def map_ecosystem_to_deps_dev(ecosystem_name: str) -> str:
   return _OSV_TO_DEPS_ECOSYSTEMS_MAP.get(ecosystem_name)
+

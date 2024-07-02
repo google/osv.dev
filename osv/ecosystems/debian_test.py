@@ -19,6 +19,9 @@ from unittest import mock
 
 from .. import cache
 from .. import ecosystems
+from osv import ecosystems
+from osv.ecosystems.debian import compare
+from osv.ecosystems import debian
 
 
 class DebianEcosystemTest(unittest.TestCase):
@@ -99,3 +102,11 @@ class DebianEcosystemTest(unittest.TestCase):
     debian.next_version('nginx', '1.13.5-1')
     cache_mock.get.assert_called_once()
     cache_mock.set.assert_called_once()
+
+  # def test_debian_version(self):
+  #   val = compare("79.0.3945.130-1~deb10u1", "79.0.3945.79-1")
+  #   self.assertEqual(val, 1)
+  #   ecosystem = "Debian:9"
+  #   ecosystem_var = ecosystems.get(ecosystem)
+  #   if ecosystem_var.sort_key("79.0.3945.130-1~deb10u1") > ecosystem_var.sort_key("79.0.3945.79-1"):
+  #     self.fail()

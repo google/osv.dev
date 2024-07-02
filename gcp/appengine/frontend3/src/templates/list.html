@@ -2,12 +2,11 @@
 {% set active_section = 'vulnerabilities' %}
 {% set disable_turbo_cache = 'true' %}
 
-{% macro table_header_cell(column_id, column_name, is_sortable, is_sorted, is_descending, hide_on_mobile) %}
+{% macro table_header_cell(column_id, column_name, is_sortable, is_sorted, is_descending) %}
 <span class="vuln-table-cell mdc-data-table__header-cell vuln-table-header
     {% if is_sortable %}mdc-data-table__header-cell--with-sort__DISABLED{% endif %}
     {% if is_sorted %}mdc-data-table__header-cell--sorted{% endif %}
-    {% if is_descending %}mdc-data-table__header-cell--sorted-descending{% endif %}
-    {% if hide_on_mobile%}hide-on-mobile{% endif %}" role="columnheader" scope="col"
+    {% if is_descending %}mdc-data-table__header-cell--sorted-descending{% endif %}" role="columnheader" scope="col"
   aria-sort="{% if is_sorted %}{% if is_descending %}descending{% else %}ascending{% endif %}{% else %}none{% endif %}"
   data-column-id="{{ column_id }}">
   <div class="mdc-data-table__header-cell-wrapper">
@@ -15,8 +14,8 @@
       {{ column_name }}
     </div>
     {% if is_sorted %}
-    <md-icon-button class="mdc-data-table__sort-icon-button" disabled
-      aria-label="Sorted by {{ column_name }}" aria-describedby="{{ column_id }}-status-label">
+    <md-icon-button class="mdc-data-table__sort-icon-button" disabled aria-label="Sorted by {{ column_name }}"
+      aria-describedby="{{ column_id }}-status-label">
       <md-icon aria-hidden="false">arrow_upward</md-icon>
     </md-icon-button>
     <div class="mdc-data-table__sort-status-label" aria-hidden="true" id="{{ column_id }}-status-label">
@@ -77,18 +76,11 @@
     <div role="table" class="vuln-table mdc-data-table__table" aria-label="Vulnerability table">
       <div role="rowgroup" class="vuln-table-header">
         <div role="row" class="vuln-table-row mdc-data-table__header-row">
-          {{ table_header_cell('id', 'ID', is_sortable=False, is_sorted=False, is_descending=False,
-          hide_on_mobile=False) }}
-          {{ table_header_cell('package', 'Packages', is_sortable=False, is_sorted=False, is_descending=False,
-          hide_on_mobile=False) }}
-          {{ table_header_cell('summary', 'Summary', is_sortable=False, is_sorted=False, is_descending=False,
-          hide_on_mobile=True) }}
-          {{ table_header_cell('affected-versions', 'Affected versions', is_sortable=False, is_sorted=False,
-          is_descending=False, hide_on_mobile=True) }}
-          {{ table_header_cell('published', 'Published', is_sortable=True, is_sorted=True, is_descending=True,
-          hide_on_mobile=True) }}
-          {{ table_header_cell('fixed', 'Fix', is_sortable=False, is_sorted=False, is_descending=False,
-          hide_on_mobile=True) }}
+          {{ table_header_cell('id', 'ID', is_sortable=False, is_sorted=False, is_descending=False) }}
+          {{ table_header_cell('package', 'Packages', is_sortable=False, is_sorted=False, is_descending=False) }}
+          {{ table_header_cell('summary', 'Summary', is_sortable=False, is_sorted=False, is_descending=False) }}
+          {{ table_header_cell('published', 'Published', is_sortable=True, is_sorted=True, is_descending=True) }}
+          {{ table_header_cell('attributes', 'Attributes', is_sortable=False, is_sorted=False, is_descending=False) }}
         </div>
       </div>
       <div role="rowgroup" class="vuln-table-rows mdc-data-table__content">
@@ -106,35 +98,30 @@
                 {% endfor %}
               </ul>
             </span>
-            <span role="cell" class="vuln-table-cell vuln-summary mdc-data-table__cell hide-on-mobile">
+            <span role="cell" class="vuln-table-cell vuln-summary mdc-data-table__cell">
               {{ vulnerability.summary or "See record for full details" }}
             </span>
-            <span role="cell" class="vuln-table-cell vuln-versions mdc-data-table__cell hide-on-mobile">
-              <ul class="versions">
-                {#-
-                https://stackoverflow.com/questions/31876069/is-it-possible-to-flatten-a-lists-of-lists-with-ansible-jinja2
-                -#}
-                {%- for version in vulnerability.affected | map(attribute='versions', default=[]) | sum(start=[]) -%}
-                {% if loop.index < 8 %} <li class="version">{{ version }}</li>
-                  {%- elif loop.index == 8 -%}
-                  <li class="version">...</li>
-                  {%- endif -%}
-                  {%- else -%}
-                  <li class="version">See details.</li>
-                  {%- endfor -%}
-              </ul>
-            </span>
-            <span role="cell" class="vuln-table-cell mdc-data-table__cell hide-on-mobile">
+            <span role="cell" class="vuln-table-cell mdc-data-table__cell">
               <relative-time datetime="{{ vulnerability.published }}">
-                {{ vulnerability.published }}
+                {{ vulnerability.published | relative_time }}
               </relative-time>
             </span>
-            <span role="cell" class="vuln-table-cell vuln-fix-status mdc-data-table__cell hide-on-mobile">
-              {%- if vulnerability.isFixed -%}
-              <span class="tag fix-available">Fix available</span>
-              {%- else -%}
-              <span class="tag fix-unavailable">No fix available</span>
-              {%- endif -%}
+            <span role="cell" class="vuln-table-cell vuln-attributes mdc-data-table__cell">
+              <ul class="tags">
+                <li>
+                  {%- if vulnerability.isFixed -%}
+                  <span class="tag fix-available">Fix available</span>
+                  {%- else -%}
+                  <span class="tag fix-unavailable">No fix available</span>
+                  {%- endif -%}
+                </li>
+                {%- if vulnerability.severity_score and vulnerability.severity_rating -%}
+                <li>
+                  <span class="tag severity-{{ vulnerability.severity_rating | lower }}">Severity - {{
+                    vulnerability.severity_score }} ({{ vulnerability.severity_rating }})</span>
+                </li>
+                {%- endif -%}
+              </ul>
             </span>
           </div>
           {%- endfor -%}
@@ -152,7 +139,8 @@
                   total_pages - page > 1 %}s{% endif %} left)</span>
                   {%- endif -%}
               </a>
-              <md-circular-progress class="next-page-indicator" indeterminate density="-4" aria-label="Page loading progress"></md-circular-progress>
+              <md-circular-progress class="next-page-indicator" indeterminate density="-4"
+                aria-label="Page loading progress"></md-circular-progress>
             </div>
         </turbo-frame>
         {%- endif -%}

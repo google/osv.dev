@@ -19,8 +19,9 @@ from .helper_base import Ecosystem
 class RockyLinux(Ecosystem):
   """"Rocky Linux ecosystem"""
 
-  def supports_comparing(self):
-    return True
+  @property
+  def name(self):
+    return "Rocky Linux"
 
   def sort_key(self, version):
     return RpmVersion.from_string(version)

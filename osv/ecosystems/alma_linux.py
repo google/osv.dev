@@ -11,17 +11,14 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""Alma Linux ecosystem helper."""
+"""AlmaLinux ecosystem helper."""
 
 from ..third_party.univers.rpm import RpmVersion
 
 from .helper_base import Ecosystem
 
 class AlmaLinux(Ecosystem):
-  """"Alma Linux ecosystem"""
-
-  def supports_comparing(self):
-    return True
+  """"AlmaLinux ecosystem"""
 
   def sort_key(self, version):
     return RpmVersion.from_string(version)

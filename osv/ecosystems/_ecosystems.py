@@ -108,8 +108,7 @@ def get(name: str) -> Ecosystem:
   """Get ecosystem helpers for a given ecosystem."""
 
   if name.startswith('Debian'):
-    release_ver = name.split(':')[1] if len(name.split(':')) > 1 else ''
-    return Debian(release_ver)
+    return Debian(name.partition(':')[2])
 
   if name.startswith('Alpine:'):
     return Alpine(name.split(':')[1])

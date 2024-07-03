@@ -82,9 +82,6 @@ class Debian(Ecosystem):
   def __init__(self, debian_release_ver: str):
     self.debian_release_ver = debian_release_ver
 
-  def supports_comparing(self):
-    return True
-
   def sort_key(self, version):
     if not DebianVersion.is_valid(version):
       # If debian version is not valid, it is most likely an invalid fixed

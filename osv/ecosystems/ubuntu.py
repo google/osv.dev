@@ -21,9 +21,6 @@ from .helper_base import Ecosystem
 class Ubuntu(Ecosystem):
   """Ubuntu ecosystem"""
 
-  def supports_comparing(self):
-    return True
-
   def sort_key(self, version):
     if not UbuntuVersion.is_valid(version):
       return UbuntuVersion(999999, 999999)

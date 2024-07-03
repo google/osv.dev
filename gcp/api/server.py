@@ -1051,9 +1051,11 @@ def query_by_version(context: QueryContext,
 
   ecosystem_info = ecosystems.get(ecosystem)
   is_semver = ecosystem_info and ecosystem_info.is_semver
+  supports_ordering = ecosystem_info and ecosystem_info.supports_ordering
 
   bugs = []
   next_page_token = None
+  project = getattr(_ndb_client, 'project', 'oss-vdb')
   if ecosystem:
     if is_semver:
       # Ecosystem supports semver only.
@@ -1066,10 +1068,10 @@ def query_by_version(context: QueryContext,
       for bug in new_bugs:
         if bug not in bugs:
           bugs.append(bug)
-    elif ecosystem_info.supports_comparing:
+    elif project == 'oss-vdb-test' and supports_ordering:
       # Query for non-enumerated ecosystems.
       bugs, next_page_token = yield _query_by_comparing_versions(
-        context, query, ecosystem_info, version)
+        context, query, ecosystem, version)
     else:
       bugs, next_page_token = yield _query_by_generic_version(
           context, query, package_name, ecosystem, purl, version)
@@ -1099,11 +1101,14 @@ def query_by_version(context: QueryContext,
   return [to_response(bug) for bug in bugs], next_page_token
 
 @ndb.tasklet
-def _query_by_comparing_versions(context: QueryContext, query: ndb.Query, ecosystem_info: Ecosystem, version: str) -> tuple[list, ndb.Cursor]:
+def _query_by_comparing_versions(context: QueryContext, query: ndb.Query, ecosystem: str, version: str) -> tuple[list, ndb.Cursor]:
   """Query by package."""
   bugs = []
   it: ndb.QueryIterator = query.iter(start_cursor=context.page_token)
   cursor = None
+  ecosystem_info = ecosystems.get(ecosystem)
+  # Check if the query specifies a release (e.g., "Debian:12")
+  has_release = ':' in ecosystem
 
   while (yield it.has_next_async()):
     if len(bugs) >= context.total_responses.page_limit():
@@ -1113,6 +1118,16 @@ def _query_by_comparing_versions(context: QueryContext, query: ndb.Query, ecosys
     bug: osv.Bug = it.next()
     for affected_package in bug.affected_packages:
       affected_package: osv.AffectedPackage
+      package = affected_package.package
+      package: osv.Package
+
+      package_ecosystem = package.ecosystem
+      if not has_release:
+        # If no release is specified, extract only the ecosystem name (e.g., "Debian")
+        package_ecosystem = package_ecosystem.split(':')[0]
+      if ecosystem != package_ecosystem:
+        continue
+
       if _is_affected(ecosystem_info, version, affected_package):
         bugs.append(bug)
         context.total_responses.add(1)
@@ -1207,6 +1222,7 @@ def is_cloud_run() -> bool:
 
 
 def _is_affected(ecosystem: Ecosystem, version: str, affected_package: osv.AffectedPackage) -> bool:
+  """Checks if a version is affected."""
   for range in affected_package.ranges:
     range: osv.AffectedRange2
 

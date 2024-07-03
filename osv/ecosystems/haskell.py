@@ -68,7 +68,6 @@ class Hackage(Ecosystem):
 class GHC(Ecosystem):
   """Glasgow Haskell Compiler (GHC) ecosystem."""
 
-  # FIXME: https://github.com/google/osv.dev/issues/2367
   _API_PACKAGE_URL = ('https://gitlab.haskell.org'
                       '/api/v4/projects/3561/repository/tags?per_page=100')
   """

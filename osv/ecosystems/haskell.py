@@ -70,6 +70,8 @@ class GHC(Ecosystem):
 
   _API_PACKAGE_URL = ('https://gitlab.haskell.org'
                       '/api/v4/projects/3561/repository/tags?per_page=100')
+  # 100 is the maximum per_page size according to GitLab docs:
+  # https://docs.gitlab.com/ee/api/rest/index.html#offset-based-pagination
   """
   Historical versions do not have tags in the Git repo, so we hardcode the
   list.  See https://github.com/google/osv.dev/pull/1463 for discussion.

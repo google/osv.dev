@@ -20,11 +20,13 @@ on:
   merge_group:
     branches: ["master"]
   schedule:
-    - cron: "12 12 * * 1"
+  - cron: "12 12 * * 1"
   push:
     branches: ["master"]
 
 permissions:
+  # Required to upload SARIF file to CodeQL. See: https://github.com/github/codeql-action/issues/2117
+  actions: read
   # Require writing security events to upload SARIF file to security tab
   security-events: write
   # Read commit contents
@@ -34,7 +36,9 @@ permissions:
 jobs:
   scan-scheduled:
     if: ${{ github.event_name == 'push' || github.event_name == 'schedule' }}
-    uses: "google/osv-scanner-action/.github/workflows/osv-scanner-reusable.yml@staging"
+    # If you want to copy this config, highly suggest pinning this version to a release rather than tracking the main branch
+    uses: "google/osv-scanner-action/.github/workflows/osv-scanner-reusable.yml@main"
   scan-pr:
     if: ${{ github.event_name == 'pull_request' || github.event_name == 'merge_group' }}
-    uses: "google/osv-scanner-action/.github/workflows/osv-scanner-reusable-pr.yml@staging"
+    # If you want to copy this config, highly suggest pinning this version to a release rather than tracking the main branch
+    uses: "google/osv-scanner-action/.github/workflows/osv-scanner-reusable-pr.yml@main"

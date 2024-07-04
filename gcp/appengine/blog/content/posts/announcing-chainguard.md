@@ -1,6 +1,6 @@
 ---
 title: "Chainguard adds OSV feed"
-date: 2024-07-02T16:00:00Z
+date: 2024-07-02T06:00:00Z
 draft: false
 author: OSV Team
 ---

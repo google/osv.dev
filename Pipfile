@@ -4,17 +4,19 @@ verify_ssl = true
 name = "pypi"
 
 [packages]
-google-cloud-ndb = "*"
-google-cloud-logging = "*"
-google-cloud-storage = "*"
-semver = ">=3.0.0"
-pyyaml = "*"
-pygit2 = ">=1.14.0"
-attrs = "*"
-jsonschema = "*"
-grpcio = "*"
+python = "^3.11"
+google-cloud-ndb = "^2.3"
+google-cloud-logging = "^3.10"
+google-cloud-storage = "^2.17"
+semver = "^3"
+pyyaml = "^6"
+pygit2 = "^1.14.0"
+attrs = "^23.2"
+jsonschema = "^4"
+grpcio = "^1"
+# TODO: Can this be higher
 packaging = "<22.0"
-requests = ">=2.32.2"
+requests = "^2.32"
 
 [dev-packages]
 yapf = "*"

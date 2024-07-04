@@ -41,8 +41,7 @@ class GHCEcosystemTest(unittest.TestCase):
     self.assertEqual('0.29', ecosystem.next_version('GHC', '0'))
     self.assertEqual('7.0.4', ecosystem.next_version('GHC', '7.0.4-rc1'))
     # 7.0.4 is the last of the hardcoded versions
-    # Disabled due to https://github.com/google/osv.dev/issues/2367
-    # self.assertEqual('7.2.1', ecosystem.next_version('GHC', '7.0.4'))
+    self.assertEqual('7.2.1', ecosystem.next_version('GHC', '7.0.4'))
 
     # The whole GHC ecosystem is versioned together.  Enumeration ignores
     # package/component name.  Therefore this should NOT raise:

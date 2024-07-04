@@ -11,15 +11,22 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""Alma Linux ecosystem helper tests."""
+"""AlmaLinux ecosystem helper tests."""
 
 import unittest
-
-from osv.ecosystems.rocky_linux import compare
+from .. import ecosystems
 
 
 class RockyLinuxEcosystemTest(unittest.TestCase):
-  """Rocky Alma linux ecosystem helper tests."""
-  # def test_alma_linux(self):
-  #   val = compare("9.27-13.el8_10", "9.27-15.el8_10")
-  #   self.assertEqual(val, -1)
+  """Almalinux ecosystem helper tests."""
+
+  def test_alma_linux(self):
+    ecosystem = ecosystems.get('AlmaLinux')
+    self.assertGreater(
+        ecosystem.sort_key("9.27-15.el8_10"),
+        ecosystem.sort_key("9.27-13.el8_10"))
+    self.assertGreater(
+        ecosystem.sort_key("9.27-15.el8_10"), ecosystem.sort_key("0"))
+    self.assertGreater(
+        ecosystem.sort_key("3:2.1.10-1.module_el8.10.0+3845+87b84552"),
+        ecosystem.sort_key("3:2.1.10-1.module_el8.10.0+3858+6ad51f9f"))

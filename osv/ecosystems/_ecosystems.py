@@ -48,22 +48,22 @@ _ecosystems = {
     'Hex': SemverEcosystem(),
     'npm': SemverEcosystem(),
     'SwiftURL': SemverEcosystem(),
-    # Ecosystems missing implementations:
-    'Android': OrderingUnsupportedEcosystem(),
-    'ConanCenter': OrderingUnsupportedEcosystem(),
-    'GitHub Actions': OrderingUnsupportedEcosystem(),
-    'Linux': OrderingUnsupportedEcosystem(),
-    'OSS-Fuzz': OrderingUnsupportedEcosystem(),
     # Ecosystems which require a release version for enumeration, which is
     # handled separately in get().
     'AlmaLinux': OrderingUnsupportedEcosystem(),
     'Alpine': OrderingUnsupportedEcosystem(),
     'Chainguard': OrderingUnsupportedEcosystem(),
     'Debian': OrderingUnsupportedEcosystem(),
-    'Photon OS': OrderingUnsupportedEcosystem(),
     'Rocky Linux': OrderingUnsupportedEcosystem(),
     'Ubuntu': OrderingUnsupportedEcosystem(),
     'Wolfi': OrderingUnsupportedEcosystem(),
+    # Ecosystems missing implementations:
+    'Android': OrderingUnsupportedEcosystem(),
+    'ConanCenter': OrderingUnsupportedEcosystem(),
+    'GitHub Actions': OrderingUnsupportedEcosystem(),
+    'Linux': OrderingUnsupportedEcosystem(),
+    'OSS-Fuzz': OrderingUnsupportedEcosystem(),
+    'Photon OS': OrderingUnsupportedEcosystem(),
 }
 
 # Semver-based ecosystems, should correspond to _ecosystems above.
@@ -104,6 +104,7 @@ _OSV_TO_DEPS_ECOSYSTEMS_MAP = {
     'crates.io': 'cargo'
 }
 
+
 def get(name: str) -> Ecosystem:
   """Get ecosystem helpers for a given ecosystem."""
 
@@ -139,4 +140,3 @@ def is_supported_in_deps_dev(ecosystem_name: str) -> bool:
 
 def map_ecosystem_to_deps_dev(ecosystem_name: str) -> str:
   return _OSV_TO_DEPS_ECOSYSTEMS_MAP.get(ecosystem_name)
-

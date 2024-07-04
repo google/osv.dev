@@ -17,6 +17,7 @@ from ..third_party.univers.rpm import RpmVersion
 
 from .helper_base import Ecosystem
 
+
 class AlmaLinux(Ecosystem):
   """"AlmaLinux ecosystem"""
 
@@ -30,4 +31,3 @@ class AlmaLinux(Ecosystem):
                          last_affected=None,
                          limits=None):
     raise NotImplementedError('Ecosystem helper does not support enumeration')
-

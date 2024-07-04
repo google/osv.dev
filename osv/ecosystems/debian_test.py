@@ -20,8 +20,6 @@ from unittest import mock
 from .. import cache
 from .. import ecosystems
 from osv import ecosystems
-from osv.ecosystems.debian import compare
-from osv.ecosystems import debian
 
 
 class DebianEcosystemTest(unittest.TestCase):

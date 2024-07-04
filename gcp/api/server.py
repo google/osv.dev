@@ -46,7 +46,6 @@ from osv import purl_helpers
 from osv.logs import setup_gcp_logging
 import osv_service_v1_pb2
 import osv_service_v1_pb2_grpc
-from osv.ecosystems.helper_base import Ecosystem
 
 _SHUTDOWN_GRACE_DURATION = 5
 
@@ -93,7 +92,6 @@ _TAG_PREFIX = "refs/tags/"
 _ndb_client = ndb.Client()
 
 
-
 def ndb_context(func):
   """Wrapper to create an NDB context."""
 
@@ -132,12 +130,7 @@ class LogTraceFilter:
     # "X-Cloud-Trace-Context: TRACE_ID/SPAN_ID;o=TRACE_TRUE"
     parts = trace.split('/')
     trace_id = parts[0]
-    # We don't set the GOOGLE_CLOUD_PROJECT env var explicitly, and I can't find
-    # any confirmation on whether Cloud Run will set automatically.
-    # Grab the project name from the (undocumented?) field on ndb.Client().
-    # Most correct way to do this would be to use the instance metadata server
-    # https://cloud.google.com/run/docs/container-contract#metadata-server
-    project = getattr(_ndb_client, 'project', 'oss-vdb')  # fall back to oss-vdb
+    project = get_gcp_project()
     record.trace = f'projects/{project}/traces/{trace_id}'
     if len(parts) > 1:
       record.span_id = parts[1].split(';')[0]
@@ -628,6 +621,10 @@ def do_query(query, context: QueryContext, include_details=True):
     purl_str = ''
 
   if ecosystem and not ecosystems.get(ecosystem):
+    if ecosystem.startswith('Alpine') and not ecosystem.startswith('Alpine:v'):
+      context.service_context.abort(
+          grpc.StatusCode.INVALID_ARGUMENT,
+          'Invalid ecosystem, Alpine must have a :v<RELEASE-NUMBER> suffix')
     context.service_context.abort(grpc.StatusCode.INVALID_ARGUMENT,
                                   'Invalid ecosystem.')
 
@@ -1055,7 +1052,7 @@ def query_by_version(context: QueryContext,
 
   bugs = []
   next_page_token = None
-  project = getattr(_ndb_client, 'project', 'oss-vdb')
+  project = get_gcp_project()
   if ecosystem:
     if is_semver:
       # Ecosystem supports semver only.
@@ -1071,10 +1068,18 @@ def query_by_version(context: QueryContext,
     elif project == 'oss-vdb-test' and supports_ordering:
       # Query for non-enumerated ecosystems.
       bugs, next_page_token = yield _query_by_comparing_versions(
-        context, query, ecosystem, version)
+          context, query, ecosystem, version)
+      logging.info(
+          '[_query_by_comparing_versions] Package %s'
+          'at version %s has total %d bugs in %s', package_name or purl,
+          version, len(bugs), ecosystem)
     else:
       bugs, next_page_token = yield _query_by_generic_version(
           context, query, package_name, ecosystem, purl, version)
+      logging.info(
+          '[_query_by_generic_version] Package %s'
+          'at version %s has total %d bugs in %s', package_name or purl,
+          version, len(bugs), ecosystem)
 
   else:
     logging.warning("Package query without ecosystem specified")
@@ -1100,13 +1105,15 @@ def query_by_version(context: QueryContext,
 
   return [to_response(bug) for bug in bugs], next_page_token
 
+
 @ndb.tasklet
-def _query_by_comparing_versions(context: QueryContext, query: ndb.Query, ecosystem: str, version: str) -> tuple[list, ndb.Cursor]:
+def _query_by_comparing_versions(context: QueryContext, query: ndb.Query,
+                                 ecosystem: str,
+                                 version: str) -> tuple[list, ndb.Cursor]:
   """Query by package."""
   bugs = []
   it: ndb.QueryIterator = query.iter(start_cursor=context.page_token)
   cursor = None
-  ecosystem_info = ecosystems.get(ecosystem)
   # Check if the query specifies a release (e.g., "Debian:12")
   has_release = ':' in ecosystem
 
@@ -1123,18 +1130,19 @@ def _query_by_comparing_versions(context: QueryContext, query: ndb.Query, ecosys
 
       package_ecosystem = package.ecosystem
       if not has_release:
-        # If no release is specified, extract only the ecosystem name (e.g., "Debian")
+        # If no release is specified,
+        # extracts only the ecosystem name (e.g., "Debian")
         package_ecosystem = package_ecosystem.split(':')[0]
       if ecosystem != package_ecosystem:
         continue
 
-      if _is_affected(ecosystem_info, version, affected_package):
+      if _is_affected(ecosystem, version, affected_package):
         bugs.append(bug)
         context.total_responses.add(1)
         break
 
-  logging.info(f"[QUERY_BY_PACKAGE] version {version} has total {len(bugs)} bugs in {ecosystem_info.name}")  # DEBUG ONLY, WILL BE REMOVED
   return bugs, cursor
+
 
 @ndb.tasklet
 def query_by_package(context: QueryContext, package_name: str, ecosystem: str,
@@ -1221,21 +1229,42 @@ def is_cloud_run() -> bool:
   return os.getenv('K_SERVICE') is not None
 
 
-def _is_affected(ecosystem: Ecosystem, version: str, affected_package: osv.AffectedPackage) -> bool:
+def get_gcp_project():
+  """Get the gcp project name."""
+  # We don't set the GOOGLE_CLOUD_PROJECT env var explicitly, and I can't find
+  # any confirmation on whether Cloud Run will set automatically.
+  # Grab the project name from the (undocumented?) field on ndb.Client().
+  # Most correct way to do this would be to use the instance metadata server
+  # https://cloud.google.com/run/docs/container-contract#metadata-server
+  return getattr(_ndb_client, 'project', 'oss-vdb')  # fall back to oss-vdb
+
+
+def _is_affected(ecosystem: str, version: str,
+                 affected_package: osv.AffectedPackage) -> bool:
   """Checks if a version is affected."""
-  for range in affected_package.ranges:
-    range: osv.AffectedRange2
+  affected = False
+  ecosystem_info = ecosystems.get(ecosystem)
+  queried_version = ecosystem_info.sort_key(version)
 
-    introduced_version = '0'
-    fixed_version = '99999'
-    for event in range.events:
+  for r in affected_package.ranges:
+    r: osv.AffectedRange2
+
+    for event in osv.sorted_events(ecosystem, r.type, r.events):
       event: osv.AffectedEvent
-      if event.type == 'introduced':
-        introduced_version = event.value
-      elif event.type == 'fixed':
-        fixed_version = event.value
+      if (event.type == 'introduced' and
+          (event.value == '0' or
+           queried_version >= ecosystem_info.sort_key(event.value))):
+        affected = True
 
-    if ecosystem.sort_key(version) >= ecosystem.sort_key(introduced_version) and ecosystem.sort_key(version) < ecosystem.sort_key(fixed_version):
+      if event.type == 'fixed' and queried_version >= ecosystem_info.sort_key(
+          event.value):
+        affected = False
+
+      if (event.type == 'last_affected' and
+          queried_version > ecosystem_info.sort_key(event.value)):
+        affected = False
+
+    if affected:
       return True
 
   return False

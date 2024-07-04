@@ -14,13 +14,21 @@
 """Rocky Linux ecosystem helper tests."""
 
 import unittest
-from unittest import mock
-
-from osv.ecosystems.rocky_linux import compare
+from .. import ecosystems
 
 
 class RockyLinuxEcosystemTest(unittest.TestCase):
   """Rocky Linux ecosystem helper tests."""
-  # def test_rocky_linux(self):
-  #   val = compare("0:0.0.99.4-5.module+el8.9.0+1445+07728297", "0:0.2.6-20.module+el8.9.0+1420+91577025")
-  #   self.assertEqual(val, -1)
+
+  def test_rocky_linux(self):
+    ecosystem = ecosystems.get('Rocky Linux')
+    self.assertEqual("Rocky Linux", ecosystem.name)
+    self.assertGreater(
+        ecosystem.sort_key("0:0.2.6-20.module+el8.9.0+1420+91577025"),
+        ecosystem.sort_key("0:0.0.99.4-5.module+el8.9.0+1445+07728297"))
+    self.assertGreater(
+        ecosystem.sort_key("0:0.2.6-20.module+el8.9.0+1420+91577025"),
+        ecosystem.sort_key("0"))
+    self.assertGreater(
+        ecosystem.sort_key("2:1.14.3-2.module+el8.10.0+1815+5fe7415e"),
+        ecosystem.sort_key("2:1.10.3-1.module+el8.10.0+1815+5fe7415e"))

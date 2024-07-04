@@ -14,9 +14,9 @@
 """Ubuntu ecosystem helper."""
 
 from ..third_party.univers.debian import Version as UbuntuVersion
-from ..third_party.univers.debian import compare_versions
 
 from .helper_base import Ecosystem
+
 
 class Ubuntu(Ecosystem):
   """Ubuntu ecosystem"""

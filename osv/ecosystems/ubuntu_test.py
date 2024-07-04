@@ -14,22 +14,20 @@
 """Ubuntu ecosystem helper tests."""
 
 import unittest
-from unittest import mock
-
-from osv.ecosystems.ubuntu import compare
+from .. import ecosystems
 
 
 class UbuntuEcosystemTest(unittest.TestCase):
   """Ubuntu ecosystem helper tests."""
-  # def test_ubuntu(self):
-    # val = compare("2.40.0+dfsg-3ubuntu0.5", "2.42.8+dfsg-1ubuntu0.3")
-    # self.assertEqual(val, -1)
 
-    # val = compare("999999.99999.99999", "5.4.13-1")
-    # self.assertEqual(val, 1)
-
-    # val = compare("0", "5.4.13-1")
-    # self.assertEqual(val, -1)
-
-    # val = compare("3.2.30-1", "5.4.13-1")
-    # self.assertEqual(val, -1)
+  def test_ubuntu(self):
+    ecosystem = ecosystems.get('Ubuntu')
+    self.assertGreater(
+        ecosystem.sort_key("2.42.8+dfsg-1ubuntu0.3"),
+        ecosystem.sort_key("2.40.0+dfsg-3ubuntu0.5"))
+    self.assertGreater(
+        ecosystem.sort_key("2.42.8+dfsg-1ubuntu0.3"),
+        ecosystem.sort_key("2.42.8+dfsg-1ubuntu0.2"))
+    self.assertGreater(ecosystem.sort_key("5.4.13-1"), ecosystem.sort_key("0"))
+    self.assertGreater(
+        ecosystem.sort_key("5.4.13-1"), ecosystem.sort_key("3.2.30-1"))

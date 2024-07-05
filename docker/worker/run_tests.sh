@@ -1,4 +1,4 @@
-#!/bin/bash -x
+#!/bin/bash -xe
 # Copyright 2021 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -14,6 +14,14 @@
 # limitations under the License.
 
 export GOOGLE_CLOUD_PROJECT=fake-project123
+
+if [ "$USE_POETRY" == "true" ]
+then
+  poetry install
+  poetry run python worker_test.py
+  exit 0
+fi
+
 export PIPENV_IGNORE_VIRTUALENVS=1
 pipenv sync
 pipenv run python worker_test.py

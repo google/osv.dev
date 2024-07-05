@@ -621,10 +621,6 @@ def do_query(query, context: QueryContext, include_details=True):
     purl_str = ''
 
   if ecosystem and not ecosystems.get(ecosystem):
-    if ecosystem.startswith('Alpine') and not ecosystem.startswith('Alpine:v'):
-      context.service_context.abort(
-          grpc.StatusCode.INVALID_ARGUMENT,
-          'Invalid ecosystem, Alpine must have a :v<RELEASE-NUMBER> suffix')
     context.service_context.abort(grpc.StatusCode.INVALID_ARGUMENT,
                                   'Invalid ecosystem.')
 
@@ -1065,19 +1061,19 @@ def query_by_version(context: QueryContext,
       for bug in new_bugs:
         if bug not in bugs:
           bugs.append(bug)
-    elif project == 'oss-vdb-test' and supports_ordering:
+    elif project == 'oss-vdb-test' and supports_ordering and package_name:
       # Query for non-enumerated ecosystems.
       bugs, next_page_token = yield _query_by_comparing_versions(
           context, query, ecosystem, version)
       logging.info(
-          '[_query_by_comparing_versions] Package %s'
+          '[_query_by_comparing_versions] Package %s '
           'at version %s has total %d bugs in %s', package_name or purl,
           version, len(bugs), ecosystem)
     else:
       bugs, next_page_token = yield _query_by_generic_version(
           context, query, package_name, ecosystem, purl, version)
       logging.info(
-          '[_query_by_generic_version] Package %s'
+          '[_query_by_generic_version] Package %s '
           'at version %s has total %d bugs in %s', package_name or purl,
           version, len(bugs), ecosystem)
 

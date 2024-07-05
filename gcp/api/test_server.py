@@ -20,7 +20,7 @@ import time
 
 _ESP_PORT = 8080
 _BACKEND_PORT = 8000
-_GCP_PROJECT = 'oss-vdb-test'
+_GCP_PROJECT = 'oss-vdb'
 
 
 class ServerInstance:

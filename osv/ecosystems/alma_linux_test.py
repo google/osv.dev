@@ -28,5 +28,5 @@ class RockyLinuxEcosystemTest(unittest.TestCase):
     self.assertGreater(
         ecosystem.sort_key("9.27-15.el8_10"), ecosystem.sort_key("0"))
     self.assertGreater(
-        ecosystem.sort_key("3:2.1.10-1.module_el8.10.0+3845+87b84552"),
-        ecosystem.sort_key("3:2.1.10-1.module_el8.10.0+3858+6ad51f9f"))
+        ecosystem.sort_key("3:2.1.10-1.module_el8.10.0+3858+6ad51f9f"),
+        ecosystem.sort_key("3:2.1.10-1.module_el8.10.0+3845+87b84552"))

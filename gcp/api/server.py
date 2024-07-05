@@ -1061,7 +1061,7 @@ def query_by_version(context: QueryContext,
       for bug in new_bugs:
         if bug not in bugs:
           bugs.append(bug)
-    elif project == 'oss-vdb-test' and supports_ordering and package_name:
+    elif project == 'oss-vdb-test' and supports_ordering:
       # Query for non-enumerated ecosystems.
       bugs, next_page_token = yield _query_by_comparing_versions(
           context, query, ecosystem, version)

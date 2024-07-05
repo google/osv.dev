@@ -1,9 +1,10 @@
-[[source]]
-url = "https://pypi.python.org/simple"
-verify_ssl = true
-name = "pypi"
+[tool.poetry]
+name = "appengine-backend"
+package-mode = false
 
-[packages]
+[tool.poetry.dependencies]
+python = "^3.11"
+
 Flask = "==2.3.3"
 Flask-Caching = "==2.1.0"
 Flask-Compress = "==1.15"
@@ -19,12 +20,12 @@ gunicorn = "==22.0.0"
 whitenoise = "==6.7.0"
 cvss = "==3.1"
 
-osv = {editable = true, path = "../../"}
+osv = { path = "../../", develop = true }
 
-[dev-packages]
-pipenv = "==2022.12.19"
+[tool.poetry.dev-dependencies]
 yapf = "*"
 pylint = "*"
 
-[requires]
-python_version = "3.11"
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"

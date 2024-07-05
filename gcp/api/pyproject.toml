@@ -1,9 +1,10 @@
-[[source]]
-url = "https://pypi.python.org/simple"
-verify_ssl = true
-name = "pypi"
+[tool.poetry]
+name = "api-backend"
+package-mode = false
 
-[packages]
+[tool.poetry.dependencies]
+python = "^3.11"
+
 google-cloud-ndb = "==2.3.1"
 google-cloud-logging = "==3.10.0"
 packageurl-python = "==0.15.1"
@@ -13,12 +14,13 @@ grpcio = "==1.64.1"
 grpcio-reflection = "==1.62.2"
 grpcio-health-checking = "==1.62.2"
 
-osv = {editable = true, path = "../../"}
+osv = { path = "../../", develop = true }
 
-[dev-packages]
+[tool.poetry.dev-dependencies]
 grpcio-tools = "*"
 yapf = "*"
 pylint = "*"
 
-[requires]
-python_version = "3.11"
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"

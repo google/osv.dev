@@ -1,0 +1,34 @@
+[tool.poetry]
+name = "osv"
+version = "0.0.21"
+description = "Open Source Vulnerabilities library"
+authors = ["OSV Authors <osv-discuss@googlegroups.com>"]
+license = "MIT"
+readme = "README.md"
+packages = [{ include = "osv" }]
+package-mode = true
+
+# https://python-poetry.org/docs/dependency-specification/
+[tool.poetry.dependencies]
+python = "^3.11"
+google-cloud-ndb = "^2.3"
+google-cloud-logging = "^3.10"
+google-cloud-storage = "^2.17"
+semver = "^3.0"
+pyyaml = "^6.0"
+pygit2 = "^1.14.0"
+attrs = "^23.2"
+jsonschema = "^4.0"
+grpcio = "^1.0"
+# TODO: Can this be higher
+packaging = "<22.0"
+requests = "^2.32"
+
+[tool.poetry.dev-dependencies]
+yapf = "*"
+pylint = "*"
+grpcio-tools = "*"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"

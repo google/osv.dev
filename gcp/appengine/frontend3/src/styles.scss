@@ -167,8 +167,12 @@ pre {
   display: inline-block;
   background: $osv-text-color;
   color: $osv-background;
-  padding: 0 7px;
+  padding-top: 4px;
+  padding-bottom: 2px;
+  padding-left: 7px;
+  padding-right: 7px;
   border-radius: $osv-border-radius-small;
+  line-height: normal;
 
   &.severity-low {
     background: $osv-green;
@@ -247,7 +251,7 @@ pre {
       margin: 0;
       gap: 40px;
       font-size: 16px;
-  
+
       .push {
         margin-left: auto;
       }
@@ -578,6 +582,7 @@ md-icon-button.mdc-data-table__sort-icon-button {
       margin-bottom: 5px;
     }
   }
+
   .tag {
     @extend .tag;
 
@@ -704,7 +709,8 @@ dl.vulnerability-details,
     grid-column: 2;
   }
 
-  dt.summary, dd.summary {
+  dt.summary,
+  dd.summary {
     margin-top: 16px;
   }
 
@@ -756,11 +762,11 @@ dl.vulnerability-details,
     ul {
       padding: 0;
     }
-    
+
     li.credit {
       margin: 0 0 10px 0;
     }
-    
+
     .contact li {
       margin: 5px 40px 10px 0;
       display: inline-flex;
@@ -768,16 +774,16 @@ dl.vulnerability-details,
       overflow-wrap: break-word;
     }
   }
-  
+
   pre {
     white-space: pre-wrap;
     overflow: auto;
   }
-  
+
   .purl {
     font-family: $osv-heading-font-family;
   }
-  
+
   .links {
     padding: 0;
     display: flex;
@@ -963,8 +969,8 @@ dl.vulnerability-details,
 }
 
 .showmore {
-	cursor: pointer;
-	font-weight: bold;
+  cursor: pointer;
+  font-weight: bold;
 }
 
 /** Home page */
@@ -1192,21 +1198,21 @@ dl.vulnerability-details,
 
   .github-action {
     margin-top: 100px;
-    display:grid;
+    display: grid;
     justify-items: center;
-    
+
     .heading {
       font-size: $osv-heading-size;
       text-align: center;
       margin-bottom: 32px;
     }
-    
+
     @media (max-width: $osv-mobile-breakpoint) {
       .heading {
         font-size: $osv-heading-size-mobile;
       }
     }
-    
+
     .description {
       font-size: 20px;
       line-height: 26px;
@@ -1215,12 +1221,12 @@ dl.vulnerability-details,
       margin-right: 8px;
       max-width: 900px;
     }
-    
+
     img {
       max-width: 900px;
     }
 
-    .image-container{
+    .image-container {
       display: flex;
       width: 100%;
       max-width: 900px;
@@ -1502,18 +1508,20 @@ div.highlight {
       gap: 4px;
     }
 
-    h2,h3,h4 {
+    h2,
+    h3,
+    h4 {
       line-height: 1.1;
       font-weight: 300;
       margin-top: 3rem;
       margin-bottom: 1.5rem;
     }
-    
+
     p {
       margin-bottom: 16px;
       line-height: 1.6;
     }
-    
+
     a {
       color: $osv-cyan-300;
     }

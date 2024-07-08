@@ -19,7 +19,6 @@ from unittest import mock
 
 from .. import cache
 from .. import ecosystems
-from osv import ecosystems
 
 
 class DebianEcosystemTest(unittest.TestCase):
@@ -100,3 +99,25 @@ class DebianEcosystemTest(unittest.TestCase):
     debian.next_version('nginx', '1.13.5-1')
     cache_mock.get.assert_called_once()
     cache_mock.set.assert_called_once()
+
+  def test_debian_sort_key(self):
+    ecosystem = ecosystems.get('Debian')
+
+    # Compares base versions
+    self.assertGreater(ecosystem.sort_key('1.2.3'), ecosystem.sort_key('1.2'))
+    self.assertGreater(ecosystem.sort_key('1.3'), ecosystem.sort_key('1.2-3'))
+
+    # Compares versions within the same Debian release
+    self.assertGreater(
+        ecosystem.sort_key('1.3+deb11u1'), ecosystem.sort_key('1.2+deb11u5'))
+
+    # Compare versions across Debian releases
+    self.assertGreater(
+        ecosystem.sort_key('1.2+deb12u1'),
+        ecosystem.sort_key('1.2+deb11u2'))  # deb12 > deb11
+    self.assertGreater(
+        ecosystem.sort_key('1.18+deb11u3'),
+        ecosystem.sort_key('1.14+deb10u3'))  # 1.18 > 1.14
+    self.assertGreater(
+        ecosystem.sort_key('1.18+deb10'),
+        ecosystem.sort_key('1.14+deb11'))  # 1.18 > 1.14

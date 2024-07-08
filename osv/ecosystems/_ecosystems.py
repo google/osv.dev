@@ -112,7 +112,7 @@ def get(name: str) -> Ecosystem:
     return Debian(name.partition(':')[2])
 
   if name.startswith('Alpine:'):
-    return Alpine(name.split(':')[1])
+    return Alpine(name.partition(':')[2])
 
   if name.startswith('AlmaLinux'):
     return AlmaLinux()

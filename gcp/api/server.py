@@ -1129,7 +1129,10 @@ def _query_by_comparing_versions(context: QueryContext, query: ndb.Query,
         # If no release is specified,
         # extracts only the ecosystem name (e.g., "Debian")
         package_ecosystem = package_ecosystem.split(':')[0]
-      if ecosystem != package_ecosystem:
+
+      # Skips if the affected package ecosystem does not match
+      # the queried ecosystem.
+      if package_ecosystem != ecosystem:
         continue
 
       if _is_affected(ecosystem, version, affected_package):
@@ -1251,13 +1254,11 @@ def _is_affected(ecosystem: str, version: str,
           (event.value == '0' or
            queried_version >= ecosystem_info.sort_key(event.value))):
         affected = True
-
-      if event.type == 'fixed' and queried_version >= ecosystem_info.sort_key(
-          event.value):
+      elif (event.type == 'fixed' and
+            queried_version >= ecosystem_info.sort_key(event.value)):
         affected = False
-
-      if (event.type == 'last_affected' and
-          queried_version > ecosystem_info.sort_key(event.value)):
+      elif (event.type == 'last_affected' and
+            queried_version > ecosystem_info.sort_key(event.value)):
         affected = False
 
     if affected:

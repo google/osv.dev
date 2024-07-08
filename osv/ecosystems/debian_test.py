@@ -90,17 +90,8 @@ class DebianEcosystemTest(unittest.TestCase):
     self.assertEqual(general_requests_mock.call_count, 5)
     ecosystems.config.set_cache(None)
 
-  @mock.patch('osv.cache.Cache')
-  def test_cache(self, cache_mock: mock.MagicMock):
-    cache_mock.get.return_value = None
-    ecosystems.config.set_cache(cache_mock)
-
-    debian = ecosystems.get('Debian:9')
-    debian.next_version('nginx', '1.13.5-1')
-    cache_mock.get.assert_called_once()
-    cache_mock.set.assert_called_once()
-
   def test_debian_sort_key(self):
+    """Tests Debian sort key across different releases."""
     ecosystem = ecosystems.get('Debian')
 
     # Compares base versions
@@ -121,3 +112,13 @@ class DebianEcosystemTest(unittest.TestCase):
     self.assertGreater(
         ecosystem.sort_key('1.18+deb10'),
         ecosystem.sort_key('1.14+deb11'))  # 1.18 > 1.14
+
+  @mock.patch('osv.cache.Cache')
+  def test_cache(self, cache_mock: mock.MagicMock):
+    cache_mock.get.return_value = None
+    ecosystems.config.set_cache(cache_mock)
+
+    debian = ecosystems.get('Debian:9')
+    debian.next_version('nginx', '1.13.5-1')
+    cache_mock.get.assert_called_once()
+    cache_mock.set.assert_called_once()

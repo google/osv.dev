@@ -31,5 +31,6 @@ tools and unsupported by the core OSV maintainers.
     advisory databases](https://github.com/twu/skjold)
 -   [Trivy](https://github.com/aquasecurity/trivy)
 -   [IronDome: SCA scanner for Ruby applications](https://rubygems.org/gems/iron_dome)
+-   [OSV module in x-cmd: A shell CLI for OSV.dev API with osv-scanner integration](https://x-cmd.com/mod/osv)
 
 Feel free to [send a PR](https://github.com/google/osv.dev/blob/master/docs/third-party.md) to add your project here.

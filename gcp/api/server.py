@@ -1110,7 +1110,7 @@ def _query_by_comparing_versions(context: QueryContext, query: ndb.Query,
   bugs = []
   it: ndb.QueryIterator = query.iter(start_cursor=context.page_token)
   cursor = None
-  # Check if the query specifies a release (e.g., "Debian:12")
+  # Checks if the query specifies a release (e.g., "Debian:12")
   has_release = ':' in ecosystem
 
   while (yield it.has_next_async()):
@@ -1124,10 +1124,13 @@ def _query_by_comparing_versions(context: QueryContext, query: ndb.Query,
       package = affected_package.package
       package: osv.Package
 
+      # If the queried ecosystem has no release specified (e.g., "Debian"),
+      # compare against packages in all releases (e.g., "Debian:X").
+      # Otherwise, only compare within
+      # the specified release (e.g., "Debian:11").
       package_ecosystem = package.ecosystem
       if not has_release:
-        # If no release is specified,
-        # extracts only the ecosystem name (e.g., "Debian")
+        # Extracts ecosystem name for broader comparison (e.g., "Debian")
         package_ecosystem = package_ecosystem.split(':')[0]
 
       # Skips if the affected package ecosystem does not match
@@ -1229,7 +1232,7 @@ def is_cloud_run() -> bool:
 
 
 def get_gcp_project():
-  """Get the gcp project name."""
+  """Get the GCP project name."""
   # We don't set the GOOGLE_CLOUD_PROJECT env var explicitly, and I can't find
   # any confirmation on whether Cloud Run will set automatically.
   # Grab the project name from the (undocumented?) field on ndb.Client().

@@ -688,7 +688,7 @@ class Bug(ndb.Model):
       credits_.append(cr)
 
     related = self.related
-    aliases = []
+    aliases = self.aliases
 
     if include_alias:
       related_bugs = Bug.query(Bug.related == self.db_id).fetch()

@@ -654,7 +654,7 @@ def analyze(vulnerability: vulnerability_pb2.Vulnerability,
             # package no longer exists).
             pass
           except NotImplementedError:
-            # Some ecosystem support ordering but don't support enumeration.
+            # Some ecosystems support ordering but don't support enumeration.
             pass
         else:
           logging.warning('No ecosystem helpers implemented for %s: %s',

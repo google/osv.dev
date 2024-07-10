@@ -54,7 +54,7 @@ Do you have a question or a suggestion? Please [open an issue](https://github.co
 ## Third party tools and integrations
 
 There are also community tools that use OSV. Note that these are community built
-tools and unsupported and not endorsed by the core OSV maintainers. You may wish
+tools and as such are not supported or endorsed by the core OSV maintainers. You may wish
 to consult the [OpenSSF's Concise Guide for Evaluating Open Source Software](https://best.openssf.org/Concise-Guide-for-Evaluating-Open-Source-Software)
 to determine suitability for your use.
 

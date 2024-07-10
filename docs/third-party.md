@@ -8,7 +8,7 @@ nav_order: 5
 # Third party tools
 
 There are community tools that use OSV. Note that these are community built
-tools and unsupported and not endorsed by the core OSV maintainers. You may wish
+tools as such are not supported or endorsed by the core OSV maintainers. You may wish
 to consult the [OpenSSF's Concise Guide for Evaluating Open Source Software](https://best.openssf.org/Concise-Guide-for-Evaluating-Open-Source-Software)
 to determine suitability for your use.
 

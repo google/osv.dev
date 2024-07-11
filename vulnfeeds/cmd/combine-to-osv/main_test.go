@@ -102,6 +102,20 @@ func TestCombineIntoOSV(t *testing.T) {
 		if len(combinedOSV[cve].Affected) != len(allParts[cve]) {
 			t.Errorf("Affected lengths for %s do not match", cve)
 		}
+		if cve == "CVE-2018-1000500" {
+			found := false
+			expectedCount := 6
+			for _, reference := range combinedOSV[cve].References {
+				if reference.Type == "ADVISORY" &&
+					reference.URL == fmt.Sprintf("https://security-tracker.debian.org/tracker/%s", cve) {
+					found = true
+				}
+			}
+			if !found || len(combinedOSV[cve].References) != expectedCount {
+				t.Errorf("%s doesn't have all expected references", cve)
+			}
+		}
+
 	}
 }
 

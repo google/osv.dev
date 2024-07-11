@@ -3,6 +3,7 @@ package main
 import (
 	"encoding/json"
 	"flag"
+	"fmt"
 	"os"
 	"path"
 	"strings"
@@ -159,9 +160,28 @@ func combineIntoOSV(loadedCves map[cves.CVEID]cves.Vulnerability, allParts map[c
 				convertedCve.Withdrawn = modified
 			}
 		}
+
+		addedDebianURL := false
+		addedAlpineURL := false
 		for _, pkgInfo := range allParts[cveId] {
 			convertedCve.AddPkgInfo(pkgInfo)
+
+			// Add the related security tracker URL into references.
+			var securityReference vulns.Reference
+			securityReference.Type = "ADVISORY"
+			if !addedAlpineURL && strings.HasPrefix(pkgInfo.Ecosystem, "Alpine") {
+				securityReference.URL = fmt.Sprintf("https://security.alpinelinux.org/vuln/%s", cveId)
+				addedAlpineURL = true
+			} else if !addedDebianURL && strings.HasPrefix(pkgInfo.Ecosystem, "Debian") {
+				securityReference.URL = fmt.Sprintf("https://security-tracker.debian.org/tracker/%s", cveId)
+				addedDebianURL = true
+			}
+
+			if securityReference.URL != "" {
+				convertedCve.References = append(convertedCve.References, securityReference)
+			}
 		}
+
 		cveModified, _ := time.Parse(time.RFC3339, convertedCve.Modified)
 		if cvePartsModifiedTime[cveId].After(cveModified) {
 			convertedCve.Modified = cvePartsModifiedTime[cveId].Format(time.RFC3339)

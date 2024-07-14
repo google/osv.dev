@@ -75,6 +75,15 @@ resource "google_certificate_manager_certificate_map_entry" "website" {
   }
 }
 
+# Create LB backend buckets
+resource "google_compute_backend_bucket" "osv_dev_sitemap_backend" {
+  project     = var.project_id
+  name        = "osv-dev-sitemap-backend"
+  description = "Backend for GCS bucket containing osv.dev's sitemap"
+  bucket_name = google_storage_bucket.osv_dev_sitemap_bucket.id
+  enable_cdn  = false
+}
+
 # Load Balancer
 module "gclb" {
   source  = "terraform-google-modules/lb-http/google//modules/serverless_negs"
@@ -145,8 +154,19 @@ resource "google_compute_url_map" "website" {
   path_matcher {
     name            = "allpaths"
     default_service = module.gclb.backend_services.cloudrun.id
+
+    // Sitemap specific URLs
     route_rules {
       priority = 1
+      match_rules {
+        prefix_match = "/sitemap_"
+      }
+      service = google_compute_backend_bucket.osv_dev_sitemap_backend.id
+    }
+
+    // Rest of the website should go to the cloud run
+    route_rules {
+      priority = 10
       match_rules {
         prefix_match = "/"
       }

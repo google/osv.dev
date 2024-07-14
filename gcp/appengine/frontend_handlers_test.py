@@ -39,8 +39,8 @@ class FrontendHandlerTest(unittest.TestCase):
   def test_ecosystem_counts(self):
     """Test ecosystem counts aggregates correctly updates."""
     models.Bug(
-        id='BLAH-0',
-        db_id='BLAH-0',
+        id='OSV-0',
+        db_id='OSV-0',
         status=1,
         public=True,
         source='test',
@@ -52,8 +52,8 @@ class FrontendHandlerTest(unittest.TestCase):
         }]).put()
 
     models.Bug(
-        id='BLAH-1',
-        db_id='BLAH-1',
+        id='OSV-1',
+        db_id='OSV-1',
         status=1,
         public=True,
         source='test',
@@ -70,8 +70,8 @@ class FrontendHandlerTest(unittest.TestCase):
         }]).put()
 
     models.Bug(
-        id='BLAH-2',
-        db_id='BLAH-2',
+        id='OSV-2',
+        db_id='OSV-2',
         status=1,
         public=True,
         source='test',
@@ -84,8 +84,8 @@ class FrontendHandlerTest(unittest.TestCase):
 
     # Invalid entries.
     models.Bug(
-        id='BLAH-3',
-        db_id='BLAH-3',
+        id='OSV-3',
+        db_id='OSV-3',
         status=2,
         public=True,
         source='test',
@@ -97,8 +97,8 @@ class FrontendHandlerTest(unittest.TestCase):
         }]).put()
 
     models.Bug(
-        id='BLAH-4',
-        db_id='BLAH-4',
+        id='OSV-4',
+        db_id='OSV-4',
         status=1,
         public=False,
         source='test',

@@ -17,3 +17,4 @@ patches:
 - path: nvd-mirror.yaml
 - path: alias-computation.yaml
 - path: backup.yaml
+- path: generate-sitemap.yaml

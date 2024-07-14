@@ -31,6 +31,7 @@ from flask import send_from_directory
 from werkzeug.security import safe_join
 from werkzeug import exceptions
 from google.cloud import ndb
+from cvss import CVSS2, CVSS3, CVSS4
 
 import markdown2
 from urllib import parse
@@ -50,6 +51,8 @@ _WORD_CHARACTERS_OR_DASH = re.compile(r'^[+\w-]+$')
 _VALID_BLOG_NAME = _WORD_CHARACTERS_OR_DASH
 _VALID_VULN_ID = _WORD_CHARACTERS_OR_DASH
 _BLOG_CONTENTS_DIR = 'blog'
+_DEPS_BASE_URL = 'https://deps.dev'
+_FIRST_CVSS_CALCULATOR_BASE_URL = 'https://www.first.org/cvss/calculator'
 
 if utils.is_prod():
   redis_host = os.environ.get('REDISHOST', 'localhost')
@@ -113,6 +116,13 @@ def index_v2_with_subpath(subpath):
 def index():
   return render_template(
       'home.html', ecosystem_counts=osv_get_ecosystem_counts_cached())
+
+
+@blueprint.route('/robots.txt')
+def robots():
+  response = make_response(f'Sitemap: {request.host_url}sitemap_index.xml\n')
+  response.mimetype = 'text/plain'
+  return response
 
 
 @blueprint.route('/blog/', strict_slashes=False)
@@ -280,10 +290,49 @@ def bug_to_response(bug, detailed=True):
       'invalid': bug.status == osv.BugStatus.INVALID
   })
 
+  add_cvss_score(response)
+
   if detailed:
     add_links(response)
     add_source_info(bug, response)
   return response
+
+
+def calculate_severity_details(
+    severity: dict) -> tuple[float | None, str | None]:
+  """Calculate score and rating of severity"""
+  cvss_calculator = {
+      'CVSS_V2': CVSS2,
+      'CVSS_V3': CVSS3,
+      'CVSS_V4': CVSS4,
+  }
+
+  type_ = severity.get('type')
+  score = severity.get('score')
+
+  if not (type_ and score):
+    return None, None
+
+  c = cvss_calculator[type_](score)
+  severity_rating = c.severities()[0]
+  severity_score = c.base_score
+  return severity_score, severity_rating
+
+
+def add_cvss_score(bug):
+  """Add severity score where possible."""
+  severity_score = None
+  severity_rating = None
+  severity_type = None
+
+  for severity in bug.get('severity', []):
+    type_ = severity.get('type')
+    if type_ and (not severity_type or type_ > severity_type):
+      severity_type = type_
+      severity_score, severity_rating = calculate_severity_details(severity)
+
+  bug['severity_score'] = severity_score
+  bug['severity_rating'] = severity_rating
 
 
 def add_links(bug):
@@ -644,3 +693,70 @@ def list_packages(vuln_affected: list[dict]):
 def not_found_error(error: exceptions.HTTPException):
   logging.info('Handled %s - Path attempted: %s', error, request.path)
   return render_template('404.html'), 404
+
+
+@blueprint.app_template_filter('has_link_to_deps_dev')
+def has_link_to_deps_dev(ecosystem):
+  """
+  Check if a given ecosystem has a corresponding link in deps.dev.
+
+  Returns:
+      bool: True if the ecosystem has a corresponding link in deps.dev,
+            False otherwise.
+  """
+  return osv.ecosystems.is_supported_in_deps_dev(ecosystem)
+
+
+@blueprint.app_template_filter('link_to_deps_dev')
+def link_to_deps_dev(package, ecosystem):
+  """
+  Generate a link to the deps.dev page for a given package in the specified
+  ecosystem.
+
+  Args:
+      package (str): The name of the package.
+      ecosystem (str): The ecosystem name.
+  Returns:
+      str or None: The URL to the deps.dev page for the package if the
+      ecosystem is supported, None otherwise.
+  """
+  system = osv.ecosystems.map_ecosystem_to_deps_dev(ecosystem)
+  if not system:
+    return None
+  # This ensures that special characters such as / are properly encoded,
+  # preventing invalid paths and 404 errors.
+  # e.g. for the package name github.com/rancher/wrangler,
+  # return https://deps.dev/go/github.com%2Francher%2Fwrangler
+  encoded_package = parse.quote(package, safe='')
+  return f"{_DEPS_BASE_URL}/{system}/{encoded_package}"
+
+
+@blueprint.app_template_filter('display_severity_rating')
+def display_severity_rating(severity: dict) -> str:
+  """Return base score and rating of the severity."""
+  severity_base_score, severity_rating = calculate_severity_details(severity)
+  return f"{severity_base_score} ({severity_rating})"
+
+
+@blueprint.app_template_filter('severity_level')
+def severity_level(severity: dict) -> str:
+  """Return rating of the severity."""
+  _, rating = calculate_severity_details(severity)
+  return rating.lower()
+
+
+@blueprint.app_template_filter('cvss_calculator_url')
+def cvss_calculator_url(severity):
+  """Generate the FIRST CVSS calculator URL from a CVSS string."""
+  score = severity.get('score')
+
+  # Extract CVSS version from the vector string
+  version = score.split('/')[0].split(':')[1]
+
+  return f"{_FIRST_CVSS_CALCULATOR_BASE_URL}/{version}#{score}"
+
+
+@blueprint.app_template_filter('relative_time')
+def relative_time(timestamp: str) -> str:
+  """Convert the input to a human-readable relative time."""
+  return utils.relative_time(timestamp)

@@ -14,7 +14,10 @@
 """Ecosystem helpers."""
 
 from .helper_base import Ecosystem, OrderingUnsupportedEcosystem
+from .alma_linux import AlmaLinux
 from .alpine import Alpine
+from .bioconductor import Bioconductor
+from .cran import CRAN
 from .debian import Debian
 from .haskell import Hackage, GHC
 from .maven import Maven
@@ -22,10 +25,10 @@ from .nuget import NuGet
 from .packagist import Packagist
 from .pub import Pub
 from .pypi import PyPI
-from .cran import CRAN
-from .bioconductor import Bioconductor
+from .rocky_linux import RockyLinux
 from .rubygems import RubyGems
 from .semver_ecosystem_helper import SemverEcosystem
+from .ubuntu import Ubuntu
 
 _ecosystems = {
     'Bioconductor': Bioconductor(),
@@ -45,22 +48,22 @@ _ecosystems = {
     'Hex': SemverEcosystem(),
     'npm': SemverEcosystem(),
     'SwiftURL': SemverEcosystem(),
-    # Ecosystems missing implementations:
-    'Android': OrderingUnsupportedEcosystem(),
-    'ConanCenter': OrderingUnsupportedEcosystem(),
-    'GitHub Actions': OrderingUnsupportedEcosystem(),
-    'Linux': OrderingUnsupportedEcosystem(),
-    'OSS-Fuzz': OrderingUnsupportedEcosystem(),
     # Ecosystems which require a release version for enumeration, which is
     # handled separately in get().
     'AlmaLinux': OrderingUnsupportedEcosystem(),
     'Alpine': OrderingUnsupportedEcosystem(),
     'Chainguard': OrderingUnsupportedEcosystem(),
     'Debian': OrderingUnsupportedEcosystem(),
-    'Photon OS': OrderingUnsupportedEcosystem(),
     'Rocky Linux': OrderingUnsupportedEcosystem(),
     'Ubuntu': OrderingUnsupportedEcosystem(),
     'Wolfi': OrderingUnsupportedEcosystem(),
+    # Ecosystems missing implementations:
+    'Android': OrderingUnsupportedEcosystem(),
+    'ConanCenter': OrderingUnsupportedEcosystem(),
+    'GitHub Actions': OrderingUnsupportedEcosystem(),
+    'Linux': OrderingUnsupportedEcosystem(),
+    'OSS-Fuzz': OrderingUnsupportedEcosystem(),
+    'Photon OS': OrderingUnsupportedEcosystem(),
 }
 
 # Semver-based ecosystems, should correspond to _ecosystems above.
@@ -92,34 +95,48 @@ package_urls = {
     'RubyGems': 'https://rubygems.org/gems/',
 }
 
+_OSV_TO_DEPS_ECOSYSTEMS_MAP = {
+    'npm': 'npm',
+    'Go': 'go',
+    'Maven': 'maven',
+    'PyPI': 'pypi',
+    'NuGet': 'nuget',
+    'crates.io': 'cargo'
+}
+
 
 def get(name: str) -> Ecosystem:
   """Get ecosystem helpers for a given ecosystem."""
 
-  if name.startswith('Debian:'):
-    return Debian(name.split(':')[1])
+  if name.startswith('Debian'):
+    return Debian(name.partition(':')[2])
 
   if name.startswith('Alpine:'):
-    return Alpine(name.split(':')[1])
+    return Alpine(name.partition(':')[2])
 
-  if name.startswith('AlmaLinux:'):
-    # TODO(unassigned)
-    return OrderingUnsupportedEcosystem()
+  if name.startswith('AlmaLinux'):
+    return AlmaLinux()
 
-  if name.startswith('Rocky Linux:'):
-    # TODO(unassigned)
-    return OrderingUnsupportedEcosystem()
+  if name.startswith('Rocky Linux'):
+    return RockyLinux()
 
   if name.startswith('Photon OS:'):
     # TODO(unassigned)
     return OrderingUnsupportedEcosystem()
 
-  if name.startswith('Ubuntu:'):
-    # TODO(unassigned)
-    return OrderingUnsupportedEcosystem()
+  if name.startswith('Ubuntu'):
+    return Ubuntu()
 
   return _ecosystems.get(name)
 
 
 def normalize(ecosystem_name: str):
   return ecosystem_name.split(':')[0]
+
+
+def is_supported_in_deps_dev(ecosystem_name: str) -> bool:
+  return ecosystem_name in _OSV_TO_DEPS_ECOSYSTEMS_MAP
+
+
+def map_ecosystem_to_deps_dev(ecosystem_name: str) -> str:
+  return _OSV_TO_DEPS_ECOSYSTEMS_MAP.get(ecosystem_name)

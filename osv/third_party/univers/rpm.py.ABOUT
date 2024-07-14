@@ -1,0 +1,12 @@
+about_resource: rpm.py
+package_url: pkg:pypi/rpm_vercmp@0.1.2
+copyright: |
+    Copyright (c) SAS Institute Inc.
+
+license_expression: apache-2.0
+homepage_url: https://github.com/nexB/python-rpm-vercmp
+
+notes: |
+  This has been substantially modified and enhanced from the original code.
+
+notice_file: rpm.py.NOTICE

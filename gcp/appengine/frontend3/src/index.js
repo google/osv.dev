@@ -1,12 +1,11 @@
 import './styles.scss';
 import '@github/clipboard-copy-element';
-import '@github/relative-time-element';
-import '@material/mwc-circular-progress';
-import '@material/mwc-icon';
-import '@material/mwc-icon-button';
+import '@material/web/icon/icon.js';
+import '@material/web/iconbutton/icon-button.js';
+import '@material/web/progress/circular-progress.js';
 import '@hotwired/turbo';
 import 'spicy-sections/src/SpicySections';
-import { TextField as MwcTextField } from '@material/mwc-textfield';
+import { MdFilledTextField } from '@material/web/textfield/filled-text-field.js';
 import { LitElement, html } from 'lit';
 
 // Submits a form in a way such that Turbo can intercept the event.
@@ -36,9 +35,9 @@ export class SubmitRadiosOnClickContainer extends LitElement {
 }
 customElements.define('submit-radios', SubmitRadiosOnClickContainer);
 
-// A wrapper around <mwc-textfield> that adds back native-like enter key form
+// A wrapper around <md-filled-textfield> that adds back native-like enter key form
 // submission behavior.
-export class MwcTextFieldWithEnter extends MwcTextField {
+export class MdTextFieldWithEnter extends MdFilledTextField {
   constructor() {
     super();
     this.addEventListener('keyup', (e) => {
@@ -48,5 +47,5 @@ export class MwcTextFieldWithEnter extends MwcTextField {
     });
   }
 }
-customElements.define('mwc-textfield-with-enter', MwcTextFieldWithEnter);
+customElements.define('md-textfield-with-enter', MdTextFieldWithEnter);
 

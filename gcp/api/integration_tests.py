@@ -294,11 +294,13 @@ class IntegrationTests(unittest.TestCase,
     go_2020_0001 = self._get('GO-2020-0001')
     go_2021_0052 = self._get('GO-2021-0052')
     ghsa_6vm3_jj99_7229 = self._get('GHSA-6vm3-jj99-7229')
+    ghsa_869c_j7wc_8jqv = self._get('GHSA-869c-j7wc-8jqv')
     ghsa_h395_qcrw_5vmq = self._get('GHSA-h395-qcrw-5vmq')
     ghsa_3vp4_m3rf_835h = self._get('GHSA-3vp4-m3rf-835h')
 
     expected_vulns = [
         ghsa_6vm3_jj99_7229,
+        ghsa_869c_j7wc_8jqv,
         go_2020_0001,
         ghsa_h395_qcrw_5vmq,
         go_2021_0052,
@@ -442,8 +444,8 @@ class IntegrationTests(unittest.TestCase,
         timeout=_TIMEOUT)
 
     response_json = response.json()
-    self.assertEqual(1, len(response_json['vulns']))
-    self.assertCountEqual(['GHSA-6fc8-4gx4-v693'],
+    self.assertEqual(2, len(response_json['vulns']))
+    self.assertCountEqual(['GHSA-6fc8-4gx4-v693', 'GHSA-3h5v-q93c-6h6q'],
                           [vuln['id'] for vuln in response_json['vulns']])
 
   def test_query_purl(self):
@@ -485,12 +487,7 @@ class IntegrationTests(unittest.TestCase,
 
     self.assert_results_equal({'vulns': another_expected}, response.json())
 
-    expected_deb = [
-        self._get('CVE-2009-4487'),
-        self._get('CVE-2013-0337'),
-        self._get('DLA-3203-1'),
-        self._get('DSA-4921-1')
-    ]
+    expected_deb = [self._get('DLA-3203-1'), self._get('DSA-4921-1')]
 
     response = requests.post(
         _api() + _BASE_QUERY,

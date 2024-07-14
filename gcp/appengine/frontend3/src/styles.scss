@@ -8,6 +8,10 @@ $osv-red-300: #ec928e;
 $osv-grey-600: #80868b;
 $osv-grey-800: #3C4043;
 $osv-cyan-300: #C9F5F7;
+$osv-green: #53aa33;
+$osv-yellow: #ffd700;
+$osv-orange: #ffa500;
+$osv-red-700: #ad0300;
 $osv-body-font-family: string.unquote('Overpass, sans-serif');
 $osv-heading-font-family: string.unquote('"Overpass Mono", monospace');
 $osv-heading-size: 60px;
@@ -82,8 +86,7 @@ body {
   --mdc-theme-surface: $osv-background;
   --mdc-theme-background: $osv-background;
   --mdc-typography-font-family: $osv-body-font-family;
-  --mdc-text-field-fill-color: #696969;
-  --mdc-text-field-ink-color: $osv-text-color;
+  --md-icon-font: "Material Icons"
 }
 
 a {
@@ -132,6 +135,7 @@ pre {
 .tooltip {
   position: relative;
   display: inline-block;
+  width: 650px;
 }
 
 .tooltip .tooltiptext {
@@ -143,7 +147,7 @@ pre {
   padding: 5px;
   border-radius: $osv-border-radius-small;
 
-  max-width: 250px;
+  max-width: 700px;
   line-height: 16px;
 
   top: -5px;
@@ -159,12 +163,51 @@ pre {
   opacity: 1;
 }
 
+.tag {
+  display: inline-block;
+  background: $osv-text-color;
+  color: $osv-background;
+  padding-top: 4px;
+  padding-bottom: 2px;
+  padding-left: 7px;
+  padding-right: 7px;
+  border-radius: $osv-border-radius-small;
+  line-height: normal;
+
+  &.severity-low {
+    background: $osv-green;
+    color: black;
+  }
+
+  &.severity-medium {
+    background: $osv-yellow;
+    color: black;
+  }
+
+  &.severity-high {
+    background: $osv-orange;
+    color: black;
+  }
+
+  &.severity-critical {
+    background: $osv-red-700;
+    color: white;
+  }
+}
+
+.severity-level {
+  @extend .tag;
+  padding: 2px 7px;
+  margin-bottom: 4px;
+}
+
 /** Top bar */
 
 .top-bar {
   $left-padding: 40px;
   display: flex;
   padding: 34px $left-padding;
+  height: 98px;
 
   .logo {
     $logo-width: 53px;
@@ -208,7 +251,7 @@ pre {
       margin: 0;
       gap: 40px;
       font-size: 16px;
-  
+
       .push {
         margin-left: auto;
       }
@@ -317,6 +360,7 @@ pre {
 .list-page {
   .title {
     font-size: 20px;
+    height: 25px;
   }
 
   .ecosystem-buttons {
@@ -371,6 +415,7 @@ pre {
       padding: 10px 20px;
       background: #696969;
       border-radius: 999px;
+      height: 38px;
 
       .ecosystem-count {
         font-weight: bold;
@@ -404,8 +449,14 @@ pre {
   margin-top: 22px;
   border: 2px solid $osv-text-color;
   border-radius: 8px;
-  --mdc-text-field-fill-color: rgba(255, 255, 255, 0.3);
-  --mdc-text-field-label-ink-color: $osv-text-color;
+  --md-filled-text-field-container-color: #696969;
+  --md-filled-text-field-label-text-font: $osv-body-font-family;
+  --md-filled-text-field-input-text-font: $osv-body-font-family;
+  --md-filled-text-field-input-text-weight: 100;
+  --md-sys-color-primary: $osv-text-color;
+  --md-sys-color-on-surface: $osv-text-color;
+  --md-sys-color-on-surface-variant: $osv-text-color;
+  height: 56px;
 
   // Make the inner search field full-width.
   .query-field {
@@ -415,12 +466,6 @@ pre {
   // Hax: Use our own icon because mwc-textfield supplies a dark gray one. Maybe M3 will fix it:
   // https://github.com/material-components/material-web/commit/0c200ecf04a533b1dc56932c3979e3e5d8fb7d73
   position: relative;
-
-  .search-icon {
-    position: absolute;
-    top: 50%;
-    transform: translate(50%, -50%);
-  }
 
   // Hax: Get rid of the material underline.
   overflow: hidden;
@@ -437,19 +482,22 @@ pre {
   }
 }
 
-// Hax: Make @material/mwc-icon-button play well with @material/data-table.
-mwc-icon-button.mdc-data-table__sort-icon-button {
-  width: auto;
-  height: auto;
-  --mdc-icon-button-size: 36px;
+// Hax: Make @material/md-icon-button play well with @material/data-table.
+md-icon-button.mdc-data-table__sort-icon-button {
+  width: 18px;
+  height: 18px;
+  --md-icon-button-icon-size: 18px;
+  --md-icon-button-icon-color: $osv-text-color;
+  --md-icon-button-disabled-icon-color: $osv-grey-600;
 }
 
 .vuln-table-container {
   width: 100%;
 
   @media (max-width: $osv-mobile-breakpoint) {
-    .hide-on-mobile {
-      display: none !important;
+    .vuln-table-container {
+      overflow-x: scroll;
+      overflow-y: hidden;
     }
   }
 
@@ -503,8 +551,7 @@ mwc-icon-button.mdc-data-table__sort-icon-button {
     }
   }
 
-  .vuln-versions,
-  .vuln-fix-status {
+  .vuln-attributes {
     white-space: nowrap;
   }
 
@@ -527,12 +574,17 @@ mwc-icon-button.mdc-data-table__sort-icon-button {
   }
 
   // Tag styling.
+  .tags {
+    margin: 0;
+    padding: 0;
+
+    li {
+      margin-bottom: 5px;
+    }
+  }
+
   .tag {
-    display: inline-block;
-    background: $osv-text-color;
-    color: $osv-background;
-    padding: 0 7px;
-    border-radius: $osv-border-radius-small;
+    @extend .tag;
 
     &.fix-unavailable {
       background: $osv-red-300;
@@ -561,6 +613,8 @@ mwc-icon-button.mdc-data-table__sort-icon-button {
 
   turbo-frame[busy] .next-page-indicator {
     display: block;
+    --md-circular-progress-active-indicator-color: white;
+    --md-circular-progress-size: 36px;
   }
 
   // Center the next page button.
@@ -655,7 +709,8 @@ dl.vulnerability-details,
     grid-column: 2;
   }
 
-  dt.summary, dd.summary {
+  dt.summary,
+  dd.summary {
     margin-top: 16px;
   }
 
@@ -707,11 +762,11 @@ dl.vulnerability-details,
     ul {
       padding: 0;
     }
-    
+
     li.credit {
       margin: 0 0 10px 0;
     }
-    
+
     .contact li {
       margin: 5px 40px 10px 0;
       display: inline-flex;
@@ -719,16 +774,16 @@ dl.vulnerability-details,
       overflow-wrap: break-word;
     }
   }
-  
+
   pre {
     white-space: pre-wrap;
     overflow: auto;
   }
-  
+
   .purl {
     font-family: $osv-heading-font-family;
   }
-  
+
   .links {
     padding: 0;
     display: flex;
@@ -745,6 +800,7 @@ dl.vulnerability-details,
   .severity {
     padding: 0;
     font-family: $osv-heading-font-family;
+    font-size: 14px;
   }
 }
 
@@ -913,8 +969,8 @@ dl.vulnerability-details,
 }
 
 .showmore {
-	cursor: pointer;
-	font-weight: bold;
+  cursor: pointer;
+  font-weight: bold;
 }
 
 /** Home page */
@@ -1142,21 +1198,21 @@ dl.vulnerability-details,
 
   .github-action {
     margin-top: 100px;
-    display:grid;
+    display: grid;
     justify-items: center;
-    
+
     .heading {
       font-size: $osv-heading-size;
       text-align: center;
       margin-bottom: 32px;
     }
-    
+
     @media (max-width: $osv-mobile-breakpoint) {
       .heading {
         font-size: $osv-heading-size-mobile;
       }
     }
-    
+
     .description {
       font-size: 20px;
       line-height: 26px;
@@ -1165,12 +1221,12 @@ dl.vulnerability-details,
       margin-right: 8px;
       max-width: 900px;
     }
-    
+
     img {
       max-width: 900px;
     }
 
-    .image-container{
+    .image-container {
       display: flex;
       width: 100%;
       max-width: 900px;
@@ -1252,7 +1308,7 @@ dl.vulnerability-details,
       .icon {
         background: #fff;
         border-radius: 999px;
-        color: #d46d59;
+        --md-sys-color-on-surface-variant: #d46d59;
       }
     }
   }
@@ -1452,18 +1508,20 @@ div.highlight {
       gap: 4px;
     }
 
-    h2,h3,h4 {
+    h2,
+    h3,
+    h4 {
       line-height: 1.1;
       font-weight: 300;
       margin-top: 3rem;
       margin-bottom: 1.5rem;
     }
-    
+
     p {
       margin-bottom: 16px;
       line-height: 1.6;
     }
-    
+
     a {
       color: $osv-cyan-300;
     }

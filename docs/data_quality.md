@@ -100,12 +100,8 @@ The definition of "impact" will vary depending on how fine-grained the informati
 
 **Additional Validation Rules:**
 
-* **timestamp:** A custom definition that ensures timestamps adhere to a specific date-time format (e.g., "2023-11-15T12:34:56Z").
+* **timestamp:** A custom definition that ensures timestamps adhere to the RFC3339 date-time format (e.g., "2023-11-15T12:34:56Z").
 * **additionalProperties: false:** This prevents any extra properties from being added to the JSON object beyond those defined in the schema.
 * **Specific Requirements in `affected` Array:
   * There are conditional validations based on the `type` of range, ensuring the correct properties are present (e.g., `repo` is required when `type` is `GIT`).
   * A logical check ensures that if `last_affected` is specified in `events`, then `fixed` cannot be present in the same `events` array.
-
-**Overall:**
-
-This schema enforces a consistent and detailed structure for representing open source vulnerabilities, including information about affected packages, severity assessments, references, and credits. It helps ensure that the data is accurate and comprehensive while remaining flexible enough to accommodate various package ecosystems and additional data specific to the database using the schema.

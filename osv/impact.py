@@ -611,7 +611,7 @@ def analyze(vulnerability: vulnerability_pb2.Vulnerability,
 
   The behaviour varies by the vulnerability's affected field.
 
-  If there's package information for a supported ecosystem, versions are
+  If there's package information for a supported ecosystem, versions may be
   enumerated.
   If there's GIT ranges and analyze_git and versions_from_repo are True,
   versions are enumerated from the associated Git repo.
@@ -652,6 +652,9 @@ def analyze(vulnerability: vulnerability_pb2.Vulnerability,
           except ecosystems.EnumerateError:
             # Allow non-retryable enumeration errors to occur (e.g. if the
             # package no longer exists).
+            pass
+          except NotImplementedError:
+            # Some ecosystems support ordering but don't support enumeration.
             pass
         else:
           logging.warning('No ecosystem helpers implemented for %s: %s',

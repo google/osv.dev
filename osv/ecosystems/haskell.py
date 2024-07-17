@@ -68,9 +68,10 @@ class Hackage(Ecosystem):
 class GHC(Ecosystem):
   """Glasgow Haskell Compiler (GHC) ecosystem."""
 
-  # FIXME: https://github.com/google/osv.dev/issues/2367
   _API_PACKAGE_URL = ('https://gitlab.haskell.org'
-                      '/api/v4/projects/3561/repository/tags?per_page=-1')
+                      '/api/v4/projects/3561/repository/tags?per_page=100')
+  # 100 is the maximum per_page size according to GitLab docs:
+  # https://docs.gitlab.com/ee/api/rest/index.html#offset-based-pagination
   """
   Historical versions do not have tags in the Git repo, so we hardcode the
   list.  See https://github.com/google/osv.dev/pull/1463 for discussion.
@@ -136,18 +137,25 @@ class GHC(Ecosystem):
 
     """
 
-    response = requests.get(self._API_PACKAGE_URL, timeout=config.timeout)
-    if response.status_code == 404:
-      raise EnumerateError('GHC tag list not found')
-    if response.status_code != 200:
-      raise RuntimeError(f'Failed to get GHC versions with: {response.text}')
+    # Versions come from tags from the GitLab API, which are paginated.
+    # https://docs.gitlab.com/ee/api/rest/index.html#pagination-link-header
+    url = self._API_PACKAGE_URL
+    versions = self.HISTORICAL_VERSIONS.copy()
+    while url is not None:
+      response = requests.get(url, timeout=config.timeout)
+      if response.status_code == 404:
+        raise EnumerateError(f'GHC tag list not found at {url}')
+      if response.status_code != 200:
+        raise RuntimeError(
+            f'Failed to get GHC versions from: {url} with: {response.text}')
 
-    response = response.json()
-    versions = self.HISTORICAL_VERSIONS + [
-        self.tag_to_version(x['name'])
-        for x in response
-        if self.tag_to_version(x['name'])
-    ]
+      versions.extend(self.tag_to_version(x['name']) for x in response.json())
+
+      if 'next' not in response.links:
+        break
+      url = response.links['next'].get('url')
+
+    versions = [v for v in versions if v is not None]
 
     self.sort_versions(versions)
     return self._get_affected_versions(versions, introduced, fixed,

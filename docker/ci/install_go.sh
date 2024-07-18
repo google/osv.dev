@@ -19,4 +19,4 @@ set -eux
 
 # Download and install Go
 # https://pkg.go.dev/golang.org/x/tools/cmd/getgo#section-readme
-curl -LO https://get.golang.org/$(uname)/go_installer && chmod +x go_installer && SHELL="bash" ./go_installer -version 1.22.4 && rm go_installer
+curl -LO https://get.golang.org/$(uname)/go_installer && chmod +x go_installer && SHELL="bash" ./go_installer -version 1.22.5 && rm go_installer

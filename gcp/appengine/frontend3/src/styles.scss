@@ -229,6 +229,16 @@ pre {
 
   .tabs {
 
+    li.external-link a::after {
+      display: inline-block;
+      content: ' ';
+      background-image: url('/static/img/external-link.svg');
+      width: 16px;
+      height: 16px;
+      margin-left: 3px;
+      vertical-align: middle;
+    }
+
     // Remove external link indicator.
     a.logo-img::after {
       display: none;
@@ -262,7 +272,7 @@ pre {
         padding: $active-spacing 0;
         border-bottom: 8px solid #fff0;
 
-        a {
+        &:not(.external-link) a {
           text-decoration: none;
         }
 

@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"flag"
 	"fmt"
+	"net/http"
 	"os"
 	"path"
 	"strings"
@@ -165,20 +166,12 @@ func combineIntoOSV(loadedCves map[cves.CVEID]cves.Vulnerability, allParts map[c
 		addedAlpineURL := false
 		for _, pkgInfo := range allParts[cveId] {
 			convertedCve.AddPkgInfo(pkgInfo)
-
-			// Add the related security tracker URL into references.
-			var securityReference vulns.Reference
-			securityReference.Type = "ADVISORY"
-			if !addedAlpineURL && strings.HasPrefix(pkgInfo.Ecosystem, "Alpine") {
-				securityReference.URL = fmt.Sprintf("https://security.alpinelinux.org/vuln/%s", cveId)
-				addedAlpineURL = true
-			} else if !addedDebianURL && strings.HasPrefix(pkgInfo.Ecosystem, "Debian") {
-				securityReference.URL = fmt.Sprintf("https://security-tracker.debian.org/tracker/%s", cveId)
+			if strings.HasPrefix(pkgInfo.Ecosystem, "Debian") && !addedDebianURL {
+				addReference(string(cveId), "Debian", convertedCve)
 				addedDebianURL = true
-			}
-
-			if securityReference.URL != "" {
-				convertedCve.References = append(convertedCve.References, securityReference)
+			} else if strings.HasPrefix(pkgInfo.Ecosystem, "Alpine") && !addedAlpineURL {
+				addReference(string(cveId), "Alpine", convertedCve)
+				addedAlpineURL = true
 			}
 		}
 
@@ -240,4 +233,42 @@ func loadAllCVEs(cvePath string) map[cves.CVEID]cves.Vulnerability {
 		file.Close()
 	}
 	return result
+}
+
+// addReference adds the related security tracker URL to a given vulnerability's references
+func addReference(cveId string, ecosystem string, convertedCve *vulns.Vulnerability) {
+	var securityReference vulns.Reference
+	securityReference.Type = "ADVISORY"
+	if ecosystem == "Alpine" {
+		securityReference.URL = fmt.Sprintf("https://security.alpinelinux.org/vuln/%s", cveId)
+	} else if ecosystem == "Debian" {
+		securityReference.URL = fmt.Sprintf("https://security-tracker.debian.org/tracker/%s", cveId)
+	}
+
+	if securityReference.URL != "" {
+		// Validate URL
+		req, err := http.NewRequest("HEAD", securityReference.URL, nil)
+		if err != nil {
+			Logger.Warnf("Unable to validate the URL '%s'", securityReference.URL)
+			return
+		}
+
+		// security.alpinelinux.org responds with text/html content.
+		req.Header.Set("Accept", "text/html")
+
+		// Send the request
+		resp, err := http.DefaultClient.Do(req)
+		if err != nil {
+			Logger.Warnf("Unable to validate the URL '%s'", securityReference.URL)
+			return
+		}
+		defer resp.Body.Close()
+
+		if resp.StatusCode == http.StatusOK {
+			// Add new reference to the vulnerability's references list
+			convertedCve.References = append(convertedCve.References, securityReference)
+		} else {
+			Logger.Warnf("The reference URL '%s' is not valid", securityReference.URL)
+		}
+	}
 }

@@ -1,11 +1,9 @@
 package main
 
 import (
-	"context"
 	"encoding/json"
 	"flag"
 	"fmt"
-	"net/http"
 	"os"
 	"path"
 	"strings"
@@ -14,7 +12,6 @@ import (
 	"github.com/google/osv/vulnfeeds/cves"
 	"github.com/google/osv/vulnfeeds/utility"
 	"github.com/google/osv/vulnfeeds/vulns"
-	"github.com/sethvargo/go-retry"
 )
 
 const (
@@ -251,37 +248,10 @@ func addReference(cveId string, ecosystem string, convertedCve *vulns.Vulnerabil
 		return
 	}
 
-	backoff := retry.NewExponential(1 * time.Second)
-	if err := retry.Do(context.Background(), retry.WithMaxRetries(3, backoff), func(ctx context.Context) error {
-		// Validate URL
-		req, err := http.NewRequest("HEAD", securityReference.URL, nil)
-		if err != nil {
-			return err
-		}
-
-		// security.alpinelinux.org responds with text/html content.
-		req.Header.Set("Accept", "text/html")
-
-		// Send the request
-		resp, err := http.DefaultClient.Do(req)
-		if err != nil {
-			return err
-		}
-		defer resp.Body.Close()
-
-		switch resp.StatusCode / 100 {
-		// 4xx response codes are an instant fail.
-		case 4:
-			return fmt.Errorf("the URL is not valid: %v", resp.StatusCode)
-		// 5xx response codes are retriable.
-		case 5:
-			return retry.RetryableError(fmt.Errorf("bad response: %v", resp.StatusCode))
-		// Anything else is acceptable.
-		default:
-			convertedCve.References = append(convertedCve.References, securityReference)
-			return nil
-		}
-	}); err != nil {
+	_, err := cves.ValidateAndCanonicalizeLink(securityReference.URL)
+	if err != nil {
 		Logger.Warnf("Unable to validate the URL %q: %v", securityReference.URL, err)
+		return
 	}
+	convertedCve.References = append(convertedCve.References, securityReference)
 }

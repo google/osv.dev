@@ -611,7 +611,16 @@ func ValidateAndCanonicalizeLink(link string) (canonicalLink string, err error) 
 	}
 	backoff := retry.NewExponential(1 * time.Second)
 	if err := retry.Do(context.Background(), retry.WithMaxRetries(3, backoff), func(ctx context.Context) error {
-		resp, err := http.Head(link)
+		req, err := http.NewRequest("HEAD", link, nil)
+		if err != nil {
+			return err
+		}
+
+		// security.alpinelinux.org responds with text/html content.
+		req.Header.Set("Accept", "text/html")
+
+		// Send the request
+		resp, err := http.DefaultClient.Do(req)
 		if err != nil {
 			return err
 		}

@@ -5,7 +5,7 @@ $body-background-color: $grey-dk-300;
 $body-heading-color: $white;//$grey-lt-000;
 $body-text-color: $grey-lt-300;
 $link-color: #C9F5F7;
-$nav-child-link-color: $grey-dk-000;
+$nav-child-link-color: $white; //$grey-dk-000;
 $sidebar-color: $grey-dk-300;
 $base-button-color: $grey-dk-250;
 $btn-primary-color: $blue-200;
@@ -16,3 +16,50 @@ $table-background-color: $grey-dk-250;
 $search-background-color: $grey-dk-250;
 $search-result-preview-color: $grey-dk-000;
 $border-color: $grey-dk-200;
+
+
+// Code snippet colors
+.highlight .c {
+    color: #514E56;
+    background: #f5f6fa;
+  } // comment //
+.highlight .nb {
+    color: #8F6B00;
+  } // name.builtin //
+.highlight .nt {
+    color: #2075B1;
+  } // name.tag //
+.highlight .s1 {
+    color: #207E74;
+  } // literal.string.single //
+.highlight .k {
+    color: #667500;
+  } // keyword //
+.highlight .nn {
+    color: #647373;
+  } // name.namespace //
+.highlight .py {
+    color: #647373;
+  } // name.property //
+.highlight .c {
+    color: #586e75;
+  } // comment //
+.highlight .s {
+    color: #207E74;
+  } // literal.string //
+.highlight .s2 {
+    color: #207E74;
+  } // literal.string.double //
+.highlight .err {
+    color: #647373;
+    background: #f5f6fa;
+  } // error //
+.highlight .p {
+    color: #647373;
+  } // punctuation //
+.highlight .nl {
+    color: #514E56;
+  } // name.label //
+.highlight .w {
+    color: #647373;
+  } // text.whitespace //

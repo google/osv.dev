@@ -130,12 +130,7 @@ class LogTraceFilter:
     # "X-Cloud-Trace-Context: TRACE_ID/SPAN_ID;o=TRACE_TRUE"
     parts = trace.split('/')
     trace_id = parts[0]
-    # We don't set the GOOGLE_CLOUD_PROJECT env var explicitly, and I can't find
-    # any confirmation on whether Cloud Run will set automatically.
-    # Grab the project name from the (undocumented?) field on ndb.Client().
-    # Most correct way to do this would be to use the instance metadata server
-    # https://cloud.google.com/run/docs/container-contract#metadata-server
-    project = getattr(_ndb_client, 'project', 'oss-vdb')  # fall back to oss-vdb
+    project = get_gcp_project()
     record.trace = f'projects/{project}/traces/{trace_id}'
     if len(parts) > 1:
       record.span_id = parts[1].split(';')[0]
@@ -1049,9 +1044,11 @@ def query_by_version(context: QueryContext,
 
   ecosystem_info = ecosystems.get(ecosystem)
   is_semver = ecosystem_info and ecosystem_info.is_semver
+  supports_ordering = ecosystem_info and ecosystem_info.supports_ordering
 
   bugs = []
   next_page_token = None
+  project = get_gcp_project()
   if ecosystem:
     if is_semver:
       # Ecosystem supports semver only.
@@ -1064,10 +1061,21 @@ def query_by_version(context: QueryContext,
       for bug in new_bugs:
         if bug not in bugs:
           bugs.append(bug)
-
+    elif project == 'oss-vdb-test' and supports_ordering:
+      # Query for non-enumerated ecosystems.
+      bugs, next_page_token = yield _query_by_comparing_versions(
+          context, query, ecosystem, version)
+      logging.info(
+          '[_query_by_comparing_versions] Package %s '
+          'at version %s has total %d bugs in %s', package_name or purl,
+          version, len(bugs), ecosystem)
     else:
       bugs, next_page_token = yield _query_by_generic_version(
           context, query, package_name, ecosystem, purl, version)
+      logging.info(
+          '[_query_by_generic_version] Package %s '
+          'at version %s has total %d bugs in %s', package_name or purl,
+          version, len(bugs), ecosystem)
 
   else:
     logging.warning("Package query without ecosystem specified")
@@ -1092,6 +1100,50 @@ def query_by_version(context: QueryContext,
     #                               'Ecosystem not specified')
 
   return [to_response(bug) for bug in bugs], next_page_token
+
+
+@ndb.tasklet
+def _query_by_comparing_versions(context: QueryContext, query: ndb.Query,
+                                 ecosystem: str,
+                                 version: str) -> tuple[list, ndb.Cursor]:
+  """Query by package."""
+  bugs = []
+  it: ndb.QueryIterator = query.iter(start_cursor=context.page_token)
+  cursor = None
+  # Checks if the query specifies a release (e.g., "Debian:12")
+  has_release = ':' in ecosystem
+
+  while (yield it.has_next_async()):
+    if len(bugs) >= context.total_responses.page_limit():
+      cursor = it.cursor_after()
+      break
+
+    bug: osv.Bug = it.next()
+    for affected_package in bug.affected_packages:
+      affected_package: osv.AffectedPackage
+      package = affected_package.package
+      package: osv.Package
+
+      # If the queried ecosystem has no release specified (e.g., "Debian"),
+      # compare against packages in all releases (e.g., "Debian:X").
+      # Otherwise, only compare within
+      # the specified release (e.g., "Debian:11").
+      package_ecosystem = package.ecosystem
+      if not has_release:
+        # Extracts ecosystem name for broader comparison (e.g., "Debian")
+        package_ecosystem = package_ecosystem.split(':')[0]
+
+      # Skips if the affected package ecosystem does not match
+      # the queried ecosystem.
+      if package_ecosystem != ecosystem:
+        continue
+
+      if _is_affected(ecosystem, version, affected_package):
+        bugs.append(bug)
+        context.total_responses.add(1)
+        break
+
+  return bugs, cursor
 
 
 @ndb.tasklet
@@ -1177,6 +1229,45 @@ def is_cloud_run() -> bool:
   """Check if we are running in Cloud Run."""
   # https://cloud.google.com/run/docs/container-contract#env-vars
   return os.getenv('K_SERVICE') is not None
+
+
+def get_gcp_project():
+  """Get the GCP project name."""
+  # We don't set the GOOGLE_CLOUD_PROJECT env var explicitly, and I can't find
+  # any confirmation on whether Cloud Run will set automatically.
+  # Grab the project name from the (undocumented?) field on ndb.Client().
+  # Most correct way to do this would be to use the instance metadata server
+  # https://cloud.google.com/run/docs/container-contract#metadata-server
+  return getattr(_ndb_client, 'project', 'oss-vdb')  # fall back to oss-vdb
+
+
+def _is_affected(ecosystem: str, version: str,
+                 affected_package: osv.AffectedPackage) -> bool:
+  """Checks if a version is affected."""
+  affected = False
+  ecosystem_info = ecosystems.get(ecosystem)
+  queried_version = ecosystem_info.sort_key(version)
+
+  for r in affected_package.ranges:
+    r: osv.AffectedRange2
+
+    for event in osv.sorted_events(ecosystem, r.type, r.events):
+      event: osv.AffectedEvent
+      if (event.type == 'introduced' and
+          (event.value == '0' or
+           queried_version >= ecosystem_info.sort_key(event.value))):
+        affected = True
+      elif (event.type == 'fixed' and
+            queried_version >= ecosystem_info.sort_key(event.value)):
+        affected = False
+      elif (event.type == 'last_affected' and
+            queried_version > ecosystem_info.sort_key(event.value)):
+        affected = False
+
+    if affected:
+      return True
+
+  return False
 
 
 def main():

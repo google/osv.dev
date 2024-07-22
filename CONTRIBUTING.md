@@ -39,6 +39,7 @@ You must install:
 1.  [Pylint](https://pypi.org/project/pylint)
 1.  [Yapf](https://github.com/google/yapf)
 1.  [Make](https://www.gnu.org/software/make/)
+1.  [Poetry](https://python-poetry.org/)
 1.  [Pipenv](https://pipenv.pypa.io/en/latest/)
 1.  [Google Cloud SDK](https://cloud.google.com/sdk)
 1.  [Hugo](https://gohugo.io/installation/)

@@ -61,11 +61,11 @@
         <li class="{{ 'active' if active_section == 'blog' else '' }} page-link">
           <a href="{{ url_for('frontend_handlers.blog') }}">Blog</a>
         </li>
-        <li class="{{ 'active' if active_section == 'faq' else '' }} page-link">
-          <a href="https://google.github.io/osv.dev/faq/">FAQ</a>
+        <li class="{{ 'active' if active_section == 'faq' else '' }} page-link external-link">
+          <a href="https://google.github.io/osv.dev/faq/" target=”_blank” >FAQ</a>
         </li>
-        <li class="{{ 'active' if active_section == 'docs' else '' }} page-link">
-          <a href="https://google.github.io/osv.dev/">Docs</a>
+        <li class="{{ 'active' if active_section == 'docs' else '' }} page-link external-link">
+          <a href="https://google.github.io/osv.dev/" target=”_blank” >Docs</a>
         </li>
         
         <ul class="push social-icons">

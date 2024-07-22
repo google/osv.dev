@@ -48,8 +48,16 @@ The following ecosystems have vulnerabilities encoded in this format:
     ([CC0 1.0](https://github.com/haskell/security-advisories/blob/main/LICENSE.txt))
 -   [RConsortium Advisory Database](https://github.com/RConsortium/r-advisory-database)
     ([Apache 2.0](https://github.com/RConsortium/r-advisory-database/blob/main/LICENSE))
+-   [OpenSSF Malicious Packages](https://github.com/ossf/malicious-packages)
+    ([Apache 2.0](https://github.com/ossf/malicious-packages/blob/main/LICENSE))
 -   [Python Software Foundation Database](https://github.com/psf/advisory-database)
     ([CC-BY 4.0](https://github.com/psf/advisory-database/blob/main/LICENSE))
+-   [Bitnami Vulnerability Database](https://github.com/bitnami/vulndb)
+    ([Apache 2.0](https://github.com/bitnami/vulndb/blob/main/LICENSE.md))
+-   [Haskell Security Advisory DB](https://github.com/haskell/security-advisories)
+    ([CC0 1.0](https://github.com/haskell/security-advisories/blob/main/LICENSE.txt))
+-   [Ubuntu](https://github.com/canonical/ubuntu-security-notices)
+    ([GPL v3](https://github.com/canonical/ubuntu-security-notices/blob/main/LICENSE))
 
 ## Converted data
 
@@ -72,6 +80,7 @@ Between the data served in OSV and the data converted to OSV the following ecosy
 -   Android
 -   Bitnami
 -   crates.io
+-   Curl
 -   Debian GNU/Linux
 -   Git ([including C/C++](https://osv.dev/blog/posts/introducing-broad-c-c++-support/))
 -   GitHub Actions
@@ -91,6 +100,7 @@ Between the data served in OSV and the data converted to OSV the following ecosy
 -   Rocky Linux
 -   RubyGems
 -   SwiftURL
+-   Ubuntu OS
 
 ## Data Quality
 

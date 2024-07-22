@@ -668,9 +668,13 @@ def analyze(vulnerability: vulnerability_pb2.Vulnerability,
       if (analyze_git and
           affected_range.type == vulnerability_pb2.Range.Type.GIT):
         repo_analyzer = RepoAnalyzer(detect_cherrypicks=detect_cherrypicks)
-        _analyze_git_ranges(repo_analyzer, checkout_path, affected_range,
-                            new_git_versions, commits, new_introduced,
-                            new_fixed)
+        try:
+          _analyze_git_ranges(repo_analyzer, checkout_path, affected_range,
+                              new_git_versions, commits, new_introduced,
+                              new_fixed)
+        except Exception as e:
+          e.add_note(f'Happened analyzing {vulnerability.id}')
+          raise
 
       # Add additional versions derived from commits and tags.
       if versions_from_repo:

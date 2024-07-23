@@ -434,6 +434,12 @@ func TestRepo(t *testing.T) {
 			expectedRepoURL: "https://git.postgresql.org/git/postgresql.git",
 			expectedOk:      true,
 		},
+		{
+			description:     "libcap repo on kernel.org (with a trailing slash)",
+			inputLink:       "https://git.kernel.org/pub/scm/libs/libcap/libcap.git/",
+			expectedRepoURL: "https://git.kernel.org/pub/scm/libs/libcap/libcap.git",
+			expectedOk:      true,
+		},
 	}
 
 	for _, tc := range tests {

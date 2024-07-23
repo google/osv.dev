@@ -31,6 +31,7 @@ then
   exit 0
 fi
 
+python3 -m pipenv verify
 python3 -m pipenv sync
 
 export PIPENV_IGNORE_VIRTUALENVS=1

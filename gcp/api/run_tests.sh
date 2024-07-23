@@ -21,10 +21,11 @@ fi
 export GOOGLE_CLOUD_PROJECT=oss-vdb
 service docker start
 
+# Set -e later as service docker start should be able to successfully fail
+set -e
+
 if [ "$USE_POETRY" == "true" ]
 then
-  # Set -e later as service docker start should be able to successfully fail
-  set -e
   poetry install
   poetry run python server_test.py
   poetry run python integration_tests.py "$1"

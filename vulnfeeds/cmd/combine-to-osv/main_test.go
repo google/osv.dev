@@ -106,21 +106,21 @@ func TestCombineIntoOSV(t *testing.T) {
 		if cve == "CVE-2018-1000500" {
 			for _, reference := range combinedOSV[cve].References {
 				if reference.Type == "ADVISORY" &&
-					reference.URL == fmt.Sprintf("https://security-tracker.debian.org/tracker/%s", cve) {
+					reference.URL == "https://security-tracker.debian.org/tracker/CVE-2018-1000500" {
 					found = true
 				}
 			}
 		} else if cve == "CVE-2022-33745" {
 			for _, reference := range combinedOSV[cve].References {
 				if reference.Type == "ADVISORY" &&
-					reference.URL == fmt.Sprintf("https://security.alpinelinux.org/vuln/%s", cve) {
+					reference.URL == "https://security.alpinelinux.org/vuln/CVE-2022-33745" {
 					found = true
 				}
 			}
 		} else if cve == "CVE-2022-32746" {
 			for _, reference := range combinedOSV[cve].References {
 				if reference.Type == "ADVISORY" &&
-					reference.URL == fmt.Sprintf("https://security.alpinelinux.org/vuln/%s", cve) {
+					reference.URL == "https://security.alpinelinux.org/vuln/CVE-2022-32746" {
 					found = true
 				}
 			}

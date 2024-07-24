@@ -3,7 +3,7 @@ package main
 import (
 	"encoding/json"
 	"flag"
-	"fmt"
+	"net/url"
 	"os"
 	"path"
 	"strings"
@@ -19,6 +19,11 @@ const (
 	defaultPartsInputPath = "parts"
 	defaultOSVOutputPath  = "osv_output"
 	defaultCVEListPath    = "."
+
+	alpineEcosystem          = "Alpine"
+	alpineSecurityTrackerURL = "https://security.alpinelinux.org/vuln"
+	debianEcosystem          = "Debian"
+	debianSecurityTrackerURL = "https://security-tracker.debian.org/tracker"
 )
 
 var Logger utility.LoggerWrapper
@@ -165,11 +170,11 @@ func combineIntoOSV(loadedCves map[cves.CVEID]cves.Vulnerability, allParts map[c
 		addedAlpineURL := false
 		for _, pkgInfo := range allParts[cveId] {
 			convertedCve.AddPkgInfo(pkgInfo)
-			if strings.HasPrefix(pkgInfo.Ecosystem, "Debian") && !addedDebianURL {
-				addReference(string(cveId), "Debian", convertedCve)
+			if strings.HasPrefix(pkgInfo.Ecosystem, debianEcosystem) && !addedDebianURL {
+				addReference(string(cveId), debianEcosystem, convertedCve)
 				addedDebianURL = true
-			} else if strings.HasPrefix(pkgInfo.Ecosystem, "Alpine") && !addedAlpineURL {
-				addReference(string(cveId), "Alpine", convertedCve)
+			} else if strings.HasPrefix(pkgInfo.Ecosystem, alpineEcosystem) && !addedAlpineURL {
+				addReference(string(cveId), alpineEcosystem, convertedCve)
 				addedAlpineURL = true
 			}
 		}
@@ -236,12 +241,11 @@ func loadAllCVEs(cvePath string) map[cves.CVEID]cves.Vulnerability {
 
 // addReference adds the related security tracker URL to a given vulnerability's references
 func addReference(cveId string, ecosystem string, convertedCve *vulns.Vulnerability) {
-	var securityReference vulns.Reference
-	securityReference.Type = "ADVISORY"
-	if ecosystem == "Alpine" {
-		securityReference.URL = fmt.Sprintf("https://security.alpinelinux.org/vuln/%s", cveId)
-	} else if ecosystem == "Debian" {
-		securityReference.URL = fmt.Sprintf("https://security-tracker.debian.org/tracker/%s", cveId)
+	securityReference := vulns.Reference{Type: "ADVISORY"}
+	if ecosystem == alpineEcosystem {
+		securityReference.URL, _ = url.JoinPath(alpineSecurityTrackerURL, cveId)
+	} else if ecosystem == debianEcosystem {
+		securityReference.URL, _ = url.JoinPath(debianSecurityTrackerURL, cveId)
 	}
 
 	if securityReference.URL == "" {

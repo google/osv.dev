@@ -617,6 +617,7 @@ func ValidateAndCanonicalizeLink(link string) (canonicalLink string, err error) 
 		}
 
 		// security.alpinelinux.org responds with text/html content.
+		// default HEAD request in Go does not provide any Accept headers, causing a 406 response.
 		req.Header.Set("Accept", "text/html")
 
 		// Send the request

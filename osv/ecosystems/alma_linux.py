@@ -11,26 +11,23 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+"""AlmaLinux ecosystem helper."""
 
-FROM golang:1.22.5-alpine@sha256:8c9183f715b0b4eca05b8b3dbf59766aaedb41ec07477b132ee2891ac0110a07 AS GO_BUILD
+from ..third_party.univers.rpm import RpmVersion
 
-RUN mkdir /src
-WORKDIR /src
-
-COPY ./go.mod /src/go.mod
-COPY ./go.sum /src/go.sum
-RUN go mod download
-
-COPY ./ /src/
-RUN go build -o debian-osv ./cmd/debian/
+from .helper_base import Ecosystem
 
 
-FROM gcr.io/google.com/cloudsdktool/google-cloud-cli:alpine
+class AlmaLinux(Ecosystem):
+  """"AlmaLinux ecosystem"""
 
-WORKDIR /root/
-COPY --from=GO_BUILD /src/debian-osv ./
-COPY ./cmd/debian/run_debian_convert.sh ./
+  def sort_key(self, version):
+    return RpmVersion.from_string(version)
 
-RUN chmod 755 ./run_debian_convert.sh
-
-ENTRYPOINT ["/root/run_debian_convert.sh"]
+  def enumerate_versions(self,
+                         package,
+                         introduced,
+                         fixed=None,
+                         last_affected=None,
+                         limits=None):
+    raise NotImplementedError('Ecosystem helper does not support enumeration')

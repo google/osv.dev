@@ -40,11 +40,11 @@ jobs:
       - name: Install pipenv
         run: pip install pipenv==2023.12.1
       - name: Set up pipenv
-        run: pipenv sync --dev
+        run: pipenv verify && pipenv sync --dev
       - name: Set up Go
         uses: actions/setup-go@v5
         with:
-          go-version: '>=1.22.4'
+          go-version: '>=1.22.5'
       - name: Set up terraform
         uses: hashicorp/setup-terraform@v2
       - name: Run pylint and yapf, go vet

@@ -1,216 +1,221 @@
 // Source: https://github.com/dwayne/sass-pygments/blob/master/styles/scss/solarized_dark.scss
+// This SCSS file defines syntax highlighting styles based on the Solarized Dark color scheme.
 
-.highlight {
-    .hll {
-      background-color: #ffffcc;
-    }
-  
-    background: #002B36;
-    color: #93A1A1;
-  
-    .c {
-      color: #586E75;
-    }
-  
-    .err, .esc, .g {
-      color: #93A1A1;
-    }
-  
-    .k {
-      color: #719e07;
-    }
-  
-    .l, .n {
-      color: #93A1A1;
-    }
-  
-    .o {
-      color: #719e07;
-    }
-  
-    .x {
-      color: #CB4B16;
-    }
-  
-    .p {
-      color: #93A1A1;
-    }
-  
-    .ch, .cm {
-      color: #586E75;
-    }
-  
-    .cp {
-      color: #719e07;
-    }
-  
-    .cpf, .c1 {
-      color: #586E75;
-    }
-  
-    .cs {
-      color: #719e07;
-    }
-  
-    .gd {
-      color: #DC322F;
-    }
-  
-    .ge {
-      color: #93A1A1;
-      font-style: italic;
-    }
-  
-    .gr {
-      color: #DC322F;
-      font-weight: bold;
-    }
-  
-    .gh {
-      color: #CB4B16;
-    }
-  
-    .gi {
-      color: #719e07;
-    }
-  
-    .go, .gp {
-      color: #93A1A1;
-    }
-  
-    .gs {
-      color: #93A1A1;
-      font-weight: bold;
-    }
-  
-    .gu {
-      color: #268BD2;
-    }
-  
-    .gt {
-      color: #93A1A1;
-    }
-  
-    .kc {
-      color: #CB4B16;
-    }
-  
-    .kd {
-      color: #268BD2;
-    }
-  
-    .kn, .kp {
-      color: #719e07;
-    }
-  
-    .kr {
-      color: #268BD2;
-    }
-  
-    .kt {
-      color: #DC322F;
-    }
-  
-    .ld {
-      color: #93A1A1;
-    }
-  
-    .m, .s {
-      color: #2AA198;
-    }
-  
-    .na {
-      color: #93A1A1;
-    }
-  
-    .nb {
-      color: #B58900;
-    }
-  
-    .nc {
-      color: #268BD2;
-    }
-  
-    .no {
-      color: #CB4B16;
-    }
-  
-    .nd {
-      color: #268BD2;
-    }
-  
-    .ni, .ne {
-      color: #CB4B16;
-    }
-  
-    .nf {
-      color: #268BD2;
-    }
-  
-    .nl, .nn, .nx, .py {
-      color: #93A1A1;
-    }
-  
-    .nt, .nv {
-      color: #268BD2;
-    }
-  
-    .ow {
-      color: #719e07;
-    }
-  
-    .w {
-      color: #93A1A1;
-    }
-  
-    .mb, .mf, .mh, .mi, .mo {
-      color: #2AA198;
-    }
-  
-    .sb {
-      color: #586E75;
-    }
-  
-    .sc {
-      color: #2AA198;
-    }
-  
-    .sd {
-      color: #93A1A1;
-    }
-  
-    .s2 {
-      color: #2AA198;
-    }
-  
-    .se {
-      color: #CB4B16;
-    }
-  
-    .sh {
-      color: #93A1A1;
-    }
-  
-    .si, .sx {
-      color: #2AA198;
-    }
-  
-    .sr {
-      color: #DC322F;
-    }
-  
-    .s1, .ss {
-      color: #2AA198;
-    }
-  
-    .bp, .vc, .vg, .vi {
-      color: #268BD2;
-    }
-  
-    .il {
-      color: #2AA198;
-    }
+.highlight, pre.highlight {
+  .hll {
+    background-color: #ffffcc;
   }
+
+  // Note that the important here is important
+  background: #002B36 !important;
+  color: #93A1A1;
+
+  .c {
+    color: #586E75;
+  }
+  
+  // Updated background color
+  .err, .esc, .g {
+    background-color: #002B36;
+    color: #93A1A1;
+  }
+
+  .k {
+    color: #719e07;
+  }
+
+  .l, .n {
+    color: #93A1A1;
+  }
+
+  .o {
+    color: #719e07;
+  }
+
+  .x {
+    color: #CB4B16;
+  }
+
+  .p {
+    color: #93A1A1;
+  }
+
+  .ch, .cm {
+    color: #586E75;
+  }
+
+  .cp {
+    color: #719e07;
+  }
+
+  .cpf, .c1 {
+    color: #586E75;
+  }
+
+  .cs {
+    color: #719e07;
+  }
+
+  .gd {
+    color: #DC322F;
+  }
+
+  .ge {
+    color: #93A1A1;
+    font-style: italic;
+  }
+
+  .gr {
+    color: #DC322F;
+    font-weight: bold;
+  }
+
+  .gh {
+    color: #CB4B16;
+  }
+
+  .gi {
+    color: #719e07;
+  }
+
+  .go, .gp {
+    color: #93A1A1;
+  }
+
+  .gs {
+    color: #93A1A1;
+    font-weight: bold;
+  }
+
+  .gu {
+    color: #268BD2;
+  }
+
+  .gt {
+    color: #93A1A1;
+  }
+
+  .kc {
+    color: #CB4B16;
+  }
+
+  .kd {
+    color: #268BD2;
+  }
+
+  .kn, .kp {
+    color: #719e07;
+  }
+
+  .kr {
+    color: #268BD2;
+  }
+
+  .kt {
+    color: #DC322F;
+  }
+
+  .ld {
+    color: #93A1A1;
+  }
+
+  .m, .s {
+    color: #2AA198;
+  }
+
+  .na {
+    color: #93A1A1;
+  }
+
+  .nb {
+    color: #B58900;
+  }
+
+  .nc {
+    color: #268BD2;
+  }
+
+  .no {
+    color: #CB4B16;
+  }
+
+  .nd {
+    color: #268BD2;
+  }
+
+  .ni, .ne {
+    color: #CB4B16;
+  }
+
+  .nf {
+    color: #268BD2;
+  }
+
+  .nl, .nn, .nx, .py {
+    color: #93A1A1;
+  }
+
+  .nt, .nv {
+    color: #268BD2;
+  }
+
+  .ow {
+    color: #719e07;
+  }
+
+  .w {
+    color: #93A1A1;
+  }
+
+  .mb, .mf, .mh, .mi, .mo {
+    color: #2AA198;
+  }
+
+  .sb {
+    color: #586E75;
+  }
+
+  .sc {
+    color: #2AA198;
+  }
+
+  .sd {
+    color: #93A1A1;
+  }
+
+  .s2 {
+    color: #2AA198;
+  }
+
+  .se {
+    color: #CB4B16;
+  }
+
+  .sh {
+    color: #93A1A1;
+  }
+
+  .si, .sx {
+    color: #2AA198;
+  }
+
+  .sr {
+    color: #DC322F;
+  }
+
+  .s1, .ss {
+    color: #2AA198;
+  }
+
+  .bp, .vc, .vg, .vi {
+    color: #268BD2;
+  }
+
+  .il {
+    color: #2AA198;
+  }
+}
+
   
   /* Comment */
   /* Error */

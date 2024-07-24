@@ -35,7 +35,7 @@ plugins:
 color_scheme: custom_dark
 markdown: kramdown
 
-logo: "/assets/logo.png"
+logo: "/assets/logo-dark.png"
 favicon_ico: "/assets/icon.png"
 
 callouts_level: quiet # or loud

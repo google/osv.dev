@@ -40,7 +40,7 @@ jobs:
       - name: Install pipenv
         run: pip install pipenv==2023.12.1
       - name: Set up pipenv
-        run: pipenv sync --dev
+        run: pipenv verify && pipenv sync --dev
       - name: Set up Go
         uses: actions/setup-go@v5
         with:

@@ -1,21 +1,22 @@
 @import "./variables";
 @import "../highlight/solarized_dark.scss";
 
+// Overriding dark default for just-the-docs styles
 $color-scheme: dark;
-$body-background-color: $grey-dk-300;
+$body-background-color: #2A2A2A; //$grey-dk-300;
 $body-heading-color: $white;//$grey-lt-000;
-$body-text-color: $grey-lt-300;
+$body-text-color: $white; //$grey-lt-300;
 $link-color: #C9F5F7;
 $nav-child-link-color: $white; //$grey-dk-000;
-$sidebar-color: $grey-dk-300;
+$sidebar-color: #2A2A2A; // $grey-dk-300;
 $base-button-color: $grey-dk-250;
 $btn-primary-color: $blue-200;
-$code-background-color: #31343f; // OneDarkJekyll default for syntax-one-dark-vivid
-$code-linenumber-color: #dee2f7; // OneDarkJekyll .nf for syntax-one-dark-vivid
+$code-background-color:#31343f; // Important to match this color with .highlight background and .highlight.err background-color 
+$code-linenumber-color: #268BD2; // Important to match this color with .highlight.nf styles
 $feedback-color: darken($sidebar-color, 3%);
 $table-background-color: $grey-dk-250;
 $search-background-color: $grey-dk-250;
 $search-result-preview-color: $grey-dk-000;
-$border-color: $grey-dk-200;
+$border-color: #6A6A6A;//# $grey-dk-200;
 
 

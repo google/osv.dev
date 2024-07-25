@@ -16,7 +16,7 @@ ifeq "$(USE_POETRY)" "true"
 	install-cmd := poetry install
 	run-cmd := poetry run
 else
-	install-cmd := pipenv sync
+	install-cmd := pipenv verify && pipenv sync
 	run-cmd := pipenv run
 endif
 

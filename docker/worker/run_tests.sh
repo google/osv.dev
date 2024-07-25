@@ -23,5 +23,6 @@ then
 fi
 
 export PIPENV_IGNORE_VIRTUALENVS=1
+pipenv verify
 pipenv sync
 pipenv run python worker_test.py

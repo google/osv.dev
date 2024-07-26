@@ -15,6 +15,7 @@ then
 fi
 
 export PIPENV_IGNORE_VIRTUALENVS=1
+python3 -m pipenv verify
 python3 -m pipenv sync
 python3 -m pipenv run python -m unittest osv.bug_test
 python3 -m pipenv run python -m unittest osv.purl_helpers_test

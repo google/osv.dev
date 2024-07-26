@@ -17,12 +17,12 @@ from google.cloud.storage import retry
 
 
 class Error(Exception):
-  pass
+  """General purpose exception for errors."""
 
 
-def Sources(source: str) -> dict:
+def Sources(source_path: str) -> dict:
   """Return a dictionary of the contents of a source.yaml file."""
-  return yaml.safe_load(open(source))
+  return yaml.safe_load(open(source_path))
 
 
 def DownloadSource(source: dict, directory: str, verbose: bool = False) -> None:

@@ -46,10 +46,10 @@
   type: 1
   detect_cherrypicks: False
   extension: '.json'
-  bucket: 'android-osv'
+  bucket: 'android-osv-test'
   db_prefix: 'A-'
   ignore_git: True
-  link: 'https://storage.googleapis.com/android-osv/'
+  link: 'https://storage.googleapis.com/android-osv-test/'
   editable: False
 
 - name: 'bitnami'

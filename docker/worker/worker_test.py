@@ -1126,6 +1126,7 @@ class UpdateTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
     self.source_repo.ignore_git = False
     self.source_repo.versions_from_repo = False
     self.source_repo.detect_cherrypicks = False
+    self.source_repo.db_prefix.append('PYSEC-')
     self.source_repo.put()
 
     self.mock_repo.add_file(
@@ -1175,6 +1176,7 @@ class UpdateTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
     self.source_repo.ignore_git = False
     self.source_repo.versions_from_repo = False
     self.source_repo.detect_cherrypicks = False
+    self.source_repo.db_prefix.append('PYSEC-')
     self.source_repo.put()
 
     self.mock_repo.add_file(
@@ -1224,6 +1226,7 @@ class UpdateTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
     self.source_repo.ignore_git = False
     self.source_repo.versions_from_repo = False
     self.source_repo.detect_cherrypicks = False
+    self.source_repo.db_prefix.append('PYSEC-')
     self.source_repo.put()
 
     self.mock_repo.add_file(
@@ -1261,6 +1264,7 @@ class UpdateTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
     self.source_repo.ignore_git = False
     self.source_repo.versions_from_repo = False
     self.source_repo.detect_cherrypicks = False
+    self.source_repo.db_prefix.append('GHSA-')
     self.source_repo.put()
 
     self.mock_repo.add_file(
@@ -1301,6 +1305,7 @@ class UpdateTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
     self.source_repo.ignore_git = False
     self.source_repo.versions_from_repo = False
     self.source_repo.detect_cherrypicks = False
+    self.source_repo.db_prefix.append('LINUX-')
     self.source_repo.put()
 
     self.mock_repo.add_file(
@@ -1341,6 +1346,7 @@ class UpdateTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
     self.source_repo.type = osv.SourceRepositoryType.BUCKET
     self.source_repo.bucket = TEST_BUCKET
     self.source_repo.editable = False
+    self.source_repo.db_prefix.append('GO-')
     self.source_repo.put()
 
     task_runner = worker.TaskRunner(ndb_client, None, self.tmp_dir.name, None,
@@ -1364,6 +1370,7 @@ class UpdateTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
     self.source_repo.ignore_git = False
     self.source_repo.versions_from_repo = False
     self.source_repo.detect_cherrypicks = False
+    self.source_repo.db_prefix.append('DSA-')
     self.source_repo.put()
 
     self.mock_repo.add_file(
@@ -1404,6 +1411,7 @@ class UpdateTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
     self.source_repo.ignore_git = False
     self.source_repo.versions_from_repo = False
     self.source_repo.detect_cherrypicks = False
+    self.source_repo.db_prefix.append('CVE-')
     self.source_repo.put()
 
     self.mock_repo.add_file(
@@ -1445,6 +1453,7 @@ class UpdateTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
     self.source_repo.type = osv.SourceRepositoryType.BUCKET
     self.source_repo.bucket = TEST_BUCKET
     self.source_repo.editable = False
+    self.source_repo.db_prefix.append('ASB-A-')
     self.source_repo.put()
 
     task_runner = worker.TaskRunner(ndb_client, None, self.tmp_dir.name, None,
@@ -1545,6 +1554,7 @@ class UpdateTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
     self.source_repo.type = osv.SourceRepositoryType.BUCKET
     self.source_repo.bucket = TEST_BUCKET
     self.source_repo.editable = False
+    self.source_repo.db_prefix.append('CVE-')
     self.source_repo.put()
 
     task_runner = worker.TaskRunner(ndb_client, None, self.tmp_dir.name, None,

@@ -41,12 +41,13 @@ _future_map: dict[str, Future] = {}
 
 def smart_cache(
     key: str,
-    timeout: int,
+    hard_timeout: int,
+    soft_timeout: int,
 ) -> Callable:
   """
   The decorated function will be cached with the given key. 
 
-  If the decorated function is called any time after half the timeout 
+  If the decorated function is called any time after the `soft_timeout` 
   of the cache, the cached value will still be returned, but the cache 
   will be refreshed in an asynchronous background thread.
 
@@ -67,8 +68,8 @@ def smart_cache(
 
       def update_func():
         result = f(*args, **kwargs)
-        instance.set(key, result, timeout=timeout)
-        instance.set(key + _should_refresh_suffix, True, timeout=timeout // 2)
+        instance.set(key, result, timeout=hard_timeout)
+        instance.set(key + _should_refresh_suffix, True, timeout=soft_timeout)
         return result
 
       result = instance.get(key)

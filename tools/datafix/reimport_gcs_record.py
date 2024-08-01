@@ -43,11 +43,12 @@ def objname_for_bug(client: datastore.Client,
     A dict with keys for the GCS uri, the bucket name and path within the
     bucket.
   """
-  bucket = bucket_for_source(client, bug["source"])
+  bucket = "cve-osv-conversion"
+  filename = os.path.basename(bug["source_id"].split(":")[1])
   return {
-      "uri": "gs://" + os.path.join(bucket, bug["source_id"].split(":")[1]),
+      "uri": "gs://" + os.path.join(bucket, "osv-output", filename),
       "bucket": bucket,
-      "path": bug["source_id"].split(":")[1]
+      "path": os.path.join("osv-output", filename)
   }
 
 
@@ -91,8 +92,6 @@ def bucket_for_source(client: datastore.Client, source: str) -> str:
   if len(result) != 1:
     raise UnexpectedSituation(
         f"More than one SourceRepository entry found for {source}")
-  if result[0]['type'] != 1:
-    raise UnexpectedSituation(f"The type for {source} isn't GCS")
   return result[0]['bucket']
 
 

@@ -153,8 +153,7 @@
 - name: 'go'
   versions_from_repo: True
   type: 1
-  ignore_patterns: ['^(?!GO-).*$']
-  ignore_patterns: ['index.json']
+  ignore_patterns: ['^(?!GO-).*$', 'index.json']
   directory_path: 'ID'
   detect_cherrypicks: True
   extension: '.json'
@@ -195,7 +194,7 @@
 - name: 'psf'
   versions_from_repo: True
   type: 0
-  ignore_patterns: ['PYSEC-0000.*', 'false_positives.yaml', '^(?!PSF-).*$']
+  ignore_patterns: ['^(?!PSF-).*$']
   directory_path: 'advisories'
   repo_url: 'https://github.com/psf/advisory-database.git'
   detect_cherrypicks: False

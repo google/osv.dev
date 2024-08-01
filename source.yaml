@@ -1,7 +1,7 @@
 - name: almalinux-alba
   versions_from_repo: False
   type: 0
-  ignore_patterns: ['ALSA-.*', 'ALEA-.*']
+  ignore_patterns: ['ALSA-.*', 'ALEA-.*', '^(?!ALBA-).*$']
   directory_path: advisories
   repo_url: https://github.com/AlmaLinux/osv-database.git
   detect_cherrypicks: False
@@ -15,7 +15,7 @@
 - name: almalinux-alea
   versions_from_repo: False
   type: 0
-  ignore_patterns: ['ALSA-.*', 'ALBA-.*']
+  ignore_patterns: ['ALSA-.*', 'ALBA-.*', '^(?!ALEA-).*$']
   directory_path: advisories
   repo_url: https://github.com/AlmaLinux/osv-database.git
   detect_cherrypicks: False
@@ -43,6 +43,7 @@
 - name: android
   versions_from_repo: False
   type: 1
+  ignore_patterns: ['^(?!A-).*$', '^(?!ASB-A-).*$', '^(?!PUB-ASB-A-).*$']
   detect_cherrypicks: False
   extension: .json
   bucket: android-osv
@@ -54,6 +55,7 @@
 - name: bitnami
   versions_from_repo: False
   type: 0
+  ignore_patterns: ['^(?!BIT-).*$']
   directory_path: data
   repo_url: https://github.com/bitnami/vulndb.git
   detect_cherrypicks: False
@@ -67,7 +69,7 @@
   versions_from_repo: False
   rest_api_url: 'https://packages.cgr.dev/chainguard/osv/all.json'
   type: 2
-  ignore_patterns: ['propertyValue']
+  ignore_patterns: ['^(?!CGA-).*$']  # NOTE: Not currently supported for REST sources
   directory_path: 'chainguard/osv'
   detect_cherrypicks: False
   extension: '.json'
@@ -80,6 +82,7 @@
   versions_from_repo: False
   rest_api_url: https://curl.se/docs/vuln.json
   type: 2
+  ignore_patterns: ['^(?!CURL-).*$']  # NOTE: Not currently supported for REST sources
   directory_path: docs
   detect_cherrypicks: False
   extension: .json
@@ -92,6 +95,7 @@
 - name: cve-osv
   versions_from_repo: True
   type: 1
+  ignore_patterns: ['^(?!CVE-).*$']
   directory_path: osv-output
   detect_cherrypicks: False
   extension: .json
@@ -105,6 +109,7 @@
 - name: debian-dla
   versions_from_repo: False
   type: 1
+  ignore_patterns: ['^(?!DLA-).*$']
   directory_path: dla-osv
   detect_cherrypicks: False
   extension: .json
@@ -118,6 +123,7 @@
 - name: debian-dsa
   versions_from_repo: False
   type: 1
+  ignore_patterns: ['^(?!DSA-).*$']
   directory_path: dsa-osv
   detect_cherrypicks: False
   extension: .json
@@ -131,6 +137,7 @@
 - name: debian-dtsa
   versions_from_repo: False
   type: 1
+  ignore_patterns: ['^(?!DTSA-).*$']
   directory_path: dtsa-osv
   detect_cherrypicks: False
   extension: .json
@@ -144,6 +151,7 @@
 - name: ghsa
   versions_from_repo: False
   type: 0
+  ignore_patterns: ['^(?!GHSA-).*$']
   directory_path: advisories/github-reviewed
   repo_url: https://github.com/github/advisory-database.git
   detect_cherrypicks: False
@@ -157,7 +165,7 @@
 - name: go
   versions_from_repo: True
   type: 1
-  ignore_patterns: ['index.json']
+  ignore_patterns: ['index.json', '^(?!GO-).*$']
   directory_path: ID
   detect_cherrypicks: True
   extension: .json
@@ -171,6 +179,7 @@
 - name: haskell
   versions_from_repo: False
   type: 0
+  ignore_patterns: ['^(?!HSEC-).*$']
   repo_branch: generated/osv-export
   repo_url: https://github.com/haskell/security-advisories.git
   detect_cherrypicks: False
@@ -184,7 +193,7 @@
 - name: malicious-packages
   versions_from_repo: False
   type: 0
-  ignore_patterns: ['MAL-0000.*', 'config.yaml']
+  ignore_patterns: ['^(?!MAL-).*$', 'MAL-0000.*', 'config.yaml']
   directory_path: osv
   repo_url: https://github.com/ossf/malicious-packages.git
   detect_cherrypicks: False
@@ -197,6 +206,7 @@
 - name: oss-fuzz
   versions_from_repo: True
   type: 0
+  ignore_patterns: ['PYSEC-0000.*', 'false_positives.yaml', '^(?!PSF-).*$']
   directory_path: vulns
   repo_url: ssh://github.com/google/oss-fuzz-vulns
   detect_cherrypicks: True
@@ -210,6 +220,7 @@
 - name: psf
   versions_from_repo: True
   type: 0
+  ignore_patterns: ['^(?!PSF-).*$']
   directory_path: advisories
   repo_url: https://github.com/psf/advisory-database.git
   detect_cherrypicks: False
@@ -222,7 +233,7 @@
 - name: python
   versions_from_repo: False
   type: 0
-  ignore_patterns: ['PYSEC-0000.*', 'false_positives.yaml']
+  ignore_patterns: ['PYSEC-0000.*', 'false_positives.yaml', '^(?!PYSEC-).*$']
   directory_path: vulns
   repo_url: ssh://github.com/pypa/advisory-database
   detect_cherrypicks: False
@@ -236,6 +247,7 @@
 - name: r
   versions_from_repo: False
   type: 0
+  ignore_patterns: ['^(?!RSEC-).*$']
   directory_path: vulns
   repo_url: https://github.com/RConsortium/r-advisory-database.git
   detect_cherrypicks: False
@@ -248,7 +260,7 @@
 - name: rockylinux-rlsa
   versions_from_repo: False
   type: 1
-  ignore_patterns: ['RXSA-.*']
+  ignore_patterns: ['^(?!RLSA-).*$']
   detect_cherrypicks: False
   extension: .json
   bucket: resf-osv-data
@@ -260,7 +272,7 @@
 - name: rockylinux-rxsa
   versions_from_repo: False
   type: 1
-  ignore_patterns: ['RLSA-.*']
+  ignore_patterns: ['^(?!RUSTSEC-).*$']
   detect_cherrypicks: False
   extension: .json
   bucket: resf-osv-data
@@ -272,6 +284,7 @@
 - name: rust
   versions_from_repo: True
   type: 0
+  ignore_patterns: ['^(?!OSV-).*$']
   repo_branch: osv
   directory_path: crates
   repo_url: https://github.com/rustsec/advisory-db.git
@@ -287,7 +300,7 @@
 - name: 'ubuntu'
   versions_from_repo: False
   type: 0
-  ignore_patterns: ['CVE-.*']
+  ignore_patterns: ['^(?!USN-).*$']
   directory_path: 'osv'
   repo_url: 'https://github.com/canonical/ubuntu-security-notices.git'
   detect_cherrypicks: False
@@ -301,7 +314,7 @@
 - name: uvi
   versions_from_repo: True
   type: 0
-  ignore_patterns: ['allowlist.json']
+  ignore_patterns: ['allowlist.json', '^(?!GSD-).*$']
   repo_url: https://github.com/cloudsecurityalliance/gsd-database.git
   detect_cherrypicks: False
   extension: .json

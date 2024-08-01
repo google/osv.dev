@@ -302,12 +302,16 @@ class RepoAnalyzer:
       # Ignore commits without parents and merge commits with multiple parents.
       if not commit.parents or len(commit.parents) > 1:
         continue
-
-      patch_id = repo.cache.get(commit.id)
-      if not patch_id:
+      #Handle repositories that do not support cache
+      if hasattr(repo, 'cache'):
+        patch_id = repo.cache.get(commit.id)
+        if not patch_id:
+          diff = repo.diff(commit.parents[0], commit)
+          patch_id = diff.patchid
+          repo.cache[commit.id] = patch_id
+      else:
         diff = repo.diff(commit.parents[0], commit)
         patch_id = diff.patchid
-        repo.cache[commit.id] = patch_id
 
       if patch_id == target_patch_id:
         return str(commit.id)

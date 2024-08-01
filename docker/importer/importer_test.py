@@ -386,6 +386,12 @@ class ImporterTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
         ignore_patterns=['(^(?!USN-).*$)'])
     self.assertTrue(
         source_repo_ignore_negative.ignore_file('/tmp/foo/CVE-2024-1234.json'))
+    source_repo_ignore_multiple = osv.SourceRepository(
+        ignore_patterns=['^(?!MAL-).*$', 'MAL-0000.*'])
+    self.assertTrue(
+        source_repo_ignore_multiple.ignore_file('/tmp/foo/CVE-2024-1234.json'))
+    self.assertTrue(
+        source_repo_ignore_multiple.ignore_file('/tmp/foo/MAL-0000-0001.json'))
 
 
 @mock.patch('importer.utcnow', lambda: datetime.datetime(2021, 1, 1))

@@ -76,7 +76,7 @@ class ImporterTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
         type=osv.SourceRepositoryType.GIT,
         id='oss-fuzz',
         name='oss-fuzz',
-        db_prefix='OSV-',
+        db_prefix=['OSV-'],
         repo_url='file://' + self.remote_source_repo_path,
         repo_username='',
         ignore_patterns=['.*IGNORE.*'])
@@ -702,7 +702,7 @@ class BucketImporterMassDeletionTest(unittest.TestCase):
         bucket='osv-test-cve-osv-conversion',
         directory_path='osv-output',
         extension='.json',
-        db_prefix='CVE-')
+        db_prefix=['CVE-'])
 
     tests.mock_datetime(self)
 
@@ -765,7 +765,7 @@ class RESTImporterTest(unittest.TestCase):
         name='curl',
         link=MOCK_ADDRESS_FORMAT,
         rest_api_url=MOCK_ADDRESS_FORMAT,
-        db_prefix='CURL-',
+        db_prefix=['CURL-'],
         extension='.json',
         editable=False)
     self.source_repo.put()

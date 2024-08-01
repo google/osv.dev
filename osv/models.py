@@ -476,12 +476,10 @@ class Bug(ndb.Model):
       if not source_repo:
         raise ValueError(f'Invalid source {self.source}')
 
-      if source_repo.db_prefix and self.db_id.startswith(source_repo.db_prefix):
-        key_id = self.db_id
-      else:
-        key_id = f'{self.source}:{self.db_id}'
+      if not any(self.db_id.startswith(prefix) for prefix in source_repo.db_prefix):
+        raise ValueError(f'{self.db_id} has invalid prefix for source {self.source}')
 
-      self.key = ndb.Key(Bug, key_id)
+      self.key = ndb.Key(Bug, self.db_id)
 
     if self.withdrawn:
       self.status = bug.BugStatus.INVALID
@@ -831,7 +829,7 @@ class SourceRepository(ndb.Model):
   human_link = ndb.StringProperty()
   # DB prefix, if the database allocates its own.
   # https://ossf.github.io/osv-schema/#id-modified-fields
-  db_prefix = ndb.StringProperty()
+  db_prefix = ndb.StringProperty(repeated=True)
 
   def ignore_file(self, file_path):
     """Return whether or not we should be ignoring a file."""

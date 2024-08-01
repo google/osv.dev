@@ -272,7 +272,7 @@
 - name: rockylinux-rxsa
   versions_from_repo: False
   type: 1
-  ignore_patterns: ['^(?!RUSTSEC-).*$']
+  ignore_patterns: ['^(?!RXSA-).*$']
   detect_cherrypicks: False
   extension: .json
   bucket: resf-osv-data
@@ -284,7 +284,7 @@
 - name: rust
   versions_from_repo: True
   type: 0
-  ignore_patterns: ['^(?!OSV-).*$']
+  ignore_patterns: ['^(?!RUSTSEC-).*$']
   repo_branch: osv
   directory_path: crates
   repo_url: https://github.com/rustsec/advisory-db.git

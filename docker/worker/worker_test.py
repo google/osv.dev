@@ -148,7 +148,8 @@ class ImpactTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
     tests.mock_clone(self, return_value=pygit2.Repository('osv-test'))
     tests.mock_datetime(self)
 
-    osv.SourceRepository(id='oss-fuzz', name='oss-fuzz', db_prefix=['OSV-']).put()
+    osv.SourceRepository(
+        id='oss-fuzz', name='oss-fuzz', db_prefix=['OSV-']).put()
 
     allocated_bug = osv.Bug(
         db_id='OSV-2020-1337',
@@ -516,7 +517,8 @@ class MarkBugInvalidTest(unittest.TestCase):
 
   def test_mark_bug_invalid(self):
     """Test mark_bug_invalid."""
-    osv.SourceRepository(id='oss-fuzz', name='oss-fuzz', db_prefix=['OSV-']).put()
+    osv.SourceRepository(
+        id='oss-fuzz', name='oss-fuzz', db_prefix=['OSV-']).put()
     osv.Bug(db_id='OSV-2021-1', source_id='oss-fuzz:1337').put()
     osv.AffectedCommits(bug_id='OSV-2021-1').put()
     osv.AffectedCommits(bug_id='OSV-2021-1').put()
@@ -734,7 +736,7 @@ class UpdateTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
         type=osv.SourceRepositoryType.GIT,
         id='source',
         name='source',
-        db_prefix=['BLAH-'],
+        db_prefix=['OSV-'],
         repo_url='file://' + self.remote_source_repo_path,
         editable=True,
         repo_username='',
@@ -1151,9 +1153,8 @@ class UpdateTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
     diff = repo.diff(commit.parents[0], commit)
     self.expect_equal('diff_pypi', diff.patch)
 
-    self.expect_dict_equal(
-        'update_pypi',
-        ndb.Key(osv.Bug, 'PYSEC-123').get()._to_dict())
+    self.expect_dict_equal('update_pypi',
+                           ndb.Key(osv.Bug, 'PYSEC-123').get()._to_dict())
 
     affected_commits = list(osv.AffectedCommits.query())
     self.assertEqual(1, len(affected_commits))
@@ -1619,6 +1620,18 @@ class UpdateTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
         ],
         [codecs.encode(commit, 'hex') for commit in affected_commits.commits],
     )
+
+  def test_invalid_prefix(self):
+    """Test attempting to create a bug with a invalid db_prefix."""
+    with self.assertRaises(ValueError):
+      osv.Bug(
+          db_id='BLAH-131',
+          project=['blah.com/package'],
+          ecosystem=['ecosystem'],
+          source_id='source:OSV-131.yaml',
+          import_last_modified=datetime.datetime(2021, 1, 1, 0, 0),
+          source_of_truth=osv.SourceOfTruth.SOURCE_REPO,
+      ).put()
 
 
 if __name__ == '__main__':

@@ -287,7 +287,7 @@
 - name: 'ubuntu'
   versions_from_repo: False
   type: 0
-  ignore_patterns: []
+  ignore_patterns: ['CVE-.*']
   directory_path: 'osv'
   repo_url: 'https://github.com/canonical/ubuntu-security-notices.git'
   detect_cherrypicks: False

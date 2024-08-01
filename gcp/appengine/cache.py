@@ -26,7 +26,7 @@ if utils.is_prod():
   instance = flask_caching.Cache(
       config={
           'CACHE_TYPE': 'RedisCache',
-          'CACHE_REDIS_HOST': os.environ.get('REDISHOST', 'localhost'),
+          'CACHE_REDIS_HOST': os.environ.get('REDISHOST', '127.0.0.1'),
           'CACHE_REDIS_PORT': int(os.environ.get('REDISPORT', 6379)),
       })
 else:
@@ -68,7 +68,7 @@ def smart_cache(
       def update_func():
         result = f(*args, **kwargs)
         instance.set(key, result, timeout=timeout)
-        instance.set(key + _should_refresh_suffix, True, timeout=timeout / 2)
+        instance.set(key + _should_refresh_suffix, True, timeout=timeout // 2)
         return result
 
       result = instance.get(key)

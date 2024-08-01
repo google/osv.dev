@@ -70,8 +70,7 @@
   versions_from_repo: False
   rest_api_url: 'https://curl.se/docs/vuln.json'
   type: 2
-  ignore_patterns: ['^(?!CURL-).*$']
-  ignore_patterns: ['propertyValue']
+  ignore_patterns: ['^(?!CURL-).*$']  # NOTE: Not currently supported for REST sources
   directory_path: 'docs'
   detect_cherrypicks: False
   extension: '.json'
@@ -305,7 +304,7 @@
   versions_from_repo: False
   rest_api_url: 'https://packages.cgr.dev/chainguard/osv/all.json'
   type: 2
-  ignore_patterns: ['^(?!CGA-).*$']
+  ignore_patterns: ['^(?!CGA-).*$']  # NOTE: Not currently supported for REST sources
   directory_path: 'chainguard/osv'
   detect_cherrypicks: False
   extension: '.json'

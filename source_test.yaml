@@ -2,7 +2,7 @@
 - name: 'almalinux-alba'
   versions_from_repo: False
   type: 0
-  ignore_patterns: ['ALSA-.*', 'ALEA-.*', '^(?!ALBA-).*$']
+  ignore_patterns: ['^(?!ALBA-).*$']
   directory_path: 'advisories'
   repo_url: 'https://github.com/AlmaLinux/osv-database.git'
   detect_cherrypicks: False
@@ -16,7 +16,7 @@
 - name: 'almalinux-alea'
   versions_from_repo: False
   type: 0
-  ignore_patterns: ['ALSA-.*', 'ALBA-.*', '^(?!ALEA-).*$']
+  ignore_patterns: ['^(?!ALEA-).*$']
   directory_path: 'advisories'
   repo_url: 'https://github.com/AlmaLinux/osv-database.git'
   detect_cherrypicks: False
@@ -30,7 +30,7 @@
 - name: 'almalinux-alsa'
   versions_from_repo: False
   type: 0
-  ignore_patterns: ['ALBA-.*', 'ALEA-.*', '^(?!ALSA-).*$']
+  ignore_patterns: ['^(?!ALSA-).*$']
   directory_path: 'advisories'
   repo_url: 'https://github.com/AlmaLinux/osv-database.git'
   detect_cherrypicks: False
@@ -153,7 +153,7 @@
 - name: 'go'
   versions_from_repo: True
   type: 1
-  ignore_patterns: ['^(?!GO-).*$', 'index.json']
+  ignore_patterns: ['^(?!GO-).*$']
   directory_path: 'ID'
   detect_cherrypicks: True
   extension: '.json'
@@ -181,7 +181,7 @@
 - name: 'malicious-packages'
   versions_from_repo: False
   type: 0
-  ignore_patterns: ['^(?!MAL-).*$', 'MAL-0000.*', 'config.yaml']
+  ignore_patterns: ['^(?!MAL-).*$', 'MAL-0000.*']
   directory_path: 'osv'
   repo_url: 'https://github.com/ossf/malicious-packages.git'
   detect_cherrypicks: False
@@ -207,7 +207,7 @@
 - name: 'python'
   versions_from_repo: False
   type: 0
-  ignore_patterns: ['PYSEC-0000.*', 'false_positives.yaml', '^(?!PYSEC-).*$']
+  ignore_patterns: ['PYSEC-0000.*', '^(?!PYSEC-).*$']
   directory_path: 'vulns'
   repo_url: 'https://github.com/pypa/advisory-database.git'
   detect_cherrypicks: False
@@ -287,7 +287,7 @@
 - name: 'uvi'
   versions_from_repo: True
   type: 0
-  ignore_patterns: ['allowlist.json', '^(?!GSD-).*$']
+  ignore_patterns: ['^(?!GSD-).*$']
   repo_url: 'https://github.com/cloudsecurityalliance/gsd-database.git'
   detect_cherrypicks: False
   extension: '.json'

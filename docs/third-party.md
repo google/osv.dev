@@ -36,6 +36,7 @@ to determine suitability for your use.
 - [Trivy](https://github.com/aquasecurity/trivy)
 - [IronDome: SCA scanner for Ruby applications](https://rubygems.org/gems/iron_dome)
 - [OSV module in x-cmd: A shell CLI for OSV.dev API with osv-scanner integration](https://x-cmd.com/mod/osv)
+- [SBOMResearcher](https://github.com/bigdawgsfootball/SBOM-Researcher)
 
 Feel free to [send a PR](https://github.com/google/osv.dev/blob/master/docs/third-party.md) to add
 your project here. We ask that you consider [adopting](https://scorecard.dev/#run-the-checks) [OpenSSF

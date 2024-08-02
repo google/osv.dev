@@ -43,7 +43,7 @@
 - name: android
   versions_from_repo: False
   type: 1
-  ignore_patterns: ['^(?!A-).*$', '^(?!ASB-A-).*$', '^(?!PUB-ASB-A-).*$']
+  ignore_patterns: ['^(?!(PUB-)?ASB-A-).*$']
   detect_cherrypicks: False
   extension: .json
   bucket: android-osv

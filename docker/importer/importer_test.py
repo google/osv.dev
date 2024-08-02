@@ -381,15 +381,17 @@ class ImporterTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
   @mock.patch('google.cloud.pubsub_v1.PublisherClient.publish')
   def test_ignore(self, mock_publish):  # pylint: disable=unused-argument
     """Test ignoring."""
-    # TODO(michaelkedar): This test doesn't check anything
-    self.skipTest("Not Implemented")
-    self.mock_repo.add_file('2021-111IGNORE.yaml', _MIN_VALID_VULNERABILITY)
-    self.mock_repo.commit('User', 'user@email', 'message.')
-
-    imp = importer.Importer('fake_public_key', 'fake_private_key', self.tmp_dir,
-                            importer.DEFAULT_PUBLIC_LOGGING_BUCKET, 'bucket',
-                            True, False)
-    imp.run()
+    self.assertTrue(self.source_repo.ignore_file('/tmp/foo/recoredIGNOREme'))
+    source_repo_ignore_negative = osv.SourceRepository(
+        ignore_patterns=['(^(?!USN-).*$)'])
+    self.assertTrue(
+        source_repo_ignore_negative.ignore_file('/tmp/foo/CVE-2024-1234.json'))
+    source_repo_ignore_multiple = osv.SourceRepository(
+        ignore_patterns=['^(?!MAL-).*$', 'MAL-0000.*'])
+    self.assertTrue(
+        source_repo_ignore_multiple.ignore_file('/tmp/foo/CVE-2024-1234.json'))
+    self.assertTrue(
+        source_repo_ignore_multiple.ignore_file('/tmp/foo/MAL-0000-0001.json'))
 
 
 @mock.patch('importer.utcnow', lambda: datetime.datetime(2021, 1, 1))

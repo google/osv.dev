@@ -1634,6 +1634,7 @@ class UpdateTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
   def test_invalid_prefix(self):
     """Test attempting to create a bug with a invalid db_prefix."""
     with self.assertRaises(ValueError):
+      # Default db_prefix is `OSV-`
       osv.Bug(
           db_id='BLAH-131',
           project=['blah.com/package'],

@@ -428,7 +428,6 @@ class Bug(ndb.Model):
     for affected_package in self.affected_packages:
       # Indexes used for querying by exact version.
       ecosystem_helper = ecosystems.get(affected_package.package.ecosystem)
-      self.has_affected |= bool(affected_package.versions)
 
       if ecosystem_helper and ecosystem_helper.supports_ordering:
         # No need to normalize if the ecosystem is supported.
@@ -447,13 +446,14 @@ class Bug(ndb.Model):
               'Skipping indexing of git versions for %s '
               'as there are too many (%s).', self.db_id,
               len(affected_package.versions))
-          continue
+        else:
+          self.affected_fuzzy.extend(
+              bug.normalize_tags(
+                  _maybe_strip_repo_prefixes(
+                      affected_package.versions,
+                      [range.repo_url for range in affected_package.ranges])))
 
-        self.affected_fuzzy.extend(
-            bug.normalize_tags(
-                _maybe_strip_repo_prefixes(
-                    affected_package.versions,
-                    [range.repo_url for range in affected_package.ranges])))
+      self.has_affected |= bool(affected_package.versions)
 
       for affected_range in affected_package.ranges:
         fixed_version = None

@@ -445,8 +445,8 @@ class Bug(ndb.Model):
           # for Git is via commit hash matching instead.
           logging.info(
               'Skipping indexing of git versions for %s '
-              'as there are too many (%s).',
-              self.db_id, len(affected_package.versions))
+              'as there are too many (%s).', self.db_id,
+              len(affected_package.versions))
           continue
 
         self.affected_fuzzy.extend(

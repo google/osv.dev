@@ -7,7 +7,7 @@
   repo_url: 'https://github.com/AlmaLinux/osv-database.git'
   detect_cherrypicks: False
   extension: '.json'
-  db_prefix: ['ALBA-']
+  db_prefix: 'ALBA-'
   ignore_git: False
   human_link: 'https://errata.almalinux.org/{{ ECOSYSTEMS[1].split(":")[1] }}/{{ BUG_ID | replace(":", "-", 1) }}.html'
   link: 'https://github.com/AlmaLinux/osv-database/blob/master/'
@@ -21,7 +21,7 @@
   repo_url: 'https://github.com/AlmaLinux/osv-database.git'
   detect_cherrypicks: False
   extension: '.json'
-  db_prefix: ['ALEA-']
+  db_prefix: 'ALEA-'
   ignore_git: False
   human_link: 'https://errata.almalinux.org/{{ ECOSYSTEMS[1].split(":")[1] }}/{{ BUG_ID | replace(":", "-", 1) }}.html'
   link: 'https://github.com/AlmaLinux/osv-database/blob/master/'
@@ -35,7 +35,7 @@
   repo_url: 'https://github.com/AlmaLinux/osv-database.git'
   detect_cherrypicks: False
   extension: '.json'
-  db_prefix: ['ALSA-']
+  db_prefix: 'ALSA-'
   ignore_git: False
   human_link: 'https://errata.almalinux.org/{{ ECOSYSTEMS[1].split(":")[1] }}/{{ BUG_ID | replace(":", "-", 1) }}.html'
   link: 'https://github.com/AlmaLinux/osv-database/blob/master/'
@@ -48,7 +48,7 @@
   detect_cherrypicks: False
   extension: '.json'
   bucket: 'android-osv-test'
-  db_prefix: ['A-', 'ASB-A', 'PUB-A']
+  db_prefix: 'A-'
   ignore_git: True
   link: 'https://storage.googleapis.com/android-osv-test/'
   editable: False
@@ -61,7 +61,7 @@
   repo_url: 'https://github.com/bitnami/vulndb.git'
   detect_cherrypicks: False
   extension: '.json'
-  db_prefix: ['BIT-']
+  db_prefix: 'BIT-'
   ignore_git: False
   link: 'https://github.com/bitnami/vulndb/tree/main/'
   editable: False
@@ -74,7 +74,7 @@
   directory_path: 'docs'
   detect_cherrypicks: False
   extension: '.json'
-  db_prefix: ['CURL-']
+  db_prefix: 'CURL-'
   ignore_git: True
   human_link: 'https://curl.se/docs/{{ BUG_ID | replace("CURL-", "") }}.html'
   link: 'https://curl.se/docs/'
@@ -88,7 +88,7 @@
   detect_cherrypicks: False
   extension: '.json'
   bucket: 'osv-test-cve-osv-conversion'
-  db_prefix: ['CVE-']
+  db_prefix: 'CVE-'
   ignore_git: False
   human_link: 'https://nvd.nist.gov/vuln/detail/{{ BUG_ID }}'
   link: 'https://storage.googleapis.com/osv-test-cve-osv-conversion/'
@@ -102,7 +102,7 @@
   detect_cherrypicks: False
   extension: '.json'
   bucket: 'osv-test-debian-osv'
-  db_prefix: ['DLA-']
+  db_prefix: 'DLA-'
   ignore_git: True
   human_link: 'https://security-tracker.debian.org/tracker/{{ BUG_ID }}'
   link: 'https://storage.googleapis.com/debian-osv/'
@@ -116,7 +116,7 @@
   detect_cherrypicks: False
   extension: '.json'
   bucket: 'osv-test-debian-osv'
-  db_prefix: ['DSA-']
+  db_prefix: 'DSA-'
   ignore_git: True
   human_link: 'https://security-tracker.debian.org/tracker/{{ BUG_ID }}'
   link: 'https://storage.googleapis.com/debian-osv/'
@@ -130,7 +130,7 @@
   detect_cherrypicks: False
   extension: '.json'
   bucket: 'osv-test-debian-osv'
-  db_prefix: ['DTSA-']
+  db_prefix: 'DTSA-'
   ignore_git: True
   human_link: 'https://security-tracker.debian.org/tracker/{{ BUG_ID }}'
   link: 'https://storage.googleapis.com/debian-osv/'
@@ -144,7 +144,7 @@
   repo_url: 'https://github.com/github/advisory-database.git'
   detect_cherrypicks: False
   extension: '.json'
-  db_prefix: ['GHSA-']
+  db_prefix: 'GHSA-'
   ignore_git: True
   human_link: 'https://github.com/advisories/{{ BUG_ID }}'
   link: 'https://github.com/github/advisory-database/blob/main/'
@@ -158,7 +158,7 @@
   detect_cherrypicks: True
   extension: '.json'
   bucket: 'go-vulndb'
-  db_prefix: ['GO-']
+  db_prefix: 'GO-'
   ignore_git: True
   human_link: 'https://pkg.go.dev/vuln/{{ BUG_ID }}'
   link: 'https://vuln.go.dev/'
@@ -172,7 +172,7 @@
   repo_url: 'https://github.com/haskell/security-advisories.git'
   detect_cherrypicks: False
   extension: '.json'
-  db_prefix: ['HSEC-']
+  db_prefix: 'HSEC-'
   ignore_git: False
   link: 'https://github.com/haskell/security-advisories/blob/generated/osv-export/'
   editable: False
@@ -186,7 +186,7 @@
   repo_url: 'https://github.com/ossf/malicious-packages.git'
   detect_cherrypicks: False
   extension: '.json'
-  db_prefix: ['MAL-']
+  db_prefix: 'MAL-'
   ignore_git: False
   link: 'https://github.com/ossf/malicious-packages/blob/main/'
   editable: False
@@ -199,7 +199,7 @@
   repo_url: 'https://github.com/psf/advisory-database.git'
   detect_cherrypicks: False
   extension: '.json'
-  db_prefix: ['PSF-']
+  db_prefix: 'PSF-'
   ignore_git: False
   link: 'https://github.com/psf/advisory-database/blob/main/'
   editable: False
@@ -212,7 +212,7 @@
   repo_url: 'https://github.com/pypa/advisory-database.git'
   detect_cherrypicks: False
   extension: '.yaml'
-  db_prefix: ['PYSEC-']
+  db_prefix: 'PYSEC-'
   ignore_git: False
   link: 'https://github.com/pypa/advisory-database/blob/main/'
   editable: False
@@ -225,7 +225,7 @@
   repo_url: 'https://github.com/RConsortium/r-advisory-database.git'
   detect_cherrypicks: False
   extension: '.yaml'
-  db_prefix: ['RSEC-']
+  db_prefix: 'RSEC-'
   ignore_git: False
   link: 'https://github.com/RConsortium/r-advisory-database/blob/main/'
   editable: False
@@ -237,7 +237,7 @@
   detect_cherrypicks: False
   extension: '.json'
   bucket: 'resf-osv-data'
-  db_prefix: ['RLSA-']
+  db_prefix: 'RLSA-'
   ignore_git: False
   link: 'https://storage.googleapis.com/resf-osv-data/'
   editable: False
@@ -251,7 +251,7 @@
   repo_url: 'https://github.com/rustsec/advisory-db.git'
   detect_cherrypicks: False
   extension: '.json'
-  db_prefix: ['RUSTSEC-']
+  db_prefix: 'RUSTSEC-'
   ignore_git: False
   human_link: 'https://rustsec.org/advisories/{{ BUG_ID }}'
   link: 'https://github.com/rustsec/advisory-db/blob/osv/'
@@ -265,7 +265,7 @@
   directory_path: 'vulns'
   repo_url: 'https://github.com/google/oss-fuzz-vulns.git'
   detect_cherrypicks: False
-  db_prefix: ['OSV-']
+  db_prefix: 'OSV-'
   ignore_git: False
   link: 'https://github.com/google/oss-fuzz-vulns/blob/main/'
   editable: False
@@ -278,7 +278,7 @@
   repo_url: 'https://github.com/canonical/ubuntu-security-notices.git'
   detect_cherrypicks: False
   extension: '.json'
-  db_prefix: ['USN-']
+  db_prefix: 'USN-'
   ignore_git: False
   human_link: 'https://ubuntu.com/security/notices/{{ BUG_ID }}'
   link: 'https://github.com/canonical/ubuntu-security-notices/blob/main/'
@@ -291,7 +291,7 @@
   repo_url: 'https://github.com/cloudsecurityalliance/gsd-database.git'
   detect_cherrypicks: False
   extension: '.json'
-  db_prefix: ['GSD-']
+  db_prefix: 'GSD-'
   ignore_git: False
   link: 'https://github.com/cloudsecurityalliance/gsd-database/blob/main/'
   editable: False
@@ -306,7 +306,7 @@
   directory_path: 'chainguard/osv'
   detect_cherrypicks: False
   extension: '.json'
-  db_prefix: ['CGA-']
+  db_prefix: 'CGA-'
   ignore_git: True
   link: 'https://packages.cgr.dev/chainguard/osv/'
   editable: False

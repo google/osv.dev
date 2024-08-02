@@ -15,6 +15,7 @@
 
 import datetime
 import enum
+import logging
 import re
 import os
 
@@ -34,6 +35,8 @@ from . import sources
 from . import vulnerability_pb2
 
 SCHEMA_VERSION = '1.6.0'
+
+_MAX_GIT_VERSIONS_TO_INDEX = 5000
 
 
 def _check_valid_severity(prop, value):
@@ -425,17 +428,32 @@ class Bug(ndb.Model):
     for affected_package in self.affected_packages:
       # Indexes used for querying by exact version.
       ecosystem_helper = ecosystems.get(affected_package.package.ecosystem)
+      self.has_affected |= bool(affected_package.versions)
+
       if ecosystem_helper and ecosystem_helper.supports_ordering:
         # No need to normalize if the ecosystem is supported.
         self.affected_fuzzy.extend(affected_package.versions)
       else:
+        if (not affected_package.package.ecosystem and
+            len(affected_package.versions) > _MAX_GIT_VERSIONS_TO_INDEX):
+          # Assume that if there is no ecosystem specified, then these versions
+          # were enumerated from Git.
+          #
+          # Mitigate cases where the Git repo tag matching results in too many
+          # versions to index for Datastore.
+          # It's OK to do this because the primary intended matching mechanism
+          # for Git is via commit hash matching instead.
+          logging.info(
+              'Skipping indexing of git versions for %s '
+              'as there are too many (%s).',
+              self.db_id, len(affected_package.versions))
+          continue
+
         self.affected_fuzzy.extend(
             bug.normalize_tags(
                 _maybe_strip_repo_prefixes(
                     affected_package.versions,
                     [range.repo_url for range in affected_package.ranges])))
-
-      self.has_affected |= bool(affected_package.versions)
 
       for affected_range in affected_package.ranges:
         fixed_version = None

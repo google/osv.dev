@@ -428,7 +428,6 @@ class Bug(ndb.Model):
     for affected_package in self.affected_packages:
       # Indexes used for querying by exact version.
       ecosystem_helper = ecosystems.get(affected_package.package.ecosystem)
-
       if ecosystem_helper and ecosystem_helper.supports_ordering:
         # No need to normalize if the ecosystem is supported.
         self.affected_fuzzy.extend(affected_package.versions)

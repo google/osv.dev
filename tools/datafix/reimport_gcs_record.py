@@ -171,7 +171,12 @@ def main() -> None:
   try:
     with ds_client.transaction() as xact:
       for bug in result_to_fix:
-        bug_in_gcs = objname_for_bug(ds_client, bug)
+        try:
+          bug_in_gcs = objname_for_bug(ds_client, bug)
+        except UnexpectedSituation as e:
+          if args.verbose:
+            print(f"Skipping {bug}, got {e}\n")
+          continue
         if args.verbose:
           print(f"Resetting creation time for {bug_in_gcs['uri']}")
         if not args.dryrun:

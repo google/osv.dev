@@ -1648,12 +1648,10 @@ class UpdateTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
     """Test that we don't index too many versions from Git."""
     self.source_repo.ignore_git = False
     self.source_repo.versions_from_repo = True
-    # detect_cherrypicks should not cause result in cherrypick detection for
-    # `last_affected`, since equivalent `last_affected` across different
-    # branches likely no have relation to the actual vulnerable range.
     self.source_repo.detect_cherrypicks = True
     self.source_repo.put()
 
+    # Use any valid OSV input test file here.
     self.mock_repo.add_file(
         'OSV-TEST-last-affected-01.yaml',
         self._load_test_data(
@@ -1672,6 +1670,8 @@ class UpdateTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
     task_runner._source_update(message)
 
     bug = ndb.Key(osv.Bug, 'source:OSV-TEST-last-affected-01').get()
+
+    # Manually append versions over the expected version limit.
     bug.affected_packages[0].versions = ['%05d' % i for i in range(5001)]
     self.expect_dict_equal('dont_index_too_many_git_versions', bug._to_dict())
 

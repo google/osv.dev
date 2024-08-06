@@ -1644,6 +1644,38 @@ class UpdateTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
           source_of_truth=osv.SourceOfTruth.SOURCE_REPO,
       ).put()
 
+  def test_dont_index_too_many_git_versions(self):
+    """Test that we don't index too many versions from Git."""
+    self.source_repo.ignore_git = False
+    self.source_repo.versions_from_repo = True
+    self.source_repo.detect_cherrypicks = True
+    self.source_repo.put()
+
+    # Use any valid OSV input test file here.
+    self.mock_repo.add_file(
+        'OSV-TEST-last-affected-01.yaml',
+        self._load_test_data(
+            os.path.join(TEST_DATA_DIR, 'OSV-TEST-last-affected-01.yaml')),
+    )
+    self.mock_repo.commit('User', 'user@email')
+    task_runner = worker.TaskRunner(ndb_client, None, self.tmp_dir.name, None,
+                                    None)
+    message = mock.Mock()
+    message.attributes = {
+        'source': 'source',
+        'path': 'OSV-TEST-last-affected-01.yaml',
+        'original_sha256': _sha256('OSV-TEST-last-affected-01.yaml'),
+        'deleted': 'false',
+    }
+    task_runner._source_update(message)
+
+    bug = ndb.Key(osv.Bug, 'OSV-TEST-last-affected-01').get()
+
+    # Manually append versions over the expected version limit.
+    bug.affected_packages[0].versions = ['%05d' % i for i in range(5001)]
+    bug.put()
+    self.expect_dict_equal('dont_index_too_many_git_versions', bug._to_dict())
+
 
 if __name__ == '__main__':
   ds_emulator = tests.start_datastore_emulator()

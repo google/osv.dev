@@ -76,7 +76,7 @@ class ImporterTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
         type=osv.SourceRepositoryType.GIT,
         id='oss-fuzz',
         name='oss-fuzz',
-        db_prefix='OSV-',
+        db_prefix=['OSV-'],
         repo_url='file://' + self.remote_source_repo_path,
         repo_username='',
         ignore_patterns=['.*IGNORE.*'])
@@ -381,15 +381,17 @@ class ImporterTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
   @mock.patch('google.cloud.pubsub_v1.PublisherClient.publish')
   def test_ignore(self, mock_publish):  # pylint: disable=unused-argument
     """Test ignoring."""
-    # TODO(michaelkedar): This test doesn't check anything
-    self.skipTest("Not Implemented")
-    self.mock_repo.add_file('2021-111IGNORE.yaml', _MIN_VALID_VULNERABILITY)
-    self.mock_repo.commit('User', 'user@email', 'message.')
-
-    imp = importer.Importer('fake_public_key', 'fake_private_key', self.tmp_dir,
-                            importer.DEFAULT_PUBLIC_LOGGING_BUCKET, 'bucket',
-                            True, False)
-    imp.run()
+    self.assertTrue(self.source_repo.ignore_file('/tmp/foo/recoredIGNOREme'))
+    source_repo_ignore_negative = osv.SourceRepository(
+        ignore_patterns=['(^(?!USN-).*$)'])
+    self.assertTrue(
+        source_repo_ignore_negative.ignore_file('/tmp/foo/CVE-2024-1234.json'))
+    source_repo_ignore_multiple = osv.SourceRepository(
+        ignore_patterns=['^(?!MAL-).*$', 'MAL-0000.*'])
+    self.assertTrue(
+        source_repo_ignore_multiple.ignore_file('/tmp/foo/CVE-2024-1234.json'))
+    self.assertTrue(
+        source_repo_ignore_multiple.ignore_file('/tmp/foo/MAL-0000-0001.json'))
 
 
 @mock.patch('importer.utcnow', lambda: datetime.datetime(2021, 1, 1))
@@ -700,7 +702,7 @@ class BucketImporterMassDeletionTest(unittest.TestCase):
         bucket='osv-test-cve-osv-conversion',
         directory_path='osv-output',
         extension='.json',
-        db_prefix='CVE-')
+        db_prefix=['CVE-'])
 
     tests.mock_datetime(self)
 
@@ -763,7 +765,7 @@ class RESTImporterTest(unittest.TestCase):
         name='curl',
         link=MOCK_ADDRESS_FORMAT,
         rest_api_url=MOCK_ADDRESS_FORMAT,
-        db_prefix='CURL-',
+        db_prefix=['CURL-'],
         extension='.json',
         editable=False)
     self.source_repo.put()

@@ -1261,6 +1261,8 @@ def _is_affected(ecosystem: str, version: str,
 
   # OSV allows users to add affected versions
   # that are not covered by affected ranges.
+  # TODO(gongh@): Move this check before the version range check
+  # after performance analysis.
   return version in affected_package.versions
 
 

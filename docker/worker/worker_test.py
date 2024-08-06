@@ -1673,6 +1673,7 @@ class UpdateTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
 
     # Manually append versions over the expected version limit.
     bug.affected_packages[0].versions = ['%05d' % i for i in range(5001)]
+    bug.put()
     self.expect_dict_equal('dont_index_too_many_git_versions', bug._to_dict())
 
 

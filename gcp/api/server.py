@@ -1240,9 +1240,6 @@ def _is_affected(ecosystem: str, version: str,
   ecosystem_info = ecosystems.get(ecosystem)
   queried_version = ecosystem_info.sort_key(version)
 
-  if version in affected_package.versions:
-    return True
-
   for r in affected_package.ranges:
     r: osv.AffectedRange2
 
@@ -1262,7 +1259,8 @@ def _is_affected(ecosystem: str, version: str,
     if affected:
       return True
 
-  return False
+  # OSV allows users to add affected versions that are not covered by affected ranges.
+  return version in affected_package.versions
 
 
 def main():

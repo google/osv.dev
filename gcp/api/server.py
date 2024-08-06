@@ -1065,17 +1065,9 @@ def query_by_version(context: QueryContext,
       # Query for non-enumerated ecosystems.
       bugs, next_page_token = yield _query_by_comparing_versions(
           context, query, ecosystem, version)
-      logging.info(
-          '[_query_by_comparing_versions] Package %s '
-          'at version %s has total %d bugs in %s', package_name or purl,
-          version, len(bugs), ecosystem)
     else:
       bugs, next_page_token = yield _query_by_generic_version(
           context, query, package_name, ecosystem, purl, version)
-      logging.info(
-          '[_query_by_generic_version] Package %s '
-          'at version %s has total %d bugs in %s', package_name or purl,
-          version, len(bugs), ecosystem)
 
   else:
     logging.warning("Package query without ecosystem specified")
@@ -1247,6 +1239,9 @@ def _is_affected(ecosystem: str, version: str,
   affected = False
   ecosystem_info = ecosystems.get(ecosystem)
   queried_version = ecosystem_info.sort_key(version)
+
+  if version in affected_package.versions:
+    return True
 
   for r in affected_package.ranges:
     r: osv.AffectedRange2

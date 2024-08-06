@@ -1669,7 +1669,7 @@ class UpdateTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
     }
     task_runner._source_update(message)
 
-    bug = ndb.Key(osv.Bug, 'source:OSV-TEST-last-affected-01').get()
+    bug = ndb.Key(osv.Bug, 'OSV-TEST-last-affected-01').get()
 
     # Manually append versions over the expected version limit.
     bug.affected_packages[0].versions = ['%05d' % i for i in range(5001)]

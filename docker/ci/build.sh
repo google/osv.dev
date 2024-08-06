@@ -14,6 +14,6 @@
 # limitations under the License.
 
 
-docker build -t gcr.io/oss-vdb/ci:$1 -t gcr.io/oss-vdb/ci:latest --pull . && \
-docker -- push gcr.io/oss-vdb/ci:$1 && \
-docker -- push gcr.io/oss-vdb/ci:latest
+docker build -t gcr.io/oss-vdb/ci:$1 -t gcr.io/oss-vdb/ci:latest --pull .
+# docker -- push gcr.io/oss-vdb/ci:$1 && \
+# docker -- push gcr.io/oss-vdb/ci:latest

@@ -37,10 +37,10 @@ jobs:
         uses: actions/setup-python@v4
         with:
           python-version: '3.11'
-      - name: Install pipenv
-        run: pip install pipenv==2023.12.1
-      - name: Set up pipenv
-        run: pipenv verify && pipenv sync --dev
+      - name: Install poetry
+        run: pip install poetry==1.8.3
+      - name: Set up poetry
+        run: poetry install
       - name: Set up Go
         uses: actions/setup-go@v5
         with:
@@ -48,4 +48,4 @@ jobs:
       - name: Set up terraform
         uses: hashicorp/setup-terraform@v2
       - name: Run pylint and yapf, go vet
-        run: pipenv run ./tools/lint_and_format.sh
+        run: poetry run ./tools/lint_and_format.sh

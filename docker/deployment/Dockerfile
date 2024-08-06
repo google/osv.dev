@@ -7,7 +7,7 @@ RUN echo "deb [signed-by=/usr/share/keyrings/cloud.google.gpg] http://packages.c
     curl https://packages.cloud.google.com/apt/doc/apt-key.gpg | gpg --dearmor -o /usr/share/keyrings/cloud.google.gpg && \
     apt-get update && apt-get install -y google-cloud-sdk
 
-RUN pip3 install pipenv==2023.12.1
+RUN pip3 install poetry==1.8.3
 # Install the latest npm version 8 release (last release is in Feb 2023)
 # This will take precedence over the system installed version on the PATH
 RUN npm install -g npm@8

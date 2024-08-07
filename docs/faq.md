@@ -21,8 +21,14 @@ nav_order: 4
 
 OSV consists of:
 
-1. [The OSV Schema](https://ossf.github.io/osv-schema/): An easy-to-use data format that maps precisely to open source versioning schemes.
-2. Reference infrastructure (this site, API, and tooling) that aggregates and indexes vulnerability data from databases that use the OSV schema.
+1. [The OSV Schema](https://ossf.github.io/osv-schema/): An easy-to-use data
+   format that maps precisely to open source versioning schemes.
+2. Reference infrastructure ([OSV.dev website](https://osv.dev/),
+   [API](../api/), and tooling) that aggregates,
+   [enriches](#what-does-osvdev-do-to-the-records-it-imports) and indexes
+   vulnerability data from databases that use the OSV schema.
+3. [OSV-Scanner](https://github.com/google/osv-scanner), the officially
+   supported frontend for OSV.dev
 
 We created OSV to address many of the shortcomings of dealing with vulnerabilities in open source software using existing solutions.
 
@@ -56,9 +62,11 @@ The benefits of the OSV schema have led to adoption by several vulnerability dat
 ## What does OSV.dev do to the records it imports?
 
 1. Version enumeration (for non-SemVer ecosystems where [supporting version enumeration code](https://github.com/google/osv.dev/tree/master/osv/ecosystems) exists)
-2. Git commit to tag mapping
+2. [Package URL](https://github.com/package-url/purl-spec) [computation](https://github.com/google/osv.dev/blob/a751ceb26522f093edf26c0ad167cfd0967716d9/osv/models.py#L361-L365) (if necessary)
+3. [Git affected commit enumeration and commit to tag mapping](https://github.com/google/osv.dev/blob/a751ceb26522f093edf26c0ad167cfd0967716d9/osv/impact.py#L422)
+4. [Batch](https://github.com/google/osv.dev/blob/master/deployment/clouddeploy/gke-workers/base/alias-computation.yaml) [computation](https://github.com/google/osv.dev/tree/master/docker/alias) of [aliases](https://ossf.github.io/osv-schema/#aliases-field)
 
-Both of these populate the [`affected.versions[]`](https://ossf.github.io/osv-schema/#affectedversions-field) field, which assists with precise version matching.
+Both version and commit enumeration populate the [`affected.versions[]`](https://ossf.github.io/osv-schema/#affectedversions-field) field, which assists with precise version matching.
 
 In some cases, there may be no applicable versions, so the `affected.versions[]`
 array is empty. This field, when empty, is omitted in the API output, and

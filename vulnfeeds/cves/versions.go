@@ -298,7 +298,7 @@ func Repo(u string) (string, error) {
 		"git",
 		"gitlab",
 	}
-	parsedURL, err := url.Parse(u)
+	parsedURL, err := url.Parse(strings.TrimSuffix(u, "/"))
 	if err != nil {
 		return "", err
 	}
@@ -317,11 +317,10 @@ func Repo(u string) (string, error) {
 
 	// Were we handed a base repository URL from the get go?
 	if slices.Contains(supportedHosts, parsedURL.Hostname()) || slices.Contains(supportedHostPrefixes, strings.Split(parsedURL.Hostname(), ".")[0]) {
-		pathParts := strings.Split(strings.TrimSuffix(parsedURL.Path, "/"), "/")
-		if len(pathParts) == 3 && parsedURL.Path != "/cgi-bin/gitweb.cgi" && parsedURL.Hostname() != "sourceware.org" {
+		pathParts := strings.Split(parsedURL.Path, "/")
+		if len(pathParts) == 3 && !strings.Contains(parsedURL.Path, "gitweb") && parsedURL.Hostname() != "sourceware.org" {
 			return fmt.Sprintf("%s://%s%s", parsedURL.Scheme,
-					parsedURL.Hostname(),
-					strings.TrimSuffix(parsedURL.Path, "/")),
+					parsedURL.Hostname(), parsedURL.Path),
 				nil
 		}
 		// GitLab can have a deeper structure to a repo (projects can be within nested groups)
@@ -335,14 +334,12 @@ func Repo(u string) (string, error) {
 				strings.Contains(parsedURL.Path, "security/advisories") ||
 				strings.Contains(parsedURL.Path, "issues")) {
 			return fmt.Sprintf("%s://%s%s", parsedURL.Scheme,
-					parsedURL.Hostname(),
-					strings.TrimSuffix(parsedURL.Path, "/")),
+					parsedURL.Hostname(), parsedURL.Path),
 				nil
 		}
 		if len(pathParts) == 2 && parsedURL.Hostname() == "git.netfilter.org" {
 			return fmt.Sprintf("%s://%s%s", parsedURL.Scheme,
-					parsedURL.Hostname(),
-					strings.TrimSuffix(parsedURL.Path, "/")),
+					parsedURL.Hostname(), parsedURL.Path),
 				nil
 		}
 		if len(pathParts) >= 2 && parsedURL.Hostname() == "git.ffmpeg.org" {
@@ -451,7 +448,7 @@ func Repo(u string) (string, error) {
 			strings.Contains(parsedURL.Path, "issues")) {
 		return fmt.Sprintf("%s://%s%s", parsedURL.Scheme,
 				parsedURL.Hostname(),
-				strings.TrimSuffix(strings.Split(parsedURL.Path, "/-/")[0], "/")),
+				strings.Split(parsedURL.Path, "/-/")[0]),
 			nil
 	}
 
@@ -614,7 +611,17 @@ func ValidateAndCanonicalizeLink(link string) (canonicalLink string, err error) 
 	}
 	backoff := retry.NewExponential(1 * time.Second)
 	if err := retry.Do(context.Background(), retry.WithMaxRetries(3, backoff), func(ctx context.Context) error {
-		resp, err := http.Head(link)
+		req, err := http.NewRequest("HEAD", link, nil)
+		if err != nil {
+			return err
+		}
+
+		// security.alpinelinux.org responds with text/html content.
+		// default HEAD request in Go does not provide any Accept headers, causing a 406 response.
+		req.Header.Set("Accept", "text/html")
+
+		// Send the request
+		resp, err := http.DefaultClient.Do(req)
 		if err != nil {
 			return err
 		}

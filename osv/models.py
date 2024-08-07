@@ -15,6 +15,7 @@
 
 import datetime
 import enum
+import logging
 import re
 import os
 
@@ -34,6 +35,8 @@ from . import sources
 from . import vulnerability_pb2
 
 SCHEMA_VERSION = '1.6.0'
+
+_MAX_GIT_VERSIONS_TO_INDEX = 5000
 
 
 def _check_valid_severity(prop, value):
@@ -429,11 +432,25 @@ class Bug(ndb.Model):
         # No need to normalize if the ecosystem is supported.
         self.affected_fuzzy.extend(affected_package.versions)
       else:
-        self.affected_fuzzy.extend(
-            bug.normalize_tags(
-                _maybe_strip_repo_prefixes(
-                    affected_package.versions,
-                    [range.repo_url for range in affected_package.ranges])))
+        if (not affected_package.package.ecosystem and
+            len(affected_package.versions) > _MAX_GIT_VERSIONS_TO_INDEX):
+          # Assume that if there is no ecosystem specified, then these versions
+          # were enumerated from Git.
+          #
+          # Mitigate cases where the Git repo tag matching results in too many
+          # versions to index for Datastore.
+          # It's OK to do this because the primary intended matching mechanism
+          # for Git is via commit hash matching instead.
+          logging.info(
+              'Skipping indexing of git versions for %s '
+              'as there are too many (%s).', self.db_id,
+              len(affected_package.versions))
+        else:
+          self.affected_fuzzy.extend(
+              bug.normalize_tags(
+                  _maybe_strip_repo_prefixes(
+                      affected_package.versions,
+                      [range.repo_url for range in affected_package.ranges])))
 
       self.has_affected |= bool(affected_package.versions)
 
@@ -476,12 +493,12 @@ class Bug(ndb.Model):
       if not source_repo:
         raise ValueError(f'Invalid source {self.source}')
 
-      if source_repo.db_prefix and self.db_id.startswith(source_repo.db_prefix):
-        key_id = self.db_id
-      else:
-        key_id = f'{self.source}:{self.db_id}'
+      if source_repo.db_prefix and not any(
+          self.db_id.startswith(prefix) for prefix in source_repo.db_prefix):
+        raise ValueError(
+            f'{self.db_id} has invalid prefix for source {self.source}')
 
-      self.key = ndb.Key(Bug, key_id)
+      self.key = ndb.Key(Bug, self.db_id)
 
     if self.withdrawn:
       self.status = bug.BugStatus.INVALID
@@ -831,7 +848,7 @@ class SourceRepository(ndb.Model):
   human_link = ndb.StringProperty()
   # DB prefix, if the database allocates its own.
   # https://ossf.github.io/osv-schema/#id-modified-fields
-  db_prefix = ndb.StringProperty()
+  db_prefix = ndb.StringProperty(repeated=True)
 
   def ignore_file(self, file_path):
     """Return whether or not we should be ignoring a file."""

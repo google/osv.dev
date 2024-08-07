@@ -1,12 +1,12 @@
 - name: almalinux-alba
   versions_from_repo: False
   type: 0
-  ignore_patterns: ['ALSA-.*', 'ALEA-.*']
+  ignore_patterns: ['^(?!ALBA-).*$']
   directory_path: advisories
   repo_url: https://github.com/AlmaLinux/osv-database.git
   detect_cherrypicks: False
   extension: .json
-  db_prefix: ALBA-
+  db_prefix: ['ALBA-']
   ignore_git: False
   human_link: 'https://errata.almalinux.org/{{ ECOSYSTEMS[1].split(":")[1] }}/{{ BUG_ID | replace(":", "-", 1) }}.html'
   link: https://github.com/AlmaLinux/osv-database/blob/master/
@@ -15,12 +15,12 @@
 - name: almalinux-alea
   versions_from_repo: False
   type: 0
-  ignore_patterns: ['ALSA-.*', 'ALBA-.*']
+  ignore_patterns: ['^(?!ALEA-).*$']
   directory_path: advisories
   repo_url: https://github.com/AlmaLinux/osv-database.git
   detect_cherrypicks: False
   extension: .json
-  db_prefix: ALEA-
+  db_prefix: ['ALEA-']
   ignore_git: False
   human_link: 'https://errata.almalinux.org/{{ ECOSYSTEMS[1].split(":")[1] }}/{{ BUG_ID | replace(":", "-", 1) }}.html'
   link: https://github.com/AlmaLinux/osv-database/blob/master/
@@ -29,12 +29,12 @@
 - name: almalinux-alsa
   versions_from_repo: False
   type: 0
-  ignore_patterns: ['ALBA-.*', 'ALEA-.*']
+  ignore_patterns: ['^(?!ALSA-).*$']
   directory_path: advisories
   repo_url: https://github.com/AlmaLinux/osv-database.git
   detect_cherrypicks: False
   extension: .json
-  db_prefix: ALSA-
+  db_prefix: ['ALSA-']
   ignore_git: False
   human_link: 'https://errata.almalinux.org/{{ ECOSYSTEMS[1].split(":")[1] }}/{{ BUG_ID | replace(":", "-", 1) }}.html'
   link: https://github.com/AlmaLinux/osv-database/blob/master/
@@ -43,10 +43,11 @@
 - name: android
   versions_from_repo: False
   type: 1
+  ignore_patterns: ['^(?!(PUB-)?ASB-A-).*$']
   detect_cherrypicks: False
   extension: .json
   bucket: android-osv
-  db_prefix: A-
+  db_prefix: ['A-', 'ASB-A', 'PUB-A']
   ignore_git: True
   link: https://storage.googleapis.com/android-osv/
   editable: False
@@ -54,11 +55,12 @@
 - name: bitnami
   versions_from_repo: False
   type: 0
+  ignore_patterns: ['^(?!BIT-).*$']
   directory_path: data
   repo_url: https://github.com/bitnami/vulndb.git
   detect_cherrypicks: False
   extension: .json
-  db_prefix: BIT-
+  db_prefix: ['BIT-']
   ignore_git: False
   link: https://github.com/bitnami/vulndb/tree/main/
   editable: False
@@ -67,11 +69,11 @@
   versions_from_repo: False
   rest_api_url: 'https://packages.cgr.dev/chainguard/osv/all.json'
   type: 2
-  ignore_patterns: ['propertyValue']
+  ignore_patterns: ['^(?!CGA-).*$']  # NOTE: Not currently supported for REST sources
   directory_path: 'chainguard/osv'
   detect_cherrypicks: False
   extension: '.json'
-  db_prefix: 'CGA-'
+  db_prefix: ['CGA-']
   ignore_git: True
   link: 'https://packages.cgr.dev/chainguard/osv/'
   editable: False
@@ -80,10 +82,11 @@
   versions_from_repo: False
   rest_api_url: https://curl.se/docs/vuln.json
   type: 2
+  ignore_patterns: ['^(?!CURL-).*$']  # NOTE: Not currently supported for REST sources
   directory_path: docs
   detect_cherrypicks: False
   extension: .json
-  db_prefix: CURL-
+  db_prefix: ['CURL-']
   ignore_git: True
   human_link: 'https://curl.se/docs/{{ BUG_ID | replace("CURL-", "") }}.html'
   link: https://curl.se/docs/
@@ -92,11 +95,12 @@
 - name: cve-osv
   versions_from_repo: True
   type: 1
+  ignore_patterns: ['^(?!CVE-).*$']
   directory_path: osv-output
   detect_cherrypicks: False
   extension: .json
   bucket: cve-osv-conversion
-  db_prefix: CVE-
+  db_prefix: ['CVE-']
   ignore_git: False
   human_link: 'https://nvd.nist.gov/vuln/detail/{{ BUG_ID }}'
   link: https://storage.googleapis.com/cve-osv-conversion/
@@ -105,11 +109,12 @@
 - name: debian-dla
   versions_from_repo: False
   type: 1
+  ignore_patterns: ['^(?!DLA-).*$']
   directory_path: dla-osv
   detect_cherrypicks: False
   extension: .json
   bucket: debian-osv
-  db_prefix: DLA-
+  db_prefix: ['DLA-']
   ignore_git: True
   human_link: 'https://security-tracker.debian.org/tracker/{{ BUG_ID }}'
   link: https://storage.googleapis.com/debian-osv/
@@ -118,11 +123,12 @@
 - name: debian-dsa
   versions_from_repo: False
   type: 1
+  ignore_patterns: ['^(?!DSA-).*$']
   directory_path: dsa-osv
   detect_cherrypicks: False
   extension: .json
   bucket: debian-osv
-  db_prefix: DSA-
+  db_prefix: ['DSA-']
   ignore_git: True
   human_link: 'https://security-tracker.debian.org/tracker/{{ BUG_ID }}'
   link: https://storage.googleapis.com/debian-osv/
@@ -131,11 +137,12 @@
 - name: debian-dtsa
   versions_from_repo: False
   type: 1
+  ignore_patterns: ['^(?!DTSA-).*$']
   directory_path: dtsa-osv
   detect_cherrypicks: False
   extension: .json
   bucket: debian-osv
-  db_prefix: DTSA-
+  db_prefix: ['DTSA-']
   ignore_git: True
   human_link: 'https://security-tracker.debian.org/tracker/{{ BUG_ID }}'
   link: https://storage.googleapis.com/debian-osv/
@@ -144,11 +151,12 @@
 - name: ghsa
   versions_from_repo: False
   type: 0
+  ignore_patterns: ['^(?!GHSA-).*$']
   directory_path: advisories/github-reviewed
   repo_url: https://github.com/github/advisory-database.git
   detect_cherrypicks: False
   extension: .json
-  db_prefix: GHSA-
+  db_prefix: ['GHSA-']
   ignore_git: True
   human_link: 'https://github.com/advisories/{{ BUG_ID }}'
   link: https://github.com/github/advisory-database/blob/main/
@@ -157,12 +165,12 @@
 - name: go
   versions_from_repo: True
   type: 1
-  ignore_patterns: ['index.json']
+  ignore_patterns: ['^(?!GO-).*$']
   directory_path: ID
   detect_cherrypicks: True
   extension: .json
   bucket: go-vulndb
-  db_prefix: GO-
+  db_prefix: ['GO-']
   ignore_git: True
   human_link: 'https://pkg.go.dev/vuln/{{ BUG_ID }}'
   link: https://vuln.go.dev/
@@ -171,11 +179,12 @@
 - name: haskell
   versions_from_repo: False
   type: 0
+  ignore_patterns: ['^(?!HSEC-).*$']
   repo_branch: generated/osv-export
   repo_url: https://github.com/haskell/security-advisories.git
   detect_cherrypicks: False
   extension: .json
-  db_prefix: HSEC-
+  db_prefix: ['HSEC-']
   ignore_git: False
   link: https://github.com/haskell/security-advisories/blob/generated/osv-export/
   editable: False
@@ -184,12 +193,12 @@
 - name: malicious-packages
   versions_from_repo: False
   type: 0
-  ignore_patterns: ['MAL-0000.*', 'config.yaml']
+  ignore_patterns: ['^(?!MAL-).*$']
   directory_path: osv
   repo_url: https://github.com/ossf/malicious-packages.git
   detect_cherrypicks: False
   extension: .json
-  db_prefix: MAL-
+  db_prefix: ['MAL-']
   ignore_git: False
   link: https://github.com/ossf/malicious-packages/blob/main/
   editable: False
@@ -197,11 +206,12 @@
 - name: oss-fuzz
   versions_from_repo: True
   type: 0
+  ignore_patterns: ['^(?!OSV-).*$']
   directory_path: vulns
   repo_url: ssh://github.com/google/oss-fuzz-vulns
   detect_cherrypicks: True
   extension: .yaml
-  db_prefix: OSV-
+  db_prefix: ['OSV-']
   ignore_git: False
   link: https://github.com/google/oss-fuzz-vulns/blob/main/
   editable: True
@@ -210,11 +220,12 @@
 - name: psf
   versions_from_repo: True
   type: 0
+  ignore_patterns: ['^(?!PSF-).*$']
   directory_path: advisories
   repo_url: https://github.com/psf/advisory-database.git
   detect_cherrypicks: False
   extension: .json
-  db_prefix: PSF-
+  db_prefix: ['PSF-']
   ignore_git: False
   link: https://github.com/psf/advisory-database/blob/main/
   editable: False
@@ -222,12 +233,12 @@
 - name: python
   versions_from_repo: False
   type: 0
-  ignore_patterns: ['PYSEC-0000.*', 'false_positives.yaml']
+  ignore_patterns: ['PYSEC-0000.*', '^(?!PYSEC-).*$']
   directory_path: vulns
   repo_url: ssh://github.com/pypa/advisory-database
   detect_cherrypicks: False
   extension: .yaml
-  db_prefix: PYSEC-
+  db_prefix: ['PYSEC-']
   ignore_git: False
   link: https://github.com/pypa/advisory-database/blob/main/
   editable: False
@@ -236,11 +247,12 @@
 - name: r
   versions_from_repo: False
   type: 0
+  ignore_patterns: ['^(?!RSEC-).*$']
   directory_path: vulns
   repo_url: https://github.com/RConsortium/r-advisory-database.git
   detect_cherrypicks: False
   extension: .yaml
-  db_prefix: RSEC-
+  db_prefix: ['RSEC-']
   ignore_git: False
   link: https://github.com/RConsortium/r-advisory-database/blob/main/
   editable: False
@@ -248,11 +260,11 @@
 - name: rockylinux-rlsa
   versions_from_repo: False
   type: 1
-  ignore_patterns: ['RXSA-.*']
+  ignore_patterns: ['^(?!RLSA-).*$']
   detect_cherrypicks: False
   extension: .json
   bucket: resf-osv-data
-  db_prefix: RLSA-
+  db_prefix: ['RLSA-']
   ignore_git: False
   link: https://storage.googleapis.com/resf-osv-data/
   editable: False
@@ -260,11 +272,11 @@
 - name: rockylinux-rxsa
   versions_from_repo: False
   type: 1
-  ignore_patterns: ['RLSA-.*']
+  ignore_patterns: ['^(?!RXSA-).*$']
   detect_cherrypicks: False
   extension: .json
   bucket: resf-osv-data
-  db_prefix: RXSA-
+  db_prefix: ['RXSA-']
   ignore_git: False
   link: https://storage.googleapis.com/resf-osv-data/
   editable: False
@@ -272,12 +284,13 @@
 - name: rust
   versions_from_repo: True
   type: 0
+  ignore_patterns: ['^(?!RUSTSEC-).*$']
   repo_branch: osv
   directory_path: crates
   repo_url: https://github.com/rustsec/advisory-db.git
   detect_cherrypicks: False
   extension: .json
-  db_prefix: RUSTSEC-
+  db_prefix: ['RUSTSEC-']
   ignore_git: False
   human_link: 'https://rustsec.org/advisories/{{ BUG_ID }}'
   link: https://github.com/rustsec/advisory-db/blob/osv/
@@ -287,12 +300,12 @@
 - name: 'ubuntu'
   versions_from_repo: False
   type: 0
-  ignore_patterns: []
+  ignore_patterns: ['^(?!USN-).*$']
   directory_path: 'osv'
   repo_url: 'https://github.com/canonical/ubuntu-security-notices.git'
   detect_cherrypicks: False
   extension: '.json'
-  db_prefix: 'USN-'
+  db_prefix: ['USN-']
   ignore_git: False
   human_link: 'https://ubuntu.com/security/notices/{{ BUG_ID }}'
   link: 'https://github.com/canonical/ubuntu-security-notices/blob/main/'
@@ -301,11 +314,11 @@
 - name: uvi
   versions_from_repo: True
   type: 0
-  ignore_patterns: ['allowlist.json']
+  ignore_patterns: ['^(?!GSD-).*$']
   repo_url: https://github.com/cloudsecurityalliance/gsd-database.git
   detect_cherrypicks: False
   extension: .json
-  db_prefix: GSD-
+  db_prefix: ['GSD-']
   ignore_git: False
   link: https://github.com/cloudsecurityalliance/gsd-database/blob/main/
   editable: False

@@ -1,5 +1,5 @@
 #!/bin/bash -x
-# Copyright 2023 Google LLC
+# Copyright 2024 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -13,7 +13,5 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-
-docker build -t gcr.io/oss-vdb/ci:$1 -t gcr.io/oss-vdb/ci:latest --pull . && \
-docker -- push gcr.io/oss-vdb/ci:$1 && \
-docker -- push gcr.io/oss-vdb/ci:latest
+cd ../.. &&
+    docker build -t gcr.io/oss-vdb/osv-website:$1 -t gcr.io/oss-vdb/osv-website:latest -f gcp/appengine/Dockerfile --pull .

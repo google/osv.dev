@@ -15,14 +15,5 @@
 
 cd ../worker
 
-if [ "$USE_POETRY" == "true" ]
-then
-  poetry install
-  poetry run python ../importer/importer_test.py
-  exit 0
-fi
-
-export PIPENV_IGNORE_VIRTUALENVS=1
-pipenv verify
-pipenv sync
-pipenv run python ../importer/importer_test.py
+poetry install
+poetry run python ../importer/importer_test.py

@@ -13,17 +13,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-if [ "$USE_POETRY" == "true" ]
-then
-  poetry install
-  poetry run python source_sync.py --kind SourceRepository --project oss-vdb --file ../../source.yaml --verbose --validate
-  poetry run python source_sync.py --kind SourceRepository --project oss-vdb-test --file ../../source_test.yaml --verbose --validate
-  exit 0
-fi
-
-export PIPENV_IGNORE_VIRTUALENVS=1
-pipenv verify
-pipenv sync
-
-pipenv run python source_sync.py --kind SourceRepository --project oss-vdb --file ../../source.yaml --verbose --validate
-pipenv run python source_sync.py --kind SourceRepository --project oss-vdb-test --file ../../source_test.yaml --verbose --validate
+poetry install
+poetry run python source_sync.py --kind SourceRepository --project oss-vdb --file ../../source.yaml --verbose --validate
+poetry run python source_sync.py --kind SourceRepository --project oss-vdb-test --file ../../source_test.yaml --verbose --validate

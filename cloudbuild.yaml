@@ -53,7 +53,7 @@ steps:
     - CLOUD_BUILD=1
     # same as worker
     - DATASTORE_EMULATOR_PORT=8003
-  # importer uses same pipenv as worker, 'pipenv sync' may break if run concurrently
+  # importer uses same poetry as worker, 'poetry install' may break if run concurrently
   waitFor: ['init', 'worker-tests']
 
 - name: 'gcr.io/oss-vdb/ci'
@@ -63,7 +63,7 @@ steps:
   env:
     # same as worker/importer
     - DATASTORE_EMULATOR_PORT=8003
-  # alias uses same pipenv as worker, 'pipenv sync' may break if run concurrently
+  # alias uses same poetry as worker, 'poetry install' may break if run concurrently
   waitFor: ['init', 'importer-tests']
 
 - name: 'gcr.io/oss-vdb/ci'

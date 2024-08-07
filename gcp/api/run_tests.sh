@@ -24,17 +24,6 @@ service docker start
 # Set -e later as service docker start should be able to successfully fail
 set -e
 
-if [ "$USE_POETRY" == "true" ]
-then
-  poetry install
-  poetry run python server_test.py
-  poetry run python integration_tests.py "$1"
-  exit 0
-fi
-
-python3 -m pipenv verify
-python3 -m pipenv sync
-
-export PIPENV_IGNORE_VIRTUALENVS=1
-python3 -m pipenv run python server_test.py
-python3 -m pipenv run python integration_tests.py "$1"
+poetry install
+poetry run python server_test.py
+poetry run python integration_tests.py "$1"

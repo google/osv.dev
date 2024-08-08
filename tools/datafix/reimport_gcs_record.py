@@ -96,26 +96,19 @@ def bucket_for_source(client: datastore.Client, source: str) -> str:
   return result[0]['bucket']
 
 
-def reset_object_creation(bucket_name: str,
-                          blob_name: str,
-                          tmpdir="/tmp") -> None:
+def reset_object_modification(bucket_name: str, blob_name: str) -> None:
   """Resets a GCS object's creation time.
 
-  Copies the object locally and uploads it again.
+  Makes a no-op patch ("gcloud object storage objects update" equivalent)
 
   Args:
     bucket_name: the name of the GCS bucket.
     blob_name: the name of the object in the bucket.
-    tmpdir: a preexisting directory in the local filesystem to copy the object
-    to/from.
   """
-  local_tmp_file = os.path.join(tmpdir, os.path.basename(blob_name))
   gcs_client = storage.Client()
   bucket = gcs_client.bucket(bucket_name)
   blob = bucket.blob(blob_name)
-  blob.download_to_filename(local_tmp_file)
-  blob.upload_from_filename(local_tmp_file, retry=retry.DEFAULT_RETRY)
-  os.unlink(local_tmp_file)
+  blob.patch(retry=retry.DEFAULT_RETRY)
 
 
 def main() -> None:
@@ -178,11 +171,10 @@ def main() -> None:
             print(f"Skipping {bug['db_id']}, got {e}\n")
           continue
         if args.verbose:
-          print(f"Resetting creation time for {bug_in_gcs['uri']}")
+          print(f"Resetting modification time for {bug_in_gcs['uri']}")
         if not args.dryrun:
           try:
-            reset_object_creation(bug_in_gcs["bucket"], bug_in_gcs["path"],
-                                  args.tmpdir)
+            reset_object_modification(bug_in_gcs["bucket"], bug_in_gcs["path"])
           except NotFound as e:
             if args.verbose:
               print(f"Skipping, got {e}\n")

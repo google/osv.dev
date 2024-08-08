@@ -463,7 +463,8 @@ class Importer:
       if not _is_vulnerability_file(source_repo, blob.name):
         return None
       if not ignore_last_import_time and \
-         not blob.time_created > utc_last_update_date:
+   blob.updated is not None and \
+   not blob.updated > utc_last_update_date:
         return None
 
       logging.info('Bucket entry triggered for %s/%s', source_repo.bucket,

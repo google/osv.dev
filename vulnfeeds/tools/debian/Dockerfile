@@ -15,7 +15,7 @@
 FROM google/cloud-sdk:449.0.0-alpine
 
 RUN apk --no-cache add py3-pip \
-    && pip install pipenv==2023.12.1
+    && pip install poetry==1.8.3
 
 RUN mkdir /src
 WORKDIR /src
@@ -24,6 +24,6 @@ ENV PIP_NO_BINARY ""
 COPY . /src
 
 ENV LANG en_US.UTF-8
-RUN cd debian_converter && pipenv install --deploy
+RUN cd debian_converter && poetry install
 
 RUN chmod +x /src/run_*

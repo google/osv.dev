@@ -13,9 +13,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-export PIPENV_IGNORE_VIRTUALENVS=1
-pipenv verify
-pipenv sync
+poetry install
 
-pipenv run python source_sync.py --kind SourceRepository --project oss-vdb --file ../../source.yaml --no-dry-run --verbose
-pipenv run python source_sync.py --kind SourceRepository --project oss-vdb-test --file ../../source_test.yaml --no-dry-run --verbose
+poetry run python source_sync.py --kind SourceRepository --project oss-vdb --file ../../source.yaml --no-dry-run --verbose
+poetry run python source_sync.py --kind SourceRepository --project oss-vdb-test --file ../../source_test.yaml --no-dry-run --verbose

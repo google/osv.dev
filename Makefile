@@ -12,14 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-ifeq "$(USE_POETRY)" "true"
-	install-cmd := poetry install
-	run-cmd := poetry run
-else
-	install-cmd := pipenv verify && pipenv sync
-	run-cmd := pipenv run
-endif
-
+install-cmd := poetry install
+run-cmd := poetry run
 
 lib-tests:
 	./run_tests.sh

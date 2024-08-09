@@ -30,10 +30,10 @@ ENV PYTHONUNBUFFERED True
 WORKDIR /osv/gcp/appengine
 
 # Install Python dependencies
-COPY setup.py Pipfile* README.md /osv/
+COPY setup.py poetry.lock pyproject.toml README.md /osv/
 COPY osv /osv/osv
-COPY gcp/appengine/Pipfile* ./
-RUN pip3 install -U pipenv==2023.12.1 && python3 -m pipenv install --deploy --system
+COPY gcp/appengine/poetry.lock gcp/appengine/pyproject.toml ./
+RUN pip3 install poetry==1.8.3 && poetry install
 
 # Website Python code
 COPY gcp/appengine/*.py ./
@@ -47,11 +47,11 @@ COPY docs/osv_service_v1.swagger.json docs/
 COPY --from=FRONTEND3_BUILD /build/dist/ dist/
 COPY --from=HUGO_BUILD /build/dist dist/
 
-RUN python -m whitenoise.compress dist/static/
+RUN poetry run python -m whitenoise.compress dist/static/
 
 # Run the web service on container startup. Here we use the gunicorn
 # webserver, with one worker process and 8 threads.
 # For environments with multiple CPU cores, increase the number of workers
 # to be equal to the cores available.
 # Timeout is set to 0 to disable the timeouts of the workers to allow Cloud Run to handle instance scaling.
-CMD exec gunicorn --bind :$PORT --workers 1 --threads 8 --timeout 0 main:app
+CMD poetry run gunicorn --bind :$PORT --workers 1 --threads 8 --timeout 0 main:app

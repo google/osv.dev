@@ -34,7 +34,7 @@ Automatically built and deployed on pushes to master branch.
 To speed up running tests:
 
 1. `make run-api-server` at the root of this repository to start the test server.
-2. `pipenv shell` in this directory
+2. `poetry shell` in this directory
 3. `python -m unittest integration_test.py` in this directory.
 
 This avoids the need to start the test server (and waiting for it) every run.

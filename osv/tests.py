@@ -110,6 +110,7 @@ def start_datastore_emulator():
   os.environ['DATASTORE_EMULATOR_HOST'] = 'localhost:' + port
   os.environ['DATASTORE_PROJECT_ID'] = TEST_PROJECT_ID
   os.environ['GOOGLE_CLOUD_PROJECT'] = TEST_PROJECT_ID
+  print(f"Emulator Port: {port}")
   proc = subprocess.Popen([
       'gcloud',
       'beta',

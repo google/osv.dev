@@ -110,7 +110,6 @@ def start_datastore_emulator():
   os.environ['DATASTORE_EMULATOR_HOST'] = 'localhost:' + port
   os.environ['DATASTORE_PROJECT_ID'] = TEST_PROJECT_ID
   os.environ['GOOGLE_CLOUD_PROJECT'] = TEST_PROJECT_ID
-  print(f"Emulator Port: {port}")
   proc = subprocess.Popen([
       'gcloud',
       'beta',
@@ -128,21 +127,23 @@ def start_datastore_emulator():
   _wait_for_emulator_ready(proc, 'datastore', _DATASTORE_READY_INDICATOR)
   return proc
 
+emulator_stdout_thread_output = ''
 
 def _wait_for_emulator_ready(proc,
                              emulator,
                              indicator,
                              timeout=_EMULATOR_TIMEOUT):
   """Waits for emulator to be ready."""
-
+  emulator_stdout_thread_output = ''
   def _read_thread(proc, ready_event):
     """Thread to continuously read from the process stdout."""
+    global emulator_stdout_thread_output
     ready = False
     while True:
       line = proc.stdout.readline()
       if not line:
         break
-      print(line)
+      emulator_stdout_thread_output += str(line) + '\n'
       if not ready and indicator in line:
         ready = True
         ready_event.set()
@@ -154,6 +155,7 @@ def _wait_for_emulator_ready(proc,
   thread.start()
 
   if not ready_event.wait(timeout):
+    print(emulator_stdout_thread_output)
     raise RuntimeError(
         '{} emulator did not get ready in time.'.format(emulator))
 

@@ -113,12 +113,12 @@ class FrontendHandlerTest(unittest.TestCase):
     self.assertDictEqual({'Debian': 2, 'PyPI': 1}, counts)
 
 
-# if __name__ == '__main__':
-#   ds_emulator = tests.start_datastore_emulator()
-#   try:
-#     with ndb.Client().context() as context:
-#       context.set_memcache_policy(False)
-#       context.set_cache_policy(False)
-#       unittest.main()
-#   finally:
-#     ds_emulator.kill()
+if __name__ == '__main__':
+  ds_emulator = tests.start_datastore_emulator()
+  try:
+    with ndb.Client().context() as context:
+      context.set_memcache_policy(False)
+      context.set_cache_policy(False)
+      unittest.main()
+  finally:
+    ds_emulator.kill()

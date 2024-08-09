@@ -120,7 +120,7 @@ def start_datastore_emulator():
       '--consistency=1.0',
       '--host-port=localhost:' + port,
       '--project=' + TEST_PROJECT_ID,
-      '--no-store-on-disk',
+      '--store_on_disk=False',
   ],
                           stdout=subprocess.PIPE,
                           stderr=subprocess.STDOUT)

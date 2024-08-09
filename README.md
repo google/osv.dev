@@ -65,6 +65,7 @@ to determine suitability for your use.
 - [Cortex XSOAR](https://github.com/demisto/content)
 - [dependency-management-data](https://dmd.tanna.dev)
 - [Dependency-Track](https://github.com/DependencyTrack/dependency-track)
+- [Dependi.io: Dependency management extension for VS Code that provides package version visibility and generates vulnerability reports.](https://github.com/filllabs/dependi)
 - [dep-scan](https://github.com/AppThreat/dep-scan)
 - [G-Rath/osv-detector](https://github.com/G-Rath/osv-detector): A scanner
   that uses the OSV database.

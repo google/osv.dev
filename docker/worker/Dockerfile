@@ -28,6 +28,9 @@ COPY osv /env/osv
 # Set virtualenv creation to false to install globally
 RUN poetry config virtualenvs.create false
 RUN cd /env/docker/worker && poetry install
+# Set virtualenv back to true to simulate previous pipenv behavior 
+# (where only one command installs to global)
+RUN poetry config virtualenvs.create true
 
 COPY docker/worker/oss_fuzz.py docker/worker/worker.py /usr/local/bin/
 RUN chmod 755 /usr/local/bin/worker.py

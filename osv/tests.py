@@ -134,6 +134,7 @@ def _wait_for_emulator_ready(proc,
                              indicator,
                              timeout=_EMULATOR_TIMEOUT):
   """Waits for emulator to be ready."""
+  global emulator_stdout_thread_output
   emulator_stdout_thread_output = ''
   def _read_thread(proc, ready_event):
     """Thread to continuously read from the process stdout."""

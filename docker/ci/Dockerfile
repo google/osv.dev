@@ -28,4 +28,8 @@ ENV PATH "$PATH:/root/.go/bin:/root/go/bin"
 
 RUN go install -tags extended github.com/gohugoio/hugo@v0.111.3
 
+# Set virtualenv back to false to run the tests, so each test has its
+# own virtualenvs.
+RUN poetry config virtualenvs.create true
+
 ENTRYPOINT []

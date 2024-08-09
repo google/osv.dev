@@ -41,7 +41,7 @@ RUN curl -sS https://www.python.org/ftp/python/${PYTHON_VERSION}/Python-${PYTHON
 ENV POETRY_HOME "/opt/poetry"
 RUN python3 -m venv $POETRY_HOME
 RUN $POETRY_HOME/bin/pip install poetry==1.8.3
-ENV PATH "$PATH:$POETRY_HOME/bin"
+RUN ln -s $POETRY_HOME/bin/poetry /usr/local/bin/poetry
 
 # Install Docker.
 # Pin the version to an older one due to gVisor incompatibilities.

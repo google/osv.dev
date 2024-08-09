@@ -128,16 +128,11 @@ def start_datastore_emulator():
   return proc
 
 
-emulator_stdout_thread_output = ''
-
-
 def _wait_for_emulator_ready(proc,
                              emulator,
                              indicator,
                              timeout=_EMULATOR_TIMEOUT):
   """Waits for emulator to be ready."""
-  global emulator_stdout_thread_output
-  emulator_stdout_thread_output = ''
 
   def _read_thread(proc, ready_event):
     """Thread to continuously read from the process stdout."""
@@ -145,10 +140,10 @@ def _wait_for_emulator_ready(proc,
     ready = False
     while True:
       line = proc.stdout.readline()
-      print(line)
       if not line:
         break
-      emulator_stdout_thread_output += str(line) + '\n'
+
+      print(line)
       if not ready and indicator in line:
         ready = True
         ready_event.set()
@@ -162,7 +157,11 @@ def _wait_for_emulator_ready(proc,
   if not ready_event.wait(timeout):
     raise RuntimeError(
         '{} emulator did not get ready in time.'.format(emulator))
-
+  
+  # another_event = threading.Event()
+  # another_event.wait(5)
+  # raise RuntimeError(
+  #      'foisefjosdfji')
   return thread
 
 

@@ -48,8 +48,9 @@ _PAGE_SIZE = 16
 _PAGE_LOOKAHEAD = 4
 _REQUESTS_PER_MIN = 30
 _WORD_CHARACTERS_OR_DASH = re.compile(r'^[+\w-]+$')
+_WORD_CHARACTERS_OR_DASH_OR_COLON = re.compile(r'^[+\w:-]+$')
 _VALID_BLOG_NAME = _WORD_CHARACTERS_OR_DASH
-_VALID_VULN_ID = _WORD_CHARACTERS_OR_DASH
+_VALID_VULN_ID = _WORD_CHARACTERS_OR_DASH_OR_COLON
 _BLOG_CONTENTS_DIR = 'blog'
 _DEPS_BASE_URL = 'https://deps.dev'
 _FIRST_CVSS_CALCULATOR_BASE_URL = 'https://www.first.org/cvss/calculator'
@@ -247,6 +248,8 @@ def vulnerability(vuln_id):
 @blueprint.route('/<potential_vuln_id>')
 def vulnerability_redirector(potential_vuln_id):
   """Convenience redirector for /VULN-ID to /vulnerability/VULN-ID."""
+  # AlmaLinux have colons in their identifiers, which gets URL encoded.
+  potential_vuln_id = parse.unquote(potential_vuln_id)
   if not _VALID_VULN_ID.match(potential_vuln_id):
     abort(404)
     return None

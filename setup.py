@@ -33,7 +33,7 @@ setuptools.setup(
         'Operating System :: OS Independent',
     ],
     install_requires=[
-        # TODO(ochang): Migrate to using pyproject.toml directly.
+        # TODO(rexpan): Migrate to using pyproject.toml directly.
         'google-cloud-ndb',
         'google-cloud-logging',
         'pygit2>=1.14.0',

@@ -148,6 +148,7 @@ def _wait_for_emulator_ready(proc,
       if not line:
         break
       emulator_stdout_thread_output += str(line) + '\n'
+
       if not ready and indicator in line:
         ready = True
         ready_event.set()

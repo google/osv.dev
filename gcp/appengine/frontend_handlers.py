@@ -423,7 +423,8 @@ def osv_get_ecosystems():
                 key=str.lower)
 
 
-@cache.smart_cache("osv_get_ecosystem_counts", hard_timeout=24 * 60 * 60, soft_timeout=30 * 60)
+@cache.smart_cache(
+    "osv_get_ecosystem_counts", hard_timeout=24 * 60 * 60, soft_timeout=30 * 60)
 def osv_get_ecosystem_counts_cached():
   """Get count of vulnerabilities per ecosystem, cached"""
   # Check if we're already in ndb context, if not, put us in one

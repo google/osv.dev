@@ -174,7 +174,7 @@ def main() -> None:
       dest="bucket",
       default=None,
       help=("Override the bucket name (and with a colon + path, the path) "
-            "for the object in GCS"))
+            "for the object in GCS (e.g. `cve-osv-conversion:osv-output`)"))
   args = parser.parse_args()
 
   if len(args.bugs[0]) > MAX_QUERY_SIZE:

@@ -31,23 +31,41 @@ class UnexpectedSituation(Exception):
   pass
 
 
-def objname_for_bug(client: datastore.Client,
-                    bug: datastore.entity.Entity) -> dict:
+def objname_for_bug(client: datastore.Client, bug: datastore.entity.Entity,
+                    forced_bucket_name: str) -> dict:
   """Returns the GCS object details for a given Bug.
 
   Args:
       client: an initialized Cloud Datastore client.
       bug: a Bug Cloud Datastore entity.
+      forced_bucket_name: bucket name (with optional colon-separated path) to
+      forcibly use.
 
   Returns:
     A dict with keys for the GCS uri, the bucket name and path within the
     bucket.
   """
+  source_object_path = bug["source_id"].split(":")[1]
+
+  if forced_bucket_name:
+    (bucket, _, bucketpath) = forced_bucket_name.partition(":")
+    # The assumption is that when passed a different bucket path, only the
+    # current object's base filename is relevant.
+    return {
+        "uri":
+            "gs://" + os.path.join(bucket, bucketpath,
+                                   os.path.basename(source_object_path)),
+        "bucket":
+            bucket,
+        "path":
+            os.path.join(bucketpath, os.path.basename(source_object_path))
+    }
+
   bucket = bucket_for_source(client, bug["source"])
   return {
-      "uri": "gs://" + os.path.join(bucket, bug["source_id"].split(":")[1]),
+      "uri": "gs://" + os.path.join(bucket, source_object_path),
       "bucket": bucket,
-      "path": bug["source_id"].split(":")[1]
+      "path": source_object_path
   }
 
 
@@ -150,6 +168,13 @@ def main() -> None:
       dest="tmpdir",
       default="/tmp",
       help="Local directory to copy to from GCS")
+  parser.add_argument(
+      "--bucket",
+      action="store",
+      dest="bucket",
+      default=None,
+      help=("Override the bucket name (and with a colon + path, the path) "
+            "for the object in GCS (e.g. `cve-osv-conversion:osv-output`)"))
   args = parser.parse_args()
 
   if len(args.bugs[0]) > MAX_QUERY_SIZE:
@@ -172,7 +197,8 @@ def main() -> None:
     with ds_client.transaction() as xact:
       for bug in result_to_fix:
         try:
-          bug_in_gcs = objname_for_bug(ds_client, bug)
+          bug_in_gcs = objname_for_bug(
+              ds_client, bug, forced_bucket_name=args.bucket)
         except UnexpectedSituation as e:
           if args.verbose:
             print(f"Skipping {bug['db_id']}, got {e}\n")

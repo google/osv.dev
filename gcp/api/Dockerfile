@@ -15,11 +15,11 @@
 FROM python:3.11-slim
 
 # TODO(ochang): Just copy the entire project (needs a clean checkout).
-COPY setup.py Pipfile* README.md /osv/
+COPY setup.py pyproject.toml poetry.lock README.md /osv/
 COPY osv /osv/osv
 COPY gcp/api /osv/gcp/api
 
 WORKDIR /osv/gcp/api
-RUN pip3 install -U pipenv && python3 -m pipenv install --deploy --system
+RUN pip3 install poetry==1.8.3 && poetry install
 
-ENTRYPOINT ["python", "/osv/gcp/api/server.py"]
+ENTRYPOINT ["poetry", "run", "python", "/osv/gcp/api/server.py"]

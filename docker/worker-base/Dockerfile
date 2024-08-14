@@ -46,6 +46,10 @@ RUN $POETRY_HOME/bin/pip install poetry==1.8.3
 # Link in PATH to make it possible to directly call poetry
 RUN ln -s $POETRY_HOME/bin/poetry /usr/local/bin/poetry
 
+# Keep the virtualenv directly in the project directory. This isn't strictly neccesary for
+# this image as it runs on kubernetes, but it keeps it consistent with other cloud run images.
+ENV POETRY_VIRTUALENVS_IN_PROJECT=true
+
 # Install Docker.
 # Pin the version to an older one due to gVisor incompatibilities.
 # See https://github.com/google/osv.dev/issues/1019#issuecomment-1427418758

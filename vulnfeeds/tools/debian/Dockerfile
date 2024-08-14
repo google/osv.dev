@@ -14,6 +14,10 @@
 
 FROM google/cloud-sdk:449.0.0-alpine
 
+# Keep the virtualenv directly in the project directory. This isn't strictly neccesary for
+# this project as it runs on kubernetes, but it keeps it consistent with other cloud run images
+ENV POETRY_VIRTUALENVS_IN_PROJECT=true
+
 RUN apk --no-cache add py3-pip \
     && pip install poetry==1.8.3
 

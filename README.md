@@ -61,6 +61,7 @@ to determine suitability for your use. Some popular third party tools are:
 - [Cortex XSOAR](https://github.com/demisto/content)
 - [dep-scan](https://github.com/AppThreat/dep-scan)
 - [Dependency-Track](https://github.com/DependencyTrack/dependency-track)
+- [GUAC](https://github.com/guacsec/guac)
 - [OSS Review Toolkit](https://github.com/oss-review-toolkit/ort)
 - [pip-audit](https://github.com/pypa/pip-audit)
 - [Renovate](https://github.com/renovatebot/renovate)

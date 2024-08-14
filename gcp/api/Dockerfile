@@ -14,6 +14,12 @@
 
 FROM python:3.11-slim
 
+# Generation 1 of cloud run overrides the HOME environment variable, causing
+# poetry to run in the incorrect environment, as it defaults to using $HOME/.cache/virtualenvs/...
+# 
+# This forces it to create the virtualenv in the same directory as the project, avoiding this issue.
+ENV POETRY_VIRTUALENVS_IN_PROJECT=true
+
 # TODO(ochang): Just copy the entire project (needs a clean checkout).
 COPY setup.py pyproject.toml poetry.lock README.md /osv/
 COPY osv /osv/osv

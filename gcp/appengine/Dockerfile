@@ -2,12 +2,6 @@
 FROM node:20.9 AS FRONTEND3_BUILD
 WORKDIR /build/frontend3
 
-# Generation 1 of cloud run overrides the HOME environment variable, causing
-# poetry to run in the incorrect environment, as it defaults to using $HOME/.cache/virtualenvs/...
-# 
-# This forces it to create the virtualenv in the same directory as the project, avoiding this issue.
-ENV POETRY_VIRTUALENVS_IN_PROJECT=true
-
 # Install dependencies first for better caching
 COPY gcp/appengine/frontend3/package.json gcp/appengine/frontend3/package-lock.json ./
 RUN npm ci
@@ -30,6 +24,12 @@ RUN hugo -d ../dist/static/blog
 # OSV.dev site image
 # Adapted from https://cloud.google.com/run/docs/quickstarts/build-and-deploy/deploy-python-service#writing
 FROM python:3.11-slim
+
+# Generation 1 of cloud run overrides the HOME environment variable, causing
+# poetry to run in the incorrect environment, as it defaults to using $HOME/.cache/virtualenvs/...
+# 
+# This forces it to create the virtualenv in the same directory as the project, avoiding this issue.
+ENV POETRY_VIRTUALENVS_IN_PROJECT=true
 
 # Allow statements and log messages to immediately appear in the logs
 ENV PYTHONUNBUFFERED True

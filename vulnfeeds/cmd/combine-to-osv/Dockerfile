@@ -26,7 +26,7 @@ RUN go build -o combine-to-osv ./cmd/combine-to-osv/
 RUN go build -o download-cves ./cmd/download-cves/
 
 
-FROM gcr.io/google.com/cloudsdktool/google-cloud-cli:alpine
+FROM gcr.io/google.com/cloudsdktool/google-cloud-cli:alpine@sha256:d5da0344b23d03a6f2728657732c7a60300a91acaad9b8076c6fd30b1dfe1ff4
 RUN apk --no-cache add jq
 
 WORKDIR /root/

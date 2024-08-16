@@ -29,6 +29,11 @@
     },
     {
       "matchFileNames": ["gcp/api/**"],
+      "matchPackageNames": ["grpcio*"],
+      "enabled": false
+    },
+    {
+      "matchFileNames": ["gcp/api/**"],
       "groupName": "api"
     },
     {

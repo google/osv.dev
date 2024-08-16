@@ -253,10 +253,5 @@ func addReference(cveId string, ecosystem string, convertedCve *vulns.Vulnerabil
 		return
 	}
 
-	_, err := cves.ValidateAndCanonicalizeLink(securityReference.URL)
-	if err != nil {
-		Logger.Warnf("Failed to add reference for %s in %s: %v", cveId, ecosystem, err)
-		return
-	}
 	convertedCve.References = append(convertedCve.References, securityReference)
 }

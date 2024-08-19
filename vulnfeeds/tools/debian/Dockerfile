@@ -18,8 +18,7 @@ FROM gcr.io/google.com/cloudsdktool/google-cloud-cli:alpine@sha256:d5da0344b23d0
 # this project as it runs on kubernetes, but it keeps it consistent with other cloud run images
 ENV POETRY_VIRTUALENVS_IN_PROJECT=true
 
-RUN apk --no-cache add py3-pip \
-    && pip install poetry==1.8.3
+RUN apk --no-cache add poetry
 
 RUN mkdir /src
 WORKDIR /src

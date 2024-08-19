@@ -1063,8 +1063,13 @@ def query_by_version(context: QueryContext,
           bugs.append(bug)
     elif project == 'oss-vdb-test' and supports_ordering:
       # Query for non-enumerated ecosystems.
-      bugs, next_page_token = yield _query_by_comparing_versions(
-          context, query, ecosystem, version)
+
+      # Performance testing only
+      # TODO(gongh): revert change back after testing.
+      # bugs, next_page_token = yield _query_by_comparing_versions(
+      #     context, query, ecosystem, version)
+      bugs, next_page_token = yield _query_by_generic_version(
+          context, query, package_name, ecosystem, purl, version)
     else:
       bugs, next_page_token = yield _query_by_generic_version(
           context, query, package_name, ecosystem, purl, version)

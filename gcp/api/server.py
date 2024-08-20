@@ -17,6 +17,7 @@ import argparse
 import codecs
 import concurrent
 from dataclasses import dataclass
+from datetime import datetime, timedelta
 import math
 import hashlib
 import functools
@@ -49,6 +50,7 @@ import osv_service_v1_pb2_grpc
 
 _SHUTDOWN_GRACE_DURATION = 5
 
+_MAX_QUERY_TIME = timedelta(seconds=30)
 _MAX_BATCH_QUERY = 1000
 # Maximum number of responses to return before applying post exceeded limit
 _MAX_VULN_RESP_THRESH = 3000
@@ -195,7 +197,7 @@ class OSVServicer(osv_service_v1_pb2_grpc.OSVServicer,
 
     query_context = QueryContext(
         service_context=context,
-        # request_start_time=datetime.now(),
+        request_start_time=datetime.now(),
         page_token=page_token,
         total_responses=ResponsesCount(0))
 
@@ -272,7 +274,7 @@ class OSVServicer(osv_service_v1_pb2_grpc.OSVServicer,
       return None
 
     total_responses = ResponsesCount(0)
-    # req_start_time = datetime.now()
+    req_start_time = datetime.now()
     for i, query in enumerate(request.query.queries):
       page_token = None
       if query.page_token:
@@ -284,7 +286,7 @@ class OSVServicer(osv_service_v1_pb2_grpc.OSVServicer,
                         f'Invalid page token at index: {i}.')
       query_context = QueryContext(
           service_context=context,
-          # request_start_time=req_start_time,
+          request_start_time=req_start_time,
           page_token=page_token,
           total_responses=total_responses)
 
@@ -402,7 +404,7 @@ class ResponsesCount:
 class QueryContext:
   service_context: grpc.ServicerContext
   page_token: ndb.Cursor | None
-  # request_start_time: datetime
+  request_start_time: datetime
   # Use a dataclass to copy by reference
   total_responses: ResponsesCount
 
@@ -774,7 +776,8 @@ def query_by_commit(
 
   cursor = None
   while (yield it.has_next_async()):
-    if len(bug_ids) >= context.total_responses.page_limit():
+    now = datetime.now()
+    if len(bug_ids) >= context.total_responses.page_limit() or (now - context.request_start_time) > _MAX_QUERY_TIME:
       cursor = it.cursor_after()
       break
 
@@ -924,7 +927,8 @@ def _query_by_semver(context: QueryContext, query: ndb.Query, package_name: str,
   cursor = None
 
   while (yield it.has_next_async()):
-    if len(results) >= context.total_responses.page_limit():
+    now = datetime.now()
+    if len(results) >= context.total_responses.page_limit() or (now - context.request_start_time) > _MAX_QUERY_TIME:
       cursor = it.cursor_after()
       break
 
@@ -992,7 +996,8 @@ def query_by_generic_helper(results: list, cursor, context: QueryContext,
   query: ndb.Query = base_query.filter(osv.Bug.affected_fuzzy == version)
   it: ndb.QueryIterator = query.iter(start_cursor=context.page_token)
   while (yield it.has_next_async()):
-    if len(results) >= context.total_responses.page_limit():
+    now = datetime.now()
+    if len(results) >= context.total_responses.page_limit() or (now - context.request_start_time) > _MAX_QUERY_TIME:
       cursor = it.cursor_after()
       break
     bug = it.next()
@@ -1106,7 +1111,8 @@ def _query_by_comparing_versions(context: QueryContext, query: ndb.Query,
   has_release = ':' in ecosystem
 
   while (yield it.has_next_async()):
-    if len(bugs) >= context.total_responses.page_limit():
+    now = datetime.now()
+    if len(bugs) >= context.total_responses.page_limit() or (now - context.request_start_time) > _MAX_QUERY_TIME:
       cursor = it.cursor_after()
       break
 
@@ -1165,7 +1171,8 @@ def query_by_package(context: QueryContext, package_name: str, ecosystem: str,
   it: ndb.QueryIterator = query.iter(start_cursor=context.page_token)
   cursor = None
   while (yield it.has_next_async()):
-    if len(bugs) >= context.total_responses.page_limit():
+    now = datetime.now()
+    if len(bugs) >= context.total_responses.page_limit() or (now - context.request_start_time) > _MAX_QUERY_TIME:
       cursor = it.cursor_after()
       break
 

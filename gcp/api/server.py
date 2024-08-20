@@ -410,7 +410,8 @@ class QueryContext:
   total_responses: ResponsesCount
 
   def should_break_page(self, response_count: int):
-    return response_count >= self.total_responses.page_limit() or self.request_cutoff_time < datetime.now()
+    return response_count >= self.total_responses.page_limit(
+    ) or self.request_cutoff_time < datetime.now()
 
 
 def should_skip_bucket(path: str) -> bool:

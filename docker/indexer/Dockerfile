@@ -24,7 +24,7 @@ RUN go mod download
 COPY ./ /build
 RUN CGO_ENABLED=0 ./build.sh
 
-FROM gcr.io/distroless/base
+FROM gcr.io/distroless/base@sha256:237b9021dd6224b2a41bb1bdbea5cd9ea84c758126482e3c6331faaca90c4d29
 COPY --from=GO_BUILD build/indexer /indexer
 ENTRYPOINT ["/indexer"]
 CMD ["--help"]

@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-FROM python:3.11-slim
+FROM python:3.11-slim@sha256:ad5dadd957a398226996bc4846e522c39f2a77340b531b28aaab85b2d361210b
 
 # Generation 1 of cloud run overrides the HOME environment variable, causing
 # poetry to run in the incorrect environment, as it defaults to using $HOME/.cache/virtualenvs/...

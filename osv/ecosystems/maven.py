@@ -14,6 +14,7 @@
 """Maven ecosystem helper."""
 
 import collections
+import functools
 import re
 
 from .helper_base import DepsDevMixin
@@ -95,6 +96,7 @@ class VersionToken(
     return qualifier_order(self) < qualifier_order(other)
 
 
+@functools.total_ordering
 class Version:
   """Maven version."""
 

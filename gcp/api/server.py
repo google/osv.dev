@@ -50,7 +50,7 @@ import osv_service_v1_pb2_grpc
 
 _SHUTDOWN_GRACE_DURATION = 5
 
-_MAX_QUERY_TIME = timedelta(seconds=30)
+_MAX_QUERY_TIME = timedelta(seconds=20)
 _MAX_BATCH_QUERY = 1000
 # Maximum number of responses to return before applying post exceeded limit
 _MAX_VULN_RESP_THRESH = 3000

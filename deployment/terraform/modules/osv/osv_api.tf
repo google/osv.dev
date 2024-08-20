@@ -126,7 +126,7 @@ resource "google_cloud_run_service" "api" {
         image = data.google_container_registry_image.api.image_url
         env {
           name  = "ESPv2_ARGS"
-          value = "^++^--transcoding_preserve_proto_field_names++--envoy_connection_buffer_limit_bytes=10485760"
+          value = "^++^--transcoding_preserve_proto_field_names++--envoy_connection_buffer_limit_bytes=104857600"
         }
       }
     }

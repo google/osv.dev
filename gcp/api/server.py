@@ -777,7 +777,8 @@ def query_by_commit(
   cursor = None
   while (yield it.has_next_async()):
     now = datetime.now()
-    if len(bug_ids) >= context.total_responses.page_limit() or (now - context.request_start_time) > _MAX_QUERY_TIME:
+    if len(bug_ids) >= context.total_responses.page_limit() or (
+        now - context.request_start_time) > _MAX_QUERY_TIME:
       cursor = it.cursor_after()
       break
 
@@ -928,7 +929,8 @@ def _query_by_semver(context: QueryContext, query: ndb.Query, package_name: str,
 
   while (yield it.has_next_async()):
     now = datetime.now()
-    if len(results) >= context.total_responses.page_limit() or (now - context.request_start_time) > _MAX_QUERY_TIME:
+    if len(results) >= context.total_responses.page_limit() or (
+        now - context.request_start_time) > _MAX_QUERY_TIME:
       cursor = it.cursor_after()
       break
 
@@ -997,7 +999,8 @@ def query_by_generic_helper(results: list, cursor, context: QueryContext,
   it: ndb.QueryIterator = query.iter(start_cursor=context.page_token)
   while (yield it.has_next_async()):
     now = datetime.now()
-    if len(results) >= context.total_responses.page_limit() or (now - context.request_start_time) > _MAX_QUERY_TIME:
+    if len(results) >= context.total_responses.page_limit() or (
+        now - context.request_start_time) > _MAX_QUERY_TIME:
       cursor = it.cursor_after()
       break
     bug = it.next()
@@ -1112,7 +1115,8 @@ def _query_by_comparing_versions(context: QueryContext, query: ndb.Query,
 
   while (yield it.has_next_async()):
     now = datetime.now()
-    if len(bugs) >= context.total_responses.page_limit() or (now - context.request_start_time) > _MAX_QUERY_TIME:
+    if len(bugs) >= context.total_responses.page_limit() or (
+        now - context.request_start_time) > _MAX_QUERY_TIME:
       cursor = it.cursor_after()
       break
 
@@ -1172,7 +1176,8 @@ def query_by_package(context: QueryContext, package_name: str, ecosystem: str,
   cursor = None
   while (yield it.has_next_async()):
     now = datetime.now()
-    if len(bugs) >= context.total_responses.page_limit() or (now - context.request_start_time) > _MAX_QUERY_TIME:
+    if len(bugs) >= context.total_responses.page_limit() or (
+        now - context.request_start_time) > _MAX_QUERY_TIME:
       cursor = it.cursor_after()
       break
 

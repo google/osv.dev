@@ -404,6 +404,10 @@ class ResponsesCount:
 
 @dataclass
 class QueryContext:
+  """
+  Information about the query the server is currently
+  responding to.
+  """
   service_context: grpc.ServicerContext
   page_token: ndb.Cursor | None
   request_cutoff_time: datetime
@@ -412,7 +416,8 @@ class QueryContext:
 
   def should_break_page(self, response_count: int):
     """
-    Returns whether the API should finish its current page here and return a cursor.
+    Returns whether the API should finish its current page here 
+    and return a cursor.
 
     Currently uses two criteria:
       - total response size greater than page limit
@@ -972,9 +977,9 @@ def _query_by_generic_version(
                                                   ecosystem, purl, version,
                                                   False)
 
-  # If no results is because of a page break, then there is no reason to pass further down
-  # as page break would still be in effect with the following queries,
-  # and would have to immediately return.
+  # If no results is because of a page break, then there is no reason
+  # to pass further down  # as page break would still be in effect with
+  # the following queries, and would have to immediately return.
   if results or context.should_break_page(0):
     return results, cursor
 
@@ -1006,7 +1011,10 @@ def query_by_generic_helper(results: list, cursor, context: QueryContext,
                             base_query: ndb.Query, project: str, ecosystem: str,
                             purl: PackageURL | None, version: str,
                             is_normalized):
-  """Helper function for query_by_generic. This function can be called multiple times"""
+  """
+  Helper function for query_by_generic. 
+  This function can be called multiple times.
+  """
   query: ndb.Query = base_query.filter(osv.Bug.affected_fuzzy == version)
   it: ndb.QueryIterator = query.iter(start_cursor=context.page_token)
   while (yield it.has_next_async()):

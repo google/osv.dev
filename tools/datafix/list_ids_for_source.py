@@ -65,5 +65,6 @@ def main() -> None:
       for bug in bugs:
         f.write(f'{bug}\n')
 
+
 if __name__ == "__main__":
   main()

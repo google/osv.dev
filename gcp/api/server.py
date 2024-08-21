@@ -285,7 +285,7 @@ class OSVServicer(osv_service_v1_pb2_grpc.OSVServicer,
           logging.warning(e)
           context.abort(grpc.StatusCode.INVALID_ARGUMENT,
                         f'Invalid page token at index: {i}.')
-          
+
       query_context = QueryContext(
           service_context=context,
           request_cutoff_time=req_cutoff_time,
@@ -973,7 +973,7 @@ def _query_by_generic_version(
                                                   False)
 
   # If no results is because of a page break, then there is no reason to pass further down
-  # as page break would still be in effect with the following queries, 
+  # as page break would still be in effect with the following queries,
   # and would have to immediately return.
   if results or context.should_break_page(0):
     return results, cursor

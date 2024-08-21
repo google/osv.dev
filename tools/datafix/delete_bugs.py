@@ -82,7 +82,7 @@ def main() -> None:
         for r in result[batch:batch + MAX_BATCH_SIZE]:
           if args.verbose:
             print(f"Deleting {r}")
-            xact.delete(r.key)
+          xact.delete(r.key)
         if args.dryrun:
           raise Exception("Dry run mode. Preventing transaction from commiting")  # pylint: disable=broad-exception-raised
     except Exception as e:

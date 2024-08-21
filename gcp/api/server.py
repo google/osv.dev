@@ -978,7 +978,7 @@ def _query_by_generic_version(
                                                   False)
 
   # If no results is because of a page break, then there is no reason
-  # to pass further down  # as page break would still be in effect with
+  # to pass further down as page break would still be in effect with
   # the following queries, and would have to immediately return.
   if results or context.should_break_page(0):
     return results, cursor

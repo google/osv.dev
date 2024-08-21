@@ -43,6 +43,10 @@ class MavenVersionTest(unittest.TestCase):
             parsed_versions[j],
             parsed_versions[i],
             msg=f'Expected {versions[j]} > {versions[i]}')
+        self.assertGreaterEqual(
+            parsed_versions[j],
+            parsed_versions[i],
+            msg=f'Expected {versions[j]} >= {versions[i]}')
 
   def check_versions_equal(self, *versions):
     """Check that the provided versions are equivalent."""

@@ -4,11 +4,11 @@ metadata:
   name: combine-to-osv
 spec:
   schedule: "30 */1 * * *"
-  concurrencyPolicy: Allow # on the assumption the dominant part of the runtime is the GCS copy at the end
+  concurrencyPolicy: Forbid
   failedJobsHistoryLimit: 3
   jobTemplate:
     spec:
-      activeDeadlineSeconds: 14400
+      activeDeadlineSeconds: 7200
       template:
         spec:
           tolerations:

@@ -17,6 +17,7 @@ import argparse
 import codecs
 import concurrent
 from dataclasses import dataclass
+from datetime import datetime, timedelta
 import math
 import hashlib
 import functools
@@ -49,6 +50,8 @@ import osv_service_v1_pb2_grpc
 
 _SHUTDOWN_GRACE_DURATION = 5
 
+_MAX_SINGLE_QUERY_TIME = timedelta(seconds=20)
+_MAX_BATCH_QUERY_TIME = timedelta(seconds=35)
 _MAX_BATCH_QUERY = 1000
 # Maximum number of responses to return before applying post exceeded limit
 _MAX_VULN_RESP_THRESH = 3000
@@ -195,7 +198,7 @@ class OSVServicer(osv_service_v1_pb2_grpc.OSVServicer,
 
     query_context = QueryContext(
         service_context=context,
-        # request_start_time=datetime.now(),
+        request_cutoff_time=datetime.now() + _MAX_SINGLE_QUERY_TIME,
         page_token=page_token,
         total_responses=ResponsesCount(0))
 
@@ -272,7 +275,7 @@ class OSVServicer(osv_service_v1_pb2_grpc.OSVServicer,
       return None
 
     total_responses = ResponsesCount(0)
-    # req_start_time = datetime.now()
+    req_cutoff_time = datetime.now() + _MAX_BATCH_QUERY_TIME
     for i, query in enumerate(request.query.queries):
       page_token = None
       if query.page_token:
@@ -282,9 +285,10 @@ class OSVServicer(osv_service_v1_pb2_grpc.OSVServicer,
           logging.warning(e)
           context.abort(grpc.StatusCode.INVALID_ARGUMENT,
                         f'Invalid page token at index: {i}.')
+
       query_context = QueryContext(
           service_context=context,
-          # request_start_time=req_start_time,
+          request_cutoff_time=req_cutoff_time,
           page_token=page_token,
           total_responses=total_responses)
 
@@ -400,11 +404,27 @@ class ResponsesCount:
 
 @dataclass
 class QueryContext:
+  """
+  Information about the query the server is currently
+  responding to.
+  """
   service_context: grpc.ServicerContext
   page_token: ndb.Cursor | None
-  # request_start_time: datetime
+  request_cutoff_time: datetime
   # Use a dataclass to copy by reference
   total_responses: ResponsesCount
+
+  def should_break_page(self, response_count: int):
+    """
+    Returns whether the API should finish its current page here 
+    and return a cursor.
+
+    Currently uses two criteria:
+      - total response size greater than page limit
+      - request exceeding the cutoff time
+    """
+    return (response_count >= self.total_responses.page_limit() or
+            datetime.now() > self.request_cutoff_time)
 
 
 def should_skip_bucket(path: str) -> bool:
@@ -774,7 +794,7 @@ def query_by_commit(
 
   cursor = None
   while (yield it.has_next_async()):
-    if len(bug_ids) >= context.total_responses.page_limit():
+    if context.should_break_page(len(bug_ids)):
       cursor = it.cursor_after()
       break
 
@@ -924,7 +944,7 @@ def _query_by_semver(context: QueryContext, query: ndb.Query, package_name: str,
   cursor = None
 
   while (yield it.has_next_async()):
-    if len(results) >= context.total_responses.page_limit():
+    if context.should_break_page(len(results)):
       cursor = it.cursor_after()
       break
 
@@ -957,7 +977,10 @@ def _query_by_generic_version(
                                                   ecosystem, purl, version,
                                                   False)
 
-  if results:
+  # If no results is because of a page break, then there is no reason
+  # to pass further down as page break would still be in effect with
+  # the following queries, and would have to immediately return.
+  if results or context.should_break_page(0):
     return results, cursor
 
   # page_token can be the token for this query, or the token for the one
@@ -971,7 +994,7 @@ def _query_by_generic_version(
                                                   osv.normalize_tag(version),
                                                   True)
 
-  if results:
+  if results or context.should_break_page(0):
     return results, cursor
 
   # Try again after canonicalizing + normalizing version.
@@ -988,12 +1011,22 @@ def query_by_generic_helper(results: list, cursor, context: QueryContext,
                             base_query: ndb.Query, project: str, ecosystem: str,
                             purl: PackageURL | None, version: str,
                             is_normalized):
-  """Helper function for query_by_generic."""
+  """
+  Helper function for query_by_generic. 
+  This function can be called multiple times.
+  """
   query: ndb.Query = base_query.filter(osv.Bug.affected_fuzzy == version)
   it: ndb.QueryIterator = query.iter(start_cursor=context.page_token)
   while (yield it.has_next_async()):
-    if len(results) >= context.total_responses.page_limit():
-      cursor = it.cursor_after()
+    if context.should_break_page(len(results)):
+      # Because this helper function might be called multiple times
+      # we might break before the first result is even queried, raising
+      # a BadArgumentError
+      try:
+        cursor = it.cursor_after()
+      except ndb_exceptions.BadArgumentError:
+        # Don't set the cursor in this case and just return existing cursor
+        pass
       break
     bug = it.next()
     if _is_version_affected(
@@ -1063,6 +1096,7 @@ def query_by_version(context: QueryContext,
           bugs.append(bug)
     elif project == 'oss-vdb-test' and supports_ordering:
       # Query for non-enumerated ecosystems.
+
       bugs, next_page_token = yield _query_by_comparing_versions(
           context, query, ecosystem, version)
     else:
@@ -1106,7 +1140,7 @@ def _query_by_comparing_versions(context: QueryContext, query: ndb.Query,
   has_release = ':' in ecosystem
 
   while (yield it.has_next_async()):
-    if len(bugs) >= context.total_responses.page_limit():
+    if context.should_break_page(len(bugs)):
       cursor = it.cursor_after()
       break
 
@@ -1165,7 +1199,7 @@ def query_by_package(context: QueryContext, package_name: str, ecosystem: str,
   it: ndb.QueryIterator = query.iter(start_cursor=context.page_token)
   cursor = None
   while (yield it.has_next_async()):
-    if len(bugs) >= context.total_responses.page_limit():
+    if context.should_break_page(len(bugs)):
       cursor = it.cursor_after()
       break
 
@@ -1240,6 +1274,11 @@ def _is_affected(ecosystem: str, version: str,
   ecosystem_info = ecosystems.get(ecosystem)
   queried_version = ecosystem_info.sort_key(version)
 
+  # OSV allows users to add affected versions
+  # that are not covered by affected ranges.
+  if version in affected_package.versions:
+    return True
+
   for r in affected_package.ranges:
     r: osv.AffectedRange2
 
@@ -1259,11 +1298,7 @@ def _is_affected(ecosystem: str, version: str,
     if affected:
       return True
 
-  # OSV allows users to add affected versions
-  # that are not covered by affected ranges.
-  # TODO(gongh@): Move this check before the version range check
-  # after performance analysis.
-  return version in affected_package.versions
+  return False
 
 
 def main():

@@ -29,6 +29,11 @@
     },
     {
       "matchFileNames": ["gcp/api/**"],
+      "matchPackageNames": ["grpcio*"],
+      "enabled": false
+    },
+    {
+      "matchFileNames": ["gcp/api/**"],
       "groupName": "api"
     },
     {
@@ -66,7 +71,7 @@
       "groupName": "workflows"
     },
     {
-      "matchFileNames": ["Pipfile"],
+      "matchFileNames": ["pyproject.toml"],
       "groupName": "osv-lib"
     },
     {

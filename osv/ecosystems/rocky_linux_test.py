@@ -21,14 +21,16 @@ class RockyLinuxEcosystemTest(unittest.TestCase):
   """Rocky Linux ecosystem helper tests."""
 
   def test_rocky_linux(self):
+    """Test sort_key"""
     ecosystem = ecosystems.get('Rocky Linux')
-    self.assertEqual("Rocky Linux", ecosystem.name)
+    self.assertEqual('Rocky Linux', ecosystem.name)
     self.assertGreater(
-        ecosystem.sort_key("0:0.2.6-20.module+el8.9.0+1420+91577025"),
-        ecosystem.sort_key("0:0.0.99.4-5.module+el8.9.0+1445+07728297"))
+        ecosystem.sort_key('0:0.2.6-20.module+el8.9.0+1420+91577025'),
+        ecosystem.sort_key('0:0.0.99.4-5.module+el8.9.0+1445+07728297'))
     self.assertGreater(
-        ecosystem.sort_key("0:0.2.6-20.module+el8.9.0+1420+91577025"),
-        ecosystem.sort_key("0"))
+        ecosystem.sort_key('0:0.2.6-20.module+el8.9.0+1420+91577025'),
+        ecosystem.sort_key('0'))
     self.assertGreater(
-        ecosystem.sort_key("2:1.14.3-2.module+el8.10.0+1815+5fe7415e"),
-        ecosystem.sort_key("2:1.10.3-1.module+el8.10.0+1815+5fe7415e"))
+        ecosystem.sort_key('2:1.14.3-2.module+el8.10.0+1815+5fe7415e'),
+        ecosystem.sort_key('2:1.10.3-1.module+el8.10.0+1815+5fe7415e'))
+    self.assertLess(ecosystem.sort_key('invalid'), ecosystem.sort_key('0'))

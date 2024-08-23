@@ -27,6 +27,8 @@ class PackagistEcosystemTest(unittest.TestCase):
   def test_packagist(self):
     """Test Packagist."""
     ecosystem = ecosystems.get('Packagist')
+    # Any invalid versions will be handled.
+    self.assertLess(ecosystem.sort_key('invalid'), ecosystem.sort_key('0'))
     self.assertLess(
         ecosystem.sort_key('4.3-2RC1'), ecosystem.sort_key('4.3-2RC2'))
     self.assertGreater(

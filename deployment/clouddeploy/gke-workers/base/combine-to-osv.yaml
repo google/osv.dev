@@ -30,7 +30,7 @@ spec:
                 memory: "8G"
           nodeSelector:
             cloud.google.com/gke-nodepool: highend
-          restartPolicy: OnFailure
+          restartPolicy: Never # on the assumption that the next scheduled run is soon enough
           volumes:
             - name: "ssd"
               hostPath:

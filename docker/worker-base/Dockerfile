@@ -12,21 +12,21 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-FROM ubuntu:20.04
+FROM ubuntu:20.04@sha256:fa17826afb526a9fc7250e0fbcbfd18d03fe7a54849472f86879d8bf562c629e
 
 ENV DEBIAN_FRONTEND noninteractive
 RUN apt-get update && apt-get upgrade -y && \
     apt-get install -y \
-        apt-transport-https \
-        build-essential \
-        ca-certificates \
-        curl \
-        git \
-        gnupg-agent \
-        zlib1g-dev \
-        libffi-dev \
-        libssl-dev \
-        software-properties-common
+    apt-transport-https \
+    build-essential \
+    ca-certificates \
+    curl \
+    git \
+    gnupg-agent \
+    zlib1g-dev \
+    libffi-dev \
+    libssl-dev \
+    software-properties-common
 
 ARG PYTHON_VERSION=3.11.4
 RUN curl -sS https://www.python.org/ftp/python/${PYTHON_VERSION}/Python-${PYTHON_VERSION}.tgz | tar -C /tmp -xzv && \
@@ -35,7 +35,20 @@ RUN curl -sS https://www.python.org/ftp/python/${PYTHON_VERSION}/Python-${PYTHON
     make -j && \
     make install && \
     rm -rf /tmp/Python-${PYTHON_VERSION}
-RUN pip3 install pipenv==2023.12.1
+
+# Setup Poetry in its own virtual environment.
+# So when poetry changes the system dependencies, it doesn't mess with its own dependencies
+# when managing our dependencies.
+# See: https://python-poetry.org/docs/#installation 
+ENV POETRY_HOME "/opt/poetry"
+RUN python3 -m venv $POETRY_HOME
+RUN $POETRY_HOME/bin/pip install poetry==1.8.3
+# Link in PATH to make it possible to directly call poetry
+RUN ln -s $POETRY_HOME/bin/poetry /usr/local/bin/poetry
+
+# Keep the virtualenv directly in the project directory. This isn't strictly neccesary for
+# this image as it runs on kubernetes, but it keeps it consistent with other cloud run images.
+ENV POETRY_VIRTUALENVS_IN_PROJECT=true
 
 # Install Docker.
 # Pin the version to an older one due to gVisor incompatibilities.
@@ -43,7 +56,7 @@ RUN pip3 install pipenv==2023.12.1
 ARG DOCKER_VERSION=5:20.10.22~3-0~ubuntu-bionic
 RUN curl -fsSL https://download.docker.com/linux/ubuntu/gpg | gpg --dearmor -o /etc/apt/trusted.gpg.d/docker.gpg && \
     add-apt-repository \
-        "deb [arch=amd64] https://download.docker.com/linux/ubuntu bionic stable" && \
+    "deb [arch=amd64] https://download.docker.com/linux/ubuntu bionic stable" && \
     apt-get install -y docker-ce=$DOCKER_VERSION docker-ce-cli=$DOCKER_VERSION && \
     apt-mark hold docker-ce docker-ce-cli  # Prevent subsequent upgrades from bumping the version.
 

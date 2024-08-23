@@ -43,6 +43,10 @@ class MavenVersionTest(unittest.TestCase):
             parsed_versions[j],
             parsed_versions[i],
             msg=f'Expected {versions[j]} > {versions[i]}')
+        self.assertGreaterEqual(
+            parsed_versions[j],
+            parsed_versions[i],
+            msg=f'Expected {versions[j]} >= {versions[i]}')
 
   def check_versions_equal(self, *versions):
     """Check that the provided versions are equivalent."""
@@ -80,32 +84,10 @@ class MavenVersionTest(unittest.TestCase):
     """Basic sort tests."""
     # These tests are taken from the spec.
     unsorted = [
-        '1',
-        '1.1',
-        '1-snapshot',
-        '1',
-        '1-sp',
-        '1-foo2',
-        '1-foo10',
-        '1.foo',
-        '1-foo',
-        '1-1',
-        '1.1',
-        '1.ga',
-        '1-ga',
-        '1-0',
-        '1.0',
-        '1',
-        '1-sp',
-        '1-ga',
-        '1-sp.1',
-        '1-ga.1',
-        '1-sp-1',
-        '1-ga-1',
-        '1-1',
-        '1-a1',
-        '1-alpha-1',
-        '2',
+        '1', '1.1', '1-snapshot', '1', '1-sp', '1-foo2', '1-foo10', '1.foo',
+        '1-foo', '1-1', '1.1', '1.ga', '1-ga', '1-0', '1.0', '1', '1-sp',
+        '1-ga', '1-sp.1', '1-ga.1', '1-sp-1', '1-ga-1', '1-1', '1-a1',
+        '1-alpha-1', '2', 'invalid', '0'
     ]
 
     sorted_versions = [
@@ -113,9 +95,10 @@ class MavenVersionTest(unittest.TestCase):
     ]
 
     self.assertListEqual([
-        '1-alpha-1', '1-alpha-1', '1-snapshot', '1', '1', '1', '1', '1', '1',
-        '1', '1', '1.foo', '1-.1', '1-sp', '1-sp', '1-sp-1', '1-sp.1', '1-foo',
-        '1-foo-2', '1-foo-10', '1-1', '1-1', '1-1', '1.1', '1.1', '2'
+        'invalid', '0', '1-alpha-1', '1-alpha-1', '1-snapshot', '1', '1', '1',
+        '1', '1', '1', '1', '1', '1.foo', '1-.1', '1-sp', '1-sp', '1-sp-1',
+        '1-sp.1', '1-foo', '1-foo-2', '1-foo-10', '1-1', '1-1', '1-1', '1.1',
+        '1.1', '2'
     ], sorted_versions)
 
   def test_versions_qualifiers(self):

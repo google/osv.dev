@@ -148,7 +148,7 @@ func loadParts(partsInputPath string) (map[cves.CVEID][]vulns.PackageInfo, map[c
 
 // combineIntoOSV creates OSV entry by combining loaded CVEs from NVD and PackageInfo information from security advisories.
 func combineIntoOSV(loadedCves map[cves.CVEID]cves.Vulnerability, allParts map[cves.CVEID][]vulns.PackageInfo, cveList string, cvePartsModifiedTime map[cves.CVEID]time.Time) map[cves.CVEID]*vulns.Vulnerability {
-	Logger.Infof("Begin writing OSV files")
+	Logger.Infof("Begin writing OSV files from %d parts", len(allParts))
 	convertedCves := map[cves.CVEID]*vulns.Vulnerability{}
 	for cveId, cve := range loadedCves {
 		if len(allParts[cveId]) == 0 {
@@ -185,6 +185,7 @@ func combineIntoOSV(loadedCves map[cves.CVEID]cves.Vulnerability, allParts map[c
 		}
 		convertedCves[cveId] = convertedCve
 	}
+	Logger.Infof("Ended writing %d OSV files", len(convertedCves))
 	return convertedCves
 }
 
@@ -204,7 +205,7 @@ func writeOSVFile(osvData map[cves.CVEID]*vulns.Vulnerability, osvOutputPath str
 		file.Close()
 	}
 
-	Logger.Infof("Successfully written all OSV files")
+	Logger.Infof("Successfully written %d OSV files", len(osvData))
 }
 
 // loadAllCVEs loads the downloaded CVE's from the NVD database into memory.
@@ -252,10 +253,5 @@ func addReference(cveId string, ecosystem string, convertedCve *vulns.Vulnerabil
 		return
 	}
 
-	_, err := cves.ValidateAndCanonicalizeLink(securityReference.URL)
-	if err != nil {
-		Logger.Warnf("Failed to add reference for %s in %s: %v", cveId, ecosystem, err)
-		return
-	}
 	convertedCve.References = append(convertedCve.References, securityReference)
 }

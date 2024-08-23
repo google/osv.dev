@@ -12,14 +12,20 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-FROM python:3.11-slim
+FROM python:3.11-slim@sha256:ad5dadd957a398226996bc4846e522c39f2a77340b531b28aaab85b2d361210b
+
+# Generation 1 of cloud run overrides the HOME environment variable, causing
+# poetry to run in the incorrect environment, as it defaults to using $HOME/.cache/virtualenvs/...
+# 
+# This forces it to create the virtualenv in the same directory as the project, avoiding this issue.
+ENV POETRY_VIRTUALENVS_IN_PROJECT=true
 
 # TODO(ochang): Just copy the entire project (needs a clean checkout).
-COPY setup.py Pipfile* README.md /osv/
+COPY setup.py pyproject.toml poetry.lock README.md /osv/
 COPY osv /osv/osv
 COPY gcp/api /osv/gcp/api
 
 WORKDIR /osv/gcp/api
-RUN pip3 install -U pipenv && python3 -m pipenv install --deploy --system
+RUN pip3 install poetry==1.8.3 && poetry install
 
-ENTRYPOINT ["python", "/osv/gcp/api/server.py"]
+ENTRYPOINT ["poetry", "run", "python", "/osv/gcp/api/server.py"]

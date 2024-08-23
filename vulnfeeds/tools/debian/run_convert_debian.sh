@@ -36,11 +36,11 @@ git clone --quiet https://salsa.debian.org/security-tracker-team/security-tracke
 echo "Cloning webwml"
 git clone --quiet https://salsa.debian.org/webmaster-team/webwml.git
 echo "Converting DSAs"
-pipenv run python3 convert_debian.py --adv_type=DSA -o $OSV_DSA_OUT $WEBWML_PATH $DSA_PATH
+poetry run python3 convert_debian.py --adv_type=DSA -o $OSV_DSA_OUT $WEBWML_PATH $DSA_PATH
 echo "Converting DLAs"
-pipenv run python3 convert_debian.py --adv_type=DLA -o $OSV_DLA_OUT $WEBWML_PATH $DSA_PATH
+poetry run python3 convert_debian.py --adv_type=DLA -o $OSV_DLA_OUT $WEBWML_PATH $DSA_PATH
 echo "Converting DTSAs"
-pipenv run python3 convert_debian.py --adv_type=DTSA -o $OSV_DTSA_OUT $WEBWML_PATH $DSA_PATH
+poetry run python3 convert_debian.py --adv_type=DTSA -o $OSV_DTSA_OUT $WEBWML_PATH $DSA_PATH
 popd
 
 echo "Begin Syncing with cloud"

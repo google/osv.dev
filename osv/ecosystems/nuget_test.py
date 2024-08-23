@@ -100,6 +100,12 @@ class NuGetEcosystemTest(unittest.TestCase):
     with self.assertRaises(ecosystems.EnumerateError):
       ecosystem.next_version('doesnotexist123456', '1')
 
+  def test_sort_key(self):
+    ecosystem = ecosystems.get('NuGet')
+    # Tests invalid input versions
+    self.assertGreater(
+        ecosystem.sort_key('1.4.0rc3'), ecosystem.sort_key('3.0.0.4001'))
+
 
 if __name__ == '__main__':
   unittest.main()

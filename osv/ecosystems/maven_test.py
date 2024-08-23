@@ -106,6 +106,8 @@ class MavenVersionTest(unittest.TestCase):
         '1-a1',
         '1-alpha-1',
         '2',
+        'invalid',
+        '0'
     ]
 
     sorted_versions = [
@@ -113,7 +115,7 @@ class MavenVersionTest(unittest.TestCase):
     ]
 
     self.assertListEqual([
-        '1-alpha-1', '1-alpha-1', '1-snapshot', '1', '1', '1', '1', '1', '1',
+        'invalid', '0', '1-alpha-1', '1-alpha-1', '1-snapshot', '1', '1', '1', '1', '1', '1',
         '1', '1', '1.foo', '1-.1', '1-sp', '1-sp', '1-sp-1', '1-sp.1', '1-foo',
         '1-foo-2', '1-foo-10', '1-1', '1-1', '1-1', '1.1', '1.1', '2'
     ], sorted_versions)

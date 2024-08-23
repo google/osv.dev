@@ -33,3 +33,9 @@ class RubyGemsEcosystemTest(unittest.TestCase):
                      ecosystem.next_version('rails', '5.0.0.beta4'))
     with self.assertRaises(ecosystems.EnumerateError):
       ecosystem.next_version('doesnotexist123456', '1')
+
+  def test_sort_key(self):
+    """Test sort_key with invalid versions"""
+    ecosystem = ecosystems.get('RubyGems')
+    self.assertGreater(ecosystem.sort_key('invalid'), ecosystem.sort_key('4.0.0.rc1'))
+    self.assertGreater(ecosystem.sort_key('v3.1.1'), ecosystem.sort_key('4.0.0.rc1'))

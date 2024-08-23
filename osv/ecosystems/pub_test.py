@@ -66,6 +66,8 @@ class PubVersionTest(unittest.TestCase):
     pub.Version.from_string('1.2.3+build.1')
     pub.Version.from_string('1.2.3+x.7.z-92')
     pub.Version.from_string('1.0.0-rc-1+build-1')
+    # Tests invalid versions
+    pub.Version.from_string('3.4.0rc3-invalid')
 
   def test_empty_identifier(self):
     """Test parsing versions with empty identifiers.

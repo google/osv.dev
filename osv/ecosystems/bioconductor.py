@@ -44,6 +44,10 @@ class Bioconductor(Ecosystem):
 
   def sort_key(self, version):
     """Sort key."""
+    if not semver_index.is_valid(version):
+      # If version is not valid, it is most likely an invalid input
+      # version then sort it to the last/largest element
+      return semver_index.parse('999999')
     return semver_index.parse(version)
 
   def _enumerate_versions(self,

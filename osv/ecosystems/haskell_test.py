@@ -31,6 +31,10 @@ class HackageEcosystemTest(unittest.TestCase):
     with self.assertRaises(ecosystems.EnumerateError):
       ecosystem.next_version('doesnotexist123456', '1')
 
+  def test_sort_key(self):
+    """Test sort_key."""
+    ecosystem = ecosystems.get('Hackage')
+    self.assertGreater(ecosystem.sort_key('1-20-0'), ecosystem.sort_key('1.20.0'))
 
 class GHCEcosystemTest(unittest.TestCase):
   """GHC ecosystem helper tests."""

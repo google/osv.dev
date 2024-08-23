@@ -730,10 +730,11 @@ class IntegrationTests(unittest.TestCase,
             ]
         }, response.json())
 
-  @unittest.skip("Run this test locally with " +
-                 "MAX_VULN_LISTED_PRE_EXCEEDED at a lower value")
+  @unittest.skipIf(os.getenv('LOW_MAX_THRESH', '0') != '1' ,
+                   "Run this test locally with " +
+                   "MAX_VULN_LISTED_PRE_EXCEEDED at a lower value (around 10)")
   def test_query_pagination(self):
-    """Test query by package."""
+    """Test query by package with pagination."""
     response = requests.post(
         _api() + _BASE_QUERY,
         data=json.dumps(
@@ -763,9 +764,51 @@ class IntegrationTests(unittest.TestCase,
 
     self.assertEqual(set(), vulns_first.intersection(vulns_second))
 
-  @unittest.skip("Run this test locally with " +
-                 "MAX_VULN_LISTED_PRE_EXCEEDED at a lower value")
-  def test_query_package_purl(self):
+
+  @unittest.skipIf(os.getenv('LOW_MAX_THRESH', '0') != '1',
+                   "Run this test locally with " +
+                   "MAX_VULN_LISTED_PRE_EXCEEDED at a lower value (around 10)")
+  def test_query_pagination_no_ecosystem(self):
+    """Test query with pagination but no ecosystem."""
+    response = requests.post(
+        _api() + _BASE_QUERY,
+        data=json.dumps({
+            'package': {
+                'name': 'django',
+            },
+            'version': '5.0',
+        }),
+        timeout=_TIMEOUT)
+
+    result = response.json()
+    vulns_first = set(v['id'] for v in result['vulns'])
+    self.assertIn('next_page_token', result)
+    self.assertTrue(str.startswith(result['next_page_token'], '1:'))
+
+    response = requests.post(
+        _api() + _BASE_QUERY,
+        data=json.dumps({
+            'package': {
+                'name': 'django',
+            },
+            'version': '5.0',
+            'page_token': result['next_page_token'],
+        }),
+        timeout=_TIMEOUT)
+
+    result = response.json()
+    vulns_second = set(v['id'] for v in result['vulns'])
+
+    self.assertIn('next_page_token', result)
+    # There is not enough django vulns to simultaneously test multiple pages,
+    # and pass the other tests
+    # self.assertTrue(str.startswith(result['next_page_token'], '1:'))
+    self.assertEqual(set(), vulns_first.intersection(vulns_second))
+
+  @unittest.skipIf(os.getenv('LOW_MAX_THRESH', '0') != '1',
+                   "Run this test locally with " +
+                   "MAX_VULN_LISTED_PRE_EXCEEDED at a lower value (around 10)")
+  def test_query_package_purl_paging(self):
     """Test query by package (purl)."""
     response = requests.post(
         _api() + _BASE_QUERY,
@@ -890,18 +933,18 @@ def print_logs(filename):
 
 if __name__ == '__main__':
   if len(sys.argv) < 2:
-    print(f'Usage: {sys.argv[0]} path/to/credential.json')
+    print(f'Usage: {sys.argv[0]} path/to/credential.json [...optional specific tests]')
     sys.exit(1)
 
   subprocess.run(
       ['docker', 'pull', 'gcr.io/endpoints-release/endpoints-runtime:2'],
       check=True)
 
-  credential_path = sys.argv.pop()
+  credential_path = sys.argv.pop(1)
   server = test_server.start(credential_path, port=_PORT)
-  time.sleep(30)
+  time.sleep(10)
 
   try:
-    unittest.main()
+    unittest.main(argv=sys.argv)
   finally:
     server.stop()

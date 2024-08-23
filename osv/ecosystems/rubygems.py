@@ -35,7 +35,6 @@ class RubyGems(Ecosystem):
     except InvalidVersionError:
       return GemVersion('999999')
 
-
   def enumerate_versions(self,
                          package,
                          introduced,

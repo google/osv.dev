@@ -37,5 +37,7 @@ class RubyGemsEcosystemTest(unittest.TestCase):
   def test_sort_key(self):
     """Test sort_key with invalid versions"""
     ecosystem = ecosystems.get('RubyGems')
-    self.assertGreater(ecosystem.sort_key('invalid'), ecosystem.sort_key('4.0.0.rc1'))
-    self.assertGreater(ecosystem.sort_key('v3.1.1'), ecosystem.sort_key('4.0.0.rc1'))
+    self.assertGreater(
+        ecosystem.sort_key('invalid'), ecosystem.sort_key('4.0.0.rc1'))
+    self.assertGreater(
+        ecosystem.sort_key('v3.1.1'), ecosystem.sort_key('4.0.0.rc1'))

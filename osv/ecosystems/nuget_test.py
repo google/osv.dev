@@ -103,7 +103,8 @@ class NuGetEcosystemTest(unittest.TestCase):
   def test_sort_key(self):
     ecosystem = ecosystems.get('NuGet')
     # Tests invalid input versions
-    self.assertGreater(ecosystem.sort_key('1.4.0rc3'), ecosystem.sort_key('3.0.0.4001'))
+    self.assertGreater(
+        ecosystem.sort_key('1.4.0rc3'), ecosystem.sort_key('3.0.0.4001'))
 
 
 if __name__ == '__main__':

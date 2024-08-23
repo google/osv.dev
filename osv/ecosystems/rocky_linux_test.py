@@ -21,6 +21,7 @@ class RockyLinuxEcosystemTest(unittest.TestCase):
   """Rocky Linux ecosystem helper tests."""
 
   def test_rocky_linux(self):
+    """Test sort_key"""
     ecosystem = ecosystems.get('Rocky Linux')
     self.assertEqual('Rocky Linux', ecosystem.name)
     self.assertGreater(

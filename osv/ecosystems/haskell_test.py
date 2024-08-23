@@ -34,7 +34,9 @@ class HackageEcosystemTest(unittest.TestCase):
   def test_sort_key(self):
     """Test sort_key."""
     ecosystem = ecosystems.get('Hackage')
-    self.assertGreater(ecosystem.sort_key('1-20-0'), ecosystem.sort_key('1.20.0'))
+    self.assertGreater(
+        ecosystem.sort_key('1-20-0'), ecosystem.sort_key('1.20.0'))
+
 
 class GHCEcosystemTest(unittest.TestCase):
   """GHC ecosystem helper tests."""

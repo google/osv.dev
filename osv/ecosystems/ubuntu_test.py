@@ -21,6 +21,7 @@ class UbuntuEcosystemTest(unittest.TestCase):
   """Ubuntu ecosystem helper tests."""
 
   def test_ubuntu(self):
+    """Test sort_key"""
     ecosystem = ecosystems.get('Ubuntu')
     self.assertGreater(
         ecosystem.sort_key('2.42.8+dfsg-1ubuntu0.3'),

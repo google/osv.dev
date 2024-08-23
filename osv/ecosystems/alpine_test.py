@@ -62,9 +62,7 @@ class AlpineEcosystemTest(unittest.TestCase):
         ecosystem.sort_key('1.13.2-r0'), ecosystem.sort_key('1.13.2_alpha'))
 
     # Check invalid version handle
-    print(ecosystem.sort_key('1-0-0'))
     self.assertGreater(
-      ecosystem.sort_key('1-0-0'), ecosystem.sort_key('1.13.2-r0')
-    )
+        ecosystem.sort_key('1-0-0'), ecosystem.sort_key('1.13.2-r0'))
 
     ecosystems.config.set_cache(None)

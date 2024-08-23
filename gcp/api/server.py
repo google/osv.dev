@@ -1113,7 +1113,7 @@ def query_by_version(context: QueryContext,
       bugs = yield _query_by_semver(context, query, package_name, ecosystem,
                                     purl, version)
 
-      # If the previous query has fully finished (or skipped), 
+      # If the previous query has fully finished (or skipped),
       # try generic version
       new_bugs = yield _query_by_generic_version(context, query, package_name,
                                                  ecosystem, purl, version)

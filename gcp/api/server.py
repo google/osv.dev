@@ -285,6 +285,7 @@ class OSVServicer(osv_service_v1_pb2_grpc.OSVServicer,
           logging.warning(e)
           context.abort(grpc.StatusCode.INVALID_ARGUMENT,
                         f'Invalid page token at index: {i}.')
+
       query_context = QueryContext(
           service_context=context,
           request_cutoff_time=req_cutoff_time,
@@ -403,6 +404,10 @@ class ResponsesCount:
 
 @dataclass
 class QueryContext:
+  """
+  Information about the query the server is currently
+  responding to.
+  """
   service_context: grpc.ServicerContext
   page_token: ndb.Cursor | None
   request_cutoff_time: datetime
@@ -410,6 +415,14 @@ class QueryContext:
   total_responses: ResponsesCount
 
   def should_break_page(self, response_count: int):
+    """
+    Returns whether the API should finish its current page here 
+    and return a cursor.
+
+    Currently uses two criteria:
+      - total response size greater than page limit
+      - request exceeding the cutoff time
+    """
     return (response_count >= self.total_responses.page_limit() or
             datetime.now() > self.request_cutoff_time)
 
@@ -964,7 +977,10 @@ def _query_by_generic_version(
                                                   ecosystem, purl, version,
                                                   False)
 
-  if results:
+  # If no results is because of a page break, then there is no reason
+  # to pass further down as page break would still be in effect with
+  # the following queries, and would have to immediately return.
+  if results or context.should_break_page(0):
     return results, cursor
 
   # page_token can be the token for this query, or the token for the one
@@ -978,7 +994,7 @@ def _query_by_generic_version(
                                                   osv.normalize_tag(version),
                                                   True)
 
-  if results:
+  if results or context.should_break_page(0):
     return results, cursor
 
   # Try again after canonicalizing + normalizing version.
@@ -995,12 +1011,22 @@ def query_by_generic_helper(results: list, cursor, context: QueryContext,
                             base_query: ndb.Query, project: str, ecosystem: str,
                             purl: PackageURL | None, version: str,
                             is_normalized):
-  """Helper function for query_by_generic."""
+  """
+  Helper function for query_by_generic. 
+  This function can be called multiple times.
+  """
   query: ndb.Query = base_query.filter(osv.Bug.affected_fuzzy == version)
   it: ndb.QueryIterator = query.iter(start_cursor=context.page_token)
   while (yield it.has_next_async()):
     if context.should_break_page(len(results)):
-      cursor = it.cursor_after()
+      # Because this helper function might be called multiple times
+      # we might break before the first result is even queried, raising
+      # a BadArgumentError
+      try:
+        cursor = it.cursor_after()
+      except ndb_exceptions.BadArgumentError:
+        # Don't set the cursor in this case and just return existing cursor
+        pass
       break
     bug = it.next()
     if _is_version_affected(

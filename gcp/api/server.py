@@ -203,7 +203,7 @@ class OSVServicer(osv_service_v1_pb2_grpc.OSVServicer,
         service_context=context,
         request_cutoff_time=datetime.now() + _MAX_SINGLE_QUERY_TIME,
         input_cursor=page_token,
-        output_cursor=QueryCursor(0),
+        output_cursor=QueryCursor(),
         total_responses=ResponsesCount(0))
 
     try:
@@ -295,7 +295,7 @@ class OSVServicer(osv_service_v1_pb2_grpc.OSVServicer,
           service_context=context,
           request_cutoff_time=req_cutoff_time,
           input_cursor=page_token,
-          output_cursor=QueryCursor(0),
+          output_cursor=QueryCursor(),
           total_responses=total_responses)
 
       futures.append(do_query(query, query_context, include_details=False))

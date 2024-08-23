@@ -44,10 +44,9 @@ class _QueryCursorState(Enum):
 class QueryCursor:
   """
   Custom cursor class that wraps the ndb cursor.
-  This cursor should be initialized every time a pageable 
-  query.iter() is called.
-
   Allows us to represent the "starting" cursor.
+
+  The default state is ENDED with no ndb.Cursor.
 
   This type could have 3 states encoded in _QueryCursorState.
   If the current state is IN_PROGRESS, self.cursor will not be None.
@@ -57,14 +56,10 @@ class QueryCursor:
   cursor_state: _QueryCursorState = _QueryCursorState.ENDED
   query_number: int = 1
 
-  def __init__(self, query_number: int) -> None:
-    self.query_number = query_number
-    pass
-
   @classmethod
   def from_page_token(cls, page_token: str | None) -> Self:
     """Generate a query cursor from a url safe page token."""
-    qc = cls(0)
+    qc = cls()
 
     if not page_token:
       qc.cursor_state = _QueryCursorState.STARTED

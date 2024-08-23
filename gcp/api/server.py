@@ -434,7 +434,7 @@ class QueryContext:
     """
     return (response_count >= self.total_responses.page_limit() or
             datetime.now() > self.request_cutoff_time)
-  
+
   def should_skip_query(self):
     """
     Returns whether a query should be executed or skipped depending
@@ -447,7 +447,7 @@ class QueryContext:
     """
     return (self.query_counter < self.input_cursor.query_number or
             not self.output_cursor.ended())
-  
+
   def save_cursor_at_page_break(self, it: ndb.QueryIterator):
     """
     Saves the cursor at the current page break position
@@ -716,8 +716,7 @@ def do_query(query,
                                     'Invalid hash.')
       return None
 
-    bugs = yield query_by_commit(
-        context, commit_bytes, to_response=to_response)
+    bugs = yield query_by_commit(context, commit_bytes, to_response=to_response)
   elif purl and purl_version:
     bugs = yield query_by_version(
         context,
@@ -777,7 +776,7 @@ def do_query(query,
   next_page_token_str = context.output_cursor.url_safe_encode()
   if next_page_token_str:
     logging.warning('Page size limit hit, response size: %s', len(bugs))
-  
+
   return bugs, next_page_token_str
 
 
@@ -816,10 +815,9 @@ def _datastore_normalized_purl(purl: PackageURL):
 
 
 @ndb.tasklet
-def query_by_commit(
-    context: QueryContext,
-    commit: bytes,
-    to_response: Callable = bug_to_response) -> list:
+def query_by_commit(context: QueryContext,
+                    commit: bytes,
+                    to_response: Callable = bug_to_response) -> list:
   """Query by commit."""
   query = osv.AffectedCommits.query(osv.AffectedCommits.commits == commit)
 
@@ -978,7 +976,7 @@ def _query_by_semver(context: QueryContext, query: ndb.Query, package_name: str,
   results = []
   query = query.filter(
       osv.Bug.semver_fixed_indexes > semver_index.normalize(version))
-  
+
   context.query_counter += 1
   if context.should_skip_query():
     return []
@@ -1011,37 +1009,32 @@ def _query_by_generic_version(
 ):
   """Query by generic version."""
   # Try without normalizing.
-  results = yield query_by_generic_helper(context,
-                                                  base_query, project,
-                                                  ecosystem, purl, version,
-                                                  False)
+  results = yield query_by_generic_helper(context, base_query, project,
+                                          ecosystem, purl, version, False)
 
   # If there is results, then we should return with this query,
   # as no normalization seem to be the correct format.
   if results:
     return results
 
-  results = yield query_by_generic_helper(context,
-                                                  base_query, project,
-                                                  ecosystem, purl,
-                                                  osv.normalize_tag(version),
-                                                  True)
+  results = yield query_by_generic_helper(context, base_query, project,
+                                          ecosystem, purl,
+                                          osv.normalize_tag(version), True)
 
   if results:
     return results
 
   # Try again after canonicalizing + normalizing version.
-  results = yield query_by_generic_helper(context, base_query,
-                                                  project, ecosystem, purl,
-                                                  canonicalize_version(version),
-                                                  True)
+  results = yield query_by_generic_helper(context, base_query, project,
+                                          ecosystem, purl,
+                                          canonicalize_version(version), True)
 
   return results
 
 
 @ndb.tasklet
-def query_by_generic_helper(context: QueryContext,
-                            base_query: ndb.Query, project: str, ecosystem: str,
+def query_by_generic_helper(context: QueryContext, base_query: ndb.Query,
+                            project: str, ecosystem: str,
                             purl: PackageURL | None, version: str,
                             is_normalized):
   """
@@ -1118,17 +1111,16 @@ def query_by_version(context: QueryContext,
     if is_semver:
       # Ecosystem supports semver only.
       bugs = yield _query_by_semver(context, query, package_name, ecosystem,
-                                        purl, version)
+                                    purl, version)
 
-
-      # If the previous query has fully finished (or skipped), try generic version
-      new_bugs = yield _query_by_generic_version(context, query,
-                                                    package_name, ecosystem,
-                                                    purl, version)
+      # If the previous query has fully finished (or skipped), 
+      # try generic version
+      new_bugs = yield _query_by_generic_version(context, query, package_name,
+                                                 ecosystem, purl, version)
       for bug in new_bugs:
         if bug not in bugs:
           bugs.append(bug)
-        
+
     elif project == 'oss-vdb-test' and supports_ordering:
       # Query for non-enumerated ecosystems.
 
@@ -1136,21 +1128,21 @@ def query_by_version(context: QueryContext,
       # TODO(gongh): revert change back after testing.
       # bugs = yield _query_by_comparing_versions(
       #     context, query, ecosystem, version)
-      bugs = yield _query_by_generic_version(
-          context, query, package_name, ecosystem, purl, version)
+      bugs = yield _query_by_generic_version(context, query, package_name,
+                                             ecosystem, purl, version)
     else:
-      bugs = yield _query_by_generic_version(
-          context, query, package_name, ecosystem, purl, version)
+      bugs = yield _query_by_generic_version(context, query, package_name,
+                                             ecosystem, purl, version)
 
   else:
     logging.warning("Package query without ecosystem specified")
     # Unspecified ecosystem. Try semver first.
-    new_bugs = yield _query_by_semver(context, query, package_name,
-                                              ecosystem, purl, version)
+    new_bugs = yield _query_by_semver(context, query, package_name, ecosystem,
+                                      purl, version)
     bugs.extend(new_bugs)
 
-    new_bugs = yield _query_by_generic_version(
-        context, query, package_name, ecosystem, purl, version)
+    new_bugs = yield _query_by_generic_version(context, query, package_name,
+                                               ecosystem, purl, version)
     for bug in new_bugs:
       if bug not in bugs:
         bugs.append(bug)
@@ -1164,8 +1156,7 @@ def query_by_version(context: QueryContext,
 
 @ndb.tasklet
 def _query_by_comparing_versions(context: QueryContext, query: ndb.Query,
-                                 ecosystem: str,
-                                 version: str) -> list:
+                                 ecosystem: str, version: str) -> list:
   """Query by package."""
   bugs = []
 
@@ -1214,8 +1205,7 @@ def _query_by_comparing_versions(context: QueryContext, query: ndb.Query,
 
 @ndb.tasklet
 def query_by_package(context: QueryContext, package_name: str, ecosystem: str,
-                     purl: PackageURL | None,
-                     to_response: Callable) -> list:
+                     purl: PackageURL | None, to_response: Callable) -> list:
   """Query by package."""
   bugs = []
   if package_name and ecosystem:

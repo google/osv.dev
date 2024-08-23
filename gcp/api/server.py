@@ -1097,12 +1097,8 @@ def query_by_version(context: QueryContext,
     elif project == 'oss-vdb-test' and supports_ordering:
       # Query for non-enumerated ecosystems.
 
-      # Performance testing only
-      # TODO(gongh): revert change back after testing.
-      # bugs, next_page_token = yield _query_by_comparing_versions(
-      #     context, query, ecosystem, version)
-      bugs, next_page_token = yield _query_by_generic_version(
-          context, query, package_name, ecosystem, purl, version)
+      bugs, next_page_token = yield _query_by_comparing_versions(
+          context, query, ecosystem, version)
     else:
       bugs, next_page_token = yield _query_by_generic_version(
           context, query, package_name, ecosystem, purl, version)
@@ -1278,6 +1274,11 @@ def _is_affected(ecosystem: str, version: str,
   ecosystem_info = ecosystems.get(ecosystem)
   queried_version = ecosystem_info.sort_key(version)
 
+  # OSV allows users to add affected versions
+  # that are not covered by affected ranges.
+  if version in affected_package.versions:
+    return True
+
   for r in affected_package.ranges:
     r: osv.AffectedRange2
 
@@ -1297,11 +1298,7 @@ def _is_affected(ecosystem: str, version: str,
     if affected:
       return True
 
-  # OSV allows users to add affected versions
-  # that are not covered by affected ranges.
-  # TODO(gongh@): Move this check before the version range check
-  # after performance analysis.
-  return version in affected_package.versions
+  return False
 
 
 def main():

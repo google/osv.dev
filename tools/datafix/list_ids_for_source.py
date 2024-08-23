@@ -35,6 +35,12 @@ def main() -> None:
       dest="source_id",
       default="cve-osv",
       help="the source_id to filter on")
+  parser.add_argument(
+      "--txt",
+      action=argparse.BooleanOptionalAction,
+      dest="txt",
+      default=False,
+      help="output result to a txt file")
   args = parser.parse_args()
 
   ds_client = datastore.Client(project=args.project)
@@ -47,10 +53,17 @@ def main() -> None:
   result = list(query.fetch())
   print(f"Retrieved {len(result)} bugs")
 
+  bugs = []
   # Chunk the results to modify in acceptibly sized batches for the API.
   for batch in range(0, len(result), MAX_BATCH_SIZE):
     for bug in result[batch:batch + MAX_BATCH_SIZE]:
       print(f"{bug['db_id']}")
+      bugs.append(bug['db_id'])
+
+  if args.txt:
+    with open('bug_ids.txt', 'w') as f:
+      for bug in bugs:
+        f.write(f'{bug}\n')
 
 
 if __name__ == "__main__":

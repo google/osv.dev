@@ -25,12 +25,12 @@ To query multiple packages at once, see further information [here](post-v1-query
 ## Parameters
   
 |---
-| Parameter         | Type   | Description                                                                                                                                                    |
-| ----------------- | ------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `commit`          | string | The commit hash to query for. If specified, `version` should not be set.                                                                                       |
-| `version`         | string | The version string to query for. A fuzzy match is done against upstream versions. If specified, `commit` should not be set.                                    |
-| `package`         | object | The package to query against. When a `commit` hash is given, this is optional.                                                                                 |
-| `page_token`      | string | If your previous query fetched a large number of results, the response will be paginated. This is an optional field. Please see the [pagination section](#pagination) for more information. |
+| Parameter    | Type   | Description                                                                                                                                                                                 |
+| ------------ | ------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `commit`     | string | The commit hash to query for. If specified, `version` should not be set.                                                                                                                    |
+| `version`    | string | The version string to query for. A fuzzy match is done against upstream versions. If specified, `commit` should not be set.                                                                 |
+| `package`    | object | The package to query against. When a `commit` hash is given, this is optional.                                                                                                              |
+| `page_token` | string | If your previous query fetched a large number of results, the response will be paginated. This is an optional field. Please see the [pagination section](#pagination) for more information. |
 
 Package Objects can be described by package name AND ecosystem OR by the package URL. 
 
@@ -130,7 +130,7 @@ curl -d \
 
 The OSV.dev API uses pagination for queries that return a large number of vulnerabilities. When pagination is used, the `next_page_token` is given in the response, indicating that there are more results to return. You will need to run additional queries using the `page_token` to see the remaining results, repeating queries until the `next_page_token` is no longer included in the response. 
 
-For the `v1/query` endpoint pagination will occur when there more than 1,000 vulnerabilities in the response.  The page size can vary slightly because of threading and  may change in the future.
+For the `v1/query` endpoint pagination will occur when there more than 1,000 vulnerabilities in the response, or when the query has exceeded 20 seconds. The page size can vary slightly because of threading and may change in the future.
 
 A response indicating pagination will be in this form:
 ```json
@@ -151,3 +151,5 @@ curl -d \
 
 ```
 
+{: .note }
+In rare cases, the response might contain **only** the `next_page_token`. In those cases, there might be more data that can be retrieved, but were not found within the time limit, please keep querying with the `next_page_token` until either results are returned, or no more page tokens are returned. 

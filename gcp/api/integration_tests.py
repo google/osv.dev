@@ -730,9 +730,9 @@ class IntegrationTests(unittest.TestCase,
             ]
         }, response.json())
 
-  @unittest.skipIf(os.getenv('LOW_MAX_THRESH', '0') != '1' ,
-                   "Run this test locally with " +
-                   "MAX_VULN_LISTED_PRE_EXCEEDED at a lower value (around 10)")
+  @unittest.skipIf(
+      os.getenv('LOW_MAX_THRESH', '0') != '1', "Run this test locally with " +
+      "MAX_VULN_LISTED_PRE_EXCEEDED at a lower value (around 10)")
   def test_query_pagination(self):
     """Test query by package with pagination."""
     response = requests.post(
@@ -764,10 +764,9 @@ class IntegrationTests(unittest.TestCase,
 
     self.assertEqual(set(), vulns_first.intersection(vulns_second))
 
-
-  @unittest.skipIf(os.getenv('LOW_MAX_THRESH', '0') != '1',
-                   "Run this test locally with " +
-                   "MAX_VULN_LISTED_PRE_EXCEEDED at a lower value (around 10)")
+  @unittest.skipIf(
+      os.getenv('LOW_MAX_THRESH', '0') != '1', "Run this test locally with " +
+      "MAX_VULN_LISTED_PRE_EXCEEDED at a lower value (around 10)")
   def test_query_pagination_no_ecosystem(self):
     """Test query with pagination but no ecosystem."""
     response = requests.post(
@@ -805,9 +804,9 @@ class IntegrationTests(unittest.TestCase,
     # self.assertTrue(str.startswith(result['next_page_token'], '1:'))
     self.assertEqual(set(), vulns_first.intersection(vulns_second))
 
-  @unittest.skipIf(os.getenv('LOW_MAX_THRESH', '0') != '1',
-                   "Run this test locally with " +
-                   "MAX_VULN_LISTED_PRE_EXCEEDED at a lower value (around 10)")
+  @unittest.skipIf(
+      os.getenv('LOW_MAX_THRESH', '0') != '1', "Run this test locally with " +
+      "MAX_VULN_LISTED_PRE_EXCEEDED at a lower value (around 10)")
   def test_query_package_purl_paging(self):
     """Test query by package (purl)."""
     response = requests.post(
@@ -933,7 +932,9 @@ def print_logs(filename):
 
 if __name__ == '__main__':
   if len(sys.argv) < 2:
-    print(f'Usage: {sys.argv[0]} path/to/credential.json [...optional specific tests]')
+    print(
+        f'Usage: {sys.argv[0]} path/to/credential.json [...optional specific tests]'
+    )
     sys.exit(1)
 
   subprocess.run(

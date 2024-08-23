@@ -29,3 +29,9 @@ class PyPIEcosystemTest(unittest.TestCase):
     self.assertEqual('0.3.0', ecosystem.next_version('grpcio', '0'))
     with self.assertRaises(ecosystems.EnumerateError):
       ecosystem.next_version('doesnotexist123456', '1')
+
+  def test_sort_key(self):
+    """Test sort_key"""
+    ecosystem = ecosystems.get('PyPI')
+    self.assertGreater(ecosystem.sort_key('2.0.0'), ecosystem.sort_key('1.0.0'))
+    self.assertLess(ecosystem.sort_key('invalid'), ecosystem.sort_key('0'))

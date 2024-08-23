@@ -58,7 +58,12 @@ class Version:
 
   @classmethod
   def from_string(cls, str_version):
-    return Version(semver_index.parse(str_version))
+    # If version is not valid, it is most likely an invalid input
+    # version then sort it to the last/largest element
+    try:
+      return Version(semver_index.parse(str_version))
+    except ValueError:
+      return Version(semver_index.parse('999999'))
 
 
 class Pub(Ecosystem):

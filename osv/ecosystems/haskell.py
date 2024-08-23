@@ -40,7 +40,12 @@ class Hackage(Ecosystem):
     https://hackage.haskell.org/package/Cabal-syntax/docs/Distribution-Types-Version.html
 
     """
-    return [int(x) for x in version.split('.')]
+    # If version is not valid, it is most likely an invalid input version
+    # then sort it to the last/largest element
+    try:
+      return [int(x) for x in version.split('.')]
+    except ValueError:
+      return [999999]
 
   def enumerate_versions(self,
                          package,

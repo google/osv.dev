@@ -21,6 +21,8 @@ from .. import cache
 from .. import ecosystems
 
 
+@unittest.skip(
+    "snapshot.debian.org certificate expiry: https://bugs.debian.org/1079320")
 class DebianEcosystemTest(unittest.TestCase):
   """Debian ecosystem helper tests."""
 

@@ -33,7 +33,7 @@ spec:
                 memory: "192G"
           nodeSelector:
             cloud.google.com/gke-nodepool: highend
-          restartPolicy: OnFailure
+          restartPolicy: Never
           volumes:
             - name: "ssd"
               hostPath:

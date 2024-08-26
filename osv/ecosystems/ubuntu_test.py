@@ -21,13 +21,16 @@ class UbuntuEcosystemTest(unittest.TestCase):
   """Ubuntu ecosystem helper tests."""
 
   def test_ubuntu(self):
+    """Test sort_key"""
     ecosystem = ecosystems.get('Ubuntu')
     self.assertGreater(
-        ecosystem.sort_key("2.42.8+dfsg-1ubuntu0.3"),
-        ecosystem.sort_key("2.40.0+dfsg-3ubuntu0.5"))
+        ecosystem.sort_key('2.42.8+dfsg-1ubuntu0.3'),
+        ecosystem.sort_key('2.40.0+dfsg-3ubuntu0.5'))
     self.assertGreater(
-        ecosystem.sort_key("2.42.8+dfsg-1ubuntu0.3"),
-        ecosystem.sort_key("2.42.8+dfsg-1ubuntu0.2"))
-    self.assertGreater(ecosystem.sort_key("5.4.13-1"), ecosystem.sort_key("0"))
+        ecosystem.sort_key('2.42.8+dfsg-1ubuntu0.3'),
+        ecosystem.sort_key('2.42.8+dfsg-1ubuntu0.2'))
+    self.assertGreater(ecosystem.sort_key('5.4.13-1'), ecosystem.sort_key('0'))
     self.assertGreater(
-        ecosystem.sort_key("5.4.13-1"), ecosystem.sort_key("3.2.30-1"))
+        ecosystem.sort_key('5.4.13-1'), ecosystem.sort_key('3.2.30-1'))
+    self.assertGreater(
+        ecosystem.sort_key('invalid'), ecosystem.sort_key('3.2.30-1'))

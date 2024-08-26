@@ -37,6 +37,7 @@ class CRAN(Ecosystem):
     # The packaging.version appears to work for the typical X.Y.Z and
     # X.Y-Z cases
     version = version.replace("-", ".")
+    # version.parse() handles invalid versions by returning LegacyVersion()
     return packaging.version.parse(version)
 
   def _enumerate_versions(self,

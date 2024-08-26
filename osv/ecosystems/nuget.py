@@ -72,6 +72,10 @@ class Version:
   def from_string(cls, str_version):
     str_version = semver_index.coerce(str_version)
     str_version, revision = _extract_revision(str_version)
+    if not semver_index.is_valid(str_version):
+      # If version is not valid, it is most likely an invalid input
+      # version then sort it to the last/largest element
+      return Version(semver_index.parse('999999'), 999999)
     return Version(semver_index.parse(str_version), revision)
 
 

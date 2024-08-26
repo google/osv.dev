@@ -831,7 +831,20 @@ def _datastore_normalized_purl(purl: PackageURL):
 def query_by_commit(context: QueryContext,
                     commit: bytes,
                     to_response: Callable = bug_to_response) -> list:
-  """Query by commit."""
+  """
+  Perform a query by commit.
+
+  This is a ndb.tasklet, so will return a future that will need to be yielded.
+
+  Args:
+    context: QueryContext for the current query.
+    commit: The commit hash to query.
+    to_response: Optional function to convert osv.Bug to a 
+      vulnerability response.
+
+  Returns:
+    list of responses (return values from to_response)
+  """
   query = osv.AffectedCommits.query(osv.AffectedCommits.commits == commit)
 
   context.query_counter += 1
@@ -948,8 +961,8 @@ def _is_version_affected(affected_packages,
                          purl: PackageURL | None,
                          version,
                          normalize=False):
-  """Returns whether or not the given version is within an affected ECOSYSTEM
-
+  """
+  Returns whether or not the given version is within an affected ECOSYSTEM
   range.
   """
   for affected_package in affected_packages:
@@ -980,9 +993,26 @@ def _is_version_affected(affected_packages,
 
 
 @ndb.tasklet
-def _query_by_semver(context: QueryContext, query: ndb.Query, package_name: str,
-                     ecosystem: str, purl: PackageURL | None, version: str):
-  """Query by semver."""
+def _query_by_semver(context: QueryContext, query: ndb.Query,
+                     package_name: str | None, ecosystem: str | None,
+                     purl: PackageURL | None, version: str):
+  """
+  Perform a query by semver version.
+
+  This is a ndb.tasklet, so will return a future that will need to be yielded.
+
+  Args:
+    context: QueryContext for the current query.
+    query: A partially completed ndb.Query object which only needs 
+      semver filters to be added before query is performed.
+    package_name: Optional name of the package to query.
+    ecosystem: Optional ecosystem of the package to query.
+    purl: Optional PackageURL.
+    version: The semver version to query for.
+
+  Returns:
+    list of osv.Bug entries wrapped in a Future.
+  """
   if not semver_index.is_valid(version):
     return []
 
@@ -1015,14 +1045,30 @@ def _query_by_semver(context: QueryContext, query: ndb.Query, package_name: str,
 def _query_by_generic_version(
     context: QueryContext,
     base_query: ndb.Query,
-    project: str,
-    ecosystem: str,
+    package_name: str | None,
+    ecosystem: str | None,
     purl: PackageURL | None,
     version: str,
 ):
-  """Query by generic version."""
+  """
+  Query by generic version. 
+  
+  This is a ndb.tasklet, so will return a future that will need to be yielded.
+
+  Args:
+    context: QueryContext for the current query.
+    base_query: A partially completed ndb.Query object which only needs 
+      version filters to be added before query is performed.
+    package_name: Optional name of the package to query.
+    ecosystem: Optional ecosystem of the package to query.
+    purl: Optional PackageURL.
+    version: The non-semver version to query for.
+  
+  Returns:
+    list of osv.Bug entries wrapped in a Future.
+  """
   # Try without normalizing.
-  results = yield query_by_generic_helper(context, base_query, project,
+  results = yield query_by_generic_helper(context, base_query, package_name,
                                           ecosystem, purl, version, False)
 
   # If there are results, then we should return with this query,
@@ -1030,7 +1076,7 @@ def _query_by_generic_version(
   if results:
     return results
 
-  results = yield query_by_generic_helper(context, base_query, project,
+  results = yield query_by_generic_helper(context, base_query, package_name,
                                           ecosystem, purl,
                                           osv.normalize_tag(version), True)
 
@@ -1038,7 +1084,7 @@ def _query_by_generic_version(
     return results
 
   # Try again after canonicalizing + normalizing version.
-  results = yield query_by_generic_helper(context, base_query, project,
+  results = yield query_by_generic_helper(context, base_query, package_name,
                                           ecosystem, purl,
                                           canonicalize_version(version), True)
 
@@ -1047,7 +1093,7 @@ def _query_by_generic_version(
 
 @ndb.tasklet
 def query_by_generic_helper(context: QueryContext, base_query: ndb.Query,
-                            project: str, ecosystem: str,
+                            package_name: str | None, ecosystem: str | None,
                             purl: PackageURL | None, version: str,
                             is_normalized):
   """
@@ -1070,7 +1116,7 @@ def query_by_generic_helper(context: QueryContext, base_query: ndb.Query,
     bug = it.next()
     if _is_version_affected(
         bug.affected_packages,
-        project,
+        package_name,
         ecosystem,
         purl,
         version,
@@ -1082,12 +1128,28 @@ def query_by_generic_helper(context: QueryContext, base_query: ndb.Query,
 
 @ndb.tasklet
 def query_by_version(context: QueryContext,
-                     package_name: str,
-                     ecosystem: str,
+                     package_name: str | None,
+                     ecosystem: str | None,
                      purl: PackageURL | None,
-                     version,
+                     version: str,
                      to_response: Callable = bug_to_response):
-  """Query by (fuzzy) version."""
+  """
+  Query by (fuzzy) version.
+
+  This is a ndb.tasklet, so will return a future that will need to be yielded.
+
+  Args:
+    context: QueryContext for the current query.
+    package_name: Optional name of the package to query.
+    ecosystem: Optional ecosystem of the package to query.
+    purl: Optional PackageURL.
+    version: The version str to query by.
+    to_response: Optional function to convert osv.Bug to a 
+      vulnerability response.
+
+  Returns:
+    list of responses (return values from to_response)
+  """
 
   if package_name:
     query = osv.Bug.query(
@@ -1166,7 +1228,11 @@ def query_by_version(context: QueryContext,
 @ndb.tasklet
 def _query_by_comparing_versions(context: QueryContext, query: ndb.Query,
                                  ecosystem: str, version: str) -> list:
-  """Query by package."""
+  """
+  Query by comparing versions.
+
+  TODO:
+  """
   bugs = []
 
   context.query_counter += 1
@@ -1213,9 +1279,26 @@ def _query_by_comparing_versions(context: QueryContext, query: ndb.Query,
 
 
 @ndb.tasklet
-def query_by_package(context: QueryContext, package_name: str, ecosystem: str,
-                     purl: PackageURL | None, to_response: Callable) -> list:
-  """Query by package."""
+def query_by_package(context: QueryContext, package_name: str | None,
+                     ecosystem: str | None, purl: PackageURL | None,
+                     to_response: Callable) -> list:
+  """
+  Query by package.
+  
+  This is a ndb.tasklet, so will return a future that will need to be yielded.
+
+  Args:
+    context: QueryContext for the current query.
+    package_name: Optional name of the package to query.
+    ecosystem: Optional ecosystem of the package to query.
+    purl: Optional PackageURL. If purl is None, then both 
+      package_name and ecosystem need to be set.
+    to_response: Function to convert osv.Bug to a 
+      vulnerability response.
+
+  Returns:
+    list of responses (return values from to_response)
+  """
   bugs = []
   if package_name and ecosystem:
     query = osv.Bug.query(

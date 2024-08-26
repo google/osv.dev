@@ -45,8 +45,8 @@ from osv import ecosystems
 from osv import semver_index
 from osv import purl_helpers
 from osv.logs import setup_gcp_logging
-import osv_service_v1_pb2
-import osv_service_v1_pb2_grpc
+from gcp.api import osv_service_v1_pb2
+from gcp.api import osv_service_v1_pb2_grpc
 
 from gcp.api.cursor import QueryCursor
 
@@ -343,7 +343,7 @@ class OSVServicer(osv_service_v1_pb2_grpc.OSVServicer,
     context.abort(grpc.StatusCode.UNIMPLEMENTED, "Unimplemented")
 
 
-def query_info(query) -> tuple[str, str, str]:
+def query_info(query) -> tuple[str, str | None, str | None]:
   """Returns information about a query, for logging purposes.
   First return value is one of 'commit', 'purl', 'ecosystem', 'invalid'.
   If 'ecosystem' or 'purl', second two return values are the ecosystem name,

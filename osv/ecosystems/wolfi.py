@@ -22,7 +22,7 @@ class Wolfi(Ecosystem):
   """Wolfi packages ecosystem"""
 
   def sort_key(self, version):
-    # Wolfi uses apk package format
+    # Wolfi uses `apk` package format
     if not AlpineLinuxVersion.is_valid(version):
       # If version is not valid, it is most likely an invalid input
       # version then sort it to the last/largest element

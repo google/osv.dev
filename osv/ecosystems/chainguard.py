@@ -13,7 +13,6 @@
 # limitations under the License.
 """Chainguard ecosystem helper."""
 
-
 from osv.ecosystems.helper_base import Ecosystem
 from ..third_party.univers.alpine import AlpineLinuxVersion
 

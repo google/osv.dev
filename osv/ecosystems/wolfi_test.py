@@ -24,11 +24,8 @@ class WolfiEcosystemTest(unittest.TestCase):
     """Test sort_key"""
     ecosystem = ecosystems.get('Wolfi')
     self.assertGreater(
-        ecosystem.sort_key('38.52.0-r0'),
-        ecosystem.sort_key('37.52.0-r0'))
-    self.assertLess(
-        ecosystem.sort_key('453'),
-        ecosystem.sort_key('453-r1'))
+        ecosystem.sort_key('38.52.0-r0'), ecosystem.sort_key('37.52.0-r0'))
+    self.assertLess(ecosystem.sort_key('453'), ecosystem.sort_key('453-r1'))
     self.assertGreater(ecosystem.sort_key('5.4.13-r1'), ecosystem.sort_key('0'))
     self.assertGreater(
         ecosystem.sort_key('1.4.0-r1'), ecosystem.sort_key('1.4.0-r0'))

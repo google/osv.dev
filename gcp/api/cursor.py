@@ -50,10 +50,16 @@ class QueryCursor:
 
   This type could have 3 states encoded in _QueryCursorState.
   If the current state is IN_PROGRESS, self.cursor will not be None.
+
+  Attributes:
+    query_number: This cursor is specifically for the Nth ndb datastore
+      query in the current query request.
+    ndb_cursor: Get the internal ndb_cursor. This could be None.
+    ended: Whether this cursor is for a query that has finished returning data.
   """
 
-  cursor: ndb.Cursor | None = None
-  cursor_state: _QueryCursorState = _QueryCursorState.ENDED
+  _ndb_cursor: ndb.Cursor | None = None
+  _cursor_state: _QueryCursorState = _QueryCursorState.ENDED
   query_number: int = 1
 
   @classmethod
@@ -62,8 +68,8 @@ class QueryCursor:
     qc = cls()
 
     if not page_token:
-      qc.cursor_state = _QueryCursorState.STARTED
-      qc.cursor = None
+      qc._cursor_state = _QueryCursorState.STARTED
+      qc._ndb_cursor = None
       return qc
 
     split_values = page_token.split(_METADATA_SEPARATOR, 1)
@@ -75,41 +81,56 @@ class QueryCursor:
         raise ValueError('Invalid page token.') from e
 
     if not page_token or page_token == _FIRST_PAGE_TOKEN:
-      qc.cursor_state = _QueryCursorState.STARTED
-      qc.cursor = None
+      qc._cursor_state = _QueryCursorState.STARTED
+      qc._ndb_cursor = None
       return qc
 
-    qc.cursor = ndb.Cursor(urlsafe=page_token)
-    qc.cursor_state = _QueryCursorState.IN_PROGRESS
+    qc._ndb_cursor = ndb.Cursor(urlsafe=page_token)
+    qc._cursor_state = _QueryCursorState.IN_PROGRESS
     return qc
 
   def update_from_iterator(self, it: ndb.QueryIterator) -> None:
     try:
-      self.cursor = typing.cast(ndb.Cursor, it.cursor_after())
-      self.cursor_state = _QueryCursorState.IN_PROGRESS
+      self._ndb_cursor = typing.cast(ndb.Cursor, it.cursor_after())
+      self._cursor_state = _QueryCursorState.IN_PROGRESS
     except ndb_exceptions.BadArgumentError:
-      self.cursor = None
-      self.cursor_state = _QueryCursorState.STARTED
+      # This exception can happen when iterator has not begun iterating.
+      # and it.next() is the very first element.
+      #
+      # In those cases, `cursor_after()`` would not be 'after' any element,
+      # throwing this exception.
 
-  def get_cursor(self) -> ndb.Cursor | None:
-    if self.cursor_state == _QueryCursorState.IN_PROGRESS:
-      return self.cursor
+      # We represent this by setting the state to STARTED.
+      self._ndb_cursor = None
+      self._cursor_state = _QueryCursorState.STARTED
+
+  @property
+  def ndb_cursor(self) -> ndb.Cursor | None:
+    """The inner ndb cursor, could be None"""
+    if self._cursor_state == _QueryCursorState.IN_PROGRESS:
+      return self._ndb_cursor
 
     return None
 
+  @property
   def ended(self) -> bool:
-    return self.cursor_state == _QueryCursorState.ENDED
+    """
+    Whether the cursor has finished or not.
+    """
+    return self._cursor_state == _QueryCursorState.ENDED
 
   def url_safe_encode(self) -> str | None:
-    """Create a url safe page token to pass back to the API caller"""
+    """
+    Create a url safe page token to pass back to the API caller.
+    """
     cursor_part: str = ''
-    match self.cursor_state:
+    match self._cursor_state:
       case _QueryCursorState.STARTED:
         cursor_part = _FIRST_PAGE_TOKEN
       case _QueryCursorState.IN_PROGRESS:
         # Assume that IN_PROGRESS means self.cursor is always set.
         # Loudly throw an exception if this is not the case
-        cursor_part = self.cursor.urlsafe().decode()  # type: ignore
+        cursor_part = self._ndb_cursor.urlsafe().decode()  # type: ignore
       case _QueryCursorState.ENDED:
         # If ENDED, we want to return None to not include
         # a token in the response

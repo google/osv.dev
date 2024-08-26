@@ -446,7 +446,7 @@ class QueryContext:
         in a previous query.
     """
     return (self.query_counter < self.input_cursor.query_number or
-            not self.output_cursor.ended())
+            not self.output_cursor.ended)
 
   def save_cursor_at_page_break(self, it: ndb.QueryIterator):
     """
@@ -768,10 +768,13 @@ def do_query(query,
           list(set(related_bug_ids + list(bugs[i].related))))
 
   if context.query_counter < context.input_cursor.query_number:
+    logging.error(
+        'Cursor is invalid - received "%d" while total query count is "%d".',
+        context.input_cursor.query_number, context.query_counter)
     # If the input cursor is for a query number that's greater than
     # the number of queries performed, the cursor must be invalid
     # (and there will be no results, as everything is skipped)
-    raise ValueError("Cursor is invalid/does not belong to this query")
+    raise ValueError('Cursor is invalid/does not belong to this query')
 
   next_page_token_str = context.output_cursor.url_safe_encode()
   if next_page_token_str:
@@ -827,7 +830,7 @@ def query_by_commit(context: QueryContext,
 
   bug_ids = []
   it: ndb.QueryIterator = query.iter(
-      keys_only=True, start_cursor=context.input_cursor.get_cursor())
+      keys_only=True, start_cursor=context.input_cursor.ndb_cursor)
 
   while (yield it.has_next_async()):
     if context.should_break_page(len(bug_ids)):
@@ -982,7 +985,7 @@ def _query_by_semver(context: QueryContext, query: ndb.Query, package_name: str,
     return []
 
   it: ndb.QueryIterator = query.iter(
-      start_cursor=context.input_cursor.get_cursor())
+      start_cursor=context.input_cursor.ndb_cursor)
 
   while (yield it.has_next_async()):
     if context.should_break_page(len(results)):
@@ -1012,7 +1015,7 @@ def _query_by_generic_version(
   results = yield query_by_generic_helper(context, base_query, project,
                                           ecosystem, purl, version, False)
 
-  # If there is results, then we should return with this query,
+  # If there are results, then we should return with this query,
   # as no normalization seem to be the correct format.
   if results:
     return results
@@ -1048,7 +1051,7 @@ def query_by_generic_helper(context: QueryContext, base_query: ndb.Query,
     return []
 
   it: ndb.QueryIterator = query.iter(
-      start_cursor=context.input_cursor.get_cursor())
+      start_cursor=context.input_cursor.ndb_cursor)
 
   while (yield it.has_next_async()):
     if context.should_break_page(len(results)):
@@ -1161,7 +1164,7 @@ def _query_by_comparing_versions(context: QueryContext, query: ndb.Query,
     return []
 
   it: ndb.QueryIterator = query.iter(
-      start_cursor=context.input_cursor.get_cursor())
+      start_cursor=context.input_cursor.ndb_cursor)
 
   # Checks if the query specifies a release (e.g., "Debian:12")
   has_release = ':' in ecosystem
@@ -1227,7 +1230,7 @@ def query_by_package(context: QueryContext, package_name: str, ecosystem: str,
     return []
 
   it: ndb.QueryIterator = query.iter(
-      start_cursor=context.input_cursor.get_cursor())
+      start_cursor=context.input_cursor.ndb_cursor)
 
   while (yield it.has_next_async()):
     if context.should_break_page(len(bugs)):

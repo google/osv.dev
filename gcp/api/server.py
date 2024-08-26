@@ -413,6 +413,17 @@ class QueryContext:
   """
   Information about the query the server is currently
   responding to.
+
+  Attributes:
+    service_context: Context of the underlying grpc call.
+    input_cursor: Cursor from the user API query input.
+    output_cursor: Cursor to potentially return to the user.
+    request_cutoff_time: Time past which all further datastore 
+      queries stop and a page cut is made.
+    total_responses: **Reference** to the total count of responses
+      across all queries in the batch.
+    query_counter: Number of queries which has already been executed
+      (does not count batch queries).
   """
   service_context: grpc.ServicerContext
   input_cursor: QueryCursor
@@ -420,7 +431,6 @@ class QueryContext:
   request_cutoff_time: datetime
   # Use a dataclass to copy by reference
   total_responses: ResponsesCount
-  # Number of queries that has already been executed
   query_counter: int = 0
 
   def should_break_page(self, response_count: int):

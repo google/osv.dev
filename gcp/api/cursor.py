@@ -94,7 +94,7 @@ class QueryCursor:
       self._ndb_cursor = typing.cast(ndb.Cursor, it.cursor_after())
       self._cursor_state = _QueryCursorState.IN_PROGRESS
     except ndb_exceptions.BadArgumentError:
-      # This exception can happen when iterator has not begun iterating.
+      # This exception can happen when iterator has not begun iterating
       # and it.next() is the very first element.
       #
       # In those cases, `cursor_after()`` would not be 'after' any element,

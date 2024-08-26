@@ -90,6 +90,12 @@ class QueryCursor:
     return qc
 
   def update_from_iterator(self, it: ndb.QueryIterator) -> None:
+    """
+    Update the current cursor from the value of the ndb.iterator passed in.
+
+    Args:
+      it: the iterator to take the cursor position from.
+    """
     try:
       self._ndb_cursor = typing.cast(ndb.Cursor, it.cursor_after())
       self._cursor_state = _QueryCursorState.IN_PROGRESS

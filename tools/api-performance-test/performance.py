@@ -1,12 +1,14 @@
 #!/usr/bin/env python3
-"""Mock API queries and send them to the test API endpoint
-for performance testing."""
+"""Mock API queries and send them to the test API endpoint for
+performance testing. It is recommended to use two terminals to
+run this script concurrently to generate sufficient traffic."""
 
+import aiohttp
 import asyncio
 import os
 import random
+import sys
 import time
-import aiohttp
 import json
 
 from google.cloud import ndb
@@ -19,12 +21,16 @@ TOTAL_RUNTIME = 3600  # total run time in second
 GCP_PROJECT = 'oss-vdb-test'
 BUG_DIR = './all_bugs'
 
-# Number of vulnerability get requests to send per second
-VULN_QUERY_BATCH_SIZE = 100
-VERSION_QUERY_BATCH_SIZE = 200
-PACKAGE_QUERY_BATCH_SIZE = 60
-BATCH_QUERY_BATCH_SIZE = 6
-LARGE_BATCH_QUERY_BATCH_SIZE = 4
+# Number of `vulnerability get` requests to send per second
+VULN_QUERY_BATCH_SIZE = 50
+# Number of `version query` requests to send per second
+VERSION_QUERY_BATCH_SIZE = 100
+# Number of `package query` requests to send per second
+PACKAGE_QUERY_BATCH_SIZE = 30
+# Number of `batch query` requests to send per second
+BATCH_QUERY_BATCH_SIZE = 3
+# Number of large `batch query` requests to send per second
+LARGE_BATCH_QUERY_BATCH_SIZE = 2
 
 
 class SimpleBug:
@@ -33,11 +39,11 @@ class SimpleBug:
 
   def __init__(self, bug_dict):
     self.db_id = bug_dict['db_id']
-    # If the project/ecosystem/version value is None, then add a fake value in.
+    # If the package/ecosystem/version value is None, then add a fake value in.
     if not bug_dict['project']:
-      self.projects = 'foo'
+      self.packages = 'foo'
     else:
-      self.projects = list(bug_dict['project'])
+      self.packages = list(bug_dict['project'])
     self.purl = bug_dict['purl']
     if not bug_dict['ecosystem']:
       self.ecosystems = 'foo'
@@ -51,8 +57,16 @@ class SimpleBug:
       self.affected_fuzzy = '1.0.0'
 
 
-def format_bug_for_output(bug):
-  """Outputs ndb bug query results to JSON file"""
+def format_bug_for_output(bug) -> dict[str:any]:
+  """Outputs ndb bug query results to JSON file
+
+  Args:
+    bug: an `osv.Bug` queried from ndb.
+
+  Returns:
+    A dict storing all the important `Bug` fields that we want to use later
+  """
+
   affected_fuzzy = None
   # Store one version for use as the query version later.
   if len(bug.affected_fuzzy) > 0:
@@ -68,9 +82,8 @@ def format_bug_for_output(bug):
   }
 
 
-def get_bugs_from_datastore():
-  """Gets all bugs from the datastore and write them to separate files in case
-  the query fails or times out."""
+def get_bugs_from_datastore() -> None:
+  """Gets all bugs from the datastore and writes to `BUG_DIR`."""
 
   entries_per_file = 10000  # amount of bugs per file
   batch_size = 1000
@@ -78,7 +91,7 @@ def get_bugs_from_datastore():
   os.makedirs(BUG_DIR, exist_ok=True)
 
   def write_to_json():
-    # Write to a new JSON file
+    """Writes to a new JSON file."""
     file_name = f'{BUG_DIR}/all_bugs_{file_counter}.json'
     with open(file_name, 'w+') as f:
       json.dump(results, f, indent=2)
@@ -104,6 +117,7 @@ def get_bugs_from_datastore():
       results.extend([format_bug_for_output(bug) for bug in bugs])
       total_entries += len(bugs)
 
+      # Write bugs to separate files in case the query fails or times out.
       if total_entries >= entries_per_file:
         write_to_json()
 
@@ -119,33 +133,76 @@ def get_bugs_from_datastore():
   print(f'All results saved to {BUG_DIR}.')
 
 
-def read_from_json(filename, ecosystem_map, bug_map, project_map):
-  """Reads one JSON file"""
+def read_from_json(filename, ecosystem_map, bug_map, package_map) -> None:
+  """Loads bugs from one JSON file into bug dicts.
+
+  Args:
+    filename: the JSON filename.
+
+    ecosystem_map:
+      A defaultdict mapping ecosystem names to their bugs. For example:
+      {'Maven': (CVE-XXXX-XXXX, CVE-XXXX-XXXX), 'PyPI': ()}
+
+    bug_map:
+      A dict mapping bug ID to its `SimpleBug` object. For example:
+      {'CVE-XXXX-XXXX,': SimpleBug{}}
+
+    package_map:
+      A defaultdict mapping package names to their bugs. For example:
+      {'tensorflow': (CVE-XXXX-XXXX, CVE-XXXX-XXXX), 'curl': ()}
+
+  Returns:
+    None
+  """
   with open(filename, "r") as f:
     json_file = json.load(f)
     for bug_data in json_file:
       bug = SimpleBug(bug_data)
       for ecosystem in bug.ecosystems:
         ecosystem_map[ecosystem].add(bug.db_id)
-      for project in bug.projects:
-        project_map[project].add(bug.db_id)
+      for package in bug.packages:
+        package_map[package].add(bug.db_id)
       bug_map[bug.db_id] = bug
 
 
-def load_all_bugs(directory_path):
-  """Loads bugs from JSON output"""
+def load_all_bugs() -> tuple[defaultdict, dict, defaultdict]:
+  """Loads bugs from JSON directory
+
+  Returns:
+    A defaultdict mapping ecosystem names to their bugs. For example:
+    {'Maven': (CVE-XXXX-XXXX, CVE-XXXX-XXXX), 'PyPI': ()}
+
+    A dict mapping bug ID to its `SimpleBug` object. For example:
+    {'CVE-XXXX-XXXX,': SimpleBug{}}
+
+    A defaultdict mapping package names to their bugs. For example:
+    {'tensorflow': (CVE-XXXX-XXXX, CVE-XXXX-XXXX), 'curl': ()}
+  """
+
   ecosystem_map = defaultdict(set)
   bug_map = {}
-  project_map = defaultdict(set)
-  for filename in os.listdir(directory_path):
+  package_map = defaultdict(set)
+  for filename in os.listdir(BUG_DIR):
     if filename.endswith('.json'):
-      file_path = os.path.join(directory_path, filename)
-      read_from_json(file_path, ecosystem_map, bug_map, project_map)
-  return ecosystem_map, bug_map, project_map
+      file_path = os.path.join(BUG_DIR, filename)
+      read_from_json(file_path, ecosystem_map, bug_map, package_map)
+  return ecosystem_map, bug_map, package_map
 
 
-async def make_http_request(session, request_url, request_type, request_body):
-  """Makes one HTTP request"""
+async def make_http_request(session, request_url, request_type,
+                            request_body) -> None:
+  """Makes one HTTP request
+
+  Args:
+    session:
+      The HTTP ClientSession
+    request_url:
+      The HTTP request URL
+    request_type:
+      The HTTP request type: `GET` or `POST`
+    request_body:
+      The HTTP request body in JSON format
+  """
   try:
     timeout = aiohttp.ClientTimeout(total=None, sock_connect=80, sock_read=80)
     if request_type == 'GET':
@@ -161,8 +218,22 @@ async def make_http_request(session, request_url, request_type, request_body):
 
 
 async def make_http_requests_async(request_ids, bug_map, url, batch_size,
-                                   payload_func):
-  """Makes the required number of HTTP requests per second."""
+                                   payload_func) -> None:
+  """Makes the required number of HTTP requests per second async.
+
+  Args:
+    request_ids:
+      A list of bug IDs
+    bug_map:
+      A dict mapping bug IDs to the corresponding `SimpleBug` objects
+    url:
+      The request URL
+    batch_size:
+      The number of requests to make per second
+    payload_func:
+      The payload function, such as `build_batch_payload`
+  """
+
   begin_time = time.monotonic()
   print(f'[{begin_time}] Running make request {payload_func.__name__} '
         f'for {TOTAL_RUNTIME} seconds')
@@ -175,12 +246,13 @@ async def make_http_requests_async(request_ids, bug_map, url, batch_size,
       start_time = time.monotonic()
 
       batch_request_ids = request_ids[index:batch_size + index]
-      if payload_func.__name__ == vulnerability_payload.__name__:
+      if payload_func.__name__ == build_vulnerability_payload.__name__:
         for request_id in batch_request_ids:
+          # OSV getting vulnerability detail is a GET request
           asyncio.create_task(
               make_http_request(session, f'{url}/{request_id}', 'GET',
                                 payload_func()))
-      elif payload_func.__name__ == batch_payload.__name__:
+      elif payload_func.__name__ == build_batch_payload.__name__:
         for _ in range(0, batch_size):
           asyncio.create_task(
               make_http_request(session, url, 'POST',
@@ -201,16 +273,45 @@ async def make_http_requests_async(request_ids, bug_map, url, batch_size,
       total_run_time = time.monotonic() - begin_time
 
 
-def package_payload(request_id, bug_map):
-  """package/project query payload"""
-  package = random.choice(bug_map[request_id].projects)
+def build_vulnerability_payload() -> None:
+  """The vulnerability query doesn't need a request body"""
+  return None
+
+
+def build_package_payload(request_id, bug_map) -> dict[str:any]:
+  """Builds a package query payload
+
+  Args:
+    request_id:
+      The bug ID
+    bug_map:
+      A dict mapping bug IDs to the corresponding `SimpleBug` objects
+
+  Returns:
+    A dict containing package query payload, example:
+    '"package": {"name": "mruby","ecosystem": "OSS-Fuzz"}}'
+  """
+
+  package = random.choice(bug_map[request_id].packages)
   ecosystem = random.choice(bug_map[request_id].ecosystems)
   return {"package": {"name": package, "ecosystem": ecosystem}}
 
 
-def version_payload(request_id, bug_map):
-  """version query payload"""
-  package = random.choice(bug_map[request_id].projects)
+def build_version_payload(request_id, bug_map) -> dict:
+  """Builds a version query payload
+
+  Args:
+    request_id:
+      The bug ID
+    bug_map:
+      A dict mapping bug IDs to the corresponding `SimpleBug` objects
+
+  Returns:
+    A dict containing package version query payload, example:
+    '{"package": {
+      "name": "mruby","ecosystem": "OSS-Fuzz"}, "version": "2.1.2rc"}'
+  """
+  package = random.choice(bug_map[request_id].packages)
   ecosystem = random.choice(bug_map[request_id].ecosystems)
   return {
       "version": bug_map[request_id].affected_fuzzy,
@@ -221,104 +322,188 @@ def version_payload(request_id, bug_map):
   }
 
 
-def batch_payload(request_ids, bug_map):
-  """batch query payload"""
+def build_batch_payload(request_ids,
+                        bug_map) -> dict[str, list[dict[str, any]]]:
+  """Builds a batch query payload
+
+  Args:
+    request_id:
+      The bug ID
+    bug_map:
+      A dict mapping bug IDs to the corresponding `SimpleBug` objects
+
+  Returns:
+    A dict containing OSV batch query payload, example:
+    '{
+        "queries": [
+          {
+            "package": {
+              ...
+            },
+            "version": ...
+          },
+          {
+            "package": {
+              ...
+            },
+            "version": ...
+          },
+        ]
+      }'
+  """
   size = random.randint(1, 100)
   batch_ids = random.sample(request_ids, min(size, len(request_ids)))
   queries = []
   for bug_id in batch_ids:
     query = {}
-    query_type = random.choice(['version', 'project'])
+    query_type = random.choice(['version', 'package'])
     if query_type == 'version':
-      query = version_payload(bug_id, bug_map)
-    elif query_type == 'project':
-      query = package_payload(bug_id, bug_map)
+      query = build_version_payload(bug_id, bug_map)
+    elif query_type == 'package':
+      query = build_package_payload(bug_id, bug_map)
     queries.append(query)
 
   return {"queries": [queries]}
 
 
-def vulnerability_payload():
-  """vulnerability query doesn't need request body"""
-  return None
+def get_large_batch_query(package_map) -> list[str]:
+  """Gets a list of bug IDs for large batch queries. 
+  This list contains bug IDs from the packages with the high
+  number of vulnerabilities.
 
+  Args:
+    request_id:
+      The bug ID
+    bug_map:
+      A dict mapping bug IDs to the corresponding `SimpleBug` objects
 
-def get_large_batch_query(project_map):
-  """Gets packages with the most amount of vulns."""
+  Returns:
+    A dict containing OSV batch query payload, example:
+    '{
+        "queries": [
+          {
+            "package": {
+              ...
+            },
+            "version": ...
+          },
+          {
+            "package": {
+              ...
+            },
+            "version": ...
+          },
+        ]
+      }'
+  """
   most_common = 5000
-  project_counter = Counter()
-  for project in project_map:
-    # filter out invalid project name and Linux Kernel
-    if project in ('foo', 'Kernel'):
+  package_counter = Counter()
+  for package in package_map:
+    # filter out invalid package name and Linux Kernel
+    if package in ('foo', 'Kernel'):
       continue
-    project_counter[project] = len(project_map[project])
-  most_vulnerable_projects = project_counter.most_common(most_common)
+    package_counter[package] = len(package_map[package])
+  most_vulnerable_packages = package_counter.most_common(most_common)
   large_batch_query_ids = []
-  for project, project_count in most_vulnerable_projects:
-    if project_count == 10:
+  for package, package_count in most_vulnerable_packages:
+    if package_count == 0:
       break
-    large_batch_query_ids.append(project_map[project].pop())
+    large_batch_query_ids.append(package_map[package].pop())
 
   random.shuffle(large_batch_query_ids)
   return large_batch_query_ids
 
 
-async def send_version_requests(request_ids, bug_map):
-  """Sends version query requests"""
+async def send_version_requests(request_ids, bug_map) -> None:
+  """Sends version query requests
+
+  Args:
+    request_id:
+      The bug ID
+    bug_map:
+      A dict mapping bug IDs to the corresponding `SimpleBug` objects
+  """
+
   url = f'{BASE_URL}/query'
   batch_size = VERSION_QUERY_BATCH_SIZE
   await make_http_requests_async(request_ids, bug_map, url, batch_size,
-                                 version_payload)
+                                 build_version_payload)
 
 
-async def send_package_requests(request_ids, bug_map):
-  """Sends package query requests"""
+async def send_package_requests(request_ids, bug_map) -> None:
+  """Sends package query requests
+
+  Args:
+    request_id:
+      The bug ID
+    bug_map:
+      A dict mapping bug IDs to the corresponding `SimpleBug` objects
+  """
   url = f'{BASE_URL}/query'
   batch_size = PACKAGE_QUERY_BATCH_SIZE
   await make_http_requests_async(request_ids, bug_map, url, batch_size,
-                                 package_payload)
+                                 build_package_payload)
 
 
-async def send_vuln_requests(request_ids, bug_map):
-  """Sends vulnerability get requests"""
+async def send_vuln_requests(request_ids, bug_map) -> None:
+  """Sends vulnerability get requests
+
+  Args:
+    request_id:
+      The bug ID
+    bug_map:
+      A dict mapping bug IDs to the corresponding `SimpleBug` objects
+  """
   url = f'{BASE_URL}/vulns'
   batch_size = VULN_QUERY_BATCH_SIZE
   await make_http_requests_async(request_ids, bug_map, url, batch_size,
-                                 vulnerability_payload)
+                                 build_vulnerability_payload)
 
 
-async def send_batch_requests(request_ids, bug_map, batch_size):
-  """Sends batch query requests"""
+async def send_batch_requests(request_ids, bug_map, batch_size) -> None:
+  """Sends batch query requests
+
+  Args:
+    request_id:
+      The bug ID
+    bug_map:
+      A dict mapping bug IDs to the corresponding `SimpleBug` objects
+    batch_size:
+      The batch query size
+  """
   url = f'{BASE_URL}/querybatch'
   await make_http_requests_async(request_ids, bug_map, url, batch_size,
-                                 batch_payload)
+                                 build_batch_payload)
 
 
-async def main():
-  """Main"""
+async def main() -> None:
   if not os.path.exists(BUG_DIR):
     # This will take around 10 mins
     get_bugs_from_datastore()
 
+  seed = random.randrange(sys.maxsize)
+  # The seed value can be replaced for debugging
+  random.seed(seed)
+  print(f'Random seed {seed}')
   # The `ecosystem_map` can be used to filter our queries for a
   # specific ecosystem.
-  ecosystem_map, bug_map, project_map = load_all_bugs(BUG_DIR)
+  ecosystem_map, bug_map, package_map = load_all_bugs()
   vuln_query_ids = list(bug_map.keys())
   package_query_ids = []
-  for project in project_map:
-    # Tests each project once.
-    package_query_ids.append(project_map[project].pop())
+  for package in package_map:
+    # Tests each package once.
+    package_query_ids.append(package_map[package].pop())
   random.shuffle(package_query_ids)
   random.shuffle(vuln_query_ids)
   print(f'It will send vulnerability get requests for {len(vuln_query_ids)} '
         'vulnerabilities.')
   print('It will send package/version/batch query requests for '
-        f'{len(package_query_ids)} projects within '
+        f'{len(package_query_ids)} packages within '
         f'{len(ecosystem_map)} ecosystems.')
 
-  # Get all projects with the most frequently occurring number
+  # Get all packages with the most frequently occurring number
   # of vulnerabilities.
-  large_batch_query_ids = get_large_batch_query(project_map)
+  large_batch_query_ids = get_large_batch_query(package_map)
 
   await asyncio.gather(
       send_vuln_requests(vuln_query_ids, bug_map),

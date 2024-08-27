@@ -1,5 +1,5 @@
 [tool.poetry]
-name = "api-perfomance-tester"
+name = "api-perfomance-test"
 package-mode = false
 
 [tool.poetry.dependencies]

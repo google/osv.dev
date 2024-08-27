@@ -464,7 +464,7 @@ class QueryContext:
     """
     if self.input_cursor.query_number == self.query_counter:
       return self.input_cursor.ndb_cursor
-    
+
     return None
 
   def save_cursor_at_page_break(self, it: ndb.QueryIterator):

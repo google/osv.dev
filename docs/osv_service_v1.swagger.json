@@ -336,6 +336,7 @@
       "type": "string",
       "enum": [
         "UNSPECIFIED",
+        "CVSS_V4",
         "CVSS_V3",
         "CVSS_V2"
       ],

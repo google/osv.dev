@@ -1,5 +1,5 @@
 # Build the Javascript frontend
-FROM node:20.9 AS FRONTEND3_BUILD
+FROM node:20.9@sha256:146bbe4eaee99ae885be2a0a767f63a4b96032141d70d80e590f10e0d7ebabcb AS FRONTEND3_BUILD
 WORKDIR /build/frontend3
 
 # Install dependencies first for better caching
@@ -23,17 +23,23 @@ RUN hugo -d ../dist/static/blog
 
 # OSV.dev site image
 # Adapted from https://cloud.google.com/run/docs/quickstarts/build-and-deploy/deploy-python-service#writing
-FROM python:3.11-slim
+FROM python:3.11-slim@sha256:ad5dadd957a398226996bc4846e522c39f2a77340b531b28aaab85b2d361210b
+
+# Generation 1 of cloud run overrides the HOME environment variable, causing
+# poetry to run in the incorrect environment, as it defaults to using $HOME/.cache/virtualenvs/...
+# 
+# This forces it to create the virtualenv in the same directory as the project, avoiding this issue.
+ENV POETRY_VIRTUALENVS_IN_PROJECT=true
 
 # Allow statements and log messages to immediately appear in the logs
 ENV PYTHONUNBUFFERED True
 WORKDIR /osv/gcp/appengine
 
 # Install Python dependencies
-COPY setup.py Pipfile* README.md /osv/
+COPY setup.py poetry.lock pyproject.toml README.md /osv/
 COPY osv /osv/osv
-COPY gcp/appengine/Pipfile* ./
-RUN pip3 install -U pipenv==2023.12.1 && python3 -m pipenv install --deploy --system
+COPY gcp/appengine/poetry.lock gcp/appengine/pyproject.toml ./
+RUN pip3 install poetry==1.8.3 && poetry install
 
 # Website Python code
 COPY gcp/appengine/*.py ./
@@ -47,11 +53,11 @@ COPY docs/osv_service_v1.swagger.json docs/
 COPY --from=FRONTEND3_BUILD /build/dist/ dist/
 COPY --from=HUGO_BUILD /build/dist dist/
 
-RUN python -m whitenoise.compress dist/static/
+RUN poetry run python -m whitenoise.compress dist/static/
 
 # Run the web service on container startup. Here we use the gunicorn
 # webserver, with one worker process and 8 threads.
 # For environments with multiple CPU cores, increase the number of workers
 # to be equal to the cores available.
 # Timeout is set to 0 to disable the timeouts of the workers to allow Cloud Run to handle instance scaling.
-CMD exec gunicorn --bind :$PORT --workers 1 --threads 8 --timeout 0 main:app
+CMD poetry run gunicorn --bind :$PORT --workers 1 --threads 8 --timeout 0 main:app

@@ -40,21 +40,20 @@ You must install:
 1.  [Yapf](https://github.com/google/yapf)
 1.  [Make](https://www.gnu.org/software/make/)
 1.  [Poetry](https://python-poetry.org/)
-1.  [Pipenv](https://pipenv.pypa.io/en/latest/)
-1.  [Google Cloud SDK](https://cloud.google.com/sdk)
-1.  [Hugo](https://gohugo.io/installation/)
-1.  [Node JS](https://nodejs.org/) >= 18.17.x
-1.  [Terraform](https://developer.hashicorp.com/terraform/downloads) >= 1.5 (for infrastructure changes)
+2.  [Google Cloud SDK](https://cloud.google.com/sdk)
+3.  [Hugo](https://gohugo.io/installation/)
+4.  [Node JS](https://nodejs.org/) >= 18.17.x
+5.  [Terraform](https://developer.hashicorp.com/terraform/downloads) >= 1.5 (for infrastructure changes)
 
 Then you can set up the development environment by cloning the OSV repo and
-installing the Pipfile dependencies.
+installing the Poetry dependencies.
 
 ```shell
 git clone https://github.com/google/osv.dev
 cd osv.dev
 git submodule update --init --recursive
-pipenv sync --dev
-pipenv shell
+poetry install
+poetry shell
 ```
 
 ### Running tests
@@ -130,6 +129,12 @@ to download API configuration.
 gcloud auth login --update-adc
 make run-api-server
 ```
+
+### Making commits
+
+Please follow the [Conventional Commits](https://www.conventionalcommits.org/en/v1.0.0/) specification for commit messages. This helps us to automate processes like changelog generation and ensures a clear and consistent commit history.
+
+Some types: `feat:`, `fix:`, `docs:`, `chore:`, `refactor:`, and others.
 
 ## Contributing data
 

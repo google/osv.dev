@@ -27,6 +27,7 @@ class PyPI(Ecosystem):
 
   def sort_key(self, version):
     """Sort key."""
+    # version.parse() handles invalid versions by returning LegacyVersion()
     return packaging.version.parse(version)
 
   def enumerate_versions(self,

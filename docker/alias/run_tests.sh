@@ -15,13 +15,5 @@
 
 cd ../worker
 
-if [ "$USE_POETRY" == "true" ]
-then
-  poetry install
-  poetry run python ../alias/alias_computation_test.py
-  exit 0
-fi
-
-export PIPENV_IGNORE_VIRTUALENVS=1
-pipenv sync
-pipenv run python ../alias/alias_computation_test.py
+poetry install
+poetry run python ../alias/alias_computation_test.py

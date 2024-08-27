@@ -15,7 +15,7 @@
 
 import requests
 
-from ..third_party.univers.gem import GemVersion
+from ..third_party.univers.gem import GemVersion, InvalidVersionError
 
 from . import config
 from .helper_base import Ecosystem, EnumerateError
@@ -28,7 +28,12 @@ class RubyGems(Ecosystem):
 
   def sort_key(self, version):
     """Sort key."""
-    return GemVersion(version)
+    # If version is not valid, it is most likely an invalid input
+    # version then sort it to the last/largest element
+    try:
+      return GemVersion(version)
+    except InvalidVersionError:
+      return GemVersion('999999')
 
   def enumerate_versions(self,
                          package,

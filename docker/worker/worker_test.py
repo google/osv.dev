@@ -148,7 +148,8 @@ class ImpactTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
     tests.mock_clone(self, return_value=pygit2.Repository('osv-test'))
     tests.mock_datetime(self)
 
-    osv.SourceRepository(id='oss-fuzz', name='oss-fuzz', db_prefix='OSV-').put()
+    osv.SourceRepository(
+        id='oss-fuzz', name='oss-fuzz', db_prefix=['OSV-']).put()
 
     allocated_bug = osv.Bug(
         db_id='OSV-2020-1337',
@@ -516,7 +517,8 @@ class MarkBugInvalidTest(unittest.TestCase):
 
   def test_mark_bug_invalid(self):
     """Test mark_bug_invalid."""
-    osv.SourceRepository(id='oss-fuzz', name='oss-fuzz', db_prefix='OSV-').put()
+    osv.SourceRepository(
+        id='oss-fuzz', name='oss-fuzz', db_prefix=['OSV-']).put()
     osv.Bug(db_id='OSV-2021-1', source_id='oss-fuzz:1337').put()
     osv.AffectedCommits(bug_id='OSV-2021-1').put()
     osv.AffectedCommits(bug_id='OSV-2021-1').put()
@@ -734,7 +736,7 @@ class UpdateTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
         type=osv.SourceRepositoryType.GIT,
         id='source',
         name='source',
-        db_prefix='BLAH-',
+        db_prefix=['OSV-'],
         repo_url='file://' + self.remote_source_repo_path,
         editable=True,
         repo_username='',
@@ -1124,6 +1126,7 @@ class UpdateTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
     self.source_repo.ignore_git = False
     self.source_repo.versions_from_repo = False
     self.source_repo.detect_cherrypicks = False
+    self.source_repo.db_prefix.append('PYSEC-')
     self.source_repo.put()
 
     self.mock_repo.add_file(
@@ -1151,9 +1154,8 @@ class UpdateTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
     diff = repo.diff(commit.parents[0], commit)
     self.expect_equal('diff_pypi', diff.patch)
 
-    self.expect_dict_equal(
-        'update_pypi',
-        ndb.Key(osv.Bug, 'source:PYSEC-123').get()._to_dict())
+    self.expect_dict_equal('update_pypi',
+                           ndb.Key(osv.Bug, 'PYSEC-123').get()._to_dict())
 
     affected_commits = list(osv.AffectedCommits.query())
     self.assertEqual(1, len(affected_commits))
@@ -1174,6 +1176,7 @@ class UpdateTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
     self.source_repo.ignore_git = False
     self.source_repo.versions_from_repo = False
     self.source_repo.detect_cherrypicks = False
+    self.source_repo.db_prefix.append('PYSEC-')
     self.source_repo.put()
 
     self.mock_repo.add_file(
@@ -1200,7 +1203,7 @@ class UpdateTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
 
     self.expect_dict_equal(
         'normalized_pypi',
-        ndb.Key(osv.Bug, 'source:PYSEC-456').get()._to_dict(),
+        ndb.Key(osv.Bug, 'PYSEC-456').get()._to_dict(),
     )
 
     affected_commits = list(osv.AffectedCommits.query())
@@ -1223,6 +1226,7 @@ class UpdateTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
     self.source_repo.ignore_git = False
     self.source_repo.versions_from_repo = False
     self.source_repo.detect_cherrypicks = False
+    self.source_repo.db_prefix.append('PYSEC-')
     self.source_repo.put()
 
     self.mock_repo.add_file(
@@ -1252,7 +1256,7 @@ class UpdateTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
 
     self.expect_dict_equal(
         'update_last_affected',
-        ndb.Key(osv.Bug, 'source:PYSEC-124').get()._to_dict(),
+        ndb.Key(osv.Bug, 'PYSEC-124').get()._to_dict(),
     )
 
   def test_update_maven(self):
@@ -1260,6 +1264,7 @@ class UpdateTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
     self.source_repo.ignore_git = False
     self.source_repo.versions_from_repo = False
     self.source_repo.detect_cherrypicks = False
+    self.source_repo.db_prefix.append('GHSA-')
     self.source_repo.put()
 
     self.mock_repo.add_file(
@@ -1290,7 +1295,7 @@ class UpdateTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
 
     self.expect_dict_equal(
         'update_maven',
-        ndb.Key(osv.Bug, 'source:GHSA-838r-hvwh-24h8').get()._to_dict(),
+        ndb.Key(osv.Bug, 'GHSA-838r-hvwh-24h8').get()._to_dict(),
     )
 
     self.mock_publish.assert_not_called()
@@ -1300,6 +1305,7 @@ class UpdateTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
     self.source_repo.ignore_git = False
     self.source_repo.versions_from_repo = False
     self.source_repo.detect_cherrypicks = False
+    self.source_repo.db_prefix.append('LINUX-')
     self.source_repo.put()
 
     self.mock_repo.add_file(
@@ -1320,7 +1326,7 @@ class UpdateTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
 
     self.expect_dict_equal(
         'update_linux',
-        ndb.Key(osv.Bug, 'source:LINUX-123').get()._to_dict(),
+        ndb.Key(osv.Bug, 'LINUX-123').get()._to_dict(),
     )
 
     affected_commits = list(osv.AffectedCommits.query())
@@ -1340,6 +1346,7 @@ class UpdateTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
     self.source_repo.type = osv.SourceRepositoryType.BUCKET
     self.source_repo.bucket = TEST_BUCKET
     self.source_repo.editable = False
+    self.source_repo.db_prefix.append('GO-')
     self.source_repo.put()
 
     task_runner = worker.TaskRunner(ndb_client, None, self.tmp_dir.name, None,
@@ -1363,6 +1370,7 @@ class UpdateTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
     self.source_repo.ignore_git = False
     self.source_repo.versions_from_repo = False
     self.source_repo.detect_cherrypicks = False
+    self.source_repo.db_prefix.append('DSA-')
     self.source_repo.put()
 
     self.mock_repo.add_file(
@@ -1393,7 +1401,7 @@ class UpdateTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
 
     self.expect_dict_equal(
         'update_debian',
-        ndb.Key(osv.Bug, 'source:DSA-3029-1').get()._to_dict(),
+        ndb.Key(osv.Bug, 'DSA-3029-1').get()._to_dict(),
     )
 
     self.mock_publish.assert_not_called()
@@ -1403,6 +1411,7 @@ class UpdateTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
     self.source_repo.ignore_git = False
     self.source_repo.versions_from_repo = False
     self.source_repo.detect_cherrypicks = False
+    self.source_repo.db_prefix.append('CVE-')
     self.source_repo.put()
 
     self.mock_repo.add_file(
@@ -1434,7 +1443,7 @@ class UpdateTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
 
     self.expect_dict_equal(
         'update_alpine',
-        ndb.Key(osv.Bug, 'source:CVE-2022-27449').get()._to_dict(),
+        ndb.Key(osv.Bug, 'CVE-2022-27449').get()._to_dict(),
     )
 
     self.mock_publish.assert_not_called()
@@ -1444,6 +1453,7 @@ class UpdateTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
     self.source_repo.type = osv.SourceRepositoryType.BUCKET
     self.source_repo.bucket = TEST_BUCKET
     self.source_repo.editable = False
+    self.source_repo.db_prefix.append('ASB-A-')
     self.source_repo.put()
 
     task_runner = worker.TaskRunner(ndb_client, None, self.tmp_dir.name, None,
@@ -1544,6 +1554,7 @@ class UpdateTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
     self.source_repo.type = osv.SourceRepositoryType.BUCKET
     self.source_repo.bucket = TEST_BUCKET
     self.source_repo.editable = False
+    self.source_repo.db_prefix.append('CVE-')
     self.source_repo.put()
 
     task_runner = worker.TaskRunner(ndb_client, None, self.tmp_dir.name, None,
@@ -1604,7 +1615,7 @@ class UpdateTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
 
     self.expect_dict_equal(
         'last_affected_git',
-        ndb.Key(osv.Bug, 'source:OSV-TEST-last-affected-01').get()._to_dict(),
+        ndb.Key(osv.Bug, 'OSV-TEST-last-affected-01').get()._to_dict(),
     )
 
     affected_commits = list(osv.AffectedCommits.query())
@@ -1619,6 +1630,51 @@ class UpdateTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
         ],
         [codecs.encode(commit, 'hex') for commit in affected_commits.commits],
     )
+
+  def test_invalid_prefix(self):
+    """Test attempting to create a bug with a invalid db_prefix."""
+    with self.assertRaises(ValueError):
+      # Default db_prefix is `OSV-`
+      osv.Bug(
+          db_id='BLAH-131',
+          project=['blah.com/package'],
+          ecosystem=['ecosystem'],
+          source_id='source:OSV-131.yaml',
+          import_last_modified=datetime.datetime(2021, 1, 1, 0, 0),
+          source_of_truth=osv.SourceOfTruth.SOURCE_REPO,
+      ).put()
+
+  def test_dont_index_too_many_git_versions(self):
+    """Test that we don't index too many versions from Git."""
+    self.source_repo.ignore_git = False
+    self.source_repo.versions_from_repo = True
+    self.source_repo.detect_cherrypicks = True
+    self.source_repo.put()
+
+    # Use any valid OSV input test file here.
+    self.mock_repo.add_file(
+        'OSV-TEST-last-affected-01.yaml',
+        self._load_test_data(
+            os.path.join(TEST_DATA_DIR, 'OSV-TEST-last-affected-01.yaml')),
+    )
+    self.mock_repo.commit('User', 'user@email')
+    task_runner = worker.TaskRunner(ndb_client, None, self.tmp_dir.name, None,
+                                    None)
+    message = mock.Mock()
+    message.attributes = {
+        'source': 'source',
+        'path': 'OSV-TEST-last-affected-01.yaml',
+        'original_sha256': _sha256('OSV-TEST-last-affected-01.yaml'),
+        'deleted': 'false',
+    }
+    task_runner._source_update(message)
+
+    bug = ndb.Key(osv.Bug, 'OSV-TEST-last-affected-01').get()
+
+    # Manually append versions over the expected version limit.
+    bug.affected_packages[0].versions = ['%05d' % i for i in range(5001)]
+    bug.put()
+    self.expect_dict_equal('dont_index_too_many_git_versions', bug._to_dict())
 
 
 if __name__ == '__main__':

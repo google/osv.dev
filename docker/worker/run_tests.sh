@@ -15,14 +15,5 @@
 
 export GOOGLE_CLOUD_PROJECT=fake-project123
 
-if [ "$USE_POETRY" == "true" ]
-then
-  poetry install
-  poetry run python worker_test.py
-  exit 0
-fi
-
-export PIPENV_IGNORE_VIRTUALENVS=1
-pipenv verify
-pipenv sync
-pipenv run python worker_test.py
+poetry install
+poetry run python worker_test.py

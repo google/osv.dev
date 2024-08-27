@@ -369,8 +369,9 @@ pre {
 
 .list-page {
   .title {
-    font-size: 20px;
-    height: 25px;
+    font-size: 42px;
+    margin-top: 24px;
+    margin-bottom: 26px; // To compensate the margin-top of search input of 22px
   }
 
   .ecosystem-buttons {
@@ -1372,6 +1373,13 @@ dl.vulnerability-details,
     .blog-entry {
       padding-bottom: 24px;
 
+      .entry-title {
+        font-size: 1.5rem;
+        font-family: $osv-heading-font-family;
+        display: block;
+        padding-bottom: 16px;
+      }
+
       .author {
         font-size: 18px;
         font-family: $osv-body-font-family;
@@ -1461,12 +1469,23 @@ div.highlight {
   }
 }
 
+.blog-page{
+  .title {
+    padding-top: 24px;
+    padding-bottom: 42px;
+  }
+}
+
 .blog-post-page {
   .post {
     max-width: 800px;
     width: 100%;
     margin: 0 auto;
     font-size: 16px;
+  }
+
+  .author{
+    padding-bottom: 48px;
   }
 }
 

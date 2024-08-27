@@ -12,10 +12,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-FROM google/cloud-sdk:449.0.0-alpine
+FROM gcr.io/google.com/cloudsdktool/google-cloud-cli:alpine@sha256:d5da0344b23d03a6f2728657732c7a60300a91acaad9b8076c6fd30b1dfe1ff4
 
-RUN apk --no-cache add py3-pip \
-    && pip install pipenv==2023.12.1
+# Keep the virtualenv directly in the project directory. This isn't strictly neccesary for
+# this project as it runs on kubernetes, but it keeps it consistent with other cloud run images
+ENV POETRY_VIRTUALENVS_IN_PROJECT=true
+
+RUN apk --no-cache add poetry
 
 RUN mkdir /src
 WORKDIR /src
@@ -24,6 +27,6 @@ ENV PIP_NO_BINARY ""
 COPY . /src
 
 ENV LANG en_US.UTF-8
-RUN cd debian_converter && pipenv install --deploy
+RUN cd debian_converter && poetry install
 
 RUN chmod +x /src/run_*

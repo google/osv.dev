@@ -139,7 +139,7 @@ def start_esp(port, backend_port, credential_path, log_path):
         '--non_gcp',
         '--enable_debug',
         '--transcoding_preserve_proto_field_names',
-        '--envoy_connection_buffer_limit_bytes=10485760',
+        '--envoy_connection_buffer_limit_bytes=104857600',
     ]
 
   # Stop existing osv-esp processes that weren't killed properly.

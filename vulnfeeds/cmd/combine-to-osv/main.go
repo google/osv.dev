@@ -3,6 +3,7 @@ package main
 import (
 	"encoding/json"
 	"flag"
+	"net/url"
 	"os"
 	"path"
 	"strings"
@@ -18,6 +19,11 @@ const (
 	defaultPartsInputPath = "parts"
 	defaultOSVOutputPath  = "osv_output"
 	defaultCVEListPath    = "."
+
+	alpineEcosystem          = "Alpine"
+	alpineSecurityTrackerURL = "https://security.alpinelinux.org/vuln"
+	debianEcosystem          = "Debian"
+	debianSecurityTrackerURL = "https://security-tracker.debian.org/tracker"
 )
 
 var Logger utility.LoggerWrapper
@@ -142,7 +148,7 @@ func loadParts(partsInputPath string) (map[cves.CVEID][]vulns.PackageInfo, map[c
 
 // combineIntoOSV creates OSV entry by combining loaded CVEs from NVD and PackageInfo information from security advisories.
 func combineIntoOSV(loadedCves map[cves.CVEID]cves.Vulnerability, allParts map[cves.CVEID][]vulns.PackageInfo, cveList string, cvePartsModifiedTime map[cves.CVEID]time.Time) map[cves.CVEID]*vulns.Vulnerability {
-	Logger.Infof("Begin writing OSV files")
+	Logger.Infof("Begin writing OSV files from %d parts", len(allParts))
 	convertedCves := map[cves.CVEID]*vulns.Vulnerability{}
 	for cveId, cve := range loadedCves {
 		if len(allParts[cveId]) == 0 {
@@ -159,15 +165,27 @@ func combineIntoOSV(loadedCves map[cves.CVEID]cves.Vulnerability, allParts map[c
 				convertedCve.Withdrawn = modified
 			}
 		}
+
+		addedDebianURL := false
+		addedAlpineURL := false
 		for _, pkgInfo := range allParts[cveId] {
 			convertedCve.AddPkgInfo(pkgInfo)
+			if strings.HasPrefix(pkgInfo.Ecosystem, debianEcosystem) && !addedDebianURL {
+				addReference(string(cveId), debianEcosystem, convertedCve)
+				addedDebianURL = true
+			} else if strings.HasPrefix(pkgInfo.Ecosystem, alpineEcosystem) && !addedAlpineURL {
+				addReference(string(cveId), alpineEcosystem, convertedCve)
+				addedAlpineURL = true
+			}
 		}
+
 		cveModified, _ := time.Parse(time.RFC3339, convertedCve.Modified)
 		if cvePartsModifiedTime[cveId].After(cveModified) {
 			convertedCve.Modified = cvePartsModifiedTime[cveId].Format(time.RFC3339)
 		}
 		convertedCves[cveId] = convertedCve
 	}
+	Logger.Infof("Ended writing %d OSV files", len(convertedCves))
 	return convertedCves
 }
 
@@ -187,7 +205,7 @@ func writeOSVFile(osvData map[cves.CVEID]*vulns.Vulnerability, osvOutputPath str
 		file.Close()
 	}
 
-	Logger.Infof("Successfully written all OSV files")
+	Logger.Infof("Successfully written %d OSV files", len(osvData))
 }
 
 // loadAllCVEs loads the downloaded CVE's from the NVD database into memory.
@@ -220,4 +238,20 @@ func loadAllCVEs(cvePath string) map[cves.CVEID]cves.Vulnerability {
 		file.Close()
 	}
 	return result
+}
+
+// addReference adds the related security tracker URL to a given vulnerability's references
+func addReference(cveId string, ecosystem string, convertedCve *vulns.Vulnerability) {
+	securityReference := vulns.Reference{Type: "ADVISORY"}
+	if ecosystem == alpineEcosystem {
+		securityReference.URL, _ = url.JoinPath(alpineSecurityTrackerURL, cveId)
+	} else if ecosystem == debianEcosystem {
+		securityReference.URL, _ = url.JoinPath(debianSecurityTrackerURL, cveId)
+	}
+
+	if securityReference.URL == "" {
+		return
+	}
+
+	convertedCve.References = append(convertedCve.References, securityReference)
 }

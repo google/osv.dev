@@ -32,8 +32,24 @@ do
   cat "${WORK_DIR}/nvd/nvdcve-2.0.json" \
     | jq \
       --arg year $YEAR \
-      '{ "resultsPerPage": .vulnerabilities | map(select(.cve?.id? | startswith("CVE-" + $year + "-"))) | length, "startIndex": 0, "totalResults": .vulnerabilities | map(select(.cve?.id? | startswith("CVE-" + $year + "-"))) | length, "format": .format, "version": .version, "timestamp": .timestamp, "vulnerabilities": .vulnerabilities | map(select(.cve?.id? | startswith("CVE-" + $year + "-"))) }' > "${WORK_DIR}/nvd/nvdcve-2.0-${YEAR}.json"
+      'def count_matching_cves:
+          reduce .vulnerabilities[] as $v (0;
+          if $v.cve?.id? | startswith("CVE-" + $year + "-") then . + 1 else . end
+        );
+
+        {
+        "resultsPerPage": count_matching_cves,
+        "startIndex": 0,
+        "totalResults": count_matching_cves,
+        "format": .format,
+        "version": .version,
+        "timestamp": .timestamp,
+        "vulnerabilities": .vulnerabilities | map(select(.cve?.id? | startswith("CVE-" + $year + "-")))
+       }' > "${WORK_DIR}/nvd/nvdcve-2.0-${YEAR}.json" &
 done
 
+wait
+
 echo "Copying files to GCS bucket"
+gcloud config set storage/parallel_composite_upload_enabled True
 gcloud --no-user-output-enabled storage rsync "${WORK_DIR}/nvd/" "gs://${BUCKET}/nvd/" --checksums-only -c --delete-unmatched-destination-objects -q

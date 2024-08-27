@@ -26,6 +26,9 @@ steps:
   args: ['bash', '-ex', 'run_tests.sh']
   env:
     # Each concurrent test that uses the datastore emulator must have a unique port number
+    # lib-tests is the first test that starts the emulator. The first emulator call creates the
+    # test project config. Every other datastore must wait till this finishes, otherwise
+    # we risk multiple attempts at creating the config directory, causing failure.
     - DATASTORE_EMULATOR_PORT=8002
   waitFor: ['init']
 
@@ -42,8 +45,9 @@ steps:
   args: ['bash', '-ex', 'run_tests.sh']
   env:
     # Each concurrent test that uses the datastore emulator must have a unique port number
+    # Wait for lib-tests to make sure the project directory is created
     - DATASTORE_EMULATOR_PORT=8003
-  waitFor: ['init']
+  waitFor: ['init', 'lib-tests']
 
 - name: 'gcr.io/oss-vdb/ci'
   id: 'importer-tests'
@@ -53,7 +57,7 @@ steps:
     - CLOUD_BUILD=1
     # same as worker
     - DATASTORE_EMULATOR_PORT=8003
-  # importer uses same pipenv as worker, 'pipenv sync' may break if run concurrently
+  # importer uses same poetry as worker, 'poetry install' may break if run concurrently
   waitFor: ['init', 'worker-tests']
 
 - name: 'gcr.io/oss-vdb/ci'
@@ -63,7 +67,7 @@ steps:
   env:
     # same as worker/importer
     - DATASTORE_EMULATOR_PORT=8003
-  # alias uses same pipenv as worker, 'pipenv sync' may break if run concurrently
+  # alias uses same poetry as worker, 'poetry install' may break if run concurrently
   waitFor: ['init', 'importer-tests']
 
 - name: 'gcr.io/oss-vdb/ci'
@@ -72,8 +76,9 @@ steps:
   args: ['bash', '-ex', 'run_tests.sh']
   env:
     # Each concurrent test that uses the datastore emulator must have a unique port number
+    # Wait for lib-tests to make sure the project directory is created
     - DATASTORE_EMULATOR_PORT=8004
-  waitFor: ['init']
+  waitFor: ['init', 'lib-tests']
 
 - name: 'gcr.io/oss-vdb/ci'
   id: 'vulnfeed-tests'

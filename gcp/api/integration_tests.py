@@ -775,14 +775,14 @@ class IntegrationTests(unittest.TestCase,
             'package': {
                 'name': 'django',
             },
-            'version': '5.0',
+            'version': '5.0.1',
         }),
         timeout=_TIMEOUT)
 
     result = response.json()
     vulns_first = set(v['id'] for v in result['vulns'])
     self.assertIn('next_page_token', result)
-    self.assertTrue(str.startswith(result['next_page_token'], '1:'))
+    self.assertTrue(str.startswith(result['next_page_token'], '2:'))
 
     response = requests.post(
         _api() + _BASE_QUERY,
@@ -790,7 +790,7 @@ class IntegrationTests(unittest.TestCase,
             'package': {
                 'name': 'django',
             },
-            'version': '5.0',
+            'version': '5.0.1',
             'page_token': result['next_page_token'],
         }),
         timeout=_TIMEOUT)

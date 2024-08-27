@@ -458,6 +458,16 @@ class QueryContext:
     return (self.query_counter < self.input_cursor.query_number or
             not self.output_cursor.ended)
 
+  def cursor_at_current(self) -> ndb.Cursor | None:
+    """
+    Return the cursor if the stored cursor is for the current query.
+    """
+    if self.input_cursor.query_number == self.query_counter:
+      return self.input_cursor.ndb_cursor
+    else:
+      return None
+
+
   def save_cursor_at_page_break(self, it: ndb.QueryIterator):
     """
     Saves the cursor at the current page break position
@@ -853,7 +863,7 @@ def query_by_commit(context: QueryContext,
 
   bug_ids = []
   it: ndb.QueryIterator = query.iter(
-      keys_only=True, start_cursor=context.input_cursor.ndb_cursor)
+      keys_only=True, start_cursor=context.cursor_at_current())
 
   while (yield it.has_next_async()):
     if context.should_break_page(len(bug_ids)):
@@ -1025,7 +1035,7 @@ def _query_by_semver(context: QueryContext, query: ndb.Query,
     return []
 
   it: ndb.QueryIterator = query.iter(
-      start_cursor=context.input_cursor.ndb_cursor)
+      start_cursor=context.cursor_at_current())
 
   while (yield it.has_next_async()):
     if context.should_break_page(len(results)):
@@ -1107,7 +1117,7 @@ def query_by_generic_helper(context: QueryContext, base_query: ndb.Query,
     return []
 
   it: ndb.QueryIterator = query.iter(
-      start_cursor=context.input_cursor.ndb_cursor)
+      start_cursor=context.cursor_at_current())
 
   while (yield it.has_next_async()):
     if context.should_break_page(len(results)):
@@ -1235,7 +1245,7 @@ def _query_by_comparing_versions(context: QueryContext, query: ndb.Query,
     context: QueryContext for the current query.
     query: A partially completed ndb.Query object which only needs 
       version filters to be added before query is performed.
-    ecosystem: Optional ecosystem of the package to query.
+    ecosystem: Required ecosystem of the package to query.
     version: The version str to query by.
 
   Returns:
@@ -1248,7 +1258,7 @@ def _query_by_comparing_versions(context: QueryContext, query: ndb.Query,
     return []
 
   it: ndb.QueryIterator = query.iter(
-      start_cursor=context.input_cursor.ndb_cursor)
+      start_cursor=context.cursor_at_current())
 
   # Checks if the query specifies a release (e.g., "Debian:12")
   has_release = ':' in ecosystem
@@ -1331,7 +1341,7 @@ def query_by_package(context: QueryContext, package_name: str | None,
     return []
 
   it: ndb.QueryIterator = query.iter(
-      start_cursor=context.input_cursor.ndb_cursor)
+      start_cursor=context.cursor_at_current())
 
   while (yield it.has_next_async()):
     if context.should_break_page(len(bugs)):

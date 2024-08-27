@@ -53,13 +53,15 @@ class QueryCursor:
 
   Attributes:
     query_number: This cursor is specifically for the Nth ndb datastore
-      query in the current query request.
+      query in the current query request. (Starts from 1)
     ndb_cursor: Get the internal ndb_cursor. This could be None.
     ended: Whether this cursor is for a query that has finished returning data.
   """
 
   _ndb_cursor: ndb.Cursor | None = None
   _cursor_state: _QueryCursorState = _QueryCursorState.ENDED
+  # The first query is numbered 1. This is because the query counter is
+  # incremented **before** the query and the query number being used.
   query_number: int = 1
 
   @classmethod
@@ -141,8 +143,5 @@ class QueryCursor:
         # If ENDED, we want to return None to not include
         # a token in the response
         return None
-
-    if self.query_number == 0:
-      return cursor_part
 
     return str(self.query_number) + _METADATA_SEPARATOR + cursor_part

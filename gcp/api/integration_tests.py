@@ -775,7 +775,7 @@ class IntegrationTests(unittest.TestCase,
             'package': {
                 'name': 'django',
             },
-            # Test with a version that is ambiguous whether it 
+            # Test with a version that is ambiguous whether it
             # belongs to semver or generic version
             'version': '5.0.1',
         }),

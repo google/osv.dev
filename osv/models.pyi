@@ -21,6 +21,7 @@ from datetime import datetime
 from typing import List, Self
 
 from google.cloud import ndb
+from . import vulnerability_pb2
 
 
 class ndbModel(ndb.Model):
@@ -226,6 +227,19 @@ class Bug(ndbModel):
   affected_packages: list[AffectedPackage]
   # The source of this Bug.
   source: str
+
+  def update_from_vulnerability(self,
+                                vulnerability: vulnerability_pb2.Vulnerability):
+    ...
+
+  def to_vulnerability(self,
+                       include_source=False,
+                       include_alias=True) -> vulnerability_pb2.Vulnerability:
+    ...
+
+  @ndb.tasklet
+  def to_vulnerability_async(self, include_source=False):
+    ...
 
 
 class RepoIndex(ndbModel):

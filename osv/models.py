@@ -889,7 +889,7 @@ def get_source_repository(source_name):
   return SourceRepository.get_by_id(source_name)
 
 
-def sorted_events(ecosystem, range_type, events):
+def sorted_events(ecosystem, range_type, events) -> list[AffectedEvent]:
   """Sort events."""
   if range_type == 'GIT':
     # No need to sort.
@@ -921,14 +921,14 @@ def sorted_events(ecosystem, range_type, events):
 
 
 @ndb.tasklet
-def get_aliases_async(bug_id):
+def get_aliases_async(bug_id) -> ndb.Future:
   """Gets aliases asynchronously."""
   alias_group = yield AliasGroup.query(AliasGroup.bug_ids == bug_id).get_async()
   return alias_group
 
 
 @ndb.tasklet
-def get_related_async(bug_id):
+def get_related_async(bug_id) -> ndb.Future:
   """Gets related bugs asynchronously."""
   related_bugs = yield Bug.query(Bug.related == bug_id).fetch_async()
   related_bug_ids = [bug.db_id for bug in related_bugs]

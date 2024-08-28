@@ -353,19 +353,3 @@ class AliasAllowListEntry(ndbModel):
 class AliasDenyListEntry(ndbModel):
   """Alias group deny list entry."""
   bug_id: str
-
-
-def get_source_repository(source_name):
-  ...
-
-
-def sorted_events(ecosystem, range_type, events) -> list[AffectedEvent]:
-  ...
-
-
-def get_aliases_async(bug_id) -> ndb.Future:
-  ...
-
-
-def get_related_async(bug_id) -> ndb.Future:
-  ...

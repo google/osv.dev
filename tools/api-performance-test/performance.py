@@ -18,9 +18,13 @@ from collections import Counter, defaultdict
 from typing import Callable
 
 BASE_URL = 'https://api.test.osv.dev/v1'
-TOTAL_RUNTIME = 3600  # total run time in second
 GCP_PROJECT = 'oss-vdb-test'
 BUG_DIR = './all_bugs'
+
+# Total run time in seconds
+TOTAL_RUNTIME = 3600
+# Execute all pending batch size requests within the specified time interval.
+FREQUENCY_IN_SECONDS = 1
 
 # Number of `vulnerability get` requests to send per second
 VULN_QUERY_BATCH_SIZE = 50
@@ -271,8 +275,8 @@ async def make_http_requests_async(request_ids: list, bug_map: dict, url: str,
 
       end_time = time.monotonic()
       time_elapsed = end_time - start_time
-      if time_elapsed < 1:
-        await asyncio.sleep(1 - time_elapsed)
+      if time_elapsed < FREQUENCY_IN_SECONDS:
+        await asyncio.sleep(FREQUENCY_IN_SECONDS - time_elapsed)
       total_run_time = time.monotonic() - begin_time
 
 

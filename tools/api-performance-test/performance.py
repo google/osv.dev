@@ -11,10 +11,11 @@ import sys
 import time
 import json
 
-from google.cloud import ndb
 import osv
 
+from google.cloud import ndb
 from collections import Counter, defaultdict
+from typing import Callable
 
 BASE_URL = 'https://api.test.osv.dev/v1'
 TOTAL_RUNTIME = 3600  # total run time in second
@@ -37,7 +38,7 @@ class SimpleBug:
   """A simplified bug only contains essential information
   for making HTTP requests."""
 
-  def __init__(self, bug_dict):
+  def __init__(self, bug_dict: dict):
     self.db_id = bug_dict['db_id']
     # If the package/ecosystem/version value is None, then add a fake value in.
     if not bug_dict['project']:
@@ -57,7 +58,7 @@ class SimpleBug:
       self.affected_fuzzy = '1.0.0'
 
 
-def format_bug_for_output(bug) -> dict[str:any]:
+def format_bug_for_output(bug: osv.Bug) -> dict[str, any]:
   """Outputs ndb bug query results to JSON file
 
   Args:
@@ -133,7 +134,8 @@ def get_bugs_from_datastore() -> None:
   print(f'All results saved to {BUG_DIR}.')
 
 
-def read_from_json(filename, ecosystem_map, bug_map, package_map) -> None:
+def read_from_json(filename: str, ecosystem_map: defaultdict, bug_map: dict,
+                   package_map: defaultdict) -> None:
   """Loads bugs from one JSON file into bug dicts.
 
   Args:
@@ -189,8 +191,8 @@ def load_all_bugs() -> tuple[defaultdict, dict, defaultdict]:
   return ecosystem_map, bug_map, package_map
 
 
-async def make_http_request(session, request_url, request_type,
-                            request_body) -> None:
+async def make_http_request(session: aiohttp.ClientSession, request_url: str,
+                            request_type: str, request_body: dict) -> None:
   """Makes one HTTP request
 
   Args:
@@ -217,8 +219,9 @@ async def make_http_request(session, request_url, request_type,
           f'{request_body}: {type(e)}')
 
 
-async def make_http_requests_async(request_ids, bug_map, url, batch_size,
-                                   payload_func) -> None:
+async def make_http_requests_async(request_ids: list, bug_map: dict, url: str,
+                                   batch_size: int,
+                                   payload_func: Callable) -> None:
   """Makes the required number of HTTP requests per second async.
 
   Args:
@@ -278,7 +281,7 @@ def build_vulnerability_payload() -> None:
   return None
 
 
-def build_package_payload(request_id, bug_map) -> dict[str:any]:
+def build_package_payload(request_id: str, bug_map: dict) -> dict[str, any]:
   """Builds a package query payload
 
   Args:
@@ -297,7 +300,7 @@ def build_package_payload(request_id, bug_map) -> dict[str:any]:
   return {"package": {"name": package, "ecosystem": ecosystem}}
 
 
-def build_version_payload(request_id, bug_map) -> dict:
+def build_version_payload(request_id: str, bug_map: dict) -> dict:
   """Builds a version query payload
 
   Args:
@@ -322,8 +325,8 @@ def build_version_payload(request_id, bug_map) -> dict:
   }
 
 
-def build_batch_payload(request_ids,
-                        bug_map) -> dict[str, list[dict[str, any]]]:
+def build_batch_payload(request_ids: list,
+                        bug_map: dict) -> dict[str, list[dict[str, any]]]:
   """Builds a batch query payload
 
   Args:
@@ -366,7 +369,7 @@ def build_batch_payload(request_ids,
   return {"queries": [queries]}
 
 
-def get_large_batch_query(package_map) -> list[str]:
+def get_large_batch_query(package_map: defaultdict) -> list[str]:
   """Gets a list of bug IDs for large batch queries. 
   This list contains bug IDs from the packages with the high
   number of vulnerabilities.
@@ -414,7 +417,7 @@ def get_large_batch_query(package_map) -> list[str]:
   return large_batch_query_ids
 
 
-async def send_version_requests(request_ids, bug_map) -> None:
+async def send_version_requests(request_ids: list, bug_map: dict) -> None:
   """Sends version query requests
 
   Args:
@@ -430,7 +433,7 @@ async def send_version_requests(request_ids, bug_map) -> None:
                                  build_version_payload)
 
 
-async def send_package_requests(request_ids, bug_map) -> None:
+async def send_package_requests(request_ids: list, bug_map: dict) -> None:
   """Sends package query requests
 
   Args:
@@ -445,7 +448,7 @@ async def send_package_requests(request_ids, bug_map) -> None:
                                  build_package_payload)
 
 
-async def send_vuln_requests(request_ids, bug_map) -> None:
+async def send_vuln_requests(request_ids: list, bug_map: dict) -> None:
   """Sends vulnerability get requests
 
   Args:
@@ -460,7 +463,8 @@ async def send_vuln_requests(request_ids, bug_map) -> None:
                                  build_vulnerability_payload)
 
 
-async def send_batch_requests(request_ids, bug_map, batch_size) -> None:
+async def send_batch_requests(request_ids: list, bug_map: dict,
+                              batch_size: int) -> None:
   """Sends batch query requests
 
   Args:

@@ -20,7 +20,7 @@ import re
 import os
 
 from urllib.parse import urlparse
-from typing import List
+from typing import List, Self
 
 from google.cloud import ndb
 from google.protobuf import json_format
@@ -335,7 +335,7 @@ class Bug(ndb.Model):
     return None
 
   @classmethod
-  def get_by_id(cls, vuln_id, *args, **kwargs):
+  def get_by_id(cls, vuln_id, *args, **kwargs) -> Self:
     """Overridden get_by_id to handle OSV allocated IDs."""
     result = cls.query(cls.db_id == vuln_id).get()
     if result:

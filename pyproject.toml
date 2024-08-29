@@ -30,6 +30,11 @@ pylint = "*"
 grpcio-tools = "*"
 mypy-protobuf = "^3.6.0"
 
+[tool.pyright]
+executionEnvironments = [
+    { root = "osv/models.py", reportAssignmentType = "none" },
+]
+
 [build-system]
 requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"

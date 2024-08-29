@@ -194,7 +194,7 @@
 - name: 'malicious-packages'
   versions_from_repo: False
   type: 0
-  ignore_patterns: ['^(?!MAL-).*$']
+  ignore_patterns: ['MAL-0000.*', '^(?!MAL-).*$']
   directory_path: 'osv'
   repo_url: 'https://github.com/ossf/malicious-packages.git'
   detect_cherrypicks: False

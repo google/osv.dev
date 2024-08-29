@@ -36,3 +36,7 @@ class Wolfi(Ecosystem):
                          last_affected=None,
                          limits=None):
     raise NotImplementedError('Ecosystem helper does not support enumeration')
+
+  @property
+  def supports_comparing(self):
+    return True

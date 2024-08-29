@@ -44,7 +44,7 @@
 - name: 'android'
   versions_from_repo: False
   type: 1
-  ignore_patterns: ['^(?!(PUB-)?ASB-A-).*$']
+  ignore_patterns: ['^(?!(ASB|PUB|A))-.*$']
   detect_cherrypicks: False
   extension: '.json'
   bucket: 'android-osv-test'
@@ -66,6 +66,18 @@
   link: 'https://github.com/bitnami/vulndb/tree/main/'
   editable: False
 
+- name: 'chainguard'
+  versions_from_repo: False
+  rest_api_url: 'https://packages.cgr.dev/chainguard/osv/all.json'
+  type: 2
+  ignore_patterns: ['^(?!CGA-).*$']  # NOTE: Not currently supported for REST sources
+  directory_path: 'chainguard/osv'
+  detect_cherrypicks: False
+  extension: '.json'
+  db_prefix: ['CGA-']
+  ignore_git: True
+  link: 'https://packages.cgr.dev/chainguard/osv/'
+  editable: False
 - name: 'curl'
   versions_from_repo: False
   rest_api_url: 'https://curl.se/docs/vuln.json'
@@ -181,7 +193,7 @@
 - name: 'malicious-packages'
   versions_from_repo: False
   type: 0
-  ignore_patterns: ['^(?!MAL-).*$', 'MAL-0000.*']
+  ignore_patterns: ['MAL-0000.*', '^(?!MAL-).*$']
   directory_path: 'osv'
   repo_url: 'https://github.com/ossf/malicious-packages.git'
   detect_cherrypicks: False
@@ -189,6 +201,18 @@
   db_prefix: ['MAL-']
   ignore_git: False
   link: 'https://github.com/ossf/malicious-packages/blob/main/'
+  editable: False
+
+- name: 'test-oss-fuzz'
+  versions_from_repo: True
+  type: 0
+  ignore_patterns: ['^(?!OSV-).*$']
+  directory_path: 'vulns'
+  repo_url: 'ssh://github.com/google/oss-fuzz-vulns'
+  detect_cherrypicks: True
+  db_prefix: ['OSV-']
+  ignore_git: False
+  link: 'https://github.com/google/oss-fuzz-vulns/blob/main/'
   editable: False
 
 - name: 'psf'
@@ -209,7 +233,7 @@
   type: 0
   ignore_patterns: ['PYSEC-0000.*', '^(?!PYSEC-).*$']
   directory_path: 'vulns'
-  repo_url: 'https://github.com/pypa/advisory-database.git'
+  repo_url: 'https://github.com/pypa/advisory-database'
   detect_cherrypicks: False
   extension: '.yaml'
   db_prefix: ['PYSEC-']
@@ -242,6 +266,18 @@
   link: 'https://storage.googleapis.com/resf-osv-data/'
   editable: False
 
+- name: 'rockylinux-rxsa'
+  versions_from_repo: False
+  type: 1
+  ignore_patterns: ['^(?!RXSA-).*$']
+  detect_cherrypicks: False
+  extension: '.json'
+  bucket: 'resf-osv-data'
+  db_prefix: ['RXSA-']
+  ignore_git: False
+  link: 'https://storage.googleapis.com/resf-osv-data/'
+  editable: False
+
 - name: 'rust'
   versions_from_repo: True
   type: 0
@@ -257,18 +293,6 @@
   link: 'https://github.com/rustsec/advisory-db/blob/osv/'
   editable: False
   repo_username: 'git'
-
-- name: 'test-oss-fuzz'
-  versions_from_repo: True
-  type: 0
-  ignore_patterns: ['^(?!OSV-).*$']
-  directory_path: 'vulns'
-  repo_url: 'https://github.com/google/oss-fuzz-vulns.git'
-  detect_cherrypicks: False
-  db_prefix: ['OSV-']
-  ignore_git: False
-  link: 'https://github.com/google/oss-fuzz-vulns/blob/main/'
-  editable: False
 
 - name: 'ubuntu'
   versions_from_repo: False
@@ -298,15 +322,3 @@
   key_path: 'OSV'
   repo_username: 'git'
 
-- name: 'chainguard'
-  versions_from_repo: False
-  rest_api_url: 'https://packages.cgr.dev/chainguard/osv/all.json'
-  type: 2
-  ignore_patterns: ['^(?!CGA-).*$']  # NOTE: Not currently supported for REST sources
-  directory_path: 'chainguard/osv'
-  detect_cherrypicks: False
-  extension: '.json'
-  db_prefix: ['CGA-']
-  ignore_git: True
-  link: 'https://packages.cgr.dev/chainguard/osv/'
-  editable: False

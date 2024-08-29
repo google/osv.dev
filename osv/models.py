@@ -13,7 +13,7 @@
 # limitations under the License.
 """Datastore types."""
 
-from datetime import datetime, UTC
+from datetime import datetime
 import enum
 import logging
 import re

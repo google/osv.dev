@@ -236,14 +236,13 @@
   type: 0
   ignore_patterns: ['PYSEC-0000.*', '^(?!PYSEC-).*$']
   directory_path: 'vulns'
-  repo_url: 'ssh://github.com/pypa/advisory-database'
+  repo_url: 'https://github.com/pypa/advisory-database'
   detect_cherrypicks: False
   extension: '.yaml'
   db_prefix: ['PYSEC-']
   ignore_git: False
   link: 'https://github.com/pypa/advisory-database/blob/main/'
   editable: False
-  repo_username: 'git'
 
 - name: 'r'
   versions_from_repo: False

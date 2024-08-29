@@ -15,8 +15,6 @@
 
 import datetime
 
-from typing import List, Self
-
 from google.cloud import ndb
 
 # pylint: disable=relative-beyond-top-level

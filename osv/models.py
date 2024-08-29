@@ -304,7 +304,8 @@ class Bug(ndb.Model):
   # Whether or not the bug has any affected versions (auto-populated).
   has_affected: bool = ndb.BooleanProperty()
   # Source of truth for this Bug.
-  source_of_truth: SourceOfTruth = ndb.IntegerProperty(default=SourceOfTruth.INTERNAL)
+  source_of_truth: SourceOfTruth = ndb.IntegerProperty(
+      default=SourceOfTruth.INTERNAL)
   # Whether the bug is fixed (indexed for querying).
   is_fixed: bool = ndb.BooleanProperty()
   # Database specific.

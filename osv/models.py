@@ -65,7 +65,9 @@ def _check_valid_event_type(prop, value):
 
 def utcnow():
   """For mocking."""
-  return datetime.now(UTC)
+  # The alternative mentioned in the deprecation notice
+  # does not behave in the same way? Tests fail.
+  return datetime.utcnow()
 
 
 def _get_purl_indexes(affected_packages):

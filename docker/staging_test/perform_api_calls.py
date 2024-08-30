@@ -148,7 +148,7 @@ async def make_http_request(session: aiohttp.ClientSession, request_url: str,
       The HTTP request body in JSON format
   """
   try:
-    timeout = aiohttp.ClientTimeout(total=None, sock_connect=80, sock_read=80)
+    timeout = aiohttp.ClientTimeout(sock_connect=300, sock_read=300)
     if request_type == 'GET':
       async with session.get(request_url):
         pass  # We're not awaiting the response, just sending the request
@@ -157,8 +157,8 @@ async def make_http_request(session: aiohttp.ClientSession, request_url: str,
         # print(f'request: {request_body}, response: {response.status}')
         pass  # We're not awaiting the response, just sending the request
   except Exception as e:
-    logging.warning(f'Error sending request {request_url} with body'
-          f'{request_body}: {type(e)}')
+    logging.warning('Error sending request %s with body %s: %s', request_url,
+                    request_body, type(e))
 
 
 async def make_http_requests_async(request_ids: list, bug_map: dict, url: str,
@@ -180,8 +180,8 @@ async def make_http_requests_async(request_ids: list, bug_map: dict, url: str,
   """
 
   begin_time = time.monotonic()
-  logging.info(f'[{begin_time}] Running make request {payload_func.__name__} '
-        f'for {TOTAL_RUNTIME} seconds')
+  logging.info('[%s] Running make request %s for %d seconds', begin_time,
+               payload_func.__name__, TOTAL_RUNTIME)
 
   total_run_time = time.monotonic() - begin_time
   index = 0
@@ -427,7 +427,7 @@ async def main() -> None:
   seed = random.randrange(sys.maxsize)
   # The seed value can be replaced for debugging
   random.seed(seed)
-  logging.info(f'Random seed {seed}')
+  logging.info('Random seed %d', seed)
   # The `ecosystem_map` can be used to filter our queries for a
   # specific ecosystem.
   ecosystem_map, bug_map, package_map = load_all_bugs()
@@ -438,11 +438,13 @@ async def main() -> None:
     package_query_ids.append(package_map[package].pop())
   random.shuffle(package_query_ids)
   random.shuffle(vuln_query_ids)
-  logging.info(f'It will send vulnerability get requests for {len(vuln_query_ids)} '
-        'vulnerabilities.')
-  logging.info('It will send package/version/batch query requests for '
-        f'{len(package_query_ids)} packages within '
-        f'{len(ecosystem_map)} ecosystems.')
+  logging.info(
+      'It will send vulnerability get requests for %d vulnerabilities.',
+      len(vuln_query_ids))
+  logging.info(
+      'It will send package/version/batch query requests for '
+      '%d packages within %d ecosystems.', len(package_query_ids),
+      len(ecosystem_map))
 
   # Get all packages with the most frequently occurring number
   # of vulnerabilities.

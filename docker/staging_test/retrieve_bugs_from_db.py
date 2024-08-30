@@ -27,6 +27,7 @@ from google.cloud import ndb
 GCP_PROJECT = 'oss-vdb-test'
 BUG_DIR = '/staging_testing/all_bugs'
 
+
 def format_bug_for_output(bug: osv.Bug) -> dict[str, any]:
   """Outputs ndb bug query results to JSON file
 
@@ -65,13 +66,13 @@ def get_bugs_from_datastore() -> None:
     file_name = f'{BUG_DIR}/all_bugs_{file_counter}.json'
     with open(file_name, 'w+') as f:
       json.dump(results, f, indent=2)
-    logging.info(f'Saved {total_entries} entries to {file_name}')
+    logging.info('Saved %d entries to %s', total_entries, file_name)
 
   with ndb.Client(project=GCP_PROJECT).context():
     query = osv.Bug.query()
     query = query.filter(osv.Bug.status == osv.BugStatus.PROCESSED,
                          osv.Bug.public == True)  # pylint: disable=singleton-comparison
-    logging.info(f'Querying {query}')
+    logging.info('Querying %s', query)
 
     results = []
     total_entries = 0
@@ -83,7 +84,7 @@ def get_bugs_from_datastore() -> None:
       if not has_more:
         break
 
-      logging.info(f'fetching {batch_size} entries.')
+      logging.info('Fetching %d entries.', batch_size)
       results.extend([format_bug_for_output(bug) for bug in bugs])
       total_entries += len(bugs)
 
@@ -100,7 +101,8 @@ def get_bugs_from_datastore() -> None:
     if results:
       write_to_json()
 
-  logging.info(f'All results saved to {BUG_DIR}.')
+  logging.info('All results saved to %s.', BUG_DIR)
+
 
 def main() -> None:
   osv.logs.setup_gcp_logging('staging-test')
@@ -109,7 +111,8 @@ def main() -> None:
     get_bugs_from_datastore()
     logging.info('Fetching data finished.')
   else:
-    logging.info(f'{BUG_DIR} exists, skipping fetching.')
+    logging.info('%s exists, skipping fetching.', BUG_DIR)
 
-if __name__ == "__main__":
+
+if __name__ == '__main__':
   main()

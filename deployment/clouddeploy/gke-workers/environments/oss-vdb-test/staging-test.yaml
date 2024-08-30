@@ -22,5 +22,5 @@ spec:
                 memory: "3G"
               limits:
                 cpu: 1
-                memory: "4G"
+                memory: "6G"
           restartPolicy: Never

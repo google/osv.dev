@@ -1185,10 +1185,9 @@ def query_by_version(context: QueryContext,
 
   ecosystem_info = ecosystems.get(ecosystem)
   is_semver = ecosystem_info and ecosystem_info.is_semver
-  supports_ordering = ecosystem_info and ecosystem_info.supports_ordering
+  supports_comparing = ecosystem_info and ecosystem_info.supports_comparing
 
   bugs = []
-  project = get_gcp_project()
   if ecosystem:
     if is_semver:
       # Ecosystem supports semver only.
@@ -1202,10 +1201,8 @@ def query_by_version(context: QueryContext,
       for bug in new_bugs:
         if bug not in bugs:
           bugs.append(bug)
-
-    elif project == 'oss-vdb-test' and supports_ordering:
+    elif supports_comparing:
       # Query for non-enumerated ecosystems.
-
       bugs = yield _query_by_comparing_versions(context, query, ecosystem,
                                                 version)
     else:

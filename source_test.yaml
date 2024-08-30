@@ -44,7 +44,7 @@
 - name: 'android'
   versions_from_repo: False
   type: 1
-  ignore_patterns: ['^(?!(ASB|PUB|A))-.*$']
+  ignore_patterns: ['^(?!(ASB|PUB|A)-).*$']
   detect_cherrypicks: False
   extension: '.json'
   bucket: 'android-osv-test'

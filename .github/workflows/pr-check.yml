@@ -1,4 +1,4 @@
-# Copyright 2021 Google LLC
+# Copyright 2024 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -12,19 +12,24 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-FROM golang:1.22.5-alpine@sha256:8c9183f715b0b4eca05b8b3dbf59766aaedb41ec07477b132ee2891ac0110a07 AS GO_BUILD
-WORKDIR /build
+name: OSV PR format check
 
-# Cache dependencies in these steps
-COPY ./go.mod /build/go.mod
-COPY ./go.sum /build/go.sum
-RUN go mod download
+on:
+  # `pull_request_target` is only required when editing PRs from forks.
+  pull_request:
+    types:
+      - opened
+      - edited
+      - reopened
 
-# Do the build here
-COPY ./ /build
-RUN CGO_ENABLED=0 ./build.sh
+permissions:
+  pull-requests: read
 
-FROM gcr.io/distroless/base-debian12@sha256:1aae189e3baecbb4044c648d356ddb75025b2ba8d14cdc9c2a19ba784c90bfb9
-COPY --from=GO_BUILD build/indexer /indexer
-ENTRYPOINT ["/indexer"]
-CMD ["--help"]
+jobs:
+  title-check:
+    name: Validate PR title
+    runs-on: ubuntu-latest
+    steps:
+      - uses: amannn/action-semantic-pull-request@v5
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

@@ -118,6 +118,12 @@ class Ecosystem(ABC):
   def supports_ordering(self):
     return True
 
+  @property
+  def supports_comparing(self):
+    """Determines whether to use affected version range comparison
+    for API queries."""
+    return False
+
 
 class OrderingUnsupportedEcosystem(Ecosystem):
   """Placeholder ecosystem helper for unimplemented ecosystems."""

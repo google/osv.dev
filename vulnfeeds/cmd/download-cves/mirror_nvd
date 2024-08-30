@@ -45,8 +45,10 @@ do
         "version": .version,
         "timestamp": .timestamp,
         "vulnerabilities": .vulnerabilities | map(select(.cve?.id? | startswith("CVE-" + $year + "-")))
-       }' > "${WORK_DIR}/nvd/nvdcve-2.0-${YEAR}.json"
+       }' > "${WORK_DIR}/nvd/nvdcve-2.0-${YEAR}.json" &
 done
+
+wait
 
 echo "Copying files to GCS bucket"
 gcloud config set storage/parallel_composite_upload_enabled True

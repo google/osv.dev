@@ -11,18 +11,23 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""AlmaLinux ecosystem helper."""
+"""Wolfi ecosystem helper."""
 
-from ..third_party.univers.rpm import RpmVersion
+from ..third_party.univers.alpine import AlpineLinuxVersion
 
 from .helper_base import Ecosystem
 
 
-class AlmaLinux(Ecosystem):
-  """"AlmaLinux ecosystem"""
+class Wolfi(Ecosystem):
+  """Wolfi packages ecosystem"""
 
   def sort_key(self, version):
-    return RpmVersion.from_string(version)
+    # Wolfi uses `apk` package format
+    if not AlpineLinuxVersion.is_valid(version):
+      # If version is not valid, it is most likely an invalid input
+      # version then sort it to the last/largest element
+      return AlpineLinuxVersion('999999')
+    return AlpineLinuxVersion(version)
 
   def enumerate_versions(self,
                          package,

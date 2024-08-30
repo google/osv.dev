@@ -45,8 +45,10 @@ from osv import ecosystems
 from osv import semver_index
 from osv import purl_helpers
 from osv.logs import setup_gcp_logging
-import osv_service_v1_pb2
-import osv_service_v1_pb2_grpc
+from gcp.api import osv_service_v1_pb2
+from gcp.api import osv_service_v1_pb2_grpc
+
+from gcp.api.cursor import QueryCursor
 
 _SHUTDOWN_GRACE_DURATION = 5
 
@@ -188,18 +190,20 @@ class OSVServicer(osv_service_v1_pb2_grpc.OSVServicer,
     else:
       logging.info('QueryAffected for %s', qtype)
 
-    page_token = None
-    if request.query.page_token:
-      try:
-        page_token = ndb.Cursor(urlsafe=request.query.page_token)
-      except ValueError as e:
-        logging.warning(e)
-        context.abort(grpc.StatusCode.INVALID_ARGUMENT, 'Invalid page token.')
+    try:
+      page_token = QueryCursor.from_page_token(request.query.page_token)
+    except ValueError as e:
+      logging.warning(e)
+      context.abort(grpc.StatusCode.INVALID_ARGUMENT, 'Invalid page token.')
+      # This is just for the type checker which doesn't know
+      # abort will kill the code flow
+      raise
 
     query_context = QueryContext(
         service_context=context,
         request_cutoff_time=datetime.now() + _MAX_SINGLE_QUERY_TIME,
-        page_token=page_token,
+        input_cursor=page_token,
+        output_cursor=QueryCursor(),
         total_responses=ResponsesCount(0))
 
     try:
@@ -277,19 +281,21 @@ class OSVServicer(osv_service_v1_pb2_grpc.OSVServicer,
     total_responses = ResponsesCount(0)
     req_cutoff_time = datetime.now() + _MAX_BATCH_QUERY_TIME
     for i, query in enumerate(request.query.queries):
-      page_token = None
-      if query.page_token:
-        try:
-          page_token = ndb.Cursor(urlsafe=query.page_token)
-        except ValueError as e:
-          logging.warning(e)
-          context.abort(grpc.StatusCode.INVALID_ARGUMENT,
-                        f'Invalid page token at index: {i}.')
+      try:
+        page_token = QueryCursor.from_page_token(query.page_token)
+      except ValueError as e:
+        logging.warning(e)
+        context.abort(grpc.StatusCode.INVALID_ARGUMENT,
+                      f'Invalid page token at index: {i}.')
+        # This is just for the type checker which doesn't know
+        # abort will kill the code flow
+        raise
 
       query_context = QueryContext(
           service_context=context,
           request_cutoff_time=req_cutoff_time,
-          page_token=page_token,
+          input_cursor=page_token,
+          output_cursor=QueryCursor(),
           total_responses=total_responses)
 
       futures.append(do_query(query, query_context, include_details=False))
@@ -337,7 +343,7 @@ class OSVServicer(osv_service_v1_pb2_grpc.OSVServicer,
     context.abort(grpc.StatusCode.UNIMPLEMENTED, "Unimplemented")
 
 
-def query_info(query) -> tuple[str, str, str]:
+def query_info(query) -> tuple[str, str | None, str | None]:
   """Returns information about a query, for logging purposes.
   First return value is one of 'commit', 'purl', 'ecosystem', 'invalid'.
   If 'ecosystem' or 'purl', second two return values are the ecosystem name,
@@ -407,12 +413,25 @@ class QueryContext:
   """
   Information about the query the server is currently
   responding to.
+
+  Attributes:
+    service_context: Context of the underlying grpc call.
+    input_cursor: Cursor from the user API query input.
+    output_cursor: Cursor to potentially return to the user.
+    request_cutoff_time: Time past which all further datastore 
+      queries stop and a page cut is made.
+    total_responses: **Reference** to the total count of responses
+      across all queries in the batch.
+    query_counter: Number of queries which has already been executed
+      (does not count batch queries).
   """
   service_context: grpc.ServicerContext
-  page_token: ndb.Cursor | None
+  input_cursor: QueryCursor
+  output_cursor: QueryCursor
   request_cutoff_time: datetime
   # Use a dataclass to copy by reference
   total_responses: ResponsesCount
+  query_counter: int = 0
 
   def should_break_page(self, response_count: int):
     """
@@ -425,6 +444,35 @@ class QueryContext:
     """
     return (response_count >= self.total_responses.page_limit() or
             datetime.now() > self.request_cutoff_time)
+
+  def should_skip_query(self):
+    """
+    Returns whether a query should be executed or skipped depending
+    on the cursor position.
+
+    A query should be skipped when:
+      - Input cursor is for a future query
+      - Output cursor is not ended(), which means we already hit page limit
+        in a previous query.
+    """
+    return (self.query_counter < self.input_cursor.query_number or
+            not self.output_cursor.ended)
+
+  def cursor_at_current(self) -> ndb.Cursor | None:
+    """
+    Return the cursor if the stored cursor is for the current query.
+    """
+    if self.input_cursor.query_number == self.query_counter:
+      return self.input_cursor.ndb_cursor
+
+    return None
+
+  def save_cursor_at_page_break(self, it: ndb.QueryIterator):
+    """
+    Saves the cursor at the current page break position
+    """
+    self.output_cursor.update_from_iterator(it)
+    self.output_cursor.query_number = self.query_counter
 
 
 def should_skip_bucket(path: str) -> bool:
@@ -629,7 +677,9 @@ def determine_version(version_query: osv_service_v1_pb2.VersionQuery,
 
 
 @ndb.tasklet
-def do_query(query, context: QueryContext, include_details=True):
+def do_query(query,
+             context: QueryContext,
+             include_details=True) -> tuple[list, str | None]:
   """Do a query."""
   if query.HasField('package'):
     package_name = query.package.name
@@ -677,8 +727,6 @@ def do_query(query, context: QueryContext, include_details=True):
     # Retrieve it asynchronously later.
     return bug_to_response(b, include_details)
 
-  next_page_token = None
-
   if query.WhichOneof('param') == 'commit':
     try:
       commit_bytes = codecs.decode(query.commit, 'hex')
@@ -687,10 +735,9 @@ def do_query(query, context: QueryContext, include_details=True):
                                     'Invalid hash.')
       return None
 
-    bugs, next_page_token = yield query_by_commit(
-        context, commit_bytes, to_response=to_response)
+    bugs = yield query_by_commit(context, commit_bytes, to_response=to_response)
   elif purl and purl_version:
-    bugs, next_page_token = yield query_by_version(
+    bugs = yield query_by_version(
         context,
         package_name,
         ecosystem,
@@ -698,7 +745,7 @@ def do_query(query, context: QueryContext, include_details=True):
         purl_version,
         to_response=to_response)
   elif query.WhichOneof('param') == 'version':
-    bugs, next_page_token = yield query_by_version(
+    bugs = yield query_by_version(
         context,
         package_name,
         ecosystem,
@@ -707,7 +754,7 @@ def do_query(query, context: QueryContext, include_details=True):
         to_response=to_response)
   elif (package_name != '' and ecosystem != '') or (purl and not purl_version):
     # Package specified without version.
-    bugs, next_page_token = yield query_by_package(
+    bugs = yield query_by_package(
         context, package_name, ecosystem, purl, to_response=to_response)
   else:
     context.service_context.abort(grpc.StatusCode.INVALID_ARGUMENT,
@@ -739,11 +786,20 @@ def do_query(query, context: QueryContext, include_details=True):
       bugs[i].related[:] = sorted(
           list(set(related_bug_ids + list(bugs[i].related))))
 
-  if next_page_token:
-    next_page_token = next_page_token.urlsafe()
+  if context.query_counter < context.input_cursor.query_number:
+    logging.error(
+        'Cursor is invalid - received "%d" while total query count is "%d".',
+        context.input_cursor.query_number, context.query_counter)
+    # If the input cursor is for a query number that's greater than
+    # the number of queries performed, the cursor must be invalid
+    # (and there will be no results, as everything is skipped)
+    raise ValueError('Cursor is invalid/does not belong to this query')
+
+  next_page_token_str = context.output_cursor.url_safe_encode()
+  if next_page_token_str:
     logging.warning('Page size limit hit, response size: %s', len(bugs))
 
-  return bugs, next_page_token
+  return bugs, next_page_token_str
 
 
 def bug_to_response(bug, include_details=True, include_alias=False):
@@ -781,21 +837,36 @@ def _datastore_normalized_purl(purl: PackageURL):
 
 
 @ndb.tasklet
-def query_by_commit(
-    context: QueryContext,
-    commit: bytes,
-    to_response: Callable = bug_to_response) -> tuple[list, ndb.Cursor]:
-  """Query by commit."""
+def query_by_commit(context: QueryContext,
+                    commit: bytes,
+                    to_response: Callable = bug_to_response) -> list:
+  """
+  Perform a query by commit.
+
+  This is a ndb.tasklet, so will return a future that will need to be yielded.
+
+  Args:
+    context: QueryContext for the current query.
+    commit: The commit hash to query.
+    to_response: Optional function to convert osv.Bug to a 
+      vulnerability response.
+
+  Returns:
+    list of responses (return values from to_response)
+  """
   query = osv.AffectedCommits.query(osv.AffectedCommits.commits == commit)
+
+  context.query_counter += 1
+  if context.should_skip_query():
+    return []
 
   bug_ids = []
   it: ndb.QueryIterator = query.iter(
-      keys_only=True, start_cursor=context.page_token)
+      keys_only=True, start_cursor=context.cursor_at_current())
 
-  cursor = None
   while (yield it.has_next_async()):
     if context.should_break_page(len(bug_ids)):
-      cursor = it.cursor_after()
+      context.save_cursor_at_page_break(it)
       break
 
     # Affect commits key follows this format:
@@ -807,7 +878,7 @@ def query_by_commit(
     context.total_responses.add(1)
 
   bugs = yield _get_bugs(bug_ids, to_response=to_response)
-  return bugs, cursor
+  return bugs
 
 
 def _match_purl(purl_query: PackageURL, purl_db: PackageURL) -> bool:
@@ -899,8 +970,8 @@ def _is_version_affected(affected_packages,
                          purl: PackageURL | None,
                          version,
                          normalize=False):
-  """Returns whether or not the given version is within an affected ECOSYSTEM
-
+  """
+  Returns whether or not the given version is within an affected ECOSYSTEM
   range.
   """
   for affected_package in affected_packages:
@@ -931,21 +1002,42 @@ def _is_version_affected(affected_packages,
 
 
 @ndb.tasklet
-def _query_by_semver(context: QueryContext, query: ndb.Query, package_name: str,
-                     ecosystem: str, purl: PackageURL | None, version: str):
-  """Query by semver."""
+def _query_by_semver(context: QueryContext, query: ndb.Query,
+                     package_name: str | None, ecosystem: str | None,
+                     purl: PackageURL | None, version: str):
+  """
+  Perform a query by semver version.
+
+  This is a ndb.tasklet, so will return a future that will need to be yielded.
+
+  Args:
+    context: QueryContext for the current query.
+    query: A partially completed ndb.Query object which only needs 
+      semver filters to be added before query is performed.
+    package_name: Optional name of the package to query.
+    ecosystem: Optional ecosystem of the package to query.
+    purl: Optional PackageURL.
+    version: The semver version to query for.
+
+  Returns:
+    list of osv.Bug entries wrapped in a Future.
+  """
   if not semver_index.is_valid(version):
-    return [], None
+    return []
 
   results = []
   query = query.filter(
       osv.Bug.semver_fixed_indexes > semver_index.normalize(version))
-  it: ndb.QueryIterator = query.iter(start_cursor=context.page_token)
-  cursor = None
+
+  context.query_counter += 1
+  if context.should_skip_query():
+    return []
+
+  it: ndb.QueryIterator = query.iter(start_cursor=context.cursor_at_current())
 
   while (yield it.has_next_async()):
     if context.should_break_page(len(results)):
-      cursor = it.cursor_after()
+      context.save_cursor_at_page_break(it)
       break
 
     bug: osv.Bug = it.next()  # type: ignore
@@ -954,61 +1046,62 @@ def _query_by_semver(context: QueryContext, query: ndb.Query, package_name: str,
       results.append(bug)
       context.total_responses.add(1)
 
-  return results, cursor
+  return results
 
 
 @ndb.tasklet
 def _query_by_generic_version(
     context: QueryContext,
     base_query: ndb.Query,
-    project: str,
-    ecosystem: str,
+    package_name: str | None,
+    ecosystem: str | None,
     purl: PackageURL | None,
     version: str,
 ):
-  """Query by generic version."""
+  """
+  Query by generic version. 
+  
+  This is a ndb.tasklet, so will return a future that will need to be yielded.
 
-  results = []
-
-  cursor = None
+  Args:
+    context: QueryContext for the current query.
+    base_query: A partially completed ndb.Query object which only needs 
+      version filters to be added before query is performed.
+    package_name: Optional name of the package to query.
+    ecosystem: Optional ecosystem of the package to query.
+    purl: Optional PackageURL.
+    version: The non-semver version to query for.
+  
+  Returns:
+    list of osv.Bug entries wrapped in a Future.
+  """
   # Try without normalizing.
-  results, cursor = yield query_by_generic_helper(results, cursor, context,
-                                                  base_query, project,
-                                                  ecosystem, purl, version,
-                                                  False)
+  results = yield query_by_generic_helper(context, base_query, package_name,
+                                          ecosystem, purl, version, False)
 
-  # If no results is because of a page break, then there is no reason
-  # to pass further down as page break would still be in effect with
-  # the following queries, and would have to immediately return.
-  if results or context.should_break_page(0):
-    return results, cursor
+  # If there are results, then we should return with this query,
+  # as no normalization seem to be the correct format.
+  if results:
+    return results
 
-  # page_token can be the token for this query, or the token for the one
-  # below. If the token is used for the normalized query below, this query
-  # must have returned no results, so will still return no results, fall
-  # through to the query below again.
-  # Try again after normalizing.
-  results, cursor = yield query_by_generic_helper(results, cursor, context,
-                                                  base_query, project,
-                                                  ecosystem, purl,
-                                                  osv.normalize_tag(version),
-                                                  True)
+  results = yield query_by_generic_helper(context, base_query, package_name,
+                                          ecosystem, purl,
+                                          osv.normalize_tag(version), True)
 
-  if results or context.should_break_page(0):
-    return results, cursor
+  if results:
+    return results
 
   # Try again after canonicalizing + normalizing version.
-  results, cursor = yield query_by_generic_helper(results, cursor, context,
-                                                  base_query, project,
-                                                  ecosystem, purl,
-                                                  canonicalize_version(version),
-                                                  True)
-  return results, cursor
+  results = yield query_by_generic_helper(context, base_query, package_name,
+                                          ecosystem, purl,
+                                          canonicalize_version(version), True)
+
+  return results
 
 
 @ndb.tasklet
-def query_by_generic_helper(results: list, cursor, context: QueryContext,
-                            base_query: ndb.Query, project: str, ecosystem: str,
+def query_by_generic_helper(context: QueryContext, base_query: ndb.Query,
+                            package_name: str | None, ecosystem: str | None,
                             purl: PackageURL | None, version: str,
                             is_normalized):
   """
@@ -1016,39 +1109,54 @@ def query_by_generic_helper(results: list, cursor, context: QueryContext,
   This function can be called multiple times.
   """
   query: ndb.Query = base_query.filter(osv.Bug.affected_fuzzy == version)
-  it: ndb.QueryIterator = query.iter(start_cursor=context.page_token)
+  results = []
+  context.query_counter += 1
+  if context.should_skip_query():
+    return []
+
+  it: ndb.QueryIterator = query.iter(start_cursor=context.cursor_at_current())
+
   while (yield it.has_next_async()):
     if context.should_break_page(len(results)):
-      # Because this helper function might be called multiple times
-      # we might break before the first result is even queried, raising
-      # a BadArgumentError
-      try:
-        cursor = it.cursor_after()
-      except ndb_exceptions.BadArgumentError:
-        # Don't set the cursor in this case and just return existing cursor
-        pass
+      context.save_cursor_at_page_break(it)
       break
     bug = it.next()
     if _is_version_affected(
         bug.affected_packages,
-        project,
+        package_name,
         ecosystem,
         purl,
         version,
         normalize=is_normalized):
       results.append(bug)
       context.total_responses.add(1)
-  return results, cursor
+  return results
 
 
 @ndb.tasklet
 def query_by_version(context: QueryContext,
-                     package_name: str,
-                     ecosystem: str,
+                     package_name: str | None,
+                     ecosystem: str | None,
                      purl: PackageURL | None,
-                     version,
+                     version: str,
                      to_response: Callable = bug_to_response):
-  """Query by (fuzzy) version."""
+  """
+  Query by (fuzzy) version.
+
+  This is a ndb.tasklet, so will return a future that will need to be yielded.
+
+  Args:
+    context: QueryContext for the current query.
+    package_name: Optional name of the package to query.
+    ecosystem: Optional ecosystem of the package to query.
+    purl: Optional PackageURL.
+    version: The version str to query by.
+    to_response: Optional function to convert osv.Bug to a 
+      vulnerability response.
+
+  Returns:
+    list of responses (return values from to_response)
+  """
 
   if package_name:
     query = osv.Bug.query(
@@ -1065,7 +1173,7 @@ def query_by_version(context: QueryContext,
         osv.Bug.public == True,  # noqa: E712
     )
   else:
-    return [], None
+    return []
 
   if ecosystem:
     query = query.filter(osv.Bug.ecosystem == ecosystem)
@@ -1077,71 +1185,80 @@ def query_by_version(context: QueryContext,
 
   ecosystem_info = ecosystems.get(ecosystem)
   is_semver = ecosystem_info and ecosystem_info.is_semver
-  supports_ordering = ecosystem_info and ecosystem_info.supports_ordering
+  supports_comparing = ecosystem_info and ecosystem_info.supports_comparing
 
   bugs = []
-  next_page_token = None
-  project = get_gcp_project()
   if ecosystem:
     if is_semver:
       # Ecosystem supports semver only.
-      bugs, _ = yield _query_by_semver(context, query, package_name, ecosystem,
-                                       purl, version)
+      bugs = yield _query_by_semver(context, query, package_name, ecosystem,
+                                    purl, version)
 
-      new_bugs, _ = yield _query_by_generic_version(context, query,
-                                                    package_name, ecosystem,
-                                                    purl, version)
+      # If the previous query has fully finished (or skipped),
+      # try generic version
+      new_bugs = yield _query_by_generic_version(context, query, package_name,
+                                                 ecosystem, purl, version)
       for bug in new_bugs:
         if bug not in bugs:
           bugs.append(bug)
-    elif project == 'oss-vdb-test' and supports_ordering:
+    elif supports_comparing:
       # Query for non-enumerated ecosystems.
-
-      bugs, next_page_token = yield _query_by_comparing_versions(
-          context, query, ecosystem, version)
+      bugs = yield _query_by_comparing_versions(context, query, ecosystem,
+                                                version)
     else:
-      bugs, next_page_token = yield _query_by_generic_version(
-          context, query, package_name, ecosystem, purl, version)
+      bugs = yield _query_by_generic_version(context, query, package_name,
+                                             ecosystem, purl, version)
 
   else:
     logging.warning("Package query without ecosystem specified")
     # Unspecified ecosystem. Try semver first.
-
-    # TODO: Remove after testing how many consumers are
-    # querying the API this way.
-    context.page_token = None
-    new_bugs, _ = yield _query_by_semver(context, query, package_name,
-                                         ecosystem, purl, version)
+    new_bugs = yield _query_by_semver(context, query, package_name, ecosystem,
+                                      purl, version)
     bugs.extend(new_bugs)
 
-    new_bugs, _ = yield _query_by_generic_version(context, query, package_name,
-                                                  ecosystem, purl, version)
+    new_bugs = yield _query_by_generic_version(context, query, package_name,
+                                               ecosystem, purl, version)
     for bug in new_bugs:
       if bug not in bugs:
         bugs.append(bug)
 
-    # Trying both is too difficult/ugly with paging
     # Our documentation states that this is an invalid query
     # context.service_context.abort(grpc.StatusCode.INVALID_ARGUMENT,
     #                               'Ecosystem not specified')
 
-  return [to_response(bug) for bug in bugs], next_page_token
+  return [to_response(bug) for bug in bugs]
 
 
 @ndb.tasklet
 def _query_by_comparing_versions(context: QueryContext, query: ndb.Query,
-                                 ecosystem: str,
-                                 version: str) -> tuple[list, ndb.Cursor]:
-  """Query by package."""
+                                 ecosystem: str, version: str) -> list:
+  """
+  Query by comparing versions.
+
+  Args:
+    context: QueryContext for the current query.
+    query: A partially completed ndb.Query object which only needs 
+      version filters to be added before query is performed.
+    ecosystem: Required ecosystem of the package to query.
+    version: The version str to query by.
+
+  Returns:
+    list of osv.Bugs
+  """
   bugs = []
-  it: ndb.QueryIterator = query.iter(start_cursor=context.page_token)
-  cursor = None
+
+  context.query_counter += 1
+  if context.should_skip_query():
+    return []
+
+  it: ndb.QueryIterator = query.iter(start_cursor=context.cursor_at_current())
+
   # Checks if the query specifies a release (e.g., "Debian:12")
   has_release = ':' in ecosystem
 
   while (yield it.has_next_async()):
     if context.should_break_page(len(bugs)):
-      cursor = it.cursor_after()
+      context.save_cursor_at_page_break(it)
       break
 
     bug: osv.Bug = it.next()
@@ -1169,14 +1286,30 @@ def _query_by_comparing_versions(context: QueryContext, query: ndb.Query,
         context.total_responses.add(1)
         break
 
-  return bugs, cursor
+  return bugs
 
 
 @ndb.tasklet
-def query_by_package(context: QueryContext, package_name: str, ecosystem: str,
-                     purl: PackageURL | None,
-                     to_response: Callable) -> tuple[list, ndb.Cursor]:
-  """Query by package."""
+def query_by_package(context: QueryContext, package_name: str | None,
+                     ecosystem: str | None, purl: PackageURL | None,
+                     to_response: Callable) -> list:
+  """
+  Query by package.
+  
+  This is a ndb.tasklet, so will return a future that will need to be yielded.
+
+  Args:
+    context: QueryContext for the current query.
+    package_name: Optional name of the package to query.
+    ecosystem: Optional ecosystem of the package to query.
+    purl: Optional PackageURL. If purl is None, then both 
+      package_name and ecosystem need to be set.
+    to_response: Function to convert osv.Bug to a 
+      vulnerability response.
+
+  Returns:
+    list of responses (return values from to_response)
+  """
   bugs = []
   if package_name and ecosystem:
     query = osv.Bug.query(
@@ -1194,13 +1327,17 @@ def query_by_package(context: QueryContext, package_name: str, ecosystem: str,
         osv.Bug.public == True,  # noqa: E712
     )
   else:
-    return [], None
+    return []
 
-  it: ndb.QueryIterator = query.iter(start_cursor=context.page_token)
-  cursor = None
+  context.query_counter += 1
+  if context.should_skip_query():
+    return []
+
+  it: ndb.QueryIterator = query.iter(start_cursor=context.cursor_at_current())
+
   while (yield it.has_next_async()):
     if context.should_break_page(len(bugs)):
-      cursor = it.cursor_after()
+      context.save_cursor_at_page_break(it)
       break
 
     bug: osv.Bug = it.next()
@@ -1223,7 +1360,7 @@ def query_by_package(context: QueryContext, package_name: str, ecosystem: str,
       bugs.append(bug)
       context.total_responses.add(1)
 
-  return [to_response(bug) for bug in bugs], cursor
+  return [to_response(bug) for bug in bugs]
 
 
 def serve(port: int, local: bool):

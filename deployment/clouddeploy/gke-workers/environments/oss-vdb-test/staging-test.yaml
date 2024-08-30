@@ -1,0 +1,26 @@
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: staging-test
+spec:
+  schedule: "50 * * * *"
+  concurrencyPolicy: Forbid
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          containers:
+          - name: staging-test
+            image: staging-test
+            imagePullPolicy: Always
+            env:
+            - name: GOOGLE_CLOUD_PROJECT
+              value: "oss-vdb-test"
+            resources:
+              requests:
+                cpu: 1
+                memory: "3G"
+              limits:
+                cpu: 1
+                memory: "4G"
+          restartPolicy: Never

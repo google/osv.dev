@@ -3,7 +3,7 @@ kind: CronJob
 metadata:
   name: staging-test
 spec:
-  schedule: "50 * * * *"
+  schedule: "50 9 * * *"
   concurrencyPolicy: Forbid
   jobTemplate:
     spec:

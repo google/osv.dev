@@ -910,6 +910,32 @@ class RESTImporterTest(unittest.TestCase):
     ])
 
 
+@mock.patch('importer.utcnow', lambda: datetime.datetime(2024, 1, 1))
+class ImportFindingsTest(unittest.TestCase):
+  """Import Finding tests."""
+
+  def setUp(self):
+    tests.reset_emulator()
+
+    tests.mock_datetime(self)
+
+  def test_add_finding(self):
+    """Test that creating an import finding works."""
+    expected = osv.ImportFinding(
+        bug_id='CVE-2024-1234',
+        findings=[
+            osv.ImportFindings.INVALID_VERSION,
+        ],
+        first_seen=importer.utcnow(),
+        last_attempt=importer.utcnow(),
+    )
+    expected.put()
+
+    for actual in osv.ImportFinding.query(
+        osv.ImportFinding.bug_id == expected.bug_id):
+      self.assertEqual(expected, actual)
+
+
 if __name__ == '__main__':
   run_slow_tests = (
       os.environ.get('CLOUD_BUILD', 0) != 1 and 'RUN_SLOW_TESTS' in os.environ)

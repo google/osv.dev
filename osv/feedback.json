@@ -71,13 +71,17 @@
                     "id": "GSD-2021-1001229",
                     "finding_first_seen": "2024-04-01T08:15:00Z",
                     "import_last_attempt": "2024-05-03T08:15:00Z",
-                    "findings": "INVALID_JSON"
+                    "findings": [
+                        "INVALID_JSON"
+                    ]
                 },
                 {
                     "id": "GSD-2022-1003535",
                     "finding_first_seen": "2024-04-01T08:15:00Z",
                     "import_last_attempt": "2024-05-03T08:15:00Z",
-                    "findings": "DELETED"
+                    "findings": [
+                        "DELETED"
+                    ]
                 }]
             ]
         }
@@ -87,13 +91,17 @@
             "id": "GSD-2021-1001229",
             "finding_first_seen": "2024-04-01T08:15:00Z",
             "import_last_attempt": "2024-05-03T08:15:00Z",
-            "findings": "INVALID_JSON"
+            "findings": [
+                "INVALID_JSON"
+            ]
         },
         {
             "id": "GSD-2022-1003535",
             "finding_first_seen": "2024-04-01T08:15:00Z",
             "import_last_attempt": "2024-05-03T08:15:00Z",
-            "findings": "DELETED"
+            "findings": [
+                "DELETED"
+            ]
         }]
     }]
 }

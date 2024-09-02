@@ -1,0 +1,99 @@
+{
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "$id": "https://raw.githubusercontent.com/google/osv.dev/main/osv/invalid_records_schema.json",
+    "type": "object",
+    "default": {},
+    "title": "The OSV.dev invalid record Schema",
+    "required": [
+        "invalid_records"
+    ],
+    "properties": {
+        "invalid_records": {
+            "type": "array",
+            "default": [],
+            "title": "The OSV.dev per-source invalid records",
+            "items": {
+                "type": "object",
+                "title": "An individual invalid record",
+                "required": [
+                    "id",
+                    "finding_first_seen",
+                    "import_last_attempt",
+                    "findings"
+                ],
+                "properties": {
+                    "id": {
+                        "type": "string",
+                        "title": "The id of the OSV record",
+                        "examples": [
+                            "GSD-2021-1001229",
+                            "GSD-2022-1003535"
+                        ]
+                    },
+                    "import_last_attempt": {
+                        "type": "string",
+                        "title": "When an import for this record was last attempted in RFC3339",
+                        "examples": [
+                            "2024-05-03T08:15:00Z"
+                        ]
+                    },
+                    "findings": {
+                        "type": "array",
+                        "title": "Reasons for invalidity",
+                        "items": { 
+                            "type": "string"
+                        },
+                        "examples": [
+                            [ "INVALID_JSON" ],
+                            [ "DELETED" ]
+                        ]
+                    }
+                },
+                "examples": [{
+                    "id": "GSD-2021-1001229",
+                    "finding_first_seen": "2024-04-01T08:15:00Z",
+                    "import_last_attempt": "2024-05-03T08:15:00Z",
+                    "findings": [
+                        "INVALID_JSON"
+                    ]
+                },
+                {
+                    "id": "GSD-2022-1003535",
+                    "finding_first_seen": "2024-04-01T08:15:00Z",
+                    "import_last_attempt": "2024-05-03T08:15:00Z",
+                    "findings": [
+                        "DELETED"
+                    ]
+                }]
+            },
+            "examples": [
+                [{
+                    "id": "GSD-2021-1001229",
+                    "finding_first_seen": "2024-04-01T08:15:00Z",
+                    "import_last_attempt": "2024-05-03T08:15:00Z",
+                    "findings": "INVALID_JSON"
+                },
+                {
+                    "id": "GSD-2022-1003535",
+                    "finding_first_seen": "2024-04-01T08:15:00Z",
+                    "import_last_attempt": "2024-05-03T08:15:00Z",
+                    "findings": "DELETED"
+                }]
+            ]
+        }
+    },
+    "examples": [{
+        "invalid_records": [{
+            "id": "GSD-2021-1001229",
+            "finding_first_seen": "2024-04-01T08:15:00Z",
+            "import_last_attempt": "2024-05-03T08:15:00Z",
+            "findings": "INVALID_JSON"
+        },
+        {
+            "id": "GSD-2022-1003535",
+            "finding_first_seen": "2024-04-01T08:15:00Z",
+            "import_last_attempt": "2024-05-03T08:15:00Z",
+            "findings": "DELETED"
+        }]
+    }]
+}

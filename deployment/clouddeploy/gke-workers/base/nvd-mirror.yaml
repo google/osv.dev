@@ -8,7 +8,7 @@ spec:
   failedJobsHistoryLimit: 3
   jobTemplate:
     spec:
-      activeDeadlineSeconds: 2100
+      activeDeadlineSeconds: 7200
       template:
         spec:
           tolerations:

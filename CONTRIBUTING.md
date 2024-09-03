@@ -73,12 +73,12 @@ make all-tests
 
 To run integration tests for the API is a separate command
 ```shell
-make integration-tests
+make api-server-tests
 ```
 
 By default, this skips long tests, enable them by setting the `LONG_TESTS` variable
 ```shell
-LONG_TESTS=1 make integration-tests
+LONG_TESTS=1 make api-server-tests
 ```
 
 #### Test result generation

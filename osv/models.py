@@ -20,7 +20,7 @@ import re
 import os
 
 from urllib.parse import urlparse
-from typing import List, Self
+from typing import Self
 
 from google.cloud import ndb
 from google.protobuf import json_format
@@ -89,8 +89,8 @@ def _repo_name(repo_url: str) -> str:
   return name
 
 
-def _maybe_strip_repo_prefixes(versions: List[str],
-                               repo_urls: List[str]) -> str:
+def _maybe_strip_repo_prefixes(versions: list[str],
+                               repo_urls: list[str]) -> str:
   """Try to strip the repo name from tags prior to normalizing.
 
   There are some particularly regex-unfriendly tag names that prefix the

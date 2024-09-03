@@ -771,6 +771,8 @@ def do_query(query: osv_service_v1_pb2.Query,
   else:
     context.service_context.abort(grpc.StatusCode.INVALID_ARGUMENT,
                                   'Invalid query.')
+    # This will never be reached, and is just here for the type checker,
+    # to know that control flow breaks here.
     raise ValueError
 
   # Asynchronously retrieve computed aliases and related ids here

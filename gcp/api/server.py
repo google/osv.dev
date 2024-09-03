@@ -1240,7 +1240,7 @@ def _query_by_comparing_versions(context: QueryContext, query: ndb.Query,
     context: QueryContext for the current query.
     query: A partially completed ndb.Query object which only needs 
       version filters to be added before query is performed.
-    package_name: The queried package.
+    package_name: Required name of the package to query.
     ecosystem: Required ecosystem of the package to query.
     version: The version str to query by.
 

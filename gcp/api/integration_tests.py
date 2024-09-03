@@ -363,6 +363,19 @@ class IntegrationTests(unittest.TestCase,
         timeout=_TIMEOUT)
     self.assert_results_equal({'vulns': expected_vulns}, response.json())
 
+    # Tests empty response
+    response = requests.post(
+        _api() + _BASE_QUERY,
+        data=json.dumps({
+            'version': '99999999-117.git2e92a49f.el8_8.alma.1',
+            'package': {
+                'name': package,
+                'ecosystem': ecosystem,
+            }
+        }),
+        timeout=_TIMEOUT)
+    self.assertEqual(0, len(response.json()))
+
   def test_query_invalid_ecosystem(self):
     """Test a query with an invalid ecosystem fails validation."""
     response = requests.post(

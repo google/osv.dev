@@ -336,6 +336,46 @@ class IntegrationTests(unittest.TestCase,
         timeout=_TIMEOUT)
     self.assert_results_equal({'vulns': expected_vulns}, response.json())
 
+  def test_query_comparing_version(self):
+    """Test queries by comparing versions."""
+
+    package = 'linux-firmware'
+    ecosystem = 'AlmaLinux:8'
+    alsa_2023_7109 = self._get('ALSA-2023:7109')
+    alsa_2024_3178 = self._get('ALSA-2024:3178')
+    alsa_2024_4262 = self._get('ALSA-2024:4262')
+
+    expected_vulns = [
+        alsa_2023_7109,
+        alsa_2024_3178,
+        alsa_2024_4262,
+    ]
+
+    response = requests.post(
+        _api() + _BASE_QUERY,
+        data=json.dumps({
+            'version': '20230404-117.git2e92a49f.el8_8.alma.1',
+            'package': {
+                'name': package,
+                'ecosystem': ecosystem,
+            }
+        }),
+        timeout=_TIMEOUT)
+    self.assert_results_equal({'vulns': expected_vulns}, response.json())
+
+    # Tests empty response
+    response = requests.post(
+        _api() + _BASE_QUERY,
+        data=json.dumps({
+            'version': '99999999-117.git2e92a49f.el8_8.alma.1',
+            'package': {
+                'name': package,
+                'ecosystem': ecosystem,
+            }
+        }),
+        timeout=_TIMEOUT)
+    self.assertEqual(0, len(response.json()))
+
   def test_query_invalid_ecosystem(self):
     """Test a query with an invalid ecosystem fails validation."""
     response = requests.post(

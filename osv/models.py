@@ -342,7 +342,7 @@ class Bug(ndb.Model):
     return None
 
   @classmethod
-  def get_by_id(cls, vuln_id, *args, **kwargs) -> Self:
+  def get_by_id(cls, vuln_id, *args, **kwargs) -> Self | None:
     """Overridden get_by_id to handle OSV allocated IDs."""
     result = cls.query(cls.db_id == vuln_id).get()
     if result:

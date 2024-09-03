@@ -15,7 +15,6 @@
 
 import argparse
 import codecs
-import concurrent
 from dataclasses import dataclass
 from datetime import datetime, timedelta
 import math
@@ -26,7 +25,7 @@ import os
 import threading
 import time
 import concurrent.futures
-from typing import Callable, List
+from typing import Callable
 
 from collections import defaultdict
 
@@ -96,6 +95,13 @@ _VENDORED_LIB_NAMES = frozenset((
 # Prefix for the
 _TAG_PREFIX = "refs/tags/"
 
+# ----
+# Type Aliases:
+
+ToResponseCallable = Callable[[osv.Bug], vulnerability_pb2.Vulnerability]
+
+# ----
+
 _ndb_client = ndb.Client()
 
 
@@ -156,7 +162,7 @@ class OSVServicer(osv_service_v1_pb2_grpc.OSVServicer,
   @trace_filter.log_trace
   def GetVulnById(self, request, context: grpc.ServicerContext):
     """Return a `Vulnerability` object for a given OSV ID."""
-    bug: osv.Bug | None = osv.Bug.get_by_id(request.id)  # type: ignore
+    bug = osv.Bug.get_by_id(request.id)
     if not bug or bug.status == osv.BugStatus.UNPROCESSED:
       context.abort(grpc.StatusCode.NOT_FOUND, 'Bug not found.')
       return None
@@ -493,7 +499,7 @@ def should_skip_bucket(path: str) -> bool:
 
 
 def process_buckets(
-    file_results: List[osv.FileResult]) -> list[osv.RepoIndexBucket]:
+    file_results: list[osv.FileResult]) -> list[osv.RepoIndexBucket]:
   """
   Create buckets in the same process as 
   indexer to generate the same bucket hashes
@@ -727,7 +733,7 @@ def do_query(query: osv_service_v1_pb2.Query,
         'version specified in params and purl query',
     )
 
-  def to_response(b):
+  def to_response(b: osv.Bug):
     # Skip retrieving aliases from to_vulnerability().
     # Retrieve it asynchronously later.
     return bug_to_response(b, include_details)
@@ -808,7 +814,9 @@ def do_query(query: osv_service_v1_pb2.Query,
   return bugs, next_page_token_str
 
 
-def bug_to_response(bug, include_details=True, include_alias=False):
+def bug_to_response(bug: osv.Bug,
+                    include_details=True,
+                    include_alias=False) -> vulnerability_pb2.Vulnerability:
   """Convert a Bug entity to a response object."""
   if include_details:
     return bug.to_vulnerability(
@@ -818,7 +826,10 @@ def bug_to_response(bug, include_details=True, include_alias=False):
 
 
 @ndb.tasklet
-def _get_bugs(bug_ids, to_response=bug_to_response):
+def _get_bugs(
+    bug_ids: list[str],
+    to_response: ToResponseCallable = bug_to_response
+) -> list[vulnerability_pb2.Vulnerability]:
   """Get bugs from bug ids."""
   bugs = ndb.get_multi_async([ndb.Key(osv.Bug, bug_id) for bug_id in bug_ids
                              ])  # type: ignore
@@ -847,7 +858,7 @@ def _datastore_normalized_purl(purl: PackageURL):
 def query_by_commit(
     context: QueryContext,
     commit: bytes,
-    to_response: Callable = bug_to_response
+    to_response: ToResponseCallable = bug_to_response
 ) -> list[vulnerability_pb2.Vulnerability]:
   """
   Perform a query by commit.
@@ -1151,7 +1162,7 @@ def query_by_version(
     ecosystem: str | None,
     purl: PackageURL | None,
     version: str,
-    to_response: Callable = bug_to_response
+    to_response: ToResponseCallable = bug_to_response
 ) -> list[vulnerability_pb2.Vulnerability]:
   """
   Query by (fuzzy) version.
@@ -1309,7 +1320,7 @@ def _query_by_comparing_versions(context: QueryContext, query: ndb.Query,
 def query_by_package(
     context: QueryContext, package_name: str | None, ecosystem: str | None,
     purl: PackageURL | None,
-    to_response: Callable) -> list[vulnerability_pb2.Vulnerability]:
+    to_response: ToResponseCallable) -> list[vulnerability_pb2.Vulnerability]:
   """
   Query by package.
   

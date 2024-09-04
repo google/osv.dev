@@ -744,7 +744,8 @@ def do_query(query,
         purl,
         purl_version,
         to_response=to_response)
-  elif query.WhichOneof('param') == 'version':
+  # Version query needs to include a package.
+  elif (package_name != '' or purl) and query.WhichOneof('param') == 'version':
     bugs = yield query_by_version(
         context,
         package_name,

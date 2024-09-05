@@ -31,6 +31,8 @@ from .rocky_linux import RockyLinux
 from .rubygems import RubyGems
 from .semver_ecosystem_helper import SemverEcosystem
 from .ubuntu import Ubuntu
+from .suse import SUSE
+from .opensuse import OpenSUSE
 
 _ecosystems = {
     # SemVer-based ecosystems (remember keep synced with SEMVER_ECOSYSTEMS):
@@ -55,11 +57,6 @@ _ecosystems = {
     'Wolfi': Wolfi(),
     # Ecosystems which require a release version for enumeration, which is
     # handled separately in get().
-    'AlmaLinux': OrderingUnsupportedEcosystem(),
-    'Alpine': OrderingUnsupportedEcosystem(),
-    'Debian': OrderingUnsupportedEcosystem(),
-    'Rocky Linux': OrderingUnsupportedEcosystem(),
-    'Ubuntu': OrderingUnsupportedEcosystem(),
     # Ecosystems missing implementations:
     'Android': OrderingUnsupportedEcosystem(),
     'ConanCenter': OrderingUnsupportedEcosystem(),
@@ -129,6 +126,12 @@ def get(name: str) -> Ecosystem:
 
   if name.startswith('Ubuntu'):
     return Ubuntu()
+
+  if name.startswith('openSUSE'):
+    return OpenSUSE()
+
+  if name.startswith('SUSE'):
+    return SUSE()
 
   return _ecosystems.get(name)
 

@@ -17,7 +17,7 @@ import unittest
 from .. import ecosystems
 
 
-class openSUSEEcosystemTest(unittest.TestCase):
+class OpenSUSEEcosystemTest(unittest.TestCase):
   """openSUSE ecosystem helper tests."""
 
   def test_suse(self):
@@ -32,8 +32,7 @@ class openSUSEEcosystemTest(unittest.TestCase):
         ecosystem.sort_key("6.2.8-bp156.2.3.1"),
         ecosystem.sort_key("6.2.8-bp156"))
     self.assertLess(
-        ecosystem.sort_key("0.4.6-15.8"),
-        ecosystem.sort_key("1.4.6-15.8"))
+        ecosystem.sort_key("0.4.6-15.8"), ecosystem.sort_key("1.4.6-15.8"))
     self.assertEqual(
         ecosystem.sort_key("6.2.8-bp156.2.3.1"),
         ecosystem.sort_key("6.2.8-bp156.2.3.1"))

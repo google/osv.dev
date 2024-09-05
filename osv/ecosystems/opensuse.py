@@ -11,15 +11,19 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""SUSE ecosystem helper."""
+"""openSUSE ecosystem helper."""
 
 from ..third_party.univers.rpm import RpmVersion
 
 from .helper_base import Ecosystem
 
 
-class openSUSE(Ecosystem):
-  """"SUSE ecosystem"""
+class OpenSUSE(Ecosystem):
+  """"openSUSE ecosystem"""
+
+  @property
+  def name(self):
+    return "openSUSE"
 
   def sort_key(self, version):
     return RpmVersion.from_string(version)

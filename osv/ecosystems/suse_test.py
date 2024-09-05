@@ -35,5 +35,4 @@ class SUSEEcosystemTest(unittest.TestCase):
         ecosystem.sort_key("1.86-150100.7.23.11"),
         ecosystem.sort_key("2.86-150100.7.23.1"))
     self.assertEqual(
-        ecosystem.sort_key("2.0.8-4.8.2"),
-        ecosystem.sort_key("2.0.8-4.8.2"))
+        ecosystem.sort_key("2.0.8-4.8.2"), ecosystem.sort_key("2.0.8-4.8.2"))

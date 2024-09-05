@@ -32,7 +32,7 @@ from .rubygems import RubyGems
 from .semver_ecosystem_helper import SemverEcosystem
 from .ubuntu import Ubuntu
 from .suse import SUSE
-from .opensuse import openSUSE
+from .opensuse import OpenSUSE
 
 _ecosystems = {
     # SemVer-based ecosystems (remember keep synced with SEMVER_ECOSYSTEMS):
@@ -128,7 +128,7 @@ def get(name: str) -> Ecosystem:
     return Ubuntu()
 
   if name.startswith('openSUSE'):
-    return openSUSE()
+    return OpenSUSE()
 
   if name.startswith('SUSE'):
     return SUSE()

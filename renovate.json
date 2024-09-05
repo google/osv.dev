@@ -14,6 +14,9 @@
     "enabled": true,
     "schedule": ["before 6am on wednesday"]
   },
+  "git-submodules": {
+    "enabled": true
+  },
   "packageRules": [
     {
       "matchUpdateTypes": ["major"],

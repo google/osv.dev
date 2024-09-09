@@ -1,5 +1,6 @@
 @import "./variables";
 @import "../highlight/native.scss";
+@import url('https://fonts.googleapis.com/css2?family=Overpass:ital,wght@0,100..900;1,100..900&display=swap');
 
 $new-body-background-color: #292929;
 
@@ -20,5 +21,3 @@ $table-background-color: lighten($new-body-background-color, 5%); // Replacing d
 $search-background-color: $new-body-background-color; // Replacing default $grey-dk-250
 $search-result-preview-color: $grey-dk-000;
 $border-color: #6A6A6A; // Replacing default $grey-dk-200
-
-

@@ -1,6 +1,6 @@
 resources:
 - ../../base
-- staging-test.yaml
+- staging-api-test.yaml
 patches:
 - path: workers.yaml
 - path: scaler.yaml

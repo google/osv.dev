@@ -25,7 +25,7 @@ import osv.logs
 from google.cloud import ndb
 
 GCP_PROJECT = 'oss-vdb-test'
-BUG_DIR = '/staging_testing/all_bugs'
+BUG_DIR = './all_bugs'
 
 
 def format_bug_for_output(bug: osv.Bug) -> dict[str, any]:

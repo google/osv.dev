@@ -1,3 +1,4 @@
+#!/bin/bash -x
 # Copyright 2024 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -12,19 +13,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-FROM gcr.io/oss-vdb/worker
+python3 ./retrieve_bugs_from_db.py
 
-WORKDIR /staging_testing
+# `aiohttp` has limits on the number of simultaneous connections.
+# Running two instances of the program in parrallel 
+# can help circumvent this restriction.
+python3 ./perform_api_calls.py &
+python3 ./perform_api_calls.py &
 
-COPY retrieve_bugs_from_db.py /staging_testing
-COPY perform_api_calls.py /staging_testing
-COPY run.sh /staging_testing
-
-# Add aiohttp lib
-RUN cd /env/docker/worker && POETRY_VIRTUALENVS_CREATE=false poetry add aiohttp
-
-RUN chmod 755 /staging_testing/retrieve_bugs_from_db.py
-RUN chmod 755 /staging_testing/perform_api_calls.py
-RUN chmod 755 /staging_testing/run.sh
-
-ENTRYPOINT ["/staging_testing/run.sh"]
+# Wait for both background processes to finish
+wait

@@ -33,7 +33,7 @@ import osv.logs
 
 BASE_URL = 'https://api.test.osv.dev/v1'
 GCP_PROJECT = 'oss-vdb-test'
-BUG_DIR = '/staging_testing/all_bugs'
+BUG_DIR = './all_bugs'
 
 # Total run time in seconds
 TOTAL_RUNTIME = 3600
@@ -154,9 +154,12 @@ async def make_http_request(session: aiohttp.ClientSession, request_url: str,
         pass  # We're not awaiting the response, just sending the request
     elif request_type == 'POST':
       async with session.post(request_url, json=request_body, timeout=timeout):
-        # print(f'request: {request_body}, response: {response.status}')
         pass  # We're not awaiting the response, just sending the request
   except Exception as e:
+    # When sending a large number of requests concurrently,
+    # some may fail due to timeout issues.
+    # These failures can be ignored as long as the server receives a
+    # sufficient volume of successful requests.
     logging.warning('Error sending request %s with body %s: %s', request_url,
                     request_body, type(e))
 

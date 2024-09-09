@@ -1,4 +1,3 @@
-#!/bin/bash -x
 # Copyright 2024 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -13,11 +12,15 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-python3 /staging_testing/retrieve_bugs_from_db.py
+FROM gcr.io/oss-vdb/worker
 
-# Run the two processing scripts concurrently in the background
-python3 /staging_testing/perform_api_calls.py &
-python3 /staging_testing/perform_api_calls.py &
+WORKDIR /staging_api_test
 
-# Wait for both background processes to finish
-wait
+COPY retrieve_bugs_from_db.py perform_api_calls.py run.sh ./
+
+# Add aiohttp lib
+RUN cd /env/docker/worker && POETRY_VIRTUALENVS_CREATE=false poetry add aiohttp
+
+RUN chmod 755 retrieve_bugs_from_db.py perform_api_calls.py run.sh
+
+ENTRYPOINT ["./run.sh"]

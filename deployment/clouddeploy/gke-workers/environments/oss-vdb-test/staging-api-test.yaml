@@ -19,8 +19,8 @@ spec:
             resources:
               requests:
                 cpu: 1.5
-                memory: "3G"
+                memory: "4G"
               limits:
                 cpu: 2
-                memory: "6G"
+                memory: "10G"
           restartPolicy: Never

@@ -756,7 +756,8 @@ def do_query(query: osv_service_v1_pb2.Query,
         purl,
         purl_version,
         to_response=to_response)
-  elif query.WhichOneof('param') == 'version':
+  # Version query needs to include a package.
+  elif (package_name != '' or purl) and query.WhichOneof('param') == 'version':
     bugs = yield query_by_version(
         context,
         package_name,
@@ -1232,8 +1233,8 @@ def query_by_version(
           bugs.append(bug)
     elif supports_comparing:
       # Query for non-enumerated ecosystems.
-      bugs = yield _query_by_comparing_versions(context, query, ecosystem,
-                                                version)
+      bugs = yield _query_by_comparing_versions(context, query, package_name,
+                                                ecosystem, version)
     else:
       bugs = yield _query_by_generic_version(context, query, package_name,
                                              ecosystem, purl, version)
@@ -1260,7 +1261,8 @@ def query_by_version(
 
 @ndb.tasklet
 def _query_by_comparing_versions(context: QueryContext, query: ndb.Query,
-                                 ecosystem: str, version: str) -> list[osv.Bug]:
+                                 package_name: str, ecosystem: str,
+                                 version: str) -> list[osv.Bug]:
   """
   Query by comparing versions.
 
@@ -1268,6 +1270,7 @@ def _query_by_comparing_versions(context: QueryContext, query: ndb.Query,
     context: QueryContext for the current query.
     query: A partially completed ndb.Query object which only needs 
       version filters to be added before query is performed.
+    package_name: Required name of the package to query.
     ecosystem: Required ecosystem of the package to query.
     version: The version str to query by.
 
@@ -1308,6 +1311,11 @@ def _query_by_comparing_versions(context: QueryContext, query: ndb.Query,
       # Skips if the affected package ecosystem does not match
       # the queried ecosystem.
       if package_ecosystem != ecosystem:
+        continue
+
+      # Skips if the affected package name does not match
+      # the queried package name.
+      if package_name != package.name:
         continue
 
       if _is_affected(ecosystem, version, affected_package):

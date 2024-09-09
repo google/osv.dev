@@ -8,3 +8,5 @@ build/lib
 .history/*
 **/.history/*
 */datastore-helper/
+go.work
+go.work.sum

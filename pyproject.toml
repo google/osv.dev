@@ -28,6 +28,12 @@ requests = "^2.32"
 yapf = "*"
 pylint = "*"
 grpcio-tools = "*"
+mypy-protobuf = "^3.6.0"
+
+[tool.pyright]
+executionEnvironments = [
+    { root = "osv/models.py", reportAssignmentType = "none" },
+]
 
 [build-system]
 requires = ["poetry-core"]

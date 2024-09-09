@@ -15,6 +15,7 @@
 
 from abc import ABC, abstractmethod
 import bisect
+from typing import Any
 import requests
 from urllib.parse import quote
 
@@ -57,7 +58,7 @@ class Ecosystem(ABC):
     return None
 
   @abstractmethod
-  def sort_key(self, version):
+  def sort_key(self, version: str) -> Any:
     """Sort key."""
 
   def sort_versions(self, versions):

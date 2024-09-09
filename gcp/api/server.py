@@ -15,7 +15,6 @@
 
 import argparse
 import codecs
-import concurrent
 from dataclasses import dataclass
 from datetime import datetime, timedelta
 import math
@@ -25,7 +24,8 @@ import logging
 import os
 import threading
 import time
-from typing import Callable, List
+import concurrent.futures
+from typing import Callable
 
 from collections import defaultdict
 
@@ -44,6 +44,7 @@ import osv
 from osv import ecosystems
 from osv import semver_index
 from osv import purl_helpers
+from osv import vulnerability_pb2
 from osv.logs import setup_gcp_logging
 from gcp.api import osv_service_v1_pb2
 from gcp.api import osv_service_v1_pb2_grpc
@@ -93,6 +94,13 @@ _VENDORED_LIB_NAMES = frozenset((
 
 # Prefix for the
 _TAG_PREFIX = "refs/tags/"
+
+# ----
+# Type Aliases:
+
+ToResponseCallable = Callable[[osv.Bug], vulnerability_pb2.Vulnerability]
+
+# ----
 
 _ndb_client = ndb.Client()
 
@@ -154,7 +162,7 @@ class OSVServicer(osv_service_v1_pb2_grpc.OSVServicer,
   @trace_filter.log_trace
   def GetVulnById(self, request, context: grpc.ServicerContext):
     """Return a `Vulnerability` object for a given OSV ID."""
-    bug: osv.Bug = osv.Bug.get_by_id(request.id)
+    bug = osv.Bug.get_by_id(request.id)
     if not bug or bug.status == osv.BugStatus.UNPROCESSED:
       context.abort(grpc.StatusCode.NOT_FOUND, 'Bug not found.')
       return None
@@ -207,7 +215,8 @@ class OSVServicer(osv_service_v1_pb2_grpc.OSVServicer,
         total_responses=ResponsesCount(0))
 
     try:
-      results, next_page_token = do_query(request.query, query_context).result()
+      results, next_page_token = do_query(
+          request.query, query_context).result()  # type: ignore
     except InvalidArgument:
       # Currently cannot think of any other way
       # this can be raised other than invalid cursor
@@ -490,7 +499,7 @@ def should_skip_bucket(path: str) -> bool:
 
 
 def process_buckets(
-    file_results: List[osv.FileResult]) -> List[osv.RepoIndexBucket]:
+    file_results: list[osv.FileResult]) -> list[osv.RepoIndexBucket]:
   """
   Create buckets in the same process as 
   indexer to generate the same bucket hashes
@@ -504,18 +513,19 @@ def process_buckets(
     buckets[int.from_bytes(fr.hash[:2], byteorder='big') % _BUCKET_SIZE].append(
         fr.hash)
 
-  results: list[osv.RepoIndexBucket] = [None] * _BUCKET_SIZE
-  for bucket_idx, bucket in enumerate(buckets):
+  results: list[osv.RepoIndexBucket] = []
+  for bucket in buckets:
     bucket.sort()
 
     hasher = hashlib.md5()
     for v in bucket:
       hasher.update(v)
 
-    results[bucket_idx] = osv.RepoIndexBucket(
-        node_hash=hasher.digest(),
-        files_contained=len(bucket),
-    )
+    results.append(
+        osv.RepoIndexBucket(
+            node_hash=hasher.digest(),
+            files_contained=len(bucket),
+        ))
 
   return results
 
@@ -535,7 +545,8 @@ def build_determine_version_result(
   # Only interested in our maximum number of results
   bucket_match_items = bucket_match_items[:min(
       _MAX_DETERMINE_VER_RESULTS_TO_RETURN, len(bucket_match_items))]
-  idx_futures = ndb.get_multi_async([b[0] for b in bucket_match_items])
+  idx_futures = ndb.get_multi_async([b[0] for b in bucket_match_items
+                                    ])  # type: ignore
   output = []
 
   # Apply bitwise NOT to the user bitmap
@@ -661,7 +672,7 @@ def determine_version(version_query: osv_service_v1_pb2.VersionQuery,
         continue
 
       for index_bucket in result:
-        parent_key = index_bucket.key.parent()
+        parent_key = index_bucket.key.parent()  # type: ignore
         file_match_count[parent_key] += index_bucket.files_contained
         bucket_match_count[parent_key] += 1
 
@@ -677,7 +688,7 @@ def determine_version(version_query: osv_service_v1_pb2.VersionQuery,
 
 
 @ndb.tasklet
-def do_query(query,
+def do_query(query: osv_service_v1_pb2.Query,
              context: QueryContext,
              include_details=True) -> tuple[list, str | None]:
   """Do a query."""
@@ -722,11 +733,12 @@ def do_query(query,
         'version specified in params and purl query',
     )
 
-  def to_response(b):
+  def to_response(b: osv.Bug):
     # Skip retrieving aliases from to_vulnerability().
     # Retrieve it asynchronously later.
     return bug_to_response(b, include_details)
 
+  bugs: list[vulnerability_pb2.Vulnerability]
   if query.WhichOneof('param') == 'commit':
     try:
       commit_bytes = codecs.decode(query.commit, 'hex')
@@ -760,7 +772,9 @@ def do_query(query,
   else:
     context.service_context.abort(grpc.StatusCode.INVALID_ARGUMENT,
                                   'Invalid query.')
-    return None
+    # This will never be reached, and is just here for the type checker,
+    # to know that control flow breaks here.
+    raise ValueError
 
   # Asynchronously retrieve computed aliases and related ids here
   # to prevent significant query time increase for packages with
@@ -773,7 +787,7 @@ def do_query(query,
       related.append(osv.get_related_async(bug.id))
 
     for i, alias in enumerate(aliases):
-      alias_group = yield alias
+      alias_group: osv.AliasGroup = yield alias
       if not alias_group:
         continue
       alias_ids = sorted(list(set(alias_group.bug_ids) - {bugs[i].id}))
@@ -783,7 +797,7 @@ def do_query(query,
       bugs[i].modified.FromDatetime(modified_time)
 
     for i, related_ids in enumerate(related):
-      related_bug_ids = yield related_ids
+      related_bug_ids: list[str] = yield related_ids
       bugs[i].related[:] = sorted(
           list(set(related_bug_ids + list(bugs[i].related))))
 
@@ -803,7 +817,9 @@ def do_query(query,
   return bugs, next_page_token_str
 
 
-def bug_to_response(bug, include_details=True, include_alias=False):
+def bug_to_response(bug: osv.Bug,
+                    include_details=True,
+                    include_alias=False) -> vulnerability_pb2.Vulnerability:
   """Convert a Bug entity to a response object."""
   if include_details:
     return bug.to_vulnerability(
@@ -813,9 +829,13 @@ def bug_to_response(bug, include_details=True, include_alias=False):
 
 
 @ndb.tasklet
-def _get_bugs(bug_ids, to_response=bug_to_response):
+def _get_bugs(
+    bug_ids: list[str],
+    to_response: ToResponseCallable = bug_to_response
+) -> list[vulnerability_pb2.Vulnerability]:
   """Get bugs from bug ids."""
-  bugs = ndb.get_multi_async([ndb.Key(osv.Bug, bug_id) for bug_id in bug_ids])
+  bugs = ndb.get_multi_async([ndb.Key(osv.Bug, bug_id) for bug_id in bug_ids
+                             ])  # type: ignore
 
   responses = []
   for future_bug in bugs:
@@ -838,9 +858,11 @@ def _datastore_normalized_purl(purl: PackageURL):
 
 
 @ndb.tasklet
-def query_by_commit(context: QueryContext,
-                    commit: bytes,
-                    to_response: Callable = bug_to_response) -> list:
+def query_by_commit(
+    context: QueryContext,
+    commit: bytes,
+    to_response: ToResponseCallable = bug_to_response
+) -> list[vulnerability_pb2.Vulnerability]:
   """
   Perform a query by commit.
 
@@ -914,7 +936,8 @@ def _match_purl(purl_query: PackageURL, purl_db: PackageURL) -> bool:
     # No qualifiers, and our PURLs never have versions, so just match name
     return purl_query.name == purl_db.name
 
-  if purl_db.qualifiers:
+  if (purl_db.qualifiers and isinstance(purl_db.qualifiers, dict) and
+      isinstance(purl_query.qualifiers, dict)):
     # A arch of 'source' matches all other architectures
     if purl_db.qualifiers['arch'] == 'source':
       purl_db.qualifiers['arch'] = purl_query.qualifiers['arch']
@@ -922,13 +945,14 @@ def _match_purl(purl_query: PackageURL, purl_db: PackageURL) -> bool:
   return purl_query == purl_db
 
 
-def _is_semver_affected(affected_packages, package_name, ecosystem,
-                        purl: PackageURL | None, version):
+def _is_semver_affected(affected_packages: list[osv.AffectedPackage],
+                        package_name: str | None, ecosystem: str | None,
+                        purl: PackageURL | None, version_str: str):
   """Returns whether or not the given version is within an affected SEMVER
 
   range.
   """
-  version = semver_index.parse(version)
+  version = semver_index.parse(version_str)
 
   affected = False
   for affected_package in affected_packages:
@@ -1005,7 +1029,7 @@ def _is_version_affected(affected_packages,
 @ndb.tasklet
 def _query_by_semver(context: QueryContext, query: ndb.Query,
                      package_name: str | None, ecosystem: str | None,
-                     purl: PackageURL | None, version: str):
+                     purl: PackageURL | None, version: str) -> list[osv.Bug]:
   """
   Perform a query by semver version.
 
@@ -1027,8 +1051,8 @@ def _query_by_semver(context: QueryContext, query: ndb.Query,
     return []
 
   results = []
-  query = query.filter(
-      osv.Bug.semver_fixed_indexes > semver_index.normalize(version))
+  query = query.filter(osv.Bug.semver_fixed_indexes
+                       > semver_index.normalize(version))  # type: ignore
 
   context.query_counter += 1
   if context.should_skip_query():
@@ -1058,7 +1082,7 @@ def _query_by_generic_version(
     ecosystem: str | None,
     purl: PackageURL | None,
     version: str,
-):
+) -> list[osv.Bug]:
   """
   Query by generic version. 
   
@@ -1104,13 +1128,13 @@ def _query_by_generic_version(
 def query_by_generic_helper(context: QueryContext, base_query: ndb.Query,
                             package_name: str | None, ecosystem: str | None,
                             purl: PackageURL | None, version: str,
-                            is_normalized):
+                            is_normalized: bool) -> list[osv.Bug]:
   """
   Helper function for query_by_generic. 
   This function can be called multiple times.
   """
   query: ndb.Query = base_query.filter(osv.Bug.affected_fuzzy == version)
-  results = []
+  results: list[osv.Bug] = []
   context.query_counter += 1
   if context.should_skip_query():
     return []
@@ -1121,7 +1145,7 @@ def query_by_generic_helper(context: QueryContext, base_query: ndb.Query,
     if context.should_break_page(len(results)):
       context.save_cursor_at_page_break(it)
       break
-    bug = it.next()
+    bug: osv.Bug = it.next()  # type: ignore
     if _is_version_affected(
         bug.affected_packages,
         package_name,
@@ -1135,12 +1159,14 @@ def query_by_generic_helper(context: QueryContext, base_query: ndb.Query,
 
 
 @ndb.tasklet
-def query_by_version(context: QueryContext,
-                     package_name: str | None,
-                     ecosystem: str | None,
-                     purl: PackageURL | None,
-                     version: str,
-                     to_response: Callable = bug_to_response):
+def query_by_version(
+    context: QueryContext,
+    package_name: str | None,
+    ecosystem: str | None,
+    purl: PackageURL | None,
+    version: str,
+    to_response: ToResponseCallable = bug_to_response
+) -> list[vulnerability_pb2.Vulnerability]:
   """
   Query by (fuzzy) version.
 
@@ -1176,13 +1202,16 @@ def query_by_version(context: QueryContext,
   else:
     return []
 
+  ecosystem_info = None
   if ecosystem:
     query = query.filter(osv.Bug.ecosystem == ecosystem)
+    ecosystem_info = ecosystems.get(ecosystem)
 
   if purl:
     purl_ecosystem = purl_helpers.purl_to_ecosystem(purl.type)
     if purl_ecosystem:
       ecosystem = purl_ecosystem
+      ecosystem_info = ecosystems.get(ecosystem)
 
   ecosystem_info = ecosystems.get(ecosystem)
   is_semver = ecosystem_info and ecosystem_info.is_semver
@@ -1233,7 +1262,7 @@ def query_by_version(context: QueryContext,
 @ndb.tasklet
 def _query_by_comparing_versions(context: QueryContext, query: ndb.Query,
                                  package_name: str, ecosystem: str,
-                                 version: str) -> list:
+                                 version: str) -> list[osv.Bug]:
   """
   Query by comparing versions.
 
@@ -1248,7 +1277,7 @@ def _query_by_comparing_versions(context: QueryContext, query: ndb.Query,
   Returns:
     list of osv.Bugs
   """
-  bugs = []
+  bugs: list[osv.Bug] = []
 
   context.query_counter += 1
   if context.should_skip_query():
@@ -1264,17 +1293,17 @@ def _query_by_comparing_versions(context: QueryContext, query: ndb.Query,
       context.save_cursor_at_page_break(it)
       break
 
-    bug: osv.Bug = it.next()
-    for affected_package in bug.affected_packages:
+    # next() will never return None as we check for has next above.
+    bug: osv.Bug = it.next()  # type: ignore
+    for affected_package in bug.affected_packages:  # type: ignore
       affected_package: osv.AffectedPackage
-      package = affected_package.package
-      package: osv.Package
+      package: osv.Package = affected_package.package  # type: ignore
 
       # If the queried ecosystem has no release specified (e.g., "Debian"),
       # compare against packages in all releases (e.g., "Debian:X").
       # Otherwise, only compare within
       # the specified release (e.g., "Debian:11").
-      package_ecosystem = package.ecosystem
+      package_ecosystem: str = package.ecosystem  # type: ignore
       if not has_release:
         # Extracts ecosystem name for broader comparison (e.g., "Debian")
         package_ecosystem = package_ecosystem.split(':')[0]
@@ -1298,9 +1327,10 @@ def _query_by_comparing_versions(context: QueryContext, query: ndb.Query,
 
 
 @ndb.tasklet
-def query_by_package(context: QueryContext, package_name: str | None,
-                     ecosystem: str | None, purl: PackageURL | None,
-                     to_response: Callable) -> list:
+def query_by_package(
+    context: QueryContext, package_name: str | None, ecosystem: str | None,
+    purl: PackageURL | None,
+    to_response: ToResponseCallable) -> list[vulnerability_pb2.Vulnerability]:
   """
   Query by package.
   
@@ -1348,7 +1378,7 @@ def query_by_package(context: QueryContext, package_name: str | None,
       context.save_cursor_at_page_break(it)
       break
 
-    bug: osv.Bug = it.next()
+    bug: osv.Bug = it.next()  # type: ignore
 
     if purl:
       affected = False
@@ -1472,9 +1502,7 @@ def main():
   args = parser.parse_args()
   port = args.port
   if not port:
-    port = os.environ.get('PORT')
-  if not port:
-    port = 8000
+    port = int(os.environ.get('PORT', '8000'))
 
   serve(port, args.local)
 

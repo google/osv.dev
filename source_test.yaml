@@ -78,6 +78,7 @@
   ignore_git: True
   link: 'https://packages.cgr.dev/chainguard/osv/'
   editable: False
+
 - name: 'curl'
   versions_from_repo: False
   rest_api_url: 'https://curl.se/docs/vuln.json'
@@ -293,6 +294,19 @@
   link: 'https://github.com/rustsec/advisory-db/blob/osv/'
   editable: False
   repo_username: 'git'
+
+- name: 'suse'
+  versions_from_repo: False
+  rest_api_url: 'https://ftp.suse.com/pub/projects/security/osv/all.json'
+  type: 2
+  ignore_patterns: ['^(?!(?:open)?SUSE-[FORS]U-).*$']  # NOTE: Not currently supported for REST sources
+  directory_path: 'pub/projects/security/osv'
+  detect_cherrypicks: False
+  extension: '.json'
+  db_prefix: ['openSUSE-SU-', 'SUSE-FU-', 'SUSE-OU-', 'SUSE-RU-', 'SUSE-SU-']
+  ignore_git: True
+  link: 'https://ftp.suse.com/pub/projects/security/osv/'
+  editable: False
 
 - name: 'ubuntu'
   versions_from_repo: False

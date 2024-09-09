@@ -24,7 +24,7 @@ description: >-
   Information about the OSV database and API.
 baseurl: "/osv.dev" # the subpath of your site, e.g. /blog
 url: "" # the base hostname & protocol for your site, e.g. http://example.com
-github_username:  google
+github_username: google
 heading_anchors: true
 
 # Build settings
@@ -32,10 +32,10 @@ remote_theme: just-the-docs/just-the-docs
 plugins:
   - jekyll-feed
 
-color_scheme: better_contrast
+color_scheme: custom_dark
 markdown: kramdown
 
-logo: "/assets/logo.png"
+logo: "/assets/logo-dark.png"
 favicon_ico: "/assets/icon.png"
 
 callouts_level: quiet # or loud

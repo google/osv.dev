@@ -20,6 +20,7 @@ python3 -m grpc_tools.protoc \
     --go_out=../../../tools/indexer-api-caller/ \
     --go_opt=Mosv/vulnerability.proto=github.com/google/osv/proto \
     --go_opt=Mosv_service_v1.proto=github.com/google/osv/api/proto \
+    --mypy_out=../ \
     osv_service_v1.proto
 ```
 

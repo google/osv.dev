@@ -10,12 +10,12 @@
   "labels": ["dependencies"],
   "postUpdateOptions": ["gomodTidy"],
   "osvVulnerabilityAlerts": true,
-  "lockFileMaintenance": { 
+  "lockFileMaintenance": {
     "enabled": true,
     "schedule": ["before 6am on wednesday"]
   },
   "git-submodules": {
-    "enabled": true
+    "enabled": false
   },
   "packageRules": [
     {

@@ -18,7 +18,7 @@ redis = "==4.6.0"
 requests = "==2.32.3"
 gunicorn = "==22.0.0"
 whitenoise = "==6.7.0"
-cvss = "==3.1"
+cvss = "==3.2"
 
 osv = { path = "../../", develop = true }
 

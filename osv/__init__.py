@@ -18,4 +18,5 @@ from .impact import *
 from .repos import *
 from .sources import *
 from .models import *
+from .model_helpers import *
 from .ecosystems import *

@@ -18,6 +18,7 @@ osv = { path = "../../", develop = true }
 
 [tool.poetry.dev-dependencies]
 grpcio-tools = "*"
+mypy-protobuf = "^3.6.0"
 yapf = "*"
 pylint = "*"
 

@@ -80,7 +80,7 @@ def _coerce_suffix(suffix):
   return pre + build + match.group(3)
 
 
-def coerce(version):
+def coerce(version: str):
   """Coerce a potentially invalid semver into valid semver."""
   version = _strip_leading_v(version)
   version_pattern = re.compile(r'^(\d+)(\.\d+)?(\.\d+)?(.*)$')
@@ -99,7 +99,7 @@ def is_valid(version):
   return semver.Version.is_valid(_strip_leading_v(version))
 
 
-def parse(version):
+def parse(version: str):
   """Parse a SemVer."""
   return semver.Version.parse(coerce(version))
 

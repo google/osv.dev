@@ -311,12 +311,12 @@
 - name: 'ubuntu'
   versions_from_repo: False
   type: 0
-  ignore_patterns: ['^(?!USN-).*$']
+  ignore_patterns: ['^(?!(USN|UBUNTU)-).*$']
   directory_path: 'osv'
   repo_url: 'https://github.com/canonical/ubuntu-security-notices.git'
   detect_cherrypicks: False
   extension: '.json'
-  db_prefix: ['USN-']
+  db_prefix: ['USN-', 'UBUNTU-']
   ignore_git: False
   human_link: 'https://ubuntu.com/security/notices/{{ BUG_ID }}'
   link: 'https://github.com/canonical/ubuntu-security-notices/blob/main/'

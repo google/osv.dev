@@ -891,6 +891,27 @@ class AliasDenyListEntry(ndb.Model):
   bug_id: str = ndb.StringProperty()
 
 
+class ImportFindings(enum.IntEnum):
+  """The possible quality findings about an individual record."""
+  NONE = 0
+  DELETED = 1
+  INVALID_JSON = 2
+  INVALID_PACKAGE = 3
+  INVALID_PURL = 4
+  INVALID_VERSION = 5
+  INVALID_COMMIT = 6
+  INVALID_RANGE = 7
+  BAD_ALIASED_CVE = 8
+
+
+class ImportFinding(ndb.Model):
+  """Quality findings about an individual record."""
+  bug_id: str = ndb.StringProperty()
+  findings: list[ImportFindings] = ndb.IntegerProperty(repeated=True)
+  first_seen: datetime = ndb.DateTimeProperty()
+  last_attempt: datetime = ndb.DateTimeProperty()
+
+
 def get_source_repository(source_name):
   """Get source repository."""
   return SourceRepository.get_by_id(source_name)

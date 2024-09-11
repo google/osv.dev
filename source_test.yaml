@@ -209,7 +209,8 @@
   type: 0
   ignore_patterns: ['^(?!OSV-).*$']
   directory_path: 'vulns'
-  repo_url: 'ssh://github.com/google/oss-fuzz-vulns'
+  # deliberately HTTPS due to lack of SSH credentials in Staging.
+  repo_url: 'https://github.com/google/oss-fuzz-vulns.git'
   detect_cherrypicks: True
   db_prefix: ['OSV-']
   ignore_git: False

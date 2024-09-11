@@ -1,8 +1,10 @@
 package main
 
 import (
+	"encoding/csv"
 	"encoding/json"
 	"flag"
+	"fmt"
 	"net/url"
 	"os"
 	"path"
@@ -24,6 +26,7 @@ const (
 	alpineSecurityTrackerURL = "https://security.alpinelinux.org/vuln"
 	debianEcosystem          = "Debian"
 	debianSecurityTrackerURL = "https://security-tracker.debian.org/tracker"
+	modifiedCSVFile          = "modified_time.csv"
 )
 
 var Logger utility.LoggerWrapper
@@ -48,9 +51,19 @@ func main() {
 		Logger.Fatalf("Can't create output path: %s", err)
 	}
 
+	outputModifiedTime, err := loadOutputModifiedTime(*osvOutputPath)
+	if err != nil {
+		Logger.Fatalf("Failed to read modified.csv : %s", err)
+	}
+
 	allCves := loadAllCVEs(*cvePath)
 	allParts, cveModifiedMap := loadParts(*partsInputPath)
-	combinedData := combineIntoOSV(allCves, allParts, *cveListPath, cveModifiedMap)
+	combinedData := combineIntoOSV(allCves, allParts, *cveListPath, cveModifiedMap, outputModifiedTime)
+	err = updateOutputModifiedTime(outputModifiedTime, *osvOutputPath)
+	if err != nil {
+		Logger.Fatalf("Failed to write modified.csv : %s", err)
+	}
+
 	writeOSVFile(combinedData, *osvOutputPath)
 }
 
@@ -65,6 +78,84 @@ func getModifiedTime(filePath string) (time.Time, error) {
 	parsedTime := fileInfo.ModTime()
 
 	return parsedTime, err
+}
+
+// updateOutputModifiedTime updates the last modified timestamps for the CVEs output files.
+//
+// Parameters:
+//   - outputModifiedTime: The output modified time map.
+//   - osvOutputPath: The directory path containing the OSV output files.
+//
+// Returns:
+//   - An error object
+func updateOutputModifiedTime(outputModifiedTime map[cves.CVEID]time.Time, osvOutputPath string) error {
+	filePath := path.Join(osvOutputPath, modifiedCSVFile)
+	file, err := os.Create(filePath) // Create or truncate the file
+	if err != nil {
+		return fmt.Errorf("error creating modified time CSV: %w", err)
+	}
+	defer file.Close()
+
+	writer := csv.NewWriter(file)
+	defer writer.Flush()
+
+	// Write the header
+	err = writer.Write([]string{"CVE ID", "ModifiedTime"})
+	if err != nil {
+		return fmt.Errorf("Error writing CSV header: %w", err)
+	}
+
+	// Write the data
+	for cveId, modifiedTime := range outputModifiedTime {
+		err := writer.Write([]string{string(cveId), modifiedTime.Format(time.RFC3339)})
+		if err != nil {
+			return fmt.Errorf("Error writing CSV data: %w", err)
+		}
+	}
+
+	return nil
+}
+
+// loadOutputModifiedTime retrieves the last modified timestamps for the CVEs output files.
+//
+// Parameters:
+//   - osvOutputPath: The directory path containing the OSV output files.
+//
+// Returns:
+//   - A mapping of "CVE-ID": last modified times (time.Time)
+//   - An error object
+func loadOutputModifiedTime(osvOutputPath string) (map[cves.CVEID]time.Time, error) {
+	filePath := path.Join(osvOutputPath, modifiedCSVFile)
+	file, err := os.Open(filePath)
+
+	if err != nil {
+		// Handle the case where the file might not exist
+		if os.IsNotExist(err) {
+			Logger.Infof("Modified time CSV file not found. Creating a new one.")
+			return make(map[cves.CVEID]time.Time), nil
+		}
+		return nil, fmt.Errorf("Error opening modified time CSV: %w", err)
+	}
+	defer file.Close()
+
+	reader := csv.NewReader(file)
+	reader.Read() // Skip reading CSV header
+	records, err := reader.ReadAll()
+	if err != nil {
+		return nil, fmt.Errorf("Error reading modified time CSV: %w", err)
+	}
+
+	modifiedTimes := make(map[cves.CVEID]time.Time)
+	for _, record := range records {
+		cveId, modifiedTimeString := cves.CVEID(record[0]), record[1]
+		modifiedTime, err := time.Parse(time.RFC3339, modifiedTimeString)
+		if err != nil {
+			return nil, fmt.Errorf("Error parsing modified time for %s: %w", cveId, err)
+		}
+		modifiedTimes[cveId] = modifiedTime
+	}
+
+	return modifiedTimes, nil
 }
 
 // loadInnerParts loads second level folder for the loadParts function
@@ -147,9 +238,10 @@ func loadParts(partsInputPath string) (map[cves.CVEID][]vulns.PackageInfo, map[c
 }
 
 // combineIntoOSV creates OSV entry by combining loaded CVEs from NVD and PackageInfo information from security advisories.
-func combineIntoOSV(loadedCves map[cves.CVEID]cves.Vulnerability, allParts map[cves.CVEID][]vulns.PackageInfo, cveList string, cvePartsModifiedTime map[cves.CVEID]time.Time) map[cves.CVEID]*vulns.Vulnerability {
+func combineIntoOSV(loadedCves map[cves.CVEID]cves.Vulnerability, allParts map[cves.CVEID][]vulns.PackageInfo, cveList string, cvePartsModifiedTime map[cves.CVEID]time.Time, outputModifiedTime map[cves.CVEID]time.Time) map[cves.CVEID]*vulns.Vulnerability {
 	Logger.Infof("Begin writing OSV files from %d parts", len(allParts))
 	convertedCves := map[cves.CVEID]*vulns.Vulnerability{}
+	newModifiedTime := time.Now()
 	for cveId, cve := range loadedCves {
 		if len(allParts[cveId]) == 0 {
 			continue
@@ -182,8 +274,17 @@ func combineIntoOSV(loadedCves map[cves.CVEID]cves.Vulnerability, allParts map[c
 		cveModified, _ := time.Parse(time.RFC3339, convertedCve.Modified)
 		if cvePartsModifiedTime[cveId].After(cveModified) {
 			convertedCve.Modified = cvePartsModifiedTime[cveId].Format(time.RFC3339)
+			cveModified, _ = time.Parse(time.RFC3339, convertedCve.Modified)
+		}
+		// If there are no changes to `part/`` or the CVE content since the last `output/` write,
+		// skip updating the output record.
+		if _, exists := outputModifiedTime[cveId]; exists && cveModified.Before(outputModifiedTime[cveId]) {
+			Logger.Infof("Skipping update for %s. Last write to output: %s.Last content update: %s.",
+				cveId, outputModifiedTime[cveId], convertedCve.Modified)
+			continue
 		}
 		convertedCves[cveId] = convertedCve
+		outputModifiedTime[cveId] = newModifiedTime
 	}
 	Logger.Infof("Ended writing %d OSV files", len(convertedCves))
 	return convertedCves

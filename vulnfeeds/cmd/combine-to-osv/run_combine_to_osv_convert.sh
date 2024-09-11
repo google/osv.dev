@@ -34,6 +34,9 @@ if [[ -n "$CVELIST" ]]; then
     git clone --quiet https://github.com/CVEProject/cvelistV5
 fi
 
+echo "Get output files modified time"
+cloud storage cp "gs://${OUTPUT_BUCKET}/osv-output/modified_time.csv" $OSV_OUTPUT
+
 echo "Run combine-to-osv"
 ./combine-to-osv -cvePath "$CVE_OUTPUT" -partsPath "$OSV_PARTS_ROOT" -osvOutputPath "$OSV_OUTPUT" -cveListPath "$CVELIST"
 
@@ -41,5 +44,5 @@ echo "Override"
 gcloud --no-user-output-enabled storage rsync "gs://${INPUT_BUCKET}/osv-output-overrides/" $OSV_OUTPUT
 
 echo "Begin syncing output to GCS bucket ${OUTPUT_BUCKET}"
-gcloud --no-user-output-enabled storage rsync "$OSV_OUTPUT" "gs://${OUTPUT_BUCKET}/osv-output/" --checksums-only -c --delete-unmatched-destination-objects -q
+gcloud --no-user-output-enabled storage rsync "$OSV_OUTPUT" "gs://${OUTPUT_BUCKET}/osv-output/" --checksums-only -c -q
 echo "Successfully synced to GCS bucket"

@@ -565,7 +565,7 @@ class Importer:
     result.sort(key=lambda r: r.id())
     VulnAndSource = namedtuple('VulnAndSource', ['id', 'path'])
     vuln_ids_for_source = [
-        VulnAndSource(id=r.id(), path=r.source_id.split(':')[1])
+        VulnAndSource(id=r.id(), path=r.source_id.partition(':')[2])
         for r in result
         if not r.withdrawn
     ]

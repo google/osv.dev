@@ -742,10 +742,10 @@ def do_query(query: osv_service_v1_pb2.Query,
     )
 
   # Hack to work around ubuntu having extremely large individual entries
-  if (ecosystem.startswith("Ubuntu") or
-      (purl and purl.type == "deb" and purl.namespace == "ubuntu")):
+  if (ecosystem.startswith('Ubuntu') or
+      (purl and purl.type == 'deb' and purl.namespace == 'ubuntu')):
     # Specifically the linux entries
-    if "linux" in package_name or (purl and "linux" in purl.name):
+    if 'linux' in package_name or (purl and 'linux' in purl.name):
       context.single_page_limit_override = \
         _MAX_VULN_LISTED_PRE_EXCEEDED_UBUNTU_EXCEPTION
 

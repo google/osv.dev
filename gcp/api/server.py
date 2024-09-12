@@ -744,8 +744,10 @@ def do_query(query: osv_service_v1_pb2.Query,
   # Hack to work around ubuntu having extremely large individual entries
   if (ecosystem.startswith("Ubuntu") or
       (purl and purl.type == "deb" and purl.namespace == "ubuntu")):
-    context.single_page_limit_override = \
-      _MAX_VULN_LISTED_PRE_EXCEEDED_UBUNTU_EXCEPTION
+    # Specifically the linux entries
+    if "linux" in package_name or (purl and "linux" in purl.name):
+      context.single_page_limit_override = \
+        _MAX_VULN_LISTED_PRE_EXCEEDED_UBUNTU_EXCEPTION
 
   def to_response(b: osv.Bug):
     # Skip retrieving aliases from to_vulnerability().

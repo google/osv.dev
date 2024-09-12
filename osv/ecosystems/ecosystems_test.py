@@ -34,22 +34,22 @@ class EcosystemsTest(unittest.TestCase):
   def test_ecosystem_supported_by_schema(self):
     """Test ecosystems referenced exist in schema definition"""
     for ecosystem in self.canonical_ecosystems:
-      self.assertTrue(
+      self.assertIsNotNone(
           self.schema_ecosystems.match(ecosystem),
           msg=f'"{ecosystem}" not defined in schema')
 
     for ecosystem in _ecosystems.SEMVER_ECOSYSTEMS:
-      self.assertTrue(
+      self.assertIsNotNone(
           self.schema_ecosystems.match(ecosystem),
           msg=f'SEMVER ecosystem "{ecosystem}" not defined in schema')
 
     for ecosystem in _ecosystems.package_urls:
-      self.assertTrue(
+      self.assertIsNotNone(
           self.schema_ecosystems.match(ecosystem),
           msg=f'Purl "{ecosystem}" not defined in schema')
 
     for ecosystem in _ecosystems._OSV_TO_DEPS_ECOSYSTEMS_MAP:  # pylint: disable=protected-access
-      self.assertTrue(
+      self.assertIsNotNone(
           self.schema_ecosystems.match(ecosystem),
           msg=f'"{ecosystem}" in deps.dev map not defined in schema')
 

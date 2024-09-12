@@ -16,6 +16,6 @@ FROM gcr.io/google.com/cloudsdktool/google-cloud-cli:485.0.0-alpine@sha256:d5da0
 
 RUN apk add wget
 
-COPY ./debian-copyright-mirror /
+COPY ./debian-copyright-mirror.sh /
 
-ENTRYPOINT ["/debian-copyright-mirror"]
+ENTRYPOINT ["/debian-copyright-mirror.sh"]

@@ -29,6 +29,6 @@ RUN apk --no-cache add jq
 
 WORKDIR /usr/local/bin
 COPY --from=GO_BUILD /src/download-cves ./
-COPY ./cmd/download-cves/mirror_nvd ./
+COPY ./cmd/download-cves/mirror_nvd.sh ./
 
-ENTRYPOINT ["/usr/local/bin/mirror_nvd"]
+ENTRYPOINT ["/usr/local/bin/mirror_nvd.sh"]

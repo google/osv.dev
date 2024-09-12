@@ -701,7 +701,7 @@ class Importer:
         logging.info('Entry does not have an OSV entry: %s', vuln.id)
         continue
       except Exception as e:
-        logging.excecption('Failed to parse %s: error type: %s, details: %s',
+        logging.exception('Failed to parse %s: error type: %s, details: %s',
                            vuln.id, e.__class__.__name__, e)
         import_failure_logs.append('Failed to parse vulnerability "' + vuln.id +
                                    '"')

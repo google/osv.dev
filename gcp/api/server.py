@@ -63,6 +63,8 @@ _MAX_VULN_LISTED_POST_EXCEEDED = 5
 # Max responses before MAX_VULN_RESP_THRESH has been exceeded
 _MAX_VULN_LISTED_PRE_EXCEEDED = 1000
 
+_MAX_VULN_LISTED_PRE_EXCEEDED_UBUNTU_EXCEPTION = 100
+
 # Used in DetermineVersion
 # If there are more results for a bucket than this number,
 # ignore the bucket completely
@@ -441,6 +443,7 @@ class QueryContext:
   # Use a dataclass to copy by reference
   total_responses: ResponsesCount
   query_counter: int = 0
+  single_page_limit_override: int | None = None
 
   def should_break_page(self, response_count: int):
     """
@@ -451,7 +454,12 @@ class QueryContext:
       - total response size greater than page limit
       - request exceeding the cutoff time
     """
-    return (response_count >= self.total_responses.page_limit() or
+    page_limit = self.total_responses.page_limit()
+    if (self.single_page_limit_override and
+        not self.total_responses.exceeded()):
+      page_limit = self.single_page_limit_override
+
+    return (response_count >= page_limit or
             datetime.now() > self.request_cutoff_time)
 
   def should_skip_query(self):
@@ -732,6 +740,14 @@ def do_query(query: osv_service_v1_pb2.Query,
         grpc.StatusCode.INVALID_ARGUMENT,
         'version specified in params and purl query',
     )
+
+  # Hack to work around ubuntu having extremely large individual entries
+  if (ecosystem.startswith('Ubuntu') or
+      (purl and purl.type == 'deb' and purl.namespace == 'ubuntu')):
+    # Specifically the linux entries
+    if 'linux' in package_name or (purl and 'linux' in purl.name):
+      context.single_page_limit_override = \
+        _MAX_VULN_LISTED_PRE_EXCEEDED_UBUNTU_EXCEPTION
 
   def to_response(b: osv.Bug):
     # Skip retrieving aliases from to_vulnerability().

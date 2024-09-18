@@ -39,10 +39,15 @@ UNKNOWN_COMMIT = 'unknown'
 # Large projects which take way too long to build.
 # TODO(ochang): Don't hardcode this.
 PROJECT_DENYLIST = {
+    'avahi',  # https://github.com/google/osv.dev/issues/2178
     'boringssl',  # https://github.com/google/osv.dev/issues/2178
+    'dbus-broker',  # https://github.com/google/osv.dev/issues/2178
+    'elfutils',  # https://github.com/google/osv.dev/issues/2178
     'ffmpeg',
     'imagemagick',
+    'libbpf',  # https://github.com/google/osv.dev/issues/2178
     'libreoffice',
+    'systemd',  # https://github.com/google/osv.dev/issues/2178
 }
 
 REPO_DENYLIST = {

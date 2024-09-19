@@ -37,8 +37,12 @@ Possible edits to consider making:
 * remove or correct an incorrect `affected` entry
 * add a `withdrawn` field
 
+#### Considerations
+
+This statically overrides the record generated, any and all of the inputs for this record will be diregarded from this point forward.
+
 #### Procedure
 
-1. `gsutil cp gs://${OUTPUT_BUCKET}/osv-output/CVE-YYYY-NNNN.json`
+1. `gsutil cp gs://cve-osv-conversion/osv-output/CVE-YYYY-NNNN.json`
 2. manually edit the file
-3. `gsutil cp gs://${INPUT_BUCKET}/osv-output-overrides/CVE-YYYY-NNNN.json`
+3. `gsutil cp gs://cve-osv-conversion/osv-output-overrides/CVE-YYYY-NNNN.json`

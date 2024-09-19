@@ -8,9 +8,9 @@ Combine [`PackageInfo`](https://github.com/google/osv.dev/blob/2c22e9534a521c6c6
 
 To address the generation of CVE records from multiple disparate sources (all requiring a common record prefix):
 
-* Alpine, by [this code](../cmd/alpine)
-* Debian, by [this code](../cmd/debian)
-* the NVD, by [this code](../cmd/nvd-cve-osv)
+* Alpine, by [this code](../alpine)
+* Debian, by [this code](../debian)
+* the NVD, by [this code](../nvd-cve-osv)
 
 ## How
 

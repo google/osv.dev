@@ -39,7 +39,7 @@ Possible edits to consider making:
 
 #### Considerations
 
-This statically overrides the record generated, any and all of the inputs for this record will be diregarded from this point forward.
+This statically overrides the record generated, meaning any and all of the inputs for this record will be diregarded. The record will no longer change.
 
 #### Procedure
 

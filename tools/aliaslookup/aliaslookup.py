@@ -22,20 +22,21 @@ def lookup_by_aliases(client: datastore.Client,
   Returns:
     a datastore.query.Iterator
   """
-  query = client.query(kind='Bug')
-  # the "IN" operator only supports 30 identifiers as a maximum, so we need to
-  # batch into multiple a composite OR query
-  # This still caps out at 100 total filters, sadly
-  query.add_filter(
-      filter=datastore.query.PropertyFilter('aliases', 'IN', identifiers))
-  if verbose:
-    print(f'Running query {query.filters[0]} '
-          f'on {query.kind} (in {query.project})...')
-  result = list(query.fetch())
-  if verbose:
-    print(f'Retrieved {len(result)} bugs')
+  for identifier in identifiers:
+    query = client.query(kind='Bug')
+    query.add_filter(
+        filter=datastore.query.PropertyFilter('aliases', 'IN', [identifier]))
+    if verbose:
+      print(f'Running query {query.filters[0]} '
+            f'on {query.kind} (in {query.project})...')
+    result = list(query.fetch())
+    if verbose:
+      print(f'Retrieved {len(result)} bugs')
 
-  return result
+    if len(result) > 0:
+      yield result[0]
+    else:
+      continue
 
 
 def main() -> None:

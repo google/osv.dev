@@ -12,15 +12,15 @@ import argparse
 def lookup_by_aliases(client: datastore.Client,
                       identifiers: list[str],
                       verbose=False) -> datastore.query.Iterator:
-  """Look up OSV records by alias.
+  """Look up OSV records with aliases.
 
   Args:
     client: a datastore.Client object.
-    identifiers: a list of strings being the aliases to look up.
+    identifiers: a list of record IDs to search in the aliases for
     verbose: a boolean whether to emit more verbose processing information.
 
-  Returns:
-    a datastore.query.Iterator
+  Yields:
+    a datastore.entity.Entity (the Bug record with the alias)
   """
   for identifier in identifiers:
     query = client.query(kind='Bug')
@@ -33,10 +33,7 @@ def lookup_by_aliases(client: datastore.Client,
     if verbose:
       print(f'Retrieved {len(result)} bugs')
 
-    if len(result) > 0:
-      yield result[0]
-    else:
-      continue
+    yield from result
 
 
 def main() -> None:

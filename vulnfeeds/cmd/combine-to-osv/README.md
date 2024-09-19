@@ -24,7 +24,7 @@ See [`run_combine_to_osv_convert.sh`](run_combine_to_osv_convert.sh):
 
 ## Operational matters
 
-* Runs every 30 minutes as a [Kubernetes CronJob](https://github.com/google/osv.dev/blob/master/deployment/clouddeploy/gke-workers/base/combine-to-osv.yaml)
+* Runs every hour (on the half hour) as a [Kubernetes CronJob](https://github.com/google/osv.dev/blob/master/deployment/clouddeploy/gke-workers/base/combine-to-osv.yaml)
 
 ### Overriding an OSV record
 

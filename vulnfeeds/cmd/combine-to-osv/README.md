@@ -41,4 +41,4 @@ Possible edits to consider making:
 
 1. `gsutil cp gs://${OUTPUT_BUCKET}/osv-output/CVE-YYYY-NNNN.json`
 2. manually edit the file
-3. `gsutil cp gs://${INPUT_BUCKET/osv-output-overrides/CVE-YYYY-NNNN.json`
+3. `gsutil cp gs://${INPUT_BUCKET}/osv-output-overrides/CVE-YYYY-NNNN.json`

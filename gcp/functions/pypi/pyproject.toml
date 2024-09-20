@@ -7,7 +7,7 @@ python = "^3.11"
 
 cryptography = "==43.0.1"
 google-cloud-secret-manager = "==2.20.2"
-osv = "==0.0.21"
+osv = "==0.0.22"
 requests = "==2.32.3"
 
 [build-system]

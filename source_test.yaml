@@ -256,6 +256,18 @@
   link: 'https://github.com/RConsortium/r-advisory-database/blob/main/'
   editable: False
 
+- name: 'redhat-stage'
+  versions_from_repo: False
+  type: 0
+  ignore_patterns: ['^(?!RH[BES]{1}A-).*$']
+  repo_url: 'https://github.com/jasinner/redhat-osv.git'
+  detect_cherrypicks: False
+  extension: '.json'
+  db_prefix: ['RHBA-', 'RHEA-', 'RHSA-']
+  ignore_git: False
+  link: 'https://github.com/jasinner/redhat-osv/blob/main/'
+  editable: False
+
 - name: 'rockylinux'
   versions_from_repo: False
   type: 1

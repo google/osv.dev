@@ -1,4 +1,5 @@
-# Copyright 2021 Google LLC
+#!/bin/bash -x
+# Copyright 2024 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -12,10 +13,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-FROM gcr.io/google.com/cloudsdktool/google-cloud-cli:485.0.0-alpine@sha256:d5da0344b23d03a6f2728657732c7a60300a91acaad9b8076c6fd30b1dfe1ff4
+python3 ./retrieve_bugs_from_db.py
 
-RUN apk add wget
+# `aiohttp` has limits on the number of simultaneous connections.
+# Running two instances of the program in parrallel 
+# can help circumvent this restriction.
+python3 ./perform_api_calls.py &
+python3 ./perform_api_calls.py &
 
-COPY ./debian-copyright-mirror.sh /
-
-ENTRYPOINT ["/debian-copyright-mirror.sh"]
+# Wait for both background processes to finish
+wait

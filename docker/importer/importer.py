@@ -463,7 +463,8 @@ class Importer:
       if not _is_vulnerability_file(source_repo, blob.name):
         return None
       if not ignore_last_import_time and \
-         not blob.time_created > utc_last_update_date:
+         blob.updated is not None and \
+         not blob.updated > utc_last_update_date:
         return None
 
       logging.info('Bucket entry triggered for %s/%s', source_repo.bucket,
@@ -565,7 +566,7 @@ class Importer:
     result.sort(key=lambda r: r.id())
     VulnAndSource = namedtuple('VulnAndSource', ['id', 'path'])
     vuln_ids_for_source = [
-        VulnAndSource(id=r.id(), path=r.source_id.split(':')[1])
+        VulnAndSource(id=r.id(), path=r.source_id.partition(':')[2])
         for r in result
         if not r.withdrawn
     ]
@@ -701,8 +702,8 @@ class Importer:
         logging.info('Entry does not have an OSV entry: %s', vuln.id)
         continue
       except Exception as e:
-        logging.excecption('Failed to parse %s: error type: %s, details: %s',
-                           vuln.id, e.__class__.__name__, e)
+        logging.exception('Failed to parse %s: error type: %s, details: %s',
+                          vuln.id, e.__class__.__name__, e)
         import_failure_logs.append('Failed to parse vulnerability "' + vuln.id +
                                    '"')
         continue

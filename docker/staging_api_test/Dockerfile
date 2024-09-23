@@ -1,4 +1,4 @@
-# Copyright 2021 Google LLC
+# Copyright 2024 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -12,10 +12,15 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-FROM gcr.io/google.com/cloudsdktool/google-cloud-cli:485.0.0-alpine@sha256:d5da0344b23d03a6f2728657732c7a60300a91acaad9b8076c6fd30b1dfe1ff4
+FROM gcr.io/oss-vdb/worker
 
-RUN apk add wget
+WORKDIR /staging_api_test
 
-COPY ./debian-copyright-mirror.sh /
+COPY retrieve_bugs_from_db.py perform_api_calls.py run.sh ./
 
-ENTRYPOINT ["/debian-copyright-mirror.sh"]
+# Add aiohttp lib
+RUN cd /env/docker/worker && POETRY_VIRTUALENVS_CREATE=false poetry add aiohttp
+
+RUN chmod 755 retrieve_bugs_from_db.py perform_api_calls.py run.sh
+
+ENTRYPOINT ["./run.sh"]

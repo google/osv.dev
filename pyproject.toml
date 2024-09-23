@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "osv"
-version = "0.0.21"
+version = "0.0.22"
 description = "Open Source Vulnerabilities library"
 authors = ["OSV Authors <osv-discuss@googlegroups.com>"]
 license = "MIT"

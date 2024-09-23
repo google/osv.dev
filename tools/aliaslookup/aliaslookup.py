@@ -12,30 +12,28 @@ import argparse
 def lookup_by_aliases(client: datastore.Client,
                       identifiers: list[str],
                       verbose=False) -> datastore.query.Iterator:
-  """Look up OSV records by alias.
+  """Look up OSV records with aliases.
 
   Args:
     client: a datastore.Client object.
-    identifiers: a list of strings being the aliases to look up.
+    identifiers: a list of record IDs to search in the aliases for
     verbose: a boolean whether to emit more verbose processing information.
 
-  Returns:
-    a datastore.query.Iterator
+  Yields:
+    a datastore.entity.Entity (the Bug record with the alias)
   """
-  query = client.query(kind='Bug')
-  # the "IN" operator only supports 30 identifiers as a maximum, so we need to
-  # batch into multiple a composite OR query
-  # This still caps out at 100 total filters, sadly
-  query.add_filter(
-      filter=datastore.query.PropertyFilter('aliases', 'IN', identifiers))
-  if verbose:
-    print(f'Running query {query.filters[0]} '
-          f'on {query.kind} (in {query.project})...')
-  result = list(query.fetch())
-  if verbose:
-    print(f'Retrieved {len(result)} bugs')
+  for identifier in identifiers:
+    query = client.query(kind='Bug')
+    query.add_filter(
+        filter=datastore.query.PropertyFilter('aliases', 'IN', [identifier]))
+    if verbose:
+      print(f'Running query {query.filters[0]} '
+            f'on {query.kind} (in {query.project})...')
+    result = list(query.fetch())
+    if verbose:
+      print(f'Retrieved {len(result)} bugs')
 
-  return result
+    yield from result
 
 
 def main() -> None:

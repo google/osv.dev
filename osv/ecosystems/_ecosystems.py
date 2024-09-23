@@ -64,6 +64,7 @@ _ecosystems = {
     'Linux': OrderingUnsupportedEcosystem(),
     'OSS-Fuzz': OrderingUnsupportedEcosystem(),
     'Photon OS': OrderingUnsupportedEcosystem(),
+    'Red Hat': OrderingUnsupportedEcosystem,
 }
 
 # Semver-based ecosystems, should correspond to _ecosystems above.

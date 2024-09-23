@@ -375,6 +375,8 @@ class Importer:
         blob.name, blob.bucket,
         generation=None).download_as_bytes(storage_client)
 
+    blob_hash = osv.sha256_bytes(blob_bytes)
+
     # When self._strict_validation is True,
     # this *may* raise a jsonschema.exceptions.ValidationError
     vulns = osv.parse_vulnerabilities_from_data(
@@ -384,17 +386,15 @@ class Importer:
 
     # This is the atypical execution path (when reimporting is triggered)
     if ignore_last_import_time:
-      blob_hash = osv.sha256_bytes(blob_bytes)
       return blob_hash, blob.name
 
     # This is the typical execution path (when reimporting not triggered)
     with ndb_client.context():
       for vuln in vulns:
         bug = osv.Bug.get_by_id(vuln.id)
-        # Check if the bug has been modified since last import
+        # The bug already exists and has been modified since last import
         if bug is None or \
                 bug.import_last_modified != vuln.modified.ToDatetime():
-          blob_hash = osv.sha256_bytes(blob_bytes)
           return blob_hash, blob.name
 
         return None

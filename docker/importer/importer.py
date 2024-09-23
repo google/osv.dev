@@ -327,8 +327,9 @@ class Importer:
       ignore_last_import_time: bool) -> Optional[Tuple[str]]:
     """Parse a GCS blob into a tuple of hash and Vulnerability
 
-    Criteria for returning a record:
-    - it's new/modified since last run and the hash has changed
+    Criteria for returning a tuple:
+    - any record in the blob is new (i.e. a new ID) or modified since last run,
+      and the hash for the blob has changed
     - the importer is reimporting the entire source
       - ignore_last_import_time is True
     - the record passes OSV JSON Schema validation
@@ -374,24 +375,20 @@ class Importer:
         blob.name, blob.bucket,
         generation=None).download_as_bytes(storage_client)
 
+    # When self._strict_validation is True,
+    # this *may* raise a jsonschema.exceptions.ValidationError
+    vulns = osv.parse_vulnerabilities_from_data(
+        blob_bytes,
+        os.path.splitext(blob.name)[1],
+        strict=self._strict_validation)
+
     # This is the atypical execution path (when reimporting is triggered)
     if ignore_last_import_time:
       blob_hash = osv.sha256_bytes(blob_bytes)
-      if self._strict_validation:
-        # This may raise a jsonschema.exceptions.ValidationError
-        _ = osv.parse_vulnerabilities_from_data(
-            blob_bytes,
-            os.path.splitext(blob.name)[1],
-            strict=self._strict_validation)
       return blob_hash, blob.name
 
     # This is the typical execution path (when reimporting not triggered)
     with ndb_client.context():
-      # This may raise a jsonschema.exceptions.ValidationError
-      vulns = osv.parse_vulnerabilities_from_data(
-          blob_bytes,
-          os.path.splitext(blob.name)[1],
-          strict=self._strict_validation)
       for vuln in vulns:
         bug = osv.Bug.get_by_id(vuln.id)
         # Check if the bug has been modified since last import

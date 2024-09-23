@@ -395,7 +395,6 @@ class Importer:
         if bug is None or \
                 bug.import_last_modified != vuln.modified.ToDatetime():
           blob_hash = osv.sha256_bytes(blob_bytes)
-          # Is this returning prematurely?
           return blob_hash, blob.name
 
         return None

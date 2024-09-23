@@ -384,6 +384,8 @@ class Importer:
         os.path.splitext(blob.name)[1],
         strict=self._strict_validation)
 
+    # TODO(andrewpollock): integrate with linter here.
+
     # This is the atypical execution path (when reimporting is triggered)
     if ignore_last_import_time:
       return blob_hash, blob.name

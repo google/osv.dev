@@ -17,7 +17,7 @@ import unittest
 from .. import ecosystems
 
 
-class RedhatEcosystemTest(unittest.TestCase):
+class RedHatEcosystemTest(unittest.TestCase):
   """Red Hat Linux ecosystem helper tests."""
 
   def test_redhat(self):

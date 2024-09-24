@@ -17,7 +17,7 @@ from ..third_party.univers.rpm import RpmVersion
 from .helper_base import Ecosystem
 
 
-class Redhat(Ecosystem):
+class RedHat(Ecosystem):
   """"Red Hat Linux ecosystem"""
 
   @property

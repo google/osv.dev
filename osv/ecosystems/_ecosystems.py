@@ -28,7 +28,7 @@ from .packagist import Packagist
 from .pub import Pub
 from .pypi import PyPI
 from .rocky_linux import RockyLinux
-from .redhat import Redhat
+from .redhat import RedHat
 from .rubygems import RubyGems
 from .semver_ecosystem_helper import SemverEcosystem
 from .ubuntu import Ubuntu
@@ -119,7 +119,7 @@ def get(name: str) -> Ecosystem:
     return AlmaLinux()
 
   if name.startswith('Red Hat'):
-    return Redhat()
+    return RedHat()
 
   if name.startswith('Rocky Linux'):
     return RockyLinux()

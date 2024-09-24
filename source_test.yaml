@@ -258,14 +258,13 @@
 
 - name: 'redhat-stage'
   versions_from_repo: False
-  type: 0
+  type: 1
+  bucket: 'osv-test-cve-osv-conversion'
+  directory_path: 'redhat-temporary'
   ignore_patterns: ['^(?!RH[BES]{1}A-).*$']
-  repo_url: 'https://github.com/jasinner/redhat-osv.git'
-  detect_cherrypicks: False
   extension: '.json'
   db_prefix: ['RHBA-', 'RHEA-', 'RHSA-']
-  ignore_git: False
-  link: 'https://github.com/jasinner/redhat-osv/blob/main/'
+  link: 'https://storage.googleapis.com/osv-test-cve-osv-conversion/'
   editable: False
 
 - name: 'rockylinux'

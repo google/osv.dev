@@ -137,7 +137,7 @@ def get(name: str) -> Ecosystem:
   if name.startswith('SUSE'):
     return SUSE()
 
-  return _ecosystems.get(name)
+  return _ecosystems.get(normalize(name))
 
 
 def normalize(ecosystem_name: str):

@@ -25,6 +25,7 @@ from unittest import mock
 import warnings
 
 from google.cloud import ndb
+from google.cloud.storage import retry
 import pygit2
 from docker.mock_test.mock_test_handler import MockDataHandler
 import importer
@@ -205,9 +206,11 @@ class ImporterTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
 
     bucket.blob.assert_has_calls([
         mock.call('testcase/5417710252982272.json'),
-        mock.call().upload_from_string(expected_json),
+        mock.call().upload_from_string(
+            expected_json, retry=retry.DEFAULT_RETRY),
         mock.call('issue/1064.json'),
-        mock.call().upload_from_string(expected_json),
+        mock.call().upload_from_string(
+            expected_json, retry=retry.DEFAULT_RETRY),
     ])
 
   @mock.patch('google.cloud.pubsub_v1.PublisherClient.publish')

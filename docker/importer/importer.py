@@ -359,9 +359,9 @@ class Importer:
     utc_last_update_date = source_repo.last_update_date.replace(
         tzinfo=datetime.timezone.utc)
 
-    if not ignore_last_import_time and \
-        blob.updated is not None and \
-        not blob.updated > utc_last_update_date:
+    if (not ignore_last_import_time and
+        blob.updated and
+        blob.updated <= utc_last_update_date):
       return None
 
     # The record in GCS appears to be new/changed, examine further.

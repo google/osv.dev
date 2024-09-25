@@ -6,7 +6,7 @@ package-mode = false
 python = "^3.11"
 
 markdownify = "==0.13.1"
-pandas = "==2.2.2"
+pandas = "==2.2.3"
 python-dateutil = "==2.9.0.post0"
 
 [tool.poetry.dev-dependencies]

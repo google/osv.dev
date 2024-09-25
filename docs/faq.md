@@ -5,6 +5,8 @@ permalink: /faq/
 nav_order: 4
 ---
 
+# Frequently Asked Questions
+
 {: .no_toc }
 
 <details open markdown="block">

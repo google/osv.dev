@@ -18,11 +18,11 @@ from .helper_base import Ecosystem
 
 
 class RedHat(Ecosystem):
-  """"Red Hat Linux ecosystem"""
+  """Red Hat Linux ecosystem"""
 
   @property
   def name(self):
-    return "Red Hat"
+    return 'Red Hat'
 
   def sort_key(self, version):
     return RpmVersion.from_string(version)

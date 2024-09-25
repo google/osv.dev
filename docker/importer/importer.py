@@ -836,13 +836,13 @@ class Importer:
       try:
         blob = bucket.blob(f'testcase/{testcase_id}.json')
         data = json.dumps(osv.vulnerability_to_dict(vulnerability))
-        blob.upload_from_string(data)
+        blob.upload_from_string(data, retry=retry.DEFAULT_RETRY)
 
         if not issue_id:
           return
 
         blob = bucket.blob(f'issue/{issue_id}.json')
-        blob.upload_from_string(data)
+        blob.upload_from_string(data, retry=retry.DEFAULT_RETRY)
       except Exception as e:
         logging.error('Failed to export: %s', e)
 

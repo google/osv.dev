@@ -11,18 +11,18 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""Rocky linux ecosystem helper."""
+"""Red Hat Linux ecosystem helper."""
 
 from ..third_party.univers.rpm import RpmVersion
 from .helper_base import Ecosystem
 
 
-class RockyLinux(Ecosystem):
-  """Rocky Linux ecosystem"""
+class RedHat(Ecosystem):
+  """Red Hat Linux ecosystem"""
 
   @property
   def name(self):
-    return 'Rocky Linux'
+    return 'Red Hat'
 
   def sort_key(self, version):
     return RpmVersion.from_string(version)

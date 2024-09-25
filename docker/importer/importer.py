@@ -359,8 +359,7 @@ class Importer:
     utc_last_update_date = source_repo.last_update_date.replace(
         tzinfo=datetime.timezone.utc)
 
-    if (not ignore_last_import_time and
-        blob.updated and
+    if (not ignore_last_import_time and blob.updated and
         blob.updated <= utc_last_update_date):
       return None
 

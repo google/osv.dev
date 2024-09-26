@@ -732,7 +732,7 @@ class Importer:
     vulns = osv.parse_vulnerabilities_from_data(
         request.text, source_repo.extension, strict=self._strict_validation)
 
-    vulns_last_modified = datetime.datetime.min
+    vulns_last_modified = last_update_date
     # Create tasks for changed files.
     for vuln in vulns:
       import_failure_logs = []

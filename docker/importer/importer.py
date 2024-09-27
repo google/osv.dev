@@ -701,7 +701,18 @@ class Importer:
                          self._public_log_bucket, import_failure_logs)
 
   def _process_updates_rest(self, source_repo: osv.SourceRepository):
-    """Process updates from REST API."""
+    """Process updates from REST API.
+    
+    To find new updates, first makes a HEAD request to check the 'Last-Modified'
+    header, and skips processing if it's before the source's last_modified_date
+    (and ignore_last_import_time isn't set).
+
+    Otherwise, GETs the list of vulnerabilities and requests updates for
+    vulnerabilities modified after last_modified_date.
+
+    last_modified_date is updated to the HEAD's 'Last-Modified' time, or the
+    latest vulnerability's modified date if 'Last-Modified' was missing/invalid.
+    """
     logging.info('Begin processing REST: %s', source_repo.name)
 
     last_update_date = source_repo.last_update_date or datetime.datetime.min

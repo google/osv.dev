@@ -25,9 +25,11 @@ import json
 import logging
 import os
 import requests
+from requests.adapters import HTTPAdapter
 import shutil
 import threading
 import time
+from urllib3.util import Retry
 import atexit
 from typing import List, Tuple, Optional
 
@@ -721,7 +723,18 @@ class Importer:
       source_repo.ignore_last_import_time = False
       source_repo.put()
 
-    request = requests.head(source_repo.rest_api_url, timeout=_TIMEOUT_SECONDS)
+    s = requests.Session()
+    adapter = HTTPAdapter(
+        max_retries=Retry(
+            total=3, status_forcelist=[502, 503, 504], backoff_factor=1))
+    s.mount(source_repo.rest_api_url, adapter)
+    s.mount(source_repo.link, adapter)
+
+    try:
+      request = s.head(source_repo.rest_api_url, timeout=_TIMEOUT_SECONDS)
+    except Exception:
+      logging.exception('Exception querying REST API:')
+      return
     if request.status_code != 200:
       logging.error('Failed to fetch REST API: %s', request.status_code)
       return
@@ -738,7 +751,11 @@ class Importer:
       except ValueError:
         logging.error('Invalid Last-Modified header: "%s"', last_modified)
 
-    request = requests.get(source_repo.rest_api_url, timeout=_TIMEOUT_SECONDS)
+    try:
+      request = s.get(source_repo.rest_api_url, timeout=_TIMEOUT_SECONDS)
+    except Exception:
+      logging.exception('Exception querying REST API:')
+      return
     # Parse vulns into Vulnerability objects from the REST API request.
     vulns = osv.parse_vulnerabilities_from_data(
         request.text, source_repo.extension, strict=self._strict_validation)
@@ -756,7 +773,7 @@ class Importer:
         continue
       try:
         # TODO(jesslowe): Use a ThreadPoolExecutor to parallelize this
-        single_vuln = requests.get(
+        single_vuln = s.get(
             source_repo.link + vuln.id + source_repo.extension,
             timeout=_TIMEOUT_SECONDS)
         # Validate the individual request

@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Importer tests."""
+import contextlib
 import datetime
 import os
 import shutil
@@ -22,6 +23,7 @@ import logging
 import threading
 
 from unittest import mock
+from urllib3.exceptions import SystemTimeWarning
 import warnings
 
 from google.cloud import ndb
@@ -66,6 +68,7 @@ class ImporterTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
     self.tmp_dir = tempfile.mkdtemp()
 
     tests.mock_datetime(self)
+    warnings.filterwarnings('ignore', category=SystemTimeWarning)
     self.mock_repo = tests.mock_repository(self)
 
     storage_patcher = mock.patch('google.cloud.storage.Client')
@@ -407,6 +410,7 @@ class BucketImporterTest(unittest.TestCase):
     self.tmp_dir = tempfile.mkdtemp()
 
     tests.mock_datetime(self)
+    warnings.filterwarnings('ignore', category=SystemTimeWarning)
 
     self.source_repo = osv.SourceRepository(
         type=osv.SourceRepositoryType.BUCKET,
@@ -821,7 +825,7 @@ class RESTImporterTest(unittest.TestCase):
     self.tmp_dir = tempfile.mkdtemp()
 
     tests.mock_datetime(self)
-    warnings.filterwarnings("ignore", "unclosed", ResourceWarning)
+    warnings.filterwarnings('ignore', category=SystemTimeWarning)
 
     storage_patcher = mock.patch('google.cloud.storage.Client')
     self.addCleanup(storage_patcher.stop)
@@ -841,7 +845,19 @@ class RESTImporterTest(unittest.TestCase):
 
   def tearDown(self):
     shutil.rmtree(self.tmp_dir, ignore_errors=True)
-    self.httpd.shutdown()
+
+  @contextlib.contextmanager
+  def server(self, handler_class):
+    """REST mock server context manager."""
+    httpd = http.server.HTTPServer(SERVER_ADDRESS, handler_class)
+    thread = threading.Thread(target=httpd.serve_forever)
+    thread.start()
+    try:
+      yield httpd
+    finally:
+      httpd.shutdown()
+      httpd.server_close()
+      thread.join()
 
   @mock.patch('google.cloud.pubsub_v1.PublisherClient.publish')
   @mock.patch('time.time', return_value=12345.0)
@@ -851,15 +867,13 @@ class RESTImporterTest(unittest.TestCase):
     data_handler = MockDataHandler
     data_handler.last_modified = 'Mon, 01 Jan 2024 00:00:00 GMT'
     data_handler.load_file(data_handler, 'rest_test.json')
-    self.httpd = http.server.HTTPServer(SERVER_ADDRESS, data_handler)
-    thread = threading.Thread(target=self.httpd.serve_forever)
-    thread.start()
     self.source_repo.last_update_date = datetime.datetime(2020, 1, 1)
     repo = self.source_repo.put()
     imp = importer.Importer('fake_public_key', 'fake_private_key', self.tmp_dir,
                             importer.DEFAULT_PUBLIC_LOGGING_BUCKET, 'bucket',
                             False, False)
-    imp.run()
+    with self.server(data_handler):
+      imp.run()
     self.assertEqual(mock_publish.call_count, data_handler.cve_count)
     self.assertEqual(
         repo.get().last_update_date,
@@ -874,16 +888,14 @@ class RESTImporterTest(unittest.TestCase):
     data_handler = MockDataHandler
     data_handler.last_modified = 'Mon, 01 Jan 2024 00:00:00 GMT'
     data_handler.load_file(data_handler, 'rest_test.json')
-    self.httpd = http.server.HTTPServer(SERVER_ADDRESS, data_handler)
-    thread = threading.Thread(target=self.httpd.serve_forever)
-    thread.start()
     self.source_repo.last_update_date = datetime.datetime(2023, 6, 6)
     self.source_repo.ignore_last_import_time = True
     repo = self.source_repo.put()
     imp = importer.Importer('fake_public_key', 'fake_private_key', self.tmp_dir,
                             importer.DEFAULT_PUBLIC_LOGGING_BUCKET, 'bucket',
                             False, False)
-    imp.run()
+    with self.server(data_handler):
+      imp.run()
     self.assertEqual(mock_publish.call_count, data_handler.cve_count)
     self.assertEqual(
         repo.get().last_update_date,
@@ -896,15 +908,12 @@ class RESTImporterTest(unittest.TestCase):
                       mock_publish: mock.MagicMock):
     """Testing none last modified"""
     MockDataHandler.last_modified = 'Fri, 01 Jan 2021 00:00:00 GMT'
-    self.httpd = http.server.HTTPServer(SERVER_ADDRESS, MockDataHandler)
-    thread = threading.Thread(target=self.httpd.serve_forever)
-    thread.start()
     self.source_repo.last_update_date = datetime.datetime(2024, 2, 1)
     repo = self.source_repo.put()
     imp = importer.Importer('fake_public_key', 'fake_private_key', self.tmp_dir,
                             importer.DEFAULT_PUBLIC_LOGGING_BUCKET, 'bucket',
                             True, False)
-    with self.assertLogs() as logs:
+    with self.assertLogs() as logs, self.server(MockDataHandler):
       imp.run()
     mock_publish.assert_not_called()
     self.assertIn('INFO:root:No changes since last update.', logs.output[1])
@@ -920,15 +929,13 @@ class RESTImporterTest(unittest.TestCase):
     """Testing from date between entries - 
     only entries after 6/6/2023 should be called"""
     MockDataHandler.last_modified = 'Mon, 01 Jan 2024 00:00:00 GMT'
-    self.httpd = http.server.HTTPServer(SERVER_ADDRESS, MockDataHandler)
-    thread = threading.Thread(target=self.httpd.serve_forever)
-    thread.start()
     self.source_repo.last_update_date = datetime.datetime(2023, 6, 6)
     repo = self.source_repo.put()
     imp = importer.Importer('fake_public_key', 'fake_private_key', self.tmp_dir,
                             importer.DEFAULT_PUBLIC_LOGGING_BUCKET, 'bucket',
                             False, False)
-    imp.run()
+    with self.server(MockDataHandler):
+      imp.run()
     mock_publish.assert_has_calls([
         mock.call(
             self.tasks_topic,
@@ -1005,6 +1012,7 @@ class ImportFindingsTest(unittest.TestCase):
     tests.reset_emulator()
 
     tests.mock_datetime(self)
+    warnings.filterwarnings('ignore', category=SystemTimeWarning)
 
   def test_add_finding(self):
     """Test that creating an import finding works."""

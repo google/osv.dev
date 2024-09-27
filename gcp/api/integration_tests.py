@@ -336,6 +336,46 @@ class IntegrationTests(unittest.TestCase,
         timeout=_TIMEOUT)
     self.assert_results_equal({'vulns': expected_vulns}, response.json())
 
+  def test_query_comparing_version(self):
+    """Test queries by comparing versions."""
+
+    package = 'linux-firmware'
+    ecosystem = 'AlmaLinux:8'
+    alsa_2023_7109 = self._get('ALSA-2023:7109')
+    alsa_2024_3178 = self._get('ALSA-2024:3178')
+    alsa_2024_4262 = self._get('ALSA-2024:4262')
+
+    expected_vulns = [
+        alsa_2023_7109,
+        alsa_2024_3178,
+        alsa_2024_4262,
+    ]
+
+    response = requests.post(
+        _api() + _BASE_QUERY,
+        data=json.dumps({
+            'version': '20230404-117.git2e92a49f.el8_8.alma.1',
+            'package': {
+                'name': package,
+                'ecosystem': ecosystem,
+            }
+        }),
+        timeout=_TIMEOUT)
+    self.assert_results_equal({'vulns': expected_vulns}, response.json())
+
+    # Tests empty response
+    response = requests.post(
+        _api() + _BASE_QUERY,
+        data=json.dumps({
+            'version': '99999999-117.git2e92a49f.el8_8.alma.1',
+            'package': {
+                'name': package,
+                'ecosystem': ecosystem,
+            }
+        }),
+        timeout=_TIMEOUT)
+    self.assertEqual(0, len(response.json()))
+
   def test_query_invalid_ecosystem(self):
     """Test a query with an invalid ecosystem fails validation."""
     response = requests.post(
@@ -730,10 +770,11 @@ class IntegrationTests(unittest.TestCase,
             ]
         }, response.json())
 
-  @unittest.skip("Run this test locally with " +
-                 "MAX_VULN_LISTED_PRE_EXCEEDED at a lower value")
+  @unittest.skipIf(
+      os.getenv('LOW_MAX_THRESH', '0') != '1', "Run this test locally with " +
+      "MAX_VULN_LISTED_PRE_EXCEEDED at a lower value (around 10)")
   def test_query_pagination(self):
-    """Test query by package."""
+    """Test query by package with pagination."""
     response = requests.post(
         _api() + _BASE_QUERY,
         data=json.dumps(
@@ -763,9 +804,52 @@ class IntegrationTests(unittest.TestCase,
 
     self.assertEqual(set(), vulns_first.intersection(vulns_second))
 
-  @unittest.skip("Run this test locally with " +
-                 "MAX_VULN_LISTED_PRE_EXCEEDED at a lower value")
-  def test_query_package_purl(self):
+  @unittest.skipIf(
+      os.getenv('LOW_MAX_THRESH', '0') != '1', "Run this test locally with " +
+      "MAX_VULN_LISTED_PRE_EXCEEDED at a lower value (around 10)")
+  def test_query_pagination_no_ecosystem(self):
+    """Test query with pagination but no ecosystem."""
+    response = requests.post(
+        _api() + _BASE_QUERY,
+        data=json.dumps({
+            'package': {
+                'name': 'django',
+            },
+            # Test with a version that is ambiguous whether it
+            # belongs to semver or generic version
+            'version': '5.0.1',
+        }),
+        timeout=_TIMEOUT)
+
+    result = response.json()
+    vulns_first = set(v['id'] for v in result['vulns'])
+    self.assertIn('next_page_token', result)
+    self.assertTrue(str.startswith(result['next_page_token'], '2:'))
+
+    response = requests.post(
+        _api() + _BASE_QUERY,
+        data=json.dumps({
+            'package': {
+                'name': 'django',
+            },
+            'version': '5.0.1',
+            'page_token': result['next_page_token'],
+        }),
+        timeout=_TIMEOUT)
+
+    result = response.json()
+    vulns_second = set(v['id'] for v in result['vulns'])
+
+    self.assertIn('next_page_token', result)
+    # There is not enough django vulns to simultaneously test multiple pages,
+    # and pass the other tests
+    # self.assertTrue(str.startswith(result['next_page_token'], '1:'))
+    self.assertEqual(set(), vulns_first.intersection(vulns_second))
+
+  @unittest.skipIf(
+      os.getenv('LOW_MAX_THRESH', '0') != '1', "Run this test locally with " +
+      "MAX_VULN_LISTED_PRE_EXCEEDED at a lower value (around 10)")
+  def test_query_package_purl_paging(self):
     """Test query by package (purl)."""
     response = requests.post(
         _api() + _BASE_QUERY,
@@ -890,18 +974,20 @@ def print_logs(filename):
 
 if __name__ == '__main__':
   if len(sys.argv) < 2:
-    print(f'Usage: {sys.argv[0]} path/to/credential.json')
+    print(
+        f'Usage: {sys.argv[0]} path/to/credential.json [...optional specific tests]'
+    )
     sys.exit(1)
 
   subprocess.run(
       ['docker', 'pull', 'gcr.io/endpoints-release/endpoints-runtime:2'],
       check=True)
 
-  credential_path = sys.argv.pop()
+  credential_path = sys.argv.pop(1)
   server = test_server.start(credential_path, port=_PORT)
-  time.sleep(30)
+  time.sleep(10)
 
   try:
-    unittest.main()
+    unittest.main(argv=sys.argv)
   finally:
     server.stop()

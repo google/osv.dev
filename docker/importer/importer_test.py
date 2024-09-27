@@ -25,6 +25,7 @@ from unittest import mock
 import warnings
 
 from google.cloud import ndb
+from google.cloud.storage import retry
 import pygit2
 from docker.mock_test.mock_test_handler import MockDataHandler
 import importer
@@ -205,9 +206,11 @@ class ImporterTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
 
     bucket.blob.assert_has_calls([
         mock.call('testcase/5417710252982272.json'),
-        mock.call().upload_from_string(expected_json),
+        mock.call().upload_from_string(
+            expected_json, retry=retry.DEFAULT_RETRY),
         mock.call('issue/1064.json'),
-        mock.call().upload_from_string(expected_json),
+        mock.call().upload_from_string(
+            expected_json, retry=retry.DEFAULT_RETRY),
     ])
 
   @mock.patch('google.cloud.pubsub_v1.PublisherClient.publish')
@@ -462,6 +465,37 @@ class BucketImporterTest(unittest.TestCase):
         import_last_modified=datetime.datetime(2018, 2, 9, 3, 29, 0, 0),
     ).put()
 
+    # Preexisting Bug (with a colon in the ID) that does not exist in GCS.
+    osv.Bug(
+        id='RXSA-2023:0101',
+        db_id='RXSA-2023:0101',
+        status=1,
+        source='test',
+        source_id='test:RXSA-2023:0101.json',
+        public=True,
+        affected_packages=[{
+            'package': {
+                'ecosystem':
+                    'Rocky Linux:8',
+                'name':
+                    'kernel',
+                'purl': ('pkg:rpm/rocky-linux/kernel'
+                         '?distro=rocky-linux-8-sig-cloud&epoch=0'),
+            },
+            'ranges': [{
+                'events': [{
+                    'value': '0',
+                    'type': 'introduced'
+                }, {
+                    'value': '0:4.18.0-425.10.1.el8_7.cloud',
+                    'type': 'fixed'
+                }],
+                'type': 'ECOSYSTEM',
+            }],
+        }],
+        import_last_modified=datetime.datetime(2018, 2, 9, 3, 29, 0, 0),
+    ).put()
+
     self.tasks_topic = f'projects/{tests.TEST_PROJECT_ID}/topics/tasks'
 
   def tearDown(self):
@@ -480,19 +514,31 @@ class BucketImporterTest(unittest.TestCase):
 
     with self.assertLogs(level='WARNING') as logs:
       imp.run()
-    self.assertEqual(3, len(logs.output))
+
+    self.assertEqual(
+        3,
+        len(logs.output),
+        msg='Expected number of WARNING level (or higher) logs not found')
     self.assertEqual(
         "WARNING:root:Failed to validate loaded OSV entry: 'modified' is a required property",  # pylint: disable=line-too-long
-        logs.output[0])
-    self.assertIn('WARNING:root:Invalid data:', logs.output[1])
+        logs.output[0],
+        msg='Expected schema validation failure log not found')
+    self.assertIn(
+        'WARNING:root:Invalid data:',
+        logs.output[1],
+        msg='Expected schema validation failure log not found')
     self.assertIn(
         "ERROR:root:Failed to parse vulnerability a/b/test-invalid.json: 'modified' is a required property",  # pylint: disable=line-too-long
-        logs.output[2])
+        logs.output[2],
+        msg='Expected schema validation failure log not found')
 
     # Check if vulnerability parse failure was logged correctly.
     self.assertTrue(
-        any('Failed to parse vulnerability "a/b/test-invalid.json"' in x[0][0]
-            for x in upload_from_str.call_args_list))
+        any(('Failed to parse vulnerability (when considering for import)'
+             ' "a/b/test-invalid.json"') in x[0][0]
+            for x in upload_from_str.call_args_list),
+        msg=('Expected schema validation failure not logged in public log '
+             'bucket'))
 
     # Expected pubsub calls for validly imported records.
     mock_publish.assert_has_calls([
@@ -527,7 +573,10 @@ class BucketImporterTest(unittest.TestCase):
         path='a/b/DSA-3029-1.json',
         original_sha256=mock.ANY,
         deleted='false')
-    self.assertNotIn(dsa_call, mock_publish.mock_calls)
+    self.assertNotIn(
+        dsa_call,
+        mock_publish.mock_calls,
+        msg='Old record was processed unexpectedly')
 
     # Test invalid entry is not published, as it failed validation.
     invalid_call = mock.call(
@@ -538,7 +587,10 @@ class BucketImporterTest(unittest.TestCase):
         path='a/b/test-invalid.json',
         original_sha256=mock.ANY,
         deleted=mock.ANY)
-    self.assertNotIn(invalid_call, mock_publish.mock_calls)
+    self.assertNotIn(
+        invalid_call,
+        mock_publish.mock_calls,
+        msg='Invalid record was processed unexpectedly')
 
   @mock.patch('google.cloud.pubsub_v1.PublisherClient.publish')
   @mock.patch('time.time', return_value=12345.0)
@@ -580,6 +632,20 @@ class BucketImporterTest(unittest.TestCase):
         req_timestamp='12345')
     mock_publish.assert_has_calls([deletion_call])
 
+    # Test existing record in Datastore with an ID containing a colon and no
+    # longer present in GCS has been requested to be deleted and is correctly
+    # formed.
+    deletion_call = mock.call(
+        self.tasks_topic,
+        data=b'',
+        type='update',
+        source='test',
+        path='RXSA-2023:0101.json',
+        original_sha256='',
+        deleted='true',
+        req_timestamp='12345')
+    mock_publish.assert_has_calls([deletion_call])
+
     # Run again with a 10% threshold and confirm the safeguards work as
     # intended.
     imp = importer.Importer(
@@ -601,7 +667,7 @@ class BucketImporterTest(unittest.TestCase):
     # _process_deletions_bucket() causes, plus an extra one from the safeguard.
     self.assertEqual(4, len(logs.output))
     self.assertEqual(
-        "ERROR:root:Cowardly refusing to delete 1 missing records from GCS for: test",  # pylint: disable=line-too-long
+        "ERROR:root:Cowardly refusing to delete 2 missing records from GCS for: test",  # pylint: disable=line-too-long
         logs.output[-1])
 
     # No deletions should have been requested.
@@ -647,7 +713,8 @@ class BucketImporterTest(unittest.TestCase):
 
     # Check if vulnerability parse failure was logged correctly.
     self.assertTrue(
-        any('Failed to parse vulnerability "a/b/test-invalid.json"' in x[0][0]
+        any(('Failed to parse vulnerability (when considering for import) '
+             '"a/b/test-invalid.json"') in x[0][0]
             for x in upload_from_str.call_args_list))
 
     # Confirm a pubsub message was emitted for record reimported.
@@ -673,7 +740,8 @@ class BucketImporterTest(unittest.TestCase):
 
     # Check if vulnerability parse failure was logged correctly.
     self.assertTrue(
-        any('Failed to parse vulnerability "a/b/test-invalid.json"' in x[0][0]
+        any(('Failed to parse vulnerability (when considering for import) '
+             '"a/b/test-invalid.json"') in x[0][0]
             for x in upload_from_str.call_args_list))
 
     # Confirm second run didn't reprocess any existing records.
@@ -908,6 +976,32 @@ class RESTImporterTest(unittest.TestCase):
             deleted='false',
             req_timestamp='12345')
     ])
+
+
+@mock.patch('importer.utcnow', lambda: datetime.datetime(2024, 1, 1))
+class ImportFindingsTest(unittest.TestCase):
+  """Import Finding tests."""
+
+  def setUp(self):
+    tests.reset_emulator()
+
+    tests.mock_datetime(self)
+
+  def test_add_finding(self):
+    """Test that creating an import finding works."""
+    expected = osv.ImportFinding(
+        bug_id='CVE-2024-1234',
+        findings=[
+            osv.ImportFindings.INVALID_VERSION,
+        ],
+        first_seen=importer.utcnow(),
+        last_attempt=importer.utcnow(),
+    )
+    expected.put()
+
+    for actual in osv.ImportFinding.query(
+        osv.ImportFinding.bug_id == expected.bug_id):
+      self.assertEqual(expected, actual)
 
 
 if __name__ == '__main__':

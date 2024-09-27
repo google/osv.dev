@@ -17,10 +17,11 @@ import unittest
 from .. import ecosystems
 
 
-class RockyLinuxEcosystemTest(unittest.TestCase):
+class AlmaLinuxEcosystemTest(unittest.TestCase):
   """Almalinux ecosystem helper tests."""
 
   def test_alma_linux(self):
+    """Test sort key"""
     ecosystem = ecosystems.get('AlmaLinux')
     self.assertGreater(
         ecosystem.sort_key("9.27-15.el8_10"),
@@ -30,3 +31,9 @@ class RockyLinuxEcosystemTest(unittest.TestCase):
     self.assertGreater(
         ecosystem.sort_key("3:2.1.10-1.module_el8.10.0+3858+6ad51f9f"),
         ecosystem.sort_key("3:2.1.10-1.module_el8.10.0+3845+87b84552"))
+    self.assertLess(
+        ecosystem.sort_key("20230404-117.git2e92a49f.el8_8.alma.1"),
+        ecosystem.sort_key("20240111-121.gitb3132c18.el8"))
+    self.assertEqual(
+        ecosystem.sort_key("20240111-121.gitb3132c18.el8"),
+        ecosystem.sort_key("20240111-121.gitb3132c18.el8"))

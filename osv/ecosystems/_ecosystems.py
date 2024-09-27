@@ -13,6 +13,8 @@
 # limitations under the License.
 """Ecosystem helpers."""
 
+from osv.ecosystems.chainguard import Chainguard
+from osv.ecosystems.wolfi import Wolfi
 from .helper_base import Ecosystem, OrderingUnsupportedEcosystem
 from .alma_linux import AlmaLinux
 from .alpine import Alpine
@@ -26,13 +28,25 @@ from .packagist import Packagist
 from .pub import Pub
 from .pypi import PyPI
 from .rocky_linux import RockyLinux
+from .redhat import RedHat
 from .rubygems import RubyGems
 from .semver_ecosystem_helper import SemverEcosystem
 from .ubuntu import Ubuntu
+from .suse import SUSE
+from .opensuse import OpenSUSE
 
 _ecosystems = {
+    # SemVer-based ecosystems (remember keep synced with SEMVER_ECOSYSTEMS):
+    'Bitnami': SemverEcosystem(),
+    'crates.io': SemverEcosystem(),
+    'Go': SemverEcosystem(),
+    'Hex': SemverEcosystem(),
+    'npm': SemverEcosystem(),
+    'SwiftURL': SemverEcosystem(),
+    # Non SemVer-based ecosystems
     'Bioconductor': Bioconductor(),
     'CRAN': CRAN(),
+    'Chainguard': Chainguard(),
     'GHC': GHC(),
     'Hackage': Hackage(),
     'Maven': Maven(),
@@ -41,22 +55,9 @@ _ecosystems = {
     'Pub': Pub(),
     'PyPI': PyPI(),
     'RubyGems': RubyGems(),
-    # SemVer-based ecosystems (remember keep synced with SEMVER_ECOSYSTEMS):
-    'Bitnami': SemverEcosystem(),
-    'crates.io': SemverEcosystem(),
-    'Go': SemverEcosystem(),
-    'Hex': SemverEcosystem(),
-    'npm': SemverEcosystem(),
-    'SwiftURL': SemverEcosystem(),
+    'Wolfi': Wolfi(),
     # Ecosystems which require a release version for enumeration, which is
     # handled separately in get().
-    'AlmaLinux': OrderingUnsupportedEcosystem(),
-    'Alpine': OrderingUnsupportedEcosystem(),
-    'Chainguard': OrderingUnsupportedEcosystem(),
-    'Debian': OrderingUnsupportedEcosystem(),
-    'Rocky Linux': OrderingUnsupportedEcosystem(),
-    'Ubuntu': OrderingUnsupportedEcosystem(),
-    'Wolfi': OrderingUnsupportedEcosystem(),
     # Ecosystems missing implementations:
     'Android': OrderingUnsupportedEcosystem(),
     'ConanCenter': OrderingUnsupportedEcosystem(),
@@ -117,6 +118,9 @@ def get(name: str) -> Ecosystem:
   if name.startswith('AlmaLinux'):
     return AlmaLinux()
 
+  if name.startswith('Red Hat'):
+    return RedHat()
+
   if name.startswith('Rocky Linux'):
     return RockyLinux()
 
@@ -127,7 +131,13 @@ def get(name: str) -> Ecosystem:
   if name.startswith('Ubuntu'):
     return Ubuntu()
 
-  return _ecosystems.get(name)
+  if name.startswith('openSUSE'):
+    return OpenSUSE()
+
+  if name.startswith('SUSE'):
+    return SUSE()
+
+  return _ecosystems.get(normalize(name))
 
 
 def normalize(ecosystem_name: str):

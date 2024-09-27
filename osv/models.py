@@ -13,14 +13,14 @@
 # limitations under the License.
 """Datastore types."""
 
-import datetime
+from datetime import datetime
 import enum
 import logging
 import re
 import os
 
 from urllib.parse import urlparse
-from typing import List
+from typing import Self
 
 from google.cloud import ndb
 from google.protobuf import json_format
@@ -65,7 +65,9 @@ def _check_valid_event_type(prop, value):
 
 def utcnow():
   """For mocking."""
-  return datetime.datetime.utcnow()
+  # The alternative mentioned in the deprecation notice
+  # does not behave in the same way? Tests fail.
+  return datetime.utcnow()
 
 
 def _get_purl_indexes(affected_packages):
@@ -87,8 +89,8 @@ def _repo_name(repo_url: str) -> str:
   return name
 
 
-def _maybe_strip_repo_prefixes(versions: List[str],
-                               repo_urls: List[str]) -> str:
+def _maybe_strip_repo_prefixes(versions: list[str],
+                               repo_urls: list[str]) -> str:
   """Try to strip the repo name from tags prior to normalizing.
 
   There are some particularly regex-unfriendly tag names that prefix the
@@ -110,7 +112,7 @@ def _maybe_strip_repo_prefixes(versions: List[str],
 class IDCounter(ndb.Model):
   """Counter for ID allocations."""
   # Next ID to allocate.
-  next_id = ndb.IntegerProperty()
+  next_id: int = ndb.IntegerProperty()
 
 
 class AffectedCommits(ndb.Model):
@@ -118,81 +120,82 @@ class AffectedCommits(ndb.Model):
   MAX_COMMITS_PER_ENTITY = 10000
 
   # The main bug ID.
-  bug_id = ndb.StringProperty()
+  bug_id: str = ndb.StringProperty()
   # The commit hash.
-  commits = ndb.BlobProperty(repeated=True, indexed=True)
+  commits: list[bytes] = ndb.BlobProperty(repeated=True, indexed=True)
   # Whether or not the bug is public.
-  public = ndb.BooleanProperty()
+  public: bool = ndb.BooleanProperty()
   # The page for this batch of commits.
-  page = ndb.IntegerProperty(indexed=False)
+  page: int = ndb.IntegerProperty(indexed=False)
 
 
 class RegressResult(ndb.Model):
   """Regression results."""
   # The commit hash.
-  commit = ndb.StringProperty(default='')
+  commit: str = ndb.StringProperty(default='')
   # Vulnerability summary.
-  summary = ndb.TextProperty()
+  summary: str = ndb.TextProperty()
   # Vulnerability details.
-  details = ndb.TextProperty()
+  details: str = ndb.TextProperty()
   # Error (if any).
-  error = ndb.StringProperty()
+  error: str = ndb.StringProperty()
   # OSS-Fuzz issue ID.
-  issue_id = ndb.StringProperty()
+  issue_id: str = ndb.StringProperty()
   # Project for the bug.
-  project = ndb.StringProperty()
+  project: str = ndb.StringProperty()
   # Package ecosystem for the project.
-  ecosystem = ndb.StringProperty()
+  ecosystem: str = ndb.StringProperty()
   # Repo URL.
-  repo_url = ndb.StringProperty()
+  repo_url: str = ndb.StringProperty()
   # Severity of the bug.
-  severity = ndb.StringProperty(validator=_check_valid_severity)
+  severity: str = ndb.StringProperty(validator=_check_valid_severity)
   # Reference URLs.
-  reference_urls = ndb.StringProperty(repeated=True)
+  reference_urls: list[str] = ndb.StringProperty(repeated=True)
   # Source timestamp.
-  timestamp = ndb.DateTimeProperty()
+  timestamp: datetime = ndb.DateTimeProperty()
 
 
 class FixResult(ndb.Model):
   """Fix results."""
   # The commit hash.
-  commit = ndb.StringProperty(default='')
+  commit: str = ndb.StringProperty(default='')
   # Vulnerability summary.
-  summary = ndb.TextProperty()
+  summary: str = ndb.TextProperty()
   # Vulnerability details.
-  details = ndb.TextProperty()
+  details: str = ndb.TextProperty()
   # Error (if any).
-  error = ndb.StringProperty()
+  error: str = ndb.StringProperty()
   # OSS-Fuzz issue ID.
-  issue_id = ndb.StringProperty()
+  issue_id: str = ndb.StringProperty()
   # Project for the bug.
-  project = ndb.StringProperty()
+  project: str = ndb.StringProperty()
   # Package ecosystem for the project.
-  ecosystem = ndb.StringProperty()
+  ecosystem: str = ndb.StringProperty()
   # Repo URL.
-  repo_url = ndb.StringProperty()
+  repo_url: str = ndb.StringProperty()
   # Severity of the bug.
-  severity = ndb.StringProperty(validator=_check_valid_severity)
+  severity: str = ndb.StringProperty(validator=_check_valid_severity)
   # Reference URLs.
-  reference_urls = ndb.StringProperty(repeated=True)
+  reference_urls: list[str] = ndb.StringProperty(repeated=True)
   # Source timestamp.
-  timestamp = ndb.DateTimeProperty()
+  timestamp: datetime = ndb.DateTimeProperty()
 
 
 class AffectedEvent(ndb.Model):
   """Affected event."""
-  type = ndb.StringProperty(validator=_check_valid_event_type)
-  value = ndb.StringProperty()
+  type: str = ndb.StringProperty(validator=_check_valid_event_type)
+  value: str = ndb.StringProperty()
 
 
 class AffectedRange2(ndb.Model):
   """Affected range."""
   # Type of range.
-  type = ndb.StringProperty(validator=_check_valid_range_type)
+  type: str = ndb.StringProperty(validator=_check_valid_range_type)
   # Repo URL.
-  repo_url = ndb.StringProperty()
+  repo_url: str = ndb.StringProperty()
   # Events.
-  events = ndb.LocalStructuredProperty(AffectedEvent, repeated=True)
+  events: list[AffectedEvent] = ndb.LocalStructuredProperty(
+      AffectedEvent, repeated=True)
 
 
 class SourceOfTruth(enum.IntEnum):
@@ -206,38 +209,40 @@ class SourceOfTruth(enum.IntEnum):
 
 class Package(ndb.Model):
   """Package."""
-  ecosystem = ndb.StringProperty()
-  name = ndb.StringProperty()
-  purl = ndb.StringProperty()
+  ecosystem: str = ndb.StringProperty()
+  name: str = ndb.StringProperty()
+  purl: str = ndb.StringProperty()
 
 
 class Severity(ndb.Model):
   """Severity."""
-  type = ndb.StringProperty()
-  score = ndb.StringProperty()
+  type: str = ndb.StringProperty()
+  score: str = ndb.StringProperty()
 
 
 class AffectedPackage(ndb.Model):
   """Affected packages."""
   # The affected package identifier.
-  package = ndb.StructuredProperty(Package)
+  package: Package = ndb.StructuredProperty(Package)
   # The list of affected ranges.
-  ranges = ndb.LocalStructuredProperty(AffectedRange2, repeated=True)
+  ranges: list[AffectedRange2] = ndb.LocalStructuredProperty(
+      AffectedRange2, repeated=True)
   # The list of explicit affected versions.
-  versions = ndb.TextProperty(repeated=True)
+  versions: list[str] = ndb.TextProperty(repeated=True)
   # Database specific metadata.
-  database_specific = ndb.JsonProperty()
+  database_specific: dict = ndb.JsonProperty()
   # Ecosystem specific metadata.
-  ecosystem_specific = ndb.JsonProperty()
+  ecosystem_specific: dict = ndb.JsonProperty()
   # Severity of the bug.
-  severities = ndb.LocalStructuredProperty(Severity, repeated=True)
+  severities: list[Severity] = ndb.LocalStructuredProperty(
+      Severity, repeated=True)
 
 
 class Credit(ndb.Model):
   """Credits."""
-  name = ndb.StringProperty()
-  contact = ndb.StringProperty(repeated=True)
-  type = ndb.StringProperty()
+  name: str = ndb.StringProperty()
+  contact: list[str] = ndb.StringProperty(repeated=True)
+  type: str = ndb.StringProperty()
 
 
 class Bug(ndb.Model):
@@ -248,70 +253,72 @@ class Bug(ndb.Model):
 
   # Display ID as used by the source database. The full qualified database that
   # OSV tracks this as may be different.
-  db_id = ndb.StringProperty()
+  db_id: str = ndb.StringProperty()
   # Other IDs this bug is known as.
-  aliases = ndb.StringProperty(repeated=True)
+  aliases: list[str] = ndb.StringProperty(repeated=True)
   # Related IDs.
-  related = ndb.StringProperty(repeated=True)
+  related: list[str] = ndb.StringProperty(repeated=True)
   # Status of the bug.
-  status = ndb.IntegerProperty()
+  status: int = ndb.IntegerProperty()
   # Timestamp when Bug was allocated.
-  timestamp = ndb.DateTimeProperty()
+  timestamp: datetime = ndb.DateTimeProperty()
   # When the entry was last edited.
-  last_modified = ndb.DateTimeProperty()
+  last_modified: datetime = ndb.DateTimeProperty()
   # Last modified field of the original imported file
-  import_last_modified = ndb.DateTimeProperty()
+  import_last_modified: datetime = ndb.DateTimeProperty()
   # When the entry was withdrawn.
-  withdrawn = ndb.DateTimeProperty()
+  withdrawn: datetime = ndb.DateTimeProperty()
   # The source identifier.
   # For OSS-Fuzz, this oss-fuzz:<ClusterFuzz testcase ID>.
   # For others this is <source>:<path/to/source>.
-  source_id = ndb.StringProperty()
+  source_id: str = ndb.StringProperty()
   # The main fixed commit (from bisection).
-  fixed = ndb.StringProperty(default='')
+  fixed: str = ndb.StringProperty(default='')
   # The main regressing commit (from bisection).
-  regressed = ndb.StringProperty(default='')
+  regressed: str = ndb.StringProperty(default='')
   # List of affected versions.
-  affected = ndb.TextProperty(repeated=True)
+  affected: list[str] = ndb.TextProperty(repeated=True)
   # List of normalized versions indexed for fuzzy matching.
-  affected_fuzzy = ndb.StringProperty(repeated=True)
+  affected_fuzzy: list[str] = ndb.StringProperty(repeated=True)
   # OSS-Fuzz issue ID.
-  issue_id = ndb.StringProperty()
+  issue_id: str = ndb.StringProperty()
   # Package URL for this package.
-  purl = ndb.StringProperty(repeated=True)
+  purl: list[str] = ndb.StringProperty(repeated=True)
   # Project/package name for the bug.
-  project = ndb.StringProperty(repeated=True)
+  project: list[str] = ndb.StringProperty(repeated=True)
   # Package ecosystem for the project.
-  ecosystem = ndb.StringProperty(repeated=True)
+  ecosystem: list[str] = ndb.StringProperty(repeated=True)
   # Summary for the bug.
-  summary = ndb.TextProperty()
+  summary: str = ndb.TextProperty()
   # Vulnerability details.
-  details = ndb.TextProperty()
+  details: str = ndb.TextProperty()
   # Severity of the bug.
-  severities = ndb.LocalStructuredProperty(Severity, repeated=True)
+  severities: list[Severity] = ndb.LocalStructuredProperty(
+      Severity, repeated=True)
   # Credits for the bug.
-  credits = ndb.LocalStructuredProperty(Credit, repeated=True)
+  credits: list[Credit] = ndb.LocalStructuredProperty(Credit, repeated=True)
   # Whether or not the bug is public (OSS-Fuzz only).
-  public = ndb.BooleanProperty()
+  public: bool = ndb.BooleanProperty()
   # Reference URL types (dict of url -> type).
-  reference_url_types = ndb.JsonProperty()
+  reference_url_types: dict = ndb.JsonProperty()
   # Search indices (auto-populated)
-  search_indices = ndb.StringProperty(repeated=True)
+  search_indices: list[str] = ndb.StringProperty(repeated=True)
   # Whether or not the bug has any affected versions (auto-populated).
-  has_affected = ndb.BooleanProperty()
+  has_affected: bool = ndb.BooleanProperty()
   # Source of truth for this Bug.
-  source_of_truth = ndb.IntegerProperty(default=SourceOfTruth.INTERNAL)
+  source_of_truth: SourceOfTruth = ndb.IntegerProperty(
+      default=SourceOfTruth.INTERNAL)
   # Whether the bug is fixed (indexed for querying).
-  is_fixed = ndb.BooleanProperty()
+  is_fixed: bool = ndb.BooleanProperty()
   # Database specific.
-  database_specific = ndb.JsonProperty()
+  database_specific: dict = ndb.JsonProperty()
   # Normalized SEMVER fixed indexes for querying.
-  semver_fixed_indexes = ndb.StringProperty(repeated=True)
+  semver_fixed_indexes: list[str] = ndb.StringProperty(repeated=True)
   # Affected packages and versions.
-  affected_packages = ndb.LocalStructuredProperty(
+  affected_packages: list[AffectedPackage] = ndb.LocalStructuredProperty(
       AffectedPackage, repeated=True)
   # The source of this Bug.
-  source = ndb.StringProperty()
+  source: str = ndb.StringProperty()
 
   def id(self):
     """Get the bug ID."""
@@ -335,7 +342,7 @@ class Bug(ndb.Model):
     return None
 
   @classmethod
-  def get_by_id(cls, vuln_id, *args, **kwargs):
+  def get_by_id(cls, vuln_id, *args, **kwargs) -> Self | None:
     """Overridden get_by_id to handle OSV allocated IDs."""
     result = cls.query(cls.db_id == vuln_id).get()
     if result:
@@ -760,41 +767,41 @@ class Bug(ndb.Model):
 class RepoIndex(ndb.Model):
   """RepoIndex entry"""
   # The dependency name
-  name = ndb.StringProperty()
+  name: str = ndb.StringProperty()
   # The base cpe without the version
-  base_cpe = ndb.StringProperty()
+  base_cpe: str = ndb.StringProperty()
   # The repository commit
-  commit = ndb.BlobProperty()
+  commit: bytes = ndb.BlobProperty()
   # The source address
-  repo_addr = ndb.StringProperty()
+  repo_addr: str = ndb.StringProperty()
   # The scanned file extensions
-  file_exts = ndb.StringProperty(repeated=True)
+  file_exts: list[str] = ndb.StringProperty(repeated=True)
   # The hash algorithm used
-  file_hash_type = ndb.StringProperty()
+  file_hash_type: str = ndb.StringProperty()
   # The repository type
-  repo_type = ndb.StringProperty()
+  repo_type: str = ndb.StringProperty()
   # A bitmap of which buckets are empty
-  empty_bucket_bitmap = ndb.BlobProperty()
+  empty_bucket_bitmap: bytes = ndb.BlobProperty()
   # Number of files in this repo
-  file_count = ndb.IntegerProperty()
+  file_count: int = ndb.IntegerProperty()
   # Tag name of the source
-  tag = ndb.StringProperty()
+  tag: str = ndb.StringProperty()
 
 
 class FileResult(ndb.Model):
   """FileResult entry containing the path and hash"""
   # The hash value of the file
-  hash = ndb.BlobProperty(indexed=True)
+  hash: bytes = ndb.BlobProperty(indexed=True)
   # The file path
-  path = ndb.TextProperty()
+  path: str = ndb.TextProperty()
 
 
 class RepoIndexBucket(ndb.Model):
   """RepoIndexResult entries containing the actual hash values"""
   # The file results per file
-  node_hash = ndb.BlobProperty(indexed=True)
+  node_hash: bytes = ndb.BlobProperty(indexed=True)
   # number of files this hash represents
-  files_contained = ndb.IntegerProperty()
+  files_contained: int = ndb.IntegerProperty()
 
 
 class SourceRepositoryType(enum.IntEnum):
@@ -807,48 +814,48 @@ class SourceRepositoryType(enum.IntEnum):
 class SourceRepository(ndb.Model):
   """Source repository."""
   # The SourceRepositoryType of the repository.
-  type = ndb.IntegerProperty()
+  type: int = ndb.IntegerProperty()
   # The name of the source.
-  name = ndb.StringProperty()
+  name: str = ndb.StringProperty()
   # The repo URL for the source for SourceRepositoryType.GIT.
-  repo_url = ndb.StringProperty()
+  repo_url: str = ndb.StringProperty()
   # The username to use for SSH auth for SourceRepositoryType.GIT.
-  repo_username = ndb.StringProperty()
+  repo_username: str = ndb.StringProperty()
   # Optional branch for repo for SourceRepositoryType.GIT.
-  repo_branch = ndb.StringProperty()
+  repo_branch: str = ndb.StringProperty()
   # The API endpoint for SourceRepositoryType.REST_ENDPOINT.
-  rest_api_url = ndb.StringProperty()
+  rest_api_url: str = ndb.StringProperty()
   # Bucket name for SourceRepositoryType.BUCKET.
-  bucket = ndb.StringProperty()
+  bucket: str = ndb.StringProperty()
   # Vulnerability data not under this path is ignored by the importer.
-  directory_path = ndb.StringProperty()
+  directory_path: str = ndb.StringProperty()
   # Last synced hash for SourceRepositoryType.GIT.
-  last_synced_hash = ndb.StringProperty()
+  last_synced_hash: str = ndb.StringProperty()
   # Last date recurring updates were requested.
-  last_update_date = ndb.DateTimeProperty()
+  last_update_date: datetime = ndb.DateTimeProperty()
   # Patterns of files to exclude (regex).
-  ignore_patterns = ndb.StringProperty(repeated=True)
+  ignore_patterns: list[str] = ndb.StringProperty(repeated=True)
   # Whether this repository is editable.
-  editable = ndb.BooleanProperty(default=False)
+  editable: bool = ndb.BooleanProperty(default=False)
   # Default extension.
-  extension = ndb.StringProperty(default='.yaml')
+  extension: str = ndb.StringProperty(default='.yaml')
   # Key path within each file to store the vulnerability.
-  key_path = ndb.StringProperty()
+  key_path: str = ndb.StringProperty()
   # If true, don't analyze any Git ranges.
-  ignore_git = ndb.BooleanProperty(default=False)
+  ignore_git: bool = ndb.BooleanProperty(default=False)
   # Whether to detect cherypicks or not (slow for large repos).
-  detect_cherrypicks = ndb.BooleanProperty(default=True)
+  detect_cherrypicks: bool = ndb.BooleanProperty(default=True)
   # Whether to populate "affected[].versions" from Git ranges.
-  versions_from_repo = ndb.BooleanProperty(default=True)
+  versions_from_repo: bool = ndb.BooleanProperty(default=True)
   # Ignore last import time once (SourceRepositoryType.BUCKET).
-  ignore_last_import_time = ndb.BooleanProperty(default=False)
+  ignore_last_import_time: bool = ndb.BooleanProperty(default=False)
   # HTTP link prefix to individual OSV source records.
-  link = ndb.StringProperty()
+  link: str = ndb.StringProperty()
   # HTTP link prefix to individual vulnerability records for humans.
-  human_link = ndb.StringProperty()
+  human_link: str = ndb.StringProperty()
   # DB prefix, if the database allocates its own.
   # https://ossf.github.io/osv-schema/#id-modified-fields
-  db_prefix = ndb.StringProperty(repeated=True)
+  db_prefix: list[str] = ndb.StringProperty(repeated=True)
 
   def ignore_file(self, file_path):
     """Return whether or not we should be ignoring a file."""
@@ -870,18 +877,39 @@ class SourceRepository(ndb.Model):
 
 class AliasGroup(ndb.Model):
   """Alias group."""
-  bug_ids = ndb.StringProperty(repeated=True)
-  last_modified = ndb.DateTimeProperty()
+  bug_ids: list[str] = ndb.StringProperty(repeated=True)
+  last_modified: datetime = ndb.DateTimeProperty()
 
 
 class AliasAllowListEntry(ndb.Model):
   """Alias group allow list entry."""
-  bug_id = ndb.StringProperty()
+  bug_id: str = ndb.StringProperty()
 
 
 class AliasDenyListEntry(ndb.Model):
   """Alias group deny list entry."""
-  bug_id = ndb.StringProperty()
+  bug_id: str = ndb.StringProperty()
+
+
+class ImportFindings(enum.IntEnum):
+  """The possible quality findings about an individual record."""
+  NONE = 0
+  DELETED = 1
+  INVALID_JSON = 2
+  INVALID_PACKAGE = 3
+  INVALID_PURL = 4
+  INVALID_VERSION = 5
+  INVALID_COMMIT = 6
+  INVALID_RANGE = 7
+  BAD_ALIASED_CVE = 8
+
+
+class ImportFinding(ndb.Model):
+  """Quality findings about an individual record."""
+  bug_id: str = ndb.StringProperty()
+  findings: list[ImportFindings] = ndb.IntegerProperty(repeated=True)
+  first_seen: datetime = ndb.DateTimeProperty()
+  last_attempt: datetime = ndb.DateTimeProperty()
 
 
 def get_source_repository(source_name):
@@ -889,7 +917,7 @@ def get_source_repository(source_name):
   return SourceRepository.get_by_id(source_name)
 
 
-def sorted_events(ecosystem, range_type, events):
+def sorted_events(ecosystem, range_type, events) -> list[AffectedEvent]:
   """Sort events."""
   if range_type == 'GIT':
     # No need to sort.
@@ -921,14 +949,14 @@ def sorted_events(ecosystem, range_type, events):
 
 
 @ndb.tasklet
-def get_aliases_async(bug_id):
+def get_aliases_async(bug_id) -> ndb.Future:
   """Gets aliases asynchronously."""
   alias_group = yield AliasGroup.query(AliasGroup.bug_ids == bug_id).get_async()
   return alias_group
 
 
 @ndb.tasklet
-def get_related_async(bug_id):
+def get_related_async(bug_id) -> ndb.Future:
   """Gets related bugs asynchronously."""
   related_bugs = yield Bug.query(Bug.related == bug_id).fetch_async()
   related_bug_ids = [bug.db_id for bug in related_bugs]

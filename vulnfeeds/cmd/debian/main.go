@@ -11,6 +11,7 @@ import (
 	"strconv"
 
 	"github.com/google/osv/vulnfeeds/cves"
+	"github.com/google/osv/vulnfeeds/faulttolerant"
 	"github.com/google/osv/vulnfeeds/utility"
 	"github.com/google/osv/vulnfeeds/vulns"
 )
@@ -54,7 +55,7 @@ func main() {
 // getDebianReleaseMap gets the Debian version number, excluding testing and experimental versions.
 func getDebianReleaseMap() (map[string]string, error) {
 	releaseMap := make(map[string]string)
-	res, err := http.Get(debianDistroInfoURL)
+	res, err := faulttolerant.Get(debianDistroInfoURL)
 	if err != nil {
 		return releaseMap, err
 	}
@@ -105,13 +106,9 @@ func updateOSVPkgInfos(pkgName string, cveId string, releases map[string]Release
 	}
 
 	for _, releaseName := range releaseNames {
-		// Skips 'not yet assigned' entries because their status may change in the future.
 		// For reference on urgency levels, see: https://security-team.debian.org/security_tracker.html#severity-levels
 		release, ok := releases[releaseName]
 		if !ok {
-			continue
-		}
-		if release.Urgency == "not yet assigned" {
 			continue
 		}
 		debianVersion, ok := debianReleaseMap[releaseName]
@@ -198,7 +195,7 @@ func writeToOutput(cvePkgInfos map[string][]vulns.PackageInfo) error {
 
 // downloadDebianSecurityTracker download Debian json file
 func downloadDebianSecurityTracker() (DebianSecurityTrackerData, error) {
-	res, err := http.Get(debianSecurityTrackerURL)
+	res, err := faulttolerant.Get(debianSecurityTrackerURL)
 	if err != nil {
 		return nil, err
 	}

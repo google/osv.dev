@@ -49,9 +49,11 @@ Then you can set up the development environment by cloning the OSV repo and
 installing the Poetry dependencies.
 
 ```shell
-git clone https://github.com/google/osv.dev
+git clone --recurse-submodules https://github.com/google/osv.dev
+# FYI
+# git config fetch.recurseSubmodules on-demand
+# is recommended to help manage updates to the osv/osv-schema submodule
 cd osv.dev
-git submodule update --init --recursive
 poetry install
 poetry shell
 ```
@@ -66,19 +68,19 @@ gcloud auth login --update-adc
 gcloud components install beta cloud-datastore-emulator
 ```
 
-To run tests: 
-```shell 
+To run tests:
+```shell
 make all-tests
 ```
 
 To run integration tests for the API is a separate command
 ```shell
-make integration-tests
+make api-server-tests
 ```
 
 By default, this skips long tests, enable them by setting the `LONG_TESTS` variable
 ```shell
-LONG_TESTS=1 make integration-tests
+LONG_TESTS=1 make api-server-tests
 ```
 
 #### Test result generation
@@ -105,8 +107,8 @@ To lint your code, run
 make lint
 ```
 
-To format your code, run 
-```shell 
+To format your code, run
+```shell
 yapf -i <file>.py
 ```
 
@@ -122,7 +124,7 @@ make run-appengine
 #### API
 
 Running a local instance of the API server requires the path to application
-default credentials. The is required so that the ESP container has credentials 
+default credentials. The is required so that the ESP container has credentials
 to download API configuration.
 
 ```shell

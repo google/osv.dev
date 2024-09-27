@@ -29,7 +29,7 @@ jobs:
         fetch-depth: 0
         submodules: recursive
     - name: Set up Python 3
-      uses: actions/setup-python@39cd14951b08e74b54015e9e001cdefcf80e669f # v5.1.1
+      uses: actions/setup-python@f677139bbe7f9c59b41e40162b753c062f5d49a3 # v5.2.0
       with:
         python-version: 3.7
     - name: Install pypa/build
@@ -44,7 +44,7 @@ jobs:
         build
         --sdist --wheel --outdir dist/ .
     - name: Publish distribution to PyPI
-      uses: pypa/gh-action-pypi-publish@ec4db0b4ddc65acdf4bff5fa45ac92d78b56bdf0 # v1.9.0
+      uses: pypa/gh-action-pypi-publish@897895f1e160c830e369f9779632ebc134688e1b # v1.10.2
       with:
         password: ${{ secrets.PYPI_API_TOKEN }}
         packages_dir: dist/

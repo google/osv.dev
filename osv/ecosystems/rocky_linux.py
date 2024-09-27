@@ -18,11 +18,11 @@ from .helper_base import Ecosystem
 
 
 class RockyLinux(Ecosystem):
-  """"Rocky Linux ecosystem"""
+  """Rocky Linux ecosystem"""
 
   @property
   def name(self):
-    return "Rocky Linux"
+    return 'Rocky Linux'
 
   def sort_key(self, version):
     return RpmVersion.from_string(version)
@@ -34,3 +34,7 @@ class RockyLinux(Ecosystem):
                          last_affected=None,
                          limits=None):
     raise NotImplementedError('Ecosystem helper does not support enumeration')
+
+  @property
+  def supports_comparing(self):
+    return True

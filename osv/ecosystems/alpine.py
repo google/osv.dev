@@ -53,6 +53,10 @@ class Alpine(Ecosystem):
     return self.alpine_release_ver.lstrip('v') + self._BRANCH_SUFFIX
 
   def sort_key(self, version):
+    if not AlpineLinuxVersion.is_valid(version):
+      # If version is not valid, it is most likely an invalid input
+      # version then sort it to the last/largest element
+      return AlpineLinuxVersion('999999')
     return AlpineLinuxVersion(version)
 
   @staticmethod

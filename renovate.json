@@ -5,12 +5,17 @@
   ],
   "timezone": "Australia/Sydney",
   "schedule": ["before 6am on wednesday"],
+  "prHourlyLimit": 0,
+  "prConcurrentLimit": 20,
   "labels": ["dependencies"],
   "postUpdateOptions": ["gomodTidy"],
   "osvVulnerabilityAlerts": true,
-  "lockFileMaintenance": { 
+  "lockFileMaintenance": {
     "enabled": true,
     "schedule": ["before 6am on wednesday"]
+  },
+  "git-submodules": {
+    "enabled": false
   },
   "packageRules": [
     {

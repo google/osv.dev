@@ -26,7 +26,7 @@ func Test_generateDebianSecurityTrackerOSV(t *testing.T) {
 	debianReleaseMap["trixie"] = "13"
 
 	osvPkgInfos := generateDebianSecurityTrackerOSV(decodedDebianData, debianReleaseMap)
-	expectedCount := 2
+	expectedCount := 3
 	if len(osvPkgInfos) != expectedCount {
 		t.Errorf("Expected %v Debian OSV entries , got %v", expectedCount, osvPkgInfos)
 	}

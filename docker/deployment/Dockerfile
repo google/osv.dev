@@ -1,4 +1,4 @@
-FROM ubuntu:22.04@sha256:fa17826afb526a9fc7250e0fbcbfd18d03fe7a54849472f86879d8bf562c629e
+FROM ubuntu:22.04@sha256:58b87898e82351c6cf9cf5b9f3c20257bb9e2dcf33af051e12ce532d7f94e3fe
 
 RUN apt-get update && \
     apt-get install -y curl jq

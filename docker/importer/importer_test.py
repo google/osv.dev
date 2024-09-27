@@ -861,7 +861,10 @@ class RESTImporterTest(unittest.TestCase):
                             False, False)
     imp.run()
     self.assertEqual(mock_publish.call_count, data_handler.cve_count)
-    self.assertEqual(repo.get().last_update_date, datetime.datetime(2024, 1, 1))
+    self.assertEqual(
+        repo.get().last_update_date,
+        datetime.datetime(2024, 1, 1),
+        msg='Expected last_update_date to equal REST Last-Modified date')
 
   @mock.patch('google.cloud.pubsub_v1.PublisherClient.publish')
   @mock.patch('time.time', return_value=12345.0)
@@ -882,7 +885,10 @@ class RESTImporterTest(unittest.TestCase):
                             False, False)
     imp.run()
     self.assertEqual(mock_publish.call_count, data_handler.cve_count)
-    self.assertEqual(repo.get().last_update_date, datetime.datetime(2024, 1, 1))
+    self.assertEqual(
+        repo.get().last_update_date,
+        datetime.datetime(2024, 1, 1),
+        msg='Expected last_update_date to equal REST Last-Modified date')
 
   @mock.patch('google.cloud.pubsub_v1.PublisherClient.publish')
   @mock.patch('time.time', return_value=12345.0)
@@ -902,7 +908,10 @@ class RESTImporterTest(unittest.TestCase):
       imp.run()
     mock_publish.assert_not_called()
     self.assertIn('INFO:root:No changes since last update.', logs.output[1])
-    self.assertEqual(repo.get().last_update_date, datetime.datetime(2024, 2, 1))
+    self.assertEqual(
+        repo.get().last_update_date,
+        datetime.datetime(2024, 2, 1),
+        msg='last_update_date should not have been updated')
 
   @mock.patch('google.cloud.pubsub_v1.PublisherClient.publish')
   @mock.patch('time.time', return_value=12345.0)
@@ -982,7 +991,10 @@ class RESTImporterTest(unittest.TestCase):
             deleted='false',
             req_timestamp='12345')
     ])
-    self.assertEqual(repo.get().last_update_date, datetime.datetime(2024, 1, 1))
+    self.assertEqual(
+        repo.get().last_update_date,
+        datetime.datetime(2024, 1, 1),
+        msg='Expected last_update_date to equal REST Last-Modified date')
 
 
 @mock.patch('importer.utcnow', lambda: datetime.datetime(2024, 1, 1))

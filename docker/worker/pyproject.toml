@@ -5,6 +5,8 @@ package-mode = false
 [tool.poetry.dependencies]
 python = "^3.11"
 
+google-auth-httplib2 = "^0.2.0"
+google-api-python-client = "^2.147"
 google-cloud-pubsub = "==2.23.1"
 google-cloud-ndb = "==2.3.2"
 google-cloud-storage = "==2.18.2"

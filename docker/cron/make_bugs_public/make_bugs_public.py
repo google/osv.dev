@@ -19,7 +19,8 @@ import sys
 from google.cloud import ndb
 import requests
 
-import monorail
+from google_issue_tracker import client
+from google_issue_tracker import issue_tracker
 import osv
 import osv.logs
 
@@ -37,7 +38,7 @@ def make_affected_commits_public(bug):
 
 def main():
   """Mark bugs public."""
-  monorail_client = monorail.Client('oss-fuzz', _MONORAIL_ACCOUNT)
+  tracker = issue_tracker.IssueTracker(client.build())
   query = osv.Bug.query(osv.Bug.public == False)  # pylint: disable=singleton-comparison
 
   to_mark_public = []
@@ -48,13 +49,14 @@ def main():
       continue
 
     try:
-      issue = monorail_client.get_issue(issue_id)
-    except requests.exceptions.HTTPError:
+      issue = tracker.get_issue(issue_id)
+    except issue_tracker.IssueTrackerError:
       logging.error('Failed to get issue %s.', issue_id)
       continue
 
-    labels = [label['label'].lower() for label in issue['labels']]
-    if 'restrict-view-commit' not in labels:
+    if (issue['issueState'].get(
+        'accessLimit',
+        {}).get('accessLevel') == issue_tracker.IssueAccessLevel.LIMIT_NONE):
       bug.public = True
       logging.info('Marking %s as public.', bug.key.id())
       to_mark_public.append(bug)

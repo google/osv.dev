@@ -191,6 +191,19 @@
   editable: False
   repo_username: 'git'
 
+- name: 'mageia'
+  versions_from_repo: False
+  rest_api_url: 'https://advisories.mageia.org/vulns.json'
+  type: 2
+  directory_path: .
+  detect_cherrypicks: False
+  extension: '.json'
+  db_prefix: ['MGASA-']
+  ignore_git: True
+  human_link: 'https://advisories.mageia.org/{{ BUG_ID }}.html'
+  link: 'https://advisories.mageia.org/'
+  editable: False
+
 - name: 'malicious-packages'
   versions_from_repo: False
   type: 0

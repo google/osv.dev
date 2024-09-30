@@ -69,10 +69,10 @@ class IssueTracker:
         return request.execute(num_retries=_NUM_RETRIES, http=http)
       except client.HttpError as e:
         if e.resp.status == 404:
-          raise IssueTrackerNotFoundError(str(e))
+          raise IssueTrackerNotFoundError(str(e)) from e
         if e.resp.status == 403:
-          raise IssueTrackerPermissionError(str(e))
-        raise IssueTrackerError(str(e))
+          raise IssueTrackerPermissionError(str(e)) from e
+        raise IssueTrackerError(str(e)) from e
 
   def get_issue(self, issue_id):
     """Gets the issue with the given ID."""

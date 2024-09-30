@@ -17,14 +17,11 @@
 import logging
 import sys
 from google.cloud import ndb
-import requests
 
 from google_issue_tracker import client
 from google_issue_tracker import issue_tracker
 import osv
 import osv.logs
-
-_MONORAIL_ACCOUNT = 'service@oss-vdb.iam.gserviceaccount.com'
 
 
 def make_affected_commits_public(bug):

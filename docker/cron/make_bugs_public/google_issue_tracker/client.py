@@ -14,6 +14,7 @@
 """Gets a Google Issue Tracker HTTP client."""
 
 import google.auth
+from google.auth import impersonated_credentials
 import google_auth_httplib2
 from googleapiclient import discovery
 from googleapiclient import errors
@@ -22,6 +23,8 @@ import httplib2
 _DISCOVERY_URL = ('https://issuetracker.googleapis.com/$discovery/rest?'
                   'version=v1&labels=GOOGLE_PUBLIC')
 _SCOPE = 'https://www.googleapis.com/auth/buganizer'
+# OSS-Fuzz service account.
+_IMPERSONATED_SERVICE_ACCOUNT = '877343783628-compute@developer.gserviceaccount.com'
 _REQUEST_TIMEOUT = 60
 
 HttpError = errors.HttpError
@@ -30,11 +33,14 @@ UnknownApiNameOrVersion = errors.UnknownApiNameOrVersion
 
 def build_http():
   """Builds a httplib2.Http."""
-  creds, _ = google.auth.default()
-  if creds.requires_scopes:
-    creds = creds.with_scopes([_SCOPE])
+  source_credentials, _ = google.auth.default()
+  credentials = impersonated_credentials.Credentials(
+      source_credentials=source_credentials,
+      target_principal=_IMPERSONATED_SERVICE_ACCOUNT,
+      target_scopes=[_SCOPE])
+
   return google_auth_httplib2.AuthorizedHttp(
-      creds, http=httplib2.Http(timeout=_REQUEST_TIMEOUT))
+      credentials, http=httplib2.Http(timeout=_REQUEST_TIMEOUT))
 
 
 def _call_discovery(api, http):

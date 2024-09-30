@@ -35,6 +35,7 @@ from google.cloud import ndb
 from google.cloud import pubsub_v1
 from google.cloud import storage
 from google.cloud.storage import retry
+from google.cloud.exceptions import NotFound
 import pygit2.enums
 
 import osv
@@ -292,9 +293,13 @@ class Importer:
       source_repo: the osv.SourceRepository the blob relates to
       blob: the storage.Blob object to operate on
 
+    Raises:
+      jsonschema.exceptions.ValidationError when self._strict_validation is True
+      input fails OSV JSON Schema validation
+
     Returns:
       a list of one or more vulnerability IDs (from the Vulnerability proto) or
-      None when the blob has an unexpected name or fails to parse
+      None when the blob has an unexpected name or fails to retrieve
     """
     if not _is_vulnerability_file(source_repo, blob.name):
       return None
@@ -302,21 +307,20 @@ class Importer:
     # Download in a blob generation agnostic way to cope with the blob
     # changing between when it was listed and now (if the generation doesn't
     # match, retrieval fails otherwise).
-    blob_bytes = storage.Blob(
-        blob.name, blob.bucket, generation=None).download_as_bytes(client)
+    try:
+      blob_bytes = storage.Blob(
+          blob.name, blob.bucket, generation=None).download_as_bytes(client)
+    except NotFound:
+      # The file can disappear between bucket listing and blob retrieval.
+      return None
 
     vuln_ids = []
-    try:
-      vulns = osv.parse_vulnerabilities_from_data(
-          blob_bytes,
-          os.path.splitext(blob.name)[1],
-          strict=self._strict_validation)
-    except Exception as e:
-      logging.error('Failed to parse vulnerability %s: %s', blob.name, e)
-      # TODO(andrewpollock): I think this needs to be reraised here...
-      # a jsonschema.exceptions.ValidationError only gets raised in strict
-      # validation mode.
-      return None
+    # When self._strict_validation is True,
+    # this *may* raise a jsonschema.exceptions.ValidationError
+    vulns = osv.parse_vulnerabilities_from_data(
+        blob_bytes,
+        os.path.splitext(blob.name)[1],
+        strict=self._strict_validation)
     for vuln in vulns:
       vuln_ids.append(vuln.id)
     return vuln_ids

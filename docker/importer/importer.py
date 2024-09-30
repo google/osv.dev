@@ -727,8 +727,8 @@ class Importer:
     adapter = HTTPAdapter(
         max_retries=Retry(
             total=3, status_forcelist=[502, 503, 504], backoff_factor=1))
-    s.mount(source_repo.rest_api_url, adapter)
-    s.mount(source_repo.link, adapter)
+    s.mount('http://', adapter)
+    s.mount('https://', adapter)
 
     try:
       request = s.head(source_repo.rest_api_url, timeout=_TIMEOUT_SECONDS)

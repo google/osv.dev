@@ -24,7 +24,8 @@ _DISCOVERY_URL = ('https://issuetracker.googleapis.com/$discovery/rest?'
                   'version=v1&labels=GOOGLE_PUBLIC')
 _SCOPE = 'https://www.googleapis.com/auth/buganizer'
 # OSS-Fuzz service account.
-_IMPERSONATED_SERVICE_ACCOUNT = '877343783628-compute@developer.gserviceaccount.com'
+_IMPERSONATED_SERVICE_ACCOUNT = (
+    '877343783628-compute@developer.gserviceaccount.com')
 _REQUEST_TIMEOUT = 60
 
 HttpError = errors.HttpError

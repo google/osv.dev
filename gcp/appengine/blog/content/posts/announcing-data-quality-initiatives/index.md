@@ -1,6 +1,6 @@
 ---
 title: "OSV's approach to data quality"
-date: 2023-09-30T09:00:00Z
+date: 2024-09-30T09:00:00Z
 draft: false
 author: Andrew Pollock and Charl de Nysschen
 ---

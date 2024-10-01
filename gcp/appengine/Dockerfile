@@ -19,7 +19,7 @@ FROM gcr.io/oss-vdb/ci AS HUGO_BUILD
 WORKDIR /build/blog
 COPY gcp/appengine/blog ./
 
-RUN hugo -d ../dist/static/blog
+RUN hugo --buildFuture -d ../dist/static/blog
 
 # OSV.dev site image
 # Adapted from https://cloud.google.com/run/docs/quickstarts/build-and-deploy/deploy-python-service#writing

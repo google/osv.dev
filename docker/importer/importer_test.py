@@ -518,31 +518,19 @@ class BucketImporterTest(unittest.TestCase):
 
     with self.assertLogs(level='WARNING') as logs:
       imp.run()
-
-    self.assertEqual(
-        3,
-        len(logs.output),
-        msg='Expected number of WARNING level (or higher) logs not found')
+    self.assertEqual(3, len(logs.output))
     self.assertEqual(
         "WARNING:root:Failed to validate loaded OSV entry: 'modified' is a required property",  # pylint: disable=line-too-long
-        logs.output[0],
-        msg='Expected schema validation failure log not found')
-    self.assertIn(
-        'WARNING:root:Invalid data:',
-        logs.output[1],
-        msg='Expected schema validation failure log not found')
+        logs.output[0])
+    self.assertIn('WARNING:root:Invalid data:', logs.output[1])
     self.assertIn(
         "ERROR:root:Failed to parse vulnerability a/b/test-invalid.json: 'modified' is a required property",  # pylint: disable=line-too-long
-        logs.output[2],
-        msg='Expected schema validation failure log not found')
+        logs.output[2])
 
     # Check if vulnerability parse failure was logged correctly.
     self.assertTrue(
-        any(('Failed to parse vulnerability (when considering for import)'
-             ' "a/b/test-invalid.json"') in x[0][0]
-            for x in upload_from_str.call_args_list),
-        msg=('Expected schema validation failure not logged in public log '
-             'bucket'))
+        any('Failed to parse vulnerability "a/b/test-invalid.json"' in x[0][0]
+            for x in upload_from_str.call_args_list))
 
     # Expected pubsub calls for validly imported records.
     mock_publish.assert_has_calls([
@@ -577,10 +565,7 @@ class BucketImporterTest(unittest.TestCase):
         path='a/b/DSA-3029-1.json',
         original_sha256=mock.ANY,
         deleted='false')
-    self.assertNotIn(
-        dsa_call,
-        mock_publish.mock_calls,
-        msg='Old record was processed unexpectedly')
+    self.assertNotIn(dsa_call, mock_publish.mock_calls)
 
     # Test invalid entry is not published, as it failed validation.
     invalid_call = mock.call(
@@ -591,10 +576,7 @@ class BucketImporterTest(unittest.TestCase):
         path='a/b/test-invalid.json',
         original_sha256=mock.ANY,
         deleted=mock.ANY)
-    self.assertNotIn(
-        invalid_call,
-        mock_publish.mock_calls,
-        msg='Invalid record was processed unexpectedly')
+    self.assertNotIn(invalid_call, mock_publish.mock_calls)
 
   @mock.patch('google.cloud.pubsub_v1.PublisherClient.publish')
   @mock.patch('time.time', return_value=12345.0)
@@ -717,8 +699,7 @@ class BucketImporterTest(unittest.TestCase):
 
     # Check if vulnerability parse failure was logged correctly.
     self.assertTrue(
-        any(('Failed to parse vulnerability (when considering for import) '
-             '"a/b/test-invalid.json"') in x[0][0]
+        any('Failed to parse vulnerability "a/b/test-invalid.json"' in x[0][0]
             for x in upload_from_str.call_args_list))
 
     # Confirm a pubsub message was emitted for record reimported.
@@ -744,8 +725,7 @@ class BucketImporterTest(unittest.TestCase):
 
     # Check if vulnerability parse failure was logged correctly.
     self.assertTrue(
-        any(('Failed to parse vulnerability (when considering for import) '
-             '"a/b/test-invalid.json"') in x[0][0]
+        any('Failed to parse vulnerability "a/b/test-invalid.json"' in x[0][0]
             for x in upload_from_str.call_args_list))
 
     # Confirm second run didn't reprocess any existing records.

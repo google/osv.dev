@@ -553,9 +553,10 @@ class Importer:
 
       logging.info('Parallel-parsing %d blobs in %s', len(listed_blobs),
                    source_repo.name)
+      datastore_client = ndb.Client()
       future_to_blob = {
-          executor.submit(self._convert_blob_to_vuln, storage.Client(),
-                          ndb.Client(), source_repo, blob,
+          executor.submit(self._convert_blob_to_vuln, storage_client,
+                          datastore_client, source_repo, blob,
                           ignore_last_import_time):
               blob for blob in listed_blobs
       }

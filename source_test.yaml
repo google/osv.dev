@@ -256,15 +256,18 @@
   link: 'https://github.com/RConsortium/r-advisory-database/blob/main/'
   editable: False
 
-- name: 'redhat-stage'
+- name: 'redhat'
   versions_from_repo: False
-  type: 1
-  bucket: 'osv-test-cve-osv-conversion'
-  directory_path: 'redhat-temporary'
+  rest_api_url: 'https://security.access.redhat.com/data/osv/all.json'
+  type: 2
+  directory_path: 'data/osv'
+  detect_cherrypicks: False
   ignore_patterns: ['^(?!RH[BES]{1}A-).*$']
   extension: '.json'
   db_prefix: ['RHBA-', 'RHEA-', 'RHSA-']
-  link: 'https://storage.googleapis.com/osv-test-cve-osv-conversion/'
+  ignore_git: False
+  human_link: 'https://access.redhat.com/errata/{{ BUG_ID }}'
+  link: 'https://security.access.redhat.com/data/osv/'
   editable: False
 
 - name: 'rockylinux'

@@ -26,5 +26,5 @@ See [`run_source_update.sh`](run_source_update.sh):
 ## Operational matters
 
 * Triggered by Cloud Build on pushes of `source.yaml` or `source_test.yaml` to
-  `master`, using [source\_build.yaml](source_build.yaml)
+  `master`, using [`source\_build.yaml`](source_build.yaml)
 * Can fail non-prominently post-merge

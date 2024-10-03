@@ -60,6 +60,8 @@ def main() -> None:
     """Check the attributes of the source repo."""
     sourcerepo_names = []
     for repo in repository:
+      if args.verbose:
+        print(f'Validating: {repo}')
       if repo['name'] == '' or repo['name'] is None or repo['name'] == 'null':
         raise ValueError(f'Empty sourcerepo name in {file}')
       if repo['name'] in sourcerepo_names:

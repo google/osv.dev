@@ -391,8 +391,20 @@ class Importer:
     if ignore_last_import_time:
       return blob_hash, blob.name
 
+    # If being run under test, reuse existing NDB client.
+    ctx = ndb.context.get_context(False)
+    if ctx is None:
+      # Production. Use the NDB client passed in.
+      ctx = ndb_client.context()
+    else:
+      # Unit testing. Reuse the unit test's existing NDB client to avoid
+      # "RuntimeError: Context is already created for this thread."
+      ctx.set_memcache_policy(False)
+      ctx.set_cache_policy(False)
+      ctx = ctx.use()
+
     # This is the typical execution path (when reimporting not triggered)
-    with ndb_client.context():
+    with ctx:
       for vuln in vulns:
         bug = osv.Bug.get_by_id(vuln.id)
         # The bug already exists and has been modified since last import
@@ -400,7 +412,7 @@ class Importer:
                 bug.import_last_modified != vuln.modified.ToDatetime():
           return blob_hash, blob.name
 
-        return None
+      return None
 
     return None
 

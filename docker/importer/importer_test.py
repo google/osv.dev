@@ -27,6 +27,7 @@ from urllib3.exceptions import SystemTimeWarning
 import warnings
 
 from google.cloud import ndb
+from google.cloud import storage
 from google.cloud.storage import retry
 import pygit2
 from docker.mock_test.mock_test_handler import MockDataHandler
@@ -522,7 +523,8 @@ class BucketImporterTest(unittest.TestCase):
     self.assertEqual(
         3,
         len(logs.output),
-        msg='Expected number of WARNING level (or higher) logs not found')
+        msg=(f'Expected number of WARNING level (or higher) '
+             f'logs not found {logs.output}'))
     self.assertEqual(
         "WARNING:root:Failed to validate loaded OSV entry: 'modified' is a required property",  # pylint: disable=line-too-long
         logs.output[0],
@@ -566,7 +568,18 @@ class BucketImporterTest(unittest.TestCase):
                              '37340a47f43356ee4a1cabe8f089869'),
             deleted='false',
             req_timestamp='12345'),
-    ])
+        mock.call(
+            self.tasks_topic,
+            data=b'',
+            type='update',
+            source='test',
+            path='a/b/CVE-2022-0128.json',
+            original_sha256=('a4060cb842363cb6ae7669057402ccddc'
+                             'e21a94ed6cad98234e73305816a86d3'),
+            deleted='false',
+            req_timestamp='12345'),
+    ],
+                                  any_order=True)
 
     # Test this entry is not published, as it is preexisting and not newer.
     dsa_call = mock.call(
@@ -750,6 +763,38 @@ class BucketImporterTest(unittest.TestCase):
 
     # Confirm second run didn't reprocess any existing records.
     self.assertNotIn(expected_pubsub_message, mock_publish.mock_calls)
+
+  def test_blob_parsing(self):
+    """Test conditional GCS blob parsing works correctly."""
+
+    imp = importer.Importer(
+        'fake_public_key',
+        'fake_private_key',
+        self.tmp_dir,
+        importer.DEFAULT_PUBLIC_LOGGING_BUCKET,
+        'bucket',
+        True,
+        False,
+        deletion_safety_threshold_pct=100)
+
+    if not self.source_repo.last_update_date:
+      self.source_repo.last_update_date = datetime.datetime.min
+
+    storage_client = storage.Client()
+    # Reuse the NDB client already created in __main__
+    datastore_client = globals()['context'].client
+    blob = storage.Blob(
+        'a/b/CVE-2022-0128.json',
+        storage.Bucket(storage_client, TEST_BUCKET),
+        generation=None)
+
+    # pylint: disable-next=protected-access
+    result = imp._convert_blob_to_vuln(storage_client, datastore_client,
+                                       self.source_repo, blob, False)
+    self.assertEqual(
+        result,
+        ('a4060cb842363cb6ae7669057402ccddce21a94ed6cad98234e73305816a86d3',
+         'a/b/CVE-2022-0128.json'))
 
 
 class BucketImporterMassDeletionTest(unittest.TestCase):

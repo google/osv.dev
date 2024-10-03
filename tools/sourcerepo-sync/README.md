@@ -22,9 +22,9 @@ See [`run_source_update.sh`](run_source_update.sh):
   request](https://github.com/google/osv.dev/blob/fe6155f7cfa0e5df0ae1ef20c7b16f5c20bebed1/tools/sourcerepo-sync/source_sync.py#L125) *and* [the existing
   content in Cloud
   Datastore](https://github.com/google/osv.dev/blob/fe6155f7cfa0e5df0ae1ef20c7b16f5c20bebed1/tools/sourcerepo-sync/source_sync.py#L134)
-* Can fail non-prominently post-merge
 
 ## Operational matters
 
 * Triggered by Cloud Build on pushes of `source.yaml` or `source_test.yaml` to
   `master`, using [source\_build.yaml](source_build.yaml)
+* Can fail non-prominently post-merge

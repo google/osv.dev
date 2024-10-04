@@ -380,13 +380,16 @@ def add_links(bug):
 
 
 def add_source_info(bug, response):
-  """Add source information to `response`."""
+  """Add upstream provenance information to `response`."""
   if bug.source_of_truth == osv.SourceOfTruth.INTERNAL:
     response['source'] = 'INTERNAL'
     return
 
   source_repo = osv.get_source_repository(bug.source)
   if not source_repo or not source_repo.link:
+    logging.error(
+        'Unexpected state for "%s": source repository/link not found for "%s"',
+        bug.id, bug.source)
     return
 
   source_path = osv.source_path(source_repo, bug)

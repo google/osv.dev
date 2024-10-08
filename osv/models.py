@@ -397,9 +397,9 @@ class Bug(ndb.Model):
           break
 
     # If a withdrawn record has no affected package,
-    # assign an 'EMPTY' ecosystem value for export.
+    # assign an '[EMPTY]' ecosystem value for export.
     if not ecosystems_set:
-      ecosystems_set.add('EMPTY')
+      ecosystems_set.add('[EMPTY]')
 
     # For all ecosystems that specify a specific version with colon,
     # also add the base name

@@ -758,7 +758,7 @@ def display_severity_rating(severity: dict) -> str:
 def severity_level(severity: dict) -> str:
   """Return rating of the severity."""
   _, rating = calculate_severity_details(severity)
-  return (rating and rating.lower()) or "invalid"
+  return 'invalid' if rating is None else rating.lower()
 
 
 @blueprint.app_template_filter('cvss_calculator_url')

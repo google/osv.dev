@@ -320,8 +320,8 @@ def calculate_severity_details(
     c = cvss_calculator[type_](score)
     severity_rating = c.severities()[0]
   except Exception as e:
-    logging.error('Exception raised when parsing "%s" severity "%s": %s',
-                  type_, score, e)
+    logging.error('Exception raised when parsing "%s" severity "%s": %s', type_,
+                  score, e)
     return None, None
 
   severity_score = c.base_score

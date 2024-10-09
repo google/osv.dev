@@ -749,7 +749,7 @@ def display_severity_rating(severity: dict) -> str:
   """Return base score and rating of the severity."""
   severity_base_score, severity_rating = calculate_severity_details(severity)
   if severity_base_score is None:
-    return "Invalid Severity Rating"
+    return 'Invalid Severity Rating'
 
   return f"{severity_base_score} ({severity_rating})"
 

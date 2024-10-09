@@ -748,6 +748,9 @@ def link_to_deps_dev(package, ecosystem):
 def display_severity_rating(severity: dict) -> str:
   """Return base score and rating of the severity."""
   severity_base_score, severity_rating = calculate_severity_details(severity)
+  if severity_base_score is None:
+    return 'Invalid Severity Rating'
+
   return f"{severity_base_score} ({severity_rating})"
 
 
@@ -755,7 +758,7 @@ def display_severity_rating(severity: dict) -> str:
 def severity_level(severity: dict) -> str:
   """Return rating of the severity."""
   _, rating = calculate_severity_details(severity)
-  return rating.lower()
+  return 'invalid' if rating is None else rating.lower()
 
 
 @blueprint.app_template_filter('cvss_calculator_url')

@@ -47,11 +47,9 @@ class Exporter:
     """Run exporter."""
     if self._ecosystem == "list":
       query = osv.Bug.query(projection=[osv.Bug.ecosystem], distinct=True)
-      ecosystems = [
-          bug.ecosystem[0]
-          for bug in query
-          if bug.ecosystem and ':' not in bug.ecosystem[0]
-      ]
+      #TODO(gongh@): remove all ecosystem releases from ecosystem.txt
+      # after notifying users.
+      ecosystems = [bug.ecosystem[0] for bug in query if bug.ecosystem]
       with tempfile.TemporaryDirectory() as tmp_dir:
         self._export_ecosystem_list_to_bucket(ecosystems, tmp_dir)
     else:

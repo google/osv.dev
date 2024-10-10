@@ -10,6 +10,7 @@ google-cloud-storage = "==2.18.2"
 PyYAML = "==6.0.2"
 
 osv = { path = "../../", develop = true }
+google-cloud-pubsub = "^2.25.2"
 
 [tool.poetry.dev-dependencies]
 yapf = "*"

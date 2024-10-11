@@ -18,9 +18,12 @@ import concurrent.futures
 import logging
 import os
 import subprocess
+import shutil
+import zipfile as z
 
-from google.cloud import ndb
+from google.cloud import ndb, storage
 
+from exporter import upload_single
 import osv
 import osv.logs
 
@@ -44,10 +47,6 @@ def main():
       default=os.cpu_count() or DEFAULT_EXPORT_PROCESSES)
   args = parser.parse_args()
 
-  tmp_dir = os.path.join(args.work_dir, 'tmp')
-  os.makedirs(tmp_dir, exist_ok=True)
-  os.environ['TMPDIR'] = tmp_dir
-
   query = osv.Bug.query(projection=[osv.Bug.ecosystem], distinct=True)
   ecosystems = [bug.ecosystem[0] for bug in query if bug.ecosystem] + ['list']
 
@@ -58,6 +57,9 @@ def main():
       if ':' in eco:
         continue
       executor.submit(spawn_ecosystem_exporter, args.work_dir, args.bucket, eco)
+  # Upload a ZIP file containing records from all ecosystems.
+  aggregate_all_vulnerabilities(args.work_dir, args.bucket)
+  clean_work_dir(args.work_dir)
 
 
 def spawn_ecosystem_exporter(work_dir: str, bucket: str, eco: str):
@@ -72,6 +74,39 @@ def spawn_ecosystem_exporter(work_dir: str, bucket: str, eco: str):
   return_code = proc.wait()
   if return_code != 0:
     logging.error('Export of %s failed with Exit Code: %d', eco, return_code)
+
+
+def aggregate_all_vulnerabilities(work_dir: str, export_bucket: str):
+  """
+  Aggregates vulnerability records from each ecosystem into a single zip
+  file and uploads it to the export bucket.
+  """
+  zip_file_name = 'all.zip'
+  output_zip = os.path.join(work_dir, zip_file_name)
+  all_vulns = {}
+
+  for ecosystem_dir, _, files in os.walk(work_dir):
+    if ecosystem_dir == work_dir:
+      continue
+    for vuln_filename in files:
+      if not vuln_filename.endswith('.json'):
+        continue
+      all_vulns[vuln_filename] = os.path.join(ecosystem_dir, vuln_filename)
+
+  with z.ZipFile(output_zip, 'a') as all_zip:
+    for vuln_filename in sorted(all_vulns):
+      file_path = all_vulns[vuln_filename]
+      all_zip.write(file_path, os.path.basename(file_path))
+
+  storage_client = storage.Client()
+  bucket = storage_client.get_bucket(export_bucket)
+  upload_single(bucket, output_zip, zip_file_name)
+
+
+def clean_work_dir(work_dir: str):
+  if os.path.exists(work_dir):
+    shutil.rmtree(work_dir, ignore_errors=True)
+  os.makedirs(work_dir, exist_ok=True)  # Recreate the directory (empty one)
 
 
 if __name__ == '__main__':

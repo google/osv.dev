@@ -17,7 +17,6 @@ import argparse
 import concurrent.futures
 import logging
 import os
-import tempfile
 import zipfile
 from typing import List
 
@@ -50,20 +49,9 @@ class Exporter:
       #TODO(gongh@): remove all ecosystem releases from ecosystem.txt
       # after notifying users.
       ecosystems = [bug.ecosystem[0] for bug in query if bug.ecosystem]
-      with tempfile.TemporaryDirectory() as tmp_dir:
-        self._export_ecosystem_list_to_bucket(ecosystems, tmp_dir)
+      self._export_ecosystem_list_to_bucket(ecosystems, self._work_dir)
     else:
-      with tempfile.TemporaryDirectory() as tmp_dir:
-        self._export_ecosystem_to_bucket(self._ecosystem, tmp_dir)
-
-  def upload_single(self, bucket, source_path, target_path):
-    """Upload a single file to a GCS bucket."""
-    logging.info('Uploading %s', target_path)
-    try:
-      blob = bucket.blob(target_path)
-      blob.upload_from_filename(source_path, retry=retry.DEFAULT_RETRY)
-    except Exception as e:
-      logging.exception('Failed to export: %s', e)
+      self._export_ecosystem_to_bucket(self._ecosystem, self._work_dir)
 
   def _export_ecosystem_list_to_bucket(self, ecosystems: List[str],
                                        tmp_dir: str):
@@ -83,14 +71,14 @@ class Exporter:
     with open(ecosystems_file_path, "w") as ecosystems_file:
       ecosystems_file.writelines([e + "\n" for e in ecosystems])
 
-    self.upload_single(bucket, ecosystems_file_path, ECOSYSTEMS_FILE)
+    upload_single(bucket, ecosystems_file_path, ECOSYSTEMS_FILE)
 
-  def _export_ecosystem_to_bucket(self, ecosystem: str, tmp_dir: str):
+  def _export_ecosystem_to_bucket(self, ecosystem: str, work_dir: str):
     """Export the vulnerabilities in an ecosystem to GCS.
 
     Args:
       ecosystem: the ecosystem name
-      tmp_dir: temporary directory for scratch
+      work_dir: working directory for scratch
 
     This simultaneously exports every Bug for the given ecosystem to individual
     files in the scratch filesystem, and a zip file in the scratch filesystem.
@@ -102,7 +90,9 @@ class Exporter:
     storage_client = storage.Client()
     bucket = storage_client.get_bucket(self._export_bucket)
 
-    zip_path = os.path.join(tmp_dir, 'all.zip')
+    ecosystem_dir = os.path.join(work_dir, ecosystem)
+    os.makedirs(ecosystem_dir, exist_ok=True)
+    zip_path = os.path.join(ecosystem_dir, 'all.zip')
     with zipfile.ZipFile(zip_path, 'w', zipfile.ZIP_DEFLATED) as zip_file:
       files_to_zip = []
 
@@ -112,7 +102,7 @@ class Exporter:
         if not bug.public or bug.status == osv.BugStatus.UNPROCESSED:
           return
 
-        file_path = os.path.join(tmp_dir, bug.id() + '.json')
+        file_path = os.path.join(ecosystem_dir, bug.id() + '.json')
         vulnerability = yield bug.to_vulnerability_async(include_source=True)
         osv.write_vulnerability(vulnerability, file_path)
 
@@ -130,10 +120,20 @@ class Exporter:
     with concurrent.futures.ThreadPoolExecutor(
         max_workers=_EXPORT_WORKERS) as executor:
       # Note: all.zip is included here
-      for filename in os.listdir(tmp_dir):
-        executor.submit(self.upload_single, bucket,
-                        os.path.join(tmp_dir, filename),
+      for filename in os.listdir(ecosystem_dir):
+        executor.submit(upload_single, bucket,
+                        os.path.join(ecosystem_dir, filename),
                         f'{ecosystem}/{filename}')
+
+
+def upload_single(bucket, source_path, target_path):
+  """Upload a single file to a GCS bucket."""
+  logging.info('Uploading %s', target_path)
+  try:
+    blob = bucket.blob(target_path)
+    blob.upload_from_filename(source_path, retry=retry.DEFAULT_RETRY)
+  except Exception as e:
+    logging.exception('Failed to export: %s', e)
 
 
 def main():
@@ -150,9 +150,6 @@ def main():
       help='Ecosystem to upload, pass the value "list" ' +
       'to export the ecosystem.txt file')
   args = parser.parse_args()
-
-  tmp_dir = os.path.join(args.work_dir, 'tmp')
-  os.environ['TMPDIR'] = tmp_dir
 
   exporter = Exporter(args.work_dir, args.bucket, args.ecosystem)
   exporter.run()

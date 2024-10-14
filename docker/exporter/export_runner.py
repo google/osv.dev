@@ -47,6 +47,8 @@ def main():
       default=os.cpu_count() or DEFAULT_EXPORT_PROCESSES)
   args = parser.parse_args()
 
+  # Clean up the work directory, in case other job didn't clean it properly.
+  clean_work_dir(args.work_dir)
   query = osv.Bug.query(projection=[osv.Bug.ecosystem], distinct=True)
   ecosystems = [bug.ecosystem[0] for bug in query if bug.ecosystem] + ['list']
 

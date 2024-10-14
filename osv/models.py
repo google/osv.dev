@@ -396,6 +396,11 @@ class Bug(ndb.Model):
         if 'GIT' in ecosystems_set:
           break
 
+    # If a withdrawn record has no affected package,
+    # assign an '[EMPTY]' ecosystem value for export.
+    if not ecosystems_set:
+      ecosystems_set.add('[EMPTY]')
+
     # For all ecosystems that specify a specific version with colon,
     # also add the base name
     ecosystems_set.update({ecosystems.normalize(x) for x in ecosystems_set})

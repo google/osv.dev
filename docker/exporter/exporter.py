@@ -23,6 +23,7 @@ from typing import List
 from google.cloud import ndb
 from google.cloud import storage
 from google.cloud.storage import retry
+from google.cloud.storage.bucket import Bucket
 
 import osv
 import osv.logs
@@ -119,14 +120,14 @@ class Exporter:
 
     with concurrent.futures.ThreadPoolExecutor(
         max_workers=_EXPORT_WORKERS) as executor:
-      # Note: all.zip is included here
+      # Note: the individual ecosystem all.zip is included here
       for filename in os.listdir(ecosystem_dir):
         executor.submit(upload_single, bucket,
                         os.path.join(ecosystem_dir, filename),
                         f'{ecosystem}/{filename}')
 
 
-def upload_single(bucket, source_path, target_path):
+def upload_single(bucket: Bucket, source_path: str, target_path: str):
   """Upload a single file to a GCS bucket."""
   logging.info('Uploading %s', target_path)
   try:

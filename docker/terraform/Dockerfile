@@ -6,7 +6,7 @@ ARG TERRAFORM_VERSION
 WORKDIR /build/
 RUN GOBIN=$(pwd) go install github.com/hashicorp/terraform@v${TERRAFORM_VERSION}
 
-FROM gcr.io/google.com/cloudsdktool/google-cloud-cli:alpine@sha256:39aa8b09ee0bc012955063f2d3f1ed7160c2dea501dae1853c78e2f261c07469
+FROM gcr.io/google.com/cloudsdktool/google-cloud-cli:alpine@sha256:018fc1e8680f52aa37a835fee82a3f39a9a7f781396dda869f4f1ebaf9162f76
 
 COPY --from=GO_BUILD /build/terraform /usr/bin/terraform
 COPY entrypoint.bash /builder/entrypoint.bash

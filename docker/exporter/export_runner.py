@@ -87,15 +87,16 @@ def aggregate_all_vulnerabilities(work_dir: str, export_bucket: str):
   Aggregates vulnerability records from each ecosystem into a single zip
   file and uploads it to the export bucket.
   """
+  logging.info('Generating unified all.zip archive.')
   zip_file_name = 'all.zip'
   output_zip = os.path.join(work_dir, zip_file_name)
   all_vulns = {}
 
   for file_path in glob.glob(
-      os.path.join(work_dir, '**/*.json', recursive=True)):
+      os.path.join(work_dir, '**/*.json'), recursive=True):
     all_vulns[os.path.basename(file_path)] = file_path
 
-  with z.ZipFile(output_zip, 'a') as all_zip:
+  with z.ZipFile(output_zip, 'a', z.ZIP_DEFLATED) as all_zip:
     for vuln_filename in sorted(all_vulns):
       file_path = all_vulns[vuln_filename]
       all_zip.write(file_path, os.path.basename(file_path))
@@ -103,6 +104,7 @@ def aggregate_all_vulnerabilities(work_dir: str, export_bucket: str):
   storage_client = storage.Client()
   bucket = storage_client.get_bucket(export_bucket)
   upload_single(bucket, output_zip, zip_file_name)
+  logging.info('Unified all.zip uploaded successfully.')
 
 
 if __name__ == '__main__':

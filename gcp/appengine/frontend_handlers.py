@@ -456,7 +456,7 @@ def osv_get_ecosystem_counts() -> dict[str, int]:
   counts = {}
   ecosystem_names = osv_get_ecosystems()
   for ecosystem in ecosystem_names:
-    if ':' in ecosystem:
+    if ':' in ecosystem or ecosystem == '[EMPTY]':
       # Count by the base ecosystem index. Otherwise we'll overcount as a
       # single entry may refer to multiple sub-ecosystems.
       continue

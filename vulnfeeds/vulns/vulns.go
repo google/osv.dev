@@ -207,6 +207,7 @@ type Vulnerability struct {
 	Affected   []Affected  `json:"affected" yaml:"affected"`
 	References []Reference `json:"references" yaml:"references"`
 	Aliases    []string    `json:"aliases,omitempty" yaml:"aliases,omitempty"`
+	Related    []string    `json:"related,omitempty" yaml:"related,omitempty"`
 	Modified   string      `json:"modified" yaml:"modified"`
 	Published  string      `json:"published" yaml:"published"`
 }
@@ -516,12 +517,15 @@ func ClassifyReferenceLink(link string, tag string) string {
 	return "WEB"
 }
 
-func extractAliases(id cves.CVEID, cve cves.CVE) []string {
+func extractReferencedVulns(id cves.CVEID, cve cves.CVE) ([]string, []string) {
 	var aliases []string
+	var related []string
 	if id != cve.ID {
 		aliases = append(aliases, string(cve.ID))
 	}
 
+	var GHSAs []string
+	var SYNKs []string
 	for _, reference := range cve.References {
 		u, err := url.Parse(reference.Url)
 		if err == nil {
@@ -536,7 +540,7 @@ func extractAliases(id cves.CVEID, cve cves.CVE) []string {
 						a := pathParts[len(pathParts)-1]
 
 						if string(id) != a && strings.HasPrefix(a, "GHSA-") {
-							aliases = append(aliases, a)
+							GHSAs = append(GHSAs, a)
 						}
 					}
 				}
@@ -545,9 +549,8 @@ func extractAliases(id cves.CVEID, cve cves.CVE) []string {
 					//Example: https://snyk.io/vuln/SNYK-PYTHON-TRYTOND-1730329
 					if pathParts[1] == "vuln" {
 						a := pathParts[len(pathParts)-1]
-
 						if string(id) != a && strings.HasPrefix(a, "SNYK-") {
-							aliases = append(aliases, a)
+							SYNKs = append(SYNKs, a)
 						}
 					}
 				}
@@ -555,7 +558,21 @@ func extractAliases(id cves.CVEID, cve cves.CVE) []string {
 		}
 	}
 
-	return aliases
+	// A CVE should have only one GHSA as an alias
+	// If multiple GHSAs are associated with a CVE,
+	// it can potentially cause one CVE to be aliased to other CVEs, which is most likely incorrect.
+	if len(GHSAs) > 1 {
+		related = append(related, GHSAs...)
+	} else {
+		aliases = append(aliases, GHSAs...)
+	}
+	if len(SYNKs) > 1 {
+		related = append(related, SYNKs...)
+	} else {
+		aliases = append(aliases, SYNKs...)
+	}
+
+	return aliases, related
 }
 
 func unique[T comparable](s []T) []T {
@@ -595,10 +612,12 @@ func ClassifyReferences(refs []cves.Reference) (references References) {
 // FromCVE creates a minimal OSV object from a given CVEItem and id.
 // Leaves affected and version fields empty to be filled in later with AddPkgInfo
 func FromCVE(id cves.CVEID, cve cves.CVE) (*Vulnerability, []string) {
+	aliases, related := extractReferencedVulns(id, cve)
 	v := Vulnerability{
 		ID:      string(id),
 		Details: cves.EnglishDescription(cve),
-		Aliases: extractAliases(id, cve),
+		Aliases: aliases,
+		Related: related,
 	}
 	var notes []string
 	v.Published = cve.Published.Format(time.RFC3339)

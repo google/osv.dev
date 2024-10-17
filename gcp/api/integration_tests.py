@@ -344,11 +344,13 @@ class IntegrationTests(unittest.TestCase,
     alsa_2023_7109 = self._get('ALSA-2023:7109')
     alsa_2024_3178 = self._get('ALSA-2024:3178')
     alsa_2024_4262 = self._get('ALSA-2024:4262')
+    alsa_2024_7481 = self._get('ALSA-2024:7481')
 
     expected_vulns = [
         alsa_2023_7109,
         alsa_2024_3178,
         alsa_2024_4262,
+        alsa_2024_7481,
     ]
 
     response = requests.post(

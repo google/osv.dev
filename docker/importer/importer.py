@@ -774,6 +774,7 @@ class Importer:
         request.text, source_repo.extension, strict=self._strict_validation)
 
     vulns_last_modified = last_update_date
+    logging.info('%d records to consider', len(vulns))
     # Create tasks for changed files.
     for vuln in vulns:
       import_failure_logs = []
@@ -793,6 +794,8 @@ class Importer:
         _ = osv.parse_vulnerability_from_dict(single_vuln.json(),
                                               source_repo.key_path,
                                               self._strict_validation)
+        logging.info('Requesting analysis of REST record: %s',
+                     vuln.id + source_repo.extension)
         self._request_analysis_external(
             source_repo, osv.sha256_bytes(single_vuln.text.encode()),
             vuln.id + source_repo.extension)

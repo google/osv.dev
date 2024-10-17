@@ -585,8 +585,8 @@ class BucketImporterTest(unittest.TestCase):
     dsa_call = mock.call(
         self.tasks_topic,
         data=b'',
-        type='test',
-        source='bucket',
+        type='update',
+        source='test',
         path='a/b/DSA-3029-1.json',
         original_sha256=mock.ANY,
         deleted='false')

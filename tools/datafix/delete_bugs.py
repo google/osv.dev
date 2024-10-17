@@ -69,10 +69,6 @@ def main() -> None:
 
   result = list(query.fetch())
 
-  print(f"Retrieved {len(result)} bugs to examine for deletion")
-
-  result = list(query.fetch())
-
   print(f"There are {len(result)} bugs to delete...")
 
   # Chunk the results to delete in acceptibly sized batches for the API.

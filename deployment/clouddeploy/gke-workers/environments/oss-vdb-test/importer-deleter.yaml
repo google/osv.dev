@@ -15,5 +15,5 @@ spec:
             image: importer
             args:
               - --delete
-              - --delete_threshold_pct=20
+              - --delete_threshold_pct=2
               - --public_log_bucket=osv-test-public-import-logs

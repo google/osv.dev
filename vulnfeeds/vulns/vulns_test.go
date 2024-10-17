@@ -112,14 +112,21 @@ func loadTestData2(cveName string) cves.Vulnerability {
 func TestExtractAliases(t *testing.T) {
 	// TODO: convert to table based test
 	cveItem := loadTestData2("CVE-2022-36037")
-	aliases := extractAliases(cveItem.CVE.ID, cveItem.CVE)
-	if !utility.SliceEqual(aliases, []string{"GHSA-3f89-869f-5w76"}) {
+	aliases, related := extractReferencedVulns(cveItem.CVE.ID, cveItem.CVE)
+	if !utility.SliceEqual(aliases, []string{"GHSA-3f89-869f-5w76"}) || !utility.SliceEqual(related, []string{}) {
 		t.Errorf("Aliases not extracted, got %v, but expected %v.", aliases, []string{"GHSA-3f89-869f-5w76"})
 	}
 	cveItem = loadTestData2("CVE-2022-36749")
-	aliases = extractAliases(cveItem.CVE.ID, cveItem.CVE)
-	if !utility.SliceEqual(aliases, []string{}) {
+	aliases, related = extractReferencedVulns(cveItem.CVE.ID, cveItem.CVE)
+	if !utility.SliceEqual(aliases, []string{}) || !utility.SliceEqual(related, []string{}) {
 		t.Errorf("Aliases not extracted, got %v, but expected %v.", aliases, []string{"GHSA-3f89-869f-5w76"})
+	}
+	cveItem = loadTestData2("CVE-2024-47177")
+	aliases, related = extractReferencedVulns(cveItem.CVE.ID, cveItem.CVE)
+	expectedRelated := []string{"GHSA-7xfx-47qg-grp6", "GHSA-p9rh-jxmq-gq47", "GHSA-rj88-6mr5-rcw8", "GHSA-w63j-6g73-wmg5"}
+	if !utility.SliceEqual(aliases, []string{}) || !utility.SliceEqualUnordered(related, expectedRelated) {
+		t.Errorf("Aliases not extracted, got %v, but expected %v.", aliases, []string{})
+		t.Errorf("Related not extracted, got %v, but expected %v.", related, expectedRelated)
 	}
 }
 
@@ -206,7 +213,7 @@ func TestAddPkgInfo(t *testing.T) {
 				},
 				{
 					LastAffected: "0xdeadf00d",
-					Repo:  "github.com/foo/baz",
+					Repo:         "github.com/foo/baz",
 				},
 			},
 		},

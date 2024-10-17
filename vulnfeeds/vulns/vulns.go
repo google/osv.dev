@@ -560,7 +560,7 @@ func extractReferencedVulns(id cves.CVEID, cve cves.CVE) ([]string, []string) {
 
 	// A CVE should have only one GHSA as an alias
 	// If multiple GHSAs are associated with a CVE,
-	// it can potentially cause the CVE to be treated as an alias of itself.
+	// it can potentially cause one CVE to be aliased to other CVEs, which is most likely incorrect.
 	if len(GHSAs) > 1 {
 		related = append(related, GHSAs...)
 	} else {

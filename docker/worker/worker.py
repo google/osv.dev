@@ -532,9 +532,9 @@ class TaskRunner:
       bug.status = osv.BugStatus.INVALID
     try:
       bug.put()
-    except ndb.exceptions.Error as e:
-      e.add_note(f'Happened on {vulnerability.id}')
-      logging.exception('Unexpected expection while writing %s to Datastore',
+    except (google.api_core.exceptions.Cancelled, ndb.exceptions.Error) as e:
+      e.add_note(f'Happened processing {vulnerability.id}')
+      logging.exception('Unexpected exception while writing %s to Datastore',
                         vulnerability.id)
 
     osv.update_affected_commits(bug.key.id(), result.commits, bug.public)

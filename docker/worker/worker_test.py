@@ -677,6 +677,32 @@ class RESTUpdateTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
     self.expect_dict_equal('update_no_introduced',
                            osv.Bug.get_by_id('CURL-CVE-2022-32221')._to_dict())
 
+  def test_update_redhat_toobig(self):
+    """Test failure handling of a too-large Red Hat record."""
+    solo_endpoint = 'RHSA-2018:3140' + '.json'
+    sha = 'a5cc068278ddad5f4c63d9b4f27baf59f296076306a24e850c5edde1b0232b0c'
+
+    self.source_repo.db_prefix.append('RHSA-')
+    self.source_repo.put()
+
+    task_runner = worker.TaskRunner(ndb_client, None, self.tmp_dir.name, None,
+                                    None)
+    message = mock.Mock()
+    message.attributes = {
+        'source': 'source',
+        'path': solo_endpoint,
+        'original_sha256': sha,
+        'deleted': 'false',
+    }
+    with self.assertLogs(level='ERROR') as logs:
+      task_runner._source_update(message)
+
+    self.assertIn(
+        "ERROR:root:Unexpected exception while writing RHSA-2018:3140 to Datastore",
+        logs.output[0])
+
+    self.mock_publish.assert_not_called()
+
 
 class UpdateTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
   """Vulnerability update tests."""

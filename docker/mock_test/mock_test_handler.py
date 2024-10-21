@@ -8,7 +8,7 @@ TEST_DATA_DIR = os.path.dirname(os.path.abspath(__file__))
 
 class MockDataHandler(http.server.BaseHTTPRequestHandler):
   """Mock data handler for testing."""
-  last_modified = 'Tue, 13 Jun 2023 00:00:00 GMT'
+  last_modified = 'Mon, 01 Jan 2024 00:00:00 GMT'
   file_path = 'rest_test.json'
   cve_count = -1
   data = None

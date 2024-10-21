@@ -193,6 +193,11 @@ pre {
     background: $osv-red-700;
     color: white;
   }
+
+  &.severity-invalid {
+    background: $osv-grey-800;
+    color: white;
+  }
 }
 
 .severity-level {
@@ -1469,7 +1474,7 @@ div.highlight {
   }
 }
 
-.blog-page{
+.blog-page {
   .title {
     padding-top: 24px;
     padding-bottom: 42px;
@@ -1484,7 +1489,7 @@ div.highlight {
     font-size: 16px;
   }
 
-  .author{
+  .author {
     padding-bottom: 48px;
   }
 }

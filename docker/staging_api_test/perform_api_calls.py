@@ -36,7 +36,7 @@ GCP_PROJECT = 'oss-vdb-test'
 BUG_DIR = './all_bugs'
 
 # Total run time in seconds
-TOTAL_RUNTIME = 3600
+TOTAL_RUNTIME = 3600 * 5    # 5 hours
 # Execute all pending batch size requests within the specified time interval.
 FREQUENCY_IN_SECONDS = 1
 

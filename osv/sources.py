@@ -115,7 +115,7 @@ def load_schema():
 
 
 def parse_vulnerability(path, key_path=None, strict=False):
-  """Parse vulnerability YAML."""
+  """Parse vulnerability YAML/JSON."""
   data = _parse_vulnerability_dict(path)
   return parse_vulnerability_from_dict(data, key_path, strict)
 

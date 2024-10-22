@@ -863,6 +863,8 @@ class SourceRepository(ndb.Model):
   # DB prefix, if the database allocates its own.
   # https://ossf.github.io/osv-schema/#id-modified-fields
   db_prefix: list[str] = ndb.StringProperty(repeated=True)
+  # Apply strict validation (JSON Schema + linter checks) to this source.
+  strict_validation: bool = ndb.BooleanProperty(default=False)
 
   def ignore_file(self, file_path):
     """Return whether or not we should be ignoring a file."""

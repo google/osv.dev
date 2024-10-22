@@ -396,6 +396,11 @@ class Bug(ndb.Model):
         if 'GIT' in ecosystems_set:
           break
 
+    # If a withdrawn record has no affected package,
+    # assign an '[EMPTY]' ecosystem value for export.
+    if not ecosystems_set:
+      ecosystems_set.add('[EMPTY]')
+
     # For all ecosystems that specify a specific version with colon,
     # also add the base name
     ecosystems_set.update({ecosystems.normalize(x) for x in ecosystems_set})
@@ -675,6 +680,8 @@ class Bug(ndb.Model):
 
     details = self.details
 
+    # Note that there is further possible mutation of this field below when
+    # `include_alias` is True
     if self.last_modified:
       modified = timestamp_pb2.Timestamp()
       modified.FromDatetime(self.last_modified)
@@ -730,7 +737,7 @@ class Bug(ndb.Model):
         schema_version=SCHEMA_VERSION,
         id=self.id(),
         published=published,
-        modified=modified,
+        modified=modified,  # Note the two places above where this can be set.
         aliases=aliases,
         related=related,
         withdrawn=withdrawn,

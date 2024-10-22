@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Importer tests."""
+import contextlib
 import datetime
 import os
 import shutil
@@ -22,9 +23,12 @@ import logging
 import threading
 
 from unittest import mock
+from urllib3.exceptions import SystemTimeWarning
 import warnings
 
 from google.cloud import ndb
+from google.cloud import storage
+from google.cloud.storage import retry
 import pygit2
 from docker.mock_test.mock_test_handler import MockDataHandler
 import importer
@@ -65,6 +69,7 @@ class ImporterTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
     self.tmp_dir = tempfile.mkdtemp()
 
     tests.mock_datetime(self)
+    warnings.filterwarnings('ignore', category=SystemTimeWarning)
     self.mock_repo = tests.mock_repository(self)
 
     storage_patcher = mock.patch('google.cloud.storage.Client')
@@ -205,9 +210,11 @@ class ImporterTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
 
     bucket.blob.assert_has_calls([
         mock.call('testcase/5417710252982272.json'),
-        mock.call().upload_from_string(expected_json),
+        mock.call().upload_from_string(
+            expected_json, retry=retry.DEFAULT_RETRY),
         mock.call('issue/1064.json'),
-        mock.call().upload_from_string(expected_json),
+        mock.call().upload_from_string(
+            expected_json, retry=retry.DEFAULT_RETRY),
     ])
 
   @mock.patch('google.cloud.pubsub_v1.PublisherClient.publish')
@@ -404,6 +411,7 @@ class BucketImporterTest(unittest.TestCase):
     self.tmp_dir = tempfile.mkdtemp()
 
     tests.mock_datetime(self)
+    warnings.filterwarnings('ignore', category=SystemTimeWarning)
 
     self.source_repo = osv.SourceRepository(
         type=osv.SourceRepositoryType.BUCKET,
@@ -515,7 +523,8 @@ class BucketImporterTest(unittest.TestCase):
     self.assertEqual(
         3,
         len(logs.output),
-        msg='Expected number of WARNING level (or higher) logs not found')
+        msg=(f'Expected number of WARNING level (or higher) '
+             f'logs not found {logs.output}'))
     self.assertEqual(
         "WARNING:root:Failed to validate loaded OSV entry: 'modified' is a required property",  # pylint: disable=line-too-long
         logs.output[0],
@@ -559,14 +568,25 @@ class BucketImporterTest(unittest.TestCase):
                              '37340a47f43356ee4a1cabe8f089869'),
             deleted='false',
             req_timestamp='12345'),
-    ])
+        mock.call(
+            self.tasks_topic,
+            data=b'',
+            type='update',
+            source='test',
+            path='a/b/CVE-2022-0128.json',
+            original_sha256=('a4060cb842363cb6ae7669057402ccddc'
+                             'e21a94ed6cad98234e73305816a86d3'),
+            deleted='false',
+            req_timestamp='12345'),
+    ],
+                                  any_order=True)
 
     # Test this entry is not published, as it is preexisting and not newer.
     dsa_call = mock.call(
         self.tasks_topic,
         data=b'',
-        type='test',
-        source='bucket',
+        type='update',
+        source='test',
         path='a/b/DSA-3029-1.json',
         original_sha256=mock.ANY,
         deleted='false')
@@ -744,6 +764,38 @@ class BucketImporterTest(unittest.TestCase):
     # Confirm second run didn't reprocess any existing records.
     self.assertNotIn(expected_pubsub_message, mock_publish.mock_calls)
 
+  def test_blob_parsing(self):
+    """Test conditional GCS blob parsing works correctly."""
+
+    imp = importer.Importer(
+        'fake_public_key',
+        'fake_private_key',
+        self.tmp_dir,
+        importer.DEFAULT_PUBLIC_LOGGING_BUCKET,
+        'bucket',
+        True,
+        False,
+        deletion_safety_threshold_pct=100)
+
+    if not self.source_repo.last_update_date:
+      self.source_repo.last_update_date = datetime.datetime.min
+
+    storage_client = storage.Client()
+    # Reuse the NDB client already created in __main__
+    datastore_client = globals()['context'].client
+    blob = storage.Blob(
+        'a/b/CVE-2022-0128.json',
+        storage.Bucket(storage_client, TEST_BUCKET),
+        generation=None)
+
+    # pylint: disable-next=protected-access
+    result = imp._convert_blob_to_vuln(storage_client, datastore_client,
+                                       self.source_repo, blob, False)
+    self.assertEqual(
+        result,
+        ('a4060cb842363cb6ae7669057402ccddce21a94ed6cad98234e73305816a86d3',
+         'a/b/CVE-2022-0128.json'))
+
 
 class BucketImporterMassDeletionTest(unittest.TestCase):
   """Rigorous deletion testing against production data (in staging)."""
@@ -818,7 +870,7 @@ class RESTImporterTest(unittest.TestCase):
     self.tmp_dir = tempfile.mkdtemp()
 
     tests.mock_datetime(self)
-    warnings.filterwarnings("ignore", "unclosed", ResourceWarning)
+    warnings.filterwarnings('ignore', category=SystemTimeWarning)
 
     storage_patcher = mock.patch('google.cloud.storage.Client')
     self.addCleanup(storage_patcher.stop)
@@ -838,7 +890,19 @@ class RESTImporterTest(unittest.TestCase):
 
   def tearDown(self):
     shutil.rmtree(self.tmp_dir, ignore_errors=True)
-    self.httpd.shutdown()
+
+  @contextlib.contextmanager
+  def server(self, handler_class):
+    """REST mock server context manager."""
+    httpd = http.server.HTTPServer(SERVER_ADDRESS, handler_class)
+    thread = threading.Thread(target=httpd.serve_forever)
+    thread.start()
+    try:
+      yield httpd
+    finally:
+      httpd.shutdown()
+      httpd.server_close()
+      thread.join()
 
   @mock.patch('google.cloud.pubsub_v1.PublisherClient.publish')
   @mock.patch('time.time', return_value=12345.0)
@@ -846,17 +910,20 @@ class RESTImporterTest(unittest.TestCase):
                        mock_publish: mock.MagicMock):
     """Testing basic rest endpoint import"""
     data_handler = MockDataHandler
+    data_handler.last_modified = 'Mon, 01 Jan 2024 00:00:00 GMT'
     data_handler.load_file(data_handler, 'rest_test.json')
-    self.httpd = http.server.HTTPServer(SERVER_ADDRESS, data_handler)
-    thread = threading.Thread(target=self.httpd.serve_forever)
-    thread.start()
     self.source_repo.last_update_date = datetime.datetime(2020, 1, 1)
-    self.source_repo.put()
+    repo = self.source_repo.put()
     imp = importer.Importer('fake_public_key', 'fake_private_key', self.tmp_dir,
                             importer.DEFAULT_PUBLIC_LOGGING_BUCKET, 'bucket',
                             False, False)
-    imp.run()
+    with self.server(data_handler):
+      imp.run()
     self.assertEqual(mock_publish.call_count, data_handler.cve_count)
+    self.assertEqual(
+        repo.get().last_update_date,
+        datetime.datetime(2024, 1, 1),
+        msg='Expected last_update_date to equal REST Last-Modified date')
 
   @mock.patch('google.cloud.pubsub_v1.PublisherClient.publish')
   @mock.patch('time.time', return_value=12345.0)
@@ -864,18 +931,21 @@ class RESTImporterTest(unittest.TestCase):
                                mock_publish: mock.MagicMock):
     """Testing last update ignored"""
     data_handler = MockDataHandler
+    data_handler.last_modified = 'Mon, 01 Jan 2024 00:00:00 GMT'
     data_handler.load_file(data_handler, 'rest_test.json')
-    self.httpd = http.server.HTTPServer(SERVER_ADDRESS, data_handler)
-    thread = threading.Thread(target=self.httpd.serve_forever)
-    thread.start()
     self.source_repo.last_update_date = datetime.datetime(2023, 6, 6)
     self.source_repo.ignore_last_import_time = True
-    self.source_repo.put()
+    repo = self.source_repo.put()
     imp = importer.Importer('fake_public_key', 'fake_private_key', self.tmp_dir,
                             importer.DEFAULT_PUBLIC_LOGGING_BUCKET, 'bucket',
                             False, False)
-    imp.run()
+    with self.server(data_handler):
+      imp.run()
     self.assertEqual(mock_publish.call_count, data_handler.cve_count)
+    self.assertEqual(
+        repo.get().last_update_date,
+        datetime.datetime(2024, 1, 1),
+        msg='Expected last_update_date to equal REST Last-Modified date')
 
   @mock.patch('google.cloud.pubsub_v1.PublisherClient.publish')
   @mock.patch('time.time', return_value=12345.0)
@@ -883,18 +953,19 @@ class RESTImporterTest(unittest.TestCase):
                       mock_publish: mock.MagicMock):
     """Testing none last modified"""
     MockDataHandler.last_modified = 'Fri, 01 Jan 2021 00:00:00 GMT'
-    self.httpd = http.server.HTTPServer(SERVER_ADDRESS, MockDataHandler)
-    thread = threading.Thread(target=self.httpd.serve_forever)
-    thread.start()
-    self.source_repo.last_update_date = datetime.datetime(2024, 1, 1)
-    self.source_repo.put()
+    self.source_repo.last_update_date = datetime.datetime(2024, 2, 1)
+    repo = self.source_repo.put()
     imp = importer.Importer('fake_public_key', 'fake_private_key', self.tmp_dir,
                             importer.DEFAULT_PUBLIC_LOGGING_BUCKET, 'bucket',
                             True, False)
-    with self.assertLogs() as logs:
+    with self.assertLogs() as logs, self.server(MockDataHandler):
       imp.run()
     mock_publish.assert_not_called()
     self.assertIn('INFO:root:No changes since last update.', logs.output[1])
+    self.assertEqual(
+        repo.get().last_update_date,
+        datetime.datetime(2024, 2, 1),
+        msg='last_update_date should not have been updated')
 
   @mock.patch('google.cloud.pubsub_v1.PublisherClient.publish')
   @mock.patch('time.time', return_value=12345.0)
@@ -902,15 +973,14 @@ class RESTImporterTest(unittest.TestCase):
                        mock_publish: mock.MagicMock):
     """Testing from date between entries - 
     only entries after 6/6/2023 should be called"""
-    self.httpd = http.server.HTTPServer(SERVER_ADDRESS, MockDataHandler)
-    thread = threading.Thread(target=self.httpd.serve_forever)
-    thread.start()
+    MockDataHandler.last_modified = 'Mon, 01 Jan 2024 00:00:00 GMT'
     self.source_repo.last_update_date = datetime.datetime(2023, 6, 6)
-    self.source_repo.put()
+    repo = self.source_repo.put()
     imp = importer.Importer('fake_public_key', 'fake_private_key', self.tmp_dir,
                             importer.DEFAULT_PUBLIC_LOGGING_BUCKET, 'bucket',
                             False, False)
-    imp.run()
+    with self.server(MockDataHandler):
+      imp.run()
     mock_publish.assert_has_calls([
         mock.call(
             self.tasks_topic,
@@ -973,6 +1043,10 @@ class RESTImporterTest(unittest.TestCase):
             deleted='false',
             req_timestamp='12345')
     ])
+    self.assertEqual(
+        repo.get().last_update_date,
+        datetime.datetime(2024, 1, 1),
+        msg='Expected last_update_date to equal REST Last-Modified date')
 
 
 @mock.patch('importer.utcnow', lambda: datetime.datetime(2024, 1, 1))
@@ -983,6 +1057,7 @@ class ImportFindingsTest(unittest.TestCase):
     tests.reset_emulator()
 
     tests.mock_datetime(self)
+    warnings.filterwarnings('ignore', category=SystemTimeWarning)
 
   def test_add_finding(self):
     """Test that creating an import finding works."""

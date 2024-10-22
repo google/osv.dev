@@ -316,8 +316,14 @@ def calculate_severity_details(
   if not (type_ and score):
     return None, None
 
-  c = cvss_calculator[type_](score)
-  severity_rating = c.severities()[0]
+  try:
+    c = cvss_calculator[type_](score)
+    severity_rating = c.severities()[0]
+  except Exception as e:
+    logging.error('Exception raised when parsing "%s" severity "%s": %s', type_,
+                  score, e)
+    return None, None
+
   severity_score = c.base_score
   return severity_score, severity_rating
 
@@ -380,13 +386,16 @@ def add_links(bug):
 
 
 def add_source_info(bug, response):
-  """Add source information to `response`."""
+  """Add upstream provenance information to `response`."""
   if bug.source_of_truth == osv.SourceOfTruth.INTERNAL:
     response['source'] = 'INTERNAL'
     return
 
   source_repo = osv.get_source_repository(bug.source)
   if not source_repo or not source_repo.link:
+    logging.error(
+        'Unexpected state for "%s": source repository/link not found for "%s"',
+        bug.id, bug.source)
     return
 
   source_path = osv.source_path(source_repo, bug)
@@ -447,7 +456,7 @@ def osv_get_ecosystem_counts() -> dict[str, int]:
   counts = {}
   ecosystem_names = osv_get_ecosystems()
   for ecosystem in ecosystem_names:
-    if ':' in ecosystem:
+    if ':' in ecosystem or ecosystem == '[EMPTY]':
       # Count by the base ecosystem index. Otherwise we'll overcount as a
       # single entry may refer to multiple sub-ecosystems.
       continue
@@ -739,6 +748,9 @@ def link_to_deps_dev(package, ecosystem):
 def display_severity_rating(severity: dict) -> str:
   """Return base score and rating of the severity."""
   severity_base_score, severity_rating = calculate_severity_details(severity)
+  if severity_base_score is None:
+    return 'Invalid Severity Rating'
+
   return f"{severity_base_score} ({severity_rating})"
 
 
@@ -746,7 +758,7 @@ def display_severity_rating(severity: dict) -> str:
 def severity_level(severity: dict) -> str:
   """Return rating of the severity."""
   _, rating = calculate_severity_details(severity)
-  return rating.lower()
+  return 'invalid' if rating is None else rating.lower()
 
 
 @blueprint.app_template_filter('cvss_calculator_url')

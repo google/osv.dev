@@ -25,9 +25,11 @@ import json
 import logging
 import os
 import requests
+from requests.adapters import HTTPAdapter
 import shutil
 import threading
 import time
+from urllib3.util import Retry
 import atexit
 from typing import List, Tuple, Optional
 
@@ -35,6 +37,7 @@ from google.cloud import ndb
 from google.cloud import pubsub_v1
 from google.cloud import storage
 from google.cloud.storage import retry
+from google.cloud.exceptions import NotFound
 import pygit2.enums
 
 import osv
@@ -292,9 +295,13 @@ class Importer:
       source_repo: the osv.SourceRepository the blob relates to
       blob: the storage.Blob object to operate on
 
+    Raises:
+      jsonschema.exceptions.ValidationError when self._strict_validation is True
+      input fails OSV JSON Schema validation
+
     Returns:
       a list of one or more vulnerability IDs (from the Vulnerability proto) or
-      None when the blob has an unexpected name or fails to parse
+      None when the blob has an unexpected name or fails to retrieve
     """
     if not _is_vulnerability_file(source_repo, blob.name):
       return None
@@ -302,21 +309,20 @@ class Importer:
     # Download in a blob generation agnostic way to cope with the blob
     # changing between when it was listed and now (if the generation doesn't
     # match, retrieval fails otherwise).
-    blob_bytes = storage.Blob(
-        blob.name, blob.bucket, generation=None).download_as_bytes(client)
+    try:
+      blob_bytes = storage.Blob(
+          blob.name, blob.bucket, generation=None).download_as_bytes(client)
+    except NotFound:
+      # The file can disappear between bucket listing and blob retrieval.
+      return None
 
     vuln_ids = []
-    try:
-      vulns = osv.parse_vulnerabilities_from_data(
-          blob_bytes,
-          os.path.splitext(blob.name)[1],
-          strict=self._strict_validation)
-    except Exception as e:
-      logging.error('Failed to parse vulnerability %s: %s', blob.name, e)
-      # TODO(andrewpollock): I think this needs to be reraised here...
-      # a jsonschema.exceptions.ValidationError only gets raised in strict
-      # validation mode.
-      return None
+    # When self._strict_validation is True,
+    # this *may* raise a jsonschema.exceptions.ValidationError
+    vulns = osv.parse_vulnerabilities_from_data(
+        blob_bytes,
+        os.path.splitext(blob.name)[1],
+        strict=self._strict_validation)
     for vuln in vulns:
       vuln_ids.append(vuln.id)
     return vuln_ids
@@ -389,8 +395,18 @@ class Importer:
     if ignore_last_import_time:
       return blob_hash, blob.name
 
+    # If being run under test, reuse existing NDB client.
+    ndb_ctx = ndb.context.get_context(False)
+    if ndb_ctx is None:
+      # Production. Use the NDB client passed in.
+      ndb_ctx = ndb_client.context()
+    else:
+      # Unit testing. Reuse the unit test's existing NDB client to avoid
+      # "RuntimeError: Context is already created for this thread."
+      ndb_ctx = ndb_ctx.use()
+
     # This is the typical execution path (when reimporting not triggered)
-    with ndb_client.context():
+    with ndb_ctx:
       for vuln in vulns:
         bug = osv.Bug.get_by_id(vuln.id)
         # The bug already exists and has been modified since last import
@@ -398,7 +414,7 @@ class Importer:
                 bug.import_last_modified != vuln.modified.ToDatetime():
           return blob_hash, blob.name
 
-        return None
+      return None
 
     return None
 
@@ -551,9 +567,10 @@ class Importer:
 
       logging.info('Parallel-parsing %d blobs in %s', len(listed_blobs),
                    source_repo.name)
+      datastore_client = ndb.Client()
       future_to_blob = {
-          executor.submit(self._convert_blob_to_vuln, storage.Client(),
-                          ndb.Client(), source_repo, blob,
+          executor.submit(self._convert_blob_to_vuln, storage_client,
+                          datastore_client, source_repo, blob,
                           ignore_last_import_time):
               blob for blob in listed_blobs
       }
@@ -646,7 +663,7 @@ class Importer:
       logging.info('Parallel-parsing %d blobs in %s', len(listed_blobs),
                    source_repo.name)
       future_to_blob = {
-          executor.submit(self._vuln_ids_from_gcs_blob, storage.Client(),
+          executor.submit(self._vuln_ids_from_gcs_blob, storage_client,
                           source_repo, blob):
               blob for blob in listed_blobs
       }
@@ -701,48 +718,86 @@ class Importer:
                          self._public_log_bucket, import_failure_logs)
 
   def _process_updates_rest(self, source_repo: osv.SourceRepository):
-    """Process updates from REST API."""
+    """Process updates from REST API.
+    
+    To find new updates, first makes a HEAD request to check the 'Last-Modified'
+    header, and skips processing if it's before the source's last_modified_date
+    (and ignore_last_import_time isn't set).
+
+    Otherwise, GETs the list of vulnerabilities and requests updates for
+    vulnerabilities modified after last_modified_date.
+
+    last_modified_date is updated to the HEAD's 'Last-Modified' time, or the
+    latest vulnerability's modified date if 'Last-Modified' was missing/invalid.
+    """
     logging.info('Begin processing REST: %s', source_repo.name)
 
-    ignore_last_import_time = (
-        source_repo.ignore_last_import_time or not source_repo.last_update_date)
-    if ignore_last_import_time:
+    last_update_date = source_repo.last_update_date or datetime.datetime.min
+    if source_repo.ignore_last_import_time:
+      last_update_date = datetime.datetime.min
       source_repo.ignore_last_import_time = False
       source_repo.put()
-    import_time_now = utcnow()
-    request = requests.head(source_repo.rest_api_url, timeout=_TIMEOUT_SECONDS)
+
+    s = requests.Session()
+    adapter = HTTPAdapter(
+        max_retries=Retry(
+            total=3, status_forcelist=[502, 503, 504], backoff_factor=1))
+    s.mount('http://', adapter)
+    s.mount('https://', adapter)
+
+    try:
+      request = s.head(source_repo.rest_api_url, timeout=_TIMEOUT_SECONDS)
+    except Exception:
+      logging.exception('Exception querying REST API:')
+      return
     if request.status_code != 200:
       logging.error('Failed to fetch REST API: %s', request.status_code)
       return
 
-    if 'Last-Modified' in request.headers:
-      last_modified = datetime.datetime.strptime(
-          request.headers['Last-Modified'], _HTTP_LAST_MODIFIED_FORMAT)
-      # Check whether endpoint has been modified since last update
-      if not ignore_last_import_time and (last_modified
-                                          < source_repo.last_update_date):
-        logging.info('No changes since last update.')
-        return
+    request_last_modified = None
+    if last_modified := request.headers.get('Last-Modified'):
+      try:
+        request_last_modified = datetime.datetime.strptime(
+            last_modified, _HTTP_LAST_MODIFIED_FORMAT)
+        # Check whether endpoint has been modified since last update
+        if request_last_modified <= last_update_date:
+          logging.info('No changes since last update.')
+          return
+      except ValueError:
+        logging.error('Invalid Last-Modified header: "%s"', last_modified)
 
-    request = requests.get(source_repo.rest_api_url, timeout=_TIMEOUT_SECONDS)
+    try:
+      request = s.get(source_repo.rest_api_url, timeout=_TIMEOUT_SECONDS)
+    except Exception:
+      logging.exception('Exception querying REST API:')
+      return
     # Parse vulns into Vulnerability objects from the REST API request.
     vulns = osv.parse_vulnerabilities_from_data(
         request.text, source_repo.extension, strict=self._strict_validation)
+
+    vulns_last_modified = last_update_date
+    logging.info('%d records to consider', len(vulns))
     # Create tasks for changed files.
     for vuln in vulns:
       import_failure_logs = []
-      if not ignore_last_import_time and vuln.modified.ToDatetime(
-      ) < source_repo.last_update_date:
+      vuln_modified = vuln.modified.ToDatetime()
+      if request_last_modified and vuln_modified > request_last_modified:
+        logging.warning('%s was modified (%s) after Last-Modified header (%s)',
+                        vuln.id, vuln_modified, request_last_modified)
+      vulns_last_modified = max(vulns_last_modified, vuln_modified)
+      if vuln_modified <= last_update_date:
         continue
       try:
         # TODO(jesslowe): Use a ThreadPoolExecutor to parallelize this
-        single_vuln = requests.get(
+        single_vuln = s.get(
             source_repo.link + vuln.id + source_repo.extension,
             timeout=_TIMEOUT_SECONDS)
         # Validate the individual request
         _ = osv.parse_vulnerability_from_dict(single_vuln.json(),
                                               source_repo.key_path,
                                               self._strict_validation)
+        logging.info('Requesting analysis of REST record: %s',
+                     vuln.id + source_repo.extension)
         self._request_analysis_external(
             source_repo, osv.sha256_bytes(single_vuln.text.encode()),
             vuln.id + source_repo.extension)
@@ -754,14 +809,13 @@ class Importer:
       except Exception as e:
         logging.exception('Failed to parse %s: error type: %s, details: %s',
                           vuln.id, e.__class__.__name__, e)
-        import_failure_logs.append('Failed to parse vulnerability "' + vuln.id +
-                                   '"')
+        import_failure_logs.append(f'Failed to parse vulnerability "{vuln.id}"')
         continue
 
     replace_importer_log(storage.Client(), source_repo.name,
                          self._public_log_bucket, import_failure_logs)
 
-    source_repo.last_update_date = import_time_now
+    source_repo.last_update_date = request_last_modified or vulns_last_modified
     source_repo.put()
 
     logging.info('Finished processing REST: %s', source_repo.name)
@@ -836,13 +890,13 @@ class Importer:
       try:
         blob = bucket.blob(f'testcase/{testcase_id}.json')
         data = json.dumps(osv.vulnerability_to_dict(vulnerability))
-        blob.upload_from_string(data)
+        blob.upload_from_string(data, retry=retry.DEFAULT_RETRY)
 
         if not issue_id:
           return
 
         blob = bucket.blob(f'issue/{issue_id}.json')
-        blob.upload_from_string(data)
+        blob.upload_from_string(data, retry=retry.DEFAULT_RETRY)
       except Exception as e:
         logging.error('Failed to export: %s', e)
 

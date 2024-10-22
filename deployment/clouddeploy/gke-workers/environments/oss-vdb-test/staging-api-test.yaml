@@ -3,7 +3,8 @@ kind: CronJob
 metadata:
   name: staging-api-test
 spec:
-  schedule: "50 9 * * *"
+  timeZone: Australia/Sydney
+  schedule: "0 9 * * *"
   concurrencyPolicy: Forbid
   jobTemplate:
     spec:
@@ -19,8 +20,8 @@ spec:
             resources:
               requests:
                 cpu: 1.5
-                memory: "4G"
+                memory: "10G"
               limits:
                 cpu: 2
-                memory: "10G"
+                memory: "30G"
           restartPolicy: Never

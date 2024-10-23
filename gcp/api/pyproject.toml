@@ -7,7 +7,7 @@ python = "^3.11"
 
 google-cloud-ndb = "==2.3.2"
 google-cloud-logging = "==3.11.3"
-packageurl-python = "==0.15.6"
+packageurl-python = "==0.16.0"
 packaging = "==20.9"
 requests = "==2.32.3"
 grpcio = "==1.64.1"

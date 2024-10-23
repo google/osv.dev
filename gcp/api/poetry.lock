@@ -889,13 +889,13 @@ url = "../.."
 
 [[package]]
 name = "packageurl-python"
-version = "0.15.6"
+version = "0.16.0"
 description = "A purl aka. Package URL parser and builder"
 optional = false
-python-versions = ">=3.7"
+python-versions = ">=3.8"
 files = [
-    {file = "packageurl_python-0.15.6-py3-none-any.whl", hash = "sha256:a40210652c89022772a6c8340d6066f7d5dc67132141e5284a4db7a27d0a8ab0"},
-    {file = "packageurl_python-0.15.6.tar.gz", hash = "sha256:cbc89afd15d5f4d05db4f1b61297e5b97a43f61f28799f6d282aff467ed2ee96"},
+    {file = "packageurl_python-0.16.0-py3-none-any.whl", hash = "sha256:5c3872638b177b0f1cf01c3673017b7b27ebee485693ae12a8bed70fa7fa7c35"},
+    {file = "packageurl_python-0.16.0.tar.gz", hash = "sha256:69e3bf8a3932fe9c2400f56aaeb9f86911ecee2f9398dbe1b58ec34340be365d"},
 ]
 
 [package.extras]
@@ -1366,13 +1366,13 @@ files = [
 
 [[package]]
 name = "setuptools"
-version = "75.1.0"
+version = "75.2.0"
 description = "Easily download, build, install, upgrade, and uninstall Python packages"
 optional = false
 python-versions = ">=3.8"
 files = [
-    {file = "setuptools-75.1.0-py3-none-any.whl", hash = "sha256:35ab7fd3bcd95e6b7fd704e4a1539513edad446c097797f2985e0e4b960772f2"},
-    {file = "setuptools-75.1.0.tar.gz", hash = "sha256:d59a21b17a275fb872a9c3dae73963160ae079f1049ed956880cd7c09b120538"},
+    {file = "setuptools-75.2.0-py3-none-any.whl", hash = "sha256:a7fcb66f68b4d9e8e66b42f9876150a3371558f98fa32222ffaa5bced76406f8"},
+    {file = "setuptools-75.2.0.tar.gz", hash = "sha256:753bb6ebf1f465a1912e19ed1d41f403a79173a9acf66a42e7e6aec45c3c16ec"},
 ]
 
 [package.extras]
@@ -1551,4 +1551,4 @@ type = ["pytest-mypy"]
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.11"
-content-hash = "1ba16fca54228d044788fd8cea60e100a8ee2e401b9354d67db3b8aed528eb7b"
+content-hash = "c3e7e368e2a95bee8db8b958b94bb816ff89b62cd5fd664db4a831e4902a08f7"

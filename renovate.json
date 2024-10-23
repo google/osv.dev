@@ -12,7 +12,8 @@
   "osvVulnerabilityAlerts": true,
   "lockFileMaintenance": {
     "enabled": true,
-    "schedule": ["before 6am on wednesday"]
+    "schedule": ["before 6am on wednesday"],
+    "commitMessageTopic": "group {{groupName}}"
   },
   "git-submodules": {
     "enabled": false

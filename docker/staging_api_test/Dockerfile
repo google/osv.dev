@@ -16,11 +16,11 @@ FROM gcr.io/oss-vdb/worker
 
 WORKDIR /staging_api_test
 
-COPY retrieve_bugs_from_db.py perform_api_calls.py run.sh ./
+COPY retrieve_bugs_from_bucket.py perform_api_calls.py run.sh ./
 
 # Add aiohttp lib
 RUN cd /env/docker/worker && POETRY_VIRTUALENVS_CREATE=false poetry add aiohttp
 
-RUN chmod 755 retrieve_bugs_from_db.py perform_api_calls.py run.sh
+RUN chmod 755 retrieve_bugs_from_bucket.py perform_api_calls.py run.sh
 
 ENTRYPOINT ["./run.sh"]

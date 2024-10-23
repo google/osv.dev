@@ -13,14 +13,17 @@ import argparse
 MAX_BATCH_SIZE = 500
 
 
-def reput_bugs(dryrun: bool, source: str) -> None:
+def reput_bugs(dryrun: bool, source: str, ids: list) -> None:
   """ Reput all bugs from a given source."""
   query = osv.Bug.query()
-  query = query.filter(osv.Bug.source == source)
-  print(f"Running query {query.filters} "
-        f"on {query.kind}...")
+  if ids:
+    result = [ndb.Key(query.kind, id) for id in ids[0]]
+  else:
+    query = query.filter(osv.Bug.source == source)
+    print(f"Running query {query.filters} "
+          f"on {query.kind}...")
+    result = list(query.fetch(keys_only=True))
 
-  result = list(query.fetch(keys_only=True))
   result.sort(key=lambda r: r.id())
   # result = [r for r in result if not r.id()[0].isnumeric()]
   print(f"Retrieved {len(result)} bugs to examine for reputting")
@@ -78,11 +81,17 @@ def main() -> None:
       dest="project",
       default="oss-vdb-test",
       help="GCP project to operate on")
+  parser.add_argument(
+      "--bugs",
+      action="append",
+      nargs="+",
+      required=False,
+      help=f"The bug IDs to operate on ({MAX_BATCH_SIZE} at most)")
   args = parser.parse_args()
 
   client = ndb.Client(project=args.project)
   with client.context():
-    reput_bugs(args.dryrun, args.source)
+    reput_bugs(args.dryrun, args.source, args.bugs)
 
 
 if __name__ == "__main__":

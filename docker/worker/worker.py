@@ -530,7 +530,12 @@ class TaskRunner:
       logging.info('%s does not affect any packages. Marking as invalid.',
                    vulnerability.id)
       bug.status = osv.BugStatus.INVALID
-    bug.put()
+    try:
+      bug.put()
+    except (google.api_core.exceptions.Cancelled, ndb.exceptions.Error) as e:
+      e.add_note(f'Happened processing {vulnerability.id}')
+      logging.exception('Unexpected exception while writing %s to Datastore',
+                        vulnerability.id)
 
     osv.update_affected_commits(bug.key.id(), result.commits, bug.public)
     self._notify_ecosystem_bridge(vulnerability)

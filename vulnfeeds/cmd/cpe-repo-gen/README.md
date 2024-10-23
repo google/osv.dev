@@ -2,6 +2,10 @@
 
 This extracts likely repository URLs from the NVD CPE Dictionary.
 
+See
+https://cve-osv-conversion.storage.googleapis.com/cpe_repos/cpe_product_to_repo.json
+for example output.
+
 It can utilise Debian copyright metadata for additional inference. Populate that
 metadata mirror with:
 

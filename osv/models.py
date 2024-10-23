@@ -680,6 +680,8 @@ class Bug(ndb.Model):
 
     details = self.details
 
+    # Note that there is further possible mutation of this field below when
+    # `include_alias` is True
     if self.last_modified:
       modified = timestamp_pb2.Timestamp()
       modified.FromDatetime(self.last_modified)
@@ -735,7 +737,7 @@ class Bug(ndb.Model):
         schema_version=SCHEMA_VERSION,
         id=self.id(),
         published=published,
-        modified=modified,
+        modified=modified,  # Note the two places above where this can be set.
         aliases=aliases,
         related=related,
         withdrawn=withdrawn,

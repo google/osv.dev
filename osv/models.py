@@ -722,7 +722,8 @@ class Bug(ndb.Model):
     aliases = []
 
     if include_alias:
-      related_bugs = Bug.query(Bug.related == self.db_id).fetch()
+      related_bugs = Bug.query(
+          Bug.related == self.db_id, projection=[Bug.db_id]).fetch()
       related_bug_ids = [bug.db_id for bug in related_bugs]
       related = sorted(list(set(related_bug_ids + self.related)))
 
@@ -965,6 +966,7 @@ def get_aliases_async(bug_id) -> ndb.Future:
 @ndb.tasklet
 def get_related_async(bug_id) -> ndb.Future:
   """Gets related bugs asynchronously."""
-  related_bugs = yield Bug.query(Bug.related == bug_id).fetch_async()
+  related_bugs = yield Bug.query(
+      Bug.related == bug_id, projection=[Bug.db_id]).fetch_async()
   related_bug_ids = [bug.db_id for bug in related_bugs]
   return related_bug_ids

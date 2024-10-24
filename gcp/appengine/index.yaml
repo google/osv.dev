@@ -99,5 +99,5 @@ indexes:
 
   - kind: Bug
     properties:
-    - name: db_id
     - name: related
+    - name: db_id

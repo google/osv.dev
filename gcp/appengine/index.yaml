@@ -97,3 +97,7 @@ indexes:
     - name: source
     - name: timestamp
 
+  - kind: Bug
+    properties:
+    - name: related
+    - name: db_id

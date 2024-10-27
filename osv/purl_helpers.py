@@ -30,7 +30,7 @@ PURL_ECOSYSTEMS = {
     'Pub': 'pub',
     'PyPI': 'pypi',
     'RubyGems': 'gem',
-    'SwiftURL' : 'swift',
+    'SwiftURL': 'swift',
 }
 
 

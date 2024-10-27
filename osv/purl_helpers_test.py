@@ -56,8 +56,8 @@ class PurlHelpersTest(unittest.TestCase):
     """Test PURL generation for Swift."""
     self.assertEqual(
         'pkg:swift/github.com/Alamofire/Alamofire',
-         purl_helpers.package_to_purl('SwiftURL',
-                                      'github.com/Alamofire/Alamofire'))
+        purl_helpers.package_to_purl('SwiftURL',
+                                     'github.com/Alamofire/Alamofire'))
 
 
 if __name__ == '__main__':

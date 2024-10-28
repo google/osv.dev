@@ -89,7 +89,7 @@ def download_vuln_zip(tmp_dir: str) -> None:
   logging.info('Downloaded %s.', zip_full_path)
 
 
-def write_to_json(bug_info_list: list) -> None:
+def write_to_json(bug_info_list: list[dict[str, any]]) -> None:
   """Writes Bugs to JSON files."""
   file_counter = 0
   for i in range(0, len(bug_info_list), ENTRIES_PER_FILE):

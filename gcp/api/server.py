@@ -97,6 +97,8 @@ _VENDORED_LIB_NAMES = frozenset((
 # Prefix for the
 _TAG_PREFIX = "refs/tags/"
 
+_TEST_INSTANCE = 'oss-vdb-test'
+
 # ----
 # Type Aliases:
 
@@ -894,6 +896,10 @@ def query_by_commit(
     list of responses (return values from to_response)
   """
   query = osv.AffectedCommits.query(osv.AffectedCommits.commits == commit)
+  # Log queries for test instance.
+  # This is for debugging purposes. Production queries will not be recorded.
+  if get_gcp_project() == _TEST_INSTANCE:
+    logging.info('[query_by_commit] commit: %s', commit)
 
   context.query_counter += 1
   if context.should_skip_query():
@@ -1200,7 +1206,7 @@ def query_by_version(
   Returns:
     list of responses (return values from to_response)
   """
-
+  gcp_project = get_gcp_project()
   if package_name:
     query = osv.Bug.query(
         osv.Bug.status == osv.BugStatus.PROCESSED,
@@ -1208,6 +1214,12 @@ def query_by_version(
         # pylint: disable=singleton-comparison
         osv.Bug.public == True,  # noqa: E712
     )
+    # Log queries for test instance.
+    # This is for debugging purposes. Production queries will not be recorded.
+    if gcp_project == _TEST_INSTANCE:
+      logging.info(
+          '[query_by_version] package name: %s, ecosystem: %s, version: %s',
+          package_name, ecosystem, version)
   elif purl:
     query = osv.Bug.query(
         osv.Bug.status == osv.BugStatus.PROCESSED,
@@ -1215,6 +1227,11 @@ def query_by_version(
         # pylint: disable=singleton-comparison
         osv.Bug.public == True,  # noqa: E712
     )
+    # Log queries for test instance.
+    # This is for debugging purposes. Production queries will not be recorded.
+    if gcp_project == _TEST_INSTANCE:
+      logging.info('[query_by_version] purl: %s, ecosystem: %s, version: %s',
+                   purl, ecosystem, version)
   else:
     return []
 
@@ -1365,6 +1382,7 @@ def query_by_package(
     list of responses (return values from to_response)
   """
   bugs = []
+  gcp_project = get_gcp_project()
   if package_name and ecosystem:
     query = osv.Bug.query(
         osv.Bug.status == osv.BugStatus.PROCESSED,
@@ -1373,6 +1391,11 @@ def query_by_package(
         # pylint: disable=singleton-comparison
         osv.Bug.public == True,  # noqa: E712
     )
+    # Log queries for test instance.
+    # This is for debugging purposes. Production queries will not be recorded.
+    if gcp_project == _TEST_INSTANCE:
+      logging.info('[query_by_package] package name: %s, ecosystem: %s',
+                   package_name, ecosystem)
   elif purl:
     query = osv.Bug.query(
         osv.Bug.status == osv.BugStatus.PROCESSED,
@@ -1380,6 +1403,11 @@ def query_by_package(
         # pylint: disable=singleton-comparison
         osv.Bug.public == True,  # noqa: E712
     )
+    # Log queries for test instance.
+    # This is for debugging purposes. Production queries will not be recorded.
+    if gcp_project == _TEST_INSTANCE:
+      logging.info('[query_by_package] purl: %s, ecosystem: %s', purl,
+                   ecosystem)
   else:
     return []
 

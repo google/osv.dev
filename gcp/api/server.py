@@ -903,7 +903,6 @@ def query_by_commit(
   Returns:
     list of responses (return values from to_response)
   """
-
   query = osv.AffectedCommits.query(osv.AffectedCommits.commits == commit)
 
   context.query_counter += 1
@@ -1211,6 +1210,7 @@ def query_by_version(
   Returns:
     list of responses (return values from to_response)
   """
+
   if package_name:
     query = osv.Bug.query(
         osv.Bug.status == osv.BugStatus.PROCESSED,

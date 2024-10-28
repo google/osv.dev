@@ -97,6 +97,8 @@ _VENDORED_LIB_NAMES = frozenset((
 # Prefix for the
 _TAG_PREFIX = "refs/tags/"
 
+_TEST_INSTANCE = 'oss-vdb-test'
+
 # ----
 # Type Aliases:
 
@@ -200,6 +202,10 @@ class OSVServicer(osv_service_v1_pb2_grpc.OSVServicer,
     else:
       logging.info('QueryAffected for %s', qtype)
 
+    # Log queries for test instance.
+    # This is for debugging purposes. Production queries will not be recorded.
+    if get_gcp_project() == _TEST_INSTANCE:
+      logging.info('Query: %s', request.query)
     try:
       page_token = QueryCursor.from_page_token(request.query.page_token)
     except ValueError as e:
@@ -284,6 +290,10 @@ class OSVServicer(osv_service_v1_pb2_grpc.OSVServicer,
         extra={'json_fields': {
             'details': query_details
         }})
+    # Log queries for test instance.
+    # This is for debugging purposes. Production queries will not be recorded.
+    if get_gcp_project() == _TEST_INSTANCE:
+      logging.info('Batch query: %s', request.query)
 
     if len(request.query.queries) > _MAX_BATCH_QUERY:
       context.abort(grpc.StatusCode.INVALID_ARGUMENT, 'Too many queries.')

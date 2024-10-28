@@ -21,7 +21,6 @@ import aiohttp
 import asyncio
 import os
 import random
-import sys
 import time
 import json
 
@@ -59,21 +58,12 @@ class SimpleBug:
   def __init__(self, bug_dict: dict):
     self.db_id = bug_dict['db_id']
     # If the package/ecosystem/version value is None, then add a fake value in.
-    if not bug_dict['project']:
-      self.packages = 'foo'
-    else:
-      self.packages = list(bug_dict['project'])
-    self.purl = bug_dict['purl']
-    if not bug_dict['ecosystem']:
-      self.ecosystems = 'foo'
-    else:
-      self.ecosystems = list(bug_dict['ecosystem'])
+    self.package = bug_dict.get('project', 'foo')
+    self.ecosystem = bug_dict.get('ecosystem', 'foo')
 
     # Use the `affected fuzzy` value as the query version.
     # If no 'affected fuzzy' is present, assign a default value.
-    self.affected_fuzzy = bug_dict['affected_fuzzy']
-    if not self.affected_fuzzy:
-      self.affected_fuzzy = '1.0.0'
+    self.affected_fuzzy = bug_dict.get('affected_fuzzy', '1.0.0')
 
 
 def read_from_json(filename: str, ecosystem_map: defaultdict, bug_map: dict,
@@ -102,10 +92,8 @@ def read_from_json(filename: str, ecosystem_map: defaultdict, bug_map: dict,
     json_file = json.load(f)
     for bug_data in json_file:
       bug = SimpleBug(bug_data)
-      for ecosystem in bug.ecosystems:
-        ecosystem_map[ecosystem].add(bug.db_id)
-      for package in bug.packages:
-        package_map[package].add(bug.db_id)
+      ecosystem_map[bug.ecosystem].add(bug.db_id)
+      package_map[bug.package].add(bug.db_id)
       bug_map[bug.db_id] = bug
 
 
@@ -240,9 +228,12 @@ def build_package_payload(request_id: str, bug_map: dict) -> dict[str, any]:
     '"package": {"name": "mruby","ecosystem": "OSS-Fuzz"}}'
   """
 
-  package = random.choice(bug_map[request_id].packages)
-  ecosystem = random.choice(bug_map[request_id].ecosystems)
-  return {"package": {"name": package, "ecosystem": ecosystem}}
+  return {
+      "package": {
+          "name": bug_map[request_id].package,
+          "ecosystem": bug_map[request_id].ecosystem
+      }
+  }
 
 
 def build_version_payload(request_id: str, bug_map: dict) -> dict:
@@ -259,13 +250,12 @@ def build_version_payload(request_id: str, bug_map: dict) -> dict:
     '{"package": {
       "name": "mruby","ecosystem": "OSS-Fuzz"}, "version": "2.1.2rc"}'
   """
-  package = random.choice(bug_map[request_id].packages)
-  ecosystem = random.choice(bug_map[request_id].ecosystems)
+
   return {
       "version": bug_map[request_id].affected_fuzzy,
       "package": {
-          "name": package,
-          "ecosystem": ecosystem
+          "name": bug_map[request_id].package,
+          "ecosystem": bug_map[request_id].ecosystem
       }
   }
 
@@ -427,10 +417,12 @@ async def send_batch_requests(request_ids: list, bug_map: dict,
 
 async def main() -> None:
   osv.logs.setup_gcp_logging('staging-test')
-  seed = random.randrange(sys.maxsize)
-  # The seed value can be replaced for debugging
-  random.seed(seed)
+  seed = random.randrange(1000)
   logging.info('Random seed %d', seed)
+  # Log the seed value. This allows us to use the same seed later
+  # and reproduce this random result for debugging purposes.
+  random.seed(seed)
+
   # The `ecosystem_map` can be used to filter our queries for a
   # specific ecosystem.
   ecosystem_map, bug_map, package_map = load_all_bugs()

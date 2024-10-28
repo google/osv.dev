@@ -903,6 +903,7 @@ def query_by_commit(
   Returns:
     list of responses (return values from to_response)
   """
+
   query = osv.AffectedCommits.query(osv.AffectedCommits.commits == commit)
 
   context.query_counter += 1

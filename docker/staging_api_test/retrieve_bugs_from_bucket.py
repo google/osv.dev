@@ -18,6 +18,7 @@ import logging
 import os
 import random
 import json
+import sys
 import tempfile
 import zipfile
 
@@ -29,6 +30,7 @@ GCP_PROJECT = 'oss-vdb-test'
 BUG_DIR = './all_bugs'
 VULN_BUCKET = 'osv-test-vulnerabilities'
 ZIP_FILE_PATH = 'all.zip'
+ENTRIES_PER_FILE = 10000  # amount of bugs per file
 
 
 def format_bug_for_output(bug: dict[str, any]) -> dict[str, any]:
@@ -73,7 +75,8 @@ def format_bug_for_output(bug: dict[str, any]) -> dict[str, any]:
 
 def download_vuln_zip(tmp_dir: str) -> None:
   """Downloads all.zip file from bucket."""
-  logging.info('Start to download %s.', ZIP_FILE_PATH)
+  zip_full_path = os.path.join(VULN_BUCKET, ZIP_FILE_PATH)
+  logging.info('Start to download %s.', zip_full_path)
   storage_client = storage.Client()
   bucket = storage_client.get_bucket(VULN_BUCKET)
   try:
@@ -82,26 +85,33 @@ def download_vuln_zip(tmp_dir: str) -> None:
     blob.download_to_filename(file_path)
   except Exception as e:
     logging.exception('Failed to download all.zip: %s', e)
-  logging.info('Downloaded %s.', ZIP_FILE_PATH)
+    sys.exit(1)
+  logging.info('Downloaded %s.', zip_full_path)
+
+
+def write_to_json(bug_info_list: list) -> None:
+  """Writes Bugs to JSON files."""
+  file_counter = 0
+  for i in range(0, len(bug_info_list), ENTRIES_PER_FILE):
+    try:
+      file_name = os.path.join(BUG_DIR, f'all_bugs_{file_counter}.json')
+      with open(file_name, 'w') as f:
+        # Extract a slice of the list for the current file
+        end_index = min(i + ENTRIES_PER_FILE, len(bug_info_list))
+        json.dump(bug_info_list[i:end_index], f, indent=2)
+      logging.info('Saved %d entries to %s', ENTRIES_PER_FILE, file_name)
+    except Exception as e:
+      logging.exception("Error writing to JSON file %s: %s", file_name, e)
+    finally:
+      file_counter += 1
 
 
 def get_bugs_from_export() -> None:
   """Gets all bugs from the exported all.zip and writes to `BUG_DIR`."""
-
-  entries_per_file = 10000  # amount of bugs per file
-  file_counter = 0
-  os.makedirs(BUG_DIR, exist_ok=True)
   tmp_dir = os.path.join(BUG_DIR, 'tmp')
   os.makedirs(tmp_dir, exist_ok=True)
   os.environ['TMPDIR'] = tmp_dir
   logging.info('Start to process %s.', ZIP_FILE_PATH)
-
-  def write_to_json():
-    """Writes to a new JSON file."""
-    file_name = f'{BUG_DIR}/all_bugs_{file_counter}.json'
-    with open(file_name, 'w+') as f:
-      json.dump(bug_info_list, f, indent=2)
-    logging.info('Saved %d entries to %s', len(bug_info_list), file_name)
 
   with tempfile.TemporaryDirectory() as tmp_dir:
     download_vuln_zip(tmp_dir)
@@ -113,14 +123,10 @@ def get_bugs_from_export() -> None:
           with vuln_zip.open(filename) as file:
             bug = json.load(file)
             bug_info_list.append(format_bug_for_output(bug))
-            if len(bug_info_list) == entries_per_file:
-              write_to_json()
-              file_counter += 1
-              bug_info_list = []
         except Exception as e:
           logging.warning('Skipping invalid JSON file %s: %s', filename, e)
           continue
-
+    write_to_json(bug_info_list)
   logging.info('All results saved to %s.', BUG_DIR)
 
 
@@ -128,11 +134,12 @@ def main() -> None:
   osv.logs.setup_gcp_logging('staging-test')
 
   if not os.path.exists(BUG_DIR):
-    # This will take around 10 mins
-    seed = random.randrange(100)
-    # The seed value can be replaced for debugging
-    random.seed(seed)
+    seed = random.randrange(1000)
     logging.info('Random seed %d', seed)
+    # Log the seed value. This allows us to use the same seed later
+    # and reproduce this random result for debugging purposes.
+    random.seed(seed)
+
     get_bugs_from_export()
     logging.info('Fetching data finished.')
   else:

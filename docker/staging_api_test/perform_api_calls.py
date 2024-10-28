@@ -21,7 +21,6 @@ import aiohttp
 import asyncio
 import os
 import random
-import sys
 import time
 import json
 
@@ -418,10 +417,12 @@ async def send_batch_requests(request_ids: list, bug_map: dict,
 
 async def main() -> None:
   osv.logs.setup_gcp_logging('staging-test')
-  seed = random.randrange(sys.maxsize)
-  # The seed value can be replaced for debugging
-  random.seed(seed)
+  seed = random.randrange(1000)
   logging.info('Random seed %d', seed)
+  # Log the seed value. This allows us to use the same seed later
+  # and reproduce this random result for debugging purposes.
+  random.seed(seed)
+
   # The `ecosystem_map` can be used to filter our queries for a
   # specific ecosystem.
   ecosystem_map, bug_map, package_map = load_all_bugs()

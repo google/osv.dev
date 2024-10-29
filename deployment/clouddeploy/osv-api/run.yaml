@@ -12,7 +12,7 @@ spec:
       - image: osv-server
         resources:
           limits:
-            cpu: 2000m
+            cpu: 2
             memory: 8Gi
         startupProbe:
           grpc:

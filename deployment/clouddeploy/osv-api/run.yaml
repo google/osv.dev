@@ -12,7 +12,7 @@ spec:
       - image: osv-server
         resources:
           limits:
-            memory: 4Gi
+            memory: 8Gi
         startupProbe:
           grpc:
             service: osv.v1.OSV

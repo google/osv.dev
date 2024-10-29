@@ -10,3 +10,4 @@ build/lib
 .history/*
 **/.history/*
 */datastore-helper/
+hurl-scripts/

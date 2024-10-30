@@ -55,7 +55,7 @@ run-appengine-staging:
 run-api-server:
 	test -f $(HOME)/.config/gcloud/application_default_credentials.json || (echo "GCP Application Default Credentials not set, try 'gcloud auth login --update-adc'"; exit 1)
 	cd gcp/api && docker build -f Dockerfile.esp -t osv/esp:latest .
-	cd gcp/api && $(install-cmd) && GOOGLE_CLOUD_PROJECT=oss-vdb $(run-cmd) python test_server.py $(HOME)/.config/gcloud/application_default_credentials.json
+	cd gcp/api && $(install-cmd) && GOOGLE_CLOUD_PROJECT=oss-vdb $(run-cmd) python test_server.py $(HOME)/.config/gcloud/application_default_credentials.json $(NOBACKUP)
 
 # TODO: API integration tests.
 all-tests: lib-tests worker-tests importer-tests alias-tests appengine-tests vulnfeed-tests

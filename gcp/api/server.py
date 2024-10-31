@@ -63,7 +63,7 @@ _MAX_VULN_LISTED_POST_EXCEEDED = 5
 # Max responses before MAX_VULN_RESP_THRESH has been exceeded
 _MAX_VULN_LISTED_PRE_EXCEEDED = 1000
 
-_MAX_VULN_LISTED_PRE_EXCEEDED_UBUNTU_EXCEPTION = 100
+_MAX_VULN_LISTED_PRE_EXCEEDED_UBUNTU_EXCEPTION = 50
 
 # Used in DetermineVersion
 # If there are more results for a bucket than this number,

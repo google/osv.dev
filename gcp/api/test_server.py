@@ -183,11 +183,11 @@ if __name__ == '__main__':
     print(f'Usage: {sys.argv[0]} path/to/credential.json')
     sys.exit(1)
 
-  no_backend = False
+  no_backend_flag = False
   if len(sys.argv) == 3:
-    no_backend = sys.argv[2] == '--no-backend'
+    no_backend_flag = sys.argv[2] == '--no-backend'
 
-  server = start(sys.argv[1], no_backend=no_backend)
+  server = start(sys.argv[1], no_backend=no_backend_flag)
   try:
     while True:
       server.check()

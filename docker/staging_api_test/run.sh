@@ -13,7 +13,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-python3 ./retrieve_bugs_from_db.py
+if ! python3 ./retrieve_bugs_from_bucket.py; then
+  echo "Skipping API testing, retrieving bugs failed."
+  exit 1
+fi
 
 # `aiohttp` has limits on the number of simultaneous connections.
 # Running two instances of the program in parrallel 

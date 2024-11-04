@@ -47,9 +47,13 @@ class Exporter:
     """Run exporter."""
     if self._ecosystem == "list":
       query = osv.Bug.query(projection=[osv.Bug.ecosystem], distinct=True)
-      #TODO(gongh@): remove all ecosystem releases from ecosystem.txt
-      # after notifying users.
-      ecosystems = [bug.ecosystem[0] for bug in query if bug.ecosystem]
+      # Filter out ecosystems that contain a colon,
+      # as these represent Linux distro releases.
+      ecosystems = [
+          bug.ecosystem[0]
+          for bug in query
+          if bug.ecosystem and ':' not in bug.ecosystem[0]
+      ]
       self._export_ecosystem_list_to_bucket(ecosystems, self._work_dir)
     else:
       self._export_ecosystem_to_bucket(self._ecosystem, self._work_dir)

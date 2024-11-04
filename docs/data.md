@@ -112,10 +112,9 @@ For convenience, these sources are aggregated and [continuously](https://github.
 exported to a GCS bucket maintained by OSV:
 [`gs://osv-vulnerabilities`](https://storage.googleapis.com/osv-vulnerabilities/index.html)
 
-This bucket contains individual entries of the format
-`gs://osv-vulnerabilities/<ECOSYSTEM>/<ID>.json` as well as a zip containing all
-vulnerabilities for each ecosystem at
-`gs://osv-vulnerabilities/<ECOSYSTEM>/all.zip`.
+This bucket contains a zip file with all vulnerabilities across all ecosystems (including withdrawn records) at `gs://osv-vulnerabilities/all.zip`. This is the easiest way to download the entire OSV database.
+
+Individual vulnerability records can be found at `gs://osv-vulnerabilities/<ECOSYSTEM>/<ID>.json`. A zip containing all vulnerabilities for each ecosystem is available at `gs://osv-vulnerabilities/<ECOSYSTEM>/all.zip`. Vulnerabilities without an ecosystem (typically withdrawn ones) are exported to the `gs://osv-vulnerabilities/[EMPTY]/` directory.
 
 E.g. for PyPI vulnerabilities:
 

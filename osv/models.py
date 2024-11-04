@@ -722,7 +722,8 @@ class Bug(ndb.Model):
     aliases = []
 
     if include_alias:
-      related_bugs = Bug.query(Bug.related == self.db_id).fetch()
+      related_bugs = Bug.query(
+          Bug.related == self.db_id, projection=[Bug.db_id]).fetch()
       related_bug_ids = [bug.db_id for bug in related_bugs]
       related = sorted(list(set(related_bug_ids + self.related)))
 
@@ -921,7 +922,7 @@ class ImportFinding(ndb.Model):
   last_attempt: datetime = ndb.DateTimeProperty()
 
 
-def get_source_repository(source_name):
+def get_source_repository(source_name: str) -> SourceRepository:
   """Get source repository."""
   return SourceRepository.get_by_id(source_name)
 
@@ -958,15 +959,16 @@ def sorted_events(ecosystem, range_type, events) -> list[AffectedEvent]:
 
 
 @ndb.tasklet
-def get_aliases_async(bug_id) -> ndb.Future:
+def get_aliases_async(bug_id: str) -> ndb.Future:
   """Gets aliases asynchronously."""
   alias_group = yield AliasGroup.query(AliasGroup.bug_ids == bug_id).get_async()
   return alias_group
 
 
 @ndb.tasklet
-def get_related_async(bug_id) -> ndb.Future:
+def get_related_async(bug_id: str) -> ndb.Future:
   """Gets related bugs asynchronously."""
-  related_bugs = yield Bug.query(Bug.related == bug_id).fetch_async()
+  related_bugs = yield Bug.query(
+      Bug.related == bug_id, projection=[Bug.db_id]).fetch_async()
   related_bug_ids = [bug.db_id for bug in related_bugs]
   return related_bug_ids

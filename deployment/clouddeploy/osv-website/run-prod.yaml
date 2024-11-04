@@ -22,3 +22,7 @@ spec:
         livenessProbe:
           httpGet:
             path: /_ah/warmup
+        resources:
+          limits:
+            cpu: 1
+            memory: 4Gi

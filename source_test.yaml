@@ -279,6 +279,7 @@
   bucket: 'resf-osv-data'
   db_prefix: ['RLSA-']
   ignore_git: False
+  human_link: 'https://errata.rockylinux.org/{{ BUG_ID }}'
   link: 'https://storage.googleapis.com/resf-osv-data/'
   editable: False
 
@@ -291,6 +292,7 @@
   bucket: 'resf-osv-data'
   db_prefix: ['RXSA-']
   ignore_git: False
+  human_link: 'https://errata.rockylinux.org/{{ BUG_ID }}'
   link: 'https://storage.googleapis.com/resf-osv-data/'
   editable: False
 
@@ -320,6 +322,7 @@
   extension: '.json'
   db_prefix: ['openSUSE-', 'SUSE-']
   ignore_git: True
+  human_link: 'https://www.suse.com/support/update/announcement/{{ BUG_ID.split(":")[0].split("-")[2] }}/{{ BUG_ID | replace(":", "") | lower }}/'
   link: 'https://ftp.suse.com/pub/projects/security/osv/'
   editable: False
 
@@ -360,6 +363,7 @@
   extension: '.json'
   db_prefix: ['GSD-']
   ignore_git: False
+  human_link: 'https://data.gsd.id/{{ BUG_ID }}'
   link: 'https://github.com/cloudsecurityalliance/gsd-database/blob/main/'
   editable: False
   key_path: 'OSV'

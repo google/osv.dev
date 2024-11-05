@@ -322,7 +322,7 @@
   extension: '.json'
   db_prefix: ['openSUSE-', 'SUSE-']
   ignore_git: True
-  human_link: 'https://www.suse.com/support/update/announcement/{{ BUG_ID.split(':')[0].split('-')[2] }}/{{ BUG_ID | replace(":", "") | lower }}/'
+  human_link: 'https://www.suse.com/support/update/announcement/{{ BUG_ID.split(":")[0].split("-")[2] }}/{{ BUG_ID | replace(":", "") | lower }}/'
   link: 'https://ftp.suse.com/pub/projects/security/osv/'
   editable: False
 

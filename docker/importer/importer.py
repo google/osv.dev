@@ -228,9 +228,9 @@ class Importer:
 
     # Get any current findings for this record.
     findingtimenow = utcnow()
-    existing_findings = osv.ImportFinding.query(
-        osv.ImportFinding.bug_id == bug_id)
-    if list(existing_findings):
+    existing_findings = list(
+        osv.ImportFinding.query(osv.ImportFinding.bug_id == bug_id))
+    if existing_findings:
       for finding in existing_findings:
         if maybe_new_finding not in finding.findings:
           finding.findings.append(maybe_new_finding)

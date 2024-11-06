@@ -392,6 +392,11 @@ func Repo(u string) (string, error) {
 			parsedURL.Hostname(), repo), nil
 	}
 
+	// Handle a Linux Kernel URL that is already cloneable and doesn't require remapping.
+	if parsedURL.Hostname() == "git.kernel.org" && strings.HasPrefix(parsedURL.Path, "/pub/scm/linux/kernel/git/torvalds/linux.git") {
+		return fmt.Sprintf("%s://%s%s", parsedURL.Scheme, parsedURL.Hostname(), "/pub/scm/linux/kernel/git/torvalds/linux.git"), nil
+	}
+
 	// GitWeb CGI URLs are structured very differently, and require significant translation to get a cloneable URL, e.g.
 	// https://git.gnupg.org/cgi-bin/gitweb.cgi?p=libksba.git;a=commit;h=f61a5ea4e0f6a80fd4b28ef0174bee77793cf070 -> git://git.gnupg.org/libksba.git
 	// https://sourceware.org/git/gitweb.cgi?p=binutils-gdb.git;h=11d171f1910b508a81d21faa087ad1af573407d8 -> git://sourceware.org/git/binutils-gdb.git
@@ -647,21 +652,21 @@ func ValidateAndCanonicalizeLink(link string) (canonicalLink string, err error) 
 
 // For URLs referencing commits in supported Git repository hosts, return a cloneable AffectedCommit.
 func extractGitCommit(link string, commitType CommitType) (ac AffectedCommit, err error) {
+	// If URL doesn't validate, treat it as linkrot.
+	// Possible TODO(apollock): restart the entire extraction process when the
+	// repo changes (i.e. handle a redirect to a completely different host,
+	// instead of a redirect within GitHub)
+	link, err = ValidateAndCanonicalizeLink(link)
+	if err != nil {
+		return ac, err
+	}
+
 	r, err := Repo(link)
 	if err != nil {
 		return ac, err
 	}
 
 	c, err := Commit(link)
-	if err != nil {
-		return ac, err
-	}
-
-	// If URL doesn't validate, treat it as linkrot.
-	// Possible TODO(apollock): restart the entire extraction process when the
-	// repo changes (i.e. handle a redirect to a completely different host,
-	// instead of a redirect within GitHub)
-	r, err = ValidateAndCanonicalizeLink(r)
 	if err != nil {
 		return ac, err
 	}

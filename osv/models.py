@@ -921,6 +921,11 @@ class ImportFinding(ndb.Model):
   first_seen: datetime = ndb.DateTimeProperty()
   last_attempt: datetime = ndb.DateTimeProperty()
 
+  def _pre_put_hook(self):  # pylint: disable=arguments-differ
+    """Pre-put hook for setting key."""
+    if not self.key:  # pylint: disable=access-member-before-definition
+      self.key = ndb.Key(ImportFinding, self.bug_id)
+
 
 def get_source_repository(source_name: str) -> SourceRepository:
   """Get source repository."""

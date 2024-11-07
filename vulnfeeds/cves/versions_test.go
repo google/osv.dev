@@ -440,6 +440,12 @@ func TestRepo(t *testing.T) {
 			expectedRepoURL: "https://git.kernel.org/pub/scm/libs/libcap/libcap.git",
 			expectedOk:      true,
 		},
+		{
+			description:     "Linux kernel URL that doesn't require remapping to be cloneable",
+			inputLink:       "https://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git/commit/?id=ee1fee900537b5d9560e9f937402de5ddc8412f3",
+			expectedRepoURL: "https://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git",
+			expectedOk:      true,
+		},
 	}
 
 	for _, tc := range tests {
@@ -611,6 +617,13 @@ func TestExtractGitCommit(t *testing.T) {
 				Repo:  "https://github.com/eggjs/extend2",
 				Fixed: "aa332a59116c8398976434b57ea477c6823054f8",
 			},
+		},
+		{
+			description:            "A GitHub commit link that is 404'ing (as seen on CVE-2019-8375)",
+			inputLink:              "https://github.com/WebKit/webkit/commit/6f9b511a115311b13c06eb58038ddc2c78da5531",
+			inputCommitType:        Fixed,
+			expectedAffectedCommit: AffectedCommit{},
+			expectFailure:          true,
 		},
 	}
 
@@ -1037,5 +1050,79 @@ func TestInvalidRangeDetection(t *testing.T) {
 		if diff := cmp.Diff(result, tc.expectedResult); diff != "" {
 			t.Errorf("test %q: Duplicated() for %#v was incorrect: %s", tc.description, tc.inputAffectedCommit, diff)
 		}
+	}
+}
+
+func TestValidateAndCanonicalizeLink(t *testing.T) {
+	type args struct {
+		link string
+	}
+	tests := []struct {
+		name              string
+		args              args
+		wantCanonicalLink string
+		wantErr           bool
+	}{
+		{
+			name: "A link that 404's",
+			args: args{
+				link: "https://github.com/WebKit/webkit/commit/6f9b511a115311b13c06eb58038ddc2c78da5531",
+			},
+			wantCanonicalLink: "https://github.com/WebKit/webkit/commit/6f9b511a115311b13c06eb58038ddc2c78da5531",
+			wantErr:           true,
+		},
+		{
+			name: "A functioning link",
+			args: args{
+				link: "https://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git/commit/?id=ee1fee900537b5d9560e9f937402de5ddc8412f3",
+			},
+			wantCanonicalLink: "https://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git/commit/?id=ee1fee900537b5d9560e9f937402de5ddc8412f3",
+			wantErr:           false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			gotCanonicalLink, err := ValidateAndCanonicalizeLink(tt.args.link)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("ValidateAndCanonicalizeLink() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if gotCanonicalLink != tt.wantCanonicalLink {
+				t.Errorf("ValidateAndCanonicalizeLink() = %v, want %v", gotCanonicalLink, tt.wantCanonicalLink)
+			}
+		})
+	}
+}
+
+func TestCommit(t *testing.T) {
+	type args struct {
+		u string
+	}
+	tests := []struct {
+		name    string
+		args    args
+		want    string
+		wantErr bool
+	}{
+		{
+			name: "a canoncalized kernel.org cGit URL",
+			args: args{
+				u: "https://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git/commit/?id=ee1fee900537b5d9560e9f937402de5ddc8412f3",
+			},
+			want: "ee1fee900537b5d9560e9f937402de5ddc8412f3",
+			wantErr: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := Commit(tt.args.u)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("Commit() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if got != tt.want {
+				t.Errorf("Commit() = %v, want %v", got, tt.want)
+			}
+		})
 	}
 }

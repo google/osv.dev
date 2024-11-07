@@ -1093,3 +1093,36 @@ func TestValidateAndCanonicalizeLink(t *testing.T) {
 		})
 	}
 }
+
+func TestCommit(t *testing.T) {
+	type args struct {
+		u string
+	}
+	tests := []struct {
+		name    string
+		args    args
+		want    string
+		wantErr bool
+	}{
+		{
+			name: "a canoncalized kernel.org cGit URL",
+			args: args{
+				u: "https://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git/commit/?id=ee1fee900537b5d9560e9f937402de5ddc8412f3",
+			},
+			want: "ee1fee900537b5d9560e9f937402de5ddc8412f3",
+			wantErr: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := Commit(tt.args.u)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("Commit() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if got != tt.want {
+				t.Errorf("Commit() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}

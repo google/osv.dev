@@ -549,10 +549,19 @@ func Commit(u string) (string, error) {
 		return "", err
 	}
 
+	// "https://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git/commit/?id=ee1fee900537b5d9560e9f937402de5ddc8412f3"
+
 	// cGit URLs are structured another way, e.g.
 	// https://git.dpkg.org/cgit/dpkg/dpkg.git/commit/?id=faa4c92debe45412bfcf8a44f26e827800bb24be
 	// https://git.kernel.org/cgit/linux/kernel/git/torvalds/linux.git/commit/?id=817b8b9c5396d2b2d92311b46719aad5d3339dbe
 	if strings.HasPrefix(parsedURL.Path, "/cgit") &&
+		strings.HasSuffix(parsedURL.Path, "commit/") &&
+		strings.HasPrefix(parsedURL.RawQuery, "id=") {
+		return strings.Split(parsedURL.RawQuery, "=")[1], nil
+	}
+
+	// Canonicalized git.kernel.org URLs lose /cgit in the path...
+	if parsedURL.Hostname() == "git.kernel.org" &&
 		strings.HasSuffix(parsedURL.Path, "commit/") &&
 		strings.HasPrefix(parsedURL.RawQuery, "id=") {
 		return strings.Split(parsedURL.RawQuery, "=")[1], nil

@@ -84,7 +84,8 @@ class ImporterTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
         db_prefix=['OSV-'],
         repo_url='file://' + self.remote_source_repo_path,
         repo_username='',
-        ignore_patterns=['.*IGNORE.*'])
+        ignore_patterns=['.*IGNORE.*'],
+        strict_validation=True)
     self.source_repo.put()
 
     self.tasks_topic = f'projects/{tests.TEST_PROJECT_ID}/topics/tasks'
@@ -228,7 +229,19 @@ class ImporterTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
                             True, False)
     with self.assertLogs(level='WARNING') as logs:
       imp.run()
-    self.assertEqual(3, len(logs.output))
+
+    self.assertIn(
+        osv.ImportFinding(
+            bug_id='OSV-2017-145',
+            findings=[osv.ImportFindings.INVALID_JSON],
+            first_seen=importer.utcnow(),
+            last_attempt=importer.utcnow()).to_dict(),
+        [r.to_dict() for r in osv.ImportFinding.query()])
+
+    self.assertEqual(
+        5,
+        len(logs.output),
+        msg='Expected number of WARNING level (or higher) logs not found')
     self.assertEqual(
         "WARNING:root:Failed to validate loaded OSV entry: 'modified' is a required property",  # pylint: disable=line-too-long
         logs.output[0])
@@ -277,7 +290,8 @@ class ImporterTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
         id='source',
         name='source',
         repo_url='file://' + self.remote_source_repo_path,
-        repo_username='').put()
+        repo_username='',
+        strict_validation=True).put()
     osv.Bug(
         db_id='OSV-2021-1337',
         affected_packages=[
@@ -419,7 +433,8 @@ class BucketImporterTest(unittest.TestCase):
         name='test',
         bucket=TEST_BUCKET,
         directory_path='a/b',
-        extension='.json')
+        extension='.json',
+        strict_validation=True)
     self.source_repo.put()
 
     # Preexisting Bug that exists in GCS.
@@ -521,7 +536,7 @@ class BucketImporterTest(unittest.TestCase):
       imp.run()
 
     self.assertEqual(
-        3,
+        5,
         len(logs.output),
         msg=(f'Expected number of WARNING level (or higher) '
              f'logs not found {logs.output}'))
@@ -537,6 +552,19 @@ class BucketImporterTest(unittest.TestCase):
         "ERROR:root:Failed to parse vulnerability a/b/test-invalid.json: 'modified' is a required property",  # pylint: disable=line-too-long
         logs.output[2],
         msg='Expected schema validation failure log not found')
+
+    # Check parse failure finding was recorded correctly.
+    self.assertIn(
+        osv.ImportFinding(
+            bug_id='GO-2021-0085',
+            findings=[osv.ImportFindings.INVALID_JSON],
+            first_seen=importer.utcnow(),
+            last_attempt=importer.utcnow()).to_dict(),
+        [r.to_dict() for r in osv.ImportFinding.query()])
+    self.assertEqual(
+        1,
+        len(list(osv.ImportFinding.query())),
+        msg="Expected number of adverse import findings not found")
 
     # Check if vulnerability parse failure was logged correctly.
     self.assertTrue(
@@ -627,7 +655,10 @@ class BucketImporterTest(unittest.TestCase):
 
     with self.assertLogs(level='WARNING') as logs:
       imp.run()
-    self.assertEqual(3, len(logs.output))
+    self.assertEqual(
+        3,
+        len(logs.output),
+        msg='Expected number of WARNING level (or higher) logs not found')
     self.assertEqual(
         "WARNING:root:Failed to validate loaded OSV entry: 'modified' is a required property",  # pylint: disable=line-too-long
         logs.output[0])
@@ -719,7 +750,11 @@ class BucketImporterTest(unittest.TestCase):
       imp.run()
 
     # Confirm invalid records were treated as expected.
-    self.assertEqual(3, len(logs.output))
+    self.assertEqual(
+        5,
+        len(logs.output),
+        msg=('Expected number of WARNING level (or higher) logs '
+             '(from first run) not found'))
     self.assertEqual(
         "WARNING:root:Failed to validate loaded OSV entry: 'modified' is a required property",  # pylint: disable=line-too-long
         logs.output[0])
@@ -727,6 +762,12 @@ class BucketImporterTest(unittest.TestCase):
     self.assertIn(
         "ERROR:root:Failed to parse vulnerability a/b/test-invalid.json: 'modified' is a required property",  # pylint: disable=line-too-long
         logs.output[2])
+
+    # Check parse failure finding was recorded correctly.
+    self.assertEqual(
+        1,
+        len(list(osv.ImportFinding.query())),
+        msg="Expected number of adverse import findings not found")
 
     # Check if vulnerability parse failure was logged correctly.
     self.assertTrue(
@@ -746,7 +787,11 @@ class BucketImporterTest(unittest.TestCase):
       imp.run()
 
     # Confirm invalid records were (again) treated as expected.
-    self.assertEqual(3, len(logs.output))
+    self.assertEqual(
+        5,
+        len(logs.output),
+        msg=('Expected number of WARNING level (or higher) logs '
+             '(from second run) not found'))
     self.assertEqual(
         "WARNING:root:Failed to validate loaded OSV entry: 'modified' is a required property",  # pylint: disable=line-too-long
         logs.output[0])
@@ -884,7 +929,8 @@ class RESTImporterTest(unittest.TestCase):
         rest_api_url=MOCK_ADDRESS_FORMAT,
         db_prefix=['CURL-'],
         extension='.json',
-        editable=False)
+        editable=False,
+        strict_validation=True)
     self.source_repo.put()
     self.tasks_topic = f'projects/{tests.TEST_PROJECT_ID}/topics/tasks'
 
@@ -1047,6 +1093,13 @@ class RESTImporterTest(unittest.TestCase):
         repo.get().last_update_date,
         datetime.datetime(2024, 1, 1),
         msg='Expected last_update_date to equal REST Last-Modified date')
+
+  @mock.patch('google.cloud.pubsub_v1.PublisherClient.publish')
+  @mock.patch('time.time', return_value=12345.0)
+  def test_invalid(self, unused_mock_time: mock.MagicMock,
+                   mock_publish: mock.MagicMock):
+    """Test invalid records are treated correctly."""
+    # TODO(apollock): implement
 
 
 @mock.patch('importer.utcnow', lambda: datetime.datetime(2024, 1, 1))

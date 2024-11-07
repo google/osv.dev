@@ -182,6 +182,64 @@ class Importer:
         allocated_id=bug.key.id(),
         req_timestamp=str(int(time.time())))
 
+  def _infer_id_from_invalid_data(self, name: str, content: bytes) -> str:
+    """Best effort infer the bug ID for data that failed to parse.
+
+    First try and extract something that looks like an "id" field, and failing
+    that, try to  infer from the filename.
+
+    Args:
+      name: the name associated with the data
+      content: the data itself
+
+    Returns:
+      str: the inferred identifer
+    """
+
+    # First try without strict validation
+    extension = os.path.splitext(name)[1]
+    try:
+      vulns = osv.parse_vulnerabilities_from_data(
+          content, extension, strict=False)
+      if vulns:
+        return vulns[0].id
+    except RuntimeError:
+      # Happens if filename extension is unsupported.
+      pass
+
+    # TODO(apollock): Then try by poking around at the data.
+
+    # Then use the filename
+    return os.path.splitext(os.path.basename(name))[0]
+
+  def _record_quality_finding(
+      self,
+      bug_id: str,
+      maybe_new_finding: osv.ImportFindings = osv.ImportFindings.INVALID_JSON):
+    """Record the quality finding about a record in Datastore.
+
+    Args:
+      bug_id: the ID of the vulnerability
+      maybe_new_finding: the finding to record
+
+    Sets the finding's last_attempt to now, and adds the finding to the list of
+    findings for the record (if any already exist)
+    """
+
+    # Get any current findings for this record.
+    findingtimenow = utcnow()
+    if existing_finding := osv.ImportFinding.get_by_id(bug_id):
+      if maybe_new_finding not in existing_finding.findings:
+        existing_finding.findings.append(maybe_new_finding)
+      existing_finding.last_attempt: findingtimenow
+      existing_finding.put()
+    else:
+      osv.ImportFinding(
+          bug_id=bug_id,
+          findings=[maybe_new_finding],
+          first_seen=findingtimenow,
+          last_attempt=findingtimenow).put()
+
   def run(self):
     """Run importer."""
     for source_repo in osv.SourceRepository.query():
@@ -322,7 +380,7 @@ class Importer:
     vulns = osv.parse_vulnerabilities_from_data(
         blob_bytes,
         os.path.splitext(blob.name)[1],
-        strict=self._strict_validation)
+        strict=source_repo.strict_validation and self._strict_validation)
     for vuln in vulns:
       vuln_ids.append(vuln.id)
     return vuln_ids
@@ -499,7 +557,9 @@ class Importer:
 
       try:
         _ = osv.parse_vulnerability(
-            path, key_path=source_repo.key_path, strict=self._strict_validation)
+            path,
+            key_path=source_repo.key_path,
+            strict=source_repo.strict_validation and self._strict_validation)
       except osv.sources.KeyPathError:
         # Key path doesn't exist in the vulnerability.
         # No need to log a full error, as this is expected result.
@@ -507,6 +567,11 @@ class Importer:
         continue
       except Exception as e:
         logging.error('Failed to parse %s: %s', changed_entry, str(e))
+        with open(path, "rb") as f:
+          content = f.read()
+        bug_id = self._infer_id_from_invalid_data(
+            os.path.basename(path), content)
+        self._record_quality_finding(bug_id)
         # Don't include error stack trace as that might leak sensitive info
         import_failure_logs.append('Failed to parse vulnerability "' + path +
                                    '"')
@@ -587,6 +652,11 @@ class Importer:
         except Exception as e:
           # Don't include error stack trace as that might leak sensitive info
           logging.error('Failed to parse vulnerability %s: %s', blob.name, e)
+          # TODO(apollock): log finding here
+          # This feels gross to redownload it again.
+          bug_id = self._infer_id_from_invalid_data(blob.name,
+                                                    blob.download_as_bytes())
+          self._record_quality_finding(bug_id)
           import_failure_logs.append(
               'Failed to parse vulnerability (when considering for import) "' +
               blob.name + '"')
@@ -773,7 +843,9 @@ class Importer:
       return
     # Parse vulns into Vulnerability objects from the REST API request.
     vulns = osv.parse_vulnerabilities_from_data(
-        request.text, source_repo.extension, strict=self._strict_validation)
+        request.text,
+        source_repo.extension,
+        strict=source_repo.strict_validation and self._strict_validation)
 
     vulns_last_modified = last_update_date
     logging.info('%d records to consider', len(vulns))
@@ -793,9 +865,18 @@ class Importer:
             source_repo.link + vuln.id + source_repo.extension,
             timeout=_TIMEOUT_SECONDS)
         # Validate the individual request
-        _ = osv.parse_vulnerability_from_dict(single_vuln.json(),
-                                              source_repo.key_path,
-                                              self._strict_validation)
+        try:
+          _ = osv.parse_vulnerability_from_dict(
+              single_vuln.json(),
+              source_repo.key_path,
+              strict=source_repo.strict_validation and self._strict_validation)
+        except Exception as e:
+          logging.error('Failed to parse %s: %s', str(single_vuln.content),
+                        str(e))
+          bug_id = self._infer_id_from_invalid_data(
+              source_repo.link + vuln.id + source_repo.extension,
+              single_vuln.content)
+          self._record_quality_finding(bug_id)
         logging.info('Requesting analysis of REST record: %s',
                      vuln.id + source_repo.extension)
         self._request_analysis_external(

@@ -16,3 +16,7 @@ spec:
               # TODO(michaelkedar): ssh secrets
               # TODO(michaelkedar): single source of truth w/ terraform config
               - "--public_log_bucket=osv-test-public-import-logs"
+              # Note that with https://github.com/google/osv.dev/pull/2766
+              # addition per-repository settings make this *really* take effect, see
+              # https://github.com/google/osv.dev/pull/2837
+              - "--strict_validation=True"

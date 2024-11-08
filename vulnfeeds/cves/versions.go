@@ -661,15 +661,6 @@ func ValidateAndCanonicalizeLink(link string) (canonicalLink string, err error) 
 
 // For URLs referencing commits in supported Git repository hosts, return a cloneable AffectedCommit.
 func extractGitCommit(link string, commitType CommitType) (ac AffectedCommit, err error) {
-	// If URL doesn't validate, treat it as linkrot.
-	// Possible TODO(apollock): restart the entire extraction process when the
-	// repo changes (i.e. handle a redirect to a completely different host,
-	// instead of a redirect within GitHub)
-	link, err = ValidateAndCanonicalizeLink(link)
-	if err != nil {
-		return ac, err
-	}
-
 	r, err := Repo(link)
 	if err != nil {
 		return ac, err
@@ -678,6 +669,19 @@ func extractGitCommit(link string, commitType CommitType) (ac AffectedCommit, er
 	c, err := Commit(link)
 	if err != nil {
 		return ac, err
+	}
+
+	// If URL doesn't validate, treat it as linkrot.
+	possiblyDifferentLink, err := ValidateAndCanonicalizeLink(link)
+	if err != nil {
+		return ac, err
+	}
+
+	// restart the entire extraction process when the URL changes (i.e. handle a
+	// redirect to a completely different host, instead of a redirect within
+	// GitHub)
+	if possiblyDifferentLink != link {
+		return extractGitCommit(possiblyDifferentLink, commitType)
 	}
 
 	ac.SetRepo(r)

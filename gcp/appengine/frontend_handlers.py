@@ -55,6 +55,19 @@ _BLOG_CONTENTS_DIR = 'blog'
 _DEPS_BASE_URL = 'https://deps.dev'
 _FIRST_CVSS_CALCULATOR_BASE_URL = 'https://www.first.org/cvss/calculator'
 
+
+class VulnerabilityNotFound(exceptions.NotFound):
+  """Plumb the vulnerability ID not found to the error handler."""
+
+  def __init__(self, vuln_id: str) -> None:
+    super().__init__()
+    self.vuln_id = vuln_id
+
+
+class VulnerabilityNotImported(VulnerabilityNotFound):
+  """Plumb the vulnerability ID with import findings to the error handler."""
+
+
 if utils.is_prod():
   redis_host = os.environ.get('REDISHOST', 'localhost')
   redis_port = int(os.environ.get('REDISPORT', 6379))
@@ -124,6 +137,11 @@ def robots():
   response = make_response(f'Sitemap: {request.host_url}sitemap_index.xml\n')
   response.mimetype = 'text/plain'
   return response
+
+
+@blueprint.route('/favicon.ico')
+def favicon():
+  return current_app.send_static_file('img/favicon-32x32.png')
 
 
 @blueprint.route('/blog/', strict_slashes=False)
@@ -251,15 +269,13 @@ def vulnerability_redirector(potential_vuln_id):
   # AlmaLinux have colons in their identifiers, which gets URL encoded.
   potential_vuln_id = parse.unquote(potential_vuln_id)
   if not _VALID_VULN_ID.match(potential_vuln_id):
-    abort(404)
+    abort(400)
     return None
 
-  vuln = osv_get_by_id(potential_vuln_id)
-  if vuln:
-    return redirect(f'/vulnerability/{potential_vuln_id}')
+  # This may raise an exception directly or via abort() for failed retrievals.
+  _ = osv_get_by_id(potential_vuln_id)
 
-  abort(404)
-  return None
+  return redirect(f'/vulnerability/{potential_vuln_id}')
 
 
 @blueprint.route('/<potential_vuln_id>.json')
@@ -269,13 +285,11 @@ def vulnerability_json_redirector(potential_vuln_id):
   https://api.osv.dev/v1/vulns/VULN-ID.
   """
   if not _VALID_VULN_ID.match(potential_vuln_id):
-    abort(404)
+    abort(400)
     return None
 
-  vuln = osv_get_by_id(potential_vuln_id)
-  if not vuln:
-    abort(404)
-    return None
+  # This calls abort() on failed retrievals.
+  _ = osv_get_by_id(potential_vuln_id)
 
   if utils.is_prod():
     api_url = 'api.osv.dev'
@@ -524,12 +538,15 @@ def osv_get_by_id(vuln_id):
 
   bug = osv.Bug.get_by_id(vuln_id)
   if not bug:
-    abort(404)
-    return None
+    if osv.ImportFinding.get_by_id(vuln_id):
+      # abort(404) is too simplistic for this.
+      raise VulnerabilityNotImported(vuln_id)
+    # abort(404) is too simplistic for this.
+    raise VulnerabilityNotFound(vuln_id)
 
   if bug.status == osv.BugStatus.UNPROCESSED:
-    abort(404)
-    return None
+    # abort(404) is too simplistic for this.
+    raise VulnerabilityNotFound(vuln_id)
 
   if not bug.public:
     abort(403)
@@ -705,6 +722,11 @@ def list_packages(vuln_affected: list[dict]):
 @blueprint.app_errorhandler(404)
 def not_found_error(error: exceptions.HTTPException):
   logging.info('Handled %s - Path attempted: %s', error, request.path)
+  if isinstance(error, VulnerabilityNotFound):
+    return render_template(
+        '404.html',
+        vuln_id=error.vuln_id,
+        has_importfindings=isinstance(error, VulnerabilityNotImported)), 404
   return render_template('404.html'), 404
 
 

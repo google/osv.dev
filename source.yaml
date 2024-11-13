@@ -280,6 +280,7 @@
   bucket: 'resf-osv-data'
   db_prefix: ['RLSA-']
   ignore_git: False
+  human_link: 'https://errata.rockylinux.org/{{ BUG_ID }}'
   link: 'https://storage.googleapis.com/resf-osv-data/'
   editable: False
 
@@ -292,6 +293,7 @@
   bucket: 'resf-osv-data'
   db_prefix: ['RXSA-']
   ignore_git: False
+  human_link: 'https://errata.rockylinux.org/{{ BUG_ID }}'
   link: 'https://storage.googleapis.com/resf-osv-data/'
   editable: False
 

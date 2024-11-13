@@ -19,4 +19,4 @@ spec:
               # Note that with https://github.com/google/osv.dev/pull/2766
               # addition per-repository settings make this *really* take effect, see
               # https://github.com/google/osv.dev/pull/2837
-              - "--strict_validation=True"
+              - "--strict_validation"

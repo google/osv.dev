@@ -128,7 +128,7 @@
           </div>
           {%- endfor -%}
           {%- if vulnerabilities | length == 0 -%}
-          <span class="no-results">No results</span>
+          <span class="no-results">No results (check our <a href="https://google.github.io/osv.dev/faq/">FAQ</a> if this is unexpected)</span>
           {%- endif -%}
           {%- if page < total_pages -%} <turbo-frame id="vulnerability-table-page{{ page + 1 }}"
             data-turbo-action="advance" target="_top" class="next-page-frame">

@@ -119,7 +119,8 @@ def DownloadRESTSource(source: dict,
       r = GetWithRetry(record_url, timeout=30, retries=3)
       with open(fn, mode='w') as record_f:
         if verbose:
-          print(f'Writing {record["id"]} to {record_f.name}')
+          print(
+              f'[{source["name"]}]: Writing {record["id"]} to {record_f.name}')
         record_f.write(r.text)
     else:
       # The full record was supplied in the initial listing.

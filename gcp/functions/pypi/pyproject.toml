@@ -6,7 +6,7 @@ package-mode = false
 python = "^3.11"
 
 cryptography = "==43.0.3"
-google-cloud-secret-manager = "==2.21.0"
+google-cloud-secret-manager = "==2.21.1"
 osv = "==0.0.22"
 requests = "==2.32.3"
 

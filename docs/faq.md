@@ -91,6 +91,16 @@ If you have any questions, please feel free to create an issue!
 
 ## Data
 
+### Why isn't a record available?
+
+If you are unable to retrieve a record you are expecting to be able to find, it
+may be because it has not imported successfully, due to there being a quality issue with it.
+
+If a record has not met [OSV.dev's quality bar](data_quality.md), the 404 page
+for the vulnerability will state this.
+
+You should raise this with the home database responsible for the record.
+
 ### I've found something wrong with the data
 
 Data quality is very important to us. Please remember that OSV.dev is an

@@ -5,7 +5,7 @@ package-mode = false
 [tool.poetry.dependencies]
 python = "^3.11"
 
-aiohttp = "^3.10.5"
+aiohttp = "^3.10.11"
 
 osv = { path = "../../", develop = true }
 

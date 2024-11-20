@@ -12,6 +12,27 @@
 {% block top_bar %} {% endblock %}
 
 {% block content %}
+{% if vuln_id %}
+<div class="mdc-layout-grid not-found-page">
+    <div class="mdc-layout-grid__inner">
+        <div class="mdc-layout-grid__cell--span-12 text-info">
+            <h2 class="heading">{{ vuln_id }} Not Found!</h2>
+            <p class="description">
+            {% if has_importfindings %}
+            The record has not been successfully imported from its source<br/>
+            {% endif %}
+                Please see our
+                <a href="https://google.github.io/osv.dev/faq/">FAQ</a> for more information.
+            </p>
+            <div class="cta">
+                <a class="cta-primary link-button" href="{{ url_for('frontend_handlers.index') }}"
+                    aria-label="Get me back Home!">Back to Home</a>
+            </div>
+        </div>
+    </div>
+    <footer></footer>
+</div>
+{% else %}
 <div class="mdc-layout-grid not-found-page">
     <div class="mdc-layout-grid__inner">
         <div class="mdc-layout-grid__cell--span-12 text-info">
@@ -29,4 +50,5 @@
     </div>
     <footer></footer>
 </div>
+{% endif %}
 {% endblock %}

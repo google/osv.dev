@@ -43,10 +43,6 @@ _DATASTORE_LARGE_BATCH_SIZE = 8
 _DATASTORE_BATCH_SLEEP = 10
 
 
-class OrphanedCommitError(IndexError):
-  """The commit being analysed has no parents."""
-
-
 @dataclass
 class AffectedResult:
   """The tags, commits and affected ranges of a vulnerability."""

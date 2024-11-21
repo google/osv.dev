@@ -397,7 +397,7 @@ def _branches_with_commit(repo, commit):
   try:
     branches = subprocess.check_output(
         ['git', '-C', repo.path, 'branch', '-r', '--contains',
-        commit]).decode().splitlines()
+         commit]).decode().splitlines()
   except subprocess.CalledProcessError:
     branches = []
 

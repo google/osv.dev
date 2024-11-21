@@ -43,6 +43,10 @@ _DATASTORE_LARGE_BATCH_SIZE = 8
 _DATASTORE_BATCH_SLEEP = 10
 
 
+class OrphanedCommitError(IndexError):
+  """The commit being analysed has no parents."""
+
+
 @dataclass
 class AffectedResult:
   """The tags, commits and affected ranges of a vulnerability."""
@@ -283,7 +287,11 @@ class RepoAnalyzer:
       # Invalid commit.
       return None
 
-    target_patch_id = repo.diff(target.parents[0], target).patchid
+    try:
+      target_patch_id = repo.diff(target.parents[0], target).patchid
+    except IndexError:
+      # Orphaned target_commit.
+      return None
 
     search = repo.revparse_single(to_search)
     try:
@@ -386,9 +394,12 @@ def get_commit_and_tag_list(repo,
 def _branches_with_commit(repo, commit):
   """Get all remote branches that include a commit."""
   # pygit2's implementation of this is much slower, so we use `git`.
-  branches = subprocess.check_output(
-      ['git', '-C', repo.path, 'branch', '-r', '--contains',
-       commit]).decode().splitlines()
+  try:
+    branches = subprocess.check_output(
+        ['git', '-C', repo.path, 'branch', '-r', '--contains',
+        commit]).decode().splitlines()
+  except subprocess.CalledProcessError:
+    branches = []
 
   def process_ref(ref):
     return ref.strip().split()[0]

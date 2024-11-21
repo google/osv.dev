@@ -462,35 +462,11 @@ class TaskRunner:
 
     analyze_git = not source_repo.ignore_git
 
-    try:
-      result = osv.analyze(
-          vulnerability,
-          analyze_git=analyze_git,
-          detect_cherrypicks=source_repo.detect_cherrypicks,
-          versions_from_repo=source_repo.versions_from_repo)
-    except (IndexError, subprocess.CalledProcessError):
-      if analyze_git:
-        # IndexError:
-        #   May be an orphaned commit
-        # subprocess.CalledProcessError:
-        #   May be a commit absent from the repository (i.e. from a fork)
-        logging.exception('Potential invalid GIT commit event on %s',
-                          vulnerability.id)
-        # Remove any GIT events from vulnerability.affected
-        affected_without_git_events = [
-            a for a in vulnerability.affected
-            if any(r.type != vulnerability_pb2.Range.Type.GIT for r in a.ranges)
-        ]
-        del vulnerability.affected[:]
-        vulnerability.affected.extend(affected_without_git_events)
-        result = osv.analyze(
-            vulnerability,
-            analyze_git=analyze_git,
-            detect_cherrypicks=source_repo.detect_cherrypicks,
-            versions_from_repo=source_repo.versions_from_repo)
-        if not result.has_changes and not added_fix_info:
-          return result
-      raise
+    result = osv.analyze(
+        vulnerability,
+        analyze_git=analyze_git,
+        detect_cherrypicks=source_repo.detect_cherrypicks,
+        versions_from_repo=source_repo.versions_from_repo)
 
     if not result.has_changes and not added_fix_info:
       return result

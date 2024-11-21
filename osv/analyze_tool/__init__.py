@@ -99,26 +99,11 @@ def analyze(path, checkout_path, key_path, analyze_git, detect_cherrypicks):
     logging.error('Failed to parse %s', path)
     return
 
-  try:
-    result = impact.analyze(
-        vuln,
-        analyze_git=analyze_git,
-        checkout_path=checkout_path,
-        detect_cherrypicks=detect_cherrypicks)
-  except (IndexError, subprocess.CalledProcessError) as e:
-    if analyze_git:
-      logging.warning('Got "%s", retrying without the GIT events', e)
-      affected_without_git_events = [
-          a for a in vuln.affected
-          if any(r.type != vulnerability_pb2.Range.Type.GIT for r in a.ranges)
-      ]
-      del vuln.affected[:]
-      vuln.affected.extend(affected_without_git_events)
-      result = impact.analyze(
-          vuln,
-          analyze_git=analyze_git,
-          checkout_path=checkout_path,
-          detect_cherrypicks=detect_cherrypicks)
+  result = impact.analyze(
+      vuln,
+      analyze_git=analyze_git,
+      checkout_path=checkout_path,
+      detect_cherrypicks=detect_cherrypicks)
 
   if not result.has_changes:
     logging.info('No changes required.')

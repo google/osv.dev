@@ -1704,7 +1704,7 @@ class UpdateTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
     self.expect_dict_equal('dont_index_too_many_git_versions', bug._to_dict())
 
   def test_analysis_crash_handling(self):
-    """Test that crash-inducing GIT events are stripped."""
+    """Test that formerly crash-inducing GIT events are handled gracefully."""
     self.source_repo.ignore_git = False
     self.source_repo.versions_from_repo = True
     self.source_repo.detect_cherrypicks = False

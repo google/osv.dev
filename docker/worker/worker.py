@@ -460,11 +460,9 @@ class TaskRunner:
       if fix_result:
         added_fix_info = add_fix_information(vulnerability, fix_result)
 
-    analyze_git = not source_repo.ignore_git
-
     result = osv.analyze(
         vulnerability,
-        analyze_git=analyze_git,
+        analyze_git=not source_repo.ignore_git,
         detect_cherrypicks=source_repo.detect_cherrypicks,
         versions_from_repo=source_repo.versions_from_repo)
 

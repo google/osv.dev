@@ -27,3 +27,4 @@ spec:
         periodSeconds: 1800
       # Current supported max from https://kubernetes.io/docs/reference/kubernetes-api/workload-resources/horizontal-pod-autoscaler-v2beta2/.
       stabilizationWindowSeconds: 3600
+      

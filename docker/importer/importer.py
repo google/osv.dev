@@ -206,6 +206,10 @@ class Importer:
     except RuntimeError:
       # Happens if filename extension is unsupported.
       pass
+    except Exception:
+      # This function is called from an Exception handler.
+      # Do not cause further exceptions.
+      pass
 
     # TODO(apollock): Then try by poking around at the data.
 

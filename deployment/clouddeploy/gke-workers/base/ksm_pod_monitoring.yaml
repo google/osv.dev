@@ -1,0 +1,15 @@
+apiVersion: monitoring.googleapis.com/v1
+kind: PodMonitoring
+metadata:
+  namespace: gmp-public
+  name: kube-state-metrics
+  labels:
+    app.kubernetes.io/name: kube-state-metrics
+    app.kubernetes.io/part-of: google-cloud-managed-prometheus
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: kube-state-metrics
+  endpoints:
+  - port: metrics-self
+    interval: 30s

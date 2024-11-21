@@ -1,0 +1,29 @@
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: kube-state-metrics
+  namespace: gmp-public
+spec:
+  maxReplicas: 10
+  minReplicas: 1
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: StatefulSet
+    name: kube-state-metrics
+  metrics:
+  - type: Resource
+    resource:
+      name: memory
+      target:
+        type: Utilization
+        averageUtilization: 60
+  behavior:
+    scaleDown:
+      policies:
+      - type: Pods
+        value: 1
+        # Under-utilization needs to persist for `periodSeconds` before any action can be taken.
+        # Current supported max from https://kubernetes.io/docs/reference/kubernetes-api/workload-resources/horizontal-pod-autoscaler-v2beta2/.
+        periodSeconds: 1800
+      # Current supported max from https://kubernetes.io/docs/reference/kubernetes-api/workload-resources/horizontal-pod-autoscaler-v2beta2/.
+      stabilizationWindowSeconds: 3600

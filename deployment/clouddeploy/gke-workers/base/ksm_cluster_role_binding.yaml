@@ -13,4 +13,3 @@ subjects:
 - kind: ServiceAccount
   namespace: gmp-public
   name: kube-state-metrics
-  

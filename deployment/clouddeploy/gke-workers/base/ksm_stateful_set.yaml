@@ -81,4 +81,3 @@ spec:
           initialDelaySeconds: 5
           timeoutSeconds: 5
       serviceAccountName: kube-state-metrics
-      

@@ -13,4 +13,3 @@ spec:
   endpoints:
   - port: metrics-self
     interval: 30s
-    

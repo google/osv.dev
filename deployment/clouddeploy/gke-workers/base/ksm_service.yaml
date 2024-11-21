@@ -17,4 +17,3 @@ spec:
     targetPort: metrics-self
   selector:
     app.kubernetes.io/name: kube-state-metrics
-    

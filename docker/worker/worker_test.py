@@ -1328,6 +1328,7 @@ class UpdateTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
 
   def test_update_linux(self):
     """Test a Linux entry."""
+    self.skipTest("Prefix not supported by schema")
     self.source_repo.ignore_git = False
     self.source_repo.versions_from_repo = False
     self.source_repo.detect_cherrypicks = False
@@ -1701,6 +1702,37 @@ class UpdateTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
     bug.affected_packages[0].versions = ['%05d' % i for i in range(5001)]
     bug.put()
     self.expect_dict_equal('dont_index_too_many_git_versions', bug._to_dict())
+
+  def test_analysis_crash_handling(self):
+    """Test that formerly crash-inducing GIT events are handled gracefully."""
+    self.source_repo.ignore_git = False
+    self.source_repo.versions_from_repo = True
+    self.source_repo.detect_cherrypicks = False
+    self.source_repo.db_prefix.append('CVE-')
+    self.source_repo.put()
+
+    # Use any valid OSV input test file here.
+    self.mock_repo.add_file(
+        'CVE-2016-10046.json',
+        self._load_test_data(
+            os.path.join(TEST_DATA_DIR, 'CVE-2016-10046.json')),
+    )
+    self.mock_repo.commit('User', 'user@email')
+
+    task_runner = worker.TaskRunner(ndb_client, None, self.tmp_dir.name, None,
+                                    None)
+    message = mock.Mock()
+    message.attributes = {
+        'source': 'source',
+        'path': 'CVE-2016-10046.json',
+        'original_sha256': _sha256('CVE-2016-10046.json'),
+        'deleted': 'false',
+    }
+    task_runner._source_update(message)
+
+    bug = osv.Bug.get_by_id('CVE-2016-10046')
+
+    self.expect_dict_equal('analysis_crash_handling', bug._to_dict())
 
 
 if __name__ == '__main__':

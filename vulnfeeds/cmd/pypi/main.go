@@ -73,12 +73,35 @@ func loadExisting(vulnsDir string) (map[string]bool, error) {
 	return ids, nil
 }
 
+func anyUnbounded(v *vulns.Vulnerability) bool {
+	for _, affected := range v.Affected {
+		for _, ranges := range affected.Ranges {
+			hasFixed := false
+			hasLastAffected := false
+			for _, event := range ranges.Events {
+				if event.Fixed != "" {
+					hasFixed = true
+				}
+				if event.LastAffected != "" {
+					hasLastAffected = true
+				}
+			}
+			if !hasFixed && !hasLastAffected {
+				return true
+			}
+		}
+	}
+
+	return false
+}
+
 func main() {
 	jsonPath := flag.String("nvd_json", "", "Path to NVD CVE JSON.")
 	pypiLinksPath := flag.String("pypi_links", "", "Path to pypi_links.json.")
 	pypiVersionsPath := flag.String("pypi_versions", "", "Path to pypi_versions.json.")
 	falsePositivesPath := flag.String("false_positives", "", "Path to false positives file.")
 	withoutNotes := flag.Bool("without_notes", false, "Output vulnerabilities without notes only.")
+	excludeUnbounded := flag.Bool("exclude_unbounded", false, "Exclude vulnerabilities with unbounded affected ranges.")
 	outDir := flag.String("out_dir", "", "Path to output results.")
 
 	flag.Parse()
@@ -140,10 +163,16 @@ func main() {
 			v, notes := vulns.FromCVE(id, cve.CVE)
 			v.AddPkgInfo(pkgInfo)
 			versions, versionNotes := cves.ExtractVersionInfo(cve.CVE, validVersions)
+
 			notes = append(notes, versionNotes...)
 			v.Affected[0].AttachExtractedVersionInfo(versions)
 			if len(v.Affected[0].Ranges) == 0 {
 				log.Printf("No affected versions detected.")
+			}
+
+			if *excludeUnbounded && anyUnbounded(v) {
+				log.Printf("Skipping %s as we could not find a fixed version.", cve.CVE.ID)
+				continue
 			}
 
 			pkgDir := filepath.Join(*outDir, pkg)

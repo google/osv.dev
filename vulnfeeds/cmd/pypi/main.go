@@ -171,7 +171,7 @@ func main() {
 			}
 
 			if *excludeUnbounded && anyUnbounded(v) {
-				log.Printf("Skipping %s as we could not find a fixed version.", cve.CVE.ID)
+				log.Printf("Skipping %s as we could not find an upperbound version.", cve.CVE.ID)
 				continue
 			}
 

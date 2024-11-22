@@ -82,6 +82,7 @@
   db_prefix: ['CGA-']
   ignore_git: True
   link: 'https://packages.cgr.dev/chainguard/osv/'
+  human_link: 'https://images.chainguard.dev/security/{{ BUG_ID }}'
   editable: False
   strict_validation: False
 

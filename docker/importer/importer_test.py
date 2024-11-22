@@ -1116,6 +1116,7 @@ class ImportFindingsTest(unittest.TestCase):
     """Test that creating an import finding works."""
     expected = osv.ImportFinding(
         bug_id='CVE-2024-1234',
+        source='cve-osv',
         findings=[
             osv.ImportFindings.INVALID_VERSION,
         ],
@@ -1124,9 +1125,8 @@ class ImportFindingsTest(unittest.TestCase):
     )
     expected.put()
 
-    for actual in osv.ImportFinding.query(
-        osv.ImportFinding.bug_id == expected.bug_id):
-      self.assertEqual(expected, actual)
+    actual = osv.ImportFinding.get_by_id(expected.bug_id)
+    self.assertEqual(expected, actual)
 
 
 if __name__ == '__main__':

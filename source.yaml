@@ -78,6 +78,7 @@
   ignore_git: True
   link: 'https://packages.cgr.dev/chainguard/osv/'
   editable: False
+  strict_validation: False
 
 - name: 'curl'
   versions_from_repo: False

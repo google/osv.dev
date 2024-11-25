@@ -917,6 +917,7 @@ class ImportFindings(enum.IntEnum):
 class ImportFinding(ndb.Model):
   """Quality findings about an individual record."""
   bug_id: str = ndb.StringProperty()
+  source: str = ndb.StringProperty()
   findings: list[ImportFindings] = ndb.IntegerProperty(repeated=True)
   first_seen: datetime = ndb.DateTimeProperty()
   last_attempt: datetime = ndb.DateTimeProperty()

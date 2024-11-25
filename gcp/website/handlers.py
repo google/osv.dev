@@ -18,6 +18,7 @@ from flask import send_file, send_from_directory
 
 blueprint = Blueprint('handlers', __name__)
 
+
 @blueprint.route('/healthz')
 def healthz():
   """Health check handler."""

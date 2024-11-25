@@ -233,6 +233,7 @@ class ImporterTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
     self.assertIn(
         osv.ImportFinding(
             bug_id='OSV-2017-145',
+            source='oss-fuzz',
             findings=[osv.ImportFindings.INVALID_JSON],
             first_seen=importer.utcnow(),
             last_attempt=importer.utcnow()).to_dict(),
@@ -557,6 +558,7 @@ class BucketImporterTest(unittest.TestCase):
     self.assertIn(
         osv.ImportFinding(
             bug_id='GO-2021-0085',
+            source='test',
             findings=[osv.ImportFindings.INVALID_JSON],
             first_seen=importer.utcnow(),
             last_attempt=importer.utcnow()).to_dict(),
@@ -1108,6 +1110,7 @@ class ImportFindingsTest(unittest.TestCase):
 
   def setUp(self):
     tests.reset_emulator()
+    self.tmp_dir = tempfile.mkdtemp()
 
     tests.mock_datetime(self)
     warnings.filterwarnings('ignore', category=SystemTimeWarning)
@@ -1122,10 +1125,16 @@ class ImportFindingsTest(unittest.TestCase):
         ],
         first_seen=importer.utcnow(),
         last_attempt=importer.utcnow(),
-    )
-    expected.put()
+    ).to_dict()
 
-    actual = osv.ImportFinding.get_by_id(expected.bug_id)
+    imp = importer.Importer('fake_public_key', 'fake_private_key', self.tmp_dir,
+                            importer.DEFAULT_PUBLIC_LOGGING_BUCKET, 'bucket',
+                            False, False)
+    # pylint: disable-next=protected-access
+    imp._record_quality_finding('cve-osv', 'CVE-2024-1234',
+                                osv.ImportFindings.INVALID_VERSION)
+
+    actual = osv.ImportFinding.get_by_id(expected['bug_id']).to_dict()
     self.assertEqual(expected, actual)
 
 

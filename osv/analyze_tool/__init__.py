@@ -25,6 +25,7 @@ import yaml
 # pylint: disable=relative-beyond-top-level
 from .. import impact
 from .. import sources
+from .. import vulnerability_pb2
 
 
 def main():
@@ -103,6 +104,7 @@ def analyze(path, checkout_path, key_path, analyze_git, detect_cherrypicks):
       analyze_git=analyze_git,
       checkout_path=checkout_path,
       detect_cherrypicks=detect_cherrypicks)
+
   if not result.has_changes:
     logging.info('No changes required.')
     return

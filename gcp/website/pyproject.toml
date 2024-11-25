@@ -1,5 +1,5 @@
 [tool.poetry]
-name = "appengine-backend"
+name = "website-backend"
 package-mode = false
 
 [tool.poetry.dependencies]

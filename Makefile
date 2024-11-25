@@ -28,8 +28,8 @@ importer-tests:
 alias-tests:
 	cd docker/alias && ./run_tests.sh
 
-appengine-tests:
-	cd gcp/appengine && ./run_tests.sh
+website-tests:
+	cd gcp/website && ./run_tests.sh
 
 vulnfeed-tests:
 	cd vulnfeeds && ./run_tests.sh
@@ -42,15 +42,15 @@ api-server-tests:
 lint:
 	tools/lint_and_format.sh
 
-run-appengine:
-	cd gcp/appengine/frontend3 && npm install && npm run build
-	cd gcp/appengine/blog && hugo --buildFuture -d ../dist/static/blog
-	cd gcp/appengine && $(install-cmd) && GOOGLE_CLOUD_PROJECT=oss-vdb $(run-cmd) python main.py
+run-website:
+	cd gcp/website/frontend3 && npm install && npm run build
+	cd gcp/website/blog && hugo --buildFuture -d ../dist/static/blog
+	cd gcp/website && $(install-cmd) && GOOGLE_CLOUD_PROJECT=oss-vdb $(run-cmd) python main.py
 
-run-appengine-staging:
-	cd gcp/appengine/frontend3 && npm install && npm run build
-	cd gcp/appengine/blog && hugo --buildFuture -d ../dist/static/blog
-	cd gcp/appengine && $(install-cmd) && GOOGLE_CLOUD_PROJECT=oss-vdb-test $(run-cmd) python main.py
+run-website-staging:
+	cd gcp/website/frontend3 && npm install && npm run build
+	cd gcp/website/blog && hugo --buildFuture -d ../dist/static/blog
+	cd gcp/website && $(install-cmd) && GOOGLE_CLOUD_PROJECT=oss-vdb-test $(run-cmd) python main.py
 
 # Run with `make run-api-server ARGS=--no-backend` to launch esp without backend.
 run-api-server:
@@ -59,4 +59,4 @@ run-api-server:
 	cd gcp/api && $(install-cmd) && GOOGLE_CLOUD_PROJECT=oss-vdb $(run-cmd) python test_server.py $(HOME)/.config/gcloud/application_default_credentials.json $(ARGS)
 
 # TODO: API integration tests.
-all-tests: lib-tests worker-tests importer-tests alias-tests appengine-tests vulnfeed-tests
+all-tests: lib-tests worker-tests importer-tests alias-tests website-tests vulnfeed-tests

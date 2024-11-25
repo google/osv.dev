@@ -47,12 +47,11 @@ The [API server] runs on [Cloud Run], and is served by [Cloud Endpoints].
 [Cloud Run]: https://cloud.google.com/run
 [Cloud Endpoints]: https://cloud.google.com/endpoints
 
-## App Engine
+## Website
 
-The [main web UI] runs on [App Engine]. App Engine [cron jobs] also schedule
-recurring tasks for the workers, allocate OSV IDs, and make vulnerabilities
-public at the appropriate times.
+The [main web UI] also runs on [Cloud Run], and is served through 
+[Cloud Load Balancing].
 
 [main web UI]: https://osv.dev
-[App Engine]: https://github.com/google/osv/tree/master/gcp/appengine
-[cron jobs]: https://github.com/google/osv/blob/master/gcp/appengine/cron.yaml
+[Cloud Run]: https://cloud.google.com/run
+[Cloud Load Balancing]: https://cloud.google.com/load-balancing

@@ -235,7 +235,7 @@ steps:
 - name: 'gcr.io/cloud-builders/docker'
   args: ['buildx', 'build', '--build-arg', 'BUILDKIT_INLINE_CACHE=1',
          '-t', 'gcr.io/oss-vdb/osv-website:latest', '-t', 'gcr.io/oss-vdb/osv-website:$COMMIT_SHA',
-         '-f', 'gcp/appengine/Dockerfile', '--cache-from', 'gcr.io/oss-vdb/osv-website:latest', '--pull', '.']
+         '-f', 'gcp/website/Dockerfile', '--cache-from', 'gcr.io/oss-vdb/osv-website:latest', '--pull', '.']
   env:
   - BUILDKIT_PROGRESS=plain
   id: 'build-website'

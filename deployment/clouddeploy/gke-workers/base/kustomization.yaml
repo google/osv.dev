@@ -16,3 +16,11 @@ resources:
 - nvd-mirror.yaml
 - backup.yaml
 - generate-sitemap.yaml
+- ksm_cluster_pod_monitoring.yaml
+- ksm_cluster_role_binding.yaml
+- ksm_cluster_role.yaml
+- ksm_horizontal_pod_autoscaler.yaml
+- ksm_pod_monitoring.yaml
+- ksm_service_account.yaml
+- ksm_service.yaml
+- ksm_stateful_set.yaml

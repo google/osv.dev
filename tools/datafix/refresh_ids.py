@@ -10,28 +10,30 @@ import argparse
 import json
 import functools
 import time
+import typing
 
 MAX_BATCH_SIZE = 500
 
 
 def get_relevant_ids(verbose: bool) -> list[str]:
   relevant_ids = []
-  query = osv.Bug.query()
 
-  query: ndb.Query = query.filter()
+  query = osv.Bug.query()
   query.projection = ["db_id"]
   print(f"Running initial query on {query.kind}...")
-  result: list[osv.Bug] = list(query.fetch(limit=5000))
 
-  print(f"Retrieved {len(result)} bugs to examine for reputting")
+  result: typing.Iterable[osv.Bug] = query.iter()
+  counter = 0
 
   for res in result:
+    counter += 1
+    # Check if the key needs to be updated
     if res.key.id() != res.db_id:  # type: ignore
       relevant_ids.append(res.db_id)
       if verbose:
         print(res.db_id + ' - ' + res.key.id())  # type: ignore
 
-  print(str(len(relevant_ids)) + " / " + str(len(result)))
+  print(f"Found {len(relevant_ids)} / {counter} relevant bugs to refresh.")
   return relevant_ids
 
 
@@ -45,8 +47,6 @@ def reput_bugs(dryrun: bool, verbose: bool) -> None:
   # Store the state incase we cancel halfway to avoid having to do the initial query again
   json.dump(relevant_ids, open('relevant_ids.json', 'w'))
 
-  relevant_ids = relevant_ids[:2]
-  print(relevant_ids)
   num_reputted = 0
   time_start = time.perf_counter()
 

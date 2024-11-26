@@ -28,8 +28,9 @@ consists of:
 | `docker/`       | CI docker files (`ci`, `deployment`, `terraform`) <br /> Workers for bisection and impact analysis (`worker`, `importer`, `exporter`, `alias`, `worker-base`) <br /> The determine version `indexer`<br /> `cron/` jobs for database backups and processing oss-fuzz records |
 | `docs/`         | Jekyll files for https://google.github.io/osv.dev/ <br /> `build_swagger.py` and `tools.go` |
 | `gcp/api`       | OSV API server files (including files for the local ESP server) <br /> protobuf files in `/v1`|
-| `gcp/website  ` | The backend of the osv.dev web interface, with the frontend in `frontend3` <br /> Blog posts (in `blog`) <br /> The datastore indexes file (`index.yaml`) |
+| `gcp/website  ` | The backend of the osv.dev web interface, with the frontend in `frontend3` <br /> Blog posts (in `blog`) |
 | `gcp/functions` | The Cloud Function for publishing PyPI vulnerabilities (maintained, but not developed) |
+| `gcp/datastore` | The datastore index file (`index.yaml`) |
 | `osv/`          | The core OSV Python library, used in basically all Python services <br /> OSV ecosystem package versioning helpers in `ecosystems/` <br /> Datastore model definitions in `models.py` |
 | `tools/`        | Misc scripts/tools, mostly intended for development (datastore stuff, linting) <br /> The `indexer-api-caller` for indexer calling |
 | `vulnfeeds/`    | Go module for (mostly) the NVD CVE conversion <br /> The Alpine feed converter (`cmd/alpine`) <br /> The Debian feed converter (`tools/debian`, which is written in Python) |

@@ -218,11 +218,13 @@ class Importer:
 
   def _record_quality_finding(
       self,
+      source: osv.SourceRepository.name,
       bug_id: str,
       maybe_new_finding: osv.ImportFindings = osv.ImportFindings.INVALID_JSON):
     """Record the quality finding about a record in Datastore.
 
     Args:
+      source: the name of the source of the vulnerability record
       bug_id: the ID of the vulnerability
       maybe_new_finding: the finding to record
 
@@ -240,6 +242,7 @@ class Importer:
     else:
       osv.ImportFinding(
           bug_id=bug_id,
+          source=source,
           findings=[maybe_new_finding],
           first_seen=findingtimenow,
           last_attempt=findingtimenow).put()
@@ -575,7 +578,7 @@ class Importer:
           content = f.read()
         bug_id = self._infer_id_from_invalid_data(
             os.path.basename(path), content)
-        self._record_quality_finding(bug_id)
+        self._record_quality_finding(source_repo.name, bug_id)
         # Don't include error stack trace as that might leak sensitive info
         import_failure_logs.append('Failed to parse vulnerability "' + path +
                                    '"')
@@ -660,7 +663,7 @@ class Importer:
           # This feels gross to redownload it again.
           bug_id = self._infer_id_from_invalid_data(blob.name,
                                                     blob.download_as_bytes())
-          self._record_quality_finding(bug_id)
+          self._record_quality_finding(source_repo.name, bug_id)
           import_failure_logs.append(
               'Failed to parse vulnerability (when considering for import) "' +
               blob.name + '"')
@@ -880,7 +883,7 @@ class Importer:
           bug_id = self._infer_id_from_invalid_data(
               source_repo.link + vuln.id + source_repo.extension,
               single_vuln.content)
-          self._record_quality_finding(bug_id)
+          self._record_quality_finding(source_repo.name, bug_id)
         logging.info('Requesting analysis of REST record: %s',
                      vuln.id + source_repo.extension)
         self._request_analysis_external(

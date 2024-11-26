@@ -15,6 +15,10 @@ import typing
 MAX_BATCH_SIZE = 500
 
 
+class DryRunException(Exception):
+  """This exception is raised to cancel a transaction during dry runs"""
+
+
 def get_relevant_ids(verbose: bool) -> list[str]:
   relevant_ids = []
 
@@ -40,12 +44,15 @@ def get_relevant_ids(verbose: bool) -> list[str]:
 def reput_bugs(dryrun: bool, verbose: bool) -> None:
   """ Reput all bugs from a given source."""
 
+  relevant_ids = []
   # Uncomment below to load the state and skip the get_relevant_ids func
-  # relevant_ids = json.load(open('relevant_ids.json', 'r'))
+  # with open('relevant_ids.json', 'r') as f:
+  #   relevant_ids = json.load(open('relevant_ids.json', 'r'))
   relevant_ids = get_relevant_ids(verbose)
 
   # Store the state incase we cancel halfway to avoid having to do the initial query again
-  json.dump(relevant_ids, open('relevant_ids.json', 'w'))
+  with open('relevant_ids.json', 'w') as f:
+    json.dump(relevant_ids, f)
 
   num_reputted = 0
   time_start = time.perf_counter()
@@ -68,7 +75,7 @@ def reput_bugs(dryrun: bool, verbose: bool) -> None:
 
     if dryrun:
       print("Dry run mode. Preventing transaction from committing")
-      raise Exception("Dry run mode")  # pylint: disable=broad-exception-raised
+      raise DryRunException
 
     print(f"Time elapsed: {(time.perf_counter() - time_start):.2f} seconds.")
 
@@ -80,14 +87,13 @@ def reput_bugs(dryrun: bool, verbose: bool) -> None:
           f"Reput {num_reputted} bugs... - {num_reputted/len(relevant_ids)*100:.2f}%"
       )
       ndb.transaction(functools.partial(_reput_ndb, batch))
-    except Exception as e:
+    except DryRunException:
       # Don't have the first batch's transaction-aborting exception stop
       # subsequent batches from being attempted.
-      if dryrun and e.args[0].startswith("Dry run mode"):
-        print("Dry run mode. Preventing transaction from committing")
-      else:
-        print([r for r in relevant_ids[batch:batch + MAX_BATCH_SIZE]])
-        print(f"Exception {e} occurred. Continuing to next batch.")
+      print("Dry run mode. Preventing transaction from committing")
+    except Exception as e:
+      print([r for r in relevant_ids[batch:batch + MAX_BATCH_SIZE]])
+      print(f"Exception {e} occurred. Continuing to next batch.")
 
   print("Reputted!")
 

@@ -26,7 +26,7 @@ def api_url() -> str:
   """
   Returns the URL of the OSV API for the current GCP project.
 
-  Falls back to 'api.osv.dev' if URL cannot be determined.
+  Falls back to 'api.test.osv.dev' if URL cannot be determined.
   """
   try:
     _, project = google.auth.default()
@@ -34,10 +34,10 @@ def api_url() -> str:
     project = '<unknown>'
 
   # TODO(michaelkedar): Is there a way to avoid hard-coding this?
-  if project == 'oss-vdb-test':
-    return 'api.test.osv.dev'
+  if project == 'oss-vdb':
+    return 'api.osv.dev'
 
-  return 'api.osv.dev'
+  return 'api.test.osv.dev'
 
 
 def is_cloud_run() -> bool:

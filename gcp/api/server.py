@@ -388,7 +388,7 @@ def query_info(query) -> tuple[str, str | None, str | None]:
       if purl.version and query.version:
         raise ValueError('purl version and version cannot both be specified')
       qtype = 'purl'
-      ecosystem = purl.type
+      ecosystem = purl_helpers.parse_purl_ecosystem(purl)
       version = purl.version or version
     except ValueError:
       return 'invalid', None, None
@@ -710,28 +710,21 @@ def do_query(query: osv_service_v1_pb2.Query,
              context: QueryContext,
              include_details=True) -> tuple[list, str | None]:
   """Do a query."""
+  package_name = ''
+  ecosystem = ''
+  purl_str = ''
+  version = ''
+
   if query.HasField('package'):
     package_name = query.package.name
     ecosystem = query.package.ecosystem
     purl_str = query.package.purl
-  else:
-    package_name = ''
-    ecosystem = ''
-    purl_str = ''
 
-  if ecosystem and not ecosystems.get(ecosystem):
-    context.service_context.abort(grpc.StatusCode.INVALID_ARGUMENT,
-                                  'Invalid ecosystem.')
+  if query.HasField('version'):
+    version = query.version
 
-  purl = None
-  purl_version = None
-  if purl_str:
-    try:
-      purl = PackageURL.from_string(purl_str)
-      purl_version = purl.version
-    except ValueError:
-      context.service_context.abort(grpc.StatusCode.INVALID_ARGUMENT,
-                                    'Invalid Package URL.')
+  # convert purl to package names
+  purl = PackageURL.from_string(purl_str)
 
   if purl and package_name:  # Purls already include the package name
     context.service_context.abort(
@@ -744,18 +737,30 @@ def do_query(query: osv_service_v1_pb2.Query,
         grpc.StatusCode.INVALID_ARGUMENT,
         'ecosystem specified in a purl query',
     )
-  if purl_version and query.WhichOneof('param') == 'version':
+  if purl.version and version:
     # version included both in purl and query
     context.service_context.abort(
         grpc.StatusCode.INVALID_ARGUMENT,
         'version specified in params and purl query',
     )
 
+  if purl:
+    try:
+      package_name = purl.name
+      ecosystem = purl_helpers.parse_purl_ecosystem(purl)
+      version = purl.version
+    except ValueError:
+      context.service_context.abort(grpc.StatusCode.INVALID_ARGUMENT,
+                                    'Invalid Package URL.')
+
+  if ecosystem and not ecosystems.get(ecosystem):
+    context.service_context.abort(grpc.StatusCode.INVALID_ARGUMENT,
+                                  'Invalid ecosystem.')
+
   # Hack to work around ubuntu having extremely large individual entries
-  if (ecosystem.startswith('Ubuntu') or
-      (purl and purl.type == 'deb' and purl.namespace == 'ubuntu')):
+  if ecosystem.startswith('Ubuntu'):
     # Specifically the linux entries
-    if 'linux' in package_name or (purl and 'linux' in purl.name):
+    if 'linux' in package_name:
       context.single_page_limit_override = \
         _MAX_VULN_LISTED_PRE_EXCEEDED_UBUNTU_EXCEPTION
 
@@ -774,27 +779,14 @@ def do_query(query: osv_service_v1_pb2.Query,
       return None
 
     bugs = yield query_by_commit(context, commit_bytes, to_response=to_response)
-  elif purl and purl_version:
-    bugs = yield query_by_version(
-        context,
-        package_name,
-        ecosystem,
-        purl,
-        purl_version,
-        to_response=to_response)
   # Version query needs to include a package.
-  elif (package_name != '' or purl) and query.WhichOneof('param') == 'version':
+  elif package_name and version:
     bugs = yield query_by_version(
-        context,
-        package_name,
-        ecosystem,
-        purl,
-        query.version,
-        to_response=to_response)
-  elif (package_name != '' and ecosystem != '') or (purl and not purl_version):
+        context, package_name, ecosystem, version, to_response=to_response)
+  elif package_name:
     # Package specified without version.
     bugs = yield query_by_package(
-        context, package_name, ecosystem, purl, to_response=to_response)
+        context, package_name, ecosystem, to_response=to_response)
   else:
     context.service_context.abort(grpc.StatusCode.INVALID_ARGUMENT,
                                   'Invalid query.')
@@ -872,17 +864,6 @@ def _get_bugs(
   return responses
 
 
-def _datastore_normalized_purl(purl: PackageURL):
-  """
-  Returns a new PURL with most attributes removed, used for datastore queries
-  """
-  values = purl.to_dict()
-  values.pop('version', None)
-  values.pop('subpath', None)
-  values.pop('qualifiers', None)
-  return PackageURL(**values)
-
-
 @ndb.tasklet
 def query_by_commit(
     context: QueryContext,
@@ -930,50 +911,9 @@ def query_by_commit(
   return bugs
 
 
-def _match_purl(purl_query: PackageURL, purl_db: PackageURL) -> bool:
-  """Check if purl match at the specifity level of purl_query
-
-  If purl_query doesn't have qualifiers, then we will match against purl_db
-  without qualifiers, otherwise match with qualifiers
-  """
-
-  # Define _clean_purl inside to make sure it's only used within _match_purl
-  def _clean_purl(purl: PackageURL):
-    """
-    Clean a purl object for matching
-
-    Removes version, subpath, and qualifiers with the exception of
-    the 'arch' qualifier
-    """
-    values = purl.to_dict()
-    values.pop('version', None)
-    values.pop('subpath', None)
-    qualifiers = values.pop('qualifiers', None)
-    new_qualifiers = {}
-    if qualifiers and 'arch' in qualifiers:  # CPU arch for debian packages
-      new_qualifiers['arch'] = qualifiers['arch']
-    return PackageURL(qualifiers=new_qualifiers, **values)
-
-  purl_query = _clean_purl(purl_query)
-  # Most of the time this will have no effect, since PURLs in the db
-  # are already cleaned
-  purl_db = _clean_purl(purl_db)
-  if not purl_query.qualifiers:
-    # No qualifiers, and our PURLs never have versions, so just match name
-    return purl_query.name == purl_db.name
-
-  if (purl_db.qualifiers and isinstance(purl_db.qualifiers, dict) and
-      isinstance(purl_query.qualifiers, dict)):
-    # A arch of 'source' matches all other architectures
-    if purl_db.qualifiers['arch'] == 'source':
-      purl_db.qualifiers['arch'] = purl_query.qualifiers['arch']
-
-  return purl_query == purl_db
-
-
 def _is_semver_affected(affected_packages: list[osv.AffectedPackage],
                         package_name: str | None, ecosystem: str | None,
-                        purl: PackageURL | None, version_str: str):
+                        version_str: str):
   """Returns whether or not the given version is within an affected SEMVER
 
   range.
@@ -986,10 +926,6 @@ def _is_semver_affected(affected_packages: list[osv.AffectedPackage],
       continue
 
     if ecosystem and ecosystem != affected_package.package.ecosystem:
-      continue
-
-    if purl and not (affected_package.package.purl and _match_purl(
-        purl, PackageURL.from_string(affected_package.package.purl))):
       continue
 
     for affected_range in affected_package.ranges:
@@ -1018,7 +954,6 @@ def _is_semver_affected(affected_packages: list[osv.AffectedPackage],
 def _is_version_affected(affected_packages,
                          package_name,
                          ecosystem,
-                         purl: PackageURL | None,
                          version,
                          normalize=False):
   """
@@ -1036,10 +971,6 @@ def _is_version_affected(affected_packages,
               affected_package.package.ecosystem) != ecosystem):
         continue
 
-    if purl and not (affected_package.package.purl and _match_purl(
-        purl, PackageURL.from_string(affected_package.package.purl))):
-      continue
-
     if normalize:
       if any(
           osv.normalize_tag(version) == osv.normalize_tag(v)
@@ -1055,7 +986,7 @@ def _is_version_affected(affected_packages,
 @ndb.tasklet
 def _query_by_semver(context: QueryContext, query: ndb.Query,
                      package_name: str | None, ecosystem: str | None,
-                     purl: PackageURL | None, version: str) -> list[osv.Bug]:
+                     version: str) -> list[osv.Bug]:
   """
   Perform a query by semver version.
 
@@ -1067,7 +998,6 @@ def _query_by_semver(context: QueryContext, query: ndb.Query,
       semver filters to be added before query is performed.
     package_name: Optional name of the package to query.
     ecosystem: Optional ecosystem of the package to query.
-    purl: Optional PackageURL.
     version: The semver version to query for.
 
   Returns:
@@ -1092,7 +1022,7 @@ def _query_by_semver(context: QueryContext, query: ndb.Query,
       break
 
     bug: osv.Bug = it.next()  # type: ignore
-    if _is_semver_affected(bug.affected_packages, package_name, ecosystem, purl,
+    if _is_semver_affected(bug.affected_packages, package_name, ecosystem,
                            version):
       results.append(bug)
       context.total_responses.add(1)
@@ -1106,7 +1036,6 @@ def _query_by_generic_version(
     base_query: ndb.Query,
     package_name: str | None,
     ecosystem: str | None,
-    purl: PackageURL | None,
     version: str,
 ) -> list[osv.Bug]:
   """
@@ -1120,7 +1049,6 @@ def _query_by_generic_version(
       version filters to be added before query is performed.
     package_name: Optional name of the package to query.
     ecosystem: Optional ecosystem of the package to query.
-    purl: Optional PackageURL.
     version: The non-semver version to query for.
   
   Returns:
@@ -1128,15 +1056,15 @@ def _query_by_generic_version(
   """
   # Try without normalizing.
   results = yield query_by_generic_helper(context, base_query, package_name,
-                                          ecosystem, purl, version, False)
+                                          ecosystem, version, False)
 
   # If there are results, then we should return with this query,
   # as no normalization seem to be the correct format.
   if results:
     return results
 
-  results = yield query_by_generic_helper(context, base_query, package_name,
-                                          ecosystem, purl,
+  results = yield query_by_generic_helper(context, base_query,
+                                          package_name, ecosystem,
                                           osv.normalize_tag(version), True)
 
   if results:
@@ -1144,7 +1072,7 @@ def _query_by_generic_version(
 
   # Try again after canonicalizing + normalizing version.
   results = yield query_by_generic_helper(context, base_query, package_name,
-                                          ecosystem, purl,
+                                          ecosystem,
                                           canonicalize_version(version), True)
 
   return results
@@ -1153,8 +1081,7 @@ def _query_by_generic_version(
 @ndb.tasklet
 def query_by_generic_helper(context: QueryContext, base_query: ndb.Query,
                             package_name: str | None, ecosystem: str | None,
-                            purl: PackageURL | None, version: str,
-                            is_normalized: bool) -> list[osv.Bug]:
+                            version: str, is_normalized: bool) -> list[osv.Bug]:
   """
   Helper function for query_by_generic. 
   This function can be called multiple times.
@@ -1176,7 +1103,6 @@ def query_by_generic_helper(context: QueryContext, base_query: ndb.Query,
         bug.affected_packages,
         package_name,
         ecosystem,
-        purl,
         version,
         normalize=is_normalized):
       results.append(bug)
@@ -1189,7 +1115,6 @@ def query_by_version(
     context: QueryContext,
     package_name: str | None,
     ecosystem: str | None,
-    purl: PackageURL | None,
     version: str,
     to_response: ToResponseCallable = bug_to_response
 ) -> list[vulnerability_pb2.Vulnerability]:
@@ -1202,7 +1127,6 @@ def query_by_version(
     context: QueryContext for the current query.
     package_name: Optional name of the package to query.
     ecosystem: Optional ecosystem of the package to query.
-    purl: Optional PackageURL.
     version: The version str to query by.
     to_response: Optional function to convert osv.Bug to a 
       vulnerability response.
@@ -1218,13 +1142,6 @@ def query_by_version(
         # pylint: disable=singleton-comparison
         osv.Bug.public == True,  # noqa: E712
     )
-  elif purl:
-    query = osv.Bug.query(
-        osv.Bug.status == osv.BugStatus.PROCESSED,
-        osv.Bug.purl == _datastore_normalized_purl(purl).to_string(),
-        # pylint: disable=singleton-comparison
-        osv.Bug.public == True,  # noqa: E712
-    )
   else:
     return []
 
@@ -1232,12 +1149,6 @@ def query_by_version(
   if ecosystem:
     query = query.filter(osv.Bug.ecosystem == ecosystem)
     ecosystem_info = ecosystems.get(ecosystem)
-
-  if purl:
-    purl_ecosystem = purl_helpers.purl_to_ecosystem(purl.type)
-    if purl_ecosystem:
-      ecosystem = purl_ecosystem
-      ecosystem_info = ecosystems.get(ecosystem)
 
   ecosystem_info = ecosystems.get(ecosystem)
   is_semver = ecosystem_info and ecosystem_info.is_semver
@@ -1248,12 +1159,12 @@ def query_by_version(
     if is_semver:
       # Ecosystem supports semver only.
       bugs = yield _query_by_semver(context, query, package_name, ecosystem,
-                                    purl, version)
+                                    version)
 
       # If the previous query has fully finished (or skipped),
       # try generic version
       new_bugs = yield _query_by_generic_version(context, query, package_name,
-                                                 ecosystem, purl, version)
+                                                 ecosystem, version)
       for bug in new_bugs:
         if bug not in bugs:
           bugs.append(bug)
@@ -1263,17 +1174,17 @@ def query_by_version(
                                                 ecosystem, version)
     else:
       bugs = yield _query_by_generic_version(context, query, package_name,
-                                             ecosystem, purl, version)
+                                             ecosystem, version)
 
   else:
     logging.warning("Package query without ecosystem specified")
     # Unspecified ecosystem. Try semver first.
     new_bugs = yield _query_by_semver(context, query, package_name, ecosystem,
-                                      purl, version)
+                                      version)
     bugs.extend(new_bugs)
 
     new_bugs = yield _query_by_generic_version(context, query, package_name,
-                                               ecosystem, purl, version)
+                                               ecosystem, version)
     for bug in new_bugs:
       if bug not in bugs:
         bugs.append(bug)
@@ -1355,7 +1266,6 @@ def _query_by_comparing_versions(context: QueryContext, query: ndb.Query,
 @ndb.tasklet
 def query_by_package(
     context: QueryContext, package_name: str | None, ecosystem: str | None,
-    purl: PackageURL | None,
     to_response: ToResponseCallable) -> list[vulnerability_pb2.Vulnerability]:
   """
   Query by package.
@@ -1366,8 +1276,6 @@ def query_by_package(
     context: QueryContext for the current query.
     package_name: Optional name of the package to query.
     ecosystem: Optional ecosystem of the package to query.
-    purl: Optional PackageURL. If purl is None, then both 
-      package_name and ecosystem need to be set.
     to_response: Function to convert osv.Bug to a 
       vulnerability response.
 
@@ -1380,13 +1288,6 @@ def query_by_package(
         osv.Bug.status == osv.BugStatus.PROCESSED,
         osv.Bug.project == package_name,
         osv.Bug.ecosystem == ecosystem,
-        # pylint: disable=singleton-comparison
-        osv.Bug.public == True,  # noqa: E712
-    )
-  elif purl:
-    query = osv.Bug.query(
-        osv.Bug.status == osv.BugStatus.PROCESSED,
-        osv.Bug.purl == _datastore_normalized_purl(purl).to_string(),
         # pylint: disable=singleton-comparison
         osv.Bug.public == True,  # noqa: E712
     )
@@ -1406,23 +1307,8 @@ def query_by_package(
 
     bug: osv.Bug = it.next()  # type: ignore
 
-    if purl:
-      affected = False
-      # Check if any affected packages actually match _match_purl
-      for affected_package in bug.affected_packages:
-        affected_package: osv.AffectedPackage
-        if not (affected_package.package.purl and _match_purl(
-            purl, PackageURL.from_string(affected_package.package.purl))):
-          continue
-
-        affected = True
-        break
-    else:
-      affected = True
-
-    if affected:
-      bugs.append(bug)
-      context.total_responses.add(1)
+    bugs.append(bug)
+    context.total_responses.add(1)
 
   return [to_response(bug) for bug in bugs]
 

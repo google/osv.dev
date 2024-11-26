@@ -15,8 +15,11 @@
 
 from urllib.parse import quote
 
+from packageurl import PackageURL
+
 PURL_ECOSYSTEMS = {
     'Alpine': 'apk',
+    'Bitnami': 'bitnami',
     'crates.io': 'cargo',
     'Debian': 'deb',
     'Go': 'golang',
@@ -31,6 +34,47 @@ PURL_ECOSYSTEMS = {
     'PyPI': 'pypi',
     'RubyGems': 'gem',
     'SwiftURL': 'swift',
+}
+
+# PURL spec: scheme:type/namespace/name@version?qualifiers#subpath
+# project ecosystems use purl.type to represent.
+PURL_TYPE_ECOSYSTEMS = {
+    # Android
+    'bitnami': 'Bitnami',
+    'cargo': 'crates.io',
+    # CRAN
+    'golang': 'Go',
+    'hackage': 'Hackage',
+    'hex': 'Hex',
+    'maven': 'Maven',
+    'npm': 'npm',
+    'nuget': 'NuGet',
+    'generic': 'OSS-Fuzz',
+    'composer': 'Packagist',
+    'pub': 'Pub',
+    'pypi': 'PyPI',
+    'gem': 'RubyGems',
+    'swift': 'SwiftURL',
+}
+
+# PURL spec: scheme:type/namespace/name@version?qualifiers#subpath
+# For Linux distributions, the namespace helps determine the ecosystem.
+# This is because different distributions (like Red Hat and openSUSE)
+# might use the same package manager (like RPM).
+# Example:
+#  - pkg:rpm/redhat/curl  ->  Ecosystem: redhat
+#  - pkg:rpm/opensuse/curl ->  Ecosystem: opensuse
+PURL_NAMESPACE_ECOSYSTEMS = {
+    # AlmaLinux
+    'alpine': 'Alpine',
+    'chainguard': 'Chainguard',
+    'debian': 'Debian',
+    'opensuse': 'openSUSE',
+    'redhat': 'Red Hat',
+    'rocky-linux': 'Rocky Linux',
+    'suse': 'SUSE',
+    'ubuntu': 'Ubuntu',
+    'wolfi': 'Wolfi',
 }
 
 
@@ -63,7 +107,8 @@ def package_to_purl(ecosystem: str, package_name: str) -> str | None:
   return f'pkg:{purl_type}/{_url_encode(package_name)}{suffix}'
 
 
-def purl_to_ecosystem(purl_type: str) -> str | None:
-  """Convert purl to a specific ecosystem string"""
-  ecosystem_purl = {v: k for k, v in PURL_ECOSYSTEMS.items()}
-  return ecosystem_purl.get(purl_type)
+def parse_purl_ecosystem(purl: PackageURL) -> str | None:
+  """Extracts the ecosystem name from a PackageURL by checking
+  its `type` and `namespace`."""
+  return PURL_TYPE_ECOSYSTEMS.get(
+      purl.type, PURL_NAMESPACE_ECOSYSTEMS.get(purl.namespace, None))

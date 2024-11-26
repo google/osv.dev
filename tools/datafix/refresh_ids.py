@@ -47,8 +47,8 @@ def get_relevant_ids(verbose: bool) -> list[str]:
   return relevant_ids
 
 
-def reput_bugs(dryrun: bool, verbose: bool, loadcache: str) -> None:
-  """ Reput all bugs from a given source."""
+def refresh_ids(dryrun: bool, verbose: bool, loadcache: str) -> None:
+  """Update bugs IDs to the new format"""
 
   relevant_ids = []
   if loadcache:
@@ -67,7 +67,7 @@ def reput_bugs(dryrun: bool, verbose: bool, loadcache: str) -> None:
 
   # This handles the actual transaction of reputting
   # the bugs with ndb
-  def _reput_ndb(batch: int):
+  def _refresh_ids(batch: int):
     buf: list[osv.Bug] = [
         osv.Bug.get_by_id(r) for r in relevant_ids[batch:batch + MAX_BATCH_SIZE]
     ]
@@ -95,7 +95,7 @@ def reput_bugs(dryrun: bool, verbose: bool, loadcache: str) -> None:
       num_reputted += len(relevant_ids[batch:batch + MAX_BATCH_SIZE])
       print(f"Reput {num_reputted} bugs... - "
             f"{num_reputted/len(relevant_ids)*100:.2f}%")
-      ndb.transaction(functools.partial(_reput_ndb, batch))
+      ndb.transaction(functools.partial(_refresh_ids, batch))
     except DryRunException:
       # Don't have the first batch's transaction-aborting exception stop
       # subsequent batches from being attempted.
@@ -138,7 +138,7 @@ def main() -> None:
   client = ndb.Client(project=args.project)
   print(f"Running on project {args.project}.")
   with client.context():
-    reput_bugs(args.dryrun, args.verbose, args.loadcache)
+    refresh_ids(args.dryrun, args.verbose, args.loadcache)
 
 
 if __name__ == "__main__":

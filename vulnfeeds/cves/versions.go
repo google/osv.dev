@@ -258,7 +258,7 @@ func repoGitWeb(parsedURL *url.URL) (string, error) {
 	//
 	// The frontend code needs to be taught how to rewrite these back to
 	// something clickable for humans in
-	// https://github.com/google/osv.dev/blob/master/gcp/appengine/source_mapper.py
+	// https://github.com/google/osv.dev/blob/master/gcp/website/source_mapper.py
 	//
 	var gitProtocolHosts = []string{
 		"git.code-call-cc.org",

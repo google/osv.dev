@@ -3,12 +3,12 @@ FROM node:20.18@sha256:a7a3b7ec6de4b11bb2d673b31de9d28c6da09c557ee65453672c8e4f7
 WORKDIR /build/frontend3
 
 # Install dependencies first for better caching
-COPY gcp/appengine/frontend3/package.json gcp/appengine/frontend3/package-lock.json ./
+COPY gcp/website/frontend3/package.json gcp/website/frontend3/package-lock.json ./
 RUN npm ci
 
-COPY gcp/appengine/frontend3/webpack.prod.js ./
-COPY gcp/appengine/frontend3/img img
-COPY gcp/appengine/frontend3/src src
+COPY gcp/website/frontend3/webpack.prod.js ./
+COPY gcp/website/frontend3/img img
+COPY gcp/website/frontend3/src src
 
 RUN npm run build:prod
 
@@ -17,7 +17,7 @@ RUN npm run build:prod
 FROM gcr.io/oss-vdb/ci AS HUGO_BUILD
 
 WORKDIR /build/blog
-COPY gcp/appengine/blog ./
+COPY gcp/website/blog ./
 
 RUN hugo --buildFuture -d ../dist/static/blog
 
@@ -33,21 +33,21 @@ ENV POETRY_VIRTUALENVS_IN_PROJECT=true
 
 # Allow statements and log messages to immediately appear in the logs
 ENV PYTHONUNBUFFERED True
-WORKDIR /osv/gcp/appengine
+WORKDIR /osv/gcp/website
 
 # Install Python dependencies
 COPY setup.py poetry.lock pyproject.toml README.md /osv/
 COPY osv /osv/osv
-COPY gcp/appengine/poetry.lock gcp/appengine/pyproject.toml ./
+COPY gcp/website/poetry.lock gcp/website/pyproject.toml ./
 RUN pip3 install poetry==1.8.3 && poetry install
 
 # Website Python code
-COPY gcp/appengine/*.py ./
+COPY gcp/website/*.py ./
 
 # JS/hugo builds
-COPY gcp/appengine/dist/public_keys dist/public_keys
-COPY gcp/appengine/docs docs
-# gcp/appengine/docs/docs/osv_service_v1.swagger.json is a symlink
+COPY gcp/website/dist/public_keys dist/public_keys
+COPY gcp/website/docs docs
+# gcp/website/docs/docs/osv_service_v1.swagger.json is a symlink
 COPY docs/osv_service_v1.swagger.json docs/
 
 COPY --from=FRONTEND3_BUILD /build/dist/ dist/

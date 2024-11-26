@@ -71,8 +71,8 @@ steps:
   waitFor: ['init', 'importer-tests']
 
 - name: 'gcr.io/oss-vdb/ci'
-  id: 'appengine-tests'
-  dir: gcp/appengine
+  id: 'website-tests'
+  dir: gcp/website
   args: ['bash', '-ex', 'run_tests.sh']
   env:
     # Each concurrent test that uses the datastore emulator must have a unique port number

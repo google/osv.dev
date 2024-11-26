@@ -118,7 +118,7 @@ yapf -i <file>.py
 
 ```shell
 gcloud auth login --update-adc
-make run-appengine
+make run-website
 ```
 
 #### API

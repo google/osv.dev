@@ -14,4 +14,4 @@
 # limitations under the License.
 
 cd ../.. &&
-    docker build -t gcr.io/oss-vdb/osv-website:$1 -t gcr.io/oss-vdb/osv-website:latest -f gcp/appengine/Dockerfile --pull .
+    docker build -t gcr.io/oss-vdb/osv-website:$1 -t gcr.io/oss-vdb/osv-website:latest -f gcp/website/Dockerfile --pull .

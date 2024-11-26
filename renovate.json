@@ -23,14 +23,14 @@
       "enabled": false
     },
     {
-      "matchFileNames": ["gcp/appengine/**"],
+      "matchFileNames": ["gcp/website/**"],
       "matchCategories": ["python"],
-      "groupName": "appengine-backend"
+      "groupName": "website-backend"
     },
     {
-      "matchFileNames": ["gcp/appengine/**"],
+      "matchFileNames": ["gcp/website/**"],
       "matchCategories": ["js"],
-      "groupName": "appengine-frontend"
+      "groupName": "website-frontend"
     },
     {
       "matchFileNames": ["gcp/api/**"],

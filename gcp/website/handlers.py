@@ -11,11 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""OSV cron handlers."""
-
-# TODO(michaelkedar): Cloud Run equivalents need to be made for these.
-# This cron logic should probably be removed from the website entirely.
-# https://github.com/google/osv.dev/issues/1249
+"""OSV misc handlers."""
 
 from flask import Blueprint
 from flask import send_file, send_from_directory
@@ -23,11 +19,9 @@ from flask import send_file, send_from_directory
 blueprint = Blueprint('handlers', __name__)
 
 
-# TODO(michaelkedar): Cloud Run is currently using this its health checks.
-# Should replace this with the conventional /healthz endpoint.
-@blueprint.route('/_ah/warmup')
-def warmup():
-  """Warmup handler."""
+@blueprint.route('/healthz')
+def healthz():
+  """Health check handler."""
   return 'OK'
 
 

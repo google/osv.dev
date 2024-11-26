@@ -228,6 +228,7 @@
   # deliberately HTTPS due to lack of SSH credentials in Staging.
   repo_url: 'https://github.com/google/oss-fuzz-vulns.git'
   detect_cherrypicks: True
+  extension: '.yaml'
   db_prefix: ['OSV-']
   ignore_git: False
   link: 'https://github.com/google/oss-fuzz-vulns/blob/main/'

@@ -40,13 +40,6 @@ indexes:
       - name: purl
       - name: semver_fixed_indexes
 
-  - kind: Bug
-    properties:
-      - name: status
-      - name: public
-      - name: purl
-      - name: semver_fixed_indexes
-
   # Is used in importer to look for not fixed bug entries
   # Specifically specified since merged index has a slight performance hit
   - kind: Bug

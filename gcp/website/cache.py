@@ -22,7 +22,7 @@ import flask_caching
 
 import utils
 
-if utils.is_prod():
+if utils.is_cloud_run():
   instance = flask_caching.Cache(
       config={
           'CACHE_TYPE': 'RedisCache',

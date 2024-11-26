@@ -11,7 +11,6 @@ import argparse
 import json
 import functools
 import time
-import os
 import typing
 
 MAX_BATCH_SIZE = 500

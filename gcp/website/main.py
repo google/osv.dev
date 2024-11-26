@@ -41,7 +41,7 @@ def ndb_wsgi_middleware(wsgi_app):
 
 def create_app():
   """Create flask app."""
-  if utils.is_prod():
+  if utils.is_cloud_run():
     logging_client = google.cloud.logging.Client()
     logging_client.setup_logging()
 

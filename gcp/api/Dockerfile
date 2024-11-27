@@ -26,6 +26,6 @@ COPY osv /osv/osv
 COPY gcp/api /osv/gcp/api
 
 WORKDIR /osv/gcp/api
-RUN pip3 install poetry==1.8.3 && poetry install
+RUN pip3 install poetry==1.8.4 && poetry install
 
 ENTRYPOINT ["poetry", "run", "python", "/osv/gcp/api/server.py"]

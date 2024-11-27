@@ -16,6 +16,11 @@
 #    https://cloud.google.com/datastore/docs/concepts/optimize-indexes
 #    https://cloud.google.com/datastore/docs/tools/indexconfig
 
+# To create new indexes, see
+#    https://cloud.google.com/sdk/gcloud/reference/datastore/indexes/create 
+# To cleanup indexes, see
+#    https://cloud.google.com/sdk/gcloud/reference/datastore/indexes/cleanup
+
 indexes:
   # Semver fixed index is used in ordering, so one index per combination of fields queried.
   - kind: Bug

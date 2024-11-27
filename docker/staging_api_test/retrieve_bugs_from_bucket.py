@@ -69,7 +69,8 @@ def format_bug_for_output(bug: dict[str, any]) -> dict[str, any]:
       'db_id': bug['id'],
       'project': affected_package.get('name', None),
       'ecosystem': affected_package.get('ecosystem', None),
-      'affected_fuzzy': affected_fuzzy
+      'purl': affected_package.get('purl', None),
+      'affected_fuzzy': affected_fuzzy,
   }
 
 

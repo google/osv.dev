@@ -84,13 +84,19 @@ def parse_purl(purl_str: str) -> tuple[str, str, str] | None:
     return None
 
   match purl:
-  # Cases based on PURL_TYPE_ECOSYSTEMS
+    # Project ecosystems
     case PackageURL(type='bitnami'):
       ecosystem = 'Bitnami'
     case PackageURL(type='cargo'):
       ecosystem = 'crates.io'
     case PackageURL(
         type='golang', namespace=namespace, name=name, version=version):
+      # OSV uses the combined purl.namespace and purl.name for Go package names
+      # Example:
+      #   pkg:golang/github.com/cri-o/cri-o
+      #   -> namespace: github.com/cri-o
+      #   -> name: cri-o
+      #   -> package name in OSV: github.com/cri-o/cri-o
       return 'Go', namespace + '/' + name, version
     case PackageURL(type='hackage'):
       ecosystem = 'Hackage'
@@ -115,7 +121,7 @@ def parse_purl(purl_str: str) -> tuple[str, str, str] | None:
     case PackageURL(type='swift'):
       ecosystem = 'SwiftURL'
 
-    # For Linux distributions
+    # Linux distributions
     case PackageURL(type='apk', namespace='alpine'):
       ecosystem = 'Alpine'
     case PackageURL(type='apk', namespace='chainguard'):

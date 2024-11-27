@@ -3,7 +3,7 @@ name = "osv"
 version = "0.0.22"
 description = "Open Source Vulnerabilities library"
 authors = ["OSV Authors <osv-discuss@googlegroups.com>"]
-license = "MIT"
+license = "Apache-2.0"
 readme = "README.md"
 packages = [{ include = "osv" }]
 package-mode = true

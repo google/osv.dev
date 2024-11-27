@@ -74,13 +74,13 @@ colors = ["colorama (>=0.4.6)"]
 
 [[package]]
 name = "markdownify"
-version = "0.13.1"
+version = "0.14.1"
 description = "Convert HTML to markdown."
 optional = false
 python-versions = "*"
 files = [
-    {file = "markdownify-0.13.1-py3-none-any.whl", hash = "sha256:1d181d43d20902bcc69d7be85b5316ed174d0dda72ff56e14ae4c95a4a407d22"},
-    {file = "markdownify-0.13.1.tar.gz", hash = "sha256:ab257f9e6bd4075118828a28c9d02f8a4bfeb7421f558834aa79b2dfeb32a098"},
+    {file = "markdownify-0.14.1-py3-none-any.whl", hash = "sha256:4c46a6c0c12c6005ddcd49b45a5a890398b002ef51380cd319db62df5e09bc2a"},
+    {file = "markdownify-0.14.1.tar.gz", hash = "sha256:a62a7a216947ed0b8dafb95b99b2ef4a0edd1e18d5653c656f68f03db2bfb2f1"},
 ]
 
 [package.dependencies]
@@ -376,4 +376,4 @@ platformdirs = ">=3.5.1"
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.11"
-content-hash = "d20fae1f8dbd5cabfc103cc81e2033fd28e5960d8bab965ce737603f7765c24f"
+content-hash = "2356168eda4478a81885deffd2b224b0c81c146f00b7926645b8fb7f5721377b"

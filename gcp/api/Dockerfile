@@ -21,7 +21,7 @@ FROM python:3.11-slim@sha256:ad5dadd957a398226996bc4846e522c39f2a77340b531b28aaa
 ENV POETRY_VIRTUALENVS_IN_PROJECT=true
 
 # TODO(ochang): Just copy the entire project (needs a clean checkout).
-COPY setup.py pyproject.toml poetry.lock README.md /osv/
+COPY pyproject.toml poetry.lock README.md /osv/
 COPY osv /osv/osv
 COPY gcp/api /osv/gcp/api
 

@@ -139,10 +139,11 @@ class PurlHelpersTest(unittest.TestCase):
         ('Wolfi', 'test-package', '1.2.3'),
         purl_helpers.parse_purl('pkg:apk/wolfi/test-package@1.2.3'))
 
-    self.assertEqual(None, purl_helpers.parse_purl('pkg:bad/ubuntu/pygments'))
+    with self.assertRaises(ValueError):
+      purl_helpers.parse_purl('pkg:bad/ubuntu/pygments')
 
-    self.assertEqual(
-        None, purl_helpers.parse_purl('purl:apk/wolfi/test-package@1.2.3'))
+    with self.assertRaises(ValueError):
+      purl_helpers.parse_purl('purl:apk/wolfi/test-package@1.2.3')
 
     self.assertEqual(
         'Alpine',

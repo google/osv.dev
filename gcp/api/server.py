@@ -382,8 +382,6 @@ def query_info(query) -> tuple[str, str | None, str | None]:
   if query.package.purl:
     try:
       purl = purl_helpers.parse_purl(query.package.purl)  # can raise ValueError
-      if not purl:
-        raise ValueError('purl is invalid.')
       if query.package.ecosystem or query.package.name:
         raise ValueError('purl and name/ecosystem cannot both be specified')
       if purl.version and query.version:
@@ -725,15 +723,15 @@ def do_query(query: osv_service_v1_pb2.Query,
     version = query.version
 
   # convert purl to package names
-  purl = purl_helpers.parse_purl(purl_str)
+  if purl_str:
+    try:
+      purl = purl_helpers.parse_purl(purl_str)
+    except ValueError:
+      context.service_context.abort(
+          grpc.StatusCode.INVALID_ARGUMENT,
+          'Invalid PURL.',
+      )
 
-  if purl_str and not purl:
-    context.service_context.abort(
-        grpc.StatusCode.INVALID_ARGUMENT,
-        'Invalid PURL.',
-    )
-
-  if purl:
     if package_name:  # Purls already include the package name
       context.service_context.abort(
           grpc.StatusCode.INVALID_ARGUMENT,

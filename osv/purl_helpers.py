@@ -83,23 +83,26 @@ def parse_purl(purl_str: str) -> Purl | None:
 
   try:
     purl = PackageURL.from_string(purl_str)
-  except ValueError:  # Catch potential parsing errors
-    return None
+  except ValueError as e:  # Catch potential parsing errors
+    raise e
+
+  package = purl.name
+  version = purl.version
 
   match purl:
     case PackageURL(type='bitnami'):
       ecosystem = 'Bitnami'
     case PackageURL(type='cargo'):
       ecosystem = 'crates.io'
-    case PackageURL(
-        type='golang', namespace=namespace, name=name, version=version):
-      # OSV uses the combined purl.namespace and purl.name for Go package names
+    case PackageURL(type='golang', namespace=namespace, name=name):
+      # Go uses the combined purl.namespace and purl.name for Go package names
       # Example:
       #   pkg:golang/github.com/cri-o/cri-o
       #   -> namespace: github.com/cri-o
       #   -> name: cri-o
       #   -> package name in OSV: github.com/cri-o/cri-o
-      return Purl('Go', namespace + '/' + name, version)
+      ecosystem = 'Go'
+      package = namespace + '/' + name
     case PackageURL(type='hackage'):
       ecosystem = 'Hackage'
     case PackageURL(type='hex'):
@@ -144,9 +147,6 @@ def parse_purl(purl_str: str) -> Purl | None:
       ecosystem = 'Wolfi'
 
     case _:
-      return None
-
-  package = purl.name
-  version = purl.version
+      raise ValueError('Invalid ecosystem.')
 
   return Purl(ecosystem, package, version)

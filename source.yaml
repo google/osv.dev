@@ -12,6 +12,7 @@
   human_link: 'https://errata.almalinux.org/{{ ECOSYSTEMS[1].split(":")[1] }}/{{ BUG_ID | replace(":", "-", 1) }}.html'
   link: 'https://github.com/AlmaLinux/osv-database/blob/master/'
   editable: False
+  strict_validation: False
 
 - name: 'almalinux-alea'
   versions_from_repo: False
@@ -26,6 +27,7 @@
   human_link: 'https://errata.almalinux.org/{{ ECOSYSTEMS[1].split(":")[1] }}/{{ BUG_ID | replace(":", "-", 1) }}.html'
   link: 'https://github.com/AlmaLinux/osv-database/blob/master/'
   editable: False
+  strict_validation: False
 
 - name: 'almalinux-alsa'
   versions_from_repo: False
@@ -40,6 +42,7 @@
   human_link: 'https://errata.almalinux.org/{{ ECOSYSTEMS[1].split(":")[1] }}/{{ BUG_ID | replace(":", "-", 1) }}.html'
   link: 'https://github.com/AlmaLinux/osv-database/blob/master/'
   editable: False
+  strict_validation: False
 
 - name: 'android'
   versions_from_repo: False
@@ -52,6 +55,7 @@
   ignore_git: True
   link: 'https://storage.googleapis.com/android-osv/'
   editable: False
+  strict_validation: False
 
 - name: 'bitnami'
   versions_from_repo: False
@@ -65,6 +69,7 @@
   ignore_git: False
   link: 'https://github.com/bitnami/vulndb/tree/main/'
   editable: False
+  strict_validation: False
 
 - name: 'chainguard'
   versions_from_repo: False
@@ -77,6 +82,7 @@
   db_prefix: ['CGA-']
   ignore_git: True
   link: 'https://packages.cgr.dev/chainguard/osv/'
+  human_link: 'https://images.chainguard.dev/security/{{ BUG_ID }}'
   editable: False
   strict_validation: False
 
@@ -93,6 +99,7 @@
   human_link: 'https://curl.se/docs/{{ BUG_ID | replace("CURL-", "") }}.html'
   link: 'https://curl.se/docs/'
   editable: False
+  strict_validation: False
 
 - name: 'cve-osv'
   versions_from_repo: True
@@ -107,6 +114,7 @@
   human_link: 'https://nvd.nist.gov/vuln/detail/{{ BUG_ID }}'
   link: 'https://storage.googleapis.com/cve-osv-conversion/'
   editable: False
+  strict_validation: False
 
 - name: 'debian-dla'
   versions_from_repo: False
@@ -121,6 +129,7 @@
   human_link: 'https://security-tracker.debian.org/tracker/{{ BUG_ID }}'
   link: 'https://storage.googleapis.com/debian-osv/'
   editable: False
+  strict_validation: False
 
 - name: 'debian-dsa'
   versions_from_repo: False
@@ -135,6 +144,7 @@
   human_link: 'https://security-tracker.debian.org/tracker/{{ BUG_ID }}'
   link: 'https://storage.googleapis.com/debian-osv/'
   editable: False
+  strict_validation: False
 
 - name: 'debian-dtsa'
   versions_from_repo: False
@@ -149,6 +159,7 @@
   human_link: 'https://security-tracker.debian.org/tracker/{{ BUG_ID }}'
   link: 'https://storage.googleapis.com/debian-osv/'
   editable: False
+  strict_validation: False
 
 - name: 'ghsa'
   versions_from_repo: False
@@ -163,6 +174,7 @@
   human_link: 'https://github.com/advisories/{{ BUG_ID }}'
   link: 'https://github.com/github/advisory-database/blob/main/'
   editable: False
+  strict_validation: False
 
 - name: 'go'
   versions_from_repo: True
@@ -177,6 +189,7 @@
   human_link: 'https://pkg.go.dev/vuln/{{ BUG_ID }}'
   link: 'https://vuln.go.dev/'
   editable: False
+  strict_validation: False
 
 - name: 'haskell'
   versions_from_repo: False
@@ -191,6 +204,7 @@
   link: 'https://github.com/haskell/security-advisories/blob/generated/osv-export/'
   editable: False
   repo_username: 'git'
+  strict_validation: False
 
 - name: 'malicious-packages'
   versions_from_repo: False
@@ -204,6 +218,7 @@
   ignore_git: False
   link: 'https://github.com/ossf/malicious-packages/blob/main/'
   editable: False
+  strict_validation: False
 
 - name: 'oss-fuzz'
   versions_from_repo: True
@@ -218,6 +233,7 @@
   link: 'https://github.com/google/oss-fuzz-vulns/blob/main/'
   editable: True
   repo_username: 'git'
+  strict_validation: False
 
 - name: 'psf'
   versions_from_repo: True
@@ -231,6 +247,7 @@
   ignore_git: False
   link: 'https://github.com/psf/advisory-database/blob/main/'
   editable: False
+  strict_validation: False
 
 - name: 'python'
   versions_from_repo: False
@@ -244,6 +261,7 @@
   ignore_git: False
   link: 'https://github.com/pypa/advisory-database/blob/main/'
   editable: False
+  strict_validation: False
 
 - name: 'r'
   versions_from_repo: False
@@ -257,6 +275,7 @@
   ignore_git: False
   link: 'https://github.com/RConsortium/r-advisory-database/blob/main/'
   editable: False
+  strict_validation: False
 
 - name: 'redhat'
   versions_from_repo: False
@@ -271,6 +290,7 @@
   human_link: 'https://access.redhat.com/errata/{{ BUG_ID }}'
   link: 'https://security.access.redhat.com/data/osv/'
   editable: False
+  strict_validation: False
 
 - name: 'rockylinux-rlsa'
   versions_from_repo: False
@@ -284,6 +304,7 @@
   human_link: 'https://errata.rockylinux.org/{{ BUG_ID }}'
   link: 'https://storage.googleapis.com/resf-osv-data/'
   editable: False
+  strict_validation: False
 
 - name: 'rockylinux-rxsa'
   versions_from_repo: False
@@ -297,6 +318,7 @@
   human_link: 'https://errata.rockylinux.org/{{ BUG_ID }}'
   link: 'https://storage.googleapis.com/resf-osv-data/'
   editable: False
+  strict_validation: False
 
 - name: 'rust'
   versions_from_repo: True
@@ -313,6 +335,7 @@
   link: 'https://github.com/rustsec/advisory-db/blob/osv/'
   editable: False
   repo_username: 'git'
+  strict_validation: False
 
 - name: 'suse'
   versions_from_repo: False
@@ -327,6 +350,7 @@
   human_link: 'https://www.suse.com/support/update/announcement/{{ BUG_ID.split(":")[0].split("-")[2] }}/{{ BUG_ID | replace(":", "") | lower }}/'
   link: 'https://ftp.suse.com/pub/projects/security/osv/'
   editable: False
+  strict_validation: False
 
 - name: 'ubuntu-cve'
   versions_from_repo: False
@@ -341,6 +365,7 @@
   human_link: 'https://ubuntu.com/security/{{ BUG_ID | replace("UBUNTU-", "") }}'
   link: 'https://github.com/canonical/ubuntu-security-notices/blob/main/'
   editable: False
+  strict_validation: False
 
 - name: 'ubuntu-usn'
   versions_from_repo: False
@@ -355,6 +380,7 @@
   human_link: 'https://ubuntu.com/security/notices/{{ BUG_ID }}'
   link: 'https://github.com/canonical/ubuntu-security-notices/blob/main/'
   editable: False
+  strict_validation: False
 
 - name: 'uvi'
   versions_from_repo: True
@@ -365,8 +391,10 @@
   extension: '.json'
   db_prefix: ['GSD-']
   ignore_git: False
+  human_link: 'https://data.gsd.id/{{ BUG_ID }}'
   link: 'https://github.com/cloudsecurityalliance/gsd-database/blob/main/'
   editable: False
   key_path: 'OSV'
   repo_username: 'git'
+  strict_validation: False
 

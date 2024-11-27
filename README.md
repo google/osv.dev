@@ -24,7 +24,7 @@ consists of:
 
 | directory       | what |
 |-----------------|------|
-| `deployment/`   | Terraform & Cloud Deploy config files <br /> A few Cloud Build config yamls <br /> Old (no longer used?) `api-staging` and `api-test` Cloud Run configs  |
+| `deployment/`   | Terraform & Cloud Deploy config files <br /> A few Cloud Build config yamls |
 | `docker/`       | CI docker files (`ci`, `deployment`, `terraform`) <br /> Workers for bisection and impact analysis (`worker`, `importer`, `exporter`, `alias`, `worker-base`) <br /> The determine version `indexer`<br /> `cron/` jobs for database backups and processing oss-fuzz records |
 | `docs/`         | Jekyll files for https://google.github.io/osv.dev/ <br /> `build_swagger.py` and `tools.go` |
 | `gcp/api`       | OSV API server files (including files for the local ESP server) <br /> protobuf files in `/v1`|

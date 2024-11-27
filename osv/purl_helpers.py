@@ -13,6 +13,7 @@
 # limitations under the License.
 """PURL conversion utilities."""
 
+from collections import namedtuple
 from urllib.parse import quote
 
 from packageurl import PackageURL
@@ -35,6 +36,8 @@ PURL_ECOSYSTEMS = {
     'RubyGems': 'gem',
     'SwiftURL': 'swift',
 }
+
+Purl = namedtuple('Purl', ['ecosystem', 'package', 'version'])
 
 
 def _url_encode(package_name):
@@ -66,7 +69,7 @@ def package_to_purl(ecosystem: str, package_name: str) -> str | None:
   return f'pkg:{purl_type}/{_url_encode(package_name)}{suffix}'
 
 
-def parse_purl(purl_str: str) -> tuple[str, str, str] | None:
+def parse_purl(purl_str: str) -> Purl | None:
   """Parses a PURL string and extracts
   ecosystem, package, and version information.
 
@@ -96,7 +99,7 @@ def parse_purl(purl_str: str) -> tuple[str, str, str] | None:
       #   -> namespace: github.com/cri-o
       #   -> name: cri-o
       #   -> package name in OSV: github.com/cri-o/cri-o
-      return 'Go', namespace + '/' + name, version
+      return Purl('Go', namespace + '/' + name, version)
     case PackageURL(type='hackage'):
       ecosystem = 'Hackage'
     case PackageURL(type='hex'):
@@ -146,4 +149,4 @@ def parse_purl(purl_str: str) -> tuple[str, str, str] | None:
   package = purl.name
   version = purl.version
 
-  return ecosystem, package, version
+  return Purl(ecosystem, package, version)

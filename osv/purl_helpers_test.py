@@ -144,6 +144,17 @@ class PurlHelpersTest(unittest.TestCase):
     self.assertEqual(
         None, purl_helpers.parse_purl('purl:apk/wolfi/test-package@1.2.3'))
 
+    self.assertEqual(
+        'Alpine',
+        purl_helpers.parse_purl('pkg:apk/alpine/postgresql14').ecosystem)
+
+    self.assertEqual('moodl',
+                     purl_helpers.parse_purl('pkg:bitnami/moodl').package)
+
+    self.assertEqual(
+        '2.11.2',
+        purl_helpers.parse_purl('pkg:deb/ubuntu/pygments@2.11.2').version)
+
 
 if __name__ == '__main__':
   unittest.main()

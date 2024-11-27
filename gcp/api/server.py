@@ -386,11 +386,11 @@ def query_info(query) -> tuple[str, str | None, str | None]:
         raise ValueError('purl is invalid.')
       if query.package.ecosystem or query.package.name:
         raise ValueError('purl and name/ecosystem cannot both be specified')
-      if purl[2] and query.version:
+      if purl.version and query.version:
         raise ValueError('purl version and version cannot both be specified')
       qtype = 'purl'
-      ecosystem = purl[0]
-      version = purl[2] or version
+      ecosystem = purl.ecosystem
+      version = purl.version or version
     except ValueError:
       return 'invalid', None, None
 
@@ -745,16 +745,16 @@ def do_query(query: osv_service_v1_pb2.Query,
           grpc.StatusCode.INVALID_ARGUMENT,
           'ecosystem specified in a purl query',
       )
-    if purl[2] and version:
+    if purl.version and version:
       # version included both in purl and query
       context.service_context.abort(
           grpc.StatusCode.INVALID_ARGUMENT,
           'version specified in params and purl query',
       )
 
-    ecosystem = purl[0]
-    package_name = purl[1]
-    version = purl[2]
+    ecosystem = purl.ecosystem
+    package_name = purl.package
+    version = purl.version
 
   if ecosystem and not ecosystems.get(ecosystem):
     context.service_context.abort(grpc.StatusCode.INVALID_ARGUMENT,

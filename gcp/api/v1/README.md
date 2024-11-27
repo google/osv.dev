@@ -17,9 +17,6 @@ python3 -m grpc_tools.protoc \
     --descriptor_set_out=api_descriptor.pb \
     --python_out=../. \
     --grpc_python_out=../ \
-    --go_out=../../../tools/indexer-api-caller/ \
-    --go_opt=Mosv/vulnerability.proto=github.com/google/osv/proto \
-    --go_opt=Mosv_service_v1.proto=github.com/google/osv/api/proto \
     --mypy_out=../ \
     osv_service_v1.proto
 ```

@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# This is the endpoints configuration used when running the server locally.
 type: google.api.Service
 config_version: 3
 name: api-test.osv.dev

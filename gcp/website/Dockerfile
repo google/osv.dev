@@ -39,7 +39,7 @@ WORKDIR /osv/gcp/website
 COPY setup.py poetry.lock pyproject.toml README.md /osv/
 COPY osv /osv/osv
 COPY gcp/website/poetry.lock gcp/website/pyproject.toml ./
-RUN pip3 install poetry==1.8.3 && poetry install
+RUN pip3 install poetry==1.8.4 && poetry install
 
 # Website Python code
 COPY gcp/website/*.py ./

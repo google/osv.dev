@@ -3,6 +3,8 @@ name: Renovate Config Validator
 on:
   push:
     branches: [ master ]
+    paths:
+      - 'renovate.json'
   pull_request:
     branches: [ master ]
     paths:

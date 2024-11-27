@@ -36,47 +36,6 @@ PURL_ECOSYSTEMS = {
     'SwiftURL': 'swift',
 }
 
-# PURL spec: scheme:type/namespace/name@version?qualifiers#subpath
-# project ecosystems use purl.type to represent.
-PURL_TYPE_ECOSYSTEMS = {
-    # Android
-    'bitnami': 'Bitnami',
-    'cargo': 'crates.io',
-    # CRAN
-    'golang': 'Go',
-    'hackage': 'Hackage',
-    'hex': 'Hex',
-    'maven': 'Maven',
-    'npm': 'npm',
-    'nuget': 'NuGet',
-    'generic': 'OSS-Fuzz',
-    'composer': 'Packagist',
-    'pub': 'Pub',
-    'pypi': 'PyPI',
-    'gem': 'RubyGems',
-    'swift': 'SwiftURL',
-}
-
-# PURL spec: scheme:type/namespace/name@version?qualifiers#subpath
-# For Linux distributions, the namespace helps determine the ecosystem.
-# This is because different distributions (like Red Hat and openSUSE)
-# might use the same package manager (like RPM).
-# Example:
-#  - pkg:rpm/redhat/curl  ->  Ecosystem: redhat
-#  - pkg:rpm/opensuse/curl ->  Ecosystem: opensuse
-PURL_NAMESPACE_ECOSYSTEMS = {
-    # AlmaLinux
-    'alpine': 'Alpine',
-    'chainguard': 'Chainguard',
-    'debian': 'Debian',
-    'opensuse': 'openSUSE',
-    'redhat': 'Red Hat',
-    'rocky-linux': 'Rocky Linux',
-    'suse': 'SUSE',
-    'ubuntu': 'Ubuntu',
-    'wolfi': 'Wolfi',
-}
-
 
 def _url_encode(package_name):
   """URL encode a PURL `namespace/name` or `name`."""
@@ -107,8 +66,79 @@ def package_to_purl(ecosystem: str, package_name: str) -> str | None:
   return f'pkg:{purl_type}/{_url_encode(package_name)}{suffix}'
 
 
-def parse_purl_ecosystem(purl: PackageURL) -> str | None:
-  """Extracts the ecosystem name from a PackageURL by checking
-  its `type` and `namespace`."""
-  return PURL_TYPE_ECOSYSTEMS.get(
-      purl.type, PURL_NAMESPACE_ECOSYSTEMS.get(purl.namespace, None))
+def parse_purl(purl_str: str) -> tuple[str, str, str] | None:
+  """Parses a PURL string and extracts
+  ecosystem, package, and version information.
+
+  Args:
+    purl_str: The Package URL string to parse.
+
+  Returns:
+    A tuple containing the ecosystem, package,
+    and version, or None if parsing fails.
+  """
+
+  try:
+    purl = PackageURL.from_string(purl_str)
+  except ValueError:  # Catch potential parsing errors
+    return None
+
+  match purl:
+  # Cases based on PURL_TYPE_ECOSYSTEMS
+    case PackageURL(type='bitnami'):
+      ecosystem = 'Bitnami'
+    case PackageURL(type='cargo'):
+      ecosystem = 'crates.io'
+    case PackageURL(
+        type='golang', namespace=namespace, name=name, version=version):
+      return 'Go', namespace + '/' + name, version
+    case PackageURL(type='hackage'):
+      ecosystem = 'Hackage'
+    case PackageURL(type='hex'):
+      ecosystem = 'Hex'
+    case PackageURL(type='maven'):
+      ecosystem = 'Maven'
+    case PackageURL(type='npm'):
+      ecosystem = 'npm'
+    case PackageURL(type='nuget'):
+      ecosystem = 'NuGet'
+    case PackageURL(type='generic'):
+      ecosystem = 'OSS-Fuzz'
+    case PackageURL(type='composer'):
+      ecosystem = 'Packagist'
+    case PackageURL(type='pub'):
+      ecosystem = 'Pub'
+    case PackageURL(type='pypi'):
+      ecosystem = 'PyPI'
+    case PackageURL(type='gem'):
+      ecosystem = 'RubyGems'
+    case PackageURL(type='swift'):
+      ecosystem = 'SwiftURL'
+
+    # For Linux distributions
+    case PackageURL(type='apk', namespace='alpine'):
+      ecosystem = 'Alpine'
+    case PackageURL(type='apk', namespace='chainguard'):
+      ecosystem = 'Chainguard'
+    case PackageURL(type='deb', namespace='debian'):
+      ecosystem = 'Debian'
+    case PackageURL(type='rpm', namespace='opensuse'):
+      ecosystem = 'openSUSE'
+    case PackageURL(type='rpm', namespace='redhat'):
+      ecosystem = 'Red Hat'
+    case PackageURL(type='rpm', namespace='rocky-linux'):
+      ecosystem = 'Rocky Linux'
+    case PackageURL(type='rpm', namespace='suse'):
+      ecosystem = 'SUSE'
+    case PackageURL(type='deb', namespace='ubuntu'):
+      ecosystem = 'Ubuntu'
+    case PackageURL(type='apk', namespace='wolfi'):
+      ecosystem = 'Wolfi'
+
+    case _:
+      return None
+
+  package = purl.name
+  version = purl.version
+
+  return ecosystem, package, version

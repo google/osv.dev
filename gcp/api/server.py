@@ -37,7 +37,6 @@ import grpc
 from grpc_health.v1 import health_pb2
 from grpc_health.v1 import health_pb2_grpc
 from grpc_reflection.v1alpha import reflection
-from packageurl import PackageURL
 from packaging.utils import canonicalize_version
 
 import osv
@@ -382,14 +381,16 @@ def query_info(query) -> tuple[str, str | None, str | None]:
   version = query.version
   if query.package.purl:
     try:
-      purl = PackageURL.from_string(query.package.purl)  # can raise ValueError
+      purl = purl_helpers.parse_purl(query.package.purl)  # can raise ValueError
+      if not purl:
+        raise ValueError('purl is invalid.')
       if query.package.ecosystem or query.package.name:
         raise ValueError('purl and name/ecosystem cannot both be specified')
-      if purl.version and query.version:
+      if purl[2] and query.version:
         raise ValueError('purl version and version cannot both be specified')
       qtype = 'purl'
-      ecosystem = purl_helpers.parse_purl_ecosystem(purl)
-      version = purl.version or version
+      ecosystem = purl[0]
+      version = purl[2] or version
     except ValueError:
       return 'invalid', None, None
 
@@ -724,34 +725,36 @@ def do_query(query: osv_service_v1_pb2.Query,
     version = query.version
 
   # convert purl to package names
-  purl = PackageURL.from_string(purl_str)
+  purl = purl_helpers.parse_purl(purl_str)
 
-  if purl and package_name:  # Purls already include the package name
+  if purl_str and not purl:
     context.service_context.abort(
         grpc.StatusCode.INVALID_ARGUMENT,
-        'name specified in a purl query',
-    )
-  if purl and ecosystem:
-    # Purls already include the ecosystem inside
-    context.service_context.abort(
-        grpc.StatusCode.INVALID_ARGUMENT,
-        'ecosystem specified in a purl query',
-    )
-  if purl.version and version:
-    # version included both in purl and query
-    context.service_context.abort(
-        grpc.StatusCode.INVALID_ARGUMENT,
-        'version specified in params and purl query',
+        'Invalid PURL.',
     )
 
   if purl:
-    try:
-      package_name = purl.name
-      ecosystem = purl_helpers.parse_purl_ecosystem(purl)
-      version = purl.version
-    except ValueError:
-      context.service_context.abort(grpc.StatusCode.INVALID_ARGUMENT,
-                                    'Invalid Package URL.')
+    if package_name:  # Purls already include the package name
+      context.service_context.abort(
+          grpc.StatusCode.INVALID_ARGUMENT,
+          'name specified in a purl query',
+      )
+    if ecosystem:
+      # Purls already include the ecosystem inside
+      context.service_context.abort(
+          grpc.StatusCode.INVALID_ARGUMENT,
+          'ecosystem specified in a purl query',
+      )
+    if purl[2] and version:
+      # version included both in purl and query
+      context.service_context.abort(
+          grpc.StatusCode.INVALID_ARGUMENT,
+          'version specified in params and purl query',
+      )
+
+    ecosystem = purl[0]
+    package_name = purl[1]
+    version = purl[2]
 
   if ecosystem and not ecosystems.get(ecosystem):
     context.service_context.abort(grpc.StatusCode.INVALID_ARGUMENT,
@@ -783,7 +786,7 @@ def do_query(query: osv_service_v1_pb2.Query,
   elif package_name and version:
     bugs = yield query_by_version(
         context, package_name, ecosystem, version, to_response=to_response)
-  elif package_name:
+  elif package_name and ecosystem:
     # Package specified without version.
     bugs = yield query_by_package(
         context, package_name, ecosystem, to_response=to_response)

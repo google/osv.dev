@@ -22,7 +22,7 @@ VOLUME /var/lib/docker
 # Replicate project structure to make relative editable poetry dependency work.
 # TODO(ochang): Just copy the entire project (needs a clean checkout).
 COPY docker/worker/poetry.lock docker/worker/pyproject.toml /env/docker/worker/
-COPY setup.py poetry.lock pyproject.toml README.md /env/
+COPY poetry.lock pyproject.toml README.md /env/
 COPY osv /env/osv
 
 # Set virtualenv creation to false to install globally

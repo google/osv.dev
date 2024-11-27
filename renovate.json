@@ -3,6 +3,7 @@
   "extends": [
     "config:base"
   ],
+  "test": "test",
   "timezone": "Australia/Sydney",
   "schedule": ["before 6am on wednesday"],
   "prHourlyLimit": 0,

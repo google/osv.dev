@@ -42,9 +42,11 @@ FREQUENCY_IN_SECONDS = 1
 # Number of `vulnerability get` requests to send per second
 VULN_QUERY_BATCH_SIZE = 50
 # Number of `version query` requests to send per second
-VERSION_QUERY_BATCH_SIZE = 100
+VERSION_QUERY_BATCH_SIZE = 80
 # Number of `package query` requests to send per second
-PACKAGE_QUERY_BATCH_SIZE = 30
+PACKAGE_QUERY_BATCH_SIZE = 20
+# Number of `purl query` requests to send per second
+PURL_QUERY_BATCH_SIZE = 30
 # Number of `batch query` requests to send per second
 BATCH_QUERY_BATCH_SIZE = 3
 # Number of large `batch query` requests to send per second
@@ -60,6 +62,7 @@ class SimpleBug:
     # If the package/ecosystem/version value is None, then add a fake value in.
     self.package = bug_dict.get('project', 'foo')
     self.ecosystem = bug_dict.get('ecosystem', 'foo')
+    self.purl = bug_dict.get('purl', 'pkg:foo/foo')
 
     # Use the `affected fuzzy` value as the query version.
     # If no 'affected fuzzy' is present, assign a default value.
@@ -260,6 +263,28 @@ def build_version_payload(request_id: str, bug_map: dict) -> dict:
   }
 
 
+def build_purl_payload(request_id: str, bug_map: dict) -> dict:
+  """Builds a purl query payload
+
+  Args:
+    request_id:
+      The bug ID
+    bug_map:
+      A dict mapping bug IDs to the corresponding `SimpleBug` objects
+
+  Returns:
+    A dict containing package version query payload, example:
+    '{"package": {"purl": "pkg:golang/github.com/golang-jwt/jwt/v4@4.5.1"}}'
+  """
+  purl = bug_map[request_id].purl
+  purl_with_version = f'{purl}@{bug_map[request_id].affected_fuzzy}'
+
+  # Use random.choice to select between the two PURL options
+  chosen_purl = random.choice([purl, purl_with_version])
+
+  return {"package": {"purl": chosen_purl,}}
+
+
 def build_batch_payload(request_ids: list,
                         bug_map: dict) -> dict[str, list[dict[str, any]]]:
   """Builds a batch query payload
@@ -294,11 +319,13 @@ def build_batch_payload(request_ids: list,
   queries = []
   for bug_id in batch_ids:
     query = {}
-    query_type = random.choice(['version', 'package'])
+    query_type = random.choice(['version', 'package', 'purl'])
     if query_type == 'version':
       query = build_version_payload(bug_id, bug_map)
     elif query_type == 'package':
       query = build_package_payload(bug_id, bug_map)
+    elif query_type == 'purl':
+      query = build_purl_payload(bug_id, bug_map)
     queries.append(query)
 
   return {"queries": [queries]}
@@ -383,6 +410,21 @@ async def send_package_requests(request_ids: list, bug_map: dict) -> None:
                                  build_package_payload)
 
 
+async def send_purl_requests(request_ids: list, bug_map: dict) -> None:
+  """Sends purl query requests
+
+  Args:
+    request_id:
+      The bug ID
+    bug_map:
+      A dict mapping bug IDs to the corresponding `SimpleBug` objects
+  """
+  url = f'{BASE_URL}/query'
+  batch_size = PURL_QUERY_BATCH_SIZE
+  await make_http_requests_async(request_ids, bug_map, url, batch_size,
+                                 build_purl_payload)
+
+
 async def send_vuln_requests(request_ids: list, bug_map: dict) -> None:
   """Sends vulnerability get requests
 
@@ -449,6 +491,7 @@ async def main() -> None:
       send_vuln_requests(vuln_query_ids, bug_map),
       send_package_requests(package_query_ids, bug_map),
       send_version_requests(package_query_ids, bug_map),
+      send_purl_requests(package_query_ids, bug_map),
       send_batch_requests(package_query_ids, bug_map, BATCH_QUERY_BATCH_SIZE),
       send_batch_requests(large_batch_query_ids, bug_map,
                           LARGE_BATCH_QUERY_BATCH_SIZE))

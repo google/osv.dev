@@ -13,5 +13,8 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
         
-      - name: Run validator
-        uses: suzuki-shunsuke/github-action-renovate-config-validator@v1.1.0
+      - name: Set up Nodes.js
+        uses: actions/setup-node@v4
+
+      - name: Validate Renovate Config
+        run: npx --yes --package renovate -- renovate-config-validator

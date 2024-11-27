@@ -334,7 +334,7 @@ def sha256_bytes(data):
 def source_path(source_repo, bug):
   """Get the source path for an osv.Bug."""
   source_name, source_id = parse_source_id(bug.source_id)
-  if source_name == 'oss-fuzz':
+  if source_name == 'oss-fuzz' and len(bug.project) > 0:
     path = os.path.join(bug.project[0], bug.id() + source_repo.extension)
     if source_repo.directory_path:
       path = os.path.join(source_repo.directory_path, path)

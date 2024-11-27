@@ -84,7 +84,6 @@ def parse_purl(purl_str: str) -> tuple[str, str, str] | None:
     return None
 
   match purl:
-    # Project ecosystems
     case PackageURL(type='bitnami'):
       ecosystem = 'Bitnami'
     case PackageURL(type='cargo'):

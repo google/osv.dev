@@ -897,6 +897,7 @@ google-cloud-ndb = "^2.3"
 google-cloud-storage = "^2.17"
 grpcio = "^1.0"
 jsonschema = "^4.0"
+packageurl-python = "==0.16.0"
 packaging = "<22.0"
 pygit2 = "^1.14.0"
 pyyaml = "^6.0"
@@ -906,6 +907,23 @@ semver = "^3.0"
 [package.source]
 type = "directory"
 url = "../.."
+
+[[package]]
+name = "packageurl-python"
+version = "0.16.0"
+description = "A purl aka. Package URL parser and builder"
+optional = false
+python-versions = ">=3.8"
+files = [
+    {file = "packageurl_python-0.16.0-py3-none-any.whl", hash = "sha256:5c3872638b177b0f1cf01c3673017b7b27ebee485693ae12a8bed70fa7fa7c35"},
+    {file = "packageurl_python-0.16.0.tar.gz", hash = "sha256:69e3bf8a3932fe9c2400f56aaeb9f86911ecee2f9398dbe1b58ec34340be365d"},
+]
+
+[package.extras]
+build = ["setuptools", "wheel"]
+lint = ["black", "isort", "mypy"]
+sqlalchemy = ["sqlalchemy (>=2.0.0)"]
+test = ["pytest"]
 
 [[package]]
 name = "packaging"
@@ -1514,4 +1532,4 @@ type = ["pytest-mypy"]
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.11"
-content-hash = "cd1ebdd9f7e7529d13b7f7762e6f11c696b7ebcf2488fee670b47d4d5c552866"
+content-hash = "9ed6a3d16d3846a9231541774de4e5489a344b70c22ae09ab6bf4d68fd203ebe"

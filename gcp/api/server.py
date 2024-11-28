@@ -51,6 +51,8 @@ from gcp.api import osv_service_v1_pb2_grpc
 
 from gcp.api.cursor import QueryCursor
 
+import googlecloudprofiler
+
 _SHUTDOWN_GRACE_DURATION = 5
 
 _MAX_SINGLE_QUERY_TIME = timedelta(seconds=20)
@@ -1504,9 +1506,17 @@ def _is_affected(ecosystem: str, version: str,
 
 def main():
   """Entrypoint."""
+
   if is_cloud_run():
     setup_gcp_logging('api-backend')
     logging.getLogger().addFilter(trace_filter)
+
+    # Profiler initialization. It starts a daemon thread which continuously
+    # collects and uploads profiles. Best done as early as possible.
+    try:
+      googlecloudprofiler.start(service="osv-api-profiler")
+    except (ValueError, NotImplementedError) as e:
+      logging.error(e)
 
   logging.getLogger().setLevel(logging.INFO)
 

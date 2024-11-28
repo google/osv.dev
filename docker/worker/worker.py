@@ -334,7 +334,7 @@ class TaskRunner:
 
     source_repo = osv.get_source_repository(source)
     if source_repo is None:
-      logging.info('Failed to get source repository %s', source)
+      logging.error('Failed to get source repository %s', source)
       return
 
     if source_repo.type == osv.SourceRepositoryType.GIT:

@@ -88,12 +88,18 @@ class PurlHelpersTest(unittest.TestCase):
     self.assertEqual(('Hex', 'test-package', None),
                      purl_helpers.parse_purl('pkg:hex/test-package'))
 
-    self.assertEqual(
-        ('Maven', 'test-package', '1.0.0'),
-        purl_helpers.parse_purl('pkg:maven/com.example/test-package@1.0.0'))
+    self.assertEqual(('Hex', 'acme/foo', '2.3.'),
+                     purl_helpers.parse_purl('pkg:hex/acme/foo@2.3.'))
 
-    self.assertEqual(('npm', 'test-package', '1.2.3'),
-                     purl_helpers.parse_purl('pkg:npm/test-package@1.2.3'))
+    self.assertEqual(('Maven', 'org.apache.struts:struts2-core', '1.0.0'),
+                     purl_helpers.parse_purl(
+                         'pkg:maven/org.apache.struts/struts2-core@1.0.0'))
+
+    self.assertEqual(('npm', '@hapi/hoek', '1.2.3'),
+                     purl_helpers.parse_purl('pkg:npm/%40hapi/hoek@1.2.3'))
+
+    self.assertEqual(('npm', 'test-package', None),
+                     purl_helpers.parse_purl('pkg:npm/test-package'))
 
     self.assertEqual(('NuGet', 'test-package', '1.2.3'),
                      purl_helpers.parse_purl('pkg:nuget/test-package@1.2.3'))
@@ -105,8 +111,10 @@ class PurlHelpersTest(unittest.TestCase):
     self.assertEqual(('OSS-Fuzz', 'test-package', None),
                      purl_helpers.parse_purl('pkg:generic/test-package'))
 
-    self.assertEqual(('Packagist', 'test-package', '1.2.3'),
-                     purl_helpers.parse_purl('pkg:composer/test-package@1.2.3'))
+    self.assertEqual(
+        ('Packagist', 'spencer14420/sp-php-email-handler', '1.2.3'),
+        purl_helpers.parse_purl(
+            'pkg:composer/spencer14420/sp-php-email-handler@1.2.3'))
 
     self.assertEqual(('Pub', 'test-package', '1.2.3'),
                      purl_helpers.parse_purl('pkg:pub/test-package@1.2.3'))
@@ -128,8 +136,10 @@ class PurlHelpersTest(unittest.TestCase):
     self.assertEqual(('SUSE', 'test-package', '1.2.3'),
                      purl_helpers.parse_purl('pkg:rpm/suse/test-package@1.2.3'))
 
-    self.assertEqual(('SwiftURL', 'test-package', '1.2.3'),
-                     purl_helpers.parse_purl('pkg:swift/test-package@1.2.3'))
+    self.assertEqual(
+        ('SwiftURL', 'github.com/shareup/wasm-interpreter-apple', None),
+        purl_helpers.parse_purl(
+            'pkg:swift/github.com/shareup/wasm-interpreter-apple'))
 
     self.assertEqual(('Ubuntu', 'pygments', '2.11.2+dfsg-2ubuntu0.1'),
                      purl_helpers.parse_purl(

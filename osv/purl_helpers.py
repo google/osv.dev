@@ -87,6 +87,8 @@ def parse_purl(purl_str: str) -> Purl | None:
   package = purl.name
   version = purl.version
 
+  # PURL spec:
+  # https://github.com/package-url/purl-spec/blob/master/PURL-TYPES.rst
   match purl:
     case PackageURL(type='bitnami'):
       ecosystem = 'Bitnami'
@@ -100,29 +102,40 @@ def parse_purl(purl_str: str) -> Purl | None:
       #   -> name: cri-o
       #   -> package name in OSV: github.com/cri-o/cri-o
       ecosystem = 'Go'
-      package = namespace + '/' + name
+      if namespace:
+        package = namespace + '/' + name
     case PackageURL(type='hackage'):
       ecosystem = 'Hackage'
-    case PackageURL(type='hex'):
+    case PackageURL(type='hex', namespace=namespace, name=name):
       ecosystem = 'Hex'
-    case PackageURL(type='maven'):
+      if namespace:
+        package = namespace + '/' + name
+    case PackageURL(type='maven', namespace=namespace, name=name):
       ecosystem = 'Maven'
-    case PackageURL(type='npm'):
+      if namespace:
+        package = namespace + ':' + name
+    case PackageURL(type='npm', namespace=namespace, name=name):
       ecosystem = 'npm'
+      if namespace:
+        package = namespace + '/' + name
     case PackageURL(type='nuget'):
       ecosystem = 'NuGet'
     case PackageURL(type='generic'):
       ecosystem = 'OSS-Fuzz'
-    case PackageURL(type='composer'):
+    case PackageURL(type='composer', namespace=namespace, name=name):
       ecosystem = 'Packagist'
+      if namespace:
+        package = namespace + '/' + name
     case PackageURL(type='pub'):
       ecosystem = 'Pub'
     case PackageURL(type='pypi'):
       ecosystem = 'PyPI'
     case PackageURL(type='gem'):
       ecosystem = 'RubyGems'
-    case PackageURL(type='swift'):
+    case PackageURL(type='swift', namespace=namespace, name=name):
       ecosystem = 'SwiftURL'
+      if namespace:
+        package = namespace + '/' + name
 
     # Linux distributions
     case PackageURL(type='apk', namespace='alpine'):

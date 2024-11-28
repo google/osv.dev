@@ -81,10 +81,8 @@ def parse_purl(purl_str: str) -> Purl | None:
     and version, or None if parsing fails.
   """
 
-  try:
-    purl = PackageURL.from_string(purl_str)
-  except ValueError as e:  # Catch potential parsing errors
-    raise e
+  purl = PackageURL.from_string(
+      purl_str)  # May raise ValueError for invalid PURL strings
 
   package = purl.name
   version = purl.version

@@ -887,6 +887,7 @@ google-cloud-ndb = "^2.3"
 google-cloud-storage = "^2.17"
 grpcio = "^1.0"
 jsonschema = "^4.0"
+packageurl-python = "==0.16.0"
 packaging = "<22.0"
 pygit2 = "^1.14.0"
 pyyaml = "^6.0"
@@ -1530,4 +1531,4 @@ type = ["pytest-mypy"]
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.11"
-content-hash = "c3e7e368e2a95bee8db8b958b94bb816ff89b62cd5fd664db4a831e4902a08f7"
+content-hash = "886b9f191a6856aaa8bacfca0823fb46a0ca5f7f06bfa4e64ff72616d911393d"

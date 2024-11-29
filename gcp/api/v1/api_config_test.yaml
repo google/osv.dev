@@ -12,9 +12,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# This is the endpoints configuration used when running the server locally.
 type: google.api.Service
 config_version: 3
-name: api-staging.osv.dev
+name: api-test.osv.dev
 title: OSV
 apis:
   - name: osv.v1.OSV
@@ -22,11 +23,8 @@ usage:
   rules:
     - selector: "*"
       allow_unregistered_calls: true
-authentication:
-  rules:
-    - selector: "*"
-      allow_without_credential: true
 backend:
   rules:
     - selector: "*"
-      address: grpcs://osv-grpc-backend-staging-2tmaiuio7a-uc.a.run.app
+      deadline: 120
+

@@ -18,23 +18,44 @@ from urllib.parse import quote
 
 from packageurl import PackageURL
 
-PURL_ECOSYSTEMS = {
-    'Alpine': 'apk',
-    'Bitnami': 'bitnami',
-    'crates.io': 'cargo',
-    'Debian': 'deb',
-    'Go': 'golang',
-    'Hackage': 'hackage',
-    'Hex': 'hex',
-    'Maven': 'maven',
-    'npm': 'npm',
-    'NuGet': 'nuget',
-    'OSS-Fuzz': 'generic',
-    'Packagist': 'composer',
-    'Pub': 'pub',
-    'PyPI': 'pypi',
-    'RubyGems': 'gem',
-    'SwiftURL': 'swift',
+# PURL spec:
+# https://github.com/package-url/purl-spec/blob/master/PURL-TYPES.rst
+ECOSYSTEM_PURL_DATA = {
+    'AlmaLinux': ('rpm', 'almalinux'),
+    'Alpine': ('apk', 'alpine'),
+    # Android
+    'Bitnami': ('bitnami', None),
+    'Chainguard': ('apk', 'chainguard'),
+    'CRAN': ('cran', None),
+    'crates.io': ('cargo', None),
+    'Debian': ('deb', 'debian'),
+    # GIT
+    'GitHub Actions': ('github', None),
+    'Go': ('golang', None),
+    'Hackage': ('hackage', None),
+    'Hex': ('hex', None),
+    # Linux
+    'Maven': ('maven', None),
+    'npm': ('npm', None),
+    'NuGet': ('nuget', None),
+    'openSUSE': ('rpm', 'opensuse'),
+    'OSS-Fuzz': ('generic', None),
+    'Packagist': ('composer', None),
+    'Pub': ('pub', None),
+    'PyPI': ('pypi', None),
+    'Red Hat': ('rpm', 'redhat'),
+    'Rocky Linux': ('rpm', 'rocky-linux'),
+    'RubyGems': ('gem', None),
+    'SUSE': ('rpm', 'suse'),
+    'SwiftURL': ('swift', None),
+    'Ubuntu': ('deb', 'ubuntu'),
+    'Wolfi': ('apk', 'wolfi'),
+}
+
+# Create the reverse lookup hash map
+PURL_ECOSYSTEM_MAP = {
+    (purl_type, purl_namespace): ecosystem
+    for ecosystem, (purl_type, purl_namespace) in ECOSYSTEM_PURL_DATA.items()
 }
 
 Purl = namedtuple('Purl', ['ecosystem', 'package', 'version'])
@@ -48,9 +69,14 @@ def _url_encode(package_name):
 
 def package_to_purl(ecosystem: str, package_name: str) -> str | None:
   """Convert a ecosystem and package name to PURL."""
-  purl_type = PURL_ECOSYSTEMS.get(ecosystem)
-  if not purl_type:
+  purl_data = ECOSYSTEM_PURL_DATA.get(ecosystem)
+  if not purl_data:
     return None
+
+  purl_type, purl_namespace = purl_data
+  purl_ecosystem = purl_type
+  if purl_namespace:
+    purl_ecosystem = f'{purl_type}/{purl_namespace}'
 
   suffix = ''
 
@@ -59,14 +85,12 @@ def package_to_purl(ecosystem: str, package_name: str) -> str | None:
     package_name = package_name.replace(':', '/', 1)
 
   if purl_type == 'deb' and ecosystem == 'Debian':
-    package_name = 'debian/' + package_name
     suffix = '?arch=source'
 
   if purl_type == 'apk' and ecosystem == 'Alpine':
-    package_name = 'alpine/' + package_name
     suffix = '?arch=source'
 
-  return f'pkg:{purl_type}/{_url_encode(package_name)}{suffix}'
+  return f'pkg:{purl_ecosystem}/{_url_encode(package_name)}{suffix}'
 
 
 def parse_purl(purl_str: str) -> Purl | None:
@@ -87,77 +111,28 @@ def parse_purl(purl_str: str) -> Purl | None:
   package = purl.name
   version = purl.version
 
-  # PURL spec:
-  # https://github.com/package-url/purl-spec/blob/master/PURL-TYPES.rst
-  match purl:
-    case PackageURL(type='bitnami'):
-      ecosystem = 'Bitnami'
-    case PackageURL(type='cargo'):
-      ecosystem = 'crates.io'
-    case PackageURL(type='golang', namespace=namespace, name=name):
+  ecosystem = PURL_ECOSYSTEM_MAP.get((purl.type, purl.namespace))
+  if not ecosystem:
+    # check for matching ecosystems without using the namespace (special cases)
+    ecosystem = PURL_ECOSYSTEM_MAP.get((purl.type, None))
+    if not ecosystem:
+      raise ValueError('Invalid ecosystem.')
+    # Handle special cases for package name construction
+    if purl.type == 'golang' and purl.namespace:
       # Go uses the combined purl.namespace and purl.name for Go package names
       # Example:
       #   pkg:golang/github.com/cri-o/cri-o
       #   -> namespace: github.com/cri-o
       #   -> name: cri-o
       #   -> package name in OSV: github.com/cri-o/cri-o
-      ecosystem = 'Go'
-      if namespace:
-        package = namespace + '/' + name
-    case PackageURL(type='hackage'):
-      ecosystem = 'Hackage'
-    case PackageURL(type='hex', namespace=namespace, name=name):
-      ecosystem = 'Hex'
-      if namespace:
-        package = namespace + '/' + name
-    case PackageURL(type='maven', namespace=namespace, name=name):
-      ecosystem = 'Maven'
-      if namespace:
-        package = namespace + ':' + name
-    case PackageURL(type='npm', namespace=namespace, name=name):
-      ecosystem = 'npm'
-      if namespace:
-        package = namespace + '/' + name
-    case PackageURL(type='nuget'):
-      ecosystem = 'NuGet'
-    case PackageURL(type='generic'):
-      ecosystem = 'OSS-Fuzz'
-    case PackageURL(type='composer', namespace=namespace, name=name):
-      ecosystem = 'Packagist'
-      if namespace:
-        package = namespace + '/' + name
-    case PackageURL(type='pub'):
-      ecosystem = 'Pub'
-    case PackageURL(type='pypi'):
-      ecosystem = 'PyPI'
-    case PackageURL(type='gem'):
-      ecosystem = 'RubyGems'
-    case PackageURL(type='swift', namespace=namespace, name=name):
-      ecosystem = 'SwiftURL'
-      if namespace:
-        package = namespace + '/' + name
-
-    # Linux distributions
-    case PackageURL(type='apk', namespace='alpine'):
-      ecosystem = 'Alpine'
-    case PackageURL(type='apk', namespace='chainguard'):
-      ecosystem = 'Chainguard'
-    case PackageURL(type='deb', namespace='debian'):
-      ecosystem = 'Debian'
-    case PackageURL(type='rpm', namespace='opensuse'):
-      ecosystem = 'openSUSE'
-    case PackageURL(type='rpm', namespace='redhat'):
-      ecosystem = 'Red Hat'
-    case PackageURL(type='rpm', namespace='rocky-linux'):
-      ecosystem = 'Rocky Linux'
-    case PackageURL(type='rpm', namespace='suse'):
-      ecosystem = 'SUSE'
-    case PackageURL(type='deb', namespace='ubuntu'):
-      ecosystem = 'Ubuntu'
-    case PackageURL(type='apk', namespace='wolfi'):
-      ecosystem = 'Wolfi'
-
-    case _:
+      package = purl.namespace + '/' + purl.name
+    elif purl.type in ('hex', 'npm', 'swift') and purl.namespace:
+      package = purl.namespace + '/' + purl.name
+    elif purl.type == 'maven' and purl.namespace:
+      package = purl.namespace + ':' + purl.name
+    elif purl.type == 'composer' and purl.namespace:
+      package = purl.namespace + '/' + purl.name
+    else:
       raise ValueError('Invalid ecosystem.')
 
   return Purl(ecosystem, package, version)

@@ -14,8 +14,8 @@
 # limitations under the License.
 
 # Build from root context.
-cd ../../
+cd ../../../
 
-docker build -t gcr.io/oss-vdb/worker:$1 -t gcr.io/oss-vdb/worker:latest -f docker/worker/Dockerfile . && \
+docker build -t gcr.io/oss-vdb/worker:$1 -t gcr.io/oss-vdb/worker:latest -f gcp/workers/worker/Dockerfile . && \
 gcloud docker -- push gcr.io/oss-vdb/worker:$1 && \
 gcloud docker -- push gcr.io/oss-vdb/worker:latest

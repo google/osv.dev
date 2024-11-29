@@ -30,7 +30,7 @@ from google.cloud import ndb
 from google.cloud import storage
 from google.cloud.storage import retry
 import pygit2
-from docker.mock_test.mock_test_handler import MockDataHandler
+from gcp.workers.mock_test.mock_test_handler import MockDataHandler
 import importer
 import osv
 from osv import tests

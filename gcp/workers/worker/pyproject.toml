@@ -17,7 +17,7 @@ pygit2 = "==1.16.0"
 requests = "==2.32.3"
 jsonschema = "==4.23.0"
 
-osv = { path = "../../", develop = true }
+osv = { path = "../../../", develop = true }
 
 [tool.poetry.dev-dependencies]
 yapf = "*"

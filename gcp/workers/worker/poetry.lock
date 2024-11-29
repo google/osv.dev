@@ -906,7 +906,7 @@ semver = "^3.0"
 
 [package.source]
 type = "directory"
-url = "../.."
+url = "../../.."
 
 [[package]]
 name = "packageurl-python"
@@ -1532,4 +1532,4 @@ type = ["pytest-mypy"]
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.11"
-content-hash = "9ed6a3d16d3846a9231541774de4e5489a344b70c22ae09ab6bf4d68fd203ebe"
+content-hash = "9717190fa004b095330d4bfccc4ea8cc3dc8b8c8bee9f0c905f506273f299315"

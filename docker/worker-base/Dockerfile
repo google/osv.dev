@@ -72,4 +72,4 @@ RUN curl -fsSL https://gvisor.dev/archive.key | gpg --dearmor -o /etc/apt/truste
     apt-get update && apt-get install -y runsc
 
 # Make gVisor the default Docker runtime.
-COPY docker/worker/daemon.json /etc/docker/daemon.json
+COPY docker/worker-base/daemon.json /etc/docker/daemon.json

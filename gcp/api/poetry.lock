@@ -500,20 +500,40 @@ pytz = ">=2018.3"
 redis = ">=3.0.0,<6.0.0dev"
 
 [[package]]
-name = "google-cloud-profiler"
-version = "4.1.0"
+name = "google-cloud-profiler-wheels"
+version = "4.0.0"
 description = "Google Cloud Profiler Python Agent"
 optional = false
 python-versions = "*"
 files = [
-    {file = "google-cloud-profiler-4.1.0.tar.gz", hash = "sha256:2d90f9c6d4c075ad6d43752ae39424c3d0bad63e6549a2c761881f9a235067ae"},
+    {file = "google-cloud-profiler-wheels-4.0.0.tar.gz", hash = "sha256:2fb3c8af4e29278fe98885bfc9f0f7a581e6324479a1eceddf8fab77ddc896e8"},
+    {file = "google_cloud_profiler_wheels-4.0.0-cp310-cp310-manylinux_2_17_i686.manylinux2014_i686.whl", hash = "sha256:cf2cc83e531c27307f5e3d1f5c2d9e1fba7a734d4a3fe8184806d6fde3fe8917"},
+    {file = "google_cloud_profiler_wheels-4.0.0-cp310-cp310-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:d061a3995002acad7400444bbb80c02898c5c2372fc36031dac20702d7f34eb0"},
+    {file = "google_cloud_profiler_wheels-4.0.0-cp310-cp310-musllinux_1_1_i686.whl", hash = "sha256:22e826f19d74a33dc4679fa0c07095202e90dafe8b589e0755a77a116abafb9b"},
+    {file = "google_cloud_profiler_wheels-4.0.0-cp310-cp310-musllinux_1_1_x86_64.whl", hash = "sha256:6bd64def9890ddb71d5dd85347dbd17c7a082e6b1cb0d9736b42e75bff5a6e3b"},
+    {file = "google_cloud_profiler_wheels-4.0.0-cp36-cp36m-manylinux_2_17_i686.manylinux2014_i686.whl", hash = "sha256:7f97a270ea3c4eef6e59c87a60e8f4bf3d98299e098cce9d8ef74b3db5ae3f41"},
+    {file = "google_cloud_profiler_wheels-4.0.0-cp36-cp36m-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:1c004a045b8cbd3f44162d5370b185519140c8f0e51e11b9768cb2e2ded820f6"},
+    {file = "google_cloud_profiler_wheels-4.0.0-cp36-cp36m-musllinux_1_1_i686.whl", hash = "sha256:71c1c5e1cbb5d77f7b56df4c40479b53cbb33f442def2b59e522aa435ef6270f"},
+    {file = "google_cloud_profiler_wheels-4.0.0-cp36-cp36m-musllinux_1_1_x86_64.whl", hash = "sha256:106f564c730d1ccb0864aa1e2a0a8beadb509e7478f1afea10ba50dad391e3d9"},
+    {file = "google_cloud_profiler_wheels-4.0.0-cp37-cp37m-manylinux_2_17_i686.manylinux2014_i686.whl", hash = "sha256:65e39b62a6d632d8cf0eabb5a742c0b9a4c4922c6c63c6212389707692346245"},
+    {file = "google_cloud_profiler_wheels-4.0.0-cp37-cp37m-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:0abf14c03619f53bf143ebabeecfa6b3e5a18d9717cf7f93b6d8a1918dc53f86"},
+    {file = "google_cloud_profiler_wheels-4.0.0-cp37-cp37m-musllinux_1_1_i686.whl", hash = "sha256:b2e484aec5fd6287af202f2e3256c9d8baf7a64b386ee5c98957df360a5c3447"},
+    {file = "google_cloud_profiler_wheels-4.0.0-cp37-cp37m-musllinux_1_1_x86_64.whl", hash = "sha256:da66934b78986fa2635b654b7a311628bdb5cd0645dd25345f7210fe5621e2f5"},
+    {file = "google_cloud_profiler_wheels-4.0.0-cp38-cp38-manylinux_2_17_i686.manylinux2014_i686.whl", hash = "sha256:fdd490f69fa1b0397d602c7a67a2a187aa6fb467596cad9c0559156bd0bfdc8f"},
+    {file = "google_cloud_profiler_wheels-4.0.0-cp38-cp38-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:eff8f109cb54311a5b0aa22da061ab956ea3e2116365da8625407befe287ea85"},
+    {file = "google_cloud_profiler_wheels-4.0.0-cp38-cp38-musllinux_1_1_i686.whl", hash = "sha256:4fec2eaa6c27768f5c6dbec3c540f6259f3bc89f539dc14f646af098968f9879"},
+    {file = "google_cloud_profiler_wheels-4.0.0-cp38-cp38-musllinux_1_1_x86_64.whl", hash = "sha256:4c3653eb013e741d58997fdb5929bb5696434012d51657bc9fb6a66da108eb3c"},
+    {file = "google_cloud_profiler_wheels-4.0.0-cp39-cp39-manylinux_2_17_i686.manylinux2014_i686.whl", hash = "sha256:561bf98113da731215d52a2e88fa3b24a97cdbce6c4c72b51186b7d02912af06"},
+    {file = "google_cloud_profiler_wheels-4.0.0-cp39-cp39-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:66392b7bfc2d739cc2d976767b17c8d1fb02ed4982bfaa351a0f6740c6646c96"},
+    {file = "google_cloud_profiler_wheels-4.0.0-cp39-cp39-musllinux_1_1_i686.whl", hash = "sha256:b153b6f57f95d1f6a6901502cf5478d772788027c0fff1dc551aa8b9d0d6e819"},
+    {file = "google_cloud_profiler_wheels-4.0.0-cp39-cp39-musllinux_1_1_x86_64.whl", hash = "sha256:a02c1afc3544084153fbdd1382e9a64208bf5ba171c4a4385c9e18cbced06d6c"},
 ]
 
 [package.dependencies]
 google-api-python-client = "<1.12.0 || >1.12.0,<2.0.2 || >2.0.2"
 google-auth = ">=1.0.0"
 google-auth-httplib2 = "*"
-protobuf = ">=3.20"
+protobuf = "*"
 requests = "*"
 
 [[package]]
@@ -1606,4 +1626,4 @@ type = ["pytest-mypy"]
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.11"
-content-hash = "faec406b44c2298295af9dff97925be81e2960a9a8a9c94dfe6f4425381d11ee"
+content-hash = "fc6a22add1f61a050e6e1a29860d0416ff8b1c2c64ce7fd88596c2da62ef7abe"

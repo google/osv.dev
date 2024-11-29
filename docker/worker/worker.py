@@ -333,6 +333,10 @@ class TaskRunner:
     deleted = message.attributes['deleted'] == 'true'
 
     source_repo = osv.get_source_repository(source)
+    if source_repo is None:
+      logging.error('Failed to get source repository %s', source)
+      return
+
     if source_repo.type == osv.SourceRepositoryType.GIT:
       repo = osv.ensure_updated_checkout(
           source_repo.repo_url,

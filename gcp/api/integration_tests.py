@@ -422,7 +422,10 @@ class IntegrationTests(unittest.TestCase,
         }),
         timeout=_TIMEOUT)
 
-    self.assert_results_equal({}, response.json())
+    self.assert_results_equal({
+        'code': 3,
+        'message': 'Invalid PURL.'
+    }, response.json())
 
   def test_query_semver_no_vulns(self):
     """Test queries by SemVer with no vulnerabilities."""
@@ -911,7 +914,7 @@ class IntegrationTests(unittest.TestCase,
         }
     }, {}]
 
-    pkg_version = [{'package': {'version': '0.8.5'}}, {}]
+    pkg_version = [{'version': '0.8.5'}, {}]
 
     commit = [{'commit': 'd374094d8c49b6b7d288f307e11217ec5a502391'}, {}]
 

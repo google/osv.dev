@@ -5,7 +5,7 @@ package-mode = false
 [tool.poetry.dependencies]
 python = "^3.11"
 
-markdownify = "==0.13.1"
+markdownify = "==0.14.1"
 pandas = "==2.2.3"
 python-dateutil = "==2.9.0.post0"
 

@@ -1393,7 +1393,6 @@ def _is_affected(ecosystem: str, version: str,
 
 def main():
   """Entrypoint."""
-
   if is_cloud_run():
     setup_gcp_logging('api-backend')
     logging.getLogger().addFilter(trace_filter)

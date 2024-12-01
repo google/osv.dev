@@ -64,6 +64,7 @@ Interest and external contributions continue:
   * [32 total contributors](https://github.com/google/osv-scanner/graphs/contributors?from=2024-01-01&to=2024-12-31&type=c)
 * OSV-Scanner GitHub Action
   * [8 total contributors](https://github.com/google/osv-scanner-action/graphs/contributors?from=2024-01-01&to=2024-12-31&type=c)
+  * Over 400 GitHub repositories have [adopted](https://github.com/google/osv-scanner-action/network/dependents)
 
 ### Conferences and events
 

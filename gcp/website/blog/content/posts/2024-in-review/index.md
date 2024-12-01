@@ -26,7 +26,9 @@ This has brought the total number of supported ecosystems to 30. The significant
 ### Impact of the NVD's analysis challenges on Git commit range coverage
 
 Last year, we [announced](https://osv.dev/blog/posts/introducing-broad-c-c++-support/) the expansion of coverage of C/C++ software with Git range coverage of CVEs
-programmatically converted from the NVD. The [reduction of the NVD's analysis capabilities](https://www.scworld.com/news/update-delays-to-nist-vulnerability-database-alarms-researchers) has had a broad impact on vulnerability management, and it has also impacted the effectiveness and comprehensiveness of this CVE conversion. On the expectation that this may persist into 2025, and in light of [related](https://github.com/cisagov/vulnrichment) [developments](https://www.cisa.gov/securebydesign/pledge) this year, we will be exploring additionally converting CVEs directly from the [CVE List](https://github.com/CVEProject/cvelist).
+programmatically converted from the NVD. The [reduction of the NVD's analysis capabilities](https://www.scworld.com/news/update-delays-to-nist-vulnerability-database-alarms-researchers) has had a broad impact on vulnerability management, and it has also impacted the effectiveness and comprehensiveness of this CVE conversion. Even with this unexpected challenge, slightly over 50% of in-scope CVEs have been able to be converted to OSV records with the [current implementation](https://github.com/google/osv.dev/tree/master/vulnfeeds/cmd/nvd-cve-osv).
+
+On the expectation that this may persist into 2025, and in light of [related](https://github.com/cisagov/vulnrichment) [developments](https://www.cisa.gov/securebydesign/pledge) this year, we will be exploring additionally converting CVEs directly from the [CVE List](https://github.com/CVEProject/cvelist).
 
 ## Data Quality
 

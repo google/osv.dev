@@ -77,8 +77,8 @@ This year, OSV-Scanner gained these noteworthy new features:
 
 * [Guided Remediation](https://osv.dev/blog/posts/announcing-guided-remediation-in-osv-scanner/) for npm
 * [Transitive dependency scanning for Maven](https://osv.dev/blog/posts/announcing-transitive-dependency-support-for-maven-pomxml-in-osv-scanner/)
-* The ability to override findings in specific packages
 * Support for private Maven registries
+* The ability to override findings in specific packages
 * Additional support for scanning
   * NuGet version 2 lock files
   * pdm lockfiles

@@ -38,6 +38,8 @@ We announced our [approach to data quality](https://osv.dev/blog/posts/announcin
 
 We added [support for importing records published at a REST API endpoint](https://osv.dev/blog/posts/announcing-curl-via-rest/), (with the [curl project](https://curl.se/) being the pilot home database to do so).
 
+We also made improvements to the record import and ingestion processes, to be more tolerant of records with `GIT` ranges that are semantically valid, but incorrect, enabling more existing converted CVEs to be partially imported successfully.
+
 A very impactful change to the OSV.dev [API](https://google.github.io/osv.dev/api/) has been the [ability to perform queries on existing and future data that OSV.dev did not have version enumeration support for](https://osv.dev/blog/posts/announcing-api-queries-for-more-linux-distros/). This unlocked the usage of existing data for vulnerability discovery via the API, and reduces the effort required to onboard additional ecosystems into the future.
 
 We also continued to make performance and reliability improvements to the API, and transitioned the website serving infrastructure from Google App Engine to Cloud Run.

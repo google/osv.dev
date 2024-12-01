@@ -15,7 +15,7 @@ author: The OSV Team
 * [Ubuntu](https://openssf.org/blog/2024/06/11/ubuntu-security-notices-now-available-in-osv/)
 * [Chainguard](https://openssf.org/blog/2024/07/03/chainguard-enhances-security-with-osv-advisory-feed/)
 * [Red Hat](https://openssf.org/blog/2024/11/01/red-hats-collaboration-with-the-openssf-and-osv-dev-yields-results-red-hat-security-data-now-available-in-the-osv-format/)
-* SUSE/openSUSE
+* [SUSE/openSUSE](https://github.com/ossf/osv-schema/pull/260)
 
 We also expanded our existing coverage of Debian GNU/Linux, by [including CVE data from their Security Tracker](https://osv.dev/blog/posts/supporting-debian-security-tracker-data/) in our existing CVE record conversion.
 

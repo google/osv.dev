@@ -44,7 +44,7 @@ A very impactful change to the OSV.dev [API](https://google.github.io/osv.dev/ap
 
 We also continued to make performance and reliability improvements to the API, and transitioned the website serving infrastructure from Google App Engine to Cloud Run.
 
-OSV.dev API usage of peaked at over 900 QPS in October.
+OSV.dev API usage of peaked at over 900 QPS in October, with at least 140 QPS specifically attributable to OSV-Scanner (including [OpenSSF Scorecard](https://securityscorecards.dev/)'s use of OSV-Scanner).
 
 With the growth in ecosystems, we took the opportunity to [simplify the exported data](https://groups.google.com/g/osv-discuss/c/V7ZSZEMewGA) in our public GCS bucket.
 

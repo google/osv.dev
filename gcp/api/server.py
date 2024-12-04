@@ -78,9 +78,7 @@ _DETERMINE_VER_MIN_SCORE_CUTOFF = 0.05
 _BUCKET_SIZE = 512
 
 # This needs to be kept in sync with
-# https://github.com/google/osv.dev/blob/
-# 666a43e6ae7690fbfa283e9a6f0b08a986be4d32/
-# docker/indexer/stages/processing/processing.go#L77
+# https://github.com/google/osv.dev/blob/master/docker/indexer/stages/processing/processing.go#L77
 _VENDORED_LIB_NAMES = frozenset((
     '3rdparty',
     'dep',

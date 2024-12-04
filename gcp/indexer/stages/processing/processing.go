@@ -33,8 +33,8 @@ import (
 	"cloud.google.com/go/pubsub"
 	"cloud.google.com/go/storage"
 	"github.com/go-git/go-git/v5"
-	"github.com/google/osv.dev/docker/indexer/shared"
-	"github.com/google/osv.dev/docker/indexer/stages/preparation"
+	"github.com/google/osv.dev/gcp/indexer/shared"
+	"github.com/google/osv.dev/gcp/indexer/stages/preparation"
 
 	log "github.com/golang/glog"
 )

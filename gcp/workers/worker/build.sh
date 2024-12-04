@@ -1,4 +1,4 @@
-#!/bin/bash -ex
+#!/bin/bash -x
 # Copyright 2021 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -13,14 +13,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-pushd worker
-./build.sh $1
-popd
+# Build from root context.
+cd ../../../
 
-pushd importer
-./build.sh $1
-popd
-
-pushd exporter
-./build.sh $1
-popd
+docker build -t gcr.io/oss-vdb/worker:$1 -t gcr.io/oss-vdb/worker:latest -f gcp/workers/worker/Dockerfile . && \
+gcloud docker -- push gcr.io/oss-vdb/worker:$1 && \
+gcloud docker -- push gcr.io/oss-vdb/worker:latest

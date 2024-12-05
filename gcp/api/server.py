@@ -735,8 +735,13 @@ def do_query(query: osv_service_v1_pb2.Query,
       )
 
     if purl is None:
-      context.service_context.abort(grpc.StatusCode.INVALID_ARGUMENT,
-                                    'Unknown PURL ecosystem.')
+      # TODO(gongh@): Previously, we didn't perform any PURL validation.
+      # All unsupported PURL queries would simply return a 200
+      # status code with an empty response.
+      # To avoid breaking existing behavior,
+      # we return an empty response here with no error.
+      # This needs to be revisited with a more considerate design.
+      return [], None
 
     if package_name:  # Purls already include the package name
       context.service_context.abort(

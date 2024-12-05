@@ -6,7 +6,7 @@ package-mode = false
 python = "^3.11"
 
 google-cloud-ndb = "==2.3.2"
-google-cloud-storage = "==2.18.2"
+google-cloud-storage = "==2.19.0"
 PyYAML = "==6.0.2"
 
 osv = { path = "../../", develop = true }

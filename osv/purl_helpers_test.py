@@ -146,6 +146,9 @@ class PurlHelpersTest(unittest.TestCase):
     self.assertEqual(('CRAN', 'commonmark', None),
                      purl_helpers.parse_purl('pkg:cran/commonmark'))
 
+    self.assertEqual(('ConanCenter', 'openssl', '3.0.3'),
+                     purl_helpers.parse_purl('pkg:conan/openssl@3.0.3'))
+
     self.assertEqual(('Debian', 'mpg123', '1.26.4-1+deb11u1'),
                      purl_helpers.parse_purl(
                          'pkg:deb/debian/mpg123@1.26.4-1+deb11u1?arch=source'))
@@ -221,8 +224,7 @@ class PurlHelpersTest(unittest.TestCase):
         ('Wolfi', 'test-package', '1.2.3'),
         purl_helpers.parse_purl('pkg:apk/wolfi/test-package@1.2.3'))
 
-    with self.assertRaises(ValueError):
-      purl_helpers.parse_purl('pkg:bad/ubuntu/pygments')
+    self.assertIsNone(purl_helpers.parse_purl('pkg:bad/ubuntu/pygments'))
 
     with self.assertRaises(ValueError):
       purl_helpers.parse_purl('purl:apk/wolfi/test-package@1.2.3')

@@ -27,23 +27,28 @@ ECOSYSTEM_PURL_DATA = {
     'AlmaLinux': EcosystemPURL('rpm', 'almalinux'),
     'Alpine': EcosystemPURL('apk', 'alpine'),
     # Android
+    # Bioconductor
     'Bitnami': EcosystemPURL('bitnami', None),
     'Chainguard': EcosystemPURL('apk', 'chainguard'),
+    'ConanCenter': EcosystemPURL('conan', None),
     'CRAN': EcosystemPURL('cran', None),
     'crates.io': EcosystemPURL('cargo', None),
     'Debian': EcosystemPURL('deb', 'debian'),
+    # GHC
     # GIT
     'GitHub Actions': EcosystemPURL('github', None),
     'Go': EcosystemPURL('golang', None),
     'Hackage': EcosystemPURL('hackage', None),
     'Hex': EcosystemPURL('hex', None),
     # Linux
+    # Mageia
     'Maven': EcosystemPURL('maven', None),
     'npm': EcosystemPURL('npm', None),
     'NuGet': EcosystemPURL('nuget', None),
     'openSUSE': EcosystemPURL('rpm', 'opensuse'),
     'OSS-Fuzz': EcosystemPURL('generic', None),
     'Packagist': EcosystemPURL('composer', None),
+    # Photon OS
     'Pub': EcosystemPURL('pub', None),
     'PyPI': EcosystemPURL('pypi', None),
     'Red Hat': EcosystemPURL('rpm', 'redhat'),
@@ -123,7 +128,7 @@ def parse_purl(purl_str: str) -> ParsedPURL | None:
   # information (like vendors) and the namespace might be optional.
   ecosystem = PURL_ECOSYSTEM_MAP.get(EcosystemPURL(purl.type, None))
   if not ecosystem:
-    raise ValueError('Invalid ecosystem.')
+    return None
 
   # For ecosystems with optional namespaces, the namespace might need to be
   # included as part of the package name.

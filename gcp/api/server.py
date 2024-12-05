@@ -382,6 +382,8 @@ def query_info(query) -> tuple[str, str | None, str | None]:
   if query.package.purl:
     try:
       purl = purl_helpers.parse_purl(query.package.purl)  # can raise ValueError
+      if purl is None:
+        raise ValueError('purl ecosystem is unknown')
       if query.package.ecosystem or query.package.name:
         raise ValueError('purl and name/ecosystem cannot both be specified')
       if purl.version and query.version:
@@ -726,28 +728,33 @@ def do_query(query: osv_service_v1_pb2.Query,
   if purl_str:
     try:
       purl = purl_helpers.parse_purl(purl_str)
+
     except ValueError:
       context.service_context.abort(
           grpc.StatusCode.INVALID_ARGUMENT,
           'Invalid PURL.',
       )
 
+    if purl is None:
+      context.service_context.abort(grpc.StatusCode.INVALID_ARGUMENT,
+                                    'Unknown PURL ecosystem.')
+
     if package_name:  # Purls already include the package name
       context.service_context.abort(
           grpc.StatusCode.INVALID_ARGUMENT,
-          'name specified in a purl query',
+          'name specified in a PURL query',
       )
     if ecosystem:
       # Purls already include the ecosystem inside
       context.service_context.abort(
           grpc.StatusCode.INVALID_ARGUMENT,
-          'ecosystem specified in a purl query',
+          'ecosystem specified in a PURL query',
       )
     if purl.version and version:
       # version included both in purl and query
       context.service_context.abort(
           grpc.StatusCode.INVALID_ARGUMENT,
-          'version specified in params and purl query',
+          'version specified in params and PURL query',
       )
 
     ecosystem = purl.ecosystem

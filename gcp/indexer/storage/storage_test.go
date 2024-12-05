@@ -20,7 +20,7 @@ import (
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
-	"github.com/google/osv.dev/docker/indexer/stages/preparation"
+	"github.com/google/osv.dev/gcp/indexer/stages/preparation"
 )
 
 func getRepoInfo(t *testing.T) *preparation.Result {

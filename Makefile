@@ -20,13 +20,13 @@ lib-tests:
 
 worker-tests:
 	git submodule update --init --recursive
-	cd docker/worker && ./run_tests.sh
+	cd gcp/workers/worker && ./run_tests.sh
 
 importer-tests:
-	cd docker/importer && ./run_tests.sh
+	cd gcp/workers/importer && ./run_tests.sh
 
 alias-tests:
-	cd docker/alias && ./run_tests.sh
+	cd gcp/workers/alias && ./run_tests.sh
 
 website-tests:
 	cd gcp/website && ./run_tests.sh

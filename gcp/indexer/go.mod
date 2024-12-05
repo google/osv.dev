@@ -1,4 +1,4 @@
-module github.com/google/osv.dev/docker/indexer
+module github.com/google/osv.dev/gcp/indexer
 
 go 1.23.1
 

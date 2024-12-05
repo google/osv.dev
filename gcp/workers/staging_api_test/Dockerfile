@@ -19,7 +19,7 @@ WORKDIR /staging_api_test
 COPY retrieve_bugs_from_bucket.py perform_api_calls.py run.sh ./
 
 # Add aiohttp lib
-RUN cd /env/docker/worker && POETRY_VIRTUALENVS_CREATE=false poetry add aiohttp
+RUN cd /env/gcp/workers/worker && POETRY_VIRTUALENVS_CREATE=false poetry add aiohttp
 
 RUN chmod 755 retrieve_bugs_from_bucket.py perform_api_calls.py run.sh
 

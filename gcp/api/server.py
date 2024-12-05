@@ -78,9 +78,7 @@ _DETERMINE_VER_MIN_SCORE_CUTOFF = 0.05
 _BUCKET_SIZE = 512
 
 # This needs to be kept in sync with
-# https://github.com/google/osv.dev/blob/
-# 666a43e6ae7690fbfa283e9a6f0b08a986be4d32/
-# docker/indexer/stages/processing/processing.go#L77
+# https://github.com/google/osv.dev/blob/master/docker/indexer/stages/processing/processing.go#L77
 _VENDORED_LIB_NAMES = frozenset((
     '3rdparty',
     'dep',
@@ -384,6 +382,8 @@ def query_info(query) -> tuple[str, str | None, str | None]:
   if query.package.purl:
     try:
       purl = purl_helpers.parse_purl(query.package.purl)  # can raise ValueError
+      if purl is None:
+        raise ValueError('purl ecosystem is unknown')
       if query.package.ecosystem or query.package.name:
         raise ValueError('purl and name/ecosystem cannot both be specified')
       if purl.version and query.version:
@@ -734,22 +734,31 @@ def do_query(query: osv_service_v1_pb2.Query,
           'Invalid PURL.',
       )
 
+    if purl is None:
+      # TODO(gongh@): Previously, we didn't perform any PURL validation.
+      # All unsupported PURL queries would simply return a 200
+      # status code with an empty response.
+      # To avoid breaking existing behavior,
+      # we return an empty response here with no error.
+      # This needs to be revisited with a more considerate design.
+      return [], None
+
     if package_name:  # Purls already include the package name
       context.service_context.abort(
           grpc.StatusCode.INVALID_ARGUMENT,
-          'name specified in a purl query',
+          'name specified in a PURL query',
       )
     if ecosystem:
       # Purls already include the ecosystem inside
       context.service_context.abort(
           grpc.StatusCode.INVALID_ARGUMENT,
-          'ecosystem specified in a purl query',
+          'ecosystem specified in a PURL query',
       )
     if purl.version and version:
       # version included both in purl and query
       context.service_context.abort(
           grpc.StatusCode.INVALID_ARGUMENT,
-          'version specified in params and purl query',
+          'version specified in params and PURL query',
       )
 
     ecosystem = purl.ecosystem

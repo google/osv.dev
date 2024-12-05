@@ -22,12 +22,12 @@ import (
 
 	"cloud.google.com/go/pubsub"
 	"cloud.google.com/go/storage"
-	"github.com/google/osv.dev/docker/indexer/config"
-	"github.com/google/osv.dev/docker/indexer/stages/preparation"
-	"github.com/google/osv.dev/docker/indexer/stages/processing"
+	"github.com/google/osv.dev/gcp/indexer/config"
+	"github.com/google/osv.dev/gcp/indexer/stages/preparation"
+	"github.com/google/osv.dev/gcp/indexer/stages/processing"
 
 	log "github.com/golang/glog"
-	idxStorage "github.com/google/osv.dev/docker/indexer/storage"
+	idxStorage "github.com/google/osv.dev/gcp/indexer/storage"
 )
 
 var (

@@ -64,7 +64,7 @@ steps:
 
 # Build/push core worker/importer/exporter/alias images.
 - name: gcr.io/cloud-builders/docker
-  args: ['build', '-t', 'gcr.io/oss-vdb/worker:latest', '-t', 'gcr.io/oss-vdb/worker:$COMMIT_SHA', '-f', 'docker/worker/Dockerfile', '.']
+  args: ['build', '-t', 'gcr.io/oss-vdb/worker:latest', '-t', 'gcr.io/oss-vdb/worker:$COMMIT_SHA', '-f', 'gcp/workers/worker/Dockerfile', '.']
   id: 'build-worker'
   waitFor: ['build-worker-base']
 - name: gcr.io/cloud-builders/docker
@@ -73,7 +73,7 @@ steps:
 
 - name: gcr.io/cloud-builders/docker
   args: ['build', '-t', 'gcr.io/oss-vdb/importer:latest', '-t', 'gcr.io/oss-vdb/importer:$COMMIT_SHA', '.']
-  dir: 'docker/importer'
+  dir: 'gcp/workers/importer'
   id: 'build-importer'
   waitFor: ['build-worker']
 - name: gcr.io/cloud-builders/docker
@@ -82,7 +82,7 @@ steps:
 
 - name: gcr.io/cloud-builders/docker
   args: ['build', '-t', 'gcr.io/oss-vdb/exporter:latest', '-t', 'gcr.io/oss-vdb/exporter:$COMMIT_SHA', '.']
-  dir: 'docker/exporter'
+  dir: 'gcp/workers/exporter'
   id: 'build-exporter'
   waitFor: ['build-worker']
 - name: gcr.io/cloud-builders/docker
@@ -91,7 +91,7 @@ steps:
 
 - name: gcr.io/cloud-builders/docker
   args: ['build', '-t', 'gcr.io/oss-vdb/alias-computation:latest', '-t', 'gcr.io/oss-vdb/alias-computation:$COMMIT_SHA', '.']
-  dir: 'docker/alias'
+  dir: 'gcp/workers/alias'
   id: 'build-alias-computation'
   waitFor: ['build-worker']
 - name: gcr.io/cloud-builders/docker
@@ -101,7 +101,7 @@ steps:
 # Build/push staging-api-test images to gcr.io/oss-vdb-test.
 - name: gcr.io/cloud-builders/docker
   args: ['build', '-t', 'gcr.io/oss-vdb-test/staging-api-test:latest', '-t', 'gcr.io/oss-vdb-test/staging-api-test:$COMMIT_SHA', '.']
-  dir: 'docker/staging_api_test'
+  dir: 'gcp/workers/staging_api_test'
   id: 'build-staging-api-test'
   waitFor: ['build-worker']
 - name: gcr.io/cloud-builders/docker
@@ -111,7 +111,7 @@ steps:
 # Build/push cron job images.
 - name: gcr.io/cloud-builders/docker
   args: ['build', '-t', 'gcr.io/oss-vdb/cron:latest', '-t', 'gcr.io/oss-vdb/cron:$COMMIT_SHA', '.']
-  dir: 'docker/cron'
+  dir: 'gcp/workers/cron'
   id: 'build-cron'
   waitFor: ['build-worker']
 - name: gcr.io/cloud-builders/docker
@@ -169,7 +169,7 @@ steps:
   waitFor: ['setup']
 - name: gcr.io/cloud-builders/docker
   args: ['build', '-t', 'gcr.io/oss-vdb/indexer:latest', '-t', 'gcr.io/oss-vdb/indexer:$COMMIT_SHA', '--cache-from', 'gcr.io/oss-vdb/indexer:latest', '--pull', '.']
-  dir: 'docker/indexer'
+  dir: 'gcp/indexer'
   id: 'build-indexer'
   waitFor: ['pull-indexer']
 - name: gcr.io/cloud-builders/docker

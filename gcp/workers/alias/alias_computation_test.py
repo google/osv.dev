@@ -20,7 +20,7 @@ from google.cloud import ndb
 from google.protobuf import timestamp_pb2
 
 import osv
-from docker.alias import alias_computation
+import alias_computation
 from osv import tests
 
 TEST_DATA_DIR = os.path.join(

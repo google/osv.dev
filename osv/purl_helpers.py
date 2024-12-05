@@ -36,7 +36,7 @@ ECOSYSTEM_PURL_DATA = {
     'Debian': EcosystemPURL('deb', 'debian'),
     # GHC
     # GIT
-    'GitHub Actions': EcosystemPURL('github', None),
+    # GitHub Actions
     'Go': EcosystemPURL('golang', None),
     'Hackage': EcosystemPURL('hackage', None),
     'Hex': EcosystemPURL('hex', None),
@@ -138,6 +138,6 @@ def parse_purl(purl_str: str) -> ParsedPURL | None:
   elif purl.type == 'maven' and purl.namespace:
     package = purl.namespace + ':' + purl.name
   else:
-    raise ValueError('Invalid ecosystem.')
+    return None
 
   return ParsedPURL(ecosystem, package, version)

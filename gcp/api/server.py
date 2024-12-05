@@ -728,7 +728,6 @@ def do_query(query: osv_service_v1_pb2.Query,
   if purl_str:
     try:
       purl = purl_helpers.parse_purl(purl_str)
-
     except ValueError:
       context.service_context.abort(
           grpc.StatusCode.INVALID_ARGUMENT,

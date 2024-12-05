@@ -41,7 +41,7 @@ ECOSYSTEM_PURL_DATA = {
     'Hackage': EcosystemPURL('hackage', None),
     'Hex': EcosystemPURL('hex', None),
     # Linux
-    # Mageia
+    'Mageia': EcosystemPURL('rpm', 'mageia'),
     'Maven': EcosystemPURL('maven', None),
     'npm': EcosystemPURL('npm', None),
     'NuGet': EcosystemPURL('nuget', None),

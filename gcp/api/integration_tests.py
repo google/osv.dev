@@ -424,7 +424,7 @@ class IntegrationTests(unittest.TestCase,
 
     self.assert_results_equal({
         'code': 3,
-        'message': 'Invalid PURL.'
+        'message': 'Unknown PURL ecosystem.'
     }, response.json())
 
   def test_query_semver_no_vulns(self):
@@ -644,7 +644,7 @@ class IntegrationTests(unittest.TestCase,
     self.assert_results_equal(
         {
             'code': 3,
-            'message': 'ecosystem specified in a purl query'
+            'message': 'ecosystem specified in a PURL query'
         }, response.json())
 
   def test_query_with_redundant_version(self):
@@ -661,7 +661,7 @@ class IntegrationTests(unittest.TestCase,
     self.assert_results_equal(
         {
             'code': 3,
-            'message': 'version specified in params and purl query'
+            'message': 'version specified in params and PURL query'
         }, response.json())
 
   def test_query_with_redundant_package_name(self):
@@ -677,7 +677,7 @@ class IntegrationTests(unittest.TestCase,
     self.assert_results_equal(
         {
             'code': 3,
-            'message': 'name specified in a purl query'
+            'message': 'name specified in a PURL query'
         }, response.json())
 
   def test_query_batch(self):

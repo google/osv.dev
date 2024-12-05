@@ -35,8 +35,14 @@ class PurlHelpersTest(unittest.TestCase):
     self.assertEqual('pkg:cran/commonmark',
                      purl_helpers.package_to_purl('CRAN', 'commonmark'))
 
+    self.assertEqual('pkg:conan/openssl',
+                     purl_helpers.package_to_purl('ConanCenter', 'openssl'))
+
     self.assertEqual('pkg:pypi/django',
                      purl_helpers.package_to_purl('PyPI', 'django'))
+
+    self.assertEqual('pkg:rpm/mageia/python-aiohttp',
+                     purl_helpers.package_to_purl('Mageia', 'python-aiohttp'))
 
     self.assertEqual(
         'pkg:maven/org.apache.struts/struts2-core',
@@ -165,6 +171,10 @@ class PurlHelpersTest(unittest.TestCase):
 
     self.assertEqual(('Hex', 'acme/foo', '2.3.'),
                      purl_helpers.parse_purl('pkg:hex/acme/foo@2.3.'))
+
+    self.assertEqual(('Mageia', 'python-aiohttp', None),
+                     purl_helpers.parse_purl(
+                         'pkg:rpm/mageia/python-aiohttp?distro=mageia-9'))
 
     self.assertEqual(('Maven', 'org.apache.struts:struts2-core', '1.0.0'),
                      purl_helpers.parse_purl(

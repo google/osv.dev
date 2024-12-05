@@ -422,10 +422,7 @@ class IntegrationTests(unittest.TestCase,
         }),
         timeout=_TIMEOUT)
 
-    self.assert_results_equal({
-        'code': 3,
-        'message': 'Unknown PURL ecosystem.'
-    }, response.json())
+    self.assert_results_equal({}, response.json())
 
   def test_query_semver_no_vulns(self):
     """Test queries by SemVer with no vulnerabilities."""

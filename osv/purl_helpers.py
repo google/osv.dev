@@ -132,12 +132,20 @@ def parse_purl(purl_str: str) -> ParsedPURL | None:
 
   # For ecosystems with optional namespaces, the namespace might need to be
   # included as part of the package name.
-  if purl.type in ('composer', 'golang', 'hex', 'npm',
-                   'swift') and purl.namespace:
-    package = purl.namespace + '/' + purl.name
-  elif purl.type == 'maven' and purl.namespace:
-    package = purl.namespace + ':' + purl.name
+  if purl.namespace:
+    if purl.type == 'golang':
+      package = purl.namespace + '/' + purl.name
+      if purl.subpath:
+        package = package + '/' + purl.subpath
+    elif purl.type in ('composer', 'hex', 'npm', 'swift'):
+      package = purl.namespace + '/' + purl.name
+    elif purl.type == 'maven':
+      package = purl.namespace + ':' + purl.name
+    else:
+      # Handle the case where the ecosystem shouldn't have a namespace.
+      return None
   else:
+    # Handle the case where the namespace is not supported.
     return None
 
   return ParsedPURL(ecosystem, package, version)

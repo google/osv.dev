@@ -1406,13 +1406,12 @@ def main():
     setup_gcp_logging('api-backend')
     logging.getLogger().addFilter(trace_filter)
 
-    if get_gcp_project() == _TEST_INSTANCE:
-      # Profiler initialization. It starts a daemon thread which continuously
-      # collects and uploads profiles. Best done as early as possible.
-      try:
-        googlecloudprofiler.start(service="osv-api-profiler")
-      except (ValueError, NotImplementedError) as e:
-        logging.error(e)
+    # Profiler initialization. It starts a daemon thread which continuously
+    # collects and uploads profiles. Best done as early as possible.
+    try:
+      googlecloudprofiler.start(service="osv-api-profiler")
+    except (ValueError, NotImplementedError) as e:
+      logging.error(e)
 
   logging.getLogger().setLevel(logging.INFO)
 

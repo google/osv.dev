@@ -378,6 +378,52 @@ class IntegrationTests(unittest.TestCase,
         timeout=_TIMEOUT)
     self.assertEqual(0, len(response.json()))
 
+  def test_malicious_package_matching(self):
+    """"Test malicious package query"""
+    # Test matching by affected ranges
+    mal_2022_7426 = self._get('MAL-2022-7426')
+
+    expected_vulns = [
+        mal_2022_7426,
+    ]
+
+    package = 'pymocks'
+    ecosystem = 'PyPI'
+
+    response = requests.post(
+        _api() + _BASE_QUERY,
+        data=json.dumps({
+            'version': '0.0.1',
+            'package': {
+                'name': package,
+                'ecosystem': ecosystem,
+            }
+        }),
+        timeout=_TIMEOUT)
+    self.assert_results_equal({'vulns': expected_vulns}, response.json())
+
+    # Test matching by affected versions
+    mal_2024_4618 = self._get('MAL-2024-4618')
+
+    expected_vulns = [
+        mal_2024_4618,
+    ]
+
+    package = 'psbuiId'
+    ecosystem = 'NuGet'
+
+    response = requests.post(
+        _api() + _BASE_QUERY,
+        data=json.dumps({
+            'version': '1.1.1-beta',
+            'package': {
+                'name': package,
+                'ecosystem': ecosystem,
+            }
+        }),
+        timeout=_TIMEOUT)
+    self.assert_results_equal({'vulns': expected_vulns}, response.json())
+
   def test_query_invalid_ecosystem(self):
     """Test a query with an invalid ecosystem fails validation."""
     response = requests.post(

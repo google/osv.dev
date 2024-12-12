@@ -144,6 +144,31 @@ def normalize(ecosystem_name: str):
   return ecosystem_name.split(':')[0]
 
 
+def add_matching_ecosystems(original_set: set[str]) -> set[str]:
+  """
+  For Linux distributions, some release versions may have different variants.
+  For example, Ubuntu:22.04 is equivalent to Ubuntu:22.04:LTS.
+  This function adds all matching ecosystems
+  to the datastore to facilitate API queries.
+
+  For example:
+  - "Ubuntu:Pro:18.04:LTS" would also be "Ubuntu:18.04"
+
+  Args:
+    original_set: The original ecosystem set
+
+  Returns:
+    A new set with the added matching ecosystems.
+  """
+  new_set = set(original_set)
+  for ecosystem in original_set:
+    # For Ubuntu, remove ":Pro" and ":LTS"
+    if ecosystem.startswith("Ubuntu"):
+      new_item = ecosystem.replace(":Pro", "").replace(":LTS", "")
+      new_set.add(new_item)
+  return new_set
+
+
 def is_supported_in_deps_dev(ecosystem_name: str) -> bool:
   return ecosystem_name in _OSV_TO_DEPS_ECOSYSTEMS_MAP
 

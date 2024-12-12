@@ -163,8 +163,8 @@ def add_matching_ecosystems(original_set: set[str]) -> set[str]:
   new_set = set(original_set)
   for ecosystem in original_set:
     # For Ubuntu, remove ":Pro" and ":LTS"
-    if ecosystem.startswith("Ubuntu"):
-      new_item = ecosystem.replace(":Pro", "").replace(":LTS", "")
+    if ecosystem.startswith('Ubuntu'):
+      new_item = ecosystem.replace(':Pro', '').replace(':LTS', '')
       new_set.add(new_item)
   return new_set
 

@@ -24,9 +24,9 @@ class EcosystemTest(unittest.TestCase):
     """Test sort key"""
     # Test Ubuntu
     ubuntu_ecosystem = {
-        "Ubuntu", "Ubuntu:20.04:LTS", "Ubuntu:22.04:LTS", "Ubuntu:24.04:LTS",
-        "Ubuntu:24.10", "Ubuntu:Pro:14.04:LTS", "Ubuntu:Pro:16.04:LTS",
-        "Ubuntu:Pro:18.04:LTS"
+        'Ubuntu', 'Ubuntu:20.04:LTS', 'Ubuntu:22.04:LTS', 'Ubuntu:24.04:LTS',
+        'Ubuntu:24.10', 'Ubuntu:Pro:14.04:LTS', 'Ubuntu:Pro:16.04:LTS',
+        'Ubuntu:Pro:18.04:LTS'
     }
     actual_output = list(ecosystems.add_matching_ecosystems(ubuntu_ecosystem))
     expected_output = [
@@ -39,8 +39,8 @@ class EcosystemTest(unittest.TestCase):
     self.assertEqual(list(actual_output), expected_output)
 
     #Test Debian (it should be no change)
-    debian_ecosystem = {"Debian", "Debian:11", "Debian:12", "Debian:13"}
+    debian_ecosystem = {'Debian', 'Debian:11', 'Debian:12', 'Debian:13'}
     actual_output = list(ecosystems.add_matching_ecosystems(debian_ecosystem))
-    expected_output = ["Debian", "Debian:11", "Debian:12", "Debian:13"]
+    expected_output = ['Debian', 'Debian:11', 'Debian:12', 'Debian:13']
     actual_output.sort()
     self.assertEqual(list(actual_output), expected_output)

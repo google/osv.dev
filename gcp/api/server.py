@@ -52,8 +52,6 @@ from gcp.api.cursor import QueryCursor
 
 import googlecloudprofiler
 
-from osv.models import AffectedPackage
-
 _SHUTDOWN_GRACE_DURATION = 5
 
 _MAX_SINGLE_QUERY_TIME = timedelta(seconds=20)
@@ -983,7 +981,8 @@ def _is_version_affected(affected_packages,
 
     if ecosystem:
       # If package ecosystem has a :, also try ignoring parts after it.
-      if not is_matching_package_ecosystem(affected_package.package, ecosystem):
+      if not is_matching_package_ecosystem(affected_package.package.ecosystem,
+                                           ecosystem):
         continue
 
     if normalize:
@@ -1254,7 +1253,7 @@ def _query_by_comparing_versions(context: QueryContext, query: ndb.Query,
       # the specified release (e.g., "Debian:11").
       # Skips if the affected package ecosystem does not match
       # the queried ecosystem.
-      if not is_matching_package_ecosystem(affected_package, ecosystem):
+      if not is_matching_package_ecosystem(package.ecosystem, ecosystem):
         continue
 
       # Skips if the affected package name does not match
@@ -1395,12 +1394,11 @@ def _is_affected(ecosystem: str, version: str,
   return False
 
 
-def is_matching_package_ecosystem(affected_package: AffectedPackage,
+def is_matching_package_ecosystem(package_ecosystem: str,
                                   ecosystem: str) -> bool:
   """Checks if the queried ecosystem matches the affected package's ecosystem,
   considering potential variations in the package's ecosystem.
   """
-  package_ecosystem = affected_package.package.ecosystem
   return any(eco == ecosystem for eco in (
       package_ecosystem,
       ecosystems.normalize(package_ecosystem),

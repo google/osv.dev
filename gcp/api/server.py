@@ -983,7 +983,7 @@ def _is_version_affected(affected_packages,
 
     if ecosystem:
       # If package ecosystem has a :, also try ignoring parts after it.
-      if is_matching_package_ecosystem(affected_package.package, ecosystem):
+      if not is_matching_package_ecosystem(affected_package.package, ecosystem):
         continue
 
     if normalize:
@@ -1237,9 +1237,6 @@ def _query_by_comparing_versions(context: QueryContext, query: ndb.Query,
 
   it: ndb.QueryIterator = query.iter(start_cursor=context.cursor_at_current())
 
-  # Checks if the query specifies a release (e.g., "Debian:12")
-  has_release = ':' in ecosystem
-
   while (yield it.has_next_async()):
     if context.should_break_page(len(bugs)):
       context.save_cursor_at_page_break(it)
@@ -1255,14 +1252,9 @@ def _query_by_comparing_versions(context: QueryContext, query: ndb.Query,
       # compare against packages in all releases (e.g., "Debian:X").
       # Otherwise, only compare within
       # the specified release (e.g., "Debian:11").
-      package_ecosystem: str = package.ecosystem  # type: ignore
-      if not has_release:
-        # Extracts ecosystem name for broader comparison (e.g., "Debian")
-        package_ecosystem = package_ecosystem.split(':')[0]
-
       # Skips if the affected package ecosystem does not match
       # the queried ecosystem.
-      if package_ecosystem != ecosystem:
+      if not is_matching_package_ecosystem(affected_package, ecosystem):
         continue
 
       # Skips if the affected package name does not match

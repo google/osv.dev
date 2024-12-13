@@ -52,6 +52,8 @@ from gcp.api.cursor import QueryCursor
 
 import googlecloudprofiler
 
+from osv.models import AffectedPackage
+
 _SHUTDOWN_GRACE_DURATION = 5
 
 _MAX_SINGLE_QUERY_TIME = timedelta(seconds=20)
@@ -981,9 +983,7 @@ def _is_version_affected(affected_packages,
 
     if ecosystem:
       # If package ecosystem has a :, also try ignoring parts after it.
-      if (affected_package.package.ecosystem != ecosystem and
-          ecosystems.normalize(
-              affected_package.package.ecosystem) != ecosystem):
+      if is_matching_package_ecosystem(affected_package.package, ecosystem):
         continue
 
     if normalize:
@@ -1401,6 +1401,19 @@ def _is_affected(ecosystem: str, version: str,
       return True
 
   return False
+
+
+def is_matching_package_ecosystem(affected_package: AffectedPackage,
+                                  ecosystem: str) -> bool:
+  """Checks if the queried ecosystem matches the affected package's ecosystem,
+  considering potential variations in the package's ecosystem.
+  """
+  package_ecosystem = affected_package.package.ecosystem
+  return any(eco == ecosystem for eco in (
+      package_ecosystem,
+      ecosystems.normalize(package_ecosystem),
+      ecosystems.remove_variants(package_ecosystem),
+  ))
 
 
 def main():

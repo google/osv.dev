@@ -17,6 +17,7 @@ syntax = "proto3";
 package osv.v1;
 
 import "osv/vulnerability.proto";
+import "osv/importfinding.proto";
 import "google/api/annotations.proto";
 
 // A list of Vulnerability entries.
@@ -72,6 +73,11 @@ message DetermineVersionParameters {
   VersionQuery query = 1;
 }
 
+// Parameters for ImportFindings.
+message ImportFindingsParameters {
+  string source = 1;
+}
+
 // The version query.
 message VersionQuery {
   // The name of the dependency. Can be empty.
@@ -95,6 +101,11 @@ message FileHash {
 // Result of DetmineVersion.
 message VersionMatchList {
   repeated VersionMatch matches = 1;
+}
+
+// Result of ImportFindings.
+message ImportFindingList {
+  repeated osv.ImportFinding invalid_records = 1;
 }
 
 // Match information for the provided VersionQuery.
@@ -164,6 +175,13 @@ service OSV {
     option (google.api.http) = {
       post: "/v1experimental/determineversion"
       body: "query"
+    };
+  }
+
+  // Get import findings per source.
+  rpc ImportFindings(ImportFindingsParameters) returns (ImportFindingList) {
+    option (google.api.http) = {
+      get: "/v1/importfindings/{source}"
     };
   }
 }

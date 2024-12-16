@@ -44,6 +44,7 @@ from osv import ecosystems
 from osv import semver_index
 from osv import purl_helpers
 from osv import vulnerability_pb2
+from osv import importfinding_pb2
 from osv.logs import setup_gcp_logging
 from gcp.api import osv_service_v1_pb2
 from gcp.api import osv_service_v1_pb2_grpc
@@ -344,6 +345,32 @@ class OSVServicer(osv_service_v1_pb2_grpc.OSVServicer,
     """Determine the version of the provided hashes."""
     res = determine_version(request.query, context).result()
     return res
+
+  @ndb_context
+  @trace_filter.log_trace
+  def ImportFindings(self, request, context: grpc.ServicerContext):
+    """Return a list of `ImportFinding` for a given source."""
+    source = request.source
+    # TODO(gongh@): add source check
+    if not source:
+      context.abort(grpc.StatusCode.INVALID_ARGUMENT, 'Source is required.')
+    if get_gcp_project() == _TEST_INSTANCE:
+      logging.info('Checking import finding for %s\n', source)
+
+    query = osv.ImportFinding.query(osv.ImportFinding.source == source)
+    import_findings: list[osv.ImportFinding] = query.fetch()
+    invalid_records = []
+    for finding in import_findings:
+      invalid_records.append(
+          importfinding_pb2.ImportFinding(
+              bug_id=finding.bug_id,
+              source=finding.source,
+              findings=finding.findings,  # type: ignore
+              first_seen=finding.first_seen.timestamp_pb(),  #type: ignore
+              last_attempt=finding.last_attempt.timestamp_pb(),  #type: ignore
+          ))
+
+    return osv_service_v1_pb2.ImportFindingList(invalid_records=invalid_records)
 
   @ndb_context
   def Check(self, request, context: grpc.ServicerContext):

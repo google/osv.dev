@@ -405,6 +405,9 @@ class Bug(ndb.Model):
     # also add the base name
     ecosystems_set.update({ecosystems.normalize(x) for x in ecosystems_set})
 
+    # Expand the set to include all ecosystem variants.
+    ecosystems_set = ecosystems.add_matching_ecosystems(ecosystems_set)
+
     self.ecosystem = list(ecosystems_set)
     self.ecosystem.sort()
 
@@ -503,7 +506,7 @@ class Bug(ndb.Model):
     if not self.key:  # pylint: disable=access-member-before-definition
       source_repo = get_source_repository(self.source)
       if not source_repo:
-        raise ValueError(f'Invalid source {self.source}')
+        raise ValueError(f'{self.db_id} has invalid source {self.source}')
 
       if source_repo.db_prefix and not any(
           self.db_id.startswith(prefix) for prefix in source_repo.db_prefix):

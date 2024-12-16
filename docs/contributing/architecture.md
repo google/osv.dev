@@ -35,7 +35,7 @@ Workers are Docker containers, which use [gVisor] for sandboxing untrusted
 workloads.
 
 [GKE]: https://cloud.google.com/kubernetes-engine
-[workers]: https://github.com/google/osv/tree/master/docker/worker
+[workers]: https://github.com/google/osv/tree/master/gcp/workers
 [gVisor]: https://gvisor.dev/
 [Cloud Pub/Sub]: https://cloud.google.com/pubsub
 

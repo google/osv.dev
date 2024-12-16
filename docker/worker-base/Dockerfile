@@ -42,7 +42,7 @@ RUN curl -sS https://www.python.org/ftp/python/${PYTHON_VERSION}/Python-${PYTHON
 # See: https://python-poetry.org/docs/#installation 
 ENV POETRY_HOME "/opt/poetry"
 RUN python3 -m venv $POETRY_HOME
-RUN $POETRY_HOME/bin/pip install poetry==1.8.3
+RUN $POETRY_HOME/bin/pip install poetry==1.8.4
 # Link in PATH to make it possible to directly call poetry
 RUN ln -s $POETRY_HOME/bin/poetry /usr/local/bin/poetry
 
@@ -72,4 +72,4 @@ RUN curl -fsSL https://gvisor.dev/archive.key | gpg --dearmor -o /etc/apt/truste
     apt-get update && apt-get install -y runsc
 
 # Make gVisor the default Docker runtime.
-COPY docker/worker/daemon.json /etc/docker/daemon.json
+COPY docker/worker-base/daemon.json /etc/docker/daemon.json

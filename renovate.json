@@ -1,87 +1,138 @@
 {
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
   "extends": [
-    "config:base"
+    "config:recommended"
   ],
   "timezone": "Australia/Sydney",
-  "schedule": ["before 6am on wednesday"],
+  "schedule": [
+    "before 6am on wednesday"
+  ],
   "prHourlyLimit": 0,
   "prConcurrentLimit": 20,
-  "labels": ["dependencies"],
-  "postUpdateOptions": ["gomodTidy"],
+  "labels": [
+    "dependencies"
+  ],
+  "postUpdateOptions": [
+    "gomodTidy"
+  ],
   "osvVulnerabilityAlerts": true,
   "lockFileMaintenance": {
     "enabled": true,
-    "schedule": ["before 6am on wednesday"]
+    "schedule": [
+      "before 6am on wednesday"
+    ],
+    "groupName": "lockfile maintenance"
   },
   "git-submodules": {
     "enabled": false
   },
   "packageRules": [
     {
-      "matchUpdateTypes": ["major"],
+      "matchUpdateTypes": [
+        "major"
+      ],
       "enabled": false
     },
     {
-      "matchFileNames": ["gcp/website/**"],
-      "matchCategories": ["python"],
+      "matchFileNames": [
+        "gcp/website/**"
+      ],
+      "matchCategories": [
+        "python"
+      ],
       "groupName": "website-backend"
     },
     {
-      "matchFileNames": ["gcp/website/**"],
-      "matchCategories": ["js"],
+      "matchFileNames": [
+        "gcp/website/**"
+      ],
+      "matchCategories": [
+        "js"
+      ],
       "groupName": "website-frontend"
     },
     {
-      "matchFileNames": ["gcp/api/**"],
-      "matchPackageNames": ["grpcio*"],
+      "matchFileNames": [
+        "gcp/api/**"
+      ],
+      "matchPackageNames": [
+        "grpcio*"
+      ],
       "enabled": false
     },
     {
-      "matchFileNames": ["gcp/api/**"],
+      "matchFileNames": [
+        "gcp/api/**"
+      ],
       "groupName": "api"
     },
     {
-      "matchFileNames": ["gcp/functions/**"],
+      "matchFileNames": [
+        "gcp/functions/**"
+      ],
       "groupName": "functions"
     },
     {
-      "matchFileNames": ["docker/**"],
-      "matchCategories": ["python"],
+      "matchFileNames": [
+        "gcp/workers/**"
+      ],
+      "matchCategories": [
+        "python"
+      ],
       "groupName": "workers"
     },
     {
-      "matchFileNames": ["docker/**"],
-      "matchCategories": ["golang"],
+      "matchFileNames": [
+        "gcp/indexer/**"
+      ],
+      "matchCategories": [
+        "golang"
+      ],
       "groupName": "indexer"
     },
     {
-      "matchFileNames": ["vulnfeeds/**"],
+      "matchFileNames": [
+        "vulnfeeds/**"
+      ],
       "groupName": "vulnfeeds"
     },
     {
-      "matchFileNames": ["docs/**"],
+      "matchFileNames": [
+        "docs/**"
+      ],
       "groupName": "docs"
     },
     {
-      "matchFileNames": ["tools/**"],
+      "matchFileNames": [
+        "tools/**"
+      ],
       "groupName": "tools"
     },
     {
-      "matchFileNames": ["deployment/terraform/**"],
+      "matchFileNames": [
+        "deployment/terraform/**"
+      ],
       "groupName": "terraform"
     },
     {
-      "matchFileNames": [".github/**"],
+      "matchFileNames": [
+        ".github/**"
+      ],
       "groupName": "workflows"
     },
     {
-      "matchFileNames": ["pyproject.toml"],
+      "matchFileNames": [
+        "pyproject.toml"
+      ],
       "groupName": "osv-lib"
     },
     {
-      "matchDatasources": ["docker"],
-      "matchPackageNames": ["python"],
+      "matchDatasources": [
+        "docker"
+      ],
+      "matchPackageNames": [
+        "python"
+      ],
       "enabled": false
     }
   ]

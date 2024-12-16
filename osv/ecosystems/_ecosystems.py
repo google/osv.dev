@@ -144,6 +144,15 @@ def normalize(ecosystem_name: str):
   return ecosystem_name.split(':')[0]
 
 
+def remove_variants(ecosystem_name: str) -> str | None:
+  result = None
+  # For Ubuntu, remove ":Pro" and ":LTS"
+  if ecosystem_name.startswith('Ubuntu'):
+    result = ecosystem_name.replace(':Pro', '').replace(':LTS', '')
+
+  return result
+
+
 def add_matching_ecosystems(original_set: set[str]) -> set[str]:
   """
   For Linux distributions, some release versions may have different variants.
@@ -163,9 +172,9 @@ def add_matching_ecosystems(original_set: set[str]) -> set[str]:
   new_set = set(original_set)
   for ecosystem in original_set:
     # For Ubuntu, remove ":Pro" and ":LTS"
-    if ecosystem.startswith('Ubuntu'):
-      new_item = ecosystem.replace(':Pro', '').replace(':LTS', '')
-      new_set.add(new_item)
+    new_ecosystem = remove_variants(ecosystem)
+    if new_ecosystem:
+      new_set.add(new_ecosystem)
   return new_set
 
 

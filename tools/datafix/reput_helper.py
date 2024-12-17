@@ -62,7 +62,7 @@ def get_relevant_ids() -> list[str]:
   return relevant_ids
 
 
-def transform_bug(bug: osv.Bug):
+def transform_bug(_: osv.Bug):
   """Transform bug in place.
   
   2. FILLOUT this function to apply transformations before reputting the bug.

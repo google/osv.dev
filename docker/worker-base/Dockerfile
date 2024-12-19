@@ -41,10 +41,10 @@ RUN curl -sS https://www.python.org/ftp/python/${PYTHON_VERSION}/Python-${PYTHON
 # when managing our dependencies.
 # See: https://python-poetry.org/docs/#installation 
 ENV POETRY_HOME "/opt/poetry"
-RUN python3 -m venv $POETRY_HOME
-RUN $POETRY_HOME/bin/pip install poetry==1.8.4
-# Link in PATH to make it possible to directly call poetry
-RUN ln -s $POETRY_HOME/bin/poetry /usr/local/bin/poetry
+COPY docker/poetry/requirements.txt ./poetry-requirements.txt
+RUN python3 -m venv $POETRY_HOME && \
+    $POETRY_HOME/bin/pip install --require-hashes -r ./poetry-requirements.txt && \
+    ln -s $POETRY_HOME/bin/poetry /usr/local/bin/poetry
 
 # Keep the virtualenv directly in the project directory. This isn't strictly neccesary for
 # this image as it runs on kubernetes, but it keeps it consistent with other cloud run images.

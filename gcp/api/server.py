@@ -44,7 +44,6 @@ from osv import ecosystems
 from osv import semver_index
 from osv import purl_helpers
 from osv import vulnerability_pb2
-from osv import importfinding_pb2
 from osv.logs import setup_gcp_logging
 from gcp.api import osv_service_v1_pb2
 from gcp.api import osv_service_v1_pb2_grpc
@@ -351,9 +350,11 @@ class OSVServicer(osv_service_v1_pb2_grpc.OSVServicer,
   def ImportFindings(self, request, context: grpc.ServicerContext):
     """Return a list of `ImportFinding` for a given source."""
     source = request.source
-    # TODO(gongh@): add source check
+    # TODO(gongh@): add source check,
+    # check if the source name exists in the source repository.
     if not source:
-      context.abort(grpc.StatusCode.INVALID_ARGUMENT, 'Source is required.')
+      context.abort(grpc.StatusCode.INVALID_ARGUMENT,
+                    'Missing Source:  Please specify the source')
     if get_gcp_project() == _TEST_INSTANCE:
       logging.info('Checking import finding for %s\n', source)
 
@@ -361,14 +362,7 @@ class OSVServicer(osv_service_v1_pb2_grpc.OSVServicer,
     import_findings: list[osv.ImportFinding] = query.fetch()
     invalid_records = []
     for finding in import_findings:
-      invalid_records.append(
-          importfinding_pb2.ImportFinding(
-              bug_id=finding.bug_id,
-              source=finding.source,
-              findings=finding.findings,  # type: ignore
-              first_seen=finding.first_seen.timestamp_pb(),  #type: ignore
-              last_attempt=finding.last_attempt.timestamp_pb(),  #type: ignore
-          ))
+      invalid_records.append(finding.to_proto())
 
     return osv_service_v1_pb2.ImportFindingList(invalid_records=invalid_records)
 

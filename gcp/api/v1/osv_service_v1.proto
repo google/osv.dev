@@ -181,7 +181,7 @@ service OSV {
   // Get import findings per source.
   rpc ImportFindings(ImportFindingsParameters) returns (ImportFindingList) {
     option (google.api.http) = {
-      get: "/v1/importfindings/{source}"
+      get: "/v1experimental/importfindings/{source}"
     };
   }
 }

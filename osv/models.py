@@ -25,6 +25,7 @@ from typing import Self
 from google.cloud import ndb
 from google.protobuf import json_format
 from google.protobuf import timestamp_pb2
+from osv import importfinding_pb2
 
 # pylint: disable=relative-beyond-top-level
 from . import bug
@@ -929,6 +930,16 @@ class ImportFinding(ndb.Model):
     """Pre-put hook for setting key."""
     if not self.key:  # pylint: disable=access-member-before-definition
       self.key = ndb.Key(ImportFinding, self.bug_id)
+
+  def to_proto(self):
+    """Converts to ImportFinding proto."""
+    return importfinding_pb2.ImportFinding(
+        bug_id=self.bug_id,
+        source=self.source,
+        findings=self.findings,  # type: ignore
+        first_seen=self.first_seen.timestamp_pb(),  #type: ignore
+        last_attempt=self.last_attempt.timestamp_pb(),  #type: ignore
+    )
 
 
 def get_source_repository(source_name: str) -> SourceRepository:

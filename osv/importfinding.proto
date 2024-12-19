@@ -1,0 +1,42 @@
+// Copyright 2024 Google LLC
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//      http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+syntax = "proto3";
+
+package osv;
+
+import "google/protobuf/timestamp.proto";
+
+enum ImportFindingType {
+  IMPORT_FINDING_TYPE_NONE = 0;
+  IMPORT_FINDING_TYPE_DELETED = 1;
+  IMPORT_FINDING_TYPE_INVALID_JSON = 2;
+  IMPORT_FINDING_TYPE_INVALID_PACKAGE = 3;
+  IMPORT_FINDING_TYPE_INVALID_PURL = 4;
+  IMPORT_FINDING_TYPE_INVALID_VERSION = 5;
+  IMPORT_FINDING_TYPE_INVALID_COMMIT = 6;
+  IMPORT_FINDING_TYPE_INVALID_RANGE = 7;
+  IMPORT_FINDING_TYPE_BAD_ALIASED_CVE = 8;
+}
+
+// An importfinding entry.
+// The protobuf representation is *NOT* stable and only used for implementing
+// the JSON based API.
+message ImportFinding {
+  string bug_id = 1;
+  string source = 2;
+  repeated ImportFindingType findings = 3;
+  google.protobuf.Timestamp first_seen = 4;
+  google.protobuf.Timestamp last_attempt = 5;
+}

@@ -30,6 +30,11 @@ FROM python:3.11-slim@sha256:ad5dadd957a398226996bc4846e522c39f2a77340b531b28aaa
 # 
 # This forces it to create the virtualenv in the same directory as the project, avoiding this issue.
 ENV POETRY_VIRTUALENVS_IN_PROJECT=true
+ENV POETRY_HOME "/opt/poetry"
+COPY docker/poetry/requirements.txt ./poetry-requirements.txt
+RUN python3 -m venv $POETRY_HOME && \
+    $POETRY_HOME/bin/pip install --require-hashes -r ./poetry-requirements.txt && \
+    ln -s $POETRY_HOME/bin/poetry /usr/local/bin/poetry
 
 # Allow statements and log messages to immediately appear in the logs
 ENV PYTHONUNBUFFERED True
@@ -39,7 +44,7 @@ WORKDIR /osv/gcp/website
 COPY poetry.lock pyproject.toml README.md /osv/
 COPY osv /osv/osv
 COPY gcp/website/poetry.lock gcp/website/pyproject.toml ./
-RUN pip3 install poetry==1.8.4 && poetry install
+RUN poetry install
 
 # Website Python code
 COPY gcp/website/*.py ./

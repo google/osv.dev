@@ -50,6 +50,12 @@ With the growth in ecosystems, we took the opportunity to [simplify the exported
 
 ## Community
 
+### Integrations
+
+Noteworthy integrations that happened this year:
+
+* [Google Cloud used OSV to expand Artifact Registry's vulnerability detection](https://security.googleblog.com/2024/12/google-cloud-expands-vulnerability.html)
+
 ### Code
 
 ![Image shows the GitHub star history for all OSV-related GitHub repositories taken at November 27, 2024. osv-schema has approximately 180 stars, osv.dev has approximately 1,500 stars, osv-scanner has approximately 6,270 stars, and osv-scanner-action has 16 stars.](star-history-20241127.png "GitHub star history for all OSV repos, as of 2024/11/27")

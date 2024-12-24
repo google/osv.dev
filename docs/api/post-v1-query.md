@@ -53,7 +53,7 @@ Case Sensitivity: API requests are case-sensitive. Please ensure that you use th
     "ecosystem": "string",
     "purl": "string"
   },
-  "next_page_token": "string",
+  "page_token": "string",
 }
 ```
 

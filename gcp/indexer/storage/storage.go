@@ -24,9 +24,9 @@ import (
 
 	"cloud.google.com/go/datastore"
 	"github.com/go-git/go-git/v5/plumbing"
-	"github.com/google/osv.dev/docker/indexer/shared"
-	"github.com/google/osv.dev/docker/indexer/stages/preparation"
-	"github.com/google/osv.dev/docker/indexer/stages/processing"
+	"github.com/google/osv.dev/gcp/indexer/shared"
+	"github.com/google/osv.dev/gcp/indexer/stages/preparation"
+	"github.com/google/osv.dev/gcp/indexer/stages/processing"
 )
 
 const (

@@ -1,4 +1,4 @@
-# Copyright 2021 Google LLC
+# Copyright 2024 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -12,19 +12,15 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-FROM golang:1.23.3-alpine@sha256:c694a4d291a13a9f9d94933395673494fc2cc9d4777b85df3a7e70b3492d3574 AS GO_BUILD
-WORKDIR /build
+FROM gcr.io/oss-vdb/worker
 
-# Cache dependencies in these steps
-COPY ./go.mod /build/go.mod
-COPY ./go.sum /build/go.sum
-RUN go mod download
+WORKDIR /staging_api_test
 
-# Do the build here
-COPY ./ /build
-RUN CGO_ENABLED=0 ./build.sh
+COPY retrieve_bugs_from_bucket.py perform_api_calls.py run.sh ./
 
-FROM gcr.io/distroless/base-debian12@sha256:7a4bffcb07307d97aa731b50cb6ab22a68a8314426f4e4428335939b5b1943a5
-COPY --from=GO_BUILD build/indexer /indexer
-ENTRYPOINT ["/indexer"]
-CMD ["--help"]
+# Add aiohttp lib
+RUN cd /env/gcp/workers/worker && POETRY_VIRTUALENVS_CREATE=false poetry add aiohttp
+
+RUN chmod 755 retrieve_bugs_from_bucket.py perform_api_calls.py run.sh
+
+ENTRYPOINT ["./run.sh"]

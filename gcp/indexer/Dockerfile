@@ -1,4 +1,3 @@
-#!/bin/bash -ex
 # Copyright 2021 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -13,14 +12,19 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-pushd worker
-./build.sh $1
-popd
+FROM golang:1.23.4-alpine@sha256:6c5c9590f169f77c8046e45c611d3b28fe477789acd8d3762d23d4744de69812 AS GO_BUILD
+WORKDIR /build
 
-pushd importer
-./build.sh $1
-popd
+# Cache dependencies in these steps
+COPY ./go.mod /build/go.mod
+COPY ./go.sum /build/go.sum
+RUN go mod download
 
-pushd exporter
-./build.sh $1
-popd
+# Do the build here
+COPY ./ /build
+RUN CGO_ENABLED=0 ./build.sh
+
+FROM gcr.io/distroless/base-debian12@sha256:e9d0321de8927f69ce20e39bfc061343cce395996dfc1f0db6540e5145bc63a5
+COPY --from=GO_BUILD build/indexer /indexer
+ENTRYPOINT ["/indexer"]
+CMD ["--help"]

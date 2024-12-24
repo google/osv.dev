@@ -1,4 +1,5 @@
-# Copyright 2024 Google LLC
+#!/bin/bash -x
+# Copyright 2021 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -12,15 +13,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-FROM gcr.io/oss-vdb/worker
+# Build from root context.
+cd ../../../
 
-WORKDIR /staging_api_test
-
-COPY retrieve_bugs_from_bucket.py perform_api_calls.py run.sh ./
-
-# Add aiohttp lib
-RUN cd /env/docker/worker && POETRY_VIRTUALENVS_CREATE=false poetry add aiohttp
-
-RUN chmod 755 retrieve_bugs_from_bucket.py perform_api_calls.py run.sh
-
-ENTRYPOINT ["./run.sh"]
+docker build -t gcr.io/oss-vdb/worker:$1 -t gcr.io/oss-vdb/worker:latest -f gcp/workers/worker/Dockerfile . && \
+gcloud docker -- push gcr.io/oss-vdb/worker:$1 && \
+gcloud docker -- push gcr.io/oss-vdb/worker:latest

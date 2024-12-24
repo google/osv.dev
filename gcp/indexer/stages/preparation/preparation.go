@@ -32,8 +32,8 @@ import (
 	"github.com/go-git/go-git/v5"
 	"github.com/go-git/go-git/v5/plumbing"
 	"github.com/go-git/go-git/v5/plumbing/object"
-	"github.com/google/osv.dev/docker/indexer/config"
-	"github.com/google/osv.dev/docker/indexer/shared"
+	"github.com/google/osv.dev/gcp/indexer/config"
+	"github.com/google/osv.dev/gcp/indexer/shared"
 	"golang.org/x/sync/semaphore"
 
 	log "github.com/golang/glog"

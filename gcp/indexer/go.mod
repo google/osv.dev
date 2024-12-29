@@ -5,12 +5,12 @@ go 1.23.1
 require (
 	cloud.google.com/go/datastore v1.20.0
 	cloud.google.com/go/pubsub v1.45.3
-	cloud.google.com/go/storage v1.48.0
-	github.com/go-git/go-git/v5 v5.12.0
+	cloud.google.com/go/storage v1.49.0
+	github.com/go-git/go-git/v5 v5.13.0
 	github.com/golang/glog v1.2.3
 	github.com/google/go-cmp v0.6.0
 	golang.org/x/sync v0.10.0
-	google.golang.org/api v0.213.0
+	google.golang.org/api v0.214.0
 	gopkg.in/yaml.v3 v3.0.1
 )
 

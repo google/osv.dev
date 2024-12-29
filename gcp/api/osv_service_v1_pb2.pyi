@@ -22,6 +22,7 @@ import google.protobuf.descriptor
 import google.protobuf.internal.containers
 import google.protobuf.internal.enum_type_wrapper
 import google.protobuf.message
+import osv.importfinding_pb2
 import osv.vulnerability_pb2
 import sys
 import typing
@@ -204,6 +205,23 @@ class DetermineVersionParameters(google.protobuf.message.Message):
 global___DetermineVersionParameters = DetermineVersionParameters
 
 @typing.final
+class ImportFindingsParameters(google.protobuf.message.Message):
+    """Parameters for ImportFindings."""
+
+    DESCRIPTOR: google.protobuf.descriptor.Descriptor
+
+    SOURCE_FIELD_NUMBER: builtins.int
+    source: builtins.str
+    def __init__(
+        self,
+        *,
+        source: builtins.str = ...,
+    ) -> None: ...
+    def ClearField(self, field_name: typing.Literal["source", b"source"]) -> None: ...
+
+global___ImportFindingsParameters = ImportFindingsParameters
+
+@typing.final
 class VersionQuery(google.protobuf.message.Message):
     """The version query."""
 
@@ -279,6 +297,24 @@ class VersionMatchList(google.protobuf.message.Message):
     def ClearField(self, field_name: typing.Literal["matches", b"matches"]) -> None: ...
 
 global___VersionMatchList = VersionMatchList
+
+@typing.final
+class ImportFindingList(google.protobuf.message.Message):
+    """Result of ImportFindings."""
+
+    DESCRIPTOR: google.protobuf.descriptor.Descriptor
+
+    INVALID_RECORDS_FIELD_NUMBER: builtins.int
+    @property
+    def invalid_records(self) -> google.protobuf.internal.containers.RepeatedCompositeFieldContainer[osv.importfinding_pb2.ImportFinding]: ...
+    def __init__(
+        self,
+        *,
+        invalid_records: collections.abc.Iterable[osv.importfinding_pb2.ImportFinding] | None = ...,
+    ) -> None: ...
+    def ClearField(self, field_name: typing.Literal["invalid_records", b"invalid_records"]) -> None: ...
+
+global___ImportFindingList = ImportFindingList
 
 @typing.final
 class VersionMatch(google.protobuf.message.Message):

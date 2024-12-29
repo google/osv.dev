@@ -61,6 +61,11 @@ class OSVStub(object):
                 request_serializer=osv__service__v1__pb2.DetermineVersionParameters.SerializeToString,
                 response_deserializer=osv__service__v1__pb2.VersionMatchList.FromString,
                 _registered_method=True)
+        self.ImportFindings = channel.unary_unary(
+                '/osv.v1.OSV/ImportFindings',
+                request_serializer=osv__service__v1__pb2.ImportFindingsParameters.SerializeToString,
+                response_deserializer=osv__service__v1__pb2.ImportFindingList.FromString,
+                _registered_method=True)
 
 
 class OSVServicer(object):
@@ -98,6 +103,13 @@ class OSVServicer(object):
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
 
+    def ImportFindings(self, request, context):
+        """Get import findings per source.
+        """
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
 
 def add_OSVServicer_to_server(servicer, server):
     rpc_method_handlers = {
@@ -120,6 +132,11 @@ def add_OSVServicer_to_server(servicer, server):
                     servicer.DetermineVersion,
                     request_deserializer=osv__service__v1__pb2.DetermineVersionParameters.FromString,
                     response_serializer=osv__service__v1__pb2.VersionMatchList.SerializeToString,
+            ),
+            'ImportFindings': grpc.unary_unary_rpc_method_handler(
+                    servicer.ImportFindings,
+                    request_deserializer=osv__service__v1__pb2.ImportFindingsParameters.FromString,
+                    response_serializer=osv__service__v1__pb2.ImportFindingList.SerializeToString,
             ),
     }
     generic_handler = grpc.method_handlers_generic_handler(
@@ -231,6 +248,33 @@ class OSV(object):
             '/osv.v1.OSV/DetermineVersion',
             osv__service__v1__pb2.DetermineVersionParameters.SerializeToString,
             osv__service__v1__pb2.VersionMatchList.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
+    def ImportFindings(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/osv.v1.OSV/ImportFindings',
+            osv__service__v1__pb2.ImportFindingsParameters.SerializeToString,
+            osv__service__v1__pb2.ImportFindingList.FromString,
             options,
             channel_credentials,
             insecure,

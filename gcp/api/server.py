@@ -346,6 +346,27 @@ class OSVServicer(osv_service_v1_pb2_grpc.OSVServicer,
     return res
 
   @ndb_context
+  @trace_filter.log_trace
+  def ImportFindings(self, request, context: grpc.ServicerContext):
+    """Return a list of `ImportFinding` for a given source."""
+    source = request.source
+    # TODO(gongh@): add source check,
+    # check if the source name exists in the source repository.
+    if not source:
+      context.abort(grpc.StatusCode.INVALID_ARGUMENT,
+                    'Missing Source:  Please specify the source')
+    if get_gcp_project() == _TEST_INSTANCE:
+      logging.info('Checking import finding for %s\n', source)
+
+    query = osv.ImportFinding.query(osv.ImportFinding.source == source)
+    import_findings: list[osv.ImportFinding] = query.fetch()
+    invalid_records = []
+    for finding in import_findings:
+      invalid_records.append(finding.to_proto())
+
+    return osv_service_v1_pb2.ImportFindingList(invalid_records=invalid_records)
+
+  @ndb_context
   def Check(self, request, context: grpc.ServicerContext):
     """Health check per the gRPC health check protocol."""
     del request  # Unused.

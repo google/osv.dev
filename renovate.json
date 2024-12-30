@@ -135,5 +135,6 @@
       ],
       "enabled": false
     }
-  ]
+  ],
+  "ignorePaths": ["docker/poetry/requirements.txt"]
 }

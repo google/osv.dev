@@ -22,6 +22,11 @@ RUN apt-get update && apt-get install -y build-essential
 # 
 # This forces it to create the virtualenv in the same directory as the project, avoiding this issue.
 ENV POETRY_VIRTUALENVS_IN_PROJECT=true
+ENV POETRY_HOME "/opt/poetry"
+COPY docker/poetry/requirements.txt ./poetry-requirements.txt
+RUN python3 -m venv $POETRY_HOME && \
+    $POETRY_HOME/bin/pip install --require-hashes -r ./poetry-requirements.txt && \
+    ln -s $POETRY_HOME/bin/poetry /usr/local/bin/poetry
 
 # TODO(ochang): Just copy the entire project (needs a clean checkout).
 COPY pyproject.toml poetry.lock README.md /osv/
@@ -29,6 +34,6 @@ COPY osv /osv/osv
 COPY gcp/api /osv/gcp/api
 
 WORKDIR /osv/gcp/api
-RUN pip3 install poetry==1.8.4 && poetry install
+RUN poetry install
 
 ENTRYPOINT ["poetry", "run", "python", "/osv/gcp/api/server.py"]

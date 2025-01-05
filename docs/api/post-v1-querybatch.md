@@ -36,7 +36,8 @@ The parameters are the same as those in found [here](post-v1-query.md#parameters
         "name": "string",
         "ecosystem": "string",
         "purl": "string"
-      }
+      },
+      "page_token": "string",
     }, 
     {
       "commit": "string",
@@ -45,7 +46,8 @@ The parameters are the same as those in found [here](post-v1-query.md#parameters
         "name": "string",
         "ecosystem": "string",
         "purl": "string"
-      }
+      },
+      "page_token": "string",
     }
   ]
 }

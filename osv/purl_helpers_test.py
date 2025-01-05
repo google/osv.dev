@@ -163,6 +163,10 @@ class PurlHelpersTest(unittest.TestCase):
                      purl_helpers.parse_purl(
                          'pkg:golang/github.com/treeverse/lakefs@1.33.0'))
 
+    self.assertEqual(
+        ('Go', 'github.com/jackc/pgx/v5', 'v5.6.0'),
+        purl_helpers.parse_purl('pkg:golang/github.com/jackc/pgx@v5.6.0#v5'))
+
     self.assertEqual(('Hackage', 'process', None),
                      purl_helpers.parse_purl('pkg:hackage/process'))
 

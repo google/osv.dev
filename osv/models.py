@@ -405,6 +405,9 @@ class Bug(ndb.Model):
     # also add the base name
     ecosystems_set.update({ecosystems.normalize(x) for x in ecosystems_set})
 
+    # Expand the set to include all ecosystem variants.
+    ecosystems_set = ecosystems.add_matching_ecosystems(ecosystems_set)
+
     self.ecosystem = list(ecosystems_set)
     self.ecosystem.sort()
 

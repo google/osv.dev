@@ -734,6 +734,19 @@ def do_query(query: osv_service_v1_pb2.Query,
           'Invalid PURL.',
       )
 
+    if package_name:  # Purls already include the package name
+      context.service_context.abort(
+          grpc.StatusCode.INVALID_ARGUMENT,
+          'name specified in a PURL query',
+      )
+
+    if ecosystem:
+      # Purls already include the ecosystem inside
+      context.service_context.abort(
+          grpc.StatusCode.INVALID_ARGUMENT,
+          'ecosystem specified in a PURL query',
+      )
+
     if purl is None:
       # TODO(gongh@): Previously, we didn't perform any PURL validation.
       # All unsupported PURL queries would simply return a 200
@@ -743,17 +756,6 @@ def do_query(query: osv_service_v1_pb2.Query,
       # This needs to be revisited with a more considerate design.
       return [], None
 
-    if package_name:  # Purls already include the package name
-      context.service_context.abort(
-          grpc.StatusCode.INVALID_ARGUMENT,
-          'name specified in a PURL query',
-      )
-    if ecosystem:
-      # Purls already include the ecosystem inside
-      context.service_context.abort(
-          grpc.StatusCode.INVALID_ARGUMENT,
-          'ecosystem specified in a PURL query',
-      )
     if purl.version and version:
       # version included both in purl and query
       context.service_context.abort(
@@ -763,7 +765,8 @@ def do_query(query: osv_service_v1_pb2.Query,
 
     ecosystem = purl.ecosystem
     package_name = purl.package
-    version = purl.version
+    if purl.version:
+      version = purl.version
 
   if ecosystem and not ecosystems.get(ecosystem):
     context.service_context.abort(grpc.StatusCode.INVALID_ARGUMENT,
@@ -978,9 +981,8 @@ def _is_version_affected(affected_packages,
 
     if ecosystem:
       # If package ecosystem has a :, also try ignoring parts after it.
-      if (affected_package.package.ecosystem != ecosystem and
-          ecosystems.normalize(
-              affected_package.package.ecosystem) != ecosystem):
+      if not is_matching_package_ecosystem(affected_package.package.ecosystem,
+                                           ecosystem):
         continue
 
     if normalize:
@@ -1234,9 +1236,6 @@ def _query_by_comparing_versions(context: QueryContext, query: ndb.Query,
 
   it: ndb.QueryIterator = query.iter(start_cursor=context.cursor_at_current())
 
-  # Checks if the query specifies a release (e.g., "Debian:12")
-  has_release = ':' in ecosystem
-
   while (yield it.has_next_async()):
     if context.should_break_page(len(bugs)):
       context.save_cursor_at_page_break(it)
@@ -1252,14 +1251,9 @@ def _query_by_comparing_versions(context: QueryContext, query: ndb.Query,
       # compare against packages in all releases (e.g., "Debian:X").
       # Otherwise, only compare within
       # the specified release (e.g., "Debian:11").
-      package_ecosystem: str = package.ecosystem  # type: ignore
-      if not has_release:
-        # Extracts ecosystem name for broader comparison (e.g., "Debian")
-        package_ecosystem = package_ecosystem.split(':')[0]
-
       # Skips if the affected package ecosystem does not match
       # the queried ecosystem.
-      if package_ecosystem != ecosystem:
+      if not is_matching_package_ecosystem(package.ecosystem, ecosystem):
         continue
 
       # Skips if the affected package name does not match
@@ -1398,6 +1392,18 @@ def _is_affected(ecosystem: str, version: str,
       return True
 
   return False
+
+
+def is_matching_package_ecosystem(package_ecosystem: str,
+                                  ecosystem: str) -> bool:
+  """Checks if the queried ecosystem matches the affected package's ecosystem,
+  considering potential variations in the package's ecosystem.
+  """
+  return any(eco == ecosystem for eco in (
+      package_ecosystem,
+      ecosystems.normalize(package_ecosystem),
+      ecosystems.remove_variants(package_ecosystem),
+  ))
 
 
 def main():

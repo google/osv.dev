@@ -1,6 +1,6 @@
 ---
 title: "The Year in Review"
-date: 2024-12-13T04:00:00Z
+date: 2025-01-13T04:00:00Z
 draft: false
 author: The OSV Team
 ---

@@ -105,5 +105,12 @@ As part of the our data quality program, work commencing on an [OSV record linti
 
 The team is looking forward to much more to come in 2025 and the OSV Schema and OSV.dev’s fourth birthday in February, and OSV-Scanner’s second birthday in December.
 
-We have a lot more exciting work planned in 2025, that we’ll share more details soon. Our main priorities for 2025 continue to be centered around improving data
-quality and providing accurate and actionable results that lead to easy remediation.
+With a growing list of OSV-supported databases, our main priorities for 2025 continue to be centered around improving data
+quality and providing accurate and actionable vulnerability scanning results that lead to easy remediation.
+
+Stay tuned for more details on a few exciting things that we'll be working on throughout 2025! These are focused around:
+- A comprehensive library for vulnerability management that will expose OSV-Scanner CLI functionality (OSV-SCALIBR) 
+- Better, layer-focused container scanning support, including base layer identification
+- Guided Remediation for Maven
+- Improvements to reachability analysis and VEX autogeneration
+- And much more! 

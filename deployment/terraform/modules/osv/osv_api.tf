@@ -128,6 +128,12 @@ resource "google_cloud_run_service" "api" {
           name  = "ESPv2_ARGS"
           value = "^++^--transcoding_preserve_proto_field_names++--envoy_connection_buffer_limit_bytes=104857600"
         }
+        resources {
+          limits = {
+            "cpu"    = "1000m"
+            "memory" = "2Gi"
+          }
+        }
       }
     }
   }

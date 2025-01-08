@@ -339,10 +339,11 @@ func (j *CVE) UnmarshalJSON(b []byte) error {
 	if err := json.Unmarshal(b, &plain); err != nil {
 		return err
 	}
-	if plain.Descriptions != nil && len(plain.Descriptions) < 1 {
-		return fmt.Errorf("field %s length: must be >= %d", "descriptions", 1)
-	}
-	// (hand-modified), CVE-2009-3555 from NVD has more than 500 references
+	// (hand-modified), being more permissive in case of odd records
+	// e.g. CVE-2009-3555 from NVD has more than 500 references
+	// if plain.Descriptions != nil && len(plain.Descriptions) < 1 {
+	// 	return fmt.Errorf("field %s length: must be >= %d", "descriptions", 1)
+	// }
 	// if len(plain.References) > 500 {
 	// 	return fmt.Errorf("field %s length: must be <= %d", "references", 500)
 	// }

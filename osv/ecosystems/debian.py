@@ -137,3 +137,7 @@ class Debian(Ecosystem):
 
     return self._get_affected_versions(versions, introduced, fixed,
                                        last_affected, limits)
+
+  @property
+  def supports_comparing(self):
+    return True

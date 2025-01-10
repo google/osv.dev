@@ -575,13 +575,18 @@ class IntegrationTests(unittest.TestCase,
 
     self.assert_results_equal({'vulns': another_expected}, response.json())
 
-    expected_deb = [self._get('DLA-3203-1'), self._get('DSA-4921-1')]
+    expected_deb = [
+        self._get('CVE-2018-25047'),
+        self._get('CVE-2023-28447'),
+        self._get('CVE-2024-35226'),
+        self._get('DSA-5830-1'),
+    ]
 
     response = requests.post(
         _api() + _BASE_QUERY,
         data=json.dumps(
             {'package': {
-                'purl': 'pkg:deb/debian/nginx@1.14.2-2+deb10u3',
+                'purl': 'pkg:deb/debian/smarty4@4.1.1-1',
             }}),
         timeout=_TIMEOUT)
 
@@ -592,7 +597,7 @@ class IntegrationTests(unittest.TestCase,
         _api() + _BASE_QUERY,
         data=json.dumps({
             'package': {
-                'purl': 'pkg:deb/debian/nginx@1.14.2-2+deb10u3?arch=source',
+                'purl': 'pkg:deb/debian/smarty4@4.1.1-1?arch=source',
             }
         }),
         timeout=_TIMEOUT)
@@ -602,11 +607,10 @@ class IntegrationTests(unittest.TestCase,
     # A non source arch should also return the same item
     response = requests.post(
         _api() + _BASE_QUERY,
-        data=json.dumps({
-            'package': {
-                'purl': 'pkg:deb/debian/nginx@1.14.2-2+deb10u3?arch=x64',
-            }
-        }),
+        data=json.dumps(
+            {'package': {
+                'purl': 'pkg:deb/debian/smarty4@4.1.1-1?arch=x64',
+            }}),
         timeout=_TIMEOUT)
 
     self.assert_results_equal({'vulns': expected_deb}, response.json())
@@ -616,7 +620,7 @@ class IntegrationTests(unittest.TestCase,
         _api() + _BASE_QUERY,
         data=json.dumps({
             'package': {
-                'purl': ('pkg:deb/debian/nginx@1.14.2-2+deb10u3?'
+                'purl': ('pkg:deb/debian/smarty4@4.1.1-1?'
                          'randomqualifier=1234'),
             }
         }),

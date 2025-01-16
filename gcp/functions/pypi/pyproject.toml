@@ -1,12 +1,13 @@
 [project]
 name = "pypi-publish"
+requires-python = ">=3.11,<4.0"
 dependencies = [
-    "python (>=3.11)",
     "cryptography (==43.0.3)",
     "google-cloud-secret-manager (==2.22.0)",
     "osv (==0.0.22)",
     "requests (==2.32.3)",
 ]
+dynamic = ["version"] 
 
 [tool.poetry]
 package-mode = false

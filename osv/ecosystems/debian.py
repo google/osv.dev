@@ -86,7 +86,7 @@ class Debian(Ecosystem):
     if not DebianVersion.is_valid(version):
       # If debian version is not valid, it is most likely an invalid fixed
       # version then sort it to the last/largest element
-      return DebianVersion(999999, 999999)
+      return DebianVersion(999999, '999999')
     return DebianVersion.from_string(version)
 
   def enumerate_versions(self,

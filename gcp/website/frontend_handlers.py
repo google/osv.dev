@@ -693,15 +693,13 @@ def list_packages(vuln_affected: list[dict]):
   packages = []
 
   for affected in vuln_affected:
+    if 'package' in affected:
+      package_entry = affected['package']['ecosystem'] + '/' + affected[
+          'package']['name']
+      if package_entry not in packages:
+        packages.append(package_entry)
     for affected_range in affected.get('ranges', []):
-      if affected_range['type'] in ['ECOSYSTEM', 'SEMVER']:
-        if 'package' not in affected:
-          continue
-        package_entry = affected['package']['ecosystem'] + '/' + affected[
-            'package']['name']
-        if package_entry not in packages:
-          packages.append(package_entry)
-      elif affected_range['type'] == 'GIT':
+      if affected_range['type'] == 'GIT':
         parsed_scheme = strip_scheme(affected_range['repo'])
         if parsed_scheme not in packages:
           packages.append(parsed_scheme)

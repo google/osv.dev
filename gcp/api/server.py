@@ -749,10 +749,10 @@ def do_query(query: osv_service_v1_pb2.Query,
   if purl_str:
     try:
       purl = purl_helpers.parse_purl(purl_str)
-    except ValueError:
+    except ValueError as e:
       context.service_context.abort(
           grpc.StatusCode.INVALID_ARGUMENT,
-          'Invalid PURL.',
+          f'{e}',
       )
 
     if package_name:  # Purls already include the package name
@@ -1258,34 +1258,37 @@ def _query_by_comparing_versions(context: QueryContext, query: ndb.Query,
   it: ndb.QueryIterator = query.iter(start_cursor=context.cursor_at_current())
 
   while (yield it.has_next_async()):
-    if context.should_break_page(len(bugs)):
-      context.save_cursor_at_page_break(it)
-      break
-
-    # next() will never return None as we check for has next above.
-    bug: osv.Bug = it.next()  # type: ignore
-    for affected_package in bug.affected_packages:  # type: ignore
-      affected_package: osv.AffectedPackage
-      package: osv.Package = affected_package.package  # type: ignore
-
-      # If the queried ecosystem has no release specified (e.g., "Debian"),
-      # compare against packages in all releases (e.g., "Debian:X").
-      # Otherwise, only compare within
-      # the specified release (e.g., "Debian:11").
-      # Skips if the affected package ecosystem does not match
-      # the queried ecosystem.
-      if not is_matching_package_ecosystem(package.ecosystem, ecosystem):
-        continue
-
-      # Skips if the affected package name does not match
-      # the queried package name.
-      if package_name != package.name:
-        continue
-
-      if _is_affected(ecosystem, version, affected_package):
-        bugs.append(bug)
-        context.total_responses.add(1)
+    try:
+      if context.should_break_page(len(bugs)):
+        context.save_cursor_at_page_break(it)
         break
+
+      # next() will never return None as we check for has next above.
+      bug: osv.Bug = it.next()  # type: ignore
+      for affected_package in bug.affected_packages:  # type: ignore
+        affected_package: osv.AffectedPackage
+        package: osv.Package = affected_package.package  # type: ignore
+
+        # If the queried ecosystem has no release specified (e.g., "Debian"),
+        # compare against packages in all releases (e.g., "Debian:X").
+        # Otherwise, only compare within
+        # the specified release (e.g., "Debian:11").
+        # Skips if the affected package ecosystem does not match
+        # the queried ecosystem.
+        if not is_matching_package_ecosystem(package.ecosystem, ecosystem):
+          continue
+
+        # Skips if the affected package name does not match
+        # the queried package name.
+        if package_name != package.name:
+          continue
+
+        if _is_affected(ecosystem, version, affected_package):
+          bugs.append(bug)
+          context.total_responses.add(1)
+          break
+    except Exception:
+      logging.exception('failed to compare versions')
 
   return bugs
 

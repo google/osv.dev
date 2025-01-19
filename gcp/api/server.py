@@ -1257,8 +1257,8 @@ def _query_by_comparing_versions(context: QueryContext, query: ndb.Query,
 
   it: ndb.QueryIterator = query.iter(start_cursor=context.cursor_at_current())
 
-  try:
-    while (yield it.has_next_async()):
+  while (yield it.has_next_async()):
+    try:
       if context.should_break_page(len(bugs)):
         context.save_cursor_at_page_break(it)
         break
@@ -1287,10 +1287,8 @@ def _query_by_comparing_versions(context: QueryContext, query: ndb.Query,
           bugs.append(bug)
           context.total_responses.add(1)
           break
-  except TypeError as e:
-    logging.warning(e)
-  except ValueError as e:
-    logging.warning(e)
+    except Exception:
+      logging.exception('failed to compare versions')
 
   return bugs
 

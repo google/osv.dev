@@ -11,6 +11,7 @@ from google.cloud import pubsub_v1
 from google.cloud import ndb
 import osv
 import requests
+from urllib.parse import urlparse
 
 DEFAULT_TIMEOUT = 60
 PUBSUB_TOPIC_ID = "tasks"
@@ -48,6 +49,32 @@ def publish_update_message(project_id, topic_id, source, path, original_sha256):
   print(f"Published message ID: {future.result()}")
 
 
+def github_raw_url(repo_url, path):
+  """Get a downloadable raw URL for a path in a github repo."""
+  if 'github.com' not in repo_url:
+    raise ValueError(f'{repo_url} is not a GitHub URL')
+
+  parsed = urlparse(repo_url.removesuffix('.git'))
+  repo = '/'.join(parsed.path.split('/')[1:3])
+
+  return f'https://raw.githubusercontent.com/{repo}/refs/heads/main/' + path
+
+
+def request_url_update(record_url, project_id, source, path, timeout):
+  """Request a update based on a URL record."""
+  print(f'Trying: {record_url}')
+  response = requests.get(record_url, timeout=timeout)
+  try:
+    response.raise_for_status()
+  except requests.HTTPError as e:
+    print(e)
+    return
+
+  original_sha256 = osv.sha256_bytes(response.text.encode())
+  publish_update_message(project_id, PUBSUB_TOPIC_ID, source, path,
+                         original_sha256)
+
+
 def main():
   parser = argparse.ArgumentParser(
       description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
@@ -73,19 +100,20 @@ def main():
       for bug in args.bugs[0]:
         record_url = f'{source.link}{bug}{source.extension}'
         path = f'{bug}{source.extension}'
-        print(f'Trying: {record_url}')
-        response = requests.get(record_url, timeout=args.timeout)
-        try:
-          response.raise_for_status()
-        except requests.HTTPError as e:
-          print(e)
-          continue
-        original_sha256 = osv.sha256_bytes(response.text.encode())
-        publish_update_message(args.project_id, PUBSUB_TOPIC_ID, args.source,
-                               path, original_sha256)
+        request_url_update(record_url, args.project_id, args.source, path,
+                           args.timeout)
 
     if source.type == osv.SourceRepositoryType.GIT:
-      raise NotImplementedError()
+      for bug in args.bugs[0]:
+        entity = osv.Bug.get_by_id(bug)
+        if not entity:
+          raise ValueError(f'{bug} does not exist in Datastore')
+
+        path = entity.source_id.split(':')[1]
+
+        record_url = github_raw_url(source.repo_url, path)
+        request_url_update(record_url, args.project_id, args.source, path,
+                           args.timeout)
 
     if source.type == osv.SourceRepositoryType.BUCKET:
       raise NotImplementedError("Use reimport_gcs_record.py for now")

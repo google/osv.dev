@@ -51,12 +51,11 @@ def publish_update_message(project_id, topic_id, source, path, original_sha256):
 
 def github_raw_url(repo_url, path):
   """Get a downloadable raw URL for a path in a github repo."""
-  if 'github.com' not in repo_url:
+  parsed = urlparse(repo_url.removesuffix('.git'))
+  if parsed.hostname != 'github.com':
     raise ValueError(f'{repo_url} is not a GitHub URL')
 
-  parsed = urlparse(repo_url.removesuffix('.git'))
   repo = '/'.join(parsed.path.split('/')[1:3])
-
   return f'https://raw.githubusercontent.com/{repo}/refs/heads/main/' + path
 
 

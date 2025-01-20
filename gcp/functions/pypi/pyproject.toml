@@ -7,11 +7,9 @@ dependencies = [
     "osv (==0.0.22)",
     "requests (==2.32.3)",
 ]
-dynamic = ["version"] 
-
 [tool.poetry]
 package-mode = false
 
 [build-system]
-requires = ["poetry-core"]
+requires = ["poetry-core>=2.0.0"]
 build-backend = "poetry.core.masonry.api"

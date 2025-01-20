@@ -8,7 +8,6 @@ dependencies = [
     "osv @ {path=\"../../\",develop=true}",
     "google-cloud-pubsub>=2.25.2", 
 ]
-dynamic = ["version"]
 
 [tool.poetry]
 package-mode = false
@@ -18,5 +17,5 @@ yapf = "*"
 pylint = "*"
 
 [build-system]
-requires = ["poetry-core>=1.0.0"]
+requires = ["poetry-core>=2.0.0"]
 build-backend = "poetry.core.masonry.api"

@@ -20,7 +20,7 @@ dependencies = [
 package-mode = false  
 
 [tool.poetry.dependencies]
-osv = { path = "../../", develop = true }
+osv = { path = "../../../", develop = true }
 
 [tool.poetry.group.dev.dependencies] 
 yapf = "*"

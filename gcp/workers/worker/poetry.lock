@@ -914,25 +914,28 @@ name = "osv"
 version = "0.0.22"
 description = "Open Source Vulnerabilities library"
 optional = false
-python-versions = "<4.0,>=3.11"
+python-versions = ">=3.11,<4.0"
 groups = ["main"]
-files = [
-    {file = "osv-0.0.22-py3-none-any.whl", hash = "sha256:95ed761d8f742dcf11ba8cd7e83ed6f945d5a6d45830fc6cf2cb4bf00bcc06ec"},
-    {file = "osv-0.0.22.tar.gz", hash = "sha256:08ab61c6133b6cad372975c47ee7d9cd7a85979504893cc99f1ab189adad6af9"},
-]
+files = []
+develop = true
 
 [package.dependencies]
-attrs = ">=23.2,<24.0"
-google-cloud-logging = ">=3.10,<4.0"
-google-cloud-ndb = ">=2.3,<3.0"
-google-cloud-storage = ">=2.17,<3.0"
-grpcio = ">=1.0,<2.0"
-jsonschema = ">=4.0,<5.0"
+attrs = ">=23.2"
+google-cloud-logging = ">=3.10"
+google-cloud-ndb = ">=2.3"
+google-cloud-storage = ">=2.17"
+grpcio = ">=1.0"
+jsonschema = ">=4.0"
+packageurl-python = "0.16.0"
 packaging = "<22.0"
-pygit2 = ">=1.14.0,<2.0.0"
-pyyaml = ">=6.0,<7.0"
-requests = ">=2.32,<3.0"
-semver = ">=3.0,<4.0"
+pygit2 = ">=1.14.0"
+pyyaml = ">=6.0"
+requests = ">=2.32"
+semver = ">=3.0"
+
+[package.source]
+type = "directory"
+url = "../../.."
 
 [[package]]
 name = "packageurl-python"
@@ -1600,4 +1603,4 @@ type = ["pytest-mypy"]
 [metadata]
 lock-version = "2.1"
 python-versions = ">=3.11,<4.0"
-content-hash = "d21891fb130b81093f999997d93304f4f8c259e9a9cf263f21a5d6f689162000"
+content-hash = "6e6c3375f989261d1d23eefd331abbd4b81e3928fae736b30506cc51dec52da4"

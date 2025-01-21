@@ -864,25 +864,46 @@ name = "osv"
 version = "0.0.22"
 description = "Open Source Vulnerabilities library"
 optional = false
-python-versions = "<4.0,>=3.11"
+python-versions = ">=3.11,<4.0"
 groups = ["main"]
-files = [
-    {file = "osv-0.0.22-py3-none-any.whl", hash = "sha256:95ed761d8f742dcf11ba8cd7e83ed6f945d5a6d45830fc6cf2cb4bf00bcc06ec"},
-    {file = "osv-0.0.22.tar.gz", hash = "sha256:08ab61c6133b6cad372975c47ee7d9cd7a85979504893cc99f1ab189adad6af9"},
-]
+files = []
+develop = true
 
 [package.dependencies]
-attrs = ">=23.2,<24.0"
-google-cloud-logging = ">=3.10,<4.0"
-google-cloud-ndb = ">=2.3,<3.0"
-google-cloud-storage = ">=2.17,<3.0"
-grpcio = ">=1.0,<2.0"
-jsonschema = ">=4.0,<5.0"
+attrs = ">=23.2"
+google-cloud-logging = ">=3.10"
+google-cloud-ndb = ">=2.3"
+google-cloud-storage = ">=2.17"
+grpcio = ">=1.0"
+jsonschema = ">=4.0"
+packageurl-python = "0.16.0"
 packaging = "<22.0"
-pygit2 = ">=1.14.0,<2.0.0"
-pyyaml = ">=6.0,<7.0"
-requests = ">=2.32,<3.0"
-semver = ">=3.0,<4.0"
+pygit2 = ">=1.14.0"
+pyyaml = ">=6.0"
+requests = ">=2.32"
+semver = ">=3.0"
+
+[package.source]
+type = "directory"
+url = "../.."
+
+[[package]]
+name = "packageurl-python"
+version = "0.16.0"
+description = "A purl aka. Package URL parser and builder"
+optional = false
+python-versions = ">=3.8"
+groups = ["main"]
+files = [
+    {file = "packageurl_python-0.16.0-py3-none-any.whl", hash = "sha256:5c3872638b177b0f1cf01c3673017b7b27ebee485693ae12a8bed70fa7fa7c35"},
+    {file = "packageurl_python-0.16.0.tar.gz", hash = "sha256:69e3bf8a3932fe9c2400f56aaeb9f86911ecee2f9398dbe1b58ec34340be365d"},
+]
+
+[package.extras]
+build = ["setuptools", "wheel"]
+lint = ["black", "isort", "mypy"]
+sqlalchemy = ["sqlalchemy (>=2.0.0)"]
+test = ["pytest"]
 
 [[package]]
 name = "packaging"
@@ -1518,4 +1539,4 @@ type = ["pytest-mypy"]
 [metadata]
 lock-version = "2.1"
 python-versions = ">=3.11,<4.0"
-content-hash = "7fe56bddda1c8a4fc06e7098d01d3c76f561375d7060b2c801f267a0f9b02529"
+content-hash = "c5ec10e25afc3e9301e6f8bf5e32d4aa25a08403d1becfacea05a40d83ed1f35"

@@ -18,11 +18,14 @@ dependencies = [
     "gunicorn==22.0.0",
     "whitenoise==6.8.2",
     "cvss==3.3",
-    "osv @ {path=\"../../\",develop=true}",
+    "osv",
 ]
 
 [tool.poetry]
 package-mode = false 
+
+[tool.poetry.dependencies]
+osv = { path = "../../", develop = true }
 
 [tool.poetry.group.dev.dependencies]
 yapf = "*"

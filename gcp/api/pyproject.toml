@@ -10,12 +10,15 @@ dependencies = [
     "grpcio-reflection==1.62.2",
     "grpcio-health-checking==1.62.2",
     "google-cloud-profiler==4.1.0",
-    "osv @ {path=\"../../\",develop=true}",
+    "osv",
 ]
-dynamic = ["version"]
 
 [tool.poetry]
 package-mode = false 
+
+
+[tool.poetry.dependencies]
+osv = { path = "../../", develop = true }
 
 [tool.poetry.group.dev.dependencies]
 grpcio-tools = "*"
@@ -24,5 +27,5 @@ yapf = "*"
 pylint = "*"
 
 [build-system]
-requires = ["poetry-core"]
+requires = ["poetry-core>=2.0.0"]
 build-backend = "poetry.core.masonry.api"

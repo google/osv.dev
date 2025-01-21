@@ -13,11 +13,14 @@ dependencies = [
     "pygit2==1.17.0",
     "requests==2.32.3",
     "jsonschema==4.23.0",
-    "osv @ {path=\"../../\",develop=true}",
+    "osv",
 ]
 
 [tool.poetry]
 package-mode = false  
+
+[tool.poetry.dependencies]
+osv = { path = "../../", develop = true }
 
 [tool.poetry.group.dev.dependencies] 
 yapf = "*"

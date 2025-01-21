@@ -45,10 +45,10 @@ from osv import semver_index
 from osv import purl_helpers
 from osv import vulnerability_pb2
 from osv.logs import setup_gcp_logging
-from gcp.api import osv_service_v1_pb2
-from gcp.api import osv_service_v1_pb2_grpc
+import osv_service_v1_pb2
+import osv_service_v1_pb2_grpc
 
-from gcp.api.cursor import QueryCursor
+from cursor import QueryCursor
 
 import googlecloudprofiler
 

@@ -24,7 +24,7 @@ COPY daemon.json /etc/docker/daemon.json
 COPY install_go.sh /tmp/install_go.sh
 
 RUN "/tmp/install_go.sh"
-ENV PATH "$PATH:/usr/local/go/bin"
+ENV PATH "$PATH:/usr/local/go/bin:/root/go/bin"
 
 RUN go install -tags extended github.com/gohugoio/hugo@v0.111.3
 

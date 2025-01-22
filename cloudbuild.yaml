@@ -14,14 +14,14 @@
 
 steps:
 # noop to pull the ci image once before the tests try to run concurrently
-- name: 'gcr.io/oss-vdb/ci-poetry2'
+- name: 'gcr.io/oss-vdb/ci'
   args: ['echo']
 
 - name: 'gcr.io/cloud-builders/git'
   id: 'init'
   args: ['submodule', 'update', '--init']
 
-- name: 'gcr.io/oss-vdb/ci-poetry2'
+- name: 'gcr.io/oss-vdb/ci'
   id: 'lib-tests'
   args: ['bash', '-ex', 'run_tests.sh']
   env:
@@ -33,13 +33,13 @@ steps:
   waitFor: ['init']
 
 # Sourcerepo-sync-tests and lib-tests use the same env so have a race condition. 
-- name: 'gcr.io/oss-vdb/ci-poetry2'
+- name: 'gcr.io/oss-vdb/ci'
   id: 'sourcerepo-sync-tests'
   dir: 'tools/sourcerepo-sync'
   args: ['bash', '-ex', 'run_tests.sh']
   waitFor: ['init', 'lib-tests']
 
-- name: 'gcr.io/oss-vdb/ci-poetry2'
+- name: 'gcr.io/oss-vdb/ci'
   id: 'worker-tests'
   dir: gcp/workers/worker
   args: ['bash', '-ex', 'run_tests.sh']
@@ -49,7 +49,7 @@ steps:
     - DATASTORE_EMULATOR_PORT=8003
   waitFor: ['init', 'lib-tests']
 
-- name: 'gcr.io/oss-vdb/ci-poetry2'
+- name: 'gcr.io/oss-vdb/ci'
   id: 'importer-tests'
   dir: gcp/workers/importer
   args: ['bash', '-ex', 'run_tests.sh']
@@ -60,7 +60,7 @@ steps:
   # importer uses same poetry as worker, 'poetry install' may break if run concurrently
   waitFor: ['init', 'worker-tests']
 
-- name: 'gcr.io/oss-vdb/ci-poetry2'
+- name: 'gcr.io/oss-vdb/ci'
   id: 'alias-tests'
   dir: gcp/workers/alias
   args: ['bash', '-ex', 'run_tests.sh']
@@ -70,7 +70,7 @@ steps:
   # alias uses same poetry as worker, 'poetry install' may break if run concurrently
   waitFor: ['init', 'importer-tests']
 
-- name: 'gcr.io/oss-vdb/ci-poetry2'
+- name: 'gcr.io/oss-vdb/ci'
   id: 'website-tests'
   dir: gcp/website
   args: ['bash', '-ex', 'run_tests.sh']
@@ -80,13 +80,13 @@ steps:
     - DATASTORE_EMULATOR_PORT=8004
   waitFor: ['init', 'lib-tests']
 
-- name: 'gcr.io/oss-vdb/ci-poetry2'
+- name: 'gcr.io/oss-vdb/ci'
   id: 'vulnfeed-tests'
   dir: vulnfeeds
   args: ['bash', '-ex', 'run_tests.sh']
   waitFor: ['init']
 
-- name: 'gcr.io/oss-vdb/ci-poetry2'
+- name: 'gcr.io/oss-vdb/ci'
   id: 'api-tests'
   dir: gcp/api
   #TODO: Update test scripts to support not supplying a credential.

@@ -190,7 +190,7 @@ def map_ecosystem_to_deps_dev(ecosystem_name: str) -> str:
 
 def maybe_normalize_package_names(package_name: str, ecosystem: str):
   """Normalize package names as necessary."""
-  if ecosystem == "PyPI":
+  if ecosystem == 'PyPI':
     # per https://peps.python.org/pep-0503/#normalized-names
     package_name = re.sub(r'[-_.]+', '-', package_name).lower()
 

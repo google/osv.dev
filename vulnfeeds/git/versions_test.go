@@ -85,8 +85,8 @@ func TestVersionToCommit(t *testing.T) {
 			description:    "An RC version that should match to one of many prefixed release candidates",
 			inputRepoURL:   "https://github.com/apache/inlong",
 			cache:          cache,
-			inputVersion:   "1.8.0-RC0",
-			expectedResult: "15d9fd922ef314977c7ce47c1fdf5e1655efd945",
+			inputVersion:   "1.8.0-RC1",
+			expectedResult: "91368c4b61d0dc4284092e497a1c1a2eceb5c2ad",
 			expectedOk:     false,
 		},
 	}

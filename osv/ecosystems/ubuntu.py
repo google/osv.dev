@@ -23,7 +23,7 @@ class Ubuntu(Ecosystem):
 
   def sort_key(self, version):
     if not UbuntuVersion.is_valid(version):
-      return UbuntuVersion(999999, 999999)
+      return UbuntuVersion(999999, '999999')
     return UbuntuVersion.from_string(version)
 
   def enumerate_versions(self,

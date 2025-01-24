@@ -13,6 +13,8 @@
 # limitations under the License.
 """Ecosystem helpers."""
 
+import re
+
 from osv.ecosystems.chainguard import Chainguard
 from osv.ecosystems.wolfi import Wolfi
 from .helper_base import Ecosystem, OrderingUnsupportedEcosystem
@@ -184,3 +186,12 @@ def is_supported_in_deps_dev(ecosystem_name: str) -> bool:
 
 def map_ecosystem_to_deps_dev(ecosystem_name: str) -> str:
   return _OSV_TO_DEPS_ECOSYSTEMS_MAP.get(ecosystem_name)
+
+
+def maybe_normalize_package_names(package_name: str, ecosystem: str):
+  """Normalize package names as necessary."""
+  if ecosystem == "PyPI":
+    # per https://peps.python.org/pep-0503/#normalized-names
+    package_name = re.sub(r'[-_.]+', '-', package_name).lower()
+
+  return package_name

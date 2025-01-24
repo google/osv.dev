@@ -44,3 +44,12 @@ class EcosystemTest(unittest.TestCase):
     expected_output = ['Debian', 'Debian:11', 'Debian:12', 'Debian:13']
     actual_output.sort()
     self.assertEqual(list(actual_output), expected_output)
+
+  def test_maybe_normalize_package_names(self):
+    """Test normalize package name"""
+    package_name = 'Flask'
+    ecosystem = 'PyPI'
+    expected = 'flask'
+
+    actual = ecosystems.maybe_normalize_package_names(package_name, ecosystem)
+    self.assertEqual(actual, expected)

@@ -280,6 +280,8 @@ def fix_invalid_ghsa(vulnerability):
 def maybe_normalize_package_names(vulnerability):
   """Normalize package names as necessary."""
   for affected in vulnerability.affected:
+    if not affected.package.ecosystem:
+      continue
     affected.package.name = osv.ecosystems.maybe_normalize_package_names(
         affected.package.name, affected.package.ecosystem)
 

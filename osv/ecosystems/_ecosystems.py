@@ -188,7 +188,7 @@ def map_ecosystem_to_deps_dev(ecosystem_name: str) -> str:
   return _OSV_TO_DEPS_ECOSYSTEMS_MAP.get(ecosystem_name)
 
 
-def maybe_normalize_package_names(package_name: str, ecosystem: str):
+def maybe_normalize_package_names(package_name: str, ecosystem: str) -> str:
   """Normalize package names as necessary."""
   if ecosystem == 'PyPI':
     # per https://peps.python.org/pep-0503/#normalized-names

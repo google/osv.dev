@@ -794,8 +794,9 @@ def do_query(query: osv_service_v1_pb2.Query,
                                   'Invalid ecosystem.')
 
   # Normalize package names as necessary.
-  package_name = ecosystems.maybe_normalize_package_names(
-      package_name, ecosystem)
+  if package_name:
+    package_name = ecosystems.maybe_normalize_package_names(
+        package_name, ecosystem)
 
   # Hack to work around ubuntu having extremely large individual entries
   if ecosystem.startswith('Ubuntu'):

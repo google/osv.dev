@@ -18,7 +18,6 @@ import datetime
 import json
 import logging
 import os
-import re
 import redis
 import requests
 import resource
@@ -281,10 +280,8 @@ def fix_invalid_ghsa(vulnerability):
 def maybe_normalize_package_names(vulnerability):
   """Normalize package names as necessary."""
   for affected in vulnerability.affected:
-    if affected.package.ecosystem == 'PyPI':
-      # per https://peps.python.org/pep-0503/#normalized-names
-      affected.package.name = re.sub(r'[-_.]+', '-',
-                                     affected.package.name).lower()
+    affected.package.name = osv.ecosystems.maybe_normalize_package_names(
+        affected.package.name, affected.package.ecosystem)
 
   return vulnerability
 

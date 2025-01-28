@@ -7,7 +7,7 @@ require (
 	cloud.google.com/go/pubsub v1.45.3
 	cloud.google.com/go/storage v1.50.0
 	github.com/go-git/go-git/v5 v5.13.1
-	github.com/golang/glog v1.2.3
+	github.com/golang/glog v1.2.4
 	github.com/google/go-cmp v0.6.0
 	golang.org/x/sync v0.10.0
 	google.golang.org/api v0.216.0

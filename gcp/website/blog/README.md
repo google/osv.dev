@@ -12,6 +12,8 @@ for Hugo installation.
 Posts are written using Markdown. During deploy, this is rendered into HTML.
 The name of the file corresponds to the URL slug.
 
+The file name must only container these regex characters `+\w-`.
+
 ```bash
 $ hugo new posts/name-of-new-post.md
 $ <your-editor> content/posts/name-of-new-post.md

@@ -1,5 +1,5 @@
 ---
-title: "OSV-Scanner v2.0.0-beta1 is ready! "
+title: "OSV-Scanner v2.0.0-beta1 is ready!"
 date: 2025-01-29T00:00:00Z
 draft: false
 author: The OSV Team
@@ -22,10 +22,10 @@ A significant new feature is a rewritten, layer-aware container scanning support
 This layer analysis leverages [OSV-Scalibr](https://github.com/google/osv-scalibr), and supports the following OSes and languages:
 | Distro Support | Language Artifacts Support |
 | -------------- | -------------------------- |
-| Alpine OS | Go |
-| Debian | Java |
-| Ubuntu | Node |
-| | Python |
+| Alpine OS      | Go                         |
+| Debian         | Java                       |
+| Ubuntu         | Node                       |
+|                | Python                     |
 
 Base image identification also leverages a [new experimental API](https://docs.deps.dev/api/v3alpha/#querycontainerimages) provided by deps.dev. Check out their [technical blog post](https://blog.deps.dev/base-container-image/index.html) for details on how this data is collected and queried.
 

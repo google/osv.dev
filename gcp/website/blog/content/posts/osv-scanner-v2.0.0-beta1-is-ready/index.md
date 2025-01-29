@@ -5,7 +5,7 @@ draft: false
 author: The OSV Team
 ---
 
-Today we’re excited to announce that the first beta of OSV-Scanner V2 is ready! The team has been hard at work in the past months to revamp OSV-Scanner under the hood (transitioning to [OSV-Scalibr](https://github.com/google/osv-scalibr), which we [announced earlier this month](https://security.googleblog.com/2025/01/osv-scalibr-library-for-software.html)) and building several new significant features.
+Today we’re excited to announce that the [first beta of OSV-Scanner V2](https://github.com/google/osv-scanner/releases/tag/v2.0.0-beta1) is ready! The team has been hard at work in the past months to revamp OSV-Scanner under the hood (transitioning to [OSV-Scalibr](https://github.com/google/osv-scalibr), which we [announced earlier this month](https://security.googleblog.com/2025/01/osv-scalibr-library-for-software.html)) and building several new significant features.
 
 This beta release does *not* introduce any breaking CLI changes - existing OSV-Scanner can use the tool in exactly the same way. The beta period is expected to last approximately one month. However, as this is a beta release, there may be breaking changes in the final release compared to the beta.
 

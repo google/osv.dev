@@ -101,7 +101,7 @@ OSV-Scalibr also makes it incredibly easy to add new extractors. Please file a [
 
 ## Feedback and testing
 
-You can find our latest release on GitHub here, and our updated V2 documentation here.
+You can find our latest release on GitHub [here](https://github.com/google/osv-scanner/releases/tag/v2.0.0-beta1), and our updated V2 documentation [here](https://google.github.io/osv-scanner/).
 
 We still expect changes to be made, smaller new features to be added, and bugs to be shaken out leading up to the final v2.0.0 release. If you do give this a try, we’d appreciate any feedback you might have on our discussion topics:
 - [General V2 feedback](https://github.com/google/osv-scanner/discussions/1529)

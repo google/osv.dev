@@ -27,7 +27,8 @@ This layer analysis leverages [OSV-Scalibr](https://github.com/google/osv-scalib
 | Ubuntu | Node |
 | | Python |
 
-Base image identification also leverages a new experimental API provided by https://deps.dev.
+Base image identification also leverages a [new experimental API](https://docs.deps.dev/api/v3alpha/#querycontainerimages) provided by deps.dev. Check out their [technical blog post](https://blog.deps.dev/base-container-image/index.html) for details on how this data is collected and queried.
+
 
 For usage, run the new `scan image` command:
 

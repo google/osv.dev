@@ -52,7 +52,7 @@ And additionally for container image scanning:
 - Image layer information
 - Base image identification
 
-![Screenshot of HTML output for container image scanning](html-container-output.png)
+![Illustration of HTML output for container image scanning](html-container.gif)
 
 ## Guided Remediation for Maven pom.xml
 

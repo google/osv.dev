@@ -20,19 +20,24 @@ A significant new feature is a rewritten, layer-aware container scanning support
 - OS/Distro the container is running on
 
 This layer analysis leverages [OSV-Scalibr](https://github.com/google/osv-scalibr), and supports the following OSes and languages:
-| Distro Support | Language Artifacts Support |
-| -------------- | -------------------------- |
-| Alpine OS      | Go                         |
-| Debian         | Java                       |
-| Ubuntu         | Node                       |
-|                | Python                     |
+
+Distro Support:
+ - Alpine OS
+ - Debian
+ - Ubuntu
+
+Language Artifacts Support:
+ - Go
+ - Java
+ - Node
+ - Python
 
 Base image identification also leverages a [new experimental API](https://docs.deps.dev/api/v3alpha/#querycontainerimages) provided by deps.dev. Check out their [technical blog post](https://blog.deps.dev/base-container-image/index.html) for details on how this data is collected and queried.
 
 
 For usage, run the new `scan image` command:
 
-```
+```bash
 osv-scanner scan image <image-name>:<tag>
 ```
 
@@ -69,7 +74,7 @@ We’ve introduced a few new features for our Maven support:
 
 The guided remediation support for Maven is only available in the non-interactive mode. For basic usage, run the following command:
 
-```
+```bash
 osv-scanner fix --non-interactive --strategy=override -M path/to/pom.xml
 ```
 

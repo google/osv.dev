@@ -5,7 +5,7 @@ draft: false
 author: The OSV Team
 ---
 
-Today we’re excited to announce that the first beta of OSV-Scanner V2 is ready! The team has been hard at work in the past months to revamp OSV-Scanner under the hood (transitioning to [OSV-Scalibr](https://github.com/google/osv-scalibr), which we announced last month) and building several new significant features.
+Today we’re excited to announce that the first beta of OSV-Scanner V2 is ready! The team has been hard at work in the past months to revamp OSV-Scanner under the hood (transitioning to [OSV-Scalibr](https://github.com/google/osv-scalibr), which we [announced earlier this month](https://security.googleblog.com/2025/01/osv-scalibr-library-for-software.html)) and building several new significant features.
 
 This beta release does *not* introduce any breaking CLI changes - existing OSV-Scanner can use the tool in exactly the same way. The beta period is expected to last approximately one month. However, as this is a beta release, there may be breaking changes in the final release compared to the beta.
 
@@ -80,13 +80,13 @@ For more usage details on guided remediation, please see our [documentation](htt
 
 With the help from [OSV-Scalibr](https://github.com/google/osv-scalibr), we now also have expanded support for the kinds of dependencies we can extract from projects and containers:
 
-Source manifests and lockfiles
+### Source manifests and lockfiles
 
 - Haskell: `cabal.project.freeze`, `stack.yaml.lock`
 - .NET: `deps.json`
 - Python: `uv.lock`
 
-Artifacts
+### Artifacts
 
 - node_modules
 - Python wheels

@@ -32,7 +32,7 @@ class ServerInstance:
 
   def check(self):
     """Check that the server is still up."""
-    if self.backend.poll():
+    if self.backend and self.backend.poll():
       raise RuntimeError('Backend process died.')
 
     if self.esp.poll():
@@ -41,7 +41,8 @@ class ServerInstance:
   def stop(self):
     """Stop the server."""
     self.esp.kill()
-    self.backend.kill()
+    if self.backend:
+      self.backend.kill()
 
 
 def start_backend(port, log_path):
@@ -105,6 +106,7 @@ def start_esp(port, backend_port, credential_path, log_path):
         '--disable_tracing',
         '--service=api-test.osv.dev',
         '--rollout_strategy=managed',
+        '--underscores_in_headers',
         f'--listener_port={port}',
         f'--backend=grpc://{host}:{backend_port}',
         '--enable_debug',
@@ -133,6 +135,7 @@ def start_esp(port, backend_port, credential_path, log_path):
         '--disable_tracing',
         '--service=api-test.osv.dev',
         '--rollout_strategy=managed',
+        '--underscores_in_headers',
         f'--listener_port={port}',
         f'--backend=grpc://{host}:{backend_port}',
         f'--service_account_key=/esp/{credential_name}',
@@ -154,12 +157,16 @@ def start_esp(port, backend_port, credential_path, log_path):
   return esp_proc
 
 
-def start(credential_path, port=_ESP_PORT, backend_port=_BACKEND_PORT):
+def start(credential_path,
+          no_backend=False,
+          port=_ESP_PORT,
+          backend_port=_BACKEND_PORT):
   """Start the test server."""
   backend = None
   esp = None
   try:
-    backend = start_backend(_BACKEND_PORT, 'backend.log')
+    if not no_backend:
+      backend = start_backend(_BACKEND_PORT, 'backend.log')
     esp = start_esp(port, backend_port, credential_path, 'esp.log')
   except Exception:
     if esp:
@@ -178,7 +185,11 @@ if __name__ == '__main__':
     print(f'Usage: {sys.argv[0]} path/to/credential.json')
     sys.exit(1)
 
-  server = start(sys.argv[1])
+  no_backend_flag = False
+  if len(sys.argv) == 3:
+    no_backend_flag = sys.argv[2] == '--no-backend'
+
+  server = start(sys.argv[1], no_backend=no_backend_flag)
   try:
     while True:
       server.check()

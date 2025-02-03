@@ -1,0 +1,101 @@
+# Copyright 2021 Google LLC
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#      http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+# See: 
+#    https://cloud.google.com/datastore/docs/concepts/optimize-indexes
+#    https://cloud.google.com/datastore/docs/tools/indexconfig
+
+# To create new indexes, see
+#    https://cloud.google.com/sdk/gcloud/reference/datastore/indexes/create 
+# To cleanup indexes, see
+#    https://cloud.google.com/sdk/gcloud/reference/datastore/indexes/cleanup
+
+indexes:
+  # Semver fixed index is used in ordering, so one index per combination of fields queried.
+  - kind: Bug
+    properties:
+      - name: status
+      - name: public
+      - name: project
+      - name: ecosystem
+      - name: semver_fixed_indexes
+
+  - kind: Bug
+    properties:
+      - name: status
+      - name: public
+      - name: project
+      - name: semver_fixed_indexes
+
+  - kind: Bug
+    properties:
+      - name: status
+      - name: public
+      - name: purl
+      - name: semver_fixed_indexes
+
+  # Is used in importer to look for not fixed bug entries
+  # Specifically specified since merged index has a slight performance hit
+  - kind: Bug
+    properties:
+      - name: is_fixed
+      - name: status
+      - name: source
+
+  # Timestamp is used for ordering on osv.dev
+  - kind: Bug
+    properties:
+    - name: public
+    - name: status
+    - name: timestamp
+      direction: desc
+
+  - kind: Bug
+    properties:
+    - name: public
+    - name: status
+    - name: ecosystem
+    - name: timestamp
+      direction: desc
+
+  - kind: Bug
+    properties:
+    - name: public
+    - name: status
+    - name: search_indices
+    - name: timestamp
+      direction: desc
+
+  # ecosystem + search_indices queries is served by merging the two indexes above
+  
+  # To allow sitemap generation to project and sort on last_modified
+  - kind: Bug
+    properties:
+    - name: ecosystem
+    - name: public
+    - name: status
+    - name: last_modified
+      direction: desc
+
+  # TODO: See if this can be removed
+  - kind: Bug
+    properties:
+    - name: status
+    - name: source
+    - name: timestamp
+
+  - kind: Bug
+    properties:
+    - name: related
+    - name: db_id

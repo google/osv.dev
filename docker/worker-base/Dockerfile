@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-FROM ubuntu:20.04@sha256:fa17826afb526a9fc7250e0fbcbfd18d03fe7a54849472f86879d8bf562c629e
+FROM ubuntu:20.04@sha256:8e5c4f0285ecbb4ead070431d29b576a530d3166df73ec44affc1cd27555141b
 
 ENV DEBIAN_FRONTEND noninteractive
 RUN apt-get update && apt-get upgrade -y && \
@@ -41,10 +41,10 @@ RUN curl -sS https://www.python.org/ftp/python/${PYTHON_VERSION}/Python-${PYTHON
 # when managing our dependencies.
 # See: https://python-poetry.org/docs/#installation 
 ENV POETRY_HOME "/opt/poetry"
-RUN python3 -m venv $POETRY_HOME
-RUN $POETRY_HOME/bin/pip install poetry==1.8.3
-# Link in PATH to make it possible to directly call poetry
-RUN ln -s $POETRY_HOME/bin/poetry /usr/local/bin/poetry
+COPY docker/poetry/requirements.txt ./poetry-requirements.txt
+RUN python3 -m venv $POETRY_HOME && \
+    $POETRY_HOME/bin/pip install --require-hashes -r ./poetry-requirements.txt && \
+    ln -s $POETRY_HOME/bin/poetry /usr/local/bin/poetry
 
 # Keep the virtualenv directly in the project directory. This isn't strictly neccesary for
 # this image as it runs on kubernetes, but it keeps it consistent with other cloud run images.
@@ -72,4 +72,4 @@ RUN curl -fsSL https://gvisor.dev/archive.key | gpg --dearmor -o /etc/apt/truste
     apt-get update && apt-get install -y runsc
 
 # Make gVisor the default Docker runtime.
-COPY docker/worker/daemon.json /etc/docker/daemon.json
+COPY docker/worker-base/daemon.json /etc/docker/daemon.json

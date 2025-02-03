@@ -1,0 +1,15 @@
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: gmp-public:kube-state-metrics
+  labels:
+    app.kubernetes.io/name: kube-state-metrics
+    app.kubernetes.io/version: 2.14.0
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: gmp-public:kube-state-metrics
+subjects:
+- kind: ServiceAccount
+  namespace: gmp-public
+  name: kube-state-metrics

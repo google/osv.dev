@@ -6,6 +6,14 @@
 ## This script is intended to be the entrypoint of the docker image.
 ## with the working directory being the root of the repository
 
+function __error_handing__() {
+     local last_status_code=$1;
+     local error_line_number=$2;
+     echo 1>&2 "Error - exited with status $last_status_code at line $error_line_number";
+}
+
+trap  '__error_handing__ $? $LINENO' ERR
+
 set -eu
 
 INPUT_BUCKET="${INPUT_GCS_BUCKET:=cve-osv-conversion}"

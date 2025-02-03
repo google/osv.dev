@@ -34,6 +34,12 @@ resource "google_container_cluster" "workers" {
     ]
     prevent_destroy = true
   }
+
+  monitoring_config {
+    managed_prometheus {
+      enabled = true
+    }
+  }
 }
 
 resource "google_container_node_pool" "default_pool" {

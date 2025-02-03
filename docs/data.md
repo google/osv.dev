@@ -112,10 +112,9 @@ For convenience, these sources are aggregated and [continuously](https://github.
 exported to a GCS bucket maintained by OSV:
 [`gs://osv-vulnerabilities`](https://storage.googleapis.com/osv-vulnerabilities/index.html)
 
-This bucket contains individual entries of the format
-`gs://osv-vulnerabilities/<ECOSYSTEM>/<ID>.json` as well as a zip containing all
-vulnerabilities for each ecosystem at
-`gs://osv-vulnerabilities/<ECOSYSTEM>/all.zip`.
+This bucket contains a zip file with all vulnerabilities across all ecosystems (including withdrawn records) at `gs://osv-vulnerabilities/all.zip`. This is the easiest way to download the entire OSV database.
+
+Individual vulnerability records can be found at `gs://osv-vulnerabilities/<ECOSYSTEM>/<ID>.json`. A zip containing all vulnerabilities for each ecosystem is available at `gs://osv-vulnerabilities/<ECOSYSTEM>/all.zip`. Vulnerabilities without an ecosystem (typically withdrawn ones) are exported to the `gs://osv-vulnerabilities/[EMPTY]/` directory.
 
 E.g. for PyPI vulnerabilities:
 
@@ -128,6 +127,9 @@ Some ecosystems contain a `:` separator in the name (e.g. `Alpine:v3.17`). For t
 
 A list of all current ecosystems is available at
 [`gs://osv-vulnerabilities/ecosystems.txt`](https://osv-vulnerabilities.storage.googleapis.com/ecosystems.txt)
+
+**Note:**
+OSV.dev has stopped exporting entries for ecosystems with prefixes (e.g. All `Alpine:.*`). Please refer only to the main ecosystem, the one without the `:.*` suffix, for all vulnerabilities of that ecosystem.
 
 ## Contributing Data
 If you a work with a project such as a Linux distribution and would like to contribute your security advisories, please follow the steps outlined in [CONTRIBUTING.md](https://github.com/google/osv.dev/blob/master/CONTRIBUTING.md#contributing-data)

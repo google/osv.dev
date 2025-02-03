@@ -19,6 +19,14 @@
 # discontinued by the NVD.
 # They are saved to GCS for use by combine-to-osv and the NVD to OSV conversion.
 
+function __error_handing__() {
+     local last_status_code=$1;
+     local error_line_number=$2;
+     echo 1>&2 "Error - exited with status $last_status_code at line $error_line_number";
+}
+
+trap  '__error_handing__ $? $LINENO' ERR
+
 set -e
 
 echo "Downloading the entire NVD"

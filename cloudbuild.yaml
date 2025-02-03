@@ -41,7 +41,7 @@ steps:
 
 - name: 'gcr.io/oss-vdb/ci'
   id: 'worker-tests'
-  dir: docker/worker
+  dir: gcp/workers/worker
   args: ['bash', '-ex', 'run_tests.sh']
   env:
     # Each concurrent test that uses the datastore emulator must have a unique port number
@@ -51,7 +51,7 @@ steps:
 
 - name: 'gcr.io/oss-vdb/ci'
   id: 'importer-tests'
-  dir: docker/importer
+  dir: gcp/workers/importer
   args: ['bash', '-ex', 'run_tests.sh']
   env:
     - CLOUD_BUILD=1
@@ -62,7 +62,7 @@ steps:
 
 - name: 'gcr.io/oss-vdb/ci'
   id: 'alias-tests'
-  dir: docker/alias
+  dir: gcp/workers/alias
   args: ['bash', '-ex', 'run_tests.sh']
   env:
     # same as worker/importer
@@ -71,8 +71,8 @@ steps:
   waitFor: ['init', 'importer-tests']
 
 - name: 'gcr.io/oss-vdb/ci'
-  id: 'appengine-tests'
-  dir: gcp/appengine
+  id: 'website-tests'
+  dir: gcp/website
   args: ['bash', '-ex', 'run_tests.sh']
   env:
     # Each concurrent test that uses the datastore emulator must have a unique port number

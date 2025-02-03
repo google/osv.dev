@@ -18,7 +18,11 @@ spec:
           value: '6379'
         startupProbe:
           httpGet:
-            path: /_ah/warmup  # TODO(michaelkedar): Better endpoint for these
+            path: /healthz
         livenessProbe:
           httpGet:
-            path: /_ah/warmup
+            path: /healthz
+        resources:
+          limits:
+            cpu: 1
+            memory: 4Gi

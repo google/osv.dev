@@ -258,7 +258,7 @@ func repoGitWeb(parsedURL *url.URL) (string, error) {
 	//
 	// The frontend code needs to be taught how to rewrite these back to
 	// something clickable for humans in
-	// https://github.com/google/osv.dev/blob/master/gcp/appengine/source_mapper.py
+	// https://github.com/google/osv.dev/blob/master/gcp/website/source_mapper.py
 	//
 	var gitProtocolHosts = []string{
 		"git.code-call-cc.org",
@@ -390,6 +390,11 @@ func Repo(u string) (string, error) {
 
 		return fmt.Sprintf("%s://%s%s", parsedURL.Scheme,
 			parsedURL.Hostname(), repo), nil
+	}
+
+	// Handle a Linux Kernel URL that is already cloneable and doesn't require remapping.
+	if parsedURL.Hostname() == "git.kernel.org" && strings.HasPrefix(parsedURL.Path, "/pub/scm/linux/kernel/git/torvalds/linux.git") {
+		return fmt.Sprintf("%s://%s%s", parsedURL.Scheme, parsedURL.Hostname(), "/pub/scm/linux/kernel/git/torvalds/linux.git"), nil
 	}
 
 	// GitWeb CGI URLs are structured very differently, and require significant translation to get a cloneable URL, e.g.
@@ -544,10 +549,19 @@ func Commit(u string) (string, error) {
 		return "", err
 	}
 
+	// "https://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git/commit/?id=ee1fee900537b5d9560e9f937402de5ddc8412f3"
+
 	// cGit URLs are structured another way, e.g.
 	// https://git.dpkg.org/cgit/dpkg/dpkg.git/commit/?id=faa4c92debe45412bfcf8a44f26e827800bb24be
 	// https://git.kernel.org/cgit/linux/kernel/git/torvalds/linux.git/commit/?id=817b8b9c5396d2b2d92311b46719aad5d3339dbe
 	if strings.HasPrefix(parsedURL.Path, "/cgit") &&
+		strings.HasSuffix(parsedURL.Path, "commit/") &&
+		strings.HasPrefix(parsedURL.RawQuery, "id=") {
+		return strings.Split(parsedURL.RawQuery, "=")[1], nil
+	}
+
+	// Canonicalized git.kernel.org URLs lose /cgit in the path...
+	if parsedURL.Hostname() == "git.kernel.org" &&
 		strings.HasSuffix(parsedURL.Path, "commit/") &&
 		strings.HasPrefix(parsedURL.RawQuery, "id=") {
 		return strings.Split(parsedURL.RawQuery, "=")[1], nil
@@ -658,12 +672,16 @@ func extractGitCommit(link string, commitType CommitType) (ac AffectedCommit, er
 	}
 
 	// If URL doesn't validate, treat it as linkrot.
-	// Possible TODO(apollock): restart the entire extraction process when the
-	// repo changes (i.e. handle a redirect to a completely different host,
-	// instead of a redirect within GitHub)
-	r, err = ValidateAndCanonicalizeLink(r)
+	possiblyDifferentLink, err := ValidateAndCanonicalizeLink(link)
 	if err != nil {
 		return ac, err
+	}
+
+	// restart the entire extraction process when the URL changes (i.e. handle a
+	// redirect to a completely different host, instead of a redirect within
+	// GitHub)
+	if possiblyDifferentLink != link {
+		return extractGitCommit(possiblyDifferentLink, commitType)
 	}
 
 	ac.SetRepo(r)

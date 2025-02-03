@@ -1,0 +1,19 @@
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app.kubernetes.io/name: kube-state-metrics
+    app.kubernetes.io/version: 2.14.0
+  namespace: gmp-public
+  name: kube-state-metrics
+spec:
+  clusterIP: None
+  ports:
+  - name: metrics
+    port: 8080
+    targetPort: metrics
+  - name: metrics-self
+    port: 8081
+    targetPort: metrics-self
+  selector:
+    app.kubernetes.io/name: kube-state-metrics

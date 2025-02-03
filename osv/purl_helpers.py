@@ -13,23 +13,57 @@
 # limitations under the License.
 """PURL conversion utilities."""
 
+from collections import namedtuple
 from urllib.parse import quote
 
-PURL_ECOSYSTEMS = {
-    'Alpine': 'apk',
-    'crates.io': 'cargo',
-    'Debian': 'deb',
-    'Go': 'golang',
-    'Hackage': 'hackage',
-    'Hex': 'hex',
-    'Maven': 'maven',
-    'npm': 'npm',
-    'NuGet': 'nuget',
-    'OSS-Fuzz': 'generic',
-    'Packagist': 'composer',
-    'Pub': 'pub',
-    'PyPI': 'pypi',
-    'RubyGems': 'gem',
+from packageurl import PackageURL
+
+ParsedPURL = namedtuple('ParsedPURL', ['ecosystem', 'package', 'version'])
+EcosystemPURL = namedtuple('EcosystemPURL', ['type', 'namespace'])
+
+# PURL spec:
+# https://github.com/package-url/purl-spec/blob/master/PURL-TYPES.rst
+ECOSYSTEM_PURL_DATA = {
+    'AlmaLinux': EcosystemPURL('rpm', 'almalinux'),
+    'Alpine': EcosystemPURL('apk', 'alpine'),
+    # Android
+    # Bioconductor
+    'Bitnami': EcosystemPURL('bitnami', None),
+    'Chainguard': EcosystemPURL('apk', 'chainguard'),
+    'ConanCenter': EcosystemPURL('conan', None),
+    'CRAN': EcosystemPURL('cran', None),
+    'crates.io': EcosystemPURL('cargo', None),
+    'Debian': EcosystemPURL('deb', 'debian'),
+    # GHC
+    # GIT
+    # GitHub Actions
+    'Go': EcosystemPURL('golang', None),
+    'Hackage': EcosystemPURL('hackage', None),
+    'Hex': EcosystemPURL('hex', None),
+    # Linux
+    'Mageia': EcosystemPURL('rpm', 'mageia'),
+    'Maven': EcosystemPURL('maven', None),
+    'npm': EcosystemPURL('npm', None),
+    'NuGet': EcosystemPURL('nuget', None),
+    'openSUSE': EcosystemPURL('rpm', 'opensuse'),
+    'OSS-Fuzz': EcosystemPURL('generic', None),
+    'Packagist': EcosystemPURL('composer', None),
+    # Photon OS
+    'Pub': EcosystemPURL('pub', None),
+    'PyPI': EcosystemPURL('pypi', None),
+    'Red Hat': EcosystemPURL('rpm', 'redhat'),
+    'Rocky Linux': EcosystemPURL('rpm', 'rocky-linux'),
+    'RubyGems': EcosystemPURL('gem', None),
+    'SUSE': EcosystemPURL('rpm', 'suse'),
+    'SwiftURL': EcosystemPURL('swift', None),
+    'Ubuntu': EcosystemPURL('deb', 'ubuntu'),
+    'Wolfi': EcosystemPURL('apk', 'wolfi'),
+}
+
+# Create the reverse lookup hash map
+PURL_ECOSYSTEM_MAP = {
+    purl_data: ecosystem
+    for ecosystem, purl_data in ECOSYSTEM_PURL_DATA.items()
 }
 
 
@@ -41,9 +75,15 @@ def _url_encode(package_name):
 
 def package_to_purl(ecosystem: str, package_name: str) -> str | None:
   """Convert a ecosystem and package name to PURL."""
-  purl_type = PURL_ECOSYSTEMS.get(ecosystem)
-  if not purl_type:
+  purl_data = ECOSYSTEM_PURL_DATA.get(ecosystem)
+  if not purl_data:
     return None
+
+  purl_type, purl_namespace = purl_data
+  if purl_namespace:
+    purl_ecosystem = f'{purl_type}/{purl_namespace}'
+  else:
+    purl_ecosystem = purl_type
 
   suffix = ''
 
@@ -52,17 +92,60 @@ def package_to_purl(ecosystem: str, package_name: str) -> str | None:
     package_name = package_name.replace(':', '/', 1)
 
   if purl_type == 'deb' and ecosystem == 'Debian':
-    package_name = 'debian/' + package_name
     suffix = '?arch=source'
 
   if purl_type == 'apk' and ecosystem == 'Alpine':
-    package_name = 'alpine/' + package_name
     suffix = '?arch=source'
 
-  return f'pkg:{purl_type}/{_url_encode(package_name)}{suffix}'
+  return f'pkg:{purl_ecosystem}/{_url_encode(package_name)}{suffix}'
 
 
-def purl_to_ecosystem(purl_type: str) -> str | None:
-  """Convert purl to a specific ecosystem string"""
-  ecosystem_purl = {v: k for k, v in PURL_ECOSYSTEMS.items()}
-  return ecosystem_purl.get(purl_type)
+def parse_purl(purl_str: str) -> ParsedPURL | None:
+  """Parses a PURL string and extracts
+  ecosystem, package, and version information.
+
+  Args:
+    purl_str: The Package URL string to parse.
+
+  Returns:
+    A tuple containing the ecosystem, package,
+    and version, or None if parsing fails.
+  """
+
+  purl = PackageURL.from_string(
+      purl_str)  # May raise ValueError for invalid PURL strings
+
+  package = purl.name
+  version = purl.version
+
+  # Find a matching ecosystem using both type and namespace.
+  ecosystem = PURL_ECOSYSTEM_MAP.get(EcosystemPURL(purl.type, purl.namespace))
+  if ecosystem:
+    return ParsedPURL(ecosystem, package, version)
+
+  # If no match is found, try again using only the type.
+  # Some ecosystems may use the namespace to represent additional
+  # information (like vendors) and the namespace might be optional.
+  ecosystem = PURL_ECOSYSTEM_MAP.get(EcosystemPURL(purl.type, None))
+  if not ecosystem:
+    return None
+
+  # For ecosystems with optional namespaces, the namespace might need to be
+  # included as part of the package name.
+  if purl.namespace:
+    if purl.type == 'golang':
+      package = purl.namespace + '/' + purl.name
+      if purl.subpath:
+        package = package + '/' + purl.subpath
+    elif purl.type in ('composer', 'hex', 'npm', 'swift'):
+      package = purl.namespace + '/' + purl.name
+    elif purl.type == 'maven':
+      package = purl.namespace + ':' + purl.name
+    else:
+      # Handle the case where the ecosystem shouldn't have a namespace.
+      return None
+  else:
+    # Handle the case where the namespace is not supported.
+    return None
+
+  return ParsedPURL(ecosystem, package, version)

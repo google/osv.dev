@@ -91,6 +91,16 @@ If you have any questions, please feel free to create an issue!
 
 ## Data
 
+### Why isn't a record available?
+
+If you are unable to retrieve a record you are expecting to be able to find, it
+may be because it has not imported successfully, due to there being a quality issue with it.
+
+If a record has not met [OSV.dev's quality bar](data_quality.md), the 404 page
+for the vulnerability will state this.
+
+You should raise this with the home database responsible for the record.
+
 ### I've found something wrong with the data
 
 Data quality is very important to us. Please remember that OSV.dev is an
@@ -130,7 +140,7 @@ If you work on a project (like a Linux distribution) and would like to contribut
 1. Version enumeration (for non-SemVer ecosystems where [supporting version enumeration code](https://github.com/google/osv.dev/tree/master/osv/ecosystems) exists)
 2. [Package URL](https://github.com/package-url/purl-spec) [computation](https://github.com/google/osv.dev/blob/a751ceb26522f093edf26c0ad167cfd0967716d9/osv/models.py#L361-L365) (if necessary)
 3. [Git affected commit enumeration and commit to tag mapping](https://github.com/google/osv.dev/blob/a751ceb26522f093edf26c0ad167cfd0967716d9/osv/impact.py#L422)
-4. [Batch](https://github.com/google/osv.dev/blob/master/deployment/clouddeploy/gke-workers/base/alias-computation.yaml) [computation](https://github.com/google/osv.dev/tree/master/docker/alias) of [aliases](https://ossf.github.io/osv-schema/#aliases-field)
+4. Repeat [batch](https://github.com/google/osv.dev/blob/master/deployment/clouddeploy/gke-workers/base/alias-computation.yaml) [computation](https://github.com/google/osv.dev/tree/master/gcp/workers/alias) of [aliases](https://ossf.github.io/osv-schema/#aliases-field) (**Note**: any time the `aliases` field changes, the record's [`modified`](https://ossf.github.io/osv-schema/#id-modified-fields) field is updated)
 
 Both version and commit enumeration populate the [`affected.versions[]`](https://ossf.github.io/osv-schema/#affectedversions-field) field, which assists with precise version matching.
 

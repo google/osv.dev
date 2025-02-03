@@ -344,11 +344,13 @@ class IntegrationTests(unittest.TestCase,
     alsa_2023_7109 = self._get('ALSA-2023:7109')
     alsa_2024_3178 = self._get('ALSA-2024:3178')
     alsa_2024_4262 = self._get('ALSA-2024:4262')
+    alsa_2024_7481 = self._get('ALSA-2024:7481')
 
     expected_vulns = [
         alsa_2023_7109,
         alsa_2024_3178,
         alsa_2024_4262,
+        alsa_2024_7481,
     ]
 
     response = requests.post(
@@ -375,6 +377,52 @@ class IntegrationTests(unittest.TestCase,
         }),
         timeout=_TIMEOUT)
     self.assertEqual(0, len(response.json()))
+
+  def test_malicious_package_matching(self):
+    """"Test malicious package query"""
+    # Test matching by affected ranges
+    mal_2022_7426 = self._get('MAL-2022-7426')
+
+    expected_vulns = [
+        mal_2022_7426,
+    ]
+
+    package = 'pymocks'
+    ecosystem = 'PyPI'
+
+    response = requests.post(
+        _api() + _BASE_QUERY,
+        data=json.dumps({
+            'version': '0.0.1',
+            'package': {
+                'name': package,
+                'ecosystem': ecosystem,
+            }
+        }),
+        timeout=_TIMEOUT)
+    self.assert_results_equal({'vulns': expected_vulns}, response.json())
+
+    # Test matching by affected versions
+    mal_2024_4618 = self._get('MAL-2024-4618')
+
+    expected_vulns = [
+        mal_2024_4618,
+    ]
+
+    package = 'psbuiId'
+    ecosystem = 'NuGet'
+
+    response = requests.post(
+        _api() + _BASE_QUERY,
+        data=json.dumps({
+            'version': '1.1.1-beta',
+            'package': {
+                'name': package,
+                'ecosystem': ecosystem,
+            }
+        }),
+        timeout=_TIMEOUT)
+    self.assert_results_equal({'vulns': expected_vulns}, response.json())
 
   def test_query_invalid_ecosystem(self):
     """Test a query with an invalid ecosystem fails validation."""
@@ -527,13 +575,18 @@ class IntegrationTests(unittest.TestCase,
 
     self.assert_results_equal({'vulns': another_expected}, response.json())
 
-    expected_deb = [self._get('DLA-3203-1'), self._get('DSA-4921-1')]
+    expected_deb = [
+        self._get('CVE-2018-25047'),
+        self._get('CVE-2023-28447'),
+        self._get('CVE-2024-35226'),
+        self._get('DSA-5830-1'),
+    ]
 
     response = requests.post(
         _api() + _BASE_QUERY,
         data=json.dumps(
             {'package': {
-                'purl': 'pkg:deb/debian/nginx@1.14.2-2+deb10u3',
+                'purl': 'pkg:deb/debian/smarty4@4.1.1-1',
             }}),
         timeout=_TIMEOUT)
 
@@ -544,7 +597,7 @@ class IntegrationTests(unittest.TestCase,
         _api() + _BASE_QUERY,
         data=json.dumps({
             'package': {
-                'purl': 'pkg:deb/debian/nginx@1.14.2-2+deb10u3?arch=source',
+                'purl': 'pkg:deb/debian/smarty4@4.1.1-1?arch=source',
             }
         }),
         timeout=_TIMEOUT)
@@ -554,11 +607,10 @@ class IntegrationTests(unittest.TestCase,
     # A non source arch should also return the same item
     response = requests.post(
         _api() + _BASE_QUERY,
-        data=json.dumps({
-            'package': {
-                'purl': 'pkg:deb/debian/nginx@1.14.2-2+deb10u3?arch=x64',
-            }
-        }),
+        data=json.dumps(
+            {'package': {
+                'purl': 'pkg:deb/debian/smarty4@4.1.1-1?arch=x64',
+            }}),
         timeout=_TIMEOUT)
 
     self.assert_results_equal({'vulns': expected_deb}, response.json())
@@ -568,7 +620,7 @@ class IntegrationTests(unittest.TestCase,
         _api() + _BASE_QUERY,
         data=json.dumps({
             'package': {
-                'purl': ('pkg:deb/debian/nginx@1.14.2-2+deb10u3?'
+                'purl': ('pkg:deb/debian/smarty4@4.1.1-1?'
                          'randomqualifier=1234'),
             }
         }),
@@ -639,7 +691,7 @@ class IntegrationTests(unittest.TestCase,
     self.assert_results_equal(
         {
             'code': 3,
-            'message': 'ecosystem specified in a purl query'
+            'message': 'ecosystem specified in a PURL query'
         }, response.json())
 
   def test_query_with_redundant_version(self):
@@ -656,7 +708,7 @@ class IntegrationTests(unittest.TestCase,
     self.assert_results_equal(
         {
             'code': 3,
-            'message': 'version specified in params and purl query'
+            'message': 'version specified in params and PURL query'
         }, response.json())
 
   def test_query_with_redundant_package_name(self):
@@ -672,7 +724,7 @@ class IntegrationTests(unittest.TestCase,
     self.assert_results_equal(
         {
             'code': 3,
-            'message': 'name specified in a purl query'
+            'message': 'name specified in a PURL query'
         }, response.json())
 
   def test_query_batch(self):
@@ -909,7 +961,7 @@ class IntegrationTests(unittest.TestCase,
         }
     }, {}]
 
-    pkg_version = [{'package': {'version': '0.8.5'}}, {}]
+    pkg_version = [{'version': '0.8.5'}, {}]
 
     commit = [{'commit': 'd374094d8c49b6b7d288f307e11217ec5a502391'}, {}]
 

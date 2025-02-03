@@ -14,18 +14,26 @@
 
 FROM python:3.11-slim@sha256:ad5dadd957a398226996bc4846e522c39f2a77340b531b28aaab85b2d361210b
 
+# Install build-essential which is required by Cloud Profiler
+RUN apt-get update && apt-get install -y build-essential
+
 # Generation 1 of cloud run overrides the HOME environment variable, causing
 # poetry to run in the incorrect environment, as it defaults to using $HOME/.cache/virtualenvs/...
 # 
 # This forces it to create the virtualenv in the same directory as the project, avoiding this issue.
 ENV POETRY_VIRTUALENVS_IN_PROJECT=true
+ENV POETRY_HOME "/opt/poetry"
+COPY docker/poetry/requirements.txt ./poetry-requirements.txt
+RUN python3 -m venv $POETRY_HOME && \
+    $POETRY_HOME/bin/pip install --require-hashes -r ./poetry-requirements.txt && \
+    ln -s $POETRY_HOME/bin/poetry /usr/local/bin/poetry
 
 # TODO(ochang): Just copy the entire project (needs a clean checkout).
-COPY setup.py pyproject.toml poetry.lock README.md /osv/
+COPY pyproject.toml poetry.lock README.md /osv/
 COPY osv /osv/osv
 COPY gcp/api /osv/gcp/api
 
 WORKDIR /osv/gcp/api
-RUN pip3 install poetry==1.8.3 && poetry install
+RUN poetry install
 
 ENTRYPOINT ["poetry", "run", "python", "/osv/gcp/api/server.py"]

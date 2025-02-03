@@ -39,7 +39,7 @@ You must install:
 1.  [Pylint](https://pypi.org/project/pylint)
 1.  [Yapf](https://github.com/google/yapf)
 1.  [Make](https://www.gnu.org/software/make/)
-1.  [Poetry](https://python-poetry.org/)
+1.  [Poetry](https://python-poetry.org/) >= 2.0.1
 2.  [Google Cloud SDK](https://cloud.google.com/sdk)
 3.  [Hugo](https://gohugo.io/installation/)
 4.  [Node JS](https://nodejs.org/) >= 18.17.x
@@ -55,6 +55,7 @@ git clone --recurse-submodules https://github.com/google/osv.dev
 # is recommended to help manage updates to the osv/osv-schema submodule
 cd osv.dev
 poetry install
+poetry self add poetry-plugin-shell
 poetry shell
 ```
 
@@ -118,7 +119,7 @@ yapf -i <file>.py
 
 ```shell
 gcloud auth login --update-adc
-make run-appengine
+make run-website
 ```
 
 #### API

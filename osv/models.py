@@ -25,6 +25,7 @@ from typing import Self
 from google.cloud import ndb
 from google.protobuf import json_format
 from google.protobuf import timestamp_pb2
+from osv import importfinding_pb2
 
 # pylint: disable=relative-beyond-top-level
 from . import bug
@@ -396,9 +397,17 @@ class Bug(ndb.Model):
         if 'GIT' in ecosystems_set:
           break
 
+    # If a withdrawn record has no affected package,
+    # assign an '[EMPTY]' ecosystem value for export.
+    if not ecosystems_set:
+      ecosystems_set.add('[EMPTY]')
+
     # For all ecosystems that specify a specific version with colon,
     # also add the base name
     ecosystems_set.update({ecosystems.normalize(x) for x in ecosystems_set})
+
+    # Expand the set to include all ecosystem variants.
+    ecosystems_set = ecosystems.add_matching_ecosystems(ecosystems_set)
 
     self.ecosystem = list(ecosystems_set)
     self.ecosystem.sort()
@@ -498,7 +507,7 @@ class Bug(ndb.Model):
     if not self.key:  # pylint: disable=access-member-before-definition
       source_repo = get_source_repository(self.source)
       if not source_repo:
-        raise ValueError(f'Invalid source {self.source}')
+        raise ValueError(f'{self.db_id} has invalid source {self.source}')
 
       if source_repo.db_prefix and not any(
           self.db_id.startswith(prefix) for prefix in source_repo.db_prefix):
@@ -675,6 +684,8 @@ class Bug(ndb.Model):
 
     details = self.details
 
+    # Note that there is further possible mutation of this field below when
+    # `include_alias` is True
     if self.last_modified:
       modified = timestamp_pb2.Timestamp()
       modified.FromDatetime(self.last_modified)
@@ -715,7 +726,8 @@ class Bug(ndb.Model):
     aliases = []
 
     if include_alias:
-      related_bugs = Bug.query(Bug.related == self.db_id).fetch()
+      related_bugs = Bug.query(
+          Bug.related == self.db_id, projection=[Bug.db_id]).fetch()
       related_bug_ids = [bug.db_id for bug in related_bugs]
       related = sorted(list(set(related_bug_ids + self.related)))
 
@@ -730,7 +742,7 @@ class Bug(ndb.Model):
         schema_version=SCHEMA_VERSION,
         id=self.id(),
         published=published,
-        modified=modified,
+        modified=modified,  # Note the two places above where this can be set.
         aliases=aliases,
         related=related,
         withdrawn=withdrawn,
@@ -856,6 +868,8 @@ class SourceRepository(ndb.Model):
   # DB prefix, if the database allocates its own.
   # https://ossf.github.io/osv-schema/#id-modified-fields
   db_prefix: list[str] = ndb.StringProperty(repeated=True)
+  # Apply strict validation (JSON Schema + linter checks) to this source.
+  strict_validation: bool = ndb.BooleanProperty(default=False)
 
   def ignore_file(self, file_path):
     """Return whether or not we should be ignoring a file."""
@@ -907,12 +921,28 @@ class ImportFindings(enum.IntEnum):
 class ImportFinding(ndb.Model):
   """Quality findings about an individual record."""
   bug_id: str = ndb.StringProperty()
+  source: str = ndb.StringProperty()
   findings: list[ImportFindings] = ndb.IntegerProperty(repeated=True)
   first_seen: datetime = ndb.DateTimeProperty()
   last_attempt: datetime = ndb.DateTimeProperty()
 
+  def _pre_put_hook(self):  # pylint: disable=arguments-differ
+    """Pre-put hook for setting key."""
+    if not self.key:  # pylint: disable=access-member-before-definition
+      self.key = ndb.Key(ImportFinding, self.bug_id)
 
-def get_source_repository(source_name):
+  def to_proto(self):
+    """Converts to ImportFinding proto."""
+    return importfinding_pb2.ImportFinding(
+        bug_id=self.bug_id,
+        source=self.source,
+        findings=self.findings,  # type: ignore
+        first_seen=self.first_seen.timestamp_pb(),  #type: ignore
+        last_attempt=self.last_attempt.timestamp_pb(),  #type: ignore
+    )
+
+
+def get_source_repository(source_name: str) -> SourceRepository:
   """Get source repository."""
   return SourceRepository.get_by_id(source_name)
 
@@ -949,15 +979,16 @@ def sorted_events(ecosystem, range_type, events) -> list[AffectedEvent]:
 
 
 @ndb.tasklet
-def get_aliases_async(bug_id) -> ndb.Future:
+def get_aliases_async(bug_id: str) -> ndb.Future:
   """Gets aliases asynchronously."""
   alias_group = yield AliasGroup.query(AliasGroup.bug_ids == bug_id).get_async()
   return alias_group
 
 
 @ndb.tasklet
-def get_related_async(bug_id) -> ndb.Future:
+def get_related_async(bug_id: str) -> ndb.Future:
   """Gets related bugs asynchronously."""
-  related_bugs = yield Bug.query(Bug.related == bug_id).fetch_async()
+  related_bugs = yield Bug.query(
+      Bug.related == bug_id, projection=[Bug.db_id]).fetch_async()
   related_bug_ids = [bug.db_id for bug in related_bugs]
   return related_bug_ids

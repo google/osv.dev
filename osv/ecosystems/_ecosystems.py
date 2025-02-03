@@ -24,6 +24,7 @@ from .bioconductor import Bioconductor
 from .cran import CRAN
 from .debian import Debian
 from .haskell import Hackage, GHC
+from .mageia import Mageia
 from .maven import Maven
 from .nuget import NuGet
 from .packagist import Packagist
@@ -89,6 +90,7 @@ package_urls = {
     'Go': 'https://',
     'Hackage': 'https://hackage.haskell.org/package/',
     'Hex': 'https://hex.pm/packages/',
+    'Mageia': 'https://pkgs.org/download/',
     'npm': 'https://www.npmjs.com/package/',
     'NuGet': 'https://www.nuget.org/packages/',
     'Packagist': 'https://packagist.org/packages/',
@@ -119,6 +121,9 @@ def get(name: str) -> Ecosystem:
 
   if name.startswith('AlmaLinux'):
     return AlmaLinux()
+
+  if name.startswith('Mageia'):
+    return Mageia()
 
   if name.startswith('Red Hat'):
     return RedHat()

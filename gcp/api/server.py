@@ -45,10 +45,10 @@ from osv import semver_index
 from osv import purl_helpers
 from osv import vulnerability_pb2
 from osv.logs import setup_gcp_logging
-from gcp.api import osv_service_v1_pb2
-from gcp.api import osv_service_v1_pb2_grpc
+import osv_service_v1_pb2
+import osv_service_v1_pb2_grpc
 
-from gcp.api.cursor import QueryCursor
+from cursor import QueryCursor
 
 import googlecloudprofiler
 
@@ -344,6 +344,27 @@ class OSVServicer(osv_service_v1_pb2_grpc.OSVServicer,
     """Determine the version of the provided hashes."""
     res = determine_version(request.query, context).result()
     return res
+
+  @ndb_context
+  @trace_filter.log_trace
+  def ImportFindings(self, request, context: grpc.ServicerContext):
+    """Return a list of `ImportFinding` for a given source."""
+    source = request.source
+    # TODO(gongh@): add source check,
+    # check if the source name exists in the source repository.
+    if not source:
+      context.abort(grpc.StatusCode.INVALID_ARGUMENT,
+                    'Missing Source:  Please specify the source')
+    if get_gcp_project() == _TEST_INSTANCE:
+      logging.info('Checking import finding for %s\n', source)
+
+    query = osv.ImportFinding.query(osv.ImportFinding.source == source)
+    import_findings: list[osv.ImportFinding] = query.fetch()
+    invalid_records = []
+    for finding in import_findings:
+      invalid_records.append(finding.to_proto())
+
+    return osv_service_v1_pb2.ImportFindingList(invalid_records=invalid_records)
 
   @ndb_context
   def Check(self, request, context: grpc.ServicerContext):
@@ -728,10 +749,10 @@ def do_query(query: osv_service_v1_pb2.Query,
   if purl_str:
     try:
       purl = purl_helpers.parse_purl(purl_str)
-    except ValueError:
+    except ValueError as e:
       context.service_context.abort(
           grpc.StatusCode.INVALID_ARGUMENT,
-          'Invalid PURL.',
+          f'{e}',
       )
 
     if package_name:  # Purls already include the package name
@@ -771,6 +792,11 @@ def do_query(query: osv_service_v1_pb2.Query,
   if ecosystem and not ecosystems.get(ecosystem):
     context.service_context.abort(grpc.StatusCode.INVALID_ARGUMENT,
                                   'Invalid ecosystem.')
+
+  # Normalize package names as necessary.
+  if package_name:
+    package_name = ecosystems.maybe_normalize_package_names(
+        package_name, ecosystem)
 
   # Hack to work around ubuntu having extremely large individual entries
   if ecosystem.startswith('Ubuntu'):
@@ -1237,34 +1263,37 @@ def _query_by_comparing_versions(context: QueryContext, query: ndb.Query,
   it: ndb.QueryIterator = query.iter(start_cursor=context.cursor_at_current())
 
   while (yield it.has_next_async()):
-    if context.should_break_page(len(bugs)):
-      context.save_cursor_at_page_break(it)
-      break
-
-    # next() will never return None as we check for has next above.
-    bug: osv.Bug = it.next()  # type: ignore
-    for affected_package in bug.affected_packages:  # type: ignore
-      affected_package: osv.AffectedPackage
-      package: osv.Package = affected_package.package  # type: ignore
-
-      # If the queried ecosystem has no release specified (e.g., "Debian"),
-      # compare against packages in all releases (e.g., "Debian:X").
-      # Otherwise, only compare within
-      # the specified release (e.g., "Debian:11").
-      # Skips if the affected package ecosystem does not match
-      # the queried ecosystem.
-      if not is_matching_package_ecosystem(package.ecosystem, ecosystem):
-        continue
-
-      # Skips if the affected package name does not match
-      # the queried package name.
-      if package_name != package.name:
-        continue
-
-      if _is_affected(ecosystem, version, affected_package):
-        bugs.append(bug)
-        context.total_responses.add(1)
+    try:
+      if context.should_break_page(len(bugs)):
+        context.save_cursor_at_page_break(it)
         break
+
+      # next() will never return None as we check for has next above.
+      bug: osv.Bug = it.next()  # type: ignore
+      for affected_package in bug.affected_packages:  # type: ignore
+        affected_package: osv.AffectedPackage
+        package: osv.Package = affected_package.package  # type: ignore
+
+        # If the queried ecosystem has no release specified (e.g., "Debian"),
+        # compare against packages in all releases (e.g., "Debian:X").
+        # Otherwise, only compare within
+        # the specified release (e.g., "Debian:11").
+        # Skips if the affected package ecosystem does not match
+        # the queried ecosystem.
+        if not is_matching_package_ecosystem(package.ecosystem, ecosystem):
+          continue
+
+        # Skips if the affected package name does not match
+        # the queried package name.
+        if package_name != package.name:
+          continue
+
+        if _is_affected(ecosystem, version, affected_package):
+          bugs.append(bug)
+          context.total_responses.add(1)
+          break
+    except Exception:
+      logging.exception('failed to compare versions')
 
   return bugs
 
@@ -1412,13 +1441,12 @@ def main():
     setup_gcp_logging('api-backend')
     logging.getLogger().addFilter(trace_filter)
 
-    if get_gcp_project() == _TEST_INSTANCE:
-      # Profiler initialization. It starts a daemon thread which continuously
-      # collects and uploads profiles. Best done as early as possible.
-      try:
-        googlecloudprofiler.start(service="osv-api-profiler")
-      except (ValueError, NotImplementedError) as e:
-        logging.error(e)
+    # Profiler initialization. It starts a daemon thread which continuously
+    # collects and uploads profiles. Best done as early as possible.
+    try:
+      googlecloudprofiler.start(service="osv-api-profiler")
+    except (ValueError, NotImplementedError) as e:
+      logging.error(e)
 
   logging.getLogger().setLevel(logging.INFO)
 

@@ -1,1 +1,5 @@
-poetry==1.8.5
+# Use this file to update the poetry version used in docker images.
+# To regenerate requirements.txt, use
+#     pip-compile --generate-hashes requirements.in
+# (requires pip-tools to be installed in current python environment)
+poetry==2.0.1

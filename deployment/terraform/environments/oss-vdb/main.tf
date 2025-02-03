@@ -16,7 +16,7 @@ module "osv" {
 
   website_domain = "osv.dev"
   api_url        = "api.osv.dev"
-  esp_version    = "2.49.0"
+  esp_version    = "2.51.0"
 }
 
 import {

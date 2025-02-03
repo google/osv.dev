@@ -18,5 +18,5 @@
 set -eux
 
 # Download and install Go
-# https://pkg.go.dev/golang.org/x/tools/cmd/getgo#section-readme
-curl -LO https://get.golang.org/$(uname)/go_installer && chmod +x go_installer && SHELL="bash" ./go_installer -version 1.23.1 && rm go_installer
+# https://go.dev/doc/install
+curl https://go.dev/dl/go1.23.5.linux-amd64.tar.gz -LO && rm -rf /usr/local/go && tar -C /usr/local -xzf go1.23.5.linux-amd64.tar.gz

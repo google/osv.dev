@@ -1734,6 +1734,28 @@ class UpdateTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
 
     self.expect_dict_equal('analysis_crash_handling', bug._to_dict())
 
+  def test_update_clears_stale_import_finding(self):
+    """A subsequent successful update removes the now stale import finding."""
+
+    # Add a pre-existing record import finding.
+
+    osv.ImportFinding(
+        bug_id='OSV-123',
+        source='source',
+        findings=[osv.ImportFindings.INVALID_JSON],
+        first_seen=osv.utcnow(),
+        last_attempt=osv.utcnow()).put()
+
+    # Simulate a successful record update.
+
+    self.test_update()
+
+    # Check the pre-existing finding is no longer present.
+
+    self.assertIsNone(
+        osv.ImportFinding.get_by_id('OSV-123'),
+        'Stale import finding still present after successful record processing')
+
 
 if __name__ == '__main__':
   ds_emulator = tests.start_datastore_emulator()

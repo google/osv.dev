@@ -542,6 +542,7 @@ class TaskRunner:
 
     osv.update_affected_commits(bug.key.id(), result.commits, bug.public)
     self._notify_ecosystem_bridge(vulnerability)
+    self._maybe_remove_import_findings(bug)
 
   def _notify_ecosystem_bridge(self, vulnerability):
     """Notify ecosystem bridges."""
@@ -560,6 +561,14 @@ class TaskRunner:
         publisher.publish(
             push_topic,
             data=json.dumps(osv.vulnerability_to_dict(vulnerability)).encode())
+
+  def _maybe_remove_import_findings(self, vulnerability: osv.Bug):
+    """Remove any stale import findings for a successfully processed Bug,"""
+
+    finding = osv.ImportFinding.get_by_id(vulnerability.id())
+    if finding:
+      logging.info('Removing stale import finding for %s', vulnerability.id())
+      finding.key.delete()
 
   def _do_process_task(self, subscriber, subscription, ack_id, message,
                        done_event):

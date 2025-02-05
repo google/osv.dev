@@ -2,6 +2,8 @@ apiVersion: batch/v1
 kind: CronJob
 metadata:
   name: combine-to-osv
+  labels:
+    cronLastSuccessfulTimeMins: 90
 spec:
   schedule: "30 */1 * * *"
   concurrencyPolicy: Forbid

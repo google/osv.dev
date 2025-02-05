@@ -1,3 +1,13 @@
+locals {
+  # Iterate of each yaml configuration and create a key based on kind and name in the yaml file.
+  kube_manifests = {
+    for manifest in flatten([for i in fileset("../../..", "./clouddeploy/gke-workers/base/*.yaml") : yamldecode(file("../../../${i}"))]) :
+    "${try(manifest.kind, "")}--${try(manifest.metadata.name, "")}" => manifest
+    if try(manifest.kind, "") == "CronJob" # Filter for CronJobs, handling missing kind
+  }
+  project_id = "oss-vdb-test"
+}
+
 module "osv_test" {
   source = "../../modules/osv"
 
@@ -17,6 +27,14 @@ module "osv_test" {
   website_domain = "test.osv.dev"
   api_url        = "api.test.osv.dev"
   esp_version    = "2.51.0"
+}
+
+module "k8s_cron_alert" {
+  for_each                         = local.kube_manifests
+  source                           = "../../modules/k8s_cron_alert"
+  project_id                       = local.project_id
+  cronjob_name                     = each.value.metadata.name
+  cronjob_expected_latency_minutes = lookup(each.value.metadata.labels, "cronLastSuccessfulTimeMins", null)
 }
 
 import {

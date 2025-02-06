@@ -1,11 +1,18 @@
 locals {
+  kustomization_path = "../../../clouddeploy/gke-workers/environments/oss-vdb-test" # Path to your kustomization.yaml
+  kustomization      = yamldecode(file("${local.kustomization_path}/kustomization.yaml"))
+
+  all_resources = concat(
+    [for resource in local.kustomization.resources : "${local.kustomization_path}/${resource}" if can(regex("\\.yaml$", resource))],
+    [for patch in local.kustomization.patches : "${local.kustomization_path}/${patch.path}" if can(regex("\\.yaml$", patch.path))]
+  )
+
   # Iterate of each yaml configuration and create a key based on kind and name in the yaml file.
   kube_manifests = {
-    for manifest in flatten([for i in fileset("../../..", "./clouddeploy/gke-workers/base/*.yaml") : yamldecode(file("../../../${i}"))]) :
+    for manifest in flatten([for file in local.all_resources : yamldecode(file(file))]) :
     "${try(manifest.kind, "")}--${try(manifest.metadata.name, "")}" => manifest
-    if try(manifest.kind, "") == "CronJob" # Filter for CronJobs, handling missing kind
+    if try(manifest.kind, "") == "CronJob"
   }
-  project_id = "oss-vdb-test"
 }
 
 module "osv_test" {
@@ -32,7 +39,7 @@ module "osv_test" {
 module "k8s_cron_alert" {
   for_each                         = local.kube_manifests
   source                           = "../../modules/k8s_cron_alert"
-  project_id                       = local.project_id
+  project_id                       = module.osv_test.project_id
   cronjob_name                     = each.value.metadata.name
   cronjob_expected_latency_minutes = lookup(each.value.metadata.labels, "cronLastSuccessfulTimeMins", null)
 }

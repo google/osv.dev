@@ -2,6 +2,8 @@ apiVersion: batch/v1
 kind: CronJob
 metadata:
   name: cpe-repo-gen
+  labels:
+    cronLastSuccessfulTimeMins: 2880
 spec:
   jobTemplate:
     spec:

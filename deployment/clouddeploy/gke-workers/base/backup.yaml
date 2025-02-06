@@ -2,8 +2,6 @@ apiVersion: batch/v1
 kind: CronJob
 metadata:
   name: backup
-  labels:
-    cronLastSuccessfulTimeMins: 2880
 spec:
   schedule: "0 18 * * *"
   concurrencyPolicy: Forbid

@@ -3,7 +3,7 @@ kind: CronJob
 metadata:
   name: importer-deleter
   labels:
-    cronLastSuccessfulTimeMins: 360
+    cronLastSuccessfulTimeMins: "360"
 spec:
   schedule: "* */3 * * *"
   concurrencyPolicy: Forbid

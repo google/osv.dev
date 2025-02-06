@@ -3,7 +3,7 @@ kind: CronJob
 metadata:
   name: alias-computation
   labels:
-    cronLastSuccessfulTimeMins: 45
+    cronLastSuccessfulTimeMins: "45"
 spec:
   schedule: "10/15 * * * *"
   concurrencyPolicy: Forbid

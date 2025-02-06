@@ -30,3 +30,6 @@ class MageiaEcosystemTest(unittest.TestCase):
     self.assertGreater(
         ecosystem.sort_key('3.2.7-1.2.mga9'), ecosystem.sort_key('0'))
     self.assertLess(ecosystem.sort_key('invalid'), ecosystem.sort_key('0'))
+    self.assertGreater(
+        ecosystem.sort_key('1:1.8.11-1.mga9'),
+        ecosystem.sort_key('0:1.9.1-2.mga9'))

@@ -2,8 +2,6 @@ apiVersion: batch/v1
 kind: CronJob
 metadata:
   name: exporter
-  labels:
-    cronLastSuccessfulTimeMins: 90
 spec:
   jobTemplate:
     spec:

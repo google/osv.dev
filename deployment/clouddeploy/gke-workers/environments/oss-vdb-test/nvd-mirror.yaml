@@ -2,8 +2,6 @@ apiVersion: batch/v1
 kind: CronJob
 metadata:
   name: nvd-mirror
-  labels:
-    cronLastSuccessfulTimeMins: 240
 spec:
   jobTemplate:
     spec:

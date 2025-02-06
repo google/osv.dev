@@ -1,10 +1,12 @@
 locals {
-  kustomization_path = "../../../clouddeploy/gke-workers/environments/oss-vdb-test" # Path to your kustomization.yaml
-  kustomization      = yamldecode(file("${local.kustomization_path}/kustomization.yaml"))
+  env_kustomization_path  = "../../../clouddeploy/gke-workers/environments/oss-vdb-test"
+  base_kustomization_path = "../../../clouddeploy/gke-workers/base"
+  env_kustomization       = yamldecode(file("${local.env_kustomization_path}/kustomization.yaml"))
+  base_kustomization      = yamldecode(file("${local.base_kustomization_path}/kustomization.yaml"))
 
   all_resources = concat(
-    [for resource in local.kustomization.resources : "${local.kustomization_path}/${resource}" if can(regex("\\.yaml$", resource))],
-    [for patch in local.kustomization.patches : "${local.kustomization_path}/${patch.path}" if can(regex("\\.yaml$", patch.path))]
+    [for resource in local.env_kustomization.resources : "${local.env_kustomization_path}/${resource}" if can(regex("\\.yaml$", resource))],
+    [for resource in local.base_kustomization.resources : "${local.base_kustomization_path}/${resource}" if can(regex("\\.yaml$", resource))],
   )
 
   # Iterate of each yaml configuration and create a key based on kind and name in the yaml file.

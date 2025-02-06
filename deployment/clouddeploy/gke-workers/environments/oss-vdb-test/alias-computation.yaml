@@ -2,8 +2,6 @@ apiVersion: batch/v1
 kind: CronJob
 metadata:
   name: alias-computation
-  labels:
-    cronLastSuccessfulTimeMins: 45
 spec:
   jobTemplate:
     spec:

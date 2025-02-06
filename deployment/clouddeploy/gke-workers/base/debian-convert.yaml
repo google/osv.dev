@@ -2,6 +2,8 @@ apiVersion: batch/v1
 kind: CronJob
 metadata:
   name: debian-convert
+  labels:
+    cronLastSuccessfulTimeMins: "180"
 spec:
   schedule: "0 */1 * * *"
   concurrencyPolicy: Forbid

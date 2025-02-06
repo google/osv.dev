@@ -90,7 +90,7 @@ package_urls = {
     'Go': 'https://',
     'Hackage': 'https://hackage.haskell.org/package/',
     'Hex': 'https://hex.pm/packages/',
-    'Mageia': 'https://pkgs.org/download/',
+    'Mageia': 'https://madb.mageia.org/show?rpm=',
     'npm': 'https://www.npmjs.com/package/',
     'NuGet': 'https://www.nuget.org/packages/',
     'Packagist': 'https://packagist.org/packages/',

@@ -2,6 +2,8 @@ apiVersion: batch/v1
 kind: CronJob
 metadata:
   name: staging-api-test
+  labels:
+    cronLastSuccessfulTimeMins: "2880"
 spec:
   timeZone: Australia/Sydney
   schedule: "0 9 * * *"

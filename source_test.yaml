@@ -219,6 +219,7 @@
   human_link: 'https://advisories.mageia.org/{{ BUG_ID }}.html'
   link: 'https://advisories.mageia.org/'
   editable: False
+  strict_validation: True
 
 - name: 'malicious-packages'
   versions_from_repo: False

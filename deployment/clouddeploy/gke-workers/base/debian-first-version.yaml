@@ -3,7 +3,7 @@ kind: CronJob
 metadata:
   name: debian-first-version
   labels:
-    cronLastSuccessfulTimeMins: "120"
+    cronLastSuccessfulTimeMins: "2880"
 spec:
   schedule: "0 1 * * *"
   concurrencyPolicy: Forbid

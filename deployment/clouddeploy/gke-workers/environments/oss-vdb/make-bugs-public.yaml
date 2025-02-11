@@ -2,6 +2,8 @@ apiVersion: batch/v1
 kind: CronJob
 metadata:
   name: make-bugs-public
+  labels:
+    cronLastSuccessfulTimeMins: "2160"
 spec:
   schedule: "0 12 * * *"
   concurrencyPolicy: Forbid

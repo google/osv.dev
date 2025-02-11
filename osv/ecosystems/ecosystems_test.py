@@ -28,7 +28,8 @@ class EcosystemsTest(unittest.TestCase):
   def setUp(self):
     with open('osv/osv-schema/validation/schema.json') as schema_f:
       schema = json.load(schema_f)
-    self.schema_ecosystems = re.compile(schema['$defs']['ecosystem']['pattern'])
+    self.schema_ecosystems = re.compile(
+        schema['$defs']['ecosystemWithSuffix']['pattern'])
     self.canonical_ecosystems = _ecosystems._ecosystems.keys()  # pylint: disable=protected-access
 
   def test_ecosystem_supported_by_schema(self):

@@ -132,7 +132,7 @@ def execute_curl(configuration: str, directory: str):
  """
 
   os.makedirs(directory)
-  _ = subprocess.run(
+  subprocess.run(
       ['curl', '--parallel', '--create-dirs', '--config', configuration],
       cwd=directory,
       check=True)

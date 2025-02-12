@@ -13,6 +13,12 @@ variable "cronjob_expected_latency_minutes" {
   description = "Expected amount of time since last successful run of the job expressed in minutes."
 }
 
+variable "notification_channel" {
+  type        = string
+  description = "(Optional) The notification channel to send alerts to."
+  default     = null
+}
+
 resource "google_monitoring_alert_policy" "cron_alert_policy" {
   project      = var.project_id
   display_name = "Cronjob: ${var.cronjob_name} has not run recently."
@@ -27,4 +33,6 @@ resource "google_monitoring_alert_policy" "cron_alert_policy" {
       rule_group          = "cronjob ${var.cronjob_name}"
     }
   }
+
+  notification_channels = var.notification_channel != null ? toset([var.notification_channel]) : toset([])
 }

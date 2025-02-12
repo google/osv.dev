@@ -16,8 +16,8 @@ dependencies = [
     "redis==4.6.0",
     "requests==2.32.3",
     "gunicorn==22.0.0",
-    "whitenoise==6.8.2",
-    "cvss==3.3",
+    "whitenoise==6.9.0",
+    "cvss==3.4",
     "osv",
 ]
 

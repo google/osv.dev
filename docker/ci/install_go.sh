@@ -19,4 +19,4 @@ set -eux
 
 # Download and install Go
 # https://go.dev/doc/install
-curl https://go.dev/dl/go1.23.5.linux-amd64.tar.gz -LO && rm -rf /usr/local/go && tar -C /usr/local -xzf go1.23.5.linux-amd64.tar.gz
+curl https://go.dev/dl/go1.23.6.linux-amd64.tar.gz -LO && rm -rf /usr/local/go && tar -C /usr/local -xzf go1.23.6.linux-amd64.tar.gz

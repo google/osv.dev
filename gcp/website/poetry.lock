@@ -482,14 +482,14 @@ markers = {main = "platform_system == \"Windows\"", dev = "sys_platform == \"win
 
 [[package]]
 name = "cvss"
-version = "3.3"
+version = "3.4"
 description = "CVSS2/3/4 library with interactive calculator for Python 2 and Python 3"
 optional = false
 python-versions = "*"
 groups = ["main"]
 files = [
-    {file = "cvss-3.3-py2.py3-none-any.whl", hash = "sha256:cc7326afc7585cc63d0a6ca74dab27d74aa2bc99f5f3d5d4bc4d94a3c22bc0a1"},
-    {file = "cvss-3.3.tar.gz", hash = "sha256:ae097183ee58b02262ab2291d27857ca3d0a7c4242b9b076c6bf537e6239fbc0"},
+    {file = "cvss-3.4-py2.py3-none-any.whl", hash = "sha256:d9950613758e60820f7fac37ca5f35158712f8f2ea4f6629858a60c4984fe4ef"},
+    {file = "cvss-3.4.tar.gz", hash = "sha256:632353244ba3c58b53355466677edc968b9d7143c317b66271f9fd7939951ee8"},
 ]
 
 [[package]]
@@ -1820,14 +1820,14 @@ watchdog = ["watchdog (>=2.3)"]
 
 [[package]]
 name = "whitenoise"
-version = "6.8.2"
+version = "6.9.0"
 description = "Radically simplified static file serving for WSGI applications"
 optional = false
 python-versions = ">=3.9"
 groups = ["main"]
 files = [
-    {file = "whitenoise-6.8.2-py3-none-any.whl", hash = "sha256:df12dce147a043d1956d81d288c6f0044147c6d2ab9726e5772ac50fb45d2280"},
-    {file = "whitenoise-6.8.2.tar.gz", hash = "sha256:486bd7267a375fa9650b136daaec156ac572971acc8bf99add90817a530dd1d4"},
+    {file = "whitenoise-6.9.0-py3-none-any.whl", hash = "sha256:c8a489049b7ee9889617bb4c274a153f3d979e8f51d2efd0f5b403caf41c57df"},
+    {file = "whitenoise-6.9.0.tar.gz", hash = "sha256:8c4a7c9d384694990c26f3047e118c691557481d624f069b7f7752a2f735d609"},
 ]
 
 [package.extras]
@@ -2073,4 +2073,4 @@ cffi = ["cffi (>=1.11)"]
 [metadata]
 lock-version = "2.1"
 python-versions = ">=3.11,<4.0"
-content-hash = "a5cd36cf8eb23bac4314c2f8be98a9f3c740b40aa0bd5a8eca027b15a36a4f2c"
+content-hash = "6307c8396240bd5ec72dea33940756de9b0b2b37722ecf501ef94a7d02b83985"

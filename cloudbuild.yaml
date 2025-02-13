@@ -84,6 +84,8 @@ steps:
   id: 'vulnfeed-tests'
   dir: vulnfeeds
   args: ['bash', '-ex', 'run_tests.sh']
+  env:
+    - 'BUILD_ID=$BUILD_ID'
   waitFor: ['init']
 
 - name: 'gcr.io/oss-vdb/ci'

@@ -631,8 +631,7 @@ func TestExtractGitCommit(t *testing.T) {
 
 	for _, tc := range tests {
 		if _, ok := os.LookupEnv("BUILD_ID"); ok && tc.skipOnCloudBuild {
-			t.Logf("test %q: skipping on Cloud Build", tc.description)
-			continue
+			t.Skipf("test %q: running on Cloud Build", tc.description)
 		}
 		got, err := extractGitCommit(tc.inputLink, tc.inputCommitType)
 		if err != nil && !tc.expectFailure {
@@ -1089,11 +1088,10 @@ func TestValidateAndCanonicalizeLink(t *testing.T) {
 		},
 	}
 	for _, tt := range tests {
-		if _, ok := os.LookupEnv("BUILD_ID"); ok && tt.skipOnCloudBuild {
-			t.Logf("test %q: skipping on Cloud Build", tt.name)
-			continue
-		}
 		t.Run(tt.name, func(t *testing.T) {
+			if _, ok := os.LookupEnv("BUILD_ID"); ok && tt.skipOnCloudBuild {
+				t.Skipf("test %q: running on Cloud Build", tt.name)
+			}
 			gotCanonicalLink, err := ValidateAndCanonicalizeLink(tt.args.link)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("ValidateAndCanonicalizeLink() error = %v, wantErr %v", err, tt.wantErr)

@@ -29,18 +29,7 @@
 
 mkdir -p "${WORK_DIR}" || true
 
-if gsutil --quiet stat "${GCS_PATH}"; then
-  gsutil ${BE_VERBOSE="--quiet"} cp "${GCS_PATH}" "${WORK_DIR}"
-  tar -C "${WORK_DIR}" -xf "${WORK_DIR}/$(basename ${GCS_PATH})"
-fi
-
-wget \
-  ${BE_VERBOSE="--quiet"} \
-  --directory "${WORK_DIR}" \
-  --mirror \
-  --accept unstable_copyright \
-  --accept index.html \
-  https://metadata.ftp-master.debian.org/changelogs/main
+python debian-copyright-mirror.py "${WORK_DIR}/metadata.ftp-master.debian.org/changelogs/"
 
 tar -C "${WORK_DIR}" -cf "${WORK_DIR}/$(basename ${GCS_PATH})" .
 

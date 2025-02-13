@@ -466,6 +466,7 @@ func TestExtractGitCommit(t *testing.T) {
 		inputCommitType        CommitType
 		expectedAffectedCommit AffectedCommit
 		expectFailure          bool
+		skipOnCloudBuild       bool
 	}{
 		{
 			description:     "Valid GitHub commit URL",
@@ -590,6 +591,7 @@ func TestExtractGitCommit(t *testing.T) {
 				Repo:  "https://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git",
 				Fixed: "ee1fee900537b5d9560e9f937402de5ddc8412f3",
 			},
+			skipOnCloudBuild: true, // observing indications of IP denylisting as at 2025-02-13
 		},
 		{
 			description:     "Valid GitWeb commit URL",
@@ -628,6 +630,10 @@ func TestExtractGitCommit(t *testing.T) {
 	}
 
 	for _, tc := range tests {
+		if _, ok := os.LookupEnv("BUILD_ID"); ok && tc.skipOnCloudBuild {
+			t.Logf("test %q: skipping on Cloud Build", tc.description)
+			continue
+		}
 		got, err := extractGitCommit(tc.inputLink, tc.inputCommitType)
 		if err != nil && !tc.expectFailure {
 			t.Errorf("test %q: extractGitCommit for %q (%q) errored unexpectedly: %#v", tc.description, tc.inputLink, tc.inputCommitType, err)
@@ -1062,6 +1068,7 @@ func TestValidateAndCanonicalizeLink(t *testing.T) {
 		args              args
 		wantCanonicalLink string
 		wantErr           bool
+		skipOnCloudBuild  bool
 	}{
 		{
 			name: "A link that 404's",
@@ -1078,9 +1085,14 @@ func TestValidateAndCanonicalizeLink(t *testing.T) {
 			},
 			wantCanonicalLink: "https://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git/commit/?id=ee1fee900537b5d9560e9f937402de5ddc8412f3",
 			wantErr:           false,
+			skipOnCloudBuild:  true, // observing indications of IP denylisting as at 2025-02-13
 		},
 	}
 	for _, tt := range tests {
+		if _, ok := os.LookupEnv("BUILD_ID"); ok && tt.skipOnCloudBuild {
+			t.Logf("test %q: skipping on Cloud Build", tt.name)
+			continue
+		}
 		t.Run(tt.name, func(t *testing.T) {
 			gotCanonicalLink, err := ValidateAndCanonicalizeLink(tt.args.link)
 			if (err != nil) != tt.wantErr {
@@ -1109,7 +1121,7 @@ func TestCommit(t *testing.T) {
 			args: args{
 				u: "https://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git/commit/?id=ee1fee900537b5d9560e9f937402de5ddc8412f3",
 			},
-			want: "ee1fee900537b5d9560e9f937402de5ddc8412f3",
+			want:    "ee1fee900537b5d9560e9f937402de5ddc8412f3",
 			wantErr: false,
 		},
 	}

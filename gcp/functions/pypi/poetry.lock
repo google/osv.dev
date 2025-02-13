@@ -502,14 +502,14 @@ redis = ">=3.0.0,<6.0.0dev"
 
 [[package]]
 name = "google-cloud-secret-manager"
-version = "2.22.1"
+version = "2.23.0"
 description = "Google Cloud Secret Manager API client library"
 optional = false
 python-versions = ">=3.7"
 groups = ["main"]
 files = [
-    {file = "google_cloud_secret_manager-2.22.1-py2.py3-none-any.whl", hash = "sha256:f18c5094d2d462a58d1ef23cd62895f68ad0adebf96f6b8612f35197a456908c"},
-    {file = "google_cloud_secret_manager-2.22.1.tar.gz", hash = "sha256:f245e505b429990388f0f92cd4a24d424a4c4cdc2acb866e52c24e7680d15e77"},
+    {file = "google_cloud_secret_manager-2.23.0-py2.py3-none-any.whl", hash = "sha256:fc4c28dd3e932b89d1057100c6625686a43b5ca26e6dd73ffea2afbfbbc97209"},
+    {file = "google_cloud_secret_manager-2.23.0.tar.gz", hash = "sha256:0249f433b6f0899b5e2adfc495e5b2d4a76c484937cad7c27e2b374bebf8f248"},
 ]
 
 [package.dependencies]
@@ -1393,4 +1393,4 @@ type = ["pytest-mypy"]
 [metadata]
 lock-version = "2.1"
 python-versions = ">=3.11,<4.0"
-content-hash = "d5c00c0c12a453af4ddaede63efeee55e79c8f379119d16ac3e82f0b9e1893ba"
+content-hash = "4c921d7b9c51a668c7c2eb9ef9513546efe5ed88d1475307a22b1f87dc3f50c3"

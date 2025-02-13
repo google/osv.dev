@@ -44,6 +44,7 @@ module "k8s_cron_alert" {
   project_id                       = module.osv.project_id
   cronjob_name                     = each.value.metadata.name
   cronjob_expected_latency_minutes = lookup(each.value.metadata.labels, "cronLastSuccessfulTimeMins", null)
+  notification_channel             = "projects/oss-vdb/notificationChannels/17648103713296264012"
 }
 
 import {

@@ -35,4 +35,5 @@ resource "google_monitoring_alert_policy" "cron_alert_policy" {
   }
 
   notification_channels = var.notification_channel != null ? toset([var.notification_channel]) : toset([])
+  severity              = "ERROR"
 }

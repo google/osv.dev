@@ -225,6 +225,13 @@ func TestNormalizeRepoTag(t *testing.T) {
 			expectedResult: "2-0-2",
 			expectedOk:     true,
 		},
+		{
+			description:    "A tag with a v prefix",
+			inputTag:       "v0.0.245",
+			repoName:       "langchain",
+			expectedResult: "0-0-245",
+			expectedOk:     true,
+		},
 	}
 
 	for _, tc := range tests {

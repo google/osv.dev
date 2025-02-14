@@ -161,7 +161,7 @@ func RepoTags(repoURL string, repoTagsCache RepoTagsCache) (tags Tags, e error) 
 // finally, it is run through the standard version normalizing treatment
 func normalizeRepoTag(tag string, reponame string) (normalizedTag string, err error) {
 	// Match the likes of "org.apache.sling.i18n-2.0.2" as seen in github.com/apache/sling-org-apache-sling-i18n
-	var javaPackageRegex = regexp.MustCompile(`(?i)^(?:[a-z][a-z0-9_]*(?:\.[a-z0-9_]+)+[0-9a-z_])(.*)$`)
+	var javaPackageRegex = regexp.MustCompile(`(?i)^(?:[a-z][a-z0-9_]*(?:\.[a-z][a-z0-9_]+)+[a-z0-9_])-(.*)$`)
 	// Opportunistically remove parts determined to match the repo name,
 	// to ease particularly difficult to normalize cases like 'openj9-0.38.0'.
 	prenormalizedTag := strings.TrimPrefix(strings.ToLower(tag), reponame)

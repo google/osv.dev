@@ -301,12 +301,11 @@ func TestValidRepo(t *testing.T) {
 			repoURL:        "https://github.com/torvalds/linux",
 			expectedResult: true,
 		},
-		// Seems to be having an outage at 2024-06-19
-		// {
-		// 	description:    "Valid repository with a git:// protocol URL",
-		// 	repoURL:        "git://git.infradead.org/mtd-utils.git",
-		// 	expectedResult: true,
-		// },
+		{
+			description:    "Valid repository with a git:// protocol URL",
+			repoURL:        "git://git.infradead.org/mtd-utils.git",
+			expectedResult: true,
+		},
 		{
 			description:    "Invalid repository",
 			repoURL:        "https://github.com/andrewpollock/mybogusrepo",
@@ -320,6 +319,11 @@ func TestValidRepo(t *testing.T) {
 		{
 			description:    "Legitimate repository with no tags and one branch",
 			repoURL:        "https://github.com/active-labs/Advisories",
+			expectedResult: false,
+		},
+		{
+			description:    "Unusable repo that seems to be slipping past",
+			repoURL:        "https://github.com/shaturo1337/POCs",
 			expectedResult: false,
 		},
 	}

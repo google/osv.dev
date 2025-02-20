@@ -259,6 +259,8 @@ class Bug(ndb.Model):
   aliases: list[str] = ndb.StringProperty(repeated=True)
   # Related IDs.
   related: list[str] = ndb.StringProperty(repeated=True)
+  # Upstream IDs.
+  upstream: list[str] = ndb.StringProperty(repeated=True)
   # Status of the bug.
   status: int = ndb.IntegerProperty()
   # Timestamp when Bug was allocated.
@@ -539,6 +541,7 @@ class Bug(ndb.Model):
 
     self.aliases = list(vulnerability.aliases)
     self.related = list(vulnerability.related)
+    self.upstream = list(vulnerability.upstream)
 
     self.affected_packages = []
     for affected_package in vulnerability.affected:
@@ -626,7 +629,10 @@ class Bug(ndb.Model):
 
     return vulnerability_pb2.Vulnerability(id=self.id(), modified=modified)
 
-  def to_vulnerability(self, include_source=False, include_alias=True):
+  def to_vulnerability(self,
+                       include_source=False,
+                       include_alias=True,
+                       include_upstream=True):
     """Convert to Vulnerability proto."""
     affected = []
 
@@ -685,7 +691,7 @@ class Bug(ndb.Model):
     details = self.details
 
     # Note that there is further possible mutation of this field below when
-    # `include_alias` is True
+    # `include_alias` is True or `include_upstream` is True
     if self.last_modified:
       modified = timestamp_pb2.Timestamp()
       modified.FromDatetime(self.last_modified)
@@ -738,13 +744,25 @@ class Bug(ndb.Model):
         modified.FromDatetime(
             max(self.last_modified, alias_group.last_modified))
 
+    upstream = {}
+
+    if include_upstream:
+      upstream_group = UpstreamGroup.query(
+          UpstreamGroup.db_id == self.db_id).get()
+      if upstream_group:
+        upstream = sorted(list(set(upstream_group.upstream_ids)))
+        modified = timestamp_pb2.Timestamp()
+        modified.FromDatetime(
+            max(self.last_modified, upstream_group.last_modified))
+
     result = vulnerability_pb2.Vulnerability(
         schema_version=SCHEMA_VERSION,
         id=self.id(),
         published=published,
-        modified=modified,  # Note the two places above where this can be set.
+        modified=modified,  # Note the three places above where this can be set.
         aliases=aliases,
         related=related,
+        upstream=upstream,
         withdrawn=withdrawn,
         summary=self.summary,
         details=details,
@@ -762,7 +780,9 @@ class Bug(ndb.Model):
   def to_vulnerability_async(self, include_source=False):
     """Converts to Vulnerability proto and retrieves aliases asynchronously."""
     vulnerability = self.to_vulnerability(
-        include_source=include_source, include_alias=False)
+        include_source=include_source,
+        include_alias=False,
+        include_upstream=False)
     alias_group = yield get_aliases_async(vulnerability.id)
     if alias_group:
       alias_ids = sorted(list(set(alias_group.bug_ids) - {vulnerability.id}))
@@ -773,6 +793,13 @@ class Bug(ndb.Model):
     related_bug_ids = yield get_related_async(vulnerability.id)
     vulnerability.related[:] = sorted(
         list(set(related_bug_ids + list(vulnerability.related))))
+    upstream_group = yield get_upstream_async(vulnerability.id)
+    if upstream_group:
+      upstream_ids = sorted(list(set(upstream_group.upstream_ids)))
+      vulnerability.upstream[:] = upstream_ids
+      modified_time = vulnerability.modified.ToDatetime()
+      modified_time = max(upstream_group.last_modified, modified_time)
+      vulnerability.modified.FromDatetime(modified_time)
     return vulnerability
 
 
@@ -905,6 +932,13 @@ class AliasDenyListEntry(ndb.Model):
   bug_id: str = ndb.StringProperty()
 
 
+class UpstreamGroup(ndb.Model):
+  """Upstream group."""
+  db_id: str = ndb.StringProperty()
+  upstream_ids: list[str] = ndb.StringProperty(repeated=True)
+  last_modified: datetime = ndb.DateTimeProperty()
+
+
 class ImportFindings(enum.IntEnum):
   """The possible quality findings about an individual record."""
   NONE = 0
@@ -992,3 +1026,11 @@ def get_related_async(bug_id: str) -> ndb.Future:
       Bug.related == bug_id, projection=[Bug.db_id]).fetch_async()
   related_bug_ids = [bug.db_id for bug in related_bugs]
   return related_bug_ids
+
+
+@ndb.tasklet
+def get_upstream_async(bug_id: str) -> ndb.Future:
+  """Gets upstream bugs asynchronously."""
+  upstream_group = yield UpstreamGroup.query(
+      UpstreamGroup.db_id == bug_id).get_async()
+  return upstream_group

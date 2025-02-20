@@ -1099,8 +1099,32 @@ dl.vulnerability-details,
       // Force columns outside of available space to overflow.
       // These do not use the value set in grid-template-columns, so set it.
       overflow-x: auto;
+      overflow-y: hidden; /* Hide vertical scrollbar */
       grid-auto-flow: column;
       grid-auto-columns: minmax(80px, 1fr);
+      padding-bottom: 12px; 
+
+      /* Custom scrollbar styling */
+      scrollbar-color: #555 #2c2c2c; 
+      scrollbar-width: thin;
+
+      /* For WebKit browsers (Chrome, Safari) */
+      &::-webkit-scrollbar {
+          height: 8px;
+      }
+
+      &::-webkit-scrollbar-track {
+          background: #2c2c2c; /* Track color */
+      }
+
+      &::-webkit-scrollbar-thumb {
+          background-color: #555; /* Thumb color */
+          border-radius: 4px;
+      }
+
+      &::-webkit-scrollbar-thumb:hover {
+          background-color: #777;
+      }
 
       .ecosystem-name {
         position: relative;

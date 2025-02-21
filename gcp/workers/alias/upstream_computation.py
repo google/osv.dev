@@ -59,9 +59,10 @@ def _create_group(bug_id, upstream_ids):
 
 
 def _update_group(upstream_group, upstream_ids: list):
-  """Updates the alias group in the datastore."""
-  if len(upstream_ids) < 1:
-    logging.info('Deleting alias group due to too few bugs: %s', upstream_ids)
+  """Updates the upstream group in the datastore."""
+  if len(upstream_ids) == 0:
+    logging.info('Deleting upstream group due to too few bugs: %s',
+                 upstream_ids)
     upstream_group.key.delete()
     return
 
@@ -84,14 +85,13 @@ def main():
 
   all_upstream_group = osv.UpstreamGroup.query()
 
-  # for every bug, check if it has an UpstreamGroup.
   for bug in bugs:
     # check if the db key is also a db_id in all_upstream_group
-    b = all_upstream_group.filter(osv.UpstreamGroup.db_id == bug.db_id)
-    if b:
+    bug_group = all_upstream_group.filter(osv.UpstreamGroup.db_id == bug.db_id)
+    if bug_group:
       #recompute the transitive upstreams and compare with the existing group
       upstream_ids = compute_upstream(bug.db_id, bugs)
-      _update_group(b, upstream_ids)
+      _update_group(bug_group, upstream_ids)
     else:
       # Create a new UpstreamGroup
       upstream_ids = compute_upstream(bug.db_id, bugs)

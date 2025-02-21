@@ -308,7 +308,7 @@ class UpstreamTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
     bugs = {}
     for bug in bugs_query:
       bugs[bug.db_id] = bug.upstream
-    bug_ids = upstream_computation._compute_upstream('CVE-3', bugs)
+    bug_ids = upstream_computation.compute_upstream('CVE-3', bugs)
     self.assertEqual(['CVE-1', 'CVE-2'], bug_ids)
 
   def test_compute_upstream_example(self):
@@ -320,11 +320,13 @@ class UpstreamTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
     bugs = {}
     for bug in bugs_query:
       bugs[bug.db_id] = bug.upstream
-    bug_ids = upstream_computation._compute_upstream('USN-7234-3', bugs)
-    self.assertEqual(["CVE-2023-21400", "CVE-2024-40967", "CVE-2024-53103",
-            "CVE-2024-53141", "CVE-2024-53164", "UBUNTU-CVE-2023-21400",
-            "UBUNTU-CVE-2024-40967", "UBUNTU-CVE-2024-53103",
-            "UBUNTU-CVE-2024-53141", "UBUNTU-CVE-2024-53164"], bug_ids)
+    bug_ids = upstream_computation.compute_upstream('USN-7234-3', bugs)
+    self.assertEqual([
+        "CVE-2023-21400", "CVE-2024-40967", "CVE-2024-53103", "CVE-2024-53141",
+        "CVE-2024-53164", "UBUNTU-CVE-2023-21400", "UBUNTU-CVE-2024-40967",
+        "UBUNTU-CVE-2024-53103", "UBUNTU-CVE-2024-53141",
+        "UBUNTU-CVE-2024-53164"
+    ], bug_ids)
 
   def test_incomplete_compute_upstream(self):
     """ Test when incomplete upstream information is given 
@@ -367,12 +369,12 @@ class UpstreamTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
         import_last_modified=datetime.datetime(2023, 8, 14),
     ).put()
     bugs_query = osv.Bug.query(
-    ndb.OR(osv.Bug.upstream > '', osv.Bug.upstream < ''))
+        ndb.OR(osv.Bug.upstream > '', osv.Bug.upstream < ''))
 
     bugs = {}
     for bug in bugs_query:
       bugs[bug.db_id] = bug.upstream
-    bug_ids = upstream_computation._compute_upstream('VULN-4', bugs)
+    bug_ids = upstream_computation.compute_upstream('VULN-4', bugs)
     self.assertEqual(['VULN-1', 'VULN-3'], bug_ids)
 
 

@@ -23,7 +23,7 @@ import osv.logs
 import logging
 
 
-def _compute_upstream(target_bug_id, bugs):
+def compute_upstream(target_bug_id, bugs):
   """Computes all upstream vulnerabilities for the given bug ID.
   The returned list contains all of the bug IDs that are upstream of the
   target bug ID, including transitive upstreams."""
@@ -47,6 +47,7 @@ def _compute_upstream(target_bug_id, bugs):
   # Returns a sorted list of bug IDs, which ensures deterministic behaviour
   # and avoids unnecessary updates.
   return sorted(bug_ids)
+
 
 def _create_group(bug_id, upstream_ids):
   """Creates a new upstream group in the datastore."""
@@ -89,11 +90,11 @@ def main():
     b = all_upstream_group.filter(osv.UpstreamGroup.db_id == bug.db_id)
     if b:
       #recompute the transitive upstreams and compare with the existing group
-      upstream_ids = _compute_upstream(bug.db_id, bugs)
+      upstream_ids = compute_upstream(bug.db_id, bugs)
       _update_group(b, upstream_ids)
     else:
       # Create a new UpstreamGroup
-      upstream_ids = _compute_upstream(bug.db_id, bugs)
+      upstream_ids = compute_upstream(bug.db_id, bugs)
       _create_group(bug, upstream_ids)
 
 

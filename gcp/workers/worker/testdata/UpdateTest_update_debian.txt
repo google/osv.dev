@@ -84,4 +84,5 @@
     'status': 1,
     'summary': 'nginx - security update',
     'timestamp': DatetimeWithNanoseconds(2014, 9, 20, 0, 0),
+    'upstream': [],
     'withdrawn': None}

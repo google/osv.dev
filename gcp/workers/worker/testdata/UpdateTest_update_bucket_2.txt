@@ -53,4 +53,5 @@
                'local escalation of privilege with User execution privileges '
                'needed. User interaction is not needed for exploitation.',
     'timestamp': DatetimeWithNanoseconds(2021, 10, 1, 0, 0),
+    'upstream': [],
     'withdrawn': None}

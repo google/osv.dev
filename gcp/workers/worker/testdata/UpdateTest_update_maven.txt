@@ -86,4 +86,5 @@
     'status': 1,
     'summary': 'XML Injection in Any23',
     'timestamp': DatetimeWithNanoseconds(2021, 9, 13, 20, 6, 31),
+    'upstream': [],
     'withdrawn': None}

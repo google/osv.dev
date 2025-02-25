@@ -54,4 +54,5 @@
     'status': 1,
     'summary': 'A vulnerability in an unnormalized package',
     'timestamp': DatetimeWithNanoseconds(2021, 1, 1, 0, 0),
+    'upstream': [],
     'withdrawn': None}

@@ -23,12 +23,13 @@ import osv.logs
 import logging
 
 
-def compute_upstream(target_bug_id, bugs):
+def compute_upstream(target_bug, bugs: dict[str, list[osv.Bug]]):
   """Computes all upstream vulnerabilities for the given bug ID.
   The returned list contains all of the bug IDs that are upstream of the
   target bug ID, including transitive upstreams."""
   visited = set()
-  target_bug_upstream = bugs[target_bug_id]
+
+  target_bug_upstream = target_bug.upstream
   if not target_bug_upstream:
     return []
   to_visit = set(target_bug_upstream)
@@ -41,7 +42,8 @@ def compute_upstream(target_bug_id, bugs):
     bug_ids.append(bug_id)
     upstreams = set()
     if bug_id in bugs.keys():
-      upstreams = set(bugs[bug_id])
+      bug = bugs.get(bug_id)
+      upstreams = set(bug.upstream)
     to_visit.update(upstreams - visited)
 
   # Returns a sorted list of bug IDs, which ensures deterministic behaviour
@@ -82,20 +84,23 @@ def main():
   # Use (> '' OR < '') instead of (!= '') / (> '') to de-duplicate results
   # and avoid datastore emulator problems, see issue #2093
   bugs = osv.Bug.query(ndb.OR(osv.Bug.upstream > '', osv.Bug.upstream < ''))
-
+  bugs = {bug.db_id: bug for bug in bugs.fetch()}
   all_upstream_group = osv.UpstreamGroup.query()
 
-  for bug in bugs:
+  for bug_id in bugs:
+    # print(bugs.get(bug_id))
+    bug = bugs.get(bug_id)
     # check if the db key is also a db_id in all_upstream_group
-    bug_group = all_upstream_group.filter(osv.UpstreamGroup.db_id == bug.db_id)
+    bug_group = all_upstream_group.filter(osv.UpstreamGroup.db_id == bug_id)
+    bug_group = bug_group.get()
     if bug_group:
       #recompute the transitive upstreams and compare with the existing group
-      upstream_ids = compute_upstream(bug.db_id, bugs)
+      upstream_ids = compute_upstream(bug, bugs)
       _update_group(bug_group, upstream_ids)
     else:
       # Create a new UpstreamGroup
-      upstream_ids = compute_upstream(bug.db_id, bugs)
-      _create_group(bug, upstream_ids)
+      upstream_ids = compute_upstream(bug, bugs)
+      _create_group(bug_id, upstream_ids)
 
 
 if __name__ == '__main__':

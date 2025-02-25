@@ -17,3 +17,4 @@ cd ../worker
 
 poetry install
 poetry run python ../alias/alias_computation_test.py
+poetry run python ../alias/upstream_computation_test.py

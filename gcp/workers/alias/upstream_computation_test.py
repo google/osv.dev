@@ -305,7 +305,7 @@ class UpstreamTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
     bugs_query = osv.Bug.query(
         ndb.OR(osv.Bug.upstream > '', osv.Bug.upstream < ''))
 
-    bugs = {bug.db_id: bug for bug in bugs_query.fetch()}
+    bugs = {bug.db_id: bug for bug in bugs_query.iter()}
     bug_ids = upstream_computation.compute_upstream(bugs.get('CVE-3'), bugs)
     self.assertEqual(['CVE-1', 'CVE-2'], bug_ids)
 
@@ -315,7 +315,7 @@ class UpstreamTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
     bugs_query = osv.Bug.query(
         ndb.OR(osv.Bug.upstream > '', osv.Bug.upstream < ''))
 
-    bugs = {bug.db_id: bug for bug in bugs_query.fetch()}
+    bugs = {bug.db_id: bug for bug in bugs_query.iter()}
     bug_ids = upstream_computation.compute_upstream(
         bugs.get('USN-7234-3'), bugs)
     self.assertEqual([
@@ -367,7 +367,7 @@ class UpstreamTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
     ).put()
     bugs_query = osv.Bug.query(
         ndb.OR(osv.Bug.upstream > '', osv.Bug.upstream < ''))
-    bugs = {bug.db_id: bug for bug in bugs_query.fetch()}
+    bugs = {bug.db_id: bug for bug in bugs_query.iter()}
     bug_ids = upstream_computation.compute_upstream(bugs.get('VULN-4'), bugs)
     self.assertEqual(['VULN-1', 'VULN-3'], bug_ids)
 

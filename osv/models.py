@@ -935,9 +935,12 @@ class AliasDenyListEntry(ndb.Model):
 
 
 class UpstreamGroup(ndb.Model):
-  """Upstream group."""
+  """Upstream group for storing transitive upstreams of a Bug"""
+  # Database ID of the corresponding Bug
   db_id: str = ndb.StringProperty()
+  # List of transitive upstreams
   upstream_ids: list[str] = ndb.StringProperty(repeated=True)
+  # Date when group was last modified
   last_modified: datetime = ndb.DateTimeProperty()
 
 

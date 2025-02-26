@@ -29,7 +29,7 @@ def compute_upstream(target_bug, bugs: dict[str, osv.Bug]):
   target bug ID, including transitive upstreams."""
   visited = set()
 
-  target_bug_upstream = target_bug.upstream
+  target_bug_upstream = target_bug.upstream_raw
   if not target_bug_upstream:
     return []
   to_visit = set(target_bug_upstream)
@@ -41,7 +41,7 @@ def compute_upstream(target_bug, bugs: dict[str, osv.Bug]):
     upstreams = set()
     if bug_id in bugs:
       bug = bugs.get(bug_id)
-      upstreams = set(bug.upstream)
+      upstreams = set(bug.upstream_raw)
     to_visit.update(upstreams - visited)
 
   # Returns a sorted list of bug IDs, which ensures deterministic behaviour

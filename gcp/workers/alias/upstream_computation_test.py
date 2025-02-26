@@ -36,7 +36,7 @@ class UpstreamTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
         id='CVE-1',
         db_id='CVE-1',
         status=1,
-        upstream=[],
+        upstream_raw=[],
         source='test',
         public=True,
         import_last_modified=datetime.datetime(2023, 1, 1),
@@ -45,7 +45,7 @@ class UpstreamTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
         id='CVE-2',
         db_id='CVE-2',
         status=1,
-        upstream=['CVE-1'],
+        upstream_raw=['CVE-1'],
         source='test',
         public=True,
         import_last_modified=datetime.datetime(2023, 1, 1),
@@ -54,7 +54,7 @@ class UpstreamTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
         id='CVE-3',
         db_id='CVE-3',
         status=1,
-        upstream=['CVE-1', 'CVE-2'],
+        upstream_raw=['CVE-1', 'CVE-2'],
         source='test',
         public=True,
         import_last_modified=datetime.datetime(2023, 1, 1),
@@ -64,7 +64,7 @@ class UpstreamTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
         id='CVE-2023-21400',
         db_id='CVE-2023-21400',
         status=1,
-        upstream=[],
+        upstream_raw=[],
         source='test',
         public=True,
         import_last_modified=datetime.datetime(2025, 1, 14),
@@ -73,7 +73,7 @@ class UpstreamTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
         id='UBUNTU-CVE-2023-21400',
         db_id='UBUNTU-CVE-2023-21400',
         status=1,
-        upstream=['CVE-2023-21400'],
+        upstream_raw=['CVE-2023-21400'],
         source='test',
         public=True,
         import_last_modified=datetime.datetime(2025, 1, 14),
@@ -83,7 +83,7 @@ class UpstreamTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
         id='UBUNTU-CVE-2023-4004',
         db_id='UBUNTU-CVE-2023-4004',
         status=1,
-        upstream=['CVE-2023-4004'],
+        upstream_raw=['CVE-2023-4004'],
         source='test',
         public=True,
         import_last_modified=datetime.datetime(2025, 2, 10),
@@ -93,7 +93,7 @@ class UpstreamTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
         id='UBUNTU-CVE-2023-4015',
         db_id='UBUNTU-CVE-2023-4015',
         status=1,
-        upstream=['CVE-2023-4015'],
+        upstream_raw=['CVE-2023-4015'],
         source='test',
         public=True,
         import_last_modified=datetime.datetime(2025, 2, 10),
@@ -103,7 +103,7 @@ class UpstreamTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
         id='USN-6315-1',
         db_id='USN-6315-1',
         status=1,
-        upstream=[
+        upstream_raw=[
             "CVE-2022-40982", "CVE-2023-20593", "CVE-2023-21400",
             "CVE-2023-3609", "CVE-2023-3610", "CVE-2023-3611", "CVE-2023-3776",
             "CVE-2023-3777", "CVE-2023-4004", "CVE-2023-4015",
@@ -122,7 +122,7 @@ class UpstreamTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
         id='USN-6325-1',
         db_id='USN-6325-1',
         status=1,
-        upstream=[
+        upstream_raw=[
             "CVE-2022-40982", "CVE-2023-20593", "CVE-2023-21400",
             "CVE-2023-3609", "CVE-2023-3610", "CVE-2023-3611", "CVE-2023-3776",
             "CVE-2023-3777", "CVE-2023-4004", "CVE-2023-4015",
@@ -141,7 +141,7 @@ class UpstreamTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
         id='USN-6330-1',
         db_id='USN-6330-1',
         status=1,
-        upstream=[
+        upstream_raw=[
             "CVE-2022-40982", "CVE-2023-20593", "CVE-2023-21400",
             "CVE-2023-3609", "CVE-2023-3610", "CVE-2023-3611", "CVE-2023-3776",
             "CVE-2023-3777", "CVE-2023-4004", "CVE-2023-4015",
@@ -160,7 +160,7 @@ class UpstreamTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
         id='USN-6332-1',
         db_id='USN-6332-1',
         status=1,
-        upstream=[
+        upstream_raw=[
             "CVE-2022-40982", "CVE-2022-4269", "CVE-2022-48502",
             "CVE-2023-0597", "CVE-2023-1611", "CVE-2023-1855", "CVE-2023-1990",
             "CVE-2023-2002", "CVE-2023-20593", "CVE-2023-2124",
@@ -198,7 +198,7 @@ class UpstreamTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
         id='USN-6348-1',
         db_id='USN-6348-1',
         status=1,
-        upstream=[
+        upstream_raw=[
             "CVE-2022-40982", "CVE-2023-20593", "CVE-2023-21400",
             "CVE-2023-3609", "CVE-2023-3610", "CVE-2023-3611", "CVE-2023-3776",
             "CVE-2023-3777", "CVE-2023-4004", "CVE-2023-4015",
@@ -217,7 +217,7 @@ class UpstreamTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
         id='USN-7234-1',
         db_id='USN-7234-1',
         status=1,
-        upstream=[
+        upstream_raw=[
             "CVE-2023-21400", "CVE-2024-40967", "CVE-2024-53103",
             "CVE-2024-53141", "CVE-2024-53164", "UBUNTU-CVE-2023-21400",
             "UBUNTU-CVE-2024-40967", "UBUNTU-CVE-2024-53103",
@@ -232,7 +232,7 @@ class UpstreamTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
         id='USN-7234-3',
         db_id='USN-7234-3',
         status=1,
-        upstream=[
+        upstream_raw=[
             "CVE-2023-21400", "CVE-2024-40967", "CVE-2024-53103",
             "CVE-2024-53141", "CVE-2024-53164", "UBUNTU-CVE-2023-21400",
             "UBUNTU-CVE-2024-40967", "UBUNTU-CVE-2024-53103",
@@ -247,7 +247,7 @@ class UpstreamTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
         id='USN-7234-2',
         db_id='USN-7234-2',
         status=1,
-        upstream=[
+        upstream_raw=[
             "CVE-2023-21400", "CVE-2024-40967", "CVE-2024-53103",
             "CVE-2024-53141", "CVE-2024-53164", "UBUNTU-CVE-2023-21400",
             "UBUNTU-CVE-2024-40967", "UBUNTU-CVE-2024-53103",
@@ -262,7 +262,7 @@ class UpstreamTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
         id='DLA-3623-1',
         db_id='DLA-3623-1',
         status=1,
-        upstream=[
+        upstream_raw=[
             "CVE-2022-39189", "CVE-2022-4269", "CVE-2023-1206", "CVE-2023-1380",
             "CVE-2023-2002", "CVE-2023-2007", "CVE-2023-20588", "CVE-2023-2124",
             "CVE-2023-21255", "CVE-2023-21400", "CVE-2023-2269",
@@ -285,7 +285,7 @@ class UpstreamTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
         id='SUSE-SU-2023:3313-1',
         db_id='SUSE-SU-2023:3313-1',
         status=1,
-        upstream=[
+        upstream_raw=[
             "CVE-2022-40982", "CVE-2023-0459", "CVE-2023-20569",
             "CVE-2023-21400", "CVE-2023-2156", "CVE-2023-2166",
             "CVE-2023-31083", "CVE-2023-3268", "CVE-2023-3567", "CVE-2023-3609",
@@ -333,7 +333,7 @@ class UpstreamTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
         id='VULN-1',
         db_id='VULN-1',
         status=1,
-        upstream=[],
+        upstream_raw=[],
         source='test',
         public=True,
         import_last_modified=datetime.datetime(2023, 8, 14),
@@ -342,7 +342,7 @@ class UpstreamTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
         id='VULN-2',
         db_id='VULN-2',
         status=1,
-        upstream=['VULN-1'],
+        upstream_raw=['VULN-1'],
         source='test',
         public=True,
         import_last_modified=datetime.datetime(2023, 8, 14),
@@ -351,7 +351,7 @@ class UpstreamTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
         id='VULN-3',
         db_id='VULN-3',
         status=1,
-        upstream=['VULN-1'],
+        upstream_raw=['VULN-1'],
         source='test',
         public=True,
         import_last_modified=datetime.datetime(2023, 8, 14),
@@ -360,7 +360,7 @@ class UpstreamTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
         id='VULN-4',
         db_id='VULN-4',
         status=1,
-        upstream=['VULN-3'],
+        upstream_raw=['VULN-3'],
         source='test',
         public=True,
         import_last_modified=datetime.datetime(2023, 8, 14),

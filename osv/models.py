@@ -259,8 +259,9 @@ class Bug(ndb.Model):
   aliases: list[str] = ndb.StringProperty(repeated=True)
   # Related IDs.
   related: list[str] = ndb.StringProperty(repeated=True)
-  # Upstream IDs.
-  upstream: list[str] = ndb.StringProperty(repeated=True)
+  # Raw upstream vulnerability IDs from the source - does not include
+  # exhaustive transitive upstreams
+  upstream_raw: list[str] = ndb.StringProperty(repeated=True)
   # Status of the bug.
   status: int = ndb.IntegerProperty()
   # Timestamp when Bug was allocated.
@@ -750,7 +751,7 @@ class Bug(ndb.Model):
       upstream_group = UpstreamGroup.query(
           UpstreamGroup.db_id == self.db_id).get()
       if upstream_group:
-        upstream = sorted(list(set(upstream_group.upstream_ids)))
+        upstream = sorted(upstream_group.upstream_ids)
         modified = timestamp_pb2.Timestamp()
         modified.FromDatetime(
             max(self.last_modified, upstream_group.last_modified))
@@ -935,7 +936,11 @@ class AliasDenyListEntry(ndb.Model):
 
 
 class UpstreamGroup(ndb.Model):
-  """Upstream group for storing transitive upstreams of a Bug"""
+  """Upstream group for storing transitive upstreams of a Bug
+     This group is in a separate table in order to prevent additional race
+     conditions. This makes sure that only the worker is modifying the Bug
+     entity directly. 
+  """
   # Database ID of the corresponding Bug
   db_id: str = ndb.StringProperty()
   # List of transitive upstreams

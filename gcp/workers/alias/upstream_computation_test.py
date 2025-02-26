@@ -303,7 +303,7 @@ class UpstreamTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
     """
 
     bugs_query = osv.Bug.query(
-        ndb.OR(osv.Bug.upstream > '', osv.Bug.upstream < ''))
+        ndb.OR(osv.Bug.upstream_raw > '', osv.Bug.upstream_raw < ''))
 
     bugs = {bug.db_id: bug for bug in bugs_query.iter()}
     bug_ids = upstream_computation.compute_upstream(bugs.get('CVE-3'), bugs)
@@ -313,7 +313,7 @@ class UpstreamTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
     """Test real world case with multiple levels"""
 
     bugs_query = osv.Bug.query(
-        ndb.OR(osv.Bug.upstream > '', osv.Bug.upstream < ''))
+        ndb.OR(osv.Bug.upstream_raw > '', osv.Bug.upstream_raw < ''))
 
     bugs = {bug.db_id: bug for bug in bugs_query.iter()}
     bug_ids = upstream_computation.compute_upstream(
@@ -366,7 +366,7 @@ class UpstreamTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
         import_last_modified=datetime.datetime(2023, 8, 14),
     ).put()
     bugs_query = osv.Bug.query(
-        ndb.OR(osv.Bug.upstream > '', osv.Bug.upstream < ''))
+        ndb.OR(osv.Bug.upstream_raw > '', osv.Bug.upstream_raw < ''))
     bugs = {bug.db_id: bug for bug in bugs_query.iter()}
     bug_ids = upstream_computation.compute_upstream(bugs.get('VULN-4'), bugs)
     self.assertEqual(['VULN-1', 'VULN-3'], bug_ids)

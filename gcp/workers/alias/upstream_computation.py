@@ -52,11 +52,11 @@ def compute_upstream(target_bug, bugs: dict[str, osv.Bug]):
 def _create_group(bug_id, upstream_ids):
   """Creates a new upstream group in the datastore."""
 
-  new_group = osv.UpstreamGroup(id=bug_id,
-                                db_id=bug_id,
-                                upstream_ids=upstream_ids,
-                                last_modified=datetime.datetime.now()
-                                )
+  new_group = osv.UpstreamGroup(
+      id=bug_id,
+      db_id=bug_id,
+      upstream_ids=upstream_ids,
+      last_modified=datetime.datetime.now())
   new_group.put()
 
 
@@ -83,7 +83,8 @@ def main():
   # Query for all bugs that have upstreams.
   # Use (> '' OR < '') instead of (!= '') / (> '') to de-duplicate results
   # and avoid datastore emulator problems, see issue #2093
-  bugs = osv.Bug.query(ndb.OR(osv.Bug.upstream > '', osv.Bug.upstream < ''))
+  bugs = osv.Bug.query(
+      ndb.OR(osv.Bug.upstream_raw > '', osv.Bug.upstream_raw < ''))
   bugs = {bug.db_id: bug for bug in bugs.iter()}
   all_upstream_group = osv.UpstreamGroup.query()
 

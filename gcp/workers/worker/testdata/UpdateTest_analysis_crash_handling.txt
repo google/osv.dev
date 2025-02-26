@@ -143,5 +143,5 @@
     'status': 1,
     'summary': '',
     'timestamp': DatetimeWithNanoseconds(2017, 3, 23, 17, 59),
-    'upstream': [],
+    'upstream_raw': [],
     'withdrawn': None}

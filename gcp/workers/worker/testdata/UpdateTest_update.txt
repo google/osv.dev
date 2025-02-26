@@ -62,5 +62,5 @@
     'status': 1,
     'summary': 'A vulnerability',
     'timestamp': None,
-    'upstream': [],
+    'upstream_raw': [],
     'withdrawn': None}

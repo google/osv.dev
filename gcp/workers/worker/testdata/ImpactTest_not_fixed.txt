@@ -52,5 +52,5 @@
     'status': 1,
     'summary': 'Heap-buffer-overflow in Foo',
     'timestamp': DatetimeWithNanoseconds(2020, 1, 1, 0, 0),
-    'upstream': [],
+    'upstream_raw': [],
     'withdrawn': None}

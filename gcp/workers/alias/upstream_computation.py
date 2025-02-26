@@ -33,13 +33,11 @@ def compute_upstream(target_bug, bugs: dict[str, osv.Bug]):
   if not target_bug_upstream:
     return []
   to_visit = set(target_bug_upstream)
-  bug_ids = []
   while to_visit:
     bug_id = to_visit.pop()
     if bug_id in visited:
       continue
     visited.add(bug_id)
-    bug_ids.append(bug_id)
     upstreams = set()
     if bug_id in bugs:
       bug = bugs.get(bug_id)
@@ -48,15 +46,17 @@ def compute_upstream(target_bug, bugs: dict[str, osv.Bug]):
 
   # Returns a sorted list of bug IDs, which ensures deterministic behaviour
   # and avoids unnecessary updates.
-  return sorted(bug_ids)
+  return sorted(visited)
 
 
 def _create_group(bug_id, upstream_ids):
   """Creates a new upstream group in the datastore."""
 
-  new_group = osv.UpstreamGroup(db_id=bug_id)
-  new_group.upstream_ids = upstream_ids
-  new_group.last_modified = datetime.datetime.now()
+  new_group = osv.UpstreamGroup(id=bug_id,
+                                db_id=bug_id,
+                                upstream_ids=upstream_ids,
+                                last_modified=datetime.datetime.now()
+                                )
   new_group.put()
 
 

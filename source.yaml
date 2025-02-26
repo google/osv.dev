@@ -114,7 +114,7 @@
   human_link: 'https://nvd.nist.gov/vuln/detail/{{ BUG_ID }}'
   link: 'https://storage.googleapis.com/cve-osv-conversion/'
   editable: False
-  strict_validation: False
+  strict_validation: True
 
 - name: 'debian-dla'
   versions_from_repo: False
@@ -129,7 +129,7 @@
   human_link: 'https://security-tracker.debian.org/tracker/{{ BUG_ID }}'
   link: 'https://storage.googleapis.com/debian-osv/'
   editable: False
-  strict_validation: False
+  strict_validation: True
 
 - name: 'debian-dsa'
   versions_from_repo: False
@@ -144,7 +144,7 @@
   human_link: 'https://security-tracker.debian.org/tracker/{{ BUG_ID }}'
   link: 'https://storage.googleapis.com/debian-osv/'
   editable: False
-  strict_validation: False
+  strict_validation: True
 
 - name: 'debian-dtsa'
   versions_from_repo: False
@@ -159,7 +159,7 @@
   human_link: 'https://security-tracker.debian.org/tracker/{{ BUG_ID }}'
   link: 'https://storage.googleapis.com/debian-osv/'
   editable: False
-  strict_validation: False
+  strict_validation: True
 
 - name: 'ghsa'
   versions_from_repo: False
@@ -248,7 +248,7 @@
   link: 'https://github.com/google/oss-fuzz-vulns/blob/main/'
   editable: True
   repo_username: 'git'
-  strict_validation: False
+  strict_validation: True
 
 - name: 'psf'
   versions_from_repo: True

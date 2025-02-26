@@ -653,8 +653,9 @@ class TaskRunner:
 
       done = done_event.wait(timeout=MAX_LEASE_DURATION)
       logging.info('Returned from task thread')
-      self._log_task_latency(message)
-      if not done:
+      if done:
+        self._log_task_latency(message)
+      else:
         self.handle_timeout(subscriber, subscription, ack_id, message)
         logging.warning('Timed out processing task')
 

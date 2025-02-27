@@ -1046,4 +1046,6 @@ def get_related_async(bug_id: str) -> ndb.Future:
 @ndb.tasklet
 def get_upstream_async(bug_id: str) -> ndb.Future:
   """Gets upstream bugs asynchronously."""
-  return UpstreamGroup.query(UpstreamGroup.db_id == bug_id).get_async()
+  upstream_group = yield UpstreamGroup.query(
+      UpstreamGroup.db_id == bug_id).get_async()
+  return upstream_group

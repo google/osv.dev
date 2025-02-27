@@ -109,12 +109,13 @@ class Exporter:
 
         try:
           file_path = os.path.join(ecosystem_dir, bug.id() + '.json')
-          vulnerability = yield bug.to_vulnerability_async(include_source=True)
+          vulnerability = yield bug.to_vulnerability_async(
+              include_source=True, include_alias=True, include_upstream=True)
           osv.write_vulnerability(vulnerability, file_path)
 
           files_to_zip.append(file_path)
         except Exception:
-          logging.error('Failed to export bug: "%s"', bug.id())
+          logging.exception('Failed to export bug: "%s"', bug.id())
           raise
 
       # This *should* pause here until

@@ -745,7 +745,7 @@ class Bug(ndb.Model):
         modified.FromDatetime(
             max(self.last_modified, alias_group.last_modified))
 
-    upstream = {}
+    upstream = []
 
     if include_upstream:
       upstream_group = UpstreamGroup.query(

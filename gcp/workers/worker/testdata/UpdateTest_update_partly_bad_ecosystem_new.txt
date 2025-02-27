@@ -57,4 +57,5 @@
     'status': 1,
     'summary': 'A vulnerability',
     'timestamp': DatetimeWithNanoseconds(2021, 1, 1, 0, 0),
+    'upstream_raw': [],
     'withdrawn': None}

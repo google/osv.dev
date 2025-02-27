@@ -85,4 +85,5 @@
     'status': 1,
     'summary': '',
     'timestamp': DatetimeWithNanoseconds(2021, 4, 14, 20, 4, 52),
+    'upstream_raw': [],
     'withdrawn': None}

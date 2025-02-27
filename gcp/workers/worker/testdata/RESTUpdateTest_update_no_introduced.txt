@@ -396,4 +396,5 @@
     'status': 1,
     'summary': 'POST following PUT confusion',
     'timestamp': DatetimeWithNanoseconds(2022, 10, 26, 8, 0),
+    'upstream_raw': [],
     'withdrawn': None}

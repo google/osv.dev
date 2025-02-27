@@ -785,8 +785,8 @@ class Bug(ndb.Model):
     """Converts to Vulnerability proto and retrieves aliases asynchronously."""
     vulnerability = self.to_vulnerability(
         include_source=include_source,
-        include_alias=include_alias,
-        include_upstream=include_upstream)
+        include_alias=False,
+        include_upstream=False)
 
     related_bug_ids = yield get_related_async(vulnerability.id)
     vulnerability.related[:] = sorted(

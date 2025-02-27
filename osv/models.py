@@ -745,7 +745,7 @@ class Bug(ndb.Model):
         modified.FromDatetime(
             max(self.last_modified, alias_group.last_modified))
 
-    upstream = {}
+    upstream = []
 
     if include_upstream:
       upstream_group = UpstreamGroup.query(
@@ -785,24 +785,29 @@ class Bug(ndb.Model):
     """Converts to Vulnerability proto and retrieves aliases asynchronously."""
     vulnerability = self.to_vulnerability(
         include_source=include_source,
-        include_alias=include_alias,
-        include_upstream=include_upstream)
-    alias_group = yield get_aliases_async(vulnerability.id)
-    if alias_group:
-      alias_ids = sorted(list(set(alias_group.bug_ids) - {vulnerability.id}))
-      vulnerability.aliases[:] = alias_ids
-      modified_time = vulnerability.modified.ToDatetime()
-      modified_time = max(alias_group.last_modified, modified_time)
-      vulnerability.modified.FromDatetime(modified_time)
+        include_alias=False,
+        include_upstream=False)
+
     related_bug_ids = yield get_related_async(vulnerability.id)
     vulnerability.related[:] = sorted(
         list(set(related_bug_ids + list(vulnerability.related))))
-    upstream_group = yield get_upstream_async(vulnerability.id)
-    if upstream_group:
-      vulnerability.upstream = upstream_group.upstream_ids
-      modified_time = vulnerability.modified.ToDatetime()
-      modified_time = max(upstream_group.last_modified, modified_time)
-      vulnerability.modified.FromDatetime(modified_time)
+
+    if include_alias:
+      alias_group = yield get_aliases_async(vulnerability.id)
+      if alias_group:
+        alias_ids = sorted(list(set(alias_group.bug_ids) - {vulnerability.id}))
+        vulnerability.aliases[:] = alias_ids
+        modified_time = vulnerability.modified.ToDatetime()
+        modified_time = max(alias_group.last_modified, modified_time)
+        vulnerability.modified.FromDatetime(modified_time)
+
+    if include_upstream:
+      upstream_group = yield get_upstream_async(vulnerability.id)
+      if upstream_group:
+        vulnerability.upstream = upstream_group.upstream_ids
+        modified_time = vulnerability.modified.ToDatetime()
+        modified_time = max(upstream_group.last_modified, modified_time)
+        vulnerability.modified.FromDatetime(modified_time)
     return vulnerability
 
 

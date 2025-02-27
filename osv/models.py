@@ -542,7 +542,7 @@ class Bug(ndb.Model):
 
     self.aliases = list(vulnerability.aliases)
     self.related = list(vulnerability.related)
-    self.upstream = list(vulnerability.upstream)
+    self.upstream_raw = list(vulnerability.upstream)
 
     self.affected_packages = []
     for affected_package in vulnerability.affected:

@@ -1,4 +1,5 @@
-# Copyright 2023 Google LLC
+#!/bin/bash -x
+# Copyright 2025 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -12,9 +13,5 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-FROM gcr.io/oss-vdb/worker
-
-COPY alias_computation.py upstream_computation.py run_cron.sh /usr/local/bin/
-RUN chmod 755 /usr/local/bin/alias_computation.py /usr/local/bin/upstream_computation.py /usr/local/bin/run_cron.sh
-
-ENTRYPOINT ["run_cron.sh"]
+python3 ./alias_computation.py
+python3 ./upstream_computation.py

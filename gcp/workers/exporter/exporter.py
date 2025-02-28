@@ -31,6 +31,7 @@ import osv.logs
 DEFAULT_WORK_DIR = '/work'
 
 DEFAULT_EXPORT_BUCKET = 'osv-vulnerabilities'
+DEFAULT_SAFE_DELTA_PCT = 10
 _EXPORT_WORKERS = 32
 ECOSYSTEMS_FILE = 'ecosystems.txt'
 
@@ -154,7 +155,7 @@ def upload_single(bucket: Bucket, source_path: str, target_path: str):
 def safe_upload_single(bucket: Bucket,
                        source_path: str,
                        target_path: str,
-                       safe_delta_pct: int = 10):
+                       safe_delta_pct: int = DEFAULT_SAFE_DELTA_PCT):
   """Upload a single file to a GCS bucket, with a size check.
 
   This refuses to overwrite the GCS object if the file size difference is

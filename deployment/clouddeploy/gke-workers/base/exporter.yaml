@@ -3,9 +3,9 @@ kind: CronJob
 metadata:
   name: exporter
   labels:
-    cronLastSuccessfulTimeMins: "90"
+    cronLastSuccessfulTimeMins: "180"
 spec:
-  schedule: "*/30 * * * *"
+  schedule: "*/60 * * * *"
   concurrencyPolicy: Forbid
   # If the previous job overruns by more than a minute,
   # Don't try to immediately queue up the next job

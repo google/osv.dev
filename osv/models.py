@@ -804,7 +804,7 @@ class Bug(ndb.Model):
     if include_upstream:
       upstream_group = yield get_upstream_async(vulnerability.id)
       if upstream_group:
-        vulnerability.upstream = upstream_group.upstream_ids
+        vulnerability.upstream[:] = upstream_group.upstream_ids
         modified_time = vulnerability.modified.ToDatetime()
         modified_time = max(upstream_group.last_modified, modified_time)
         vulnerability.modified.FromDatetime(modified_time)

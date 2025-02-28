@@ -1122,6 +1122,38 @@ func TestCommit(t *testing.T) {
 			want:    "ee1fee900537b5d9560e9f937402de5ddc8412f3",
 			wantErr: false,
 		},
+		{
+			name: "an unusual and technically valid GitHub commit URL based on a tag (with ancestry)",
+			args: args{
+				u: "https://github.com/curl/curl/commit/curl-7_50_2~32",
+			},
+			want:    "", // Ideally it would be 7700fcba64bf5806de28f6c1c7da3b4f0b38567d but this isn't `git rev-parse`
+			wantErr: true,
+		},
+		{
+			name: "Valid GitHub commit URL",
+			args: args{
+				u: "https://github.com/MariaDB/server/commit/b1351c15946349f9daa7e5297fb2ac6f3139e4a",
+			},
+			want:    "b1351c15946349f9daa7e5297fb2ac6f3139e4a",
+			wantErr: false,
+		},
+		{
+			name: "Valid FreeDesktop GitLab commit URL",
+			args: args{
+				u: "https://gitlab.freedesktop.org/virgl/virglrenderer/-/commit/b05bb61f454eeb8a85164c8a31510aeb9d79129",
+			},
+			want:    "b05bb61f454eeb8a85164c8a31510aeb9d79129",
+			wantErr: false,
+		},
+		{
+			name: "Valid GitLab commit URL with a shorter hash",
+			args: args{
+				u: "https://gitlab.com/qemu-project/qemu/-/commit/4367a20cc",
+			},
+			want:    "4367a20cc",
+			wantErr: false,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

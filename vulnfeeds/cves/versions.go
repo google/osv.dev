@@ -549,6 +549,8 @@ func Commit(u string) (string, error) {
 		return "", err
 	}
 
+	gitSHA1Regex := regexp.MustCompile("^[0-9a-f]{7,40}")
+
 	// "https://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git/commit/?id=ee1fee900537b5d9560e9f937402de5ddc8412f3"
 
 	// cGit URLs are structured another way, e.g.
@@ -593,7 +595,7 @@ func Commit(u string) (string, error) {
 
 	parsedURL.Path = strings.TrimSuffix(parsedURL.Path, "/")
 	directory, possibleCommitHash := path.Split(parsedURL.Path)
-	if strings.HasSuffix(directory, "commit/") {
+	if strings.HasSuffix(directory, "commit/") && gitSHA1Regex.MatchString(possibleCommitHash) {
 		return strings.TrimSuffix(possibleCommitHash, ".patch"), nil
 	}
 
@@ -605,7 +607,7 @@ func Commit(u string) (string, error) {
 	if parsedURL.Host == "bitbucket.org" {
 		parsedURL.Path = strings.TrimSuffix(parsedURL.Path, "/")
 		directory, possibleCommitHash := path.Split(parsedURL.Path)
-		if strings.HasSuffix(directory, "commits/") {
+		if strings.HasSuffix(directory, "commits/") && gitSHA1Regex.MatchString(possibleCommitHash) {
 			return possibleCommitHash, nil
 		}
 	}

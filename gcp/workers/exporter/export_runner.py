@@ -24,7 +24,7 @@ import zipfile as z
 
 from google.cloud import ndb, storage
 
-from exporter import upload_single
+from exporter import safe_upload_single
 import osv
 import osv.logs
 
@@ -103,7 +103,7 @@ def aggregate_all_vulnerabilities(work_dir: str, export_bucket: str):
 
   storage_client = storage.Client()
   bucket = storage_client.get_bucket(export_bucket)
-  upload_single(bucket, output_zip, zip_file_name)
+  safe_upload_single(bucket, output_zip, zip_file_name)
   logging.info('Unified all.zip uploaded successfully.')
 
 

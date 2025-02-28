@@ -35,6 +35,10 @@ _EXPORT_WORKERS = 32
 ECOSYSTEMS_FILE = 'ecosystems.txt'
 
 
+class Error(Exception):
+  """Base exception class."""
+
+
 class Exporter:
   """Exporter."""
 
@@ -130,6 +134,7 @@ class Exporter:
     with concurrent.futures.ThreadPoolExecutor(
         max_workers=_EXPORT_WORKERS) as executor:
       # Note: the individual ecosystem all.zip is included here
+      # TODO: use safe_upload_single() on the zip files.
       for filename in os.listdir(ecosystem_dir):
         executor.submit(upload_single, bucket,
                         os.path.join(ecosystem_dir, filename),
@@ -141,6 +146,41 @@ def upload_single(bucket: Bucket, source_path: str, target_path: str):
   logging.info('Uploading %s', target_path)
   try:
     blob = bucket.blob(target_path)
+    blob.upload_from_filename(source_path, retry=retry.DEFAULT_RETRY)
+  except Exception as e:
+    logging.exception('Failed to export: %s', e)
+
+
+def safe_upload_single(bucket: Bucket,
+                       source_path: str,
+                       target_path: str,
+                       safe_delta_pct: int = 10):
+  """Upload a single file to a GCS bucket, with a size check.
+
+  This refuses to overwrite the GCS object if the file size difference is
+  greater than the permitted threshold (10% by default).
+
+  NOTE: this intentionally only catches unexpectedly smaller files, not larger
+  ones.
+
+  Args:
+    bucket: (Bucket): the GCS bucket object to upload to.
+    source_path: (str): the source path to the file to upload.
+    target_path: (str): the target path in Bucket to upload to.
+    safe_delta_pct: (int): the threshold at which to raise an exception.
+
+  Raises:
+    Error: if safe_delta_pct is exceeded
+  """
+
+  source_size = os.stat(source_path).st_size
+  logging.info('Uploading %s', target_path)
+  try:
+    blob = bucket.blob(target_path)
+    if (source_size / blob.size) * 100 < safe_delta_pct:
+      raise (Error(
+          f'Cowardly refusing to overwrite {blob.name} ({blob.size} bytes) '
+          f'with {source_path} ({source_size} bytes)'))
     blob.upload_from_filename(source_path, retry=retry.DEFAULT_RETRY)
   except Exception as e:
     logging.exception('Failed to export: %s', e)

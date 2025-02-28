@@ -13,9 +13,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 echo "Starting alias computation"
-python3 alias_computation.py
+python3 /usr/local/bin/alias_computation.py
 echo "Completed alias computation"
 
 echo "Starting upstream computation"
-python3 upstream_computation.py
+python3 /usr/local/bin/upstream_computation.py
 echo "Completed upstream computation"

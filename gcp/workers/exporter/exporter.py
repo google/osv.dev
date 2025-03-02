@@ -177,8 +177,8 @@ def safe_upload_single(bucket: Bucket,
   source_size = os.stat(source_path).st_size
   logging.info('Uploading %s', target_path)
   try:
-    blob = bucket.blob(target_path)
-    if (source_size / blob.size) * 100 < safe_delta_pct:
+    blob = bucket.get_blob(target_path)
+    if blob.size and (source_size / blob.size) * 100 < safe_delta_pct:
       raise (Error(
           f'Cowardly refusing to overwrite {blob.name} ({blob.size} bytes) '
           f'with {source_path} ({source_size} bytes)'))

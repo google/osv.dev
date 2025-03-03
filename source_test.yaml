@@ -425,6 +425,5 @@
   human_link: 'https://github.com/google/chromium-policy-vulnfeed/blob/main/advisories/V8-advisory.json'
   link: 'https://github.com/google/chromium-policy-vulnfeed/blob/main/advisories/V8-advisory.json'
   editable: False
-  key_path: 'OSV'
   repo_username: 'git'
   strict_validation: True

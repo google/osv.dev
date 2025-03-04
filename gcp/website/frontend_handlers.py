@@ -30,6 +30,7 @@ from flask import url_for
 from flask import send_from_directory
 from werkzeug.security import safe_join
 from werkzeug import exceptions
+from collections import OrderedDict
 from google.cloud import ndb
 from cvss import CVSS2, CVSS3, CVSS4
 
@@ -302,7 +303,23 @@ def bug_to_response(bug, detailed=True):
   if detailed:
     add_links(response)
     add_source_info(bug, response)
+    add_stream_info(bug, response)
+
   return response
+
+
+def add_stream_info(bug, response):
+  """Add upstream hierarchy information to `response`."""
+  # Check whether there are upstreams
+  if bug.upstream_raw:
+    upstream_hierarchy_string = get_upstreams_of_vulnerability(bug.db_id)
+    response['upstream_hierarchy'] = upstream_hierarchy_string
+  # Check whether there are downstreams
+  downstreams = _get_downstreams_of_bug_query(bug.db_id)
+  if downstreams:
+    downstream_hierarchy_string = compute_downstream_hierarchy(
+        bug.db_id, downstreams)
+    response['downstream_hierarchy'] = downstream_hierarchy_string
 
 
 def calculate_severity_details(
@@ -786,3 +803,202 @@ def cvss_calculator_url(severity):
 def relative_time(timestamp: str) -> str:
   """Convert the input to a human-readable relative time."""
   return utils.relative_time(timestamp)
+
+
+def construct_hierarchy_string(target_bug_id, root_nodes, graph):
+  """Constructs a hierarchy string for display.
+
+  Args:
+    target_bug_id: The ID of the target bug.
+    root_nodes: a list of root_nodes
+    graph: A dictionary representing the tree to build.
+
+  Returns:
+    A string representing the hierarchy for display by the frontend.
+  """
+  print(graph)
+  output_lines = []
+
+  def print_subtree(node, indent=0):
+    """
+    Recursively formats the subtree starting from the given node.
+
+    Args:
+        node (str): The starting node for printing the subtree.
+        indent (int): The indentation level for the current node.
+    """
+
+    indent_string = ""
+    if indent != 0:
+      indent_string = ("&nbsp;" * indent) + "⤷ "
+    base_string = "<li>" + indent_string
+
+    if node != target_bug_id:
+      if osv_has_vuln(node):
+        output_lines.append(base_string + "<a href=\"/vulnerability/" + node +
+                            "\">" + node + " </a></li>")
+      else:
+        output_lines.append(base_string + node + "</li>")
+
+    if node in graph:
+      for parent in graph[node]:
+        print_subtree(parent, indent + 4)
+
+  for root in root_nodes:
+    output_lines.append("<ul class=\"aliases\">")
+    print_subtree(root)
+    output_lines.append("</ul>")
+
+  final_string = "".join(output_lines)
+  return final_string
+
+
+def get_upstreams_of_vulnerability(target_bug_id):
+  """Gets the upstream hierarchy of a vulnerability.
+
+  Args:
+    target_bug_id: The ID of the target bug.
+
+  Returns:
+    A string representing the upstream hierarchy for display by 
+    the frontend.
+  """
+
+  bug_group = osv.UpstreamGroup.query(
+      osv.UpstreamGroup.db_id == target_bug_id).get()
+  if bug_group is None or bug_group.upstream_ids is None:
+    return []
+  bugs_group_dict = {b_id: [] for b_id in bug_group.upstream_ids}
+  bug_groups_keys = [
+      ndb.Key(osv.UpstreamGroup, id) for id in bug_group.upstream_ids
+  ]
+  bug_groups_upstream = ndb.get_multi(bug_groups_keys)
+  if bug_groups_upstream is None:
+    return None
+  for bug in bug_groups_upstream:
+    if bug is not None:
+      bugs_group_dict[bug.db_id] = bug.upstream_ids
+
+  bugs_group_dict[target_bug_id] = bug_group.upstream_ids
+
+  upstream_hierarchy = _compute_upstream_hierarchy(bug_group, bugs_group_dict)
+  reversed_graph = reverse_tree(upstream_hierarchy)
+  all_children = set()
+  for children in upstream_hierarchy.values():
+    all_children.update(children)
+
+  root_nodes = list(all_children - set(upstream_hierarchy.keys()))
+
+  upstream_hierarchy_string = construct_hierarchy_string(
+      target_bug_id, root_nodes, reversed_graph)
+  return upstream_hierarchy_string
+
+
+def _compute_upstream_hierarchy(target_bug_group: osv.UpstreamGroup,
+                                bug_groups: dict[str, list[str]]):
+  """Computes all upstream vulnerabilities for the given bug ID.
+  The returned list contains all of the bug IDs that are upstream of the
+  target bug ID, including transitive upstreams in a map hierarchy.
+  bug_group:
+        { db_id: bug id
+          upstream_ids: str[bug_ids]
+          last_modified_date}
+  """
+  visited = set()
+  upstream_map = {}
+  to_visit = set([target_bug_group.db_id])
+  while to_visit:
+    bug_id = to_visit.pop()
+    if bug_id in visited:
+      continue
+    visited.add(bug_id)
+    upstreams = set(bug_groups.get(bug_id, []))
+    if not upstreams:
+      continue
+    for upstream in upstreams:
+      if upstream not in visited and upstream not in to_visit:
+        to_visit.add(upstream)
+      else:
+        if bug_id not in upstream_map:
+          upstream_map[bug_id] = set([upstream])
+        else:
+          upstream_map[bug_id].add(upstream)
+      upstream_map[bug_id] = upstreams
+      to_visit.update(upstreams - visited)
+  for k, v in upstream_map.items():
+    if k is target_bug_group.db_id:
+      continue
+    upstream_map[
+        target_bug_group.db_id] = upstream_map[target_bug_group.db_id] - v
+  return upstream_map
+
+
+def _get_downstreams_of_bug_query(bug_id):
+  """Returns a list of all downstream bugs of the given bug ID by querying the
+  database."""
+  downstreams = {}
+  for bug in osv.UpstreamGroup.query(osv.UpstreamGroup.upstream_ids == bug_id):
+    downstreams[bug.db_id] = bug.upstream_ids
+  return downstreams
+
+
+def _get_downstreams_of_bug(bug_id, bugs):
+  """Returns a list of all downstream bugs of the given bug ID 
+  given a list of bugs."""
+  downstreams = []
+  for bug in bugs:
+    if bug_id in bugs[bug]:
+      downstreams.append(bug)
+  return downstreams
+
+
+def compute_downstream_hierarchy(target_bug_id: str, downstreams) -> str:
+  """Computes the hierarchy of all downstream vulnerabilities for the given 
+  bug ID. Returns a constructed string of the downstreams formatted for the 
+  frontend
+  """
+
+  downstream_map: dict[str, set[str]] = {}
+  transitive_downstreams = downstreams
+
+  # Sort downstreams by number of upstreams
+  transitive_downstreams = OrderedDict(
+      sorted(transitive_downstreams.items(), key=lambda item: len(item[1])))
+
+  leaf_bugs: set[str] = set()
+
+  for bug_id, _ in transitive_downstreams.items():
+    immediate_downstreams = _get_downstreams_of_bug(bug_id,
+                                                    transitive_downstreams)
+    if not immediate_downstreams:
+      leaf_bugs.add(bug_id)
+    else:
+      downstream_map[bug_id] = set(immediate_downstreams)
+
+  root_leaves = leaf_bugs.copy()
+  for bug_id, downstream_bugs in downstream_map.items():
+    for leaf in leaf_bugs:
+      if leaf in downstream_bugs:
+        root_leaves.discard(leaf)
+    root_leaves.add(bug_id)
+
+  downstream_map[target_bug_id] = root_leaves
+
+  hierarchy_string = construct_hierarchy_string(target_bug_id, root_leaves,
+                                                downstream_map)
+  return hierarchy_string
+
+
+def reverse_tree(graph):
+  """
+  Reverses a graph represented as a dictionary
+  """
+
+  reversed_graph = {}
+  for node, children in graph.items():
+    for child in children:
+      if child not in reversed_graph:
+        reversed_graph[child] = set()
+      reversed_graph[child].add(node)
+
+  return reversed_graph

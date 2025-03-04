@@ -816,7 +816,6 @@ def construct_hierarchy_string(target_bug_id, root_nodes, graph):
   Returns:
     A string representing the hierarchy for display by the frontend.
   """
-  print(graph)
   output_lines = []
 
   def print_subtree(node, indent=0):

@@ -892,6 +892,8 @@ class SourceRepository(ndb.Model):
   ignore_git: bool = ndb.BooleanProperty(default=False)
   # Whether to detect cherypicks or not (slow for large repos).
   detect_cherrypicks: bool = ndb.BooleanProperty(default=True)
+  # Whether to consider all branches when analyzing GIT ranges.
+  consider_all_branches: bool = ndb.BooleanProperty(default=False)
   # Whether to populate "affected[].versions" from Git ranges.
   versions_from_repo: bool = ndb.BooleanProperty(default=True)
   # Ignore last import time once (SourceRepositoryType.BUCKET).

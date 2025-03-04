@@ -120,8 +120,9 @@ class RangeCollector:
 class RepoAnalyzer:
   """Repository analyzer."""
 
-  def __init__(self, detect_cherrypicks=True):
+  def __init__(self, detect_cherrypicks=True, consider_all_branches=False):
     self.detect_cherrypicks = detect_cherrypicks
+    self.consider_all_branches = consider_all_branches
 
   def get_affected(self,
                    repo: pygit2.Repository,
@@ -158,13 +159,23 @@ class RepoAnalyzer:
       repo_url = repo.remotes['origin'].url
 
     branches = []
-    detect_cherrypicks = self.detect_cherrypicks and not limit_commits
-    if detect_cherrypicks and not last_affected_commits:
-      # Check all branches for cherry picked regress/fix commits (sorted for
+
+    # If `last_affected` is provided at all, we can't detect cherrypicks, as
+    # cherry-pick detection does not make sense when it comes to the
+    # `last_affected` commit.
+    # Similarly, when there are `limit` commits, we don't do cherry pick
+    # detection because it implies limiting to specific branches.
+    detect_cherrypicks = (
+        self.detect_cherrypicks and not limit_commits and
+        not last_affected_commits)
+
+    # detect_cherrypicks implies consider_all_branches because it needs to
+    # consider all branches to work.
+    consider_all_branches = self.consider_all_branches or detect_cherrypicks
+
+    if consider_all_branches:
+      # Check all branches for cherrypicked regress/fix commits (sorted for
       # determinism).
-      # If `last_affected` is provided at all, we can't do this, as we
-      # cherry-pick detection does not make sense when it comes to
-      # the `last_affected` commit.
       branches = sorted(repo.branches.remote)
     else:
       if limit_commits:
@@ -613,7 +624,8 @@ def analyze(vulnerability: vulnerability_pb2.Vulnerability,
             analyze_git: bool = True,
             checkout_path: str = None,
             detect_cherrypicks: bool = True,
-            versions_from_repo: bool = True) -> AnalyzeResult:
+            versions_from_repo: bool = True,
+            consider_all_branches: bool = False) -> AnalyzeResult:
   """Analyze and possibly update a vulnerability based on its input ranges.
 
   The behaviour varies by the vulnerability's affected field.
@@ -674,7 +686,9 @@ def analyze(vulnerability: vulnerability_pb2.Vulnerability,
       # Analyze git ranges.
       if (analyze_git and
           affected_range.type == vulnerability_pb2.Range.Type.GIT):
-        repo_analyzer = RepoAnalyzer(detect_cherrypicks=detect_cherrypicks)
+        repo_analyzer = RepoAnalyzer(
+            detect_cherrypicks=detect_cherrypicks,
+            consider_all_branches=consider_all_branches)
         try:
           _analyze_git_ranges(repo_analyzer, checkout_path, affected_range,
                               new_git_versions, commits, new_introduced,

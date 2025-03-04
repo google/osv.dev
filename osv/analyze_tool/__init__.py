@@ -38,7 +38,12 @@ def main():
       default='true')
   parser.add_argument(
       '--detect_cherrypicks',
-      help='Detect git cherry-picks (slow)',
+      help='Detect git cherry-picks (slow), implies consider_all_branches',
+      choices=['true', 'false'],
+      default='false')
+  parser.add_argument(
+      '--consider_all_branches',
+      help='Consider all git branches',
       choices=['true', 'false'],
       default='false')
   parser.add_argument(
@@ -60,6 +65,7 @@ def main():
 
   analyze_git = args.analyze_git == 'true'
   detect_cherrypicks = args.detect_cherrypicks == 'true'
+  consider_all_branches = args.consider_all_branches == 'true'
 
   if args.pr_base:
     paths = subprocess.check_output(
@@ -87,10 +93,11 @@ def main():
       continue
 
     analyze(path, args.checkout_path, args.key_path, analyze_git,
-            detect_cherrypicks)
+            detect_cherrypicks, consider_all_branches)
 
 
-def analyze(path, checkout_path, key_path, analyze_git, detect_cherrypicks):
+def analyze(path, checkout_path, key_path, analyze_git, detect_cherrypicks,
+            consider_all_branches):
   """Analyze and write changes to file."""
   logging.info('Analyzing %s', path)
   try:
@@ -103,11 +110,13 @@ def analyze(path, checkout_path, key_path, analyze_git, detect_cherrypicks):
       vuln,
       analyze_git=analyze_git,
       checkout_path=checkout_path,
-      detect_cherrypicks=detect_cherrypicks)
+      detect_cherrypicks=detect_cherrypicks,
+      consider_all_branches=consider_all_branches)
 
   if not result.has_changes:
     logging.info('No changes required.')
     return
 
+  logging.info('Found %s affected commits.', len(result.commits))
   logging.info('Writing changes.')
   sources.write_vulnerability(vuln, path, key_path)

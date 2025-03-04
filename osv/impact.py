@@ -32,6 +32,7 @@ from . import models
 from . import vulnerability_pb2
 
 TAG_PREFIX = 'refs/tags/'
+BRANCH_PREFIX = 'refs/remotes/'
 
 # Limit for writing small entities.
 _DATASTORE_BATCH_SIZE = 5000
@@ -118,7 +119,20 @@ class RangeCollector:
 
 
 class RepoAnalyzer:
-  """Repository analyzer."""
+  """Repository analyzer.
+
+  This provides functionality for analyzing git repos to determine affected
+  tags and commits based on GIT ranges from OSV records.
+
+  Attributes:
+    detect_cherrypicks: Whether or not we want to try and detect cherrypicks
+      for fix and introduced commits at a best effort basis. This can be slow
+      for larger repos. This typically implies `consider_all_branches`.
+    consider_all_branches: Whether or not we want to consider all branches when
+      analyzing affected commits and tags. For this analysis to avoid false
+      positives, it's important that the complete set of `introduced` and
+      `fixed` commits are provided (including cherrypicks).
+  """
 
   def __init__(self, detect_cherrypicks=True, consider_all_branches=False):
     self.detect_cherrypicks = detect_cherrypicks
@@ -201,8 +215,24 @@ class RepoAnalyzer:
         for regress_commit in regress_commits:
           branches.extend(_branches_with_commit(repo, regress_commit))
 
+    # Optimization: pre-compute branches with specified commits in them if
+    # we're not doing cherrypick detection.
+    branches_with_commits = {}
+    if consider_all_branches and not detect_cherrypicks:
+      if fix_commits:
+        for fix_commit in fix_commits:
+          branches_with_commits[fix_commit] = _branches_with_commit(
+              repo, fix_commit)
+
+      if regress_commits:
+        for regress_commit in regress_commits:
+          branches_with_commits[regress_commit] = _branches_with_commit(
+              repo, regress_commit)
+
+    print(branches_with_commits)
+
     for branch in branches:
-      ref = 'refs/remotes/' + branch
+      ref = BRANCH_PREFIX + branch
 
       # Get the earliest equivalent commit in the regression range.
       equivalent_regress_commit = None
@@ -210,7 +240,11 @@ class RepoAnalyzer:
         logging.info('Finding equivalent regress commit to %s in %s in %s',
                      regress_commit, ref, repo_url)
         equivalent_regress_commit = self._get_equivalent_commit(
-            repo, ref, regress_commit, detect_cherrypicks=detect_cherrypicks)
+            repo,
+            ref,
+            regress_commit,
+            detect_cherrypicks=detect_cherrypicks,
+            branches_with_commits=branches_with_commits)
         if equivalent_regress_commit:
           break
 
@@ -224,7 +258,11 @@ class RepoAnalyzer:
         logging.info('Finding equivalent fix commit to %s in %s in %s',
                      fix_commit, ref, str(repo_url or 'UNKNOWN_REPO_URL'))
         equivalent_fix_commit = self._get_equivalent_commit(
-            repo, ref, fix_commit, detect_cherrypicks=detect_cherrypicks)
+            repo,
+            ref,
+            fix_commit,
+            detect_cherrypicks=detect_cherrypicks,
+            branches_with_commits=branches_with_commits)
         if equivalent_fix_commit:
           break
 
@@ -282,11 +320,19 @@ class RepoAnalyzer:
                              repo,
                              to_search,
                              target_commit,
-                             detect_cherrypicks=True):
+                             detect_cherrypicks=True,
+                             branches_with_commits=None):
     """Find an equivalent commit at to_search, or None. The equivalent commit
     can be equal to target_commit."""
     if not target_commit:
       return None
+
+    # Optimization: If we're not detecting cherrypicks, then we don't need to
+    # walk the entire history and we can just look up if a branch contains a
+    # commit based on a precomputed dictionary.
+    if not detect_cherrypicks and branches_with_commits:
+      return to_search in branches_with_commits.get(
+          target_commit.removeprefix(BRANCH_PREFIX), [])
 
     try:
       target = repo.revparse_single(target_commit)
@@ -294,11 +340,14 @@ class RepoAnalyzer:
       # Invalid commit.
       return None
 
-    try:
-      target_patch_id = repo.diff(target.parents[0], target).patchid
-    except IndexError:
-      # Orphaned target_commit.
-      return None
+    if detect_cherrypicks:
+      try:
+        target_patch_id = repo.diff(target.parents[0], target).patchid
+      except IndexError:
+        # Orphaned target_commit.
+        return None
+    else:
+      target_patch_id = None
 
     search = repo.revparse_single(to_search)
     try:

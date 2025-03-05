@@ -466,7 +466,8 @@ class TaskRunner:
         vulnerability,
         analyze_git=not source_repo.ignore_git,
         detect_cherrypicks=source_repo.detect_cherrypicks,
-        versions_from_repo=source_repo.versions_from_repo)
+        versions_from_repo=source_repo.versions_from_repo,
+        consider_all_branches=source_repo.consider_all_branches)
 
     if not result.has_changes and not added_fix_info:
       return result

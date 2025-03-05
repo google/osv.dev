@@ -805,7 +805,8 @@ def relative_time(timestamp: str) -> str:
   return utils.relative_time(timestamp)
 
 
-def construct_hierarchy_string(target_bug_id, root_nodes, graph):
+def construct_hierarchy_string(target_bug_id: str, root_nodes: set[str],
+                               graph: dict[str, set[str]]) -> str:
   """Constructs a hierarchy string for display.
 
   Args:
@@ -818,7 +819,7 @@ def construct_hierarchy_string(target_bug_id, root_nodes, graph):
   """
   output_lines = []
 
-  def print_subtree(vuln_id):
+  def print_subtree(vuln_id: str) -> None:
     """
     Recursively formats the subtree starting from the given vuln_id.
 
@@ -827,8 +828,8 @@ def construct_hierarchy_string(target_bug_id, root_nodes, graph):
     """
     if vuln_id != target_bug_id:
       if osv_has_vuln(vuln_id):
-        output_lines.append("<li><a href=\"/vulnerability/" + vuln_id +
-                            "\">" + vuln_id + " </a></li>")
+        output_lines.append("<li><a href=\"/vulnerability/" + vuln_id + "\">" +
+                            vuln_id + " </a></li>")
       else:
         output_lines.append("<li>" + vuln_id + "</li>")
 
@@ -848,7 +849,7 @@ def construct_hierarchy_string(target_bug_id, root_nodes, graph):
   return final_string
 
 
-def get_upstreams_of_vulnerability(target_bug_id):
+def get_upstreams_of_vulnerability(target_bug_id: str) -> str:
   """Gets the upstream hierarchy of a vulnerability.
 
   Args:
@@ -862,7 +863,7 @@ def get_upstreams_of_vulnerability(target_bug_id):
   bug_group = osv.UpstreamGroup.query(
       osv.UpstreamGroup.db_id == target_bug_id).get()
   if bug_group is None or bug_group.upstream_ids is None:
-    return []
+    return None
   bugs_group_dict = {b_id: [] for b_id in bug_group.upstream_ids}
   bug_groups_keys = [
       ndb.Key(osv.UpstreamGroup, id) for id in bug_group.upstream_ids
@@ -882,15 +883,16 @@ def get_upstreams_of_vulnerability(target_bug_id):
   for children in upstream_hierarchy.values():
     all_children.update(children)
 
-  root_nodes = list(all_children - set(upstream_hierarchy.keys()))
+  root_nodes = set(all_children - set(upstream_hierarchy.keys()))
 
   upstream_hierarchy_string = construct_hierarchy_string(
       target_bug_id, root_nodes, reversed_graph)
   return upstream_hierarchy_string
 
 
-def _compute_upstream_hierarchy(target_bug_group: osv.UpstreamGroup,
-                                bug_groups: dict[str, list[str]]):
+def _compute_upstream_hierarchy(
+    target_bug_group: osv.UpstreamGroup,
+    bug_groups: dict[str, list[str]]) -> dict[str, list[str]]:
   """Computes all upstream vulnerabilities for the given bug ID.
   The returned list contains all of the bug IDs that are upstream of the
   target bug ID, including transitive upstreams in a map hierarchy.
@@ -928,7 +930,7 @@ def _compute_upstream_hierarchy(target_bug_group: osv.UpstreamGroup,
   return upstream_map
 
 
-def _get_downstreams_of_bug_query(bug_id):
+def _get_downstreams_of_bug_query(bug_id: str) -> dict[str, list[str]]:
   """Returns a list of all downstream bugs of the given bug ID by querying the
   database."""
   downstreams = {}
@@ -937,7 +939,8 @@ def _get_downstreams_of_bug_query(bug_id):
   return downstreams
 
 
-def _get_downstreams_of_bug(bug_id, bugs):
+def _get_downstreams_of_bug(bug_id: str, bugs: dict[str,
+                                                    list[str]]) -> list[str]:
   """Returns a list of all downstream bugs of the given bug ID 
   given a list of bugs."""
   downstreams = []
@@ -947,7 +950,8 @@ def _get_downstreams_of_bug(bug_id, bugs):
   return downstreams
 
 
-def compute_downstream_hierarchy(target_bug_id: str, downstreams) -> str:
+def compute_downstream_hierarchy(target_bug_id: str,
+                                 downstreams: dict[str, list[str]]) -> str:
   """Computes the hierarchy of all downstream vulnerabilities for the given 
   bug ID. Returns a constructed string of the downstreams formatted for the 
   frontend
@@ -984,7 +988,7 @@ def compute_downstream_hierarchy(target_bug_id: str, downstreams) -> str:
   return hierarchy_string
 
 
-def reverse_tree(graph):
+def reverse_tree(graph: dict[str, set[str]]) -> dict[str, set[str]]:
   """
   Reverses a graph represented as a dictionary
   """

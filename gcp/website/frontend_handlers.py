@@ -818,22 +818,22 @@ def construct_hierarchy_string(target_bug_id, root_nodes, graph):
   """
   output_lines = []
 
-  def print_subtree(node):
+  def print_subtree(vuln_id):
     """
-    Recursively formats the subtree starting from the given node.
+    Recursively formats the subtree starting from the given vuln_id.
 
     Args:
-        node (str): The starting node for printing the subtree.
+        vuln_id (str): The starting vuln_id for printing the subtree.
     """
-    if node != target_bug_id:
-      if osv_has_vuln(node):
-        output_lines.append("<li><a href=\"/vulnerability/" + node +
-                            "\">" + node + " </a></li>")
+    if vuln_id != target_bug_id:
+      if osv_has_vuln(vuln_id):
+        output_lines.append("<li><a href=\"/vulnerability/" + vuln_id +
+                            "\">" + vuln_id + " </a></li>")
       else:
-        output_lines.append("<li>" + node + "</li>")
+        output_lines.append("<li>" + vuln_id + "</li>")
 
-    if node in graph:
-      for child in graph[node]:
+    if vuln_id in graph:
+      for child in graph[vuln_id]:
         if child != target_bug_id:
           output_lines.append("<ul>")
           print_subtree(child)

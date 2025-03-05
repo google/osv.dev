@@ -335,6 +335,8 @@ class RepoAnalyzer:
       if (to_search.removeprefix(BRANCH_PREFIX)
           in branches_with_commits.get(target_commit, [])):
         return target_commit
+      else:
+        return None
 
     try:
       target = repo.revparse_single(target_commit)

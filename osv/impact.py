@@ -332,8 +332,9 @@ class RepoAnalyzer:
     # walk the entire history and we can just look up if a branch contains a
     # commit based on a precomputed dictionary.
     if not detect_cherrypicks and branches_with_commits:
-      return to_search in branches_with_commits.get(
-          target_commit.removeprefix(BRANCH_PREFIX), [])
+      if (to_search.removeprefix(BRANCH_PREFIX)
+          in branches_with_commits.get(target_commit, [])):
+        return target_commit
 
     try:
       target = repo.revparse_single(target_commit)

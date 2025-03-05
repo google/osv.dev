@@ -229,8 +229,6 @@ class RepoAnalyzer:
           branches_with_commits[regress_commit] = _branches_with_commit(
               repo, regress_commit)
 
-    print(branches_with_commits)
-
     for branch in branches:
       ref = BRANCH_PREFIX + branch
 

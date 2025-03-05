@@ -818,30 +818,26 @@ def construct_hierarchy_string(target_bug_id, root_nodes, graph):
   """
   output_lines = []
 
-  def print_subtree(node, indent=0):
+  def print_subtree(node):
     """
     Recursively formats the subtree starting from the given node.
 
     Args:
         node (str): The starting node for printing the subtree.
-        indent (int): The indentation level for the current node.
     """
-
-    indent_string = ""
-    if indent != 0:
-      indent_string = ("&nbsp;" * indent) + "⤷ "
-    base_string = "<li>" + indent_string
-
     if node != target_bug_id:
       if osv_has_vuln(node):
-        output_lines.append(base_string + "<a href=\"/vulnerability/" + node +
+        output_lines.append("<li><a href=\"/vulnerability/" + node +
                             "\">" + node + " </a></li>")
       else:
-        output_lines.append(base_string + node + "</li>")
+        output_lines.append("<li>" + node + "</li>")
 
     if node in graph:
-      for parent in graph[node]:
-        print_subtree(parent, indent + 4)
+      for child in graph[node]:
+        if child != target_bug_id:
+          output_lines.append("<ul>")
+          print_subtree(child)
+          output_lines.append("</ul>")
 
   for root in root_nodes:
     output_lines.append("<ul class=\"aliases\">")

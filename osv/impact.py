@@ -452,7 +452,7 @@ def get_commit_and_tag_list(repo,
     # Another walker has encountered this commit already, and it was unbounded
     # so we don't need to walk through this again.
     if seen_unbounded and str(commit.id) in seen_unbounded:
-      break
+      walker.hide(str(commit.id))
 
     process_commit(str(commit.id))
 

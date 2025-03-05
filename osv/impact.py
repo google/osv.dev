@@ -21,6 +21,7 @@ import subprocess
 import tempfile
 import time
 import traceback
+from typing import Optional
 
 from google.cloud import ndb
 import pygit2
@@ -229,6 +230,7 @@ class RepoAnalyzer:
           branches_with_commits[regress_commit] = _branches_with_commit(
               repo, regress_commit)
 
+    seen_unbounded = set()
     for branch in branches:
       ref = BRANCH_PREFIX + branch
 
@@ -308,7 +310,8 @@ class RepoAnalyzer:
           commits_to_tags=commits_to_tags,
           include_start=True,
           include_end=include_end,
-          limit_commit=branch_to_limit.get(branch))
+          limit_commit=branch_to_limit.get(branch),
+          seen_unbounded=seen_unbounded)
       commits.update(cur_commits)
       tags.update(cur_tags)
 
@@ -398,7 +401,8 @@ def get_commit_and_tag_list(repo,
                             commits_to_tags=None,
                             include_start=False,
                             include_end=True,
-                            limit_commit=None):
+                            limit_commit=None,
+                            seen_unbounded: Optional[set[str]] = None):
   """Given a commit range, return the list of commits and tags in the range."""
   if limit_commit:
     if str(repo.merge_base(end_commit, limit_commit)) == limit_commit:
@@ -427,6 +431,13 @@ def get_commit_and_tag_list(repo,
   tags = []
 
   def process_commit(commit):
+    # Optimisation: If we've walked through a commit before and it wasn't bound
+    # to a start commit (i.e. affected from the very beginning of time), then
+    # record that so we don't have to repeatedly walk through this commit in
+    # other branches.
+    if not start_commit and seen_unbounded is not None:
+      seen_unbounded.add(commit)
+
     commits.append(commit)
     if not commits_to_tags:
       return
@@ -436,6 +447,11 @@ def get_commit_and_tag_list(repo,
   for commit in walker:
     if not include_end and str(commit.id) == end_commit:
       continue
+
+    # Another walker has encountered this commit already, and it was unbounded
+    # so we don't need to walk through this again.
+    if seen_unbounded and str(commit.id) in seen_unbounded:
+      break
 
     process_commit(str(commit.id))
 

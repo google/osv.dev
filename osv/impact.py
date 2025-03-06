@@ -21,6 +21,7 @@ import subprocess
 import tempfile
 import time
 import traceback
+from typing import Optional
 
 from google.cloud import ndb
 import pygit2
@@ -32,6 +33,7 @@ from . import models
 from . import vulnerability_pb2
 
 TAG_PREFIX = 'refs/tags/'
+BRANCH_PREFIX = 'refs/remotes/'
 
 # Limit for writing small entities.
 _DATASTORE_BATCH_SIZE = 5000
@@ -118,10 +120,24 @@ class RangeCollector:
 
 
 class RepoAnalyzer:
-  """Repository analyzer."""
+  """Repository analyzer.
 
-  def __init__(self, detect_cherrypicks=True):
+  This provides functionality for analyzing git repos to determine affected
+  tags and commits based on GIT ranges from OSV records.
+
+  Attributes:
+    detect_cherrypicks: Whether or not we want to try and detect cherrypicks
+      for fix and introduced commits at a best effort basis. This can be slow
+      for larger repos. This typically implies `consider_all_branches`.
+    consider_all_branches: Whether or not we want to consider all branches when
+      analyzing affected commits and tags. For this analysis to avoid false
+      positives, it's important that the complete set of `introduced` and
+      `fixed` commits are provided (including cherrypicks).
+  """
+
+  def __init__(self, detect_cherrypicks=True, consider_all_branches=False):
     self.detect_cherrypicks = detect_cherrypicks
+    self.consider_all_branches = consider_all_branches
 
   def get_affected(self,
                    repo: pygit2.Repository,
@@ -158,13 +174,23 @@ class RepoAnalyzer:
       repo_url = repo.remotes['origin'].url
 
     branches = []
-    detect_cherrypicks = self.detect_cherrypicks and not limit_commits
-    if detect_cherrypicks and not last_affected_commits:
-      # Check all branches for cherry picked regress/fix commits (sorted for
+
+    # If `last_affected` is provided at all, we can't detect cherrypicks, as
+    # cherry-pick detection does not make sense when it comes to the
+    # `last_affected` commit.
+    # Similarly, when there are `limit` commits, we don't do cherry pick
+    # detection because it implies limiting to specific branches.
+    detect_cherrypicks = (
+        self.detect_cherrypicks and not limit_commits and
+        not last_affected_commits)
+
+    # detect_cherrypicks implies consider_all_branches because it needs to
+    # consider all branches to work.
+    consider_all_branches = self.consider_all_branches or detect_cherrypicks
+
+    if consider_all_branches:
+      # Check all branches for cherrypicked regress/fix commits (sorted for
       # determinism).
-      # If `last_affected` is provided at all, we can't do this, as we
-      # cherry-pick detection does not make sense when it comes to
-      # the `last_affected` commit.
       branches = sorted(repo.branches.remote)
     else:
       if limit_commits:
@@ -190,8 +216,23 @@ class RepoAnalyzer:
         for regress_commit in regress_commits:
           branches.extend(_branches_with_commit(repo, regress_commit))
 
+    # Optimization: pre-compute branches with specified commits in them if
+    # we're not doing cherrypick detection.
+    branches_with_commits = {}
+    if consider_all_branches and not detect_cherrypicks:
+      if fix_commits:
+        for fix_commit in fix_commits:
+          branches_with_commits[fix_commit] = _branches_with_commit(
+              repo, fix_commit)
+
+      if regress_commits:
+        for regress_commit in regress_commits:
+          branches_with_commits[regress_commit] = _branches_with_commit(
+              repo, regress_commit)
+
+    seen_unbounded = set()
     for branch in branches:
-      ref = 'refs/remotes/' + branch
+      ref = BRANCH_PREFIX + branch
 
       # Get the earliest equivalent commit in the regression range.
       equivalent_regress_commit = None
@@ -199,7 +240,11 @@ class RepoAnalyzer:
         logging.info('Finding equivalent regress commit to %s in %s in %s',
                      regress_commit, ref, repo_url)
         equivalent_regress_commit = self._get_equivalent_commit(
-            repo, ref, regress_commit, detect_cherrypicks=detect_cherrypicks)
+            repo,
+            ref,
+            regress_commit,
+            detect_cherrypicks=detect_cherrypicks,
+            branches_with_commits=branches_with_commits)
         if equivalent_regress_commit:
           break
 
@@ -213,7 +258,11 @@ class RepoAnalyzer:
         logging.info('Finding equivalent fix commit to %s in %s in %s',
                      fix_commit, ref, str(repo_url or 'UNKNOWN_REPO_URL'))
         equivalent_fix_commit = self._get_equivalent_commit(
-            repo, ref, fix_commit, detect_cherrypicks=detect_cherrypicks)
+            repo,
+            ref,
+            fix_commit,
+            detect_cherrypicks=detect_cherrypicks,
+            branches_with_commits=branches_with_commits)
         if equivalent_fix_commit:
           break
 
@@ -261,7 +310,8 @@ class RepoAnalyzer:
           commits_to_tags=commits_to_tags,
           include_start=True,
           include_end=include_end,
-          limit_commit=branch_to_limit.get(branch))
+          limit_commit=branch_to_limit.get(branch),
+          seen_unbounded=seen_unbounded)
       commits.update(cur_commits)
       tags.update(cur_tags)
 
@@ -271,10 +321,21 @@ class RepoAnalyzer:
                              repo,
                              to_search,
                              target_commit,
-                             detect_cherrypicks=True):
+                             detect_cherrypicks=True,
+                             branches_with_commits=None):
     """Find an equivalent commit at to_search, or None. The equivalent commit
     can be equal to target_commit."""
     if not target_commit:
+      return None
+
+    # Optimization: If we're not detecting cherrypicks, then we don't need to
+    # walk the entire history and we can just look up if a branch contains a
+    # commit based on a precomputed dictionary.
+    if not detect_cherrypicks and branches_with_commits:
+      if (to_search.removeprefix(BRANCH_PREFIX)
+          in branches_with_commits.get(target_commit, [])):
+        return target_commit
+
       return None
 
     try:
@@ -283,11 +344,14 @@ class RepoAnalyzer:
       # Invalid commit.
       return None
 
-    try:
-      target_patch_id = repo.diff(target.parents[0], target).patchid
-    except IndexError:
-      # Orphaned target_commit.
-      return None
+    if detect_cherrypicks:
+      try:
+        target_patch_id = repo.diff(target.parents[0], target).patchid
+      except IndexError:
+        # Orphaned target_commit.
+        return None
+    else:
+      target_patch_id = None
 
     search = repo.revparse_single(to_search)
     try:
@@ -340,7 +404,8 @@ def get_commit_and_tag_list(repo,
                             commits_to_tags=None,
                             include_start=False,
                             include_end=True,
-                            limit_commit=None):
+                            limit_commit=None,
+                            seen_unbounded: Optional[set[str]] = None):
   """Given a commit range, return the list of commits and tags in the range."""
   if limit_commit:
     if str(repo.merge_base(end_commit, limit_commit)) == limit_commit:
@@ -369,6 +434,13 @@ def get_commit_and_tag_list(repo,
   tags = []
 
   def process_commit(commit):
+    # Optimisation: If we've walked through a commit before and it wasn't bound
+    # to a start commit (i.e. affected from the very beginning of time), then
+    # record that so we don't have to repeatedly walk through this commit in
+    # other branches.
+    if not start_commit and seen_unbounded is not None:
+      seen_unbounded.add(commit)
+
     commits.append(commit)
     if not commits_to_tags:
       return
@@ -378,6 +450,13 @@ def get_commit_and_tag_list(repo,
   for commit in walker:
     if not include_end and str(commit.id) == end_commit:
       continue
+
+    # Another walker has encountered this commit already, and it was unbounded
+    # so we don't need to walk through this again.
+    if seen_unbounded and str(commit.id) in seen_unbounded:
+      walker.hide(commit.id)
+      for parent in commit.parents:
+        walker.hide(parent.id)
 
     process_commit(str(commit.id))
 
@@ -613,7 +692,8 @@ def analyze(vulnerability: vulnerability_pb2.Vulnerability,
             analyze_git: bool = True,
             checkout_path: str = None,
             detect_cherrypicks: bool = True,
-            versions_from_repo: bool = True) -> AnalyzeResult:
+            versions_from_repo: bool = True,
+            consider_all_branches: bool = False) -> AnalyzeResult:
   """Analyze and possibly update a vulnerability based on its input ranges.
 
   The behaviour varies by the vulnerability's affected field.
@@ -674,7 +754,9 @@ def analyze(vulnerability: vulnerability_pb2.Vulnerability,
       # Analyze git ranges.
       if (analyze_git and
           affected_range.type == vulnerability_pb2.Range.Type.GIT):
-        repo_analyzer = RepoAnalyzer(detect_cherrypicks=detect_cherrypicks)
+        repo_analyzer = RepoAnalyzer(
+            detect_cherrypicks=detect_cherrypicks,
+            consider_all_branches=consider_all_branches)
         try:
           _analyze_git_ranges(repo_analyzer, checkout_path, affected_range,
                               new_git_versions, commits, new_introduced,

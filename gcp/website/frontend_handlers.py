@@ -879,6 +879,11 @@ def get_upstreams_of_vulnerability(target_bug_id: str) -> str:
 
   upstream_hierarchy = _compute_upstream_hierarchy(bug_group, bugs_group_dict)
   reversed_graph = reverse_tree(upstream_hierarchy)
+  if has_cycle(reversed_graph):
+    logging.error("Cycle detected in upstream hierarchy for %s", target_bug_id)
+
+    return None
+
   all_children = set()
   for children in upstream_hierarchy.values():
     all_children.update(children)
@@ -892,7 +897,7 @@ def get_upstreams_of_vulnerability(target_bug_id: str) -> str:
 
 def _compute_upstream_hierarchy(
     target_bug_group: osv.UpstreamGroup,
-    bug_groups: dict[str, list[str]]) -> dict[str, list[str]]:
+    bug_groups: dict[str, list[str]]) -> dict[str, set[str]]:
   """Computes all upstream vulnerabilities for the given bug ID.
   The returned list contains all of the bug IDs that are upstream of the
   target bug ID, including transitive upstreams in a map hierarchy.
@@ -1001,3 +1006,50 @@ def reverse_tree(graph: dict[str, set[str]]) -> dict[str, set[str]]:
       reversed_graph[child].add(node)
 
   return reversed_graph
+
+
+def has_cycle(graph: dict[str, set[str]]) -> bool:
+  """
+    Determines whether there are any cycles in a directed graph represented
+    as an adjacency list.
+
+    Args:
+        graph: A dictionary representing the graph, where keys are nodes and
+        values are sets of their neighbors.
+
+    Returns:
+        True if the graph contains a cycle, False otherwise.
+    """
+
+  visited = set()
+  recursion_stack = set()
+
+  def dfs(node: str) -> bool:
+    """
+        Performs Depth-First Search to detect cycles.
+
+        Args:
+            node: The current node being visited.
+
+        Returns:
+            True if a cycle is detected, False otherwise.
+        """
+    visited.add(node)
+    recursion_stack.add(node)
+
+    for neighbor in graph.get(node, set()):
+      if neighbor in recursion_stack:
+        return True  # Cycle detected
+      if neighbor not in visited:
+        if dfs(neighbor):
+          return True
+
+    recursion_stack.remove(node)
+    return False
+
+  for node in graph:
+    if node not in visited:
+      if dfs(node):
+        return True
+
+  return False

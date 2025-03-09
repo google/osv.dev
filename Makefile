@@ -52,11 +52,10 @@ run-website-staging:
 	cd gcp/website/blog && hugo --buildFuture -d ../dist/static/blog
 	cd gcp/website && $(install-cmd) && GOOGLE_CLOUD_PROJECT=oss-vdb-test $(run-cmd) python main.py
 
-
 run-website-emulator:
 	cd gcp/website/frontend3 && npm install && npm run build
 	cd gcp/website/blog && hugo --buildFuture -d ../dist/static/blog
-	cd gcp/website && $(install-cmd) && GOOGLE_CLOUD_PROJECT=test-osv DATASTORE_EMULATOR_PORT=5002 $(run-cmd) python frontend_emulator.py
+	cd gcp/website && $(install-cmd) && DATASTORE_EMULATOR_PORT=5002 $(run-cmd) python frontend_emulator.py
 
 # Run with `make run-api-server ARGS=--no-backend` to launch esp without backend.
 run-api-server:

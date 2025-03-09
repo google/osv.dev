@@ -370,6 +370,6 @@ if __name__ == '__main__':
       context.set_memcache_policy(False)
       context.set_cache_policy(False)
       setUp()
-      main.app.run(host='127.0.0.1', port=8000, debug=False)
+    main.app.run(host='127.0.0.1', port=8000, debug=False)
   finally:
     tests.stop_emulator()

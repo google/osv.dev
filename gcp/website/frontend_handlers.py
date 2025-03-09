@@ -312,7 +312,8 @@ def add_stream_info(bug, response):
   """Add upstream hierarchy information to `response`."""
   # Check whether there are upstreams
   if bug.upstream_raw:
-    upstream_hierarchy_string = get_upstreams_of_vulnerability(bug.db_id)
+    upstream_hierarchy_string = get_upstreams_of_vulnerability(
+        bug.db_id, response['upstream'])
     response['upstream_hierarchy'] = upstream_hierarchy_string
   # Check whether there are downstreams
   downstreams = _get_downstreams_of_bug_query(bug.db_id)
@@ -849,7 +850,8 @@ def construct_hierarchy_string(target_bug_id: str, root_nodes: set[str],
   return final_string
 
 
-def get_upstreams_of_vulnerability(target_bug_id: str) -> str:
+def get_upstreams_of_vulnerability(target_bug_id: str,
+                                   transitive_upstreams: list[str]) -> str:
   """Gets the upstream hierarchy of a vulnerability.
 
   Args:
@@ -860,13 +862,13 @@ def get_upstreams_of_vulnerability(target_bug_id: str) -> str:
     the frontend.
   """
 
-  bug_group = osv.UpstreamGroup.query(
-      osv.UpstreamGroup.db_id == target_bug_id).get()
-  if bug_group is None or bug_group.upstream_ids is None:
-    return None
-  bugs_group_dict = {b_id: [] for b_id in bug_group.upstream_ids}
+  # bug_group = osv.UpstreamGroup.query(
+  #     osv.UpstreamGroup.db_id == target_bug_id).get()
+  # if bug_group is None or bug_group.upstream_ids is None:
+  #   return None
+  bugs_group_dict = {b_id: [] for b_id in transitive_upstreams}
   bug_groups_keys = [
-      ndb.Key(osv.UpstreamGroup, id) for id in bug_group.upstream_ids
+      ndb.Key(osv.UpstreamGroup, id) for id in transitive_upstreams
   ]
   bug_groups_upstream = ndb.get_multi(bug_groups_keys)
   if bug_groups_upstream is None:
@@ -875,9 +877,10 @@ def get_upstreams_of_vulnerability(target_bug_id: str) -> str:
     if bug is not None:
       bugs_group_dict[bug.db_id] = bug.upstream_ids
 
-  bugs_group_dict[target_bug_id] = bug_group.upstream_ids
+  bugs_group_dict[target_bug_id] = transitive_upstreams
 
-  upstream_hierarchy = _compute_upstream_hierarchy(bug_group, bugs_group_dict)
+  upstream_hierarchy = _compute_upstream_hierarchy(target_bug_id,
+                                                   bugs_group_dict)
   reversed_graph = reverse_tree(upstream_hierarchy)
   if has_cycle(reversed_graph):
     logging.error("Cycle detected in upstream hierarchy for %s", target_bug_id)
@@ -896,8 +899,8 @@ def get_upstreams_of_vulnerability(target_bug_id: str) -> str:
 
 
 def _compute_upstream_hierarchy(
-    target_bug_group: osv.UpstreamGroup,
-    bug_groups: dict[str, list[str]]) -> dict[str, set[str]]:
+    target_bug_id: str, bug_groups: dict[str,
+                                         list[str]]) -> dict[str, set[str]]:
   """Computes all upstream vulnerabilities for the given bug ID.
   The returned list contains all of the bug IDs that are upstream of the
   target bug ID, including transitive upstreams in a map hierarchy.
@@ -908,7 +911,7 @@ def _compute_upstream_hierarchy(
   """
   visited = set()
   upstream_map = {}
-  to_visit = set([target_bug_group.db_id])
+  to_visit = set([target_bug_id])
   while to_visit:
     bug_id = to_visit.pop()
     if bug_id in visited:
@@ -928,10 +931,9 @@ def _compute_upstream_hierarchy(
       upstream_map[bug_id] = upstreams
       to_visit.update(upstreams - visited)
   for k, v in upstream_map.items():
-    if k is target_bug_group.db_id:
+    if k is target_bug_id:
       continue
-    upstream_map[
-        target_bug_group.db_id] = upstream_map[target_bug_group.db_id] - v
+    upstream_map[target_bug_id] = upstream_map[target_bug_id] - v
   return upstream_map
 
 

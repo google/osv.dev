@@ -862,10 +862,6 @@ def get_upstreams_of_vulnerability(target_bug_id: str,
     the frontend.
   """
 
-  # bug_group = osv.UpstreamGroup.query(
-  #     osv.UpstreamGroup.db_id == target_bug_id).get()
-  # if bug_group is None or bug_group.upstream_ids is None:
-  #   return None
   bugs_group_dict = {b_id: [] for b_id in transitive_upstreams}
   bug_groups_keys = [
       ndb.Key(osv.UpstreamGroup, id) for id in transitive_upstreams

@@ -311,7 +311,7 @@ def bug_to_response(bug, detailed=True):
 def add_stream_info(bug, response):
   """Add upstream hierarchy information to `response`."""
   # Check whether there are upstreams
-  if bug.upstream_raw:
+  if bug.upstream_raw and 'upstream' in response:
     upstream_hierarchy_string = get_upstreams_of_vulnerability(
         bug.db_id, response['upstream'])
     response['upstream_hierarchy'] = upstream_hierarchy_string

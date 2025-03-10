@@ -326,6 +326,11 @@ func TestValidRepo(t *testing.T) {
 			repoURL:        "https://github.com/shaturo1337/POCs",
 			expectedResult: false,
 		},
+		{
+			description:    "Unusable repo (without remapping) that seems to be slipping past",
+			repoURL:        "https://git.musl-libc.org/cgit/musl",
+			expectedResult: false,
+		},
 	}
 	for _, tc := range tests {
 		// This tests against Internet hosts and may have intermittent failures.

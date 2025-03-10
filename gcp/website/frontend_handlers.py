@@ -837,7 +837,7 @@ def construct_hierarchy_string(target_bug_id: str, root_nodes: set[str],
     if vuln_id in graph:
       for child in graph[vuln_id]:
         if child != target_bug_id:
-          output_lines.append("<ul>")
+          output_lines.append("<ul class=\"substream\">")
           print_subtree(child)
           output_lines.append("</ul>")
 

@@ -498,16 +498,15 @@ func TestExtractGitCommit(t *testing.T) {
 			inputCommitType: Fixed,
 			expectFailure:   true,
 		},
-		// Skips this test as "https://gitlab.freedesktop.org" is currently under maintenance.
-		// {
-		// 	description:     "Valid GitLab commit URL",
-		// 	inputLink:       "https://gitlab.freedesktop.org/virgl/virglrenderer/-/commit/b05bb61f454eeb8a85164c8a31510aeb9d79129c",
-		// 	inputCommitType: Fixed,
-		// 	expectedAffectedCommit: AffectedCommit{
-		// 		Repo:  "https://gitlab.freedesktop.org/virgl/virglrenderer",
-		// 		Fixed: "b05bb61f454eeb8a85164c8a31510aeb9d79129c",
-		// 	},
-		// },
+		{
+			description:     "Valid GitLab commit URL",
+			inputLink:       "https://gitlab.freedesktop.org/virgl/virglrenderer/-/commit/b05bb61f454eeb8a85164c8a31510aeb9d79129c",
+			inputCommitType: Fixed,
+			expectedAffectedCommit: AffectedCommit{
+				Repo:  "https://gitlab.freedesktop.org/virgl/virglrenderer",
+				Fixed: "b05bb61f454eeb8a85164c8a31510aeb9d79129c",
+			},
+		},
 		{
 			description:     "Valid GitLab commit URL with .patch extension",
 			inputLink:       "https://gitlab.com/muttmua/mutt/-/commit/452ee330e094bfc7c9a68555e5152b1826534555.patch",
@@ -893,17 +892,16 @@ func TestExtractVersionInfo(t *testing.T) {
 			},
 			expectedNotes: []string{},
 		},
-		// Skips this test as "https://gitlab.freedesktop.org" is currently under maintenance.
-		// {
-		// 	description:        "A CVE with a weird GitLab reference that breaks version enumeration in the worker",
-		// 	inputCVEItem:       loadTestData2("CVE-2022-46285"),
-		// 	inputValidVersions: []string{},
-		// 	expectedVersionInfo: VersionInfo{
-		// 		AffectedCommits:  []AffectedCommit{{Repo: "https://gitlab.freedesktop.org/xorg/lib/libxpm", Fixed: "a3a7c6dcc3b629d7650148"}},
-		// 		AffectedVersions: []AffectedVersion{{Fixed: "3.5.15"}},
-		// 	},
-		// 	expectedNotes: []string{},
-		// },
+		{
+			description:        "A CVE with a weird GitLab reference that breaks version enumeration in the worker",
+			inputCVEItem:       loadTestData2("CVE-2022-46285"),
+			inputValidVersions: []string{},
+			expectedVersionInfo: VersionInfo{
+				AffectedCommits:  []AffectedCommit{{Repo: "https://gitlab.freedesktop.org/xorg/lib/libxpm", Fixed: "a3a7c6dcc3b629d7650148"}},
+				AffectedVersions: []AffectedVersion{{Fixed: "3.5.15"}},
+			},
+			expectedNotes: []string{},
+		},
 		{
 			description:  "A CVE with a different GitWeb reference URL that was not previously being extracted successfully",
 			inputCVEItem: loadTestData2("CVE-2021-28429"),

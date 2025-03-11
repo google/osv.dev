@@ -55,6 +55,7 @@ _VALID_VULN_ID = _WORD_CHARACTERS_OR_DASH_OR_COLON
 _BLOG_CONTENTS_DIR = 'blog'
 _DEPS_BASE_URL = 'https://deps.dev'
 _FIRST_CVSS_CALCULATOR_BASE_URL = 'https://www.first.org/cvss/calculator'
+_ndb_client = ndb.Client()
 
 
 class VulnerabilityNotFound(exceptions.NotFound):
@@ -303,8 +304,9 @@ def bug_to_response(bug, detailed=True):
   if detailed:
     add_links(response)
     add_source_info(bug, response)
-    add_stream_info(bug, response)
-
+    # TODO(jesslowe): remove once speed verified in staging
+    if getattr(_ndb_client, 'project', 'oss-vdb-test') == 'oss-vdb-test':
+      add_stream_info(bug, response)
   return response
 
 
@@ -467,7 +469,7 @@ def osv_get_ecosystem_counts_cached():
   if ndb.get_context(raise_context_error=False) is None:
     # IMPORTANT: Ensure this ndb.Client remains consistent
     # with the one defined in main.py
-    with ndb.Client().context():
+    with _ndb_client.context():
       return osv_get_ecosystem_counts()
 
   return osv_get_ecosystem_counts()

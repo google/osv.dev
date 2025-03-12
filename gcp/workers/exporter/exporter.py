@@ -46,9 +46,9 @@ def modify_storage_client_adapters(storage_client: storage.Client,
                                    pool_connections: int = 128,
                                    max_retries: int = 3,
                                    pool_block: bool = True) -> storage.Client:
-  """In-place modifies the adapters of a google.cloud.storage.Client object.
+  """Returns a modified google.cloud.storage.Client object.
 
-  Due to the concurrent GCS connections, the default connection pool can become
+  Due to many concurrent GCS connections, the default connection pool can become
   overwhelmed, introducing delays.
 
   Solution described in https://github.com/googleapis/python-storage/issues/253

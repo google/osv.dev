@@ -630,6 +630,7 @@ def sort_versions(versions: list[str], ecosystem: str) -> list[str]:
 # with     <a href="https://chromium.googlesource.com/v8/v8.git/+/refs/heads/beta">
 _URL_MARKDOWN_REPLACER = re.compile(r'(<a href=\".*?)(/ /)(.*?\">)')
 
+
 @blueprint.app_template_filter('markdown')
 def markdown(text):
   """Render markdown."""
@@ -642,7 +643,7 @@ def markdown(text):
     # For now, manually replace any leftover comments with the escaped form
     md = md.replace('<!--', '&lt;!--')
 
-    # TODO(rexpan): There is a bug with the markdown2 escaping + as space rather than %2B 
+    # TODO(rexpan): There is a bug with the markdown2 escaping + as space rather than %2B
     # See: https://github.com/trentm/python-markdown2/issues/621
     md = _URL_MARKDOWN_REPLACER.sub(r'\1/+/\3', md)
 

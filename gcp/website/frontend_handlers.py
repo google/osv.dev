@@ -628,7 +628,7 @@ def sort_versions(versions: list[str], ecosystem: str) -> list[str]:
 # Temporary until markdown2 fixes url sanitisation.
 # Replaces <a href="https://chromium.googlesource.com/v8/v8.git/ /refs/heads/beta">
 # with     <a href="https://chromium.googlesource.com/v8/v8.git/+/refs/heads/beta">
-_URL_MARKDOWN_REPLACER = re.compile(r'<a href=\".*?(/ /).*?\">')
+_URL_MARKDOWN_REPLACER = re.compile(r'(<a href=\".*?)(/ /)(.*?\">)')
 
 @blueprint.app_template_filter('markdown')
 def markdown(text):
@@ -644,7 +644,7 @@ def markdown(text):
 
     # TODO(rexpan): There is a bug with the markdown2 escaping + as space rather than %2B 
     # See: https://github.com/trentm/python-markdown2/issues/621
-    md = _URL_MARKDOWN_REPLACER.sub('/+/', md)
+    md = _URL_MARKDOWN_REPLACER.sub(r'\1/+/\3', md)
 
     return md
 

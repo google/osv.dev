@@ -489,6 +489,7 @@ class TaskRunner:
   def _do_update(self, source_repo, repo, vulnerability, relative_path,
                  original_sha256):
     """Process updates on a vulnerability."""
+    _state.bug_id = vulnerability.id
     logging.info('Processing update for vulnerability %s', vulnerability.id)
     vulnerability = maybe_normalize_package_names(vulnerability)
     if source_repo.name == 'ghsa' and not fix_invalid_ghsa(vulnerability):

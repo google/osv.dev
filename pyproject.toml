@@ -19,7 +19,7 @@ dependencies = [
     "attrs>=23.2", 
     "jsonschema>=4.0", 
     "grpcio>=1.0", 
-    "packaging<22.0",
+    "packaging-legacy>=23.0.post0",
     "requests>=2.32", 
 ]
 

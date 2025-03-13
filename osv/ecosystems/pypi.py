@@ -13,7 +13,7 @@
 # limitations under the License.
 """PyPI ecosystem helper."""
 
-import packaging.version
+import packaging_legacy.version
 import requests
 
 from . import config
@@ -28,7 +28,7 @@ class PyPI(Ecosystem):
   def sort_key(self, version):
     """Sort key."""
     # version.parse() handles invalid versions by returning LegacyVersion()
-    return packaging.version.parse(version)
+    return packaging_legacy.version.parse(version)
 
   def enumerate_versions(self,
                          package,

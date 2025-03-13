@@ -446,6 +446,18 @@ func TestRepo(t *testing.T) {
 			expectedRepoURL: "https://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git",
 			expectedOk:      true,
 		},
+		{
+			description:     "musl-libc repo that requires remapping",
+			inputLink:       "https://git.musl-libc.org/cgit/musl/commit/?id=c47ad25ea3b484e10326f933e927c0bc8cded3da",
+			expectedRepoURL: "https://git.musl-libc.org/git/musl",
+			expectedOk:      true,
+		},
+		{
+			description:     "Savannah repo that requires remapping",
+			inputLink:       "https://git.savannah.gnu.org/cgit/wget.git/commit/?id=c419542d956a2607bbce5df64b9d378a8588d778",
+			expectedRepoURL: "https://git.savannah.gnu.org/git/wget.git",
+			expectedOk:      true,
+		},
 	}
 
 	for _, tc := range tests {

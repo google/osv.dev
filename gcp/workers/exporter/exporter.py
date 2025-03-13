@@ -25,6 +25,8 @@ from google.cloud import storage
 from google.cloud.storage import retry
 from google.cloud.storage.bucket import Bucket
 
+import requests
+
 import osv
 import osv.logs
 
@@ -38,6 +40,40 @@ ECOSYSTEMS_FILE = 'ecosystems.txt'
 
 class Error(Exception):
   """Base exception class."""
+
+
+def modify_storage_client_adapters(storage_client: storage.Client,
+                                   pool_connections: int = 128,
+                                   max_retries: int = 3,
+                                   pool_block: bool = True) -> storage.Client:
+  """Returns a modified google.cloud.storage.Client object.
+
+  Due to many concurrent GCS connections, the default connection pool can become
+  overwhelmed, introducing delays.
+
+  Solution described in https://github.com/googleapis/python-storage/issues/253
+
+  These affect the urllib3.HTTPConnectionPool underpinning the storage.Client's
+  HTTP requests.
+
+  Args:
+    storage_client: an existing google.cloud.storage.Client object
+    pool_connections: number of pool_connections desired
+    max_retries: maximum retries
+    pool_block: blocking behaviour when pool is exhausted
+
+  Returns:
+    the google.cloud.storage.Client appropriately modified.
+
+  """
+  adapter = requests.adapters.HTTPAdapter(
+      pool_connections=pool_connections,
+      max_retries=max_retries,
+      pool_block=pool_block)
+  # pylint: disable=protected-access
+  storage_client._http.mount('https://', adapter)
+  storage_client._http._auth_request.session.mount('https://', adapter)
+  return storage_client
 
 
 class Exporter:
@@ -98,6 +134,7 @@ class Exporter:
     """
     logging.info('Exporting vulnerabilities for ecosystem %s', ecosystem)
     storage_client = storage.Client()
+    storage_client = modify_storage_client_adapters(storage_client)
     bucket = storage_client.get_bucket(self._export_bucket)
 
     ecosystem_dir = os.path.join(work_dir, ecosystem)
@@ -178,11 +215,12 @@ def safe_upload_single(bucket: Bucket,
   logging.info('Uploading %s', target_path)
   try:
     blob = bucket.get_blob(target_path)
-    if blob.size and (source_size / blob.size) * 100 < safe_delta_pct:
+    if blob and blob.size and (source_size / blob.size) * 100 < safe_delta_pct:
       raise (Error(
           f'Cowardly refusing to overwrite {blob.name} ({blob.size} bytes) '
           f'with {source_path} ({source_size} bytes)'))
-    blob.upload_from_filename(source_path, retry=retry.DEFAULT_RETRY)
+    if blob:
+      blob.upload_from_filename(source_path, retry=retry.DEFAULT_RETRY)
   except Exception as e:
     logging.exception('Failed to export: %s', e)
 

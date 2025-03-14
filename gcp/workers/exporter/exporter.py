@@ -133,8 +133,7 @@ class Exporter:
     (including the zip file) are uploaded to the GCS bucket.
     """
     logging.info('Exporting vulnerabilities for ecosystem %s', ecosystem)
-    storage_client = storage.Client()
-    storage_client = modify_storage_client_adapters(storage_client)
+    storage_client = modify_storage_client_adapters(storage.Client())
     bucket = storage_client.get_bucket(self._export_bucket)
 
     ecosystem_dir = os.path.join(work_dir, ecosystem)

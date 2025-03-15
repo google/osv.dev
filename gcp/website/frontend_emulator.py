@@ -324,6 +324,7 @@ def setUp():
       public=True,
       last_modified=datetime.datetime(2025, 2, 4),
       source="test",
+      status=1,
       timestamp=datetime.datetime(2023, 8, 14)).put()
   osv.Bug(
       id="CYCLE-ROOT-2",
@@ -332,12 +333,14 @@ def setUp():
       public=True,
       last_modified=datetime.datetime(2025, 2, 4),
       source="test",
+      status=1,
       timestamp=datetime.datetime(2023, 8, 14)).put()
   osv.Bug(
       id="CYCLE-ROOT-3",
       db_id="CYCLE-ROOT-3",
       upstream_raw=['CYCLE-ROOT-1', 'CYCLE-ROOT-2'],
       public=True,
+      status=1,
       last_modified=datetime.datetime(2025, 2, 4),
       source="test",
       timestamp=datetime.datetime(2023, 8, 14)).put()

@@ -55,7 +55,7 @@
   ignore_git: True
   link: 'https://storage.googleapis.com/android-osv/'
   editable: False
-  strict_validation: False
+  strict_validation: True
 
 - name: 'bitnami'
   versions_from_repo: False
@@ -189,7 +189,7 @@
   human_link: 'https://pkg.go.dev/vuln/{{ BUG_ID }}'
   link: 'https://vuln.go.dev/'
   editable: False
-  strict_validation: False
+  strict_validation: True
 
 - name: 'haskell'
   versions_from_repo: False
@@ -233,7 +233,7 @@
   ignore_git: False
   link: 'https://github.com/ossf/malicious-packages/blob/main/'
   editable: False
-  strict_validation: False
+  strict_validation: True
 
 - name: 'oss-fuzz'
   versions_from_repo: True

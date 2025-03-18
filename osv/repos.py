@@ -176,7 +176,7 @@ def ensure_updated_checkout(git_url,
       if isinstance(e, subprocess.CalledProcessError):
         # add the git output to the log
         err_str = f'{err_str}\n{e.stderr.decode()}'
-      logging.error('Failed to load existing checkout: %s', err_str)
+      logging.exception('Failed to load existing checkout: %s', err_str)
       shutil.rmtree(checkout_dir)
 
   repo = clone_with_retries(

@@ -23,7 +23,7 @@ RUN hugo --buildFuture -d ../dist/static/blog
 
 # OSV.dev site image
 # Adapted from https://cloud.google.com/run/docs/quickstarts/build-and-deploy/deploy-python-service#writing
-FROM python:3.11-slim@sha256:ad5dadd957a398226996bc4846e522c39f2a77340b531b28aaab85b2d361210b
+FROM python:3.12.8-slim@sha256:143496c4e492ee45436fb1ac222714990b58a02f2eafe5eb2622b1427a8301c6
 
 # Generation 1 of cloud run overrides the HOME environment variable, causing
 # poetry to run in the incorrect environment, as it defaults to using $HOME/.cache/virtualenvs/...

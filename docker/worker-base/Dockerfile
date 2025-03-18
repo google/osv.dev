@@ -28,7 +28,7 @@ RUN apt-get update && apt-get upgrade -y && \
     libssl-dev \
     software-properties-common
 
-ARG PYTHON_VERSION=3.11.4
+ARG PYTHON_VERSION=3.12.8
 RUN curl -sS https://www.python.org/ftp/python/${PYTHON_VERSION}/Python-${PYTHON_VERSION}.tgz | tar -C /tmp -xzv && \
     cd /tmp/Python-${PYTHON_VERSION} && \
     ./configure --enable-optimizations --with-lto --enable-loadable-sqlite-extensions && \

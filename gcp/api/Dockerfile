@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-FROM python:3.11-slim@sha256:ad5dadd957a398226996bc4846e522c39f2a77340b531b28aaab85b2d361210b
+FROM python:3.12.8-slim@sha256:143496c4e492ee45436fb1ac222714990b58a02f2eafe5eb2622b1427a8301c6
 
 # Install build-essential which is required by Cloud Profiler
 RUN apt-get update && apt-get install -y build-essential

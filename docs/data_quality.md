@@ -58,6 +58,7 @@ The definition of "impact" will vary depending on how fine-grained the informati
 
 * Where relevant, an `alias` to the equivalent CVE record is present
 * Where an OSV record consolidates multiple vulnerabilities in another ecosystem (or universe), multiple `related` identifiers are present
+* Where an OSV record derives from another record, relevant `upstream` identifiers are present.
 
 ## Examples
 
@@ -85,7 +86,7 @@ The definition of "impact" will vary depending on how fine-grained the informati
 
 * **schema\_version:** A string specifying the version of the schema being used.
 * **published/withdrawn:** Timestamps (in RFC3339 format, in UTC, ending in "Z") for when the vulnerability was published or withdrawn.
-* **aliases/related:** Arrays of strings for alternate identifiers or related vulnerabilities.
+* **aliases/related/upstream:** Arrays of strings for alternate identifiers, related or upstream vulnerabilities.
 * **summary/details:** String descriptions of the vulnerability.
 * **severity:** An array of objects detailing the severity using different scoring systems (e.g., CVSS v2, v3, or v4), if available.
 * **affected:** An array of objects describing which packages are affected, including details like:
@@ -102,6 +103,6 @@ The definition of "impact" will vary depending on how fine-grained the informati
 
 * **timestamp:** A custom definition that ensures timestamps adhere to the RFC3339 date-time format (e.g., "2023-11-15T12:34:56Z").
 * **additionalProperties: false:** This prevents any extra properties from being added to the JSON object beyond those defined in the schema.
-* **Specific Requirements in `affected` Array:
+* **Specific Requirements in `affected` Array**:
   * There are conditional validations based on the `type` of range, ensuring the correct properties are present (e.g., `repo` is required when `type` is `GIT`).
   * A logical check ensures that if `last_affected` is specified in `events`, then `fixed` cannot be present in the same `events` array.

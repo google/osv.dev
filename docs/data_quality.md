@@ -58,7 +58,7 @@ The definition of "impact" will vary depending on how fine-grained the informati
 
 * Where relevant, an `alias` to the equivalent CVE record is present
 * Where an OSV record consolidates multiple vulnerabilities in another ecosystem (or universe), multiple `related` identifiers are present
-* Where an OSV record derives from another record, relevant `upstream` identifiers are present.
+* Where an OSV record describes a vulnerability that is "downstream" of one in another ecosystem (or universe), relevant `upstream` identifiers are present.
 
 ## Examples
 

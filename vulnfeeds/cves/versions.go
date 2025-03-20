@@ -383,8 +383,7 @@ func Repo(u string) (string, error) {
 		case "git.kernel.org":
 			repo = strings.Replace(repo, "/cgit", "/pub/scm", 1)
 
-		case "git.savannah.gnu.org":
-		case "git.savannah.nongnu.org":
+		case "git.savannah.gnu.org", "git.savannah.nongnu.org", "git.musl-libc.org":
 			repo = strings.Replace(repo, "/cgit", "/git", 1)
 		}
 

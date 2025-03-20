@@ -14,7 +14,7 @@
 """CRAN helpers."""
 
 import requests
-import packaging.version
+import packaging_legacy.version
 
 from . import config
 from .helper_base import Ecosystem, EnumerateError
@@ -38,7 +38,7 @@ class CRAN(Ecosystem):
     # X.Y-Z cases
     version = version.replace("-", ".")
     # version.parse() handles invalid versions by returning LegacyVersion()
-    return packaging.version.parse(version)
+    return packaging_legacy.version.parse(version)
 
   def _enumerate_versions(self,
                           url,

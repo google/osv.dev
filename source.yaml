@@ -55,7 +55,7 @@
   ignore_git: True
   link: 'https://storage.googleapis.com/android-osv/'
   editable: False
-  strict_validation: False
+  strict_validation: True
 
 - name: 'bitnami'
   versions_from_repo: False
@@ -189,7 +189,7 @@
   human_link: 'https://pkg.go.dev/vuln/{{ BUG_ID }}'
   link: 'https://vuln.go.dev/'
   editable: False
-  strict_validation: False
+  strict_validation: True
 
 - name: 'haskell'
   versions_from_repo: False
@@ -233,7 +233,7 @@
   ignore_git: False
   link: 'https://github.com/ossf/malicious-packages/blob/main/'
   editable: False
-  strict_validation: False
+  strict_validation: True
 
 - name: 'oss-fuzz'
   versions_from_repo: True
@@ -381,6 +381,21 @@
   link: 'https://github.com/canonical/ubuntu-security-notices/blob/main/'
   editable: False
   strict_validation: False
+
+- name: 'ubuntu-lsn'
+  versions_from_repo: False
+  type: 0
+  ignore_patterns: ['^(?!LSN-).*$']
+  directory_path: 'osv'
+  repo_url: 'https://github.com/canonical/ubuntu-security-notices.git'
+  detect_cherrypicks: False
+  extension: '.json'
+  db_prefix: ['LSN-']
+  ignore_git: False
+  human_link: 'https://ubuntu.com/security/notices/{{ BUG_ID }}'
+  link: 'https://github.com/canonical/ubuntu-security-notices/blob/main/'
+  editable: False
+  strict_validation: True
 
 - name: 'ubuntu-usn'
   versions_from_repo: False

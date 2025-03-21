@@ -203,7 +203,7 @@ def main() -> None:
       print(f'Still in flight: {pprint.pformat(inflight, width=1)}')
       source = future_to_source[future]
       if exc := future.exception():
-        print(f"source['name'] raised {exc}")
+        print(f"{source['name']} raised {exc}")
       else:
         print(f"{source['name']} completed")
 

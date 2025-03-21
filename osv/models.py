@@ -952,6 +952,7 @@ class UpstreamGroup(ndb.Model):
   db_id: str = ndb.StringProperty()
   # List of transitive upstreams
   upstream_ids: list[str] = ndb.StringProperty(repeated=True)
+  upstream_hierarchy: str = ndb.JsonProperty()
   # Date when group was last modified
   last_modified: datetime = ndb.DateTimeProperty()
 

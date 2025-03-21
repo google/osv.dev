@@ -103,6 +103,6 @@ The definition of "impact" will vary depending on how fine-grained the informati
 
 * **timestamp:** A custom definition that ensures timestamps adhere to the RFC3339 date-time format (e.g., "2023-11-15T12:34:56Z").
 * **additionalProperties: false:** This prevents any extra properties from being added to the JSON object beyond those defined in the schema.
-* **Specific Requirements in `affected` Array**:
+* **Specific Requirements in `affected` Array:**
   * There are conditional validations based on the `type` of range, ensuring the correct properties are present (e.g., `repo` is required when `type` is `GIT`).
   * A logical check ensures that if `last_affected` is specified in `events`, then `fixed` cannot be present in the same `events` array.

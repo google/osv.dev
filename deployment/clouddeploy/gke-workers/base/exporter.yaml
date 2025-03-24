@@ -32,7 +32,7 @@ spec:
                 cpu: "6"
                 memory: "48G"
               limits:
-                cpu: "6"
+                cpu: "32"
                 memory: "128G"
           restartPolicy: OnFailure
           volumes:

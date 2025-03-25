@@ -42,6 +42,7 @@ def compute_upstream(target_bug, bugs: dict[str, osv.Bug]):
     if bug_id in bugs:
       bug = bugs.get(bug_id)
       upstreams = set(bug.upstream_raw)
+
     to_visit.update(upstreams - visited)
 
   # Returns a sorted list of bug IDs, which ensures deterministic behaviour
@@ -58,6 +59,7 @@ def _create_group(bug_id, upstream_ids):
       upstream_ids=upstream_ids,
       last_modified=datetime.datetime.now())
   new_group.put()
+
   return new_group
 
 
@@ -77,29 +79,33 @@ def _update_group(upstream_group, upstream_ids: list):
   upstream_group.put()
 
 
-def compute_upstream_hierarchy(target_bug: osv.UpstreamGroup,
-                               bug_groups):
+def compute_upstream_hierarchy(target_upstream_group: osv.UpstreamGroup,
+                               all_upstream_groups: ndb.Query):
   """Computes all upstream vulnerabilities for the given bug ID.
   The returned list contains all of the bug IDs that are upstream of the
   target bug ID, including transitive upstreams in a map hierarchy.
-  bug_group:
+  upstream_group:
         { db_id: bug id
           upstream_ids: str[bug_ids]
-          last_modified_date}
+          last_modified_date: date
+          upstream_hierarchy: JSON str
+          }
   """
   visited = set()
   upstream_map = {}
-  to_visit = set([target_bug.db_id])
+  to_visit = set([target_upstream_group.db_id])
+
   while to_visit:
     bug_id = to_visit.pop()
     if bug_id in visited:
       continue
     visited.add(bug_id)
-    bug = bug_groups.filter(osv.UpstreamGroup.db_id == bug_id).get()
-    if bug is None:
+    upstream_group = all_upstream_groups.filter(
+        osv.UpstreamGroup.db_id == bug_id).get()
+    if upstream_group is None:
       continue
 
-    upstreams = set(bug.upstream_ids)
+    upstreams = set(upstream_group.upstream_ids)
     if not upstreams:
       continue
     for upstream in upstreams:
@@ -112,17 +118,22 @@ def compute_upstream_hierarchy(target_bug: osv.UpstreamGroup,
           upstream_map[bug_id].add(upstream)
       upstream_map[bug_id] = upstreams
       to_visit.update(upstreams - visited)
+
   for k, v in upstream_map.items():
-    if k is target_bug.db_id:
+    if k is target_upstream_group.db_id:
       continue
-    upstream_map[target_bug.db_id] = upstream_map[target_bug.db_id] - v
-  if target_bug.upstream_hierarchy == upstream_map:
+    upstream_map[target_upstream_group
+                 .db_id] = upstream_map[target_upstream_group.db_id] - v
+
+  if target_upstream_group.upstream_hierarchy == upstream_map:
     return
+
   if upstream_map:
-    target_bug.upstream_hierarchy = json.dumps(
+    target_upstream_group.upstream_hierarchy = json.dumps(
         upstream_map, default=set_default)
-    target_bug.last_modified = datetime.datetime.now()
-    target_bug.put()
+    target_upstream_group.last_modified = datetime.datetime.now()
+    target_upstream_group.put()
+
 
 def set_default(obj):
   if isinstance(obj, set):
@@ -141,30 +152,28 @@ def main():
   bugs = osv.Bug.query(
       ndb.OR(osv.Bug.upstream_raw > '', osv.Bug.upstream_raw < ''))
   bugs = {bug.db_id: bug for bug in bugs.iter()}
-  all_upstream_group = osv.UpstreamGroup.query()
+  all_upstream_groups = osv.UpstreamGroup.query()
 
   for bug_id, bug in bugs.items():
     # Check if the db key is also a db_id in all_upstream_group
-    bug_group = all_upstream_group.filter(
+    upstream_group = all_upstream_groups.filter(
         osv.UpstreamGroup.db_id == bug_id).get()
     # Recompute the transitive upstreams and compare with the existing group
     upstream_ids = compute_upstream(bug, bugs)
-    if bug_group:
-      if upstream_ids == bug_group.upstream_ids:
+    if upstream_group:
+      if upstream_ids == upstream_group.upstream_ids:
         continue
       # Update the existing UpstreamGroup
-      _update_group(bug_group, upstream_ids)
-      updated_bugs.append(bug_group)
+      _update_group(upstream_group, upstream_ids)
+      updated_bugs.append(upstream_group)
     else:
       # Create a new UpstreamGroup
-      new_bug_group = _create_group(bug_id, upstream_ids)
-      updated_bugs.append(new_bug_group)
-
+      new_upstream_group = _create_group(bug_id, upstream_ids)
+      updated_bugs.append(new_upstream_group)
 
   for group in updated_bugs:
-    print("Updating " + group.db_id)
     # Recompute the upstream hierarchies
-    compute_upstream_hierarchy(group, all_upstream_group)
+    compute_upstream_hierarchy(group, all_upstream_groups)
 
 
 if __name__ == '__main__':

@@ -882,7 +882,7 @@ def reverse_tree(graph: dict[str, set[str]]) -> dict[str, set[str]]:
   return reversed_graph
 
 
-def get_upstreams_of_vulnerability(bug) -> str:
+def get_upstreams_of_vulnerability(bug) -> str | None:
   """Gets the upstream hierarchy of a vulnerability.
 
   Args:

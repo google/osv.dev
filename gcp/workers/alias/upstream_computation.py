@@ -23,7 +23,7 @@ import json
 import logging
 
 
-def compute_upstream(target_bug, bugs: dict[str, osv.Bug]):
+def compute_upstream(target_bug, bugs: dict[str, osv.Bug]) -> list[str]:
   """Computes all upstream vulnerabilities for the given bug ID.
   The returned list contains all of the bug IDs that are upstream of the
   target bug ID, including transitive upstreams."""
@@ -50,7 +50,7 @@ def compute_upstream(target_bug, bugs: dict[str, osv.Bug]):
   return sorted(visited)
 
 
-def _create_group(bug_id, upstream_ids):
+def _create_group(bug_id, upstream_ids) -> osv.UpstreamGroup:
   """Creates a new upstream group in the datastore."""
 
   new_group = osv.UpstreamGroup(
@@ -63,7 +63,8 @@ def _create_group(bug_id, upstream_ids):
   return new_group
 
 
-def _update_group(upstream_group, upstream_ids: list):
+def _update_group(upstream_group: osv.UpstreamGroup,
+                  upstream_ids: list) -> None:
   """Updates the upstream group in the datastore."""
   if len(upstream_ids) == 0:
     logging.info('Deleting upstream group due to too few bugs: %s',
@@ -80,21 +81,29 @@ def _update_group(upstream_group, upstream_ids: list):
 
 
 def compute_upstream_hierarchy(target_upstream_group: osv.UpstreamGroup,
-                               all_upstream_groups: ndb.Query):
+                               all_upstream_groups: ndb.Query) -> None:
   """Computes all upstream vulnerabilities for the given bug ID.
   The returned list contains all of the bug IDs that are upstream of the
   target bug ID, including transitive upstreams in a map hierarchy.
   upstream_group:
         { db_id: bug id
-          upstream_ids: str[bug_ids]
+          upstream_ids: list of upstream bug ids
           last_modified_date: date
-          upstream_hierarchy: JSON str
-          }
+          upstream_hierarchy: JSON string of upstream hierarchy
+        }
   """
+
+  # To convert to json, sets need to be converted to lists
+  # and sorting is done for a more consistent outcome.
+  def set_default(obj):
+    if isinstance(obj, set):
+      return list(sorted(obj))
+    raise TypeError
+
   visited = set()
   upstream_map = {}
   to_visit = set([target_upstream_group.db_id])
-
+  # BFS navigation through the upstream hierarchy of a given upstream group
   while to_visit:
     bug_id = to_visit.pop()
     if bug_id in visited:
@@ -116,29 +125,24 @@ def compute_upstream_hierarchy(target_upstream_group: osv.UpstreamGroup,
           upstream_map[bug_id] = set([upstream])
         else:
           upstream_map[bug_id].add(upstream)
+    # Add the immediate upstreams of the bug to the dict
     upstream_map[bug_id] = upstreams
     to_visit.update(upstreams - visited)
 
+  # Ensure there are no duplicate entries where transitive vulns appear
   for k, v in upstream_map.items():
     if k is target_upstream_group.db_id:
       continue
     upstream_map[target_upstream_group
                  .db_id] = upstream_map[target_upstream_group.db_id] - v
 
-  if target_upstream_group.upstream_hierarchy == upstream_map:
-    return
-
+  # Update the datastore entry if hierarchy has changed
   if upstream_map:
-    target_upstream_group.upstream_hierarchy = json.dumps(
-        upstream_map, default=set_default)
-    target_upstream_group.last_modified = datetime.datetime.now()
+    upstream_json = json.dumps(upstream_map, default=set_default)
+    if upstream_json == target_upstream_group.upstream_hierarchy:
+      return
+    target_upstream_group.upstream_hierarchy = upstream_json
     target_upstream_group.put()
-
-
-def set_default(obj):
-  if isinstance(obj, set):
-    return list(sorted(obj))
-  raise TypeError
 
 
 def main():

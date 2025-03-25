@@ -18,6 +18,7 @@ import unittest
 import logging
 from google.cloud import ndb
 
+import json
 import osv
 import upstream_computation
 from osv import tests
@@ -409,6 +410,25 @@ class UpstreamTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
     bug_ids = osv.UpstreamGroup.query(
         osv.UpstreamGroup.db_id == 'CVE-3').get().upstream_hierarchy
     self.assertEqual('{"CVE-3": ["CVE-2"], "CVE-2": ["CVE-1"]}', bug_ids)
+
+  def test_upstream_hierarchy_computation_complex(self):
+    """Testing hierarchy computation for more complex, realworld case"""
+
+    upstream_computation.main()
+
+    bug_ids = osv.UpstreamGroup.query(
+        osv.UpstreamGroup.db_id == 'USN-7234-3').get().upstream_hierarchy
+    bug_ids = json.loads(bug_ids)
+    expected = {
+        'USN-7234-3': [
+            'CVE-2024-40967', 'CVE-2024-53103', 'CVE-2024-53141',
+            'CVE-2024-53164', 'UBUNTU-CVE-2023-21400', 'UBUNTU-CVE-2024-40967',
+            'UBUNTU-CVE-2024-53103', 'UBUNTU-CVE-2024-53141',
+            'UBUNTU-CVE-2024-53164'
+        ],
+        'UBUNTU-CVE-2023-21400': ['CVE-2023-21400']
+    }
+    self.assertEqual(expected, bug_ids)
 
 
 if __name__ == '__main__':

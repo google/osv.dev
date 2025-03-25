@@ -116,8 +116,8 @@ def compute_upstream_hierarchy(target_upstream_group: osv.UpstreamGroup,
           upstream_map[bug_id] = set([upstream])
         else:
           upstream_map[bug_id].add(upstream)
-      upstream_map[bug_id] = upstreams
-      to_visit.update(upstreams - visited)
+    upstream_map[bug_id] = upstreams
+    to_visit.update(upstreams - visited)
 
   for k, v in upstream_map.items():
     if k is target_upstream_group.db_id:
@@ -137,7 +137,7 @@ def compute_upstream_hierarchy(target_upstream_group: osv.UpstreamGroup,
 
 def set_default(obj):
   if isinstance(obj, set):
-    return list(obj)
+    return list(sorted(obj))
   raise TypeError
 
 

@@ -17,7 +17,6 @@ from google.cloud import ndb
 import osv
 import datetime
 from gcp.workers.alias import upstream_computation
-from gcp.workers.alias import upstream_hierarchy_computation
 
 
 def setUp():
@@ -365,7 +364,6 @@ def setUp():
       last_modified=datetime.datetime(2023, 8, 14)).put()
 
   upstream_computation.main()
-  upstream_hierarchy_computation.main()
 
 
 if __name__ == '__main__':

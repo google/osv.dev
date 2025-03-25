@@ -16,10 +16,6 @@ echo "Starting alias computation"
 python3 /usr/local/bin/alias_computation.py
 echo "Completed alias computation"
 
-echo "Starting upstream transitive computation"
+echo "Starting upstream computation"
 python3 /usr/local/bin/upstream_computation.py
 echo "Completed upstream computation"
-
-echo "Starting upstream hierarchy computation"
-python3 /usr/local/bin/upstream_hierarchy_computation.py
-echo "Completed upstream hierarchy computation"

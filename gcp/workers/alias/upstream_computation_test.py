@@ -404,6 +404,12 @@ class UpstreamTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
 
     self.assertEqual(upstream_ids, bug_ids)
 
+  def test_upstream_hierarchy_computation(self):
+    upstream_computation.main()
+    bug_ids = osv.UpstreamGroup.query(
+        osv.UpstreamGroup.db_id == 'CVE-3').get().upstream_hierarchy
+    self.assertEqual('{"CVE-3": ["CVE-2"], "CVE-2": ["CVE-1"]}', bug_ids)
+
 
 if __name__ == '__main__':
   ds_emulator = tests.start_datastore_emulator()

@@ -19,7 +19,7 @@ from google.cloud import ndb
 
 import osv
 import osv.logs
-
+import json
 import logging
 
 
@@ -58,6 +58,7 @@ def _create_group(bug_id, upstream_ids):
       upstream_ids=upstream_ids,
       last_modified=datetime.datetime.now())
   new_group.put()
+  return new_group
 
 
 def _update_group(upstream_group, upstream_ids: list):
@@ -76,6 +77,59 @@ def _update_group(upstream_group, upstream_ids: list):
   upstream_group.put()
 
 
+def compute_upstream_hierarchy(target_bug: osv.UpstreamGroup,
+                               bug_groups):
+  """Computes all upstream vulnerabilities for the given bug ID.
+  The returned list contains all of the bug IDs that are upstream of the
+  target bug ID, including transitive upstreams in a map hierarchy.
+  bug_group:
+        { db_id: bug id
+          upstream_ids: str[bug_ids]
+          last_modified_date}
+  """
+  visited = set()
+  upstream_map = {}
+  to_visit = set([target_bug.db_id])
+  while to_visit:
+    bug_id = to_visit.pop()
+    if bug_id in visited:
+      continue
+    visited.add(bug_id)
+    bug = bug_groups.filter(osv.UpstreamGroup.db_id == bug_id).get()
+    if bug is None:
+      continue
+
+    upstreams = set(bug.upstream_ids)
+    if not upstreams:
+      continue
+    for upstream in upstreams:
+      if upstream not in visited and upstream not in to_visit:
+        to_visit.add(upstream)
+      else:
+        if bug_id not in upstream_map:
+          upstream_map[bug_id] = set([upstream])
+        else:
+          upstream_map[bug_id].add(upstream)
+      upstream_map[bug_id] = upstreams
+      to_visit.update(upstreams - visited)
+  for k, v in upstream_map.items():
+    if k is target_bug.db_id:
+      continue
+    upstream_map[target_bug.db_id] = upstream_map[target_bug.db_id] - v
+  if target_bug.upstream_hierarchy == upstream_map:
+    return
+  if upstream_map:
+    target_bug.upstream_hierarchy = json.dumps(
+        upstream_map, default=set_default)
+    target_bug.last_modified = datetime.datetime.now()
+    target_bug.put()
+
+def set_default(obj):
+  if isinstance(obj, set):
+    return list(obj)
+  raise TypeError
+
+
 def main():
   """Updates all upstream groups in the datastore by re-computing existing
   UpstreamGroups and creating new UpstreamGroups for un-computed bugs."""
@@ -83,6 +137,7 @@ def main():
   # Query for all bugs that have upstreams.
   # Use (> '' OR < '') instead of (!= '') / (> '') to de-duplicate results
   # and avoid datastore emulator problems, see issue #2093
+  updated_bugs = []
   bugs = osv.Bug.query(
       ndb.OR(osv.Bug.upstream_raw > '', osv.Bug.upstream_raw < ''))
   bugs = {bug.db_id: bug for bug in bugs.iter()}
@@ -95,11 +150,21 @@ def main():
     # Recompute the transitive upstreams and compare with the existing group
     upstream_ids = compute_upstream(bug, bugs)
     if bug_group:
+      if upstream_ids == bug_group.upstream_ids:
+        continue
       # Update the existing UpstreamGroup
       _update_group(bug_group, upstream_ids)
+      updated_bugs.append(bug_group)
     else:
       # Create a new UpstreamGroup
-      _create_group(bug_id, upstream_ids)
+      new_bug_group = _create_group(bug_id, upstream_ids)
+      updated_bugs.append(new_bug_group)
+
+
+  for group in updated_bugs:
+    print("Updating " + group.db_id)
+    # Recompute the upstream hierarchies
+    compute_upstream_hierarchy(group, all_upstream_group)
 
 
 if __name__ == '__main__':

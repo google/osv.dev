@@ -14,7 +14,7 @@
 
 FROM gcr.io/oss-vdb/worker
 
-COPY alias_computation.py upstream_computation.py upstream_hierarchy_computation.py run_cron.sh /usr/local/bin/
-RUN chmod 755 /usr/local/bin/alias_computation.py /usr/local/bin/upstream_computation.py /usr/local/bin/upstream_hierarchy_computation.py /usr/local/bin/run_cron.sh
+COPY alias_computation.py upstream_computation.py run_cron.sh /usr/local/bin/
+RUN chmod 755 /usr/local/bin/alias_computation.py /usr/local/bin/upstream_computation.py /usr/local/bin/run_cron.sh
 
 ENTRYPOINT ["run_cron.sh"]

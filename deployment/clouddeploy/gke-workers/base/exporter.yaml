@@ -29,10 +29,10 @@ spec:
                 name: "ssd"
             resources:
               requests:
-                cpu: "6"
+                cpu: "12"
                 memory: "48G"
               limits:
-                cpu: "6"
+                cpu: "24"
                 memory: "128G"
           restartPolicy: OnFailure
           volumes:

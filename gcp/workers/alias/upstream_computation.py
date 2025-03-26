@@ -81,8 +81,6 @@ def _update_group(upstream_group: osv.UpstreamGroup,
   return upstream_group
 
 
-
-
 def compute_upstream_hierarchy(
     target_upstream_group: osv.UpstreamGroup,
     all_upstream_groups: dict[str, osv.UpstreamGroup]) -> None:
@@ -159,7 +157,9 @@ def main():
   bugs = osv.Bug.query(
       ndb.OR(osv.Bug.upstream_raw > '', osv.Bug.upstream_raw < ''))
   bugs = {bug.db_id: bug for bug in bugs.iter()}
-  upstream_groups = {group.db_id: group for group in osv.UpstreamGroup.query().iter()}
+  upstream_groups = {
+      group.db_id: group for group in osv.UpstreamGroup.query().iter()
+  }
 
   for bug_id, bug in bugs.items():
     # Get the specific upstream_group ID

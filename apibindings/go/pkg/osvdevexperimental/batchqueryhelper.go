@@ -7,6 +7,8 @@ import (
 	"github.com/google/osv.dev/apibindings/go/pkg/osvdev"
 )
 
+// BatchQueryPaging performs a batch query with the given OSVClient, and handles
+// paging logic for each batch until all pages are resolved.
 func BatchQueryPaging(ctx context.Context, c *osvdev.OSVClient, queries []*osvdev.Query) (*osvdev.BatchedResponse, error) {
 	batchResp, err := c.QueryBatch(ctx, queries)
 

@@ -8,7 +8,7 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/google/osv.dev/apibindings/go/internal/testhelper"
-	"github.com/google/osv.dev/apibindings/go/pkg/osvdev"
+	"github.com/google/osv.dev/apibindings/go/osvdev"
 	"github.com/ossf/osv-schema/bindings/go/osvschema"
 )
 

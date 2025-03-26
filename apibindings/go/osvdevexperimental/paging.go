@@ -4,7 +4,7 @@ import (
 	"context"
 	"errors"
 
-	"github.com/google/osv.dev/apibindings/go/pkg/osvdev"
+	"github.com/google/osv.dev/apibindings/go/osvdev"
 )
 
 // QueryPaging performs a single query with the given OSVClient, and handles

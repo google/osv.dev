@@ -15,7 +15,7 @@ dependencies = [
     "packageurl-python==0.16.0",
     "redis==4.6.0",
     "requests==2.32.3",
-    "gunicorn==22.0.0",
+    "gunicorn==23.0.0",
     "whitenoise==6.9.0",
     "cvss==3.4",
     "osv",

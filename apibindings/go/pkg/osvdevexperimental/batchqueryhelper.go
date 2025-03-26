@@ -4,7 +4,7 @@ import (
 	"context"
 	"errors"
 
-	"github.com/another-rex/osv.dev/go/pkg/osvdev"
+	"github.com/google/osv.dev/apibindings/go/pkg/osvdev"
 )
 
 func BatchQueryPaging(ctx context.Context, c *osvdev.OSVClient, queries []*osvdev.Query) (*osvdev.BatchedResponse, error) {

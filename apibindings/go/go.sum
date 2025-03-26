@@ -1,3 +1,5 @@
+github.com/another-rex/osv.dev/go v0.4.0 h1:1UNsHVhM4KH5faHTXRHF4g1KyDDrrN477w+SxPKoKrM=
+github.com/another-rex/osv.dev/go v0.4.0/go.mod h1:Gb3fa+j3r4ewPodfnLlJRlWWKlML49rJmjLugRv/Wc8=
 github.com/google/go-cmp v0.7.0 h1:wk8382ETsv4JYUZwIsn6YpYiWiBsYLSJiTsyBybVuN8=
 github.com/google/go-cmp v0.7.0/go.mod h1:pXiqmnSA92OHEEa9HXL2W4E7lf9JzCmGVUdgjX3N/iU=
 github.com/ossf/osv-schema/bindings/go v0.0.0-20250318011049-e4c58d9a4a9e h1:v/bSQI7UNOcg2i6iEtVKSQNSckOxutSrt8aYEHQobLU=

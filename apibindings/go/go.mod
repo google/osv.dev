@@ -1,4 +1,4 @@
-module github.com/another-rex/osv.dev/apibindings/go
+module github.com/google/osv.dev/apibindings/go
 
 go 1.23.7
 

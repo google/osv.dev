@@ -64,20 +64,23 @@ def _create_group(bug_id, upstream_ids) -> osv.UpstreamGroup:
 
 
 def _update_group(upstream_group: osv.UpstreamGroup,
-                  upstream_ids: list) -> None:
+                  upstream_ids: list) -> osv.UpstreamGroup | None:
   """Updates the upstream group in the datastore."""
   if len(upstream_ids) == 0:
     logging.info('Deleting upstream group due to too few bugs: %s',
                  upstream_ids)
     upstream_group.key.delete()
-    return
+    return None
 
   if upstream_ids == upstream_group.upstream_ids:
-    return
+    return None
 
   upstream_group.upstream_ids = upstream_ids
   upstream_group.last_modified = datetime.datetime.now()
   upstream_group.put()
+  return upstream_group
+
+
 
 
 def compute_upstream_hierarchy(
@@ -156,8 +159,8 @@ def main():
   bugs = osv.Bug.query(
       ndb.OR(osv.Bug.upstream_raw > '', osv.Bug.upstream_raw < ''))
   bugs = {bug.db_id: bug for bug in bugs.iter()}
-  all_upstream_groups = osv.UpstreamGroup.query().fetch()
-  upstream_groups = {group.db_id: group for group in all_upstream_groups}
+  all_upstream_groups = osv.UpstreamGroup.query()
+  upstream_groups = {group.db_id: group for group in all_upstream_groups.iter()}
 
   for bug_id, bug in bugs.items():
     # Get the specific upstream_group ID
@@ -168,12 +171,16 @@ def main():
       if upstream_ids == upstream_group.upstream_ids:
         continue
       # Update the existing UpstreamGroup
-      _update_group(upstream_group, upstream_ids)
-      updated_bugs.append(upstream_group)
+      new_upstream_group = _update_group(upstream_group, upstream_ids)
+      if new_upstream_group is None:
+        continue
+      updated_bugs.append(new_upstream_group)
+      upstream_groups[bug_id] = new_upstream_group
     else:
       # Create a new UpstreamGroup
       new_upstream_group = _create_group(bug_id, upstream_ids)
       updated_bugs.append(new_upstream_group)
+      upstream_groups[bug_id] = new_upstream_group
 
   for group in updated_bugs:
     # Recompute the upstream hierarchies

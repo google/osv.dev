@@ -10,7 +10,7 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
-	"github.com/google/osv.dev/apibindings/go/internal/testhelper"
+	"osv.dev/bindings/go/internal/testhelper"
 )
 
 func TestOSVClient_makeRetryRequest(t *testing.T) {

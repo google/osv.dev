@@ -303,9 +303,7 @@ def bug_to_response(bug, detailed=True):
   if detailed:
     add_links(response)
     add_source_info(bug, response)
-    # TODO(jesslowe): remove once speed verified in staging
-    if getattr(_ndb_client, 'project', 'oss-vdb-test') == 'oss-vdb-test':
-      add_stream_info(bug, response)
+    add_stream_info(bug, response)
   return response
 
 

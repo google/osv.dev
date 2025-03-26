@@ -55,6 +55,8 @@ _VALID_VULN_ID = _WORD_CHARACTERS_OR_DASH_OR_COLON
 _BLOG_CONTENTS_DIR = 'blog'
 _DEPS_BASE_URL = 'https://deps.dev'
 _FIRST_CVSS_CALCULATOR_BASE_URL = 'https://www.first.org/cvss/calculator'
+_GO_VANITY_METADATA = '<meta name="go-import" content="osv.dev/bindings/go git https://github.com/google/osv.dev/bindings/go">'
+
 _ndb_client = ndb.Client()
 
 
@@ -123,6 +125,13 @@ def index_v2():
 def index_v2_with_subpath(subpath):
   return redirect('/' + subpath)
 
+
+@blueprint.route('/bindings/go')
+def go_bindings_vanity():
+  if request.args.get('go-get', 0) == 1:
+    return _GO_VANITY_METADATA
+
+  abort(404)
 
 @blueprint.route('/')
 def index():

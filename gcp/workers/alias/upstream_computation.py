@@ -57,7 +57,7 @@ def _create_group(bug_id, upstream_ids) -> osv.UpstreamGroup:
       id=bug_id,
       db_id=bug_id,
       upstream_ids=upstream_ids,
-      last_modified=datetime.datetime.now())
+      last_modified=datetime.datetime.utcnow())
   new_group.put()
 
   return new_group
@@ -76,7 +76,7 @@ def _update_group(upstream_group: osv.UpstreamGroup,
     return None
 
   upstream_group.upstream_ids = upstream_ids
-  upstream_group.last_modified = datetime.datetime.now()
+  upstream_group.last_modified = datetime.datetime.utcnow()
   upstream_group.put()
   return upstream_group
 

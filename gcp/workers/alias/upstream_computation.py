@@ -159,8 +159,7 @@ def main():
   bugs = osv.Bug.query(
       ndb.OR(osv.Bug.upstream_raw > '', osv.Bug.upstream_raw < ''))
   bugs = {bug.db_id: bug for bug in bugs.iter()}
-  all_upstream_groups = osv.UpstreamGroup.query()
-  upstream_groups = {group.db_id: group for group in all_upstream_groups.iter()}
+  upstream_groups = {group.db_id: group for group in osv.UpstreamGroup.query().iter()}
 
   for bug_id, bug in bugs.items():
     # Get the specific upstream_group ID

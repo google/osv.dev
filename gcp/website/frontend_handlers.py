@@ -133,6 +133,7 @@ def go_bindings_vanity():
 
   abort(404)
 
+
 @blueprint.route('/')
 def index():
   # Go will request the root url to make sure we own this domain

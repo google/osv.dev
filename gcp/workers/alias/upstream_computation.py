@@ -80,8 +80,9 @@ def _update_group(upstream_group: osv.UpstreamGroup,
   upstream_group.put()
 
 
-def compute_upstream_hierarchy(target_upstream_group: osv.UpstreamGroup,
-                               all_upstream_groups: ndb.Query) -> None:
+def compute_upstream_hierarchy(
+    target_upstream_group: osv.UpstreamGroup,
+    all_upstream_groups: dict[str, osv.UpstreamGroup]) -> None:
   """Computes all upstream vulnerabilities for the given bug ID.
   The returned list contains all of the bug IDs that are upstream of the
   target bug ID, including transitive upstreams in a map hierarchy.
@@ -109,8 +110,7 @@ def compute_upstream_hierarchy(target_upstream_group: osv.UpstreamGroup,
     if bug_id in visited:
       continue
     visited.add(bug_id)
-    upstream_group = all_upstream_groups.filter(
-        osv.UpstreamGroup.db_id == bug_id).get()
+    upstream_group = all_upstream_groups.get(bug_id)
     if upstream_group is None:
       continue
 
@@ -156,12 +156,12 @@ def main():
   bugs = osv.Bug.query(
       ndb.OR(osv.Bug.upstream_raw > '', osv.Bug.upstream_raw < ''))
   bugs = {bug.db_id: bug for bug in bugs.iter()}
-  all_upstream_groups = osv.UpstreamGroup.query()
+  all_upstream_groups = osv.UpstreamGroup.query().fetch()
+  upstream_groups = {group.db_id: group for group in all_upstream_groups}
 
   for bug_id, bug in bugs.items():
-    # Check if the db key is also a db_id in all_upstream_group
-    upstream_group = all_upstream_groups.filter(
-        osv.UpstreamGroup.db_id == bug_id).get()
+    # Get the specific upstream_group ID
+    upstream_group = upstream_groups.get(bug_id)
     # Recompute the transitive upstreams and compare with the existing group
     upstream_ids = compute_upstream(bug, bugs)
     if upstream_group:
@@ -177,7 +177,7 @@ def main():
 
   for group in updated_bugs:
     # Recompute the upstream hierarchies
-    compute_upstream_hierarchy(group, all_upstream_groups)
+    compute_upstream_hierarchy(group, upstream_groups)
 
 
 if __name__ == '__main__':

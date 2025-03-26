@@ -7,8 +7,55 @@ import (
 	"github.com/google/osv.dev/apibindings/go/pkg/osvdev"
 )
 
+// QueryPaging performs a single query with the given OSVClient, and handles
+// paging logic to return all results.
+func QueryPaging(ctx context.Context, c *osvdev.OSVClient, query *osvdev.Query) (*osvdev.Response, error) {
+	queryResponse, err := c.Query(ctx, query)
+
+	if err != nil {
+		return nil, err
+	}
+	// --- Paging logic ---
+	var errToReturn error
+
+	if queryResponse.NextPageToken == "" {
+		return queryResponse, nil
+	}
+
+	if ctx.Err() != nil {
+		return queryResponse, &DuringPagingError{
+			PageDepth: 1,
+			Inner:     ctx.Err(),
+		}
+	}
+
+	newQuery := *query
+	newQuery.PageToken = queryResponse.NextPageToken
+	nextPageResponse, err := QueryPaging(ctx, c, &newQuery)
+
+	if err != nil {
+		var dpe *DuringPagingError
+		if ok := errors.As(err, &dpe); ok {
+			dpe.PageDepth += 1
+			errToReturn = dpe
+		} else {
+			errToReturn = &DuringPagingError{
+				PageDepth: 1,
+				Inner:     err,
+			}
+		}
+
+		return queryResponse, dpe
+	}
+
+	queryResponse.Vulns = append(queryResponse.Vulns, nextPageResponse.Vulns...)
+	queryResponse.NextPageToken = nextPageResponse.NextPageToken
+
+	return queryResponse, errToReturn
+}
+
 // BatchQueryPaging performs a batch query with the given OSVClient, and handles
-// paging logic for each batch until all pages are resolved.
+// paging logic for each query to return all results.
 func BatchQueryPaging(ctx context.Context, c *osvdev.OSVClient, queries []*osvdev.Query) (*osvdev.BatchedResponse, error) {
 	batchResp, err := c.QueryBatch(ctx, queries)
 
@@ -39,12 +86,12 @@ func BatchQueryPaging(ctx context.Context, c *osvdev.OSVClient, queries []*osvde
 			}
 		}
 
-		nextPageResp, err := c.QueryBatch(ctx, nextPageQueries)
+		nextPageResp, err := BatchQueryPaging(ctx, c, nextPageQueries)
 		if err != nil {
-			var dpr *DuringPagingError
-			if ok := errors.As(err, &dpr); ok {
-				dpr.PageDepth += 1
-				errToReturn = dpr
+			var dpe *DuringPagingError
+			if ok := errors.As(err, &dpe); ok {
+				dpe.PageDepth += 1
+				errToReturn = dpe
 			} else {
 				errToReturn = &DuringPagingError{
 					PageDepth: 1,

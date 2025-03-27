@@ -18,9 +18,9 @@ spec:
             command: ["/usr/local/bin/generate_sitemap/generate_and_upload.sh"]
             resources:
               requests:
-                cpu: 1
+                cpu: "1"
                 memory: "4G"
               limits:
-                cpu: 1
+                cpu: "1"
                 memory: "6G"
           restartPolicy: OnFailure

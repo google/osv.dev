@@ -130,7 +130,7 @@ def index_v2_with_subpath(subpath):
 
 @blueprint.route('/bindings/go')
 def go_bindings_vanity():
-  if request.args.get('go-get', 0) == 1:
+  if request.args.get('go-get', 0) == '1':
     return _GO_VANITY_METADATA
 
   abort(404)
@@ -140,7 +140,7 @@ def go_bindings_vanity():
 @blueprint.route('/')
 def index():
   # Go will request the root url to make sure we own this domain
-  if request.args.get('go-get', 0) == 1:
+  if request.args.get('go-get', 0) == '1':
     return _GO_VANITY_METADATA
 
   return render_template(

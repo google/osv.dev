@@ -34,7 +34,7 @@ spec:
               limits:
                 cpu: "24"
                 memory: "128G"
-          restartPolicy: OnFailure
+          restartPolicy: Never
           volumes:
             - name: "ssd"
               emptyDir:

@@ -7,9 +7,12 @@ import (
 	"os"
 	"reflect"
 	"testing"
+	"time"
 
 	"github.com/google/go-cmp/cmp"
 )
+
+var NO_EXPIRY = time.Date(2000, 1, 1, 0, 0, 0, 0, time.UTC)
 
 func loadTestData2(cveName string) Vulnerability {
 	fileName := fmt.Sprintf("../test_data/nvdcve-2.0/%s.json", cveName)
@@ -151,322 +154,379 @@ func TestRepo(t *testing.T) {
 		inputLink       string // a possible repository URL to call Repo() with
 		expectedRepoURL string // The expected  repository URL to get back from Repo()
 		expectedOk      bool   // If an error is expected
+		disableExpiryDate time.Time
 	}{
 		{
 			description:     "GitHub compare URL",
 			inputLink:       "https://github.com/kovidgoyal/kitty/compare/v0.26.1...v0.26.2",
 			expectedRepoURL: "https://github.com/kovidgoyal/kitty",
 			expectedOk:      true,
+			disableExpiryDate: NO_EXPIRY,
 		},
 		{
 			description:     "GitLab compare URL",
 			inputLink:       "https://gitlab.com/mayan-edms/mayan-edms/-/compare/development...master?from_project_id=396557&straight=false",
 			expectedRepoURL: "https://gitlab.com/mayan-edms/mayan-edms",
 			expectedOk:      true,
+			disableExpiryDate: NO_EXPIRY,
 		},
 		{
 			description:     "GitHub releases URL",
 			inputLink:       "https://github.com/apache/activemq-artemis/releases",
 			expectedRepoURL: "https://github.com/apache/activemq-artemis",
 			expectedOk:      true,
+			disableExpiryDate: NO_EXPIRY,
 		},
 		{
 			description:     "GitHub releases URL",
 			inputLink:       "https://github.com/apache/activemq-artemis/tags",
 			expectedRepoURL: "https://github.com/apache/activemq-artemis",
 			expectedOk:      true,
+			disableExpiryDate: NO_EXPIRY,
 		},
 		{
 			description:     "GitHub advisory URL",
 			inputLink:       "https://github.com/ballcat-projects/ballcat-codegen/security/advisories/GHSA-fv3m-xhqw-9m79",
 			expectedRepoURL: "https://github.com/ballcat-projects/ballcat-codegen",
 			expectedOk:      true,
+			disableExpiryDate: NO_EXPIRY,
 		},
 		{
 			description:     "Ambiguous GitLab compare URL",
 			inputLink:       "https://git.drupalcode.org/project/views/-/compare/7.x-3.21...7.x-3.x",
 			expectedRepoURL: "https://git.drupalcode.org/project/views",
 			expectedOk:      true,
+			disableExpiryDate: NO_EXPIRY,
 		},
 		{
 			description:     "Exact repository URL",
 			inputLink:       "https://github.com/apache/activemq-artemis",
 			expectedRepoURL: "https://github.com/apache/activemq-artemis",
 			expectedOk:      true,
+			disableExpiryDate: NO_EXPIRY,
 		},
 		{
 			description:     "Freedesktop GitLab commit URL observed in CVE-2022-46285",
 			inputLink:       "https://gitlab.freedesktop.org/xorg/lib/libxpm/-/commit/a3a7c6dcc3b629d7650148",
 			expectedRepoURL: "https://gitlab.freedesktop.org/xorg/lib/libxpm",
 			expectedOk:      true,
+			disableExpiryDate: NO_EXPIRY,
 		},
 		{
 			description:     "Freedesktop cGit mirror",
 			inputLink:       "https://cgit.freedesktop.org/xorg/lib/libXRes/commit/?id=c05c6d918b0e2011d4bfa370c321482e34630b17",
 			expectedRepoURL: "https://gitlab.freedesktop.org/xorg/lib/libXRes",
 			expectedOk:      true,
+			disableExpiryDate: NO_EXPIRY,
 		},
 		{
 			description:     "Exact Freedesktop cGit mirror",
 			inputLink:       "https://cgit.freedesktop.org/xorg/lib/libXRes",
 			expectedRepoURL: "https://gitlab.freedesktop.org/xorg/lib/libXRes",
 			expectedOk:      true,
+			disableExpiryDate: NO_EXPIRY,
 		},
 		{
 			description:     "Freedesktop cGit mirror refs/tags URL",
 			inputLink:       "http://cgit.freedesktop.org/spice/spice/refs/tags",
 			expectedRepoURL: "https://gitlab.freedesktop.org/spice/spice",
 			expectedOk:      true,
+			disableExpiryDate: NO_EXPIRY,
 		},
 		{
 			description:     "GitWeb URL, remapped to something cloneable (CVE-2022-47629)",
 			inputLink:       "https://git.gnupg.org/cgi-bin/gitweb.cgi?p=libksba.git;a=commit;h=f61a5ea4e0f6a80fd4b28ef0174bee77793cf070",
 			expectedRepoURL: "git://git.gnupg.org/libksba.git",
 			expectedOk:      true,
+			disableExpiryDate: NO_EXPIRY,
 		},
 		{
 			description:     "GitWeb URL, remapped to something cloneable (CVE-2023-1579)",
 			inputLink:       "https://sourceware.org/git/gitweb.cgi?p=binutils-gdb.git;h=11d171f1910b508a81d21faa087ad1af573407d8",
 			expectedRepoURL: "https://sourceware.org/git/binutils-gdb.git",
 			expectedOk:      true,
+			disableExpiryDate: NO_EXPIRY,
 		},
 		{
 			description:     "Exact repo URL with a trailing slash",
 			inputLink:       "https://github.com/pyca/pyopenssl/",
 			expectedRepoURL: "https://github.com/pyca/pyopenssl",
 			expectedOk:      true,
+			disableExpiryDate: NO_EXPIRY,
 		},
 		{
 			description:     "Bitbucket download URL",
 			inputLink:       "https://bitbucket.org/snakeyaml/snakeyaml/downloads/?tab=tags",
 			expectedRepoURL: "https://bitbucket.org/snakeyaml/snakeyaml",
 			expectedOk:      true,
+			disableExpiryDate: NO_EXPIRY,
 		},
 		{
 			description:     "Bitbucket wiki URL",
 			inputLink:       "https://bitbucket.org/snakeyaml/snakeyaml/wiki/Home",
 			expectedRepoURL: "https://bitbucket.org/snakeyaml/snakeyaml",
 			expectedOk:      true,
+			disableExpiryDate: NO_EXPIRY,
 		},
 		{
 			description:     "Bitbucket security URL",
 			inputLink:       "https://bitbucket.org/snakeyaml/snakeyaml/security",
 			expectedRepoURL: "https://bitbucket.org/snakeyaml/snakeyaml",
 			expectedOk:      true,
+			disableExpiryDate: NO_EXPIRY,
 		},
 		{
 			description:     "Bitbucket pull-request URL",
 			inputLink:       "https://bitbucket.org/snakeyaml/snakeyaml/pull-requests/35",
 			expectedRepoURL: "https://bitbucket.org/snakeyaml/snakeyaml",
 			expectedOk:      true,
+			disableExpiryDate: NO_EXPIRY,
 		},
 		{
 			description:     "Bitbucket commit URL",
 			inputLink:       "https://bitbucket.org/snakeyaml/snakeyaml/commits/6e8cd890716dfe22d5ba56f9a592225fb7fa2803",
 			expectedRepoURL: "https://bitbucket.org/snakeyaml/snakeyaml",
 			expectedOk:      true,
+			disableExpiryDate: NO_EXPIRY,
 		},
 		{
 			description:     "Bitbucket issue URL with title",
 			inputLink:       "https://bitbucket.org/snakeyaml/snakeyaml/issues/566/build-android",
 			expectedRepoURL: "https://bitbucket.org/snakeyaml/snakeyaml",
 			expectedOk:      true,
+			disableExpiryDate: NO_EXPIRY,
 		},
 		{
 			description:     "Bitbucket bare issue URL",
 			inputLink:       "https://bitbucket.org/snakeyaml/snakeyaml/issues/566",
 			expectedRepoURL: "https://bitbucket.org/snakeyaml/snakeyaml",
 			expectedOk:      true,
+			disableExpiryDate: NO_EXPIRY,
 		},
 		{
 			description:     "Valid URL but not wanted (by deny regexp)",
 			inputLink:       "https://github.com/Ko-kn3t/CVE-2020-29156",
 			expectedRepoURL: "",
 			expectedOk:      false,
+			disableExpiryDate: NO_EXPIRY,
 		},
 		{
 			description:     "Valid URL but not wanted (by deny regexp)",
 			inputLink:       "https://github.com/GitHubAssessments/CVE_Assessment_04_2018",
 			expectedRepoURL: "",
 			expectedOk:      false,
+			disableExpiryDate: NO_EXPIRY,
 		},
 		{
 			description:     "Valid URL but not wanted (by deny regexp)",
 			inputLink:       "https://github.com/jenaye/cve",
 			expectedRepoURL: "",
 			expectedOk:      false,
+			disableExpiryDate: NO_EXPIRY,
 		},
 		{
 			description:     "Valid URL (unnormalized) but not wanted (by deny regexp)",
 			inputLink:       "https://github.com/vlakhani28/CVE-2022-22296/blob/main/README.md",
 			expectedRepoURL: "",
 			expectedOk:      false,
+			disableExpiryDate: NO_EXPIRY,
 		},
 		{
 			description:     "Valid repo previously being discarded",
 			inputLink:       "https://gitlab.com/bgermann/unrar-free",
 			expectedRepoURL: "https://gitlab.com/bgermann/unrar-free",
 			expectedOk:      true,
+			disableExpiryDate: NO_EXPIRY,
 		},
 		{
 			description:     "Valid repo previously being discarded",
 			inputLink:       "https://gitlab.xiph.org/xiph/ezstream",
 			expectedRepoURL: "https://gitlab.xiph.org/xiph/ezstream",
 			expectedOk:      true,
+			disableExpiryDate: NO_EXPIRY,
 		},
 		{
 			description:     "Valid repo previously being discarded",
 			inputLink:       "https://gitlab.freedesktop.org/xdg/xdg-utils",
 			expectedRepoURL: "https://gitlab.freedesktop.org/xdg/xdg-utils",
 			expectedOk:      true,
+			disableExpiryDate: NO_EXPIRY,
 		},
 		{
 			description:     "Valid repo previously being discarded",
 			inputLink:       "http://git.linuxtv.org/xawtv3.git",
 			expectedRepoURL: "http://git.linuxtv.org/xawtv3.git",
 			expectedOk:      true,
+			disableExpiryDate: NO_EXPIRY,
 		},
 		{
 			description:     "Valid repo previously being discarded",
 			inputLink:       "https://git.savannah.gnu.org/git/emacs.git",
 			expectedRepoURL: "https://git.savannah.gnu.org/git/emacs.git",
 			expectedOk:      true,
+			disableExpiryDate: NO_EXPIRY,
 		},
 		{
 			description:     "Valid repo previously being discarded",
 			inputLink:       "https://git.libssh.org/projects/libssh.git",
 			expectedRepoURL: "https://git.libssh.org/projects/libssh.git",
 			expectedOk:      true,
+			disableExpiryDate: NO_EXPIRY,
 		},
 		{
 			description:     "Valid repo previously being discarded",
 			inputLink:       "https://pagure.io/libaio.git",
 			expectedRepoURL: "https://pagure.io/libaio.git",
 			expectedOk:      true,
+			disableExpiryDate: NO_EXPIRY,
 		},
 		{
 			description:     "Valid repo previously being discarded",
 			inputLink:       "git://git.infradead.org/mtd-utils.git",
 			expectedRepoURL: "git://git.infradead.org/mtd-utils.git",
 			expectedOk:      true,
+			disableExpiryDate: NO_EXPIRY,
 		},
 		{
 			description:     "Valid repo previously being discarded",
 			inputLink:       "https://git.savannah.nongnu.org/git/davfs2.git",
 			expectedRepoURL: "https://git.savannah.nongnu.org/git/davfs2.git",
 			expectedOk:      true,
+			disableExpiryDate: NO_EXPIRY,
 		},
 		{
 			description:     "Valid repo previously being discarded",
 			inputLink:       "https://git.kernel.org/pub/scm/linux/kernel/git/jaegeuk/f2fs-tools.git",
 			expectedRepoURL: "https://git.kernel.org/pub/scm/linux/kernel/git/jaegeuk/f2fs-tools.git",
 			expectedOk:      true,
+			disableExpiryDate: NO_EXPIRY,
 		},
 		{
 			description:     "Valid repo previously being discarded",
 			inputLink:       "https://xenbits.xen.org/git-http/xen.git",
 			expectedRepoURL: "https://xenbits.xen.org/git-http/xen.git",
 			expectedOk:      true,
+			disableExpiryDate: NO_EXPIRY,
 		},
 		{
 			description:     "Valid repo previously being discarded",
 			inputLink:       "https://opendev.org/x/sqlalchemy-migrate.git",
 			expectedRepoURL: "https://opendev.org/x/sqlalchemy-migrate.git",
 			expectedOk:      true,
+			disableExpiryDate: NO_EXPIRY,
 		},
 		{
 			description:     "Valid repo previously being discarded",
 			inputLink:       "https://git.netfilter.org/libnftnl",
 			expectedRepoURL: "https://git.netfilter.org/libnftnl",
 			expectedOk:      true,
+			disableExpiryDate: NO_EXPIRY,
 		},
 		{
 			description:     "Valid repo previously being discarded",
 			inputLink:       "https://gitlab.com/ubports/development/core/click/",
 			expectedRepoURL: "https://gitlab.com/ubports/development/core/click",
 			expectedOk:      true,
+			disableExpiryDate: NO_EXPIRY,
 		},
 		{
 			description:     "cGit URL on git.kernel.org remapped to be cloneable",
 			inputLink:       "https://git.kernel.org/cgit/linux/kernel/git/torvalds/linux.git/commit/?id=ee1fee900537b5d9560e9f937402de5ddc8412f3",
 			expectedRepoURL: "https://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git",
 			expectedOk:      true,
+			disableExpiryDate: NO_EXPIRY,
 		},
 		{
 			description:     "Valid Gitweb repo",
 			inputLink:       "https://git.ffmpeg.org/gitweb/ffmpeg.git/commitdiff/c94875471e3ba3dc396c6919ff3ec9b14539cd71",
 			expectedRepoURL: "https://git.ffmpeg.org/ffmpeg.git",
 			expectedOk:      true,
+			disableExpiryDate: time.Date(2025, 3, 31, 12, 30, 0, 0, time.Local),
 		},
 		{
 			description:     "Undesired researcher repo (by deny regex)",
 			inputLink:       "https://github.com/bigzooooz/CVE-2023-26692#readme",
 			expectedRepoURL: "",
 			expectedOk:      false,
+			disableExpiryDate: NO_EXPIRY,
 		},
 		{
 			description:     "GNU glibc GitWeb repo (with no distinguishing marks)",
 			inputLink:       "https://sourceware.org/git/?p=glibc.git",
 			expectedRepoURL: "https://sourceware.org/git/glibc.git",
 			expectedOk:      true,
+			disableExpiryDate: NO_EXPIRY,
 		},
 		{
 			description:     "GNU glibc GitWeb repo (with distinguishing marks)",
 			inputLink:       "https://sourceware.org/git/gitweb.cgi?p=glibc.git",
 			expectedRepoURL: "https://sourceware.org/git/glibc.git",
 			expectedOk:      true,
+			disableExpiryDate: NO_EXPIRY,
 		},
 		{
 			description:     "GnuPG GitWeb repo that doesn't talk https",
 			inputLink:       "https://git.gnupg.org/cgi-bin/gitweb.cgi?p=libksba.git;a=commit;h=f61a5ea4e0f6a80fd4b28ef0174bee77793cf070",
 			expectedRepoURL: "git://git.gnupg.org/libksba.git",
 			expectedOk:      true,
+			disableExpiryDate: NO_EXPIRY,
 		},
 		{
 			description:     "high profile repo encountered on CVE-2024-3094",
 			inputLink:       "https://git.tukaani.org/?p=xz.git;a=tags",
 			expectedRepoURL: "https://git.tukaani.org/xz.git",
 			expectedOk:      true,
+			disableExpiryDate: NO_EXPIRY,
 		},
 		{
 			description:     "PostgreSQL repo",
 			inputLink:       "https://git.postgresql.org/gitweb/?p=postgresql.git;a=summary",
 			expectedRepoURL: "https://git.postgresql.org/git/postgresql.git",
 			expectedOk:      true,
+			disableExpiryDate: NO_EXPIRY,
 		},
 		{
 			description:     "libcap repo on kernel.org (with a trailing slash)",
 			inputLink:       "https://git.kernel.org/pub/scm/libs/libcap/libcap.git/",
 			expectedRepoURL: "https://git.kernel.org/pub/scm/libs/libcap/libcap.git",
 			expectedOk:      true,
+			disableExpiryDate: NO_EXPIRY,
 		},
 		{
 			description:     "Linux kernel URL that doesn't require remapping to be cloneable",
 			inputLink:       "https://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git/commit/?id=ee1fee900537b5d9560e9f937402de5ddc8412f3",
 			expectedRepoURL: "https://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git",
 			expectedOk:      true,
+			disableExpiryDate: NO_EXPIRY,
 		},
 		{
 			description:     "musl-libc repo that requires remapping",
 			inputLink:       "https://git.musl-libc.org/cgit/musl/commit/?id=c47ad25ea3b484e10326f933e927c0bc8cded3da",
 			expectedRepoURL: "https://git.musl-libc.org/git/musl",
 			expectedOk:      true,
+			disableExpiryDate: NO_EXPIRY,
 		},
 		{
 			description:     "Savannah repo that requires remapping",
 			inputLink:       "https://git.savannah.gnu.org/cgit/wget.git/commit/?id=c419542d956a2607bbce5df64b9d378a8588d778",
 			expectedRepoURL: "https://git.savannah.gnu.org/git/wget.git",
 			expectedOk:      true,
+			disableExpiryDate: NO_EXPIRY,
 		},
 	}
 
 	for _, tc := range tests {
 		got, err := Repo(tc.inputLink)
-		if err != nil && tc.expectedOk {
-			t.Errorf("test %q: Repo(%q) unexpectedly failed: %+v", tc.description, tc.inputLink, err)
-		}
-		if !reflect.DeepEqual(got, tc.expectedRepoURL) {
-			t.Errorf("test %q: Repo(%q) was incorrect, got: %#v, expected: %#v", tc.description, tc.inputLink, got, tc.expectedRepoURL)
+		if err != nil {
+			if time.Now().Before(tc.disableExpiryDate){
+				continue
+			}
+			if err != nil && tc.expectedOk {
+				t.Errorf("test %q: Repo(%q) unexpectedly failed: %+v", tc.description, tc.inputLink, err)
+			}
+			if !reflect.DeepEqual(got, tc.expectedRepoURL) {
+				t.Errorf("test %q: Repo(%q) was incorrect, got: %#v, expected: %#v", tc.description, tc.inputLink, got, tc.expectedRepoURL)
+			}
 		}
 	}
 }

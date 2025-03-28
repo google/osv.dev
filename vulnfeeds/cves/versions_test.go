@@ -724,7 +724,6 @@ func TestExtractGitCommit(t *testing.T) {
 			t.Skipf("test %q: running on Cloud Build", tc.description)
 		}
 		if time.Now().Before(tc.disableExpiryDate) {
-			println(tc.description)
 			continue
 		}
 		got, err := extractGitCommit(tc.inputLink, tc.inputCommitType)

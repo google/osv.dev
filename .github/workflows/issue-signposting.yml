@@ -1,5 +1,5 @@
 name: Add comments to specifically labeled issues
-permissions: read-only
+permissions: {}
 on:
   issues:
     types:

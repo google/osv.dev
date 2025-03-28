@@ -1,6 +1,6 @@
 name: Renovate Config Validator
 
-permissions: read-only
+permissions: {}
 
 on:
   push:

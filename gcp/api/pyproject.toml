@@ -4,7 +4,7 @@ requires-python = ">=3.11,<4.0"
 dependencies = [
     "google-cloud-ndb==2.3.2",
     "google-cloud-logging==3.11.4",
-    "packaging==20.9",
+    "packaging==24.2",
     "requests==2.32.3",
     "grpcio==1.70.0",
     "grpcio-reflection==1.62.2",

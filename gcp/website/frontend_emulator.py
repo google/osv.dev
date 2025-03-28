@@ -16,6 +16,7 @@ from osv import tests
 from google.cloud import ndb
 import osv
 import datetime
+from gcp.workers.alias import upstream_computation
 
 
 def setUp():
@@ -324,6 +325,7 @@ def setUp():
       public=True,
       last_modified=datetime.datetime(2025, 2, 4),
       source="test",
+      status=1,
       timestamp=datetime.datetime(2023, 8, 14)).put()
   osv.Bug(
       id="CYCLE-ROOT-2",
@@ -332,12 +334,14 @@ def setUp():
       public=True,
       last_modified=datetime.datetime(2025, 2, 4),
       source="test",
+      status=1,
       timestamp=datetime.datetime(2023, 8, 14)).put()
   osv.Bug(
       id="CYCLE-ROOT-3",
       db_id="CYCLE-ROOT-3",
       upstream_raw=['CYCLE-ROOT-1', 'CYCLE-ROOT-2'],
       public=True,
+      status=1,
       last_modified=datetime.datetime(2025, 2, 4),
       source="test",
       timestamp=datetime.datetime(2023, 8, 14)).put()
@@ -358,6 +362,8 @@ def setUp():
       db_id='CYCLE-ROOT-2',
       upstream_ids=['CYCLE-ROOT-1'],
       last_modified=datetime.datetime(2023, 8, 14)).put()
+
+  upstream_computation.main()
 
 
 if __name__ == '__main__':

@@ -249,3 +249,7 @@ class Maven(DepsDevMixin):
     """Enumerate versions."""
     return self._deps_dev_enumerate(
         package, introduced, fixed, last_affected, limits=limits)
+
+  @property
+  def supports_comparing(self):
+    return True

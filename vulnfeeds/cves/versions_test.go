@@ -471,7 +471,10 @@ func TestRepo(t *testing.T) {
 		t.Run(tc.description, func(t *testing.T) {
 			t.Parallel()
 			if time.Now().Before(tc.disableExpiryDate) {
-				t.Skipf("test %q: Repo(%q) has been skipped due to known outage and will be reenabled on %s.", tc.description, tc.inputLink, tc.disableExpiryDate.Format(time.RFC3339))
+				t.Skipf("test %q: Repo(%q) has been skipped due to known outage and will be reenabled on %s.", tc.description, tc.inputLink, tc.disableExpiryDate)
+			}
+			if !tc.disableExpiryDate.IsZero() && time.Now().After(tc.disableExpiryDate) {
+				t.Logf("test %q: Repo(%q) has been enabled on %s.", tc.description, tc.inputLink, tc.disableExpiryDate)
 			}
 			got, err := Repo(tc.inputLink)
 			if err != nil && tc.expectedOk {
@@ -664,6 +667,9 @@ func TestExtractGitCommit(t *testing.T) {
 			}
 			if time.Now().Before(tc.disableExpiryDate) {
 				t.Skipf("test %q: extractGitCommit for %q (%q) has been skipped due to known outage and will be reenabled on %s.", tc.description, tc.inputLink, tc.inputCommitType, tc.disableExpiryDate)
+			}
+			if !tc.disableExpiryDate.IsZero() && time.Now().After(tc.disableExpiryDate) {
+				t.Logf("test %q: extractGitCommit(%q, %q) has been enabled on %s.", tc.description, tc.inputLink, tc.inputCommitType, tc.disableExpiryDate)
 			}
 			got, err := extractGitCommit(tc.inputLink, tc.inputCommitType)
 			if err != nil && !tc.expectFailure {
@@ -965,6 +971,9 @@ func TestExtractVersionInfo(t *testing.T) {
 			t.Parallel()
 			if time.Now().Before(tc.disableExpiryDate) {
 				t.Skipf("test %q: VersionInfo for %#v has been skipped due to known outage and will be reenabled on %s.", tc.description, tc.inputCVEItem, tc.disableExpiryDate)
+			}
+			if !tc.disableExpiryDate.IsZero() && time.Now().After(tc.disableExpiryDate) {
+				t.Logf("test %q: VersionInfo for %#v has been enabled on %s.", tc.description, tc.inputCVEItem, tc.disableExpiryDate)
 			}
 			gotVersionInfo, _ := ExtractVersionInfo(tc.inputCVEItem.CVE, tc.inputValidVersions)
 			if diff := cmp.Diff(tc.expectedVersionInfo, gotVersionInfo); diff != "" {

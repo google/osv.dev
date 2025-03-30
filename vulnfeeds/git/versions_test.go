@@ -99,6 +99,9 @@ func TestVersionToCommit(t *testing.T) {
 			if time.Now().Before(tc.disableExpiryDate) {
 				t.Skipf("test %q: VersionToCommit(%q, %q) has been skipped due to known outage and will be reenabled on %s.", tc.description, tc.inputVersion, tc.inputRepoURL, tc.disableExpiryDate)
 			}
+			if !tc.disableExpiryDate.IsZero() && time.Now().After(tc.disableExpiryDate) {
+				t.Logf("test %q: VersionToCommit(%q, %q) has been enabled on %s.", tc.description, tc.inputVersion, tc.inputRepoURL, tc.disableExpiryDate)
+			}
 			normalizedTags, err := NormalizeRepoTags(tc.inputRepoURL, cache)
 			if err != nil {
 				t.Errorf("test %q: unexpected failure normalizing repo tags: %#v", tc.description, err)

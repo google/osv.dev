@@ -7,6 +7,7 @@ import (
 	"os"
 	"reflect"
 	"testing"
+	"time"
 
 	"github.com/google/go-cmp/cmp"
 )
@@ -135,22 +136,26 @@ func TestParseCPE(t *testing.T) {
 	}
 
 	for _, tc := range tests {
-		got, err := ParseCPE(tc.inputCPEString)
-		if err != nil && tc.expectedOk {
-			t.Errorf("test %q: ParseCPE for %q unexpectedly failed: %+v", tc.description, tc.inputCPEString, err)
-		}
-		if !reflect.DeepEqual(got, tc.expectedCPEStruct) {
-			t.Errorf("test %q: ParseCPE for %q was incorrect, got: %#v, expected: %#v", tc.description, tc.inputCPEString, got, tc.expectedCPEStruct)
-		}
+		t.Run(tc.description, func(t *testing.T) {
+			t.Parallel()
+			got, err := ParseCPE(tc.inputCPEString)
+			if err != nil && tc.expectedOk {
+				t.Errorf("test %q: ParseCPE for %q unexpectedly failed: %+v", tc.description, tc.inputCPEString, err)
+			}
+			if !reflect.DeepEqual(got, tc.expectedCPEStruct) {
+				t.Errorf("test %q: ParseCPE for %q was incorrect, got: %#v, expected: %#v", tc.description, tc.inputCPEString, got, tc.expectedCPEStruct)
+			}
+		})
 	}
 }
 
 func TestRepo(t *testing.T) {
 	tests := []struct {
-		description     string // human-readable description of test case
-		inputLink       string // a possible repository URL to call Repo() with
-		expectedRepoURL string // The expected  repository URL to get back from Repo()
-		expectedOk      bool   // If an error is expected
+		description       string    // human-readable description of test case
+		inputLink         string    // a possible repository URL to call Repo() with
+		expectedRepoURL   string    // The expected  repository URL to get back from Repo()
+		expectedOk        bool      // If an error is expected
+		disableExpiryDate time.Time // If test needs to be disabled due to known outage.
 	}{
 		{
 			description:     "GitHub compare URL",
@@ -393,10 +398,11 @@ func TestRepo(t *testing.T) {
 			expectedOk:      true,
 		},
 		{
-			description:     "Valid Gitweb repo",
-			inputLink:       "https://git.ffmpeg.org/gitweb/ffmpeg.git/commitdiff/c94875471e3ba3dc396c6919ff3ec9b14539cd71",
-			expectedRepoURL: "https://git.ffmpeg.org/ffmpeg.git",
-			expectedOk:      true,
+			description:       "Valid Gitweb repo",
+			inputLink:         "https://git.ffmpeg.org/gitweb/ffmpeg.git/commitdiff/c94875471e3ba3dc396c6919ff3ec9b14539cd71",
+			expectedRepoURL:   "https://git.ffmpeg.org/ffmpeg.git",
+			expectedOk:        true,
+			disableExpiryDate: time.Date(2025, 3, 31, 12, 30, 0, 0, time.Local),
 		},
 		{
 			description:     "Undesired researcher repo (by deny regex)",
@@ -461,13 +467,23 @@ func TestRepo(t *testing.T) {
 	}
 
 	for _, tc := range tests {
-		got, err := Repo(tc.inputLink)
-		if err != nil && tc.expectedOk {
-			t.Errorf("test %q: Repo(%q) unexpectedly failed: %+v", tc.description, tc.inputLink, err)
-		}
-		if !reflect.DeepEqual(got, tc.expectedRepoURL) {
-			t.Errorf("test %q: Repo(%q) was incorrect, got: %#v, expected: %#v", tc.description, tc.inputLink, got, tc.expectedRepoURL)
-		}
+
+		t.Run(tc.description, func(t *testing.T) {
+			t.Parallel()
+			if time.Now().Before(tc.disableExpiryDate) {
+				t.Skipf("test %q: Repo(%q) has been skipped due to known outage and will be reenabled on %s.", tc.description, tc.inputLink, tc.disableExpiryDate)
+			}
+			if !tc.disableExpiryDate.IsZero() && time.Now().After(tc.disableExpiryDate) {
+				t.Logf("test %q: Repo(%q) has been enabled on %s.", tc.description, tc.inputLink, tc.disableExpiryDate)
+			}
+			got, err := Repo(tc.inputLink)
+			if err != nil && tc.expectedOk {
+				t.Errorf("test %q: Repo(%q) unexpectedly failed: %+v", tc.description, tc.inputLink, err)
+			}
+			if !reflect.DeepEqual(got, tc.expectedRepoURL) {
+				t.Errorf("test %q: Repo(%q) was incorrect, got: %#v, expected: %#v", tc.description, tc.inputLink, got, tc.expectedRepoURL)
+			}
+		})
 	}
 }
 
@@ -479,6 +495,7 @@ func TestExtractGitCommit(t *testing.T) {
 		expectedAffectedCommit AffectedCommit
 		expectFailure          bool
 		skipOnCloudBuild       bool
+		disableExpiryDate      time.Time // If test needs to be disabled due to known outage.
 	}{
 		{
 			description:     "Valid GitHub commit URL",
@@ -510,16 +527,16 @@ func TestExtractGitCommit(t *testing.T) {
 			inputCommitType: Fixed,
 			expectFailure:   true,
 		},
-		// Currently planned outage: 2025-03-16 -> 2025-03-22
-		//		{
-		//			description:     "Valid GitLab commit URL",
-		//			inputLink:       "https://gitlab.freedesktop.org/virgl/virglrenderer/-/commit/b05bb61f454eeb8a85164c8a31510aeb9d79129c",
-		//			inputCommitType: Fixed,
-		//			expectedAffectedCommit: AffectedCommit{
-		//				Repo:  "https://gitlab.freedesktop.org/virgl/virglrenderer",
-		//				Fixed: "b05bb61f454eeb8a85164c8a31510aeb9d79129c",
-		//			},
-		//		},
+		{
+			description:     "Valid GitLab commit URL",
+			inputLink:       "https://gitlab.freedesktop.org/virgl/virglrenderer/-/commit/b05bb61f454eeb8a85164c8a31510aeb9d79129c",
+			inputCommitType: Fixed,
+			expectedAffectedCommit: AffectedCommit{
+				Repo:  "https://gitlab.freedesktop.org/virgl/virglrenderer",
+				Fixed: "b05bb61f454eeb8a85164c8a31510aeb9d79129c",
+			},
+			disableExpiryDate: time.Date(2025, 3, 22, 12, 30, 0, 0, time.Local),
+		},
 		{
 			description:     "Valid GitLab commit URL with .patch extension",
 			inputLink:       "https://gitlab.com/muttmua/mutt/-/commit/452ee330e094bfc7c9a68555e5152b1826534555.patch",
@@ -642,19 +659,29 @@ func TestExtractGitCommit(t *testing.T) {
 	}
 
 	for _, tc := range tests {
-		if _, ok := os.LookupEnv("BUILD_ID"); ok && tc.skipOnCloudBuild {
-			t.Skipf("test %q: running on Cloud Build", tc.description)
-		}
-		got, err := extractGitCommit(tc.inputLink, tc.inputCommitType)
-		if err != nil && !tc.expectFailure {
-			t.Errorf("test %q: extractGitCommit for %q (%q) errored unexpectedly: %#v", tc.description, tc.inputLink, tc.inputCommitType, err)
-		}
-		if err == nil && tc.expectFailure {
-			t.Errorf("test %q: extractGitCommit for %q (%q) did not error as unexpected!", tc.description, tc.inputLink, tc.inputCommitType)
-		}
-		if !reflect.DeepEqual(got, tc.expectedAffectedCommit) {
-			t.Errorf("test %q: extractGitCommit for %q was incorrect, got: %#v, expected: %#v", tc.description, tc.inputLink, got, tc.expectedAffectedCommit)
-		}
+
+		t.Run(tc.description, func(t *testing.T) {
+			t.Parallel()
+			if _, ok := os.LookupEnv("BUILD_ID"); ok && tc.skipOnCloudBuild {
+				t.Skipf("test %q: running on Cloud Build", tc.description)
+			}
+			if time.Now().Before(tc.disableExpiryDate) {
+				t.Skipf("test %q: extractGitCommit for %q (%q) has been skipped due to known outage and will be reenabled on %s.", tc.description, tc.inputLink, tc.inputCommitType, tc.disableExpiryDate)
+			}
+			if !tc.disableExpiryDate.IsZero() && time.Now().After(tc.disableExpiryDate) {
+				t.Logf("test %q: extractGitCommit(%q, %q) has been enabled on %s.", tc.description, tc.inputLink, tc.inputCommitType, tc.disableExpiryDate)
+			}
+			got, err := extractGitCommit(tc.inputLink, tc.inputCommitType)
+			if err != nil && !tc.expectFailure {
+				t.Errorf("test %q: extractGitCommit for %q (%q) errored unexpectedly: %#v", tc.description, tc.inputLink, tc.inputCommitType, err)
+			}
+			if err == nil && tc.expectFailure {
+				t.Errorf("test %q: extractGitCommit for %q (%q) did not error as unexpected!", tc.description, tc.inputLink, tc.inputCommitType)
+			}
+			if !reflect.DeepEqual(got, tc.expectedAffectedCommit) {
+				t.Errorf("test %q: extractGitCommit for %q was incorrect, got: %#v, expected: %#v", tc.description, tc.inputLink, got, tc.expectedAffectedCommit)
+			}
+		})
 	}
 }
 
@@ -757,13 +784,17 @@ func TestNormalizeVersion(t *testing.T) {
 		},
 	}
 	for _, tc := range tests {
-		got, err := NormalizeVersion(tc.inputVersion)
-		if err != nil && tc.expectedOk {
-			t.Errorf("test %q: Normalize(%q) unexpectedly errored: %#v", tc.description, tc.inputVersion, err)
-		}
-		if !reflect.DeepEqual(got, tc.expectedNormalizedVersion) {
-			t.Errorf("test %q: normalized version for %q was incorrect, got: %q, expected %q", tc.description, tc.inputVersion, got, tc.expectedNormalizedVersion)
-		}
+
+		t.Run(tc.description, func(t *testing.T) {
+			t.Parallel()
+			got, err := NormalizeVersion(tc.inputVersion)
+			if err != nil && tc.expectedOk {
+				t.Errorf("test %q: Normalize(%q) unexpectedly errored: %#v", tc.description, tc.inputVersion, err)
+			}
+			if !reflect.DeepEqual(got, tc.expectedNormalizedVersion) {
+				t.Errorf("test %q: normalized version for %q was incorrect, got: %q, expected %q", tc.description, tc.inputVersion, got, tc.expectedNormalizedVersion)
+			}
+		})
 	}
 }
 
@@ -774,6 +805,7 @@ func TestExtractVersionInfo(t *testing.T) {
 		inputValidVersions  []string
 		expectedVersionInfo VersionInfo
 		expectedNotes       []string
+		disableExpiryDate   time.Time // If test needs to be disabled due to known outage.
 	}{
 		{
 			description:        "A CVE with multiple affected versions",
@@ -905,17 +937,17 @@ func TestExtractVersionInfo(t *testing.T) {
 			},
 			expectedNotes: []string{},
 		},
-		// Currently planned outage: 2025-03-16 -> 2025-03-22
-		//		{
-		//			description:        "A CVE with a weird GitLab reference that breaks version enumeration in the worker",
-		//			inputCVEItem:       loadTestData2("CVE-2022-46285"),
-		//			inputValidVersions: []string{},
-		//			expectedVersionInfo: VersionInfo{
-		//				AffectedCommits:  []AffectedCommit{{Repo: "https://gitlab.freedesktop.org/xorg/lib/libxpm", Fixed: "a3a7c6dcc3b629d7650148"}},
-		//				AffectedVersions: []AffectedVersion{{Fixed: "3.5.15"}},
-		//			},
-		//			expectedNotes: []string{},
-		//		},
+		{
+			description:        "A CVE with a weird GitLab reference that breaks version enumeration in the worker",
+			inputCVEItem:       loadTestData2("CVE-2022-46285"),
+			inputValidVersions: []string{},
+			expectedVersionInfo: VersionInfo{
+				AffectedCommits:  []AffectedCommit{{Repo: "https://gitlab.freedesktop.org/xorg/lib/libxpm", Fixed: "a3a7c6dcc3b629d7650148"}},
+				AffectedVersions: []AffectedVersion{{Fixed: "3.5.15"}},
+			},
+			expectedNotes:     []string{},
+			disableExpiryDate: time.Date(2025, 3, 22, 12, 30, 0, 0, time.Local),
+		},
 		{
 			description:  "A CVE with a different GitWeb reference URL that was not previously being extracted successfully",
 			inputCVEItem: loadTestData2("CVE-2021-28429"),
@@ -934,10 +966,20 @@ func TestExtractVersionInfo(t *testing.T) {
 	}
 
 	for _, tc := range tests {
-		gotVersionInfo, _ := ExtractVersionInfo(tc.inputCVEItem.CVE, tc.inputValidVersions)
-		if diff := cmp.Diff(tc.expectedVersionInfo, gotVersionInfo); diff != "" {
-			t.Errorf("test %q: VersionInfo for %#v was incorrect: %s", tc.description, tc.inputCVEItem, diff)
-		}
+
+		t.Run(tc.description, func(t *testing.T) {
+			t.Parallel()
+			if time.Now().Before(tc.disableExpiryDate) {
+				t.Skipf("test %q: VersionInfo for %#v has been skipped due to known outage and will be reenabled on %s.", tc.description, tc.inputCVEItem, tc.disableExpiryDate)
+			}
+			if !tc.disableExpiryDate.IsZero() && time.Now().After(tc.disableExpiryDate) {
+				t.Logf("test %q: VersionInfo for %#v has been enabled on %s.", tc.description, tc.inputCVEItem, tc.disableExpiryDate)
+			}
+			gotVersionInfo, _ := ExtractVersionInfo(tc.inputCVEItem.CVE, tc.inputValidVersions)
+			if diff := cmp.Diff(tc.expectedVersionInfo, gotVersionInfo); diff != "" {
+				t.Errorf("test %q: VersionInfo for %#v was incorrect: %s", tc.description, tc.inputCVEItem, diff)
+			}
+		})
 	}
 }
 
@@ -960,10 +1002,14 @@ func TestCPEs(t *testing.T) {
 	}
 
 	for _, tc := range tests {
-		gotCPEs := CPEs(tc.inputCVEItem.CVE)
-		if diff := cmp.Diff(gotCPEs, tc.expectedCPEs); diff != "" {
-			t.Errorf("test %q: CPEs for %#v were incorrect: %s", tc.description, tc.inputCVEItem.CVE.Configurations, diff)
-		}
+
+		t.Run(tc.description, func(t *testing.T) {
+			t.Parallel()
+			gotCPEs := CPEs(tc.inputCVEItem.CVE)
+			if diff := cmp.Diff(gotCPEs, tc.expectedCPEs); diff != "" {
+				t.Errorf("test %q: CPEs for %#v were incorrect: %s", tc.description, tc.inputCVEItem.CVE.Configurations, diff)
+			}
+		})
 	}
 }
 
@@ -1007,10 +1053,14 @@ func TestVersionInfoDuplicateDetection(t *testing.T) {
 	}
 
 	for _, tc := range tests {
-		result := tc.inputVersionInfo.Duplicated(tc.inputAffectedCommit)
-		if diff := cmp.Diff(result, tc.expectedResult); diff != "" {
-			t.Errorf("test %q: HasDuplicateAffectedVersions for %#v was incorrect: %s", tc.description, tc.inputVersionInfo, diff)
-		}
+
+		t.Run(tc.description, func(t *testing.T) {
+			t.Parallel()
+			result := tc.inputVersionInfo.Duplicated(tc.inputAffectedCommit)
+			if diff := cmp.Diff(result, tc.expectedResult); diff != "" {
+				t.Errorf("test %q: HasDuplicateAffectedVersions for %#v was incorrect: %s", tc.description, tc.inputVersionInfo, diff)
+			}
+		})
 	}
 }
 
@@ -1063,10 +1113,14 @@ func TestInvalidRangeDetection(t *testing.T) {
 	}
 
 	for _, tc := range tests {
-		result := tc.inputAffectedCommit.InvalidRange()
-		if diff := cmp.Diff(result, tc.expectedResult); diff != "" {
-			t.Errorf("test %q: Duplicated() for %#v was incorrect: %s", tc.description, tc.inputAffectedCommit, diff)
-		}
+
+		t.Run(tc.description, func(t *testing.T) {
+			t.Parallel()
+			result := tc.inputAffectedCommit.InvalidRange()
+			if diff := cmp.Diff(result, tc.expectedResult); diff != "" {
+				t.Errorf("test %q: Duplicated() for %#v was incorrect: %s", tc.description, tc.inputAffectedCommit, diff)
+			}
+		})
 	}
 }
 
@@ -1080,6 +1134,7 @@ func TestValidateAndCanonicalizeLink(t *testing.T) {
 		wantCanonicalLink string
 		wantErr           bool
 		skipOnCloudBuild  bool
+		disableExpiryDate time.Time // If test needs to be disabled due to known outage.
 	}{
 		{
 			name: "A link that 404's",
@@ -1097,10 +1152,14 @@ func TestValidateAndCanonicalizeLink(t *testing.T) {
 			wantCanonicalLink: "https://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git/commit/?id=ee1fee900537b5d9560e9f937402de5ddc8412f3",
 			wantErr:           false,
 			skipOnCloudBuild:  true, // observing indications of IP denylisting as at 2025-02-13
+
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			if time.Now().Before(tt.disableExpiryDate) {
+				t.Skipf("test %q has been skipped due to known outage and will be reenabled on %s.", tt.name, tt.disableExpiryDate)
+			}
 			if _, ok := os.LookupEnv("BUILD_ID"); ok && tt.skipOnCloudBuild {
 				t.Skipf("test %q: running on Cloud Build", tt.name)
 			}
@@ -1121,10 +1180,11 @@ func TestCommit(t *testing.T) {
 		u string
 	}
 	tests := []struct {
-		name    string
-		args    args
-		want    string
-		wantErr bool
+		name              string
+		args              args
+		want              string
+		wantErr           bool
+		disableExpiryDate time.Time // If test needs to be disabled due to known outage.
 	}{
 		{
 			name: "a canoncalized kernel.org cGit URL",
@@ -1169,6 +1229,9 @@ func TestCommit(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			if time.Now().Before(tt.disableExpiryDate) {
+				t.Skipf("test %q has been skipped due to known outage and will be reenabled on %s.", tt.name, tt.disableExpiryDate)
+			}
 			got, err := Commit(tt.args.u)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("Commit() error = %v, wantErr %v", err, tt.wantErr)

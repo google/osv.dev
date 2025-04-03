@@ -5,7 +5,7 @@ metadata:
   labels:
     cronLastSuccessfulTimeMins: "180"
 spec:
-  schedule: "0 */1 * * *"
+  schedule: "0 * * * *"
   concurrencyPolicy: Forbid
   jobTemplate:
     spec:

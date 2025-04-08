@@ -123,7 +123,8 @@ def replace_importer_log(client: storage.Client, source_name: str,
                          bucket_name: str, import_failure_logs: List[str]):
   """Replace the public importer logs with the new one."""
   bucket: storage.Bucket = client.bucket(bucket_name)
-  upload_string = '--- ' + datetime.datetime.now(datetime.timezone.utc).isoformat() + ' ---\n'
+  upload_string = '--- ' + datetime.datetime.now(
+      datetime.timezone.utc).isoformat() + ' ---\n'
   upload_string += '\n'.join(import_failure_logs)
   bucket.blob(source_name).upload_from_string(
       upload_string, retry=retry.DEFAULT_RETRY)
@@ -744,20 +745,22 @@ class Importer:
     result.sort(key=lambda r: r.id())
     VulnAndSource = namedtuple('VulnAndSource', ['id', 'path'])
     logging.info('Retrieved %s results from query', len(result))
-    
+
     vuln_ids_for_source = [
         VulnAndSource(id=r.id(), path=r.source_id.partition(':')[2])
         for r in result
         if not r.withdrawn
     ]
-    logging.info('Counted %d Bugs for %s in Datastore',
-                 len(vuln_ids_for_source), source_repo.name, 
-                 extra={
-              'json_fields': {
-                  'vuln_ids_for_source': vuln_ids_for_source,
-                  'source_repo': source_repo.name,
-                  }
-              })
+    logging.info(
+        'Counted %d Bugs for %s in Datastore',
+        len(vuln_ids_for_source),
+        source_repo.name,
+        extra={
+            'json_fields': {
+                'vuln_ids_for_source': vuln_ids_for_source,
+                'source_repo': source_repo.name,
+            }
+        })
 
     storage_client = storage.Client()
     # Get all of the existing records in the GCS bucket

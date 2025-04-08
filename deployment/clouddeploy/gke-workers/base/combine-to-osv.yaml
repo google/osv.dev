@@ -5,7 +5,7 @@ metadata:
   labels:
     cronLastSuccessfulTimeMins: "90"
 spec:
-  schedule: "30 */1 * * *"
+  schedule: "30 * * * *"
   concurrencyPolicy: Forbid
   failedJobsHistoryLimit: 3
   jobTemplate:
@@ -25,10 +25,10 @@ spec:
               privileged: true
             resources:
               requests:
-                cpu: 30
+                cpu: "30"
                 memory: "4G"
               limits:
-                cpu: 30
+                cpu: "30"
                 memory: "8G"
           nodeSelector:
             cloud.google.com/gke-nodepool: highend

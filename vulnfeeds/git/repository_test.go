@@ -2,6 +2,7 @@ package git
 
 import (
 	"testing"
+	"time"
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/osv/vulnfeeds/cves"
@@ -36,13 +37,16 @@ func TestRepoName(t *testing.T) {
 		},
 	}
 	for _, tc := range tests {
-		got, err := RepoName(tc.input)
-		if err != nil && tc.expectedOk {
-			t.Errorf("test %q: RepoName(%q) unexpectedly failed: %+v", tc.description, tc.input, err)
-		}
-		if got != tc.want {
-			t.Errorf("test %q: RepoName(%q) unexpected result = %q, want %q", tc.description, tc.input, got, tc.want)
-		}
+		t.Run(tc.description, func(t *testing.T) {
+			t.Parallel()
+			got, err := RepoName(tc.input)
+			if err != nil && tc.expectedOk {
+				t.Errorf("test %q: RepoName(%q) unexpectedly failed: %+v", tc.description, tc.input, err)
+			}
+			if got != tc.want {
+				t.Errorf("test %q: RepoName(%q) unexpected result = %q, want %q", tc.description, tc.input, got, tc.want)
+			}
+		})
 	}
 }
 
@@ -50,11 +54,12 @@ func TestRepoTags(t *testing.T) {
 	cache := make(RepoTagsCache)
 
 	tests := []struct {
-		description    string
-		inputRepoURL   string
-		cache          RepoTagsCache
-		expectedResult Tags
-		expectedOk     bool
+		description       string
+		inputRepoURL      string
+		cache             RepoTagsCache
+		expectedResult    Tags
+		expectedOk        bool
+		disableExpiryDate time.Time
 	}{
 		{
 			description:  "Repo with only lightweight tags and no caching",
@@ -162,23 +167,29 @@ func TestRepoTags(t *testing.T) {
 	}
 
 	for _, tc := range tests {
-		var cache_before, cache_after int
-		if tc.cache != nil {
-			cache_before = len(tc.cache)
-		}
-		got, err := RepoTags(tc.inputRepoURL, tc.cache)
-		if err != nil && tc.expectedOk {
-			t.Errorf("test %q: RepoTags(%q) unexpectedly failed: %+v", tc.description, tc.inputRepoURL, err)
-		}
-		if diff := cmp.Diff(got, tc.expectedResult); diff != "" {
-			t.Errorf("test %q: RepoTags(%q) incorrect result: %s", tc.description, tc.inputRepoURL, diff)
-		}
-		if tc.cache != nil {
-			cache_after = len(tc.cache)
-		}
-		if tc.cache != nil && !(cache_after > cache_before) {
-			t.Errorf("test %q: RepoTags(%q) incorrect cache behaviour: size before: %d size after: %d cache: %#v", tc.description, tc.inputRepoURL, cache_before, cache_after, tc.cache)
-		}
+		t.Run(tc.description, func(t *testing.T) {
+			t.Parallel()
+			if time.Now().Before(tc.disableExpiryDate) {
+				t.Skipf("test %q: TestRepoTags(%q) has been skipped due to known outage and will be reenabled on %s.", tc.description, tc.inputRepoURL, tc.disableExpiryDate)
+			}
+			var cache_before, cache_after int
+			if tc.cache != nil {
+				cache_before = len(tc.cache)
+			}
+			got, err := RepoTags(tc.inputRepoURL, tc.cache)
+			if err != nil && tc.expectedOk {
+				t.Errorf("test %q: RepoTags(%q) unexpectedly failed: %+v", tc.description, tc.inputRepoURL, err)
+			}
+			if diff := cmp.Diff(got, tc.expectedResult); diff != "" {
+				t.Errorf("test %q: RepoTags(%q) incorrect result: %s", tc.description, tc.inputRepoURL, diff)
+			}
+			if tc.cache != nil {
+				cache_after = len(tc.cache)
+			}
+			if tc.cache != nil && !(cache_after > cache_before) {
+				t.Errorf("test %q: RepoTags(%q) incorrect cache behaviour: size before: %d size after: %d cache: %#v", tc.description, tc.inputRepoURL, cache_before, cache_after, tc.cache)
+			}
+		})
 	}
 }
 
@@ -235,21 +246,25 @@ func TestNormalizeRepoTag(t *testing.T) {
 	}
 
 	for _, tc := range tests {
-		got, err := normalizeRepoTag(tc.inputTag, tc.repoName)
-		if err != nil && tc.expectedOk {
-			t.Errorf("test %q: normalizeRepoTag(%q, %q): %q unexpectedly failed: %+v", tc.description, tc.inputTag, tc.repoName, got, err)
-		}
-		if diff := cmp.Diff(got, tc.expectedResult); diff != "" {
-			t.Errorf("test %q: normalizeRepoTag(%q, %q) incorrect result: %s", tc.description, tc.inputTag, tc.repoName, diff)
-		}
+		t.Run(tc.description, func(t *testing.T) {
+			t.Parallel()
+			got, err := normalizeRepoTag(tc.inputTag, tc.repoName)
+			if err != nil && tc.expectedOk {
+				t.Errorf("test %q: normalizeRepoTag(%q, %q): %q unexpectedly failed: %+v", tc.description, tc.inputTag, tc.repoName, got, err)
+			}
+			if diff := cmp.Diff(got, tc.expectedResult); diff != "" {
+				t.Errorf("test %q: normalizeRepoTag(%q, %q) incorrect result: %s", tc.description, tc.inputTag, tc.repoName, diff)
+			}
+		})
 	}
 }
 
 func TestNormalizeRepoTags(t *testing.T) {
 	tests := []struct {
-		description  string
-		inputRepoURL string
-		expectedOk   bool
+		description       string
+		inputRepoURL      string
+		expectedOk        bool
+		disableExpiryDate time.Time
 	}{
 		{
 			description:  "Valid repository, normalized versions exist",
@@ -274,27 +289,34 @@ func TestNormalizeRepoTags(t *testing.T) {
 	}
 	cache := make(RepoTagsCache)
 	for _, tc := range tests {
-		normalizedRepoTags, err := NormalizeRepoTags(tc.inputRepoURL, cache)
-		if err != nil && tc.expectedOk {
-			t.Errorf("test %q: NormalizeRepoTags(%q) unexpectedly failed: %+v", tc.description, tc.inputRepoURL, err)
-		}
-		// Confirm there are some normalized versions
-		if len(maps.Keys(normalizedRepoTags)) == 0 && tc.expectedOk {
-			t.Errorf("test %q: NormalizeRepoTags(%q): failed to find any normalized versions for repo in map: %#v", tc.description, tc.inputRepoURL, normalizedRepoTags)
-		}
-		if len(maps.Keys(normalizedRepoTags)) > 0 && cache[tc.inputRepoURL].NormalizedTag == nil {
-			t.Errorf("test %q: NormalizeRepoTags(%q) incorrect cache behaviour: %#v", tc.description, tc.inputRepoURL, cache)
-		}
-		t.Logf("test %q: NormalizedRepoTags(%q): %#v", tc.description, tc.inputRepoURL, normalizedRepoTags)
+		t.Run(tc.description, func(t *testing.T) {
+			t.Parallel()
+			if time.Now().Before(tc.disableExpiryDate) {
+				t.Skipf("test %q: TestNormalizeRepoTags(%q) has been skipped due to known outage and will be reenabled on %s.", tc.description, tc.inputRepoURL, tc.disableExpiryDate)
+			}
+			normalizedRepoTags, err := NormalizeRepoTags(tc.inputRepoURL, cache)
+			if err != nil && tc.expectedOk {
+				t.Errorf("test %q: NormalizeRepoTags(%q) unexpectedly failed: %+v", tc.description, tc.inputRepoURL, err)
+			}
+			// Confirm there are some normalized versions
+			if len(maps.Keys(normalizedRepoTags)) == 0 && tc.expectedOk {
+				t.Errorf("test %q: NormalizeRepoTags(%q): failed to find any normalized versions for repo in map: %#v", tc.description, tc.inputRepoURL, normalizedRepoTags)
+			}
+			if len(maps.Keys(normalizedRepoTags)) > 0 && cache[tc.inputRepoURL].NormalizedTag == nil {
+				t.Errorf("test %q: NormalizeRepoTags(%q) incorrect cache behaviour: %#v", tc.description, tc.inputRepoURL, cache)
+			}
+			t.Logf("test %q: NormalizedRepoTags(%q): %#v", tc.description, tc.inputRepoURL, normalizedRepoTags)
+		})
 	}
 }
 
 func TestValidRepo(t *testing.T) {
 	tests := []struct {
-		description    string
-		repoURL        string
-		expectedResult interface{}
-		expectedOk     bool
+		description       string
+		repoURL           string
+		expectedResult    interface{}
+		expectedOk        bool
+		disableExpiryDate time.Time
 	}{
 		{
 			description:    "Valid repository",
@@ -333,12 +355,18 @@ func TestValidRepo(t *testing.T) {
 		},
 	}
 	for _, tc := range tests {
-		// This tests against Internet hosts and may have intermittent failures.
-		got := ValidRepoAndHasUsableRefs(tc.repoURL)
-		if diff := cmp.Diff(got, tc.expectedResult); diff != "" {
-			t.Errorf("test %q: ValidRepo(%q) was incorrect: %s", tc.description, tc.repoURL, diff)
-			t.Logf("Confirm that %s is reachable with `git ls-remote %s`", tc.repoURL, tc.repoURL)
-		}
+		t.Run(tc.description, func(t *testing.T) {
+			t.Parallel()
+			// This tests against Internet hosts and may have intermittent failures.
+			if time.Now().Before(tc.disableExpiryDate) {
+				t.Skipf("test %q: TestValidRepo(%q) has been skipped due to known outage and will be reenabled on %s.", tc.description, tc.repoURL, tc.disableExpiryDate)
+			}
+			got := ValidRepoAndHasUsableRefs(tc.repoURL)
+			if diff := cmp.Diff(got, tc.expectedResult); diff != "" {
+				t.Errorf("test %q: ValidRepo(%q) was incorrect: %s", tc.description, tc.repoURL, diff)
+				t.Logf("Confirm that %s is reachable with `git ls-remote %s`", tc.repoURL, tc.repoURL)
+			}
+		})
 	}
 }
 

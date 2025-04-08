@@ -2,6 +2,7 @@ package git
 
 import (
 	"testing"
+	"time"
 
 	"github.com/google/osv/vulnfeeds/cves"
 )
@@ -10,12 +11,13 @@ func TestVersionToCommit(t *testing.T) {
 	cache := make(RepoTagsCache)
 
 	tests := []struct {
-		description    string
-		inputRepoURL   string
-		cache          RepoTagsCache
-		inputVersion   string
-		expectedResult string
-		expectedOk     bool
+		description       string
+		inputRepoURL      string
+		cache             RepoTagsCache
+		inputVersion      string
+		expectedResult    string
+		expectedOk        bool
+		disableExpiryDate time.Time
 	}{
 		{
 			description:    "An exact match",
@@ -92,17 +94,26 @@ func TestVersionToCommit(t *testing.T) {
 	}
 
 	for _, tc := range tests {
-		normalizedTags, err := NormalizeRepoTags(tc.inputRepoURL, cache)
-		if err != nil {
-			t.Errorf("test %q: unexpected failure normalizing repo tags: %#v", tc.description, err)
-		}
-		got, err := VersionToCommit(tc.inputVersion, tc.inputRepoURL, cves.Fixed, normalizedTags)
-		if err != nil && tc.expectedOk {
-			t.Errorf("test %q: VersionToCommit(%q, %q) unexpectedly failed: %#v", tc.description, tc.inputVersion, tc.inputRepoURL, err)
-			continue
-		}
-		if got.Fixed != tc.expectedResult {
-			t.Errorf("test %q: VersionToCommit(%q, %q) result incorrect, got: %q wanted: %q", tc.description, tc.inputVersion, tc.inputRepoURL, got.Fixed, tc.expectedResult)
-		}
+		t.Run(tc.description, func(t *testing.T) {
+			t.Parallel()
+			if time.Now().Before(tc.disableExpiryDate) {
+				t.Skipf("test %q: VersionToCommit(%q, %q) has been skipped due to known outage and will be reenabled on %s.", tc.description, tc.inputVersion, tc.inputRepoURL, tc.disableExpiryDate)
+			}
+			if !tc.disableExpiryDate.IsZero() && time.Now().After(tc.disableExpiryDate) {
+				t.Logf("test %q: VersionToCommit(%q, %q) has been enabled on %s.", tc.description, tc.inputVersion, tc.inputRepoURL, tc.disableExpiryDate)
+			}
+			normalizedTags, err := NormalizeRepoTags(tc.inputRepoURL, cache)
+			if err != nil {
+				t.Errorf("test %q: unexpected failure normalizing repo tags: %#v", tc.description, err)
+			}
+			got, err := VersionToCommit(tc.inputVersion, tc.inputRepoURL, cves.Fixed, normalizedTags)
+			if err != nil && tc.expectedOk {
+				t.Errorf("test %q: VersionToCommit(%q, %q) unexpectedly failed: %#v", tc.description, tc.inputVersion, tc.inputRepoURL, err)
+				t.Skip()
+			}
+			if got.Fixed != tc.expectedResult {
+				t.Errorf("test %q: VersionToCommit(%q, %q) result incorrect, got: %q wanted: %q", tc.description, tc.inputVersion, tc.inputRepoURL, got.Fixed, tc.expectedResult)
+			}
+		})
 	}
 }

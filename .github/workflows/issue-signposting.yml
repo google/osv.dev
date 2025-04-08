@@ -1,4 +1,5 @@
 name: Add comments to specifically labeled issues
+permissions: {}
 on:
   issues:
     types:

@@ -1,5 +1,7 @@
 name: Renovate Config Validator
 
+permissions: {}
+
 on:
   push:
     branches: [ master ]

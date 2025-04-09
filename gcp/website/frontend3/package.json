@@ -24,10 +24,10 @@
     "html-webpack-plugin": "5.6.3",
     "mini-css-extract-plugin": "2.9.2",
     "raw-loader": "4.0.2",
-    "sass": "1.86.1",
+    "sass": "1.86.3",
     "sass-loader": "12.6.0",
     "style-loader": "3.3.4",
-    "webpack": "5.98.0",
+    "webpack": "5.99.5",
     "webpack-bundle-analyzer": "4.10.2",
     "webpack-cli": "4.10.0",
     "webpack-dev-server": "4.15.2"

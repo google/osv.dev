@@ -715,10 +715,10 @@ class BucketImporterTest(unittest.TestCase):
       imp.run()
     # The schema validation of failures of the files in GCS by
     # _process_deletions_bucket() causes, plus an extra one from the safeguard.
-    self.assertEqual(5, len(logs.output))
+    self.assertEqual(4, len(logs.output))
     self.assertEqual(
         "ERROR:root:Cowardly refusing to delete 2 missing records from GCS for: test",  # pylint: disable=line-too-long
-        logs.output[-2])
+        logs.output[-1])
 
     # No deletions should have been requested.
     self.assertNotIn(deletion_call, mock_publish.mock_calls)

@@ -827,9 +827,10 @@ class Importer:
     if (len(vulns_to_delete) / len(vuln_ids_for_source) * 100) >= threshold:
       logging.error(
           'Cowardly refusing to delete %d missing records from '
-          'GCS for: %s', len(vulns_to_delete), source_repo.name)
+          'GCS for: %s', len(vulns_to_delete), source_repo.name, extra={
+          })
       vulns = [v.id for v in vulns_to_delete]
-      logging.error('Vulnerabilities to delete: %s', vulns)
+      logging.info('Vulnerabilities to delete: %s', vulns)
       return
 
     # Request deletion.

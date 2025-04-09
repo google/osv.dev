@@ -718,7 +718,7 @@ class BucketImporterTest(unittest.TestCase):
     self.assertEqual(5, len(logs.output))
     self.assertEqual(
         "ERROR:root:Cowardly refusing to delete 2 missing records from GCS for: test",  # pylint: disable=line-too-long
-        logs.output[-1])
+        logs.output[-2])
 
     # No deletions should have been requested.
     self.assertNotIn(deletion_call, mock_publish.mock_calls)

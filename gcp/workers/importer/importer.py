@@ -123,8 +123,7 @@ def replace_importer_log(client: storage.Client, source_name: str,
                          bucket_name: str, import_failure_logs: List[str]):
   """Replace the public importer logs with the new one."""
   bucket: storage.Bucket = client.bucket(bucket_name)
-  upload_string = '--- ' + datetime.datetime.now(
-      datetime.timezone.utc).isoformat() + ' ---\n'
+  upload_string = f'--- {datetime.datetime.now(datetime.UTC).isoformat()} ---\n'
   upload_string += '\n'.join(import_failure_logs)
   bucket.blob(source_name).upload_from_string(
       upload_string, retry=retry.DEFAULT_RETRY)

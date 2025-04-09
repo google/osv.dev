@@ -123,7 +123,7 @@ def replace_importer_log(client: storage.Client, source_name: str,
                          bucket_name: str, import_failure_logs: List[str]):
   """Replace the public importer logs with the new one."""
   bucket: storage.Bucket = client.bucket(bucket_name)
-  upload_string = '--- ' + datetime.datetime.utcnow().isoformat() + ' ---\n'
+  upload_string = f'--- {datetime.datetime.now(datetime.UTC).isoformat()} ---\n'
   upload_string += '\n'.join(import_failure_logs)
   bucket.blob(source_name).upload_from_string(
       upload_string, retry=retry.DEFAULT_RETRY)
@@ -743,13 +743,23 @@ class Importer:
     result = list(query.fetch(keys_only=False))
     result.sort(key=lambda r: r.id())
     VulnAndSource = namedtuple('VulnAndSource', ['id', 'path'])
+    logging.info('Retrieved %s results from query', len(result))
+
     vuln_ids_for_source = [
         VulnAndSource(id=r.id(), path=r.source_id.partition(':')[2])
         for r in result
         if not r.withdrawn
     ]
-    logging.info('Counted %d Bugs for %s in Datastore',
-                 len(vuln_ids_for_source), source_repo.name)
+    logging.info(
+        'Counted %d Bugs for %s in Datastore',
+        len(vuln_ids_for_source),
+        source_repo.name,
+        extra={
+            'json_fields': {
+                'vuln_ids_for_source': vuln_ids_for_source,
+                'source_repo': source_repo.name,
+            }
+        })
 
     storage_client = storage.Client()
     # Get all of the existing records in the GCS bucket
@@ -806,6 +816,7 @@ class Importer:
                  len(vulns_to_delete), source_repo.name)
 
     if len(vulns_to_delete) == 0:
+      logging.info('No bugs to delete from GCS for %s', source_repo.name)
       replace_importer_log(storage_client, source_repo.name,
                            self._public_log_bucket, import_failure_logs)
       return
@@ -815,7 +826,12 @@ class Importer:
     if (len(vulns_to_delete) / len(vuln_ids_for_source) * 100) >= threshold:
       logging.error(
           'Cowardly refusing to delete %d missing records from '
-          'GCS for: %s', len(vulns_to_delete), source_repo.name)
+          'GCS for: %s',
+          len(vulns_to_delete),
+          source_repo.name,
+          extra={})
+      vulns = [v.id for v in vulns_to_delete]
+      logging.info('Vulnerabilities to delete: %s', vulns)
       return
 
     # Request deletion.

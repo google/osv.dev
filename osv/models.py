@@ -427,6 +427,9 @@ class Bug(ndb.Model):
     for alias in self.aliases:
       search_indices.update(self._tokenize(alias))
 
+    for upstream in self.upstream_raw:
+      search_indices.update(self._tokenize(upstream))
+
     for affected_package in self.affected_packages:
       for affected_range in affected_package.ranges:
         if affected_range.repo_url and affected_range.repo_url != '':

@@ -95,7 +95,7 @@
   detect_cherrypicks: False
   extension: '.json'
   db_prefix: ['CURL-']
-  ignore_git: True
+  ignore_git: False
   human_link: 'https://curl.se/docs/{{ BUG_ID | replace("CURL-", "") }}.html'
   link: 'https://curl.se/docs/'
   editable: False

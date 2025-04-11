@@ -47,195 +47,190 @@ def _api():
 class IntegrationTests(unittest.TestCase,
                        tests.ExpectationTest(_TEST_DATA_DIR)):
   """Server integration tests."""
-
-  _VULN_890 = {
-      'vulns': [{
-          'id':
-              'CVE-2024-2002',
-          'details':
-              'A double-free vulnerability was found in libdwarf. In a multiply-corrupted DWARF object, libdwarf may try to dealloc(free) an allocation twice, potentially causing unpredictable and various results.',
-          'modified':
-              '2025-04-10T03:36:25.951623Z',
-          'published':
-              '2024-03-18T13:15:07Z',
-          'related': ['UBUNTU-CVE-2024-2002'],
-          'references': [{
-              'type':
-                  'ARTICLE',
-              'url':
-                  'https://lists.fedoraproject.org/archives/list/package-announce@lists.fedoraproject.org/message/ZGPVLSPIXR32J6FOAFTTIMYTUUXJICGW/'
-          }, {
-              'type': 'REPORT',
-              'url': 'https://bugzilla.redhat.com/show_bug.cgi?id=2267700'
-          }, {
-              'type': 'WEB',
-              'url': 'https://access.redhat.com/security/cve/CVE-2024-2002'
-          }, {
-              'type':
-                  'WEB',
-              'url':
-                  'https://github.com/davea42/libdwarf-code/blob/main/bugxml/data.txt'
-          }, {
-              'type': 'ADVISORY',
-              'url': 'https://security-tracker.debian.org/tracker/CVE-2024-2002'
-          }],
-          'affected': [{
-              'package': {
-                  'name': 'dwarfutils',
-                  'ecosystem': 'Debian:11',
-                  'purl': 'pkg:deb/debian/dwarfutils?arch=source'
-              },
-              'ranges': [{
-                  'type': 'ECOSYSTEM',
-                  'events': [{
-                      'introduced': '0'
-                  }]
-              }],
-              'versions': [
-                  '1:0.11.1-1', '1:0.11.1-1~exp1', '1:0.11.1-1~exp2',
-                  '20201201-1', '20210528-1'
-              ],
-              'ecosystem_specific': {
-                  'urgency': 'not yet assigned'
-              },
-              'database_specific': {
-                  'source':
-                      'https://storage.googleapis.com/cve-osv-conversion/osv-output/CVE-2024-2002.json'
-              }
-          }, {
-              'package': {
-                  'name': 'dwarfutils',
-                  'ecosystem': 'Debian:12',
-                  'purl': 'pkg:deb/debian/dwarfutils?arch=source'
-              },
-              'ranges': [{
-                  'type': 'ECOSYSTEM',
-                  'events': [{
-                      'introduced': '0'
-                  }]
-              }],
-              'versions': [
-                  '1:0.11.1-1', '1:0.11.1-1~exp1', '1:0.11.1-1~exp2',
-                  '20210528-1'
-              ],
-              'ecosystem_specific': {
-                  'urgency': 'not yet assigned'
-              },
-              'database_specific': {
-                  'source':
-                      'https://storage.googleapis.com/cve-osv-conversion/osv-output/CVE-2024-2002.json'
-              }
-          }, {
-              'package': {
-                  'name': 'dwarfutils',
-                  'ecosystem': 'Debian:13',
-                  'purl': 'pkg:deb/debian/dwarfutils?arch=source'
-              },
-              'ranges': [{
-                  'type': 'ECOSYSTEM',
-                  'events': [{
-                      'introduced': '0'
-                  }, {
-                      'fixed': '1:0.11.1-1'
-                  }]
-              }],
-              'versions': ['1:0.11.1-1~exp1', '1:0.11.1-1~exp2', '20210528-1'],
-              'ecosystem_specific': {
-                  'urgency': 'not yet assigned'
-              },
-              'database_specific': {
-                  'source':
-                      'https://storage.googleapis.com/cve-osv-conversion/osv-output/CVE-2024-2002.json'
-              }
-          }, {
-              'ranges': [{
-                  'type':
-                      'GIT',
-                  'repo':
-                      'https://github.com/davea42/libdwarf-code',
-                  'events': [{
-                      'introduced': '0'
-                  }, {
-                      'fixed': '5e43a5ab73cb00c8a46660b361366a8c9c3c93c9'
-                  }]
-              }],
-              'versions': [
-                  '20110113', '20110605', '20110607', '20110612', '20110908',
-                  '20111009', '20111030', '20111214', '20120410', '20121127',
-                  '20121130', '20130125', '20130126', '20130207', '20130729',
-                  '20130729-b', '20140131', '20140208', '20140413', '20140519',
-                  '20140805', '20150112', '20150115', '20150310', '20150507',
-                  '20150913', '20150915', '20151114', '20160116', '20160507',
-                  '20160613', '20160923', '20160929', '20161001', '20161021',
-                  '20161124', '20170416', '20170709', '20180129', '20180527',
-                  '20180723', '20180724', '20180809', '20181024', '20190104',
-                  '20190110', '20190505', '20190529', '20191002', '20191104',
-                  '20200114', '20200703', '20200719', '20200825', '20201020',
-                  '20201201', '20210305', '20210528', 'libdwarf-0.1.1',
-                  'libdwarf-0.2.0', 'libdwarf-0.3.0', 'libdwarf-0.3.1',
-                  'libdwarf-0.3.2', 'libdwarf-0.3.3', 'libdwarf-0.3.4',
-                  'libdwarf-0.4.0', 'libdwarf-0.4.1', 'libdwarf-0.4.2',
-                  'libdwarf-0.5.0', 'libdwarf-0.6.0', 'libdwarf-0.7.0',
-                  'libdwarf-0.8.0-fixedtag', 'libdwarf-0.9.0', 'libdwarf-0.9.1',
-                  'v0.3.4', 'v0.4.0', 'v0.4.1', 'v0.4.2', 'v0.5.0', 'v0.6.0',
-                  'v0.7.0', 'v0.8.0', 'v0.8.0-fixedtag', 'v0.9.0', 'v0.9.1'
-              ],
-              'database_specific': {
-                  'source':
-                      'https://storage.googleapis.com/cve-osv-conversion/osv-output/CVE-2024-2002.json'
-              }
-          }],
-          'schema_version':
-              '1.6.0'
+  _CVE_2024_2002 = {
+      'id':
+          'CVE-2024-2002',
+      'details':
+          'A double-free vulnerability was found in libdwarf. In a multiply-corrupted DWARF object, libdwarf may try to dealloc(free) an allocation twice, potentially causing unpredictable and various results.',
+      'modified':
+          '2025-04-10T03:36:25.951623Z',
+      'published':
+          '2024-03-18T13:15:07Z',
+      'related': ['UBUNTU-CVE-2024-2002'],
+      'references': [{
+          'type':
+              'ARTICLE',
+          'url':
+              'https://lists.fedoraproject.org/archives/list/package-announce@lists.fedoraproject.org/message/ZGPVLSPIXR32J6FOAFTTIMYTUUXJICGW/'
       }, {
-          'id':
-              'OSV-2023-890',
-          'summary':
-              'Heap-use-after-free in dwarf_dealloc',
-          'details':
-              'OSS-Fuzz report: https://bugs.chromium.org/p/oss-fuzz/issues/detail?id=62547\n\n```\nCrash type: Heap-use-after-free READ 2\nCrash state:\ndwarf_dealloc\n_dwarf_fde_destructor\ntdestroy_free_node\n```\n',
-          'modified':
-              '2023-09-21T14:01:03.576815Z',
-          'published':
-              '2023-09-21T14:01:03.576514Z',
-          'references': [{
+          'type': 'REPORT',
+          'url': 'https://bugzilla.redhat.com/show_bug.cgi?id=2267700'
+      }, {
+          'type': 'WEB',
+          'url': 'https://access.redhat.com/security/cve/CVE-2024-2002'
+      }, {
+          'type':
+              'WEB',
+          'url':
+              'https://github.com/davea42/libdwarf-code/blob/main/bugxml/data.txt'
+      }, {
+          'type': 'ADVISORY',
+          'url': 'https://security-tracker.debian.org/tracker/CVE-2024-2002'
+      }],
+      'affected': [{
+          'package': {
+              'name': 'dwarfutils',
+              'ecosystem': 'Debian:11',
+              'purl': 'pkg:deb/debian/dwarfutils?arch=source'
+          },
+          'ranges': [{
+              'type': 'ECOSYSTEM',
+              'events': [{
+                  'introduced': '0'
+              }]
+          }],
+          'versions': [
+              '1:0.11.1-1', '1:0.11.1-1~exp1', '1:0.11.1-1~exp2', '20201201-1',
+              '20210528-1'
+          ],
+          'ecosystem_specific': {
+              'urgency': 'not yet assigned'
+          },
+          'database_specific': {
+              'source':
+                  'https://storage.googleapis.com/cve-osv-conversion/osv-output/CVE-2024-2002.json'
+          }
+      }, {
+          'package': {
+              'name': 'dwarfutils',
+              'ecosystem': 'Debian:12',
+              'purl': 'pkg:deb/debian/dwarfutils?arch=source'
+          },
+          'ranges': [{
+              'type': 'ECOSYSTEM',
+              'events': [{
+                  'introduced': '0'
+              }]
+          }],
+          'versions': [
+              '1:0.11.1-1', '1:0.11.1-1~exp1', '1:0.11.1-1~exp2', '20210528-1'
+          ],
+          'ecosystem_specific': {
+              'urgency': 'not yet assigned'
+          },
+          'database_specific': {
+              'source':
+                  'https://storage.googleapis.com/cve-osv-conversion/osv-output/CVE-2024-2002.json'
+          }
+      }, {
+          'package': {
+              'name': 'dwarfutils',
+              'ecosystem': 'Debian:13',
+              'purl': 'pkg:deb/debian/dwarfutils?arch=source'
+          },
+          'ranges': [{
+              'type': 'ECOSYSTEM',
+              'events': [{
+                  'introduced': '0'
+              }, {
+                  'fixed': '1:0.11.1-1'
+              }]
+          }],
+          'versions': ['1:0.11.1-1~exp1', '1:0.11.1-1~exp2', '20210528-1'],
+          'ecosystem_specific': {
+              'urgency': 'not yet assigned'
+          },
+          'database_specific': {
+              'source':
+                  'https://storage.googleapis.com/cve-osv-conversion/osv-output/CVE-2024-2002.json'
+          }
+      }, {
+          'ranges': [{
               'type':
-                  'REPORT',
-              'url':
-                  'https://bugs.chromium.org/p/oss-fuzz/issues/detail?id=62547'
+                  'GIT',
+              'repo':
+                  'https://github.com/davea42/libdwarf-code',
+              'events': [{
+                  'introduced': '0'
+              }, {
+                  'fixed': '5e43a5ab73cb00c8a46660b361366a8c9c3c93c9'
+              }]
           }],
-          'affected': [{
-              'package': {
-                  'name': 'libdwarf',
-                  'ecosystem': 'OSS-Fuzz',
-                  'purl': 'pkg:generic/libdwarf'
-              },
-              'ranges': [{
-                  'type':
-                      'GIT',
-                  'repo':
-                      'https://github.com/davea42/libdwarf-code',
-                  'events': [{
-                      'introduced': 'b55ce0185528bf0a99e375cf8f3c84b76b6881a3'
-                  }, {
-                      'fixed': 'cd741379bd0203a0875b413542d5f982606ae637'
-                  }]
-              }],
-              'versions': [
-                  'libdwarf-0.7.0', 'libdwarf-0.8.0-fixedtag', 'v0.7.0',
-                  'v0.8.0-fixedtag'
-              ],
-              'ecosystem_specific': {
-                  'severity': 'HIGH'
-              },
-              'database_specific': {
-                  'source':
-                      'https://github.com/google/oss-fuzz-vulns/blob/main/vulns/libdwarf/OSV-2023-890.yaml'
-              }
+          'versions': [
+              '20110113', '20110605', '20110607', '20110612', '20110908',
+              '20111009', '20111030', '20111214', '20120410', '20121127',
+              '20121130', '20130125', '20130126', '20130207', '20130729',
+              '20130729-b', '20140131', '20140208', '20140413', '20140519',
+              '20140805', '20150112', '20150115', '20150310', '20150507',
+              '20150913', '20150915', '20151114', '20160116', '20160507',
+              '20160613', '20160923', '20160929', '20161001', '20161021',
+              '20161124', '20170416', '20170709', '20180129', '20180527',
+              '20180723', '20180724', '20180809', '20181024', '20190104',
+              '20190110', '20190505', '20190529', '20191002', '20191104',
+              '20200114', '20200703', '20200719', '20200825', '20201020',
+              '20201201', '20210305', '20210528', 'libdwarf-0.1.1',
+              'libdwarf-0.2.0', 'libdwarf-0.3.0', 'libdwarf-0.3.1',
+              'libdwarf-0.3.2', 'libdwarf-0.3.3', 'libdwarf-0.3.4',
+              'libdwarf-0.4.0', 'libdwarf-0.4.1', 'libdwarf-0.4.2',
+              'libdwarf-0.5.0', 'libdwarf-0.6.0', 'libdwarf-0.7.0',
+              'libdwarf-0.8.0-fixedtag', 'libdwarf-0.9.0', 'libdwarf-0.9.1',
+              'v0.3.4', 'v0.4.0', 'v0.4.1', 'v0.4.2', 'v0.5.0', 'v0.6.0',
+              'v0.7.0', 'v0.8.0', 'v0.8.0-fixedtag', 'v0.9.0', 'v0.9.1'
+          ],
+          'database_specific': {
+              'source':
+                  'https://storage.googleapis.com/cve-osv-conversion/osv-output/CVE-2024-2002.json'
+          }
+      }],
+      'schema_version':
+          '1.6.0'
+  }
+  _VULN_890 = {
+      'id':
+          'OSV-2023-890',
+      'summary':
+          'Heap-use-after-free in dwarf_dealloc',
+      'details':
+          'OSS-Fuzz report: https://bugs.chromium.org/p/oss-fuzz/issues/detail?id=62547\n\n```\nCrash type: Heap-use-after-free READ 2\nCrash state:\ndwarf_dealloc\n_dwarf_fde_destructor\ntdestroy_free_node\n```\n',
+      'modified':
+          '2023-09-21T14:01:03.576815Z',
+      'published':
+          '2023-09-21T14:01:03.576514Z',
+      'references': [{
+          'type': 'REPORT',
+          'url': 'https://bugs.chromium.org/p/oss-fuzz/issues/detail?id=62547'
+      }],
+      'affected': [{
+          'package': {
+              'name': 'libdwarf',
+              'ecosystem': 'OSS-Fuzz',
+              'purl': 'pkg:generic/libdwarf'
+          },
+          'ranges': [{
+              'type':
+                  'GIT',
+              'repo':
+                  'https://github.com/davea42/libdwarf-code',
+              'events': [{
+                  'introduced': 'b55ce0185528bf0a99e375cf8f3c84b76b6881a3'
+              }, {
+                  'fixed': 'cd741379bd0203a0875b413542d5f982606ae637'
+              }]
           }],
-          'schema_version':
-              '1.6.0'
-      }]
+          'versions': [
+              'libdwarf-0.7.0', 'libdwarf-0.8.0-fixedtag', 'v0.7.0',
+              'v0.8.0-fixedtag'
+          ],
+          'ecosystem_specific': {
+              'severity': 'HIGH'
+          },
+          'database_specific': {
+              'source':
+                  'https://github.com/google/oss-fuzz-vulns/blob/main/vulns/libdwarf/OSV-2023-890.yaml'
+          }
+      }],
+      'schema_version':
+          '1.6.0'
   }
 
   _VULN_744 = {
@@ -344,7 +339,7 @@ class IntegrationTests(unittest.TestCase,
             'commit': '60e572dbf7b4ded66b488f54773f66aaf6184321',
         }),
         timeout=_TIMEOUT)
-    self.assert_results_equal(self._VULN_890, response.json())
+    self.assert_results_equal({'vulns': [self._CVE_2024_2002, self._VULN_890]}, response.json())
 
   def test_query_version(self):
     """Test querying by version."""

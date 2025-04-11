@@ -372,7 +372,7 @@ class Bug(ndb.Model):
     if num_parts > 1:
       for length in range(2, num_parts + 1):
         for i in range(num_parts - length + 1):
-          sub_parts = parts[i : i + length]
+          sub_parts = parts[i:i + length]
           combo = '-'.join(sub_parts)
           tokens.add(combo.lower())
     return tokens
@@ -537,7 +537,6 @@ class Bug(ndb.Model):
 
     if self.withdrawn:
       self.status = bug.BugStatus.INVALID
-
 
   def update_from_vulnerability(self, vulnerability):
     """Set fields from vulnerability. Does not set the ID."""

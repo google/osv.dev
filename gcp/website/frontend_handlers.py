@@ -514,8 +514,8 @@ def osv_query(search_string, page, affected_only, ecosystem):
 
   if search_string and len(search_string) <= 300:
     # Indexed value can only be 1500 bytes at most.
-    # The search string length is capped at 300 characters which should be
-    # enough for package names or bug IDs.
+    # The search string length is capped at 300 which should be enough for
+    # package names or bug IDs.
     query = query.filter(osv.Bug.search_indices == search_string.lower())
 
   if affected_only:

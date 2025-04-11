@@ -671,7 +671,13 @@ def estimate_diff(num_bucket_change: int, file_count_diff: int) -> int:
 def determine_version(version_query: osv_service_v1_pb2.VersionQuery,
                       _: grpc.ServicerContext) -> ndb.Future:
   """Identify fitting commits based on a subset of hashes"""
-  req_list = [osv.FileResult(hash=x.hash) for x in version_query.file_hashes]
+  logging.info("DetermineVersion for %d hashes", len(version_query.file_hashes))
+
+  req_list = []
+  for x in version_query.file_hashes:
+    if x.hash is not None and len(x.hash) <= 100:
+      # We are expecting MD5 hashes which should not be super long.
+      req_list.append(osv.FileResult(hash=x.hash))
 
   # Build all the buckets and query the bucket hash
   buckets = process_buckets(req_list)

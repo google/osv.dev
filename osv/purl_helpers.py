@@ -25,8 +25,11 @@ EcosystemPURL = namedtuple('EcosystemPURL', ['type', 'namespace'])
 # https://github.com/package-url/purl-spec/blob/master/PURL-TYPES.rst
 ECOSYSTEM_PURL_DATA = {
     'AlmaLinux': EcosystemPURL('rpm', 'almalinux'),
+    'Alpaquita': EcosystemPURL('apk', 'alpaquita'),
     'Alpine': EcosystemPURL('apk', 'alpine'),
     # Android
+    'BellSoft Hardened Containers':
+        EcosystemPURL('apk', 'bellsoft-hardened-containers'),
     # Bioconductor
     'Bitnami': EcosystemPURL('bitnami', None),
     'Chainguard': EcosystemPURL('apk', 'chainguard'),
@@ -95,7 +98,8 @@ def package_to_purl(ecosystem: str, package_name: str) -> str | None:
   if purl_type == 'deb' and ecosystem == 'Debian':
     suffix = '?arch=source'
 
-  if purl_type == 'apk' and ecosystem == 'Alpine':
+  if purl_type == 'apk' and ecosystem in ('Alpine', 'Alpaquita',
+                                          'BellSoft Hardened Containers'):
     suffix = '?arch=source'
 
   return f'pkg:{purl_ecosystem}/{_url_encode(package_name)}{suffix}'

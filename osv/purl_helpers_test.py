@@ -26,6 +26,9 @@ class PurlHelpersTest(unittest.TestCase):
     self.assertEqual('pkg:rpm/almalinux/libvpx',
                      purl_helpers.package_to_purl('AlmaLinux', 'libvpx'))
 
+    self.assertEqual('pkg:apk/alpaquita/xz?arch=source',
+                     purl_helpers.package_to_purl('Alpaquita', 'xz'))
+
     self.assertEqual('pkg:apk/alpine/postgresql14?arch=source',
                      purl_helpers.package_to_purl('Alpine', 'postgresql14'))
 
@@ -135,6 +138,10 @@ class PurlHelpersTest(unittest.TestCase):
     """Test parse purl"""
     self.assertEqual(('AlmaLinux', 'libvpx', None),
                      purl_helpers.parse_purl('pkg:rpm/almalinux/libvpx'))
+
+    self.assertEqual(
+        ('Alpaquita', 'xz', None),
+        purl_helpers.parse_purl('pkg:apk/alpaquita/xz?arch=source&distro=stream'))
 
     self.assertEqual(
         ('Alpine', 'postgresql14', None),

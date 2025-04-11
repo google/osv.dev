@@ -364,7 +364,18 @@ class Bug(ndb.Model):
       return []
 
     value_lower = value.lower()
-    return re.split(r'\W+', value_lower) + [value_lower]
+    tokens = {token for token in re.split(r'\W+', value_lower) if token}
+    tokens.add(value_lower)
+
+    parts = value_lower.split('-')
+    num_parts = len(parts)
+    if num_parts > 1:
+      for length in range(2, num_parts + 1):
+        for i in range(num_parts - length + 1):
+          sub_parts = parts[i : i + length]
+          combo = '-'.join(sub_parts)
+          tokens.add(combo.lower())
+    return tokens
 
   def _pre_put_hook(self):  # pylint: disable=arguments-differ
     """Pre-put hook for populating search indices."""
@@ -526,6 +537,7 @@ class Bug(ndb.Model):
 
     if self.withdrawn:
       self.status = bug.BugStatus.INVALID
+
 
   def update_from_vulnerability(self, vulnerability):
     """Set fields from vulnerability. Does not set the ID."""

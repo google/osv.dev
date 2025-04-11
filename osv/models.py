@@ -427,6 +427,8 @@ class Bug(ndb.Model):
     for alias in self.aliases:
       search_indices.update(self._tokenize(alias))
 
+    # Please note this will not include exhaustive transitive upstream
+    # so may not appear for all cases.
     for upstream in self.upstream_raw:
       search_indices.update(self._tokenize(upstream))
 

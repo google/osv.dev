@@ -537,8 +537,23 @@ def osv_query(search_string, page, affected_only, ecosystem):
 
   bugs, _, _ = query.fetch_page(
       page_size=_PAGE_SIZE, offset=(page - 1) * _PAGE_SIZE)
-  for bug in bugs:
-    result_items.append(bug_to_response(bug, detailed=False))
+
+  # The following only works 100% as intended if all of these results appear in
+  # the first page
+  if _VALID_VULN_ID.match(search_string):
+    sorting_bugs = list(bugs)
+    # yapf: disable
+    bugs = sorted(
+        sorting_bugs,
+        key=lambda bug: (
+            0 if bug.db_id == search_string else
+            1 if search_string in bug.aliases else
+            2 if search_string in bug.upstream_raw else
+            3 if search_string in bug.related else
+            4,  # Default priority for items not matching specific criteria
+            -bug.timestamp.timestamp()))
+    # yapf: enable
+  result_items = [bug_to_response(bug, detailed=False) for bug in bugs]
 
   results = {
       'total': total_future.get_result(),

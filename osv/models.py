@@ -367,6 +367,9 @@ class Bug(ndb.Model):
     tokens = {token for token in re.split(r'\W+', value_lower) if token}
     tokens.add(value_lower)
 
+    # Add subsection combinations from id (split at '-') in the search indices
+    # Specifically addresses situation in which UBUNTU-CVE-XXXs don't show up
+    # when searching for the CVE-XXX.
     parts = value_lower.split('-')
     num_parts = len(parts)
     if num_parts > 1:
@@ -374,7 +377,7 @@ class Bug(ndb.Model):
         for i in range(num_parts - length + 1):
           sub_parts = parts[i:i + length]
           combo = '-'.join(sub_parts)
-          tokens.add(combo.lower())
+          tokens.add(combo)
     return tokens
 
   def _pre_put_hook(self):  # pylint: disable=arguments-differ
@@ -454,7 +457,6 @@ class Bug(ndb.Model):
 
     self.search_indices = list(set(search_indices))
     self.search_indices.sort()
-
     self.affected_fuzzy = []
     self.semver_fixed_indexes = []
     self.has_affected = False

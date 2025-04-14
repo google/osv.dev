@@ -364,12 +364,16 @@ class Bug(ndb.Model):
       return []
 
     value_lower = value.lower()
+
+    # Deconstructs the id given into parts by retrieving parts that are
+    # alphanumeric.
     tokens = {token for token in re.split(r'\W+', value_lower) if token}
     tokens.add(value_lower)
 
     # Add subsection combinations from id (split at '-') in the search indices
     # Specifically addresses situation in which UBUNTU-CVE-XXXs don't show up
     # when searching for the CVE-XXX.
+    # Does not account for combinations with the suffix sections ':' like SUSE
     parts = value_lower.split('-')
     num_parts = len(parts)
     if num_parts > 1:

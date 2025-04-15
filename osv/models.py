@@ -367,6 +367,7 @@ class Bug(ndb.Model):
 
     # Deconstructs the id given into parts by retrieving parts that are
     # alphanumeric.
+    # This addresses special cases like SUSE that include ':' in their id suffix
     tokens = {token for token in re.split(r'\W+', value_lower) if token}
     tokens.add(value_lower)
 

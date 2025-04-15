@@ -5,7 +5,7 @@ metadata:
   labels:
     cronLastSuccessfulTimeMins: "180"
 spec:
-  schedule: "0 */1 * * *"
+  schedule: "0 * * * *"
   concurrencyPolicy: Forbid
   jobTemplate:
     spec:
@@ -25,12 +25,12 @@ spec:
               privileged: true
             resources:
               requests:
-                cpu: 1
+                cpu: "1"
                 memory: "1G"
               limits:
-                cpu: 1
+                cpu: "1"
                 memory: "2G"
-          restartPolicy: OnFailure
+          restartPolicy: Never
           volumes:
             - name: "ssd"
               hostPath:

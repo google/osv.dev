@@ -17,9 +17,9 @@ spec:
             imagePullPolicy: Always
             resources:
               requests:
-                cpu: 1
+                cpu: "1"
                 memory: "3G"
               limits:
-                cpu: 1
+                cpu: "1"
                 memory: "4G"
-          restartPolicy: OnFailure
+          restartPolicy: Never

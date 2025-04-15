@@ -18,9 +18,9 @@ spec:
             command: ["/usr/local/bin/backup/backup.py"]
             resources:
               requests:
-                cpu: 1
+                cpu: "1"
                 memory: "3G"
               limits:
-                cpu: 1
+                cpu: "1"
                 memory: "4G"
           restartPolicy: OnFailure

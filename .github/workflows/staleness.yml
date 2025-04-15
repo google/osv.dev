@@ -1,6 +1,6 @@
 name: "Close stale issues and PRs"
 
-permissions: read-all
+permissions: {}
 
 on:
   schedule:
@@ -20,6 +20,7 @@ jobs:
           operations-per-run: 100
           remove-stale-when-updated: true
           exempt-issue-labels: "good first issue,backlog"
+          exempt-pr-labels: "backlog"
           exempt-all-assignees: true
           ignore-updates: false
           stale-issue-label: stale

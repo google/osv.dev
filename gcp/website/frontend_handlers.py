@@ -55,6 +55,10 @@ _VALID_VULN_ID = _WORD_CHARACTERS_OR_DASH_OR_COLON
 _BLOG_CONTENTS_DIR = 'blog'
 _DEPS_BASE_URL = 'https://deps.dev'
 _FIRST_CVSS_CALCULATOR_BASE_URL = 'https://www.first.org/cvss/calculator'
+_GO_VANITY_METADATA = \
+  ('<meta name="go-import" '
+   'content="osv.dev git https://github.com/google/osv.dev">')
+
 _ndb_client = ndb.Client()
 
 
@@ -124,8 +128,21 @@ def index_v2_with_subpath(subpath):
   return redirect('/' + subpath)
 
 
+@blueprint.route('/bindings/go')
+def go_bindings_vanity():
+  if request.args.get('go-get', 0) == '1':
+    return _GO_VANITY_METADATA
+
+  abort(404)
+  return None
+
+
 @blueprint.route('/')
 def index():
+  # Go will request the root url to make sure we own this domain
+  if request.args.get('go-get', 0) == '1':
+    return _GO_VANITY_METADATA
+
   return render_template(
       'home.html', ecosystem_counts=osv_get_ecosystem_counts_cached())
 
@@ -298,15 +315,12 @@ def bug_to_response(bug, detailed=True):
       'isFixed': bug.is_fixed,
       'invalid': bug.status == osv.BugStatus.INVALID
   })
-
   add_cvss_score(response)
 
   if detailed:
     add_links(response)
     add_source_info(bug, response)
-    # TODO(jesslowe): remove once speed verified in staging
-    if getattr(_ndb_client, 'project', 'oss-vdb-test') == 'oss-vdb-test':
-      add_stream_info(bug, response)
+    add_stream_info(bug, response)
   return response
 
 
@@ -314,8 +328,7 @@ def add_stream_info(bug, response):
   """Add upstream hierarchy information to `response`."""
   # Check whether there are upstreams
   if bug.upstream_raw and 'upstream' in response:
-    upstream_hierarchy_string = get_upstreams_of_vulnerability(
-        bug.db_id, response['upstream'])
+    upstream_hierarchy_string = get_upstreams_of_vulnerability(bug)
     response['upstream_hierarchy'] = upstream_hierarchy_string
   # Check whether there are downstreams
   downstreams = _get_downstreams_of_bug_query(bug.db_id)
@@ -499,7 +512,10 @@ def osv_query(search_string, page, affected_only, ecosystem):
   query: ndb.Query = osv.Bug.query(osv.Bug.status == osv.BugStatus.PROCESSED,
                                    osv.Bug.public == True)  # pylint: disable=singleton-comparison
 
-  if search_string:
+  if search_string and len(search_string) <= 300:
+    # Indexed value can only be 1500 bytes at most.
+    # The search string length is capped at 300 which should be enough for
+    # package names or bug IDs.
     query = query.filter(osv.Bug.search_indices == search_string.lower())
 
   if affected_only:
@@ -521,8 +537,23 @@ def osv_query(search_string, page, affected_only, ecosystem):
 
   bugs, _, _ = query.fetch_page(
       page_size=_PAGE_SIZE, offset=(page - 1) * _PAGE_SIZE)
-  for bug in bugs:
-    result_items.append(bug_to_response(bug, detailed=False))
+
+  # The following only works 100% as intended if all of these results appear in
+  # the first page
+  if _VALID_VULN_ID.match(search_string):
+    sorting_bugs = list(bugs)
+    # yapf: disable
+    bugs = sorted(
+        sorting_bugs,
+        key=lambda bug: (
+            0 if bug.db_id == search_string else
+            1 if search_string in bug.aliases else
+            2 if search_string in bug.upstream_raw else
+            3 if search_string in bug.related else
+            4,  # Default priority for items not matching specific criteria
+            -bug.timestamp.timestamp()))
+    # yapf: enable
+  result_items = [bug_to_response(bug, detailed=False) for bug in bugs]
 
   results = {
       'total': total_future.get_result(),
@@ -869,8 +900,22 @@ def construct_hierarchy_string(target_bug_id: str, root_nodes: set[str],
   return final_string
 
 
-def get_upstreams_of_vulnerability(target_bug_id: str,
-                                   transitive_upstreams: list[str]) -> str:
+def reverse_tree(graph: dict[str, set[str]]) -> dict[str, set[str]]:
+  """
+  Reverses a graph represented as a dictionary
+  """
+
+  reversed_graph = {}
+  for node, children in graph.items():
+    for child in children:
+      if child not in reversed_graph:
+        reversed_graph[child] = set()
+      reversed_graph[child].add(node)
+
+  return reversed_graph
+
+
+def get_upstreams_of_vulnerability(bug) -> str | None:
   """Gets the upstream hierarchy of a vulnerability.
 
   Args:
@@ -880,76 +925,74 @@ def get_upstreams_of_vulnerability(target_bug_id: str,
     A string representing the upstream hierarchy for display by 
     the frontend.
   """
+  target_bug_group = osv.UpstreamGroup.query(
+      osv.UpstreamGroup.db_id == bug.db_id).get()
+  upstream_hierarchy_json = target_bug_group.upstream_hierarchy
 
-  bugs_group_dict = {b_id: [] for b_id in transitive_upstreams}
-  bug_groups_keys = [
-      ndb.Key(osv.UpstreamGroup, id) for id in transitive_upstreams
-  ]
-  bug_groups_upstream = ndb.get_multi(bug_groups_keys)
-  if bug_groups_upstream is None:
-    return None
-  for bug in bug_groups_upstream:
-    if bug is not None:
-      bugs_group_dict[bug.db_id] = bug.upstream_ids
+  if upstream_hierarchy_json:
+    upstream_hierarchy = json.loads(upstream_hierarchy_json)
 
-  bugs_group_dict[target_bug_id] = transitive_upstreams
+    reversed_graph = reverse_tree(upstream_hierarchy)
+    if has_cycle(reversed_graph):
+      logging.error("Cycle detected in upstream hierarchy for %s", bug.db_id)
+      return None
+    all_children = set()
+    for children in upstream_hierarchy.values():
+      all_children.update(children)
 
-  upstream_hierarchy = _compute_upstream_hierarchy(target_bug_id,
-                                                   bugs_group_dict)
-  reversed_graph = reverse_tree(upstream_hierarchy)
-  if has_cycle(reversed_graph):
-    logging.error("Cycle detected in upstream hierarchy for %s", target_bug_id)
+    root_nodes = set(all_children - set(upstream_hierarchy.keys()))
 
-    return None
-
-  all_children = set()
-  for children in upstream_hierarchy.values():
-    all_children.update(children)
-
-  root_nodes = set(all_children - set(upstream_hierarchy.keys()))
-
-  upstream_hierarchy_string = construct_hierarchy_string(
-      target_bug_id, root_nodes, reversed_graph)
-  return upstream_hierarchy_string
+    upstream_hierarchy_string = construct_hierarchy_string(
+        bug.db_id, root_nodes, reversed_graph)
+    return upstream_hierarchy_string
+  return ""
 
 
-def _compute_upstream_hierarchy(
-    target_bug_id: str, bug_groups: dict[str,
-                                         list[str]]) -> dict[str, set[str]]:
-  """Computes all upstream vulnerabilities for the given bug ID.
-  The returned list contains all of the bug IDs that are upstream of the
-  target bug ID, including transitive upstreams in a map hierarchy.
-  bug_group:
-        { db_id: bug id
-          upstream_ids: str[bug_ids]
-          last_modified_date}
+def has_cycle(graph: dict[str, set[str]]) -> bool:
   """
+    Determines whether there are any cycles in a directed graph represented
+    as an adjacency list.
+
+    Args:
+        graph: A dictionary representing the graph, where keys are nodes and
+        values are sets of their neighbors.
+
+    Returns:
+        True if the graph contains a cycle, False otherwise.
+    """
+
   visited = set()
-  upstream_map = {}
-  to_visit = set([target_bug_id])
-  while to_visit:
-    bug_id = to_visit.pop()
-    if bug_id in visited:
-      continue
-    visited.add(bug_id)
-    upstreams = set(bug_groups.get(bug_id, []))
-    if not upstreams:
-      continue
-    for upstream in upstreams:
-      if upstream not in visited and upstream not in to_visit:
-        to_visit.add(upstream)
-      else:
-        if bug_id not in upstream_map:
-          upstream_map[bug_id] = set([upstream])
-        else:
-          upstream_map[bug_id].add(upstream)
-      upstream_map[bug_id] = upstreams
-      to_visit.update(upstreams - visited)
-  for k, v in upstream_map.items():
-    if k is target_bug_id:
-      continue
-    upstream_map[target_bug_id] = upstream_map[target_bug_id] - v
-  return upstream_map
+  recursion_stack = set()
+
+  def dfs(node: str) -> bool:
+    """
+        Performs Depth-First Search to detect cycles.
+
+        Args:
+            node: The current node being visited.
+
+        Returns:
+            True if a cycle is detected, False otherwise.
+        """
+    visited.add(node)
+    recursion_stack.add(node)
+
+    for neighbor in graph.get(node, set()):
+      if neighbor in recursion_stack:
+        return True  # Cycle detected
+      if neighbor not in visited:
+        if dfs(neighbor):
+          return True
+
+    recursion_stack.remove(node)
+    return False
+
+  for node in graph:
+    if node not in visited:
+      if dfs(node):
+        return True
+
+  return False
 
 
 def _get_downstreams_of_bug_query(bug_id: str) -> dict[str, list[str]]:
@@ -1008,65 +1051,3 @@ def compute_downstream_hierarchy(target_bug_id: str,
   hierarchy_string = construct_hierarchy_string(target_bug_id, root_leaves,
                                                 downstream_map)
   return hierarchy_string
-
-
-def reverse_tree(graph: dict[str, set[str]]) -> dict[str, set[str]]:
-  """
-  Reverses a graph represented as a dictionary
-  """
-
-  reversed_graph = {}
-  for node, children in graph.items():
-    for child in children:
-      if child not in reversed_graph:
-        reversed_graph[child] = set()
-      reversed_graph[child].add(node)
-
-  return reversed_graph
-
-
-def has_cycle(graph: dict[str, set[str]]) -> bool:
-  """
-    Determines whether there are any cycles in a directed graph represented
-    as an adjacency list.
-
-    Args:
-        graph: A dictionary representing the graph, where keys are nodes and
-        values are sets of their neighbors.
-
-    Returns:
-        True if the graph contains a cycle, False otherwise.
-    """
-
-  visited = set()
-  recursion_stack = set()
-
-  def dfs(node: str) -> bool:
-    """
-        Performs Depth-First Search to detect cycles.
-
-        Args:
-            node: The current node being visited.
-
-        Returns:
-            True if a cycle is detected, False otherwise.
-        """
-    visited.add(node)
-    recursion_stack.add(node)
-
-    for neighbor in graph.get(node, set()):
-      if neighbor in recursion_stack:
-        return True  # Cycle detected
-      if neighbor not in visited:
-        if dfs(neighbor):
-          return True
-
-    recursion_stack.remove(node)
-    return False
-
-  for node in graph:
-    if node not in visited:
-      if dfs(node):
-        return True
-
-  return False

@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-FROM golang:1.24.1-alpine@sha256:43c094ad24b6ac0546c62193baeb3e6e49ce14d3250845d166c77c25f64b0386 AS GO_BUILD
+FROM golang:1.24.2-alpine@sha256:7772cb5322baa875edd74705556d08f0eeca7b9c4b5367754ce3f2f00041ccee AS GO_BUILD
 
 RUN mkdir /src
 WORKDIR /src
@@ -25,7 +25,7 @@ COPY ./ /src/
 RUN go build -o alpine-osv ./cmd/alpine/
 
 
-FROM gcr.io/google.com/cloudsdktool/google-cloud-cli:485.0.0-alpine@sha256:d5da0344b23d03a6f2728657732c7a60300a91acaad9b8076c6fd30b1dfe1ff4
+FROM gcr.io/google.com/cloudsdktool/google-cloud-cli:alpine@sha256:842e710b4c98cdf36d52e1783be7c071080e8ae7bc9456240d57525aed364475
 
 WORKDIR /root/
 COPY --from=GO_BUILD /src/alpine-osv ./

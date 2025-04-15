@@ -16,6 +16,7 @@ from osv import tests
 from google.cloud import ndb
 import osv
 import datetime
+from gcp.workers.alias import upstream_computation
 
 
 def setUp():
@@ -361,6 +362,8 @@ def setUp():
       db_id='CYCLE-ROOT-2',
       upstream_ids=['CYCLE-ROOT-1'],
       last_modified=datetime.datetime(2023, 8, 14)).put()
+
+  upstream_computation.main()
 
 
 if __name__ == '__main__':

@@ -427,6 +427,11 @@ class Bug(ndb.Model):
     for alias in self.aliases:
       search_indices.update(self._tokenize(alias))
 
+    # Please note this will not include exhaustive transitive upstream
+    # so may not appear for all cases.
+    for upstream in self.upstream_raw:
+      search_indices.update(self._tokenize(upstream))
+
     for affected_package in self.affected_packages:
       for affected_range in affected_package.ranges:
         if affected_range.repo_url and affected_range.repo_url != '':
@@ -952,6 +957,7 @@ class UpstreamGroup(ndb.Model):
   db_id: str = ndb.StringProperty()
   # List of transitive upstreams
   upstream_ids: list[str] = ndb.StringProperty(repeated=True)
+  upstream_hierarchy: str = ndb.JsonProperty()
   # Date when group was last modified
   last_modified: datetime = ndb.DateTimeProperty()
 

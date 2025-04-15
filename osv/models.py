@@ -373,15 +373,15 @@ class Bug(ndb.Model):
     # Add subsection combinations from id (split at '-') in the search indices
     # Specifically addresses situation in which UBUNTU-CVE-XXXs don't show up
     # when searching for the CVE-XXX.
+    # e.g. `a-b-c-d' becomes ['a-b', 'b-c', 'c-d', 'a-b-c', 'b-c-d', 'a-b-c-d']
     # Does not account for combinations with the suffix sections ':' like SUSE
     parts = value_lower.split('-')
     num_parts = len(parts)
-    if num_parts > 1:
-      for length in range(2, num_parts + 1):
-        for i in range(num_parts - length + 1):
-          sub_parts = parts[i:i + length]
-          combo = '-'.join(sub_parts)
-          tokens.add(combo)
+    for length in range(2, num_parts + 1):
+      for i in range(num_parts - length + 1):
+        sub_parts = parts[i:i + length]
+        combo = '-'.join(sub_parts)
+        tokens.add(combo)
     return tokens
 
   def _pre_put_hook(self):  # pylint: disable=arguments-differ

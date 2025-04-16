@@ -143,7 +143,7 @@ Some types: `feat:`, `fix:`, `docs:`, `chore:`, `refactor:`, and others.
 
 Data contributions are also welcome!
 
-If you a work with a project such as a Linux distribution and would like to
+If you work with a project such as a Linux distribution and would like to
 contribute your security advisories, please follow these steps.
 
 1.  Open an [issue](https://github.com/google/osv.dev/issues). Let us know about

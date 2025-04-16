@@ -364,7 +364,26 @@ class Bug(ndb.Model):
       return []
 
     value_lower = value.lower()
-    return re.split(r'\W+', value_lower) + [value_lower]
+
+    # Deconstructs the id given into parts by retrieving parts that are
+    # alphanumeric.
+    # This addresses special cases like SUSE that include ':' in their id suffix
+    tokens = {token for token in re.split(r'\W+', value_lower) if token}
+    tokens.add(value_lower)
+
+    # Add subsection combinations from id (split at '-') in the search indices
+    # Specifically addresses situation in which UBUNTU-CVE-XXXs don't show up
+    # when searching for the CVE-XXX.
+    # e.g. `a-b-c-d' becomes ['a-b', 'b-c', 'c-d', 'a-b-c', 'b-c-d', 'a-b-c-d']
+    # Does not account for combinations with the suffix sections ':' like SUSE
+    parts = value_lower.split('-')
+    num_parts = len(parts)
+    for length in range(2, num_parts + 1):
+      for i in range(num_parts - length + 1):
+        sub_parts = parts[i:i + length]
+        combo = '-'.join(sub_parts)
+        tokens.add(combo)
+    return tokens
 
   def _pre_put_hook(self):  # pylint: disable=arguments-differ
     """Pre-put hook for populating search indices."""
@@ -443,7 +462,6 @@ class Bug(ndb.Model):
 
     self.search_indices = list(set(search_indices))
     self.search_indices.sort()
-
     self.affected_fuzzy = []
     self.semver_fixed_indexes = []
     self.has_affected = False

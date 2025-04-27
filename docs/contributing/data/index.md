@@ -1,9 +1,10 @@
 ---
 layout: page
 title: Contributing Data
-permalink: /data/
-nav_order: 3
-has_children: false
+permalink: /contributing/data/
+nav_order: 1
+has_children: true
+parent: Contributing
 ---
 # Contributing Data
 
@@ -12,7 +13,7 @@ Data contributions are welcome. If you work with a project such as a Linux distr
 please follow these steps:
 
 - [ ] Decide if you're going to publish records via a [Git repository](/git-repo-contribution), [GCS bucket](/gcs-bucket-contribution/) or [REST endpoint](/rest-api-contribution/).
-- [ ] Open an [issue](https://github.com/google/osv.dev/issues). Let us know about your project and tag the issue `datasource` so we can properly triage the issue.
+- [ ] Open an [issue](https://github.com/google/osv.dev/issues) using the 'new data source' template. 
 - [ ] Prepare your data - refer to the [OSV Schema](https://ossf.github.io/osv-schema/) documentation for information on how to properly format the data so it can be accepted. 
 - [ ] Create a PR to [reserve a prefix in the OSV-Schema](https://ossf.github.io/osv-schema/#id-modified-fields). We review the records you start publishing for OSV Schema [correctness](https://github.com/ossf/osv-schema/tree/main/validation) and [quality](https://google.github.io/osv.dev/data_quality.html) as part of reviewing and merging this PR.
 
@@ -28,7 +29,7 @@ please follow these steps:
 - [ ] Create a PR to start [importing the records you are publishing into our production environment](https://github.com/google/osv.dev/blob/master/source.yaml)
   
   **Worked example:**
-  - https://github.com/google/osv.dev/pull/2105)
+  - https://github.com/google/osv.dev/pull/2105
 
 
 Do you have a question, suggestion or feedback? Please [open an issue](https://github.com/google/osv.dev/issues). 

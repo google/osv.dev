@@ -1,9 +1,9 @@
 ---
 layout: page
 title: Contributing Data from REST API
-permalink: /rest-api-contribution/
-nav_order: 2
-parent: Contributing
+permalink: /contributing/data/rest-api/
+nav_order: 3
+parent: Contributing Data
 ---
 # Contributing Data from REST API
 
@@ -36,6 +36,26 @@ Full vulnerability information in the osv format should be posted at the endpoin
 
 ### 3. The extension used for the individual vulnerability endpoints:
 The ``.json`` extension is preferred, but discuss in your issue if you need to use a different extension.
+
+
+Example source.yaml addition:
+```yaml
+- name: 'curl'
+  versions_from_repo: False
+  rest_api_url: 'https://curl.se/docs/vuln.json' # URL pointing to a REST endpoint containing at least all of the vulnerabilities' IDs and date modified
+  type: 2 # 0: GIT, 1: GCS, 2: REST
+  ignore_patterns: ['^(?!CURL-).*$']  # NOTE: Not currently supported for REST sources
+  directory_path: 'docs' # Vulnerability data not under this path is ignored by the importer
+  detect_cherrypicks: False # Whether to detect cherrypicks or not (slow for large repos)
+  extension: '.json' # Extension for vulnerability data
+  db_prefix: ['CURL-'] # DB prefix, as reserved in ossf. https://ossf.github.io/osv-schema/#id-modified-fields
+  ignore_git: False # If true, don't analyze any Git ranges.
+  human_link: 'https://curl.se/docs/{{ BUG_ID | replace("CURL-", "") }}.html'  # The human readable link
+  link: 'https://curl.se/docs/' # The base link
+  editable: False # Whether this repository is editable.
+  strict_validation: False # Apply strict validation (JSON Schema + linter checks) to this source.
+
+```
 
 
 ### Open an issue [here](https://github.com/google/osv.dev/issues).

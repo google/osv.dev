@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-FROM gcr.io/google.com/cloudsdktool/google-cloud-cli:alpine@sha256:7e6937555d2b82843dfb1dbbc60c5adbcc02d57358ac79a24203d3eb56ff7959
+FROM gcr.io/google.com/cloudsdktool/google-cloud-cli:alpine@sha256:a22e57b8929966ecf8590d330b8a481e0d7b7413ba970fcff3610e038059f056
 
 # Setup Poetry in its own virtual environment.
 # So when poetry changes the system dependencies, it doesn't mess with its own dependencies

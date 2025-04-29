@@ -118,11 +118,16 @@ func downloadCVE2(APIKey string, CVEPath string) {
 	var vulnerabilities []cves.Vulnerability
 	page := &cves.CVEAPIJSON20Schema{}
 	offset := 0
+	prevTotal := 0
 	for {
 		page, err = downloadCVE2WithOffset(APIKey, offset)
 		if err != nil {
 			Logger.Fatalf("Failed to download at offset %d: %+v", offset, err)
 		}
+		if page.TotalResults < prevTotal {
+			Logger.Fatalf("TotalResults decreased from %d to %d", prevTotal, page.TotalResults)
+		}
+		prevTotal = page.TotalResults
 		vulnerabilities = append(vulnerabilities, page.Vulnerabilities...)
 		offset += PageSize
 		if offset > page.TotalResults {

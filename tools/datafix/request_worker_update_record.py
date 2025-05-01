@@ -17,7 +17,8 @@ DEFAULT_TIMEOUT = 60
 PUBSUB_TOPIC_ID = "tasks"
 
 
-def publish_update_message(project_id, topic_id, source, path, original_sha256):
+def publish_update_message(project_id, topic_id, source, path, original_sha256,
+                           deleted=False):
   """Publish a message to a Pub/Sub topic with the provided data as attributes.
 
   Args:
@@ -26,6 +27,7 @@ def publish_update_message(project_id, topic_id, source, path, original_sha256):
       source: The record source ID.
       path: The record path.
       original_sha256: The original SHA256 checksum of the record.
+      deleted: Whether the record has been deleted.
   """
 
   publisher = pubsub_v1.PublisherClient()
@@ -39,7 +41,7 @@ def publish_update_message(project_id, topic_id, source, path, original_sha256):
           "source": source,
           "path": path,
           "original_sha256": original_sha256,
-          "deleted": "false",
+          "deleted": "true" if deleted else "false",
           "req_timestamp": str(int(time.time())),
       },
   )
@@ -59,19 +61,25 @@ def github_raw_url(repo_url, path):
   return f'https://raw.githubusercontent.com/{repo}/refs/heads/main/' + path
 
 
-def request_url_update(record_url, project_id, source, path, timeout):
+def request_url_update(record_url, project_id, source, path, timeout,
+                       allow_delete):
   """Request a update based on a URL record."""
   print(f'Trying: {record_url}')
   response = requests.get(record_url, timeout=timeout)
+  original_sha256 = ''
+  deleted = False
   try:
     response.raise_for_status()
+    original_sha256 = osv.sha256_bytes(response.text.encode())
   except requests.HTTPError as e:
-    print(e)
-    return
+    if not allow_delete or e.response.status_code != 404:
+      print(e)
+      return
+    print(f'Bug was deleted: {record_url}')
+    deleted = True
 
-  original_sha256 = osv.sha256_bytes(response.text.encode())
   publish_update_message(project_id, PUBSUB_TOPIC_ID, source, path,
-                         original_sha256)
+                         original_sha256, deleted)
 
 
 def main():
@@ -85,6 +93,11 @@ def main():
       type=int,
       default=DEFAULT_TIMEOUT,
       help="Default timeout to use for operations")
+  parser.add_argument(
+      "--allow-delete",
+      action="store_true",
+      default=False,
+      help="Delete bugs if not found in source (GIT only)")
   parser.add_argument(
       "bugs", action="append", nargs="+", help="The bug IDs to operate on")
 
@@ -100,7 +113,7 @@ def main():
         record_url = f'{source.link}{bug}{source.extension}'
         path = f'{bug}{source.extension}'
         request_url_update(record_url, args.project_id, args.source, path,
-                           args.timeout)
+                           args.timeout, False)
 
     if source.type == osv.SourceRepositoryType.GIT:
       for bug in args.bugs[0]:
@@ -112,7 +125,7 @@ def main():
 
         record_url = github_raw_url(source.repo_url, path)
         request_url_update(record_url, args.project_id, args.source, path,
-                           args.timeout)
+                           args.timeout, args.allow_delete)
 
     if source.type == osv.SourceRepositoryType.BUCKET:
       raise NotImplementedError("Use reimport_gcs_record.py for now")

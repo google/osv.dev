@@ -17,7 +17,10 @@ DEFAULT_TIMEOUT = 60
 PUBSUB_TOPIC_ID = "tasks"
 
 
-def publish_update_message(project_id, topic_id, source, path, original_sha256,
+def publish_update_message(project_id,
+                           topic_id,
+                           source, path,
+                           original_sha256,
                            deleted=False):
   """Publish a message to a Pub/Sub topic with the provided data as attributes.
 

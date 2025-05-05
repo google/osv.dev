@@ -42,6 +42,26 @@ def setUp():
       public=True,
       import_last_modified=datetime.datetime(2023, 1, 1),
       timestamp=datetime.datetime(2023, 8, 14),
+      affected_packages=[
+          osv.AffectedPackage(
+              package=osv.Package(ecosystem='Ecosystem1', name='proj1')),
+          osv.AffectedPackage(
+              package=osv.Package(ecosystem='Ecosystem2', name='proj1')),
+          osv.AffectedPackage(
+              package=osv.Package(ecosystem='Ecosystem3', name='proj1')),
+          osv.AffectedPackage(
+              package=osv.Package(ecosystem='Ecosystem1', name='proj2')),
+          osv.AffectedPackage(
+              package=osv.Package(ecosystem='Ecosystem2', name='proj2')),
+          osv.AffectedPackage(
+              package=osv.Package(ecosystem='Ecosystem3', name='proj2')),
+          osv.AffectedPackage(
+              package=osv.Package(ecosystem='Ecosystem1', name='proj3')),
+          osv.AffectedPackage(
+              package=osv.Package(ecosystem='Ecosystem2', name='proj3')),
+          osv.AffectedPackage(
+              package=osv.Package(ecosystem='Ecosystem3', name='proj3'))
+      ],
   ).put()
   osv.Bug(
       id='CVE-3',

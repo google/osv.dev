@@ -513,9 +513,10 @@ func TestExtractGitCommit(t *testing.T) {
 			expectFailure:   true,
 		},
 		{
-			description:     "Valid GitHub commit URL with .patch extension",
-			inputLink:       "https://github.com/pimcore/customer-data-framework/commit/e3f333391582d9309115e6b94e875367d0ea7163.patch",
-			inputCommitType: Fixed,
+			description:       "Valid GitHub commit URL with .patch extension",
+			disableExpiryDate: time.Date(2025, 6, 1, 0, 0, 0, 0, time.Local),
+			inputLink:         "https://github.com/pimcore/customer-data-framework/commit/e3f333391582d9309115e6b94e875367d0ea7163.patch",
+			inputCommitType:   Fixed,
 			expectedAffectedCommit: AffectedCommit{
 				Repo:  "https://github.com/pimcore/customer-data-framework",
 				Fixed: "e3f333391582d9309115e6b94e875367d0ea7163",
@@ -877,6 +878,7 @@ func TestExtractVersionInfo(t *testing.T) {
 		},
 		{
 			description:        "A CVE with fix commits in references and CPE match info",
+			disableExpiryDate:  time.Date(2025, 6, 1, 0, 0, 0, 0, time.Local),
 			inputCVEItem:       loadTestData2("CVE-2022-25929"),
 			inputValidVersions: []string{},
 			expectedVersionInfo: VersionInfo{
@@ -898,6 +900,7 @@ func TestExtractVersionInfo(t *testing.T) {
 		},
 		{
 			description:        "A CVE with fix commits in references and (more complex) CPE match info",
+			disableExpiryDate:  time.Date(2025, 6, 1, 0, 0, 0, 0, time.Local),
 			inputCVEItem:       loadTestData2("CVE-2022-29194"),
 			inputValidVersions: []string{},
 			expectedVersionInfo: VersionInfo{

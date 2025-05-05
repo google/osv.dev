@@ -877,6 +877,7 @@ func TestExtractVersionInfo(t *testing.T) {
 		},
 		{
 			description:        "A CVE with fix commits in references and CPE match info",
+			disableExpiryDate:  time.Date(2025, 6, 1, 0, 0, 0, 0, time.Local),
 			inputCVEItem:       loadTestData2("CVE-2022-25929"),
 			inputValidVersions: []string{},
 			expectedVersionInfo: VersionInfo{
@@ -898,6 +899,7 @@ func TestExtractVersionInfo(t *testing.T) {
 		},
 		{
 			description:        "A CVE with fix commits in references and (more complex) CPE match info",
+			disableExpiryDate:  time.Date(2025, 6, 1, 0, 0, 0, 0, time.Local),
 			inputCVEItem:       loadTestData2("CVE-2022-29194"),
 			inputValidVersions: []string{},
 			expectedVersionInfo: VersionInfo{

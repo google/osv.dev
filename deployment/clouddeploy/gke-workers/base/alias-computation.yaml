@@ -18,8 +18,8 @@ spec:
             resources:
               requests:
                 cpu: "1"
-                memory: "3G"
+                memory: "16G"
               limits:
                 cpu: "1"
-                memory: "4G"
+                memory: "32G"
           restartPolicy: Never

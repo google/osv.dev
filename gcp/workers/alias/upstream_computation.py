@@ -24,7 +24,7 @@ import logging
 from collections import defaultdict
 
 
-def compute_upstream(target_bug, bugs) -> list[str]:
+def compute_upstream(target_bug, bugs: dict[str, set[str]]) -> list[str]:
   """Computes all upstream vulnerabilities for the given bug ID.
   The returned list contains all of the bug IDs that are upstream of the
   target bug ID, including transitive upstreams."""
@@ -152,15 +152,13 @@ def main():
   UpstreamGroups and creating new UpstreamGroups for un-computed bugs."""
 
   # Query for all bugs that have upstreams.
-  # Use (> '' OR < '') instead of (!= '') / (> '') to de-duplicate results
-  # and avoid datastore emulator problems, see issue #2093
   updated_bugs = []
   logging.info('Retrieving bugs...')
   bugs_query = osv.Bug.query(osv.Bug.upstream_raw > '')
 
-  bugs = defaultdict(list)
+  bugs = defaultdict(set)
   for bug in bugs_query.iter(projection=[osv.Bug.db_id, osv.Bug.upstream_raw]):
-    bugs[bug.db_id].append(bug.upstream_raw[0])
+    bugs[bug.db_id].add(bug.upstream_raw[0])
   logging.info('%s Bugs successfully retrieved', len(bugs))
 
   logging.info('Retrieving upstream groups...')

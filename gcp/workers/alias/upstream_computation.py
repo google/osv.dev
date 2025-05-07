@@ -161,7 +161,6 @@ def main():
   bugs = defaultdict(list)
   for bug in bugs_query.iter(projection=[osv.Bug.db_id, osv.Bug.upstream_raw]):
     bugs[bug.db_id].append(bug.upstream_raw[0])
-  bugs = {k: list(set(v)) for k, v in bugs.items()}
   logging.info('%s Bugs successfully retrieved', len(bugs))
 
   logging.info('Retrieving upstream groups...')

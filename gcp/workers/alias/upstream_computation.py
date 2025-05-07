@@ -21,15 +21,16 @@ import osv
 import osv.logs
 import json
 import logging
+from collections import defaultdict
 
 
-def compute_upstream(target_bug, bugs: dict[str, osv.Bug]) -> list[str]:
+def compute_upstream(target_bug, bugs) -> list[str]:
   """Computes all upstream vulnerabilities for the given bug ID.
   The returned list contains all of the bug IDs that are upstream of the
   target bug ID, including transitive upstreams."""
   visited = set()
 
-  target_bug_upstream = target_bug.upstream_raw
+  target_bug_upstream = target_bug
   if not target_bug_upstream:
     return []
   to_visit = set(target_bug_upstream)
@@ -39,9 +40,9 @@ def compute_upstream(target_bug, bugs: dict[str, osv.Bug]) -> list[str]:
       continue
     visited.add(bug_id)
     upstreams = set()
-    if bug_id in bugs:
+    if bug_id in bugs.keys():
       bug = bugs.get(bug_id)
-      upstreams = set(bug.upstream_raw)
+      upstreams = set(bug)
 
     to_visit.update(upstreams - visited)
 
@@ -155,12 +156,12 @@ def main():
   # and avoid datastore emulator problems, see issue #2093
   updated_bugs = []
   logging.info('Retrieving bugs...')
-  bugs = osv.Bug.query(
-      ndb.OR(osv.Bug.upstream_raw > '', osv.Bug.upstream_raw < ''))
-  bugs = {
-      bug.db_id: bug
-      for bug in bugs.iter(projection=[osv.Bug.db_id, osv.Bug.upstream_raw])
-  }
+  bugs_query = osv.Bug.query(osv.Bug.upstream_raw > '')
+
+  bugs = defaultdict(list)
+  for bug in bugs_query.iter(projection=[osv.Bug.db_id, osv.Bug.upstream_raw]):
+    bugs[bug.db_id].append(bug.upstream_raw[0])
+  bugs = {k: list(set(v)) for k, v in bugs.items()}
   logging.info('%s Bugs successfully retrieved', len(bugs))
 
   logging.info('Retrieving upstream groups...')
@@ -199,6 +200,7 @@ def main():
 
 if __name__ == '__main__':
   _ndb_client = ndb.Client()
-  osv.logs.setup_gcp_logging('upstream')
+  # osv.logs.setup_gcp_logging('upstream')
+  logging.getLogger().setLevel(logging.INFO)
   with _ndb_client.context():
     main()

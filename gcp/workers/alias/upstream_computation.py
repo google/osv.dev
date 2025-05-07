@@ -154,12 +154,20 @@ def main():
   # Use (> '' OR < '') instead of (!= '') / (> '') to de-duplicate results
   # and avoid datastore emulator problems, see issue #2093
   updated_bugs = []
+  logging.info('Retrieving bugs...')
   bugs = osv.Bug.query(
       ndb.OR(osv.Bug.upstream_raw > '', osv.Bug.upstream_raw < ''))
-  bugs = {bug.db_id: bug for bug in bugs.iter()}
+  bugs = {
+      bug.db_id: bug
+      for bug in bugs.iter(projection=[osv.Bug.db_id, osv.Bug.upstream_raw])
+  }
+  logging.info('%s Bugs successfully retrieved', len(bugs))
+
+  logging.info('Retrieving upstream groups...')
   upstream_groups = {
       group.db_id: group for group in osv.UpstreamGroup.query().iter()
   }
+  logging.info('Upstream Groups successfully retrieved')
 
   for bug_id, bug in bugs.items():
     # Get the specific upstream_group ID
@@ -175,15 +183,18 @@ def main():
         continue
       updated_bugs.append(new_upstream_group)
       upstream_groups[bug_id] = new_upstream_group
+      logging.info('Upstream group updated for bug: %s', bug_id)
     else:
       # Create a new UpstreamGroup
       new_upstream_group = _create_group(bug_id, upstream_ids)
+      logging.info('New upstream group created for bug: %s', bug_id)
       updated_bugs.append(new_upstream_group)
       upstream_groups[bug_id] = new_upstream_group
 
   for group in updated_bugs:
     # Recompute the upstream hierarchies
     compute_upstream_hierarchy(group, upstream_groups)
+    logging.info('Upstream hierarchy updated for bug: %s', group.db_id)
 
 
 if __name__ == '__main__':

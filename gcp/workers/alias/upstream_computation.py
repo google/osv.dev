@@ -199,7 +199,6 @@ def main():
 
 if __name__ == '__main__':
   _ndb_client = ndb.Client()
-  # osv.logs.setup_gcp_logging('upstream')
-  logging.getLogger().setLevel(logging.INFO)
+  osv.logs.setup_gcp_logging('upstream')
   with _ndb_client.context():
     main()

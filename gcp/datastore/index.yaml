@@ -99,3 +99,8 @@ indexes:
     properties:
     - name: related
     - name: db_id
+
+  - kind: Bug
+    properties:
+    - name: upstream_raw
+    - name: db_id

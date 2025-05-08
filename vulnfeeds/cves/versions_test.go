@@ -631,6 +631,7 @@ func TestExtractGitCommit(t *testing.T) {
 				Repo:  "https://git.ffmpeg.org/ffmpeg.git",
 				Fixed: "c94875471e3ba3dc396c6919ff3ec9b14539cd71",
 			},
+			disableExpiryDate: time.Date(2025, 5, 31, 12, 30, 0, 0, time.Local),
 		},
 		{
 			description:     "A GitHub repo that has been renamed (as seen on CVE-2016-10544)",
@@ -949,11 +950,11 @@ func TestExtractVersionInfo(t *testing.T) {
 				AffectedVersions: []AffectedVersion{{Fixed: "3.5.15"}},
 			},
 			expectedNotes:     []string{},
-			disableExpiryDate: time.Date(2025, 3, 22, 12, 30, 0, 0, time.Local),
 		},
 		{
 			description:  "A CVE with a different GitWeb reference URL that was not previously being extracted successfully",
 			inputCVEItem: loadTestData2("CVE-2021-28429"),
+			disableExpiryDate: time.Date(2025, 5, 22, 12, 30, 0, 0, time.Local),
 			expectedVersionInfo: VersionInfo{
 				AffectedCommits:  []AffectedCommit{{Repo: "https://git.ffmpeg.org/ffmpeg.git", Fixed: "c94875471e3ba3dc396c6919ff3ec9b14539cd71"}},
 				AffectedVersions: []AffectedVersion{{LastAffected: "4.3.2"}},

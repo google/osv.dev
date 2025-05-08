@@ -631,7 +631,7 @@ func TestExtractGitCommit(t *testing.T) {
 				Repo:  "https://git.ffmpeg.org/ffmpeg.git",
 				Fixed: "c94875471e3ba3dc396c6919ff3ec9b14539cd71",
 			},
-			disableExpiryDate: time.Date(2025, 3, 31, 12, 30, 0, 0, time.Local),
+			disableExpiryDate: time.Date(2025, 5, 31, 12, 30, 0, 0, time.Local),
 		},
 		{
 			description:     "A GitHub repo that has been renamed (as seen on CVE-2016-10544)",

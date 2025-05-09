@@ -33,6 +33,7 @@ from werkzeug import exceptions
 from collections import OrderedDict
 from google.cloud import ndb
 from cvss import CVSS2, CVSS3, CVSS4
+from collections import defaultdict
 
 import markdown2
 from urllib import parse
@@ -269,10 +270,20 @@ def vulnerability(vuln_id):
   """Vulnerability page."""
   vuln = osv_get_by_id(vuln_id)
 
+  def get_ecosystem(affected):
+      if 'package' in affected and affected['package']:
+          return affected['package'].get('ecosystem', '')
+      return 'Git'
+
+  # Group by ecosystem
+  grouped_affected = defaultdict(list)
+  for affected in vuln['affected']:
+      ecosystem = get_ecosystem(affected)
+      grouped_affected[ecosystem].append(affected)
+
   api_url = utils.api_url()
 
-  return render_template(
-      'vulnerability.html', vulnerability=vuln, api_url=api_url)
+  return render_template('vulnerability.html',vulnerability=vuln,grouped_affected=grouped_affected,api_url=api_url)
 
 
 @blueprint.route('/<potential_vuln_id>')
@@ -646,7 +657,7 @@ def should_collapse(affected):
   """Whether if we should collapse the package tab bar."""
   total_package_length = sum(
       len(entry.get('package', {}).get('name', '')) for entry in affected)
-  return total_package_length > 70 or len(affected) > 5
+  return total_package_length > 70 or len(affected) > 7
 
 
 @blueprint.app_template_filter('group_versions')

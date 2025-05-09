@@ -43,6 +43,7 @@ ECOSYSTEM_PURL_DATA = {
     # Linux
     'Mageia': EcosystemPURL('rpm', 'mageia'),
     'Maven': EcosystemPURL('maven', None),
+    'MinimOS': EcosystemPURL('apk', 'minimos'),
     'npm': EcosystemPURL('npm', None),
     'NuGet': EcosystemPURL('nuget', None),
     'openSUSE': EcosystemPURL('rpm', 'opensuse'),

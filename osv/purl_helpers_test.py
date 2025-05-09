@@ -48,6 +48,9 @@ class PurlHelpersTest(unittest.TestCase):
         'pkg:maven/org.apache.struts/struts2-core',
         purl_helpers.package_to_purl('Maven', 'org.apache.struts:struts2-core'))
 
+    self.assertEqual('pkg:apk/minimos/nginx',
+                     purl_helpers.package_to_purl('MinimOS', 'nginx'))
+
     self.assertEqual('pkg:npm/%40hapi/hoek',
                      purl_helpers.package_to_purl('npm', '@hapi/hoek'))
 
@@ -183,6 +186,9 @@ class PurlHelpersTest(unittest.TestCase):
     self.assertEqual(('Maven', 'org.apache.struts:struts2-core', '1.0.0'),
                      purl_helpers.parse_purl(
                          'pkg:maven/org.apache.struts/struts2-core@1.0.0'))
+
+    self.assertEqual(('MinimOS', 'nginx', None),
+                     purl_helpers.parse_purl('pkg:apk/minimos/nginx'))
 
     self.assertEqual(('npm', '@hapi/hoek', '1.2.3'),
                      purl_helpers.parse_purl('pkg:npm/%40hapi/hoek@1.2.3'))

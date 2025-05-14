@@ -235,6 +235,20 @@
   editable: False
   strict_validation: True
 
+- name: 'minimos'
+  versions_from_repo: False
+  rest_api_url: 'https://packages.mini.dev/advisories/osv/all.json'
+  type: 2
+  ignore_patterns: ['^(?!MINI-).*$']
+  directory_path: 'advisories/osv'
+  detect_cherrypicks: False
+  extension: '.json'
+  db_prefix: ['MINI-']
+  ignore_git: True
+  link: 'https://packages.mini.dev/advisories/osv/'
+  editable: False
+  strict_validation: True
+
 - name: 'oss-fuzz'
   versions_from_repo: True
   type: 0

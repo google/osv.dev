@@ -6,13 +6,13 @@ require (
 	cloud.google.com/go/logging v1.13.0
 	cloud.google.com/go/secretmanager v1.14.7
 	github.com/aquasecurity/go-pep440-version v0.0.1
-	github.com/atombender/go-jsonschema v0.18.0
+	github.com/atombender/go-jsonschema v0.20.0
 	github.com/go-git/go-git/v5 v5.16.0
 	github.com/google/go-cmp v0.7.0
 	github.com/google/osv-scanner v1.9.2
 	github.com/knqyf263/go-cpe v0.0.0-20230627041855-cb0794d06872
 	github.com/sethvargo/go-retry v0.3.0
-	golang.org/x/exp v0.0.0-20250408133849-7e4ce0ab07d0
+	golang.org/x/exp v0.0.0-20250506013437-ce4c2cf36ca6
 	gopkg.in/yaml.v2 v2.4.0
 )
 
@@ -23,7 +23,7 @@ require (
 	cloud.google.com/go/compute/metadata v0.6.0 // indirect
 	cloud.google.com/go/iam v1.5.0 // indirect
 	cloud.google.com/go/longrunning v0.6.6 // indirect
-	dario.cat/mergo v1.0.1 // indirect
+	dario.cat/mergo v1.0.2 // indirect
 	github.com/Microsoft/go-winio v0.6.2 // indirect
 	github.com/ProtonMail/go-crypto v1.1.6 // indirect
 	github.com/aquasecurity/go-version v0.0.1 // indirect
@@ -56,7 +56,7 @@ require (
 	golang.org/x/crypto v0.37.0 // indirect
 	golang.org/x/net v0.39.0 // indirect
 	golang.org/x/oauth2 v0.29.0 // indirect
-	golang.org/x/sync v0.13.0 // indirect
+	golang.org/x/sync v0.14.0 // indirect
 	golang.org/x/sys v0.32.0 // indirect
 	golang.org/x/text v0.24.0 // indirect
 	golang.org/x/time v0.11.0 // indirect

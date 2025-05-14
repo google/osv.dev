@@ -513,9 +513,10 @@ func TestExtractGitCommit(t *testing.T) {
 			expectFailure:   true,
 		},
 		{
-			description:     "Valid GitHub commit URL with .patch extension",
-			inputLink:       "https://github.com/pimcore/customer-data-framework/commit/e3f333391582d9309115e6b94e875367d0ea7163.patch",
-			inputCommitType: Fixed,
+			description:       "Valid GitHub commit URL with .patch extension",
+			disableExpiryDate: time.Date(2025, 6, 1, 0, 0, 0, 0, time.Local),
+			inputLink:         "https://github.com/pimcore/customer-data-framework/commit/e3f333391582d9309115e6b94e875367d0ea7163.patch",
+			inputCommitType:   Fixed,
 			expectedAffectedCommit: AffectedCommit{
 				Repo:  "https://github.com/pimcore/customer-data-framework",
 				Fixed: "e3f333391582d9309115e6b94e875367d0ea7163",
@@ -630,6 +631,7 @@ func TestExtractGitCommit(t *testing.T) {
 				Repo:  "https://git.ffmpeg.org/ffmpeg.git",
 				Fixed: "c94875471e3ba3dc396c6919ff3ec9b14539cd71",
 			},
+			disableExpiryDate: time.Date(2025, 5, 31, 12, 30, 0, 0, time.Local),
 		},
 		{
 			description:     "A GitHub repo that has been renamed (as seen on CVE-2016-10544)",
@@ -877,6 +879,7 @@ func TestExtractVersionInfo(t *testing.T) {
 		},
 		{
 			description:        "A CVE with fix commits in references and CPE match info",
+			disableExpiryDate:  time.Date(2025, 6, 1, 0, 0, 0, 0, time.Local),
 			inputCVEItem:       loadTestData2("CVE-2022-25929"),
 			inputValidVersions: []string{},
 			expectedVersionInfo: VersionInfo{
@@ -898,6 +901,7 @@ func TestExtractVersionInfo(t *testing.T) {
 		},
 		{
 			description:        "A CVE with fix commits in references and (more complex) CPE match info",
+			disableExpiryDate:  time.Date(2025, 6, 1, 0, 0, 0, 0, time.Local),
 			inputCVEItem:       loadTestData2("CVE-2022-29194"),
 			inputValidVersions: []string{},
 			expectedVersionInfo: VersionInfo{
@@ -946,11 +950,11 @@ func TestExtractVersionInfo(t *testing.T) {
 				AffectedVersions: []AffectedVersion{{Fixed: "3.5.15"}},
 			},
 			expectedNotes:     []string{},
-			disableExpiryDate: time.Date(2025, 3, 22, 12, 30, 0, 0, time.Local),
 		},
 		{
 			description:  "A CVE with a different GitWeb reference URL that was not previously being extracted successfully",
 			inputCVEItem: loadTestData2("CVE-2021-28429"),
+			disableExpiryDate: time.Date(2025, 5, 22, 12, 30, 0, 0, time.Local),
 			expectedVersionInfo: VersionInfo{
 				AffectedCommits:  []AffectedCommit{{Repo: "https://git.ffmpeg.org/ffmpeg.git", Fixed: "c94875471e3ba3dc396c6919ff3ec9b14539cd71"}},
 				AffectedVersions: []AffectedVersion{{LastAffected: "4.3.2"}},

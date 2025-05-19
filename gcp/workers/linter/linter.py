@@ -17,6 +17,7 @@
 import json
 import logging
 import os
+import shutil
 import subprocess
 import sys
 import tempfile
@@ -189,7 +190,7 @@ def run_linter():
         command, capture_output=True, text=True, check=False, timeout=600)
 
     parse_and_record_linter_output(result.stdout)
-    os.removedirs(TEST_DATA)
+    shutil.rmtree(TEST_DATA)
   except Exception as e:
     logging.error('An unexpected error occurred: %e', e)
     sys.exit(1)

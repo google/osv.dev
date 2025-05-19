@@ -1,0 +1,29 @@
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: osv-linter
+  labels:
+    cronLastSuccessfulTimeMins: "2880"
+spec:
+  timeZone: Australia/Sydney
+  schedule: "0 14 * * *"
+  concurrencyPolicy: Forbid
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          containers:
+          - name: osv-linter
+            image: osv-linter
+            imagePullPolicy: Always
+            env:
+            - name: GOOGLE_CLOUD_PROJECT
+              value: "oss-vdb-test"
+            resources:
+              requests:
+                cpu: 1.5
+                memory: "10G"
+              limits:
+                cpu: 2
+                memory: "30G"
+          restartPolicy: Never

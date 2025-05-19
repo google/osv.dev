@@ -632,7 +632,7 @@ class IntegrationTests(unittest.TestCase,
     response = requests.post(
         _api() + _BASE_QUERY,
         data=json.dumps({
-            'version': '1.1.1',
+            'version': '1.2.1',
             'package': {
                 'name': package,
                 'ecosystem': ecosystem,

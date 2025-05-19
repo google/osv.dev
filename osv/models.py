@@ -990,8 +990,9 @@ class ImportFindings(enum.IntEnum):
   INVALID_VERSION = 5
   INVALID_COMMIT = 6
   INVALID_RANGE = 7
-  BAD_ALIASED_CVE = 8
-
+  INVALID_RECORD = 8
+  BAD_ALIASED_CVE = 9
+  UNKNOWN = 10
 
 class ImportFinding(ndb.Model):
   """Quality findings about an individual record."""

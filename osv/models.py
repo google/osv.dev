@@ -994,6 +994,7 @@ class ImportFindings(enum.IntEnum):
   BAD_ALIASED_CVE = 9
   UNKNOWN = 10
 
+
 class ImportFinding(ndb.Model):
   """Quality findings about an individual record."""
   bug_id: str = ndb.StringProperty()

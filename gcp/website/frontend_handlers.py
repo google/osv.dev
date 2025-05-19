@@ -267,9 +267,11 @@ def list_vulnerabilities():
 @blueprint.route('/vulnerability/<vuln_id>')
 def vulnerability(vuln_id):
   """Vulnerability page."""
-  vuln = osv_get_by_id(vuln_id)
+  vuln, route = osv_get_by_id(vuln_id)
 
   api_url = utils.api_url()
+  if route:
+    return redirect(route)
 
   return render_template(
       'vulnerability.html', vulnerability=vuln, api_url=api_url)
@@ -285,9 +287,10 @@ def vulnerability_redirector(potential_vuln_id):
     return None
 
   # This may raise an exception directly or via abort() for failed retrievals.
-  bug = osv_get_by_id(potential_vuln_id)
-
-  return redirect(f'/vulnerability/{bug["id"]}')
+  bug, route = osv_get_by_id(potential_vuln_id)
+  if bug:
+    return redirect(f'/vulnerability/{bug["id"]}')
+  return redirect(route)
 
 
 @blueprint.route('/<potential_vuln_id>.json')
@@ -301,7 +304,7 @@ def vulnerability_json_redirector(potential_vuln_id):
     return None
 
   # This calls abort() on failed retrievals.
-  bug = osv_get_by_id(potential_vuln_id)
+  bug, _ = osv_get_by_id(potential_vuln_id)
 
   api_url = utils.api_url()
   return redirect(f'https://{api_url}/v1/vulns/{bug["id"]}')
@@ -571,19 +574,27 @@ def get_vuln_count_for_ecosystem(ecosystem: str) -> int:
   return ecosystem_counts.get(ecosystem, 0)
 
 
-def osv_get_by_id(vuln_id):
+def osv_get_by_id(vuln_id) -> tuple[osv.Bug | None, str | None]:
   """Gets bug details from its id. If invalid, aborts the request."""
   if not vuln_id:
     abort(400)
-    return None
 
   bug = osv.Bug.get_by_id(vuln_id)
   if not bug:
-    if osv.ImportFinding.get_by_id(vuln_id):
-      # abort(404) is too simplistic for this.
-      raise VulnerabilityNotImported(vuln_id)
-    # abort(404) is too simplistic for this.
-    raise VulnerabilityNotFound(vuln_id)
+    alias_group = osv.AliasGroup.query(osv.AliasGroup.bug_ids == vuln_id).get()
+    if alias_group and len(alias_group.bug_ids) == 2:
+      # Assume if current ID doesn't exist, but an alias does, bug must exist.
+      alias = alias_group.bug_ids[0]
+      if alias == vuln_id:
+        alias = alias_group.bug_ids[1]
+      bug = osv.Bug.get_by_id(alias)
+      # Confirm bug exists
+      if bug:
+        vuln_id = bug.db_id  # Update vuln_id to the actual bug's ID
+      else:
+        return None, f'/list?q={vuln_id}'
+    else:
+      return None, f'/list?q={vuln_id}'
 
   if bug.status == osv.BugStatus.UNPROCESSED:
     # abort(404) is too simplistic for this.
@@ -591,9 +602,8 @@ def osv_get_by_id(vuln_id):
 
   if not bug.public:
     abort(403)
-    return None
 
-  return bug_to_response(bug)
+  return bug_to_response(bug), None
 
 
 @blueprint.app_template_filter('event_type')

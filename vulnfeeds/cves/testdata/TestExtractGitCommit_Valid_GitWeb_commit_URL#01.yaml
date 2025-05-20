@@ -1,0 +1,47 @@
+---
+version: 2
+interactions:
+    - id: 0
+      request:
+        proto: HTTP/1.1
+        proto_major: 1
+        proto_minor: 1
+        content_length: 0
+        transfer_encoding: []
+        trailer: {}
+        host: git.ffmpeg.org
+        remote_addr: ""
+        request_uri: ""
+        body: ""
+        form: {}
+        headers:
+            Accept:
+                - text/html
+        url: https://git.ffmpeg.org/gitweb/ffmpeg.git/commitdiff/c94875471e3ba3dc396c6919ff3ec9b14539cd71
+        method: HEAD
+      response:
+        proto: HTTP/1.1
+        proto_major: 1
+        proto_minor: 1
+        transfer_encoding: []
+        trailer: {}
+        content_length: -1
+        uncompressed: false
+        body: ""
+        headers:
+            Content-Type:
+                - text/html; charset=utf-8
+            Date:
+                - Tue, 20 May 2025 05:07:58 GMT
+            Expires:
+                - Wed, 21 May 2025 05:07:59 GMT
+            Server:
+                - Apache
+            Vary:
+                - Accept-Encoding
+            X-Frame-Options:
+                - SAMEORIGIN
+                - SAMEORIGIN
+        status: 200 OK
+        code: 200
+        duration: 1.780721093s

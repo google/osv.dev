@@ -265,7 +265,7 @@ func repoGitWeb(parsedURL *url.URL) (string, error) {
 		"git.gnupg.org",
 		"git.infradead.org",
 	}
-	params := strings.Split(parsedURL.RawQuery, ";")
+	params := strings.FieldsFunc(parsedURL.RawQuery, func(r rune) bool { return r == ';' || r == '&' })
 	for _, param := range params {
 		if !strings.HasPrefix(param, "p=") {
 			continue
@@ -572,7 +572,7 @@ func Commit(u string) (string, error) {
 	// https://git.gnupg.org/cgi-bin/gitweb.cgi?p=libksba.git;a=commit;h=f61a5ea4e0f6a80fd4b28ef0174bee77793cf070
 	if strings.HasPrefix(parsedURL.Path, "/cgi-bin/gitweb.cgi") &&
 		strings.Contains(parsedURL.RawQuery, "a=commit") {
-		params := strings.Split(parsedURL.RawQuery, ";")
+		params := strings.FieldsFunc(parsedURL.RawQuery, func(r rune) bool { return r == ';' || r == '&' })
 		for _, param := range params {
 			if !strings.HasPrefix(param, "h=") {
 				continue
@@ -618,7 +618,7 @@ func Commit(u string) (string, error) {
 }
 
 // Detect linkrot and handle link decay in HTTP(S) links via HEAD request with exponential backoff.
-func ValidateAndCanonicalizeLink(link string) (canonicalLink string, err error) {
+func ValidateAndCanonicalizeLink(link string, httpClient *http.Client) (canonicalLink string, err error) {
 	u, err := url.Parse(link)
 	if !slices.Contains([]string{"http", "https"}, u.Scheme) {
 		// Handle what's presumably a git:// URL.
@@ -636,7 +636,7 @@ func ValidateAndCanonicalizeLink(link string) (canonicalLink string, err error) 
 		req.Header.Set("Accept", "text/html")
 
 		// Send the request
-		resp, err := http.DefaultClient.Do(req)
+		resp, err := httpClient.Do(req)
 		if err != nil {
 			return err
 		}
@@ -661,7 +661,7 @@ func ValidateAndCanonicalizeLink(link string) (canonicalLink string, err error) 
 }
 
 // For URLs referencing commits in supported Git repository hosts, return a cloneable AffectedCommit.
-func extractGitCommit(link string, commitType CommitType) (ac AffectedCommit, err error) {
+func extractGitCommit(link string, commitType CommitType, httpClient *http.Client) (ac AffectedCommit, err error) {
 	r, err := Repo(link)
 	if err != nil {
 		return ac, err
@@ -673,7 +673,7 @@ func extractGitCommit(link string, commitType CommitType) (ac AffectedCommit, er
 	}
 
 	// If URL doesn't validate, treat it as linkrot.
-	possiblyDifferentLink, err := ValidateAndCanonicalizeLink(link)
+	possiblyDifferentLink, err := ValidateAndCanonicalizeLink(link, httpClient)
 	if err != nil {
 		return ac, err
 	}
@@ -682,7 +682,7 @@ func extractGitCommit(link string, commitType CommitType) (ac AffectedCommit, er
 	// redirect to a completely different host, instead of a redirect within
 	// GitHub)
 	if possiblyDifferentLink != link {
-		return extractGitCommit(possiblyDifferentLink, commitType)
+		return extractGitCommit(possiblyDifferentLink, commitType, httpClient)
 	}
 
 	ac.SetRepo(r)
@@ -806,10 +806,10 @@ func cleanVersion(version string) string {
 	return strings.TrimRight(version, ":")
 }
 
-func ExtractVersionInfo(cve CVE, validVersions []string) (v VersionInfo, notes []string) {
+func ExtractVersionInfo(cve CVE, validVersions []string, httpClient *http.Client) (v VersionInfo, notes []string) {
 	for _, reference := range cve.References {
 		// (Potentially faulty) Assumption: All viable Git commit reference links are fix commits.
-		if commit, err := extractGitCommit(reference.Url, Fixed); err == nil {
+		if commit, err := extractGitCommit(reference.Url, Fixed, httpClient); err == nil {
 			v.AffectedCommits = append(v.AffectedCommits, commit)
 		}
 	}

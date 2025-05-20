@@ -1,0 +1,244 @@
+---
+version: 2
+interactions:
+    - id: 0
+      request:
+        proto: HTTP/1.1
+        proto_major: 1
+        proto_minor: 1
+        content_length: 0
+        transfer_encoding: []
+        trailer: {}
+        host: gitlab.com
+        remote_addr: ""
+        request_uri: ""
+        body: ""
+        form: {}
+        headers:
+            Accept:
+                - text/html
+        url: https://gitlab.com/mayan-edms/mayan-edms/commit/9ebe80595afe4fdd1e2c74358d6a9421f4ce130e
+        method: HEAD
+      response:
+        proto: HTTP/2.0
+        proto_major: 2
+        proto_minor: 0
+        transfer_encoding: []
+        trailer: {}
+        content_length: 0
+        uncompressed: false
+        body: ""
+        headers:
+            Cache-Control:
+                - no-cache
+            Cf-Cache-Status:
+                - MISS
+            Cf-Ray:
+                - 9429503ea97b5f25-SYD
+            Content-Length:
+                - "0"
+            Content-Security-Policy:
+                - 'base-uri ''self''; child-src https://www.google.com/recaptcha/ https://www.recaptcha.net/ https://www.googletagmanager.com/ns.html https://*.zuora.com/apps/PublicHostedPageLite.do https://gitlab.com/admin/ https://gitlab.com/assets/ https://gitlab.com/-/speedscope/index.html https://gitlab.com/-/sandbox/ ''self'' https://gitlab.com/assets/ blob: data:; connect-src ''self'' https://gitlab.com wss://gitlab.com https://sentry.gitlab.net https://new-sentry.gitlab.net https://customers.gitlab.com https://snowplow.trx.gitlab.net https://sourcegraph.com https://collector.prd-278964.gl-product-analytics.com; default-src ''self''; font-src ''self''; form-action ''self'' https: http:; frame-ancestors ''self''; frame-src https://www.google.com/recaptcha/ https://www.recaptcha.net/ https://www.googletagmanager.com/ns.html https://*.zuora.com/apps/PublicHostedPageLite.do https://gitlab.com/admin/ https://gitlab.com/assets/ https://gitlab.com/-/speedscope/index.html https://gitlab.com/-/sandbox/; img-src ''self'' data: blob: http: https:; manifest-src ''self''; media-src ''self'' data: blob: http: https:; object-src ''none''; report-uri https://new-sentry.gitlab.net/api/4/security/?sentry_key=f5573e26de8f4293b285e556c35dfd6e&sentry_environment=gprd; script-src ''strict-dynamic'' ''self'' ''unsafe-inline'' ''unsafe-eval'' https://www.google.com/recaptcha/ https://www.gstatic.com/recaptcha/ https://www.recaptcha.net/ https://apis.google.com https://*.zuora.com/apps/PublicHostedPageLite.do ''nonce-XvsAjZXbTyumlbX0/Byrtg==''; style-src ''self'' ''unsafe-inline''; worker-src ''self'' https://gitlab.com/assets/ blob: data:'
+            Content-Type:
+                - text/html; charset=utf-8
+            Date:
+                - Tue, 20 May 2025 05:07:58 GMT
+            Gitlab-Lb:
+                - haproxy-main-02-lb-gprd
+            Gitlab-Sv:
+                - web-gke-us-east1-c
+            Location:
+                - https://gitlab.com/mayan-edms/mayan-edms/-/commit/9ebe80595afe4fdd1e2c74358d6a9421f4ce130e
+            Nel:
+                - '{"max_age": 0}'
+            Server:
+                - cloudflare
+            Set-Cookie:
+                - _cfuvid=2ljnD2T1jfT719.I6ZEhbdasc2wp0XnURx4wM_8_Y1s-1747717678163-0.0.1.1-604800000; path=/; domain=.gitlab.com; HttpOnly; Secure; SameSite=None
+            Strict-Transport-Security:
+                - max-age=31536000
+            X-Content-Type-Options:
+                - nosniff
+            X-Gitlab-Meta:
+                - '{"correlation_id":"01JVP1ERYBHX5Q1XSYF9M96T49","version":"1"}'
+            X-Request-Id:
+                - 01JVP1ERYBHX5Q1XSYF9M96T49
+            X-Runtime:
+                - "0.024795"
+        status: 301 Moved Permanently
+        code: 301
+        duration: 540.634794ms
+    - id: 1
+      request:
+        proto: ""
+        proto_major: 0
+        proto_minor: 0
+        content_length: 0
+        transfer_encoding: []
+        trailer: {}
+        host: ""
+        remote_addr: ""
+        request_uri: ""
+        body: ""
+        form: {}
+        headers:
+            Accept:
+                - text/html
+            Referer:
+                - https://gitlab.com/mayan-edms/mayan-edms/commit/9ebe80595afe4fdd1e2c74358d6a9421f4ce130e
+        url: https://gitlab.com/mayan-edms/mayan-edms/-/commit/9ebe80595afe4fdd1e2c74358d6a9421f4ce130e
+        method: HEAD
+      response:
+        proto: HTTP/2.0
+        proto_major: 2
+        proto_minor: 0
+        transfer_encoding: []
+        trailer: {}
+        content_length: 63339
+        uncompressed: false
+        body: ""
+        headers:
+            Accept-Ranges:
+                - bytes
+            Cache-Control:
+                - max-age=0, private, must-revalidate
+            Cf-Cache-Status:
+                - MISS
+            Cf-Ray:
+                - 94295043fe0d5f25-SYD
+            Content-Length:
+                - "63339"
+            Content-Security-Policy:
+                - 'base-uri ''self''; child-src https://www.google.com/recaptcha/ https://www.recaptcha.net/ https://www.googletagmanager.com/ns.html https://*.zuora.com/apps/PublicHostedPageLite.do https://gitlab.com/admin/ https://gitlab.com/assets/ https://gitlab.com/-/speedscope/index.html https://gitlab.com/-/sandbox/ ''self'' https://gitlab.com/assets/ blob: data:; connect-src ''self'' https://gitlab.com wss://gitlab.com https://sentry.gitlab.net https://new-sentry.gitlab.net https://customers.gitlab.com https://snowplow.trx.gitlab.net https://sourcegraph.com https://collector.prd-278964.gl-product-analytics.com snowplowprd.trx.gitlab.net https://sourcegraph.com/.api/; default-src ''self''; font-src ''self''; form-action ''self'' https: http:; frame-ancestors ''self''; frame-src https://www.google.com/recaptcha/ https://www.recaptcha.net/ https://www.googletagmanager.com/ns.html https://*.zuora.com/apps/PublicHostedPageLite.do https://gitlab.com/admin/ https://gitlab.com/assets/ https://gitlab.com/-/speedscope/index.html https://gitlab.com/-/sandbox/; img-src ''self'' data: blob: http: https:; manifest-src ''self''; media-src ''self'' data: blob: http: https:; object-src ''none''; report-uri https://new-sentry.gitlab.net/api/4/security/?sentry_key=f5573e26de8f4293b285e556c35dfd6e&sentry_environment=gprd; script-src ''strict-dynamic'' ''self'' ''unsafe-inline'' ''unsafe-eval'' https://www.google.com/recaptcha/ https://www.gstatic.com/recaptcha/ https://www.recaptcha.net/ https://apis.google.com https://*.zuora.com/apps/PublicHostedPageLite.do ''nonce-emQZteJ5a9pEQw5yjUK0WQ==''; style-src ''self'' ''unsafe-inline''; worker-src ''self'' https://gitlab.com/assets/ blob: data:'
+            Content-Type:
+                - text/html; charset=utf-8
+            Date:
+                - Tue, 20 May 2025 05:07:59 GMT
+            Etag:
+                - W/"a9f423d60daf5ecc4d6803492cbb4ec8"
+            Gitlab-Lb:
+                - haproxy-main-45-lb-gprd
+            Gitlab-Sv:
+                - web-gke-us-east1-d
+            Nel:
+                - '{"max_age": 0}'
+            Permissions-Policy:
+                - interest-cohort=()
+            Referrer-Policy:
+                - strict-origin-when-cross-origin
+            Server:
+                - cloudflare
+            Set-Cookie:
+                - _gitlab_session=72d2d0df2167339170cb8fa0b34dab00; path=/; secure; HttpOnly; SameSite=None
+                - _cfuvid=J1coXi0rhUB0fX1BfhDkFfY9guvdN54uA3TFzAVMir4-1747717679279-0.0.1.1-604800000; path=/; domain=.gitlab.com; HttpOnly; Secure; SameSite=None
+            Strict-Transport-Security:
+                - max-age=31536000
+            Vary:
+                - Accept
+            X-Content-Type-Options:
+                - nosniff
+            X-Download-Options:
+                - noopen
+            X-Frame-Options:
+                - SAMEORIGIN
+            X-Gitlab-Meta:
+                - '{"correlation_id":"01JVP1ESRDFVZ0S9JZS268T1FD","version":"1"}'
+            X-Permitted-Cross-Domain-Policies:
+                - none
+            X-Request-Id:
+                - 01JVP1ESRDFVZ0S9JZS268T1FD
+            X-Runtime:
+                - "0.305069"
+            X-Ua-Compatible:
+                - IE=edge
+            X-Xss-Protection:
+                - 1; mode=block
+        status: 200 OK
+        code: 200
+        duration: 570.262948ms
+    - id: 2
+      request:
+        proto: HTTP/1.1
+        proto_major: 1
+        proto_minor: 1
+        content_length: 0
+        transfer_encoding: []
+        trailer: {}
+        host: gitlab.com
+        remote_addr: ""
+        request_uri: ""
+        body: ""
+        form: {}
+        headers:
+            Accept:
+                - text/html
+        url: https://gitlab.com/mayan-edms/mayan-edms/-/commit/9ebe80595afe4fdd1e2c74358d6a9421f4ce130e
+        method: HEAD
+      response:
+        proto: HTTP/2.0
+        proto_major: 2
+        proto_minor: 0
+        transfer_encoding: []
+        trailer: {}
+        content_length: 63339
+        uncompressed: false
+        body: ""
+        headers:
+            Accept-Ranges:
+                - bytes
+            Cache-Control:
+                - max-age=0, private, must-revalidate
+            Cf-Cache-Status:
+                - MISS
+            Cf-Ray:
+                - 9429504b1c3e5f25-SYD
+            Content-Length:
+                - "63339"
+            Content-Security-Policy:
+                - 'base-uri ''self''; child-src https://www.google.com/recaptcha/ https://www.recaptcha.net/ https://www.googletagmanager.com/ns.html https://*.zuora.com/apps/PublicHostedPageLite.do https://gitlab.com/admin/ https://gitlab.com/assets/ https://gitlab.com/-/speedscope/index.html https://gitlab.com/-/sandbox/ ''self'' https://gitlab.com/assets/ blob: data:; connect-src ''self'' https://gitlab.com wss://gitlab.com https://sentry.gitlab.net https://new-sentry.gitlab.net https://customers.gitlab.com https://snowplow.trx.gitlab.net https://sourcegraph.com https://collector.prd-278964.gl-product-analytics.com snowplowprd.trx.gitlab.net https://sourcegraph.com/.api/; default-src ''self''; font-src ''self''; form-action ''self'' https: http:; frame-ancestors ''self''; frame-src https://www.google.com/recaptcha/ https://www.recaptcha.net/ https://www.googletagmanager.com/ns.html https://*.zuora.com/apps/PublicHostedPageLite.do https://gitlab.com/admin/ https://gitlab.com/assets/ https://gitlab.com/-/speedscope/index.html https://gitlab.com/-/sandbox/; img-src ''self'' data: blob: http: https:; manifest-src ''self''; media-src ''self'' data: blob: http: https:; object-src ''none''; report-uri https://new-sentry.gitlab.net/api/4/security/?sentry_key=f5573e26de8f4293b285e556c35dfd6e&sentry_environment=gprd; script-src ''strict-dynamic'' ''self'' ''unsafe-inline'' ''unsafe-eval'' https://www.google.com/recaptcha/ https://www.gstatic.com/recaptcha/ https://www.recaptcha.net/ https://apis.google.com https://*.zuora.com/apps/PublicHostedPageLite.do ''nonce-RKJoZH1Q/zs881tZRvQAxA==''; style-src ''self'' ''unsafe-inline''; worker-src ''self'' https://gitlab.com/assets/ blob: data:'
+            Content-Type:
+                - text/html; charset=utf-8
+            Date:
+                - Tue, 20 May 2025 05:08:00 GMT
+            Etag:
+                - W/"86653c83e9c1b80da49d0027c62c9595"
+            Gitlab-Lb:
+                - haproxy-main-30-lb-gprd
+            Gitlab-Sv:
+                - web-gke-us-east1-d
+            Nel:
+                - '{"max_age": 0}'
+            Permissions-Policy:
+                - interest-cohort=()
+            Referrer-Policy:
+                - strict-origin-when-cross-origin
+            Server:
+                - cloudflare
+            Set-Cookie:
+                - _gitlab_session=8858a8e249144849213c6bcdfdfee6e9; path=/; secure; HttpOnly; SameSite=None
+                - _cfuvid=9fQEM2j_7BBTejv3Q_sDaWUhBzcrQEZ0VMMQe4q7nRE-1747717680461-0.0.1.1-604800000; path=/; domain=.gitlab.com; HttpOnly; Secure; SameSite=None
+            Strict-Transport-Security:
+                - max-age=31536000
+            Vary:
+                - Accept
+            X-Content-Type-Options:
+                - nosniff
+            X-Download-Options:
+                - noopen
+            X-Frame-Options:
+                - SAMEORIGIN
+            X-Gitlab-Meta:
+                - '{"correlation_id":"01JVP1ETW5DMF8RJY14A29BTHT","version":"1"}'
+            X-Permitted-Cross-Domain-Policies:
+                - none
+            X-Request-Id:
+                - 01JVP1ETW5DMF8RJY14A29BTHT
+            X-Runtime:
+                - "0.335991"
+            X-Ua-Compatible:
+                - IE=edge
+            X-Xss-Protection:
+                - 1; mode=block
+        status: 200 OK
+        code: 200
+        duration: 611.154299ms

@@ -1,0 +1,60 @@
+---
+version: 2
+interactions:
+    - id: 0
+      request:
+        proto: HTTP/1.1
+        proto_major: 1
+        proto_minor: 1
+        content_length: 0
+        transfer_encoding: []
+        trailer: {}
+        host: github.com
+        remote_addr: ""
+        request_uri: ""
+        body: ""
+        form: {}
+        headers:
+            Accept:
+                - '*/*'
+            Host:
+                - github.com
+            User-Agent:
+                - go-git/5.x
+        url: https://github.com/202ecommerce/security-advisories/info/refs?service=git-upload-pack
+        method: GET
+      response:
+        proto: HTTP/2.0
+        proto_major: 2
+        proto_minor: 0
+        transfer_encoding: []
+        trailer: {}
+        content_length: -1
+        uncompressed: false
+        body: "001e# service=git-upload-pack\n0000015363eb3816abec7a2a4d482bd8898845a54aef7df5 HEAD\0multi_ack thin-pack side-band side-band-64k ofs-delta shallow deepen-since deepen-not deepen-relative no-progress include-tag multi_ack_detailed allow-tip-sha1-in-want allow-reachable-sha1-in-want no-done symref=HEAD:refs/heads/main filter object-format=sha1 agent=git/github-203a3d8c358f\n00537f6f0e0a6575b02c01bdfebe755460d97239a0ea refs/heads/cbourgeois202-table_rework\n003d63eb3816abec7a2a4d482bd8898845a54aef7df5 refs/heads/main\n003eae337c225f2e04487957a55c3916df87d64b8c50 refs/pull/1/head\n003f97891a582c38304144ad147d95ca91f2bb50f7df refs/pull/10/head\n003ed85da969f120bc459163384b9d395b567abd3726 refs/pull/2/head\n003e3dbc4fc0bd3e641ed2497f5f3e6ca07bee5ae37a refs/pull/3/head\n003eb4882f69b4ab32f4e90c4850e3166b94fdfc222a refs/pull/4/head\n003ecb181e6207ea35f0300eb212c9802baec319b8cf refs/pull/5/head\n003e0eec47d7cc05f203ef30560739349037815fd00a refs/pull/6/head\n003e35c4bdc747cf9eee6a55f03a10f6e60dc1b1722d refs/pull/7/head\n003e7f6f0e0a6575b02c01bdfebe755460d97239a0ea refs/pull/8/head\n003e7f6f0e0a6575b02c01bdfebe755460d97239a0ea refs/pull/9/head\n0000"
+        headers:
+            Cache-Control:
+                - no-cache, max-age=0, must-revalidate
+            Content-Security-Policy:
+                - default-src 'none'; sandbox
+            Content-Type:
+                - application/x-git-upload-pack-advertisement
+            Date:
+                - Tue, 20 May 2025 06:39:44 GMT
+            Expires:
+                - Fri, 01 Jan 1980 00:00:00 GMT
+            Pragma:
+                - no-cache
+            Server:
+                - GitHub-Babel/3.0
+            Strict-Transport-Security:
+                - max-age=31536000; includeSubDomains; preload
+            Vary:
+                - Accept-Encoding
+            X-Frame-Options:
+                - DENY
+            X-Github-Request-Id:
+                - A40E:34DD5C:866E08:A1BE48:682C23B0
+        status: 200 OK
+        code: 200
+        duration: 268.047403ms

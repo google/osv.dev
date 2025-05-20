@@ -1,10 +1,15 @@
 package git
 
 import (
+	"path/filepath"
+	"strings"
 	"testing"
 	"time"
 
+	"github.com/go-git/go-git/v5/plumbing/transport/client"
+	githttp "github.com/go-git/go-git/v5/plumbing/transport/http"
 	"github.com/google/osv/vulnfeeds/cves"
+	"gopkg.in/dnaeon/go-vcr.v4/pkg/recorder"
 )
 
 func TestVersionToCommit(t *testing.T) {
@@ -95,7 +100,20 @@ func TestVersionToCommit(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.description, func(t *testing.T) {
-			t.Parallel()
+			// Cannot make this test parallel because it modifies the global git protocols.
+			r, err := recorder.New(filepath.Join("testdata", strings.ReplaceAll(t.Name(), "/", "_")))
+			if err != nil {
+				t.Fatal(err)
+			}
+			t.Cleanup(func() {
+				if err := r.Stop(); err != nil {
+					t.Error(err)
+				}
+			})
+			httpClient := r.GetDefaultClient()
+			client.InstallProtocol("http", githttp.NewClient(httpClient))
+			client.InstallProtocol("https", githttp.NewClient(httpClient))
+
 			if time.Now().Before(tc.disableExpiryDate) {
 				t.Skipf("test %q: VersionToCommit(%q, %q) has been skipped due to known outage and will be reenabled on %s.", tc.description, tc.inputVersion, tc.inputRepoURL, tc.disableExpiryDate)
 			}

@@ -1,0 +1,60 @@
+---
+version: 2
+interactions:
+    - id: 0
+      request:
+        proto: HTTP/1.1
+        proto_major: 1
+        proto_minor: 1
+        content_length: 0
+        transfer_encoding: []
+        trailer: {}
+        host: github.com
+        remote_addr: ""
+        request_uri: ""
+        body: ""
+        form: {}
+        headers:
+            Accept:
+                - '*/*'
+            Host:
+                - github.com
+            User-Agent:
+                - go-git/5.x
+        url: https://github.com/aide/aide/info/refs?service=git-upload-pack
+        method: GET
+      response:
+        proto: HTTP/2.0
+        proto_major: 2
+        proto_minor: 0
+        transfer_encoding: []
+        trailer: {}
+        content_length: -1
+        uncompressed: false
+        body: "001e# service=git-upload-pack\n000001552677eff4c7126df76e98148023cdbdc2b18f278f HEAD\0multi_ack thin-pack side-band side-band-64k ofs-delta shallow deepen-since deepen-not deepen-relative no-progress include-tag multi_ack_detailed allow-tip-sha1-in-want allow-reachable-sha1-in-want no-done symref=HEAD:refs/heads/master filter object-format=sha1 agent=git/github-203a3d8c358f\n003f2677eff4c7126df76e98148023cdbdc2b18f278f refs/heads/master\n0040f57bbfdd5dad88187913a39c360cf1dd69c28819 refs/heads/v0.17.x\n00409135b4c37298bd53e2e42d6210e877856caa1fd2 refs/heads/v0.18.x\n004020e6d36471fa6023a9aa0fe534bd54d06b6f4c9c refs/heads/v0.19.x\n00406c96aeccd5855195a78d9c8c87a6a2c7a71335c1 refs/pull/105/head\n00409ea2859f104693d8772fa7d41da3deb98bba6e91 refs/pull/110/head\n0040293f25a67b4f19b021e65536bdef6190178ab000 refs/pull/138/head\n0040c8d78218eed4c8e1c65a58fcb825aebaa1cb6d53 refs/pull/144/head\n0040ef770a569ba37c3aa7757a9b4419866ba494f443 refs/pull/145/head\n0040bc7d4e199a7952b1d909cab69ee5142f4c23feda refs/pull/148/head\n0040e04501932c754c941f9d4d788630e3c26fcf21e4 refs/pull/161/head\n0040ba7ad3e7c8fa43fd0867a1736c8aa91934b03ef6 refs/pull/162/head\n004027dc6adf639e193331364e8cd124d1229673f38f refs/pull/164/head\n003f2f7e4758c770a3a94d6c71db68b4dd646024e93b refs/pull/17/head\n00403693c4aceeac566c8c73838bff014924ed09e159 refs/pull/171/head\n0040103678076c25a1a5a27fd6cf138738bfe0a66437 refs/pull/172/head\n0040aedb6cde3c4cfe5e16627abbbc36413082abdcc1 refs/pull/173/head\n0040d8d598990616461bc05e8fa2386522a62bead693 refs/pull/174/head\n00405afa535192916b76269181908dedd9b3480b221d refs/pull/175/head\n00408e6436b3bea83ec85e64eb9db7448591d637e6db refs/pull/178/head\n004055038d49d82e586f1a976a65a4a474159c2693f6 refs/pull/185/head\n0040571a0e00f0273a2581e0114391b8d7f6756c4283 refs/pull/186/head\n004047dac5e06b063c06f99aa39b1ec9a00093c48cc8 refs/pull/188/head\n003ec3043d277700f5080abb4ac26fee64947a60ed1b refs/pull/2/head\n003f097c9e0661e698a57ef65ab196ceb3a209818c45 refs/pull/22/head\n003f17acc72b8bafef73a5fb3ed5e7f36cab9c058a3a refs/pull/23/head\n003f6a0a61c8337c64e46e9ddf23fb0ad1f47470cd64 refs/pull/29/head\n003f23762911bf7d90b8791671946363305ec0d00186 refs/pull/42/head\n003f182c9a37a72b28cc2c2f433d4998ac86a278d61b refs/pull/60/head\n003f5293f413185b8f8dc9ca8d36c1270f7586984360 refs/pull/61/head\n003f0fd8802c2a877105f71bbf2de751b4540bce67f6 refs/pull/63/head\n003f804cf46bfdc99a47559c7e11aaee45833292dae0 refs/pull/64/head\n003f5a8801b4b014fa7c446b534096935c5b070b189d refs/pull/69/head\n003f1b61024920ba058a1cdb688328b1cc142eabcc55 refs/pull/85/head\n003fb70f863d84286cabc67e894b44d4c0d2f7550165 refs/pull/86/head\n003fad4e93c8598cd386def63d441fb47e647730e4da refs/pull/99/head\n004902961dda0a1f114802e107bad93108c9b9d092ed refs/tags/aide.0.10.release\n004d050147df2f788ce25787754df0d8c47b9fc743e0 refs/tags/aide.0.11.rc1.release\n004dfd39909144f4a89d21748884610df2936ad2c46b refs/tags/aide.0.11.rc2.release\n004d09f4f761fb316364056966a5f9bb996e40eb2e1a refs/tags/aide.0.11.rc3.release\n00493f4d262342256cc8eb6abebcb51520877140c476 refs/tags/aide.0.11.release\n0049911e69815ed6a97f5a7fbc85713b8add4a45d8e7 refs/tags/aide.0.11a.debian\n004924d6d7c87e8e7bc6b15fdeb44dd025e7b8a959a4 refs/tags/aide.0.11b.nocurl\n004d53949793c63618b565e9a5f6d1029b8cccebe9fb refs/tags/aide.0.12.rc1.release\n004d27f19a9d4d192abd65fd3e5e8108ced5d8ad0e14 refs/tags/aide.0.12.rc2.release\n004924f4794baa026f5e05768f4dc04629c22423f7fc refs/tags/aide.0.12.release\n004b117c3e7be1ed6db9a20196a044f0892c03d4655f refs/tags/aide.0.13.1.release\n004dcd162898b0344eb93945bd615586998b389f205c refs/tags/aide.0.13.rc1.release\n004d5e6a50d2c22b280770fc1b3c6fe3c1db75db74e8 refs/tags/aide.0.13.rc2.release\n0049a43fa38b3665d9579da8dd21bf44b967ba3e6e20 refs/tags/aide.0.13.release\n004b531ef22e7db3cadb1d9f67b1bf7a510e57cb7bd9 refs/tags/aide.0.14.1.release\n004b585224a9a0af7ba0f7d127f09e477e46295ebb6d refs/tags/aide.0.14.2.release\n004d4e906d97488d30747a4d903a888ee88bc9af2086 refs/tags/aide.0.14.rc1.release\n004deaa4da81c202affa3000adca5757f2c9a5f81eeb refs/tags/aide.0.14.rc2.release\n004de82be89f5e0036cc9d171d260e9c53713bb31b39 refs/tags/aide.0.14.rc3.release\n0049727c5677d3c97d49e7b406eb3c3b51e6fc429f21 refs/tags/aide.0.14.release\n004b213165495c7cc7209b3aea786ea07e0501045d25 refs/tags/aide.0.15.1.release\n004e3e41f1d1a96645fae661e3bd585d11a8bed0eb2e refs/tags/aide.0.15.1.release^{}\n004d6e639e18f79ca840673709738fe2b5b7ba842980 refs/tags/aide.0.15.rc1.release\n00501b7d73f1b689e673bc0fac3f54005db0e0a0b4ab refs/tags/aide.0.15.rc1.release^{}\n004995995531cdd9ce0cd043a3f48431ed1751f46cfc refs/tags/aide.0.15.release\n004c0d8f5df0e5d3f1047a286fab369ad02aafdc8857 refs/tags/aide.0.15.release^{}\n00482e84254676a6148acd6ab8e7ce1cd9749836a445 refs/tags/cs.tut.fi.import\n003d3730e8f503d94aa29f0128158e7c46986ec227cf refs/tags/v0.16\n0040543c3f9f1af0414a52be20d35558f1490bcf559b refs/tags/v0.16^{}\n003f63331d10348428ae30a378a9399eaa6185de8ef2 refs/tags/v0.16.1\n004262cf11b455279f2fa4dcc7755f6145b48c1db0a4 refs/tags/v0.16.1^{}\n003f463797d6164997f746b472f451e9cb4bbebf3a05 refs/tags/v0.16.2\n0042a8a5d67f4abb230df850f7b327b1f373e7ec49cf refs/tags/v0.16.2^{}\n003f25e59edc12a3f8c19745eae04d77a94eb61207db refs/tags/v0.16a1\n0042c52f1ca1d4d204ffef05c71e46a0b4195940fd79 refs/tags/v0.16a1^{}\n003f121fbe3633b586e0bd91bb7eaa4fecd4dd1b63ba refs/tags/v0.16a2\n00427a460b9191c981134381b965798984580838c2c8 refs/tags/v0.16a2^{}\n003fe0763affa46f85ab1d8b7ad88a876cf86dc813f7 refs/tags/v0.16b1\n00426be695a9b8b3b64a0d3d2f9a0c92e027f4c462f8 refs/tags/v0.16b1^{}\n00406de8660468429bcdc35d56597aeaa307033d127c refs/tags/v0.16rc1\n00437bf821b14d24711f559a8b213f68a5dfefe6345b refs/tags/v0.16rc1^{}\n003d33c436580b35e83929e65d069e6ba138339f6cd7 refs/tags/v0.17\n0040fcca55970940387efaccdfefd870fd9f4c958c9e refs/tags/v0.17^{}\n003f920fd575144f247439f64debad4400240cefbd4a refs/tags/v0.17.1\n004298322b8a6e00c189e4f9226269dd9d03c04ad610 refs/tags/v0.17.1^{}\n003f4a3cbc9e25c63402f98172206b8492e34c733dd5 refs/tags/v0.17.2\n004235927ea48d3e43a146103733c6459dd66237f4dd refs/tags/v0.17.2^{}\n003fb1fda5bdd5e74ab7874f5c93fecb35457cc68f78 refs/tags/v0.17.3\n0042d4b80a9e5d48494e0003d22d9ce1a8133de0f15e refs/tags/v0.17.3^{}\n003f49e8faad5e2ed9ab2de54f6858ee223f918abac4 refs/tags/v0.17.4\n0042f57bbfdd5dad88187913a39c360cf1dd69c28819 refs/tags/v0.17.4^{}\n003d8ed48ad5ba180cd3ce30a3c41d42bad3779d9f26 refs/tags/v0.18\n004073078765396b99ac1ce9004d35a1ee5db2fbb6e5 refs/tags/v0.18^{}\n003f5ee3529c3014b4238231885b1403faa3e1affb5c refs/tags/v0.18.1\n0042de5bb24b9b24df7598161a1ce19dc2ce15afa9c6 refs/tags/v0.18.1^{}\n003fd5499cbd3bf4ce6183f5ae3ce18e6e153e48ac9b refs/tags/v0.18.2\n00423d5b18b9e5e1c51533ac01d8acd3499b2f9fcc2e refs/tags/v0.18.2^{}\n003f7e32b28b3c646928919ae1adb8f627aa7c35f422 refs/tags/v0.18.3\n00421cf7764293aebb473baee3ff82298d83593943e8 refs/tags/v0.18.3^{}\n003fc63df7071bb2459887f7bec3339be2b0aa43801b refs/tags/v0.18.4\n0042c03255688a13cf7089eeb7a292c1de2abf1d3a9d refs/tags/v0.18.4^{}\n003f908d7ffd3ace0e3ea738c48e2b84af720c73a981 refs/tags/v0.18.5\n0042a164c35a217579b1eec3b548f9421cd030160c5b refs/tags/v0.18.5^{}\n003f6a67191613e8785969ad15b079600f69b3a93e4e refs/tags/v0.18.6\n004282fd64038788942aef8a394d6d4b802cb529f71b refs/tags/v0.18.6^{}\n003f121249ac9f43e21c5f85101a6f00116acd8ed3e2 refs/tags/v0.18.7\n0042f4317bc0fb005a9718a9c61534649b2fa35cbc07 refs/tags/v0.18.7^{}\n003f1b6947aa4f5db3abb1fc051e26b472bb4f9f4471 refs/tags/v0.18.8\n00429135b4c37298bd53e2e42d6210e877856caa1fd2 refs/tags/v0.18.8^{}\n003d99285b6591f0d591782383093e48e03354d65f2d refs/tags/v0.19\n004020e6d36471fa6023a9aa0fe534bd54d06b6f4c9c refs/tags/v0.19^{}\n0000"
+        headers:
+            Cache-Control:
+                - no-cache, max-age=0, must-revalidate
+            Content-Security-Policy:
+                - default-src 'none'; sandbox
+            Content-Type:
+                - application/x-git-upload-pack-advertisement
+            Date:
+                - Tue, 20 May 2025 06:37:05 GMT
+            Expires:
+                - Fri, 01 Jan 1980 00:00:00 GMT
+            Pragma:
+                - no-cache
+            Server:
+                - GitHub-Babel/3.0
+            Strict-Transport-Security:
+                - max-age=31536000; includeSubDomains; preload
+            Vary:
+                - Accept-Encoding
+            X-Frame-Options:
+                - DENY
+            X-Github-Request-Id:
+                - E3A4:2A0B27:9254F2:BA8472:682C2310
+        status: 200 OK
+        code: 200
+        duration: 862.209535ms

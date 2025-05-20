@@ -5,11 +5,14 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"path/filepath"
 	"reflect"
+	"strings"
 	"testing"
 	"time"
 
 	"github.com/google/go-cmp/cmp"
+	"gopkg.in/dnaeon/go-vcr.v4/pkg/recorder"
 )
 
 func loadTestData2(cveName string) Vulnerability {
@@ -398,11 +401,10 @@ func TestRepo(t *testing.T) {
 			expectedOk:      true,
 		},
 		{
-			description:       "Valid Gitweb repo",
-			inputLink:         "https://git.ffmpeg.org/gitweb/ffmpeg.git/commitdiff/c94875471e3ba3dc396c6919ff3ec9b14539cd71",
-			expectedRepoURL:   "https://git.ffmpeg.org/ffmpeg.git",
-			expectedOk:        true,
-			disableExpiryDate: time.Date(2025, 3, 31, 12, 30, 0, 0, time.Local),
+			description:     "Valid Gitweb repo",
+			inputLink:       "https://git.ffmpeg.org/gitweb/ffmpeg.git/commitdiff/c94875471e3ba3dc396c6919ff3ec9b14539cd71",
+			expectedRepoURL: "https://git.ffmpeg.org/ffmpeg.git",
+			expectedOk:      true,
 		},
 		{
 			description:     "Undesired researcher repo (by deny regex)",
@@ -513,10 +515,9 @@ func TestExtractGitCommit(t *testing.T) {
 			expectFailure:   true,
 		},
 		{
-			description:       "Valid GitHub commit URL with .patch extension",
-			disableExpiryDate: time.Date(2025, 6, 1, 0, 0, 0, 0, time.Local),
-			inputLink:         "https://github.com/pimcore/customer-data-framework/commit/e3f333391582d9309115e6b94e875367d0ea7163.patch",
-			inputCommitType:   Fixed,
+			description:     "Valid GitHub commit URL with .patch extension",
+			inputLink:       "https://github.com/pimcore/customer-data-framework/commit/e3f333391582d9309115e6b94e875367d0ea7163.patch",
+			inputCommitType: Fixed,
 			expectedAffectedCommit: AffectedCommit{
 				Repo:  "https://github.com/pimcore/customer-data-framework",
 				Fixed: "e3f333391582d9309115e6b94e875367d0ea7163",
@@ -536,7 +537,6 @@ func TestExtractGitCommit(t *testing.T) {
 				Repo:  "https://gitlab.freedesktop.org/virgl/virglrenderer",
 				Fixed: "b05bb61f454eeb8a85164c8a31510aeb9d79129c",
 			},
-			disableExpiryDate: time.Date(2025, 3, 22, 12, 30, 0, 0, time.Local),
 		},
 		{
 			description:     "Valid GitLab commit URL with .patch extension",
@@ -584,8 +584,11 @@ func TestExtractGitCommit(t *testing.T) {
 			},
 		},
 		{
-			description:     "Valid GitWeb commit URL",
-			inputLink:       "https://git.gnupg.org/cgi-bin/gitweb.cgi?p=libksba.git;a=commit;h=f61a5ea4e0f6a80fd4b28ef0174bee77793cf070",
+			description: "Valid GitWeb commit URL",
+			// inputLink:       "https://git.gnupg.org/cgi-bin/gitweb.cgi?p=libksba.git;a=commit;h=f61a5ea4e0f6a80fd4b28ef0174bee77793cf070",
+			// go-vcr / go's url parser does not support ';' in query strings.
+			// This does actually successfully parse outside of the tests, but there's no way to have go-vcr skip the URL validation.
+			inputLink:       "https://git.gnupg.org/cgi-bin/gitweb.cgi?p=libksba.git&a=commit&h=f61a5ea4e0f6a80fd4b28ef0174bee77793cf070",
 			inputCommitType: Fixed,
 			expectedAffectedCommit: AffectedCommit{
 				Repo:  "git://git.gnupg.org/libksba.git",
@@ -631,7 +634,6 @@ func TestExtractGitCommit(t *testing.T) {
 				Repo:  "https://git.ffmpeg.org/ffmpeg.git",
 				Fixed: "c94875471e3ba3dc396c6919ff3ec9b14539cd71",
 			},
-			disableExpiryDate: time.Date(2025, 5, 31, 12, 30, 0, 0, time.Local),
 		},
 		{
 			description:     "A GitHub repo that has been renamed (as seen on CVE-2016-10544)",
@@ -661,9 +663,19 @@ func TestExtractGitCommit(t *testing.T) {
 	}
 
 	for _, tc := range tests {
-
 		t.Run(tc.description, func(t *testing.T) {
 			t.Parallel()
+			r, err := recorder.New(filepath.Join("testdata", strings.ReplaceAll(t.Name(), "/", "_")))
+			if err != nil {
+				t.Fatal(err)
+			}
+			t.Cleanup(func() {
+				if err := r.Stop(); err != nil {
+					t.Error(err)
+				}
+			})
+			client := r.GetDefaultClient()
+
 			if _, ok := os.LookupEnv("BUILD_ID"); ok && tc.skipOnCloudBuild {
 				t.Skipf("test %q: running on Cloud Build", tc.description)
 			}
@@ -673,7 +685,7 @@ func TestExtractGitCommit(t *testing.T) {
 			if !tc.disableExpiryDate.IsZero() && time.Now().After(tc.disableExpiryDate) {
 				t.Logf("test %q: extractGitCommit(%q, %q) has been enabled on %s.", tc.description, tc.inputLink, tc.inputCommitType, tc.disableExpiryDate)
 			}
-			got, err := extractGitCommit(tc.inputLink, tc.inputCommitType)
+			got, err := extractGitCommit(tc.inputLink, tc.inputCommitType, client)
 			if err != nil && !tc.expectFailure {
 				t.Errorf("test %q: extractGitCommit for %q (%q) errored unexpectedly: %#v", tc.description, tc.inputLink, tc.inputCommitType, err)
 			}
@@ -879,7 +891,6 @@ func TestExtractVersionInfo(t *testing.T) {
 		},
 		{
 			description:        "A CVE with fix commits in references and CPE match info",
-			disableExpiryDate:  time.Date(2025, 6, 1, 0, 0, 0, 0, time.Local),
 			inputCVEItem:       loadTestData2("CVE-2022-25929"),
 			inputValidVersions: []string{},
 			expectedVersionInfo: VersionInfo{
@@ -901,7 +912,6 @@ func TestExtractVersionInfo(t *testing.T) {
 		},
 		{
 			description:        "A CVE with fix commits in references and (more complex) CPE match info",
-			disableExpiryDate:  time.Date(2025, 6, 1, 0, 0, 0, 0, time.Local),
 			inputCVEItem:       loadTestData2("CVE-2022-29194"),
 			inputValidVersions: []string{},
 			expectedVersionInfo: VersionInfo{
@@ -949,12 +959,11 @@ func TestExtractVersionInfo(t *testing.T) {
 				AffectedCommits:  []AffectedCommit{{Repo: "https://gitlab.freedesktop.org/xorg/lib/libxpm", Fixed: "a3a7c6dcc3b629d7650148"}},
 				AffectedVersions: []AffectedVersion{{Fixed: "3.5.15"}},
 			},
-			expectedNotes:     []string{},
+			expectedNotes: []string{},
 		},
 		{
 			description:  "A CVE with a different GitWeb reference URL that was not previously being extracted successfully",
 			inputCVEItem: loadTestData2("CVE-2021-28429"),
-			disableExpiryDate: time.Date(2025, 5, 22, 12, 30, 0, 0, time.Local),
 			expectedVersionInfo: VersionInfo{
 				AffectedCommits:  []AffectedCommit{{Repo: "https://git.ffmpeg.org/ffmpeg.git", Fixed: "c94875471e3ba3dc396c6919ff3ec9b14539cd71"}},
 				AffectedVersions: []AffectedVersion{{LastAffected: "4.3.2"}},
@@ -970,16 +979,26 @@ func TestExtractVersionInfo(t *testing.T) {
 	}
 
 	for _, tc := range tests {
-
 		t.Run(tc.description, func(t *testing.T) {
 			t.Parallel()
+			r, err := recorder.New(filepath.Join("testdata", strings.ReplaceAll(t.Name(), "/", "_")))
+			if err != nil {
+				t.Fatal(err)
+			}
+			t.Cleanup(func() {
+				if err := r.Stop(); err != nil {
+					t.Error(err)
+				}
+			})
+			client := r.GetDefaultClient()
+
 			if time.Now().Before(tc.disableExpiryDate) {
 				t.Skipf("test %q: VersionInfo for %#v has been skipped due to known outage and will be reenabled on %s.", tc.description, tc.inputCVEItem, tc.disableExpiryDate)
 			}
 			if !tc.disableExpiryDate.IsZero() && time.Now().After(tc.disableExpiryDate) {
 				t.Logf("test %q: VersionInfo for %#v has been enabled on %s.", tc.description, tc.inputCVEItem, tc.disableExpiryDate)
 			}
-			gotVersionInfo, _ := ExtractVersionInfo(tc.inputCVEItem.CVE, tc.inputValidVersions)
+			gotVersionInfo, _ := ExtractVersionInfo(tc.inputCVEItem.CVE, tc.inputValidVersions, client)
 			if diff := cmp.Diff(tc.expectedVersionInfo, gotVersionInfo); diff != "" {
 				t.Errorf("test %q: VersionInfo for %#v was incorrect: %s", tc.description, tc.inputCVEItem, diff)
 			}
@@ -1161,13 +1180,24 @@ func TestValidateAndCanonicalizeLink(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			r, err := recorder.New(filepath.Join("testdata", strings.ReplaceAll(t.Name(), "/", "_")))
+			if err != nil {
+				t.Fatal(err)
+			}
+			t.Cleanup(func() {
+				if err := r.Stop(); err != nil {
+					t.Error(err)
+				}
+			})
+			client := r.GetDefaultClient()
+
 			if time.Now().Before(tt.disableExpiryDate) {
 				t.Skipf("test %q has been skipped due to known outage and will be reenabled on %s.", tt.name, tt.disableExpiryDate)
 			}
 			if _, ok := os.LookupEnv("BUILD_ID"); ok && tt.skipOnCloudBuild {
 				t.Skipf("test %q: running on Cloud Build", tt.name)
 			}
-			gotCanonicalLink, err := ValidateAndCanonicalizeLink(tt.args.link)
+			gotCanonicalLink, err := ValidateAndCanonicalizeLink(tt.args.link, client)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("ValidateAndCanonicalizeLink() error = %v, wantErr %v", err, tt.wantErr)
 				return

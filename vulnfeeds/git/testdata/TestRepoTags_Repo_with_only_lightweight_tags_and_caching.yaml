@@ -1,0 +1,60 @@
+---
+version: 2
+interactions:
+    - id: 0
+      request:
+        proto: HTTP/1.1
+        proto_major: 1
+        proto_minor: 1
+        content_length: 0
+        transfer_encoding: []
+        trailer: {}
+        host: github.com
+        remote_addr: ""
+        request_uri: ""
+        body: ""
+        form: {}
+        headers:
+            Accept:
+                - '*/*'
+            Host:
+                - github.com
+            User-Agent:
+                - go-git/5.x
+        url: https://github.com/zblogcn/zblogphp/info/refs?service=git-upload-pack
+        method: GET
+      response:
+        proto: HTTP/2.0
+        proto_major: 2
+        proto_minor: 0
+        transfer_encoding: []
+        trailer: {}
+        content_length: -1
+        uncompressed: false
+        body: "001e# service=git-upload-pack\n00000155e91eba9561e670aac69dc62d7301483c898cf961 HEAD\0multi_ack thin-pack side-band side-band-64k ofs-delta shallow deepen-since deepen-not deepen-relative no-progress include-tag multi_ack_detailed allow-tip-sha1-in-want allow-reachable-sha1-in-want no-done symref=HEAD:refs/heads/master filter object-format=sha1 agent=git/github-203a3d8c358f\n004300d4eaba46344ceafa5bb3039afbfd0ee81e50e9 refs/heads/ajax-admin\n003c4d0359fa95b31fe442f5217ea65fcdc03344740d refs/heads/api\n004884d6521ee456132d823a8d4dffb6cf773dc06b8d refs/heads/bootstrap-admin\n004498d71478da455d3ffa4bc429929bde28513cca33 refs/heads/emit-plugin\n003fe91eba9561e670aac69dc62d7301483c898cf961 refs/heads/master\n0046a0ebcf88f5ff523282570c2ae41472c03c2acda5 refs/heads/webpack-theme\n003dc6aa40a84ad454ce6f27401f1a555ebc67243efd refs/import/raw\n0040f6f88d46832244cd891d32bf862c76bd9b3d6da4 refs/pull/130/head\n00408e6980247f5b612d17043ecbd5b83fb564592c25 refs/pull/131/head\n00418de59f612aeba9369c28dd1cd2e81f30a13771fb refs/pull/131/merge\n0040046bbd73ea25f8d47c67bf93845428777b3de142 refs/pull/132/head\n00412870f84109a4781e68ae4ca7f7cd988ea415ac4a refs/pull/132/merge\n004084d6521ee456132d823a8d4dffb6cf773dc06b8d refs/pull/135/head\n0041e8733beda838abddf8a1b33d60bec3eab9d965a4 refs/pull/135/merge\n0040a0ebcf88f5ff523282570c2ae41472c03c2acda5 refs/pull/161/head\n00419ebc7e085dd61e6939e40e36fed68b668789828f refs/pull/161/merge\n0040f90891544240a518b104fb09d3746a1aa5c33977 refs/pull/181/head\n00410c5c3f687b8ac708b24c1df8b08e9560b13a12bd refs/pull/181/merge\n0040e15cb0ff89850072eeb6bf421ab32343af868787 refs/pull/182/head\n0040c8d13d99bb81803fbda7566b7d44db9b5a9a93eb refs/pull/183/head\n004045111a6c1a57846812f56f020919929232b1411e refs/pull/198/head\n00408f8b8b2d58ac1c78abead1a56e91fbbe08af11ed refs/pull/206/head\n0040462de64c221b2399172d99000f47992092efbad0 refs/pull/207/head\n0040c996b4802545255abe7332d08fc02dab0912eac5 refs/pull/208/head\n004077a5761df84af313a39178112f4100a67ff8d85b refs/pull/215/head\n00409e10368bfa07aa164c419aec5e6c2e93c90fdcdf refs/pull/221/head\n0040d16d3ddbac878bd863c3bcc069458f9cd499a273 refs/pull/224/head\n0040e8eadaa6ffb1981bfb6a56bece773e8059bd176d refs/pull/225/head\n004032f8cb141c960a0d9b3d93007c15d09fe429a201 refs/pull/233/head\n00408bc31d378d0508648be81413c963f430ab728f8c refs/pull/234/head\n0040098adb6e97c77d8e5abebd5b2c98373e750eb1b2 refs/pull/235/head\n0040da3ee9f1d09f1b77aa7e9b815562cd775bc14918 refs/pull/238/head\n0040db321f102ceac0bb97e0c8ec055686390688a9ae refs/pull/245/head\n00403855f8233a5d7fdfccf644cf3048b1c69fb9dd8d refs/pull/247/head\n00403855f8233a5d7fdfccf644cf3048b1c69fb9dd8d refs/pull/248/head\n004096d3e5a41f6e088334cfef747a72b077df75e8ed refs/pull/249/head\n0040de0ff7c972fed086692b14972c4ac5fedab7bf27 refs/pull/251/head\n004052444adb4a771d53b5afe85cafd8d1f80ee94ceb refs/pull/253/head\n00406924c3db0f392227d609d60b6475e2d716b68b6b refs/pull/255/head\n00409f7049005a0a1cc229600d4df0666aca4cf4b198 refs/pull/259/head\n0040624c99b41ff01499b6e8108e5d10df6e82ec9527 refs/pull/260/head\n0040a09c17217344625684f793d3e7e5dd8f204e1c26 refs/pull/264/head\n0040d1acd168edbf02e7c9dc9bd0051767b82e8b8010 refs/pull/266/head\n0040c893e43ff5f3d5105565c510e4eb774be44712f2 refs/pull/267/head\n003fb78514e4db1dd6562e36f1e62b68eabae4079efa refs/pull/27/head\n004023f1c8f7e00fd3b758bc290c3af833ee51f483ec refs/pull/272/head\n0040e16edac2060052cac88633a065f737965d67a077 refs/pull/279/head\n003fdaab569e83422f0281c671be69e57d75aaf5a111 refs/pull/28/head\n00408734182bdda0d68d4a22f64fab7462b9316f10e4 refs/pull/287/head\n0040341738abc5a0ec80620b515e0dbdd3ec7e902db9 refs/pull/288/head\n0040923343e040218537b7e7484d017c271af2b0f645 refs/pull/289/head\n0040b46b312e993f3663e7a9468772f92d210fb1e694 refs/pull/291/head\n0040554840d2edb2d56f10f4e52aa45ff46c60427efb refs/pull/298/head\n00407428765134e494a30ef3a1a425acf243a09fa511 refs/pull/303/head\n0040bf7de06634619892712efe7e020fe1feca3507c7 refs/pull/304/head\n00407ce5f4b38c11ad0b098534ccc94f8ab3144c9160 refs/pull/305/head\n004083f243b10fdb2c9203959a9fe0d57215f035dba1 refs/pull/316/head\n004044ffe56b505764d2c868a8b842115393e35d5172 refs/pull/319/head\n0040a64aef854de76ef8de0f126f7235f2109a2fea0d refs/pull/320/head\n0040353247c2ccc67d04f240eb2f00b5d7d8ed1b420e refs/pull/326/head\n003fbc5d0e3ebdd963c9abdef51efdc950e8c9aeffd8 refs/pull/33/head\n0040f8f4753773289e3fe63520e44fed4251a781120e refs/pull/33/merge\n00400cfb632d8de5002b60133950ed38aa967f2048ec refs/pull/333/head\n0040782e8f8698f89cffd2ae96c7fab706e7e7b931d2 refs/pull/338/head\n0040eeae30c3ae7746470ff549adf67b16a4da4b6d92 refs/pull/341/head\n0040c4d27072a7901984079f0386679e0bb6db7d8725 refs/pull/349/head\n0040efac4d9ca81fbfd02c70d7bda46cd4ce9658699a refs/pull/350/head\n004093d47cbf427c320911d3d0c728563456f1d03668 refs/pull/351/head\n004048d2740029fbe3c0aa4c9ac51f838f9cfaae84b0 refs/pull/360/head\n004066b56832995e54ea162e505608464aa2d187757b refs/pull/361/head\n0040daa701b05b3cee4b1ad6346fa69f94bd74a3390e refs/pull/365/head\n0041bf7f0366bc2c86d86f1db076676f2e8d185521d3 refs/pull/365/merge\n003ffe3ce1a1ddd3607e2469dd325d53bf79da13dd9a refs/pull/45/head\n003fd0e705e42cbab8ba49e15be025547c0e764c40df refs/pull/70/head\n00403ca37554bf4eeca38fbd794b3181ebb5852cc26c refs/pull/70/merge\n003fd0e705e42cbab8ba49e15be025547c0e764c40df refs/pull/71/head\n0040d0848d39d667e6b819ba88aa9a013093c46d09e6 refs/pull/71/merge\n003f90edd6e8bfbcb7370260390e08a19bbc884c912d refs/pull/84/head\n003f2820dcced892d739ac4710fd9d589ffa392503c2 refs/pull/89/head\n003f3464af56a94282fd04d32c9bb416c9b071e97af7 refs/pull/95/head\n0040ee585afcb67967cd18b4dac74d96d99ac4b13912 refs/pull/95/merge\n0042c8d47c25296ffda9f2083a813ed719b637f86c59 refs/tags/1.5.0.1525\n0044fc4579cade51e0a565e5bd83503e028a17675e9d refs/tags/1.5.0.1525-2\n0044537c6000fe951d9e7719e204a4c324772ec28bcf refs/tags/1.5.0.1525-3\n00443c9fdc49cc05d5a376a7f6fcd6e00390c9dc517f refs/tags/1.5.0.1525-4\n00441a6b98c937288acf20a5e87e45b9f8e46e138da8 refs/tags/1.5.0.1525-5\n004421a2347cbf112eebe2fbc13e4b17d21ad946c7bf refs/tags/1.5.0.1525-6\n0044df6d05860a5b3ca46627f058c330d3bd72db80d1 refs/tags/1.5.0.1525-7\n004454434fe137f9c0c89889bfa7865c3b7b5e24e4b8 refs/tags/1.5.0.1525-8\n003c45fc093f879348b855377d9ccf726403098ebe7d refs/tags/1626\n003c64eea82fc69906659382e7d1445df0081f202e51 refs/tags/1740\n003e255cb7bf57134b3f32d237335f77892b94e1a43c refs/tags/v1.6.0\n003e2130805447e7819301ac53cc7323cadbebc82c58 refs/tags/v1.6.1\n003e8474237fe952db369c318b989983aa59f6d11cde refs/tags/v1.7.0\n00438c6e4f2d3a2a79ce1822945dcbfdd1b7299b2aa1 refs/tags/v1.7.0-2945\n004308c5e0ac49c9520585eebfe25be0f51239733891 refs/tags/v1.7.0-beta\n004344b73602ab5518a213e0128a04f57239988847cf refs/tags/v1.7.1-2960\n0043302e57b5703d92d2f43bbfe86a8d4080647a4ba9 refs/tags/v1.7.2-3030\n004396a5fcdc3c958268559ec63c8fbd0a60e3c7e1c8 refs/tags/v1.7.3-3230\n0000"
+        headers:
+            Cache-Control:
+                - no-cache, max-age=0, must-revalidate
+            Content-Security-Policy:
+                - default-src 'none'; sandbox
+            Content-Type:
+                - application/x-git-upload-pack-advertisement
+            Date:
+                - Tue, 20 May 2025 06:27:38 GMT
+            Expires:
+                - Fri, 01 Jan 1980 00:00:00 GMT
+            Pragma:
+                - no-cache
+            Server:
+                - GitHub-Babel/3.0
+            Strict-Transport-Security:
+                - max-age=31536000; includeSubDomains; preload
+            Vary:
+                - Accept-Encoding
+            X-Frame-Options:
+                - DENY
+            X-Github-Request-Id:
+                - CDC2:388307:8E8923:B683D6:682C20D9
+        status: 200 OK
+        code: 200
+        duration: 345.675161ms

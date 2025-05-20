@@ -265,9 +265,15 @@ def list_vulnerabilities():
 
 
 @blueprint.route('/vulnerability/<vuln_id>')
-def vulnerability(vuln_id):
+def vulnerability(vuln_id: str):
   """Vulnerability page."""
-  vuln = osv_get_by_id(vuln_id)
+  try:
+    vuln = osv_get_by_id(vuln_id)
+  except VulnerabilityNotImported:
+    # TODO: handle showing import findings
+    abort(404)
+  except VulnerabilityNotFound as e:
+    return redirect(url_for('list_vulnerabilities', q=e.vuln_id))
 
   api_url = utils.api_url()
 
@@ -276,7 +282,7 @@ def vulnerability(vuln_id):
 
 
 @blueprint.route('/<potential_vuln_id>')
-def vulnerability_redirector(potential_vuln_id):
+def vulnerability_redirector(potential_vuln_id: str):
   """Convenience redirector for /VULN-ID to /vulnerability/VULN-ID."""
   # AlmaLinux have colons in their identifiers, which gets URL encoded.
   potential_vuln_id = parse.unquote(potential_vuln_id)
@@ -285,9 +291,13 @@ def vulnerability_redirector(potential_vuln_id):
     return None
 
   # This may raise an exception directly or via abort() for failed retrievals.
-  bug = osv_get_by_id(potential_vuln_id)
+  try:
+    bug = osv_get_by_id(potential_vuln_id)
+  except VulnerabilityNotFound as e:
+    return redirect(url_for('list_vulnerabilities', q=e.vuln_id))
 
-  return redirect(f'/vulnerability/{bug["id"]}')
+  path = safe_join('/vulnerability', bug.get('id', ''))
+  return redirect(path or '/vulnerability/')
 
 
 @blueprint.route('/<potential_vuln_id>.json')
@@ -301,7 +311,10 @@ def vulnerability_json_redirector(potential_vuln_id):
     return None
 
   # This calls abort() on failed retrievals.
-  bug = osv_get_by_id(potential_vuln_id)
+  try:
+    bug = osv_get_by_id(potential_vuln_id)
+  except VulnerabilityNotFound:
+    return abort(404)
 
   api_url = utils.api_url()
   return redirect(f'https://{api_url}/v1/vulns/{bug["id"]}')
@@ -571,19 +584,19 @@ def get_vuln_count_for_ecosystem(ecosystem: str) -> int:
   return ecosystem_counts.get(ecosystem, 0)
 
 
-def osv_get_by_id(vuln_id):
+def osv_get_by_id(vuln_id: str) -> dict:
   """Gets bug details from its id. If invalid, aborts the request."""
   if not vuln_id:
     abort(400)
-    return None
 
   bug = osv.Bug.get_by_id(vuln_id)
   if not bug:
-    if osv.ImportFinding.get_by_id(vuln_id):
-      # abort(404) is too simplistic for this.
-      raise VulnerabilityNotImported(vuln_id)
-    # abort(404) is too simplistic for this.
-    raise VulnerabilityNotFound(vuln_id)
+    alias = check_for_aliases(vuln_id)
+    if not alias:
+      if osv.ImportFinding.get_by_id(vuln_id):
+        raise VulnerabilityNotImported(vuln_id)
+      raise VulnerabilityNotFound(vuln_id)
+    bug = alias
 
   if bug.status == osv.BugStatus.UNPROCESSED:
     # abort(404) is too simplistic for this.
@@ -591,9 +604,23 @@ def osv_get_by_id(vuln_id):
 
   if not bug.public:
     abort(403)
-    return None
 
   return bug_to_response(bug)
+
+
+def check_for_aliases(vuln_id: str) -> osv.Bug | None:
+  """ Search for aliases of a vuln if only one exists """
+  alias_group = osv.AliasGroup.query(osv.AliasGroup.bug_ids == vuln_id).get()
+  if alias_group and len(alias_group.bug_ids) == 2:
+    # Assume if current ID doesn't exist, but an alias does, bug must exist.
+    alias = alias_group.bug_ids[0]
+    if alias == vuln_id:
+      alias = alias_group.bug_ids[1]
+    bug = osv.Bug.get_by_id(alias)
+    # Confirm bug exists
+    if bug:
+      return bug
+  return None
 
 
 @blueprint.app_template_filter('event_type')

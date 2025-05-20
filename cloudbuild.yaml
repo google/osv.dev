@@ -16,26 +16,26 @@ steps:
 - name: 'gcr.io/cloud-builders/gcloud'
   id: 'lib-tests'
   args: ['builds', 'submit', '--region=${LOCATION}', '--config=osv/cloudbuild.yaml', '.']
-  waitFor: []
+  waitFor: ['-']
 
 - name: 'gcr.io/cloud-builders/gcloud'
   id: 'worker-tests'
   args: ['builds', 'submit', '--region=${LOCATION}', '--config=gcp/workers/cloudbuild.yaml', '.']
-  waitFor: []
+  waitFor: ['-']
 
 - name: 'gcr.io/cloud-builders/gcloud'
   id: 'website-tests'
   args: ['builds', 'submit', '--region=${LOCATION}', '--config=gcp/website/cloudbuild.yaml', '.']
-  waitFor: []
+  waitFor: ['-']
 
 - name: 'gcr.io/cloud-builders/gcloud'
   id: 'api-tests'
   args: ['builds', 'submit', '--region=${LOCATION}', '--config=gcp/api/cloudbuild.yaml', '.']
-  waitFor: []
+  waitFor: ['-']
 
 - name: 'gcr.io/cloud-builders/gcloud'
   id: 'vulnfeeds-tests'
   args: ['builds', 'submit', '--region=${LOCATION}', '--config=vulnfeeds/cloudbuild.yaml', '.']
-  waitFor: []
+  waitFor: ['-']
 
 timeout: 7200s

@@ -273,7 +273,7 @@ def vulnerability(vuln_id: str):
     # TODO: handle showing import findings
     abort(404)
   except VulnerabilityNotFound as e:
-    return redirect(url_for('list_vulnerabilities', q=e.vuln_id))
+    return redirect(url_for('frontend_handlers.list_vulnerabilities', q=e.vuln_id))
 
   api_url = utils.api_url()
 
@@ -294,7 +294,7 @@ def vulnerability_redirector(potential_vuln_id: str):
   try:
     bug = osv_get_by_id(potential_vuln_id)
   except VulnerabilityNotFound as e:
-    return redirect(url_for('list_vulnerabilities', q=e.vuln_id))
+    return redirect(url_for('frontend_handlers.list_vulnerabilities', q=e.vuln_id))
 
   path = safe_join('/vulnerability', bug.get('id', ''))
   return redirect(path or '/vulnerability/')

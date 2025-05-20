@@ -12,13 +12,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# vulnfeeds test runner
+# api test runner
 # This should be triggered on changes to the following:
-# vulnfeeds/go.mod
-# vulnfeeds/go.sum
-# vulnfeeds/run_tests.sh
-# vulnfeeds/*.go
-# vulnfeeds/**/*.go
+# gcp/api/poetry.lock
+# gcp/api/run_tests.sh
+# gcp/api/*.py
+# gcp/api/**/*.py
+# osv/*.py
+# osv/**/*.py
 
 steps:
 - name: 'gcr.io/cloud-builders/git'
@@ -27,13 +28,19 @@ steps:
   # if this is invoked from another cloud build, this will fail as it is not a git repo
   # the invoking cloud build file should run this step.
   allowFailure: true
+- name: 'gcr.io/oss-vdb/ci'
+  id: 'sync'
+  dir: gcp/api
+  args: ['poetry', 'sync']
+  waitFor: ['-']
 
 - name: 'gcr.io/oss-vdb/ci'
-  id: 'vulnfeed-tests'
-  dir: vulnfeeds
-  args: ['bash', '-ex', 'run_tests.sh']
+  id: 'api-tests'
+  dir: gcp/api
+  #TODO: Update test scripts to support not supplying a credential.
+  args: ['bash', '-ex', 'run_tests.sh', '/workspace/dummy.json']
   env:
-    - 'BUILD_ID=$BUILD_ID'
-  waitFor: ['init']
+    - CLOUDBUILD=1
+  waitFor: ['init', 'sync']
 
 timeout: 7200s

@@ -12,13 +12,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# vulnfeeds test runner
+# workers test runner
 # This should be triggered on changes to the following:
-# vulnfeeds/go.mod
-# vulnfeeds/go.sum
-# vulnfeeds/run_tests.sh
-# vulnfeeds/*.go
-# vulnfeeds/**/*.go
+# gcp/workers/worker/poetry.lock
+# gcp/workers/**/run_tests.sh
+# gcp/workers/**/*.py
+# osv/*.py
+# osv/**/*.py
 
 steps:
 - name: 'gcr.io/cloud-builders/git'
@@ -27,13 +27,38 @@ steps:
   # if this is invoked from another cloud build, this will fail as it is not a git repo
   # the invoking cloud build file should run this step.
   allowFailure: true
+- name: 'gcr.io/oss-vdb/ci'
+  id: 'sync'
+  dir: gcp/workers/worker
+  args: ['poetry', 'sync']
+  waitFor: ['-']
 
 - name: 'gcr.io/oss-vdb/ci'
-  id: 'vulnfeed-tests'
-  dir: vulnfeeds
+  id: 'worker-tests'
+  dir: gcp/workers/worker
   args: ['bash', '-ex', 'run_tests.sh']
   env:
-    - 'BUILD_ID=$BUILD_ID'
-  waitFor: ['init']
+    # Each concurrent test that uses the datastore emulator must have a unique port number
+    - DATASTORE_EMULATOR_PORT=8003
+  waitFor: ['init', 'sync']
+
+- name: 'gcr.io/oss-vdb/ci'
+  id: 'importer-tests'
+  dir: gcp/workers/importer
+  args: ['bash', '-ex', 'run_tests.sh']
+  env:
+    - CLOUD_BUILD=1
+    - DATASTORE_EMULATOR_PORT=8004
+  waitFor: ['init', 'sync']
+
+- name: 'gcr.io/oss-vdb/ci'
+  id: 'alias-tests'
+  dir: gcp/workers/alias
+  args: ['bash', '-ex', 'run_tests.sh']
+  env:
+    - DATASTORE_EMULATOR_PORT=8002
+  waitFor: ['init', 'sync']
 
 timeout: 7200s
+options:
+  machineType: E2_HIGHCPU_8

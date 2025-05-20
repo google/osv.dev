@@ -31,6 +31,7 @@ steps:
   id: 'sync'
   dir: gcp/workers/worker
   args: ['poetry', 'sync']
+  waitFor: ['-']
 
 - name: 'gcr.io/oss-vdb/ci'
   id: 'worker-tests'

@@ -32,6 +32,7 @@ steps:
   id: 'sync'
   dir: gcp/api
   args: ['poetry', 'sync']
+  waitFor: ['-']
 
 - name: 'gcr.io/oss-vdb/ci'
   id: 'api-tests'

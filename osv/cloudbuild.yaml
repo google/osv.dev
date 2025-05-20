@@ -34,6 +34,7 @@ steps:
   id: 'sync'
   dir: '.'
   args: ['poetry', 'sync']
+  waitFor: ['-']
 
 - name: 'gcr.io/oss-vdb/ci'
   id: 'lib-tests'

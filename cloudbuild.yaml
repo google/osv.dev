@@ -1,4 +1,4 @@
-# Copyright 2021 Google LLC
+# Copyright 2025 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -13,90 +13,33 @@
 # limitations under the License.
 
 steps:
-# noop to pull the ci image once before the tests try to run concurrently
-- name: 'gcr.io/oss-vdb/ci'
-  args: ['echo']
-
 - name: 'gcr.io/cloud-builders/git'
   id: 'init'
   args: ['submodule', 'update', '--init']
 
-- name: 'gcr.io/oss-vdb/ci'
+- name: 'gcr.io/cloud-builders/gcloud'
   id: 'lib-tests'
-  args: ['bash', '-ex', 'run_tests.sh']
-  env:
-    # Each concurrent test that uses the datastore emulator must have a unique port number
-    # lib-tests is the first test that starts the emulator. The first emulator call creates the
-    # test project config. Every other datastore must wait till this finishes, otherwise
-    # we risk multiple attempts at creating the config directory, causing failure.
-    - DATASTORE_EMULATOR_PORT=8002
+  args: ['builds', 'submit', '--region=${LOCATION}', '--config=osv/cloudbuild.yaml', '.']
   waitFor: ['init']
 
-# Sourcerepo-sync-tests and lib-tests use the same env so have a race condition. 
-- name: 'gcr.io/oss-vdb/ci'
-  id: 'sourcerepo-sync-tests'
-  dir: 'tools/sourcerepo-sync'
-  args: ['bash', '-ex', 'run_tests.sh']
-  waitFor: ['init', 'lib-tests']
-
-- name: 'gcr.io/oss-vdb/ci'
+- name: 'gcr.io/cloud-builders/gcloud'
   id: 'worker-tests'
-  dir: gcp/workers/worker
-  args: ['bash', '-ex', 'run_tests.sh']
-  env:
-    # Each concurrent test that uses the datastore emulator must have a unique port number
-    # Wait for lib-tests to make sure the project directory is created
-    - DATASTORE_EMULATOR_PORT=8003
-  waitFor: ['init', 'lib-tests']
-
-- name: 'gcr.io/oss-vdb/ci'
-  id: 'importer-tests'
-  dir: gcp/workers/importer
-  args: ['bash', '-ex', 'run_tests.sh']
-  env:
-    - CLOUD_BUILD=1
-    # same as worker
-    - DATASTORE_EMULATOR_PORT=8003
-  # importer uses same poetry as worker, 'poetry install' may break if run concurrently
-  waitFor: ['init', 'worker-tests']
-
-- name: 'gcr.io/oss-vdb/ci'
-  id: 'alias-tests'
-  dir: gcp/workers/alias
-  args: ['bash', '-ex', 'run_tests.sh']
-  env:
-    # same as worker/importer
-    - DATASTORE_EMULATOR_PORT=8003
-  # alias uses same poetry as worker, 'poetry install' may break if run concurrently
-  waitFor: ['init', 'importer-tests']
-
-- name: 'gcr.io/oss-vdb/ci'
-  id: 'website-tests'
-  dir: gcp/website
-  args: ['bash', '-ex', 'run_tests.sh']
-  env:
-    # Each concurrent test that uses the datastore emulator must have a unique port number
-    # Wait for lib-tests to make sure the project directory is created
-    - DATASTORE_EMULATOR_PORT=8004
-  waitFor: ['init', 'lib-tests']
-
-- name: 'gcr.io/oss-vdb/ci'
-  id: 'vulnfeed-tests'
-  dir: vulnfeeds
-  args: ['bash', '-ex', 'run_tests.sh']
-  env:
-    - 'BUILD_ID=$BUILD_ID'
+  args: ['builds', 'submit', '--region=${LOCATION}', '--config=gcp/workers/cloudbuild.yaml', '.']
   waitFor: ['init']
 
-- name: 'gcr.io/oss-vdb/ci'
+- name: 'gcr.io/cloud-builders/gcloud'
+  id: 'website-tests'
+  args: ['builds', 'submit', '--region=${LOCATION}', '--config=gcp/website/cloudbuild.yaml', '.']
+  waitFor: ['init']
+
+- name: 'gcr.io/cloud-builders/gcloud'
   id: 'api-tests'
-  dir: gcp/api
-  #TODO: Update test scripts to support not supplying a credential.
-  args: ['bash', '-ex', 'run_tests.sh', '/workspace/dummy.json']
-  env:
-    - CLOUDBUILD=1
+  args: ['builds', 'submit', '--region=${LOCATION}', '--config=gcp/api/cloudbuild.yaml', '.']
+  waitFor: ['init']
+
+- name: 'gcr.io/cloud-builders/gcloud'
+  id: 'vulnfeeds-tests'
+  args: ['builds', 'submit', '--region=${LOCATION}', '--config=vulnfeeds/cloudbuild.yaml', '.']
   waitFor: ['init']
 
 timeout: 7200s
-options:
-  machineType: E2_HIGHCPU_8

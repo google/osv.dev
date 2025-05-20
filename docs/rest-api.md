@@ -8,7 +8,7 @@ parent: New Data Source
 
 # Contributing Data via REST API
 
-Contributing data can be supplied either through a public Git repository, a public GCS bucket or to REST API endpoints. The below guidelines are for contributing data through REST API endpoints.
+Contributing data can be supplied either through a public Git repository, REST API endpoints, or a public GCS bucket. The below guidelines are for contributing data through REST API endpoints.
 
 To contribute, we will need to know the following information:
 

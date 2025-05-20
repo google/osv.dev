@@ -24,6 +24,9 @@ steps:
 - name: 'gcr.io/cloud-builders/git'
   id: 'init'
   args: ['submodule', 'update', '--init']
+  # if this is invoked from another cloud build, this will fail as it is not a git repo
+  # the invoking cloud build file should run this step.
+  allowFailure: true
 
 - name: 'gcr.io/oss-vdb/ci'
   id: 'vulnfeed-tests'

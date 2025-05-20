@@ -105,7 +105,8 @@ class MockRepo:
 
 
 _ds_data_dir = None
-  
+
+
 def start_datastore_emulator():
   """Starts Datastore emulator."""
   port = os.environ.get('DATASTORE_EMULATOR_PORT', _DATASTORE_EMULATOR_PORT)

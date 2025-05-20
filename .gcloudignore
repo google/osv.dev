@@ -1,0 +1,2 @@
+# worker tests rely on this dir being a git repo
+!gcp/workers/worker/osv-test/.git

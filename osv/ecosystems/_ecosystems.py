@@ -26,6 +26,7 @@ from .debian import Debian
 from .haskell import Hackage, GHC
 from .mageia import Mageia
 from .maven import Maven
+from .minimos import MinimOS
 from .nuget import NuGet
 from .packagist import Packagist
 from .pub import Pub
@@ -53,6 +54,7 @@ _ecosystems = {
     'GHC': GHC(),
     'Hackage': Hackage(),
     'Maven': Maven(),
+    'MinimOS': MinimOS(),
     'NuGet': NuGet(),
     'Packagist': Packagist(),
     'Pub': Pub(),

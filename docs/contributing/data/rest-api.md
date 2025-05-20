@@ -2,9 +2,10 @@
 layout: page
 title: via REST API
 permalink: /contributing/data/rest-api
-nav_order: 3
+nav_order: 1
 parent: Data Source
 ---
+
 # Contributing Data via REST API
 
 Contributing data can be supplied either through a public Git repository, a public GCS bucket or to REST API endpoints. The below guidelines are for contributing data through REST API endpoints.

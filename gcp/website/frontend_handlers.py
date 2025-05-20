@@ -269,8 +269,11 @@ def vulnerability(vuln_id: str):
   """Vulnerability page."""
   try:
     vuln = osv_get_by_id(vuln_id)
+  except VulnerabilityNotImported:
+    # TODO: handle showing import findings
+    abort(404)
   except VulnerabilityNotFound as e:
-    return redirect(f'/list?q={e.vuln_id}')
+    return redirect(url_for('list_vulnerabilities', q=e.vuln_id))
 
   api_url = utils.api_url()
 
@@ -291,9 +294,9 @@ def vulnerability_redirector(potential_vuln_id: str):
   try:
     bug = osv_get_by_id(potential_vuln_id)
   except VulnerabilityNotFound as e:
-    return redirect(f'/list?q={e.vuln_id}')
+    return redirect(url_for('list_vulnerabilities', q=e.vuln_id))
 
-  path = safe_join('/vulnerability/', bug.get('id', ''))
+  path = safe_join('/vulnerability', bug.get('id', ''))
   return redirect(path or '/vulnerability/')
 
 
@@ -590,6 +593,8 @@ def osv_get_by_id(vuln_id: str) -> dict:
   if not bug:
     alias = check_for_aliases(vuln_id)
     if not alias:
+      if osv.ImportFinding.get_by_id(vuln_id):
+        raise VulnerabilityNotImported(vuln_id)
       raise VulnerabilityNotFound(vuln_id)
     bug = alias
 

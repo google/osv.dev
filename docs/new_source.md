@@ -33,61 +33,73 @@ The step by step instructions are as follows:
 
 ### Git (preferred)
 ``` yaml
-- name: # name of advisory
+- name: 
   type: 0   # 0: GIT, 1: GCS, 2: REST
   repo_url:    # The repo URL for the source
+  db_prefix: # DB prefix, if the database allocates its own. https://ossf.github.io/osv-schema/#id-modified-fields
+  human_link: # HTTP link prefix to individual vulnerability records for humans. 
+  link: # HTTP link prefix to individual OSV source records. 
+  directory_path: # Vulnerability data not under this path is ignored by the importer.
+  extension: '.json' # Default extension.
+  ignore_patterns: # Patterns of files to exclude (regex).
+```
+Advanced and optional fields 
+``` yaml
+  # Optional
   repo_username:  # The username to use for SSH auth if needed
   repo_branch: # Optional branch for repo
-  directory_path: # Vulnerability data not under this path is ignored by the importer.
-  ignore_patterns: # Patterns of files to exclude (regex).
-  editable: # Whether this repository is editable.
-  extension: # Default extension.
-  key_path: # Key path within each file to store the vulnerability. 
-  ignore_git: # If true, don't analyze any Git ranges.
-  detect_cherrypicks: # Whether to detect cherrypicks or not (slow for large repos).
-  consider_all_branches: # Whether to consider all branches when analyzing GIT ranges.
-  versions_from_repo: # Whether to populate "affected[].versions" from Git ranges.
-  link: # HTTP link prefix to individual OSV source records. 
-  human_link: # HTTP link prefix to individual vulnerability records for humans. 
-  db_prefix: # DB prefix, if the database allocates its own.
-  # https://ossf.github.io/osv-schema/#id-modified-fields
-  strict_validation: # Apply strict validation (JSON Schema + linter checks) to this source.
+  
+  # Default Advanced values
+  editable: False # Whether this repository is editable.
+  ignore_git: False # If true, don't analyze any Git ranges.
+  detect_cherrypicks: False # Whether to detect cherrypicks or not (slow for large repos).
+  consider_all_branches: False # Whether to consider all branches when analyzing GIT ranges.
+  versions_from_repo: False # Whether to populate "affected[].versions" from Git ranges.
+  strict_validation: False # Apply strict validation (JSON Schema + linter checks) to this source.
+```
+
+### REST
+``` yaml
+- name: 
+  type: 2 # 0: GIT, 1: GCS, 2: REST
+  rest_api_url: # URL pointing to a REST endpoint containing at least all of the vulnerabilities' IDs and date modified
+  db_prefix: # DB prefix, as reserved in ossf. https://ossf.github.io/osv-schema/#id-modified-fields
+  human_link: # The human readable link
+  link:  # The base link
+  directory_path: # Vulnerability data not under this path is ignored by the importer
+  extension: # Extension for vulnerability data
+  ignore_patterns:  # Patterns of files to exclude (regex).
+```
+Advanced and optional fields 
+``` yaml
+  detect_cherrypicks: False # Whether to detect cherrypicks or not (slow for large repos)
+  ignore_git: False # If true, don't analyze any Git ranges.
+  editable: False # Whether this repository is editable.
+  versions_from_repo: False # Whether to populate "affected[].versions" from Git ranges.
+  strict_validation: False # Apply strict validation (JSON Schema + linter checks) to this source.
 ```
 
 ### GCS
 ``` yaml
 - name: 
-  versions_from_repo:  # Whether to populate "affected[].versions" from Git ranges.
   type: 1 # 0: GIT, 1: GCS, 2: REST
-  ignore_patterns: # Patterns of files to exclude (regex).
-  directory_path: # Vulnerability data not under this path is ignored by the importer
-  detect_cherrypicks:  # Whether to detect cherrypicks or not (slow for large repos)
-  extension: # Extension for vulnerability data
   bucket:  # Bucket name
   db_prefix:  # DB prefix, as reserved in ossf. https://ossf.github.io/osv-schema/#id-modified-fields
-  ignore_git:  # If true, don't analyze any Git ranges.
   human_link:  # The human readable link
   link:  # The base link
-  editable:  # Whether this repository is editable.
-  strict_validation: # Apply strict validation (JSON Schema + linter checks) to this source.
+  directory_path: # Vulnerability data not under this path is ignored by the importer
+  extension: '.json' # Extension for vulnerability data
+  ignore_patterns: # Patterns of files to exclude (regex).
+
+```
+Advanced and optional fields 
+``` yaml
+  detect_cherrypicks: False # Whether to detect cherrypicks or not (slow for large repos)
+  ignore_git: False # If true, don't analyze any Git ranges.
+  editable: False # Whether this repository is editable.
+  versions_from_repo: False # Whether to populate "affected[].versions" from Git ranges.
+  strict_validation: False # Apply strict validation (JSON Schema + linter checks) to this source.
 ```
 
-### REST
-``` yaml
-- name: # name of source
-  versions_from_repo: # Whether to populate "affected[].versions" from Git ranges.
-  rest_api_url: # URL pointing to a REST endpoint containing at least all of the vulnerabilities' IDs and date modified
-  type: 2 # 0: GIT, 1: GCS, 2: REST
-  ignore_patterns:  # Patterns of files to exclude (regex).
-  directory_path: # Vulnerability data not under this path is ignored by the importer
-  detect_cherrypicks: # Whether to detect cherrypicks or not (slow for large repos)
-  extension: # Extension for vulnerability data
-  db_prefix: # DB prefix, as reserved in ossf. https://ossf.github.io/osv-schema/#id-modified-fields
-  ignore_git: False # If true, don't analyze any Git ranges.
-  human_link: # The human readable link
-  link:  # The base link
-  editable: # Whether this repository is editable.
-  strict_validation: # Apply strict validation (JSON Schema + linter checks) to this source.
-```
 </details>
 Do you have a question, suggestion or feedback? Please [open an issue](https://github.com/google/osv.dev/issues).

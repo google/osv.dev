@@ -12,13 +12,16 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# vulnfeeds test runner
+# osv-lib test runner
 # This should be triggered on changes to the following:
-# vulnfeeds/go.mod
-# vulnfeeds/go.sum
-# vulnfeeds/run_tests.sh
-# vulnfeeds/*.go
-# vulnfeeds/**/*.go
+# poetry.lock
+# run_tests.sh
+# osv/*.py
+# osv/**/*.py
+# tools/source-sync/run_tests.sh
+# tools/source-sync/*.py
+# source.yaml
+# source_test.yaml
 
 steps:
 - name: 'gcr.io/cloud-builders/git'
@@ -27,13 +30,26 @@ steps:
   # if this is invoked from another cloud build, this will fail as it is not a git repo
   # the invoking cloud build file should run this step.
   allowFailure: true
+- name: 'gcr.io/oss-vdb/ci'
+  id: 'sync'
+  dir: '.'
+  args: ['poetry', 'sync']
+  waitFor: ['-']
 
 - name: 'gcr.io/oss-vdb/ci'
-  id: 'vulnfeed-tests'
-  dir: vulnfeeds
+  id: 'lib-tests'
   args: ['bash', '-ex', 'run_tests.sh']
   env:
-    - 'BUILD_ID=$BUILD_ID'
-  waitFor: ['init']
+    # Each concurrent test that uses the datastore emulator must have a unique port number
+    - DATASTORE_EMULATOR_PORT=8002
+  waitFor: ['init', 'sync']
+
+- name: 'gcr.io/oss-vdb/ci'
+  id: 'sourcerepo-sync-tests'
+  dir: 'tools/sourcerepo-sync'
+  args: ['bash', '-ex', 'run_tests.sh']
+  waitFor: ['init', 'sync']
 
 timeout: 7200s
+options:
+  machineType: E2_HIGHCPU_8

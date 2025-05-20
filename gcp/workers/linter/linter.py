@@ -14,10 +14,10 @@
 # limitations under the License.
 """Run osv-linter on all OSV records."""
 
+import argparse
 import json
 import logging
 import os
-import shutil
 import subprocess
 import sys
 import tempfile
@@ -29,10 +29,10 @@ import osv.logs
 from osv.models import utcnow
 
 # The Go binary is copied to /usr/local/bin in the Dockerfile
-OSV_LINTER_PATH = '/usr/local/bin/osv-linter'
+OSV_LINTER = 'osv-linter'
 VULN_BUCKET = 'osv-test-vulnerabilities'
 ZIP_FILE_PATH = 'all.zip'
-TEST_DATA = './test_data'
+TEST_DATA = '/linter/test_data'
 GCP_PROJECT = 'oss-vdb-test'
 
 ERROR_CODE_MAPPING = {
@@ -86,36 +86,35 @@ PREFIX_TO_SOURCE = {
 }
 
 
-def download_zip(all_zip: str):
-  """Downloads all.zip file from bucket."""
+def download_file(source: str, destination: str):
+  """Downloads the required file from bucket."""
   storage_client = storage.Client()
   bucket = storage_client.get_bucket(VULN_BUCKET)
   try:
-    blob = bucket.blob(ZIP_FILE_PATH)
-    blob.download_to_filename(all_zip)
+    blob = bucket.blob(source)
+    blob.download_to_filename(destination)
   except Exception as e:
-    logging.exception('Failed to download all.zip: %s', e)
+    logging.exception('Failed to download %s: %s', source, e)
     sys.exit(1)
-  logging.info('Downloaded %s.', all_zip)
+  logging.info('Downloaded to %s.', destination)
 
 
-def download_osv_data():
-  """download osv data from all.zip"""
-  tmp_dir = os.path.join(TEST_DATA, 'tmp')
-  os.makedirs(tmp_dir, exist_ok=True)
-  os.environ['TMPDIR'] = tmp_dir
-
-  with tempfile.TemporaryDirectory() as tmp_dir:
-    logging.info('Starts to download %s from bucket %s.', ZIP_FILE_PATH,
-                 VULN_BUCKET)
-    all_zip = os.path.join(tmp_dir, ZIP_FILE_PATH)
-    download_zip(all_zip)
-    logging.info('Unzipping %s into %s...', all_zip, TEST_DATA)
-    with zipfile.ZipFile(all_zip, 'r') as zip_ref:
-      zip_ref.extractall(TEST_DATA)
-    logging.info('Successfully unzipped files to %s.', TEST_DATA)
+def download_osv_data(tmp_dir: str):
+  """download osv data from all.zip to a temp directory"""
+  logging.info('Starts to download %s from bucket %s.', ZIP_FILE_PATH,
+               VULN_BUCKET)
+  all_zip = os.path.join(tmp_dir, ZIP_FILE_PATH)
+  download_file(ZIP_FILE_PATH, all_zip)
+  logging.info('Unzipping %s into %s...', all_zip, tmp_dir)
+  with zipfile.ZipFile(all_zip, 'r') as zip_ref:
+    # TODO(gongh@): add json validation here.
+    zip_ref.extractall(tmp_dir)
+  logging.info('Successfully unzipped files to %s.', tmp_dir)
 
 
+# TODO(gongh@): This function is duplicated from importer.py.
+# A common version should be created in models.py
+# or other files for shared usage.
 def record_quality_finding(
     bug_id: str,
     source: osv.SourceRepository.name,
@@ -165,10 +164,12 @@ def parse_and_record_linter_output(json_output_str: str):
         if import_finding_code in findings_already_added:
           continue
         findings_already_added.add(import_finding_code)
-        source = PREFIX_TO_SOURCE.get(bug_id.split('-')[0], '')
+        prefix = bug_id.split('-')[0] + '-'
+        source = PREFIX_TO_SOURCE.get(prefix, '')
         record_quality_finding(bug_id, source,
                                import_finding_code)  # type: ignore
-        logging.debug('Recorded: Code=%s, Message=%s', code, message)
+        logging.debug('Recorded: Code=%s, Message=%s, source=%s', code, message,
+                      source)
 
   if total_findings > 0:
     logging.error(
@@ -176,28 +177,35 @@ def parse_and_record_linter_output(json_output_str: str):
         total_findings)
 
 
-def run_linter():
+def main():
   """Run linter"""
-  download_osv_data()
-  try:
-    command = [
-        OSV_LINTER_PATH, 'record', 'check', '--json', '--collection', 'offline',
-        TEST_DATA
-    ]
-    logging.info('Executing Go linter: %s', ' '.join(command))
+  parser = argparse.ArgumentParser(description='Linter')
+  parser.add_argument('--work_dir', help='Working directory', default=TEST_DATA)
+  args = parser.parse_args()
 
-    result = subprocess.run(
-        command, capture_output=True, text=True, check=False, timeout=600)
+  tmp_dir = os.path.join(args.work_dir, 'tmp')
+  os.makedirs(tmp_dir, exist_ok=True)
 
-    parse_and_record_linter_output(result.stdout)
-    shutil.rmtree(TEST_DATA)
-  except Exception as e:
-    logging.error('An unexpected error occurred: %e', e)
-    sys.exit(1)
+  with tempfile.TemporaryDirectory(dir=tmp_dir) as tmp_dir:
+    download_osv_data(tmp_dir)
+    try:
+      command = [
+          OSV_LINTER, 'record', 'check', '--json', '--collection', 'offline',
+          tmp_dir
+      ]
+      logging.info('Executing Go linter: %s', ' '.join(command))
+
+      result = subprocess.run(
+          command, capture_output=True, text=True, check=False, timeout=600)
+
+      parse_and_record_linter_output(result.stdout)
+    except Exception as e:
+      logging.error('An unexpected error occurred: %e', e)
+      sys.exit(1)
 
 
 if __name__ == '__main__':
   osv.logs.setup_gcp_logging('linter')
   _ndb_client = ndb.Client()
   with _ndb_client.context():
-    run_linter()
+    main()

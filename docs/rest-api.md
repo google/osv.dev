@@ -1,9 +1,9 @@
 ---
 layout: page
 title: via REST API
-permalink: /contributing/data/rest-api
+permalink: /data/new/rest-api
 nav_order: 1
-parent: Data Source
+parent: New Data Source
 ---
 
 # Contributing Data via REST API

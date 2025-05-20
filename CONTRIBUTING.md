@@ -154,7 +154,7 @@ contribute your security advisories, please follow these steps.
     for information on how to properly format the data so it can be accepted.
 
 3.  Data can be supplied either through a public Git repository, a public GCS
-    bucket or to [REST API endpoints](https://google.github.io/osv.dev/contributing/data/rest-api/).
+    bucket or to [REST API endpoints](https://google.github.io/osv.dev/data/new/rest-api/).
 
 ## Contributing documentation
 

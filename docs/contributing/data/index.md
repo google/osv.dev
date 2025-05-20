@@ -1,13 +1,13 @@
 ---
 layout: page
-title: Contributing Data
+title: Data Source
 permalink: /contributing/data/
 nav_order: 1
 has_children: true
 parent: Contributing
 ---
 
-# Contributing Data
+# Contributing A New Data Source
 
 Data contributions are welcome. OSV.dev readily accepts security related records from open source projects, given they are provided in the [OSV format](https://ossf.github.io/osv-schema/). Publishing records to OSV is straightforward: reserve a prefix in the OSV-Schema, and then prepare and publish your data via a Git repository or other supported method. The step by step instructions are as follows:
 
@@ -26,8 +26,8 @@ Data contributions are welcome. OSV.dev readily accepts security related records
 - [ ] Create a PR to start [importing the records you are publishing into our production environment](https://github.com/google/osv.dev/blob/master/source.yaml)
 
 
-
-## source.yaml Examples:
+<details markdown="1">
+<summary><b>source.yaml Examples</b></summary>
 
 ### Git (preferred)
 ``` yaml
@@ -87,5 +87,5 @@ Data contributions are welcome. OSV.dev readily accepts security related records
   editable: # Whether this repository is editable.
   strict_validation: # Apply strict validation (JSON Schema + linter checks) to this source.
 ```
-
+</details>
 Do you have a question, suggestion or feedback? Please [open an issue](https://github.com/google/osv.dev/issues).

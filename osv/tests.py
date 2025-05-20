@@ -104,12 +104,17 @@ class MockRepo:
                              [self._repo.head.peel().id])
 
 
+_ds_data_dir = None
+  
 def start_datastore_emulator():
   """Starts Datastore emulator."""
   port = os.environ.get('DATASTORE_EMULATOR_PORT', _DATASTORE_EMULATOR_PORT)
   os.environ['DATASTORE_EMULATOR_HOST'] = 'localhost:' + port
   os.environ['DATASTORE_PROJECT_ID'] = TEST_PROJECT_ID
   os.environ['GOOGLE_CLOUD_PROJECT'] = TEST_PROJECT_ID
+  global _ds_data_dir
+  _ds_data_dir = tempfile.TemporaryDirectory()
+
   proc = subprocess.Popen([
       'gcloud',
       'beta',
@@ -120,6 +125,7 @@ def start_datastore_emulator():
       '--host-port=localhost:' + port,
       '--project=' + TEST_PROJECT_ID,
       '--no-store-on-disk',
+      f'--data-dir={_ds_data_dir.name}',
   ],
                           stdout=subprocess.PIPE,
                           stderr=subprocess.STDOUT)
@@ -182,6 +188,10 @@ def stop_emulator():
     resp = requests.post(
         'http://localhost:{}/shutdown'.format(port), timeout=_EMULATOR_TIMEOUT)
     resp.raise_for_status()
+    global _ds_data_dir
+    if _ds_data_dir:
+      _ds_data_dir.cleanup()
+      _ds_data_dir = None
   except Exception as e:
     # Something went wrong, manually kill all datastore processes instead.
     os.system('pkill -f datastore')

@@ -5,7 +5,7 @@ import (
 	"time"
 
 	"github.com/google/osv/vulnfeeds/cves"
-	"github.com/google/osv/vulnfeeds/testutils"
+	"github.com/google/osv/vulnfeeds/internal/testutils"
 )
 
 func TestVersionToCommit(t *testing.T) {

@@ -6,7 +6,7 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/osv/vulnfeeds/cves"
-	"github.com/google/osv/vulnfeeds/testutils"
+	"github.com/google/osv/vulnfeeds/internal/testutils"
 	"golang.org/x/exp/maps"
 )
 

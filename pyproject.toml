@@ -29,6 +29,7 @@ yapf = "*"
 pylint = "*"
 grpcio-tools = "*"
 mypy-protobuf = "^3.6.0"
+vcrpy = "*"
 
 [tool.pyright]
 executionEnvironments = [

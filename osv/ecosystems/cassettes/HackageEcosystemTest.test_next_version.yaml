@@ -1,0 +1,180 @@
+interactions:
+- request:
+    body: null
+    headers:
+      Accept:
+      - '*/*'
+      Accept-Encoding:
+      - gzip, deflate
+      Connection:
+      - keep-alive
+      User-Agent:
+      - python-requests/2.32.3
+    method: GET
+    uri: https://hackage.haskell.org/package/aeson.json
+  response:
+    body:
+      string: '{"0.1.0.0":"normal","0.10.0.0":"deprecated","0.11.0.0":"normal","0.11.1.0":"normal","0.11.1.1":"normal","0.11.1.2":"normal","0.11.1.3":"normal","0.11.1.4":"normal","0.11.2.0":"normal","0.11.2.1":"normal","0.11.3.0":"normal","0.2.0.0":"normal","0.3.0.0":"normal","0.3.1.0":"normal","0.3.1.1":"normal","0.3.2.0":"normal","0.3.2.1":"normal","0.3.2.10":"normal","0.3.2.11":"normal","0.3.2.12":"normal","0.3.2.13":"normal","0.3.2.14":"normal","0.3.2.2":"normal","0.3.2.3":"normal","0.3.2.4":"normal","0.3.2.5":"normal","0.3.2.6":"normal","0.3.2.7":"normal","0.3.2.8":"normal","0.3.2.9":"normal","0.4.0.0":"normal","0.4.0.1":"normal","0.5.0.0":"normal","0.6.0.0":"normal","0.6.0.1":"normal","0.6.0.2":"normal","0.6.1.0":"normal","0.6.2.0":"normal","0.6.2.1":"normal","0.7.0.0":"deprecated","0.7.0.1":"deprecated","0.7.0.2":"deprecated","0.7.0.3":"deprecated","0.7.0.4":"normal","0.7.0.5":"deprecated","0.7.0.6":"normal","0.8.0.0":"deprecated","0.8.0.1":"deprecated","0.8.0.2":"normal","0.8.1.0":"normal","0.8.1.1":"normal","0.9.0.0":"normal","0.9.0.1":"normal","1.0.0.0":"normal","1.0.1.0":"normal","1.0.2.0":"normal","1.0.2.1":"normal","1.1.0.0":"normal","1.1.1.0":"normal","1.1.2.0":"normal","1.2.0.0":"normal","1.2.1.0":"normal","1.2.2.0":"normal","1.2.3.0":"normal","1.2.4.0":"normal","1.3.0.0":"normal","1.3.1.0":"normal","1.3.1.1":"normal","1.4.0.0":"normal","1.4.1.0":"normal","1.4.2.0":"normal","1.4.3.0":"normal","1.4.4.0":"normal","1.4.5.0":"normal","1.4.6.0":"normal","1.4.7.0":"normal","1.4.7.1":"normal","1.5.0.0":"normal","1.5.1.0":"normal","1.5.2.0":"normal","1.5.3.0":"normal","1.5.4.0":"normal","1.5.4.1":"normal","1.5.5.0":"normal","1.5.5.1":"normal","1.5.6.0":"normal","2.0.0.0":"normal","2.0.1.0":"normal","2.0.2.0":"normal","2.0.3.0":"normal","2.1.0.0":"normal","2.1.1.0":"normal","2.1.2.0":"normal","2.1.2.1":"normal","2.2.0.0":"normal","2.2.1.0":"normal","2.2.2.0":"normal","2.2.3.0":"normal"}'
+    headers:
+      Accept-Ranges:
+      - bytes
+      Connection:
+      - keep-alive
+      Content-Type:
+      - application/json
+      Date:
+      - Wed, 21 May 2025 03:00:15 GMT
+      Server:
+      - nginx/1.24.0 (Ubuntu)
+      Vary:
+      - Accept-Encoding
+      Via:
+      - 1.1 varnish, 1.1 varnish
+      X-Cache:
+      - MISS, MISS
+      X-Cache-Hits:
+      - 0, 0
+      X-Served-By:
+      - cache-dfw-kdal2120033-DFW, cache-syd10141-SYD
+      X-Timer:
+      - S1747796415.852326,VS0,VE589
+      transfer-encoding:
+      - chunked
+    status:
+      code: 200
+      message: OK
+- request:
+    body: null
+    headers:
+      Accept:
+      - '*/*'
+      Accept-Encoding:
+      - gzip, deflate
+      Connection:
+      - keep-alive
+      User-Agent:
+      - python-requests/2.32.3
+    method: GET
+    uri: https://hackage.haskell.org/package/aeson.json
+  response:
+    body:
+      string: '{"0.1.0.0":"normal","0.10.0.0":"deprecated","0.11.0.0":"normal","0.11.1.0":"normal","0.11.1.1":"normal","0.11.1.2":"normal","0.11.1.3":"normal","0.11.1.4":"normal","0.11.2.0":"normal","0.11.2.1":"normal","0.11.3.0":"normal","0.2.0.0":"normal","0.3.0.0":"normal","0.3.1.0":"normal","0.3.1.1":"normal","0.3.2.0":"normal","0.3.2.1":"normal","0.3.2.10":"normal","0.3.2.11":"normal","0.3.2.12":"normal","0.3.2.13":"normal","0.3.2.14":"normal","0.3.2.2":"normal","0.3.2.3":"normal","0.3.2.4":"normal","0.3.2.5":"normal","0.3.2.6":"normal","0.3.2.7":"normal","0.3.2.8":"normal","0.3.2.9":"normal","0.4.0.0":"normal","0.4.0.1":"normal","0.5.0.0":"normal","0.6.0.0":"normal","0.6.0.1":"normal","0.6.0.2":"normal","0.6.1.0":"normal","0.6.2.0":"normal","0.6.2.1":"normal","0.7.0.0":"deprecated","0.7.0.1":"deprecated","0.7.0.2":"deprecated","0.7.0.3":"deprecated","0.7.0.4":"normal","0.7.0.5":"deprecated","0.7.0.6":"normal","0.8.0.0":"deprecated","0.8.0.1":"deprecated","0.8.0.2":"normal","0.8.1.0":"normal","0.8.1.1":"normal","0.9.0.0":"normal","0.9.0.1":"normal","1.0.0.0":"normal","1.0.1.0":"normal","1.0.2.0":"normal","1.0.2.1":"normal","1.1.0.0":"normal","1.1.1.0":"normal","1.1.2.0":"normal","1.2.0.0":"normal","1.2.1.0":"normal","1.2.2.0":"normal","1.2.3.0":"normal","1.2.4.0":"normal","1.3.0.0":"normal","1.3.1.0":"normal","1.3.1.1":"normal","1.4.0.0":"normal","1.4.1.0":"normal","1.4.2.0":"normal","1.4.3.0":"normal","1.4.4.0":"normal","1.4.5.0":"normal","1.4.6.0":"normal","1.4.7.0":"normal","1.4.7.1":"normal","1.5.0.0":"normal","1.5.1.0":"normal","1.5.2.0":"normal","1.5.3.0":"normal","1.5.4.0":"normal","1.5.4.1":"normal","1.5.5.0":"normal","1.5.5.1":"normal","1.5.6.0":"normal","2.0.0.0":"normal","2.0.1.0":"normal","2.0.2.0":"normal","2.0.3.0":"normal","2.1.0.0":"normal","2.1.1.0":"normal","2.1.2.0":"normal","2.1.2.1":"normal","2.2.0.0":"normal","2.2.1.0":"normal","2.2.2.0":"normal","2.2.3.0":"normal"}'
+    headers:
+      Accept-Ranges:
+      - bytes
+      Connection:
+      - keep-alive
+      Content-Type:
+      - application/json
+      Date:
+      - Wed, 21 May 2025 03:00:15 GMT
+      Server:
+      - nginx/1.24.0 (Ubuntu)
+      Vary:
+      - Accept-Encoding
+      Via:
+      - 1.1 varnish, 1.1 varnish
+      X-Cache:
+      - MISS, MISS
+      X-Cache-Hits:
+      - 0, 0
+      X-Served-By:
+      - cache-dfw-kdal2120047-DFW, cache-syd10149-SYD
+      X-Timer:
+      - S1747796416.504767,VS0,VE230
+      transfer-encoding:
+      - chunked
+    status:
+      code: 200
+      message: OK
+- request:
+    body: null
+    headers:
+      Accept:
+      - '*/*'
+      Accept-Encoding:
+      - gzip, deflate
+      Connection:
+      - keep-alive
+      User-Agent:
+      - python-requests/2.32.3
+    method: GET
+    uri: https://hackage.haskell.org/package/jose.json
+  response:
+    body:
+      string: '{"0.1.26.0":"normal","0.1.27.0":"normal","0.10":"normal","0.10.0.1":"normal","0.11":"normal","0.2.31.0":"normal","0.2.33.0":"normal","0.2.38.0":"normal","0.2.38.1":"normal","0.3.38.0":"normal","0.3.41.0":"normal","0.3.41.1":"normal","0.3.41.2":"normal","0.4.0.0":"normal","0.4.0.1":"normal","0.4.0.2":"normal","0.4.0.3":"normal","0.4.0.4":"normal","0.5.0.0":"normal","0.5.0.1":"normal","0.5.0.2":"normal","0.5.0.3":"normal","0.5.0.4":"normal","0.5.0.5":"normal","0.6.0.0":"normal","0.6.0.1":"normal","0.6.0.2":"normal","0.6.0.3":"normal","0.7.0.0":"normal","0.8.0.0":"normal","0.8.1.0":"normal","0.8.2.0":"normal","0.8.2.1":"normal","0.8.3":"normal","0.8.3.1":"normal","0.8.4":"normal","0.8.4.1":"normal","0.8.5":"normal","0.8.5.1":"normal","0.9":"normal"}'
+    headers:
+      Accept-Ranges:
+      - bytes
+      Connection:
+      - keep-alive
+      Content-Type:
+      - application/json
+      Date:
+      - Wed, 21 May 2025 03:00:15 GMT
+      Server:
+      - nginx/1.24.0 (Ubuntu)
+      Vary:
+      - Accept-Encoding
+      Via:
+      - 1.1 varnish, 1.1 varnish
+      X-Cache:
+      - MISS, MISS
+      X-Cache-Hits:
+      - 0, 0
+      X-Served-By:
+      - cache-dfw-kdal2120097-DFW, cache-syd10150-SYD
+      X-Timer:
+      - S1747796416.767202,VS0,VE221
+      transfer-encoding:
+      - chunked
+    status:
+      code: 200
+      message: OK
+- request:
+    body: null
+    headers:
+      Accept:
+      - '*/*'
+      Accept-Encoding:
+      - gzip, deflate
+      Connection:
+      - keep-alive
+      User-Agent:
+      - python-requests/2.32.3
+    method: GET
+    uri: https://hackage.haskell.org/package/doesnotexist123456.json
+  response:
+    body:
+      string: 'Package not found: No such package in package index
+
+        '
+    headers:
+      Accept-Ranges:
+      - bytes
+      Connection:
+      - keep-alive
+      Content-Length:
+      - '52'
+      Content-Type:
+      - text/plain
+      Date:
+      - Wed, 21 May 2025 03:00:16 GMT
+      Server:
+      - nginx/1.24.0 (Ubuntu)
+      Vary:
+      - Accept-Encoding
+      Via:
+      - 1.1 varnish, 1.1 varnish
+      X-Cache:
+      - MISS, MISS
+      X-Cache-Hits:
+      - 0, 0
+      X-Served-By:
+      - cache-dfw-kdal2120087-DFW, cache-syd10163-SYD
+      X-Timer:
+      - S1747796416.015696,VS0,VE581
+    status:
+      code: 404
+      message: Not Found
+version: 1

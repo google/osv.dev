@@ -14,14 +14,14 @@
 """Debian ecosystem helper tests."""
 
 import requests
-import unittest
+import vcr.unittest
 from unittest import mock
 
 from .. import cache
 from .. import ecosystems
 
 
-class DebianEcosystemTest(unittest.TestCase):
+class DebianEcosystemTest(vcr.unittest.VCRTestCase):
   """Debian ecosystem helper tests."""
 
   @mock.patch(

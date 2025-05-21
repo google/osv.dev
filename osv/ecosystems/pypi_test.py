@@ -13,12 +13,12 @@
 # limitations under the License.
 """PyPI ecosystem helper tests."""
 
-import unittest
+import vcr.unittest
 
 from .. import ecosystems
 
 
-class PyPIEcosystemTest(unittest.TestCase):
+class PyPIEcosystemTest(vcr.unittest.VCRTestCase):
   """PyPI ecosystem helper tests."""
 
   def test_next_version(self):

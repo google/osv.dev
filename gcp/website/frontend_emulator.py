@@ -16,13 +16,26 @@ from osv import tests
 from google.cloud import ndb
 import osv
 import datetime
-from gcp.workers.alias import upstream_computation
+from gcp.workers.alias import upstream_computation, alias_computation
 
 
 def setUp():
   """ Set Up a series of bugs and UpstreamGroups to put in the emulator
   for testing purposes."""
   tests.reset_emulator()
+  osv.Bug(
+      id='ALIAS-CVE-1',
+      db_id='ALIAS-CVE-1',
+      aliases=['CVE-1', 'ALIAS'],
+      status=1,
+      upstream_raw=['CVE-1', 'CVE-2'],
+      source='test',
+      public=True,
+      import_last_modified=datetime.datetime(2023, 1, 1),
+      timestamp=datetime.datetime(2023, 8, 14),
+  ).put()
+  osv.AliasGroup(bug_ids=['ALIAS-CVE-1', 'CVE-1', 'ALIAS'],).put()
+
   osv.Bug(
       id='CVE-1',
       db_id='CVE-1',
@@ -36,6 +49,7 @@ def setUp():
   osv.Bug(
       id='CVE-2',
       db_id='CVE-2',
+      aliases=['CVE-1'],
       status=1,
       upstream_raw=['CVE-1'],
       source='test',
@@ -67,6 +81,7 @@ def setUp():
       id='CVE-3',
       db_id='CVE-3',
       status=1,
+      aliases=['CVE-4'],
       upstream_raw=['CVE-1', 'CVE-2'],
       source='test',
       public=True,
@@ -337,7 +352,6 @@ def setUp():
       source="test",
       timestamp=datetime.datetime(2023, 8, 14),
   ).put()
-
   osv.Bug(
       id="CYCLE-ROOT-1",
       db_id="CYCLE-ROOT-1",
@@ -382,8 +396,11 @@ def setUp():
       db_id='CYCLE-ROOT-2',
       upstream_ids=['CYCLE-ROOT-1'],
       last_modified=datetime.datetime(2023, 8, 14)).put()
-
+  osv.AliasGroup(
+      bug_ids=['CVE-3', 'CVE-4'], last_modified=datetime.datetime(2025, 2,
+                                                                  4)).put()
   upstream_computation.main()
+  alias_computation.main()
 
 
 if __name__ == '__main__':

@@ -284,14 +284,16 @@ class Importer:
   def run(self):
     """Run importer."""
     for source_repo in osv.SourceRepository.query():
-      if not self._delete and source_repo.name == 'oss-fuzz':
-        self.process_oss_fuzz(source_repo)
-
-      self.validate_source_repo(source_repo)
-      if not self._delete:
-        self.process_updates(source_repo)
-      if self._delete:
-        self.process_deletions(source_repo)
+      try:
+        if not self._delete and source_repo.name == 'oss-fuzz':
+          self.process_oss_fuzz(source_repo)
+        self.validate_source_repo(source_repo)
+        if not self._delete:
+          self.process_updates(source_repo)
+        if self._delete:
+          self.process_deletions(source_repo)
+      except Exception as e:
+        logging.exception(e)
 
   def checkout(self, source_repo):
     """Check out a source repo."""

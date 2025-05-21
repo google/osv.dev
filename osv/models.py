@@ -980,8 +980,10 @@ class UpstreamGroup(ndb.Model):
   last_modified: datetime = ndb.DateTimeProperty()
 
 
+# TODO(gongh@): redesign this to make it easy to scale.
 class ImportFindings(enum.IntEnum):
   """The possible quality findings about an individual record."""
+  UNKNOWN = -1
   NONE = 0
   DELETED = 1
   INVALID_JSON = 2
@@ -990,7 +992,11 @@ class ImportFindings(enum.IntEnum):
   INVALID_VERSION = 5
   INVALID_COMMIT = 6
   INVALID_RANGE = 7
-  BAD_ALIASED_CVE = 8
+  INVALID_RECORD = 8
+  INVALID_ALIASES = 9
+  INVALID_UPSTREAM = 10
+  INVALID_RELATED = 11
+  BAD_ALIASED_CVE = 12
 
 
 class ImportFinding(ndb.Model):

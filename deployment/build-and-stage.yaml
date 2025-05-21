@@ -108,6 +108,16 @@ steps:
   args: ['push', '--all-tags', 'gcr.io/oss-vdb-test/staging-api-test']
   waitFor: ['build-staging-api-test', 'cloud-build-queue']
 
+# Build/push osv-linter images to gcr.io/oss-vdb-test.
+- name: gcr.io/cloud-builders/docker
+  args: ['build', '-t', 'gcr.io/oss-vdb-test/osv-linter:latest', '-t', 'gcr.io/oss-vdb-test/osv-linter:$COMMIT_SHA', '.']
+  dir: 'gcp/workers/linter'
+  id: 'build-osv-linter'
+  waitFor: ['build-worker']
+- name: gcr.io/cloud-builders/docker
+  args: ['push', '--all-tags', 'gcr.io/oss-vdb-test/osv-linter']
+  waitFor: ['build-osv-linter', 'cloud-build-queue']
+
 # Build/push cron job images.
 - name: gcr.io/cloud-builders/docker
   args: ['build', '-t', 'gcr.io/oss-vdb/cron:latest', '-t', 'gcr.io/oss-vdb/cron:$COMMIT_SHA', '.']
@@ -272,6 +282,7 @@ steps:
      exporter=gcr.io/oss-vdb/exporter:$COMMIT_SHA,\
      alias-computation=gcr.io/oss-vdb/alias-computation:$COMMIT_SHA,\
      staging-api-test=gcr.io/oss-vdb-test/staging-api-test:$COMMIT_SHA,\
+     osv-linter=gcr.io/oss-vdb-test/osv-linter:$COMMIT_SHA,\
      cron=gcr.io/oss-vdb/cron:$COMMIT_SHA,\
      debian-convert=gcr.io/oss-vdb/debian-convert:$COMMIT_SHA,\
      combine-to-osv=gcr.io/oss-vdb/combine-to-osv:$COMMIT_SHA,\
@@ -335,3 +346,4 @@ images:
 - 'gcr.io/oss-vdb/nvd-cve-osv:$COMMIT_SHA'
 - 'gcr.io/oss-vdb/nvd-mirror:$COMMIT_SHA'
 - 'gcr.io/oss-vdb-test/staging-api-test:$COMMIT_SHA'
+- 'gcr.io/oss-vdb-test/osv-linter:$COMMIT_SHA'

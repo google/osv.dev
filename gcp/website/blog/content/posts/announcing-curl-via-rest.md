@@ -41,6 +41,6 @@ While .json is preferred, let us know if you need to use a different extension.
 
 **Open an Issue to Get Started!**
 
-Ready to contribute? Have a look at our documentation here: https://google.github.io/osv.dev/rest-api-contribution/ or simply [open an issue](https://github.com/google/osv.dev/issues) on our GitHub repository, provide the necessary information outlined above, and our team will work with you to integrate your data smoothly.
+Ready to contribute? Have a look at our documentation here: https://google.github.io/osv.dev/data/new/rest-api or simply [open an issue](https://github.com/google/osv.dev/issues) on our GitHub repository, provide the necessary information outlined above, and our team will work with you to integrate your data smoothly.
 
 Together, we can strengthen the open source ecosystem by making vulnerability information more accessible and actionable. Let's continue building a more secure future for open source software.

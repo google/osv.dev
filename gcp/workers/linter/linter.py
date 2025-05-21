@@ -36,12 +36,15 @@ TEST_DATA = '/linter/test_data'
 GCP_PROJECT = 'oss-vdb-test'
 
 ERROR_CODE_MAPPING = {
-    'A0001': osv.ImportFindings.INVALID_RECORD,
-    'R0001': osv.ImportFindings.INVALID_RANGE,
-    'R0002': osv.ImportFindings.INVALID_RANGE,
-    'P0001': osv.ImportFindings.INVALID_PACKAGE,
-    'P0002': osv.ImportFindings.INVALID_VERSION,
-    'P0003': osv.ImportFindings.INVALID_PURL,
+    'REC:001': osv.ImportFindings.INVALID_RECORD,
+    'REC:002': osv.ImportFindings.INVALID_ALIASES,
+    'REC:003': osv.ImportFindings.INVALID_UPSTREAM,
+    'REC:004': osv.ImportFindings.INVALID_RELATED,
+    'RNG:001': osv.ImportFindings.INVALID_RANGE,
+    'RNG:002': osv.ImportFindings.INVALID_RANGE,
+    'PKG:001': osv.ImportFindings.INVALID_PACKAGE,
+    'PKG:002': osv.ImportFindings.INVALID_VERSION,
+    'PKG:003': osv.ImportFindings.INVALID_PURL,
 }
 
 # TODO(gongh@): query the mapping from the SourceRepository database

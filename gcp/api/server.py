@@ -172,10 +172,9 @@ class OSVServicer(osv_service_v1_pb2_grpc.OSVServicer,
       alias_group = osv.AliasGroup.query(
           osv.AliasGroup.bug_ids == request.id).get()
       if alias_group:
-        string_builder = {
-            f'{alias} ' for alias in alias_group.bug_ids if alias != request.id
-        }
-        alias_string = ''.join(string_builder)
+        alias_string = ' '.join([
+            f'{alias}' for alias in alias_group.bug_ids if alias != request.id
+        ])
         context.abort(
             grpc.StatusCode.NOT_FOUND,
             f'Bug not found, but the following aliases were: {alias_string}')

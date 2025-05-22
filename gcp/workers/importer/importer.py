@@ -104,12 +104,12 @@ def _is_vulnerability_file(source_repo, file_path):
   return file_path.endswith(source_repo.extension)
 
 
-def aestnow() -> datetime:
+def aestnow() -> datetime.datetime:
   """Get the current AEST time"""
   return utcnow().astimezone(datetime.timezone(datetime.timedelta(hours=10)))
 
 
-def utcnow():
+def utcnow() -> datetime.datetime:
   """utcnow() for mocking."""
   return datetime.datetime.now(datetime.UTC)
 
@@ -340,9 +340,11 @@ class Importer:
       ndb.put_multi(exported)
 
   def schedule_regular_updates(self, repo, source_repo: osv.SourceRepository):
-    ##### TODO(michaelkedar): AAAAAHHHHHHHHHHHHHHHHHHHHHHH
     """Schedule regular updates."""
-    aest_time_now = aestnow()
+    # To match the original timezone-unaware implementation,
+    # aest_time_now is the current AEST time, but in the UTC timezone
+    # i.e. it's the current time + 10 hours in UTC.
+    aest_time_now = aestnow().replace(tzinfo=datetime.UTC)
 
     if (source_repo.last_update_date and
         # OSV devs are mostly located in australia,
@@ -507,7 +509,7 @@ class Importer:
         bug = osv.Bug.get_by_id(vuln.id)
         # The bug already exists and has been modified since last import
         if bug is None or \
-                bug.import_last_modified != vuln.modified.ToDatetime():
+                bug.import_last_modified != vuln.modified.ToDatetime(datetime.UTC):
           return blob_hash, blob.name
 
       return None

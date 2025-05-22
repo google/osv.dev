@@ -39,7 +39,7 @@ class AliasTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
         status=1,
         source='test',
         public=True,
-        import_last_modified=datetime.datetime(2023, 1, 1),
+        import_last_modified=datetime.datetime(2023, 1, 1, tzinfo=datetime.UTC),
     ).put()
     osv.Bug(
         id='aaa-124',
@@ -47,11 +47,11 @@ class AliasTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
         status=1,
         source='test',
         public=True,
-        import_last_modified=datetime.datetime(2023, 1, 1),
+        import_last_modified=datetime.datetime(2023, 1, 1, tzinfo=datetime.UTC),
     ).put()
     osv.AliasGroup(
         bug_ids=['aaa-123', 'aaa-124'],
-        last_modified=datetime.datetime(2023, 1, 1),
+        last_modified=datetime.datetime(2023, 1, 1, tzinfo=datetime.UTC),
     ).put()
     alias_computation.main()
     bug_ids = osv.AliasGroup.query(
@@ -69,7 +69,7 @@ class AliasTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
         status=1,
         source='test',
         public=True,
-        import_last_modified=datetime.datetime(2023, 1, 1),
+        import_last_modified=datetime.datetime(2023, 1, 1, tzinfo=datetime.UTC),
     ).put()
     alias_computation.main()
     alias_group = osv.AliasGroup.query(
@@ -80,7 +80,7 @@ class AliasTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
     """Tests updating an existing alias group."""
     osv.AliasGroup(
         bug_ids=['bbb-123', 'bbb-234'],
-        last_modified=datetime.datetime(2023, 1, 1),
+        last_modified=datetime.datetime(2023, 1, 1, tzinfo=datetime.UTC),
     ).put()
     osv.Bug(
         id='bbb-123',
@@ -89,7 +89,7 @@ class AliasTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
         status=1,
         source='test',
         public=True,
-        import_last_modified=datetime.datetime(2023, 1, 1),
+        import_last_modified=datetime.datetime(2023, 1, 1, tzinfo=datetime.UTC),
     ).put()
     osv.Bug(
         id='bbb-234',
@@ -98,7 +98,7 @@ class AliasTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
         status=1,
         source='test',
         public=True,
-        import_last_modified=datetime.datetime(2023, 1, 1),
+        import_last_modified=datetime.datetime(2023, 1, 1, tzinfo=datetime.UTC),
     ).put()
     osv.Bug(
         id='bbb-789',
@@ -107,7 +107,7 @@ class AliasTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
         status=1,
         source='test',
         public=True,
-        import_last_modified=datetime.datetime(2023, 1, 1),
+        import_last_modified=datetime.datetime(2023, 1, 1, tzinfo=datetime.UTC),
     ).put()
     alias_computation.main()
     alias_group = osv.AliasGroup.query(
@@ -115,7 +115,8 @@ class AliasTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
     self.assertEqual(['bbb-123', 'bbb-234', 'bbb-345', 'bbb-456', 'bbb-789'],
                      alias_group.bug_ids)
     self.assertNotEqual(
-        datetime.datetime(2023, 1, 1), alias_group.last_modified)
+        datetime.datetime(2023, 1, 1, tzinfo=datetime.UTC),
+        alias_group.last_modified)
 
   def test_create_alias_group(self):
     """Tests adding a new alias group."""
@@ -126,7 +127,7 @@ class AliasTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
         status=1,
         source='test',
         public=True,
-        import_last_modified=datetime.datetime(2023, 1, 1),
+        import_last_modified=datetime.datetime(2023, 1, 1, tzinfo=datetime.UTC),
     ).put()
     osv.Bug(
         id='test-222',
@@ -135,7 +136,7 @@ class AliasTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
         status=1,
         source='test',
         public=True,
-        import_last_modified=datetime.datetime(2023, 1, 1),
+        import_last_modified=datetime.datetime(2023, 1, 1, tzinfo=datetime.UTC),
     ).put()
     alias_computation.main()
     alias_group = osv.AliasGroup.query(
@@ -151,11 +152,11 @@ class AliasTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
         status=1,
         source='test',
         public=True,
-        import_last_modified=datetime.datetime(2023, 1, 1),
+        import_last_modified=datetime.datetime(2023, 1, 1, tzinfo=datetime.UTC),
     ).put()
     osv.AliasGroup(
         bug_ids=['ccc-123'],
-        last_modified=datetime.datetime(2023, 1, 1),
+        last_modified=datetime.datetime(2023, 1, 1, tzinfo=datetime.UTC),
     ).put()
     alias_computation.main()
     alias_group = osv.AliasGroup.query(
@@ -173,7 +174,7 @@ class AliasTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
         status=1,
         source='test',
         public=True,
-        import_last_modified=datetime.datetime(2023, 1, 1),
+        import_last_modified=datetime.datetime(2023, 1, 1, tzinfo=datetime.UTC),
     ).put()
     osv.Bug(
         id='ddd-124',
@@ -181,7 +182,7 @@ class AliasTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
         status=1,
         source='test',
         public=True,
-        import_last_modified=datetime.datetime(2023, 1, 1),
+        import_last_modified=datetime.datetime(2023, 1, 1, tzinfo=datetime.UTC),
     ).put()
     osv.Bug(
         id='ddd-125',
@@ -190,7 +191,7 @@ class AliasTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
         status=1,
         source='test',
         public=True,
-        import_last_modified=datetime.datetime(2023, 1, 1),
+        import_last_modified=datetime.datetime(2023, 1, 1, tzinfo=datetime.UTC),
     ).put()
     osv.Bug(
         id='ddd-126',
@@ -198,11 +199,11 @@ class AliasTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
         status=1,
         source='test',
         public=True,
-        import_last_modified=datetime.datetime(2023, 1, 1),
+        import_last_modified=datetime.datetime(2023, 1, 1, tzinfo=datetime.UTC),
     ).put()
     osv.AliasGroup(
         bug_ids=['ddd-123', 'ddd-124', 'ddd-125', 'ddd-126'],
-        last_modified=datetime.datetime(2023, 1, 1),
+        last_modified=datetime.datetime(2023, 1, 1, tzinfo=datetime.UTC),
     ).put()
     alias_computation.main()
     alias_group = osv.AliasGroup.query(
@@ -225,7 +226,7 @@ class AliasTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
         status=1,
         source='test',
         public=True,
-        import_last_modified=datetime.datetime(2023, 1, 1),
+        import_last_modified=datetime.datetime(2023, 1, 1, tzinfo=datetime.UTC),
     ).put()
     osv.AliasAllowListEntry(bug_id='eee-111',).put()
     alias_computation.main()
@@ -242,7 +243,7 @@ class AliasTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
         status=1,
         source='test',
         public=True,
-        import_last_modified=datetime.datetime(2023, 1, 1),
+        import_last_modified=datetime.datetime(2023, 1, 1, tzinfo=datetime.UTC),
     ).put()
     osv.Bug(
         id='fff-124',
@@ -251,11 +252,11 @@ class AliasTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
         status=1,
         source='test',
         public=True,
-        import_last_modified=datetime.datetime(2023, 1, 1),
+        import_last_modified=datetime.datetime(2023, 1, 1, tzinfo=datetime.UTC),
     ).put()
     osv.AliasGroup(
         bug_ids=['fff-124', 'fff-125'],
-        last_modified=datetime.datetime(2023, 1, 1),
+        last_modified=datetime.datetime(2023, 1, 1, tzinfo=datetime.UTC),
     ).put()
     osv.AliasDenyListEntry(bug_id='fff-123',).put()
     alias_computation.main()
@@ -273,15 +274,15 @@ class AliasTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
         status=1,
         source='test',
         public=True,
-        import_last_modified=datetime.datetime(2023, 1, 1),
+        import_last_modified=datetime.datetime(2023, 1, 1, tzinfo=datetime.UTC),
     ).put()
     osv.AliasGroup(
         bug_ids=['ggg-123', 'ggg-124'],
-        last_modified=datetime.datetime(2023, 1, 1),
+        last_modified=datetime.datetime(2023, 1, 1, tzinfo=datetime.UTC),
     ).put()
     osv.AliasGroup(
         bug_ids=['ggg-125', 'ggg-126'],
-        last_modified=datetime.datetime(2023, 1, 1),
+        last_modified=datetime.datetime(2023, 1, 1, tzinfo=datetime.UTC),
     ).put()
     alias_computation.main()
     alias_group = osv.AliasGroup.query(
@@ -299,7 +300,7 @@ class AliasTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
         status=1,
         source='test',
         public=True,
-        import_last_modified=datetime.datetime(2023, 1, 1),
+        import_last_modified=datetime.datetime(2023, 1, 1, tzinfo=datetime.UTC),
     ).put()
     osv.Bug(
         id='hhh-126',
@@ -308,15 +309,15 @@ class AliasTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
         status=1,
         source='test',
         public=True,
-        import_last_modified=datetime.datetime(2023, 1, 1),
+        import_last_modified=datetime.datetime(2023, 1, 1, tzinfo=datetime.UTC),
     ).put()
     osv.AliasGroup(
         bug_ids=['hhh-123', 'hhh-124'],
-        last_modified=datetime.datetime(2023, 1, 1),
+        last_modified=datetime.datetime(2023, 1, 1, tzinfo=datetime.UTC),
     ).put()
     osv.AliasGroup(
         bug_ids=['hhh-125', 'hhh-126', 'hhh-127'],
-        last_modified=datetime.datetime(2023, 1, 1),
+        last_modified=datetime.datetime(2023, 1, 1, tzinfo=datetime.UTC),
     ).put()
     alias_computation.main()
     alias_group = osv.AliasGroup.query(
@@ -341,7 +342,7 @@ class AliasTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
         status=1,
         source='test',
         public=True,
-        import_last_modified=datetime.datetime(2023, 1, 1),
+        import_last_modified=datetime.datetime(2023, 1, 1, tzinfo=datetime.UTC),
     ).put()
     osv.AliasAllowListEntry(bug_id='iii-1',).put()
     alias_computation.main()
@@ -357,11 +358,11 @@ class AliasTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
         status=1,
         source='test',
         public=True,
-        import_last_modified=datetime.datetime(2023, 1, 1),
-        last_modified=datetime.datetime(2023, 1, 1),
-        timestamp=datetime.datetime(2023, 1, 1))
+        import_last_modified=datetime.datetime(2023, 1, 1, tzinfo=datetime.UTC),
+        last_modified=datetime.datetime(2023, 1, 1, tzinfo=datetime.UTC),
+        timestamp=datetime.datetime(2023, 1, 1, tzinfo=datetime.UTC))
     bug.put()
-    alias_group_last_modified = datetime.datetime(2023, 10, 1)
+    alias_group_last_modified = datetime.datetime(2023, 10, 1, tzinfo=datetime.UTC)
     osv.AliasGroup(
         bug_ids=['jjj-123', 'jjj-234', 'jjj-456'],
         last_modified=alias_group_last_modified,
@@ -373,7 +374,7 @@ class AliasTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
         status=1,
         source='test',
         public=True,
-        import_last_modified=datetime.datetime(2023, 1, 1),
+        import_last_modified=datetime.datetime(2023, 1, 1, tzinfo=datetime.UTC),
     ).put()
     vuln = bug.to_vulnerability()
     self.assertEqual(vuln.related, ['jjj-111', 'jjj-222'])

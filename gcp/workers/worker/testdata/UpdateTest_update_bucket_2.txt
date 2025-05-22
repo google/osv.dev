@@ -18,10 +18,10 @@
     'ecosystem': ['Android'],
     'fixed': '',
     'has_affected': True,
-    'import_last_modified': DatetimeWithNanoseconds(2021, 10, 1, 0, 0),
+    'import_last_modified': DatetimeWithNanoseconds(2021, 10, 1, 0, 0, tzinfo=datetime.timezone.utc),
     'is_fixed': False,
     'issue_id': None,
-    'last_modified': DatetimeWithNanoseconds(2021, 10, 1, 0, 0),
+    'last_modified': DatetimeWithNanoseconds(2021, 10, 1, 0, 0, tzinfo=datetime.timezone.utc),
     'project': ['Media Framework'],
     'public': True,
     'purl': [],
@@ -56,6 +56,6 @@
                'use-after-free due to a race condition. This could lead to '
                'local escalation of privilege with User execution privileges '
                'needed. User interaction is not needed for exploitation.',
-    'timestamp': DatetimeWithNanoseconds(2021, 10, 1, 0, 0),
+    'timestamp': DatetimeWithNanoseconds(2021, 10, 1, 0, 0, tzinfo=datetime.timezone.utc),
     'upstream_raw': [],
     'withdrawn': None}

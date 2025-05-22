@@ -106,17 +106,12 @@ def _is_vulnerability_file(source_repo, file_path):
 
 def aestnow() -> datetime:
   """Get the current AEST time"""
-  # - First make datetime timezone aware
-  # - Then set timezone to AEST without DST (+10)
-  # - Then make datetime timezone unaware again to keep
-  #   compatibility with ndb
-  return utcnow().replace(tzinfo=datetime.timezone.utc).astimezone(
-      datetime.timezone(datetime.timedelta(hours=10))).replace(tzinfo=None)
+  return utcnow().astimezone(datetime.timezone(datetime.timedelta(hours=10)))
 
 
 def utcnow():
   """utcnow() for mocking."""
-  return datetime.datetime.utcnow()
+  return datetime.datetime.now(datetime.UTC)
 
 
 def replace_importer_log(client: storage.Client, source_name: str,
@@ -345,6 +340,7 @@ class Importer:
       ndb.put_multi(exported)
 
   def schedule_regular_updates(self, repo, source_repo: osv.SourceRepository):
+    ##### TODO(michaelkedar): AAAAAHHHHHHHHHHHHHHHHHHHHHHH
     """Schedule regular updates."""
     aest_time_now = aestnow()
 
@@ -463,8 +459,7 @@ class Importer:
     if not _is_vulnerability_file(source_repo, blob.name):
       return None
 
-    utc_last_update_date = source_repo.last_update_date.replace(
-        tzinfo=datetime.timezone.utc)
+    utc_last_update_date = source_repo.last_update_date
 
     if (not ignore_last_import_time and blob.updated and
         blob.updated <= utc_last_update_date):
@@ -643,7 +638,7 @@ class Importer:
     import_time_now = utcnow()
 
     if not source_repo.last_update_date:
-      source_repo.last_update_date = datetime.datetime.min
+      source_repo.last_update_date = datetime.datetime.min.replace(tzinfo=datetime.UTC)
 
     ignore_last_import_time = source_repo.ignore_last_import_time
     if ignore_last_import_time:
@@ -861,9 +856,9 @@ class Importer:
     """
     logging.info('Begin processing REST: %s', source_repo.name)
 
-    last_update_date = source_repo.last_update_date or datetime.datetime.min
+    last_update_date = source_repo.last_update_date or datetime.datetime.min.replace(tzinfo=datetime.UTC)
     if source_repo.ignore_last_import_time:
-      last_update_date = datetime.datetime.min
+      last_update_date = datetime.datetime.min.replace(tzinfo=datetime.UTC)
       source_repo.ignore_last_import_time = False
       source_repo.put()
 
@@ -886,8 +881,9 @@ class Importer:
     request_last_modified = None
     if last_modified := request.headers.get('Last-Modified'):
       try:
+        # strptime discards timezone information - assume UTC
         request_last_modified = datetime.datetime.strptime(
-            last_modified, _HTTP_LAST_MODIFIED_FORMAT)
+            last_modified, _HTTP_LAST_MODIFIED_FORMAT).replace(tzinfo=datetime.UTC)
         # Check whether endpoint has been modified since last update
         if request_last_modified <= last_update_date:
           logging.info('No changes since last update.')
@@ -911,7 +907,7 @@ class Importer:
     # Create tasks for changed files.
     for vuln in vulns:
       import_failure_logs = []
-      vuln_modified = vuln.modified.ToDatetime()
+      vuln_modified = vuln.modified.ToDatetime(datetime.UTC)
       if request_last_modified and vuln_modified > request_last_modified:
         logging.warning('%s was modified (%s) after Last-Modified header (%s)',
                         vuln.id, vuln_modified, request_last_modified)

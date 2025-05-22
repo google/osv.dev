@@ -28,7 +28,7 @@
     'import_last_modified': None,
     'is_fixed': False,
     'issue_id': '9001',
-    'last_modified': DatetimeWithNanoseconds(2021, 1, 1, 0, 0),
+    'last_modified': DatetimeWithNanoseconds(2021, 1, 1, 0, 0, tzinfo=datetime.timezone.utc),
     'project': ['project'],
     'public': False,
     'purl': [],
@@ -53,6 +53,6 @@
     'source_of_truth': 1,
     'status': 1,
     'summary': 'Heap-buffer-overflow in Foo',
-    'timestamp': DatetimeWithNanoseconds(2020, 1, 1, 0, 0),
+    'timestamp': DatetimeWithNanoseconds(2020, 1, 1, 0, 0, tzinfo=datetime.timezone.utc),
     'upstream_raw': [],
     'withdrawn': None}

@@ -27,7 +27,7 @@ class RateLimiter:
 
   def check_request(self, ip_addr):
     """Check a request. Returns whether or not the request should proceed."""
-    minute = datetime.datetime.utcnow().minute
+    minute = datetime.datetime.now(datetime.UTC).minute
     key_name = f'{ip_addr}:{minute}'
 
     with self._redis.pipeline():

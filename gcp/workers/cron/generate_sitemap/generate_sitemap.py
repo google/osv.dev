@@ -33,7 +33,7 @@ _SITEMAP_URL_LIMIT = 49999
 
 
 def epoch() -> datetime.datetime:
-  return datetime.datetime.fromtimestamp(0).astimezone(datetime.UTC)
+  return datetime.datetime.fromtimestamp(0, tz=datetime.UTC)
 
 
 alias_to_last_modified: defaultdict[str, datetime.datetime] = defaultdict(epoch)
@@ -53,9 +53,8 @@ def fetch_vulnerabilities_and_dates(
   bug_and_dates = []
   for bug in bugs:
     key = bug.key.id()
-    # Make sure to set the timezone to UTC to add +00:00 when outputting iso
     last_mod_date = max(
-        bug.last_modified.replace(tzinfo=datetime.UTC),
+        bug.last_modified,
         alias_to_last_modified[bug.key.id()])
     bug_and_dates.append((key, last_mod_date))
 
@@ -156,8 +155,7 @@ def preload_alias_groups():
   for al in aliases:
     al: osv.AliasGroup
     for bug_id in al.bug_ids:  # type: ignore
-      alias_to_last_modified[bug_id] = al.last_modified.replace(  # type: ignore
-          tzinfo=datetime.UTC)
+      alias_to_last_modified[bug_id] = al.last_modified
 
 
 def main() -> int:

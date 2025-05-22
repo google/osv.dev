@@ -31,7 +31,7 @@ _TASKS_TOPIC = 'projects/{project}/topics/{topic}'.format(
 def _get_counter(year=None):
   """Get next Bug ID."""
   if year is None:
-    year = datetime.datetime.utcnow().year
+    year = datetime.datetime.now(datetime.UTC).year
 
   key = ndb.Key(osv.IDCounter, year)
 
@@ -89,7 +89,7 @@ def main():
       # impact task finishes.
       bug = osv.Bug(
           db_id=cur_id,
-          timestamp=datetime.datetime.utcnow(),
+          timestamp=datetime.datetime.now(datetime.UTC),
           public=False,
           source_id=key_id,
           status=osv.BugStatus.UNPROCESSED)

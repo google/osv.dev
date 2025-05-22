@@ -38,17 +38,17 @@ class TestSitemapGeneration(unittest.TestCase):
     # Mock the returned query
     mock_query.return_value.order.return_value = [
         MagicMock(
-            last_modified=datetime.fromtimestamp(10),
+            last_modified=datetime.fromtimestamp(10, tz=UTC),
             key=MagicMock(id=MagicMock(return_value='vuln1'))),
         MagicMock(
-            last_modified=datetime.fromtimestamp(20),
+            last_modified=datetime.fromtimestamp(20, tz=UTC),
             key=MagicMock(id=MagicMock(return_value='vuln2'))),
     ]
 
     result = generate_sitemap.fetch_vulnerabilities_and_dates('Go')
     self.assertEqual(
-        result, [('vuln1', datetime.fromtimestamp(10).replace(tzinfo=UTC)),
-                 ('vuln2', datetime.fromtimestamp(20).replace(tzinfo=UTC))])
+        result, [('vuln1', datetime.fromtimestamp(10, tz=UTC)),
+                 ('vuln2', datetime.fromtimestamp(20, tz=UTC))])
 
   @patch.object(osv.Bug, 'query')
   def test_osv_get_ecosystems(self, mock_query):
@@ -68,8 +68,8 @@ class TestSitemapGeneration(unittest.TestCase):
                                           mock_fetch_vulns):
     """Check it generates the sitemap for ecosystem"""
     mock_fetch_vulns.return_value = [
-        ('vuln1', datetime.fromtimestamp(10).replace(tzinfo=UTC)),
-        ('vuln2', datetime.fromtimestamp(20).replace(tzinfo=UTC))
+        ('vuln1', datetime.fromtimestamp(10, tz=UTC)),
+        ('vuln2', datetime.fromtimestamp(20, tz=UTC))
     ]
     mock_tree = MagicMock()
     mock_element_tree.return_value = mock_tree
@@ -88,8 +88,8 @@ class TestSitemapGeneration(unittest.TestCase):
     ecosystem name.
     """
     mock_fetch_vulns.return_value = [
-        ('vuln1', datetime.fromtimestamp(10).replace(tzinfo=UTC)),
-        ('vuln2', datetime.fromtimestamp(20).replace(tzinfo=UTC))
+        ('vuln1', datetime.fromtimestamp(10, tz=UTC)),
+        ('vuln2', datetime.fromtimestamp(20, tz=UTC))
     ]
     mock_tree = MagicMock()
     mock_element_tree.return_value = mock_tree
@@ -109,8 +109,8 @@ class TestSitemapGeneration(unittest.TestCase):
     ecosystem name.
     """
     mock_fetch_vulns.return_value = [
-        ('vuln1', datetime.fromtimestamp(10).replace(tzinfo=UTC)),
-        ('vuln2', datetime.fromtimestamp(20).replace(tzinfo=UTC))
+        ('vuln1', datetime.fromtimestamp(10, tz=UTC)),
+        ('vuln2', datetime.fromtimestamp(20, tz=UTC))
     ]
     mock_tree = MagicMock()
     mock_element_tree.return_value = mock_tree
@@ -129,8 +129,8 @@ class TestSitemapGeneration(unittest.TestCase):
 
     generate_sitemap.generate_sitemap_index(
         {'Go', 'UVI'}, 'http://example.com', {
-            'Go': datetime.fromtimestamp(10).replace(tzinfo=UTC),
-            'UVI': datetime.fromtimestamp(20).replace(tzinfo=UTC)
+            'Go': datetime.fromtimestamp(10, tz=UTC),
+            'UVI': datetime.fromtimestamp(20, tz=UTC)
         })
 
     mock_tree.write.assert_called_once_with(
@@ -146,8 +146,7 @@ class TestSitemapGeneration(unittest.TestCase):
     sitemap index.
     """
     mock_get_ecosystems.return_value = ['Go', 'UVI:Library', 'Android']
-    mock_generate_sitemap.return_value = datetime.fromtimestamp(10).replace(
-        tzinfo=UTC)
+    mock_generate_sitemap.return_value = datetime.fromtimestamp(10, tz=UTC)
     generate_sitemap.generate_sitemaps('http://example.com')
 
     self.assertEqual(mock_generate_sitemap.call_count, 2)
@@ -156,8 +155,8 @@ class TestSitemapGeneration(unittest.TestCase):
 
     mock_generate_index.assert_called_once_with(
         {'Android', 'Go'}, 'http://example.com', {
-            'Android': datetime.fromtimestamp(10).replace(tzinfo=UTC),
-            'Go': datetime.fromtimestamp(10).replace(tzinfo=UTC),
+            'Android': datetime.fromtimestamp(10, tz=UTC),
+            'Go': datetime.fromtimestamp(10, tz=UTC),
         })
 
 

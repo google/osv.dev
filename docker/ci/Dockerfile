@@ -1,4 +1,4 @@
-# Copyright 2021 Google LLC
+# Copyright 2025 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -18,7 +18,7 @@ RUN apt-get update && \
     apt-get install -y \
     wget \
     google-cloud-sdk-datastore-emulator \
-    openjdk-11-jre  # Needed for Datastore emulator.
+    openjdk-21-jre  # Needed for Datastore emulator.
 
 COPY daemon.json /etc/docker/daemon.json
 COPY install_go.sh /tmp/install_go.sh

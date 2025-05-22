@@ -13,12 +13,12 @@
 # limitations under the License.
 """Bioconductor ecosystem helper tests."""
 
-import unittest
+import vcr.unittest
 
 from .. import ecosystems
 
 
-class BioconductorEcosystemTest(unittest.TestCase):
+class BioconductorEcosystemTest(vcr.unittest.VCRTestCase):
   """Bioconductor ecosystem helper tests."""
 
   def test_next_version(self):

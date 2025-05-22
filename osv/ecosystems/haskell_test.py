@@ -14,12 +14,12 @@
 # limitations under the License.
 """Haskell ecosystem helper tests."""
 
-import unittest
+import vcr.unittest
 
 from .. import ecosystems
 
 
-class HackageEcosystemTest(unittest.TestCase):
+class HackageEcosystemTest(vcr.unittest.VCRTestCase):
   """Hackage ecosystem helper tests."""
 
   def test_next_version(self):
@@ -38,7 +38,7 @@ class HackageEcosystemTest(unittest.TestCase):
         ecosystem.sort_key('1-20-0'), ecosystem.sort_key('1.20.0'))
 
 
-class GHCEcosystemTest(unittest.TestCase):
+class GHCEcosystemTest(vcr.unittest.VCRTestCase):
   """GHC ecosystem helper tests."""
 
   def test_next_version(self):

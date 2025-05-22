@@ -6,6 +6,7 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/osv/vulnfeeds/cves"
+	"github.com/google/osv/vulnfeeds/internal/testutils"
 	"golang.org/x/exp/maps"
 )
 
@@ -168,7 +169,7 @@ func TestRepoTags(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.description, func(t *testing.T) {
-			t.Parallel()
+			testutils.SetupGitVCR(t)
 			if time.Now().Before(tc.disableExpiryDate) {
 				t.Skipf("test %q: TestRepoTags(%q) has been skipped due to known outage and will be reenabled on %s.", tc.description, tc.inputRepoURL, tc.disableExpiryDate)
 			}
@@ -290,7 +291,7 @@ func TestNormalizeRepoTags(t *testing.T) {
 	cache := make(RepoTagsCache)
 	for _, tc := range tests {
 		t.Run(tc.description, func(t *testing.T) {
-			t.Parallel()
+			testutils.SetupGitVCR(t)
 			if time.Now().Before(tc.disableExpiryDate) {
 				t.Skipf("test %q: TestNormalizeRepoTags(%q) has been skipped due to known outage and will be reenabled on %s.", tc.description, tc.inputRepoURL, tc.disableExpiryDate)
 			}
@@ -324,7 +325,8 @@ func TestValidRepo(t *testing.T) {
 			expectedResult: true,
 		},
 		{
-			description:    "Valid repository with a git:// protocol URL",
+			description: "Valid repository with a git:// protocol URL",
+			// Note: git:// protocol cannot go through go-vcr - this will connect to internet
 			repoURL:        "git://git.infradead.org/mtd-utils.git",
 			expectedResult: true,
 		},
@@ -356,7 +358,7 @@ func TestValidRepo(t *testing.T) {
 	}
 	for _, tc := range tests {
 		t.Run(tc.description, func(t *testing.T) {
-			t.Parallel()
+			testutils.SetupGitVCR(t)
 			// This tests against Internet hosts and may have intermittent failures.
 			if time.Now().Before(tc.disableExpiryDate) {
 				t.Skipf("test %q: TestValidRepo(%q) has been skipped due to known outage and will be reenabled on %s.", tc.description, tc.repoURL, tc.disableExpiryDate)
@@ -371,6 +373,7 @@ func TestValidRepo(t *testing.T) {
 }
 
 func TestInvalidRepos(t *testing.T) {
+	testutils.SetupGitVCR(t)
 	redundantRepos := []string{}
 	for _, repo := range cves.InvalidRepos {
 		if !ValidRepoAndHasUsableRefs(repo) {

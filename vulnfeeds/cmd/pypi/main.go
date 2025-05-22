@@ -21,6 +21,7 @@ import (
 	"io/fs"
 	"io/ioutil"
 	"log"
+	"net/http"
 	"os"
 	"path/filepath"
 	"strings"
@@ -162,7 +163,7 @@ func main() {
 
 			v, notes := vulns.FromCVE(id, cve.CVE)
 			v.AddPkgInfo(pkgInfo)
-			versions, versionNotes := cves.ExtractVersionInfo(cve.CVE, validVersions)
+			versions, versionNotes := cves.ExtractVersionInfo(cve.CVE, validVersions, http.DefaultClient)
 
 			notes = append(notes, versionNotes...)
 			v.Affected[0].AttachExtractedVersionInfo(versions)

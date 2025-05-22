@@ -1,0 +1,80 @@
+---
+version: 2
+interactions:
+    - id: 0
+      request:
+        proto: HTTP/1.1
+        proto_major: 1
+        proto_minor: 1
+        content_length: 0
+        transfer_encoding: []
+        trailer: {}
+        host: gitlab.freedesktop.org
+        remote_addr: ""
+        request_uri: ""
+        body: ""
+        form: {}
+        headers:
+            Accept:
+                - text/html
+        url: https://gitlab.freedesktop.org/xorg/lib/libxpm/-/commit/a3a7c6dcc3b629d7650148
+        method: HEAD
+      response:
+        proto: HTTP/2.0
+        proto_major: 2
+        proto_minor: 0
+        transfer_encoding: []
+        trailer: {}
+        content_length: -1
+        uncompressed: false
+        body: ""
+        headers:
+            Cache-Control:
+                - max-age=0, private, must-revalidate
+            Content-Security-Policy:
+                - ""
+            Content-Type:
+                - text/html; charset=utf-8
+            Date:
+                - Tue, 20 May 2025 05:08:04 GMT
+            Etag:
+                - W/"3176d15f471b341d3da50b7272a95aff"
+            Nel:
+                - '{"max_age": 0}'
+            Permissions-Policy:
+                - interest-cohort=()
+            Referrer-Policy:
+                - strict-origin-when-cross-origin
+            Set-Cookie:
+                - _gitlab_session=68029dc63d8c6f1324f0af21114eab0b; path=/; secure; HttpOnly; SameSite=None
+            Strict-Transport-Security:
+                - max-age=31536000; includeSubDomains
+            Vary:
+                - Accept
+            X-Cache:
+                - MISS
+            X-Cache-Hits:
+                - "0"
+            X-Content-Type-Options:
+                - nosniff
+            X-Download-Options:
+                - noopen
+            X-Frame-Options:
+                - SAMEORIGIN
+            X-Gitlab-Meta:
+                - '{"correlation_id":"01JVP1EZD6TSP1PAJQG9KYRGV5","version":"1"}'
+            X-Permitted-Cross-Domain-Policies:
+                - none
+            X-Request-Id:
+                - 01JVP1EZD6TSP1PAJQG9KYRGV5
+            X-Runtime:
+                - "0.204677"
+            X-Served-By:
+                - cache-syd10152-SYD
+            X-Ua-Compatible:
+                - IE=edge
+            X-Xss-Protection:
+                - 1; mode=block
+        status: 200 OK
+        code: 200
+        duration: 1.076685316s

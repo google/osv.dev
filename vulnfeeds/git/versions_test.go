@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/google/osv/vulnfeeds/cves"
+	"github.com/google/osv/vulnfeeds/internal/testutils"
 )
 
 func TestVersionToCommit(t *testing.T) {
@@ -95,7 +96,7 @@ func TestVersionToCommit(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.description, func(t *testing.T) {
-			t.Parallel()
+			testutils.SetupGitVCR(t)
 			if time.Now().Before(tc.disableExpiryDate) {
 				t.Skipf("test %q: VersionToCommit(%q, %q) has been skipped due to known outage and will be reenabled on %s.", tc.description, tc.inputVersion, tc.inputRepoURL, tc.disableExpiryDate)
 			}

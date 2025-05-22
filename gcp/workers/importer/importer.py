@@ -106,7 +106,11 @@ def _is_vulnerability_file(source_repo, file_path):
 
 def aestnow() -> datetime.datetime:
   """Get the current AEST time"""
-  return utcnow().astimezone(datetime.timezone(datetime.timedelta(hours=10)))
+  # To retain the original timezone-unaware behaviour of this function,
+  # returns the current AEST time with a UTC timezone.
+  # i.e. returns (utcnow() + 10 hours) UTC
+  return utcnow().astimezone(datetime.timezone(
+      datetime.timedelta(hours=10))).replace(tzinfo=datetime.UTC)
 
 
 def utcnow() -> datetime.datetime:
@@ -341,10 +345,7 @@ class Importer:
 
   def schedule_regular_updates(self, repo, source_repo: osv.SourceRepository):
     """Schedule regular updates."""
-    # To match the original timezone-unaware implementation,
-    # aest_time_now is the current AEST time, but in the UTC timezone
-    # i.e. it's the current time + 10 hours in UTC.
-    aest_time_now = aestnow().replace(tzinfo=datetime.UTC)
+    aest_time_now = aestnow()
 
     if (source_repo.last_update_date and
         # OSV devs are mostly located in australia,

@@ -613,6 +613,26 @@ func Commit(u string) (string, error) {
 
 	// TODO(apollock): add support for resolving a GitHub PR to a commit hash
 
+	// TODO(jesslowe): add support for resolving a Github PR to a commit hash
+	// example: https://github.com/redis/redis/releases/tag/6.2.17
+	if parsedURL.Host == "github.com" {
+		directory, tag := path.Split(parsedURL.Path)
+		if strings.HasSuffix(directory, "tag/") {
+			maybeRepoURL, err := Repo(u)
+			if err == nil {
+				normalizedTags, err := NormalizeRepoTags(maybeRepoURL, nil)
+				if err == nil {
+					for t, nTag := range normalizedTags {
+						if t == tag && gitSHA1Regex.MatchString(nTag.Commit) {
+							return nTag.Commit, nil
+						}
+
+					}
+				}
+			}
+
+		}
+	}
 	// If we get to here, we've encountered an unsupported URL.
 	return "", fmt.Errorf("Commit(): unsupported URL: %s", u)
 }

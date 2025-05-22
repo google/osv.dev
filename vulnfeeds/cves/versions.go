@@ -397,28 +397,40 @@ func Commit(u string) (string, error) {
 	// Support for resolving a Github tag to a commit hash
 	// example: https://github.com/redis/redis/releases/tag/6.2.17
 	if parsedURL.Host == "github.com" {
-		directory, tag := path.Split(parsedURL.Path)
-		normTag, err := git.NormalizeVersion(tag)
-		if err == nil {
-			tag = normTag
-		}
-		if strings.HasSuffix(directory, "tag/") {
-			maybeRepoURL, err := Repo(u)
-			if err == nil {
-				normalizedTags, err := git.NormalizeRepoTags(maybeRepoURL, nil)
-				if err == nil {
-					for t, nTag := range normalizedTags {
-						if tag == t && gitSHA1Regex.MatchString(nTag.Commit) {
-							return nTag.Commit, nil
-						}
-					}
-				}
-			}
-
+		possibleCommitHash, err := resolveGitTag(parsedURL, u, gitSHA1Regex)
+		if possibleCommitHash != "" && err == nil {
+			return possibleCommitHash, nil
 		}
 	}
 	// If we get to here, we've encountered an unsupported URL.
 	return "", fmt.Errorf("Commit(): unsupported URL: %s", u)
+}
+
+func resolveGitTag(parsedURL *url.URL, u string, gitSHA1Regex *regexp.Regexp) (string, error) {
+	directory, tag := path.Split(parsedURL.Path)
+	normalizedTag, err := git.NormalizeVersion(tag)
+	if err == nil {
+		tag = normalizedTag
+	}
+
+	if strings.HasSuffix(directory, "tag/") {
+		maybeRepoURL, err := Repo(u)
+		if err != nil {
+			return "", err
+		}
+
+		normalizedTags, err := git.NormalizeRepoTags(maybeRepoURL, nil)
+		if err != nil {
+			return "", err
+		}
+		for t, nTag := range normalizedTags {
+			if tag == t && gitSHA1Regex.MatchString(nTag.Commit) {
+				return nTag.Commit, nil
+			}
+		}
+
+	}
+	return "", err
 }
 
 // Detect linkrot and handle link decay in HTTP(S) links via HEAD request with exponential backoff.

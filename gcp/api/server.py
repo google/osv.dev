@@ -1,4 +1,4 @@
-# Copyright 2021 Google LLC
+# Copyright 2025 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -166,7 +166,23 @@ class OSVServicer(osv_service_v1_pb2_grpc.OSVServicer,
   def GetVulnById(self, request, context: grpc.ServicerContext):
     """Return a `Vulnerability` object for a given OSV ID."""
     bug = osv.Bug.get_by_id(request.id)
-    if not bug or bug.status == osv.BugStatus.UNPROCESSED:
+
+    if not bug:
+      # Check for aliases
+      alias_group = osv.AliasGroup.query(
+          osv.AliasGroup.bug_ids == request.id).get()
+      if alias_group:
+        alias_string = ' '.join([
+            f'{alias}' for alias in alias_group.bug_ids if alias != request.id
+        ])
+        context.abort(
+            grpc.StatusCode.NOT_FOUND,
+            f'Bug not found, but the following aliases were: {alias_string}')
+        return None
+      context.abort(grpc.StatusCode.NOT_FOUND, 'Bug not found.')
+      return None
+
+    if bug.status == osv.BugStatus.UNPROCESSED:
       context.abort(grpc.StatusCode.NOT_FOUND, 'Bug not found.')
       return None
 

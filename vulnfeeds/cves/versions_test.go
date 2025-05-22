@@ -602,7 +602,7 @@ func TestExtractGitCommit(t *testing.T) {
 			expectFailure:          true,
 		},
 		{
-			description:     "Unsupported GitHub tag URL",
+			description:     "Supported GitHub tag URL",
 			inputLink:       "https://github.com/google/osv.dev/releases/tag/v0.0.14",
 			inputCommitType: common.Fixed,
 			expectedAffectedCommit: common.AffectedCommit{

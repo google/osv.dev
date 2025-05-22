@@ -13,12 +13,12 @@
 # limitations under the License.
 """RubyGems ecosystem helper tests."""
 
-import unittest
+import vcr.unittest
 
 from .. import ecosystems
 
 
-class RubyGemsEcosystemTest(unittest.TestCase):
+class RubyGemsEcosystemTest(vcr.unittest.VCRTestCase):
   """RubyGems ecosystem helper tests."""
 
   def test_next_version(self):

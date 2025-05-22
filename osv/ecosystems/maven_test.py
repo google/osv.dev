@@ -17,6 +17,7 @@
 # https://github.com/apache/maven/blob/c3cf29438e3d65d6ee5c5726f8611af99d9a649a/maven-artifact/src/test/java/org/apache/maven/artifact/versioning/ComparableVersionTest.java.
 """Maven ecosystem helper tests."""
 import unittest
+import vcr.unittest
 
 from . import maven
 from .. import ecosystems
@@ -240,7 +241,7 @@ class MavenVersionTest(unittest.TestCase):
     self.check_versions_order('0.0.0-2021-05-17T01-01-51-5ec03a8b', '20.0.0')
 
 
-class MavenEcosystemTest(unittest.TestCase):
+class MavenEcosystemTest(vcr.unittest.VCRTestCase):
   """Maven ecosystem helper tests."""
 
   def test_next_version(self):

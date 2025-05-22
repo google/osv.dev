@@ -5,14 +5,12 @@ import (
 	"fmt"
 	"log"
 	"os"
-	"path/filepath"
 	"reflect"
-	"strings"
 	"testing"
 	"time"
 
 	"github.com/google/go-cmp/cmp"
-	"gopkg.in/dnaeon/go-vcr.v4/pkg/recorder"
+	"github.com/google/osv/vulnfeeds/internal/testutils"
 )
 
 func loadTestData2(cveName string) Vulnerability {
@@ -665,15 +663,7 @@ func TestExtractGitCommit(t *testing.T) {
 	for _, tc := range tests {
 		t.Run(tc.description, func(t *testing.T) {
 			t.Parallel()
-			r, err := recorder.New(filepath.Join("testdata", strings.ReplaceAll(t.Name(), "/", "_")))
-			if err != nil {
-				t.Fatal(err)
-			}
-			t.Cleanup(func() {
-				if err := r.Stop(); err != nil {
-					t.Error(err)
-				}
-			})
+			r := testutils.SetupVCR(t)
 			client := r.GetDefaultClient()
 
 			if _, ok := os.LookupEnv("BUILD_ID"); ok && tc.skipOnCloudBuild {
@@ -981,15 +971,7 @@ func TestExtractVersionInfo(t *testing.T) {
 	for _, tc := range tests {
 		t.Run(tc.description, func(t *testing.T) {
 			t.Parallel()
-			r, err := recorder.New(filepath.Join("testdata", strings.ReplaceAll(t.Name(), "/", "_")))
-			if err != nil {
-				t.Fatal(err)
-			}
-			t.Cleanup(func() {
-				if err := r.Stop(); err != nil {
-					t.Error(err)
-				}
-			})
+			r := testutils.SetupVCR(t)
 			client := r.GetDefaultClient()
 
 			if time.Now().Before(tc.disableExpiryDate) {
@@ -1180,15 +1162,7 @@ func TestValidateAndCanonicalizeLink(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			r, err := recorder.New(filepath.Join("testdata", strings.ReplaceAll(t.Name(), "/", "_")))
-			if err != nil {
-				t.Fatal(err)
-			}
-			t.Cleanup(func() {
-				if err := r.Stop(); err != nil {
-					t.Error(err)
-				}
-			})
+			r := testutils.SetupVCR(t)
 			client := r.GetDefaultClient()
 
 			if time.Now().Before(tt.disableExpiryDate) {

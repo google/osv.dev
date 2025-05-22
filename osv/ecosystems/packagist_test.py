@@ -14,12 +14,12 @@
 """Packagist ecosystem helper tests."""
 
 import os
-import unittest
+import vcr.unittest
 
 from .. import ecosystems
 
 
-class PackagistEcosystemTest(unittest.TestCase):
+class PackagistEcosystemTest(vcr.unittest.VCRTestCase):
   """Packagist ecosystem helper tests."""
   _TEST_DATA_DIR = os.path.join(
       os.path.dirname(os.path.abspath(__file__)), 'testdata')

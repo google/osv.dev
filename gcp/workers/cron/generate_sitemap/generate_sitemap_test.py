@@ -46,9 +46,8 @@ class TestSitemapGeneration(unittest.TestCase):
     ]
 
     result = generate_sitemap.fetch_vulnerabilities_and_dates('Go')
-    self.assertEqual(
-        result, [('vuln1', datetime.fromtimestamp(10, tz=UTC)),
-                 ('vuln2', datetime.fromtimestamp(20, tz=UTC))])
+    self.assertEqual(result, [('vuln1', datetime.fromtimestamp(10, tz=UTC)),
+                              ('vuln2', datetime.fromtimestamp(20, tz=UTC))])
 
   @patch.object(osv.Bug, 'query')
   def test_osv_get_ecosystems(self, mock_query):

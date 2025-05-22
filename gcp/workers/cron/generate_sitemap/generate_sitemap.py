@@ -53,9 +53,7 @@ def fetch_vulnerabilities_and_dates(
   bug_and_dates = []
   for bug in bugs:
     key = bug.key.id()
-    last_mod_date = max(
-        bug.last_modified,
-        alias_to_last_modified[bug.key.id()])
+    last_mod_date = max(bug.last_modified, alias_to_last_modified[bug.key.id()])
     bug_and_dates.append((key, last_mod_date))
 
   return bug_and_dates

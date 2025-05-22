@@ -362,7 +362,8 @@ class AliasTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
         last_modified=datetime.datetime(2023, 1, 1, tzinfo=datetime.UTC),
         timestamp=datetime.datetime(2023, 1, 1, tzinfo=datetime.UTC))
     bug.put()
-    alias_group_last_modified = datetime.datetime(2023, 10, 1, tzinfo=datetime.UTC)
+    alias_group_last_modified = datetime.datetime(
+        2023, 10, 1, tzinfo=datetime.UTC)
     osv.AliasGroup(
         bug_ids=['jjj-123', 'jjj-234', 'jjj-456'],
         last_modified=alias_group_last_modified,

@@ -508,8 +508,8 @@ class Importer:
       for vuln in vulns:
         bug = osv.Bug.get_by_id(vuln.id)
         # The bug already exists and has been modified since last import
-        if bug is None or \
-                bug.import_last_modified != vuln.modified.ToDatetime(datetime.UTC):
+        if (bug is None or
+            bug.import_last_modified != vuln.modified.ToDatetime(datetime.UTC)):
           return blob_hash, blob.name
 
       return None
@@ -640,7 +640,8 @@ class Importer:
     import_time_now = utcnow()
 
     if not source_repo.last_update_date:
-      source_repo.last_update_date = datetime.datetime.min.replace(tzinfo=datetime.UTC)
+      source_repo.last_update_date = datetime.datetime.min.replace(
+          tzinfo=datetime.UTC)
 
     ignore_last_import_time = source_repo.ignore_last_import_time
     if ignore_last_import_time:
@@ -858,7 +859,9 @@ class Importer:
     """
     logging.info('Begin processing REST: %s', source_repo.name)
 
-    last_update_date = source_repo.last_update_date or datetime.datetime.min.replace(tzinfo=datetime.UTC)
+    last_update_date = (
+        source_repo.last_update_date or
+        datetime.datetime.min.replace(tzinfo=datetime.UTC))
     if source_repo.ignore_last_import_time:
       last_update_date = datetime.datetime.min.replace(tzinfo=datetime.UTC)
       source_repo.ignore_last_import_time = False
@@ -885,7 +888,8 @@ class Importer:
       try:
         # strptime discards timezone information - assume UTC
         request_last_modified = datetime.datetime.strptime(
-            last_modified, _HTTP_LAST_MODIFIED_FORMAT).replace(tzinfo=datetime.UTC)
+            last_modified,
+            _HTTP_LAST_MODIFIED_FORMAT).replace(tzinfo=datetime.UTC)
         # Check whether endpoint has been modified since last update
         if request_last_modified <= last_update_date:
           logging.info('No changes since last update.')

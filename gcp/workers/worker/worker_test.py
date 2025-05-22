@@ -663,7 +663,8 @@ class RESTUpdateTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
         db_id='CURL-CVE-2022-32221',
         ecosystem=[''],
         source_id='source:CURL-CVE-2022-32221.json',
-        import_last_modified=datetime.datetime(2020, 1, 1, 0, 0, tzinfo=datetime.UTC),
+        import_last_modified=datetime.datetime(
+            2020, 1, 1, 0, 0, tzinfo=datetime.UTC),
     ).put()
     message = mock.Mock()
     message.attributes = {
@@ -774,7 +775,8 @@ class UpdateTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
         project=['blah.com/package'],
         ecosystem=['Go'],
         source_id='source:OSV-123.yaml',
-        import_last_modified=datetime.datetime(2021, 1, 1, 0, 0, tzinfo=datetime.UTC),
+        import_last_modified=datetime.datetime(
+            2021, 1, 1, 0, 0, tzinfo=datetime.UTC),
         source_of_truth=osv.SourceOfTruth.SOURCE_REPO,
     ).put()
     osv.Bug(
@@ -783,7 +785,8 @@ class UpdateTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
         project=['blah.com/package'],
         ecosystem=['Go'],
         source_id='source:OSV-124.yaml',
-        import_last_modified=datetime.datetime(2021, 1, 1, 0, 0, tzinfo=datetime.UTC),
+        import_last_modified=datetime.datetime(
+            2021, 1, 1, 0, 0, tzinfo=datetime.UTC),
         source_of_truth=osv.SourceOfTruth.SOURCE_REPO,
     ).put()
     osv.Bug(
@@ -793,7 +796,8 @@ class UpdateTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
         project=['blah.com/package'],
         ecosystem=['Go'],
         source_id='source:OSV-125.yaml',
-        import_last_modified=datetime.datetime(2021, 1, 1, 0, 0, tzinfo=datetime.UTC),
+        import_last_modified=datetime.datetime(
+            2021, 1, 1, 0, 0, tzinfo=datetime.UTC),
         source_of_truth=osv.SourceOfTruth.SOURCE_REPO,
     ).put()
     osv.Bug(
@@ -801,7 +805,8 @@ class UpdateTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
         project=['blah.com/package'],
         ecosystem=['Go'],
         source_id='source:OSV-127.yaml',
-        import_last_modified=datetime.datetime(2021, 1, 1, 0, 0, tzinfo=datetime.UTC),
+        import_last_modified=datetime.datetime(
+            2021, 1, 1, 0, 0, tzinfo=datetime.UTC),
         source_of_truth=osv.SourceOfTruth.SOURCE_REPO,
     ).put()
     osv.Bug(
@@ -809,7 +814,8 @@ class UpdateTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
         project=['blah.com/package'],
         ecosystem=['ecosystem'],
         source_id='source:OSV-131.yaml',
-        import_last_modified=datetime.datetime(2021, 1, 1, 0, 0, tzinfo=datetime.UTC),
+        import_last_modified=datetime.datetime(
+            2021, 1, 1, 0, 0, tzinfo=datetime.UTC),
         source_of_truth=osv.SourceOfTruth.SOURCE_REPO,
     ).put()
 
@@ -1667,7 +1673,8 @@ class UpdateTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
           project=['blah.com/package'],
           ecosystem=['ecosystem'],
           source_id='source:OSV-131.yaml',
-          import_last_modified=datetime.datetime(2021, 1, 1, 0, 0, tzinfo=datetime.UTC),
+          import_last_modified=datetime.datetime(
+              2021, 1, 1, 0, 0, tzinfo=datetime.UTC),
           source_of_truth=osv.SourceOfTruth.SOURCE_REPO,
       ).put()
 

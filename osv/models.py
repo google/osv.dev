@@ -267,7 +267,8 @@ class Bug(ndb.Model):
   # When the entry was last edited.
   last_modified: datetime.datetime = ndb.DateTimeProperty(tzinfo=datetime.UTC)
   # Last modified field of the original imported file
-  import_last_modified: datetime.datetime = ndb.DateTimeProperty(tzinfo=datetime.UTC)
+  import_last_modified: datetime.datetime = ndb.DateTimeProperty(
+      tzinfo=datetime.UTC)
   # When the entry was withdrawn.
   withdrawn: datetime.datetime = ndb.DateTimeProperty(tzinfo=datetime.UTC)
   # The source identifier.
@@ -900,7 +901,8 @@ class SourceRepository(ndb.Model):
   # Last synced hash for SourceRepositoryType.GIT.
   last_synced_hash: str = ndb.StringProperty()
   # Last date recurring updates were requested.
-  last_update_date: datetime.datetime = ndb.DateTimeProperty(tzinfo=datetime.UTC)
+  last_update_date: datetime.datetime = ndb.DateTimeProperty(
+      tzinfo=datetime.UTC)
   # Patterns of files to exclude (regex).
   ignore_patterns: list[str] = ndb.StringProperty(repeated=True)
   # Whether this repository is editable.

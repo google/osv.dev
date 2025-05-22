@@ -22,6 +22,7 @@ import os
 import subprocess
 import sys
 import tempfile
+from typing import Any
 import zipfile
 
 from google.cloud import ndb, storage
@@ -116,7 +117,7 @@ def download_osv_data(tmp_dir: str):
   logging.info('Successfully unzipped files to %s.', tmp_dir)
 
 
-def process_linter_result(output, bugs: set):
+def process_linter_result(output: Any, bugs: set):
   """process the linter results and update/add findings into db."""
   time = utcnow()
   total_findings = 0
@@ -140,8 +141,8 @@ def process_linter_result(output, bugs: set):
     sorted_findings = sorted(list(findings_already_added))
     prefix = bug_id.split('-')[0] + '-'
     source = PREFIX_TO_SOURCE.get(prefix, '')
+    record_quality_finding(bug_id, source, sorted_findings, time)
 
-  record_quality_finding(bug_id, source, sorted_findings, time)
   if total_findings > 0:
     logging.info('OSV Linter found %d issues across files.', total_findings)
 
@@ -153,11 +154,12 @@ def record_quality_finding(bug_id: str, source: str,
   existing_finding = osv.ImportFinding.get_by_id(bug_id)
 
   if existing_finding:
-    existing_finding.findings = new_findings
-    existing_finding.last_attempt = findingtimenow
-    existing_finding.put()
-    logging.debug('DB Update for %s: Set findings to %s. Source: %s', bug_id,
-                  new_findings, source)
+    if new_findings != existing_finding.findings:
+      existing_finding.findings = new_findings
+      existing_finding.last_attempt = findingtimenow
+      existing_finding.put()
+      logging.debug('DB Update for %s: Set findings to %s. Source: %s', bug_id,
+                    new_findings, source)
   elif new_findings:
     osv.ImportFinding(
         bug_id=bug_id,
@@ -196,10 +198,10 @@ def parse_and_record_linter_output(json_output_str: str):
   # Process linter results
   process_linter_result(linter_output_json, linter_bugs)
 
-  # Remove entries from db that are no longer found by the linter
+  # Delete entries from db that are no longer found by the linter
   ids_to_delete = existing_db_bug_ids - linter_bugs
   if ids_to_delete:
-    logging.info('Found %d stale entries to remove from DB: %s',
+    logging.info('Found %d stale entries to delete from DB: %s',
                  len(ids_to_delete), ids_to_delete)
     deleted_count = 0
     for id_to_delete in ids_to_delete:
@@ -240,6 +242,7 @@ def main():
 
 if __name__ == '__main__':
   osv.logs.setup_gcp_logging('linter')
+
   _ndb_client = ndb.Client()
   with _ndb_client.context():
     main()

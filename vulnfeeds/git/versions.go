@@ -17,19 +17,19 @@ package git
 import (
 	"fmt"
 	"regexp"
+	"slices"
 	"strings"
 
+	"github.com/google/osv/vulnfeeds/common"
 	"golang.org/x/exp/maps"
-
-	"github.com/google/osv/vulnfeeds/cves"
 )
 
 // Take an already normalized version, repo and the mapping of repo tags
 // normalized tags and commits and do fuzzy matching version, returning a
 // GitCommit and a bool if successful.
-func fuzzyVersionToCommit(normalizedVersion string, repo string, commitType cves.CommitType, normalizedTags map[string]NormalizedTag) (ac cves.AffectedCommit, b bool) {
+func fuzzyVersionToCommit(normalizedVersion string, repo string, commitType common.CommitType, normalizedTags map[string]NormalizedTag) (ac common.AffectedCommit, b bool) {
 	candidateTags := []string{} // the subset of normalizedTags tags that might be appropriate to use as a fuzzy match for normalizedVersion.
-	// Keep in sync with the regex in cves.NormalizeVersion()
+	// Keep in sync with the regex in common.NormalizeVersion()
 	var validVersionText = regexp.MustCompile(`(?i)(?:rc|alpha|beta|preview)\d*`)
 
 	for _, k := range maps.Keys(normalizedTags) {
@@ -52,13 +52,13 @@ func fuzzyVersionToCommit(normalizedVersion string, repo string, commitType cves
 	if len(candidateTags) == 1 {
 		ac.SetRepo(repo)
 		switch commitType {
-		case cves.Introduced:
+		case common.Introduced:
 			ac.SetIntroduced(normalizedTags[candidateTags[0]].Commit)
-		case cves.LastAffected:
+		case common.LastAffected:
 			ac.SetLastAffected(normalizedTags[candidateTags[0]].Commit)
-		case cves.Limit:
+		case common.Limit:
 			ac.SetLimit(normalizedTags[candidateTags[0]].Commit)
-		case cves.Fixed:
+		case common.Fixed:
 			ac.SetFixed(normalizedTags[candidateTags[0]].Commit)
 		}
 		return ac, true
@@ -72,13 +72,13 @@ func fuzzyVersionToCommit(normalizedVersion string, repo string, commitType cves
 		if strings.TrimPrefix(t, normalizedVersion) == "-0" {
 			ac.SetRepo(repo)
 			switch commitType {
-			case cves.Introduced:
+			case common.Introduced:
 				ac.SetIntroduced(normalizedTags[candidateTags[i]].Commit)
-			case cves.LastAffected:
+			case common.LastAffected:
 				ac.SetLastAffected(normalizedTags[candidateTags[i]].Commit)
-			case cves.Limit:
+			case common.Limit:
 				ac.SetLimit(normalizedTags[candidateTags[i]].Commit)
-			case cves.Fixed:
+			case common.Fixed:
 				ac.SetFixed(normalizedTags[candidateTags[i]].Commit)
 			}
 			return ac, true
@@ -90,8 +90,8 @@ func fuzzyVersionToCommit(normalizedVersion string, repo string, commitType cves
 }
 
 // Take an unnormalized version string, a repo, the pre-normalized mapping of tags to commits and return an AffectedCommit.
-func VersionToCommit(version string, repo string, commitType cves.CommitType, normalizedTags map[string]NormalizedTag) (ac cves.AffectedCommit, e error) {
-	normalizedVersion, err := cves.NormalizeVersion(version)
+func VersionToCommit(version string, repo string, commitType common.CommitType, normalizedTags map[string]NormalizedTag) (ac common.AffectedCommit, e error) {
+	normalizedVersion, err := NormalizeVersion(version)
 	if err != nil {
 		return ac, err
 	}
@@ -107,14 +107,33 @@ func VersionToCommit(version string, repo string, commitType cves.CommitType, no
 	}
 	ac.SetRepo(repo)
 	switch commitType {
-	case cves.Introduced:
+	case common.Introduced:
 		ac.SetIntroduced(normalizedTag.Commit)
-	case cves.LastAffected:
+	case common.LastAffected:
 		ac.SetLastAffected(normalizedTag.Commit)
-	case cves.Limit:
+	case common.Limit:
 		ac.SetLimit(normalizedTag.Commit)
-	case cves.Fixed:
+	case common.Fixed:
 		ac.SetFixed(normalizedTag.Commit)
 	}
 	return ac, nil
+}
+
+// Normalize version strings found in CVE CPE Match data or Git tags.
+// Use the same logic and behaviour as normalize_tag() osv/bug.py for consistency.
+func NormalizeVersion(version string) (normalizedVersion string, e error) {
+	// Keep in sync with the intent of https://github.com/google/osv.dev/blob/26050deb42785bc5a4dc7d802eac8e7f95135509/osv/bug.py#L31
+	var validVersion = regexp.MustCompile(`(?i)(\d+|(?:rc|alpha|beta|preview)\d*)`)
+	var validVersionText = regexp.MustCompile(`(?i)(?:rc|alpha|beta|preview)\d*`)
+	components := validVersion.FindAllString(version, -1)
+	if components == nil {
+		return "", fmt.Errorf("%q is not a supported version", version)
+	}
+	// If the very first component happens to accidentally match the strings we support, remove it.
+	// This is necessary because of the lack of negative lookbehind assertion support in RE2.
+	if validVersionText.MatchString(components[0]) {
+		components = slices.Delete(components, 0, 1)
+	}
+	normalizedVersion = strings.Join(components, "-")
+	return normalizedVersion, e
 }

@@ -30,6 +30,7 @@ import (
 
 	"gopkg.in/yaml.v2"
 
+	"github.com/google/osv/vulnfeeds/common"
 	"github.com/google/osv/vulnfeeds/cves"
 )
 
@@ -65,11 +66,11 @@ type Affected struct {
 	EcosystemSpecific map[string]string `json:"ecosystem_specific,omitempty" yaml:"ecosystem_specific,omitempty"`
 }
 
-// AttachExtractedVersionInfo converts the cves.VersionInfo struct to OSV GIT and ECOSYSTEM AffectedRanges and AffectedPackage.
-func (affected *Affected) AttachExtractedVersionInfo(version cves.VersionInfo) {
+// AttachExtractedVersionInfo converts the common.VersionInfo struct to OSV GIT and ECOSYSTEM AffectedRanges and AffectedPackage.
+func (affected *Affected) AttachExtractedVersionInfo(version common.VersionInfo) {
 	// commit holds a commit hash of one of the supported commit types.
 	type commit struct {
-		commitType cves.CommitType
+		commitType common.CommitType
 		hash       string
 	}
 	// Collect the commits of the supported types for each repo.
@@ -78,17 +79,17 @@ func (affected *Affected) AttachExtractedVersionInfo(version cves.VersionInfo) {
 	unfixed := true
 	for _, ac := range version.AffectedCommits {
 		if ac.Introduced != "" {
-			repoToCommits[ac.Repo] = append(repoToCommits[ac.Repo], commit{commitType: cves.Introduced, hash: ac.Introduced})
+			repoToCommits[ac.Repo] = append(repoToCommits[ac.Repo], commit{commitType: common.Introduced, hash: ac.Introduced})
 		}
 		if ac.Fixed != "" {
-			repoToCommits[ac.Repo] = append(repoToCommits[ac.Repo], commit{commitType: cves.Fixed, hash: ac.Fixed})
+			repoToCommits[ac.Repo] = append(repoToCommits[ac.Repo], commit{commitType: common.Fixed, hash: ac.Fixed})
 			unfixed = false
 		}
 		if ac.Limit != "" {
-			repoToCommits[ac.Repo] = append(repoToCommits[ac.Repo], commit{commitType: cves.Limit, hash: ac.Limit})
+			repoToCommits[ac.Repo] = append(repoToCommits[ac.Repo], commit{commitType: common.Limit, hash: ac.Limit})
 		}
 		if ac.LastAffected != "" {
-			repoToCommits[ac.Repo] = append(repoToCommits[ac.Repo], commit{commitType: cves.LastAffected, hash: ac.LastAffected})
+			repoToCommits[ac.Repo] = append(repoToCommits[ac.Repo], commit{commitType: common.LastAffected, hash: ac.LastAffected})
 		}
 	}
 
@@ -100,19 +101,19 @@ func (affected *Affected) AttachExtractedVersionInfo(version cves.VersionInfo) {
 		// We're not always able to determine when a vulnerability is introduced, and may need to default to the dawn of time.
 		addedIntroduced := false
 		for _, commit := range commits {
-			if commit.commitType == cves.Introduced {
+			if commit.commitType == common.Introduced {
 				gitRange.Events = append(gitRange.Events, Event{Introduced: commit.hash})
 				addedIntroduced = true
 			}
-			if commit.commitType == cves.Fixed {
+			if commit.commitType == common.Fixed {
 				gitRange.Events = append(gitRange.Events, Event{Fixed: commit.hash})
 			}
-			if commit.commitType == cves.Limit {
+			if commit.commitType == common.Limit {
 				gitRange.Events = append(gitRange.Events, Event{Limit: commit.hash})
 			}
 			// Only add any LastAffectedCommits in the absence of
 			// any FixCommits to maintain schema compliance.
-			if commit.commitType == cves.LastAffected && unfixed {
+			if commit.commitType == common.LastAffected && unfixed {
 				gitRange.Events = append(gitRange.Events, Event{LastAffected: commit.hash})
 			}
 		}
@@ -163,11 +164,11 @@ func (affected *Affected) AttachExtractedVersionInfo(version cves.VersionInfo) {
 
 // PackageInfo is an intermediate struct to ease generating Vulnerability structs.
 type PackageInfo struct {
-	PkgName           string            `json:"pkg_name,omitempty" yaml:"pkg_name,omitempty"`
-	Ecosystem         string            `json:"ecosystem,omitempty" yaml:"ecosystem,omitempty"`
-	PURL              string            `json:"purl,omitempty" yaml:"purl,omitempty"`
-	VersionInfo       cves.VersionInfo  `json:"fixed_version,omitempty" yaml:"fixed_version,omitempty"`
-	EcosystemSpecific map[string]string `json:"ecosystem_specific,omitempty" yaml:"ecosystem_specific,omitempty"`
+	PkgName           string             `json:"pkg_name,omitempty" yaml:"pkg_name,omitempty"`
+	Ecosystem         string             `json:"ecosystem,omitempty" yaml:"ecosystem,omitempty"`
+	PURL              string             `json:"purl,omitempty" yaml:"purl,omitempty"`
+	VersionInfo       common.VersionInfo `json:"fixed_version,omitempty" yaml:"fixed_version,omitempty"`
+	EcosystemSpecific map[string]string  `json:"ecosystem_specific,omitempty" yaml:"ecosystem_specific,omitempty"`
 }
 
 func (pi *PackageInfo) ToJSON(w io.Writer) error {

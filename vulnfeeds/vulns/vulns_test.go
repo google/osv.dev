@@ -15,6 +15,7 @@ import (
 	gocmp "github.com/google/go-cmp/cmp"
 	"github.com/google/osv/vulnfeeds/utility"
 
+	"github.com/google/osv/vulnfeeds/common"
 	"github.com/google/osv/vulnfeeds/cves"
 )
 
@@ -147,8 +148,8 @@ func TestAddPkgInfo(t *testing.T) {
 	testPkgInfoNameEco := PackageInfo{
 		PkgName:   "TestName",
 		Ecosystem: "TestEco",
-		VersionInfo: cves.VersionInfo{
-			AffectedVersions: []cves.AffectedVersion{
+		VersionInfo: common.VersionInfo{
+			AffectedVersions: []common.AffectedVersion{
 				{
 					Fixed: "1.2.3-4",
 				},
@@ -159,8 +160,8 @@ func TestAddPkgInfo(t *testing.T) {
 		PkgName:   "nginx",
 		Ecosystem: "Debian",
 		PURL:      "pkg:deb/debian/nginx@1.1.2-1",
-		VersionInfo: cves.VersionInfo{
-			AffectedVersions: []cves.AffectedVersion{
+		VersionInfo: common.VersionInfo{
+			AffectedVersions: []common.AffectedVersion{
 				{
 					Fixed: "1.2.3-4",
 				},
@@ -168,8 +169,8 @@ func TestAddPkgInfo(t *testing.T) {
 		},
 	}
 	testPkgInfoCommits := PackageInfo{
-		VersionInfo: cves.VersionInfo{
-			AffectedCommits: []cves.AffectedCommit{
+		VersionInfo: common.VersionInfo{
+			AffectedCommits: []common.AffectedCommit{
 				{
 					Fixed: "dsafwefwfe370a9e65d68d62ef37345597e4100b0e87021dfb",
 					Repo:  "github.com/foo/bar",
@@ -181,13 +182,13 @@ func TestAddPkgInfo(t *testing.T) {
 		PkgName:   "apackage",
 		Ecosystem: "Debian",
 		PURL:      "pkg:deb/debian/apackage@1.2.3-4",
-		VersionInfo: cves.VersionInfo{
-			AffectedVersions: []cves.AffectedVersion{
+		VersionInfo: common.VersionInfo{
+			AffectedVersions: []common.AffectedVersion{
 				{
 					Fixed: "1.2.3-4",
 				},
 			},
-			AffectedCommits: []cves.AffectedCommit{
+			AffectedCommits: []common.AffectedCommit{
 				{
 					Fixed: "0xdeadbeef",
 					Repo:  "github.com/foo/bar",
@@ -200,8 +201,8 @@ func TestAddPkgInfo(t *testing.T) {
 		},
 	}
 	testPkgInfoCommitsMultiple := PackageInfo{
-		VersionInfo: cves.VersionInfo{
-			AffectedCommits: []cves.AffectedCommit{
+		VersionInfo: common.VersionInfo{
+			AffectedCommits: []common.AffectedCommit{
 				{
 					Introduced: "0xdeadbeef",
 					Fixed:      "dsafwefwfe370a9e65d68d62ef37345597e4100b0e87021dfb",
@@ -221,8 +222,8 @@ func TestAddPkgInfo(t *testing.T) {
 	testPkgInfoEcoMultiple := PackageInfo{
 		PkgName:   "TestNameWithIntroduced",
 		Ecosystem: "TestEco",
-		VersionInfo: cves.VersionInfo{
-			AffectedVersions: []cves.AffectedVersion{
+		VersionInfo: common.VersionInfo{
+			AffectedVersions: []common.AffectedVersion{
 				{
 					Introduced: "1.0.0-1",
 					Fixed:      "1.2.3-4",

@@ -5,7 +5,7 @@ import (
 	"time"
 
 	"github.com/google/go-cmp/cmp"
-	"github.com/google/osv/vulnfeeds/cves"
+	"github.com/google/osv/vulnfeeds/common"
 	"github.com/google/osv/vulnfeeds/internal/testutils"
 	"golang.org/x/exp/maps"
 )
@@ -375,7 +375,7 @@ func TestValidRepo(t *testing.T) {
 func TestInvalidRepos(t *testing.T) {
 	testutils.SetupGitVCR(t)
 	redundantRepos := []string{}
-	for _, repo := range cves.InvalidRepos {
+	for _, repo := range common.InvalidRepos {
 		if !ValidRepoAndHasUsableRefs(repo) {
 			redundantRepos = append(redundantRepos, repo)
 		}

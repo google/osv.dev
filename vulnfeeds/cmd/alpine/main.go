@@ -11,7 +11,7 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/google/osv/vulnfeeds/cves"
+	"github.com/google/osv/vulnfeeds/common"
 	"github.com/google/osv/vulnfeeds/utility"
 	"github.com/google/osv/vulnfeeds/vulns"
 )
@@ -117,8 +117,8 @@ func generateAlpineOSV(allAlpineSecDb map[string][]VersionAndPkg, alpineOutputPa
 		for _, verPkg := range verPkgs {
 			pkgInfo := vulns.PackageInfo{
 				PkgName: verPkg.Pkg,
-				VersionInfo: cves.VersionInfo{
-					AffectedVersions: []cves.AffectedVersion{{Fixed: verPkg.Ver}},
+				VersionInfo: common.VersionInfo{
+					AffectedVersions: []common.AffectedVersion{{Fixed: verPkg.Ver}},
 				},
 				Ecosystem: "Alpine:" + verPkg.AlpineVer,
 				PURL:      "pkg:apk/alpine/" + verPkg.Pkg + "?arch=source",

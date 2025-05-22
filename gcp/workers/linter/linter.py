@@ -54,8 +54,8 @@ PREFIX_TO_SOURCE = {
     'ALEA-': 'almalinux-alea',
     'ALSA-': 'almalinux-alsa',
     'A-': 'android',
-    'ASB-A': 'android',
-    'PUB-A': 'android',
+    'ASB-': 'android',
+    'PUB-': 'android',
     'BIT-': 'bitnami',
     'CGA-': 'chainguard',
     'CURL-': 'curl',
@@ -129,8 +129,8 @@ def record_quality_finding(
   if existing_finding := osv.ImportFinding.get_by_id(bug_id):
     if maybe_new_finding not in existing_finding.findings:  # type: ignore
       existing_finding.findings.append(maybe_new_finding)  # type: ignore
-    existing_finding.last_attempt = findingtimenow  # type: ignore
-    existing_finding.put()
+      existing_finding.last_attempt = findingtimenow  # type: ignore
+      existing_finding.put()
   else:
     osv.ImportFinding(
         bug_id=bug_id,
@@ -175,9 +175,7 @@ def parse_and_record_linter_output(json_output_str: str):
                       source)
 
   if total_findings > 0:
-    logging.error(
-        'OSV Linter found %d issues across files. Exiting with error.',
-        total_findings)
+    logging.info('OSV Linter found %d issues across files.', total_findings)
 
 
 def main():

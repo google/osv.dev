@@ -498,7 +498,7 @@ class TaskRunner:
 
     filter_unsupported_ecosystems(vulnerability)
 
-    orig_modified_date = vulnerability.modified.ToDatetime()
+    orig_modified_date = vulnerability.modified.ToDatetime(datetime.UTC)
     try:
       result = self._analyze_vulnerability(source_repo, repo, vulnerability,
                                            relative_path, original_sha256)

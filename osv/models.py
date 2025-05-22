@@ -553,11 +553,11 @@ class Bug(ndb.Model):
     }
 
     if vulnerability.HasField('modified'):
-      self.last_modified = vulnerability.modified.ToDatetime()
+      self.last_modified = vulnerability.modified.ToDatetime(datetime.UTC)
     if vulnerability.HasField('published'):
-      self.timestamp = vulnerability.published.ToDatetime()
+      self.timestamp = vulnerability.published.ToDatetime(datetime.UTC)
     if vulnerability.HasField('withdrawn'):
-      self.withdrawn = vulnerability.withdrawn.ToDatetime()
+      self.withdrawn = vulnerability.withdrawn.ToDatetime(datetime.UTC)
     else:
       self.withdrawn = None
 
@@ -818,7 +818,7 @@ class Bug(ndb.Model):
       if alias_group:
         alias_ids = sorted(list(set(alias_group.bug_ids) - {vulnerability.id}))
         vulnerability.aliases[:] = alias_ids
-        modified_time = vulnerability.modified.ToDatetime()
+        modified_time = vulnerability.modified.ToDatetime(datetime.UTC)
         modified_time = max(alias_group.last_modified, modified_time)
         vulnerability.modified.FromDatetime(modified_time)
 
@@ -826,7 +826,7 @@ class Bug(ndb.Model):
       upstream_group = yield get_upstream_async(vulnerability.id)
       if upstream_group:
         vulnerability.upstream[:] = upstream_group.upstream_ids
-        modified_time = vulnerability.modified.ToDatetime()
+        modified_time = vulnerability.modified.ToDatetime(datetime.UTC)
         modified_time = max(upstream_group.last_modified, modified_time)
         vulnerability.modified.FromDatetime(modified_time)
     return vulnerability

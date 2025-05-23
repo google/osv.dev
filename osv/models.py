@@ -401,7 +401,7 @@ class Bug(ndb.Model):
         pkg.package.name for pkg in self.affected_packages if pkg.package.name
     })
 
-    if self.repo_url:
+    if self.repo_url and 'GIT' in self.ecosystem:
        self.project.append(self.repo_url)
 
     self.project.sort()

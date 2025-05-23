@@ -1208,7 +1208,6 @@ def query_by_version(
     query = query.filter(osv.Bug.ecosystem == ecosystem)
     ecosystem_info = ecosystems.get(ecosystem)
 
-  ecosystem_info = ecosystems.get(ecosystem)
   is_semver = ecosystem_info and ecosystem_info.is_semver
   supports_comparing = ecosystem_info and ecosystem_info.supports_comparing
 
@@ -1446,6 +1445,11 @@ def is_matching_package_ecosystem(package_ecosystem: str,
   """Checks if the queried ecosystem matches the affected package's ecosystem,
   considering potential variations in the package's ecosystem.
   """
+
+  # Special case for GIT queries, for which osv entries will have an empty ecosystem for.
+  if ecosystem == 'GIT' and package_ecosystem == '':
+    return True
+
   return any(eco == ecosystem for eco in (
       package_ecosystem,
       ecosystems.normalize(package_ecosystem),

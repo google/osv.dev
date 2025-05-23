@@ -1026,7 +1026,7 @@ def _is_version_affected(affected_packages,
         if package_name != repo_url:
           continue
       else:
-        if package_name != affected_package.ranges:
+        if package_name != affected_package.package.name:
           continue
 
     if normalize:

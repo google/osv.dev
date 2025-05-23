@@ -1446,7 +1446,8 @@ def is_matching_package_ecosystem(package_ecosystem: str,
   considering potential variations in the package's ecosystem.
   """
 
-  # Special case for GIT queries, for which osv entries will have an empty ecosystem for.
+  # Special case for GIT queries,
+  # for which osv entries will have an empty ecosystem for.
   if ecosystem == 'GIT' and package_ecosystem == '':
     return True
 

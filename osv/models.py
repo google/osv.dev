@@ -402,7 +402,7 @@ class Bug(ndb.Model):
     })
 
     if self.repo_url and 'GIT' in self.ecosystem:
-       self.project.append(self.repo_url)
+      self.project.append(self.repo_url)
 
     self.project.sort()
 

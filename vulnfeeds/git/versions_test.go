@@ -5,8 +5,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/google/osv/vulnfeeds/common"
 	"github.com/google/osv/vulnfeeds/internal/testutils"
+	"github.com/google/osv/vulnfeeds/models"
 )
 
 func TestVersionToCommit(t *testing.T) {
@@ -108,7 +108,7 @@ func TestVersionToCommit(t *testing.T) {
 			if err != nil {
 				t.Errorf("test %q: unexpected failure normalizing repo tags: %#v", tc.description, err)
 			}
-			got, err := VersionToCommit(tc.inputVersion, tc.inputRepoURL, common.Fixed, normalizedTags)
+			got, err := VersionToCommit(tc.inputVersion, tc.inputRepoURL, models.Fixed, normalizedTags)
 			if err != nil && tc.expectedOk {
 				t.Errorf("test %q: VersionToCommit(%q, %q) unexpectedly failed: %#v", tc.description, tc.inputVersion, tc.inputRepoURL, err)
 				t.Skip()

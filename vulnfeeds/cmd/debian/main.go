@@ -10,8 +10,8 @@ import (
 	"sort"
 	"strconv"
 
-	"github.com/google/osv/vulnfeeds/common"
 	"github.com/google/osv/vulnfeeds/faulttolerant"
+	"github.com/google/osv/vulnfeeds/models"
 	"github.com/google/osv/vulnfeeds/utility"
 	"github.com/google/osv/vulnfeeds/vulns"
 )
@@ -122,14 +122,14 @@ func updateOSVPkgInfos(pkgName string, cveId string, releases map[string]Release
 		}
 		pkgInfo.EcosystemSpecific = make(map[string]string)
 
-		pkgInfo.VersionInfo = common.VersionInfo{
-			AffectedVersions: []common.AffectedVersion{{Introduced: "0"}},
+		pkgInfo.VersionInfo = models.VersionInfo{
+			AffectedVersions: []models.AffectedVersion{{Introduced: "0"}},
 		}
 		if release.Status == "resolved" {
 			if release.FixedVersion == "0" { // not affected
 				continue
 			}
-			pkgInfo.VersionInfo.AffectedVersions = append(pkgInfo.VersionInfo.AffectedVersions, common.AffectedVersion{Fixed: release.FixedVersion})
+			pkgInfo.VersionInfo.AffectedVersions = append(pkgInfo.VersionInfo.AffectedVersions, models.AffectedVersion{Fixed: release.FixedVersion})
 		}
 		pkgInfo.EcosystemSpecific["urgency"] = release.Urgency
 		pkgInfos = append(pkgInfos, pkgInfo)

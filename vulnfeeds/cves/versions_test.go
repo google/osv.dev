@@ -10,8 +10,8 @@ import (
 	"time"
 
 	"github.com/google/go-cmp/cmp"
-	"github.com/google/osv/vulnfeeds/common"
 	"github.com/google/osv/vulnfeeds/internal/testutils"
+	"github.com/google/osv/vulnfeeds/models"
 )
 
 func loadTestData2(cveName string) Vulnerability {
@@ -38,7 +38,7 @@ func TestParseCPE(t *testing.T) {
 	tests := []struct {
 		description       string
 		inputCPEString    string
-		expectedCPEStruct *common.CPE
+		expectedCPEStruct *models.CPE
 		expectedOk        bool
 	}{
 		{
@@ -62,7 +62,7 @@ func TestParseCPE(t *testing.T) {
 		},
 		{
 			description: "valid input (hardware)", inputCPEString: "cpe:2.3:h:intel:core_i3-1005g1:-:*:*:*:*:*:*:*",
-			expectedCPEStruct: &common.CPE{
+			expectedCPEStruct: &models.CPE{
 				CPEVersion: "2.3",
 				Part:       "h",
 				Vendor:     "intel",
@@ -81,7 +81,7 @@ func TestParseCPE(t *testing.T) {
 		{
 			description:    "valid input (software)",
 			inputCPEString: "cpe:2.3:a:gitlab:gitlab:*:*:*:*:community:*:*:*",
-			expectedCPEStruct: &common.CPE{
+			expectedCPEStruct: &models.CPE{
 				CPEVersion: "2.3",
 				Part:       "a",
 				Vendor:     "gitlab",
@@ -100,7 +100,7 @@ func TestParseCPE(t *testing.T) {
 		{
 			description:    "valid input (software) with embedded colons",
 			inputCPEString: "cpe:2.3:a:http\\:\\:daemon_project:http\\:\\:daemon:*:*:*:*:*:*:*:*",
-			expectedCPEStruct: &common.CPE{
+			expectedCPEStruct: &models.CPE{
 				CPEVersion: "2.3",
 				Part:       "a",
 				Vendor:     "http::daemon_project",
@@ -119,7 +119,7 @@ func TestParseCPE(t *testing.T) {
 		{
 			description:    "valid input (software) with escaped characters",
 			inputCPEString: "cpe:2.3:a:bloodshed:dev-c\\+\\+:4.9.9.2:*:*:*:*:*:*:*",
-			expectedCPEStruct: &common.CPE{
+			expectedCPEStruct: &models.CPE{
 				CPEVersion: "2.3",
 				Part:       "a",
 				Vendor:     "bloodshed",
@@ -492,8 +492,8 @@ func TestExtractGitCommit(t *testing.T) {
 	tests := []struct {
 		description            string
 		inputLink              string
-		inputCommitType        common.CommitType
-		expectedAffectedCommit common.AffectedCommit
+		inputCommitType        models.CommitType
+		expectedAffectedCommit models.AffectedCommit
 		expectFailure          bool
 		skipOnCloudBuild       bool
 		disableExpiryDate      time.Time // If test needs to be disabled due to known outage.
@@ -501,8 +501,8 @@ func TestExtractGitCommit(t *testing.T) {
 		{
 			description:     "Valid GitHub commit URL",
 			inputLink:       "https://github.com/google/osv/commit/cd4e934d0527e5010e373e7fed54ef5daefba2f5",
-			inputCommitType: common.Fixed,
-			expectedAffectedCommit: common.AffectedCommit{
+			inputCommitType: models.Fixed,
+			expectedAffectedCommit: models.AffectedCommit{
 				Repo:  "https://github.com/google/osv.dev",
 				Fixed: "cd4e934d0527e5010e373e7fed54ef5daefba2f5",
 			},
@@ -510,14 +510,14 @@ func TestExtractGitCommit(t *testing.T) {
 		{
 			description:     "Undesired GitHub commit URL", // TODO(apollock): be able to parse this a a LastAffected commit
 			inputLink:       "https://github.com/Budibase/budibase/commits/develop?after=93d6939466aec192043d8ac842e754f65fdf2e8a+594\u0026branch=develop\u0026qualified_name=refs%2Fheads%2Fdevelop",
-			inputCommitType: common.Fixed,
+			inputCommitType: models.Fixed,
 			expectFailure:   true,
 		},
 		{
 			description:     "Valid GitHub commit URL with .patch extension",
 			inputLink:       "https://github.com/pimcore/customer-data-framework/commit/e3f333391582d9309115e6b94e875367d0ea7163.patch",
-			inputCommitType: common.Fixed,
-			expectedAffectedCommit: common.AffectedCommit{
+			inputCommitType: models.Fixed,
+			expectedAffectedCommit: models.AffectedCommit{
 				Repo:  "https://github.com/pimcore/customer-data-framework",
 				Fixed: "e3f333391582d9309115e6b94e875367d0ea7163",
 			},
@@ -525,14 +525,14 @@ func TestExtractGitCommit(t *testing.T) {
 		{
 			description:     "Undesired GitHub PR commit URL",
 			inputLink:       "https://github.com/OpenZeppelin/cairo-contracts/pull/542/commits/6d4cb750478fca2fd916f73297632f899aca9299",
-			inputCommitType: common.Fixed,
+			inputCommitType: models.Fixed,
 			expectFailure:   true,
 		},
 		{
 			description:     "Valid GitLab commit URL",
 			inputLink:       "https://gitlab.freedesktop.org/virgl/virglrenderer/-/commit/b05bb61f454eeb8a85164c8a31510aeb9d79129c",
-			inputCommitType: common.Fixed,
-			expectedAffectedCommit: common.AffectedCommit{
+			inputCommitType: models.Fixed,
+			expectedAffectedCommit: models.AffectedCommit{
 				Repo:  "https://gitlab.freedesktop.org/virgl/virglrenderer",
 				Fixed: "b05bb61f454eeb8a85164c8a31510aeb9d79129c",
 			},
@@ -540,8 +540,8 @@ func TestExtractGitCommit(t *testing.T) {
 		{
 			description:     "Valid GitLab commit URL with .patch extension",
 			inputLink:       "https://gitlab.com/muttmua/mutt/-/commit/452ee330e094bfc7c9a68555e5152b1826534555.patch",
-			inputCommitType: common.Fixed,
-			expectedAffectedCommit: common.AffectedCommit{
+			inputCommitType: models.Fixed,
+			expectedAffectedCommit: models.AffectedCommit{
 				Repo:  "https://gitlab.com/muttmua/mutt",
 				Fixed: "452ee330e094bfc7c9a68555e5152b1826534555",
 			},
@@ -549,8 +549,8 @@ func TestExtractGitCommit(t *testing.T) {
 		{
 			description:     "Valid GitLab.com commit URL",
 			inputLink:       "https://gitlab.com/mayan-edms/mayan-edms/commit/9ebe80595afe4fdd1e2c74358d6a9421f4ce130e",
-			inputCommitType: common.Fixed,
-			expectedAffectedCommit: common.AffectedCommit{
+			inputCommitType: models.Fixed,
+			expectedAffectedCommit: models.AffectedCommit{
 				Repo:  "https://gitlab.com/mayan-edms/mayan-edms",
 				Fixed: "9ebe80595afe4fdd1e2c74358d6a9421f4ce130e",
 			},
@@ -558,8 +558,8 @@ func TestExtractGitCommit(t *testing.T) {
 		{
 			description:     "Valid bitbucket.org commit URL",
 			inputLink:       "https://bitbucket.org/openpyxl/openpyxl/commits/3b4905f428e1",
-			inputCommitType: common.Fixed,
-			expectedAffectedCommit: common.AffectedCommit{
+			inputCommitType: models.Fixed,
+			expectedAffectedCommit: models.AffectedCommit{
 				Repo:  "https://bitbucket.org/openpyxl/openpyxl",
 				Fixed: "3b4905f428e1",
 			},
@@ -567,8 +567,8 @@ func TestExtractGitCommit(t *testing.T) {
 		{
 			description:     "Valid bitbucket.org commit URL with trailing slash",
 			inputLink:       "https://bitbucket.org/utmandrew/pcrs/commits/5f18bcb/",
-			inputCommitType: common.Fixed,
-			expectedAffectedCommit: common.AffectedCommit{
+			inputCommitType: models.Fixed,
+			expectedAffectedCommit: models.AffectedCommit{
 				Repo:  "https://bitbucket.org/utmandrew/pcrs",
 				Fixed: "5f18bcb",
 			},
@@ -576,8 +576,8 @@ func TestExtractGitCommit(t *testing.T) {
 		{
 			description:     "Valid cGit commit URL",
 			inputLink:       "https://git.dpkg.org/cgit/dpkg/dpkg.git/commit/?id=faa4c92debe45412bfcf8a44f26e827800bb24be",
-			inputCommitType: common.Fixed,
-			expectedAffectedCommit: common.AffectedCommit{
+			inputCommitType: models.Fixed,
+			expectedAffectedCommit: models.AffectedCommit{
 				Repo:  "https://git.dpkg.org/cgit/dpkg/dpkg.git",
 				Fixed: "faa4c92debe45412bfcf8a44f26e827800bb24be",
 			},
@@ -588,8 +588,8 @@ func TestExtractGitCommit(t *testing.T) {
 			// go-vcr / go's url parser does not support ';' in query strings.
 			// This does actually successfully parse outside of the tests, but there's no way to have go-vcr skip the URL validation.
 			inputLink:       "https://git.gnupg.org/cgi-bin/gitweb.cgi?p=libksba.git&a=commit&h=f61a5ea4e0f6a80fd4b28ef0174bee77793cf070",
-			inputCommitType: common.Fixed,
-			expectedAffectedCommit: common.AffectedCommit{
+			inputCommitType: models.Fixed,
+			expectedAffectedCommit: models.AffectedCommit{
 				Repo:  "git://git.gnupg.org/libksba.git",
 				Fixed: "f61a5ea4e0f6a80fd4b28ef0174bee77793cf070",
 			},
@@ -597,15 +597,15 @@ func TestExtractGitCommit(t *testing.T) {
 		{
 			description:            "Unsupported GitHub PR URL",
 			inputLink:              "https://github.com/google/osv/pull/123",
-			inputCommitType:        common.Fixed,
-			expectedAffectedCommit: common.AffectedCommit{},
+			inputCommitType:        models.Fixed,
+			expectedAffectedCommit: models.AffectedCommit{},
 			expectFailure:          true,
 		},
 		{
 			description:     "Supported GitHub tag URL",
 			inputLink:       "https://github.com/google/osv.dev/releases/tag/v0.0.14",
-			inputCommitType: common.Fixed,
-			expectedAffectedCommit: common.AffectedCommit{
+			inputCommitType: models.Fixed,
+			expectedAffectedCommit: models.AffectedCommit{
 				Repo:  "https://github.com/google/osv.dev",
 				Fixed: "8de7697b3b8a73e79a73ec34f17ef0fa842cfbb2",
 			},
@@ -614,15 +614,15 @@ func TestExtractGitCommit(t *testing.T) {
 		{
 			description:            "Completely invalid input",
 			inputLink:              "",
-			inputCommitType:        common.Fixed,
-			expectedAffectedCommit: common.AffectedCommit{},
+			inputCommitType:        models.Fixed,
+			expectedAffectedCommit: models.AffectedCommit{},
 			expectFailure:          true,
 		},
 		{
 			description:     "cGit reference from CVE-2022-30594, remapped to be cloneable",
 			inputLink:       "https://git.kernel.org/cgit/linux/kernel/git/torvalds/linux.git/commit/?id=ee1fee900537b5d9560e9f937402de5ddc8412f3",
-			inputCommitType: common.Fixed,
-			expectedAffectedCommit: common.AffectedCommit{
+			inputCommitType: models.Fixed,
+			expectedAffectedCommit: models.AffectedCommit{
 				Repo:  "https://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git",
 				Fixed: "ee1fee900537b5d9560e9f937402de5ddc8412f3",
 			},
@@ -631,8 +631,8 @@ func TestExtractGitCommit(t *testing.T) {
 		{
 			description:     "Valid GitWeb commit URL",
 			inputLink:       "https://git.ffmpeg.org/gitweb/ffmpeg.git/commitdiff/c94875471e3ba3dc396c6919ff3ec9b14539cd71",
-			inputCommitType: common.Fixed,
-			expectedAffectedCommit: common.AffectedCommit{
+			inputCommitType: models.Fixed,
+			expectedAffectedCommit: models.AffectedCommit{
 				Repo:  "https://git.ffmpeg.org/ffmpeg.git",
 				Fixed: "c94875471e3ba3dc396c6919ff3ec9b14539cd71",
 			},
@@ -640,8 +640,8 @@ func TestExtractGitCommit(t *testing.T) {
 		{
 			description:     "A GitHub repo that has been renamed (as seen on CVE-2016-10544)",
 			inputLink:       "https://github.com/uWebSockets/uWebSockets/commit/37deefd01f0875e133ea967122e3a5e421b8fcd9",
-			inputCommitType: common.Fixed,
-			expectedAffectedCommit: common.AffectedCommit{
+			inputCommitType: models.Fixed,
+			expectedAffectedCommit: models.AffectedCommit{
 				Repo:  "https://github.com/unetworking/uwebsockets",
 				Fixed: "37deefd01f0875e133ea967122e3a5e421b8fcd9",
 			},
@@ -649,8 +649,8 @@ func TestExtractGitCommit(t *testing.T) {
 		{
 			description:     "A GitHub repo that should be working (as seen on CVE-2021-23568)",
 			inputLink:       "https://github.com/eggjs/extend2/commit/aa332a59116c8398976434b57ea477c6823054f8",
-			inputCommitType: common.Fixed,
-			expectedAffectedCommit: common.AffectedCommit{
+			inputCommitType: models.Fixed,
+			expectedAffectedCommit: models.AffectedCommit{
 				Repo:  "https://github.com/eggjs/extend2",
 				Fixed: "aa332a59116c8398976434b57ea477c6823054f8",
 			},
@@ -658,15 +658,15 @@ func TestExtractGitCommit(t *testing.T) {
 		{
 			description:            "A GitHub commit link that is 404'ing (as seen on CVE-2019-8375)",
 			inputLink:              "https://github.com/WebKit/webkit/commit/6f9b511a115311b13c06eb58038ddc2c78da5531",
-			inputCommitType:        common.Fixed,
-			expectedAffectedCommit: common.AffectedCommit{},
+			inputCommitType:        models.Fixed,
+			expectedAffectedCommit: models.AffectedCommit{},
 			expectFailure:          true,
 		},
 		{
 			description:     "A GitHub link with tags",
 			inputLink:       "https://github.com/redis/redis/releases/tag/6.2.17",
-			inputCommitType: common.Fixed,
-			expectedAffectedCommit: common.AffectedCommit{
+			inputCommitType: models.Fixed,
+			expectedAffectedCommit: models.AffectedCommit{
 				Repo:  "https://github.com/redis/redis",
 				Fixed: "441001a4e5e37a7a450c0929d2a94ba489941874",
 			},
@@ -708,7 +708,7 @@ func TestExtractVersionInfo(t *testing.T) {
 		description         string
 		inputCVEItem        Vulnerability
 		inputValidVersions  []string
-		expectedVersionInfo common.VersionInfo
+		expectedVersionInfo models.VersionInfo
 		expectedNotes       []string
 		disableExpiryDate   time.Time // If test needs to be disabled due to known outage.
 	}{
@@ -716,9 +716,9 @@ func TestExtractVersionInfo(t *testing.T) {
 			description:        "A CVE with multiple affected versions",
 			inputCVEItem:       loadTestData2("CVE-2022-32746"),
 			inputValidVersions: []string{},
-			expectedVersionInfo: common.VersionInfo{
-				AffectedCommits: []common.AffectedCommit(nil),
-				AffectedVersions: []common.AffectedVersion{
+			expectedVersionInfo: models.VersionInfo{
+				AffectedCommits: []models.AffectedCommit(nil),
+				AffectedVersions: []models.AffectedVersion{
 					{
 						Introduced:   "4.3.0",
 						Fixed:        "4.14.14",
@@ -742,9 +742,9 @@ func TestExtractVersionInfo(t *testing.T) {
 			description:        "A CVE with duplicate affected versions squashed",
 			inputCVEItem:       loadTestData2("CVE-2022-0090"),
 			inputValidVersions: []string{},
-			expectedVersionInfo: common.VersionInfo{
-				AffectedCommits: []common.AffectedCommit(nil),
-				AffectedVersions: []common.AffectedVersion{
+			expectedVersionInfo: models.VersionInfo{
+				AffectedCommits: []models.AffectedCommit(nil),
+				AffectedVersions: []models.AffectedVersion{
 					{
 						Introduced:   "",
 						Fixed:        "14.4.5",
@@ -768,9 +768,9 @@ func TestExtractVersionInfo(t *testing.T) {
 			description:        "A CVE with no explicit versions",
 			inputCVEItem:       loadTestData2("CVE-2022-1122"),
 			inputValidVersions: []string{},
-			expectedVersionInfo: common.VersionInfo{
-				AffectedCommits: []common.AffectedCommit(nil),
-				AffectedVersions: []common.AffectedVersion{
+			expectedVersionInfo: models.VersionInfo{
+				AffectedCommits: []models.AffectedCommit(nil),
+				AffectedVersions: []models.AffectedVersion{
 					{
 						Introduced:   "",
 						Fixed:        "",
@@ -784,14 +784,14 @@ func TestExtractVersionInfo(t *testing.T) {
 			description:        "A CVE with fix commits in references and CPE match info",
 			inputCVEItem:       loadTestData2("CVE-2022-25929"),
 			inputValidVersions: []string{},
-			expectedVersionInfo: common.VersionInfo{
-				AffectedCommits: []common.AffectedCommit{
+			expectedVersionInfo: models.VersionInfo{
+				AffectedCommits: []models.AffectedCommit{
 					{
 						Repo:  "https://github.com/joewalnes/smoothie",
 						Fixed: "8e0920d50da82f4b6e605d56f41b69fbb9606a98",
 					},
 				},
-				AffectedVersions: []common.AffectedVersion{
+				AffectedVersions: []models.AffectedVersion{
 					{
 						Introduced:   "1.31.0",
 						Fixed:        "1.36.1",
@@ -805,14 +805,14 @@ func TestExtractVersionInfo(t *testing.T) {
 			description:        "A CVE with fix commits in references and (more complex) CPE match info",
 			inputCVEItem:       loadTestData2("CVE-2022-29194"),
 			inputValidVersions: []string{},
-			expectedVersionInfo: common.VersionInfo{
-				AffectedCommits: []common.AffectedCommit{
+			expectedVersionInfo: models.VersionInfo{
+				AffectedCommits: []models.AffectedCommit{
 					{
 						Repo:  "https://github.com/tensorflow/tensorflow",
 						Fixed: "cff267650c6a1b266e4b4500f69fbc49cdd773c5",
 					},
 				},
-				AffectedVersions: []common.AffectedVersion{
+				AffectedVersions: []models.AffectedVersion{
 					{
 						Introduced:   "",
 						Fixed:        "2.6.4",
@@ -836,9 +836,9 @@ func TestExtractVersionInfo(t *testing.T) {
 			description:        "A CVE with undesired wildcards and no versions",
 			inputCVEItem:       loadTestData2("CVE-2022-2956"),
 			inputValidVersions: []string{},
-			expectedVersionInfo: common.VersionInfo{
-				AffectedCommits:  []common.AffectedCommit(nil),
-				AffectedVersions: []common.AffectedVersion(nil),
+			expectedVersionInfo: models.VersionInfo{
+				AffectedCommits:  []models.AffectedCommit(nil),
+				AffectedVersions: []models.AffectedVersion(nil),
 			},
 			expectedNotes: []string{},
 		},
@@ -846,25 +846,25 @@ func TestExtractVersionInfo(t *testing.T) {
 			description:        "A CVE with a weird GitLab reference that breaks version enumeration in the worker",
 			inputCVEItem:       loadTestData2("CVE-2022-46285"),
 			inputValidVersions: []string{},
-			expectedVersionInfo: common.VersionInfo{
-				AffectedCommits:  []common.AffectedCommit{{Repo: "https://gitlab.freedesktop.org/xorg/lib/libxpm", Fixed: "a3a7c6dcc3b629d7650148"}},
-				AffectedVersions: []common.AffectedVersion{{Fixed: "3.5.15"}},
+			expectedVersionInfo: models.VersionInfo{
+				AffectedCommits:  []models.AffectedCommit{{Repo: "https://gitlab.freedesktop.org/xorg/lib/libxpm", Fixed: "a3a7c6dcc3b629d7650148"}},
+				AffectedVersions: []models.AffectedVersion{{Fixed: "3.5.15"}},
 			},
 			expectedNotes: []string{},
 		},
 		{
 			description:  "A CVE with a different GitWeb reference URL that was not previously being extracted successfully",
 			inputCVEItem: loadTestData2("CVE-2021-28429"),
-			expectedVersionInfo: common.VersionInfo{
-				AffectedCommits:  []common.AffectedCommit{{Repo: "https://git.ffmpeg.org/ffmpeg.git", Fixed: "c94875471e3ba3dc396c6919ff3ec9b14539cd71"}},
-				AffectedVersions: []common.AffectedVersion{{LastAffected: "4.3.2"}},
+			expectedVersionInfo: models.VersionInfo{
+				AffectedCommits:  []models.AffectedCommit{{Repo: "https://git.ffmpeg.org/ffmpeg.git", Fixed: "c94875471e3ba3dc396c6919ff3ec9b14539cd71"}},
+				AffectedVersions: []models.AffectedVersion{{LastAffected: "4.3.2"}},
 			},
 		},
 		{
 			description:  "A CVE with a configuration unsupported by ExtractVersionInfo and a limit version in the description",
 			inputCVEItem: loadTestData2("CVE-2020-13595"),
-			expectedVersionInfo: common.VersionInfo{
-				AffectedVersions: []common.AffectedVersion{{Introduced: "4.0.0", LastAffected: "4.2"}},
+			expectedVersionInfo: models.VersionInfo{
+				AffectedVersions: []models.AffectedVersion{{Introduced: "4.0.0", LastAffected: "4.2"}},
 			},
 		},
 	}
@@ -922,38 +922,38 @@ func TestCPEs(t *testing.T) {
 func TestVersionInfoDuplicateDetection(t *testing.T) {
 	tests := []struct {
 		description         string
-		inputVersionInfo    common.VersionInfo
-		inputAffectedCommit common.AffectedCommit
+		inputVersionInfo    models.VersionInfo
+		inputAffectedCommit models.AffectedCommit
 		expectedResult      bool
 	}{
 		{
 			description:         "An empty VersionInfo and AffectedCommit",
-			inputVersionInfo:    common.VersionInfo{},
-			inputAffectedCommit: common.AffectedCommit{},
+			inputVersionInfo:    models.VersionInfo{},
+			inputAffectedCommit: models.AffectedCommit{},
 			expectedResult:      false,
 		},
 		{
 			description:         "A populated VersionInfo and empty AffectedCommit",
-			inputVersionInfo:    common.VersionInfo{AffectedCommits: []common.AffectedCommit{{Repo: "https://github.com/foo/bar", Introduced: "4089bd6080d41450adab1e0ac0d63cfeab4a78e7", Fixed: "4089bd6080d41450adab1e0ac0d63cfeab4a78e7"}}},
-			inputAffectedCommit: common.AffectedCommit{},
+			inputVersionInfo:    models.VersionInfo{AffectedCommits: []models.AffectedCommit{{Repo: "https://github.com/foo/bar", Introduced: "4089bd6080d41450adab1e0ac0d63cfeab4a78e7", Fixed: "4089bd6080d41450adab1e0ac0d63cfeab4a78e7"}}},
+			inputAffectedCommit: models.AffectedCommit{},
 			expectedResult:      false,
 		},
 		{
 			description:         "An empty VersionInfo and a populated AffectedCommit",
-			inputVersionInfo:    common.VersionInfo{},
-			inputAffectedCommit: common.AffectedCommit{Repo: "https://github.com/foo/bar", Introduced: "4089bd6080d41450adab1e0ac0d63cfeab4a78e7", Fixed: "4089bd6080d41450adab1e0ac0d63cfeab4a78e7"},
+			inputVersionInfo:    models.VersionInfo{},
+			inputAffectedCommit: models.AffectedCommit{Repo: "https://github.com/foo/bar", Introduced: "4089bd6080d41450adab1e0ac0d63cfeab4a78e7", Fixed: "4089bd6080d41450adab1e0ac0d63cfeab4a78e7"},
 			expectedResult:      false,
 		},
 		{
 			description:         "A bonafide full duplicate",
-			inputVersionInfo:    common.VersionInfo{AffectedCommits: []common.AffectedCommit{{Repo: "https://github.com/foo/bar", Introduced: "4089bd6080d41450adab1e0ac0d63cfeab4a78e7", Fixed: "4089bd6080d41450adab1e0ac0d63cfeab4a78e7"}}},
-			inputAffectedCommit: common.AffectedCommit{Repo: "https://github.com/foo/bar", Introduced: "4089bd6080d41450adab1e0ac0d63cfeab4a78e7", Fixed: "4089bd6080d41450adab1e0ac0d63cfeab4a78e7"},
+			inputVersionInfo:    models.VersionInfo{AffectedCommits: []models.AffectedCommit{{Repo: "https://github.com/foo/bar", Introduced: "4089bd6080d41450adab1e0ac0d63cfeab4a78e7", Fixed: "4089bd6080d41450adab1e0ac0d63cfeab4a78e7"}}},
+			inputAffectedCommit: models.AffectedCommit{Repo: "https://github.com/foo/bar", Introduced: "4089bd6080d41450adab1e0ac0d63cfeab4a78e7", Fixed: "4089bd6080d41450adab1e0ac0d63cfeab4a78e7"},
 			expectedResult:      true,
 		},
 		{
 			description:         "Duplication across introduced and fixed",
-			inputVersionInfo:    common.VersionInfo{AffectedCommits: []common.AffectedCommit{{Repo: "https://github.com/foo/bar", Introduced: "4089bd6080d41450adab1e0ac0d63cfeab4a78e7"}}},
-			inputAffectedCommit: common.AffectedCommit{Repo: "https://github.com/foo/bar", Fixed: "4089bd6080d41450adab1e0ac0d63cfeab4a78e7"},
+			inputVersionInfo:    models.VersionInfo{AffectedCommits: []models.AffectedCommit{{Repo: "https://github.com/foo/bar", Introduced: "4089bd6080d41450adab1e0ac0d63cfeab4a78e7"}}},
+			inputAffectedCommit: models.AffectedCommit{Repo: "https://github.com/foo/bar", Fixed: "4089bd6080d41450adab1e0ac0d63cfeab4a78e7"},
 			expectedResult:      true,
 		},
 	}
@@ -973,47 +973,47 @@ func TestVersionInfoDuplicateDetection(t *testing.T) {
 func TestInvalidRangeDetection(t *testing.T) {
 	tests := []struct {
 		description         string
-		inputAffectedCommit common.AffectedCommit
+		inputAffectedCommit models.AffectedCommit
 		expectedResult      bool
 	}{
 		{
 			description:         "An empty AffectedCommit",
-			inputAffectedCommit: common.AffectedCommit{},
+			inputAffectedCommit: models.AffectedCommit{},
 			expectedResult:      false,
 		},
 		{
 			description:         "Only an introduced commit",
-			inputAffectedCommit: common.AffectedCommit{Repo: "https://github.com/foo/bar", Introduced: "4089bd6080d41450adab1e0ac0d63cfeab4a78e7"},
+			inputAffectedCommit: models.AffectedCommit{Repo: "https://github.com/foo/bar", Introduced: "4089bd6080d41450adab1e0ac0d63cfeab4a78e7"},
 			expectedResult:      false,
 		},
 		{
 			description:         "Only a fixed commit",
-			inputAffectedCommit: common.AffectedCommit{Repo: "https://github.com/foo/bar", Fixed: "4089bd6080d41450adab1e0ac0d63cfeab4a78e7"},
+			inputAffectedCommit: models.AffectedCommit{Repo: "https://github.com/foo/bar", Fixed: "4089bd6080d41450adab1e0ac0d63cfeab4a78e7"},
 			expectedResult:      false,
 		},
 		{
 			description:         "Only a last_affected commit",
-			inputAffectedCommit: common.AffectedCommit{Repo: "https://github.com/foo/bar", LastAffected: "4089bd6080d41450adab1e0ac0d63cfeab4a78e7"},
+			inputAffectedCommit: models.AffectedCommit{Repo: "https://github.com/foo/bar", LastAffected: "4089bd6080d41450adab1e0ac0d63cfeab4a78e7"},
 			expectedResult:      false,
 		},
 		{
 			description:         "Non-overlapping introduced and fixed range",
-			inputAffectedCommit: common.AffectedCommit{Repo: "https://github.com/foo/bar", Introduced: "4089bd6080d41450adab1e0ac0d63cfeab4a78e7", Fixed: "b48ff2aa1e57e761fa0825e3dc78105a0d016e16"},
+			inputAffectedCommit: models.AffectedCommit{Repo: "https://github.com/foo/bar", Introduced: "4089bd6080d41450adab1e0ac0d63cfeab4a78e7", Fixed: "b48ff2aa1e57e761fa0825e3dc78105a0d016e16"},
 			expectedResult:      false,
 		},
 		{
 			description:         "Non-overlapping introduced and last_affected range",
-			inputAffectedCommit: common.AffectedCommit{Repo: "https://github.com/foo/bar", Introduced: "4089bd6080d41450adab1e0ac0d63cfeab4a78e7", LastAffected: "b48ff2aa1e57e761fa0825e3dc78105a0d016e16"},
+			inputAffectedCommit: models.AffectedCommit{Repo: "https://github.com/foo/bar", Introduced: "4089bd6080d41450adab1e0ac0d63cfeab4a78e7", LastAffected: "b48ff2aa1e57e761fa0825e3dc78105a0d016e16"},
 			expectedResult:      false,
 		},
 		{
 			description:         "Overlapping introduced and fixed range",
-			inputAffectedCommit: common.AffectedCommit{Repo: "https://github.com/foo/bar", Introduced: "4089bd6080d41450adab1e0ac0d63cfeab4a78e7", Fixed: "4089bd6080d41450adab1e0ac0d63cfeab4a78e7"},
+			inputAffectedCommit: models.AffectedCommit{Repo: "https://github.com/foo/bar", Introduced: "4089bd6080d41450adab1e0ac0d63cfeab4a78e7", Fixed: "4089bd6080d41450adab1e0ac0d63cfeab4a78e7"},
 			expectedResult:      true,
 		},
 		{
 			description:         "Overlapping introduced and last_affected range",
-			inputAffectedCommit: common.AffectedCommit{Repo: "https://github.com/foo/bar", Introduced: "4089bd6080d41450adab1e0ac0d63cfeab4a78e7", LastAffected: "4089bd6080d41450adab1e0ac0d63cfeab4a78e7"},
+			inputAffectedCommit: models.AffectedCommit{Repo: "https://github.com/foo/bar", Introduced: "4089bd6080d41450adab1e0ac0d63cfeab4a78e7", LastAffected: "4089bd6080d41450adab1e0ac0d63cfeab4a78e7"},
 			expectedResult:      true,
 		},
 	}

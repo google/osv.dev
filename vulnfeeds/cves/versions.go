@@ -16,6 +16,7 @@ package cves
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"log"
 	"net/http"
@@ -29,8 +30,8 @@ import (
 	"github.com/sethvargo/go-retry"
 	"golang.org/x/exp/slices"
 
-	"github.com/google/osv/vulnfeeds/common"
 	"github.com/google/osv/vulnfeeds/git"
+	"github.com/google/osv/vulnfeeds/models"
 )
 
 // Rewrites known GitWeb URLs to their base repository.
@@ -85,12 +86,12 @@ func Repo(u string) (string, error) {
 	}
 
 	// Disregard the repos we know we don't like (by regex).
-	matched, _ := regexp.MatchString(common.InvalidRepoRegex, u)
+	matched, _ := regexp.MatchString(models.InvalidRepoRegex, u)
 	if matched {
 		return "", fmt.Errorf("%q matched invalid repo regexp", u)
 	}
 
-	for _, dr := range common.InvalidRepos {
+	for _, dr := range models.InvalidRepos {
 		if strings.HasPrefix(u, dr) {
 			return "", fmt.Errorf("%q found in denylist", u)
 		}
@@ -127,7 +128,7 @@ func Repo(u string) (string, error) {
 			return fmt.Sprintf("%s://%s/%s", parsedURL.Scheme, parsedURL.Hostname(), pathParts[2]), nil
 		}
 		if parsedURL.Hostname() == "sourceware.org" {
-			// Call out to common function for GitWeb URLs
+			// Call out to models function for GitWeb URLs
 			return repoGitWeb(parsedURL)
 		}
 		if parsedURL.Hostname() == "git.postgresql.org" {
@@ -408,29 +409,32 @@ func Commit(u string) (string, error) {
 
 func resolveGitTag(parsedURL *url.URL, u string, gitSHA1Regex *regexp.Regexp) (string, error) {
 	directory, tag := path.Split(parsedURL.Path)
-	normalizedTag, err := git.NormalizeVersion(tag)
-	if err == nil {
-		tag = normalizedTag
+	if !strings.HasSuffix(directory, "tag/") {
+		return "", errors.New("no tag found")
+	}
+	tag, err := git.NormalizeVersion(tag)
+	if err != nil {
+		return "", err
 	}
 
-	if strings.HasSuffix(directory, "tag/") {
-		maybeRepoURL, err := Repo(u)
-		if err != nil {
-			return "", err
-		}
-
-		normalizedTags, err := git.NormalizeRepoTags(maybeRepoURL, nil)
-		if err != nil {
-			return "", err
-		}
-		for t, nTag := range normalizedTags {
-			if tag == t && gitSHA1Regex.MatchString(nTag.Commit) {
-				return nTag.Commit, nil
-			}
-		}
-
+	maybeRepoURL, err := Repo(u)
+	if err != nil {
+		return "", err
 	}
-	return "", err
+
+	normalizedTags, err := git.NormalizeRepoTags(maybeRepoURL, nil)
+	if err != nil {
+		return "", err
+	}
+
+	for t, nTag := range normalizedTags {
+		if tag == t && gitSHA1Regex.MatchString(nTag.Commit) {
+			return nTag.Commit, nil
+		}
+	}
+
+	return "", errors.New("no tag found")
+
 }
 
 // Detect linkrot and handle link decay in HTTP(S) links via HEAD request with exponential backoff.
@@ -477,7 +481,7 @@ func ValidateAndCanonicalizeLink(link string, httpClient *http.Client) (canonica
 }
 
 // For URLs referencing commits in supported Git repository hosts, return a cloneable AffectedCommit.
-func extractGitCommit(link string, commitType common.CommitType, httpClient *http.Client) (ac common.AffectedCommit, err error) {
+func extractGitCommit(link string, commitType models.CommitType, httpClient *http.Client) (ac models.AffectedCommit, err error) {
 	r, err := Repo(link)
 	if err != nil {
 		return ac, err
@@ -504,13 +508,13 @@ func extractGitCommit(link string, commitType common.CommitType, httpClient *htt
 	ac.SetRepo(r)
 
 	switch commitType {
-	case common.Introduced:
+	case models.Introduced:
 		ac.SetIntroduced(c)
-	case common.LastAffected:
+	case models.LastAffected:
 		ac.SetLastAffected(c)
-	case common.Limit:
+	case models.Limit:
 		ac.SetLimit(c)
-	case common.Fixed:
+	case models.Fixed:
 		ac.SetFixed(c)
 	}
 
@@ -557,7 +561,7 @@ func processExtractedVersion(version string) string {
 	return version
 }
 
-func extractVersionsFromDescription(validVersions []string, description string) ([]common.AffectedVersion, []string) {
+func extractVersionsFromDescription(validVersions []string, description string) ([]models.AffectedVersion, []string) {
 	// Match:
 	//  - x.x.x before x.x.x
 	//  - x.x.x through x.x.x
@@ -570,7 +574,7 @@ func extractVersionsFromDescription(validVersions []string, description string) 
 	}
 
 	var notes []string
-	var versions []common.AffectedVersion
+	var versions []models.AffectedVersion
 	for _, match := range matches {
 		// Trim periods that are part of sentences.
 		introduced := processExtractedVersion(match[1])
@@ -607,7 +611,7 @@ func extractVersionsFromDescription(validVersions []string, description string) 
 			lastaffected = ""
 		}
 
-		versions = append(versions, common.AffectedVersion{
+		versions = append(versions, models.AffectedVersion{
 			Introduced:   introduced,
 			Fixed:        fixed,
 			LastAffected: lastaffected,
@@ -622,10 +626,10 @@ func cleanVersion(version string) string {
 	return strings.TrimRight(version, ":")
 }
 
-func ExtractVersionInfo(cve CVE, validVersions []string, httpClient *http.Client) (v common.VersionInfo, notes []string) {
+func ExtractVersionInfo(cve CVE, validVersions []string, httpClient *http.Client) (v models.VersionInfo, notes []string) {
 	for _, reference := range cve.References {
 		// (Potentially faulty) Assumption: All viable Git commit reference links are fix commits.
-		if commit, err := extractGitCommit(reference.Url, common.Fixed, httpClient); err == nil {
+		if commit, err := extractGitCommit(reference.Url, models.Fixed, httpClient); err == nil {
 			v.AffectedCommits = append(v.AffectedCommits, commit)
 		}
 	}
@@ -703,7 +707,7 @@ func ExtractVersionInfo(cve CVE, validVersions []string, httpClient *http.Client
 				}
 
 				gotVersions = true
-				possibleNewAffectedVersion := common.AffectedVersion{
+				possibleNewAffectedVersion := models.AffectedVersion{
 					Introduced:   introduced,
 					Fixed:        fixed,
 					LastAffected: lastaffected,
@@ -738,7 +742,7 @@ func ExtractVersionInfo(cve CVE, validVersions []string, httpClient *http.Client
 
 	// Remove any lastaffected versions in favour of fixed versions.
 	if v.HasFixedVersions() {
-		affectedVersionsWithoutLastAffected := []common.AffectedVersion{}
+		affectedVersionsWithoutLastAffected := []models.AffectedVersion{}
 		for _, av := range v.AffectedVersions {
 			if av.LastAffected != "" {
 				continue
@@ -771,7 +775,7 @@ func RemoveQuoting(s string) (result string) {
 }
 
 // Parse a well-formed CPE string into a struct.
-func ParseCPE(formattedString string) (*common.CPE, error) {
+func ParseCPE(formattedString string) (*models.CPE, error) {
 	if !strings.HasPrefix(formattedString, "cpe:") {
 		return nil, fmt.Errorf("%q does not have expected 'cpe:' prefix", formattedString)
 	}
@@ -782,7 +786,7 @@ func ParseCPE(formattedString string) (*common.CPE, error) {
 		return nil, err
 	}
 
-	return &common.CPE{
+	return &models.CPE{
 		CPEVersion: strings.Split(formattedString, ":")[1],
 		Part:       wfn.GetString("part"),
 		Vendor:     RemoveQuoting(wfn.GetString("vendor")),

@@ -30,8 +30,8 @@ import (
 
 	"gopkg.in/yaml.v2"
 
-	"github.com/google/osv/vulnfeeds/common"
 	"github.com/google/osv/vulnfeeds/cves"
+	"github.com/google/osv/vulnfeeds/models"
 )
 
 const CVEListBasePath = "cves"
@@ -66,11 +66,11 @@ type Affected struct {
 	EcosystemSpecific map[string]string `json:"ecosystem_specific,omitempty" yaml:"ecosystem_specific,omitempty"`
 }
 
-// AttachExtractedVersionInfo converts the common.VersionInfo struct to OSV GIT and ECOSYSTEM AffectedRanges and AffectedPackage.
-func (affected *Affected) AttachExtractedVersionInfo(version common.VersionInfo) {
+// AttachExtractedVersionInfo converts the models.VersionInfo struct to OSV GIT and ECOSYSTEM AffectedRanges and AffectedPackage.
+func (affected *Affected) AttachExtractedVersionInfo(version models.VersionInfo) {
 	// commit holds a commit hash of one of the supported commit types.
 	type commit struct {
-		commitType common.CommitType
+		commitType models.CommitType
 		hash       string
 	}
 	// Collect the commits of the supported types for each repo.
@@ -79,17 +79,17 @@ func (affected *Affected) AttachExtractedVersionInfo(version common.VersionInfo)
 	unfixed := true
 	for _, ac := range version.AffectedCommits {
 		if ac.Introduced != "" {
-			repoToCommits[ac.Repo] = append(repoToCommits[ac.Repo], commit{commitType: common.Introduced, hash: ac.Introduced})
+			repoToCommits[ac.Repo] = append(repoToCommits[ac.Repo], commit{commitType: models.Introduced, hash: ac.Introduced})
 		}
 		if ac.Fixed != "" {
-			repoToCommits[ac.Repo] = append(repoToCommits[ac.Repo], commit{commitType: common.Fixed, hash: ac.Fixed})
+			repoToCommits[ac.Repo] = append(repoToCommits[ac.Repo], commit{commitType: models.Fixed, hash: ac.Fixed})
 			unfixed = false
 		}
 		if ac.Limit != "" {
-			repoToCommits[ac.Repo] = append(repoToCommits[ac.Repo], commit{commitType: common.Limit, hash: ac.Limit})
+			repoToCommits[ac.Repo] = append(repoToCommits[ac.Repo], commit{commitType: models.Limit, hash: ac.Limit})
 		}
 		if ac.LastAffected != "" {
-			repoToCommits[ac.Repo] = append(repoToCommits[ac.Repo], commit{commitType: common.LastAffected, hash: ac.LastAffected})
+			repoToCommits[ac.Repo] = append(repoToCommits[ac.Repo], commit{commitType: models.LastAffected, hash: ac.LastAffected})
 		}
 	}
 
@@ -101,19 +101,19 @@ func (affected *Affected) AttachExtractedVersionInfo(version common.VersionInfo)
 		// We're not always able to determine when a vulnerability is introduced, and may need to default to the dawn of time.
 		addedIntroduced := false
 		for _, commit := range commits {
-			if commit.commitType == common.Introduced {
+			if commit.commitType == models.Introduced {
 				gitRange.Events = append(gitRange.Events, Event{Introduced: commit.hash})
 				addedIntroduced = true
 			}
-			if commit.commitType == common.Fixed {
+			if commit.commitType == models.Fixed {
 				gitRange.Events = append(gitRange.Events, Event{Fixed: commit.hash})
 			}
-			if commit.commitType == common.Limit {
+			if commit.commitType == models.Limit {
 				gitRange.Events = append(gitRange.Events, Event{Limit: commit.hash})
 			}
 			// Only add any LastAffectedCommits in the absence of
 			// any FixCommits to maintain schema compliance.
-			if commit.commitType == common.LastAffected && unfixed {
+			if commit.commitType == models.LastAffected && unfixed {
 				gitRange.Events = append(gitRange.Events, Event{LastAffected: commit.hash})
 			}
 		}
@@ -167,7 +167,7 @@ type PackageInfo struct {
 	PkgName           string             `json:"pkg_name,omitempty" yaml:"pkg_name,omitempty"`
 	Ecosystem         string             `json:"ecosystem,omitempty" yaml:"ecosystem,omitempty"`
 	PURL              string             `json:"purl,omitempty" yaml:"purl,omitempty"`
-	VersionInfo       common.VersionInfo `json:"fixed_version,omitempty" yaml:"fixed_version,omitempty"`
+	VersionInfo       models.VersionInfo `json:"fixed_version,omitempty" yaml:"fixed_version,omitempty"`
 	EcosystemSpecific map[string]string  `json:"ecosystem_specific,omitempty" yaml:"ecosystem_specific,omitempty"`
 }
 

@@ -20,16 +20,16 @@ import (
 	"slices"
 	"strings"
 
-	"github.com/google/osv/vulnfeeds/common"
+	"github.com/google/osv/vulnfeeds/models"
 	"golang.org/x/exp/maps"
 )
 
 // Take an already normalized version, repo and the mapping of repo tags
 // normalized tags and commits and do fuzzy matching version, returning a
 // GitCommit and a bool if successful.
-func fuzzyVersionToCommit(normalizedVersion string, repo string, commitType common.CommitType, normalizedTags map[string]NormalizedTag) (ac common.AffectedCommit, b bool) {
+func fuzzyVersionToCommit(normalizedVersion string, repo string, commitType models.CommitType, normalizedTags map[string]NormalizedTag) (ac models.AffectedCommit, b bool) {
 	candidateTags := []string{} // the subset of normalizedTags tags that might be appropriate to use as a fuzzy match for normalizedVersion.
-	// Keep in sync with the regex in common.NormalizeVersion()
+	// Keep in sync with the regex in models.NormalizeVersion()
 	var validVersionText = regexp.MustCompile(`(?i)(?:rc|alpha|beta|preview)\d*`)
 
 	for _, k := range maps.Keys(normalizedTags) {
@@ -52,13 +52,13 @@ func fuzzyVersionToCommit(normalizedVersion string, repo string, commitType comm
 	if len(candidateTags) == 1 {
 		ac.SetRepo(repo)
 		switch commitType {
-		case common.Introduced:
+		case models.Introduced:
 			ac.SetIntroduced(normalizedTags[candidateTags[0]].Commit)
-		case common.LastAffected:
+		case models.LastAffected:
 			ac.SetLastAffected(normalizedTags[candidateTags[0]].Commit)
-		case common.Limit:
+		case models.Limit:
 			ac.SetLimit(normalizedTags[candidateTags[0]].Commit)
-		case common.Fixed:
+		case models.Fixed:
 			ac.SetFixed(normalizedTags[candidateTags[0]].Commit)
 		}
 		return ac, true
@@ -72,13 +72,13 @@ func fuzzyVersionToCommit(normalizedVersion string, repo string, commitType comm
 		if strings.TrimPrefix(t, normalizedVersion) == "-0" {
 			ac.SetRepo(repo)
 			switch commitType {
-			case common.Introduced:
+			case models.Introduced:
 				ac.SetIntroduced(normalizedTags[candidateTags[i]].Commit)
-			case common.LastAffected:
+			case models.LastAffected:
 				ac.SetLastAffected(normalizedTags[candidateTags[i]].Commit)
-			case common.Limit:
+			case models.Limit:
 				ac.SetLimit(normalizedTags[candidateTags[i]].Commit)
-			case common.Fixed:
+			case models.Fixed:
 				ac.SetFixed(normalizedTags[candidateTags[i]].Commit)
 			}
 			return ac, true
@@ -90,7 +90,7 @@ func fuzzyVersionToCommit(normalizedVersion string, repo string, commitType comm
 }
 
 // Take an unnormalized version string, a repo, the pre-normalized mapping of tags to commits and return an AffectedCommit.
-func VersionToCommit(version string, repo string, commitType common.CommitType, normalizedTags map[string]NormalizedTag) (ac common.AffectedCommit, e error) {
+func VersionToCommit(version string, repo string, commitType models.CommitType, normalizedTags map[string]NormalizedTag) (ac models.AffectedCommit, e error) {
 	normalizedVersion, err := NormalizeVersion(version)
 	if err != nil {
 		return ac, err
@@ -107,13 +107,13 @@ func VersionToCommit(version string, repo string, commitType common.CommitType, 
 	}
 	ac.SetRepo(repo)
 	switch commitType {
-	case common.Introduced:
+	case models.Introduced:
 		ac.SetIntroduced(normalizedTag.Commit)
-	case common.LastAffected:
+	case models.LastAffected:
 		ac.SetLastAffected(normalizedTag.Commit)
-	case common.Limit:
+	case models.Limit:
 		ac.SetLimit(normalizedTag.Commit)
-	case common.Fixed:
+	case models.Fixed:
 		ac.SetFixed(normalizedTag.Commit)
 	}
 	return ac, nil

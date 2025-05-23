@@ -11,3 +11,4 @@ build/lib
 **/.history/*
 */datastore-helper/
 hurl-scripts/
+temp/*

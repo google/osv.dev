@@ -1008,14 +1008,26 @@ def _is_version_affected(affected_packages,
   range.
   """
   for affected_package in affected_packages:
-    if package_name and package_name != affected_package.package.name:
-      continue
-
     if ecosystem:
       # If package ecosystem has a :, also try ignoring parts after it.
       if not is_matching_package_ecosystem(affected_package.package.ecosystem,
                                            ecosystem):
         continue
+
+    if package_name:
+      if ecosystem == "GIT":
+        # Special case for git ecosystems to match repo urls
+        repo_url = ""
+        for rg in affected_package.ranges:
+          if rg.repo_url != "":
+            repo_url = rg.repo_url
+            break
+
+        if package_name != repo_url:
+          continue
+      else:
+        if package_name != affected_package.ranges:
+          continue
 
     if normalize:
       if any(

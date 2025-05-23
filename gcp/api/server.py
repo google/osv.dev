@@ -1015,11 +1015,11 @@ def _is_version_affected(affected_packages,
         continue
 
     if package_name:
-      if ecosystem == "GIT":
+      if ecosystem == 'GIT':
         # Special case for git ecosystems to match repo urls
-        repo_url = ""
+        repo_url = ''
         for rg in affected_package.ranges:
-          if rg.repo_url != "":
+          if rg.repo_url != '':
             repo_url = rg.repo_url
             break
 

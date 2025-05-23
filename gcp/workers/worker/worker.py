@@ -164,7 +164,7 @@ def mark_bug_invalid(message):
   """Mark a bug as invalid."""
   source_id = get_source_id(message)
   for bug in osv.Bug.query(osv.Bug.source_id == source_id):
-    bug.withdrawn = datetime.datetime.utcnow()
+    bug.withdrawn = datetime.datetime.now(datetime.UTC)
     bug.status = osv.BugStatus.INVALID
     bug.put()
 
@@ -434,7 +434,7 @@ class TaskRunner:
 
     logging.info('Marking %s as invalid and withdrawn.', vuln_id)
     bug.status = osv.BugStatus.INVALID
-    bug.withdrawn = datetime.datetime.utcnow()
+    bug.withdrawn = datetime.datetime.now(datetime.UTC)
     bug.put()
 
   def _push_new_ranges_and_versions(self, source_repo, repo, vulnerability,
@@ -498,7 +498,7 @@ class TaskRunner:
 
     filter_unsupported_ecosystems(vulnerability)
 
-    orig_modified_date = vulnerability.modified.ToDatetime()
+    orig_modified_date = vulnerability.modified.ToDatetime(datetime.UTC)
     try:
       result = self._analyze_vulnerability(source_repo, repo, vulnerability,
                                            relative_path, original_sha256)

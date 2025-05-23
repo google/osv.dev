@@ -16,7 +16,7 @@
 import argparse
 import codecs
 from dataclasses import dataclass
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, UTC
 import math
 import hashlib
 import functools
@@ -873,7 +873,7 @@ def do_query(query: osv_service_v1_pb2.Query,
         continue
       alias_ids = sorted(list(set(alias_group.bug_ids) - {bugs[i].id}))
       bugs[i].aliases[:] = alias_ids
-      modified_time = bugs[i].modified.ToDatetime()
+      modified_time = bugs[i].modified.ToDatetime(UTC)
       modified_time = max(alias_group.last_modified, modified_time)
       bugs[i].modified.FromDatetime(modified_time)
 

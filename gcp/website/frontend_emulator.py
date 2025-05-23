@@ -31,8 +31,8 @@ def setUp():
       upstream_raw=['CVE-1', 'CVE-2'],
       source='test',
       public=True,
-      import_last_modified=datetime.datetime(2023, 1, 1),
-      timestamp=datetime.datetime(2023, 8, 14),
+      import_last_modified=datetime.datetime(2023, 1, 1, tzinfo=datetime.UTC),
+      timestamp=datetime.datetime(2023, 8, 14, tzinfo=datetime.UTC),
   ).put()
   osv.AliasGroup(bug_ids=['ALIAS-CVE-1', 'CVE-1', 'ALIAS'],).put()
 
@@ -43,8 +43,8 @@ def setUp():
       upstream_raw=[],
       source='test',
       public=True,
-      import_last_modified=datetime.datetime(2023, 1, 1),
-      timestamp=datetime.datetime(2023, 8, 14),
+      import_last_modified=datetime.datetime(2023, 1, 1, tzinfo=datetime.UTC),
+      timestamp=datetime.datetime(2023, 8, 14, tzinfo=datetime.UTC),
   ).put()
   osv.Bug(
       id='CVE-2',
@@ -54,8 +54,8 @@ def setUp():
       upstream_raw=['CVE-1'],
       source='test',
       public=True,
-      import_last_modified=datetime.datetime(2023, 1, 1),
-      timestamp=datetime.datetime(2023, 8, 14),
+      import_last_modified=datetime.datetime(2023, 1, 1, tzinfo=datetime.UTC),
+      timestamp=datetime.datetime(2023, 8, 14, tzinfo=datetime.UTC),
       affected_packages=[
           osv.AffectedPackage(
               package=osv.Package(ecosystem='Ecosystem1', name='proj1')),
@@ -85,8 +85,8 @@ def setUp():
       upstream_raw=['CVE-1', 'CVE-2'],
       source='test',
       public=True,
-      import_last_modified=datetime.datetime(2023, 1, 1),
-      timestamp=datetime.datetime(2023, 8, 14),
+      import_last_modified=datetime.datetime(2023, 1, 1, tzinfo=datetime.UTC),
+      timestamp=datetime.datetime(2023, 8, 14, tzinfo=datetime.UTC),
   ).put()
 
   osv.Bug(
@@ -96,8 +96,8 @@ def setUp():
       upstream_raw=[],
       source='test',
       public=True,
-      import_last_modified=datetime.datetime(2025, 1, 14),
-      timestamp=datetime.datetime(2023, 8, 14),
+      import_last_modified=datetime.datetime(2025, 1, 14, tzinfo=datetime.UTC),
+      timestamp=datetime.datetime(2023, 8, 14, tzinfo=datetime.UTC),
   ).put()
   osv.Bug(
       id='UBUNTU-CVE-2023-21400',
@@ -106,8 +106,8 @@ def setUp():
       upstream_raw=['CVE-2023-21400'],
       source='test',
       public=True,
-      import_last_modified=datetime.datetime(2025, 1, 14),
-      timestamp=datetime.datetime(2023, 8, 14),
+      import_last_modified=datetime.datetime(2025, 1, 14, tzinfo=datetime.UTC),
+      timestamp=datetime.datetime(2023, 8, 14, tzinfo=datetime.UTC),
   ).put()
 
   osv.Bug(
@@ -117,8 +117,8 @@ def setUp():
       upstream_raw=['CVE-2023-4004'],
       source='test',
       public=True,
-      import_last_modified=datetime.datetime(2025, 2, 10),
-      timestamp=datetime.datetime(2023, 8, 14),
+      import_last_modified=datetime.datetime(2025, 2, 10, tzinfo=datetime.UTC),
+      timestamp=datetime.datetime(2023, 8, 14, tzinfo=datetime.UTC),
   ).put()
 
   osv.Bug(
@@ -128,8 +128,8 @@ def setUp():
       upstream_raw=['CVE-2023-4015'],
       source='test',
       public=True,
-      import_last_modified=datetime.datetime(2025, 2, 10),
-      timestamp=datetime.datetime(2023, 8, 14),
+      import_last_modified=datetime.datetime(2025, 2, 10, tzinfo=datetime.UTC),
+      timestamp=datetime.datetime(2023, 8, 14, tzinfo=datetime.UTC),
   ).put()
 
   osv.Bug(
@@ -147,8 +147,8 @@ def setUp():
       ],
       source='test',
       public=True,
-      import_last_modified=datetime.datetime(2023, 8, 29),
-      timestamp=datetime.datetime(2023, 8, 14),
+      import_last_modified=datetime.datetime(2023, 8, 29, tzinfo=datetime.UTC),
+      timestamp=datetime.datetime(2023, 8, 14, tzinfo=datetime.UTC),
   ).put()
 
   osv.Bug(
@@ -166,8 +166,8 @@ def setUp():
       ],
       source='test',
       public=True,
-      import_last_modified=datetime.datetime(2023, 8, 31),
-      timestamp=datetime.datetime(2023, 8, 14),
+      import_last_modified=datetime.datetime(2023, 8, 31, tzinfo=datetime.UTC),
+      timestamp=datetime.datetime(2023, 8, 14, tzinfo=datetime.UTC),
   ).put()
 
   osv.Bug(
@@ -185,8 +185,8 @@ def setUp():
       ],
       source='test',
       public=True,
-      import_last_modified=datetime.datetime(2023, 8, 31),
-      timestamp=datetime.datetime(2023, 8, 14),
+      import_last_modified=datetime.datetime(2023, 8, 31, tzinfo=datetime.UTC),
+      timestamp=datetime.datetime(2023, 8, 14, tzinfo=datetime.UTC),
   ).put()
 
   osv.Bug(
@@ -222,8 +222,8 @@ def setUp():
       ],
       source='test',
       public=True,
-      import_last_modified=datetime.datetime(2023, 8, 31),
-      timestamp=datetime.datetime(2023, 8, 14),
+      import_last_modified=datetime.datetime(2023, 8, 31, tzinfo=datetime.UTC),
+      timestamp=datetime.datetime(2023, 8, 14, tzinfo=datetime.UTC),
   ).put()
 
   osv.Bug(
@@ -241,8 +241,8 @@ def setUp():
       ],
       source='test',
       public=True,
-      import_last_modified=datetime.datetime(2023, 9, 6),
-      timestamp=datetime.datetime(2023, 8, 14),
+      import_last_modified=datetime.datetime(2023, 9, 6, tzinfo=datetime.UTC),
+      timestamp=datetime.datetime(2023, 8, 14, tzinfo=datetime.UTC),
   ).put()
 
   osv.Bug(
@@ -257,8 +257,8 @@ def setUp():
       ],
       source='test',
       public=True,
-      import_last_modified=datetime.datetime(2023, 8, 31),
-      timestamp=datetime.datetime(2023, 8, 14),
+      import_last_modified=datetime.datetime(2023, 8, 31, tzinfo=datetime.UTC),
+      timestamp=datetime.datetime(2023, 8, 14, tzinfo=datetime.UTC),
   ).put()
 
   osv.Bug(
@@ -273,8 +273,8 @@ def setUp():
       ],
       source='test',
       public=True,
-      import_last_modified=datetime.datetime(2025, 2, 4),
-      timestamp=datetime.datetime(2023, 8, 14),
+      import_last_modified=datetime.datetime(2025, 2, 4, tzinfo=datetime.UTC),
+      timestamp=datetime.datetime(2023, 8, 14, tzinfo=datetime.UTC),
   ).put()
 
   osv.Bug(
@@ -289,8 +289,8 @@ def setUp():
       ],
       source='test',
       public=True,
-      import_last_modified=datetime.datetime(2023, 8, 31),
-      timestamp=datetime.datetime(2023, 8, 14),
+      import_last_modified=datetime.datetime(2023, 8, 31, tzinfo=datetime.UTC),
+      timestamp=datetime.datetime(2023, 8, 14, tzinfo=datetime.UTC),
   ).put()
 
   osv.Bug(
@@ -313,8 +313,8 @@ def setUp():
       ],
       source='test',
       public=True,
-      import_last_modified=datetime.datetime(2024, 1, 9),
-      timestamp=datetime.datetime(2023, 8, 14),
+      import_last_modified=datetime.datetime(2024, 1, 9, tzinfo=datetime.UTC),
+      timestamp=datetime.datetime(2023, 8, 14, tzinfo=datetime.UTC),
   ).put()
 
   osv.Bug(
@@ -329,8 +329,8 @@ def setUp():
       ],
       source='test',
       public=True,
-      import_last_modified=datetime.datetime(2023, 8, 14),
-      timestamp=datetime.datetime(2023, 8, 14),
+      import_last_modified=datetime.datetime(2023, 8, 14, tzinfo=datetime.UTC),
+      timestamp=datetime.datetime(2023, 8, 14, tzinfo=datetime.UTC),
   ).put()
 
   osv.UpstreamGroup(
@@ -342,63 +342,63 @@ def setUp():
           "CVE-2023-3567", "CVE-2023-3609", "CVE-2023-3611", "CVE-2023-3776",
           "CVE-2023-4004"
       ],
-      last_modified=datetime.datetime(2023, 8, 14)).put()
+      last_modified=datetime.datetime(2023, 8, 14, tzinfo=datetime.UTC)).put()
 
   osv.Bug(
       id="CVE-2021-44228",
       db_id="CVE-2021-44228",
       public=True,
-      last_modified=datetime.datetime(2025, 2, 4),
+      last_modified=datetime.datetime(2025, 2, 4, tzinfo=datetime.UTC),
       source="test",
-      timestamp=datetime.datetime(2023, 8, 14),
+      timestamp=datetime.datetime(2023, 8, 14, tzinfo=datetime.UTC),
   ).put()
   osv.Bug(
       id="CYCLE-ROOT-1",
       db_id="CYCLE-ROOT-1",
       upstream_raw=['CYCLE-ROOT-2'],
       public=True,
-      last_modified=datetime.datetime(2025, 2, 4),
+      last_modified=datetime.datetime(2025, 2, 4, tzinfo=datetime.UTC),
       source="test",
       status=1,
-      timestamp=datetime.datetime(2023, 8, 14)).put()
+      timestamp=datetime.datetime(2023, 8, 14, tzinfo=datetime.UTC)).put()
   osv.Bug(
       id="CYCLE-ROOT-2",
       db_id="CYCLE-ROOT-2",
       upstream_raw=['CYCLE-ROOT-1'],
       public=True,
-      last_modified=datetime.datetime(2025, 2, 4),
+      last_modified=datetime.datetime(2025, 2, 4, tzinfo=datetime.UTC),
       source="test",
       status=1,
-      timestamp=datetime.datetime(2023, 8, 14)).put()
+      timestamp=datetime.datetime(2023, 8, 14, tzinfo=datetime.UTC)).put()
   osv.Bug(
       id="CYCLE-ROOT-3",
       db_id="CYCLE-ROOT-3",
       upstream_raw=['CYCLE-ROOT-1', 'CYCLE-ROOT-2'],
       public=True,
       status=1,
-      last_modified=datetime.datetime(2025, 2, 4),
+      last_modified=datetime.datetime(2025, 2, 4, tzinfo=datetime.UTC),
       source="test",
-      timestamp=datetime.datetime(2023, 8, 14)).put()
+      timestamp=datetime.datetime(2023, 8, 14, tzinfo=datetime.UTC)).put()
 
   osv.UpstreamGroup(
       id='CYCLE-ROOT-3',
       db_id='CYCLE-ROOT-3',
       upstream_ids=['CYCLE-ROOT-1', 'CYCLE-ROOT-2'],
-      last_modified=datetime.datetime(2023, 8, 14)).put()
+      last_modified=datetime.datetime(2023, 8, 14, tzinfo=datetime.UTC)).put()
   osv.UpstreamGroup(
       id='CYCLE-ROOT-1',
       db_id='CYCLE-ROOT-1',
       upstream_ids=['CYCLE-ROOT-2'],
-      last_modified=datetime.datetime(2023, 8, 14)).put()
+      last_modified=datetime.datetime(2023, 8, 14, tzinfo=datetime.UTC)).put()
 
   osv.UpstreamGroup(
       id='CYCLE-ROOT-2',
       db_id='CYCLE-ROOT-2',
       upstream_ids=['CYCLE-ROOT-1'],
-      last_modified=datetime.datetime(2023, 8, 14)).put()
+      last_modified=datetime.datetime(2023, 8, 14, tzinfo=datetime.UTC)).put()
   osv.AliasGroup(
-      bug_ids=['CVE-3', 'CVE-4'], last_modified=datetime.datetime(2025, 2,
-                                                                  4)).put()
+      bug_ids=['CVE-3', 'CVE-4'],
+      last_modified=datetime.datetime(2025, 2, 4, tzinfo=datetime.UTC)).put()
   upstream_computation.main()
   alias_computation.main()
 

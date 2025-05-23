@@ -40,7 +40,7 @@ class UpstreamTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
         upstream_raw=[],
         source='test',
         public=True,
-        import_last_modified=datetime.datetime(2023, 1, 1),
+        import_last_modified=datetime.datetime(2023, 1, 1, tzinfo=datetime.UTC),
     ).put()
     osv.Bug(
         id='CVE-2',
@@ -49,7 +49,7 @@ class UpstreamTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
         upstream_raw=['CVE-1'],
         source='test',
         public=True,
-        import_last_modified=datetime.datetime(2023, 1, 1),
+        import_last_modified=datetime.datetime(2023, 1, 1, tzinfo=datetime.UTC),
     ).put()
     osv.Bug(
         id='CVE-3',
@@ -58,7 +58,7 @@ class UpstreamTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
         upstream_raw=['CVE-1', 'CVE-2'],
         source='test',
         public=True,
-        import_last_modified=datetime.datetime(2023, 1, 1),
+        import_last_modified=datetime.datetime(2023, 1, 1, tzinfo=datetime.UTC),
     ).put()
 
     osv.Bug(
@@ -68,7 +68,8 @@ class UpstreamTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
         upstream_raw=[],
         source='test',
         public=True,
-        import_last_modified=datetime.datetime(2025, 1, 14),
+        import_last_modified=datetime.datetime(
+            2025, 1, 14, tzinfo=datetime.UTC),
     ).put()
     osv.Bug(
         id='UBUNTU-CVE-2023-21400',
@@ -77,7 +78,8 @@ class UpstreamTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
         upstream_raw=['CVE-2023-21400'],
         source='test',
         public=True,
-        import_last_modified=datetime.datetime(2025, 1, 14),
+        import_last_modified=datetime.datetime(
+            2025, 1, 14, tzinfo=datetime.UTC),
     ).put()
 
     osv.Bug(
@@ -87,7 +89,8 @@ class UpstreamTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
         upstream_raw=['CVE-2023-4004'],
         source='test',
         public=True,
-        import_last_modified=datetime.datetime(2025, 2, 10),
+        import_last_modified=datetime.datetime(
+            2025, 2, 10, tzinfo=datetime.UTC),
     ).put()
 
     osv.Bug(
@@ -97,7 +100,8 @@ class UpstreamTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
         upstream_raw=['CVE-2023-4015'],
         source='test',
         public=True,
-        import_last_modified=datetime.datetime(2025, 2, 10),
+        import_last_modified=datetime.datetime(
+            2025, 2, 10, tzinfo=datetime.UTC),
     ).put()
 
     osv.Bug(
@@ -116,7 +120,8 @@ class UpstreamTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
         ],
         source='test',
         public=True,
-        import_last_modified=datetime.datetime(2023, 8, 29),
+        import_last_modified=datetime.datetime(
+            2023, 8, 29, tzinfo=datetime.UTC),
     ).put()
 
     osv.Bug(
@@ -135,7 +140,8 @@ class UpstreamTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
         ],
         source='test',
         public=True,
-        import_last_modified=datetime.datetime(2023, 8, 31),
+        import_last_modified=datetime.datetime(
+            2023, 8, 31, tzinfo=datetime.UTC),
     ).put()
 
     osv.Bug(
@@ -154,7 +160,8 @@ class UpstreamTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
         ],
         source='test',
         public=True,
-        import_last_modified=datetime.datetime(2023, 8, 31),
+        import_last_modified=datetime.datetime(
+            2023, 8, 31, tzinfo=datetime.UTC),
     ).put()
 
     osv.Bug(
@@ -192,7 +199,8 @@ class UpstreamTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
         ],
         source='test',
         public=True,
-        import_last_modified=datetime.datetime(2023, 8, 31),
+        import_last_modified=datetime.datetime(
+            2023, 8, 31, tzinfo=datetime.UTC),
     ).put()
 
     osv.Bug(
@@ -211,7 +219,7 @@ class UpstreamTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
         ],
         source='test',
         public=True,
-        import_last_modified=datetime.datetime(2023, 9, 6),
+        import_last_modified=datetime.datetime(2023, 9, 6, tzinfo=datetime.UTC),
     ).put()
 
     osv.Bug(
@@ -226,7 +234,8 @@ class UpstreamTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
         ],
         source='test',
         public=True,
-        import_last_modified=datetime.datetime(2023, 8, 31),
+        import_last_modified=datetime.datetime(
+            2023, 8, 31, tzinfo=datetime.UTC),
     ).put()
 
     osv.Bug(
@@ -241,7 +250,7 @@ class UpstreamTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
         ],
         source='test',
         public=True,
-        import_last_modified=datetime.datetime(2025, 2, 4),
+        import_last_modified=datetime.datetime(2025, 2, 4, tzinfo=datetime.UTC),
     ).put()
 
     osv.Bug(
@@ -256,7 +265,8 @@ class UpstreamTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
         ],
         source='test',
         public=True,
-        import_last_modified=datetime.datetime(2023, 8, 31),
+        import_last_modified=datetime.datetime(
+            2023, 8, 31, tzinfo=datetime.UTC),
     ).put()
 
     osv.Bug(
@@ -279,7 +289,7 @@ class UpstreamTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
         ],
         source='test',
         public=True,
-        import_last_modified=datetime.datetime(2024, 1, 9),
+        import_last_modified=datetime.datetime(2024, 1, 9, tzinfo=datetime.UTC),
     ).put()
 
     osv.Bug(
@@ -294,7 +304,8 @@ class UpstreamTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
         ],
         source='test',
         public=True,
-        import_last_modified=datetime.datetime(2023, 8, 14),
+        import_last_modified=datetime.datetime(
+            2023, 8, 14, tzinfo=datetime.UTC),
     ).put()
 
   def test_compute_upstream_basic(self):
@@ -337,7 +348,8 @@ class UpstreamTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
         upstream_raw=[],
         source='test',
         public=True,
-        import_last_modified=datetime.datetime(2023, 8, 14),
+        import_last_modified=datetime.datetime(
+            2023, 8, 14, tzinfo=datetime.UTC),
     ).put()
     osv.Bug(
         id='VULN-2',
@@ -346,7 +358,8 @@ class UpstreamTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
         upstream_raw=['VULN-1'],
         source='test',
         public=True,
-        import_last_modified=datetime.datetime(2023, 8, 14),
+        import_last_modified=datetime.datetime(
+            2023, 8, 14, tzinfo=datetime.UTC),
     ).put()
     osv.Bug(
         id='VULN-3',
@@ -355,7 +368,8 @@ class UpstreamTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
         upstream_raw=['VULN-1'],
         source='test',
         public=True,
-        import_last_modified=datetime.datetime(2023, 8, 14),
+        import_last_modified=datetime.datetime(
+            2023, 8, 14, tzinfo=datetime.UTC),
     ).put()
     osv.Bug(
         id='VULN-4',
@@ -364,7 +378,8 @@ class UpstreamTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
         upstream_raw=['VULN-3'],
         source='test',
         public=True,
-        import_last_modified=datetime.datetime(2023, 8, 14),
+        import_last_modified=datetime.datetime(
+            2023, 8, 14, tzinfo=datetime.UTC),
     ).put()
     bugs_query = osv.Bug.query(
         ndb.OR(osv.Bug.upstream_raw > '', osv.Bug.upstream_raw < ''))
@@ -378,7 +393,7 @@ class UpstreamTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
     osv.UpstreamGroup(
         db_id='CVE-3',
         upstream_ids=['CVE-1', 'CVE-2'],
-        last_modified=datetime.datetime(2024, 1, 1),
+        last_modified=datetime.datetime(2024, 1, 1, tzinfo=datetime.UTC),
     ).put()
     bug_ids = osv.UpstreamGroup.query(
         osv.UpstreamGroup.db_id == 'CVE-3').get().upstream_ids

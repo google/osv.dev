@@ -20,7 +20,6 @@ import time
 
 _ESP_PORT = 8080
 _BACKEND_PORT = 8000
-_GCP_PROJECT = 'oss-vdb'
 
 
 class ServerInstance:
@@ -49,7 +48,6 @@ def start_backend(port, log_path):
   """Start backend server."""
   log_handle = open(log_path, 'w')
   env = os.environ.copy()
-  env['GOOGLE_CLOUD_PROJECT'] = _GCP_PROJECT
 
   backend_proc = subprocess.Popen(
       [sys.executable, 'server.py', f'--port={port}'],

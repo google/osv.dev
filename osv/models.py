@@ -336,7 +336,7 @@ class Bug(ndb.Model):
 
   @property
   def repo_url(self):
-    """Repo URL."""
+    """Repo URL. Assumes there is only ever one repo URL per advisory."""
     for affected_package in self.affected_packages:
       for affected_range in affected_package.ranges:
         if affected_range.repo_url:
@@ -399,6 +399,10 @@ class Bug(ndb.Model):
     self.project = list({
         pkg.package.name for pkg in self.affected_packages if pkg.package.name
     })
+
+    if self.repo_url and 'GIT' in self.ecosystem:
+      self.project.append(self.repo_url)
+
     self.project.sort()
 
     ecosystems_set = {

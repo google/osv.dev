@@ -33,8 +33,6 @@ import (
 
 	"golang.org/x/exp/maps"
 	"golang.org/x/exp/slices"
-
-	"github.com/google/osv/vulnfeeds/cves"
 )
 
 const (
@@ -176,7 +174,7 @@ func normalizeRepoTag(tag string, reponame string) (normalizedTag string, err er
 		prenormalizedTag = javaPackageRegex.FindStringSubmatch(prenormalizedTag)[1]
 	}
 	prenormalizedTag = strings.TrimPrefix(prenormalizedTag, "-")
-	normalizedTag, err = cves.NormalizeVersion(prenormalizedTag)
+	normalizedTag, err = NormalizeVersion(prenormalizedTag)
 	return normalizedTag, err
 }
 

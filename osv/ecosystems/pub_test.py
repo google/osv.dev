@@ -17,6 +17,7 @@
 """Pub version parser tests."""
 
 import unittest
+import vcr.unittest
 
 from . import pub
 from .. import ecosystems
@@ -99,7 +100,7 @@ class PubVersionTest(unittest.TestCase):
     # I have decided that this extreme edge case is not worth fixing.
 
 
-class PubEcosystemTest(unittest.TestCase):
+class PubEcosystemTest(vcr.unittest.VCRTestCase):
   """Pub ecosystem helper tests."""
 
   def test_next_version(self):

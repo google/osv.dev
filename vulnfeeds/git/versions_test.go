@@ -1,11 +1,12 @@
 package git
 
 import (
+	"reflect"
 	"testing"
 	"time"
 
-	"github.com/google/osv/vulnfeeds/cves"
 	"github.com/google/osv/vulnfeeds/internal/testutils"
+	"github.com/google/osv/vulnfeeds/models"
 )
 
 func TestVersionToCommit(t *testing.T) {
@@ -107,13 +108,125 @@ func TestVersionToCommit(t *testing.T) {
 			if err != nil {
 				t.Errorf("test %q: unexpected failure normalizing repo tags: %#v", tc.description, err)
 			}
-			got, err := VersionToCommit(tc.inputVersion, tc.inputRepoURL, cves.Fixed, normalizedTags)
+			got, err := VersionToCommit(tc.inputVersion, tc.inputRepoURL, models.Fixed, normalizedTags)
 			if err != nil && tc.expectedOk {
 				t.Errorf("test %q: VersionToCommit(%q, %q) unexpectedly failed: %#v", tc.description, tc.inputVersion, tc.inputRepoURL, err)
 				t.Skip()
 			}
 			if got.Fixed != tc.expectedResult {
 				t.Errorf("test %q: VersionToCommit(%q, %q) result incorrect, got: %q wanted: %q", tc.description, tc.inputVersion, tc.inputRepoURL, got.Fixed, tc.expectedResult)
+			}
+		})
+	}
+}
+func TestNormalizeVersion(t *testing.T) {
+	tests := []struct {
+		description               string
+		inputVersion              string
+		expectedNormalizedVersion string
+		expectedOk                bool
+	}{
+		{
+			description:               "Empty string",
+			inputVersion:              "",
+			expectedNormalizedVersion: "",
+			expectedOk:                false,
+		},
+		{
+			description:               "Garbage version",
+			inputVersion:              "hjlk;gfdhjkgf",
+			expectedNormalizedVersion: "",
+			expectedOk:                false,
+		},
+		{
+			description:               "Valid supported version #1",
+			inputVersion:              "1.0",
+			expectedNormalizedVersion: "1-0",
+			expectedOk:                true,
+		},
+		{
+			description:               "Valid supported version #2",
+			inputVersion:              "22.3rc1",
+			expectedNormalizedVersion: "22-3-rc1",
+			expectedOk:                true,
+		},
+		{
+			description:               "Valid supported version #3",
+			inputVersion:              "1.2.3.4.5-rc1",
+			expectedNormalizedVersion: "1-2-3-4-5-rc1",
+			expectedOk:                true,
+		},
+		{
+			description:               "Valid supported version #4",
+			inputVersion:              ".1",
+			expectedNormalizedVersion: "1",
+			expectedOk:                true,
+		},
+		{
+			description:               "Valid supported version #5",
+			inputVersion:              "0.1.11.1",
+			expectedNormalizedVersion: "0-1-11-1",
+			expectedOk:                true,
+		},
+		{
+			description:               "Valid supported version #6",
+			inputVersion:              "project-123-1",
+			expectedNormalizedVersion: "123-1",
+			expectedOk:                true,
+		},
+		{
+			description:               "Valid supported version #7",
+			inputVersion:              "project-123-1RC",
+			expectedNormalizedVersion: "123-1-RC",
+			expectedOk:                true,
+		},
+		{
+			description:               "Valid supported version #8",
+			inputVersion:              "project-123-1RC5",
+			expectedNormalizedVersion: "123-1-RC5",
+			expectedOk:                true,
+		},
+		{
+			description:               "Valid supported version #9",
+			inputVersion:              "arc-20200101",
+			expectedNormalizedVersion: "20200101",
+			expectedOk:                true,
+		},
+		{
+			description:               "Valid supported version #10",
+			inputVersion:              "php-8.0.0beta",
+			expectedNormalizedVersion: "8-0-0-beta",
+			expectedOk:                true,
+		},
+		{
+			description:               "Valid supported version #11",
+			inputVersion:              "php-8.0.0beta",
+			expectedNormalizedVersion: "8-0-0-beta",
+			expectedOk:                true,
+		},
+		{
+			description:               "Valid supported version #12",
+			inputVersion:              "v6.0.0-alpha1",
+			expectedNormalizedVersion: "6-0-0-alpha1",
+			expectedOk:                true,
+		},
+		{
+			description:               "Valid supported version #13",
+			inputVersion:              "android-10.0.0_r10",
+			expectedNormalizedVersion: "10-0-0-10",
+			expectedOk:                true,
+		},
+	}
+	for _, tc := range tests {
+
+		t.Run(tc.description, func(t *testing.T) {
+			t.Parallel()
+			got, err := NormalizeVersion(tc.inputVersion)
+			if err != nil && tc.expectedOk {
+				t.Errorf("test %q: Normalize(%q) unexpectedly errored: %#v", tc.description, tc.inputVersion, err)
+			}
+			if !reflect.DeepEqual(got, tc.expectedNormalizedVersion) {
+				t.Errorf("test %q: normalized version for %q was incorrect, got: %q, expected %q", tc.description, tc.inputVersion, got, tc.expectedNormalizedVersion)
 			}
 		})
 	}

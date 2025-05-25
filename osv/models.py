@@ -13,7 +13,7 @@
 # limitations under the License.
 """Datastore types."""
 
-from datetime import datetime
+import datetime
 import enum
 import logging
 import re
@@ -66,9 +66,7 @@ def _check_valid_event_type(prop, value):
 
 def utcnow():
   """For mocking."""
-  # The alternative mentioned in the deprecation notice
-  # does not behave in the same way? Tests fail.
-  return datetime.utcnow()
+  return datetime.datetime.now(datetime.UTC)
 
 
 def _get_purl_indexes(affected_packages):
@@ -153,7 +151,7 @@ class RegressResult(ndb.Model):
   # Reference URLs.
   reference_urls: list[str] = ndb.StringProperty(repeated=True)
   # Source timestamp.
-  timestamp: datetime = ndb.DateTimeProperty()
+  timestamp: datetime.datetime = ndb.DateTimeProperty(tzinfo=datetime.UTC)
 
 
 class FixResult(ndb.Model):
@@ -179,7 +177,7 @@ class FixResult(ndb.Model):
   # Reference URLs.
   reference_urls: list[str] = ndb.StringProperty(repeated=True)
   # Source timestamp.
-  timestamp: datetime = ndb.DateTimeProperty()
+  timestamp: datetime.datetime = ndb.DateTimeProperty(tzinfo=datetime.UTC)
 
 
 class AffectedEvent(ndb.Model):
@@ -265,13 +263,14 @@ class Bug(ndb.Model):
   # Status of the bug.
   status: int = ndb.IntegerProperty()
   # Timestamp when Bug was allocated.
-  timestamp: datetime = ndb.DateTimeProperty()
+  timestamp: datetime.datetime = ndb.DateTimeProperty(tzinfo=datetime.UTC)
   # When the entry was last edited.
-  last_modified: datetime = ndb.DateTimeProperty()
+  last_modified: datetime.datetime = ndb.DateTimeProperty(tzinfo=datetime.UTC)
   # Last modified field of the original imported file
-  import_last_modified: datetime = ndb.DateTimeProperty()
+  import_last_modified: datetime.datetime = ndb.DateTimeProperty(
+      tzinfo=datetime.UTC)
   # When the entry was withdrawn.
-  withdrawn: datetime = ndb.DateTimeProperty()
+  withdrawn: datetime.datetime = ndb.DateTimeProperty(tzinfo=datetime.UTC)
   # The source identifier.
   # For OSS-Fuzz, this oss-fuzz:<ClusterFuzz testcase ID>.
   # For others this is <source>:<path/to/source>.
@@ -559,11 +558,11 @@ class Bug(ndb.Model):
     }
 
     if vulnerability.HasField('modified'):
-      self.last_modified = vulnerability.modified.ToDatetime()
+      self.last_modified = vulnerability.modified.ToDatetime(datetime.UTC)
     if vulnerability.HasField('published'):
-      self.timestamp = vulnerability.published.ToDatetime()
+      self.timestamp = vulnerability.published.ToDatetime(datetime.UTC)
     if vulnerability.HasField('withdrawn'):
-      self.withdrawn = vulnerability.withdrawn.ToDatetime()
+      self.withdrawn = vulnerability.withdrawn.ToDatetime(datetime.UTC)
     else:
       self.withdrawn = None
 
@@ -824,7 +823,7 @@ class Bug(ndb.Model):
       if alias_group:
         alias_ids = sorted(list(set(alias_group.bug_ids) - {vulnerability.id}))
         vulnerability.aliases[:] = alias_ids
-        modified_time = vulnerability.modified.ToDatetime()
+        modified_time = vulnerability.modified.ToDatetime(datetime.UTC)
         modified_time = max(alias_group.last_modified, modified_time)
         vulnerability.modified.FromDatetime(modified_time)
 
@@ -832,7 +831,7 @@ class Bug(ndb.Model):
       upstream_group = yield get_upstream_async(vulnerability.id)
       if upstream_group:
         vulnerability.upstream[:] = upstream_group.upstream_ids
-        modified_time = vulnerability.modified.ToDatetime()
+        modified_time = vulnerability.modified.ToDatetime(datetime.UTC)
         modified_time = max(upstream_group.last_modified, modified_time)
         vulnerability.modified.FromDatetime(modified_time)
     return vulnerability
@@ -906,7 +905,8 @@ class SourceRepository(ndb.Model):
   # Last synced hash for SourceRepositoryType.GIT.
   last_synced_hash: str = ndb.StringProperty()
   # Last date recurring updates were requested.
-  last_update_date: datetime = ndb.DateTimeProperty()
+  last_update_date: datetime.datetime = ndb.DateTimeProperty(
+      tzinfo=datetime.UTC)
   # Patterns of files to exclude (regex).
   ignore_patterns: list[str] = ndb.StringProperty(repeated=True)
   # Whether this repository is editable.
@@ -956,7 +956,7 @@ class SourceRepository(ndb.Model):
 class AliasGroup(ndb.Model):
   """Alias group."""
   bug_ids: list[str] = ndb.StringProperty(repeated=True)
-  last_modified: datetime = ndb.DateTimeProperty()
+  last_modified: datetime.datetime = ndb.DateTimeProperty(tzinfo=datetime.UTC)
 
 
 class AliasAllowListEntry(ndb.Model):
@@ -981,7 +981,7 @@ class UpstreamGroup(ndb.Model):
   upstream_ids: list[str] = ndb.StringProperty(repeated=True)
   upstream_hierarchy: str = ndb.JsonProperty()
   # Date when group was last modified
-  last_modified: datetime = ndb.DateTimeProperty()
+  last_modified: datetime.datetime = ndb.DateTimeProperty(tzinfo=datetime.UTC)
 
 
 # TODO(gongh@): redesign this to make it easy to scale.
@@ -1008,8 +1008,8 @@ class ImportFinding(ndb.Model):
   bug_id: str = ndb.StringProperty()
   source: str = ndb.StringProperty()
   findings: list[ImportFindings] = ndb.IntegerProperty(repeated=True)
-  first_seen: datetime = ndb.DateTimeProperty()
-  last_attempt: datetime = ndb.DateTimeProperty()
+  first_seen: datetime.datetime = ndb.DateTimeProperty(tzinfo=datetime.UTC)
+  last_attempt: datetime.datetime = ndb.DateTimeProperty(tzinfo=datetime.UTC)
 
   def _pre_put_hook(self):  # pylint: disable=arguments-differ
     """Pre-put hook for setting key."""

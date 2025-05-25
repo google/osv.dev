@@ -40,7 +40,7 @@ def _update_group(bug_ids, alias_group):
     return
 
   alias_group.bug_ids = bug_ids
-  alias_group.last_modified = datetime.datetime.utcnow()
+  alias_group.last_modified = datetime.datetime.now(datetime.UTC)
   alias_group.put()
 
 
@@ -56,7 +56,7 @@ def _create_alias_group(bug_ids):
     return
 
   new_group = osv.AliasGroup(bug_ids=bug_ids)
-  new_group.last_modified = datetime.datetime.utcnow()
+  new_group.last_modified = datetime.datetime.now(datetime.UTC)
   new_group.put()
 
 

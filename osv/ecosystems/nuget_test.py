@@ -18,6 +18,7 @@
 """NuGet ecosystem helper tests."""
 
 import unittest
+import vcr.unittest
 
 from . import nuget
 from .. import ecosystems
@@ -83,7 +84,7 @@ class NuGetVersionTest(unittest.TestCase):
     self.check_order(self.assertLess, '0.9.9.1', '1.0.0')
 
 
-class NuGetEcosystemTest(unittest.TestCase):
+class NuGetEcosystemTest(vcr.unittest.VCRTestCase):
   """NuGet ecosystem helper tests."""
 
   def test_next_version(self):

@@ -15,14 +15,13 @@
 package cves
 
 import (
-	"cmp"
 	"context"
+	"errors"
 	"fmt"
 	"log"
 	"net/http"
 	"net/url"
 	"path"
-	"reflect"
 	"regexp"
 	"strings"
 	"time"
@@ -30,226 +29,9 @@ import (
 	"github.com/knqyf263/go-cpe/naming"
 	"github.com/sethvargo/go-retry"
 	"golang.org/x/exp/slices"
-)
 
-type AffectedCommit struct {
-	Repo         string `json:"repo,omitempty" yaml:"repo,omitempty"`
-	Introduced   string `json:"introduced,omitempty" yaml:"introduced,omitempty"`
-	Fixed        string `json:"fixed,omitempty" yaml:"fixed,omitempty"`
-	Limit        string `json:"limit,omitempty" yaml:"limit,omitempty"`
-	LastAffected string `json:"last_affected,omitempty" yaml:"last_affected,omitempty"`
-}
-
-func (ac *AffectedCommit) SetRepo(repo string) {
-	// GitHub.com repos are demonstrably case-insensitive, and frequently
-	// expressed in URLs with varying cases, so normalize them to lowercase.
-	// vulns.AddPkgInfo() treats repos case sensitively, and this can result in
-	// incorrect behaviour.
-	if strings.Contains(strings.ToLower(repo), "github.com") {
-		repo = strings.ToLower(repo)
-	}
-	ac.Repo = repo
-}
-
-func (ac *AffectedCommit) SetIntroduced(commit string) {
-	ac.Introduced = commit
-}
-
-func (ac *AffectedCommit) SetFixed(commit string) {
-	ac.Fixed = commit
-}
-
-func (ac *AffectedCommit) SetLimit(commit string) {
-	ac.Limit = commit
-}
-
-func (ac *AffectedCommit) SetLastAffected(commit string) {
-	ac.LastAffected = commit
-}
-
-// Check if the commit range actually spans any commits.
-// A range that starts and ends with the same commit is not considered a valid range.
-func (ac *AffectedCommit) InvalidRange() bool {
-	if ac.Introduced == ac.Fixed && ac.Introduced != "" {
-		return true
-	}
-	if ac.Introduced == ac.LastAffected && ac.Introduced != "" {
-		return true
-	}
-	return false
-}
-
-// Helper function for sorting AffectedCommit for stability.
-// Sorts by Repo, then Fixed, then LastAffected, then Introduced.
-func AffectedCommitCompare(i, j AffectedCommit) int {
-	if n := cmp.Compare(i.Repo, j.Repo); n != 0 {
-		return n
-	}
-	if n := cmp.Compare(i.Fixed, j.Fixed); n != 0 {
-		return n
-	}
-	if n := cmp.Compare(i.LastAffected, j.LastAffected); n != 0 {
-		return n
-	}
-	return cmp.Compare(i.Introduced, j.Introduced)
-}
-
-type AffectedVersion struct {
-	Introduced   string `json:"introduced,omitempty" yaml:"introduced,omitempty"`
-	Fixed        string `json:"fixed,omitempty" yaml:"fixed,omitempty"`
-	LastAffected string `json:"last_affected,omitempty" yaml:"last_affected,omitempty"`
-}
-
-type VersionInfo struct {
-	AffectedCommits  []AffectedCommit  `json:"affect_commits,omitempty" yaml:"affected_commits,omitempty"`
-	AffectedVersions []AffectedVersion `json:"affected_versions,omitempty" yaml:"affected_versions,omitempty"`
-}
-
-func (vi *VersionInfo) HasFixedVersions() bool {
-	for _, av := range vi.AffectedVersions {
-		if av.Fixed != "" {
-			return true
-		}
-	}
-	return false
-}
-
-func (vi *VersionInfo) HasLastAffectedVersions() bool {
-	for _, av := range vi.AffectedVersions {
-		if av.LastAffected != "" {
-			return true
-		}
-	}
-	return false
-}
-
-func (vi *VersionInfo) HasIntroducedCommits(repo string) bool {
-	for _, ac := range vi.AffectedCommits {
-		if strings.EqualFold(ac.Repo, repo) && ac.Introduced != "" {
-			return true
-		}
-	}
-	return false
-}
-
-func (vi *VersionInfo) HasFixedCommits(repo string) bool {
-	for _, ac := range vi.AffectedCommits {
-		if strings.EqualFold(ac.Repo, repo) && ac.Fixed != "" {
-			return true
-		}
-	}
-	return false
-}
-
-func (vi *VersionInfo) HasLastAffectedCommits(repo string) bool {
-	for _, ac := range vi.AffectedCommits {
-		if strings.EqualFold(ac.Repo, repo) && ac.LastAffected != "" {
-			return true
-		}
-	}
-	return false
-}
-
-func (vi *VersionInfo) HasLimitCommits(repo string) bool {
-	for _, ac := range vi.AffectedCommits {
-		if strings.EqualFold(ac.Repo, repo) && ac.Limit != "" {
-			return true
-		}
-	}
-	return false
-}
-
-func (vi *VersionInfo) FixedCommits(repo string) (FixedCommits []string) {
-	for _, ac := range vi.AffectedCommits {
-		if strings.EqualFold(ac.Repo, repo) && ac.Fixed != "" {
-			FixedCommits = append(FixedCommits, ac.Fixed)
-		}
-	}
-	return FixedCommits
-}
-
-func (vi *VersionInfo) LastAffectedCommits(repo string) (LastAffectedCommits []string) {
-	for _, ac := range vi.AffectedCommits {
-		if strings.EqualFold(ac.Repo, repo) && ac.LastAffected != "" {
-			LastAffectedCommits = append(LastAffectedCommits, ac.Fixed)
-		}
-	}
-	return LastAffectedCommits
-}
-
-// Check if the same commit appears in multiple fields of the AffectedCommits array.
-// See https://github.com/google/osv.dev/issues/1984 for more context.
-func (vi *VersionInfo) Duplicated(candidate AffectedCommit) bool {
-	fieldsToCheck := []string{"Introduced", "LastAffected", "Limit", "Fixed"}
-
-	// Get the commit hash to look for.
-	v := reflect.ValueOf(&candidate).Elem()
-
-	commit := ""
-	for _, field := range fieldsToCheck {
-		commit = v.FieldByName(field).String()
-		if commit != "" {
-			break
-		}
-	}
-	if commit == "" {
-		return false
-	}
-
-	// Look through what is already present.
-	for _, ac := range vi.AffectedCommits {
-		v = reflect.ValueOf(&ac).Elem()
-		for _, field := range fieldsToCheck {
-			existingCommit := v.FieldByName(field).String()
-			if existingCommit == commit {
-				return true
-			}
-		}
-	}
-	return false
-}
-
-// Synthetic enum of supported commit types.
-type CommitType int
-
-const (
-	Introduced CommitType = iota
-	Fixed
-	Limit
-	LastAffected
-)
-
-type CPE struct {
-	CPEVersion string
-	Part       string
-	Vendor     string
-	Product    string
-	Version    string
-	Update     string
-	Edition    string
-	Language   string
-	SWEdition  string
-	TargetSW   string
-	TargetHW   string
-	Other      string
-}
-
-var (
-	InvalidRepos = []string{
-		"https://github.com/ComparedArray/printix-CVE-2022-25089",
-		"https://github.com/CVEProject/cvelist",
-		"https://github.com/github/cvelist", // Heavily in Advisory URLs, sometimes shows up elsewhere
-		"https://github.com/github/securitylab",
-		"https://github.com/gitlabhq/gitlabhq", // GitHub mirror, not canonical
-		"https://github.com/n0Sleeper/bosscmsVuln",
-		"https://github.com/rapid7/metasploit-framework",
-		"https://github.com/starnightcyber/miscellaneous",
-		"https://gitlab.com/gitlab-org/gitlab-ce",      // redirects to gitlab-foss
-		"https://gitlab.com/gitlab-org/gitlab-ee",      // redirects to gitlab
-		"https://gitlab.com/gitlab-org/gitlab-foss",    // not the canonical source
-		"https://gitlab.com/gitlab-org/omnibus-gitlab", // not the source
-	}
-	InvalidRepoRegex = `(?i)/(?:(?:CVEs?)|(?:CVE-\d{4}-\d{4,})(?:/?.*)?|bug_report(?:/.*)?|GitHubAssessments/.*)`
+	"github.com/google/osv/vulnfeeds/git"
+	"github.com/google/osv/vulnfeeds/models"
 )
 
 // Rewrites known GitWeb URLs to their base repository.
@@ -304,12 +86,12 @@ func Repo(u string) (string, error) {
 	}
 
 	// Disregard the repos we know we don't like (by regex).
-	matched, _ := regexp.MatchString(InvalidRepoRegex, u)
+	matched, _ := regexp.MatchString(models.InvalidRepoRegex, u)
 	if matched {
 		return "", fmt.Errorf("%q matched invalid repo regexp", u)
 	}
 
-	for _, dr := range InvalidRepos {
+	for _, dr := range models.InvalidRepos {
 		if strings.HasPrefix(u, dr) {
 			return "", fmt.Errorf("%q found in denylist", u)
 		}
@@ -346,7 +128,7 @@ func Repo(u string) (string, error) {
 			return fmt.Sprintf("%s://%s/%s", parsedURL.Scheme, parsedURL.Hostname(), pathParts[2]), nil
 		}
 		if parsedURL.Hostname() == "sourceware.org" {
-			// Call out to common function for GitWeb URLs
+			// Call out to models function for GitWeb URLs
 			return repoGitWeb(parsedURL)
 		}
 		if parsedURL.Hostname() == "git.postgresql.org" {
@@ -613,8 +395,46 @@ func Commit(u string) (string, error) {
 
 	// TODO(apollock): add support for resolving a GitHub PR to a commit hash
 
+	// Support for resolving a Github tag to a commit hash
+	// example: https://github.com/redis/redis/releases/tag/6.2.17
+	if parsedURL.Host == "github.com" {
+		possibleCommitHash, err := resolveGitTag(parsedURL, u, gitSHA1Regex)
+		if possibleCommitHash != "" && err == nil {
+			return possibleCommitHash, nil
+		}
+	}
 	// If we get to here, we've encountered an unsupported URL.
 	return "", fmt.Errorf("Commit(): unsupported URL: %s", u)
+}
+
+func resolveGitTag(parsedURL *url.URL, u string, gitSHA1Regex *regexp.Regexp) (string, error) {
+	directory, tag := path.Split(parsedURL.Path)
+	if !strings.HasSuffix(directory, "tag/") {
+		return "", errors.New("no tag found")
+	}
+	tag, err := git.NormalizeVersion(tag)
+	if err != nil {
+		return "", err
+	}
+
+	maybeRepoURL, err := Repo(u)
+	if err != nil {
+		return "", err
+	}
+
+	normalizedTags, err := git.NormalizeRepoTags(maybeRepoURL, nil)
+	if err != nil {
+		return "", err
+	}
+
+	for t, nTag := range normalizedTags {
+		if tag == t && gitSHA1Regex.MatchString(nTag.Commit) {
+			return nTag.Commit, nil
+		}
+	}
+
+	return "", errors.New("no tag found")
+
 }
 
 // Detect linkrot and handle link decay in HTTP(S) links via HEAD request with exponential backoff.
@@ -661,7 +481,7 @@ func ValidateAndCanonicalizeLink(link string, httpClient *http.Client) (canonica
 }
 
 // For URLs referencing commits in supported Git repository hosts, return a cloneable AffectedCommit.
-func extractGitCommit(link string, commitType CommitType, httpClient *http.Client) (ac AffectedCommit, err error) {
+func extractGitCommit(link string, commitType models.CommitType, httpClient *http.Client) (ac models.AffectedCommit, err error) {
 	r, err := Repo(link)
 	if err != nil {
 		return ac, err
@@ -688,13 +508,13 @@ func extractGitCommit(link string, commitType CommitType, httpClient *http.Clien
 	ac.SetRepo(r)
 
 	switch commitType {
-	case Introduced:
+	case models.Introduced:
 		ac.SetIntroduced(c)
-	case LastAffected:
+	case models.LastAffected:
 		ac.SetLastAffected(c)
-	case Limit:
+	case models.Limit:
 		ac.SetLimit(c)
-	case Fixed:
+	case models.Fixed:
 		ac.SetFixed(c)
 	}
 
@@ -741,7 +561,7 @@ func processExtractedVersion(version string) string {
 	return version
 }
 
-func extractVersionsFromDescription(validVersions []string, description string) ([]AffectedVersion, []string) {
+func extractVersionsFromDescription(validVersions []string, description string) ([]models.AffectedVersion, []string) {
 	// Match:
 	//  - x.x.x before x.x.x
 	//  - x.x.x through x.x.x
@@ -754,7 +574,7 @@ func extractVersionsFromDescription(validVersions []string, description string) 
 	}
 
 	var notes []string
-	var versions []AffectedVersion
+	var versions []models.AffectedVersion
 	for _, match := range matches {
 		// Trim periods that are part of sentences.
 		introduced := processExtractedVersion(match[1])
@@ -791,7 +611,7 @@ func extractVersionsFromDescription(validVersions []string, description string) 
 			lastaffected = ""
 		}
 
-		versions = append(versions, AffectedVersion{
+		versions = append(versions, models.AffectedVersion{
 			Introduced:   introduced,
 			Fixed:        fixed,
 			LastAffected: lastaffected,
@@ -806,10 +626,10 @@ func cleanVersion(version string) string {
 	return strings.TrimRight(version, ":")
 }
 
-func ExtractVersionInfo(cve CVE, validVersions []string, httpClient *http.Client) (v VersionInfo, notes []string) {
+func ExtractVersionInfo(cve CVE, validVersions []string, httpClient *http.Client) (v models.VersionInfo, notes []string) {
 	for _, reference := range cve.References {
 		// (Potentially faulty) Assumption: All viable Git commit reference links are fix commits.
-		if commit, err := extractGitCommit(reference.Url, Fixed, httpClient); err == nil {
+		if commit, err := extractGitCommit(reference.Url, models.Fixed, httpClient); err == nil {
 			v.AffectedCommits = append(v.AffectedCommits, commit)
 		}
 	}
@@ -887,7 +707,7 @@ func ExtractVersionInfo(cve CVE, validVersions []string, httpClient *http.Client
 				}
 
 				gotVersions = true
-				possibleNewAffectedVersion := AffectedVersion{
+				possibleNewAffectedVersion := models.AffectedVersion{
 					Introduced:   introduced,
 					Fixed:        fixed,
 					LastAffected: lastaffected,
@@ -922,7 +742,7 @@ func ExtractVersionInfo(cve CVE, validVersions []string, httpClient *http.Client
 
 	// Remove any lastaffected versions in favour of fixed versions.
 	if v.HasFixedVersions() {
-		affectedVersionsWithoutLastAffected := []AffectedVersion{}
+		affectedVersionsWithoutLastAffected := []models.AffectedVersion{}
 		for _, av := range v.AffectedVersions {
 			if av.LastAffected != "" {
 				continue
@@ -955,7 +775,7 @@ func RemoveQuoting(s string) (result string) {
 }
 
 // Parse a well-formed CPE string into a struct.
-func ParseCPE(formattedString string) (*CPE, error) {
+func ParseCPE(formattedString string) (*models.CPE, error) {
 	if !strings.HasPrefix(formattedString, "cpe:") {
 		return nil, fmt.Errorf("%q does not have expected 'cpe:' prefix", formattedString)
 	}
@@ -966,7 +786,7 @@ func ParseCPE(formattedString string) (*CPE, error) {
 		return nil, err
 	}
 
-	return &CPE{
+	return &models.CPE{
 		CPEVersion: strings.Split(formattedString, ":")[1],
 		Part:       wfn.GetString("part"),
 		Vendor:     RemoveQuoting(wfn.GetString("vendor")),
@@ -979,23 +799,4 @@ func ParseCPE(formattedString string) (*CPE, error) {
 		TargetSW:   wfn.GetString("target_sw"),
 		TargetHW:   wfn.GetString("target_hw"),
 		Other:      wfn.GetString("other")}, nil
-}
-
-// Normalize version strings found in CVE CPE Match data or Git tags.
-// Use the same logic and behaviour as normalize_tag() osv/bug.py for consistency.
-func NormalizeVersion(version string) (normalizedVersion string, e error) {
-	// Keep in sync with the intent of https://github.com/google/osv.dev/blob/26050deb42785bc5a4dc7d802eac8e7f95135509/osv/bug.py#L31
-	var validVersion = regexp.MustCompile(`(?i)(\d+|(?:rc|alpha|beta|preview)\d*)`)
-	var validVersionText = regexp.MustCompile(`(?i)(?:rc|alpha|beta|preview)\d*`)
-	components := validVersion.FindAllString(version, -1)
-	if components == nil {
-		return "", fmt.Errorf("%q is not a supported version", version)
-	}
-	// If the very first component happens to accidentally match the strings we support, remove it.
-	// This is necessary because of the lack of negative lookbehind assertion support in RE2.
-	if validVersionText.MatchString(components[0]) {
-		components = slices.Delete(components, 0, 1)
-	}
-	normalizedVersion = strings.Join(components, "-")
-	return normalizedVersion, e
 }

@@ -13,12 +13,12 @@
 # limitations under the License.
 """CRAN ecosystem helper tests."""
 
-import unittest
+import vcr.unittest
 
 from .. import ecosystems
 
 
-class CRANEcosystemTest(unittest.TestCase):
+class CRANEcosystemTest(vcr.unittest.VCRTestCase):
   """CRAN ecosystem helper tests."""
 
   def test_next_version(self):

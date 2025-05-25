@@ -1,0 +1,66 @@
+interactions:
+- request:
+    body: null
+    headers:
+      Accept:
+      - '*/*'
+      Accept-Encoding:
+      - gzip, deflate
+      Connection:
+      - keep-alive
+      User-Agent:
+      - osv.dev
+    method: GET
+    uri: https://snapshot.debian.org/mr/package/nginx/
+  response:
+    body:
+      string: '{"_comment":"foo","package":"nginx","result":[{"version":"1.26.3-3"},{"version":"1.26.3-2"},{"version":"1.26.3-1"},{"version":"1.26.2-1"},{"version":"1.26.0-3"},{"version":"1.26.0-2"},{"version":"1.26.0-1"},{"version":"1.26.0-1~exp1"},{"version":"1.24.0-2"},{"version":"1.24.0-1"},{"version":"1.24.0-1~exp1"},{"version":"1.22.1-9+deb12u2"},{"version":"1.22.1-9+deb12u1"},{"version":"1.22.1-9"},{"version":"1.22.1-8"},{"version":"1.22.1-7"},{"version":"1.22.1-6"},{"version":"1.22.1-6~exp1"},{"version":"1.22.1-5"},{"version":"1.22.1-4"},{"version":"1.22.1-3"},{"version":"1.22.1-3~exp1"},{"version":"1.22.1-2"},{"version":"1.22.1-2~exp2"},{"version":"1.22.1-2~exp1"},{"version":"1.22.1-1"},{"version":"1.22.1-1~exp2"},{"version":"1.22.1-1~exp1"},{"version":"1.22.0-3.1"},{"version":"1.22.0-3"},{"version":"1.22.0-2"},{"version":"1.22.0-2~exp4"},{"version":"1.22.0-2~exp3"},{"version":"1.22.0-2~exp2"},{"version":"1.22.0-2~exp1"},{"version":"1.22.0-1"},{"version":"1.22.0-1~exp2"},{"version":"1.22.0-1~exp1"},{"version":"1.20.2-3~exp1"},{"version":"1.20.2-2"},{"version":"1.20.2-1"},{"version":"1.18.0-9"},{"version":"1.18.0-8"},{"version":"1.18.0-7"},{"version":"1.18.0-6.1+deb11u4"},{"version":"1.18.0-6.1+deb11u3"},{"version":"1.18.0-6.1+deb11u2"},{"version":"1.18.0-6.1+deb11u1"},{"version":"1.18.0-6.1"},{"version":"1.18.0-6"},{"version":"1.18.0-5"},{"version":"1.18.0-4"},{"version":"1.18.0-3"},{"version":"1.18.0-2"},{"version":"1.18.0-1"},{"version":"1.16.1-3"},{"version":"1.16.1-3~exp2"},{"version":"1.16.1-3~exp1"},{"version":"1.16.1-2"},{"version":"1.16.1-1"},{"version":"1.14.2-3"},{"version":"1.14.2-2+deb10u5"},{"version":"1.14.2-2+deb10u4"},{"version":"1.14.2-2+deb10u3"},{"version":"1.14.2-2+deb10u2"},{"version":"1.14.2-2+deb10u1"},{"version":"1.14.2-2"},{"version":"1.14.2-1"},{"version":"1.14.1-1"},{"version":"1.14.1-1~bpo9+1"},{"version":"1.14.0-1"},{"version":"1.14.0-1~bpo9+1"},{"version":"1.13.12-1"},{"version":"1.13.11-1"},{"version":"1.13.10-1"},{"version":"1.13.9-1"},{"version":"1.13.8-1"},{"version":"1.13.7-1"},{"version":"1.13.6-2"},{"version":"1.13.6-1"},{"version":"1.13.5-1"},{"version":"1.13.4-1"},{"version":"1.13.3-1"},{"version":"1.13.3-1~bpo9+1"},{"version":"1.13.2-1"},{"version":"1.13.1-2"},{"version":"1.13.1-2~bpo9+1"},{"version":"1.13.1-1"},{"version":"1.13.0-1"},{"version":"1.12.0-1"},{"version":"1.11.10-1~exp1"},{"version":"1.11.9-1~exp2"},{"version":"1.11.9-1~exp1"},{"version":"1.11.8-1~exp1"},{"version":"1.11.7-1~exp1"},{"version":"1.11.6-1~exp1"},{"version":"1.11.5-1~exp1"},{"version":"1.11.3-1~exp2"},{"version":"1.11.3-1~exp1"},{"version":"1.11.2-1~exp1"},{"version":"1.10.3-1+deb9u7"},{"version":"1.10.3-1+deb9u6"},{"version":"1.10.3-1+deb9u5"},{"version":"1.10.3-1+deb9u4"},{"version":"1.10.3-1+deb9u3"},{"version":"1.10.3-1+deb9u2"},{"version":"1.10.3-1+deb9u1"},{"version":"1.10.3-1+deb9u1~bpo8+2"},{"version":"1.10.3-1+deb9u1~bpo8+1"},{"version":"1.10.3-1"},{"version":"1.10.3-1~bpo8+1"},{"version":"1.10.2-4"},{"version":"1.10.2-4~bpo8+1"},{"version":"1.10.2-3"},{"version":"1.10.2-2"},{"version":"1.10.2-1"},{"version":"1.10.1-3"},{"version":"1.10.1-2"},{"version":"1.10.1-1"},{"version":"1.10.0-1"},{"version":"1.9.14-2"},{"version":"1.9.14-1"},{"version":"1.9.10-1"},{"version":"1.9.10-1~bpo8+4"},{"version":"1.9.10-1~bpo8+3"},{"version":"1.9.10-1~bpo8+2"},{"version":"1.9.10-1~bpo8+1"},{"version":"1.9.9-1"},{"version":"1.9.6-2"},{"version":"1.9.6-1"},{"version":"1.9.4-1"},{"version":"1.9.4-1~bpo8+1"},{"version":"1.9.3-1"},{"version":"1.9.3-1~bpo8+1"},{"version":"1.9.2-1"},{"version":"1.9.1-1"},{"version":"1.9.1-1~bpo8+1"},{"version":"1.6.2-5+deb8u6"},{"version":"1.6.2-5+deb8u5"},{"version":"1.6.2-5+deb8u4"},{"version":"1.6.2-5+deb8u3"},{"version":"1.6.2-5+deb8u2"},{"version":"1.6.2-5+deb8u2~bpo70+1"},{"version":"1.6.2-5+deb8u1"},{"version":"1.6.2-5+deb8u1~bpo70+1"},{"version":"1.6.2-5+a.exp1"},{"version":"1.6.2-5"},{"version":"1.6.2-5~bpo70+1"},{"version":"1.6.2-4"},{"version":"1.6.2-3"},{"version":"1.6.2-2"},{"version":"1.6.2-2~bpo70+1"},{"version":"1.6.2-1"},{"version":"1.6.2-1~bpo70+1"},{"version":"1.6.1-2"},{"version":"1.6.1-2~bpo70+1"},{"version":"1.6.1-1"},{"version":"1.6.1-1~bpo70+1"},{"version":"1.6.0-2"},{"version":"1.6.0-1"},{"version":"1.6.0-1~bpo70+1"},{"version":"1.5.13-1~exp1"},{"version":"1.5.12-1~exp1"},{"version":"1.5.11-1~exp1"},{"version":"1.4.7-2"},{"version":"1.4.7-1"},{"version":"1.4.6-1"},{"version":"1.4.6-1~bpo70+1"},{"version":"1.4.5-1"},{"version":"1.4.4-4"},{"version":"1.4.4-3"},{"version":"1.4.4-2"},{"version":"1.4.4-1"},{"version":"1.4.4-1~bpo70+1"},{"version":"1.4.3-2"},{"version":"1.4.3-1"},{"version":"1.4.1-3"},{"version":"1.4.1-3~bpo70+1"},{"version":"1.4.1-2"},{"version":"1.4.1-1"},{"version":"1.4.0-2"},{"version":"1.4.0-1"},{"version":"1.2.6-1"},{"version":"1.2.4-2"},{"version":"1.2.4-1"},{"version":"1.2.1-2.2+wheezy4+deb7u1"},{"version":"1.2.1-2.2+wheezy4"},{"version":"1.2.1-2.2+wheezy3"},{"version":"1.2.1-2.2+wheezy3~bpo60+1"},{"version":"1.2.1-2.2+wheezy2"},{"version":"1.2.1-2.2+wheezy1"},{"version":"1.2.1-2.2"},{"version":"1.2.1-2.2~bpo60+2"},{"version":"1.2.1-2.2~bpo60+1"},{"version":"1.2.1-2.1"},{"version":"1.2.1-2"},{"version":"1.2.1-2~bpo60+1"},{"version":"1.2.1-1"},{"version":"1.2.0-1"},{"version":"1.1.19-1"},{"version":"1.1.19-1~bpo60+1"},{"version":"1.1.18-1"},{"version":"1.1.17-2"},{"version":"1.1.17-2~bpo60+1"},{"version":"1.1.17-1"},{"version":"1.1.16-1"},{"version":"1.1.14-1"},{"version":"1.1.14-1~bpo60+1"},{"version":"1.1.12-1"},{"version":"1.1.11-1"},{"version":"1.1.8-2"},{"version":"1.1.8-2~bpo60+1"},{"version":"1.1.8-1"},{"version":"1.1.4-2"},{"version":"1.1.4-1"},{"version":"1.1.2-1"},{"version":"1.1.0-1"},{"version":"1.1.0-1~bpo60+1"},{"version":"1.0.5-1"},{"version":"1.0.4-1"},{"version":"1.0.4-1~bpo60+1"},{"version":"1.0.1-1"},{"version":"1.0.0-2"},{"version":"1.0.0-1"},{"version":"0.8.54-4+sparc64"},{"version":"0.8.54-4"},{"version":"0.8.54-3"},{"version":"0.8.54-2"},{"version":"0.8.54-1"},{"version":"0.8.53-2"},{"version":"0.8.53-1"},{"version":"0.7.67-3+squeeze4+deb6u1"},{"version":"0.7.67-3+squeeze4"},{"version":"0.7.67-3+squeeze3"},{"version":"0.7.67-3+squeeze2"},{"version":"0.7.67-3+squeeze1"},{"version":"0.7.67-3"},{"version":"0.7.67-3~bpo50+1"},{"version":"0.7.67-2"},{"version":"0.7.67-1"},{"version":"0.7.65-7"},{"version":"0.7.65-6"},{"version":"0.7.65-5"},{"version":"0.7.65-4"},{"version":"0.7.65-3"},{"version":"0.7.65-2"},{"version":"0.7.65-2~bpo50+1"},{"version":"0.7.65-1"},{"version":"0.7.64-3"},{"version":"0.7.64-2"},{"version":"0.7.64-1"},{"version":"0.7.63-1"},{"version":"0.7.62-4"},{"version":"0.7.62-3"},{"version":"0.7.62-2"},{"version":"0.7.62-1"},{"version":"0.7.61-3"},{"version":"0.7.61-2"},{"version":"0.7.61-1"},{"version":"0.7.59-1"},{"version":"0.7.14-1"},{"version":"0.6.34-2"},{"version":"0.6.34-1"},{"version":"0.6.32-3+lenny3"},{"version":"0.6.32-3+lenny2"},{"version":"0.6.32-3"},{"version":"0.6.32-2"},{"version":"0.6.32-1"},{"version":"0.6.31-2"},{"version":"0.6.31-1"},{"version":"0.6.30-2"},{"version":"0.6.30-1"},{"version":"0.6.29-1"},{"version":"0.6.28-1"},{"version":"0.6.22-1"},{"version":"0.5.35-3"},{"version":"0.5.35-2"},{"version":"0.5.35-1"},{"version":"0.5.35-1~bpo40+1"},{"version":"0.5.34-1"},{"version":"0.5.33-1"},{"version":"0.5.30-1"},{"version":"0.5.26-1"},{"version":"0.5.18-1"},{"version":"0.5.13-1"},{"version":"0.5.12-2"},{"version":"0.5.12-1"},{"version":"0.5.11-1"},{"version":"0.4.13-2+etch3"},{"version":"0.4.13-2+etch2"},{"version":"0.4.13-2"},{"version":"0.4.13-1"},{"version":"0.4.12-1"},{"version":"0.4.2-1"}]}
+
+        '
+    headers:
+      Accept-Ranges:
+      - bytes
+      Age:
+      - '0'
+      Connection:
+      - keep-alive
+      Content-Length:
+      - '7564'
+      Date:
+      - Wed, 21 May 2025 02:59:51 GMT
+      X-Cache:
+      - MISS
+      X-Cache-Hits:
+      - '0'
+      X-Served-By:
+      - cache-syd10162-SYD
+      X-Timer:
+      - S1747796391.639858,VS0,VE852
+      cache-control:
+      - max-age=600, public
+      content-type:
+      - application/json
+      expires:
+      - Wed, 21 May 2025 03:09:51 GMT
+      permissions-policy:
+      - interest-cohort=()
+      referrer-policy:
+      - no-referrer
+      server:
+      - Apache
+      strict-transport-security:
+      - max-age=15768000; preload
+      via:
+      - 1.1 varnish (Varnish/7.1), 1.1 varnish
+      x-clacks-overhead:
+      - GNU Terry Pratchett
+      x-content-type-options:
+      - nosniff
+      x-frame-options:
+      - sameorigin
+      x-xss-protection:
+      - '1'
+    status:
+      code: 200
+      message: OK
+version: 1

@@ -54,7 +54,8 @@ SERVER_ADDRESS = ('localhost', PORT)
 MOCK_ADDRESS_FORMAT = f"http://{SERVER_ADDRESS[0]}:{SERVER_ADDRESS[1]}/"
 
 
-@mock.patch('importer.utcnow', lambda: datetime.datetime(2021, 1, 1))
+@mock.patch('importer.utcnow',
+            lambda: datetime.datetime(2021, 1, 1, tzinfo=datetime.UTC))
 class ImporterTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
   """Importer tests."""
 
@@ -162,7 +163,8 @@ class ImporterTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
         source_of_truth=osv.SourceOfTruth.INTERNAL,
         status=1,
         summary='Heap-buffer-overflow in cdf_file_property_info',
-        timestamp=datetime.datetime(2021, 1, 15, 0, 0, 24, 559102),
+        timestamp=datetime.datetime(
+            2021, 1, 15, 0, 0, 24, 559102, tzinfo=datetime.UTC),
         database_specific={
             'database_specific': 1337
         },
@@ -302,7 +304,8 @@ class ImporterTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
         status=1,
         source_id='oss-fuzz:123',
         source_of_truth=osv.SourceOfTruth.SOURCE_REPO,
-        timestamp=datetime.datetime(2020, 1, 1, 0, 0, 0, 0)).put()
+        timestamp=datetime.datetime(
+            2020, 1, 1, 0, 0, 0, 0, tzinfo=datetime.UTC)).put()
     osv.Bug(
         db_id='OSV-2021-1338',
         affected_packages=[
@@ -331,7 +334,8 @@ class ImporterTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
         status=1,
         source_id='oss-fuzz:124',
         source_of_truth=osv.SourceOfTruth.INTERNAL,
-        timestamp=datetime.datetime(2020, 1, 1, 0, 0, 0, 0)).put()
+        timestamp=datetime.datetime(
+            2020, 1, 1, 0, 0, 0, 0, tzinfo=datetime.UTC)).put()
 
     imp = importer.Importer('fake_public_key', 'fake_private_key', self.tmp_dir,
                             importer.DEFAULT_PUBLIC_LOGGING_BUCKET, 'bucket',
@@ -360,7 +364,8 @@ class ImporterTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
 
     source_repo = osv.SourceRepository.get_by_id('oss-fuzz')
     self.assertEqual(
-        datetime.datetime(2021, 1, 1, 10, 0), source_repo.last_update_date)
+        datetime.datetime(2021, 1, 1, 10, 0, tzinfo=datetime.UTC),
+        source_repo.last_update_date)
 
   @mock.patch('google.cloud.pubsub_v1.PublisherClient.publish')
   def test_scheduled_updates_already_done(self, mock_publish):  # pylint: disable=unused-argument
@@ -380,7 +385,8 @@ class ImporterTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
         status=1,
         source_id='oss-fuzz:123',
         source_of_truth=osv.SourceOfTruth.SOURCE_REPO,
-        timestamp=datetime.datetime(2020, 1, 1, 0, 0, 0, 0)).put()
+        timestamp=datetime.datetime(
+            2020, 1, 1, 0, 0, 0, 0, tzinfo=datetime.UTC)).put()
 
     imp = importer.Importer('fake_public_key', 'fake_private_key', self.tmp_dir,
                             importer.DEFAULT_PUBLIC_LOGGING_BUCKET, 'bucket',
@@ -416,7 +422,8 @@ class ImporterTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
         source_repo_ignore_multiple.ignore_file('/tmp/foo/MAL-0000-0001.json'))
 
 
-@mock.patch('importer.utcnow', lambda: datetime.datetime(2021, 1, 1))
+@mock.patch('importer.utcnow',
+            lambda: datetime.datetime(2021, 1, 1, tzinfo=datetime.UTC))
 class BucketImporterTest(unittest.TestCase):
   """GCS bucket importer tests."""
 
@@ -454,7 +461,8 @@ class BucketImporterTest(unittest.TestCase):
         }],
         # Same timestamp as the gs://TEST_BUCKET/a/b/DSA-3029-1.json modified
         # file
-        import_last_modified=datetime.datetime(2014, 9, 20, 8, 18, 7, 0),
+        import_last_modified=datetime.datetime(
+            2014, 9, 20, 8, 18, 7, 0, tzinfo=datetime.UTC),
     ).put()
 
     # Preexisting Bug that does not exist in GCS.
@@ -483,7 +491,8 @@ class BucketImporterTest(unittest.TestCase):
                 "repo_url": "https://github.com/python/cpython"
             }]
         }],
-        import_last_modified=datetime.datetime(2018, 2, 9, 3, 29, 0, 0),
+        import_last_modified=datetime.datetime(
+            2018, 2, 9, 3, 29, 0, 0, tzinfo=datetime.UTC),
     ).put()
 
     # Preexisting Bug (with a colon in the ID) that does not exist in GCS.
@@ -514,7 +523,8 @@ class BucketImporterTest(unittest.TestCase):
                 'type': 'ECOSYSTEM',
             }],
         }],
-        import_last_modified=datetime.datetime(2018, 2, 9, 3, 29, 0, 0),
+        import_last_modified=datetime.datetime(
+            2018, 2, 9, 3, 29, 0, 0, tzinfo=datetime.UTC),
     ).put()
 
     self.tasks_topic = f'projects/{tests.TEST_PROJECT_ID}/topics/tasks'
@@ -825,7 +835,8 @@ class BucketImporterTest(unittest.TestCase):
         deletion_safety_threshold_pct=100)
 
     if not self.source_repo.last_update_date:
-      self.source_repo.last_update_date = datetime.datetime.min
+      self.source_repo.last_update_date = datetime.datetime.min.replace(
+          tzinfo=datetime.UTC)
 
     storage_client = storage.Client()
     # Reuse the NDB client already created in __main__
@@ -907,7 +918,8 @@ class BucketImporterMassDeletionTest(unittest.TestCase):
     ])
 
 
-@mock.patch('importer.utcnow', lambda: datetime.datetime(2024, 1, 1))
+@mock.patch('importer.utcnow',
+            lambda: datetime.datetime(2024, 1, 1, tzinfo=datetime.UTC))
 class RESTImporterTest(unittest.TestCase):
   """REST importer tests."""
   httpd = None
@@ -960,7 +972,8 @@ class RESTImporterTest(unittest.TestCase):
     data_handler = MockDataHandler
     data_handler.last_modified = 'Mon, 01 Jan 2024 00:00:00 GMT'
     data_handler.load_file(data_handler, 'rest_test.json')
-    self.source_repo.last_update_date = datetime.datetime(2020, 1, 1)
+    self.source_repo.last_update_date = datetime.datetime(
+        2020, 1, 1, tzinfo=datetime.UTC)
     repo = self.source_repo.put()
     imp = importer.Importer('fake_public_key', 'fake_private_key', self.tmp_dir,
                             importer.DEFAULT_PUBLIC_LOGGING_BUCKET, 'bucket',
@@ -970,7 +983,7 @@ class RESTImporterTest(unittest.TestCase):
     self.assertEqual(mock_publish.call_count, data_handler.cve_count)
     self.assertEqual(
         repo.get().last_update_date,
-        datetime.datetime(2024, 1, 1),
+        datetime.datetime(2024, 1, 1, tzinfo=datetime.UTC),
         msg='Expected last_update_date to equal REST Last-Modified date')
 
   @mock.patch('google.cloud.pubsub_v1.PublisherClient.publish')
@@ -981,7 +994,8 @@ class RESTImporterTest(unittest.TestCase):
     data_handler = MockDataHandler
     data_handler.last_modified = 'Mon, 01 Jan 2024 00:00:00 GMT'
     data_handler.load_file(data_handler, 'rest_test.json')
-    self.source_repo.last_update_date = datetime.datetime(2023, 6, 6)
+    self.source_repo.last_update_date = datetime.datetime(
+        2023, 6, 6, tzinfo=datetime.UTC)
     self.source_repo.ignore_last_import_time = True
     repo = self.source_repo.put()
     imp = importer.Importer('fake_public_key', 'fake_private_key', self.tmp_dir,
@@ -992,7 +1006,7 @@ class RESTImporterTest(unittest.TestCase):
     self.assertEqual(mock_publish.call_count, data_handler.cve_count)
     self.assertEqual(
         repo.get().last_update_date,
-        datetime.datetime(2024, 1, 1),
+        datetime.datetime(2024, 1, 1, tzinfo=datetime.UTC),
         msg='Expected last_update_date to equal REST Last-Modified date')
 
   @mock.patch('google.cloud.pubsub_v1.PublisherClient.publish')
@@ -1001,7 +1015,8 @@ class RESTImporterTest(unittest.TestCase):
                       mock_publish: mock.MagicMock):
     """Testing none last modified"""
     MockDataHandler.last_modified = 'Fri, 01 Jan 2021 00:00:00 GMT'
-    self.source_repo.last_update_date = datetime.datetime(2024, 2, 1)
+    self.source_repo.last_update_date = datetime.datetime(
+        2024, 2, 1, tzinfo=datetime.UTC)
     repo = self.source_repo.put()
     imp = importer.Importer('fake_public_key', 'fake_private_key', self.tmp_dir,
                             importer.DEFAULT_PUBLIC_LOGGING_BUCKET, 'bucket',
@@ -1012,7 +1027,7 @@ class RESTImporterTest(unittest.TestCase):
     self.assertIn('INFO:root:No changes since last update.', logs.output[1])
     self.assertEqual(
         repo.get().last_update_date,
-        datetime.datetime(2024, 2, 1),
+        datetime.datetime(2024, 2, 1, tzinfo=datetime.UTC),
         msg='last_update_date should not have been updated')
 
   @mock.patch('google.cloud.pubsub_v1.PublisherClient.publish')
@@ -1022,7 +1037,8 @@ class RESTImporterTest(unittest.TestCase):
     """Testing from date between entries - 
     only entries after 6/6/2023 should be called"""
     MockDataHandler.last_modified = 'Mon, 01 Jan 2024 00:00:00 GMT'
-    self.source_repo.last_update_date = datetime.datetime(2023, 6, 6)
+    self.source_repo.last_update_date = datetime.datetime(
+        2023, 6, 6, tzinfo=datetime.UTC)
     repo = self.source_repo.put()
     imp = importer.Importer('fake_public_key', 'fake_private_key', self.tmp_dir,
                             importer.DEFAULT_PUBLIC_LOGGING_BUCKET, 'bucket',
@@ -1093,7 +1109,7 @@ class RESTImporterTest(unittest.TestCase):
     ])
     self.assertEqual(
         repo.get().last_update_date,
-        datetime.datetime(2024, 1, 1),
+        datetime.datetime(2024, 1, 1, tzinfo=datetime.UTC),
         msg='Expected last_update_date to equal REST Last-Modified date')
 
   @mock.patch('google.cloud.pubsub_v1.PublisherClient.publish')
@@ -1104,7 +1120,8 @@ class RESTImporterTest(unittest.TestCase):
     # TODO(apollock): implement
 
 
-@mock.patch('importer.utcnow', lambda: datetime.datetime(2024, 1, 1))
+@mock.patch('importer.utcnow',
+            lambda: datetime.datetime(2024, 1, 1, tzinfo=datetime.UTC))
 class ImportFindingsTest(unittest.TestCase):
   """Import Finding tests."""
 

@@ -886,7 +886,7 @@ class IntegrationTests(unittest.TestCase,
         {
             'code': 5,
             'message': 'Bug not found, but the following aliases were: '
-                       'GHSA-q97m-8853-pq76'
+                       'GHSA-q97m-8853-pq76 GO-2025-3690'
         }, response.json())
 
   def test_query_batch(self):

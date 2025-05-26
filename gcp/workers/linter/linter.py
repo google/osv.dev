@@ -15,12 +15,14 @@
 """Run osv-linter on all OSV records."""
 
 import argparse
+import datetime
 import json
 import logging
 import os
 import subprocess
 import sys
 import tempfile
+from typing import Any
 import zipfile
 
 from google.cloud import ndb, storage
@@ -115,67 +117,99 @@ def download_osv_data(tmp_dir: str):
   logging.info('Successfully unzipped files to %s.', tmp_dir)
 
 
-# TODO(gongh@): This function is duplicated from importer.py.
-# A common version should be created in models.py
-# or other files for shared usage.
-def record_quality_finding(
-    bug_id: str,
-    source: osv.SourceRepository.name,
-    maybe_new_finding: osv.ImportFindings = osv.ImportFindings.INVALID_JSON):
-  """Record the quality finding about a record in Datastore."""
+def process_linter_result(output: Any, bugs: set):
+  """process the linter results and update/add findings into db."""
+  time = utcnow()
+  total_findings = 0
 
-  # Get any current findings for this record.
-  findingtimenow = utcnow()
-  if existing_finding := osv.ImportFinding.get_by_id(bug_id):
-    if maybe_new_finding not in existing_finding.findings:  # type: ignore
-      existing_finding.findings.append(maybe_new_finding)  # type: ignore
-      existing_finding.last_attempt = findingtimenow  # type: ignore
+  for filename, findings_list in output.items():
+    bug_id = os.path.splitext(os.path.basename(filename))[0]
+    bugs.add(bug_id)
+    findings_already_added = set()
+    if not findings_list:
+      continue
+
+    total_findings += len(findings_list)
+    for finding in findings_list:
+      code = finding.get('Code', 'UNKNOWN_CODE')
+      import_finding_code = ERROR_CODE_MAPPING.get(code,
+                                                   osv.ImportFindings.NONE)
+
+      # Only adds the same finding code once per bug using set().
+      findings_already_added.add(import_finding_code)
+
+    sorted_findings = sorted(list(findings_already_added))
+    prefix = bug_id.split('-')[0] + '-'
+    source = PREFIX_TO_SOURCE.get(prefix, '')
+    record_quality_finding(bug_id, source, sorted_findings, time)
+
+  if total_findings > 0:
+    logging.info('OSV Linter found %d issues across files.', total_findings)
+
+
+def record_quality_finding(bug_id: str, source: str,
+                           new_findings: list[osv.ImportFindings],
+                           findingtimenow: datetime):
+  """Record or update the linter finding about a record in Datastore."""
+  existing_finding = osv.ImportFinding.get_by_id(bug_id)
+
+  if existing_finding:
+    if new_findings != existing_finding.findings:
+      existing_finding.findings = new_findings
+      existing_finding.last_attempt = findingtimenow
       existing_finding.put()
-  else:
+      logging.debug('DB Update for %s: Set findings to %s. Source: %s', bug_id,
+                    new_findings, source)
+  elif new_findings:
     osv.ImportFinding(
         bug_id=bug_id,
         source=source,
-        findings=[maybe_new_finding],
+        findings=new_findings,
         first_seen=findingtimenow,
         last_attempt=findingtimenow).put()
+    logging.debug('DB Create for %s: Set findings to %s. Source: %s', bug_id,
+                  new_findings, source)
 
 
 def parse_and_record_linter_output(json_output_str: str):
   """
   Parses the JSON output from the OSV linter and records findings.
+  Manages create, update, and delete findings in the Datastore.
   """
-  linter_output_json = json.loads(json_output_str)
-  logging.info('Successfully parsed OSV Linter JSON output.')
+  try:
+    linter_output_json = json.loads(json_output_str)
+    logging.info('Successfully parsed OSV Linter JSON output.')
+  except Exception as e:
+    logging.error('Failed to parse OSV Linter JSON output: %s', e)
+    return
 
-  total_findings = 0
+  # Fetch all existing ids from importfindings db
+  all_finding_keys = osv.ImportFinding.query().fetch(keys_only=True)
+  existing_db_bug_ids = set(key.id() for key in all_finding_keys)
+  logging.info('Fetched %d existing findings from the database.',
+               len(existing_db_bug_ids))
+
   if not linter_output_json:
     logging.info('OSV Linter output was empty JSON, indicating no findings.')
     return
 
-  for filename, findings_list in linter_output_json.items():
-    bug_id = os.path.splitext(os.path.basename(filename))[0]
-    findings_already_added = set()
-    if findings_list:
-      total_findings += len(findings_list)
-      for finding in findings_list:
-        code = finding.get('Code', 'UNKNOWN_CODE')
-        message = finding.get('Message', 'No message provided')
-        import_finding_code = ERROR_CODE_MAPPING.get(code,
-                                                     osv.ImportFindings.NONE)
+  linter_bugs = set()
 
-        # Only adds the same finding code once per bug.
-        if import_finding_code in findings_already_added:
-          continue
-        findings_already_added.add(import_finding_code)
-        prefix = bug_id.split('-')[0] + '-'
-        source = PREFIX_TO_SOURCE.get(prefix, '')
-        record_quality_finding(bug_id, source,
-                               import_finding_code)  # type: ignore
-        logging.debug('Recorded: Code=%s, Message=%s, source=%s', code, message,
-                      source)
+  # Process linter results
+  process_linter_result(linter_output_json, linter_bugs)
 
-  if total_findings > 0:
-    logging.info('OSV Linter found %d issues across files.', total_findings)
+  # Delete entries from db that are no longer found by the linter
+  ids_to_delete = existing_db_bug_ids - linter_bugs
+  if ids_to_delete:
+    logging.info('Found %d stale entries to delete from DB: %s',
+                 len(ids_to_delete), ids_to_delete)
+    deleted_count = 0
+    for id_to_delete in ids_to_delete:
+      entity_to_delete = osv.ImportFinding.get_by_id(id_to_delete)
+      entity_to_delete.key.delete()
+      logging.debug('Deleted stale entry for %s.', id_to_delete)
+      deleted_count += 1
+    logging.info('Successfully deleted %d stale entries.', deleted_count)
 
 
 def main():
@@ -200,6 +234,7 @@ def main():
           command, capture_output=True, text=True, check=False, timeout=600)
 
       parse_and_record_linter_output(result.stdout)
+
     except Exception as e:
       logging.error('An unexpected error occurred: %e', e)
       sys.exit(1)
@@ -207,6 +242,7 @@ def main():
 
 if __name__ == '__main__':
   osv.logs.setup_gcp_logging('linter')
+
   _ndb_client = ndb.Client()
   with _ndb_client.context():
     main()

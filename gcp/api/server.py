@@ -1024,14 +1024,26 @@ def _is_version_affected(affected_packages,
   range.
   """
   for affected_package in affected_packages:
-    if package_name and package_name != affected_package.package.name:
-      continue
-
     if ecosystem:
       # If package ecosystem has a :, also try ignoring parts after it.
       if not is_matching_package_ecosystem(affected_package.package.ecosystem,
                                            ecosystem):
         continue
+
+    if package_name:
+      if ecosystem == 'GIT':
+        # Special case for git ecosystems to match repo urls
+        repo_url = ''
+        for rg in affected_package.ranges:
+          if rg.repo_url != '':
+            repo_url = rg.repo_url
+            break
+
+        if package_name != repo_url:
+          continue
+      else:
+        if package_name != affected_package.package.name:
+          continue
 
     if normalize:
       if any(
@@ -1212,7 +1224,6 @@ def query_by_version(
     query = query.filter(osv.Bug.ecosystem == ecosystem)
     ecosystem_info = ecosystems.get(ecosystem)
 
-  ecosystem_info = ecosystems.get(ecosystem)
   is_semver = ecosystem_info and ecosystem_info.is_semver
   supports_comparing = ecosystem_info and ecosystem_info.supports_comparing
 
@@ -1450,6 +1461,12 @@ def is_matching_package_ecosystem(package_ecosystem: str,
   """Checks if the queried ecosystem matches the affected package's ecosystem,
   considering potential variations in the package's ecosystem.
   """
+
+  # Special case for GIT queries,
+  # for which osv entries will have an empty ecosystem for.
+  if ecosystem == 'GIT' and package_ecosystem == '':
+    return True
+
   return any(eco == ecosystem for eco in (
       package_ecosystem,
       ecosystems.normalize(package_ecosystem),

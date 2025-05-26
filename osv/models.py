@@ -805,7 +805,7 @@ class Bug(ndb.Model):
                              include_alias=False,
                              include_upstream=False):
     """Converts to Vulnerability proto and retrieves aliases asynchronously."""
-    vulnerability = self.to_vulnerability(
+    vulnerability: vulnerability_pb2.Vulnerability = self.to_vulnerability(
         include_source=include_source,
         include_alias=False,
         include_upstream=False)

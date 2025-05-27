@@ -138,9 +138,9 @@ def clone_with_retries(git_url, checkout_dir, git_callbacks=None, branch=None):
       if attempt == CLONE_TRIES - 1:
         raise ('Clone failed after %d attempts' % CLONE_TRIES) from e
       time.sleep(RETRY_SLEEP_SECONDS)
-    except NoBranchError:
+    except NoBranchError as e:
       raise NoBranchError('Branch "%s" not found in repo "%s"' %
-                          (branch, git_url))
+                          (branch, git_url)) from e
 
   return None
 
@@ -163,9 +163,9 @@ def _use_existing_checkout(git_url,
   if branch:
     try:
       _checkout_branch(repo, branch)
-    except NoBranchError:
+    except NoBranchError as e:
       raise NoBranchError('Branch "%s" not found in repo "%s"' %
-                          (branch, git_url))
+                          (branch, git_url)) from e
 
   reset_repo(repo, git_callbacks)
   logging.info('Using existing checkout at %s', checkout_dir)

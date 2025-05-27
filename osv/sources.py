@@ -13,7 +13,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Importer sources."""
-import datetime
 import json
 import hashlib
 import logging
@@ -215,7 +214,7 @@ def vulnerability_to_dict(vulnerability):
 
 
 def _write_vulnerability_dict(data, output_path,
-                              modified_date: datetime.datetime):
+                              modified_date_timestamp: float):
   """Write a vulnerability dict to disk."""
   with open(output_path, 'w') as f:
     ext = os.path.splitext(output_path)[1]
@@ -226,7 +225,7 @@ def _write_vulnerability_dict(data, output_path,
     else:
       raise RuntimeError('Unknown format ' + ext)
 
-  os.utime(output_path, (modified_date.timestamp(), modified_date.timestamp()))
+  os.utime(output_path, (modified_date_timestamp, modified_date_timestamp))
 
 
 def write_vulnerability(vulnerability: vulnerability_pb2.Vulnerability,
@@ -247,8 +246,11 @@ def write_vulnerability(vulnerability: vulnerability_pb2.Vulnerability,
   vuln_data = _get_nested_vulnerability(data, key_path)
   vuln_data.clear()
   vuln_data.update(vulnerability_to_dict(vulnerability))
-  _write_vulnerability_dict(data, output_path,
-                            vulnerability.modified.ToDatetime())
+  dt_timestamp = vulnerability.modified.seconds
+  if dt_timestamp == 0:
+    logging.warning('Record has no modified time: %s', vulnerability.id)
+
+  _write_vulnerability_dict(data, output_path, dt_timestamp)
 
 
 def vulnerability_has_range(vulnerability, introduced, fixed):

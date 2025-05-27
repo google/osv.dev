@@ -133,16 +133,14 @@ def clone_with_retries(git_url, checkout_dir, git_callbacks=None, branch=None):
       if branch:
         _checkout_branch(repo, branch)
       return repo
-    except GitCloneError:
+    except GitCloneError as e:
       shutil.rmtree(checkout_dir, ignore_errors=True)
       if attempt == CLONE_TRIES - 1:
-        logging.error('Clone failed after %d attempts', CLONE_TRIES)
-        raise
+        raise ('Clone failed after %d attempts' % CLONE_TRIES) from e
       time.sleep(RETRY_SLEEP_SECONDS)
     except NoBranchError:
-      logging.error('Remote branch "%s" not found in repo "%s"', branch,
-                    git_url)
-      raise
+      raise NoBranchError('Branch "%s" not found in repo "%s"' %
+                          (branch, git_url))
 
   return None
 
@@ -166,9 +164,8 @@ def _use_existing_checkout(git_url,
     try:
       _checkout_branch(repo, branch)
     except NoBranchError:
-      logging.error('Remote branch "%s" not found in repo "%s"', branch,
-                    git_url)
-      raise
+      raise NoBranchError('Branch "%s" not found in repo "%s"' %
+                          (branch, git_url))
 
   reset_repo(repo, git_callbacks)
   logging.info('Using existing checkout at %s', checkout_dir)

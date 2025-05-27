@@ -24,7 +24,7 @@ RUN go mod download
 COPY ./ /src/
 RUN go build -o download-cves ./cmd/download-cves/
 
-FROM gcr.io/google.com/cloudsdktool/google-cloud-cli:alpine@sha256:cfb3001dde0c3d4efbf77b65371018fc66564c5df05c35e4aa6a00d94c0fc35d
+FROM gcr.io/google.com/cloudsdktool/google-cloud-cli:alpine@sha256:0ea6aac6920cce79b2b40584e4d735fba134a275fd18ebc827cebfdadd7db1da
 RUN apk --no-cache add jq
 
 WORKDIR /usr/local/bin

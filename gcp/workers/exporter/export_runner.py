@@ -79,7 +79,9 @@ def spawn_ecosystem_exporter(work_dir: str, bucket: str, eco: str):
   ])
   return_code = proc.wait()
   if return_code != 0:
-    logging.error('Export of %s failed with Exit Code: %d', eco, return_code)
+    logging.error(
+        'Export of %s failed with Exit Code: %d. See logs for related errors.',
+        eco, return_code)
 
 
 def aggregate_all_vulnerabilities(work_dir: str, export_bucket: str):

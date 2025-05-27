@@ -249,7 +249,7 @@ def write_vulnerability(vulnerability: vulnerability_pb2.Vulnerability,
   vuln_data.clear()
   vuln_data.update(vulnerability_to_dict(vulnerability))
   dt_timestamp = vulnerability.modified.seconds
-  if dt_timestamp == 0:
+  if dt_timestamp < DEFAULT_TIMESTAMP:
     logging.warning('Record has no modified time: %s', vulnerability.id)
     dt_timestamp = DEFAULT_TIMESTAMP
 

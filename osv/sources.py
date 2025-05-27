@@ -37,6 +37,8 @@ PUSH_RETRY_SLEEP_SECONDS = 10
 YAML_EXTENSIONS = ('.yaml', '.yml')
 JSON_EXTENSIONS = ('.json',)
 
+DEFAULT_TIMESTAMP = 946684800  # Year 2000
+
 shared_cache = cache.InMemoryCache()
 
 
@@ -249,6 +251,7 @@ def write_vulnerability(vulnerability: vulnerability_pb2.Vulnerability,
   dt_timestamp = vulnerability.modified.seconds
   if dt_timestamp == 0:
     logging.warning('Record has no modified time: %s', vulnerability.id)
+    dt_timestamp = DEFAULT_TIMESTAMP
 
   _write_vulnerability_dict(data, output_path, dt_timestamp)
 

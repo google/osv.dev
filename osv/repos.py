@@ -100,6 +100,7 @@ def _set_git_callback_env(git_callbacks):
 class GitCloneError(Exception):
   """Git repository clone exception."""
 
+
 class NoBranchError(Exception):
   """Branch does not exist"""
 
@@ -139,7 +140,8 @@ def clone_with_retries(git_url, checkout_dir, git_callbacks=None, branch=None):
         raise
       time.sleep(RETRY_SLEEP_SECONDS)
     except NoBranchError:
-      logging.error('Remote branch "%s" not found in repo "%s"', branch, git_url)
+      logging.error('Remote branch "%s" not found in repo "%s"', branch,
+                    git_url)
       raise
 
   return None
@@ -164,7 +166,8 @@ def _use_existing_checkout(git_url,
     try:
       _checkout_branch(repo, branch)
     except NoBranchError:
-      logging.error('Remote branch "%s" not found in repo "%s"', branch, git_url)
+      logging.error('Remote branch "%s" not found in repo "%s"', branch,
+                    git_url)
       raise
 
   reset_repo(repo, git_callbacks)

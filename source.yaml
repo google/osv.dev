@@ -9,7 +9,7 @@
   extension: '.json'
   db_prefix: ['ALBA-']
   ignore_git: False
-  human_link: 'https://errata.almalinux.org/{{ ECOSYSTEMS[1].split(":")[1] }}/{{ BUG_ID | replace(":", "-", 1) }}.html'
+  human_link: '{% if ECOSYSTEMS|length >= 2 %}https://errata.almalinux.org/{{ ECOSYSTEMS[1].split(":")[1] }}/{{ BUG_ID | replace(":", "-", 1) }}.html{% endif %}'
   link: 'https://github.com/AlmaLinux/osv-database/blob/master/'
   editable: False
   strict_validation: False
@@ -24,7 +24,7 @@
   extension: '.json'
   db_prefix: ['ALEA-']
   ignore_git: False
-  human_link: 'https://errata.almalinux.org/{{ ECOSYSTEMS[1].split(":")[1] }}/{{ BUG_ID | replace(":", "-", 1) }}.html'
+  human_link: '{% if ECOSYSTEMS|length >= 2 %}https://errata.almalinux.org/{{ ECOSYSTEMS[1].split(":")[1] }}/{{ BUG_ID | replace(":", "-", 1) }}.html{% endif %}'
   link: 'https://github.com/AlmaLinux/osv-database/blob/master/'
   editable: False
   strict_validation: False
@@ -39,7 +39,7 @@
   extension: '.json'
   db_prefix: ['ALSA-']
   ignore_git: False
-  human_link: 'https://errata.almalinux.org/{{ ECOSYSTEMS[1].split(":")[1] }}/{{ BUG_ID | replace(":", "-", 1) }}.html'
+  human_link: '{% if ECOSYSTEMS|length >= 2 %}https://errata.almalinux.org/{{ ECOSYSTEMS[1].split(":")[1] }}/{{ BUG_ID | replace(":", "-", 1) }}.html{% endif %}'
   link: 'https://github.com/AlmaLinux/osv-database/blob/master/'
   editable: False
   strict_validation: False

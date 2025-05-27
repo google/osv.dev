@@ -136,7 +136,7 @@ def clone_with_retries(git_url, checkout_dir, git_callbacks=None, branch=None):
     except GitCloneError as e:
       shutil.rmtree(checkout_dir, ignore_errors=True)
       if attempt == CLONE_TRIES - 1:
-        raise ('Clone failed after %d attempts' % CLONE_TRIES) from e
+        raise GitCloneError('Clone failed after %d attempts' % CLONE_TRIES) from e
       time.sleep(RETRY_SLEEP_SECONDS)
     except NoBranchError as e:
       raise NoBranchError('Branch "%s" not found in repo "%s"' %

@@ -73,6 +73,8 @@ def _checkout_branch(repo, branch):
                                      pygit2.enums.BranchType.REMOTE)
   local_branch = repo.lookup_branch(branch, pygit2.enums.BranchType.LOCAL)
   if not local_branch:
+    if remote_branch is None:
+      raise NoBranchError
     local_branch = repo.branches.create(branch, commit=remote_branch.peel())
 
   local_branch.upstream = remote_branch
@@ -97,6 +99,9 @@ def _set_git_callback_env(git_callbacks):
 
 class GitCloneError(Exception):
   """Git repository clone exception."""
+
+class NoBranchError(Exception):
+  """Branch does not exist"""
 
 
 def clone(git_url, checkout_dir, git_callbacks=None):
@@ -133,6 +138,9 @@ def clone_with_retries(git_url, checkout_dir, git_callbacks=None, branch=None):
         logging.error('Clone failed after %d attempts', CLONE_TRIES)
         raise
       time.sleep(RETRY_SLEEP_SECONDS)
+    except NoBranchError:
+      logging.error('Remote branch "%s" not found in repo "%s"', branch, git_url)
+      raise
 
   return None
 
@@ -153,7 +161,11 @@ def _use_existing_checkout(git_url,
     repo.remotes['origin'].url = _git_mirror(git_url)
 
   if branch:
-    _checkout_branch(repo, branch)
+    try:
+      _checkout_branch(repo, branch)
+    except NoBranchError:
+      logging.error('Remote branch "%s" not found in repo "%s"', branch, git_url)
+      raise
 
   reset_repo(repo, git_callbacks)
   logging.info('Using existing checkout at %s', checkout_dir)

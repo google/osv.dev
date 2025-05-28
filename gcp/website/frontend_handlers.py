@@ -914,13 +914,17 @@ def construct_hierarchy_string(target_bug_id: str, root_nodes: set[str],
         output_lines.append("<li>" + vuln_id + "</li>")
 
     if vuln_id in graph:
-      for child in graph[vuln_id]:
+      # Sort children alphabetically
+      sorted_children = sorted(graph[vuln_id])
+      for child in sorted_children:
         if child != target_bug_id:
           output_lines.append("<ul class=\"substream\">")
           print_subtree(child)
           output_lines.append("</ul>")
 
-  for root in root_nodes:
+  # Sort root nodes alphabetically
+  sorted_roots = sorted(root_nodes)
+  for root in sorted_roots:
     output_lines.append("<ul class=\"aliases\">")
     print_subtree(root)
     output_lines.append("</ul>")

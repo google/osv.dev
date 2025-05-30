@@ -35,7 +35,7 @@ func QueryPaging(ctx context.Context, c *osvdev.OSVClient, query *osvdev.Query) 
 
 	if err != nil {
 		var dpe *DuringPagingError
-		if ok := errors.As(err, &dpe); ok {
+		if ok := errors.As(err, &dpe); ok && dpe != nil {
 			dpe.PageDepth += 1
 			errToReturn = dpe
 		} else {
@@ -45,7 +45,7 @@ func QueryPaging(ctx context.Context, c *osvdev.OSVClient, query *osvdev.Query) 
 			}
 		}
 
-		return queryResponse, dpe
+		return queryResponse, errToReturn
 	}
 
 	queryResponse.Vulns = append(queryResponse.Vulns, nextPageResponse.Vulns...)

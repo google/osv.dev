@@ -722,7 +722,7 @@ func ExtractVersionInfo(cve CVE, validVersions []string, httpClient *http.Client
 	}
 	if !gotVersions {
 		var extractNotes []string
-		v.AffectedVersions, extractNotes = extractVersionsFromDescription(validVersions, EnglishDescription(cve))
+		v.AffectedVersions, extractNotes = extractVersionsFromDescription(validVersions, EnglishDescription(cve.Descriptions))
 		notes = append(notes, extractNotes...)
 		if len(v.AffectedVersions) > 0 {
 			log.Printf("[%s] Extracted versions from description = %+v", cve.ID, v.AffectedVersions)

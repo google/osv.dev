@@ -113,17 +113,17 @@ func loadTestData2(cveName string) cves.Vulnerability {
 func TestExtractAliases(t *testing.T) {
 	// TODO: convert to table based test
 	cveItem := loadTestData2("CVE-2022-36037")
-	aliases, related := extractReferencedVulns(cveItem.CVE.ID, cveItem.CVE)
+	aliases, related := extractReferencedVulns(cveItem.CVE.ID, cveItem.CVE.ID, cveItem.CVE.References)
 	if !utility.SliceEqual(aliases, []string{"GHSA-3f89-869f-5w76"}) || !utility.SliceEqual(related, []string{}) {
 		t.Errorf("Aliases not extracted, got %v, but expected %v.", aliases, []string{"GHSA-3f89-869f-5w76"})
 	}
 	cveItem = loadTestData2("CVE-2022-36749")
-	aliases, related = extractReferencedVulns(cveItem.CVE.ID, cveItem.CVE)
+	aliases, related = extractReferencedVulns(cveItem.CVE.ID, cveItem.CVE.ID, cveItem.CVE.References)
 	if !utility.SliceEqual(aliases, []string{}) || !utility.SliceEqual(related, []string{}) {
 		t.Errorf("Aliases not extracted, got %v, but expected %v.", aliases, []string{"GHSA-3f89-869f-5w76"})
 	}
 	cveItem = loadTestData2("CVE-2024-47177")
-	aliases, related = extractReferencedVulns(cveItem.CVE.ID, cveItem.CVE)
+	aliases, related = extractReferencedVulns(cveItem.CVE.ID, cveItem.CVE.ID, cveItem.CVE.References)
 	expectedRelated := []string{"GHSA-7xfx-47qg-grp6", "GHSA-p9rh-jxmq-gq47", "GHSA-rj88-6mr5-rcw8", "GHSA-w63j-6g73-wmg5"}
 	if !utility.SliceEqual(aliases, []string{}) || !utility.SliceEqualUnordered(related, expectedRelated) {
 		t.Errorf("Aliases not extracted, got %v, but expected %v.", aliases, []string{})
@@ -133,7 +133,7 @@ func TestExtractAliases(t *testing.T) {
 
 func TestEnglishDescription(t *testing.T) {
 	cveItem := loadTestData2("CVE-2022-36037")
-	description := cves.EnglishDescription(cveItem.CVE)
+	description := cves.EnglishDescription(cveItem.CVE.Descriptions)
 	expectedDescription := "kirby is a content management system (CMS) that adapts to many different projects and helps you build your own ideal interface. Cross-site scripting (XSS) is a type of vulnerability that allows execution of any kind of JavaScript code inside the Panel session of the same or other users. In the Panel, a harmful script can for example trigger requests to Kirby's API with the permissions of the victim. If bad actors gain access to your group of authenticated Panel users they can escalate their privileges via the Panel session of an admin user. Depending on your site, other JavaScript-powered attacks are possible. The multiselect field allows selection of tags from an autocompleted list. Unfortunately, the Panel in Kirby 3.5 used HTML rendering for the raw option value. This allowed **attackers with influence on the options source** to store HTML code. The browser of the victim who visited a page with manipulated multiselect options in the Panel will then have rendered this malicious HTML code when the victim opened the autocomplete dropdown. Users are *not* affected by this vulnerability if you don't use the multiselect field or don't use it with options that can be manipulated by attackers. The problem has been patched in Kirby 3.5.8.1."
 	if description != expectedDescription {
 		t.Errorf("Description not extracted, got %v, but expected %v", description, expectedDescription)

@@ -616,7 +616,7 @@ func FromCVE(id cves.CVEID, cve cves.CVE) (*Vulnerability, []string) {
 	aliases, related := extractReferencedVulns(id, cve)
 	v := Vulnerability{
 		ID:      string(id),
-		Details: cves.EnglishDescription(cve),
+		Details: cves.EnglishDescription(cve.Descriptions),
 		Aliases: aliases,
 		Related: related,
 	}

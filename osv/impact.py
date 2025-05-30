@@ -81,6 +81,10 @@ class RangeCollector:
     self.grouped_ranges = {}
 
   def add(self, introduced_in, fixed_in, affected_in):
+     # docs(range-collector): clarify conditional logic in add method for range updates
+      # Added an inline comment explaining why ranges containing only a last_affected commit 
+      # are removed once a fixed commit is discovered. This improves understanding of how 
+      # the system reduces redundant range entries when a clearer boundary is available.
     """Add a new commit range."""
     # last_affected is redundant if fixed is available
     if fixed_in and affected_in:

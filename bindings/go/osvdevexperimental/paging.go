@@ -45,7 +45,7 @@ func QueryPaging(ctx context.Context, c *osvdev.OSVClient, query *osvdev.Query) 
 			}
 		}
 
-		return queryResponse, dpe
+		return queryResponse, errToReturn
 	}
 
 	queryResponse.Vulns = append(queryResponse.Vulns, nextPageResponse.Vulns...)

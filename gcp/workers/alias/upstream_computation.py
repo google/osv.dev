@@ -12,187 +12,204 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""OSV Upstream relation computation."""
+from __future__ import annotations
 
 import datetime
-from google.cloud import ndb
-
-import osv
-import osv.logs
 import json
 import logging
 from collections import defaultdict
+from typing import Any, Dict, List, Optional, Set
+
+from google.cloud import ndb
+
+import osv.models # Import models for specific types
+import osv.logs
+
+# Global NDB client instance
+_ndb_client: ndb.Client
 
 
-def compute_upstream(target_bug, bugs: dict[str, set[str]]) -> list[str]:
-  """Computes all upstream vulnerabilities for the given bug ID.
-  The returned list contains all of the bug IDs that are upstream of the
-  target bug ID, including transitive upstreams."""
-  visited = set()
+def compute_upstream(
+    target_bug_direct_upstream_ids: Set[str],
+    all_bugs_to_direct_upstreams_map: Dict[str, Set[str]]
+) -> List[str]:
+  """Computes all transitive upstream vulnerabilities for a given set of direct upstream IDs.
 
-  target_bug_upstream = target_bug
-  if not target_bug_upstream:
+  Args:
+    target_bug_direct_upstream_ids: A set of bug IDs that are direct upstreams of the target bug.
+    all_bugs_to_direct_upstreams_map: A dictionary mapping every known bug ID to a set of its direct upstream IDs.
+
+  Returns:
+    A sorted list of all unique transitive upstream bug IDs.
+  """
+  visited_ids: Set[str] = set()
+  to_visit_stack: List[str] = list(target_bug_direct_upstream_ids)
+
+  if not to_visit_stack:
     return []
-  to_visit = set(target_bug_upstream)
-  while to_visit:
-    bug_id = to_visit.pop()
-    if bug_id in visited:
+
+  while to_visit_stack:
+    current_bug_id: str = to_visit_stack.pop()
+    if current_bug_id in visited_ids:
       continue
-    visited.add(bug_id)
-    upstreams = set()
-    if bug_id in bugs.keys():
-      bug = bugs.get(bug_id)
-      upstreams = set(bug)
 
-    to_visit.update(upstreams - visited)
+    visited_ids.add(current_bug_id)
 
-  # Returns a sorted list of bug IDs, which ensures deterministic behaviour
-  # and avoids unnecessary updates.
-  return sorted(visited)
+    direct_upstreams_of_current: Set[str] = all_bugs_to_direct_upstreams_map.get(current_bug_id, set())
+
+    for upstream_id in direct_upstreams_of_current:
+        if upstream_id not in visited_ids:
+            to_visit_stack.append(upstream_id)
+
+  return sorted(list(visited_ids))
 
 
-def _create_group(bug_id, upstream_ids) -> osv.UpstreamGroup:
+def _create_group(bug_id: str, upstream_ids: List[str]) -> osv.models.UpstreamGroup:
   """Creates a new upstream group in the datastore."""
+  sorted_unique_upstream_ids = sorted(list(set(upstream_ids)))
 
-  new_group = osv.UpstreamGroup(
+  new_group = osv.models.UpstreamGroup(
       id=bug_id,
       db_id=bug_id,
-      upstream_ids=upstream_ids,
-      last_modified=datetime.datetime.now(datetime.UTC))
+      upstream_ids=sorted_unique_upstream_ids,
+      last_modified=datetime.datetime.now(datetime.UTC)
+  )
   new_group.put()
-
+  logging.info('Created UpstreamGroup for %s with upstreams: %s', bug_id, sorted_unique_upstream_ids)
   return new_group
 
 
-def _update_group(upstream_group: osv.UpstreamGroup,
-                  upstream_ids: list) -> osv.UpstreamGroup | None:
-  """Updates the upstream group in the datastore."""
-  if len(upstream_ids) == 0:
-    logging.info('Deleting upstream group due to too few bugs: %s',
-                 upstream_ids)
-    upstream_group.key.delete()
+def _update_group(upstream_group: osv.models.UpstreamGroup,
+                  upstream_ids: List[str]) -> Optional[osv.models.UpstreamGroup]:
+  """Updates the upstream group in the datastore. Returns None if no update or group deleted."""
+  sorted_unique_upstream_ids = sorted(list(set(upstream_ids)))
+
+  if not sorted_unique_upstream_ids:
+    logging.info('Deleting upstream group for %s due to no valid upstream IDs.', upstream_group.db_id)
+    if upstream_group.key:
+        upstream_group.key.delete()
     return None
 
-  if upstream_ids == upstream_group.upstream_ids:
+  current_group_upstream_ids = sorted(list(set(upstream_group.upstream_ids or [])))
+  if sorted_unique_upstream_ids == current_group_upstream_ids:
     return None
 
-  upstream_group.upstream_ids = upstream_ids
+  upstream_group.upstream_ids = sorted_unique_upstream_ids
   upstream_group.last_modified = datetime.datetime.now(datetime.UTC)
   upstream_group.put()
+  logging.info('Updated UpstreamGroup for %s with upstreams: %s', upstream_group.db_id, sorted_unique_upstream_ids)
   return upstream_group
 
 
 def compute_upstream_hierarchy(
-    target_upstream_group: osv.UpstreamGroup,
-    all_upstream_groups: dict[str, osv.UpstreamGroup]) -> None:
-  """Computes all upstream vulnerabilities for the given bug ID.
-  The returned list contains all of the bug IDs that are upstream of the
-  target bug ID, including transitive upstreams in a map hierarchy.
-  upstream_group:
-        { db_id: bug id
-          upstream_ids: list of upstream bug ids
-          last_modified_date: date
-          upstream_hierarchy: JSON string of upstream hierarchy
-        }
+    target_upstream_group: osv.models.UpstreamGroup,
+    all_upstream_groups_map: Dict[str, osv.models.UpstreamGroup]
+) -> None:
+  """Computes and updates the transitive upstream hierarchy for target_upstream_group.
+  The hierarchy is stored as a JSON string in target_upstream_group.upstream_hierarchy.
   """
 
-  # To convert to json, sets need to be converted to lists
-  # and sorting is done for a more consistent outcome.
-  def set_default(obj):
+  def set_to_sorted_list_default(obj: Any) -> List[Any]:
     if isinstance(obj, set):
-      return list(sorted(obj))
-    raise TypeError
+      try:
+        return list(sorted(list(obj)))
+      except TypeError:
+        return list(obj)
+    raise TypeError(f"Object of type {type(obj).__name__} is not JSON serializable (or set for custom handler)")
 
-  visited = set()
-  upstream_map = {}
-  to_visit = set([target_upstream_group.db_id])
-  # BFS navigation through the upstream hierarchy of a given upstream group
-  while to_visit:
-    bug_id = to_visit.pop()
-    if bug_id in visited:
-      continue
-    visited.add(bug_id)
-    upstream_group = all_upstream_groups.get(bug_id)
-    if upstream_group is None:
-      continue
+  transitive_upstream_map: Dict[str, Set[str]] = {}
 
-    upstreams = set(upstream_group.upstream_ids)
-    if not upstreams:
-      continue
-    for upstream in upstreams:
-      if upstream not in visited and upstream not in to_visit:
-        to_visit.add(upstream)
-      else:
-        if bug_id not in upstream_map:
-          upstream_map[bug_id] = set([upstream])
-        else:
-          upstream_map[bug_id].add(upstream)
-    # Add the immediate upstreams of the bug to the dict
-    upstream_map[bug_id] = upstreams
-    to_visit.update(upstreams - visited)
-
-  # Ensure there are no duplicate entries where transitive vulns appear
-  for k, v in upstream_map.items():
-    if k is target_upstream_group.db_id:
-      continue
-    upstream_map[target_upstream_group
-                 .db_id] = upstream_map[target_upstream_group.db_id] - v
-
-  # Update the datastore entry if hierarchy has changed
-  if upstream_map:
-    upstream_json = json.dumps(upstream_map, default=set_default)
-    if upstream_json == target_upstream_group.upstream_hierarchy:
+  if not target_upstream_group.db_id or not target_upstream_group.upstream_ids:
+      if target_upstream_group.upstream_hierarchy is not None:
+          target_upstream_group.upstream_hierarchy = None
+          target_upstream_group.put()
       return
-    target_upstream_group.upstream_hierarchy = upstream_json
+
+  all_transitive_upstreams_for_target: Set[str] = set(target_upstream_group.upstream_ids or [])
+
+  for current_bug_id in all_transitive_upstreams_for_target:
+    current_bug_upstream_group = all_upstream_groups_map.get(current_bug_id)
+    if not current_bug_upstream_group or not current_bug_upstream_group.upstream_ids:
+      continue
+
+    relevant_direct_upstreams = set(current_bug_upstream_group.upstream_ids) & all_transitive_upstreams_for_target
+
+    if relevant_direct_upstreams:
+      transitive_upstream_map[current_bug_id] = relevant_direct_upstreams
+
+  if transitive_upstream_map:
+    serializable_upstream_map: Dict[str, List[str]] = {
+        k: list(sorted(list(v))) for k, v in transitive_upstream_map.items()
+    }
+    upstream_json_str = json.dumps(serializable_upstream_map)
+
+    if upstream_json_str == target_upstream_group.upstream_hierarchy:
+      return
+
+    target_upstream_group.upstream_hierarchy = upstream_json_str
+    target_upstream_group.last_modified = datetime.datetime.now(datetime.UTC)
     target_upstream_group.put()
+    logging.info("Updated upstream_hierarchy for %s", target_upstream_group.db_id)
+  elif target_upstream_group.upstream_hierarchy is not None:
+    target_upstream_group.upstream_hierarchy = None
+    target_upstream_group.last_modified = datetime.datetime.now(datetime.UTC)
+    target_upstream_group.put()
+    logging.info("Cleared upstream_hierarchy for %s as it's now empty.", target_upstream_group.db_id)
 
 
-def main():
+def main() -> None:
   """Updates all upstream groups in the datastore by re-computing existing
   UpstreamGroups and creating new UpstreamGroups for un-computed bugs."""
 
-  # Query for all bugs that have upstreams.
-  updated_bugs = []
-  logging.info('Retrieving bugs...')
-  bugs_query = osv.Bug.query(osv.Bug.upstream_raw > '')
+  updated_upstream_groups: List[osv.models.UpstreamGroup] = []
+  logging.info('Retrieving bugs with upstream_raw field set...')
+  bugs_with_upstreams_query: ndb.Query[osv.models.Bug] = osv.models.Bug.query(
+      osv.models.Bug.upstream_raw > '') # type: ignore[operator]
 
-  bugs = defaultdict(set)
-  for bug in bugs_query.iter(projection=[osv.Bug.db_id, osv.Bug.upstream_raw]):
-    bugs[bug.db_id].add(bug.upstream_raw[0])
-  logging.info('%s Bugs successfully retrieved', len(bugs))
+  all_bugs_to_direct_upstreams_map: Dict[str, Set[str]] = defaultdict(set)
 
-  logging.info('Retrieving upstream groups...')
-  upstream_groups = {
-      group.db_id: group for group in osv.UpstreamGroup.query().iter()
+  current_bug_projection: osv.models.Bug
+  for current_bug_projection in bugs_with_upstreams_query.iter(
+      projection=[osv.models.Bug.db_id, osv.models.Bug.upstream_raw]):
+    if not current_bug_projection.db_id or not current_bug_projection.upstream_raw:
+      continue
+
+    all_bugs_to_direct_upstreams_map[current_bug_projection.db_id].update(current_bug_projection.upstream_raw)
+  logging.info('%s Bugs with upstream_raw data successfully retrieved and mapped.', len(all_bugs_to_direct_upstreams_map))
+
+  logging.info('Retrieving all existing UpstreamGroup entities...')
+  existing_upstream_groups_map: Dict[str, osv.models.UpstreamGroup] = {
+      group.db_id: group for group in osv.models.UpstreamGroup.query().iter() if group.db_id
   }
-  logging.info('Upstream Groups successfully retrieved')
+  logging.info('%s UpstreamGroup entities successfully retrieved.', len(existing_upstream_groups_map))
 
-  for bug_id, bug in bugs.items():
-    # Get the specific upstream_group ID
-    upstream_group = upstream_groups.get(bug_id)
-    # Recompute the transitive upstreams and compare with the existing group
-    upstream_ids = compute_upstream(bug, bugs)
-    if upstream_group:
-      if upstream_ids == upstream_group.upstream_ids:
-        continue
-      # Update the existing UpstreamGroup
-      new_upstream_group = _update_group(upstream_group, upstream_ids)
-      if new_upstream_group is None:
-        continue
-      updated_bugs.append(new_upstream_group)
-      upstream_groups[bug_id] = new_upstream_group
-      logging.info('Upstream group updated for bug: %s', bug_id)
+  for bug_id_str, direct_upstream_ids_set in all_bugs_to_direct_upstreams_map.items():
+    existing_upstream_group: Optional[osv.models.UpstreamGroup] = existing_upstream_groups_map.get(bug_id_str)
+
+    transitive_upstream_ids: List[str] = compute_upstream(
+        direct_upstream_ids_set, all_bugs_to_direct_upstreams_map)
+
+    updated_group: Optional[osv.models.UpstreamGroup] = None
+
+    if existing_upstream_group:
+      updated_group = _update_group(existing_upstream_group, transitive_upstream_ids)
+      if updated_group:
+        logging.info('UpstreamGroup updated for bug: %s', bug_id_str)
     else:
-      # Create a new UpstreamGroup
-      new_upstream_group = _create_group(bug_id, upstream_ids)
-      logging.info('New upstream group created for bug: %s', bug_id)
-      updated_bugs.append(new_upstream_group)
-      upstream_groups[bug_id] = new_upstream_group
+      if transitive_upstream_ids:
+          updated_group = _create_group(bug_id_str, transitive_upstream_ids)
+          logging.info('New UpstreamGroup created for bug: %s', bug_id_str)
+      else:
+          logging.info('No transitive upstreams for bug: %s, no group created.', bug_id_str)
 
-  for group in updated_bugs:
-    # Recompute the upstream hierarchies
-    compute_upstream_hierarchy(group, upstream_groups)
-    logging.info('Upstream hierarchy updated for bug: %s', group.db_id)
+    if updated_group:
+      updated_upstream_groups.append(updated_group)
+      existing_upstream_groups_map[bug_id_str] = updated_group
+
+  for group_to_process_hierarchy in updated_upstream_groups:
+    compute_upstream_hierarchy(group_to_process_hierarchy, existing_upstream_groups_map)
+
+  logging.info("Upstream computation and hierarchy update complete.")
 
 
 if __name__ == '__main__':

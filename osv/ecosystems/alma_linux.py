@@ -13,6 +13,8 @@
 # limitations under the License.
 """AlmaLinux ecosystem helper."""
 
+from typing import Any, List, Optional
+
 from ..third_party.univers.rpm import RpmVersion
 
 from .helper_base import Ecosystem
@@ -21,17 +23,17 @@ from .helper_base import Ecosystem
 class AlmaLinux(Ecosystem):
   """"AlmaLinux ecosystem"""
 
-  def sort_key(self, version):
+  def sort_key(self, version: str) -> RpmVersion:
     return RpmVersion.from_string(version)
 
   def enumerate_versions(self,
-                         package,
-                         introduced,
-                         fixed=None,
-                         last_affected=None,
-                         limits=None):
+                         package: str,
+                         introduced: str,
+                         fixed: Optional[str] = None,
+                         last_affected: Optional[str] = None,
+                         limits: Optional[List[str]] = None) -> List[str]:
     raise NotImplementedError('Ecosystem helper does not support enumeration')
 
   @property
-  def supports_comparing(self):
+  def supports_comparing(self) -> bool:
     return True

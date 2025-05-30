@@ -15,7 +15,7 @@
 
 from abc import ABC, abstractmethod
 import bisect
-from typing import Any
+from typing import Any, Dict, List, Optional
 import requests
 from urllib.parse import quote
 
@@ -30,11 +30,11 @@ class Ecosystem(ABC):
   """Ecosystem helpers."""
 
   @property
-  def name(self):
+  def name(self) -> str:
     """Get the name of the ecosystem."""
     return self.__class__.__name__
 
-  def _before_limits(self, version, limits):
+  def _before_limits(self, version: str, limits: Optional[List[str]]) -> bool:
     """Return whether the given version is before any limits."""
     if not limits or '*' in limits:
       return True
@@ -42,9 +42,9 @@ class Ecosystem(ABC):
     return any(
         self.sort_key(version) < self.sort_key(limit) for limit in limits)
 
-  def next_version(self, package, version):
+  def next_version(self, package: str, version: str) -> Optional[str]:
     """Get the next version after the given version."""
-    versions = self.enumerate_versions(package, version, fixed=None)
+    versions: List[str] = self.enumerate_versions(package, version, fixed=None)
     # Check if the key used for sorting is equal as sometimes different
     # strings could evaluate to the same version.
     if versions and self.sort_key(versions[0]) != self.sort_key(version):
@@ -61,21 +61,23 @@ class Ecosystem(ABC):
   def sort_key(self, version: str) -> Any:
     """Sort key."""
 
-  def sort_versions(self, versions):
+  def sort_versions(self, versions: List[str]) -> None:
     """Sort versions."""
     versions.sort(key=self.sort_key)
 
   @abstractmethod
   def enumerate_versions(self,
-                         package,
-                         introduced,
-                         fixed=None,
-                         last_affected=None,
-                         limits=None):
+                         package: str,
+                         introduced: str,
+                         fixed: Optional[str] = None,
+                         last_affected: Optional[str] = None,
+                         limits: Optional[List[str]] = None) -> List[str]:
     """Enumerate versions."""
 
-  def _get_affected_versions(self, versions, introduced, fixed, last_affected,
-                             limits):
+  def _get_affected_versions(self, versions: List[str], introduced: str,
+                             fixed: Optional[str],
+                             last_affected: Optional[str],
+                             limits: Optional[List[str]]) -> List[str]:
     """Get affected versions.
 
     Args:
@@ -88,39 +90,49 @@ class Ecosystem(ABC):
     Returns:
       A list of affected version strings.
     """
-    parsed_versions = [self.sort_key(v) for v in versions]
+    parsed_versions: List[Any] = [self.sort_key(v) for v in versions]
+    start_idx: int
+    end_idx: int
 
+    processed_introduced: Optional[Any] = None
     if introduced == '0':
-      introduced = None
+      processed_introduced = None
+    elif introduced:
+      processed_introduced = self.sort_key(introduced)
 
-    if introduced:
-      introduced = self.sort_key(introduced)
-      start_idx = bisect.bisect_left(parsed_versions, introduced)
+    if processed_introduced is not None:
+      start_idx = bisect.bisect_left(parsed_versions, processed_introduced)
     else:
       start_idx = 0
 
+    processed_fixed: Optional[Any] = None
     if fixed:
-      fixed = self.sort_key(fixed)
-      end_idx = bisect.bisect_left(parsed_versions, fixed)
-    elif last_affected:
-      last_affected = self.sort_key(last_affected)
-      end_idx = bisect.bisect_right(parsed_versions, last_affected)
+      processed_fixed = self.sort_key(fixed)
+
+    processed_last_affected: Optional[Any] = None
+    if last_affected:
+      processed_last_affected = self.sort_key(last_affected)
+
+    if processed_fixed is not None:
+      end_idx = bisect.bisect_left(parsed_versions, processed_fixed)
+    elif processed_last_affected is not None:
+      end_idx = bisect.bisect_right(parsed_versions, processed_last_affected)
     else:
       end_idx = len(versions)
 
-    affected = versions[start_idx:end_idx]
+    affected: List[str] = versions[start_idx:end_idx]
     return [v for v in affected if self._before_limits(v, limits)]
 
   @property
-  def is_semver(self):
+  def is_semver(self) -> bool:
     return False
 
   @property
-  def supports_ordering(self):
+  def supports_ordering(self) -> bool:
     return True
 
   @property
-  def supports_comparing(self):
+  def supports_comparing(self) -> bool:
     """Determines whether to use affected version range comparison
     for API queries."""
     return False
@@ -129,52 +141,55 @@ class Ecosystem(ABC):
 class OrderingUnsupportedEcosystem(Ecosystem):
   """Placeholder ecosystem helper for unimplemented ecosystems."""
 
-  def sort_key(self, version):
+  def sort_key(self, version: str) -> Any:
     raise NotImplementedError('Ecosystem helper does not support sorting')
 
   def enumerate_versions(self,
-                         package,
-                         introduced,
-                         fixed=None,
-                         last_affected=None,
-                         limits=None):
+                         package: str,
+                         introduced: str,
+                         fixed: Optional[str] = None,
+                         last_affected: Optional[str] = None,
+                         limits: Optional[List[str]] = None) -> List[str]:
     raise NotImplementedError('Ecosystem helper does not support enumeration')
 
   @property
-  def supports_ordering(self):
+  def supports_ordering(self) -> bool:
     return False
 
 
 class DepsDevMixin(Ecosystem, ABC):
   """deps.dev mixin."""
 
-  _DEPS_DEV_PACKAGE_URL = \
+  _DEPS_DEV_PACKAGE_URL: str = \
       'https://api.deps.dev/v3alpha/systems/{system}/packages/{package}'
 
-  _DEPS_DEV_ECOSYSTEM_MAP = {
+  _DEPS_DEV_ECOSYSTEM_MAP: Dict[str, str] = {
       'Maven': 'maven',
       'PyPI': 'pypi',
   }
 
   def _deps_dev_enumerate(self,
-                          package,
-                          introduced,
-                          fixed=None,
-                          last_affected=None,
-                          limits=None):
+                          package: str,
+                          introduced: str,
+                          fixed: Optional[str] = None,
+                          last_affected: Optional[str] = None,
+                          limits: Optional[List[str]] = None) -> List[str]:
     """Use deps.dev to get list of versions."""
-    ecosystem = self._DEPS_DEV_ECOSYSTEM_MAP[self.name]
-    url = self._DEPS_DEV_PACKAGE_URL.format(
-        system=ecosystem, package=quote(package, safe=''))
-    response = requests.get(url, timeout=config.timeout)
+    ecosystem_name: str = self._DEPS_DEV_ECOSYSTEM_MAP[self.name]
+    url: str = self._DEPS_DEV_PACKAGE_URL.format(
+        system=ecosystem_name, package=quote(package, safe=''))
+    response = requests.get(
+        url, timeout=config.timeout)  # pytype: disable=module-attr
     if response.status_code == 404:
       raise EnumerateError(f'Package {package} not found')
     if response.status_code != 200:
       raise RuntimeError(
-          f'Failed to get {ecosystem} versions for {package} with: '
+          f'Failed to get {ecosystem_name} versions for {package} with: '
           f'{response.status_code}')
-    response = response.json()
-    versions = [v['versionKey']['version'] for v in response['versions']]
+    response_json: Any = response.json()
+    versions: List[str] = [
+        v['versionKey']['version'] for v in response_json['versions']
+    ]
     self.sort_versions(versions)
     return self._get_affected_versions(versions, introduced, fixed,
                                        last_affected, limits)

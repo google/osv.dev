@@ -12,35 +12,43 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Caching interface and implementations"""
+from __future__ import annotations
+
 import datetime
 import functools
 import inspect
 import json
-import typing
+from typing import Any, Callable, Dict, Tuple
+
+
+# Cache key type, simplified for now.
+# In reality, it's a tuple containing items from bound_args.arguments.items()
+# and unique_f_key.
+CacheKey = Any  # Or more precisely: Tuple[Any, ...]
 
 
 class Cache:
   """Cache Interface"""
 
-  def get(self, key):
+  def get(self, key: CacheKey) -> Any | None:
     raise NotImplementedError
 
-  def set(self, key, value, ttl):
+  def set(self, key: CacheKey, value: Any, ttl: int) -> None:
     raise NotImplementedError
 
 
 class _CacheEntry:
-  data: typing.Any
+  data: Any
   # TODO(rexpan):
   #  Add more complex expiry logic by checking Last-Modified headers
   expiry: float
 
-  def __init__(self, data, ttl):
+  def __init__(self, data: Any, ttl: int) -> None:
     self.data = data
     self.expiry = datetime.datetime.now().timestamp() + ttl
 
 
-def _check_json_serializable(obj):
+def _check_json_serializable(obj: Any) -> None:
   """Raise exception if `obj` is not JSON serializable."""
   # Cache implementations require keys and values to be JSON serializable.
   json.dumps(obj)
@@ -49,13 +57,13 @@ def _check_json_serializable(obj):
 class InMemoryCache(Cache):
   """In memory cache implementation."""
 
-  key_val_map: typing.Dict[str, _CacheEntry]
+  key_val_map: Dict[CacheKey, _CacheEntry]
 
-  def __init__(self):
+  def __init__(self) -> None:
     self.key_val_map = {}
 
-  def get(self, key):
-    entry = self.key_val_map.get(key)
+  def get(self, key: CacheKey) -> Any | None:
+    entry: _CacheEntry | None = self.key_val_map.get(key)
     if not entry:
       return None
 
@@ -65,11 +73,11 @@ class InMemoryCache(Cache):
     self.key_val_map.pop(key)
     return None
 
-  def set(self, key, value, ttl):
+  def set(self, key: CacheKey, value: Any, ttl: int) -> None:
     self.key_val_map[key] = _CacheEntry(value, ttl)
 
 
-def cached(cache: Cache, ttl: int = 60 * 60):
+def cached(cache: Cache, ttl: int = 60 * 60) -> Callable[..., Any]:
   """Function decorator to cache results.
 
   Args:
@@ -79,14 +87,17 @@ def cached(cache: Cache, ttl: int = 60 * 60):
     ttl: Time to live in seconds (default 1 hour).
   """
 
-  def decorator(func):
+  def decorator(func: Callable[..., Any]) -> Callable[..., Any]:
     # Get the name of the function decorated, this will be used as the key in
     # the cache.
-    unique_f_key = ('FUNC_MODULE_NAME', inspect.getmodule(func).__name__,
-                    func.__qualname__)
+    unique_f_key: Tuple[str, str, str] = (
+        'FUNC_MODULE_NAME',
+        inspect.getmodule(func).__name__,
+        func.__qualname__,
+    )
 
     @functools.wraps(func)
-    def wrapper(*args, **kwargs):
+    def wrapper(*args: Any, **kwargs: Any) -> Any:
       # TODO(ochang): Detect and handle `self` arguments.
       sig = inspect.signature(func)
       # Passing through the arguments made to the function
@@ -95,14 +106,17 @@ def cached(cache: Cache, ttl: int = 60 * 60):
       # If default changes, we want a new key to be generated
       bound_args.apply_defaults()
       # Making it hashable and combining it with the function name
-      cache_key = (*bound_args.arguments.items(), unique_f_key)
+      # The actual type of cache_key items can be complex (tuples of str, Any)
+      cache_key_parts = list(bound_args.arguments.items())
+      cache_key: CacheKey = tuple(cache_key_parts + [unique_f_key])
+
       _check_json_serializable(cache_key)
-      cached_value = cache.get(cache_key)
-      if cached_value:
+      cached_value: Any | None = cache.get(cache_key)
+      if cached_value is not None: # Check for not None, as False is a valid cached value
         return cached_value
 
       # Cache miss, cache the return value from the decorated function
-      value = func(*args, **kwargs)
+      value: Any = func(*args, **kwargs)
       _check_json_serializable(value)
       cache.set(cache_key, value, ttl)
 

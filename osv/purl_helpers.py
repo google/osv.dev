@@ -13,17 +13,22 @@
 # limitations under the License.
 """PURL conversion utilities."""
 
+from __future__ import annotations
+
 from collections import namedtuple
+from typing import Dict, Optional
 from urllib.parse import quote
 
 from packageurl import PackageURL
 
+# Define types for namedtuples for clarity if needed, though their usage is straightforward.
+# For now, relying on their definition.
 ParsedPURL = namedtuple('ParsedPURL', ['ecosystem', 'package', 'version'])
-EcosystemPURL = namedtuple('EcosystemPURL', ['type', 'namespace'])
+EcosystemPURL = namedtuple('EcosystemPURL', ['type', 'namespace']) # namespace can be None
 
 # PURL spec:
 # https://github.com/package-url/purl-spec/blob/master/PURL-TYPES.rst
-ECOSYSTEM_PURL_DATA = {
+ECOSYSTEM_PURL_DATA: Dict[str, EcosystemPURL] = {
     'AlmaLinux': EcosystemPURL('rpm', 'almalinux'),
     'Alpine': EcosystemPURL('apk', 'alpine'),
     # Android
@@ -62,35 +67,39 @@ ECOSYSTEM_PURL_DATA = {
 }
 
 # Create the reverse lookup hash map
-PURL_ECOSYSTEM_MAP = {
+PURL_ECOSYSTEM_MAP: Dict[EcosystemPURL, str] = {
     purl_data: ecosystem
     for ecosystem, purl_data in ECOSYSTEM_PURL_DATA.items()
 }
 
 
-def _url_encode(package_name):
+def _url_encode(package_name: str) -> str:
   """URL encode a PURL `namespace/name` or `name`."""
-  parts = package_name.split('/')
+  parts: List[str] = package_name.split('/')
   return '/'.join(quote(p) for p in parts)
 
 
-def package_to_purl(ecosystem: str, package_name: str) -> str | None:
+def package_to_purl(ecosystem: str, package_name: str) -> Optional[str]:
   """Convert a ecosystem and package name to PURL."""
-  purl_data = ECOSYSTEM_PURL_DATA.get(ecosystem)
+  purl_data: Optional[EcosystemPURL] = ECOSYSTEM_PURL_DATA.get(ecosystem)
   if not purl_data:
     return None
 
-  purl_type, purl_namespace = purl_data
-  if purl_namespace:
-    purl_ecosystem = f'{purl_type}/{purl_namespace}'
-  else:
-    purl_ecosystem = purl_type
+  purl_type: str = purl_data.type
+  purl_namespace: Optional[str] = purl_data.namespace # namespace can be None
 
-  suffix = ''
+  purl_ecosystem_str: str # Renamed for clarity
+  if purl_namespace:
+    purl_ecosystem_str = f'{purl_type}/{purl_namespace}'
+  else:
+    purl_ecosystem_str = purl_type
+
+  suffix: str = ''
+  processed_package_name: str = package_name # Use a new var for modifications
 
   if purl_type == 'maven':
     # PURLs use / to separate the group ID and the artifact ID.
-    package_name = package_name.replace(':', '/', 1)
+    processed_package_name = package_name.replace(':', '/', 1)
 
   if purl_type == 'deb' and ecosystem == 'Debian':
     suffix = '?arch=source'
@@ -98,10 +107,10 @@ def package_to_purl(ecosystem: str, package_name: str) -> str | None:
   if purl_type == 'apk' and ecosystem == 'Alpine':
     suffix = '?arch=source'
 
-  return f'pkg:{purl_ecosystem}/{_url_encode(package_name)}{suffix}'
+  return f'pkg:{purl_ecosystem_str}/{_url_encode(processed_package_name)}{suffix}'
 
 
-def parse_purl(purl_str: str) -> ParsedPURL | None:
+def parse_purl(purl_str: str) -> Optional[ParsedPURL]:
   """Parses a PURL string and extracts
   ecosystem, package, and version information.
 

@@ -13,10 +13,14 @@
 # limitations under the License.
 """Ecosystem helpers."""
 
+from __future__ import annotations
+
 import re
 
 from osv.ecosystems.chainguard import Chainguard
 from osv.ecosystems.wolfi import Wolfi
+from typing import Dict, Optional, Set
+
 from .helper_base import Ecosystem, OrderingUnsupportedEcosystem
 from .alma_linux import AlmaLinux
 from .alpine import Alpine
@@ -39,7 +43,7 @@ from .ubuntu import Ubuntu
 from .suse import SUSE
 from .opensuse import OpenSUSE
 
-_ecosystems = {
+_ecosystems: Dict[str, Ecosystem] = {
     # SemVer-based ecosystems (remember keep synced with SEMVER_ECOSYSTEMS):
     'Bitnami': SemverEcosystem(),
     'crates.io': SemverEcosystem(),
@@ -75,7 +79,7 @@ _ecosystems = {
 
 # Semver-based ecosystems, should correspond to _ecosystems above.
 # TODO(michaelkedar): Avoid need to keep in sync with above.
-SEMVER_ECOSYSTEMS = {
+SEMVER_ECOSYSTEMS: Set[str] = {
     'Bitnami',
     'crates.io',
     'Go',
@@ -84,7 +88,7 @@ SEMVER_ECOSYSTEMS = {
     'SwiftURL',
 }
 
-package_urls = {
+package_urls: Dict[str, str] = {
     'Android': 'https://android.googlesource.com/',
     'CRAN': 'https://cran.r-project.org/web/packages/',
     'crates.io': 'https://crates.io/crates/',
@@ -103,7 +107,7 @@ package_urls = {
     'RubyGems': 'https://rubygems.org/gems/',
 }
 
-_OSV_TO_DEPS_ECOSYSTEMS_MAP = {
+_OSV_TO_DEPS_ECOSYSTEMS_MAP: Dict[str, str] = {
     'npm': 'npm',
     'Go': 'go',
     'Maven': 'maven',
@@ -113,7 +117,7 @@ _OSV_TO_DEPS_ECOSYSTEMS_MAP = {
 }
 
 
-def get(name: str) -> Ecosystem:
+def get(name: str) -> Optional[Ecosystem]:
   """Get ecosystem helpers for a given ecosystem."""
 
   if name.startswith('Debian'):
@@ -150,12 +154,12 @@ def get(name: str) -> Ecosystem:
   return _ecosystems.get(normalize(name))
 
 
-def normalize(ecosystem_name: str):
+def normalize(ecosystem_name: str) -> str:
   return ecosystem_name.split(':')[0]
 
 
-def remove_variants(ecosystem_name: str) -> str | None:
-  result = None
+def remove_variants(ecosystem_name: str) -> Optional[str]:
+  result: Optional[str] = None
   # For Ubuntu, remove ":Pro" and ":LTS"
   if ecosystem_name.startswith('Ubuntu'):
     result = ecosystem_name.replace(':Pro', '').replace(':LTS', '')
@@ -163,7 +167,7 @@ def remove_variants(ecosystem_name: str) -> str | None:
   return result
 
 
-def add_matching_ecosystems(original_set: set[str]) -> set[str]:
+def add_matching_ecosystems(original_set: Set[str]) -> Set[str]:
   """
   For Linux distributions, some release versions may have different variants.
   For example, Ubuntu:22.04 is equivalent to Ubuntu:22.04:LTS.
@@ -179,10 +183,10 @@ def add_matching_ecosystems(original_set: set[str]) -> set[str]:
   Returns:
     A new set with the added matching ecosystems.
   """
-  new_set = set(original_set)
+  new_set: Set[str] = set(original_set)
   for ecosystem in original_set:
     # For Ubuntu, remove ":Pro" and ":LTS"
-    new_ecosystem = remove_variants(ecosystem)
+    new_ecosystem: Optional[str] = remove_variants(ecosystem)
     if new_ecosystem:
       new_set.add(new_ecosystem)
   return new_set
@@ -192,7 +196,7 @@ def is_supported_in_deps_dev(ecosystem_name: str) -> bool:
   return ecosystem_name in _OSV_TO_DEPS_ECOSYSTEMS_MAP
 
 
-def map_ecosystem_to_deps_dev(ecosystem_name: str) -> str:
+def map_ecosystem_to_deps_dev(ecosystem_name: str) -> Optional[str]:
   return _OSV_TO_DEPS_ECOSYSTEMS_MAP.get(ecosystem_name)
 
 

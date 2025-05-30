@@ -16,16 +16,18 @@
 import vcr.unittest
 
 from .. import ecosystems
+from .helper_base import Ecosystem
 
 
 class BioconductorEcosystemTest(vcr.unittest.VCRTestCase):
   """Bioconductor ecosystem helper tests."""
 
-  def test_next_version(self):
+  def test_next_version(self) -> None:
     """Test next_version."""
-    ecosystem = ecosystems.get('Bioconductor')
-    self.assertEqual('1.18.0', ecosystem.next_version('a4', '1.16.0'))
-    self.assertEqual('1.20.0', ecosystem.next_version('a4', '1.18.0'))
-    self.assertGreater(ecosystem.sort_key('1-0'), ecosystem.sort_key('1.2.0'))
+    ecosystem: Ecosystem = ecosystems.get('Bioconductor')
+    self.assertIsNotNone(ecosystem)
+    self.assertEqual('1.18.0', ecosystem.next_version('a4', '1.16.0'))  # pytype: disable=attribute-error
+    self.assertEqual('1.20.0', ecosystem.next_version('a4', '1.18.0'))  # pytype: disable=attribute-error
+    self.assertGreater(ecosystem.sort_key('1-0'), ecosystem.sort_key('1.2.0'))  # pytype: disable=attribute-error
     with self.assertRaises(ecosystems.EnumerateError):
-      ecosystem.next_version('doesnotexist123456', '1')
+      ecosystem.next_version('doesnotexist123456', '1')  # pytype: disable=attribute-error

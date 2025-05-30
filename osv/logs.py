@@ -13,6 +13,8 @@
 # limitations under the License.
 """GCP Logging Helpers."""
 
+from __future__ import annotations
+
 import logging
 from google.cloud import logging as google_logging
 
@@ -54,6 +56,21 @@ class _ErrorReportingFilter:
 
 
 def setup_gcp_logging(service_name):
+  """Set up GCP logging and error reporting."""
+
+  logging_client = google_logging.Client()
+  logging_client.setup_logging()
+
+  logging.getLogger().addFilter(_ErrorReportingFilter(service_name))
+  logging.getLogger().setLevel(logging.INFO)
+
+  # Suppress noisy logs in some of our dependencies.
+  logging.getLogger('google.api_core.bidi').setLevel(logging.ERROR)
+  logging.getLogger('google.cloud.pubsub_v1.subscriber._protocol.'
+                    'streaming_pull_manager').setLevel(logging.ERROR)
+
+
+def setup_gcp_logging(service_name: str) -> None:
   """Set up GCP logging and error reporting."""
 
   logging_client = google_logging.Client()

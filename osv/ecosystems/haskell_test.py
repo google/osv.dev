@@ -17,38 +17,42 @@
 import vcr.unittest
 
 from .. import ecosystems
+from .helper_base import Ecosystem
 
 
 class HackageEcosystemTest(vcr.unittest.VCRTestCase):
   """Hackage ecosystem helper tests."""
 
-  def test_next_version(self):
+  def test_next_version(self) -> None:
     """Test next_version."""
-    ecosystem = ecosystems.get('Hackage')
-    self.assertEqual('1.0.0.0', ecosystem.next_version('aeson', '0.11.3.0'))
-    self.assertEqual('1.0.1.0', ecosystem.next_version('aeson', '1.0.0.0'))
-    self.assertEqual('0.1.26.0', ecosystem.next_version('jose', '0'))
+    ecosystem: Ecosystem = ecosystems.get('Hackage')
+    self.assertIsNotNone(ecosystem)
+    self.assertEqual('1.0.0.0', ecosystem.next_version('aeson', '0.11.3.0'))  # pytype: disable=attribute-error
+    self.assertEqual('1.0.1.0', ecosystem.next_version('aeson', '1.0.0.0'))  # pytype: disable=attribute-error
+    self.assertEqual('0.1.26.0', ecosystem.next_version('jose', '0'))  # pytype: disable=attribute-error
     with self.assertRaises(ecosystems.EnumerateError):
-      ecosystem.next_version('doesnotexist123456', '1')
+      ecosystem.next_version('doesnotexist123456', '1')  # pytype: disable=attribute-error
 
-  def test_sort_key(self):
+  def test_sort_key(self) -> None:
     """Test sort_key."""
-    ecosystem = ecosystems.get('Hackage')
-    self.assertGreater(
+    ecosystem: Ecosystem = ecosystems.get('Hackage')
+    self.assertIsNotNone(ecosystem)
+    self.assertGreater(  # pytype: disable=attribute-error
         ecosystem.sort_key('1-20-0'), ecosystem.sort_key('1.20.0'))
 
 
 class GHCEcosystemTest(vcr.unittest.VCRTestCase):
   """GHC ecosystem helper tests."""
 
-  def test_next_version(self):
+  def test_next_version(self) -> None:
     """Test next_version."""
-    ecosystem = ecosystems.get('GHC')
-    self.assertEqual('0.29', ecosystem.next_version('GHC', '0'))
-    self.assertEqual('7.0.4', ecosystem.next_version('GHC', '7.0.4-rc1'))
+    ecosystem: Ecosystem = ecosystems.get('GHC')
+    self.assertIsNotNone(ecosystem)
+    self.assertEqual('0.29', ecosystem.next_version('GHC', '0'))  # pytype: disable=attribute-error
+    self.assertEqual('7.0.4', ecosystem.next_version('GHC', '7.0.4-rc1'))  # pytype: disable=attribute-error
     # 7.0.4 is the last of the hardcoded versions
-    self.assertEqual('7.2.1', ecosystem.next_version('GHC', '7.0.4'))
+    self.assertEqual('7.2.1', ecosystem.next_version('GHC', '7.0.4'))  # pytype: disable=attribute-error
 
     # The whole GHC ecosystem is versioned together.  Enumeration ignores
     # package/component name.  Therefore this should NOT raise:
-    ecosystem.next_version('doesnotexist123456', '1')
+    ecosystem.next_version('doesnotexist123456', '1')  # pytype: disable=attribute-error

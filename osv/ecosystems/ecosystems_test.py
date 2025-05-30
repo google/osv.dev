@@ -14,25 +14,26 @@
 """Ecosystem helpers tests."""
 
 import json
-
 import re
-
 import unittest
+from typing import Any, Dict, KeysView
 
 from . import _ecosystems
 
 
 class EcosystemsTest(unittest.TestCase):
   """Ecosystem helpers tests."""
+  schema_ecosystems: re.Pattern
+  canonical_ecosystems: KeysView[str]
 
-  def setUp(self):
+  def setUp(self) -> None:
     with open('osv/osv-schema/validation/schema.json') as schema_f:
-      schema = json.load(schema_f)
+      schema: Dict[str, Any] = json.load(schema_f)
     self.schema_ecosystems = re.compile(
         schema['$defs']['ecosystemWithSuffix']['pattern'])
     self.canonical_ecosystems = _ecosystems._ecosystems.keys()  # pylint: disable=protected-access
 
-  def test_ecosystem_supported_by_schema(self):
+  def test_ecosystem_supported_by_schema(self) -> None:
     """Test ecosystems referenced exist in schema definition"""
     for ecosystem in self.canonical_ecosystems:
       self.assertIsNotNone(

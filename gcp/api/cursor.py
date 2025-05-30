@@ -13,10 +13,11 @@
 # limitations under the License.
 """OSV API server cursor implementation."""
 
+from __future__ import annotations
+
 import base64
 from enum import Enum
-from typing import Self
-import typing
+from typing import Optional, Self, cast # Removed `import typing`, use `cast` from `typing`
 
 from google.cloud import ndb
 import google.cloud.ndb.exceptions as ndb_exceptions
@@ -58,7 +59,7 @@ class QueryCursor:
     ended: Whether this cursor is for a query that has finished returning data.
   """
 
-  _ndb_cursor: ndb.Cursor | None = None
+  _ndb_cursor: Optional[ndb.Cursor] = None # Changed to Optional[ndb.Cursor]
   _cursor_state: _QueryCursorState = _QueryCursorState.ENDED
   # The first query is numbered 1. This is because the query counter is
   # incremented **before** the query and the query number being used.
@@ -99,7 +100,8 @@ class QueryCursor:
       it: the iterator to take the cursor position from.
     """
     try:
-      self._ndb_cursor = typing.cast(ndb.Cursor, it.cursor_after())
+      # Use cast from typing directly
+      self._ndb_cursor = cast(ndb.Cursor, it.cursor_after())
       self._cursor_state = _QueryCursorState.IN_PROGRESS
     except ndb_exceptions.BadArgumentError:
       # This exception can happen when iterator has not begun iterating
@@ -136,9 +138,11 @@ class QueryCursor:
       case _QueryCursorState.STARTED:
         cursor_part = _FIRST_PAGE_TOKEN
       case _QueryCursorState.IN_PROGRESS:
-        # Assume that IN_PROGRESS means self.cursor is always set.
-        # Loudly throw an exception if this is not the case
-        cursor_part = self._ndb_cursor.urlsafe().decode()  # type: ignore
+        # Ensure _ndb_cursor is not None when in this state, as per class logic.
+        if self._ndb_cursor is None:
+          # This case should ideally not be reached if state is managed correctly.
+          raise ValueError("_ndb_cursor cannot be None when state is IN_PROGRESS")
+        cursor_part = self._ndb_cursor.urlsafe().decode()
       case _QueryCursorState.ENDED:
         # If ENDED, we want to return None to not include
         # a token in the response

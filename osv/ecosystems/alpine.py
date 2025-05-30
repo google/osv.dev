@@ -17,7 +17,7 @@ import glob
 import logging
 import os.path
 import subprocess
-import typing
+from typing import List, Optional, Set
 
 from ..third_party.univers.alpine import AlpineLinuxVersion
 
@@ -38,21 +38,21 @@ class Alpine(Ecosystem):
 
   # Use github mirror which supports more bandwidth.
   _APORTS_GIT_URL = 'https://github.com/alpinelinux/aports.git'
-  _BRANCH_SUFFIX = '-stable'
+  _BRANCH_SUFFIX: str = '-stable'
   alpine_release_ver: str
-  _GIT_REPO_PATH = 'version_enum/aports/'
+  _GIT_REPO_PATH: str = 'version_enum/aports/'
   # Sometimes (2 or 3 packages) APKBUILD files are a bash script and version
   # is actually stored in variables. _kver is the common variable name.
-  _PKGVER_ALIASES = ('+pkgver=', '+_kver=')
-  _PKGREL_ALIASES = ('+pkgrel=', '+_krel=')
+  _PKGVER_ALIASES: tuple[str, ...] = ('+pkgver=', '+_kver=')
+  _PKGREL_ALIASES: tuple[str, ...] = ('+pkgrel=', '+_krel=')
 
-  def __init__(self, alpine_release_ver: str):
+  def __init__(self, alpine_release_ver: str) -> None:
     self.alpine_release_ver = alpine_release_ver
 
   def get_branch_name(self) -> str:
     return self.alpine_release_ver.lstrip('v') + self._BRANCH_SUFFIX
 
-  def sort_key(self, version):
+  def sort_key(self, version: str) -> AlpineLinuxVersion:
     if not AlpineLinuxVersion.is_valid(version):
       # If version is not valid, it is most likely an invalid input
       # version then sort it to the last/largest element
@@ -60,24 +60,24 @@ class Alpine(Ecosystem):
     return AlpineLinuxVersion(version)
 
   @staticmethod
-  def _process_git_log(output: str) -> list:
+  def _process_git_log(output: str) -> List[str]:
     """
     Takes git log diff output,
     finds all changes to pkgver and pkgrel and outputs that in an unsorted list
     """
-    all_versions = set()
+    all_versions: Set[str] = set()
     # Filter out the relevant lines
-    lines = [
+    lines: List[str] = [
         x for x in output.splitlines()
-        if len(x) == 0 or x.startswith(Alpine._PKGVER_ALIASES) or
-        x.startswith(Alpine._PKGREL_ALIASES)
+        if len(x) == 0 or x.startswith(Alpine._PKGVER_ALIASES) or  # pytype: disable=wrong-arg-types
+        x.startswith(Alpine._PKGREL_ALIASES)  # pytype: disable=wrong-arg-types
     ]
     # Reverse so that it's in chronological order.
     # The following loop also expects this order.
     lines.reverse()
 
-    current_ver = None
-    current_rel = None
+    current_ver: Optional[str] = None
+    current_rel: Optional[str] = None
 
     def clean_versions(ver: str) -> str:
       ver = ver.split(' #')[0]  # Remove comment lines
@@ -103,17 +103,17 @@ class Alpine(Ecosystem):
 
       # Within a commit block, parse all lines and save it till the end
       # of the block
-      x_split = line.split('=', 1)
+      x_split: List[str] = line.split('=', 1)
       if len(x_split) != 2:
         # Skip the occasional invalid versions
         continue
 
-      num = x_split[1]
-      if line.startswith(Alpine._PKGVER_ALIASES):
+      num: str = x_split[1]
+      if line.startswith(Alpine._PKGVER_ALIASES):  # pytype: disable=wrong-arg-types
         current_ver = num
         continue
 
-      if line.startswith(Alpine._PKGREL_ALIASES):
+      if line.startswith(Alpine._PKGREL_ALIASES):  # pytype: disable=wrong-arg-types
         current_rel = num
         continue
 
@@ -122,10 +122,10 @@ class Alpine(Ecosystem):
 
   def enumerate_versions(self,
                          package: str,
-                         introduced,
-                         fixed=None,
-                         last_affected=None,
-                         limits=None):
+                         introduced: str,
+                         fixed: Optional[str] = None,
+                         last_affected: Optional[str] = None,
+                         limits: Optional[List[str]] = None) -> List[str]:
     """We use Alpines aports git repository history to do version enum"""
 
     if config.work_dir is None:
@@ -135,30 +135,31 @@ class Alpine(Ecosystem):
 
     get_versions = self._get_versions
     if config.shared_cache:
-      get_versions = cached(config.shared_cache)(get_versions)
+      # TODO(rexpan): Fix pytype issue with importing cache
+      get_versions = cached(config.shared_cache)(get_versions)  # pytype: disable=import-error
 
-    versions = get_versions(self.get_branch_name(), package)
+    versions: List[str] = get_versions(self.get_branch_name(), package)
     self.sort_versions(versions)
 
     return self._get_affected_versions(versions, introduced, fixed,
                                        last_affected, limits)
 
   @staticmethod
-  def _get_versions(branch: str, package: str) -> typing.List[str]:
+  def _get_versions(branch: str, package: str) -> List[str]:
     """Get all versions for a package from aports repo"""
 
     # Checkout the repo at the alpine version branch
-    checkout_dir = os.path.join(config.work_dir, Alpine._GIT_REPO_PATH)
+    checkout_dir: str = os.path.join(config.work_dir, Alpine._GIT_REPO_PATH)  # pytype: disable=attribute-error
     repos.ensure_updated_checkout(
         Alpine._APORTS_GIT_URL, checkout_dir, branch=branch)
-    directories = glob.glob(
+    directories: List[str] = glob.glob(
         os.path.join(checkout_dir, '*', package.lower(), 'APKBUILD'),
         recursive=True)
 
     if len(directories) != 1:
       raise EnumerateError('Cannot find package in aports')
 
-    relative_path = os.path.relpath(directories[0], checkout_dir)
+    relative_path: str = os.path.relpath(directories[0], checkout_dir)
 
     # Run git log -L to get a list of all changes to the package APKBUILD file
     # Specifically changes to "pkgver=" and "pkgrel="
@@ -170,12 +171,12 @@ class Alpine(Ecosystem):
 
     # yapf: disable
     # https://git-scm.com/docs/git-log/2.33.1#Documentation/git-log.txt--Lltstartgtltendgtltfilegt
-    stdout_data = subprocess.check_output([
+    stdout_data: str = subprocess.check_output([
         'git', 'log', '--oneline',
         '-L', '^/' + regex_test_versions  + '/,+1:' + relative_path,
         '-L', '^/' + regex_test_revisions + '/,+1:' + relative_path
     ], cwd=checkout_dir).decode('utf-8')
     # yapf: enable
 
-    versions = Alpine._process_git_log(stdout_data)
+    versions: List[str] = Alpine._process_git_log(stdout_data)
     return versions

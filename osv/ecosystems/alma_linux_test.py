@@ -15,25 +15,28 @@
 
 import unittest
 from .. import ecosystems
+from .helper_base import Ecosystem
 
 
 class AlmaLinuxEcosystemTest(unittest.TestCase):
   """Almalinux ecosystem helper tests."""
 
-  def test_alma_linux(self):
+  def test_alma_linux(self) -> None:
     """Test sort key"""
-    ecosystem = ecosystems.get('AlmaLinux')
+    ecosystem: Ecosystem = ecosystems.get('AlmaLinux')
+    self.assertIsNotNone(ecosystem)
     self.assertGreater(
-        ecosystem.sort_key("9.27-15.el8_10"),
-        ecosystem.sort_key("9.27-13.el8_10"))
+        ecosystem.sort_key("9.27-15.el8_10"),  # pytype: disable=attribute-error
+        ecosystem.sort_key("9.27-13.el8_10"))  # pytype: disable=attribute-error
     self.assertGreater(
-        ecosystem.sort_key("9.27-15.el8_10"), ecosystem.sort_key("0"))
+        ecosystem.sort_key("9.27-15.el8_10"),  # pytype: disable=attribute-error
+        ecosystem.sort_key("0"))  # pytype: disable=attribute-error
     self.assertGreater(
-        ecosystem.sort_key("3:2.1.10-1.module_el8.10.0+3858+6ad51f9f"),
-        ecosystem.sort_key("3:2.1.10-1.module_el8.10.0+3845+87b84552"))
+        ecosystem.sort_key("3:2.1.10-1.module_el8.10.0+3858+6ad51f9f"),  # pytype: disable=attribute-error
+        ecosystem.sort_key("3:2.1.10-1.module_el8.10.0+3845+87b84552"))  # pytype: disable=attribute-error
     self.assertLess(
-        ecosystem.sort_key("20230404-117.git2e92a49f.el8_8.alma.1"),
-        ecosystem.sort_key("20240111-121.gitb3132c18.el8"))
+        ecosystem.sort_key("20230404-117.git2e92a49f.el8_8.alma.1"),  # pytype: disable=attribute-error
+        ecosystem.sort_key("20240111-121.gitb3132c18.el8"))  # pytype: disable=attribute-error
     self.assertEqual(
-        ecosystem.sort_key("20240111-121.gitb3132c18.el8"),
-        ecosystem.sort_key("20240111-121.gitb3132c18.el8"))
+        ecosystem.sort_key("20240111-121.gitb3132c18.el8"),  # pytype: disable=attribute-error
+        ecosystem.sort_key("20240111-121.gitb3132c18.el8"))  # pytype: disable=attribute-error

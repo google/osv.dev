@@ -20,8 +20,9 @@ if something is broken and you need help to fix it.
 
 """
 
+from typing import Any, List, Optional, Sequence
+
 import requests
-import typing
 
 from . import config
 from .helper_base import Ecosystem, EnumerateError
@@ -31,9 +32,9 @@ from .. import semver_index
 class Hackage(Ecosystem):
   """Hackage (Haskell package index) ecosystem."""
 
-  _API_PACKAGE_URL = 'https://hackage.haskell.org/package/{package}.json'
+  _API_PACKAGE_URL: str = 'https://hackage.haskell.org/package/{package}.json'
 
-  def sort_key(self, version):
+  def sort_key(self, version: str) -> List[int]:
     """Sort key.
 
     The Haskell package version data type is defined at
@@ -48,22 +49,23 @@ class Hackage(Ecosystem):
       return [999999]
 
   def enumerate_versions(self,
-                         package,
-                         introduced,
-                         fixed=None,
-                         last_affected=None,
-                         limits=None):
+                         package: str,
+                         introduced: str,
+                         fixed: Optional[str] = None,
+                         last_affected: Optional[str] = None,
+                         limits: Optional[List[str]] = None) -> List[str]:
     """Enumerate versions."""
     response = requests.get(
-        self._API_PACKAGE_URL.format(package=package), timeout=config.timeout)
+        self._API_PACKAGE_URL.format(package=package),
+        timeout=config.timeout)  # pytype: disable=module-attr
     if response.status_code == 404:
       raise EnumerateError(f'Package {package} not found')
     if response.status_code != 200:
       raise RuntimeError(
           f'Failed to get Hackage versions for {package} with: {response.text}')
 
-    response = response.json()
-    versions = list(response.keys())
+    response_json: Any = response.json()
+    versions: List[str] = list(response_json.keys())
 
     self.sort_versions(versions)
     return self._get_affected_versions(versions, introduced, fixed,
@@ -73,15 +75,15 @@ class Hackage(Ecosystem):
 class GHC(Ecosystem):
   """Glasgow Haskell Compiler (GHC) ecosystem."""
 
-  _API_PACKAGE_URL = ('https://gitlab.haskell.org'
-                      '/api/v4/projects/3561/repository/tags?per_page=100')
+  _API_PACKAGE_URL: str = ('https://gitlab.haskell.org'
+                           '/api/v4/projects/3561/repository/tags?per_page=100')
   # 100 is the maximum per_page size according to GitLab docs:
   # https://docs.gitlab.com/ee/api/rest/index.html#offset-based-pagination
   """
   Historical versions do not have tags in the Git repo, so we hardcode the
   list.  See https://github.com/google/osv.dev/pull/1463 for discussion.
   """
-  HISTORICAL_VERSIONS = [
+  HISTORICAL_VERSIONS: List[str] = [
     '0.29',
     '2.10',
     '3.02', '3.03',
@@ -99,12 +101,12 @@ class GHC(Ecosystem):
     '7.0.3', '7.0.4-rc1', '7.0.4',
   ]  # yapf: disable
 
-  def sort_key(self, version):
+  def sort_key(self, version: str) -> semver_index.Version:
     """Sort key."""
     return semver_index.parse(version)
 
   @classmethod
-  def tag_to_version(cls, tag: str) -> typing.Optional[str]:
+  def tag_to_version(cls, tag: str) -> Optional[str]:
     """Convert a tag to a release version, or return None if invalid.
 
     GHC release tags follow the scheme:
@@ -114,7 +116,7 @@ class GHC(Ecosystem):
     - ghc-<major>.<minor>.<patch>-release
 
     """
-    parts = tag.split('-')
+    parts: List[str] = tag.split('-')
     if len(parts) == 3 and parts[0] == 'ghc' \
         and cls.is_major_minor_patch(parts[1]):
       if parts[2].startswith('alpha') or parts[2].startswith('rc'):
@@ -126,15 +128,15 @@ class GHC(Ecosystem):
   @staticmethod
   def is_major_minor_patch(s: str) -> bool:
     """Check that string matches ``<int>.<int>.<int>``."""
-    parts = s.split('.')
+    parts: List[str] = s.split('.')
     return len(parts) == 3 and all(x.isdigit() for x in parts)
 
   def enumerate_versions(self,
-                         package,
-                         introduced,
-                         fixed=None,
-                         last_affected=None,
-                         limits=None):
+                         package: str,
+                         introduced: str,
+                         fixed: Optional[str] = None,
+                         last_affected: Optional[str] = None,
+                         limits: Optional[List[str]] = None) -> List[str]:
     """Enumerate versions.
 
     Different components of GHC are part of the same software release.
@@ -144,23 +146,26 @@ class GHC(Ecosystem):
 
     # Versions come from tags from the GitLab API, which are paginated.
     # https://docs.gitlab.com/ee/api/rest/index.html#pagination-link-header
-    url = self._API_PACKAGE_URL
-    versions = self.HISTORICAL_VERSIONS.copy()
+    url: Optional[str] = self._API_PACKAGE_URL
+    versions: List[str] = self.HISTORICAL_VERSIONS.copy()
     while url is not None:
-      response = requests.get(url, timeout=config.timeout)
+      response = requests.get(
+          url, timeout=config.timeout)  # pytype: disable=module-attr
       if response.status_code == 404:
         raise EnumerateError(f'GHC tag list not found at {url}')
       if response.status_code != 200:
         raise RuntimeError(
             f'Failed to get GHC versions from: {url} with: {response.text}')
 
-      versions.extend(self.tag_to_version(x['name']) for x in response.json())
+      response_json: Any = response.json()
+      versions.extend(
+          str(self.tag_to_version(x['name'])) for x in response_json)
 
       if 'next' not in response.links:
         break
       url = response.links['next'].get('url')
 
-    versions = [v for v in versions if v is not None]
+    versions = [v for v in versions if v is not None and v != 'None']
 
     self.sort_versions(versions)
     return self._get_affected_versions(versions, introduced, fixed,

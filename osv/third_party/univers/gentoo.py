@@ -5,44 +5,65 @@
 #
 # Visit https://aboutcode.org and https://github.com/nexB/univers for support and download.
 
+from __future__ import annotations
+
 import re
+from typing import Callable, Dict, List, Match, Optional, Pattern, Tuple # Added necessary types
 
-from .utils import cmp
-from .utils import remove_spaces
+from .utils import cmp # from osv.third_party.univers.utils import cmp
+from .utils import remove_spaces # from osv.third_party.univers.utils import remove_spaces
 
-_is_gentoo_version = re.compile(
+# This is a method of a compiled regex object
+_is_gentoo_version: Callable[[str], Optional[Match[str]]] = re.compile(
     r"^(?:\d+)(?:\.\d+)*[a-zA-Z]?(?:_(p(?:re)?|beta|alpha|rc)\d*)*$").match
 
-suffix_regexp = re.compile("^(alpha|beta|rc|pre|p)(\\d*)$")
+suffix_regexp: Pattern[str] = re.compile(r"^(alpha|beta|rc|pre|p)(\d*)$")
 
-revision_regexp = re.compile(r".*([\.-]r\d+)")
+revision_regexp: Pattern[str] = re.compile(r".*([\.-]r\d+)") # Group 1 captures e.g. "-r1" or ".r1"
 
-suffix_value = {"pre": -2, "p": 1, "alpha": -4, "beta": -3, "rc": -1}
+suffix_value: Dict[str, int] = {"pre": -2, "p": 1, "alpha": -4, "beta": -3, "rc": -1}
 """
 gentoo ebuild version comparison
 """
 
 
-def is_valid(string):
-  version, _ = parse_version_and_revision(remove_spaces(string))
-  return _is_gentoo_version(version)
+def is_valid(string_val: str) -> bool: # Renamed string to string_val
+  # remove_spaces ensures string_val is processed without leading/trailing spaces
+  # parse_version_and_revision extracts the main version part and revision.
+  # _is_gentoo_version then validates only the main version part.
+  version_part, _ = parse_version_and_revision(remove_spaces(string_val)) # Renamed version
+  return bool(_is_gentoo_version(version_part)) # bool() converts Match object or None to boolean
 
 
-def parse_version_and_revision(version_string):
+def parse_version_and_revision(version_string: str) -> Tuple[str, int]:
   """
-  Return a tuple of (version string, revision int) given a ``version_string``.
+  Return a tuple of (version string part, revision int) given a ``version_string``.
+  E.g., "1.2.3-r4" -> ("1.2.3", 4). "1.2.3" -> ("1.2.3", 0).
   """
-  revision = 0
-  version = version_string
-  match = revision_regexp.search(version_string)
-  if match:
-    revision = int(match.group(1)[2:])
-    version = version_string[:match.span(1)[0]]
+  revision_val: int = 0 # Renamed revision
+  version_part: str = version_string # Renamed version
 
-  return version, revision
+  # Search for revision pattern (e.g., "-r1", ".r1")
+  match_obj: Optional[Match[str]] = revision_regexp.search(version_string) # Renamed match
+  if match_obj:
+    # group(1) is like "-r1" or ".r1". We need the number part.
+    # The first char is delimiter ('.' or '-'), second is 'r'. So number starts at index 2.
+    revision_str: str = match_obj.group(1)[2:]
+    if revision_str.isdigit(): # Ensure it's a number before int()
+        revision_val = int(revision_str)
+    else:
+        # This case implies a malformed revision string, e.g., "1.2-rfoo"
+        # Depending on strictness, could raise error or ignore.
+        # Original code assumes int() will succeed.
+        pass # Keep revision_val = 0 or handle error
+
+    # The main version part is everything before the matched revision string.
+    version_part = version_string[:match_obj.span(1)[0]]
+
+  return version_part, revision_val
 
 
-def vercmp(ver1, ver2):
+def vercmp(ver1_str: Optional[str], ver2_str: Optional[str]) -> int: # Renamed ver1, ver2
   """
   Compare two versions ``ver1`` and ``ver2`` and return 0, 1, or -1 according
   to the Python 2 cmp() semantics:

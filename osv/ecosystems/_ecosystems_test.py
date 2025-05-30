@@ -14,22 +14,24 @@
 """Ecosystem helper tests."""
 
 import unittest
+from typing import List, Set
 from .. import ecosystems
 
 
 class EcosystemTest(unittest.TestCase):
   """Ecosystem helper tests."""
 
-  def test_add_matching_ecosystems(self):
+  def test_add_matching_ecosystems(self) -> None:
     """Test sort key"""
     # Test Ubuntu
-    ubuntu_ecosystem = {
+    ubuntu_ecosystem: Set[str] = {
         'Ubuntu', 'Ubuntu:20.04:LTS', 'Ubuntu:22.04:LTS', 'Ubuntu:24.04:LTS',
         'Ubuntu:24.10', 'Ubuntu:Pro:14.04:LTS', 'Ubuntu:Pro:16.04:LTS',
         'Ubuntu:Pro:18.04:LTS'
     }
-    actual_output = list(ecosystems.add_matching_ecosystems(ubuntu_ecosystem))
-    expected_output = [
+    actual_output: List[str] = list(
+        ecosystems.add_matching_ecosystems(ubuntu_ecosystem))
+    expected_output: List[str] = [
         'Ubuntu', 'Ubuntu:14.04', 'Ubuntu:16.04', 'Ubuntu:18.04',
         'Ubuntu:20.04', 'Ubuntu:20.04:LTS', 'Ubuntu:22.04', 'Ubuntu:22.04:LTS',
         'Ubuntu:24.04', 'Ubuntu:24.04:LTS', 'Ubuntu:24.10',
@@ -39,17 +41,18 @@ class EcosystemTest(unittest.TestCase):
     self.assertEqual(list(actual_output), expected_output)
 
     #Test Debian (it should be no change)
-    debian_ecosystem = {'Debian', 'Debian:11', 'Debian:12', 'Debian:13'}
+    debian_ecosystem: Set[str] = {'Debian', 'Debian:11', 'Debian:12', 'Debian:13'}
     actual_output = list(ecosystems.add_matching_ecosystems(debian_ecosystem))
     expected_output = ['Debian', 'Debian:11', 'Debian:12', 'Debian:13']
     actual_output.sort()
     self.assertEqual(list(actual_output), expected_output)
 
-  def test_maybe_normalize_package_names(self):
+  def test_maybe_normalize_package_names(self) -> None:
     """Test normalize package name"""
-    package_name = 'Flask'
-    ecosystem = 'PyPI'
-    expected = 'flask'
+    package_name: str = 'Flask'
+    ecosystem: str = 'PyPI'
+    expected: str = 'flask'
 
-    actual = ecosystems.maybe_normalize_package_names(package_name, ecosystem)
+    actual: str = ecosystems.maybe_normalize_package_names(
+        package_name, ecosystem)
     self.assertEqual(actual, expected)

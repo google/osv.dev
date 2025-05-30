@@ -13,8 +13,11 @@
 # limitations under the License.
 """Bug helpers."""
 
+from __future__ import annotations
+
 import enum
 import re
+from typing import Any, Dict, List
 
 
 class BugStatus(enum.IntFlag):
@@ -32,26 +35,30 @@ VERSION_COMPONENT_REGEX = re.compile(
     r'(\d+|(?<![a-z])(?:rc|alpha|beta|preview)\d*)', re.IGNORECASE)
 
 
-def normalize_tag(tag):
+def normalize_tag(tag: str) -> str:
   """Normalize a single tag for fuzzy version searching."""
-  components = VERSION_COMPONENT_REGEX.findall(tag)
+  components: List[str] = VERSION_COMPONENT_REGEX.findall(tag)
   return '-'.join(components)
 
 
-def normalize_tags(tags):
+def normalize_tags(tags: List[str]) -> List[str]:
   """Normalize tags for fuzzy version searching."""
   return [normalize_tag(tag) for tag in tags]
 
 
-def populate_indices(bug):
+def populate_indices(bug: Dict[str, Any]) -> None:
   """Write search indices for the bug."""
   bug['has_affected'] = bool(bug.get('affected'))
 
-  search_indices = []
-  project = bug.get('project')
+  search_indices: List[str] = []
+  project: str | None = bug.get('project')
   if project:
     search_indices.append(project)
 
-  search_indices.append(bug.key.id_or_name)
-  search_indices.extend(bug.key.id_or_name.split('-'))
+  # Assuming bug.key.id_or_name is a string.
+  # If bug is an NDB model, this might need a more specific type
+  # but Dict[str, Any] for bug means we assume string keys for now.
+  bug_id: str = bug.key.id_or_name
+  search_indices.append(bug_id)
+  search_indices.extend(bug_id.split('-'))
   bug['search_indices'] = search_indices

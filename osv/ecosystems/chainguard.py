@@ -13,6 +13,8 @@
 # limitations under the License.
 """Chainguard ecosystem helper."""
 
+from typing import List, Optional
+
 from osv.ecosystems.helper_base import Ecosystem
 from ..third_party.univers.alpine import AlpineLinuxVersion
 
@@ -20,7 +22,7 @@ from ..third_party.univers.alpine import AlpineLinuxVersion
 class Chainguard(Ecosystem):
   """Chainguard packages ecosystem"""
 
-  def sort_key(self, version):
+  def sort_key(self, version: str) -> AlpineLinuxVersion:
     # Chainguard uses `apk` package format
     if not AlpineLinuxVersion.is_valid(version):
       # If version is not valid, it is most likely an invalid input
@@ -29,13 +31,13 @@ class Chainguard(Ecosystem):
     return AlpineLinuxVersion(version)
 
   def enumerate_versions(self,
-                         package,
-                         introduced,
-                         fixed=None,
-                         last_affected=None,
-                         limits=None):
+                         package: str,
+                         introduced: str,
+                         fixed: Optional[str] = None,
+                         last_affected: Optional[str] = None,
+                         limits: Optional[List[str]] = None) -> List[str]:
     raise NotImplementedError('Ecosystem helper does not support enumeration')
 
   @property
-  def supports_comparing(self):
+  def supports_comparing(self) -> bool:
     return True

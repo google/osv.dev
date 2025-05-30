@@ -15,19 +15,24 @@
 
 import unittest
 from .. import ecosystems
+from .helper_base import Ecosystem
 
 
 class ChainguardEcosystemTest(unittest.TestCase):
   """Chainguard ecosystem helper tests."""
 
-  def test_chainguard(self):
+  def test_chainguard(self) -> None:
     """Test sort_key"""
-    ecosystem = ecosystems.get('Chainguard')
+    ecosystem: Ecosystem = ecosystems.get('Chainguard')
+    self.assertIsNotNone(ecosystem)
     self.assertGreater(
-        ecosystem.sort_key('38.52.0-r0'), ecosystem.sort_key('37.52.0-r0'))
-    self.assertLess(ecosystem.sort_key('453'), ecosystem.sort_key('453-r1'))
-    self.assertGreater(ecosystem.sort_key('5.4.13-r1'), ecosystem.sort_key('0'))
+        ecosystem.sort_key('38.52.0-r0'),  # pytype: disable=attribute-error
+        ecosystem.sort_key('37.52.0-r0'))  # pytype: disable=attribute-error
+    self.assertLess(ecosystem.sort_key('453'), ecosystem.sort_key('453-r1'))  # pytype: disable=attribute-error
+    self.assertGreater(ecosystem.sort_key('5.4.13-r1'), ecosystem.sort_key('0'))  # pytype: disable=attribute-error
     self.assertGreater(
-        ecosystem.sort_key('1.4.0-r1'), ecosystem.sort_key('1.4.0-r0'))
+        ecosystem.sort_key('1.4.0-r1'),  # pytype: disable=attribute-error
+        ecosystem.sort_key('1.4.0-r0'))  # pytype: disable=attribute-error
     self.assertGreater(
-        ecosystem.sort_key('invalid'), ecosystem.sort_key('1.4.0-r0'))
+        ecosystem.sort_key('invalid'),  # pytype: disable=attribute-error
+        ecosystem.sort_key('1.4.0-r0'))  # pytype: disable=attribute-error

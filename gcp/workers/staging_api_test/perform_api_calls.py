@@ -141,11 +141,16 @@ async def make_http_request(session: aiohttp.ClientSession, request_url: str,
   try:
     timeout = aiohttp.ClientTimeout(sock_connect=300, sock_read=300)
     if request_type == 'GET':
-      async with session.get(request_url):
-        pass  # We're not awaiting the response, just sending the request
+      async with session.get(request_url) as response:
+        # Await the response to ensure the server has finished
+        # and the connection is properly handled.
+        await response.read()
     elif request_type == 'POST':
-      async with session.post(request_url, json=request_body, timeout=timeout):
-        pass  # We're not awaiting the response, just sending the request
+      async with session.post(
+          request_url, json=request_body, timeout=timeout) as response:
+        # Await the response to ensure the server has finished
+        # and the connection is properly handled.
+        await response.read()
   except Exception as e:
     # When sending a large number of requests concurrently,
     # some may fail due to timeout issues.
@@ -494,7 +499,8 @@ async def main() -> None:
       send_purl_requests(package_query_ids, bug_map),
       send_batch_requests(package_query_ids, bug_map, BATCH_QUERY_BATCH_SIZE),
       send_batch_requests(large_batch_query_ids, bug_map,
-                          LARGE_BATCH_QUERY_BATCH_SIZE))
+                          LARGE_BATCH_QUERY_BATCH_SIZE),
+      return_exceptions=True)
 
 
 if __name__ == "__main__":

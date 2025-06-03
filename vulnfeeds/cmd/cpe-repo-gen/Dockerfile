@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-FROM golang:1.24.3-alpine@sha256:ef18ee7117463ac1055f5a370ed18b8750f01589f13ea0b48642f5792b234044 AS GO_BUILD
+FROM golang:1.24.3-alpine@sha256:b4f875e650466fa0fe62c6fd3f02517a392123eea85f1d7e69d85f780e4db1c1 AS GO_BUILD
 
 RUN mkdir /src
 WORKDIR /src
@@ -24,7 +24,7 @@ RUN go mod download
 COPY ./ /src/
 RUN CGO_ENABLED=0 go build -o cpe-repo-gen ./cmd/cpe-repo-gen
 
-FROM gcr.io/google.com/cloudsdktool/google-cloud-cli:alpine@sha256:0ea6aac6920cce79b2b40584e4d735fba134a275fd18ebc827cebfdadd7db1da
+FROM gcr.io/google.com/cloudsdktool/google-cloud-cli:alpine@sha256:27813d3aa958b495fc9ad585fe4ef135d52726b28d6e38b3dbd3c03323e9149e
 
 COPY --from=GO_BUILD /src/cpe-repo-gen ./
 COPY ./cmd/cpe-repo-gen/cpe-repo-gen_map.sh ./

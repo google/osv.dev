@@ -518,7 +518,7 @@ func ClassifyReferenceLink(link string, tag string) string {
 	return "WEB"
 }
 
-func extractReferencedVulns(id cves.CVEID, cveID cves.CVEID, references []cves.Reference) ([]string, []string) {
+func ExtractReferencedVulns(id cves.CVEID, cveID cves.CVEID, references []cves.Reference) ([]string, []string) {
 	var aliases []string
 	var related []string
 	if id != cves.CVEID(cveID) {
@@ -613,7 +613,7 @@ func ClassifyReferences(refs []cves.Reference) (references References) {
 // FromCVE creates a minimal OSV object from a given CVEItem and id.
 // Leaves affected and version fields empty to be filled in later with AddPkgInfo
 func FromCVE(id cves.CVEID, cve cves.CVE) (*Vulnerability, []string) {
-	aliases, related := extractReferencedVulns(id, cve.ID, cve.References)
+	aliases, related := ExtractReferencedVulns(id, cve.ID, cve.References)
 	v := Vulnerability{
 		ID:      string(id),
 		Details: cves.EnglishDescription(cve.Descriptions),

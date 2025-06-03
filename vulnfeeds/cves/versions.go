@@ -481,7 +481,7 @@ func ValidateAndCanonicalizeLink(link string, httpClient *http.Client) (canonica
 }
 
 // For URLs referencing commits in supported Git repository hosts, return a cloneable AffectedCommit.
-func extractGitCommit(link string, commitType models.CommitType, httpClient *http.Client) (ac models.AffectedCommit, err error) {
+func ExtractGitCommit(link string, commitType models.CommitType, httpClient *http.Client) (ac models.AffectedCommit, err error) {
 	r, err := Repo(link)
 	if err != nil {
 		return ac, err
@@ -502,7 +502,7 @@ func extractGitCommit(link string, commitType models.CommitType, httpClient *htt
 	// redirect to a completely different host, instead of a redirect within
 	// GitHub)
 	if possiblyDifferentLink != link {
-		return extractGitCommit(possiblyDifferentLink, commitType, httpClient)
+		return ExtractGitCommit(possiblyDifferentLink, commitType, httpClient)
 	}
 
 	ac.SetRepo(r)
@@ -629,7 +629,7 @@ func cleanVersion(version string) string {
 func ExtractVersionInfo(cve CVE, validVersions []string, httpClient *http.Client) (v models.VersionInfo, notes []string) {
 	for _, reference := range cve.References {
 		// (Potentially faulty) Assumption: All viable Git commit reference links are fix commits.
-		if commit, err := extractGitCommit(reference.Url, models.Fixed, httpClient); err == nil {
+		if commit, err := ExtractGitCommit(reference.Url, models.Fixed, httpClient); err == nil {
 			v.AffectedCommits = append(v.AffectedCommits, commit)
 		}
 	}

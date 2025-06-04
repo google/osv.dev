@@ -177,26 +177,26 @@ A queryset response with paginated results will be in this form:
 
 ```json
 {
-  "results": [
-    {
-      "vulns": [
-        ...
-      ],
-      "next_page_token": "token for query 1"
-    },
-    {
-      "vulns": [
-        ...
-      ],
-      "next_page_token": "token for query 2"
-    },
-    {
-      "vulns": [
-        ...
-      ],
-    },
-    ...
-  ]
+  "results": [
+    {
+      "vulns": [
+        ...
+      ],
+      "next_page_token": "token for query 1"
+    },
+    {
+      "vulns": [
+        ...
+      ],
+      "next_page_token": "token for query 2"
+    },
+    {
+      "vulns": [
+        ...
+      ],
+    },
+    ...
+  ]
 }
 ```
 Notice that each result has a distinct `next_page_token` and that the third result does not include a `next_page_token`. This indicates that all of the vulnerabilities for the third query have been returned. 

@@ -43,6 +43,9 @@ Package Objects can be described by package name AND ecosystem OR by the package
 
 Case Sensitivity: API requests are case-sensitive. Please ensure that you use the correct case for parameter names and values. For example, use 'PyPI' instead of 'pypi'.
 
+### Queries for Git records
+You can also query for git tags via this API. To do so, set the `ecosystem` to `GIT`, enter the full URL of the repository to the `name` field, and the tag into the `version` field. See below for an example.
+
 ## Payload
 ```json
 {
@@ -53,21 +56,28 @@ Case Sensitivity: API requests are case-sensitive. Please ensure that you use th
     "ecosystem": "string",
     "purl": "string"
   },
-  "page_token": "string",
+  "page_token": "string"
 }
 ```
 
 ## Request samples
 
 ```bash
+# Commit query
 curl -d \
   '{"commit": "6879efc2c1596d11a6a6ad296f80063b558d5e0f"}' \
   "https://api.osv.dev/v1/query"
 
+# Package and version query
 curl -d \
-  '{"package": {"name": "mruby"}, "version": "2.1.2rc"}' \
+  '{"package": {"name": "nokogiri", "ecosystem": "RubyGems"}, "version": "1.18.2"}' \
   "https://api.osv.dev/v1/query"
-  ```
+
+# Git query by tag
+curl -d \
+  '{"package": {"name": "https://github.com/curl/curl.git", "ecosystem": "GIT"}, "version": "8.5.0"}' \
+  "https://api.osv.dev/v1/query"
+```
 
 ## Sample 200 response
 ```json
@@ -135,10 +145,10 @@ For the `v1/query` endpoint pagination will occur when there more than 1,000 vul
 A response indicating pagination will be in this form:
 ```json
 {
-  "vulns": [
-    ...
-  ],
-  "next_page_token": "a base64 string here"
+  "vulns": [
+    ...
+  ],
+  "next_page_token": "a base64 string here"
 }
 ```
 

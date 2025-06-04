@@ -3,8 +3,8 @@ name = "worker"
 requires-python = ">=3.11,<4.0"
 dependencies = [
     "google-auth-httplib2==0.2.0",
-    "google-api-python-client==2.170.0",
-    "google-cloud-pubsub==2.29.0",
+    "google-api-python-client==2.171.0",
+    "google-cloud-pubsub==2.29.1",
     "google-cloud-ndb==2.3.3",
     "google-cloud-storage==2.19.0",
     "pyyaml==6.0.2",

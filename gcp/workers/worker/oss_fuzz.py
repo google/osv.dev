@@ -36,7 +36,7 @@ COMMIT_RANGE_LIMIT = 4
 # determined.
 UNKNOWN_COMMIT = 'unknown'
 
-# Large projects which take way too long to build.
+# Projects that are excluded from OSV analysis.
 # TODO(ochang): Don't hardcode this.
 PROJECT_DENYLIST = {
     'avahi',  # https://github.com/google/osv.dev/issues/2178
@@ -48,6 +48,7 @@ PROJECT_DENYLIST = {
     'libbpf',  # https://github.com/google/osv.dev/issues/2178
     'libreoffice',
     'systemd',  # https://github.com/google/osv.dev/issues/2178
+    'xpdf',  # https://github.com/google/oss-fuzz/issues/13248
 }
 
 REPO_DENYLIST = {

@@ -13,7 +13,7 @@ dependencies = [
     "google-cloud-logging>=3.10", 
     "google-cloud-storage>=2.17", 
     "semver>=3.0",
-    "packageurl-python==0.16.0",
+    "packageurl-python==0.17.0",
     "pyyaml>=6.0",  
     "pygit2>=1.14.0", 
     "attrs>=23.2", 

@@ -24,41 +24,73 @@ EcosystemPURL = namedtuple('EcosystemPURL', ['type', 'namespace'])
 # PURL spec:
 # https://github.com/package-url/purl-spec/blob/master/PURL-TYPES.rst
 ECOSYSTEM_PURL_DATA = {
-    'AlmaLinux': EcosystemPURL('rpm', 'almalinux'),
-    'Alpine': EcosystemPURL('apk', 'alpine'),
+    'AlmaLinux':
+        EcosystemPURL('rpm', 'almalinux'),
+    'Alpaquita':
+        EcosystemPURL('apk', 'alpaquita'),
+    'Alpine':
+        EcosystemPURL('apk', 'alpine'),
     # Android
+    'BellSoft Hardened Containers':
+        EcosystemPURL('apk', 'bellsoft-hardened-containers'),
     # Bioconductor
-    'Bitnami': EcosystemPURL('bitnami', None),
-    'Chainguard': EcosystemPURL('apk', 'chainguard'),
-    'ConanCenter': EcosystemPURL('conan', None),
-    'CRAN': EcosystemPURL('cran', None),
-    'crates.io': EcosystemPURL('cargo', None),
-    'Debian': EcosystemPURL('deb', 'debian'),
+    'Bitnami':
+        EcosystemPURL('bitnami', None),
+    'Chainguard':
+        EcosystemPURL('apk', 'chainguard'),
+    'ConanCenter':
+        EcosystemPURL('conan', None),
+    'CRAN':
+        EcosystemPURL('cran', None),
+    'crates.io':
+        EcosystemPURL('cargo', None),
+    'Debian':
+        EcosystemPURL('deb', 'debian'),
     # GHC
     # GIT
     # GitHub Actions
-    'Go': EcosystemPURL('golang', None),
-    'Hackage': EcosystemPURL('hackage', None),
-    'Hex': EcosystemPURL('hex', None),
+    'Go':
+        EcosystemPURL('golang', None),
+    'Hackage':
+        EcosystemPURL('hackage', None),
+    'Hex':
+        EcosystemPURL('hex', None),
     # Linux
-    'Mageia': EcosystemPURL('rpm', 'mageia'),
-    'Maven': EcosystemPURL('maven', None),
-    'MinimOS': EcosystemPURL('apk', 'minimos'),
-    'npm': EcosystemPURL('npm', None),
-    'NuGet': EcosystemPURL('nuget', None),
-    'openSUSE': EcosystemPURL('rpm', 'opensuse'),
-    'OSS-Fuzz': EcosystemPURL('generic', None),
-    'Packagist': EcosystemPURL('composer', None),
+    'Mageia':
+        EcosystemPURL('rpm', 'mageia'),
+    'Maven':
+        EcosystemPURL('maven', None),
+    'MinimOS':
+        EcosystemPURL('apk', 'minimos'),
+    'npm':
+        EcosystemPURL('npm', None),
+    'NuGet':
+        EcosystemPURL('nuget', None),
+    'openSUSE':
+        EcosystemPURL('rpm', 'opensuse'),
+    'OSS-Fuzz':
+        EcosystemPURL('generic', None),
+    'Packagist':
+        EcosystemPURL('composer', None),
     # Photon OS
-    'Pub': EcosystemPURL('pub', None),
-    'PyPI': EcosystemPURL('pypi', None),
-    'Red Hat': EcosystemPURL('rpm', 'redhat'),
-    'Rocky Linux': EcosystemPURL('rpm', 'rocky-linux'),
-    'RubyGems': EcosystemPURL('gem', None),
-    'SUSE': EcosystemPURL('rpm', 'suse'),
-    'SwiftURL': EcosystemPURL('swift', None),
-    'Ubuntu': EcosystemPURL('deb', 'ubuntu'),
-    'Wolfi': EcosystemPURL('apk', 'wolfi'),
+    'Pub':
+        EcosystemPURL('pub', None),
+    'PyPI':
+        EcosystemPURL('pypi', None),
+    'Red Hat':
+        EcosystemPURL('rpm', 'redhat'),
+    'Rocky Linux':
+        EcosystemPURL('rpm', 'rocky-linux'),
+    'RubyGems':
+        EcosystemPURL('gem', None),
+    'SUSE':
+        EcosystemPURL('rpm', 'suse'),
+    'SwiftURL':
+        EcosystemPURL('swift', None),
+    'Ubuntu':
+        EcosystemPURL('deb', 'ubuntu'),
+    'Wolfi':
+        EcosystemPURL('apk', 'wolfi'),
 }
 
 # Create the reverse lookup hash map
@@ -95,7 +127,8 @@ def package_to_purl(ecosystem: str, package_name: str) -> str | None:
   if purl_type == 'deb' and ecosystem == 'Debian':
     suffix = '?arch=source'
 
-  if purl_type == 'apk' and ecosystem == 'Alpine':
+  if purl_type == 'apk' and ecosystem in ('Alpine', 'Alpaquita',
+                                          'BellSoft Hardened Containers'):
     suffix = '?arch=source'
 
   return f'pkg:{purl_ecosystem}/{_url_encode(package_name)}{suffix}'

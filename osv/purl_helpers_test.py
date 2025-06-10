@@ -26,6 +26,13 @@ class PurlHelpersTest(unittest.TestCase):
     self.assertEqual('pkg:rpm/almalinux/libvpx',
                      purl_helpers.package_to_purl('AlmaLinux', 'libvpx'))
 
+    self.assertEqual('pkg:apk/alpaquita/xz?arch=source',
+                     purl_helpers.package_to_purl('Alpaquita', 'xz'))
+
+    self.assertEqual(
+        'pkg:apk/bellsoft-hardened-containers/jq?arch=source',
+        purl_helpers.package_to_purl('BellSoft Hardened Containers', 'jq'))
+
     self.assertEqual('pkg:apk/alpine/postgresql14?arch=source',
                      purl_helpers.package_to_purl('Alpine', 'postgresql14'))
 
@@ -139,6 +146,10 @@ class PurlHelpersTest(unittest.TestCase):
     self.assertEqual(('AlmaLinux', 'libvpx', None),
                      purl_helpers.parse_purl('pkg:rpm/almalinux/libvpx'))
 
+    self.assertEqual(('Alpaquita', 'xz', None),
+                     purl_helpers.parse_purl(
+                         'pkg:apk/alpaquita/xz?arch=source&distro=stream'))
+
     self.assertEqual(
         ('Alpine', 'postgresql14', None),
         purl_helpers.parse_purl('pkg:apk/alpine/postgresql14?arch=source'))
@@ -172,6 +183,11 @@ class PurlHelpersTest(unittest.TestCase):
 
     self.assertEqual(('Hackage', 'process', None),
                      purl_helpers.parse_purl('pkg:hackage/process'))
+
+    self.assertEqual(
+        ('BellSoft Hardened Containers', 'jq', None),
+        purl_helpers.parse_purl(
+            'pkg:apk/bellsoft-hardened-containers/jq?arch=source&distro=23'))
 
     self.assertEqual(('Hex', 'test-package', None),
                      purl_helpers.parse_purl('pkg:hex/test-package'))

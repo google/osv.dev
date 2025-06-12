@@ -330,13 +330,14 @@ grpcio-gcp = ["grpcio-gcp (>=0.2.2,<1.0.0)"]
 
 [[package]]
 name = "google-api-python-client"
-version = "2.171.0"
+version = "2.172.0"
 description = "Google API Client Library for Python"
 optional = false
 python-versions = ">=3.7"
 groups = ["main"]
 files = [
-    {file = "google_api_python_client-2.171.0.tar.gz", hash = "sha256:057a5c08d28463c6b9eb89746355de5f14b7ed27a65c11fdbf1d06c66bb66b23"},
+    {file = "google_api_python_client-2.172.0-py3-none-any.whl", hash = "sha256:9f1b9a268d5dc1228207d246c673d3a09ee211b41a11521d38d9212aeaa43af7"},
+    {file = "google_api_python_client-2.172.0.tar.gz", hash = "sha256:dcb3b7e067154b2aa41f1776cf86584a5739c0ac74e6ff46fc665790dca0e6a6"},
 ]
 
 [package.dependencies]
@@ -498,33 +499,34 @@ protobuf = ">=3.20.2,<4.21.0 || >4.21.0,<4.21.1 || >4.21.1,<4.21.2 || >4.21.2,<4
 
 [[package]]
 name = "google-cloud-ndb"
-version = "2.3.3"
+version = "2.3.4"
 description = "NDB library for Google Cloud Datastore"
 optional = false
 python-versions = ">=3.7"
 groups = ["main"]
 files = [
-    {file = "google_cloud_ndb-2.3.3-py3-none-any.whl", hash = "sha256:8841a8222b1e5a720566bed4b8f3c3567c260d3f5dc29ca7e5d13dd0c4ac8ddf"},
-    {file = "google_cloud_ndb-2.3.3.tar.gz", hash = "sha256:f0b22067f4f5159192bfc311989988335a3a8dd570d9ae3cd4527ca74b9b1091"},
+    {file = "google_cloud_ndb-2.3.4-py3-none-any.whl", hash = "sha256:6bf46c7331a58229408251652521f14355cf74ba58f5aa049c0664562d468a29"},
+    {file = "google_cloud_ndb-2.3.4.tar.gz", hash = "sha256:c2cdc38b22fa2d3f6984db6368b9be11902235ef46e2252a17f8083fe3176160"},
 ]
 
 [package.dependencies]
-google-api-core = {version = ">=1.34.0,<2.0.dev0 || >=2.11.dev0,<3.0.0dev", extras = ["grpc"]}
-google-cloud-datastore = ">=2.16.0,<2.20.2 || >2.20.2,<3.0.0dev"
-protobuf = ">=3.20.2,<4.21.0 || >4.21.0,<4.21.1 || >4.21.1,<4.21.2 || >4.21.2,<4.21.3 || >4.21.3,<4.21.4 || >4.21.4,<4.21.5 || >4.21.5,<6.0.0dev"
-pymemcache = ">=2.1.0,<5.0.0dev"
+google-api-core = {version = ">=1.34.0,<2.0.dev0 || >=2.11.dev0,<3.0.0", extras = ["grpc"]}
+google-cloud-datastore = ">=2.16.0,<2.20.2 || >2.20.2,<3.0.0"
+protobuf = ">=3.20.2,<4.21.0 || >4.21.0,<4.21.1 || >4.21.1,<4.21.2 || >4.21.2,<4.21.3 || >4.21.3,<4.21.4 || >4.21.4,<4.21.5 || >4.21.5,<7.0.0"
+pymemcache = ">=2.1.0,<5.0.0"
 pytz = ">=2018.3"
-redis = ">=3.0.0,<6.0.0dev"
+redis = ">=3.0.0,<7.0.0"
 
 [[package]]
 name = "google-cloud-pubsub"
-version = "2.29.1"
+version = "2.30.0"
 description = "Google Cloud Pub/Sub API client library"
 optional = false
 python-versions = ">=3.7"
 groups = ["main"]
 files = [
-    {file = "google_cloud_pubsub-2.29.1.tar.gz", hash = "sha256:5f4b0534c587394dd20538c1baeab7d4ebced789561058739555eb44d7924ce4"},
+    {file = "google_cloud_pubsub-2.30.0-py3-none-any.whl", hash = "sha256:bd7adabc1b79ba2220529401e34dfd72bfdbdad9132a697b4200012a49281629"},
+    {file = "google_cloud_pubsub-2.30.0.tar.gz", hash = "sha256:26975ed728d2209479f4fb2667e3b3bd70de7605abadf4b301c651c39ed83042"},
 ]
 
 [package.dependencies]
@@ -936,7 +938,7 @@ google-cloud-ndb = ">=2.3"
 google-cloud-storage = ">=2.17"
 grpcio = ">=1.0"
 jsonschema = ">=4.0"
-packageurl-python = "0.16.0"
+packageurl-python = ">=0.17.0"
 packaging-legacy = ">=23.0.post0"
 pygit2 = ">=1.14.0"
 pyyaml = ">=6.0"
@@ -949,14 +951,14 @@ url = "../../.."
 
 [[package]]
 name = "packageurl-python"
-version = "0.16.0"
+version = "0.17.1"
 description = "A purl aka. Package URL parser and builder"
 optional = false
 python-versions = ">=3.8"
 groups = ["main"]
 files = [
-    {file = "packageurl_python-0.16.0-py3-none-any.whl", hash = "sha256:5c3872638b177b0f1cf01c3673017b7b27ebee485693ae12a8bed70fa7fa7c35"},
-    {file = "packageurl_python-0.16.0.tar.gz", hash = "sha256:69e3bf8a3932fe9c2400f56aaeb9f86911ecee2f9398dbe1b58ec34340be365d"},
+    {file = "packageurl_python-0.17.1-py3-none-any.whl", hash = "sha256:59b0862ae0b216994f847e05b4c6e870e0d16e1ddd706feefb19d79810f22cbd"},
+    {file = "packageurl_python-0.17.1.tar.gz", hash = "sha256:5db592a990b60bc02446033c50fb1803a26c5124cd72c5a2cd1b8ea1ae741969"},
 ]
 
 [package.extras]
@@ -1675,4 +1677,4 @@ type = ["pytest-mypy"]
 [metadata]
 lock-version = "2.1"
 python-versions = ">=3.11,<4.0"
-content-hash = "6e24998dc74633fde4b6cf1c4e68dbd2e402eeb63155b6ac8a68c09a7524df06"
+content-hash = "5f39b1af34e13ea78e8c05d3c7b4ceb48447d8c411426cd688583e5f1b3061a1"

@@ -6,10 +6,10 @@ require (
 	cloud.google.com/go/datastore v1.20.0
 	cloud.google.com/go/pubsub v1.49.0
 	cloud.google.com/go/storage v1.55.0
-	github.com/go-git/go-git/v5 v5.16.0
+	github.com/go-git/go-git/v5 v5.16.2
 	github.com/golang/glog v1.2.5
 	github.com/google/go-cmp v0.7.0
-	golang.org/x/sync v0.14.0
+	golang.org/x/sync v0.15.0
 	google.golang.org/api v0.236.0
 	gopkg.in/yaml.v3 v3.0.1
 )

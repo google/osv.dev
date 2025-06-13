@@ -336,7 +336,7 @@ func (p *PyPI) packageExists(pkg string) bool {
 
 func (p *PyPI) finalPkgCheck(cve cves.CVE, pkg string, falsePositives *triage.FalsePositives) bool {
 	// To avoid false positives, check that the pkg name is mentioned in the description.
-	desc := strings.ToLower(cves.EnglishDescription(cve))
+	desc := strings.ToLower(cves.EnglishDescription(cve.Descriptions))
 	pkgNameParts := strings.Split(pkg, "-")
 
 	for _, part := range pkgNameParts {

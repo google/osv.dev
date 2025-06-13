@@ -689,7 +689,7 @@ func TestExtractGitCommit(t *testing.T) {
 			if !tc.disableExpiryDate.IsZero() && time.Now().After(tc.disableExpiryDate) {
 				t.Logf("test %q: extractGitCommit(%q, %q) has been enabled on %s.", tc.description, tc.inputLink, tc.inputCommitType, tc.disableExpiryDate)
 			}
-			got, err := extractGitCommit(tc.inputLink, tc.inputCommitType, client)
+			got, err := ExtractGitCommit(tc.inputLink, tc.inputCommitType, client)
 			if err != nil && !tc.expectFailure {
 				t.Errorf("test %q: extractGitCommit for %q (%q) errored unexpectedly: %#v", tc.description, tc.inputLink, tc.inputCommitType, err)
 			}

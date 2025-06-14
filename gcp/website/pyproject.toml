@@ -14,7 +14,7 @@ dependencies = [
     "markupsafe==2.1.5",
     "packageurl-python==0.17.1",
     "redis==4.6.0",
-    "requests==2.32.3",
+    "requests==2.32.4",
     "gunicorn==23.0.0",
     "whitenoise==6.9.0",
     "cvss==3.4",

@@ -20,7 +20,7 @@ dependencies = [
     "jsonschema>=4.0", 
     "grpcio>=1.0", 
     "packaging-legacy>=23.0.post0",
-    "requests>=2.32", 
+    "requests>=2.32.4", 
 ]
 
 

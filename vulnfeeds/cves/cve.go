@@ -69,8 +69,8 @@ type CVE5 struct {
 	}
 }
 
-func EnglishDescription(cve CVE) string {
-	for _, desc := range cve.Descriptions {
+func EnglishDescription(descriptions []LangString) string {
+	for _, desc := range descriptions {
 		if desc.Lang == "en" {
 			return desc.Value
 		}

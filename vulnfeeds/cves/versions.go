@@ -481,7 +481,7 @@ func ValidateAndCanonicalizeLink(link string, httpClient *http.Client) (canonica
 }
 
 // For URLs referencing commits in supported Git repository hosts, return a cloneable AffectedCommit.
-func extractGitCommit(link string, commitType models.CommitType, httpClient *http.Client) (ac models.AffectedCommit, err error) {
+func ExtractGitCommit(link string, commitType models.CommitType, httpClient *http.Client) (ac models.AffectedCommit, err error) {
 	r, err := Repo(link)
 	if err != nil {
 		return ac, err
@@ -502,7 +502,7 @@ func extractGitCommit(link string, commitType models.CommitType, httpClient *htt
 	// redirect to a completely different host, instead of a redirect within
 	// GitHub)
 	if possiblyDifferentLink != link {
-		return extractGitCommit(possiblyDifferentLink, commitType, httpClient)
+		return ExtractGitCommit(possiblyDifferentLink, commitType, httpClient)
 	}
 
 	ac.SetRepo(r)
@@ -521,7 +521,7 @@ func extractGitCommit(link string, commitType models.CommitType, httpClient *htt
 	return ac, nil
 }
 
-func hasVersion(validVersions []string, version string) bool {
+func HasVersion(validVersions []string, version string) bool {
 	if len(validVersions) == 0 {
 		return true
 	}
@@ -561,7 +561,7 @@ func processExtractedVersion(version string) string {
 	return version
 }
 
-func extractVersionsFromDescription(validVersions []string, description string) ([]models.AffectedVersion, []string) {
+func ExtractVersionsFromDescription(validVersions []string, description string) ([]models.AffectedVersion, []string) {
 	// Match:
 	//  - x.x.x before x.x.x
 	//  - x.x.x through x.x.x
@@ -597,13 +597,13 @@ func extractVersionsFromDescription(validVersions []string, description string) 
 			continue
 		}
 
-		if introduced != "" && !hasVersion(validVersions, introduced) {
+		if introduced != "" && !HasVersion(validVersions, introduced) {
 			notes = append(notes, fmt.Sprintf("Extracted introduced version %s is not a valid version", introduced))
 		}
-		if fixed != "" && !hasVersion(validVersions, fixed) {
+		if fixed != "" && !HasVersion(validVersions, fixed) {
 			notes = append(notes, fmt.Sprintf("Extracted fixed version %s is not a valid version", fixed))
 		}
-		if lastaffected != "" && !hasVersion(validVersions, lastaffected) {
+		if lastaffected != "" && !HasVersion(validVersions, lastaffected) {
 			notes = append(notes, fmt.Sprintf("Extracted last_affected version %s is not a valid version", lastaffected))
 		}
 		// Favour fixed over last_affected for schema compliance.
@@ -629,7 +629,7 @@ func cleanVersion(version string) string {
 func ExtractVersionInfo(cve CVE, validVersions []string, httpClient *http.Client) (v models.VersionInfo, notes []string) {
 	for _, reference := range cve.References {
 		// (Potentially faulty) Assumption: All viable Git commit reference links are fix commits.
-		if commit, err := extractGitCommit(reference.Url, models.Fixed, httpClient); err == nil {
+		if commit, err := ExtractGitCommit(reference.Url, models.Fixed, httpClient); err == nil {
 			v.AffectedCommits = append(v.AffectedCommits, commit)
 		}
 	}
@@ -698,11 +698,11 @@ func ExtractVersionInfo(cve CVE, validVersions []string, httpClient *http.Client
 					continue
 				}
 
-				if introduced != "" && !hasVersion(validVersions, introduced) {
+				if introduced != "" && !HasVersion(validVersions, introduced) {
 					notes = append(notes, fmt.Sprintf("Warning: %s is not a valid introduced version", introduced))
 				}
 
-				if fixed != "" && !hasVersion(validVersions, fixed) {
+				if fixed != "" && !HasVersion(validVersions, fixed) {
 					notes = append(notes, fmt.Sprintf("Warning: %s is not a valid fixed version", fixed))
 				}
 
@@ -722,7 +722,7 @@ func ExtractVersionInfo(cve CVE, validVersions []string, httpClient *http.Client
 	}
 	if !gotVersions {
 		var extractNotes []string
-		v.AffectedVersions, extractNotes = extractVersionsFromDescription(validVersions, EnglishDescription(cve))
+		v.AffectedVersions, extractNotes = ExtractVersionsFromDescription(validVersions, EnglishDescription(cve.Descriptions))
 		notes = append(notes, extractNotes...)
 		if len(v.AffectedVersions) > 0 {
 			log.Printf("[%s] Extracted versions from description = %+v", cve.ID, v.AffectedVersions)

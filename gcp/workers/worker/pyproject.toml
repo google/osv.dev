@@ -11,7 +11,7 @@ dependencies = [
     "redis==5.3.0",
     "packageurl-python==0.17.1",
     "pygit2==1.18.0",
-    "requests==2.32.3",
+    "requests==2.32.4",
     "jsonschema==4.24.0",
     "osv",
 ]

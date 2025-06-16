@@ -37,7 +37,7 @@ from cvss import CVSS2, CVSS3, CVSS4
 import markdown2
 from urllib import parse
 
-import caches
+import cache
 import osv
 import rate_limiter
 import source_mapper
@@ -914,15 +914,13 @@ def construct_hierarchy_string(target_bug_id: str, root_nodes: set[str],
         output_lines.append("<li>" + vuln_id + "</li>")
 
     if vuln_id in graph:
-      sorted_children = sorted(graph[vuln_id])
-      for child in sorted_children:
+      for child in graph[vuln_id]:
         if child != target_bug_id:
           output_lines.append("<ul class=\"substream\">")
           print_subtree(child)
           output_lines.append("</ul>")
 
-  sorted_root_nodes = sorted(root_nodes)
-  for root in sorted_root_nodes:
+  for root in root_nodes:
     output_lines.append("<ul class=\"aliases\">")
     print_subtree(root)
     output_lines.append("</ul>")

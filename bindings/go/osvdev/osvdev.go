@@ -96,8 +96,9 @@ func (c *OSVClient) QueryBatch(ctx context.Context, queries []*Query) (*BatchedR
 		g.Go(func() error {
 			// exit early if another hydration request has already failed
 			// results are thrown away later, so avoid needless work
+			// still return the error here as it might be a context error (e.g. deadline exceeded)
 			if errGrpCtx.Err() != nil {
-				return nil
+				return errGrpCtx.Err()
 			}
 
 			resp, err := c.makeRetryRequest(func(client *http.Client) (*http.Response, error) {

@@ -2,8 +2,8 @@
 name = "pypi-publish"
 requires-python = ">=3.11,<4.0"
 dependencies = [
-    "cryptography (==44.0.2)",
-    "google-cloud-secret-manager (==2.23.3)",
+    "cryptography (==44.0.3)",
+    "google-cloud-secret-manager (==2.24.0)",
     "osv (==0.0.22)",
     "requests (==2.32.4)",
 ]

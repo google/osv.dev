@@ -25,6 +25,8 @@ The step by step instructions are as follows:
         
 - [ ] Create a PR to start [importing the records you are publishing into our test instance of OSV.dev](https://github.com/google/osv.dev/blob/master/source_test.yaml) and validate everything is working as intended there.
 
+- [ ] After successful import, review the OSV-linter results by querying http://api.test.osv.dev/v1experimental/importfindings/{source_name} to identify and address any important record linting issues (allow up to a 1-day delay).
+
 - [ ] Create a PR to start [importing the records you are publishing into our production environment](https://github.com/google/osv.dev/blob/master/source.yaml)
 
 

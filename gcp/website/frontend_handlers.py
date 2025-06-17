@@ -994,8 +994,7 @@ def reverse_tree(graph: dict[str, set[str]]) -> dict[str, set[str]]:
   return reversed_graph
 
 
-def get_upstreams_of_vulnerability(
-    bug) -> ComputedHierarchy | None:
+def get_upstreams_of_vulnerability(bug) -> ComputedHierarchy | None:
   """Gets the upstream hierarchy of a vulnerability.
 
   Args:
@@ -1096,8 +1095,7 @@ def _get_downstreams_of_bug(bug_id: str, bugs: dict[str,
 
 
 def compute_downstream_hierarchy(
-    target_bug_id: str,
-    downstreams: dict[str, list[str]]) -> ComputedHierarchy:
+    target_bug_id: str, downstreams: dict[str, list[str]]) -> ComputedHierarchy:
   """Computes the hierarchy of all downstream vulnerabilities for the given 
   bug ID. Returns the root nodes and a dict of the hierarchy of the downstreams.
   """

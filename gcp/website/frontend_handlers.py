@@ -14,10 +14,11 @@
 """Handlers for the OSV web frontend."""
 
 import json
-import os
-import math
-import re
 import logging
+import math
+import os
+import re
+from typing import Any, NamedTuple
 
 from flask import abort
 from flask import current_app
@@ -336,21 +337,62 @@ def bug_to_response(bug, detailed=True):
     add_links(response)
     add_source_info(bug, response)
     add_stream_info(bug, response)
+    add_known_osv_bugs(response)
+    add_stream_strings(bug, response)
   return response
 
 
-def add_stream_info(bug, response):
+def add_known_osv_bugs(response: dict[str, Any]):
+  """Compute which bugs in aliases/related/upstream/downstream exist in OSV,
+  in order to add links to them.
+
+  Note: This must be called after add_stream_info().
+  """
+
+  # collect all the unique IDs referenced by aliases, related, up- & downstream.
+  ids = set(response.get('aliases', [])) | set(response.get('related', []))
+  if computed := response.get('computed_upstream'):
+    tree = computed[1]
+    for k, v in tree.items():
+      ids.add(k)
+      ids |= v
+  if computed := response.get('computed_downstream'):
+    tree = computed[1]
+    for k, v in tree.items():
+      ids.add(k)
+      ids |= v
+
+  # Somewhat asynchronously query all of the found IDs to check their existence.
+  # This is written to mimic how ndb.get_multi() is implemented.
+  exist_futures = [
+      (bug_id, osv.Bug.query(osv.Bug.db_id == bug_id).get_async(keys_only=True))
+      for bug_id in ids
+  ]
+  exist_ids = set(bug_id for bug_id, f in exist_futures if f.result())
+  response['known_ids'] = exist_ids
+
+
+def add_stream_info(bug: osv.Bug, response: dict[str, Any]):
   """Add upstream hierarchy information to `response`."""
   # Check whether there are upstreams
   if bug.upstream_raw and 'upstream' in response:
-    upstream_hierarchy_string = get_upstreams_of_vulnerability(bug)
-    response['upstream_hierarchy'] = upstream_hierarchy_string
+    response['computed_upstream'] = get_upstreams_of_vulnerability(bug)
   # Check whether there are downstreams
   downstreams = _get_downstreams_of_bug_query(bug.db_id)
   if downstreams:
-    downstream_hierarchy_string = compute_downstream_hierarchy(
+    response['computed_downstream'] = compute_downstream_hierarchy(
         bug.db_id, downstreams)
-    response['downstream_hierarchy'] = downstream_hierarchy_string
+
+
+def add_stream_strings(bug: osv.Bug, response: dict[str, Any]):
+  """Add upstream hierarchy html strings to `response`."""
+  known_ids = response.get('known_ids', set())
+  if computed := response.get('computed_upstream'):
+    response['upstream_hierarchy'] = construct_hierarchy_string(
+        bug.db_id, computed, known_ids)
+  if computed := response.get('computed_downstream'):
+    response['downstream_hierarchy'] = construct_hierarchy_string(
+        bug.db_id, computed, known_ids)
 
 
 def calculate_severity_details(
@@ -777,12 +819,6 @@ def package_in_ecosystem(package):
   return ''
 
 
-@blueprint.app_template_filter('osv_has_vuln')
-def osv_has_vuln(vuln_id):
-  """Checks if an osv vulnerability exists for the given ID."""
-  return osv.Bug.get_by_id(vuln_id)
-
-
 @blueprint.app_template_filter('list_packages')
 def list_packages(vuln_affected: list[dict]):
   """Lists all affected package names without duplicates,
@@ -885,19 +921,33 @@ def relative_time(timestamp: str) -> str:
   return utils.relative_time(timestamp)
 
 
-def construct_hierarchy_string(target_bug_id: str, root_nodes: set[str],
-                               graph: dict[str, set[str]]) -> str:
+class ComputedHierarchy(NamedTuple):
+  """Represents the computed hierarchy of upstream/downstream vulnerabilities.
+  For use with construct_hierarchy_string.
+
+  Attributes:
+    root_nodes: a set of root_nodes
+    graph: A dictionary representing the tree.
+  """
+  root_nodes: set[str]
+  graph: dict[str, set[str]]
+
+
+def construct_hierarchy_string(target_bug_id: str, hierarchy: ComputedHierarchy,
+                               known_ids: set[str]) -> str:
   """Constructs a hierarchy string for display.
 
   Args:
     target_bug_id: The ID of the target bug.
-    root_nodes: a list of root_nodes
-    graph: A dictionary representing the tree to build.
+    hierarchy: a ComputedHierarchy containing the root nodes and tree to build.
+    known_ids: A set of bug IDs that are known to exist (for link generation).
 
   Returns:
     A string representing the hierarchy for display by the frontend.
   """
   output_lines = []
+  root_nodes = hierarchy.root_nodes
+  graph = hierarchy.graph
 
   def print_subtree(vuln_id: str) -> None:
     """
@@ -907,7 +957,7 @@ def construct_hierarchy_string(target_bug_id: str, root_nodes: set[str],
         vuln_id (str): The starting vuln_id for printing the subtree.
     """
     if vuln_id != target_bug_id:
-      if osv_has_vuln(vuln_id):
+      if vuln_id in known_ids:
         output_lines.append("<li><a href=\"/vulnerability/" + vuln_id + "\">" +
                             vuln_id + " </a></li>")
       else:
@@ -944,15 +994,16 @@ def reverse_tree(graph: dict[str, set[str]]) -> dict[str, set[str]]:
   return reversed_graph
 
 
-def get_upstreams_of_vulnerability(bug) -> str | None:
+def get_upstreams_of_vulnerability(bug) -> ComputedHierarchy | None:
   """Gets the upstream hierarchy of a vulnerability.
 
   Args:
     target_bug_id: The ID of the target bug.
 
   Returns:
-    A string representing the upstream hierarchy for display by 
-    the frontend.
+    A ComputedHierarchy containing root nodes and a dict representing the tree,
+    if upstream exists.
+    None if upstreams don't exist or cannot be computed.
   """
   target_bug_group = osv.UpstreamGroup.query(
       osv.UpstreamGroup.db_id == bug.db_id).get()
@@ -971,10 +1022,9 @@ def get_upstreams_of_vulnerability(bug) -> str | None:
 
     root_nodes = set(all_children - set(upstream_hierarchy.keys()))
 
-    upstream_hierarchy_string = construct_hierarchy_string(
-        bug.db_id, root_nodes, reversed_graph)
-    return upstream_hierarchy_string
-  return ""
+    return ComputedHierarchy(root_nodes=root_nodes, graph=reversed_graph)
+
+  return None
 
 
 def has_cycle(graph: dict[str, set[str]]) -> bool:
@@ -1044,11 +1094,10 @@ def _get_downstreams_of_bug(bug_id: str, bugs: dict[str,
   return downstreams
 
 
-def compute_downstream_hierarchy(target_bug_id: str,
-                                 downstreams: dict[str, list[str]]) -> str:
+def compute_downstream_hierarchy(
+    target_bug_id: str, downstreams: dict[str, list[str]]) -> ComputedHierarchy:
   """Computes the hierarchy of all downstream vulnerabilities for the given 
-  bug ID. Returns a constructed string of the downstreams formatted for the 
-  frontend
+  bug ID. Returns the root nodes and a dict of the hierarchy of the downstreams.
   """
 
   downstream_map: dict[str, set[str]] = {}
@@ -1077,6 +1126,4 @@ def compute_downstream_hierarchy(target_bug_id: str,
 
   downstream_map[target_bug_id] = root_leaves
 
-  hierarchy_string = construct_hierarchy_string(target_bug_id, root_leaves,
-                                                downstream_map)
-  return hierarchy_string
+  return ComputedHierarchy(root_nodes=root_leaves, graph=downstream_map)

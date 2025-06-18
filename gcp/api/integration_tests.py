@@ -881,12 +881,12 @@ class IntegrationTests(unittest.TestCase,
   def test_get_vuln_by_alias_not_in_db(self):
     """ Test search by ID for a vuln not in db, but alias is"""
     response = requests.get(
-        _api() + '/v1/vulns/CVE-2024-40120', timeout=_TIMEOUT)
+        _api() + '/v1/vulns/CVE-2018-18420', timeout=_TIMEOUT)
     self.assert_results_equal(
         {
             'code': 5,
             'message': 'Bug not found, but the following aliases were: '
-                       'GHSA-q97m-8853-pq76 GO-2025-3690'
+                       'GHSA-22cq-xxr9-jrrv'
         }, response.json())
 
   def test_query_batch(self):

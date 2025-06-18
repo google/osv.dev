@@ -43,7 +43,7 @@ lint:
 	tools/lint_and_format.sh
 
 build-protos:
-	osv/build_protos.sh
+	$(run-cmd) python -m grpc_tools.protoc --python_out=. --mypy_out=. --proto_path=. osv/*.proto
 
 run-website:
 	cd gcp/website/frontend3 && npm install && npm run build

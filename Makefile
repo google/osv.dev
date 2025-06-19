@@ -44,8 +44,7 @@ lint:
 
 build-protos:
 	$(run-cmd) python -m grpc_tools.protoc --python_out=. --mypy_out=. --proto_path=. osv/*.proto
-	cd gcp/api/v1
-	$(run-cmd) python -m grpc_tools.protoc \
+	cd gcp/api/v1 && $(run-cmd) python3 -m grpc_tools.protoc \
     --include_imports \
     --include_source_info \
     --proto_path=googleapis \

@@ -23,48 +23,68 @@ const (
 	CVE5TimeFormat = "2006-01-02T15:04:05"
 )
 
-type CVE5 struct {
-	DataType    string `json:"dataType"`
-	DataVersion string `json:"dataVersion"`
-	Metadata    struct {
-		State             string `json:"state"`
-		ID                string `json:"cveId"`
-		AssignerOrgId     string `json:"assignerOrgId"`
-		AssignerShortName string `json:"assignerShortName"`
-		DateUpdated       string `json:"dateUpdated"`
-		DateReserved      string `json:"dateReserved"`
-		DatePublished     string `json:"datePublished"`
+type ProblemTypes []struct {
+	Descriptions []struct {
+		Type        string `json:"type"`
+		Lang        string `json:"lang"`
+		Description string `json:"description"`
 	}
-	Containers struct {
+}
+type ProviderMetadata struct {
+	OrgID       string `json:"orgId"`
+	ShortName   string `json:"shortName"`
+	DateUpdated string `json:"dateUpdated"`
+}
+
+type CVE5Metadata struct {
+	State             string `json:"state"`
+	ID                CVEID  `json:"cveId"`
+	AssignerOrgId     string `json:"assignerOrgId"`
+	AssignerShortName string `json:"assignerShortName"`
+	DateUpdated       string `json:"dateUpdated"`
+	DateReserved      string `json:"dateReserved"`
+	DatePublished     string `json:"datePublished"`
+}
+
+type CPE struct {
+	Nodes []Node `json:"nodes"`
+}
+
+type CVE5 struct {
+	DataType    string       `json:"dataType"`
+	DataVersion string       `json:"dataVersion"`
+	Metadata    CVE5Metadata `json:"cveMetadata"`
+	Containers  struct {
 		CNA struct {
-			ProviderMetadata struct {
-				OrgID       string `json:"orgId"`
-				ShortName   string `json:"shortName"`
-				DateUpdated string `json:"dateUpdated"`
-			}
-			Descriptions []struct {
-				Lang  string `json:"lang"`
-				Value string `json:"value"`
-			}
-			Tags     []string `json:"tags"`
-			Affected []struct {
-				Vendor   string `json:"vendor"`
-				Product  string `json:"product"`
-				Versions []struct {
-					Version string `json:"version"`
-					Status  string `json:"status"`
+			ProviderMetadata ProviderMetadata `json:"providerMetadata"`
+
+			Descriptions []LangString `json:"descriptions"`
+			Tags         []string     `json:"tags"`
+			Affected     []struct {
+				Vendor        string `json:"vendor"`
+				Product       string `json:"product"`
+				PackageName   string `json:"packageName"`
+				CollectionUrl string `json:"collectionURL"`
+				Versions      []struct {
+					Version         string `json:"version"`
+					Status          string `json:"status"`
+					LessThanOrEqual string `json:"lessThanOrEqual"`
+					LessThan        string `json:"lessThan"`
+					VersionType     string `json:"versionType"`
 				}
 			}
-			References []struct {
-				URL string `json:"url"`
+			References       []Reference  `json:"references"`
+			ProblemTypes     ProblemTypes `json:"problemTypes"`
+			CPEApplicability CPE          `json:"cpeApplicability"`
+		}
+		ADP []struct {
+			Title            string           `json:"title"`
+			ProviderMetadata ProviderMetadata `json:"providerMetadata"`
+			ProblemTypes     ProblemTypes     `json:"problemTypes"`
+			Metrics          []struct {
+				CVSS CVSS `json:"cvssData"`
 			}
-			ProblemTypes []struct {
-				Descriptions []struct {
-					Type        string `json:"type"`
-					Lang        string `json:"lang"`
-					Description string `json:"description"`
-				}
-			}
+			References []Reference `json:"references"`
 		}
 	}
 }

@@ -631,17 +631,15 @@ func deduplicateAffectedCommits(commits []models.AffectedCommit) []models.Affect
 		return []models.AffectedCommit{}
 	}
 
-	// Use a map to track seen combinations of Repo and Fixed.
-	// The key is a string concatenation of Repo and Fixed.
 	seen := make(map[string]struct{})
 	uniqueCommits := make([]models.AffectedCommit, 0, len(commits))
 
 	for _, commit := range commits {
 		// Create a unique key for each commit based on the fields that define uniqueness.
-		key := commit.Repo + "|" + commit.Fixed // Using a separator to avoid issues if parts of the string could combine
+		key := commit.Repo + "|" + commit.Introduced + "|" + commit.Fixed + "|" + commit.LastAffected // Using a separator to avoid issues if parts of the string could combine
 		if _, found := seen[key]; !found {
 			uniqueCommits = append(uniqueCommits, commit)
-			seen[key] = struct{}{} // Mark this key as seen
+			seen[key] = struct{}{}
 		}
 	}
 

@@ -1014,95 +1014,82 @@ func TestDeduplicateAffectedCommits(t *testing.T) {
 		expected []models.AffectedCommit
 	}{
 		{
-			name: "All duplicates",
+			name: "All duplicates (map-based, all fields)",
 			input: []models.AffectedCommit{
-				{Repo: "repo1", Fixed: "commitA"},
-				{Repo: "repo1", Fixed: "commitA"},
-				{Repo: "repo1", Fixed: "commitA"},
+				{Repo: "repo1", Introduced: "v1", Fixed: "commitA", LastAffected: "L1"},
+				{Repo: "repo1", Introduced: "v1", Fixed: "commitA", LastAffected: "L1"},
+				{Repo: "repo1", Introduced: "v1", Fixed: "commitA", LastAffected: "L1"},
 			},
 			expected: []models.AffectedCommit{
-				{Repo: "repo1", Fixed: "commitA"},
+				{Repo: "repo1", Introduced: "v1", Fixed: "commitA", LastAffected: "L1"},
 			},
 		},
 		{
-			name: "Mixed duplicates and uniques",
+			name: "Mixed duplicates and uniques (map-based, all fields)",
 			input: []models.AffectedCommit{
-				{Repo: "repo1", Fixed: "commitB"},
-				{Repo: "repo2", Fixed: "commitX"},
-				{Repo: "repo1", Fixed: "commitA"},
-				{Repo: "repo1", Fixed: "commitB"},
-				{Repo: "repo2", Fixed: "commitY"},
-				{Repo: "repo1", Fixed: "commitA"},
+				{Repo: "repo1", Introduced: "v1", Fixed: "commitB", LastAffected: "L1"},
+				{Repo: "repo2", Introduced: "v1", Fixed: "commitX", LastAffected: "L1"},
+				{Repo: "repo1", Introduced: "v1", Fixed: "commitA", LastAffected: "L1"},
+				{Repo: "repo1", Introduced: "v1", Fixed: "commitB", LastAffected: "L1"}, // Duplicate of first
+				{Repo: "repo2", Introduced: "v2", Fixed: "commitX", LastAffected: "L1"}, // Unique (Introduced different)
+				{Repo: "repo1", Introduced: "v1", Fixed: "commitA", LastAffected: "L2"}, // Unique (Limit different)
+				{Repo: "repo1", Introduced: "v1", Fixed: "commitA", LastAffected: "L1"}, // Duplicate of third
 			},
-			// For map-based deduplication, the order is based on first appearance.
-			// So, the expected values reflect that specific order.
 			expected: []models.AffectedCommit{
-				{Repo: "repo1", Fixed: "commitB"}, // First B
-				{Repo: "repo2", Fixed: "commitX"},
-				{Repo: "repo1", Fixed: "commitA"}, // First A
-				{Repo: "repo2", Fixed: "commitY"},
+				{Repo: "repo1", Introduced: "v1", Fixed: "commitB", LastAffected: "L1"},
+				{Repo: "repo2", Introduced: "v1", Fixed: "commitX", LastAffected: "L1"},
+				{Repo: "repo1", Introduced: "v1", Fixed: "commitA", LastAffected: "L1"},
+				{Repo: "repo2", Introduced: "v2", Fixed: "commitX", LastAffected: "L1"},
+				{Repo: "repo1", Introduced: "v1", Fixed: "commitA", LastAffected: "L2"},
 			},
 		},
 		{
-			name: "No duplicates",
+			name: "No duplicates (map-based, all fields)",
 			input: []models.AffectedCommit{
-				{Repo: "repo1", Fixed: "commitA"},
-				{Repo: "repo1", Fixed: "commitB"},
-				{Repo: "repo2", Fixed: "commitC"},
+				{Repo: "repo1", Introduced: "v1", Fixed: "commitA", LastAffected: "L1"},
+				{Repo: "repo1", Introduced: "v1", Fixed: "commitB", LastAffected: "L1"},
+				{Repo: "repo2", Introduced: "v1", Fixed: "commitC", LastAffected: "L1"},
 			},
 			expected: []models.AffectedCommit{
-				{Repo: "repo1", Fixed: "commitA"},
-				{Repo: "repo1", Fixed: "commitB"},
-				{Repo: "repo2", Fixed: "commitC"},
+				{Repo: "repo1", Introduced: "v1", Fixed: "commitA", LastAffected: "L1"},
+				{Repo: "repo1", Introduced: "v1", Fixed: "commitB", LastAffected: "L1"},
+				{Repo: "repo2", Introduced: "v1", Fixed: "commitC", LastAffected: "L1"},
 			},
 		},
 		{
-			name:     "Empty slice",
+			name:     "Empty slice (map-based)",
 			input:    []models.AffectedCommit{},
 			expected: []models.AffectedCommit{},
 		},
 		{
-			name: "Single element",
+			name: "Single element (map-based)",
 			input: []models.AffectedCommit{
-				{Repo: "repo1", Fixed: "commitA"},
+				{Repo: "repo1", Introduced: "v1", Fixed: "commitA", LastAffected: "L1"},
 			},
 			expected: []models.AffectedCommit{
-				{Repo: "repo1", Fixed: "commitA"},
+				{Repo: "repo1", Introduced: "v1", Fixed: "commitA", LastAffected: "L1"},
 			},
 		},
 		{
-			name: "Different fields matter for uniqueness (map order)",
+			name: "Real-world example",
 			input: []models.AffectedCommit{
-				{Repo: "repo1", Introduced: "v1", Fixed: "commitA"},
-				{Repo: "repo1", Introduced: "v2", Fixed: "commitA"}, // Different Introduced, but same Repo+Fixed
-				{Repo: "repo1", Introduced: "v1", Fixed: "commitB"},
+				{Repo: "https://github.com/open62541/open62541", Introduced: "1.0", Fixed: "b79db1ac", LastAffected: ""},
+				{Repo: "https://github.com/open62541/open62541", Introduced: "1.0", Fixed: "b79db1ac", LastAffected: ""}, // Duplicate
+				{Repo: "https://github.com/open62541/open62541", Introduced: "1.0", Fixed: "3010bc67", LastAffected: ""}, // Unique (Fixed)
+				{Repo: "https://github.com/open62541/open62541", Introduced: "1.1", Fixed: "b79db1ac", LastAffected: ""}, // Unique (Introduced)
+				{Repo: "https://github.com/open62541/open62541", Introduced: "1.0", Fixed: "b79db1ac", LastAffected: ""}, // Unique (Limit)
+				{Repo: "https://github.com/open62541/open62541", Introduced: "1.0", Fixed: "b79db1ac", LastAffected: ""}, // Duplicate
 			},
 			expected: []models.AffectedCommit{
-				{Repo: "repo1", Introduced: "v1", Fixed: "commitA"}, // We keep the first one encountered
-				{Repo: "repo1", Introduced: "v1", Fixed: "commitB"},
-			},
-		},
-		{
-			name: "Real-world example from prompt (map order)",
-			input: []models.AffectedCommit{
-				{Repo: "https://github.com/open62541/open62541", Introduced: "", Fixed: "b79db1ac78146fc06b0b8435773d3967de2d659c", Limit: "", LastAffected: ""},
-				{Repo: "https://github.com/open62541/open62541", Introduced: "", Fixed: "b79db1ac78146fc06b0b8435773d3967de2d659c", Limit: "", LastAffected: ""},
-				{Repo: "https://github.com/open62541/open62541", Introduced: "", Fixed: "3010bc67fbfd8de0921fc38c9efa146cd2e02c7f", Limit: "", LastAffected: ""},
-				{Repo: "https://github.com/open62541/open62541", Introduced: "", Fixed: "b79db1ac78146fc06b0b8435773d3967de2d659c", Limit: "", LastAffected: ""},
-				{Repo: "https://github.com/open62541/open62541", Introduced: "", Fixed: "b79db1ac78146fc06b0b8435773d3967de2d659c", Limit: "", LastAffected: ""},
-				{Repo: "https://github.com/open62541/open62541", Introduced: "", Fixed: "3010bc67fbfd8de0921fc38c9efa146cd2e02c7f", Limit: "", LastAffected: ""},
-			},
-			expected: []models.AffectedCommit{
-				// Expected order for map method is based on first appearance
-				{Repo: "https://github.com/open62541/open62541", Introduced: "", Fixed: "b79db1ac78146fc06b0b8435773d3967de2d659c", Limit: "", LastAffected: ""}, // First occurrence
-				{Repo: "https://github.com/open62541/open62541", Introduced: "", Fixed: "3010bc67fbfd8de0921fc38c9efa146cd2e02c7f", Limit: "", LastAffected: ""}, // First occurrence
+				{Repo: "https://github.com/open62541/open62541", Introduced: "1.0", Fixed: "b79db1ac", LastAffected: ""},
+				{Repo: "https://github.com/open62541/open62541", Introduced: "1.0", Fixed: "3010bc67", LastAffected: ""},
+				{Repo: "https://github.com/open62541/open62541", Introduced: "1.1", Fixed: "b79db1ac", LastAffected: ""},
 			},
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			// No copy needed for map method as it doesn't modify input slice in-place
 			got := deduplicateAffectedCommits(tt.input)
 
 			// For the map method, the order of elements in the output slice

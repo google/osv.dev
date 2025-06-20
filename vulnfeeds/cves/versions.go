@@ -626,12 +626,37 @@ func cleanVersion(version string) string {
 	return strings.TrimRight(version, ":")
 }
 
+func deduplicateAffectedCommits(commits []models.AffectedCommit) []models.AffectedCommit {
+	if len(commits) == 0 {
+		return []models.AffectedCommit{}
+	}
+
+	// Use a map to track seen combinations of Repo and Fixed.
+	// The key is a string concatenation of Repo and Fixed.
+	seen := make(map[string]struct{})
+	uniqueCommits := make([]models.AffectedCommit, 0, len(commits))
+
+	for _, commit := range commits {
+		// Create a unique key for each commit based on the fields that define uniqueness.
+		key := commit.Repo + "|" + commit.Fixed // Using a separator to avoid issues if parts of the string could combine
+		if _, found := seen[key]; !found {
+			uniqueCommits = append(uniqueCommits, commit)
+			seen[key] = struct{}{} // Mark this key as seen
+		}
+	}
+
+	return uniqueCommits
+}
+
 func ExtractVersionInfo(cve CVE, validVersions []string, httpClient *http.Client) (v models.VersionInfo, notes []string) {
 	for _, reference := range cve.References {
 		// (Potentially faulty) Assumption: All viable Git commit reference links are fix commits.
 		if commit, err := ExtractGitCommit(reference.Url, models.Fixed, httpClient); err == nil {
 			v.AffectedCommits = append(v.AffectedCommits, commit)
 		}
+	}
+	if v.AffectedCommits != nil {
+		v.AffectedCommits = deduplicateAffectedCommits(v.AffectedCommits)
 	}
 
 	gotVersions := false

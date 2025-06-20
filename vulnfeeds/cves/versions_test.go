@@ -6,6 +6,7 @@ import (
 	"log"
 	"os"
 	"reflect"
+	"sort"
 	"testing"
 	"time"
 
@@ -867,6 +868,24 @@ func TestExtractVersionInfo(t *testing.T) {
 				AffectedVersions: []models.AffectedVersion{{Introduced: "4.0.0", LastAffected: "4.2"}},
 			},
 		},
+		{
+			description:  "CVE with duplicate hashes",
+			inputCVEItem: loadTestData2("CVE-2022-25761"),
+			expectedVersionInfo: models.VersionInfo{
+				AffectedCommits: []models.AffectedCommit{
+					{
+						Repo:  "https://github.com/open62541/open62541",
+						Fixed: "b79db1ac78146fc06b0b8435773d3967de2d659c",
+					},
+					{
+						Repo:  "https://github.com/open62541/open62541",
+						Fixed: "3010bc67fbfd8de0921fc38c9efa146cd2e02c7f",
+					},
+				},
+
+				AffectedVersions: []models.AffectedVersion{{Fixed: "1.2.5"}},
+			},
+		},
 	}
 
 	for _, tc := range tests {
@@ -970,6 +989,138 @@ func TestVersionInfoDuplicateDetection(t *testing.T) {
 	}
 }
 
+type ByAffectedCommit []models.AffectedCommit
+
+func (a ByAffectedCommit) Len() int {
+	return len(a)
+}
+
+func (a ByAffectedCommit) Swap(i, j int) {
+	a[i], a[j] = a[j], a[i]
+}
+
+func (a ByAffectedCommit) Less(i, j int) bool {
+	// Primary sort key: Repo
+	if a[i].Repo != a[j].Repo {
+		return a[i].Repo < a[j].Repo
+	}
+	// Secondary sort key: Fixed
+	return a[i].Fixed < a[j].Fixed
+}
+func TestDeduplicateAffectedCommits(t *testing.T) {
+	tests := []struct {
+		name     string
+		input    []models.AffectedCommit
+		expected []models.AffectedCommit
+	}{
+		{
+			name: "All duplicates",
+			input: []models.AffectedCommit{
+				{Repo: "repo1", Fixed: "commitA"},
+				{Repo: "repo1", Fixed: "commitA"},
+				{Repo: "repo1", Fixed: "commitA"},
+			},
+			expected: []models.AffectedCommit{
+				{Repo: "repo1", Fixed: "commitA"},
+			},
+		},
+		{
+			name: "Mixed duplicates and uniques",
+			input: []models.AffectedCommit{
+				{Repo: "repo1", Fixed: "commitB"},
+				{Repo: "repo2", Fixed: "commitX"},
+				{Repo: "repo1", Fixed: "commitA"},
+				{Repo: "repo1", Fixed: "commitB"},
+				{Repo: "repo2", Fixed: "commitY"},
+				{Repo: "repo1", Fixed: "commitA"},
+			},
+			// For map-based deduplication, the order is based on first appearance.
+			// So, the expected values reflect that specific order.
+			expected: []models.AffectedCommit{
+				{Repo: "repo1", Fixed: "commitB"}, // First B
+				{Repo: "repo2", Fixed: "commitX"},
+				{Repo: "repo1", Fixed: "commitA"}, // First A
+				{Repo: "repo2", Fixed: "commitY"},
+			},
+		},
+		{
+			name: "No duplicates",
+			input: []models.AffectedCommit{
+				{Repo: "repo1", Fixed: "commitA"},
+				{Repo: "repo1", Fixed: "commitB"},
+				{Repo: "repo2", Fixed: "commitC"},
+			},
+			expected: []models.AffectedCommit{
+				{Repo: "repo1", Fixed: "commitA"},
+				{Repo: "repo1", Fixed: "commitB"},
+				{Repo: "repo2", Fixed: "commitC"},
+			},
+		},
+		{
+			name:     "Empty slice",
+			input:    []models.AffectedCommit{},
+			expected: []models.AffectedCommit{},
+		},
+		{
+			name: "Single element",
+			input: []models.AffectedCommit{
+				{Repo: "repo1", Fixed: "commitA"},
+			},
+			expected: []models.AffectedCommit{
+				{Repo: "repo1", Fixed: "commitA"},
+			},
+		},
+		{
+			name: "Different fields matter for uniqueness (map order)",
+			input: []models.AffectedCommit{
+				{Repo: "repo1", Introduced: "v1", Fixed: "commitA"},
+				{Repo: "repo1", Introduced: "v2", Fixed: "commitA"}, // Different Introduced, but same Repo+Fixed
+				{Repo: "repo1", Introduced: "v1", Fixed: "commitB"},
+			},
+			expected: []models.AffectedCommit{
+				{Repo: "repo1", Introduced: "v1", Fixed: "commitA"}, // We keep the first one encountered
+				{Repo: "repo1", Introduced: "v1", Fixed: "commitB"},
+			},
+		},
+		{
+			name: "Real-world example from prompt (map order)",
+			input: []models.AffectedCommit{
+				{Repo: "https://github.com/open62541/open62541", Introduced: "", Fixed: "b79db1ac78146fc06b0b8435773d3967de2d659c", Limit: "", LastAffected: ""},
+				{Repo: "https://github.com/open62541/open62541", Introduced: "", Fixed: "b79db1ac78146fc06b0b8435773d3967de2d659c", Limit: "", LastAffected: ""},
+				{Repo: "https://github.com/open62541/open62541", Introduced: "", Fixed: "3010bc67fbfd8de0921fc38c9efa146cd2e02c7f", Limit: "", LastAffected: ""},
+				{Repo: "https://github.com/open62541/open62541", Introduced: "", Fixed: "b79db1ac78146fc06b0b8435773d3967de2d659c", Limit: "", LastAffected: ""},
+				{Repo: "https://github.com/open62541/open62541", Introduced: "", Fixed: "b79db1ac78146fc06b0b8435773d3967de2d659c", Limit: "", LastAffected: ""},
+				{Repo: "https://github.com/open62541/open62541", Introduced: "", Fixed: "3010bc67fbfd8de0921fc38c9efa146cd2e02c7f", Limit: "", LastAffected: ""},
+			},
+			expected: []models.AffectedCommit{
+				// Expected order for map method is based on first appearance
+				{Repo: "https://github.com/open62541/open62541", Introduced: "", Fixed: "b79db1ac78146fc06b0b8435773d3967de2d659c", Limit: "", LastAffected: ""}, // First occurrence
+				{Repo: "https://github.com/open62541/open62541", Introduced: "", Fixed: "3010bc67fbfd8de0921fc38c9efa146cd2e02c7f", Limit: "", LastAffected: ""}, // First occurrence
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// No copy needed for map method as it doesn't modify input slice in-place
+			got := deduplicateAffectedCommits(tt.input)
+
+			// For the map method, the order of elements in the output slice
+			// is determined by the order they were first encountered.
+			// However, when comparing slices, the order *must* match exactly.
+			// To make the comparison robust for the map method,
+			// we sort both the 'got' and 'expected' slices before comparison,
+			// ensuring that we are only testing for the presence of unique items,
+			// not their specific output order.
+			sort.Sort(ByAffectedCommit(got))
+			sort.Sort(ByAffectedCommit(tt.expected))
+
+			if !reflect.DeepEqual(got, tt.expected) {
+				t.Errorf("deduplicateAffectedCommitsMap() got = %v, want %v", got, tt.expected)
+			}
+		})
+	}
+}
 func TestInvalidRangeDetection(t *testing.T) {
 	tests := []struct {
 		description         string

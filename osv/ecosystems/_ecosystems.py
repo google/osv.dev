@@ -28,6 +28,7 @@ from .mageia import Mageia
 from .maven import Maven
 from .minimos import MinimOS
 from .nuget import NuGet
+from .openeuler import OpenEuler
 from .packagist import Packagist
 from .pub import Pub
 from .pypi import PyPI
@@ -143,6 +144,9 @@ def get(name: str) -> Ecosystem:
 
   if name.startswith('openSUSE'):
     return OpenSUSE()
+
+  if name.startswith('openEuler'):
+    return OpenEuler()
 
   if name.startswith('SUSE'):
     return SUSE()

@@ -101,6 +101,9 @@ class PurlHelpersTest(unittest.TestCase):
     self.assertEqual('pkg:nuget/test-package',
                      purl_helpers.package_to_purl('NuGet', 'test-package'))
 
+    self.assertEqual('pkg:rpm/openeuler/test-package',
+                     purl_helpers.package_to_purl('openEuler', 'test-package'))
+
     self.assertEqual('pkg:rpm/opensuse/test-package',
                      purl_helpers.package_to_purl('openSUSE', 'test-package'))
 
@@ -214,6 +217,10 @@ class PurlHelpersTest(unittest.TestCase):
 
     self.assertEqual(('NuGet', 'test-package', '1.2.3'),
                      purl_helpers.parse_purl('pkg:nuget/test-package@1.2.3'))
+
+    self.assertEqual(
+        ('openEuler', 'test-package', '1.2.3'),
+        purl_helpers.parse_purl('pkg:rpm/openeuler/test-package@1.2.3'))
 
     self.assertEqual(
         ('openSUSE', 'test-package', '1.2.3'),

@@ -1007,6 +1007,7 @@ func (a ByAffectedCommit) Less(i, j int) bool {
 	// Secondary sort key: Fixed
 	return a[i].Fixed < a[j].Fixed
 }
+
 func TestDeduplicateAffectedCommits(t *testing.T) {
 	tests := []struct {
 		name     string

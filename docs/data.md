@@ -132,6 +132,6 @@ A list of all current ecosystems is available at
 OSV.dev has stopped exporting entries for ecosystems with prefixes (e.g. All `Alpine:.*`). Please refer only to the main ecosystem, the one without the `:.*` suffix, for all vulnerabilities of that ecosystem.
 
 ## Contributing Data
-If you a work with a project such as a Linux distribution and would like to contribute your security advisories, please follow the steps outlined in [CONTRIBUTING.md](https://github.com/google/osv.dev/blob/master/CONTRIBUTING.md#contributing-data)
+If you work with a project such as a Linux distribution and would like to contribute your security advisories, please follow the steps outlined in the [New Data Source](./new_source.md) page.
 
 Data can be supplied either through a public Git repository, to [REST API endpoints](/data/new/rest-api.md), or through a public GCS bucket.

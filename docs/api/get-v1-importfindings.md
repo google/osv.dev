@@ -40,7 +40,7 @@ do not meet [OSV.dev's quality bar](data_quality.html) (and therefore have not b
 
 The only parameter you need for this API call is the source, in order to construct the URL.
 
-`https://api.osv.dev/v1/importfindings/{source}`
+`https://api.osv.dev/v1experimental/importfindings/{source}`
 
 The `source` value is the same as the `name` value in [`source.yaml`](https://github.com/google/osv.dev/blob/master/source.yaml)
 

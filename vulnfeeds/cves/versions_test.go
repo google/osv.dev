@@ -875,11 +875,11 @@ func TestExtractVersionInfo(t *testing.T) {
 				AffectedCommits: []models.AffectedCommit{
 					{
 						Repo:  "https://github.com/open62541/open62541",
-						Fixed: "b79db1ac78146fc06b0b8435773d3967de2d659c",
+						Fixed: "3010bc67fbfd8de0921fc38c9efa146cd2e02c7f",
 					},
 					{
 						Repo:  "https://github.com/open62541/open62541",
-						Fixed: "3010bc67fbfd8de0921fc38c9efa146cd2e02c7f",
+						Fixed: "b79db1ac78146fc06b0b8435773d3967de2d659c",
 					},
 				},
 
@@ -989,25 +989,6 @@ func TestVersionInfoDuplicateDetection(t *testing.T) {
 	}
 }
 
-type ByAffectedCommit []models.AffectedCommit
-
-func (a ByAffectedCommit) Len() int {
-	return len(a)
-}
-
-func (a ByAffectedCommit) Swap(i, j int) {
-	a[i], a[j] = a[j], a[i]
-}
-
-func (a ByAffectedCommit) Less(i, j int) bool {
-	// Primary sort key: Repo
-	if a[i].Repo != a[j].Repo {
-		return a[i].Repo < a[j].Repo
-	}
-	// Secondary sort key: Fixed
-	return a[i].Fixed < a[j].Fixed
-}
-
 func TestDeduplicateAffectedCommits(t *testing.T) {
 	tests := []struct {
 		name     string
@@ -1093,18 +1074,10 @@ func TestDeduplicateAffectedCommits(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			got := deduplicateAffectedCommits(tt.input)
 
-			// For the map method, the order of elements in the output slice
-			// is determined by the order they were first encountered.
-			// However, when comparing slices, the order *must* match exactly.
-			// To make the comparison robust for the map method,
-			// we sort both the 'got' and 'expected' slices before comparison,
-			// ensuring that we are only testing for the presence of unique items,
-			// not their specific output order.
 			sort.Sort(ByAffectedCommit(got))
 			sort.Sort(ByAffectedCommit(tt.expected))
-
-			if !reflect.DeepEqual(got, tt.expected) {
-				t.Errorf("deduplicateAffectedCommitsMap() got = %v, want %v", got, tt.expected)
+			if diff := cmp.Diff(got, tt.expected); diff != "" {
+				t.Errorf("deduplicateAffectedCommits() got = %v, want %v", got, tt.expected)
 			}
 		})
 	}

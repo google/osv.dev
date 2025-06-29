@@ -23,6 +23,7 @@ import (
 	"net/url"
 	"path"
 	"regexp"
+	"sort"
 	"strings"
 	"time"
 
@@ -626,23 +627,36 @@ func cleanVersion(version string) string {
 	return strings.TrimRight(version, ":")
 }
 
+type ByAffectedCommit []models.AffectedCommit
+
+func (a ByAffectedCommit) Len() int {
+	return len(a)
+}
+
+func (a ByAffectedCommit) Swap(i, j int) {
+	a[i], a[j] = a[j], a[i]
+}
+
+func (a ByAffectedCommit) Less(i, j int) bool {
+	if a[i].Repo != a[j].Repo {
+		return a[i].Repo < a[j].Repo
+	}
+	if a[i].Introduced != a[j].Introduced {
+		return a[i].Introduced < a[j].Introduced
+	}
+	if a[i].Fixed != a[j].Fixed {
+		return a[i].Fixed < a[j].Fixed
+	}
+	return a[i].LastAffected < a[j].LastAffected
+}
 func deduplicateAffectedCommits(commits []models.AffectedCommit) []models.AffectedCommit {
 	if len(commits) == 0 {
 		return []models.AffectedCommit{}
 	}
-
-	seen := make(map[string]struct{})
-	uniqueCommits := make([]models.AffectedCommit, 0, len(commits))
-
-	for _, commit := range commits {
-		// Create a unique key for each commit based on the fields that define uniqueness.
-		key := commit.Repo + "|" + commit.Introduced + "|" + commit.Fixed + "|" + commit.LastAffected // Using a separator to avoid issues if parts of the string could combine
-		if _, found := seen[key]; !found {
-			uniqueCommits = append(uniqueCommits, commit)
-			seen[key] = struct{}{}
-		}
-	}
-
+	sort.Sort(ByAffectedCommit(commits))
+	uniqueCommits := slices.CompactFunc(commits, func(a, b models.AffectedCommit) bool {
+		return a.Repo == b.Repo && a.Introduced == b.Introduced && a.Fixed == b.Fixed && a.LastAffected == b.LastAffected
+	})
 	return uniqueCommits
 }
 

@@ -1,19 +1,19 @@
-package main
+package common
 
 import (
 	"reflect"
 	"testing"
 
-	"github.com/google/osv/vulnfeeds/cmd/common"
 	"github.com/google/osv/vulnfeeds/cves"
 	"github.com/google/osv/vulnfeeds/internal/testutils"
+	"github.com/google/osv/vulnfeeds/utility"
 )
 
 func TestReposFromReferences(t *testing.T) {
 	type args struct {
 		CVE         string
-		cache       common.VendorProductToRepoMap
-		vp          *common.VendorProduct
+		cache       VendorProductToRepoMap
+		vp          *VendorProduct
 		refs        []cves.Reference
 		tagDenyList []string
 	}
@@ -27,14 +27,14 @@ func TestReposFromReferences(t *testing.T) {
 			args: args{
 				CVE:   "CVE-2023-0327",
 				cache: nil,
-				vp:    &common.VendorProduct{"theradsystem_project", "theradsystem"},
+				vp:    &VendorProduct{"theradsystem_project", "theradsystem"},
 				refs: []cves.Reference{
 					{
 						Source: "cna@vuldb.com",
 						Tags:   []string{"Patch", "Third Party Advisory"},
 						Url:    "https://github.com/saemorris/TheRadSystem/commit/bfba26bd34af31648a11af35a0bb66f1948752a6"},
 				},
-				tagDenyList: common.RefTagDenyList,
+				tagDenyList: RefTagDenyList,
 			},
 			wantRepos: []string{"https://github.com/saemorris/TheRadSystem"},
 		},
@@ -43,14 +43,14 @@ func TestReposFromReferences(t *testing.T) {
 			args: args{
 				CVE:   "CVE-2025-0211",
 				cache: nil,
-				vp:    &common.VendorProduct{"campcodes", "school_faculty_scheduling_system"},
+				vp:    &VendorProduct{"campcodes", "school_faculty_scheduling_system"},
 				refs: []cves.Reference{
 					{
 						Source: "cna@vuldb.com",
 						Tags:   []string{"Exploit", "Third Party Advisory"},
 						Url:    "https://github.com/shaturo1337/POCs/blob/main/LFI%20in%20School%20Faculty%20Scheduling%20System.md"},
 				},
-				tagDenyList: common.RefTagDenyList,
+				tagDenyList: RefTagDenyList,
 			},
 			wantRepos: []string(nil),
 		},
@@ -67,7 +67,7 @@ func TestReposFromReferences(t *testing.T) {
 						Url:    "https://git.musl-libc.org/cgit/musl/commit/?id=c47ad25ea3b484e10326f933e927c0bc8cded3da",
 					},
 				},
-				tagDenyList: common.RefTagDenyList,
+				tagDenyList: RefTagDenyList,
 			},
 			wantRepos: []string{"https://git.musl-libc.org/git/musl"},
 		},
@@ -84,7 +84,7 @@ func TestReposFromReferences(t *testing.T) {
 						Url:    "https://github.com/dwyl/hapi-auth-jwt2/issues/111",
 					},
 				},
-				tagDenyList: common.RefTagDenyList,
+				tagDenyList: RefTagDenyList,
 			},
 			wantRepos: []string{"https://github.com/dwyl/hapi-auth-jwt2"},
 		},
@@ -92,7 +92,8 @@ func TestReposFromReferences(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			testutils.SetupGitVCR(t)
-			if gotRepos := common.ReposFromReferences(tt.args.CVE, tt.args.cache, tt.args.vp, tt.args.refs, tt.args.tagDenyList, Logger); !reflect.DeepEqual(gotRepos, tt.wantRepos) {
+			var Logger utility.LoggerWrapper
+			if gotRepos := ReposFromReferences(tt.args.CVE, tt.args.cache, tt.args.vp, tt.args.refs, tt.args.tagDenyList, Logger); !reflect.DeepEqual(gotRepos, tt.wantRepos) {
 				t.Errorf("ReposFromReferences() = %#v, want %#v", gotRepos, tt.wantRepos)
 			}
 		})
@@ -101,20 +102,20 @@ func TestReposFromReferences(t *testing.T) {
 
 func Test_maybeUpdateVPRepoCache(t *testing.T) {
 	type args struct {
-		cache common.VendorProductToRepoMap
-		vp    *common.VendorProduct
+		cache VendorProductToRepoMap
+		vp    *VendorProduct
 		repos []string
 	}
 	tests := []struct {
 		name      string
 		args      args
-		wantCache common.VendorProductToRepoMap
+		wantCache VendorProductToRepoMap
 	}{
 		{
 			name: "Test with no cache",
 			args: args{
 				cache: nil,
-				vp:    &common.VendorProduct{"avendor", "aproduct"},
+				vp:    &VendorProduct{"avendor", "aproduct"},
 				repos: []string{"https://github.com/google/osv.dev"},
 			},
 			wantCache: nil,
@@ -122,45 +123,45 @@ func Test_maybeUpdateVPRepoCache(t *testing.T) {
 		{
 			name: "Test with an empty cache",
 			args: args{
-				cache: common.VendorProductToRepoMap{},
-				vp:    &common.VendorProduct{"avendor", "aproduct"},
+				cache: VendorProductToRepoMap{},
+				vp:    &VendorProduct{"avendor", "aproduct"},
 				repos: []string{"https://github.com/google/osv.dev"},
 			},
-			wantCache: common.VendorProductToRepoMap{
-				common.VendorProduct{"avendor", "aproduct"}: []string{"https://github.com/google/osv.dev"},
+			wantCache: VendorProductToRepoMap{
+				VendorProduct{"avendor", "aproduct"}: []string{"https://github.com/google/osv.dev"},
 			},
 		},
 		{
 			name: "Test with an empty cache and an unusable repo",
 			args: args{
-				cache: common.VendorProductToRepoMap{},
-				vp:    &common.VendorProduct{"avendor", "aproduct"},
+				cache: VendorProductToRepoMap{},
+				vp:    &VendorProduct{"avendor", "aproduct"},
 				repos: []string{"https://github.com/vendor/repo"},
 			},
-			wantCache: common.VendorProductToRepoMap{},
+			wantCache: VendorProductToRepoMap{},
 		},
 		{
 			name: "Test with an existing cache",
 			args: args{
-				cache: common.VendorProductToRepoMap{
-					common.VendorProduct{"avendor", "aproduct"}: []string{"https://github.com/google/osv.dev"},
+				cache: VendorProductToRepoMap{
+					VendorProduct{"avendor", "aproduct"}: []string{"https://github.com/google/osv.dev"},
 				},
-				vp:    &common.VendorProduct{"avendor", "aproduct"},
+				vp:    &VendorProduct{"avendor", "aproduct"},
 				repos: []string{"https://github.com/google/osv-scanner"},
 			},
-			wantCache: common.VendorProductToRepoMap{
-				common.VendorProduct{"avendor", "aproduct"}: []string{"https://github.com/google/osv.dev", "https://github.com/google/osv-scanner"},
+			wantCache: VendorProductToRepoMap{
+				VendorProduct{"avendor", "aproduct"}: []string{"https://github.com/google/osv.dev", "https://github.com/google/osv-scanner"},
 			},
 		},
 		{
 			name: "Test with an empty cache adding two values",
 			args: args{
-				cache: common.VendorProductToRepoMap{},
-				vp:    &common.VendorProduct{"avendor", "aproduct"},
+				cache: VendorProductToRepoMap{},
+				vp:    &VendorProduct{"avendor", "aproduct"},
 				repos: []string{"https://github.com/google/osv.dev", "https://github.com/google/osv-scanner"},
 			},
-			wantCache: common.VendorProductToRepoMap{
-				common.VendorProduct{"avendor", "aproduct"}: []string{"https://github.com/google/osv.dev", "https://github.com/google/osv-scanner"},
+			wantCache: VendorProductToRepoMap{
+				VendorProduct{"avendor", "aproduct"}: []string{"https://github.com/google/osv.dev", "https://github.com/google/osv-scanner"},
 			},
 		},
 	}
@@ -168,7 +169,7 @@ func Test_maybeUpdateVPRepoCache(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			testutils.SetupGitVCR(t)
 			for _, repo := range tt.args.repos {
-				common.MaybeUpdateVPRepoCache(tt.args.cache, tt.args.vp, repo)
+				MaybeUpdateVPRepoCache(tt.args.cache, tt.args.vp, repo)
 			}
 			if !reflect.DeepEqual(tt.args.cache, tt.wantCache) {
 				t.Errorf("maybeUpdateVPRepoCache() have %#v, wanted %#v", tt.args.cache, tt.wantCache)

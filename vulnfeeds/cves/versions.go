@@ -23,6 +23,7 @@ import (
 	"net/url"
 	"path"
 	"regexp"
+	"sort"
 	"strings"
 	"time"
 
@@ -626,12 +627,46 @@ func cleanVersion(version string) string {
 	return strings.TrimRight(version, ":")
 }
 
+type ByAffectedCommit []models.AffectedCommit
+
+func (a ByAffectedCommit) Len() int {
+	return len(a)
+}
+
+func (a ByAffectedCommit) Swap(i, j int) {
+	a[i], a[j] = a[j], a[i]
+}
+
+func (a ByAffectedCommit) Less(i, j int) bool {
+	if a[i].Repo != a[j].Repo {
+		return a[i].Repo < a[j].Repo
+	}
+	if a[i].Introduced != a[j].Introduced {
+		return a[i].Introduced < a[j].Introduced
+	}
+	if a[i].Fixed != a[j].Fixed {
+		return a[i].Fixed < a[j].Fixed
+	}
+	return a[i].LastAffected < a[j].LastAffected
+}
+func deduplicateAffectedCommits(commits []models.AffectedCommit) []models.AffectedCommit {
+	if len(commits) == 0 {
+		return []models.AffectedCommit{}
+	}
+	sort.Sort(ByAffectedCommit(commits))
+	uniqueCommits := slices.Compact(commits)
+	return uniqueCommits
+}
+
 func ExtractVersionInfo(cve CVE, validVersions []string, httpClient *http.Client) (v models.VersionInfo, notes []string) {
 	for _, reference := range cve.References {
 		// (Potentially faulty) Assumption: All viable Git commit reference links are fix commits.
 		if commit, err := ExtractGitCommit(reference.Url, models.Fixed, httpClient); err == nil {
 			v.AffectedCommits = append(v.AffectedCommits, commit)
 		}
+	}
+	if v.AffectedCommits != nil {
+		v.AffectedCommits = deduplicateAffectedCommits(v.AffectedCommits)
 	}
 
 	gotVersions := false

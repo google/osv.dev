@@ -654,9 +654,7 @@ func deduplicateAffectedCommits(commits []models.AffectedCommit) []models.Affect
 		return []models.AffectedCommit{}
 	}
 	sort.Sort(ByAffectedCommit(commits))
-	uniqueCommits := slices.CompactFunc(commits, func(a, b models.AffectedCommit) bool {
-		return a.Repo == b.Repo && a.Introduced == b.Introduced && a.Fixed == b.Fixed && a.LastAffected == b.LastAffected
-	})
+	uniqueCommits := slices.Compact(commits)
 	return uniqueCommits
 }
 

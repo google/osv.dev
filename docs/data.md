@@ -134,4 +134,4 @@ OSV.dev has stopped exporting entries for ecosystems with prefixes (e.g. All `Al
 ## Contributing Data
 If you work with a project such as a Linux distribution and would like to contribute your security advisories, please follow the steps outlined in the [New Data Source](./new_source.md) page.
 
-Data can be supplied either through a public Git repository, to [REST API endpoints](/data/new/rest-api.md), or through a public GCS bucket.
+Data can be supplied either through a public Git repository, to [REST API endpoints](./rest-api.md), or through a public GCS bucket.

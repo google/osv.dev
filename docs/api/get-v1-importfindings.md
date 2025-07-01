@@ -34,7 +34,7 @@ any pain points or highlights.
 
 The purpose of this endpoint is give OSV record providers (home database
 operators) a machine-readable way to reason about records they have published that
-do not meet [OSV.dev's quality bar](data_quality.html) (and therefore have not been imported).
+do not meet [OSV.dev's quality bar](../data_quality.md) (and therefore have not been imported).
 
 ## Parameters
 

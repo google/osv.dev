@@ -6,13 +6,13 @@ import (
 	"log"
 	"os"
 	"reflect"
-	"sort"
 	"testing"
 	"time"
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/osv/vulnfeeds/internal/testutils"
 	"github.com/google/osv/vulnfeeds/models"
+	"golang.org/x/exp/slices"
 )
 
 func loadTestData2(cveName string) Vulnerability {
@@ -1074,8 +1074,8 @@ func TestDeduplicateAffectedCommits(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			got := deduplicateAffectedCommits(tt.input)
 
-			sort.Sort(ByAffectedCommit(got))
-			sort.Sort(ByAffectedCommit(tt.expected))
+			slices.SortStableFunc(got, models.AffectedCommitCompare)
+			slices.SortStableFunc(tt.expected, models.AffectedCommitCompare)
 			if diff := cmp.Diff(got, tt.expected); diff != "" {
 				t.Errorf("deduplicateAffectedCommits() got = %v, want %v", got, tt.expected)
 			}

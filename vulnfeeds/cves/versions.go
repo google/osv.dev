@@ -23,7 +23,6 @@ import (
 	"net/url"
 	"path"
 	"regexp"
-	"sort"
 	"strings"
 	"time"
 
@@ -627,33 +626,11 @@ func cleanVersion(version string) string {
 	return strings.TrimRight(version, ":")
 }
 
-type ByAffectedCommit []models.AffectedCommit
-
-func (a ByAffectedCommit) Len() int {
-	return len(a)
-}
-
-func (a ByAffectedCommit) Swap(i, j int) {
-	a[i], a[j] = a[j], a[i]
-}
-
-func (a ByAffectedCommit) Less(i, j int) bool {
-	if a[i].Repo != a[j].Repo {
-		return a[i].Repo < a[j].Repo
-	}
-	if a[i].Introduced != a[j].Introduced {
-		return a[i].Introduced < a[j].Introduced
-	}
-	if a[i].Fixed != a[j].Fixed {
-		return a[i].Fixed < a[j].Fixed
-	}
-	return a[i].LastAffected < a[j].LastAffected
-}
 func deduplicateAffectedCommits(commits []models.AffectedCommit) []models.AffectedCommit {
 	if len(commits) == 0 {
 		return []models.AffectedCommit{}
 	}
-	sort.Sort(ByAffectedCommit(commits))
+	slices.SortStableFunc(commits, models.AffectedCommitCompare)
 	uniqueCommits := slices.Compact(commits)
 	return uniqueCommits
 }

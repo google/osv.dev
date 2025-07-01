@@ -1,6 +1,13 @@
-name: Check links on push
+name: Check links on push and schedule
 
-on: push
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+    # The branches below must be a subset of the branches above
+    branches: [ master ]
+  schedule:
+    - cron: '30 22 * * 1,4'
 permissions:  # added using https://github.com/step-security/secure-repo
   contents: read
 

@@ -59,14 +59,14 @@ files = [
 
 [[package]]
 name = "certifi"
-version = "2025.4.26"
+version = "2025.6.15"
 description = "Python package for providing Mozilla's CA Bundle."
 optional = false
-python-versions = ">=3.6"
+python-versions = ">=3.7"
 groups = ["main"]
 files = [
-    {file = "certifi-2025.4.26-py3-none-any.whl", hash = "sha256:30350364dfe371162649852c63336a15c70c6510c2ad5015b21c2345311805f3"},
-    {file = "certifi-2025.4.26.tar.gz", hash = "sha256:0a816057ea3cdefcef70270d2c515e4506bbc954f417fa5ade2021213bb8f0c6"},
+    {file = "certifi-2025.6.15-py3-none-any.whl", hash = "sha256:2e0c7ce7cb5d8f8634ca55d2ba7e6ec2689a2fd6537d8dec1296a477a4910057"},
+    {file = "certifi-2025.6.15.tar.gz", hash = "sha256:d747aa5a8b9bbbb1bb8c22bb13e22bd1f18e9796defa16bab421f7f7a317323b"},
 ]
 
 [[package]]
@@ -282,14 +282,14 @@ profile = ["gprof2dot (>=2022.7.29)"]
 
 [[package]]
 name = "google-api-core"
-version = "2.25.0"
+version = "2.25.1"
 description = "Google API client core library"
 optional = false
 python-versions = ">=3.7"
 groups = ["main"]
 files = [
-    {file = "google_api_core-2.25.0-py3-none-any.whl", hash = "sha256:1db79d1281dcf9f3d10023283299ba38f3dc9f639ec41085968fd23e5bcf512e"},
-    {file = "google_api_core-2.25.0.tar.gz", hash = "sha256:9b548e688702f82a34ed8409fb8a6961166f0b7795032f0be8f48308dff4333a"},
+    {file = "google_api_core-2.25.1-py3-none-any.whl", hash = "sha256:8a2a56c1fef82987a524371f99f3bd0143702fecc670c72e600c1cda6bf8dbb7"},
+    {file = "google_api_core-2.25.1.tar.gz", hash = "sha256:d2aaa0b13c78c61cb3f4282c464c046e45fbd75755683c9c525e6e8f7ed0a5e8"},
 ]
 
 [package.dependencies]
@@ -339,14 +339,14 @@ urllib3 = ["packaging", "urllib3"]
 
 [[package]]
 name = "google-cloud-appengine-logging"
-version = "1.6.1"
+version = "1.6.2"
 description = "Google Cloud Appengine Logging API client library"
 optional = false
 python-versions = ">=3.7"
 groups = ["main"]
 files = [
-    {file = "google_cloud_appengine_logging-1.6.1-py3-none-any.whl", hash = "sha256:48f4dcf43000899c7b411bc27181f70240e81a958a44e44ce800ba8e5d5184ac"},
-    {file = "google_cloud_appengine_logging-1.6.1.tar.gz", hash = "sha256:f97bde36c7f7ff541123c2570813158bdda0c3f2385c8d32fdf1211c561ae56d"},
+    {file = "google_cloud_appengine_logging-1.6.2-py3-none-any.whl", hash = "sha256:2b28ed715e92b67e334c6fcfe1deb523f001919560257b25fc8fcda95fd63938"},
+    {file = "google_cloud_appengine_logging-1.6.2.tar.gz", hash = "sha256:4890928464c98da9eecc7bf4e0542eba2551512c0265462c10f3a3d2a6424b90"},
 ]
 
 [package.dependencies]
@@ -870,11 +870,11 @@ google-cloud-ndb = ">=2.3"
 google-cloud-storage = ">=2.17"
 grpcio = ">=1.0"
 jsonschema = ">=4.0"
-packageurl-python = "0.17.0"
+packageurl-python = ">=0.17.0"
 packaging-legacy = ">=23.0.post0"
 pygit2 = ">=1.14.0"
 pyyaml = ">=6.0"
-requests = ">=2.32"
+requests = ">=2.32.4"
 semver = ">=3.0"
 
 [package.source]
@@ -883,14 +883,14 @@ url = "../.."
 
 [[package]]
 name = "packageurl-python"
-version = "0.17.0"
+version = "0.17.1"
 description = "A purl aka. Package URL parser and builder"
 optional = false
 python-versions = ">=3.8"
 groups = ["main"]
 files = [
-    {file = "packageurl_python-0.17.0-py3-none-any.whl", hash = "sha256:c2a8e48d7b393b18806fd096abe326260b3aed82a07eda6c6628689b36ba52c4"},
-    {file = "packageurl_python-0.17.0.tar.gz", hash = "sha256:3cc44a01c9549c237f14c34981bae1008eb57c858c0af9039f4f13091807e1f3"},
+    {file = "packageurl_python-0.17.1-py3-none-any.whl", hash = "sha256:59b0862ae0b216994f847e05b4c6e870e0d16e1ddd706feefb19d79810f22cbd"},
+    {file = "packageurl_python-0.17.1.tar.gz", hash = "sha256:5db592a990b60bc02446033c50fb1803a26c5124cd72c5a2cd1b8ea1ae741969"},
 ]
 
 [package.extras]
@@ -1419,14 +1419,14 @@ files = [
 
 [[package]]
 name = "urllib3"
-version = "2.4.0"
+version = "2.5.0"
 description = "HTTP library with thread-safe connection pooling, file post, and more."
 optional = false
 python-versions = ">=3.9"
 groups = ["main"]
 files = [
-    {file = "urllib3-2.4.0-py3-none-any.whl", hash = "sha256:4e16665048960a0900c702d4a66415956a584919c03361cac9f1df5c5dd7e813"},
-    {file = "urllib3-2.4.0.tar.gz", hash = "sha256:414bc6535b787febd7567804cc015fee39daab8ad86268f1310a9250697de466"},
+    {file = "urllib3-2.5.0-py3-none-any.whl", hash = "sha256:e6b01673c0fa6a13e374b50871808eb3bf7046c4b125b216f6bf1cc604cff0dc"},
+    {file = "urllib3-2.5.0.tar.gz", hash = "sha256:3fc47733c7e419d4bc3f6b3dc2b4f890bb743906a30d56ba4a5bfa4bbff92760"},
 ]
 
 [package.extras]

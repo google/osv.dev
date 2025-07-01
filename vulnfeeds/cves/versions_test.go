@@ -12,6 +12,7 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/osv/vulnfeeds/internal/testutils"
 	"github.com/google/osv/vulnfeeds/models"
+	"golang.org/x/exp/slices"
 )
 
 func loadTestData2(cveName string) Vulnerability {
@@ -867,6 +868,24 @@ func TestExtractVersionInfo(t *testing.T) {
 				AffectedVersions: []models.AffectedVersion{{Introduced: "4.0.0", LastAffected: "4.2"}},
 			},
 		},
+		{
+			description:  "CVE with duplicate hashes",
+			inputCVEItem: loadTestData2("CVE-2022-25761"),
+			expectedVersionInfo: models.VersionInfo{
+				AffectedCommits: []models.AffectedCommit{
+					{
+						Repo:  "https://github.com/open62541/open62541",
+						Fixed: "3010bc67fbfd8de0921fc38c9efa146cd2e02c7f",
+					},
+					{
+						Repo:  "https://github.com/open62541/open62541",
+						Fixed: "b79db1ac78146fc06b0b8435773d3967de2d659c",
+					},
+				},
+
+				AffectedVersions: []models.AffectedVersion{{Fixed: "1.2.5"}},
+			},
+		},
 	}
 
 	for _, tc := range tests {
@@ -970,6 +989,99 @@ func TestVersionInfoDuplicateDetection(t *testing.T) {
 	}
 }
 
+func TestDeduplicateAffectedCommits(t *testing.T) {
+	tests := []struct {
+		name     string
+		input    []models.AffectedCommit
+		expected []models.AffectedCommit
+	}{
+		{
+			name: "All duplicates (map-based, all fields)",
+			input: []models.AffectedCommit{
+				{Repo: "repo1", Introduced: "v1", Fixed: "commitA", LastAffected: "L1"},
+				{Repo: "repo1", Introduced: "v1", Fixed: "commitA", LastAffected: "L1"},
+				{Repo: "repo1", Introduced: "v1", Fixed: "commitA", LastAffected: "L1"},
+			},
+			expected: []models.AffectedCommit{
+				{Repo: "repo1", Introduced: "v1", Fixed: "commitA", LastAffected: "L1"},
+			},
+		},
+		{
+			name: "Mixed duplicates and uniques (map-based, all fields)",
+			input: []models.AffectedCommit{
+				{Repo: "repo1", Introduced: "v1", Fixed: "commitB", LastAffected: "L1"},
+				{Repo: "repo2", Introduced: "v1", Fixed: "commitX", LastAffected: "L1"},
+				{Repo: "repo1", Introduced: "v1", Fixed: "commitA", LastAffected: "L1"},
+				{Repo: "repo1", Introduced: "v1", Fixed: "commitB", LastAffected: "L1"}, // Duplicate of first
+				{Repo: "repo2", Introduced: "v2", Fixed: "commitX", LastAffected: "L1"}, // Unique (Introduced different)
+				{Repo: "repo1", Introduced: "v1", Fixed: "commitA", LastAffected: "L2"}, // Unique (Limit different)
+				{Repo: "repo1", Introduced: "v1", Fixed: "commitA", LastAffected: "L1"}, // Duplicate of third
+			},
+			expected: []models.AffectedCommit{
+				{Repo: "repo1", Introduced: "v1", Fixed: "commitB", LastAffected: "L1"},
+				{Repo: "repo2", Introduced: "v1", Fixed: "commitX", LastAffected: "L1"},
+				{Repo: "repo1", Introduced: "v1", Fixed: "commitA", LastAffected: "L1"},
+				{Repo: "repo2", Introduced: "v2", Fixed: "commitX", LastAffected: "L1"},
+				{Repo: "repo1", Introduced: "v1", Fixed: "commitA", LastAffected: "L2"},
+			},
+		},
+		{
+			name: "No duplicates (map-based, all fields)",
+			input: []models.AffectedCommit{
+				{Repo: "repo1", Introduced: "v1", Fixed: "commitA", LastAffected: "L1"},
+				{Repo: "repo1", Introduced: "v1", Fixed: "commitB", LastAffected: "L1"},
+				{Repo: "repo2", Introduced: "v1", Fixed: "commitC", LastAffected: "L1"},
+			},
+			expected: []models.AffectedCommit{
+				{Repo: "repo1", Introduced: "v1", Fixed: "commitA", LastAffected: "L1"},
+				{Repo: "repo1", Introduced: "v1", Fixed: "commitB", LastAffected: "L1"},
+				{Repo: "repo2", Introduced: "v1", Fixed: "commitC", LastAffected: "L1"},
+			},
+		},
+		{
+			name:     "Empty slice (map-based)",
+			input:    []models.AffectedCommit{},
+			expected: []models.AffectedCommit{},
+		},
+		{
+			name: "Single element (map-based)",
+			input: []models.AffectedCommit{
+				{Repo: "repo1", Introduced: "v1", Fixed: "commitA", LastAffected: "L1"},
+			},
+			expected: []models.AffectedCommit{
+				{Repo: "repo1", Introduced: "v1", Fixed: "commitA", LastAffected: "L1"},
+			},
+		},
+		{
+			name: "Real-world example",
+			input: []models.AffectedCommit{
+				{Repo: "https://github.com/open62541/open62541", Introduced: "1.0", Fixed: "b79db1ac", LastAffected: ""},
+				{Repo: "https://github.com/open62541/open62541", Introduced: "1.0", Fixed: "b79db1ac", LastAffected: ""}, // Duplicate
+				{Repo: "https://github.com/open62541/open62541", Introduced: "1.0", Fixed: "3010bc67", LastAffected: ""}, // Unique (Fixed)
+				{Repo: "https://github.com/open62541/open62541", Introduced: "1.1", Fixed: "b79db1ac", LastAffected: ""}, // Unique (Introduced)
+				{Repo: "https://github.com/open62541/open62541", Introduced: "1.0", Fixed: "b79db1ac", LastAffected: ""}, // Unique (Limit)
+				{Repo: "https://github.com/open62541/open62541", Introduced: "1.0", Fixed: "b79db1ac", LastAffected: ""}, // Duplicate
+			},
+			expected: []models.AffectedCommit{
+				{Repo: "https://github.com/open62541/open62541", Introduced: "1.0", Fixed: "b79db1ac", LastAffected: ""},
+				{Repo: "https://github.com/open62541/open62541", Introduced: "1.0", Fixed: "3010bc67", LastAffected: ""},
+				{Repo: "https://github.com/open62541/open62541", Introduced: "1.1", Fixed: "b79db1ac", LastAffected: ""},
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := deduplicateAffectedCommits(tt.input)
+
+			slices.SortStableFunc(got, models.AffectedCommitCompare)
+			slices.SortStableFunc(tt.expected, models.AffectedCommitCompare)
+			if diff := cmp.Diff(got, tt.expected); diff != "" {
+				t.Errorf("deduplicateAffectedCommits() got = %v, want %v", got, tt.expected)
+			}
+		})
+	}
+}
 func TestInvalidRangeDetection(t *testing.T) {
 	tests := []struct {
 		description         string

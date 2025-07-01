@@ -39,6 +39,9 @@ TEST_DATA_DIR = os.path.join(
     os.path.dirname(os.path.abspath(__file__)), 'testdata')
 
 ndb_client = None
+ds_emulator = None
+context_manager = None
+
 PORT = 8000
 SERVER_ADDRESS = ('localhost', PORT)
 MOCK_ADDRESS_FORMAT = f'http://{SERVER_ADDRESS[0]}:{SERVER_ADDRESS[1]}/'
@@ -1765,28 +1768,27 @@ class UpdateTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
 
 
 def setUpModule():
-    """Set up the test module."""
-    print("Starting Datastore Emulator for the test suite...")
-    global ds_emulator, ndb_client, context_manager
-    ds_emulator = tests.start_datastore_emulator()
-    ndb_client = ndb.Client()
+  """Set up the test module."""
+  print("Starting Datastore Emulator for the test suite...")
+  global ds_emulator, ndb_client, context_manager
+  ds_emulator = tests.start_datastore_emulator()
+  ndb_client = ndb.Client()
 
-    # Set the NDB client context for all tests in this module
-    context_manager = ndb_client.context()
-    # __enter__ is needed to activate the context
-    context = context_manager.__enter__()
-    context.set_memcache_policy(False)
-    context.set_cache_policy(False)
+  # Set the NDB client context for all tests in this module
+  context_manager = ndb_client.context()
+  # __enter__ is needed to activate the context
+  context = context_manager.__enter__()
+  context.set_memcache_policy(False)
+  context.set_cache_policy(False)
 
 
 def tearDownModule():
-    """Tear down the test module."""
-    print("Stopping Datastore Emulator.")
-    # Deactivate the NDB context
-    context_manager.__exit__(None, None, None)
-    tests.stop_emulator()
+  """Tear down the test module."""
+  print("Stopping Datastore Emulator.")
+  # Deactivate the NDB context
+  context_manager.__exit__(None, None, None)
+  tests.stop_emulator()
 
 
 if __name__ == '__main__':
-    unittest.main()
-
+  unittest.main()

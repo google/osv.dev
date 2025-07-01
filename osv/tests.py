@@ -183,11 +183,16 @@ def _kill_existing_datastore_emulator():
         print(f'Could not parse PID from line: {line.strip()}')
       except ProcessLookupError:
         # This can happen if the process terminated between finding it and trying to kill it.
-        print(f'Process with PID {pid} not found. It might have already been terminated.')
+        print(
+            f'Process with PID {pid} not found. It might have already been terminated.'
+        )
       except PermissionError:
         print(f'Permission denied. Could not terminate process {pid}.')
       except Exception as e:
-        print(f'An unexpected error occurred while trying to kill process {pid}: {e}')
+        print(
+            f'An unexpected error occurred while trying to kill process {pid}: {e}'
+        )
+
 
 emulator_stdout_thread_output = ''
 

@@ -6,9 +6,9 @@ dependencies = [
     "google-cloud-logging==3.12.1",
     "packaging==24.2",
     "requests==2.32.4",
-    "grpcio==1.70.0",
-    "grpcio-reflection==1.62.2",
-    "grpcio-health-checking==1.62.2",
+    "grpcio==1.73.1",
+    "grpcio-reflection==1.73.1",
+    "grpcio-health-checking==1.73.1",
     "google-cloud-profiler==4.1.0",
     "osv",
 ]

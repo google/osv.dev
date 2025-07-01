@@ -7,7 +7,7 @@ API documentation is available [here](https://google.github.io/osv.dev/api/).
 
 ## Data Dump
 
-We have data dumps available from a GCS bucket at `gs://osv-vulnerabilities`. For more information checkout [our documentation](https://google.github.io/osv.dev/data/#data-dumps).
+We have data dumps available from a GCS bucket at `gs://osv-vulnerabilities`. For more information check out [our documentation](https://google.github.io/osv.dev/data/#data-dumps).
 
 ## Viewing the web UI
 

@@ -160,12 +160,12 @@ func ExtractVersionInfo(cve cves.CVE5, validVersions []string, httpClient *http.
 
 			// SUPER NAIVE APPROACH
 			if hasRange {
-				if vInfo.Version != "" && vInfo.Version != "n/a" && vInfo.Version != "unknown" {
+				if vInfo.Version != "" && vInfo.Version != "n/a" && vInfo.Version != "unknown" && vInfo.Version != "unspecified" {
 					introduced = vInfo.Version
 				}
-				if vInfo.LessThan != "" && vInfo.LessThan != "n/a" && vInfo.LessThan != "unknown" {
+				if vInfo.LessThan != "" && vInfo.LessThan != "n/a" && vInfo.LessThan != "unknown" && vInfo.Version != "unspecified" {
 					fixed = vInfo.LessThan
-				} else if vInfo.LessThanOrEqual != "" && vInfo.LessThanOrEqual != "n/a" && vInfo.LessThanOrEqual != "unknown" {
+				} else if vInfo.LessThanOrEqual != "" && vInfo.LessThanOrEqual != "n/a" && vInfo.LessThanOrEqual != "unknown" && vInfo.Version != "unspecified" {
 					lastaffected = vInfo.LessThanOrEqual
 				}
 

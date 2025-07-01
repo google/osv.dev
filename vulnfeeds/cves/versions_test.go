@@ -6,7 +6,6 @@ import (
 	"log"
 	"os"
 	"reflect"
-	"sort"
 	"testing"
 	"time"
 

@@ -50,6 +50,31 @@ type CPE struct {
 	Nodes []Node `json:"nodes"`
 }
 
+type ADP struct {
+	Title            string           `json:"title"`
+	ProviderMetadata ProviderMetadata `json:"providerMetadata"`
+	ProblemTypes     ProblemTypes     `json:"problemTypes"`
+	Metrics          []struct {
+		CVSS CVSS `json:"cvssData"`
+	}
+	References []Reference `json:"references"`
+}
+type Affected struct {
+	Vendor        string     `json:"vendor"`
+	Product       string     `json:"product"`
+	PackageName   string     `json:"packageName"`
+	CollectionUrl string     `json:"collectionURL"`
+	Versions      []Versions `json:"versions"`
+}
+
+type Versions struct {
+	Version         string `json:"version"`
+	Status          string `json:"status"`
+	LessThanOrEqual string `json:"lessThanOrEqual"`
+	LessThan        string `json:"lessThan"`
+	VersionType     string `json:"versionType"`
+}
+
 type CVE5 struct {
 	DataType    string       `json:"dataType"`
 	DataVersion string       `json:"dataVersion"`
@@ -58,34 +83,14 @@ type CVE5 struct {
 		CNA struct {
 			ProviderMetadata ProviderMetadata `json:"providerMetadata"`
 
-			Descriptions []LangString `json:"descriptions"`
-			Tags         []string     `json:"tags"`
-			Affected     []struct {
-				Vendor        string `json:"vendor"`
-				Product       string `json:"product"`
-				PackageName   string `json:"packageName"`
-				CollectionUrl string `json:"collectionURL"`
-				Versions      []struct {
-					Version         string `json:"version"`
-					Status          string `json:"status"`
-					LessThanOrEqual string `json:"lessThanOrEqual"`
-					LessThan        string `json:"lessThan"`
-					VersionType     string `json:"versionType"`
-				}
-			}
+			Descriptions     []LangString `json:"descriptions"`
+			Tags             []string     `json:"tags"`
+			Affected         []Affected   `json:"affected"`
 			References       []Reference  `json:"references"`
 			ProblemTypes     ProblemTypes `json:"problemTypes"`
 			CPEApplicability CPE          `json:"cpeApplicability"`
 		}
-		ADP []struct {
-			Title            string           `json:"title"`
-			ProviderMetadata ProviderMetadata `json:"providerMetadata"`
-			ProblemTypes     ProblemTypes     `json:"problemTypes"`
-			Metrics          []struct {
-				CVSS CVSS `json:"cvssData"`
-			}
-			References []Reference `json:"references"`
-		}
+		ADP []ADP `json:"adp"`
 	}
 }
 

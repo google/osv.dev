@@ -4,7 +4,7 @@ go 1.23.6
 
 require (
 	cloud.google.com/go/datastore v1.20.0
-	google.golang.org/api v0.238.0
+	google.golang.org/api v0.239.0
 )
 
 require (

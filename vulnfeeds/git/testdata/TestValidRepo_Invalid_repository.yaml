@@ -7,13 +7,10 @@ interactions:
         proto_major: 1
         proto_minor: 1
         content_length: 0
-        transfer_encoding: []
-        trailer: {}
         host: github.com
-        remote_addr: ""
-        request_uri: ""
-        body: ""
-        form: {}
+        form:
+            service:
+                - git-upload-pack
         headers:
             Accept:
                 - '*/*'
@@ -27,10 +24,7 @@ interactions:
         proto: HTTP/2.0
         proto_major: 2
         proto_minor: 0
-        transfer_encoding: []
-        trailer: {}
         content_length: 21
-        uncompressed: false
         body: Repository not found.
         headers:
             Content-Length:
@@ -40,7 +34,7 @@ interactions:
             Content-Type:
                 - text/plain; charset=UTF-8
             Date:
-                - Tue, 20 May 2025 06:39:44 GMT
+                - Wed, 02 Jul 2025 01:38:41 GMT
             Server:
                 - GitHub-Babel/3.0
             Strict-Transport-Security:
@@ -50,7 +44,7 @@ interactions:
             X-Frame-Options:
                 - DENY
             X-Github-Request-Id:
-                - A40E:34DD5C:866DC5:A1BDF8:682C23AE
+                - 8B18:6B796:5B138:6A33C:68648DA0
         status: 401 Unauthorized
         code: 401
-        duration: 220.740775ms
+        duration: 321.866914ms

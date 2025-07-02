@@ -185,6 +185,7 @@ func GitVersionsToCommits(CVE cves.CVEID, versions models.VersionInfo, repos []s
 }
 
 // Examines the CVE references for a CVE and derives repos for it, optionally caching it.
+// TODO (jesslowe): refactor with below
 func ReposFromReferences(CVE string, cache VendorProductToRepoMap, vp *VendorProduct, refs []cves.Reference, tagDenyList []string, Logger utility.LoggerWrapper) (repos []string) {
 	for _, ref := range refs {
 		// If any of the denylist tags are in the ref's tag set, it's out of consideration.
@@ -208,6 +209,43 @@ func ReposFromReferences(CVE string, cache VendorProductToRepoMap, vp *VendorPro
 		if (err == nil && !git.ValidRepo(repo)) || (err != nil && !git.ValidRepoAndHasUsableRefs(repo)) {
 			continue
 		}
+		repos = append(repos, repo)
+		MaybeUpdateVPRepoCache(cache, vp, repo)
+	}
+	if vp != nil {
+		Logger.Infof("[%s]: Derived %q for %q %q using references", CVE, repos, vp.Vendor, vp.Product)
+	} else {
+		Logger.Infof("[%s]: Derived %q (no CPEs) using references", CVE, repos)
+	}
+
+	return repos
+}
+
+// Examines the CVE references for a CVE and derives repos for it, optionally caching it.
+func ReposFromReferencesCVEList(CVE string, cache VendorProductToRepoMap, vp *VendorProduct, refs []cves.Reference, tagDenyList []string, Logger utility.LoggerWrapper) (repos []string) {
+	for _, ref := range refs {
+		// If any of the denylist tags are in the ref's tag set, it's out of consideration.
+		if !RefAcceptable(ref, tagDenyList) {
+			// Also remove it if previously added under an acceptable tag.
+			MaybeRemoveFromVPRepoCache(cache, vp, ref.Url)
+			Logger.Infof("[%s]: disregarding %q for %q due to a denied tag in %q", CVE, ref.Url, vp, ref.Tags)
+			continue
+		}
+		// if it ends with .md it is likely a researcher repo and _currently_ useless.
+		if strings.HasSuffix(ref.Url, ".md") {
+			continue
+		}
+		repo, err := cves.Repo(ref.Url)
+		if err != nil {
+			// Failed to parse as a valid repo.
+			continue
+		}
+		if slices.Contains(repos, repo) {
+			continue
+		}
+		// If the reference is a commit URL, the repo is inherently useful (but only if the repo still ultimately works).
+		_, err = cves.Commit(ref.Url)
+
 		repos = append(repos, repo)
 		MaybeUpdateVPRepoCache(cache, vp, repo)
 	}

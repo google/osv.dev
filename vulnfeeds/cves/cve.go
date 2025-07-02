@@ -47,7 +47,17 @@ type CVE5Metadata struct {
 }
 
 type CPE struct {
-	Nodes []Node `json:"nodes"`
+	Nodes []CPENode `json:"nodes"`
+}
+type CPENode struct {
+	Operator string `json:"operator"`
+	Negate   bool   `json:"negate"`
+	CPEMatch []struct {
+		Vulnerable          bool   `json:"vulnerable"`
+		Criteria            string `json:"criteria"`
+		VersionEndIncluding string `json:"versionEndIncluding"`
+		VersionEndExcluding string `json:"versionEndExcluding"`
+	} `json:"cpeMatch"`
 }
 
 type CVE5 struct {
@@ -65,7 +75,9 @@ type CVE5 struct {
 				Product       string `json:"product"`
 				PackageName   string `json:"packageName"`
 				CollectionUrl string `json:"collectionURL"`
-				Versions      []struct {
+				Repo          string `json:"repo"`
+
+				Versions []struct {
 					Version         string `json:"version"`
 					Status          string `json:"status"`
 					LessThanOrEqual string `json:"lessThanOrEqual"`
@@ -75,7 +87,7 @@ type CVE5 struct {
 			}
 			References       []Reference  `json:"references"`
 			ProblemTypes     ProblemTypes `json:"problemTypes"`
-			CPEApplicability CPE          `json:"cpeApplicability"`
+			CPEApplicability []CPE        `json:"cpeApplicability"`
 		}
 		ADP []struct {
 			Title            string           `json:"title"`

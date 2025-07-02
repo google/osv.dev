@@ -100,6 +100,112 @@ func TestReposFromReferences(t *testing.T) {
 	}
 }
 
+func TestReposFromReferencesCVEList(t *testing.T) {
+	type args struct {
+		CVE         string
+		cache       VendorProductToRepoMap
+		vp          *VendorProduct
+		refs        []cves.Reference
+		tagDenyList []string
+	}
+	tests := []struct {
+		name      string
+		args      args
+		wantRepos []string
+	}{
+		{
+			name: "A CVE with a repo not already present in the VendorRepo cache (that happens to have a useful commit and a repo that has no tags)",
+			args: args{
+				CVE:   "CVE-2023-0327",
+				cache: nil,
+				vp:    &VendorProduct{"theradsystem_project", "theradsystem"},
+				refs: []cves.Reference{
+					{
+						Source: "cna@vuldb.com",
+						Tags:   []string{"Patch", "Third Party Advisory"},
+						Url:    "https://github.com/saemorris/TheRadSystem/commit/bfba26bd34af31648a11af35a0bb66f1948752a6"},
+				},
+				tagDenyList: RefTagDenyList,
+			},
+			wantRepos: []string{"https://github.com/saemorris/TheRadSystem"},
+		},
+		{
+			name: "A CVE with a useless (vulnerability researcher) repo",
+			args: args{
+				CVE:   "CVE-2025-0211",
+				cache: nil,
+				vp:    &VendorProduct{"campcodes", "school_faculty_scheduling_system"},
+				refs: []cves.Reference{
+					{
+						Source: "cna@vuldb.com",
+						Tags:   []string{"Exploit", "Third Party Advisory"},
+						Url:    "https://github.com/shaturo1337/POCs/blob/main/LFI%20in%20School%20Faculty%20Scheduling%20System.md"},
+				},
+				tagDenyList: RefTagDenyList,
+			},
+			wantRepos: []string(nil),
+		},
+		{
+			name: "A CVE with a cgit repo reference that does not work without transformation",
+			args: args{
+				CVE:   "CVE-2025-26519",
+				cache: nil,
+				vp:    nil,
+				refs: []cves.Reference{
+					{
+						Source: "cna@mitre.org",
+						Tags:   nil,
+						Url:    "https://git.musl-libc.org/cgit/musl/commit/?id=c47ad25ea3b484e10326f933e927c0bc8cded3da",
+					},
+				},
+				tagDenyList: RefTagDenyList,
+			},
+			wantRepos: []string{"https://git.musl-libc.org/git/musl"},
+		},
+		{
+			name: "A CVE with a valid GitHub repo that stopped working",
+			args: args{
+				CVE:   "CVE-2016-10525",
+				cache: nil,
+				vp:    nil,
+				refs: []cves.Reference{
+					{
+						Source: "support@hackerone.com",
+						Tags:   []string{"Patch", "Third Party Advisory"},
+						Url:    "https://github.com/dwyl/hapi-auth-jwt2/issues/111",
+					},
+				},
+				tagDenyList: RefTagDenyList,
+			},
+			wantRepos: []string{"https://github.com/dwyl/hapi-auth-jwt2"},
+		}, {
+			name: "A CVE with a repo not already present)",
+			args: args{
+				CVE:   "CVE-2024-7790",
+				cache: nil,
+				vp:    &VendorProduct{"Devikia", "DevikaAI"},
+				refs: []cves.Reference{
+					{
+						Source: "cna@vuldb.com",
+						Tags:   []string{"Patch", "Third Party Advisory"},
+						Url:    "https://github.com/stitionai/devika"},
+				},
+				tagDenyList: RefTagDenyList,
+			},
+			wantRepos: []string{"https://github.com/stitionai/devika"},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			testutils.SetupGitVCR(t)
+			var Logger utility.LoggerWrapper
+			if gotRepos := ReposFromReferencesCVEList(tt.args.CVE, tt.args.cache, tt.args.vp, tt.args.refs, tt.args.tagDenyList, Logger); !reflect.DeepEqual(gotRepos, tt.wantRepos) {
+				t.Errorf("ReposFromReferences() = %#v, want %#v", gotRepos, tt.wantRepos)
+			}
+		})
+	}
+}
+
 func Test_maybeUpdateVPRepoCache(t *testing.T) {
 	type args struct {
 		cache VendorProductToRepoMap

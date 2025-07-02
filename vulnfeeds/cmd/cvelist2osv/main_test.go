@@ -180,7 +180,12 @@ func TestExtractVersionInfo(t *testing.T) {
 			client := r.GetDefaultClient()
 
 			cveData := loadTestData(tc.cveID)
-			got, notes := ExtractVersionInfo(cveData, nil, client)
+			refs := identifyPossibleURLs(cveData)
+			repos := []string{}
+			for _, ref := range refs {
+				repos = append(repos, ref.Url)
+			}
+			got, notes := ExtractVersionInfo(cveData, repos, nil, client)
 
 			// Sort for stable comparison
 			sort.SliceStable(got.AffectedVersions, func(i, j int) bool {

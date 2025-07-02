@@ -130,10 +130,10 @@ func FromCVE(id cves.CVEID, cve cves.CVE5) (*vulns.Vulnerability, []string) {
 	// v.AddSeverity(cve.Metrics)
 	return &v, notes
 }
-func ExtractVersionInfo(cve cves.CVE5, validVersions []string, httpClient *http.Client) (v models.VersionInfo, notes []string) {
-	for _, reference := range cve.Containers.CNA.References {
+func ExtractVersionInfo(cve cves.CVE5, refs []string, validVersions []string, httpClient *http.Client) (v models.VersionInfo, notes []string) {
+	for _, reference := range refs {
 		// (Potentially faulty) Assumption: All viable Git commit reference links are fix commits.
-		if commit, err := cves.ExtractGitCommit(reference.Url, models.Fixed, httpClient); err == nil {
+		if commit, err := cves.ExtractGitCommit(reference, models.Fixed, httpClient); err == nil {
 			v.AffectedCommits = append(v.AffectedCommits, commit)
 		}
 	}
@@ -241,7 +241,7 @@ func CVEToOSV(CVE cves.CVE5, repos []string, cache git.RepoTagsCache, directory 
 	// Create a base OSV record
 	v, notes := FromCVE(cves.CVEID(CVE.Metadata.ID), CVE)
 
-	versions, versionNotes := ExtractVersionInfo(CVE, nil, http.DefaultClient)
+	versions, versionNotes := ExtractVersionInfo(CVE, repos, nil, http.DefaultClient)
 
 	notes = append(notes, versionNotes...)
 
@@ -360,6 +360,33 @@ func outputOutcomes(outcomes map[cves.CVEID]ConversionOutcome, reposForCVE map[c
 	return nil
 }
 
+func identifyPossibleURLs(cve cves.CVE5) []cves.Reference {
+
+	refs := cve.Containers.CNA.References
+	// check if there are more references in the ADP
+	for _, adp := range cve.Containers.ADP {
+		if adp.References != nil {
+			refs = append(refs, adp.References...)
+		}
+	}
+	for _, affected := range cve.Containers.CNA.Affected {
+		if affected.CollectionUrl != "" {
+			refs = append(refs, cves.Reference{Url: affected.CollectionUrl})
+		}
+		if affected.Repo != "" {
+			refs = append(refs, cves.Reference{Url: affected.Repo})
+		}
+	}
+
+	slices.SortStableFunc(refs, func(a, b cves.Reference) int {
+		return strings.Compare(a.Url, b.Url)
+	})
+	refs = slices.CompactFunc(refs, func(a, b cves.Reference) bool {
+		return a.Url == b.Url
+	})
+	return refs
+}
+
 func main() {
 	flag.Parse()
 	if !slices.Contains([]string{"OSV", "PackageInfo"}, *outFormat) {
@@ -385,32 +412,15 @@ func main() {
 	}
 
 	// VPRepoCache := make(VendorProductToRepoMap)
-
 	ReposForCVE := make(map[cves.CVEID][]string)
-
-	refs := cve.Containers.CNA.References
-	// check if there are more references in the ADP
-	for _, adp := range cve.Containers.ADP {
-		if adp.References != nil {
-			refs = append(refs, adp.References...)
-		}
-	}
-
-	for _, affected := range cve.Containers.CNA.Affected {
-		if affected.CollectionUrl != "" {
-			refs = append(refs, cves.Reference{Url: affected.CollectionUrl})
-		}
-	}
-	for _, ref := range refs {
-		log.Printf(ref.Url)
-	}
+	refs := identifyPossibleURLs(cve)
 
 	CVEID := cve.Metadata.ID
 
 	// Not rejecting cause we might be able to leverage other datasources
 
 	if len(refs) > 0 {
-		repos := common.ReposFromReferences(string(CVEID), nil, nil, refs, RefTagDenyList, Logger)
+		repos := common.ReposFromReferencesCVEList(string(CVEID), nil, nil, refs, RefTagDenyList, Logger)
 		if len(repos) == 0 {
 			Logger.Warnf("[%s]: Failed to derive any repos", CVEID)
 		}

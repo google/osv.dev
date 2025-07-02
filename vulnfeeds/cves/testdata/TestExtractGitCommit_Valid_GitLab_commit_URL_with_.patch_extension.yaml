@@ -7,13 +7,7 @@ interactions:
         proto_major: 1
         proto_minor: 1
         content_length: 0
-        transfer_encoding: []
-        trailer: {}
         host: gitlab.com
-        remote_addr: ""
-        request_uri: ""
-        body: ""
-        form: {}
         headers:
             Accept:
                 - text/html
@@ -23,10 +17,7 @@ interactions:
         proto: HTTP/2.0
         proto_major: 2
         proto_minor: 0
-        transfer_encoding: []
-        trailer: {}
         content_length: -1
-        uncompressed: false
         body: ""
         headers:
             Cache-Control:
@@ -34,21 +25,21 @@ interactions:
             Cf-Cache-Status:
                 - MISS
             Cf-Ray:
-                - 9429503ea9765f25-SYD
+                - 958a6b52f97357d5-SYD
             Content-Disposition:
                 - inline
             Content-Security-Policy:
-                - 'base-uri ''self''; child-src https://www.google.com/recaptcha/ https://www.recaptcha.net/ https://www.googletagmanager.com/ns.html https://*.zuora.com/apps/PublicHostedPageLite.do https://gitlab.com/admin/ https://gitlab.com/assets/ https://gitlab.com/-/speedscope/index.html https://gitlab.com/-/sandbox/ ''self'' https://gitlab.com/assets/ blob: data:; connect-src ''self'' https://gitlab.com wss://gitlab.com https://sentry.gitlab.net https://new-sentry.gitlab.net https://customers.gitlab.com https://snowplow.trx.gitlab.net https://sourcegraph.com https://collector.prd-278964.gl-product-analytics.com snowplowprd.trx.gitlab.net https://sourcegraph.com/.api/; default-src ''self''; font-src ''self''; form-action ''self'' https: http:; frame-ancestors ''self''; frame-src https://www.google.com/recaptcha/ https://www.recaptcha.net/ https://www.googletagmanager.com/ns.html https://*.zuora.com/apps/PublicHostedPageLite.do https://gitlab.com/admin/ https://gitlab.com/assets/ https://gitlab.com/-/speedscope/index.html https://gitlab.com/-/sandbox/; img-src ''self'' data: blob: http: https:; manifest-src ''self''; media-src ''self'' data: blob: http: https:; object-src ''none''; report-uri https://new-sentry.gitlab.net/api/4/security/?sentry_key=f5573e26de8f4293b285e556c35dfd6e&sentry_environment=gprd; script-src ''strict-dynamic'' ''self'' ''unsafe-inline'' ''unsafe-eval'' https://www.google.com/recaptcha/ https://www.gstatic.com/recaptcha/ https://www.recaptcha.net/ https://apis.google.com https://*.zuora.com/apps/PublicHostedPageLite.do ''nonce-h7GJ6vn38tJZTJqrOVlevQ==''; style-src ''self'' ''unsafe-inline''; worker-src ''self'' https://gitlab.com/assets/ blob: data:'
+                - 'base-uri ''self''; child-src https://www.google.com/recaptcha/ https://www.recaptcha.net/ https://www.googletagmanager.com/ns.html https://*.zuora.com/apps/PublicHostedPageLite.do https://gitlab.com/admin/ https://gitlab.com/assets/ https://gitlab.com/-/speedscope/index.html https://gitlab.com/-/sandbox/ ''self'' https://gitlab.com/assets/ blob: data:; connect-src ''self'' https://gitlab.com wss://gitlab.com https://sentry.gitlab.net https://new-sentry.gitlab.net https://customers.gitlab.com https://snowplow.trx.gitlab.net https://sourcegraph.com https://collector.prd-278964.gl-product-analytics.com https://analytics.gitlab.com snowplowprd.trx.gitlab.net https://sourcegraph.com/.api/; default-src ''self''; font-src ''self''; form-action ''self'' https: http:; frame-ancestors ''self''; frame-src https://www.google.com/recaptcha/ https://www.recaptcha.net/ https://www.googletagmanager.com/ns.html https://*.zuora.com/apps/PublicHostedPageLite.do https://gitlab.com/admin/ https://gitlab.com/assets/ https://gitlab.com/-/speedscope/index.html https://gitlab.com/-/sandbox/; img-src ''self'' data: blob: http: https:; manifest-src ''self''; media-src ''self'' data: blob: http: https:; object-src ''none''; report-uri https://new-sentry.gitlab.net/api/4/security/?sentry_key=f5573e26de8f4293b285e556c35dfd6e&sentry_environment=gprd; script-src ''strict-dynamic'' ''self'' ''unsafe-inline'' ''unsafe-eval'' https://www.google.com/recaptcha/ https://www.gstatic.com/recaptcha/ https://www.recaptcha.net/ https://apis.google.com https://*.zuora.com/apps/PublicHostedPageLite.do ''nonce-Sqk8rg0tH8+EOtO7OsQ1gA==''; style-src ''self'' ''unsafe-inline''; worker-src ''self'' https://gitlab.com/assets/ blob: data:'
             Content-Type:
                 - text/plain; charset=utf-8
             Date:
-                - Tue, 20 May 2025 05:07:58 GMT
+                - Wed, 02 Jul 2025 01:37:40 GMT
             Gitlab-Lb:
-                - haproxy-main-51-lb-gprd
+                - haproxy-main-04-lb-gprd
             Gitlab-Sv:
-                - web-gke-us-east1-d
+                - web-gke-us-east1-b
             Last-Modified:
-                - Tue, 20 May 2025 05:07:58 GMT
+                - Wed, 02 Jul 2025 01:37:40 GMT
             Nel:
                 - '{"max_age": 0}'
             Permissions-Policy:
@@ -58,7 +49,7 @@ interactions:
             Server:
                 - cloudflare
             Set-Cookie:
-                - _cfuvid=zwIuY5P3pGHtxXsvZ_IynDmLiQ6Qla5RmLkiEGR1b2Y-1747717678259-0.0.1.1-604800000; path=/; domain=.gitlab.com; HttpOnly; Secure; SameSite=None
+                - _cfuvid=sOHJdudYEzPMBlS84t3bKmIUiHi9LX0nQL99j5X0SfE-1751420260706-0.0.1.1-604800000; path=/; domain=.gitlab.com; HttpOnly; Secure; SameSite=None
             Strict-Transport-Security:
                 - max-age=31536000
             X-Content-Type-Options:
@@ -68,17 +59,17 @@ interactions:
             X-Frame-Options:
                 - SAMEORIGIN
             X-Gitlab-Meta:
-                - '{"correlation_id":"01JVP1ERXP3T5XJ0QQK7TVXKBT","version":"1"}'
+                - '{"correlation_id":"01JZ4CGM34N0SR2020F327EJ8Y","version":"1"}'
             X-Permitted-Cross-Domain-Policies:
                 - none
             X-Request-Id:
-                - 01JVP1ERXP3T5XJ0QQK7TVXKBT
+                - 01JZ4CGM34N0SR2020F327EJ8Y
             X-Runtime:
-                - "0.134261"
+                - "0.139085"
             X-Ua-Compatible:
                 - IE=edge
             X-Xss-Protection:
                 - 1; mode=block
         status: 200 OK
         code: 200
-        duration: 634.780392ms
+        duration: 532.345942ms

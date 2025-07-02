@@ -810,7 +810,23 @@ func TestExtractVersionInfo(t *testing.T) {
 				AffectedCommits: []models.AffectedCommit{
 					{
 						Repo:  "https://github.com/tensorflow/tensorflow",
+						Fixed: "0516d4d8bced506cae97dc3cb45dbd2fe4311f26",
+					},
+					{
+						Repo:  "https://github.com/tensorflow/tensorflow",
+						Fixed: "33ed2b11cb8e879d86c371700e6573db1814a69e",
+					},
+					{
+						Repo:  "https://github.com/tensorflow/tensorflow",
+						Fixed: "8a20d54a3c1bfa38c03ea99a2ad3c1b0a45dfa95",
+					},
+					{
+						Repo:  "https://github.com/tensorflow/tensorflow",
 						Fixed: "cff267650c6a1b266e4b4500f69fbc49cdd773c5",
+					},
+					{
+						Repo:  "https://github.com/tensorflow/tensorflow",
+						Fixed: "dd7b8a3c1714d0052ce4b4a2fd8dcef927439a24",
 					},
 				},
 				AffectedVersions: []models.AffectedVersion{

@@ -7,13 +7,7 @@ interactions:
         proto_major: 1
         proto_minor: 1
         content_length: 0
-        transfer_encoding: []
-        trailer: {}
         host: bitbucket.org
-        remote_addr: ""
-        request_uri: ""
-        body: ""
-        form: {}
         headers:
             Accept:
                 - text/html
@@ -23,10 +17,7 @@ interactions:
         proto: HTTP/2.0
         proto_major: 2
         proto_minor: 0
-        transfer_encoding: []
-        trailer: {}
-        content_length: 21686
-        uncompressed: false
+        content_length: 21731
         body: ""
         headers:
             Accept-Ranges:
@@ -34,23 +25,23 @@ interactions:
             Age:
                 - "0"
             Atl-Request-Id:
-                - bef87227-abcd-446e-b717-d63ae053db3e
+                - 6b4eef3a-cd71-417f-8f00-6598567414a6
             Atl-Traceid:
-                - bef87227abcd446eb717d63ae053db3e
+                - 6b4eef3acd71417f8f006598567414a6
             Cache-Control:
                 - max-age=0, no-cache, no-store, must-revalidate, private
             Content-Language:
                 - en
             Content-Length:
-                - "21686"
+                - "21731"
             Content-Security-Policy:
-                - 'frame-ancestors ''self'' start.atlassian.com start.stg.atlassian.com atlaskit.atlassian.com bitbucket.org app.pendo.io; base-uri ''self''; font-src ''self'' https://bbc-frontbucket-static.stg-east.frontend.public.atl-paas.net https://bbc-frontbucket-static.prod-east.frontend.public.atl-paas.net https://bbc-frontbucket-canary.prod-east.frontend.public.atl-paas.net https://bbc-frontbucket-exp.prod-east.frontend.public.atl-paas.net https://ds-cdn.prod-east.frontend.public.atl-paas.net https://bbc-object-storage--frontbucket.us-east-1.prod.public.atl-paas.net; default-src ''self'' ''unsafe-inline'' ''unsafe-eval'' data: blob: *; script-src ''unsafe-eval'' ''strict-dynamic'' ''unsafe-inline'' ''self'' http: https: https://remote-app-switcher.stg-east.frontend.public.atl-paas.net https://remote-app-switcher.prod-east.frontend.public.atl-paas.net https://bbc-frontbucket-static.stg-east.frontend.public.atl-paas.net https://bbc-frontbucket-static.prod-east.frontend.public.atl-paas.net https://bbc-frontbucket-canary.prod-east.frontend.public.atl-paas.net https://bbc-frontbucket-exp.prod-east.frontend.public.atl-paas.net app.pendo.io cdn.pendo.io data.pendo.io pendo-io-static.storage.googleapis.com pendo-static-6291417196199936.storage.googleapis.com https://bbc-object-storage--frontbucket.us-east-1.prod.public.atl-paas.net/ https://bbc-object-storage--frontbucket.us-east-1.staging.public.atl-paas.net/ https://bbc-object-storage--frontbucket.us-east-1.prod.public.atl-paas.net/ ''nonce-ID2sqZvJyPz5TDYYsqotmQ==''; style-src ''self'' ''unsafe-inline'' https://aui-cdn.atlassian.com/ https://cdn.cookielaw.org/ https://bbc-frontbucket-static.stg-east.frontend.public.atl-paas.net https://bbc-frontbucket-static.prod-east.frontend.public.atl-paas.net https://bbc-frontbucket-canary.prod-east.frontend.public.atl-paas.net https://bbc-frontbucket-exp.prod-east.frontend.public.atl-paas.net app.pendo.io cdn.pendo.io pendo-static-6291417196199936.storage.googleapis.com https://ds-cdn.prod-east.frontend.public.atl-paas.net https://bbc-object-storage--frontbucket.us-east-1.prod.public.atl-paas.net/ https://bbc-object-storage--frontbucket.us-east-1.staging.public.atl-paas.net/ https://bbc-object-storage--frontbucket.us-east-1.prod.public.atl-paas.net/; object-src ''none''; connect-src bitbucket.org *.bitbucket.org bb-inf.net *.bb-inf.net atlassianblog.wpengine.com id.atlassian.com api.atlassian.com api.stg.atlassian.com wss://bitbucketci-ws-service.services.atlassian.com/ wss://bitbucketci-ws-service.stg.services.atlassian.com/ wss://bitbucketci-ws-service.dev.services.atlassian.com/ analytics.atlassian.com atlassian-cookies--categories.us-east-1.prod.public.atl-paas.net as.atlassian.com api-private.stg.atlassian.com api-private.atlassian.com xp.atlassian.com atl-global.atlassian.com cofs.staging.public.atl-paas.net cofs.prod.public.atl-paas.net fd-assets.prod.atl-paas.net flight-deck-assets-bifrost.prod-east.frontend.public.atl-paas.net intake.opbeat.com api.media.atlassian.com api.segment.io xid.statuspage.io xid.atlassian.com xid.sourcetreeapp.com bam.nr-data.net bam-cell.nr-data.net www.google-analytics.com sentry.io *.ingest.sentry.io statsigapi.net fd-config.us-east-1.prod.public.atl-paas.net fd-config-bifrost.prod-east.frontend.public.atl-paas.net micros--prod-west--bitbucketci-file-service--files.s3.us-west-1.amazonaws.com micros--prod-east--bitbucketci-file-service--files.s3.amazonaws.com micros--stg-west--bitbucketci-file-service--files.s3.us-west-1.amazonaws.com micros--stg-east--bitbucketci-file-service--files.s3.amazonaws.com micros--ddev--bitbucketci-file-service--files.s3.ap-southeast-2.amazonaws.com app.pendo.io data.pendo.io pendo-static-6291417196199936.storage.googleapis.com bqlf8qjztdtr.statuspage.io https://bbc-object-storage--frontbucket.us-east-1.prod.public.atl-paas.net/ https://bbc-object-storage--frontbucket.us-east-1.staging.public.atl-paas.net/ https://bbc-object-storage--frontbucket.us-east-1.prod.public.atl-paas.net/; report-uri https://web-security-reports.services.atlassian.com/csp-report/bb-website'
+                - 'style-src ''self'' ''unsafe-inline'' https://aui-cdn.atlassian.com/ https://cdn.cookielaw.org/ https://bbc-frontbucket-static.stg-east.frontend.public.atl-paas.net https://bbc-frontbucket-static.prod-east.frontend.public.atl-paas.net https://bbc-frontbucket-canary.prod-east.frontend.public.atl-paas.net https://bbc-frontbucket-exp.prod-east.frontend.public.atl-paas.net app.pendo.io cdn.pendo.io pendo-static-6291417196199936.storage.googleapis.com https://ds-cdn.prod-east.frontend.public.atl-paas.net https://bbc-object-storage--frontbucket.us-east-1.prod.public.atl-paas.net/ https://bbc-object-storage--frontbucket.us-east-1.staging.public.atl-paas.net/ https://bbc-object-storage--frontbucket.us-east-1.prod.public.atl-paas.net/; frame-ancestors ''self'' start.atlassian.com start.stg.atlassian.com atlaskit.atlassian.com bitbucket.org app.pendo.io; default-src ''self'' ''unsafe-inline'' ''unsafe-eval'' data: blob: *; font-src ''self'' https://bbc-frontbucket-static.stg-east.frontend.public.atl-paas.net https://bbc-frontbucket-static.prod-east.frontend.public.atl-paas.net https://bbc-frontbucket-canary.prod-east.frontend.public.atl-paas.net https://bbc-frontbucket-exp.prod-east.frontend.public.atl-paas.net https://ds-cdn.prod-east.frontend.public.atl-paas.net https://bbc-object-storage--frontbucket.us-east-1.prod.public.atl-paas.net; base-uri ''self''; object-src ''none''; connect-src bitbucket.org *.bitbucket.org bb-inf.net *.bb-inf.net atlassianblog.wpengine.com id.atlassian.com api.atlassian.com api.stg.atlassian.com wss://bitbucketci-ws-service.services.atlassian.com/ wss://bitbucketci-ws-service.stg.services.atlassian.com/ wss://bitbucketci-ws-service.dev.services.atlassian.com/ analytics.atlassian.com atlassian-cookies--categories.us-east-1.prod.public.atl-paas.net as.atlassian.com api-private.stg.atlassian.com api-private.atlassian.com xp.atlassian.com atl-global.atlassian.com cofs.staging.public.atl-paas.net cofs.prod.public.atl-paas.net fd-assets.prod.atl-paas.net flight-deck-assets-bifrost.prod-east.frontend.public.atl-paas.net intake.opbeat.com api.media.atlassian.com api.segment.io xid.statuspage.io xid.atlassian.com xid.sourcetreeapp.com bam.nr-data.net bam-cell.nr-data.net www.google-analytics.com sentry.io *.ingest.sentry.io statsigapi.net fd-config.us-east-1.prod.public.atl-paas.net fd-config-bifrost.prod-east.frontend.public.atl-paas.net micros--prod-west--bitbucketci-file-service--files.s3.us-west-1.amazonaws.com micros--prod-east--bitbucketci-file-service--files.s3.amazonaws.com micros--stg-west--bitbucketci-file-service--files.s3.us-west-1.amazonaws.com micros--stg-east--bitbucketci-file-service--files.s3.amazonaws.com micros--ddev--bitbucketci-file-service--files.s3.ap-southeast-2.amazonaws.com app.pendo.io data.pendo.io pendo-static-6291417196199936.storage.googleapis.com bqlf8qjztdtr.statuspage.io wss://bitbucket.org/gateway/api/bbc-aps/subscriptions https://bbc-object-storage--frontbucket.us-east-1.prod.public.atl-paas.net/ https://bbc-object-storage--frontbucket.us-east-1.staging.public.atl-paas.net/ https://bbc-object-storage--frontbucket.us-east-1.prod.public.atl-paas.net/; script-src ''unsafe-eval'' ''strict-dynamic'' ''unsafe-inline'' ''self'' http: https: https://remote-app-switcher.stg-east.frontend.public.atl-paas.net https://remote-app-switcher.prod-east.frontend.public.atl-paas.net https://bbc-frontbucket-static.stg-east.frontend.public.atl-paas.net https://bbc-frontbucket-static.prod-east.frontend.public.atl-paas.net https://bbc-frontbucket-canary.prod-east.frontend.public.atl-paas.net https://bbc-frontbucket-exp.prod-east.frontend.public.atl-paas.net app.pendo.io cdn.pendo.io data.pendo.io pendo-io-static.storage.googleapis.com pendo-static-6291417196199936.storage.googleapis.com https://bbc-object-storage--frontbucket.us-east-1.prod.public.atl-paas.net/ https://bbc-object-storage--frontbucket.us-east-1.staging.public.atl-paas.net/ https://bbc-object-storage--frontbucket.us-east-1.prod.public.atl-paas.net/ ''nonce-SHRN9Ss3NHUpaC9CE7GZBA==''; report-uri https://web-security-reports.services.atlassian.com/csp-report/bb-website'
             Content-Type:
                 - text/html; charset=utf-8
             Date:
-                - Tue, 20 May 2025 05:07:58 GMT
+                - Wed, 02 Jul 2025 01:37:41 GMT
             Expires:
-                - Tue, 20 May 2025 05:07:58 GMT
+                - Wed, 02 Jul 2025 01:37:41 GMT
             Nel:
                 - '{"failure_fraction": 0.001, "include_subdomains": true, "max_age": 600, "report_to": "endpoint-1"}'
             Report-To:
@@ -58,17 +49,17 @@ interactions:
             Server:
                 - AtlassianEdge
             Server-Timing:
-                - atl-edge;dur=311,atl-edge-internal;dur=3,atl-edge-upstream;dur=309,atl-edge-pop;desc="aws-us-west-2"
+                - atl-edge;dur=478,atl-edge-internal;dur=3,atl-edge-upstream;dur=477,atl-edge-pop;desc="aws-ap-south-1"
             Set-Cookie:
-                - csrftoken=YMqAMFeEC100upj10YXGEMlbu4ioc1U4QY6UxhLkEIXKC8NRSMqFeXMQTjAp6XAb; expires=Tue, 19 May 2026 05:07:58 GMT; Max-Age=31449600; Path=/; SameSite=Lax; Secure
+                - csrftoken=tOOhDfs8hQK1i1LhmveYqQ9X6pLuBxAQ3BYYMGnJuRn5g0Uwhe2bvNhhDaFqZ2Ii; expires=Wed, 01 Jul 2026 01:37:41 GMT; Max-Age=31449600; Path=/; SameSite=Lax; Secure
             Strict-Transport-Security:
                 - max-age=63072000; includeSubDomains; preload
             Vary:
-                - Cookie, Accept-Language, Origin, Accept-Encoding
+                - Cookie, Accept-Language, origin, Accept-Encoding
             X-B3-Spanid:
-                - 660596fc9288c916
+                - e83ddc44b03d87e8
             X-B3-Traceid:
-                - bef87227abcd446eb717d63ae053db3e
+                - 6b4eef3acd71417f8f006598567414a6
             X-Cache:
                 - MISS
             X-Content-Type-Options:
@@ -78,33 +69,33 @@ interactions:
             X-Frame-Options:
                 - SAMEORIGIN
             X-Render-Time:
-                - "0.23749804496765137"
+                - "0.2581510543823242"
             X-Request-Count:
-                - "3407"
+                - "1213"
             X-Served-By:
-                - 472fc1abc018
+                - 7c3bd862bf9f
             X-Static-Version:
-                - 4056e51ca5fe
+                - 8d4e9ba809f8
             X-Usage-Input-Ops:
-                - "16"
+                - "0"
             X-Usage-Output-Ops:
                 - "0"
             X-Usage-Quota-Remaining:
-                - "995148.117"
+                - "996008.148"
             X-Usage-Request-Cost:
-                - "4915.40"
+                - "4064.30"
             X-Usage-System-Time:
-                - "0.024883"
+                - "0.012711"
             X-Usage-User-Time:
-                - "0.118579"
+                - "0.109218"
             X-Used-Mesh:
                 - "False"
             X-Version:
-                - 4056e51ca5fe
+                - 8d4e9ba809f8
             X-View-Name:
                 - bitbucket.apps.repo2.views.CommitPageView
             X-Xss-Protection:
                 - 1; mode=block
         status: 200 OK
         code: 200
-        duration: 1.453592148s
+        duration: 1.036441522s

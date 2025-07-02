@@ -77,10 +77,10 @@ var RefTagDenyList = []string{
 // cross-contamination of repo derivation between CVEs.
 var VendorProductDenyList = []common.VendorProduct{
 	// Three strikes and the entire netapp vendor is out...
-	{"netapp", ""},
+	{Vendor: "netapp", Product: ""},
 	// [CVE-2021-28957]: Incorrectly associates with github.com/lxml/lxml
-	{"oracle", "zfs_storage_appliance_kit"},
-	{"gradle", "enterprise"}, // The OSS repo gets mis-attributed via CVE-2020-15767
+	{Vendor: "oracle", Product: "zfs_storage_appliance_kit"},
+	{Vendor: "gradle", Product: "enterprise"}, // The OSS repo gets mis-attributed via CVE-2020-15767
 }
 
 // formatDateTimeRFC3339 parses an ISO-like date string and returns RFC3339 format or original on error.

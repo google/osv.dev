@@ -7,13 +7,10 @@ interactions:
         proto_major: 1
         proto_minor: 1
         content_length: 0
-        transfer_encoding: []
-        trailer: {}
         host: git.dpkg.org
-        remote_addr: ""
-        request_uri: ""
-        body: ""
-        form: {}
+        form:
+            id:
+                - faa4c92debe45412bfcf8a44f26e827800bb24be
         headers:
             Accept:
                 - text/html
@@ -23,22 +20,19 @@ interactions:
         proto: HTTP/2.0
         proto_major: 2
         proto_minor: 0
-        transfer_encoding: []
-        trailer: {}
         content_length: -1
-        uncompressed: false
         body: ""
         headers:
             Content-Type:
                 - text/html; charset=UTF-8
             Date:
-                - Tue, 20 May 2025 05:08:01 GMT
+                - Wed, 02 Jul 2025 01:37:41 GMT
             Expect-Ct:
                 - max-age=3600, enforce
             Expires:
-                - Fri, 18 May 2035 05:08:01 GMT
+                - Sat, 30 Jun 2035 01:37:41 GMT
             Last-Modified:
-                - Tue, 20 May 2025 05:08:01 GMT
+                - Wed, 02 Jul 2025 01:37:41 GMT
             Permissions-Policy:
                 - accelerometer=(), autoplay=(), camera=(), encrypted-media=(), geolocation=(), gyroscope=(), magnetometer=(), microphone=(), midi=(), payment=(), picture-in-picture=(), sync-xhr=(), usb=()
             Referrer-Policy:
@@ -55,4 +49,4 @@ interactions:
                 - "0"
         status: 200 OK
         code: 200
-        duration: 1.414158241s
+        duration: 1.030631642s

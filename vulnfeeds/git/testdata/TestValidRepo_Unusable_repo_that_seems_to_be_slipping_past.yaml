@@ -7,13 +7,10 @@ interactions:
         proto_major: 1
         proto_minor: 1
         content_length: 0
-        transfer_encoding: []
-        trailer: {}
         host: github.com
-        remote_addr: ""
-        request_uri: ""
-        body: ""
-        form: {}
+        form:
+            service:
+                - git-upload-pack
         headers:
             Accept:
                 - '*/*'
@@ -27,11 +24,8 @@ interactions:
         proto: HTTP/2.0
         proto_major: 2
         proto_minor: 0
-        transfer_encoding: []
-        trailer: {}
         content_length: -1
-        uncompressed: false
-        body: "001e# service=git-upload-pack\n000001532c29b1b21c38b1c6948edc208cd883733c7ee1a4 HEAD\0multi_ack thin-pack side-band side-band-64k ofs-delta shallow deepen-since deepen-not deepen-relative no-progress include-tag multi_ack_detailed allow-tip-sha1-in-want allow-reachable-sha1-in-want no-done symref=HEAD:refs/heads/main filter object-format=sha1 agent=git/github-203a3d8c358f\n003d2c29b1b21c38b1c6948edc208cd883733c7ee1a4 refs/heads/main\n0000"
+        body: "001e# service=git-upload-pack\n000001532c29b1b21c38b1c6948edc208cd883733c7ee1a4 HEAD\0multi_ack thin-pack side-band side-band-64k ofs-delta shallow deepen-since deepen-not deepen-relative no-progress include-tag multi_ack_detailed allow-tip-sha1-in-want allow-reachable-sha1-in-want no-done symref=HEAD:refs/heads/main filter object-format=sha1 agent=git/github-e744e5203bf9\n003d2c29b1b21c38b1c6948edc208cd883733c7ee1a4 refs/heads/main\n0000"
         headers:
             Cache-Control:
                 - no-cache, max-age=0, must-revalidate
@@ -40,7 +34,7 @@ interactions:
             Content-Type:
                 - application/x-git-upload-pack-advertisement
             Date:
-                - Tue, 20 May 2025 06:39:46 GMT
+                - Wed, 02 Jul 2025 01:38:43 GMT
             Expires:
                 - Fri, 01 Jan 1980 00:00:00 GMT
             Pragma:
@@ -54,7 +48,7 @@ interactions:
             X-Frame-Options:
                 - DENY
             X-Github-Request-Id:
-                - A40E:34DD5C:866EA5:A1BF74:682C23B1
+                - 8B18:6B796:5B279:6A4BB:68648DA3
         status: 200 OK
         code: 200
-        duration: 228.276384ms
+        duration: 347.702825ms

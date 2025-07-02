@@ -89,7 +89,7 @@ func TestFormatDateTimeRFC3339(t *testing.T) {
 
 func TestFromCVE(t *testing.T) {
 	cveData := loadTestData("CVE-2021-44228")
-	v, notes := FromCVE(cveData.Metadata.ID, cveData)
+	v, notes := FromCVE(cveData.Metadata.CVEID, cveData)
 
 	if v.ID != "CVE-2021-44228" {
 		t.Errorf("Expected ID CVE-2021-44228, got %s", v.ID)

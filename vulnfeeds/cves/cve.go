@@ -38,7 +38,7 @@ type ProviderMetadata struct {
 
 type CVE5Metadata struct {
 	State             string `json:"state"`
-	ID                CVEID  `json:"cveId"`
+	CVEID             CVEID  `json:"cveId"`
 	AssignerOrgId     string `json:"assignerOrgId"`
 	AssignerShortName string `json:"assignerShortName"`
 	DateUpdated       string `json:"dateUpdated"`
@@ -65,7 +65,7 @@ type ADP struct {
 	ProviderMetadata ProviderMetadata `json:"providerMetadata"`
 	ProblemTypes     ProblemTypes     `json:"problemTypes"`
 	Metrics          []struct {
-		CVSS CVSS `json:"cvssData"`
+		CVSS CVSS `json:"cvssv3_1"`
 	}
 	References []Reference `json:"references"`
 }

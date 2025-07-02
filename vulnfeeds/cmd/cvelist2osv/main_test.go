@@ -275,6 +275,21 @@ func TestCVEToOSV(t *testing.T) {
 		if err == nil {
 			t.Errorf("Expected error for CVEToOSV with no repos, but got nil")
 		}
+
+		// Check that a notes file was created with the expected error.
+		expectedNotesFile := filepath.Join(tempDir, "amazon-ion", "ion-java", "CVE-2024-21634.notes")
+		if _, err := os.Stat(expectedNotesFile); os.IsNotExist(err) {
+			t.Fatalf("Expected notes file %s was not created", expectedNotesFile)
+		}
+
+		notesContent, err := os.ReadFile(expectedNotesFile)
+		if err != nil {
+			t.Fatalf("Failed to read notes file: %v", err)
+		}
+
+		if !strings.Contains(string(notesContent), "No affected ranges detected") {
+			t.Errorf("Expected notes file to contain 'No affected ranges' error, but it did not. Got: %s", string(notesContent))
+		}
 	})
 }
 

@@ -242,7 +242,6 @@ func CVEToOSV(CVE cves.CVE5, repos []string, cache git.RepoTagsCache, directory 
 	v, notes := FromCVE(cves.CVEID(CVE.Metadata.ID), CVE)
 
 	versions, versionNotes := ExtractVersionInfo(CVE, repos, nil, http.DefaultClient)
-
 	notes = append(notes, versionNotes...)
 
 	// Attempt to resolve Version Info to commits.
@@ -254,39 +253,45 @@ func CVEToOSV(CVE cves.CVE5, repos []string, cache git.RepoTagsCache, directory 
 		maybeProductName = cveAff.Product
 		continue
 	}
+
+	var gotUnresolvedFix, gotNoRanges bool
+
 	if len(versions.AffectedVersions) != 0 {
-		var err error
 		// There are some AffectedVersions to try and resolve to AffectedCommits.
 		if len(repos) == 0 {
-			return fmt.Errorf("[%s]: No affected ranges for %q, and no repos to try and convert %+v to tags with", CVE.Metadata.ID, maybeProductName, versions.AffectedVersions)
-		}
-		Logger.Infof("[%s]: Trying to convert version tags %+v to commits using %v", CVE.Metadata.ID, versions, repos)
-		versions, err = common.GitVersionsToCommits(CVE.Metadata.ID, versions, repos, cache, Logger)
-		if err != nil {
-			return fmt.Errorf("[%s]: Failed to convert version tags to commits: %#v", CVE.Metadata.ID, err)
-		}
-		hasAnyFixedCommits := false
-		for _, repo := range repos {
-			if versions.HasFixedCommits(repo) {
-				hasAnyFixedCommits = true
-				break
+			notes = append(notes, fmt.Sprintf("[%s]: No repos to try and convert %+v to tags with", CVE.Metadata.ID, versions.AffectedVersions))
+		} else {
+			Logger.Infof("[%s]: Trying to convert version tags %+v to commits using %v", CVE.Metadata.ID, versions, repos)
+			var err error
+			versions, err = common.GitVersionsToCommits(CVE.Metadata.ID, versions, repos, cache, Logger)
+			if err != nil {
+				notes = append(notes, fmt.Sprintf("[%s]: Failed to convert version tags to commits: %#v", CVE.Metadata.ID, err))
 			}
-		}
-
-		if versions.HasFixedVersions() && !hasAnyFixedCommits {
-			return fmt.Errorf("[%s]: Failed to convert fixed version tags to commits: %#v %w", CVE.Metadata.ID, versions, ErrUnresolvedFix)
-		}
-
-		hasAnyLastAffectedCommits := false
-		for _, repo := range repos {
-			if versions.HasLastAffectedCommits(repo) {
-				hasAnyLastAffectedCommits = true
-				break
+			hasAnyFixedCommits := false
+			for _, repo := range repos {
+				if versions.HasFixedCommits(repo) {
+					hasAnyFixedCommits = true
+					break
+				}
 			}
-		}
 
-		if versions.HasLastAffectedVersions() && !hasAnyLastAffectedCommits && !hasAnyFixedCommits {
-			return fmt.Errorf("[%s]: Failed to convert last_affected version tags to commits: %#v %w", CVE.Metadata.ID, versions, ErrUnresolvedFix)
+			if versions.HasFixedVersions() && !hasAnyFixedCommits {
+				notes = append(notes, fmt.Sprintf("[%s]: Failed to convert fixed version tags to commits: %#v", CVE.Metadata.ID, versions))
+				gotUnresolvedFix = true
+			}
+
+			hasAnyLastAffectedCommits := false
+			for _, repo := range repos {
+				if versions.HasLastAffectedCommits(repo) {
+					hasAnyLastAffectedCommits = true
+					break
+				}
+			}
+
+			if versions.HasLastAffectedVersions() && !hasAnyLastAffectedCommits && !hasAnyFixedCommits {
+				notes = append(notes, fmt.Sprintf("[%s]: Failed to convert last_affected version tags to commits: %#v", CVE.Metadata.ID, versions))
+				gotUnresolvedFix = true
+			}
 		}
 	}
 
@@ -296,10 +301,6 @@ func CVEToOSV(CVE cves.CVE5, repos []string, cache git.RepoTagsCache, directory 
 	affected.AttachExtractedVersionInfo(versions)
 	v.Affected = append(v.Affected, affected)
 
-	if len(v.Affected[0].Ranges) == 0 {
-		return fmt.Errorf("[%s]: No affected ranges detected for %q %w", CVE.Metadata.ID, maybeProductName, ErrNoRanges)
-	}
-
 	// Save OSV record to a directory
 	vulnDir := filepath.Join(directory, maybeVendorName, maybeProductName)
 	err := os.MkdirAll(vulnDir, 0755)
@@ -307,32 +308,47 @@ func CVEToOSV(CVE cves.CVE5, repos []string, cache git.RepoTagsCache, directory 
 		Logger.Warnf("Failed to create dir: %v", err)
 		return fmt.Errorf("failed to create dir: %v", err)
 	}
-
-	outputFile := filepath.Join(vulnDir, v.ID+extension)
 	notesFile := filepath.Join(vulnDir, v.ID+".notes")
+	var fileWriteErr error
 
-	f, err := os.Create(outputFile)
-
-	if err != nil {
-		Logger.Warnf("Failed to open %s for writing: %v", outputFile, err)
-		return fmt.Errorf("failed to open %s for writing: %v", outputFile, err)
+	if len(v.Affected[0].Ranges) == 0 {
+		notes = append(notes, fmt.Sprintf("[%s]: No affected ranges detected for %q", CVE.Metadata.ID, maybeProductName))
+		gotNoRanges = true
+	} else {
+		// Only write out the OSV file if we have ranges.
+		outputFile := filepath.Join(vulnDir, v.ID+extension)
+		f, err := os.Create(outputFile)
+		if err != nil {
+			notes = append(notes, fmt.Sprintf("Failed to open %s for writing: %v", outputFile, err))
+			fileWriteErr = err
+		} else {
+			err = v.ToJSON(f)
+			if err != nil {
+				notes = append(notes, fmt.Sprintf("Failed to write %s: %v", outputFile, err))
+				fileWriteErr = err
+			} else {
+				Logger.Infof("[%s]: Generated OSV record for %q", CVE.Metadata.ID, maybeProductName)
+			}
+			f.Close()
+		}
 	}
-	defer f.Close()
-
-	err = v.ToJSON(f)
-
-	if err != nil {
-		Logger.Warnf("Failed to write %s: %v", outputFile, err)
-		return fmt.Errorf("failed to write %s: %v", outputFile, err)
-	}
-	Logger.Infof("[%s]: Generated OSV record for %q", CVE.Metadata.ID, maybeProductName)
+	Logger.Warnf("numNotes %v", len(notes))
 	if len(notes) > 0 {
+
+		Logger.Warnf("notes: %s", notesFile)
 		err = os.WriteFile(notesFile, []byte(strings.Join(notes, "\n")), 0660)
 		if err != nil {
 			Logger.Warnf("[%s]: Failed to write %s: %v", CVE.Metadata.ID, notesFile, err)
 		}
 	}
-	return nil
+
+	if gotNoRanges {
+		return ErrNoRanges
+	}
+	if gotUnresolvedFix {
+		return ErrUnresolvedFix
+	}
+	return fileWriteErr
 }
 
 // Output a CSV summarizing per-CVE how it was handled.

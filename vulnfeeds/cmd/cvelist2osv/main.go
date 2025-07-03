@@ -15,7 +15,6 @@ import (
 
 	"golang.org/x/exp/slices"
 
-	"github.com/google/osv/vulnfeeds/cmd/common"
 	"github.com/google/osv/vulnfeeds/cves"
 	"github.com/google/osv/vulnfeeds/git"
 	"github.com/google/osv/vulnfeeds/models"
@@ -75,7 +74,7 @@ var RefTagDenyList = []string{
 
 // VendorProducts known not to be Open Source software and causing
 // cross-contamination of repo derivation between CVEs.
-var VendorProductDenyList = []common.VendorProduct{
+var VendorProductDenyList = []cves.VendorProduct{
 	// Three strikes and the entire netapp vendor is out...
 	{Vendor: "netapp", Product: ""},
 	// [CVE-2021-28957]: Incorrectly associates with github.com/lxml/lxml
@@ -263,7 +262,7 @@ func CVEToOSV(CVE cves.CVE5, repos []string, cache git.RepoTagsCache, directory 
 		} else {
 			Logger.Infof("[%s]: Trying to convert version tags %+v to commits using %v", CVE.Metadata.CVEID, versions, repos)
 			var err error
-			versions, err = common.GitVersionsToCommits(CVE.Metadata.CVEID, versions, repos, cache, Logger)
+			versions, err = cves.GitVersionsToCommits(CVE.Metadata.CVEID, versions, repos, cache, Logger)
 			if err != nil {
 				notes = append(notes, fmt.Sprintf("[%s]: Failed to convert version tags to commits: %#v", CVE.Metadata.CVEID, err))
 			}
@@ -436,7 +435,7 @@ func main() {
 	// Not rejecting cause we might be able to leverage other datasources
 
 	if len(refs) > 0 {
-		repos := common.ReposFromReferencesCVEList(string(CVEID), nil, nil, refs, RefTagDenyList, Logger)
+		repos := cves.ReposFromReferencesCVEList(string(CVEID), nil, nil, refs, RefTagDenyList, Logger)
 		if len(repos) == 0 {
 			Logger.Warnf("[%s]: Failed to derive any repos", CVEID)
 		}

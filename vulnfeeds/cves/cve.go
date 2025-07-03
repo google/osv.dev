@@ -81,7 +81,7 @@ type Metrics struct {
 	CVSSV2_0  BaseCVSS     `json:"cvssv2_0,omitempty"`
 	Other     struct {
 		Type    string `json:"type,omitempty"`
-		Content string `json:"content,omitempty"`
+		Content any    `json:"content,omitempty"`
 	} `json:"other,omitempty"`
 }
 

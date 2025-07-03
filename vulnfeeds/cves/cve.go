@@ -23,50 +23,115 @@ const (
 	CVE5TimeFormat = "2006-01-02T15:04:05"
 )
 
+type ProblemTypes []struct {
+	Descriptions []struct {
+		Type        string `json:"type,omitempty"`
+		Lang        string `json:"lang,omitempty"`
+		Description string `json:"description,omitempty"`
+	} `json:"descriptions,omitempty"`
+}
+type ProviderMetadata struct {
+	OrgID       string `json:"orgId,omitempty"`
+	ShortName   string `json:"shortName,omitempty"`
+	DateUpdated string `json:"dateUpdated,omitempty"`
+}
+
+type CVE5Metadata struct {
+	State             string `json:"state,omitempty"`
+	CVEID             CVEID  `json:"cveId,omitempty"`
+	AssignerOrgId     string `json:"assignerOrgId,omitempty"`
+	AssignerShortName string `json:"assignerShortName,omitempty"`
+	DateUpdated       string `json:"dateUpdated,omitempty"`
+	DateReserved      string `json:"dateReserved,omitempty"`
+	DatePublished     string `json:"datePublished,omitempty"`
+}
+
+type CPE struct {
+	Nodes []CPENode `json:"nodes,omitempty"`
+}
+type CPENode struct {
+	Operator string `json:"operator,omitempty"`
+	Negate   bool   `json:"negate,omitempty"`
+	CPEMatch []struct {
+		Vulnerable          bool   `json:"vulnerable,omitempty"`
+		Criteria            string `json:"criteria,omitempty"`
+		VersionEndIncluding string `json:"versionEndIncluding,omitempty"`
+		VersionEndExcluding string `json:"versionEndExcluding,omitempty"`
+	} `json:"cpeMatch,omitempty"`
+}
+
+type Impact struct {
+	CAPECID      string       `json:"capecId,omitempty"`
+	Descriptions []LangString `json:"descriptions,omitempty"`
+}
+
+type BaseCVSS struct {
+	Version      string  `json:"version,omitempty"`
+	VectorString string  `json:"vectorString,omitempty"`
+	BaseScore    float64 `json:"baseScore,omitempty"`
+	BaseSeverity string  `json:"baseSeverity,omitempty"`
+}
+
+type Metrics struct {
+	Format    string       `json:"format,omitempty"`
+	Scenarios []LangString `json:"scenarios,omitempty"`
+	CVSSV4_0  BaseCVSS     `json:"cvssv4_0,omitempty"`
+	CVSSV3_1  BaseCVSS     `json:"cvssv3_1,omitempty"`
+	CVSSV3_0  BaseCVSS     `json:"cvssv3_0,omitempty"`
+	CVSSV2_0  BaseCVSS     `json:"cvssv2_0,omitempty"`
+	Other     struct {
+		Type    string `json:"type,omitempty"`
+		Content string `json:"content,omitempty"`
+	} `json:"other,omitempty"`
+}
+
+type CNA struct {
+	ProviderMetadata ProviderMetadata `json:"providerMetadata"` // Required
+	Descriptions     []LangString     `json:"descriptions"`     // Required
+	Affected         []Affected       `json:"affected"`         // Required
+	ProblemTypes     ProblemTypes     `json:"problemTypes,omitempty"`
+	References       []Reference      `json:"references"` //Required
+	Impacts          []Impact         `json:"impacts,omitempty"`
+	Metrics          []Metrics        `json:"metrics,omitempty"`
+	Tags             []string         `json:"tags,omitempty"`
+	CPEApplicability []CPE            `json:"cpeApplicability,omitempty"`
+	DateAssigned     string           `json:"dateAssigned,omitempty"`
+	DatePublic       string           `json:"datePublic,omitempty"`
+	Title            string           `json:"title,omitempty"`
+}
+
+type ADP struct {
+	Title            string           `json:"title,omitempty"`
+	ProviderMetadata ProviderMetadata `json:"providerMetadata,omitempty"`
+	ProblemTypes     ProblemTypes     `json:"problemTypes,omitempty"`
+	Metrics          []Metrics        `json:"metrics,omitempty"`
+	References       []Reference      `json:"references,omitempty"`
+}
+type Affected struct {
+	Vendor        string     `json:"vendor,omitempty"`
+	Product       string     `json:"product,omitempty"`
+	PackageName   string     `json:"packageName,omitempty"`
+	CollectionUrl string     `json:"collectionURL,omitempty"`
+	Versions      []Versions `json:"versions,omitempty"`
+	Repo          string     `json:"repo,omitempty"`
+}
+
+type Versions struct {
+	Version         string `json:"version,omitempty"`
+	Status          string `json:"status,omitempty"`
+	LessThanOrEqual string `json:"lessThanOrEqual,omitempty"`
+	LessThan        string `json:"lessThan,omitempty"`
+	VersionType     string `json:"versionType,omitempty"`
+}
+
 type CVE5 struct {
-	DataType    string `json:"dataType"`
-	DataVersion string `json:"dataVersion"`
-	Metadata    struct {
-		State             string `json:"state"`
-		ID                string `json:"cveId"`
-		AssignerOrgId     string `json:"assignerOrgId"`
-		AssignerShortName string `json:"assignerShortName"`
-		DateUpdated       string `json:"dateUpdated"`
-		DateReserved      string `json:"dateReserved"`
-		DatePublished     string `json:"datePublished"`
-	}
-	Containers struct {
-		CNA struct {
-			ProviderMetadata struct {
-				OrgID       string `json:"orgId"`
-				ShortName   string `json:"shortName"`
-				DateUpdated string `json:"dateUpdated"`
-			}
-			Descriptions []struct {
-				Lang  string `json:"lang"`
-				Value string `json:"value"`
-			}
-			Tags     []string `json:"tags"`
-			Affected []struct {
-				Vendor   string `json:"vendor"`
-				Product  string `json:"product"`
-				Versions []struct {
-					Version string `json:"version"`
-					Status  string `json:"status"`
-				}
-			}
-			References []struct {
-				URL string `json:"url"`
-			}
-			ProblemTypes []struct {
-				Descriptions []struct {
-					Type        string `json:"type"`
-					Lang        string `json:"lang"`
-					Description string `json:"description"`
-				}
-			}
-		}
-	}
+	DataType    string       `json:"dataType,omitempty"`
+	DataVersion string       `json:"dataVersion,omitempty"`
+	Metadata    CVE5Metadata `json:"cveMetadata,omitempty"`
+	Containers  struct {
+		CNA CNA   `json:"cna"`
+		ADP []ADP `json:"adp,omitempty"`
+	} `json:"containers,omitempty"`
 }
 
 func EnglishDescription(descriptions []LangString) string {
@@ -87,5 +152,5 @@ func ParseCVE5Timestamp(timestamp string) (time.Time, error) {
 
 type CVSS struct {
 	// VectorString corresponds to the JSON schema field "vectorString".
-	VectorString string `json:"vectorString" yaml:"vectorString" mapstructure:"vectorString"`
+	VectorString string `json:"vectorString,omitempty" yaml:"vectorString" mapstructure:"vectorString"`
 }

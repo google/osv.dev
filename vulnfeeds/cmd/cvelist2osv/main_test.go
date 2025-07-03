@@ -144,34 +144,6 @@ func TestExtractVersionInfo(t *testing.T) {
 				},
 			},
 		},
-		// {
-		// 	name:  "CVE with lessThanOrEqual",
-		// 	cveID: "CVE-2023-45803", // grafana
-		// 	expectedVersionInfo: models.VersionInfo{
-		// 		AffectedCommits: []models.AffectedCommit{
-		// 			{
-		// 				Repo:  "https://github.com/urllib3/urllib3",
-		// 				Fixed: "4e98d57809dacab1cbe625fddeec1a290c478ea9",
-		// 			},
-		// 		},
-		// 		AffectedVersions: nil,
-		// 	},
-		// },
-		// {
-		// 	name:  "CVE with fix commit and version range",
-		// 	cveID: "CVE-2022-25929", // smoothie
-		// 	expectedVersionInfo: models.VersionInfo{
-		// 		AffectedCommits: []models.AffectedCommit{
-		// 			{
-		// 				Repo:  "https://github.com/joewalnes/smoothie",
-		// 				Fixed: "8e0920d50da82f4b6e605d56f41b69fbb9606a98",
-		// 			},
-		// 		},
-		// 		AffectedVersions: []models.AffectedVersion{
-		// 			{Introduced: "0", Fixed: "1.36.1"},
-		// 		},
-		// 	},
-		// },
 	}
 
 	for _, tc := range tests {

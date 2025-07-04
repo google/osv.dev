@@ -395,15 +395,15 @@ def add_stream_strings(bug: osv.Bug, response: dict[str, Any]):
         bug.db_id, computed, known_ids)
 
 
+cvss_calculator = {
+    'CVSS_V2': CVSS2,
+    'CVSS_V3': CVSS3,
+    'CVSS_V4': CVSS4,
+}
+
 def calculate_severity_details(
     severity: dict) -> tuple[float | None, str | None]:
   """Calculate score and rating of severity"""
-  cvss_calculator = {
-      'CVSS_V2': CVSS2,
-      'CVSS_V3': CVSS3,
-      'CVSS_V4': CVSS4,
-  }
-
   type_ = severity.get('type')
   score = severity.get('score')
 
@@ -904,9 +904,18 @@ def severity_level(severity: dict) -> str:
   return 'invalid' if rating is None else rating.lower()
 
 
+@blueprint.app_template_filter('is_cvss')
+def is_cvss(severity: dict) -> bool:
+  """Checks if severity is a CVSS score."""
+  return severity.get('type') in cvss_calculator
+
+
 @blueprint.app_template_filter('cvss_calculator_url')
 def cvss_calculator_url(severity):
   """Generate the FIRST CVSS calculator URL from a CVSS string."""
+  if not is_cvss(severity):
+    return None
+
   score = severity.get('score')
 
   # Extract CVSS version from the vector string

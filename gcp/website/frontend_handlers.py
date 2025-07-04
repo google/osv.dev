@@ -401,6 +401,7 @@ cvss_calculator = {
     'CVSS_V4': CVSS4,
 }
 
+
 def calculate_severity_details(
     severity: dict) -> tuple[float | None, str | None]:
   """Calculate score and rating of severity"""

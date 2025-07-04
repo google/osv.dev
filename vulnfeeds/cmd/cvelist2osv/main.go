@@ -129,6 +129,7 @@ func FromCVE(id cves.CVEID, cve cves.CVE5) (*vulns.Vulnerability, []string) {
 	// v.AddSeverity(cve.Metrics)
 	return &v, notes
 }
+
 func ExtractVersionInfo(cve cves.CVE5, refs []string, validVersions []string, httpClient *http.Client) (v models.VersionInfo, notes []string) {
 	for _, reference := range refs {
 		// (Potentially faulty) Assumption: All viable Git commit reference links are fix commits.

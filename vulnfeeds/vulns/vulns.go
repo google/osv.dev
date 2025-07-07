@@ -693,3 +693,20 @@ func CVEIsDisputed(v *Vulnerability, cveList string) (modified string, e error) 
 
 	return "", nil
 }
+
+// IsNotEmptyOrFiller will return true if field text is not a filler text or otherwise empty
+func IsNotEmptyOrFiller(text string) bool {
+	var fillerText = []string{
+		"n/a", // common with mitre vulns
+		"unknown",
+		"unspecified",
+		"not-known",
+	}
+	for _, filler := range fillerText {
+		if strings.EqualFold(strings.TrimSpace(text), filler) {
+			return false
+		}
+	}
+	return text != ""
+
+}

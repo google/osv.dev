@@ -29,7 +29,14 @@ var ErrNoRanges = errors.New("no ranges")
 var ErrUnresolvedFix = errors.New("fixes not resolved to commits")
 
 func (c ConversionOutcome) String() string {
-	return [...]string{"ConversionUnknown", "Successful", "Rejected", "NoSoftware", "NoRepos", "NoRanges", "FixUnresolvable"}[c]
+	return [...]string{
+		"ConversionUnknown",
+		"Successful",
+		"Rejected",
+		"NoSoftware",
+		"NoRepos",
+		"NoRanges",
+		"FixUnresolvable"}[c]
 }
 
 const (
@@ -62,7 +69,7 @@ var Metrics struct {
 	Outcomes            map[cves.CVEID]ConversionOutcome // Per-CVE-ID record of conversion result.
 }
 
-// References with these tags have been found to contain completely unrelated
+// RefTagDenyList: References with these tags have been found to contain completely unrelated
 // repositories and can be misleading as to the software's true repository,
 // Currently not used for this purpose due to undesired false positives
 // reducing the number of valid records successfully converted.
@@ -159,19 +166,17 @@ func ExtractVersionInfo(cve cves.CVE5, refs []string, validVersions []string, ht
 
 			// SUPER NAIVE APPROACH
 			if hasRange {
-				if vInfo.Version != "" && vInfo.Version != "n/a" && vInfo.Version != "unknown" && vInfo.Version != "unspecified" {
+				if vulns.IsNotEmptyOrFiller(vInfo.Version) {
 					introduced = vInfo.Version
 				}
-				if vInfo.LessThan != "" && vInfo.LessThan != "n/a" && vInfo.LessThan != "unknown" && vInfo.Version != "unspecified" {
+				if vulns.IsNotEmptyOrFiller(vInfo.LessThan) {
 					fixed = vInfo.LessThan
-				} else if vInfo.LessThanOrEqual != "" && vInfo.LessThanOrEqual != "n/a" && vInfo.LessThanOrEqual != "unknown" && vInfo.Version != "unspecified" {
+				} else if vulns.IsNotEmptyOrFiller(vInfo.LessThanOrEqual) {
 					lastaffected = vInfo.LessThanOrEqual
 				}
-
 				if introduced != "" && !cves.HasVersion(validVersions, introduced) {
 					notes = append(notes, fmt.Sprintf("Warning: %s is not a valid introduced version", introduced))
 				}
-
 				if fixed != "" && !cves.HasVersion(validVersions, fixed) {
 					notes = append(notes, fmt.Sprintf("Warning: %s is not a valid fixed version", fixed))
 				}
@@ -333,7 +338,6 @@ func CVEToOSV(CVE cves.CVE5, repos []string, cache git.RepoTagsCache, directory 
 	}
 	Logger.Warnf("numNotes %v", len(notes))
 	if len(notes) > 0 {
-
 		Logger.Warnf("notes: %s", notesFile)
 		err = os.WriteFile(notesFile, []byte(strings.Join(notes, "\n")), 0660)
 		if err != nil {
@@ -426,7 +430,6 @@ func main() {
 		Logger.Fatalf("Failed to parse CVEList CVE JSON: %v", err)
 	}
 
-	// VPRepoCache := make(VendorProductToRepoMap)
 	ReposForCVE := make(map[cves.CVEID][]string)
 	refs := identifyPossibleURLs(cve)
 

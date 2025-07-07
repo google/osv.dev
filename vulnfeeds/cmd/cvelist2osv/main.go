@@ -88,6 +88,22 @@ var VendorProductDenyList = []cves.VendorProduct{
 	{Vendor: "gradle", Product: "enterprise"}, // The OSS repo gets mis-attributed via CVE-2020-15767
 }
 
+// extractVersionsFromAffected extracts affected versions from the CNA container of a CVE.
+// It populates the models.AffectedVersion slice based on the versioning information
+// provided in the CVE data, handling both explicit ranges (lessThan, lessThanOrEqual)
+// and single affected versions. It also attempts to extract versions from text
+// descriptions if direct version ranges are not available.
+//
+// Parameters:
+//   - cna: The CNA container from the CVE5 object.
+//   - gotVersions: A boolean indicating if any versions have already been extracted.
+//   - versionInfo: The models.VersionInfo struct to populate with affected versions.
+//
+// Returns:
+//   - []models.AffectedVersion: The updated slice of affected versions.
+//   - bool: True if any versions were successfully extracted, false otherwise.
+//   - []string: A slice of notes or warnings generated during the extraction process.
+
 func extractVersionsFromAffected(cna cves.CNA, gotVersions bool, versionInfo models.VersionInfo) ([]models.AffectedVersion, bool, []string) {
 	var notes []string
 	for _, cveAff := range cna.Affected {

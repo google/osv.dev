@@ -338,9 +338,11 @@ func outputOutcomes(outcomes map[cves.CVEID]ConversionOutcome, reposForCVE map[c
 	return nil
 }
 
+// identifyPossibleURLs extracts all possible URLs from a CVE5 object,
+// including those in CNA and ADP containers, and affected package information.
+// It deduplicates the URLs before returning them.
 func identifyPossibleURLs(cve cves.CVE5) []cves.Reference {
 	refs := cve.Containers.CNA.References
-	// check if there are more references in the ADP
 	for _, adp := range cve.Containers.ADP {
 		if adp.References != nil {
 			refs = append(refs, adp.References...)

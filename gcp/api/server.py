@@ -162,7 +162,7 @@ class OSVServicer(osv_service_v1_pb2_grpc.OSVServicer,
 
   @ndb_context
   @trace_filter.log_trace
-  @ndb.toplevel
+  @ndb.synctasklet
   def GetVulnById(self, request, context: grpc.ServicerContext):
     """Return a `Vulnerability` object for a given OSV ID."""
     bug = yield osv.Bug.query(osv.Bug.db_id == request.id).get_async()
@@ -195,7 +195,7 @@ class OSVServicer(osv_service_v1_pb2_grpc.OSVServicer,
 
   @ndb_context
   @trace_filter.log_trace
-  @ndb.toplevel
+  @ndb.synctasklet
   def QueryAffected(self, request, context: grpc.ServicerContext):
     """Query vulnerabilities for a particular project at a given commit or
 
@@ -258,7 +258,7 @@ class OSVServicer(osv_service_v1_pb2_grpc.OSVServicer,
 
   @ndb_context
   @trace_filter.log_trace
-  @ndb.toplevel
+  @ndb.synctasklet
   def QueryAffectedBatch(self, request, context: grpc.ServicerContext):
     """Query vulnerabilities (batch)."""
     batch_results = []
@@ -358,7 +358,7 @@ class OSVServicer(osv_service_v1_pb2_grpc.OSVServicer,
 
   @ndb_context
   @trace_filter.log_trace
-  @ndb.toplevel
+  @ndb.synctasklet
   def DetermineVersion(self, request, context: grpc.ServicerContext):
     """Determine the version of the provided hashes."""
     res = yield determine_version(request.query, context)

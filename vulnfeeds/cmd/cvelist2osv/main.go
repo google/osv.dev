@@ -11,7 +11,6 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
-	"time"
 
 	"golang.org/x/exp/slices"
 
@@ -89,53 +88,6 @@ var VendorProductDenyList = []cves.VendorProduct{
 	{Vendor: "gradle", Product: "enterprise"}, // The OSS repo gets mis-attributed via CVE-2020-15767
 }
 
-// formatDateTimeRFC3339 parses an ISO-like date string and returns RFC3339 format or original on error.
-func formatDateTimeRFC3339(dateStr string) string {
-	if dateStr == "" {
-		return ""
-	}
-	// Try parsing common ISO8601 variations
-	layouts := []string{
-		time.RFC3339Nano,           // "2006-01-02T15:04:05.999999999Z07:00"
-		time.RFC3339,               // "2006-01-02T15:04:05Z07:00"
-		"2006-01-02T15:04:05Z",     // ISO 8601 UTC
-		"2006-01-02T15:04:05.000Z", // Explicit milliseconds UTC
-	}
-	var t time.Time
-	var err error
-	for _, layout := range layouts {
-		t, err = time.Parse(layout, dateStr)
-		if err == nil {
-			break // Parsed successfully
-		}
-	}
-
-	if err != nil {
-		fmt.Printf("Warning: Could not parse date string '%s': %v. Returning original.\n", dateStr, err)
-		return dateStr // Return original if parsing fails
-	}
-	return t.UTC().Format(time.RFC3339) // Format in UTC RFC3339
-}
-
-// BORROWED FROM VULNS.GO
-// FromCVE creates a minimal OSV object from a given CVEItem and id.
-// Leaves affected and version fields empty to be filled in later with AddPkgInfo
-func FromCVE(id cves.CVEID, cve cves.CVE5) (*vulns.Vulnerability, []string) {
-	aliases, related := vulns.ExtractReferencedVulns(id, cves.CVEID(cve.Metadata.CVEID), cve.Containers.CNA.References)
-	v := vulns.Vulnerability{
-		ID:      string(id),
-		Details: cves.EnglishDescription(cve.Containers.CNA.Descriptions),
-		Aliases: aliases,
-		Related: related,
-	}
-	var notes []string
-
-	v.Published = formatDateTimeRFC3339(cve.Metadata.DatePublished)
-	v.Modified = formatDateTimeRFC3339(cve.Metadata.DateUpdated)
-	v.References = vulns.ClassifyReferences(cve.Containers.CNA.References)
-	// v.AddSeverity(cve.Metrics)
-	return &v, notes
-}
 func ExtractVersionInfo(cve cves.CVE5, refs []string, validVersions []string, httpClient *http.Client) (v models.VersionInfo, notes []string) {
 	for _, reference := range refs {
 		// (Potentially faulty) Assumption: All viable Git commit reference links are fix commits.
@@ -143,20 +95,14 @@ func ExtractVersionInfo(cve cves.CVE5, refs []string, validVersions []string, ht
 			v.AffectedCommits = append(v.AffectedCommits, commit)
 		}
 	}
-
 	gotVersions := false
 	cna := cve.Containers.CNA
-
 	for _, cveAff := range cna.Affected {
-
 		for _, vInfo := range cveAff.Versions {
 			if vInfo.Status != "affected" {
 				continue
 			}
-			introduced := ""
-			fixed := ""
-			lastaffected := ""
-			// TODO Clean up versions and add checks for natural language or bad syntax
+			var introduced, fixed, lastaffected string
 			hasRange := vInfo.LessThan != "" || vInfo.LessThanOrEqual != ""
 			if vInfo.LessThan != "" && vInfo.LessThan == vInfo.Version {
 				fmt.Printf("Warning: lessThan (%s) is the same as introduced (%s)\n", vInfo.LessThan, vInfo.Version)
@@ -180,15 +126,12 @@ func ExtractVersionInfo(cve cves.CVE5, refs []string, validVersions []string, ht
 				if fixed != "" && !cves.HasVersion(validVersions, fixed) {
 					notes = append(notes, fmt.Sprintf("Warning: %s is not a valid fixed version", fixed))
 				}
-
 			} else {
-
 				// only version number
 				// naive assumption: it only affects that version. More likely, it affects up to that version
 				// lastaffected = vInfo.Version
 				v.AffectedVersions, _ = cves.ExtractVersionsFromDescription(validVersions, vInfo.Version)
-				//check if it starts with "<" or "before" or "before version"
-
+				// check if it starts with "<" or "before" or "before version"
 			}
 			if introduced == "" && fixed == "" && lastaffected == "" {
 				continue
@@ -237,31 +180,45 @@ func ExtractVersionInfo(cve cves.CVE5, refs []string, validVersions []string, ht
 		}
 		v.AffectedVersions = affectedVersionsWithoutLastAffected
 	}
+
 	return v, notes
 }
 
 // Takes a CVE record and outputs an OSV file in the specified directory.
-func CVEToOSV(CVE cves.CVE5, repos []string, cache git.RepoTagsCache, directory string) error {
+func CVEToOSV(CVE cves.CVE5, references []cves.Reference, repos []string, cache git.RepoTagsCache, directory string) error {
 	// Create a base OSV record
-	v, notes := FromCVE(cves.CVEID(CVE.Metadata.CVEID), CVE)
+	cveID := CVE.Metadata.CVEID
+	datePublished, _ := vulns.CVE5timestampToRFC3339(CVE.Metadata.DatePublished)
+	dateUpdated, _ := vulns.CVE5timestampToRFC3339(CVE.Metadata.DateUpdated)
+	metrics := CVE.Containers.CNA.Metrics
+
+	v, notes := vulns.FromCVE(cveID, cveID, references, CVE.Containers.CNA.Descriptions, datePublished, dateUpdated, metrics)
 
 	versions, versionNotes := ExtractVersionInfo(CVE, repos, nil, http.DefaultClient)
 	notes = append(notes, versionNotes...)
 
 	// Attempt to resolve Version Info to commits.
 	cna := CVE.Containers.CNA
-	maybeVendorName := "SOMETHING"
-	maybeProductName := "SOMETHING"
+	maybeVendorName := "UNKNOWN"
+	maybeProductName := "UNKNOWN"
 	for _, cveAff := range cna.Affected {
-		maybeVendorName = cveAff.Vendor
-		maybeProductName = cveAff.Product
-		continue
+		if slices.Contains(VendorProductDenyList, cves.VendorProduct{Vendor: cveAff.Vendor, Product: cveAff.Product}) {
+			continue
+		}
+		if vulns.IsNotEmptyOrFiller(cveAff.Vendor) {
+			maybeVendorName = cveAff.Vendor
+		}
+		if vulns.IsNotEmptyOrFiller(cveAff.Product) {
+			maybeProductName = cveAff.Product
+		}
+		if maybeProductName != "UNKNOWN" && maybeVendorName != "UNKNOWN" {
+			break
+		}
 	}
 
 	var gotUnresolvedFix, gotNoRanges bool
 
 	if len(versions.AffectedVersions) != 0 {
-		// There are some AffectedVersions to try and resolve to AffectedCommits.
 		if len(repos) == 0 {
 			notes = append(notes, fmt.Sprintf("[%s]: No repos to try and convert %+v to tags with", CVE.Metadata.CVEID, versions.AffectedVersions))
 		} else {
@@ -310,7 +267,7 @@ func CVEToOSV(CVE cves.CVE5, repos []string, cache git.RepoTagsCache, directory 
 	err := os.MkdirAll(vulnDir, 0755)
 	if err != nil {
 		Logger.Warnf("Failed to create dir: %v", err)
-		return fmt.Errorf("failed to create dir: %v", err)
+		return fmt.Errorf("failed to create dir: %w", err)
 	}
 	notesFile := filepath.Join(vulnDir, v.ID+".notes")
 	var fileWriteErr error
@@ -351,6 +308,7 @@ func CVEToOSV(CVE cves.CVE5, repos []string, cache git.RepoTagsCache, directory 
 	if gotUnresolvedFix {
 		return ErrUnresolvedFix
 	}
+
 	return fileWriteErr
 }
 
@@ -376,11 +334,11 @@ func outputOutcomes(outcomes map[cves.CVEID]ConversionOutcome, reposForCVE map[c
 	if err = w.Error(); err != nil {
 		return err
 	}
+
 	return nil
 }
 
 func identifyPossibleURLs(cve cves.CVE5) []cves.Reference {
-
 	refs := cve.Containers.CNA.References
 	// check if there are more references in the ADP
 	for _, adp := range cve.Containers.ADP {
@@ -388,6 +346,8 @@ func identifyPossibleURLs(cve cves.CVE5) []cves.Reference {
 			refs = append(refs, adp.References...)
 		}
 	}
+
+	// Remove duplicate URLs
 	for _, affected := range cve.Containers.CNA.Affected {
 		if affected.CollectionUrl != "" {
 			refs = append(refs, cves.Reference{Url: affected.CollectionUrl})
@@ -435,8 +395,6 @@ func main() {
 
 	CVEID := cve.Metadata.CVEID
 
-	// Not rejecting cause we might be able to leverage other datasources
-
 	if len(refs) > 0 {
 		repos := cves.ReposFromReferencesCVEList(string(CVEID), nil, nil, refs, RefTagDenyList, Logger)
 		if len(repos) == 0 {
@@ -450,7 +408,7 @@ func main() {
 
 	switch *outFormat {
 	case "OSV":
-		err = CVEToOSV(cve, ReposForCVE[CVEID], RepoTagsCache, *outDir)
+		err = CVEToOSV(cve, refs, ReposForCVE[CVEID], RepoTagsCache, *outDir)
 
 		// TODO: Implement CVEToPackageInfo for CVEList CVE
 		// case "PackageInfo":
@@ -461,18 +419,16 @@ func main() {
 			Logger.Warnf("[%s]: Failed to generate an OSV record: %+v", CVEID, err)
 			if errors.Is(err, ErrNoRanges) {
 				Metrics.Outcomes[CVEID] = NoRanges
-
-			}
-			if errors.Is(err, ErrUnresolvedFix) {
+			} else if errors.Is(err, ErrUnresolvedFix) {
 				Metrics.Outcomes[CVEID] = FixUnresolvable
-
+			} else {
+				Metrics.Outcomes[CVEID] = ConversionUnknown
 			}
-			Metrics.Outcomes[CVEID] = ConversionUnknown
+		} else {
 
+			Metrics.OSVRecordsGenerated++
+			Metrics.Outcomes[CVEID] = Successful
 		}
-		Metrics.OSVRecordsGenerated++
-		Metrics.Outcomes[CVEID] = Successful
-
 		// Metrics.TotalCVEs = len(parsed.Vulnerabilities)
 		err = outputOutcomes(Metrics.Outcomes, ReposForCVE, *outDir)
 		if err != nil {
@@ -483,5 +439,4 @@ func main() {
 		Metrics.Outcomes = nil
 		Logger.Infof("%s Metrics: %+v", filepath.Base(*jsonPath), Metrics)
 	}
-
 }

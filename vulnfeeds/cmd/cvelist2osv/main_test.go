@@ -39,57 +39,15 @@ func loadTestData(cveName string) cves.CVE5 {
 	return cve
 }
 
-func TestFormatDateTimeRFC3339(t *testing.T) {
-	tests := []struct {
-		name     string
-		input    string
-		expected string
-	}{
-		{
-			name:     "RFC3339Nano with Z",
-			input:    "2023-08-16T15:04:05.999Z",
-			expected: "2023-08-16T15:04:05Z",
-		},
-		{
-			name:     "RFC3339 with Z",
-			input:    "2023-08-16T15:04:05Z",
-			expected: "2023-08-16T15:04:05Z",
-		},
-		{
-			name:     "RFC3339 with timezone",
-			input:    "2023-08-16T10:04:05-05:00",
-			expected: "2023-08-16T15:04:05Z",
-		},
-		{
-			name:     "Empty string",
-			input:    "",
-			expected: "",
-		},
-		{
-			name:     "Invalid format",
-			input:    "2023/08/16 15:04:05",
-			expected: "2023/08/16 15:04:05", // Should return original
-		},
-		{
-			name:     "CVE5 format",
-			input:    "2024-07-19T19:15:11.053Z",
-			expected: "2024-07-19T19:15:11Z",
-		},
-	}
-
-	for _, tc := range tests {
-		t.Run(tc.name, func(t *testing.T) {
-			got := formatDateTimeRFC3339(tc.input)
-			if got != tc.expected {
-				t.Errorf("formatDateTimeRFC3339(%q) = %q; want %q", tc.input, got, tc.expected)
-			}
-		})
-	}
-}
-
 func TestFromCVE(t *testing.T) {
 	cveData := loadTestData("CVE-2021-44228")
-	v, notes := FromCVE(cveData.Metadata.CVEID, cveData)
+	id := cveData.Metadata.CVEID
+	refs := identifyPossibleURLs(cveData)
+	descriptions := cveData.Containers.CNA.Descriptions
+	published, _ := vulns.CVE5timestampToRFC3339(cveData.Metadata.DatePublished)
+	modified, _ := vulns.CVE5timestampToRFC3339(cveData.Metadata.DateUpdated)
+	metrics := cveData.Containers.CNA.Metrics
+	v, notes := vulns.FromCVE(id, id, refs, descriptions, published, modified, metrics)
 
 	if v.ID != "CVE-2021-44228" {
 		t.Errorf("Expected ID CVE-2021-44228, got %s", v.ID)
@@ -190,14 +148,14 @@ func TestCVEToOSV(t *testing.T) {
 		var cache git.RepoTagsCache
 		cveData := loadTestData("CVE-2025-1110") // wire-server
 		repos := []string{"https://gitlab.com/gitlab-org/gitlab"}
-
+		refs := []cves.Reference{{Url: "https://gitlab.com/gitlab-org/gitlab"}}
 		tempDir, err := os.MkdirTemp("", "osv-test")
 		if err != nil {
 			t.Fatalf("Failed to create temp dir: %v", err)
 		}
 		defer os.RemoveAll(tempDir)
 
-		err = CVEToOSV(cveData, repos, cache, tempDir)
+		err = CVEToOSV(cveData, refs, repos, cache, tempDir)
 		if err != nil {
 			t.Fatalf("CVEToOSV() failed: %v", err)
 		}
@@ -243,7 +201,7 @@ func TestCVEToOSV(t *testing.T) {
 		}
 		defer os.RemoveAll(tempDir)
 
-		err = CVEToOSV(cveData, []string{}, cache, tempDir)
+		err = CVEToOSV(cveData, []cves.Reference{}, []string{}, cache, tempDir)
 		if err == nil {
 			t.Errorf("Expected error for CVEToOSV with no repos, but got nil")
 		}

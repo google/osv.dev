@@ -321,30 +321,21 @@ func (v *Vulnerability) AddPkgInfo(pkgInfo PackageInfo) {
 	v.Affected = append(v.Affected, affected)
 }
 
-// AddSeverity adds CVSS3 severity information to the OSV vulnerability object.
-// It uses the highest available CVSS 3.x Primary score from the underlying CVE record.
-func (v *Vulnerability) AddSeverity(CVEImpact *cves.CVEItemMetrics) {
-	if CVEImpact == nil {
-		return
-	}
-
-	// Use the highest available of CvssMetric31, CvssMetric30
-	// from the Primary scorer.
+// AddSeverity adds CVSS severity information to the OSV vulnerability object.
+// It uses the highest available CVSS score from the underlying CVE record.
+// For NVD data, it uses the Primary score.
+func (v *Vulnerability) AddSeverity(metricsData any) {
 	var bestVectorString string
+	var severityType string
 
-	for _, metric := range CVEImpact.CVSSMetricV31 {
-		if bestVectorString != "" {
+	switch md := metricsData.(type) {
+	case *cves.CVEItemMetrics:
+		if md == nil {
 			break
 		}
-		if metric.Type != "Primary" {
-			continue
-		}
-		bestVectorString = metric.CVSSData.VectorString
-	}
-
-	// No CVSS 3.1, try falling back to CVSS 3.0 if available.
-	if bestVectorString == "" {
-		for _, metric := range CVEImpact.CVSSMetricV30 {
+		// Use the highest available of CvssMetricV31, CvssMetricV30
+		// from the Primary scorer.
+		for _, metric := range md.CVSSMetricV31 {
 			if bestVectorString != "" {
 				break
 			}
@@ -352,6 +343,48 @@ func (v *Vulnerability) AddSeverity(CVEImpact *cves.CVEItemMetrics) {
 				continue
 			}
 			bestVectorString = metric.CVSSData.VectorString
+			severityType = "CVSS_V3"
+		}
+
+		// No CVSS 3.1, try falling back to CVSS 3.0 if available.
+		if bestVectorString == "" {
+			for _, metric := range md.CVSSMetricV30 {
+				if bestVectorString != "" {
+					break
+				}
+				if metric.Type != "Primary" {
+					continue
+				}
+				bestVectorString = metric.CVSSData.VectorString
+				severityType = "CVSS_V3"
+			}
+		}
+	case []cves.Metrics:
+		// Use the highest available of CVSSV4_0, CVSSV3_1, CVSSV3_0.
+		for _, m := range md {
+			if m.CVSSV4_0.VectorString != "" {
+				bestVectorString = m.CVSSV4_0.VectorString
+				severityType = "CVSS_V4"
+				break
+			}
+		}
+		if bestVectorString == "" {
+			for _, m := range md {
+				if m.CVSSV3_1.VectorString != "" {
+					bestVectorString = m.CVSSV3_1.VectorString
+					severityType = "CVSS_V3"
+					break
+				}
+			}
+		}
+		if bestVectorString == "" {
+			for _, m := range md {
+				if m.CVSSV3_0.VectorString != "" {
+					bestVectorString = m.CVSSV3_0.VectorString
+					severityType = "CVSS_V3"
+					break
+				}
+			}
 		}
 	}
 
@@ -361,7 +394,7 @@ func (v *Vulnerability) AddSeverity(CVEImpact *cves.CVEItemMetrics) {
 	}
 
 	severity := Severity{
-		Type:  "CVSS_V3",
+		Type:  severityType,
 		Score: bestVectorString,
 	}
 
@@ -573,6 +606,8 @@ func ExtractReferencedVulns(id cves.CVEID, cveID cves.CVEID, references []cves.R
 		aliases = append(aliases, SYNKs...)
 	}
 
+	// TODO(jesslowe): Check if references to other CVEs exist in the description and add to related
+
 	return aliases, related
 }
 
@@ -610,21 +645,21 @@ func ClassifyReferences(refs []cves.Reference) (references References) {
 	return references
 }
 
-// FromCVE creates a minimal OSV object from a given CVEItem and id.
+// FromCVE creates a minimal OSV object from a given CVE and id.
 // Leaves affected and version fields empty to be filled in later with AddPkgInfo
-func FromCVE(id cves.CVEID, cve cves.CVE) (*Vulnerability, []string) {
-	aliases, related := ExtractReferencedVulns(id, cve.ID, cve.References)
+func FromCVE(id cves.CVEID, cveID cves.CVEID, references []cves.Reference, descriptions []cves.LangString, publishedDate string, modifiedDate string, metrics any) (*Vulnerability, []string) {
+	aliases, related := ExtractReferencedVulns(id, cveID, references)
 	v := Vulnerability{
 		ID:      string(id),
-		Details: cves.EnglishDescription(cve.Descriptions),
+		Details: cves.EnglishDescription(descriptions),
 		Aliases: aliases,
 		Related: related,
 	}
 	var notes []string
-	v.Published = cve.Published.Format(time.RFC3339)
-	v.Modified = cve.LastModified.Format(time.RFC3339)
-	v.References = ClassifyReferences(cve.References)
-	v.AddSeverity(cve.Metrics)
+	v.Published = publishedDate
+	v.Modified = modifiedDate
+	v.References = ClassifyReferences(references)
+	v.AddSeverity(metrics)
 	return &v, notes
 }
 

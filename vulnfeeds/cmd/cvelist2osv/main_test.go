@@ -115,7 +115,7 @@ func TestExtractVersionInfo(t *testing.T) {
 			for _, ref := range refs {
 				repos = append(repos, ref.Url)
 			}
-			got, notes := ExtractVersionInfo(cveData, repos, nil, client)
+			got, notes := ExtractVersionInfo(cveData, repos, client)
 
 			// Sort for stable comparison
 			sort.SliceStable(got.AffectedVersions, func(i, j int) bool {

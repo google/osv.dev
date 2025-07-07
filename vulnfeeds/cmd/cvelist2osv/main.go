@@ -88,62 +88,49 @@ var VendorProductDenyList = []cves.VendorProduct{
 	{Vendor: "gradle", Product: "enterprise"}, // The OSS repo gets mis-attributed via CVE-2020-15767
 }
 
-func ExtractVersionInfo(cve cves.CVE5, refs []string, validVersions []string, httpClient *http.Client) (v models.VersionInfo, notes []string) {
-	for _, reference := range refs {
-		// (Potentially faulty) Assumption: All viable Git commit reference links are fix commits.
-		if commit, err := cves.ExtractGitCommit(reference, models.Fixed, httpClient); err == nil {
-			v.AffectedCommits = append(v.AffectedCommits, commit)
-		}
-	}
-	gotVersions := false
-	cna := cve.Containers.CNA
+func extractVersionsFromAffected(cna cves.CNA, gotVersions bool, versionInfo models.VersionInfo) ([]models.AffectedVersion, bool, []string) {
+	var notes []string
 	for _, cveAff := range cna.Affected {
-		for _, vInfo := range cveAff.Versions {
-			if vInfo.Status != "affected" {
+		for _, v := range cveAff.Versions {
+			if v.Status != "affected" {
 				continue
 			}
 			var introduced, fixed, lastaffected string
-			hasRange := vulns.IsNotEmptyOrFiller(vInfo.LessThan) || vulns.IsNotEmptyOrFiller(vInfo.LessThanOrEqual)
-			if vInfo.LessThan != "" && vInfo.LessThan == vInfo.Version {
-				fmt.Printf("Warning: lessThan (%s) is the same as introduced (%s)\n", vInfo.LessThan, vInfo.Version)
+			hasRange := vulns.IsNotEmptyOrFiller(v.LessThan) || vulns.IsNotEmptyOrFiller(v.LessThanOrEqual)
+			if v.LessThan != "" && v.LessThan == v.Version {
+				fmt.Printf("Warning: lessThan (%s) is the same as introduced (%s)\n", v.LessThan, v.Version)
 				// Only this specific version affected or up to this version
 				hasRange = false
 			}
 
 			if hasRange {
-				if vulns.IsNotEmptyOrFiller(vInfo.Version) {
-					introduced = vInfo.Version
+				if vulns.IsNotEmptyOrFiller(v.Version) {
+					introduced = v.Version
 				}
-				if vulns.IsNotEmptyOrFiller(vInfo.LessThan) {
-					fixed = vInfo.LessThan
-				} else if vulns.IsNotEmptyOrFiller(vInfo.LessThanOrEqual) {
-					lastaffected = vInfo.LessThanOrEqual
-				}
-				if introduced != "" && !cves.HasVersion(validVersions, introduced) {
-					notes = append(notes, fmt.Sprintf("Warning: %s is not a valid introduced version", introduced))
-				}
-				if fixed != "" && !cves.HasVersion(validVersions, fixed) {
-					notes = append(notes, fmt.Sprintf("Warning: %s is not a valid fixed version", fixed))
+				if vulns.IsNotEmptyOrFiller(v.LessThan) {
+					fixed = v.LessThan
+				} else if vulns.IsNotEmptyOrFiller(v.LessThanOrEqual) {
+					lastaffected = v.LessThanOrEqual
 				}
 			} else {
-				// In this case only vInfo.Version exists which either means that it is _only_ that version that is
+				// In this case only v.Version exists which either means that it is _only_ that version that is
 				// affected, but more likely, it affects up to that version. It could also mean that the range is given
 				// in one line instead - like "< 1.5.3" or "< 2.45.4, >= 2.0 " or just "before 1.4.7", so check for that.
 
-				possibleVersions, note := cves.ExtractVersionsFromText(validVersions, vInfo.Version)
+				possibleVersions, note := cves.ExtractVersionsFromText(nil, v.Version)
 				if note != nil {
 					notes = append(notes, note...)
 				}
 				if possibleVersions != nil {
-					v.AffectedVersions = append(v.AffectedVersions, possibleVersions...)
+					versionInfo.AffectedVersions = append(versionInfo.AffectedVersions, possibleVersions...)
 					gotVersions = true
 					continue
 				}
 
-				// we might only have a single version. Assume it affects up to that version
-				if vulns.IsNotEmptyOrFiller(vInfo.Version) {
+				// We might only have a single version. Assume it affects up to that version
+				if vulns.IsNotEmptyOrFiller(v.Version) {
 					introduced = "0"
-					lastaffected = vInfo.Version
+					lastaffected = v.Version
 				}
 
 			}
@@ -156,17 +143,29 @@ func ExtractVersionInfo(cve cves.CVE5, refs []string, validVersions []string, ht
 				Fixed:        fixed,
 				LastAffected: lastaffected,
 			}
-			if slices.Contains(v.AffectedVersions, possibleNewAffectedVersion) {
+			if slices.Contains(versionInfo.AffectedVersions, possibleNewAffectedVersion) {
 				// Avoid appending duplicates
 				continue
 			}
-			v.AffectedVersions = append(v.AffectedVersions, possibleNewAffectedVersion)
+			versionInfo.AffectedVersions = append(versionInfo.AffectedVersions, possibleNewAffectedVersion)
 		}
 	}
+	return versionInfo.AffectedVersions, gotVersions, notes
+}
+
+func ExtractVersionInfo(cve cves.CVE5, refs []string, httpClient *http.Client) (v models.VersionInfo, notes []string) {
+	for _, reference := range refs {
+		// (Potentially faulty) Assumption: All viable Git commit reference links are fix commits.
+		if commit, err := cves.ExtractGitCommit(reference, models.Fixed, httpClient); err == nil {
+			v.AffectedCommits = append(v.AffectedCommits, commit)
+		}
+	}
+	gotVersions := false
+	v.AffectedVersions, gotVersions, notes = extractVersionsFromAffected(cve.Containers.CNA, gotVersions, v)
 	if !gotVersions {
 		var extractNotes []string
 		// If all else has failed, attempt to extract version from the description.
-		v.AffectedVersions, extractNotes = cves.ExtractVersionsFromText(validVersions, cves.EnglishDescription(cve.Containers.CNA.Descriptions))
+		v.AffectedVersions, extractNotes = cves.ExtractVersionsFromText(nil, cves.EnglishDescription(cve.Containers.CNA.Descriptions))
 		notes = append(notes, extractNotes...)
 		if len(v.AffectedVersions) > 0 {
 			log.Printf("[%s] Extracted versions from description = %+v", cve.Metadata.CVEID, v.AffectedVersions)
@@ -175,13 +174,6 @@ func ExtractVersionInfo(cve cves.CVE5, refs []string, validVersions []string, ht
 
 	if len(v.AffectedVersions) == 0 {
 		notes = append(notes, "No versions detected.")
-	}
-
-	if len(notes) != 0 && len(validVersions) > 0 {
-		notes = append(notes, "Valid versions:")
-		for _, version := range validVersions {
-			notes = append(notes, "  - "+version)
-		}
 	}
 
 	// Remove any lastaffected versions in favour of fixed versions.
@@ -209,7 +201,7 @@ func CVEToOSV(CVE cves.CVE5, references []cves.Reference, repos []string, cache 
 
 	v, notes := vulns.FromCVE(cveID, cveID, references, CVE.Containers.CNA.Descriptions, datePublished, dateUpdated, metrics)
 
-	versions, versionNotes := ExtractVersionInfo(CVE, repos, nil, http.DefaultClient)
+	versions, versionNotes := ExtractVersionInfo(CVE, repos, http.DefaultClient)
 	notes = append(notes, versionNotes...)
 
 	// Attempt to resolve Version Info to commits.

@@ -103,14 +103,13 @@ func ExtractVersionInfo(cve cves.CVE5, refs []string, validVersions []string, ht
 				continue
 			}
 			var introduced, fixed, lastaffected string
-			hasRange := vInfo.LessThan != "" || vInfo.LessThanOrEqual != ""
+			hasRange := vulns.IsNotEmptyOrFiller(vInfo.LessThan) || vulns.IsNotEmptyOrFiller(vInfo.LessThanOrEqual)
 			if vInfo.LessThan != "" && vInfo.LessThan == vInfo.Version {
 				fmt.Printf("Warning: lessThan (%s) is the same as introduced (%s)\n", vInfo.LessThan, vInfo.Version)
 				// Only this specific version affected or up to this version
 				hasRange = false
 			}
 
-			// SUPER NAIVE APPROACH
 			if hasRange {
 				if vulns.IsNotEmptyOrFiller(vInfo.Version) {
 					introduced = vInfo.Version
@@ -127,11 +126,26 @@ func ExtractVersionInfo(cve cves.CVE5, refs []string, validVersions []string, ht
 					notes = append(notes, fmt.Sprintf("Warning: %s is not a valid fixed version", fixed))
 				}
 			} else {
-				// only version number
-				// naive assumption: it only affects that version. More likely, it affects up to that version
-				// lastaffected = vInfo.Version
-				v.AffectedVersions, _ = cves.ExtractVersionsFromDescription(validVersions, vInfo.Version)
-				// check if it starts with "<" or "before" or "before version"
+				// In this case only vInfo.Version exists which either means that it is _only_ that version that is
+				// affected, but more likely, it affects up to that version. It could also mean that the range is given
+				// in one line instead - like "< 1.5.3" or "< 2.45.4, >= 2.0 " or just "before 1.4.7", so check for that.
+
+				possibleVersions, note := cves.ExtractVersionsFromText(validVersions, vInfo.Version)
+				if note != nil {
+					notes = append(notes, note...)
+				}
+				if possibleVersions != nil {
+					v.AffectedVersions = append(v.AffectedVersions, possibleVersions...)
+					gotVersions = true
+					continue
+				}
+
+				// we might only have a single version. Assume it affects up to that version
+				if vulns.IsNotEmptyOrFiller(vInfo.Version) {
+					introduced = "0"
+					lastaffected = vInfo.Version
+				}
+
 			}
 			if introduced == "" && fixed == "" && lastaffected == "" {
 				continue
@@ -151,7 +165,8 @@ func ExtractVersionInfo(cve cves.CVE5, refs []string, validVersions []string, ht
 	}
 	if !gotVersions {
 		var extractNotes []string
-		v.AffectedVersions, extractNotes = cves.ExtractVersionsFromDescription(validVersions, cves.EnglishDescription(cve.Containers.CNA.Descriptions))
+		// If all else has failed, attempt to extract version from the description.
+		v.AffectedVersions, extractNotes = cves.ExtractVersionsFromText(validVersions, cves.EnglishDescription(cve.Containers.CNA.Descriptions))
 		notes = append(notes, extractNotes...)
 		if len(v.AffectedVersions) > 0 {
 			log.Printf("[%s] Extracted versions from description = %+v", cve.Metadata.CVEID, v.AffectedVersions)

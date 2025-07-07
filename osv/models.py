@@ -665,7 +665,7 @@ class Bug(ndb.Model):
     if self.last_modified:
       modified_times.append(self.last_modified)
 
-    # Correctly fetch the last_modified dates from the upstream/alias groups
+    # Fetch the last_modified dates from the upstream/alias groups.
     alias_future = get_aliases_async(self.id()) if include_alias else None
     upstream_future = (
         get_upstream_async(self.id()) if include_upstream else None)

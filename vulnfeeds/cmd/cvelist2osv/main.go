@@ -96,16 +96,14 @@ var VendorProductDenyList = []cves.VendorProduct{
 //
 // Parameters:
 //   - cna: The CNA container from the CVE5 object.
-//   - gotVersions: A boolean indicating if any versions have already been extracted.
 //   - versionInfo: The models.VersionInfo struct to populate with affected versions.
 //
 // Returns:
-//   - []models.AffectedVersion: The updated slice of affected versions.
 //   - bool: True if any versions were successfully extracted, false otherwise.
 //   - []string: A slice of notes or warnings generated during the extraction process.
-
-func extractVersionsFromAffected(cna cves.CNA, gotVersions bool, versionInfo models.VersionInfo) ([]models.AffectedVersion, bool, []string) {
+func extractVersionsFromAffected(cna cves.CNA, versionInfo *models.VersionInfo) (bool, []string) {
 	var notes []string
+	gotVersions := false
 	for _, cveAff := range cna.Affected {
 		for _, v := range cveAff.Versions {
 			if v.Status != "affected" {
@@ -166,7 +164,7 @@ func extractVersionsFromAffected(cna cves.CNA, gotVersions bool, versionInfo mod
 			versionInfo.AffectedVersions = append(versionInfo.AffectedVersions, possibleNewAffectedVersion)
 		}
 	}
-	return versionInfo.AffectedVersions, gotVersions, notes
+	return gotVersions, notes
 }
 
 func ExtractVersionInfo(cve cves.CVE5, refs []string, httpClient *http.Client) (v models.VersionInfo, notes []string) {
@@ -177,8 +175,9 @@ func ExtractVersionInfo(cve cves.CVE5, refs []string, httpClient *http.Client) (
 		}
 	}
 	gotVersions := false
-	v.AffectedVersions, gotVersions, notes = extractVersionsFromAffected(cve.Containers.CNA, gotVersions, v)
+	gotVersions, notes = extractVersionsFromAffected(cve.Containers.CNA, &v)
 	if !gotVersions {
+
 		var extractNotes []string
 		// If all else has failed, attempt to extract version from the description.
 		v.AffectedVersions, extractNotes = cves.ExtractVersionsFromText(nil, cves.EnglishDescription(cve.Containers.CNA.Descriptions))

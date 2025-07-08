@@ -26,4 +26,4 @@ spec:
           failureThreshold: 3
           periodSeconds: 10
       timeoutSeconds: 60
-      containerConcurrency: 5 # from-param: ${containerConcurrency}
+      containerConcurrency: 10 # from-param: ${containerConcurrency}

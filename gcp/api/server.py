@@ -1383,7 +1383,7 @@ def query_by_package(
 
 def serve(port: int, local: bool):
   """Configures and runs the OSV API server."""
-  server = grpc.server(concurrent.futures.ThreadPoolExecutor(max_workers=5))
+  server = grpc.server(concurrent.futures.ThreadPoolExecutor(max_workers=10))
   servicer = OSVServicer()
   osv_service_v1_pb2_grpc.add_OSVServicer_to_server(servicer, server)
   health_pb2_grpc.add_HealthServicer_to_server(servicer, server)

@@ -647,6 +647,8 @@ func ClassifyReferences(refs []cves.Reference) (references References) {
 
 // FromCVE creates a minimal OSV object from a given CVE and id.
 // Leaves affected and version fields empty to be filled in later with AddPkgInfo
+// There are two id fields passed in as one of the users of this field (PyPi) sometimes has a different id than the CVEID
+// and the ExtractReferencedVulns function uses these in a check to add the other ID as an alias.
 func FromCVE(id cves.CVEID, cveID cves.CVEID, references []cves.Reference, descriptions []cves.LangString, publishedDate string, modifiedDate string, metrics any) (*Vulnerability, []string) {
 	aliases, related := ExtractReferencedVulns(id, cveID, references)
 	v := Vulnerability{

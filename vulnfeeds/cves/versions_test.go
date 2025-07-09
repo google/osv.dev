@@ -12,6 +12,8 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/osv/vulnfeeds/internal/testutils"
 	"github.com/google/osv/vulnfeeds/models"
+	"github.com/google/osv/vulnfeeds/utility"
+	"golang.org/x/exp/slices"
 )
 
 func loadTestData2(cveName string) Vulnerability {
@@ -809,7 +811,23 @@ func TestExtractVersionInfo(t *testing.T) {
 				AffectedCommits: []models.AffectedCommit{
 					{
 						Repo:  "https://github.com/tensorflow/tensorflow",
+						Fixed: "0516d4d8bced506cae97dc3cb45dbd2fe4311f26",
+					},
+					{
+						Repo:  "https://github.com/tensorflow/tensorflow",
+						Fixed: "33ed2b11cb8e879d86c371700e6573db1814a69e",
+					},
+					{
+						Repo:  "https://github.com/tensorflow/tensorflow",
+						Fixed: "8a20d54a3c1bfa38c03ea99a2ad3c1b0a45dfa95",
+					},
+					{
+						Repo:  "https://github.com/tensorflow/tensorflow",
 						Fixed: "cff267650c6a1b266e4b4500f69fbc49cdd773c5",
+					},
+					{
+						Repo:  "https://github.com/tensorflow/tensorflow",
+						Fixed: "dd7b8a3c1714d0052ce4b4a2fd8dcef927439a24",
 					},
 				},
 				AffectedVersions: []models.AffectedVersion{
@@ -865,6 +883,24 @@ func TestExtractVersionInfo(t *testing.T) {
 			inputCVEItem: loadTestData2("CVE-2020-13595"),
 			expectedVersionInfo: models.VersionInfo{
 				AffectedVersions: []models.AffectedVersion{{Introduced: "4.0.0", LastAffected: "4.2"}},
+			},
+		},
+		{
+			description:  "CVE with duplicate hashes",
+			inputCVEItem: loadTestData2("CVE-2022-25761"),
+			expectedVersionInfo: models.VersionInfo{
+				AffectedCommits: []models.AffectedCommit{
+					{
+						Repo:  "https://github.com/open62541/open62541",
+						Fixed: "3010bc67fbfd8de0921fc38c9efa146cd2e02c7f",
+					},
+					{
+						Repo:  "https://github.com/open62541/open62541",
+						Fixed: "b79db1ac78146fc06b0b8435773d3967de2d659c",
+					},
+				},
+
+				AffectedVersions: []models.AffectedVersion{{Fixed: "1.2.5"}},
 			},
 		},
 	}
@@ -970,6 +1006,99 @@ func TestVersionInfoDuplicateDetection(t *testing.T) {
 	}
 }
 
+func TestDeduplicateAffectedCommits(t *testing.T) {
+	tests := []struct {
+		name     string
+		input    []models.AffectedCommit
+		expected []models.AffectedCommit
+	}{
+		{
+			name: "All duplicates (map-based, all fields)",
+			input: []models.AffectedCommit{
+				{Repo: "repo1", Introduced: "v1", Fixed: "commitA", LastAffected: "L1"},
+				{Repo: "repo1", Introduced: "v1", Fixed: "commitA", LastAffected: "L1"},
+				{Repo: "repo1", Introduced: "v1", Fixed: "commitA", LastAffected: "L1"},
+			},
+			expected: []models.AffectedCommit{
+				{Repo: "repo1", Introduced: "v1", Fixed: "commitA", LastAffected: "L1"},
+			},
+		},
+		{
+			name: "Mixed duplicates and uniques (map-based, all fields)",
+			input: []models.AffectedCommit{
+				{Repo: "repo1", Introduced: "v1", Fixed: "commitB", LastAffected: "L1"},
+				{Repo: "repo2", Introduced: "v1", Fixed: "commitX", LastAffected: "L1"},
+				{Repo: "repo1", Introduced: "v1", Fixed: "commitA", LastAffected: "L1"},
+				{Repo: "repo1", Introduced: "v1", Fixed: "commitB", LastAffected: "L1"}, // Duplicate of first
+				{Repo: "repo2", Introduced: "v2", Fixed: "commitX", LastAffected: "L1"}, // Unique (Introduced different)
+				{Repo: "repo1", Introduced: "v1", Fixed: "commitA", LastAffected: "L2"}, // Unique (Limit different)
+				{Repo: "repo1", Introduced: "v1", Fixed: "commitA", LastAffected: "L1"}, // Duplicate of third
+			},
+			expected: []models.AffectedCommit{
+				{Repo: "repo1", Introduced: "v1", Fixed: "commitB", LastAffected: "L1"},
+				{Repo: "repo2", Introduced: "v1", Fixed: "commitX", LastAffected: "L1"},
+				{Repo: "repo1", Introduced: "v1", Fixed: "commitA", LastAffected: "L1"},
+				{Repo: "repo2", Introduced: "v2", Fixed: "commitX", LastAffected: "L1"},
+				{Repo: "repo1", Introduced: "v1", Fixed: "commitA", LastAffected: "L2"},
+			},
+		},
+		{
+			name: "No duplicates (map-based, all fields)",
+			input: []models.AffectedCommit{
+				{Repo: "repo1", Introduced: "v1", Fixed: "commitA", LastAffected: "L1"},
+				{Repo: "repo1", Introduced: "v1", Fixed: "commitB", LastAffected: "L1"},
+				{Repo: "repo2", Introduced: "v1", Fixed: "commitC", LastAffected: "L1"},
+			},
+			expected: []models.AffectedCommit{
+				{Repo: "repo1", Introduced: "v1", Fixed: "commitA", LastAffected: "L1"},
+				{Repo: "repo1", Introduced: "v1", Fixed: "commitB", LastAffected: "L1"},
+				{Repo: "repo2", Introduced: "v1", Fixed: "commitC", LastAffected: "L1"},
+			},
+		},
+		{
+			name:     "Empty slice (map-based)",
+			input:    []models.AffectedCommit{},
+			expected: []models.AffectedCommit{},
+		},
+		{
+			name: "Single element (map-based)",
+			input: []models.AffectedCommit{
+				{Repo: "repo1", Introduced: "v1", Fixed: "commitA", LastAffected: "L1"},
+			},
+			expected: []models.AffectedCommit{
+				{Repo: "repo1", Introduced: "v1", Fixed: "commitA", LastAffected: "L1"},
+			},
+		},
+		{
+			name: "Real-world example",
+			input: []models.AffectedCommit{
+				{Repo: "https://github.com/open62541/open62541", Introduced: "1.0", Fixed: "b79db1ac", LastAffected: ""},
+				{Repo: "https://github.com/open62541/open62541", Introduced: "1.0", Fixed: "b79db1ac", LastAffected: ""}, // Duplicate
+				{Repo: "https://github.com/open62541/open62541", Introduced: "1.0", Fixed: "3010bc67", LastAffected: ""}, // Unique (Fixed)
+				{Repo: "https://github.com/open62541/open62541", Introduced: "1.1", Fixed: "b79db1ac", LastAffected: ""}, // Unique (Introduced)
+				{Repo: "https://github.com/open62541/open62541", Introduced: "1.0", Fixed: "b79db1ac", LastAffected: ""}, // Unique (Limit)
+				{Repo: "https://github.com/open62541/open62541", Introduced: "1.0", Fixed: "b79db1ac", LastAffected: ""}, // Duplicate
+			},
+			expected: []models.AffectedCommit{
+				{Repo: "https://github.com/open62541/open62541", Introduced: "1.0", Fixed: "b79db1ac", LastAffected: ""},
+				{Repo: "https://github.com/open62541/open62541", Introduced: "1.0", Fixed: "3010bc67", LastAffected: ""},
+				{Repo: "https://github.com/open62541/open62541", Introduced: "1.1", Fixed: "b79db1ac", LastAffected: ""},
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := deduplicateAffectedCommits(tt.input)
+
+			slices.SortStableFunc(got, models.AffectedCommitCompare)
+			slices.SortStableFunc(tt.expected, models.AffectedCommitCompare)
+			if diff := cmp.Diff(got, tt.expected); diff != "" {
+				t.Errorf("deduplicateAffectedCommits() got = %v, want %v", got, tt.expected)
+			}
+		})
+	}
+}
 func TestInvalidRangeDetection(t *testing.T) {
 	tests := []struct {
 		description         string
@@ -1148,6 +1277,175 @@ func TestCommit(t *testing.T) {
 			}
 			if got != tt.want {
 				t.Errorf("Commit() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestReposFromReferences(t *testing.T) {
+	type args struct {
+		CVE         string
+		cache       VendorProductToRepoMap
+		vp          *VendorProduct
+		refs        []Reference
+		tagDenyList []string
+	}
+	tests := []struct {
+		name      string
+		args      args
+		wantRepos []string
+	}{
+		{
+			name: "A CVE with a repo not already present in the VendorRepo cache (that happens to have a useful commit and a repo that has no tags)",
+			args: args{
+				CVE:   "CVE-2023-0327",
+				cache: nil,
+				vp:    &VendorProduct{"theradsystem_project", "theradsystem"},
+				refs: []Reference{
+					{
+						Source: "cna@vuldb.com",
+						Tags:   []string{"Patch", "Third Party Advisory"},
+						Url:    "https://github.com/saemorris/TheRadSystem/commit/bfba26bd34af31648a11af35a0bb66f1948752a6"},
+				},
+				tagDenyList: RefTagDenyList,
+			},
+			wantRepos: []string{"https://github.com/saemorris/TheRadSystem"},
+		},
+		{
+			name: "A CVE with a useless (vulnerability researcher) repo",
+			args: args{
+				CVE:   "CVE-2025-0211",
+				cache: nil,
+				vp:    &VendorProduct{"campcodes", "school_faculty_scheduling_system"},
+				refs: []Reference{
+					{
+						Source: "cna@vuldb.com",
+						Tags:   []string{"Exploit", "Third Party Advisory"},
+						Url:    "https://github.com/shaturo1337/POCs/blob/main/LFI%20in%20School%20Faculty%20Scheduling%20System.md"},
+				},
+				tagDenyList: RefTagDenyList,
+			},
+			wantRepos: []string(nil),
+		},
+		{
+			name: "A CVE with a cgit repo reference that does not work without transformation",
+			args: args{
+				CVE:   "CVE-2025-26519",
+				cache: nil,
+				vp:    nil,
+				refs: []Reference{
+					{
+						Source: "cna@mitre.org",
+						Tags:   nil,
+						Url:    "https://git.musl-libc.org/cgit/musl/commit/?id=c47ad25ea3b484e10326f933e927c0bc8cded3da",
+					},
+				},
+				tagDenyList: RefTagDenyList,
+			},
+			wantRepos: []string{"https://git.musl-libc.org/git/musl"},
+		},
+		{
+			name: "A CVE with a valid GitHub repo that stopped working",
+			args: args{
+				CVE:   "CVE-2016-10525",
+				cache: nil,
+				vp:    nil,
+				refs: []Reference{
+					{
+						Source: "support@hackerone.com",
+						Tags:   []string{"Patch", "Third Party Advisory"},
+						Url:    "https://github.com/dwyl/hapi-auth-jwt2/issues/111",
+					},
+				},
+				tagDenyList: RefTagDenyList,
+			},
+			wantRepos: []string{"https://github.com/dwyl/hapi-auth-jwt2"},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			testutils.SetupGitVCR(t)
+			var Logger utility.LoggerWrapper
+			if gotRepos := ReposFromReferences(tt.args.CVE, tt.args.cache, tt.args.vp, tt.args.refs, tt.args.tagDenyList, Logger); !reflect.DeepEqual(gotRepos, tt.wantRepos) {
+				t.Errorf("ReposFromReferences() = %#v, want %#v", gotRepos, tt.wantRepos)
+			}
+		})
+	}
+}
+
+func Test_maybeUpdateVPRepoCache(t *testing.T) {
+	type args struct {
+		cache VendorProductToRepoMap
+		vp    *VendorProduct
+		repos []string
+	}
+	tests := []struct {
+		name      string
+		args      args
+		wantCache VendorProductToRepoMap
+	}{
+		{
+			name: "Test with no cache",
+			args: args{
+				cache: nil,
+				vp:    &VendorProduct{"avendor", "aproduct"},
+				repos: []string{"https://github.com/google/osv.dev"},
+			},
+			wantCache: nil,
+		},
+		{
+			name: "Test with an empty cache",
+			args: args{
+				cache: VendorProductToRepoMap{},
+				vp:    &VendorProduct{"avendor", "aproduct"},
+				repos: []string{"https://github.com/google/osv.dev"},
+			},
+			wantCache: VendorProductToRepoMap{
+				VendorProduct{"avendor", "aproduct"}: []string{"https://github.com/google/osv.dev"},
+			},
+		},
+		{
+			name: "Test with an empty cache and an unusable repo",
+			args: args{
+				cache: VendorProductToRepoMap{},
+				vp:    &VendorProduct{"avendor", "aproduct"},
+				repos: []string{"https://github.com/vendor/repo"},
+			},
+			wantCache: VendorProductToRepoMap{},
+		},
+		{
+			name: "Test with an existing cache",
+			args: args{
+				cache: VendorProductToRepoMap{
+					VendorProduct{"avendor", "aproduct"}: []string{"https://github.com/google/osv.dev"},
+				},
+				vp:    &VendorProduct{"avendor", "aproduct"},
+				repos: []string{"https://github.com/google/osv-scanner"},
+			},
+			wantCache: VendorProductToRepoMap{
+				VendorProduct{"avendor", "aproduct"}: []string{"https://github.com/google/osv.dev", "https://github.com/google/osv-scanner"},
+			},
+		},
+		{
+			name: "Test with an empty cache adding two values",
+			args: args{
+				cache: VendorProductToRepoMap{},
+				vp:    &VendorProduct{"avendor", "aproduct"},
+				repos: []string{"https://github.com/google/osv.dev", "https://github.com/google/osv-scanner"},
+			},
+			wantCache: VendorProductToRepoMap{
+				VendorProduct{"avendor", "aproduct"}: []string{"https://github.com/google/osv.dev", "https://github.com/google/osv-scanner"},
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			testutils.SetupGitVCR(t)
+			for _, repo := range tt.args.repos {
+				MaybeUpdateVPRepoCache(tt.args.cache, tt.args.vp, repo)
+			}
+			if !reflect.DeepEqual(tt.args.cache, tt.wantCache) {
+				t.Errorf("maybeUpdateVPRepoCache() have %#v, wanted %#v", tt.args.cache, tt.wantCache)
 			}
 		})
 	}

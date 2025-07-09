@@ -7,13 +7,7 @@ interactions:
         proto_major: 1
         proto_minor: 1
         content_length: 0
-        transfer_encoding: []
-        trailer: {}
         host: gitlab.freedesktop.org
-        remote_addr: ""
-        request_uri: ""
-        body: ""
-        form: {}
         headers:
             Accept:
                 - text/html
@@ -23,10 +17,7 @@ interactions:
         proto: HTTP/2.0
         proto_major: 2
         proto_minor: 0
-        transfer_encoding: []
-        trailer: {}
         content_length: -1
-        uncompressed: false
         body: ""
         headers:
             Cache-Control:
@@ -36,9 +27,9 @@ interactions:
             Content-Type:
                 - text/html; charset=utf-8
             Date:
-                - Tue, 20 May 2025 05:08:02 GMT
+                - Wed, 02 Jul 2025 01:37:42 GMT
             Etag:
-                - W/"fe8fe50ceaf952f2bed78ab3672fcfcd"
+                - W/"792da1429f77295c2ade86e5fa30699c"
             Nel:
                 - '{"max_age": 0}'
             Permissions-Policy:
@@ -46,7 +37,7 @@ interactions:
             Referrer-Policy:
                 - strict-origin-when-cross-origin
             Set-Cookie:
-                - _gitlab_session=19a2304d33bc3243acee99b361cc7842; path=/; secure; HttpOnly; SameSite=None
+                - _gitlab_session=e5d4e33b350bfba869598ff67e814c0e; path=/; secure; HttpOnly; SameSite=None
             Strict-Transport-Security:
                 - max-age=31536000; includeSubDomains
             Vary:
@@ -62,19 +53,19 @@ interactions:
             X-Frame-Options:
                 - SAMEORIGIN
             X-Gitlab-Meta:
-                - '{"correlation_id":"01JVP1EWGF4SFB7V4EBMJ2GRNG","version":"1"}'
+                - '{"correlation_id":"01JZ4CGMSV5PPXZ1SJFCR0YDS5","version":"1"}'
             X-Permitted-Cross-Domain-Policies:
                 - none
             X-Request-Id:
-                - 01JVP1EWGF4SFB7V4EBMJ2GRNG
+                - 01JZ4CGMSV5PPXZ1SJFCR0YDS5
             X-Runtime:
-                - "0.342625"
+                - "0.767859"
             X-Served-By:
-                - cache-syd10152-SYD
+                - cache-syd10181-SYD
             X-Ua-Compatible:
                 - IE=edge
             X-Xss-Protection:
                 - 1; mode=block
         status: 200 OK
         code: 200
-        duration: 1.680643482s
+        duration: 2.041797194s

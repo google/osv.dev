@@ -16,6 +16,8 @@ import datetime
 import difflib
 import os
 import pprint
+import signal
+
 from proto import datetime_helpers
 import requests
 import subprocess
@@ -109,6 +111,8 @@ _ds_data_dir = None
 
 def start_datastore_emulator():
   """Starts Datastore emulator."""
+  _kill_existing_datastore_emulator()
+
   port = os.environ.get('DATASTORE_EMULATOR_PORT', _DATASTORE_EMULATOR_PORT)
   os.environ['DATASTORE_EMULATOR_HOST'] = 'localhost:' + port
   os.environ['DATASTORE_PROJECT_ID'] = TEST_PROJECT_ID
@@ -133,6 +137,60 @@ def start_datastore_emulator():
 
   _wait_for_emulator_ready(proc, 'datastore', _DATASTORE_READY_INDICATOR)
   return proc
+
+
+def _kill_existing_datastore_emulator():
+  """
+     Finds and kills the Google Cloud Datastore emulator process.
+
+     This function executes `ps x`, searches for the process line containing
+     'com.google.cloud.datastore.emulator.CloudDatastore start' and '--port=',
+     extracts the PID, and sends a SIGKILL signal to terminate it.
+     """
+  try:
+    # 1. Execute `ps x` to get a list of processes and their commands.
+    # The output is captured as a byte string.
+    process_list_output = subprocess.check_output(['ps', 'x'])
+  except (subprocess.CalledProcessError, FileNotFoundError) as e:
+    print(f'Error executing "ps x": {e}')
+    return
+
+  # 2. Decode the byte string to a UTF-8 string and split into individual lines.
+  lines = process_list_output.decode('utf-8').strip().split('\n')
+
+  # 3. Define the unique strings that identify the target process.
+  target_string_1 = 'com.google.cloud.datastore.emulator.CloudDatastore start'
+  target_string_2 = f'--port={_DATASTORE_EMULATOR_PORT}'
+
+  # 4. Go through each line of the process list.
+  for line in lines:
+    # 5. Check if the line contains both of our target strings.
+    if target_string_1 in line and target_string_2 in line:
+      print(f'Found target process line: {line.strip()}')
+      try:
+        # 6. Extract the PID. The PID is the first column in the `ps x` output.
+        # We split the line by whitespace and take the first element.
+        pid_str = line.strip().split()[0]
+        pid = int(pid_str)
+
+        # 7. Kill the process using its PID.
+        print(f'Attempting to terminate process with PID: {pid}')
+        os.kill(pid, signal.SIGTERM)
+        print(f'Successfully sent SIGTERM to process {pid}.')
+        # Once we've found and killed the process, we can stop searching.
+        break
+      except (ValueError, IndexError):
+        print(f'Could not parse PID from line: {line.strip()}')
+      except ProcessLookupError:
+        # This can happen if the process terminated
+        # between finding it and trying to kill it.
+        print(f'Process with PID {pid} not found. '
+              f'It might have already been terminated.')
+      except PermissionError:
+        print(f'Permission denied. Could not terminate process {pid}.')
+      except Exception as e:
+        print(f'An unexpected error occurred while '
+              f'trying to kill process {pid}: {e}')
 
 
 emulator_stdout_thread_output = ''

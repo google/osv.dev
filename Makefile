@@ -42,6 +42,10 @@ api-server-tests:
 lint:
 	tools/lint_and_format.sh
 
+build-protos:
+	$(run-cmd) python -m grpc_tools.protoc --python_out=. --mypy_out=. --proto_path=. osv/*.proto
+	cd gcp/api/v1 && $(run-cmd) python -m grpc_tools.protoc --include_imports --include_source_info --proto_path=googleapis --proto_path=. --proto_path=.. --descriptor_set_out=api_descriptor.pb --python_out=../. --grpc_python_out=../ --mypy_out=../ osv_service_v1.proto
+
 run-website:
 	cd gcp/website/frontend3 && npm install && npm run build
 	cd gcp/website/blog && hugo --buildFuture -d ../dist/static/blog

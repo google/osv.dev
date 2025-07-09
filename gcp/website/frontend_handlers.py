@@ -1141,44 +1141,54 @@ def compute_downstream_hierarchy(
   return ComputedHierarchy(root_nodes=root_leaves, graph=downstream_map)
 
 
+def _add_package_suggestion(suggestions, query, affected, max_suggestions):
+  """Add package name suggestions."""
+  if not (hasattr(affected, 'package') and affected.package and
+          hasattr(affected.package, 'name')):
+    return False
+
+  pkg_name = str(affected.package.name)
+  if pkg_name and pkg_name.lower().startswith(
+      query) and pkg_name not in suggestions:
+    suggestions.append(pkg_name)
+
+  return len(suggestions) >= max_suggestions
+
+
 @blueprint.route('/api/search_suggestions', methods=['GET'])
 def search_suggestions():
-    """Return search suggestions based on a query string."""
-    query = request.args.get('q', '').strip().lower()
-    if not query or len(query) > 300:
-        return json.dumps({'suggestions': []})
+  """Return search suggestions based on a query string."""
+  query = request.args.get('q', '').strip().lower()
+  if not query or len(query) > 300:
+    return json.dumps({'suggestions': []})
 
-    # Limit to 10 suggestions
-    max_suggestions = 10
-    
-    db_query = osv.Bug.query(osv.Bug.status == osv.BugStatus.PROCESSED,
-                          osv.Bug.public == True)  # pylint: disable=singleton-comparison
-    
-    db_query = db_query.filter(osv.Bug.search_indices == query)
-    db_query = db_query.order(-osv.Bug.timestamp)
-    bugs = db_query.fetch(max_suggestions)
-    
-    suggestions = []
-    
-    # Build suggestion list
-    for bug in bugs:
-        bug_id = str(bug.id) if hasattr(bug, 'id') else ""
-        if bug_id.lower().startswith(query) and bug_id not in suggestions:
-            suggestions.append(bug_id)
-        
-        if hasattr(bug, 'affected') and bug.affected:
-            for affected in bug.affected:
-                if hasattr(affected, 'package') and affected.package:
-                    if hasattr(affected.package, 'name'):
-                        pkg_name = str(affected.package.name)
-                        if pkg_name and pkg_name.lower().startswith(query) and pkg_name not in suggestions:
-                            suggestions.append(pkg_name)
-                        
-                        # Break if we've reached the max suggestions
-                        if len(suggestions) >= max_suggestions:
-                            break
-            
-            if len(suggestions) >= max_suggestions:
-                break
-                
-    return json.dumps({'suggestions': suggestions[:max_suggestions]})
+  max_suggestions = 10
+  suggestions = []
+
+  db_query = osv.Bug.query(
+      osv.Bug.status == osv.BugStatus.PROCESSED,
+      osv.Bug.public == True)  # pylint: disable=singleton-comparison
+  db_query = db_query.filter(osv.Bug.search_indices == query)
+  db_query = db_query.order(-osv.Bug.timestamp)
+  bugs = db_query.fetch(max_suggestions)
+
+  # Build suggestion list
+  for bug in bugs:
+    if len(suggestions) >= max_suggestions:
+      break
+
+    bug_id = str(bug.id) if hasattr(bug, 'id') else ''
+    if bug_id.lower().startswith(query) and bug_id not in suggestions:
+      suggestions.append(bug_id)
+      if len(suggestions) >= max_suggestions:
+        break
+
+    if not (hasattr(bug, 'affected') and bug.affected):
+      continue
+
+    for affected in bug.affected:
+      if _add_package_suggestion(suggestions, query, affected,
+                                 max_suggestions):
+        break
+
+  return json.dumps({'suggestions': suggestions[:max_suggestions]})

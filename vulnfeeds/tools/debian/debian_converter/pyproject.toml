@@ -3,7 +3,7 @@ name = "debian_converter"
 requires-python = ">=3.11,<4.0"
 dependencies = [
     "markdownify==0.14.1",
-    "pandas==2.3.0",
+    "pandas==2.3.1",
     "python-dateutil==2.9.0.post0",
 ]
 

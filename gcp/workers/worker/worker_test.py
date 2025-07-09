@@ -1795,6 +1795,7 @@ class UpdateTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
     bug = ndb.Key(osv.Bug, 'UBUNTU-CVE-2025-38094').get()
     self.expect_dict_equal('ubuntu_severity_type', bug._to_dict())
 
+
 def setUpModule():
   """Set up the test module."""
   print("Starting Datastore Emulator for the test suite...")

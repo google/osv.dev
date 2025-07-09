@@ -423,7 +423,7 @@
                           'ubuntu:14.04',
                           'ubuntu:pro:14.04:lts'],
     'semver_fixed_indexes': [],
-    'severities': [{'score': 'negligible', 'type': 'Ubuntu'}],
+    'severities': [{'score': 'medium', 'type': 'Ubuntu'}],
     'source': 'source',
     'source_id': 'source:UBUNTU-CVE-2025-38094.json',
     'source_of_truth': 2,

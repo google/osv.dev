@@ -1064,7 +1064,7 @@ def has_cycle(graph: dict[str, set[str]]) -> bool:
 
         Returns:
             True if a cycle is detected, False otherwise.
-        """
+    """
     visited.add(node)
     recursion_stack.add(node)
 
@@ -1139,3 +1139,46 @@ def compute_downstream_hierarchy(
   downstream_map[target_bug_id] = root_leaves
 
   return ComputedHierarchy(root_nodes=root_leaves, graph=downstream_map)
+
+
+@blueprint.route('/api/search_suggestions', methods=['GET'])
+def search_suggestions():
+    """Return search suggestions based on a query string."""
+    query = request.args.get('q', '').strip().lower()
+    if not query or len(query) > 300:
+        return json.dumps({'suggestions': []})
+
+    # Limit to 10 suggestions
+    max_suggestions = 10
+    
+    db_query = osv.Bug.query(osv.Bug.status == osv.BugStatus.PROCESSED,
+                          osv.Bug.public == True)  # pylint: disable=singleton-comparison
+    
+    db_query = db_query.filter(osv.Bug.search_indices == query)
+    db_query = db_query.order(-osv.Bug.timestamp)
+    bugs = db_query.fetch(max_suggestions)
+    
+    suggestions = []
+    
+    # Build suggestion list
+    for bug in bugs:
+        bug_id = str(bug.id) if hasattr(bug, 'id') else ""
+        if bug_id.lower().startswith(query) and bug_id not in suggestions:
+            suggestions.append(bug_id)
+        
+        if hasattr(bug, 'affected') and bug.affected:
+            for affected in bug.affected:
+                if hasattr(affected, 'package') and affected.package:
+                    if hasattr(affected.package, 'name'):
+                        pkg_name = str(affected.package.name)
+                        if pkg_name and pkg_name.lower().startswith(query) and pkg_name not in suggestions:
+                            suggestions.append(pkg_name)
+                        
+                        # Break if we've reached the max suggestions
+                        if len(suggestions) >= max_suggestions:
+                            break
+            
+            if len(suggestions) >= max_suggestions:
+                break
+                
+    return json.dumps({'suggestions': suggestions[:max_suggestions]})

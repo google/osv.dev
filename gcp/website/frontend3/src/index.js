@@ -7,6 +7,7 @@ import '@hotwired/turbo';
 import 'spicy-sections/src/SpicySections';
 import { MdFilledTextField } from '@material/web/textfield/filled-text-field.js';
 import { LitElement, html } from 'lit';
+import { ExpandableSearch } from './search.js';
 
 // Submits a form in a way such that Turbo can intercept the event.
 // Triggering submit on the form directly would still give a correct resulting
@@ -48,4 +49,37 @@ export class MdTextFieldWithEnter extends MdFilledTextField {
   }
 }
 customElements.define('md-textfield-with-enter', MdTextFieldWithEnter);
+
+let searchInstance = null;
+
+function initializeSearch() {
+  console.debug('Initializing search functionality');
+  // Clean up previous instance if it exists
+  if (searchInstance) {
+    console.debug('Cleaning up previous search instance');
+  }
+  searchInstance = new ExpandableSearch();
+}
+
+if (document.readyState === 'complete' || document.readyState === 'interactive') {
+  console.debug('Document already loaded, initializing search immediately');
+  setTimeout(initializeSearch, 0);
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  console.debug('DOMContentLoaded event fired, initializing search');
+  initializeSearch();
+});
+
+document.addEventListener('turbo:load', () => {
+  console.debug('Turbo:load event fired, reinitializing search');
+  initializeSearch();
+});
+
+window.addEventListener('load', () => {
+  console.debug('Window load event fired, ensuring search is initialized');
+  if (!searchInstance) {
+    initializeSearch();
+  }
+});
 

@@ -45,6 +45,22 @@
         </a>
       </div>
 
+      <!-- Mobile search icon, outside hamburger menu -->
+      <div class="mobile-search-container">
+        <div class="search-toggle-container">
+          <button class="search-toggle" aria-label="Toggle search" aria-expanded="false">
+            <span class="material-icons">search</span>
+          </button>
+          <!-- Expandable search form -->
+          <form class="search-form" action="{{ url_for('frontend_handlers.list_vulnerabilities') }}" method="get">
+            <input type="text" name="q" class="search-input" placeholder="Search vulnerabilities..." maxlength="300" autocomplete="off">
+            <button type="submit" class="search-submit" aria-label="Search">
+              <span class="material-icons">arrow_forward</span>
+            </button>
+          </form>
+        </div>
+      </div>
+
       <!-- Hidden checkbox for hamburger menu state -->
       <input type="checkbox" id="hamburger-checkbox" aria-label="Hamburger Menu">
       <!-- Hamburger menu -->
@@ -69,6 +85,21 @@
         </li>
         
         <ul class="push social-icons">
+          <li class="search-container-nav">
+            <div class="search-toggle-container">
+              <!-- Expandable search form -->
+              <form class="search-form" action="{{ url_for('frontend_handlers.list_vulnerabilities') }}" method="get">
+                <input type="text" name="q" class="search-input" placeholder="Search vulnerabilities..." maxlength="300" autocomplete="off">
+                <button type="submit" class="search-submit" aria-label="Search">
+                  <span class="material-icons">arrow_forward</span>
+                </button>
+              </form>
+              <!-- Search toggle button -->
+              <button class="search-toggle" aria-label="Toggle search" aria-expanded="false">
+                <span class="material-icons">search</span>
+              </button>
+            </div>
+          </li>
           {% if active_section == 'blog' %}
             <li>
               <a class="logo-img" href="{{ url_for('frontend_handlers.blog_rss') }}" target="_blank"

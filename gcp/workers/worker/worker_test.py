@@ -1766,6 +1766,34 @@ class UpdateTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
         osv.ImportFinding.get_by_id('OSV-123'),
         'Stale import finding still present after successful record processing')
 
+  def test_ubuntu_severity(self):
+    """Test whether Ubuntu severity is parsed as expected."""
+
+    self.source_repo.ignore_git = False
+    self.source_repo.versions_from_repo = False
+    self.source_repo.detect_cherrypicks = False
+    self.source_repo.db_prefix.append('UBUNTU-CVE')
+    self.source_repo.put()
+
+    self.mock_repo.add_file(
+        'UBUNTU-CVE-2025-38094.json',
+        self._load_test_data(
+            os.path.join(TEST_DATA_DIR, 'UBUNTU-CVE-2025-38094.json')),
+    )
+    self.mock_repo.commit('User', 'user@email')
+    task_runner = worker.TaskRunner(ndb_client, None, self.tmp_dir.name, None,
+                                    None)
+    message = mock.Mock()
+    message.attributes = {
+        'source': 'source',
+        'path': 'UBUNTU-CVE-2025-38094.json',
+        'original_sha256': _sha256('UBUNTU-CVE-2025-38094.json'),
+        'deleted': 'false',
+    }
+    task_runner._source_update(message)
+
+    bug = ndb.Key(osv.Bug, 'UBUNTU-CVE-2025-38094').get()
+    self.expect_dict_equal('ubuntu_severity_type', bug._to_dict())
 
 def setUpModule():
   """Set up the test module."""

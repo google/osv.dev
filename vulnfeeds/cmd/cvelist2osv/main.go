@@ -291,7 +291,7 @@ func CVEToOSV(CVE cves.CVE5, references []cves.Reference, repos []string, cache 
 		Logger.Warnf("Failed to create dir: %v", err)
 		return fmt.Errorf("failed to create dir: %w", err)
 	}
-	notesFile := filepath.Join(vulnDir, v.ID+".notes")
+
 	var fileWriteErr error
 
 	if len(v.Affected[0].Ranges) == 0 {
@@ -316,6 +316,7 @@ func CVEToOSV(CVE cves.CVE5, references []cves.Reference, repos []string, cache 
 		}
 	}
 	Logger.Warnf("numNotes %v", len(notes))
+	notesFile := filepath.Join(vulnDir, v.ID+".notes")
 	if len(notes) > 0 {
 		Logger.Warnf("notes: %s", notesFile)
 		err = os.WriteFile(notesFile, []byte(strings.Join(notes, "\n")), 0660)
@@ -324,6 +325,9 @@ func CVEToOSV(CVE cves.CVE5, references []cves.Reference, repos []string, cache 
 		}
 	}
 
+	if fileWriteErr != nil {
+		return fileWriteErr
+	}
 	if gotNoRanges {
 		return ErrNoRanges
 	}
@@ -331,7 +335,7 @@ func CVEToOSV(CVE cves.CVE5, references []cves.Reference, repos []string, cache 
 		return ErrUnresolvedFix
 	}
 
-	return fileWriteErr
+	return nil
 }
 
 // Output a CSV summarizing per-CVE how it was handled.
@@ -371,7 +375,6 @@ func identifyPossibleURLs(cve cves.CVE5) []cves.Reference {
 		}
 	}
 
-	// Remove duplicate URLs
 	for _, affected := range cve.Containers.CNA.Affected {
 		if affected.CollectionUrl != "" {
 			refs = append(refs, cves.Reference{Url: affected.CollectionUrl})
@@ -381,6 +384,7 @@ func identifyPossibleURLs(cve cves.CVE5) []cves.Reference {
 		}
 	}
 
+	// Remove duplicate URLs
 	slices.SortStableFunc(refs, func(a, b cves.Reference) int {
 		return strings.Compare(a.Url, b.Url)
 	})

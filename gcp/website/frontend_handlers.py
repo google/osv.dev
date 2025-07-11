@@ -1064,7 +1064,7 @@ def has_cycle(graph: dict[str, set[str]]) -> bool:
 
         Returns:
             True if a cycle is detected, False otherwise.
-    """
+        """
     visited.add(node)
     recursion_stack.add(node)
 
@@ -1139,54 +1139,3 @@ def compute_downstream_hierarchy(
   downstream_map[target_bug_id] = root_leaves
 
   return ComputedHierarchy(root_nodes=root_leaves, graph=downstream_map)
-
-
-def _add_package_suggestion(suggestions, query, affected, max_suggestions):
-  """Add package name suggestions."""
-  if not (hasattr(affected, 'package') and affected.package and
-          hasattr(affected.package, 'name')):
-    return False
-
-  pkg_name = str(affected.package.name)
-  if pkg_name and pkg_name.lower().startswith(
-      query) and pkg_name not in suggestions:
-    suggestions.append(pkg_name)
-
-  return len(suggestions) >= max_suggestions
-
-
-@blueprint.route('/api/search_suggestions', methods=['GET'])
-def search_suggestions():
-  """Return search suggestions based on a query string."""
-  query = request.args.get('q', '').strip().lower()
-  if not query or len(query) > 300:
-    return json.dumps({'suggestions': []})
-
-  max_suggestions = 10
-  suggestions = []
-
-  db_query = osv.Bug.query(osv.Bug.status == osv.BugStatus.PROCESSED,
-                           osv.Bug.public == True)  # pylint: disable=singleton-comparison
-  db_query = db_query.filter(osv.Bug.search_indices == query)
-  db_query = db_query.order(-osv.Bug.timestamp)
-  bugs = db_query.fetch(max_suggestions)
-
-  # Build suggestion list
-  for bug in bugs:
-    if len(suggestions) >= max_suggestions:
-      break
-
-    bug_id = str(bug.id) if hasattr(bug, 'id') else ''
-    if bug_id.lower().startswith(query) and bug_id not in suggestions:
-      suggestions.append(bug_id)
-      if len(suggestions) >= max_suggestions:
-        break
-
-    if not (hasattr(bug, 'affected') and bug.affected):
-      continue
-
-    for affected in bug.affected:
-      if _add_package_suggestion(suggestions, query, affected, max_suggestions):
-        break
-
-  return json.dumps({'suggestions': suggestions[:max_suggestions]})

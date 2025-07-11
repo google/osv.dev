@@ -1165,9 +1165,8 @@ def search_suggestions():
   max_suggestions = 10
   suggestions = []
 
-  db_query = osv.Bug.query(
-      osv.Bug.status == osv.BugStatus.PROCESSED,
-      osv.Bug.public == True)  # pylint: disable=singleton-comparison
+  db_query = osv.Bug.query(osv.Bug.status == osv.BugStatus.PROCESSED,
+                           osv.Bug.public == True)  # pylint: disable=singleton-comparison
   db_query = db_query.filter(osv.Bug.search_indices == query)
   db_query = db_query.order(-osv.Bug.timestamp)
   bugs = db_query.fetch(max_suggestions)
@@ -1187,8 +1186,7 @@ def search_suggestions():
       continue
 
     for affected in bug.affected:
-      if _add_package_suggestion(suggestions, query, affected,
-                                 max_suggestions):
+      if _add_package_suggestion(suggestions, query, affected, max_suggestions):
         break
 
   return json.dumps({'suggestions': suggestions[:max_suggestions]})

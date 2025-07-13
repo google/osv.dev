@@ -35,10 +35,10 @@
           <form action="{{ url_for('frontend_handlers.list_vulnerabilities') }}" data-turbo-frame="vulnerability-table">
             <div class="mdc-layout-grid__inner">
               <div class="query-container mdc-layout-grid__cell--span-8">
-                <md-textfield-with-enter label="Package or ID search" class="query-field" type="search" name="q"
-                  value="{{ query }}" maxlength="300">
+                <md-textfield-with-suggestions label="Package or ID search" class="query-field" type="search" name="q"
+                  value="{{ query }}">
                   <md-icon slot="leading-icon" aria-hidden="false">search</md-icon>
-                </md-textfield-with-enter>
+                </md-textfield-with-suggestions>
               </div>
             </div>
             <submit-radios>
@@ -160,8 +160,4 @@
 </turbo-stream>
 </turbo-frame>
 </div>
-<script>
-  import { MDCDataTable } from '@material/data-table';
-  const dataTable = new MDCDataTable(document.querySelector('.mdc-data-table'));
-</script>
 {% endblock %}

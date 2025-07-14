@@ -17,7 +17,7 @@ Prior to the \`upstream\` addition, the OSV schema supported the `related` and `
 `alias`: This field captures alternative identifiers for a specific vulnerability, such as different CVE IDs, where their vulnerability and advisory are the same, where there are no functional differences between the records beyond their identifiers.  
 `related`: This field is used to link vulnerabilities that share a common root cause or impact, even if they manifest differently across different software packages or versions, while not being an alias, upstream or downstream manifestation of another record.
 
-Some records that once were listed in `related` have been moved to the `upstream` field to facilitate this change. As of time of writing, we have vulnerability records across RedHat, Debian, Ubuntu, Chainguard and SUSE supporting this change. 
+Some records that once were listed in `related` have been moved to the `upstream` field to facilitate this change. As of time of writing, we have vulnerability records across RedHat, Debian, Ubuntu, Chainguard, MinimOS and SUSE supporting this change. 
 
 ***What does this mean for you?***  
 The OSV.dev API and frontend now support this field. Querying the API returns the complete transitive list of upstream records, while the website further displays the hierarchy among the vulnerability entries.

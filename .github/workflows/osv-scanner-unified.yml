@@ -31,6 +31,8 @@ permissions:
 jobs:
   scan-scheduled:
     permissions:
+      contents: read
+      actions: read
       # Required for writing security events to upload SARIF file to security tab
       security-events: write
     if: ${{ github.event_name == 'push' || github.event_name == 'schedule' }}
@@ -38,6 +40,8 @@ jobs:
     uses: "google/osv-scanner-action/.github/workflows/osv-scanner-reusable.yml@main"
   scan-pr:
     permissions:
+      contents: read
+      actions: read
       # Required for writing security events to upload SARIF file to security tab
       security-events: write
     if: ${{ github.event_name == 'pull_request' || github.event_name == 'merge_group' }}

@@ -258,7 +258,7 @@ pre {
     }
   }
 
-  @media (min-width: $osv-mobile-breakpoint+1) {
+  @media (min-width: #{$osv-mobile-breakpoint + 1}) {
     .tabs {
       width: 100%;
       display: flex;
@@ -856,7 +856,7 @@ dl.vulnerability-details,
   }
 
   // Tab bar styling.
-  --const-mq-affordances: [screen and (max-width: #{$osv-mobile-breakpoint})] collapse | [screen and (min-width: #{$osv-mobile-breakpoint+1})] tab-bar;
+  --const-mq-affordances: [screen and (max-width: #{$osv-mobile-breakpoint})] collapse | [screen and (min-width: #{$osv-mobile-breakpoint + 1})] tab-bar;
 
   .force-collapse {
     --const-mq-affordances: [screen] collapse;
@@ -1621,3 +1621,175 @@ div.highlight {
     left: 0;
   }
 }
+
+/* Navbar search styles */
+.search-container-nav {
+  position: relative;
+  display: flex;
+  align-items: center;
+  height: 24px; /* Match the GitHub icon height */
+}
+
+.search-toggle-container {
+  position: relative;
+  display: flex;
+  align-items: center;
+  height: 100%;
+}
+
+.search-toggle {
+  background: transparent;
+  border: none;
+  color: white;
+  cursor: pointer;
+  padding: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background-color 0.2s ease;
+  border-radius: 50%;
+
+  &:hover {
+    background-color: rgba(255, 255, 255, 0.1);
+  }
+
+  &:focus {
+    outline: none;
+    background-color: rgba(255, 255, 255, 0.1);
+  }
+
+  &.active {
+    color: $osv-text-color;
+  }
+  
+  .material-icons {
+    font-size: 24px;
+  }
+}
+
+.search-form {
+  position: absolute;
+  right: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  display: flex;
+  align-items: center;
+  width: 0;
+  overflow: hidden;
+  transition: width 0.3s ease, opacity 0.3s ease, visibility 0.3s ease;
+  background: rgba(41, 41, 41, 0.95);
+  border-radius: 24px;
+  z-index: 1000;
+  opacity: 0;
+  visibility: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  box-sizing: border-box;
+
+  &.active {
+    width: 280px;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+    opacity: 1;
+    visibility: visible;
+  }
+
+  .search-input {
+    flex: 1;
+    border: none;
+    padding: 10px 16px;
+    font-size: 14px;
+    font-family: $osv-body-font-family;
+    background: transparent;
+    color: $osv-text-color;
+    width: 100%;
+    outline: none;
+    height: 36px;
+    line-height: 36px;
+    box-sizing: border-box;
+
+    &::placeholder {
+      color: rgba(255, 255, 255, 0.7);
+    }
+    
+    &:focus::placeholder {
+      color: rgba(255, 255, 255, 0.5);
+    }
+  }
+
+  .search-submit {
+    background: transparent;
+    border: none;
+    color: $osv-text-color;
+    cursor: pointer;
+    padding: 8px;
+    margin-right: 2px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    transition: background-color 0.2s ease;
+    height: 36px;
+    width: 36px;
+
+    &:hover {
+      background-color: rgba(255, 255, 255, 0.1);
+    }
+    
+    .material-icons {
+      font-size: 20px;
+    }
+  }
+}
+
+// Search suggestions dropdown styles
+.search-suggestions {
+  position: absolute;
+  top: calc(100% + 5px);
+  left: 0;
+  right: 0;
+  background-color: $osv-background;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  border-radius: 8px;
+  max-height: 300px;
+  overflow-y: auto;
+  z-index: 1001;
+  display: none;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.suggestion-item {
+  padding: 10px 16px;
+  cursor: pointer;
+  font-size: 14px;
+  color: $osv-text-color;
+  transition: background-color 0.2s ease;
+  
+  &:hover {
+    background-color: rgba(255, 255, 255, 0.1);
+  }
+
+  strong {
+    font-weight: bold;
+    color: $osv-accent-color;
+  }
+}
+
+@media screen and (max-width: 600px) {
+  .search-form.active {
+    width: 240px;
+  }
+  
+  .search-input {
+    padding: 8px 12px;
+  }
+}
+
+.mobile-search-container {
+  display: none; 
+}
+
+@media (max-width: $osv-mobile-breakpoint) {
+  .social-icons .search-container-nav {
+    display: none; 
+  }
+}
+

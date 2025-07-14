@@ -90,9 +90,10 @@ export class ExpandableSearch {
       }
     };
     
-    searchToggle.removeEventListener('click', toggleHandler);
-    searchToggle.addEventListener('click', toggleHandler);
-    searchToggle.setAttribute('data-search-initialized', 'true');
+    if (!searchToggle.hasAttribute('data-search-initialized')) {
+      searchToggle.addEventListener('click', toggleHandler);
+      searchToggle.setAttribute('data-search-initialized', 'true');
+    }
 
     const submitHandler = (e) => {
       const query = searchInput.value.trim();
@@ -101,9 +102,10 @@ export class ExpandableSearch {
       }
     };
     
-    searchForm.removeEventListener('submit', submitHandler);
-    searchForm.addEventListener('submit', submitHandler);
-    searchForm.setAttribute('data-search-initialized', 'true');
+    if (!searchForm.hasAttribute('data-search-initialized')) {
+      searchForm.addEventListener('submit', submitHandler);
+      searchForm.setAttribute('data-search-initialized', 'true');
+    }
   }
 
   openSearch(container) {

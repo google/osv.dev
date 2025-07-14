@@ -54,9 +54,6 @@ let searchInstance = null;
 
 function initializeSearch() {
   // Clean up previous instance if it exists
-  if (searchInstance) {
-    // Previous instance will be cleaned up by the new instance
-  }
   searchInstance = new ExpandableSearch();
 }
 

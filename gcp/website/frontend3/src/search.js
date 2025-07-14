@@ -1,3 +1,5 @@
+import { submitForm } from './index.js';
+
 export class ExpandableSearch {
   constructor() {
     this.containers = [];
@@ -128,5 +130,195 @@ export class ExpandableSearch {
     container.toggle.setAttribute('aria-expanded', 'false');
     
     if (container.input) container.input.blur();
+  }
+}
+
+// ============= Search Suggestions Manager =============
+
+export class SearchSuggestionsManager {
+  constructor(inputElement) {
+    this.input = inputElement;
+    this.suggestionsElement = null;
+    this.selectedIndex = -1;
+    this.currentSuggestions = [];
+    this.debounceTimer = null;
+    this.isDestroyed = false;
+    
+    this.cleanupOrphanedElements();
+    
+    this.init();
+  }
+
+  init() {
+    this.createSuggestionsElement();
+    this.setupEventListeners();
+  }
+
+  cleanupOrphanedElements() {
+    const orphanedElements = document.querySelectorAll('.search-suggestions');
+    orphanedElements.forEach(element => {
+      if (!element.dataset.managerId) {
+        element.remove();
+      }
+    });
+  }
+
+  createSuggestionsElement() {
+    if (this.suggestionsElement) {
+      return;
+    }
+    
+    this.suggestionsElement = document.createElement('div');
+    this.suggestionsElement.classList.add('search-suggestions');
+    this.suggestionsElement.style.display = 'none';
+    
+    // Add a unique identifier to track this element
+    this.managerId = `suggestions-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+    this.suggestionsElement.dataset.managerId = this.managerId;
+    
+    // Ensure document.body exists before appending
+    if (document.body) {
+      document.body.appendChild(this.suggestionsElement);
+    } else {
+      const checkBody = () => {
+        if (document.body && !this.isDestroyed) {
+          document.body.appendChild(this.suggestionsElement);
+        } else if (!this.isDestroyed) {
+          setTimeout(checkBody, 10);
+        }
+      };
+      checkBody();
+    }
+  }
+
+  setupEventListeners() {
+    if (!this.input) return;
+    
+    this.input.addEventListener('input', () => {
+      if (this.isDestroyed) return;
+      this.selectedIndex = -1;
+      clearTimeout(this.debounceTimer);
+      this.debounceTimer = setTimeout(() => this.handleInput(), 300);
+    });
+
+    this.input.addEventListener('keydown', (e) => this.handleKeydown(e));
+    this.input.addEventListener('blur', () => setTimeout(() => this.hide(), 200));
+  }
+
+  async handleInput() {
+    if (this.isDestroyed) return;
+    
+    const query = this.input.value.trim();
+    
+    if (query.length < 2) {
+      this.hide();
+      return;
+    }
+    
+    try {
+      const response = await fetch(`/api/search_suggestions?q=${encodeURIComponent(query)}`);
+      if (this.isDestroyed) return; 
+      
+      const data = await response.json();
+      this.currentSuggestions = data.suggestions || [];
+      this.show();
+    } catch (error) {
+      console.error('Error fetching suggestions:', error);
+      this.hide();
+    }
+  }
+
+  handleKeydown(e) {
+    if (this.isDestroyed || !this.suggestionsElement || this.suggestionsElement.style.display === 'none') return;
+
+    switch (e.key) {
+      case 'ArrowDown':
+        e.preventDefault();
+        this.selectedIndex = Math.min(this.selectedIndex + 1, this.currentSuggestions.length - 1);
+        this.updateSelection();
+        break;
+      case 'ArrowUp':
+        e.preventDefault();
+        this.selectedIndex = Math.max(this.selectedIndex - 1, -1);
+        this.updateSelection();
+        break;
+      case 'Enter':
+        if (this.selectedIndex >= 0) {
+          e.preventDefault();
+          this.selectSuggestion(this.currentSuggestions[this.selectedIndex]);
+        }
+        break;
+      case 'Escape':
+        this.hide();
+        break;
+    }
+  }
+
+  show() {
+    if (!this.currentSuggestions.length) {
+      this.hide();
+      return;
+    }
+
+    this.updatePosition();
+    this.render();
+    this.suggestionsElement.style.display = 'block';
+  }
+
+  hide() {
+    if (this.suggestionsElement) {
+      this.suggestionsElement.style.display = 'none';
+    }
+    this.selectedIndex = -1;
+  }
+
+  updatePosition() {
+    const rect = this.input.getBoundingClientRect();
+    this.suggestionsElement.style.left = `${rect.left}px`;
+    this.suggestionsElement.style.top = `${rect.bottom}px`;
+    this.suggestionsElement.style.width = `${rect.width}px`;
+  }
+
+  render() {
+    this.suggestionsElement.innerHTML = '';
+    
+    this.currentSuggestions.forEach((suggestion, index) => {
+      const item = document.createElement('div');
+      item.classList.add('search-suggestions__item');
+      item.textContent = suggestion;
+      
+      item.addEventListener('click', () => this.selectSuggestion(suggestion));
+      
+      this.suggestionsElement.appendChild(item);
+    });
+    
+    this.updateSelection();
+  }
+
+  updateSelection() {
+    const items = this.suggestionsElement.querySelectorAll('.search-suggestions__item');
+    items.forEach((item, index) => {
+      item.classList.toggle('search-suggestions__item--selected', index === this.selectedIndex);
+    });
+  }
+
+  selectSuggestion(suggestion) {
+    this.input.value = suggestion;
+    this.hide();
+    submitForm(this.input.closest('form'));
+  }
+
+  destroy() {
+    this.isDestroyed = true;
+    clearTimeout(this.debounceTimer);
+    
+    if (this.suggestionsElement) {
+      this.suggestionsElement.remove();
+      this.suggestionsElement = null;
+    }
+    
+    // Clear references
+    this.input = null;
+    this.currentSuggestions = [];
   }
 }

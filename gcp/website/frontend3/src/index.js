@@ -7,12 +7,12 @@ import '@hotwired/turbo';
 import 'spicy-sections/src/SpicySections';
 import { MdFilledTextField } from '@material/web/textfield/filled-text-field.js';
 import { LitElement, html } from 'lit';
-import { ExpandableSearch } from './search.js';
+import { ExpandableSearch, SearchSuggestionsManager } from './search.js';
 
 // Submits a form in a way such that Turbo can intercept the event.
 // Triggering submit on the form directly would still give a correct resulting
 // page, but we want to let Turbo speed up renders as intended.
-const submitForm = function (form) {
+export const submitForm = function (form) {
   if (!form) {
     return;
   }
@@ -53,188 +53,91 @@ customElements.define('md-textfield-with-enter', MdTextFieldWithEnter);
 let searchInstance = null;
 
 function initializeSearch() {
-  // Clean up previous instance if it exists
   searchInstance = new ExpandableSearch();
 }
 
-if (document.readyState === 'complete' || document.readyState === 'interactive') {
-  setTimeout(initializeSearch, 0);
+// Ensure initialization happens after all dependencies are loaded
+function ensureInitialization() {
+  if (typeof customElements !== 'undefined' && customElements.get('md-filled-text-field')) {
+    initializeSearch();
+  } else {
+    // wait a bit longer for components to load
+    setTimeout(ensureInitialization, 50);
+  }
 }
 
-document.addEventListener('DOMContentLoaded', () => {
-  initializeSearch();
-});
+if (document.readyState === 'complete') {
+  // Page is fully loaded, initialize immediately
+  setTimeout(ensureInitialization, 0);
+} else if (document.readyState === 'interactive') {
+  // DOM is ready but resources might still be loading
+  setTimeout(ensureInitialization, 100);
+} else {
+  // DOM is not ready yet
+  document.addEventListener('DOMContentLoaded', () => {
+    setTimeout(ensureInitialization, 0);
+  });
+}
 
+// Handle Turbo navigation
 document.addEventListener('turbo:load', () => {
-  initializeSearch();
+  setTimeout(ensureInitialization, 0);
 });
 
+// Fallback
 window.addEventListener('load', () => {
   if (!searchInstance) {
-    initializeSearch();
+    setTimeout(ensureInitialization, 0);
   }
 });
-
-// ============= SEARCH SUGGESTIONS =============
-
-// search suggestions manager for vulnerability search
-class SearchSuggestionsManager {
-  constructor(inputElement) {
-    this.input = inputElement;
-    this.suggestionsElement = null;
-    this.selectedIndex = -1;
-    this.currentSuggestions = [];
-    this.debounceTimer = null;
-    
-    this.init();
-  }
-
-  init() {
-    this.createSuggestionsElement();
-    this.setupEventListeners();
-  }
-
-  createSuggestionsElement() {
-    this.suggestionsElement = document.createElement('div');
-    this.suggestionsElement.classList.add('search-suggestions');
-    this.suggestionsElement.style.display = 'none';
-    document.body.appendChild(this.suggestionsElement);
-  }
-
-  setupEventListeners() {
-    this.input.addEventListener('input', () => {
-      this.selectedIndex = -1;
-      clearTimeout(this.debounceTimer);
-      this.debounceTimer = setTimeout(() => this.handleInput(), 300);
-    });
-
-    this.input.addEventListener('keydown', (e) => this.handleKeydown(e));
-    this.input.addEventListener('blur', () => setTimeout(() => this.hide(), 200));
-  }
-
-  async handleInput() {
-    const query = this.input.value.trim();
-    
-    if (query.length < 2) {
-      this.hide();
-      return;
-    }
-    
-    try {
-      const response = await fetch(`/api/search_suggestions?q=${encodeURIComponent(query)}`);
-      const data = await response.json();
-      this.currentSuggestions = data.suggestions || [];
-      this.show();
-    } catch (error) {
-      console.error('Error fetching suggestions:', error);
-      this.hide();
-    }
-  }
-
-  handleKeydown(e) {
-    if (!this.suggestionsElement || this.suggestionsElement.style.display === 'none') return;
-
-    switch (e.key) {
-      case 'ArrowDown':
-        e.preventDefault();
-        this.selectedIndex = Math.min(this.selectedIndex + 1, this.currentSuggestions.length - 1);
-        this.updateSelection();
-        break;
-      case 'ArrowUp':
-        e.preventDefault();
-        this.selectedIndex = Math.max(this.selectedIndex - 1, -1);
-        this.updateSelection();
-        break;
-      case 'Enter':
-        if (this.selectedIndex >= 0) {
-          e.preventDefault();
-          this.selectSuggestion(this.currentSuggestions[this.selectedIndex]);
-        }
-        break;
-      case 'Escape':
-        this.hide();
-        break;
-    }
-  }
-
-  show() {
-    if (!this.currentSuggestions.length) {
-      this.hide();
-      return;
-    }
-
-    this.updatePosition();
-    this.render();
-    this.suggestionsElement.style.display = 'block';
-  }
-
-  hide() {
-    if (this.suggestionsElement) {
-      this.suggestionsElement.style.display = 'none';
-    }
-    this.selectedIndex = -1;
-  }
-
-  updatePosition() {
-    const rect = this.input.getBoundingClientRect();
-    this.suggestionsElement.style.left = `${rect.left}px`;
-    this.suggestionsElement.style.top = `${rect.bottom}px`;
-    this.suggestionsElement.style.width = `${rect.width}px`;
-  }
-
-  render() {
-    this.suggestionsElement.innerHTML = '';
-    
-    this.currentSuggestions.forEach((suggestion, index) => {
-      const item = document.createElement('div');
-      item.classList.add('search-suggestions__item');
-      item.textContent = suggestion;
-      
-      item.addEventListener('click', () => this.selectSuggestion(suggestion));
-      
-      this.suggestionsElement.appendChild(item);
-    });
-    
-    this.updateSelection();
-  }
-
-  updateSelection() {
-    const items = this.suggestionsElement.querySelectorAll('.search-suggestions__item');
-    items.forEach((item, index) => {
-      item.classList.toggle('search-suggestions__item--selected', index === this.selectedIndex);
-    });
-  }
-
-  selectSuggestion(suggestion) {
-    this.input.value = suggestion;
-    this.hide();
-    submitForm(this.input.closest('form'));
-  }
-
-  destroy() {
-    clearTimeout(this.debounceTimer);
-    if (this.suggestionsElement) {
-      this.suggestionsElement.remove();
-    }
-  }
-}
 
 // Enhanced text field with search suggestions (extends existing MdTextFieldWithEnter)
 export class MdTextFieldWithSuggestions extends MdTextFieldWithEnter {
   constructor() {
     super();
     this.suggestionsManager = null;
+    this.initializationRetries = 0;
+    this.maxRetries = 10;
   }
 
   connectedCallback() {
     super.connectedCallback();
-    this.suggestionsManager = new SearchSuggestionsManager(this);
+    // Delay initialization to ensure the element is fully rendered
+    this.initializeSuggestions();
+  }
+
+  initializeSuggestions() {
+    // Don't initialize if already destroyed/disconnected
+    if (!this.isConnected) {
+      return;
+    }
+    
+    // Wait for the element to be fully rendered
+    if (this.offsetHeight === 0 && this.initializationRetries < this.maxRetries) {
+      this.initializationRetries++;
+      setTimeout(() => this.initializeSuggestions(), 50);
+      return;
+    }
+    
+    try {
+      if (!this.suggestionsManager && this.isConnected) {
+        this.suggestionsManager = new SearchSuggestionsManager(this);
+      }
+    } catch (error) {
+      console.warn('Failed to initialize SearchSuggestionsManager:', error);
+      // Retry initialization after a delay
+      if (this.initializationRetries < this.maxRetries && this.isConnected) {
+        this.initializationRetries++;
+        setTimeout(() => this.initializeSuggestions(), 100);
+      }
+    }
   }
 
   disconnectedCallback() {
     super.disconnectedCallback();
     if (this.suggestionsManager) {
       this.suggestionsManager.destroy();
+      this.suggestionsManager = null;
     }
   }
 }

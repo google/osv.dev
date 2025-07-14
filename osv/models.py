@@ -44,7 +44,7 @@ def _check_valid_severity(prop, value):
   """Check valid severity."""
   del prop
 
-  if value not in ('LOW', 'MEDIUM', 'HIGH', 'CRITICAL'):
+  if value not in ('NEGLIGIBLE', 'LOW', 'MEDIUM', 'HIGH', 'CRITICAL'):
     raise ValueError('Invalid severity: ' + value)
 
 

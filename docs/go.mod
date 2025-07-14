@@ -1,6 +1,6 @@
 module osv.dev/tools
 
-go 1.23.6
+go 1.24.4
 
 require (
 	github.com/grpc-ecosystem/grpc-gateway/v2 v2.27.1

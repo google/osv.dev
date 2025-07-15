@@ -153,7 +153,7 @@ class IntegrationTests(unittest.TestCase,
             'commit': '60e572dbf7b4ded66b488f54773f66aaf6184321',
         }),
         timeout=_TIMEOUT)
-    cve_2024_2002 = self._get('CVE_2024_2002')
+    cve_2024_2002 = self._get('CVE-2024-2002')
     osv_2023_890 = self._get('OSV-2023-890')
 
     self.assert_results_equal({'vulns': [cve_2024_2002, osv_2023_890]},

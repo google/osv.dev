@@ -3,6 +3,7 @@ import { submitForm } from './index.js';
 export class ExpandableSearch {
   constructor() {
     this.containers = [];
+    this.suggestionsManagers = new Map(); // Track suggestions managers per container
     
     this.cleanupExistingInstances();
     this.setupGlobalListeners();
@@ -17,6 +18,13 @@ export class ExpandableSearch {
       }
       if (window.OSVSearchInstance.documentKeydownHandler) {
         document.removeEventListener('keydown', window.OSVSearchInstance.documentKeydownHandler);
+      }
+      // Cleanup existing suggestions managers (to prevent old suggestion dropdowns from persisting)
+      if (window.OSVSearchInstance.suggestionsManagers) {
+        window.OSVSearchInstance.suggestionsManagers.forEach(manager => {
+          manager.destroy();
+        });
+        window.OSVSearchInstance.suggestionsManagers.clear();
       }
     }
     
@@ -118,7 +126,14 @@ export class ExpandableSearch {
     container.toggle.setAttribute('aria-expanded', 'true');
     
     setTimeout(() => {
-      if (container.input) container.input.focus();
+      if (container.input) {
+        container.input.focus();
+        // Create suggestions only when search is loaded
+        if (!this.suggestionsManagers.has(container.input)) {
+          const suggestionsManager = new SearchSuggestionsManager(container.input);
+          this.suggestionsManagers.set(container.input, suggestionsManager);
+        }
+      }
     }, 100);
   }
 
@@ -129,7 +144,14 @@ export class ExpandableSearch {
     container.toggle.classList.remove('active');
     container.toggle.setAttribute('aria-expanded', 'false');
     
-    if (container.input) container.input.blur();
+    if (container.input) {
+      container.input.blur();
+      // Hide suggestions when closing search
+      const suggestionsManager = this.suggestionsManagers.get(container.input);
+      if (suggestionsManager) {
+        suggestionsManager.hide();
+      }
+    }
   }
 }
 
@@ -274,9 +296,24 @@ export class SearchSuggestionsManager {
 
   updatePosition() {
     const rect = this.input.getBoundingClientRect();
-    this.suggestionsElement.style.left = `${rect.left}px`;
-    this.suggestionsElement.style.top = `${rect.bottom}px`;
-    this.suggestionsElement.style.width = `${rect.width}px`;
+    
+    // Check if this is a navbar search input
+    const isNavbarSearch = this.input.closest('.search-container-nav');
+    
+    if (isNavbarSearch) {
+      // For navbar search, position relative to the search form container
+      const searchForm = this.input.closest('.search-form');
+      const formRect = searchForm.getBoundingClientRect();
+      
+      this.suggestionsElement.style.left = `${formRect.left}px`;
+      this.suggestionsElement.style.top = `${formRect.bottom}px`;
+      this.suggestionsElement.style.width = `${formRect.width}px`;
+    } else {
+      // For regular search inputs, use the original positioning
+      this.suggestionsElement.style.left = `${rect.left}px`;
+      this.suggestionsElement.style.top = `${rect.bottom}px`;
+      this.suggestionsElement.style.width = `${rect.width}px`;
+    }
   }
 
   render() {

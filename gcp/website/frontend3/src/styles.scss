@@ -1628,6 +1628,10 @@ div.highlight {
   display: flex;
   align-items: center;
   height: 24px; /* Match the GitHub icon height */
+  
+  @media (max-width: $osv-mobile-breakpoint) {
+    display: none;
+  }
 }
 
 .search-toggle-container {
@@ -1646,7 +1650,7 @@ div.highlight {
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: background-color 0.2s ease;
+  transition: background-color 0.2s ease, opacity 0.3s ease, visibility 0.3s ease;
   border-radius: 50%;
 
   &:hover {
@@ -1660,6 +1664,8 @@ div.highlight {
 
   &.active {
     color: $osv-text-color;
+    opacity: 0;
+    visibility: hidden;
   }
   
   .material-icons {
@@ -1799,4 +1805,25 @@ div.highlight {
     color: $osv-accent-color;
     font-weight: 600;
   }
+}
+
+/* Navbar Search Suggestions - Specific styling for the expandable navbar search */
+.search-container-nav .search-suggestions {
+  z-index: 10000;
+  margin-top: 0;
+  
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  border-top: none;
+  border-radius: 0 0 24px 24px;
+  background: rgba(41, 41, 41, 0.95);
+  
+  width: 280px;
+  min-width: 280px;
+  max-width: 280px;
+  
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+}
+
+.search-form.active + .search-toggle {
+  z-index: 9998;
 }

@@ -296,20 +296,25 @@ export class SearchSuggestionsManager {
 
   updatePosition() {
     const rect = this.input.getBoundingClientRect();
-    
-    // Check if this is a navbar search input
+    const queryContainer = this.input.closest('.query-container');
     const isNavbarSearch = this.input.closest('.search-container-nav');
-    
+
     if (isNavbarSearch) {
-      // For navbar search, position relative to the search form container
+      // Navbar search
       const searchForm = this.input.closest('.search-form');
       const formRect = searchForm.getBoundingClientRect();
-      
+
       this.suggestionsElement.style.left = `${formRect.left}px`;
       this.suggestionsElement.style.top = `${formRect.bottom}px`;
       this.suggestionsElement.style.width = `${formRect.width}px`;
+    } else if (queryContainer) {
+      // Main search
+      const containerRect = queryContainer.getBoundingClientRect();
+      this.suggestionsElement.style.left = `${containerRect.left}px`;
+      this.suggestionsElement.style.top = `${containerRect.bottom}px`;
+      this.suggestionsElement.style.width = `${containerRect.width}px`;
     } else {
-      // For regular search inputs, use the original positioning
+      // Fallback
       this.suggestionsElement.style.left = `${rect.left}px`;
       this.suggestionsElement.style.top = `${rect.bottom}px`;
       this.suggestionsElement.style.width = `${rect.width}px`;

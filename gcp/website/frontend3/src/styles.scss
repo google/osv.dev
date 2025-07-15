@@ -1749,15 +1749,17 @@ div.highlight {
 /* Search Suggestions Component */
 .search-suggestions {
   position: absolute;
-  background: $osv-background;
-  border: 2px solid $osv-text-color;
-  border-top: none;
-  border-radius: 0 0 8px 8px;
+  background: #3c4043;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 8px;
   z-index: 9999;
   max-height: 300px;
   overflow-y: auto;
   font-family: $osv-body-font-family;
   font-size: 14px;
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+  margin-top: 6px;
+  box-sizing: border-box;
 }
 
 .search-suggestions__loading {
@@ -1777,18 +1779,26 @@ div.highlight {
   display: flex;
   align-items: center;
   gap: 12px;
-  padding: 12px 20px;
+  padding: 10px 16px;
   cursor: pointer;
   color: $osv-text-color;
-  border-bottom: 1px solid $osv-grey-600;
+  border-bottom: 1px solid #4a4e51;
+  transition: background-color 0.15s ease;
   
+  &:first-child {
+    border-top-left-radius: 8px;
+    border-top-right-radius: 8px;
+  }
+
   &:last-child {
     border-bottom: none;
+    border-bottom-left-radius: 8px;
+    border-bottom-right-radius: 8px;
   }
   
   &:hover,
   &--selected {
-    background: rgba($osv-accent-color, 0.1);
+    background: rgba($osv-accent-color, 0.2);
   }
 }
 
@@ -1809,21 +1819,37 @@ div.highlight {
 
 /* Navbar Search Suggestions - Specific styling for the expandable navbar search */
 .search-container-nav .search-suggestions {
-  z-index: 10000;
-  margin-top: 0;
-  
-  border: 1px solid rgba(255, 255, 255, 0.3);
-  border-top: none;
-  border-radius: 0 0 24px 24px;
-  background: rgba(41, 41, 41, 0.95);
+  margin-top: 6px;
+  background: #2d2d2d; 
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 18px; 
+  backdrop-filter: blur(5px);
   
   width: 280px;
   min-width: 280px;
   max-width: 280px;
   
-  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+  box-shadow: 0 5px 20px rgba(0, 0, 0, 0.4);
 }
 
 .search-form.active + .search-toggle {
   z-index: 9998;
+}
+
+.search-suggestions::-webkit-scrollbar {
+  width: 6px;
+}
+
+.search-suggestions::-webkit-scrollbar-track {
+  background: transparent;
+  margin: 4px 0;
+}
+
+.search-suggestions::-webkit-scrollbar-thumb {
+  background-color: $osv-grey-600;
+  border-radius: 3px;
+}
+
+.search-suggestions::-webkit-scrollbar-thumb:hover {
+  background-color: $osv-grey-800;
 }

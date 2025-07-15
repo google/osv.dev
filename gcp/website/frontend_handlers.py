@@ -1141,20 +1141,6 @@ def compute_downstream_hierarchy(
   return ComputedHierarchy(root_nodes=root_leaves, graph=downstream_map)
 
 
-def _add_package_suggestion(suggestions, query, affected, max_suggestions):
-  """Add package name suggestions."""
-  if not (hasattr(affected, 'package') and affected.package and
-          hasattr(affected.package, 'name')):
-    return False
-
-  pkg_name = str(affected.package.name)
-  if pkg_name and pkg_name.lower().startswith(
-      query) and pkg_name not in suggestions:
-    suggestions.append(pkg_name)
-
-  return len(suggestions) >= max_suggestions
-
-
 @blueprint.route('/api/search_suggestions', methods=['GET'])
 def search_suggestions():
   """Return search suggestions based on a query string."""
@@ -1175,7 +1161,7 @@ def search_suggestions():
   # Build suggestion list
   suggestions = sorted(
       list(
-          set(tag for bug in bugs for tag in bug.search_tags
+          set(tag.upper() for bug in bugs for tag in bug.search_tags
               if tag.lower().startswith(query))))
 
   return json.dumps({'suggestions': suggestions[:max_suggestions]})

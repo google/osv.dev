@@ -1,6 +1,6 @@
 module github.com/google/osv.dev/gcp/indexer
 
-go 1.23.6
+go 1.24.4
 
 require (
 	cloud.google.com/go/datastore v1.20.0

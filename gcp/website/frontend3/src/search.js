@@ -1,9 +1,11 @@
 import { submitForm } from './index.js';
 
+const MIN_QUERY_LENGTH = 3;
+
 export class ExpandableSearch {
   constructor() {
-    this.containers = [];
-    this.suggestionsManagers = new Map(); // Track suggestions managers per container
+    this.container = null;
+    this.suggestionsManager = null;
     
     this.cleanupExistingInstances();
     this.setupGlobalListeners();
@@ -19,12 +21,9 @@ export class ExpandableSearch {
       if (window.OSVSearchInstance.documentKeydownHandler) {
         document.removeEventListener('keydown', window.OSVSearchInstance.documentKeydownHandler);
       }
-      // Cleanup existing suggestions managers (to prevent old suggestion dropdowns from persisting)
-      if (window.OSVSearchInstance.suggestionsManagers) {
-        window.OSVSearchInstance.suggestionsManagers.forEach(manager => {
-          manager.destroy();
-        });
-        window.OSVSearchInstance.suggestionsManagers.clear();
+      // Cleanup existing suggestions manager
+      if (window.OSVSearchInstance.suggestionsManager) {
+        window.OSVSearchInstance.suggestionsManager.destroy();
       }
     }
     
@@ -39,35 +38,26 @@ export class ExpandableSearch {
     document.addEventListener('click', this.documentClickHandler);
     document.addEventListener('keydown', this.documentKeydownHandler);
   }
-  
-  handleDocumentClick(e) {
-    this.containers.forEach(container => {
-      if (container && container.element && 
-          !container.element.contains(e.target) && 
-          container.form.classList.contains('active')) {
-        this.closeSearch(container);
-      }
-    });
+   handleDocumentClick(e) {
+    if (this.container && this.container.element && 
+        !this.container.element.contains(e.target) && 
+        this.container.form.classList.contains('active')) {
+      this.closeSearch();
+    }
   }
-  
+
   handleDocumentKeydown(e) {
     // Close any open search on escape key
     if (e.key === 'Escape') {
-      this.containers.forEach(container => {
-        if (container && container.form && 
-            container.form.classList.contains('active')) {
-          this.closeSearch(container);
-        }
-      });
+      if (this.container && this.container.form && 
+          this.container.form.classList.contains('active')) {
+        this.closeSearch();
+      }
     }
   }
 
   initializeSearch() {
-    this.initializeSearchContainer('.search-container-nav');
-  }
-  
-  initializeSearchContainer(containerSelector) {
-    const searchContainer = document.querySelector(containerSelector);
+    const searchContainer = document.querySelector('.search-container-nav');
     if (!searchContainer) {
       return;
     }
@@ -80,23 +70,21 @@ export class ExpandableSearch {
       return;
     }
 
-    const containerInfo = {
+    this.container = {
       element: searchContainer,
       form: searchForm,
       toggle: searchToggle,
       input: searchInput
     };
-    
-    this.containers.push(containerInfo);
 
     const toggleHandler = (e) => {
       e.preventDefault();
       const isActive = searchForm.classList.contains('active');
       
       if (isActive) {
-        this.closeSearch(containerInfo);
+        this.closeSearch();
       } else {
-        this.openSearch(containerInfo);
+        this.openSearch();
       }
     };
     
@@ -118,38 +106,36 @@ export class ExpandableSearch {
     }
   }
 
-  openSearch(container) {
-    if (!container || !container.form) return;
+  openSearch() {
+    if (!this.container || !this.container.form) return;
     
-    container.form.classList.add('active');
-    container.toggle.classList.add('active');
-    container.toggle.setAttribute('aria-expanded', 'true');
+    this.container.form.classList.add('active');
+    this.container.toggle.classList.add('active');
+    this.container.toggle.setAttribute('aria-expanded', 'true');
     
     setTimeout(() => {
-      if (container.input) {
-        container.input.focus();
-        // Create suggestions only when search is loaded
-        if (!this.suggestionsManagers.has(container.input)) {
-          const suggestionsManager = new SearchSuggestionsManager(container.input);
-          this.suggestionsManagers.set(container.input, suggestionsManager);
+      if (this.container.input) {
+        this.container.input.focus();
+        // Create suggestions only when search is opened
+        if (!this.suggestionsManager) {
+          this.suggestionsManager = new SearchSuggestionsManager(this.container.input);
         }
       }
     }, 100);
   }
 
-  closeSearch(container) {
-    if (!container || !container.form) return;
+  closeSearch() {
+    if (!this.container || !this.container.form) return;
     
-    container.form.classList.remove('active');
-    container.toggle.classList.remove('active');
-    container.toggle.setAttribute('aria-expanded', 'false');
+    this.container.form.classList.remove('active');
+    this.container.toggle.classList.remove('active');
+    this.container.toggle.setAttribute('aria-expanded', 'false');
     
-    if (container.input) {
-      container.input.blur();
+    if (this.container.input) {
+      this.container.input.blur();
       // Hide suggestions when closing search
-      const suggestionsManager = this.suggestionsManagers.get(container.input);
-      if (suggestionsManager) {
-        suggestionsManager.hide();
+      if (this.suggestionsManager) {
+        this.suggestionsManager.hide();
       }
     }
   }
@@ -166,8 +152,6 @@ export class SearchSuggestionsManager {
     this.debounceTimer = null;
     this.isDestroyed = false;
     
-    this.cleanupOrphanedElements();
-    
     this.init();
   }
 
@@ -176,25 +160,15 @@ export class SearchSuggestionsManager {
     this.setupEventListeners();
   }
 
-  cleanupOrphanedElements() {
-    const orphanedElements = document.querySelectorAll('.search-suggestions');
-    orphanedElements.forEach(element => {
-      if (!element.dataset.managerId) {
-        element.remove();
-      }
-    });
-  }
-
   createSuggestionsElement() {
     if (this.suggestionsElement) {
       return;
     }
     
     this.suggestionsElement = document.createElement('div');
-    this.suggestionsElement.classList.add('search-suggestions');
-    this.suggestionsElement.style.display = 'none';
+    this.suggestionsElement.classList.add('search-suggestions', 'search-suggestions--hidden');
     
-    // Add a unique identifier to track this element
+    // Add a unique identifier to track this element for cleanup (if a suggestionsElement is orphaned)
     this.managerId = `suggestions-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
     this.suggestionsElement.dataset.managerId = this.managerId;
     
@@ -224,7 +198,7 @@ export class SearchSuggestionsManager {
     });
 
     this.input.addEventListener('keydown', (e) => this.handleKeydown(e));
-    this.input.addEventListener('blur', () => setTimeout(() => this.hide(), 200));
+    this.input.addEventListener('blur', () => setTimeout(() => this.hide(), 200)); // Delay to allow click events on suggestions
   }
 
   async handleInput() {
@@ -232,7 +206,7 @@ export class SearchSuggestionsManager {
     
     const query = this.input.value.trim();
     
-    if (query.length < 2) {
+    if (query.length < MIN_QUERY_LENGTH) {
       this.hide();
       return;
     }
@@ -251,7 +225,7 @@ export class SearchSuggestionsManager {
   }
 
   handleKeydown(e) {
-    if (this.isDestroyed || !this.suggestionsElement || this.suggestionsElement.style.display === 'none') return;
+    if (this.isDestroyed || !this.suggestionsElement || this.suggestionsElement.classList.contains('search-suggestions--hidden')) return;
 
     switch (e.key) {
       case 'ArrowDown':
@@ -284,37 +258,31 @@ export class SearchSuggestionsManager {
 
     this.updatePosition();
     this.render();
-    this.suggestionsElement.style.display = 'block';
+    this.suggestionsElement.classList.remove('search-suggestions--hidden');
   }
 
   hide() {
     if (this.suggestionsElement) {
-      this.suggestionsElement.style.display = 'none';
+      this.suggestionsElement.classList.add('search-suggestions--hidden');
     }
     this.selectedIndex = -1;
   }
 
   updatePosition() {
     const rect = this.input.getBoundingClientRect();
-    const queryContainer = this.input.closest('.query-container');
-    const isNavbarSearch = this.input.closest('.search-container-nav');
+    
+    // Look for the designated suggestions container
+    const suggestionContainer = this.input.closest('.search-suggestions-container');
 
-    if (isNavbarSearch) {
-      // Navbar search
-      const searchForm = this.input.closest('.search-form');
-      const formRect = searchForm.getBoundingClientRect();
-
-      this.suggestionsElement.style.left = `${formRect.left}px`;
-      this.suggestionsElement.style.top = `${formRect.bottom}px`;
-      this.suggestionsElement.style.width = `${formRect.width}px`;
-    } else if (queryContainer) {
-      // Main search
-      const containerRect = queryContainer.getBoundingClientRect();
+    if (suggestionContainer) {
+      // Use the designated suggestions container
+      const containerRect = suggestionContainer.getBoundingClientRect();
       this.suggestionsElement.style.left = `${containerRect.left}px`;
       this.suggestionsElement.style.top = `${containerRect.bottom}px`;
       this.suggestionsElement.style.width = `${containerRect.width}px`;
     } else {
-      // Fallback
+      console.warn('No .search-suggestions-container found. Add this class to the desired parent element to control suggestions positioning.');
+      // Fallback to input element positioning
       this.suggestionsElement.style.left = `${rect.left}px`;
       this.suggestionsElement.style.top = `${rect.bottom}px`;
       this.suggestionsElement.style.width = `${rect.width}px`;

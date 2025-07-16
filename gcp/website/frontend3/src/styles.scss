@@ -1760,6 +1760,10 @@ div.highlight {
   box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
   margin-top: 6px;
   box-sizing: border-box;
+
+  &--hidden {
+    display: none;
+  }
 }
 
 .search-suggestions__loading {

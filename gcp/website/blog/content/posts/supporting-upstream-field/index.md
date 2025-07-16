@@ -1,6 +1,6 @@
 ---
 title: "Supporting the upstream field in OSV"
-date: 2025-07-14T16:00:00Z
+date: 2025-07-23T16:00:00Z
 draft: false
 author: Jess Lowe & Holly Gong
 ---

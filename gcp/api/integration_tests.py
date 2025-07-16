@@ -56,7 +56,6 @@ class IntegrationTests(unittest.TestCase,
           '2025-04-10T03:36:25.951623Z',
       'published':
           '2024-03-18T13:15:07Z',
-      'related': ['UBUNTU-CVE-2024-2002'],
       'references': [
           {
               'type':

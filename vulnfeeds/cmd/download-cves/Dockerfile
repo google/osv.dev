@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-FROM golang:1.24.4-alpine@sha256:68932fa6d4d4059845c8f40ad7e654e626f3ebd3706eef7846f319293ab5cb7a AS GO_BUILD
+FROM golang:1.24.5-alpine@sha256:9c4b616be9d26e4762219223331bab5db98649e4be1f6badeac3f7c00a340e3f AS GO_BUILD
 
 RUN mkdir /src
 WORKDIR /src
@@ -24,7 +24,7 @@ RUN go mod download
 COPY ./ /src/
 RUN go build -o download-cves ./cmd/download-cves/
 
-FROM gcr.io/google.com/cloudsdktool/google-cloud-cli:alpine@sha256:f0f43981a0b69a5d6390a1e9cc47e2355a873e1c1e9d6d1b923cbded92bda671
+FROM gcr.io/google.com/cloudsdktool/google-cloud-cli:alpine@sha256:8ce775825f971fea637196751861bdea40f33d94b5e025214510f51996699343
 RUN apk --no-cache add jq
 
 WORKDIR /usr/local/bin

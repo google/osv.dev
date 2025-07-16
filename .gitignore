@@ -1,6 +1,7 @@
 go.work
 go.work.sum
 *.pyc
+*.iml
 __pycache__/
 .idea/
 *.egg-info

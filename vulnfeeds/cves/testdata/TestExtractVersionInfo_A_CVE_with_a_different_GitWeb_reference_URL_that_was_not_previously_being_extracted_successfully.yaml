@@ -7,13 +7,7 @@ interactions:
         proto_major: 1
         proto_minor: 1
         content_length: 0
-        transfer_encoding: []
-        trailer: {}
         host: git.ffmpeg.org
-        remote_addr: ""
-        request_uri: ""
-        body: ""
-        form: {}
         headers:
             Accept:
                 - text/html
@@ -23,18 +17,15 @@ interactions:
         proto: HTTP/1.1
         proto_major: 1
         proto_minor: 1
-        transfer_encoding: []
-        trailer: {}
         content_length: -1
-        uncompressed: false
         body: ""
         headers:
             Content-Type:
                 - text/html; charset=utf-8
             Date:
-                - Tue, 20 May 2025 05:08:05 GMT
+                - Wed, 02 Jul 2025 01:37:44 GMT
             Expires:
-                - Wed, 21 May 2025 05:08:05 GMT
+                - Thu, 03 Jul 2025 01:37:44 GMT
             Server:
                 - Apache
             Vary:
@@ -44,4 +35,4 @@ interactions:
                 - SAMEORIGIN
         status: 200 OK
         code: 200
-        duration: 1.778421728s
+        duration: 531.201711ms

@@ -19,7 +19,7 @@ The step by step instructions are as follows:
         
 - [ ] Create a PR to [reserve an ID prefix and define a new ecosystem](https://ossf.github.io/osv-schema/#id-modified-fields) ([example](https://github.com/ossf/osv-schema/pull/351)). We review the records you start publishing for OSV Schema [correctness](https://github.com/ossf/osv-schema/tree/main/validation) and [quality](https://google.github.io/osv.dev/data_quality.html) as part of reviewing and merging this PR.
 
-- [ ] Prepare and publish your records via a public Git repository ([example](https://github.com/AlmaLinux/osv-database/tree/master)). If this method isn’t ideal, we also support publishing records through [REST API](/data/new/rest-api) or GCS buckets ([example](https://storage.googleapis.com/android-osv/)).  
+- [ ] Prepare and publish your records via a public Git repository ([example](https://github.com/AlmaLinux/osv-database/tree/master)). If this method isn’t ideal, we also support publishing records through [REST API](./rest-api.md) or GCS buckets ([example](https://storage.googleapis.com/android-osv/)).  
         
 - [ ] To support API querying, if you are contributing a new ecosystem, please create a PR to extend [purl\_helpers.py](https://github.com/google/osv.dev/blob/master/osv/purl_helpers.py) and create a new ecosystem in [\_ecosystems.py](https://github.com/google/osv.dev/blob/master/osv/ecosystems/_ecosystems.py). You can refer to existing examples showing how to implement support for [Semver](https://github.com/google/osv.dev/blob/139de7b69a2ea39e2113309b3a0a47aab920ddcf/osv/ecosystems/_ecosystems.py#L45) and [non-Semver](https://github.com/google/osv.dev/pull/3430) ecosystems.  
         
@@ -104,4 +104,5 @@ Advanced and optional fields
 ```
 
 </details>
+
 Do you have a question, suggestion or feedback? Please [open an issue](https://github.com/google/osv.dev/issues).

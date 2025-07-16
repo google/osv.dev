@@ -51,7 +51,6 @@
                           'test-last-affected',
                           'test-last-affected-01',
                           'url'],
-
     'semver_fixed_indexes': [],
     'severities': [],
     'source': 'source',

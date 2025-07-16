@@ -44,7 +44,7 @@ def _check_valid_severity(prop, value):
   """Check valid severity."""
   del prop
 
-  if value not in ('LOW', 'MEDIUM', 'HIGH', 'CRITICAL'):
+  if value not in ('NEGLIGIBLE', 'LOW', 'MEDIUM', 'HIGH', 'CRITICAL'):
     raise ValueError('Invalid severity: ' + value)
 
 
@@ -656,6 +656,37 @@ class Bug(ndb.Model):
 
     return vulnerability_pb2.Vulnerability(id=self.id(), modified=modified)
 
+  @ndb.tasklet
+  def to_vulnerability_minimal_async(self,
+                                     include_alias=True,
+                                     include_upstream=True):
+    """Convert to Vulnerability proto (minimal) asynchronously."""
+    modified_times = []
+    if self.last_modified:
+      modified_times.append(self.last_modified)
+
+    # Fetch the last_modified dates from the upstream/alias groups.
+    alias_future = get_aliases_async(self.id()) if include_alias else None
+    upstream_future = (
+        get_upstream_async(self.id()) if include_upstream else None)
+
+    if include_alias:
+      alias = yield alias_future
+      if alias and alias.last_modified:
+        modified_times.append(alias.last_modified)
+
+    if include_upstream:
+      upstream = yield upstream_future
+      if upstream and upstream.last_modified:
+        modified_times.append(upstream.last_modified)
+
+    modified = None
+    if modified_times:
+      modified = timestamp_pb2.Timestamp()
+      modified.FromDatetime(max(modified_times))
+
+    return vulnerability_pb2.Vulnerability(id=self.id(), modified=modified)
+
   def to_vulnerability(self,
                        include_source=False,
                        include_alias=True,
@@ -809,17 +840,35 @@ class Bug(ndb.Model):
                              include_alias=False,
                              include_upstream=False):
     """Converts to Vulnerability proto and retrieves aliases asynchronously."""
+    # Convert the vulnerability without any subqueries first.
     vulnerability: vulnerability_pb2.Vulnerability = self.to_vulnerability(
-        include_source=include_source,
-        include_alias=False,
-        include_upstream=False)
+        include_source=False, include_alias=False, include_upstream=False)
 
-    related_bug_ids = yield get_related_async(vulnerability.id)
-    vulnerability.related[:] = sorted(
-        list(set(related_bug_ids + list(vulnerability.related))))
+    # Asynchronously make all necessary subqueries.
+    if not self.source:
+      include_source = False
+    source_future = (
+        SourceRepository.get_by_id_async(self.source)
+        if include_source else None)
+    related_future = (
+        get_related_async(vulnerability.id) if include_alias else None)
+    alias_future = (
+        get_aliases_async(vulnerability.id) if include_alias else None)
+    upstream_future = (
+        get_upstream_async(vulnerability.id) if include_upstream else None)
+
+    if include_source:
+      source_repo = yield source_future
+      if source_repo and source_repo.link:
+        source_link = source_repo.link + sources.source_path(source_repo, self)
+        for affected in vulnerability.affected:
+          affected.database_specific.update({'source': source_link})
 
     if include_alias:
-      alias_group = yield get_aliases_async(vulnerability.id)
+      related_bug_ids = yield related_future
+      vulnerability.related[:] = sorted(
+          list(set(related_bug_ids + list(vulnerability.related))))
+      alias_group = yield alias_future
       if alias_group:
         alias_ids = sorted(list(set(alias_group.bug_ids) - {vulnerability.id}))
         vulnerability.aliases[:] = alias_ids
@@ -828,7 +877,7 @@ class Bug(ndb.Model):
         vulnerability.modified.FromDatetime(modified_time)
 
     if include_upstream:
-      upstream_group = yield get_upstream_async(vulnerability.id)
+      upstream_group = yield upstream_future
       if upstream_group:
         vulnerability.upstream[:] = upstream_group.upstream_ids
         modified_time = vulnerability.modified.ToDatetime(datetime.UTC)

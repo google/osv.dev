@@ -39,6 +39,9 @@ TEST_DATA_DIR = os.path.join(
     os.path.dirname(os.path.abspath(__file__)), 'testdata')
 
 ndb_client = None
+ds_emulator = None
+context_manager = None
+
 PORT = 8000
 SERVER_ADDRESS = ('localhost', PORT)
 MOCK_ADDRESS_FORMAT = f'http://{SERVER_ADDRESS[0]}:{SERVER_ADDRESS[1]}/'
@@ -1763,14 +1766,58 @@ class UpdateTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
         osv.ImportFinding.get_by_id('OSV-123'),
         'Stale import finding still present after successful record processing')
 
+  def test_ubuntu_severity(self):
+    """Test whether Ubuntu severity is parsed as expected."""
+
+    self.source_repo.ignore_git = False
+    self.source_repo.versions_from_repo = False
+    self.source_repo.detect_cherrypicks = False
+    self.source_repo.db_prefix.append('UBUNTU-CVE')
+    self.source_repo.put()
+
+    self.mock_repo.add_file(
+        'UBUNTU-CVE-2025-38094.json',
+        self._load_test_data(
+            os.path.join(TEST_DATA_DIR, 'UBUNTU-CVE-2025-38094.json')),
+    )
+    self.mock_repo.commit('User', 'user@email')
+    task_runner = worker.TaskRunner(ndb_client, None, self.tmp_dir.name, None,
+                                    None)
+    message = mock.Mock()
+    message.attributes = {
+        'source': 'source',
+        'path': 'UBUNTU-CVE-2025-38094.json',
+        'original_sha256': _sha256('UBUNTU-CVE-2025-38094.json'),
+        'deleted': 'false',
+    }
+    task_runner._source_update(message)
+
+    bug = ndb.Key(osv.Bug, 'UBUNTU-CVE-2025-38094').get()
+    self.expect_dict_equal('ubuntu_severity_type', bug._to_dict())
+
+
+def setUpModule():
+  """Set up the test module."""
+  print("Starting Datastore Emulator for the test suite...")
+  global ds_emulator, ndb_client, context_manager
+  ds_emulator = tests.start_datastore_emulator()
+  ndb_client = ndb.Client()
+
+  # Set the NDB client context for all tests in this module
+  context_manager = ndb_client.context()
+  # __enter__ is needed to activate the context
+  context = context_manager.__enter__()
+  context.set_memcache_policy(False)
+  context.set_cache_policy(False)
+
+
+def tearDownModule():
+  """Tear down the test module."""
+  print("Stopping Datastore Emulator.")
+  # Deactivate the NDB context
+  context_manager.__exit__(None, None, None)
+  tests.stop_emulator()
+
 
 if __name__ == '__main__':
-  ds_emulator = tests.start_datastore_emulator()
-  try:
-    ndb_client = ndb.Client()
-    with ndb_client.context() as context:
-      context.set_memcache_policy(False)
-      context.set_cache_policy(False)
-      unittest.main()
-  finally:
-    tests.stop_emulator()
+  unittest.main()

@@ -59,6 +59,7 @@ _FIRST_CVSS_CALCULATOR_BASE_URL = 'https://www.first.org/cvss/calculator'
 _GO_VANITY_METADATA = \
   ('<meta name="go-import" '
    'content="osv.dev git https://github.com/google/osv.dev">')
+MAX_SUGGESTIONS = 10
 
 _ndb_client = ndb.Client()
 
@@ -1148,15 +1149,13 @@ def search_suggestions():
   if not query or len(query) > 300:
     return json.dumps({'suggestions': []})
 
-  max_suggestions = 10
-
   db_query = osv.Bug.query(
       osv.Bug.status == osv.BugStatus.PROCESSED,
       osv.Bug.public == True,  # pylint: disable=singleton-comparison
       osv.Bug.search_tags >= query,
       osv.Bug.search_tags < query + '\ufffd')
   db_query = db_query.order(osv.Bug.search_tags)
-  bugs = db_query.fetch(max_suggestions, projection=[osv.Bug.search_tags])
+  bugs = db_query.fetch(MAX_SUGGESTIONS, projection=[osv.Bug.search_tags])
 
   # Build suggestion list
   suggestions = sorted(
@@ -1164,4 +1163,4 @@ def search_suggestions():
           set(tag.upper() for bug in bugs for tag in bug.search_tags
               if tag.lower().startswith(query))))
 
-  return json.dumps({'suggestions': suggestions[:max_suggestions]})
+  return json.dumps({'suggestions': suggestions[:MAX_SUGGESTIONS]})

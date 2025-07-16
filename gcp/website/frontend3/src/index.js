@@ -58,7 +58,12 @@ function initializeSearch() {
 
 // Ensure initialization happens after all dependencies are loaded
 function ensureInitialization() {
-  if (typeof customElements !== 'undefined' && customElements.get('md-filled-text-field')) {
+  if (!customElements) {
+    console.warn('Browser does not support customElements. Initialization aborted.');
+    return;
+  }
+
+  if (customElements.get('md-filled-text-field')) {
     initializeSearch();
   } else {
     // wait a bit longer for components to load
@@ -96,8 +101,6 @@ export class MdTextFieldWithSuggestions extends MdTextFieldWithEnter {
   constructor() {
     super();
     this.suggestionsManager = null;
-    this.initializationRetries = 0;
-    this.maxRetries = 10;
   }
 
   connectedCallback() {
@@ -107,29 +110,18 @@ export class MdTextFieldWithSuggestions extends MdTextFieldWithEnter {
   }
 
   initializeSuggestions() {
-    // Don't initialize if already destroyed/disconnected
-    if (!this.isConnected) {
-      return;
-    }
-    
-    // Wait for the element to be fully rendered
-    if (this.offsetHeight === 0 && this.initializationRetries < this.maxRetries) {
-      this.initializationRetries++;
+    // Ensure the element is connected and fully rendered before initializing
+    if (!this.isConnected || this.offsetHeight === 0) {
       setTimeout(() => this.initializeSuggestions(), 50);
       return;
     }
-    
+
     try {
-      if (!this.suggestionsManager && this.isConnected) {
+      if (!this.suggestionsManager) {
         this.suggestionsManager = new SearchSuggestionsManager(this);
       }
     } catch (error) {
       console.warn('Failed to initialize SearchSuggestionsManager:', error);
-      // Retry initialization after a delay
-      if (this.initializationRetries < this.maxRetries && this.isConnected) {
-        this.initializationRetries++;
-        setTimeout(() => this.initializeSuggestions(), 100);
-      }
     }
   }
 

@@ -1746,19 +1746,14 @@ div.highlight {
   }
 }
 
-/* Search Suggestions Component */
+/* --- Base styles for the suggestions dropdown --- */
 .search-suggestions {
   position: absolute;
-  background: #3c4043;
-  border: 1px solid rgba(255, 255, 255, 0.15);
-  border-radius: 8px;
   z-index: 9999;
   max-height: 300px;
   overflow-y: auto;
   font-family: $osv-body-font-family;
   font-size: 14px;
-  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
-  margin-top: 6px;
   box-sizing: border-box;
 
   &--hidden {
@@ -1766,19 +1761,7 @@ div.highlight {
   }
 }
 
-.search-suggestions__loading {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 16px 20px;
-  color: $osv-text-color;
-  
-  md-circular-progress {
-    --md-circular-progress-size: 20px;
-    --md-sys-color-primary: #{$osv-accent-color};
-  }
-}
-
+/* --- Base styles for a single suggestion item --- */
 .search-suggestions__item {
   display: flex;
   align-items: center;
@@ -1786,58 +1769,59 @@ div.highlight {
   padding: 10px 16px;
   cursor: pointer;
   color: $osv-text-color;
-  border-bottom: 1px solid #4a4e51;
   transition: background-color 0.15s ease;
   
-  &:first-child {
-    border-top-left-radius: 8px;
-    border-top-right-radius: 8px;
-  }
-
   &:last-child {
     border-bottom: none;
-    border-bottom-left-radius: 8px;
-    border-bottom-right-radius: 8px;
-  }
-  
-  &:hover,
-  &--selected {
-    background: rgba($osv-accent-color, 0.2);
   }
 }
 
-.search-suggestions__icon {
-  --md-icon-color: #{$osv-grey-600};
-  --md-icon-size: 18px;
-  flex-shrink: 0;
+/* --- Styling for dropdown effect --- */
+.query-container.suggestions-active {
+  border-bottom-left-radius: 0;
+  border-bottom-right-radius: 0;
 }
 
-.search-suggestions__text {
-  flex: 1;
-  
-  strong {
-    color: $osv-accent-color;
-    font-weight: 600;
+.search-form.suggestions-active {
+  border-bottom-left-radius: 0;
+  border-bottom-right-radius: 0;
+}
+
+
+/* --- Styles for the Main List Page Search Bar --- */
+.search-suggestions--list-page {
+  background: $osv-background; 
+  border: 2px solid $osv-text-color; 
+  border-top: none;
+  border-radius: 0 0 8px 8px;
+  margin-top: -2px; 
+
+  .search-suggestions__item {
+    border-bottom: 1px dashed $osv-grey-600;
+
+    &:hover,
+    &--selected {
+      background-color: $osv-grey-800; 
+    }
   }
 }
 
-/* Navbar Search Suggestions - Specific styling for the expandable navbar search */
-.search-container-nav .search-suggestions {
-  margin-top: 6px;
-  background: #2d2d2d; 
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  border-radius: 18px; 
-  backdrop-filter: blur(5px);
-  
+/* --- Styles for the Navbar Search Bar --- */
+.search-suggestions--nav {
+  background: rgba(41, 41, 41, 0.95); 
+  border: 1px solid rgba(255, 255, 255, 0.3); 
+  border-top: none;
+  border-radius: 0 0 24px 24px; 
   width: 280px;
-  min-width: 280px;
-  max-width: 280px;
-  
   box-shadow: 0 5px 20px rgba(0, 0, 0, 0.4);
-}
-
-.search-form.active + .search-toggle {
-  z-index: 9998;
+  margin-top: -1px; 
+  
+  .search-suggestions__item {
+    &:hover,
+    &--selected {
+      background: rgba($osv-accent-color, 0.2);
+    }
+  }
 }
 
 .search-suggestions::-webkit-scrollbar {

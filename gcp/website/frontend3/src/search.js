@@ -168,6 +168,16 @@ export class SearchSuggestionsManager {
     this.suggestionsElement = document.createElement('div');
     this.suggestionsElement.classList.add('search-suggestions', 'search-suggestions--hidden');
     
+    // Add a context-specific class based on the input's parent
+    const container = this.input.closest('.search-suggestions-container');
+    if (container) {
+        if (container.closest('.list-page')) {
+            this.suggestionsElement.classList.add('search-suggestions--list-page');
+        } else if (container.closest('.search-container-nav')) {
+            this.suggestionsElement.classList.add('search-suggestions--nav');
+        }
+    }
+    
     // Add a unique identifier to track this element for cleanup
     this.managerId = `suggestions-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
     this.suggestionsElement.dataset.managerId = this.managerId;
@@ -254,21 +264,26 @@ export class SearchSuggestionsManager {
   }
 
   show() {
+    if (this.isDestroyed) return;
     if (!this.currentSuggestions.length) {
       this.hide();
       return;
     }
-
     this.updatePosition();
     this.render();
     this.suggestionsElement.classList.remove('search-suggestions--hidden');
+    // Add active class to container for styling
+    this.input.closest('.search-suggestions-container')?.classList.add('suggestions-active');
   }
 
   hide() {
+    if (this.isDestroyed) return;
     if (this.suggestionsElement) {
       this.suggestionsElement.classList.add('search-suggestions--hidden');
     }
     this.selectedIndex = -1;
+    // Remove active class from container
+    this.input.closest('.search-suggestions-container')?.classList.remove('suggestions-active');
   }
 
   updatePosition() {

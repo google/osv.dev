@@ -430,6 +430,8 @@ def add_cvss_score(bug):
   severity_type = None
 
   for severity in bug.get('severity', []):
+    if not is_cvss(severity):
+      continue
     type_ = severity.get('type')
     if type_ and (not severity_type or type_ > severity_type):
       severity_type = type_

@@ -168,22 +168,25 @@ export class SearchSuggestionsManager {
     this.suggestionsElement = document.createElement('div');
     this.suggestionsElement.classList.add('search-suggestions', 'search-suggestions--hidden');
     
-    // Add a unique identifier to track this element for cleanup (if a suggestionsElement is orphaned)
+    // Add a unique identifier to track this element for cleanup
     this.managerId = `suggestions-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
     this.suggestionsElement.dataset.managerId = this.managerId;
     
-    // Ensure document.body exists before appending
+    this.appendSuggestionsElement();
+  }
+  
+  /**
+   * Appends the suggestions element to the document body.
+   * If the body is not yet available, it waits and retries.
+   */
+  appendSuggestionsElement() {
+    if (this.isDestroyed) return;
+
     if (document.body) {
       document.body.appendChild(this.suggestionsElement);
     } else {
-      const checkBody = () => {
-        if (document.body && !this.isDestroyed) {
-          document.body.appendChild(this.suggestionsElement);
-        } else if (!this.isDestroyed) {
-          setTimeout(checkBody, 10);
-        }
-      };
-      checkBody();
+      // If body is not ready, try again shortly.
+      setTimeout(() => this.appendSuggestionsElement(), 10);
     }
   }
 

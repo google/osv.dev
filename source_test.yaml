@@ -57,6 +57,21 @@
   editable: False
   strict_validation: True
 
+- name: 'bellsoft'
+  versions_from_repo: False
+  type: 0
+  ignore_patterns: ['^(?!BELL-CVE-).*$']
+  directory_path: 'BELL-CVE'
+  repo_url: 'https://github.com/bell-sw/osv-database.git'
+  detect_cherrypicks: False
+  extension: '.json'
+  db_prefix: ['BELL-']
+  ignore_git: False
+  human_link: 'https://docs.bell-sw.com/security/cves/{{ BUG_ID }}/'
+  link: 'https://github.com/bell-sw/osv-database/blob/master/'
+  editable: False
+  strict_validation: True
+
 - name: 'bitnami'
   versions_from_repo: False
   type: 0

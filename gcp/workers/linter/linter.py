@@ -38,6 +38,7 @@ TEST_DATA = '/linter/test_data'
 GCP_PROJECT = 'oss-vdb-test'
 
 ERROR_CODE_MAPPING = {
+    'SCH:001': osv.ImportFindings.INVALID_JSON,
     'REC:001': osv.ImportFindings.INVALID_RECORD,
     'REC:002': osv.ImportFindings.INVALID_ALIASES,
     'REC:003': osv.ImportFindings.INVALID_UPSTREAM,

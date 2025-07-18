@@ -402,6 +402,10 @@ def setUp():
   upstream_computation.main()
   alias_computation.main()
 
+  # Re-save all bugs to trigger the _pre_put_hook and populate search_tags.
+  for bug in osv.Bug.query():
+    bug.put()
+
 
 if __name__ == '__main__':
   # The datastore emulator needs to be started before main is imported

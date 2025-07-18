@@ -1162,7 +1162,9 @@ def search_suggestions():
   # Build suggestion list
   suggestions = sorted(
       list(
-          set(tag.upper() for bug in bugs for tag in bug.search_tags
+          set(tag.upper()
+              for bug in bugs
+              for tag in bug.search_tags
               if tag.lower().startswith(query))))
 
   return json.dumps({'suggestions': suggestions[:MAX_SUGGESTIONS]})

@@ -9,6 +9,7 @@ import (
 	"os"
 	"reflect"
 	"testing"
+	"time"
 
 	"golang.org/x/exp/slices"
 
@@ -359,7 +360,13 @@ func TestAddSeverity(t *testing.T) {
 	}
 
 	for _, tc := range tests {
-		vuln, _ := FromCVE(tc.inputCVE.CVE.ID, tc.inputCVE.CVE)
+		id := tc.inputCVE.CVE.ID
+		references := tc.inputCVE.CVE.References
+		descriptions := tc.inputCVE.CVE.Descriptions
+		published := tc.inputCVE.CVE.Published.Format(time.RFC3339)
+		modified := tc.inputCVE.CVE.LastModified.Format(time.RFC3339)
+		metrics := tc.inputCVE.CVE.Metrics
+		vuln, _ := FromCVE(id, id, references, descriptions, published, modified, metrics)
 
 		got := vuln.Severity
 		if diff := gocmp.Diff(got, tc.expectedResult); diff != "" {

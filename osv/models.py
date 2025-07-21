@@ -412,14 +412,13 @@ class Bug(ndb.Model):
     }
 
     # Add the Git ecosystem if it has git ranges
-    
     for pkg in self.affected_packages:
+      if 'GIT' in ecosystems_set:
+        break
       for r in pkg.ranges:
         if r.type == 'GIT':
           ecosystems_set.add('GIT')
           break
-      if 'GIT' in ecosystems_set:
-        break
 
     # If a withdrawn record has no affected package,
     # assign an '[EMPTY]' ecosystem value for export.

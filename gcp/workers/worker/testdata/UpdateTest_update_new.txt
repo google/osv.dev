@@ -51,6 +51,7 @@
                           'package',
                           'repo',
                           'url'],
+    'search_tags': ['blah.com/package', 'osv-126'],
     'semver_fixed_indexes': [],
     'severities': [],
     'source': 'source',

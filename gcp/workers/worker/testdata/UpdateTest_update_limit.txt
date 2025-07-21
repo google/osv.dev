@@ -62,6 +62,7 @@
                           'pypi',
                           'repo',
                           'url'],
+    'search_tags': ['grpcio', 'osv-128'],
     'semver_fixed_indexes': [],
     'severities': [],
     'source': 'source',

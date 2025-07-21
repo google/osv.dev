@@ -84,6 +84,7 @@
                           'maven',
                           'org',
                           'org.apache.any23:apache-any23'],
+    'search_tags': ['ghsa-838r-hvwh-24h8', 'org.apache.any23:apache-any23'],
     'semver_fixed_indexes': [],
     'severities': [   {   'score': 'CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:N',
                           'type': 'CVSS_V3'}],

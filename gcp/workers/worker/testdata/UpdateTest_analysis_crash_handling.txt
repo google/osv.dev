@@ -136,6 +136,7 @@
                           'https://github.com/imagemagick/imagemagick6',
                           'imagemagick',
                           'imagemagick6'],
+    'search_tags': ['cve-2016-10046', 'imagemagick'],
     'semver_fixed_indexes': [],
     'severities': [   {   'score': 'CVSS:3.0/AV:L/AC:L/PR:N/UI:R/S:U/C:N/I:N/A:H',
                           'type': 'CVSS_V3'}],

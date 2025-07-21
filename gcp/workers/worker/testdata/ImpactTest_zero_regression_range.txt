@@ -44,6 +44,7 @@
                           'project',
                           'repo',
                           'repo.com/repo'],
+    'search_tags': ['osv-2020-1337', 'project'],
     'semver_fixed_indexes': [],
     'severities': [],
     'source': 'oss-fuzz',

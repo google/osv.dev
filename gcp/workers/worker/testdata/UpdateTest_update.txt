@@ -53,6 +53,7 @@
                           'package',
                           'repo',
                           'url'],
+    'search_tags': ['blah.com/package', 'osv-123'],
     'semver_fixed_indexes': [],
     'severities': [   {   'score': 'CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:L/I:L/A:L',
                           'type': 'CVSS_V3'}],

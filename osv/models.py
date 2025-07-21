@@ -411,16 +411,15 @@ class Bug(ndb.Model):
         if pkg.package.ecosystem
     }
 
-    # Only attempt to add the Git ecosystem if
-    # there are no existing ecosystems present
-    if not ecosystems_set:
-      for pkg in self.affected_packages:
-        for r in pkg.ranges:
-          if r.type == 'GIT':
-            ecosystems_set.add('GIT')
-            break
-        if 'GIT' in ecosystems_set:
+    # Add the Git ecosystem if it has git ranges
+    
+    for pkg in self.affected_packages:
+      for r in pkg.ranges:
+        if r.type == 'GIT':
+          ecosystems_set.add('GIT')
           break
+      if 'GIT' in ecosystems_set:
+        break
 
     # If a withdrawn record has no affected package,
     # assign an '[EMPTY]' ecosystem value for export.

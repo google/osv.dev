@@ -24,6 +24,8 @@ import (
 	"golang.org/x/exp/maps"
 )
 
+var versionRangeRegex = regexp.MustCompile(`^(>=|<=|~|\^|>|<|=)\s*([0-9a-zA-Z\.\-]+)(?:,\s*(>=|<=|~|\^|>|<|=)\s*([0-9a-zA-Z\.\-]+))?$`) // Used to parse version strings from the GitHub CNA.
+
 // Take an already normalized version, repo and the mapping of repo tags
 // normalized tags and commits and do fuzzy matching version, returning a
 // GitCommit and a bool if successful.
@@ -136,4 +138,54 @@ func NormalizeVersion(version string) (normalizedVersion string, e error) {
 	}
 	normalizedVersion = strings.Join(components, "-")
 	return normalizedVersion, e
+}
+
+// Parse a version range string into an AffectedVersion struct.
+func ParseVersionRange(versionRange string) (models.AffectedVersion, error) {
+	matches := versionRangeRegex.FindStringSubmatch(strings.TrimSpace(versionRange))
+
+	if len(matches) == 0 {
+		return models.AffectedVersion{}, fmt.Errorf("invalid version range format: %s", versionRange)
+	}
+
+	av := models.AffectedVersion{}
+
+	op1 := matches[1]
+	ver1 := matches[2]
+	op2 := matches[3]
+	ver2 := matches[4]
+
+	if op2 == "" {
+		// Only one constraint
+		switch op1 {
+		case ">=":
+			av.Introduced = ver1
+		case ">":
+			av.Introduced = ver1
+		case "<=":
+			av.LastAffected = ver1
+		case "<":
+			av.Fixed = ver1
+		default:
+			return models.AffectedVersion{}, fmt.Errorf("unhandled single operator: %s", op1)
+		}
+	} else {
+		// Two constraints
+		if op1 == ">=" {
+			av.Introduced = ver1
+		} else {
+			return models.AffectedVersion{}, fmt.Errorf("unexpected operator at start of range: %s", op1)
+		}
+
+		switch op2 {
+		case "<":
+			av.Fixed = ver2
+		case "<=":
+			av.LastAffected = ver2
+		default:
+			return models.AffectedVersion{}, fmt.Errorf("unexpected operator at end of range: %s", op2)
+		}
+	}
+
+	return av, nil
 }

@@ -72,7 +72,7 @@
           <li class="search-container-nav">
             <div class="search-toggle-container">
               <!-- Expandable search form -->
-              <form class="search-form" action="{{ url_for('frontend_handlers.list_vulnerabilities') }}" method="get">
+              <form class="search-form search-suggestions-container" action="{{ url_for('frontend_handlers.list_vulnerabilities') }}" method="get">
                 <input type="text" name="q" class="search-input" placeholder="Search vulnerabilities..." maxlength="300" autocomplete="off">
                 <button type="submit" class="search-submit" aria-label="Search">
                   <span class="material-icons">arrow_forward</span>

@@ -232,7 +232,7 @@ def main():
       logging.info('Executing Go linter: %s', ' '.join(command))
 
       result = subprocess.run(
-          command, capture_output=True, text=True, check=False, timeout=600)
+          command, capture_output=True, text=True, check=False, timeout=2000)
 
       parse_and_record_linter_output(result.stdout)
 

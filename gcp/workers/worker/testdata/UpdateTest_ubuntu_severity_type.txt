@@ -422,6 +422,7 @@
                           'ubuntu-cve-2025-38094',
                           'ubuntu:14.04',
                           'ubuntu:pro:14.04:lts'],
+    'search_tags': ['linux', 'ubuntu-cve-2025-38094'],
     'semver_fixed_indexes': [],
     'severities': [{'score': 'medium', 'type': 'Ubuntu'}],
     'source': 'source',

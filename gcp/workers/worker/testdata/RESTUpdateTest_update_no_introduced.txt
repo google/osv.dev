@@ -392,6 +392,7 @@
                           'git',
                           'github.com/curl/curl.git',
                           'https://github.com/curl/curl.git'],
+    'search_tags': ['curl-cve-2022-32221'],
     'semver_fixed_indexes': ['00000007.00000086.00000000-zzzzzzzzzzzzzzzz'],
     'severities': [],
     'source': 'source',

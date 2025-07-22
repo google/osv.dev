@@ -4,6 +4,10 @@
   bucket: 
   # Whether to detect cherypicks or not (slow for large repos).
   detect_cherrypicks: false
+  # Whether to consider all branches when analyzing GIT ranges.
+  consider_all_branches: false
+  # DB prefix, as reserved in ossf. https://ossf.github.io/osv-schema/#id-modified-fields
+  db_prefix: []
   # Vulnerability data not under this path is ignored by the importer.
   directory_path:
   # Whether this repository is editable.
@@ -35,6 +39,8 @@
   # The API endpoint for SourceRepositoryType.REST_ENDPOINT that 
   # returns all of the vulnerability files to be updated (minimum id and modified dates)
   rest_api_url: null
+  # Apply strict validation (JSON Schema + linter checks) to this source.
+  strict_validation: False 
   # SourceRepositoryType - 0 for git, 1 for GCS, 2 for REST API
   type: 0
   # Whether to populate "affected[].versions" from Git ranges.

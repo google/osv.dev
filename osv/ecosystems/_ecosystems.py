@@ -19,6 +19,7 @@ from osv.ecosystems.chainguard import Chainguard
 from osv.ecosystems.wolfi import Wolfi
 from .helper_base import Ecosystem, OrderingUnsupportedEcosystem
 from .alma_linux import AlmaLinux
+from .alpaquita import Alpaquita
 from .alpine import Alpine
 from .bioconductor import Bioconductor
 from .cran import CRAN

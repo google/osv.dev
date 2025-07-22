@@ -20,7 +20,7 @@
     'database_specific': None,
     'db_id': 'OSV-2020-1337',
     'details': 'DETAILS',
-    'ecosystem': [GIT','ecosystem'],
+    'ecosystem': ['GIT','ecosystem'],
     'fixed': '8d8242f545e9cec3e6d0d2e3f5bde8be1c659735',
     'has_affected': True,
     'import_last_modified': None,

@@ -124,10 +124,10 @@ def get(name: str) -> Ecosystem:
     return AlmaLinux()
 
   if name.startswith('Alpaquita'):
-    return Alpine(name.partition(':')[2])
+    return Alpaquita()
 
   if name.startswith('Alpine'):
-    return Alpaquita()
+    return Alpine(name.partition(':')[2])
 
   if name.startswith('Mageia'):
     return Mageia()

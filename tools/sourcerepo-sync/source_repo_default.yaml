@@ -4,6 +4,10 @@
   bucket: 
   # Whether to detect cherypicks or not (slow for large repos).
   detect_cherrypicks: false
+  # Whether to consider all branches when analyzing GIT ranges.
+  consider_all_branches: false
+  # DB prefix, as reserved in ossf. https://ossf.github.io/osv-schema/#id-modified-fields
+  db_prefix: []
   # Vulnerability data not under this path is ignored by the importer.
   directory_path:
   # Whether this repository is editable.

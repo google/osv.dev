@@ -55,6 +55,7 @@ html,
 body {
   height: 100%;
   scroll-behavior: smooth;
+  font-size: 13px;
 }
 
 ol,
@@ -672,6 +673,7 @@ md-icon-button.mdc-data-table__sort-icon-button {
     background: $osv-grey-800;
     padding: 2px 4px;
     border-radius: $osv-border-radius-small;
+    box-shadow: 0 0 2px white;
   }
 
   @media (max-width: $osv-mobile-breakpoint) {
@@ -1478,6 +1480,7 @@ div.highlight {
 
 .blog-post-page,
 .blog-page {
+  font-size: 1.461rem; // ~ 19px / 13px (html font size)
 
   ul,
   ol {
@@ -1500,19 +1503,37 @@ div.highlight {
   h2,
   h3,
   h4 {
-    line-height: 1.1;
-    font-weight: 700;
-    margin-top: 3rem;
-    margin-bottom: 1.5rem;
+    line-height: 1.5;
+    font-weight: 900;
+    margin-top: 1.667em;
+    margin-bottom: 0.7em;
+  }
+
+  h3 {
+    // ~26px
+    font-size: 2rem;
   }
 
   p {
-    margin-bottom: 16px;
-    line-height: 1.6;
+    margin-bottom: 1.1em;
+    line-height: 1.5;
   }
 
   a {
-    color: $osv-cyan-300
+    color: $osv-red-300
+  }
+
+  code {
+    font-family: $osv-heading-font-family;
+    background: $osv-grey-800;
+    padding: 2px 6px;
+    border-radius: $osv-border-radius-small;
+    box-shadow: 0 0 2px white;
+  }
+
+  img {
+    border-radius: $osv-border-radius-small;
+    box-shadow: 0 0 3px white;
   }
 
   .author {
@@ -1535,11 +1556,10 @@ div.highlight {
     max-width: 800px;
     width: 100%;
     margin: 0 auto;
-    font-size: 16px;
   }
 
   .author {
-    padding-bottom: 48px;
+    padding-bottom: 48px !important;
   }
 }
 

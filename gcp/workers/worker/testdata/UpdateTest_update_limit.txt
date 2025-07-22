@@ -40,7 +40,7 @@
     'database_specific': None,
     'db_id': 'OSV-128',
     'details': 'Blah blah blah\nBlah\n',
-    'ecosystem': ['GIT', PyPI'],
+    'ecosystem': ['GIT', 'PyPI'],
     'fixed': '',
     'has_affected': True,
     'import_last_modified': DatetimeWithNanoseconds(2020, 1, 1, 0, 0, tzinfo=datetime.timezone.utc),

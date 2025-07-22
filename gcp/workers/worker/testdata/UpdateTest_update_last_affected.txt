@@ -100,7 +100,7 @@
     'database_specific': None,
     'db_id': 'PYSEC-124',
     'details': 'Blah blah blah\nBlah\n',
-    'ecosystem': ['PyPI'],
+    'ecosystem': ['GIT', 'PyPI'],
     'fixed': '',
     'has_affected': True,
     'import_last_modified': DatetimeWithNanoseconds(2022, 10, 7, 18, 59, tzinfo=datetime.timezone.utc),

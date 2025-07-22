@@ -24,7 +24,7 @@
     'database_specific': None,
     'db_id': 'OSV-130',
     'details': 'Blah blah blah\nBlah\n',
-    'ecosystem': ['ecosystem', 'GIT'],
+    'ecosystem': [GIT','ecosystem'],
     'fixed': '',
     'has_affected': True,
     'import_last_modified': DatetimeWithNanoseconds(2020, 1, 1, 0, 0, tzinfo=datetime.timezone.utc),

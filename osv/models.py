@@ -108,24 +108,13 @@ def _maybe_strip_repo_prefixes(versions: list[str],
   return repo_stripped_versions
 
 
+# --- OSS-Fuzz-related Entities ---
+
+
 class IDCounter(ndb.Model):
   """Counter for ID allocations."""
   # Next ID to allocate.
   next_id: int = ndb.IntegerProperty()
-
-
-class AffectedCommits(ndb.Model):
-  """AffectedCommits entry."""
-  MAX_COMMITS_PER_ENTITY = 10000
-
-  # The main bug ID.
-  bug_id: str = ndb.StringProperty()
-  # The commit hash.
-  commits: list[bytes] = ndb.BlobProperty(repeated=True, indexed=True)
-  # Whether or not the bug is public.
-  public: bool = ndb.BooleanProperty()
-  # The page for this batch of commits.
-  page: int = ndb.IntegerProperty(indexed=False)
 
 
 class RegressResult(ndb.Model):
@@ -178,6 +167,9 @@ class FixResult(ndb.Model):
   reference_urls: list[str] = ndb.StringProperty(repeated=True)
   # Source timestamp.
   timestamp: datetime.datetime = ndb.DateTimeProperty(tzinfo=datetime.UTC)
+
+
+# --- OSV Bug entities ---
 
 
 class AffectedEvent(ndb.Model):
@@ -893,6 +885,98 @@ class Bug(ndb.Model):
     return vulnerability
 
 
+# --- Vulnerability Entity ---
+
+class Vulnerability(ndb.Model):
+  """Vulnerability entry."""
+  # The entity's key/id is ID in OSV
+
+  # The source identifier.
+  # For OSS-Fuzz, this oss-fuzz:<ClusterFuzz testcase ID>.
+  # For others this is <source>:<path/to/source>.
+  source_id: str = ndb.StringProperty()
+  # When this record was truly last modified.
+  modified: datetime.datetime = ndb.DateTimeProperty(tzinfo=datetime.UTC)
+  # Whether this record has been withdrawn
+  # TODO(michaelkedar): I don't think this is necessary
+  is_withdrawn: bool = ndb.BooleanProperty()
+
+  # Raw fields from the original source.
+  # The reported modified date.
+  modified_raw: datetime.datetime = ndb.DateTimeProperty(tzinfo=datetime.UTC)
+  # The reported aliased IDs.
+  alias_raw: list[str] = ndb.StringProperty(repeated=True)
+  # The reported related IDs.
+  related_raw: list[str] = ndb.StringProperty(repeated=True)
+  # The reported upstream IDs.
+  upstream_raw: list[str] = ndb.StringProperty(repeated=True)
+
+
+# --- Affected versions for matching ---
+
+
+class AffectedCommits(ndb.Model):
+  """AffectedCommits entry."""
+  MAX_COMMITS_PER_ENTITY = 10000
+
+  # The main bug ID.
+  bug_id: str = ndb.StringProperty()
+  # The commit hash.
+  commits: list[bytes] = ndb.BlobProperty(repeated=True, indexed=True)
+  # Whether or not the bug is public.
+  public: bool = ndb.BooleanProperty()
+  # The page for this batch of commits.
+  page: int = ndb.IntegerProperty(indexed=False)
+
+
+class AffectedVersions(ndb.Model):
+  """AffectedVersions entry."""
+  # The main vulnerability ID.
+  vuln_id: str = ndb.StringProperty()
+  # The ecosystem of the affected package.
+  ecosystem: str = ndb.StringProperty()
+  # The name of the affected package.
+  name: str = ndb.StringProperty()
+
+  # Only one of the following should be set:
+  # The enumerated affected versions.
+  versions: list[str] = ndb.TextProperty(repeated=True)
+  # The sorted affected events.
+  events: list[AffectedEvent] = ndb.LocalStructuredProperty(
+      AffectedEvent, repeated=True)
+
+
+# --- Website search / list entity ---
+
+
+class ListedVulnerability(ndb.Model):
+  """ListedVulnerability entry, used for the website's /list page."""
+  # The entity's key/id is ID in OSV
+
+  # The date the vulnerability was published (for sorting & display).
+  published: datetime.datetime = ndb.DateTimeProperty(tzinfo=datetime.UTC)
+  # The ecosystems the vulnerability belongs to (for filtering).
+  ecosystems: list[str] = ndb.StringProperty(repeated=True)
+  # The list of rendered affected packages (for display).
+  # e.g. 'PyPI/urllib3', 'github.com/torvalds/linux'
+  packages: list[str] = ndb.TextProperty(repeated=True)
+  # The summary line (for display).
+  summary: str = ndb.TextProperty()
+  # Whether there is a fix available (for display).
+  is_fixed: bool = ndb.BooleanProperty(indexed=False)
+  # The severities of the vulnerability (for display).
+  severities: list[Severity] = ndb.LocalStructuredProperty(
+      Severity, repeated=True)
+
+  # Strings that the search bar may suggest while typing.
+  autocomplete_tags: list[str] = ndb.StringProperty(repeated=True)
+  # Strings this matches when searching.
+  search_indices: list[str] = ndb.StringProperty(repeated=True)
+
+
+# --- Indexer entities ---
+
+
 class RepoIndex(ndb.Model):
   """RepoIndex entry"""
   # The dependency name
@@ -931,6 +1015,9 @@ class RepoIndexBucket(ndb.Model):
   node_hash: bytes = ndb.BlobProperty(indexed=True)
   # number of files this hash represents
   files_contained: int = ndb.IntegerProperty()
+
+
+# --- SourceRepository ---
 
 
 class SourceRepositoryType(enum.IntEnum):
@@ -1009,6 +1096,9 @@ class SourceRepository(ndb.Model):
       raise ValueError('BUCKET SourceRepository cannot be editable.')
 
 
+# --- Alias & Upstream ---
+
+
 class AliasGroup(ndb.Model):
   """Alias group."""
   bug_ids: list[str] = ndb.StringProperty(repeated=True)
@@ -1040,6 +1130,7 @@ class UpstreamGroup(ndb.Model):
   last_modified: datetime.datetime = ndb.DateTimeProperty(tzinfo=datetime.UTC)
 
 
+# --- ImportFinding ---
 # TODO(gongh@): redesign this to make it easy to scale.
 class ImportFindings(enum.IntEnum):
   """The possible quality findings about an individual record."""

@@ -525,10 +525,12 @@ md-icon-button.mdc-data-table__sort-icon-button {
     border-bottom-style: solid;
     font-family: $osv-heading-font-family;
     font-weight: bold;
+    font-size: 1rem;
   }
 
   .mdc-data-table__cell {
     border-bottom-style: dashed;
+    font-size: 1rem;
   }
 
   // Render the divs as a table.

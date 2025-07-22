@@ -43,6 +43,6 @@ class AlpaquitaEcosystemTest(unittest.TestCase):
     # '1-0-0' is considered invalid by AlpineLinuxVersion.
     self.assertGreater(
         ecosystem.sort_key('1-0-0'), ecosystem.sort_key('1.13.2-r0'))
-    
+
     self.assertEqual(
         ecosystem.sort_key('1.13.2-r0'), ecosystem.sort_key('1.13.2-r0'))

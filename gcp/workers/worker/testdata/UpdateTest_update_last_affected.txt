@@ -114,6 +114,7 @@
     'regressed': '',
     'related': [],
     'search_indices': ['124', 'grpcio', 'pypi', 'pysec', 'pysec-124'],
+    'search_tags': ['grpcio', 'pysec-124'],
     'semver_fixed_indexes': [],
     'severities': [],
     'source': 'source',

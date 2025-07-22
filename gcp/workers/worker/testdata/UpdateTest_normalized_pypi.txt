@@ -46,6 +46,7 @@
                           'repo',
                           'scrapy',
                           'url'],
+    'search_tags': ['pysec-456', 'scrapy'],
     'semver_fixed_indexes': [],
     'severities': [],
     'source': 'source',

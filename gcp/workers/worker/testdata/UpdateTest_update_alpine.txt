@@ -670,6 +670,7 @@
                           'cve-2022-27449',
                           'mariadb',
                           'v3'],
+    'search_tags': ['cve-2022-27449', 'mariadb'],
     'semver_fixed_indexes': [],
     'severities': [],
     'source': 'source',

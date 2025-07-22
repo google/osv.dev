@@ -306,6 +306,8 @@ class Bug(ndb.Model):
   reference_url_types: dict = ndb.JsonProperty()
   # Search indices (auto-populated)
   search_indices: list[str] = ndb.StringProperty(repeated=True)
+  # Search tags (auto-populated)
+  search_tags: list[str] = ndb.StringProperty(repeated=True)
   # Whether or not the bug has any affected versions (auto-populated).
   has_affected: bool = ndb.BooleanProperty()
   # Source of truth for this Bug.
@@ -465,6 +467,13 @@ class Bug(ndb.Model):
 
     self.search_indices = list(set(search_indices))
     self.search_indices.sort()
+
+    search_tags = set()
+    search_tags.add(self.id().lower())
+    search_tags.update([p.lower() for p in self.project])
+    self.search_tags = list(search_tags)
+    self.search_tags.sort()
+
     self.affected_fuzzy = []
     self.semver_fixed_indexes = []
     self.has_affected = False

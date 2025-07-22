@@ -126,6 +126,7 @@
                           'pysec-123',
                           'repo',
                           'url'],
+    'search_tags': ['grpcio', 'pysec-123'],
     'semver_fixed_indexes': [],
     'severities': [],
     'source': 'source',

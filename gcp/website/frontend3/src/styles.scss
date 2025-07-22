@@ -55,7 +55,7 @@ html,
 body {
   height: 100%;
   scroll-behavior: smooth;
-  font-size: 13px;
+  font-size: 14px;
 }
 
 ol,
@@ -82,7 +82,6 @@ body {
   background: $osv-background;
   color: $osv-text-color;
   font-family: $osv-body-font-family;
-  font-size: 14px;
   --mdc-theme-primary: #{$osv-text-color};
   --mdc-theme-surface: $osv-background;
   --mdc-theme-background: $osv-background;
@@ -671,7 +670,8 @@ md-icon-button.mdc-data-table__sort-icon-button {
   code {
     font-family: $osv-heading-font-family;
     background: $osv-grey-800;
-    padding: 2px 4px;
+    padding: 2px 5px;
+    margin: 0 2px;
     border-radius: $osv-border-radius-small;
     box-shadow: 0 0 2px white;
   }
@@ -1430,7 +1430,7 @@ dl.vulnerability-details,
       padding-bottom: 24px;
 
       .entry-title {
-        font-size: 1.5rem;
+        font-size: 1.6rem;
         font-family: $osv-heading-font-family;
         display: block;
         padding-bottom: 16px;
@@ -1441,10 +1441,6 @@ dl.vulnerability-details,
         font-family: $osv-body-font-family;
         font-weight: bold;
         padding-bottom: 20px;
-      }
-
-      .summary {
-        font-size: 16px;
       }
 
     }
@@ -1480,7 +1476,7 @@ div.highlight {
 
 .blog-post-page,
 .blog-page {
-  font-size: 1.461rem; // ~ 19px / 13px (html font size)
+  font-size: 1.357rem; // ~ 19px / 13px (html font size)
 
   ul,
   ol {
@@ -1496,7 +1492,7 @@ div.highlight {
     display: block;
     font-family: $osv-heading-font-family;
     padding-bottom: 16px;
-    // 3rem is 3x16px=48px
+    // 3rem is 3x14px=42px
     font-size: clamp(1.8rem, 9vw, 3rem);
   }
 
@@ -1511,7 +1507,7 @@ div.highlight {
 
   h3 {
     // ~26px
-    font-size: 2rem;
+    font-size: 1.857rem;
   }
 
   p {
@@ -1526,7 +1522,8 @@ div.highlight {
   code {
     font-family: $osv-heading-font-family;
     background: $osv-grey-800;
-    padding: 2px 6px;
+    padding: 2px 5px;
+    margin: 0 2px;
     border-radius: $osv-border-radius-small;
     box-shadow: 0 0 2px white;
   }

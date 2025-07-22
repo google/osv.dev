@@ -39,6 +39,8 @@
   # The API endpoint for SourceRepositoryType.REST_ENDPOINT that 
   # returns all of the vulnerability files to be updated (minimum id and modified dates)
   rest_api_url: null
+  # Apply strict validation (JSON Schema + linter checks) to this source.
+  strict_validation: False 
   # SourceRepositoryType - 0 for git, 1 for GCS, 2 for REST API
   type: 0
   # Whether to populate "affected[].versions" from Git ranges.

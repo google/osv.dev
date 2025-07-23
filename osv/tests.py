@@ -119,18 +119,19 @@ def start_datastore_emulator():
   os.environ['GOOGLE_CLOUD_PROJECT'] = TEST_PROJECT_ID
   global _ds_data_dir
   _ds_data_dir = tempfile.TemporaryDirectory()
-
+  # TODO(michaelkedar): use `gcloud emulators firestore` with
+  # `--database-mode=datastore-mode` instead.
   proc = subprocess.Popen([
       'gcloud',
       'beta',
       'emulators',
       'datastore',
       'start',
-      '--consistency=1.0',
       '--host-port=localhost:' + port,
       '--project=' + TEST_PROJECT_ID,
       '--no-store-on-disk',
       f'--data-dir={_ds_data_dir.name}',
+      '--use-firestore-in-datastore-mode',
   ],
                           stdout=subprocess.PIPE,
                           stderr=subprocess.STDOUT)

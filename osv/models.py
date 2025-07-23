@@ -351,38 +351,11 @@ class Bug(ndb.Model):
 
     return super().get_by_id(vuln_id, *args, **kwargs)
 
-  def _tokenize(self, value):
-    """Tokenize value for indexing."""
-    if not value:
-      return []
-
-    value_lower = value.lower()
-
-    # Deconstructs the id given into parts by retrieving parts that are
-    # alphanumeric.
-    # This addresses special cases like SUSE that include ':' in their id suffix
-    tokens = {token for token in re.split(r'\W+', value_lower) if token}
-    tokens.add(value_lower)
-
-    # Add subsection combinations from id (split at '-') in the search indices
-    # Specifically addresses situation in which UBUNTU-CVE-XXXs don't show up
-    # when searching for the CVE-XXX.
-    # e.g. `a-b-c-d' becomes ['a-b', 'b-c', 'c-d', 'a-b-c', 'b-c-d', 'a-b-c-d']
-    # Does not account for combinations with the suffix sections ':' like SUSE
-    parts = value_lower.split('-')
-    num_parts = len(parts)
-    for length in range(2, num_parts + 1):
-      for i in range(num_parts - length + 1):
-        sub_parts = parts[i:i + length]
-        combo = '-'.join(sub_parts)
-        tokens.add(combo)
-    return tokens
-
   def _pre_put_hook(self):  # pylint: disable=arguments-differ
     """Pre-put hook for populating search indices."""
     search_indices = set()
 
-    search_indices.update(self._tokenize(self.id()))
+    search_indices.update(_tokenize(self.id()))
 
     for pkg in self.affected_packages:
       # Set PURL if it wasn't provided.
@@ -433,18 +406,18 @@ class Bug(ndb.Model):
     self.purl.sort()
 
     for project in self.project:
-      search_indices.update(self._tokenize(project))
+      search_indices.update(_tokenize(project))
 
     for ecosystem in self.ecosystem:
-      search_indices.update(self._tokenize(ecosystem))
+      search_indices.update(_tokenize(ecosystem))
 
     for alias in self.aliases:
-      search_indices.update(self._tokenize(alias))
+      search_indices.update(_tokenize(alias))
 
     # Please note this will not include exhaustive transitive upstream
     # so may not appear for all cases.
     for upstream in self.upstream_raw:
-      search_indices.update(self._tokenize(upstream))
+      search_indices.update(_tokenize(upstream))
 
     for affected_package in self.affected_packages:
       for affected_range in affected_package.ranges:
@@ -665,6 +638,8 @@ class Bug(ndb.Model):
       modified_times.append(self.last_modified)
 
     # Fetch the last_modified dates from the upstream/alias groups.
+    # TODO(michaelkedar): modified time needs to update if related changes.
+    # Probably requires a RelatedGroup entity/cron
     alias_future = get_aliases_async(self.id()) if include_alias else None
     upstream_future = (
         get_upstream_async(self.id()) if include_upstream else None)
@@ -793,6 +768,8 @@ class Bug(ndb.Model):
           Bug.related == self.db_id, projection=[Bug.db_id]).fetch()
       related_bug_ids = [bug.db_id for bug in related_bugs]
       related = sorted(list(set(related_bug_ids + self.related)))
+      # TODO(michaelkedar): modified time needs to update if related changes.
+      # Probably requires a RelatedGroup entity/cron
 
       alias_group = AliasGroup.query(AliasGroup.bug_ids == self.db_id).get()
       if alias_group:
@@ -867,6 +844,8 @@ class Bug(ndb.Model):
       related_bug_ids = yield related_future
       vulnerability.related[:] = sorted(
           list(set(related_bug_ids + list(vulnerability.related))))
+      # TODO(michaelkedar): modified time needs to update if related changes.
+      # Probably requires a RelatedGroup entity/cron
       alias_group = yield alias_future
       if alias_group:
         alias_ids = sorted(list(set(alias_group.bug_ids) - {vulnerability.id}))
@@ -884,8 +863,45 @@ class Bug(ndb.Model):
         vulnerability.modified.FromDatetime(modified_time)
     return vulnerability
 
+  def _post_put_hook(self: Self, future: ndb.Future):  # pylint: disable=arguments-differ
+    """Post-put hook for writing new entities for database migration."""
+    if future.exception():
+      logging.error("Not writing new entities for %s since Bug.put() failed.",
+                    self.db_id)
+      return
+    populate_entities_from_bug(self)
+
+
+def _tokenize(value):
+  """Tokenize value for indexing."""
+  if not value:
+    return []
+
+  value_lower = value.lower()
+
+  # Deconstructs the id given into parts by retrieving parts that are
+  # alphanumeric.
+  # This addresses special cases like SUSE that include ':' in their id suffix
+  tokens = {token for token in re.split(r'\W+', value_lower) if token}
+  tokens.add(value_lower)
+
+  # Add subsection combinations from id (split at '-') in the search indices
+  # Specifically addresses situation in which UBUNTU-CVE-XXXs don't show up
+  # when searching for the CVE-XXX.
+  # e.g. `a-b-c-d' becomes ['a-b', 'b-c', 'c-d', 'a-b-c', 'b-c-d', 'a-b-c-d']
+  # Does not account for combinations with the suffix sections ':' like SUSE
+  parts = value_lower.split('-')
+  num_parts = len(parts)
+  for length in range(2, num_parts + 1):
+    for i in range(num_parts - length + 1):
+      sub_parts = parts[i:i + length]
+      combo = '-'.join(sub_parts)
+      tokens.add(combo)
+  return tokens
+
 
 # --- Vulnerability Entity ---
+
 
 class Vulnerability(ndb.Model):
   """Vulnerability entry."""
@@ -895,14 +911,14 @@ class Vulnerability(ndb.Model):
   # For OSS-Fuzz, this oss-fuzz:<ClusterFuzz testcase ID>.
   # For others this is <source>:<path/to/source>.
   source_id: str = ndb.StringProperty()
-  # When this record was truly last modified.
+  # When this record was truly last modified (including e.g. aliases/upstream).
   modified: datetime.datetime = ndb.DateTimeProperty(tzinfo=datetime.UTC)
   # Whether this record has been withdrawn
   # TODO(michaelkedar): I don't think this is necessary
   is_withdrawn: bool = ndb.BooleanProperty()
 
   # Raw fields from the original source.
-  # The reported modified date.
+  # The reported modified date in the record.
   modified_raw: datetime.datetime = ndb.DateTimeProperty(tzinfo=datetime.UTC)
   # The reported aliased IDs.
   alias_raw: list[str] = ndb.StringProperty(repeated=True)
@@ -945,6 +961,11 @@ class AffectedVersions(ndb.Model):
   events: list[AffectedEvent] = ndb.LocalStructuredProperty(
       AffectedEvent, repeated=True)
 
+  def sort_key(self):
+    """Key function for comparison and deduplication."""
+    return (self.vuln_id, self.ecosystem, self.name, tuple(self.versions),
+            tuple((e.type, e.value) for e in self.events))
+
 
 # --- Website search / list entity ---
 
@@ -972,6 +993,232 @@ class ListedVulnerability(ndb.Model):
   autocomplete_tags: list[str] = ndb.StringProperty(repeated=True)
   # Strings this matches when searching.
   search_indices: list[str] = ndb.StringProperty(repeated=True)
+
+  @classmethod
+  def from_vulnerability(
+      cls: Self, vulnerability: vulnerability_pb2.Vulnerability) -> Self:
+    """Construct a ListedVulnerability from a complete vulnerability proto"""
+    published = vulnerability.published.ToDatetime(datetime.UTC)
+    summary = vulnerability.summary
+    # TODO(michaelkedar): Take the first line of details if summary is missing.
+
+    all_ecosystems = set()
+    all_packages = set()
+
+    is_fixed = False
+    severities = set()
+    for sev in vulnerability.severity:
+      severities.add(
+          (vulnerability_pb2.Severity.Type.Name(sev.type), sev.score))
+
+    search_indices = set()
+    search_indices.update(_tokenize(vulnerability.id))
+    autocomplete_tags = {vulnerability.id.lower()}
+
+    for alias in vulnerability.aliases:
+      search_indices.update(_tokenize(alias))
+    for upstream in vulnerability.upstream:
+      search_indices.update(_tokenize(upstream))
+    # related intentionally omitted
+
+    for affected in vulnerability.affected:
+      if affected.package.name:
+        search_indices.update(_tokenize(affected.package.name))
+        autocomplete_tags.add(affected.package.name.lower())
+        all_packages.add(affected.package.ecosystem + '/' +
+                         affected.package.name)
+      if affected.package.ecosystem:
+        all_ecosystems.add(affected.package.ecosystem)
+      for sev in affected.severity:
+        severities.add(
+            (vulnerability_pb2.Severity.Type.Name(sev.type), sev.score))
+      for r in affected.ranges:
+        if r.type == vulnerability_pb2.Range.Type.GIT:
+          all_ecosystems.add('GIT')
+          all_packages.add(r.repo)
+          search_indices.add(r.repo)
+          autocomplete_tags.add(r.repo)
+          split = r.repo.split('//')
+          if len(split) >= 2:
+            no_http = split[1]
+            search_indices.add(no_http)
+            # Add the path components exluding the domain name
+            search_indices.update(no_http.split('/')[1:])
+
+        if any(e.fixed or e.limit for e in r.events):
+          is_fixed = True
+
+    for eco in all_ecosystems:
+      # TODO(michaelkedar): Seems like a noisy/useless search index?
+      search_indices.update(_tokenize(eco))
+
+    ecos = sorted({ecosystems.normalize(e) for e in all_ecosystems})
+    pkgs = sorted(all_packages)
+    sevs = [Severity(type=t, score=s) for t, s in sorted(severities)]
+    search_indices = sorted(search_indices)
+    autocomplete_tags = sorted(autocomplete_tags)
+
+    return cls(
+        id=vulnerability.id,
+        published=published,
+        ecosystems=ecos,
+        packages=pkgs,
+        summary=summary,
+        is_fixed=is_fixed,
+        severities=sevs,
+        autocomplete_tags=autocomplete_tags,
+        search_indices=search_indices,
+    )
+
+
+def populate_entities_from_bug(entity: Bug):
+  """Puts entities (Vulnerability, ListedVulnerability, AffectedVersions) from
+  a given Bug entity, and writes completed OSV records to GCS bucket."""
+  if not entity.public or entity.status == bug.BugStatus.UNPROCESSED:
+    # OSS-Fuzz private Bugs
+    return
+
+  vuln_pb = entity.to_vulnerability(
+      include_source=True, include_alias=True, include_upstream=True)
+
+  def transaction():
+    to_put = []
+    to_delete = []
+    vuln = Vulnerability.get_by_id(entity.db_id)
+    if vuln is None:
+      vuln = Vulnerability(id=entity.db_id)
+    if vuln.modified != vuln_pb.modified.ToDatetime(datetime.UTC):
+      vuln.source_id = entity.source_id
+      vuln.modified = vuln_pb.modified.ToDatetime(datetime.UTC)
+      vuln.is_withdrawn = entity.withdrawn is not None
+      vuln.modified_raw = entity.import_last_modified
+      vuln.alias_raw = entity.aliases
+      vuln.related_raw = entity.related
+      vuln.upstream_raw = entity.upstream_raw
+      to_put.append(vuln)
+
+    old_affected = AffectedVersions.query(
+        AffectedVersions.vuln_id == entity.db_id).fetch()
+    if vuln.is_withdrawn:
+      # We do not want the vuln to be searchable if it's been withdrawn.
+      to_delete.append(ndb.Key(ListedVulnerability, vuln_pb.id))
+      to_delete.extend(av.key for av in old_affected)
+    else:
+      to_put.append(ListedVulnerability.from_vulnerability(vuln_pb))
+      new_affected = affected_from_bug(entity)
+      added, removed = diff_affected_versions(old_affected, new_affected)
+      to_put.extend(added)
+      to_delete.extend(r.key for r in removed)
+
+    ndb.put_multi(to_put)
+    ndb.delete_multi(to_delete)
+
+  ndb.transaction(transaction)
+  # TODO: write to bucket
+
+
+_EVENT_ORDER = {
+    'introduced': 0,
+    'last_affected': 1,
+    'fixed': 2,
+    'limit': 3,
+}
+
+
+def affected_from_bug(entity: Bug) -> list[AffectedVersions]:
+  """Compute the AffectedVersions from a Bug entity."""
+  affected_versions = []
+  for affected in entity.affected_packages:
+    pkg_ecosystem = affected.package.ecosystem
+    # Make sure we capture all possible ecosystem variants for matching.
+    # e.g. {'Ubuntu:22.04:LTS', 'Ubuntu:22.04', 'Ubuntu'}
+    all_pkg_ecosystems = {pkg_ecosystem, ecosystems.normalize(pkg_ecosystem)}
+    if (e := ecosystems.remove_variants(pkg_ecosystem)) is not None:
+      all_pkg_ecosystems.add(e)
+
+    pkg_name = ecosystems.maybe_normalize_package_names(affected.package.name,
+                                                        pkg_ecosystem)
+
+    # Ecosystem helper for sorting the events.
+    e_helper = ecosystems.get(pkg_ecosystem)
+    if e_helper is not None and not e_helper.supports_comparing:
+      e_helper = None
+
+    # TODO(michaelkedar): I am matching the current behaviour of the API,
+    # where GIT tags match to the first git repo in the ranges list, even if
+    # there are non-git ranges or multiple git repos in a range.
+    repo_url = ''
+    for r in affected.ranges:
+      if r.type == 'GIT':
+        if not repo_url:
+          repo_url = r.repo_url
+        continue
+      if r.type not in ('SEMVER', 'ECOSYSTEM'):
+        logging.warning('Unknown range type "%s" in %s', r.type, entity.db_id)
+        continue
+
+      events = r.events
+      if e_helper is not None:
+        # If we have an ecosystem helper sort the events to help with querying.
+        events.sort(key=lambda e, sort_key=e_helper.sort_key:
+                    (sort_key(e.value), _EVENT_ORDER.get(e.type, -1)))
+      # If we don't have an ecosystem helper, assume the events are in order.
+      for e in all_pkg_ecosystems:
+        affected_versions.append(
+            AffectedVersions(
+                vuln_id=entity.db_id,
+                ecosystem=e,
+                name=pkg_name,
+                events=events,
+            ))
+
+    # Add the enumerated versions
+    if affected.versions:
+      if pkg_name:  # We need at least a package name to perform matching.
+        for e in all_pkg_ecosystems:
+          affected_versions.append(
+              AffectedVersions(
+                  vuln_id=entity.db_id,
+                  ecosystem=e,
+                  name=pkg_name,
+                  versions=affected.versions,
+              ))
+      if repo_url:
+        affected_versions.append(
+            AffectedVersions(
+                vuln_id=entity.db_id,
+                ecosystem='GIT',
+                name=repo_url,
+                versions=affected.versions,
+            ))
+
+  # Deduplicate and sort the affected_versions
+  unique_affected_dict = {av.sort_key(): av for av in affected_versions}
+  affected_versions = sorted(
+      unique_affected_dict.values(), key=AffectedVersions.sort_key)
+
+  return affected_versions
+
+
+def diff_affected_versions(
+    old: list[AffectedVersions], new: list[AffectedVersions]
+) -> tuple[list[AffectedVersions], list[AffectedVersions]]:
+  """Find all the AffectedVersion entities that were added/removed from `old` to
+  get `new` (ignoring the entity IDs).
+  
+  returns (added, removed)
+  """
+  all_dict = {av.sort_key(): av for av in old + new}
+  old_set = {av.sort_key() for av in old}
+  new_set = {av.sort_key() for av in new}
+
+  added_keys = new_set - old_set
+  removed_keys = old_set - new_set
+
+  added = [all_dict[k] for k in added_keys]
+  removed = [all_dict[k] for k in removed_keys]
+
+  return added, removed
 
 
 # --- Indexer entities ---

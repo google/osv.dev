@@ -135,7 +135,7 @@ type CVE5 struct {
 	Metadata    CVE5Metadata `json:"cveMetadata,omitempty"`
 	Containers  struct {
 		CNA CNA   `json:"cna"`
-		ADP []ADP `json:"adp,omitempty"`
+		ADP []CNA `json:"adp,omitempty"`
 	} `json:"containers,omitempty"`
 }
 

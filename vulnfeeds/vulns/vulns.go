@@ -18,6 +18,7 @@ import (
 	"cmp"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"io"
 	"net/url"
 	"os"
@@ -65,6 +66,28 @@ type Affected struct {
 	Versions          []string          `json:"versions,omitempty" yaml:"versions,omitempty"`
 	EcosystemSpecific map[string]string `json:"ecosystem_specific,omitempty" yaml:"ecosystem_specific,omitempty"`
 }
+
+type QualityCheck int
+
+func (q QualityCheck) String() string {
+	return [...]string{
+		"QualityUnknown",
+		"Success",
+		"Spaces",
+		"Empty",
+		"Filler",
+	}[q]
+}
+
+const (
+	// Set of enums for categorizing c.
+	QualityUnknown QualityCheck = iota // Shouldn't happen
+	Success                            // No determinable quality issue
+	Spaces                             // Contains space characters
+	Empty                              // Contains no entry
+	Filler                             // Has been determined to be a filler word
+
+)
 
 // AttachExtractedVersionInfo converts the models.VersionInfo struct to OSV GIT and ECOSYSTEM AffectedRanges and AffectedPackage.
 func (affected *Affected) AttachExtractedVersionInfo(version models.VersionInfo) {
@@ -156,6 +179,61 @@ func (affected *Affected) AttachExtractedVersionInfo(version models.VersionInfo)
 			})
 			seenFixed[v.Fixed] = true
 		}
+	}
+	if len(version.AffectedVersions) > 0 {
+		affected.Ranges = append(affected.Ranges, versionRange)
+	}
+}
+
+// AttachExtractedVersionInfo converts the models.VersionInfo struct to OSV GIT and ECOSYSTEM AffectedRanges and AffectedPackage.
+func (affected *Affected) NaivelyAttachExtractedVersionInfo(version models.VersionInfo) {
+
+	var versionRange AffectedRange
+	// Adding an ECOSYSTEM version range only makes sense if we have package information.
+	if affected.Package == nil {
+		versionRange = AffectedRange{
+			Type: "[EMPTY]",
+		}
+	} else {
+		versionRange = AffectedRange{
+			Type: "ECOSYSTEM",
+		}
+	}
+
+	seenIntroduced := map[string]bool{}
+	seenFixed := map[string]bool{}
+	seenLastAffected := map[string]bool{}
+	fmt.Printf("%+v\n", version.AffectedVersions)
+	for _, v := range version.AffectedVersions {
+		var introduced string
+		if v.Introduced == "" {
+			introduced = "0"
+		} else {
+			introduced = v.Introduced
+		}
+
+		if _, seen := seenIntroduced[introduced]; !seen {
+			versionRange.Events = append(versionRange.Events, Event{
+				Introduced: introduced,
+			})
+			seenIntroduced[introduced] = true
+		}
+
+		if _, seen := seenFixed[v.Fixed]; v.Fixed != "" && !seen {
+			versionRange.Events = append(versionRange.Events, Event{
+				Fixed: v.Fixed,
+			})
+			seenFixed[v.Fixed] = true
+		}
+		if !seenFixed[v.Fixed] {
+			if _, seen := seenLastAffected[v.LastAffected]; v.LastAffected != "" && !seen {
+				versionRange.Events = append(versionRange.Events, Event{
+					LastAffected: v.LastAffected,
+				})
+				seenLastAffected[v.LastAffected] = true
+			}
+		}
+
 	}
 	if len(version.AffectedVersions) > 0 {
 		affected.Ranges = append(affected.Ranges, versionRange)
@@ -647,9 +725,10 @@ func ClassifyReferences(refs []cves.Reference) (references References) {
 
 // FromCVE creates a minimal OSV object from a given CVE and id.
 // Leaves affected and version fields empty to be filled in later with AddPkgInfo
+// References are classified and severity metrics are added.
 // There are two id fields passed in as one of the users of this field (PyPi) sometimes has a different id than the CVEID
 // and the ExtractReferencedVulns function uses these in a check to add the other ID as an alias.
-func FromCVE(id cves.CVEID, cveID cves.CVEID, references []cves.Reference, descriptions []cves.LangString, publishedDate string, modifiedDate string, metrics any) (*Vulnerability, []string) {
+func FromCVE(id cves.CVEID, cveID cves.CVEID, references []cves.Reference, descriptions []cves.LangString, publishedDate string, modifiedDate string, metrics any) *Vulnerability {
 	aliases, related := ExtractReferencedVulns(id, cveID, references)
 	v := Vulnerability{
 		ID:      string(id),
@@ -657,12 +736,11 @@ func FromCVE(id cves.CVEID, cveID cves.CVEID, references []cves.Reference, descr
 		Aliases: aliases,
 		Related: related,
 	}
-	var notes []string
 	v.Published = publishedDate
 	v.Modified = modifiedDate
 	v.References = ClassifyReferences(references)
 	v.AddSeverity(metrics)
-	return &v, notes
+	return &v
 }
 
 func FromYAML(r io.Reader) (*Vulnerability, error) {
@@ -731,19 +809,28 @@ func CVEIsDisputed(v *Vulnerability, cveList string) (modified string, e error) 
 	return "", nil
 }
 
-// IsNotEmptyOrFiller will return true if field text is not a filler text or otherwise empty
-func IsNotEmptyOrFiller(text string) bool {
+// CheckQuality will return true if field text is not a filler text or otherwise empty
+func CheckQuality(text string) QualityCheck {
 	var fillerText = []string{
 		"n/a", // common with mitre vulns
 		"unknown",
 		"unspecified",
 		"not-known",
+		"tbd",
+		"to be determined",
 	}
 	for _, filler := range fillerText {
 		if strings.EqualFold(strings.TrimSpace(text), filler) {
-			return false
+			return Filler
 		}
 	}
-	return text != ""
+	if text == "" {
+		return Empty
+	}
+
+	if strings.Contains(text, " ") {
+		return Spaces
+	}
+	return Success
 
 }

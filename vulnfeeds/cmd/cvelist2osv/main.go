@@ -56,16 +56,16 @@ const (
 var (
 	jsonPath  = flag.String("cve_json", "", "Path to CVEList JSON to examine.")
 	outDir    = flag.String("out_dir", "", "Path to output results.")
-	outFormat = flag.String("out_format", "OSV", "Format to output {OSV,PackageInfo}")
+	outFormat = flag.String("out_format", "MinimalOSV", "Format to output {OSV,MinimalOSV}")
 )
 var Logger utility.LoggerWrapper
 var RepoTagsCache git.RepoTagsCache
 var Metrics struct {
-	TotalCVEs           int
-	CVEsForApplications int
-	CVEsForKnownRepos   int
+	CNA                 string
 	OSVRecordsGenerated int
-	Outcomes            map[cves.CVEID]ConversionOutcome // Per-CVE-ID record of conversion result.
+	Outcome             ConversionOutcome
+	RefTypesCount       map[string]int
+	Notes               []string
 }
 
 // RefTagDenyList: References with these tags have been found to contain completely unrelated
@@ -102,49 +102,63 @@ var VendorProductDenyList = []cves.VendorProduct{
 //   - bool: True if any versions were successfully extracted, false otherwise.
 //   - []string: A slice of notes or warnings generated during the extraction process.
 func extractVersionsFromAffected(cna cves.CNA, versionInfo *models.VersionInfo) (bool, []string) {
-	var notes []string
 	gotVersions := false
+	var notes []string
 	for _, cveAff := range cna.Affected {
 		for _, v := range cveAff.Versions {
 			if v.Status != "affected" {
 				continue
 			}
+
 			var introduced, fixed, lastaffected string
-			hasRange := vulns.IsNotEmptyOrFiller(v.LessThan) || vulns.IsNotEmptyOrFiller(v.LessThanOrEqual)
+
+			// Quality check
+			vQuality := vulns.CheckQuality(v.Version)
+			if vQuality == vulns.Filler {
+				notes = append(notes, fmt.Sprintf("Version value for %s %s is filler or empty", cveAff.Vendor, cveAff.Product))
+			}
+			vLessThanQual := vulns.CheckQuality(v.LessThan)
+			vLTOEQual := vulns.CheckQuality(v.LessThanOrEqual)
+
+			hasRange := vLessThanQual <= vulns.Spaces || vLTOEQual <= vulns.Spaces
 			if v.LessThan != "" && v.LessThan == v.Version {
-				fmt.Printf("Warning: lessThan (%s) is the same as introduced (%s)\n", v.LessThan, v.Version)
+				notes = append(notes, fmt.Sprintf("Warning: lessThan (%s) is the same as introduced (%s)\n", v.LessThan, v.Version))
 				// Only this specific version affected or up to this version
 				hasRange = false
 			}
-
 			if hasRange {
-				if vulns.IsNotEmptyOrFiller(v.Version) {
+				if vQuality <= vulns.Spaces {
 					introduced = v.Version
+					notes = append(notes, fmt.Sprintf("%s - Introduced from version value", vQuality.String()))
 				}
-				if vulns.IsNotEmptyOrFiller(v.LessThan) {
+				if vLessThanQual <= vulns.Spaces {
 					fixed = v.LessThan
-				} else if vulns.IsNotEmptyOrFiller(v.LessThanOrEqual) {
+					notes = append(notes, fmt.Sprintf("%s - Fixed from LessThan value", vLessThanQual.String()))
+				} else if vLTOEQual <= vulns.Spaces {
 					lastaffected = v.LessThanOrEqual
+					notes = append(notes, fmt.Sprintf("%s - LastAffected from LessThanOrEqual value", vLTOEQual.String()))
 				}
 			} else {
 				// In this case only v.Version exists which either means that it is _only_ that version that is
 				// affected, but more likely, it affects up to that version. It could also mean that the range is given
 				// in one line instead - like "< 1.5.3" or "< 2.45.4, >= 2.0 " or just "before 1.4.7", so check for that.
-
+				notes = append(notes, "Only version exists")
 				possibleVersions, note := cves.ExtractVersionsFromText(nil, v.Version)
 				if note != nil {
 					notes = append(notes, note...)
 				}
 				if possibleVersions != nil {
 					versionInfo.AffectedVersions = append(versionInfo.AffectedVersions, possibleVersions...)
+					notes = append(notes, fmt.Sprintf("Versions retrieved from text"))
 					gotVersions = true
 					continue
 				}
 
 				// We might only have a single version. Assume it affects up to that version
-				if vulns.IsNotEmptyOrFiller(v.Version) {
+				if vQuality <= vulns.Spaces {
 					introduced = "0"
 					lastaffected = v.Version
+					notes = append(notes, fmt.Sprintf("%s - Single version found. Assuming introduced is 0, and LastAffected is given version", vQuality))
 				}
 
 			}
@@ -157,6 +171,8 @@ func extractVersionsFromAffected(cna cves.CNA, versionInfo *models.VersionInfo) 
 				Fixed:        fixed,
 				LastAffected: lastaffected,
 			}
+			notes = append(notes, fmt.Sprintf("Possible new affected versions i:%s l:%s f:%s", possibleNewAffectedVersion.Introduced, possibleNewAffectedVersion.LastAffected, possibleNewAffectedVersion.Fixed))
+
 			if slices.Contains(versionInfo.AffectedVersions, possibleNewAffectedVersion) {
 				// Avoid appending duplicates
 				continue
@@ -165,6 +181,14 @@ func extractVersionsFromAffected(cna cves.CNA, versionInfo *models.VersionInfo) 
 		}
 	}
 	return gotVersions, notes
+}
+
+func addIDToNotes(id cves.CVEID, notes []string) []string {
+	var updatedNotes []string
+	for _, note := range notes {
+		updatedNotes = append(updatedNotes, fmt.Sprintf("[%s] %s", id, note))
+	}
+	return updatedNotes
 }
 
 func ExtractVersionInfo(cve cves.CVE5, refs []string, httpClient *http.Client) (v models.VersionInfo, notes []string) {
@@ -176,8 +200,18 @@ func ExtractVersionInfo(cve cves.CVE5, refs []string, httpClient *http.Client) (
 	}
 	gotVersions := false
 	gotVersions, notes = extractVersionsFromAffected(cve.Containers.CNA, &v)
-	if !gotVersions {
 
+	// attempt using adp as well
+	for _, adp := range cve.Containers.ADP {
+		notes = append(notes, "Looking at ADP")
+		adpGotVersions, extractNotes := extractVersionsFromAffected(adp, &v)
+		if !gotVersions && adpGotVersions {
+			gotVersions = adpGotVersions
+		}
+		notes = append(notes, extractNotes...)
+	}
+
+	if !gotVersions {
 		var extractNotes []string
 		// If all else has failed, attempt to extract version from the description.
 		v.AffectedVersions, extractNotes = cves.ExtractVersionsFromText(nil, cves.EnglishDescription(cve.Containers.CNA.Descriptions))
@@ -206,6 +240,30 @@ func ExtractVersionInfo(cve cves.CVE5, refs []string, httpClient *http.Client) (
 	return v, notes
 }
 
+func determineHeuristics(cve cves.CVE5, v *osvschema.Vulnerability) {
+	// CNA based heuristics
+	Metrics.CNA = cve.Metadata.AssignerShortName
+	// TODO(jesslowe): more CNA based analysis
+	// Reference based heuristics
+	// Count number of references of each type
+	// len(v.References)
+	refTypeCounts := make(map[string]int)
+	for _, ref := range v.References {
+		refTypeCounts[ref.Type]++
+	}
+	Metrics.RefTypesCount = refTypeCounts
+	for refType, count := range refTypeCounts {
+		Logger.Infof("[%s]: Reference Type %s: %d", cve.Metadata.CVEID, refType, count)
+	}
+
+	// ADP based heuristics?
+	// CVE Program container seems to just add url tags for some reason
+	// CISA ADP Vulnrichment often adds metrics
+
+	// Additional information provided - CVSS, KEV, CWE etc.
+
+}
+
 // Takes a CVE record and outputs an OSV file in the specified directory.
 func CVEToOSV(CVE cves.CVE5, references []cves.Reference, repos []string, cache git.RepoTagsCache, directory string) error {
 	// Create a base OSV record
@@ -214,10 +272,10 @@ func CVEToOSV(CVE cves.CVE5, references []cves.Reference, repos []string, cache 
 	dateUpdated, _ := vulns.CVE5timestampToRFC3339(CVE.Metadata.DateUpdated)
 	metrics := CVE.Containers.CNA.Metrics
 
-	v, notes := vulns.FromCVE(cveID, cveID, references, CVE.Containers.CNA.Descriptions, datePublished, dateUpdated, metrics)
+	v := vulns.FromCVE(cveID, cveID, references, CVE.Containers.CNA.Descriptions, datePublished, dateUpdated, metrics)
+	determineHeuristics(CVE, v)
 
-	versions, versionNotes := ExtractVersionInfo(CVE, repos, http.DefaultClient)
-	notes = append(notes, versionNotes...)
+	versions, notes := ExtractVersionInfo(CVE, repos, http.DefaultClient)
 
 	// Attempt to resolve Version Info to commits.
 	cna := CVE.Containers.CNA
@@ -227,14 +285,16 @@ func CVEToOSV(CVE cves.CVE5, references []cves.Reference, repos []string, cache 
 		if slices.Contains(VendorProductDenyList, cves.VendorProduct{Vendor: cveAff.Vendor, Product: cveAff.Product}) {
 			continue
 		}
-		if vulns.IsNotEmptyOrFiller(cveAff.Vendor) {
+		if vulns.CheckQuality(cveAff.Vendor) == vulns.Success || vulns.CheckQuality(cveAff.Vendor) == vulns.Spaces {
 			maybeVendorName = cveAff.Vendor
 		}
-		if vulns.IsNotEmptyOrFiller(cveAff.Product) {
-			maybeProductName = cveAff.Product
-		}
-		if maybeProductName != "UNKNOWN" && maybeVendorName != "UNKNOWN" {
-			break
+		if vulns.CheckQuality(cveAff.Product) == vulns.Success || vulns.CheckQuality(cveAff.Product) == vulns.Spaces {
+			{
+				maybeProductName = cveAff.Product
+			}
+			if maybeProductName != "UNKNOWN" && maybeVendorName != "UNKNOWN" {
+				break
+			}
 		}
 	}
 
@@ -315,13 +375,13 @@ func CVEToOSV(CVE cves.CVE5, references []cves.Reference, repos []string, cache 
 			f.Close()
 		}
 	}
-	Logger.Warnf("numNotes %v", len(notes))
-	notesFile := filepath.Join(vulnDir, v.ID+".notes")
-	if len(notes) > 0 {
-		Logger.Warnf("notes: %s", notesFile)
-		err = os.WriteFile(notesFile, []byte(strings.Join(notes, "\n")), 0660)
-		if err != nil {
-			Logger.Warnf("[%s]: Failed to write %s: %v", CVE.Metadata.CVEID, notesFile, err)
+	Metrics.Notes = notes
+	metricsFile := filepath.Join(vulnDir, v.ID+".metrics.json")
+	if marshalledMetrics, err := json.MarshalIndent(Metrics, "", "  "); err != nil {
+		Logger.Warnf("[%s]: Failed to marshal metrics: %v", CVE.Metadata.CVEID, err)
+	} else {
+		if err = os.WriteFile(metricsFile, marshalledMetrics, 0660); err != nil {
+			Logger.Warnf("[%s]: Failed to write %s: %v", CVE.Metadata.CVEID, metricsFile, err)
 		}
 	}
 
@@ -333,6 +393,135 @@ func CVEToOSV(CVE cves.CVE5, references []cves.Reference, repos []string, cache 
 	}
 	if gotUnresolvedFix {
 		return ErrUnresolvedFix
+	}
+
+	return nil
+}
+
+func ExtractNaiveVersionInfo(cve cves.CVE5, refs []string, httpClient *http.Client) (v models.VersionInfo) {
+	// gotVersions := false
+	gotVersions, notes := extractVersionsFromAffected(cve.Containers.CNA, &v)
+	Metrics.Notes = append(Metrics.Notes, addIDToNotes(cve.Metadata.CVEID, notes)...)
+
+	// var extractNotes []string
+	// attempt using adp as well
+	for _, adp := range cve.Containers.ADP {
+		notes = append(notes, "Looking at ADP")
+		adpGotVersions, notes := extractVersionsFromAffected(adp, &v)
+		if !gotVersions && adpGotVersions {
+			gotVersions = adpGotVersions
+		}
+		Metrics.Notes = append(Metrics.Notes, addIDToNotes(cve.Metadata.CVEID, notes)...)
+	}
+
+	if !gotVersions {
+		// If all else has failed, attempt to extract version from the description.
+		v.AffectedVersions, notes = cves.ExtractVersionsFromText(nil, cves.EnglishDescription(cve.Containers.CNA.Descriptions))
+		Metrics.Notes = append(Metrics.Notes, addIDToNotes(cve.Metadata.CVEID, notes)...)
+		if len(v.AffectedVersions) > 0 {
+			Metrics.Notes = append(Metrics.Notes, fmt.Sprintf("[%s] Extracted versions from description as no other versions found %+v", cve.Metadata.CVEID, v.AffectedVersions))
+		}
+	}
+
+	if len(v.AffectedVersions) == 0 {
+		Metrics.Notes = append(Metrics.Notes, "No versions detected.")
+	}
+
+	// Remove any lastaffected versions in favour of fixed versions.
+	if v.HasFixedVersions() {
+		affectedVersionsWithoutLastAffected := []models.AffectedVersion{}
+		for _, av := range v.AffectedVersions {
+			if av.LastAffected != "" {
+				continue
+			}
+			affectedVersionsWithoutLastAffected = append(affectedVersionsWithoutLastAffected, av)
+		}
+		v.AffectedVersions = affectedVersionsWithoutLastAffected
+	}
+
+	return v
+}
+
+func CVEToMinimalOSV(CVE cves.CVE5, references []cves.Reference, repos []string, directory string) error {
+	// Create a base OSV record
+	cveID := CVE.Metadata.CVEID
+	datePublished, _ := vulns.CVE5timestampToRFC3339(CVE.Metadata.DatePublished)
+	dateUpdated, _ := vulns.CVE5timestampToRFC3339(CVE.Metadata.DateUpdated)
+	metrics := CVE.Containers.CNA.Metrics
+
+	v := vulns.FromCVE(cveID, cveID, references, CVE.Containers.CNA.Descriptions, datePublished, dateUpdated, metrics)
+
+	// Determine CNA specific heuristics
+	determineHeuristics(CVE, v)
+
+	versions := ExtractNaiveVersionInfo(CVE, repos, http.DefaultClient)
+	//Create naive affected packanges
+	affected := vulns.Affected{}
+	affected.NaivelyAttachExtractedVersionInfo(versions)
+	v.Affected = append(v.Affected, affected)
+
+	cna := CVE.Containers.CNA
+	maybeVendorName := "UNKNOWN"
+	maybeProductName := "UNKNOWN"
+	for _, cveAff := range cna.Affected {
+		if slices.Contains(VendorProductDenyList, cves.VendorProduct{Vendor: cveAff.Vendor, Product: cveAff.Product}) {
+			Metrics.Notes = append(Metrics.Notes, "[%s] Vendor/Product combo on VendorProductDenyList")
+			continue
+		}
+		if vulns.CheckQuality(cveAff.Vendor) == vulns.Success || vulns.CheckQuality(cveAff.Vendor) == vulns.Spaces {
+			maybeVendorName = cveAff.Vendor
+		}
+		if vulns.CheckQuality(cveAff.Product) == vulns.Success || vulns.CheckQuality(cveAff.Product) == vulns.Spaces {
+			{
+				maybeProductName = cveAff.Product
+			}
+			if maybeProductName != "UNKNOWN" && maybeVendorName != "UNKNOWN" {
+				break
+			}
+		}
+	}
+
+	v.DatabaseSpecific := 
+	// Save OSV record to a directory
+	vulnDir := filepath.Join(directory, maybeVendorName, maybeProductName)
+	err := os.MkdirAll(vulnDir, 0755)
+	if err != nil {
+		Logger.Warnf("Failed to create dir: %v", err)
+		return fmt.Errorf("failed to create dir: %w", err)
+	}
+
+	var fileWriteErr error
+
+	// Only write out the OSV file if we have ranges.
+	outputFile := filepath.Join(vulnDir, v.ID+extension)
+	var notes []string
+	f, err := os.Create(outputFile)
+	if err != nil {
+		notes = append(notes, fmt.Sprintf("Failed to open %s for writing: %v", outputFile, err))
+		fileWriteErr = err
+	} else {
+		err = v.ToJSON(f)
+		if err != nil {
+			notes = append(notes, fmt.Sprintf("Failed to write %s: %v", outputFile, err))
+			fileWriteErr = err
+		} else {
+			Logger.Infof("[%s]: Generated OSV record for %q", CVE.Metadata.CVEID, maybeProductName)
+		}
+		f.Close()
+	}
+
+	Metrics.Notes = append(Metrics.Notes, notes...)
+	metricsFile := filepath.Join(vulnDir, v.ID+".metrics.json")
+	if marshalledMetrics, err := json.MarshalIndent(Metrics, "", "  "); err != nil {
+		Logger.Warnf("[%s]: Failed to marshal metrics: %v", CVE.Metadata.CVEID, err)
+	} else {
+		if err = os.WriteFile(metricsFile, marshalledMetrics, 0660); err != nil {
+			Logger.Warnf("[%s]: Failed to write %s: %v", CVE.Metadata.CVEID, metricsFile, err)
+		}
+	}
+
+	if fileWriteErr != nil {
+		return fileWriteErr
 	}
 
 	return nil
@@ -396,19 +585,17 @@ func identifyPossibleURLs(cve cves.CVE5) []cves.Reference {
 
 func main() {
 	flag.Parse()
-	if !slices.Contains([]string{"OSV", "PackageInfo"}, *outFormat) {
+	if !slices.Contains([]string{"OSV", "MinimalOSV"}, *outFormat) {
 		fmt.Fprintf(os.Stderr, "Unsupported output format: %s\n", *outFormat)
 		os.Exit(1)
 	}
 
-	Metrics.Outcomes = make(map[cves.CVEID]ConversionOutcome)
-
 	var logCleanup func()
 	Logger, logCleanup = utility.CreateLoggerWrapper("cvelist-osv")
 	defer logCleanup()
-
 	data, err := os.ReadFile(*jsonPath)
 	if err != nil {
+		// Metrics.Notes = append("", Metric.Notes)
 		Logger.Fatalf("Failed to open file: %v", err) // double check this is best practice output
 	}
 
@@ -419,6 +606,7 @@ func main() {
 	}
 
 	ReposForCVE := make(map[cves.CVEID][]string)
+	// Metrics.Outcomes = make(map[cves.CVEID]ConversionOutcome)
 	refs := identifyPossibleURLs(cve)
 
 	CVEID := cve.Metadata.CVEID
@@ -438,33 +626,33 @@ func main() {
 	case "OSV":
 		err = CVEToOSV(cve, refs, ReposForCVE[CVEID], RepoTagsCache, *outDir)
 
-		// TODO: Implement CVEToPackageInfo for CVEList CVE
-		// case "PackageInfo":
-		// 	err = CVEToPackageInfo(cve.CVE, ReposForCVE[CVEID], RepoTagsCache, *outDir)
-		// }
-		// Parse this error to determine which failure mode it was
-		if err != nil {
-			Logger.Warnf("[%s]: Failed to generate an OSV record: %+v", CVEID, err)
-			if errors.Is(err, ErrNoRanges) {
-				Metrics.Outcomes[CVEID] = NoRanges
-			} else if errors.Is(err, ErrUnresolvedFix) {
-				Metrics.Outcomes[CVEID] = FixUnresolvable
-			} else {
-				Metrics.Outcomes[CVEID] = ConversionUnknown
-			}
-		} else {
-
-			Metrics.OSVRecordsGenerated++
-			Metrics.Outcomes[CVEID] = Successful
-		}
-		// Metrics.TotalCVEs = len(parsed.Vulnerabilities)
-		err = outputOutcomes(Metrics.Outcomes, ReposForCVE, *outDir)
-		if err != nil {
-			// Log entry with size 1.15M exceeds maximum size of 256.0K
-			fmt.Fprintf(os.Stderr, "Failed to write out metrics: %v", err)
-		}
-		// Outcomes is too big to log, so zero it out.
-		Metrics.Outcomes = nil
-		Logger.Infof("%s Metrics: %+v", filepath.Base(*jsonPath), Metrics)
+	case "MinimalOSV":
+		err = CVEToMinimalOSV(cve, refs, ReposForCVE[CVEID], *outDir)
 	}
+	// Parse this error to determine which failure mode it was
+	if err != nil {
+		Logger.Warnf("[%s]: Failed to generate an OSV record: %+v", CVEID, err)
+		if errors.Is(err, ErrNoRanges) {
+			Metrics.Outcome = NoRanges
+		} else if errors.Is(err, ErrUnresolvedFix) {
+			Metrics.Outcome = FixUnresolvable
+		} else {
+			Metrics.Outcome = ConversionUnknown
+		}
+	} else {
+
+		Metrics.OSVRecordsGenerated++
+		Metrics.Outcome = Successful
+	}
+
+	fmt.Printf("%+v\n", Metrics)
+	// Metrics.TotalCVEs = len(parsed.Vulnerabilities)
+	// err = outputOutcomes(Metrics.Outcomes, ReposForCVE, *outDir)
+	// if err != nil {
+	// 	// Log entry with size 1.15M exceeds maximum size of 256.0K
+	// 	fmt.Fprintf(os.Stderr, "Failed to write out metrics: %v", err)
+	// }
+	// // Outcomes is too big to log, so zero it out.
+	// Metrics.Outcomes = nil
+	// Logger.Infof("%s Metrics: %+v", filepath.Base(*jsonPath), Metrics)
 }

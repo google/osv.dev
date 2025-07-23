@@ -32,6 +32,7 @@ import (
 
 	"github.com/google/osv/vulnfeeds/cves"
 	"github.com/google/osv/vulnfeeds/models"
+	"github.com/ossf/osv-schema/bindings/go/osvschema"
 )
 
 const CVEListBasePath = "cves"
@@ -47,23 +48,8 @@ func (e *VulnsCVEListError) Error() string {
 	return e.URL + ": " + e.Err.Error()
 }
 
-type Event struct {
-	Introduced   string `json:"introduced,omitempty" yaml:"introduced,omitempty"`
-	Fixed        string `json:"fixed,omitempty" yaml:"fixed,omitempty"`
-	Limit        string `json:"limit,omitempty" yaml:"limit,omitempty"`
-	LastAffected string `json:"last_affected,omitempty" yaml:"last_affected,omitempty"`
-}
-
-type Severity struct {
-	Type  string `json:"type" yaml:"type"`
-	Score string `json:"score" yaml:"score"`
-}
-
 type Affected struct {
-	Package           *AffectedPackage  `json:"package,omitempty"`
-	Ranges            []AffectedRange   `json:"ranges" yaml:"ranges"`
-	Versions          []string          `json:"versions,omitempty" yaml:"versions,omitempty"`
-	EcosystemSpecific map[string]string `json:"ecosystem_specific,omitempty" yaml:"ecosystem_specific,omitempty"`
+	osvschema.Affected
 }
 
 // AttachExtractedVersionInfo converts the models.VersionInfo struct to OSV GIT and ECOSYSTEM AffectedRanges and AffectedPackage.
@@ -94,7 +80,7 @@ func (affected *Affected) AttachExtractedVersionInfo(version models.VersionInfo)
 	}
 
 	for repo, commits := range repoToCommits {
-		gitRange := AffectedRange{
+		gitRange := osvschema.Range{
 			Type: "GIT",
 			Repo: repo,
 		}
@@ -102,34 +88,34 @@ func (affected *Affected) AttachExtractedVersionInfo(version models.VersionInfo)
 		addedIntroduced := false
 		for _, commit := range commits {
 			if commit.commitType == models.Introduced {
-				gitRange.Events = append(gitRange.Events, Event{Introduced: commit.hash})
+				gitRange.Events = append(gitRange.Events, osvschema.Event{Introduced: commit.hash})
 				addedIntroduced = true
 			}
 			if commit.commitType == models.Fixed {
-				gitRange.Events = append(gitRange.Events, Event{Fixed: commit.hash})
+				gitRange.Events = append(gitRange.Events, osvschema.Event{Fixed: commit.hash})
 			}
 			if commit.commitType == models.Limit {
-				gitRange.Events = append(gitRange.Events, Event{Limit: commit.hash})
+				gitRange.Events = append(gitRange.Events, osvschema.Event{Limit: commit.hash})
 			}
 			// Only add any LastAffectedCommits in the absence of
 			// any FixCommits to maintain schema compliance.
 			if commit.commitType == models.LastAffected && unfixed {
-				gitRange.Events = append(gitRange.Events, Event{LastAffected: commit.hash})
+				gitRange.Events = append(gitRange.Events, osvschema.Event{LastAffected: commit.hash})
 			}
 		}
 		if !addedIntroduced {
 			// Prepending not strictly necessary, but seems nicer to have the Introduced first in the list.
-			gitRange.Events = append([]Event{{Introduced: "0"}}, gitRange.Events...)
+			gitRange.Events = append([]osvschema.Event{{Introduced: "0"}}, gitRange.Events...)
 		}
 		affected.Ranges = append(affected.Ranges, gitRange)
 	}
 
 	// Adding an ECOSYSTEM version range only makes sense if we have package information.
-	if affected.Package == nil {
+	if affected.Package == (osvschema.Package{}) {
 		return
 	}
 
-	versionRange := AffectedRange{
+	versionRange := osvschema.Range{
 		Type: "ECOSYSTEM",
 	}
 	seenIntroduced := map[string]bool{}
@@ -144,14 +130,14 @@ func (affected *Affected) AttachExtractedVersionInfo(version models.VersionInfo)
 		}
 
 		if _, seen := seenIntroduced[introduced]; !seen {
-			versionRange.Events = append(versionRange.Events, Event{
+			versionRange.Events = append(versionRange.Events, osvschema.Event{
 				Introduced: introduced,
 			})
 			seenIntroduced[introduced] = true
 		}
 
 		if _, seen := seenFixed[v.Fixed]; v.Fixed != "" && !seen {
-			versionRange.Events = append(versionRange.Events, Event{
+			versionRange.Events = append(versionRange.Events, osvschema.Event{
 				Fixed: v.Fixed,
 			})
 			seenFixed[v.Fixed] = true
@@ -168,7 +154,7 @@ type PackageInfo struct {
 	Ecosystem         string             `json:"ecosystem,omitempty" yaml:"ecosystem,omitempty"`
 	PURL              string             `json:"purl,omitempty" yaml:"purl,omitempty"`
 	VersionInfo       models.VersionInfo `json:"fixed_version,omitempty" yaml:"fixed_version,omitempty"`
-	EcosystemSpecific map[string]string  `json:"ecosystem_specific,omitempty" yaml:"ecosystem_specific,omitempty"`
+	EcosystemSpecific map[string]any     `json:"ecosystem_specific,omitempty" yaml:"ecosystem_specific,omitempty"`
 }
 
 func (pi *PackageInfo) ToJSON(w io.Writer) error {
@@ -176,49 +162,16 @@ func (pi *PackageInfo) ToJSON(w io.Writer) error {
 	return encoder.Encode(pi)
 }
 
-type AffectedPackage struct {
-	Name      string `json:"name,omitempty" yaml:"name"`
-	Ecosystem string `json:"ecosystem,omitempty" yaml:"ecosystem"`
-	Purl      string `json:"purl,omitempty" yaml:"purl,omitempty"`
-}
-
-type AffectedRange struct {
-	Type   string  `json:"type" yaml:"type"`
-	Repo   string  `json:"repo,omitempty" yaml:"repo,omitempty"`
-	Events []Event `json:"events" yaml:"events"`
-}
-
-type Reference struct {
-	Type string `json:"type" yaml:"type"`
-	URL  string `json:"url" yaml:"url"`
-}
-
-type References []Reference
-
-func (r References) Len() int           { return len(r) }
-func (r References) Less(i, j int) bool { return r[i].Type < r[j].Type }
-func (r References) Swap(i, j int)      { r[i], r[j] = r[j], r[i] }
-
 type Vulnerability struct {
-	ID         string      `json:"id" yaml:"id"`
-	Withdrawn  string      `json:"withdrawn,omitempty" yaml:"withdrawn,omitempty"`
-	Summary    string      `json:"summary,omitempty" yaml:"summary,omitempty"`
-	Severity   []Severity  `json:"severity,omitempty" yaml:"severity,omitempty"`
-	Details    string      `json:"details" yaml:"details"`
-	Affected   []Affected  `json:"affected" yaml:"affected"`
-	References []Reference `json:"references" yaml:"references"`
-	Aliases    []string    `json:"aliases,omitempty" yaml:"aliases,omitempty"`
-	Related    []string    `json:"related,omitempty" yaml:"related,omitempty"`
-	Modified   string      `json:"modified" yaml:"modified"`
-	Published  string      `json:"published" yaml:"published"`
+	osvschema.Vulnerability
 }
 
-// AddPkgInfo converts a PackageInfo struct to the corresponding AffectedRanges and adds them to the OSV vulnerability object.
+// AddPkgInfo converts a PackageInfo struct to the corresponding Affected and adds it to the OSV vulnerability object.
 func (v *Vulnerability) AddPkgInfo(pkgInfo PackageInfo) {
-	affected := Affected{}
+	affected := osvschema.Affected{}
 
 	if pkgInfo.PkgName != "" && pkgInfo.Ecosystem != "" {
-		affected.Package = &AffectedPackage{
+		affected.Package = osvschema.Package{
 			Name:      pkgInfo.PkgName,
 			Ecosystem: pkgInfo.Ecosystem,
 			Purl:      pkgInfo.PURL,
@@ -227,7 +180,7 @@ func (v *Vulnerability) AddPkgInfo(pkgInfo PackageInfo) {
 
 	// Aggregate commits by their repo, and synthesize a zero introduced commit if necessary.
 	if len(pkgInfo.VersionInfo.AffectedCommits) > 0 {
-		gitCommitRangesByRepo := map[string]AffectedRange{}
+		gitCommitRangesByRepo := map[string]osvschema.Range{}
 
 		hasAddedZeroIntroduced := make(map[string]bool)
 
@@ -235,16 +188,16 @@ func (v *Vulnerability) AddPkgInfo(pkgInfo PackageInfo) {
 			entry, ok := gitCommitRangesByRepo[ac.Repo]
 			// Create the stub for the repo if necessary.
 			if !ok {
-				entry = AffectedRange{
-					Type:   "GIT",
-					Events: []Event{},
+				entry = osvschema.Range{
+					Type:   osvschema.RangeGit,
+					Events: []osvschema.Event{},
 					Repo:   ac.Repo,
 				}
 
 				if !pkgInfo.VersionInfo.HasIntroducedCommits(ac.Repo) && !hasAddedZeroIntroduced[ac.Repo] {
 					// There was no explicitly defined introduced commit, so create one at 0.
 					entry.Events = append(entry.Events,
-						Event{
+						osvschema.Event{
 							Introduced: "0",
 						},
 					)
@@ -253,16 +206,16 @@ func (v *Vulnerability) AddPkgInfo(pkgInfo PackageInfo) {
 			}
 
 			if ac.Introduced != "" {
-				entry.Events = append(entry.Events, Event{Introduced: ac.Introduced})
+				entry.Events = append(entry.Events, osvschema.Event{Introduced: ac.Introduced})
 			}
 			if ac.Fixed != "" {
-				entry.Events = append(entry.Events, Event{Fixed: ac.Fixed})
+				entry.Events = append(entry.Events, osvschema.Event{Fixed: ac.Fixed})
 			}
 			if ac.LastAffected != "" {
-				entry.Events = append(entry.Events, Event{LastAffected: ac.LastAffected})
+				entry.Events = append(entry.Events, osvschema.Event{LastAffected: ac.LastAffected})
 			}
 			if ac.Limit != "" {
-				entry.Events = append(entry.Events, Event{Limit: ac.Limit})
+				entry.Events = append(entry.Events, osvschema.Event{Limit: ac.Limit})
 			}
 			gitCommitRangesByRepo[ac.Repo] = entry
 		}
@@ -273,25 +226,25 @@ func (v *Vulnerability) AddPkgInfo(pkgInfo PackageInfo) {
 	}
 
 	if len(pkgInfo.VersionInfo.AffectedVersions) > 0 {
-		versionRange := AffectedRange{
-			Type:   "ECOSYSTEM",
-			Events: []Event{},
+		versionRange := osvschema.Range{
+			Type:   osvschema.RangeEcosystem,
+			Events: []osvschema.Event{},
 		}
 		hasIntroduced := false
 		for _, av := range pkgInfo.VersionInfo.AffectedVersions {
 			if av.Introduced != "" {
 				hasIntroduced = true
-				versionRange.Events = append(versionRange.Events, Event{
+				versionRange.Events = append(versionRange.Events, osvschema.Event{
 					Introduced: av.Introduced,
 				})
 			}
 			if av.Fixed != "" {
-				versionRange.Events = append(versionRange.Events, Event{
+				versionRange.Events = append(versionRange.Events, osvschema.Event{
 					Fixed: av.Fixed,
 				})
 			}
 			if av.LastAffected != "" {
-				versionRange.Events = append(versionRange.Events, Event{
+				versionRange.Events = append(versionRange.Events, osvschema.Event{
 					LastAffected: av.LastAffected,
 				})
 			}
@@ -300,7 +253,7 @@ func (v *Vulnerability) AddPkgInfo(pkgInfo PackageInfo) {
 		if !hasIntroduced {
 			// If no introduced entry, add one with special value of 0 to indicate
 			// all versions before fixed is affected
-			versionRange.Events = append([]Event{{
+			versionRange.Events = append([]osvschema.Event{{
 				Introduced: "0",
 			}}, versionRange.Events...)
 		}
@@ -309,7 +262,7 @@ func (v *Vulnerability) AddPkgInfo(pkgInfo PackageInfo) {
 
 	// Sort affected[].ranges (by type) for stability.
 	// https://ossf.github.io/osv-schema/#requirements
-	slices.SortFunc(affected.Ranges, func(a, b AffectedRange) int {
+	slices.SortFunc(affected.Ranges, func(a, b osvschema.Range) int {
 		if n := cmp.Compare(a.Type, b.Type); n != 0 {
 			return n
 		}
@@ -321,30 +274,21 @@ func (v *Vulnerability) AddPkgInfo(pkgInfo PackageInfo) {
 	v.Affected = append(v.Affected, affected)
 }
 
-// AddSeverity adds CVSS3 severity information to the OSV vulnerability object.
-// It uses the highest available CVSS 3.x Primary score from the underlying CVE record.
-func (v *Vulnerability) AddSeverity(CVEImpact *cves.CVEItemMetrics) {
-	if CVEImpact == nil {
-		return
-	}
-
-	// Use the highest available of CvssMetric31, CvssMetric30
-	// from the Primary scorer.
+// AddSeverity adds CVSS severity information to the OSV vulnerability object.
+// It uses the highest available CVSS score from the underlying CVE record.
+// For NVD data, it uses the Primary score.
+func (v *Vulnerability) AddSeverity(metricsData any) {
 	var bestVectorString string
+	var severityType osvschema.SeverityType
 
-	for _, metric := range CVEImpact.CVSSMetricV31 {
-		if bestVectorString != "" {
+	switch md := metricsData.(type) {
+	case *cves.CVEItemMetrics:
+		if md == nil {
 			break
 		}
-		if metric.Type != "Primary" {
-			continue
-		}
-		bestVectorString = metric.CVSSData.VectorString
-	}
-
-	// No CVSS 3.1, try falling back to CVSS 3.0 if available.
-	if bestVectorString == "" {
-		for _, metric := range CVEImpact.CVSSMetricV30 {
+		// Use the highest available of CvssMetricV31, CvssMetricV30
+		// from the Primary scorer.
+		for _, metric := range md.CVSSMetricV31 {
 			if bestVectorString != "" {
 				break
 			}
@@ -352,6 +296,48 @@ func (v *Vulnerability) AddSeverity(CVEImpact *cves.CVEItemMetrics) {
 				continue
 			}
 			bestVectorString = metric.CVSSData.VectorString
+			severityType = osvschema.SeverityCVSSV3
+		}
+
+		// No CVSS 3.1, try falling back to CVSS 3.0 if available.
+		if bestVectorString == "" {
+			for _, metric := range md.CVSSMetricV30 {
+				if bestVectorString != "" {
+					break
+				}
+				if metric.Type != "Primary" {
+					continue
+				}
+				bestVectorString = metric.CVSSData.VectorString
+				severityType = osvschema.SeverityCVSSV3
+			}
+		}
+	case []cves.Metrics:
+		// Use the highest available of CVSSV4_0, CVSSV3_1, CVSSV3_0.
+		for _, m := range md {
+			if m.CVSSV4_0.VectorString != "" {
+				bestVectorString = m.CVSSV4_0.VectorString
+				severityType = osvschema.SeverityCVSSV4
+				break
+			}
+		}
+		if bestVectorString == "" {
+			for _, m := range md {
+				if m.CVSSV3_1.VectorString != "" {
+					bestVectorString = m.CVSSV3_1.VectorString
+					severityType = osvschema.SeverityCVSSV3
+					break
+				}
+			}
+		}
+		if bestVectorString == "" {
+			for _, m := range md {
+				if m.CVSSV3_0.VectorString != "" {
+					bestVectorString = m.CVSSV3_0.VectorString
+					severityType = osvschema.SeverityCVSSV3
+					break
+				}
+			}
 		}
 	}
 
@@ -360,8 +346,8 @@ func (v *Vulnerability) AddSeverity(CVEImpact *cves.CVEItemMetrics) {
 		return
 	}
 
-	severity := Severity{
-		Type:  "CVSS_V3",
+	severity := osvschema.Severity{
+		Type:  severityType,
 		Score: bestVectorString,
 	}
 
@@ -370,6 +356,7 @@ func (v *Vulnerability) AddSeverity(CVEImpact *cves.CVEItemMetrics) {
 
 func (v *Vulnerability) ToJSON(w io.Writer) error {
 	encoder := json.NewEncoder(w)
+	encoder.SetIndent("", "  ")
 	return encoder.Encode(v)
 }
 
@@ -378,36 +365,30 @@ func (v *Vulnerability) ToYAML(w io.Writer) error {
 	return encoder.Encode(v)
 }
 
-func CVE5timestampToRFC3339(timestamp string) (string, error) {
-	t, err := cves.ParseCVE5Timestamp(timestamp)
-	if err != nil {
-		return "", err
-	}
-
-	return t.Format(time.RFC3339), nil
+func cve5timestampToTime(timestamp string) (time.Time, error) {
+	return cves.ParseCVE5Timestamp(timestamp)
 }
 
-// For a given URL, infer the OSV schema's reference type of it.
+// ClassifyReferenceLink infers the OSV schema's reference type for a given URL.
 // See https://ossf.github.io/osv-schema/#references-field
-// Uses the tags first before resorting to inference by shape.
-
-func ClassifyReferenceLink(link string, tag string) string {
+// It uses tags first before resorting to inference by shape.
+func ClassifyReferenceLink(link string, tag string) osvschema.ReferenceType {
 	switch tag {
 	case "Patch":
-		return "FIX"
+		return osvschema.ReferenceFix
 	case "Exploit":
-		return "EVIDENCE"
+		return osvschema.ReferenceEvidence
 	case "Mailing List":
-		return "ARTICLE"
+		return osvschema.ReferenceArticle
 	case "Issue Tracking":
-		return "REPORT"
-	case "Vendor Advisory", "Third Party Avisory", "VDB Entry":
-		return "ADVISORY"
+		return osvschema.ReferenceReport
+	case "Vendor Advisory", "Third Party Advisory", "VDB Entry":
+		return osvschema.ReferenceAdvisory
 	}
 
 	u, err := url.Parse(link)
 	if err != nil {
-		return "WEB"
+		return osvschema.ReferenceWeb
 	}
 
 	pathParts := strings.Split(u.Path, "/")
@@ -416,106 +397,106 @@ func ClassifyReferenceLink(link string, tag string) string {
 	if len(pathParts) >= 2 {
 		if u.Host == "github.com" {
 			// Example: https://github.com/google/osv/commit/cd4e934d0527e5010e373e7fed54ef5daefba2f5
-			if pathParts[len(pathParts)-2] == "commit" {
-				return "FIX"
+			if len(pathParts) >= 3 && pathParts[len(pathParts)-2] == "commit" {
+				return osvschema.ReferenceFix
 			}
 
 			// Example: https://github.com/advisories/GHSA-fr26-qjc8-mvjx
 			// Example: https://github.com/dpgaspar/Flask-AppBuilder/security/advisories/GHSA-624f-cqvr-3qw4
-			if pathParts[len(pathParts)-2] == "advisories" {
-				return "ADVISORY"
+			if len(pathParts) >= 3 && pathParts[len(pathParts)-2] == "advisories" {
+				return osvschema.ReferenceAdvisory
 			}
 
 			// Example: https://github.com/Netflix/lemur/issues/117
-			if pathParts[len(pathParts)-2] == "issues" {
-				return "REPORT"
+			if len(pathParts) >= 3 && pathParts[len(pathParts)-2] == "issues" {
+				return osvschema.ReferenceReport
 			}
 		}
 
 		if u.Host == "snyk.io" {
 			//Example: https://snyk.io/vuln/SNYK-PYTHON-TRYTOND-1730329
 			if pathParts[1] == "vuln" {
-				return "ADVISORY"
+				return osvschema.ReferenceAdvisory
 			}
 		}
 
 		if u.Host == "nvd.nist.gov" {
 			//Example: https://nvd.nist.gov/vuln/detail/CVE-2021-23336
 			if len(pathParts) == 4 && pathParts[1] == "vuln" && pathParts[2] == "detail" {
-				return "ADVISORY"
+				return osvschema.ReferenceAdvisory
 			}
 		}
 
 		if u.Host == "www.debian.org" {
 			//Example: https://www.debian.org/security/2021/dsa-4878
 			if pathParts[1] == "security" {
-				return "ADVISORY"
+				return osvschema.ReferenceAdvisory
 			}
 		}
 
 		if u.Host == "usn.ubuntu.com" {
 			//Example: https://usn.ubuntu.com/usn/usn-4661-1
 			if pathParts[1] == "usn" {
-				return "ADVISORY"
+				return osvschema.ReferenceAdvisory
 			}
 		}
 
 		if u.Host == "www.ubuntu.com" {
 			//Example: http://www.ubuntu.com/usn/USN-2915-2
 			if pathParts[1] == "usn" {
-				return "ADVISORY"
+				return osvschema.ReferenceAdvisory
 			}
 		}
 
 		if u.Host == "ubuntu.com" {
 			//Example: https://ubuntu.com/security/notices/USN-5124-1
 			if pathParts[1] == "security" && pathParts[2] == "notices" {
-				return "ADVISORY"
+				return osvschema.ReferenceAdvisory
 			}
 		}
 
 		if u.Host == "rhn.redhat.com" {
 			//Example: http://rhn.redhat.com/errata/RHSA-2016-0504.html
 			if pathParts[1] == "errata" {
-				return "ADVISORY"
+				return osvschema.ReferenceAdvisory
 			}
 		}
 
 		if u.Host == "access.redhat.com" {
 			//Example: https://access.redhat.com/errata/RHSA-2017:1499
 			if pathParts[1] == "errata" {
-				return "ADVISORY"
+				return osvschema.ReferenceAdvisory
 			}
 		}
 
 		if u.Host == "security.gentoo.org" {
 			//Example: https://security.gentoo.org/glsa/202003-45
-			if pathParts[len(pathParts)-2] == "glsa" {
-				return "ADVISORY"
+			if len(pathParts) >= 2 && pathParts[len(pathParts)-2] == "glsa" {
+				return osvschema.ReferenceAdvisory
 			}
 		}
 
 		if u.Host == "pypi.org" {
 			//Example: "https://pypi.org/project/flask"
 			if pathParts[1] == "project" {
-				return "PACKAGE"
+				return osvschema.ReferencePackage
 			}
 		}
 	}
 
 	if strings.Contains(link, "advisory") || strings.Contains(link, "advisories") {
-		return "ADVISORY"
+		return osvschema.ReferenceAdvisory
 	}
 
 	if strings.Contains(link, "bugzilla") {
-		return "REPORT"
+		return osvschema.ReferenceReport
 	}
 
 	if strings.Contains(link, "blog") {
-		return "ARTICLE"
+		return osvschema.ReferenceArticle
 	}
 
-	return "WEB"
+	return osvschema.ReferenceWeb
 }
 
 func ExtractReferencedVulns(id cves.CVEID, cveID cves.CVEID, references []cves.Reference) ([]string, []string) {
@@ -573,7 +554,7 @@ func ExtractReferencedVulns(id cves.CVEID, cveID cves.CVEID, references []cves.R
 		aliases = append(aliases, SYNKs...)
 	}
 
-	return aliases, related
+	return unique(aliases), unique(related)
 }
 
 func unique[T comparable](s []T) []T {
@@ -588,44 +569,47 @@ func unique[T comparable](s []T) []T {
 	return result
 }
 
-// Annotates reference links based on their tags or the shape of them.
-func ClassifyReferences(refs []cves.Reference) (references References) {
+// ClassifyReferences annotates reference links based on their tags or their shape.
+func ClassifyReferences(refs []cves.Reference) []osvschema.Reference {
+	var references []osvschema.Reference
 	for _, reference := range refs {
 		if len(reference.Tags) > 0 {
 			for _, tag := range reference.Tags {
-				references = append(references, Reference{
+				references = append(references, osvschema.Reference{
 					Type: ClassifyReferenceLink(reference.Url, tag),
 					URL:  reference.Url,
 				})
 			}
 		} else {
-			references = append(references, Reference{
+			references = append(references, osvschema.Reference{
 				Type: ClassifyReferenceLink(reference.Url, ""),
 				URL:  reference.Url,
 			})
 		}
 	}
 	references = unique(references)
-	sort.Stable(references)
+	sort.SliceStable(references, func(i, j int) bool {
+		return references[i].Type < references[j].Type
+	})
 	return references
 }
 
-// FromCVE creates a minimal OSV object from a given CVEItem and id.
+// FromCVE creates a minimal OSV object from a given CVE and id.
 // Leaves affected and version fields empty to be filled in later with AddPkgInfo
-func FromCVE(id cves.CVEID, cve cves.CVE) (*Vulnerability, []string) {
-	aliases, related := ExtractReferencedVulns(id, cve.ID, cve.References)
-	v := Vulnerability{
-		ID:      string(id),
-		Details: cves.EnglishDescription(cve.Descriptions),
-		Aliases: aliases,
-		Related: related,
-	}
-	var notes []string
-	v.Published = cve.Published.Format(time.RFC3339)
-	v.Modified = cve.LastModified.Format(time.RFC3339)
-	v.References = ClassifyReferences(cve.References)
-	v.AddSeverity(cve.Metrics)
-	return &v, notes
+// There are two id fields passed in as one of the users of this field (PyPi) sometimes has a different id than the CVEID
+// and the ExtractReferencedVulns function uses these in a check to add the other ID as an alias.
+func FromCVE(id cves.CVEID, cveID cves.CVEID, references []cves.Reference, descriptions []cves.LangString, publishedDate time.Time, modifiedDate time.Time, metrics any) *Vulnerability {
+	aliases, related := ExtractReferencedVulns(id, cveID, references)
+	v := Vulnerability{}
+	v.ID = string(id)
+	v.Details = cves.EnglishDescription(descriptions)
+	v.Aliases = aliases
+	v.Related = related
+	v.Published = publishedDate
+	v.Modified = modifiedDate
+	v.References = ClassifyReferences(references)
+	v.AddSeverity(metrics)
+	return &v
 }
 
 func FromYAML(r io.Reader) (*Vulnerability, error) {
@@ -654,13 +638,13 @@ func FromJSON(r io.Reader) (*Vulnerability, error) {
 // It returns the CVE's CNA container's dateUpdated value if it is disputed.
 // This can be used to set the Withdrawn field.
 // It consults a local clone of https://github.com/CVEProject/cvelistV5 found in the location specified by cveList
-func CVEIsDisputed(v *Vulnerability, cveList string) (modified string, e error) {
+func CVEIsDisputed(v *Vulnerability, cveList string) (time.Time, error) {
 	// iff the v.ID starts with a CVE...
 	// 	Try to make an HTTP request for the CVE record in the CVE List
 	// 	iff .containers.cna.tags contains "disputed"
 	//		return .containers.cna.providerMetadata.dateUpdated, formatted for use in the Withdrawn field.
 	if !strings.HasPrefix(v.ID, "CVE-") {
-		return "", ErrVulnNotACVE
+		return time.Time{}, ErrVulnNotACVE
 	}
 
 	CVEParts := strings.Split(v.ID, "-")[1:3]
@@ -673,23 +657,24 @@ func CVEIsDisputed(v *Vulnerability, cveList string) (modified string, e error) 
 	f, err := os.Open(CVEListFile)
 
 	if err != nil {
-		return "", &VulnsCVEListError{"", err}
+		if os.IsNotExist(err) {
+			return time.Time{}, nil
+		}
+		return time.Time{}, &VulnsCVEListError{CVEListFile, err}
 	}
 
 	defer f.Close()
 
-	decoder := json.NewDecoder(f)
-
 	CVE := &cves.CVE5{}
 
-	if err := decoder.Decode(&CVE); err != nil {
-		return "", &VulnsCVEListError{"", err}
+	if err := json.NewDecoder(f).Decode(&CVE); err != nil {
+		return time.Time{}, &VulnsCVEListError{CVEListFile, err}
 	}
 
 	if slices.Contains(CVE.Containers.CNA.Tags, "disputed") {
-		modified, err = CVE5timestampToRFC3339(CVE.Containers.CNA.ProviderMetadata.DateUpdated)
+		modified, err := cve5timestampToTime(CVE.Containers.CNA.ProviderMetadata.DateUpdated)
 		return modified, err
 	}
 
-	return "", nil
+	return time.Time{}, nil
 }

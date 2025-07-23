@@ -30,6 +30,7 @@ from osv import importfinding_pb2
 # pylint: disable=relative-beyond-top-level
 from . import bug
 from . import ecosystems
+from . import gcs
 from . import purl_helpers
 from . import semver_index
 from . import sources
@@ -1114,7 +1115,33 @@ def populate_entities_from_bug(entity: Bug):
     ndb.delete_multi(to_delete)
 
   ndb.transaction(transaction)
-  # TODO: write to bucket
+  _write_to_bucket(vuln_pb)
+
+
+def _write_to_bucket(vulnerability: vulnerability_pb2.Vulnerability):
+  bucket = gcs.get_osv_bucket()
+  vuln_id = vulnerability.id
+  modified = vulnerability.modified.ToDatetime()
+  try:
+    pb_blob = bucket.blob(os.path.join(gcs.VULN_PB_PATH, vuln_id + '.pb'))
+    pb_blob.custom_time = modified
+    pb_blob.upload_from_string(
+        vulnerability.SerializeToString(deterministic=True),
+        content_type='application/octet-stream')
+  except Exception:
+    logging.exception('failed to upload vulnerability protobuf to GCS')
+    # TODO(michaelkedar): send pub/sub message to retry
+
+  try:
+    json_blob = bucket.blob(os.path.join(gcs.VULN_JSON_PATH, vuln_id + '.json'))
+    json_blob.custom_time = modified
+    json_data = json_format.MessageToJson(vulnerability,
+                                          preserving_proto_field_name=True,
+                                          indent=None)
+    json_blob.upload_from_string(json_data, content_type='application/json')
+  except Exception:
+    logging.exception('failed to upload vulnerability protobuf to GCS')
+    # TODO(michaelkedar): send pub/sub message to retry
 
 
 _EVENT_ORDER = {

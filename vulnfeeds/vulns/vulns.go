@@ -48,12 +48,8 @@ func (e *VulnsCVEListError) Error() string {
 	return e.URL + ": " + e.Err.Error()
 }
 
-type Affected struct {
-	osvschema.Affected
-}
-
 // AttachExtractedVersionInfo converts the models.VersionInfo struct to OSV GIT and ECOSYSTEM AffectedRanges and AffectedPackage.
-func (affected *Affected) AttachExtractedVersionInfo(version models.VersionInfo) {
+func AttachExtractedVersionInfo(affected *osvschema.Affected, version models.VersionInfo) {
 	// commit holds a commit hash of one of the supported commit types.
 	type commit struct {
 		commitType models.CommitType

@@ -25,6 +25,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"time"
 
 	"github.com/google/osv/vulnfeeds/cves"
 	"github.com/google/osv/vulnfeeds/pypi"
@@ -161,7 +162,14 @@ func main() {
 				PURL:      purl,
 			}
 
-			v, notes := vulns.FromCVE(id, cve.CVE)
+			v, notes := vulns.FromCVE(
+				id,
+				cve.CVE.ID,
+				cve.CVE.References,
+				cve.CVE.Descriptions,
+				cve.CVE.Published.Format(time.RFC3339),
+				cve.CVE.LastModified.Format(time.RFC3339),
+				cve.CVE.Metrics)
 			v.AddPkgInfo(pkgInfo)
 			versions, versionNotes := cves.ExtractVersionInfo(cve.CVE, validVersions, http.DefaultClient)
 

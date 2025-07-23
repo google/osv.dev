@@ -72,6 +72,11 @@ type BaseCVSS struct {
 	BaseSeverity string  `json:"baseSeverity,omitempty"`
 }
 
+type CVSS struct {
+	// VectorString corresponds to the JSON schema field "vectorString".
+	VectorString string `json:"vectorString,omitempty" yaml:"vectorString" mapstructure:"vectorString"`
+}
+
 type Metrics struct {
 	Format    string       `json:"format,omitempty"`
 	Scenarios []LangString `json:"scenarios,omitempty"`
@@ -81,7 +86,7 @@ type Metrics struct {
 	CVSSV2_0  BaseCVSS     `json:"cvssv2_0,omitempty"`
 	Other     struct {
 		Type    string `json:"type,omitempty"`
-		Content any `json:"content,omitempty"`
+		Content any    `json:"content,omitempty"`
 	} `json:"other,omitempty"`
 }
 
@@ -148,9 +153,4 @@ func ParseCVE5Timestamp(timestamp string) (time.Time, error) {
 		timestamp = timestamp[:len(timestamp)-1]
 	}
 	return time.Parse(CVE5TimeFormat, timestamp)
-}
-
-type CVSS struct {
-	// VectorString corresponds to the JSON schema field "vectorString".
-	VectorString string `json:"vectorString,omitempty" yaml:"vectorString" mapstructure:"vectorString"`
 }

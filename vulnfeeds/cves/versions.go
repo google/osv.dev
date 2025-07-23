@@ -594,16 +594,16 @@ func processExtractedVersion(version string) string {
 	return version
 }
 
-func ExtractVersionsFromDescription(validVersions []string, description string) ([]models.AffectedVersion, []string) {
+func ExtractVersionsFromText(validVersions []string, text string) ([]models.AffectedVersion, []string) {
 	// Match:
 	//  - x.x.x before x.x.x
 	//  - x.x.x through x.x.x
 	//  - through x.x.x
 	//  - before x.x.x
 	pattern := regexp.MustCompile(`(?i)([\w.+\-]+)?\s+(through|before)\s+(?:version\s+)?([\w.+\-]+)`)
-	matches := pattern.FindAllStringSubmatch(description, -1)
+	matches := pattern.FindAllStringSubmatch(text, -1)
 	if matches == nil {
-		return nil, []string{"Failed to parse versions from description"}
+		return nil, []string{"Failed to parse versions from text"}
 	}
 
 	var notes []string
@@ -626,7 +626,7 @@ func ExtractVersionsFromDescription(validVersions []string, description string) 
 		}
 
 		if introduced == "" && fixed == "" && lastaffected == "" {
-			notes = append(notes, "Failed to match version range from description")
+			notes = append(notes, "Failed to match version range from text")
 			continue
 		}
 
@@ -767,7 +767,7 @@ func ExtractVersionInfo(cve CVE, validVersions []string, httpClient *http.Client
 	}
 	if !gotVersions {
 		var extractNotes []string
-		v.AffectedVersions, extractNotes = ExtractVersionsFromDescription(validVersions, EnglishDescription(cve.Descriptions))
+		v.AffectedVersions, extractNotes = ExtractVersionsFromText(validVersions, EnglishDescription(cve.Descriptions))
 		notes = append(notes, extractNotes...)
 		if len(v.AffectedVersions) > 0 {
 			log.Printf("[%s] Extracted versions from description = %+v", cve.ID, v.AffectedVersions)

@@ -12,6 +12,7 @@ import (
 	"github.com/google/osv/vulnfeeds/cves"
 	"github.com/google/osv/vulnfeeds/utility"
 	"github.com/google/osv/vulnfeeds/vulns"
+	"github.com/ossf/osv-schema/bindings/go/osvschema"
 )
 
 const (
@@ -154,13 +155,13 @@ func combineIntoOSV(loadedCves map[cves.CVEID]cves.Vulnerability, allParts map[c
 		if len(allParts[cveId]) == 0 {
 			continue
 		}
-		convertedCve, _ := vulns.FromCVE(
+		convertedCve := vulns.FromCVE(
 			cveId,
 			cve.CVE.ID,
 			cve.CVE.References,
 			cve.CVE.Descriptions,
-			cve.CVE.Published.Format(time.RFC3339),
-			cve.CVE.LastModified.Format(time.RFC3339),
+			cve.CVE.Published.Time,
+			cve.CVE.LastModified.Time,
 			cve.CVE.Metrics)
 		if len(cveList) > 0 {
 			// Best-effort attempt to mark a disputed CVE as withdrawn.
@@ -168,7 +169,6 @@ func combineIntoOSV(loadedCves map[cves.CVEID]cves.Vulnerability, allParts map[c
 			if err != nil {
 				Logger.Warnf("Unable to determine CVE dispute status of %s: %v", convertedCve.ID, err)
 			}
-			if err == nil && modified != "" {
 				convertedCve.Withdrawn = modified
 			}
 		}
@@ -186,9 +186,9 @@ func combineIntoOSV(loadedCves map[cves.CVEID]cves.Vulnerability, allParts map[c
 			}
 		}
 
-		cveModified, _ := time.Parse(time.RFC3339, convertedCve.Modified)
+		cveModified := convertedCve.Modified
 		if cvePartsModifiedTime[cveId].After(cveModified) {
-			convertedCve.Modified = cvePartsModifiedTime[cveId].Format(time.RFC3339)
+			convertedCve.Modified = cvePartsModifiedTime[cveId]
 		}
 		convertedCves[cveId] = convertedCve
 	}
@@ -249,7 +249,7 @@ func loadAllCVEs(cvePath string) map[cves.CVEID]cves.Vulnerability {
 
 // addReference adds the related security tracker URL to a given vulnerability's references
 func addReference(cveId string, ecosystem string, convertedCve *vulns.Vulnerability) {
-	securityReference := vulns.Reference{Type: "ADVISORY"}
+	securityReference := osvschema.Reference{Type: osvschema.ReferenceAdvisory}
 	if ecosystem == alpineEcosystem {
 		securityReference.URL, _ = url.JoinPath(alpineSecurityTrackerURL, cveId)
 	} else if ecosystem == debianEcosystem {

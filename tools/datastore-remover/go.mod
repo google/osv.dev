@@ -1,10 +1,10 @@
 module github.com/google/datastore-remover
 
-go 1.23.6
+go 1.24.4
 
 require (
 	cloud.google.com/go/datastore v1.20.0
-	google.golang.org/api v0.240.0
+	google.golang.org/api v0.241.0
 )
 
 require (

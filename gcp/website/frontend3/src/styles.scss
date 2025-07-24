@@ -55,6 +55,7 @@ html,
 body {
   height: 100%;
   scroll-behavior: smooth;
+  font-size: 14px;
 }
 
 ol,
@@ -81,7 +82,6 @@ body {
   background: $osv-background;
   color: $osv-text-color;
   font-family: $osv-body-font-family;
-  font-size: 14px;
   --mdc-theme-primary: #{$osv-text-color};
   --mdc-theme-surface: $osv-background;
   --mdc-theme-background: $osv-background;
@@ -258,7 +258,7 @@ pre {
     }
   }
 
-  @media (min-width: $osv-mobile-breakpoint+1) {
+  @media (min-width: #{$osv-mobile-breakpoint + 1}) {
     .tabs {
       width: 100%;
       display: flex;
@@ -525,10 +525,12 @@ md-icon-button.mdc-data-table__sort-icon-button {
     border-bottom-style: solid;
     font-family: $osv-heading-font-family;
     font-weight: bold;
+    font-size: 1rem;
   }
 
   .mdc-data-table__cell {
     border-bottom-style: dashed;
+    font-size: 1rem;
   }
 
   // Render the divs as a table.
@@ -670,8 +672,10 @@ md-icon-button.mdc-data-table__sort-icon-button {
   code {
     font-family: $osv-heading-font-family;
     background: $osv-grey-800;
-    padding: 2px 4px;
+    padding: 2px 5px;
+    margin: 0 2px;
     border-radius: $osv-border-radius-small;
+    box-shadow: 0 0 2px white;
   }
 
   @media (max-width: $osv-mobile-breakpoint) {
@@ -856,7 +860,7 @@ dl.vulnerability-details,
   }
 
   // Tab bar styling.
-  --const-mq-affordances: [screen and (max-width: #{$osv-mobile-breakpoint})] collapse | [screen and (min-width: #{$osv-mobile-breakpoint+1})] tab-bar;
+  --const-mq-affordances: [screen and (max-width: #{$osv-mobile-breakpoint})] collapse | [screen and (min-width: #{$osv-mobile-breakpoint + 1})] tab-bar;
 
   .force-collapse {
     --const-mq-affordances: [screen] collapse;
@@ -1428,7 +1432,7 @@ dl.vulnerability-details,
       padding-bottom: 24px;
 
       .entry-title {
-        font-size: 1.5rem;
+        font-size: 1.6rem;
         font-family: $osv-heading-font-family;
         display: block;
         padding-bottom: 16px;
@@ -1439,10 +1443,6 @@ dl.vulnerability-details,
         font-family: $osv-body-font-family;
         font-weight: bold;
         padding-bottom: 20px;
-      }
-
-      .summary {
-        font-size: 16px;
       }
 
     }
@@ -1478,6 +1478,7 @@ div.highlight {
 
 .blog-post-page,
 .blog-page {
+  font-size: 1.357rem; // ~ 19px / 13px (html font size)
 
   ul,
   ol {
@@ -1493,26 +1494,45 @@ div.highlight {
     display: block;
     font-family: $osv-heading-font-family;
     padding-bottom: 16px;
-    // 3rem is 3x16px=48px
+    // 3rem is 3x14px=42px
     font-size: clamp(1.8rem, 9vw, 3rem);
   }
 
   h2,
   h3,
   h4 {
-    line-height: 1.1;
-    font-weight: 700;
-    margin-top: 3rem;
-    margin-bottom: 1.5rem;
+    line-height: 1.5;
+    font-weight: 900;
+    margin-top: 1.667em;
+    margin-bottom: 0.7em;
+  }
+
+  h3 {
+    // ~26px
+    font-size: 1.857rem;
   }
 
   p {
-    margin-bottom: 16px;
-    line-height: 1.6;
+    margin-bottom: 1.1em;
+    line-height: 1.5;
   }
 
   a {
-    color: $osv-cyan-300
+    color: $osv-red-300
+  }
+
+  code {
+    font-family: $osv-heading-font-family;
+    background: $osv-grey-800;
+    padding: 2px 5px;
+    margin: 0 2px;
+    border-radius: $osv-border-radius-small;
+    box-shadow: 0 0 2px white;
+  }
+
+  img {
+    border-radius: $osv-border-radius-small;
+    box-shadow: 0 0 3px white;
   }
 
   .author {
@@ -1535,11 +1555,10 @@ div.highlight {
     max-width: 800px;
     width: 100%;
     margin: 0 auto;
-    font-size: 16px;
   }
 
   .author {
-    padding-bottom: 48px;
+    padding-bottom: 48px !important;
   }
 }
 
@@ -1620,4 +1639,224 @@ div.highlight {
     position: absolute;
     left: 0;
   }
+}
+
+/* Navbar search styles */
+.search-container-nav {
+  position: relative;
+  display: flex;
+  align-items: center;
+  height: 24px; /* Match the GitHub icon height */
+  
+  @media (max-width: $osv-mobile-breakpoint) {
+    display: none;
+  }
+}
+
+.search-toggle-container {
+  position: relative;
+  display: flex;
+  align-items: center;
+  height: 100%;
+}
+
+.search-toggle {
+  background: transparent;
+  border: none;
+  color: white;
+  cursor: pointer;
+  padding: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background-color 0.2s ease, opacity 0.3s ease, visibility 0.3s ease;
+  border-radius: 50%;
+
+  &:hover {
+    background-color: rgba(255, 255, 255, 0.1);
+  }
+
+  &:focus {
+    outline: none;
+    background-color: rgba(255, 255, 255, 0.1);
+  }
+
+  &.active {
+    color: $osv-text-color;
+    opacity: 0;
+    visibility: hidden;
+  }
+  
+  .material-icons {
+    font-size: 24px;
+  }
+}
+
+.search-form {
+  position: absolute;
+  right: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  display: flex;
+  align-items: center;
+  width: 0;
+  overflow: hidden;
+  transition: width 0.3s ease, opacity 0.3s ease, visibility 0.3s ease;
+  background: rgba(41, 41, 41, 0.95);
+  border-radius: 24px;
+  z-index: 1000;
+  opacity: 0;
+  visibility: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  box-sizing: border-box;
+
+  &.active {
+    width: 280px;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+    opacity: 1;
+    visibility: visible;
+  }
+
+  .search-input {
+    flex: 1;
+    border: none;
+    padding: 10px 16px;
+    font-size: 14px;
+    font-family: $osv-body-font-family;
+    background: transparent;
+    color: $osv-text-color;
+    width: 100%;
+    outline: none;
+    height: 36px;
+    line-height: 36px;
+    box-sizing: border-box;
+
+    &::placeholder {
+      color: rgba(255, 255, 255, 0.7);
+    }
+    
+    &:focus::placeholder {
+      color: rgba(255, 255, 255, 0.5);
+    }
+  }
+
+  .search-submit {
+    background: transparent;
+    border: none;
+    color: $osv-text-color;
+    cursor: pointer;
+    padding: 8px;
+    margin-right: 2px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    transition: background-color 0.2s ease;
+    height: 36px;
+    width: 36px;
+
+    &:hover {
+      background-color: rgba(255, 255, 255, 0.1);
+    }
+    
+    .material-icons {
+      font-size: 20px;
+    }
+  }
+}
+
+/* --- Base styles for the suggestions dropdown --- */
+.search-suggestions {
+  position: absolute;
+  z-index: 9999;
+  max-height: 300px;
+  overflow-y: auto;
+  font-family: $osv-body-font-family;
+  font-size: 14px;
+  box-sizing: border-box;
+
+  &--hidden {
+    display: none;
+  }
+}
+
+/* --- Base styles for a single suggestion item --- */
+.search-suggestions__item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 16px;
+  cursor: pointer;
+  color: $osv-text-color;
+  transition: background-color 0.15s ease;
+  
+  &:last-child {
+    border-bottom: none;
+  }
+}
+
+/* --- Styling for dropdown effect --- */
+.query-container.suggestions-active {
+  border-bottom-left-radius: 0;
+  border-bottom-right-radius: 0;
+}
+
+.search-form.suggestions-active {
+  border-bottom-left-radius: 0;
+  border-bottom-right-radius: 0;
+}
+
+
+/* --- Styles for the Main List Page Search Bar --- */
+.search-suggestions--list-page {
+  background: $osv-background; 
+  border: 2px solid $osv-text-color; 
+  border-top: none;
+  border-radius: 0 0 8px 8px;
+  margin-top: -2px; 
+
+  .search-suggestions__item {
+    border-bottom: 1px dashed $osv-grey-600;
+
+    &:hover,
+    &--selected {
+      background-color: $osv-grey-800; 
+    }
+  }
+}
+
+/* --- Styles for the Navbar Search Bar --- */
+.search-suggestions--nav {
+  background: rgba(41, 41, 41, 0.95); 
+  border: 1px solid rgba(255, 255, 255, 0.3); 
+  border-top: none;
+  border-radius: 0 0 24px 24px; 
+  width: 280px;
+  box-shadow: 0 5px 20px rgba(0, 0, 0, 0.4);
+  margin-top: -1px; 
+  
+  .search-suggestions__item {
+    &:hover,
+    &--selected {
+      background: rgba($osv-accent-color, 0.2);
+    }
+  }
+}
+
+.search-suggestions::-webkit-scrollbar {
+  width: 6px;
+}
+
+.search-suggestions::-webkit-scrollbar-track {
+  background: transparent;
+  margin: 4px 0;
+}
+
+.search-suggestions::-webkit-scrollbar-thumb {
+  background-color: $osv-grey-600;
+  border-radius: 3px;
+}
+
+.search-suggestions::-webkit-scrollbar-thumb:hover {
+  background-color: $osv-grey-800;
 }

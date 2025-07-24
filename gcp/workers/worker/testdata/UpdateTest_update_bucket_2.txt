@@ -46,6 +46,7 @@
                           'framework',
                           'media',
                           'media framework'],
+    'search_tags': ['asb-a-153358911', 'media framework'],
     'semver_fixed_indexes': [],
     'severities': [],
     'source': 'source',

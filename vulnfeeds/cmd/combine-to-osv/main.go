@@ -169,8 +169,7 @@ func combineIntoOSV(loadedCves map[cves.CVEID]cves.Vulnerability, allParts map[c
 			if err != nil {
 				Logger.Warnf("Unable to determine CVE dispute status of %s: %v", convertedCve.ID, err)
 			}
-				convertedCve.Withdrawn = modified
-			}
+			convertedCve.Withdrawn = modified
 		}
 
 		addedDebianURL := false

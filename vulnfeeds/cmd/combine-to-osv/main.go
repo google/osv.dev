@@ -155,14 +155,7 @@ func combineIntoOSV(loadedCves map[cves.CVEID]cves.Vulnerability, allParts map[c
 		if len(allParts[cveId]) == 0 {
 			continue
 		}
-		convertedCve := vulns.FromCVE(
-			cveId,
-			cve.CVE.ID,
-			cve.CVE.References,
-			cve.CVE.Descriptions,
-			cve.CVE.Published.Time,
-			cve.CVE.LastModified.Time,
-			cve.CVE.Metrics)
+		convertedCve := vulns.FromNVDCVE(cveId, cve.CVE)
 		if len(cveList) > 0 {
 			// Best-effort attempt to mark a disputed CVE as withdrawn.
 			modified, err := vulns.CVEIsDisputed(convertedCve, cveList)

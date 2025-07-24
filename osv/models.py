@@ -1119,6 +1119,7 @@ def populate_entities_from_bug(entity: Bug):
 
 
 def _write_to_bucket(vulnerability: vulnerability_pb2.Vulnerability):
+  """Writes the vulnerability .pb and .json to the GCS bucket."""
   bucket = gcs.get_osv_bucket()
   vuln_id = vulnerability.id
   modified = vulnerability.modified.ToDatetime()
@@ -1135,9 +1136,8 @@ def _write_to_bucket(vulnerability: vulnerability_pb2.Vulnerability):
   try:
     json_blob = bucket.blob(os.path.join(gcs.VULN_JSON_PATH, vuln_id + '.json'))
     json_blob.custom_time = modified
-    json_data = json_format.MessageToJson(vulnerability,
-                                          preserving_proto_field_name=True,
-                                          indent=None)
+    json_data = json_format.MessageToJson(
+        vulnerability, preserving_proto_field_name=True, indent=None)
     json_blob.upload_from_string(json_data, content_type='application/json')
   except Exception:
     logging.exception('failed to upload vulnerability protobuf to GCS')

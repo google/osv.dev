@@ -295,14 +295,14 @@ export class SearchSuggestionsManager {
     if (suggestionContainer) {
       // Use the designated suggestions container
       const containerRect = suggestionContainer.getBoundingClientRect();
-      this.suggestionsElement.style.left = `${containerRect.left}px`;
-      this.suggestionsElement.style.top = `${containerRect.bottom}px`;
+      this.suggestionsElement.style.left = `${containerRect.left + window.scrollX}px`;
+      this.suggestionsElement.style.top = `${containerRect.bottom + window.scrollY}px`;
       this.suggestionsElement.style.width = `${containerRect.width}px`;
     } else {
       console.warn('No .search-suggestions-container found. Add this class to the desired parent element to control suggestions positioning.');
       // Fallback to input element positioning
-      this.suggestionsElement.style.left = `${rect.left}px`;
-      this.suggestionsElement.style.top = `${rect.bottom}px`;
+      this.suggestionsElement.style.left = `${rect.left + window.scrollX}px`;
+      this.suggestionsElement.style.top = `${rect.bottom + window.scrollY}px`;
       this.suggestionsElement.style.width = `${rect.width}px`;
     }
   }

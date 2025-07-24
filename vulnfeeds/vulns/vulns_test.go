@@ -369,12 +369,7 @@ func TestAddSeverity(t *testing.T) {
 
 	for _, tc := range tests {
 		id := tc.inputCVE.CVE.ID
-		references := tc.inputCVE.CVE.References
-		descriptions := tc.inputCVE.CVE.Descriptions
-		published := tc.inputCVE.CVE.Published.Time
-		modified := tc.inputCVE.CVE.LastModified.Time
-		metrics := tc.inputCVE.CVE.Metrics
-		vuln := FromCVE(id, id, references, descriptions, published, modified, metrics)
+		vuln := FromNVDCVE(id, tc.inputCVE.CVE)
 
 		got := vuln.Severity
 		if diff := gocmp.Diff(got, tc.expectedResult); diff != "" {

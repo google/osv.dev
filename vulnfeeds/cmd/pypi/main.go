@@ -161,7 +161,7 @@ func main() {
 				PURL:      purl,
 			}
 
-			v := vulns.FromCVE(id, cve.CVE.ID, cve.CVE.References, cve.CVE.Descriptions, cve.CVE.Published.Time, cve.CVE.LastModified.Time, cve.CVE.Metrics)
+			v := vulns.FromNVDCVE(id, cve.CVE)
 			v.AddPkgInfo(pkgInfo)
 			versions, notes := cves.ExtractVersionInfo(cve.CVE, validVersions, http.DefaultClient)
 

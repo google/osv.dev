@@ -129,6 +129,9 @@ def get(name: str) -> Ecosystem:
   if name.startswith('Alpine'):
     return Alpine(name.partition(':')[2])
 
+  if name.startswith('BellSoft Hardened Containers'):
+    return Alpaquita()
+
   if name.startswith('Mageia'):
     return Mageia()
 

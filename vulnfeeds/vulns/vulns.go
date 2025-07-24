@@ -107,6 +107,7 @@ func AttachExtractedVersionInfo(affected *osvschema.Affected, version models.Ver
 		addedIntroduced := false
 		for _, commit := range commits {
 			if commit.commitType == models.Introduced {
+				gitRange.Events = append(gitRange.Events, osvschema.Event{Introduced: commit.hash})
 				addedIntroduced = true
 			}
 			if commit.commitType == models.Fixed {
@@ -363,6 +364,24 @@ func getBestSeverity(metricsData any) (string, osvschema.SeverityType) {
 		for _, metric := range md.CVSSMetricV30 {
 			if metric.Type == "Primary" && metric.CVSSData.VectorString != "" {
 				return metric.CVSSData.VectorString, osvschema.SeverityCVSSV3
+			}
+		}
+	case []cves.Metrics:
+		// Define a prioritized list of checks.
+		checks := []struct {
+			getVectorString func(cves.Metrics) string
+			severityType    osvschema.SeverityType
+		}{
+			{func(m cves.Metrics) string { return m.CVSSV4_0.VectorString }, osvschema.SeverityCVSSV4},
+			{func(m cves.Metrics) string { return m.CVSSV3_1.VectorString }, osvschema.SeverityCVSSV3},
+			{func(m cves.Metrics) string { return m.CVSSV3_0.VectorString }, osvschema.SeverityCVSSV3},
+		}
+
+		for _, check := range checks {
+			for _, m := range md {
+				if vectorString := check.getVectorString(m); vectorString != "" {
+					return vectorString, check.severityType
+				}
 			}
 		}
 	}
@@ -626,21 +645,21 @@ func ClassifyReferences(refs []cves.Reference) []osvschema.Reference {
 	return references
 }
 
-// FromCVE creates a minimal OSV object from a given CVE and id.
+// FromNVDCVE creates a minimal OSV object from a given CVE and id.
 // Leaves affected and version fields empty to be filled in later with AddPkgInfo
 // There are two id fields passed in as one of the users of this field (PyPi) sometimes has a different id than the CVEID
 // and the ExtractReferencedVulns function uses these in a check to add the other ID as an alias.
-func FromCVE(id cves.CVEID, cveID cves.CVEID, references []cves.Reference, descriptions []cves.LangString, publishedDate time.Time, modifiedDate time.Time, metrics any) *Vulnerability {
-	aliases, related := ExtractReferencedVulns(id, cveID, references)
+func FromNVDCVE(id cves.CVEID, cve cves.CVE) *Vulnerability {
+	aliases, related := ExtractReferencedVulns(id, cve.ID, cve.References)
 	v := Vulnerability{}
 	v.ID = string(id)
-	v.Details = cves.EnglishDescription(descriptions)
+	v.Details = cves.EnglishDescription(cve.Descriptions)
 	v.Aliases = aliases
 	v.Related = related
-	v.Published = publishedDate
-	v.Modified = modifiedDate
-	v.References = ClassifyReferences(references)
-	v.AddSeverity(metrics)
+	v.Published = cve.Published.Time
+	v.Modified = cve.LastModified.Time
+	v.References = ClassifyReferences(cve.References)
+	v.AddSeverity(cve.Metrics)
 	return &v
 }
 

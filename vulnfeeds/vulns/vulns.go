@@ -33,6 +33,7 @@ import (
 
 	"github.com/google/osv/vulnfeeds/cves"
 	"github.com/google/osv/vulnfeeds/models"
+	"github.com/ossf/osv-schema/bindings/go/osvschema"
 )
 
 const CVEListBasePath = "cves"
@@ -71,6 +72,7 @@ const (
 )
 
 // AttachExtractedVersionInfo converts the models.VersionInfo struct to OSV GIT and ECOSYSTEM AffectedRanges and AffectedPackage.
+func AttachExtractedVersionInfo(affected *osvschema.Affected, version models.VersionInfo) {
 	// commit holds a commit hash of one of the supported commit types.
 	type commit struct {
 		commitType models.CommitType
@@ -97,7 +99,8 @@ const (
 	}
 
 	for repo, commits := range repoToCommits {
-			Type: "GIT",
+		gitRange := osvschema.Range{
+			Type: osvschema.RangeGit,
 			Repo: repo,
 		}
 		// We're not always able to determine when a vulnerability is introduced, and may need to default to the dawn of time.
@@ -164,16 +167,16 @@ const (
 }
 
 // AttachExtractedVersionInfo converts the models.VersionInfo struct to OSV GIT and ECOSYSTEM AffectedRanges and AffectedPackage.
-func (affected *Affected) NaivelyAttachExtractedVersionInfo(version models.VersionInfo) {
+func NaivelyAttachExtractedVersionInfo(affected *osvschema.Affected, version models.VersionInfo) {
 
-	var versionRange AffectedRange
+	var versionRange osvschema.Range
 	// Adding an ECOSYSTEM version range only makes sense if we have package information.
-	if affected.Package == nil {
-		versionRange = AffectedRange{
+	if affected.Package == (osvschema.Package{}) {
+		versionRange = osvschema.Range{
 			Type: "[EMPTY]",
 		}
 	} else {
-		versionRange = AffectedRange{
+		versionRange = osvschema.Range{
 			Type: "ECOSYSTEM",
 		}
 	}
@@ -191,27 +194,26 @@ func (affected *Affected) NaivelyAttachExtractedVersionInfo(version models.Versi
 		}
 
 		if _, seen := seenIntroduced[introduced]; !seen {
-			versionRange.Events = append(versionRange.Events, Event{
+			versionRange.Events = append(versionRange.Events, osvschema.Event{
 				Introduced: introduced,
 			})
 			seenIntroduced[introduced] = true
 		}
 
 		if _, seen := seenFixed[v.Fixed]; v.Fixed != "" && !seen {
-			versionRange.Events = append(versionRange.Events, Event{
+			versionRange.Events = append(versionRange.Events, osvschema.Event{
 				Fixed: v.Fixed,
 			})
 			seenFixed[v.Fixed] = true
 		}
 		if !seenFixed[v.Fixed] {
 			if _, seen := seenLastAffected[v.LastAffected]; v.LastAffected != "" && !seen {
-				versionRange.Events = append(versionRange.Events, Event{
+				versionRange.Events = append(versionRange.Events, osvschema.Event{
 					LastAffected: v.LastAffected,
 				})
 				seenLastAffected[v.LastAffected] = true
 			}
 		}
-
 	}
 	if len(version.AffectedVersions) > 0 {
 		affected.Ranges = append(affected.Ranges, versionRange)
@@ -361,7 +363,6 @@ func getBestSeverity(metricsData any) (string, osvschema.SeverityType) {
 		for _, metric := range md.CVSSMetricV30 {
 			if metric.Type == "Primary" && metric.CVSSData.VectorString != "" {
 				return metric.CVSSData.VectorString, osvschema.SeverityCVSSV3
-			}
 			}
 		}
 	}
@@ -585,7 +586,7 @@ func ExtractReferencedVulns(id cves.CVEID, cveID cves.CVEID, references []cves.R
 
 	// TODO(jesslowe): Check if references to other CVEs exist in the description and add to related
 
-	return unqiue(aliases), unique(related)
+	return unique(aliases), unique(related)
 }
 
 func unique[T comparable](s []T) []T {

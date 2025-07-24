@@ -737,8 +737,11 @@ class Bug(ndb.Model):
     else:
       withdrawn = None
 
-    published = timestamp_pb2.Timestamp()
-    published.FromDatetime(self.timestamp)
+    if self.timestamp:
+      published = timestamp_pb2.Timestamp()
+      published.FromDatetime(self.timestamp)
+    else:
+      published = None
 
     references = []
     if self.reference_url_types:
@@ -867,7 +870,7 @@ class Bug(ndb.Model):
   def _post_put_hook(self: Self, future: ndb.Future):  # pylint: disable=arguments-differ
     """Post-put hook for writing new entities for database migration."""
     if future.exception():
-      logging.error("Not writing new entities for %s since Bug.put() failed.",
+      logging.error("Not writing new entities for %s since Bug.put() failed",
                     self.db_id)
       return
     populate_entities_from_bug(self)

@@ -146,11 +146,11 @@ func AttachExtractedVersionInfo(affected *osvschema.Affected, version models.Ver
 
 // PackageInfo is an intermediate struct to ease generating Vulnerability structs.
 type PackageInfo struct {
-	PkgName           string             `json:"pkg_name,omitempty" yaml:"pkg_name,omitempty"`
-	Ecosystem         string             `json:"ecosystem,omitempty" yaml:"ecosystem,omitempty"`
-	PURL              string             `json:"purl,omitempty" yaml:"purl,omitempty"`
-	VersionInfo       models.VersionInfo `json:"fixed_version,omitempty" yaml:"fixed_version,omitempty"`
-	EcosystemSpecific map[string]any     `json:"ecosystem_specific,omitempty" yaml:"ecosystem_specific,omitempty"`
+	PkgName           string                 `json:"pkg_name,omitempty" yaml:"pkg_name,omitempty"`
+	Ecosystem         string                 `json:"ecosystem,omitempty" yaml:"ecosystem,omitempty"`
+	PURL              string                 `json:"purl,omitempty" yaml:"purl,omitempty"`
+	VersionInfo       models.VersionInfo     `json:"fixed_version,omitempty" yaml:"fixed_version,omitempty"`
+	EcosystemSpecific map[string]interface{} `json:"ecosystem_specific,omitempty" yaml:"ecosystem_specific,omitempty"`
 }
 
 func (pi *PackageInfo) ToJSON(w io.Writer) error {

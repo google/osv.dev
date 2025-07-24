@@ -120,7 +120,7 @@ func updateOSVPkgInfos(pkgName string, cveId string, releases map[string]Release
 			PkgName:   pkgName,
 			Ecosystem: "Debian:" + debianVersion,
 		}
-		pkgInfo.EcosystemSpecific = make(map[string]any)
+		pkgInfo.EcosystemSpecific = make(map[string]interface{})
 
 		pkgInfo.VersionInfo = models.VersionInfo{
 			AffectedVersions: []models.AffectedVersion{{Introduced: "0"}},

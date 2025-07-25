@@ -19,6 +19,7 @@ import (
 	"github.com/google/osv/vulnfeeds/models"
 	"github.com/google/osv/vulnfeeds/utility"
 	"github.com/google/osv/vulnfeeds/vulns"
+	"github.com/ossf/osv-schema/bindings/go/osvschema"
 )
 
 type ConversionOutcome int
@@ -64,7 +65,7 @@ var Metrics struct {
 	CNA                 string
 	OSVRecordsGenerated int
 	Outcome             ConversionOutcome
-	RefTypesCount       map[string]int
+	RefTypesCount       map[osvschema.ReferenceType]int
 	Notes               []string
 }
 
@@ -240,14 +241,14 @@ func ExtractVersionInfo(cve cves.CVE5, refs []string, httpClient *http.Client) (
 	return v, notes
 }
 
-func determineHeuristics(cve cves.CVE5, v *osvschema.Vulnerability) {
+func determineHeuristics(cve cves.CVE5, v *vulns.Vulnerability) {
 	// CNA based heuristics
 	Metrics.CNA = cve.Metadata.AssignerShortName
 	// TODO(jesslowe): more CNA based analysis
 	// Reference based heuristics
 	// Count number of references of each type
 	// len(v.References)
-	refTypeCounts := make(map[string]int)
+	refTypeCounts := make(map[osvschema.ReferenceType]int)
 	for _, ref := range v.References {
 		refTypeCounts[ref.Type]++
 	}
@@ -267,12 +268,7 @@ func determineHeuristics(cve cves.CVE5, v *osvschema.Vulnerability) {
 // Takes a CVE record and outputs an OSV file in the specified directory.
 func CVEToOSV(CVE cves.CVE5, references []cves.Reference, repos []string, cache git.RepoTagsCache, directory string) error {
 	// Create a base OSV record
-	cveID := CVE.Metadata.CVEID
-	datePublished, _ := vulns.CVE5timestampToRFC3339(CVE.Metadata.DatePublished)
-	dateUpdated, _ := vulns.CVE5timestampToRFC3339(CVE.Metadata.DateUpdated)
-	metrics := CVE.Containers.CNA.Metrics
-
-	v := vulns.FromCVE(cveID, cveID, references, CVE.Containers.CNA.Descriptions, datePublished, dateUpdated, metrics)
+	v, notes := vulns.FromCVE5(CVE, references)
 	determineHeuristics(CVE, v)
 
 	versions, notes := ExtractVersionInfo(CVE, repos, http.DefaultClient)
@@ -340,8 +336,8 @@ func CVEToOSV(CVE cves.CVE5, references []cves.Reference, repos []string, cache 
 
 	slices.SortStableFunc(versions.AffectedCommits, models.AffectedCommitCompare)
 
-	affected := vulns.Affected{}
-	affected.AttachExtractedVersionInfo(versions)
+	affected := osvschema.Affected{}
+	vulns.AttachExtractedVersionInfo(&affected, versions)
 	v.Affected = append(v.Affected, affected)
 
 	// Save OSV record to a directory
@@ -442,25 +438,7 @@ func ExtractNaiveVersionInfo(cve cves.CVE5, refs []string, httpClient *http.Clie
 	return v
 }
 
-func CVEToMinimalOSV(CVE cves.CVE5, references []cves.Reference, repos []string, directory string) error {
-	// Create a base OSV record
-	cveID := CVE.Metadata.CVEID
-	datePublished, _ := vulns.CVE5timestampToRFC3339(CVE.Metadata.DatePublished)
-	dateUpdated, _ := vulns.CVE5timestampToRFC3339(CVE.Metadata.DateUpdated)
-	metrics := CVE.Containers.CNA.Metrics
-
-	v := vulns.FromCVE(cveID, cveID, references, CVE.Containers.CNA.Descriptions, datePublished, dateUpdated, metrics)
-
-	// Determine CNA specific heuristics
-	determineHeuristics(CVE, v)
-
-	versions := ExtractNaiveVersionInfo(CVE, repos, http.DefaultClient)
-	//Create naive affected packanges
-	affected := vulns.Affected{}
-	affected.NaivelyAttachExtractedVersionInfo(versions)
-	v.Affected = append(v.Affected, affected)
-
-	cna := CVE.Containers.CNA
+func getVendorProductNames(cna cves.CNA) (string, string) {
 	maybeVendorName := "UNKNOWN"
 	maybeProductName := "UNKNOWN"
 	for _, cveAff := range cna.Affected {
@@ -468,10 +446,10 @@ func CVEToMinimalOSV(CVE cves.CVE5, references []cves.Reference, repos []string,
 			Metrics.Notes = append(Metrics.Notes, "[%s] Vendor/Product combo on VendorProductDenyList")
 			continue
 		}
-		if vulns.CheckQuality(cveAff.Vendor) == vulns.Success || vulns.CheckQuality(cveAff.Vendor) == vulns.Spaces {
+		if vulns.CheckQuality(cveAff.Vendor) <= vulns.Spaces {
 			maybeVendorName = cveAff.Vendor
 		}
-		if vulns.CheckQuality(cveAff.Product) == vulns.Success || vulns.CheckQuality(cveAff.Product) == vulns.Spaces {
+		if vulns.CheckQuality(cveAff.Product) <= vulns.Spaces {
 			{
 				maybeProductName = cveAff.Product
 			}
@@ -480,10 +458,26 @@ func CVEToMinimalOSV(CVE cves.CVE5, references []cves.Reference, repos []string,
 			}
 		}
 	}
+	return maybeVendorName, maybeProductName
+}
 
-	v.DatabaseSpecific := 
+func CVEToMinimalOSV(CVE cves.CVE5, references []cves.Reference, repos []string, directory string) error {
+	// Create a base OSV record
+	v, notes := vulns.FromCVE5(CVE, references)
+
+	// Determine CNA specific heuristics
+	determineHeuristics(CVE, v)
+
+	// versions := ExtractNaiveVersionInfo(CVE, repos, http.DefaultClient)
+	// //Create naive affected packanges
+	// affected := osvschema.Affected{}
+	// vulns.NaivelyAttachExtractedVersionInfo(&affected, versions)
+	// v.Affected = append(v.Affected, affected)
+	// maybeVendorName, maybeProductName := getVendorProductNames(CVE.Containers.CNA)
+	cnaAssigner := CVE.Metadata.AssignerShortName
+	print(cnaAssigner)
 	// Save OSV record to a directory
-	vulnDir := filepath.Join(directory, maybeVendorName, maybeProductName)
+	vulnDir := filepath.Join(directory, cnaAssigner)
 	err := os.MkdirAll(vulnDir, 0755)
 	if err != nil {
 		Logger.Warnf("Failed to create dir: %v", err)
@@ -494,7 +488,7 @@ func CVEToMinimalOSV(CVE cves.CVE5, references []cves.Reference, repos []string,
 
 	// Only write out the OSV file if we have ranges.
 	outputFile := filepath.Join(vulnDir, v.ID+extension)
-	var notes []string
+
 	f, err := os.Create(outputFile)
 	if err != nil {
 		notes = append(notes, fmt.Sprintf("Failed to open %s for writing: %v", outputFile, err))
@@ -505,7 +499,7 @@ func CVEToMinimalOSV(CVE cves.CVE5, references []cves.Reference, repos []string,
 			notes = append(notes, fmt.Sprintf("Failed to write %s: %v", outputFile, err))
 			fileWriteErr = err
 		} else {
-			Logger.Infof("[%s]: Generated OSV record for %q", CVE.Metadata.CVEID, maybeProductName)
+			Logger.Infof("[%s]: Generated OSV record for %s under the %s CNA", CVE.Metadata.CVEID, cnaAssigner)
 		}
 		f.Close()
 	}

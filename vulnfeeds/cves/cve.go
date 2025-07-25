@@ -119,6 +119,7 @@ type Affected struct {
 	CollectionUrl string     `json:"collectionURL,omitempty"`
 	Versions      []Versions `json:"versions,omitempty"`
 	Repo          string     `json:"repo,omitempty"`
+	DefaultStatus string     `json:"defaultStatus,omitempty"`
 }
 
 type Versions struct {

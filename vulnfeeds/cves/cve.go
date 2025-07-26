@@ -53,10 +53,12 @@ type CPENode struct {
 	Operator string `json:"operator,omitempty"`
 	Negate   bool   `json:"negate,omitempty"`
 	CPEMatch []struct {
-		Vulnerable          bool   `json:"vulnerable,omitempty"`
-		Criteria            string `json:"criteria,omitempty"`
-		VersionEndIncluding string `json:"versionEndIncluding,omitempty"`
-		VersionEndExcluding string `json:"versionEndExcluding,omitempty"`
+		Vulnerable            bool   `json:"vulnerable,omitempty"`
+		Criteria              string `json:"criteria,omitempty"`
+		VersionEndIncluding   string `json:"versionEndIncluding,omitempty"`
+		VersionStartExcluding string `json:"versionStartExcluding,omitempty" yaml:"versionStartExcluding,omitempty" mapstructure:"versionStartExcluding,omitempty"`
+		VersionStartIncluding string `json:"versionStartIncluding,omitempty" yaml:"versionStartIncluding,omitempty" mapstructure:"versionStartIncluding,omitempty"`
+		VersionEndExcluding   string `json:"versionEndExcluding,omitempty"`
 	} `json:"cpeMatch,omitempty"`
 }
 

@@ -659,22 +659,60 @@ func FromNVDCVE(id cves.CVEID, cve cves.CVE) *Vulnerability {
 	return &v
 }
 
+func getCPEEvents(cve cves.CVE5) []osvschema.Event {
+	var events []osvschema.Event
+	for _, c := range cve.Containers.CNA.CPEApplicability {
+		for _, node := range c.Nodes {
+			if node.Operator != "OR" {
+				continue
+			}
+			for _, match := range node.CPEMatch {
+				if match.Vulnerable != true {
+					continue
+				}
+				if match.VersionEndExcluding != "" {
+					events = append(events, osvschema.Event{
+						Introduced: match.VersionStartIncluding,
+						Fixed:      match.VersionEndExcluding,
+					})
+				} else if match.VersionEndIncluding != "" {
+					events = append(events, osvschema.Event{
+						Introduced: match.VersionStartIncluding,
+						Fixed:      match.VersionEndExcluding,
+					})
+				}
+			}
+		}
+	}
+	return events
+}
+
 func (v *Vulnerability) AddVersionInfo(cve cves.CVE5) []string {
 	cna := cve.Containers.CNA
 	var notes []string
 	for _, cveAff := range cna.Affected {
 		seenIntroduced := map[string]bool{}
 		seenFixed := map[string]bool{}
-		// seenLastAffected := map[string]bool{}
 		pkg := osvschema.Package{}
 
 		if cveAff.DefaultStatus == "affected" {
 			var versionRange osvschema.Range
 			if cveAff.Product == "Linux" && cve.Metadata.AssignerShortName == "Linux" {
+				// skip doing literally any of this we cant traust them
 				pkg.Ecosystem = string(osvschema.EcosystemLinux)
 				pkg.Name = "Kernel"
 				versionRange = osvschema.Range{
 					Type: osvschema.RangeEcosystem,
+				}
+				events := getCPEEvents(cve)
+				if events != nil {
+					versionRange.Events = append(versionRange.Events, events...)
+					newAffect := osvschema.Affected{
+						Package: pkg,
+					}
+					newAffect.Ranges = append(newAffect.Ranges, versionRange)
+					v.Affected = append(v.Affected, newAffect)
+					continue
 				}
 			} else {
 				versionRange = osvschema.Range{
@@ -688,10 +726,12 @@ func (v *Vulnerability) AddVersionInfo(cve cves.CVE5) []string {
 			for _, vers := range cveAff.Versions {
 				// Read them each individually
 				if vers.Status == "affected" {
-
 					introduced = append(introduced, vers.Version)
 				}
 				if vers.Status == "unaffected" {
+					if vers.Version == "0" {
+						continue
+					}
 					fixed = append(fixed, vers.Version)
 					// double check that the next one contains a *
 					// minorVers = strings.SplitAfter(vers.LessThanOrEqual,".*")
@@ -727,8 +767,7 @@ func (v *Vulnerability) AddVersionInfo(cve cves.CVE5) []string {
 				newAffect.Ranges = append(newAffect.Ranges, versionRange)
 				v.Affected = append(v.Affected, newAffect)
 			}
-		} else if cveAff.DefaultStatus == "unaffected" {
-			// Take values at facefor _, vers:= range cveAff.Versions {
+		} else {
 			rangeMap := make(map[string]*osvschema.Range)
 			for _, vers := range cveAff.Versions {
 				if vers.Status != "affected" {
@@ -788,6 +827,7 @@ func (v *Vulnerability) AddVersionInfo(cve cves.CVE5) []string {
 				vLTOEQual := CheckQuality(vers.LessThanOrEqual)
 
 				hasRange := vLessThanQual <= Spaces || vLTOEQual <= Spaces
+				notes = append(notes, fmt.Sprintf("Range detected: %v", hasRange))
 				if vers.LessThan != "" && vers.LessThan == vers.Version {
 					notes = append(notes, fmt.Sprintf("Warning: lessThan (%s) is the same as introduced (%s)\n", vers.LessThan, vers.Version))
 					// Only this specific version affected or up to this version
@@ -806,23 +846,22 @@ func (v *Vulnerability) AddVersionInfo(cve cves.CVE5) []string {
 						notes = append(notes, fmt.Sprintf("%s - LastAffected from LessThanOrEqual value- %s", vLTOEQual.String(), vers.LessThanOrEqual))
 					}
 					versionRange, ok := rangeMap[versionType]
-
+					notes = append(notes, fmt.Sprintf("vers range %v exists? %v", versionRange, ok))
 					if ok {
 						if introduced != "" && fixed != "" {
 							versionRange.Events = append(versionRange.Events, osvschema.Event{
 								Introduced: introduced,
 								Fixed:      fixed,
 							})
-						} else if introduced != "" && fixed != "" {
+							notes = append(notes, "vers range updated fixed")
+						} else if introduced != "" && lastaffected != "" {
 							versionRange.Events = append(versionRange.Events, osvschema.Event{
 								Introduced:   introduced,
 								LastAffected: lastaffected,
 							})
+							notes = append(notes, "vers range updated la")
 						}
-					} else {
-						print("type not found somehow")
 					}
-
 				} else {
 					// In this case only vers.Version exists which either means that it is _only_ that version that is
 					// affected, but more likely, it affects up to that version. It could also mean that the range is given
@@ -900,12 +939,14 @@ func (v *Vulnerability) AddVersionInfo(cve cves.CVE5) []string {
 
 				// versionInfo.AffectedVersions = append(versionInfo.AffectedVersions, possibleNewAffectedVersion)
 			}
+
 			for _, versionRange := range rangeMap {
 				if len(versionRange.Events) != 0 {
 					newAffect := osvschema.Affected{
 						Package: pkg,
 					}
 					newAffect.Ranges = append(newAffect.Ranges, *versionRange)
+					notes = append(notes, fmt.Sprintf("new ranges %v", newAffect.Ranges))
 					v.Affected = append(v.Affected, newAffect)
 				}
 			}

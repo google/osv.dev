@@ -1,7 +1,6 @@
 package main
 
 import (
-	"encoding/csv"
 	"encoding/json"
 	"errors"
 	"flag"
@@ -247,14 +246,13 @@ func determineHeuristics(cve cves.CVE5, v *vulns.Vulnerability) {
 	// TODO(jesslowe): more CNA based analysis
 	// Reference based heuristics
 	// Count number of references of each type
-	// len(v.References)
 	refTypeCounts := make(map[osvschema.ReferenceType]int)
 	for _, ref := range v.References {
 		refTypeCounts[ref.Type]++
 	}
 	Metrics.RefTypesCount = refTypeCounts
 	for refType, count := range refTypeCounts {
-		Logger.Infof("[%s]: Reference Type %s: %d", cve.Metadata.CVEID, refType, count)
+		Metrics.Notes = append(Metrics.Notes, fmt.Sprintf("[%s]: Reference Type %s: %d", cve.Metadata.CVEID, refType, count))
 	}
 
 	// ADP based heuristics?
@@ -468,12 +466,6 @@ func CVEToMinimalOSV(CVE cves.CVE5, references []cves.Reference, repos []string,
 	// Determine CNA specific heuristics
 	determineHeuristics(CVE, v)
 
-	// versions := ExtractNaiveVersionInfo(CVE, repos, http.DefaultClient)
-	// //Create naive affected packanges
-	// affected := osvschema.Affected{}
-	// vulns.NaivelyAttachExtractedVersionInfo(&affected, versions)
-	// v.Affected = append(v.Affected, affected)
-	// maybeVendorName, maybeProductName := getVendorProductNames(CVE.Containers.CNA)
 	cnaAssigner := CVE.Metadata.AssignerShortName
 	print(cnaAssigner)
 	// Save OSV record to a directory
@@ -499,7 +491,7 @@ func CVEToMinimalOSV(CVE cves.CVE5, references []cves.Reference, repos []string,
 			notes = append(notes, fmt.Sprintf("Failed to write %s: %v", outputFile, err))
 			fileWriteErr = err
 		} else {
-			Logger.Infof("[%s]: Generated OSV record for %s under the %s CNA", CVE.Metadata.CVEID, cnaAssigner)
+			Logger.Infof("[%s]: Generated OSV record under the %s CNA", CVE.Metadata.CVEID, cnaAssigner)
 		}
 		f.Close()
 	}
@@ -521,31 +513,31 @@ func CVEToMinimalOSV(CVE cves.CVE5, references []cves.Reference, repos []string,
 	return nil
 }
 
-// Output a CSV summarizing per-CVE how it was handled.
-func outputOutcomes(outcomes map[cves.CVEID]ConversionOutcome, reposForCVE map[cves.CVEID][]string, directory string) error {
-	outcomesFile, err := os.Create(filepath.Join(directory, "outcomes.csv"))
-	if err != nil {
-		return err
-	}
-	defer outcomesFile.Close()
-	w := csv.NewWriter(outcomesFile)
-	w.Write([]string{"CVE", "outcome", "repos"})
-	for CVE, outcome := range outcomes {
-		// It's conceivable to have more than one repo for a CVE, so concatenate them.
-		r := ""
-		if repos, ok := reposForCVE[CVE]; ok {
-			r = strings.Join(repos, " ")
-		}
-		w.Write([]string{string(CVE), outcome.String(), r})
-	}
-	w.Flush()
+// // Output a CSV summarizing per-CVE how it was handled.
+// func outputOutcomes(outcomes map[cves.CVEID]ConversionOutcome, reposForCVE map[cves.CVEID][]string, directory string) error {
+// 	outcomesFile, err := os.Create(filepath.Join(directory, "outcomes.csv"))
+// 	if err != nil {
+// 		return err
+// 	}
+// 	defer outcomesFile.Close()
+// 	w := csv.NewWriter(outcomesFile)
+// 	w.Write([]string{"CVE", "outcome", "repos"})
+// 	for CVE, outcome := range outcomes {
+// 		// It's conceivable to have more than one repo for a CVE, so concatenate them.
+// 		r := ""
+// 		if repos, ok := reposForCVE[CVE]; ok {
+// 			r = strings.Join(repos, " ")
+// 		}
+// 		w.Write([]string{string(CVE), outcome.String(), r})
+// 	}
+// 	w.Flush()
 
-	if err = w.Error(); err != nil {
-		return err
-	}
+// 	if err = w.Error(); err != nil {
+// 		return err
+// 	}
 
-	return nil
-}
+// 	return nil
+// }
 
 // identifyPossibleURLs extracts all possible URLs from a CVE5 object,
 // including those in CNA and ADP containers, and affected package information.
@@ -606,15 +598,16 @@ func main() {
 	CVEID := cve.Metadata.CVEID
 
 	if len(refs) > 0 {
-		repos := cves.ReposFromReferencesCVEList(string(CVEID), nil, nil, refs, RefTagDenyList, Logger)
+		repos, notes := cves.ReposFromReferencesCVEList(string(CVEID), nil, nil, refs, RefTagDenyList, Logger)
+		addIDToNotes(CVEID, notes)
 		if len(repos) == 0 {
 			Logger.Warnf("[%s]: Failed to derive any repos", CVEID)
 		}
-		Logger.Infof("[%s]: Derived %q for CVE", CVEID, repos)
+		Metrics.Notes = append(Metrics.Notes, fmt.Sprintf("[%s]: Derived %q for CVE", CVEID, repos))
 		ReposForCVE[CVEID] = repos
 	}
 
-	Logger.Infof("[%s]: Repos: %#v", CVEID, ReposForCVE[CVEID])
+	Metrics.Notes = append(Metrics.Notes, fmt.Sprintf("[%s]: Repos: %#v", CVEID, ReposForCVE[CVEID]))
 
 	switch *outFormat {
 	case "OSV":
@@ -634,12 +627,10 @@ func main() {
 			Metrics.Outcome = ConversionUnknown
 		}
 	} else {
-
-		Metrics.OSVRecordsGenerated++
 		Metrics.Outcome = Successful
 	}
 
-	fmt.Printf("%+v\n", Metrics)
+	// fmt.Printf("%+v\n", Metrics)
 	// Metrics.TotalCVEs = len(parsed.Vulnerabilities)
 	// err = outputOutcomes(Metrics.Outcomes, ReposForCVE, *outDir)
 	// if err != nil {

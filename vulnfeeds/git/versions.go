@@ -21,6 +21,7 @@ import (
 	"strings"
 
 	"github.com/google/osv/vulnfeeds/models"
+	"github.com/ossf/osv-schema/bindings/go/osvschema"
 	"golang.org/x/exp/maps"
 )
 
@@ -140,16 +141,16 @@ func NormalizeVersion(version string) (normalizedVersion string, e error) {
 	return normalizedVersion, e
 }
 
-// Parse a version range string into an AffectedVersion struct,
+// Parse a version range string into an osvschema.Event struct,
 // which aligns with the structure used by GitHub CNA feeds.
-func ParseVersionRange(versionRange string) (models.AffectedVersion, error) {
+func ParseVersionRange(versionRange string) (osvschema.Event, error) {
 	matches := versionRangeRegex.FindStringSubmatch(strings.TrimSpace(versionRange))
 
 	if len(matches) == 0 {
-		return models.AffectedVersion{}, fmt.Errorf("invalid version range format: %s", versionRange)
+		return osvschema.Event{}, fmt.Errorf("invalid version range format: %s", versionRange)
 	}
 
-	av := models.AffectedVersion{}
+	av := osvschema.Event{}
 
 	op1 := matches[1]
 	ver1 := matches[2]
@@ -168,14 +169,14 @@ func ParseVersionRange(versionRange string) (models.AffectedVersion, error) {
 		case "<":
 			av.Fixed = ver1
 		default:
-			return models.AffectedVersion{}, fmt.Errorf("unhandled single operator: %s", op1)
+			return osvschema.Event{}, fmt.Errorf("unhandled single operator: %s", op1)
 		}
 	} else {
 		// Two constraints
 		if op1 == ">=" {
 			av.Introduced = ver1
 		} else {
-			return models.AffectedVersion{}, fmt.Errorf("unexpected operator at start of range: %s", op1)
+			return osvschema.Event{}, fmt.Errorf("unexpected operator at start of range: %s", op1)
 		}
 
 		switch op2 {
@@ -184,7 +185,7 @@ func ParseVersionRange(versionRange string) (models.AffectedVersion, error) {
 		case "<=":
 			av.LastAffected = ver2
 		default:
-			return models.AffectedVersion{}, fmt.Errorf("unexpected operator at end of range: %s", op2)
+			return osvschema.Event{}, fmt.Errorf("unexpected operator at end of range: %s", op2)
 		}
 	}
 

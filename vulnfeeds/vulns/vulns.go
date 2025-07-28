@@ -32,6 +32,7 @@ import (
 	"gopkg.in/yaml.v2"
 
 	"github.com/google/osv/vulnfeeds/cves"
+	"github.com/google/osv/vulnfeeds/git"
 	"github.com/google/osv/vulnfeeds/models"
 	"github.com/ossf/osv-schema/bindings/go/osvschema"
 )
@@ -687,271 +688,275 @@ func getCPEEvents(cve cves.CVE5) []osvschema.Event {
 	return events
 }
 
-func (v *Vulnerability) AddVersionInfo(cve cves.CVE5) []string {
-	cna := cve.Containers.CNA
-	var notes []string
-	for _, cveAff := range cna.Affected {
-		seenIntroduced := map[string]bool{}
-		seenFixed := map[string]bool{}
-		pkg := osvschema.Package{}
+func ExtractFromAffected(affected cves.Affected, cnaAssigner string) (events []osvschema.Event, rangeType string, notes []string) {
+	if affected.DefaultStatus == "affected" {
+		var versionRange osvschema.Range
+		if cnaAssigner == "Linux" {
+			notes = append(notes, "Skipping Linux Affected range versions in favour of CPE versions")
+			return nil, "", notes
+		}
+		// Find the inverse affected ranges
+		notes = findInverseAffectedRanges(&versionRange, affected)
 
-		if cveAff.DefaultStatus == "affected" {
-			var versionRange osvschema.Range
-			if cveAff.Product == "Linux" && cve.Metadata.AssignerShortName == "Linux" {
-				// skip doing literally any of this we cant traust them
-				pkg.Ecosystem = string(osvschema.EcosystemLinux)
-				pkg.Name = "Kernel"
-				versionRange = osvschema.Range{
-					Type: osvschema.RangeEcosystem,
-				}
-				events := getCPEEvents(cve)
-				if events != nil {
-					versionRange.Events = append(versionRange.Events, events...)
-					newAffect := osvschema.Affected{
-						Package: pkg,
-					}
-					newAffect.Ranges = append(newAffect.Ranges, versionRange)
-					v.Affected = append(v.Affected, newAffect)
-					continue
-				}
-			} else {
-				versionRange = osvschema.Range{
-					Type: osvschema.RangeSemVer,
-				}
-			}
-			// Find the inverse affected ranges
-			var introduced []string
-			var fixed []string
-			// var lastAffected []string
-			for _, vers := range cveAff.Versions {
-				// Read them each individually
-				if vers.Status == "affected" {
-					introduced = append(introduced, vers.Version)
-				}
-				if vers.Status == "unaffected" {
-					if vers.Version == "0" {
-						continue
-					}
-					fixed = append(fixed, vers.Version)
-					// double check that the next one contains a *
-					// minorVers = strings.SplitAfter(vers.LessThanOrEqual,".*")
-					// nextMinorVers =
-				}
-			}
-			if len(introduced) < 1 {
-				introduced = append(introduced, "0")
-			}
-			for _, intro := range introduced {
-				if _, seen := seenIntroduced[intro]; !seen {
-					versionRange.Events = append(versionRange.Events, osvschema.Event{
-						Introduced: intro,
-					})
-					seenIntroduced[intro] = true
-					notes = append(notes, fmt.Sprintf("Introduced from version value - %s", intro))
-				}
-			}
-			for _, fix := range fixed {
-				if _, seen := seenFixed[fix]; fix != "" && !seen {
-					versionRange.Events = append(versionRange.Events, osvschema.Event{
-						Fixed: fix,
-					})
-					seenFixed[fix] = true
-					notes = append(notes, fmt.Sprintf("Introduced from version value - %s", fix))
+		if len(versionRange.Events) != 0 {
+			return versionRange.Events, string(osvschema.RangeSemVer), notes
+		}
+		// TODO(jesslowe): add more notes here
+		return nil, "", notes
+	}
 
-				}
-			}
-			if len(versionRange.Events) != 0 {
-				newAffect := osvschema.Affected{
-					Package: pkg,
-				}
-				newAffect.Ranges = append(newAffect.Ranges, versionRange)
-				v.Affected = append(v.Affected, newAffect)
-			}
+	versionTypesCount := make(map[string]int)
+
+	for _, vers := range affected.Versions {
+		if vers.Status != "affected" {
+			continue
+		}
+		_, ok := versionTypesCount[vers.VersionType]
+		if ok {
+			versionTypesCount[vers.VersionType]++
 		} else {
-			rangeMap := make(map[string]*osvschema.Range)
-			for _, vers := range cveAff.Versions {
-				if vers.Status != "affected" {
-					continue
-				}
+			versionTypesCount[vers.VersionType] = 0
+		}
 
-				versionType := vers.VersionType
+		var introduced, fixed, lastaffected string
 
-				if versionType == "git" {
-					versionRange, ok := rangeMap["git"]
-					if !ok {
-						versionRange = &osvschema.Range{
-							Type: osvschema.RangeGit,
-							Repo: cveAff.Repo,
-						}
-						rangeMap["git"] = versionRange
-					}
+		// Quality check
+		vQuality := CheckQuality(vers.Version)
+		if vQuality >= Filler {
+			notes = append(notes, fmt.Sprintf("Version value for %s %s is filler or empty", affected.Vendor, affected.Product))
+		}
+		vLessThanQual := CheckQuality(vers.LessThan)
+		vLTOEQual := CheckQuality(vers.LessThanOrEqual)
 
-				} else if versionType == "semver" {
-					versionRange, ok := rangeMap["semver"]
-					if !ok {
-						if cveAff.Vendor == "Linux" {
-
-							versionRange = &osvschema.Range{
-								Type: osvschema.RangeEcosystem,
-							}
-							rangeMap["semver"] = versionRange
-
-						} else {
-
-							versionRange = &osvschema.Range{
-								Type: osvschema.RangeSemVer,
-							}
-							rangeMap["semver"] = versionRange
-
-						}
-					}
-				} else {
-
-					versionRange, ok := rangeMap[versionType]
-					if !ok {
-						versionRange = &osvschema.Range{
-							Type: "UNKNOWN",
-						}
-						rangeMap[versionType] = versionRange
-					}
-				}
-
-				var introduced, fixed, lastaffected string
-
-				// Quality check
-				vQuality := CheckQuality(vers.Version)
-				if vQuality == Filler {
-					notes = append(notes, fmt.Sprintf("Version value for %s %s is filler or empty", cveAff.Vendor, cveAff.Product))
-				}
-				vLessThanQual := CheckQuality(vers.LessThan)
-				vLTOEQual := CheckQuality(vers.LessThanOrEqual)
-
-				hasRange := vLessThanQual <= Spaces || vLTOEQual <= Spaces
-				notes = append(notes, fmt.Sprintf("Range detected: %v", hasRange))
-				if vers.LessThan != "" && vers.LessThan == vers.Version {
-					notes = append(notes, fmt.Sprintf("Warning: lessThan (%s) is the same as introduced (%s)\n", vers.LessThan, vers.Version))
-					// Only this specific version affected or up to this version
-					hasRange = false
-				}
-				if hasRange {
-					if vQuality <= Spaces {
-						introduced = vers.Version
-						notes = append(notes, fmt.Sprintf("%s - Introduced from version value - %s", vQuality.String(), vers.Version))
-					}
-					if vLessThanQual <= Spaces {
-						fixed = vers.LessThan
-						notes = append(notes, fmt.Sprintf("%s - Fixed from LessThan value - s %s", vLessThanQual.String(), vers.LessThan))
-					} else if vLTOEQual <= Spaces {
-						lastaffected = vers.LessThanOrEqual
-						notes = append(notes, fmt.Sprintf("%s - LastAffected from LessThanOrEqual value- %s", vLTOEQual.String(), vers.LessThanOrEqual))
-					}
-					versionRange, ok := rangeMap[versionType]
-					notes = append(notes, fmt.Sprintf("vers range %v exists? %v", versionRange, ok))
-					if ok {
-						if introduced != "" && fixed != "" {
-							versionRange.Events = append(versionRange.Events, osvschema.Event{
-								Introduced: introduced,
-								Fixed:      fixed,
-							})
-							notes = append(notes, "vers range updated fixed")
-						} else if introduced != "" && lastaffected != "" {
-							versionRange.Events = append(versionRange.Events, osvschema.Event{
-								Introduced:   introduced,
-								LastAffected: lastaffected,
-							})
-							notes = append(notes, "vers range updated la")
-						}
-					}
-				} else {
-					// In this case only vers.Version exists which either means that it is _only_ that version that is
-					// affected, but more likely, it affects up to that version. It could also mean that the range is given
-					// in one line instead - like "< 1.5.3" or "< 2.45.4, >= 2.0 " or just "before 1.4.7", so check for that.
-					notes = append(notes, "Only version exists")
-					if vers.VersionType == "git" {
-						versionRange, ok := rangeMap[versionType]
-						if ok {
-							versionRange.Events = append(versionRange.Events, osvschema.Event{
-								Introduced: vers.Version,
-							})
-						}
-						continue
-					}
-
-					possibleVersions, note := cves.ExtractVersionsFromText(nil, vers.Version)
-					if note != nil {
-						notes = append(notes, note...)
-					}
-					if possibleVersions != nil {
-
-						// versionInfo.AffectedVersions = append(versionInfo.AffectedVersions, possibleVersions...)
-						notes = append(notes, fmt.Sprintf("Versions retrieved from text but not used CURRENTLY"))
-						continue
-					}
-
-					// We might only have a single version. Assume it affects up to that version
-					if vQuality <= Spaces {
-						introduced = vers.Version
-						notes = append(notes, fmt.Sprintf("%s - Single version found. Assuming introduced is 0, and LastAffected is given version", vQuality))
-					}
-
-				}
-				if introduced == "" && fixed == "" && lastaffected == "" {
-					continue
-				}
-
-				// if _, seen := seenIntroduced[introduced]; !seen {
-				// 	versionRange, ok := rangeMap[versionType]
-				// 	if ok {
-				// 		versionRange.Events = append(versionRange.Events, osvschema.Event{
-				// 			Introduced: introduced,
-				// 		})
-				// 	} else {
-				// 		print("type not found somehow")
-				// 	}
-				// 	seenIntroduced[introduced] = true
-				// }
-
-				// if _, seen := seenFixed[fixed]; fixed != "" && !seen {
-				// 	versionRange, ok := rangeMap[versionType]
-				// 	if ok {
-				// 		versionRange.Events = append(versionRange.Events, osvschema.Event{
-				// 			Fixed: fixed,
-				// 		})
-				// 	} else {
-				// 		print("type not found somehow")
-				// 	}
-				// 	seenFixed[fixed] = true
-				// }
-				// if !seenFixed[fixed] {
-				// 	versionRange, ok := rangeMap[versionType]
-				// 	if ok {
-				// 		if _, seen := seenLastAffected[lastaffected]; lastaffected != "" && !seen {
-				// 			versionRange.Events = append(versionRange.Events, osvschema.Event{
-				// 				LastAffected: lastaffected,
-				// 			})
-				// 			seenLastAffected[lastaffected] = true
-				// 		}
-				// 	}
-				// }
-
-				// add to package
-				// notes = append(notes, fmt.Sprintf("Possible new affected versions i:%s l:%s f:%s", possibleNewAffectedVersion.Introduced, possibleNewAffectedVersion.LastAffected, possibleNewAffectedVersion.Fixed))
-
-				// versionInfo.AffectedVersions = append(versionInfo.AffectedVersions, possibleNewAffectedVersion)
+		hasRange := vLessThanQual <= Spaces || vLTOEQual <= Spaces
+		notes = append(notes, fmt.Sprintf("Range detected: %v", hasRange))
+		if vers.LessThan != "" && vers.LessThan == vers.Version {
+			notes = append(notes, fmt.Sprintf("Warning: lessThan (%s) is the same as introduced (%s)\n", vers.LessThan, vers.Version))
+			// Only this specific version affected or up to this version
+			hasRange = false
+		}
+		if hasRange {
+			if vQuality <= Spaces {
+				introduced = vers.Version
+				notes = append(notes, fmt.Sprintf("%s - Introduced from version value - %s", vQuality.String(), vers.Version))
+			}
+			if vLessThanQual <= Spaces {
+				fixed = vers.LessThan
+				notes = append(notes, fmt.Sprintf("%s - Fixed from LessThan value - s %s", vLessThanQual.String(), vers.LessThan))
+			} else if vLTOEQual <= Spaces {
+				lastaffected = vers.LessThanOrEqual
+				notes = append(notes, fmt.Sprintf("%s - LastAffected from LessThanOrEqual value- %s", vLTOEQual.String(), vers.LessThanOrEqual))
 			}
 
-			for _, versionRange := range rangeMap {
-				if len(versionRange.Events) != 0 {
-					newAffect := osvschema.Affected{
-						Package: pkg,
-					}
-					newAffect.Ranges = append(newAffect.Ranges, *versionRange)
-					notes = append(notes, fmt.Sprintf("new ranges %v", newAffect.Ranges))
-					v.Affected = append(v.Affected, newAffect)
-				}
+			if introduced != "" && fixed != "" {
+				events = append(events, osvschema.Event{
+					Introduced: introduced,
+					Fixed:      fixed,
+				})
+				notes = append(notes, "vers range updated fixed")
+			} else if introduced != "" && lastaffected != "" {
+				events = append(events, osvschema.Event{
+					Introduced:   introduced,
+					LastAffected: lastaffected,
+				})
+				notes = append(notes, "vers range updated la")
 			}
+
+		} else {
+			// In this case only vers.Version exists which either means that it is _only_ that version that is
+			// affected, but more likely, it affects up to that version. It could also mean that the range is given
+			// in one line instead - like "< 1.5.3" or "< 2.45.4, >= 2.0 " or just "before 1.4.7", so check for that.
+			notes = append(notes, "Only version exists")
+			if cnaAssigner == "Github_M" {
+				ev, err := git.ParseVersionRange(vers.Version)
+				if err == nil {
+					events = append(events, ev)
+				}
+				continue
+			}
+
+			if vers.VersionType == "git" {
+				events = append(events, osvschema.Event{
+					Introduced: vers.Version,
+				})
+				continue
+			}
+
+			possibleVersions, note := cves.ExtractVersionsFromText(nil, vers.Version)
+			if note != nil {
+				notes = append(notes, note...)
+			}
+			if possibleVersions != nil {
+				// versionInfo.AffectedVersions = append(versionInfo.AffectedVersions, possibleVersions...)
+				notes = append(notes, fmt.Sprintf("Versions retrieved from text but not used CURRENTLY"))
+				continue
+			}
+
+			// We might only have a single version. Assume it affects up to that version
+			if vQuality <= Spaces {
+				introduced = vers.Version
+				notes = append(notes, fmt.Sprintf("%s - Single version found. Assuming introduced is 0, and LastAffected is given version", vQuality))
+			}
+
+		}
+		if introduced == "" && fixed == "" && lastaffected == "" {
+			continue
+		}
+
+	}
+	// find the versionsType with the highest count
+	maxCount := 0
+	var mostFrequentVersionType string
+	for versionType, count := range versionTypesCount {
+		if count > maxCount {
+			maxCount = count
+			mostFrequentVersionType = versionType
 		}
 	}
+
+	return events, mostFrequentVersionType, notes
+}
+
+func findInverseAffectedRanges(versionRange *osvschema.Range, cveAff cves.Affected) (notes []string) {
+	var introduced []string
+	var fixed []string
+	seenIntroduced := map[string]bool{}
+	seenFixed := map[string]bool{}
+	for _, vers := range cveAff.Versions {
+		// Read them each individually
+		if vers.Status == "affected" {
+			introduced = append(introduced, vers.Version)
+		}
+		if vers.Status == "unaffected" {
+			if vers.Version == "0" {
+				continue
+			}
+			fixed = append(fixed, vers.Version)
+			// double check that the next one contains a *
+			// minorVers = strings.SplitAfter(vers.LessThanOrEqual,".*")
+			// nextMinorVers =
+		}
+	}
+	if len(introduced) < 1 {
+		introduced = append(introduced, "0")
+	}
+	for _, intro := range introduced {
+		if _, seen := seenIntroduced[intro]; !seen {
+			versionRange.Events = append(versionRange.Events, osvschema.Event{
+				Introduced: intro,
+			})
+			seenIntroduced[intro] = true
+			notes = append(notes, fmt.Sprintf("Introduced from version value - %s", intro))
+		}
+	}
+	for _, fix := range fixed {
+		if _, seen := seenFixed[fix]; fix != "" && !seen {
+			versionRange.Events = append(versionRange.Events, osvschema.Event{
+				Fixed: fix,
+			})
+			seenFixed[fix] = true
+			notes = append(notes, fmt.Sprintf("Fixed from version value - %s", fix))
+		}
+	}
+	return notes
+}
+
+func (v *Vulnerability) AddVersionInfo(cve cves.CVE5) []string {
+	if cve.Metadata.AssignerShortName == "Linux" {
+		pkg := osvschema.Package{
+			Ecosystem: string(osvschema.EcosystemLinux),
+			Name:      "Kernel"}
+		versionRange := osvschema.Range{
+			Type: osvschema.RangeEcosystem,
+		}
+		cpeEvents := getCPEEvents(cve)
+		if cpeEvents != nil {
+			versionRange.Events = append(versionRange.Events, cpeEvents...)
+			nA := osvschema.Affected{
+				Package: pkg,
+			}
+			nA.Ranges = append(nA.Ranges, versionRange)
+			v.Affected = append(v.Affected, nA)
+		}
+	}
+
+	cna := cve.Containers.CNA
+	adps := cve.Containers.ADP
+	gotVersions := false
+
+	var notes []string
+	affected := cna.Affected
+	for _, adp := range adps {
+		if adp.Affected != nil {
+			affected = append(affected, adp.Affected...)
+		}
+	}
+
+	// Attempt to extract from Affected field
+	for _, cveAff := range affected {
+		events, versionType, extractNotes := ExtractFromAffected(cveAff, cve.Metadata.AssignerShortName)
+		if len(events) == 0 {
+			notes = append(notes, extractNotes...)
+			continue
+		} else {
+			gotVersions = true
+		}
+		if versionType == "git" {
+			versionRange := osvschema.Range{
+				Type:   osvschema.RangeGit,
+				Repo:   cveAff.Repo,
+				Events: events,
+			}
+			nA := osvschema.Affected{}
+			nA.Ranges = append(nA.Ranges, versionRange)
+			v.Affected = append(v.Affected, nA)
+		} else {
+			versionRange := osvschema.Range{
+				Type:   "UNKNOWN",
+				Events: events,
+			}
+			var name string
+			if CheckQuality(cveAff.Product) <= Spaces {
+				name = cveAff.Product
+			} else {
+				name = "unknown"
+			}
+			nA := osvschema.Affected{
+				Package: osvschema.Package{
+					Name: name,
+				},
+			}
+			nA.Ranges = append(nA.Ranges, versionRange)
+			v.Affected = append(v.Affected, nA)
+		}
+	}
+
+	// No versions were extracted from Affected so attempt to extract from CPE field
+	if !gotVersions {
+		notes = append(notes, "No versions in affected, attempting to extract from CPE")
+		events := getCPEEvents(cve)
+		if len(events) != 0 {
+			versionRange := osvschema.Range{
+				Type:   "UNKNOWN",
+				Events: events,
+			}
+			nA := osvschema.Affected{}
+			nA.Ranges = append(nA.Ranges, versionRange)
+			v.Affected = append(v.Affected, nA)
+		}
+	}
+
+	// CPEs was a bust so try to extract from the description
+	if !gotVersions {
+		notes = append(notes, "No versions in CPEs so attempting extraction from description")
+		versions, extractNotes := cves.ExtractVersionsFromText(nil, cves.EnglishDescription(cve.Containers.CNA.Descriptions))
+		notes = append(notes, extractNotes...)
+		if len(versions) > 0 {
+			// NOT SAVED CURRENTLY - need to add better validation before I'm comfortable saving these
+			notes = append(notes, fmt.Sprintf("Extracted versions from description as no other versions found %+v", versions))
+		}
+	}
+
 	return notes
 }
 
@@ -1078,6 +1083,7 @@ func CheckQuality(text string) QualityCheck {
 		"not-known",
 		"tbd",
 		"to be determined",
+		"-",
 	}
 	for _, filler := range fillerText {
 		if strings.EqualFold(strings.TrimSpace(text), filler) {

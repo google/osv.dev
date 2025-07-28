@@ -50,46 +50,20 @@ ERROR_CODE_MAPPING = {
     'PKG:003': osv.ImportFindings.INVALID_PURL,
 }
 
-# TODO(gongh@): query the mapping from the SourceRepository database
-# instead of hardcoding it.
-PREFIX_TO_SOURCE = {
-    'ALBA-': 'almalinux-alba',
-    'ALEA-': 'almalinux-alea',
-    'ALSA-': 'almalinux-alsa',
-    'A-': 'android',
-    'ASB-': 'android',
-    'PUB-': 'android',
-    'BIT-': 'bitnami',
-    'CGA-': 'chainguard',
-    'CURL-': 'curl',
-    'CVE-': 'cve-osv',
-    'DLA-': 'debian-dla',
-    'DSA-': 'debian-dsa',
-    'DTSA-': 'debian-dtsa',
-    'GHSA-': 'ghsa',
-    'GO-': 'go',
-    'HSEC-': 'haskell',
-    'MGASA-': 'mageia',
-    'MAL-': 'malicious-packages',
-    'MINI-': 'minimos',
-    'OSV-': 'test-oss-fuzz',
-    'PSF-': 'psf',
-    'PYSEC-': 'python',
-    'RSEC-': 'r',
-    'RHBA-': 'redhat',
-    'RHEA-': 'redhat',
-    'RHSA-': 'redhat',
-    'RLSA-': 'rockylinux',
-    'RXSA-': 'rockylinux-rxsa',
-    'RUSTSEC-': 'rust',
-    'openSUSE-': 'suse',
-    'SUSE-': 'suse',
-    'UBUNTU-': 'ubuntu-cve',
-    'LSN-': 'ubuntu-lsn',
-    'USN-': 'ubuntu-usn',
-    'GSD-': 'uvi',
-    'V8-': 'V8',
-}
+
+def construct_prefix_to_source_map() -> dict[str, str]:
+  """construct the prefix to source name map from source repository db"""
+  prefix_to_source = {}
+  try:
+    sources = osv.SourceRepository.query().fetch()
+    for source in sources:
+      for prefix in source.db_prefix:
+        prefix_to_source[prefix] = source.name
+  except Exception as e:
+    logging.exception('Failed to query SourceRepository: %s', e)
+    sys.exit(1)
+
+  return prefix_to_source
 
 
 def download_file(source: str, destination: str):
@@ -122,6 +96,7 @@ def process_linter_result(output: Any, bugs: set):
   """process the linter results and update/add findings into db."""
   time = utcnow()
   total_findings = 0
+  prefix_to_source = construct_prefix_to_source_map()
 
   for filename, findings_list in output.items():
     bug_id = os.path.splitext(os.path.basename(filename))[0]
@@ -141,7 +116,7 @@ def process_linter_result(output: Any, bugs: set):
 
     sorted_findings = sorted(list(findings_already_added))
     prefix = bug_id.split('-')[0] + '-'
-    source = PREFIX_TO_SOURCE.get(prefix, '')
+    source = prefix_to_source.get(prefix, '')
     record_quality_finding(bug_id, source, sorted_findings, time)
 
   if total_findings > 0:

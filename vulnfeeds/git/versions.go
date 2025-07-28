@@ -21,7 +21,6 @@ import (
 	"strings"
 
 	"github.com/google/osv/vulnfeeds/models"
-	"github.com/ossf/osv-schema/bindings/go/osvschema"
 	"golang.org/x/exp/maps"
 )
 
@@ -141,16 +140,16 @@ func NormalizeVersion(version string) (normalizedVersion string, e error) {
 	return normalizedVersion, e
 }
 
-// Parse a version range string into an osvschema.Event struct,
+// Parse a version range string into an models.AffectedVersion struct,
 // which aligns with the structure used by GitHub CNA feeds.
-func ParseVersionRange(versionRange string) (osvschema.Event, error) {
+func ParseVersionRange(versionRange string) (models.AffectedVersion, error) {
 	matches := versionRangeRegex.FindStringSubmatch(strings.TrimSpace(versionRange))
 
 	if len(matches) == 0 {
-		return osvschema.Event{}, fmt.Errorf("invalid version range format: %s", versionRange)
+		return models.AffectedVersion{}, fmt.Errorf("invalid version range format: %s", versionRange)
 	}
 
-	av := osvschema.Event{}
+	av := models.AffectedVersion{}
 
 	op1 := matches[1]
 	ver1 := matches[2]
@@ -165,18 +164,20 @@ func ParseVersionRange(versionRange string) (osvschema.Event, error) {
 		case ">":
 			av.Introduced = ver1
 		case "<=":
+			av.Introduced = "0"
 			av.LastAffected = ver1
 		case "<":
+			av.Introduced = "0"
 			av.Fixed = ver1
 		default:
-			return osvschema.Event{}, fmt.Errorf("unhandled single operator: %s", op1)
+			return models.AffectedVersion{}, fmt.Errorf("unhandled single operator: %s", op1)
 		}
 	} else {
 		// Two constraints
 		if op1 == ">=" {
 			av.Introduced = ver1
 		} else {
-			return osvschema.Event{}, fmt.Errorf("unexpected operator at start of range: %s", op1)
+			return models.AffectedVersion{}, fmt.Errorf("unexpected operator at start of range: %s", op1)
 		}
 
 		switch op2 {
@@ -185,7 +186,7 @@ func ParseVersionRange(versionRange string) (osvschema.Event, error) {
 		case "<=":
 			av.LastAffected = ver2
 		default:
-			return osvschema.Event{}, fmt.Errorf("unexpected operator at end of range: %s", op2)
+			return models.AffectedVersion{}, fmt.Errorf("unexpected operator at end of range: %s", op2)
 		}
 	}
 

@@ -261,6 +261,7 @@ func TestParseVersionRange(t *testing.T) {
 			description: "Single constraint with <=",
 			input:       "<= 2.0.0",
 			expectedResult: models.AffectedVersion{
+				Introduced:   "0",
 				LastAffected: "2.0.0",
 			},
 			expectErr: false,

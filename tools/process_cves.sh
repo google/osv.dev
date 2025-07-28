@@ -1,5 +1,7 @@
 #!/bin/bash -ex
 
+cd ..
+
 INPUT_FILE="vulnfeeds/cmd/cvelist2osv/Linux_2025.json"
 OUTPUT_DIR="osv_output"
 GO_PROGRAM="vulnfeeds/cmd/cvelist2osv/main.go"

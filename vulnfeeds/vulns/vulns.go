@@ -432,6 +432,11 @@ func ClassifyReferenceLink(link string, tag string) osvschema.ReferenceType {
 		return osvschema.ReferenceAdvisory
 	}
 
+	// Check if URL is git repo
+	if strings.HasPrefix(link, "git://") {
+		return osvschema.ReferenceGit
+	}
+
 	u, err := url.Parse(link)
 	if err != nil {
 		return osvschema.ReferenceWeb
@@ -959,17 +964,7 @@ func (v *Vulnerability) AddVersionInfo(cve cves.CVE5) []string {
 
 			v.Affected = append(v.Affected, nA)
 		} else {
-			var name string
-			if CheckQuality(cveAff.Product) <= Spaces {
-				name = cveAff.Product
-			} else {
-				name = "unknown"
-			}
-			nA := osvschema.Affected{
-				Package: osvschema.Package{
-					Name: name,
-				},
-			}
+			nA := osvschema.Affected{}
 			for _, vr := range versionRanges {
 				vr.Type = "UNKNOWN"
 				nA.Ranges = append(nA.Ranges, vr)

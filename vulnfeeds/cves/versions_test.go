@@ -1472,7 +1472,7 @@ func TestReposFromReferencesCVEList(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			testutils.SetupGitVCR(t)
 			var Logger utility.LoggerWrapper
-			if gotRepos := ReposFromReferencesCVEList(tt.args.CVE, tt.args.cache, tt.args.vp, tt.args.refs, tt.args.tagDenyList, Logger); !reflect.DeepEqual(gotRepos, tt.wantRepos) {
+			if gotRepos, _ := ReposFromReferencesCVEList(tt.args.CVE, tt.args.cache, tt.args.vp, tt.args.refs, tt.args.tagDenyList, Logger); !reflect.DeepEqual(gotRepos, tt.wantRepos) {
 				t.Errorf("ReposFromReferences() = %#v, want %#v", gotRepos, tt.wantRepos)
 			}
 		})

@@ -38,7 +38,8 @@ function error_exit() {
 # IMAGE_REPOSITORY as following:
 #   'LOCATION-docker.pkg.dev/PROJECT-ID/REPOSITORY'
 
-while getopts :c:s:p:v:z:g:i: arg; do
+GCS_LOG_DIR=""
+while getopts :c:s:p:v:z:g:i:l: arg; do
   case ${arg} in
     c) CONFIG_ID="${OPTARG}";;
     s) SERVICE="${OPTARG}";;
@@ -50,6 +51,7 @@ while getopts :c:s:p:v:z:g:i: arg; do
       BASE_IMAGE="${OPTARG}"
       ESP_FULL_VERSION="custom"
       ;;
+    l) GCS_LOG_DIR="${OPTARG}";;
     \?) error_exit "Unrecognized argument -${OPTARG}";;
   esac
 done
@@ -122,7 +124,11 @@ ENTRYPOINT ["/env_start_proxy.py"]
 EOF
 
 NEW_IMAGE="${IMAGE_REPOSITORY}/endpoints-runtime-serverless:${ESP_FULL_VERSION}-${SERVICE}-${CONFIG_ID}"
-gcloud builds submit --tag "${NEW_IMAGE}" . --project="${PROJECT}"
+GCLOUD_BUILD_ARGS=("--tag" "${NEW_IMAGE}" "." "--project=${PROJECT}")
+if [[ -n "${GCS_LOG_DIR}" ]]; then
+  GCLOUD_BUILD_ARGS+=("--gcs-log-dir=${GCS_LOG_DIR}")
+fi
+gcloud builds submit "${GCLOUD_BUILD_ARGS[@]}"
 )
 
 # Delete the temporary directory we created earlier.

@@ -155,9 +155,6 @@ def get(name: str) -> Ecosystem:
   if name.startswith('SUSE'):
     return SUSE()
 
-  if name.startswith('Drupal'):
-    return Drupal()
-
   return _ecosystems.get(normalize(name))
 
 

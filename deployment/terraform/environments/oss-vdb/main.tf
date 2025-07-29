@@ -32,7 +32,7 @@ module "osv" {
   backups_bucket_retention_days                  = 60
   affected_commits_backups_bucket                = "osv-affected-commits"
   affected_commits_backups_bucket_retention_days = 3
-  gcs_log_dir = "gs://oss-vdb-tf/apply-logs"
+  gcs_log_dir                                    = "gs://oss-vdb-tf/apply-logs"
 
   website_domain = "osv.dev"
   api_url        = "api.osv.dev"

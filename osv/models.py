@@ -868,6 +868,9 @@ class Bug(ndb.Model):
 
   def _post_put_hook(self: Self, future: ndb.Future):  # pylint: disable=arguments-differ
     """Post-put hook for writing new entities for database migration."""
+    # TODO!!: check if not test instance or tests
+    if False:  # pylint: disable=using-constant-test
+      return
     if future.exception():
       logging.error("Not writing new entities for %s since Bug.put() failed",
                     self.db_id)

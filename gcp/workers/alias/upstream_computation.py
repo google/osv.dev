@@ -117,7 +117,7 @@ def _update_vuln_with_group(vuln_id: str, upstream: osv.UpstreamGroup | None):
       return
     if upstream is None:
       modified = datetime.datetime.now(datetime.UTC)
-      upstream_group = vuln.upstream_raw
+      upstream_group = []
     else:
       modified = upstream.last_modified
       upstream_group = upstream.upstream_ids

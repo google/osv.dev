@@ -162,4 +162,7 @@ curl -d \
 ```
 
 {: .note }
+The API has a response size limit of 32MiB when using HTTP/1.1. There is **no limit** when using HTTP/2. We recommend using HTTP/2 for queries that may result in large responses.
+
+{: .note }
 In rare cases, the response might contain **only** the `next_page_token`. In those cases, there might be more data that can be retrieved, but were not found within the time limit, please keep querying with the `next_page_token` until either results are returned, or no more page tokens are returned. 

@@ -23,8 +23,7 @@ from urllib.parse import urlparse
 from typing import Self
 
 from google.cloud import ndb
-from google.protobuf import json_format
-from google.protobuf import timestamp_pb2
+from google.protobuf import json_format, timestamp_pb2
 from osv import importfinding_pb2
 
 # pylint: disable=relative-beyond-top-level
@@ -1125,7 +1124,7 @@ def _write_to_bucket(vulnerability: vulnerability_pb2.Vulnerability):
   """Writes the vulnerability .pb and .json to the GCS bucket."""
   bucket = gcs.get_osv_bucket()
   vuln_id = vulnerability.id
-  modified = vulnerability.modified.ToDatetime()
+  modified = vulnerability.modified.ToDatetime(datetime.UTC)
   try:
     pb_blob = bucket.blob(os.path.join(gcs.VULN_PB_PATH, vuln_id + '.pb'))
     pb_blob.custom_time = modified
@@ -1133,7 +1132,7 @@ def _write_to_bucket(vulnerability: vulnerability_pb2.Vulnerability):
         vulnerability.SerializeToString(deterministic=True),
         content_type='application/octet-stream')
   except Exception:
-    logging.exception('failed to upload vulnerability protobuf to GCS')
+    logging.exception('failed to upload %s protobuf to GCS', vuln_id)
     # TODO(michaelkedar): send pub/sub message to retry
 
   try:
@@ -1143,7 +1142,7 @@ def _write_to_bucket(vulnerability: vulnerability_pb2.Vulnerability):
         vulnerability, preserving_proto_field_name=True, indent=None)
     json_blob.upload_from_string(json_data, content_type='application/json')
   except Exception:
-    logging.exception('failed to upload vulnerability protobuf to GCS')
+    logging.exception('failed to upload %s json to GCS', vuln_id)
     # TODO(michaelkedar): send pub/sub message to retry
 
 

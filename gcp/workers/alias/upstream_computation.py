@@ -14,14 +14,18 @@
 # limitations under the License.
 """OSV Upstream relation computation."""
 
+from collections import defaultdict
 import datetime
+import json
+import logging
+import os
+
 from google.cloud import ndb
+from google.protobuf import json_format
 
 import osv
 import osv.logs
-import json
-import logging
-from collections import defaultdict
+from osv import gcs
 
 
 def compute_upstream(target_bug, bugs: dict[str, set[str]]) -> list[str]:
@@ -60,6 +64,7 @@ def _create_group(bug_id, upstream_ids) -> osv.UpstreamGroup:
       upstream_ids=upstream_ids,
       last_modified=datetime.datetime.now(datetime.UTC))
   new_group.put()
+  _update_vuln_with_group(bug_id, new_group)
 
   return new_group
 
@@ -71,6 +76,7 @@ def _update_group(upstream_group: osv.UpstreamGroup,
     logging.info('Deleting upstream group due to too few bugs: %s',
                  upstream_ids)
     upstream_group.key.delete()
+    _update_vuln_with_group(upstream_group.db_id, None)
     return None
 
   if upstream_ids == upstream_group.upstream_ids:
@@ -79,7 +85,69 @@ def _update_group(upstream_group: osv.UpstreamGroup,
   upstream_group.upstream_ids = upstream_ids
   upstream_group.last_modified = datetime.datetime.now(datetime.UTC)
   upstream_group.put()
+  _update_vuln_with_group(upstream_group.db_id, upstream_group)
   return upstream_group
+
+
+def _update_vuln_with_group(vuln_id: str, upstream: osv.UpstreamGroup | None):
+  """Updates the Vulnerability in Datastore & GCS with the new upstream group.
+  If `upstream` is None, assumes a preexisting UpstreamGroup was just deleted.
+  """
+  # TODO!!: check if not test instance or tests
+  if False:  # pylint: disable=using-constant-test
+    return
+  # Get the existing vulnerability first, so we can recalculate search_indices
+  bucket = gcs.get_osv_bucket()
+  pb_blob = bucket.get_blob(os.path.join(gcs.VULN_PB_PATH, vuln_id + '.pb'))
+  if pb_blob is None:
+    logging.error('vulnerability not in GCS - %s', vuln_id)
+    # TODO(michaelkedar): send pub/sub message to reimport
+    return
+  try:
+    vuln_proto = osv.vulnerability_pb2.Vulnerability.FromString(
+        pb_blob.download_as_bytes())
+  except Exception:
+    logging.exception('failed to download %s protobuf from GCS', vuln_id)
+
+  def transaction():
+    vuln: osv.Vulnerability = osv.Vulnerability.get_by_id(vuln_id)
+    if vuln is None:
+      logging.error('vulnerability not in Datastore - %s', vuln_id)
+      # TODO: Raise exception
+      return
+    if upstream is None:
+      modified = datetime.datetime.now(datetime.UTC)
+      upstream_group = vuln.upstream_raw
+    else:
+      modified = upstream.last_modified
+      upstream_group = upstream.upstream_ids
+    vuln_proto.upstream[:] = upstream_group
+    vuln_proto.modified.FromDatetime(modified)
+    osv.ListedVulnerability.from_vulnerability(vuln_proto).put()
+    vuln.modified = modified
+    vuln.put()
+
+  ndb.transaction(transaction)
+  modified = vuln_proto.modified.ToDatetime(datetime.UTC)
+  try:
+    pb_blob.custom_time = modified
+    pb_blob.upload_from_string(
+        vuln_proto.SerializeToString(deterministic=True),
+        content_type='application/octet-stream',
+        if_generation_match=pb_blob.generation)
+  except Exception:
+    logging.exception('failed to upload %s protobuf to GCS', vuln_id)
+    # TODO(michaelkedar): send pub/sub message to retry
+
+  try:
+    json_blob = bucket.blob(os.path.join(gcs.VULN_JSON_PATH, vuln_id + '.json'))
+    json_blob.custom_time = modified
+    json_data = json_format.MessageToJson(
+        vuln_proto, preserving_proto_field_name=True, indent=None)
+    json_blob.upload_from_string(json_data, content_type='application/json')
+  except Exception:
+    logging.exception('failed to upload %s json to GCS', vuln_id)
+    # TODO(michaelkedar): send pub/sub message to retry
 
 
 def compute_upstream_hierarchy(

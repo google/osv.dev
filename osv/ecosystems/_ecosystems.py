@@ -57,6 +57,7 @@ _ecosystems = {
     'Maven': Maven(),
     'MinimOS': MinimOS(),
     'NuGet': NuGet(),
+    'Drupal': Packagist(),
     'Packagist': Packagist(),
     'Pub': Pub(),
     'PyPI': PyPI(),
@@ -153,6 +154,9 @@ def get(name: str) -> Ecosystem:
 
   if name.startswith('SUSE'):
     return SUSE()
+
+  if name.startswith('Drupal'):
+    return Drupal()
 
   return _ecosystems.get(normalize(name))
 

@@ -19,7 +19,10 @@ from .helper_base import Ecosystem
 
 
 class Alpaquita(Ecosystem):
-  """"Alpaquita ecosystem"""
+  """
+  Alpaquita ecosystem
+  also used for 'BellSoft Hardened Containers'
+  """
 
   def sort_key(self, version):
     if not AlpineLinuxVersion.is_valid(version):

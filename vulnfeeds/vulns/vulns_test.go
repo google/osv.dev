@@ -8,40 +8,41 @@ import (
 	"log"
 	"os"
 	"reflect"
+	"sort"
 	"testing"
 
 	"golang.org/x/exp/slices"
 
 	gocmp "github.com/google/go-cmp/cmp"
-	"github.com/google/osv/vulnfeeds/utility"
-
 	"github.com/google/osv/vulnfeeds/cves"
 	"github.com/google/osv/vulnfeeds/models"
+	"github.com/google/osv/vulnfeeds/utility"
+	"github.com/ossf/osv-schema/bindings/go/osvschema"
 )
 
 func TestClassifyReferenceLink(t *testing.T) {
 	tables := []struct {
 		refLink string
 		refTag  string
-		refType string
+		refType osvschema.ReferenceType
 	}{
-		{"https://example.com", "", "WEB"},
-		{"https://github.com/google/osv/commit/cd4e934d0527e5010e373e7fed54ef5daefba2f5", "", "FIX"},
-		{"https://github.com/advisories/GHSA-fr26-qjc8-mvjx", "", "ADVISORY"},
-		{"https://github.com/dpgaspar/Flask-AppBuilder/security/advisories/GHSA-624f-cqvr-3qw4", "", "ADVISORY"},
-		{"https://github.com/Netflix/lemur/issues/117", "", "REPORT"},
-		{"https://snyk.io/vuln/SNYK-PYTHON-TRYTOND-1730329", "", "ADVISORY"},
-		{"https://nvd.nist.gov/vuln/detail/CVE-2021-23336", "", "ADVISORY"},
-		{"https://www.debian.org/security/2021/dsa-4878", "", "ADVISORY"},
-		{"https://usn.ubuntu.com/usn/usn-4661-1", "", "ADVISORY"},
-		{"http://www.ubuntu.com/usn/USN-2915-2", "", "ADVISORY"},
-		{"https://ubuntu.com/security/notices/USN-5124-1", "", "ADVISORY"},
-		{"http://rhn.redhat.com/errata/RHSA-2016-0504.html", "", "ADVISORY"},
-		{"https://access.redhat.com/errata/RHSA-2017:1499", "", "ADVISORY"},
-		{"https://security.gentoo.org/glsa/202003-45", "", "ADVISORY"},
-		{"https://pypi.org/project/flask", "", "PACKAGE"},
-		{"https://bugzilla.redhat.com/show_bug.cgi?id=684877", "", "REPORT"},
-		{"https://github.com/log4js-node/log4js-node/pull/1141/commits/8042252861a1b65adb66931fdf702ead34fa9b76", "Patch", "FIX"},
+		{"https://example.com", "", osvschema.ReferenceWeb},
+		{"https://github.com/google/osv/commit/cd4e934d0527e5010e373e7fed54ef5daefba2f5", "", osvschema.ReferenceFix},
+		{"https://github.com/advisories/GHSA-fr26-qjc8-mvjx", "", osvschema.ReferenceAdvisory},
+		{"https://github.com/dpgaspar/Flask-AppBuilder/security/advisories/GHSA-624f-cqvr-3qw4", "", osvschema.ReferenceAdvisory},
+		{"https://github.com/Netflix/lemur/issues/117", "", osvschema.ReferenceReport},
+		{"https://snyk.io/vuln/SNYK-PYTHON-TRYTOND-1730329", "", osvschema.ReferenceAdvisory},
+		{"https://nvd.nist.gov/vuln/detail/CVE-2021-23336", "", osvschema.ReferenceAdvisory},
+		{"https://www.debian.org/security/2021/dsa-4878", "", osvschema.ReferenceAdvisory},
+		{"https://usn.ubuntu.com/usn/usn-4661-1", "", osvschema.ReferenceAdvisory},
+		{"http://www.ubuntu.com/usn/USN-2915-2", "", osvschema.ReferenceAdvisory},
+		{"https://ubuntu.com/security/notices/USN-5124-1", "", osvschema.ReferenceAdvisory},
+		{"http://rhn.redhat.com/errata/RHSA-2016-0504.html", "", osvschema.ReferenceAdvisory},
+		{"https://access.redhat.com/errata/RHSA-2017:1499", "", osvschema.ReferenceAdvisory},
+		{"https://security.gentoo.org/glsa/202003-45", "", osvschema.ReferenceAdvisory},
+		{"https://pypi.org/project/flask", "", osvschema.ReferencePackage},
+		{"https://bugzilla.redhat.com/show_bug.cgi?id=684877", "", osvschema.ReferenceReport},
+		{"https://github.com/log4js-node/log4js-node/pull/1141/commits/8042252861a1b65adb66931fdf702ead34fa9b76", "Patch", osvschema.ReferenceFix},
 	}
 
 	for _, table := range tables {
@@ -55,7 +56,7 @@ func TestClassifyReferenceLink(t *testing.T) {
 func TestClassifyReferences(t *testing.T) {
 	testcases := []struct {
 		refData    []cves.Reference
-		references References
+		references []osvschema.Reference
 	}{
 		{
 			refData: []cves.Reference{
@@ -63,7 +64,7 @@ func TestClassifyReferences(t *testing.T) {
 					Source: "https://example.com", Tags: []string{"MISC"}, Url: "https://example.com",
 				},
 			},
-			references: References{{URL: "https://example.com", Type: "WEB"}},
+			references: []osvschema.Reference{{URL: "https://example.com", Type: osvschema.ReferenceWeb}},
 		},
 		{
 			refData: []cves.Reference{
@@ -71,7 +72,7 @@ func TestClassifyReferences(t *testing.T) {
 					Source: "https://github.com/Netflix/lemur/issues/117", Url: "https://github.com/Netflix/lemur/issues/117", Tags: []string{"MISC", "Issue Tracking"},
 				},
 			},
-			references: References{{URL: "https://github.com/Netflix/lemur/issues/117", Type: "REPORT"}},
+			references: []osvschema.Reference{{URL: "https://github.com/Netflix/lemur/issues/117", Type: osvschema.ReferenceReport}},
 		},
 		{
 			refData: []cves.Reference{
@@ -79,11 +80,18 @@ func TestClassifyReferences(t *testing.T) {
 					Source: "https://github.com/curl/curl/issues/9271", Url: "https://github.com/curl/curl/issues/9271", Tags: []string{"MISC", "Exploit", "Issue Tracking", "Third Party Advisory"},
 				},
 			},
-			references: References{{URL: "https://github.com/curl/curl/issues/9271", Type: "EVIDENCE"}, {URL: "https://github.com/curl/curl/issues/9271", Type: "REPORT"}},
+			references: []osvschema.Reference{
+				{URL: "https://github.com/curl/curl/issues/9271", Type: osvschema.ReferenceAdvisory},
+				{URL: "https://github.com/curl/curl/issues/9271", Type: osvschema.ReferenceEvidence},
+				{URL: "https://github.com/curl/curl/issues/9271", Type: osvschema.ReferenceReport},
+			},
 		},
 	}
 	for _, tc := range testcases {
 		references := ClassifyReferences(tc.refData)
+		sort.SliceStable(tc.references, func(i, j int) bool {
+			return tc.references[i].Type < tc.references[j].Type
+		})
 		if !reflect.DeepEqual(references, tc.references) {
 			t.Errorf("ClassifyReferences for %+v was incorrect, got: %+v, expected: %+v", tc.refData, references, tc.references)
 		}
@@ -142,9 +150,9 @@ func TestEnglishDescription(t *testing.T) {
 
 func TestAddPkgInfo(t *testing.T) {
 	cveItem := loadTestData2("CVE-2022-36037")
-	vuln := Vulnerability{
-		ID: string(cveItem.CVE.ID),
-	}
+	vuln := Vulnerability{}
+	vuln.ID = string(cveItem.CVE.ID)
+
 	testPkgInfoNameEco := PackageInfo{
 		PkgName:   "TestName",
 		Ecosystem: "TestEco",
@@ -249,7 +257,7 @@ func TestAddPkgInfo(t *testing.T) {
 		t.Errorf("AddPkgInfo has not correctly added package ecosystem.")
 	}
 
-	if vuln.Affected[0].Ranges[0].Type != "ECOSYSTEM" {
+	if vuln.Affected[0].Ranges[0].Type != osvschema.RangeEcosystem {
 		t.Errorf("AddPkgInfo has not correctly added ranges type.")
 	}
 
@@ -266,7 +274,7 @@ func TestAddPkgInfo(t *testing.T) {
 	if vuln.Affected[1].Package.Purl != testPkgInfoPURL.PURL {
 		t.Errorf("AddPkgInfo has not correctly added package PURL.")
 	}
-	if vuln.Affected[1].Ranges[0].Type != "ECOSYSTEM" {
+	if vuln.Affected[1].Ranges[0].Type != osvschema.RangeEcosystem {
 		t.Errorf("AddPkgInfo has not correctly added ranges type.")
 	}
 	if vuln.Affected[1].Ranges[0].Events[1].Fixed != testPkgInfoPURL.VersionInfo.AffectedVersions[0].Fixed {
@@ -279,16 +287,16 @@ func TestAddPkgInfo(t *testing.T) {
 		t.Errorf("AddPkgInfo has not corrected add ranges repo. %#v", vuln.Affected[2])
 	}
 
-	if vuln.Affected[2].Ranges[0].Type != "GIT" {
+	if vuln.Affected[2].Ranges[0].Type != osvschema.RangeGit {
 		t.Errorf("AddPkgInfo has not correctly added ranges type.")
 	}
 	if vuln.Affected[2].Ranges[0].Events[1].Fixed != testPkgInfoCommits.VersionInfo.AffectedCommits[0].Fixed {
 		t.Errorf("AddPkgInfo has not correctly added ranges fixed.")
 	}
-	if vuln.Affected[2].Package != nil {
+	if vuln.Affected[2].Package != (osvschema.Package{}) {
 		t.Errorf("AddPkgInfo has not correctly avoided setting a package field for an ecosystem-less vulnerability.")
 	}
-	if !slices.IsSortedFunc(vuln.Affected[3].Ranges, func(a, b AffectedRange) int {
+	if !slices.IsSortedFunc(vuln.Affected[3].Ranges, func(a, b osvschema.Range) int {
 		if n := cmp.Compare(a.Type, b.Type); n != 0 {
 			return n
 		}
@@ -314,7 +322,7 @@ func TestAddPkgInfo(t *testing.T) {
 		perRepoZeroIntroducedCommitHashCount := make(map[string]int)
 		for _, r := range a.Ranges {
 			for _, e := range r.Events {
-				if r.Type == "GIT" && e.Introduced == "0" {
+				if r.Type == osvschema.RangeGit && e.Introduced == "0" {
 					// zeroIntroducedCommitHashCount++
 					if _, ok := perRepoZeroIntroducedCommitHashCount[r.Repo]; !ok {
 						perRepoZeroIntroducedCommitHashCount[r.Repo] = 1
@@ -322,7 +330,7 @@ func TestAddPkgInfo(t *testing.T) {
 						perRepoZeroIntroducedCommitHashCount[r.Repo]++
 					}
 				}
-				if e == (Event{}) {
+				if e == (osvschema.Event{}) {
 					t.Errorf("Empty event detected for the repo %s", r.Repo)
 				}
 			}
@@ -339,14 +347,14 @@ func TestAddSeverity(t *testing.T) {
 	tests := []struct {
 		description    string
 		inputCVE       cves.Vulnerability
-		expectedResult []Severity
+		expectedResult []osvschema.Severity
 	}{
 		{
 			description: "Successful CVE severity extraction and attachment",
 			inputCVE:    loadTestData2("CVE-2022-34668"),
-			expectedResult: []Severity{
+			expectedResult: []osvschema.Severity{
 				{
-					Type:  "CVSS_V3",
+					Type:  osvschema.SeverityCVSSV3,
 					Score: "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H",
 				},
 			},
@@ -359,7 +367,8 @@ func TestAddSeverity(t *testing.T) {
 	}
 
 	for _, tc := range tests {
-		vuln, _ := FromCVE(tc.inputCVE.CVE.ID, tc.inputCVE.CVE)
+		id := tc.inputCVE.CVE.ID
+		vuln := FromNVDCVE(id, tc.inputCVE.CVE)
 
 		got := vuln.Severity
 		if diff := gocmp.Diff(got, tc.expectedResult); diff != "" {
@@ -402,27 +411,26 @@ func TestCVEIsDisputed(t *testing.T) {
 	}
 
 	for _, tc := range tests {
-		inputVuln := &Vulnerability{
-			ID: tc.inputVulnId,
-		}
+		inputVuln := &Vulnerability{}
+		inputVuln.ID = tc.inputVulnId
 
-		modified, err := CVEIsDisputed(inputVuln, "../test_data/cvelistV5")
+		withdrawnTime, err := CVEIsDisputed(inputVuln, "../test_data/cvelistV5")
 
-		if err != nil && err != tc.expectedError {
+		if !errors.Is(err, tc.expectedError) {
 			var verr *VulnsCVEListError
 			if errors.As(err, &verr) {
 				t.Errorf("test %q: unexpectedly errored: %#v", tc.description, verr.Err)
 			} else {
-				t.Errorf("test %q: unexpectedly errored: %#v", tc.description, err)
+				t.Errorf("test %q: unexpectedly errored: %#v, expected: %#v", tc.description, err, tc.expectedError)
 			}
 		}
 
-		if err == nil && tc.expectedError != nil {
-			t.Errorf("test %q: did not error as expected, wanted: %#v", tc.description, tc.expectedError)
+		if withdrawnTime.IsZero() && tc.expectedWithdrawn {
+			t.Errorf("test: %q: withdrawn time not set as expected", tc.description)
 		}
 
-		if modified == "" && tc.expectedWithdrawn {
-			t.Errorf("test: %q: withdrawn (%s) not set as expected", tc.description, modified)
+		if !withdrawnTime.IsZero() && !tc.expectedWithdrawn {
+			t.Errorf("test: %q: withdrawn time (%s) set unexpectedly", tc.description, withdrawnTime)
 		}
 	}
 }

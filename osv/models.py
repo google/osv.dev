@@ -868,8 +868,15 @@ class Bug(ndb.Model):
 
   def _post_put_hook(self: Self, future: ndb.Future):  # pylint: disable=arguments-differ
     """Post-put hook for writing new entities for database migration."""
-    # TODO!!: check if not test instance or tests
-    if False:  # pylint: disable=using-constant-test
+    # TODO(michaelkedar): Currently, only want to run this on the test instance
+    # (or when running tests). Remove this check when we're ready for prod.
+    # To get the current GCP project without relying on environment variables
+    # that may not be set, grab the project name from the undocumented(?) field
+    # on the ndb.Client, which we find from the current context.
+    project = getattr(ndb.get_context().client, 'project')
+    if not project:
+      logging.error('failed to get GCP project from ndb.Client')
+    if project not in ('oss-vdb-test', 'test-osv'):
       return
     if future.exception():
       logging.error("Not writing new entities for %s since Bug.put() failed",
@@ -1041,15 +1048,17 @@ class ListedVulnerability(ndb.Model):
       for r in affected.ranges:
         if r.type == vulnerability_pb2.Range.Type.GIT:
           all_ecosystems.add('GIT')
-          all_packages.add(r.repo)
           search_indices.add(r.repo)
           autocomplete_tags.add(r.repo)
           split = r.repo.split('//')
           if len(split) >= 2:
             no_http = split[1]
+            all_packages.add(no_http)
             search_indices.add(no_http)
             # Add the path components exluding the domain name
             search_indices.update(no_http.split('/')[1:])
+          else:
+            all_packages.add(r.repo)
 
         if any(e.fixed or e.limit for e in r.events):
           is_fixed = True
@@ -1057,6 +1066,8 @@ class ListedVulnerability(ndb.Model):
     for eco in all_ecosystems:
       # TODO(michaelkedar): Seems like a noisy/useless search index?
       search_indices.update(_tokenize(eco))
+      if (e := ecosystems.remove_variants(eco)) is not None:
+        search_indices.update(_tokenize(e))
 
     ecos = sorted({ecosystems.normalize(e) for e in all_ecosystems})
     pkgs = sorted(all_packages)
@@ -1173,7 +1184,8 @@ def affected_from_bug(entity: Bug) -> list[AffectedVersions]:
 
     # Ecosystem helper for sorting the events.
     e_helper = ecosystems.get(pkg_ecosystem)
-    if e_helper is not None and not e_helper.supports_comparing:
+    if e_helper is not None and not (e_helper.supports_comparing or
+                                     e_helper.is_semver):
       e_helper = None
 
     # TODO(michaelkedar): I am matching the current behaviour of the API,

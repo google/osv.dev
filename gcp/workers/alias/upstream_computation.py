@@ -93,8 +93,12 @@ def _update_vuln_with_group(vuln_id: str, upstream: osv.UpstreamGroup | None):
   """Updates the Vulnerability in Datastore & GCS with the new upstream group.
   If `upstream` is None, assumes a preexisting UpstreamGroup was just deleted.
   """
-  # TODO!!: check if not test instance or tests
-  if False:  # pylint: disable=using-constant-test
+  # TODO(michaelkedar): Currently, only want to run this on the test instance
+  # (or when running tests). Remove this check when we're ready for prod.
+  project = getattr(ndb.get_context().client, 'project')
+  if not project:
+    logging.error('failed to get GCP project from ndb.Client')
+  if project not in ('oss-vdb-test', 'test-osv'):
     return
   # Get the existing vulnerability first, so we can recalculate search_indices
   bucket = gcs.get_osv_bucket()

@@ -109,7 +109,7 @@ def refresh_ids(dryrun: bool, loadcache: str) -> None:
 
     # If the keys have changed, delete the old keys
     # There's a potential for old keys to not get cleaned up if something fails
-    if deleted := (old_keys - new_keys):
+    if deleted := old_keys - new_keys:
       ndb.delete_multi(deleted)
 
     print(f"Time elapsed: {(time.perf_counter() - time_start):.2f} seconds.")

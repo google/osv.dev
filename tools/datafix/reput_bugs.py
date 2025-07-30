@@ -40,12 +40,14 @@ def reput_bugs(dryrun: bool, source: str, ids: list) -> None:
         print("Dry run mode. Preventing put")
       else:
         # Reputting the bug runs the Bug _pre/post_put_hook() in models.py
-        ndb.put_multi([osv.Bug.get_by_id(r.id())
-                       for r in result[batch:batch + MAX_BATCH_SIZE]])
+        ndb.put_multi([
+            osv.Bug.get_by_id(r.id())
+            for r in result[batch:batch + MAX_BATCH_SIZE]
+        ])
         print(f"Time elapsed: {(time.perf_counter()-time_start):.2f} seconds.")
     except Exception as e:
-        print([r.id() for r in result[batch:batch + MAX_BATCH_SIZE]])
-        print(f"Exception {e} occurred. Continuing to next batch.")
+      print([r.id() for r in result[batch:batch + MAX_BATCH_SIZE]])
+      print(f"Exception {e} occurred. Continuing to next batch.")
 
   print("Reputted!")
 

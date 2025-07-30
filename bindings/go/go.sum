@@ -1,6 +1,6 @@
 github.com/google/go-cmp v0.7.0 h1:wk8382ETsv4JYUZwIsn6YpYiWiBsYLSJiTsyBybVuN8=
 github.com/google/go-cmp v0.7.0/go.mod h1:pXiqmnSA92OHEEa9HXL2W4E7lf9JzCmGVUdgjX3N/iU=
-github.com/ossf/osv-schema/bindings/go v0.0.0-20250715064423-7310c9ec4b2a h1:eff71rMluaulxKV/PaG70M0DWvw79AuEXa4K8mHJkuk=
-github.com/ossf/osv-schema/bindings/go v0.0.0-20250715064423-7310c9ec4b2a/go.mod h1:lILztSxHU7VsdlYqCnwgxSDBhbXMf7iEQWtldJCDXPo=
+github.com/ossf/osv-schema/bindings/go v0.0.0-20250730052054-16741588f4a1 h1:x+tttdg4/ViHQjRUETk/bAgeV9gK42xoaSiZgSKLMTc=
+github.com/ossf/osv-schema/bindings/go v0.0.0-20250730052054-16741588f4a1/go.mod h1:lILztSxHU7VsdlYqCnwgxSDBhbXMf7iEQWtldJCDXPo=
 golang.org/x/sync v0.16.0 h1:ycBJEhp9p4vXvUZNszeOq0kGTPghopOL8q0fq3vstxw=
 golang.org/x/sync v0.16.0/go.mod h1:1dzgHSNfp02xaA81J2MS99Qcpr2w7fw1gpm99rleRqA=

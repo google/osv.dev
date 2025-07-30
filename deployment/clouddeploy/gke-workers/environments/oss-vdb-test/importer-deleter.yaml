@@ -12,6 +12,8 @@ spec:
             env:
             - name: GOOGLE_CLOUD_PROJECT
               value: oss-vdb-test
+            - name: OSV_VULNERABILITIES_BUCKET
+              value: osv-test-vulnerabilities
             image: importer
             args:
               - --delete

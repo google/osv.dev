@@ -11,7 +11,6 @@ import osv
 
 import argparse
 import json
-import functools
 import time
 import typing
 
@@ -19,12 +18,11 @@ MAX_BATCH_SIZE = 500
 
 # Global flags
 verbose = False
-fullrefresh = False
 transform = True
 
 
 class DryRunException(Exception):
-  """This exception is raised to cancel a transaction during dry runs"""
+  """This exception is raised to cancel a put during dry runs"""
 
 
 def get_relevant_ids() -> list[str]:
@@ -89,29 +87,30 @@ def refresh_ids(dryrun: bool, loadcache: str) -> None:
   num_reputted = 0
   time_start = time.perf_counter()
 
-  # This handles the actual transaction of reputting
-  # the bugs with ndb
+  # This handles the actual reput of the bugs with ndb
   def _refresh_ids(batch: int):
     buf: list[osv.Bug] = [
         osv.Bug.get_by_id(r) for r in relevant_ids[batch:batch + MAX_BATCH_SIZE]
     ]
 
-    if fullrefresh:
-      # Delete the existing entries. This must be done in a transaction
-      # to avoid losing data if interrupted
-      ndb.delete_multi([r.key for r in buf])
+    old_keys = {r.key for r in buf}
 
     if transform:
       # Clear the key so the key name will be regenerated to the new key format
       for elem in buf:
         transform_bug(elem)
 
-    # Reput the bug back in
-    ndb.put_multi_async(buf)
-
     if dryrun:
-      print("Dry run mode. Preventing transaction from committing")
+      print("Dry run mode. Preventing put")
       raise DryRunException
+
+    # Reput the bug back in
+    new_keys = set(ndb.put_multi(buf))
+
+    # If the keys have changed, delete the old keys
+    # There's a potential for old keys to not get cleaned up if something fails
+    if deleted := (old_keys - new_keys):
+      ndb.delete_multi(deleted)
 
     print(f"Time elapsed: {(time.perf_counter() - time_start):.2f} seconds.")
 
@@ -121,11 +120,11 @@ def refresh_ids(dryrun: bool, loadcache: str) -> None:
       num_reputted += len(relevant_ids[batch:batch + MAX_BATCH_SIZE])
       print(f"Reput {num_reputted} bugs... - "
             f"{num_reputted/len(relevant_ids)*100:.2f}%")
-      ndb.transaction(functools.partial(_refresh_ids, batch))
+      _refresh_ids(batch)
     except DryRunException:
-      # Don't have the first batch's transaction-aborting exception stop
+      # Don't have the first batch's put-aborting exception stop
       # subsequent batches from being attempted.
-      print("Dry run mode. Preventing transaction from committing")
+      print("Dry run mode. Preventing put")
     except Exception as e:
       print(relevant_ids[batch:batch + MAX_BATCH_SIZE])
       print(f"Exception {e} occurred. Continuing to next batch.")
@@ -149,12 +148,6 @@ def main() -> None:
       default=False,
       help="Print each ID that needs to be processed")
   parser.add_argument(
-      "--full-refresh",
-      action=argparse.BooleanOptionalAction,
-      dest="fullrefresh",
-      default=False,
-      help="Deletes the bug before reputting, necessary for key changes")
-  parser.add_argument(
       "--transform",
       action=argparse.BooleanOptionalAction,
       dest="transform",
@@ -174,11 +167,9 @@ def main() -> None:
   args = parser.parse_args()
 
   global verbose
-  global fullrefresh
   global transform
 
   verbose = args.verbose
-  fullrefresh = args.fullrefresh
   transform = args.transform
 
   client = ndb.Client(project=args.project)

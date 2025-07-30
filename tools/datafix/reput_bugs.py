@@ -82,7 +82,7 @@ def main() -> None:
   args = parser.parse_args()
 
   client = ndb.Client(project=args.project)
-  with client.context():
+  with client.context(cache_policy=False):
     reput_bugs(args.dryrun, args.source, args.bugs)
 
 

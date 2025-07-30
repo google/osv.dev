@@ -174,7 +174,7 @@ def main() -> None:
 
   client = ndb.Client(project=args.project)
   print(f"Running on project {args.project}.")
-  with client.context():
+  with client.context(cache_policy=False):
     refresh_ids(args.dryrun, args.loadcache)
 
 

@@ -1,6 +1,6 @@
 ('diff --git a/file/OSV-2017-134.yaml b/file/OSV-2017-134.yaml\n'
  'new file mode 100644\n'
- 'index 0000000..e166f48\n'
+ 'index 0000000..b82872e\n'
  '--- /dev/null\n'
  '+++ b/file/OSV-2017-134.yaml\n'
  '@@ -0,0 +1,44 @@\n'

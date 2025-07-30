@@ -6,17 +6,11 @@ import (
 	"log"
 	"os"
 	"path/filepath"
-	"sort"
 	"strings"
 	"testing"
 	"time"
 
-	"github.com/google/go-cmp/cmp"
 	"github.com/google/osv/vulnfeeds/cves"
-	"github.com/google/osv/vulnfeeds/internal/testutils"
-	"github.com/google/osv/vulnfeeds/models"
-	"github.com/google/osv/vulnfeeds/vulns"
-	"golang.org/x/exp/slices"
 )
 
 func loadTestData(cveName string) cves.CVE5 {
@@ -40,7 +34,7 @@ func TestFromCVE(t *testing.T) {
 	cveData := loadTestData("CVE-2021-44228")
 	refs := identifyPossibleURLs(cveData)
 
-	v, notes := vulns.FromCVE5(cveData, refs)
+	v, notes := FromCVE5(cveData, refs)
 
 	if v.ID != "CVE-2021-44228" {
 		t.Errorf("Expected ID CVE-2021-44228, got %s", v.ID)
@@ -76,53 +70,5 @@ func TestFromCVE(t *testing.T) {
 	}
 	if !foundRef {
 		t.Error("Expected reference not found")
-	}
-}
-
-func TestExtractVersionInfo(t *testing.T) {
-	tests := []struct {
-		name                string
-		cveID               string
-		expectedVersionInfo models.VersionInfo
-	}{
-		{
-			name:  "CVE with lessThan",
-			cveID: "CVE-2025-1110", // GitLab
-			expectedVersionInfo: models.VersionInfo{
-				AffectedVersions: []models.AffectedVersion{
-					{Introduced: "18.0", Fixed: "18.0.1"},
-				},
-			},
-		},
-	}
-
-	for _, tc := range tests {
-		t.Run(tc.name, func(t *testing.T) {
-			r := testutils.SetupVCR(t)
-			client := r.GetDefaultClient()
-
-			cveData := loadTestData(tc.cveID)
-			refs := identifyPossibleURLs(cveData)
-			repos := []string{}
-			for _, ref := range refs {
-				repos = append(repos, ref.Url)
-			}
-			got, _ := ExtractVersionInfo(cveData, repos, client)
-
-			// Sort for stable comparison
-			sort.SliceStable(got.AffectedVersions, func(i, j int) bool {
-				return got.AffectedVersions[i].Introduced < got.AffectedVersions[j].Introduced
-			})
-			sort.SliceStable(tc.expectedVersionInfo.AffectedVersions, func(i, j int) bool {
-				return tc.expectedVersionInfo.AffectedVersions[i].Introduced < tc.expectedVersionInfo.AffectedVersions[j].Introduced
-			})
-			slices.SortStableFunc(got.AffectedCommits, models.AffectedCommitCompare)
-			slices.SortStableFunc(tc.expectedVersionInfo.AffectedCommits, models.AffectedCommitCompare)
-
-			if diff := cmp.Diff(tc.expectedVersionInfo, got); diff != "" {
-				t.Errorf("ExtractVersionInfo() mismatch (-want +got):\n%s", diff)
-			}
-
-		})
 	}
 }

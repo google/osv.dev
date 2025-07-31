@@ -176,6 +176,20 @@
   editable: False
   strict_validation: True
 
+- name: 'drupal'
+  versions_from_repo: False
+  type: 0
+  ignore_patterns: ['^(?!DRUPAL-).*$']
+  directory_path: 'advisories'
+  repo_url: 'https://github.com/ackama/drupal-advisory-database.git'
+  detect_cherrypicks: False
+  extension: '.json'
+  db_prefix: ['DRUPAL-']
+  ignore_git: True
+  link: 'https://github.com/ackama/drupal-advisory-database/blob/main/'
+  editable: False
+  strict_validation: True
+
 - name: 'ghsa'
   versions_from_repo: False
   type: 0

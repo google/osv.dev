@@ -72,6 +72,8 @@ ECOSYSTEM_PURL_DATA = {
         EcosystemPURL('generic', None),
     'Packagist':
         EcosystemPURL('composer', None),
+    'Drupal':
+        EcosystemPURL('drupal', None),
     # Photon OS
     'Pub':
         EcosystemPURL('pub', None),

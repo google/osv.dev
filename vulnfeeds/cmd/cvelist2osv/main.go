@@ -8,6 +8,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"time"
 
 	"golang.org/x/exp/slices"
 
@@ -115,11 +116,13 @@ func FromCVE5(cve cves.CVE5, refs []cves.Reference) (*vulns.Vulnerability, []str
 	v.Related = related
 	v.Published, err = cves.ParseCVE5Timestamp(cve.Metadata.DatePublished)
 	if err != nil {
-		notes = append(notes, "Published date failed to parse")
+		notes = append(notes, "Published date failed to parse, setting time to now")
+		v.Published = time.Now()
 	}
 	v.Modified, err = cves.ParseCVE5Timestamp(cve.Metadata.DateUpdated)
 	if err != nil {
-		notes = append(notes, "Modified date failed to parse")
+		notes = append(notes, "Modified date failed to parse, setting time to now")
+		v.Modified = time.Now()
 	}
 	v.References = vulns.ClassifyReferences(refs)
 	// Add affected version

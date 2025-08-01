@@ -44,12 +44,14 @@ type VulnsCVEListError struct {
 	Err error
 }
 
+// Error returns the string representation of a VulnsCVEListError.
 func (e *VulnsCVEListError) Error() string {
 	return e.URL + ": " + e.Err.Error()
 }
 
 type QualityCheck int
 
+// String returns the string representation of a QualityCheck.
 func (q QualityCheck) String() string {
 	return [...]string{
 		"QualityUnknown",
@@ -175,6 +177,7 @@ type PackageInfo struct {
 	EcosystemSpecific map[string]interface{} `json:"ecosystem_specific,omitempty" yaml:"ecosystem_specific,omitempty"`
 }
 
+// ToJSON serializes the PackageInfo to JSON.
 func (pi *PackageInfo) ToJSON(w io.Writer) error {
 	encoder := json.NewEncoder(w)
 	return encoder.Encode(pi)
@@ -348,12 +351,14 @@ func (v *Vulnerability) AddSeverity(metricsData any) {
 	})
 }
 
+// ToJSON serializes the Vulnerability to JSON.
 func (v *Vulnerability) ToJSON(w io.Writer) error {
 	encoder := json.NewEncoder(w)
 	encoder.SetIndent("", "  ")
 	return encoder.Encode(v)
 }
 
+// ToYAML serializes the Vulnerability to YAML.
 func (v *Vulnerability) ToYAML(w io.Writer) error {
 	encoder := yaml.NewEncoder(w)
 	return encoder.Encode(v)
@@ -494,6 +499,8 @@ func ClassifyReferenceLink(link string, tag string) osvschema.ReferenceType {
 	return osvschema.ReferenceWeb
 }
 
+// ExtractReferencedVulns extracts other vulnerability IDs from a CVE's references
+// to place them into the aliases and related fields.
 func ExtractReferencedVulns(id cves.CVEID, cveID cves.CVEID, references []cves.Reference) ([]string, []string) {
 	var aliases []string
 	var related []string
@@ -554,6 +561,7 @@ func ExtractReferencedVulns(id cves.CVEID, cveID cves.CVEID, references []cves.R
 	return Unique(aliases), Unique(related)
 }
 
+// Unique removes duplicate elements from a slice.
 func Unique[T comparable](s []T) []T {
 	inResult := make(map[T]bool)
 	var result []T
@@ -609,6 +617,7 @@ func FromNVDCVE(id cves.CVEID, cve cves.CVE) *Vulnerability {
 	return &v
 }
 
+// GetCPEs extracts CPE strings from a slice of cves.CPE.
 func GetCPEs(cpeApplicability []cves.CPE) []string {
 	var CPEs []string
 	for _, c := range cpeApplicability {
@@ -624,6 +633,7 @@ func GetCPEs(cpeApplicability []cves.CPE) []string {
 	return CPEs
 }
 
+// FromYAML deserializes a Vulnerability from a YAML reader.
 func FromYAML(r io.Reader) (*Vulnerability, error) {
 	decoder := yaml.NewDecoder(r)
 	var vuln Vulnerability
@@ -635,6 +645,7 @@ func FromYAML(r io.Reader) (*Vulnerability, error) {
 	return &vuln, nil
 }
 
+// FromJSON deserializes a Vulnerability from a JSON reader.
 func FromJSON(r io.Reader) (*Vulnerability, error) {
 	decoder := json.NewDecoder(r)
 	var vuln Vulnerability

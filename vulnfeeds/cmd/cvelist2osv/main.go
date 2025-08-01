@@ -24,6 +24,7 @@ var ErrNoRanges = errors.New("no ranges")
 
 var ErrUnresolvedFix = errors.New("fixes not resolved to commits")
 
+// String returns the string representation of a ConversionOutcome.
 func (c ConversionOutcome) String() string {
 	return [...]string{
 		"ConversionUnknown",
@@ -74,6 +75,7 @@ var RefTagDenyList = []string{
 	"Broken Link", // Actively ignore these though.
 }
 
+// addIDToNotes prepends a CVE ID to a slice of notes.
 func addIDToNotes(id cves.CVEID, notes []string) []string {
 	var updatedNotes []string
 	for _, note := range notes {
@@ -82,6 +84,7 @@ func addIDToNotes(id cves.CVEID, notes []string) []string {
 	return updatedNotes
 }
 
+// determineHeuristics examines a CVE and extracts metrics and heuristics about it.
 func determineHeuristics(cve cves.CVE5, v *vulns.Vulnerability) {
 	// CNA based heuristics
 	Metrics.CNA = cve.Metadata.AssignerShortName
@@ -98,6 +101,7 @@ func determineHeuristics(cve cves.CVE5, v *vulns.Vulnerability) {
 	}
 }
 
+// FromCVE5 creates a Vulnerability from a CVE5 object.
 func FromCVE5(cve cves.CVE5, refs []cves.Reference) (*vulns.Vulnerability, []string) {
 	aliases, related := vulns.ExtractReferencedVulns(cve.Metadata.CVEID, cve.Metadata.CVEID, refs)
 	var err error
@@ -144,6 +148,7 @@ func FromCVE5(cve cves.CVE5, refs []cves.Reference) (*vulns.Vulnerability, []str
 	return &v, notes
 }
 
+// CVEToOSV converts a CVE into an OSV finding and writes it to a file.
 func CVEToOSV(CVE cves.CVE5, references []cves.Reference, repos []string, directory string) error {
 	// Create a base OSV record
 	v, notes := FromCVE5(CVE, references)

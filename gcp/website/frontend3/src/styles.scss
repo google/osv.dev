@@ -867,7 +867,32 @@ dl.vulnerability-details,
   }
 }
 
+.packages-scroll-container {
+  overflow-x: auto;
+  padding-bottom: 8px;
+
+  scrollbar-color: #555 #2c2c2c;
+  scrollbar-width: thin;
+
+  &::-webkit-scrollbar {
+    height: 8px;
+  }
+  &::-webkit-scrollbar-track {
+    background: #2c2c2c;
+  }
+  &::-webkit-scrollbar-thumb {
+    background-color: #555;
+    border-radius: 4px;
+  }
+  &::-webkit-scrollbar-thumb:hover {
+    background-color: #777;
+  }
+}
+
 .vulnerability-packages {
+  display: table;
+  border-spacing: 0;
+  min-width: 100%;
   h2 {
     background: #aaa;
     color: #000;
@@ -946,6 +971,12 @@ dl.vulnerability-details,
     pointer-events: none;
   }
 
+  &[affordance="tab-bar"] {
+    &::part(tab-bar) {
+      white-space: nowrap;
+    }
+  }
+  
   &[affordance="collapse"] h2.package-header {
     .vuln-ecosystem {
       display: inline;

@@ -122,12 +122,12 @@ def aggregate_all_vulnerabilities(work_dir: str, export_bucket: str):
       reader = csv.reader(infile)
       for line in reader:
         # Create <timestamp>,<dir>/<osv_id>
-        full_modified_list.append(f'{line[0]},{dir_from_work_dir}/{line[1]}')
+        full_modified_list.append((line[0],f'{dir_from_work_dir}/{line[1]}'))
 
   full_modified_list.sort(reverse=True)
 
   with open(output_modified_list, 'w') as outfile:
-    outfile.write('\n'.join(full_modified_list))
+    csv.writer(outfile).writerows(full_modified_list)
 
   storage_client = storage.Client()
   bucket = storage_client.get_bucket(export_bucket)

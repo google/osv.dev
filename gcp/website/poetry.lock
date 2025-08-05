@@ -260,14 +260,14 @@ files = [
 
 [[package]]
 name = "certifi"
-version = "2025.7.14"
+version = "2025.8.3"
 description = "Python package for providing Mozilla's CA Bundle."
 optional = false
 python-versions = ">=3.7"
 groups = ["main"]
 files = [
-    {file = "certifi-2025.7.14-py3-none-any.whl", hash = "sha256:6b31f564a415d79ee77df69d757bb49a5bb53bd9f756cbbe24394ffd6fc1f4b2"},
-    {file = "certifi-2025.7.14.tar.gz", hash = "sha256:8ea99dbdfaaf2ba2f9bac77b9249ef62ec5218e7c2b2e903378ed5fccf765995"},
+    {file = "certifi-2025.8.3-py3-none-any.whl", hash = "sha256:f6c12493cfb1b06ba2ff328595af9350c65d6644968e5d3a2ffd78699af217a5"},
+    {file = "certifi-2025.8.3.tar.gz", hash = "sha256:e564105f78ded564e3ae7c923924435e1daa7463faeab5bb932bc53ffae63407"},
 ]
 
 [[package]]
@@ -482,14 +482,14 @@ markers = {main = "platform_system == \"Windows\"", dev = "sys_platform == \"win
 
 [[package]]
 name = "cvss"
-version = "3.4"
+version = "3.6"
 description = "CVSS2/3/4 library with interactive calculator for Python 2 and Python 3"
 optional = false
 python-versions = "*"
 groups = ["main"]
 files = [
-    {file = "cvss-3.4-py2.py3-none-any.whl", hash = "sha256:d9950613758e60820f7fac37ca5f35158712f8f2ea4f6629858a60c4984fe4ef"},
-    {file = "cvss-3.4.tar.gz", hash = "sha256:632353244ba3c58b53355466677edc968b9d7143c317b66271f9fd7939951ee8"},
+    {file = "cvss-3.6-py2.py3-none-any.whl", hash = "sha256:e342c6ad9c7eb69d2aebbbc2768a03cabd57eb947c806e145de5b936219833ea"},
+    {file = "cvss-3.6.tar.gz", hash = "sha256:f21d18224efcd3c01b44ff1b37dec2e3208d29a6d0ce6c87a599c73c21ee1a99"},
 ]
 
 [[package]]
@@ -1246,14 +1246,14 @@ url = "../.."
 
 [[package]]
 name = "packageurl-python"
-version = "0.17.2"
+version = "0.17.3"
 description = "A purl aka. Package URL parser and builder"
 optional = false
 python-versions = ">=3.8"
 groups = ["main"]
 files = [
-    {file = "packageurl_python-0.17.2-py3-none-any.whl", hash = "sha256:863a903bb9fffd17c367c836903a46ee68942966d0600fdf26449630d8bf344c"},
-    {file = "packageurl_python-0.17.2.tar.gz", hash = "sha256:dc087e3a3340656c6966a3d651f12c7f689f01dc9fb8a28f1150f7be823c688e"},
+    {file = "packageurl_python-0.17.3-py3-none-any.whl", hash = "sha256:f51b5aab570159f07258c8e998e9972ff3bf060da16b7334a42bd9f9737777d9"},
+    {file = "packageurl_python-0.17.3.tar.gz", hash = "sha256:719995f0c7f706890277ba57ec95afcaa9696c836a7675770a1279b01a41f7be"},
 ]
 
 [package.extras]
@@ -2003,4 +2003,4 @@ type = ["pytest-mypy"]
 [metadata]
 lock-version = "2.1"
 python-versions = ">=3.11,<4.0"
-content-hash = "4140a3cbb3a5c286b83f5af3edc186d7fdff1760ad245117ac3abb72bd02a841"
+content-hash = "f3695416447a022745f47074b1098d1c1dab9405450f8c51337ab779cd61dc0e"

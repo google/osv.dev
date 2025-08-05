@@ -59,14 +59,14 @@ files = [
 
 [[package]]
 name = "certifi"
-version = "2025.7.14"
+version = "2025.8.3"
 description = "Python package for providing Mozilla's CA Bundle."
 optional = false
 python-versions = ">=3.7"
 groups = ["main"]
 files = [
-    {file = "certifi-2025.7.14-py3-none-any.whl", hash = "sha256:6b31f564a415d79ee77df69d757bb49a5bb53bd9f756cbbe24394ffd6fc1f4b2"},
-    {file = "certifi-2025.7.14.tar.gz", hash = "sha256:8ea99dbdfaaf2ba2f9bac77b9249ef62ec5218e7c2b2e903378ed5fccf765995"},
+    {file = "certifi-2025.8.3-py3-none-any.whl", hash = "sha256:f6c12493cfb1b06ba2ff328595af9350c65d6644968e5d3a2ffd78699af217a5"},
+    {file = "certifi-2025.8.3.tar.gz", hash = "sha256:e564105f78ded564e3ae7c923924435e1daa7463faeab5bb932bc53ffae63407"},
 ]
 
 [[package]]
@@ -933,14 +933,14 @@ url = "../../.."
 
 [[package]]
 name = "packageurl-python"
-version = "0.17.2"
+version = "0.17.3"
 description = "A purl aka. Package URL parser and builder"
 optional = false
 python-versions = ">=3.8"
 groups = ["main"]
 files = [
-    {file = "packageurl_python-0.17.2-py3-none-any.whl", hash = "sha256:863a903bb9fffd17c367c836903a46ee68942966d0600fdf26449630d8bf344c"},
-    {file = "packageurl_python-0.17.2.tar.gz", hash = "sha256:dc087e3a3340656c6966a3d651f12c7f689f01dc9fb8a28f1150f7be823c688e"},
+    {file = "packageurl_python-0.17.3-py3-none-any.whl", hash = "sha256:f51b5aab570159f07258c8e998e9972ff3bf060da16b7334a42bd9f9737777d9"},
+    {file = "packageurl_python-0.17.3.tar.gz", hash = "sha256:719995f0c7f706890277ba57ec95afcaa9696c836a7675770a1279b01a41f7be"},
 ]
 
 [package.extras]
@@ -1595,4 +1595,4 @@ type = ["pytest-mypy"]
 [metadata]
 lock-version = "2.1"
 python-versions = ">=3.11,<4.0"
-content-hash = "2db0f2c212c12f2188ff1a5b5088738636add44dcb51270f7140a64edc0f632d"
+content-hash = "e7238f905e76021ae08f8f6ab5d56abef8cba2e933dd253b2b2a64ff5713d1f3"

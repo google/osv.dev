@@ -15,6 +15,7 @@
 """OSV Exporter."""
 import argparse
 import concurrent.futures
+import csv
 import glob
 import logging
 import os
@@ -77,7 +78,12 @@ def spawn_ecosystem_exporter(work_dir: str, bucket: str, eco: str):
   proc = subprocess.Popen([
       # Assume exporter.py is in the same directory as this file
       # This is true for local dev and Docker
-      f'{__file__}/exporter.py', '--work_dir', work_dir, '--bucket', bucket, '--ecosystem',
+      f'{os.path.dirname(__file__)}/exporter.py',
+      '--work_dir',
+      work_dir,
+      '--bucket',
+      bucket,
+      '--ecosystem',
       eco
   ])
   return_code = proc.wait()
@@ -110,15 +116,13 @@ def aggregate_all_vulnerabilities(work_dir: str, export_bucket: str):
   output_modified_list = os.path.join(work_dir, LAST_MODIFIED_FILE)
   full_modified_list = []
   for file_path in glob.glob(
-          os.path.join(work_dir, f'**/{LAST_MODIFIED_FILE}'), recursive=True):
+      os.path.join(work_dir, f'**/{LAST_MODIFIED_FILE}'), recursive=True):
     dir_from_work_dir = os.path.relpath(os.path.dirname(file_path), work_dir)
     with open(file_path, 'r') as infile:
-      modified_list = infile.read().splitlines()
-      for modified in modified_list:
-        split_modified = modified.split(',')
+      reader = csv.reader(infile)
+      for line in reader:
         # Create <timestamp>,<dir>/<osv_id>
-        full_modified_list.append(
-          f'{split_modified[0]},{dir_from_work_dir}/{split_modified[1]}')
+        full_modified_list.append(f'{line[0]},{dir_from_work_dir}/{line[1]}')
 
   full_modified_list.sort(reverse=True)
 

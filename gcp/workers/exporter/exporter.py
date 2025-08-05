@@ -15,6 +15,7 @@
 """OSV Exporter."""
 import argparse
 import concurrent.futures
+import csv
 import logging
 import os
 import zipfile
@@ -159,8 +160,8 @@ class Exporter:
           files_to_zip.append(file_path)
           # ToJsonString converts it into an ISO string
           # with timezone Z correctly appended
-          id_and_modified.append('{},{}'.format(
-            vulnerability.modified.ToJsonString(), vulnerability.id))
+          id_and_modified.append(
+              (vulnerability.modified.ToJsonString(), vulnerability.id))
         except Exception:
           logging.exception('Failed to export bug: "%s"', bug.id())
           raise
@@ -175,9 +176,9 @@ class Exporter:
         zip_file.write(file_path, os.path.basename(file_path))
 
       id_and_modified.sort(reverse=True)
-      with open(os.path.join(ecosystem_dir, LAST_MODIFIED_FILE), 'w') as modified_file:
-        modified_file.write('\n'.join(id_and_modified))
-
+      with open(os.path.join(ecosystem_dir, LAST_MODIFIED_FILE),
+                'w') as modified_file:
+        csv.writer(modified_file).writerows(id_and_modified)
 
     with concurrent.futures.ThreadPoolExecutor(
         max_workers=_EXPORT_WORKERS) as executor:

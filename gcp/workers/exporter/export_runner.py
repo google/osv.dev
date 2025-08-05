@@ -15,6 +15,7 @@
 """OSV Exporter."""
 import argparse
 import concurrent.futures
+import csv
 import glob
 import logging
 import os
@@ -24,7 +25,7 @@ import zipfile as z
 
 from google.cloud import ndb, storage
 
-from exporter import safe_upload_single
+from exporter import safe_upload_single, LAST_MODIFIED_FILE
 import osv
 import osv.logs
 
@@ -44,6 +45,7 @@ def main():
   parser.add_argument(
       '--processes',
       help='Maximum number of parallel exports, default to number of cpu cores',
+      type=int,
       # If 0 or None, use the DEFAULT_EXPORT_PROCESSES value
       default=os.cpu_count() or DEFAULT_EXPORT_PROCESSES)
   args = parser.parse_args()
@@ -74,7 +76,14 @@ def spawn_ecosystem_exporter(work_dir: str, bucket: str, eco: str):
   """
   logging.info('Starting export of ecosystem: %s', eco)
   proc = subprocess.Popen([
-      'exporter.py', '--work_dir', work_dir, '--bucket', bucket, '--ecosystem',
+      # Assume exporter.py is in the same directory as this file
+      # This is true for local dev and Docker
+      f'{os.path.dirname(__file__)}/exporter.py',
+      '--work_dir',
+      work_dir,
+      '--bucket',
+      bucket,
+      '--ecosystem',
       eco
   ])
   return_code = proc.wait()
@@ -103,10 +112,29 @@ def aggregate_all_vulnerabilities(work_dir: str, export_bucket: str):
       file_path = all_vulns[vuln_filename]
       all_zip.write(file_path, os.path.basename(file_path))
 
+  # Also aggregate modified_list.csv files
+  output_modified_list = os.path.join(work_dir, LAST_MODIFIED_FILE)
+  full_modified_list = []
+  for file_path in glob.glob(
+      os.path.join(work_dir, f'**/{LAST_MODIFIED_FILE}'), recursive=True):
+    dir_from_work_dir = os.path.relpath(os.path.dirname(file_path), work_dir)
+    with open(file_path, 'r') as infile:
+      reader = csv.reader(infile)
+      for line in reader:
+        # Create <timestamp>,<dir>/<osv_id>
+        full_modified_list.append((line[0], f'{dir_from_work_dir}/{line[1]}'))
+
+  full_modified_list.sort(reverse=True)
+
+  with open(output_modified_list, 'w') as outfile:
+    csv.writer(outfile).writerows(full_modified_list)
+
   storage_client = storage.Client()
   bucket = storage_client.get_bucket(export_bucket)
   safe_upload_single(bucket, output_zip, zip_file_name)
   logging.info('Unified all.zip uploaded successfully.')
+  safe_upload_single(bucket, output_modified_list, LAST_MODIFIED_FILE)
+  logging.info('Unified modified_list.csv uploaded successfully.')
 
 
 if __name__ == '__main__':

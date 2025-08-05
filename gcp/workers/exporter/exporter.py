@@ -15,6 +15,7 @@
 """OSV Exporter."""
 import argparse
 import concurrent.futures
+import csv
 import logging
 import os
 import zipfile
@@ -36,6 +37,7 @@ DEFAULT_EXPORT_BUCKET = 'osv-vulnerabilities'
 DEFAULT_SAFE_DELTA_PCT = 10
 _EXPORT_WORKERS = 32
 ECOSYSTEMS_FILE = 'ecosystems.txt'
+LAST_MODIFIED_FILE = 'modified_id.csv'
 
 
 class Error(Exception):
@@ -141,6 +143,7 @@ class Exporter:
     zip_path = os.path.join(ecosystem_dir, 'all.zip')
     with zipfile.ZipFile(zip_path, 'w', zipfile.ZIP_DEFLATED) as zip_file:
       files_to_zip = []
+      id_and_modified = []
 
       @ndb.tasklet
       def _export_to_file_and_zipfile(bug: osv.Bug):
@@ -155,6 +158,10 @@ class Exporter:
           osv.write_vulnerability(vulnerability, file_path)
 
           files_to_zip.append(file_path)
+          # ToJsonString converts it into an ISO string
+          # with timezone Z correctly appended
+          id_and_modified.append(
+              (vulnerability.modified.ToJsonString(), vulnerability.id))
         except Exception:
           logging.exception('Failed to export bug: "%s"', bug.id())
           raise
@@ -167,6 +174,11 @@ class Exporter:
       files_to_zip.sort()
       for file_path in files_to_zip:
         zip_file.write(file_path, os.path.basename(file_path))
+
+      id_and_modified.sort(reverse=True)
+      with open(os.path.join(ecosystem_dir, LAST_MODIFIED_FILE),
+                'w') as modified_file:
+        csv.writer(modified_file).writerows(id_and_modified)
 
     with concurrent.futures.ThreadPoolExecutor(
         max_workers=_EXPORT_WORKERS) as executor:

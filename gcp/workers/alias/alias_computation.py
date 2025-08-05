@@ -15,10 +15,8 @@
 """OSV alias computation."""
 import datetime
 import logging
-import os
 
 from google.cloud import ndb
-from google.protobuf import json_format
 
 import osv
 from osv import gcs
@@ -28,7 +26,8 @@ ALIAS_GROUP_VULN_LIMIT = 32
 VULN_ALIASES_LIMIT = 5
 
 
-def _update_group(bug_ids, alias_group, changed_vulns):
+def _update_group(bug_ids: list[str], alias_group: osv.AliasGroup,
+                  changed_vulns: dict[str, osv.AliasGroup | None]):
   """Updates the alias group in the datastore."""
   if len(bug_ids) <= 1:
     logging.info('Deleting alias group due to too few bugs: %s', bug_ids)
@@ -53,7 +52,8 @@ def _update_group(bug_ids, alias_group, changed_vulns):
     changed_vulns[vuln_id] = alias_group
 
 
-def _create_alias_group(bug_ids, changed_vulns):
+def _create_alias_group(bug_ids: list[str],
+                        changed_vulns: dict[str, osv.AliasGroup | None]):
   """Creates a new alias group in the datastore."""
   if len(bug_ids) <= 1:
     logging.info('Skipping alias group creation due to too few bugs: %s',
@@ -71,7 +71,8 @@ def _create_alias_group(bug_ids, changed_vulns):
     changed_vulns[vuln_id] = new_group
 
 
-def _compute_aliases(bug_id, visited, bug_aliases):
+def _compute_aliases(bug_id: str, visited: set[str],
+                     bug_aliases: dict[str, set[str]]) -> list[str]:
   """Computes all aliases for the given bug ID.
   The returned list contains the bug ID itself, all the IDs from the bug's
   raw aliases, all the IDs of bugs that have the current bug as an alias,
@@ -105,18 +106,13 @@ def _update_vuln_with_group(vuln_id: str, alias_group: osv.AliasGroup | None):
   if project not in ('oss-vdb-test', 'test-osv'):
     return
   # Get the existing vulnerability first, so we can recalculate search_indices
-  bucket = gcs.get_osv_bucket()
-  pb_blob = bucket.get_blob(os.path.join(gcs.VULN_PB_PATH, vuln_id + '.pb'))
-  if pb_blob is None:
+  result = gcs.get_by_id_with_generation(vuln_id)
+  if result is None:
     if osv.Vulnerability.get_by_id(vuln_id) is not None:
       logging.error('vulnerability not in GCS - %s', vuln_id)
       # TODO(michaelkedar): send pub/sub message to reimport
     return
-  try:
-    vuln_proto = osv.vulnerability_pb2.Vulnerability.FromString(
-        pb_blob.download_as_bytes())
-  except Exception:
-    logging.exception('failed to download %s protobuf from GCS', vuln_id)
+  vuln_proto, generation = result
 
   def transaction():
     vuln: osv.Vulnerability = osv.Vulnerability.get_by_id(vuln_id)
@@ -138,26 +134,7 @@ def _update_vuln_with_group(vuln_id: str, alias_group: osv.AliasGroup | None):
     vuln.put()
 
   ndb.transaction(transaction)
-  modified = vuln_proto.modified.ToDatetime(datetime.UTC)
-  try:
-    pb_blob.custom_time = modified
-    pb_blob.upload_from_string(
-        vuln_proto.SerializeToString(deterministic=True),
-        content_type='application/octet-stream',
-        if_generation_match=pb_blob.generation)
-  except Exception:
-    logging.exception('failed to upload %s protobuf to GCS', vuln_id)
-    # TODO(michaelkedar): send pub/sub message to retry
-
-  try:
-    json_blob = bucket.blob(os.path.join(gcs.VULN_JSON_PATH, vuln_id + '.json'))
-    json_blob.custom_time = modified
-    json_data = json_format.MessageToJson(
-        vuln_proto, preserving_proto_field_name=True, indent=None)
-    json_blob.upload_from_string(json_data, content_type='application/json')
-  except Exception:
-    logging.exception('failed to upload %s json to GCS', vuln_id)
-    # TODO(michaelkedar): send pub/sub message to retry
+  gcs.upload_vulnerability(vuln_proto, generation)
 
 
 def main():

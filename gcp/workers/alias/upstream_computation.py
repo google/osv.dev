@@ -18,10 +18,8 @@ from collections import defaultdict
 import datetime
 import json
 import logging
-import os
 
 from google.cloud import ndb
-from google.protobuf import json_format
 
 import osv
 import osv.logs
@@ -55,7 +53,7 @@ def compute_upstream(target_bug, bugs: dict[str, set[str]]) -> list[str]:
   return sorted(visited)
 
 
-def _create_group(bug_id, upstream_ids) -> osv.UpstreamGroup:
+def _create_group(bug_id: str, upstream_ids: list[str]) -> osv.UpstreamGroup:
   """Creates a new upstream group in the datastore."""
 
   new_group = osv.UpstreamGroup(
@@ -70,7 +68,7 @@ def _create_group(bug_id, upstream_ids) -> osv.UpstreamGroup:
 
 
 def _update_group(upstream_group: osv.UpstreamGroup,
-                  upstream_ids: list) -> osv.UpstreamGroup | None:
+                  upstream_ids: list[str]) -> osv.UpstreamGroup | None:
   """Updates the upstream group in the datastore."""
   if len(upstream_ids) == 0:
     logging.info('Deleting upstream group due to too few bugs: %s',
@@ -101,17 +99,12 @@ def _update_vuln_with_group(vuln_id: str, upstream: osv.UpstreamGroup | None):
   if project not in ('oss-vdb-test', 'test-osv'):
     return
   # Get the existing vulnerability first, so we can recalculate search_indices
-  bucket = gcs.get_osv_bucket()
-  pb_blob = bucket.get_blob(os.path.join(gcs.VULN_PB_PATH, vuln_id + '.pb'))
-  if pb_blob is None:
+  result = gcs.get_by_id_with_generation(vuln_id)
+  if result is None:
     logging.error('vulnerability not in GCS - %s', vuln_id)
     # TODO(michaelkedar): send pub/sub message to reimport
     return
-  try:
-    vuln_proto = osv.vulnerability_pb2.Vulnerability.FromString(
-        pb_blob.download_as_bytes())
-  except Exception:
-    logging.exception('failed to download %s protobuf from GCS', vuln_id)
+  vuln_proto, generation = result
 
   def transaction():
     vuln: osv.Vulnerability = osv.Vulnerability.get_by_id(vuln_id)
@@ -132,26 +125,7 @@ def _update_vuln_with_group(vuln_id: str, upstream: osv.UpstreamGroup | None):
     vuln.put()
 
   ndb.transaction(transaction)
-  modified = vuln_proto.modified.ToDatetime(datetime.UTC)
-  try:
-    pb_blob.custom_time = modified
-    pb_blob.upload_from_string(
-        vuln_proto.SerializeToString(deterministic=True),
-        content_type='application/octet-stream',
-        if_generation_match=pb_blob.generation)
-  except Exception:
-    logging.exception('failed to upload %s protobuf to GCS', vuln_id)
-    # TODO(michaelkedar): send pub/sub message to retry
-
-  try:
-    json_blob = bucket.blob(os.path.join(gcs.VULN_JSON_PATH, vuln_id + '.json'))
-    json_blob.custom_time = modified
-    json_data = json_format.MessageToJson(
-        vuln_proto, preserving_proto_field_name=True, indent=None)
-    json_blob.upload_from_string(json_data, content_type='application/json')
-  except Exception:
-    logging.exception('failed to upload %s json to GCS', vuln_id)
-    # TODO(michaelkedar): send pub/sub message to retry
+  gcs.upload_vulnerability(vuln_proto, generation)
 
 
 def compute_upstream_hierarchy(

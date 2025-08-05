@@ -39,6 +39,13 @@ SCHEMA_VERSION = '1.7.0'
 
 _MAX_GIT_VERSIONS_TO_INDEX = 5000
 
+_EVENT_ORDER = {
+    'introduced': 0,
+    'last_affected': 1,
+    'fixed': 2,
+    'limit': 3,
+}
+
 
 def _check_valid_severity(prop, value):
   """Check valid severity."""
@@ -917,8 +924,14 @@ def _tokenize(value):
 
 
 class Vulnerability(ndb.Model):
-  """Vulnerability entry."""
-  # The entity's key/id is ID in OSV
+  """A Vulnerability entry.
+  
+  Contains a minimal amount of information of an OSV record, including the
+  overall modified date, an some raw fields that are  overwritten by our
+  enrichment.
+  
+  The entity's key/id is ID in OSV.
+  """
 
   # The source identifier.
   # For OSS-Fuzz, this oss-fuzz:<ClusterFuzz testcase ID>.
@@ -959,7 +972,8 @@ class AffectedCommits(ndb.Model):
 
 
 class AffectedVersions(ndb.Model):
-  """AffectedVersions entry."""
+  """AffectedVersions entry, used for finding matching vulnerabilities within
+  the OSV API."""
   # The main vulnerability ID.
   vuln_id: str = ndb.StringProperty()
   # The ecosystem of the affected package.
@@ -1049,7 +1063,7 @@ class ListedVulnerability(ndb.Model):
         if r.type == vulnerability_pb2.Range.Type.GIT:
           all_ecosystems.add('GIT')
           search_indices.add(r.repo)
-          autocomplete_tags.add(r.repo)
+          autocomplete_tags.add(r.repo.lower())
           split = r.repo.split('//')
           if len(split) >= 2:
             no_http = split[1]
@@ -1131,41 +1145,7 @@ def populate_entities_from_bug(entity: Bug):
     ndb.delete_multi(to_delete)
 
   ndb.transaction(transaction)
-  _write_to_bucket(vuln_pb)
-
-
-def _write_to_bucket(vulnerability: vulnerability_pb2.Vulnerability):
-  """Writes the vulnerability .pb and .json to the GCS bucket."""
-  bucket = gcs.get_osv_bucket()
-  vuln_id = vulnerability.id
-  modified = vulnerability.modified.ToDatetime(datetime.UTC)
-  try:
-    pb_blob = bucket.blob(os.path.join(gcs.VULN_PB_PATH, vuln_id + '.pb'))
-    pb_blob.custom_time = modified
-    pb_blob.upload_from_string(
-        vulnerability.SerializeToString(deterministic=True),
-        content_type='application/octet-stream')
-  except Exception:
-    logging.exception('failed to upload %s protobuf to GCS', vuln_id)
-    # TODO(michaelkedar): send pub/sub message to retry
-
-  try:
-    json_blob = bucket.blob(os.path.join(gcs.VULN_JSON_PATH, vuln_id + '.json'))
-    json_blob.custom_time = modified
-    json_data = json_format.MessageToJson(
-        vulnerability, preserving_proto_field_name=True, indent=None)
-    json_blob.upload_from_string(json_data, content_type='application/json')
-  except Exception:
-    logging.exception('failed to upload %s json to GCS', vuln_id)
-    # TODO(michaelkedar): send pub/sub message to retry
-
-
-_EVENT_ORDER = {
-    'introduced': 0,
-    'last_affected': 1,
-    'fixed': 2,
-    'limit': 3,
-}
+  gcs.upload_vulnerability(vuln_pb)
 
 
 def affected_from_bug(entity: Bug) -> list[AffectedVersions]:

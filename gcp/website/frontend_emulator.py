@@ -34,7 +34,10 @@ def setUp():
       import_last_modified=datetime.datetime(2023, 1, 1, tzinfo=datetime.UTC),
       timestamp=datetime.datetime(2023, 8, 14, tzinfo=datetime.UTC),
   ).put()
-  osv.AliasGroup(bug_ids=['ALIAS-CVE-1', 'CVE-1', 'ALIAS'],).put()
+  osv.AliasGroup(
+      bug_ids=['ALIAS-CVE-1', 'CVE-1', 'ALIAS'],
+      last_modified=datetime.datetime(2023, 1, 1, tzinfo=datetime.UTC),
+  ).put()
 
   osv.Bug(
       id='CVE-1',

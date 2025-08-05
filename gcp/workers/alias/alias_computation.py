@@ -19,20 +19,26 @@ import logging
 from google.cloud import ndb
 
 import osv
+from osv import gcs
 import osv.logs
 
 ALIAS_GROUP_VULN_LIMIT = 32
 VULN_ALIASES_LIMIT = 5
 
 
-def _update_group(bug_ids, alias_group):
+def _update_group(bug_ids: list[str], alias_group: osv.AliasGroup,
+                  changed_vulns: dict[str, osv.AliasGroup | None]):
   """Updates the alias group in the datastore."""
   if len(bug_ids) <= 1:
     logging.info('Deleting alias group due to too few bugs: %s', bug_ids)
+    for vuln_id in bug_ids:
+      changed_vulns[vuln_id] = None
     alias_group.key.delete()
     return
   if len(bug_ids) > ALIAS_GROUP_VULN_LIMIT:
     logging.info('Deleting alias group due to too many bugs: %s', bug_ids)
+    for vuln_id in bug_ids:
+      changed_vulns[vuln_id] = None
     alias_group.key.delete()
     return
 
@@ -42,9 +48,12 @@ def _update_group(bug_ids, alias_group):
   alias_group.bug_ids = bug_ids
   alias_group.last_modified = datetime.datetime.now(datetime.UTC)
   alias_group.put()
+  for vuln_id in bug_ids:
+    changed_vulns[vuln_id] = alias_group
 
 
-def _create_alias_group(bug_ids):
+def _create_alias_group(bug_ids: list[str],
+                        changed_vulns: dict[str, osv.AliasGroup | None]):
   """Creates a new alias group in the datastore."""
   if len(bug_ids) <= 1:
     logging.info('Skipping alias group creation due to too few bugs: %s',
@@ -58,9 +67,12 @@ def _create_alias_group(bug_ids):
   new_group = osv.AliasGroup(bug_ids=bug_ids)
   new_group.last_modified = datetime.datetime.now(datetime.UTC)
   new_group.put()
+  for vuln_id in bug_ids:
+    changed_vulns[vuln_id] = new_group
 
 
-def _compute_aliases(bug_id, visited, bug_aliases):
+def _compute_aliases(bug_id: str, visited: set[str],
+                     bug_aliases: dict[str, set[str]]) -> list[str]:
   """Computes all aliases for the given bug ID.
   The returned list contains the bug ID itself, all the IDs from the bug's
   raw aliases, all the IDs of bugs that have the current bug as an alias,
@@ -80,6 +92,49 @@ def _compute_aliases(bug_id, visited, bug_aliases):
   # Returns a sorted list of bug IDs, which ensures deterministic behaviour
   # and avoids unnecessary updates to the groups.
   return sorted(bug_ids)
+
+
+def _update_vuln_with_group(vuln_id: str, alias_group: osv.AliasGroup | None):
+  """Updates the Vulnerability in Datastore & GCS with the new alias group.
+  If `alias_group` is None, assumes a preexisting AliasGroup was just deleted.
+  """
+  # TODO(michaelkedar): Currently, only want to run this on the test instance
+  # (or when running tests). Remove this check when we're ready for prod.
+  project = getattr(ndb.get_context().client, 'project')
+  if not project:
+    logging.error('failed to get GCP project from ndb.Client')
+  if project not in ('oss-vdb-test', 'test-osv'):
+    return
+  # Get the existing vulnerability first, so we can recalculate search_indices
+  result = gcs.get_by_id_with_generation(vuln_id)
+  if result is None:
+    if osv.Vulnerability.get_by_id(vuln_id) is not None:
+      logging.error('vulnerability not in GCS - %s', vuln_id)
+      # TODO(michaelkedar): send pub/sub message to reimport
+    return
+  vuln_proto, generation = result
+
+  def transaction():
+    vuln: osv.Vulnerability = osv.Vulnerability.get_by_id(vuln_id)
+    if vuln is None:
+      logging.error('vulnerability not in Datastore - %s', vuln_id)
+      # TODO: Raise exception
+      return
+    if alias_group is None:
+      modified = datetime.datetime.now(datetime.UTC)
+      aliases = []
+    else:
+      modified = alias_group.last_modified
+      aliases = alias_group.bug_ids
+    aliases = sorted(set(aliases) - {vuln_id})
+    vuln_proto.aliases[:] = aliases
+    vuln_proto.modified.FromDatetime(modified)
+    osv.ListedVulnerability.from_vulnerability(vuln_proto).put()
+    vuln.modified = modified
+    vuln.put()
+
+  ndb.transaction(transaction)
+  gcs.upload_vulnerability(vuln_proto, generation)
 
 
 def main():
@@ -118,6 +173,10 @@ def main():
 
   visited = set()
 
+  # Keep track of vulnerabilities that have been modified, to update GCS later.
+  # `None` means the AliasGroup has been removed.
+  changed_vulns: dict[str, osv.AliasGroup | None] = {}
+
   # For each alias group, re-compute the bug IDs in the group and update the
   # group with the computed bug IDs.
   for alias_group in all_alias_group:
@@ -125,16 +184,23 @@ def main():
     # If the bug has already been counted in a different alias group,
     # we delete the original one to merge two alias groups.
     if bug_id in visited:
+      for vuln_id in alias_group.bug_ids:
+        if vuln_id not in changed_vulns:
+          changed_vulns[vuln_id] = None
       alias_group.key.delete()
       continue
     bug_ids = _compute_aliases(bug_id, visited, bug_aliases)
-    _update_group(bug_ids, alias_group)
+    _update_group(bug_ids, alias_group, changed_vulns)
 
   # For each bug ID that has not been visited, create new alias groups.
   for bug_id in bug_aliases:
     if bug_id not in visited:
       bug_ids = _compute_aliases(bug_id, visited, bug_aliases)
-      _create_alias_group(bug_ids)
+      _create_alias_group(bug_ids, changed_vulns)
+
+  # For each updated vulnerability, update them in Datastore & GCS
+  for vuln_id, alias_group in changed_vulns.items():
+    _update_vuln_with_group(vuln_id, alias_group)
 
 
 if __name__ == '__main__':

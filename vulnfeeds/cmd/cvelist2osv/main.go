@@ -12,7 +12,6 @@ import (
 	"golang.org/x/exp/slices"
 
 	"github.com/google/osv/vulnfeeds/cves"
-	"github.com/google/osv/vulnfeeds/git"
 	"github.com/google/osv/vulnfeeds/utility"
 	"github.com/google/osv/vulnfeeds/vulns"
 	"github.com/ossf/osv-schema/bindings/go/osvschema"
@@ -27,7 +26,6 @@ var (
 	outDir   = flag.String("out_dir", "", "Path to output results.")
 )
 var Logger utility.LoggerWrapper
-var RepoTagsCache git.RepoTagsCache
 var Metrics struct {
 	CNA           string
 	Outcome       string

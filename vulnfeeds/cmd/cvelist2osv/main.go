@@ -2,7 +2,6 @@ package main
 
 import (
 	"encoding/json"
-	"errors"
 	"flag"
 	"fmt"
 	"os"
@@ -19,37 +18,8 @@ import (
 	"github.com/ossf/osv-schema/bindings/go/osvschema"
 )
 
-type ConversionOutcome int
-
-var ErrNoRanges = errors.New("no ranges")
-
-var ErrUnresolvedFix = errors.New("fixes not resolved to commits")
-
-// String returns the string representation of a ConversionOutcome.
-func (c ConversionOutcome) String() string {
-	return [...]string{
-		"ConversionUnknown",
-		"Successful",
-		"Rejected",
-		"NoSoftware",
-		"NoRepos",
-		"NoRanges",
-		"FixUnresolvable"}[c]
-}
-
 const (
 	extension = ".json"
-)
-
-const (
-	// Set of enums for categorizing conversion outcomes.
-	ConversionUnknown ConversionOutcome = iota // Shouldn't happen
-	Successful                                 // It worked!
-	Rejected                                   // The CVE was rejected
-	NoSoftware                                 // The CVE had no CPEs relating to software (i.e. Operating Systems or Hardware).
-	NoRepos                                    // The CPE Vendor/Product had no repositories derived for it.
-	NoRanges                                   // No viable commit ranges could be calculated from the repository for the CVE's CPE(s).
-	FixUnresolvable                            // Partial resolution of versions, resulting in a false positive.
 )
 
 var (
@@ -60,7 +30,8 @@ var Logger utility.LoggerWrapper
 var RepoTagsCache git.RepoTagsCache
 var Metrics struct {
 	CNA           string
-	Outcome       ConversionOutcome
+	Outcome       string
+	Repos         []string
 	RefTypesCount map[osvschema.ReferenceType]int
 	Notes         []string
 }
@@ -73,15 +44,6 @@ var RefTagDenyList = []string{
 	// "Exploit",
 	// "Third Party Advisory",
 	"Broken Link", // Actively ignore these though.
-}
-
-// addIDToNotes prepends a CVE ID to a slice of notes.
-func addIDToNotes(id cves.CVEID, notes []string) []string {
-	var updatedNotes []string
-	for _, note := range notes {
-		updatedNotes = append(updatedNotes, fmt.Sprintf("[%s] %s", id, note))
-	}
-	return updatedNotes
 }
 
 // extractConversionMetrics examines a CVE and extracts metrics and heuristics about it.
@@ -188,9 +150,10 @@ func writeMetricToFile(id cves.CVEID, vulnDir string) error {
 }
 
 // CVEToOSV converts a CVE into an OSV finding and writes it to a file.
-func CVEToOSV(CVE cves.CVE5, references []cves.Reference, repos []string, directory string) error {
+func CVEToOSV(CVE cves.CVE5, directory string) error {
 	cveId := CVE.Metadata.CVEID
 	cnaAssigner := CVE.Metadata.AssignerShortName
+	references := identifyPossibleURLs(CVE)
 
 	// Create a base OSV record
 	v, notes := FromCVE5(CVE, references)
@@ -198,6 +161,11 @@ func CVEToOSV(CVE cves.CVE5, references []cves.Reference, repos []string, direct
 
 	// Determine CNA specific heuristics and conversion metrics
 	extractConversionMetrics(CVE, v.References)
+
+	// Try to extract some repositories
+	repos, notes := cves.ReposFromReferencesCVEList(string(cveId), references, RefTagDenyList, Logger)
+	Metrics.Notes = append(Metrics.Notes, notes...)
+	Metrics.Repos = repos
 
 	vulnDir := filepath.Join(directory, cnaAssigner)
 
@@ -207,6 +175,7 @@ func CVEToOSV(CVE cves.CVE5, references []cves.Reference, repos []string, direct
 		return err
 	}
 
+	// Save conversion metrics to disk
 	err = writeMetricToFile(cveId, vulnDir)
 	if err != nil {
 		return err
@@ -262,28 +231,12 @@ func main() {
 		Logger.Fatalf("Failed to parse CVEList CVE JSON: %v", err)
 	}
 
-	ReposForCVE := make(map[cves.CVEID][]string)
-	refs := identifyPossibleURLs(cve)
-
-	CVEID := cve.Metadata.CVEID
-
-	if len(refs) > 0 {
-		repos, notes := cves.ReposFromReferencesCVEList(string(CVEID), nil, nil, refs, RefTagDenyList, Logger)
-		addIDToNotes(CVEID, notes)
-		if len(repos) == 0 {
-			Logger.Warnf("[%s]: Failed to derive any repos", CVEID)
-		}
-		Metrics.Notes = append(Metrics.Notes, fmt.Sprintf("[%s]: Derived %q for CVE", CVEID, repos))
-		ReposForCVE[CVEID] = repos
-	}
-
-	Metrics.Notes = append(Metrics.Notes, fmt.Sprintf("[%s]: Repos: %#v", CVEID, ReposForCVE[CVEID]))
-
-	err = CVEToOSV(cve, refs, ReposForCVE[CVEID], *outDir)
+	err = CVEToOSV(cve, *outDir)
 
 	if err != nil {
-		Logger.Warnf("[%s]: Failed to generate an OSV record: %+v", CVEID, err)
+		Logger.Warnf("[%s]: Failed to generate an OSV record: %+v", cve.Metadata.CVEID, err)
+		Metrics.Outcome = "Failed"
 	} else {
-		Metrics.Outcome = Successful
+		Metrics.Outcome = "Successful"
 	}
 }

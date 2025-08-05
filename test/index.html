@@ -1,0 +1,420 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Vulnerability Linter Report</title>
+    <link rel="icon" href="https://google.github.io/osv.dev/assets/icon.png" type="image/x-icon" />
+    <link href='https://fonts.googleapis.com/css?family=Overpass' rel='stylesheet'>
+    <link rel="stylesheet" href="https://unpkg.com/material-components-web@latest/dist/material-components-web.min.css">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons">
+    <link rel="stylesheet" href="style.css">
+    <script src="https://cdn.jsdelivr.net/npm/js-yaml@4.1.0/dist/js-yaml.min.js"></script>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <div id="header-left">
+                <img src="https://raw.githubusercontent.com/google/osv-scanner/refs/heads/main/docs/images/osv-scanner-OSV-logo-darkmode.png" alt="OSV-Scanner Logo" class="logo" />
+                <div class="vl"></div>
+                <h1>Open Source Vulnerabilities</h1>
+            </div>
+        </header>
+        <main>
+            <div id="tab-switch">
+                <div class="tab-switch-button active" data-tab="linter-report">Linter Report</div>
+            </div>
+
+            <div id="tabs-content">
+                <div class="tab-content active" id="linter-report">
+                    <div class="filter-controls">
+                        <div class="filter-container">
+                            <span>Ecosystem</span>
+                            <div id="ecosystem-filter" class="filter">
+                                <p id="ecosystem-filter-selected" class="filter-selected"></p>
+                                <div class="filter-icon"><i class="material-icons">keyboard_arrow_down</i></div>
+                            </div>
+                            <div id="ecosystem-filter-options" class="filter-option-container"></div>
+                        </div>
+                        <div class="filter-container">
+                            <span>Finding</span>
+                            <div id="findings-filter" class="filter">
+                                <p id="findings-filter-selected" class="filter-selected"></p>
+                                <div class="filter-icon"><i class="material-icons">keyboard_arrow_down</i></div>
+                            </div>
+                            <div id="findings-filter-options" class="filter-option-container"></div>
+                        </div>
+                    </div>
+
+                    <div class="search-box">
+                      <div class="search-icon">
+                        <i class="material-icons">search</i>
+                      </div>
+                      <input type="text" id="search-input" placeholder="Search for a specific record...">
+                    </div>
+
+                    <div id="ecosystem-details">
+                        <table id="issues-table">
+                            <thead>
+                                <tr>
+                                    <th>Bug ID</th>
+                                    <th>Findings</th>
+                                    <th id="modified-header">Modified <i class="material-icons">unfold_more</i></th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <!-- Issues will be populated by JavaScript -->
+                            </tbody>
+                        </table>
+                        <div class="pagination" id="pagination-controls"></div>
+                    </div>
+                </div>
+            </div>
+            <div id="loader" class="loader">
+                <i class="material-icons">sync</i>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            let allIssues = [];
+            let issuesByEcosystem = {};
+            let filteredIssues = [];
+            const issuesPerPage = 15;
+            let currentPage = 1;
+            let sortDirection = 'desc';
+
+            const loader = document.getElementById('loader');
+            const searchInput = document.getElementById('search-input');
+            const modifiedHeader = document.getElementById('modified-header');
+            const tabSwitch = document.getElementById('tab-switch');
+            const tabsContent = document.getElementById('tabs-content');
+
+            const ecosystemFilter = document.getElementById('ecosystem-filter');
+            const ecosystemFilterSelected = document.getElementById('ecosystem-filter-selected');
+            const ecosystemFilterOptions = document.getElementById('ecosystem-filter-options');
+
+            const findingsFilter = document.getElementById('findings-filter');
+            const findingsFilterSelected = document.getElementById('findings-filter-selected');
+            const findingsFilterOptions = document.getElementById('findings-filter-options');
+
+            let selectedEcosystem = '';
+            let selectedFinding = '';
+
+            async function loadData() {
+                loader.style.display = 'flex';
+                
+                const response = await fetch('https://raw.githubusercontent.com/google/osv.dev/master/source_test.yaml');
+                const yamlText = await response.text();
+                const sources = jsyaml.load(yamlText);
+                const sourceNames = sources.map(s => s.name);
+
+                const promises = sourceNames.map(sourceName => {
+                    const url = `https://api.test.osv.dev/v1experimental/importfindings/${sourceName}`;
+                    return fetch(url).then(res => {
+                        if (!res.ok) {
+                            console.error(`HTTP error! status: ${res.status} for ${url}`);
+                            return { invalid_records: [] };
+                        }
+                        return res.json();
+                    }).catch(error => {
+                        console.error('Error loading data from ' + url, error);
+                        return { invalid_records: [] };
+                    });
+                });
+
+                const results = await Promise.all(promises);
+
+                results.forEach(data => {
+                    const records = data.invalid_records || [];
+                    allIssues.push(...records);
+                });
+                
+                allIssues.forEach(issue => {
+                    if (!issuesByEcosystem[issue.source]) {
+                        issuesByEcosystem[issue.source] = [];
+                    }
+                    issuesByEcosystem[issue.source].push(issue);
+                });
+
+
+                loader.style.display = 'none';
+                processAndDisplayData();
+            }
+
+            function processAndDisplayData() {
+                applyFilters();
+
+                searchInput.addEventListener('input', applyFilters);
+                modifiedHeader.addEventListener('click', () => {
+                    sortDirection = sortDirection === 'asc' ? 'desc' : 'asc';
+                    const icon = modifiedHeader.querySelector('.material-icons');
+                    icon.textContent = sortDirection === 'asc' ? 'expand_less' : 'expand_more';
+                    applyFilters();
+                });
+                tabSwitch.addEventListener('click', handleTabClick);
+
+                ecosystemFilter.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    toggleFilter('ecosystem')
+                });
+                findingsFilter.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    toggleFilter('findings')
+                });
+
+                ecosystemFilterOptions.addEventListener('click', (e) => {
+                    if (e.target.classList.contains('filter-option')) {
+                        selectedEcosystem = e.target.dataset.value;
+                        ecosystemFilterSelected.textContent = e.target.textContent.replace(/\((\d+)\)/, `($1 issues)`);
+                        applyFilters();
+                    }
+                });
+
+                findingsFilterOptions.addEventListener('click', (e) => {
+                    if (e.target.classList.contains('filter-option')) {
+                        selectedFinding = e.target.dataset.value;
+                        findingsFilterSelected.textContent = e.target.textContent.replace(/\((\d+)\)/, `($1 issues)`);
+                        applyFilters();
+                    }
+                });
+            }
+            
+            function applyFilters() {
+                const searchTerm = searchInput.value.toLowerCase();
+
+                filteredIssues = allIssues.filter(issue => {
+                    const bugIdMatch = issue.bug_id.toLowerCase().includes(searchTerm);
+                    const ecosystemMatch = !selectedEcosystem || issue.source === selectedEcosystem;
+                    const findingMatch = !selectedFinding || issue.findings.includes(selectedFinding);
+                    return bugIdMatch && ecosystemMatch && findingMatch;
+                });
+                
+                currentPage = 1;
+                sortIssues();
+                updateDynamicFilterCounts();
+                displayIssues();
+            }
+
+            function updateDynamicFilterCounts() {
+                const searchTerm = searchInput.value.toLowerCase();
+
+                // Update Findings counts
+                const issuesForFindingsCount = allIssues.filter(issue => 
+                    (!selectedEcosystem || issue.source === selectedEcosystem) &&
+                    issue.bug_id.toLowerCase().includes(searchTerm)
+                );
+                const findingsCount = issuesForFindingsCount.reduce((acc, issue) => {
+                    issue.findings.forEach(finding => {
+                        acc[finding] = (acc[finding] || 0) + 1;
+                    });
+                    return acc;
+                }, {});
+                
+                findingsFilterOptions.innerHTML = `<div class="filter-option" data-value="">All (${issuesForFindingsCount.length})</div>`;
+                for (const [finding, count] of Object.entries(findingsCount).sort((a,b) => a[0].localeCompare(b[0]))) {
+                    const option = document.createElement('div');
+                    option.className = 'filter-option';
+                    option.dataset.value = finding;
+                    option.textContent = `${finding.replace('IMPORT_FINDING_TYPE_', '')} (${count})`;
+                    findingsFilterOptions.appendChild(option);
+                }
+                if (!selectedFinding) {
+                    findingsFilterSelected.textContent = `All (${issuesForFindingsCount.length} issues)`;
+                }
+
+                // Update Ecosystem counts
+                const issuesForEcosystemCount = allIssues.filter(issue => 
+                    (!selectedFinding || issue.findings.includes(selectedFinding)) &&
+                    issue.bug_id.toLowerCase().includes(searchTerm)
+                );
+                const ecosystemCount = issuesForEcosystemCount.reduce((acc, issue) => {
+                    acc[issue.source] = (acc[issue.source] || 0) + 1;
+                    return acc;
+                }, {});
+
+                ecosystemFilterOptions.innerHTML = `<div class="filter-option" data-value="">All (${issuesForEcosystemCount.length})</div>`;
+                for (const ecosystem of Object.keys(issuesByEcosystem).sort()) {
+                    const count = ecosystemCount[ecosystem] || 0;
+                    const option = document.createElement('div');
+                    option.className = 'filter-option';
+                    option.dataset.value = ecosystem;
+                    option.textContent = `${ecosystem} (${count})`;
+                    ecosystemFilterOptions.appendChild(option);
+                }
+                if (!selectedEcosystem) {
+                    ecosystemFilterSelected.textContent = `All (${issuesForEcosystemCount.length} issues)`;
+                }
+            }
+
+            function sortIssues() {
+                filteredIssues.sort((a, b) => {
+                    const dateA = new Date(a.last_attempt);
+                    const dateB = new Date(b.last_attempt);
+                    if (sortDirection === 'asc') {
+                        return dateA - dateB;
+                    } else {
+                        return dateB - dateA;
+                    }
+                });
+            }
+
+            function displayIssues() {
+                const tableBody = document.getElementById('issues-table').getElementsByTagName('tbody')[0];
+                tableBody.innerHTML = '';
+
+                const startIndex = (currentPage - 1) * issuesPerPage;
+                const endIndex = startIndex + issuesPerPage;
+                const paginatedIssues = filteredIssues.slice(startIndex, endIndex);
+
+                if (paginatedIssues.length === 0) {
+                     tableBody.innerHTML = '<tr><td colspan="3">No issues found.</td></tr>';
+                } else {
+                    paginatedIssues.forEach(issue => {
+                        let row = tableBody.insertRow();
+                        let cell1 = row.insertCell();
+                        let cell2 = row.insertCell();
+                        let cell3 = row.insertCell();
+                        
+                        const bugLink = document.createElement('a');
+                        bugLink.href = `https://osv.dev/vulnerability/${issue.bug_id}`;
+                        bugLink.textContent = issue.bug_id;
+                        bugLink.dataset.bugId = issue.bug_id;
+                        bugLink.addEventListener('click', (e) => {
+                            e.preventDefault();
+                            openVulnerabilityTab(issue.bug_id);
+                        });
+                        cell1.appendChild(bugLink);
+
+                        cell2.textContent = issue.findings.join(', ').replace(/IMPORT_FINDING_TYPE_/g, '');
+                        cell3.textContent = new Date(issue.last_attempt).toLocaleString();
+                    });
+                }
+                setupPagination();
+            }
+
+            function setupPagination() {
+                const paginationControls = document.getElementById('pagination-controls');
+                paginationControls.innerHTML = '';
+                const pageCount = Math.ceil(filteredIssues.length / issuesPerPage);
+
+                if (pageCount <= 1) return;
+
+                const prevButton = document.createElement('button');
+                prevButton.textContent = 'Previous';
+                prevButton.disabled = currentPage === 1;
+                prevButton.addEventListener('click', () => {
+                    if (currentPage > 1) {
+                        currentPage--;
+                        displayIssues();
+                    }
+                });
+                paginationControls.appendChild(prevButton);
+
+                const pageInfo = document.createElement('span');
+                pageInfo.textContent = ` Page ${currentPage} of ${pageCount} `;
+                pageInfo.style.margin = "0 10px";
+                paginationControls.appendChild(pageInfo);
+
+                const nextButton = document.createElement('button');
+                nextButton.textContent = 'Next';
+                nextButton.disabled = currentPage === pageCount;
+                nextButton.addEventListener('click', () => {
+                    if (currentPage < pageCount) {
+                        currentPage++;
+                        displayIssues();
+                    }
+                });
+                paginationControls.appendChild(nextButton);
+            }
+
+            function openVulnerabilityTab(bugId) {
+                const existingTab = tabSwitch.querySelector(`[data-tab="${bugId}"]`);
+                if (existingTab) {
+                    setActiveTab(bugId);
+                    return;
+                }
+
+                const tabButton = document.createElement('div');
+                tabButton.className = 'tab-switch-button';
+                tabButton.dataset.tab = bugId;
+                tabButton.textContent = bugId;
+                
+                const closeButton = document.createElement('i');
+                closeButton.className = 'material-icons close-tab';
+                closeButton.textContent = 'close';
+                closeButton.dataset.tabClose = bugId;
+                tabButton.appendChild(closeButton);
+
+                tabSwitch.appendChild(tabButton);
+
+                const tabContent = document.createElement('div');
+                tabContent.className = 'tab-content';
+                tabContent.id = bugId;
+                tabContent.innerHTML = `
+                    <div class="iframe-container">
+                        <div class="loader"><i class="material-icons">sync</i></div>
+                        <iframe src="https://test.osv.dev/vulnerability/${bugId}" style="visibility: hidden;" onload="this.style.visibility = 'visible'; this.parentElement.querySelector('.loader').style.display = 'none';"></iframe>
+                    </div>
+                `;
+                tabsContent.appendChild(tabContent);
+                setActiveTab(bugId);
+            }
+
+            function handleTabClick(e) {
+                if (e.target.dataset.tab) {
+                    setActiveTab(e.target.dataset.tab);
+                } else if (e.target.dataset.tabClose) {
+                    e.stopPropagation();
+                    closeTab(e.target.dataset.tabClose);
+                }
+            }
+
+            function setActiveTab(tabId) {
+                // Buttons
+                Array.from(tabSwitch.children).forEach(btn => {
+                    btn.classList.toggle('active', btn.dataset.tab === tabId);
+                });
+                // Content
+                Array.from(tabsContent.children).forEach(content => {
+                    content.classList.toggle('active', content.id === tabId);
+                });
+            }
+
+            function closeTab(tabId) {
+                const tabButton = tabSwitch.querySelector(`[data-tab="${tabId}"]`);
+                const tabContent = document.getElementById(tabId);
+                
+                tabButton.remove();
+                tabContent.remove();
+
+                // Activate the main tab if the closed one was active
+                if (tabButton.classList.contains('active')) {
+                    setActiveTab('linter-report');
+                }
+            }
+
+            function toggleFilter(filterName) {
+                const options = document.getElementById(`${filterName}-filter-options`);
+                const isVisible = options.style.display === 'block';
+                
+                // Hide all filter options first
+                document.querySelectorAll('.filter-option-container').forEach(el => el.style.display = 'none');
+
+                if (!isVisible) {
+                    options.style.display = 'block';
+                }
+            }
+
+            document.addEventListener('click', function(e) {
+                if (!e.target.closest('.filter-container')) {
+                    document.querySelectorAll('.filter-option-container').forEach(el => el.style.display = 'none');
+                }
+            });
+
+            loadData();
+        });
+    </script>
+</body>
+</html>

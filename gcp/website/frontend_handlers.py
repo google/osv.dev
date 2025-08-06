@@ -725,7 +725,7 @@ def should_collapse(affected):
       len(entry.get('package', {}).get('name', '')) for entry in affected)
 
   max_total_length = max(total_text_length_ecosystem, total_text_length_package)
-  
+
   return len(affected) > 5 or max_total_length > 100
 
 

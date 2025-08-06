@@ -232,6 +232,9 @@ def safe_upload_single(bucket: Bucket,
           f'with {source_path} ({source_size} bytes)'))
     if blob:
       blob.upload_from_filename(source_path, retry=retry.DEFAULT_RETRY)
+    else:
+      (bucket.blob(target_path).upload_from_filename(
+          source_path, retry=retry.DEFAULT_RETRY))
   except Exception as e:
     logging.exception('Failed to export: %s', e)
 

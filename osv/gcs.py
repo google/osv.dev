@@ -17,11 +17,9 @@ import logging
 import os
 
 from google.cloud import storage
-from google.protobuf import json_format
 
 from .vulnerability_pb2 import Vulnerability
 
-VULN_JSON_PATH = 'all/json/'
 VULN_PB_PATH = 'all/pb/'
 
 _storage_client = None
@@ -63,9 +61,9 @@ def get_by_id_with_generation(vuln_id: str) -> tuple[Vulnerability, int] | None:
 
 
 def upload_vulnerability(vulnerability: Vulnerability,
-                         pb_generation: int | None = None):
+                         generation: int | None = None):
   """Uploads the OSV record to the GCS bucket.
-  If set, checks if the existing proto blob's generation matches pb_generation
+  If set, checks if the existing blob's generation matches `generation`
   before uploading."""
   bucket = get_osv_bucket()
   vuln_id = vulnerability.id
@@ -76,17 +74,7 @@ def upload_vulnerability(vulnerability: Vulnerability,
     pb_blob.upload_from_string(
         vulnerability.SerializeToString(deterministic=True),
         content_type='application/octet-stream',
-        if_generation_match=pb_generation)
-  except Exception:
-    logging.exception('failed to upload %s protobuf to GCS', vuln_id)
-    # TODO(michaelkedar): send pub/sub message to retry
-
-  try:
-    json_blob = bucket.blob(os.path.join(VULN_JSON_PATH, vuln_id + '.json'))
-    json_blob.custom_time = modified
-    json_data = json_format.MessageToJson(
-        vulnerability, preserving_proto_field_name=True, indent=None)
-    json_blob.upload_from_string(json_data, content_type='application/json')
+        if_generation_match=generation)
   except Exception:
     logging.exception('failed to upload %s protobuf to GCS', vuln_id)
     # TODO(michaelkedar): send pub/sub message to retry

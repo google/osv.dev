@@ -267,13 +267,6 @@ class ModelsTest(unittest.TestCase):
         blob.download_as_bytes())
     self.assertEqual(got_pb, vuln_pb)
 
-    blob = bucket.get_blob(os.path.join(gcs.VULN_JSON_PATH, f'{vuln_id}.json'))
-    self.assertIsNotNone(blob)
-    self.assertEqual(blob.custom_time,
-                     datetime.datetime(2025, 3, 5, tzinfo=datetime.UTC))
-    got_json = json.loads(blob.download_as_bytes())
-    self.assertDictEqual(got_json, sources.vulnerability_to_dict(vuln_pb))
-
   def test_bug_withdraw(self):
     """Test if withdrawing a Bug correctly removes unneeded indices."""
     # First put the bug un-withdrawn
@@ -321,10 +314,6 @@ class ModelsTest(unittest.TestCase):
     self.assertIsNotNone(blob)
     self.assertEqual(blob.custom_time,
                      datetime.datetime(2025, 3, 3, tzinfo=datetime.UTC))
-    blob = bucket.get_blob(os.path.join(gcs.VULN_JSON_PATH, f'{vuln_id}.json'))
-    self.assertIsNotNone(blob)
-    self.assertEqual(blob.custom_time,
-                     datetime.datetime(2025, 3, 3, tzinfo=datetime.UTC))
 
     # Now withdraw the Bug
     put_bug.withdrawn = datetime.datetime(2025, 4, 4, tzinfo=datetime.UTC)
@@ -345,10 +334,6 @@ class ModelsTest(unittest.TestCase):
     # Blobs still exist, and were re-written
     bucket = gcs.get_osv_bucket()
     blob = bucket.get_blob(os.path.join(gcs.VULN_PB_PATH, f'{vuln_id}.pb'))
-    self.assertIsNotNone(blob)
-    self.assertEqual(blob.custom_time,
-                     datetime.datetime(2025, 4, 4, tzinfo=datetime.UTC))
-    blob = bucket.get_blob(os.path.join(gcs.VULN_JSON_PATH, f'{vuln_id}.json'))
     self.assertIsNotNone(blob)
     self.assertEqual(blob.custom_time,
                      datetime.datetime(2025, 4, 4, tzinfo=datetime.UTC))
@@ -390,8 +375,6 @@ class ModelsTest(unittest.TestCase):
     self.assertEqual(0, len(affected))
     bucket = gcs.get_osv_bucket()
     blob = bucket.get_blob(os.path.join(gcs.VULN_PB_PATH, f'{vuln_id}.pb'))
-    self.assertIsNone(blob)
-    blob = bucket.get_blob(os.path.join(gcs.VULN_JSON_PATH, f'{vuln_id}.json'))
     self.assertIsNone(blob)
 
 

@@ -36,7 +36,6 @@ def gcs_mock(directory: str | None = None):
   """
   with (tempfile.TemporaryDirectory()
         if directory is None else contextlib.nullcontext(directory)) as db_dir:
-    pathlib.Path(db_dir, gcs.VULN_JSON_PATH).mkdir(parents=True, exist_ok=True)
     pathlib.Path(db_dir, gcs.VULN_PB_PATH).mkdir(parents=True, exist_ok=True)
     bucket = _MockBucket(db_dir)
     with mock.patch('osv.gcs.get_osv_bucket', return_value=bucket):

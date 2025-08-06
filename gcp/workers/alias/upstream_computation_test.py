@@ -397,13 +397,7 @@ class UpstreamTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
         pb_blob.download_as_bytes())
     pb_upstream = list(pb.upstream)
 
-    json_blob = bucket.blob(
-        os.path.join(osv.gcs.VULN_JSON_PATH, vuln_id + '.json'))
-    pb = json_format.Parse(json_blob.download_as_bytes(),
-                           osv.vulnerability_pb2.Vulnerability())
-    json_upstream = list(pb.upstream)
-
-    return pb_upstream, json_upstream
+    return pb_upstream
 
   def test_upstream_group_basic(self):
     """Test the upstream group get by db_id"""
@@ -417,9 +411,8 @@ class UpstreamTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
         osv.UpstreamGroup.db_id == 'CVE-3').get().upstream_ids
     self.assertEqual(['CVE-1', 'CVE-2'], bug_ids)
 
-    pb_upstream, json_upstream = self._get_upstreams_from_bucket('CVE-3')
+    pb_upstream = self._get_upstreams_from_bucket('CVE-3')
     self.assertEqual(['CVE-1', 'CVE-2'], pb_upstream)
-    self.assertEqual(['CVE-1', 'CVE-2'], json_upstream)
 
   def test_upstream_group_complex(self):
     """Testing more complex, realworld case"""
@@ -436,9 +429,8 @@ class UpstreamTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
 
     self.assertEqual(upstream_ids, bug_ids)
 
-    pb_upstream, json_upstream = self._get_upstreams_from_bucket('USN-7234-3')
+    pb_upstream = self._get_upstreams_from_bucket('USN-7234-3')
     self.assertEqual(upstream_ids, pb_upstream)
-    self.assertEqual(upstream_ids, json_upstream)
 
   def test_upstream_hierarchy_computation(self):
     upstream_computation.main()

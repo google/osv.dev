@@ -94,9 +94,12 @@ func FromCVE5(cve cves.CVE5, refs []cves.Reference) (*vulns.Vulnerability, []str
 	v.Vulnerability.Modified = modified
 
 	// TODO(jesslowe): add logic to also extract cpes from affected field (CVE-2025-1110)
-	CPEs := vulns.GetCPEs(cve.Containers.CNA.CPEApplicability)
+	CPEs, notes := vulns.GetCPEs(cve.Containers.CNA.CPEApplicability)
 	if len(CPEs) != 0 {
 		v.DatabaseSpecific["CPE"] = vulns.Unique(CPEs)
+	}
+	if notes != nil {
+		Metrics.Notes = append(Metrics.Notes, notes...)
 	}
 
 	// TODO: add CWEs

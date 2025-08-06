@@ -134,7 +134,7 @@ def aggregate_all_vulnerabilities(work_dir: str, export_bucket: str):
   safe_upload_single(bucket, output_zip, zip_file_name)
   logging.info('Unified all.zip uploaded successfully.')
   safe_upload_single(bucket, output_modified_list, LAST_MODIFIED_FILE)
-  logging.info('Unified modified_list.csv uploaded successfully.')
+  logging.info('Unified %s uploaded successfully.', LAST_MODIFIED_FILE)
 
 
 if __name__ == '__main__':

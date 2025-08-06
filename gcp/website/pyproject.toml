@@ -12,12 +12,12 @@ dependencies = [
     "jinja2==3.1.6",
     "markdown2==2.5.4",
     "markupsafe==2.1.5",
-    "packageurl-python==0.17.2",
+    "packageurl-python==0.17.3",
     "redis==4.6.0",
     "requests==2.32.4",
     "gunicorn==23.0.0",
     "whitenoise==6.9.0",
-    "cvss==3.4",
+    "cvss==3.6",
     "osv",
 ]
 

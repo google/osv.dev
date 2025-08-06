@@ -69,6 +69,9 @@ def construct_prefix_to_source_map() -> dict[str, str]:
   return prefix_to_source
 
 
+PREFIX_TO_SOURCE = construct_prefix_to_source_map()
+
+
 def download_file(source: str, destination: str):
   """Downloads the required file from bucket."""
   storage_client = storage.Client()
@@ -98,7 +101,6 @@ def process_linter_result(output: Any, bugs: set):
   """process the linter results and update/add findings into db."""
   time = utcnow()
   total_findings = 0
-  prefix_to_source = construct_prefix_to_source_map()
 
   for filename, findings_list in output.items():
     bug_id = os.path.splitext(os.path.basename(filename))[0]
@@ -118,7 +120,7 @@ def process_linter_result(output: Any, bugs: set):
 
     sorted_findings = sorted(list(findings_already_added))
     prefix = bug_id.split('-')[0] + '-'
-    source = prefix_to_source.get(prefix, '')
+    source = PREFIX_TO_SOURCE.get(prefix, '')
     record_quality_finding(bug_id, source, sorted_findings, time)
 
   if total_findings > 0:
@@ -153,13 +155,24 @@ def upload_record_to_bucket(json_result: Any):
   """Uploads the linter result to a GCS bucket, creating one file per source."""
   storage_client = storage.Client()
   bucket = storage_client.get_bucket(LINTER_EXPORT_BUCKET)
-  prefix_to_source = construct_prefix_to_source_map()
+
+  # Delete existing results first.
+  logging.info('Deleting existing linter results from %s/%s.',
+               LINTER_EXPORT_BUCKET, LINTER_RESULT_DIR)
+  blobs_to_delete = list(bucket.list_blobs(prefix=LINTER_RESULT_DIR))
+  if blobs_to_delete:
+    for blob in blobs_to_delete:
+      blob.delete()
+    logging.info('Finished deleting %d existing linter results.',
+                 len(blobs_to_delete))
+  else:
+    logging.info('No existing linter results to delete.')
 
   source_results = {}
   for filename, findings in json_result.items():
     bug_id = os.path.splitext(os.path.basename(filename))[0]
     prefix = bug_id.split('-')[0] + '-'
-    source = prefix_to_source.get(prefix, '')
+    source = PREFIX_TO_SOURCE.get(prefix, '')
 
     if source not in source_results:
       source_results[source] = {}

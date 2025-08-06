@@ -297,40 +297,16 @@ func (v *Vulnerability) AddPkgInfo(pkgInfo PackageInfo) {
 
 // getBestSeverity finds the best CVSS severity vector from the provided metrics data.
 // It prioritizes newer CVSS versions.
-func getBestSeverity(metricsData any) (string, osvschema.SeverityType) {
-	switch md := metricsData.(type) {
-	case *cves.CVEItemMetrics:
-		if md == nil {
-			return "", ""
+func getBestSeverity(metricsData *cves.CVEItemMetrics) (string, osvschema.SeverityType) {
+	// Prioritize CVSS v3.1 over v3.0 from the Primary scorer.
+	for _, metric := range metricsData.CVSSMetricV31 {
+		if metric.Type == "Primary" && metric.CVSSData.VectorString != "" {
+			return metric.CVSSData.VectorString, osvschema.SeverityCVSSV3
 		}
-		// Prioritize CVSS v3.1 over v3.0 from the Primary scorer.
-		for _, metric := range md.CVSSMetricV31 {
-			if metric.Type == "Primary" && metric.CVSSData.VectorString != "" {
-				return metric.CVSSData.VectorString, osvschema.SeverityCVSSV3
-			}
-		}
-		for _, metric := range md.CVSSMetricV30 {
-			if metric.Type == "Primary" && metric.CVSSData.VectorString != "" {
-				return metric.CVSSData.VectorString, osvschema.SeverityCVSSV3
-			}
-		}
-	case []cves.Metrics:
-		// Define a prioritized list of checks.
-		checks := []struct {
-			getVectorString func(cves.Metrics) string
-			severityType    osvschema.SeverityType
-		}{
-			{func(m cves.Metrics) string { return m.CVSSV4_0.VectorString }, osvschema.SeverityCVSSV4},
-			{func(m cves.Metrics) string { return m.CVSSV3_1.VectorString }, osvschema.SeverityCVSSV3},
-			{func(m cves.Metrics) string { return m.CVSSV3_0.VectorString }, osvschema.SeverityCVSSV3},
-		}
-
-		for _, check := range checks {
-			for _, m := range md {
-				if vectorString := check.getVectorString(m); vectorString != "" {
-					return vectorString, check.severityType
-				}
-			}
+	}
+	for _, metric := range metricsData.CVSSMetricV30 {
+		if metric.Type == "Primary" && metric.CVSSData.VectorString != "" {
+			return metric.CVSSData.VectorString, osvschema.SeverityCVSSV3
 		}
 	}
 	return "", ""
@@ -338,7 +314,7 @@ func getBestSeverity(metricsData any) (string, osvschema.SeverityType) {
 
 // AddSeverity adds CVSS severity information to the OSV vulnerability object.
 // It uses the highest available CVSS score from the underlying CVE record.
-func (v *Vulnerability) AddSeverity(metricsData any) {
+func (v *Vulnerability) AddSeverity(metricsData *cves.CVEItemMetrics) {
 	bestVectorString, severityType := getBestSeverity(metricsData)
 
 	if bestVectorString == "" {

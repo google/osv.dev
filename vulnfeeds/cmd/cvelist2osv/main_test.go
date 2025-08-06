@@ -180,13 +180,12 @@ func TestFromCVE5(t *testing.T) {
 						{Type: "WEB", URL: "https://gitlab.com/gitlab-org/gitlab/-/issues/517693"},
 						{Type: "WEB", URL: "https://hackerone.com/reports/2972576"},
 					},
-					Severity: nil, // To be fixed in future PR
-					// []osvschema.Severity{
-					// 	{
-					// 		Type:  "CVSS_V3",
-					// 		Score: "CVSS:3.1/AV:N/AC:L/PR:H/UI:N/S:U/C:L/I:N/A:N",
-					// 	},
-					// },
+					Severity: []osvschema.Severity{
+						{
+							Type:  "CVSS_V3",
+							Score: "CVSS:3.1/AV:N/AC:L/PR:H/UI:N/S:U/C:L/I:N/A:N",
+						},
+					},
 					DatabaseSpecific: map[string]interface{}{
 						// "CPE": []string{"cpe:2.3:a:gitlab:gitlab:*:*:*:*:*:*:*:*"}, // Also to be fixed in later PR
 					},
@@ -213,13 +212,12 @@ func TestFromCVE5(t *testing.T) {
 					References: []osvschema.Reference{
 						{Type: "ADVISORY", URL: "https://github.com/amazon-ion/ion-java/security/advisories/GHSA-264p-99wq-f4j6"},
 					},
-					Severity: nil,
-					// []osvschema.Severity{
-					// 	{
-					// 		Type:  "CVSS_V3",
-					// 		Score: "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:H",
-					// 	},
-					// },
+					Severity: []osvschema.Severity{
+						{
+							Type:  "CVSS_V3",
+							Score: "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:H",
+						},
+					},
 					DatabaseSpecific: make(map[string]interface{}),
 				},
 			},

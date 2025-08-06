@@ -82,10 +82,10 @@ type CVSS struct {
 type Metrics struct {
 	Format    string       `json:"format,omitempty"`
 	Scenarios []LangString `json:"scenarios,omitempty"`
-	CVSSV4_0  BaseCVSS     `json:"cvssv4_0,omitempty"`
-	CVSSV3_1  BaseCVSS     `json:"cvssv3_1,omitempty"`
-	CVSSV3_0  BaseCVSS     `json:"cvssv3_0,omitempty"`
-	CVSSV2_0  BaseCVSS     `json:"cvssv2_0,omitempty"`
+	CVSSV4_0  BaseCVSS     `json:"cvssV4_0,omitempty"`
+	CVSSV3_1  BaseCVSS     `json:"cvssV3_1,omitempty"`
+	CVSSV3_0  BaseCVSS     `json:"cvssV3_0,omitempty"`
+	CVSSV2_0  BaseCVSS     `json:"cvssV2_0,omitempty"`
 	Other     struct {
 		Type    string `json:"type,omitempty"`
 		Content any    `json:"content,omitempty"`

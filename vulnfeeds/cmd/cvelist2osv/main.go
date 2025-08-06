@@ -112,11 +112,12 @@ func FromCVE5(cve cves.CVE5, refs []cves.Reference) (*vulns.Vulnerability, []str
 		}
 	}
 	if len(severity) > 0 {
-		v.Severity = append([]osvschema.Severity{}, AddSeverity(severity))
+		v.Severity = []osvschema.Severity{findSeverity(severity)}
 	}
 	return &v, notes
 }
-func AddSeverity(metricsData []cves.Metrics) osvschema.Severity {
+
+func findSeverity(metricsData []cves.Metrics) osvschema.Severity {
 	bestVectorString, severityType := getBestSeverity(metricsData)
 	severity := osvschema.Severity{}
 	if bestVectorString == "" {
@@ -129,6 +130,7 @@ func AddSeverity(metricsData []cves.Metrics) osvschema.Severity {
 	}
 	return severity
 }
+
 func getBestSeverity(metricsData []cves.Metrics) (string, osvschema.SeverityType) {
 	checks := []struct {
 		getVectorString func(cves.Metrics) string
@@ -148,6 +150,7 @@ func getBestSeverity(metricsData []cves.Metrics) (string, osvschema.SeverityType
 	}
 	return "", ""
 }
+
 func writeOSVToFile(id cves.CVEID, cnaAssigner string, vulnDir string, v *vulns.Vulnerability) error {
 	err := os.MkdirAll(vulnDir, 0755)
 	if err != nil {

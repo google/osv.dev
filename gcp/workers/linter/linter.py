@@ -37,6 +37,9 @@ ZIP_FILE_PATH = 'all.zip'
 TEST_DATA = '/linter/test_data'
 GCP_PROJECT = 'oss-vdb-test'
 
+LINTER_EXPORT_BUCKET = 'osv-test-public-import-logs'
+LINTER_RESULT_DIR = 'linter-result'
+
 ERROR_CODE_MAPPING = {
     'SCH:001': osv.ImportFindings.INVALID_JSON,
     'REC:001': osv.ImportFindings.INVALID_RECORD,
@@ -87,7 +90,6 @@ def download_osv_data(tmp_dir: str):
   download_file(ZIP_FILE_PATH, all_zip)
   logging.info('Unzipping %s into %s...', all_zip, tmp_dir)
   with zipfile.ZipFile(all_zip, 'r') as zip_ref:
-    # TODO(gongh@): add json validation here.
     zip_ref.extractall(tmp_dir)
   logging.info('Successfully unzipped files to %s.', tmp_dir)
 
@@ -147,6 +149,38 @@ def record_quality_finding(bug_id: str, source: str,
                   new_findings, source)
 
 
+def upload_record_to_bucket(json_result: Any):
+  """Uploads the linter result to a GCS bucket, creating one file per source."""
+  storage_client = storage.Client()
+  bucket = storage_client.get_bucket(LINTER_EXPORT_BUCKET)
+  prefix_to_source = construct_prefix_to_source_map()
+
+  source_results = {}
+  for filename, findings in json_result.items():
+    bug_id = os.path.splitext(os.path.basename(filename))[0]
+    prefix = bug_id.split('-')[0] + '-'
+    source = prefix_to_source.get(prefix, '')
+
+    if source not in source_results:
+      source_results[source] = {}
+    source_results[source][filename] = findings
+
+  logging.info('Uploading linter results for %d sources.', len(source_results))
+  for source, results in source_results.items():
+    if not results:
+      continue
+
+    target_path = os.path.join(LINTER_RESULT_DIR, source, 'result.json')
+    logging.info('Uploading linter result for source '
+                 '%s'
+                 ' to %s/%s', source, LINTER_EXPORT_BUCKET, target_path)
+
+    blob = bucket.blob(target_path)
+    blob.upload_from_string(
+        json.dumps(results, indent=2), content_type='application/json')
+    logging.info("Successfully uploaded linter result for source '%s'.", source)
+
+
 def parse_and_record_linter_output(json_output_str: str):
   """
   Parses the JSON output from the OSV linter and records findings.
@@ -158,6 +192,9 @@ def parse_and_record_linter_output(json_output_str: str):
   except Exception as e:
     logging.error('Failed to parse OSV Linter JSON output: %s', e)
     return
+
+  # Upload linter result to GCS bucket
+  upload_record_to_bucket(linter_output_json)
 
   # Fetch all existing ids from importfindings db
   all_finding_keys = osv.ImportFinding.query().fetch(keys_only=True)

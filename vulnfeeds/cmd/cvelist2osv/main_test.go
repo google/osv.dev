@@ -10,65 +10,285 @@ import (
 	"testing"
 	"time"
 
+	"github.com/google/go-cmp/cmp"
 	"github.com/google/osv/vulnfeeds/cves"
+	"github.com/google/osv/vulnfeeds/vulns"
+	"github.com/ossf/osv-schema/bindings/go/osvschema"
 )
 
 func loadTestData(cveName string) cves.CVE5 {
 	prefix := strings.Split(cveName, "-")[2]
 	prefixpath := prefix[:len(prefix)-3] + "xxx"
 	fileName := filepath.Join("..", "..", "test_data", "cvelistV5", "cves", cveName[4:8], prefixpath, fmt.Sprintf("%s.json", cveName))
-	file, err := os.Open(fileName)
+	return loadTestCVE(fileName)
+}
+
+func loadTestCVE(path string) cves.CVE5 {
+	file, err := os.Open(path)
 	if err != nil {
-		log.Fatalf("Failed to load test data from %q: %v", fileName, err)
+		log.Fatalf("Failed to load test data from %q: %v", path, err)
 	}
 	defer file.Close()
 	var cve cves.CVE5
 	err = json.NewDecoder(file).Decode(&cve)
 	if err != nil {
-		log.Fatalf("Failed to decode %q: %+v", fileName, err)
+		log.Fatalf("Failed to decode %q: %+v", path, err)
 	}
 	return cve
 }
 
-func TestFromCVE(t *testing.T) {
-	cveData := loadTestData("CVE-2021-44228")
-	refs := identifyPossibleURLs(cveData)
-
-	v, notes := FromCVE5(cveData, refs)
-
-	if v.ID != "CVE-2021-44228" {
-		t.Errorf("Expected ID CVE-2021-44228, got %s", v.ID)
+func TestIdentifyPossibleURLs(t *testing.T) {
+	testCases := []struct {
+		name         string
+		cve          cves.CVE5
+		expectedRefs []cves.Reference
+	}{
+		{
+			name: "simple case with duplicates",
+			cve: cves.CVE5{
+				Containers: struct {
+					CNA cves.CNA   `json:"cna"`
+					ADP []cves.CNA `json:"adp,omitempty"`
+				}{
+					CNA: cves.CNA{
+						References: []cves.Reference{
+							{Url: "http://a.com"},
+							{Url: "http://b.com"},
+						},
+						Affected: []cves.Affected{
+							{
+								CollectionUrl: "http://d.com",
+								Repo:          "http://b.com",
+							},
+						},
+					},
+					ADP: []cves.CNA{
+						{
+							References: []cves.Reference{
+								{Url: "http://c.com"},
+								{Url: "http://a.com"},
+							},
+						},
+					},
+				},
+			},
+			expectedRefs: []cves.Reference{
+				{Url: "http://a.com"},
+				{Url: "http://b.com"},
+				{Url: "http://c.com"},
+				{Url: "http://d.com"},
+			},
+		},
+		{
+			name: "no references and CNA refs is nil",
+			cve: cves.CVE5{
+				Containers: struct {
+					CNA cves.CNA   `json:"cna"`
+					ADP []cves.CNA `json:"adp,omitempty"`
+				}{
+					CNA: cves.CNA{
+						References: nil,
+					},
+				},
+			},
+			expectedRefs: nil,
+		},
+		{
+			name: "no references and CNA refs is empty slice",
+			cve: cves.CVE5{
+				Containers: struct {
+					CNA cves.CNA   `json:"cna"`
+					ADP []cves.CNA `json:"adp,omitempty"`
+				}{
+					CNA: cves.CNA{
+						References: []cves.Reference{},
+					},
+				},
+			},
+			expectedRefs: []cves.Reference{},
+		},
+		{
+			name: "empty url string",
+			cve: cves.CVE5{
+				Containers: struct {
+					CNA cves.CNA   `json:"cna"`
+					ADP []cves.CNA `json:"adp,omitempty"`
+				}{
+					CNA: cves.CNA{
+						Affected: []cves.Affected{
+							{
+								CollectionUrl: "",
+							},
+						},
+						References: []cves.Reference{
+							{Url: "http://a.com"},
+							{Url: ""},
+						},
+					},
+				},
+			},
+			expectedRefs: []cves.Reference{
+				{Url: ""},
+				{Url: "http://a.com"},
+			},
+		},
 	}
 
-	if !strings.HasPrefix(v.Details, "Apache Log4j2") {
-		t.Errorf("Details do not seem correct, got: %s", v.Details)
-	}
-
-	expectedPublished, _ := time.Parse(time.RFC3339, "2021-12-10T00:00:00Z")
-	if v.Published != expectedPublished {
-		t.Errorf("Published date is incorrect, got: %s, want: %s", v.Published, expectedPublished)
-	}
-
-	expectedModified, _ := time.Parse(time.RFC3339, "2025-02-04T14:25:37Z")
-	if v.Modified.Truncate(time.Second) != expectedModified {
-		t.Errorf("Modified date is incorrect, got: %s, want: %s", v.Modified, expectedModified)
-	}
-
-	if len(notes) != 0 {
-		t.Errorf("Expected no notes, got %v", notes)
-	}
-
-	// Check a reference
-	foundRef := false
-	for _, ref := range v.References {
-		if ref.URL == "https://logging.apache.org/log4j/2.x/security.html" {
-			foundRef = true
-			if ref.Type != "WEB" {
-				t.Errorf("Incorrect reference type, got %s, want WEB", ref.Type)
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			refs := identifyPossibleURLs(tc.cve)
+			if diff := cmp.Diff(tc.expectedRefs, refs); diff != "" {
+				t.Errorf("identifyPossibleURLs() mismatch (-want +got):\n%s", diff)
 			}
-		}
+		})
 	}
-	if !foundRef {
-		t.Error("Expected reference not found")
+}
+
+func TestFromCVE5(t *testing.T) {
+	cve1110Pub, _ := cves.ParseCVE5Timestamp("2025-05-22T14:02:31.385Z")
+	cve1110Mod, _ := cves.ParseCVE5Timestamp("2025-05-22T14:17:44.379Z")
+	cve21634Pub, _ := cves.ParseCVE5Timestamp("2024-01-03T22:46:03.585Z")
+	cve21634Mod, _ := cves.ParseCVE5Timestamp("2025-06-16T19:45:37.088Z")
+	cve21772Pub, _ := cves.ParseCVE5Timestamp("2025-02-27T02:18:19.528Z")
+	cve21772Mod, _ := cves.ParseCVE5Timestamp("2025-05-04T07:20:46.575Z")
+
+	testCases := []struct {
+		name          string
+		cve           cves.CVE5
+		refs          []cves.Reference
+		expectedVuln  *vulns.Vulnerability
+		expectedNotes []string
+	}{
+		{
+			name: "CVE-2025-1110",
+			cve:  loadTestData("CVE-2025-1110"),
+			refs: []cves.Reference{
+				{Url: "https://gitlab.com/gitlab-org/gitlab/-/issues/517693", Tags: []string{"issue-tracking", "permissions-required"}},
+				{Url: "https://hackerone.com/reports/2972576", Tags: []string{"technical-description", "exploit", "permissions-required"}},
+			},
+			expectedVuln: &vulns.Vulnerability{
+				Vulnerability: osvschema.Vulnerability{
+					ID:            "CVE-2025-1110",
+					SchemaVersion: osvschema.SchemaVersion,
+					Published:     cve1110Pub,
+					Modified:      cve1110Mod,
+					Summary:       "Insufficient Granularity of Access Control in GitLab",
+					Details:       "An issue has been discovered in GitLab CE/EE affecting all versions from 18.0 before 18.0.1. In certain circumstances, a user with limited permissions could access Job Data via a crafted GraphQL query.",
+					Aliases:       nil,
+					Related:       nil,
+					References: []osvschema.Reference{
+						{Type: "WEB", URL: "https://gitlab.com/gitlab-org/gitlab/-/issues/517693"},
+						{Type: "WEB", URL: "https://hackerone.com/reports/2972576"},
+					},
+					Severity: nil, // To be fixed in future PR
+					// []osvschema.Severity{
+					// 	{
+					// 		Type:  "CVSS_V3",
+					// 		Score: "CVSS:3.1/AV:N/AC:L/PR:H/UI:N/S:U/C:L/I:N/A:N",
+					// 	},
+					// },
+					DatabaseSpecific: map[string]interface{}{
+						// "CPE": []string{"cpe:2.3:a:gitlab:gitlab:*:*:*:*:*:*:*:*"}, // Also to be fixed in later PR
+					},
+				},
+			},
+			expectedNotes: nil,
+		},
+		{
+			name: "CVE-2024-21634",
+			cve:  loadTestData("CVE-2024-21634"),
+			refs: []cves.Reference{
+				{Tags: []string{"x_refsource_CONFIRM"}, Url: "https://github.com/amazon-ion/ion-java/security/advisories/GHSA-264p-99wq-f4j6"},
+			},
+			expectedVuln: &vulns.Vulnerability{
+				Vulnerability: osvschema.Vulnerability{
+					ID:            "CVE-2024-21634",
+					SchemaVersion: osvschema.SchemaVersion,
+					Published:     cve21634Pub,
+					Modified:      cve21634Mod,
+					Summary:       "Ion Java StackOverflow vulnerability",
+					Details:       "Amazon Ion is a Java implementation of the Ion data notation. Prior to version 1.10.5, a potential denial-of-service issue exists in\u00a0`ion-java`\u00a0for applications that use\u00a0`ion-java`\u00a0to deserialize Ion text encoded data, or deserialize Ion text or binary encoded data into the\u00a0`IonValue`\u00a0model and then invoke certain\u00a0`IonValue`\u00a0methods on that in-memory representation. An actor could craft Ion data that, when loaded by the affected application and/or processed using the\u00a0`IonValue`\u00a0model, results in a\u00a0`StackOverflowError`\u00a0originating from the\u00a0`ion-java`\u00a0library. The patch is included in `ion-java` 1.10.5. As a workaround, do not load data which originated from an untrusted source or that could have been tampered with.",
+					Aliases:       []string{"GHSA-264p-99wq-f4j6"},
+					Related:       nil,
+					References: []osvschema.Reference{
+						{Type: "ADVISORY", URL: "https://github.com/amazon-ion/ion-java/security/advisories/GHSA-264p-99wq-f4j6"},
+					},
+					Severity: nil,
+					// []osvschema.Severity{
+					// 	{
+					// 		Type:  "CVSS_V3",
+					// 		Score: "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:H",
+					// 	},
+					// },
+					DatabaseSpecific: make(map[string]interface{}),
+				},
+			},
+			expectedNotes: nil,
+		},
+		{
+			name: "CVE-2025-21772",
+			cve:  loadTestCVE("CVE-2025-21772.json"),
+			refs: []cves.Reference{
+				{Url: "https://git.kernel.org/stable/c/a3e77da9f843e4ab93917d30c314f0283e28c124"},
+				{Url: "https://git.kernel.org/stable/c/213ba5bd81b7e97ac6e6190b8f3bc6ba76123625"},
+				{Url: "https://git.kernel.org/stable/c/40a35d14f3c0dc72b689061ec72fc9b193f37d1f"},
+				{Url: "https://git.kernel.org/stable/c/27a39d006f85e869be68c1d5d2ce05e5d6445bf5"},
+				{Url: "https://git.kernel.org/stable/c/92527100be38ede924768f4277450dfe8a40e16b"},
+				{Url: "https://git.kernel.org/stable/c/6578717ebca91678131d2b1f4ba4258e60536e9f"},
+				{Url: "https://git.kernel.org/stable/c/7fa9706722882f634090bfc9af642bf9ed719e27"},
+				{Url: "https://git.kernel.org/stable/c/80e648042e512d5a767da251d44132553fe04ae0"},
+			},
+			expectedVuln: &vulns.Vulnerability{
+				Vulnerability: osvschema.Vulnerability{
+					ID:            "CVE-2025-21772",
+					SchemaVersion: osvschema.SchemaVersion,
+					Published:     cve21772Pub,
+					Modified:      cve21772Mod,
+					Summary:       "partitions: mac: fix handling of bogus partition table",
+					Details:       "In the Linux kernel, the following vulnerability has been resolved:\n\npartitions: mac: fix handling of bogus partition table\n\nFix several issues in partition probing:\n\n - The bailout for a bad partoffset must use put_dev_sector(), since the\n   preceding read_part_sector() succeeded.\n - If the partition table claims a silly sector size like 0xfff bytes\n   (which results in partition table entries straddling sector boundaries),\n   bail out instead of accessing out-of-bounds memory.\n - We must not assume that the partition table contains proper NUL\n   termination - use strnlen() and strncmp() instead of strlen() and\n   strcmp().",
+					Aliases:       nil,
+					Related:       nil,
+					References: []osvschema.Reference{
+						{Type: "WEB", URL: "https://git.kernel.org/stable/c/a3e77da9f843e4ab93917d30c314f0283e28c124"},
+						{Type: "WEB", URL: "https://git.kernel.org/stable/c/213ba5bd81b7e97ac6e6190b8f3bc6ba76123625"},
+						{Type: "WEB", URL: "https://git.kernel.org/stable/c/40a35d14f3c0dc72b689061ec72fc9b193f37d1f"},
+						{Type: "WEB", URL: "https://git.kernel.org/stable/c/27a39d006f85e869be68c1d5d2ce05e5d6445bf5"},
+						{Type: "WEB", URL: "https://git.kernel.org/stable/c/92527100be38ede924768f4277450dfe8a40e16b"},
+						{Type: "WEB", URL: "https://git.kernel.org/stable/c/6578717ebca91678131d2b1f4ba4258e60536e9f"},
+						{Type: "WEB", URL: "https://git.kernel.org/stable/c/7fa9706722882f634090bfc9af642bf9ed719e27"},
+						{Type: "WEB", URL: "https://git.kernel.org/stable/c/80e648042e512d5a767da251d44132553fe04ae0"},
+					},
+					DatabaseSpecific: map[string]interface{}{
+						"CPE": []string{
+							"cpe:2.3:o:linux:linux_kernel:*:*:*:*:*:*:*:*",
+						},
+					},
+				},
+			},
+			expectedNotes: nil,
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			vuln, notes := FromCVE5(tc.cve, tc.refs)
+
+			// Handle non-deterministic time.Now()
+			if strings.Contains(tc.name, "invalid date") {
+				if !vuln.Published.IsZero() {
+					vuln.Published = time.Time{}
+				}
+				if !vuln.Modified.IsZero() && strings.Contains(tc.name, "invalid modified") {
+					vuln.Modified = time.Time{}
+				}
+			}
+
+			if diff := cmp.Diff(tc.expectedVuln, vuln); diff != "" {
+				t.Errorf("FromCVE5() vuln mismatch (-want +got):\n%s", diff)
+			}
+			if diff := cmp.Diff(tc.expectedNotes, notes); diff != "" {
+				t.Errorf("FromCVE5() notes mismatch (-want +got):\n%s", diff)
+			}
+		})
 	}
 }

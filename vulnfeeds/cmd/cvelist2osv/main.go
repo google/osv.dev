@@ -66,27 +66,34 @@ func FromCVE5(cve cves.CVE5, refs []cves.Reference) (*vulns.Vulnerability, []str
 	aliases, related := vulns.ExtractReferencedVulns(cve.Metadata.CVEID, cve.Metadata.CVEID, refs)
 	var err error
 	var notes []string
-	v := vulns.Vulnerability{}
-	v.SchemaVersion = osvschema.SchemaVersion
-	v.ID = string(cve.Metadata.CVEID)
-	v.Summary = string(cve.Containers.CNA.Title)
-	v.Details = cves.EnglishDescription(cve.Containers.CNA.Descriptions)
-	v.Aliases = aliases
-	v.Related = related
-	v.Published, err = cves.ParseCVE5Timestamp(cve.Metadata.DatePublished)
+	v := vulns.Vulnerability{
+		Vulnerability: osvschema.Vulnerability{
+			SchemaVersion: osvschema.SchemaVersion,
+			ID:            string(cve.Metadata.CVEID),
+			Summary:       string(cve.Containers.CNA.Title),
+			Details:       cves.EnglishDescription(cve.Containers.CNA.Descriptions),
+			Aliases:       aliases,
+			Related:       related,
+			References:    vulns.ClassifyReferences(refs),
+			// Add affected version
+			// VERSIONS WILL BE ADDED IN ANOTHER PR
+			DatabaseSpecific: make(map[string]interface{}),
+		}}
+	published, err := cves.ParseCVE5Timestamp(cve.Metadata.DatePublished)
 	if err != nil {
 		notes = append(notes, "Published date failed to parse, setting time to now")
-		v.Published = time.Now()
+		published = time.Now()
 	}
-	v.Modified, err = cves.ParseCVE5Timestamp(cve.Metadata.DateUpdated)
+	v.Vulnerability.Published = published
+
+	modified, err := cves.ParseCVE5Timestamp(cve.Metadata.DateUpdated)
 	if err != nil {
 		notes = append(notes, "Modified date failed to parse, setting time to now")
-		v.Modified = time.Now()
+		modified = time.Now()
 	}
-	v.References = vulns.ClassifyReferences(refs)
-	// Add affected version
-	// VERSIONS WILL BE ADDED IN ANOTHER PR
-	v.DatabaseSpecific = make(map[string]interface{})
+	v.Vulnerability.Modified = modified
+
+	// TODO(jesslowe): add logic to also extract cpes from affected field (CVE-2025-1110)
 	CPEs := vulns.GetCPEs(cve.Containers.CNA.CPEApplicability)
 	if len(CPEs) != 0 {
 		v.DatabaseSpecific["CPE"] = vulns.Unique(CPEs)

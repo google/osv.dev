@@ -108,7 +108,8 @@ def setUp():
                   name='package1')),
           osv.AffectedPackage(
               package=osv.Package(
-                  ecosystem='SUSE Linux Enterprise Server:sles:15:sp4::module-containers',
+                  ecosystem=('SUSE Linux Enterprise Server:sles:15:sp4'
+                             '::module-containers'),
                   name='package2')),
           osv.AffectedPackage(
               package=osv.Package(

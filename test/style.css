@@ -42,6 +42,7 @@ body {
     min-width: fit-content;
     overflow-y: scroll;
     background-color: var(--osv-background);
+    line-height: 1.6;
 }
 
 header {

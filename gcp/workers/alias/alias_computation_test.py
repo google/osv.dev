@@ -17,7 +17,7 @@ import os
 import unittest
 
 from google.cloud import ndb
-from google.protobuf import json_format, timestamp_pb2
+from google.protobuf import timestamp_pb2
 
 import osv
 import alias_computation

@@ -19,7 +19,6 @@ import os
 import unittest
 
 from google.cloud import ndb
-from google.protobuf import json_format
 
 import osv
 import upstream_computation

@@ -14,7 +14,6 @@
 """Models tests."""
 
 import datetime
-import json
 import os
 import unittest
 
@@ -22,7 +21,6 @@ from . import models
 
 from . import bug
 from . import gcs
-from . import sources
 from . import tests
 from . import vulnerability_pb2
 

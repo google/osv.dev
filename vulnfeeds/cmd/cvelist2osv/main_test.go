@@ -225,7 +225,7 @@ func TestFromCVE5(t *testing.T) {
 		},
 		{
 			name: "CVE-2025-21772",
-			cve:  loadTestCVE("CVE-2025-21772.json"),
+			cve:  loadTestData("CVE-2025-21772"),
 			refs: []cves.Reference{
 				{Url: "https://git.kernel.org/stable/c/a3e77da9f843e4ab93917d30c314f0283e28c124"},
 				{Url: "https://git.kernel.org/stable/c/213ba5bd81b7e97ac6e6190b8f3bc6ba76123625"},

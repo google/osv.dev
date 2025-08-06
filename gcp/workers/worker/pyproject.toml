@@ -9,7 +9,7 @@ dependencies = [
     "google-cloud-storage==2.19.0",
     "pyyaml==6.0.2",
     "redis==5.3.1",
-    "packageurl-python==0.17.2",
+    "packageurl-python==0.17.3",
     "pygit2==1.18.1",
     "requests==2.32.4",
     "jsonschema==4.25.0",

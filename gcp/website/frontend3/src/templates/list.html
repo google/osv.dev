@@ -94,11 +94,12 @@
             <span role="cell" class="vuln-table-cell vuln-packages mdc-data-table__cell">
               <ul class="packages">
                 {% set pkgs = vulnerability.affected | list_packages %}
-                {% for package in pkgs[:3] %}
+                {% for package in pkgs[:5] %}
                   <li>{{ package }}</li>
                 {% endfor %}
-                {% if pkgs|length > 3 %}
-                  <li>...</li>
+                {% if pkgs|length > 5 %}
+                 {% set remainingPkgCount = pkgs|length - 5 %}
+                  <li class="remaining-packages">... {{ remainingPkgCount }} more</li>
                 {% elif pkgs|length == 0 %}
                   <li>Not specified</li>
                 {% endif %}

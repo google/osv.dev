@@ -33,7 +33,7 @@ terraform init
 This command only needs to be run once to first set up the terraform directory,
 though it is safe to run multiple times.
 
-Plan and apply required project infastructure:
+Plan and apply required project infrastructure:
 ```bash
 terraform plan
 ```

@@ -91,3 +91,15 @@ resource "google_project_service" "cloud_build" {
   service            = "cloudbuild.googleapis.com"
   disable_on_destroy = false
 }
+
+resource "google_project_service" "cloud_firestore" {
+  project            = var.project_id
+  service            = "firestore.googleapis.com"
+  disable_on_destroy = false
+}
+
+resource "google_project_service" "certificate_manager" {
+  project            = var.project_id
+  service            = "certificatemanager.googleapis.com"
+  disable_on_destroy = false
+}

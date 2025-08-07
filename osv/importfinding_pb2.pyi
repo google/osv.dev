@@ -47,7 +47,11 @@ class _ImportFindingTypeEnumTypeWrapper(google.protobuf.internal.enum_type_wrapp
     IMPORT_FINDING_TYPE_INVALID_VERSION: _ImportFindingType.ValueType  # 5
     IMPORT_FINDING_TYPE_INVALID_COMMIT: _ImportFindingType.ValueType  # 6
     IMPORT_FINDING_TYPE_INVALID_RANGE: _ImportFindingType.ValueType  # 7
-    IMPORT_FINDING_TYPE_BAD_ALIASED_CVE: _ImportFindingType.ValueType  # 8
+    IMPORT_FINDING_TYPE_INVALID_RECORD: _ImportFindingType.ValueType  # 8
+    IMPORT_FINDING_TYPE_INVALID_ALIASES: _ImportFindingType.ValueType  # 9
+    IMPORT_FINDING_TYPE_INVALID_UPSTREAM: _ImportFindingType.ValueType  # 10
+    IMPORT_FINDING_TYPE_INVALID_RELATED: _ImportFindingType.ValueType  # 11
+    IMPORT_FINDING_TYPE_BAD_ALIASED_CVE: _ImportFindingType.ValueType  # 12
 
 class ImportFindingType(_ImportFindingType, metaclass=_ImportFindingTypeEnumTypeWrapper): ...
 
@@ -59,7 +63,11 @@ IMPORT_FINDING_TYPE_INVALID_PURL: ImportFindingType.ValueType  # 4
 IMPORT_FINDING_TYPE_INVALID_VERSION: ImportFindingType.ValueType  # 5
 IMPORT_FINDING_TYPE_INVALID_COMMIT: ImportFindingType.ValueType  # 6
 IMPORT_FINDING_TYPE_INVALID_RANGE: ImportFindingType.ValueType  # 7
-IMPORT_FINDING_TYPE_BAD_ALIASED_CVE: ImportFindingType.ValueType  # 8
+IMPORT_FINDING_TYPE_INVALID_RECORD: ImportFindingType.ValueType  # 8
+IMPORT_FINDING_TYPE_INVALID_ALIASES: ImportFindingType.ValueType  # 9
+IMPORT_FINDING_TYPE_INVALID_UPSTREAM: ImportFindingType.ValueType  # 10
+IMPORT_FINDING_TYPE_INVALID_RELATED: ImportFindingType.ValueType  # 11
+IMPORT_FINDING_TYPE_BAD_ALIASED_CVE: ImportFindingType.ValueType  # 12
 global___ImportFindingType = ImportFindingType
 
 @typing.final

@@ -34,12 +34,12 @@ This project follows
 You must install:
 
 1.  Git
-1.  Python 3.11
+1.  Python 3.12
 1.  [Docker](https://www.docker.com/)
 1.  [Pylint](https://pypi.org/project/pylint)
 1.  [Yapf](https://github.com/google/yapf)
 1.  [Make](https://www.gnu.org/software/make/)
-1.  [Poetry](https://python-poetry.org/) >= 2.0.1
+1.  [Poetry](https://python-poetry.org/) >= 2.1.3
 2.  [Google Cloud SDK](https://cloud.google.com/sdk)
 3.  [Hugo](https://gohugo.io/installation/)
 4.  [Node JS](https://nodejs.org/) >= 18.17.x
@@ -154,7 +154,7 @@ contribute your security advisories, please follow these steps.
     for information on how to properly format the data so it can be accepted.
 
 3.  Data can be supplied either through a public Git repository, a public GCS
-    bucket or to [REST API endpoints](https://google.github.io/osv.dev/data/new/rest-api/).
+    bucket or to [REST API endpoints](https://google.github.io/osv.dev/data/new/rest-api).
 
 ## Contributing documentation
 

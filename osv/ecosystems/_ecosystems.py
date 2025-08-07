@@ -19,6 +19,7 @@ from osv.ecosystems.chainguard import Chainguard
 from osv.ecosystems.wolfi import Wolfi
 from .helper_base import Ecosystem, OrderingUnsupportedEcosystem
 from .alma_linux import AlmaLinux
+from .alpaquita import Alpaquita
 from .alpine import Alpine
 from .bioconductor import Bioconductor
 from .cran import CRAN
@@ -120,11 +121,17 @@ def get(name: str) -> Ecosystem:
   if name.startswith('Debian'):
     return Debian(name.partition(':')[2])
 
+  if name.startswith('AlmaLinux'):
+    return AlmaLinux()
+
+  if name.startswith('Alpaquita'):
+    return Alpaquita()
+
   if name.startswith('Alpine'):
     return Alpine(name.partition(':')[2])
 
-  if name.startswith('AlmaLinux'):
-    return AlmaLinux()
+  if name.startswith('BellSoft Hardened Containers'):
+    return Alpaquita()
 
   if name.startswith('Mageia'):
     return Mageia()

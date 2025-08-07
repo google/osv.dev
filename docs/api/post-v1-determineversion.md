@@ -45,7 +45,7 @@ We recommend trying the API endpoint with our [indexer-api-caller](https://githu
 
 ### Steps to use the indexer-api-caller
 
-1. Have a local copy of this repostiory.
+1. Have a local copy of this repository.
 2. Navigate to `/osv.dev/tools/indexer-api-caller`
 3. Run the tool with the following commands:
   - For a single library: `go run . -lib path/to/library`

@@ -7,13 +7,7 @@ interactions:
         proto_major: 1
         proto_minor: 1
         content_length: 0
-        transfer_encoding: []
-        trailer: {}
         host: github.com
-        remote_addr: ""
-        request_uri: ""
-        body: ""
-        form: {}
         headers:
             Accept:
                 - text/html
@@ -23,10 +17,7 @@ interactions:
         proto: HTTP/2.0
         proto_major: 2
         proto_minor: 0
-        transfer_encoding: []
-        trailer: {}
         content_length: -1
-        uncompressed: false
         body: ""
         headers:
             Cache-Control:
@@ -36,29 +27,29 @@ interactions:
             Content-Type:
                 - text/html; charset=utf-8
             Date:
-                - Tue, 20 May 2025 05:07:59 GMT
+                - Wed, 02 Jul 2025 01:37:40 GMT
             Referrer-Policy:
                 - no-referrer-when-downgrade
             Server:
                 - github.com
             Set-Cookie:
-                - _gh_sess=%2B7S4DZ5d2%2BC7mFz1tzMACwSTGzz4BR6%2BktunntMya3fLPQB%2FbrgBdUF1ynaaruLFSGvBxxnqZQJ1N9ZOSCsi8yXP%2FTWpnfVhs0H81KBQz3CX%2BtU2%2BRUsLNSCleAGBen3VKLENgKg6yeXItgVBvgOJXhOVnN7pbzPYxDq%2FfextUIHtWcbRTL4w2Y585MP9XQed0xsYiUSsx1mhCeoEZ671A9OECLK%2FPKpHVo7nRh%2BTWcaIqY%2FhqNFgctGJV6laTQ1%2BYq0d6PE5%2FnbrsBWiNPwwg%3D%3D--a6cs3iaaFinfWsCO--lTezRk1EpFgbEFJZFO5o3A%3D%3D; Path=/; HttpOnly; Secure; SameSite=Lax
-                - _octo=GH1.1.859117125.1747717687; Path=/; Domain=github.com; Expires=Wed, 20 May 2026 05:08:07 GMT; Secure; SameSite=Lax
-                - logged_in=no; Path=/; Domain=github.com; Expires=Wed, 20 May 2026 05:08:07 GMT; HttpOnly; Secure; SameSite=Lax
+                - _gh_sess=A7WFIFatbel2fKPv%2Fg%2BH1GM%2FTLtP4U3jhokD5yKs5Pwo%2BzhPXeUAPaPGO8JLQ4ygLdxSqqdoWJ2KfJkIotgaxzysG0SnF%2FHjrsrwvEUxOS8V8%2FLKD2KltrW%2FXtiZT%2Fl2SDvk9Diqkp%2BAu8Q%2BS2amEU2NBOlhMe0w3SYOKUGQC6d61DNXLiqSFp61ZjEex9ANzxCCpQ%2BAOi0e1Qb5Tnz2BNn7NpPCNRAMbf8BM1DOraA1SPOItA5%2BWNcZzClvA1bNV5Wh%2BRbjUTNr%2FSveYOzySw%3D%3D--SWRNqcOhMjxHYtF2--AoDZLLKaHSXefXGNvHqsUg%3D%3D; Path=/; HttpOnly; Secure; SameSite=Lax
+                - _octo=GH1.1.525596442.1751420273; Path=/; Domain=github.com; Expires=Thu, 02 Jul 2026 01:37:53 GMT; Secure; SameSite=Lax
+                - logged_in=no; Path=/; Domain=github.com; Expires=Thu, 02 Jul 2026 01:37:53 GMT; HttpOnly; Secure; SameSite=Lax
             Strict-Transport-Security:
                 - max-age=31536000; includeSubdomains; preload
             Vary:
-                - X-PJAX, X-PJAX-Container, Turbo-Visit, Turbo-Frame,Accept-Encoding, Accept, X-Requested-With
+                - X-PJAX, X-PJAX-Container, Turbo-Visit, Turbo-Frame, X-Requested-With,Accept-Encoding, Accept, X-Requested-With
             X-Content-Type-Options:
                 - nosniff
             X-Frame-Options:
                 - deny
             X-Github-Request-Id:
-                - EE78:51037:82DD51:A88A14:682C0E33
+                - 8B0A:F9F90:5808C:66CDB:68648D6F
             X-Repository-Download:
                 - git clone https://github.com/WebKit/WebKit.git
             X-Xss-Protection:
                 - "0"
         status: 404 Not Found
         code: 404
-        duration: 165.550628ms
+        duration: 95.848758ms

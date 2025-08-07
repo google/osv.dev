@@ -2,4 +2,4 @@
 # To regenerate requirements.txt, use
 #     pip-compile --generate-hashes requirements.in
 # (requires pip-tools to be installed in current python environment)
-poetry==2.0.1
+poetry==2.1.3

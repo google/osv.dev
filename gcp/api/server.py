@@ -16,7 +16,7 @@
 import argparse
 import codecs
 from dataclasses import dataclass
-from datetime import datetime, timedelta, UTC
+from datetime import datetime, timedelta
 import math
 import hashlib
 import functools
@@ -43,7 +43,6 @@ import osv
 from osv import ecosystems
 from osv import semver_index
 from osv import purl_helpers
-from osv import vulnerability_pb2
 from osv.logs import setup_gcp_logging
 import osv_service_v1_pb2
 import osv_service_v1_pb2_grpc
@@ -101,7 +100,7 @@ _TEST_INSTANCE = 'oss-vdb-test'
 # ----
 # Type Aliases:
 
-ToResponseCallable = Callable[[osv.Bug], vulnerability_pb2.Vulnerability]
+ToResponseCallable = Callable[[osv.Bug], ndb.Future]
 
 # ----
 
@@ -163,14 +162,15 @@ class OSVServicer(osv_service_v1_pb2_grpc.OSVServicer,
 
   @ndb_context
   @trace_filter.log_trace
+  @ndb.synctasklet
   def GetVulnById(self, request, context: grpc.ServicerContext):
     """Return a `Vulnerability` object for a given OSV ID."""
-    bug = osv.Bug.get_by_id(request.id)
+    bug = yield osv.Bug.query(osv.Bug.db_id == request.id).get_async()
 
     if not bug:
       # Check for aliases
-      alias_group = osv.AliasGroup.query(
-          osv.AliasGroup.bug_ids == request.id).get()
+      alias_group = yield osv.AliasGroup.query(
+          osv.AliasGroup.bug_ids == request.id).get_async()
       if alias_group:
         alias_string = ' '.join([
             f'{alias}' for alias in alias_group.bug_ids if alias != request.id
@@ -190,10 +190,12 @@ class OSVServicer(osv_service_v1_pb2_grpc.OSVServicer,
       context.abort(grpc.StatusCode.PERMISSION_DENIED, 'Permission denied.')
       return None
 
-    return bug_to_response(bug, include_alias=True)
+    resp = yield bug_to_response(bug, include_details=True)
+    return resp
 
   @ndb_context
   @trace_filter.log_trace
+  @ndb.synctasklet
   def QueryAffected(self, request, context: grpc.ServicerContext):
     """Query vulnerabilities for a particular project at a given commit or
 
@@ -238,8 +240,7 @@ class OSVServicer(osv_service_v1_pb2_grpc.OSVServicer,
         total_responses=ResponsesCount(0))
 
     try:
-      results, next_page_token = do_query(
-          request.query, query_context).result()  # type: ignore
+      results, next_page_token = yield do_query(request.query, query_context)
     except InvalidArgument:
       # Currently cannot think of any other way
       # this can be raised other than invalid cursor
@@ -257,6 +258,7 @@ class OSVServicer(osv_service_v1_pb2_grpc.OSVServicer,
 
   @ndb_context
   @trace_filter.log_trace
+  @ndb.synctasklet
   def QueryAffectedBatch(self, request, context: grpc.ServicerContext):
     """Query vulnerabilities (batch)."""
     batch_results = []
@@ -338,7 +340,7 @@ class OSVServicer(osv_service_v1_pb2_grpc.OSVServicer,
 
     for future in futures:
       try:
-        result, next_page_token = future.result()
+        result, next_page_token = yield future
       except InvalidArgument:
         # Currently cannot think of any other way
         # this can be raised other than invalid cursor
@@ -356,9 +358,10 @@ class OSVServicer(osv_service_v1_pb2_grpc.OSVServicer,
 
   @ndb_context
   @trace_filter.log_trace
+  @ndb.synctasklet
   def DetermineVersion(self, request, context: grpc.ServicerContext):
     """Determine the version of the provided hashes."""
-    res = determine_version(request.query, context).result()
+    res = yield determine_version(request.query, context)
     return res
 
   @ndb_context
@@ -828,11 +831,9 @@ def do_query(query: osv_service_v1_pb2.Query,
         _MAX_VULN_LISTED_PRE_EXCEEDED_UBUNTU_EXCEPTION
 
   def to_response(b: osv.Bug):
-    # Skip retrieving aliases from to_vulnerability().
-    # Retrieve it asynchronously later.
     return bug_to_response(b, include_details)
 
-  bugs: list[vulnerability_pb2.Vulnerability]
+  bugs: list[ndb.Future]
   if query.WhichOneof('param') == 'commit':
     try:
       commit_bytes = codecs.decode(query.commit, 'hex')
@@ -857,31 +858,6 @@ def do_query(query: osv_service_v1_pb2.Query,
     # to know that control flow breaks here.
     raise ValueError
 
-  # Asynchronously retrieve computed aliases and related ids here
-  # to prevent significant query time increase for packages with
-  # numerous vulnerabilities.
-  if include_details:
-    aliases = []
-    related = []
-    for bug in bugs:
-      aliases.append(osv.get_aliases_async(bug.id))
-      related.append(osv.get_related_async(bug.id))
-
-    for i, alias in enumerate(aliases):
-      alias_group: osv.AliasGroup = yield alias
-      if not alias_group:
-        continue
-      alias_ids = sorted(list(set(alias_group.bug_ids) - {bugs[i].id}))
-      bugs[i].aliases[:] = alias_ids
-      modified_time = bugs[i].modified.ToDatetime(UTC)
-      modified_time = max(alias_group.last_modified, modified_time)
-      bugs[i].modified.FromDatetime(modified_time)
-
-    for i, related_ids in enumerate(related):
-      related_bug_ids: list[str] = yield related_ids
-      bugs[i].related[:] = sorted(
-          list(set(related_bug_ids + list(bugs[i].related))))
-
   if context.query_counter < context.input_cursor.query_number:
     logging.error(
         'Cursor is invalid - received "%d" while total query count is "%d".',
@@ -895,25 +871,26 @@ def do_query(query: osv_service_v1_pb2.Query,
   if next_page_token_str:
     logging.warning('Page size limit hit, response size: %s', len(bugs))
 
-  return bugs, next_page_token_str
+  # Wait on all the bug futures
+  bugs = yield bugs
+
+  return list(bugs), next_page_token_str
 
 
-def bug_to_response(bug: osv.Bug,
-                    include_details=True,
-                    include_alias=False) -> vulnerability_pb2.Vulnerability:
-  """Convert a Bug entity to a response object."""
+def bug_to_response(bug: osv.Bug, include_details=True) -> ndb.Future:
+  """Asynchronously convert a Bug entity to a response object."""
   if include_details:
-    return bug.to_vulnerability(
-        include_source=True, include_alias=include_alias)
+    return bug.to_vulnerability_async(
+        include_source=True, include_alias=True, include_upstream=True)
 
-  return bug.to_vulnerability_minimal()
+  return bug.to_vulnerability_minimal_async(
+      include_alias=True, include_upstream=True)
 
 
 @ndb.tasklet
 def _get_bugs(
     bug_ids: list[str],
-    to_response: ToResponseCallable = bug_to_response
-) -> list[vulnerability_pb2.Vulnerability]:
+    to_response: ToResponseCallable = bug_to_response) -> list[ndb.Future]:
   """Get bugs from bug ids."""
   bugs = ndb.get_multi_async([ndb.Key(osv.Bug, bug_id) for bug_id in bug_ids
                              ])  # type: ignore
@@ -931,8 +908,7 @@ def _get_bugs(
 def query_by_commit(
     context: QueryContext,
     commit: bytes,
-    to_response: ToResponseCallable = bug_to_response
-) -> list[vulnerability_pb2.Vulnerability]:
+    to_response: ToResponseCallable = bug_to_response) -> list[ndb.Future]:
   """
   Perform a query by commit.
 
@@ -1190,8 +1166,7 @@ def query_by_version(
     package_name: str | None,
     ecosystem: str | None,
     version: str,
-    to_response: ToResponseCallable = bug_to_response
-) -> list[vulnerability_pb2.Vulnerability]:
+    to_response: ToResponseCallable = bug_to_response) -> list[ndb.Future]:
   """
   Query by (fuzzy) version.
 
@@ -1332,9 +1307,9 @@ def _query_by_comparing_versions(context: QueryContext, query: ndb.Query,
 
 
 @ndb.tasklet
-def query_by_package(
-    context: QueryContext, package_name: str | None, ecosystem: str | None,
-    to_response: ToResponseCallable) -> list[vulnerability_pb2.Vulnerability]:
+def query_by_package(context: QueryContext, package_name: str | None,
+                     ecosystem: str | None,
+                     to_response: ToResponseCallable) -> list[ndb.Future]:
   """
   Query by package.
   

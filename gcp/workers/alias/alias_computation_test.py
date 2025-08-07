@@ -30,8 +30,22 @@ TEST_DATA_DIR = os.path.join(
 class AliasTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
   """Alias tests."""
 
+  def _get_aliases_from_bucket(self, vuln_id):
+    """Get the aliases from the vulnerabilities written to the GCS bucket."""
+    bucket = osv.gcs.get_osv_bucket()
+    pb_blob = bucket.blob(os.path.join(osv.gcs.VULN_PB_PATH, vuln_id + '.pb'))
+    pb = osv.vulnerability_pb2.Vulnerability.FromString(
+        pb_blob.download_as_bytes())
+    pb_aliases = list(pb.aliases)
+
+    return pb_aliases
+
   def test_basic(self):
     """Tests basic case."""
+    osv.AliasGroup(
+        bug_ids=['aaa-123', 'aaa-124'],
+        last_modified=datetime.datetime(2023, 1, 1, tzinfo=datetime.UTC),
+    ).put()
     osv.Bug(
         id='aaa-123',
         db_id='aaa-123',
@@ -49,14 +63,13 @@ class AliasTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
         public=True,
         import_last_modified=datetime.datetime(2023, 1, 1, tzinfo=datetime.UTC),
     ).put()
-    osv.AliasGroup(
-        bug_ids=['aaa-123', 'aaa-124'],
-        last_modified=datetime.datetime(2023, 1, 1, tzinfo=datetime.UTC),
-    ).put()
     alias_computation.main()
     bug_ids = osv.AliasGroup.query(
         osv.AliasGroup.bug_ids == 'aaa-123').get().bug_ids
     self.assertEqual(['aaa-123', 'aaa-124'], bug_ids)
+
+    pb_aliases = self._get_aliases_from_bucket('aaa-123')
+    self.assertEqual(['aaa-124'], pb_aliases)
 
   def test_bug_reaches_limit(self):
     """Tests bug reaches limit."""
@@ -75,6 +88,9 @@ class AliasTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
     alias_group = osv.AliasGroup.query(
         osv.AliasGroup.bug_ids == 'aaa-111').get()
     self.assertIsNone(alias_group)
+
+    pb_aliases = self._get_aliases_from_bucket('aaa-111')
+    self.assertEqual([], pb_aliases)
 
   def test_update_alias_group(self):
     """Tests updating an existing alias group."""
@@ -112,11 +128,14 @@ class AliasTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
     alias_computation.main()
     alias_group = osv.AliasGroup.query(
         osv.AliasGroup.bug_ids == 'bbb-123').get()
-    self.assertEqual(['bbb-123', 'bbb-234', 'bbb-345', 'bbb-456', 'bbb-789'],
-                     alias_group.bug_ids)
+    expected_aliases = ['bbb-234', 'bbb-345', 'bbb-456', 'bbb-789']
+    self.assertEqual(['bbb-123'] + expected_aliases, alias_group.bug_ids)
     self.assertNotEqual(
         datetime.datetime(2023, 1, 1, tzinfo=datetime.UTC),
         alias_group.last_modified)
+
+    pb_aliases = self._get_aliases_from_bucket('bbb-123')
+    self.assertEqual(expected_aliases, pb_aliases)
 
   def test_create_alias_group(self):
     """Tests adding a new alias group."""
@@ -144,8 +163,15 @@ class AliasTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
     self.assertIsNotNone(alias_group)
     self.assertEqual(['test-123', 'test-124', 'test-222'], alias_group.bug_ids)
 
+    pb_aliases = self._get_aliases_from_bucket('test-123')
+    self.assertEqual(['test-124', 'test-222'], pb_aliases)
+
   def test_delete_alias_group(self):
     """Tests deleting alias groups that only has one vulnerability."""
+    osv.AliasGroup(
+        bug_ids=['ccc-123'],
+        last_modified=datetime.datetime(2023, 1, 1, tzinfo=datetime.UTC),
+    ).put()
     osv.Bug(
         id='ccc-123',
         db_id='ccc-123',
@@ -154,19 +180,22 @@ class AliasTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
         public=True,
         import_last_modified=datetime.datetime(2023, 1, 1, tzinfo=datetime.UTC),
     ).put()
-    osv.AliasGroup(
-        bug_ids=['ccc-123'],
-        last_modified=datetime.datetime(2023, 1, 1, tzinfo=datetime.UTC),
-    ).put()
     alias_computation.main()
     alias_group = osv.AliasGroup.query(
         osv.AliasGroup.bug_ids == 'ccc-123').get()
     self.assertIsNone(alias_group)
 
+    pb_aliases = self._get_aliases_from_bucket('ccc-123')
+    self.assertEqual([], pb_aliases)
+
   def test_split_alias_group(self):
     """Tests split an existing alias group into two.
     AliasGroup A -> B -> C -> D, remove the B -> C alias
     to get AliasGroups A -> B and C -> D."""
+    osv.AliasGroup(
+        bug_ids=['ddd-123', 'ddd-124', 'ddd-125', 'ddd-126'],
+        last_modified=datetime.datetime(2023, 1, 1, tzinfo=datetime.UTC),
+    ).put()
     osv.Bug(
         id='ddd-123',
         db_id='ddd-123',
@@ -201,10 +230,6 @@ class AliasTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
         public=True,
         import_last_modified=datetime.datetime(2023, 1, 1, tzinfo=datetime.UTC),
     ).put()
-    osv.AliasGroup(
-        bug_ids=['ddd-123', 'ddd-124', 'ddd-125', 'ddd-126'],
-        last_modified=datetime.datetime(2023, 1, 1, tzinfo=datetime.UTC),
-    ).put()
     alias_computation.main()
     alias_group = osv.AliasGroup.query(
         osv.AliasGroup.bug_ids == 'ddd-123').get()
@@ -215,27 +240,41 @@ class AliasTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
     self.assertIsNotNone(alias_group)
     self.assertEqual(['ddd-125', 'ddd-126'], alias_group.bug_ids)
 
+    pb_aliases = self._get_aliases_from_bucket('ddd-123')
+    self.assertEqual(['ddd-124'], pb_aliases)
+    pb_aliases = self._get_aliases_from_bucket('ddd-125')
+    self.assertEqual(['ddd-126'], pb_aliases)
+
   def test_allow_list(self):
     """Test allow list."""
+    osv.AliasAllowListEntry(bug_id='eee-111',).put()
+    raw_aliases = [
+        'eee-222', 'eee-333', 'eee-444', 'eee-555', 'eee-666', 'eee-777'
+    ]
     osv.Bug(
         id='eee-111',
         db_id='eee-111',
-        aliases=[
-            'eee-222', 'eee-333', 'eee-444', 'eee-555', 'eee-666', 'eee-777'
-        ],
+        aliases=raw_aliases,
         status=1,
         source='test',
         public=True,
         import_last_modified=datetime.datetime(2023, 1, 1, tzinfo=datetime.UTC),
     ).put()
-    osv.AliasAllowListEntry(bug_id='eee-111',).put()
     alias_computation.main()
     alias_group = osv.AliasGroup.query(
         osv.AliasGroup.bug_ids == 'eee-111').get()
     self.assertEqual(7, len(alias_group.bug_ids))
 
+    pb_aliases = self._get_aliases_from_bucket('eee-111')
+    self.assertEqual(raw_aliases, pb_aliases)
+
   def test_deny_list(self):
     """Tests deny list."""
+    osv.AliasGroup(
+        bug_ids=['fff-124', 'fff-125'],
+        last_modified=datetime.datetime(2023, 1, 1, tzinfo=datetime.UTC),
+    ).put()
+    osv.AliasDenyListEntry(bug_id='fff-123',).put()
     osv.Bug(
         id='fff-123',
         db_id='fff-123',
@@ -254,19 +293,25 @@ class AliasTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
         public=True,
         import_last_modified=datetime.datetime(2023, 1, 1, tzinfo=datetime.UTC),
     ).put()
-    osv.AliasGroup(
-        bug_ids=['fff-124', 'fff-125'],
-        last_modified=datetime.datetime(2023, 1, 1, tzinfo=datetime.UTC),
-    ).put()
-    osv.AliasDenyListEntry(bug_id='fff-123',).put()
     alias_computation.main()
     bug_ids = osv.AliasGroup.query(
         osv.AliasGroup.bug_ids == 'fff-124').get().bug_ids
     self.assertEqual(['fff-124', 'fff-125'], bug_ids)
 
+    pb_aliases = self._get_aliases_from_bucket('fff-124')
+    self.assertEqual(['fff-125'], pb_aliases)
+
   def test_merge_alias_group(self):
     """Tests all bugs of one alias group have been
     merged to other alias group."""
+    osv.AliasGroup(
+        bug_ids=['ggg-123', 'ggg-124'],
+        last_modified=datetime.datetime(2023, 1, 1, tzinfo=datetime.UTC),
+    ).put()
+    osv.AliasGroup(
+        bug_ids=['ggg-125', 'ggg-126'],
+        last_modified=datetime.datetime(2023, 1, 1, tzinfo=datetime.UTC),
+    ).put()
     osv.Bug(
         id='ggg-123',
         db_id='ggg-123',
@@ -276,13 +321,14 @@ class AliasTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
         public=True,
         import_last_modified=datetime.datetime(2023, 1, 1, tzinfo=datetime.UTC),
     ).put()
-    osv.AliasGroup(
-        bug_ids=['ggg-123', 'ggg-124'],
-        last_modified=datetime.datetime(2023, 1, 1, tzinfo=datetime.UTC),
-    ).put()
-    osv.AliasGroup(
-        bug_ids=['ggg-125', 'ggg-126'],
-        last_modified=datetime.datetime(2023, 1, 1, tzinfo=datetime.UTC),
+    osv.Bug(
+        id='ggg-125',
+        db_id='ggg-125',
+        aliases=[],
+        status=1,
+        source='test',
+        public=True,
+        import_last_modified=datetime.datetime(2023, 1, 1, tzinfo=datetime.UTC),
     ).put()
     alias_computation.main()
     alias_group = osv.AliasGroup.query(
@@ -291,8 +337,19 @@ class AliasTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
     self.assertEqual(['ggg-123', 'ggg-124', 'ggg-125', 'ggg-126'],
                      alias_group[0].bug_ids)
 
+    pb_aliases = self._get_aliases_from_bucket('ggg-125')
+    self.assertEqual(['ggg-123', 'ggg-124', 'ggg-126'], pb_aliases)
+
   def test_partial_merge_alias_group(self):
     """Tests merging some bugs of one alias group to another alias group."""
+    osv.AliasGroup(
+        bug_ids=['hhh-123', 'hhh-124'],
+        last_modified=datetime.datetime(2023, 1, 1, tzinfo=datetime.UTC),
+    ).put()
+    osv.AliasGroup(
+        bug_ids=['hhh-125', 'hhh-126', 'hhh-127'],
+        last_modified=datetime.datetime(2023, 1, 1, tzinfo=datetime.UTC),
+    ).put()
     osv.Bug(
         id='hhh-123',
         db_id='hhh-123',
@@ -311,13 +368,23 @@ class AliasTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
         public=True,
         import_last_modified=datetime.datetime(2023, 1, 1, tzinfo=datetime.UTC),
     ).put()
-    osv.AliasGroup(
-        bug_ids=['hhh-123', 'hhh-124'],
-        last_modified=datetime.datetime(2023, 1, 1, tzinfo=datetime.UTC),
+    osv.Bug(
+        id='hhh-125',
+        db_id='hhh-125',
+        aliases=[],
+        status=1,
+        source='test',
+        public=True,
+        import_last_modified=datetime.datetime(2023, 1, 1, tzinfo=datetime.UTC),
     ).put()
-    osv.AliasGroup(
-        bug_ids=['hhh-125', 'hhh-126', 'hhh-127'],
-        last_modified=datetime.datetime(2023, 1, 1, tzinfo=datetime.UTC),
+    osv.Bug(
+        id='hhh-127',
+        db_id='hhh-127',
+        aliases=[],
+        status=1,
+        source='test',
+        public=True,
+        import_last_modified=datetime.datetime(2023, 1, 1, tzinfo=datetime.UTC),
     ).put()
     alias_computation.main()
     alias_group = osv.AliasGroup.query(
@@ -328,6 +395,11 @@ class AliasTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
         osv.AliasGroup.bug_ids == 'hhh-127').fetch()
     self.assertEqual(1, len(alias_group))
     self.assertEqual(['hhh-126', 'hhh-127'], alias_group[0].bug_ids)
+
+    pb_aliases = self._get_aliases_from_bucket('hhh-125')
+    self.assertEqual(['hhh-123', 'hhh-124'], pb_aliases)
+    pb_aliases = self._get_aliases_from_bucket('hhh-127')
+    self.assertEqual(['hhh-126'], pb_aliases)
 
   def test_alias_group_reaches_limit(self):
     """Tests a alias group reaches limit."""
@@ -348,6 +420,9 @@ class AliasTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
     alias_computation.main()
     alias_group = osv.AliasGroup.query(osv.AliasGroup.bug_ids == 'iii-1').get()
     self.assertIsNone(alias_group)
+
+    pb_aliases = self._get_aliases_from_bucket('iii-1')
+    self.assertEqual([], pb_aliases)
 
   def test_to_vulnerability(self):
     """Tests OSV bug to vulnerability function."""

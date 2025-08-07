@@ -31,15 +31,19 @@ permissions:
 jobs:
   scan-scheduled:
     permissions:
+      contents: read
+      actions: read
       # Required for writing security events to upload SARIF file to security tab
       security-events: write
     if: ${{ github.event_name == 'push' || github.event_name == 'schedule' }}
-    # If you want to copy this config, highly suggest pinning this version to a release rather than tracking the main branch
-    uses: "google/osv-scanner-action/.github/workflows/osv-scanner-reusable.yml@main"
+    # If you want to copy this config, highly suggest pinning this version to a release rather than tracking the nightly branch
+    uses: "google/osv-scanner-action/.github/workflows/osv-scanner-reusable.yml@nightly"
   scan-pr:
     permissions:
+      contents: read
+      actions: read
       # Required for writing security events to upload SARIF file to security tab
       security-events: write
     if: ${{ github.event_name == 'pull_request' || github.event_name == 'merge_group' }}
-    # If you want to copy this config, highly suggest pinning this version to a release rather than tracking the main branch
-    uses: "google/osv-scanner-action/.github/workflows/osv-scanner-reusable-pr.yml@main"
+    # If you want to copy this config, highly suggest pinning this version to a release rather than tracking the nightly branch
+    uses: "google/osv-scanner-action/.github/workflows/osv-scanner-reusable-pr.yml@nightly"

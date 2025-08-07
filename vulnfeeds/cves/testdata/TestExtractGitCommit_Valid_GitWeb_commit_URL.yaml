@@ -7,13 +7,14 @@ interactions:
         proto_major: 1
         proto_minor: 1
         content_length: 0
-        transfer_encoding: []
-        trailer: {}
         host: git.gnupg.org
-        remote_addr: ""
-        request_uri: ""
-        body: ""
-        form: {}
+        form:
+            a:
+                - commit
+            h:
+                - f61a5ea4e0f6a80fd4b28ef0174bee77793cf070
+            p:
+                - libksba.git
         headers:
             Accept:
                 - text/html
@@ -23,22 +24,19 @@ interactions:
         proto: HTTP/1.1
         proto_major: 1
         proto_minor: 1
-        transfer_encoding: []
-        trailer: {}
         content_length: -1
-        uncompressed: false
         body: ""
         headers:
             Content-Type:
                 - text/html; charset=utf-8
             Date:
-                - Tue, 20 May 2025 06:12:55 GMT
+                - Wed, 02 Jul 2025 01:37:41 GMT
             Expires:
-                - Wed, 21 May 2025 06:12:55 GMT
+                - Thu, 03 Jul 2025 01:37:41 GMT
             Server:
                 - Apache/2.4.56 (Debian)
             Vary:
                 - Accept-Encoding
         status: 200 OK
         code: 200
-        duration: 1.278853217s
+        duration: 1.950175335s

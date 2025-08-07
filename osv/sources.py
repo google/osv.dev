@@ -221,9 +221,9 @@ def _write_vulnerability_dict(data, output_path,
   with open(output_path, 'w') as f:
     ext = os.path.splitext(output_path)[1]
     if ext in YAML_EXTENSIONS:
-      yaml.dump(data, f, sort_keys=False, Dumper=YamlDumper)
+      yaml.dump(data, f, sort_keys=True, Dumper=YamlDumper)
     elif ext in JSON_EXTENSIONS:
-      json.dump(data, f, indent=2)
+      json.dump(data, f, indent=2, sort_keys=True)
     else:
       raise RuntimeError('Unknown format ' + ext)
 

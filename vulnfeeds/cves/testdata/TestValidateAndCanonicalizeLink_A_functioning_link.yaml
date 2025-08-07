@@ -7,13 +7,10 @@ interactions:
         proto_major: 1
         proto_minor: 1
         content_length: 0
-        transfer_encoding: []
-        trailer: {}
         host: git.kernel.org
-        remote_addr: ""
-        request_uri: ""
-        body: ""
-        form: {}
+        form:
+            id:
+                - ee1fee900537b5d9560e9f937402de5ddc8412f3
         headers:
             Accept:
                 - text/html
@@ -23,10 +20,7 @@ interactions:
         proto: HTTP/2.0
         proto_major: 2
         proto_minor: 0
-        transfer_encoding: []
-        trailer: {}
         content_length: -1
-        uncompressed: false
         body: ""
         headers:
             Content-Security-Policy:
@@ -34,11 +28,11 @@ interactions:
             Content-Type:
                 - text/html; charset=UTF-8
             Date:
-                - Tue, 20 May 2025 05:08:07 GMT
+                - Wed, 02 Jul 2025 01:37:53 GMT
             Expires:
-                - Tue, 20 May 2025 06:08:07 GMT
+                - Wed, 02 Jul 2025 02:37:53 GMT
             Last-Modified:
-                - Tue, 20 May 2025 05:08:07 GMT
+                - Wed, 02 Jul 2025 01:37:53 GMT
             Referrer-Policy:
                 - same-origin
             Server:
@@ -54,4 +48,4 @@ interactions:
                 - DENY
         status: 200 OK
         code: 200
-        duration: 146.507791ms
+        duration: 195.769527ms

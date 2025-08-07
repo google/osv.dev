@@ -7,13 +7,7 @@ interactions:
         proto_major: 1
         proto_minor: 1
         content_length: 0
-        transfer_encoding: []
-        trailer: {}
         host: github.com
-        remote_addr: ""
-        request_uri: ""
-        body: ""
-        form: {}
         headers:
             Accept:
                 - text/html
@@ -23,10 +17,7 @@ interactions:
         proto: HTTP/2.0
         proto_major: 2
         proto_minor: 0
-        transfer_encoding: []
-        trailer: {}
         content_length: -1
-        uncompressed: false
         body: ""
         headers:
             Accept-Ranges:
@@ -38,31 +29,31 @@ interactions:
             Content-Type:
                 - text/html; charset=utf-8
             Date:
-                - Tue, 20 May 2025 05:08:04 GMT
+                - Wed, 02 Jul 2025 01:37:44 GMT
             Etag:
-                - W/"7943091923bbf4cb5add85aeea058491"
+                - W/"886ce2ee01f93b02ae301379c97ade3f"
             Referrer-Policy:
                 - no-referrer-when-downgrade
             Server:
                 - github.com
             Set-Cookie:
-                - _gh_sess=Q0pMhbDpL4vWpQKtSOtZ%2FtRVDRm8%2Fh3TBy3%2BZXQ1WSn2BcxFHSGR7vw6Agkr1pGrG0PM8WnkuRCC3YX%2Bv7BPSIE33U2c6%2B%2BKN9%2FrpvaoSnrWzWi9ef7xJJFtrDMMYUrCKpS4WPhW0KlKaa52z%2BAGSXOocx%2BqTxIdB7FdvwpcHrrmTEDwjaluUjP12s7J0aHvoVFeoTCtg4yDf%2F2hKAmj%2Fhw%2B76T7lXU6OxyARLupx9F9KObahRAzadeL1WpuO780WNWiwSrnuzCHaJoLEvE2Gg%3D%3D--v9mzJeAXOhDOF6ej--9W5hFEKD8R07Al1BHBIyeg%3D%3D; Path=/; HttpOnly; Secure; SameSite=Lax
-                - _octo=GH1.1.475724577.1747717683; Path=/; Domain=github.com; Expires=Wed, 20 May 2026 05:08:03 GMT; Secure; SameSite=Lax
-                - logged_in=no; Path=/; Domain=github.com; Expires=Wed, 20 May 2026 05:08:03 GMT; HttpOnly; Secure; SameSite=Lax
+                - _gh_sess=w%2Bl1PRnb08i6XGx%2FqO85dGIsfkOfI%2F6N0CzTf4rfBXoD18ZNwpX3DQfgemqG2%2Fx6hBCpDLv8MNPr5x%2BDbbsOkRYPsOS3yx%2BD9rSsPHU4LqzmbqyRmu%2FS0meGof67SftDdiWaE9ZQPFcq%2BgJPfcCTkBDhFJw79Pw9KiS%2FG2LsQd4dsAeRqsaToV8fxarnZ8IHezUAN5Bh2ci1wt4ArVShZCRXtER3S90AaSVpNQ49HVvDSKO%2FQZPZFKPAqLt1j3gI05cPjJwP7fkmiWf%2BWcD16g%3D%3D--IhsWgwF0lTD4DyVx--bfR95f1HW8Wmxj1up2DcCA%3D%3D; Path=/; HttpOnly; Secure; SameSite=Lax
+                - _octo=GH1.1.1098516458.1751420264; Path=/; Domain=github.com; Expires=Thu, 02 Jul 2026 01:37:44 GMT; Secure; SameSite=Lax
+                - logged_in=no; Path=/; Domain=github.com; Expires=Thu, 02 Jul 2026 01:37:44 GMT; HttpOnly; Secure; SameSite=Lax
             Strict-Transport-Security:
                 - max-age=31536000; includeSubdomains; preload
             Vary:
-                - X-PJAX, X-PJAX-Container, Turbo-Visit, Turbo-Frame,Accept-Encoding, Accept, X-Requested-With
+                - X-PJAX, X-PJAX-Container, Turbo-Visit, Turbo-Frame, X-Requested-With,Accept-Encoding, Accept, X-Requested-With
             X-Content-Type-Options:
                 - nosniff
             X-Frame-Options:
                 - deny
             X-Github-Request-Id:
-                - EE78:51037:82DA4F:A886B4:682C0E33
+                - 8B0A:F9F90:57AAC:665ED:68648D66
             X-Repository-Download:
                 - git clone https://github.com/joewalnes/smoothie.git
             X-Xss-Protection:
                 - "0"
         status: 200 OK
         code: 200
-        duration: 960.85102ms
+        duration: 765.608247ms

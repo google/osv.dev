@@ -168,12 +168,12 @@ func TestUpdateModifiedDate(t *testing.T) {
 	}
 
 	// Keeps CVE modified time if none of its parts have a later modification time
-	if combinedOSV[cveId1].Modified == time1 {
+	if combinedOSV[cveId1].Modified == modifiedTime1 {
 		t.Errorf("Wrong modified time: %s", combinedOSV["CVE-2022-33745"].Modified)
 	}
 
 	// Updates the CVE's modified time if any of its parts have a later modification time
-	if combinedOSV[cveId2].Modified != time2 {
+	if combinedOSV[cveId2].Modified != modifiedTime2 {
 		t.Errorf("Wrong modified time, expected: %s, got: %s", time2, combinedOSV["CVE-2022-32746"].Modified)
 	}
 }

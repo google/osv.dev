@@ -1,6 +1,7 @@
 go.work
 go.work.sum
 *.pyc
+*.iml
 __pycache__/
 .idea/
 *.egg-info
@@ -12,3 +13,4 @@ build/lib
 */datastore-helper/
 hurl-scripts/
 temp/*
+**/tmp/**

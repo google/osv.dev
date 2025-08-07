@@ -1,0 +1,50 @@
+---
+version: 2
+interactions:
+    - id: 0
+      request:
+        proto: HTTP/1.1
+        proto_major: 1
+        proto_minor: 1
+        content_length: 0
+        host: github.com
+        form:
+            service:
+                - git-upload-pack
+        headers:
+            Accept:
+                - '*/*'
+            Host:
+                - github.com
+            User-Agent:
+                - go-git/5.x
+        url: https://github.com/vendor/repo/info/refs?service=git-upload-pack
+        method: GET
+      response:
+        proto: HTTP/2.0
+        proto_major: 2
+        proto_minor: 0
+        content_length: 21
+        body: Repository not found.
+        headers:
+            Content-Length:
+                - "21"
+            Content-Security-Policy:
+                - default-src 'none'; sandbox
+            Content-Type:
+                - text/plain; charset=UTF-8
+            Date:
+                - Wed, 02 Jul 2025 23:43:31 GMT
+            Server:
+                - GitHub-Babel/3.0
+            Strict-Transport-Security:
+                - max-age=31536000; includeSubDomains; preload
+            Www-Authenticate:
+                - Basic realm="GitHub"
+            X-Frame-Options:
+                - DENY
+            X-Github-Request-Id:
+                - 4418:60EC4:3FC2EF:4E7878:6865C424
+        status: 401 Unauthorized
+        code: 401
+        duration: 323.041714ms

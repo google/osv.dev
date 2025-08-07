@@ -59,6 +59,7 @@ _FIRST_CVSS_CALCULATOR_BASE_URL = 'https://www.first.org/cvss/calculator'
 _GO_VANITY_METADATA = \
   ('<meta name="go-import" '
    'content="osv.dev git https://github.com/google/osv.dev">')
+MAX_SUGGESTIONS = 10
 
 _ndb_client = ndb.Client()
 
@@ -395,15 +396,16 @@ def add_stream_strings(bug: osv.Bug, response: dict[str, Any]):
         bug.db_id, computed, known_ids)
 
 
+cvss_calculator = {
+    'CVSS_V2': CVSS2,
+    'CVSS_V3': CVSS3,
+    'CVSS_V4': CVSS4,
+}
+
+
 def calculate_severity_details(
     severity: dict) -> tuple[float | None, str | None]:
   """Calculate score and rating of severity"""
-  cvss_calculator = {
-      'CVSS_V2': CVSS2,
-      'CVSS_V3': CVSS3,
-      'CVSS_V4': CVSS4,
-  }
-
   type_ = severity.get('type')
   score = severity.get('score')
 
@@ -429,6 +431,8 @@ def add_cvss_score(bug):
   severity_type = None
 
   for severity in bug.get('severity', []):
+    if not is_cvss(severity):
+      continue
     type_ = severity.get('type')
     if type_ and (not severity_type or type_ > severity_type):
       severity_type = type_
@@ -904,9 +908,18 @@ def severity_level(severity: dict) -> str:
   return 'invalid' if rating is None else rating.lower()
 
 
+@blueprint.app_template_filter('is_cvss')
+def is_cvss(severity: dict) -> bool:
+  """Checks if severity is a CVSS score."""
+  return severity.get('type') in cvss_calculator
+
+
 @blueprint.app_template_filter('cvss_calculator_url')
 def cvss_calculator_url(severity):
   """Generate the FIRST CVSS calculator URL from a CVSS string."""
+  if not is_cvss(severity):
+    return None
+
   score = severity.get('score')
 
   # Extract CVSS version from the vector string
@@ -964,13 +977,15 @@ def construct_hierarchy_string(target_bug_id: str, hierarchy: ComputedHierarchy,
         output_lines.append("<li>" + vuln_id + "</li>")
 
     if vuln_id in graph:
-      for child in graph[vuln_id]:
+      sorted_children = sorted(graph[vuln_id])
+      for child in sorted_children:
         if child != target_bug_id:
           output_lines.append("<ul class=\"substream\">")
           print_subtree(child)
           output_lines.append("</ul>")
 
-  for root in root_nodes:
+  sorted_root_nodes = sorted(root_nodes)
+  for root in sorted_root_nodes:
     output_lines.append("<ul class=\"aliases\">")
     print_subtree(root)
     output_lines.append("</ul>")
@@ -1052,7 +1067,7 @@ def has_cycle(graph: dict[str, set[str]]) -> bool:
 
         Returns:
             True if a cycle is detected, False otherwise.
-        """
+    """
     visited.add(node)
     recursion_stack.add(node)
 
@@ -1127,3 +1142,29 @@ def compute_downstream_hierarchy(
   downstream_map[target_bug_id] = root_leaves
 
   return ComputedHierarchy(root_nodes=root_leaves, graph=downstream_map)
+
+
+@blueprint.route('/api/search_suggestions', methods=['GET'])
+def search_suggestions():
+  """Return search suggestions based on a query string."""
+  query = request.args.get('q', '').strip().lower()
+  if not query or len(query) > 300:
+    return json.dumps({'suggestions': []})
+
+  db_query = osv.Bug.query(
+      osv.Bug.status == osv.BugStatus.PROCESSED,
+      osv.Bug.public == True,  # pylint: disable=singleton-comparison
+      osv.Bug.search_tags >= query,
+      osv.Bug.search_tags < query + '\ufffd')
+  db_query = db_query.order(osv.Bug.search_tags)
+  bugs = db_query.fetch(MAX_SUGGESTIONS, projection=[osv.Bug.search_tags])
+
+  # Build suggestion list
+  suggestions = sorted(
+      list(
+          set(tag.upper()
+              for bug in bugs
+              for tag in bug.search_tags
+              if tag.lower().startswith(query))))
+
+  return json.dumps({'suggestions': suggestions[:MAX_SUGGESTIONS]})

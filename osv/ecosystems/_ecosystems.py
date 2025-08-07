@@ -24,6 +24,7 @@ from .alpine import Alpine
 from .bioconductor import Bioconductor
 from .cran import CRAN
 from .debian import Debian
+from .echo import Echo
 from .haskell import Hackage, GHC
 from .mageia import Mageia
 from .maven import Maven
@@ -52,6 +53,7 @@ _ecosystems = {
     'Bioconductor': Bioconductor(),
     'CRAN': CRAN(),
     'Chainguard': Chainguard(),
+    'Echo': Echo(),
     'GHC': GHC(),
     'Hackage': Hackage(),
     'Maven': Maven(),

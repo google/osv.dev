@@ -44,6 +44,8 @@ ECOSYSTEM_PURL_DATA = {
         EcosystemPURL('cran', None),
     'crates.io':
         EcosystemPURL('cargo', None),
+    'Echo':
+        EcosystemPURL('deb', 'echo'),
     'Debian':
         EcosystemPURL('deb', 'debian'),
     # GHC

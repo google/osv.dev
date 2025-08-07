@@ -30,32 +30,24 @@ def reput_bugs(dryrun: bool, source: str, ids: list) -> None:
   num_reputted = 0
   time_start = time.perf_counter()
 
-  # This handles the actual transaction of reputting the bugs with ndb
-  def _reput_ndb():
-    # Reputting the bug runs the Bug _pre_put_hook() in models.py
-    if dryrun:
-      print("Dry run mode. Preventing transaction from commiting")
-      raise Exception("Dry run mode")  # pylint: disable=broad-exception-raised
-    ndb.put_multi_async([
-        osv.Bug.get_by_id(r.id()) for r in result[batch:batch + MAX_BATCH_SIZE]
-    ])
-    print(f"Time elapsed: {(time.perf_counter() - time_start):.2f} seconds.")
-
   # Chunk the results to reput in acceptibly sized batches for the API.
   for batch in range(0, len(result), MAX_BATCH_SIZE):
     try:
       num_reputted += len(result[batch:batch + MAX_BATCH_SIZE])
       print(
           f"Reput {num_reputted} bugs... - {num_reputted/len(result)*100:.2f}%")
-      ndb.transaction(_reput_ndb)
-    except Exception as e:
-      # Don't have the first batch's transaction-aborting exception stop
-      # subsequent batches from being attempted.
-      if dryrun and e.args[0].startswith("Dry run mode"):
-        print("Dry run mode. Preventing transaction from commiting")
+      if dryrun:
+        print("Dry run mode. Preventing put")
       else:
-        print([r.id() for r in result[batch:batch + MAX_BATCH_SIZE]])
-        print(f"Exception {e} occurred. Continuing to next batch.")
+        # Reputting the bug runs the Bug _pre/post_put_hook() in models.py
+        ndb.put_multi([
+            osv.Bug.get_by_id(r.id())
+            for r in result[batch:batch + MAX_BATCH_SIZE]
+        ])
+        print(f"Time elapsed: {(time.perf_counter()-time_start):.2f} seconds.")
+    except Exception as e:
+      print([r.id() for r in result[batch:batch + MAX_BATCH_SIZE]])
+      print(f"Exception {e} occurred. Continuing to next batch.")
 
   print("Reputted!")
 
@@ -90,7 +82,7 @@ def main() -> None:
   args = parser.parse_args()
 
   client = ndb.Client(project=args.project)
-  with client.context():
+  with client.context(cache_policy=False):
     reput_bugs(args.dryrun, args.source, args.bugs)
 
 

@@ -14,14 +14,16 @@
 # limitations under the License.
 """OSV Upstream relation computation."""
 
+from collections import defaultdict
 import datetime
+import json
+import logging
+
 from google.cloud import ndb
 
 import osv
 import osv.logs
-import json
-import logging
-from collections import defaultdict
+from osv import gcs
 
 
 def compute_upstream(target_bug, bugs: dict[str, set[str]]) -> list[str]:
@@ -51,7 +53,7 @@ def compute_upstream(target_bug, bugs: dict[str, set[str]]) -> list[str]:
   return sorted(visited)
 
 
-def _create_group(bug_id, upstream_ids) -> osv.UpstreamGroup:
+def _create_group(bug_id: str, upstream_ids: list[str]) -> osv.UpstreamGroup:
   """Creates a new upstream group in the datastore."""
 
   new_group = osv.UpstreamGroup(
@@ -60,17 +62,19 @@ def _create_group(bug_id, upstream_ids) -> osv.UpstreamGroup:
       upstream_ids=upstream_ids,
       last_modified=datetime.datetime.now(datetime.UTC))
   new_group.put()
+  _update_vuln_with_group(bug_id, new_group)
 
   return new_group
 
 
 def _update_group(upstream_group: osv.UpstreamGroup,
-                  upstream_ids: list) -> osv.UpstreamGroup | None:
+                  upstream_ids: list[str]) -> osv.UpstreamGroup | None:
   """Updates the upstream group in the datastore."""
   if len(upstream_ids) == 0:
     logging.info('Deleting upstream group due to too few bugs: %s',
                  upstream_ids)
     upstream_group.key.delete()
+    _update_vuln_with_group(upstream_group.db_id, None)
     return None
 
   if upstream_ids == upstream_group.upstream_ids:
@@ -79,7 +83,49 @@ def _update_group(upstream_group: osv.UpstreamGroup,
   upstream_group.upstream_ids = upstream_ids
   upstream_group.last_modified = datetime.datetime.now(datetime.UTC)
   upstream_group.put()
+  _update_vuln_with_group(upstream_group.db_id, upstream_group)
   return upstream_group
+
+
+def _update_vuln_with_group(vuln_id: str, upstream: osv.UpstreamGroup | None):
+  """Updates the Vulnerability in Datastore & GCS with the new upstream group.
+  If `upstream` is None, assumes a preexisting UpstreamGroup was just deleted.
+  """
+  # TODO(michaelkedar): Currently, only want to run this on the test instance
+  # (or when running tests). Remove this check when we're ready for prod.
+  project = getattr(ndb.get_context().client, 'project')
+  if not project:
+    logging.error('failed to get GCP project from ndb.Client')
+  if project not in ('oss-vdb-test', 'test-osv'):
+    return
+  # Get the existing vulnerability first, so we can recalculate search_indices
+  result = gcs.get_by_id_with_generation(vuln_id)
+  if result is None:
+    logging.error('vulnerability not in GCS - %s', vuln_id)
+    # TODO(michaelkedar): send pub/sub message to reimport
+    return
+  vuln_proto, generation = result
+
+  def transaction():
+    vuln: osv.Vulnerability = osv.Vulnerability.get_by_id(vuln_id)
+    if vuln is None:
+      logging.error('vulnerability not in Datastore - %s', vuln_id)
+      # TODO: Raise exception
+      return
+    if upstream is None:
+      modified = datetime.datetime.now(datetime.UTC)
+      upstream_group = []
+    else:
+      modified = upstream.last_modified
+      upstream_group = upstream.upstream_ids
+    vuln_proto.upstream[:] = upstream_group
+    vuln_proto.modified.FromDatetime(modified)
+    osv.ListedVulnerability.from_vulnerability(vuln_proto).put()
+    vuln.modified = modified
+    vuln.put()
+
+  ndb.transaction(transaction)
+  gcs.upload_vulnerability(vuln_proto, generation)
 
 
 def compute_upstream_hierarchy(

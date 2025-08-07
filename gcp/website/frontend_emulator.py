@@ -34,7 +34,10 @@ def setUp():
       import_last_modified=datetime.datetime(2023, 1, 1, tzinfo=datetime.UTC),
       timestamp=datetime.datetime(2023, 8, 14, tzinfo=datetime.UTC),
   ).put()
-  osv.AliasGroup(bug_ids=['ALIAS-CVE-1', 'CVE-1', 'ALIAS'],).put()
+  osv.AliasGroup(
+      bug_ids=['ALIAS-CVE-1', 'CVE-1', 'ALIAS'],
+      last_modified=datetime.datetime(2023, 1, 1, tzinfo=datetime.UTC),
+  ).put()
 
   osv.Bug(
       id='CVE-1',
@@ -87,6 +90,39 @@ def setUp():
       public=True,
       import_last_modified=datetime.datetime(2023, 1, 1, tzinfo=datetime.UTC),
       timestamp=datetime.datetime(2023, 8, 14, tzinfo=datetime.UTC),
+  ).put()
+
+  osv.Bug(
+      id='CVE-5',
+      db_id='CVE-5',
+      status=1,
+      upstream_raw=[],
+      source='test',
+      public=True,
+      import_last_modified=datetime.datetime(2023, 1, 1, tzinfo=datetime.UTC),
+      timestamp=datetime.datetime(2023, 8, 14, tzinfo=datetime.UTC),
+      affected_packages=[
+          osv.AffectedPackage(
+              package=osv.Package(
+                  ecosystem='Red Hat:rhel_e4s:9.2::appstream',
+                  name='package1')),
+          osv.AffectedPackage(
+              package=osv.Package(
+                  ecosystem=('SUSE Linux Enterprise Server:sles:15:sp4'
+                             '::module-containers'),
+                  name='package2')),
+          osv.AffectedPackage(
+              package=osv.Package(
+                  ecosystem='Ubuntu:ubuntu_pro:22.04::main', name='package3')),
+          osv.AffectedPackage(
+              package=osv.Package(
+                  ecosystem='Oracle Linux:ol8_baseos_latest::ol8_baseos_latest',
+                  name='package4')),
+          osv.AffectedPackage(
+              package=osv.Package(
+                  ecosystem='Amazon Linux:amazon_linux_2023::al2023_appstream',
+                  name='package5'))
+      ],
   ).put()
 
   osv.Bug(

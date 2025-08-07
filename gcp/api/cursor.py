@@ -58,11 +58,13 @@ class QueryCursor:
     ended: Whether this cursor is for a query that has finished returning data.
   """
 
-  _ndb_cursor: ndb.Cursor | None = None
-  _cursor_state: _QueryCursorState = _QueryCursorState.ENDED
-  # The first query is numbered 1. This is because the query counter is
-  # incremented **before** the query and the query number being used.
-  query_number: int = 1
+  def __init__(self):
+    self._ndb_cursor: ndb.Cursor | None = None
+    self._cursor_state: _QueryCursorState = _QueryCursorState.ENDED
+    self._metadata: dict[str, str] = {}
+    # The first query is numbered 1. This is because the query counter is
+    # incremented **before** the query and the query number being used.
+    self.query_number: int = 1
 
   @classmethod
   def from_page_token(cls, page_token: str | None) -> Self:
@@ -74,13 +76,17 @@ class QueryCursor:
       qc._ndb_cursor = None
       return qc
 
-    split_values = page_token.split(_METADATA_SEPARATOR, 1)
-    if len(split_values) == 2:
+    split_values = page_token.split(_METADATA_SEPARATOR)
+    if len(split_values) >= 2:
       page_token = split_values[1]
       try:
         qc.query_number = int(split_values[0])
       except ValueError as e:
         raise ValueError('Invalid page token.') from e
+      for enc_meta in split_values[2:]:
+        meta = base64.urlsafe_b64decode(enc_meta).decode()
+        k, _, v = meta.partition('=')
+        qc._metadata[k] = v
 
     if not page_token or page_token == _FIRST_PAGE_TOKEN:
       qc._cursor_state = _QueryCursorState.STARTED
@@ -144,4 +150,16 @@ class QueryCursor:
         # a token in the response
         return None
 
-    return str(self.query_number) + _METADATA_SEPARATOR + cursor_part
+    
+    meta = (base64.urlsafe_b64encode(f'{k}={v}').decode()
+            for k, v in self._metadata.items())
+    return _METADATA_SEPARATOR.join(
+        [str(self.query_number), cursor_part, *meta])
+
+  def get_meta(self, key: str) -> str | None:
+    """Get an extra metadata value."""
+    return self._metadata.get(key)
+  
+  def set_meta(self, key: str, value: str):
+    """Set an extra metadata value."""
+    self._metadata[key] = value

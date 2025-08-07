@@ -29,6 +29,7 @@ from typing import Callable
 
 from collections import defaultdict
 
+from google.cloud import exceptions
 from google.cloud import ndb
 from google.api_core.exceptions import InvalidArgument
 import google.cloud.ndb.exceptions as ndb_exceptions
@@ -48,6 +49,7 @@ import osv_service_v1_pb2
 import osv_service_v1_pb2_grpc
 
 from cursor import QueryCursor
+from server_new import query_package
 
 import googlecloudprofiler
 
@@ -165,6 +167,26 @@ class OSVServicer(osv_service_v1_pb2_grpc.OSVServicer,
   @ndb.synctasklet
   def GetVulnById(self, request, context: grpc.ServicerContext):
     """Return a `Vulnerability` object for a given OSV ID."""
+
+    if get_gcp_project() in ('oss-vdb-test', 'test-osv'):
+      # Get vuln from GCS
+      try:
+        return osv.gcs.get_by_id(request.id)
+      except exceptions.NotFound:
+        # Check for aliases
+        alias_group = yield osv.AliasGroup.query(
+          osv.AliasGroup.bug_ids == request.id).get_async()
+        if alias_group:
+          alias_string = ' '.join([
+            f'{alias}' for alias in alias_group.bug_ids if alias != request.id
+          ])
+          context.abort(
+            grpc.StatusCode.NOT_FOUND,
+            f'Bug not found, but the following aliases were: {alias_string}')
+          return None
+        context.abort(grpc.StatusCode.NOT_FOUND, 'Bug not found.')
+        return None
+
     bug = yield osv.Bug.query(osv.Bug.db_id == request.id).get_async()
 
     if not bug:
@@ -535,12 +557,16 @@ class QueryContext:
 
     return None
 
-  def save_cursor_at_page_break(self, it: ndb.QueryIterator):
+  def save_cursor_at_page_break(self, it: ndb.QueryIterator,
+                                meta: dict | None = None):
     """
     Saves the cursor at the current page break position
     """
     self.output_cursor.update_from_iterator(it)
     self.output_cursor.query_number = self.query_counter
+    if meta:
+      for k, v in meta.items():
+        self.output_cursor.set_meta(k, v)
 
 
 def should_skip_bucket(path: str) -> bool:
@@ -843,6 +869,10 @@ def do_query(query: osv_service_v1_pb2.Query,
       return None
 
     bugs = yield query_by_commit(context, commit_bytes, to_response=to_response)
+  elif package_name and get_gcp_project() in ('oss-vdb-test', 'test-osv'):
+    # New Database table & GCS querying
+    bugs = yield query_package(
+        context, package_name, ecosystem, version, include_details)
   # Version query needs to include a package.
   elif package_name and version:
     bugs = yield query_by_version(
@@ -874,7 +904,7 @@ def do_query(query: osv_service_v1_pb2.Query,
   # Wait on all the bug futures
   bugs = yield bugs
 
-  return list(bugs), next_page_token_str
+  return [b for b in bugs if b is not None], next_page_token_str
 
 
 def bug_to_response(bug: osv.Bug, include_details=True) -> ndb.Future:

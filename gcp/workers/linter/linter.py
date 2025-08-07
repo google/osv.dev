@@ -69,9 +69,6 @@ def construct_prefix_to_source_map() -> dict[str, str]:
   return prefix_to_source
 
 
-PREFIX_TO_SOURCE = construct_prefix_to_source_map()
-
-
 def download_file(source: str, destination: str):
   """Downloads the required file from bucket."""
   storage_client = storage.Client()
@@ -97,7 +94,8 @@ def download_osv_data(tmp_dir: str):
   logging.info('Successfully unzipped files to %s.', tmp_dir)
 
 
-def process_linter_result(output: Any, bugs: set):
+def process_linter_result(output: Any, bugs: set, prefix_to_source: dict[str,
+                                                                         str]):
   """process the linter results and update/add findings into db."""
   time = utcnow()
   total_findings = 0
@@ -120,7 +118,7 @@ def process_linter_result(output: Any, bugs: set):
 
     sorted_findings = sorted(list(findings_already_added))
     prefix = bug_id.split('-')[0] + '-'
-    source = PREFIX_TO_SOURCE.get(prefix, '')
+    source = prefix_to_source.get(prefix, '')
     record_quality_finding(bug_id, source, sorted_findings, time)
 
   if total_findings > 0:
@@ -151,7 +149,7 @@ def record_quality_finding(bug_id: str, source: str,
                   new_findings, source)
 
 
-def upload_record_to_bucket(json_result: Any):
+def upload_record_to_bucket(json_result: Any, prefix_to_source: dict[str, str]):
   """Uploads the linter result to a GCS bucket, creating one file per source."""
   storage_client = storage.Client()
   bucket = storage_client.get_bucket(LINTER_EXPORT_BUCKET)
@@ -172,7 +170,7 @@ def upload_record_to_bucket(json_result: Any):
   for filename, findings in json_result.items():
     bug_id = os.path.splitext(os.path.basename(filename))[0]
     prefix = bug_id.split('-')[0] + '-'
-    source = PREFIX_TO_SOURCE.get(prefix, '')
+    source = prefix_to_source.get(prefix, '')
 
     if source not in source_results:
       source_results[source] = {}
@@ -194,7 +192,8 @@ def upload_record_to_bucket(json_result: Any):
     logging.info("Successfully uploaded linter result for source '%s'.", source)
 
 
-def parse_and_record_linter_output(json_output_str: str):
+def parse_and_record_linter_output(json_output_str: str,
+                                   prefix_to_source: dict[str, str]):
   """
   Parses the JSON output from the OSV linter and records findings.
   Manages create, update, and delete findings in the Datastore.
@@ -207,7 +206,7 @@ def parse_and_record_linter_output(json_output_str: str):
     return
 
   # Upload linter result to GCS bucket
-  upload_record_to_bucket(linter_output_json)
+  upload_record_to_bucket(linter_output_json, prefix_to_source)
 
   # Fetch all existing ids from importfindings db
   all_finding_keys = osv.ImportFinding.query().fetch(keys_only=True)
@@ -222,7 +221,7 @@ def parse_and_record_linter_output(json_output_str: str):
   linter_bugs = set()
 
   # Process linter results
-  process_linter_result(linter_output_json, linter_bugs)
+  process_linter_result(linter_output_json, linter_bugs, prefix_to_source)
 
   # Delete entries from db that are no longer found by the linter
   ids_to_delete = existing_db_bug_ids - linter_bugs
@@ -240,6 +239,8 @@ def parse_and_record_linter_output(json_output_str: str):
 
 def main():
   """Run linter"""
+  prefix_to_source = construct_prefix_to_source_map()
+
   parser = argparse.ArgumentParser(description='Linter')
   parser.add_argument('--work_dir', help='Working directory', default=TEST_DATA)
   args = parser.parse_args()
@@ -259,7 +260,7 @@ def main():
       result = subprocess.run(
           command, capture_output=True, text=True, check=False, timeout=2000)
 
-      parse_and_record_linter_output(result.stdout)
+      parse_and_record_linter_output(result.stdout, prefix_to_source)
 
     except Exception as e:
       logging.error('An unexpected error occurred: %e', e)

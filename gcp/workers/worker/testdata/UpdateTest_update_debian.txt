@@ -80,6 +80,7 @@
                           'dsa-3029',
                           'dsa-3029-1',
                           'nginx'],
+    'search_tags': ['dsa-3029-1', 'nginx'],
     'semver_fixed_indexes': [],
     'severities': [],
     'source': 'source',

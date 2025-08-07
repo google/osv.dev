@@ -105,17 +105,16 @@ class NoBranchError(Exception):
   """Branch does not exist"""
 
 
-def clone(git_url, checkout_dir, git_callbacks=None):
+def clone(git_url, checkout_dir, git_callbacks=None, blobless=False):
   """Perform a clone."""
   try:
     # Use 'git' CLI here as it's much faster than libgit2's clone.
     env = _set_git_callback_env(git_callbacks)
-
-    subprocess.run(
-        ['git', 'clone', _git_mirror(git_url), checkout_dir],
-        env=env,
-        capture_output=True,
-        check=True)
+    cmd = ['git', 'clone']
+    if blobless:
+      cmd.append('--filter=blob:none')
+    cmd.extend([_git_mirror(git_url), checkout_dir])
+    subprocess.run(cmd, env=env, capture_output=True, check=True)
     return pygit2.Repository(checkout_dir)
   except subprocess.CalledProcessError as e:
     raise GitCloneError(f'Failed to clone repo:\n{e.stderr.decode()}') from e
@@ -123,12 +122,16 @@ def clone(git_url, checkout_dir, git_callbacks=None):
     raise GitCloneError('Failed to open cloned repo') from e
 
 
-def clone_with_retries(git_url, checkout_dir, git_callbacks=None, branch=None):
+def clone_with_retries(git_url,
+                       checkout_dir,
+                       git_callbacks=None,
+                       branch=None,
+                       blobless=False):
   """Clone with retries."""
   logging.info('Cloning %s to %s', git_url, checkout_dir)
   for attempt in range(CLONE_TRIES):
     try:
-      repo = clone(git_url, checkout_dir, git_callbacks)
+      repo = clone(git_url, checkout_dir, git_callbacks, blobless=blobless)
       repo.cache = {}
       if branch:
         _checkout_branch(repo, branch)
@@ -176,7 +179,8 @@ def _use_existing_checkout(git_url,
 def ensure_updated_checkout(git_url,
                             checkout_dir,
                             git_callbacks=None,
-                            branch=None):
+                            branch=None,
+                            blobless=False):
   """Ensure updated checkout."""
   if os.path.exists(checkout_dir):
     # Already exists, reset and checkout latest revision.
@@ -193,7 +197,11 @@ def ensure_updated_checkout(git_url,
       shutil.rmtree(checkout_dir)
 
   repo = clone_with_retries(
-      git_url, checkout_dir, git_callbacks=git_callbacks, branch=branch)
+      git_url,
+      checkout_dir,
+      git_callbacks=git_callbacks,
+      branch=branch,
+      blobless=blobless)
   logging.info('Repo now at: %s', repo.head.peel().message)
   return repo
 

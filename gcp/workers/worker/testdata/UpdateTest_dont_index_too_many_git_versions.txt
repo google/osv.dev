@@ -5052,6 +5052,7 @@
                           'test-last-affected',
                           'test-last-affected-01',
                           'url'],
+    'search_tags': ['https://osv-test/repo/url', 'osv-test-last-affected-01'],
     'semver_fixed_indexes': [],
     'severities': [],
     'source': 'source',

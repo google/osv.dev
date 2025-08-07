@@ -28,6 +28,8 @@ from unittest import mock
 import pygit2
 import pygit2.enums
 
+from . import gcs_mock
+
 _EMULATOR_TIMEOUT = 30
 _DATASTORE_EMULATOR_PORT = '8002'
 _DATASTORE_READY_INDICATOR = b'is now running'
@@ -108,9 +110,12 @@ class MockRepo:
 
 _ds_data_dir = None
 
+_mock_gcs_ctx = None
+
 
 def start_datastore_emulator():
   """Starts Datastore emulator."""
+  # TODO(michaelkedar): turn this into a context (`with datastore_emulator()`)
   _kill_existing_datastore_emulator()
 
   port = os.environ.get('DATASTORE_EMULATOR_PORT', _DATASTORE_EMULATOR_PORT)
@@ -119,23 +124,30 @@ def start_datastore_emulator():
   os.environ['GOOGLE_CLOUD_PROJECT'] = TEST_PROJECT_ID
   global _ds_data_dir
   _ds_data_dir = tempfile.TemporaryDirectory()
-
+  # TODO(michaelkedar): use `gcloud emulators firestore` with
+  # `--database-mode=datastore-mode` instead.
   proc = subprocess.Popen([
       'gcloud',
       'beta',
       'emulators',
       'datastore',
       'start',
-      '--consistency=1.0',
       '--host-port=localhost:' + port,
       '--project=' + TEST_PROJECT_ID,
       '--no-store-on-disk',
       f'--data-dir={_ds_data_dir.name}',
+      '--use-firestore-in-datastore-mode',
   ],
                           stdout=subprocess.PIPE,
                           stderr=subprocess.STDOUT)
 
   _wait_for_emulator_ready(proc, 'datastore', _DATASTORE_READY_INDICATOR)
+
+  # Also mock the GCS bucket.
+  global _mock_gcs_ctx
+  _mock_gcs_ctx = gcs_mock.gcs_mock()
+  _mock_gcs_ctx.__enter__()  # pylint: disable=unnecessary-dunder-call
+
   return proc
 
 
@@ -242,6 +254,11 @@ def reset_emulator():
 
 def stop_emulator():
   """Stops emulator."""
+  global _mock_gcs_ctx
+  if _mock_gcs_ctx is not None:
+    _mock_gcs_ctx.__exit__(None, None, None)
+  _mock_gcs_ctx = None
+
   try:
     port = os.environ.get('DATASTORE_EMULATOR_PORT', _DATASTORE_EMULATOR_PORT)
     resp = requests.post(

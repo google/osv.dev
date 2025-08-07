@@ -30,3 +30,10 @@ There are five different types of requests that can be made of the API.
 ### Is the API rate limited?  
 
 Currently there are no limits on the API.
+
+### Are there any response size limits?
+
+The API has a response size limit of 32MiB when using HTTP/1.1.
+There is no limit when using HTTP/2.
+
+We recommend using HTTP/2 for queries that may result in large responses (e.g. big OSV Linux queries).

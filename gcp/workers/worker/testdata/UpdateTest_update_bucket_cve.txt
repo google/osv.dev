@@ -50,6 +50,7 @@
                           'github.com/vim/vim',
                           'https://github.com/vim/vim',
                           'vim'],
+    'search_tags': ['cve-2022-0128'],
     'semver_fixed_indexes': [],
     'severities': [],
     'source': 'source',

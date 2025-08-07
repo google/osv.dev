@@ -17,3 +17,15 @@ reason = "No ssh servers"
 id = "GO-2022-0969"
 # ignoreUntil = 2022-11-09 # Optional exception expiry date
 reason = "No external http servers in Go lang."
+
+[[PackageOverrides]]
+name = "urllib3"
+version = "1.26.20"
+ecosystem = "PyPI"
+vulnerability.ignore = true
+reason = """
+  Only installed when running with PyPy, and we use CPython only.
+
+  The constraint comes from a dev dependency, so it's unlikely to show up in our dependent packages.
+  See https://github.com/kevin1024/vcrpy/blob/19bd4e012c8fd6970fd7f2af3cc60aed1e5f1ab5/setup.py#L33-L41
+  """

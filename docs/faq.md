@@ -174,6 +174,13 @@ When a record is deleted from an upstream source, OSV.dev currently handles them
 
 No. Currently there is not a limit on the API.
 
+### Are there any response size limits?
+
+The API has a response size limit of 32MiB when using HTTP/1.1.
+There is no limit when using HTTP/2.
+
+We recommend using HTTP/2 for queries that may result in large responses (e.g. big OSV Linux queries).
+
 ### What are OSV.dev's service level objectives (SLOs)?
 
 OSV.dev strives to provide reliable vulnerability information to our users. To support that goal, the following service level objectives are targeted:

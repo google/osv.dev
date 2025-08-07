@@ -161,12 +161,11 @@ func main() {
 				PURL:      purl,
 			}
 
-			v, notes := vulns.FromCVE(id, cve.CVE)
+			v := vulns.FromNVDCVE(id, cve.CVE)
 			v.AddPkgInfo(pkgInfo)
-			versions, versionNotes := cves.ExtractVersionInfo(cve.CVE, validVersions, http.DefaultClient)
+			versions, notes := cves.ExtractVersionInfo(cve.CVE, validVersions, http.DefaultClient)
 
-			notes = append(notes, versionNotes...)
-			v.Affected[0].AttachExtractedVersionInfo(versions)
+			vulns.AttachExtractedVersionInfo(&v.Affected[0], versions)
 			if len(v.Affected[0].Ranges) == 0 {
 				log.Printf("No affected versions detected.")
 			}

@@ -104,3 +104,10 @@ indexes:
     properties:
     - name: upstream_raw
     - name: db_id
+
+  # Index for search suggestions API
+  - kind: Bug
+    properties:
+    - name: status
+    - name: public
+    - name: search_tags

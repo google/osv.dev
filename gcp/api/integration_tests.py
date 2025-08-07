@@ -49,7 +49,7 @@ class IntegrationTests(unittest.TestCase,
   """Server integration tests."""
   _VULN_744 = {
       'published': '2020-07-04T00:00:01.948828Z',
-      'schema_version': '1.6.0',
+      'schema_version': '1.7.0',
       'affected': [{
           'database_specific': {
               'source': 'https://github.com/google/oss-fuzz-vulns/'

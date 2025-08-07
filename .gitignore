@@ -13,3 +13,4 @@ build/lib
 */datastore-helper/
 hurl-scripts/
 temp/*
+**/tmp/**

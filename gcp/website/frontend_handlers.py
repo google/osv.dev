@@ -59,6 +59,7 @@ _FIRST_CVSS_CALCULATOR_BASE_URL = 'https://www.first.org/cvss/calculator'
 _GO_VANITY_METADATA = \
   ('<meta name="go-import" '
    'content="osv.dev git https://github.com/google/osv.dev">')
+MAX_SUGGESTIONS = 10
 
 _ndb_client = ndb.Client()
 
@@ -430,6 +431,8 @@ def add_cvss_score(bug):
   severity_type = None
 
   for severity in bug.get('severity', []):
+    if not is_cvss(severity):
+      continue
     type_ = severity.get('type')
     if type_ and (not severity_type or type_ > severity_type):
       severity_type = type_
@@ -1064,7 +1067,7 @@ def has_cycle(graph: dict[str, set[str]]) -> bool:
 
         Returns:
             True if a cycle is detected, False otherwise.
-        """
+    """
     visited.add(node)
     recursion_stack.add(node)
 
@@ -1139,3 +1142,29 @@ def compute_downstream_hierarchy(
   downstream_map[target_bug_id] = root_leaves
 
   return ComputedHierarchy(root_nodes=root_leaves, graph=downstream_map)
+
+
+@blueprint.route('/api/search_suggestions', methods=['GET'])
+def search_suggestions():
+  """Return search suggestions based on a query string."""
+  query = request.args.get('q', '').strip().lower()
+  if not query or len(query) > 300:
+    return json.dumps({'suggestions': []})
+
+  db_query = osv.Bug.query(
+      osv.Bug.status == osv.BugStatus.PROCESSED,
+      osv.Bug.public == True,  # pylint: disable=singleton-comparison
+      osv.Bug.search_tags >= query,
+      osv.Bug.search_tags < query + '\ufffd')
+  db_query = db_query.order(osv.Bug.search_tags)
+  bugs = db_query.fetch(MAX_SUGGESTIONS, projection=[osv.Bug.search_tags])
+
+  # Build suggestion list
+  suggestions = sorted(
+      list(
+          set(tag.upper()
+              for bug in bugs
+              for tag in bug.search_tags
+              if tag.lower().startswith(query))))
+
+  return json.dumps({'suggestions': suggestions[:MAX_SUGGESTIONS]})

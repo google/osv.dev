@@ -37,7 +37,11 @@ ZIP_FILE_PATH = 'all.zip'
 TEST_DATA = '/linter/test_data'
 GCP_PROJECT = 'oss-vdb-test'
 
+LINTER_EXPORT_BUCKET = 'osv-test-public-import-logs'
+LINTER_RESULT_DIR = 'linter-result'
+
 ERROR_CODE_MAPPING = {
+    'SCH:001': osv.ImportFindings.INVALID_JSON,
     'REC:001': osv.ImportFindings.INVALID_RECORD,
     'REC:002': osv.ImportFindings.INVALID_ALIASES,
     'REC:003': osv.ImportFindings.INVALID_UPSTREAM,
@@ -49,46 +53,23 @@ ERROR_CODE_MAPPING = {
     'PKG:003': osv.ImportFindings.INVALID_PURL,
 }
 
-# TODO(gongh@): query the mapping from the SourceRepository database
-# instead of hardcoding it.
-PREFIX_TO_SOURCE = {
-    'ALBA-': 'almalinux-alba',
-    'ALEA-': 'almalinux-alea',
-    'ALSA-': 'almalinux-alsa',
-    'A-': 'android',
-    'ASB-': 'android',
-    'PUB-': 'android',
-    'BIT-': 'bitnami',
-    'CGA-': 'chainguard',
-    'CURL-': 'curl',
-    'CVE-': 'cve-osv',
-    'DLA-': 'debian-dla',
-    'DSA-': 'debian-dsa',
-    'DTSA-': 'debian-dtsa',
-    'GHSA-': 'ghsa',
-    'GO-': 'go',
-    'HSEC-': 'haskell',
-    'MGASA-': 'mageia',
-    'MAL-': 'malicious-packages',
-    'MINI-': 'minimos',
-    'OSV-': 'test-oss-fuzz',
-    'PSF-': 'psf',
-    'PYSEC-': 'python',
-    'RSEC-': 'r',
-    'RHBA-': 'redhat',
-    'RHEA-': 'redhat',
-    'RHSA-': 'redhat',
-    'RLSA-': 'rockylinux',
-    'RXSA-': 'rockylinux-rxsa',
-    'RUSTSEC-': 'rust',
-    'openSUSE-': 'suse',
-    'SUSE-': 'suse',
-    'UBUNTU-': 'ubuntu-cve',
-    'LSN-': 'ubuntu-lsn',
-    'USN-': 'ubuntu-usn',
-    'GSD-': 'uvi',
-    'V8-': 'V8',
-}
+
+def construct_prefix_to_source_map() -> dict[str, str]:
+  """construct the prefix to source name map from source repository db"""
+  prefix_to_source = {}
+  try:
+    sources = osv.SourceRepository.query().fetch()
+    for source in sources:
+      for prefix in source.db_prefix:
+        prefix_to_source[prefix] = source.name
+  except Exception as e:
+    logging.exception('Failed to query SourceRepository: %s', e)
+    sys.exit(1)
+
+  return prefix_to_source
+
+
+PREFIX_TO_SOURCE = construct_prefix_to_source_map()
 
 
 def download_file(source: str, destination: str):
@@ -112,7 +93,6 @@ def download_osv_data(tmp_dir: str):
   download_file(ZIP_FILE_PATH, all_zip)
   logging.info('Unzipping %s into %s...', all_zip, tmp_dir)
   with zipfile.ZipFile(all_zip, 'r') as zip_ref:
-    # TODO(gongh@): add json validation here.
     zip_ref.extractall(tmp_dir)
   logging.info('Successfully unzipped files to %s.', tmp_dir)
 
@@ -171,6 +151,49 @@ def record_quality_finding(bug_id: str, source: str,
                   new_findings, source)
 
 
+def upload_record_to_bucket(json_result: Any):
+  """Uploads the linter result to a GCS bucket, creating one file per source."""
+  storage_client = storage.Client()
+  bucket = storage_client.get_bucket(LINTER_EXPORT_BUCKET)
+
+  # Delete existing results first.
+  logging.info('Deleting existing linter results from %s/%s.',
+               LINTER_EXPORT_BUCKET, LINTER_RESULT_DIR)
+  blobs_to_delete = list(bucket.list_blobs(prefix=LINTER_RESULT_DIR))
+  if blobs_to_delete:
+    for blob in blobs_to_delete:
+      blob.delete()
+    logging.info('Finished deleting %d existing linter results.',
+                 len(blobs_to_delete))
+  else:
+    logging.info('No existing linter results to delete.')
+
+  source_results = {}
+  for filename, findings in json_result.items():
+    bug_id = os.path.splitext(os.path.basename(filename))[0]
+    prefix = bug_id.split('-')[0] + '-'
+    source = PREFIX_TO_SOURCE.get(prefix, '')
+
+    if source not in source_results:
+      source_results[source] = {}
+    source_results[source][filename] = findings
+
+  logging.info('Uploading linter results for %d sources.', len(source_results))
+  for source, results in source_results.items():
+    if not results:
+      continue
+
+    target_path = os.path.join(LINTER_RESULT_DIR, source, 'result.json')
+    logging.info('Uploading linter result for source '
+                 '%s'
+                 ' to %s/%s', source, LINTER_EXPORT_BUCKET, target_path)
+
+    blob = bucket.blob(target_path)
+    blob.upload_from_string(
+        json.dumps(results, indent=2), content_type='application/json')
+    logging.info("Successfully uploaded linter result for source '%s'.", source)
+
+
 def parse_and_record_linter_output(json_output_str: str):
   """
   Parses the JSON output from the OSV linter and records findings.
@@ -182,6 +205,9 @@ def parse_and_record_linter_output(json_output_str: str):
   except Exception as e:
     logging.error('Failed to parse OSV Linter JSON output: %s', e)
     return
+
+  # Upload linter result to GCS bucket
+  upload_record_to_bucket(linter_output_json)
 
   # Fetch all existing ids from importfindings db
   all_finding_keys = osv.ImportFinding.query().fetch(keys_only=True)
@@ -231,7 +257,7 @@ def main():
       logging.info('Executing Go linter: %s', ' '.join(command))
 
       result = subprocess.run(
-          command, capture_output=True, text=True, check=False, timeout=600)
+          command, capture_output=True, text=True, check=False, timeout=2000)
 
       parse_and_record_linter_output(result.stdout)
 

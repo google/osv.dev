@@ -59,6 +59,12 @@ variable "_api_descriptor_file" {
   default   = "api/api_descriptor.pb"
 }
 
+variable "gcs_log_dir" {
+  type        = string
+  description = "GCS directory to store cloud build logs."
+  default     = ""
+}
+
 resource "google_endpoints_service" "grpc_service" {
   project      = var.project_id
   service_name = var.api_url
@@ -97,7 +103,8 @@ resource "null_resource" "grpc_proxy_image" {
         -s ${var.api_url} \
         -c ${google_endpoints_service.grpc_service.config_id} \
         -p ${var.project_id} \
-        -v ${var.esp_version}
+        -v ${var.esp_version} \
+        ${var.gcs_log_dir != "" ? format("-l %s", var.gcs_log_dir) : ""}
     EOS
   }
 }

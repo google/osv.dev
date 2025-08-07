@@ -231,3 +231,77 @@ func TestNormalizeVersion(t *testing.T) {
 		})
 	}
 }
+
+func TestParseVersionRange(t *testing.T) {
+	tests := []struct {
+		description    string
+		input          string
+		expectedResult models.AffectedVersion
+		expectErr      bool
+	}{
+		{
+			description: "Standard two-part range with <",
+			input:       ">= 1.32.3, < 1.34.5",
+			expectedResult: models.AffectedVersion{
+				Introduced: "1.32.3",
+				Fixed:      "1.34.5",
+			},
+			expectErr: false,
+		},
+		{
+			description: "Two-part range with <=",
+			input:       "  >= 1.32.3, <= 1.34.5  ", // Test with extra whitespace
+			expectedResult: models.AffectedVersion{
+				Introduced:   "1.32.3",
+				LastAffected: "1.34.5",
+			},
+			expectErr: false,
+		},
+		{
+			description: "Single constraint with <=",
+			input:       "<= 2.0.0",
+			expectedResult: models.AffectedVersion{
+				LastAffected: "2.0.0",
+			},
+			expectErr: false,
+		},
+		{
+			description: "Single constraint with >",
+			input:       "> 5.0",
+			expectedResult: models.AffectedVersion{
+				Introduced: "5.0",
+			},
+			expectErr: false,
+		},
+		{
+			description: "Invalid format",
+			input:       "this is not a valid range",
+			expectErr:   true,
+		},
+		{
+			description: "Invalid operator in second part",
+			input:       ">= 1.0, > 2.0",
+			expectErr:   true,
+		},
+		{
+			description: "Invalid operator in first part",
+			input:       "< 1.0, < 2.0",
+			expectErr:   true,
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.description, func(t *testing.T) {
+			t.Parallel()
+			got, err := ParseVersionRange(tc.input)
+
+			if (err != nil) != tc.expectErr {
+				t.Errorf("ParseVersionRange(%q) unexpected error state: got err = %v, wantErr = %v", tc.input, err, tc.expectErr)
+			}
+
+			if !reflect.DeepEqual(got, tc.expectedResult) {
+				t.Errorf("ParseVersionRange(%q) got = %v, want %v", tc.input, got, tc.expectedResult)
+			}
+		})
+	}
+}

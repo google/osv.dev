@@ -150,7 +150,6 @@ class QueryCursor:
         # a token in the response
         return None
 
-    
     meta = (base64.urlsafe_b64encode(f'{k}={v}').decode()
             for k, v in self._metadata.items())
     return _METADATA_SEPARATOR.join(
@@ -159,7 +158,7 @@ class QueryCursor:
   def get_meta(self, key: str) -> str | None:
     """Get an extra metadata value."""
     return self._metadata.get(key)
-  
+
   def set_meta(self, key: str, value: str):
     """Set an extra metadata value."""
     self._metadata[key] = value

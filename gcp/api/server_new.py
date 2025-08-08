@@ -23,7 +23,6 @@ from google.protobuf import timestamp_pb2
 
 import osv
 
-
 CURSOR_LAST_ID = 'last_id'
 
 # TODO(michaelkedar): A Global ThreadPoolExecutor is not ideal.
@@ -31,12 +30,11 @@ _BUCKET_THREAD_POOL = concurrent.futures.ThreadPoolExecutor(max_workers=32)
 
 
 @ndb.tasklet
-def query_package(
-    context,
-    package_name: str | None,
-    ecosystem: str | None,
-    version: str | None,
-    include_details: bool = True) -> list[ndb.Future]:
+def query_package(context,
+                  package_name: str | None,
+                  ecosystem: str | None,
+                  version: str | None,
+                  include_details: bool = True) -> list[ndb.Future]:
   """
   Queries for vulnerabilities by package and version using a new data model.
 
@@ -61,7 +59,7 @@ def query_package(
   # Bare minimum we need a package name.
   if not package_name:
     return []
-  
+
   query = osv.AffectedVersions.query(osv.AffectedVersions.name == package_name)
   if ecosystem:
     query = query.filter(osv.AffectedVersions.ecosystem == ecosystem)
@@ -95,7 +93,6 @@ def query_package(
   return bugs
 
 
-
 def affected_affects(version: str, affected: osv.AffectedVersions) -> bool:
   """Check if a given version is affected by the AffectedVersions entry."""
   ecosystem_helper = osv.ecosystems.get(affected.ecosystem)
@@ -104,24 +101,23 @@ def affected_affects(version: str, affected: osv.AffectedVersions) -> bool:
   # Check if this version is in the list of versions
   if len(affected.versions) > 0:
     if helper_valid:
-      ver = ecosystem_helper.sort_key(version) # TODO: handle errors
+      ver = ecosystem_helper.sort_key(version)  # TODO: handle errors
       return ver in (ecosystem_helper.sort_key(v) for v in affected.versions)
-    else:
-      return version in affected.versions
-  
+    return version in affected.versions
+
   # Check if this version is affected in the events list
   if len(affected.events) == 0:
-    logging.warning('AffectedVersion {} ({}) has no events or versions',
+    logging.warning('AffectedVersion %s (%s) has no events or versions',
                     affected.key, affected.vuln_id)
     return False
-  
+
   if not helper_valid:
     return False
 
-  ver = ecosystem_helper.sort_key(version) # TODO: handle errors
+  ver = ecosystem_helper.sort_key(version)  # TODO: handle errors
   # Find where this version would belong in the sorted events list.
   for event in reversed(affected.events):
-    event_ver = ecosystem_helper.sort_key(event.value) # TODO: handle errors
+    event_ver = ecosystem_helper.sort_key(event.value)  # TODO: handle errors
     if event_ver == ver:
       return event.type in ('introduced', 'last_affected')
     if event_ver < ver:
@@ -141,10 +137,11 @@ def get_minimal_async(vuln_id: str):
 
 def get_vuln_async(vuln_id: str) -> ndb.Future:
   """Asynchronously get a full vulnerability record."""
-  
+
   # As a work around for using external processes with ndb's async,
   # do the bucket get in another thread, and poll it with abd ndb Future.
   f = _BUCKET_THREAD_POOL.submit(osv.gcs.get_by_id, vuln_id)
+
   @ndb.tasklet
   def async_poll_result():
     while not f.done():
@@ -155,7 +152,7 @@ def get_vuln_async(vuln_id: str) -> ndb.Future:
       logging.error('Vulnerability %s not found in GCS', vuln_id)
       # TODO: send pub/sub message to reimport.
       return None
-  
+
   def cleanup(_: ndb.Future):
     f.cancel()
 

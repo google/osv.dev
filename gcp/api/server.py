@@ -175,14 +175,14 @@ class OSVServicer(osv_service_v1_pb2_grpc.OSVServicer,
       except exceptions.NotFound:
         # Check for aliases
         alias_group = yield osv.AliasGroup.query(
-          osv.AliasGroup.bug_ids == request.id).get_async()
+            osv.AliasGroup.bug_ids == request.id).get_async()
         if alias_group:
           alias_string = ' '.join([
-            f'{alias}' for alias in alias_group.bug_ids if alias != request.id
+              f'{alias}' for alias in alias_group.bug_ids if alias != request.id
           ])
           context.abort(
-            grpc.StatusCode.NOT_FOUND,
-            f'Bug not found, but the following aliases were: {alias_string}')
+              grpc.StatusCode.NOT_FOUND,
+              f'Bug not found, but the following aliases were: {alias_string}')
           return None
         context.abort(grpc.StatusCode.NOT_FOUND, 'Bug not found.')
         return None
@@ -557,7 +557,8 @@ class QueryContext:
 
     return None
 
-  def save_cursor_at_page_break(self, it: ndb.QueryIterator,
+  def save_cursor_at_page_break(self,
+                                it: ndb.QueryIterator,
                                 meta: dict | None = None):
     """
     Saves the cursor at the current page break position
@@ -871,8 +872,8 @@ def do_query(query: osv_service_v1_pb2.Query,
     bugs = yield query_by_commit(context, commit_bytes, to_response=to_response)
   elif package_name and get_gcp_project() in ('oss-vdb-test', 'test-osv'):
     # New Database table & GCS querying
-    bugs = yield query_package(
-        context, package_name, ecosystem, version, include_details)
+    bugs = yield query_package(context, package_name, ecosystem, version,
+                               include_details)
   # Version query needs to include a package.
   elif package_name and version:
     bugs = yield query_by_version(

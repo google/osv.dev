@@ -111,3 +111,15 @@ indexes:
     - name: status
     - name: public
     - name: search_tags
+
+  # Indexes for API querying
+  - kind: AffectedVersions
+    properties:
+      - name: ecosystem
+      - name: name
+      - name: vuln_id
+
+  - kind: AffectedVersions
+    properties:
+      - name: name
+      - name: vuln_id

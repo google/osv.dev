@@ -57,6 +57,7 @@ _ecosystems = {
     'Maven': Maven(),
     'MinimOS': MinimOS(),
     'NuGet': NuGet(),
+    'Drupal': Packagist(),
     'Packagist': Packagist(),
     'Pub': Pub(),
     'PyPI': PyPI(),

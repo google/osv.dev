@@ -616,12 +616,40 @@ def osv_query(search_string, page, affected_only, ecosystem):
     # yapf: enable
   result_items = [bug_to_response(bug, detailed=False) for bug in bugs]
 
+  # Filter isFixed flag to apply only for selected ecosystem.
+  if ecosystem:
+    eco_variants = osv.ecosystems.add_matching_ecosystems({ecosystem})
+    eco_variants.add(osv.ecosystems.normalize(ecosystem))
+
+    for item, bug_obj in zip(result_items, bugs):
+      item['isFixed'] = _is_fixed_in_ecosystem(bug_obj, eco_variants)
+
   results = {
       'total': total_future.get_result(),
       'items': result_items,
   }
 
   return results
+
+
+def _is_fixed_in_ecosystem(bug: osv.Bug, eco_variants: set[str]) -> bool:
+  """Determine if a bug has a fix within the specified ecosystem variants.
+
+  Args:
+    bug: The Bug entity.
+    eco_variants: Set of ecosystem names (including variants) to match.
+
+  Returns:
+    True if any affected package in the ecosystem has a fixed/limit event.
+  """
+  for affected_pkg in getattr(bug, 'affected_packages', []) or []:
+    pkg = affected_pkg.package
+    if not pkg or pkg.ecosystem not in eco_variants:
+      continue
+    for rng in affected_pkg.ranges or []:
+      if any(evt.type in ('fixed', 'limit') for evt in (rng.events or [])):
+        return True
+  return False
 
 
 def get_vuln_count_for_ecosystem(ecosystem: str) -> int:

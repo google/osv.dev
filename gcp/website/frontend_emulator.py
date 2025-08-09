@@ -80,6 +80,43 @@ def setUp():
               package=osv.Package(ecosystem='Ecosystem3', name='proj3'))
       ],
   ).put()
+
+  osv.Bug(
+      id='MULTI-ECO-FIX-DEMO',
+      db_id='MULTI-ECO-FIX-DEMO',
+      status=1,
+      source='test',
+      public=True,
+      import_last_modified=datetime.datetime(2025, 3, 1, tzinfo=datetime.UTC),
+      timestamp=datetime.datetime(2025, 3, 1, tzinfo=datetime.UTC),
+      summary='Demo vuln with fix only in PyPI ecosystem',
+      affected_packages=[
+          osv.AffectedPackage(
+              package=osv.Package(ecosystem='PyPI', name='demo-lib'),
+              ranges=[
+                  osv.AffectedRange2(
+                      type='SEMVER',
+                      events=[
+                          osv.AffectedEvent(type='introduced', value='0'),
+                          osv.AffectedEvent(type='fixed', value='1.2.0'),
+                      ],
+                  )
+              ],
+          ),
+          osv.AffectedPackage(
+              package=osv.Package(ecosystem='npm', name='demo-lib'),
+              ranges=[
+                  osv.AffectedRange2(
+                      type='SEMVER',
+                      events=[
+                          osv.AffectedEvent(type='introduced', value='0'),
+                      ],
+                  )
+              ],
+          ),
+      ],
+  ).put()
+
   osv.Bug(
       id='CVE-3',
       db_id='CVE-3',

@@ -771,7 +771,7 @@ def markdown(text):
   if text:
     # Escape underscores in version strings.
     text = text.replace('_', r'\_')
-    
+
     md = markdown2.markdown(
         text, safe_mode='escape', extras=['fenced-code-blocks'])
     # TODO(michaelkedar): Seems like there's a bug with markdown2 not escaping

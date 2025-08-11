@@ -764,13 +764,20 @@ def sort_versions(versions: list[str], ecosystem: str) -> list[str]:
 # <a href="https://chromium.googlesource.com/v8/v8.git/+/refs/heads/beta">
 _URL_MARKDOWN_REPLACER = re.compile(r'(<a href=\".*?)(/ /)(.*?\">)')
 
+# Escape underscores in version strings while preserving code blocks
+# Pattern matches version-like strings with underscores (e.g., "1.2.3_suffix", "v1.0_beta")
+_VERSION_STRING_REPLACER = re.compile(
+    r'(`[^`]*`|```[^`]*```)|(\b\w*\d+[\w.]*_[\w._]*)')
+
 
 @blueprint.app_template_filter('markdown')
 def markdown(text):
   """Render markdown."""
   if text:
-    # Escape underscores in version strings.
-    text = text.replace('_', r'\_')
+    # Escape underscores in version strings
+    text = _VERSION_STRING_REPLACER.sub(
+        lambda m: m.group(0)
+        if m.group(1) else m.group(2).replace('_', r'\_'), text)
 
     md = markdown2.markdown(
         text, safe_mode='escape', extras=['fenced-code-blocks'])

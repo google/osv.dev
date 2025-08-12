@@ -25,12 +25,12 @@
   font-variant-ligatures: none;
 }
 
-html,
+{{/* html,
 body {
   height: 100%;
   scroll-behavior: smooth;
   font-size: 14px;
-}
+} */}}
 
 body {
     font-family: var(--osv-body-font-family);
@@ -43,6 +43,19 @@ body {
     overflow-y: scroll;
     background-color: var(--osv-background);
     line-height: 1.6;
+}
+
+body::-webkit-scrollbar {
+    width: 8px;
+}
+
+body::-webkit-scrollbar-track {
+    background: var(--osv-surface-color);
+}
+
+body::-webkit-scrollbar-thumb {
+    background-color: var(--osv-grey-800);
+    border-radius: 4px;
 }
 
 header {
@@ -75,6 +88,20 @@ header {
     margin-bottom: 0;
 }
 
+#global-loader {
+    margin-left: 20px;
+    visibility: hidden; /* Use visibility to prevent layout shift */
+    width: 24px; /* Reserve space */
+}
+
+#global-loader.visible {
+    visibility: visible;
+}
+
+#global-loader .material-icons {
+    font-size: 24px;
+    animation: spin 2s linear infinite;
+}
 
 .container {
   max-width: 1400px;
@@ -83,6 +110,7 @@ header {
   border-radius: 4px;
   box-shadow: 0 0 5px rgba(255, 255, 255, 0.15);
   min-height: 90vh;
+  margin-bottom: 20px;
 }
 
 table {
@@ -259,12 +287,48 @@ tr:hover {
   top: 25%;
 }
 
+.tab-bar-container {
+    display: flex;
+    border-bottom: 1px solid #6c6c6c;
+    margin-bottom: 20px;
+    position: relative;
+}
+
+.tab-bar-container {
+    display: flex;
+    border-bottom: 1px solid #6c6c6c;
+    margin-bottom: 20px;
+    position: relative;
+}
+
+#linter-report-tab {
+    flex-shrink: 0;
+}
+
 #tab-switch {
   text-align: left;
-  border-bottom: 1px solid #6c6c6c;
-  padding-left: 20px;
   display: flex;
-  margin-bottom: 20px;
+  overflow-x: auto;
+  background-color: var(--osv-background);
+  scroll-behavior: smooth;
+  flex-grow: 1;
+}
+
+#tab-switch::-webkit-scrollbar {
+    display: none;
+}
+
+#ecosystem-filter-options::-webkit-scrollbar {
+    width: 8px;
+}
+
+#ecosystem-filter-options::-webkit-scrollbar-track {
+    background: var(--osv-surface-color);
+}
+
+#ecosystem-filter-options::-webkit-scrollbar-thumb {
+    background-color: var(--osv-grey-800);
+    border-radius: 4px;
 }
 
 .tab-switch-button {
@@ -273,9 +337,19 @@ tr:hover {
   background-color: transparent;
   text-align: center;
   display: flex;
+  align-items: center;
+  justify-content: space-between;
   padding: 10px 20px;
   color: #5f6368;
   border-bottom: 2px solid transparent;
+  flex-shrink: 0;
+  max-width: 250px;
+}
+
+.tab-title {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
 .tab-switch-button:hover {
@@ -295,14 +369,48 @@ tr:hover {
     display: block;
 }
 
-.iframe-container {
-    position: relative;
+.details-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+    height: calc(100vh - 250px);
 }
 
-.iframe-container iframe {
-    width: 100%;
-    min-height: 1000px;
-    border: none;
+.details-column {
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+.details-column h2 {
+    margin-bottom: 10px;
+    font-family: "Overpass Mono", monospace;
+    font-size: small;
+    font-weight: normal;
+}
+
+.json-pre {
+    background-color: var(--osv-surface-color);
+    padding: 15px;
+    border-radius: 4px;
+    overflow-y: auto;
+    white-space: pre-wrap;
+    word-wrap: break-word;
+    color: var(--osv-text-color);
+    flex-grow: 1;
+}
+
+.json-pre::-webkit-scrollbar {
+    width: 8px;
+}
+
+.json-pre::-webkit-scrollbar-track {
+    background: var(--osv-surface-color);
+}
+
+.json-pre::-webkit-scrollbar-thumb {
+    background-color: var(--osv-grey-800);
+    border-radius: 4px;
 }
 
 .close-tab {
@@ -314,10 +422,29 @@ tr:hover {
 td a {
   color: var(--osv-text-color);
   text-decoration: none;
-  cursor: pointer;
 }
 
 td a:hover {
-  color: var(--osv-text-color);
-  text-decoration: underline;
+  text-decoration: none;
 }
+
+.finding-tag {
+    display: inline-block;
+    background-color: var(--osv-surface-color);
+    padding: 4px 8px;
+    border-radius: 4px;
+    margin-right: 4px;
+    opacity: 0.8;
+}
+
+tr.clickable {
+    cursor: pointer;
+    position: relative;
+}
+
+tr.clickable:hover {
+    background-color: var(--osv-grey-800);
+}
+
+
+

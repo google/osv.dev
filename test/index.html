@@ -18,11 +18,19 @@
                 <img src="https://raw.githubusercontent.com/google/osv-scanner/refs/heads/main/docs/images/osv-scanner-OSV-logo-darkmode.png" alt="OSV-Scanner Logo" class="logo" />
                 <div class="vl"></div>
                 <h1>Open Source Vulnerabilities</h1>
+                <div id="global-loader" class="loader">
+                    <i class="material-icons">sync</i>
+                </div>
             </div>
         </header>
         <main>
-            <div id="tab-switch">
-                <div class="tab-switch-button active" data-tab="linter-report">Linter Report</div>
+            <div class="tab-bar-container">
+                <div class="tab-switch-button active" id="linter-report-tab" data-tab="linter-report">
+                    <span class="tab-title">Linter Report</span>
+                </div>
+                <div id="tab-switch">
+                    <!-- Dynamic tabs go here -->
+                </div>
             </div>
 
             <div id="tabs-content">
@@ -70,9 +78,6 @@
                     </div>
                 </div>
             </div>
-            <div id="loader" class="loader">
-                <i class="material-icons">sync</i>
-            </div>
         </main>
     </div>
 
@@ -81,13 +86,15 @@
             let allIssues = [];
             let issuesByEcosystem = {};
             let filteredIssues = [];
+            let findingDetails = {};
             const issuesPerPage = 15;
             let currentPage = 1;
             let sortDirection = 'desc';
 
-            const loader = document.getElementById('loader');
+            const globalLoader = document.getElementById('global-loader');
             const searchInput = document.getElementById('search-input');
             const modifiedHeader = document.getElementById('modified-header');
+            const tabBarContainer = document.querySelector('.tab-bar-container');
             const tabSwitch = document.getElementById('tab-switch');
             const tabsContent = document.getElementById('tabs-content');
 
@@ -103,44 +110,59 @@
             let selectedFinding = '';
 
             async function loadData() {
-                loader.style.display = 'flex';
+                globalLoader.classList.add('visible');
                 
                 const response = await fetch('https://raw.githubusercontent.com/google/osv.dev/master/source_test.yaml');
                 const yamlText = await response.text();
                 const sources = jsyaml.load(yamlText);
                 const sourceNames = sources.map(s => s.name);
 
-                const promises = sourceNames.map(sourceName => {
-                    const url = `https://api.test.osv.dev/v1experimental/importfindings/${sourceName}`;
-                    return fetch(url).then(res => {
-                        if (!res.ok) {
-                            console.error(`HTTP error! status: ${res.status} for ${url}`);
-                            return { invalid_records: [] };
-                        }
-                        return res.json();
-                    }).catch(error => {
-                        console.error('Error loading data from ' + url, error);
-                        return { invalid_records: [] };
-                    });
-                });
-
-                const results = await Promise.all(promises);
-
-                results.forEach(data => {
-                    const records = data.invalid_records || [];
-                    allIssues.push(...records);
-                });
-                
-                allIssues.forEach(issue => {
-                    if (!issuesByEcosystem[issue.source]) {
-                        issuesByEcosystem[issue.source] = [];
-                    }
-                    issuesByEcosystem[issue.source].push(issue);
-                });
-
-
-                loader.style.display = 'none';
                 processAndDisplayData();
+
+                const allPromises = [];
+
+                // Linter results
+                const linterPromise = (async () => {
+                    const linterPromises = sourceNames.map(sourceName => {
+                        const url = `https://storage.googleapis.com/osv-test-public-import-logs/linter-result/${sourceName}/result.json`;
+                        return fetch(url).then(res => res.ok ? res.json() : {}).catch(() => ({}));
+                    });
+                    const linterResults = await Promise.all(linterPromises);
+                    linterResults.forEach(data => {
+                        for (const path in data) {
+                            const bugId = path.split('/').pop().replace('.json', '');
+                            if (!findingDetails[bugId]) findingDetails[bugId] = [];
+                            findingDetails[bugId].push(...data[path]);
+                        }
+                    });
+                })();
+                allPromises.push(linterPromise);
+
+                // Main issue data
+                const issuePromises = sourceNames.map(sourceName => {
+                    const url = `https://api.test.osv.dev/v1experimental/importfindings/${sourceName}`;
+                    return fetch(url)
+                        .then(res => res.ok ? res.json() : { invalid_records: [] })
+                        .then(data => {
+                            const records = data.invalid_records || [];
+                            allIssues.push(...records);
+                            records.forEach(issue => {
+                                if (!issuesByEcosystem[issue.source]) {
+                                    issuesByEcosystem[issue.source] = [];
+                                }
+                                issuesByEcosystem[issue.source].push(issue);
+                            });
+                            applyFilters();
+                        })
+                        .catch(error => console.error('Error loading data from ' + url, error));
+                });
+                allPromises.push(...issuePromises);
+
+                // Wait for all data fetching to complete
+                Promise.allSettled(allPromises).then(() => {
+                    globalLoader.classList.remove('visible');
+                    applyFilters(); // Final render
+                });
             }
 
             function processAndDisplayData() {
@@ -153,7 +175,22 @@
                     icon.textContent = sortDirection === 'asc' ? 'expand_less' : 'expand_more';
                     applyFilters();
                 });
-                tabSwitch.addEventListener('click', handleTabClick);
+                tabBarContainer.addEventListener('click', handleTabClick);
+
+                tabSwitch.addEventListener('wheel', (e) => {
+                    if (e.deltaY !== 0) {
+                        e.preventDefault();
+                        tabSwitch.scrollLeft += e.deltaY;
+                    }
+                });
+
+                tabSwitch.addEventListener('scroll', () => {
+                    if (tabSwitch.scrollLeft > 0) {
+                        tabBarContainer.classList.add('scrolled');
+                    } else {
+                        tabBarContainer.classList.remove('scrolled');
+                    }
+                });
 
                 ecosystemFilter.addEventListener('click', (e) => {
                     e.stopPropagation();
@@ -268,26 +305,41 @@
                 const endIndex = startIndex + issuesPerPage;
                 const paginatedIssues = filteredIssues.slice(startIndex, endIndex);
 
-                if (paginatedIssues.length === 0) {
+                if (paginatedIssues.length === 0 && allIssues.length === 0) {
+                     tableBody.innerHTML = '<tr><td colspan="3">Loading data...</td></tr>';
+                } else if (paginatedIssues.length === 0) {
                      tableBody.innerHTML = '<tr><td colspan="3">No issues found.</td></tr>';
                 } else {
                     paginatedIssues.forEach(issue => {
                         let row = tableBody.insertRow();
+                        row.classList.add('clickable');
+                        row.addEventListener('click', (e) => {
+                            openCombinedView(issue.bug_id);
+                        });
+
                         let cell1 = row.insertCell();
                         let cell2 = row.insertCell();
                         let cell3 = row.insertCell();
                         
                         const bugLink = document.createElement('a');
-                        bugLink.href = `https://osv.dev/vulnerability/${issue.bug_id}`;
+                        bugLink.href = `https://api.test.osv.dev/v1/vulns/${issue.bug_id}`;
                         bugLink.textContent = issue.bug_id;
-                        bugLink.dataset.bugId = issue.bug_id;
                         bugLink.addEventListener('click', (e) => {
+                            e.stopPropagation(); 
+                            openCombinedView(issue.bug_id);
                             e.preventDefault();
-                            openVulnerabilityTab(issue.bug_id);
                         });
                         cell1.appendChild(bugLink);
 
-                        cell2.textContent = issue.findings.join(', ').replace(/IMPORT_FINDING_TYPE_/g, '');
+                        const findingsContainer = document.createElement('div');
+                        issue.findings.forEach(finding => {
+                            const findingSpan = document.createElement('span');
+                            findingSpan.textContent = finding.replace('IMPORT_FINDING_TYPE_', '');
+                            findingSpan.className = 'finding-tag';
+                            findingsContainer.appendChild(findingSpan);
+                        });
+                        cell2.appendChild(findingsContainer);
+                        
                         cell3.textContent = new Date(issue.last_attempt).toLocaleString();
                     });
                 }
@@ -329,51 +381,84 @@
                 paginationControls.appendChild(nextButton);
             }
 
-            function openVulnerabilityTab(bugId) {
-                const existingTab = tabSwitch.querySelector(`[data-tab="${bugId}"]`);
+            function openCombinedView(bugId) {
+                const tabId = `details-${bugId}`;
+                const existingTab = tabBarContainer.querySelector(`[data-tab="${tabId}"]`);
                 if (existingTab) {
-                    setActiveTab(bugId);
+                    setActiveTab(tabId);
                     return;
                 }
 
                 const tabButton = document.createElement('div');
                 tabButton.className = 'tab-switch-button';
-                tabButton.dataset.tab = bugId;
-                tabButton.textContent = bugId;
+                tabButton.dataset.tab = tabId;
+                
+                const titleSpan = document.createElement('span');
+                titleSpan.className = 'tab-title';
+                titleSpan.textContent = bugId;
+                tabButton.appendChild(titleSpan);
                 
                 const closeButton = document.createElement('i');
                 closeButton.className = 'material-icons close-tab';
                 closeButton.textContent = 'close';
-                closeButton.dataset.tabClose = bugId;
+                closeButton.dataset.tabClose = tabId;
                 tabButton.appendChild(closeButton);
 
                 tabSwitch.appendChild(tabButton);
 
                 const tabContent = document.createElement('div');
                 tabContent.className = 'tab-content';
-                tabContent.id = bugId;
+                tabContent.id = tabId;
                 tabContent.innerHTML = `
-                    <div class="iframe-container">
-                        <div class="loader"><i class="material-icons">sync</i></div>
-                        <iframe src="https://test.osv.dev/vulnerability/${bugId}" style="visibility: hidden;" onload="this.style.visibility = 'visible'; this.parentElement.querySelector('.loader').style.display = 'none';"></iframe>
+                    <div class="details-grid">
+                        <div class="details-column">
+                            <h2>Vulnerability Data</h2>
+                            <pre id="vuln-json-${bugId}" class="json-pre">Loading...</pre>
+                        </div>
+                        <div class="details-column">
+                            <h2>Linter Findings</h2>
+                            <pre id="findings-json-${bugId}" class="json-pre">Loading...</pre>
+                        </div>
                     </div>
                 `;
                 tabsContent.appendChild(tabContent);
-                setActiveTab(bugId);
+                setActiveTab(tabId);
+
+                // Fetch vuln data
+                fetch(`https://api.test.osv.dev/v1/vulns/${bugId}`)
+                    .then(res => res.ok ? res.json() : { error: `Failed to load: ${res.status}` })
+                    .then(data => {
+                        document.getElementById(`vuln-json-${bugId}`).textContent = JSON.stringify(data, null, 2);
+                    })
+                    .catch(err => {
+                        document.getElementById(`vuln-json-${bugId}`).textContent = `Error: ${err.message}`;
+                    });
+
+                // Display finding data
+                const details = findingDetails[bugId];
+                const findingsPre = document.getElementById(`findings-json-${bugId}`);
+                if (details) {
+                    findingsPre.textContent = JSON.stringify(details, null, 2);
+                } else {
+                    findingsPre.textContent = 'No linter findings available for this vulnerability.';
+                }
             }
 
             function handleTabClick(e) {
-                if (e.target.dataset.tab) {
-                    setActiveTab(e.target.dataset.tab);
-                } else if (e.target.dataset.tabClose) {
-                    e.stopPropagation();
-                    closeTab(e.target.dataset.tabClose);
+                const tabButton = e.target.closest('.tab-switch-button');
+                if (tabButton) {
+                    if (e.target.classList.contains('close-tab')) {
+                        e.stopPropagation();
+                        closeTab(e.target.dataset.tabClose);
+                    } else {
+                        setActiveTab(tabButton.dataset.tab);
+                    }
                 }
             }
 
             function setActiveTab(tabId) {
                 // Buttons
-                Array.from(tabSwitch.children).forEach(btn => {
+                Array.from(tabBarContainer.querySelectorAll('.tab-switch-button')).forEach(btn => {
                     btn.classList.toggle('active', btn.dataset.tab === tabId);
                 });
                 // Content
@@ -383,14 +468,14 @@
             }
 
             function closeTab(tabId) {
-                const tabButton = tabSwitch.querySelector(`[data-tab="${tabId}"]`);
+                const tabButton = tabBarContainer.querySelector(`[data-tab="${tabId}"]`);
                 const tabContent = document.getElementById(tabId);
                 
-                tabButton.remove();
-                tabContent.remove();
+                if (tabButton) tabButton.remove();
+                if (tabContent) tabContent.remove();
 
                 // Activate the main tab if the closed one was active
-                if (tabButton.classList.contains('active')) {
+                if (tabButton && tabButton.classList.contains('active')) {
                     setActiveTab('linter-report');
                 }
             }

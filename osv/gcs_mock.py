@@ -74,8 +74,8 @@ class _MockBlob:
     try:
       with open(self._path, 'rb') as f:
         return f.read()
-    except FileNotFoundError:
-      raise exceptions.NotFound(self._path)
+    except FileNotFoundError as exc:
+      raise exceptions.NotFound(self._path) from exc
 
 
 class _MockBucket:

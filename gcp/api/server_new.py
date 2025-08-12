@@ -15,6 +15,7 @@
 
 import concurrent.futures
 import logging
+from packaging.utils import canonicalize_version
 
 from google.cloud import exceptions
 from google.cloud import ndb
@@ -98,12 +99,43 @@ def affected_affects(version: str, affected: osv.AffectedVersions) -> bool:
   ecosystem_helper = osv.ecosystems.get(affected.ecosystem)
   helper_valid = ecosystem_helper and (ecosystem_helper.supports_comparing or
                                        ecosystem_helper.is_semver)
+  if helper_valid:
+    # Most ecosystem helpers return a very large version on invalid, but if it
+    # does cause an error, just match nothing.
+    try:
+      parsed_version = ecosystem_helper.sort_key(version)
+    except:
+      # TODO(michaelkedar): This log is noisy.
+      logging.error('Ecosystem helper for %s raised an exception',
+                    affected.ecosystem)
+      return False
+
   # Check if this version is in the list of versions
   if len(affected.versions) > 0:
     if helper_valid:
-      ver = ecosystem_helper.sort_key(version)  # TODO: handle errors
-      return ver in (ecosystem_helper.sort_key(v) for v in affected.versions)
-    return version in affected.versions
+      for v in affected.versions:
+        try:
+          if ecosystem_helper.sort_key(v) == parsed_version:
+            return True
+        except:
+          logging.error('Version %s in AffectedVersion %s (%s) does not parse',
+                        v, affected.key, affected.vuln_id)
+      return False
+
+    # Helper not implemented:
+    # Direct string matching
+    if version in affected.versions:
+      return True
+    # Try fuzzy matching
+    vers = affected.versions
+    if affected.ecosystem == 'GIT':
+      vers = osv.models.maybe_strip_repo_prefixes(vers, [affected.name])
+    if osv.normalize_tag(version) in osv.normalize_tags(vers):
+      return True
+    if canonicalize_version(version) in (
+        canonicalize_version(v) for v in affected.versions):
+      return True
+    return False
 
   # Check if this version is affected in the events list
   if len(affected.events) == 0:
@@ -114,13 +146,19 @@ def affected_affects(version: str, affected: osv.AffectedVersions) -> bool:
   if not helper_valid:
     return False
 
-  ver = ecosystem_helper.sort_key(version)  # TODO: handle errors
   # Find where this version would belong in the sorted events list.
   for event in reversed(affected.events):
-    event_ver = ecosystem_helper.sort_key(event.value)  # TODO: handle errors
-    if event_ver == ver:
+    try:
+      event_ver = ecosystem_helper.sort_key(event.value)
+    except:
+      # Shouldn't really happen. We use sort_key to sort these before creating
+      # the AffectedVersions entity.
+      logging.error('Event %s in AffectedVersion %s (%s) does not parse',
+                    event.value, affected.key, affected.vuln_id)
+      return False
+    if event_ver == parsed_version:
       return event.type in ('introduced', 'last_affected')
-    if event_ver < ver:
+    if event_ver < parsed_version:
       return event.type == 'introduced'
 
   return False

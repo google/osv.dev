@@ -1,0 +1,124 @@
+{% set active_section = 'linter' %} {% block content %}
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Vulnerability Linter Report</title>
+    <link
+      rel="icon"
+      href="https://google.github.io/osv.dev/assets/icon.png"
+      type="image/x-icon"
+    />
+    <link
+      href="https://fonts.googleapis.com/css?family=Overpass"
+      rel="stylesheet"
+    />
+    <link
+      rel="stylesheet"
+      href="https://unpkg.com/material-components-web@latest/dist/material-components-web.min.css"
+    />
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/icon?family=Material+Icons"
+    />
+    <script src="https://cdn.jsdelivr.net/npm/js-yaml@4.1.0/dist/js-yaml.min.js"></script>
+  </head>
+  <body>
+    <div class="container">
+      <header>
+        <div id="header-left">
+          <img
+            src="https://raw.githubusercontent.com/google/osv-scanner/refs/heads/main/docs/images/osv-scanner-OSV-logo-darkmode.png"
+            alt="OSV-Scanner Logo"
+            class="logo"
+          />
+          <div class="vl"></div>
+          <h1>Open Source Vulnerabilities</h1>
+          <div id="global-loader" class="loader">
+            <i class="material-icons">sync</i>
+          </div>
+        </div>
+      </header>
+      <main>
+        <div class="tab-bar-container">
+          <div
+            class="tab-switch-button active"
+            id="linter-report-tab"
+            data-tab="linter-report"
+          >
+            <span class="tab-title">Linter Report</span>
+          </div>
+          <div id="tab-switch">
+            <!-- Dynamic tabs go here -->
+          </div>
+        </div>
+
+        <div id="tabs-content">
+          <div class="tab-content active" id="linter-report">
+            <div class="filter-controls">
+              <div class="filter-container">
+                <span>Ecosystem</span>
+                <div id="ecosystem-filter" class="filter">
+                  <p id="ecosystem-filter-selected" class="filter-selected"></p>
+                  <div class="filter-icon">
+                    <i class="material-icons">keyboard_arrow_down</i>
+                  </div>
+                </div>
+                <div
+                  id="ecosystem-filter-options"
+                  class="filter-option-container"
+                ></div>
+              </div>
+              <div class="filter-container">
+                <span>Finding</span>
+                <div id="findings-filter" class="filter">
+                  <p id="findings-filter-selected" class="filter-selected"></p>
+                  <div class="filter-icon">
+                    <i class="material-icons">keyboard_arrow_down</i>
+                  </div>
+                </div>
+                <div
+                  id="findings-filter-options"
+                  class="filter-option-container"
+                ></div>
+              </div>
+            </div>
+
+            <div class="search-box">
+              <div class="search-icon">
+                <i class="material-icons">search</i>
+              </div>
+              <input
+                type="text"
+                id="search-input"
+                placeholder="Search for a specific record..."
+              />
+            </div>
+
+            <div id="ecosystem-details">
+              <table id="issues-table">
+                <thead>
+                  <tr>
+                    <th>Bug ID</th>
+                    <th>Findings</th>
+                    <th id="modified-header">
+                      Modified <i class="material-icons">unfold_more</i>
+                    </th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <!-- Issues will be populated by JavaScript -->
+                </tbody>
+              </table>
+              <div class="pagination" id="pagination-controls"></div>
+            </div>
+          </div>
+        </div>
+      </main>
+    </div>
+
+    <script src="{{ url_for('static', filename='linter.js') }}"></script>
+  </body>
+</html>
+{% endblock %}

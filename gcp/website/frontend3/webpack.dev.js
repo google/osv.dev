@@ -6,7 +6,10 @@ const MiniCssExtractPlugin = require('mini-css-extract-plugin');
 
 module.exports = {
   mode: 'development',
-  entry: './src/index.js',
+  entry: {
+    main: './src/index.js',
+    linter: './src/linter.js',
+  },
   output: {
     path: path.resolve(__dirname, '../dist'),
     filename: 'static/[name].js',
@@ -32,13 +35,21 @@ module.exports = {
   plugins: [
     new CopyPlugin({
       patterns: [
-        { from: './src/templates/*.html', to: '[name].html' },
+        { from: './src/templates/!(linter)*.html', to: '[name].html' },
         { from: './img/*', to: 'static/img/[name][ext]' },
       ],
     }),
     new HtmlWebpackPlugin({
       filename: 'base.html',
-      template: './src/base.html'
+      template: './src/base.html',
+      chunks: ['main'],
+      excludeChunks: ['linter'],
+    }),
+    new HtmlWebpackPlugin({
+      filename: 'linter.html',
+      template: './src/templates/linter.html',
+      chunks: ['linter'],
+      excludeChunks: ['main'],
     }),
     new MiniCssExtractPlugin({
       filename: 'static/[name].css'

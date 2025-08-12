@@ -150,7 +150,7 @@ class QueryCursor:
         # a token in the response
         return None
 
-    meta = (base64.urlsafe_b64encode(f'{k}={v}').decode()
+    meta = (base64.urlsafe_b64encode(f'{k}={v}'.encode()).decode()
             for k, v in self._metadata.items())
     return _METADATA_SEPARATOR.join(
         [str(self.query_number), cursor_part, *meta])

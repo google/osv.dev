@@ -83,7 +83,7 @@ def query_package(context,
     affected: osv.AffectedVersions = it.next()
     if affected.vuln_id == last_matched_id:
       continue
-    if version is None or affected_affects(version, affected):
+    if not version or affected_affects(version, affected):
       if include_details:
         bugs.append(get_vuln_async(affected.vuln_id))
       else:

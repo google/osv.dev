@@ -84,7 +84,7 @@ class QueryCursor:
       except ValueError as e:
         raise ValueError('Invalid page token.') from e
       for enc_meta in split_values[2:]:
-        meta = base64.urlsafe_b64decode(enc_meta).decode()
+        meta = base64.urlsafe_b64decode(enc_meta).decode(errors='ignore')
         k, _, v = meta.partition('=')
         qc._metadata[k] = v
 

@@ -3,17 +3,16 @@ kind: Config
 metadata:
   name: osv-api
 
-# These profiles actually unnecessary since there is currently no difference between staging and production manifests.
 profiles:
 - name: staging
   manifests:
     rawYaml:
-    - run.yaml
+    - run-staging.yaml
 
 - name: prod
   manifests:
     rawYaml:
-    - run.yaml
+    - run-prod.yaml
 
 deploy:
   cloudrun: {}

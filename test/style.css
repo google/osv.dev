@@ -25,12 +25,7 @@
   font-variant-ligatures: none;
 }
 
-{{/* html,
-body {
-  height: 100%;
-  scroll-behavior: smooth;
-  font-size: 14px;
-} */}}
+
 
 body {
     font-family: var(--osv-body-font-family);
@@ -294,13 +289,6 @@ tr:hover {
     position: relative;
 }
 
-.tab-bar-container {
-    display: flex;
-    border-bottom: 1px solid #6c6c6c;
-    margin-bottom: 20px;
-    position: relative;
-}
-
 #linter-report-tab {
     flex-shrink: 0;
 }
@@ -442,9 +430,7 @@ tr.clickable {
     position: relative;
 }
 
-tr.clickable:hover {
-    background-color: var(--osv-grey-800);
-}
+
 
 
 

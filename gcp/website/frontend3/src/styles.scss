@@ -950,6 +950,117 @@ dl.vulnerability-details,
     pointer-events: none;
   }
 
+  &.force-collapse {
+    h2.package-header {
+      width: 100%;
+      background: $osv-grey-800;
+      color: #fff;
+      padding: 12px 16px;
+      margin-bottom: 2px;
+      border-radius: 0;
+      font-weight: normal;
+      transition: background-color 0.2s ease-in-out;
+      cursor: pointer;
+
+      &::before {
+        content: '';
+        width: 14px;
+        height: 14px;
+        margin-right: 8px;
+        background-image: url(/static/img/filled-triangle.svg);
+        background-position: center;
+        background-repeat: no-repeat;
+        transition: transform 0.2s ease-in-out;
+        transform: rotate(0deg);
+      }
+
+      &[expanded]::before {
+        transform: rotate(90deg);
+      }
+
+      &:hover {
+        background: #4F4F4F;
+      }
+
+      &[expanded] {
+        background: #fff;
+        color: $osv-accent-color;
+        font-weight: bold;
+        
+        &::before {
+          filter: invert(24%) sepia(89%) saturate(2293%) hue-rotate(345deg) brightness(81%) contrast(107%);
+        }
+          
+        &:hover {
+          background: #f0f0f0;
+        }
+      }
+    }
+
+    .ecosystem-content-panel {
+      padding: 8px 0;
+      border-bottom: 2px solid $osv-grey-800;
+      margin-bottom: 8px;
+    }
+
+    .package-accordion {
+      margin-bottom: 8px;
+    }
+
+    .package-accordion h3.package-name-title {
+      font-family: $osv-heading-font-family;
+      font-size: 1.1rem;
+      color: #f1f1f1;
+      padding: 12px 16px;
+      cursor: pointer;
+      background: #333333;
+      border: 1px solid #444;
+      border-radius: 0;
+
+      &::before {
+        content: '';
+        width: 12px;
+        height: 12px;
+        margin-right: 8px;
+        background-image: url(/static/img/filled-triangle.svg);
+        background-position: center;
+        background-repeat: no-repeat;
+        filter: invert(100%);
+        transition: transform 0.2s ease-in-out;
+        display: inline-block;
+        vertical-align: middle;
+        transform: rotate(0deg);
+      }
+
+      &[expanded] {
+        border-bottom: 1px dashed #fff;
+        
+        &::before {
+          transform: rotate(90deg);
+        }
+      }
+    }
+
+    .package-accordion .package-details-card {
+      background: #333333;
+      border: 1px solid #444;
+      border-top: none;
+      border-radius: 0;
+      
+      .mdc-layout-grid {
+        padding: 0 16px 16px 16px;
+      }
+      .vulnerability-package-subsection {
+        padding: 14px 0;
+        border-bottom: 1px dashed #555;
+
+        &:last-child {
+          border-bottom: none;
+        }
+      }
+    }
+  }
+
   &[affordance="collapse"] h2.package-header {
     .vuln-ecosystem {
       display: inline;

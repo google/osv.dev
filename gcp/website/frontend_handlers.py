@@ -32,6 +32,7 @@ from flask import send_from_directory
 from werkzeug.security import safe_join
 from werkzeug import exceptions
 from collections import OrderedDict
+from collections import defaultdict
 from google.cloud import ndb
 from cvss import CVSS2, CVSS3, CVSS4
 
@@ -744,6 +745,20 @@ def group_versions(versions, ecosystem):
 
   return groups
 
+@blueprint.app_template_filter('group_by_ecosystem')
+def group_by_ecosystem(affected_list):
+    """Groups a list of affected packages by their ecosystem."""
+    grouped = defaultdict(list)
+    for affected in affected_list:
+        if 'package' in affected:
+            ecosystem = affected['package'].get('ecosystem', 'Unknown')
+        else:
+            ecosystem = 'Git'
+        grouped[ecosystem].append(affected)
+
+    # Sort ecosystems alphabetically, but keep 'Git' at the end if it exists
+    sorted_ecosystems = sorted(grouped.keys(), key=lambda x: (x == 'Git', x.lower()))
+    return {eco: grouped[eco] for eco in sorted_ecosystems}
 
 def sort_versions(versions: list[str], ecosystem: str) -> list[str]:
   """Sorts a list of version numbers in the given ecosystem's sorting order."""

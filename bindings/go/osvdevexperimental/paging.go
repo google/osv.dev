@@ -7,9 +7,14 @@ import (
 	"osv.dev/bindings/go/osvdev"
 )
 
+type OSVClientInterface interface {
+	Query(ctx context.Context, query *osvdev.Query) (*osvdev.Response, error)
+	QueryBatch(ctx context.Context, queries []*osvdev.Query) (*osvdev.BatchedResponse, error)
+}
+
 // QueryPaging performs a single query with the given OSVClient, and handles
 // paging logic to return all results.
-func QueryPaging(ctx context.Context, c *osvdev.OSVClient, query *osvdev.Query) (*osvdev.Response, error) {
+func QueryPaging(ctx context.Context, c OSVClientInterface, query *osvdev.Query) (*osvdev.Response, error) {
 	queryResponse, err := c.Query(ctx, query)
 
 	if err != nil {
@@ -56,7 +61,7 @@ func QueryPaging(ctx context.Context, c *osvdev.OSVClient, query *osvdev.Query) 
 
 // BatchQueryPaging performs a batch query with the given OSVClient, and handles
 // paging logic for each query to return all results.
-func BatchQueryPaging(ctx context.Context, c *osvdev.OSVClient, queries []*osvdev.Query) (*osvdev.BatchedResponse, error) {
+func BatchQueryPaging(ctx context.Context, c OSVClientInterface, queries []*osvdev.Query) (*osvdev.BatchedResponse, error) {
 	batchResp, err := c.QueryBatch(ctx, queries)
 
 	if err != nil {

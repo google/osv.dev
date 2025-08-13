@@ -278,6 +278,21 @@
   editable: False
   strict_validation: True
 
+- name: 'openeuler'
+  versions_from_repo: False
+  rest_api_url: 'https://repo.openeuler.org/security/data/osv/all.json'
+  type: 2
+  ignore_patterns: ['^(?!OESA-).*$']
+  directory_path: 'security/data/osv'
+  detect_cherrypicks: False
+  extension: '.json'
+  db_prefix: ['OESA-']
+  ignore_git: True
+  human_link: 'https://www.openeuler.org/en/security/security-bulletins/detail/?id=openEuler-SA-{{ BUG_ID | replace("OESA-", "") }}'
+  link: 'https://repo.openeuler.org/security/data/osv/'
+  editable: False
+  strict_validation: True
+
 - name: 'test-oss-fuzz'
   versions_from_repo: True
   type: 0

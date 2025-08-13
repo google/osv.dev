@@ -215,6 +215,7 @@ def faq():
 def docs():
   return redirect('https://google.github.io/osv.dev')
 
+
 @blueprint.route('/linter')
 def linter():
   return render_template('linter.html')

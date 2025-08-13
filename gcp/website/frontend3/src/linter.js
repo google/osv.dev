@@ -357,21 +357,43 @@ document.addEventListener("DOMContentLoaded", function () {
 
     tabSwitch.appendChild(tabButton);
 
+    const vulnJsonId = `vuln-json-${bugId}`;
+    const findingsJsonId = `findings-json-${bugId}`;
+
     const tabContent = document.createElement("div");
     tabContent.className = "tab-content";
     tabContent.id = tabId;
-    tabContent.innerHTML = `
-                    <div class="details-grid">
-                        <div class="details-column">
-                            <h2>Vulnerability Data</h2>
-                            <pre id="vuln-json-${bugId}" class="json-pre">Loading...</pre>
-                        </div>
-                        <div class="details-column">
-                            <h2>Linter Findings</h2>
-                            <pre id="findings-json-${bugId}" class="json-pre">Loading...</pre>
-                        </div>
-                    </div>
-                `;
+
+    // Create elements programmatically to avoid XSS
+    const detailsGrid = document.createElement("div");
+    detailsGrid.className = "details-grid";
+
+    const vulnColumn = document.createElement("div");
+    vulnColumn.className = "details-column";
+    const vulnHeader = document.createElement("h2");
+    vulnHeader.textContent = "Vulnerability Data";
+    const vulnPre = document.createElement("pre");
+    vulnPre.id = vulnJsonId;
+    vulnPre.className = "json-pre";
+    vulnPre.textContent = "Loading...";
+    vulnColumn.appendChild(vulnHeader);
+    vulnColumn.appendChild(vulnPre);
+
+    const findingsColumn = document.createElement("div");
+    findingsColumn.className = "details-column";
+    const findingsHeader = document.createElement("h2");
+    findingsHeader.textContent = "Linter Findings";
+    const findingsPreEl = document.createElement("pre");
+    findingsPreEl.id = findingsJsonId;
+    findingsPreEl.className = "json-pre";
+    findingsPreEl.textContent = "Loading...";
+    findingsColumn.appendChild(findingsHeader);
+    findingsColumn.appendChild(findingsPreEl);
+
+    detailsGrid.appendChild(vulnColumn);
+    detailsGrid.appendChild(findingsColumn);
+    tabContent.appendChild(detailsGrid);
+
     tabsContent.appendChild(tabContent);
     setActiveTab(tabId);
 
@@ -381,18 +403,18 @@ document.addEventListener("DOMContentLoaded", function () {
         res.ok ? res.json() : { error: `Failed to load: ${res.status}` }
       )
       .then((data) => {
-        document.getElementById(`vuln-json-${bugId}`).textContent =
+        document.getElementById(vulnJsonId).textContent =
           JSON.stringify(data, null, 2);
       })
       .catch((err) => {
         document.getElementById(
-          `vuln-json-${bugId}`
+          vulnJsonId
         ).textContent = `Error: ${err.message}`;
       });
 
     // Display finding data
     const details = findingDetails[bugId];
-    const findingsPre = document.getElementById(`findings-json-${bugId}`);
+    const findingsPre = document.getElementById(findingsJsonId);
     if (details) {
       findingsPre.textContent = JSON.stringify(details, null, 2);
     } else {

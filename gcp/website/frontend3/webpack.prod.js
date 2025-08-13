@@ -35,7 +35,7 @@ module.exports = {
   plugins: [
     new CopyPlugin({
       patterns: [
-        { from: './src/templates/!(linter)*.html', to: '[name].html' },
+        { from: './src/templates/*.html', to: '[name].html' },
         { from: './img/*', to: 'static/img/[name][ext]' },
       ],
     }),
@@ -47,7 +47,7 @@ module.exports = {
     }),
     new HtmlWebpackPlugin({
       filename: 'linter.html',
-      template: './src/templates/linter.html',
+      template: './src/templates/linter/index.html',
       chunks: ['linter'],
       excludeChunks: ['main'],
     }),

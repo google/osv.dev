@@ -1,6 +1,6 @@
 module github.com/google/osv/vulnfeeds
 
-go 1.24.4
+go 1.24.6
 
 require (
 	cloud.google.com/go/logging v1.13.0
@@ -11,9 +11,9 @@ require (
 	github.com/google/go-cmp v0.7.0
 	github.com/google/osv-scanner v1.9.2
 	github.com/knqyf263/go-cpe v0.0.0-20230627041855-cb0794d06872
-	github.com/ossf/osv-schema/bindings/go v0.0.0-20250805051309-c463400aa925
+	github.com/ossf/osv-schema/bindings/go v0.0.0-20250811013316-3418df24c5f8
 	github.com/sethvargo/go-retry v0.3.0
-	golang.org/x/exp v0.0.0-20250718183923-645b1fa84792
+	golang.org/x/exp v0.0.0-20250811191247-51f88131bc50
 	gopkg.in/dnaeon/go-vcr.v4 v4.0.4
 	gopkg.in/yaml.v2 v2.4.0
 )

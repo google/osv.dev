@@ -1,11 +1,11 @@
 module osv.dev/tools
 
-go 1.24.4
+go 1.24.6
 
 require (
 	github.com/grpc-ecosystem/grpc-gateway/v2 v2.27.1
 	google.golang.org/grpc/cmd/protoc-gen-go-grpc v1.5.1
-	google.golang.org/protobuf v1.36.6
+	google.golang.org/protobuf v1.36.7
 )
 
 require (

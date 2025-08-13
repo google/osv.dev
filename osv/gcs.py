@@ -16,6 +16,7 @@ import datetime
 import logging
 import os
 
+from google.cloud import exceptions
 from google.cloud import storage
 
 from .vulnerability_pb2 import Vulnerability
@@ -52,8 +53,12 @@ def get_by_id(vuln_id: str) -> Vulnerability:
   pb_blob = bucket.blob(os.path.join(VULN_PB_PATH, vuln_id + '.pb'))
   try:
     return Vulnerability.FromString(pb_blob.download_as_bytes())
+  except exceptions.NotFound:
+    # It's not necessarily an error if not found.
+    logging.info('vulnerability %s not found in GCS', vuln_id)
+    raise
   except:
-    logging.exception('failed to download %s protobuf from GCS', vuln_id)
+    logging.error('failed to download %s protobuf from GCS', vuln_id)
     raise
 
 
@@ -69,7 +74,7 @@ def get_by_id_with_generation(vuln_id: str) -> tuple[Vulnerability, int] | None:
     vuln = Vulnerability.FromString(pb_blob.download_as_bytes())
     return vuln, pb_blob.generation
   except:
-    logging.exception('failed to download %s protobuf from GCS', vuln_id)
+    logging.error('failed to download %s protobuf from GCS', vuln_id)
     raise
 
 

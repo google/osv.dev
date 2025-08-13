@@ -642,12 +642,12 @@ def _is_fixed_in_ecosystem(bug: osv.Bug, eco_variants: set[str]) -> bool:
   Returns:
     True if any affected package in the ecosystem has a fixed/limit event.
   """
-  for affected_pkg in getattr(bug, 'affected_packages', []) or []:
+  for affected_pkg in getattr(bug, 'affected_packages', []):
     pkg = affected_pkg.package
     if not pkg or pkg.ecosystem not in eco_variants:
       continue
-    for rng in affected_pkg.ranges or []:
-      if any(evt.type in ('fixed', 'limit') for evt in (rng.events or [])):
+    for r in affected_pkg.ranges or []:
+      if any(evt.type in ('fixed', 'limit') for evt in (r.events or [])):
         return True
   return False
 

@@ -1,0 +1,32 @@
+apiVersion: serving.knative.dev/v1
+kind: Service
+metadata:
+  name: osv-grpc-backend # from-param: ${serviceName}
+spec:
+  template:
+    metadata:
+      annotations:
+        autoscaling.knative.dev/maxScale: '300'
+    spec:
+      containers:
+      - image: osv-server
+        env:
+        - name: OSV_VULNERABILITIES_BUCKET
+          value: osv-test-vulnerabilities
+        resources:
+          limits:
+            cpu: 2
+            memory: 8Gi
+        startupProbe:
+          grpc:
+            service: osv.v1.OSV
+          initialDelaySeconds: 5
+          timeoutSeconds: 5
+        livenessProbe:
+          grpc:
+            service: osv.v1.OSV
+          timeoutSeconds: 5
+          failureThreshold: 3
+          periodSeconds: 10
+      timeoutSeconds: 60
+      containerConcurrency: 5 # from-param: ${containerConcurrency}

@@ -719,9 +719,14 @@ def event_value(event):
 @blueprint.app_template_filter('should_collapse')
 def should_collapse(affected):
   """Whether if we should collapse the package tab bar."""
-  total_package_length = sum(
+  total_text_length_ecosystem = sum(
+      len(entry.get('package', {}).get('ecosystem', '')) for entry in affected)
+  total_text_length_package = sum(
       len(entry.get('package', {}).get('name', '')) for entry in affected)
-  return total_package_length > 70 or len(affected) > 5
+
+  max_total_length = max(total_text_length_ecosystem, total_text_length_package)
+
+  return len(affected) > 5 or max_total_length > 100
 
 
 @blueprint.app_template_filter('group_versions')

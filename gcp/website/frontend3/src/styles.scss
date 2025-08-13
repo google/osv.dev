@@ -972,6 +972,7 @@ dl.vulnerability-details,
         background-repeat: no-repeat;
         transition: transform 0.2s ease-in-out;
         transform: rotate(0deg);
+        filter: invert(100%);
       }
 
       &[expanded]::before {

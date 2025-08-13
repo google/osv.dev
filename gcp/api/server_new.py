@@ -96,10 +96,22 @@ def query_package(context,
 
 def affected_affects(version: str, affected: osv.AffectedVersions) -> bool:
   """Check if a given version is affected by the AffectedVersions entry."""
+  if len(affected.versions) > 0:
+    return _match_versions(version, affected)
+  if len(affected.events) > 0:
+    return _match_events(version, affected)
+
+  logging.warning('AffectedVersion %s (%s) has no events or versions',
+                  affected.key, affected.vuln_id)
+  return False
+
+
+def _match_versions(version: str, affected: osv.AffectedVersions) -> bool:
+  """Check if the given version matches one of the AffectedVersions' listed 
+  versions."""
   ecosystem_helper = osv.ecosystems.get(affected.ecosystem)
-  helper_valid = ecosystem_helper and (ecosystem_helper.supports_comparing or
-                                       ecosystem_helper.is_semver)
-  if helper_valid:
+  if ecosystem_helper and (ecosystem_helper.supports_comparing or
+                           ecosystem_helper.is_semver):
     # Most ecosystem helpers return a very large version on invalid, but if it
     # does cause an error, just match nothing.
     try:
@@ -110,40 +122,44 @@ def affected_affects(version: str, affected: osv.AffectedVersions) -> bool:
                     affected.ecosystem)
       return False
 
-  # Check if this version is in the list of versions
-  if len(affected.versions) > 0:
-    if helper_valid:
-      for v in affected.versions:
-        try:
-          if ecosystem_helper.sort_key(v) == parsed_version:
-            return True
-        except:
-          logging.error('Version %s in AffectedVersion %s (%s) does not parse',
-                        v, affected.key, affected.vuln_id)
-      return False
-
-    # Helper not implemented:
-    # Direct string matching
-    if version in affected.versions:
-      return True
-    # Try fuzzy matching
-    vers = affected.versions
-    if affected.ecosystem == 'GIT':
-      vers = osv.models.maybe_strip_repo_prefixes(vers, [affected.name])
-    if osv.normalize_tag(version) in osv.normalize_tags(vers):
-      return True
-    if canonicalize_version(version) in (
-        canonicalize_version(v) for v in affected.versions):
-      return True
+    for v in affected.versions:
+      try:
+        if ecosystem_helper.sort_key(v) == parsed_version:
+          return True
+      except:
+        logging.error('Version %s in AffectedVersion %s (%s) does not parse', v,
+                      affected.key, affected.vuln_id)
     return False
 
-  # Check if this version is affected in the events list
-  if len(affected.events) == 0:
-    logging.warning('AffectedVersion %s (%s) has no events or versions',
-                    affected.key, affected.vuln_id)
-    return False
+  # Helper not implemented:
+  # Direct string matching
+  if version in affected.versions:
+    return True
+  # Try fuzzy matching
+  vers = affected.versions
+  if affected.ecosystem == 'GIT':
+    vers = osv.models.maybe_strip_repo_prefixes(vers, [affected.name])
+  if osv.normalize_tag(version) in osv.normalize_tags(vers):
+    return True
+  if canonicalize_version(version) in (
+      canonicalize_version(v) for v in affected.versions):
+    return True
+  return False
 
-  if not helper_valid:
+
+def _match_events(version: str, affected: osv.AffectedVersions) -> bool:
+  """Check if the given version matches in the AffectedVersions' events list."""
+  ecosystem_helper = osv.ecosystems.get(affected.ecosystem)
+  if not (ecosystem_helper and
+          (ecosystem_helper.supports_comparing or ecosystem_helper.is_semver)):
+    # Ecosystem does not support comparisons.
+    return False
+  try:
+    parsed_version = ecosystem_helper.sort_key(version)
+  except:
+    # TODO(michaelkedar): This log is noisy.
+    logging.error('Ecosystem helper for %s raised an exception',
+                  affected.ecosystem)
     return False
 
   # Find where this version would belong in the sorted events list.

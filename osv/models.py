@@ -95,8 +95,7 @@ def _repo_name(repo_url: str) -> str:
   return name
 
 
-def _maybe_strip_repo_prefixes(versions: list[str],
-                               repo_urls: list[str]) -> str:
+def maybe_strip_repo_prefixes(versions: list[str], repo_urls: list[str]) -> str:
   """Try to strip the repo name from tags prior to normalizing.
 
   There are some particularly regex-unfriendly tag names that prefix the
@@ -472,7 +471,7 @@ class Bug(ndb.Model):
         else:
           self.affected_fuzzy.extend(
               bug.normalize_tags(
-                  _maybe_strip_repo_prefixes(
+                  maybe_strip_repo_prefixes(
                       affected_package.versions,
                       [range.repo_url for range in affected_package.ranges])))
 

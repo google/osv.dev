@@ -14,6 +14,7 @@
 """OSV API server cursor implementation."""
 
 import base64
+import dataclasses
 from enum import Enum
 from typing import Self
 import typing
@@ -25,6 +26,16 @@ _FIRST_PAGE_TOKEN = base64.urlsafe_b64encode(b'FIRST_PAGE_TOKEN').decode()
 # Use ':' as the separator as it doesn't appear in urlsafe_b64encode
 # (which is what is used for both _FIRST_PAGE_TOKEN, and ndb.Cursor.urlsafe())
 _METADATA_SEPARATOR = ':'
+CURSOR_LAST_ID = 'last_id'
+
+
+@dataclasses.dataclass
+class QueryCursorMetadata:
+  """Metadata for the query cursor."""
+  # The last vulnerability ID seen in a query.
+  # This is used to avoid reprocessing the same vulnerability across pages
+  # when multiple AffectedVersions entities exist for it.
+  last_id: str | None = None
 
 
 class _QueryCursorState(Enum):
@@ -58,11 +69,13 @@ class QueryCursor:
     ended: Whether this cursor is for a query that has finished returning data.
   """
 
-  _ndb_cursor: ndb.Cursor | None = None
-  _cursor_state: _QueryCursorState = _QueryCursorState.ENDED
-  # The first query is numbered 1. This is because the query counter is
-  # incremented **before** the query and the query number being used.
-  query_number: int = 1
+  def __init__(self):
+    self._ndb_cursor: ndb.Cursor | None = None
+    self._cursor_state: _QueryCursorState = _QueryCursorState.ENDED
+    self.metadata: QueryCursorMetadata = QueryCursorMetadata()
+    # The first query is numbered 1. This is because the query counter is
+    # incremented **before** the query and the query number being used.
+    self.query_number: int = 1
 
   @classmethod
   def from_page_token(cls, page_token: str | None) -> Self:
@@ -74,13 +87,24 @@ class QueryCursor:
       qc._ndb_cursor = None
       return qc
 
-    split_values = page_token.split(_METADATA_SEPARATOR, 1)
-    if len(split_values) == 2:
+    split_values = page_token.split(_METADATA_SEPARATOR)
+    metadata_dict = {}
+    if len(split_values) >= 2:
       page_token = split_values[1]
       try:
         qc.query_number = int(split_values[0])
       except ValueError as e:
         raise ValueError('Invalid page token.') from e
+      for enc_meta in split_values[2:]:
+        meta = base64.urlsafe_b64decode(enc_meta).decode(errors='ignore')
+        k, _, v = meta.partition('=')
+        metadata_dict[k] = v
+
+    try:
+      qc.metadata = QueryCursorMetadata(**metadata_dict)
+    except TypeError as e:
+      # Unexpected metadata field.
+      raise ValueError('Invalid page token.') from e
 
     if not page_token or page_token == _FIRST_PAGE_TOKEN:
       qc._cursor_state = _QueryCursorState.STARTED
@@ -144,4 +168,9 @@ class QueryCursor:
         # a token in the response
         return None
 
-    return str(self.query_number) + _METADATA_SEPARATOR + cursor_part
+    meta_dict = dataclasses.asdict(self.metadata)
+    meta_items = (f'{k}={v}' for k, v in meta_dict.items() if v is not None)
+    meta = (
+        base64.urlsafe_b64encode(item.encode()).decode() for item in meta_items)
+    return _METADATA_SEPARATOR.join(
+        [str(self.query_number), cursor_part, *meta])

@@ -71,8 +71,11 @@ class _MockBlob:
 
   def download_as_bytes(self) -> bytes:
     """Implements google.cloud.storage.Blob.download_as_bytes."""
-    with open(self._path, 'rb') as f:
-      return f.read()
+    try:
+      with open(self._path, 'rb') as f:
+        return f.read()
+    except FileNotFoundError as exc:
+      raise exceptions.NotFound(self._path) from exc
 
 
 class _MockBucket:

@@ -44,6 +44,19 @@ def get_osv_bucket() -> storage.Bucket:
   return client.bucket(bucket)
 
 
+def get_by_id(vuln_id: str) -> Vulnerability:
+  """Gets the OSV record from the GCS bucket.
+  Raises a google.cloud.exceptions.NotFound exception if the record is missing.
+  """
+  bucket = get_osv_bucket()
+  pb_blob = bucket.blob(os.path.join(VULN_PB_PATH, vuln_id + '.pb'))
+  try:
+    return Vulnerability.FromString(pb_blob.download_as_bytes())
+  except:
+    logging.exception('failed to download %s protobuf from GCS', vuln_id)
+    raise
+
+
 def get_by_id_with_generation(vuln_id: str) -> tuple[Vulnerability, int] | None:
   """Gets the OSV record, and the object's generation from the GCS bucket.
   Returns None if the record is not found.
@@ -55,7 +68,7 @@ def get_by_id_with_generation(vuln_id: str) -> tuple[Vulnerability, int] | None:
   try:
     vuln = Vulnerability.FromString(pb_blob.download_as_bytes())
     return vuln, pb_blob.generation
-  except Exception:
+  except:
     logging.exception('failed to download %s protobuf from GCS', vuln_id)
     raise
 

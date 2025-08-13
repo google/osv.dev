@@ -578,6 +578,10 @@ md-icon-button.mdc-data-table__sort-icon-button {
   .packages {
     margin: 0;
     padding: 0;
+
+    .remaining-package {
+      color: $osv-grey-600;
+    }
   }
 
   // Version list.

@@ -37,6 +37,9 @@ ZIP_FILE_PATH = 'all.zip'
 TEST_DATA = '/linter/test_data'
 GCP_PROJECT = 'oss-vdb-test'
 
+LINTER_EXPORT_BUCKET = 'osv-test-public-import-logs'
+LINTER_RESULT_DIR = 'linter-result'
+
 ERROR_CODE_MAPPING = {
     'SCH:001': osv.ImportFindings.INVALID_JSON,
     'REC:001': osv.ImportFindings.INVALID_RECORD,
@@ -87,16 +90,15 @@ def download_osv_data(tmp_dir: str):
   download_file(ZIP_FILE_PATH, all_zip)
   logging.info('Unzipping %s into %s...', all_zip, tmp_dir)
   with zipfile.ZipFile(all_zip, 'r') as zip_ref:
-    # TODO(gongh@): add json validation here.
     zip_ref.extractall(tmp_dir)
   logging.info('Successfully unzipped files to %s.', tmp_dir)
 
 
-def process_linter_result(output: Any, bugs: set):
+def process_linter_result(output: Any, bugs: set, prefix_to_source: dict[str,
+                                                                         str]):
   """process the linter results and update/add findings into db."""
   time = utcnow()
   total_findings = 0
-  prefix_to_source = construct_prefix_to_source_map()
 
   for filename, findings_list in output.items():
     bug_id = os.path.splitext(os.path.basename(filename))[0]
@@ -147,7 +149,51 @@ def record_quality_finding(bug_id: str, source: str,
                   new_findings, source)
 
 
-def parse_and_record_linter_output(json_output_str: str):
+def upload_record_to_bucket(json_result: Any, prefix_to_source: dict[str, str]):
+  """Uploads the linter result to a GCS bucket, creating one file per source."""
+  storage_client = storage.Client()
+  bucket = storage_client.get_bucket(LINTER_EXPORT_BUCKET)
+
+  # Delete existing results first.
+  logging.info('Deleting existing linter results from %s/%s.',
+               LINTER_EXPORT_BUCKET, LINTER_RESULT_DIR)
+  blobs_to_delete = list(bucket.list_blobs(prefix=LINTER_RESULT_DIR))
+  if blobs_to_delete:
+    for blob in blobs_to_delete:
+      blob.delete()
+    logging.info('Finished deleting %d existing linter results.',
+                 len(blobs_to_delete))
+  else:
+    logging.info('No existing linter results to delete.')
+
+  source_results = {}
+  for filename, findings in json_result.items():
+    bug_id = os.path.splitext(os.path.basename(filename))[0]
+    prefix = bug_id.split('-')[0] + '-'
+    source = prefix_to_source.get(prefix, '')
+
+    if source not in source_results:
+      source_results[source] = {}
+    source_results[source][filename] = findings
+
+  logging.info('Uploading linter results for %d sources.', len(source_results))
+  for source, results in source_results.items():
+    if not results:
+      continue
+
+    target_path = os.path.join(LINTER_RESULT_DIR, source, 'result.json')
+    logging.info('Uploading linter result for source '
+                 '%s'
+                 ' to %s/%s', source, LINTER_EXPORT_BUCKET, target_path)
+
+    blob = bucket.blob(target_path)
+    blob.upload_from_string(
+        json.dumps(results, indent=2), content_type='application/json')
+    logging.info("Successfully uploaded linter result for source '%s'.", source)
+
+
+def parse_and_record_linter_output(json_output_str: str,
+                                   prefix_to_source: dict[str, str]):
   """
   Parses the JSON output from the OSV linter and records findings.
   Manages create, update, and delete findings in the Datastore.
@@ -158,6 +204,9 @@ def parse_and_record_linter_output(json_output_str: str):
   except Exception as e:
     logging.error('Failed to parse OSV Linter JSON output: %s', e)
     return
+
+  # Upload linter result to GCS bucket
+  upload_record_to_bucket(linter_output_json, prefix_to_source)
 
   # Fetch all existing ids from importfindings db
   all_finding_keys = osv.ImportFinding.query().fetch(keys_only=True)
@@ -172,7 +221,7 @@ def parse_and_record_linter_output(json_output_str: str):
   linter_bugs = set()
 
   # Process linter results
-  process_linter_result(linter_output_json, linter_bugs)
+  process_linter_result(linter_output_json, linter_bugs, prefix_to_source)
 
   # Delete entries from db that are no longer found by the linter
   ids_to_delete = existing_db_bug_ids - linter_bugs
@@ -190,6 +239,8 @@ def parse_and_record_linter_output(json_output_str: str):
 
 def main():
   """Run linter"""
+  prefix_to_source = construct_prefix_to_source_map()
+
   parser = argparse.ArgumentParser(description='Linter')
   parser.add_argument('--work_dir', help='Working directory', default=TEST_DATA)
   args = parser.parse_args()
@@ -209,7 +260,7 @@ def main():
       result = subprocess.run(
           command, capture_output=True, text=True, check=False, timeout=2000)
 
-      parse_and_record_linter_output(result.stdout)
+      parse_and_record_linter_output(result.stdout, prefix_to_source)
 
     except Exception as e:
       logging.error('An unexpected error occurred: %e', e)

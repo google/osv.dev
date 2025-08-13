@@ -36,6 +36,7 @@ document.addEventListener("DOMContentLoaded", function () {
   let selectedFinding = "";
 
   async function loadData() {
+    console.log("loading data")
     globalLoader.classList.add("visible");
 
     const response = await fetch(
@@ -127,14 +128,17 @@ document.addEventListener("DOMContentLoaded", function () {
 
     ecosystemFilter.addEventListener("click", (e) => {
       e.stopPropagation();
+      console.log("clicked ecosystemFilter")
       toggleFilter("ecosystem");
     });
     findingsFilter.addEventListener("click", (e) => {
       e.stopPropagation();
+      console.log("clicked findingsFilter")
       toggleFilter("findings");
     });
 
     ecosystemFilterOptions.addEventListener("click", (e) => {
+      console.log("clicked ecosystemFilterOptions")
       if (e.target.classList.contains("filter-option")) {
         selectedEcosystem = e.target.dataset.value;
         ecosystemFilterSelected.textContent = e.target.textContent.replace(
@@ -146,6 +150,7 @@ document.addEventListener("DOMContentLoaded", function () {
     });
 
     findingsFilterOptions.addEventListener("click", (e) => {
+      console.log("clicked findingsFilterOptions")
       if (e.target.classList.contains("filter-option")) {
         selectedFinding = e.target.dataset.value;
         findingsFilterSelected.textContent = e.target.textContent.replace(
@@ -439,6 +444,7 @@ document.addEventListener("DOMContentLoaded", function () {
   }
 
   function toggleFilter(filterName) {
+    console.log(`toggleFilter ${filterName}`)
     const options = document.getElementById(`${filterName}-filter-options`);
     const isVisible = options.style.display === "block";
 
@@ -453,6 +459,7 @@ document.addEventListener("DOMContentLoaded", function () {
   }
 
   document.addEventListener("click", function (e) {
+    console.log('clicked filter-container')
     if (!e.target.closest(".filter-container")) {
       document
         .querySelectorAll(".filter-option-container")

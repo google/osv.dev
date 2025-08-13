@@ -14,6 +14,7 @@
 """OSV API server cursor implementation."""
 
 import base64
+import dataclasses
 from enum import Enum
 from typing import Self
 import typing
@@ -25,6 +26,16 @@ _FIRST_PAGE_TOKEN = base64.urlsafe_b64encode(b'FIRST_PAGE_TOKEN').decode()
 # Use ':' as the separator as it doesn't appear in urlsafe_b64encode
 # (which is what is used for both _FIRST_PAGE_TOKEN, and ndb.Cursor.urlsafe())
 _METADATA_SEPARATOR = ':'
+CURSOR_LAST_ID = 'last_id'
+
+
+@dataclasses.dataclass
+class QueryCursorMetadata:
+  """Metadata for the query cursor."""
+  # The last vulnerability ID seen in a query.
+  # This is used to avoid reprocessing the same vulnerability across pages
+  # when multiple AffectedVersions entities exist for it.
+  last_id: str | None = None
 
 
 class _QueryCursorState(Enum):
@@ -61,7 +72,7 @@ class QueryCursor:
   def __init__(self):
     self._ndb_cursor: ndb.Cursor | None = None
     self._cursor_state: _QueryCursorState = _QueryCursorState.ENDED
-    self._metadata: dict[str, str] = {}
+    self.metadata: QueryCursorMetadata = QueryCursorMetadata()
     # The first query is numbered 1. This is because the query counter is
     # incremented **before** the query and the query number being used.
     self.query_number: int = 1
@@ -77,6 +88,7 @@ class QueryCursor:
       return qc
 
     split_values = page_token.split(_METADATA_SEPARATOR)
+    metadata_dict = {}
     if len(split_values) >= 2:
       page_token = split_values[1]
       try:
@@ -86,7 +98,13 @@ class QueryCursor:
       for enc_meta in split_values[2:]:
         meta = base64.urlsafe_b64decode(enc_meta).decode(errors='ignore')
         k, _, v = meta.partition('=')
-        qc._metadata[k] = v
+        metadata_dict[k] = v
+
+    try:
+      qc.metadata = QueryCursorMetadata(**metadata_dict)
+    except TypeError as e:
+      # Unexpected metadata field.
+      raise ValueError('Invalid page token.') from e
 
     if not page_token or page_token == _FIRST_PAGE_TOKEN:
       qc._cursor_state = _QueryCursorState.STARTED
@@ -150,15 +168,9 @@ class QueryCursor:
         # a token in the response
         return None
 
-    meta = (base64.urlsafe_b64encode(f'{k}={v}'.encode()).decode()
-            for k, v in self._metadata.items())
+    meta_dict = dataclasses.asdict(self.metadata)
+    meta_items = (f'{k}={v}' for k, v in meta_dict.items() if v is not None)
+    meta = (
+        base64.urlsafe_b64encode(item.encode()).decode() for item in meta_items)
     return _METADATA_SEPARATOR.join(
         [str(self.query_number), cursor_part, *meta])
-
-  def get_meta(self, key: str) -> str | None:
-    """Get an extra metadata value."""
-    return self._metadata.get(key)
-
-  def set_meta(self, key: str, value: str):
-    """Set an extra metadata value."""
-    self._metadata[key] = value

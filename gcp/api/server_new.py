@@ -24,7 +24,7 @@ from google.protobuf import timestamp_pb2
 
 import osv
 
-CURSOR_LAST_ID = 'last_id'
+from cursor import QueryCursorMetadata
 
 # TODO(michaelkedar): A Global ThreadPoolExecutor is not ideal.
 _BUCKET_THREAD_POOL = concurrent.futures.ThreadPoolExecutor(max_workers=32)
@@ -68,17 +68,17 @@ def query_package(context,
 
   bugs = []
   last_matched_id = ''
-  if cursor := context.input_cursor:
-    if last_id := cursor.get_meta(CURSOR_LAST_ID):
-      last_matched_id = last_id
+  if query_cursor := context.input_cursor:
+    if query_cursor.metadata.last_id:
+      last_matched_id = query_cursor.metadata.last_id
 
   it: ndb.QueryIterator = query.iter(start_cursor=context.cursor_at_current())
   while (yield it.has_next_async()):
     if context.should_break_page(len(bugs)):
-      meta = None
-      if last_matched_id:
-        meta = {CURSOR_LAST_ID: last_matched_id}
+      meta = QueryCursorMetadata(
+          last_id=last_matched_id) if last_matched_id else None
       context.save_cursor_at_page_break(it, meta)
+      break
 
     affected: osv.AffectedVersions = it.next()
     if affected.vuln_id == last_matched_id:

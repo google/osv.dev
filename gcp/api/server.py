@@ -48,7 +48,7 @@ from osv.logs import setup_gcp_logging
 import osv_service_v1_pb2
 import osv_service_v1_pb2_grpc
 
-from cursor import QueryCursor
+from cursor import QueryCursor, QueryCursorMetadata
 from server_new import query_package
 
 import googlecloudprofiler
@@ -559,15 +559,16 @@ class QueryContext:
 
   def save_cursor_at_page_break(self,
                                 it: ndb.QueryIterator,
-                                meta: dict | None = None):
+                                meta: QueryCursorMetadata | None = None):
     """
     Saves the cursor at the current page break position
     """
     self.output_cursor.update_from_iterator(it)
     self.output_cursor.query_number = self.query_counter
     if meta:
-      for k, v in meta.items():
-        self.output_cursor.set_meta(k, v)
+      self.output_cursor.metadata = meta
+    else:
+      self.output_cursor.metadata = QueryCursorMetadata()
 
 
 def should_skip_bucket(path: str) -> bool:

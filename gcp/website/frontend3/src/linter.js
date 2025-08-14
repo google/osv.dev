@@ -1,7 +1,6 @@
 import "./linter.scss";
 
 document.addEventListener("DOMContentLoaded", function () {
-  console.log("Load main");
   let allIssues = [];
   let issuesByEcosystem = {};
   let filteredIssues = [];
@@ -394,11 +393,8 @@ document.addEventListener("DOMContentLoaded", function () {
         res.ok ? res.json() : { error: `Failed to load: ${res.status}` }
       )
       .then((data) => {
-        document.getElementById(vulnJsonId).textContent = JSON.stringify(
-          data,
-          null,
-          2
-        );
+        document.getElementById(vulnJsonId).textContent = 
+          JSON.stringify(data, null, 2);
       })
       .catch((err) => {
         document.getElementById(

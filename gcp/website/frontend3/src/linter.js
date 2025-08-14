@@ -1,6 +1,7 @@
 import "./linter.scss";
 
 document.addEventListener("DOMContentLoaded", function () {
+  console.log("Load main");
   let allIssues = [];
   let issuesByEcosystem = {};
   let filteredIssues = [];
@@ -332,8 +333,15 @@ document.addEventListener("DOMContentLoaded", function () {
     paginationControls.appendChild(nextButton);
   }
 
+  function sanitiseBugId(bugId) {
+    // This regular expression keeps only letters, numbers, hyphens, and colons.
+    return bugId.replace(/[^a-zA-Z0-9-:]/g, "");
+  }
+
   function openCombinedView(bugId) {
-    const tabId = `details-${bugId}`;
+    const safeBugId = sanitiseBugId(bugId);
+
+    const tabId = `details-${safeBugId}`;
     const existingTab = tabBarContainer.querySelector(`[data-tab="${tabId}"]`);
     if (existingTab) {
       setActiveTab(tabId);
@@ -357,54 +365,40 @@ document.addEventListener("DOMContentLoaded", function () {
 
     tabSwitch.appendChild(tabButton);
 
-    const vulnJsonId = `vuln-json-${bugId}`;
-    const findingsJsonId = `findings-json-${bugId}`;
+    const vulnJsonId = `vuln-json-${safeBugId}`;
+    const findingsJsonId = `findings-json-${safeBugId}`;
 
     const tabContent = document.createElement("div");
     tabContent.className = "tab-content";
     tabContent.id = tabId;
 
-    // Create elements programmatically to avoid XSS
-    const detailsGrid = document.createElement("div");
-    detailsGrid.className = "details-grid";
-
-    const vulnColumn = document.createElement("div");
-    vulnColumn.className = "details-column";
-    const vulnHeader = document.createElement("h2");
-    vulnHeader.textContent = "Vulnerability Data";
-    const vulnPre = document.createElement("pre");
-    vulnPre.id = vulnJsonId;
-    vulnPre.className = "json-pre";
-    vulnPre.textContent = "Loading...";
-    vulnColumn.appendChild(vulnHeader);
-    vulnColumn.appendChild(vulnPre);
-
-    const findingsColumn = document.createElement("div");
-    findingsColumn.className = "details-column";
-    const findingsHeader = document.createElement("h2");
-    findingsHeader.textContent = "Linter Findings";
-    const findingsPreEl = document.createElement("pre");
-    findingsPreEl.id = findingsJsonId;
-    findingsPreEl.className = "json-pre";
-    findingsPreEl.textContent = "Loading...";
-    findingsColumn.appendChild(findingsHeader);
-    findingsColumn.appendChild(findingsPreEl);
-
-    detailsGrid.appendChild(vulnColumn);
-    detailsGrid.appendChild(findingsColumn);
-    tabContent.appendChild(detailsGrid);
+    tabContent.innerHTML = `
+      <div class="details-grid">
+          <div class="details-column">
+              <h2>Vulnerability Data</h2>
+              <pre id="${vulnJsonId}" class="json-pre">Loading...</pre>
+          </div>
+          <div class="details-column">
+              <h2>Linter Findings</h2>
+              <pre id="${findingsJsonId}" class="json-pre">Loading...</pre>
+          </div>
+      </div>
+                `;
 
     tabsContent.appendChild(tabContent);
     setActiveTab(tabId);
 
-    // Fetch vuln data
+    // Fetch vuln data with the original bugId
     fetch(`https://api.test.osv.dev/v1/vulns/${bugId}`)
       .then((res) =>
         res.ok ? res.json() : { error: `Failed to load: ${res.status}` }
       )
       .then((data) => {
-        document.getElementById(vulnJsonId).textContent =
-          JSON.stringify(data, null, 2);
+        document.getElementById(vulnJsonId).textContent = JSON.stringify(
+          data,
+          null,
+          2
+        );
       })
       .catch((err) => {
         document.getElementById(

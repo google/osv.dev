@@ -54,6 +54,7 @@ _WORD_CHARACTERS_OR_DASH_OR_COLON = re.compile(r'^[+\w:-]+$')
 _VALID_BLOG_NAME = _WORD_CHARACTERS_OR_DASH
 _VALID_VULN_ID = _WORD_CHARACTERS_OR_DASH_OR_COLON
 _BLOG_CONTENTS_DIR = 'blog'
+_LINTER_CONTENTS_DIR = 'linter'
 _DEPS_BASE_URL = 'https://deps.dev'
 _FIRST_CVSS_CALCULATOR_BASE_URL = 'https://www.first.org/cvss/calculator'
 _GO_VANITY_METADATA = \
@@ -213,6 +214,11 @@ def faq():
 @blueprint.route('/docs', strict_slashes=False)
 def docs():
   return redirect('https://google.github.io/osv.dev')
+
+
+@blueprint.route('/linter')
+def linter():
+  return render_template('linter.html')
 
 
 @blueprint.route('/ecosystems')

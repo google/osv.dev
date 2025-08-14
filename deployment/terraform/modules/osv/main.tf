@@ -87,6 +87,14 @@ resource "google_storage_bucket" "osv_public_import_logs" {
   versioning {
     enabled = true
   }
+
+  # Add this CORS configuration for linter
+  cors {
+    origin          = ["*"]
+    method          = ["GET"]
+    response_header = ["Content-Type"]
+    max_age_seconds = 3600
+  }
 }
 
 resource "google_storage_bucket" "osv_vulnerabilities_export" {

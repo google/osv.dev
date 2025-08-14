@@ -54,6 +54,7 @@ _WORD_CHARACTERS_OR_DASH_OR_COLON = re.compile(r'^[+\w:-]+$')
 _VALID_BLOG_NAME = _WORD_CHARACTERS_OR_DASH
 _VALID_VULN_ID = _WORD_CHARACTERS_OR_DASH_OR_COLON
 _BLOG_CONTENTS_DIR = 'blog'
+_LINTER_CONTENTS_DIR = 'linter'
 _DEPS_BASE_URL = 'https://deps.dev'
 _FIRST_CVSS_CALCULATOR_BASE_URL = 'https://www.first.org/cvss/calculator'
 _GO_VANITY_METADATA = \
@@ -213,6 +214,11 @@ def faq():
 @blueprint.route('/docs', strict_slashes=False)
 def docs():
   return redirect('https://google.github.io/osv.dev')
+
+
+@blueprint.route('/linter')
+def linter():
+  return render_template('linter.html')
 
 
 @blueprint.route('/ecosystems')
@@ -616,12 +622,40 @@ def osv_query(search_string, page, affected_only, ecosystem):
     # yapf: enable
   result_items = [bug_to_response(bug, detailed=False) for bug in bugs]
 
+  # Filter isFixed flag to apply only for selected ecosystem.
+  if ecosystem:
+    eco_variants = osv.ecosystems.add_matching_ecosystems({ecosystem})
+    eco_variants.add(osv.ecosystems.normalize(ecosystem))
+
+    for item, bug_obj in zip(result_items, bugs):
+      item['isFixed'] = _is_fixed_in_ecosystem(bug_obj, eco_variants)
+
   results = {
       'total': total_future.get_result(),
       'items': result_items,
   }
 
   return results
+
+
+def _is_fixed_in_ecosystem(bug: osv.Bug, eco_variants: set[str]) -> bool:
+  """Determine if a bug has a fix within the specified ecosystem variants.
+
+  Args:
+    bug: The Bug entity.
+    eco_variants: Set of ecosystem names (including variants) to match.
+
+  Returns:
+    True if any affected package in the ecosystem has a fixed/limit event.
+  """
+  for affected_pkg in getattr(bug, 'affected_packages', []):
+    pkg = affected_pkg.package
+    if not pkg or pkg.ecosystem not in eco_variants:
+      continue
+    for r in affected_pkg.ranges or []:
+      if any(evt.type in ('fixed', 'limit') for evt in (r.events or [])):
+        return True
+  return False
 
 
 def get_vuln_count_for_ecosystem(ecosystem: str) -> int:

@@ -145,7 +145,7 @@ For example:
 
 Additionally, each ecosystem directory (e.g., `gs://osv-vulnerabilities/PyPI/`) contains a `modified_id.csv` file with the same format, but only for vulnerabilities in that ecosystem and without the `<ecosystem_dir>` prefix in the second column.
 
-By tracking the entries in these files, you can determine which vulnerabilities are new or have been updated since your last download.
+By tracking the entries in these files, you can determine which vulnerabilities are new or have been updated since your last download. The CSV is sorted in reverse chronological order, so you can stream the file and stop when you reach a modified time that you have already processed.
 
 ### Can I contribute data?
 

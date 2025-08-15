@@ -53,10 +53,12 @@ type CPENode struct {
 	Operator string `json:"operator,omitempty"`
 	Negate   bool   `json:"negate,omitempty"`
 	CPEMatch []struct {
-		Vulnerable          bool   `json:"vulnerable,omitempty"`
-		Criteria            string `json:"criteria,omitempty"`
-		VersionEndIncluding string `json:"versionEndIncluding,omitempty"`
-		VersionEndExcluding string `json:"versionEndExcluding,omitempty"`
+		Vulnerable            bool   `json:"vulnerable,omitempty"`
+		Criteria              string `json:"criteria,omitempty"`
+		VersionEndIncluding   string `json:"versionEndIncluding,omitempty"`
+		VersionStartExcluding string `json:"versionStartExcluding,omitempty" yaml:"versionStartExcluding,omitempty" mapstructure:"versionStartExcluding,omitempty"`
+		VersionStartIncluding string `json:"versionStartIncluding,omitempty" yaml:"versionStartIncluding,omitempty" mapstructure:"versionStartIncluding,omitempty"`
+		VersionEndExcluding   string `json:"versionEndExcluding,omitempty"`
 	} `json:"cpeMatch,omitempty"`
 }
 
@@ -72,16 +74,21 @@ type BaseCVSS struct {
 	BaseSeverity string  `json:"baseSeverity,omitempty"`
 }
 
+type CVSS struct {
+	// VectorString corresponds to the JSON schema field "vectorString".
+	VectorString string `json:"vectorString,omitempty" yaml:"vectorString" mapstructure:"vectorString"`
+}
+
 type Metrics struct {
 	Format    string       `json:"format,omitempty"`
 	Scenarios []LangString `json:"scenarios,omitempty"`
-	CVSSV4_0  BaseCVSS     `json:"cvssv4_0,omitempty"`
-	CVSSV3_1  BaseCVSS     `json:"cvssv3_1,omitempty"`
-	CVSSV3_0  BaseCVSS     `json:"cvssv3_0,omitempty"`
-	CVSSV2_0  BaseCVSS     `json:"cvssv2_0,omitempty"`
+	CVSSV4_0  BaseCVSS     `json:"cvssV4_0,omitempty"`
+	CVSSV3_1  BaseCVSS     `json:"cvssV3_1,omitempty"`
+	CVSSV3_0  BaseCVSS     `json:"cvssV3_0,omitempty"`
+	CVSSV2_0  BaseCVSS     `json:"cvssV2_0,omitempty"`
 	Other     struct {
 		Type    string `json:"type,omitempty"`
-		Content any `json:"content,omitempty"`
+		Content any    `json:"content,omitempty"`
 	} `json:"other,omitempty"`
 }
 
@@ -114,6 +121,7 @@ type Affected struct {
 	CollectionUrl string     `json:"collectionURL,omitempty"`
 	Versions      []Versions `json:"versions,omitempty"`
 	Repo          string     `json:"repo,omitempty"`
+	DefaultStatus string     `json:"defaultStatus,omitempty"`
 }
 
 type Versions struct {
@@ -130,7 +138,7 @@ type CVE5 struct {
 	Metadata    CVE5Metadata `json:"cveMetadata,omitempty"`
 	Containers  struct {
 		CNA CNA   `json:"cna"`
-		ADP []ADP `json:"adp,omitempty"`
+		ADP []CNA `json:"adp,omitempty"`
 	} `json:"containers,omitempty"`
 }
 
@@ -148,9 +156,4 @@ func ParseCVE5Timestamp(timestamp string) (time.Time, error) {
 		timestamp = timestamp[:len(timestamp)-1]
 	}
 	return time.Parse(CVE5TimeFormat, timestamp)
-}
-
-type CVSS struct {
-	// VectorString corresponds to the JSON schema field "vectorString".
-	VectorString string `json:"vectorString,omitempty" yaml:"vectorString" mapstructure:"vectorString"`
 }

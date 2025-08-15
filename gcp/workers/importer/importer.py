@@ -54,6 +54,7 @@ _NO_UPDATE_MARKER = 'OSV-NO-UPDATE'
 _BUCKET_THREAD_COUNT = 20
 _HTTP_LAST_MODIFIED_FORMAT = '%a, %d %b %Y %H:%M:%S %Z'
 _TIMEOUT_SECONDS = 60
+_STORE_QUALITY_FINDINGS = False
 
 _client_store = threading.local()
 
@@ -269,21 +270,22 @@ class Importer:
     #       confusing results.
     #       We run osv-linter daily on all records and populate
     #       the linting bucket.
-    return
-    # # Get any current findings for this record.
-    # findingtimenow = utcnow()
-    # if existing_finding := osv.ImportFinding.get_by_id(bug_id):
-    #   if maybe_new_finding not in existing_finding.findings:
-    #     existing_finding.findings.append(maybe_new_finding)
-    #   existing_finding.last_attempt: findingtimenow
-    #   existing_finding.put()
-    # else:
-    #   osv.ImportFinding(
-    #       bug_id=bug_id,
-    #       source=source,
-    #       findings=[maybe_new_finding],
-    #       first_seen=findingtimenow,
-    #       last_attempt=findingtimenow).put()
+    if not _STORE_QUALITY_FINDINGS:
+      return
+    # Get any current findings for this record.
+    findingtimenow = utcnow()
+    if existing_finding := osv.ImportFinding.get_by_id(bug_id):
+      if maybe_new_finding not in existing_finding.findings:
+        existing_finding.findings.append(maybe_new_finding)
+      existing_finding.last_attempt: findingtimenow
+      existing_finding.put()
+    else:
+      osv.ImportFinding(
+          bug_id=bug_id,
+          source=source,
+          findings=[maybe_new_finding],
+          first_seen=findingtimenow,
+          last_attempt=findingtimenow).put()
 
   def run(self):
     """Run importer."""

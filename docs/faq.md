@@ -129,6 +129,24 @@ The database in available in a GCS bucket maintained by OSV: [gs://osv-vulnerabi
 
 More information about how to download the database is available [here](data.md#data-dumps).
 
+### I want to only download the recently added/changed records
+
+Yes, we provide a `modified_id.csv` file that can be used to identify recently added or changed vulnerability records. This file is available in the root of our GCS bucket at `gs://osv-vulnerabilities/modified_id.csv`.
+
+The format of this file is:
+```
+<iso modified date>,<ecosystem_dir>/<id>
+```
+
+For example:
+```
+2024-08-15T00:00:00Z,PyPI/PYSEC-2021-123
+```
+
+Additionally, each ecosystem directory (e.g., `gs://osv-vulnerabilities/PyPI/`) contains a `modified_id.csv` file with the same format, but only for vulnerabilities in that ecosystem and without the `<ecosystem_dir>` prefix in the second column.
+
+By tracking the entries in these files, you can determine which vulnerabilities are new or have been updated since your last download.
+
 ### Can I contribute data?
 
 Yes!

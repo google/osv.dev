@@ -116,6 +116,13 @@ This bucket contains a zip file with all vulnerabilities across all ecosystems (
 
 Individual vulnerability records can be found at `gs://osv-vulnerabilities/<ECOSYSTEM>/<ID>.json`. A zip containing all vulnerabilities for each ecosystem is available at `gs://osv-vulnerabilities/<ECOSYSTEM>/all.zip`. Vulnerabilities without an ecosystem (typically withdrawn ones) are exported to the `gs://osv-vulnerabilities/[EMPTY]/` directory.
 
+To identify recently added or changed vulnerability records, a `modified_id.csv` file is available. A top-level file at `gs://osv-vulnerabilities/modified_id.csv` lists all modified vulnerabilities across all ecosystems in the format `<iso modified date>,<ecosystem_dir>/<id>`. Additionally, each ecosystem directory contains its own `modified_id.csv` file, listing only the vulnerabilities for that ecosystem and omitting the `<ecosystem_dir>` prefix from the ID.
+
+For example:
+```
+2024-08-15T00:00:00Z,PyPI/PYSEC-2021-123
+```
+
 E.g. for PyPI vulnerabilities:
 
 ```bash

@@ -344,17 +344,21 @@ func cve5timestampToTime(timestamp string) (time.Time, error) {
 // ClassifyReferenceLink infers the OSV schema's reference type for a given URL.
 // See https://ossf.github.io/osv-schema/#references-field
 // It uses tags first before resorting to inference by shape.
+// Supports both NVD-style and CVEList V5 tags.
 func ClassifyReferenceLink(link string, tag string) osvschema.ReferenceType {
-	switch tag {
-	case "Patch":
+	normalizedTag := strings.ToLower(tag)
+	normalizedTag = strings.ReplaceAll(normalizedTag, " ", "-")
+
+	switch normalizedTag {
+	case "patch", "patch-related", "fix":
 		return osvschema.ReferenceFix
-	case "Exploit":
+	case "exploit":
 		return osvschema.ReferenceEvidence
-	case "Mailing List":
+	case "mailing-list", "technical-description", "article", "blog", "news":
 		return osvschema.ReferenceArticle
-	case "Issue Tracking":
+	case "issue-tracking", "permissions-required", "report", "bug-report":
 		return osvschema.ReferenceReport
-	case "Vendor Advisory", "Third Party Advisory", "VDB Entry":
+	case "vendor-advisory", "third-party-advisory", "vdb-entry", "release-notes", "advisory", "security-advisory":
 		return osvschema.ReferenceAdvisory
 	}
 
@@ -382,6 +386,57 @@ func ClassifyReferenceLink(link string, tag string) osvschema.ReferenceType {
 			// Example: https://github.com/Netflix/lemur/issues/117
 			if len(pathParts) >= 3 && pathParts[len(pathParts)-2] == "issues" {
 				return osvschema.ReferenceReport
+			}
+
+			// Example: https://github.com/tensorflow/tensorflow/pull/66450
+			if len(pathParts) >= 3 && pathParts[len(pathParts)-2] == "pull" {
+				return osvschema.ReferenceFix
+			}
+
+			// Example: https://github.com/git/git/releases/tag/v2.45.2
+			if len(pathParts) >= 3 && pathParts[len(pathParts)-1] == "releases" {
+				return osvschema.ReferencePackage
+			}
+
+			// Example: https://github.com/google/osv-scanner (general repo link)
+			// If it's just a 2-part path (user/repo), consider it a package/project reference
+			if len(pathParts) == 3 && pathParts[1] != "" && pathParts[2] != "" {
+				return osvschema.ReferencePackage
+			}
+		}
+
+		// Support for other Git hosting platforms
+		if u.Host == "gitlab.com" || strings.Contains(u.Host, "gitlab") {
+			// Example: https://gitlab.com/gitlab-org/gitlab/-/commit/9d78aa57285961003ba767ad43642b18973a4678
+			if len(pathParts) >= 3 && pathParts[len(pathParts)-2] == "commit" {
+				return osvschema.ReferenceFix
+			}
+			// Example: https://gitlab.com/gitlab-org/gitlab/-/issues/432139
+			if len(pathParts) >= 3 && pathParts[len(pathParts)-2] == "issues" {
+				return osvschema.ReferenceReport
+			}
+			// Example: https://gitlab.com/gitlab-org/gitlab/-/merge_requests/162237
+			if len(pathParts) >= 3 && pathParts[len(pathParts)-2] == "merge_requests" {
+				return osvschema.ReferenceFix
+			}
+			// Example: https://gitlab.com/qemu-project/qemu
+			if len(pathParts) >= 3 && pathParts[1] != "" && pathParts[2] != "" && len(pathParts) <= 4 {
+				return osvschema.ReferencePackage
+			}
+		}
+
+		if u.Host == "bitbucket.org" {
+			// Example: https://bitbucket.org/JustWalters/b-b-enhancement/commits/cf9a571dc3f03134444b2c8f2198db9174110365
+			if len(pathParts) >= 3 && pathParts[len(pathParts)-2] == "commits" {
+				return osvschema.ReferenceFix
+			}
+			// Example: https://bitbucket.org/JustWalters/b-b-enhancement/issues/1/last-post-logs-user-out-when-on-global
+			if len(pathParts) >= 3 && pathParts[len(pathParts)-2] == "issues" {
+				return osvschema.ReferenceReport
+			}
+			// Example: https://bitbucket.org/cstshane/lo5_b
+			if len(pathParts) == 3 && pathParts[1] != "" && pathParts[2] != "" {
+				return osvschema.ReferencePackage
 			}
 		}
 

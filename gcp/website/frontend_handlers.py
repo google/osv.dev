@@ -628,7 +628,7 @@ def osv_query(search_string, page, affected_only, ecosystem):
     eco_variants.add(osv.ecosystems.normalize(ecosystem))
 
     for item, bug_obj in zip(result_items, bugs):
-      item['isFixed'] = _is_fixed_in_ecosystem(bug_obj, eco_variants)
+      item['isFixed'] = _is_fixed_in_ecosystem(bug_obj, eco_variants, ecosystem)
 
   results = {
       'total': total_future.get_result(),
@@ -638,20 +638,31 @@ def osv_query(search_string, page, affected_only, ecosystem):
   return results
 
 
-def _is_fixed_in_ecosystem(bug: osv.Bug, eco_variants: set[str]) -> bool:
+def _is_fixed_in_ecosystem(bug: osv.Bug,
+                           eco_variants: set[str],
+                           base_ecosystem: str | None = None) -> bool:
   """Determine if a bug has a fix within the specified ecosystem variants.
 
   Args:
     bug: The Bug entity.
     eco_variants: Set of ecosystem names (including variants) to match.
+    base_ecosystem: Base ecosystem name to match versioned variants.
 
   Returns:
     True if any affected package in the ecosystem has a fixed/limit event.
   """
   for affected_pkg in getattr(bug, 'affected_packages', []):
     pkg = affected_pkg.package
-    if not pkg or pkg.ecosystem not in eco_variants:
+    if not pkg:
       continue
+
+    ecosystem_matches = (
+        pkg.ecosystem in eco_variants or
+        (base_ecosystem and pkg.ecosystem.startswith(base_ecosystem + ":")))
+
+    if not ecosystem_matches:
+      continue
+
     for r in affected_pkg.ranges or []:
       if any(evt.type in ('fixed', 'limit') for evt in (r.events or [])):
         return True

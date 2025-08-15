@@ -267,22 +267,23 @@ class Importer:
 
     # TODO: Do not write import findings at import time, as it could cause
     #       confusing results.
-    #       We run osv-linter daily on all records and populate the linting bucket.
+    #       We run osv-linter daily on all records and populate
+    #       the linting bucket.
     return
-    # Get any current findings for this record.
-    findingtimenow = utcnow()
-    if existing_finding := osv.ImportFinding.get_by_id(bug_id):
-      if maybe_new_finding not in existing_finding.findings:
-        existing_finding.findings.append(maybe_new_finding)
-      existing_finding.last_attempt: findingtimenow
-      existing_finding.put()
-    else:
-      osv.ImportFinding(
-          bug_id=bug_id,
-          source=source,
-          findings=[maybe_new_finding],
-          first_seen=findingtimenow,
-          last_attempt=findingtimenow).put()
+    # # Get any current findings for this record.
+    # findingtimenow = utcnow()
+    # if existing_finding := osv.ImportFinding.get_by_id(bug_id):
+    #   if maybe_new_finding not in existing_finding.findings:
+    #     existing_finding.findings.append(maybe_new_finding)
+    #   existing_finding.last_attempt: findingtimenow
+    #   existing_finding.put()
+    # else:
+    #   osv.ImportFinding(
+    #       bug_id=bug_id,
+    #       source=source,
+    #       findings=[maybe_new_finding],
+    #       first_seen=findingtimenow,
+    #       last_attempt=findingtimenow).put()
 
   def run(self):
     """Run importer."""

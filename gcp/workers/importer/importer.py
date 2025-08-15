@@ -265,6 +265,10 @@ class Importer:
     findings for the record (if any already exist)
     """
 
+    # TODO: Do not write import findings at import time, as it could cause
+    #       confusing results.
+    #       We run osv-linter daily on all records and populate the linting bucket.
+    return
     # Get any current findings for this record.
     findingtimenow = utcnow()
     if existing_finding := osv.ImportFinding.get_by_id(bug_id):

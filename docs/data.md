@@ -112,7 +112,11 @@ For convenience, these sources are aggregated and [continuously](https://github.
 exported to a GCS bucket maintained by OSV:
 [`gs://osv-vulnerabilities`](https://storage.googleapis.com/osv-vulnerabilities/index.html)
 
+### Full database download
+
 This bucket contains a zip file with all vulnerabilities across all ecosystems (including withdrawn records) at `gs://osv-vulnerabilities/all.zip`. This is the easiest way to download the entire OSV database.
+
+### Per-ecosystem downloads
 
 Individual vulnerability records can be found at `gs://osv-vulnerabilities/<ECOSYSTEM>/<ID>.json`. A zip containing all vulnerabilities for each ecosystem is available at `gs://osv-vulnerabilities/<ECOSYSTEM>/all.zip`. Vulnerabilities without an ecosystem (typically withdrawn ones) are exported to the `gs://osv-vulnerabilities/[EMPTY]/` directory.
 
@@ -122,6 +126,29 @@ E.g. for PyPI vulnerabilities:
 # Or download over HTTP via https://osv-vulnerabilities.storage.googleapis.com/PyPI/all.zip
 gsutil cp gs://osv-vulnerabilities/PyPI/all.zip .
 ```
+
+### Downloading recent changes
+
+To efficiently download only new or updated records, you can use the `modified_id.csv` files. These files list vulnerabilities by their last modified time.
+
+Two types of CSV files are provided:
+-   **A top-level file:** Located at `gs://osv-vulnerabilities/modified_id.csv`, this file contains a list of all modified vulnerabilities across all ecosystems.
+-   **Per-ecosystem files:** Each ecosystem directory (e.g., `gs://osv-vulnerabilities/PyPI/`) contains its own `modified_id.csv` file, listing only the vulnerabilities for that specific ecosystem.
+
+**Format and Usage**
+
+The format of the top-level CSV is `<iso modified date>,<ecosystem_dir>/<id>`. The per-ecosystem files omit the `<ecosystem_dir>/` prefix.
+
+For example (from the top-level file):
+```
+2024-08-15T00:05:00Z,PyPI/PYSEC-2021-123
+2024-08-15T00:01:00Z,Go/GO-2022-0123
+2024-08-14T12:00:00Z,npm/1234
+```
+
+The CSV files are sorted in reverse chronological order. This allows you to stream the file and stop processing when you encounter a timestamp that you have already seen, avoiding the need to parse the entire file.
+
+### Ecosystem naming
 
 Some ecosystems contain a `:` separator in the name (e.g. `Alpine:v3.17`). For these ecosystems, the data dump will always contain an ecosystem directory without the `:.*` suffix (e.g. `Alpine`). This will contain all the advisories of the ecosystem with the same prefix (e.g. All `Alpine:.*`).
 

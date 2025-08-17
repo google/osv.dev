@@ -207,7 +207,7 @@ tr:hover {
   margin-bottom: 24px;
 }
 
-.search-box input[type="text"] {
+.search-box input {
   flex: 1 0 auto;
   padding: 15px 10px;
   border: none;
@@ -216,7 +216,7 @@ tr:hover {
   font-size: 12pt;
 }
 
-.search-box input[type="text"]:focus {
+.search-box input:focus {
   outline: none;
 }
 

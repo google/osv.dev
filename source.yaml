@@ -269,7 +269,7 @@
   rest_api_url: 'https://repo.openeuler.org/security/data/osv/all.json'
   type: 2
   ignore_patterns: ['^(?!OESA-).*$']
-  directory_path: 'data/osv'
+  directory_path: 'security/data/osv'
   detect_cherrypicks: False
   extension: '.json'
   db_prefix: ['OESA-']

@@ -1031,7 +1031,6 @@ func ReposFromReferencesCVEList(CVE string, refs []Reference, tagDenyList []stri
 	for _, ref := range refs {
 		// If any of the denylist tags are in the ref's tag set, it's out of consideration.
 		if !RefAcceptable(ref, tagDenyList) {
-			// Also remove it if previously added under an acceptable tag.
 			notes = append(notes, fmt.Sprintf("[%s]: disregarding %q due to a denied tag in %q", CVE, ref.Url, ref.Tags))
 			continue
 		}

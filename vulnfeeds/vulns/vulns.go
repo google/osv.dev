@@ -595,6 +595,7 @@ func FromNVDCVE(id cves.CVEID, cve cves.CVE) *Vulnerability {
 }
 
 // GetCPEs extracts CPE strings from a slice of cves.CPE.
+// Returns array of CPE strings and array of notes.
 func GetCPEs(cpeApplicability []cves.CPE) ([]string, []string) {
 	var CPEs []string
 	var notes []string

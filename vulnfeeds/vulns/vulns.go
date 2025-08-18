@@ -707,3 +707,37 @@ func CheckQuality(text string) QualityCheck {
 	return Success
 
 }
+
+func FindSeverity(metricsData []cves.Metrics) osvschema.Severity {
+	bestVectorString, severityType := getBestCVE5Severity(metricsData)
+	severity := osvschema.Severity{}
+	if bestVectorString == "" {
+		return severity
+	}
+
+	severity = osvschema.Severity{
+		Type:  severityType,
+		Score: bestVectorString,
+	}
+	return severity
+}
+
+func getBestCVE5Severity(metricsData []cves.Metrics) (string, osvschema.SeverityType) {
+	checks := []struct {
+		getVectorString func(cves.Metrics) string
+		severityType    osvschema.SeverityType
+	}{
+		{func(m cves.Metrics) string { return m.CVSSV4_0.VectorString }, osvschema.SeverityCVSSV4},
+		{func(m cves.Metrics) string { return m.CVSSV3_1.VectorString }, osvschema.SeverityCVSSV3},
+		{func(m cves.Metrics) string { return m.CVSSV3_0.VectorString }, osvschema.SeverityCVSSV3},
+	}
+
+	for _, check := range checks {
+		for _, m := range metricsData {
+			if vectorString := check.getVectorString(m); vectorString != "" {
+				return vectorString, check.severityType
+			}
+		}
+	}
+	return "", ""
+}

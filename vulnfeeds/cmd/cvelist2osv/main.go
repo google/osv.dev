@@ -95,6 +95,7 @@ func FromCVE5(cve cves.CVE5, refs []cves.Reference) (*vulns.Vulnerability, []str
 
 	// TODO(jesslowe): add logic to also extract cpes from affected field (CVE-2025-1110)
 	CPEs, notes := vulns.GetCPEs(cve.Containers.CNA.CPEApplicability)
+
 	if len(CPEs) != 0 {
 		v.DatabaseSpecific["CPE"] = vulns.Unique(CPEs)
 	}
@@ -115,43 +116,9 @@ func FromCVE5(cve cves.CVE5, refs []cves.Reference) (*vulns.Vulnerability, []str
 		}
 	}
 	if len(severity) > 0 {
-		v.Severity = []osvschema.Severity{findSeverity(severity)}
+		v.Severity = []osvschema.Severity{vulns.FindSeverity(severity)}
 	}
 	return &v, notes
-}
-
-func findSeverity(metricsData []cves.Metrics) osvschema.Severity {
-	bestVectorString, severityType := getBestSeverity(metricsData)
-	severity := osvschema.Severity{}
-	if bestVectorString == "" {
-		return severity
-	}
-
-	severity = osvschema.Severity{
-		Type:  severityType,
-		Score: bestVectorString,
-	}
-	return severity
-}
-
-func getBestSeverity(metricsData []cves.Metrics) (string, osvschema.SeverityType) {
-	checks := []struct {
-		getVectorString func(cves.Metrics) string
-		severityType    osvschema.SeverityType
-	}{
-		{func(m cves.Metrics) string { return m.CVSSV4_0.VectorString }, osvschema.SeverityCVSSV4},
-		{func(m cves.Metrics) string { return m.CVSSV3_1.VectorString }, osvschema.SeverityCVSSV3},
-		{func(m cves.Metrics) string { return m.CVSSV3_0.VectorString }, osvschema.SeverityCVSSV3},
-	}
-
-	for _, check := range checks {
-		for _, m := range metricsData {
-			if vectorString := check.getVectorString(m); vectorString != "" {
-				return vectorString, check.severityType
-			}
-		}
-	}
-	return "", ""
 }
 
 func writeOSVToFile(id cves.CVEID, cnaAssigner string, vulnDir string, v *vulns.Vulnerability) error {
@@ -192,7 +159,7 @@ func writeMetricToFile(id cves.CVEID, vulnDir string) error {
 }
 
 // CVEToOSV converts a CVE into an OSV finding and writes it to a file.
-func CVEToOSV(CVE cves.CVE5, directory string) error {
+func ConvertAndExportCVEToOSV(CVE cves.CVE5, directory string) error {
 	cveId := CVE.Metadata.CVEID
 	cnaAssigner := CVE.Metadata.AssignerShortName
 	references := identifyPossibleURLs(CVE)
@@ -273,7 +240,7 @@ func main() {
 		Logger.Fatalf("Failed to parse CVEList CVE JSON: %v", err)
 	}
 
-	err = CVEToOSV(cve, *outDir)
+	err = ConvertAndExportCVEToOSV(cve, *outDir)
 
 	if err != nil {
 		Logger.Warnf("[%s]: Failed to generate an OSV record: %+v", cve.Metadata.CVEID, err)

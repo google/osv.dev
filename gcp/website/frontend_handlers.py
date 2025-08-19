@@ -653,12 +653,17 @@ def _is_fixed_in_ecosystem(bug: osv.Bug,
   """
   for affected_pkg in getattr(bug, 'affected_packages', []):
     pkg = affected_pkg.package
-    if not pkg:
-      continue
 
-    ecosystem_matches = (
-        pkg.ecosystem in eco_variants or
-        (base_ecosystem and pkg.ecosystem.startswith(base_ecosystem + ":")))
+    ecosystem_matches = False
+    if pkg:
+      ecosystem_matches |= (
+          pkg.ecosystem in eco_variants or
+          (base_ecosystem and pkg.ecosystem.startswith(base_ecosystem + ":")))
+
+    if base_ecosystem == "GIT" or "GIT" in eco_variants:
+      # Handle Git ecosystems
+      ecosystem_matches |= any(
+          r.type == "GIT" for r in (affected_pkg.ranges or []))
 
     if not ecosystem_matches:
       continue

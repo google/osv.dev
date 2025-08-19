@@ -45,6 +45,24 @@ document.addEventListener("DOMContentLoaded", function () {
     }
   }
 
+  function updateURL(ecosystem, replace = false) {
+    const params = new URLSearchParams(window.location.search);
+    if (ecosystem) {
+      params.set("ecosystem", ecosystem);
+    } else {
+      params.delete("ecosystem");
+    }
+    const newURL = `${
+      window.location.pathname
+    }?${params.toString()}`.replace(/\?$/, "");
+
+    if (replace) {
+      history.replaceState({ path: newURL }, "", newURL);
+    } else {
+      history.pushState({ path: newURL }, "", newURL);
+    }
+  }
+
   applyFiltersFromURL();
 
   async function loadData() {
@@ -58,16 +76,12 @@ document.addEventListener("DOMContentLoaded", function () {
     const sources = jsyaml.load(yamlText);
     const sourceNames = sources.map((s) => s.name);
 
-    // Early exit if the ecosystem from the URL is not in the source yaml list
+    // Check if the ecosystem from the URL is not in the source yaml list.
+    // If the queried ecosystem is not in the source list, remove the invalid parameter from the URL.
     if (selectedEcosystem && !sourceNames.includes(selectedEcosystem)) {
       selectedEcosystem = "";
       urlEcosystemApplied = true; // Prevent further checks
-      const params = new URLSearchParams(window.location.search);
-      params.delete("ecosystem");
-      const newURL = `${
-        window.location.pathname
-      }?${params.toString()}`.replace(/\?$/, "");
-      history.replaceState({ path: newURL }, "", newURL);
+      updateURL("", true);
     }
 
     processAndDisplayData();
@@ -126,12 +140,7 @@ document.addEventListener("DOMContentLoaded", function () {
       globalLoader.classList.remove("visible");
       if (selectedEcosystem && !urlEcosystemApplied) {
         selectedEcosystem = "";
-        const params = new URLSearchParams(window.location.search);
-        params.delete("ecosystem");
-        const newURL = `${
-          window.location.pathname
-        }?${params.toString()}`.replace(/\?$/, "");
-        history.replaceState({ path: newURL }, "", newURL);
+        updateURL("", true);
       }
       applyFilters(); // Final render
     });
@@ -176,35 +185,20 @@ document.addEventListener("DOMContentLoaded", function () {
 
     ecosystemFilterOptions.addEventListener("click", (e) => {
       if (e.target.classList.contains("filter-option")) {
-        selectedEcosystem = e.target.dataset.value;
-        ecosystemFilterSelected.textContent = e.target.textContent.replace(
-          /\((\d+)\)/,
-          `($1 issues)`
-        );
+        const { value, count } = e.target.dataset;
+        selectedEcosystem = value;
+        ecosystemFilterSelected.textContent = `${value} (${count} issues)`;
         urlEcosystemApplied = true;
-
-        const params = new URLSearchParams(window.location.search);
-        if (selectedEcosystem) {
-          params.set("ecosystem", selectedEcosystem);
-        } else {
-          params.delete("ecosystem");
-        }
-        const newURL = `${
-          window.location.pathname
-        }?${params.toString()}`.replace(/\?$/, "");
-        history.pushState({ path: newURL }, "", newURL);
-
+        updateURL(selectedEcosystem);
         applyFilters();
       }
     });
 
     findingsFilterOptions.addEventListener("click", (e) => {
       if (e.target.classList.contains("filter-option")) {
-        selectedFinding = e.target.dataset.value;
-        findingsFilterSelected.textContent = e.target.textContent.replace(
-          /\((\d+)\)/,
-          `($1 issues)`
-        );
+        const { value, name, count } = e.target.dataset;
+        selectedFinding = value;
+        findingsFilterSelected.textContent = `${name} (${count} issues)`;
         applyFilters();
       }
     });
@@ -248,13 +242,13 @@ document.addEventListener("DOMContentLoaded", function () {
     for (const [finding, count] of Object.entries(findingsCount).sort((a, b) =>
       a[0].localeCompare(b[0])
     )) {
+      const name = finding.replace("IMPORT_FINDING_TYPE_", "");
       const option = document.createElement("div");
       option.className = "filter-option";
       option.dataset.value = finding;
-      option.textContent = `${finding.replace(
-        "IMPORT_FINDING_TYPE_",
-        ""
-      )} (${count})`;
+      option.dataset.name = name;
+      option.dataset.count = count;
+      option.textContent = `${name} (${count})`;
       findingsFilterOptions.appendChild(option);
     }
     if (!selectedFinding) {
@@ -278,6 +272,7 @@ document.addEventListener("DOMContentLoaded", function () {
       const option = document.createElement("div");
       option.className = "filter-option";
       option.dataset.value = ecosystem;
+      option.dataset.count = count;
       option.textContent = `${ecosystem} (${count})`;
       ecosystemFilterOptions.appendChild(option);
     }
@@ -286,10 +281,8 @@ document.addEventListener("DOMContentLoaded", function () {
         `[data-value="${selectedEcosystem}"]`
       );
       if (selectedOption) {
-        ecosystemFilterSelected.textContent = selectedOption.textContent.replace(
-          /\((\d+)\)/,
-          `($1 issues)`
-        );
+        const { value, count } = selectedOption.dataset;
+        ecosystemFilterSelected.textContent = `${value} (${count} issues)`;
       }
     } else {
       ecosystemFilterSelected.textContent = `All (${issuesForEcosystemCount.length} issues)`;

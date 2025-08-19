@@ -101,6 +101,10 @@ class GHC(Ecosystem):
 
   def sort_key(self, version):
     """Sort key."""
+    if not semver_index.is_valid(version):
+      # If a user gives us an invalid semver version,
+      # treat it as a very large version so as to not match anything.
+      return semver_index.parse('999999')
     return semver_index.parse(version)
 
   @classmethod

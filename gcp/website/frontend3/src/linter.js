@@ -8,6 +8,7 @@ document.addEventListener("DOMContentLoaded", function () {
   const issuesPerPage = 15;
   let currentPage = 1;
   let sortDirection = "desc";
+  let dataLoadingComplete = false;
 
   const globalLoader = document.getElementById("global-loader");
   const searchInput = document.getElementById("search-input");
@@ -34,6 +35,17 @@ document.addEventListener("DOMContentLoaded", function () {
 
   let selectedEcosystem = "";
   let selectedFinding = "";
+  let urlEcosystemApplied = false;
+
+  function applyFiltersFromURL() {
+    const params = new URLSearchParams(window.location.search);
+    const ecosystem = params.get("ecosystem");
+    if (ecosystem) {
+      selectedEcosystem = ecosystem;
+    }
+  }
+
+  applyFiltersFromURL();
 
   async function loadData() {
     globalLoader.classList.add("visible");
@@ -45,6 +57,18 @@ document.addEventListener("DOMContentLoaded", function () {
     const yamlText = await response.text();
     const sources = jsyaml.load(yamlText);
     const sourceNames = sources.map((s) => s.name);
+
+    // Early exit if the ecosystem from the URL is not in the source yaml list
+    if (selectedEcosystem && !sourceNames.includes(selectedEcosystem)) {
+      selectedEcosystem = "";
+      urlEcosystemApplied = true; // Prevent further checks
+      const params = new URLSearchParams(window.location.search);
+      params.delete("ecosystem");
+      const newURL = `${
+        window.location.pathname
+      }?${params.toString()}`.replace(/\?$/, "");
+      history.replaceState({ path: newURL }, "", newURL);
+    }
 
     processAndDisplayData();
 
@@ -83,6 +107,11 @@ document.addEventListener("DOMContentLoaded", function () {
             }
             issuesByEcosystem[issue.source].push(issue);
           });
+
+          if (selectedEcosystem && !urlEcosystemApplied && issuesByEcosystem[selectedEcosystem]) {
+            urlEcosystemApplied = true;
+          }
+
           applyFilters();
         })
         .catch((error) =>
@@ -93,7 +122,17 @@ document.addEventListener("DOMContentLoaded", function () {
 
     // Wait for all data fetching to complete
     Promise.allSettled(allPromises).then(() => {
+      dataLoadingComplete = true;
       globalLoader.classList.remove("visible");
+      if (selectedEcosystem && !urlEcosystemApplied) {
+        selectedEcosystem = "";
+        const params = new URLSearchParams(window.location.search);
+        params.delete("ecosystem");
+        const newURL = `${
+          window.location.pathname
+        }?${params.toString()}`.replace(/\?$/, "");
+        history.replaceState({ path: newURL }, "", newURL);
+      }
       applyFilters(); // Final render
     });
   }
@@ -142,6 +181,19 @@ document.addEventListener("DOMContentLoaded", function () {
           /\((\d+)\)/,
           `($1 issues)`
         );
+        urlEcosystemApplied = true;
+
+        const params = new URLSearchParams(window.location.search);
+        if (selectedEcosystem) {
+          params.set("ecosystem", selectedEcosystem);
+        } else {
+          params.delete("ecosystem");
+        }
+        const newURL = `${
+          window.location.pathname
+        }?${params.toString()}`.replace(/\?$/, "");
+        history.pushState({ path: newURL }, "", newURL);
+
         applyFilters();
       }
     });
@@ -229,7 +281,17 @@ document.addEventListener("DOMContentLoaded", function () {
       option.textContent = `${ecosystem} (${count})`;
       ecosystemFilterOptions.appendChild(option);
     }
-    if (!selectedEcosystem) {
+    if (selectedEcosystem) {
+      const selectedOption = ecosystemFilterOptions.querySelector(
+        `[data-value="${selectedEcosystem}"]`
+      );
+      if (selectedOption) {
+        ecosystemFilterSelected.textContent = selectedOption.textContent.replace(
+          /\((\d+)\)/,
+          `($1 issues)`
+        );
+      }
+    } else {
       ecosystemFilterSelected.textContent = `All (${issuesForEcosystemCount.length} issues)`;
     }
   }
@@ -256,10 +318,13 @@ document.addEventListener("DOMContentLoaded", function () {
     const endIndex = startIndex + issuesPerPage;
     const paginatedIssues = filteredIssues.slice(startIndex, endIndex);
 
-    if (paginatedIssues.length === 0 && allIssues.length === 0) {
-      tableBody.innerHTML = '<tr><td colspan="3">Loading data...</td></tr>';
-    } else if (paginatedIssues.length === 0) {
-      tableBody.innerHTML = '<tr><td colspan="3">No issues found.</td></tr>';
+    if (paginatedIssues.length === 0) {
+      if (dataLoadingComplete) {
+        tableBody.innerHTML = '<tr><td colspan="3">No issues found.</td></tr>';
+      } else {
+        tableBody.innerHTML =
+          '<tr><td colspan="3">Loading data...</td></tr>';
+      }
     } else {
       paginatedIssues.forEach((issue) => {
         let row = tableBody.insertRow();

@@ -27,7 +27,7 @@ OSV consists of:
 1. [The OSV Schema](https://ossf.github.io/osv-schema/): An easy-to-use data
    format that maps precisely to open source versioning schemes.
 2. Reference infrastructure ([OSV.dev website](https://osv.dev/),
-   [API](../api/), and tooling) that aggregates,
+   [API](./api/), and tooling) that aggregates,
    [enriches](#what-does-osvdev-do-to-the-records-it-imports) and indexes
    vulnerability data from databases that use the OSV schema.
 3. [OSV-Scanner](https://github.com/google/osv-scanner), the officially
@@ -45,7 +45,7 @@ See our blog posts for more details:
 
 The OSV schema and OSV.dev can be used by:
 
-1. Open source consumers: By querying [OSV.dev's API](../api/) and using our tooling to find known vulnerabilities in their dependencies.
+1. Open source consumers: By querying [OSV.dev's API](./api/) and using our tooling to find known vulnerabilities in their dependencies.
 2. Open source projects: By publishing vulnerabilities in the OSV format and having them imported by OSV.dev.
 3. Vulnerability database producers: By making the database available in the OSV format.
 
@@ -67,7 +67,7 @@ The benefits of the OSV schema have led to adoption by several vulnerability dat
 
 ### How do I use OSV as an open source user?
 
-OSV.dev provides an [easy-to-use API](../api/) for querying against the aggregated database of vulnerabilities.
+OSV.dev provides an [easy-to-use API](./api/) for querying against the aggregated database of vulnerabilities.
 
 [Command line tooling](https://github.com/google/osv-scanner) is also available for vulnerability scanning of SBOMs, language manifests, and container images.
 
@@ -129,6 +129,24 @@ The database in available in a GCS bucket maintained by OSV: [gs://osv-vulnerabi
 
 More information about how to download the database is available [here](data.md#data-dumps).
 
+### I want to only download the recently added/changed records
+
+Yes, we provide a `modified_id.csv` file that can be used to identify recently added or changed vulnerability records. This file is available in the root of our GCS bucket at `gs://osv-vulnerabilities/modified_id.csv`.
+
+The format of this file is:
+```
+<iso modified date>,<ecosystem_dir>/<id>
+```
+
+For example:
+```
+2024-08-15T00:00:00Z,PyPI/PYSEC-2021-123
+```
+
+Additionally, each ecosystem directory (e.g., `gs://osv-vulnerabilities/PyPI/`) contains a `modified_id.csv` file with the same format, but only for vulnerabilities in that ecosystem and without the `<ecosystem_dir>` prefix in the second column.
+
+By tracking the entries in these files, you can determine which vulnerabilities are new or have been updated since your last download. The CSV is sorted in reverse chronological order, so you can stream the file and stop when you reach a modified time that you have already processed.
+
 ### Can I contribute data?
 
 Yes!
@@ -173,6 +191,13 @@ When a record is deleted from an upstream source, OSV.dev currently handles them
 ### Is the API rate limited?
 
 No. Currently there is not a limit on the API.
+
+### Are there any response size limits?
+
+The API has a response size limit of 32MiB when using HTTP/1.1.
+There is no limit when using HTTP/2.
+
+We recommend using HTTP/2 for queries that may result in large responses (e.g. big OSV Linux queries).
 
 ### What are OSV.dev's service level objectives (SLOs)?
 

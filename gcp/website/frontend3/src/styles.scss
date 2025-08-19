@@ -577,6 +577,10 @@ md-icon-button.mdc-data-table__sort-icon-button {
   .packages {
     margin: 0;
     padding: 0;
+
+    .remaining-package {
+      color: $osv-grey-600;
+    }
   }
 
   // Version list.
@@ -1648,7 +1652,7 @@ div.highlight {
   align-items: center;
   height: 24px; /* Match the GitHub icon height */
   
-  @media (max-width: $osv-mobile-breakpoint) {
+  @media (max-width: 990px) { // Max width to prevent navbar from overlapping on other navbar elements
     display: none;
   }
 }

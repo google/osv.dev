@@ -18,6 +18,7 @@ import (
 	"cmp"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"io"
 	"net/url"
 	"os"
@@ -44,12 +45,14 @@ type VulnsCVEListError struct {
 	Err error
 }
 
+// Error returns the string representation of a VulnsCVEListError.
 func (e *VulnsCVEListError) Error() string {
 	return e.URL + ": " + e.Err.Error()
 }
 
 type QualityCheck int
 
+// String returns the string representation of a QualityCheck.
 func (q QualityCheck) String() string {
 	return [...]string{
 		"QualityUnknown",
@@ -99,6 +102,7 @@ func AttachExtractedVersionInfo(affected *osvschema.Affected, version models.Ver
 
 	for repo, commits := range repoToCommits {
 		gitRange := osvschema.Range{
+			Type: osvschema.RangeGit,
 			Type: osvschema.RangeGit,
 			Repo: repo,
 		}
@@ -175,6 +179,7 @@ type PackageInfo struct {
 	EcosystemSpecific map[string]interface{} `json:"ecosystem_specific,omitempty" yaml:"ecosystem_specific,omitempty"`
 }
 
+// ToJSON serializes the PackageInfo to JSON.
 func (pi *PackageInfo) ToJSON(w io.Writer) error {
 	encoder := json.NewEncoder(w)
 	return encoder.Encode(pi)
@@ -294,40 +299,16 @@ func (v *Vulnerability) AddPkgInfo(pkgInfo PackageInfo) {
 
 // getBestSeverity finds the best CVSS severity vector from the provided metrics data.
 // It prioritizes newer CVSS versions.
-func getBestSeverity(metricsData any) (string, osvschema.SeverityType) {
-	switch md := metricsData.(type) {
-	case *cves.CVEItemMetrics:
-		if md == nil {
-			return "", ""
+func getBestSeverity(metricsData *cves.CVEItemMetrics) (string, osvschema.SeverityType) {
+	// Prioritize CVSS v3.1 over v3.0 from the Primary scorer.
+	for _, metric := range metricsData.CVSSMetricV31 {
+		if metric.Type == "Primary" && metric.CVSSData.VectorString != "" {
+			return metric.CVSSData.VectorString, osvschema.SeverityCVSSV3
 		}
-		// Prioritize CVSS v3.1 over v3.0 from the Primary scorer.
-		for _, metric := range md.CVSSMetricV31 {
-			if metric.Type == "Primary" && metric.CVSSData.VectorString != "" {
-				return metric.CVSSData.VectorString, osvschema.SeverityCVSSV3
-			}
-		}
-		for _, metric := range md.CVSSMetricV30 {
-			if metric.Type == "Primary" && metric.CVSSData.VectorString != "" {
-				return metric.CVSSData.VectorString, osvschema.SeverityCVSSV3
-			}
-		}
-	case []cves.Metrics:
-		// Define a prioritized list of checks.
-		checks := []struct {
-			getVectorString func(cves.Metrics) string
-			severityType    osvschema.SeverityType
-		}{
-			{func(m cves.Metrics) string { return m.CVSSV4_0.VectorString }, osvschema.SeverityCVSSV4},
-			{func(m cves.Metrics) string { return m.CVSSV3_1.VectorString }, osvschema.SeverityCVSSV3},
-			{func(m cves.Metrics) string { return m.CVSSV3_0.VectorString }, osvschema.SeverityCVSSV3},
-		}
-
-		for _, check := range checks {
-			for _, m := range md {
-				if vectorString := check.getVectorString(m); vectorString != "" {
-					return vectorString, check.severityType
-				}
-			}
+	}
+	for _, metric := range metricsData.CVSSMetricV30 {
+		if metric.Type == "Primary" && metric.CVSSData.VectorString != "" {
+			return metric.CVSSData.VectorString, osvschema.SeverityCVSSV3
 		}
 	}
 	return "", ""
@@ -335,7 +316,7 @@ func getBestSeverity(metricsData any) (string, osvschema.SeverityType) {
 
 // AddSeverity adds CVSS severity information to the OSV vulnerability object.
 // It uses the highest available CVSS score from the underlying CVE record.
-func (v *Vulnerability) AddSeverity(metricsData any) {
+func (v *Vulnerability) AddSeverity(metricsData *cves.CVEItemMetrics) {
 	bestVectorString, severityType := getBestSeverity(metricsData)
 
 	if bestVectorString == "" {
@@ -348,12 +329,14 @@ func (v *Vulnerability) AddSeverity(metricsData any) {
 	})
 }
 
+// ToJSON serializes the Vulnerability to JSON.
 func (v *Vulnerability) ToJSON(w io.Writer) error {
 	encoder := json.NewEncoder(w)
 	encoder.SetIndent("", "  ")
 	return encoder.Encode(v)
 }
 
+// ToYAML serializes the Vulnerability to YAML.
 func (v *Vulnerability) ToYAML(w io.Writer) error {
 	encoder := yaml.NewEncoder(w)
 	return encoder.Encode(v)
@@ -494,6 +477,8 @@ func ClassifyReferenceLink(link string, tag string) osvschema.ReferenceType {
 	return osvschema.ReferenceWeb
 }
 
+// ExtractReferencedVulns extracts other vulnerability IDs from a CVE's references
+// to place them into the aliases and related fields.
 func ExtractReferencedVulns(id cves.CVEID, cveID cves.CVEID, references []cves.Reference) ([]string, []string) {
 	var aliases []string
 	var related []string
@@ -554,6 +539,7 @@ func ExtractReferencedVulns(id cves.CVEID, cveID cves.CVEID, references []cves.R
 	return Unique(aliases), Unique(related)
 }
 
+// Unique removes duplicate elements from a slice.
 func Unique[T comparable](s []T) []T {
 	inResult := make(map[T]bool)
 	var result []T
@@ -585,6 +571,7 @@ func ClassifyReferences(refs []cves.Reference) []osvschema.Reference {
 		}
 	}
 	references = Unique(references)
+	references = Unique(references)
 	sort.SliceStable(references, func(i, j int) bool {
 		return references[i].Type < references[j].Type
 	})
@@ -609,11 +596,15 @@ func FromNVDCVE(id cves.CVEID, cve cves.CVE) *Vulnerability {
 	return &v
 }
 
-func GetCPEs(cpeApplicability []cves.CPE) []string {
+// GetCPEs extracts CPE strings from a slice of cves.CPE.
+// Returns array of CPE strings and array of notes.
+func GetCPEs(cpeApplicability []cves.CPE) ([]string, []string) {
 	var CPEs []string
+	var notes []string
 	for _, c := range cpeApplicability {
 		for _, node := range c.Nodes {
 			if node.Operator != "OR" {
+				notes = append(notes, fmt.Sprintf("Node found without OR operator"))
 				continue
 			}
 			for _, match := range node.CPEMatch {
@@ -621,9 +612,10 @@ func GetCPEs(cpeApplicability []cves.CPE) []string {
 			}
 		}
 	}
-	return CPEs
+	return CPEs, notes
 }
 
+// FromYAML deserializes a Vulnerability from a YAML reader.
 func FromYAML(r io.Reader) (*Vulnerability, error) {
 	decoder := yaml.NewDecoder(r)
 	var vuln Vulnerability
@@ -635,6 +627,7 @@ func FromYAML(r io.Reader) (*Vulnerability, error) {
 	return &vuln, nil
 }
 
+// FromJSON deserializes a Vulnerability from a JSON reader.
 func FromJSON(r io.Reader) (*Vulnerability, error) {
 	decoder := json.NewDecoder(r)
 	var vuln Vulnerability
@@ -716,4 +709,38 @@ func CheckQuality(text string) QualityCheck {
 	}
 	return Success
 
+}
+
+func FindSeverity(metricsData []cves.Metrics) osvschema.Severity {
+	bestVectorString, severityType := getBestCVE5Severity(metricsData)
+	severity := osvschema.Severity{}
+	if bestVectorString == "" {
+		return severity
+	}
+
+	severity = osvschema.Severity{
+		Type:  severityType,
+		Score: bestVectorString,
+	}
+	return severity
+}
+
+func getBestCVE5Severity(metricsData []cves.Metrics) (string, osvschema.SeverityType) {
+	checks := []struct {
+		getVectorString func(cves.Metrics) string
+		severityType    osvschema.SeverityType
+	}{
+		{func(m cves.Metrics) string { return m.CVSSV4_0.VectorString }, osvschema.SeverityCVSSV4},
+		{func(m cves.Metrics) string { return m.CVSSV3_1.VectorString }, osvschema.SeverityCVSSV3},
+		{func(m cves.Metrics) string { return m.CVSSV3_0.VectorString }, osvschema.SeverityCVSSV3},
+	}
+
+	for _, check := range checks {
+		for _, m := range metricsData {
+			if vectorString := check.getVectorString(m); vectorString != "" {
+				return vectorString, check.severityType
+			}
+		}
+	}
+	return "", ""
 }

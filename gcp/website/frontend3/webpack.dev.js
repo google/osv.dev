@@ -6,7 +6,10 @@ const MiniCssExtractPlugin = require('mini-css-extract-plugin');
 
 module.exports = {
   mode: 'development',
-  entry: './src/index.js',
+  entry: {
+    main: './src/index.js',
+    linter: './src/linter.js',
+  },
   output: {
     path: path.resolve(__dirname, '../dist'),
     filename: 'static/[name].js',
@@ -38,7 +41,15 @@ module.exports = {
     }),
     new HtmlWebpackPlugin({
       filename: 'base.html',
-      template: './src/base.html'
+      template: './src/base.html',
+      chunks: ['main'],
+      excludeChunks: ['linter'],
+    }),
+    new HtmlWebpackPlugin({
+      filename: 'linter.html',
+      template: './src/templates/linter/index.html',
+      chunks: ['linter'],
+      excludeChunks: ['main'],
     }),
     new MiniCssExtractPlugin({
       filename: 'static/[name].css'

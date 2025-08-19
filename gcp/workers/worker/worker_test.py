@@ -702,8 +702,11 @@ class RESTUpdateTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
       task_runner._source_update(message)
 
     self.assertIn(
-        "ERROR:root:Unexpected exception while writing RHSA-2018:3140 to Datastore",
+        'ERROR:root:Not writing new entities for RHSA-2018:3140 since Bug.put() failed',
         logs.output[0])
+    self.assertIn(
+        'ERROR:root:Unexpected exception while writing RHSA-2018:3140 to Datastore',
+        logs.output[1])
 
     self.mock_publish.assert_not_called()
 

@@ -103,7 +103,6 @@ func AttachExtractedVersionInfo(affected *osvschema.Affected, version models.Ver
 	for repo, commits := range repoToCommits {
 		gitRange := osvschema.Range{
 			Type: osvschema.RangeGit,
-			Type: osvschema.RangeGit,
 			Repo: repo,
 		}
 		// We're not always able to determine when a vulnerability is introduced, and may need to default to the dawn of time.
@@ -570,7 +569,6 @@ func ClassifyReferences(refs []cves.Reference) []osvschema.Reference {
 			})
 		}
 	}
-	references = Unique(references)
 	references = Unique(references)
 	sort.SliceStable(references, func(i, j int) bool {
 		return references[i].Type < references[j].Type

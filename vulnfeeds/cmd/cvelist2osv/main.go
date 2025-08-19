@@ -2,7 +2,6 @@ package main
 
 import (
 	"encoding/json"
-	"errors"
 	"flag"
 	"fmt"
 	"log"
@@ -582,13 +581,13 @@ func FromCVE5(cve cves.CVE5, refs []cves.Reference) (*vulns.Vulnerability, []str
 	var notes []string
 	v := vulns.Vulnerability{
 		Vulnerability: osvschema.Vulnerability{
-			SchemaVersion: osvschema.SchemaVersion,
-			ID:            string(cve.Metadata.CVEID),
-			Summary:       string(cve.Containers.CNA.Title),
-			Details:       cves.EnglishDescription(cve.Containers.CNA.Descriptions),
-			Aliases:       aliases,
-			Related:       related,
-			References:    vulns.ClassifyReferences(refs),
+			SchemaVersion:    osvschema.SchemaVersion,
+			ID:               string(cve.Metadata.CVEID),
+			Summary:          string(cve.Containers.CNA.Title),
+			Details:          cves.EnglishDescription(cve.Containers.CNA.Descriptions),
+			Aliases:          aliases,
+			Related:          related,
+			References:       vulns.ClassifyReferences(refs),
 			DatabaseSpecific: make(map[string]interface{}),
 		}}
 	published, err := cves.ParseCVE5Timestamp(cve.Metadata.DatePublished)
@@ -607,7 +606,7 @@ func FromCVE5(cve cves.CVE5, refs []cves.Reference) (*vulns.Vulnerability, []str
 
 	// Add affected versions
 	notes = append(notes, AddVersionInfo(cve, &v)...)
-	
+
 	// TODO(jesslowe): add logic to also extract cpes from affected field (CVE-2025-1110)
 	if CPEs, notes := vulns.GetCPEs(cve.Containers.CNA.CPEApplicability); len(CPEs) > 0 {
 		v.DatabaseSpecific["CPE"] = vulns.Unique(CPEs)
@@ -618,18 +617,18 @@ func FromCVE5(cve cves.CVE5, refs []cves.Reference) (*vulns.Vulnerability, []str
 
 	// TODO: add CWEs
 
-	// Find metrics across CNA and adp
-	var metrics []cves.Metrics
+	// Find severity metrics across CNA and adp
+	var severity []cves.Metrics
 	if len(cve.Containers.CNA.Metrics) != 0 {
-		metrics = append(metrics, cve.Containers.CNA.Metrics...)
+		severity = append(severity, cve.Containers.CNA.Metrics...)
 	}
 	for _, adp := range cve.Containers.ADP {
 		if len(adp.Metrics) != 0 {
-			metrics = append(metrics, adp.Metrics...)
+			severity = append(severity, adp.Metrics...)
 		}
 	}
-	for _, m := range metrics {
-		v.AddSeverity(m)
+	if len(severity) > 0 {
+		v.Severity = []osvschema.Severity{vulns.FindSeverity(severity)}
 	}
 	return &v, notes
 }

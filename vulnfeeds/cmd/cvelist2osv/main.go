@@ -4,8 +4,6 @@ import (
 	"encoding/json"
 	"flag"
 	"fmt"
-	"log"
-	"net/http"
 	"os"
 	"path/filepath"
 	"strconv"
@@ -16,7 +14,6 @@ import (
 
 	"github.com/google/osv/vulnfeeds/cves"
 	"github.com/google/osv/vulnfeeds/git"
-	"github.com/google/osv/vulnfeeds/models"
 	"github.com/google/osv/vulnfeeds/utility"
 	"github.com/google/osv/vulnfeeds/vulns"
 	"github.com/ossf/osv-schema/bindings/go/osvschema"
@@ -49,158 +46,6 @@ var RefTagDenyList = []string{
 	"Broken Link", // Actively ignore these though.
 }
 
-// extractVersionsFromAffected extracts affected versions from the CNA container of a CVE.
-// It populates the models.AffectedVersion slice based on the versioning information
-// provided in the CVE data, handling both explicit ranges (lessThan, lessThanOrEqual)
-// and single affected versions. It also attempts to extract versions from text
-// descriptions if direct version ranges are not available.
-//
-// Parameters:
-//   - cna: The CNA container from the CVE5 object.
-//   - versionInfo: The models.VersionInfo struct to populate with affected versions.
-//
-// Returns:
-//   - bool: True if any versions were successfully extracted, false otherwise.
-//   - []string: A slice of notes or warnings generated during the extraction process.
-func extractVersionsFromAffected(cna cves.CNA, versionInfo *models.VersionInfo) (bool, []string) {
-	gotVersions := false
-	var notes []string
-	for _, cveAff := range cna.Affected {
-		for _, v := range cveAff.Versions {
-			if v.Status != "affected" {
-				continue
-			}
-
-			var introduced, fixed, lastaffected string
-
-			// Quality check
-			vQuality := vulns.CheckQuality(v.Version)
-			if vQuality == vulns.Filler {
-				notes = append(notes, fmt.Sprintf("Version value for %s %s is filler or empty", cveAff.Vendor, cveAff.Product))
-			}
-			vLessThanQual := vulns.CheckQuality(v.LessThan)
-			vLTOEQual := vulns.CheckQuality(v.LessThanOrEqual)
-
-			hasRange := vLessThanQual <= vulns.Spaces || vLTOEQual <= vulns.Spaces
-			if v.LessThan != "" && v.LessThan == v.Version {
-				notes = append(notes, fmt.Sprintf("Warning: lessThan (%s) is the same as introduced (%s)\n", v.LessThan, v.Version))
-				// Only this specific version affected or up to this version
-				hasRange = false
-			}
-			if hasRange {
-				if vQuality <= vulns.Spaces {
-					introduced = v.Version
-					notes = append(notes, fmt.Sprintf("%s - Introduced from version value", vQuality.String()))
-				}
-				if vLessThanQual <= vulns.Spaces {
-					fixed = v.LessThan
-					notes = append(notes, fmt.Sprintf("%s - Fixed from LessThan value", vLessThanQual.String()))
-				} else if vLTOEQual <= vulns.Spaces {
-					lastaffected = v.LessThanOrEqual
-					notes = append(notes, fmt.Sprintf("%s - LastAffected from LessThanOrEqual value", vLTOEQual.String()))
-				}
-			} else {
-				// In this case only v.Version exists which either means that it is _only_ that version that is
-				// affected, but more likely, it affects up to that version. It could also mean that the range is given
-				// in one line instead - like "< 1.5.3" or "< 2.45.4, >= 2.0 " or just "before 1.4.7", so check for that.
-				notes = append(notes, "Only version exists")
-				possibleVersions, note := cves.ExtractVersionsFromText(nil, v.Version)
-				if note != nil {
-					notes = append(notes, note...)
-				}
-				if possibleVersions != nil {
-					versionInfo.AffectedVersions = append(versionInfo.AffectedVersions, possibleVersions...)
-					notes = append(notes, fmt.Sprintf("Versions retrieved from text"))
-					gotVersions = true
-					continue
-				}
-
-				// We might only have a single version. Assume it affects up to that version
-				if vQuality <= vulns.Spaces {
-					introduced = "0"
-					lastaffected = v.Version
-					notes = append(notes, fmt.Sprintf("%s - Single version found. Assuming introduced is 0, and LastAffected is given version", vQuality))
-				}
-
-			}
-			if introduced == "" && fixed == "" && lastaffected == "" {
-				continue
-			}
-			gotVersions = true
-			possibleNewAffectedVersion := models.AffectedVersion{
-				Introduced:   introduced,
-				Fixed:        fixed,
-				LastAffected: lastaffected,
-			}
-			notes = append(notes, fmt.Sprintf("Possible new affected versions i:%s l:%s f:%s", possibleNewAffectedVersion.Introduced, possibleNewAffectedVersion.LastAffected, possibleNewAffectedVersion.Fixed))
-
-			if slices.Contains(versionInfo.AffectedVersions, possibleNewAffectedVersion) {
-				// Avoid appending duplicates
-				continue
-			}
-			versionInfo.AffectedVersions = append(versionInfo.AffectedVersions, possibleNewAffectedVersion)
-		}
-	}
-	return gotVersions, notes
-}
-
-func addIDToNotes(id cves.CVEID, notes []string) []string {
-	var updatedNotes []string
-	for _, note := range notes {
-		updatedNotes = append(updatedNotes, fmt.Sprintf("[%s] %s", id, note))
-	}
-	return updatedNotes
-}
-
-func ExtractVersionInfo(cve cves.CVE5, refs []string, httpClient *http.Client) (v models.VersionInfo, notes []string) {
-	for _, reference := range refs {
-		// (Potentially faulty) Assumption: All viable Git commit reference links are fix commits.
-		if commit, err := cves.ExtractGitCommit(reference, models.Fixed, httpClient); err == nil {
-			v.AffectedCommits = append(v.AffectedCommits, commit)
-		}
-	}
-	gotVersions := false
-	gotVersions, notes = extractVersionsFromAffected(cve.Containers.CNA, &v)
-
-	// attempt using adp as well
-	for _, adp := range cve.Containers.ADP {
-		notes = append(notes, "Looking at ADP")
-		adpGotVersions, extractNotes := extractVersionsFromAffected(adp, &v)
-		if !gotVersions && adpGotVersions {
-			gotVersions = adpGotVersions
-		}
-		notes = append(notes, extractNotes...)
-	}
-
-	if !gotVersions {
-		var extractNotes []string
-		// If all else has failed, attempt to extract version from the description.
-		v.AffectedVersions, extractNotes = cves.ExtractVersionsFromText(nil, cves.EnglishDescription(cve.Containers.CNA.Descriptions))
-		notes = append(notes, extractNotes...)
-		if len(v.AffectedVersions) > 0 {
-			log.Printf("[%s] Extracted versions from description = %+v", cve.Metadata.CVEID, v.AffectedVersions)
-		}
-	}
-
-	if len(v.AffectedVersions) == 0 {
-		notes = append(notes, "No versions detected.")
-	}
-
-	// Remove any lastaffected versions in favour of fixed versions.
-	if v.HasFixedVersions() {
-		affectedVersionsWithoutLastAffected := []models.AffectedVersion{}
-		for _, av := range v.AffectedVersions {
-			if av.LastAffected != "" {
-				continue
-			}
-			affectedVersionsWithoutLastAffected = append(affectedVersionsWithoutLastAffected, av)
-		}
-		v.AffectedVersions = affectedVersionsWithoutLastAffected
-	}
-
-	return v, notes
-}
-
 // extractConversionMetrics examines a CVE and extracts metrics and heuristics about it.
 func extractConversionMetrics(cve cves.CVE5, refs []osvschema.Reference) {
 	// CNA based heuristics
@@ -222,9 +67,10 @@ func extractConversionMetrics(cve cves.CVE5, refs []osvschema.Reference) {
 	// CISA ADP Vulnrichment often adds metrics
 
 	// Additional information provided - CVSS, KEV, CWE etc.
-
 }
 
+// AddVersionInfo attempts to extract versions into version ranges and events
+// through different methods, sometimes based on specific CNA behaviour.
 func AddVersionInfo(cve cves.CVE5, v *vulns.Vulnerability) []string {
 	var notes []string
 	if cve.Metadata.AssignerShortName == "Linux" {
@@ -232,7 +78,7 @@ func AddVersionInfo(cve cves.CVE5, v *vulns.Vulnerability) []string {
 			Ecosystem: string(osvschema.EcosystemLinux),
 			Name:      "Kernel"}
 
-		cpeRanges, err := getCPERanges(cve)
+		cpeRanges, err := findCPEVersionRanges(cve)
 		if err != nil {
 			notes = append(notes, err.Error())
 		}
@@ -259,9 +105,9 @@ func AddVersionInfo(cve cves.CVE5, v *vulns.Vulnerability) []string {
 		}
 	}
 
-	// Attempt to extract from Affected field
+	// Attempt to extract version ranges from Affected field
 	for _, cveAff := range affected {
-		versionRanges, versionType, extractNotes := ExtractFromAffected(cveAff, cve.Metadata.AssignerShortName)
+		versionRanges, versionType, extractNotes := ExtractVersionsFromAffectedField(cveAff, cve.Metadata.AssignerShortName)
 		if len(versionRanges) == 0 {
 			notes = append(notes, extractNotes...)
 			continue
@@ -290,7 +136,7 @@ func AddVersionInfo(cve cves.CVE5, v *vulns.Vulnerability) []string {
 	// No versions were extracted from Affected so attempt to extract from CPE field
 	if !gotVersions {
 		notes = append(notes, "No versions in affected, attempting to extract from CPE")
-		cpeRanges, err := getCPERanges(cve)
+		cpeRanges, err := findCPEVersionRanges(cve)
 		if err != nil {
 			notes = append(notes, err.Error())
 		}
@@ -318,6 +164,7 @@ func AddVersionInfo(cve cves.CVE5, v *vulns.Vulnerability) []string {
 	return notes
 }
 
+// addToVersionRange is a helper function that will take a range and versions and add them as events
 func addToVersionRange(versionRange *osvschema.Range, intro string, lastAff string, fixed string) {
 	if intro != "" {
 		versionRange.Events = append(versionRange.Events, osvschema.Event{
@@ -331,10 +178,10 @@ func addToVersionRange(versionRange *osvschema.Range, intro string, lastAff stri
 			LastAffected: lastAff,
 		})
 	}
-
 }
 
-func getCPERanges(cve cves.CVE5) (versionRanges []osvschema.Range, err error) {
+// findCPEVersionRanges gets the version ranges from provided CPE ranges
+func findCPEVersionRanges(cve cves.CVE5) (versionRanges []osvschema.Range, err error) {
 	for _, c := range cve.Containers.CNA.CPEApplicability {
 		for _, node := range c.Nodes {
 			if node.Operator != "OR" {
@@ -362,10 +209,24 @@ func getCPERanges(cve cves.CVE5) (versionRanges []osvschema.Range, err error) {
 	return versionRanges, nil
 }
 
-func ExtractFromAffected(affected cves.Affected, cnaAssigner string) (versionRanges []osvschema.Range, rangeType string, notes []string) {
+// ExtractVersionsFromAffected extracts affected versions from the affected field  in the CNA container of a CVE.
+// It populates the models.AffectedVersion slice based on the versioning information
+// provided in the CVE data, handling both explicit ranges (lessThan, lessThanOrEqual)
+// and single affected versions. It also attempts to extract versions from text
+// descriptions if direct version ranges are not available.
+//
+// Parameters:
+//   - affected: The CNA container from the CVE5 object.
+//   - cnaAssigner: The CNA responsible for the CVE
+//
+// Returns:
+//   - versionRanges
+//   - rangeType
+//   - notes
+
+func ExtractVersionsFromAffectedField(affected cves.Affected, cnaAssigner string) (versionRanges []osvschema.Range, rangeType string, notes []string) {
 
 	if affected.DefaultStatus == "affected" {
-
 		if cnaAssigner == "Linux" {
 			notes = append(notes, "Skipping Linux Affected range versions in favour of CPE versions")
 			return nil, "", notes
@@ -516,6 +377,7 @@ func ExtractFromAffected(affected cves.Affected, cnaAssigner string) (versionRan
 	return versionRanges, mostFrequentVersionType, notes
 }
 
+// findInverseAffectedRanges takes the given 'unaffected' ranges and attempts to determine the affected version ranges
 func findInverseAffectedRanges(cveAff cves.Affected) (ranges []osvschema.Range, notes []string) {
 	var introduced []string
 	var fixed []string

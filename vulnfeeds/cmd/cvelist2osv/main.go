@@ -307,7 +307,7 @@ func ExtractVersionsFromAffectedField(affected cves.Affected, cnaAssigner string
 			}
 			if vLessThanQual <= vulns.Spaces {
 				fixed = vers.LessThan
-				notes = append(notes, fmt.Sprintf("%s - Fixed from LessThan value - s %s", vLessThanQual.String(), vers.LessThan))
+				notes = append(notes, fmt.Sprintf("%s - Fixed from LessThan value - %s", vLessThanQual.String(), vers.LessThan))
 			} else if vLTOEQual <= vulns.Spaces {
 				lastaffected = vers.LessThanOrEqual
 				notes = append(notes, fmt.Sprintf("%s - LastAffected from LessThanOrEqual value- %s", vLTOEQual.String(), vers.LessThanOrEqual))
@@ -317,12 +317,10 @@ func ExtractVersionsFromAffectedField(affected cves.Affected, cnaAssigner string
 				versionRange := osvschema.Range{}
 				addToVersionRange(&versionRange, introduced, "", fixed)
 				versionRanges = append(versionRanges, versionRange)
-				notes = append(notes, "vers range updated fixed")
 			} else if introduced != "" && lastaffected != "" {
 				versionRange := osvschema.Range{}
 				addToVersionRange(&versionRange, introduced, lastaffected, "")
 				versionRanges = append(versionRanges, versionRange)
-				notes = append(notes, "vers range updated la")
 			}
 		} else {
 			// In this case only vers.Version exists which either means that it is _only_ that version that is

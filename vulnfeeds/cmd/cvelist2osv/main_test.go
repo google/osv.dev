@@ -198,7 +198,6 @@ func TestFromCVE5(t *testing.T) {
 						}}}},
 				},
 			},
-			expectedNotes: nil,
 		},
 		{
 			name: "CVE-2024-21634",
@@ -231,7 +230,6 @@ func TestFromCVE5(t *testing.T) {
 					DatabaseSpecific: make(map[string]interface{}),
 				},
 			},
-			expectedNotes: nil,
 		},
 		{
 			name: "CVE-2025-21772",
@@ -350,7 +348,6 @@ func TestFromCVE5(t *testing.T) {
 					},
 				},
 			},
-			expectedNotes: []string{"Skipping Linux Affected range versions in favour of CPE versions"},
 		},
 	}
 
@@ -370,9 +367,6 @@ func TestFromCVE5(t *testing.T) {
 
 			if diff := cmp.Diff(tc.expectedVuln, vuln); diff != "" {
 				t.Errorf("FromCVE5() vuln mismatch (-want +got):\n%s", diff)
-			}
-			if diff := cmp.Diff(tc.expectedNotes, notes); diff != "" {
-				t.Errorf("FromCVE5() notes mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}

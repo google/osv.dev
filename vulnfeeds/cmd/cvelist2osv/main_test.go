@@ -154,11 +154,10 @@ func TestFromCVE5(t *testing.T) {
 	cve21772Mod, _ := cves.ParseCVE5Timestamp("2025-05-04T07:20:46.575Z")
 
 	testCases := []struct {
-		name          string
-		cve           cves.CVE5
-		refs          []cves.Reference
-		expectedVuln  *vulns.Vulnerability
-		expectedNotes []string
+		name         string
+		cve          cves.CVE5
+		refs         []cves.Reference
+		expectedVuln *vulns.Vulnerability
 	}{
 		{
 			name: "CVE-2025-1110",
@@ -353,7 +352,7 @@ func TestFromCVE5(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			vuln, notes := FromCVE5(tc.cve, tc.refs)
+			vuln, _ := FromCVE5(tc.cve, tc.refs)
 
 			// Handle non-deterministic time.Now()
 			if strings.Contains(tc.name, "invalid date") {

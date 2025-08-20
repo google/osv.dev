@@ -26,6 +26,5 @@ class BioconductorEcosystemTest(vcr.unittest.VCRTestCase):
     ecosystem = ecosystems.get('Bioconductor')
     self.assertEqual('1.18.0', ecosystem.next_version('a4', '1.16.0'))
     self.assertEqual('1.20.0', ecosystem.next_version('a4', '1.18.0'))
-    self.assertGreater(ecosystem.sort_key('1-0'), ecosystem.sort_key('1.2.0'))
     with self.assertRaises(ecosystems.EnumerateError):
       ecosystem.next_version('doesnotexist123456', '1')

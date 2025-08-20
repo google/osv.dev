@@ -379,144 +379,89 @@ func TestFromCVE5(t *testing.T) {
 	}
 }
 
-func TestFindInverseAffectedRanges_FromFile(t *testing.T) {
-	// Read the test CVE file.
-	cve := loadTestData("CVE-2025-21772")
-
-	var affectedBlock cves.Affected
-	// Find the specific affected block with defaultStatus: "affected".
-	for _, affected := range cve.Containers.CNA.Affected {
-		if affected.DefaultStatus == "affected" {
-			affectedBlock = affected
-			break
-		}
+func TestFindInverseAffectedRanges(t *testing.T) {
+	testCases := []struct {
+		name           string
+		cve            cves.CVE5
+		expectedRanges []osvschema.Range
+	}{
+		{
+			name: "CVE-2025-21772",
+			cve:  loadTestData("CVE-2025-21772"),
+			expectedRanges: []osvschema.Range{
+				{Events: []osvschema.Event{{Introduced: "0"}, {Fixed: "5.4.291"}}},
+				{Events: []osvschema.Event{{Introduced: "5.5.0"}, {Fixed: "5.10.235"}}},
+				{Events: []osvschema.Event{{Introduced: "5.11.0"}, {Fixed: "5.15.179"}}},
+				{Events: []osvschema.Event{{Introduced: "5.16.0"}, {Fixed: "6.1.129"}}},
+				{Events: []osvschema.Event{{Introduced: "6.2.0"}, {Fixed: "6.6.79"}}},
+				{Events: []osvschema.Event{{Introduced: "6.7.0"}, {Fixed: "6.12.16"}}},
+				{Events: []osvschema.Event{{Introduced: "6.13.0"}, {Fixed: "6.13.4"}}},
+			},
+		},
+		{
+			name: "CVE-2025-21631",
+			cve:  loadTestData("CVE-2025-21631"),
+			expectedRanges: []osvschema.Range{
+				{Events: []osvschema.Event{{Introduced: "0"}, {Fixed: "5.15.177"}}},
+				{Events: []osvschema.Event{{Introduced: "5.16.0"}, {Fixed: "6.1.125"}}},
+				{Events: []osvschema.Event{{Introduced: "6.2.0"}, {Fixed: "6.6.72"}}},
+				{Events: []osvschema.Event{{Introduced: "6.7.0"}, {Fixed: "6.12.10"}}},
+			},
+		},
 	}
 
-	if affectedBlock.Product == "" {
-		t.Fatal("Could not find the 'affected' block with defaultStatus 'affected' in the test file")
-	}
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			var affectedBlock cves.Affected
+			// Find the specific affected block with defaultStatus: "affected".
+			for _, affected := range tc.cve.Containers.CNA.Affected {
+				if affected.DefaultStatus == "affected" {
+					affectedBlock = affected
+					break
+				}
+			}
 
-	// Define the expected output based on the function's logic.
-	// The function should extract all "unaffected" versions as "fixed" events.
-	// The logic to infer "introduced" versions is known to be buggy and produces unusual results.
-	// This test captures the actual, current behavior of the function.
-	expectedRanges := []osvschema.Range{
-		{Events: []osvschema.Event{{Introduced: "0"}, {Fixed: "5.4.291"}}},
-		{Events: []osvschema.Event{{Introduced: "5.5.0"}, {Fixed: "5.10.235"}}},
-		{Events: []osvschema.Event{{Introduced: "5.11.0"}, {Fixed: "5.15.179"}}},
-		{Events: []osvschema.Event{{Introduced: "5.16.0"}, {Fixed: "6.1.129"}}},
-		{Events: []osvschema.Event{{Introduced: "6.2.0"}, {Fixed: "6.6.79"}}},
-		{Events: []osvschema.Event{{Introduced: "6.7.0"}, {Fixed: "6.12.16"}}},
-		{Events: []osvschema.Event{{Introduced: "6.13.0"}, {Fixed: "6.13.4"}}},
-	}
+			if affectedBlock.Product == "" {
+				t.Fatalf("Could not find the 'affected' block with defaultStatus 'affected' in the test file")
+			}
 
-	// Run the function under test.
-	gotRanges, _ := findInverseAffectedRanges(affectedBlock)
+			// Run the function under test.
+			gotRanges, _ := findInverseAffectedRanges(affectedBlock)
 
-	// Sort slices for deterministic comparison.
-	sort.Slice(gotRanges, func(i, j int) bool {
-		if len(gotRanges[i].Events) == 0 || len(gotRanges[j].Events) == 0 {
-			return false
-		}
-		eventI := gotRanges[i].Events[0]
-		eventJ := gotRanges[j].Events[0]
-		if eventI.Introduced != "" && eventJ.Introduced != "" {
-			return eventI.Introduced < eventJ.Introduced
-		}
-		if eventI.Fixed != "" && eventJ.Fixed != "" {
-			return eventI.Fixed < eventJ.Fixed
-		}
-		return eventI.Introduced != ""
-	})
+			// Sort slices for deterministic comparison.
+			sort.Slice(gotRanges, func(i, j int) bool {
+				if len(gotRanges[i].Events) == 0 || len(gotRanges[j].Events) == 0 {
+					return false
+				}
+				eventI := gotRanges[i].Events[0]
+				eventJ := gotRanges[j].Events[0]
+				if eventI.Introduced != "" && eventJ.Introduced != "" {
+					return eventI.Introduced < eventJ.Introduced
+				}
+				if eventI.Fixed != "" && eventJ.Fixed != "" {
+					return eventI.Fixed < eventJ.Fixed
+				}
+				return eventI.Introduced != ""
+			})
 
-	sort.Slice(expectedRanges, func(i, j int) bool {
-		if len(expectedRanges[i].Events) == 0 || len(expectedRanges[j].Events) == 0 {
-			return false
-		}
-		eventI := expectedRanges[i].Events[0]
-		eventJ := expectedRanges[j].Events[0]
-		if eventI.Introduced != "" && eventJ.Introduced != "" {
-			return eventI.Introduced < eventJ.Introduced
-		}
-		if eventI.Fixed != "" && eventJ.Fixed != "" {
-			return eventI.Fixed < eventJ.Fixed
-		}
-		return eventI.Introduced != ""
-	})
+			sort.Slice(tc.expectedRanges, func(i, j int) bool {
+				if len(tc.expectedRanges[i].Events) == 0 || len(tc.expectedRanges[j].Events) == 0 {
+					return false
+				}
+				eventI := tc.expectedRanges[i].Events[0]
+				eventJ := tc.expectedRanges[j].Events[0]
+				if eventI.Introduced != "" && eventJ.Introduced != "" {
+					return eventI.Introduced < eventJ.Introduced
+				}
+				if eventI.Fixed != "" && eventJ.Fixed != "" {
+					return eventI.Fixed < eventJ.Fixed
+				}
+				return eventI.Introduced != ""
+			})
 
-	if !reflect.DeepEqual(gotRanges, expectedRanges) {
-		t.Errorf("findInverseAffectedRanges() mismatch:\ngot:  %v\nwant: %v", gotRanges, expectedRanges)
-	}
-}
-
-func TestFindInverseAffectedRanges_FromFile2(t *testing.T) {
-	// Read the test CVE file.
-	data, err := os.ReadFile("CVE-2025-21631.json")
-	if err != nil {
-		t.Fatalf("Failed to read test file: %v", err)
-	}
-
-	var cve cves.CVE5
-	if err := json.Unmarshal(data, &cve); err != nil {
-		t.Fatalf("Failed to parse test CVE JSON: %v", err)
-	}
-
-	var affectedBlock cves.Affected
-	// Find the specific affected block with defaultStatus: "affected".
-	for _, affected := range cve.Containers.CNA.Affected {
-		if affected.DefaultStatus == "affected" {
-			affectedBlock = affected
-			break
-		}
-	}
-
-	if affectedBlock.Product == "" {
-		t.Fatal("Could not find the 'affected' block with defaultStatus 'affected' in the test file")
-	}
-
-	// Define the expected output based on the function's logic.
-	expectedRanges := []osvschema.Range{
-		{Events: []osvschema.Event{{Introduced: "0"}, {Fixed: "5.15.177"}}},
-		{Events: []osvschema.Event{{Introduced: "5.16.0"}, {Fixed: "6.1.125"}}},
-		{Events: []osvschema.Event{{Introduced: "6.2.0"}, {Fixed: "6.6.72"}}},
-		{Events: []osvschema.Event{{Introduced: "6.7.0"}, {Fixed: "6.12.10"}}},
-	}
-
-	// Run the function under test.
-	gotRanges, _ := findInverseAffectedRanges(affectedBlock)
-
-	// Sort slices for deterministic comparison.
-	sort.Slice(gotRanges, func(i, j int) bool {
-		if len(gotRanges[i].Events) == 0 || len(gotRanges[j].Events) == 0 {
-			return false
-		}
-		eventI := gotRanges[i].Events[0]
-		eventJ := gotRanges[j].Events[0]
-		if eventI.Introduced != "" && eventJ.Introduced != "" {
-			return eventI.Introduced < eventJ.Introduced
-		}
-		if eventI.Fixed != "" && eventJ.Fixed != "" {
-			return eventI.Fixed < eventJ.Fixed
-		}
-		return eventI.Introduced != ""
-	})
-
-	sort.Slice(expectedRanges, func(i, j int) bool {
-		if len(expectedRanges[i].Events) == 0 || len(expectedRanges[j].Events) == 0 {
-			return false
-		}
-		eventI := expectedRanges[i].Events[0]
-		eventJ := expectedRanges[j].Events[0]
-		if eventI.Introduced != "" && eventJ.Introduced != "" {
-			return eventI.Introduced < eventJ.Introduced
-		}
-		if eventI.Fixed != "" && eventJ.Fixed != "" {
-			return eventI.Fixed < eventJ.Fixed
-		}
-		return eventI.Introduced != ""
-	})
-
-	if !reflect.DeepEqual(gotRanges, expectedRanges) {
-		t.Errorf("findInverseAffectedRanges() mismatch:\ngot:  %v\nwant: %v", gotRanges, expectedRanges)
+			if diff := cmp.Diff(tc.expectedRanges, gotRanges); diff != "" {
+				t.Errorf("findInverseAffectedRanges() mismatch (-want +got):\n%s", diff)
+			}
+		})
 	}
 }

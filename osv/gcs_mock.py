@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Functions for mocking the GCS bucket for testing."""
+from collections import defaultdict
 import contextlib
 import datetime
 import os
@@ -38,8 +39,13 @@ def gcs_mock(directory: str | None = None):
         if directory is None else contextlib.nullcontext(directory)) as db_dir:
     pathlib.Path(db_dir, gcs.VULN_PB_PATH).mkdir(parents=True, exist_ok=True)
     bucket = _MockBucket(db_dir)
-    with mock.patch('osv.gcs.get_osv_bucket', return_value=bucket):
+    with mock.patch(
+        'osv.gcs.get_osv_bucket',
+        return_value=bucket), mock.patch('osv.pubsub.publish_failure'):
       yield db_dir
+
+
+_mock_blob_generations = defaultdict(int)
 
 
 class _MockBlob:
@@ -56,13 +62,14 @@ class _MockBlob:
     """Implements google.cloud.storage.Blob.upload_from_string."""
     del content_type  # Can't do anything with this.
 
-    if if_generation_match not in (None, 1):
+    if if_generation_match not in (None, _mock_blob_generations[self._path]):
       raise exceptions.PreconditionFailed('Generation mismatch')
 
     if isinstance(data, str):
       data = data.encode()
     with open(self._path, 'wb') as f:
       f.write(data)
+    _mock_blob_generations[self._path] += 1
 
     # Use the file's modified time to store the CustomTime metadata.
     if self.custom_time is not None:
@@ -94,5 +101,5 @@ class _MockBucket:
     blob = _MockBlob(path)
     ts = os.path.getmtime(path)
     blob.custom_time = datetime.datetime.fromtimestamp(ts, datetime.UTC)
-    blob.generation = 1
+    blob.generation = _mock_blob_generations[path]
     return blob

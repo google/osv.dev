@@ -19,3 +19,4 @@ patches:
 - path: alias-computation.yaml
 - path: backup.yaml
 - path: generate-sitemap.yaml
+- path: recoverer.yaml

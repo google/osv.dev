@@ -1421,12 +1421,10 @@ def is_cloud_run() -> bool:
 
 def get_gcp_project():
   """Get the GCP project name."""
-  # We don't set the GOOGLE_CLOUD_PROJECT env var explicitly, and I can't find
-  # any confirmation on whether Cloud Run will set automatically.
-  # Grab the project name from the (undocumented?) field on ndb.Client().
-  # Most correct way to do this would be to use the instance metadata server
-  # https://cloud.google.com/run/docs/container-contract#metadata-server
-  return getattr(_ndb_client, 'project', 'oss-vdb')  # fall back to oss-vdb
+  project = osv.utils.get_google_cloud_project()
+  if not project:
+    project = 'oss-vdb'  # fall back to oss-vdb
+  return project
 
 
 def _is_affected(ecosystem: str, version: str,

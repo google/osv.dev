@@ -27,31 +27,35 @@ var (
 	jsonPath = flag.String("cve_json", "", "Path to CVEList JSON to examine.")
 	outDir   = flag.String("out_dir", "", "Path to output results.")
 )
+
 var Logger utility.LoggerWrapper
+
+// Metrics holds the collected data about the conversion process for a single CVE.
 var Metrics struct {
-	CNA           string
-	Outcome       string
-	Repos         []string
-	RefTypesCount map[osvschema.ReferenceType]int
-	Notes         []string
+	CNA           string                          // The CNA that assigned the CVE.
+	Outcome       string                          // The final outcome of the conversion (e.g., "Successful", "Failed").
+	Repos         []string                        // A list of repositories extracted from the CVE's references.
+	RefTypesCount map[osvschema.ReferenceType]int // A count of each type of reference found.
+	Notes         []string                        // A collection of notes and warnings generated during conversion.
 }
 
-// RefTagDenyList: References with these tags have been found to contain completely unrelated
-// repositories and can be misleading as to the software's true repository,
-// Currently not used for this purpose due to undesired false positives
-// reducing the number of valid records successfully converted.
+// RefTagDenyList contains reference tags that are often associated with unreliable or
+// irrelevant repository URLs. References with these tags are currently ignored
+// to avoid incorrect repository associations.
 var RefTagDenyList = []string{
 	// "Exploit",
 	// "Third Party Advisory",
-	"Broken Link", // Actively ignore these though.
+	"Broken Link", // Actively ignore these.
 }
 
-// extractConversionMetrics examines a CVE and extracts metrics and heuristics about it.
+// extractConversionMetrics examines a CVE and its generated OSV references to populate
+// the global Metrics struct with heuristics about the conversion process.
+// It captures the assigning CNA and counts the occurrences of each reference type.
 func extractConversionMetrics(cve cves.CVE5, refs []osvschema.Reference) {
-	// CNA based heuristics
+	// Capture the CNA for heuristic analysis.
 	Metrics.CNA = cve.Metadata.AssignerShortName
 	// TODO(jesslowe): more CNA based analysis
-	// Reference based heuristics
+
 	// Count number of references of each type
 	refTypeCounts := make(map[osvschema.ReferenceType]int)
 	for _, ref := range refs {
@@ -62,17 +66,19 @@ func extractConversionMetrics(cve cves.CVE5, refs []osvschema.Reference) {
 		Metrics.Notes = append(Metrics.Notes, fmt.Sprintf("[%s]: Reference Type %s: %d", cve.Metadata.CVEID, refType, count))
 	}
 
-	// ADP based heuristics?
-	// CVE Program container seems to just add url tags for some reason
-	// CISA ADP Vulnrichment often adds metrics
-
-	// Additional information provided - CVSS, KEV, CWE etc.
+	// TODO(jesslowe): Add more analysis based on ADP containers, CVSS, KEV, CWE, etc.
 }
 
-// AddVersionInfo attempts to extract versions into version ranges and events
-// through different methods, sometimes based on specific CNA behaviour.
+// AddVersionInfo attempts to extract version information from a CVE and add it to the OSV record.
+// It follows a prioritized approach:
+// 1. For Linux kernel CVEs, it specifically looks for CPE version ranges.
+// 2. It processes the 'affected' fields from both the CNA and ADP containers.
+// 3. If no versions are found, it falls back to searching for CPEs in the CNA container.
+// 4. As a last resort, it attempts to extract version information from the description text (currently not saved).
+// It returns a slice of notes detailing the extraction process.
 func AddVersionInfo(cve cves.CVE5, v *vulns.Vulnerability) []string {
 	var notes []string
+	// Special handling for Linux kernel CVEs, prioritizing CPEs for version info.
 	if cve.Metadata.AssignerShortName == "Linux" {
 		pkg := osvschema.Package{
 			Ecosystem: string(osvschema.EcosystemLinux),
@@ -96,6 +102,7 @@ func AddVersionInfo(cve cves.CVE5, v *vulns.Vulnerability) []string {
 		}
 	}
 
+	// Combine 'affected' entries from both CNA and ADP containers.
 	cna := cve.Containers.CNA
 	adps := cve.Containers.ADP
 	gotVersions := false
@@ -107,15 +114,15 @@ func AddVersionInfo(cve cves.CVE5, v *vulns.Vulnerability) []string {
 		}
 	}
 
-	// Attempt to extract version ranges from Affected field
+	// Attempt to extract version ranges from the combined 'affected' fields.
 	for _, cveAff := range affected {
 		versionRanges, versionType, extractNotes := ExtractVersionsFromAffectedField(cveAff, cve.Metadata.AssignerShortName)
+		notes = append(notes, extractNotes...)
 		if len(versionRanges) == 0 {
-			notes = append(notes, extractNotes...)
 			continue
-		} else {
-			gotVersions = true
 		}
+		gotVersions = true
+
 		if versionType == "git" {
 			nA := osvschema.Affected{}
 			for _, vr := range versionRanges {
@@ -123,7 +130,6 @@ func AddVersionInfo(cve cves.CVE5, v *vulns.Vulnerability) []string {
 				vr.Repo = cveAff.Repo
 				nA.Ranges = append(nA.Ranges, vr)
 			}
-
 			v.Affected = append(v.Affected, nA)
 		} else {
 			nA := osvschema.Affected{}
@@ -131,6 +137,7 @@ func AddVersionInfo(cve cves.CVE5, v *vulns.Vulnerability) []string {
 				vr.Type = osvschema.RangeEcosystem
 				nA.Ranges = append(nA.Ranges, vr)
 			}
+			// Special handling for Linux kernel CVEs.
 			if cve.Metadata.AssignerShortName == "Linux" {
 				nA.Package = osvschema.Package{
 					Ecosystem: string(osvschema.EcosystemLinux),
@@ -140,7 +147,7 @@ func AddVersionInfo(cve cves.CVE5, v *vulns.Vulnerability) []string {
 		}
 	}
 
-	// No versions were extracted from Affected so attempt to extract from CPE field
+	// If no versions were found in 'affected', fall back to CPEs.
 	if !gotVersions {
 		notes = append(notes, "No versions in affected, attempting to extract from CPE")
 		cpeRanges, cpeStrings, err := findCPEVersionRanges(cve)
@@ -159,21 +166,22 @@ func AddVersionInfo(cve cves.CVE5, v *vulns.Vulnerability) []string {
 		}
 	}
 
-	// CPEs was a bust so try to extract from the description
+	// As a last resort, try extracting versions from the description text.
 	if !gotVersions {
 		notes = append(notes, "No versions in CPEs so attempting extraction from description")
 		versions, extractNotes := cves.ExtractVersionsFromText(nil, cves.EnglishDescription(cve.Containers.CNA.Descriptions))
 		notes = append(notes, extractNotes...)
 		if len(versions) > 0 {
-			// NOT SAVED CURRENTLY - need to add better validation before I'm comfortable saving these
-			notes = append(notes, fmt.Sprintf("Extracted versions from description as no other versions found %+v", versions))
+			// NOTE: These versions are not currently saved due to the need for better validation.
+			notes = append(notes, fmt.Sprintf("Extracted versions from description but did not save them: %+v", versions))
 		}
 	}
 
 	return notes
 }
 
-// addToVersionRange is a helper function that will take a range and versions and add them as events
+// addToVersionRange is a helper function that adds 'introduced', 'fixed', or 'last_affected'
+// events to an OSV version range. If 'intro' is empty, it defaults to "0".
 func addToVersionRange(versionRange *osvschema.Range, intro string, lastAff string, fixed string) {
 	var i string
 	if intro == "" {
@@ -194,25 +202,25 @@ func addToVersionRange(versionRange *osvschema.Range, intro string, lastAff stri
 	}
 }
 
-// findCPEVersionRanges gets the version ranges from provided CPE ranges
+// findCPEVersionRanges extracts version ranges and CPE strings from the CNA's
+// CPE applicability statements in a CVE record.
 func findCPEVersionRanges(cve cves.CVE5) (versionRanges []osvschema.Range, cpes []string, err error) {
-
-	// TODO(jesslowe): add logic to also extract cpes from affected field (CVE-2025-1110)
+	// TODO(jesslowe): Add logic to also extract CPEs from the 'affected' field (e.g., CVE-2025-1110).
 	for _, c := range cve.Containers.CNA.CPEApplicability {
 		for _, node := range c.Nodes {
 			if node.Operator != "OR" {
 				continue
 			}
 			for _, match := range node.CPEMatch {
-				if match.Vulnerable != true {
+				if !match.Vulnerable {
 					continue
 				}
 				cpes = append(cpes, match.Criteria)
 				versionRange := osvschema.Range{}
 
+				// If no start version is given, assume the vulnerability starts from version "0".
 				if match.VersionStartIncluding == "" {
 					match.VersionStartIncluding = "0"
-					// no starting version was given so assuming introduced was 0.
 				}
 
 				if match.VersionEndExcluding != "" {
@@ -227,42 +235,38 @@ func findCPEVersionRanges(cve cves.CVE5) (versionRanges []osvschema.Range, cpes 
 		}
 	}
 	if len(versionRanges) == 0 {
-		return nil, nil, fmt.Errorf("No Versions Extracted")
+		return nil, nil, fmt.Errorf("no versions extracted from CPEs")
 	}
 	return versionRanges, cpes, nil
 }
 
-// ExtractVersionsFromAffected extracts affected versions from the affected field  in the CNA container of a CVE.
-// It populates the models.AffectedVersion slice based on the versioning information
-// provided in the CVE data, handling both explicit ranges (lessThan, lessThanOrEqual)
-// and single affected versions. It also attempts to extract versions from text
-// descriptions if direct version ranges are not available.
+// ExtractVersionsFromAffectedField extracts version ranges from a CVE 'affected' entry.
+// It handles various scenarios:
+// - If `defaultStatus` is "affected", it may calculate the inverse ranges (common for Linux).
+// - It iterates through `versions` entries with `status: "affected"`.
+// - It constructs ranges from `version`, `lessThan`, and `lessThanOrEqual` fields.
+// - For GitHub CVEs, it uses a special parser for version strings like "< 1.2.3".
+// - For git commits, it creates an introduced event.
+// - As a fallback, it may assume a single version means "fixed at this version, introduced at 0".
 //
-// Parameters:
-//   - affected: The CNA container from the CVE5 object.
-//   - cnaAssigner: The CNA responsible for the CVE
-//
-// Returns:
-//   - versionRanges
-//   - rangeType
-//   - notes
-
+// Returns the extracted OSV ranges, the most frequent version type (e.g., "semver"), and any notes.
 func ExtractVersionsFromAffectedField(affected cves.Affected, cnaAssigner string) (versionRanges []osvschema.Range, rangeType string, notes []string) {
 
+	// Handle cases where a product is marked as "affected" by default, and specific versions are marked "unaffected".
 	if affected.DefaultStatus == "affected" {
+		// For Linux kernel CVEs, this logic is often handled by CPEs, so we skip it here.
 		if cnaAssigner == "Linux" {
 
 			notes = append(notes, "Skipping Linux Affected range versions in favour of CPE versions")
 			return nil, "", notes
 		}
-		// Find the inverse affected ranges
-		ranges, notes := findInverseAffectedRanges(affected)
+		// Calculate the affected ranges by finding the inverse of the unaffected ranges.
+		ranges, inverseNotes := findInverseAffectedRanges(affected)
+		notes = append(notes, inverseNotes...)
 
-		// Deal with this later
 		if len(ranges) != 0 {
 			return ranges, string(osvschema.RangeSemVer), notes
 		}
-		// TODO(jesslowe): add more notes here
 		return nil, "", notes
 	}
 
@@ -272,8 +276,7 @@ func ExtractVersionsFromAffectedField(affected cves.Affected, cnaAssigner string
 		if vers.Status != "affected" {
 			continue
 		}
-		_, ok := versionTypesCount[vers.VersionType]
-		if ok {
+		if _, ok := versionTypesCount[vers.VersionType]; ok {
 			versionTypesCount[vers.VersionType]++
 		} else {
 			versionTypesCount[vers.VersionType] = 0
@@ -281,7 +284,7 @@ func ExtractVersionsFromAffectedField(affected cves.Affected, cnaAssigner string
 
 		var introduced, fixed, lastaffected string
 
-		// Quality check
+		// Quality check the version strings to avoid using filler content.
 		vQuality := vulns.CheckQuality(vers.Version)
 		if vQuality >= vulns.Filler {
 			notes = append(notes, fmt.Sprintf("Version value for %s %s is filler or empty", affected.Vendor, affected.Product))
@@ -291,11 +294,12 @@ func ExtractVersionsFromAffectedField(affected cves.Affected, cnaAssigner string
 
 		hasRange := vLessThanQual <= vulns.Spaces || vLTOEQual <= vulns.Spaces
 		notes = append(notes, fmt.Sprintf("Range detected: %v", hasRange))
+		// Handle cases where 'lessThan' is mistakenly the same as 'version'.
 		if vers.LessThan != "" && vers.LessThan == vers.Version {
 			notes = append(notes, fmt.Sprintf("Warning: lessThan (%s) is the same as introduced (%s)\n", vers.LessThan, vers.Version))
-			// Only this specific version affected or up to this version
 			hasRange = false
 		}
+
 		if hasRange {
 			if vQuality <= vulns.Spaces {
 				introduced = vers.Version
@@ -311,29 +315,21 @@ func ExtractVersionsFromAffectedField(affected cves.Affected, cnaAssigner string
 
 			if introduced != "" && fixed != "" {
 				versionRange := osvschema.Range{}
-				versionRange.Events = append(versionRange.Events, osvschema.Event{
-					Introduced: introduced})
-				versionRange.Events = append(versionRange.Events, osvschema.Event{
-					Fixed: fixed,
-				})
+				addToVersionRange(&versionRange, introduced, "", fixed)
 				versionRanges = append(versionRanges, versionRange)
 				notes = append(notes, "vers range updated fixed")
 			} else if introduced != "" && lastaffected != "" {
 				versionRange := osvschema.Range{}
-				versionRange.Events = append(versionRange.Events, osvschema.Event{
-					Introduced: introduced})
-				versionRange.Events = append(versionRange.Events, osvschema.Event{
-					LastAffected: lastaffected,
-				})
+				addToVersionRange(&versionRange, introduced, lastaffected, "")
 				versionRanges = append(versionRanges, versionRange)
 				notes = append(notes, "vers range updated la")
 			}
-
 		} else {
 			// In this case only vers.Version exists which either means that it is _only_ that version that is
 			// affected, but more likely, it affects up to that version. It could also mean that the range is given
 			// in one line instead - like "< 1.5.3" or "< 2.45.4, >= 2.0 " or just "before 1.4.7", so check for that.
 			notes = append(notes, "Only version exists")
+			// GitHub often encodes the range directly in the version string.
 			if cnaAssigner == "GitHub_M" {
 				av, err := git.ParseVersionRange(vers.Version)
 				if err == nil {
@@ -360,35 +356,26 @@ func ExtractVersionsFromAffectedField(affected cves.Affected, cnaAssigner string
 				continue
 			}
 
+			// Try to extract versions from text like "before 1.4.7".
 			possibleVersions, note := cves.ExtractVersionsFromText(nil, vers.Version)
 			if note != nil {
 				notes = append(notes, note...)
 			}
 			if possibleVersions != nil {
-				// versionInfo.AffectedVersions = append(versionInfo.AffectedVersions, possibleVersions...)
-				notes = append(notes, fmt.Sprintf("Versions retrieved from text but not used CURRENTLY"))
+				notes = append(notes, "Versions retrieved from text but not used CURRENTLY")
 				continue
 			}
 
-			// We might only have a single version. Assume it affects up to that version
+			// As a fallback, assume a single version means it's the fixed version.
 			if vQuality <= vulns.Spaces {
 				versionRange := osvschema.Range{}
-				versionRange.Events = append(versionRange.Events, osvschema.Event{
-					Introduced: "0"})
-				versionRange.Events = append(versionRange.Events, osvschema.Event{
-					Fixed: vers.Version,
-				})
+				addToVersionRange(&versionRange, "0", "", vers.Version)
 				versionRanges = append(versionRanges, versionRange)
 				notes = append(notes, fmt.Sprintf("%s - Single version found %v - Assuming introduced = 0 and Fixed = %v", vQuality, vers.Version, vers.Version))
 			}
-
 		}
-		if introduced == "" && fixed == "" && lastaffected == "" {
-			continue
-		}
-
 	}
-	// find the versionsType with the highest count
+	// Determine the most frequent version type to return as the range type.
 	maxCount := 0
 	var mostFrequentVersionType string
 	for versionType, count := range versionTypesCount {
@@ -401,78 +388,85 @@ func ExtractVersionsFromAffectedField(affected cves.Affected, cnaAssigner string
 	return versionRanges, mostFrequentVersionType, notes
 }
 
+// sortBadSemver provides a custom sorting function for version strings that may not
+// strictly adhere to the SemVer specification. It compares versions numerically,
+// part by part (major, minor, patch).
 func sortBadSemver(a, b string) int {
 	partsA := strings.Split(a, ".")
 	partsB := strings.Split(b, ".")
-	majorA, errA := strconv.Atoi(partsA[0])
-	majorB, errB := strconv.Atoi(partsB[0])
+	majorA, _ := strconv.Atoi(partsA[0])
+	majorB, _ := strconv.Atoi(partsB[0])
 
-	_ = errA
-	_ = errB
 	if c := cmp.Compare(majorA, majorB); c != 0 {
 		return c
 	}
 
-	minorA, errA := strconv.Atoi(partsA[1])
-	minorB, errB := strconv.Atoi(partsB[1])
+	minorA, _ := strconv.Atoi(partsA[1])
+	minorB, _ := strconv.Atoi(partsB[1])
 	if c := cmp.Compare(minorA, minorB); c != 0 {
 		return c
 	}
-	patchA, errA := strconv.Atoi(partsA[2])
-	patchB, errB := strconv.Atoi(partsB[2])
+	patchA, _ := strconv.Atoi(partsA[2])
+	patchB, _ := strconv.Atoi(partsB[2])
 	return cmp.Compare(patchA, patchB)
 }
 
-// findInverseAffectedRanges takes the given 'unaffected' ranges and attempts to determine the affected version ranges
+// findInverseAffectedRanges calculates the affected version ranges by analyzing a list
+// of 'unaffected' versions. This is common in Linux kernel CVEs where a product is
+// considered affected by default, and only unaffected versions are listed.
+// It sorts the introduced and fixed versions to create chronological ranges.
 func findInverseAffectedRanges(cveAff cves.Affected) (ranges []osvschema.Range, notes []string) {
 	var introduced []string
 	var fixed []string
 	for _, vers := range cveAff.Versions {
-		// Read them each individually
 		if vers.Status == "affected" {
 			introduced = append(introduced, fmt.Sprintf("%s.0", vers.Version))
 		}
 		if vers.Status == "unaffected" {
-			if vers.Version == "0" {
-				continue
-			}
-			if vers.VersionType != "semver" {
+			if vers.Version == "0" || vers.VersionType != "semver" {
 				continue
 			}
 			fixed = append(fixed, vers.Version)
-			// Find the next minor version up
+			// Infer the next introduced version from the 'lessThanOrEqual' field.
+			// For example, if "5.10.*" is unaffected, the next introduced version is "5.11.0".
 			minorVers := strings.Split(vers.LessThanOrEqual, ".*")[0]
 			parts := strings.Split(minorVers, ".")
-			intMin, err := strconv.Atoi(parts[len(parts)-1])
-
-			if err == nil {
-				nex := fmt.Sprintf("%s.%d.0", parts[0], intMin+1)
-				introduced = append(introduced, nex)
+			if len(parts) > 1 {
+				if intMin, err := strconv.Atoi(parts[len(parts)-1]); err == nil {
+					nextIntroduced := fmt.Sprintf("%s.%d.0", parts[0], intMin+1)
+					introduced = append(introduced, nextIntroduced)
+				}
 			}
 		}
 	}
 
 	slices.SortFunc(introduced, sortBadSemver)
 	slices.SortFunc(fixed, sortBadSemver)
-	if fixed[0] < introduced[0] {
+
+	// If the first fixed version is earlier than the first introduced, assume introduction from "0".
+	if len(fixed) > 0 && len(introduced) > 0 && fixed[0] < introduced[0] {
 		introduced = append([]string{"0"}, introduced...)
 	}
 
+	// Create ranges by pairing sorted introduced and fixed versions.
 	for index, f := range fixed {
-		versionRange := osvschema.Range{}
-		addToVersionRange(&versionRange, introduced[index], "", f)
-		notes = append(notes, fmt.Sprintf("Introduced from version value - %s", introduced[index]))
-		notes = append(notes, fmt.Sprintf("Fixed from version value - %s", f))
-		ranges = append(ranges, versionRange)
+		if index < len(introduced) {
+			versionRange := osvschema.Range{}
+			addToVersionRange(&versionRange, introduced[index], "", f)
+			notes = append(notes, fmt.Sprintf("Introduced from version value - %s", introduced[index]))
+			notes = append(notes, fmt.Sprintf("Fixed from version value - %s", f))
+			ranges = append(ranges, versionRange)
+		}
 	}
 
 	return ranges, notes
 }
 
-// FromCVE5 creates a Vulnerability from a CVE5 object.
+// FromCVE5 creates a `vulns.Vulnerability` object from a `cves.CVE5` object.
+// It populates the main fields of the OSV record, including ID, summary, details,
+// references, timestamps, severity, and version information.
 func FromCVE5(cve cves.CVE5, refs []cves.Reference) (*vulns.Vulnerability, []string) {
 	aliases, related := vulns.ExtractReferencedVulns(cve.Metadata.CVEID, cve.Metadata.CVEID, refs)
-	var err error
 	var notes []string
 	v := vulns.Vulnerability{
 		Vulnerability: osvschema.Vulnerability{
@@ -485,6 +479,7 @@ func FromCVE5(cve cves.CVE5, refs []cves.Reference) (*vulns.Vulnerability, []str
 			References:       vulns.ClassifyReferences(refs),
 			DatabaseSpecific: make(map[string]interface{}),
 		}}
+
 	published, err := cves.ParseCVE5Timestamp(cve.Metadata.DatePublished)
 	if err != nil {
 		notes = append(notes, "Published date failed to parse, setting time to now")
@@ -499,12 +494,12 @@ func FromCVE5(cve cves.CVE5, refs []cves.Reference) (*vulns.Vulnerability, []str
 	}
 	v.Vulnerability.Modified = modified
 
-	// Add affected versions
+	// Add affected version information.
 	notes = append(notes, AddVersionInfo(cve, &v)...)
 
-	// TODO(jesslowe@): add CWEs
+	// TODO(jesslowe@): Add CWEs.
 
-	// Find severity metrics across CNA and adp
+	// Combine severity metrics from both CNA and ADP containers.
 	var severity []cves.Metrics
 	if len(cve.Containers.CNA.Metrics) != 0 {
 		severity = append(severity, cve.Containers.CNA.Metrics...)
@@ -520,6 +515,9 @@ func FromCVE5(cve cves.CVE5, refs []cves.Reference) (*vulns.Vulnerability, []str
 	return &v, notes
 }
 
+// writeOSVToFile saves the generated OSV vulnerability record to a JSON file.
+// The file is named after the vulnerability ID and placed in a subdirectory
+// named after the assigning CNA.
 func writeOSVToFile(id cves.CVEID, cnaAssigner string, vulnDir string, v *vulns.Vulnerability) error {
 	err := os.MkdirAll(vulnDir, 0755)
 	if err != nil {
@@ -530,73 +528,79 @@ func writeOSVToFile(id cves.CVEID, cnaAssigner string, vulnDir string, v *vulns.
 	f, err := os.Create(outputFile)
 	if err != nil {
 		Logger.Infof("[%s] Failed to open %s for writing: %v", id, outputFile, err)
-	} else {
-		err = v.ToJSON(f)
-		if err != nil {
-			Logger.Infof("Failed to write %s: %v", outputFile, err)
+		return err
+	}
+	defer f.Close()
 
-		} else {
-			Logger.Infof("[%s]: Generated OSV record under the %s CNA", id, cnaAssigner)
-		}
-		f.Close()
+	err = v.ToJSON(f)
+	if err != nil {
+		Logger.Infof("Failed to write %s: %v", outputFile, err)
+	} else {
+		Logger.Infof("[%s]: Generated OSV record under the %s CNA", id, cnaAssigner)
 	}
 	return err
 }
 
+// writeMetricToFile saves the collected conversion metrics to a JSON file.
+// This file provides data for analyzing the success and characteristics of the
+// conversion process for a given CVE.
 func writeMetricToFile(id cves.CVEID, vulnDir string) error {
 	metricsFile := filepath.Join(vulnDir, string(id)+".metrics.json")
-	if marshalledMetrics, err := json.MarshalIndent(Metrics, "", "  "); err != nil {
+	marshalledMetrics, err := json.MarshalIndent(Metrics, "", "  ")
+	if err != nil {
 		Logger.Warnf("[%s]: Failed to marshal metrics: %v", id, err)
 		return err
-	} else {
-		if err = os.WriteFile(metricsFile, marshalledMetrics, 0660); err != nil {
-			Logger.Warnf("[%s]: Failed to write %s: %v", id, metricsFile, err)
-			return err
-		}
+	}
+	if err = os.WriteFile(metricsFile, marshalledMetrics, 0660); err != nil {
+		Logger.Warnf("[%s]: Failed to write %s: %v", id, metricsFile, err)
+		return err
 	}
 	return nil
 }
 
-// ConvertAndExportCVEToOSV converts a CVE into an OSV finding and writes it to a file.
-func ConvertAndExportCVEToOSV(CVE cves.CVE5, directory string) error {
-	cveId := CVE.Metadata.CVEID
-	cnaAssigner := CVE.Metadata.AssignerShortName
-	references := identifyPossibleURLs(CVE)
+// ConvertAndExportCVEToOSV is the main function for this file. It takes a CVE,
+// converts it into an OSV record, collects metrics, and writes both to disk.
+func ConvertAndExportCVEToOSV(cve cves.CVE5, directory string) error {
+	cveId := cve.Metadata.CVEID
+	cnaAssigner := cve.Metadata.AssignerShortName
+	references := identifyPossibleURLs(cve)
 
-	// Create a base OSV record
-	v, notes := FromCVE5(CVE, references)
+	// Create a base OSV record from the CVE.
+	v, notes := FromCVE5(cve, references)
 	Metrics.Notes = append(Metrics.Notes, notes...)
 
-	// Determine CNA specific heuristics and conversion metrics
-	extractConversionMetrics(CVE, v.References)
+	// Collect metrics about the conversion.
+	extractConversionMetrics(cve, v.References)
 
-	// Try to extract some repositories
-	repos, notes := cves.ReposFromReferencesCVEList(string(cveId), references, RefTagDenyList, Logger)
-	Metrics.Notes = append(Metrics.Notes, notes...)
+	// Try to extract repository URLs from references.
+	repos, repoNotes := cves.ReposFromReferencesCVEList(string(cveId), references, RefTagDenyList, Logger)
+	Metrics.Notes = append(Metrics.Notes, repoNotes...)
 	Metrics.Repos = repos
 
 	vulnDir := filepath.Join(directory, cnaAssigner)
 
-	// Save OSV record to a directory
-	err := writeOSVToFile(cveId, cnaAssigner, vulnDir, v)
-	if err != nil {
+	// Save the OSV record to a file.
+	if err := writeOSVToFile(cveId, cnaAssigner, vulnDir, v); err != nil {
 		return err
 	}
 
-	// Save conversion metrics to disk
-	err = writeMetricToFile(cveId, vulnDir)
-	if err != nil {
+	// Save the conversion metrics to a file.
+	if err := writeMetricToFile(cveId, vulnDir); err != nil {
 		return err
 	}
 
 	return nil
 }
 
-// identifyPossibleURLs extracts all possible URLs from a CVE5 object,
-// including those in CNA and ADP containers, and affected package information.
-// It deduplicates the URLs before returning them.
+// identifyPossibleURLs extracts and deduplicates all URLs from a CVE object.
+// It searches for URLs in the CNA and ADP reference sections, as well as in
+// the 'collectionUrl' and 'repo' fields of the 'affected' entries.
 func identifyPossibleURLs(cve cves.CVE5) []cves.Reference {
-	refs := cve.Containers.CNA.References
+	var refs []cves.Reference
+	if cve.Containers.CNA.References != nil {
+		refs = append(refs, cve.Containers.CNA.References...)
+	}
+
 	for _, adp := range cve.Containers.ADP {
 		if adp.References != nil {
 			refs = append(refs, adp.References...)
@@ -612,7 +616,7 @@ func identifyPossibleURLs(cve cves.CVE5) []cves.Reference {
 		}
 	}
 
-	// Remove duplicate URLs
+	// Deduplicate references by URL.
 	slices.SortStableFunc(refs, func(a, b cves.Reference) int {
 		return strings.Compare(a.Url, b.Url)
 	})
@@ -628,20 +632,20 @@ func main() {
 	var logCleanup func()
 	Logger, logCleanup = utility.CreateLoggerWrapper("cvelist-osv")
 	defer logCleanup()
+
+	// Read the input CVE JSON file.
 	data, err := os.ReadFile(*jsonPath)
 	if err != nil {
 		Logger.Fatalf("Failed to open file: %v", err)
 	}
 
 	var cve cves.CVE5
-	err = json.Unmarshal(data, &cve)
-	if err != nil {
+	if err = json.Unmarshal(data, &cve); err != nil {
 		Logger.Fatalf("Failed to parse CVEList CVE JSON: %v", err)
 	}
 
-	err = ConvertAndExportCVEToOSV(cve, *outDir)
-
-	if err != nil {
+	// Perform the conversion and export the results.
+	if err = ConvertAndExportCVEToOSV(cve, *outDir); err != nil {
 		Logger.Warnf("[%s]: Failed to generate an OSV record: %+v", cve.Metadata.CVEID, err)
 		Metrics.Outcome = "Failed"
 	} else {

@@ -13,7 +13,7 @@
 # limitations under the License.
 """Echo ecosystem helper."""
 
-from ..third_party.univers.debian import DebianVersion
+from ..third_party.univers.debian import Version as DebianVersion
 
 from .helper_base import Ecosystem
 

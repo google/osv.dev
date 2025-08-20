@@ -8,6 +8,7 @@ document.addEventListener("DOMContentLoaded", function () {
   const issuesPerPage = 15;
   let currentPage = 1;
   let sortDirection = "desc";
+  let dataLoadingComplete = false;
 
   const globalLoader = document.getElementById("global-loader");
   const searchInput = document.getElementById("search-input");
@@ -34,6 +35,35 @@ document.addEventListener("DOMContentLoaded", function () {
 
   let selectedEcosystem = "";
   let selectedFinding = "";
+  let urlEcosystemApplied = false;
+
+  function applyFiltersFromURL() {
+    const params = new URLSearchParams(window.location.search);
+    const ecosystem = params.get("ecosystem");
+    if (ecosystem) {
+      selectedEcosystem = ecosystem;
+    }
+  }
+
+  function updateURL(ecosystem, replace = false) {
+    const params = new URLSearchParams(window.location.search);
+    if (ecosystem) {
+      params.set("ecosystem", ecosystem);
+    } else {
+      params.delete("ecosystem");
+    }
+    const newURL = `${
+      window.location.pathname
+    }?${params.toString()}`.replace(/\?$/, "");
+
+    if (replace) {
+      history.replaceState({ path: newURL }, "", newURL);
+    } else {
+      history.pushState({ path: newURL }, "", newURL);
+    }
+  }
+
+  applyFiltersFromURL();
 
   async function loadData() {
     globalLoader.classList.add("visible");
@@ -45,6 +75,14 @@ document.addEventListener("DOMContentLoaded", function () {
     const yamlText = await response.text();
     const sources = jsyaml.load(yamlText);
     const sourceNames = sources.map((s) => s.name);
+
+    // Check if the ecosystem from the URL is not in the source yaml list.
+    // If the queried ecosystem is not in the source list, remove the invalid parameter from the URL.
+    if (selectedEcosystem && !sourceNames.includes(selectedEcosystem)) {
+      selectedEcosystem = "";
+      urlEcosystemApplied = true; // Prevent further checks
+      updateURL("", true);
+    }
 
     processAndDisplayData();
 
@@ -83,6 +121,11 @@ document.addEventListener("DOMContentLoaded", function () {
             }
             issuesByEcosystem[issue.source].push(issue);
           });
+
+          if (selectedEcosystem && !urlEcosystemApplied && issuesByEcosystem[selectedEcosystem]) {
+            urlEcosystemApplied = true;
+          }
+
           applyFilters();
         })
         .catch((error) =>
@@ -93,7 +136,12 @@ document.addEventListener("DOMContentLoaded", function () {
 
     // Wait for all data fetching to complete
     Promise.allSettled(allPromises).then(() => {
+      dataLoadingComplete = true;
       globalLoader.classList.remove("visible");
+      if (selectedEcosystem && !urlEcosystemApplied) {
+        selectedEcosystem = "";
+        updateURL("", true);
+      }
       applyFilters(); // Final render
     });
   }
@@ -137,22 +185,20 @@ document.addEventListener("DOMContentLoaded", function () {
 
     ecosystemFilterOptions.addEventListener("click", (e) => {
       if (e.target.classList.contains("filter-option")) {
-        selectedEcosystem = e.target.dataset.value;
-        ecosystemFilterSelected.textContent = e.target.textContent.replace(
-          /\((\d+)\)/,
-          `($1 issues)`
-        );
+        const { value, count } = e.target.dataset;
+        selectedEcosystem = value;
+        ecosystemFilterSelected.textContent = `${value} (${count} issues)`;
+        urlEcosystemApplied = true;
+        updateURL(selectedEcosystem);
         applyFilters();
       }
     });
 
     findingsFilterOptions.addEventListener("click", (e) => {
       if (e.target.classList.contains("filter-option")) {
-        selectedFinding = e.target.dataset.value;
-        findingsFilterSelected.textContent = e.target.textContent.replace(
-          /\((\d+)\)/,
-          `($1 issues)`
-        );
+        const { value, name, count } = e.target.dataset;
+        selectedFinding = value;
+        findingsFilterSelected.textContent = `${name} (${count} issues)`;
         applyFilters();
       }
     });
@@ -196,13 +242,13 @@ document.addEventListener("DOMContentLoaded", function () {
     for (const [finding, count] of Object.entries(findingsCount).sort((a, b) =>
       a[0].localeCompare(b[0])
     )) {
+      const name = finding.replace("IMPORT_FINDING_TYPE_", "");
       const option = document.createElement("div");
       option.className = "filter-option";
       option.dataset.value = finding;
-      option.textContent = `${finding.replace(
-        "IMPORT_FINDING_TYPE_",
-        ""
-      )} (${count})`;
+      option.dataset.name = name;
+      option.dataset.count = count;
+      option.textContent = `${name} (${count})`;
       findingsFilterOptions.appendChild(option);
     }
     if (!selectedFinding) {
@@ -226,10 +272,19 @@ document.addEventListener("DOMContentLoaded", function () {
       const option = document.createElement("div");
       option.className = "filter-option";
       option.dataset.value = ecosystem;
+      option.dataset.count = count;
       option.textContent = `${ecosystem} (${count})`;
       ecosystemFilterOptions.appendChild(option);
     }
-    if (!selectedEcosystem) {
+    if (selectedEcosystem) {
+      const selectedOption = ecosystemFilterOptions.querySelector(
+        `[data-value="${selectedEcosystem}"]`
+      );
+      if (selectedOption) {
+        const { value, count } = selectedOption.dataset;
+        ecosystemFilterSelected.textContent = `${value} (${count} issues)`;
+      }
+    } else {
       ecosystemFilterSelected.textContent = `All (${issuesForEcosystemCount.length} issues)`;
     }
   }
@@ -256,10 +311,13 @@ document.addEventListener("DOMContentLoaded", function () {
     const endIndex = startIndex + issuesPerPage;
     const paginatedIssues = filteredIssues.slice(startIndex, endIndex);
 
-    if (paginatedIssues.length === 0 && allIssues.length === 0) {
-      tableBody.innerHTML = '<tr><td colspan="3">Loading data...</td></tr>';
-    } else if (paginatedIssues.length === 0) {
-      tableBody.innerHTML = '<tr><td colspan="3">No issues found.</td></tr>';
+    if (paginatedIssues.length === 0) {
+      if (dataLoadingComplete) {
+        tableBody.innerHTML = '<tr><td colspan="3">No issues found.</td></tr>';
+      } else {
+        tableBody.innerHTML =
+          '<tr><td colspan="3">Loading data...</td></tr>';
+      }
     } else {
       paginatedIssues.forEach((issue) => {
         let row = tableBody.insertRow();

@@ -60,13 +60,14 @@ class SimpleBug:
   def __init__(self, bug_dict: dict):
     self.db_id = bug_dict['db_id']
     # If the package/ecosystem/version value is None, then add a fake value in.
-    self.package = bug_dict.get('project', 'foo')
-    self.ecosystem = bug_dict.get('ecosystem', 'foo')
-    self.purl = bug_dict.get('purl', 'pkg:foo/foo')
+    self.package = p if (p := bug_dict.get('project')) else 'foo'
+    self.ecosystem = e if (e := bug_dict.get('ecosystem')) else 'foo'
+    self.purl = p if (p := bug_dict.get('purl')) else 'pkg:foo/foo'
 
     # Use the `affected fuzzy` value as the query version.
     # If no 'affected fuzzy' is present, assign a default value.
-    self.affected_fuzzy = bug_dict.get('affected_fuzzy', '1.0.0')
+    self.affected_fuzzy = v if (v :=
+                                bug_dict.get('affected_fuzzy')) else '1.0.0'
 
 
 def read_from_json(filename: str, ecosystem_map: defaultdict, bug_map: dict,

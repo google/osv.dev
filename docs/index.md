@@ -31,3 +31,21 @@ that leverages OSV.dev's data, using its API.
 databases that use the OSV format and how all those entries are collated at
 OSV.dev. Open source users can query for known vulnerabilities by version number
 or commit hash.](images/diagram.png)
+
+## 🐳 Scanning Container Images with OSV-Scanner
+
+You can use [OSV-Scanner](https://github.com/google/osv-scanner) to scan container images (like Docker images) for known vulnerabilities in installed packages.
+
+### 🔧 Example Command
+```bash
+osv-scanner scan image alpine:3.12
+```
+
+To view a comprehensive, user-friendly HTML report, run:
+
+```bash
+osv-scanner scan image --serve alpine:3.12
+```
+
+
+

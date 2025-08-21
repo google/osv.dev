@@ -272,29 +272,6 @@ func ExtractVersionsFromAffectedField(affected cves.Affected, cnaAssigner string
 
 }
 
-// sortBadSemver provides a custom sorting function for version strings that may not
-// strictly adhere to the SemVer specification. It compares versions numerically,
-// part by part (major, minor, patch).
-func sortBadSemver(a, b string) int {
-	partsA := strings.Split(a, ".")
-	partsB := strings.Split(b, ".")
-	majorA, _ := strconv.Atoi(partsA[0])
-	majorB, _ := strconv.Atoi(partsB[0])
-
-	if c := cmp.Compare(majorA, majorB); c != 0 {
-		return c
-	}
-
-	minorA, _ := strconv.Atoi(partsA[1])
-	minorB, _ := strconv.Atoi(partsB[1])
-	if c := cmp.Compare(minorA, minorB); c != 0 {
-		return c
-	}
-	patchA, _ := strconv.Atoi(partsA[2])
-	patchB, _ := strconv.Atoi(partsB[2])
-	return cmp.Compare(patchA, patchB)
-}
-
 // findInverseAffectedRanges calculates the affected version ranges by analyzing a list
 // of 'unaffected' versions. This is common in Linux kernel CVEs where a product is
 // considered affected by default, and only unaffected versions are listed.
@@ -452,6 +429,29 @@ func findNormalAffectedRanges(affected cves.Affected, cnaAssigner string) (versi
 	}
 
 	return versionRanges, mostFrequentVersionType, notes
+}
+
+// sortBadSemver provides a custom sorting function for version strings that may not
+// strictly adhere to the SemVer specification. It compares versions numerically,
+// part by part (major, minor, patch).
+func sortBadSemver(a, b string) int {
+	partsA := strings.Split(a, ".")
+	partsB := strings.Split(b, ".")
+	majorA, _ := strconv.Atoi(partsA[0])
+	majorB, _ := strconv.Atoi(partsB[0])
+
+	if c := cmp.Compare(majorA, majorB); c != 0 {
+		return c
+	}
+
+	minorA, _ := strconv.Atoi(partsA[1])
+	minorB, _ := strconv.Atoi(partsB[1])
+	if c := cmp.Compare(minorA, minorB); c != 0 {
+		return c
+	}
+	patchA, _ := strconv.Atoi(partsA[2])
+	patchB, _ := strconv.Atoi(partsB[2])
+	return cmp.Compare(patchA, patchB)
 }
 
 // FromCVE5 creates a `vulns.Vulnerability` object from a `cves.CVE5` object.

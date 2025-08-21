@@ -82,8 +82,8 @@ func AddVersionInfo(cve cves.CVE5, v *vulns.Vulnerability) []string {
 	if cve.Metadata.AssignerShortName == "Linux" {
 		pkg := osvschema.Package{
 			Ecosystem: string(osvschema.EcosystemLinux),
-			Name:      "Kernel"
-	}
+			Name:      "Kernel",
+		}
 
 		cpeRanges, cpeStrings, err := findCPEVersionRanges(cve)
 		if err != nil {
@@ -275,7 +275,7 @@ func ExtractVersionsFromAffectedField(affected cves.Affected, cnaAssigner string
 		if vers.Status != "affected" {
 			continue
 		}
-		
+
 		versionTypesCount[vers.VersionType]++
 
 		var introduced, fixed, lastaffected string
@@ -333,7 +333,7 @@ func ExtractVersionsFromAffectedField(affected cves.Affected, cnaAssigner string
 			}
 
 			if vers.VersionType == "git" {
-				versionRanges = append(versionRanges, buildVersionRange(vers.Version,"",""))
+				versionRanges = append(versionRanges, buildVersionRange(vers.Version, "", ""))
 				continue
 			}
 

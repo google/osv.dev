@@ -185,7 +185,6 @@ func AddVersionInfo(cve cves.CVE5, v *vulns.Vulnerability) []string {
 // buildVersionRange is a helper function that adds 'introduced', 'fixed', or 'last_affected'
 // events to an OSV version range. If 'intro' is empty, it defaults to "0".
 func buildVersionRange(intro string, lastAff string, fixed string) (versionRange osvschema.Range) {
-	versionRange := osvschema.Range{}
 	var i string
 	if intro == "" {
 		i = "0"

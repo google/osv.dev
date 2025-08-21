@@ -13,6 +13,43 @@ import (
 	"golang.org/x/exp/slices"
 )
 
+// VersionRangeType represents the type of versioning scheme for a range.
+type VersionRangeType int
+
+const (
+	VersionRangeTypeUnknown VersionRangeType = iota
+	VersionRangeTypeGit
+	VersionRangeTypeSemver
+	VersionRangeTypeEcosystem
+)
+
+// String returns the string representation of a VersionRangeType.
+func (vrt VersionRangeType) String() string {
+	switch vrt {
+	case VersionRangeTypeGit:
+		return "git"
+	case VersionRangeTypeEcosystem:
+		return "ecosystem"
+	case VersionRangeTypeSemver:
+		return "semver"
+	default:
+		return "unknown"
+	}
+}
+
+// toVersionRangeType converts a string to a VersionRangeType.
+func toVersionRangeType(s string) VersionRangeType {
+	switch strings.ToLower(s) {
+	case "git":
+		return VersionRangeTypeGit
+	case "semver":
+		return VersionRangeTypeSemver
+	default:
+		// Other version types like "semver" are treated as ecosystem ranges.
+		return VersionRangeTypeEcosystem
+	}
+}
+
 // AddVersionInfo attempts to extract version information from a CVE and add it to the OSV record.
 // It follows a prioritized approach:
 // 1. For Linux kernel CVEs, it specifically looks for CPE version ranges.
@@ -67,30 +104,25 @@ func AddVersionInfo(cve cves.CVE5, v *vulns.Vulnerability) []string {
 			continue
 		}
 		gotVersions = true
-
-		if versionType == "git" {
-			affected := osvschema.Affected{}
-			for _, vr := range versionRanges {
+		affected := osvschema.Affected{}
+		for _, vr := range versionRanges {
+			if versionType == VersionRangeTypeGit {
 				vr.Type = osvschema.RangeGit
 				vr.Repo = cveAff.Repo
-				affected.Ranges = append(affected.Ranges, vr)
-			}
-			v.Affected = append(v.Affected, affected)
-		} else {
-			affected := osvschema.Affected{}
-			for _, vr := range versionRanges {
+			} else {
 				vr.Type = osvschema.RangeEcosystem
-				affected.Ranges = append(affected.Ranges, vr)
 			}
-			// Special handling for Linux kernel CVEs.
-			if cve.Metadata.AssignerShortName == "Linux" {
-				affected.Package = osvschema.Package{
-					Ecosystem: string(osvschema.EcosystemLinux),
-					Name:      "Kernel",
-				}
-			}
-			v.Affected = append(v.Affected, affected)
+			affected.Ranges = append(affected.Ranges, vr)
 		}
+
+		// Special handling for Linux kernel CVEs.
+		if cve.Metadata.AssignerShortName == "Linux" && versionType != VersionRangeTypeGit {
+			affected.Package = osvschema.Package{
+				Ecosystem: string(osvschema.EcosystemLinux),
+				Name:      "Kernel",
+			}
+		}
+		v.Affected = append(v.Affected, affected)
 	}
 
 	// If no versions were found in 'affected', fall back to CPEs.
@@ -193,23 +225,23 @@ func findCPEVersionRanges(cve cves.CVE5) (versionRanges []osvschema.Range, cpes 
 // - As a fallback, it may assume a single version means "fixed at this version, introduced at 0".
 //
 // Returns the extracted OSV ranges, the most frequent version type (e.g., "semver"), and any notes.
-func extractVersionsFromAffectedField(affected cves.Affected, cnaAssigner string) (versionRanges []osvschema.Range, rangeType string, notes []string) {
+func extractVersionsFromAffectedField(affected cves.Affected, cnaAssigner string) (versionRanges []osvschema.Range, rangeType VersionRangeType, notes []string) {
 
 	// Handle cases where a product is marked as "affected" by default, and specific versions are marked "unaffected".
 	if affected.DefaultStatus == "affected" {
 		// For Linux kernel CVEs, this logic is often handled by CPEs, so we skip it here.
 		if cnaAssigner == "Linux" {
 			notes = append(notes, "Skipping Linux Affected range versions in favour of CPE versions")
-			return nil, "", notes
+			return nil, VersionRangeTypeUnknown, notes
 		}
 		// Calculate the affected ranges by finding the inverse of the unaffected ranges.
 		ranges, inverseNotes := findInverseAffectedRanges(affected, cnaAssigner)
 		notes = append(notes, inverseNotes...)
 
 		if len(ranges) != 0 {
-			return ranges, string(osvschema.RangeSemVer), notes
+			return ranges, VersionRangeTypeSemver, notes
 		}
-		return nil, "", notes
+		return nil, VersionRangeTypeUnknown, notes
 	}
 
 	return findNormalAffectedRanges(affected, cnaAssigner)
@@ -271,15 +303,16 @@ func findInverseAffectedRanges(cveAff cves.Affected, cnaAssigner string) (ranges
 	return ranges, notes
 }
 
-func findNormalAffectedRanges(affected cves.Affected, cnaAssigner string) (versionRanges []osvschema.Range, versType string, notes []string) {
-	versionTypesCount := make(map[string]int)
+func findNormalAffectedRanges(affected cves.Affected, cnaAssigner string) (versionRanges []osvschema.Range, versType VersionRangeType, notes []string) {
+	versionTypesCount := make(map[VersionRangeType]int)
 
 	for _, vers := range affected.Versions {
 		if vers.Status != "affected" {
 			continue
 		}
 
-		versionTypesCount[vers.VersionType]++
+		currentVersionType := toVersionRangeType(vers.VersionType)
+		versionTypesCount[currentVersionType]++
 
 		var introduced, fixed, lastaffected string
 
@@ -340,7 +373,7 @@ func findNormalAffectedRanges(affected cves.Affected, cnaAssigner string) (versi
 			continue
 		}
 
-		if vers.VersionType == "git" {
+		if currentVersionType == VersionRangeTypeGit {
 			versionRanges = append(versionRanges, buildVersionRange(vers.Version, "", ""))
 			continue
 		}
@@ -364,7 +397,7 @@ func findNormalAffectedRanges(affected cves.Affected, cnaAssigner string) (versi
 
 	// Determine the most frequent version type to return as the range type.
 	maxCount := 0
-	var mostFrequentVersionType string
+	mostFrequentVersionType := VersionRangeTypeEcosystem
 	for versionType, count := range versionTypesCount {
 		if count > maxCount {
 			maxCount = count

@@ -397,7 +397,10 @@ func sortBadSemver(a, b string) int {
 // of 'unaffected' versions. This is common in Linux kernel CVEs where a product is
 // considered affected by default, and only unaffected versions are listed.
 // It sorts the introduced and fixed versions to create chronological ranges.
-func findInverseAffectedRanges(cveAff cves.Affected) (ranges []osvschema.Range, notes []string) {
+func findInverseAffectedRanges(cveAff cves.Affected, cnaAssigner string) (ranges []osvschema.Range, notes []string) {
+	if cnaAssigner != "Linux" {
+		return nil, append(notes, "Currently only supporting Linux inverse logic")
+	}
 	var introduced []string
 	var fixed []string
 	for _, vers := range cveAff.Versions {

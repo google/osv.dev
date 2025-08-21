@@ -181,9 +181,10 @@ func AddVersionInfo(cve cves.CVE5, v *vulns.Vulnerability) []string {
 	return notes
 }
 
-// addToVersionRange is a helper function that adds 'introduced', 'fixed', or 'last_affected'
+// buildVersionRange is a helper function that adds 'introduced', 'fixed', or 'last_affected'
 // events to an OSV version range. If 'intro' is empty, it defaults to "0".
-func addToVersionRange(versionRange *osvschema.Range, intro string, lastAff string, fixed string) {
+func buildVersionRange(intro string, lastAff string, fixed string) (versionRange osvschema.Range) {
+	versionRange := osvschema.Range{}
 	var i string
 	if intro == "" {
 		i = "0"
@@ -201,6 +202,7 @@ func addToVersionRange(versionRange *osvschema.Range, intro string, lastAff stri
 			LastAffected: lastAff,
 		})
 	}
+	return versionRange
 }
 
 // findCPEVersionRanges extracts version ranges and CPE strings from the CNA's
@@ -217,7 +219,6 @@ func findCPEVersionRanges(cve cves.CVE5) (versionRanges []osvschema.Range, cpes 
 					continue
 				}
 				cpes = append(cpes, match.Criteria)
-				versionRange := osvschema.Range{}
 
 				// If no start version is given, assume the vulnerability starts from version "0".
 				if match.VersionStartIncluding == "" {
@@ -225,12 +226,9 @@ func findCPEVersionRanges(cve cves.CVE5) (versionRanges []osvschema.Range, cpes 
 				}
 
 				if match.VersionEndExcluding != "" {
-					addToVersionRange(&versionRange, match.VersionStartIncluding, "", match.VersionEndExcluding)
+					versionRanges = append(buildVersionRange(match.VersionStartIncluding, "", match.VersionEndExcluding))
 				} else if match.VersionEndIncluding != "" {
-					addToVersionRange(&versionRange, match.VersionStartIncluding, match.VersionEndIncluding, "")
-				}
-				if len(versionRange.Events) != 0 {
-					versionRanges = append(versionRanges, versionRange)
+					versionRanges = append(buildVersionRange(match.VersionStartIncluding, match.VersionEndIncluding, ""))
 				}
 			}
 		}
@@ -315,13 +313,9 @@ func ExtractVersionsFromAffectedField(affected cves.Affected, cnaAssigner string
 			}
 
 			if introduced != "" && fixed != "" {
-				versionRange := osvschema.Range{}
-				addToVersionRange(&versionRange, introduced, "", fixed)
-				versionRanges = append(versionRanges, versionRange)
+				versionRanges = append(versionRanges, buildVersionRange(introduced, "", fixed))
 			} else if introduced != "" && lastaffected != "" {
-				versionRange := osvschema.Range{}
-				addToVersionRange(&versionRange, introduced, lastaffected, "")
-				versionRanges = append(versionRanges, versionRange)
+				versionRanges = append(versionRanges, buildVersionRange(introduced, lastaffected, ""))
 			}
 		} else {
 			// In this case only vers.Version exists which either means that it is _only_ that version that is
@@ -333,14 +327,9 @@ func ExtractVersionsFromAffectedField(affected cves.Affected, cnaAssigner string
 				av, err := git.ParseVersionRange(vers.Version)
 				if err == nil {
 					if av.Introduced != "" && av.Fixed != "" {
-						versionRange := osvschema.Range{}
-						addToVersionRange(&versionRange, av.Introduced, "", av.Fixed)
-						versionRanges = append(versionRanges, versionRange)
+						versionRanges = append(versionRanges, buildVersionRange(av.Introduced, "", av.Fixed))
 					} else if av.Introduced != "" && av.LastAffected != "" {
-						versionRange := osvschema.Range{}
-						addToVersionRange(&versionRange, av.Introduced, av.LastAffected, "")
-						versionRanges = append(versionRanges, versionRange)
-						notes = append(notes, "vers range updated la")
+						versionRanges = append(versionRanges, buildVersionRange(av.Introduced, av.LastAffected, ""))
 					}
 				}
 				continue
@@ -367,9 +356,7 @@ func ExtractVersionsFromAffectedField(affected cves.Affected, cnaAssigner string
 
 			// As a fallback, assume a single version means it's the fixed version.
 			if vQuality <= vulns.Spaces {
-				versionRange := osvschema.Range{}
-				addToVersionRange(&versionRange, "0", "", vers.Version)
-				versionRanges = append(versionRanges, versionRange)
+				versionRanges = append(versionRanges, buildVersionRange("0", "", vers.Version))
 				notes = append(notes, fmt.Sprintf("%s - Single version found %v - Assuming introduced = 0 and Fixed = %v", vQuality, vers.Version, vers.Version))
 			}
 		}
@@ -450,11 +437,10 @@ func findInverseAffectedRanges(cveAff cves.Affected) (ranges []osvschema.Range, 
 	// Create ranges by pairing sorted introduced and fixed versions.
 	for index, f := range fixed {
 		if index < len(introduced) {
-			versionRange := osvschema.Range{}
-			addToVersionRange(&versionRange, introduced[index], "", f)
+			ranges = append(ranges, buildVersionRange(introduced[index], "", f))
 			notes = append(notes, fmt.Sprintf("Introduced from version value - %s", introduced[index]))
 			notes = append(notes, fmt.Sprintf("Fixed from version value - %s", f))
-			ranges = append(ranges, versionRange)
+			
 		}
 	}
 

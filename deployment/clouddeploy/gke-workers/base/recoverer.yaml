@@ -30,5 +30,3 @@ spec:
       - name: recoverer
         image: recoverer
         imagePullPolicy: Always
-        securityContext:
-          privileged: true

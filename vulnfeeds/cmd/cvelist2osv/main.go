@@ -142,7 +142,8 @@ func AddVersionInfo(cve cves.CVE5, v *vulns.Vulnerability) []string {
 			if cve.Metadata.AssignerShortName == "Linux" {
 				affected.Package = osvschema.Package{
 					Ecosystem: string(osvschema.EcosystemLinux),
-					Name:      "Kernel"}
+					Name:      "Kernel",
+				}
 			}
 			v.Affected = append(v.Affected, affected)
 		}

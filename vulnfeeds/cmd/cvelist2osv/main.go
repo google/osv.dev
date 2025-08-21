@@ -333,11 +333,7 @@ func ExtractVersionsFromAffectedField(affected cves.Affected, cnaAssigner string
 			}
 
 			if vers.VersionType == "git" {
-				versionRange := osvschema.Range{}
-				versionRange.Events = append(versionRange.Events, osvschema.Event{
-					Introduced: vers.Version,
-				})
-				versionRanges = append(versionRanges, versionRange)
+				versionRanges = append(versionRanges, buildVersionRange(vers.Version,"",""))
 				continue
 			}
 
@@ -437,7 +433,6 @@ func findInverseAffectedRanges(cveAff cves.Affected) (ranges []osvschema.Range, 
 			ranges = append(ranges, buildVersionRange(introduced[index], "", f))
 			notes = append(notes, fmt.Sprintf("Introduced from version value - %s", introduced[index]))
 			notes = append(notes, fmt.Sprintf("Fixed from version value - %s", f))
-			
 		}
 	}
 

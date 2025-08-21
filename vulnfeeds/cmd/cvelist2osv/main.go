@@ -574,10 +574,7 @@ func ConvertAndExportCVEToOSV(cve cves.CVE5, directory string) error {
 // It searches for URLs in the CNA and ADP reference sections, as well as in
 // the 'collectionUrl' and 'repo' fields of the 'affected' entries.
 func identifyPossibleURLs(cve cves.CVE5) []cves.Reference {
-	var refs []cves.Reference
-	if cve.Containers.CNA.References != nil {
-		refs = append(refs, cve.Containers.CNA.References...)
-	}
+	refs := cve.Containers.CNA.References
 
 	for _, adp := range cve.Containers.ADP {
 		if adp.References != nil {

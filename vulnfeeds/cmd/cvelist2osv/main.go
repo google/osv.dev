@@ -255,12 +255,11 @@ func ExtractVersionsFromAffectedField(affected cves.Affected, cnaAssigner string
 	if affected.DefaultStatus == "affected" {
 		// For Linux kernel CVEs, this logic is often handled by CPEs, so we skip it here.
 		if cnaAssigner == "Linux" {
-
 			notes = append(notes, "Skipping Linux Affected range versions in favour of CPE versions")
 			return nil, "", notes
 		}
 		// Calculate the affected ranges by finding the inverse of the unaffected ranges.
-		ranges, inverseNotes := findInverseAffectedRanges(affected)
+		ranges, inverseNotes := findInverseAffectedRanges(affected, cnaAssigner)
 		notes = append(notes, inverseNotes...)
 
 		if len(ranges) != 0 {
@@ -269,105 +268,8 @@ func ExtractVersionsFromAffectedField(affected cves.Affected, cnaAssigner string
 		return nil, "", notes
 	}
 
-	versionTypesCount := make(map[string]int)
+	return findNormalAffectedRanges(affected, cnaAssigner)
 
-	for _, vers := range affected.Versions {
-		if vers.Status != "affected" {
-			continue
-		}
-
-		versionTypesCount[vers.VersionType]++
-
-		var introduced, fixed, lastaffected string
-
-		// Quality check the version strings to avoid using filler content.
-		vQuality := vulns.CheckQuality(vers.Version)
-		if !vQuality.AtLeast(vulns.Spaces) {
-			notes = append(notes, fmt.Sprintf("Version value for %s %s is filler or empty", affected.Vendor, affected.Product))
-		}
-		vLessThanQual := vulns.CheckQuality(vers.LessThan)
-		vLTOEQual := vulns.CheckQuality(vers.LessThanOrEqual)
-
-		hasRange := vLessThanQual.AtLeast(vulns.Spaces) || vLTOEQual.AtLeast(vulns.Spaces)
-		notes = append(notes, fmt.Sprintf("Range detected: %v", hasRange))
-		// Handle cases where 'lessThan' is mistakenly the same as 'version'.
-		if vers.LessThan != "" && vers.LessThan == vers.Version {
-			notes = append(notes, fmt.Sprintf("Warning: lessThan (%s) is the same as introduced (%s)\n", vers.LessThan, vers.Version))
-			hasRange = false
-		}
-
-		if hasRange {
-			if vQuality.AtLeast(vulns.Spaces) {
-				introduced = vers.Version
-				notes = append(notes, fmt.Sprintf("%s - Introduced from version value - %s", vQuality.String(), vers.Version))
-			}
-			if vLessThanQual.AtLeast(vulns.Spaces) {
-				fixed = vers.LessThan
-				notes = append(notes, fmt.Sprintf("%s - Fixed from LessThan value - %s", vLessThanQual.String(), vers.LessThan))
-			} else if vLTOEQual.AtLeast(vulns.Spaces) {
-				lastaffected = vers.LessThanOrEqual
-				notes = append(notes, fmt.Sprintf("%s - LastAffected from LessThanOrEqual value- %s", vLTOEQual.String(), vers.LessThanOrEqual))
-			}
-
-			if introduced != "" && fixed != "" {
-				versionRanges = append(versionRanges, buildVersionRange(introduced, "", fixed))
-			} else if introduced != "" && lastaffected != "" {
-				versionRanges = append(versionRanges, buildVersionRange(introduced, lastaffected, ""))
-			}
-		} else {
-			// In this case only vers.Version exists which either means that it is _only_ that version that is
-			// affected, but more likely, it affects up to that version. It could also mean that the range is given
-			// in one line instead - like "< 1.5.3" or "< 2.45.4, >= 2.0 " or just "before 1.4.7", so check for that.
-			notes = append(notes, "Only version exists")
-			// GitHub often encodes the range directly in the version string.
-			if cnaAssigner == "GitHub_M" {
-				av, err := git.ParseVersionRange(vers.Version)
-				if err == nil {
-					if av.Introduced == "" {
-						continue
-					}
-					if av.Fixed != "" {
-						versionRanges = append(versionRanges, buildVersionRange(av.Introduced, "", av.Fixed))
-					} else if av.LastAffected != "" {
-						versionRanges = append(versionRanges, buildVersionRange(av.Introduced, av.LastAffected, ""))
-					}
-				}
-				continue
-			}
-
-			if vers.VersionType == "git" {
-				versionRanges = append(versionRanges, buildVersionRange(vers.Version, "", ""))
-				continue
-			}
-
-			// Try to extract versions from text like "before 1.4.7".
-			possibleVersions, note := cves.ExtractVersionsFromText(nil, vers.Version)
-			if note != nil {
-				notes = append(notes, note...)
-			}
-			if possibleVersions != nil {
-				notes = append(notes, "Versions retrieved from text but not used CURRENTLY")
-				continue
-			}
-
-			// As a fallback, assume a single version means it's the fixed version.
-			if vQuality.AtLeast(vulns.Spaces) {
-				versionRanges = append(versionRanges, buildVersionRange("0", "", vers.Version))
-				notes = append(notes, fmt.Sprintf("%s - Single version found %v - Assuming introduced = 0 and Fixed = %v", vQuality, vers.Version, vers.Version))
-			}
-		}
-	}
-	// Determine the most frequent version type to return as the range type.
-	maxCount := 0
-	var mostFrequentVersionType string
-	for versionType, count := range versionTypesCount {
-		if count > maxCount {
-			maxCount = count
-			mostFrequentVersionType = versionType
-		}
-	}
-
-	return versionRanges, mostFrequentVersionType, notes
 }
 
 // sortBadSemver provides a custom sorting function for version strings that may not
@@ -443,6 +345,110 @@ func findInverseAffectedRanges(cveAff cves.Affected, cnaAssigner string) (ranges
 	}
 
 	return ranges, notes
+}
+
+func findNormalAffectedRanges(affected cves.Affected, cnaAssigner string) (versionRanges []osvschema.Range, versType string, notes []string) {
+	versionTypesCount := make(map[string]int)
+
+	for _, vers := range affected.Versions {
+		if vers.Status != "affected" {
+			continue
+		}
+
+		versionTypesCount[vers.VersionType]++
+
+		var introduced, fixed, lastaffected string
+
+		// Quality check the version strings to avoid using filler content.
+		vQuality := vulns.CheckQuality(vers.Version)
+		if !vQuality.AtLeast(vulns.Spaces) {
+			notes = append(notes, fmt.Sprintf("Version value for %s %s is filler or empty", affected.Vendor, affected.Product))
+		}
+		vLessThanQual := vulns.CheckQuality(vers.LessThan)
+		vLTOEQual := vulns.CheckQuality(vers.LessThanOrEqual)
+
+		hasRange := vLessThanQual.AtLeast(vulns.Spaces) || vLTOEQual.AtLeast(vulns.Spaces)
+		notes = append(notes, fmt.Sprintf("Range detected: %v", hasRange))
+		// Handle cases where 'lessThan' is mistakenly the same as 'version'.
+		if vers.LessThan != "" && vers.LessThan == vers.Version {
+			notes = append(notes, fmt.Sprintf("Warning: lessThan (%s) is the same as introduced (%s)\n", vers.LessThan, vers.Version))
+			hasRange = false
+		}
+
+		if hasRange {
+			if vQuality.AtLeast(vulns.Spaces) {
+				introduced = vers.Version
+				notes = append(notes, fmt.Sprintf("%s - Introduced from version value - %s", vQuality.String(), vers.Version))
+			}
+			if vLessThanQual.AtLeast(vulns.Spaces) {
+				fixed = vers.LessThan
+				notes = append(notes, fmt.Sprintf("%s - Fixed from LessThan value - %s", vLessThanQual.String(), vers.LessThan))
+			} else if vLTOEQual.AtLeast(vulns.Spaces) {
+				lastaffected = vers.LessThanOrEqual
+				notes = append(notes, fmt.Sprintf("%s - LastAffected from LessThanOrEqual value- %s", vLTOEQual.String(), vers.LessThanOrEqual))
+			}
+
+			if introduced != "" && fixed != "" {
+				versionRanges = append(versionRanges, buildVersionRange(introduced, "", fixed))
+			} else if introduced != "" && lastaffected != "" {
+				versionRanges = append(versionRanges, buildVersionRange(introduced, lastaffected, ""))
+			}
+			continue
+		}
+
+		// In this case only vers.Version exists which either means that it is _only_ that version that is
+		// affected, but more likely, it affects up to that version. It could also mean that the range is given
+		// in one line instead - like "< 1.5.3" or "< 2.45.4, >= 2.0 " or just "before 1.4.7", so check for that.
+		notes = append(notes, "Only version exists")
+		// GitHub often encodes the range directly in the version string.
+		if cnaAssigner == "GitHub_M" {
+			av, err := git.ParseVersionRange(vers.Version)
+			if err == nil {
+				if av.Introduced == "" {
+					continue
+				}
+				if av.Fixed != "" {
+					versionRanges = append(versionRanges, buildVersionRange(av.Introduced, "", av.Fixed))
+				} else if av.LastAffected != "" {
+					versionRanges = append(versionRanges, buildVersionRange(av.Introduced, av.LastAffected, ""))
+				}
+			}
+			continue
+		}
+
+		if vers.VersionType == "git" {
+			versionRanges = append(versionRanges, buildVersionRange(vers.Version, "", ""))
+			continue
+		}
+
+		// Try to extract versions from text like "before 1.4.7".
+		possibleVersions, note := cves.ExtractVersionsFromText(nil, vers.Version)
+		if note != nil {
+			notes = append(notes, note...)
+		}
+		if possibleVersions != nil {
+			notes = append(notes, "Versions retrieved from text but not used CURRENTLY")
+			continue
+		}
+
+		// As a fallback, assume a single version means it's the fixed version.
+		if vQuality.AtLeast(vulns.Spaces) {
+			versionRanges = append(versionRanges, buildVersionRange("0", "", vers.Version))
+			notes = append(notes, fmt.Sprintf("%s - Single version found %v - Assuming introduced = 0 and Fixed = %v", vQuality, vers.Version, vers.Version))
+		}
+	}
+
+	// Determine the most frequent version type to return as the range type.
+	maxCount := 0
+	var mostFrequentVersionType string
+	for versionType, count := range versionTypesCount {
+		if count > maxCount {
+			maxCount = count
+			mostFrequentVersionType = versionType
+		}
+	}
+
+	return versionRanges, mostFrequentVersionType, notes
 }
 
 // FromCVE5 creates a `vulns.Vulnerability` object from a `cves.CVE5` object.

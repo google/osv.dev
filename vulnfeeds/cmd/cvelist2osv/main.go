@@ -226,9 +226,9 @@ func findCPEVersionRanges(cve cves.CVE5) (versionRanges []osvschema.Range, cpes 
 				}
 
 				if match.VersionEndExcluding != "" {
-					versionRanges = append(buildVersionRange(match.VersionStartIncluding, "", match.VersionEndExcluding))
+					versionRanges = append(versionRanges, buildVersionRange(match.VersionStartIncluding, "", match.VersionEndExcluding))
 				} else if match.VersionEndIncluding != "" {
-					versionRanges = append(buildVersionRange(match.VersionStartIncluding, match.VersionEndIncluding, ""))
+					versionRanges = append(versionRanges, buildVersionRange(match.VersionStartIncluding, match.VersionEndIncluding, ""))
 				}
 			}
 		}

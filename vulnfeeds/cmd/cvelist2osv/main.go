@@ -307,24 +307,27 @@ func findInverseAffectedRanges(cveAff cves.Affected, cnaAssigner string) (ranges
 	var fixed []string
 	for _, vers := range cveAff.Versions {
 		if vers.Status == "affected" {
-			introduced = append(introduced, fmt.Sprintf("%s.0", vers.Version))
+			introduced = append(introduced, vers.Version)
 		}
-		if vers.Status == "unaffected" {
-			if vers.Version == "0" || vers.VersionType != "semver" {
-				continue
-			}
-			fixed = append(fixed, vers.Version)
-			// Infer the next introduced version from the 'lessThanOrEqual' field.
-			// For example, if "5.10.*" is unaffected, the next introduced version is "5.11.0".
-			minorVers := strings.Split(vers.LessThanOrEqual, ".*")[0]
-			parts := strings.Split(minorVers, ".")
-			if len(parts) > 1 {
-				if intMin, err := strconv.Atoi(parts[len(parts)-1]); err == nil {
-					nextIntroduced := fmt.Sprintf("%s.%d.0", parts[0], intMin+1)
-					introduced = append(introduced, nextIntroduced)
-				}
+		if vers.Status != "unaffected" {
+			continue
+		}
+
+		if vers.Version == "0" || vers.VersionType != "semver" {
+			continue
+		}
+		fixed = append(fixed, vers.Version)
+		// Infer the next introduced version from the 'lessThanOrEqual' field.
+		// For example, if "5.10.*" is unaffected, the next introduced version is "5.11.0".
+		minorVers := strings.Split(vers.LessThanOrEqual, ".*")[0]
+		parts := strings.Split(minorVers, ".")
+		if len(parts) > 1 {
+			if intMin, err := strconv.Atoi(parts[len(parts)-1]); err == nil {
+				nextIntroduced := fmt.Sprintf("%s.%d.0", parts[0], intMin+1)
+				introduced = append(introduced, nextIntroduced)
 			}
 		}
+
 	}
 
 	slices.SortFunc(introduced, sortBadSemver)

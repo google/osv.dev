@@ -90,16 +90,16 @@ func AddVersionInfo(cve cves.CVE5, v *vulns.Vulnerability) []string {
 			notes = append(notes, err.Error())
 		}
 		if cpeRanges != nil {
-			nA := osvschema.Affected{
+			affected := osvschema.Affected{
 				Package: pkg,
 			}
 			for _, r := range cpeRanges {
 				r.Type = osvschema.RangeEcosystem
-				nA.Ranges = append(nA.Ranges, r)
+				affected.Ranges = append(affected.Ranges, r)
 			}
-			nA.DatabaseSpecific = make(map[string]interface{})
-			nA.DatabaseSpecific["CPEs"] = vulns.Unique(cpeStrings)
-			v.Affected = append(v.Affected, nA)
+			affected.DatabaseSpecific = make(map[string]interface{})
+			affected.DatabaseSpecific["CPEs"] = vulns.Unique(cpeStrings)
+			v.Affected = append(v.Affected, affected)
 		}
 	}
 
@@ -125,26 +125,26 @@ func AddVersionInfo(cve cves.CVE5, v *vulns.Vulnerability) []string {
 		gotVersions = true
 
 		if versionType == "git" {
-			nA := osvschema.Affected{}
+			affected := osvschema.Affected{}
 			for _, vr := range versionRanges {
 				vr.Type = osvschema.RangeGit
 				vr.Repo = cveAff.Repo
-				nA.Ranges = append(nA.Ranges, vr)
+				affected.Ranges = append(affected.Ranges, vr)
 			}
-			v.Affected = append(v.Affected, nA)
+			v.Affected = append(v.Affected, affected)
 		} else {
-			nA := osvschema.Affected{}
+			affected := osvschema.Affected{}
 			for _, vr := range versionRanges {
 				vr.Type = osvschema.RangeEcosystem
-				nA.Ranges = append(nA.Ranges, vr)
+				affected.Ranges = append(affected.Ranges, vr)
 			}
 			// Special handling for Linux kernel CVEs.
 			if cve.Metadata.AssignerShortName == "Linux" {
-				nA.Package = osvschema.Package{
+				affected.Package = osvschema.Package{
 					Ecosystem: string(osvschema.EcosystemLinux),
 					Name:      "Kernel"}
 			}
-			v.Affected = append(v.Affected, nA)
+			v.Affected = append(v.Affected, affected)
 		}
 	}
 
@@ -156,14 +156,14 @@ func AddVersionInfo(cve cves.CVE5, v *vulns.Vulnerability) []string {
 			notes = append(notes, err.Error())
 		}
 		if len(cpeRanges) != 0 {
-			nA := osvschema.Affected{}
+			affected := osvschema.Affected{}
 			for _, vr := range cpeRanges {
 				vr.Type = osvschema.RangeEcosystem
-				nA.Ranges = append(nA.Ranges, vr)
+				affected.Ranges = append(affected.Ranges, vr)
 			}
-			nA.DatabaseSpecific = make(map[string]interface{})
-			nA.DatabaseSpecific["CPEs"] = vulns.Unique(cpeStrings)
-			v.Affected = append(v.Affected, nA)
+			affected.DatabaseSpecific = make(map[string]interface{})
+			affected.DatabaseSpecific["CPEs"] = vulns.Unique(cpeStrings)
+			v.Affected = append(v.Affected, affected)
 		}
 	}
 

@@ -138,29 +138,6 @@ func AddVersionInfo(cve cves.CVE5, v *vulns.Vulnerability) []string {
 	return notes
 }
 
-// buildVersionRange is a helper function that adds 'introduced', 'fixed', or 'last_affected'
-// events to an OSV version range. If 'intro' is empty, it defaults to "0".
-func buildVersionRange(intro string, lastAff string, fixed string) (versionRange osvschema.Range) {
-	var i string
-	if intro == "" {
-		i = "0"
-	} else {
-		i = intro
-	}
-	versionRange.Events = append(versionRange.Events, osvschema.Event{
-		Introduced: i})
-
-	if fixed != "" {
-		versionRange.Events = append(versionRange.Events, osvschema.Event{
-			Fixed: fixed})
-	} else if lastAff != "" {
-		versionRange.Events = append(versionRange.Events, osvschema.Event{
-			LastAffected: lastAff,
-		})
-	}
-	return versionRange
-}
-
 // findCPEVersionRanges extracts version ranges and CPE strings from the CNA's
 // CPE applicability statements in a CVE record.
 func findCPEVersionRanges(cve cves.CVE5) (versionRanges []osvschema.Range, cpes []string, err error) {
@@ -386,6 +363,29 @@ func findNormalAffectedRanges(affected cves.Affected, cnaAssigner string) (versi
 	}
 
 	return versionRanges, mostFrequentVersionType, notes
+}
+
+// buildVersionRange is a helper function that adds 'introduced', 'fixed', or 'last_affected'
+// events to an OSV version range. If 'intro' is empty, it defaults to "0".
+func buildVersionRange(intro string, lastAff string, fixed string) (versionRange osvschema.Range) {
+	var i string
+	if intro == "" {
+		i = "0"
+	} else {
+		i = intro
+	}
+	versionRange.Events = append(versionRange.Events, osvschema.Event{
+		Introduced: i})
+
+	if fixed != "" {
+		versionRange.Events = append(versionRange.Events, osvschema.Event{
+			Fixed: fixed})
+	} else if lastAff != "" {
+		versionRange.Events = append(versionRange.Events, osvschema.Event{
+			LastAffected: lastAff,
+		})
+	}
+	return versionRange
 }
 
 // sortBadSemver provides a custom sorting function for version strings that may not

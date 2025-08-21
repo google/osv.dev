@@ -61,27 +61,7 @@ func AddVersionInfo(cve cves.CVE5, v *vulns.Vulnerability) []string {
 	var notes []string
 	// Special handling for Linux kernel CVEs, prioritizing CPEs for version info.
 	if cve.Metadata.AssignerShortName == "Linux" {
-		pkg := osvschema.Package{
-			Ecosystem: string(osvschema.EcosystemLinux),
-			Name:      "Kernel",
-		}
-
-		cpeRanges, cpeStrings, err := findCPEVersionRanges(cve)
-		if err != nil {
-			notes = append(notes, err.Error())
-		}
-		if cpeRanges != nil {
-			affected := osvschema.Affected{
-				Package: pkg,
-			}
-			for _, r := range cpeRanges {
-				r.Type = osvschema.RangeEcosystem
-				affected.Ranges = append(affected.Ranges, r)
-			}
-			affected.DatabaseSpecific = make(map[string]interface{})
-			affected.DatabaseSpecific["CPEs"] = vulns.Unique(cpeStrings)
-			v.Affected = append(v.Affected, affected)
-		}
+		notes = append(notes, handleLinuxCVE(cve, v)...)
 	}
 
 	// Combine 'affected' entries from both CNA and ADP containers.

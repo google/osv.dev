@@ -275,11 +275,8 @@ func ExtractVersionsFromAffectedField(affected cves.Affected, cnaAssigner string
 		if vers.Status != "affected" {
 			continue
 		}
-		if _, ok := versionTypesCount[vers.VersionType]; ok {
-			versionTypesCount[vers.VersionType]++
-		} else {
-			versionTypesCount[vers.VersionType] = 0
-		}
+		
+		versionTypesCount[vers.VersionType]++
 
 		var introduced, fixed, lastaffected string
 

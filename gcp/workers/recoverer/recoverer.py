@@ -209,10 +209,8 @@ def main():
     sys.exit(1)
 
   with pubsub_v1.SubscriberClient() as subscriber:
-    topic = subscriber.topic_path(project, osv.pubsub.FAILED_TASKS_TOPIC)
     subscription = subscriber.subscription_path(project,
                                                 _FAILED_TASKS_SUBSCRIPTION)
-    subscriber.create_subscription(name=subscription, topic=topic)
 
     while True:
       response = subscriber.pull(subscription=subscription, max_messages=1)

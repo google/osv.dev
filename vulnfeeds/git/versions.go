@@ -140,7 +140,7 @@ func NormalizeVersion(version string) (normalizedVersion string, e error) {
 	return normalizedVersion, e
 }
 
-// Parse a version range string into an AffectedVersion struct,
+// Parse a version range string into an models.AffectedVersion struct,
 // which aligns with the structure used by GitHub CNA feeds.
 func ParseVersionRange(versionRange string) (models.AffectedVersion, error) {
 	matches := versionRangeRegex.FindStringSubmatch(strings.TrimSpace(versionRange))
@@ -164,8 +164,10 @@ func ParseVersionRange(versionRange string) (models.AffectedVersion, error) {
 		case ">":
 			av.Introduced = ver1
 		case "<=":
+			av.Introduced = "0"
 			av.LastAffected = ver1
 		case "<":
+			av.Introduced = "0"
 			av.Fixed = ver1
 		default:
 			return models.AffectedVersion{}, fmt.Errorf("unhandled single operator: %s", op1)

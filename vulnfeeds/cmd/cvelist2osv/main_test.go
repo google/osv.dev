@@ -106,7 +106,7 @@ func TestIdentifyPossibleURLs(t *testing.T) {
 					},
 				},
 			},
-			expectedRefs: nil,
+			expectedRefs: []cves.Reference{},
 		},
 		{
 			name: "empty url string",

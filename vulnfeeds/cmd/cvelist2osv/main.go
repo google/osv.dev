@@ -282,13 +282,13 @@ func ExtractVersionsFromAffectedField(affected cves.Affected, cnaAssigner string
 
 		// Quality check the version strings to avoid using filler content.
 		vQuality := vulns.CheckQuality(vers.Version)
-		if vQuality >= vulns.Filler {
+		if !vQuality.AtLeast(vulns.Spaces) {
 			notes = append(notes, fmt.Sprintf("Version value for %s %s is filler or empty", affected.Vendor, affected.Product))
 		}
 		vLessThanQual := vulns.CheckQuality(vers.LessThan)
 		vLTOEQual := vulns.CheckQuality(vers.LessThanOrEqual)
 
-		hasRange := vLessThanQual <= vulns.Spaces || vLTOEQual <= vulns.Spaces
+		hasRange := vLessThanQual.AtLeast(vulns.Spaces) || vLTOEQual.AtLeast(vulns.Spaces)
 		notes = append(notes, fmt.Sprintf("Range detected: %v", hasRange))
 		// Handle cases where 'lessThan' is mistakenly the same as 'version'.
 		if vers.LessThan != "" && vers.LessThan == vers.Version {
@@ -297,14 +297,14 @@ func ExtractVersionsFromAffectedField(affected cves.Affected, cnaAssigner string
 		}
 
 		if hasRange {
-			if vQuality <= vulns.Spaces {
+			if vQuality.AtLeast(vulns.Spaces) {
 				introduced = vers.Version
 				notes = append(notes, fmt.Sprintf("%s - Introduced from version value - %s", vQuality.String(), vers.Version))
 			}
-			if vLessThanQual <= vulns.Spaces {
+			if vLessThanQual.AtLeast(vulns.Spaces) {
 				fixed = vers.LessThan
 				notes = append(notes, fmt.Sprintf("%s - Fixed from LessThan value - %s", vLessThanQual.String(), vers.LessThan))
-			} else if vLTOEQual <= vulns.Spaces {
+			} else if vLTOEQual.AtLeast(vulns.Spaces) {
 				lastaffected = vers.LessThanOrEqual
 				notes = append(notes, fmt.Sprintf("%s - LastAffected from LessThanOrEqual value- %s", vLTOEQual.String(), vers.LessThanOrEqual))
 			}
@@ -323,9 +323,12 @@ func ExtractVersionsFromAffectedField(affected cves.Affected, cnaAssigner string
 			if cnaAssigner == "GitHub_M" {
 				av, err := git.ParseVersionRange(vers.Version)
 				if err == nil {
-					if av.Introduced != "" && av.Fixed != "" {
+					if av.Introduced == "" {
+						continue
+					}
+					if av.Fixed != "" {
 						versionRanges = append(versionRanges, buildVersionRange(av.Introduced, "", av.Fixed))
-					} else if av.Introduced != "" && av.LastAffected != "" {
+					} else if av.LastAffected != "" {
 						versionRanges = append(versionRanges, buildVersionRange(av.Introduced, av.LastAffected, ""))
 					}
 				}
@@ -348,7 +351,7 @@ func ExtractVersionsFromAffectedField(affected cves.Affected, cnaAssigner string
 			}
 
 			// As a fallback, assume a single version means it's the fixed version.
-			if vQuality <= vulns.Spaces {
+			if vQuality.AtLeast(vulns.Spaces) {
 				versionRanges = append(versionRanges, buildVersionRange("0", "", vers.Version))
 				notes = append(notes, fmt.Sprintf("%s - Single version found %v - Assuming introduced = 0 and Fixed = %v", vQuality, vers.Version, vers.Version))
 			}

@@ -45,15 +45,14 @@ def gcs_mock(directory: str | None = None):
       yield db_dir
 
 
-_mock_blob_generations = defaultdict(int)
-
-
 class _MockBlob:
   """Mock google.cloud.storage.Blob with only necessary methods for tests."""
 
-  def __init__(self, path: str):
+  def __init__(self, path: str, generations: dict[str, int] = None):
     self._path = path
     self.custom_time: datetime.datetime | None = None
+    # store a reference to all the blob generations
+    self._generations = generations
 
   def upload_from_string(self,
                          data: str | bytes,
@@ -62,14 +61,14 @@ class _MockBlob:
     """Implements google.cloud.storage.Blob.upload_from_string."""
     del content_type  # Can't do anything with this.
 
-    if if_generation_match not in (None, _mock_blob_generations[self._path]):
+    if if_generation_match not in (None, self._generations[self._path]):
       raise exceptions.PreconditionFailed('Generation mismatch')
 
     if isinstance(data, str):
       data = data.encode()
     with open(self._path, 'wb') as f:
       f.write(data)
-    _mock_blob_generations[self._path] += 1
+    self._generations[self._path] += 1
 
     # Use the file's modified time to store the CustomTime metadata.
     if self.custom_time is not None:
@@ -90,16 +89,21 @@ class _MockBucket:
 
   def __init__(self, db_dir: str):
     self._db_dir = db_dir
+    self._generations = defaultdict(int)
+    # Create a generation for any pre-existing files
+    for root, _, blobs in os.walk(self._db_dir):
+      for blob_name in blobs:
+        self._generations[os.path.join(root, blob_name)] = 1
 
   def blob(self, blob_name: str) -> _MockBlob:
-    return _MockBlob(os.path.join(self._db_dir, blob_name))
+    return _MockBlob(os.path.join(self._db_dir, blob_name), self._generations)
 
   def get_blob(self, blob_name: str) -> _MockBlob | None:
     path = os.path.join(self._db_dir, blob_name)
     if not os.path.exists(path):
       return None
-    blob = _MockBlob(path)
+    blob = _MockBlob(path, self._generations)
     ts = os.path.getmtime(path)
     blob.custom_time = datetime.datetime.fromtimestamp(ts, datetime.UTC)
-    blob.generation = _mock_blob_generations[path]
+    blob.generation = self._generations[path]
     return blob

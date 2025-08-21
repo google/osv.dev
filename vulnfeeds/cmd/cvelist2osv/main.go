@@ -82,7 +82,8 @@ func AddVersionInfo(cve cves.CVE5, v *vulns.Vulnerability) []string {
 	if cve.Metadata.AssignerShortName == "Linux" {
 		pkg := osvschema.Package{
 			Ecosystem: string(osvschema.EcosystemLinux),
-			Name:      "Kernel"}
+			Name:      "Kernel"
+	}
 
 		cpeRanges, cpeStrings, err := findCPEVersionRanges(cve)
 		if err != nil {

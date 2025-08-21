@@ -66,3 +66,6 @@ nav_external_links:
   - title: OSV-Scanner
     url: https://google.github.io/osv-scanner/
     hide_icon: false # set to true to hide the external link icon - defaults to false
+  - title: OSV-Linter
+    url: https://test.osv.dev/linter/
+    hide_icon: false # set to true to hide the external link icon - defaults to false

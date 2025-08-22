@@ -53,11 +53,31 @@ header {
   display: flex;
   margin-bottom: 20px;
   align-items: center;
+  justify-content: space-between;
 }
 
 #header-left {
   display: flex;
   align-items: center;
+}
+
+#header-right {
+  display: flex;
+  align-items: center;
+}
+
+#header-right ::after {
+  display: inline-block;
+  content: " ";
+  background-image: url(https://osv.dev/static/img/external-link.svg);
+  width: 16px;
+  height: 16px;
+  margin-left: 3px;
+  vertical-align: middle;
+}
+
+#header-right a {
+  color: inherit;
 }
 
 .logo {

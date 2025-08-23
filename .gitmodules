@@ -7,3 +7,4 @@
 [submodule "osv-schema"]
 	path = osv/osv-schema
 	url = https://github.com/ossf/osv-schema.git
+	branch = v1.7.3

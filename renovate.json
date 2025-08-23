@@ -24,7 +24,7 @@
     "groupName": "lockfile maintenance"
   },
   "git-submodules": {
-    "enabled": false
+    "enabled": true
   },
   "packageRules": [
     {

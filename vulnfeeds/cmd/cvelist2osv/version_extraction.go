@@ -186,19 +186,13 @@ func extractVersionsFromAffectedField(affected cves.Affected, cnaAssigner string
 
 	// Handle cases where a product is marked as "affected" by default, and specific versions are marked "unaffected".
 	if affected.DefaultStatus == "affected" {
-		// For Linux kernel CVEs, this logic is often handled by CPEs, so we skip it here.
+		// For Linux kernel CVEs, this logic is often handled by CPEs, so we skip it here, until we are confident in the inverse calculation method.
 		if cnaAssigner == "Linux" {
 			notes = append(notes, "Skipping Linux Affected range versions in favour of CPE versions")
 			return nil, VersionRangeTypeUnknown, notes
 		}
 		// Calculate the affected ranges by finding the inverse of the unaffected ranges.
-		ranges, inverseNotes := findInverseAffectedRanges(affected, cnaAssigner)
-		notes = append(notes, inverseNotes...)
-
-		if len(ranges) != 0 {
-			return ranges, VersionRangeTypeSemver, notes
-		}
-		return nil, VersionRangeTypeUnknown, notes
+		return findInverseAffectedRanges(affected, cnaAssigner)
 	}
 
 	return findNormalAffectedRanges(affected, cnaAssigner)
@@ -209,9 +203,9 @@ func extractVersionsFromAffectedField(affected cves.Affected, cnaAssigner string
 // of 'unaffected' versions. This is common in Linux kernel CVEs where a product is
 // considered affected by default, and only unaffected versions are listed.
 // It sorts the introduced and fixed versions to create chronological ranges.
-func findInverseAffectedRanges(cveAff cves.Affected, cnaAssigner string) (ranges []osvschema.Range, notes []string) {
+func findInverseAffectedRanges(cveAff cves.Affected, cnaAssigner string) (ranges []osvschema.Range, versType VersionRangeType, notes []string) {
 	if cnaAssigner != "Linux" {
-		return nil, append(notes, "Currently only supporting Linux inverse logic")
+		return nil, VersionRangeTypeUnknown, append(notes, "Currently only supporting Linux inverse logic")
 	}
 	var introduced []string
 	var fixed []string
@@ -223,7 +217,7 @@ func findInverseAffectedRanges(cveAff cves.Affected, cnaAssigner string) (ranges
 			continue
 		}
 
-		if vers.Version == "0" || vers.VersionType != "semver" {
+		if vers.Version == "0" || toVersionRangeType(vers.VersionType) != VersionRangeTypeSemver {
 			continue
 		}
 		fixed = append(fixed, vers.Version)
@@ -257,7 +251,11 @@ func findInverseAffectedRanges(cveAff cves.Affected, cnaAssigner string) (ranges
 		}
 	}
 
-	return ranges, notes
+	if len(ranges) != 0 {
+		return ranges, VersionRangeTypeSemver, notes
+	}
+	notes = append(notes, "no ranges found")
+	return nil, VersionRangeTypeUnknown, notes
 }
 
 func findNormalAffectedRanges(affected cves.Affected, cnaAssigner string) (versionRanges []osvschema.Range, versType VersionRangeType, notes []string) {

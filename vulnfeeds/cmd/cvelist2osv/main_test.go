@@ -177,8 +177,10 @@ func TestFromCVE5(t *testing.T) {
 					Aliases:       nil,
 					Related:       nil,
 					References: []osvschema.Reference{
-						{Type: "WEB", URL: "https://gitlab.com/gitlab-org/gitlab/-/issues/517693"},
-						{Type: "WEB", URL: "https://hackerone.com/reports/2972576"},
+						{Type: "ARTICLE", URL: "https://hackerone.com/reports/2972576"},
+						{Type: "EVIDENCE", URL: "https://hackerone.com/reports/2972576"},
+						{Type: "REPORT", URL: "https://gitlab.com/gitlab-org/gitlab/-/issues/517693"},
+						{Type: "REPORT", URL: "https://hackerone.com/reports/2972576"},
 					},
 					Severity: []osvschema.Severity{
 						{

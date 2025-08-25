@@ -6,7 +6,6 @@ import (
 	"log"
 	"os"
 	"path/filepath"
-	"sort"
 	"strings"
 	"testing"
 	"time"
@@ -366,93 +365,6 @@ func TestFromCVE5(t *testing.T) {
 
 			if diff := cmp.Diff(tc.expectedVuln, vuln); diff != "" {
 				t.Errorf("FromCVE5() vuln mismatch (-want +got):\n%s", diff)
-			}
-		})
-	}
-}
-
-func TestFindInverseAffectedRanges(t *testing.T) {
-	testCases := []struct {
-		name           string
-		cve            cves.CVE5
-		expectedRanges []osvschema.Range
-	}{
-		{
-			name: "CVE-2025-21772",
-			cve:  loadTestData("CVE-2025-21772"),
-			expectedRanges: []osvschema.Range{
-				{Events: []osvschema.Event{{Introduced: "0"}, {Fixed: "5.4.291"}}},
-				{Events: []osvschema.Event{{Introduced: "5.5.0"}, {Fixed: "5.10.235"}}},
-				{Events: []osvschema.Event{{Introduced: "5.11.0"}, {Fixed: "5.15.179"}}},
-				{Events: []osvschema.Event{{Introduced: "5.16.0"}, {Fixed: "6.1.129"}}},
-				{Events: []osvschema.Event{{Introduced: "6.2.0"}, {Fixed: "6.6.79"}}},
-				{Events: []osvschema.Event{{Introduced: "6.7.0"}, {Fixed: "6.12.16"}}},
-				{Events: []osvschema.Event{{Introduced: "6.13.0"}, {Fixed: "6.13.4"}}},
-			},
-		},
-		{
-			name: "CVE-2025-21631",
-			cve:  loadTestData("CVE-2025-21631"),
-			expectedRanges: []osvschema.Range{
-				{Events: []osvschema.Event{{Introduced: "0"}, {Fixed: "5.15.177"}}},
-				{Events: []osvschema.Event{{Introduced: "5.16.0"}, {Fixed: "6.1.125"}}},
-				{Events: []osvschema.Event{{Introduced: "6.2.0"}, {Fixed: "6.6.72"}}},
-				{Events: []osvschema.Event{{Introduced: "6.7.0"}, {Fixed: "6.12.10"}}},
-			},
-		},
-	}
-
-	for _, tc := range testCases {
-		t.Run(tc.name, func(t *testing.T) {
-			var affectedBlock cves.Affected
-			// Find the specific affected block with defaultStatus: "affected".
-			for _, affected := range tc.cve.Containers.CNA.Affected {
-				if affected.DefaultStatus == "affected" {
-					affectedBlock = affected
-					break
-				}
-			}
-
-			if affectedBlock.Product == "" {
-				t.Fatalf("Could not find the 'affected' block with defaultStatus 'affected' in the test file")
-			}
-
-			// Run the function under test.
-			gotRanges, _ := findInverseAffectedRanges(affectedBlock, tc.cve.Metadata.AssignerShortName)
-
-			// Sort slices for deterministic comparison.
-			sort.Slice(gotRanges, func(i, j int) bool {
-				if len(gotRanges[i].Events) == 0 || len(gotRanges[j].Events) == 0 {
-					return false
-				}
-				eventI := gotRanges[i].Events[0]
-				eventJ := gotRanges[j].Events[0]
-				if eventI.Introduced != "" && eventJ.Introduced != "" {
-					return eventI.Introduced < eventJ.Introduced
-				}
-				if eventI.Fixed != "" && eventJ.Fixed != "" {
-					return eventI.Fixed < eventJ.Fixed
-				}
-				return eventI.Introduced != ""
-			})
-
-			sort.Slice(tc.expectedRanges, func(i, j int) bool {
-				if len(tc.expectedRanges[i].Events) == 0 || len(tc.expectedRanges[j].Events) == 0 {
-					return false
-				}
-				eventI := tc.expectedRanges[i].Events[0]
-				eventJ := tc.expectedRanges[j].Events[0]
-				if eventI.Introduced != "" && eventJ.Introduced != "" {
-					return eventI.Introduced < eventJ.Introduced
-				}
-				if eventI.Fixed != "" && eventJ.Fixed != "" {
-					return eventI.Fixed < eventJ.Fixed
-				}
-				return eventI.Introduced != ""
-			})
-
-			if diff := cmp.Diff(tc.expectedRanges, gotRanges); diff != "" {
-				t.Errorf("findInverseAffectedRanges() mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}

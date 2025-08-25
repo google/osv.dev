@@ -64,7 +64,7 @@ class PurlHelpersTest(unittest.TestCase):
     self.assertEqual('pkg:deb/debian/nginx?arch=source',
                      purl_helpers.package_to_purl('Debian', 'nginx'))
 
-    self.assertEqual('pkg:deb/echo/nginx?arch=source',
+    self.assertEqual('pkg:deb/echo/nginx',
                      purl_helpers.package_to_purl('Echo', 'nginx'))
 
     self.assertEqual('pkg:apk/alpine/nginx?arch=source',

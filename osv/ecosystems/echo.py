@@ -19,21 +19,24 @@ from .helper_base import Ecosystem
 
 
 class Echo(Ecosystem):
-    """Echo packages ecosystem"""
+  """Echo packages ecosystem"""
 
-    def sort_key(self, version):
-        # Echo uses `dpkg` package format
-        if not DebianVersion.is_valid(version):
-            # If version is not valid, it is most likely an invalid input
-            # version then sort it to the last/largest element
-            return DebianVersion(999999, "999999")
-        return DebianVersion.from_string(version)
+  def sort_key(self, version):
+    # Echo uses `dpkg` package format
+    if not DebianVersion.is_valid(version):
+      # If version is not valid, it is most likely an invalid input
+      # version then sort it to the last/largest element
+      return DebianVersion(999999, "999999")
+    return DebianVersion.from_string(version)
 
-    def enumerate_versions(
-        self, package, introduced, fixed=None, last_affected=None, limits=None
-    ):
-        raise NotImplementedError("Ecosystem helper does not support enumeration")
+  def enumerate_versions(self,
+                         package,
+                         introduced,
+                         fixed=None,
+                         last_affected=None,
+                         limits=None):
+    raise NotImplementedError("Ecosystem helper does not support enumeration")
 
-    @property
-    def supports_comparing(self):
-        return True
+  @property
+  def supports_comparing(self):
+    return True

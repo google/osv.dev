@@ -51,8 +51,6 @@ import osv_service_v1_pb2_grpc
 from cursor import QueryCursor, QueryCursorMetadata
 from server_new import query_package
 
-import googlecloudprofiler
-
 _SHUTDOWN_GRACE_DURATION = 5
 
 _MAX_SINGLE_QUERY_TIME = timedelta(seconds=20)
@@ -1484,13 +1482,6 @@ def main():
   if is_cloud_run():
     setup_gcp_logging('api-backend')
     logging.getLogger().addFilter(trace_filter)
-
-    # Profiler initialization. It starts a daemon thread which continuously
-    # collects and uploads profiles. Best done as early as possible.
-    try:
-      googlecloudprofiler.start(service="osv-api-profiler")
-    except (ValueError, NotImplementedError) as e:
-      logging.error(e)
 
   logging.getLogger().setLevel(logging.INFO)
 

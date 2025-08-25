@@ -153,11 +153,10 @@ func TestFromCVE5(t *testing.T) {
 	cve21772Mod, _ := cves.ParseCVE5Timestamp("2025-05-04T07:20:46.575Z")
 
 	testCases := []struct {
-		name          string
-		cve           cves.CVE5
-		refs          []cves.Reference
-		expectedVuln  *vulns.Vulnerability
-		expectedNotes []string
+		name         string
+		cve          cves.CVE5
+		refs         []cves.Reference
+		expectedVuln *vulns.Vulnerability
 	}{
 		{
 			name: "CVE-2025-1110",
@@ -168,14 +167,15 @@ func TestFromCVE5(t *testing.T) {
 			},
 			expectedVuln: &vulns.Vulnerability{
 				Vulnerability: osvschema.Vulnerability{
-					ID:            "CVE-2025-1110",
-					SchemaVersion: osvschema.SchemaVersion,
-					Published:     cve1110Pub,
-					Modified:      cve1110Mod,
-					Summary:       "Insufficient Granularity of Access Control in GitLab",
-					Details:       "An issue has been discovered in GitLab CE/EE affecting all versions from 18.0 before 18.0.1. In certain circumstances, a user with limited permissions could access Job Data via a crafted GraphQL query.",
-					Aliases:       nil,
-					Related:       nil,
+					ID:               "CVE-2025-1110",
+					SchemaVersion:    osvschema.SchemaVersion,
+					Published:        cve1110Pub,
+					Modified:         cve1110Mod,
+					Summary:          "Insufficient Granularity of Access Control in GitLab",
+					Details:          "An issue has been discovered in GitLab CE/EE affecting all versions from 18.0 before 18.0.1. In certain circumstances, a user with limited permissions could access Job Data via a crafted GraphQL query.",
+					Aliases:          nil,
+					Related:          nil,
+					DatabaseSpecific: map[string]any{},
 					References: []osvschema.Reference{
 						{Type: "ARTICLE", URL: "https://hackerone.com/reports/2972576"},
 						{Type: "EVIDENCE", URL: "https://hackerone.com/reports/2972576"},
@@ -188,12 +188,16 @@ func TestFromCVE5(t *testing.T) {
 							Score: "CVSS:3.1/AV:N/AC:L/PR:H/UI:N/S:U/C:L/I:N/A:N",
 						},
 					},
-					DatabaseSpecific: map[string]interface{}{
-						// "CPE": []string{"cpe:2.3:a:gitlab:gitlab:*:*:*:*:*:*:*:*"}, // Also to be fixed in later PR
-					},
+					Affected: []osvschema.Affected{{
+						// DatabaseSpecific: map[string]interface{}{
+						// 	"CPE": []string{"cpe:2.3:a:gitlab:gitlab:*:*:*:*:*:*:*:*"},
+						// },
+
+						Ranges: []osvschema.Range{{Type: "ECOSYSTEM",
+							Events: []osvschema.Event{{Introduced: "18.0"}, {Fixed: "18.0.1"}},
+						}}}},
 				},
 			},
-			expectedNotes: nil,
 		},
 		{
 			name: "CVE-2024-21634",
@@ -220,10 +224,12 @@ func TestFromCVE5(t *testing.T) {
 							Score: "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:H",
 						},
 					},
+					Affected: []osvschema.Affected{{Ranges: []osvschema.Range{{
+						Type:   "ECOSYSTEM",
+						Events: []osvschema.Event{{Introduced: "0"}, {Fixed: "1.10.5"}}}}}},
 					DatabaseSpecific: make(map[string]interface{}),
 				},
 			},
-			expectedNotes: nil,
 		},
 		{
 			name: "CVE-2025-21772",
@@ -240,14 +246,96 @@ func TestFromCVE5(t *testing.T) {
 			},
 			expectedVuln: &vulns.Vulnerability{
 				Vulnerability: osvschema.Vulnerability{
-					ID:            "CVE-2025-21772",
-					SchemaVersion: osvschema.SchemaVersion,
-					Published:     cve21772Pub,
-					Modified:      cve21772Mod,
-					Summary:       "partitions: mac: fix handling of bogus partition table",
-					Details:       "In the Linux kernel, the following vulnerability has been resolved:\n\npartitions: mac: fix handling of bogus partition table\n\nFix several issues in partition probing:\n\n - The bailout for a bad partoffset must use put_dev_sector(), since the\n   preceding read_part_sector() succeeded.\n - If the partition table claims a silly sector size like 0xfff bytes\n   (which results in partition table entries straddling sector boundaries),\n   bail out instead of accessing out-of-bounds memory.\n - We must not assume that the partition table contains proper NUL\n   termination - use strnlen() and strncmp() instead of strlen() and\n   strcmp().",
-					Aliases:       nil,
-					Related:       nil,
+					ID:               "CVE-2025-21772",
+					SchemaVersion:    osvschema.SchemaVersion,
+					Published:        cve21772Pub,
+					Modified:         cve21772Mod,
+					Summary:          "partitions: mac: fix handling of bogus partition table",
+					Details:          "In the Linux kernel, the following vulnerability has been resolved:\n\npartitions: mac: fix handling of bogus partition table\n\nFix several issues in partition probing:\n\n - The bailout for a bad partoffset must use put_dev_sector(), since the\n   preceding read_part_sector() succeeded.\n - If the partition table claims a silly sector size like 0xfff bytes\n   (which results in partition table entries straddling sector boundaries),\n   bail out instead of accessing out-of-bounds memory.\n - We must not assume that the partition table contains proper NUL\n   termination - use strnlen() and strncmp() instead of strlen() and\n   strcmp().",
+					Aliases:          nil,
+					Related:          nil,
+					DatabaseSpecific: map[string]any{},
+					Affected: []osvschema.Affected{
+						{
+							Package: osvschema.Package{Ecosystem: "Linux", Name: "Kernel"},
+							Ranges: []osvschema.Range{
+								{Type: "ECOSYSTEM", Events: []osvschema.Event{{Introduced: "0"}, {Fixed: "5.4.291"}}},
+								{Type: "ECOSYSTEM", Events: []osvschema.Event{{Introduced: "0"}, {Fixed: "5.10.235"}}},
+								{Type: "ECOSYSTEM", Events: []osvschema.Event{{Introduced: "0"}, {Fixed: "5.15.179"}}},
+								{Type: "ECOSYSTEM", Events: []osvschema.Event{{Introduced: "0"}, {Fixed: "6.1.129"}}},
+								{Type: "ECOSYSTEM", Events: []osvschema.Event{{Introduced: "0"}, {Fixed: "6.6.79"}}},
+								{Type: "ECOSYSTEM", Events: []osvschema.Event{{Introduced: "0"}, {Fixed: "6.12.16"}}},
+								{Type: "ECOSYSTEM", Events: []osvschema.Event{{Introduced: "0"}, {Fixed: "6.13.4"}}},
+								{Type: "ECOSYSTEM", Events: []osvschema.Event{{Introduced: "0"}, {Fixed: "6.14"}}},
+							},
+							DatabaseSpecific: map[string]any{"CPEs": []string{"cpe:2.3:o:linux:linux_kernel:*:*:*:*:*:*:*:*"}},
+						},
+						{
+							Ranges: []osvschema.Range{{
+								Type: "GIT",
+								Events: []osvschema.Event{
+									{Introduced: "1da177e4c3f41524e886b7f1b8a0c1fc7321cac2"},
+									{Fixed: "a3e77da9f843e4ab93917d30c314f0283e28c124"},
+								},
+								Repo: "https://git.kernel.org/pub/scm/linux/kernel/git/stable/linux.git",
+							},
+								{
+									Type: "GIT",
+									Events: []osvschema.Event{
+										{Introduced: "1da177e4c3f41524e886b7f1b8a0c1fc7321cac2"},
+										{Fixed: "213ba5bd81b7e97ac6e6190b8f3bc6ba76123625"},
+									},
+									Repo: "https://git.kernel.org/pub/scm/linux/kernel/git/stable/linux.git",
+								},
+								{
+									Type: "GIT",
+									Events: []osvschema.Event{
+										{Introduced: "1da177e4c3f41524e886b7f1b8a0c1fc7321cac2"},
+										{Fixed: "40a35d14f3c0dc72b689061ec72fc9b193f37d1f"},
+									},
+									Repo: "https://git.kernel.org/pub/scm/linux/kernel/git/stable/linux.git",
+								},
+								{
+									Type: "GIT",
+									Events: []osvschema.Event{
+										{Introduced: "1da177e4c3f41524e886b7f1b8a0c1fc7321cac2"},
+										{Fixed: "27a39d006f85e869be68c1d5d2ce05e5d6445bf5"},
+									},
+									Repo: "https://git.kernel.org/pub/scm/linux/kernel/git/stable/linux.git",
+								},
+								{
+									Type: "GIT",
+									Events: []osvschema.Event{
+										{Introduced: "1da177e4c3f41524e886b7f1b8a0c1fc7321cac2"},
+										{Fixed: "92527100be38ede924768f4277450dfe8a40e16b"},
+									},
+									Repo: "https://git.kernel.org/pub/scm/linux/kernel/git/stable/linux.git",
+								},
+								{
+									Type: "GIT",
+									Events: []osvschema.Event{
+										{Introduced: "1da177e4c3f41524e886b7f1b8a0c1fc7321cac2"},
+										{Fixed: "6578717ebca91678131d2b1f4ba4258e60536e9f"},
+									},
+									Repo: "https://git.kernel.org/pub/scm/linux/kernel/git/stable/linux.git",
+								},
+								{
+									Type: "GIT",
+									Events: []osvschema.Event{
+										{Introduced: "1da177e4c3f41524e886b7f1b8a0c1fc7321cac2"},
+										{Fixed: "7fa9706722882f634090bfc9af642bf9ed719e27"},
+									},
+									Repo: "https://git.kernel.org/pub/scm/linux/kernel/git/stable/linux.git",
+								},
+								{
+									Type: "GIT",
+									Events: []osvschema.Event{
+										{Introduced: "1da177e4c3f41524e886b7f1b8a0c1fc7321cac2"},
+										{Fixed: "80e648042e512d5a767da251d44132553fe04ae0"},
+									},
+									Repo: "https://git.kernel.org/pub/scm/linux/kernel/git/stable/linux.git",
+								}},
+						}},
 					References: []osvschema.Reference{
 						{Type: "WEB", URL: "https://git.kernel.org/stable/c/a3e77da9f843e4ab93917d30c314f0283e28c124"},
 						{Type: "WEB", URL: "https://git.kernel.org/stable/c/213ba5bd81b7e97ac6e6190b8f3bc6ba76123625"},
@@ -258,20 +346,14 @@ func TestFromCVE5(t *testing.T) {
 						{Type: "WEB", URL: "https://git.kernel.org/stable/c/7fa9706722882f634090bfc9af642bf9ed719e27"},
 						{Type: "WEB", URL: "https://git.kernel.org/stable/c/80e648042e512d5a767da251d44132553fe04ae0"},
 					},
-					DatabaseSpecific: map[string]interface{}{
-						"CPE": []string{
-							"cpe:2.3:o:linux:linux_kernel:*:*:*:*:*:*:*:*",
-						},
-					},
 				},
 			},
-			expectedNotes: nil,
 		},
 	}
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			vuln, notes := FromCVE5(tc.cve, tc.refs)
+			vuln, _ := FromCVE5(tc.cve, tc.refs)
 
 			// Handle non-deterministic time.Now()
 			if strings.Contains(tc.name, "invalid date") {
@@ -285,9 +367,6 @@ func TestFromCVE5(t *testing.T) {
 
 			if diff := cmp.Diff(tc.expectedVuln, vuln); diff != "" {
 				t.Errorf("FromCVE5() vuln mismatch (-want +got):\n%s", diff)
-			}
-			if diff := cmp.Diff(tc.expectedNotes, notes); diff != "" {
-				t.Errorf("FromCVE5() notes mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}

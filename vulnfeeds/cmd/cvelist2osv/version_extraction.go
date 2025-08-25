@@ -16,6 +16,8 @@ import (
 // VersionRangeType represents the type of versioning scheme for a range.
 type VersionRangeType int
 
+const acceptableQuality = vulns.Spaces
+
 const (
 	VersionRangeTypeUnknown VersionRangeType = iota
 	VersionRangeTypeGit
@@ -273,13 +275,13 @@ func findNormalAffectedRanges(affected cves.Affected, cnaAssigner string) (versi
 
 		// Quality check the version strings to avoid using filler content.
 		vQuality := vulns.CheckQuality(vers.Version)
-		if !vQuality.AtLeast(vulns.Spaces) {
+		if !vQuality.AtLeast(acceptableQuality) {
 			notes = append(notes, fmt.Sprintf("Version value for %s %s is filler or empty", affected.Vendor, affected.Product))
 		}
 		vLessThanQual := vulns.CheckQuality(vers.LessThan)
 		vLTOEQual := vulns.CheckQuality(vers.LessThanOrEqual)
 
-		hasRange := vLessThanQual.AtLeast(vulns.Spaces) || vLTOEQual.AtLeast(vulns.Spaces)
+		hasRange := vLessThanQual.AtLeast(acceptableQuality) || vLTOEQual.AtLeast(acceptableQuality)
 		notes = append(notes, fmt.Sprintf("Range detected: %v", hasRange))
 		// Handle cases where 'lessThan' is mistakenly the same as 'version'.
 		if vers.LessThan != "" && vers.LessThan == vers.Version {
@@ -288,14 +290,14 @@ func findNormalAffectedRanges(affected cves.Affected, cnaAssigner string) (versi
 		}
 
 		if hasRange {
-			if vQuality.AtLeast(vulns.Spaces) {
+			if vQuality.AtLeast(acceptableQuality) {
 				introduced = vers.Version
 				notes = append(notes, fmt.Sprintf("%s - Introduced from version value - %s", vQuality.String(), vers.Version))
 			}
-			if vLessThanQual.AtLeast(vulns.Spaces) {
+			if vLessThanQual.AtLeast(acceptableQuality) {
 				fixed = vers.LessThan
 				notes = append(notes, fmt.Sprintf("%s - Fixed from LessThan value - %s", vLessThanQual.String(), vers.LessThan))
-			} else if vLTOEQual.AtLeast(vulns.Spaces) {
+			} else if vLTOEQual.AtLeast(acceptableQuality) {
 				lastaffected = vers.LessThanOrEqual
 				notes = append(notes, fmt.Sprintf("%s - LastAffected from LessThanOrEqual value- %s", vLTOEQual.String(), vers.LessThanOrEqual))
 			}
@@ -344,7 +346,7 @@ func findNormalAffectedRanges(affected cves.Affected, cnaAssigner string) (versi
 		}
 
 		// As a fallback, assume a single version means it's the fixed version.
-		if vQuality.AtLeast(vulns.Spaces) {
+		if vQuality.AtLeast(acceptableQuality) {
 			versionRanges = append(versionRanges, buildVersionRange("0", "", vers.Version))
 			notes = append(notes, fmt.Sprintf("%s - Single version found %v - Assuming introduced = 0 and Fixed = %v", vQuality, vers.Version, vers.Version))
 		}

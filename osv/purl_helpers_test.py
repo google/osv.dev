@@ -64,6 +64,9 @@ class PurlHelpersTest(unittest.TestCase):
     self.assertEqual('pkg:deb/debian/nginx?arch=source',
                      purl_helpers.package_to_purl('Debian', 'nginx'))
 
+    self.assertEqual('pkg:deb/echo/nginx',
+                     purl_helpers.package_to_purl('Echo', 'nginx'))
+
     self.assertEqual('pkg:apk/alpine/nginx?arch=source',
                      purl_helpers.package_to_purl('Alpine', 'nginx'))
 
@@ -186,6 +189,9 @@ class PurlHelpersTest(unittest.TestCase):
 
     self.assertEqual(('Hackage', 'process', None),
                      purl_helpers.parse_purl('pkg:hackage/process'))
+
+    self.assertEqual(('Echo', 'nginx', None),
+                     purl_helpers.parse_purl('pkg:deb/echo/nginx?arch=source'))
 
     self.assertEqual(
         ('BellSoft Hardened Containers', 'jq', None),

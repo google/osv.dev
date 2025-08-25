@@ -184,14 +184,12 @@ func findCPEVersionRanges(cve cves.CVE5) (versionRanges []osvschema.Range, cpes 
 // - As a fallback, it may assume a single version means "fixed at this version, introduced at 0".
 //
 // Returns the extracted OSV ranges, the most frequent version type (e.g., "semver"), and any notes.
-func extractVersionsFromAffectedField(affected cves.Affected, cnaAssigner string) (versionRanges []osvschema.Range, rangeType VersionRangeType, notes []string) {
-
+func extractVersionsFromAffectedField(affected cves.Affected, cnaAssigner string) ([]osvschema.Range, VersionRangeType, []string) {
 	// Handle cases where a product is marked as "affected" by default, and specific versions are marked "unaffected".
 	if affected.DefaultStatus == "affected" {
 		// For Linux kernel CVEs, this logic is often handled by CPEs, so we skip it here, until we are confident in the inverse calculation method.
 		if cnaAssigner == "Linux" {
-			notes = append(notes, "Skipping Linux Affected range versions in favour of CPE versions")
-			return nil, VersionRangeTypeUnknown, notes
+			return nil, VersionRangeTypeUnknown, []string{"Skipping Linux Affected range versions in favour of CPE versions"}
 		}
 		// Calculate the affected ranges by finding the inverse of the unaffected ranges.
 		return findInverseAffectedRanges(affected, cnaAssigner)

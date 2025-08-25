@@ -17,20 +17,18 @@ import os
 from datetime import datetime, UTC
 from functools import cache
 
-import google.auth
-from google.auth.exceptions import DefaultCredentialsError
+import osv.utils
 
 
-@cache  # google.auth.default() can be a bit expensive.
+@cache
 def api_url() -> str:
   """
   Returns the URL of the OSV API for the current GCP project.
 
   Falls back to 'api.test.osv.dev' if URL cannot be determined.
   """
-  try:
-    _, project = google.auth.default()
-  except DefaultCredentialsError:
+  project = osv.utils.get_google_cloud_project()
+  if not project:
     project = '<unknown>'
 
   # TODO(michaelkedar): Is there a way to avoid hard-coding this?

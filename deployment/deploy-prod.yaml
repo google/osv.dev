@@ -50,6 +50,8 @@ steps:
   args: ['container', 'images', 'add-tag', '--quiet', 'gcr.io/oss-vdb/osv-server:$COMMIT_SHA', 'gcr.io/oss-vdb/osv-server:$TAG_NAME']
 - name: gcr.io/cloud-builders/gcloud
   args: ['container', 'images', 'add-tag', '--quiet', 'gcr.io/oss-vdb/osv-website:$COMMIT_SHA', 'gcr.io/oss-vdb/osv-website:$TAG_NAME']
+- name: gcr.io/cloud-builders/gcloud
+  args: ['container', 'images', 'add-tag', '--quiet', 'gcr.io/oss-vdb/recoverer:$COMMIT_SHA', 'gcr.io/oss-vdb/recoverer:$TAG_NAME']
 
 serviceAccount: 'projects/oss-vdb/serviceAccounts/deployment@oss-vdb.iam.gserviceaccount.com'
 options:

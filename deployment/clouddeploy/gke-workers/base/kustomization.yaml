@@ -24,3 +24,4 @@ resources:
 - ksm_service_account.yaml
 - ksm_service.yaml
 - ksm_stateful_set.yaml
+- recoverer.yaml

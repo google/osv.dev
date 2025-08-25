@@ -86,13 +86,9 @@ def upload_vulnerability(vulnerability: Vulnerability,
   bucket = get_osv_bucket()
   vuln_id = vulnerability.id
   modified = vulnerability.modified.ToDatetime(datetime.UTC)
-  try:
-    pb_blob = bucket.blob(os.path.join(VULN_PB_PATH, vuln_id + '.pb'))
-    pb_blob.custom_time = modified
-    pb_blob.upload_from_string(
-        vulnerability.SerializeToString(deterministic=True),
-        content_type='application/octet-stream',
-        if_generation_match=generation)
-  except Exception:
-    logging.exception('failed to upload %s protobuf to GCS', vuln_id)
-    # TODO(michaelkedar): send pub/sub message to retry
+  pb_blob = bucket.blob(os.path.join(VULN_PB_PATH, vuln_id + '.pb'))
+  pb_blob.custom_time = modified
+  pb_blob.upload_from_string(
+      vulnerability.SerializeToString(deterministic=True),
+      content_type='application/octet-stream',
+      if_generation_match=generation)

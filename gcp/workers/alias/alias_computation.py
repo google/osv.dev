@@ -16,10 +16,11 @@
 import datetime
 import logging
 
+from google.cloud import exceptions
 from google.cloud import ndb
 
 import osv
-from osv import gcs
+from osv import gcs, pubsub
 import osv.logs
 
 ALIAS_GROUP_VULN_LIMIT = 32
@@ -100,9 +101,9 @@ def _update_vuln_with_group(vuln_id: str, alias_group: osv.AliasGroup | None):
   """
   # TODO(michaelkedar): Currently, only want to run this on the test instance
   # (or when running tests). Remove this check when we're ready for prod.
-  project = getattr(ndb.get_context().client, 'project')
+  project = osv.utils.get_google_cloud_project()
   if not project:
-    logging.error('failed to get GCP project from ndb.Client')
+    logging.error('failed to get GCP project')
   if project not in ('oss-vdb-test', 'test-osv'):
     return
   # Get the existing vulnerability first, so we can recalculate search_indices
@@ -110,7 +111,7 @@ def _update_vuln_with_group(vuln_id: str, alias_group: osv.AliasGroup | None):
   if result is None:
     if osv.Vulnerability.get_by_id(vuln_id) is not None:
       logging.error('vulnerability not in GCS - %s', vuln_id)
-      # TODO(michaelkedar): send pub/sub message to reimport
+      pubsub.publish_failure(b'', type='gcs_missing', id=vuln_id)
     return
   vuln_proto, generation = result
 
@@ -118,15 +119,14 @@ def _update_vuln_with_group(vuln_id: str, alias_group: osv.AliasGroup | None):
     vuln: osv.Vulnerability = osv.Vulnerability.get_by_id(vuln_id)
     if vuln is None:
       logging.error('vulnerability not in Datastore - %s', vuln_id)
-      # TODO: Raise exception
+      # TODO(michaelkedar): What to do in this case?
       return
     if alias_group is None:
       modified = datetime.datetime.now(datetime.UTC)
       aliases = []
     else:
       modified = alias_group.last_modified
-      aliases = alias_group.bug_ids
-    aliases = sorted(set(aliases) - {vuln_id})
+      aliases = sorted(set(alias_group.bug_ids) - {vuln_id})
     vuln_proto.aliases[:] = aliases
     vuln_proto.modified.FromDatetime(modified)
     osv.ListedVulnerability.from_vulnerability(vuln_proto).put()
@@ -134,7 +134,16 @@ def _update_vuln_with_group(vuln_id: str, alias_group: osv.AliasGroup | None):
     vuln.put()
 
   ndb.transaction(transaction)
-  gcs.upload_vulnerability(vuln_proto, generation)
+  try:
+    gcs.upload_vulnerability(vuln_proto, generation)
+  except exceptions.PreconditionFailed:
+    logging.error('Generation mismatch when writing aliases for %s', vuln_id)
+    osv.pubsub.publish_failure(
+        b'', type='gcs_gen_mismatch', id=vuln_id, field='aliases')
+  except Exception:
+    logging.error('Writing to bucket failed for %s', vuln_id)
+    osv.pubsub.publish_failure(
+        vuln_proto.SerializeToString(deterministic=True), type='gcs_retry')
 
 
 def main():

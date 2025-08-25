@@ -30,9 +30,11 @@ from osv import importfinding_pb2
 from . import bug
 from . import ecosystems
 from . import gcs
+from . import pubsub
 from . import purl_helpers
 from . import semver_index
 from . import sources
+from . import utils
 from . import vulnerability_pb2
 
 SCHEMA_VERSION = '1.7.3'
@@ -876,12 +878,9 @@ class Bug(ndb.Model):
     """Post-put hook for writing new entities for database migration."""
     # TODO(michaelkedar): Currently, only want to run this on the test instance
     # (or when running tests). Remove this check when we're ready for prod.
-    # To get the current GCP project without relying on environment variables
-    # that may not be set, grab the project name from the undocumented(?) field
-    # on the ndb.Client, which we find from the current context.
-    project = getattr(ndb.get_context().client, 'project')
+    project = utils.get_google_cloud_project()
     if not project:
-      logging.error('failed to get GCP project from ndb.Client')
+      logging.error('failed to get GCP project')
     if project not in ('oss-vdb-test', 'test-osv'):
       return
     if future.exception():
@@ -1144,7 +1143,13 @@ def populate_entities_from_bug(entity: Bug):
     ndb.delete_multi(to_delete)
 
   ndb.transaction(transaction)
-  gcs.upload_vulnerability(vuln_pb)
+  try:
+    gcs.upload_vulnerability(vuln_pb)
+  except Exception:
+    # Writing to bucket failed for some reason. Send a pub/sub message to retry.
+    logging.error('Writing to bucket failed for %s', entity.db_id)
+    data = vuln_pb.SerializeToString(deterministic=True)
+    pubsub.publish_failure(data, type='gcs_retry')
 
 
 def affected_from_bug(entity: Bug) -> list[AffectedVersions]:

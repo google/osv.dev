@@ -205,7 +205,7 @@ def get_vuln_async(vuln_id: str) -> ndb.Future:
     except exceptions.NotFound:
       logging.error('Vulnerability %s matched query but not found in GCS',
                     vuln_id)
-      # TODO: send pub/sub message to reimport.
+      osv.pubsub.publish_failure(b'', type='gcs_missing', id=vuln_id)
       return None
 
   def cleanup(_: ndb.Future):

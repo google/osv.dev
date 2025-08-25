@@ -98,6 +98,15 @@ steps:
   args: ['push', '--all-tags', 'gcr.io/oss-vdb/alias-computation']
   waitFor: ['build-alias-computation', 'cloud-build-queue']
 
+- name: gcr.io/cloud-builders/docker
+  args: ['build', '-t', 'gcr.io/oss-vdb/recoverer:latest', '-t', 'gcr.io/oss-vdb/recoverer:$COMMIT_SHA', '.']
+  dir: 'gcp/workers/recoverer'
+  id: 'build-recoverer'
+  waitFor: ['build-worker']
+- name: gcr.io/cloud-builders/docker
+  args: ['push', '--all-tags', 'gcr.io/oss-vdb/recoverer']
+  waitFor: ['build-recoverer', 'cloud-build-queue']
+
 # Build/push staging-api-test images to gcr.io/oss-vdb-test.
 - name: gcr.io/cloud-builders/docker
   args: ['build', '-t', 'gcr.io/oss-vdb-test/staging-api-test:latest', '-t', 'gcr.io/oss-vdb-test/staging-api-test:$COMMIT_SHA', '.']
@@ -291,7 +300,8 @@ steps:
      debian-copyright-mirror=gcr.io/oss-vdb/debian-copyright-mirror:$COMMIT_SHA,\
      cpe-repo-gen=gcr.io/oss-vdb/cpe-repo-gen:$COMMIT_SHA,\
      nvd-cve-osv=gcr.io/oss-vdb/nvd-cve-osv:$COMMIT_SHA,\
-     nvd-mirror=gcr.io/oss-vdb/nvd-mirror:$COMMIT_SHA"
+     nvd-mirror=gcr.io/oss-vdb/nvd-mirror:$COMMIT_SHA,\
+     recoverer=gcr.io/oss-vdb/recoverer:$COMMIT_SHA"
   ]
   dir: deployment/clouddeploy/gke-workers
 
@@ -347,3 +357,4 @@ images:
 - 'gcr.io/oss-vdb/nvd-mirror:$COMMIT_SHA'
 - 'gcr.io/oss-vdb-test/staging-api-test:$COMMIT_SHA'
 - 'gcr.io/oss-vdb-test/osv-linter:$COMMIT_SHA'
+- 'gcr.io/oss-vdb/recoverer:$COMMIT_SHA'

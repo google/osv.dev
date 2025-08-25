@@ -24,6 +24,7 @@ from google.cloud import ndb
 from google.cloud import pubsub_v1
 
 import osv
+from osv.logs import setup_gcp_logging
 
 _FAILED_TASKS_SUBSCRIPTION = 'recovery'
 
@@ -41,7 +42,6 @@ def ndb_client():
 
 def handle_gcs_retry(message: pubsub_v1.types.PubsubMessage) -> bool:
   """Handle a failed GCS write."""
-  # Check that the record hasn't been written/updated in the meantime.
   try:
     vuln = osv.vulnerability_pb2.Vulnerability.FromString(message.data)
   except Exception:
@@ -58,12 +58,14 @@ def handle_gcs_retry(message: pubsub_v1.types.PubsubMessage) -> bool:
   bucket = osv.gcs.get_osv_bucket()
   path = os.path.join(osv.gcs.VULN_PB_PATH, vuln.id + '.pb')
   pb_blob = bucket.get_blob(path)
+  # Check that the record hasn't been written/updated in the meantime.
   if pb_blob and pb_blob.custom_time and pb_blob.custom_time >= modified:
     logging.warning(
         'gcs_retry: %s was modified before message was processed: '
         'message: %s, blob: %s', vuln.id, modified, pb_blob.custom_time)
     # TODO(michaelkedar): trigger a reimport of the record.
     return True
+
   pb_blob = bucket.blob(path)
   pb_blob.custom_time = modified
   try:
@@ -196,7 +198,7 @@ HANDLERS = {
 
 
 def handle_task(message: pubsub_v1.types.PubsubMessage) -> bool:
-  """Handle a task message."""
+  """Handle a 'failed-tasks' message."""
   task_type = message.attributes.get('type')
   handler = HANDLERS.get(task_type, handle_generic)
   return handler(message)
@@ -219,6 +221,9 @@ def main():
 
       message = response.received_messages[0].message
       ack_id = response.received_messages[0].ack_id
+      # Try handle the task
+      # If successful (returned True), acknowledge it.
+      # Otherwise, nack the task to trigger it to be redelivered.
       if handle_task(message):
         subscriber.acknowledge(subscription=subscription, ack_ids=[ack_id])
       else:
@@ -227,4 +232,5 @@ def main():
 
 
 if __name__ == '__main__':
+  setup_gcp_logging('recoverer')
   main()

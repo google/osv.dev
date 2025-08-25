@@ -9,7 +9,6 @@ dependencies = [
     "grpcio==1.73.1",
     "grpcio-reflection==1.73.1",
     "grpcio-health-checking==1.73.1",
-    "google-cloud-profiler==4.1.0",
     "osv",
 ]
 

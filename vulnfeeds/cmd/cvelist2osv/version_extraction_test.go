@@ -208,6 +208,7 @@ func TestFindInverseAffectedRanges(t *testing.T) {
 	tests := []struct {
 		name        string
 		affected    cves.Affected
+		versionType VersionRangeType
 		cnaAssigner string
 		want        []osvschema.Range
 	}{
@@ -228,6 +229,7 @@ func TestFindInverseAffectedRanges(t *testing.T) {
 					},
 				},
 			},
+			versionType: VersionRangeTypeSemver,
 			cnaAssigner: "Linux",
 			want: []osvschema.Range{
 				buildVersionRange("5.0", "", "5.10.1"),
@@ -245,6 +247,7 @@ func TestFindInverseAffectedRanges(t *testing.T) {
 					},
 				},
 			},
+			versionType: VersionRangeTypeUnknown,
 			cnaAssigner: "NotLinux",
 			want:        nil,
 		},
@@ -265,6 +268,7 @@ func TestFindInverseAffectedRanges(t *testing.T) {
 					},
 				},
 			},
+			versionType: VersionRangeTypeSemver,
 			cnaAssigner: "Linux",
 			want: []osvschema.Range{
 				buildVersionRange("4.0", "", "4.5.2"),
@@ -274,9 +278,12 @@ func TestFindInverseAffectedRanges(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, _ := findInverseAffectedRanges(tt.affected, tt.cnaAssigner)
-			if diff := cmp.Diff(tt.want, got); diff != "" {
-				t.Errorf("findInverseAffectedRanges() mismatch (-want +got):\n%s", diff)
+			gotRanges, gotVersionType, _ := findInverseAffectedRanges(tt.affected, tt.cnaAssigner)
+			if diff := cmp.Diff(tt.want, gotRanges); diff != "" {
+				t.Errorf("findInverseAffectedRanges() ranges mismatch (-want +got):\n%s", diff)
+			}
+			if diff := cmp.Diff(tt.versionType, gotVersionType); diff != "" {
+				t.Errorf("findInverseAffectedRanges() version type mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}
@@ -329,7 +336,7 @@ func TestRealWorldFindInverseAffectedRanges(t *testing.T) {
 			}
 
 			// Run the function under test.
-			gotRanges, _ := findInverseAffectedRanges(affectedBlock, tc.cve.Metadata.AssignerShortName)
+			gotRanges, _, _ := findInverseAffectedRanges(affectedBlock, tc.cve.Metadata.AssignerShortName)
 
 			// Sort slices for deterministic comparison.
 			sort.Slice(gotRanges, func(i, j int) bool {

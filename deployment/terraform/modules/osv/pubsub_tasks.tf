@@ -64,3 +64,22 @@ resource "google_pubsub_topic_iam_member" "failed_tasks_service_publisher" {
   role    = "roles/pubsub.publisher"
   member  = "serviceAccount:${google_project_service_identity.pubsub.email}"
 }
+
+resource "google_pubsub_subscription" "recovery" {
+  project                    = var.project_id
+  name                       = "recovery"
+  topic                      = google_pubsub_topic.failed_tasks.id
+  message_retention_duration = "604800s" # 7 days
+  ack_deadline_seconds       = 600
+
+  expiration_policy {
+    ttl = "" # never expires
+  }
+}
+
+resource "google_pubsub_subscription_iam_member" "recovery_service_subscriber" {
+  project      = var.project_id
+  subscription = google_pubsub_subscription.recovery.name
+  role         = "roles/pubsub.subscriber"
+  member       = "serviceAccount:${google_project_service_identity.pubsub.email}"
+}

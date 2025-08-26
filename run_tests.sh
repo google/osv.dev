@@ -5,6 +5,7 @@ poetry run python -m unittest osv.bug_test
 poetry run python -m unittest osv.purl_helpers_test
 poetry run python -m unittest osv.request_helper_test
 poetry run python -m unittest osv.semver_index_test
+poetry run python -m unittest osv.pubsub_test
 poetry run python -m unittest osv.impact_test
 poetry run python -m unittest osv.models_test
 

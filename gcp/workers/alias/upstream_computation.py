@@ -19,11 +19,12 @@ import datetime
 import json
 import logging
 
+from google.cloud import exceptions
 from google.cloud import ndb
 
 import osv
 import osv.logs
-from osv import gcs
+from osv import gcs, pubsub
 
 
 def compute_upstream(target_bug, bugs: dict[str, set[str]]) -> list[str]:
@@ -93,16 +94,16 @@ def _update_vuln_with_group(vuln_id: str, upstream: osv.UpstreamGroup | None):
   """
   # TODO(michaelkedar): Currently, only want to run this on the test instance
   # (or when running tests). Remove this check when we're ready for prod.
-  project = getattr(ndb.get_context().client, 'project')
+  project = osv.utils.get_google_cloud_project()
   if not project:
-    logging.error('failed to get GCP project from ndb.Client')
+    logging.error('failed to get GCP project')
   if project not in ('oss-vdb-test', 'test-osv'):
     return
   # Get the existing vulnerability first, so we can recalculate search_indices
   result = gcs.get_by_id_with_generation(vuln_id)
   if result is None:
     logging.error('vulnerability not in GCS - %s', vuln_id)
-    # TODO(michaelkedar): send pub/sub message to reimport
+    pubsub.publish_failure(b'', type='gcs_missing', id=vuln_id)
     return
   vuln_proto, generation = result
 
@@ -110,7 +111,7 @@ def _update_vuln_with_group(vuln_id: str, upstream: osv.UpstreamGroup | None):
     vuln: osv.Vulnerability = osv.Vulnerability.get_by_id(vuln_id)
     if vuln is None:
       logging.error('vulnerability not in Datastore - %s', vuln_id)
-      # TODO: Raise exception
+      # TODO(michaelkedar): What to do in this case?
       return
     if upstream is None:
       modified = datetime.datetime.now(datetime.UTC)
@@ -125,7 +126,16 @@ def _update_vuln_with_group(vuln_id: str, upstream: osv.UpstreamGroup | None):
     vuln.put()
 
   ndb.transaction(transaction)
-  gcs.upload_vulnerability(vuln_proto, generation)
+  try:
+    gcs.upload_vulnerability(vuln_proto, generation)
+  except exceptions.PreconditionFailed:
+    logging.error('Generation mismatch when writing upstream for %s', vuln_id)
+    osv.pubsub.publish_failure(
+        b'', type='gcs_gen_mismatch', id=vuln_id, field='upstream')
+  except Exception:
+    logging.error('Writing to bucket failed for %s', vuln_id)
+    osv.pubsub.publish_failure(
+        vuln_proto.SerializeToString(deterministic=True), type='gcs_retry')
 
 
 def compute_upstream_hierarchy(

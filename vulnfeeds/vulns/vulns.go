@@ -63,6 +63,12 @@ func (q QualityCheck) String() string {
 	}[q]
 }
 
+// AtLeast returns true if the quality is at least as good as the other quality.
+// Lower values are considered better quality.
+func (q QualityCheck) AtLeast(other QualityCheck) bool {
+	return q <= other
+}
+
 const (
 	// Set of enums for categorizing c.
 	QualityUnknown QualityCheck = iota // Shouldn't happen

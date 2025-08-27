@@ -32,6 +32,7 @@ from google.cloud import ndb
 from google.cloud import pubsub_v1
 from google.cloud import storage
 from google.cloud.storage import retry
+from google.protobuf import json_format
 
 sys.path.append(os.path.dirname(os.path.realpath(__file__)))
 import osv
@@ -40,6 +41,8 @@ import osv.cache
 import osv.logs
 from osv import vulnerability_pb2
 import oss_fuzz
+
+from vanir import vulnerability_manager
 
 DEFAULT_WORK_DIR = '/work'
 OSS_FUZZ_GIT_URL = 'https://github.com/google/oss-fuzz.git'
@@ -486,6 +489,36 @@ class TaskRunner:
                     vulnerability.id)
     raise UpdateConflictError
 
+  def _generate_vanir_signatures(self, vulnerability):
+    """Generates Vanir signatures for a vulnerability."""
+    if not any(r.type == vulnerability_pb2.Range.GIT
+                            for affected in vulnerability.affected
+                            for r in affected.ranges):
+      logging.info(
+          'Skipping Vanir signature generation for %s as it has no '
+          'GIT affected ranges.', vulnerability.id)
+      return vulnerability
+
+    logging.info('Generating Vanir signatures for %s', vulnerability.id)
+    try:
+      vuln_manager = vulnerability_manager.generate_from_json_string(
+        content=json.dumps(
+            [json_format.MessageToDict(vulnerability, preserving_proto_field_name=True)]
+        ),
+      )
+      vuln_manager.generate_signatures()
+
+      if not vuln_manager.vulnerabilities:
+        logging.warning('Vanir signature generation resulted in no '
+                        'vulnerabilities.')
+        return vulnerability
+
+      return vuln_manager.vulnerabilities[0].to_proto()
+    except Exception:
+      logging.exception('Failed to generate Vanir signatures for %s',
+                        vulnerability.id)
+      return vulnerability
+
   def _do_update(self, source_repo, repo, vulnerability, relative_path,
                  original_sha256):
     """Process updates on a vulnerability."""
@@ -497,6 +530,11 @@ class TaskRunner:
       return
 
     filter_unsupported_ecosystems(vulnerability)
+
+    # Generate Vanir signatures for test instance.
+    project = osv.utils.get_google_cloud_project()
+    if project and project in ('oss-vdb-test', 'test-osv'):
+      vulnerability = self._generate_vanir_signatures(vulnerability)
 
     orig_modified_date = vulnerability.modified.ToDatetime(datetime.UTC)
     try:

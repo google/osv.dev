@@ -1808,8 +1808,8 @@ def setUpModule():
 
   # Set the NDB client context for all tests in this module
   context_manager = ndb_client.context()
-  # Use context manager directly instead of calling __enter__
-  context = context_manager
+  # __enter__ is needed to activate the context
+  context = context_manager.__enter__()
   context.set_memcache_policy(False)
   context.set_cache_policy(False)
 

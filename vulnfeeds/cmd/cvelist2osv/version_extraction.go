@@ -98,7 +98,6 @@ func AddVersionInfo(cve cves.CVE5, v *vulns.Vulnerability) ([]VersionSource, []s
 	}
 
 	// Attempt to extract version ranges from the combined 'affected' fields.
-	// affectedAddedByThisStep := false
 	hasGit := false
 	for _, cveAff := range affected {
 		versionRanges, versionType, extractNotes := extractVersionsFromAffectedField(cveAff, cve.Metadata.AssignerShortName)
@@ -107,7 +106,6 @@ func AddVersionInfo(cve cves.CVE5, v *vulns.Vulnerability) ([]VersionSource, []s
 			continue
 		}
 		gotVersions = true
-		// affectedAddedByThisStep = true
 		if versionType == VersionRangeTypeGit {
 			hasGit = true
 		}

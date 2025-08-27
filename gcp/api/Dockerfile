@@ -14,9 +14,6 @@
 
 FROM python:3.13.3-slim@sha256:56a11364ffe0fee3bd60af6d6d5209eba8a99c2c16dc4c7c5861dc06261503cc
 
-# Install build-essential which is required by Cloud Profiler
-RUN apt-get update && apt-get install -y build-essential
-
 # Generation 1 of cloud run overrides the HOME environment variable, causing
 # poetry to run in the incorrect environment, as it defaults to using $HOME/.cache/virtualenvs/...
 # 

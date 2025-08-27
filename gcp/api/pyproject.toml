@@ -5,7 +5,7 @@ dependencies = [
     "google-cloud-ndb==2.3.4",
     "google-cloud-logging==3.12.1",
     "packaging==24.2",
-    "requests==2.32.4",
+    "requests==2.32.5",
     "grpcio==1.73.1",
     "grpcio-reflection==1.73.1",
     "grpcio-health-checking==1.73.1",

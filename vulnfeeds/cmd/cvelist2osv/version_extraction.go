@@ -25,6 +25,17 @@ const (
 	VersionRangeTypeEcosystem
 )
 
+// VersionSource indicates the source of the extracted version information.
+type VersionSource string
+
+const (
+	VersionSourceNone        VersionSource = "NOVERS"
+	VersionSourceAffected    VersionSource = "CVEAFFVERS"
+	VersionSourceGit         VersionSource = "GITVERS"
+	VersionSourceCPE         VersionSource = "CPEVERS"
+	VersionSourceDescription VersionSource = "DESCRVERS"
+)
+
 // String returns the string representation of a VersionRangeType.
 func (vrt VersionRangeType) String() string {
 	switch vrt {
@@ -58,18 +69,26 @@ func toVersionRangeType(s string) VersionRangeType {
 // 2. It processes the 'affected' fields from both the CNA and ADP containers.
 // 3. If no versions are found, it falls back to searching for CPEs in the CNA container.
 // 4. As a last resort, it attempts to extract version information from the description text (currently not saved).
-// It returns a slice of notes detailing the extraction process.
-func AddVersionInfo(cve cves.CVE5, v *vulns.Vulnerability) []string {
+// It returns the source of the version information and a slice of notes detailing the extraction process.
+func AddVersionInfo(cve cves.CVE5, v *vulns.Vulnerability) ([]VersionSource, []string) {
 	var notes []string
+	var source []VersionSource
+	gotVersions := false
+
 	// Special handling for Linux kernel CVEs, prioritizing CPEs for version info.
 	if cve.Metadata.AssignerShortName == "Linux" {
+		affectedLenBefore := len(v.Affected)
 		notes = append(notes, handleLinuxCVE(cve, v)...)
+		// Check if any affected fields were actually added
+		if len(v.Affected) > affectedLenBefore {
+			gotVersions = true
+			source = append(source, VersionSourceCPE)
+		}
 	}
 
 	// Combine 'affected' entries from both CNA and ADP containers.
 	cna := cve.Containers.CNA
 	adps := cve.Containers.ADP
-	gotVersions := false
 
 	affected := cna.Affected
 	for _, adp := range adps {
@@ -79,6 +98,7 @@ func AddVersionInfo(cve cves.CVE5, v *vulns.Vulnerability) []string {
 	}
 
 	// Attempt to extract version ranges from the combined 'affected' fields.
+	hasGit := false
 	for _, cveAff := range affected {
 		versionRanges, versionType, extractNotes := extractVersionsFromAffectedField(cveAff, cve.Metadata.AssignerShortName)
 		notes = append(notes, extractNotes...)
@@ -86,7 +106,10 @@ func AddVersionInfo(cve cves.CVE5, v *vulns.Vulnerability) []string {
 			continue
 		}
 		gotVersions = true
-		affected := osvschema.Affected{}
+		if versionType == VersionRangeTypeGit {
+			hasGit = true
+		}
+		aff := osvschema.Affected{}
 		for _, vr := range versionRanges {
 			if versionType == VersionRangeTypeGit {
 				vr.Type = osvschema.RangeGit
@@ -94,35 +117,41 @@ func AddVersionInfo(cve cves.CVE5, v *vulns.Vulnerability) []string {
 			} else {
 				vr.Type = osvschema.RangeEcosystem
 			}
-			affected.Ranges = append(affected.Ranges, vr)
+			aff.Ranges = append(aff.Ranges, vr)
 		}
 
 		// Special handling for Linux kernel CVEs.
 		if cve.Metadata.AssignerShortName == "Linux" && versionType != VersionRangeTypeGit {
-			affected.Package = osvschema.Package{
+			aff.Package = osvschema.Package{
 				Ecosystem: string(osvschema.EcosystemLinux),
 				Name:      "Kernel",
 			}
 		}
-		v.Affected = append(v.Affected, affected)
+		v.Affected = append(v.Affected, aff)
+		if hasGit {
+			source = append(source, VersionSourceGit)
+		} else {
+			source = append(source, VersionSourceAffected)
+		}
 	}
 
-	// If no versions were found in 'affected', fall back to CPEs.
+	// If no versions were found so far, fall back to CPEs.
 	if !gotVersions {
 		notes = append(notes, "No versions in affected, attempting to extract from CPE")
 		cpeRanges, cpeStrings, err := findCPEVersionRanges(cve)
-		if err != nil {
-			notes = append(notes, err.Error())
-		}
-		if len(cpeRanges) != 0 {
-			affected := osvschema.Affected{}
+		if err == nil && len(cpeRanges) > 0 {
+			gotVersions = true
+			source = append(source, VersionSourceCPE)
+			aff := osvschema.Affected{}
 			for _, vr := range cpeRanges {
 				vr.Type = osvschema.RangeEcosystem
-				affected.Ranges = append(affected.Ranges, vr)
+				aff.Ranges = append(aff.Ranges, vr)
 			}
-			affected.DatabaseSpecific = make(map[string]interface{})
-			affected.DatabaseSpecific["CPEs"] = vulns.Unique(cpeStrings)
-			v.Affected = append(v.Affected, affected)
+			aff.DatabaseSpecific = make(map[string]interface{})
+			aff.DatabaseSpecific["CPEs"] = vulns.Unique(cpeStrings)
+			v.Affected = append(v.Affected, aff)
+		} else if err != nil {
+			notes = append(notes, err.Error())
 		}
 	}
 
@@ -133,11 +162,12 @@ func AddVersionInfo(cve cves.CVE5, v *vulns.Vulnerability) []string {
 		notes = append(notes, extractNotes...)
 		if len(versions) > 0 {
 			// NOTE: These versions are not currently saved due to the need for better validation.
+			source = append(source, VersionSourceDescription)
 			notes = append(notes, fmt.Sprintf("Extracted versions from description but did not save them: %+v", versions))
 		}
 	}
 
-	return notes
+	return source, notes
 }
 
 // findCPEVersionRanges extracts version ranges and CPE strings from the CNA's

@@ -29,11 +29,12 @@ var Logger utility.LoggerWrapper
 
 // Metrics holds the collected data about the conversion process for a single CVE.
 var Metrics struct {
-	CNA           string                          // The CNA that assigned the CVE.
-	Outcome       string                          // The final outcome of the conversion (e.g., "Successful", "Failed").
-	Repos         []string                        // A list of repositories extracted from the CVE's references.
-	RefTypesCount map[osvschema.ReferenceType]int // A count of each type of reference found.
-	Notes         []string                        // A collection of notes and warnings generated during conversion.
+	CNA            string                          // The CNA that assigned the CVE.
+	Outcome        string                          // The final outcome of the conversion (e.g., "Successful", "Failed").
+	Repos          []string                        // A list of repositories extracted from the CVE's references.
+	RefTypesCount  map[osvschema.ReferenceType]int // A count of each type of reference found.
+	VersionSources []VersionSource                 // A list of the ways the versions were extracted
+	Notes          []string                        // A collection of notes and warnings generated during conversion.
 }
 
 // RefTagDenyList contains reference tags that are often associated with unreliable or
@@ -99,8 +100,9 @@ func FromCVE5(cve cves.CVE5, refs []cves.Reference) (*vulns.Vulnerability, []str
 	v.Vulnerability.Modified = modified
 
 	// Add affected version information.
-	notes = append(notes, AddVersionInfo(cve, &v)...)
-
+	versionSources, versNotes := AddVersionInfo(cve, &v)
+	notes = append(notes, versNotes...)
+	Metrics.VersionSources = versionSources
 	// TODO(jesslowe@): Add CWEs.
 
 	// Combine severity metrics from both CNA and ADP containers.

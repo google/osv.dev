@@ -20,3 +20,4 @@ to determine suitability for your use. Some popular third party tools are:
 - [pip-audit](https://github.com/pypa/pip-audit)
 - [Renovate](https://github.com/renovatebot/renovate)
 - [Trivy](https://github.com/aquasecurity/trivy)
+- [PySentry](https://github.com/nyudenkov/pysentry)

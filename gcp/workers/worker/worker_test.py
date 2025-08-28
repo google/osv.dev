@@ -1142,7 +1142,7 @@ class UpdateTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
     self.assertEqual(
         logs.output[0],
         'ERROR:absl:Code extraction failed for OSV-123 (Unsupported ecosystem: Go). Skipping affected[0]',
-        )
+    )
     self.assertEqual(
         logs.output[1],
         'WARNING:root:Failed to push: cannot push because a reference that you are trying to update on the remote contains commits that are not present locally.',

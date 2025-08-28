@@ -492,8 +492,8 @@ class TaskRunner:
   def _generate_vanir_signatures(self, vulnerability):
     """Generates Vanir signatures for a vulnerability."""
     if not any(r.type == vulnerability_pb2.Range.GIT
-                            for affected in vulnerability.affected
-                            for r in affected.ranges):
+               for affected in vulnerability.affected
+               for r in affected.ranges):
       logging.info(
           'Skipping Vanir signature generation for %s as it has no '
           'GIT affected ranges.', vulnerability.id)
@@ -502,10 +502,10 @@ class TaskRunner:
     logging.info('Generating Vanir signatures for %s', vulnerability.id)
     try:
       vuln_manager = vulnerability_manager.generate_from_json_string(
-        content=json.dumps(
-            [json_format.MessageToDict(vulnerability, preserving_proto_field_name=True)]
-        ),
-      )
+          content=json.dumps([
+              json_format.MessageToDict(
+                  vulnerability, preserving_proto_field_name=True)
+          ]),)
       vuln_manager.generate_signatures()
 
       if not vuln_manager.vulnerabilities:

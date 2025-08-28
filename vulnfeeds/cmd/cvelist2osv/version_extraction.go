@@ -423,19 +423,20 @@ func buildVersionRange(intro string, lastAff string, fixed string) osvschema.Ran
 func sortBadSemver(a, b string) int {
 	partsA := strings.Split(a, ".")
 	partsB := strings.Split(b, ".")
-	majorA, _ := strconv.Atoi(partsA[0])
-	majorB, _ := strconv.Atoi(partsB[0])
 
 	if c := cmp.Compare(majorA, majorB); c != 0 {
-		return c
+	minLen := min(len(partsA), len(partsB))
+	for i := 0; i < minLen; i++ {
+		// Convert parts to integers for numerical comparison.
+		// We ignore the error, so non-numeric parts default to 0.
+		numA, _ := strconv.Atoi(partsA[i])
+		numB, _ := strconv.Atoi(partsB[i])
+		if c := cmp.Compare(numA, numB); c != 0 {
+			return c
+		}
 	}
 
-	minorA, _ := strconv.Atoi(partsA[1])
-	minorB, _ := strconv.Atoi(partsB[1])
-	if c := cmp.Compare(minorA, minorB); c != 0 {
-		return c
-	}
-	patchA, _ := strconv.Atoi(partsA[2])
-	patchB, _ := strconv.Atoi(partsB[2])
-	return cmp.Compare(patchA, patchB)
+	// If all common parts are identical (e.g., "1.2" vs "1.2.3"),
+	// the version with more parts is considered greater.
+	return cmp.Compare(len(partsA), len(partsB))
 }

@@ -424,7 +424,6 @@ func sortBadSemver(a, b string) int {
 	partsA := strings.Split(a, ".")
 	partsB := strings.Split(b, ".")
 
-	if c := cmp.Compare(majorA, majorB); c != 0 {
 	minLen := min(len(partsA), len(partsB))
 	for i := 0; i < minLen; i++ {
 		// Convert parts to integers for numerical comparison.

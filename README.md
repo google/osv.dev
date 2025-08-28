@@ -1,3 +1,11 @@
+<picture>
+    <source srcset="docs/images/osv_logo_dark-full.svg"  media="(prefers-color-scheme: dark)">
+    <!-- markdown-link-check-disable-next-line -->
+    <img src="docs/images/osv_logo_light-full.svg">
+</picture>
+
+---
+
 [![OpenSSF Scorecard](https://api.securityscorecards.dev/projects/github.com/google/osv.dev/badge)](https://scorecard.dev/viewer/?uri=github.com/google/osv.dev)
 
 ## Documentation

@@ -51,8 +51,6 @@ import osv_service_v1_pb2_grpc
 from cursor import QueryCursor, QueryCursorMetadata
 from server_new import query_package
 
-import googlecloudprofiler
-
 _SHUTDOWN_GRACE_DURATION = 5
 
 _MAX_SINGLE_QUERY_TIME = timedelta(seconds=20)
@@ -1421,12 +1419,10 @@ def is_cloud_run() -> bool:
 
 def get_gcp_project():
   """Get the GCP project name."""
-  # We don't set the GOOGLE_CLOUD_PROJECT env var explicitly, and I can't find
-  # any confirmation on whether Cloud Run will set automatically.
-  # Grab the project name from the (undocumented?) field on ndb.Client().
-  # Most correct way to do this would be to use the instance metadata server
-  # https://cloud.google.com/run/docs/container-contract#metadata-server
-  return getattr(_ndb_client, 'project', 'oss-vdb')  # fall back to oss-vdb
+  project = osv.utils.get_google_cloud_project()
+  if not project:
+    project = 'oss-vdb'  # fall back to oss-vdb
+  return project
 
 
 def _is_affected(ecosystem: str, version: str,
@@ -1486,13 +1482,6 @@ def main():
   if is_cloud_run():
     setup_gcp_logging('api-backend')
     logging.getLogger().addFilter(trace_filter)
-
-    # Profiler initialization. It starts a daemon thread which continuously
-    # collects and uploads profiles. Best done as early as possible.
-    try:
-      googlecloudprofiler.start(service="osv-api-profiler")
-    except (ValueError, NotImplementedError) as e:
-      logging.error(e)
 
   logging.getLogger().setLevel(logging.INFO)
 

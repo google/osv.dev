@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-FROM golang:1.24.6-alpine@sha256:c8c5f95d64aa79b6547f3b626eb84b16a7ce18a139e3e9ca19a8c078b85ba80d AS GO_BUILD
+FROM golang:1.25.0-alpine@sha256:f18a072054848d87a8077455f0ac8a25886f2397f88bfdd222d6fafbb5bba440 AS GO_BUILD
 WORKDIR /build
 
 # Cache dependencies in these steps
@@ -24,7 +24,7 @@ RUN go mod download
 COPY ./ /build
 RUN CGO_ENABLED=0 ./build.sh
 
-FROM gcr.io/distroless/base-debian12@sha256:4f6e739881403e7d50f52a4e574c4e3c88266031fd555303ee2f1ba262523d6a
+FROM gcr.io/distroless/base-debian12@sha256:d605e138bb398428779e5ab490a6bbeeabfd2551bd919578b1044718e5c30798
 COPY --from=GO_BUILD build/indexer /indexer
 ENTRYPOINT ["/indexer"]
 CMD ["--help"]

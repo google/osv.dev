@@ -1,5 +1,5 @@
 # Build the Javascript frontend
-FROM node:20.19@sha256:2c071012e93673d595e1399564c4a48a70a5c0a0acd7db8211d5e6f6316b431a AS FRONTEND3_BUILD
+FROM node:20.19@sha256:572a90df10a58ebb7d3f223d661d964a6c2383a9c2b5763162b4f631c53dc56a AS FRONTEND3_BUILD
 WORKDIR /build/frontend3
 
 # Install dependencies first for better caching
@@ -23,7 +23,7 @@ RUN hugo --buildFuture -d ../dist/static/blog
 
 # OSV.dev site image
 # Adapted from https://cloud.google.com/run/docs/quickstarts/build-and-deploy/deploy-python-service#writing
-FROM python:3.12.8-slim@sha256:8859bd6ca943079262c27e38b7119cdacede77c463139a15651dd340087a6cc9
+FROM python:3.13.3-slim@sha256:56a11364ffe0fee3bd60af6d6d5209eba8a99c2c16dc4c7c5861dc06261503cc
 
 # Generation 1 of cloud run overrides the HOME environment variable, causing
 # poetry to run in the incorrect environment, as it defaults to using $HOME/.cache/virtualenvs/...

@@ -43,6 +43,31 @@ func TestClassifyReferenceLink(t *testing.T) {
 		{"https://pypi.org/project/flask", "", osvschema.ReferencePackage},
 		{"https://bugzilla.redhat.com/show_bug.cgi?id=684877", "", osvschema.ReferenceReport},
 		{"https://github.com/log4js-node/log4js-node/pull/1141/commits/8042252861a1b65adb66931fdf702ead34fa9b76", "Patch", osvschema.ReferenceFix},
+
+		// Test CVEList V5 tags
+		{"https://example.com", "vendor-advisory", osvschema.ReferenceAdvisory},
+		{"https://example.com", "mailing-list", osvschema.ReferenceArticle},
+		{"https://example.com", "issue-tracking", osvschema.ReferenceReport},
+		{"https://example.com", "technical-description", osvschema.ReferenceArticle},
+		{"https://example.com", "exploit", osvschema.ReferenceEvidence},
+		{"https://example.com", "permissions-required", osvschema.ReferenceReport},
+		{"https://example.com", "release-notes", osvschema.ReferenceAdvisory},
+
+		// Test case insensitive matching
+		{"https://example.com", "PATCH", osvschema.ReferenceFix},
+		{"https://example.com", "Vendor-Advisory", osvschema.ReferenceAdvisory},
+
+		// Test Git repository links
+		{"https://github.com/user/repo", "", osvschema.ReferencePackage},
+		{"https://github.com/user/repo/pull/123", "", osvschema.ReferenceFix},
+		{"https://github.com/user/repo/releases", "", osvschema.ReferencePackage},
+		{"https://gitlab.com/user/repo", "", osvschema.ReferencePackage},
+		{"https://gitlab.com/user/repo/commit/abc123", "", osvschema.ReferenceFix},
+		{"https://gitlab.com/user/repo/issues/45", "", osvschema.ReferenceReport},
+		{"https://gitlab.com/user/repo/merge_requests/67", "", osvschema.ReferenceFix},
+		{"https://bitbucket.org/user/repo", "", osvschema.ReferencePackage},
+		{"https://bitbucket.org/user/repo/commits/abc123", "", osvschema.ReferenceFix},
+		{"https://bitbucket.org/user/repo/issues/89", "", osvschema.ReferenceReport},
 	}
 
 	for _, table := range tables {
@@ -84,6 +109,36 @@ func TestClassifyReferences(t *testing.T) {
 				{URL: "https://github.com/curl/curl/issues/9271", Type: osvschema.ReferenceAdvisory},
 				{URL: "https://github.com/curl/curl/issues/9271", Type: osvschema.ReferenceEvidence},
 				{URL: "https://github.com/curl/curl/issues/9271", Type: osvschema.ReferenceReport},
+			},
+		},
+		{
+			refData: []cves.Reference{
+				{
+					Source: "https://gitlab.com/gitlab-org/gitlab/-/issues/517693", Url: "https://gitlab.com/gitlab-org/gitlab/-/issues/517693", Tags: []string{"issue-tracking", "permissions-required"},
+				},
+			},
+			references: []osvschema.Reference{
+				{URL: "https://gitlab.com/gitlab-org/gitlab/-/issues/517693", Type: osvschema.ReferenceReport},
+			},
+		},
+		{
+			refData: []cves.Reference{
+				{
+					Source: "https://security.gentoo.org/glsa/202307-01", Url: "https://security.gentoo.org/glsa/202307-01", Tags: []string{"vendor-advisory"},
+				},
+			},
+			references: []osvschema.Reference{
+				{URL: "https://security.gentoo.org/glsa/202307-01", Type: osvschema.ReferenceAdvisory},
+			},
+		},
+		{
+			refData: []cves.Reference{
+				{
+					Source: "http://www.openwall.com/lists/oss-security/2023/07/20/1", Url: "http://www.openwall.com/lists/oss-security/2023/07/20/1", Tags: []string{"mailing-list"},
+				},
+			},
+			references: []osvschema.Reference{
+				{URL: "http://www.openwall.com/lists/oss-security/2023/07/20/1", Type: osvschema.ReferenceArticle},
 			},
 		},
 	}

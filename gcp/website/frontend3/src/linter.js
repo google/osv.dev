@@ -2,7 +2,7 @@ import "./linter.scss";
 
 document.addEventListener("DOMContentLoaded", function () {
   let allIssues = [];
-  let issuesByEcosystem = {};
+  let issuesByHomeDb = {};
   let filteredIssues = [];
   let findingDetails = {};
   const issuesPerPage = 15;
@@ -17,12 +17,12 @@ document.addEventListener("DOMContentLoaded", function () {
   const tabSwitch = document.getElementById("tab-switch");
   const tabsContent = document.getElementById("tabs-content");
 
-  const ecosystemFilter = document.getElementById("ecosystem-filter");
-  const ecosystemFilterSelected = document.getElementById(
-    "ecosystem-filter-selected"
+  const homeDbFilter = document.getElementById("homedb-filter");
+  const homeDbFilterSelected = document.getElementById(
+    "homedb-filter-selected"
   );
-  const ecosystemFilterOptions = document.getElementById(
-    "ecosystem-filter-options"
+  const homeDbFilterOptions = document.getElementById(
+    "homedb-filter-options"
   );
 
   const findingsFilter = document.getElementById("findings-filter");
@@ -33,24 +33,24 @@ document.addEventListener("DOMContentLoaded", function () {
     "findings-filter-options"
   );
 
-  let selectedEcosystem = "";
+  let selectedHomeDb = "";
   let selectedFinding = "";
-  let urlEcosystemApplied = false;
+  let urlHomeDbApplied = false;
 
   function applyFiltersFromURL() {
     const params = new URLSearchParams(window.location.search);
-    const ecosystem = params.get("ecosystem");
-    if (ecosystem) {
-      selectedEcosystem = ecosystem;
+    const homeDb = params.get("homedb");
+    if (homeDb) {
+      selectedHomeDb = homeDb;
     }
   }
 
-  function updateURL(ecosystem, replace = false) {
+  function updateURL(homeDb, replace = false) {
     const params = new URLSearchParams(window.location.search);
-    if (ecosystem) {
-      params.set("ecosystem", ecosystem);
+    if (homeDb) {
+      params.set("homedb", homeDb);
     } else {
-      params.delete("ecosystem");
+      params.delete("homedb");
     }
     const newURL = `${
       window.location.pathname
@@ -76,11 +76,11 @@ document.addEventListener("DOMContentLoaded", function () {
     const sources = jsyaml.load(yamlText);
     const sourceNames = sources.map((s) => s.name);
 
-    // Check if the ecosystem from the URL is not in the source yaml list.
-    // If the queried ecosystem is not in the source list, remove the invalid parameter from the URL.
-    if (selectedEcosystem && !sourceNames.includes(selectedEcosystem)) {
-      selectedEcosystem = "";
-      urlEcosystemApplied = true; // Prevent further checks
+    // Check if the home database from the URL is not in the source yaml list.
+    // If the queried home database is not in the source list, remove the invalid parameter from the URL.
+    if (selectedHomeDb && !sourceNames.includes(selectedHomeDb)) {
+      selectedHomeDb = "";
+      urlHomeDbApplied = true; // Prevent further checks
       updateURL("", true);
     }
 
@@ -116,14 +116,14 @@ document.addEventListener("DOMContentLoaded", function () {
           const records = data.invalid_records || [];
           allIssues.push(...records);
           records.forEach((issue) => {
-            if (!issuesByEcosystem[issue.source]) {
-              issuesByEcosystem[issue.source] = [];
+            if (!issuesByHomeDb[issue.source]) {
+              issuesByHomeDb[issue.source] = [];
             }
-            issuesByEcosystem[issue.source].push(issue);
+            issuesByHomeDb[issue.source].push(issue);
           });
 
-          if (selectedEcosystem && !urlEcosystemApplied && issuesByEcosystem[selectedEcosystem]) {
-            urlEcosystemApplied = true;
+          if (selectedHomeDb && !urlHomeDbApplied && issuesByHomeDb[selectedHomeDb]) {
+            urlHomeDbApplied = true;
           }
 
           applyFilters();
@@ -138,8 +138,8 @@ document.addEventListener("DOMContentLoaded", function () {
     Promise.allSettled(allPromises).then(() => {
       dataLoadingComplete = true;
       globalLoader.classList.remove("visible");
-      if (selectedEcosystem && !urlEcosystemApplied) {
-        selectedEcosystem = "";
+      if (selectedHomeDb && !urlHomeDbApplied) {
+        selectedHomeDb = "";
         updateURL("", true);
       }
       applyFilters(); // Final render
@@ -174,22 +174,22 @@ document.addEventListener("DOMContentLoaded", function () {
       }
     });
 
-    ecosystemFilter.addEventListener("click", (e) => {
+    homeDbFilter.addEventListener("click", (e) => {
       e.stopPropagation();
-      toggleFilter("ecosystem");
+      toggleFilter("homedb");
     });
     findingsFilter.addEventListener("click", (e) => {
       e.stopPropagation();
       toggleFilter("findings");
     });
 
-    ecosystemFilterOptions.addEventListener("click", (e) => {
+    homeDbFilterOptions.addEventListener("click", (e) => {
       if (e.target.classList.contains("filter-option")) {
         const { value, count } = e.target.dataset;
-        selectedEcosystem = value;
-        ecosystemFilterSelected.textContent = `${value} (${count} issues)`;
-        urlEcosystemApplied = true;
-        updateURL(selectedEcosystem);
+        selectedHomeDb = value;
+        homeDbFilterSelected.textContent = `${value} (${count} issues)`;
+        urlHomeDbApplied = true;
+        updateURL(selectedHomeDb);
         applyFilters();
       }
     });
@@ -209,11 +209,11 @@ document.addEventListener("DOMContentLoaded", function () {
 
     filteredIssues = allIssues.filter((issue) => {
       const bugIdMatch = issue.bug_id.toLowerCase().includes(searchTerm);
-      const ecosystemMatch =
-        !selectedEcosystem || issue.source === selectedEcosystem;
+      const homeDbMatch =
+        !selectedHomeDb || issue.source === selectedHomeDb;
       const findingMatch =
         !selectedFinding || issue.findings.includes(selectedFinding);
-      return bugIdMatch && ecosystemMatch && findingMatch;
+      return bugIdMatch && homeDbMatch && findingMatch;
     });
 
     currentPage = 1;
@@ -228,7 +228,7 @@ document.addEventListener("DOMContentLoaded", function () {
     // Update Findings counts
     const issuesForFindingsCount = allIssues.filter(
       (issue) =>
-        (!selectedEcosystem || issue.source === selectedEcosystem) &&
+        (!selectedHomeDb || issue.source === selectedHomeDb) &&
         issue.bug_id.toLowerCase().includes(searchTerm)
     );
     const findingsCount = issuesForFindingsCount.reduce((acc, issue) => {
@@ -255,37 +255,37 @@ document.addEventListener("DOMContentLoaded", function () {
       findingsFilterSelected.textContent = `All (${issuesForFindingsCount.length} issues)`;
     }
 
-    // Update Ecosystem counts
-    const issuesForEcosystemCount = allIssues.filter(
+    // Update Home Database counts
+    const issuesForHomeDbCount = allIssues.filter(
       (issue) =>
         (!selectedFinding || issue.findings.includes(selectedFinding)) &&
         issue.bug_id.toLowerCase().includes(searchTerm)
     );
-    const ecosystemCount = issuesForEcosystemCount.reduce((acc, issue) => {
+    const homeDbCount = issuesForHomeDbCount.reduce((acc, issue) => {
       acc[issue.source] = (acc[issue.source] || 0) + 1;
       return acc;
     }, {});
 
-    ecosystemFilterOptions.innerHTML = `<div class="filter-option" data-value="">All (${issuesForEcosystemCount.length})</div>`;
-    for (const ecosystem of Object.keys(issuesByEcosystem).sort()) {
-      const count = ecosystemCount[ecosystem] || 0;
+    homeDbFilterOptions.innerHTML = `<div class="filter-option" data-value="">All (${issuesForHomeDbCount.length})</div>`;
+    for (const homeDb of Object.keys(issuesByHomeDb).sort()) {
+      const count = homeDbCount[homeDb] || 0;
       const option = document.createElement("div");
       option.className = "filter-option";
-      option.dataset.value = ecosystem;
+      option.dataset.value = homeDb;
       option.dataset.count = count;
-      option.textContent = `${ecosystem} (${count})`;
-      ecosystemFilterOptions.appendChild(option);
+      option.textContent = `${homeDb} (${count})`;
+      homeDbFilterOptions.appendChild(option);
     }
-    if (selectedEcosystem) {
-      const selectedOption = ecosystemFilterOptions.querySelector(
-        `[data-value="${selectedEcosystem}"]`
+    if (selectedHomeDb) {
+      const selectedOption = homeDbFilterOptions.querySelector(
+        `[data-value="${selectedHomeDb}"]`
       );
       if (selectedOption) {
         const { value, count } = selectedOption.dataset;
-        ecosystemFilterSelected.textContent = `${value} (${count} issues)`;
+        homeDbFilterSelected.textContent = `${value} (${count} issues)`;
       }
     } else {
-      ecosystemFilterSelected.textContent = `All (${issuesForEcosystemCount.length} issues)`;
+      homeDbFilterSelected.textContent = `All (${issuesForHomeDbCount.length} issues)`;
     }
   }
 

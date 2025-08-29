@@ -164,6 +164,8 @@ func combineIntoOSV(loadedCves map[cves.CVEID]cves.Vulnerability, allParts map[c
 			}
 			if err == nil && !modified.IsZero() {
 				convertedCve.Withdrawn = modified
+				convertedCve.DatabaseSpecific = make(map[string]interface{})
+				convertedCve.DatabaseSpecific["isDisputed"] = true
 			}
 		}
 

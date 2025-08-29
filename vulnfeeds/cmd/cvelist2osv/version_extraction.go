@@ -75,17 +75,6 @@ func AddVersionInfo(cve cves.CVE5, v *vulns.Vulnerability) ([]VersionSource, []s
 	var source []VersionSource
 	gotVersions := false
 
-	// Special handling for Linux kernel CVEs, prioritizing CPEs for version info.
-	if cve.Metadata.AssignerShortName == "Linux" {
-		affectedLenBefore := len(v.Affected)
-		notes = append(notes, handleLinuxCVE(cve, v)...)
-		// Check if any affected fields were actually added
-		if len(v.Affected) > affectedLenBefore {
-			gotVersions = true
-			source = append(source, VersionSourceCPE)
-		}
-	}
-
 	// Combine 'affected' entries from both CNA and ADP containers.
 	cna := cve.Containers.CNA
 	adps := cve.Containers.ADP
@@ -217,10 +206,6 @@ func findCPEVersionRanges(cve cves.CVE5) (versionRanges []osvschema.Range, cpes 
 func extractVersionsFromAffectedField(affected cves.Affected, cnaAssigner string) ([]osvschema.Range, VersionRangeType, []string) {
 	// Handle cases where a product is marked as "affected" by default, and specific versions are marked "unaffected".
 	if affected.DefaultStatus == "affected" {
-		// For Linux kernel CVEs, this logic is often handled by CPEs, so we skip it here, until we are confident in the inverse calculation method.
-		if cnaAssigner == "Linux" {
-			return nil, VersionRangeTypeUnknown, []string{"Skipping Linux Affected range versions in favour of CPE versions"}
-		}
 		// Calculate the affected ranges by finding the inverse of the unaffected ranges.
 		return findInverseAffectedRanges(affected, cnaAssigner)
 	}

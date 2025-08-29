@@ -90,14 +90,21 @@ func AddVersionInfo(cve cves.CVE5, v *vulns.Vulnerability) ([]VersionSource, []s
 	hasGit := false
 	for _, cveAff := range affected {
 		versionRanges, versionType, extractNotes := extractVersionsFromAffectedField(cveAff, cve.Metadata.AssignerShortName)
+		// TODO(jesslowe): update this to be more elegant (currently skips retrieving more git ranges after the first)
+		if versionType == VersionRangeTypeGit && hasGit {
+			continue
+		}
 		notes = append(notes, extractNotes...)
+
 		if len(versionRanges) == 0 {
 			continue
 		}
+
 		gotVersions = true
 		if versionType == VersionRangeTypeGit {
 			hasGit = true
 		}
+
 		aff := osvschema.Affected{}
 		for _, vr := range versionRanges {
 			if versionType == VersionRangeTypeGit {
@@ -116,6 +123,7 @@ func AddVersionInfo(cve cves.CVE5, v *vulns.Vulnerability) ([]VersionSource, []s
 				Name:      "Kernel",
 			}
 		}
+
 		v.Affected = append(v.Affected, aff)
 		if hasGit {
 			source = append(source, VersionSourceGit)
@@ -381,7 +389,6 @@ func findNormalAffectedRanges(affected cves.Affected, cnaAssigner string) (versi
 			mostFrequentVersionType = versionType
 		}
 	}
-
 	return versionRanges, mostFrequentVersionType, notes
 }
 

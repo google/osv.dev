@@ -225,17 +225,23 @@ func findInverseAffectedRanges(cveAff cves.Affected, cnaAssigner string) (ranges
 	var introduced []string
 	var fixed []string
 	for _, vers := range cveAff.Versions {
+		versionValue := vers.Version
 		if vers.Status == "affected" {
-			introduced = append(introduced, vers.Version)
+			if len(strings.Split(versionValue, ".")) != 3 {
+				introduced = append(introduced, fmt.Sprintf("%s.0", versionValue))
+			} else {
+				introduced = append(introduced, versionValue)
+			}
+
 		}
 		if vers.Status != "unaffected" {
 			continue
 		}
 
-		if vers.Version == "0" || toVersionRangeType(vers.VersionType) != VersionRangeTypeSemver {
+		if versionValue == "0" || toVersionRangeType(vers.VersionType) != VersionRangeTypeSemver {
 			continue
 		}
-		fixed = append(fixed, vers.Version)
+		fixed = append(fixed, versionValue)
 		// Infer the next introduced version from the 'lessThanOrEqual' field.
 		// For example, if "5.10.*" is unaffected, the next introduced version is "5.11.0".
 		minorVers := strings.Split(vers.LessThanOrEqual, ".*")[0]
@@ -248,13 +254,14 @@ func findInverseAffectedRanges(cveAff cves.Affected, cnaAssigner string) (ranges
 		}
 
 	}
-
 	slices.SortFunc(introduced, sortBadSemver)
 	slices.SortFunc(fixed, sortBadSemver)
 
 	// If the first fixed version is earlier than the first introduced, assume introduction from "0".
-	if len(fixed) > 0 && len(introduced) > 0 && fixed[0] < introduced[0] {
-		introduced = append([]string{"0"}, introduced...)
+	if len(fixed) > 0 && len(introduced) > 0 {
+		if sortBadSemver(fixed[0], introduced[0]) < 0 {
+			introduced = append([]string{"0"}, introduced...)
+		}
 	}
 
 	// Create ranges by pairing sorted introduced and fixed versions.
@@ -418,8 +425,28 @@ func sortBadSemver(a, b string) int {
 			return c
 		}
 	}
+	// If lengths are the same, they're equal.
+	if len(partsA) == len(partsB) {
+		return 0
+	}
 
-	// If all common parts are identical (e.g., "1.2" vs "1.2.3"),
-	// the version with more parts is considered greater.
-	return cmp.Compare(len(partsA), len(partsB))
+	// Determine which version has extra parts and what the result
+	// should be if those parts are non-zero.
+	longerParts := partsB
+	result := -1 // Assume 'b' is greater
+	if len(partsA) > len(partsB) {
+		longerParts = partsA
+		result = 1 // 'a' is actually greater
+	}
+
+	// Check if any of the extra parts are non-zero.
+	for i := minLen; i < len(longerParts); i++ {
+		num, _ := strconv.Atoi(longerParts[i])
+		if num != 0 {
+			return result
+		}
+	}
+
+	// All extra parts were zero, so the versions are effectively equal.
+	return 0
 }

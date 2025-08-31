@@ -244,24 +244,7 @@ osv-scanner fix -M path/to/package.json -L path/to/package-lock.json
             <md-icon-button class="icon"><md-icon>content_copy</md-icon></md-icon-button>
           </clipboard-copy>
         </div>
-        <div class="code-card mdc-layout-grid__cell--span-6 mdc-layout-grid__cell--span-12-tablet">
-          <h3 class="code-card-title">🐳 Scan Container Images</h3>
-          <p class="description">
-            You can use <a href="https://github.com/google/osv-scanner">OSV-Scanner</a> to scan container images (like Docker images) for known vulnerabilities in installed packages.
-          </p>
-          <pre class="code-card-content" id="example-container-image-scan">
-osv-scanner scan image alpine:3.12
-          </pre>
-          <p class="description">
-            To view a comprehensive, user-friendly HTML report, run:
-          </p>
-          <pre class="code-card-content" id="example-container-html-report">
-osv-scanner scan image --serve alpine:3.12
-          </pre>
-          <div class="image-container" style="margin-top: 12px;">
-            <img src="/img/container-scan-html.png" alt="Screenshot of container scan HTML output" loading="lazy" style="max-width: 100%; border-radius: 6px; border: 1px solid #ccc;">
-          </div>
-        </div>
+        
 
       </div>
       <div class="mdc-layout-grid__cell--span-12">
@@ -270,6 +253,22 @@ osv-scanner scan image --serve alpine:3.12
         </div>
       </div>
     </div>
+    <div id="use-container-scanning" class="mdc-layout-grid__cell--span-12 usage-examples">
+      <h2 class="heading">Container Image Scanning</h2>
+      <p class="description">
+        You can use <a href="https://github.com/google/osv-scanner">OSV-Scanner</a> to scan your container images for known vulnerabilities.
+      </p>
+      <pre class="code-card-content" id="example-container-scan-serve">
+    osv-scanner scan image --serve alpine:3.12
+      </pre>
+      <div class="image-container" style="margin-top: 12px;">
+        <img src="/static/img/container-scan-html.png"
+             alt="Screenshot of container scan HTML output"
+             loading="lazy"
+             style="max-width: 100%; border-radius: 6px; border: 1px solid #ccc;">
+      </div>
+    </div>
+    
     <div id="use-the-github-workflows" class="mdc-layout-grid__cell--span-12 github-action">
       <h2 class="heading">GitHub Workflows</h2>
       <p class="description">

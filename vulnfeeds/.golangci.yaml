@@ -1,0 +1,149 @@
+version: "2"
+
+linters:
+  default: all
+  # prettier-ignore
+  disable:
+    - cyclop           #
+    - depguard         # Too annoying
+    - err113           # will re-add later (another-rex)
+    - exhaustruct      # overkill (g-rath)
+    - forcetypeassert  # too hard (g-rath)
+    - funlen           #
+    - funcorder        #
+    - gochecknoglobals # disagree with, for non changing variables (another-rex)
+    - gocognit         #
+    - goconst          # not everything should be a constant
+    - gocyclo          #
+    - godot            # comments are fine without full stops (g-rath)
+    - godox            # to-do comments are fine (g-rath)
+    - ireturn          # disagree with, sort of (g-rath)
+    - lll              # line length is hard (g-rath)
+    - maintidx         #
+    - mnd              # not every number is magic (g-rath)
+    - nestif           #
+    - noinlineerr      #
+    - nonamedreturns   # disagree with, for now (another-rex)
+    - tagliatelle      # we're parsing data from external sources (g-rath)
+    - testpackage      # will re-add later (another-rex)
+    - varnamelen       # maybe later (g-rath)
+    - wrapcheck        # too difficult, will re-add later (another-rex)
+    - wsl              # disagree with, for now (g-rath)
+    - wsl_v5           # disagree with, for now (g-rath)
+  settings:
+    exhaustive:
+      default-signifies-exhaustive: true
+    forbidigo:
+      forbid:
+        - pattern: ^testing.T.Skip
+          pkg: ^testing$
+          msg: go-snaps needs to know the test has been skipped, so use `testutility.Skip` instead
+        - pattern: ^os.Getwd
+          pkg: ^os$
+          msg: use `testutility.GetCurrentWorkingDirectory`
+      analyze-types: true
+    gocritic:
+      disabled-checks:
+        - ifElseChain
+    nlreturn:
+      block-size: 2
+    revive:
+      rules:
+        - name: increment-decrement
+          disabled: true
+        - name: blank-imports
+          disabled: false
+        - name: context-as-argument
+          disabled: false
+        - name: context-keys-type
+          disabled: false
+        - name: dot-imports
+          disabled: false
+        - name: empty-block
+          disabled: false
+        - name: error-naming
+          disabled: false
+        - name: error-return
+          disabled: false
+        - name: error-strings
+          disabled: false
+        - name: errorf
+          disabled: false
+        - name: exported
+          disabled: false
+          arguments:
+            # TODO: get these all enabled
+            - "check-private-receivers"
+            # - "check-public-interface"
+            - "disable-checks-on-constants"
+            - "disable-checks-on-functions"
+            - "disable-checks-on-methods"
+            - "disable-checks-on-types"
+            - "disable-checks-on-variables"
+        - name: import-alias-naming
+          disabled: false
+        - name: import-shadowing
+          disabled: false
+        - name: indent-error-flow
+          disabled: false
+        - name: package-comments
+          disabled: false
+        - name: range
+          disabled: false
+        - name: receiver-naming
+          disabled: false
+        - name: redefines-builtin-id
+          disabled: false
+        - name: redundant-test-main-exit
+          disabled: false
+        - name: superfluous-else
+          disabled: false
+        - name: time-naming
+          disabled: false
+        - name: unexported-return
+          disabled: false
+        - name: unreachable-code
+          disabled: false
+        - name: unused-parameter
+          disabled: false
+        - name: use-any
+          disabled: false
+        - name: var-declaration
+          disabled: false
+        - name: var-naming
+          disabled: false
+          arguments:
+            - [] # AllowList
+            - [] # DenyList
+            - - skip-package-name-checks: true
+  exclusions:
+    generated: lax
+    presets:
+      - common-false-positives
+      - legacy
+      - std-error-handling
+    rules:
+      - path: _test\.go
+        linters:
+          - dupl
+      - path-except: _test\.go
+        text: use `testutility.GetCurrentWorkingDirectory`
+    paths:
+      - third_party$
+      - builtin$
+      - examples$
+
+formatters:
+  enable:
+    - gofmt
+    - goimports
+  exclusions:
+    generated: lax
+    paths:
+      - third_party$
+      - builtin$
+      - examples$
+
+issues:
+  max-issues-per-linter: 0
+  max-same-issues: 0

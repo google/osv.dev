@@ -175,7 +175,7 @@ func TestFromCVE5(t *testing.T) {
 					Details:          "An issue has been discovered in GitLab CE/EE affecting all versions from 18.0 before 18.0.1. In certain circumstances, a user with limited permissions could access Job Data via a crafted GraphQL query.",
 					Aliases:          nil,
 					Related:          nil,
-					DatabaseSpecific: map[string]any{},
+					DatabaseSpecific: nil,
 					References: []osvschema.Reference{
 						{Type: "ARTICLE", URL: "https://hackerone.com/reports/2972576"},
 						{Type: "EVIDENCE", URL: "https://hackerone.com/reports/2972576"},
@@ -227,7 +227,7 @@ func TestFromCVE5(t *testing.T) {
 					Affected: []osvschema.Affected{{Ranges: []osvschema.Range{{
 						Type:   "ECOSYSTEM",
 						Events: []osvschema.Event{{Introduced: "0"}, {Fixed: "1.10.5"}}}}}},
-					DatabaseSpecific: make(map[string]interface{}),
+					DatabaseSpecific: nil,
 				},
 			},
 		},
@@ -254,87 +254,84 @@ func TestFromCVE5(t *testing.T) {
 					Details:          "In the Linux kernel, the following vulnerability has been resolved:\n\npartitions: mac: fix handling of bogus partition table\n\nFix several issues in partition probing:\n\n - The bailout for a bad partoffset must use put_dev_sector(), since the\n   preceding read_part_sector() succeeded.\n - If the partition table claims a silly sector size like 0xfff bytes\n   (which results in partition table entries straddling sector boundaries),\n   bail out instead of accessing out-of-bounds memory.\n - We must not assume that the partition table contains proper NUL\n   termination - use strnlen() and strncmp() instead of strlen() and\n   strcmp().",
 					Aliases:          nil,
 					Related:          nil,
-					DatabaseSpecific: map[string]any{},
-					Affected: []osvschema.Affected{
+					DatabaseSpecific: nil,
+					Affected: []osvschema.Affected{{
+						Ranges: []osvschema.Range{{
+							Type: "GIT",
+							Events: []osvschema.Event{
+								{Introduced: "1da177e4c3f41524e886b7f1b8a0c1fc7321cac2"},
+								{Fixed: "a3e77da9f843e4ab93917d30c314f0283e28c124"},
+							},
+							Repo: "https://git.kernel.org/pub/scm/linux/kernel/git/stable/linux.git",
+						},
+							{
+								Type: "GIT",
+								Events: []osvschema.Event{
+									{Introduced: "1da177e4c3f41524e886b7f1b8a0c1fc7321cac2"},
+									{Fixed: "213ba5bd81b7e97ac6e6190b8f3bc6ba76123625"},
+								},
+								Repo: "https://git.kernel.org/pub/scm/linux/kernel/git/stable/linux.git",
+							},
+							{
+								Type: "GIT",
+								Events: []osvschema.Event{
+									{Introduced: "1da177e4c3f41524e886b7f1b8a0c1fc7321cac2"},
+									{Fixed: "40a35d14f3c0dc72b689061ec72fc9b193f37d1f"},
+								},
+								Repo: "https://git.kernel.org/pub/scm/linux/kernel/git/stable/linux.git",
+							},
+							{
+								Type: "GIT",
+								Events: []osvschema.Event{
+									{Introduced: "1da177e4c3f41524e886b7f1b8a0c1fc7321cac2"},
+									{Fixed: "27a39d006f85e869be68c1d5d2ce05e5d6445bf5"},
+								},
+								Repo: "https://git.kernel.org/pub/scm/linux/kernel/git/stable/linux.git",
+							},
+							{
+								Type: "GIT",
+								Events: []osvschema.Event{
+									{Introduced: "1da177e4c3f41524e886b7f1b8a0c1fc7321cac2"},
+									{Fixed: "92527100be38ede924768f4277450dfe8a40e16b"},
+								},
+								Repo: "https://git.kernel.org/pub/scm/linux/kernel/git/stable/linux.git",
+							},
+							{
+								Type: "GIT",
+								Events: []osvschema.Event{
+									{Introduced: "1da177e4c3f41524e886b7f1b8a0c1fc7321cac2"},
+									{Fixed: "6578717ebca91678131d2b1f4ba4258e60536e9f"},
+								},
+								Repo: "https://git.kernel.org/pub/scm/linux/kernel/git/stable/linux.git",
+							},
+							{
+								Type: "GIT",
+								Events: []osvschema.Event{
+									{Introduced: "1da177e4c3f41524e886b7f1b8a0c1fc7321cac2"},
+									{Fixed: "7fa9706722882f634090bfc9af642bf9ed719e27"},
+								},
+								Repo: "https://git.kernel.org/pub/scm/linux/kernel/git/stable/linux.git",
+							},
+							{
+								Type: "GIT",
+								Events: []osvschema.Event{
+									{Introduced: "1da177e4c3f41524e886b7f1b8a0c1fc7321cac2"},
+									{Fixed: "80e648042e512d5a767da251d44132553fe04ae0"},
+								},
+								Repo: "https://git.kernel.org/pub/scm/linux/kernel/git/stable/linux.git",
+							}},
+					},
 						{
 							Package: osvschema.Package{Ecosystem: "Linux", Name: "Kernel"},
 							Ranges: []osvschema.Range{
 								{Type: "ECOSYSTEM", Events: []osvschema.Event{{Introduced: "0"}, {Fixed: "5.4.291"}}},
-								{Type: "ECOSYSTEM", Events: []osvschema.Event{{Introduced: "0"}, {Fixed: "5.10.235"}}},
-								{Type: "ECOSYSTEM", Events: []osvschema.Event{{Introduced: "0"}, {Fixed: "5.15.179"}}},
-								{Type: "ECOSYSTEM", Events: []osvschema.Event{{Introduced: "0"}, {Fixed: "6.1.129"}}},
-								{Type: "ECOSYSTEM", Events: []osvschema.Event{{Introduced: "0"}, {Fixed: "6.6.79"}}},
-								{Type: "ECOSYSTEM", Events: []osvschema.Event{{Introduced: "0"}, {Fixed: "6.12.16"}}},
-								{Type: "ECOSYSTEM", Events: []osvschema.Event{{Introduced: "0"}, {Fixed: "6.13.4"}}},
-								{Type: "ECOSYSTEM", Events: []osvschema.Event{{Introduced: "0"}, {Fixed: "6.14"}}},
+								{Type: "ECOSYSTEM", Events: []osvschema.Event{{Introduced: "5.5.0"}, {Fixed: "5.10.235"}}},
+								{Type: "ECOSYSTEM", Events: []osvschema.Event{{Introduced: "5.11.0"}, {Fixed: "5.15.179"}}},
+								{Type: "ECOSYSTEM", Events: []osvschema.Event{{Introduced: "5.16.0"}, {Fixed: "6.1.129"}}},
+								{Type: "ECOSYSTEM", Events: []osvschema.Event{{Introduced: "6.2.0"}, {Fixed: "6.6.79"}}},
+								{Type: "ECOSYSTEM", Events: []osvschema.Event{{Introduced: "6.7.0"}, {Fixed: "6.12.16"}}},
+								{Type: "ECOSYSTEM", Events: []osvschema.Event{{Introduced: "6.13.0"}, {Fixed: "6.13.4"}}},
 							},
-							DatabaseSpecific: map[string]any{"CPEs": []string{"cpe:2.3:o:linux:linux_kernel:*:*:*:*:*:*:*:*"}},
-						},
-						{
-							Ranges: []osvschema.Range{{
-								Type: "GIT",
-								Events: []osvschema.Event{
-									{Introduced: "1da177e4c3f41524e886b7f1b8a0c1fc7321cac2"},
-									{Fixed: "a3e77da9f843e4ab93917d30c314f0283e28c124"},
-								},
-								Repo: "https://git.kernel.org/pub/scm/linux/kernel/git/stable/linux.git",
-							},
-								{
-									Type: "GIT",
-									Events: []osvschema.Event{
-										{Introduced: "1da177e4c3f41524e886b7f1b8a0c1fc7321cac2"},
-										{Fixed: "213ba5bd81b7e97ac6e6190b8f3bc6ba76123625"},
-									},
-									Repo: "https://git.kernel.org/pub/scm/linux/kernel/git/stable/linux.git",
-								},
-								{
-									Type: "GIT",
-									Events: []osvschema.Event{
-										{Introduced: "1da177e4c3f41524e886b7f1b8a0c1fc7321cac2"},
-										{Fixed: "40a35d14f3c0dc72b689061ec72fc9b193f37d1f"},
-									},
-									Repo: "https://git.kernel.org/pub/scm/linux/kernel/git/stable/linux.git",
-								},
-								{
-									Type: "GIT",
-									Events: []osvschema.Event{
-										{Introduced: "1da177e4c3f41524e886b7f1b8a0c1fc7321cac2"},
-										{Fixed: "27a39d006f85e869be68c1d5d2ce05e5d6445bf5"},
-									},
-									Repo: "https://git.kernel.org/pub/scm/linux/kernel/git/stable/linux.git",
-								},
-								{
-									Type: "GIT",
-									Events: []osvschema.Event{
-										{Introduced: "1da177e4c3f41524e886b7f1b8a0c1fc7321cac2"},
-										{Fixed: "92527100be38ede924768f4277450dfe8a40e16b"},
-									},
-									Repo: "https://git.kernel.org/pub/scm/linux/kernel/git/stable/linux.git",
-								},
-								{
-									Type: "GIT",
-									Events: []osvschema.Event{
-										{Introduced: "1da177e4c3f41524e886b7f1b8a0c1fc7321cac2"},
-										{Fixed: "6578717ebca91678131d2b1f4ba4258e60536e9f"},
-									},
-									Repo: "https://git.kernel.org/pub/scm/linux/kernel/git/stable/linux.git",
-								},
-								{
-									Type: "GIT",
-									Events: []osvschema.Event{
-										{Introduced: "1da177e4c3f41524e886b7f1b8a0c1fc7321cac2"},
-										{Fixed: "7fa9706722882f634090bfc9af642bf9ed719e27"},
-									},
-									Repo: "https://git.kernel.org/pub/scm/linux/kernel/git/stable/linux.git",
-								},
-								{
-									Type: "GIT",
-									Events: []osvschema.Event{
-										{Introduced: "1da177e4c3f41524e886b7f1b8a0c1fc7321cac2"},
-										{Fixed: "80e648042e512d5a767da251d44132553fe04ae0"},
-									},
-									Repo: "https://git.kernel.org/pub/scm/linux/kernel/git/stable/linux.git",
-								}},
 						}},
 					References: []osvschema.Reference{
 						{Type: "WEB", URL: "https://git.kernel.org/stable/c/a3e77da9f843e4ab93917d30c314f0283e28c124"},

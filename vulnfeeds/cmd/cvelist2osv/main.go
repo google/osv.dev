@@ -75,14 +75,13 @@ func FromCVE5(cve cves.CVE5, refs []cves.Reference) (*vulns.Vulnerability, []str
 	var notes []string
 	v := vulns.Vulnerability{
 		Vulnerability: osvschema.Vulnerability{
-			SchemaVersion:    osvschema.SchemaVersion,
-			ID:               string(cve.Metadata.CVEID),
-			Summary:          string(cve.Containers.CNA.Title),
-			Details:          cves.EnglishDescription(cve.Containers.CNA.Descriptions),
-			Aliases:          aliases,
-			Related:          related,
-			References:       vulns.ClassifyReferences(refs),
-			DatabaseSpecific: make(map[string]interface{}),
+			SchemaVersion: osvschema.SchemaVersion,
+			ID:            string(cve.Metadata.CVEID),
+			Summary:       string(cve.Containers.CNA.Title),
+			Details:       cves.EnglishDescription(cve.Containers.CNA.Descriptions),
+			Aliases:       aliases,
+			Related:       related,
+			References:    vulns.ClassifyReferences(refs),
 		}}
 
 	published, err := cves.ParseCVE5Timestamp(cve.Metadata.DatePublished)
@@ -193,9 +192,9 @@ func ConvertAndExportCVEToOSV(cve cves.CVE5, directory string) error {
 	}
 
 	// Save the conversion metrics to a file.
-	if err := writeMetricToFile(cveId, vulnDir); err != nil {
-		return err
-	}
+	// if err := writeMetricToFile(cveId, vulnDir); err != nil {
+	// 	return err
+	// }
 
 	return nil
 }

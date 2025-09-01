@@ -125,7 +125,7 @@ func downloadCVE2(APIKey string, CVEPath string) {
 			Logger.Fatalf("Failed to download at offset %d: %+v", offset, err)
 		}
 		if page.TotalResults < prevTotal {
-			Logger.Fatalf("TotalResults decreased from %d to %d", prevTotal, page.TotalResults)
+			Logger.Warnf("TotalResults decreased from %d to %d", prevTotal, page.TotalResults)
 		}
 		prevTotal = page.TotalResults
 		vulnerabilities = append(vulnerabilities, page.Vulnerabilities...)

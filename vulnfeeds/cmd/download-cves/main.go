@@ -70,6 +70,9 @@ func downloadCVE2WithOffset(APIKey string, offset int) (page *cves.CVEAPIJSON20S
 		return page, fmt.Errorf("request creation for %q failed: %+v", APIURL, err)
 	}
 	if APIKey != "" {
+		// apiKey is the correct header type that NVD expects
+		// https://nvd.nist.gov/developers/start-here
+		//nolint:canonicalheader
 		req.Header.Add("apiKey", APIKey)
 	}
 	backoff := retry.NewExponential(6 * time.Second)
@@ -161,6 +164,7 @@ func downloadCVE(version string, CVEPath string) {
 	if err != nil {
 		Logger.Fatalf("Failed to retrieve cve json with: %d, for version: %s", err, version)
 	}
+	defer res.Body.Close()
 
 	if res.StatusCode != 200 {
 		Logger.Fatalf("Failed to retrieve cve json with: %d, for version: %s", res.StatusCode, version)

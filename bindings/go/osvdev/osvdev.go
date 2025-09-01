@@ -63,6 +63,7 @@ func (c *OSVClient) GetVulnByID(ctx context.Context, id string) (*osvschema.Vuln
 		return nil, err
 	}
 
+	//nolint:errcheck
 	defer resp.Body.Close()
 
 	var vuln osvschema.Vulnerability
@@ -119,6 +120,7 @@ func (c *OSVClient) QueryBatch(ctx context.Context, queries []*Query) (*BatchedR
 			if err != nil {
 				return err
 			}
+			//nolint:errcheck
 			defer resp.Body.Close()
 
 			var osvResp BatchedResponse
@@ -178,6 +180,7 @@ func (c *OSVClient) Query(ctx context.Context, query *Query) (*Response, error) 
 	if err != nil {
 		return nil, err
 	}
+	//nolint:errcheck
 	defer resp.Body.Close()
 
 	var osvResp Response

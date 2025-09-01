@@ -232,7 +232,7 @@ func TestFindInverseAffectedRanges(t *testing.T) {
 			versionType: VersionRangeTypeSemver,
 			cnaAssigner: "Linux",
 			want: []osvschema.Range{
-				buildVersionRange("5.0", "", "5.10.1"),
+				buildVersionRange("5.0.0", "", "5.10.1"),
 			},
 		},
 		{
@@ -271,7 +271,7 @@ func TestFindInverseAffectedRanges(t *testing.T) {
 			versionType: VersionRangeTypeSemver,
 			cnaAssigner: "Linux",
 			want: []osvschema.Range{
-				buildVersionRange("4.0", "", "4.5.2"),
+				buildVersionRange("4.0.0", "", "4.5.2"),
 			},
 		},
 	}

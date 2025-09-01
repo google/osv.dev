@@ -1,4 +1,4 @@
-package main
+package cvelist2osv
 
 import (
 	"sort"

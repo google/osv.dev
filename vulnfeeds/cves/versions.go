@@ -610,7 +610,8 @@ func ExtractVersionsFromText(validVersions []string, text string) ([]models.Affe
 	}
 
 	var notes []string
-	var versions []models.AffectedVersion
+	versions := make([]models.AffectedVersion, 0, len(matches))
+
 	for _, match := range matches {
 		// Trim periods that are part of sentences.
 		introduced := processExtractedVersion(match[1])

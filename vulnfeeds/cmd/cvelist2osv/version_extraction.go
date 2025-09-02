@@ -240,7 +240,7 @@ func findInverseAffectedRanges(cveAff cves.Affected, cnaAssigner string) (ranges
 		return nil, VersionRangeTypeUnknown, append(notes, "Currently only supporting Linux inverse logic")
 	}
 	var introduced []string
-	var fixed []string
+	fixed := make([]string, 0, len(cveAff.Versions))
 	for _, vers := range cveAff.Versions {
 		if vers.Status == "affected" {
 			introduced = append(introduced, vers.Version)

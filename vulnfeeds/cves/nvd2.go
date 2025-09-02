@@ -217,9 +217,9 @@ type CVSSV30 struct {
 
 // CVSS V3.1 score. (hand-generated)
 type CVSSV31 struct {
-	Source              string       `json:"source" mapstructure:"source" yaml:"source"`
-	Type                string       `json:"type"   mapstructure:"type"   yaml:"type"`
-	CVSSData            CVSS         `json:"cvssData" mapstructure:"cvssData" yaml:"cvssData"`
+	Source              string       `json:"source"                        mapstructure:"source"                        yaml:"source"`
+	Type                string       `json:"type"                          mapstructure:"type"                          yaml:"type"`
+	CVSSData            CVSS         `json:"cvssData"                      mapstructure:"cvssData"                      yaml:"cvssData"`
 	ExploitabilityScore *DefSubscore `json:"exploitabilityScore,omitempty" mapstructure:"exploitabilityScore,omitempty" yaml:"exploitabilityScore,omitempty"`
 	ImpactScore         *DefSubscore `json:"impactScore,omitempty"         mapstructure:"impactScore,omitempty"         yaml:"impactScore,omitempty"`
 }

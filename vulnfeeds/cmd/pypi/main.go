@@ -200,7 +200,7 @@ func main() {
 			defer f.Close()
 			err = v.ToYAML(f)
 			if err != nil {
-				panic(fmt.Sprintf("Failed to write %s: %v", vulnPath, err))
+				log.Panicf("Failed to write %s: %v", vulnPath, err)
 			}
 
 			// If there are notes that require human intervention, write them to the end of the YAML.
@@ -208,7 +208,7 @@ func main() {
 				notesPath := filepath.Join(pkgDir, v.ID+".notes")
 				_, err = f.WriteString("\n# <Vulnfeeds Notes>\n# " + strings.Join(notes, "\n# "))
 				if err != nil {
-					panic(fmt.Sprintf("Failed to write %s: %v", notesPath, err))
+					log.Panicf("Failed to write %s: %v", notesPath, err)
 				}
 			}
 		}

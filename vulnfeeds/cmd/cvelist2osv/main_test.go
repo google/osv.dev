@@ -2,7 +2,6 @@ package main
 
 import (
 	"encoding/json"
-	"fmt"
 	"log"
 	"os"
 	"path/filepath"
@@ -33,7 +32,7 @@ func loadTestCVE(path string) cves.CVE5 {
 	var cve cves.CVE5
 	err = json.NewDecoder(file).Decode(&cve)
 	if err != nil {
-		panic(fmt.Sprintf("Failed to decode %q: %+v", path, err))
+		log.Panicf("Failed to decode %q: %+v", path, err)
 	}
 
 	return cve

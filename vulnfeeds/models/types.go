@@ -1,3 +1,4 @@
+// Package models contains data structures for OSV feeds.
 package models
 
 import (

@@ -172,9 +172,9 @@ func TestRepoTags(t *testing.T) {
 			if time.Now().Before(tc.disableExpiryDate) {
 				t.Skipf("test %q: TestRepoTags(%q) has been skipped due to known outage and will be reenabled on %s.", tc.description, tc.inputRepoURL, tc.disableExpiryDate)
 			}
-			var cache_before, cache_after int
+			var cacheBefore, cacheAfter int
 			if tc.cache != nil {
-				cache_before = len(tc.cache)
+				cacheBefore = len(tc.cache)
 			}
 			got, err := RepoTags(tc.inputRepoURL, tc.cache)
 			if err != nil && tc.expectedOk {
@@ -184,10 +184,10 @@ func TestRepoTags(t *testing.T) {
 				t.Errorf("test %q: RepoTags(%q) incorrect result: %s", tc.description, tc.inputRepoURL, diff)
 			}
 			if tc.cache != nil {
-				cache_after = len(tc.cache)
+				cacheAfter = len(tc.cache)
 			}
-			if tc.cache != nil && (cache_after <= cache_before) {
-				t.Errorf("test %q: RepoTags(%q) incorrect cache behaviour: size before: %d size after: %d cache: %#v", tc.description, tc.inputRepoURL, cache_before, cache_after, tc.cache)
+			if tc.cache != nil && (cacheAfter <= cacheBefore) {
+				t.Errorf("test %q: RepoTags(%q) incorrect cache behaviour: size before: %d size after: %d cache: %#v", tc.description, tc.inputRepoURL, cacheBefore, cacheAfter, tc.cache)
 			}
 		})
 	}
@@ -314,7 +314,7 @@ func TestValidRepo(t *testing.T) {
 	tests := []struct {
 		description       string
 		repoURL           string
-		expectedResult    interface{}
+		expectedResult    any
 		expectedOk        bool
 		disableExpiryDate time.Time
 	}{

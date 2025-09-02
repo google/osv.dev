@@ -81,7 +81,7 @@ func RemoteRepoRefsWithRetry(repoURL string, retries uint64) (refs []*plumbing.R
 	backoff := retry.NewExponential(1 * time.Second)
 	backoff = retry.WithMaxRetries(retries, backoff)
 
-	if err := retry.Do(ctx, backoff, func(ctx context.Context) error {
+	if err := retry.Do(ctx, backoff, func(_ context.Context) error {
 		refs, err = repo.List(&git.ListOptions{PeelingOption: git.AppendPeeled})
 		if err != nil {
 			if errors.Is(err, context.DeadlineExceeded) {

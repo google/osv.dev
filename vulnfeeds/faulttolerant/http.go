@@ -1,3 +1,4 @@
+// Package faulttolerant contains fault-tolerant HTTP client helpers.
 package faulttolerant
 
 import (
@@ -22,7 +23,7 @@ func Head(url string) (resp *http.Response, err error) {
 // Get makes a HTTP GET request for url and retry 3 times, with an exponential backoff.
 func req(url, method string) (resp *http.Response, err error) {
 	backoff := retry.NewExponential(1 * time.Second)
-	if err := retry.Do(context.Background(), retry.WithMaxRetries(3, backoff), func(ctx context.Context) error {
+	if err := retry.Do(context.Background(), retry.WithMaxRetries(3, backoff), func(_ context.Context) error {
 		req, err := http.NewRequest(method, url, nil)
 		if err != nil {
 			return err

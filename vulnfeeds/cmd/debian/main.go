@@ -100,9 +100,9 @@ func getDebianReleaseMap() (map[string]string, error) {
 }
 
 // updateOSVPkgInfos adds new release entries to osvPkgInfos.
-func updateOSVPkgInfos(pkgName string, cveId string, releases map[string]Release, osvPkgInfos map[string][]vulns.PackageInfo, debianReleaseMap map[string]string, releaseNames []string) {
+func updateOSVPkgInfos(pkgName string, cveID string, releases map[string]Release, osvPkgInfos map[string][]vulns.PackageInfo, debianReleaseMap map[string]string, releaseNames []string) {
 	var pkgInfos []vulns.PackageInfo
-	if value, ok := osvPkgInfos[cveId]; ok {
+	if value, ok := osvPkgInfos[cveID]; ok {
 		pkgInfos = value
 	}
 
@@ -121,7 +121,7 @@ func updateOSVPkgInfos(pkgName string, cveId string, releases map[string]Release
 			PkgName:   pkgName,
 			Ecosystem: "Debian:" + debianVersion,
 		}
-		pkgInfo.EcosystemSpecific = make(map[string]interface{})
+		pkgInfo.EcosystemSpecific = make(map[string]any)
 
 		pkgInfo.VersionInfo = models.VersionInfo{
 			AffectedVersions: []models.AffectedVersion{{Introduced: "0"}},
@@ -136,7 +136,7 @@ func updateOSVPkgInfos(pkgName string, cveId string, releases map[string]Release
 		pkgInfos = append(pkgInfos, pkgInfo)
 	}
 	if pkgInfos != nil {
-		osvPkgInfos[cveId] = pkgInfos
+		osvPkgInfos[cveID] = pkgInfos
 	}
 }
 
@@ -167,8 +167,8 @@ func generateDebianSecurityTrackerOSV(debianData DebianSecurityTrackerData, debi
 
 	for _, pkgName := range pkgNames {
 		pkg := debianData[pkgName]
-		for cveId, cve := range pkg {
-			updateOSVPkgInfos(pkgName, cveId, cve.Releases, osvPkgInfos, debianReleaseMap, releaseNames)
+		for cveID, cve := range pkg {
+			updateOSVPkgInfos(pkgName, cveID, cve.Releases, osvPkgInfos, debianReleaseMap, releaseNames)
 		}
 	}
 
@@ -177,9 +177,9 @@ func generateDebianSecurityTrackerOSV(debianData DebianSecurityTrackerData, debi
 
 func writeToOutput(cvePkgInfos map[string][]vulns.PackageInfo) error {
 	Logger.Infof("Writing package infos to the output.")
-	for cveId := range cvePkgInfos {
-		pkgInfos := cvePkgInfos[cveId]
-		file, err := os.OpenFile(path.Join(debianOutputPathDefault, cveId+".debian.json"), os.O_CREATE|os.O_RDWR, 0644)
+	for cveID := range cvePkgInfos {
+		pkgInfos := cvePkgInfos[cveID]
+		file, err := os.OpenFile(path.Join(debianOutputPathDefault, cveID+".debian.json"), os.O_CREATE|os.O_RDWR, 0644)
 		if err != nil {
 			return err
 		}

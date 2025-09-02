@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// package vulns contains helper functions for creating OSV vulnerability reports.
+// Package vulns contains helper functions for creating OSV vulnerability reports.
 package vulns
 
 import (
@@ -796,9 +796,9 @@ func getBestCVE5Severity(metricsData []cves.Metrics) (string, osvschema.Severity
 		getVectorString func(cves.Metrics) string
 		severityType    osvschema.SeverityType
 	}{
-		{func(m cves.Metrics) string { return m.CVSSV4_0.VectorString }, osvschema.SeverityCVSSV4},
-		{func(m cves.Metrics) string { return m.CVSSV3_1.VectorString }, osvschema.SeverityCVSSV3},
-		{func(m cves.Metrics) string { return m.CVSSV3_0.VectorString }, osvschema.SeverityCVSSV3},
+		{func(m cves.Metrics) string { return m.CVSSv4_0.VectorString }, osvschema.SeverityCVSSV4},
+		{func(m cves.Metrics) string { return m.CVSSv3_1.VectorString }, osvschema.SeverityCVSSV3},
+		{func(m cves.Metrics) string { return m.CVSSv3_0.VectorString }, osvschema.SeverityCVSSV3},
 	}
 
 	for _, check := range checks {

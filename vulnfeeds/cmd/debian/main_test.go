@@ -30,10 +30,10 @@ func Test_generateDebianSecurityTrackerOSV(t *testing.T) {
 	if len(osvPkgInfos) != expectedCount {
 		t.Errorf("Expected %v Debian OSV entries , got %v", expectedCount, osvPkgInfos)
 	}
-	for cveId, pkgInfos := range osvPkgInfos {
-		file, err := os.Open(fmt.Sprintf("../../test_data/parts/debian/%s.debian.json", cveId))
+	for cveID, pkgInfos := range osvPkgInfos {
+		file, err := os.Open(fmt.Sprintf("../../test_data/parts/debian/%s.debian.json", cveID))
 		if err != nil {
-			t.Errorf("../../test_data/parts/debian/%s.debian.json doesn't exist", cveId)
+			t.Errorf("../../test_data/parts/debian/%s.debian.json doesn't exist", cveID)
 		}
 		expectedResult, _ := io.ReadAll(file)
 		var expectedPackageInfos []vulns.PackageInfo

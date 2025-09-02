@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// Package cves contains CVE-specific data structures.
 package cves
 
 import (
@@ -39,7 +40,7 @@ type ProviderMetadata struct {
 type CVE5Metadata struct {
 	State             string `json:"state,omitempty"`
 	CVEID             CVEID  `json:"cveId,omitempty"`
-	AssignerOrgId     string `json:"assignerOrgId,omitempty"`
+	AssignerOrgID     string `json:"assignerOrgId,omitempty"`
 	AssignerShortName string `json:"assignerShortName,omitempty"`
 	DateUpdated       string `json:"dateUpdated,omitempty"`
 	DateReserved      string `json:"dateReserved,omitempty"`
@@ -82,10 +83,10 @@ type CVSS struct {
 type Metrics struct {
 	Format    string       `json:"format,omitempty"`
 	Scenarios []LangString `json:"scenarios,omitempty"`
-	CVSSV4_0  BaseCVSS     `json:"cvssV4_0,omitempty"`
-	CVSSV3_1  BaseCVSS     `json:"cvssV3_1,omitempty"`
-	CVSSV3_0  BaseCVSS     `json:"cvssV3_0,omitempty"`
-	CVSSV2_0  BaseCVSS     `json:"cvssV2_0,omitempty"`
+	CVSSv4_0  BaseCVSS     `json:"cvssV4_0,omitempty"`
+	CVSSv3_1  BaseCVSS     `json:"cvssV3_1,omitempty"`
+	CVSSv3_0  BaseCVSS     `json:"cvssV3_0,omitempty"`
+	CVSSv2_0  BaseCVSS     `json:"cvssV2_0,omitempty"`
 	Other     struct {
 		Type    string `json:"type,omitempty"`
 		Content any    `json:"content,omitempty"`
@@ -153,9 +154,7 @@ func EnglishDescription(descriptions []LangString) string {
 }
 
 func ParseCVE5Timestamp(timestamp string) (time.Time, error) {
-	if strings.HasSuffix(timestamp, "Z") {
-		timestamp = timestamp[:len(timestamp)-1]
-	}
+	timestamp = strings.TrimSuffix(timestamp, "Z")
 
 	return time.Parse(CVE5TimeFormat, timestamp)
 }

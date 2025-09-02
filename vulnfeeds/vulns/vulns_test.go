@@ -437,31 +437,31 @@ func TestAddSeverity(t *testing.T) {
 func TestCVEIsDisputed(t *testing.T) {
 	tests := []struct {
 		description       string
-		inputVulnId       string
+		inputVulnID       string
 		expectedWithdrawn bool
 		expectedError     error
 	}{
 		{
 			description:       "A non-CVE vulnerability",
-			inputVulnId:       "OSV-1234",
+			inputVulnID:       "OSV-1234",
 			expectedWithdrawn: false,
 			expectedError:     ErrVulnNotACVE,
 		},
 		{
 			description:       "A disputed CVE vulnerability",
-			inputVulnId:       "CVE-2023-23127",
+			inputVulnID:       "CVE-2023-23127",
 			expectedWithdrawn: true,
 			expectedError:     nil,
 		},
 		{
 			description:       "A disputed CVE vulnerability",
-			inputVulnId:       "CVE-2021-26917",
+			inputVulnID:       "CVE-2021-26917",
 			expectedWithdrawn: true,
 			expectedError:     nil,
 		},
 		{
 			description:       "An undisputed CVE vulnerability",
-			inputVulnId:       "CVE-2023-38408",
+			inputVulnID:       "CVE-2023-38408",
 			expectedWithdrawn: false,
 			expectedError:     nil,
 		},
@@ -469,7 +469,7 @@ func TestCVEIsDisputed(t *testing.T) {
 
 	for _, tc := range tests {
 		inputVuln := &Vulnerability{}
-		inputVuln.ID = tc.inputVulnId
+		inputVuln.ID = tc.inputVulnID
 
 		withdrawnTime, err := CVEIsDisputed(inputVuln, "../test_data/cvelistV5")
 

@@ -131,7 +131,7 @@ var (
 	Logger utility.LoggerWrapper
 	// These repos should never be considered authoritative for a product.
 	// Match repos with "CVE", "CVEs" or a pure CVE number in their name, anything from GitHubAssessments
-	CPEDictionaryDir   = flag.String("cpe_dictionary_dir", "cve_jsons/cpe_json", "Directory of CPE dictionary JSON files to parse")
+	CPEDictionaryDir   = flag.String("cpe_dictionary_dir", "cve_jsons/nvdcpe-2.0-chunks", "Directory of CPE dictionary JSON files to parse")
 	OutputDir          = flag.String("output_dir", OutputDirDefault, "Directory to output cpe_product_to_repo.json and cpe_reference_description_frequency.csv in")
 	GCPLoggingProject  = flag.String("gcp_logging_project", projectId, "GCP project ID to use for logging, set to an empty string to log locally only")
 	DebianMetadataPath = flag.String("debian_metadata_path", "", "Path to Debian copyright metadata")

@@ -53,6 +53,7 @@ fi
 go_vet_findings=""
 for module_dir in $IN_SCOPE_GO_MODULES; do
   cd "$module_dir"
+  echo "Running golangci in: $module_dir"
   if ! go run github.com/golangci/golangci-lint/v2/cmd/golangci-lint@v2.4.0 run ./...; then
     go_vet_findings="go_vet_findings"
   fi

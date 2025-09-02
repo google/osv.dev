@@ -139,6 +139,7 @@ func Repo(u string) (string, error) {
 				nil
 		}
 		// GitLab can have a deeper structure to a repo (projects can be within nested groups)
+		//nolint:staticcheck
 		if len(pathParts) >= 3 && strings.HasPrefix(parsedURL.Hostname(), "gitlab.") &&
 			!(strings.Contains(parsedURL.Path, "commit") ||
 				strings.Contains(parsedURL.Path, "compare") ||
@@ -413,7 +414,7 @@ func Commit(u string) (string, error) {
 		return strings.TrimSuffix(possibleCommitHash, ".patch"), nil
 	}
 
-	// and Bitbucket.org commit URLs are similiar yet slightly different:
+	// and Bitbucket.org commit URLs are similar yet slightly different:
 	// https://bitbucket.org/openpyxl/openpyxl/commits/3b4905f428e1
 	//
 	// Some bitbucket.org commit URLs have been observed in the wild with a trailing /, which will

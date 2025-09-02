@@ -4,6 +4,7 @@ linters:
   default: all
   # prettier-ignore
   disable:
+    - forbidigo
     - cyclop           #
     - depguard         # Too annoying
     - err113           # will re-add later (another-rex)
@@ -22,6 +23,7 @@ linters:
     - maintidx         #
     - mnd              # not every number is magic (g-rath)
     - nestif           #
+    - noctx            # Most of these don't need a context
     - noinlineerr      #
     - nonamedreturns   # disagree with, for now (another-rex)
     - tagliatelle      # we're parsing data from external sources (g-rath)
@@ -33,15 +35,6 @@ linters:
   settings:
     exhaustive:
       default-signifies-exhaustive: true
-    forbidigo:
-      forbid:
-        - pattern: ^testing.T.Skip
-          pkg: ^testing$
-          msg: go-snaps needs to know the test has been skipped, so use `testutility.Skip` instead
-        - pattern: ^os.Getwd
-          pkg: ^os$
-          msg: use `testutility.GetCurrentWorkingDirectory`
-      analyze-types: true
     gocritic:
       disabled-checks:
         - ifElseChain

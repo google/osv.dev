@@ -1,6 +1,6 @@
 /*
 cpe-repo-gen analyzes the NVD CPE Dictionary for Open Source repository information.
-It reads the NVD CPE Dictionary XML file and outputs a JSON map of CPE products to discovered repository URLs.
+It reads NVD CPE Dictionary JSON files and outputs a JSON map of CPE products to discovered repository URLs.
 
 It can also output on stdout additional data about colliding CPE package names.
 
@@ -10,8 +10,8 @@ Usage:
 
 The flags are:
 
-	  --cpe_dictionary
-		The path to the uncompressed NVD CPE Dictionary XML file, see https://nvd.nist.gov/products/cpe
+	  --cpe_dictionary_dir
+		The path to the directory of NVD CPE Dictionary JSON files, see https://nvd.nist.gov/products/cpe
 
 	  --debian_metadata_path
 	        The path to a directory containing a local mirror of Debian copyright metadata, see README.md
@@ -32,11 +32,9 @@ import (
 	"bytes"
 	"encoding/csv"
 	"encoding/json"
-	"encoding/xml"
 	"flag"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"net/url"
 	"os"
 	"path"
@@ -55,26 +53,19 @@ import (
 )
 
 type CPEDict struct {
-	XMLName  xml.Name  `xml:"cpe-list"`
-	CPEItems []CPEItem `xml:"cpe-item"`
+	CPEItems []CPEItem
 }
 
 type CPEItem struct {
-	XMLName    xml.Name    `xml:"cpe-item" json:"-"`
-	Name       string      `xml:"name,attr" json:"name"`
-	Deprecated bool        `xml:"deprecated,attr" json:"deprecated"`
-	Title      string      `xml:"title" json:"title"`
-	References []Reference `xml:"references>reference" json:"references"`
-	CPE23      CPE23Item   `xml:"cpe23-item" json:"cpe23-item"`
+	Name       string
+	Deprecated bool
+	Title      string
+	References []Reference
 }
 
 type Reference struct {
-	URL         string `xml:"href,attr" json:"URL"`
-	Description string `xml:",chardata" json:"description"`
-}
-
-type CPE23Item struct {
-	Name string `xml:"name,attr"`
+	URL         string
+	Description string
 }
 
 // VendorProduct contains a CPE's Vendor and Product strings.
@@ -109,16 +100,15 @@ func (vp VendorProduct) MarshalText() (text []byte, err error) {
 type VendorProductToRepoMap map[VendorProduct][]string
 
 const (
-	CPEDictionaryDefault = "cve_jsons/official-cpe-dictionary_v2.3.xml"
-	OutputDirDefault     = "."
-	projectId            = "oss-vdb"
+	OutputDirDefault = "."
+	projectId        = "oss-vdb"
 )
 
 var (
 	Logger utility.LoggerWrapper
 	// These repos should never be considered authoritative for a product.
 	// Match repos with "CVE", "CVEs" or a pure CVE number in their name, anything from GitHubAssessments
-	CPEDictionaryFile  = flag.String("cpe_dictionary", CPEDictionaryDefault, "CPE Dictionary file to parse")
+	CPEDictionaryDir   = flag.String("cpe_dictionary_dir", "cve_jsons/cpe_json", "Directory of CPE dictionary JSON files to parse")
 	OutputDir          = flag.String("output_dir", OutputDirDefault, "Directory to output cpe_product_to_repo.json and cpe_reference_description_frequency.csv in")
 	GCPLoggingProject  = flag.String("gcp_logging_project", projectId, "GCP project ID to use for logging, set to an empty string to log locally only")
 	DebianMetadataPath = flag.String("debian_metadata_path", "", "Path to Debian copyright metadata")
@@ -126,20 +116,53 @@ var (
 	Verbose            = flag.Bool("verbose", false, "Output some telemetry to stdout during execution")
 )
 
-func LoadCPEDictionary(f string) (CPEDict, error) {
-	xmlFile, err := os.Open(f)
+func LoadCPEsFromJSONDir(dir string) (CPEDict, error) {
+	var cpeItems []CPEItem
+	files, err := filepath.Glob(filepath.Join(dir, "*.json"))
 	if err != nil {
-		Logger.Fatalf("Failed to open %s: %v", f, err)
+		return CPEDict{}, fmt.Errorf("failed to glob for json files in %s: %w", dir, err)
 	}
 
-	defer xmlFile.Close()
+	for _, filePath := range files {
+		jsonFile, err := os.Open(filePath)
+		if err != nil {
+			Logger.Warnf("Failed to open %s: %v", filePath, err)
+			continue
+		}
 
-	byteValue, _ := ioutil.ReadAll(xmlFile)
+		byteValue, _ := io.ReadAll(jsonFile)
+		jsonFile.Close()
+		var feed struct {
+			Products []struct {
+				CPE struct {
+					Deprecated bool   `json:"deprecated"`
+					CPEName    string `json:"cpeName"`
+					References []struct {
+						URL  string `json:"ref"`
+						Type string `json:"type"`
+					} `json:"refs"`
+				} `json:"cpe"`
+			} `json:"products"`
+		}
+		if err := json.Unmarshal(byteValue, &feed); err != nil {
+			Logger.Warnf("Failed to unmarshal %s: %v", filePath, err)
+			continue
+		}
 
-	var c CPEDict
-	xml.Unmarshal(byteValue, &c)
+		for _, p := range feed.Products {
+			var refs []Reference
+			for _, r := range p.CPE.References {
+				refs = append(refs, Reference{URL: r.URL, Description: r.Type})
+			}
 
-	return c, nil
+			cpeItems = append(cpeItems, CPEItem{
+				Name:       p.CPE.CPEName,
+				Deprecated: p.CPE.Deprecated,
+				References: refs,
+			})
+		}
+	}
+	return CPEDict{CPEItems: cpeItems}, nil
 }
 
 // Outputs a JSON file of the product-to-repo map.
@@ -325,9 +348,9 @@ func analyzeCPEDictionary(d CPEDict) (ProductToRepo VendorProductToRepoMap, Desc
 			Logger.Infof("Skipping deprecated %q", c.Name)
 			continue
 		}
-		CPE, err := cves.ParseCPE(c.CPE23.Name)
+		CPE, err := cves.ParseCPE(c.Name)
 		if err != nil {
-			Logger.Infof("Failed to parse %q", c.CPE23.Name)
+			Logger.Infof("Failed to parse %q", c.Name)
 			continue
 		}
 		if CPE.Part != "a" {
@@ -427,10 +450,9 @@ func main() {
 	var logCleanup func()
 	Logger, logCleanup = utility.CreateLoggerWrapper("cpe-repo-gen")
 	defer logCleanup()
-
-	CPEDictionary, err := LoadCPEDictionary(*CPEDictionaryFile)
+	CPEDictionary, err := LoadCPEsFromJSONDir(*CPEDictionaryDir)
 	if err != nil {
-		Logger.Fatalf("Failed to load %s: %v", *CPEDictionaryFile, err)
+		Logger.Fatalf("Failed to load CPEs from %s: %v", *CPEDictionaryDir, err)
 	}
 
 	productToRepo, descriptionFrequency := analyzeCPEDictionary(CPEDictionary)

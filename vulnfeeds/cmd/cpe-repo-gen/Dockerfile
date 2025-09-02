@@ -26,6 +26,8 @@ RUN CGO_ENABLED=0 go build -o cpe-repo-gen ./cmd/cpe-repo-gen
 
 FROM gcr.io/google.com/cloudsdktool/google-cloud-cli:alpine@sha256:f2b7bf7556ac1d266c3b4563507d3c7aec1464ec3f6d3cbd114f01011d02f1c3
 
+RUN apk add --no-cache unzip
+
 COPY --from=GO_BUILD /src/cpe-repo-gen ./
 COPY ./cmd/cpe-repo-gen/cpe-repo-gen_map.sh ./
 

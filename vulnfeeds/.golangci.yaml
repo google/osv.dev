@@ -5,6 +5,7 @@ linters:
   # prettier-ignore
   disable:
     - forbidigo
+    - paralleltest
     - cyclop           #
     - depguard         # Too annoying
     - err113           # will re-add later (another-rex)

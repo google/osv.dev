@@ -16,12 +16,12 @@ package git
 
 import (
 	"fmt"
+	"maps"
 	"regexp"
 	"slices"
 	"strings"
 
 	"github.com/google/osv/vulnfeeds/models"
-	"golang.org/x/exp/maps"
 )
 
 var versionRangeRegex = regexp.MustCompile(`^(>=|<=|~|\^|>|<|=)\s*([0-9a-zA-Z\.\-]+)(?:,\s*(>=|<=|~|\^|>|<|=)\s*([0-9a-zA-Z\.\-]+))?$`) // Used to parse version strings from the GitHub CNA.
@@ -34,7 +34,7 @@ func fuzzyVersionToCommit(normalizedVersion string, repo string, commitType mode
 	// Keep in sync with the regex in models.NormalizeVersion()
 	var validVersionText = regexp.MustCompile(`(?i)(?:rc|alpha|beta|preview)\d*`)
 
-	for _, k := range slices.AppendSeq(make([]FIXME, 0, len(normalizedTags)), maps.Keys(normalizedTags)) {
+	for k := range maps.Keys(normalizedTags) {
 		// "1-8-0-RC0" (normalized from "1.8.0-RC0") shouldn't be considered a fuzzy match for "1-8-0" (normalized from "1.8.0")
 		if (validVersionText.MatchString(k) && validVersionText.MatchString(normalizedVersion)) && strings.HasPrefix(k, normalizedVersion) {
 			candidateTags = append(candidateTags, k)

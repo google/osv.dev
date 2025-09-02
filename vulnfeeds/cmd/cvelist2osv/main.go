@@ -116,7 +116,9 @@ func FromCVE5(cve cves.CVE5, refs []cves.Reference) (*vulns.Vulnerability, []str
 		}
 	}
 	if len(severity) > 0 {
-		v.Severity = []osvschema.Severity{vulns.FindSeverity(severity)}
+		if sev := vulns.FindSeverity(severity); sev != (osvschema.Severity{}) {
+			v.Severity = []osvschema.Severity{sev}
+		}
 	}
 	return &v, notes
 }

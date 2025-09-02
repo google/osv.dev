@@ -19,8 +19,8 @@ FROM golang:1.25.0-alpine AS go_builder
 RUN apk add --no-cache git
 WORKDIR /src
 
-# Using osv-schema v1.7.0+
-RUN git clone https://github.com/ossf/osv-schema.git osv-schema && cd osv-schema && git checkout 1689edab6c4337f8cd9ffa129b114c9bed5da843
+# Using osv-schema v1.7.3+
+RUN git clone https://github.com/ossf/osv-schema.git osv-schema && cd osv-schema && git checkout 35f46861449085fe92183bf8802ee6796c0e204c
 
 WORKDIR /src/osv-schema/tools/osv-linter
 

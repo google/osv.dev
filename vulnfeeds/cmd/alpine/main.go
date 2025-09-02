@@ -1,3 +1,4 @@
+// Package main converts alpine records to OSV parts for combine-to-osv to consume
 package main
 
 import (

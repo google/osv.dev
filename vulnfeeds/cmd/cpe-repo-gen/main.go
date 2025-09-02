@@ -68,6 +68,29 @@ type Reference struct {
 	Description string
 }
 
+// CPEReference is a reference from a CPE in the NVD CPE Dictionary.
+type CPEReference struct {
+	URL  string `json:"ref"`
+	Type string `json:"type"`
+}
+
+// CPE is a CPE from the NVD CPE Dictionary.
+type CPE struct {
+	Deprecated bool           `json:"deprecated"`
+	CPEName    string         `json:"cpeName"`
+	References []CPEReference `json:"refs"`
+}
+
+// CPEProduct is a product from the NVD CPE Dictionary.
+type CPEProduct struct {
+	CPE CPE `json:"cpe"`
+}
+
+// CPEFeed is a feed of products from the NVD CPE Dictionary.
+type CPEFeed struct {
+	Products []CPEProduct `json:"products"`
+}
+
 // VendorProduct contains a CPE's Vendor and Product strings.
 type VendorProduct struct {
 	Vendor  string
@@ -132,18 +155,7 @@ func LoadCPEsFromJSONDir(dir string) (CPEDict, error) {
 
 		byteValue, _ := io.ReadAll(jsonFile)
 		jsonFile.Close()
-		var feed struct {
-			Products []struct {
-				CPE struct {
-					Deprecated bool   `json:"deprecated"`
-					CPEName    string `json:"cpeName"`
-					References []struct {
-						URL  string `json:"ref"`
-						Type string `json:"type"`
-					} `json:"refs"`
-				} `json:"cpe"`
-			} `json:"products"`
-		}
+		var feed CPEFeed
 		if err := json.Unmarshal(byteValue, &feed); err != nil {
 			Logger.Warnf("Failed to unmarshal %s: %v", filePath, err)
 			continue

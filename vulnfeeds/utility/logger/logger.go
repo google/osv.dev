@@ -9,15 +9,15 @@ import (
 	"runtime/debug"
 )
 
-var globalLogger LoggerWrapper
+var GlobalLogger LoggerWrapper
 
 func InitGlobalLogger(logID string) func() {
-	if globalLogger.GCloudLogger != nil {
+	if GlobalLogger.GCloudLogger != nil {
 		log.Panicf("logger already initialized")
 	}
 
 	gl, cleanup := createLoggerWrapper(logID)
-	globalLogger = gl
+	GlobalLogger = gl
 
 	return cleanup
 }
@@ -109,20 +109,20 @@ func (wrapper LoggerWrapper) Fatalf(format string, a ...any) {
 
 // Infof prints Info level log
 func Infof(format string, a ...any) {
-	globalLogger.Infof(format, a...)
+	GlobalLogger.Infof(format, a...)
 }
 
 // Warnf prints Warning level log, defaults to stdout if GCP logger is not set
 func Warnf(format string, a ...any) {
-	globalLogger.Warnf(format, a...)
+	GlobalLogger.Warnf(format, a...)
 }
 
 // Errorf prints an error level log, defaults to stdout if GCP logger is not set
 func Errorf(format string, a ...any) {
-	globalLogger.Errorf(format, a...)
+	GlobalLogger.Errorf(format, a...)
 }
 
 // Fatalf prints Error level log with stack trace, before exiting with error code 1
 func Fatalf(format string, a ...any) {
-	globalLogger.Fatalf(format, a...)
+	GlobalLogger.Fatalf(format, a...)
 }

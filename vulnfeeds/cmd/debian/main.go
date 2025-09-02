@@ -14,6 +14,7 @@ import (
 	"github.com/google/osv/vulnfeeds/faulttolerant"
 	"github.com/google/osv/vulnfeeds/models"
 	"github.com/google/osv/vulnfeeds/utility"
+	"github.com/google/osv/vulnfeeds/utility/logger"
 	"github.com/google/osv/vulnfeeds/vulns"
 )
 
@@ -27,7 +28,7 @@ var Logger utility.LoggerWrapper
 
 func main() {
 	var logCleanup func()
-	Logger, logCleanup = utility.CreateLoggerWrapper("debian-osv")
+	logCleanup = logger.InitGlobalLogger("debian-osv")
 	defer logCleanup()
 
 	err := os.MkdirAll(debianOutputPathDefault, 0755)

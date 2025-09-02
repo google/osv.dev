@@ -12,6 +12,7 @@ import (
 
 	"github.com/google/osv/vulnfeeds/cves"
 	"github.com/google/osv/vulnfeeds/utility"
+	"github.com/google/osv/vulnfeeds/utility/logger"
 	"github.com/google/osv/vulnfeeds/vulns"
 	"github.com/ossf/osv-schema/bindings/go/osvschema"
 )
@@ -32,7 +33,7 @@ var Logger utility.LoggerWrapper
 
 func main() {
 	var logCleanup func()
-	Logger, logCleanup = utility.CreateLoggerWrapper("combine-to-osv")
+	logCleanup = logger.InitGlobalLogger("combine-to-osv")
 	defer logCleanup()
 
 	cvePath := flag.String("cvePath", defaultCvePath, "Path to CVE file")

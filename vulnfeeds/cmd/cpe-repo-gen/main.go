@@ -49,6 +49,7 @@ import (
 	"github.com/google/osv/vulnfeeds/cves"
 	"github.com/google/osv/vulnfeeds/git"
 	"github.com/google/osv/vulnfeeds/utility"
+	"github.com/google/osv/vulnfeeds/utility/logger"
 
 	"slices"
 )
@@ -436,7 +437,7 @@ func main() {
 	flag.Parse()
 
 	var logCleanup func()
-	Logger, logCleanup = utility.CreateLoggerWrapper("cpe-repo-gen")
+	logCleanup = logger.InitGlobalLogger("cpe-repo-gen")
 	defer logCleanup()
 
 	CPEDictionary, err := LoadCPEDictionary(*CPEDictionaryFile)

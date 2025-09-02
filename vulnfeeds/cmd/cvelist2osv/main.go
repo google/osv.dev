@@ -12,6 +12,7 @@ import (
 
 	"github.com/google/osv/vulnfeeds/cves"
 	"github.com/google/osv/vulnfeeds/utility"
+	"github.com/google/osv/vulnfeeds/utility/logger"
 	"github.com/google/osv/vulnfeeds/vulns"
 	"github.com/ossf/osv-schema/bindings/go/osvschema"
 )
@@ -239,7 +240,7 @@ func main() {
 	flag.Parse()
 
 	var logCleanup func()
-	Logger, logCleanup = utility.CreateLoggerWrapper("cvelist-osv")
+	logCleanup = logger.InitGlobalLogger("cvelist-osv")
 	defer logCleanup()
 
 	// Read the input CVE JSON file.

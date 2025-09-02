@@ -18,6 +18,7 @@ import (
 
 	"github.com/google/osv/vulnfeeds/cves"
 	"github.com/google/osv/vulnfeeds/utility"
+	"github.com/google/osv/vulnfeeds/utility/logger"
 	"github.com/sethvargo/go-retry"
 )
 
@@ -36,7 +37,7 @@ var cvePath = flag.String("cvePath", CVEPathDefault, "Where to download CVEs to"
 
 func main() {
 	var logCleanup func()
-	Logger, logCleanup = utility.CreateLoggerWrapper("download-cves")
+	logCleanup = logger.InitGlobalLogger("download-cves")
 	defer logCleanup()
 
 	flag.Parse()

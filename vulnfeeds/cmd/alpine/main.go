@@ -14,6 +14,7 @@ import (
 
 	"github.com/google/osv/vulnfeeds/models"
 	"github.com/google/osv/vulnfeeds/utility"
+	"github.com/google/osv/vulnfeeds/utility/logger"
 	"github.com/google/osv/vulnfeeds/vulns"
 )
 
@@ -27,7 +28,7 @@ var Logger utility.LoggerWrapper
 
 func main() {
 	var logCleanup func()
-	Logger, logCleanup = utility.CreateLoggerWrapper("alpine-osv")
+	logCleanup = logger.InitGlobalLogger("alpine-osv")
 	defer logCleanup()
 
 	alpineOutputPath := flag.String(

@@ -35,7 +35,7 @@ curl ${BE_VERBOSE="--silent"} \
   -o "${WORK_DIR}/cpe.zip"
 
 unzip -o "${WORK_DIR}/cpe.zip" -d "${CPE_JSON_DIR}"
-BE_VERBOSE=null
+
 MAYBE_USE_DEBIAN_COPYRIGHT_METADATA=""
 if [[ -n "${DEBIAN_COPYRIGHT_GCS_PATH}" ]]; then
   gsutil ${BE_VERBOSE="-q"} cp "${DEBIAN_COPYRIGHT_GCS_PATH}" "${WORK_DIR}"

@@ -42,7 +42,7 @@ func TestLoadParts(t *testing.T) {
 	actualPartCount := len(allParts)
 
 	if actualPartCount != expectedPartCount {
-		t.Errorf("Expected %d entries, got %d entries: %#v", expectedPartCount, actualPartCount, slices.AppendSeq(make([]FIXME, 0, len(allParts)), maps.Keys(allParts)))
+		t.Errorf("Expected %d entries, got %d entries: %#v", expectedPartCount, actualPartCount, slices.Collect(maps.Keys(allParts)))
 	}
 
 	tests := map[cves.CVEID]struct {

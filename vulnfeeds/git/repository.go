@@ -18,9 +18,11 @@ package git
 import (
 	"context"
 	"errors"
+	"maps"
 	"net/url"
 	"path"
 	"regexp"
+	"slices"
 	"sort"
 	"strings"
 	"time"
@@ -31,9 +33,6 @@ import (
 	"github.com/go-git/go-git/v5/plumbing/transport"
 	"github.com/go-git/go-git/v5/storage/memory"
 	"github.com/sethvargo/go-retry"
-
-	"golang.org/x/exp/maps"
-	"golang.org/x/exp/slices"
 )
 
 const (
@@ -118,7 +117,7 @@ func RepoTags(repoURL string, repoTagsCache RepoTagsCache) (tags Tags, e error) 
 	if repoTagsCache != nil {
 		tags, ok := repoTagsCache[repoURL]
 		if ok {
-			return slices.AppendSeq(make([]FIXME, 0, len(tags.Tag)), maps.Values(tags.Tag)), nil
+			return slices.Collect(maps.Values(tags.Tag)), nil
 		}
 	}
 	// Cache miss.

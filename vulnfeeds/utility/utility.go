@@ -7,7 +7,7 @@ func SliceEqual[K comparable](a []K, b []K) bool {
 	if len(a) != len(b) {
 		return false
 	}
-	for i := range len(a) {
+	for i := range a {
 		if a[i] != b[i] {
 			return false
 		}
@@ -23,7 +23,7 @@ func SliceEqualUnordered[K comparable](a []K, b []K) bool {
 	}
 	aSet := make(map[K]struct{}, len(a))
 	bSet := make(map[K]struct{}, len(b))
-	for i := range len(a) {
+	for i := range a {
 		aSet[a[i]] = struct{}{}
 		bSet[b[i]] = struct{}{}
 	}

@@ -1303,7 +1303,7 @@ func TestReposFromReferences(t *testing.T) {
 					{
 						Source: "cna@vuldb.com",
 						Tags:   []string{"Patch", "Third Party Advisory"},
-						Url:    "https://github.com/saemorris/TheRadSystem/commit/bfba26bd34af31648a11af35a0bb66f1948752a6"},
+						URL:    "https://github.com/saemorris/TheRadSystem/commit/bfba26bd34af31648a11af35a0bb66f1948752a6"},
 				},
 				tagDenyList: RefTagDenyList,
 			},
@@ -1319,7 +1319,7 @@ func TestReposFromReferences(t *testing.T) {
 					{
 						Source: "cna@vuldb.com",
 						Tags:   []string{"Exploit", "Third Party Advisory"},
-						Url:    "https://github.com/shaturo1337/POCs/blob/main/LFI%20in%20School%20Faculty%20Scheduling%20System.md"},
+						URL:    "https://github.com/shaturo1337/POCs/blob/main/LFI%20in%20School%20Faculty%20Scheduling%20System.md"},
 				},
 				tagDenyList: RefTagDenyList,
 			},
@@ -1335,7 +1335,7 @@ func TestReposFromReferences(t *testing.T) {
 					{
 						Source: "cna@mitre.org",
 						Tags:   nil,
-						Url:    "https://git.musl-libc.org/cgit/musl/commit/?id=c47ad25ea3b484e10326f933e927c0bc8cded3da",
+						URL:    "https://git.musl-libc.org/cgit/musl/commit/?id=c47ad25ea3b484e10326f933e927c0bc8cded3da",
 					},
 				},
 				tagDenyList: RefTagDenyList,
@@ -1352,7 +1352,7 @@ func TestReposFromReferences(t *testing.T) {
 					{
 						Source: "support@hackerone.com",
 						Tags:   []string{"Patch", "Third Party Advisory"},
-						Url:    "https://github.com/dwyl/hapi-auth-jwt2/issues/111",
+						URL:    "https://github.com/dwyl/hapi-auth-jwt2/issues/111",
 					},
 				},
 				tagDenyList: RefTagDenyList,
@@ -1394,7 +1394,7 @@ func TestReposFromReferencesCVEList(t *testing.T) {
 					{
 						Source: "cna@vuldb.com",
 						Tags:   []string{"Patch", "Third Party Advisory"},
-						Url:    "https://github.com/saemorris/TheRadSystem/commit/bfba26bd34af31648a11af35a0bb66f1948752a6"},
+						URL:    "https://github.com/saemorris/TheRadSystem/commit/bfba26bd34af31648a11af35a0bb66f1948752a6"},
 				},
 				tagDenyList: RefTagDenyList,
 			},
@@ -1410,7 +1410,7 @@ func TestReposFromReferencesCVEList(t *testing.T) {
 					{
 						Source: "cna@vuldb.com",
 						Tags:   []string{"Exploit", "Third Party Advisory"},
-						Url:    "https://github.com/shaturo1337/POCs/blob/main/LFI%20in%20School%20Faculty%20Scheduling%20System.md"},
+						URL:    "https://github.com/shaturo1337/POCs/blob/main/LFI%20in%20School%20Faculty%20Scheduling%20System.md"},
 				},
 				tagDenyList: RefTagDenyList,
 			},
@@ -1426,7 +1426,7 @@ func TestReposFromReferencesCVEList(t *testing.T) {
 					{
 						Source: "cna@mitre.org",
 						Tags:   nil,
-						Url:    "https://git.musl-libc.org/cgit/musl/commit/?id=c47ad25ea3b484e10326f933e927c0bc8cded3da",
+						URL:    "https://git.musl-libc.org/cgit/musl/commit/?id=c47ad25ea3b484e10326f933e927c0bc8cded3da",
 					},
 				},
 				tagDenyList: RefTagDenyList,
@@ -1443,7 +1443,7 @@ func TestReposFromReferencesCVEList(t *testing.T) {
 					{
 						Source: "support@hackerone.com",
 						Tags:   []string{"Patch", "Third Party Advisory"},
-						Url:    "https://github.com/dwyl/hapi-auth-jwt2/issues/111",
+						URL:    "https://github.com/dwyl/hapi-auth-jwt2/issues/111",
 					},
 				},
 				tagDenyList: RefTagDenyList,
@@ -1459,7 +1459,7 @@ func TestReposFromReferencesCVEList(t *testing.T) {
 					{
 						Source: "cna@vuldb.com",
 						Tags:   []string{"Patch", "Third Party Advisory"},
-						Url:    "https://github.com/stitionai/devika"},
+						URL:    "https://github.com/stitionai/devika"},
 				},
 				tagDenyList: RefTagDenyList,
 			},

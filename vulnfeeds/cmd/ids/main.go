@@ -1,13 +1,14 @@
+// package main contains a utility for assigning IDs to OSV records.
 package main
 
 import (
+	"crypto/rand"
 	"encoding/hex"
 	"encoding/json"
 	"flag"
 	"fmt"
 	"io"
 	"io/fs"
-	"math/rand"
 	"os"
 	"path/filepath"
 	"strconv"
@@ -41,7 +42,6 @@ var (
 )
 
 func main() {
-	rand.Seed(time.Now().Unix())
 	prefix := flag.String("prefix", "", "Vulnerability prefix (e.g. \"PYSEC\".")
 	dir := flag.String("dir", "", "Path to vulnerabilities.")
 	format := flag.String("format", string(fileFormatYAML), "Format of OSV reports in the repository. Must be \"json\" or \"yaml\".")
@@ -187,7 +187,7 @@ func assignIDs(prefix, dir string, format fileFormat) error {
 		return fmt.Errorf("failed to generate random string: %w", err)
 	}
 
-	return os.WriteFile(filepath.Join(dir, conflictFile), []byte(hex.EncodeToString(b)), 0644)
+	return os.WriteFile(filepath.Join(dir, conflictFile), []byte(hex.EncodeToString(b)), 0600)
 }
 
 func readVulnWithFormat(r io.Reader, format fileFormat) (*models.Vulnerability, error) {

@@ -186,7 +186,7 @@ func normalizeRepoTag(tag string, reponame string) (normalizedTag string, err er
 
 // NormalizeRepoTags returns a map of normalized tags mapping back to original tags and also commit hashes.
 // An optional repoTagsCache can be supplied to reduce repeated remote connections to the same repo.
-func NormalizeRepoTags(repoURL string, repoTagsCache RepoTagsCache) (NormalizedTags map[string]NormalizedTag, e error) {
+func NormalizeRepoTags(repoURL string, repoTagsCache RepoTagsCache) (normalizedTags map[string]NormalizedTag, e error) {
 	if repoTagsCache != nil {
 		tags, ok := repoTagsCache[repoURL]
 		if ok && tags.NormalizedTag != nil {
@@ -202,22 +202,22 @@ func NormalizeRepoTags(repoURL string, repoTagsCache RepoTagsCache) (NormalizedT
 	if err != nil {
 		return nil, err
 	}
-	NormalizedTags = make(map[string]NormalizedTag)
+	normalizedTags = make(map[string]NormalizedTag)
 	for _, t := range tags {
 		normalizedTag, err := normalizeRepoTag(strings.ToLower(t.Tag), assumedReponame)
 		if err != nil {
 			// It's conceivable that not all tags are normalizable or potentially versions.
 			continue
 		}
-		NormalizedTags[normalizedTag] = NormalizedTag{OriginalTag: t.Tag, Commit: t.Commit}
+		normalizedTags[normalizedTag] = NormalizedTag{OriginalTag: t.Tag, Commit: t.Commit}
 	}
 	if repoTagsCache != nil {
 		// The RepoTags() call above will have cached the Tag map already
 		tagsMap := repoTagsCache[repoURL].Tag
-		repoTagsCache[repoURL] = RepoTagsMap{Tag: tagsMap, NormalizedTag: NormalizedTags}
+		repoTagsCache[repoURL] = RepoTagsMap{Tag: tagsMap, NormalizedTag: normalizedTags}
 	}
 
-	return NormalizedTags, nil
+	return normalizedTags, nil
 }
 
 // Return a list of just the references that are tags.

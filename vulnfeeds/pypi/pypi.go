@@ -16,10 +16,10 @@ package pypi
 
 import (
 	"encoding/json"
-	"io/ioutil"
 	"log"
 	"net/http"
 	"net/url"
+	"os"
 	"regexp"
 	"sort"
 	"strings"
@@ -81,7 +81,7 @@ var linkBlocklist = map[string]bool{
 }
 
 func readOrPanic(path string) []byte {
-	data, err := ioutil.ReadFile(path)
+	data, err := os.ReadFile(path)
 	if err != nil {
 		log.Fatalf("Failed to read %s: %v", path, err)
 	}
@@ -245,8 +245,8 @@ func (p *PyPI) Matches(cve cves.CVE, falsePositives *triage.FalsePositives) []st
 	matches := []string{}
 	for _, reference := range cve.References {
 		// If there is a PyPI link, it must be a Python package. These take precedence.
-		if pkg := extractPyPIProject(reference.Url); pkg != "" {
-			log.Printf("Matched via PyPI link: %s", reference.Url)
+		if pkg := extractPyPIProject(reference.URL); pkg != "" {
+			log.Printf("Matched via PyPI link: %s", reference.URL)
 			matches = append(matches, pkg)
 		}
 	}
@@ -256,7 +256,7 @@ func (p *PyPI) Matches(cve cves.CVE, falsePositives *triage.FalsePositives) []st
 
 	for _, reference := range cve.References {
 		// Otherwise try to cross-reference the link against our set of known links.
-		pkgs := p.matchesPackage(reference.Url, cve, falsePositives)
+		pkgs := p.matchesPackage(reference.URL, cve, falsePositives)
 		matches = append(matches, pkgs...)
 	}
 	if len(matches) != 0 {
@@ -337,6 +337,7 @@ func (p *PyPI) packageExists(pkg string) bool {
 	if err != nil {
 		log.Panicf("Failed to call create request: %v", err)
 	}
+	defer resp.Body.Close()
 
 	result := resp.StatusCode == http.StatusOK
 	p.checkedPackages[pkg] = result

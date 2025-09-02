@@ -37,7 +37,9 @@ func Test_generateDebianSecurityTrackerOSV(t *testing.T) {
 		}
 		expectedResult, _ := io.ReadAll(file)
 		var expectedPackageInfos []vulns.PackageInfo
-		json.Unmarshal(expectedResult, &expectedPackageInfos)
+		if err := json.Unmarshal(expectedResult, &expectedPackageInfos); err != nil {
+			t.Fatalf("Failed to unmarshal expected result: %v", err)
+		}
 		if len(pkgInfos) != len(expectedPackageInfos) || pkgInfos[0].EcosystemSpecific["urgency"] != expectedPackageInfos[0].EcosystemSpecific["urgency"] {
 			t.Errorf("Expected Debian OSV data %v, got %v", expectedPackageInfos, pkgInfos)
 		}

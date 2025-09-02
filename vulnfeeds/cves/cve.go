@@ -118,7 +118,7 @@ type Affected struct {
 	Vendor        string     `json:"vendor,omitempty"`
 	Product       string     `json:"product,omitempty"`
 	PackageName   string     `json:"packageName,omitempty"`
-	CollectionUrl string     `json:"collectionURL,omitempty"`
+	CollectionURL string     `json:"collectionURL,omitempty"`
 	Versions      []Versions `json:"versions,omitempty"`
 	Repo          string     `json:"repo,omitempty"`
 	DefaultStatus string     `json:"defaultStatus,omitempty"`

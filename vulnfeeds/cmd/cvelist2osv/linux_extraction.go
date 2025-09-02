@@ -1,3 +1,4 @@
+// package main contains linux-specific CVE processing logic.
 package main
 
 import (
@@ -24,7 +25,7 @@ func handleLinuxCVE(cve cves.CVE5, v *vulns.Vulnerability) (notes []string) {
 			r.Type = osvschema.RangeEcosystem
 			affected.Ranges = append(affected.Ranges, r)
 		}
-		affected.DatabaseSpecific = make(map[string]interface{})
+		affected.DatabaseSpecific = make(map[string]any)
 		affected.DatabaseSpecific["CPEs"] = vulns.Unique(cpeStrings)
 		v.Affected = append(v.Affected, affected)
 	}

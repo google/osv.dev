@@ -23,12 +23,12 @@ import (
 	"net/url"
 	"path"
 	"regexp"
+	"slices"
 	"strings"
 	"time"
 
 	"github.com/knqyf263/go-cpe/naming"
 	"github.com/sethvargo/go-retry"
-	"golang.org/x/exp/slices"
 
 	"github.com/google/osv/vulnfeeds/git"
 	"github.com/google/osv/vulnfeeds/models"
@@ -478,7 +478,7 @@ func ValidateAndCanonicalizeLink(link string, httpClient *http.Client) (canonica
 		return link, err
 	}
 	backoff := retry.NewExponential(1 * time.Second)
-	if err := retry.Do(context.Background(), retry.WithMaxRetries(3, backoff), func(ctx context.Context) error {
+	if err := retry.Do(context.Background(), retry.WithMaxRetries(3, backoff), func(_ context.Context) error {
 		req, err := http.NewRequest(http.MethodHead, link, nil)
 		if err != nil {
 			return err
@@ -675,7 +675,7 @@ func deduplicateAffectedCommits(commits []models.AffectedCommit) []models.Affect
 func ExtractVersionInfo(cve CVE, validVersions []string, httpClient *http.Client) (v models.VersionInfo, notes []string) {
 	for _, reference := range cve.References {
 		// (Potentially faulty) Assumption: All viable Git commit reference links are fix commits.
-		if commit, err := ExtractGitCommit(reference.Url, models.Fixed, httpClient); err == nil {
+		if commit, err := ExtractGitCommit(reference.URL, models.Fixed, httpClient); err == nil {
 			v.AffectedCommits = append(v.AffectedCommits, commit)
 		}
 	}
@@ -912,25 +912,25 @@ func MaybeRemoveFromVPRepoCache(cache VendorProductToRepoMap, vp *VendorProduct,
 // Takes a CVE ID string (for logging), VersionInfo with AffectedVersions and
 // typically no AffectedCommits and attempts to add AffectedCommits (including Fixed commits) where there aren't any.
 // Refuses to add the same commit to AffectedCommits more than once.
-func GitVersionsToCommits(CVE CVEID, versions models.VersionInfo, repos []string, cache git.RepoTagsCache, Logger utility.LoggerWrapper) (v models.VersionInfo, e error) {
+func GitVersionsToCommits(cveID CVEID, versions models.VersionInfo, repos []string, cache git.RepoTagsCache, logger utility.LoggerWrapper) (v models.VersionInfo, e error) {
 	// versions is a VersionInfo with AffectedVersions and typically no AffectedCommits
 	// v is a VersionInfo with AffectedCommits (containing Fixed commits) included
 	v = versions
 	for _, repo := range repos {
 		normalizedTags, err := git.NormalizeRepoTags(repo, cache)
 		if err != nil {
-			Logger.Warnf("[%s]: Failed to normalize tags for %s: %v", CVE, repo, err)
+			logger.Warnf("[%s]: Failed to normalize tags for %s: %v", cveID, repo, err)
 			continue
 		}
 		for _, av := range versions.AffectedVersions {
-			Logger.Infof("[%s]: Attempting version resolution for %+v using %q", CVE, av, repo)
+			logger.Infof("[%s]: Attempting version resolution for %+v using %q", cveID, av, repo)
 			introducedEquivalentCommit := ""
 			if av.Introduced != "" {
 				ac, err := git.VersionToCommit(av.Introduced, repo, models.Introduced, normalizedTags)
 				if err != nil {
-					Logger.Warnf("[%s]: Failed to get a Git commit for introduced version %q from %q: %v", CVE, av.Introduced, repo, err)
+					logger.Warnf("[%s]: Failed to get a Git commit for introduced version %q from %q: %v", cveID, av.Introduced, repo, err)
 				} else {
-					Logger.Infof("[%s]: Successfully derived %+v for introduced version %q", CVE, ac, av.Introduced)
+					logger.Infof("[%s]: Successfully derived %+v for introduced version %q", cveID, ac, av.Introduced)
 					introducedEquivalentCommit = ac.Introduced
 				}
 			}
@@ -940,13 +940,13 @@ func GitVersionsToCommits(CVE CVEID, versions models.VersionInfo, repos []string
 			// Fixed commits, they're also assumed to be more precise than what may be derived from tag to commit mapping.
 			fixedEquivalentCommit := ""
 			if v.HasFixedCommits(repo) && av.Fixed != "" {
-				Logger.Infof("[%s]: Using preassumed fixed commits %+v instead of deriving from fixed version %q", CVE, v.FixedCommits(repo), av.Fixed)
+				logger.Infof("[%s]: Using preassumed fixed commits %+v instead of deriving from fixed version %q", cveID, v.FixedCommits(repo), av.Fixed)
 			} else if av.Fixed != "" {
 				ac, err := git.VersionToCommit(av.Fixed, repo, models.Fixed, normalizedTags)
 				if err != nil {
-					Logger.Warnf("[%s]: Failed to get a Git commit for fixed version %q from %q: %v", CVE, av.Fixed, repo, err)
+					logger.Warnf("[%s]: Failed to get a Git commit for fixed version %q from %q: %v", cveID, av.Fixed, repo, err)
 				} else {
-					Logger.Infof("[%s]: Successfully derived %+v for fixed version %q", CVE, ac, av.Fixed)
+					logger.Infof("[%s]: Successfully derived %+v for fixed version %q", cveID, ac, av.Fixed)
 					fixedEquivalentCommit = ac.Fixed
 				}
 			}
@@ -957,9 +957,9 @@ func GitVersionsToCommits(CVE CVEID, versions models.VersionInfo, repos []string
 			if !v.HasFixedCommits(repo) && av.LastAffected != "" {
 				ac, err := git.VersionToCommit(av.LastAffected, repo, models.LastAffected, normalizedTags)
 				if err != nil {
-					Logger.Warnf("[%s]: Failed to get a Git commit for last_affected version %q from %q: %v", CVE, av.LastAffected, repo, err)
+					logger.Warnf("[%s]: Failed to get a Git commit for last_affected version %q from %q: %v", cveID, av.LastAffected, repo, err)
 				} else {
-					Logger.Infof("[%s]: Successfully derived %+v for last_affected version %q", CVE, ac, av.LastAffected)
+					logger.Infof("[%s]: Successfully derived %+v for last_affected version %q", cveID, ac, av.LastAffected)
 					lastAffectedEquivalentCommit = ac.LastAffected
 				}
 			}
@@ -978,15 +978,15 @@ func GitVersionsToCommits(CVE CVEID, versions models.VersionInfo, repos []string
 			}
 			if ac == (models.AffectedCommit{}) {
 				// Nothing resolved, move on to the next AffectedVersion
-				Logger.Warnf("[%s]: Sufficient resolution not possible for %+v", CVE, av)
+				logger.Warnf("[%s]: Sufficient resolution not possible for %+v", cveID, av)
 				continue
 			}
 			if ac.InvalidRange() {
-				Logger.Warnf("[%s]: Invalid range: %#v", CVE, ac)
+				logger.Warnf("[%s]: Invalid range: %#v", cveID, ac)
 				continue
 			}
 			if v.Duplicated(ac) {
-				Logger.Warnf("[%s]: Duplicate: %#v already present in %#v", CVE, ac, v)
+				logger.Warnf("[%s]: Duplicate: %#v already present in %#v", cveID, ac, v)
 				continue
 			}
 			v.AffectedCommits = append(v.AffectedCommits, ac)
@@ -998,17 +998,17 @@ func GitVersionsToCommits(CVE CVEID, versions models.VersionInfo, repos []string
 
 // Examines the CVE references for a CVE and derives repos for it, optionally caching it.
 // TODO (jesslowe): refactor with below
-func ReposFromReferences(CVE string, cache VendorProductToRepoMap, vp *VendorProduct, refs []Reference, tagDenyList []string, Logger utility.LoggerWrapper) (repos []string) {
+func ReposFromReferences(cve string, cache VendorProductToRepoMap, vp *VendorProduct, refs []Reference, tagDenyList []string, logger utility.LoggerWrapper) (repos []string) {
 	for _, ref := range refs {
 		// If any of the denylist tags are in the ref's tag set, it's out of consideration.
 		if !RefAcceptable(ref, tagDenyList) {
 			// Also remove it if previously added under an acceptable tag.
-			MaybeRemoveFromVPRepoCache(cache, vp, ref.Url)
-			Logger.Infof("[%s]: disregarding %q for %q due to a denied tag in %q", CVE, ref.Url, vp, ref.Tags)
+			MaybeRemoveFromVPRepoCache(cache, vp, ref.URL)
+			logger.Infof("[%s]: disregarding %q for %q due to a denied tag in %q", cve, ref.URL, vp, ref.Tags)
 
 			continue
 		}
-		repo, err := Repo(ref.Url)
+		repo, err := Repo(ref.URL)
 		if err != nil {
 			// Failed to parse as a valid repo.
 			continue
@@ -1017,7 +1017,7 @@ func ReposFromReferences(CVE string, cache VendorProductToRepoMap, vp *VendorPro
 			continue
 		}
 		// If the reference is a commit URL, the repo is inherently useful (but only if the repo still ultimately works).
-		_, err = Commit(ref.Url)
+		_, err = Commit(ref.URL)
 		// If it's any other repo-shaped URL, it's only useful if it has tags.
 		if (err == nil && !git.ValidRepo(repo)) || (err != nil && !git.ValidRepoAndHasUsableRefs(repo)) {
 			continue
@@ -1026,27 +1026,27 @@ func ReposFromReferences(CVE string, cache VendorProductToRepoMap, vp *VendorPro
 		MaybeUpdateVPRepoCache(cache, vp, repo)
 	}
 	if vp != nil {
-		Logger.Infof("[%s]: Derived %q for %q %q using references", CVE, repos, vp.Vendor, vp.Product)
+		logger.Infof("[%s]: Derived %q for %q %q using references", cve, repos, vp.Vendor, vp.Product)
 	} else {
-		Logger.Infof("[%s]: Derived %q (no CPEs) using references", CVE, repos)
+		logger.Infof("[%s]: Derived %q (no CPEs) using references", cve, repos)
 	}
 
 	return repos
 }
 
 // Examines the CVE references for a CVE and derives repos for it, optionally caching it.
-func ReposFromReferencesCVEList(CVE string, refs []Reference, tagDenyList []string, Logger utility.LoggerWrapper) (repos []string, notes []string) {
+func ReposFromReferencesCVEList(cve string, refs []Reference, tagDenyList []string, _ utility.LoggerWrapper) (repos []string, notes []string) {
 	for _, ref := range refs {
 		// If any of the denylist tags are in the ref's tag set, it's out of consideration.
 		if !RefAcceptable(ref, tagDenyList) {
-			notes = append(notes, fmt.Sprintf("[%s]: disregarding %q due to a denied tag in %q", CVE, ref.Url, ref.Tags))
+			notes = append(notes, fmt.Sprintf("[%s]: disregarding %q due to a denied tag in %q", cve, ref.URL, ref.Tags))
 			continue
 		}
 		// if it ends with .md it is likely a researcher repo and _currently_ useless.
-		if strings.HasSuffix(ref.Url, ".md") {
+		if strings.HasSuffix(ref.URL, ".md") {
 			continue
 		}
-		repo, err := Repo(ref.Url)
+		repo, err := Repo(ref.URL)
 		if err != nil {
 			// Failed to parse as a valid repo.
 			continue
@@ -1055,14 +1055,14 @@ func ReposFromReferencesCVEList(CVE string, refs []Reference, tagDenyList []stri
 			continue
 		}
 		// If the reference is a commit URL, the repo is inherently useful (but only if the repo still ultimately works).
-		_, err = Commit(ref.Url)
+		_, _ = Commit(ref.URL)
 
 		repos = append(repos, repo)
 	}
 	if len(repos) == 0 {
 		notes = append(notes, "[%s]: Failed to identify any repos using references")
 	} else {
-		notes = append(notes, fmt.Sprintf("[%s]: Derived %q (no CPEs) using references", CVE, repos))
+		notes = append(notes, fmt.Sprintf("[%s]: Derived %q (no CPEs) using references", cve, repos))
 	}
 
 	return repos, notes

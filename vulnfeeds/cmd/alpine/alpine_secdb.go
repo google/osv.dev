@@ -1,3 +1,4 @@
+// package main contains the data structures for Alpine secdb.
 package main
 
 type AlpineSecDB struct {

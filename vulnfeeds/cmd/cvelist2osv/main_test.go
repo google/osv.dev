@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/json"
+	"fmt"
 	"log"
 	"os"
 	"path/filepath"
@@ -32,7 +33,7 @@ func loadTestCVE(path string) cves.CVE5 {
 	var cve cves.CVE5
 	err = json.NewDecoder(file).Decode(&cve)
 	if err != nil {
-		log.Fatalf("Failed to decode %q: %+v", path, err)
+		panic(fmt.Sprintf("Failed to decode %q: %+v", path, err))
 	}
 
 	return cve
@@ -53,12 +54,12 @@ func TestIdentifyPossibleURLs(t *testing.T) {
 				}{
 					CNA: cves.CNA{
 						References: []cves.Reference{
-							{Url: "http://a.com"},
-							{Url: "http://b.com"},
+							{URL: "http://a.com"},
+							{URL: "http://b.com"},
 						},
 						Affected: []cves.Affected{
 							{
-								CollectionUrl: "http://d.com",
+								CollectionURL: "http://d.com",
 								Repo:          "http://b.com",
 							},
 						},
@@ -66,18 +67,18 @@ func TestIdentifyPossibleURLs(t *testing.T) {
 					ADP: []cves.CNA{
 						{
 							References: []cves.Reference{
-								{Url: "http://c.com"},
-								{Url: "http://a.com"},
+								{URL: "http://c.com"},
+								{URL: "http://a.com"},
 							},
 						},
 					},
 				},
 			},
 			expectedRefs: []cves.Reference{
-				{Url: "http://a.com"},
-				{Url: "http://b.com"},
-				{Url: "http://c.com"},
-				{Url: "http://d.com"},
+				{URL: "http://a.com"},
+				{URL: "http://b.com"},
+				{URL: "http://c.com"},
+				{URL: "http://d.com"},
 			},
 		},
 		{
@@ -118,19 +119,19 @@ func TestIdentifyPossibleURLs(t *testing.T) {
 					CNA: cves.CNA{
 						Affected: []cves.Affected{
 							{
-								CollectionUrl: "",
+								CollectionURL: "",
 							},
 						},
 						References: []cves.Reference{
-							{Url: "http://a.com"},
-							{Url: ""},
+							{URL: "http://a.com"},
+							{URL: ""},
 						},
 					},
 				},
 			},
 			expectedRefs: []cves.Reference{
-				{Url: ""},
-				{Url: "http://a.com"},
+				{URL: ""},
+				{URL: "http://a.com"},
 			},
 		},
 	}
@@ -163,8 +164,8 @@ func TestFromCVE5(t *testing.T) {
 			name: "CVE-2025-1110",
 			cve:  loadTestData("CVE-2025-1110"),
 			refs: []cves.Reference{
-				{Url: "https://gitlab.com/gitlab-org/gitlab/-/issues/517693", Tags: []string{"issue-tracking", "permissions-required"}},
-				{Url: "https://hackerone.com/reports/2972576", Tags: []string{"technical-description", "exploit", "permissions-required"}},
+				{URL: "https://gitlab.com/gitlab-org/gitlab/-/issues/517693", Tags: []string{"issue-tracking", "permissions-required"}},
+				{URL: "https://hackerone.com/reports/2972576", Tags: []string{"technical-description", "exploit", "permissions-required"}},
 			},
 			expectedVuln: &vulns.Vulnerability{
 				Vulnerability: osvschema.Vulnerability{
@@ -204,7 +205,7 @@ func TestFromCVE5(t *testing.T) {
 			name: "CVE-2024-21634",
 			cve:  loadTestData("CVE-2024-21634"),
 			refs: []cves.Reference{
-				{Tags: []string{"x_refsource_CONFIRM"}, Url: "https://github.com/amazon-ion/ion-java/security/advisories/GHSA-264p-99wq-f4j6"},
+				{Tags: []string{"x_refsource_CONFIRM"}, URL: "https://github.com/amazon-ion/ion-java/security/advisories/GHSA-264p-99wq-f4j6"},
 			},
 			expectedVuln: &vulns.Vulnerability{
 				Vulnerability: osvschema.Vulnerability{
@@ -228,7 +229,7 @@ func TestFromCVE5(t *testing.T) {
 					Affected: []osvschema.Affected{{Ranges: []osvschema.Range{{
 						Type:   "ECOSYSTEM",
 						Events: []osvschema.Event{{Introduced: "0"}, {Fixed: "1.10.5"}}}}}},
-					DatabaseSpecific: make(map[string]interface{}),
+					DatabaseSpecific: make(map[string]any),
 				},
 			},
 		},
@@ -236,14 +237,14 @@ func TestFromCVE5(t *testing.T) {
 			name: "CVE-2025-21772",
 			cve:  loadTestData("CVE-2025-21772"),
 			refs: []cves.Reference{
-				{Url: "https://git.kernel.org/stable/c/a3e77da9f843e4ab93917d30c314f0283e28c124"},
-				{Url: "https://git.kernel.org/stable/c/213ba5bd81b7e97ac6e6190b8f3bc6ba76123625"},
-				{Url: "https://git.kernel.org/stable/c/40a35d14f3c0dc72b689061ec72fc9b193f37d1f"},
-				{Url: "https://git.kernel.org/stable/c/27a39d006f85e869be68c1d5d2ce05e5d6445bf5"},
-				{Url: "https://git.kernel.org/stable/c/92527100be38ede924768f4277450dfe8a40e16b"},
-				{Url: "https://git.kernel.org/stable/c/6578717ebca91678131d2b1f4ba4258e60536e9f"},
-				{Url: "https://git.kernel.org/stable/c/7fa9706722882f634090bfc9af642bf9ed719e27"},
-				{Url: "https://git.kernel.org/stable/c/80e648042e512d5a767da251d44132553fe04ae0"},
+				{URL: "https://git.kernel.org/stable/c/a3e77da9f843e4ab93917d30c314f0283e28c124"},
+				{URL: "https://git.kernel.org/stable/c/213ba5bd81b7e97ac6e6190b8f3bc6ba76123625"},
+				{URL: "https://git.kernel.org/stable/c/40a35d14f3c0dc72b689061ec72fc9b193f37d1f"},
+				{URL: "https://git.kernel.org/stable/c/27a39d006f85e869be68c1d5d2ce05e5d6445bf5"},
+				{URL: "https://git.kernel.org/stable/c/92527100be38ede924768f4277450dfe8a40e16b"},
+				{URL: "https://git.kernel.org/stable/c/6578717ebca91678131d2b1f4ba4258e60536e9f"},
+				{URL: "https://git.kernel.org/stable/c/7fa9706722882f634090bfc9af642bf9ed719e27"},
+				{URL: "https://git.kernel.org/stable/c/80e648042e512d5a767da251d44132553fe04ae0"},
 			},
 			expectedVuln: &vulns.Vulnerability{
 				Vulnerability: osvschema.Vulnerability{

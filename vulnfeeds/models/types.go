@@ -151,24 +151,24 @@ func (vi *VersionInfo) HasLimitCommits(repo string) bool {
 	return false
 }
 
-func (vi *VersionInfo) FixedCommits(repo string) (FixedCommits []string) {
+func (vi *VersionInfo) FixedCommits(repo string) (fixedCommits []string) {
 	for _, ac := range vi.AffectedCommits {
 		if strings.EqualFold(ac.Repo, repo) && ac.Fixed != "" {
-			FixedCommits = append(FixedCommits, ac.Fixed)
+			fixedCommits = append(fixedCommits, ac.Fixed)
 		}
 	}
 
-	return FixedCommits
+	return fixedCommits
 }
 
-func (vi *VersionInfo) LastAffectedCommits(repo string) (LastAffectedCommits []string) {
+func (vi *VersionInfo) LastAffectedCommits(repo string) (lastAffectedCommits []string) {
 	for _, ac := range vi.AffectedCommits {
 		if strings.EqualFold(ac.Repo, repo) && ac.LastAffected != "" {
-			LastAffectedCommits = append(LastAffectedCommits, ac.Fixed)
+			lastAffectedCommits = append(lastAffectedCommits, ac.Fixed)
 		}
 	}
 
-	return LastAffectedCommits
+	return lastAffectedCommits
 }
 
 // Check if the same commit appears in multiple fields of the AffectedCommits array.

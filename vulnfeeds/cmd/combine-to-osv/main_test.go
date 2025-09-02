@@ -142,13 +142,13 @@ func TestGetModifiedTime(t *testing.T) {
 }
 
 func TestUpdateModifiedDate(t *testing.T) {
-	var cveId1, cveId2 cves.CVEID
-	cveId1 = "CVE-2022-33745"
-	cveId2 = "CVE-2022-32746"
+	var cveID1, cveID2 cves.CVEID
+	cveID1 = "CVE-2022-33745"
+	cveID2 = "CVE-2022-32746"
 
 	cveStuff := map[cves.CVEID]cves.Vulnerability{
-		cveId1: loadTestData2("CVE-2022-33745"),
-		cveId2: loadTestData2("CVE-2022-32746"),
+		cveID1: loadTestData2("CVE-2022-33745"),
+		cveID2: loadTestData2("CVE-2022-32746"),
 	}
 	allParts, _ := loadParts("../../test_data/parts")
 
@@ -157,8 +157,8 @@ func TestUpdateModifiedDate(t *testing.T) {
 	time2 := "2024-04-30T00:38:53Z"
 	modifiedTime1, _ := time.Parse(time.RFC3339, time1)
 	modifiedTime2, _ := time.Parse(time.RFC3339, time2)
-	cveModifiedTimeMock[cveId1] = modifiedTime1
-	cveModifiedTimeMock[cveId2] = modifiedTime2
+	cveModifiedTimeMock[cveID1] = modifiedTime1
+	cveModifiedTimeMock[cveID2] = modifiedTime2
 
 	combinedOSV := combineIntoOSV(cveStuff, allParts, "", cveModifiedTimeMock)
 
@@ -170,12 +170,12 @@ func TestUpdateModifiedDate(t *testing.T) {
 	}
 
 	// Keeps CVE modified time if none of its parts have a later modification time
-	if combinedOSV[cveId1].Modified.Equal(modifiedTime1) {
+	if combinedOSV[cveID1].Modified.Equal(modifiedTime1) {
 		t.Errorf("Wrong modified time: %s", combinedOSV["CVE-2022-33745"].Modified)
 	}
 
 	// Updates the CVE's modified time if any of its parts have a later modification time
-	if combinedOSV[cveId2].Modified != modifiedTime2 {
+	if combinedOSV[cveID2].Modified != modifiedTime2 {
 		t.Errorf("Wrong modified time, expected: %s, got: %s", time2, combinedOSV["CVE-2022-32746"].Modified)
 	}
 }

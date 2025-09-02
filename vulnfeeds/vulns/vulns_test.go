@@ -86,7 +86,7 @@ func TestClassifyReferences(t *testing.T) {
 		{
 			refData: []cves.Reference{
 				{
-					Source: "https://example.com", Tags: []string{"MISC"}, Url: "https://example.com",
+					Source: "https://example.com", Tags: []string{"MISC"}, URL: "https://example.com",
 				},
 			},
 			references: []osvschema.Reference{{URL: "https://example.com", Type: osvschema.ReferenceWeb}},
@@ -94,7 +94,7 @@ func TestClassifyReferences(t *testing.T) {
 		{
 			refData: []cves.Reference{
 				{
-					Source: "https://github.com/Netflix/lemur/issues/117", Url: "https://github.com/Netflix/lemur/issues/117", Tags: []string{"MISC", "Issue Tracking"},
+					Source: "https://github.com/Netflix/lemur/issues/117", URL: "https://github.com/Netflix/lemur/issues/117", Tags: []string{"MISC", "Issue Tracking"},
 				},
 			},
 			references: []osvschema.Reference{{URL: "https://github.com/Netflix/lemur/issues/117", Type: osvschema.ReferenceReport}},
@@ -102,7 +102,7 @@ func TestClassifyReferences(t *testing.T) {
 		{
 			refData: []cves.Reference{
 				{
-					Source: "https://github.com/curl/curl/issues/9271", Url: "https://github.com/curl/curl/issues/9271", Tags: []string{"MISC", "Exploit", "Issue Tracking", "Third Party Advisory"},
+					Source: "https://github.com/curl/curl/issues/9271", URL: "https://github.com/curl/curl/issues/9271", Tags: []string{"MISC", "Exploit", "Issue Tracking", "Third Party Advisory"},
 				},
 			},
 			references: []osvschema.Reference{
@@ -114,7 +114,7 @@ func TestClassifyReferences(t *testing.T) {
 		{
 			refData: []cves.Reference{
 				{
-					Source: "https://gitlab.com/gitlab-org/gitlab/-/issues/517693", Url: "https://gitlab.com/gitlab-org/gitlab/-/issues/517693", Tags: []string{"issue-tracking", "permissions-required"},
+					Source: "https://gitlab.com/gitlab-org/gitlab/-/issues/517693", URL: "https://gitlab.com/gitlab-org/gitlab/-/issues/517693", Tags: []string{"issue-tracking", "permissions-required"},
 				},
 			},
 			references: []osvschema.Reference{
@@ -124,7 +124,7 @@ func TestClassifyReferences(t *testing.T) {
 		{
 			refData: []cves.Reference{
 				{
-					Source: "https://security.gentoo.org/glsa/202307-01", Url: "https://security.gentoo.org/glsa/202307-01", Tags: []string{"vendor-advisory"},
+					Source: "https://security.gentoo.org/glsa/202307-01", URL: "https://security.gentoo.org/glsa/202307-01", Tags: []string{"vendor-advisory"},
 				},
 			},
 			references: []osvschema.Reference{
@@ -134,7 +134,7 @@ func TestClassifyReferences(t *testing.T) {
 		{
 			refData: []cves.Reference{
 				{
-					Source: "http://www.openwall.com/lists/oss-security/2023/07/20/1", Url: "http://www.openwall.com/lists/oss-security/2023/07/20/1", Tags: []string{"mailing-list"},
+					Source: "http://www.openwall.com/lists/oss-security/2023/07/20/1", URL: "http://www.openwall.com/lists/oss-security/2023/07/20/1", Tags: []string{"mailing-list"},
 				},
 			},
 			references: []osvschema.Reference{
@@ -474,7 +474,7 @@ func TestCVEIsDisputed(t *testing.T) {
 		withdrawnTime, err := CVEIsDisputed(inputVuln, "../test_data/cvelistV5")
 
 		if !errors.Is(err, tc.expectedError) {
-			var verr *VulnsCVEListError
+			var verr *CVEListError
 			if errors.As(err, &verr) {
 				t.Errorf("test %q: unexpectedly errored: %#v", tc.description, verr.Err)
 			} else {

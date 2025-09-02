@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// package vulns contains helper functions for creating OSV vulnerability reports.
 package vulns
 
 import (
@@ -22,11 +23,10 @@ import (
 	"net/url"
 	"os"
 	"path"
+	"slices"
 	"sort"
 	"strings"
 	"time"
-
-	"golang.org/x/exp/slices"
 
 	"gopkg.in/yaml.v2"
 
@@ -39,13 +39,13 @@ const CVEListBasePath = "cves"
 
 var ErrVulnNotACVE = errors.New("not a CVE")
 
-type VulnsCVEListError struct {
+type CVEListError struct {
 	URL string
 	Err error
 }
 
-// Error returns the string representation of a VulnsCVEListError.
-func (e *VulnsCVEListError) Error() string {
+// Error returns the string representation of a CVEListError.
+func (e *CVEListError) Error() string {
 	return e.URL + ": " + e.Err.Error()
 }
 
@@ -176,11 +176,11 @@ func AttachExtractedVersionInfo(affected *osvschema.Affected, version models.Ver
 
 // PackageInfo is an intermediate struct to ease generating Vulnerability structs.
 type PackageInfo struct {
-	PkgName           string                 `json:"pkg_name,omitempty"           yaml:"pkg_name,omitempty"`
-	Ecosystem         string                 `json:"ecosystem,omitempty"          yaml:"ecosystem,omitempty"`
-	PURL              string                 `json:"purl,omitempty"               yaml:"purl,omitempty"`
-	VersionInfo       models.VersionInfo     `json:"fixed_version,omitempty"      yaml:"fixed_version,omitempty"`
-	EcosystemSpecific map[string]interface{} `json:"ecosystem_specific,omitempty" yaml:"ecosystem_specific,omitempty"`
+	PkgName           string             `json:"pkg_name,omitempty"           yaml:"pkg_name,omitempty"`
+	Ecosystem         string             `json:"ecosystem,omitempty"          yaml:"ecosystem,omitempty"`
+	PURL              string             `json:"purl,omitempty"               yaml:"purl,omitempty"`
+	VersionInfo       models.VersionInfo `json:"fixed_version,omitempty"      yaml:"fixed_version,omitempty"`
+	EcosystemSpecific map[string]any     `json:"ecosystem_specific,omitempty" yaml:"ecosystem_specific,omitempty"`
 }
 
 // ToJSON serializes the PackageInfo to JSON.
@@ -543,14 +543,14 @@ func ClassifyReferenceLink(link string, tag string) osvschema.ReferenceType {
 func ExtractReferencedVulns(id cves.CVEID, cveID cves.CVEID, references []cves.Reference) ([]string, []string) {
 	var aliases []string
 	var related []string
-	if id != cves.CVEID(cveID) {
-		aliases = append(aliases, string(cves.CVEID(cveID)))
+	if id != cveID {
+		aliases = append(aliases, string(cveID))
 	}
 
 	var GHSAs []string
 	var SYNKs []string
 	for _, reference := range references {
-		u, err := url.Parse(reference.Url)
+		u, err := url.Parse(reference.URL)
 		if err == nil {
 			pathParts := strings.Split(u.Path, "/")
 
@@ -621,14 +621,14 @@ func ClassifyReferences(refs []cves.Reference) []osvschema.Reference {
 		if len(reference.Tags) > 0 {
 			for _, tag := range reference.Tags {
 				references = append(references, osvschema.Reference{
-					Type: ClassifyReferenceLink(reference.Url, tag),
-					URL:  reference.Url,
+					Type: ClassifyReferenceLink(reference.URL, tag),
+					URL:  reference.URL,
 				})
 			}
 		} else {
 			references = append(references, osvschema.Reference{
-				Type: ClassifyReferenceLink(reference.Url, ""),
-				URL:  reference.Url,
+				Type: ClassifyReferenceLink(reference.URL, ""),
+				URL:  reference.URL,
 			})
 		}
 	}
@@ -730,7 +730,7 @@ func CVEIsDisputed(v *Vulnerability, cveList string) (time.Time, error) {
 			return time.Time{}, nil
 		}
 
-		return time.Time{}, &VulnsCVEListError{CVEListFile, err}
+		return time.Time{}, &CVEListError{CVEListFile, err}
 	}
 
 	defer f.Close()
@@ -738,7 +738,7 @@ func CVEIsDisputed(v *Vulnerability, cveList string) (time.Time, error) {
 	CVE := &cves.CVE5{}
 
 	if err := json.NewDecoder(f).Decode(&CVE); err != nil {
-		return time.Time{}, &VulnsCVEListError{CVEListFile, err}
+		return time.Time{}, &CVEListError{CVEListFile, err}
 	}
 
 	if slices.Contains(CVE.Containers.CNA.Tags, "disputed") {

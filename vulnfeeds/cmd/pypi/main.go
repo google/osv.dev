@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// package main contains a utility to generate PyPI OSV records.
 package main
 
 import (
@@ -19,7 +20,6 @@ import (
 	"flag"
 	"fmt"
 	"io/fs"
-	"io/ioutil"
 	"log"
 	"net/http"
 	"os"
@@ -108,7 +108,7 @@ func main() {
 
 	flag.Parse()
 
-	data, err := ioutil.ReadFile(*jsonPath)
+	data, err := os.ReadFile(*jsonPath)
 	if err != nil {
 		log.Fatalf("Failed to open file: %v", err)
 	}
@@ -200,7 +200,7 @@ func main() {
 			defer f.Close()
 			err = v.ToYAML(f)
 			if err != nil {
-				log.Fatalf("Failed to write %s: %v", vulnPath, err)
+				panic(fmt.Sprintf("Failed to write %s: %v", vulnPath, err))
 			}
 
 			// If there are notes that require human intervention, write them to the end of the YAML.
@@ -208,7 +208,7 @@ func main() {
 				notesPath := filepath.Join(pkgDir, v.ID+".notes")
 				_, err = f.WriteString("\n# <Vulnfeeds Notes>\n# " + strings.Join(notes, "\n# "))
 				if err != nil {
-					log.Fatalf("Failed to write %s: %v", notesPath, err)
+					panic(fmt.Sprintf("Failed to write %s: %v", notesPath, err))
 				}
 			}
 		}

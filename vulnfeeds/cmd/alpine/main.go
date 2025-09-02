@@ -50,6 +50,7 @@ func getAllAlpineVersions() []string {
 	if err != nil {
 		Logger.Fatalf("Failed to get alpine index page: %s", err)
 	}
+	defer res.Body.Close()
 	buf := new(strings.Builder)
 	_, err = io.Copy(buf, res.Body)
 	if err != nil {
@@ -83,9 +84,9 @@ func getAlpineSecDBData() map[string][]VersionAndPkg {
 	for _, alpineVer := range allAlpineVers {
 		secdb := downloadAlpine(alpineVer)
 		for _, pkg := range secdb.Packages {
-			for version, cveIds := range pkg.Pkg.SecFixes {
-				for _, cveId := range cveIds {
-					cveId = strings.Split(cveId, " ")[0]
+			for version, cveIDs := range pkg.Pkg.SecFixes {
+				for _, cveID := range cveIDs {
+					cveID = strings.Split(cveID, " ")[0]
 
 					if !validVersion(version) {
 						Logger.Warnf("Invalid alpine version: '%s', on package: '%s', and alpine version: '%s'",
@@ -97,7 +98,7 @@ func getAlpineSecDBData() map[string][]VersionAndPkg {
 						continue
 					}
 
-					allAlpineSecDb[cveId] = append(allAlpineSecDb[cveId],
+					allAlpineSecDb[cveID] = append(allAlpineSecDb[cveID],
 						VersionAndPkg{
 							Pkg:       pkg.Pkg.Name,
 							Ver:       version,
@@ -113,7 +114,7 @@ func getAlpineSecDBData() map[string][]VersionAndPkg {
 
 // generateAlpineOSV generates the generic PackageInfo package from the information given by alpine advisory
 func generateAlpineOSV(allAlpineSecDb map[string][]VersionAndPkg, alpineOutputPath string) {
-	for cveId, verPkgs := range allAlpineSecDb {
+	for cveID, verPkgs := range allAlpineSecDb {
 		pkgInfos := make([]vulns.PackageInfo, 0, len(verPkgs))
 
 		for _, verPkg := range verPkgs {
@@ -128,7 +129,7 @@ func generateAlpineOSV(allAlpineSecDb map[string][]VersionAndPkg, alpineOutputPa
 			pkgInfos = append(pkgInfos, pkgInfo)
 		}
 
-		file, err := os.OpenFile(path.Join(alpineOutputPath, cveId+".alpine.json"), os.O_CREATE|os.O_RDWR, 0644)
+		file, err := os.OpenFile(path.Join(alpineOutputPath, cveID+".alpine.json"), os.O_CREATE|os.O_RDWR, 0644)
 		if err != nil {
 			Logger.Fatalf("Failed to create/write osv output file: %s", err)
 		}
@@ -150,6 +151,7 @@ func downloadAlpine(version string) AlpineSecDB {
 	if err != nil {
 		Logger.Fatalf("Failed to get alpine file for version '%s' with error %s", version, err)
 	}
+	defer res.Body.Close()
 
 	var decodedSecdb AlpineSecDB
 

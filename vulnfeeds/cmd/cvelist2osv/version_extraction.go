@@ -149,7 +149,7 @@ func AddVersionInfo(cve cves.CVE5, v *vulns.Vulnerability) ([]VersionSource, []s
 				vr.Type = osvschema.RangeEcosystem
 				aff.Ranges = append(aff.Ranges, vr)
 			}
-			aff.DatabaseSpecific = make(map[string]interface{})
+			aff.DatabaseSpecific = make(map[string]any)
 			aff.DatabaseSpecific["CPEs"] = vulns.Unique(cpeStrings)
 			v.Affected = append(v.Affected, aff)
 		} else if err != nil {

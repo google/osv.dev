@@ -42,7 +42,7 @@ type CPEMatch struct {
 	Criteria string `json:"criteria" mapstructure:"criteria" yaml:"criteria"`
 
 	// MatchCriteriaId corresponds to the JSON schema field "matchCriteriaId".
-	MatchCriteriaId string `json:"matchCriteriaId" mapstructure:"matchCriteriaId" yaml:"matchCriteriaId"`
+	MatchCriteriaID string `json:"matchCriteriaId" mapstructure:"matchCriteriaId" yaml:"matchCriteriaId"`
 
 	// VersionEndExcluding corresponds to the JSON schema field "versionEndExcluding".
 	VersionEndExcluding *string `json:"versionEndExcluding,omitempty" mapstructure:"versionEndExcluding,omitempty" yaml:"versionEndExcluding,omitempty"`
@@ -77,9 +77,7 @@ func (t *NVDTime) UnmarshalJSON(b []byte) (err error) {
 	}
 
 	// Some timestamps have a trailing Z. Some don't.
-	if strings.HasSuffix(s, "Z") {
-		s = s[:len(s)-1]
-	}
+	s = strings.TrimSuffix(s, "Z")
 
 	t.Time, err = time.Parse(NVDISO8601Time, s)
 
@@ -170,7 +168,7 @@ type CVE struct {
 
 // UnmarshalJSON implements json.Unmarshaler.
 func (j *VendorComment) UnmarshalJSON(b []byte) error {
-	var raw map[string]interface{}
+	var raw map[string]any
 	if err := json.Unmarshal(b, &raw); err != nil {
 		return err
 	}
@@ -219,9 +217,9 @@ type CVSSV30 struct {
 
 // CVSS V3.1 score. (hand-generated)
 type CVSSV31 struct {
-	Source              string `json:"source" mapstructure:"source" yaml:"source"`
-	Type                string `json:"type"   mapstructure:"type"   yaml:"type"`
-	CVSSData            CVSS
+	Source              string       `json:"source" mapstructure:"source" yaml:"source"`
+	Type                string       `json:"type"   mapstructure:"type"   yaml:"type"`
+	CVSSData            CVSS         `json:"cvssData" mapstructure:"cvssData" yaml:"cvssData"`
 	ExploitabilityScore *DefSubscore `json:"exploitabilityScore,omitempty" mapstructure:"exploitabilityScore,omitempty" yaml:"exploitabilityScore,omitempty"`
 	ImpactScore         *DefSubscore `json:"impactScore,omitempty"         mapstructure:"impactScore,omitempty"         yaml:"impactScore,omitempty"`
 }
@@ -246,12 +244,12 @@ type Reference struct {
 	Tags []string `json:"tags,omitempty" mapstructure:"tags,omitempty" yaml:"tags,omitempty"`
 
 	// Url corresponds to the JSON schema field "url".
-	Url string `json:"url" mapstructure:"url" yaml:"url"`
+	URL string `json:"url" mapstructure:"url" yaml:"url"`
 }
 
 // UnmarshalJSON implements json.Unmarshaler.
 func (j *Reference) UnmarshalJSON(b []byte) error {
-	var raw map[string]interface{}
+	var raw map[string]any
 	if err := json.Unmarshal(b, &raw); err != nil {
 		return err
 	}
@@ -263,7 +261,7 @@ func (j *Reference) UnmarshalJSON(b []byte) error {
 	if err := json.Unmarshal(b, &plain); err != nil {
 		return err
 	}
-	if len(plain.Url) > 500 {
+	if len(plain.URL) > 500 {
 		return fmt.Errorf("field %s length: must be <= %d", "url", 500)
 	}
 	*j = Reference(plain)
@@ -284,7 +282,7 @@ type VendorComment struct {
 
 // UnmarshalJSON implements json.Unmarshaler.
 func (j *LangString) UnmarshalJSON(b []byte) error {
-	var raw map[string]interface{}
+	var raw map[string]any
 	if err := json.Unmarshal(b, &raw); err != nil {
 		return err
 	}
@@ -308,7 +306,7 @@ func (j *LangString) UnmarshalJSON(b []byte) error {
 	return nil
 }
 
-type Weakness interface{}
+type Weakness any
 
 type LangString struct {
 	// Lang corresponds to the JSON schema field "lang".
@@ -320,7 +318,7 @@ type LangString struct {
 
 // UnmarshalJSON implements json.Unmarshaler.
 func (j *CVE) UnmarshalJSON(b []byte) error {
-	var raw map[string]interface{}
+	var raw map[string]any
 	if err := json.Unmarshal(b, &raw); err != nil {
 		return err
 	}
@@ -374,7 +372,7 @@ type Node struct {
 
 // UnmarshalJSON implements json.Unmarshaler.
 func (j *CPEMatch) UnmarshalJSON(b []byte) error {
-	var raw map[string]interface{}
+	var raw map[string]any
 	if err := json.Unmarshal(b, &raw); err != nil {
 		return err
 	}
@@ -403,8 +401,8 @@ func (n *CVEAPIJSON20Schema) ToJSON(w io.Writer) error {
 }
 
 // UnmarshalJSON implements json.Unmarshaler.
-func (j *CVEAPIJSON20Schema) UnmarshalJSON(b []byte) error {
-	var raw map[string]interface{}
+func (n *CVEAPIJSON20Schema) UnmarshalJSON(b []byte) error {
+	var raw map[string]any
 	if err := json.Unmarshal(b, &raw); err != nil {
 		return err
 	}
@@ -434,7 +432,7 @@ func (j *CVEAPIJSON20Schema) UnmarshalJSON(b []byte) error {
 	if err := json.Unmarshal(b, &plain); err != nil {
 		return err
 	}
-	*j = CVEAPIJSON20Schema(plain)
+	*n = CVEAPIJSON20Schema(plain)
 
 	return nil
 }

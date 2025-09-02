@@ -101,7 +101,8 @@ func getDebianReleaseMap() (map[string]string, error) {
 
 // updateOSVPkgInfos adds new release entries to osvPkgInfos.
 func updateOSVPkgInfos(pkgName string, cveID string, releases map[string]Release, osvPkgInfos map[string][]vulns.PackageInfo, debianReleaseMap map[string]string, releaseNames []string) {
-	pkgInfos := make([]vulns.PackageInfo, 0, len(releases))
+	//nolint:prealloc
+	var pkgInfos []vulns.PackageInfo
 	if value, ok := osvPkgInfos[cveID]; ok {
 		pkgInfos = value
 	}

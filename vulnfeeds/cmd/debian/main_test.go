@@ -41,7 +41,7 @@ func Test_generateDebianSecurityTrackerOSV(t *testing.T) {
 			t.Fatalf("Failed to unmarshal expected result: %v", err)
 		}
 		if len(pkgInfos) != len(expectedPackageInfos) || pkgInfos[0].EcosystemSpecific["urgency"] != expectedPackageInfos[0].EcosystemSpecific["urgency"] {
-			t.Errorf("Expected Debian OSV data %v, got %v", expectedPackageInfos, pkgInfos)
+			t.Errorf("Expected Debian OSV data %v, got %#v", expectedPackageInfos, pkgInfos)
 		}
 	}
 }

@@ -9,15 +9,15 @@ import (
 	"runtime/debug"
 )
 
-var globalLogger *LoggerWrapper
+var globalLogger LoggerWrapper
 
 func InitGlobalLogger(logID string) func() {
-	if globalLogger != nil {
+	if globalLogger.GCloudLogger != nil {
 		log.Panicf("logger already initialized")
 	}
 
 	gl, cleanup := createLoggerWrapper(logID)
-	globalLogger = &gl
+	globalLogger = gl
 
 	return cleanup
 }

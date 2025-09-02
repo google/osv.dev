@@ -92,8 +92,10 @@ func repoGitWeb(parsedURL *url.URL) (string, error) {
 		if slices.Contains(gitProtocolHosts, parsedURL.Hostname()) {
 			return fmt.Sprintf("git://%s%s", parsedURL.Hostname(), repo), nil
 		}
+
 		return fmt.Sprintf("https://%s%s", parsedURL.Hostname(), repo), nil
 	}
+
 	return "", fmt.Errorf("unsupported GitWeb URL: %s", parsedURL.String())
 }
 
@@ -238,17 +240,14 @@ func Repo(u string) (string, error) {
 		if strings.HasSuffix(parsedURL.Path, "commit/") &&
 			strings.HasPrefix(parsedURL.RawQuery, "id=") {
 			repo := strings.TrimSuffix(parsedURL.Path, "/commit/")
-			return fmt.Sprintf("https://gitlab.freedesktop.org%s",
-				repo), nil
+			return "https://gitlab.freedesktop.org" + repo, nil
 		}
 		if strings.HasSuffix(parsedURL.Path, "refs/tags") {
 			repo := strings.TrimSuffix(parsedURL.Path, "/refs/tags")
-			return fmt.Sprintf("https://gitlab.freedesktop.org%s",
-				repo), nil
+			return "https://gitlab.freedesktop.org" + repo, nil
 		}
 		if len(strings.Split(parsedURL.Path, "/")) == 4 {
-			return fmt.Sprintf("https://gitlab.freedesktop.org%s",
-				parsedURL.Path), nil
+			return "https://gitlab.freedesktop.org" + parsedURL.Path, nil
 		}
 	}
 
@@ -393,6 +392,7 @@ func Commit(u string) (string, error) {
 			if !strings.HasPrefix(param, "h=") {
 				continue
 			}
+
 			return strings.Split(param, "=")[1], nil
 		}
 	}
@@ -468,7 +468,6 @@ func resolveGitTag(parsedURL *url.URL, u string, gitSHA1Regex *regexp.Regexp) (s
 	}
 
 	return "", errors.New("no tag found")
-
 }
 
 // Detect linkrot and handle link decay in HTTP(S) links via HEAD request with exponential backoff.
@@ -480,7 +479,7 @@ func ValidateAndCanonicalizeLink(link string, httpClient *http.Client) (canonica
 	}
 	backoff := retry.NewExponential(1 * time.Second)
 	if err := retry.Do(context.Background(), retry.WithMaxRetries(3, backoff), func(ctx context.Context) error {
-		req, err := http.NewRequest("HEAD", link, nil)
+		req, err := http.NewRequest(http.MethodHead, link, nil)
 		if err != nil {
 			return err
 		}
@@ -509,8 +508,9 @@ func ValidateAndCanonicalizeLink(link string, httpClient *http.Client) (canonica
 			return nil
 		}
 	}); err != nil {
-		return link, fmt.Errorf("unable to determine validity of %q: %v", link, err)
+		return link, fmt.Errorf("unable to determine validity of %q: %w", link, err)
 	}
+
 	return canonicalLink, nil
 }
 
@@ -559,6 +559,7 @@ func HasVersion(validVersions []string, version string) bool {
 	if len(validVersions) == 0 {
 		return true
 	}
+
 	return versionIndex(validVersions, version) != -1
 }
 
@@ -568,6 +569,7 @@ func versionIndex(validVersions []string, version string) int {
 			return i
 		}
 	}
+
 	return -1
 }
 
@@ -666,6 +668,7 @@ func deduplicateAffectedCommits(commits []models.AffectedCommit) []models.Affect
 	}
 	slices.SortStableFunc(commits, models.AffectedCommitCompare)
 	uniqueCommits := slices.Compact(commits)
+
 	return uniqueCommits
 }
 
@@ -797,6 +800,7 @@ func ExtractVersionInfo(cve CVE, validVersions []string, httpClient *http.Client
 		}
 		v.AffectedVersions = affectedVersionsWithoutLastAffected
 	}
+
 	return v, notes
 }
 
@@ -817,7 +821,7 @@ func CPEs(cve CVE) []string {
 // See 5.3.2 of NISTIR 7695 for more details
 // https://nvlpubs.nist.gov/nistpubs/Legacy/IR/nistir7695.pdf
 func RemoveQuoting(s string) (result string) {
-	return strings.Replace(s, "\\", "", -1)
+	return strings.ReplaceAll(s, "\\", "")
 }
 
 // Parse a well-formed CPE string into a struct.
@@ -851,6 +855,7 @@ func (vp *VendorProduct) UnmarshalText(text []byte) error {
 	s := strings.Split(string(text), ":")
 	vp.Vendor = s[0]
 	vp.Product = s[1]
+
 	return nil
 }
 
@@ -860,6 +865,7 @@ func RefAcceptable(ref Reference, tagDenyList []string) bool {
 			return false
 		}
 	}
+
 	return true
 }
 
@@ -871,7 +877,7 @@ func MaybeUpdateVPRepoCache(cache VendorProductToRepoMap, vp *VendorProduct, rep
 	if slices.Contains(cache[*vp], repo) {
 		return
 	}
-	// Avoid poluting the cache with existant-but-useless repos.
+	// Avoid polluting the cache with existent-but-useless repos.
 	if git.ValidRepoAndHasUsableRefs(repo) {
 		cache[*vp] = append(cache[*vp], repo)
 	}
@@ -986,6 +992,7 @@ func GitVersionsToCommits(CVE CVEID, versions models.VersionInfo, repos []string
 			v.AffectedCommits = append(v.AffectedCommits, ac)
 		}
 	}
+
 	return v, nil
 }
 
@@ -998,6 +1005,7 @@ func ReposFromReferences(CVE string, cache VendorProductToRepoMap, vp *VendorPro
 			// Also remove it if previously added under an acceptable tag.
 			MaybeRemoveFromVPRepoCache(cache, vp, ref.Url)
 			Logger.Infof("[%s]: disregarding %q for %q due to a denied tag in %q", CVE, ref.Url, vp, ref.Tags)
+
 			continue
 		}
 		repo, err := Repo(ref.Url)
@@ -1028,7 +1036,6 @@ func ReposFromReferences(CVE string, cache VendorProductToRepoMap, vp *VendorPro
 
 // Examines the CVE references for a CVE and derives repos for it, optionally caching it.
 func ReposFromReferencesCVEList(CVE string, refs []Reference, tagDenyList []string, Logger utility.LoggerWrapper) (repos []string, notes []string) {
-
 	for _, ref := range refs {
 		// If any of the denylist tags are in the ref's tag set, it's out of consideration.
 		if !RefAcceptable(ref, tagDenyList) {
@@ -1057,5 +1064,6 @@ func ReposFromReferencesCVEList(CVE string, refs []Reference, tagDenyList []stri
 	} else {
 		notes = append(notes, fmt.Sprintf("[%s]: Derived %q (no CPEs) using references", CVE, repos))
 	}
+
 	return repos, notes
 }

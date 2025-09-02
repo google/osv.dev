@@ -2,7 +2,6 @@ package main
 
 import (
 	"encoding/json"
-	"fmt"
 	"log"
 	"os"
 	"path/filepath"
@@ -19,7 +18,8 @@ import (
 func loadTestData(cveName string) cves.CVE5 {
 	prefix := strings.Split(cveName, "-")[2]
 	prefixpath := prefix[:len(prefix)-3] + "xxx"
-	fileName := filepath.Join("..", "..", "test_data", "cvelistV5", "cves", cveName[4:8], prefixpath, fmt.Sprintf("%s.json", cveName))
+	fileName := filepath.Join("..", "..", "test_data", "cvelistV5", "cves", cveName[4:8], prefixpath, cveName+".json")
+
 	return loadTestCVE(fileName)
 }
 
@@ -34,6 +34,7 @@ func loadTestCVE(path string) cves.CVE5 {
 	if err != nil {
 		log.Fatalf("Failed to decode %q: %+v", path, err)
 	}
+
 	return cve
 }
 

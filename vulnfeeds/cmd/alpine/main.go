@@ -93,6 +93,7 @@ func getAlpineSecDBData() map[string][]VersionAndPkg {
 							pkg.Pkg.Name,
 							alpineVer,
 						)
+
 						continue
 					}
 
@@ -106,6 +107,7 @@ func getAlpineSecDBData() map[string][]VersionAndPkg {
 			}
 		}
 	}
+
 	return allAlpineSecDb
 }
 
@@ -154,5 +156,6 @@ func downloadAlpine(version string) AlpineSecDB {
 	if err := json.NewDecoder(res.Body).Decode(&decodedSecdb); err != nil {
 		Logger.Fatalf("Failed to parse alpine json: %s", err)
 	}
+
 	return decodedSecdb
 }

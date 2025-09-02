@@ -5,10 +5,11 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"slices"
 	"testing"
 	"time"
 
-	"golang.org/x/exp/maps"
+	"maps"
 
 	"github.com/google/osv/vulnfeeds/cves"
 	"github.com/google/osv/vulnfeeds/utility"
@@ -31,6 +32,7 @@ func loadTestData2(cveName string) cves.Vulnerability {
 		}
 	}
 	log.Fatalf("test data doesn't contain %q", cveName)
+
 	return cves.Vulnerability{}
 }
 
@@ -40,7 +42,7 @@ func TestLoadParts(t *testing.T) {
 	actualPartCount := len(allParts)
 
 	if actualPartCount != expectedPartCount {
-		t.Errorf("Expected %d entries, got %d entries: %#v", expectedPartCount, actualPartCount, maps.Keys(allParts))
+		t.Errorf("Expected %d entries, got %d entries: %#v", expectedPartCount, actualPartCount, slices.AppendSeq(make([]FIXME, 0, len(allParts)), maps.Keys(allParts)))
 	}
 
 	tests := map[cves.CVEID]struct {
@@ -103,21 +105,22 @@ func TestCombineIntoOSV(t *testing.T) {
 			t.Errorf("Affected lengths for %s do not match", cve)
 		}
 		found := false
-		if cve == "CVE-2018-1000500" {
+		switch cve {
+		case "CVE-2018-1000500":
 			for _, reference := range combinedOSV[cve].References {
 				if reference.Type == "ADVISORY" &&
 					reference.URL == "https://security-tracker.debian.org/tracker/CVE-2018-1000500" {
 					found = true
 				}
 			}
-		} else if cve == "CVE-2022-33745" {
+		case "CVE-2022-33745":
 			for _, reference := range combinedOSV[cve].References {
 				if reference.Type == "ADVISORY" &&
 					reference.URL == "https://security.alpinelinux.org/vuln/CVE-2022-33745" {
 					found = true
 				}
 			}
-		} else if cve == "CVE-2022-32746" {
+		case "CVE-2022-32746":
 			for _, reference := range combinedOSV[cve].References {
 				if reference.Type == "ADVISORY" &&
 					reference.URL == "https://security.alpinelinux.org/vuln/CVE-2022-32746" {
@@ -136,7 +139,6 @@ func TestGetModifiedTime(t *testing.T) {
 	if err != nil {
 		t.Errorf("Failed to get modified time.")
 	}
-
 }
 
 func TestUpdateModifiedDate(t *testing.T) {
@@ -168,7 +170,7 @@ func TestUpdateModifiedDate(t *testing.T) {
 	}
 
 	// Keeps CVE modified time if none of its parts have a later modification time
-	if combinedOSV[cveId1].Modified == modifiedTime1 {
+	if combinedOSV[cveId1].Modified.Equal(modifiedTime1) {
 		t.Errorf("Wrong modified time: %s", combinedOSV["CVE-2022-33745"].Modified)
 	}
 

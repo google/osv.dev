@@ -97,6 +97,7 @@ func loadLinks(path string) []pypiLinks {
 	if err != nil {
 		log.Fatalf("Failed to parse %s: %v", data, err)
 	}
+
 	return links
 }
 
@@ -108,6 +109,7 @@ func loadVersions(path string) []pypiVersions {
 	if err != nil {
 		log.Fatalf("Failed to parse %s: %v", data, err)
 	}
+
 	return versions
 }
 
@@ -129,6 +131,7 @@ func hasPrefix(list []string, item string) bool {
 			return true
 		}
 	}
+
 	return false
 }
 
@@ -153,6 +156,7 @@ func processMatches(names []string) []string {
 			filtered = append(filtered, name)
 		}
 	}
+
 	return filtered
 }
 
@@ -219,6 +223,7 @@ func processVersions(versionsSource []pypiVersions) map[string][]string {
 	for _, data := range versionsSource {
 		versions[NormalizePackageName(data.Name)] = data.Versions
 	}
+
 	return versions
 }
 
@@ -227,6 +232,7 @@ func New(pypiLinksPath string, pypiVersionsPath string) *PyPI {
 	versionsSource := loadVersions(pypiVersionsPath)
 
 	links, vendorProductToPkg := processLinks(linksSource)
+
 	return &PyPI{
 		links:              links,
 		versions:           processVersions(versionsSource),
@@ -277,6 +283,7 @@ func (p *PyPI) Matches(cve cves.CVE, falsePositives *triage.FalsePositives) []st
 			}
 		}
 	}
+
 	return processMatches(matches)
 }
 
@@ -294,6 +301,7 @@ func filterVersions(versions []string) []string {
 			filtered = append(filtered, v)
 		}
 	}
+
 	return filtered
 }
 
@@ -316,6 +324,7 @@ func (p *PyPI) Versions(pkg string) []string {
 
 		return versionI.LessThan(versionJ)
 	})
+
 	return versions
 }
 
@@ -331,6 +340,7 @@ func (p *PyPI) packageExists(pkg string) bool {
 
 	result := resp.StatusCode == http.StatusOK
 	p.checkedPackages[pkg] = result
+
 	return result
 }
 
@@ -390,6 +400,7 @@ func (p *PyPI) matchesPackage(link string, cve cves.CVE, falsePositives *triage.
 			}
 		}
 	}
+
 	return pkgs
 }
 
@@ -408,17 +419,20 @@ func extractPyPIProject(link string) string {
 		if len(parts) < 3 || (parts[1] != "project" && parts[1] != "simple") {
 			return ""
 		}
+
 		return NormalizePackageName(parts[2])
 		// Example: https://pypi.python.org/pypi/tensorflow
 	case "pypi.python.org":
 		if len(parts) < 3 || parts[1] != "pypi" {
 			return ""
 		}
+
 		return NormalizePackageName(parts[2])
 	case "upload.pypi.org":
 		if len(parts) < 3 || parts[1] != "legacy" {
 			return ""
 		}
+
 		return NormalizePackageName(parts[2])
 	}
 

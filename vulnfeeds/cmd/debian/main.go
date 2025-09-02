@@ -77,9 +77,10 @@ func getDebianReleaseMap() (map[string]string, error) {
 
 	// Get the index number of version and series.
 	for i, col := range data[0] {
-		if col == "version" {
+		switch col {
+		case "version":
 			versionIndex = i
-		} else if col == "series" {
+		case "series":
 			seriesIndex = i
 		}
 	}
@@ -160,6 +161,7 @@ func generateDebianSecurityTrackerOSV(debianData DebianSecurityTrackerData, debi
 	sort.Slice(releaseNames, func(i, j int) bool {
 		vi, _ := strconv.ParseFloat(debianReleaseMap[releaseNames[i]], 64)
 		vj, _ := strconv.ParseFloat(debianReleaseMap[releaseNames[j]], 64)
+
 		return vi < vj
 	})
 
@@ -213,5 +215,6 @@ func downloadDebianSecurityTracker() (DebianSecurityTrackerData, error) {
 	}
 
 	Logger.Infof("Successfully downloaded Debian Security Tracker Data.")
+
 	return decodedDebianData, err
 }

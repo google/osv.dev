@@ -90,14 +90,14 @@ func FromCVE5(cve cves.CVE5, refs []cves.Reference) (*vulns.Vulnerability, []str
 		notes = append(notes, "Published date failed to parse, setting time to now")
 		published = time.Now()
 	}
-	v.Vulnerability.Published = published
+	v.Published = published
 
 	modified, err := cves.ParseCVE5Timestamp(cve.Metadata.DateUpdated)
 	if err != nil {
 		notes = append(notes, "Modified date failed to parse, setting time to now")
 		modified = time.Now()
 	}
-	v.Vulnerability.Modified = modified
+	v.Modified = modified
 
 	// Add affected version information.
 	versionSources, versNotes := AddVersionInfo(cve, &v)
@@ -120,6 +120,7 @@ func FromCVE5(cve cves.CVE5, refs []cves.Reference) (*vulns.Vulnerability, []str
 			v.Severity = []osvschema.Severity{sev}
 		}
 	}
+
 	return &v, notes
 }
 
@@ -146,6 +147,7 @@ func writeOSVToFile(id cves.CVEID, cnaAssigner string, vulnDir string, v *vulns.
 	} else {
 		Logger.Infof("[%s]: Generated OSV record under the %s CNA", id, cnaAssigner)
 	}
+
 	return err
 }
 
@@ -163,6 +165,7 @@ func writeMetricToFile(id cves.CVEID, vulnDir string) error {
 		Logger.Warnf("[%s]: Failed to write %s: %v", id, metricsFile, err)
 		return err
 	}
+
 	return nil
 }
 
@@ -228,6 +231,7 @@ func identifyPossibleURLs(cve cves.CVE5) []cves.Reference {
 	refs = slices.CompactFunc(refs, func(a, b cves.Reference) bool {
 		return a.Url == b.Url
 	})
+
 	return refs
 }
 

@@ -34,7 +34,7 @@ func fuzzyVersionToCommit(normalizedVersion string, repo string, commitType mode
 	// Keep in sync with the regex in models.NormalizeVersion()
 	var validVersionText = regexp.MustCompile(`(?i)(?:rc|alpha|beta|preview)\d*`)
 
-	for _, k := range maps.Keys(normalizedTags) {
+	for _, k := range slices.AppendSeq(make([]FIXME, 0, len(normalizedTags)), maps.Keys(normalizedTags)) {
 		// "1-8-0-RC0" (normalized from "1.8.0-RC0") shouldn't be considered a fuzzy match for "1-8-0" (normalized from "1.8.0")
 		if (validVersionText.MatchString(k) && validVersionText.MatchString(normalizedVersion)) && strings.HasPrefix(k, normalizedVersion) {
 			candidateTags = append(candidateTags, k)
@@ -63,12 +63,13 @@ func fuzzyVersionToCommit(normalizedVersion string, repo string, commitType mode
 		case models.Fixed:
 			ac.SetFixed(normalizedTags[candidateTags[0]].Commit)
 		}
+
 		return ac, true
 	}
 
 	// Find the most suitable tag from multiple.
 	for i, t := range candidateTags {
-		// Handle the case where where the
+		// Handle the case where the
 		// normalizedVersion is "12-0" (i.e. was "12.0") but the normalizedTags
 		// has "12-0-0" (i.e. the repo had "12.0.0")
 		if strings.TrimPrefix(t, normalizedVersion) == "-0" {
@@ -83,6 +84,7 @@ func fuzzyVersionToCommit(normalizedVersion string, repo string, commitType mode
 			case models.Fixed:
 				ac.SetFixed(normalizedTags[candidateTags[i]].Commit)
 			}
+
 			return ac, true
 		}
 	}
@@ -105,6 +107,7 @@ func VersionToCommit(version string, repo string, commitType models.CommitType, 
 		if !ok {
 			return ac, fmt.Errorf("failed to find a commit for version %q normalized as %q in %+v", version, normalizedVersion, normalizedTags)
 		}
+
 		return ac, nil
 	}
 	ac.SetRepo(repo)
@@ -118,6 +121,7 @@ func VersionToCommit(version string, repo string, commitType models.CommitType, 
 	case models.Fixed:
 		ac.SetFixed(normalizedTag.Commit)
 	}
+
 	return ac, nil
 }
 
@@ -137,6 +141,7 @@ func NormalizeVersion(version string) (normalizedVersion string, e error) {
 		components = slices.Delete(components, 0, 1)
 	}
 	normalizedVersion = strings.Join(components, "-")
+
 	return normalizedVersion, e
 }
 

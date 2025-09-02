@@ -14,8 +14,9 @@ import (
 	"strings"
 	"time"
 
+	"slices"
+
 	"github.com/google/osv-scanner/pkg/models"
-	"golang.org/x/exp/slices"
 	"gopkg.in/yaml.v2"
 )
 
@@ -42,7 +43,7 @@ var (
 func main() {
 	rand.Seed(time.Now().Unix())
 	prefix := flag.String("prefix", "", "Vulnerability prefix (e.g. \"PYSEC\".")
-	dir := flag.String("dir", "", "Path to vulnerabilites.")
+	dir := flag.String("dir", "", "Path to vulnerabilities.")
 	format := flag.String("format", string(fileFormatYAML), "Format of OSV reports in the repository. Must be \"json\" or \"yaml\".")
 
 	flag.Parse()
@@ -130,6 +131,7 @@ func assignID(prefix, path string, format fileFormat, yearCounters map[int]int, 
 	}
 
 	fmt.Printf("Assigning %s to %s\n", path, newPath)
+
 	return os.Remove(path)
 }
 
@@ -161,6 +163,7 @@ func assignIDs(prefix, dir string, format fileFormat) error {
 		if num > yearCounters[year] {
 			yearCounters[year] = num
 		}
+
 		return nil
 	})
 	if err != nil {
@@ -203,6 +206,7 @@ func readVulnWithFormat(r io.Reader, format fileFormat) (*models.Vulnerability, 
 	default:
 		return nil, fmt.Errorf("unknown file format: %v", format)
 	}
+
 	return &v, nil
 }
 
@@ -211,6 +215,7 @@ func writeVulnWithFormat(v *models.Vulnerability, w io.Writer, format fileFormat
 	case fileFormatJSON:
 		enc := json.NewEncoder(w)
 		enc.SetIndent("", "  ")
+
 		return enc.Encode(v)
 	case fileFormatYAML:
 		enc := yaml.NewEncoder(w)

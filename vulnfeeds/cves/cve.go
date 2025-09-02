@@ -56,8 +56,8 @@ type CPENode struct {
 		Vulnerable            bool   `json:"vulnerable,omitempty"`
 		Criteria              string `json:"criteria,omitempty"`
 		VersionEndIncluding   string `json:"versionEndIncluding,omitempty"`
-		VersionStartExcluding string `json:"versionStartExcluding,omitempty" yaml:"versionStartExcluding,omitempty" mapstructure:"versionStartExcluding,omitempty"`
-		VersionStartIncluding string `json:"versionStartIncluding,omitempty" yaml:"versionStartIncluding,omitempty" mapstructure:"versionStartIncluding,omitempty"`
+		VersionStartExcluding string `json:"versionStartExcluding,omitempty" mapstructure:"versionStartExcluding,omitempty" yaml:"versionStartExcluding,omitempty"`
+		VersionStartIncluding string `json:"versionStartIncluding,omitempty" mapstructure:"versionStartIncluding,omitempty" yaml:"versionStartIncluding,omitempty"`
 		VersionEndExcluding   string `json:"versionEndExcluding,omitempty"`
 	} `json:"cpeMatch,omitempty"`
 }
@@ -76,7 +76,7 @@ type BaseCVSS struct {
 
 type CVSS struct {
 	// VectorString corresponds to the JSON schema field "vectorString".
-	VectorString string `json:"vectorString,omitempty" yaml:"vectorString" mapstructure:"vectorString"`
+	VectorString string `json:"vectorString,omitempty" mapstructure:"vectorString" yaml:"vectorString"`
 }
 
 type Metrics struct {
@@ -97,7 +97,7 @@ type CNA struct {
 	Descriptions     []LangString     `json:"descriptions"`     // Required
 	Affected         []Affected       `json:"affected"`         // Required
 	ProblemTypes     ProblemTypes     `json:"problemTypes,omitempty"`
-	References       []Reference      `json:"references"` //Required
+	References       []Reference      `json:"references"` // Required
 	Impacts          []Impact         `json:"impacts,omitempty"`
 	Metrics          []Metrics        `json:"metrics,omitempty"`
 	Tags             []string         `json:"tags,omitempty"`
@@ -148,6 +148,7 @@ func EnglishDescription(descriptions []LangString) string {
 			return desc.Value
 		}
 	}
+
 	return ""
 }
 
@@ -155,5 +156,6 @@ func ParseCVE5Timestamp(timestamp string) (time.Time, error) {
 	if strings.HasSuffix(timestamp, "Z") {
 		timestamp = timestamp[:len(timestamp)-1]
 	}
+
 	return time.Parse(CVE5TimeFormat, timestamp)
 }

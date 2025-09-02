@@ -7,10 +7,10 @@ import (
 )
 
 type AffectedCommit struct {
-	Repo         string `json:"repo,omitempty" yaml:"repo,omitempty"`
-	Introduced   string `json:"introduced,omitempty" yaml:"introduced,omitempty"`
-	Fixed        string `json:"fixed,omitempty" yaml:"fixed,omitempty"`
-	Limit        string `json:"limit,omitempty" yaml:"limit,omitempty"`
+	Repo         string `json:"repo,omitempty"          yaml:"repo,omitempty"`
+	Introduced   string `json:"introduced,omitempty"    yaml:"introduced,omitempty"`
+	Fixed        string `json:"fixed,omitempty"         yaml:"fixed,omitempty"`
+	Limit        string `json:"limit,omitempty"         yaml:"limit,omitempty"`
 	LastAffected string `json:"last_affected,omitempty" yaml:"last_affected,omitempty"`
 }
 
@@ -50,6 +50,7 @@ func (ac *AffectedCommit) InvalidRange() bool {
 	if ac.Introduced == ac.LastAffected && ac.Introduced != "" {
 		return true
 	}
+
 	return false
 }
 
@@ -65,12 +66,13 @@ func AffectedCommitCompare(i, j AffectedCommit) int {
 	if n := cmp.Compare(i.LastAffected, j.LastAffected); n != 0 {
 		return n
 	}
+
 	return cmp.Compare(i.Introduced, j.Introduced)
 }
 
 type AffectedVersion struct {
-	Introduced   string `json:"introduced,omitempty" yaml:"introduced,omitempty"`
-	Fixed        string `json:"fixed,omitempty" yaml:"fixed,omitempty"`
+	Introduced   string `json:"introduced,omitempty"    yaml:"introduced,omitempty"`
+	Fixed        string `json:"fixed,omitempty"         yaml:"fixed,omitempty"`
 	LastAffected string `json:"last_affected,omitempty" yaml:"last_affected,omitempty"`
 }
 
@@ -85,7 +87,7 @@ const (
 )
 
 type VersionInfo struct {
-	AffectedCommits  []AffectedCommit  `json:"affect_commits,omitempty" yaml:"affected_commits,omitempty"`
+	AffectedCommits  []AffectedCommit  `json:"affect_commits,omitempty"    yaml:"affected_commits,omitempty"`
 	AffectedVersions []AffectedVersion `json:"affected_versions,omitempty" yaml:"affected_versions,omitempty"`
 }
 
@@ -95,6 +97,7 @@ func (vi *VersionInfo) HasFixedVersions() bool {
 			return true
 		}
 	}
+
 	return false
 }
 
@@ -104,6 +107,7 @@ func (vi *VersionInfo) HasLastAffectedVersions() bool {
 			return true
 		}
 	}
+
 	return false
 }
 
@@ -113,6 +117,7 @@ func (vi *VersionInfo) HasIntroducedCommits(repo string) bool {
 			return true
 		}
 	}
+
 	return false
 }
 
@@ -122,6 +127,7 @@ func (vi *VersionInfo) HasFixedCommits(repo string) bool {
 			return true
 		}
 	}
+
 	return false
 }
 
@@ -131,6 +137,7 @@ func (vi *VersionInfo) HasLastAffectedCommits(repo string) bool {
 			return true
 		}
 	}
+
 	return false
 }
 
@@ -140,6 +147,7 @@ func (vi *VersionInfo) HasLimitCommits(repo string) bool {
 			return true
 		}
 	}
+
 	return false
 }
 
@@ -149,6 +157,7 @@ func (vi *VersionInfo) FixedCommits(repo string) (FixedCommits []string) {
 			FixedCommits = append(FixedCommits, ac.Fixed)
 		}
 	}
+
 	return FixedCommits
 }
 
@@ -158,6 +167,7 @@ func (vi *VersionInfo) LastAffectedCommits(repo string) (LastAffectedCommits []s
 			LastAffectedCommits = append(LastAffectedCommits, ac.Fixed)
 		}
 	}
+
 	return LastAffectedCommits
 }
 
@@ -190,6 +200,7 @@ func (vi *VersionInfo) Duplicated(candidate AffectedCommit) bool {
 			}
 		}
 	}
+
 	return false
 }
 

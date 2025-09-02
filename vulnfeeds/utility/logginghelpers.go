@@ -26,6 +26,7 @@ func CreateLoggerWrapper(logID string) (LoggerWrapper, func()) {
 	wrapper := LoggerWrapper{
 		GCloudLogger: client.Logger(logID),
 	}
+
 	return wrapper, func() { client.Close() }
 }
 

@@ -65,6 +65,7 @@ func loadExisting(vulnsDir string) (map[string]bool, error) {
 		for _, alias := range vuln.Aliases {
 			ids[alias+"/"+vuln.Affected[0].Package.Name] = true
 		}
+
 		return nil
 	})
 	if err != nil {

@@ -51,7 +51,7 @@ import (
 	"github.com/google/osv/vulnfeeds/git"
 	"github.com/google/osv/vulnfeeds/utility"
 
-	"golang.org/x/exp/slices"
+	"slices"
 )
 
 type CPEDict struct {
@@ -60,17 +60,17 @@ type CPEDict struct {
 }
 
 type CPEItem struct {
-	XMLName    xml.Name    `xml:"cpe-item" json:"-"`
-	Name       string      `xml:"name,attr" json:"name"`
-	Deprecated bool        `xml:"deprecated,attr" json:"deprecated"`
-	Title      string      `xml:"title" json:"title"`
-	References []Reference `xml:"references>reference" json:"references"`
-	CPE23      CPE23Item   `xml:"cpe23-item" json:"cpe23-item"`
+	XMLName    xml.Name    `json:"-"          xml:"cpe-item"`
+	Name       string      `json:"name"       xml:"name,attr"`
+	Deprecated bool        `json:"deprecated" xml:"deprecated,attr"`
+	Title      string      `json:"title"      xml:"title"`
+	References []Reference `json:"references" xml:"references>reference"`
+	CPE23      CPE23Item   `json:"cpe23-item" xml:"cpe23-item"`
 }
 
 type Reference struct {
-	URL         string `xml:"href,attr" json:"URL"`
-	Description string `xml:",chardata" json:"description"`
+	URL         string `json:"URL"         xml:"href,attr"`
+	Description string `json:"description" xml:",chardata"`
 }
 
 type CPE23Item struct {
@@ -149,6 +149,7 @@ func outputProductToRepoMap(prm VendorProductToRepoMap, f io.Writer) error {
 		if len(prm[p]) == 0 {
 			productsWithoutRepos++
 			delete(prm, p) // we don't want the repo-less products in our JSON output
+
 			continue
 		}
 	}
@@ -163,6 +164,7 @@ func outputProductToRepoMap(prm VendorProductToRepoMap, f io.Writer) error {
 		fmt.Printf("Outputting information about %d application products, %d do not have repos\n", len(prm), productsWithoutRepos)
 	}
 	Logger.Infof("Outputting information about %d application products, %d do not have repos", len(prm), productsWithoutRepos)
+
 	return nil
 }
 
@@ -197,6 +199,7 @@ func outputDescriptionFrequency(df map[string]int, f io.Writer) error {
 		fmt.Printf("Seen %d reference descriptions\n", len(df))
 	}
 	Logger.Infof("Seen %d distinct reference descriptions", len(df))
+
 	return nil
 }
 
@@ -248,6 +251,7 @@ func MaybeTranslateSavannahURL(u string) (string, bool) {
 		if err != nil {
 			panic(err)
 		}
+
 		return tpl.String(), true
 	}
 
@@ -312,6 +316,7 @@ func MaybeGetSourceRepoFromDebian(mdir string, pkg string) string {
 		}
 		Logger.Infof("FYI: Disregarding %s for %s", possibleRepo, pkg)
 	}
+
 	return ""
 }
 
@@ -392,6 +397,7 @@ func analyzeCPEDictionary(d CPEDict) (ProductToRepo VendorProductToRepoMap, Desc
 			}
 		}
 	}
+
 	return ProductToRepo, DescriptionFrequency
 }
 
@@ -413,6 +419,7 @@ func validateRepos(prm VendorProductToRepoMap) (validated VendorProductToRepoMap
 		}
 	}
 	Logger.Infof("Before validation: %d, after: %d. Delta: %d", len(prm), len(validated), len(prm)-len(validated))
+
 	return validated
 }
 

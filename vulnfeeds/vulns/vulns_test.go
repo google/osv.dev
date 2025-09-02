@@ -11,7 +11,7 @@ import (
 	"sort"
 	"testing"
 
-	"golang.org/x/exp/slices"
+	"slices"
 
 	gocmp "github.com/google/go-cmp/cmp"
 	"github.com/google/osv/vulnfeeds/cves"
@@ -170,6 +170,7 @@ func loadTestData2(cveName string) cves.Vulnerability {
 		}
 	}
 	log.Fatalf("test data doesn't contain %q", cveName)
+
 	return cves.Vulnerability{}
 }
 
@@ -355,6 +356,7 @@ func TestAddPkgInfo(t *testing.T) {
 		if n := cmp.Compare(a.Type, b.Type); n != 0 {
 			return n
 		}
+
 		return cmp.Compare(a.Repo, b.Repo)
 	}) {
 		t.Errorf("AddPkgInfo has not generated a correctly sorted range.")

@@ -144,6 +144,7 @@ func loadParts(partsInputPath string) (map[cves.CVEID][]vulns.PackageInfo, map[c
 		// map is already a reference type, so no need to pass in a pointer
 		loadInnerParts(path.Join(partsInputPath, entry.Name()), output, cvePartsModifiedTime)
 	}
+
 	return output, cvePartsModifiedTime
 }
 
@@ -189,6 +190,7 @@ func combineIntoOSV(loadedCves map[cves.CVEID]cves.Vulnerability, allParts map[c
 		convertedCves[cveId] = convertedCve
 	}
 	Logger.Infof("Ended writing %d OSV files", len(convertedCves))
+
 	return convertedCves
 }
 
@@ -240,15 +242,17 @@ func loadAllCVEs(cvePath string) map[cves.CVEID]cves.Vulnerability {
 		Logger.Infof("Loaded CVE: %s", entry.Name())
 		file.Close()
 	}
+
 	return result
 }
 
 // addReference adds the related security tracker URL to a given vulnerability's references
 func addReference(cveId string, ecosystem string, convertedCve *vulns.Vulnerability) {
 	securityReference := osvschema.Reference{Type: osvschema.ReferenceAdvisory}
-	if ecosystem == alpineEcosystem {
+	switch ecosystem {
+	case alpineEcosystem:
 		securityReference.URL, _ = url.JoinPath(alpineSecurityTrackerURL, cveId)
-	} else if ecosystem == debianEcosystem {
+	case debianEcosystem:
 		securityReference.URL, _ = url.JoinPath(debianSecurityTrackerURL, cveId)
 	}
 

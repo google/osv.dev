@@ -1,13 +1,15 @@
 package git
 
 import (
+	"slices"
 	"testing"
 	"time"
+
+	"maps"
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/osv/vulnfeeds/internal/testutils"
 	"github.com/google/osv/vulnfeeds/models"
-	"golang.org/x/exp/maps"
 )
 
 func TestRepoName(t *testing.T) {
@@ -187,7 +189,7 @@ func TestRepoTags(t *testing.T) {
 			if tc.cache != nil {
 				cache_after = len(tc.cache)
 			}
-			if tc.cache != nil && !(cache_after > cache_before) {
+			if tc.cache != nil && (cache_after <= cache_before) {
 				t.Errorf("test %q: RepoTags(%q) incorrect cache behaviour: size before: %d size after: %d cache: %#v", tc.description, tc.inputRepoURL, cache_before, cache_after, tc.cache)
 			}
 		})
@@ -300,10 +302,10 @@ func TestNormalizeRepoTags(t *testing.T) {
 				t.Errorf("test %q: NormalizeRepoTags(%q) unexpectedly failed: %+v", tc.description, tc.inputRepoURL, err)
 			}
 			// Confirm there are some normalized versions
-			if len(maps.Keys(normalizedRepoTags)) == 0 && tc.expectedOk {
+			if len(slices.AppendSeq(make([]FIXME, 0, len(normalizedRepoTags)), maps.Keys(normalizedRepoTags))) == 0 && tc.expectedOk {
 				t.Errorf("test %q: NormalizeRepoTags(%q): failed to find any normalized versions for repo in map: %#v", tc.description, tc.inputRepoURL, normalizedRepoTags)
 			}
-			if len(maps.Keys(normalizedRepoTags)) > 0 && cache[tc.inputRepoURL].NormalizedTag == nil {
+			if len(slices.AppendSeq(make([]FIXME, 0, len(normalizedRepoTags)), maps.Keys(normalizedRepoTags))) > 0 && cache[tc.inputRepoURL].NormalizedTag == nil {
 				t.Errorf("test %q: NormalizeRepoTags(%q) incorrect cache behaviour: %#v", tc.description, tc.inputRepoURL, cache)
 			}
 			t.Logf("test %q: NormalizedRepoTags(%q): %#v", tc.description, tc.inputRepoURL, normalizedRepoTags)

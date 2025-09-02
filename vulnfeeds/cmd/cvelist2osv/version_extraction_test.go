@@ -351,6 +351,7 @@ func TestRealWorldFindInverseAffectedRanges(t *testing.T) {
 				if eventI.Fixed != "" && eventJ.Fixed != "" {
 					return eventI.Fixed < eventJ.Fixed
 				}
+
 				return eventI.Introduced != ""
 			})
 
@@ -366,6 +367,7 @@ func TestRealWorldFindInverseAffectedRanges(t *testing.T) {
 				if eventI.Fixed != "" && eventJ.Fixed != "" {
 					return eventI.Fixed < eventJ.Fixed
 				}
+
 				return eventI.Introduced != ""
 			})
 

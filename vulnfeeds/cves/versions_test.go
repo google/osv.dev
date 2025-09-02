@@ -9,11 +9,12 @@ import (
 	"testing"
 	"time"
 
+	"slices"
+
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/osv/vulnfeeds/internal/testutils"
 	"github.com/google/osv/vulnfeeds/models"
 	"github.com/google/osv/vulnfeeds/utility"
-	"golang.org/x/exp/slices"
 )
 
 func loadTestData2(cveName string) Vulnerability {
@@ -33,6 +34,7 @@ func loadTestData2(cveName string) Vulnerability {
 		}
 	}
 	log.Fatalf("test data doesn't contain %q", cveName)
+
 	return Vulnerability{}
 }
 
@@ -470,7 +472,6 @@ func TestRepo(t *testing.T) {
 	}
 
 	for _, tc := range tests {
-
 		t.Run(tc.description, func(t *testing.T) {
 			t.Parallel()
 			if time.Now().Before(tc.disableExpiryDate) {
@@ -510,7 +511,7 @@ func TestExtractGitCommit(t *testing.T) {
 			},
 		},
 		{
-			description:     "Undesired GitHub commit URL", // TODO(apollock): be able to parse this a a LastAffected commit
+			description:     "Undesired GitHub commit URL", // TODO(apollock): be able to parse this a LastAffected commit
 			inputLink:       "https://github.com/Budibase/budibase/commits/develop?after=93d6939466aec192043d8ac842e754f65fdf2e8a+594\u0026branch=develop\u0026qualified_name=refs%2Fheads%2Fdevelop",
 			inputCommitType: models.Fixed,
 			expectFailure:   true,
@@ -944,7 +945,6 @@ func TestCPEs(t *testing.T) {
 	}
 
 	for _, tc := range tests {
-
 		t.Run(tc.description, func(t *testing.T) {
 			t.Parallel()
 			gotCPEs := CPEs(tc.inputCVEItem.CVE)
@@ -995,7 +995,6 @@ func TestVersionInfoDuplicateDetection(t *testing.T) {
 	}
 
 	for _, tc := range tests {
-
 		t.Run(tc.description, func(t *testing.T) {
 			t.Parallel()
 			result := tc.inputVersionInfo.Duplicated(tc.inputAffectedCommit)
@@ -1148,7 +1147,6 @@ func TestInvalidRangeDetection(t *testing.T) {
 	}
 
 	for _, tc := range tests {
-
 		t.Run(tc.description, func(t *testing.T) {
 			t.Parallel()
 			result := tc.inputAffectedCommit.InvalidRange()

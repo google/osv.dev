@@ -58,16 +58,16 @@ func downloadCVE2WithOffset(APIKey string, offset int) (page *cves.CVEAPIJSON20S
 	client := &http.Client{}
 	APIURL, err := url.Parse(NVDAPIEndpoint)
 	if err != nil {
-		return page, fmt.Errorf("failed to parse %s: %+v", NVDAPIEndpoint, err)
+		return page, fmt.Errorf("failed to parse %s: %+w", NVDAPIEndpoint, err)
 	}
 	params := url.Values{}
 	if offset > 0 {
 		params.Add("startIndex", strconv.Itoa(offset))
 	}
 	APIURL.RawQuery = params.Encode()
-	req, err := http.NewRequest("GET", fmt.Sprint(APIURL), nil)
+	req, err := http.NewRequest(http.MethodGet, fmt.Sprint(APIURL), nil)
 	if err != nil {
-		return page, fmt.Errorf("request creation for %q failed: %+v", APIURL, err)
+		return page, fmt.Errorf("request creation for %q failed: %+w", APIURL, err)
 	}
 	if APIKey != "" {
 		// apiKey is the correct header type that NVD expects
@@ -98,15 +98,17 @@ func downloadCVE2WithOffset(APIKey string, offset int) (page *cves.CVEAPIJSON20S
 			err = json.Unmarshal(body, &page)
 			if err != nil {
 				Logger.Warnf("Failed to decode NVD data: %q", err)
-				return fmt.Errorf("failed to decode NVD data from %q: %+v", resp.Request.URL, err)
+				return fmt.Errorf("failed to decode NVD data from %q: %+w", resp.Request.URL, err)
 			}
+
 			return nil
 		}
 	}); err != nil {
 		Logger.Warnf("Unable to retrieve %q: %v", APIURL, err)
-		return page, fmt.Errorf("unable to retrieve %q: %v", APIURL, err)
+		return page, fmt.Errorf("unable to retrieve %q: %w", APIURL, err)
 	}
 	Logger.Infof("Retrieved offset %d of %d total results", page.StartIndex, page.TotalResults)
+
 	return page, nil
 }
 
@@ -166,7 +168,7 @@ func downloadCVE(version string, CVEPath string) {
 	}
 	defer res.Body.Close()
 
-	if res.StatusCode != 200 {
+	if res.StatusCode != http.StatusOK {
 		Logger.Fatalf("Failed to retrieve cve json with: %d, for version: %s", res.StatusCode, version)
 	}
 

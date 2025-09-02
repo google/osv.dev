@@ -45,7 +45,8 @@ func req(url, method string) (resp *http.Response, err error) {
 			return nil
 		}
 	}); err != nil {
-		return nil, fmt.Errorf("fail: %q: %v", url, err)
+		return nil, fmt.Errorf("fail: %q: %w", url, err)
 	}
+
 	return resp, err
 }

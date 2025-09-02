@@ -28,5 +28,6 @@ func handleLinuxCVE(cve cves.CVE5, v *vulns.Vulnerability) (notes []string) {
 		affected.DatabaseSpecific["CPEs"] = vulns.Unique(cpeStrings)
 		v.Affected = append(v.Affected, affected)
 	}
+
 	return notes
 }

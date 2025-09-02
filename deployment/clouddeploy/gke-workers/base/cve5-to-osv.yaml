@@ -1,0 +1,36 @@
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: cve5-to-osv
+  labels:
+    cronLastSuccessfulTimeMins: "2160"
+spec:
+  timeZone: Australia/Sydney
+  schedule: "0 6,13 * * *"
+  concurrencyPolicy: Forbid
+  jobTemplate:
+    spec:
+      activeDeadlineSeconds: 86400
+      template:
+        spec:
+          containers:
+          - name: cve5-to-osv
+            image: cve5-to-osv
+            imagePullPolicy: Always
+            securityContext:
+              privileged: true
+            resources:
+              requests:
+                cpu: "1"
+                memory: "2G"
+              limits:
+                cpu: "1"
+                memory: "4G"
+            env:
+              - name: WORK_DIR
+                value: /tmp
+          restartPolicy: Never
+          volumes:
+            - name: "ssd"
+              hostPath:
+                path: "/mnt/disks/ssd0"

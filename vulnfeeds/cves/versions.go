@@ -32,7 +32,7 @@ import (
 
 	"github.com/google/osv/vulnfeeds/git"
 	"github.com/google/osv/vulnfeeds/models"
-	"github.com/google/osv/vulnfeeds/utility"
+	"github.com/google/osv/vulnfeeds/utility/logger"
 )
 
 // References with these tags have been found to contain completely unrelated
@@ -913,7 +913,7 @@ func MaybeRemoveFromVPRepoCache(cache VendorProductToRepoMap, vp *VendorProduct,
 // Takes a CVE ID string (for logging), VersionInfo with AffectedVersions and
 // typically no AffectedCommits and attempts to add AffectedCommits (including Fixed commits) where there aren't any.
 // Refuses to add the same commit to AffectedCommits more than once.
-func GitVersionsToCommits(cveID CVEID, versions models.VersionInfo, repos []string, cache git.RepoTagsCache, logger utility.LoggerWrapper) (v models.VersionInfo, e error) {
+func GitVersionsToCommits(cveID CVEID, versions models.VersionInfo, repos []string, cache git.RepoTagsCache) (v models.VersionInfo, e error) {
 	// versions is a VersionInfo with AffectedVersions and typically no AffectedCommits
 	// v is a VersionInfo with AffectedCommits (containing Fixed commits) included
 	v = versions
@@ -999,7 +999,7 @@ func GitVersionsToCommits(cveID CVEID, versions models.VersionInfo, repos []stri
 
 // Examines the CVE references for a CVE and derives repos for it, optionally caching it.
 // TODO (jesslowe): refactor with below
-func ReposFromReferences(cve string, cache VendorProductToRepoMap, vp *VendorProduct, refs []Reference, tagDenyList []string, logger utility.LoggerWrapper) (repos []string) {
+func ReposFromReferences(cve string, cache VendorProductToRepoMap, vp *VendorProduct, refs []Reference, tagDenyList []string) (repos []string) {
 	for _, ref := range refs {
 		// If any of the denylist tags are in the ref's tag set, it's out of consideration.
 		if !RefAcceptable(ref, tagDenyList) {
@@ -1036,7 +1036,7 @@ func ReposFromReferences(cve string, cache VendorProductToRepoMap, vp *VendorPro
 }
 
 // Examines the CVE references for a CVE and derives repos for it, optionally caching it.
-func ReposFromReferencesCVEList(cve string, refs []Reference, tagDenyList []string, _ utility.LoggerWrapper) (repos []string, notes []string) {
+func ReposFromReferencesCVEList(cve string, refs []Reference, tagDenyList []string) (repos []string, notes []string) {
 	for _, ref := range refs {
 		// If any of the denylist tags are in the ref's tag set, it's out of consideration.
 		if !RefAcceptable(ref, tagDenyList) {

@@ -115,7 +115,6 @@ const (
 )
 
 var (
-	Logger utility.LoggerWrapper
 	// These repos should never be considered authoritative for a product.
 	// Match repos with "CVE", "CVEs" or a pure CVE number in their name, anything from GitHubAssessments
 	CPEDictionaryFile  = flag.String("cpe_dictionary", CPEDictionaryDefault, "CPE Dictionary file to parse")
@@ -129,7 +128,7 @@ var (
 func LoadCPEDictionary(f string) (CPEDict, error) {
 	xmlFile, err := os.Open(f)
 	if err != nil {
-		Logger.Fatalf("Failed to open %s: %v", f, err)
+		logger.Fatalf("Failed to open %s: %v", f, err)
 	}
 
 	defer xmlFile.Close()
@@ -168,7 +167,7 @@ func outputProductToRepoMap(prm VendorProductToRepoMap, f io.Writer) error {
 	if *Verbose {
 		fmt.Printf("Outputting information about %d application products, %d do not have repos\n", len(prm), productsWithoutRepos)
 	}
-	Logger.Infof("Outputting information about %d application products, %d do not have repos", len(prm), productsWithoutRepos)
+	logger.Infof("Outputting information about %d application products, %d do not have repos", len(prm), productsWithoutRepos)
 
 	return nil
 }
@@ -203,7 +202,7 @@ func outputDescriptionFrequency(df map[string]int, f io.Writer) error {
 	if *Verbose {
 		fmt.Printf("Seen %d reference descriptions\n", len(df))
 	}
-	Logger.Infof("Seen %d distinct reference descriptions", len(df))
+	logger.Infof("Seen %d distinct reference descriptions", len(df))
 
 	return nil
 }
@@ -271,7 +270,7 @@ func MaybeGetSourceFromDebianCopyright(copyrightFile string) (string, bool) {
 
 	file, err := os.Open(copyrightFile)
 	if err != nil {
-		Logger.Fatalf("%v", err)
+		logger.Fatalf("%v", err)
 	}
 	defer file.Close()
 
@@ -304,7 +303,7 @@ func MaybeGetSourceRepoFromDebian(mdir string, pkg string) string {
 	}
 	if _, err := os.Stat(metadata); err == nil {
 		// parse the copyright file and go from here
-		Logger.Infof("FYI: Looking at %s for %s", metadata, pkg)
+		logger.Infof("FYI: Looking at %s for %s", metadata, pkg)
 		possibleRepo, ok := MaybeGetSourceFromDebianCopyright(metadata)
 		if !ok {
 			return ""
@@ -319,7 +318,7 @@ func MaybeGetSourceRepoFromDebian(mdir string, pkg string) string {
 				return repo
 			}
 		}
-		Logger.Infof("FYI: Disregarding %s for %s", possibleRepo, pkg)
+		logger.Infof("FYI: Disregarding %s for %s", possibleRepo, pkg)
 	}
 
 	return ""
@@ -332,12 +331,12 @@ func analyzeCPEDictionary(d CPEDict) (productToRepo VendorProductToRepoMap, desc
 	MaybeTryDebian := make(map[VendorProduct]bool)
 	for _, c := range d.CPEItems {
 		if c.Deprecated {
-			Logger.Infof("Skipping deprecated %q", c.Name)
+			logger.Infof("Skipping deprecated %q", c.Name)
 			continue
 		}
 		CPE, err := cves.ParseCPE(c.CPE23.Name)
 		if err != nil {
-			Logger.Infof("Failed to parse %q", c.CPE23.Name)
+			logger.Infof("Failed to parse %q", c.CPE23.Name)
 			continue
 		}
 		if CPE.Part != "a" {
@@ -348,7 +347,7 @@ func analyzeCPEDictionary(d CPEDict) (productToRepo VendorProductToRepoMap, desc
 			descriptionFrequency[r.Description] += 1
 			repo, err := cves.Repo(r.URL)
 			if err != nil {
-				Logger.Infof("Disregarding %q for %s:%s (%s) because %v", r.URL, CPE.Vendor, CPE.Product, r.Description, err)
+				logger.Infof("Disregarding %q for %s:%s (%s) because %v", r.URL, CPE.Vendor, CPE.Product, r.Description, err)
 				continue
 			}
 			if IsGitHubURL(repo) {
@@ -358,7 +357,7 @@ func analyzeCPEDictionary(d CPEDict) (productToRepo VendorProductToRepoMap, desc
 			if slices.Contains(productToRepo[VendorProduct{CPE.Vendor, CPE.Product}], repo) {
 				continue
 			}
-			Logger.Infof("Liking %q for %s:%s (%s)", repo, CPE.Vendor, CPE.Product, r.Description)
+			logger.Infof("Liking %q for %s:%s (%s)", repo, CPE.Vendor, CPE.Product, r.Description)
 			productToRepo[VendorProduct{CPE.Vendor, CPE.Product}] = append(productToRepo[VendorProduct{CPE.Vendor, CPE.Product}], repo)
 			// If this was queued for trying to find via Debian, and subsequently found, dequeue it.
 			if *DebianMetadataPath != "" {
@@ -379,23 +378,23 @@ func analyzeCPEDictionary(d CPEDict) (productToRepo VendorProductToRepoMap, desc
 	}
 	// Try any Debian possible ones as a last resort.
 	if len(MaybeTryDebian) > 0 && *DebianMetadataPath != "" {
-		Logger.Infof("Trying to derive repos from Debian for %d products", len(MaybeTryDebian))
+		logger.Infof("Trying to derive repos from Debian for %d products", len(MaybeTryDebian))
 		// This is likely to be time consuming, so give an impatient log watcher something to gauge progress by.
 		entryCount := 0
 		for vp := range MaybeTryDebian {
 			entryCount++
-			Logger.Infof("%d/%d: Trying to derive a repo from Debian for %s:%s", entryCount, len(MaybeTryDebian), vp.Vendor, vp.Product)
+			logger.Infof("%d/%d: Trying to derive a repo from Debian for %s:%s", entryCount, len(MaybeTryDebian), vp.Vendor, vp.Product)
 			repo := MaybeGetSourceRepoFromDebian(*DebianMetadataPath, vp.Product)
 			if repo != "" {
-				Logger.Infof("Derived repo: %s for %s:%s", repo, vp.Vendor, vp.Product)
+				logger.Infof("Derived repo: %s for %s:%s", repo, vp.Vendor, vp.Product)
 				// Now check that what Debian gave us meets our expectations and is valid.
 				repo, err := cves.Repo(repo)
 				if err != nil {
-					Logger.Infof("Disregarding derived repo %s for %s:%s because %v", repo, vp.Vendor, vp.Product, err)
+					logger.Infof("Disregarding derived repo %s for %s:%s because %v", repo, vp.Vendor, vp.Product, err)
 					continue
 				}
 				if !git.ValidRepoAndHasUsableRefs(repo) {
-					Logger.Infof("Disregarding derived repo %s for %s:%s because it is unusable for version resolution", repo, vp.Vendor, vp.Product)
+					logger.Infof("Disregarding derived repo %s for %s:%s because it is unusable for version resolution", repo, vp.Vendor, vp.Product)
 					continue
 				}
 				productToRepo[VendorProduct{vp.Vendor, vp.Product}] = append(productToRepo[VendorProduct{vp.Vendor, vp.Product}], repo)
@@ -409,7 +408,7 @@ func analyzeCPEDictionary(d CPEDict) (productToRepo VendorProductToRepoMap, desc
 // validateRepos takes a VendorProductToRepoMap and removes any entries where the repository fails remote validation.
 func validateRepos(prm VendorProductToRepoMap) (validated VendorProductToRepoMap) {
 	validated = make(VendorProductToRepoMap)
-	Logger.Infof("Validating repos for %d products", len(prm))
+	logger.Infof("Validating repos for %d products", len(prm))
 	// This is likely to be time consuming, so give an impatient log watcher something to gauge progress by.
 	entryCount := 0
 	for vp := range prm {
@@ -417,13 +416,13 @@ func validateRepos(prm VendorProductToRepoMap) (validated VendorProductToRepoMap
 		// As a side-effect, this also omits any with no repos.
 		for _, r := range prm[vp] {
 			if !git.ValidRepoAndHasUsableRefs(r) {
-				Logger.Infof("%d/%d: %q is not a valid repo for %s:%s", entryCount, len(prm), r, vp.Vendor, vp.Product)
+				logger.Infof("%d/%d: %q is not a valid repo for %s:%s", entryCount, len(prm), r, vp.Vendor, vp.Product)
 				continue
 			}
 			validated[vp] = append(validated[vp], r)
 		}
 	}
-	Logger.Infof("Before validation: %d, after: %d. Delta: %d", len(prm), len(validated), len(prm)-len(validated))
+	logger.Infof("Before validation: %d, after: %d. Delta: %d", len(prm), len(validated), len(prm)-len(validated))
 
 	return validated
 }
@@ -442,7 +441,7 @@ func main() {
 
 	CPEDictionary, err := LoadCPEDictionary(*CPEDictionaryFile)
 	if err != nil {
-		Logger.Fatalf("Failed to load %s: %v", *CPEDictionaryFile, err)
+		logger.Fatalf("Failed to load %s: %v", *CPEDictionaryFile, err)
 	}
 
 	productToRepo, descriptionFrequency := analyzeCPEDictionary(CPEDictionary)
@@ -452,20 +451,20 @@ func main() {
 
 	mappingFile, err := os.Create(filepath.Join(*OutputDir, "cpe_product_to_repo.json"))
 	if err != nil {
-		Logger.Fatalf("%v", err)
+		logger.Fatalf("%v", err)
 	}
 	defer mappingFile.Close()
 	err = outputProductToRepoMap(productToRepo, mappingFile)
 	if err != nil {
-		Logger.Fatalf("%v", err)
+		logger.Fatalf("%v", err)
 	}
 	frequencyFile, err := os.Create(filepath.Join(*OutputDir, "cpe_reference_description_frequency.csv"))
 	if err != nil {
-		Logger.Fatalf("%v", err)
+		logger.Fatalf("%v", err)
 	}
 	defer frequencyFile.Close()
 	err = outputDescriptionFrequency(descriptionFrequency, frequencyFile)
 	if err != nil {
-		Logger.Fatalf("%v", err)
+		logger.Fatalf("%v", err)
 	}
 }

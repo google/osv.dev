@@ -1,4 +1,4 @@
-# Copyright 2021 Google LLC
+# Copyright 2025 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -11,30 +11,55 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""Ecosystem helpers base classes."""
-
+"""Ecosystems base classes."""
 from abc import ABC, abstractmethod
-import bisect
 from typing import Any
+from warnings import deprecated
+import bisect
 import requests
 from urllib.parse import quote
 
 from . import config
 
 
+class OrderedEcosystem(ABC):
+  """Ecosystem helper that supports comparison between versions."""
+  def __init__(self, suffix: str | None = None):
+    """init method for all ecosystem helpers.
+    
+    `suffix` is optionally used on ecosystems that use them.
+    e.g. Alpine:v3.16 would use suffix='v3.16'
+    """
+    self.suffix = suffix
+
+  @abstractmethod
+  def sort_key(self, version: str) -> Any:
+    """Comparable key for a version.
+    
+    If the version string is invalid, return a very large version.
+    """
+
+  def sort_versions(self, versions: list[str]):
+    """Sort versions."""
+    versions.sort(key=self.sort_key)
+
+
 class EnumerateError(Exception):
   """Non-retryable version enumeration error."""
 
+class EnumerableEcosystem(OrderedEcosystem, ABC):
+  """Ecosystem helper that supports version enumeration."""
+  @abstractmethod
+  def enumerate_versions(
+      self,
+      package: str,
+      introduced: str | None,
+      fixed: str | None = None,
+      last_affected: str | None = None,
+      limits: list[str] | None = None) -> list[str]:
+    """Enumerate known versions of a package in a given version range."""
 
-class Ecosystem(ABC):
-  """Ecosystem helpers."""
-
-  @property
-  def name(self):
-    """Get the name of the ecosystem."""
-    return self.__class__.__name__
-
-  def _before_limits(self, version, limits):
+  def _before_limits(self, version: str, limits: list[str] | None) -> bool:
     """Return whether the given version is before any limits."""
     if not limits or '*' in limits:
       return True
@@ -42,40 +67,8 @@ class Ecosystem(ABC):
     return any(
         self.sort_key(version) < self.sort_key(limit) for limit in limits)
 
-  def next_version(self, package, version):
-    """Get the next version after the given version."""
-    versions = self.enumerate_versions(package, version, fixed=None)
-    # Check if the key used for sorting is equal as sometimes different
-    # strings could evaluate to the same version.
-    if versions and self.sort_key(versions[0]) != self.sort_key(version):
-      # Version does not exist, so use the first one that would sort
-      # after it (which is what enumerate_versions returns).
-      return versions[0]
-
-    if len(versions) > 1:
-      return versions[1]
-
-    return None
-
-  @abstractmethod
-  def sort_key(self, version: str) -> Any:
-    """Sort key."""
-
-  def sort_versions(self, versions):
-    """Sort versions."""
-    versions.sort(key=self.sort_key)
-
-  @abstractmethod
-  def enumerate_versions(self,
-                         package,
-                         introduced,
-                         fixed=None,
-                         last_affected=None,
-                         limits=None):
-    """Enumerate versions."""
-
-  def _get_affected_versions(self, versions, introduced, fixed, last_affected,
-                             limits):
+  def _get_affected_versions(self, versions: list[str], introduced: str | None, fixed: str | None, last_affected: str | None,
+                             limits: list[str] | None) -> list[str]:
     """Get affected versions.
 
     Args:
@@ -111,50 +104,33 @@ class Ecosystem(ABC):
     affected = versions[start_idx:end_idx]
     return [v for v in affected if self._before_limits(v, limits)]
 
-  @property
-  def is_semver(self):
-    return False
+  @deprecated('Avoid using this method. '
+              'It is provided only to maintain existing tooling.')
+  def next_version(self, package: str, version: str) -> str | None:
+    """Get the next version after the given version."""
+    versions = self.enumerate_versions(package, version, fixed=None)
+    # Check if the key used for sorting is equal as sometimes different
+    # strings could evaluate to the same version.
+    if versions and self.sort_key(versions[0]) != self.sort_key(version):
+      # Version does not exist, so use the first one that would sort
+      # after it (which is what enumerate_versions returns).
+      return versions[0]
 
-  @property
-  def supports_ordering(self):
-    return True
+    if len(versions) > 1:
+      return versions[1]
 
-  @property
-  def supports_comparing(self):
-    """Determines whether to use affected version range comparison
-    for API queries."""
-    return False
+    return None
 
-
-class OrderingUnsupportedEcosystem(Ecosystem):
-  """Placeholder ecosystem helper for unimplemented ecosystems."""
-
-  def sort_key(self, version):
-    raise NotImplementedError('Ecosystem helper does not support sorting')
-
-  def enumerate_versions(self,
-                         package,
-                         introduced,
-                         fixed=None,
-                         last_affected=None,
-                         limits=None):
-    raise NotImplementedError('Ecosystem helper does not support enumeration')
-
-  @property
-  def supports_ordering(self):
-    return False
-
-
-class DepsDevMixin(Ecosystem, ABC):
+class DepsDevMixin(EnumerableEcosystem, ABC):
   """deps.dev mixin."""
 
   _DEPS_DEV_PACKAGE_URL = \
       'https://api.deps.dev/v3alpha/systems/{system}/packages/{package}'
 
-  _DEPS_DEV_ECOSYSTEM_MAP = {
-      'Maven': 'maven',
-      'PyPI': 'pypi',
-  }
+  @property
+  @abstractmethod
+  def deps_dev_system(self) -> str:
+    """The deps.dev system name."""
 
   def _deps_dev_enumerate(self,
                           package,
@@ -163,15 +139,14 @@ class DepsDevMixin(Ecosystem, ABC):
                           last_affected=None,
                           limits=None):
     """Use deps.dev to get list of versions."""
-    ecosystem = self._DEPS_DEV_ECOSYSTEM_MAP[self.name]
     url = self._DEPS_DEV_PACKAGE_URL.format(
-        system=ecosystem, package=quote(package, safe=''))
+        system=self.deps_dev_system, package=quote(package, safe=''))
     response = requests.get(url, timeout=config.timeout)
     if response.status_code == 404:
       raise EnumerateError(f'Package {package} not found')
     if response.status_code != 200:
       raise RuntimeError(
-          f'Failed to get {ecosystem} versions for {package} with: '
+          f'Failed to get {self.deps_dev_system} versions for {package} with: '
           f'{response.status_code}')
     response = response.json()
     versions = [v['versionKey']['version'] for v in response['versions']]

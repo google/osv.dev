@@ -1229,8 +1229,8 @@ def query_by_version(
     query = query.filter(osv.Bug.ecosystem == ecosystem)
     ecosystem_info = ecosystems.get(ecosystem)
 
-  is_semver = ecosystem_info and ecosystem_info.is_semver
-  supports_comparing = ecosystem_info and ecosystem_info.supports_comparing
+  is_semver = ecosystems.is_semver(ecosystem)
+  supports_comparing = ecosystem_info is not None
 
   bugs = []
   if ecosystem:

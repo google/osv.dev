@@ -1,4 +1,4 @@
-# Copyright 2021 Google LLC
+# Copyright 2025 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -18,6 +18,7 @@
 """Maven ecosystem helper tests."""
 import unittest
 import vcr.unittest
+import warnings
 
 from . import maven
 from .. import ecosystems
@@ -247,11 +248,14 @@ class MavenEcosystemTest(vcr.unittest.VCRTestCase):
   def test_next_version(self):
     """Test next_version."""
     ecosystem = ecosystems.get('Maven')
-    self.assertEqual('1.36.0',
-                     ecosystem.next_version('io.grpc:grpc-core', '1.35.1'))
-    self.assertEqual('0.7.0', ecosystem.next_version('io.grpc:grpc-core', '0'))
-    with self.assertRaises(ecosystems.EnumerateError):
-      ecosystem.next_version('blah:doesnotexist123456', '1')
+    with warnings.catch_warnings():
+      # Filter the DeprecationWarning from next_version
+      warnings.filterwarnings('ignore', 'Avoid using this method')
+      self.assertEqual('1.36.0',
+                      ecosystem.next_version('io.grpc:grpc-core', '1.35.1'))
+      self.assertEqual('0.7.0', ecosystem.next_version('io.grpc:grpc-core', '0'))
+      with self.assertRaises(ecosystems.EnumerateError):
+        ecosystem.next_version('blah:doesnotexist123456', '1')
 
   def test_enumerate(self):
     """Test enumerate."""

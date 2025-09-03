@@ -1,4 +1,4 @@
-# Copyright 2021 Google LLC
+# Copyright 2025 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -20,9 +20,20 @@ import requests
 from ..third_party.univers.debian import Version as DebianVersion
 
 from . import config
-from .helper_base import Ecosystem, EnumerateError
+from .ecosystems_base import EnumerableEcosystem, EnumerateError, OrderedEcosystem
 from .. import cache
 from ..request_helper import RequestError, RequestHelper
+
+
+class DPKG(OrderedEcosystem):
+  """Debian package (dpkg) ecosystem"""
+  def sort_key(self, version):
+    if not DebianVersion.is_valid(version):
+      # If debian version is not valid, it is most likely an invalid fixed
+      # version then sort it to the last/largest element
+      return DebianVersion(999999, '999999')
+    return DebianVersion.from_string(version)
+
 
 # TODO(another-rex): Update this to use dynamically
 # change depending on the project
@@ -73,21 +84,14 @@ def get_first_package_version(package_name: str, release_number: str) -> str:
     return '0'
 
 
-class Debian(Ecosystem):
+class Debian(EnumerableEcosystem, DPKG):
   """Debian ecosystem"""
 
   _API_PACKAGE_URL = 'https://snapshot.debian.org/mr/package/{package}/'
-  debian_release_ver: str
-
-  def __init__(self, debian_release_ver: str):
-    self.debian_release_ver = debian_release_ver
-
-  def sort_key(self, version):
-    if not DebianVersion.is_valid(version):
-      # If debian version is not valid, it is most likely an invalid fixed
-      # version then sort it to the last/largest element
-      return DebianVersion(999999, '999999')
-    return DebianVersion.from_string(version)
+  
+  @property
+  def debian_release_ver(self) -> str:
+    return self.suffix if self.suffix is not None else ''
 
   def enumerate_versions(self,
                          package,
@@ -137,7 +141,3 @@ class Debian(Ecosystem):
 
     return self._get_affected_versions(versions, introduced, fixed,
                                        last_affected, limits)
-
-  @property
-  def supports_comparing(self):
-    return True

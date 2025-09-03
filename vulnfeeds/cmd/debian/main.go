@@ -90,7 +90,8 @@ func generateOSVFromDebianTracker(debianData DebianSecurityTrackerData, debianRe
 			if !ok {
 				v = &vulns.Vulnerability{
 					Vulnerability: osvschema.Vulnerability{
-						ID:       cveId,
+						ID:       fmt.Sprintf("DEBIAN-%s", cveId),
+						Upstream: []string{cveId},
 						Modified: time.Now().UTC(),
 						Details:  cveData.Description,
 						References: []osvschema.Reference{

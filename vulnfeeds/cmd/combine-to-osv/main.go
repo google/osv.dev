@@ -29,8 +29,7 @@ const (
 )
 
 func main() {
-	var logCleanup func()
-	logCleanup = logger.InitGlobalLogger("combine-to-osv")
+	logCleanup := logger.InitGlobalLogger("combine-to-osv", false)
 	defer logCleanup()
 
 	cvePath := flag.String("cvePath", defaultCvePath, "Path to CVE file")

@@ -22,12 +22,15 @@ import typing
 from ..third_party.univers.alpine import AlpineLinuxVersion
 
 from . import config
-from .ecosystems_base import EnumerableEcosystem, EnumerateError, OrderedEcosystem
+from .ecosystems_base import EnumerableEcosystem, EnumerateError
+from .ecosystems_base import OrderedEcosystem
 from .. import repos
 from ..cache import cached
 
+
 class APK(OrderedEcosystem):
   """Alpine Package Keeper ecosystem helper."""
+
   def sort_key(self, version):
     if not AlpineLinuxVersion.is_valid(version):
       # If version is not valid, it is most likely an invalid input
@@ -54,14 +57,12 @@ class Alpine(APK, EnumerableEcosystem):
   _PKGVER_ALIASES = ('+pkgver=', '+_kver=')
   _PKGREL_ALIASES = ('+pkgrel=', '+_krel=')
 
-  
   @property
   def alpine_release_ver(self) -> str:
     return self.suffix if self.suffix is not None else ''
 
   def get_branch_name(self) -> str:
     return self.alpine_release_ver.lstrip('v') + self._BRANCH_SUFFIX
-
 
   @staticmethod
   def _process_git_log(output: str) -> list:

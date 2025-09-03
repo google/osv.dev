@@ -24,6 +24,7 @@ from . import config
 
 class OrderedEcosystem(ABC):
   """Ecosystem helper that supports comparison between versions."""
+
   def __init__(self, suffix: str | None = None):
     """init method for all ecosystem helpers.
     
@@ -47,16 +48,17 @@ class OrderedEcosystem(ABC):
 class EnumerateError(Exception):
   """Non-retryable version enumeration error."""
 
+
 class EnumerableEcosystem(OrderedEcosystem, ABC):
   """Ecosystem helper that supports version enumeration."""
+
   @abstractmethod
-  def enumerate_versions(
-      self,
-      package: str,
-      introduced: str | None,
-      fixed: str | None = None,
-      last_affected: str | None = None,
-      limits: list[str] | None = None) -> list[str]:
+  def enumerate_versions(self,
+                         package: str,
+                         introduced: str | None,
+                         fixed: str | None = None,
+                         last_affected: str | None = None,
+                         limits: list[str] | None = None) -> list[str]:
     """Enumerate known versions of a package in a given version range."""
 
   def _before_limits(self, version: str, limits: list[str] | None) -> bool:
@@ -67,7 +69,8 @@ class EnumerableEcosystem(OrderedEcosystem, ABC):
     return any(
         self.sort_key(version) < self.sort_key(limit) for limit in limits)
 
-  def _get_affected_versions(self, versions: list[str], introduced: str | None, fixed: str | None, last_affected: str | None,
+  def _get_affected_versions(self, versions: list[str], introduced: str | None,
+                             fixed: str | None, last_affected: str | None,
                              limits: list[str] | None) -> list[str]:
     """Get affected versions.
 
@@ -120,6 +123,7 @@ class EnumerableEcosystem(OrderedEcosystem, ABC):
       return versions[1]
 
     return None
+
 
 class DepsDevMixin(EnumerableEcosystem, ABC):
   """deps.dev mixin."""

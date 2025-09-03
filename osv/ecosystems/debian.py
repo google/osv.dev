@@ -20,13 +20,15 @@ import requests
 from ..third_party.univers.debian import Version as DebianVersion
 
 from . import config
-from .ecosystems_base import EnumerableEcosystem, EnumerateError, OrderedEcosystem
+from .ecosystems_base import EnumerableEcosystem, EnumerateError
+from .ecosystems_base import OrderedEcosystem
 from .. import cache
 from ..request_helper import RequestError, RequestHelper
 
 
 class DPKG(OrderedEcosystem):
   """Debian package (dpkg) ecosystem"""
+
   def sort_key(self, version):
     if not DebianVersion.is_valid(version):
       # If debian version is not valid, it is most likely an invalid fixed
@@ -88,7 +90,7 @@ class Debian(EnumerableEcosystem, DPKG):
   """Debian ecosystem"""
 
   _API_PACKAGE_URL = 'https://snapshot.debian.org/mr/package/{package}/'
-  
+
   @property
   def debian_release_ver(self) -> str:
     return self.suffix if self.suffix is not None else ''

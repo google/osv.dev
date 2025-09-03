@@ -53,7 +53,7 @@ class RPMEcosystemTest(unittest.TestCase):
     self.assertEqual(
         ecosystem.sort_key("20240111-121.gitb3132c18.el8"),
         ecosystem.sort_key("20240111-121.gitb3132c18.el8"))
-    
+
     # Mageia
     self.assertGreater(
         ecosystem.sort_key('3.2.7-1.2.mga9'),
@@ -64,7 +64,7 @@ class RPMEcosystemTest(unittest.TestCase):
     self.assertGreater(
         ecosystem.sort_key('1:1.8.11-1.mga9'),
         ecosystem.sort_key('0:1.9.1-2.mga9'))
-    
+
     # openEuler
     self.assertGreater(
         ecosystem.sort_key("1.2.3-1.oe2203"),
@@ -111,17 +111,16 @@ class RPMEcosystemTest(unittest.TestCase):
     self.assertEqual(
         ecosystem.sort_key("2.0.8-4.8.2"), ecosystem.sort_key("2.0.8-4.8.2"))
 
-
   def test_rpm_ecosystems(self):
     """Test RPM-based ecosystems return an RPM ecosystem."""
     ecos = [
-      'Red Hat',
-      'AlmaLinux',
-      'Mageia',
-      'openEuler',
-      'openSUSE',
-      'Rocky Linux',
-      'SUSE',
+        'Red Hat',
+        'AlmaLinux',
+        'Mageia',
+        'openEuler',
+        'openSUSE',
+        'Rocky Linux',
+        'SUSE',
     ]
     for ecosystem_name in ecos:
       ecosystem = ecosystems.get(ecosystem_name)

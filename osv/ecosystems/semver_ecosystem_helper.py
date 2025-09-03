@@ -34,6 +34,7 @@ class SemverLike(OrderedEcosystem):
 
 class SemverEcosystem(SemverLike):
   """Ecosystems which use the 'SEMVER' OSV version type"""
+
   @deprecated('Avoid using this method. '
               'It is provided only to maintain existing tooling.')
   def next_version(self, package, version):

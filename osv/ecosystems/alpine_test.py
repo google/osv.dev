@@ -27,6 +27,7 @@ from .. import repos
 
 class APKEcosystemTest(unittest.TestCase):
   """APK ecosystem helper tests."""
+
   def test_apk(self):
     """Test APK ecosystem sort_key behaviour"""
     ecosystem = alpine.APK()
@@ -40,7 +41,7 @@ class APKEcosystemTest(unittest.TestCase):
         ecosystem.sort_key('1.9.5p3'), ecosystem.sort_key('1.9.5p2'))
     self.assertGreater(
         ecosystem.sort_key('1.9.5p1'), ecosystem.sort_key('1.9.5'))
-    
+
     self.assertGreater(
         ecosystem.sort_key('1.13.2-r0'), ecosystem.sort_key('1.13.2_alpha'))
 
@@ -49,7 +50,7 @@ class APKEcosystemTest(unittest.TestCase):
         ecosystem.sort_key('1-0-0'), ecosystem.sort_key('1.13.2-r0'))
     self.assertEqual(
         ecosystem.sort_key('1.13.2-r0'), ecosystem.sort_key('1.13.2-r0'))
-    
+
     # Chainguard
     self.assertGreater(
         ecosystem.sort_key('38.52.0-r0'), ecosystem.sort_key('37.52.0-r0'))
@@ -59,7 +60,7 @@ class APKEcosystemTest(unittest.TestCase):
         ecosystem.sort_key('1.4.0-r1'), ecosystem.sort_key('1.4.0-r0'))
     self.assertGreater(
         ecosystem.sort_key('invalid'), ecosystem.sort_key('1.4.0-r0'))
-    
+
     # MinimOS
     self.assertGreater(
         ecosystem.sort_key('38.52.0-r0'), ecosystem.sort_key('37.52.0-r0'))
@@ -77,12 +78,12 @@ class APKEcosystemTest(unittest.TestCase):
   def test_apk_ecosystems(self):
     """Test apk-based ecosystems return an APK ecosystem."""
     ecos = [
-      'Alpine',
-      'Alpaquita',
-      'BellSoft Hardened Containers',
-      'Chainguard',
-      'MinimOS',
-      'Wolfi',
+        'Alpine',
+        'Alpaquita',
+        'BellSoft Hardened Containers',
+        'Chainguard',
+        'MinimOS',
+        'Wolfi',
     ]
     for ecosystem_name in ecos:
       ecosystem = ecosystems.get(ecosystem_name)
@@ -112,11 +113,13 @@ class AlpineEcosystemTest(unittest.TestCase):
       warnings.filterwarnings('ignore', 'Avoid using this method')
       self.assertEqual('1.12.2-r1', ecosystem.next_version('nginx', '1.12.2'))
       self.assertEqual(ensure_updated_checkout_mock.call_count, 1)
-      self.assertEqual('1.16.1-r0', ecosystem.next_version('nginx', '1.16.0-r4'))
+      self.assertEqual('1.16.1-r0',
+                       ecosystem.next_version('nginx', '1.16.0-r4'))
       # Second call should use cache, so call count should not increase
       self.assertEqual(ensure_updated_checkout_mock.call_count, 1)
 
       # Check letter suffixes clone correctly
-      self.assertEqual('2.78c-r0', ecosystem.next_version('blender', '2.78a-r1'))
+      self.assertEqual('2.78c-r0',
+                       ecosystem.next_version('blender', '2.78a-r1'))
 
     ecosystems.config.set_cache(None)

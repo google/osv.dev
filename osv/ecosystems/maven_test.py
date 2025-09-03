@@ -252,8 +252,9 @@ class MavenEcosystemTest(vcr.unittest.VCRTestCase):
       # Filter the DeprecationWarning from next_version
       warnings.filterwarnings('ignore', 'Avoid using this method')
       self.assertEqual('1.36.0',
-                      ecosystem.next_version('io.grpc:grpc-core', '1.35.1'))
-      self.assertEqual('0.7.0', ecosystem.next_version('io.grpc:grpc-core', '0'))
+                       ecosystem.next_version('io.grpc:grpc-core', '1.35.1'))
+      self.assertEqual('0.7.0', ecosystem.next_version('io.grpc:grpc-core',
+                                                       '0'))
       with self.assertRaises(ecosystems.EnumerateError):
         ecosystem.next_version('blah:doesnotexist123456', '1')
 

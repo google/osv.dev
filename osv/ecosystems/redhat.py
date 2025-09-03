@@ -16,7 +16,9 @@
 from ..third_party.univers.rpm import RpmVersion
 from .ecosystems_base import OrderedEcosystem
 
+
 class RPM(OrderedEcosystem):
   """Red Hat Package Manager ecosystem helper."""
+
   def sort_key(self, version):
     return RpmVersion.from_string(version)

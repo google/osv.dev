@@ -75,8 +75,8 @@ class DPKGEcosystemTest(unittest.TestCase):
   def test_dpkg_ecosystems(self):
     """Test dpkg-based ecosystems return a DPKG ecosystem."""
     ecos = [
-      'Debian',
-      'Echo',
+        'Debian',
+        'Echo',
     ]
     for ecosystem_name in ecos:
       ecosystem = ecosystems.get(ecosystem_name)
@@ -105,7 +105,7 @@ class DebianEcosystemTest(vcr.unittest.VCRTestCase):
       self.assertEqual('1.13.6-1', ecosystem.next_version('nginx', '1.13.5-1'))
       self.assertEqual('1.13.6-2', ecosystem.next_version('nginx', '1.13.6-1'))
       self.assertEqual('3.0.1+dfsg-2',
-                      ecosystem.next_version('blender', '3.0.1+dfsg-1'))
+                       ecosystem.next_version('blender', '3.0.1+dfsg-1'))
 
     # Test that end-of-life enumeration is disabled
     with self.assertLogs(level='WARNING') as logs:
@@ -136,7 +136,8 @@ class DebianEcosystemTest(vcr.unittest.VCRTestCase):
     self.assertNotIn('2.1.27~101-g0780600+dfsg-3+deb9u1', versions)
     self.assertNotIn('2.1.27~101-g0780600+dfsg-3+deb9u2', versions)
 
-    with self.assertRaises(ecosystems.EnumerateError), warnings.catch_warnings():
+    with self.assertRaises(
+        ecosystems.EnumerateError), warnings.catch_warnings():
       warnings.filterwarnings('ignore', 'Avoid using this method')
       ecosystem.next_version('doesnotexist123456', '1')
 
@@ -147,17 +148,17 @@ class DebianEcosystemTest(vcr.unittest.VCRTestCase):
     self.assertEqual(first_ver_requests_mock.call_count, 2)
     self.assertEqual(general_requests_mock.call_count, 5)
     ecosystems.config.set_cache(None)
-    
 
   @mock.patch('osv.cache.Cache')
   def test_cache(self, cache_mock: mock.MagicMock):
+    """Test caching works."""
     cache_mock.get.return_value = None
     ecosystems.config.set_cache(cache_mock)
 
-    debian = ecosystems.get('Debian:9')
+    deb = ecosystems.get('Debian:9')
     with warnings.catch_warnings():
       # Filter the DeprecationWarning from next_version
       warnings.filterwarnings('ignore', 'Avoid using this method')
-      debian.next_version('nginx', '1.13.5-1')
+      deb.next_version('nginx', '1.13.5-1')
     cache_mock.get.assert_called_once()
     cache_mock.set.assert_called_once()

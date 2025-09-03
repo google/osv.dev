@@ -32,9 +32,9 @@ class RubyGemsEcosystemTest(vcr.unittest.VCRTestCase):
       self.assertEqual('0.9.5', ecosystem.next_version('rails', '0.9.4.1'))
       self.assertEqual('2.3.8.pre1', ecosystem.next_version('rails', '2.3.7'))
       self.assertEqual('4.0.0.rc1',
-                      ecosystem.next_version('rails', '4.0.0.beta1'))
+                       ecosystem.next_version('rails', '4.0.0.beta1'))
       self.assertEqual('5.0.0.racecar1',
-                      ecosystem.next_version('rails', '5.0.0.beta4'))
+                       ecosystem.next_version('rails', '5.0.0.beta4'))
       with self.assertRaises(ecosystems.EnumerateError):
         ecosystem.next_version('doesnotexist123456', '1')
 

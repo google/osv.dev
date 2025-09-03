@@ -29,4 +29,5 @@ class SemVerEcosystemTest(unittest.TestCase):
       # Filter the DeprecationWarning from next_version
       warnings.filterwarnings('ignore', 'Avoid using this method')
       self.assertEqual('1.0.1-0', ecosystem.next_version('blah', '1.0.0'))
-      self.assertEqual('1.0.0-pre.0', ecosystem.next_version('blah', '1.0.0-pre'))
+      self.assertEqual('1.0.0-pre.0',
+                       ecosystem.next_version('blah', '1.0.0-pre'))

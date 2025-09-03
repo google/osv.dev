@@ -298,8 +298,8 @@ def filter_unknown_ecosystems(vulnerability):
     elif osv.ecosystems.is_known(affected.package.ecosystem):
       filtered.append(affected)
     else:
-      logging.error('%s contains unknown ecosystem "%s"',
-                      vulnerability.id, affected.package.ecosystem)
+      logging.error('%s contains unknown ecosystem "%s"', vulnerability.id,
+                    affected.package.ecosystem)
   del vulnerability.affected[:]
   vulnerability.affected.extend(filtered)
 

@@ -95,13 +95,13 @@ class NuGetEcosystemTest(vcr.unittest.VCRTestCase):
       # Filter the DeprecationWarning from next_version
       warnings.filterwarnings('ignore', 'Avoid using this method')
       self.assertEqual('3.0.1',
-                      ecosystem.next_version('NuGet.Server.Core', '3.0.0'))
+                       ecosystem.next_version('NuGet.Server.Core', '3.0.0'))
       self.assertEqual('3.0.0.4001',
-                      ecosystem.next_version('Castle.Core', '3.0.0.3001'))
+                       ecosystem.next_version('Castle.Core', '3.0.0.3001'))
       self.assertEqual('3.1.0-RC',
-                      ecosystem.next_version('Castle.Core', '3.0.0.4001'))
+                       ecosystem.next_version('Castle.Core', '3.0.0.4001'))
       self.assertEqual('2.1.0-dev-00668',
-                      ecosystem.next_version('Serilog', '2.1.0-dev-00666'))
+                       ecosystem.next_version('Serilog', '2.1.0-dev-00666'))
       with self.assertRaises(ecosystems.EnumerateError):
         ecosystem.next_version('doesnotexist123456', '1')
 

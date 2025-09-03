@@ -297,7 +297,7 @@ func TestRealWorldFindInverseAffectedRanges(t *testing.T) {
 	}{
 		{
 			name: "CVE-2025-21772",
-			cve:  loadTestData("CVE-2025-21772"),
+			cve:  loadTestData(t, "CVE-2025-21772"),
 			expectedRanges: []osvschema.Range{
 				{Events: []osvschema.Event{{Introduced: "0"}, {Fixed: "5.4.291"}}},
 				{Events: []osvschema.Event{{Introduced: "5.5.0"}, {Fixed: "5.10.235"}}},
@@ -310,7 +310,7 @@ func TestRealWorldFindInverseAffectedRanges(t *testing.T) {
 		},
 		{
 			name: "CVE-2025-21631",
-			cve:  loadTestData("CVE-2025-21631"),
+			cve:  loadTestData(t, "CVE-2025-21631"),
 			expectedRanges: []osvschema.Range{
 				{Events: []osvschema.Event{{Introduced: "0"}, {Fixed: "5.15.177"}}},
 				{Events: []osvschema.Event{{Introduced: "5.16.0"}, {Fixed: "6.1.125"}}},

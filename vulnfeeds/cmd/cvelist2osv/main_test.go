@@ -2,7 +2,6 @@ package main
 
 import (
 	"encoding/json"
-	"log"
 	"os"
 	"path/filepath"
 	"strings"
@@ -15,24 +14,26 @@ import (
 	"github.com/ossf/osv-schema/bindings/go/osvschema"
 )
 
-func loadTestData(cveName string) cves.CVE5 {
+func loadTestData(t *testing.T, cveName string) cves.CVE5 {
+	t.Helper()
 	prefix := strings.Split(cveName, "-")[2]
 	prefixpath := prefix[:len(prefix)-3] + "xxx"
 	fileName := filepath.Join("..", "..", "test_data", "cvelistV5", "cves", cveName[4:8], prefixpath, cveName+".json")
 
-	return loadTestCVE(fileName)
+	return loadTestCVE(t, fileName)
 }
 
-func loadTestCVE(path string) cves.CVE5 {
+func loadTestCVE(t *testing.T, path string) cves.CVE5 {
+	t.Helper()
 	file, err := os.Open(path)
 	if err != nil {
-		log.Fatalf("Failed to load test data from %q: %v", path, err)
+		t.Fatalf("Failed to load test data from %q: %v", path, err)
 	}
 	defer file.Close()
 	var cve cves.CVE5
 	err = json.NewDecoder(file).Decode(&cve)
 	if err != nil {
-		log.Panicf("Failed to decode %q: %+v", path, err)
+		t.Fatalf("Failed to decode %q: %+v", path, err)
 	}
 
 	return cve
@@ -161,7 +162,7 @@ func TestFromCVE5(t *testing.T) {
 	}{
 		{
 			name: "CVE-2025-1110",
-			cve:  loadTestData("CVE-2025-1110"),
+			cve:  loadTestData(t, "CVE-2025-1110"),
 			refs: []cves.Reference{
 				{URL: "https://gitlab.com/gitlab-org/gitlab/-/issues/517693", Tags: []string{"issue-tracking", "permissions-required"}},
 				{URL: "https://hackerone.com/reports/2972576", Tags: []string{"technical-description", "exploit", "permissions-required"}},
@@ -202,7 +203,7 @@ func TestFromCVE5(t *testing.T) {
 		},
 		{
 			name: "CVE-2024-21634",
-			cve:  loadTestData("CVE-2024-21634"),
+			cve:  loadTestData(t, "CVE-2024-21634"),
 			refs: []cves.Reference{
 				{Tags: []string{"x_refsource_CONFIRM"}, URL: "https://github.com/amazon-ion/ion-java/security/advisories/GHSA-264p-99wq-f4j6"},
 			},
@@ -234,7 +235,7 @@ func TestFromCVE5(t *testing.T) {
 		},
 		{
 			name: "CVE-2025-21772",
-			cve:  loadTestData("CVE-2025-21772"),
+			cve:  loadTestData(t, "CVE-2025-21772"),
 			refs: []cves.Reference{
 				{URL: "https://git.kernel.org/stable/c/a3e77da9f843e4ab93917d30c314f0283e28c124"},
 				{URL: "https://git.kernel.org/stable/c/213ba5bd81b7e97ac6e6190b8f3bc6ba76123625"},

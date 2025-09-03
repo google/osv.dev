@@ -16,7 +16,6 @@ package git
 
 import (
 	"fmt"
-	"maps"
 	"regexp"
 	"slices"
 	"strings"

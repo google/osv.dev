@@ -165,7 +165,6 @@ func combineIntoOSV(loadedCves map[cves.CVEID]cves.Vulnerability, allParts map[c
 				Logger.Warnf("Unable to determine CVE dispute status of %s: %v", convertedCve.ID, err)
 			}
 			if err == nil && !modified.IsZero() {
-				convertedCve.Withdrawn = modified
 				convertedCve.DatabaseSpecific = make(map[string]any)
 				convertedCve.DatabaseSpecific["isDisputed"] = true
 			}

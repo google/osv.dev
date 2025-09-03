@@ -1055,11 +1055,6 @@ func ReposFromReferencesCVEList(cve string, refs []Reference, tagDenyList []stri
 		if slices.Contains(repos, repo) {
 			continue
 		}
-		// If the reference is a commit URL, the repo is inherently useful (but only if the repo still ultimately works).
-		_, err = Commit(ref.URL)
-		if err != nil {
-			continue
-		}
 
 		repos = append(repos, repo)
 	}

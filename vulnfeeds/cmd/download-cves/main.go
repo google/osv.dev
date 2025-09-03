@@ -35,7 +35,7 @@ var cvePath = flag.String("cvePath", CVEPathDefault, "Where to download CVEs to"
 
 func main() {
 	var logCleanup func()
-	logCleanup = logger.InitGlobalLogger("download-cves")
+	logCleanup = logger.InitGlobalLogger("download-cves", false)
 	defer logCleanup()
 
 	flag.Parse()

@@ -237,7 +237,7 @@ func main() {
 	flag.Parse()
 
 	var logCleanup func()
-	logCleanup = logger.InitGlobalLogger("cvelist-osv")
+	logCleanup = logger.InitGlobalLogger("cvelist-osv", false)
 	defer logCleanup()
 
 	// Read the input CVE JSON file.

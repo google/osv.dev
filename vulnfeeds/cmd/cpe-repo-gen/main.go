@@ -164,9 +164,6 @@ func outputProductToRepoMap(prm VendorProductToRepoMap, f io.Writer) error {
 		return err
 	}
 
-	if *Verbose {
-		fmt.Printf("Outputting information about %d application products, %d do not have repos\n", len(prm), productsWithoutRepos)
-	}
 	logger.Infof("Outputting information about %d application products, %d do not have repos", len(prm), productsWithoutRepos)
 
 	return nil
@@ -199,9 +196,6 @@ func outputDescriptionFrequency(df map[string]int, f io.Writer) error {
 		return err
 	}
 
-	if *Verbose {
-		fmt.Printf("Seen %d reference descriptions\n", len(df))
-	}
 	logger.Infof("Seen %d distinct reference descriptions", len(df))
 
 	return nil
@@ -436,7 +430,7 @@ func main() {
 	flag.Parse()
 
 	var logCleanup func()
-	logCleanup = logger.InitGlobalLogger("cpe-repo-gen")
+	logCleanup = logger.InitGlobalLogger("cpe-repo-gen", *Verbose)
 	defer logCleanup()
 
 	CPEDictionary, err := LoadCPEDictionary(*CPEDictionaryFile)

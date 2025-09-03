@@ -18,7 +18,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"log"
 	"net/http"
 	"net/url"
 	"path"
@@ -775,7 +774,7 @@ func ExtractVersionInfo(cve CVE, validVersions []string, httpClient *http.Client
 		v.AffectedVersions, extractNotes = ExtractVersionsFromText(validVersions, EnglishDescription(cve.Descriptions))
 		notes = append(notes, extractNotes...)
 		if len(v.AffectedVersions) > 0 {
-			log.Printf("[%s] Extracted versions from description = %+v", cve.ID, v.AffectedVersions)
+			logger.Infof("[%s] Extracted versions from description = %+v", cve.ID, v.AffectedVersions)
 		}
 	}
 

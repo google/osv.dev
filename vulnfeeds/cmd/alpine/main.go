@@ -25,7 +25,7 @@ const (
 
 func main() {
 	var logCleanup func()
-	logCleanup = logger.InitGlobalLogger("alpine-osv")
+	logCleanup = logger.InitGlobalLogger("alpine-osv", false)
 	defer logCleanup()
 
 	alpineOutputPath := flag.String(

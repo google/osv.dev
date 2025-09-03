@@ -11,12 +11,12 @@ import (
 
 var GlobalLogger LoggerWrapper
 
-func InitGlobalLogger(logID string) func() {
+func InitGlobalLogger(logID string, forceLocalLogging bool) func() {
 	if GlobalLogger.GCloudLogger != nil {
 		log.Panicf("logger already initialized")
 	}
 
-	gl, cleanup := createLoggerWrapper(logID)
+	gl, cleanup := createLoggerWrapper(logID, forceLocalLogging)
 	GlobalLogger = gl
 
 	return cleanup
@@ -24,7 +24,7 @@ func InitGlobalLogger(logID string) func() {
 
 // CreateLoggerWrapper creates and initializes the LoggerWrapper,
 // and also returns a cleanup function to be deferred
-func createLoggerWrapper(logID string) (LoggerWrapper, func()) {
+func createLoggerWrapper(logID string, forceLocalLogging bool) (LoggerWrapper, func()) {
 	projectID, projectIDSet := os.LookupEnv("GOOGLE_CLOUD_PROJECT")
 	if !projectIDSet {
 		return LoggerWrapper{}, func() {}
@@ -36,7 +36,8 @@ func createLoggerWrapper(logID string) (LoggerWrapper, func()) {
 		log.Fatalf("Failed to create client: %v", err)
 	}
 	wrapper := LoggerWrapper{
-		GCloudLogger: client.Logger(logID),
+		GCloudLogger:      client.Logger(logID),
+		ForceLocalLogging: forceLocalLogging,
 	}
 
 	return wrapper, func() { client.Close() }
@@ -45,12 +46,13 @@ func createLoggerWrapper(logID string) (LoggerWrapper, func()) {
 // LoggerWrapper wraps the Logger provided by google cloud
 // Will default to the go stdout and stderr logging if GCP logger is not set
 type LoggerWrapper struct {
-	GCloudLogger *logging.Logger
+	GCloudLogger      *logging.Logger
+	ForceLocalLogging bool
 }
 
 // Infof prints Info level log
 func (wrapper LoggerWrapper) Infof(format string, a ...any) {
-	if wrapper.GCloudLogger == nil {
+	if wrapper.GCloudLogger == nil || wrapper.ForceLocalLogging {
 		log.Printf(format, a...)
 		return
 	}
@@ -63,7 +65,7 @@ func (wrapper LoggerWrapper) Infof(format string, a ...any) {
 
 // Warnf prints Warning level log, defaults to stdout if GCP logger is not set
 func (wrapper LoggerWrapper) Warnf(format string, a ...any) {
-	if wrapper.GCloudLogger == nil {
+	if wrapper.GCloudLogger == nil || wrapper.ForceLocalLogging {
 		log.Printf(format, a...)
 		return
 	}
@@ -76,7 +78,7 @@ func (wrapper LoggerWrapper) Warnf(format string, a ...any) {
 
 // Errorf prints Error level log
 func (wrapper LoggerWrapper) Errorf(format string, a ...any) {
-	if wrapper.GCloudLogger == nil {
+	if wrapper.GCloudLogger == nil || wrapper.ForceLocalLogging {
 		log.Printf(format, a...)
 		return
 	}
@@ -89,7 +91,7 @@ func (wrapper LoggerWrapper) Errorf(format string, a ...any) {
 
 // Fatalf prints Error level log with stack trace, before exiting with error code 1
 func (wrapper LoggerWrapper) Fatalf(format string, a ...any) {
-	if wrapper.GCloudLogger == nil {
+	if wrapper.GCloudLogger == nil || wrapper.ForceLocalLogging {
 		log.Fatalf(format, a...)
 		return
 	}
@@ -103,6 +105,24 @@ func (wrapper LoggerWrapper) Fatalf(format string, a ...any) {
 		log.Fatalln("Failed to flush logger")
 	}
 	os.Exit(1)
+}
+
+// Panicf prints Error level log with stack trace, before panicing
+func (wrapper LoggerWrapper) Panicf(format string, a ...any) {
+	if wrapper.GCloudLogger == nil || wrapper.ForceLocalLogging {
+		log.Panicf(format, a...)
+		return
+	}
+
+	wrapper.GCloudLogger.Log(logging.Entry{
+		Severity: logging.Error,
+		Payload:  fmt.Sprintf(format, a...) + "\n" + string(debug.Stack()),
+	})
+	err := wrapper.GCloudLogger.Flush()
+	if err != nil {
+		log.Panicln("Failed to flush logger")
+	}
+	panic(nil)
 }
 
 // ---- Global versions of these funcs:
@@ -125,4 +145,9 @@ func Errorf(format string, a ...any) {
 // Fatalf prints Error level log with stack trace, before exiting with error code 1
 func Fatalf(format string, a ...any) {
 	GlobalLogger.Fatalf(format, a...)
+}
+
+// Panicf prints Error level log with stack trace, before panicing
+func Panicf(format string, a ...any) {
+	GlobalLogger.Panicf(format, a...)
 }

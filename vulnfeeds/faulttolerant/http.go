@@ -17,7 +17,7 @@ func Get(url string) (resp *http.Response, err error) {
 
 // Head makes a HTTP HEAD request for url and retry 3 times, with an exponential backoff.
 func Head(url string) (resp *http.Response, err error) {
-	return req(url, "HEAD")
+	return req(url, http.MethodHead)
 }
 
 // req makes a HTTP request for url and retry 3 times, with an exponential backoff.

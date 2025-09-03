@@ -23,8 +23,6 @@ const (
 
 	alpineEcosystem          = "Alpine"
 	alpineSecurityTrackerURL = "https://security.alpinelinux.org/vuln"
-	debianEcosystem          = "Debian"
-	debianSecurityTrackerURL = "https://security-tracker.debian.org/tracker"
 )
 
 var Logger utility.LoggerWrapper
@@ -169,14 +167,10 @@ func combineIntoOSV(loadedCves map[cves.CVEID]cves.Vulnerability, allParts map[c
 			}
 		}
 
-		addedDebianURL := false
 		addedAlpineURL := false
 		for _, pkgInfo := range allParts[cveId] {
 			convertedCve.AddPkgInfo(pkgInfo)
-			if strings.HasPrefix(pkgInfo.Ecosystem, debianEcosystem) && !addedDebianURL {
-				addReference(string(cveId), debianEcosystem, convertedCve)
-				addedDebianURL = true
-			} else if strings.HasPrefix(pkgInfo.Ecosystem, alpineEcosystem) && !addedAlpineURL {
+			if strings.HasPrefix(pkgInfo.Ecosystem, alpineEcosystem) && !addedAlpineURL {
 				addReference(string(cveId), alpineEcosystem, convertedCve)
 				addedAlpineURL = true
 			}
@@ -248,8 +242,6 @@ func addReference(cveId string, ecosystem string, convertedCve *vulns.Vulnerabil
 	securityReference := osvschema.Reference{Type: osvschema.ReferenceAdvisory}
 	if ecosystem == alpineEcosystem {
 		securityReference.URL, _ = url.JoinPath(alpineSecurityTrackerURL, cveId)
-	} else if ecosystem == debianEcosystem {
-		securityReference.URL, _ = url.JoinPath(debianSecurityTrackerURL, cveId)
 	}
 
 	if securityReference.URL == "" {

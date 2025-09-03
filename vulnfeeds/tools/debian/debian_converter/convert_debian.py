@@ -209,7 +209,9 @@ def parse_security_tracker_file(advisories: Advisories,
         # {CVE-XXXX-XXXX CVE-XXXX-XXXX}
         line = line.lstrip()
         if line.startswith('{'):
-          advisories[current_advisory].upstream = line.strip('{}').split()
+          upstreams = line.strip('{}').split()
+          for u in upstreams:
+            advisories[current_advisory].upstream.append("DEBIAN"+u)
           continue
 
         if line.startswith('NOTE:'):

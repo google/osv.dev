@@ -1,3 +1,4 @@
+// Package utility contains utility functions for vulnerability feeds.
 package utility
 
 import (
@@ -13,19 +14,20 @@ import (
 // CreateLoggerWrapper creates and initializes the LoggerWrapper,
 // and also returns a cleanup function to be deferred
 func CreateLoggerWrapper(logID string) (LoggerWrapper, func()) {
-	projectId, projectIdSet := os.LookupEnv("GOOGLE_CLOUD_PROJECT")
-	if !projectIdSet {
+	projectID, projectIDSet := os.LookupEnv("GOOGLE_CLOUD_PROJECT")
+	if !projectIDSet {
 		return LoggerWrapper{}, func() {}
 	}
 
-	log.Println("Logging to project id: " + projectId)
-	client, err := logging.NewClient(context.Background(), projectId)
+	log.Println("Logging to project id: " + projectID)
+	client, err := logging.NewClient(context.Background(), projectID)
 	if err != nil {
 		log.Fatalf("Failed to create client: %v", err)
 	}
 	wrapper := LoggerWrapper{
 		GCloudLogger: client.Logger(logID),
 	}
+
 	return wrapper, func() { client.Close() }
 }
 

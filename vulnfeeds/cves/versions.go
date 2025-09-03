@@ -23,12 +23,12 @@ import (
 	"net/url"
 	"path"
 	"regexp"
+	"slices"
 	"strings"
 	"time"
 
 	"github.com/knqyf263/go-cpe/naming"
 	"github.com/sethvargo/go-retry"
-	"golang.org/x/exp/slices"
 
 	"github.com/google/osv/vulnfeeds/git"
 	"github.com/google/osv/vulnfeeds/models"
@@ -92,8 +92,10 @@ func repoGitWeb(parsedURL *url.URL) (string, error) {
 		if slices.Contains(gitProtocolHosts, parsedURL.Hostname()) {
 			return fmt.Sprintf("git://%s%s", parsedURL.Hostname(), repo), nil
 		}
+
 		return fmt.Sprintf("https://%s%s", parsedURL.Hostname(), repo), nil
 	}
+
 	return "", fmt.Errorf("unsupported GitWeb URL: %s", parsedURL.String())
 }
 
@@ -139,6 +141,7 @@ func Repo(u string) (string, error) {
 				nil
 		}
 		// GitLab can have a deeper structure to a repo (projects can be within nested groups)
+		//nolint:staticcheck
 		if len(pathParts) >= 3 && strings.HasPrefix(parsedURL.Hostname(), "gitlab.") &&
 			!(strings.Contains(parsedURL.Path, "commit") ||
 				strings.Contains(parsedURL.Path, "compare") ||
@@ -237,17 +240,14 @@ func Repo(u string) (string, error) {
 		if strings.HasSuffix(parsedURL.Path, "commit/") &&
 			strings.HasPrefix(parsedURL.RawQuery, "id=") {
 			repo := strings.TrimSuffix(parsedURL.Path, "/commit/")
-			return fmt.Sprintf("https://gitlab.freedesktop.org%s",
-				repo), nil
+			return "https://gitlab.freedesktop.org" + repo, nil
 		}
 		if strings.HasSuffix(parsedURL.Path, "refs/tags") {
 			repo := strings.TrimSuffix(parsedURL.Path, "/refs/tags")
-			return fmt.Sprintf("https://gitlab.freedesktop.org%s",
-				repo), nil
+			return "https://gitlab.freedesktop.org" + repo, nil
 		}
 		if len(strings.Split(parsedURL.Path, "/")) == 4 {
-			return fmt.Sprintf("https://gitlab.freedesktop.org%s",
-				parsedURL.Path), nil
+			return "https://gitlab.freedesktop.org" + parsedURL.Path, nil
 		}
 	}
 
@@ -392,6 +392,7 @@ func Commit(u string) (string, error) {
 			if !strings.HasPrefix(param, "h=") {
 				continue
 			}
+
 			return strings.Split(param, "=")[1], nil
 		}
 	}
@@ -413,7 +414,7 @@ func Commit(u string) (string, error) {
 		return strings.TrimSuffix(possibleCommitHash, ".patch"), nil
 	}
 
-	// and Bitbucket.org commit URLs are similiar yet slightly different:
+	// and Bitbucket.org commit URLs are similar yet slightly different:
 	// https://bitbucket.org/openpyxl/openpyxl/commits/3b4905f428e1
 	//
 	// Some bitbucket.org commit URLs have been observed in the wild with a trailing /, which will
@@ -467,7 +468,6 @@ func resolveGitTag(parsedURL *url.URL, u string, gitSHA1Regex *regexp.Regexp) (s
 	}
 
 	return "", errors.New("no tag found")
-
 }
 
 // Detect linkrot and handle link decay in HTTP(S) links via HEAD request with exponential backoff.
@@ -479,7 +479,7 @@ func ValidateAndCanonicalizeLink(link string, httpClient *http.Client) (canonica
 	}
 	backoff := retry.NewExponential(1 * time.Second)
 	if err := retry.Do(context.Background(), retry.WithMaxRetries(3, backoff), func(ctx context.Context) error {
-		req, err := http.NewRequest("HEAD", link, nil)
+		req, err := http.NewRequestWithContext(ctx, http.MethodHead, link, nil)
 		if err != nil {
 			return err
 		}
@@ -508,8 +508,9 @@ func ValidateAndCanonicalizeLink(link string, httpClient *http.Client) (canonica
 			return nil
 		}
 	}); err != nil {
-		return link, fmt.Errorf("unable to determine validity of %q: %v", link, err)
+		return link, fmt.Errorf("unable to determine validity of %q: %w", link, err)
 	}
+
 	return canonicalLink, nil
 }
 
@@ -558,6 +559,7 @@ func HasVersion(validVersions []string, version string) bool {
 	if len(validVersions) == 0 {
 		return true
 	}
+
 	return versionIndex(validVersions, version) != -1
 }
 
@@ -567,6 +569,7 @@ func versionIndex(validVersions []string, version string) int {
 			return i
 		}
 	}
+
 	return -1
 }
 
@@ -607,7 +610,8 @@ func ExtractVersionsFromText(validVersions []string, text string) ([]models.Affe
 	}
 
 	var notes []string
-	var versions []models.AffectedVersion
+	versions := make([]models.AffectedVersion, 0, len(matches))
+
 	for _, match := range matches {
 		// Trim periods that are part of sentences.
 		introduced := processExtractedVersion(match[1])
@@ -665,13 +669,14 @@ func deduplicateAffectedCommits(commits []models.AffectedCommit) []models.Affect
 	}
 	slices.SortStableFunc(commits, models.AffectedCommitCompare)
 	uniqueCommits := slices.Compact(commits)
+
 	return uniqueCommits
 }
 
 func ExtractVersionInfo(cve CVE, validVersions []string, httpClient *http.Client) (v models.VersionInfo, notes []string) {
 	for _, reference := range cve.References {
 		// (Potentially faulty) Assumption: All viable Git commit reference links are fix commits.
-		if commit, err := ExtractGitCommit(reference.Url, models.Fixed, httpClient); err == nil {
+		if commit, err := ExtractGitCommit(reference.URL, models.Fixed, httpClient); err == nil {
 			v.AffectedCommits = append(v.AffectedCommits, commit)
 		}
 	}
@@ -796,6 +801,7 @@ func ExtractVersionInfo(cve CVE, validVersions []string, httpClient *http.Client
 		}
 		v.AffectedVersions = affectedVersionsWithoutLastAffected
 	}
+
 	return v, notes
 }
 
@@ -816,7 +822,7 @@ func CPEs(cve CVE) []string {
 // See 5.3.2 of NISTIR 7695 for more details
 // https://nvlpubs.nist.gov/nistpubs/Legacy/IR/nistir7695.pdf
 func RemoveQuoting(s string) (result string) {
-	return strings.Replace(s, "\\", "", -1)
+	return strings.ReplaceAll(s, "\\", "")
 }
 
 // Parse a well-formed CPE string into a struct.
@@ -850,6 +856,7 @@ func (vp *VendorProduct) UnmarshalText(text []byte) error {
 	s := strings.Split(string(text), ":")
 	vp.Vendor = s[0]
 	vp.Product = s[1]
+
 	return nil
 }
 
@@ -859,6 +866,7 @@ func RefAcceptable(ref Reference, tagDenyList []string) bool {
 			return false
 		}
 	}
+
 	return true
 }
 
@@ -870,7 +878,7 @@ func MaybeUpdateVPRepoCache(cache VendorProductToRepoMap, vp *VendorProduct, rep
 	if slices.Contains(cache[*vp], repo) {
 		return
 	}
-	// Avoid poluting the cache with existant-but-useless repos.
+	// Avoid polluting the cache with existent-but-useless repos.
 	if git.ValidRepoAndHasUsableRefs(repo) {
 		cache[*vp] = append(cache[*vp], repo)
 	}
@@ -905,25 +913,25 @@ func MaybeRemoveFromVPRepoCache(cache VendorProductToRepoMap, vp *VendorProduct,
 // Takes a CVE ID string (for logging), VersionInfo with AffectedVersions and
 // typically no AffectedCommits and attempts to add AffectedCommits (including Fixed commits) where there aren't any.
 // Refuses to add the same commit to AffectedCommits more than once.
-func GitVersionsToCommits(CVE CVEID, versions models.VersionInfo, repos []string, cache git.RepoTagsCache, Logger utility.LoggerWrapper) (v models.VersionInfo, e error) {
+func GitVersionsToCommits(cveID CVEID, versions models.VersionInfo, repos []string, cache git.RepoTagsCache, logger utility.LoggerWrapper) (v models.VersionInfo, e error) {
 	// versions is a VersionInfo with AffectedVersions and typically no AffectedCommits
 	// v is a VersionInfo with AffectedCommits (containing Fixed commits) included
 	v = versions
 	for _, repo := range repos {
 		normalizedTags, err := git.NormalizeRepoTags(repo, cache)
 		if err != nil {
-			Logger.Warnf("[%s]: Failed to normalize tags for %s: %v", CVE, repo, err)
+			logger.Warnf("[%s]: Failed to normalize tags for %s: %v", cveID, repo, err)
 			continue
 		}
 		for _, av := range versions.AffectedVersions {
-			Logger.Infof("[%s]: Attempting version resolution for %+v using %q", CVE, av, repo)
+			logger.Infof("[%s]: Attempting version resolution for %+v using %q", cveID, av, repo)
 			introducedEquivalentCommit := ""
 			if av.Introduced != "" {
 				ac, err := git.VersionToCommit(av.Introduced, repo, models.Introduced, normalizedTags)
 				if err != nil {
-					Logger.Warnf("[%s]: Failed to get a Git commit for introduced version %q from %q: %v", CVE, av.Introduced, repo, err)
+					logger.Warnf("[%s]: Failed to get a Git commit for introduced version %q from %q: %v", cveID, av.Introduced, repo, err)
 				} else {
-					Logger.Infof("[%s]: Successfully derived %+v for introduced version %q", CVE, ac, av.Introduced)
+					logger.Infof("[%s]: Successfully derived %+v for introduced version %q", cveID, ac, av.Introduced)
 					introducedEquivalentCommit = ac.Introduced
 				}
 			}
@@ -933,13 +941,13 @@ func GitVersionsToCommits(CVE CVEID, versions models.VersionInfo, repos []string
 			// Fixed commits, they're also assumed to be more precise than what may be derived from tag to commit mapping.
 			fixedEquivalentCommit := ""
 			if v.HasFixedCommits(repo) && av.Fixed != "" {
-				Logger.Infof("[%s]: Using preassumed fixed commits %+v instead of deriving from fixed version %q", CVE, v.FixedCommits(repo), av.Fixed)
+				logger.Infof("[%s]: Using preassumed fixed commits %+v instead of deriving from fixed version %q", cveID, v.FixedCommits(repo), av.Fixed)
 			} else if av.Fixed != "" {
 				ac, err := git.VersionToCommit(av.Fixed, repo, models.Fixed, normalizedTags)
 				if err != nil {
-					Logger.Warnf("[%s]: Failed to get a Git commit for fixed version %q from %q: %v", CVE, av.Fixed, repo, err)
+					logger.Warnf("[%s]: Failed to get a Git commit for fixed version %q from %q: %v", cveID, av.Fixed, repo, err)
 				} else {
-					Logger.Infof("[%s]: Successfully derived %+v for fixed version %q", CVE, ac, av.Fixed)
+					logger.Infof("[%s]: Successfully derived %+v for fixed version %q", cveID, ac, av.Fixed)
 					fixedEquivalentCommit = ac.Fixed
 				}
 			}
@@ -950,9 +958,9 @@ func GitVersionsToCommits(CVE CVEID, versions models.VersionInfo, repos []string
 			if !v.HasFixedCommits(repo) && av.LastAffected != "" {
 				ac, err := git.VersionToCommit(av.LastAffected, repo, models.LastAffected, normalizedTags)
 				if err != nil {
-					Logger.Warnf("[%s]: Failed to get a Git commit for last_affected version %q from %q: %v", CVE, av.LastAffected, repo, err)
+					logger.Warnf("[%s]: Failed to get a Git commit for last_affected version %q from %q: %v", cveID, av.LastAffected, repo, err)
 				} else {
-					Logger.Infof("[%s]: Successfully derived %+v for last_affected version %q", CVE, ac, av.LastAffected)
+					logger.Infof("[%s]: Successfully derived %+v for last_affected version %q", cveID, ac, av.LastAffected)
 					lastAffectedEquivalentCommit = ac.LastAffected
 				}
 			}
@@ -971,35 +979,37 @@ func GitVersionsToCommits(CVE CVEID, versions models.VersionInfo, repos []string
 			}
 			if ac == (models.AffectedCommit{}) {
 				// Nothing resolved, move on to the next AffectedVersion
-				Logger.Warnf("[%s]: Sufficient resolution not possible for %+v", CVE, av)
+				logger.Warnf("[%s]: Sufficient resolution not possible for %+v", cveID, av)
 				continue
 			}
 			if ac.InvalidRange() {
-				Logger.Warnf("[%s]: Invalid range: %#v", CVE, ac)
+				logger.Warnf("[%s]: Invalid range: %#v", cveID, ac)
 				continue
 			}
 			if v.Duplicated(ac) {
-				Logger.Warnf("[%s]: Duplicate: %#v already present in %#v", CVE, ac, v)
+				logger.Warnf("[%s]: Duplicate: %#v already present in %#v", cveID, ac, v)
 				continue
 			}
 			v.AffectedCommits = append(v.AffectedCommits, ac)
 		}
 	}
+
 	return v, nil
 }
 
 // Examines the CVE references for a CVE and derives repos for it, optionally caching it.
 // TODO (jesslowe): refactor with below
-func ReposFromReferences(CVE string, cache VendorProductToRepoMap, vp *VendorProduct, refs []Reference, tagDenyList []string, Logger utility.LoggerWrapper) (repos []string) {
+func ReposFromReferences(cve string, cache VendorProductToRepoMap, vp *VendorProduct, refs []Reference, tagDenyList []string, logger utility.LoggerWrapper) (repos []string) {
 	for _, ref := range refs {
 		// If any of the denylist tags are in the ref's tag set, it's out of consideration.
 		if !RefAcceptable(ref, tagDenyList) {
 			// Also remove it if previously added under an acceptable tag.
-			MaybeRemoveFromVPRepoCache(cache, vp, ref.Url)
-			Logger.Infof("[%s]: disregarding %q for %q due to a denied tag in %q", CVE, ref.Url, vp, ref.Tags)
+			MaybeRemoveFromVPRepoCache(cache, vp, ref.URL)
+			logger.Infof("[%s]: disregarding %q for %q due to a denied tag in %q", cve, ref.URL, vp, ref.Tags)
+
 			continue
 		}
-		repo, err := Repo(ref.Url)
+		repo, err := Repo(ref.URL)
 		if err != nil {
 			// Failed to parse as a valid repo.
 			continue
@@ -1008,7 +1018,7 @@ func ReposFromReferences(CVE string, cache VendorProductToRepoMap, vp *VendorPro
 			continue
 		}
 		// If the reference is a commit URL, the repo is inherently useful (but only if the repo still ultimately works).
-		_, err = Commit(ref.Url)
+		_, err = Commit(ref.URL)
 		// If it's any other repo-shaped URL, it's only useful if it has tags.
 		if (err == nil && !git.ValidRepo(repo)) || (err != nil && !git.ValidRepoAndHasUsableRefs(repo)) {
 			continue
@@ -1017,28 +1027,27 @@ func ReposFromReferences(CVE string, cache VendorProductToRepoMap, vp *VendorPro
 		MaybeUpdateVPRepoCache(cache, vp, repo)
 	}
 	if vp != nil {
-		Logger.Infof("[%s]: Derived %q for %q %q using references", CVE, repos, vp.Vendor, vp.Product)
+		logger.Infof("[%s]: Derived %q for %q %q using references", cve, repos, vp.Vendor, vp.Product)
 	} else {
-		Logger.Infof("[%s]: Derived %q (no CPEs) using references", CVE, repos)
+		logger.Infof("[%s]: Derived %q (no CPEs) using references", cve, repos)
 	}
 
 	return repos
 }
 
 // Examines the CVE references for a CVE and derives repos for it, optionally caching it.
-func ReposFromReferencesCVEList(CVE string, refs []Reference, tagDenyList []string, Logger utility.LoggerWrapper) (repos []string, notes []string) {
-
+func ReposFromReferencesCVEList(cve string, refs []Reference, tagDenyList []string, _ utility.LoggerWrapper) (repos []string, notes []string) {
 	for _, ref := range refs {
 		// If any of the denylist tags are in the ref's tag set, it's out of consideration.
 		if !RefAcceptable(ref, tagDenyList) {
-			notes = append(notes, fmt.Sprintf("[%s]: disregarding %q due to a denied tag in %q", CVE, ref.Url, ref.Tags))
+			notes = append(notes, fmt.Sprintf("[%s]: disregarding %q due to a denied tag in %q", cve, ref.URL, ref.Tags))
 			continue
 		}
 		// if it ends with .md it is likely a researcher repo and _currently_ useless.
-		if strings.HasSuffix(ref.Url, ".md") {
+		if strings.HasSuffix(ref.URL, ".md") {
 			continue
 		}
-		repo, err := Repo(ref.Url)
+		repo, err := Repo(ref.URL)
 		if err != nil {
 			// Failed to parse as a valid repo.
 			continue
@@ -1046,15 +1055,14 @@ func ReposFromReferencesCVEList(CVE string, refs []Reference, tagDenyList []stri
 		if slices.Contains(repos, repo) {
 			continue
 		}
-		// If the reference is a commit URL, the repo is inherently useful (but only if the repo still ultimately works).
-		_, err = Commit(ref.Url)
 
 		repos = append(repos, repo)
 	}
 	if len(repos) == 0 {
 		notes = append(notes, "[%s]: Failed to identify any repos using references")
 	} else {
-		notes = append(notes, fmt.Sprintf("[%s]: Derived %q (no CPEs) using references", CVE, repos))
+		notes = append(notes, fmt.Sprintf("[%s]: Derived %q (no CPEs) using references", cve, repos))
 	}
+
 	return repos, notes
 }

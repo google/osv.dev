@@ -1,4 +1,3 @@
-// package main contains the data structures for the Debian Security Tracker.
 package main
 
 type Release struct {

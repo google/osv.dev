@@ -100,7 +100,7 @@ var DebianCopyrightDenylist = []VendorProduct{
 }
 
 // MarshalText is a helper for JSON rendering of a map with a struct key.
-func (vp VendorProduct) MarshalText() ([]byte, error) {
+func (vp VendorProduct) MarshalText() ([]byte, error) { //nolint:unparam
 	return []byte(vp.Vendor + ":" + vp.Product), nil
 }
 

@@ -33,7 +33,7 @@ func fuzzyVersionToCommit(normalizedVersion string, repo string, commitType mode
 	// Keep in sync with the regex in models.NormalizeVersion()
 	var validVersionText = regexp.MustCompile(`(?i)(?:rc|alpha|beta|preview)\d*`)
 
-	for k, _ := range normalizedTags {
+	for k := range normalizedTags {
 		// "1-8-0-RC0" (normalized from "1.8.0-RC0") shouldn't be considered a fuzzy match for "1-8-0" (normalized from "1.8.0")
 		if (validVersionText.MatchString(k) && validVersionText.MatchString(normalizedVersion)) && strings.HasPrefix(k, normalizedVersion) {
 			candidateTags = append(candidateTags, k)

@@ -1,3 +1,4 @@
+// package main contains the conversion logic for turning debian security tracker info to OSV parts
 package main
 
 import (

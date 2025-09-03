@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// Package cves contains CVE-specific data structures.
 package cves
 
 import (
@@ -39,7 +40,7 @@ type ProviderMetadata struct {
 type CVE5Metadata struct {
 	State             string `json:"state,omitempty"`
 	CVEID             CVEID  `json:"cveId,omitempty"`
-	AssignerOrgId     string `json:"assignerOrgId,omitempty"`
+	AssignerOrgID     string `json:"assignerOrgId,omitempty"`
 	AssignerShortName string `json:"assignerShortName,omitempty"`
 	DateUpdated       string `json:"dateUpdated,omitempty"`
 	DateReserved      string `json:"dateReserved,omitempty"`
@@ -56,8 +57,8 @@ type CPENode struct {
 		Vulnerable            bool   `json:"vulnerable,omitempty"`
 		Criteria              string `json:"criteria,omitempty"`
 		VersionEndIncluding   string `json:"versionEndIncluding,omitempty"`
-		VersionStartExcluding string `json:"versionStartExcluding,omitempty" yaml:"versionStartExcluding,omitempty" mapstructure:"versionStartExcluding,omitempty"`
-		VersionStartIncluding string `json:"versionStartIncluding,omitempty" yaml:"versionStartIncluding,omitempty" mapstructure:"versionStartIncluding,omitempty"`
+		VersionStartExcluding string `json:"versionStartExcluding,omitempty" mapstructure:"versionStartExcluding,omitempty" yaml:"versionStartExcluding,omitempty"`
+		VersionStartIncluding string `json:"versionStartIncluding,omitempty" mapstructure:"versionStartIncluding,omitempty" yaml:"versionStartIncluding,omitempty"`
 		VersionEndExcluding   string `json:"versionEndExcluding,omitempty"`
 	} `json:"cpeMatch,omitempty"`
 }
@@ -76,16 +77,16 @@ type BaseCVSS struct {
 
 type CVSS struct {
 	// VectorString corresponds to the JSON schema field "vectorString".
-	VectorString string `json:"vectorString,omitempty" yaml:"vectorString" mapstructure:"vectorString"`
+	VectorString string `json:"vectorString,omitempty" mapstructure:"vectorString" yaml:"vectorString"`
 }
 
 type Metrics struct {
 	Format    string       `json:"format,omitempty"`
 	Scenarios []LangString `json:"scenarios,omitempty"`
-	CVSSV4_0  BaseCVSS     `json:"cvssV4_0,omitempty"`
-	CVSSV3_1  BaseCVSS     `json:"cvssV3_1,omitempty"`
-	CVSSV3_0  BaseCVSS     `json:"cvssV3_0,omitempty"`
-	CVSSV2_0  BaseCVSS     `json:"cvssV2_0,omitempty"`
+	CVSSv4_0  BaseCVSS     `json:"cvssV4_0,omitempty"`
+	CVSSv3_1  BaseCVSS     `json:"cvssV3_1,omitempty"`
+	CVSSv3_0  BaseCVSS     `json:"cvssV3_0,omitempty"`
+	CVSSv2_0  BaseCVSS     `json:"cvssV2_0,omitempty"`
 	Other     struct {
 		Type    string `json:"type,omitempty"`
 		Content any    `json:"content,omitempty"`
@@ -97,7 +98,7 @@ type CNA struct {
 	Descriptions     []LangString     `json:"descriptions"`     // Required
 	Affected         []Affected       `json:"affected"`         // Required
 	ProblemTypes     ProblemTypes     `json:"problemTypes,omitempty"`
-	References       []Reference      `json:"references"` //Required
+	References       []Reference      `json:"references"` // Required
 	Impacts          []Impact         `json:"impacts,omitempty"`
 	Metrics          []Metrics        `json:"metrics,omitempty"`
 	Tags             []string         `json:"tags,omitempty"`
@@ -118,7 +119,7 @@ type Affected struct {
 	Vendor        string     `json:"vendor,omitempty"`
 	Product       string     `json:"product,omitempty"`
 	PackageName   string     `json:"packageName,omitempty"`
-	CollectionUrl string     `json:"collectionURL,omitempty"`
+	CollectionURL string     `json:"collectionURL,omitempty"`
 	Versions      []Versions `json:"versions,omitempty"`
 	Repo          string     `json:"repo,omitempty"`
 	DefaultStatus string     `json:"defaultStatus,omitempty"`
@@ -148,12 +149,12 @@ func EnglishDescription(descriptions []LangString) string {
 			return desc.Value
 		}
 	}
+
 	return ""
 }
 
 func ParseCVE5Timestamp(timestamp string) (time.Time, error) {
-	if strings.HasSuffix(timestamp, "Z") {
-		timestamp = timestamp[:len(timestamp)-1]
-	}
+	timestamp = strings.TrimSuffix(timestamp, "Z")
+
 	return time.Parse(CVE5TimeFormat, timestamp)
 }

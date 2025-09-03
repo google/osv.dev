@@ -3,10 +3,10 @@ package osvdevexperimental
 import (
 	"context"
 	"errors"
-	"github.com/ossf/osv-schema/bindings/go/osvschema"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
+	"github.com/ossf/osv-schema/bindings/go/osvschema"
 	"osv.dev/bindings/go/osvdev"
 )
 
@@ -15,7 +15,7 @@ type mockOSVClient struct {
 	batchQueryReponses map[string]*osvdev.BatchedResponse
 }
 
-func (m *mockOSVClient) Query(ctx context.Context, query *osvdev.Query) (*osvdev.Response, error) {
+func (m *mockOSVClient) Query(_ context.Context, query *osvdev.Query) (*osvdev.Response, error) {
 	key := query.PageToken
 	if key == "" {
 		key = "first"
@@ -24,10 +24,11 @@ func (m *mockOSVClient) Query(ctx context.Context, query *osvdev.Query) (*osvdev
 	if !ok {
 		return nil, errors.New("no response for query")
 	}
+
 	return resp, nil
 }
 
-func (m *mockOSVClient) QueryBatch(ctx context.Context, queries []*osvdev.Query) (*osvdev.BatchedResponse, error) {
+func (m *mockOSVClient) QueryBatch(_ context.Context, queries []*osvdev.Query) (*osvdev.BatchedResponse, error) {
 	// For simplicity, we'll just use the first query's page token to determine the response.
 	key := ""
 	if len(queries) > 0 {
@@ -41,6 +42,7 @@ func (m *mockOSVClient) QueryBatch(ctx context.Context, queries []*osvdev.Query)
 	if !ok {
 		return nil, errors.New("no response for batch query")
 	}
+
 	return resp, nil
 }
 

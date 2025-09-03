@@ -1,3 +1,4 @@
+// package main contains the conversion logic for turning debian security tracker info to OSV parts
 package main
 
 import (
@@ -77,9 +78,10 @@ func getDebianReleaseMap() (map[string]string, error) {
 
 	// Get the index number of version and series.
 	for i, col := range data[0] {
-		if col == "version" {
+		switch col {
+		case "version":
 			versionIndex = i
-		} else if col == "series" {
+		case "series":
 			seriesIndex = i
 		}
 	}
@@ -99,9 +101,10 @@ func getDebianReleaseMap() (map[string]string, error) {
 }
 
 // updateOSVPkgInfos adds new release entries to osvPkgInfos.
-func updateOSVPkgInfos(pkgName string, cveId string, releases map[string]Release, osvPkgInfos map[string][]vulns.PackageInfo, debianReleaseMap map[string]string, releaseNames []string) {
+func updateOSVPkgInfos(pkgName string, cveID string, releases map[string]Release, osvPkgInfos map[string][]vulns.PackageInfo, debianReleaseMap map[string]string, releaseNames []string) {
+	//nolint:prealloc
 	var pkgInfos []vulns.PackageInfo
-	if value, ok := osvPkgInfos[cveId]; ok {
+	if value, ok := osvPkgInfos[cveID]; ok {
 		pkgInfos = value
 	}
 
@@ -120,7 +123,7 @@ func updateOSVPkgInfos(pkgName string, cveId string, releases map[string]Release
 			PkgName:   pkgName,
 			Ecosystem: "Debian:" + debianVersion,
 		}
-		pkgInfo.EcosystemSpecific = make(map[string]interface{})
+		pkgInfo.EcosystemSpecific = make(map[string]any)
 
 		pkgInfo.VersionInfo = models.VersionInfo{
 			AffectedVersions: []models.AffectedVersion{{Introduced: "0"}},
@@ -135,7 +138,7 @@ func updateOSVPkgInfos(pkgName string, cveId string, releases map[string]Release
 		pkgInfos = append(pkgInfos, pkgInfo)
 	}
 	if pkgInfos != nil {
-		osvPkgInfos[cveId] = pkgInfos
+		osvPkgInfos[cveID] = pkgInfos
 	}
 }
 
@@ -145,7 +148,7 @@ func generateDebianSecurityTrackerOSV(debianData DebianSecurityTrackerData, debi
 	osvPkgInfos := make(map[string][]vulns.PackageInfo)
 
 	// Sorts packages to ensure results remain consistent between runs.
-	var pkgNames []string
+	pkgNames := make([]string, 0, len(debianData))
 	for name := range debianData {
 		pkgNames = append(pkgNames, name)
 	}
@@ -160,13 +163,14 @@ func generateDebianSecurityTrackerOSV(debianData DebianSecurityTrackerData, debi
 	sort.Slice(releaseNames, func(i, j int) bool {
 		vi, _ := strconv.ParseFloat(debianReleaseMap[releaseNames[i]], 64)
 		vj, _ := strconv.ParseFloat(debianReleaseMap[releaseNames[j]], 64)
+
 		return vi < vj
 	})
 
 	for _, pkgName := range pkgNames {
 		pkg := debianData[pkgName]
-		for cveId, cve := range pkg {
-			updateOSVPkgInfos(pkgName, cveId, cve.Releases, osvPkgInfos, debianReleaseMap, releaseNames)
+		for cveID, cve := range pkg {
+			updateOSVPkgInfos(pkgName, cveID, cve.Releases, osvPkgInfos, debianReleaseMap, releaseNames)
 		}
 	}
 
@@ -175,9 +179,9 @@ func generateDebianSecurityTrackerOSV(debianData DebianSecurityTrackerData, debi
 
 func writeToOutput(cvePkgInfos map[string][]vulns.PackageInfo) error {
 	Logger.Infof("Writing package infos to the output.")
-	for cveId := range cvePkgInfos {
-		pkgInfos := cvePkgInfos[cveId]
-		file, err := os.OpenFile(path.Join(debianOutputPathDefault, cveId+".debian.json"), os.O_CREATE|os.O_RDWR, 0644)
+	for cveID := range cvePkgInfos {
+		pkgInfos := cvePkgInfos[cveID]
+		file, err := os.OpenFile(path.Join(debianOutputPathDefault, cveID+".debian.json"), os.O_CREATE|os.O_RDWR, 0644)
 		if err != nil {
 			return err
 		}
@@ -213,5 +217,6 @@ func downloadDebianSecurityTracker() (DebianSecurityTrackerData, error) {
 	}
 
 	Logger.Infof("Successfully downloaded Debian Security Tracker Data.")
+
 	return decodedDebianData, err
 }

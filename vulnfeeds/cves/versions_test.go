@@ -9,11 +9,12 @@ import (
 	"testing"
 	"time"
 
+	"slices"
+
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/osv/vulnfeeds/internal/testutils"
 	"github.com/google/osv/vulnfeeds/models"
 	"github.com/google/osv/vulnfeeds/utility"
-	"golang.org/x/exp/slices"
 )
 
 func loadTestData2(cveName string) Vulnerability {
@@ -33,6 +34,7 @@ func loadTestData2(cveName string) Vulnerability {
 		}
 	}
 	log.Fatalf("test data doesn't contain %q", cveName)
+
 	return Vulnerability{}
 }
 
@@ -470,7 +472,6 @@ func TestRepo(t *testing.T) {
 	}
 
 	for _, tc := range tests {
-
 		t.Run(tc.description, func(t *testing.T) {
 			t.Parallel()
 			if time.Now().Before(tc.disableExpiryDate) {
@@ -510,7 +511,7 @@ func TestExtractGitCommit(t *testing.T) {
 			},
 		},
 		{
-			description:     "Undesired GitHub commit URL", // TODO(apollock): be able to parse this a a LastAffected commit
+			description:     "Undesired GitHub commit URL", // TODO(apollock): be able to parse this a LastAffected commit
 			inputLink:       "https://github.com/Budibase/budibase/commits/develop?after=93d6939466aec192043d8ac842e754f65fdf2e8a+594\u0026branch=develop\u0026qualified_name=refs%2Fheads%2Fdevelop",
 			inputCommitType: models.Fixed,
 			expectFailure:   true,
@@ -944,7 +945,6 @@ func TestCPEs(t *testing.T) {
 	}
 
 	for _, tc := range tests {
-
 		t.Run(tc.description, func(t *testing.T) {
 			t.Parallel()
 			gotCPEs := CPEs(tc.inputCVEItem.CVE)
@@ -995,7 +995,6 @@ func TestVersionInfoDuplicateDetection(t *testing.T) {
 	}
 
 	for _, tc := range tests {
-
 		t.Run(tc.description, func(t *testing.T) {
 			t.Parallel()
 			result := tc.inputVersionInfo.Duplicated(tc.inputAffectedCommit)
@@ -1148,7 +1147,6 @@ func TestInvalidRangeDetection(t *testing.T) {
 	}
 
 	for _, tc := range tests {
-
 		t.Run(tc.description, func(t *testing.T) {
 			t.Parallel()
 			result := tc.inputAffectedCommit.InvalidRange()
@@ -1305,7 +1303,7 @@ func TestReposFromReferences(t *testing.T) {
 					{
 						Source: "cna@vuldb.com",
 						Tags:   []string{"Patch", "Third Party Advisory"},
-						Url:    "https://github.com/saemorris/TheRadSystem/commit/bfba26bd34af31648a11af35a0bb66f1948752a6"},
+						URL:    "https://github.com/saemorris/TheRadSystem/commit/bfba26bd34af31648a11af35a0bb66f1948752a6"},
 				},
 				tagDenyList: RefTagDenyList,
 			},
@@ -1321,7 +1319,7 @@ func TestReposFromReferences(t *testing.T) {
 					{
 						Source: "cna@vuldb.com",
 						Tags:   []string{"Exploit", "Third Party Advisory"},
-						Url:    "https://github.com/shaturo1337/POCs/blob/main/LFI%20in%20School%20Faculty%20Scheduling%20System.md"},
+						URL:    "https://github.com/shaturo1337/POCs/blob/main/LFI%20in%20School%20Faculty%20Scheduling%20System.md"},
 				},
 				tagDenyList: RefTagDenyList,
 			},
@@ -1337,7 +1335,7 @@ func TestReposFromReferences(t *testing.T) {
 					{
 						Source: "cna@mitre.org",
 						Tags:   nil,
-						Url:    "https://git.musl-libc.org/cgit/musl/commit/?id=c47ad25ea3b484e10326f933e927c0bc8cded3da",
+						URL:    "https://git.musl-libc.org/cgit/musl/commit/?id=c47ad25ea3b484e10326f933e927c0bc8cded3da",
 					},
 				},
 				tagDenyList: RefTagDenyList,
@@ -1354,7 +1352,7 @@ func TestReposFromReferences(t *testing.T) {
 					{
 						Source: "support@hackerone.com",
 						Tags:   []string{"Patch", "Third Party Advisory"},
-						Url:    "https://github.com/dwyl/hapi-auth-jwt2/issues/111",
+						URL:    "https://github.com/dwyl/hapi-auth-jwt2/issues/111",
 					},
 				},
 				tagDenyList: RefTagDenyList,
@@ -1396,7 +1394,7 @@ func TestReposFromReferencesCVEList(t *testing.T) {
 					{
 						Source: "cna@vuldb.com",
 						Tags:   []string{"Patch", "Third Party Advisory"},
-						Url:    "https://github.com/saemorris/TheRadSystem/commit/bfba26bd34af31648a11af35a0bb66f1948752a6"},
+						URL:    "https://github.com/saemorris/TheRadSystem/commit/bfba26bd34af31648a11af35a0bb66f1948752a6"},
 				},
 				tagDenyList: RefTagDenyList,
 			},
@@ -1412,7 +1410,7 @@ func TestReposFromReferencesCVEList(t *testing.T) {
 					{
 						Source: "cna@vuldb.com",
 						Tags:   []string{"Exploit", "Third Party Advisory"},
-						Url:    "https://github.com/shaturo1337/POCs/blob/main/LFI%20in%20School%20Faculty%20Scheduling%20System.md"},
+						URL:    "https://github.com/shaturo1337/POCs/blob/main/LFI%20in%20School%20Faculty%20Scheduling%20System.md"},
 				},
 				tagDenyList: RefTagDenyList,
 			},
@@ -1428,7 +1426,7 @@ func TestReposFromReferencesCVEList(t *testing.T) {
 					{
 						Source: "cna@mitre.org",
 						Tags:   nil,
-						Url:    "https://git.musl-libc.org/cgit/musl/commit/?id=c47ad25ea3b484e10326f933e927c0bc8cded3da",
+						URL:    "https://git.musl-libc.org/cgit/musl/commit/?id=c47ad25ea3b484e10326f933e927c0bc8cded3da",
 					},
 				},
 				tagDenyList: RefTagDenyList,
@@ -1445,7 +1443,7 @@ func TestReposFromReferencesCVEList(t *testing.T) {
 					{
 						Source: "support@hackerone.com",
 						Tags:   []string{"Patch", "Third Party Advisory"},
-						Url:    "https://github.com/dwyl/hapi-auth-jwt2/issues/111",
+						URL:    "https://github.com/dwyl/hapi-auth-jwt2/issues/111",
 					},
 				},
 				tagDenyList: RefTagDenyList,
@@ -1461,7 +1459,7 @@ func TestReposFromReferencesCVEList(t *testing.T) {
 					{
 						Source: "cna@vuldb.com",
 						Tags:   []string{"Patch", "Third Party Advisory"},
-						Url:    "https://github.com/stitionai/devika"},
+						URL:    "https://github.com/stitionai/devika"},
 				},
 				tagDenyList: RefTagDenyList,
 			},

@@ -12,22 +12,21 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// Package vulns contains helper functions for creating OSV vulnerability reports.
 package vulns
 
 import (
 	"cmp"
 	"encoding/json"
 	"errors"
-	"fmt"
 	"io"
 	"net/url"
 	"os"
 	"path"
+	"slices"
 	"sort"
 	"strings"
 	"time"
-
-	"golang.org/x/exp/slices"
 
 	"gopkg.in/yaml.v2"
 
@@ -40,13 +39,13 @@ const CVEListBasePath = "cves"
 
 var ErrVulnNotACVE = errors.New("not a CVE")
 
-type VulnsCVEListError struct {
+type CVEListError struct {
 	URL string
 	Err error
 }
 
-// Error returns the string representation of a VulnsCVEListError.
-func (e *VulnsCVEListError) Error() string {
+// Error returns the string representation of a CVEListError.
+func (e *CVEListError) Error() string {
 	return e.URL + ": " + e.Err.Error()
 }
 
@@ -177,11 +176,11 @@ func AttachExtractedVersionInfo(affected *osvschema.Affected, version models.Ver
 
 // PackageInfo is an intermediate struct to ease generating Vulnerability structs.
 type PackageInfo struct {
-	PkgName           string                 `json:"pkg_name,omitempty" yaml:"pkg_name,omitempty"`
-	Ecosystem         string                 `json:"ecosystem,omitempty" yaml:"ecosystem,omitempty"`
-	PURL              string                 `json:"purl,omitempty" yaml:"purl,omitempty"`
-	VersionInfo       models.VersionInfo     `json:"fixed_version,omitempty" yaml:"fixed_version,omitempty"`
-	EcosystemSpecific map[string]interface{} `json:"ecosystem_specific,omitempty" yaml:"ecosystem_specific,omitempty"`
+	PkgName           string             `json:"pkg_name,omitempty"           yaml:"pkg_name,omitempty"`
+	Ecosystem         string             `json:"ecosystem,omitempty"          yaml:"ecosystem,omitempty"`
+	PURL              string             `json:"purl,omitempty"               yaml:"purl,omitempty"`
+	VersionInfo       models.VersionInfo `json:"fixed_version,omitempty"      yaml:"fixed_version,omitempty"`
+	EcosystemSpecific map[string]any     `json:"ecosystem_specific,omitempty" yaml:"ecosystem_specific,omitempty"`
 }
 
 // ToJSON serializes the PackageInfo to JSON.
@@ -316,6 +315,7 @@ func getBestSeverity(metricsData *cves.CVEItemMetrics) (string, osvschema.Severi
 			return metric.CVSSData.VectorString, osvschema.SeverityCVSSV3
 		}
 	}
+
 	return "", ""
 }
 
@@ -338,6 +338,7 @@ func (v *Vulnerability) AddSeverity(metricsData *cves.CVEItemMetrics) {
 func (v *Vulnerability) ToJSON(w io.Writer) error {
 	encoder := json.NewEncoder(w)
 	encoder.SetIndent("", "  ")
+
 	return encoder.Encode(v)
 }
 
@@ -542,14 +543,14 @@ func ClassifyReferenceLink(link string, tag string) osvschema.ReferenceType {
 func ExtractReferencedVulns(id cves.CVEID, cveID cves.CVEID, references []cves.Reference) ([]string, []string) {
 	var aliases []string
 	var related []string
-	if id != cves.CVEID(cveID) {
-		aliases = append(aliases, string(cves.CVEID(cveID)))
+	if id != cveID {
+		aliases = append(aliases, string(cveID))
 	}
 
 	var GHSAs []string
 	var SYNKs []string
 	for _, reference := range references {
-		u, err := url.Parse(reference.Url)
+		u, err := url.Parse(reference.URL)
 		if err == nil {
 			pathParts := strings.Split(u.Path, "/")
 
@@ -609,6 +610,7 @@ func Unique[T comparable](s []T) []T {
 			result = append(result, str)
 		}
 	}
+
 	return result
 }
 
@@ -619,14 +621,14 @@ func ClassifyReferences(refs []cves.Reference) []osvschema.Reference {
 		if len(reference.Tags) > 0 {
 			for _, tag := range reference.Tags {
 				references = append(references, osvschema.Reference{
-					Type: ClassifyReferenceLink(reference.Url, tag),
-					URL:  reference.Url,
+					Type: ClassifyReferenceLink(reference.URL, tag),
+					URL:  reference.URL,
 				})
 			}
 		} else {
 			references = append(references, osvschema.Reference{
-				Type: ClassifyReferenceLink(reference.Url, ""),
-				URL:  reference.Url,
+				Type: ClassifyReferenceLink(reference.URL, ""),
+				URL:  reference.URL,
 			})
 		}
 	}
@@ -634,6 +636,7 @@ func ClassifyReferences(refs []cves.Reference) []osvschema.Reference {
 	sort.SliceStable(references, func(i, j int) bool {
 		return references[i].Type < references[j].Type
 	})
+
 	return references
 }
 
@@ -652,6 +655,7 @@ func FromNVDCVE(id cves.CVEID, cve cves.CVE) *Vulnerability {
 	v.Modified = cve.LastModified.Time
 	v.References = ClassifyReferences(cve.References)
 	v.AddSeverity(cve.Metrics)
+
 	return &v
 }
 
@@ -663,7 +667,7 @@ func GetCPEs(cpeApplicability []cves.CPE) ([]string, []string) {
 	for _, c := range cpeApplicability {
 		for _, node := range c.Nodes {
 			if node.Operator != "OR" {
-				notes = append(notes, fmt.Sprintf("Node found without OR operator"))
+				notes = append(notes, "Node found without OR operator")
 				continue
 			}
 			for _, match := range node.CPEMatch {
@@ -671,6 +675,7 @@ func GetCPEs(cpeApplicability []cves.CPE) ([]string, []string) {
 			}
 		}
 	}
+
 	return CPEs, notes
 }
 
@@ -724,7 +729,8 @@ func CVEIsDisputed(v *Vulnerability, cveList string) (time.Time, error) {
 		if os.IsNotExist(err) {
 			return time.Time{}, nil
 		}
-		return time.Time{}, &VulnsCVEListError{CVEListFile, err}
+
+		return time.Time{}, &CVEListError{CVEListFile, err}
 	}
 
 	defer f.Close()
@@ -732,7 +738,7 @@ func CVEIsDisputed(v *Vulnerability, cveList string) (time.Time, error) {
 	CVE := &cves.CVE5{}
 
 	if err := json.NewDecoder(f).Decode(&CVE); err != nil {
-		return time.Time{}, &VulnsCVEListError{CVEListFile, err}
+		return time.Time{}, &CVEListError{CVEListFile, err}
 	}
 
 	if slices.Contains(CVE.Containers.CNA.Tags, "disputed") {
@@ -766,8 +772,8 @@ func CheckQuality(text string) QualityCheck {
 	if strings.Contains(text, " ") {
 		return Spaces
 	}
-	return Success
 
+	return Success
 }
 
 func FindSeverity(metricsData []cves.Metrics) osvschema.Severity {
@@ -781,6 +787,7 @@ func FindSeverity(metricsData []cves.Metrics) osvschema.Severity {
 		Type:  severityType,
 		Score: bestVectorString,
 	}
+
 	return severity
 }
 
@@ -789,9 +796,9 @@ func getBestCVE5Severity(metricsData []cves.Metrics) (string, osvschema.Severity
 		getVectorString func(cves.Metrics) string
 		severityType    osvschema.SeverityType
 	}{
-		{func(m cves.Metrics) string { return m.CVSSV4_0.VectorString }, osvschema.SeverityCVSSV4},
-		{func(m cves.Metrics) string { return m.CVSSV3_1.VectorString }, osvschema.SeverityCVSSV3},
-		{func(m cves.Metrics) string { return m.CVSSV3_0.VectorString }, osvschema.SeverityCVSSV3},
+		{func(m cves.Metrics) string { return m.CVSSv4_0.VectorString }, osvschema.SeverityCVSSV4},
+		{func(m cves.Metrics) string { return m.CVSSv3_1.VectorString }, osvschema.SeverityCVSSV3},
+		{func(m cves.Metrics) string { return m.CVSSv3_0.VectorString }, osvschema.SeverityCVSSV3},
 	}
 
 	for _, check := range checks {
@@ -801,5 +808,6 @@ func getBestCVE5Severity(metricsData []cves.Metrics) (string, osvschema.Severity
 			}
 		}
 	}
+
 	return "", ""
 }

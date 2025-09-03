@@ -12,14 +12,15 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// Package pypi contains helpers for generating PyPI OSV records.
 package pypi
 
 import (
 	"encoding/json"
-	"io/ioutil"
 	"log"
 	"net/http"
 	"net/url"
+	"os"
 	"regexp"
 	"sort"
 	"strings"
@@ -81,7 +82,7 @@ var linkBlocklist = map[string]bool{
 }
 
 func readOrPanic(path string) []byte {
-	data, err := ioutil.ReadFile(path)
+	data, err := os.ReadFile(path)
 	if err != nil {
 		log.Fatalf("Failed to read %s: %v", path, err)
 	}
@@ -97,6 +98,7 @@ func loadLinks(path string) []pypiLinks {
 	if err != nil {
 		log.Fatalf("Failed to parse %s: %v", data, err)
 	}
+
 	return links
 }
 
@@ -108,6 +110,7 @@ func loadVersions(path string) []pypiVersions {
 	if err != nil {
 		log.Fatalf("Failed to parse %s: %v", data, err)
 	}
+
 	return versions
 }
 
@@ -129,6 +132,7 @@ func hasPrefix(list []string, item string) bool {
 			return true
 		}
 	}
+
 	return false
 }
 
@@ -153,6 +157,7 @@ func processMatches(names []string) []string {
 			filtered = append(filtered, name)
 		}
 	}
+
 	return filtered
 }
 
@@ -219,6 +224,7 @@ func processVersions(versionsSource []pypiVersions) map[string][]string {
 	for _, data := range versionsSource {
 		versions[NormalizePackageName(data.Name)] = data.Versions
 	}
+
 	return versions
 }
 
@@ -227,6 +233,7 @@ func New(pypiLinksPath string, pypiVersionsPath string) *PyPI {
 	versionsSource := loadVersions(pypiVersionsPath)
 
 	links, vendorProductToPkg := processLinks(linksSource)
+
 	return &PyPI{
 		links:              links,
 		versions:           processVersions(versionsSource),
@@ -239,8 +246,8 @@ func (p *PyPI) Matches(cve cves.CVE, falsePositives *triage.FalsePositives) []st
 	matches := []string{}
 	for _, reference := range cve.References {
 		// If there is a PyPI link, it must be a Python package. These take precedence.
-		if pkg := extractPyPIProject(reference.Url); pkg != "" {
-			log.Printf("Matched via PyPI link: %s", reference.Url)
+		if pkg := extractPyPIProject(reference.URL); pkg != "" {
+			log.Printf("Matched via PyPI link: %s", reference.URL)
 			matches = append(matches, pkg)
 		}
 	}
@@ -250,7 +257,7 @@ func (p *PyPI) Matches(cve cves.CVE, falsePositives *triage.FalsePositives) []st
 
 	for _, reference := range cve.References {
 		// Otherwise try to cross-reference the link against our set of known links.
-		pkgs := p.matchesPackage(reference.Url, cve, falsePositives)
+		pkgs := p.matchesPackage(reference.URL, cve, falsePositives)
 		matches = append(matches, pkgs...)
 	}
 	if len(matches) != 0 {
@@ -277,6 +284,7 @@ func (p *PyPI) Matches(cve cves.CVE, falsePositives *triage.FalsePositives) []st
 			}
 		}
 	}
+
 	return processMatches(matches)
 }
 
@@ -294,6 +302,7 @@ func filterVersions(versions []string) []string {
 			filtered = append(filtered, v)
 		}
 	}
+
 	return filtered
 }
 
@@ -316,6 +325,7 @@ func (p *PyPI) Versions(pkg string) []string {
 
 		return versionI.LessThan(versionJ)
 	})
+
 	return versions
 }
 
@@ -328,9 +338,11 @@ func (p *PyPI) packageExists(pkg string) bool {
 	if err != nil {
 		log.Panicf("Failed to call create request: %v", err)
 	}
+	defer resp.Body.Close()
 
 	result := resp.StatusCode == http.StatusOK
 	p.checkedPackages[pkg] = result
+
 	return result
 }
 
@@ -390,6 +402,7 @@ func (p *PyPI) matchesPackage(link string, cve cves.CVE, falsePositives *triage.
 			}
 		}
 	}
+
 	return pkgs
 }
 
@@ -408,17 +421,20 @@ func extractPyPIProject(link string) string {
 		if len(parts) < 3 || (parts[1] != "project" && parts[1] != "simple") {
 			return ""
 		}
+
 		return NormalizePackageName(parts[2])
 		// Example: https://pypi.python.org/pypi/tensorflow
 	case "pypi.python.org":
 		if len(parts) < 3 || parts[1] != "pypi" {
 			return ""
 		}
+
 		return NormalizePackageName(parts[2])
 	case "upload.pypi.org":
 		if len(parts) < 3 || parts[1] != "legacy" {
 			return ""
 		}
+
 		return NormalizePackageName(parts[2])
 	}
 

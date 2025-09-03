@@ -59,7 +59,6 @@ type CPEDict struct {
 type CPEItem struct {
 	Name       string
 	Deprecated bool
-	Title      string
 	References []Reference
 }
 

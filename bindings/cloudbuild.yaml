@@ -12,21 +12,21 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-FROM gcr.io/oss-vdb/worker
+# bindings test runner
+# This should be triggered on changes to the following:
+# bindings/go/go.mod
+# bindings/go/go.sum
+# bindings/run_tests.sh
+# bindings/go/*.go
+# bindings/go/**/*.go
 
-RUN apt-get update && \
-    apt-get install -y \
-    wget \
-    google-cloud-sdk-datastore-emulator \
-    openjdk-21-jre  # Needed for Datastore emulator.
+steps:
+- name: 'gcr.io/oss-vdb/ci'
+  id: 'bindings-tests'
+  dir: bindings
+  args: ['bash', '-ex', 'run_tests.sh']
+  env:
+    - 'BUILD_ID=$BUILD_ID'
+  waitFor: ['init']
 
-COPY daemon.json /etc/docker/daemon.json
-COPY install_go.sh /tmp/install_go.sh
-
-RUN "/tmp/install_go.sh"
-# root/go/bin is needed here in order to install Hugo.
-ENV PATH="$PATH:/usr/local/go/bin:/root/go/bin"
-
-RUN go install -tags extended github.com/gohugoio/hugo@v0.111.3
-
-ENTRYPOINT []
+timeout: 7200s

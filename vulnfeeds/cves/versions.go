@@ -478,8 +478,8 @@ func ValidateAndCanonicalizeLink(link string, httpClient *http.Client) (canonica
 		return link, err
 	}
 	backoff := retry.NewExponential(1 * time.Second)
-	if err := retry.Do(context.Background(), retry.WithMaxRetries(3, backoff), func(_ context.Context) error {
-		req, err := http.NewRequest(http.MethodHead, link, nil)
+	if err := retry.Do(context.Background(), retry.WithMaxRetries(3, backoff), func(ctx context.Context) error {
+		req, err := http.NewRequestWithContext(ctx, http.MethodHead, link, nil)
 		if err != nil {
 			return err
 		}

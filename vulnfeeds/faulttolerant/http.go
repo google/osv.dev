@@ -12,7 +12,7 @@ import (
 
 // Get makes a HTTP GET request for url and retry 3 times, with an exponential backoff.
 func Get(url string) (resp *http.Response, err error) {
-	return req(url, "GET")
+	return req(url, http.MethodGet)
 }
 
 // Head makes a HTTP HEAD request for url and retry 3 times, with an exponential backoff.

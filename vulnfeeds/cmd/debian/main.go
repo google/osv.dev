@@ -126,9 +126,6 @@ func generateOSVFromDebianTracker(debianData DebianSecurityTrackerData, debianRe
 					EcosystemSpecific: map[string]interface{}{
 						"urgency": release.Urgency,
 					},
-					// VersionInfo: models.VersionInfo{
-					// 	AffectedVersions: []models.AffectedVersion{{Introduced: "0"}},
-					// },
 				}
 
 				if release.Status == "resolved" {

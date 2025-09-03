@@ -840,7 +840,7 @@ def do_query(query: osv_service_v1_pb2.Query,
     if purl.version:
       version = purl.version
 
-  if ecosystem and not ecosystems.get(ecosystem):
+  if ecosystem and not ecosystems.is_known(ecosystem):
     context.service_context.abort(grpc.StatusCode.INVALID_ARGUMENT,
                                   'Invalid ecosystem.')
 

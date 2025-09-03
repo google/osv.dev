@@ -78,7 +78,8 @@ func downloadCVE2WithOffset(apiKey string, offset int) (page *cves.CVEAPIJSON20S
 		req.Header.Add("apiKey", apiKey)
 	}
 	backoff := retry.NewExponential(6 * time.Second)
-	if err := retry.Do(context.Background(), retry.WithMaxRetries(3, backoff), func(_ context.Context) error {
+	if err := retry.Do(context.Background(), retry.WithMaxRetries(3, backoff), func(ctx context.Context) error {
+		req := req.WithContext(ctx)
 		resp, err := client.Do(req)
 		if err != nil {
 			return nil

@@ -7,11 +7,11 @@ type Release struct {
 	Urgency      string            `json:"urgency"`
 }
 
-type CVE struct {
+type DebianCVE struct {
 	Description string `json:"description"`
 	DebianBug   int
 	Scope       string             `json:"scope"`
 	Releases    map[string]Release `json:"releases"`
 }
 
-type DebianSecurityTrackerData map[string]map[string]CVE
+type DebianSecurityTrackerData map[string]map[string]DebianCVE

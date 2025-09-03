@@ -27,6 +27,5 @@ steps:
   args: ['bash', '-ex', 'run_tests.sh']
   env:
     - 'BUILD_ID=$BUILD_ID'
-  waitFor: ['init']
 
 timeout: 7200s

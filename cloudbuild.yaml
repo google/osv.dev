@@ -42,4 +42,9 @@ steps:
   args: ['builds', 'submit', '--region=${LOCATION}', '--config=vulnfeeds/cloudbuild.yaml', '.']
   waitFor: ['init']
 
+- name: 'gcr.io/cloud-builders/gcloud'
+  id: 'bindings-tests'
+  args: ['builds', 'submit', '--region=${LOCATION}', '--config=bindings/cloudbuild.yaml', '.']
+  waitFor: ['init']
+
 timeout: 7200s

@@ -27,5 +27,5 @@ func GetSecret(secretVersion string) (secret string, err error) {
 		return "", err
 	}
 
-	return string(resp.Payload.Data), nil
+	return string(resp.GetPayload().GetData()), nil
 }

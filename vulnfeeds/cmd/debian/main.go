@@ -1,3 +1,4 @@
+// package main contains the conversion logic for turning debian security tracker info to OSV parts
 package main
 
 import (
@@ -65,7 +66,7 @@ func generateOSVFromDebianTracker(debianData DebianSecurityTrackerData, debianRe
 	osvCves := make(map[string]*vulns.Vulnerability)
 
 	// Sorts packages to ensure results remain consistent between runs.
-	var pkgNames []string
+	pkgNames := make([]string, 0, len(debianData))
 	for name := range debianData {
 		pkgNames = append(pkgNames, name)
 	}
@@ -164,9 +165,10 @@ func getDebianReleaseMap() (map[string]string, error) {
 
 	// Get the index number of version and series.
 	for i, col := range data[0] {
-		if col == "version" {
+		switch col {
+		case "version":
 			versionIndex = i
-		} else if col == "series" {
+		case "series":
 			seriesIndex = i
 		}
 	}
@@ -187,8 +189,8 @@ func getDebianReleaseMap() (map[string]string, error) {
 
 func writeToOutput(osvCves map[string]*vulns.Vulnerability, debianOutputPath string) error {
 	Logger.Infof("Writing OSV files to the output.")
-	for cveId, osv := range osvCves {
-		file, err := os.OpenFile(path.Join(debianOutputPath, cveId+".json"), os.O_CREATE|os.O_RDWR|os.O_TRUNC, 0644)
+	for cveID, osv := range osvCves {
+		file, err := os.OpenFile(path.Join(debianOutputPath, cveID+".json"), os.O_CREATE|os.O_RDWR|os.O_TRUNC, 0644)
 		if err != nil {
 			return err
 		}
@@ -228,5 +230,6 @@ func downloadDebianSecurityTracker() (DebianSecurityTrackerData, error) {
 	}
 
 	Logger.Infof("Successfully downloaded Debian Security Tracker Data.")
+
 	return decodedDebianData, err
 }

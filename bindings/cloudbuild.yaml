@@ -17,8 +17,8 @@
 # bindings/go/go.mod
 # bindings/go/go.sum
 # bindings/run_tests.sh
-# bindings/*.go
-# bindings/**/*.go
+# bindings/go/*.go
+# bindings/go/**/*.go
 
 steps:
 - name: 'gcr.io/oss-vdb/ci'

@@ -20,7 +20,7 @@ func Head(url string) (resp *http.Response, err error) {
 	return req(url, "HEAD")
 }
 
-// Get makes a HTTP GET request for url and retry 3 times, with an exponential backoff.
+// req makes a HTTP request for url and retry 3 times, with an exponential backoff.
 func req(url, method string) (resp *http.Response, err error) {
 	backoff := retry.NewExponential(1 * time.Second)
 	if err := retry.Do(context.Background(), retry.WithMaxRetries(3, backoff), func(_ context.Context) error {

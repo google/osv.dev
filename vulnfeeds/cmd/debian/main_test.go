@@ -57,10 +57,11 @@ func TestGenerateOSVFromDebianTracker(t *testing.T) {
 	want := map[string]*vulns.Vulnerability{
 		"CVE-2018-1000500": {
 			Vulnerability: osvschema.Vulnerability{
-				ID:       "DEBIAN-CVE-2018-1000500",
-				Upstream: []string{"CVE-2018-1000500"},
-				Modified: now,
-				Details:  "Busybox contains a Missing SSL certificate validation vulnerability in The \"busybox wget\" applet that can result in arbitrary code execution. This attack appear to be exploitable via Simply download any file over HTTPS using \"busybox wget https://compromised-domain.com/important-file\".",
+				ID:        "DEBIAN-CVE-2018-1000500",
+				Upstream:  []string{"CVE-2018-1000500"},
+				Modified:  now,
+				Published: now,
+				Details:   "Busybox contains a Missing SSL certificate validation vulnerability in The \"busybox wget\" applet that can result in arbitrary code execution. This attack appear to be exploitable via Simply download any file over HTTPS using \"busybox wget https://compromised-domain.com/important-file\".",
 				Affected: []osvschema.Affected{
 					{Package: osvschema.Package{Name: "busybox", Ecosystem: "Debian:10"}, EcosystemSpecific: map[string]any{"urgency": "end-of-life"}},
 					{Package: osvschema.Package{Name: "busybox", Ecosystem: "Debian:11"}, EcosystemSpecific: map[string]any{"urgency": "unimportant"}},
@@ -75,6 +76,7 @@ func TestGenerateOSVFromDebianTracker(t *testing.T) {
 				ID:         "DEBIAN-CVE-2014-1424",
 				Upstream:   []string{"CVE-2014-1424"},
 				Modified:   now,
+				Published:  now,
 				Details:    "apparmor_parser in the apparmor package before 2.8.95~2430-0ubuntu5.1 in Ubuntu 14.04 allows attackers to bypass AppArmor policies via unspecified vectors, related to a \"miscompilation flaw.\"",
 				Affected:   nil, // Empty because all are resolved at version "0"
 				References: []osvschema.Reference{{Type: "ADVISORY", URL: "https://security-tracker.debian.org/tracker/CVE-2014-1424"}},
@@ -82,10 +84,11 @@ func TestGenerateOSVFromDebianTracker(t *testing.T) {
 		},
 		"CVE-2016-1585": {
 			Vulnerability: osvschema.Vulnerability{
-				ID:       "DEBIAN-CVE-2016-1585",
-				Upstream: []string{"CVE-2016-1585"},
-				Modified: now,
-				Details:  "In all versions of AppArmor mount rules are accidentally widened when compiled.",
+				ID:        "DEBIAN-CVE-2016-1585",
+				Upstream:  []string{"CVE-2016-1585"},
+				Modified:  now,
+				Published: now,
+				Details:   "In all versions of AppArmor mount rules are accidentally widened when compiled.",
 				Affected: []osvschema.Affected{
 					{Package: osvschema.Package{Name: "apparmor", Ecosystem: "Debian:10"}, EcosystemSpecific: map[string]any{"urgency": "unimportant"}},
 					{Package: osvschema.Package{Name: "apparmor", Ecosystem: "Debian:11"}, EcosystemSpecific: map[string]any{"urgency": "unimportant"}},
@@ -101,10 +104,11 @@ func TestGenerateOSVFromDebianTracker(t *testing.T) {
 		},
 		"CVE-2017-6507": {
 			Vulnerability: osvschema.Vulnerability{
-				ID:       "DEBIAN-CVE-2017-6507",
-				Upstream: []string{"CVE-2017-6507"},
-				Modified: now,
-				Details:  "An issue was discovered in AppArmor before 2.12. Incorrect handling of unknown AppArmor profiles in AppArmor init scripts, upstart jobs, and/or systemd unit files allows an attacker to possibly have increased attack surfaces of processes that were intended to be confined by AppArmor. This is due to the common logic to handle 'restart' operations removing AppArmor profiles that aren't found in the typical filesystem locations, such as /etc/apparmor.d/. Userspace projects that manage their own AppArmor profiles in atypical directories, such as what's done by LXD and Docker, are affected by this flaw in the AppArmor init script logic.",
+				ID:        "DEBIAN-CVE-2017-6507",
+				Upstream:  []string{"CVE-2017-6507"},
+				Modified:  now,
+				Published: now,
+				Details:   "An issue was discovered in AppArmor before 2.12. Incorrect handling of unknown AppArmor profiles in AppArmor init scripts, upstart jobs, and/or systemd unit files allows an attacker to possibly have increased attack surfaces of processes that were intended to be confined by AppArmor. This is due to the common logic to handle 'restart' operations removing AppArmor profiles that aren't found in the typical filesystem locations, such as /etc/apparmor.d/. Userspace projects that manage their own AppArmor profiles in atypical directories, such as what's done by LXD and Docker, are affected by this flaw in the AppArmor init script logic.",
 				Affected: []osvschema.Affected{
 					{
 						Package:           osvschema.Package{Name: "apparmor", Ecosystem: "Debian:10"},
@@ -143,8 +147,9 @@ func TestGenerateOSVFromDebianTracker(t *testing.T) {
 			continue
 		}
 
-		// Ignore Modified time for comparison.
+		// Ignore time for comparison.
 		wantVuln.Modified = gotVuln.Modified
+		wantVuln.Published = gotVuln.Published
 
 		// Sort affected packages for consistent comparison.
 		sortAffected(gotVuln.Affected)

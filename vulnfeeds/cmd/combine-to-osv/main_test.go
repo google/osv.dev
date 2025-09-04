@@ -132,7 +132,6 @@ func TestCombineIntoOSV(t *testing.T) {
 		if !found && cve != "CVE-2018-1000500" {
 			t.Errorf("%s doesn't have all expected references", cve)
 		}
-
 	}
 }
 func TestGetModifiedTime(t *testing.T) {

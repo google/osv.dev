@@ -25,6 +25,7 @@ import cache
 import frontend_handlers
 import handlers
 import utils
+import osv
 
 ndb_client = ndb.Client()
 
@@ -41,11 +42,7 @@ def ndb_wsgi_middleware(wsgi_app):
 
 def create_app():
   """Create flask app."""
-  if utils.is_cloud_run():
-    logging_client = google.cloud.logging.Client()
-    logging_client.setup_logging()
-
-  logging.getLogger().setLevel(logging.INFO)
+  osv.logs.setup_gcp_logging('website')
 
   flask_app = Flask(
       __name__, template_folder='dist', static_folder='dist/static')

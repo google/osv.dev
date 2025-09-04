@@ -301,13 +301,7 @@ class RecovererTest(unittest.TestCase):
 
 def setUpModule():
   """Set up the test module."""
-  tests.start_datastore_emulator()
-
-
-def tearDownModule():
-  """Tear down the test module."""
-  tests.stop_emulator()
-
+  unittest.enterModuleContext(tests.datastore_emulator())
 
 if __name__ == '__main__':
   unittest.main()

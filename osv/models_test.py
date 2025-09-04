@@ -378,14 +378,9 @@ class ModelsTest(unittest.TestCase):
 
 def setUpModule():
   """Set up the test module."""
-  tests.start_datastore_emulator()
-  ndb_client = ndb.Client()
-  unittest.enterModuleContext(ndb_client.context(cache_policy=False))
-
-
-def tearDownModule():
-  """Tear down the test module."""
-  tests.stop_emulator()
+  # Start the emulator BEFORE creating the ndb client
+  unittest.enterModuleContext(tests.datastore_emulator())
+  unittest.enterModuleContext(ndb.Client().context(cache_policy=False))
 
 
 if __name__ == '__main__':

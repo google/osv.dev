@@ -15,6 +15,7 @@
 
 import codecs
 import unittest
+from unittest import mock
 
 from . import impact
 from . import tests
@@ -27,22 +28,14 @@ class UpdateAffectedCommitsTests(unittest.TestCase):
   """update_affected_commits tests."""
 
   def setUp(self):
-    tests.reset_emulator()
+    self._ds_emulator.reset()
 
   @classmethod
   def setUpClass(cls):
-    cls._ds_emulator = tests.start_datastore_emulator()
+    # Start the emulator BEFORE creating the ndb client
+    cls._ds_emulator = cls.enterClassContext(tests.datastore_emulator())
+    cls.enterClassContext(ndb.Client().context(cache_policy=False))
 
-    ndb_client = ndb.Client()
-    cls._ndb_context = ndb_client.context()
-    context = cls._ndb_context.__enter__()  # pylint: disable=unnecessary-dunder-call
-    context.set_memcache_policy(False)
-    context.set_cache_policy(False)
-
-  @classmethod
-  def tearDownClass(cls):
-    tests.stop_emulator()
-    cls._ndb_context.__exit__(None, None, None)  # pylint: disable=unnecessary-dunder-call
 
   def test_update_single_page(self):
     """Test update_affected_commits with a single page."""
@@ -94,44 +87,46 @@ class UpdateAffectedCommitsTests(unittest.TestCase):
 
   def test_update_multiple_pages(self):
     """Test update_affected_commits with multiple page."""
-    # These pre-populated pages should be deleted.
-    for i in range(10):
+    # The emulator cannot handle indexing 10000 commits in a single entity.
+    with mock.patch.object(models.AffectedCommits, 'MAX_COMMITS_PER_ENTITY', 100):
+      # These pre-populated pages should be deleted.
+      for i in range(10):
+        models.AffectedCommits(
+            id=f'BUG-1-{i}', bug_id='BUG-1', commits=[], public=True,
+            page=i).put()
+
+      # These should not be deleted as they're for a different bug.
       models.AffectedCommits(
-          id=f'BUG-1-{i}', bug_id='BUG-1', commits=[], public=True,
-          page=i).put()
+          id='BUG-2-0', bug_id='BUG-2', commits=[], public=True, page=0).put()
 
-    # These should not be deleted as they're for a different bug.
-    models.AffectedCommits(
-        id='BUG-2-0', bug_id='BUG-2', commits=[], public=True, page=0).put()
+      commits = {'%08d' % number for number in range(260)}
 
-    commits = {'%08d' % number for number in range(26000)}
+      impact.update_affected_commits('BUG-1', commits, True)
+      affected_commits = list(models.AffectedCommits.query())
+      self.assertEqual(4, len(affected_commits))
 
-    impact.update_affected_commits('BUG-1', commits, True)
-    affected_commits = list(models.AffectedCommits.query())
-    self.assertEqual(4, len(affected_commits))
+      # Check that the unrelated entry still exists.
+      self.assertTrue(any(c.key.id() == 'BUG-2-0') for c in affected_commits)
 
-    # Check that the unrelated entry still exists.
-    self.assertTrue(any(c.key.id() == 'BUG-2-0') for c in affected_commits)
+      # Check that the new pages got written properly.
+      affected_commits = list(
+          models.AffectedCommits.query(models.AffectedCommits.bug_id == 'BUG-1'))
 
-    # Check that the new pages got written properly.
-    affected_commits = list(
-        models.AffectedCommits.query(models.AffectedCommits.bug_id == 'BUG-1'))
+      for i, result in enumerate(affected_commits):
+        self.assertEqual(f'BUG-1-{i}', result.key.id())
+        self.assertEqual('BUG-1', result.bug_id)
+        self.assertEqual(i, result.page)
+        self.assertTrue(result.public)
 
-    for i, result in enumerate(affected_commits):
-      self.assertEqual(f'BUG-1-{i}', result.key.id())
-      self.assertEqual('BUG-1', result.bug_id)
-      self.assertEqual(i, result.page)
-      self.assertTrue(result.public)
-
-    self.assertCountEqual(
-        [b'%08d' % i for i in range(10000)],
-        [codecs.encode(c, 'hex') for c in affected_commits[0].commits])
-    self.assertCountEqual(
-        [b'%08d' % i for i in range(10000, 20000)],
-        [codecs.encode(c, 'hex') for c in affected_commits[1].commits])
-    self.assertCountEqual(
-        [b'%08d' % i for i in range(20000, 26000)],
-        [codecs.encode(c, 'hex') for c in affected_commits[2].commits])
+      self.assertCountEqual(
+          [b'%08d' % i for i in range(100)],
+          [codecs.encode(c, 'hex') for c in affected_commits[0].commits])
+      self.assertCountEqual(
+          [b'%08d' % i for i in range(100, 200)],
+          [codecs.encode(c, 'hex') for c in affected_commits[1].commits])
+      self.assertCountEqual(
+          [b'%08d' % i for i in range(200, 260)],
+          [codecs.encode(c, 'hex') for c in affected_commits[2].commits])
 
   def test_update_no_commits(self):
     """Test updates with no commits."""

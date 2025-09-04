@@ -53,7 +53,6 @@ PORT = 8888
 SERVER_ADDRESS = ('localhost', PORT)
 MOCK_ADDRESS_FORMAT = f"http://{SERVER_ADDRESS[0]}:{SERVER_ADDRESS[1]}/"
 
-
 @mock.patch('importer.utcnow',
             lambda: datetime.datetime(2021, 1, 1, tzinfo=datetime.UTC))
 class ImporterTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
@@ -63,9 +62,15 @@ class ImporterTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
     """Load test data."""
     with open(os.path.join(TEST_DATA_DIR, name)) as f:
       return f.read()
+    
+  @classmethod
+  def setUpClass(cls):
+    # Start the emulator BEFORE creating the ndb client
+    cls.emulator = cls.enterClassContext(tests.datastore_emulator())
+    cls.enterClassContext(ndb.Client().context(cache_policy=False))
 
   def setUp(self):
-    tests.reset_emulator()
+    self.emulator.reset()
     self.maxDiff = None  # pylint: disable=invalid-name
     self.tmp_dir = tempfile.mkdtemp()
 
@@ -427,8 +432,14 @@ class ImporterTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
 class BucketImporterTest(unittest.TestCase):
   """GCS bucket importer tests."""
 
+  @classmethod
+  def setUpClass(cls):
+    # Start the emulator BEFORE creating the ndb client
+    cls.emulator = cls.enterClassContext(tests.datastore_emulator())
+    cls.ndb_context = cls.enterClassContext(ndb.Client().context(cache_policy=False))
+
   def setUp(self):
-    tests.reset_emulator()
+    self.emulator.reset()
     self.maxDiff = None  # pylint: disable=invalid-name
     self.tmp_dir = tempfile.mkdtemp()
 
@@ -840,7 +851,7 @@ class BucketImporterTest(unittest.TestCase):
 
     storage_client = storage.Client()
     # Reuse the NDB client already created in __main__
-    datastore_client = globals()['context'].client
+    datastore_client = self.ndb_context.client
     blob = storage.Blob(
         'a/b/CVE-2022-0128.json',
         storage.Bucket(storage_client, TEST_BUCKET),
@@ -859,10 +870,13 @@ class BucketImporterMassDeletionTest(unittest.TestCase):
   """Rigorous deletion testing against production data (in staging)."""
 
   def setUp(self):
+    if not (os.environ.get('CLOUD_BUILD') != 1 and 'RUN_SLOW_TESTS' in os.environ):
+      self.skipTest('Skipping slow test')
     # Note: This runs (non-destructively) against the real live (non-emulated)
     # staging datastore and GCS bucket.
-    if os.environ.get('DATASTORE_PROJECT_ID', None) is not None:
-      self.skipTest('This needs to be run outside of the Datastore Emulator')
+    self.old_gcp = os.environ.get('GOOGLE_CLOUD_PROJECT')
+    os.environ['GOOGLE_CLOUD_PROJECT'] = 'oss-vdb-test'
+    self.enterContext(ndb.Client(project='oss-vdb-test').context())
 
     self.maxDiff = None  # pylint: disable=invalid-name
     self.tmp_dir = tempfile.mkdtemp()
@@ -885,6 +899,10 @@ class BucketImporterMassDeletionTest(unittest.TestCase):
     self.logger.level = logging.INFO
 
   def tearDown(self):
+    if self.old_gcp is None:
+      os.environ.pop('GOOGLE_CLOUD_PROJECT')
+    else:
+      os.environ['GOOGLE_CLOUD_PROJECT'] = self.old_gcp
     shutil.rmtree(self.tmp_dir, ignore_errors=True)
 
   @mock.patch('google.cloud.storage.Blob.upload_from_string')
@@ -924,8 +942,14 @@ class RESTImporterTest(unittest.TestCase):
   """REST importer tests."""
   httpd = None
 
+  @classmethod
+  def setUpClass(cls):
+    # Start the emulator BEFORE creating the ndb client
+    cls.emulator = cls.enterClassContext(tests.datastore_emulator())
+    cls.enterClassContext(ndb.Client().context(cache_policy=False))
+
   def setUp(self):
-    tests.reset_emulator()
+    self.emulator.reset()
     self.tmp_dir = tempfile.mkdtemp()
 
     tests.mock_datetime(self)
@@ -1125,8 +1149,14 @@ class RESTImporterTest(unittest.TestCase):
 class ImportFindingsTest(unittest.TestCase):
   """Import Finding tests."""
 
+  @classmethod
+  def setUpClass(cls):
+    # Start the emulator BEFORE creating the ndb client
+    cls.emulator = cls.enterClassContext(tests.datastore_emulator())
+    cls.enterClassContext(ndb.Client().context(cache_policy=False))
+
   def setUp(self):
-    tests.reset_emulator()
+    self.emulator.reset()
     self.tmp_dir = tempfile.mkdtemp()
 
     tests.mock_datetime(self)
@@ -1154,32 +1184,10 @@ class ImportFindingsTest(unittest.TestCase):
     actual = osv.ImportFinding.get_by_id(expected['bug_id']).to_dict()
     self.assertEqual(expected, actual)
 
+def setUpModule():
+  """Set up the test module."""
+  logging.getLogger("UpstreamTest.test_compute_upstream").setLevel(
+    logging.DEBUG)
 
 if __name__ == '__main__':
-  run_slow_tests = (
-      os.environ.get('CLOUD_BUILD', 0) != 1 and 'RUN_SLOW_TESTS' in os.environ)
-  ds_emulator = tests.start_datastore_emulator()
-  try:
-    with ndb.Client().context() as context:
-      context.set_memcache_policy(False)
-      context.set_cache_policy(False)
-      unittest.main(exit=not run_slow_tests)
-  finally:
-    tests.stop_emulator()
-  if run_slow_tests:
-    import time
-    print('Please stand by for the slow tests')
-    for env in [
-        'DATASTORE_DATASET', 'DATASTORE_EMULATOR_HOST',
-        'DATASTORE_EMULATOR_HOST_PATH', 'DATASTORE_HOST', 'DATASTORE_PROJECT_ID'
-    ]:
-      if env in os.environ:
-        del os.environ[env]
-    loader = unittest.TestLoader()
-    suite = loader.loadTestsFromTestCase(BucketImporterMassDeletionTest)
-    runner = unittest.TextTestRunner(verbosity=2)
-    with ndb.Client(project='oss-vdb-test').context() as context:
-      start = time.perf_counter()
-      runner.run(suite)
-      end = time.perf_counter()
-    print(f'Duration: {end - start}')
+  unittest.main()

@@ -459,13 +459,12 @@ class AliasTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
     modified.FromDatetime(alias_group_last_modified)
     self.assertEqual(modified, vuln.modified)
 
+def setUpModule():
+  """Set up the test module."""
+  # Start the emulator BEFORE creating the ndb client
+  unittest.enterModuleContext(tests.datastore_emulator())
+  unittest.enterModuleContext(ndb.Client().context(cache_policy=False))
+
 
 if __name__ == '__main__':
-  ds_emulator = tests.start_datastore_emulator()
-  try:
-    with ndb.Client().context() as context:
-      context.set_memcache_policy(False)
-      context.set_cache_policy(False)
-      unittest.main()
-  finally:
-    tests.stop_emulator()
+  unittest.main()

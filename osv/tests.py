@@ -1,4 +1,4 @@
-# Copyright 2021 Google LLC
+# Copyright 2025 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -12,11 +12,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Test helpers."""
+import contextlib
 import datetime
 import difflib
 import os
 import pprint
 import signal
+import time
 
 from proto import datetime_helpers
 import requests
@@ -113,6 +115,87 @@ _ds_data_dir = None
 _mock_gcs_ctx = None
 
 
+class _DatastoreEmulator:
+  def __init__(self, url):
+    self._url = url
+
+  def reset(self):
+    """Clear emulator data."""
+    resp = requests.post(f'http://{self._url}/reset', timeout=_EMULATOR_TIMEOUT)
+    resp.raise_for_status()
+
+
+@contextlib.contextmanager
+def datastore_emulator():
+  """A context for running the datastore emulator in."""
+  port = os.environ.get('DATASTORE_EMULATOR_PORT', _DATASTORE_EMULATOR_PORT)
+  env = {
+      'DATASTORE_EMULATOR_HOST': 'localhost:' + port,
+      'DATASTORE_PROJECT_ID': TEST_PROJECT_ID,
+      'GOOGLE_CLOUD_PROJECT': TEST_PROJECT_ID,
+  }
+  old_env = {}
+  for k, v in env.items():
+    old_env[k] = os.environ.get(k)
+    os.environ[k] = v
+
+  url = f'localhost:{port}'
+  # Try shutdown an existing emulator on the port
+  try:
+    requests.post(f'http://{url}/shutdown', timeout=_EMULATOR_TIMEOUT)
+  except requests.ConnectionError:
+    pass
+
+  # Start the emulator in a new process group so we can terminate the
+  # subprocesses it spawns.
+  emu = subprocess.Popen([
+      'gcloud',
+      'emulators',
+      'firestore',
+      'start',
+      '--database-mode=datastore-mode',
+      f'--host-port={url}',
+  ],
+    stdout=subprocess.DEVNULL,
+    stderr=subprocess.DEVNULL,
+    preexec_fn=os.setsid)
+  
+  # Wait for ready
+  start = time.time()
+  while time.time() - start < _EMULATOR_TIMEOUT:
+      try:
+        resp = requests.get(f'http://{url}', timeout=_EMULATOR_TIMEOUT)
+        if resp.ok:
+            break
+      except requests.ConnectionError:
+        pass
+      time.sleep(0.5)
+  else:
+      os.killpg(emu.pid, signal.SIGKILL)
+      raise RuntimeError('Datastore emulator did not get ready in time.')
+  
+  # Also mock the GCS bucket
+  with gcs_mock.gcs_mock():
+    yield _DatastoreEmulator(url)
+
+  # Stop the process
+  requests.post(f'http://{url}/shutdown', timeout=_EMULATOR_TIMEOUT)
+  try:
+    os.killpg(emu.pid, signal.SIGTERM)
+    emu.wait(timeout=_EMULATOR_TIMEOUT)
+  except subprocess.TimeoutExpired:
+    print('Emulator ignored SIGTERM. Sending SIGKILL')
+    os.killpg(emu.pid, signal.SIGKILL)
+    emu.wait()
+  finally:
+    # restore environment variables
+    for k, v in old_env.items():
+      if v is None:
+        os.environ.pop(k, None)
+      else:
+        os.environ.setdefault(k, v)
+  
+
 def start_datastore_emulator():
   """Starts Datastore emulator."""
   # TODO(michaelkedar): turn this into a context (`with datastore_emulator()`)
@@ -151,7 +234,7 @@ def start_datastore_emulator():
   return proc
 
 
-def _kill_existing_datastore_emulator():
+def _kill_existing_datastore_emulator(port=_DATASTORE_EMULATOR_PORT):
   """
      Finds and kills the Google Cloud Datastore emulator process.
 
@@ -172,7 +255,7 @@ def _kill_existing_datastore_emulator():
 
   # 3. Define the unique strings that identify the target process.
   target_string_1 = 'com.google.cloud.datastore.emulator.CloudDatastore start'
-  target_string_2 = f'--port={_DATASTORE_EMULATOR_PORT}'
+  target_string_2 = f'--port={port}'
 
   # 4. Go through each line of the process list.
   for line in lines:

@@ -145,7 +145,7 @@ class ImpactTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
   """Impact task tests."""
 
   def setUp(self):
-    tests.reset_emulator()
+    ds_emulator.reset()
     self.maxDiff = None
 
     tests.mock_clone(self, return_value=pygit2.Repository('osv-test'))
@@ -516,7 +516,7 @@ class MarkBugInvalidTest(unittest.TestCase):
   """Test mark_bug_invalid."""
 
   def setUp(self):
-    tests.reset_emulator()
+    ds_emulator.reset()
 
   def test_mark_bug_invalid(self):
     """Test mark_bug_invalid."""
@@ -607,7 +607,7 @@ class RESTUpdateTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
 
   def setUp(self):
     self.maxDiff = None
-    tests.reset_emulator()
+    ds_emulator.reset()
     tests.mock_datetime(self)
 
     # Initialise fake source_repo.
@@ -727,7 +727,7 @@ class UpdateTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
 
   def setUp(self):
     self.maxDiff = None
-    tests.reset_emulator()
+    ds_emulator.reset()
 
     self.original_clone = osv.clone
     tests.mock_clone(self, func=self.mock_clone)
@@ -1802,24 +1802,11 @@ class UpdateTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
 def setUpModule():
   """Set up the test module."""
   print("Starting Datastore Emulator for the test suite...")
-  global ds_emulator, ndb_client, context_manager
-  ds_emulator = tests.start_datastore_emulator()
+  global ds_emulator, ndb_client
+  # Start the emulator BEFORE creating the ndb client
+  ds_emulator = unittest.enterModuleContext(tests.datastore_emulator())
   ndb_client = ndb.Client()
-
-  # Set the NDB client context for all tests in this module
-  context_manager = ndb_client.context()
-  # __enter__ is needed to activate the context
-  context = context_manager.__enter__()
-  context.set_memcache_policy(False)
-  context.set_cache_policy(False)
-
-
-def tearDownModule():
-  """Tear down the test module."""
-  print("Stopping Datastore Emulator.")
-  # Deactivate the NDB context
-  context_manager.__exit__(None, None, None)
-  tests.stop_emulator()
+  unittest.enterModuleContext(ndb_client.context(cache_policy=False))
 
 
 if __name__ == '__main__':

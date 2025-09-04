@@ -13,7 +13,6 @@
 # limitations under the License.
 """Website entrypoint."""
 
-
 from flask import Flask
 from flask_compress import Compress
 from google.cloud import ndb

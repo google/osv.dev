@@ -121,7 +121,10 @@ _OSV_TO_DEPS_ECOSYSTEMS_MAP = {
 def get(name: str) -> OrderedEcosystem | EnumerableEcosystem | None:
   """Get ecosystem helpers for a given ecosystem."""
   name, _, suffix = name.partition(':')
-  return None if (e := _ecosystems.get(name)) is None else e(suffix)
+  ecosys = _ecosystems.get(name)
+  if ecosys is None:
+    return None
+  return ecosys(suffix)
 
 
 def normalize(ecosystem_name: str):

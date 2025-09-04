@@ -27,6 +27,12 @@ func InitGlobalLogger(logID string, forceLocalLogging bool) func() {
 // CreateLoggerWrapper creates and initializes the LoggerWrapper,
 // and also returns a cleanup function to be deferred
 func createLoggerWrapper(logID string, forceLocalLogging bool) (Wrapper, func()) {
+	_, runningInCloud := os.LookupEnv("KUBERNETES_SERVICE_HOST")
+	if !runningInCloud {
+		log.Println("[Info] Detected running locally, routing logs to stdout.")
+		return Wrapper{}, func() {}
+	}
+
 	projectID, projectIDSet := os.LookupEnv("GOOGLE_CLOUD_PROJECT")
 	if !projectIDSet {
 		return Wrapper{}, func() {}
@@ -55,7 +61,7 @@ type Wrapper struct {
 // Infof prints Info level log
 func (wrapper Wrapper) Infof(format string, a ...any) {
 	if wrapper.GCloudLogger == nil || wrapper.ForceLocalLogging {
-		log.Printf(format, a...)
+		log.Printf("[Info] "+format, a...)
 		return
 	}
 
@@ -68,7 +74,7 @@ func (wrapper Wrapper) Infof(format string, a ...any) {
 // Warnf prints Warning level log, defaults to stdout if GCP logger is not set
 func (wrapper Wrapper) Warnf(format string, a ...any) {
 	if wrapper.GCloudLogger == nil || wrapper.ForceLocalLogging {
-		log.Printf(format, a...)
+		log.Printf("[Warning] "+format, a...)
 		return
 	}
 
@@ -81,7 +87,7 @@ func (wrapper Wrapper) Warnf(format string, a ...any) {
 // Errorf prints Error level log
 func (wrapper Wrapper) Errorf(format string, a ...any) {
 	if wrapper.GCloudLogger == nil || wrapper.ForceLocalLogging {
-		log.Printf(format, a...)
+		log.Printf("[Error] "+format, a...)
 		return
 	}
 
@@ -94,7 +100,7 @@ func (wrapper Wrapper) Errorf(format string, a ...any) {
 // Fatalf prints Error level log with stack trace, before exiting with error code 1
 func (wrapper Wrapper) Fatalf(format string, a ...any) {
 	if wrapper.GCloudLogger == nil || wrapper.ForceLocalLogging {
-		log.Fatalf(format, a...)
+		log.Fatalf("[Fatal] "+format, a...)
 		return
 	}
 
@@ -112,7 +118,7 @@ func (wrapper Wrapper) Fatalf(format string, a ...any) {
 // Panicf prints Error level log with stack trace, before panicing
 func (wrapper Wrapper) Panicf(format string, a ...any) {
 	if wrapper.GCloudLogger == nil || wrapper.ForceLocalLogging {
-		log.Panicf(format, a...)
+		log.Panicf("[Panic] "+format, a...)
 		return
 	}
 

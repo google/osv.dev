@@ -1,3 +1,4 @@
+// Package osvdevexperimental contains experimental helpers for querying osv.dev
 package osvdevexperimental
 
 import (
@@ -69,7 +70,9 @@ func BatchQueryPaging(ctx context.Context, c OSVClientInterface, queries []*osvd
 	}
 	// --- Paging logic ---
 	var errToReturn error
+	//nolint:prealloc
 	var nextPageQueries []*osvdev.Query
+	//nolint:prealloc
 	var nextPageIndexMap []int
 	for i, res := range batchResp.Results {
 		if res.NextPageToken == "" {

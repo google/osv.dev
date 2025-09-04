@@ -1,0 +1,13 @@
+version: "2"
+
+linters:
+  default: none
+
+formatters:
+  enable:
+    - gofmt
+    - goimports
+
+issues:
+  max-issues-per-linter: 0
+  max-same-issues: 0

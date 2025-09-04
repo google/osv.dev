@@ -218,7 +218,6 @@ func TestNormalizeVersion(t *testing.T) {
 		},
 	}
 	for _, tc := range tests {
-
 		t.Run(tc.description, func(t *testing.T) {
 			t.Parallel()
 			got, err := NormalizeVersion(tc.inputVersion)

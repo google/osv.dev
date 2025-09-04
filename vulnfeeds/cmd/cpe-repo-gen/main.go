@@ -133,7 +133,7 @@ func LoadCPEsFromJSONDir(dir string) ([]CPE, error) {
 	for _, filePath := range files {
 		jsonFile, err := os.Open(filePath)
 		if err != nil {
-			Logger.Warnf("Failed to open %s: %v", filePath, err)
+			logger.Warnf("Failed to open %s: %v", filePath, err)
 			continue
 		}
 
@@ -145,7 +145,7 @@ func LoadCPEsFromJSONDir(dir string) ([]CPE, error) {
 		jsonFile.Close()
 		var feed CPEFeed
 		if err := json.Unmarshal(byteValue, &feed); err != nil {
-			Logger.Warnf("Failed to unmarshal %s: %v", filePath, err)
+			logger.Warnf("Failed to unmarshal %s: %v", filePath, err)
 			continue
 		}
 		for _, p := range feed.Products {

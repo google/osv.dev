@@ -267,10 +267,8 @@ func findInverseAffectedRanges(cveAff cves.Affected, cnaAssigner string) (ranges
 	slices.SortFunc(fixed, sortBadSemver)
 
 	// If the first fixed version is earlier than the first introduced, assume introduction from "0".
-	if len(fixed) > 0 && len(introduced) > 0 {
-		if sortBadSemver(fixed[0], introduced[0]) < 0 {
-			introduced = append([]string{"0"}, introduced...)
-		}
+	if len(fixed) > 0 && len(introduced) > 0 && sortBadSemver(fixed[0], introduced[0]) < 0 {
+		introduced = append([]string{"0"}, introduced...)
 	}
 
 	// Create ranges by pairing sorted introduced and fixed versions.

@@ -43,6 +43,8 @@ import (
 	"sort"
 	"strconv"
 	"strings"
+	"sync"
+	"sync/atomic"
 	"text/template"
 
 	"github.com/google/osv/vulnfeeds/cves"
@@ -148,11 +150,11 @@ func LoadCPEsFromJSONDir(dir string) ([]CPE, error) {
 			Logger.Warnf("Failed to unmarshal %s: %v", filePath, err)
 			continue
 		}
-		fmt.Printf("%+v", feed)
 		for _, p := range feed.Products {
 			cpes = append(cpes, p.CPE)
 		}
 	}
+	
 	return cpes, nil
 }
 

@@ -52,32 +52,17 @@ import (
 	"slices"
 )
 
-type CPEDict struct {
-	CPEItems []CPEItem
-}
-
-type CPEItem struct {
-	Name       string      `json:"name"`
-	Deprecated bool        `json:"deprecated"`
-	References []Reference `json:"references"`
-}
-
+// Reference is a reference from a CPE in the NVD CPE Dictionary.
 type Reference struct {
-	URL         string
-	Description string
-}
-
-// CPEReference is a reference from a CPE in the NVD CPE Dictionary.
-type CPEReference struct {
 	URL  string `json:"ref"`
 	Type string `json:"type"`
 }
 
 // CPE is a CPE from the NVD CPE Dictionary.
 type CPE struct {
-	Deprecated bool           `json:"deprecated"`
-	CPEName    string         `json:"cpeName"`
-	References []CPEReference `json:"refs"`
+	Deprecated bool        `json:"deprecated"`
+	Name       string      `json:"cpeName"`
+	References []Reference `json:"refs"`
 }
 
 // CPEProduct is a product from the NVD CPE Dictionary.
@@ -138,11 +123,11 @@ var (
 	Verbose            = flag.Bool("verbose", false, "Output some telemetry to stdout during execution")
 )
 
-func LoadCPEsFromJSONDir(dir string) (CPEDict, error) {
-	var cpeItems []CPEItem
+func LoadCPEsFromJSONDir(dir string) ([]CPE, error) {
+	var cpes []CPE
 	files, err := filepath.Glob(filepath.Join(dir, "*.json"))
 	if err != nil {
-		return CPEDict{}, fmt.Errorf("failed to glob for json files in %s: %w", dir, err)
+		return nil, fmt.Errorf("failed to glob for json files in %s: %w", dir, err)
 	}
 
 	for _, filePath := range files {
@@ -154,7 +139,8 @@ func LoadCPEsFromJSONDir(dir string) (CPEDict, error) {
 
 		byteValue, err := io.ReadAll(jsonFile)
 		if err != nil {
-			return CPEDict{}, err
+			jsonFile.Close()
+			return nil, err
 		}
 		jsonFile.Close()
 		var feed CPEFeed
@@ -162,21 +148,12 @@ func LoadCPEsFromJSONDir(dir string) (CPEDict, error) {
 			Logger.Warnf("Failed to unmarshal %s: %v", filePath, err)
 			continue
 		}
-
+		fmt.Printf("%+v", feed)
 		for _, p := range feed.Products {
-			var refs []Reference
-			for _, r := range p.CPE.References {
-				refs = append(refs, Reference{URL: r.URL, Description: r.Type})
-			}
-
-			cpeItems = append(cpeItems, CPEItem{
-				Name:       p.CPE.CPEName,
-				Deprecated: p.CPE.Deprecated,
-				References: refs,
-			})
+			cpes = append(cpes, p.CPE)
 		}
 	}
-	return CPEDict{CPEItems: cpeItems}, nil
+	return cpes, nil
 }
 
 // Outputs a JSON file of the product-to-repo map.
@@ -358,55 +335,55 @@ func MaybeGetSourceRepoFromDebian(mdir string, pkg string) string {
 }
 
 // Analyze CPE Dictionary and return a product-to-repo map and a reference description frequency table.
-func analyzeCPEDictionary(d CPEDict) (productToRepo VendorProductToRepoMap, descriptionFrequency map[string]int) {
+func analyzeCPEDictionary(cpes []CPE) (productToRepo VendorProductToRepoMap, descriptionFrequency map[string]int) {
 	productToRepo = make(VendorProductToRepoMap)
 	descriptionFrequency = make(map[string]int)
 	MaybeTryDebian := make(map[VendorProduct]bool)
-	for _, c := range d.CPEItems {
+	for _, c := range cpes {
 		if c.Deprecated {
 			Logger.Infof("Skipping deprecated %q", c.Name)
 			continue
 		}
-		CPE, err := cves.ParseCPE(c.Name)
+		parsedCPE, err := cves.ParseCPE(c.Name)
 		if err != nil {
 			Logger.Infof("Failed to parse %q", c.Name)
 			continue
 		}
-		if CPE.Part != "a" {
+		if parsedCPE.Part != "a" {
 			// Not interested in hardware or operating systems.
 			continue
 		}
 		for _, r := range c.References {
-			descriptionFrequency[r.Description] += 1
+			descriptionFrequency[r.Type] += 1
 			repo, err := cves.Repo(r.URL)
 			if err != nil {
-				Logger.Infof("Disregarding %q for %s:%s (%s) because %v", r.URL, CPE.Vendor, CPE.Product, r.Description, err)
+				Logger.Infof("Disregarding %q for %s:%s (%s) because %v", r.URL, parsedCPE.Vendor, parsedCPE.Product, r.Type, err)
 				continue
 			}
 			if IsGitHubURL(repo) {
 				repo = strings.ToLower(repo)
 			}
 			// If we already have an entry for this repo, don't add it again.
-			if slices.Contains(productToRepo[VendorProduct{CPE.Vendor, CPE.Product}], repo) {
+			if slices.Contains(productToRepo[VendorProduct{parsedCPE.Vendor, parsedCPE.Product}], repo) {
 				continue
 			}
-			Logger.Infof("Liking %q for %s:%s (%s)", repo, CPE.Vendor, CPE.Product, r.Description)
-			productToRepo[VendorProduct{CPE.Vendor, CPE.Product}] = append(productToRepo[VendorProduct{CPE.Vendor, CPE.Product}], repo)
+			Logger.Infof("Liking %q for %s:%s (%s)", repo, parsedCPE.Vendor, parsedCPE.Product, r.Type)
+			productToRepo[VendorProduct{parsedCPE.Vendor, parsedCPE.Product}] = append(productToRepo[VendorProduct{parsedCPE.Vendor, parsedCPE.Product}], repo)
 			// If this was queued for trying to find via Debian, and subsequently found, dequeue it.
 			if *DebianMetadataPath != "" {
-				delete(MaybeTryDebian, VendorProduct{CPE.Vendor, CPE.Product})
+				delete(MaybeTryDebian, VendorProduct{parsedCPE.Vendor, parsedCPE.Product})
 			}
 		}
 		// If we've arrived to this point, we've exhausted the
 		// references and not calculated any repos for the product,
 		// flag for trying Debian afterwards.
 		// We may encounter another CPE item that *does* have a viable reference in the meantime.
-		if len(productToRepo[VendorProduct{CPE.Vendor, CPE.Product}]) == 0 && *DebianMetadataPath != "" {
+		if len(productToRepo[VendorProduct{parsedCPE.Vendor, parsedCPE.Product}]) == 0 && *DebianMetadataPath != "" {
 			// Check the denylist though.
-			if slices.Contains(DebianCopyrightDenylist, VendorProduct{CPE.Vendor, CPE.Product}) {
+			if slices.Contains(DebianCopyrightDenylist, VendorProduct{parsedCPE.Vendor, parsedCPE.Product}) {
 				continue
 			}
-			MaybeTryDebian[VendorProduct{CPE.Vendor, CPE.Product}] = true
+			MaybeTryDebian[VendorProduct{parsedCPE.Vendor, parsedCPE.Product}] = true
 		}
 	}
 	// Try any Debian possible ones as a last resort.
@@ -471,12 +448,12 @@ func main() {
 	var logCleanup func()
 	Logger, logCleanup = utility.CreateLoggerWrapper("cpe-repo-gen")
 	defer logCleanup()
-	CPEDictionary, err := LoadCPEsFromJSONDir(*CPEDictionaryDir)
+	cpes, err := LoadCPEsFromJSONDir(*CPEDictionaryDir)
 	if err != nil {
 		Logger.Fatalf("Failed to load CPEs from %s: %v", *CPEDictionaryDir, err)
 	}
 
-	productToRepo, descriptionFrequency := analyzeCPEDictionary(CPEDictionary)
+	productToRepo, descriptionFrequency := analyzeCPEDictionary(cpes)
 	if *Validate {
 		productToRepo = validateRepos(productToRepo)
 	}

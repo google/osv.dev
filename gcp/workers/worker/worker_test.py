@@ -1602,22 +1602,17 @@ class UpdateTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
     message = mock.Mock()
     message.attributes = {
         'source': 'source',
-        'path': 'a/b/CVE-2022-0128.json',
+        'path': 'a/b/CVE-2016-15011.json',
         'original_sha256':
-            ('a4060cb842363cb6ae7669057402ccddce21a94ed6cad98234e73305816a86d3'
+            ('88696731b137858e82177bdd9fe938eaa4e75507a2c9228fd21d98f91963ae90'
             ),
         'deleted': 'false',
     }
     task_runner._source_update(message)
 
-    actual_result = osv.Bug.get_by_id('CVE-2022-0128')
+    processed_result = osv.Bug.get_by_id('CVE-2016-15011')
 
-    # Remove some values that make the diff super unwieldly
-    for affected in actual_result.affected_packages:
-      del affected.versions
-    del actual_result.affected_fuzzy
-
-    self.expect_dict_equal('update_bucket_cve', actual_result._to_dict())
+    self.expect_dict_equal('update_bucket_cve', processed_result._to_dict())
 
   def test_last_affected_git(self):
     """Basic last_affected GIT enumeration."""

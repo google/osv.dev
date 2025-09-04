@@ -43,8 +43,6 @@ import (
 	"sort"
 	"strconv"
 	"strings"
-	"sync"
-	"sync/atomic"
 	"text/template"
 
 	"github.com/google/osv/vulnfeeds/cves"
@@ -154,7 +152,7 @@ func LoadCPEsFromJSONDir(dir string) ([]CPE, error) {
 			cpes = append(cpes, p.CPE)
 		}
 	}
-	
+
 	return cpes, nil
 }
 

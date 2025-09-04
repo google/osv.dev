@@ -81,29 +81,30 @@ func generateOSVFromDebianTracker(debianData DebianSecurityTrackerData, debianRe
 	sort.Slice(releaseNames, func(i, j int) bool {
 		vi, _ := strconv.ParseFloat(debianReleaseMap[releaseNames[i]], 64)
 		vj, _ := strconv.ParseFloat(debianReleaseMap[releaseNames[j]], 64)
+
 		return vi < vj
 	})
 
 	for _, pkgName := range pkgNames {
 		pkg := debianData[pkgName]
-		for cveId, cveData := range pkg {
-			v, ok := osvCves[cveId]
+		for cveID, cveData := range pkg {
+			v, ok := osvCves[cveID]
 			if !ok {
 				v = &vulns.Vulnerability{
 					Vulnerability: osvschema.Vulnerability{
-						ID:       fmt.Sprintf("DEBIAN-%s", cveId),
-						Upstream: []string{cveId},
+						ID:       fmt.Sprintf("DEBIAN-%s", cveID),
+						Upstream: []string{cveID},
 						Modified: time.Now().UTC(),
 						Details:  cveData.Description,
 						References: []osvschema.Reference{
 							{
 								Type: "ADVISORY",
-								URL:  "https://security-tracker.debian.org/tracker/" + cveId,
+								URL:  "https://security-tracker.debian.org/tracker/" + cveID,
 							},
 						},
 					},
 				}
-				osvCves[cveId] = v
+				osvCves[cveID] = v
 			}
 
 			for _, releaseName := range releaseNames {
@@ -124,7 +125,7 @@ func generateOSVFromDebianTracker(debianData DebianSecurityTrackerData, debianRe
 				pkgInfo := vulns.PackageInfo{
 					PkgName:   pkgName,
 					Ecosystem: "Debian:" + debianVersion,
-					EcosystemSpecific: map[string]interface{}{
+					EcosystemSpecific: map[string]any{
 						"urgency": release.Urgency,
 					},
 				}

@@ -104,13 +104,14 @@ func TestCombineIntoOSV(t *testing.T) {
 		if len(combinedOSV[cve].Affected) != len(allParts[cve]) {
 			t.Errorf("Affected lengths for %s do not match", cve)
 		}
+
 		found := false
 		switch cve {
 		case "CVE-2018-1000500":
 			for _, reference := range combinedOSV[cve].References {
 				if reference.Type == "ADVISORY" &&
 					reference.URL == "https://security-tracker.debian.org/tracker/CVE-2018-1000500" {
-					found = true
+					t.Errorf("Found unexpected Debian advisory URL for %s", cve)
 				}
 			}
 		case "CVE-2022-33745":
@@ -128,12 +129,11 @@ func TestCombineIntoOSV(t *testing.T) {
 				}
 			}
 		}
-		if !found {
+		if !found && cve != "CVE-2018-1000500" {
 			t.Errorf("%s doesn't have all expected references", cve)
 		}
 	}
 }
-
 func TestGetModifiedTime(t *testing.T) {
 	_, err := getModifiedTime("../../test_data/parts/debian/CVE-2016-1585.debian.json")
 	if err != nil {

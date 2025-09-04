@@ -24,6 +24,7 @@ from osv import tests
 
 emulator = None
 
+
 class FrontendHandlerTest(unittest.TestCase):
   """Frontend handler tests."""
 
@@ -112,6 +113,7 @@ class FrontendHandlerTest(unittest.TestCase):
 
     counts = frontend_handlers.osv_get_ecosystem_counts()
     self.assertDictEqual({'Debian': 2, 'PyPI': 1}, counts)
+
 
 def setUpModule():
   """Set up the test module."""

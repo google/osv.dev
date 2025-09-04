@@ -28,6 +28,8 @@ TEST_DATA_DIR = os.path.join(
     os.path.dirname(os.path.abspath(__file__)), 'testdata')
 
 emulator = None
+
+
 class UpstreamTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
   """Upstream tests."""
 
@@ -456,6 +458,7 @@ class UpstreamTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
     }
     self.assertEqual(expected, bug_ids)
 
+
 def setUpModule():
   """Set up the test module."""
   # Start the emulator BEFORE creating the ndb client
@@ -463,7 +466,8 @@ def setUpModule():
   emulator = unittest.enterModuleContext(tests.datastore_emulator())
   unittest.enterModuleContext(ndb.Client().context(cache_policy=False))
   logging.getLogger("UpstreamTest.test_compute_upstream").setLevel(
-    logging.DEBUG)
+      logging.DEBUG)
+
 
 if __name__ == '__main__':
   unittest.main()

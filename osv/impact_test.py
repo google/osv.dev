@@ -36,7 +36,6 @@ class UpdateAffectedCommitsTests(unittest.TestCase):
     cls._ds_emulator = cls.enterClassContext(tests.datastore_emulator())
     cls.enterClassContext(ndb.Client().context(cache_policy=False))
 
-
   def test_update_single_page(self):
     """Test update_affected_commits with a single page."""
     commits = {
@@ -88,7 +87,8 @@ class UpdateAffectedCommitsTests(unittest.TestCase):
   def test_update_multiple_pages(self):
     """Test update_affected_commits with multiple page."""
     # The emulator cannot handle indexing 10000 commits in a single entity.
-    with mock.patch.object(models.AffectedCommits, 'MAX_COMMITS_PER_ENTITY', 100):
+    with mock.patch.object(models.AffectedCommits, 'MAX_COMMITS_PER_ENTITY',
+                           100):
       # These pre-populated pages should be deleted.
       for i in range(10):
         models.AffectedCommits(
@@ -110,7 +110,8 @@ class UpdateAffectedCommitsTests(unittest.TestCase):
 
       # Check that the new pages got written properly.
       affected_commits = list(
-          models.AffectedCommits.query(models.AffectedCommits.bug_id == 'BUG-1'))
+          models.AffectedCommits.query(
+              models.AffectedCommits.bug_id == 'BUG-1'))
 
       for i, result in enumerate(affected_commits):
         self.assertEqual(f'BUG-1-{i}', result.key.id())

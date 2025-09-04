@@ -109,6 +109,7 @@ class MockRepo:
 
 
 class _DatastoreEmulator:
+
   def __init__(self, url):
     self._url = url
 
@@ -149,24 +150,24 @@ def datastore_emulator():
       '--database-mode=datastore-mode',
       f'--host-port={url}',
   ],
-    stdout=subprocess.DEVNULL,
-    stderr=subprocess.DEVNULL,
-    preexec_fn=os.setsid)
-  
+                         stdout=subprocess.DEVNULL,
+                         stderr=subprocess.DEVNULL,
+                         start_new_session=True)
+
   # Wait for ready
   start = time.time()
   while time.time() - start < _EMULATOR_TIMEOUT:
-      try:
-        resp = requests.get(f'http://{url}', timeout=_EMULATOR_TIMEOUT)
-        if resp.ok:
-            break
-      except requests.ConnectionError:
-        pass
-      time.sleep(0.5)
+    try:
+      resp = requests.get(f'http://{url}', timeout=_EMULATOR_TIMEOUT)
+      if resp.ok:
+        break
+    except requests.ConnectionError:
+      pass
+    time.sleep(0.5)
   else:
-      os.killpg(emu.pid, signal.SIGKILL)
-      raise RuntimeError('Datastore emulator did not get ready in time.')
-  
+    os.killpg(emu.pid, signal.SIGKILL)
+    raise RuntimeError('Datastore emulator did not get ready in time.')
+
   # Also mock the GCS bucket
   with gcs_mock.gcs_mock():
     yield _DatastoreEmulator(url)
@@ -187,7 +188,7 @@ def datastore_emulator():
         os.environ.pop(k, None)
       else:
         os.environ.setdefault(k, v)
- 
+
 
 def mock_datetime(test):
   """Mocks datetime."""

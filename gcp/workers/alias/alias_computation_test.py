@@ -459,6 +459,7 @@ class AliasTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
     modified.FromDatetime(alias_group_last_modified)
     self.assertEqual(modified, vuln.modified)
 
+
 def setUpModule():
   """Set up the test module."""
   # Start the emulator BEFORE creating the ndb client

@@ -303,5 +303,6 @@ def setUpModule():
   """Set up the test module."""
   unittest.enterModuleContext(tests.datastore_emulator())
 
+
 if __name__ == '__main__':
   unittest.main()

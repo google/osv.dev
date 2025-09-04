@@ -53,6 +53,7 @@ PORT = 8888
 SERVER_ADDRESS = ('localhost', PORT)
 MOCK_ADDRESS_FORMAT = f"http://{SERVER_ADDRESS[0]}:{SERVER_ADDRESS[1]}/"
 
+
 @mock.patch('importer.utcnow',
             lambda: datetime.datetime(2021, 1, 1, tzinfo=datetime.UTC))
 class ImporterTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
@@ -62,7 +63,7 @@ class ImporterTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
     """Load test data."""
     with open(os.path.join(TEST_DATA_DIR, name)) as f:
       return f.read()
-    
+
   @classmethod
   def setUpClass(cls):
     # Start the emulator BEFORE creating the ndb client
@@ -436,7 +437,8 @@ class BucketImporterTest(unittest.TestCase):
   def setUpClass(cls):
     # Start the emulator BEFORE creating the ndb client
     cls.emulator = cls.enterClassContext(tests.datastore_emulator())
-    cls.ndb_context = cls.enterClassContext(ndb.Client().context(cache_policy=False))
+    cls.ndb_context = cls.enterClassContext(
+        ndb.Client().context(cache_policy=False))
 
   def setUp(self):
     self.emulator.reset()
@@ -870,7 +872,8 @@ class BucketImporterMassDeletionTest(unittest.TestCase):
   """Rigorous deletion testing against production data (in staging)."""
 
   def setUp(self):
-    if not (os.environ.get('CLOUD_BUILD') != 1 and 'RUN_SLOW_TESTS' in os.environ):
+    if not (os.environ.get('CLOUD_BUILD') != 1 and
+            'RUN_SLOW_TESTS' in os.environ):
       self.skipTest('Skipping slow test')
     # Note: This runs (non-destructively) against the real live (non-emulated)
     # staging datastore and GCS bucket.
@@ -1184,10 +1187,12 @@ class ImportFindingsTest(unittest.TestCase):
     actual = osv.ImportFinding.get_by_id(expected['bug_id']).to_dict()
     self.assertEqual(expected, actual)
 
+
 def setUpModule():
   """Set up the test module."""
   logging.getLogger("UpstreamTest.test_compute_upstream").setLevel(
-    logging.DEBUG)
+      logging.DEBUG)
+
 
 if __name__ == '__main__':
   unittest.main()

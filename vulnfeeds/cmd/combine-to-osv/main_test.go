@@ -105,35 +105,34 @@ func TestCombineIntoOSV(t *testing.T) {
 			t.Errorf("Affected lengths for %s do not match", cve)
 		}
 
-		if cve == "CVE-2018-1000500" {
-			found := false
-			switch cve {
-			case "CVE-2018-1000500":
-				for _, reference := range combinedOSV[cve].References {
-					if reference.Type == "ADVISORY" &&
-						reference.URL == "https://security-tracker.debian.org/tracker/CVE-2018-1000500" {
-						t.Errorf("Found unexpected Debian advisory URL for %s", cve)
-					}
+		found := false
+		switch cve {
+		case "CVE-2018-1000500":
+			for _, reference := range combinedOSV[cve].References {
+				if reference.Type == "ADVISORY" &&
+					reference.URL == "https://security-tracker.debian.org/tracker/CVE-2018-1000500" {
+					t.Errorf("Found unexpected Debian advisory URL for %s", cve)
 				}
-			case "CVE-2022-33745":
-				for _, reference := range combinedOSV[cve].References {
-					if reference.Type == "ADVISORY" &&
-						reference.URL == "https://security.alpinelinux.org/vuln/CVE-2022-33745" {
-						found = true
-					}
+			}
+		case "CVE-2022-33745":
+			for _, reference := range combinedOSV[cve].References {
+				if reference.Type == "ADVISORY" &&
+					reference.URL == "https://security.alpinelinux.org/vuln/CVE-2022-33745" {
+					found = true
 				}
-			case "CVE-2022-32746":
-				for _, reference := range combinedOSV[cve].References {
-					if reference.Type == "ADVISORY" &&
-						reference.URL == "https://security.alpinelinux.org/vuln/CVE-2022-32746" {
-						found = true
-					}
-				}
-				if !found {
-					t.Errorf("%s doesn't have all expected references", cve)
+			}
+		case "CVE-2022-32746":
+			for _, reference := range combinedOSV[cve].References {
+				if reference.Type == "ADVISORY" &&
+					reference.URL == "https://security.alpinelinux.org/vuln/CVE-2022-32746" {
+					found = true
 				}
 			}
 		}
+		if !found && cve != "CVE-2018-1000500" {
+			t.Errorf("%s doesn't have all expected references", cve)
+		}
+
 	}
 }
 func TestGetModifiedTime(t *testing.T) {

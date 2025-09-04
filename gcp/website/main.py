@@ -13,19 +13,16 @@
 # limitations under the License.
 """Website entrypoint."""
 
-import logging
 
 from flask import Flask
 from flask_compress import Compress
-import google.cloud.logging
 from google.cloud import ndb
 from whitenoise import WhiteNoise
 
 import cache
 import frontend_handlers
 import handlers
-import utils
-import osv
+import osv.logs
 
 ndb_client = ndb.Client()
 

@@ -59,7 +59,7 @@ def setup_gcp_logging(service_name):
   """Set up GCP logging and error reporting."""
 
   if (os.getenv('KUBERNETES_SERVICE_HOST') is not None or
-          os.getenv('K_SERVICE') is not None):
+      os.getenv('K_SERVICE') is not None):
     logging_client = google_logging.Client()
     logging_client.setup_logging()
 

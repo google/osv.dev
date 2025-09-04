@@ -34,8 +34,7 @@ var apiKey = flag.String("api_key", "", "API key for accessing NVD API 2.0")
 var cvePath = flag.String("cvePath", CVEPathDefault, "Where to download CVEs to")
 
 func main() {
-	var logCleanup func()
-	logCleanup = logger.InitGlobalLogger("download-cves", false)
+	var logCleanup = logger.InitGlobalLogger("download-cves", false)
 	defer logCleanup()
 
 	flag.Parse()

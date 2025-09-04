@@ -429,8 +429,7 @@ func main() {
 	}
 	flag.Parse()
 
-	var logCleanup func()
-	logCleanup = logger.InitGlobalLogger("cpe-repo-gen", *Verbose)
+	var logCleanup = logger.InitGlobalLogger("cpe-repo-gen", *Verbose)
 	defer logCleanup()
 
 	CPEDictionary, err := LoadCPEDictionary(*CPEDictionaryFile)

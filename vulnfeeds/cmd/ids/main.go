@@ -7,7 +7,6 @@ import (
 	"encoding/json"
 	"flag"
 	"fmt"
-	"github.com/google/osv/vulnfeeds/utility/logger"
 	"io"
 	"io/fs"
 	"os"
@@ -15,6 +14,8 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/google/osv/vulnfeeds/utility/logger"
 
 	"slices"
 
@@ -64,6 +65,8 @@ func main() {
 
 	if err := assignIDs(*prefix, *dir, fileFormat(*format)); err != nil {
 		logger.Infof("Failed to assign IDs: %v", err)
+		cleanup()
+		//nolint:gocritic // We run cleanup right before exiting
 		os.Exit(1)
 	}
 }

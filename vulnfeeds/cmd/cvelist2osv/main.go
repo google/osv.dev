@@ -236,8 +236,7 @@ func identifyPossibleURLs(cve cves.CVE5) []cves.Reference {
 func main() {
 	flag.Parse()
 
-	var logCleanup func()
-	logCleanup = logger.InitGlobalLogger("cvelist-osv", false)
+	var logCleanup = logger.InitGlobalLogger("cvelist-osv", false)
 	defer logCleanup()
 
 	// Read the input CVE JSON file.

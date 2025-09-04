@@ -25,8 +25,7 @@ const (
 )
 
 func main() {
-	var logCleanup func()
-	logCleanup = logger.InitGlobalLogger("debian-osv", false)
+	var logCleanup = logger.InitGlobalLogger("debian-osv", false)
 	defer logCleanup()
 
 	err := os.MkdirAll(debianOutputPathDefault, 0755)

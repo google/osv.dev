@@ -20,7 +20,7 @@ wget \
 
 ```
 cpe-repo-gen analyzes the NVD CPE Dictionary for Open Source repository information.
-It reads the NVD CPE Dictionary XML file and outputs a JSON map of CPE products
+It reads the NVD CPE Dictionary JSON files and outputs a JSON map of CPE products
 to discovered repository URLs.
 
 It can also output on stdout additional data about colliding CPE package names.
@@ -31,8 +31,8 @@ Usage:
 
 The flags are:
 
-      --cpe_dictionary
-        The path to the uncompressed NVD CPE Dictionary XML file, see https://nvd.nist.gov/products/cpe
+      --cpe_dictionary_dir
+        The path to the directory of NVD CPE Dictionary JSON files, see https://nvd.nist.gov/products/cpe
 
       --debian_metadata_path
             The path to a directory containing a local mirror of Debian copyright metadata, see README.md

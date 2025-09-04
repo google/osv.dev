@@ -30,16 +30,18 @@ func Test_generateDebianSecurityTrackerOSV(t *testing.T) {
 	if len(osvPkgInfos) != expectedCount {
 		t.Errorf("Expected %v Debian OSV entries , got %v", expectedCount, osvPkgInfos)
 	}
-	for cveId, pkgInfos := range osvPkgInfos {
-		file, err := os.Open(fmt.Sprintf("../../test_data/parts/debian/%s.debian.json", cveId))
+	for cveID, pkgInfos := range osvPkgInfos {
+		file, err := os.Open(fmt.Sprintf("../../test_data/parts/debian/%s.debian.json", cveID))
 		if err != nil {
-			t.Errorf("../../test_data/parts/debian/%s.debian.json doesn't exist", cveId)
+			t.Errorf("../../test_data/parts/debian/%s.debian.json doesn't exist", cveID)
 		}
 		expectedResult, _ := io.ReadAll(file)
 		var expectedPackageInfos []vulns.PackageInfo
-		json.Unmarshal(expectedResult, &expectedPackageInfos)
+		if err := json.Unmarshal(expectedResult, &expectedPackageInfos); err != nil {
+			t.Fatalf("Failed to unmarshal expected result: %v", err)
+		}
 		if len(pkgInfos) != len(expectedPackageInfos) || pkgInfos[0].EcosystemSpecific["urgency"] != expectedPackageInfos[0].EcosystemSpecific["urgency"] {
-			t.Errorf("Expected Debian OSV data %v, got %v", expectedPackageInfos, pkgInfos)
+			t.Errorf("Expected Debian OSV data %v, got %#v", expectedPackageInfos, pkgInfos)
 		}
 	}
 }

@@ -2,15 +2,17 @@ package cvelist2osv
 
 import (
 	"cmp"
+	"errors"
 	"fmt"
 	"strconv"
 	"strings"
+
+	"slices"
 
 	"github.com/google/osv/vulnfeeds/cves"
 	"github.com/google/osv/vulnfeeds/git"
 	"github.com/google/osv/vulnfeeds/vulns"
 	"github.com/ossf/osv-schema/bindings/go/osvschema"
-	"golang.org/x/exp/slices"
 )
 
 // VersionRangeType represents the type of versioning scheme for a range.
@@ -144,7 +146,7 @@ func AddVersionInfo(cve cves.CVE5, v *vulns.Vulnerability) ([]VersionSource, []s
 				vr.Type = osvschema.RangeEcosystem
 				aff.Ranges = append(aff.Ranges, vr)
 			}
-			aff.DatabaseSpecific = make(map[string]interface{})
+			aff.DatabaseSpecific = make(map[string]any)
 			aff.DatabaseSpecific["CPEs"] = vulns.Unique(cpeStrings)
 			v.Affected = append(v.Affected, aff)
 		} else if err != nil {
@@ -196,8 +198,9 @@ func findCPEVersionRanges(cve cves.CVE5) (versionRanges []osvschema.Range, cpes 
 		}
 	}
 	if len(versionRanges) == 0 {
-		return nil, nil, fmt.Errorf("no versions extracted from CPEs")
+		return nil, nil, errors.New("no versions extracted from CPEs")
 	}
+
 	return versionRanges, cpes, nil
 }
 
@@ -219,7 +222,6 @@ func extractVersionsFromAffectedField(affected cves.Affected, cnaAssigner string
 	}
 
 	return findNormalAffectedRanges(affected, cnaAssigner)
-
 }
 
 // findInverseAffectedRanges calculates the affected version ranges by analyzing a list
@@ -231,7 +233,7 @@ func findInverseAffectedRanges(cveAff cves.Affected, cnaAssigner string) (ranges
 		return nil, VersionRangeTypeUnknown, append(notes, "Currently only supporting Linux inverse logic")
 	}
 	var introduced []string
-	var fixed []string
+	fixed := make([]string, 0, len(cveAff.Versions))
 	for _, vers := range cveAff.Versions {
 		versionValue := vers.Version
 		if vers.Status == "affected" {
@@ -260,7 +262,6 @@ func findInverseAffectedRanges(cveAff cves.Affected, cnaAssigner string) (ranges
 				introduced = append(introduced, nextIntroduced)
 			}
 		}
-
 	}
 	slices.SortFunc(introduced, sortBadSemver)
 	slices.SortFunc(fixed, sortBadSemver)
@@ -276,8 +277,8 @@ func findInverseAffectedRanges(cveAff cves.Affected, cnaAssigner string) (ranges
 	for index, f := range fixed {
 		if index < len(introduced) {
 			ranges = append(ranges, buildVersionRange(introduced[index], "", f))
-			notes = append(notes, fmt.Sprintf("Introduced from version value - %s", introduced[index]))
-			notes = append(notes, fmt.Sprintf("Fixed from version value - %s", f))
+			notes = append(notes, "Introduced from version value - "+introduced[index])
+			notes = append(notes, "Fixed from version value - "+f)
 		}
 	}
 
@@ -285,6 +286,7 @@ func findInverseAffectedRanges(cveAff cves.Affected, cnaAssigner string) (ranges
 		return ranges, VersionRangeTypeSemver, notes
 	}
 	notes = append(notes, "no ranges found")
+
 	return nil, VersionRangeTypeUnknown, notes
 }
 
@@ -335,6 +337,7 @@ func findNormalAffectedRanges(affected cves.Affected, cnaAssigner string) (versi
 			} else if introduced != "" && lastaffected != "" {
 				versionRanges = append(versionRanges, buildVersionRange(introduced, lastaffected, ""))
 			}
+
 			continue
 		}
 
@@ -355,6 +358,7 @@ func findNormalAffectedRanges(affected cves.Affected, cnaAssigner string) (versi
 					versionRanges = append(versionRanges, buildVersionRange(av.Introduced, av.LastAffected, ""))
 				}
 			}
+
 			continue
 		}
 
@@ -413,6 +417,7 @@ func buildVersionRange(intro string, lastAff string, fixed string) osvschema.Ran
 			LastAffected: lastAff,
 		})
 	}
+
 	return versionRange
 }
 
@@ -423,7 +428,7 @@ func sortBadSemver(a, b string) int {
 	partsA := strings.Split(a, ".")
 	partsB := strings.Split(b, ".")
 	minLen := min(len(partsA), len(partsB))
-	for i := 0; i < minLen; i++ {
+	for i := range minLen {
 		// Convert parts to integers for numerical comparison.
 		// We ignore the error, so non-numeric parts default to 0.
 		numA, _ := strconv.Atoi(partsA[i])

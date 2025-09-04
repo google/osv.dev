@@ -37,6 +37,9 @@ website-tests:
 vulnfeed-tests:
 	cd vulnfeeds && ./run_tests.sh
 
+bindings-tests:
+	cd bindings && ./run_tests.sh
+
 api-server-tests:
 	test -f $(HOME)/.config/gcloud/application_default_credentials.json || (echo "GCP Application Default Credentials not set, try 'gcloud auth login --update-adc'"; exit 1)
 	cd gcp/api && docker build -f Dockerfile.esp -t osv/esp:latest .
@@ -76,4 +79,4 @@ run-api-server-test:
 	cd gcp/api && $(install-cmd) && GOOGLE_CLOUD_PROJECT=oss-vdb-test OSV_VULNERABILITIES_BUCKET=osv-test-vulnerabilities $(run-cmd) python test_server.py $(HOME)/.config/gcloud/application_default_credentials.json $(ARGS)
 
 # TODO: API integration tests.
-all-tests: lib-tests worker-tests importer-tests alias-tests recoverer-tests website-tests vulnfeed-tests
+all-tests: lib-tests worker-tests importer-tests alias-tests recoverer-tests website-tests vulnfeed-tests bindings-tests

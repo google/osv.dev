@@ -21,6 +21,7 @@ package cves
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"strings"
@@ -30,35 +31,35 @@ import (
 )
 
 type Config struct {
-	Operator string `json:"operator,omitempty" yaml:"operator,omitempty" mapstructure:"operator,omitempty"`
-	Negate   bool   `json:"negate,omitempty" yaml:"negate,omitempty" mapstructure:"negate,omitempty"`
-	Nodes    []Node `json:"nodes" yaml:"nodes" mapstructure:"nodes"`
+	Operator string `json:"operator,omitempty" mapstructure:"operator,omitempty" yaml:"operator,omitempty"`
+	Negate   bool   `json:"negate,omitempty"   mapstructure:"negate,omitempty"   yaml:"negate,omitempty"`
+	Nodes    []Node `json:"nodes"              mapstructure:"nodes"              yaml:"nodes"`
 }
 
 // CPE match string or range
 type CPEMatch struct {
 	// Criteria corresponds to the JSON schema field "criteria".
-	Criteria string `json:"criteria" yaml:"criteria" mapstructure:"criteria"`
+	Criteria string `json:"criteria" mapstructure:"criteria" yaml:"criteria"`
 
 	// MatchCriteriaId corresponds to the JSON schema field "matchCriteriaId".
-	MatchCriteriaId string `json:"matchCriteriaId" yaml:"matchCriteriaId" mapstructure:"matchCriteriaId"`
+	MatchCriteriaID string `json:"matchCriteriaId" mapstructure:"matchCriteriaId" yaml:"matchCriteriaId"`
 
 	// VersionEndExcluding corresponds to the JSON schema field "versionEndExcluding".
-	VersionEndExcluding *string `json:"versionEndExcluding,omitempty" yaml:"versionEndExcluding,omitempty" mapstructure:"versionEndExcluding,omitempty"`
+	VersionEndExcluding *string `json:"versionEndExcluding,omitempty" mapstructure:"versionEndExcluding,omitempty" yaml:"versionEndExcluding,omitempty"`
 
 	// VersionEndIncluding corresponds to the JSON schema field "versionEndIncluding".
-	VersionEndIncluding *string `json:"versionEndIncluding,omitempty" yaml:"versionEndIncluding,omitempty" mapstructure:"versionEndIncluding,omitempty"`
+	VersionEndIncluding *string `json:"versionEndIncluding,omitempty" mapstructure:"versionEndIncluding,omitempty" yaml:"versionEndIncluding,omitempty"`
 
 	// VersionStartExcluding corresponds to the JSON schema field
 	// "versionStartExcluding".
-	VersionStartExcluding *string `json:"versionStartExcluding,omitempty" yaml:"versionStartExcluding,omitempty" mapstructure:"versionStartExcluding,omitempty"`
+	VersionStartExcluding *string `json:"versionStartExcluding,omitempty" mapstructure:"versionStartExcluding,omitempty" yaml:"versionStartExcluding,omitempty"`
 
 	// VersionStartIncluding corresponds to the JSON schema field
 	// "versionStartIncluding".
-	VersionStartIncluding *string `json:"versionStartIncluding,omitempty" yaml:"versionStartIncluding,omitempty" mapstructure:"versionStartIncluding,omitempty"`
+	VersionStartIncluding *string `json:"versionStartIncluding,omitempty" mapstructure:"versionStartIncluding,omitempty" yaml:"versionStartIncluding,omitempty"`
 
 	// Vulnerable corresponds to the JSON schema field "vulnerable".
-	Vulnerable bool `json:"vulnerable" yaml:"vulnerable" mapstructure:"vulnerable"`
+	Vulnerable bool `json:"vulnerable" mapstructure:"vulnerable" yaml:"vulnerable"`
 }
 
 // Vexingly, the timestamps used are not RFC 3339, but part of the (much) broader ISO 8601.
@@ -76,110 +77,109 @@ func (t *NVDTime) UnmarshalJSON(b []byte) (err error) {
 	}
 
 	// Some timestamps have a trailing Z. Some don't.
-	if strings.HasSuffix(s, "Z") {
-		s = s[:len(s)-1]
-	}
+	s = strings.TrimSuffix(s, "Z")
 
 	t.Time, err = time.Parse(NVDISO8601Time, s)
+
 	return
 }
 
 type CVEAPIJSON20Schema struct {
 	// Format corresponds to the JSON schema field "format".
-	Format string `json:"format" yaml:"format" mapstructure:"format"`
+	Format string `json:"format" mapstructure:"format" yaml:"format"`
 
 	// ResultsPerPage corresponds to the JSON schema field "resultsPerPage".
-	ResultsPerPage int `json:"resultsPerPage" yaml:"resultsPerPage" mapstructure:"resultsPerPage"`
+	ResultsPerPage int `json:"resultsPerPage" mapstructure:"resultsPerPage" yaml:"resultsPerPage"`
 
 	// StartIndex corresponds to the JSON schema field "startIndex".
-	StartIndex int `json:"startIndex" yaml:"startIndex" mapstructure:"startIndex"`
+	StartIndex int `json:"startIndex" mapstructure:"startIndex" yaml:"startIndex"`
 
 	// Timestamp corresponds to the JSON schema field "timestamp".
-	Timestamp NVDTime `json:"timestamp" yaml:"timestamp" mapstructure:"timestamp"`
+	Timestamp NVDTime `json:"timestamp" mapstructure:"timestamp" yaml:"timestamp"`
 
 	// TotalResults corresponds to the JSON schema field "totalResults".
-	TotalResults int `json:"totalResults" yaml:"totalResults" mapstructure:"totalResults"`
+	TotalResults int `json:"totalResults" mapstructure:"totalResults" yaml:"totalResults"`
 
 	// Version corresponds to the JSON schema field "version".
-	Version string `json:"version" yaml:"version" mapstructure:"version"`
+	Version string `json:"version" mapstructure:"version" yaml:"version"`
 
 	// NVD feed array of CVE
-	Vulnerabilities []Vulnerability `json:"vulnerabilities" yaml:"vulnerabilities" mapstructure:"vulnerabilities"`
+	Vulnerabilities []Vulnerability `json:"vulnerabilities" mapstructure:"vulnerabilities" yaml:"vulnerabilities"`
 }
 
 type CVEID string
 
 type CVE struct {
 	// CISAActionDue corresponds to the JSON schema field "cisaActionDue".
-	CISAActionDue *types.SerializableDate `json:"cisaActionDue,omitempty" yaml:"cisaActionDue,omitempty" mapstructure:"cisaActionDue,omitempty"`
+	CISAActionDue *types.SerializableDate `json:"cisaActionDue,omitempty" mapstructure:"cisaActionDue,omitempty" yaml:"cisaActionDue,omitempty"`
 
 	// CISAExploitAdd corresponds to the JSON schema field "cisaExploitAdd".
-	CISAExploitAdd *types.SerializableDate `json:"cisaExploitAdd,omitempty" yaml:"cisaExploitAdd,omitempty" mapstructure:"cisaExploitAdd,omitempty"`
+	CISAExploitAdd *types.SerializableDate `json:"cisaExploitAdd,omitempty" mapstructure:"cisaExploitAdd,omitempty" yaml:"cisaExploitAdd,omitempty"`
 
 	// CISARequiredAction corresponds to the JSON schema field "cisaRequiredAction".
-	CISARequiredAction *string `json:"cisaRequiredAction,omitempty" yaml:"cisaRequiredAction,omitempty" mapstructure:"cisaRequiredAction,omitempty"`
+	CISARequiredAction *string `json:"cisaRequiredAction,omitempty" mapstructure:"cisaRequiredAction,omitempty" yaml:"cisaRequiredAction,omitempty"`
 
 	// CISAVulnerabilityName corresponds to the JSON schema field
 	// "cisaVulnerabilityName".
-	CISAVulnerabilityName *string `json:"cisaVulnerabilityName,omitempty" yaml:"cisaVulnerabilityName,omitempty" mapstructure:"cisaVulnerabilityName,omitempty"`
+	CISAVulnerabilityName *string `json:"cisaVulnerabilityName,omitempty" mapstructure:"cisaVulnerabilityName,omitempty" yaml:"cisaVulnerabilityName,omitempty"`
 
 	// Configurations corresponds to the JSON schema field "configurations".
-	Configurations []Config `json:"configurations,omitempty" yaml:"configurations,omitempty" mapstructure:"configurations,omitempty"`
+	Configurations []Config `json:"configurations,omitempty" mapstructure:"configurations,omitempty" yaml:"configurations,omitempty"`
 
 	// Descriptions corresponds to the JSON schema field "descriptions".
-	Descriptions []LangString `json:"descriptions" yaml:"descriptions" mapstructure:"descriptions"`
+	Descriptions []LangString `json:"descriptions" mapstructure:"descriptions" yaml:"descriptions"`
 
 	// EvaluatorComment corresponds to the JSON schema field "evaluatorComment".
-	EvaluatorComment *string `json:"evaluatorComment,omitempty" yaml:"evaluatorComment,omitempty" mapstructure:"evaluatorComment,omitempty"`
+	EvaluatorComment *string `json:"evaluatorComment,omitempty" mapstructure:"evaluatorComment,omitempty" yaml:"evaluatorComment,omitempty"`
 
 	// EvaluatorImpact corresponds to the JSON schema field "evaluatorImpact".
-	EvaluatorImpact *string `json:"evaluatorImpact,omitempty" yaml:"evaluatorImpact,omitempty" mapstructure:"evaluatorImpact,omitempty"`
+	EvaluatorImpact *string `json:"evaluatorImpact,omitempty" mapstructure:"evaluatorImpact,omitempty" yaml:"evaluatorImpact,omitempty"`
 
 	// EvaluatorSolution corresponds to the JSON schema field "evaluatorSolution".
-	EvaluatorSolution *string `json:"evaluatorSolution,omitempty" yaml:"evaluatorSolution,omitempty" mapstructure:"evaluatorSolution,omitempty"`
+	EvaluatorSolution *string `json:"evaluatorSolution,omitempty" mapstructure:"evaluatorSolution,omitempty" yaml:"evaluatorSolution,omitempty"`
 
 	// ID corresponds to the JSON schema field "id".
-	ID CVEID `json:"id" yaml:"id" mapstructure:"id"`
+	ID CVEID `json:"id" mapstructure:"id" yaml:"id"`
 
 	// LastModified corresponds to the JSON schema field "lastModified".
-	LastModified NVDTime `json:"lastModified" yaml:"lastModified" mapstructure:"lastModified"`
+	LastModified NVDTime `json:"lastModified" mapstructure:"lastModified" yaml:"lastModified"`
 
 	// Metric scores for a vulnerability as found on NVD.
-	Metrics *CVEItemMetrics `json:"metrics,omitempty" yaml:"metrics,omitempty" mapstructure:"metrics,omitempty"`
+	Metrics *CVEItemMetrics `json:"metrics,omitempty" mapstructure:"metrics,omitempty" yaml:"metrics,omitempty"`
 
 	// Published corresponds to the JSON schema field "published".
-	Published NVDTime `json:"published" yaml:"published" mapstructure:"published"`
+	Published NVDTime `json:"published" mapstructure:"published" yaml:"published"`
 
 	// References corresponds to the JSON schema field "references".
-	References []Reference `json:"references" yaml:"references" mapstructure:"references"`
+	References []Reference `json:"references" mapstructure:"references" yaml:"references"`
 
 	// SourceIdentifier corresponds to the JSON schema field "sourceIdentifier".
-	SourceIdentifier *string `json:"sourceIdentifier,omitempty" yaml:"sourceIdentifier,omitempty" mapstructure:"sourceIdentifier,omitempty"`
+	SourceIdentifier *string `json:"sourceIdentifier,omitempty" mapstructure:"sourceIdentifier,omitempty" yaml:"sourceIdentifier,omitempty"`
 
 	// VendorComments corresponds to the JSON schema field "vendorComments".
-	VendorComments []VendorComment `json:"vendorComments,omitempty" yaml:"vendorComments,omitempty" mapstructure:"vendorComments,omitempty"`
+	VendorComments []VendorComment `json:"vendorComments,omitempty" mapstructure:"vendorComments,omitempty" yaml:"vendorComments,omitempty"`
 
 	// VulnStatus corresponds to the JSON schema field "vulnStatus".
-	VulnStatus *string `json:"vulnStatus,omitempty" yaml:"vulnStatus,omitempty" mapstructure:"vulnStatus,omitempty"`
+	VulnStatus *string `json:"vulnStatus,omitempty" mapstructure:"vulnStatus,omitempty" yaml:"vulnStatus,omitempty"`
 
 	// Weaknesses corresponds to the JSON schema field "weaknesses".
-	Weaknesses []Weakness `json:"weaknesses,omitempty" yaml:"weaknesses,omitempty" mapstructure:"weaknesses,omitempty"`
+	Weaknesses []Weakness `json:"weaknesses,omitempty" mapstructure:"weaknesses,omitempty" yaml:"weaknesses,omitempty"`
 }
 
 // UnmarshalJSON implements json.Unmarshaler.
 func (j *VendorComment) UnmarshalJSON(b []byte) error {
-	var raw map[string]interface{}
+	var raw map[string]any
 	if err := json.Unmarshal(b, &raw); err != nil {
 		return err
 	}
 	if v, ok := raw["comment"]; !ok || v == nil {
-		return fmt.Errorf("field comment in VendorComment: required")
+		return errors.New("field comment in VendorComment: required")
 	}
 	if v, ok := raw["lastModified"]; !ok || v == nil {
-		return fmt.Errorf("field lastModified in VendorComment: required")
+		return errors.New("field lastModified in VendorComment: required")
 	}
 	if v, ok := raw["organization"]; !ok || v == nil {
-		return fmt.Errorf("field organization in VendorComment: required")
+		return errors.New("field organization in VendorComment: required")
 	}
 	type Plain VendorComment
 	var plain Plain
@@ -187,108 +187,110 @@ func (j *VendorComment) UnmarshalJSON(b []byte) error {
 		return err
 	}
 	*j = VendorComment(plain)
+
 	return nil
 }
 
 // CVSS V2.0 score. (hand-generated)
 type CVSSV2 struct {
-	Source                  string       `json:"source" yaml:"source" mapstructure:"source"`
-	Type                    string       `json:"type" yaml:"type" mapstructure:"type"`
-	BaseSeverity            string       `json:"baseSeverity,omitempty" yaml:"baseSeverity,omitempty" mapstructure:"baseSeverity,omitempty"`
-	CVSSData                CVSS         `json:"cvssData" yaml:"cvssData" mapstructure:"cvssData"`
-	ExploitabilityScore     *DefSubscore `json:"exploitabilityScore,omitempty" yaml:"exploitabilityScore,omitempty" mapstructure:"exploitabilityScore,omitempty"`
-	ImpactScore             *DefSubscore `json:"impactScore,omitempty" yaml:"impactScore,omitempty" mapstructure:"impactScore,omitempty"`
-	AcInsufInfo             bool         `json:"acInsufInfo,omitempty" yaml:"acInsufInfo,omitempty" mapstructure:"acInsufInfo,omitempty"`
-	ObtainAllPrivilege      bool         `json:"obtainAllPrivilege,omitempty" yaml:"obtainAllPrivilege,omitempty" mapstructure:"obtainAllPrivilege,omitempty"`
-	ObtainUserPrivilege     bool         `json:"obtainUserPrivilege,omitempty" yaml:"obtainUserPrivilege,omitempty" mapstructure:"obtainUserPrivilege,omitempty"`
-	ObtainOtherPrivilege    bool         `json:"obtainOtherPrivilege,omitempty" yaml:"obtainOtherPrivilege,omitempty" mapstructure:"obtainOtherPrivilege,omitempty"`
-	UserInteractionRequired bool         `json:"userInteractionRequired,omitempty" yaml:"userInteractionRequired,omitempty" mapstructure:"userInteractionRequired,omitempty"`
+	Source                  string       `json:"source"                            mapstructure:"source"                            yaml:"source"`
+	Type                    string       `json:"type"                              mapstructure:"type"                              yaml:"type"`
+	BaseSeverity            string       `json:"baseSeverity,omitempty"            mapstructure:"baseSeverity,omitempty"            yaml:"baseSeverity,omitempty"`
+	CVSSData                CVSS         `json:"cvssData"                          mapstructure:"cvssData"                          yaml:"cvssData"`
+	ExploitabilityScore     *DefSubscore `json:"exploitabilityScore,omitempty"     mapstructure:"exploitabilityScore,omitempty"     yaml:"exploitabilityScore,omitempty"`
+	ImpactScore             *DefSubscore `json:"impactScore,omitempty"             mapstructure:"impactScore,omitempty"             yaml:"impactScore,omitempty"`
+	AcInsufInfo             bool         `json:"acInsufInfo,omitempty"             mapstructure:"acInsufInfo,omitempty"             yaml:"acInsufInfo,omitempty"`
+	ObtainAllPrivilege      bool         `json:"obtainAllPrivilege,omitempty"      mapstructure:"obtainAllPrivilege,omitempty"      yaml:"obtainAllPrivilege,omitempty"`
+	ObtainUserPrivilege     bool         `json:"obtainUserPrivilege,omitempty"     mapstructure:"obtainUserPrivilege,omitempty"     yaml:"obtainUserPrivilege,omitempty"`
+	ObtainOtherPrivilege    bool         `json:"obtainOtherPrivilege,omitempty"    mapstructure:"obtainOtherPrivilege,omitempty"    yaml:"obtainOtherPrivilege,omitempty"`
+	UserInteractionRequired bool         `json:"userInteractionRequired,omitempty" mapstructure:"userInteractionRequired,omitempty" yaml:"userInteractionRequired,omitempty"`
 }
 
 // CVSS V3.0 score. (hand-generated)
 type CVSSV30 struct {
-	Source              string       `json:"source" yaml:"source" mapstructure:"source"`
-	Type                string       `json:"type" yaml:"type" mapstructure:"type"`
-	CVSSData            CVSS         `json:"cvssData" yaml:"cvssData" mapstructure:"cvssData"`
-	ExploitabilityScore *DefSubscore `json:"exploitabilityScore,omitempty" yaml:"exploitabilityScore,omitempty" mapstructure:"exploitabilityScore,omitempty"`
-	ImpactScore         *DefSubscore `json:"impactScore,omitempty" yaml:"impactScore,omitempty" mapstructure:"impactScore,omitempty"`
+	Source              string       `json:"source"                        mapstructure:"source"                        yaml:"source"`
+	Type                string       `json:"type"                          mapstructure:"type"                          yaml:"type"`
+	CVSSData            CVSS         `json:"cvssData"                      mapstructure:"cvssData"                      yaml:"cvssData"`
+	ExploitabilityScore *DefSubscore `json:"exploitabilityScore,omitempty" mapstructure:"exploitabilityScore,omitempty" yaml:"exploitabilityScore,omitempty"`
+	ImpactScore         *DefSubscore `json:"impactScore,omitempty"         mapstructure:"impactScore,omitempty"         yaml:"impactScore,omitempty"`
 }
 
 // CVSS V3.1 score. (hand-generated)
 type CVSSV31 struct {
-	Source              string `json:"source" yaml:"source" mapstructure:"source"`
-	Type                string `json:"type" yaml:"type" mapstructure:"type"`
-	CVSSData            CVSS
-	ExploitabilityScore *DefSubscore `json:"exploitabilityScore,omitempty" yaml:"exploitabilityScore,omitempty" mapstructure:"exploitabilityScore,omitempty"`
-	ImpactScore         *DefSubscore `json:"impactScore,omitempty" yaml:"impactScore,omitempty" mapstructure:"impactScore,omitempty"`
+	Source              string       `json:"source"                        mapstructure:"source"                        yaml:"source"`
+	Type                string       `json:"type"                          mapstructure:"type"                          yaml:"type"`
+	CVSSData            CVSS         `json:"cvssData"                      mapstructure:"cvssData"                      yaml:"cvssData"`
+	ExploitabilityScore *DefSubscore `json:"exploitabilityScore,omitempty" mapstructure:"exploitabilityScore,omitempty" yaml:"exploitabilityScore,omitempty"`
+	ImpactScore         *DefSubscore `json:"impactScore,omitempty"         mapstructure:"impactScore,omitempty"         yaml:"impactScore,omitempty"`
 }
 
 // Metric scores for a vulnerability as found on NVD.
 type CVEItemMetrics struct {
 	// CVSS V2.0 score.
-	CVSSMetricV2 []CVSSV2 `json:"cvssMetricV2,omitempty" yaml:"cvssMetricV2,omitempty" mapstructure:"cvssMetricV2,omitempty"`
+	CVSSMetricV2 []CVSSV2 `json:"cvssMetricV2,omitempty" mapstructure:"cvssMetricV2,omitempty" yaml:"cvssMetricV2,omitempty"`
 
 	// CVSS V3.0 score.
-	CVSSMetricV30 []CVSSV30 `json:"cvssMetricV30,omitempty" yaml:"cvssMetricV30,omitempty" mapstructure:"cvssMetricV30,omitempty"`
+	CVSSMetricV30 []CVSSV30 `json:"cvssMetricV30,omitempty" mapstructure:"cvssMetricV30,omitempty" yaml:"cvssMetricV30,omitempty"`
 
 	// CVSS V3.1 score.
-	CVSSMetricV31 []CVSSV31 `json:"cvssMetricV31,omitempty" yaml:"cvssMetricV31,omitempty" mapstructure:"cvssMetricV31,omitempty"`
+	CVSSMetricV31 []CVSSV31 `json:"cvssMetricV31,omitempty" mapstructure:"cvssMetricV31,omitempty" yaml:"cvssMetricV31,omitempty"`
 }
 
 type Reference struct {
 	// Source corresponds to the JSON schema field "source".
-	Source string `json:"source,omitempty" yaml:"source,omitempty" mapstructure:"source,omitempty"`
+	Source string `json:"source,omitempty" mapstructure:"source,omitempty" yaml:"source,omitempty"`
 
 	// Tags corresponds to the JSON schema field "tags".
-	Tags []string `json:"tags,omitempty" yaml:"tags,omitempty" mapstructure:"tags,omitempty"`
+	Tags []string `json:"tags,omitempty" mapstructure:"tags,omitempty" yaml:"tags,omitempty"`
 
 	// Url corresponds to the JSON schema field "url".
-	Url string `json:"url" yaml:"url" mapstructure:"url"`
+	URL string `json:"url" mapstructure:"url" yaml:"url"`
 }
 
 // UnmarshalJSON implements json.Unmarshaler.
 func (j *Reference) UnmarshalJSON(b []byte) error {
-	var raw map[string]interface{}
+	var raw map[string]any
 	if err := json.Unmarshal(b, &raw); err != nil {
 		return err
 	}
 	if v, ok := raw["url"]; !ok || v == nil {
-		return fmt.Errorf("field url in Reference: required")
+		return errors.New("field url in Reference: required")
 	}
 	type Plain Reference
 	var plain Plain
 	if err := json.Unmarshal(b, &plain); err != nil {
 		return err
 	}
-	if len(plain.Url) > 500 {
+	if len(plain.URL) > 500 {
 		return fmt.Errorf("field %s length: must be <= %d", "url", 500)
 	}
 	*j = Reference(plain)
+
 	return nil
 }
 
 type VendorComment struct {
 	// Comment corresponds to the JSON schema field "comment".
-	Comment string `json:"comment" yaml:"comment" mapstructure:"comment"`
+	Comment string `json:"comment" mapstructure:"comment" yaml:"comment"`
 
 	// LastModified corresponds to the JSON schema field "lastModified".
-	LastModified NVDTime `json:"lastModified" yaml:"lastModified" mapstructure:"lastModified"`
+	LastModified NVDTime `json:"lastModified" mapstructure:"lastModified" yaml:"lastModified"`
 
 	// Organization corresponds to the JSON schema field "organization".
-	Organization string `json:"organization" yaml:"organization" mapstructure:"organization"`
+	Organization string `json:"organization" mapstructure:"organization" yaml:"organization"`
 }
 
 // UnmarshalJSON implements json.Unmarshaler.
 func (j *LangString) UnmarshalJSON(b []byte) error {
-	var raw map[string]interface{}
+	var raw map[string]any
 	if err := json.Unmarshal(b, &raw); err != nil {
 		return err
 	}
 	if v, ok := raw["lang"]; !ok || v == nil {
-		return fmt.Errorf("field lang in LangString: required")
+		return errors.New("field lang in LangString: required")
 	}
 	if v, ok := raw["value"]; !ok || v == nil {
-		return fmt.Errorf("field value in LangString: required")
+		return errors.New("field value in LangString: required")
 	}
 	type Plain LangString
 	var plain Plain
@@ -300,39 +302,40 @@ func (j *LangString) UnmarshalJSON(b []byte) error {
 	// 	return fmt.Errorf("field %s length: must be <= %d, have %d with content %q", "value", 4096, len(plain.Value), plain.Value)
 	// }
 	*j = LangString(plain)
+
 	return nil
 }
 
-type Weakness interface{}
+type Weakness any
 
 type LangString struct {
 	// Lang corresponds to the JSON schema field "lang".
-	Lang string `json:"lang" yaml:"lang" mapstructure:"lang"`
+	Lang string `json:"lang" mapstructure:"lang" yaml:"lang"`
 
 	// Value corresponds to the JSON schema field "value".
-	Value string `json:"value" yaml:"value" mapstructure:"value"`
+	Value string `json:"value" mapstructure:"value" yaml:"value"`
 }
 
 // UnmarshalJSON implements json.Unmarshaler.
 func (j *CVE) UnmarshalJSON(b []byte) error {
-	var raw map[string]interface{}
+	var raw map[string]any
 	if err := json.Unmarshal(b, &raw); err != nil {
 		return err
 	}
 	if v, ok := raw["descriptions"]; !ok || v == nil {
-		return fmt.Errorf("field descriptions in CveItem: required")
+		return errors.New("field descriptions in CveItem: required")
 	}
 	if v, ok := raw["id"]; !ok || v == nil {
-		return fmt.Errorf("field id in CveItem: required")
+		return errors.New("field id in CveItem: required")
 	}
 	if v, ok := raw["lastModified"]; !ok || v == nil {
-		return fmt.Errorf("field lastModified in CveItem: required")
+		return errors.New("field lastModified in CveItem: required")
 	}
 	if v, ok := raw["published"]; !ok || v == nil {
-		return fmt.Errorf("field published in CveItem: required")
+		return errors.New("field published in CveItem: required")
 	}
 	if v, ok := raw["references"]; !ok || v == nil {
-		return fmt.Errorf("field references in CveItem: required")
+		return errors.New("field references in CveItem: required")
 	}
 	type Plain CVE
 	var plain Plain
@@ -348,12 +351,13 @@ func (j *CVE) UnmarshalJSON(b []byte) error {
 	// 	return fmt.Errorf("field %s length: must be <= %d", "references", 500)
 	// }
 	*j = CVE(plain)
+
 	return nil
 }
 
 // (hand generated), see https://github.com/omissis/go-jsonschema/issues/171
 type Vulnerability struct {
-	CVE CVE `json:"cve" yaml:"cve" mapstructure:"cve"`
+	CVE CVE `json:"cve" mapstructure:"cve" yaml:"cve"`
 }
 
 // CVSS subscore.
@@ -361,25 +365,25 @@ type DefSubscore float64
 
 // Defines a configuration node in an NVD applicability statement.
 type Node struct {
-	Operator string     `json:"operator" yaml:"operator" mapstructure:"operator"`
-	Negate   bool       `json:"negate,omitempty" yaml:"negate,omitempty" mapstructure:"negate,omitempty"`
-	CPEMatch []CPEMatch `json:"cpeMatch" yaml:"cpeMatch" mapstructure:"cpeMatch"`
+	Operator string     `json:"operator"         mapstructure:"operator"         yaml:"operator"`
+	Negate   bool       `json:"negate,omitempty" mapstructure:"negate,omitempty" yaml:"negate,omitempty"`
+	CPEMatch []CPEMatch `json:"cpeMatch"         mapstructure:"cpeMatch"         yaml:"cpeMatch"`
 }
 
 // UnmarshalJSON implements json.Unmarshaler.
 func (j *CPEMatch) UnmarshalJSON(b []byte) error {
-	var raw map[string]interface{}
+	var raw map[string]any
 	if err := json.Unmarshal(b, &raw); err != nil {
 		return err
 	}
 	if v, ok := raw["criteria"]; !ok || v == nil {
-		return fmt.Errorf("field criteria in CPEMatch: required")
+		return errors.New("field criteria in CPEMatch: required")
 	}
 	if v, ok := raw["matchCriteriaId"]; !ok || v == nil {
-		return fmt.Errorf("field matchCriteriaId in CPEMatch: required")
+		return errors.New("field matchCriteriaId in CPEMatch: required")
 	}
 	if v, ok := raw["vulnerable"]; !ok || v == nil {
-		return fmt.Errorf("field vulnerable in CPEMatch: required")
+		return errors.New("field vulnerable in CPEMatch: required")
 	}
 	type Plain CPEMatch
 	var plain Plain
@@ -387,6 +391,7 @@ func (j *CPEMatch) UnmarshalJSON(b []byte) error {
 		return err
 	}
 	*j = CPEMatch(plain)
+
 	return nil
 }
 
@@ -396,37 +401,38 @@ func (n *CVEAPIJSON20Schema) ToJSON(w io.Writer) error {
 }
 
 // UnmarshalJSON implements json.Unmarshaler.
-func (j *CVEAPIJSON20Schema) UnmarshalJSON(b []byte) error {
-	var raw map[string]interface{}
+func (n *CVEAPIJSON20Schema) UnmarshalJSON(b []byte) error {
+	var raw map[string]any
 	if err := json.Unmarshal(b, &raw); err != nil {
 		return err
 	}
 	if v, ok := raw["format"]; !ok || v == nil {
-		return fmt.Errorf("field format in CVEAPIJSON20Schema: required")
+		return errors.New("field format in CVEAPIJSON20Schema: required")
 	}
 	if v, ok := raw["resultsPerPage"]; !ok || v == nil {
-		return fmt.Errorf("field resultsPerPage in CVEAPIJSON20Schema: required")
+		return errors.New("field resultsPerPage in CVEAPIJSON20Schema: required")
 	}
 	if v, ok := raw["startIndex"]; !ok || v == nil {
-		return fmt.Errorf("field startIndex in CVEAPIJSON20Schema: required")
+		return errors.New("field startIndex in CVEAPIJSON20Schema: required")
 	}
 	if v, ok := raw["timestamp"]; !ok || v == nil {
-		return fmt.Errorf("field timestamp in CVEAPIJSON20Schema: required")
+		return errors.New("field timestamp in CVEAPIJSON20Schema: required")
 	}
 	if v, ok := raw["totalResults"]; !ok || v == nil {
-		return fmt.Errorf("field totalResults in CVEAPIJSON20Schema: required")
+		return errors.New("field totalResults in CVEAPIJSON20Schema: required")
 	}
 	if v, ok := raw["version"]; !ok || v == nil {
-		return fmt.Errorf("field version in CVEAPIJSON20Schema: required")
+		return errors.New("field version in CVEAPIJSON20Schema: required")
 	}
 	if v, ok := raw["vulnerabilities"]; !ok || v == nil {
-		return fmt.Errorf("field vulnerabilities in CVEAPIJSON20Schema: required")
+		return errors.New("field vulnerabilities in CVEAPIJSON20Schema: required")
 	}
 	type Plain CVEAPIJSON20Schema
 	var plain Plain
 	if err := json.Unmarshal(b, &plain); err != nil {
 		return err
 	}
-	*j = CVEAPIJSON20Schema(plain)
+	*n = CVEAPIJSON20Schema(plain)
+
 	return nil
 }

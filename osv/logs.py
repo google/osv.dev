@@ -14,6 +14,8 @@
 """GCP Logging Helpers."""
 
 import logging
+import os
+
 from google.cloud import logging as google_logging
 
 
@@ -56,8 +58,9 @@ class _ErrorReportingFilter:
 def setup_gcp_logging(service_name):
   """Set up GCP logging and error reporting."""
 
-  logging_client = google_logging.Client()
-  logging_client.setup_logging()
+  if os.environ.get('KUBERNETES_SERVICE_HOST'):
+    logging_client = google_logging.Client()
+    logging_client.setup_logging()
 
   logging.getLogger().addFilter(_ErrorReportingFilter(service_name))
   logging.getLogger().setLevel(logging.INFO)

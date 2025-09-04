@@ -172,7 +172,7 @@ func combineIntoOSV(loadedCves map[cves.CVEID]cves.Vulnerability, allParts map[c
 		for _, pkgInfo := range allParts[cveID] {
 			convertedCve.AddPkgInfo(pkgInfo)
 			if strings.HasPrefix(pkgInfo.Ecosystem, alpineEcosystem) && !addedAlpineURL {
-				addReference(string(cveId), alpineEcosystem, convertedCve)
+				addReference(string(cveID), alpineEcosystem, convertedCve)
 				addedAlpineURL = true
 			}
 		}
@@ -244,7 +244,7 @@ func loadAllCVEs(cvePath string) map[cves.CVEID]cves.Vulnerability {
 func addReference(cveID string, ecosystem string, convertedCve *vulns.Vulnerability) {
 	securityReference := osvschema.Reference{Type: osvschema.ReferenceAdvisory}
 	if ecosystem == alpineEcosystem {
-		securityReference.URL, _ = url.JoinPath(alpineSecurityTrackerURL, cveId)
+		securityReference.URL, _ = url.JoinPath(alpineSecurityTrackerURL, cveID)
 	}
 
 	if securityReference.URL == "" {

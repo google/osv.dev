@@ -681,7 +681,8 @@ class RESTUpdateTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
     self.expect_dict_equal('update_no_introduced',
                            osv.Bug.get_by_id('CURL-CVE-2022-32221')._to_dict())
 
-  @unittest.skip("Takes too long")
+  @unittest.skip('Takes too long. '
+                 'Also, firestore emulator cannot handle records of this size.')
   def test_update_redhat_toobig(self):
     """Test failure handling of a too-large Red Hat record."""
     solo_endpoint = 'RHSA-2018:3140' + '.json'

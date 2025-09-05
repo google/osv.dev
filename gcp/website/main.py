@@ -13,18 +13,15 @@
 # limitations under the License.
 """Website entrypoint."""
 
-import logging
-
 from flask import Flask
 from flask_compress import Compress
-import google.cloud.logging
 from google.cloud import ndb
 from whitenoise import WhiteNoise
 
 import cache
 import frontend_handlers
 import handlers
-import utils
+import osv.logs
 
 ndb_client = ndb.Client()
 
@@ -41,11 +38,7 @@ def ndb_wsgi_middleware(wsgi_app):
 
 def create_app():
   """Create flask app."""
-  if utils.is_cloud_run():
-    logging_client = google.cloud.logging.Client()
-    logging_client.setup_logging()
-
-  logging.getLogger().setLevel(logging.INFO)
+  osv.logs.setup_gcp_logging('website')
 
   flask_app = Flask(
       __name__, template_folder='dist', static_folder='dist/static')

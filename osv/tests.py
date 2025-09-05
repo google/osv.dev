@@ -209,7 +209,7 @@ def datastore_emulator():
       if v is None:
         os.environ.pop(k, None)
       else:
-        os.environ.setdefault(k, v)
+        os.environ[k] = v
 
 
 def mock_datetime(test):

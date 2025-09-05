@@ -209,7 +209,7 @@ def ensure_updated_checkout(git_url,
   return repo
 
 
-def reset_repo(repo, git_callbacks, force: bool = False):
+def reset_repo(repo: pygit2.Repository, git_callbacks, force: bool = False):
   """
   Fetch the latest changes from remote, and set upstream branch correctly.
   This will try to be smart and not refetch repos that recently have been
@@ -224,6 +224,7 @@ def reset_repo(repo, git_callbacks, force: bool = False):
   if not force and key in FETCH_CACHE and (
       now - FETCH_CACHE[key]).total_seconds() < FETCH_CACHE_SECONDS:
     logging.info('Skipping fetch for %s, fetched recently.', remote_url)
+    repo.reset(repo.head.target, pygit2.enums.ResetMode.HARD)
     return
 
   logging.info('Fetching for %s', remote_url)

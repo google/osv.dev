@@ -22,12 +22,14 @@ import frontend_handlers
 from osv import models
 from osv import tests
 
+emulator = None
+
 
 class FrontendHandlerTest(unittest.TestCase):
   """Frontend handler tests."""
 
   def setUp(self):
-    tests.reset_emulator()
+    emulator.reset()
     self.maxDiff = None  # pylint: disable=invalid-name
     self.tmp_dir = tempfile.mkdtemp()
 
@@ -113,12 +115,13 @@ class FrontendHandlerTest(unittest.TestCase):
     self.assertDictEqual({'Debian': 2, 'PyPI': 1}, counts)
 
 
+def setUpModule():
+  """Set up the test module."""
+  # Start the emulator BEFORE creating the ndb client
+  global emulator
+  emulator = unittest.enterModuleContext(tests.datastore_emulator())
+  unittest.enterModuleContext(ndb.Client().context(cache_policy=False))
+
+
 if __name__ == '__main__':
-  ds_emulator = tests.start_datastore_emulator()
-  try:
-    with ndb.Client().context() as context:
-      context.set_memcache_policy(False)
-      context.set_cache_policy(False)
-      unittest.main()
-  finally:
-    ds_emulator.kill()
+  unittest.main()

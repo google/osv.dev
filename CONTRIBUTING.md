@@ -62,11 +62,11 @@ poetry shell
 ### Running tests
 
 Certain tests require you to auth with the Google Cloud SDK and to install the
-Datastore Emulator:
+Firestore Emulator:
 
 ```shell
 gcloud auth login --update-adc
-gcloud components install beta cloud-datastore-emulator
+gcloud components install cloud-firestore-emulator
 ```
 
 To run tests:

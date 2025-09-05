@@ -17,8 +17,11 @@ FROM gcr.io/oss-vdb/worker
 RUN apt-get update && \
     apt-get install -y \
     wget \
+    google-cloud-cli-firestore-emulator \
     google-cloud-sdk-datastore-emulator \
     openjdk-21-jre  # Needed for Datastore emulator.
+
+# TODO(michaelkedar): remove datastore emulator after firestore changes are merged.
 
 COPY daemon.json /etc/docker/daemon.json
 COPY install_go.sh /tmp/install_go.sh

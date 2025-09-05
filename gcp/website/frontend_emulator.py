@@ -483,13 +483,10 @@ def setUp():
 if __name__ == '__main__':
   # The datastore emulator needs to be started before main is imported
   # to make the global ndb client use the emulator.
-  ds_emulator = tests.start_datastore_emulator()
-  import main
-  try:
+  with tests.datastore_emulator():
+    import main
     with ndb.Client().context() as context:
       context.set_memcache_policy(False)
       context.set_cache_policy(False)
       setUp()
     main.app.run(host='127.0.0.1', port=8000, debug=False)
-  finally:
-    tests.stop_emulator()

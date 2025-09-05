@@ -1,4 +1,4 @@
-# Copyright 2021 Google LLC
+# Copyright 2025 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -13,6 +13,7 @@
 # limitations under the License.
 """Bioconductor ecosystem helper tests."""
 
+import warnings
 import vcr.unittest
 
 from .. import ecosystems
@@ -24,7 +25,10 @@ class BioconductorEcosystemTest(vcr.unittest.VCRTestCase):
   def test_next_version(self):
     """Test next_version."""
     ecosystem = ecosystems.get('Bioconductor')
-    self.assertEqual('1.18.0', ecosystem.next_version('a4', '1.16.0'))
-    self.assertEqual('1.20.0', ecosystem.next_version('a4', '1.18.0'))
-    with self.assertRaises(ecosystems.EnumerateError):
-      ecosystem.next_version('doesnotexist123456', '1')
+    with warnings.catch_warnings():
+      # Filter the DeprecationWarning from next_version
+      warnings.filterwarnings('ignore', 'Avoid using this method')
+      self.assertEqual('1.18.0', ecosystem.next_version('a4', '1.16.0'))
+      self.assertEqual('1.20.0', ecosystem.next_version('a4', '1.18.0'))
+      with self.assertRaises(ecosystems.EnumerateError):
+        ecosystem.next_version('doesnotexist123456', '1')

@@ -1,4 +1,4 @@
-# Copyright 2024 Google LLC
+# Copyright 2025 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -14,27 +14,11 @@
 """Red Hat Linux ecosystem helper."""
 
 from ..third_party.univers.rpm import RpmVersion
-from .helper_base import Ecosystem
+from .ecosystems_base import OrderedEcosystem
 
 
-class RedHat(Ecosystem):
-  """Red Hat Linux ecosystem"""
-
-  @property
-  def name(self):
-    return 'Red Hat'
+class RPM(OrderedEcosystem):
+  """Red Hat Package Manager ecosystem helper."""
 
   def sort_key(self, version):
     return RpmVersion.from_string(version)
-
-  def enumerate_versions(self,
-                         package,
-                         introduced,
-                         fixed=None,
-                         last_affected=None,
-                         limits=None):
-    raise NotImplementedError('Ecosystem helper does not support enumeration')
-
-  @property
-  def supports_comparing(self):
-    return True

@@ -1,4 +1,4 @@
-# Copyright 2024 Google LLC
+# Copyright 2025 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -15,21 +15,13 @@
 
 from ..third_party.univers.debian import Version as UbuntuVersion
 
-from .helper_base import Ecosystem
+from .ecosystems_base import OrderedEcosystem
 
 
-class Ubuntu(Ecosystem):
+class Ubuntu(OrderedEcosystem):
   """Ubuntu ecosystem"""
 
   def sort_key(self, version):
     if not UbuntuVersion.is_valid(version):
       return UbuntuVersion(999999, '999999')
     return UbuntuVersion.from_string(version)
-
-  def enumerate_versions(self,
-                         package,
-                         introduced,
-                         fixed=None,
-                         last_affected=None,
-                         limits=None):
-    raise NotImplementedError('Ecosystem helper does not support enumeration')

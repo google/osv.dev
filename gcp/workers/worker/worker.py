@@ -291,18 +291,18 @@ def maybe_normalize_package_names(vulnerability):
   return vulnerability
 
 
-def filter_unsupported_ecosystems(vulnerability):
-  """Remove unsupported ecosystems from vulnerability."""
+def filter_unknown_ecosystems(vulnerability):
+  """Remove unknown ecosystems from vulnerability."""
   filtered = []
   for affected in vulnerability.affected:
     # CVE-converted OSV records have no package information.
     if not affected.HasField('package'):
       filtered.append(affected)
-    elif osv.ecosystems.get(affected.package.ecosystem):
+    elif osv.ecosystems.is_known(affected.package.ecosystem):
       filtered.append(affected)
     else:
-      logging.warning('%s contains unsupported ecosystem "%s"',
-                      vulnerability.id, affected.package.ecosystem)
+      logging.error('%s contains unknown ecosystem "%s"', vulnerability.id,
+                    affected.package.ecosystem)
   del vulnerability.affected[:]
   vulnerability.affected.extend(filtered)
 
@@ -529,7 +529,7 @@ class TaskRunner:
       logging.warning('%s has an encoding error, skipping.', vulnerability.id)
       return
 
-    filter_unsupported_ecosystems(vulnerability)
+    filter_unknown_ecosystems(vulnerability)
 
     # Generate Vanir signatures for test instance.
     project = osv.utils.get_google_cloud_project()

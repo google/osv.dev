@@ -453,7 +453,7 @@ class Bug(ndb.Model):
     for affected_package in self.affected_packages:
       # Indexes used for querying by exact version.
       ecosystem_helper = ecosystems.get(affected_package.package.ecosystem)
-      if ecosystem_helper and ecosystem_helper.supports_ordering:
+      if ecosystem_helper is not None:
         # No need to normalize if the ecosystem is supported.
         self.affected_fuzzy.extend(affected_package.versions)
       else:
@@ -1168,10 +1168,6 @@ def affected_from_bug(entity: Bug) -> list[AffectedVersions]:
 
     # Ecosystem helper for sorting the events.
     e_helper = ecosystems.get(pkg_ecosystem)
-    if e_helper is not None and not (e_helper.supports_comparing or
-                                     e_helper.is_semver):
-      e_helper = None
-
     # TODO(michaelkedar): I am matching the current behaviour of the API,
     # where GIT tags match to the first git repo in the ranges list, even if
     # there are non-git ranges or multiple git repos in a range.
@@ -1465,7 +1461,7 @@ def sorted_events(ecosystem, range_type, events) -> list[AffectedEvent]:
   else:
     ecosystem_helper = ecosystems.get(ecosystem)
 
-  if ecosystem_helper is None or not ecosystem_helper.supports_ordering:
+  if ecosystem_helper is None:
     raise ValueError('Unsupported ecosystem ' + ecosystem)
 
   # Remove any magic '0' values.

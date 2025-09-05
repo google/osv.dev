@@ -110,8 +110,7 @@ def _match_versions(version: str, affected: osv.AffectedVersions) -> bool:
   """Check if the given version matches one of the AffectedVersions' listed 
   versions."""
   ecosystem_helper = osv.ecosystems.get(affected.ecosystem)
-  if ecosystem_helper and (ecosystem_helper.supports_comparing or
-                           ecosystem_helper.is_semver):
+  if ecosystem_helper is not None:
     # Most ecosystem helpers return a very large version on invalid, but if it
     # does cause an error, just match nothing.
     try:
@@ -150,8 +149,7 @@ def _match_versions(version: str, affected: osv.AffectedVersions) -> bool:
 def _match_events(version: str, affected: osv.AffectedVersions) -> bool:
   """Check if the given version matches in the AffectedVersions' events list."""
   ecosystem_helper = osv.ecosystems.get(affected.ecosystem)
-  if not (ecosystem_helper and
-          (ecosystem_helper.supports_comparing or ecosystem_helper.is_semver)):
+  if ecosystem_helper is None:
     # Ecosystem does not support comparisons.
     return False
   try:

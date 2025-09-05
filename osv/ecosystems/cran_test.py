@@ -1,4 +1,4 @@
-# Copyright 2021 Google LLC
+# Copyright 2025 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -13,6 +13,8 @@
 # limitations under the License.
 """CRAN ecosystem helper tests."""
 
+import warnings
+
 import vcr.unittest
 
 from .. import ecosystems
@@ -24,16 +26,20 @@ class CRANEcosystemTest(vcr.unittest.VCRTestCase):
   def test_next_version(self):
     """Test next_version."""
     ecosystem = ecosystems.get('CRAN')
-    # Test typical semver X.Y.Z version
-    self.assertEqual('0.1.1', ecosystem.next_version('readxl', '0.1.0'))
-    self.assertEqual('1.0.0', ecosystem.next_version('readxl', '0.1.1'))
+    with warnings.catch_warnings():
+      # Filter the DeprecationWarning from next_version
+      warnings.filterwarnings('ignore', 'Avoid using this method')
 
-    with self.assertRaises(ecosystems.EnumerateError):
-      ecosystem.next_version('doesnotexist123456', '1')
+      # Test typical semver X.Y.Z version
+      self.assertEqual('0.1.1', ecosystem.next_version('readxl', '0.1.0'))
+      self.assertEqual('1.0.0', ecosystem.next_version('readxl', '0.1.1'))
 
-    # Test versions with the X.Y-Z format
-    self.assertEqual('0.1-18', ecosystem.next_version('abd', '0.1-12'))
-    self.assertEqual('0.2-2', ecosystem.next_version('abd', '0.1-22'))
+      with self.assertRaises(ecosystems.EnumerateError):
+        ecosystem.next_version('doesnotexist123456', '1')
 
-    # Test atypical versioned package
-    self.assertEqual('0.99-8.47', ecosystem.next_version('aqp', '0.99-8.1'))
+      # Test versions with the X.Y-Z format
+      self.assertEqual('0.1-18', ecosystem.next_version('abd', '0.1-12'))
+      self.assertEqual('0.2-2', ecosystem.next_version('abd', '0.1-22'))
+
+      # Test atypical versioned package
+      self.assertEqual('0.99-8.47', ecosystem.next_version('aqp', '0.99-8.1'))

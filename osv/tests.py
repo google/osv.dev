@@ -119,9 +119,31 @@ class _DatastoreEmulator:
     resp.raise_for_status()
 
 
+def _is_emulator_installed():
+  """Check if the gcloud firestore emulator is installed."""
+  try:
+    # We check if the component is installed.
+    output = subprocess.check_output([
+        'gcloud', 'components', 'list', '--quiet',
+        '--filter=id:cloud-firestore-emulator', '--format=value(state.name)'
+    ],
+                                     text=True,
+                                     stderr=subprocess.DEVNULL)
+    return 'Not Installed' not in output
+  except (subprocess.CalledProcessError, FileNotFoundError):
+    return False
+
+
 @contextlib.contextmanager
 def datastore_emulator():
   """A context for running the datastore emulator in."""
+  if not _is_emulator_installed():
+    raise RuntimeError(
+        'gcloud firestore emulator is not installed or not working. '
+        'Please install it by running '
+        '`gcloud components install cloud-firestore-emulator` and/or '
+        'ensure `gcloud` is in your PATH.')
+
   port = os.environ.get('DATASTORE_EMULATOR_PORT', _DATASTORE_EMULATOR_PORT)
   env = {
       'DATASTORE_EMULATOR_HOST': 'localhost:' + port,

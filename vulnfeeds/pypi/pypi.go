@@ -29,6 +29,7 @@ import (
 
 	"github.com/google/osv/vulnfeeds/cves"
 	"github.com/google/osv/vulnfeeds/triage"
+	"github.com/google/osv/vulnfeeds/utility/logger"
 )
 
 type pypiLinks struct {
@@ -247,7 +248,7 @@ func (p *PyPI) Matches(cve cves.CVE, falsePositives *triage.FalsePositives) []st
 	for _, reference := range cve.References {
 		// If there is a PyPI link, it must be a Python package. These take precedence.
 		if pkg := extractPyPIProject(reference.URL); pkg != "" {
-			log.Printf("Matched via PyPI link: %s", reference.URL)
+			logger.Infof("Matched via PyPI link: %s", reference.URL)
 			matches = append(matches, pkg)
 		}
 	}
@@ -360,7 +361,7 @@ func (p *PyPI) finalPkgCheck(cve cves.CVE, pkg string, falsePositives *triage.Fa
 			return false
 		}
 	}
-	log.Printf("Matched description for %s", pkg)
+	logger.Infof("Matched description for %s", pkg)
 
 	if falsePositives.CheckPackage(pkg) && !strings.Contains(desc, "python") {
 		// If this package is listed as a false positive, and the description does not
@@ -396,7 +397,7 @@ func (p *PyPI) matchesPackage(link string, cve cves.CVE, falsePositives *triage.
 
 		// Check that the package still exists on PyPI.
 		for _, pkg := range candidates {
-			log.Printf("Got potential match for %s: %s", fullURL, pkg)
+			logger.Infof("Got potential match for %s: %s", fullURL, pkg)
 			if p.finalPkgCheck(cve, pkg, falsePositives) {
 				pkgs = append(pkgs, pkg)
 			}

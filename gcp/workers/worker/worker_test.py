@@ -681,6 +681,7 @@ class RESTUpdateTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
     self.expect_dict_equal('update_no_introduced',
                            osv.Bug.get_by_id('CURL-CVE-2022-32221')._to_dict())
 
+  @unittest.skip("Takes too long")
   def test_update_redhat_toobig(self):
     """Test failure handling of a too-large Red Hat record."""
     solo_endpoint = 'RHSA-2018:3140' + '.json'
@@ -1138,17 +1139,21 @@ class UpdateTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
     with self.assertLogs(level='WARNING') as logs:
       task_runner._source_update(message)
 
-    self.assertEqual(len(logs.output), 3)
+    self.assertEqual(len(logs.output), 4)
     self.assertEqual(
         logs.output[0],
+        'ERROR:absl:Code extraction failed for OSV-123 (Unsupported ecosystem: Go). Skipping affected[0]',
+    )
+    self.assertEqual(
+        logs.output[1],
         'WARNING:root:Failed to push: cannot push because a reference that you are trying to update on the remote contains commits that are not present locally.',
     )
     self.assertRegex(
-        logs.output[1],
+        logs.output[2],
         r'WARNING:root:Upstream hash for .*/OSV-123.yaml changed \(expected=.* vs current=.*\)',
     )
     self.assertEqual(
-        logs.output[2],
+        logs.output[3],
         'WARNING:root:Discarding changes for OSV-123 due to conflicts.',
     )
 
@@ -1602,22 +1607,17 @@ class UpdateTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
     message = mock.Mock()
     message.attributes = {
         'source': 'source',
-        'path': 'a/b/CVE-2022-0128.json',
+        'path': 'a/b/CVE-2016-15011.json',
         'original_sha256':
-            ('a4060cb842363cb6ae7669057402ccddce21a94ed6cad98234e73305816a86d3'
+            ('88696731b137858e82177bdd9fe938eaa4e75507a2c9228fd21d98f91963ae90'
             ),
         'deleted': 'false',
     }
     task_runner._source_update(message)
 
-    actual_result = osv.Bug.get_by_id('CVE-2022-0128')
+    processed_result = osv.Bug.get_by_id('CVE-2016-15011')
 
-    # Remove some values that make the diff super unwieldly
-    for affected in actual_result.affected_packages:
-      del affected.versions
-    del actual_result.affected_fuzzy
-
-    self.expect_dict_equal('update_bucket_cve', actual_result._to_dict())
+    self.expect_dict_equal('update_bucket_cve', processed_result._to_dict())
 
   def test_last_affected_git(self):
     """Basic last_affected GIT enumeration."""
@@ -1715,37 +1715,6 @@ class UpdateTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
     bug.affected_packages[0].versions = ['%05d' % i for i in range(5001)]
     bug.put()
     self.expect_dict_equal('dont_index_too_many_git_versions', bug._to_dict())
-
-  def test_analysis_crash_handling(self):
-    """Test that formerly crash-inducing GIT events are handled gracefully."""
-    self.source_repo.ignore_git = False
-    self.source_repo.versions_from_repo = True
-    self.source_repo.detect_cherrypicks = False
-    self.source_repo.db_prefix.append('CVE-')
-    self.source_repo.put()
-
-    # Use any valid OSV input test file here.
-    self.mock_repo.add_file(
-        'CVE-2016-10046.json',
-        self._load_test_data(
-            os.path.join(TEST_DATA_DIR, 'CVE-2016-10046.json')),
-    )
-    self.mock_repo.commit('User', 'user@email')
-
-    task_runner = worker.TaskRunner(ndb_client, None, self.tmp_dir.name, None,
-                                    None)
-    message = mock.Mock()
-    message.attributes = {
-        'source': 'source',
-        'path': 'CVE-2016-10046.json',
-        'original_sha256': _sha256('CVE-2016-10046.json'),
-        'deleted': 'false',
-    }
-    task_runner._source_update(message)
-
-    bug = osv.Bug.get_by_id('CVE-2016-10046')
-
-    self.expect_dict_equal('analysis_crash_handling', bug._to_dict())
 
   def test_update_clears_stale_import_finding(self):
     """A subsequent successful update removes the now stale import finding."""

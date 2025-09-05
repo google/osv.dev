@@ -33,7 +33,7 @@ _GIT_MIRRORS = {
         'linux/kernel/git/stable/linux.git'
 }
 
-FETCH_CACHE: dict[tuple, datetime.datetime] = dict()
+FETCH_CACHE: dict[tuple, datetime.datetime] = {}
 FETCH_CACHE_SECONDS = 5 * 60  # 5 minutes
 
 
@@ -212,7 +212,8 @@ def ensure_updated_checkout(git_url,
 def reset_repo(repo, git_callbacks, force: bool = False):
   """
   Fetch the latest changes from remote, and set upstream branch correctly.
-  This will try to be smart and not refetch repos that recently have been fetched.
+  This will try to be smart and not refetch repos that recently have been
+  fetched.
 
   Use force to override this
   """
@@ -245,4 +246,3 @@ def reset_repo(repo, git_callbacks, force: bool = False):
   # Reset to remote branch.
   repo.head.set_target(remote_branch.target)
   repo.reset(remote_branch.target, pygit2.enums.ResetMode.HARD)
-

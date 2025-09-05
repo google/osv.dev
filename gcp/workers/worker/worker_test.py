@@ -1716,7 +1716,6 @@ class UpdateTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
     bug.put()
     self.expect_dict_equal('dont_index_too_many_git_versions', bug._to_dict())
 
-
   def test_update_clears_stale_import_finding(self):
     """A subsequent successful update removes the now stale import finding."""
 

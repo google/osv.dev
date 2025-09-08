@@ -157,7 +157,7 @@ class AlpineLinuxVersion(Version):
 
   @classmethod
   def add_underscore(cls, input: str) -> str:
-    return re.sub(cls.patch_finder, r'\1_\2', input, 1)
+    return re.sub(cls.patch_finder, r'\1_\2', input, count=1)
 
   @classmethod
   def build_value(cls, string: str):

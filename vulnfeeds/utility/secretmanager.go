@@ -1,3 +1,4 @@
+// Package utility provides some basic utility functions
 package utility
 
 import (

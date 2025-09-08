@@ -371,7 +371,7 @@ func ClassifyReferenceLink(link string, tag string) osvschema.ReferenceType {
 
 	// Check if URL is git repo
 	if strings.HasPrefix(link, "git://") || strings.HasSuffix(link, ".git") {
-		return osvschema.ReferenceGit
+		return osvschema.ReferencePackage
 	}
 
 	u, err := url.Parse(link)

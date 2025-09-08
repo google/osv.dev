@@ -12,8 +12,10 @@ import (
 	"path"
 	"sort"
 	"strconv"
+	"strings"
 	"time"
 
+	"github.com/google/osv/vulnfeeds/cves"
 	"github.com/google/osv/vulnfeeds/faulttolerant"
 	"github.com/google/osv/vulnfeeds/models"
 	"github.com/google/osv/vulnfeeds/utility/logger"
@@ -22,6 +24,7 @@ import (
 )
 
 const (
+	defaultCvePath           = "cve_jsons"
 	debianOutputPathDefault  = "debian_osv"
 	debianDistroInfoURL      = "https://debian.pages.debian.net/distro-info-data/debian.csv"
 	debianSecurityTrackerURL = "https://security-tracker.debian.org/tracker/data/json"
@@ -49,7 +52,8 @@ func main() {
 		logger.Fatalf("Failed to get Debian distro info data: %s", err)
 	}
 
-	osvCves := generateOSVFromDebianTracker(debianData, debianReleaseMap)
+	allCVEs := vulns.LoadAllCVEs(defaultCvePath)
+	osvCves := generateOSVFromDebianTracker(debianData, debianReleaseMap, allCVEs)
 
 	if err = writeToOutput(osvCves, *debianOutputPath); err != nil {
 		logger.Fatalf("Failed to write OSV output file: %s", err)
@@ -59,7 +63,7 @@ func main() {
 }
 
 // generateOSVFromDebianTracker converts Debian Security Tracker entries to OSV format.
-func generateOSVFromDebianTracker(debianData DebianSecurityTrackerData, debianReleaseMap map[string]string) map[string]*vulns.Vulnerability {
+func generateOSVFromDebianTracker(debianData DebianSecurityTrackerData, debianReleaseMap map[string]string, allCVEs map[cves.CVEID]cves.Vulnerability) map[string]*vulns.Vulnerability {
 	logger.Infof("Converting Debian Security Tracker data to OSV.")
 	osvCves := make(map[string]*vulns.Vulnerability)
 
@@ -86,6 +90,10 @@ func generateOSVFromDebianTracker(debianData DebianSecurityTrackerData, debianRe
 	for _, pkgName := range pkgNames {
 		pkg := debianData[pkgName]
 		for cveID, cveData := range pkg {
+			// Debian Security Tracker has some 'TEMP-' Records we don't want to convert
+			if !strings.HasPrefix(cveID, "CVE") {
+				continue
+			}
 			v, ok := osvCves[cveID]
 			if !ok {
 				v = &vulns.Vulnerability{
@@ -93,7 +101,7 @@ func generateOSVFromDebianTracker(debianData DebianSecurityTrackerData, debianRe
 						ID:        "DEBIAN-" + cveID,
 						Upstream:  []string{cveID},
 						Modified:  time.Now().UTC(),
-						Published: time.Now().UTC(),
+						Published: allCVEs[cves.CVEID(cveID)].CVE.Published.Time,
 						Details:   cveData.Description,
 						References: []osvschema.Reference{
 							{

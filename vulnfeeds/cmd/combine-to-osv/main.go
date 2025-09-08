@@ -45,7 +45,7 @@ func main() {
 		logger.Fatalf("Can't create output path: %s", err)
 	}
 
-	allCves := loadAllCVEs(*cvePath)
+	allCves := vulns.LoadAllCVEs(*cvePath)
 	allParts, cveModifiedMap := loadParts(*partsInputPath)
 	combinedData := combineIntoOSV(allCves, allParts, *cveListPath, cveModifiedMap)
 	writeOSVFile(combinedData, *osvOutputPath)
@@ -202,39 +202,6 @@ func writeOSVFile(osvData map[cves.CVEID]*vulns.Vulnerability, osvOutputPath str
 	}
 
 	logger.Infof("Successfully written %d OSV files", len(osvData))
-}
-
-// loadAllCVEs loads the downloaded CVE's from the NVD database into memory.
-func loadAllCVEs(cvePath string) map[cves.CVEID]cves.Vulnerability {
-	dir, err := os.ReadDir(cvePath)
-	if err != nil {
-		logger.Fatalf("Failed to read dir %s: %s", cvePath, err)
-	}
-
-	result := make(map[cves.CVEID]cves.Vulnerability)
-
-	for _, entry := range dir {
-		if !strings.HasSuffix(entry.Name(), ".json") {
-			continue
-		}
-		file, err := os.Open(path.Join(cvePath, entry.Name()))
-		if err != nil {
-			logger.Fatalf("Failed to open CVE JSON %q: %s", path.Join(cvePath, entry.Name()), err)
-		}
-		var nvdcve cves.CVEAPIJSON20Schema
-		err = json.NewDecoder(file).Decode(&nvdcve)
-		if err != nil {
-			logger.Fatalf("Failed to decode JSON in %q: %s", file.Name(), err)
-		}
-
-		for _, item := range nvdcve.Vulnerabilities {
-			result[item.CVE.ID] = item
-		}
-		logger.Infof("Loaded CVE: %s", entry.Name())
-		file.Close()
-	}
-
-	return result
 }
 
 // addReference adds the related security tracker URL to a given vulnerability's references

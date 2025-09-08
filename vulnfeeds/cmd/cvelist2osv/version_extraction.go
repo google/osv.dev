@@ -238,11 +238,10 @@ func findInverseAffectedRanges(cveAff cves.Affected, cnaAssigner string) (ranges
 		versionValue := vers.Version
 		if vers.Status == "affected" {
 			if len(strings.Split(versionValue, ".")) != 3 {
-				introduced = append(introduced, fmt.Sprintf("%s.0", versionValue))
+				introduced = append(introduced, versionValue+".0")
 			} else {
 				introduced = append(introduced, versionValue)
 			}
-
 		}
 		if vers.Status != "unaffected" {
 			continue
@@ -391,6 +390,7 @@ func findNormalAffectedRanges(affected cves.Affected, cnaAssigner string) (versi
 			mostFrequentVersionType = versionType
 		}
 	}
+
 	return versionRanges, mostFrequentVersionType, notes
 }
 

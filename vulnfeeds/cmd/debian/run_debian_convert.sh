@@ -9,10 +9,18 @@
 set -e
 
 OSV_OUTPUT_PATH="/debian"
+INPUT_BUCKET="${INPUT_GCS_BUCKET:=cve-osv-conversion}"
 OUTPUT_BUCKET="${OUTPUT_GCS_BUCKET:=cve-osv-conversion}"
+CVE_OUTPUT="cve_jsons/"
+
 
 echo "Setup initial directories ${OSV_OUTPUT_PATH}"
 rm -rf $OSV_OUTPUT_PATH && mkdir -p $OSV_OUTPUT_PATH
+rm -rf $CVE_OUTPUT && mkdir -p $CVE_OUTPUT
+
+echo "Begin syncing NVD data from GCS bucket ${INPUT_BUCKET}"
+gcloud --no-user-output-enabled storage -q cp "gs://${INPUT_BUCKET}/nvd/*-????.json" "${CVE_OUTPUT}"
+echo "Successfully synced from GCS bucket"
 
 ./debian-osv
 echo "Begin Syncing with cloud, GCS bucket: ${OUTPUT_BUCKET}"

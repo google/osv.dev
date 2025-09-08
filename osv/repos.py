@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Repo functions."""
-
+import datetime
 import logging
 import os
 import shutil
@@ -32,6 +32,9 @@ _GIT_MIRRORS = {
         'https://kernel.googlesource.com/pub/scm/'
         'linux/kernel/git/stable/linux.git'
 }
+
+FETCH_CACHE: dict[tuple, datetime.datetime] = {}
+FETCH_CACHE_SECONDS = 5 * 60  # 5 minutes
 
 
 class GitRemoteCallback(pygit2.RemoteCallbacks):
@@ -206,15 +209,35 @@ def ensure_updated_checkout(git_url,
   return repo
 
 
-def reset_repo(repo, git_callbacks):
-  """Reset repo."""
+def reset_repo(repo: pygit2.Repository, git_callbacks, force: bool = False):
+  """
+  Fetch the latest changes from remote, and set upstream branch correctly.
+  This will try to be smart and not refetch repos that recently have been
+  fetched.
+
+  Use force to override this
+  """
+  remote_url = repo.remotes['origin'].url
+  key = (remote_url, repo.path)
+  now = datetime.datetime.now(datetime.timezone.utc)
+
+  if not force and key in FETCH_CACHE and (
+      now - FETCH_CACHE[key]).total_seconds() < FETCH_CACHE_SECONDS:
+    logging.info('Skipping fetch for %s, fetched recently.', remote_url)
+    repo.reset(repo.head.target, pygit2.enums.ResetMode.HARD)
+    return
+
+  logging.info('Fetching for %s', remote_url)
   env = _set_git_callback_env(git_callbacks)
+
   # Use git cli instead of pygit2 for performance
   subprocess.run(['git', 'fetch', 'origin'],
                  cwd=repo.workdir,
                  env=env,
                  capture_output=True,
                  check=True)
+  FETCH_CACHE[key] = now
+
   # Pygit2 equivalent of above call
   # repo.remotes['origin'].fetch(callbacks=git_callbacks)
   remote_branch = repo.lookup_branch(

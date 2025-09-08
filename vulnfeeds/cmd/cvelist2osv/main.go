@@ -11,7 +11,7 @@ import (
 	"time"
 
 	"github.com/google/osv/vulnfeeds/cves"
-	"github.com/google/osv/vulnfeeds/utility"
+	"github.com/google/osv/vulnfeeds/utility/logger"
 	"github.com/google/osv/vulnfeeds/vulns"
 	"github.com/ossf/osv-schema/bindings/go/osvschema"
 )
@@ -24,8 +24,6 @@ var (
 	jsonPath = flag.String("cve_json", "", "Path to CVEList JSON to examine.")
 	outDir   = flag.String("out_dir", "", "Path to output results.")
 )
-
-var Logger utility.LoggerWrapper
 
 // Metrics holds the collected data about the conversion process for a single CVE.
 var Metrics struct {
@@ -130,22 +128,22 @@ func FromCVE5(cve cves.CVE5, refs []cves.Reference) (*vulns.Vulnerability, []str
 func writeOSVToFile(id cves.CVEID, cnaAssigner string, vulnDir string, v *vulns.Vulnerability) error {
 	err := os.MkdirAll(vulnDir, 0755)
 	if err != nil {
-		Logger.Warnf("Failed to create dir: %v", err)
+		logger.Warnf("Failed to create dir: %v", err)
 		return fmt.Errorf("failed to create dir: %w", err)
 	}
 	outputFile := filepath.Join(vulnDir, v.ID+extension)
 	f, err := os.Create(outputFile)
 	if err != nil {
-		Logger.Infof("[%s] Failed to open %s for writing: %v", id, outputFile, err)
+		logger.Infof("[%s] Failed to open %s for writing: %v", id, outputFile, err)
 		return err
 	}
 	defer f.Close()
 
 	err = v.ToJSON(f)
 	if err != nil {
-		Logger.Infof("Failed to write %s: %v", outputFile, err)
+		logger.Infof("Failed to write %s: %v", outputFile, err)
 	} else {
-		Logger.Infof("[%s]: Generated OSV record under the %s CNA", id, cnaAssigner)
+		logger.Infof("[%s]: Generated OSV record under the %s CNA", id, cnaAssigner)
 	}
 
 	return err
@@ -158,11 +156,11 @@ func writeMetricToFile(id cves.CVEID, vulnDir string) error {
 	metricsFile := filepath.Join(vulnDir, string(id)+".metrics.json")
 	marshalledMetrics, err := json.MarshalIndent(Metrics, "", "  ")
 	if err != nil {
-		Logger.Warnf("[%s]: Failed to marshal metrics: %v", id, err)
+		logger.Warnf("[%s]: Failed to marshal metrics: %v", id, err)
 		return err
 	}
 	if err = os.WriteFile(metricsFile, marshalledMetrics, 0600); err != nil {
-		Logger.Warnf("[%s]: Failed to write %s: %v", id, metricsFile, err)
+		logger.Warnf("[%s]: Failed to write %s: %v", id, metricsFile, err)
 		return err
 	}
 
@@ -184,7 +182,7 @@ func ConvertAndExportCVEToOSV(cve cves.CVE5, directory string) error {
 	extractConversionMetrics(cve, v.References)
 
 	// Try to extract repository URLs from references.
-	repos, repoNotes := cves.ReposFromReferencesCVEList(string(cveID), references, RefTagDenyList, Logger)
+	repos, repoNotes := cves.ReposFromReferencesCVEList(string(cveID), references, RefTagDenyList)
 	Metrics.Notes = append(Metrics.Notes, repoNotes...)
 	Metrics.Repos = repos
 
@@ -238,24 +236,23 @@ func identifyPossibleURLs(cve cves.CVE5) []cves.Reference {
 func main() {
 	flag.Parse()
 
-	var logCleanup func()
-	Logger, logCleanup = utility.CreateLoggerWrapper("cvelist-osv")
+	var logCleanup = logger.InitGlobalLogger("cvelist-osv", false)
 	defer logCleanup()
 
 	// Read the input CVE JSON file.
 	data, err := os.ReadFile(*jsonPath)
 	if err != nil {
-		Logger.Fatalf("Failed to open file: %v", err)
+		logger.Fatalf("Failed to open file: %v", err)
 	}
 
 	var cve cves.CVE5
 	if err = json.Unmarshal(data, &cve); err != nil {
-		Logger.Fatalf("Failed to parse CVEList CVE JSON: %v", err)
+		logger.Fatalf("Failed to parse CVEList CVE JSON: %v", err)
 	}
 
 	// Perform the conversion and export the results.
 	if err = ConvertAndExportCVEToOSV(cve, *outDir); err != nil {
-		Logger.Warnf("[%s]: Failed to generate an OSV record: %+v", cve.Metadata.CVEID, err)
+		logger.Warnf("[%s]: Failed to generate an OSV record: %+v", cve.Metadata.CVEID, err)
 		Metrics.Outcome = "Failed"
 	} else {
 		Metrics.Outcome = "Successful"

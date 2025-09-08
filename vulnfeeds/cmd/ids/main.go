@@ -15,6 +15,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/google/osv/vulnfeeds/utility/logger"
+
 	"slices"
 
 	"github.com/google/osv-scanner/pkg/models"
@@ -48,6 +50,9 @@ func main() {
 
 	flag.Parse()
 
+	cleanup := logger.InitGlobalLogger("ids", false)
+	defer cleanup()
+
 	if *prefix == "" || *dir == "" {
 		flag.Usage()
 		return
@@ -59,7 +64,9 @@ func main() {
 	}
 
 	if err := assignIDs(*prefix, *dir, fileFormat(*format)); err != nil {
-		fmt.Printf("Failed to assign IDs: %v", err)
+		logger.Infof("Failed to assign IDs: %v", err)
+		cleanup()
+		//nolint:gocritic // We run cleanup right before exiting
 		os.Exit(1)
 	}
 }
@@ -130,7 +137,7 @@ func assignID(prefix, path string, format fileFormat, yearCounters map[int]int, 
 		return fmt.Errorf("failed to serialize: %w", err)
 	}
 
-	fmt.Printf("Assigning %s to %s\n", path, newPath)
+	logger.Infof("Assigning %s to %s\n", path, newPath)
 
 	return os.Remove(path)
 }
@@ -171,11 +178,11 @@ func assignIDs(prefix, dir string, format fileFormat) error {
 	}
 
 	if len(unassigned) == 0 {
-		fmt.Printf("Nothing to allocate")
+		logger.Infof("Nothing to allocate")
 		return nil
 	}
 
-	fmt.Printf("Assigning IDs using detected maximums: %v\n", yearCounters)
+	logger.Infof("Assigning IDs using detected maximums: %v\n", yearCounters)
 	for _, path := range unassigned {
 		if err := assignID(prefix, path, format, yearCounters, defaultYear); err != nil {
 			return fmt.Errorf("failed to assign ID: %w", err)

@@ -113,8 +113,8 @@ _ndb_client = ndb.Client()
 def _normalize_git_repo_url(repo_url: str) -> str:
   """Normalize git repository URL for matching by removing protocol/scheme.
   
-  This enables matching git repositories regardless of whether they use http, https,
-  git, or other protocols. For example:
+  This enables matching git repositories regardless of whether they use
+  http, https, git, or other protocols. For example:
   - http://git.musl-libc.org/git/musl
   - https://git.musl-libc.org/git/musl
   - git://git.musl-libc.org/git/musl

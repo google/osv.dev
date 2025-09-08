@@ -25,7 +25,7 @@ import (
 
 const (
 	defaultCvePath           = "cve_jsons"
-	debianOutputPathDefault  = "debian_osv"
+	debianOutputPathDefault  = "debian-cve-osv"
 	debianDistroInfoURL      = "https://debian.pages.debian.net/distro-info-data/debian.csv"
 	debianSecurityTrackerURL = "https://security-tracker.debian.org/tracker/data/json"
 )

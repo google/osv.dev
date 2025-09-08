@@ -2,12 +2,15 @@ package main
 
 import (
 	"encoding/json"
+	"fmt"
+	"log"
 	"os"
 	"sort"
 	"testing"
 	"time"
 
 	"github.com/google/go-cmp/cmp"
+	"github.com/google/osv/vulnfeeds/cves"
 	"github.com/google/osv/vulnfeeds/vulns"
 	"github.com/ossf/osv-schema/bindings/go/osvschema"
 )
@@ -33,6 +36,27 @@ func sortAffected(affected []osvschema.Affected) {
 	})
 }
 
+func loadTestData2(cveName string) cves.Vulnerability {
+	fileName := fmt.Sprintf("../../test_data/nvdcve-2.0/%s.json", cveName)
+	file, err := os.Open(fileName)
+	if err != nil {
+		log.Fatalf("Failed to load test data from %q: %#v", fileName, err)
+	}
+	var nvdCves cves.CVEAPIJSON20Schema
+	err = json.NewDecoder(file).Decode(&nvdCves)
+	if err != nil {
+		log.Fatalf("Failed to decode %q: %+v", fileName, err)
+	}
+	for _, vulnerability := range nvdCves.Vulnerabilities {
+		if string(vulnerability.CVE.ID) == cveName {
+			return vulnerability
+		}
+	}
+	log.Fatalf("test data doesn't contain %q", cveName)
+
+	return cves.Vulnerability{}
+}
+
 func TestGenerateOSVFromDebianTracker(t *testing.T) {
 	// Mock the time
 	now := time.Date(2024, 7, 1, 0, 0, 0, 0, time.UTC)
@@ -50,8 +74,13 @@ func TestGenerateOSVFromDebianTracker(t *testing.T) {
 		"bookworm": "12",
 		"trixie":   "13",
 	}
-
-	got := generateOSVFromDebianTracker(trackerData, releaseMap)
+	cveStuff := map[cves.CVEID]cves.Vulnerability{
+		"CVE-2014-1424":    loadTestData2("CVE-2014-1424"),
+		"CVE-2017-6507":    loadTestData2("CVE-2017-6507"),
+		"CVE-2018-1000500": loadTestData2("CVE-2018-1000500"),
+		"CVE-2016-1585":    loadTestData2("CVE-2016-1585"),
+	}
+	got := generateOSVFromDebianTracker(trackerData, releaseMap, cveStuff)
 
 	// Define the expected OSV entries.
 	want := map[string]*vulns.Vulnerability{

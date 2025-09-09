@@ -94,25 +94,20 @@ func VersionToAffectedCommit(version string, repo string, commitType models.Comm
 
 // Take an unnormalized version string, the pre-normalized mapping of tags to commits and return a commit hash.
 func VersionToCommit(version string, normalizedTags map[string]NormalizedTag) (string, error) {
-	var commitHash string
 	normalizedVersion, err := NormalizeVersion(version)
 	if err != nil {
 		return "", err
 	}
 	// Try a straight out (case-insensitive) match first.
-	normalizedTag, ok := normalizedTags[strings.ToLower(normalizedVersion)]
-	if !ok {
-		// Then try to fuzzy-match.
-		var fuzzyOk bool
-		commitHash, fuzzyOk = findFuzzyCommit(normalizedVersion, normalizedTags)
-		if !fuzzyOk {
-			return "", fmt.Errorf("failed to find a commit for version %q normalized as %q in %+v", version, normalizedVersion, normalizedTags)
-		}
-	} else {
-		commitHash = normalizedTag.Commit
+	if normalizedTag, ok := normalizedTags[strings.ToLower(normalizedVersion)]; ok {
+		return normalizedTag.Commit, nil
+	}
+	// Then try to fuzzy-match.
+	if commitHash, ok := findFuzzyCommit(normalizedVersion, normalizedTags); ok {
+		return commitHash, nil
 	}
 
-	return commitHash, nil
+	return "", fmt.Errorf("failed to find a commit for version %q normalized as %q in %+v", version, normalizedVersion, normalizedTags)
 }
 
 // Normalize version strings found in CVE CPE Match data or Git tags.

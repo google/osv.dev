@@ -261,8 +261,8 @@ func (j *Reference) UnmarshalJSON(b []byte) error {
 	if err := json.Unmarshal(b, &plain); err != nil {
 		return err
 	}
-	if len(plain.URL) > 500 {
-		return fmt.Errorf("field %s length: must be <= %d", "url", 500)
+	if len(plain.URL) > 4096 {
+		return fmt.Errorf("field %s length: must be <= %d", "url", 4096)
 	}
 	*j = Reference(plain)
 

@@ -1,8 +1,8 @@
-package main
+// Package cvelist2osv converts a single given CVEList JSON to OSV format.
+package cvelist2osv
 
 import (
 	"encoding/json"
-	"flag"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -18,11 +18,6 @@ import (
 
 const (
 	extension = ".json"
-)
-
-var (
-	jsonPath = flag.String("cve_json", "", "Path to CVEList JSON to examine.")
-	outDir   = flag.String("out_dir", "", "Path to output results.")
 )
 
 // Metrics holds the collected data about the conversion process for a single CVE.
@@ -73,14 +68,13 @@ func FromCVE5(cve cves.CVE5, refs []cves.Reference) (*vulns.Vulnerability, []str
 	var notes []string
 	v := vulns.Vulnerability{
 		Vulnerability: osvschema.Vulnerability{
-			SchemaVersion:    osvschema.SchemaVersion,
-			ID:               string(cve.Metadata.CVEID),
-			Summary:          cve.Containers.CNA.Title,
-			Details:          cves.EnglishDescription(cve.Containers.CNA.Descriptions),
-			Aliases:          aliases,
-			Related:          related,
-			References:       vulns.ClassifyReferences(refs),
-			DatabaseSpecific: make(map[string]any),
+			SchemaVersion: osvschema.SchemaVersion,
+			ID:            string(cve.Metadata.CVEID),
+			Summary:       cve.Containers.CNA.Title,
+			Details:       cves.EnglishDescription(cve.Containers.CNA.Descriptions),
+			Aliases:       aliases,
+			Related:       related,
+			References:    vulns.ClassifyReferences(refs),
 		}}
 
 	published, err := cves.ParseCVE5Timestamp(cve.Metadata.DatePublished)
@@ -231,30 +225,4 @@ func identifyPossibleURLs(cve cves.CVE5) []cves.Reference {
 	})
 
 	return refs
-}
-
-func main() {
-	flag.Parse()
-
-	var logCleanup = logger.InitGlobalLogger("cvelist-osv", false)
-	defer logCleanup()
-
-	// Read the input CVE JSON file.
-	data, err := os.ReadFile(*jsonPath)
-	if err != nil {
-		logger.Fatalf("Failed to open file: %v", err)
-	}
-
-	var cve cves.CVE5
-	if err = json.Unmarshal(data, &cve); err != nil {
-		logger.Fatalf("Failed to parse CVEList CVE JSON: %v", err)
-	}
-
-	// Perform the conversion and export the results.
-	if err = ConvertAndExportCVEToOSV(cve, *outDir); err != nil {
-		logger.Warnf("[%s]: Failed to generate an OSV record: %+v", cve.Metadata.CVEID, err)
-		Metrics.Outcome = "Failed"
-	} else {
-		Metrics.Outcome = "Successful"
-	}
 }

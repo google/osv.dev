@@ -1,4 +1,4 @@
-package main
+package cvelist2osv
 
 import (
 	"cmp"
@@ -77,17 +77,6 @@ func AddVersionInfo(cve cves.CVE5, v *vulns.Vulnerability) ([]VersionSource, []s
 	var source []VersionSource
 	gotVersions := false
 
-	// Special handling for Linux kernel CVEs, prioritizing CPEs for version info.
-	if cve.Metadata.AssignerShortName == "Linux" {
-		affectedLenBefore := len(v.Affected)
-		notes = append(notes, handleLinuxCVE(cve, v)...)
-		// Check if any affected fields were actually added
-		if len(v.Affected) > affectedLenBefore {
-			gotVersions = true
-			source = append(source, VersionSourceCPE)
-		}
-	}
-
 	// Combine 'affected' entries from both CNA and ADP containers.
 	cna := cve.Containers.CNA
 	adps := cve.Containers.ADP
@@ -103,14 +92,21 @@ func AddVersionInfo(cve cves.CVE5, v *vulns.Vulnerability) ([]VersionSource, []s
 	hasGit := false
 	for _, cveAff := range affected {
 		versionRanges, versionType, extractNotes := extractVersionsFromAffectedField(cveAff, cve.Metadata.AssignerShortName)
+		// TODO(jesslowe): update this to be more elegant (currently skips retrieving more git ranges after the first)
+		if versionType == VersionRangeTypeGit && hasGit {
+			continue
+		}
 		notes = append(notes, extractNotes...)
+
 		if len(versionRanges) == 0 {
 			continue
 		}
+
 		gotVersions = true
 		if versionType == VersionRangeTypeGit {
 			hasGit = true
 		}
+
 		aff := osvschema.Affected{}
 		for _, vr := range versionRanges {
 			if versionType == VersionRangeTypeGit {
@@ -129,6 +125,7 @@ func AddVersionInfo(cve cves.CVE5, v *vulns.Vulnerability) ([]VersionSource, []s
 				Name:      "Kernel",
 			}
 		}
+
 		v.Affected = append(v.Affected, aff)
 		if hasGit {
 			source = append(source, VersionSourceGit)
@@ -220,10 +217,6 @@ func findCPEVersionRanges(cve cves.CVE5) (versionRanges []osvschema.Range, cpes 
 func extractVersionsFromAffectedField(affected cves.Affected, cnaAssigner string) ([]osvschema.Range, VersionRangeType, []string) {
 	// Handle cases where a product is marked as "affected" by default, and specific versions are marked "unaffected".
 	if affected.DefaultStatus == "affected" {
-		// For Linux kernel CVEs, this logic is often handled by CPEs, so we skip it here, until we are confident in the inverse calculation method.
-		if cnaAssigner == "Linux" {
-			return nil, VersionRangeTypeUnknown, []string{"Skipping Linux Affected range versions in favour of CPE versions"}
-		}
 		// Calculate the affected ranges by finding the inverse of the unaffected ranges.
 		return findInverseAffectedRanges(affected, cnaAssigner)
 	}
@@ -242,17 +235,27 @@ func findInverseAffectedRanges(cveAff cves.Affected, cnaAssigner string) (ranges
 	var introduced []string
 	fixed := make([]string, 0, len(cveAff.Versions))
 	for _, vers := range cveAff.Versions {
+		versionValue := vers.Version
 		if vers.Status == "affected" {
-			introduced = append(introduced, vers.Version)
+			numParts := len(strings.Split(versionValue, "."))
+			switch numParts {
+			case 2:
+				introduced = append(introduced, versionValue+".0")
+			case 3:
+				introduced = append(introduced, versionValue)
+			default:
+				notes = append(notes, "Bad non-semver version given: "+versionValue)
+				continue
+			}
 		}
 		if vers.Status != "unaffected" {
 			continue
 		}
 
-		if vers.Version == "0" || toVersionRangeType(vers.VersionType) != VersionRangeTypeSemver {
+		if versionValue == "0" || toVersionRangeType(vers.VersionType) != VersionRangeTypeSemver {
 			continue
 		}
-		fixed = append(fixed, vers.Version)
+		fixed = append(fixed, versionValue)
 		// Infer the next introduced version from the 'lessThanOrEqual' field.
 		// For example, if "5.10.*" is unaffected, the next introduced version is "5.11.0".
 		minorVers := strings.Split(vers.LessThanOrEqual, ".*")[0]
@@ -264,12 +267,11 @@ func findInverseAffectedRanges(cveAff cves.Affected, cnaAssigner string) (ranges
 			}
 		}
 	}
-
-	slices.SortFunc(introduced, sortBadSemver)
-	slices.SortFunc(fixed, sortBadSemver)
+	slices.SortFunc(introduced, compareSemverLike)
+	slices.SortFunc(fixed, compareSemverLike)
 
 	// If the first fixed version is earlier than the first introduced, assume introduction from "0".
-	if len(fixed) > 0 && len(introduced) > 0 && fixed[0] < introduced[0] {
+	if len(fixed) > 0 && len(introduced) > 0 && compareSemverLike(fixed[0], introduced[0]) < 0 {
 		introduced = append([]string{"0"}, introduced...)
 	}
 
@@ -422,13 +424,12 @@ func buildVersionRange(intro string, lastAff string, fixed string) osvschema.Ran
 	return versionRange
 }
 
-// sortBadSemver provides a custom sorting function for version strings that may not
+// compareSemverLike provides a custom comparison function for version strings that may not
 // strictly adhere to the SemVer specification. It compares versions numerically,
 // part by part (major, minor, patch).
-func sortBadSemver(a, b string) int {
+func compareSemverLike(a, b string) int {
 	partsA := strings.Split(a, ".")
 	partsB := strings.Split(b, ".")
-
 	minLen := min(len(partsA), len(partsB))
 	for i := range minLen {
 		// Convert parts to integers for numerical comparison.
@@ -439,8 +440,32 @@ func sortBadSemver(a, b string) int {
 			return c
 		}
 	}
+	// If lengths are the same, they're equal.
+	if len(partsA) == len(partsB) {
+		return 0
+	}
 
-	// If all common parts are identical (e.g., "1.2" vs "1.2.3"),
-	// the version with more parts is considered greater.
-	return cmp.Compare(len(partsA), len(partsB))
+	// Determine which version has extra parts and what the result
+	// should be if those parts are non-zero.
+	var longerParts []string
+	var result int
+	// Assume 'b' is greater
+	if len(partsA) > len(partsB) {
+		longerParts = partsA
+		result = 1 // 'a' is actually greater
+	} else if len(partsA) < len(partsB) {
+		longerParts = partsB
+		result = -1
+	}
+
+	// Check if any of the extra parts are non-zero.
+	for i := minLen; i < len(longerParts); i++ {
+		num, _ := strconv.Atoi(longerParts[i])
+		if num != 0 {
+			return result
+		}
+	}
+
+	// All extra parts were zero, so the versions are effectively equal.
+	return 0
 }

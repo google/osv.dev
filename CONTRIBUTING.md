@@ -43,7 +43,7 @@ You must install:
 2.  [Google Cloud SDK](https://cloud.google.com/sdk)
 3.  [Hugo](https://gohugo.io/installation/)
 4.  [Node JS](https://nodejs.org/) >= 18.17.x
-5.  [Terraform](https://developer.hashicorp.com/terraform/downloads) >= 1.5 (for infrastructure changes)
+5.  [Terraform](https://developer.hashicorp.com/terraform/install) >= 1.5 (for infrastructure changes)
 
 Then you can set up the development environment by cloning the OSV repo and
 installing the Poetry dependencies.

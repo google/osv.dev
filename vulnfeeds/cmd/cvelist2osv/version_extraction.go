@@ -237,10 +237,15 @@ func findInverseAffectedRanges(cveAff cves.Affected, cnaAssigner string) (ranges
 	for _, vers := range cveAff.Versions {
 		versionValue := vers.Version
 		if vers.Status == "affected" {
-			if len(strings.Split(versionValue, ".")) != 3 {
+			numParts := len(strings.Split(versionValue, "."))
+			switch numParts {
+			case 2:
 				introduced = append(introduced, versionValue+".0")
-			} else {
+			case 3:
 				introduced = append(introduced, versionValue)
+			default:
+				notes = append(notes, "Bad non-semver version given: "+versionValue)
+				continue
 			}
 		}
 		if vers.Status != "unaffected" {

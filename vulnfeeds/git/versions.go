@@ -82,7 +82,7 @@ func findFuzzyCommit(normalizedVersion string, normalizedTags map[string]Normali
 }
 
 func VersionToAffectedCommit(version string, repo string, commitType models.CommitType, normalizedTags map[string]NormalizedTag) (ac models.AffectedCommit, e error) {
-	commitHash, err := VersionToCommit(version, repo, normalizedTags)
+	commitHash, err := VersionToCommit(version, normalizedTags)
 	if err != nil {
 		return ac, err
 	}
@@ -92,8 +92,8 @@ func VersionToAffectedCommit(version string, repo string, commitType models.Comm
 	return ac, nil
 }
 
-// Take an unnormalized version string, a repo, the pre-normalized mapping of tags to commits and return a commit hash.
-func VersionToCommit(version string, repo string, normalizedTags map[string]NormalizedTag) (string, error) {
+// Take an unnormalized version string, the pre-normalized mapping of tags to commits and return a commit hash.
+func VersionToCommit(version string, normalizedTags map[string]NormalizedTag) (string, error) {
 	var commitHash string
 	normalizedVersion, err := NormalizeVersion(version)
 	if err != nil {
@@ -111,6 +111,7 @@ func VersionToCommit(version string, repo string, normalizedTags map[string]Norm
 	} else {
 		commitHash = normalizedTag.Commit
 	}
+
 	return commitHash, nil
 }
 

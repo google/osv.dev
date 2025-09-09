@@ -442,11 +442,15 @@ func compareSemverLike(a, b string) int {
 
 	// Determine which version has extra parts and what the result
 	// should be if those parts are non-zero.
-	longerParts := partsB
-	result := -1 // Assume 'b' is greater
+	var longerParts []string
+	var result int
+	// Assume 'b' is greater
 	if len(partsA) > len(partsB) {
 		longerParts = partsA
 		result = 1 // 'a' is actually greater
+	} else if len(partsA) < len(partsB) {
+		longerParts = partsB
+		result = -1
 	}
 
 	// Check if any of the extra parts are non-zero.

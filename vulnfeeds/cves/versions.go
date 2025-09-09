@@ -926,7 +926,7 @@ func GitVersionsToCommits(cveID CVEID, versions models.VersionInfo, repos []stri
 			logger.Infof("[%s]: Attempting version resolution for %+v using %q", cveID, av, repo)
 			introducedEquivalentCommit := ""
 			if av.Introduced != "" {
-				ac, err := git.VersionToCommit(av.Introduced, repo, models.Introduced, normalizedTags)
+				ac, err := git.VersionToAffectedCommit(av.Introduced, repo, models.Introduced, normalizedTags)
 				if err != nil {
 					logger.Warnf("[%s]: Failed to get a Git commit for introduced version %q from %q: %v", cveID, av.Introduced, repo, err)
 				} else {
@@ -942,7 +942,7 @@ func GitVersionsToCommits(cveID CVEID, versions models.VersionInfo, repos []stri
 			if v.HasFixedCommits(repo) && av.Fixed != "" {
 				logger.Infof("[%s]: Using preassumed fixed commits %+v instead of deriving from fixed version %q", cveID, v.FixedCommits(repo), av.Fixed)
 			} else if av.Fixed != "" {
-				ac, err := git.VersionToCommit(av.Fixed, repo, models.Fixed, normalizedTags)
+				ac, err := git.VersionToAffectedCommit(av.Fixed, repo, models.Fixed, normalizedTags)
 				if err != nil {
 					logger.Warnf("[%s]: Failed to get a Git commit for fixed version %q from %q: %v", cveID, av.Fixed, repo, err)
 				} else {
@@ -955,7 +955,7 @@ func GitVersionsToCommits(cveID CVEID, versions models.VersionInfo, repos []stri
 			// AffectedCommits (with Fixed commits) when the CVE has appropriate references.
 			lastAffectedEquivalentCommit := ""
 			if !v.HasFixedCommits(repo) && av.LastAffected != "" {
-				ac, err := git.VersionToCommit(av.LastAffected, repo, models.LastAffected, normalizedTags)
+				ac, err := git.VersionToAffectedCommit(av.LastAffected, repo, models.LastAffected, normalizedTags)
 				if err != nil {
 					logger.Warnf("[%s]: Failed to get a Git commit for last_affected version %q from %q: %v", cveID, av.LastAffected, repo, err)
 				} else {

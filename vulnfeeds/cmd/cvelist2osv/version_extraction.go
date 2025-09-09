@@ -262,11 +262,11 @@ func findInverseAffectedRanges(cveAff cves.Affected, cnaAssigner string) (ranges
 			}
 		}
 	}
-	slices.SortFunc(introduced, sortBadSemver)
-	slices.SortFunc(fixed, sortBadSemver)
+	slices.SortFunc(introduced, compareSemverLike)
+	slices.SortFunc(fixed, compareSemverLike)
 
 	// If the first fixed version is earlier than the first introduced, assume introduction from "0".
-	if len(fixed) > 0 && len(introduced) > 0 && sortBadSemver(fixed[0], introduced[0]) < 0 {
+	if len(fixed) > 0 && len(introduced) > 0 && compareSemverLike(fixed[0], introduced[0]) < 0 {
 		introduced = append([]string{"0"}, introduced...)
 	}
 
@@ -419,10 +419,10 @@ func buildVersionRange(intro string, lastAff string, fixed string) osvschema.Ran
 	return versionRange
 }
 
-// sortBadSemver provides a custom sorting function for version strings that may not
+// compareSemverLike provides a custom comparison function for version strings that may not
 // strictly adhere to the SemVer specification. It compares versions numerically,
 // part by part (major, minor, patch).
-func sortBadSemver(a, b string) int {
+func compareSemverLike(a, b string) int {
 	partsA := strings.Split(a, ".")
 	partsB := strings.Split(b, ".")
 	minLen := min(len(partsA), len(partsB))

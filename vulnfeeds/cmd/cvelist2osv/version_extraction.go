@@ -184,8 +184,9 @@ func AddVersionInfo(cve cves.CVE5, v *vulns.Vulnerability, repos []string) ([]Ve
 // typically no AffectedCommits and attempts to add AffectedCommits (including Fixed commits) where there aren't any.
 // Refuses to add the same commit to AffectedCommits more than once.
 func gitVersionsToCommits(cveID cves.CVEID, versionRanges []osvschema.Range, repos []string, cache git.RepoTagsCache) (osvschema.Affected, error) {
-
+	var newAff osvschema.Affected
 	var newVersionRanges []osvschema.Range
+	var unresolvedRanges []osvschema.Range
 	for _, repo := range repos {
 		normalizedTags, err := git.NormalizeRepoTags(repo, cache)
 		if err != nil {
@@ -244,19 +245,26 @@ func gitVersionsToCommits(cveID cves.CVEID, versionRanges []osvschema.Range, rep
 				newVersionRanges = append(newVersionRanges, newVR)
 				continue
 			}
+
 			// Nothing resolved, move on to the next AffectedVersion
 			logger.Warnf("[%s]: Sufficient resolution not possible for %+v", cveID, vr)
+			unresolvedRanges = append(unresolvedRanges, vr)
 			continue
 		}
 	}
-
-	if len(newVersionRanges) > 0 {
-		return osvschema.Affected{
-			Ranges: newVersionRanges,
-		}, nil
+	var err error
+	if len(unresolvedRanges) > 0 {
+		newAff.DatabaseSpecific = make(map[string]any)
+		newAff.DatabaseSpecific["unresolved_versions"] = unresolvedRanges
 	}
 
-	return osvschema.Affected{}, fmt.Errorf("was not able to get git version ranges")
+	if len(newVersionRanges) > 0 {
+		newAff.Ranges = newVersionRanges
+	} else {
+		err = fmt.Errorf("was not able to get git version ranges")
+	}
+
+	return newAff, err
 }
 
 // findCPEVersionRanges extracts version ranges and CPE strings from the CNA's

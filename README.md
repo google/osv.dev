@@ -36,6 +36,7 @@ consists of:
 
 | directory       | what |
 |-----------------|------|
+| `bindings/`     | Language bindings for the [OSV API](https://google.github.io/osv.dev/api/) (currently Go only) |
 | `deployment/`   | Terraform & Cloud Deploy config files <br /> A few Cloud Build config yamls |
 | `docker/`       | CI docker files (`ci`, `deployment`, `terraform`) <br /> `worker-base` docker image for `gcp/workers/worker` |
 | `docs/`         | Jekyll files for https://google.github.io/osv.dev/ <br /> `build_swagger.py` and `tools.go` |

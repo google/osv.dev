@@ -3,7 +3,6 @@ package main
 import (
 	"encoding/json"
 	"fmt"
-	"log"
 	"os"
 	"sort"
 	"testing"
@@ -36,23 +35,24 @@ func sortAffected(affected []osvschema.Affected) {
 	})
 }
 
-func loadTestData(cveName string) cves.Vulnerability {
+func loadTestData(t *testing.T, cveName string) cves.Vulnerability {
+	t.Helper()
 	fileName := fmt.Sprintf("../../test_data/nvdcve-2.0/%s.json", cveName)
 	file, err := os.Open(fileName)
 	if err != nil {
-		log.Fatalf("Failed to load test data from %q: %#v", fileName, err)
+		t.Fatalf("Failed to load test data from %q: %#v", fileName, err)
 	}
 	var nvdCves cves.CVEAPIJSON20Schema
 	err = json.NewDecoder(file).Decode(&nvdCves)
 	if err != nil {
-		log.Fatalf("Failed to decode %q: %+v", fileName, err)
+		t.Fatalf("Failed to decode %q: %+v", fileName, err)
 	}
 	for _, vulnerability := range nvdCves.Vulnerabilities {
 		if string(vulnerability.CVE.ID) == cveName {
 			return vulnerability
 		}
 	}
-	log.Fatalf("test data doesn't contain %q", cveName)
+	t.Fatalf("test data doesn't contain %q", cveName)
 
 	return cves.Vulnerability{}
 }
@@ -75,10 +75,10 @@ func TestGenerateOSVFromDebianTracker(t *testing.T) {
 		"trixie":   "13",
 	}
 	cveStuff := map[cves.CVEID]cves.Vulnerability{
-		"CVE-2014-1424":    loadTestData("CVE-2014-1424"),
-		"CVE-2017-6507":    loadTestData("CVE-2017-6507"),
-		"CVE-2018-1000500": loadTestData("CVE-2018-1000500"),
-		"CVE-2016-1585":    loadTestData("CVE-2016-1585"),
+		"CVE-2014-1424":    loadTestData(t, "CVE-2014-1424"),
+		"CVE-2017-6507":    loadTestData(t, "CVE-2017-6507"),
+		"CVE-2018-1000500": loadTestData(t, "CVE-2018-1000500"),
+		"CVE-2016-1585":    loadTestData(t, "CVE-2016-1585"),
 	}
 	got := generateOSVFromDebianTracker(trackerData, releaseMap, cveStuff)
 

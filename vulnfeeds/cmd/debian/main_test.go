@@ -36,7 +36,7 @@ func sortAffected(affected []osvschema.Affected) {
 	})
 }
 
-func loadTestData2(cveName string) cves.Vulnerability {
+func loadTestData(cveName string) cves.Vulnerability {
 	fileName := fmt.Sprintf("../../test_data/nvdcve-2.0/%s.json", cveName)
 	file, err := os.Open(fileName)
 	if err != nil {
@@ -75,10 +75,10 @@ func TestGenerateOSVFromDebianTracker(t *testing.T) {
 		"trixie":   "13",
 	}
 	cveStuff := map[cves.CVEID]cves.Vulnerability{
-		"CVE-2014-1424":    loadTestData2("CVE-2014-1424"),
-		"CVE-2017-6507":    loadTestData2("CVE-2017-6507"),
-		"CVE-2018-1000500": loadTestData2("CVE-2018-1000500"),
-		"CVE-2016-1585":    loadTestData2("CVE-2016-1585"),
+		"CVE-2014-1424":    loadTestData("CVE-2014-1424"),
+		"CVE-2017-6507":    loadTestData("CVE-2017-6507"),
+		"CVE-2018-1000500": loadTestData("CVE-2018-1000500"),
+		"CVE-2016-1585":    loadTestData("CVE-2016-1585"),
 	}
 	got := generateOSVFromDebianTracker(trackerData, releaseMap, cveStuff)
 

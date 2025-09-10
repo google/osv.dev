@@ -30,7 +30,8 @@ import pygit2.enums
 from . import ecosystems
 from . import repos
 from . import models
-from . import vulnerability_pb2
+
+from .osvschema import vulnerability_pb2
 
 TAG_PREFIX = 'refs/tags/'
 BRANCH_PREFIX = 'refs/remotes/'

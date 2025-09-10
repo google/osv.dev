@@ -28,7 +28,8 @@ from google.protobuf import json_format
 # pylint: disable=relative-beyond-top-level
 from . import cache
 from . import repos
-from . import vulnerability_pb2
+
+from .osvschema import vulnerability_pb2
 
 AUTHOR_EMAIL = 'infra@osv.dev'
 PUSH_RETRIES = 2

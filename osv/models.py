@@ -35,7 +35,8 @@ from . import purl_helpers
 from . import semver_index
 from . import sources
 from . import utils
-from . import vulnerability_pb2
+
+from .osvschema import vulnerability_pb2
 
 SCHEMA_VERSION = '1.7.3'
 

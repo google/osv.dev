@@ -31,7 +31,7 @@ from . import ecosystems
 from . import repos
 from . import models
 
-from .osvschema import vulnerability_pb2
+from .osvschema.bindings.python import vulnerability_pb2
 
 TAG_PREFIX = 'refs/tags/'
 BRANCH_PREFIX = 'refs/remotes/'

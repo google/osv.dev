@@ -19,7 +19,7 @@ import os
 from google.cloud import exceptions
 from google.cloud import storage
 
-from .osvschema.vulnerability_pb2 import Vulnerability
+from .osvschema.bindings.python.vulnerability_pb2 import Vulnerability
 
 VULN_PB_PATH = 'all/pb/'
 

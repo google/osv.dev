@@ -29,7 +29,7 @@ from google.protobuf import json_format
 from . import cache
 from . import repos
 
-from .osvschema import vulnerability_pb2
+from .osvschema.bindings.python import vulnerability_pb2
 
 AUTHOR_EMAIL = 'infra@osv.dev'
 PUSH_RETRIES = 2

@@ -36,7 +36,7 @@ from . import semver_index
 from . import sources
 from . import utils
 
-from .osvschema import vulnerability_pb2
+from .osvschema.bindings.python import vulnerability_pb2
 
 SCHEMA_VERSION = '1.7.3'
 

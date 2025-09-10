@@ -16,7 +16,7 @@ syntax = "proto3";
 
 package osv.v1;
 
-import "osv/osv-schema/proto/vulnerability.proto";
+import "osv/osvschema/proto/vulnerability.proto";
 import "osv/importfinding.proto";
 import "google/api/annotations.proto";
 

@@ -22,12 +22,12 @@ _runtime_version.ValidateProtobufRuntimeVersion(
 _sym_db = _symbol_database.Default()
 
 
-from osv.osv_schema.proto import vulnerability_pb2 as osv_dot_osv__schema_dot_proto_dot_vulnerability__pb2
+from osv.osvschema.proto import vulnerability_pb2 as osv_dot_osvschema_dot_proto_dot_vulnerability__pb2
 from osv import importfinding_pb2 as osv_dot_importfinding__pb2
 from google.api import annotations_pb2 as google_dot_api_dot_annotations__pb2
 
 
-DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x14osv_service_v1.proto\x12\x06osv.v1\x1a(osv/osv-schema/proto/vulnerability.proto\x1a\x17osv/importfinding.proto\x1a\x1cgoogle/api/annotations.proto\"O\n\x11VulnerabilityList\x12!\n\x05vulns\x18\x01 \x03(\x0b\x32\x12.osv.Vulnerability\x12\x17\n\x0fnext_page_token\x18\x02 \x01(\t\"D\n\x16\x42\x61tchVulnerabilityList\x12*\n\x07results\x18\x01 \x03(\x0b\x32\x19.osv.v1.VulnerabilityList\"h\n\x05Query\x12\x10\n\x06\x63ommit\x18\x01 \x01(\tH\x00\x12\x11\n\x07version\x18\x02 \x01(\tH\x00\x12\x1d\n\x07package\x18\x04 \x01(\x0b\x32\x0c.osv.Package\x12\x12\n\npage_token\x18\x05 \x01(\tB\x07\n\x05param\",\n\nBatchQuery\x12\x1e\n\x07queries\x18\x01 \x03(\x0b\x32\r.osv.v1.Query\"#\n\x15GetVulnByIdParameters\x12\n\n\x02id\x18\x01 \x01(\t\"7\n\x17QueryAffectedParameters\x12\x1c\n\x05query\x18\x01 \x01(\x0b\x32\r.osv.v1.Query\"A\n\x1cQueryAffectedBatchParameters\x12!\n\x05query\x18\x01 \x01(\x0b\x32\x12.osv.v1.BatchQuery\"A\n\x1a\x44\x65termineVersionParameters\x12#\n\x05query\x18\x01 \x01(\x0b\x32\x14.osv.v1.VersionQuery\"*\n\x18ImportFindingsParameters\x12\x0e\n\x06source\x18\x01 \x01(\t\"C\n\x0cVersionQuery\x12\x0c\n\x04name\x18\x01 \x01(\t\x12%\n\x0b\x66ile_hashes\x18\x02 \x03(\x0b\x32\x10.osv.v1.FileHash\"n\n\x08\x46ileHash\x12\x11\n\tfile_path\x18\x01 \x01(\t\x12,\n\thash_type\x18\x02 \x01(\x0e\x32\x19.osv.v1.FileHash.HashType\x12\x0c\n\x04hash\x18\x03 \x01(\x0c\"\x13\n\x08HashType\x12\x07\n\x03MD5\x10\x00\"9\n\x10VersionMatchList\x12%\n\x07matches\x18\x01 \x03(\x0b\x32\x14.osv.v1.VersionMatch\"@\n\x11ImportFindingList\x12+\n\x0finvalid_records\x18\x01 \x03(\x0b\x32\x12.osv.ImportFinding\"\xc7\x01\n\x0cVersionMatch\x12\r\n\x05score\x18\x01 \x01(\x01\x12\x37\n\trepo_info\x18\x02 \x01(\x0b\x32$.osv.v1.VersionRepositoryInformation\x12$\n\x0eosv_identifier\x18\x03 \x01(\x0b\x32\x0c.osv.Package\x12\r\n\x05\x63pe23\x18\x05 \x01(\t\x12\x1c\n\x14minimum_file_matches\x18\x06 \x01(\x03\x12\x1c\n\x14\x65stimated_diff_files\x18\x07 \x01(\x03\"\xc0\x01\n\x1cVersionRepositoryInformation\x12;\n\x04type\x18\x01 \x01(\x0e\x32-.osv.v1.VersionRepositoryInformation.RepoType\x12\x0f\n\x07\x61\x64\x64ress\x18\x02 \x01(\t\x12\x0b\n\x03tag\x18\x04 \x01(\t\x12\x0f\n\x07version\x18\x05 \x01(\t\x12\x0e\n\x06\x63ommit\x18\x06 \x01(\t\"$\n\x08RepoType\x12\x0f\n\x0bUNSPECIFIED\x10\x00\x12\x07\n\x03GIT\x10\x01\x32\xc5\x04\n\x03OSV\x12X\n\x0bGetVulnById\x12\x1d.osv.v1.GetVulnByIdParameters\x1a\x12.osv.Vulnerability\"\x16\x82\xd3\xe4\x93\x02\x10\x12\x0e/v1/vulns/{id}\x12\x65\n\rQueryAffected\x12\x1f.osv.v1.QueryAffectedParameters\x1a\x19.osv.v1.VulnerabilityList\"\x18\x82\xd3\xe4\x93\x02\x12\"\t/v1/query:\x05query\x12y\n\x12QueryAffectedBatch\x12$.osv.v1.QueryAffectedBatchParameters\x1a\x1e.osv.v1.BatchVulnerabilityList\"\x1d\x82\xd3\xe4\x93\x02\x17\"\x0e/v1/querybatch:\x05query\x12\x81\x01\n\x10\x44\x65termineVersion\x12\".osv.v1.DetermineVersionParameters\x1a\x18.osv.v1.VersionMatchList\"/\x82\xd3\xe4\x93\x02)\" /v1experimental/determineversion:\x05query\x12~\n\x0eImportFindings\x12 .osv.v1.ImportFindingsParameters\x1a\x19.osv.v1.ImportFindingList\"/\x82\xd3\xe4\x93\x02)\x12\'/v1experimental/importfindings/{source}b\x06proto3')
+DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x14osv_service_v1.proto\x12\x06osv.v1\x1a\'osv/osvschema/proto/vulnerability.proto\x1a\x17osv/importfinding.proto\x1a\x1cgoogle/api/annotations.proto\"O\n\x11VulnerabilityList\x12!\n\x05vulns\x18\x01 \x03(\x0b\x32\x12.osv.Vulnerability\x12\x17\n\x0fnext_page_token\x18\x02 \x01(\t\"D\n\x16\x42\x61tchVulnerabilityList\x12*\n\x07results\x18\x01 \x03(\x0b\x32\x19.osv.v1.VulnerabilityList\"h\n\x05Query\x12\x10\n\x06\x63ommit\x18\x01 \x01(\tH\x00\x12\x11\n\x07version\x18\x02 \x01(\tH\x00\x12\x1d\n\x07package\x18\x04 \x01(\x0b\x32\x0c.osv.Package\x12\x12\n\npage_token\x18\x05 \x01(\tB\x07\n\x05param\",\n\nBatchQuery\x12\x1e\n\x07queries\x18\x01 \x03(\x0b\x32\r.osv.v1.Query\"#\n\x15GetVulnByIdParameters\x12\n\n\x02id\x18\x01 \x01(\t\"7\n\x17QueryAffectedParameters\x12\x1c\n\x05query\x18\x01 \x01(\x0b\x32\r.osv.v1.Query\"A\n\x1cQueryAffectedBatchParameters\x12!\n\x05query\x18\x01 \x01(\x0b\x32\x12.osv.v1.BatchQuery\"A\n\x1a\x44\x65termineVersionParameters\x12#\n\x05query\x18\x01 \x01(\x0b\x32\x14.osv.v1.VersionQuery\"*\n\x18ImportFindingsParameters\x12\x0e\n\x06source\x18\x01 \x01(\t\"C\n\x0cVersionQuery\x12\x0c\n\x04name\x18\x01 \x01(\t\x12%\n\x0b\x66ile_hashes\x18\x02 \x03(\x0b\x32\x10.osv.v1.FileHash\"n\n\x08\x46ileHash\x12\x11\n\tfile_path\x18\x01 \x01(\t\x12,\n\thash_type\x18\x02 \x01(\x0e\x32\x19.osv.v1.FileHash.HashType\x12\x0c\n\x04hash\x18\x03 \x01(\x0c\"\x13\n\x08HashType\x12\x07\n\x03MD5\x10\x00\"9\n\x10VersionMatchList\x12%\n\x07matches\x18\x01 \x03(\x0b\x32\x14.osv.v1.VersionMatch\"@\n\x11ImportFindingList\x12+\n\x0finvalid_records\x18\x01 \x03(\x0b\x32\x12.osv.ImportFinding\"\xc7\x01\n\x0cVersionMatch\x12\r\n\x05score\x18\x01 \x01(\x01\x12\x37\n\trepo_info\x18\x02 \x01(\x0b\x32$.osv.v1.VersionRepositoryInformation\x12$\n\x0eosv_identifier\x18\x03 \x01(\x0b\x32\x0c.osv.Package\x12\r\n\x05\x63pe23\x18\x05 \x01(\t\x12\x1c\n\x14minimum_file_matches\x18\x06 \x01(\x03\x12\x1c\n\x14\x65stimated_diff_files\x18\x07 \x01(\x03\"\xc0\x01\n\x1cVersionRepositoryInformation\x12;\n\x04type\x18\x01 \x01(\x0e\x32-.osv.v1.VersionRepositoryInformation.RepoType\x12\x0f\n\x07\x61\x64\x64ress\x18\x02 \x01(\t\x12\x0b\n\x03tag\x18\x04 \x01(\t\x12\x0f\n\x07version\x18\x05 \x01(\t\x12\x0e\n\x06\x63ommit\x18\x06 \x01(\t\"$\n\x08RepoType\x12\x0f\n\x0bUNSPECIFIED\x10\x00\x12\x07\n\x03GIT\x10\x01\x32\xc5\x04\n\x03OSV\x12X\n\x0bGetVulnById\x12\x1d.osv.v1.GetVulnByIdParameters\x1a\x12.osv.Vulnerability\"\x16\x82\xd3\xe4\x93\x02\x10\x12\x0e/v1/vulns/{id}\x12\x65\n\rQueryAffected\x12\x1f.osv.v1.QueryAffectedParameters\x1a\x19.osv.v1.VulnerabilityList\"\x18\x82\xd3\xe4\x93\x02\x12\"\t/v1/query:\x05query\x12y\n\x12QueryAffectedBatch\x12$.osv.v1.QueryAffectedBatchParameters\x1a\x1e.osv.v1.BatchVulnerabilityList\"\x1d\x82\xd3\xe4\x93\x02\x17\"\x0e/v1/querybatch:\x05query\x12\x81\x01\n\x10\x44\x65termineVersion\x12\".osv.v1.DetermineVersionParameters\x1a\x18.osv.v1.VersionMatchList\"/\x82\xd3\xe4\x93\x02)\" /v1experimental/determineversion:\x05query\x12~\n\x0eImportFindings\x12 .osv.v1.ImportFindingsParameters\x1a\x19.osv.v1.ImportFindingList\"/\x82\xd3\xe4\x93\x02)\x12\'/v1experimental/importfindings/{source}b\x06proto3')
 
 _globals = globals()
 _builder.BuildMessageAndEnumDescriptors(DESCRIPTOR, _globals)
@@ -44,40 +44,40 @@ if not _descriptor._USE_C_DESCRIPTORS:
   _globals['_OSV'].methods_by_name['DetermineVersion']._serialized_options = b'\202\323\344\223\002)\" /v1experimental/determineversion:\005query'
   _globals['_OSV'].methods_by_name['ImportFindings']._loaded_options = None
   _globals['_OSV'].methods_by_name['ImportFindings']._serialized_options = b'\202\323\344\223\002)\022\'/v1experimental/importfindings/{source}'
-  _globals['_VULNERABILITYLIST']._serialized_start=129
-  _globals['_VULNERABILITYLIST']._serialized_end=208
-  _globals['_BATCHVULNERABILITYLIST']._serialized_start=210
-  _globals['_BATCHVULNERABILITYLIST']._serialized_end=278
-  _globals['_QUERY']._serialized_start=280
-  _globals['_QUERY']._serialized_end=384
-  _globals['_BATCHQUERY']._serialized_start=386
-  _globals['_BATCHQUERY']._serialized_end=430
-  _globals['_GETVULNBYIDPARAMETERS']._serialized_start=432
-  _globals['_GETVULNBYIDPARAMETERS']._serialized_end=467
-  _globals['_QUERYAFFECTEDPARAMETERS']._serialized_start=469
-  _globals['_QUERYAFFECTEDPARAMETERS']._serialized_end=524
-  _globals['_QUERYAFFECTEDBATCHPARAMETERS']._serialized_start=526
-  _globals['_QUERYAFFECTEDBATCHPARAMETERS']._serialized_end=591
-  _globals['_DETERMINEVERSIONPARAMETERS']._serialized_start=593
-  _globals['_DETERMINEVERSIONPARAMETERS']._serialized_end=658
-  _globals['_IMPORTFINDINGSPARAMETERS']._serialized_start=660
-  _globals['_IMPORTFINDINGSPARAMETERS']._serialized_end=702
-  _globals['_VERSIONQUERY']._serialized_start=704
-  _globals['_VERSIONQUERY']._serialized_end=771
-  _globals['_FILEHASH']._serialized_start=773
-  _globals['_FILEHASH']._serialized_end=883
-  _globals['_FILEHASH_HASHTYPE']._serialized_start=864
-  _globals['_FILEHASH_HASHTYPE']._serialized_end=883
-  _globals['_VERSIONMATCHLIST']._serialized_start=885
-  _globals['_VERSIONMATCHLIST']._serialized_end=942
-  _globals['_IMPORTFINDINGLIST']._serialized_start=944
-  _globals['_IMPORTFINDINGLIST']._serialized_end=1008
-  _globals['_VERSIONMATCH']._serialized_start=1011
-  _globals['_VERSIONMATCH']._serialized_end=1210
-  _globals['_VERSIONREPOSITORYINFORMATION']._serialized_start=1213
-  _globals['_VERSIONREPOSITORYINFORMATION']._serialized_end=1405
-  _globals['_VERSIONREPOSITORYINFORMATION_REPOTYPE']._serialized_start=1369
-  _globals['_VERSIONREPOSITORYINFORMATION_REPOTYPE']._serialized_end=1405
-  _globals['_OSV']._serialized_start=1408
-  _globals['_OSV']._serialized_end=1989
+  _globals['_VULNERABILITYLIST']._serialized_start=128
+  _globals['_VULNERABILITYLIST']._serialized_end=207
+  _globals['_BATCHVULNERABILITYLIST']._serialized_start=209
+  _globals['_BATCHVULNERABILITYLIST']._serialized_end=277
+  _globals['_QUERY']._serialized_start=279
+  _globals['_QUERY']._serialized_end=383
+  _globals['_BATCHQUERY']._serialized_start=385
+  _globals['_BATCHQUERY']._serialized_end=429
+  _globals['_GETVULNBYIDPARAMETERS']._serialized_start=431
+  _globals['_GETVULNBYIDPARAMETERS']._serialized_end=466
+  _globals['_QUERYAFFECTEDPARAMETERS']._serialized_start=468
+  _globals['_QUERYAFFECTEDPARAMETERS']._serialized_end=523
+  _globals['_QUERYAFFECTEDBATCHPARAMETERS']._serialized_start=525
+  _globals['_QUERYAFFECTEDBATCHPARAMETERS']._serialized_end=590
+  _globals['_DETERMINEVERSIONPARAMETERS']._serialized_start=592
+  _globals['_DETERMINEVERSIONPARAMETERS']._serialized_end=657
+  _globals['_IMPORTFINDINGSPARAMETERS']._serialized_start=659
+  _globals['_IMPORTFINDINGSPARAMETERS']._serialized_end=701
+  _globals['_VERSIONQUERY']._serialized_start=703
+  _globals['_VERSIONQUERY']._serialized_end=770
+  _globals['_FILEHASH']._serialized_start=772
+  _globals['_FILEHASH']._serialized_end=882
+  _globals['_FILEHASH_HASHTYPE']._serialized_start=863
+  _globals['_FILEHASH_HASHTYPE']._serialized_end=882
+  _globals['_VERSIONMATCHLIST']._serialized_start=884
+  _globals['_VERSIONMATCHLIST']._serialized_end=941
+  _globals['_IMPORTFINDINGLIST']._serialized_start=943
+  _globals['_IMPORTFINDINGLIST']._serialized_end=1007
+  _globals['_VERSIONMATCH']._serialized_start=1010
+  _globals['_VERSIONMATCH']._serialized_end=1209
+  _globals['_VERSIONREPOSITORYINFORMATION']._serialized_start=1212
+  _globals['_VERSIONREPOSITORYINFORMATION']._serialized_end=1404
+  _globals['_VERSIONREPOSITORYINFORMATION_REPOTYPE']._serialized_start=1368
+  _globals['_VERSIONREPOSITORYINFORMATION_REPOTYPE']._serialized_end=1404
+  _globals['_OSV']._serialized_start=1407
+  _globals['_OSV']._serialized_end=1988
 # @@protoc_insertion_point(module_scope)

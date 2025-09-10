@@ -19,9 +19,71 @@ import (
 const (
 	pubsubTopic = "failed-tasks"
 	numWorkers  = 50
+
+	jobDataKind           = "JobData"
+	JobDataLastRun        = "record_checker_last_run"
+	JobDataInvalidRecords = "record_checker_invalid_records"
 )
 
-var recordCheckerKey = datastore.NameKey("JobData", "record_checker", nil)
+type jobDataLastRunEntity struct {
+	Value *time.Time `datastore:"value,noindex"`
+}
+type jobDataInvalidRecordsEntity struct {
+	Value []string `datastore:"value,noindex"`
+}
+
+type recordCheckerData struct {
+	lastRun        *time.Time
+	invalidRecords []string
+}
+
+func getRecordCheckerData(ctx context.Context, cl *datastore.Client) (recordCheckerData, error) {
+	var data recordCheckerData
+
+	lastRunKey := datastore.NameKey(jobDataKind, JobDataLastRun, nil)
+	var lr jobDataLastRunEntity
+	err := cl.Get(ctx, lastRunKey, &lr)
+	if err != nil && !errors.Is(err, datastore.ErrNoSuchEntity) {
+		return data, err
+	}
+	if err == nil {
+		data.lastRun = lr.Value
+	}
+
+	invalidRecordsKey := datastore.NameKey(jobDataKind, JobDataInvalidRecords, nil)
+	var ir jobDataInvalidRecordsEntity
+	err = cl.Get(ctx, invalidRecordsKey, &ir)
+	if err != nil && !errors.Is(err, datastore.ErrNoSuchEntity) {
+		return data, err
+	}
+	if err == nil {
+		data.invalidRecords = ir.Value
+	}
+
+	return data, nil
+}
+
+func writeRecordCheckData(ctx context.Context, cl *datastore.Client, data recordCheckerData) error {
+	_, err := cl.RunInTransaction(ctx, func(tx *datastore.Transaction) error {
+		lastRunKey := datastore.NameKey(jobDataKind, JobDataLastRun, nil)
+		lr := jobDataLastRunEntity{Value: data.lastRun}
+		_, err := tx.Put(lastRunKey, &lr)
+		if err != nil {
+			return err
+		}
+
+		invalidRecordsKey := datastore.NameKey(jobDataKind, JobDataInvalidRecords, nil)
+		ir := jobDataInvalidRecordsEntity{Value: data.invalidRecords}
+		_, err = tx.Put(invalidRecordsKey, &ir)
+		if err != nil {
+			return err
+		}
+
+		return nil
+	})
+
+	return err
+}
 
 // run is the main application logic
 func run(ctx context.Context, env *appEnv) error {
@@ -62,7 +124,7 @@ func run(ctx context.Context, env *appEnv) error {
 	}
 
 	// Queue all invalid records from the previous run.
-	for _, id := range rcData.InvalidRecords {
+	for _, id := range rcData.invalidRecords {
 		tasksChan <- struct {
 			ID   string
 			Vuln *models.Vulnerability
@@ -72,8 +134,8 @@ func run(ctx context.Context, env *appEnv) error {
 	// Queue all new records.
 	runStartTime := time.Now().UTC()
 	query := datastore.NewQuery("Vulnerability")
-	if rcData.LastRun != nil {
-		query = query.FilterField("modified", ">", *rcData.LastRun)
+	if rcData.lastRun != nil {
+		query = query.FilterField("modified", ">", *rcData.lastRun)
 	}
 	it := env.ds.Run(ctx, query)
 	for {
@@ -98,11 +160,10 @@ func run(ctx context.Context, env *appEnv) error {
 
 	// Update the record checker run data
 	rcData = recordCheckerData{
-		LastRun:        &runStartTime,
-		InvalidRecords: newInvalid,
+		lastRun:        &runStartTime,
+		invalidRecords: newInvalid,
 	}
-	_, err = env.ds.Put(ctx, recordCheckerKey, &rcData)
-	if err != nil {
+	if err := writeRecordCheckData(ctx, env.ds, rcData); err != nil {
 		return fmt.Errorf("failed to store run data: %w", err)
 	}
 
@@ -200,20 +261,6 @@ func setupLogging(ctx context.Context, projectID string) (*logging.Logger, error
 		return nil, fmt.Errorf("failed to create logging client: %w", err)
 	}
 	return client.Logger("record_checker"), nil
-}
-
-type recordCheckerData struct {
-	LastRun        *time.Time `datastore:"last_run"`
-	InvalidRecords []string   `datastore:"invalid_records"`
-}
-
-func getRecordCheckerData(ctx context.Context, cl *datastore.Client) (recordCheckerData, error) {
-	var data recordCheckerData
-	err := cl.Get(ctx, recordCheckerKey, &data)
-	if errors.Is(err, datastore.ErrNoSuchEntity) {
-		err = nil
-	}
-	return data, err
 }
 
 type checkRecordResult struct {

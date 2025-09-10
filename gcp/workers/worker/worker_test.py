@@ -835,7 +835,7 @@ class UpdateTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
 
     # Add fake ecosystems used in tests to supported ecosystems.
     osv.ecosystems._ecosystems._ecosystems.update({
-        'ecosystem': osv.ecosystems.OrderingUnsupportedEcosystem(),
+        'ecosystem': None,
     })
 
   def tearDown(self):

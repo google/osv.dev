@@ -91,8 +91,13 @@ func FromCVE5(cve cves.CVE5, refs []cves.Reference) (*vulns.Vulnerability, []str
 	}
 	v.Modified = modified
 
+	// Try to extract repository URLs from references.
+	repos, repoNotes := cves.ReposFromReferencesCVEList(string(cve.Metadata.CVEID), refs, RefTagDenyList)
+	notes = append(notes, repoNotes...)
+	Metrics.Repos = repos
+
 	// Add affected version information.
-	versionSources, versNotes := AddVersionInfo(cve, &v)
+	versionSources, versNotes := AddVersionInfo(cve, &v, repos)
 	notes = append(notes, versNotes...)
 	Metrics.VersionSources = versionSources
 	// TODO(jesslowe@): Add CWEs.
@@ -175,11 +180,6 @@ func ConvertAndExportCVEToOSV(cve cves.CVE5, directory string) error {
 	// Collect metrics about the conversion.
 	extractConversionMetrics(cve, v.References)
 
-	// Try to extract repository URLs from references.
-	repos, repoNotes := cves.ReposFromReferencesCVEList(string(cveID), references, RefTagDenyList)
-	Metrics.Notes = append(Metrics.Notes, repoNotes...)
-	Metrics.Repos = repos
-
 	vulnDir := filepath.Join(directory, cnaAssigner)
 
 	// Save the OSV record to a file.
@@ -188,9 +188,9 @@ func ConvertAndExportCVEToOSV(cve cves.CVE5, directory string) error {
 	}
 
 	// Save the conversion metrics to a file.
-	if err := writeMetricToFile(cveID, vulnDir); err != nil {
-		return err
-	}
+	// if err := writeMetricToFile(cveID, vulnDir); err != nil {
+	// 	return err
+	// }
 
 	return nil
 }

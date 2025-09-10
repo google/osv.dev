@@ -1,4 +1,4 @@
-# Copyright 2021 Google LLC
+# Copyright 2025 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -17,10 +17,10 @@ import packaging_legacy.version
 import requests
 
 from . import config
-from .helper_base import Ecosystem, EnumerateError
+from .ecosystems_base import EnumerableEcosystem, EnumerateError
 
 
-class PyPI(Ecosystem):
+class PyPI(EnumerableEcosystem):
   """PyPI ecosystem helpers."""
 
   _API_PACKAGE_URL = 'https://pypi.org/pypi/{package}/json'
@@ -52,7 +52,3 @@ class PyPI(Ecosystem):
 
     return self._get_affected_versions(versions, introduced, fixed,
                                        last_affected, limits)
-
-  @property
-  def supports_comparing(self):
-    return True

@@ -729,7 +729,7 @@ def analyze(vulnerability: vulnerability_pb2.Vulnerability,
     versions = []
     for affected_range in affected.ranges:
       if (affected_range.type == vulnerability_pb2.Range.ECOSYSTEM and
-          affected.package.ecosystem in ecosystems.SEMVER_ECOSYSTEMS):
+          ecosystems.is_semver(affected.package.ecosystem)):
         # Replace erroneous range type.
         affected_range.type = vulnerability_pb2.Range.SEMVER
 
@@ -737,7 +737,10 @@ def analyze(vulnerability: vulnerability_pb2.Vulnerability,
                                  vulnerability_pb2.Range.SEMVER):
         # Enumerate ECOSYSTEM and SEMVER ranges.
         ecosystem_helpers = ecosystems.get(affected.package.ecosystem)
-        if ecosystem_helpers and ecosystem_helpers.supports_ordering:
+        if ecosystem_helpers is None:
+          logging.warning('No ecosystem helpers implemented for %s: %s',
+                          affected.package.ecosystem, vulnerability.id)
+        elif isinstance(ecosystem_helpers, ecosystems.EnumerableEcosystem):
           try:
             versions.extend(
                 enumerate_versions(affected.package.name, ecosystem_helpers,
@@ -746,12 +749,6 @@ def analyze(vulnerability: vulnerability_pb2.Vulnerability,
             # Allow non-retryable enumeration errors to occur (e.g. if the
             # package no longer exists).
             pass
-          except NotImplementedError:
-            # Some ecosystems support ordering but don't support enumeration.
-            pass
-        else:
-          logging.warning('No ecosystem helpers implemented for %s: %s',
-                          affected.package.ecosystem, vulnerability.id)
 
       new_git_versions = set()
       new_introduced = set()

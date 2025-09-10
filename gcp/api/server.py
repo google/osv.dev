@@ -875,7 +875,7 @@ def do_query(query: osv_service_v1_pb2.Query,
     if purl.version:
       version = purl.version
 
-  if ecosystem and not ecosystems.get(ecosystem):
+  if ecosystem and not ecosystems.is_known(ecosystem):
     context.service_context.abort(grpc.StatusCode.INVALID_ARGUMENT,
                                   'Invalid ecosystem.')
 
@@ -1269,8 +1269,8 @@ def query_by_version(
     query = query.filter(osv.Bug.ecosystem == ecosystem)
     ecosystem_info = ecosystems.get(ecosystem)
 
-  is_semver = ecosystem_info and ecosystem_info.is_semver
-  supports_comparing = ecosystem_info and ecosystem_info.supports_comparing
+  is_semver = ecosystems.is_semver(ecosystem)
+  supports_comparing = ecosystem_info is not None
 
   bugs = []
   if ecosystem:

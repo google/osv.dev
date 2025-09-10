@@ -23,7 +23,7 @@ import google.protobuf.internal.containers
 import google.protobuf.internal.enum_type_wrapper
 import google.protobuf.message
 import osv.importfinding_pb2
-import osv.osvschema.proto.vulnerability_pb2
+import osv.osvschema.bindings.python.vulnerability_pb2
 import sys
 import typing
 
@@ -44,11 +44,11 @@ class VulnerabilityList(google.protobuf.message.Message):
     NEXT_PAGE_TOKEN_FIELD_NUMBER: builtins.int
     next_page_token: builtins.str
     @property
-    def vulns(self) -> google.protobuf.internal.containers.RepeatedCompositeFieldContainer[osv.osvschema.proto.vulnerability_pb2.Vulnerability]: ...
+    def vulns(self) -> google.protobuf.internal.containers.RepeatedCompositeFieldContainer[osv.osvschema.bindings.python.vulnerability_pb2.Vulnerability]: ...
     def __init__(
         self,
         *,
-        vulns: collections.abc.Iterable[osv.osvschema.proto.vulnerability_pb2.Vulnerability] | None = ...,
+        vulns: collections.abc.Iterable[osv.osvschema.bindings.python.vulnerability_pb2.Vulnerability] | None = ...,
         next_page_token: builtins.str = ...,
     ) -> None: ...
     def ClearField(self, field_name: typing.Literal["next_page_token", b"next_page_token", "vulns", b"vulns"]) -> None: ...
@@ -91,7 +91,7 @@ class Query(google.protobuf.message.Message):
     """
     page_token: builtins.str
     @property
-    def package(self) -> osv.osvschema.proto.vulnerability_pb2.Package:
+    def package(self) -> osv.osvschema.bindings.python.vulnerability_pb2.Package:
         """The package to query against. When a `commit` hash is given, this is
         optional.
         """
@@ -101,7 +101,7 @@ class Query(google.protobuf.message.Message):
         *,
         commit: builtins.str = ...,
         version: builtins.str = ...,
-        package: osv.osvschema.proto.vulnerability_pb2.Package | None = ...,
+        package: osv.osvschema.bindings.python.vulnerability_pb2.Package | None = ...,
         page_token: builtins.str = ...,
     ) -> None: ...
     def HasField(self, field_name: typing.Literal["commit", b"commit", "package", b"package", "param", b"param", "version", b"version"]) -> builtins.bool: ...
@@ -341,7 +341,7 @@ class VersionMatch(google.protobuf.message.Message):
         """Information about the upstream repository."""
 
     @property
-    def osv_identifier(self) -> osv.osvschema.proto.vulnerability_pb2.Package:
+    def osv_identifier(self) -> osv.osvschema.bindings.python.vulnerability_pb2.Package:
         """The OSV identifier."""
 
     def __init__(
@@ -349,7 +349,7 @@ class VersionMatch(google.protobuf.message.Message):
         *,
         score: builtins.float = ...,
         repo_info: global___VersionRepositoryInformation | None = ...,
-        osv_identifier: osv.osvschema.proto.vulnerability_pb2.Package | None = ...,
+        osv_identifier: osv.osvschema.bindings.python.vulnerability_pb2.Package | None = ...,
         cpe23: builtins.str = ...,
         minimum_file_matches: builtins.int = ...,
         estimated_diff_files: builtins.int = ...,

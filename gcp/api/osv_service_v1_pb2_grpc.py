@@ -3,7 +3,7 @@
 import grpc
 import warnings
 
-from osv.osvschema.proto import vulnerability_pb2 as osv_dot_osvschema_dot_proto_dot_vulnerability__pb2
+from osv.osvschema.bindings.python import vulnerability_pb2 as osv_dot_osvschema_dot_bindings_dot_python_dot_vulnerability__pb2
 import osv_service_v1_pb2 as osv__service__v1__pb2
 
 GRPC_GENERATED_VERSION = '1.74.0'
@@ -39,7 +39,7 @@ class OSVStub(object):
         self.GetVulnById = channel.unary_unary(
                 '/osv.v1.OSV/GetVulnById',
                 request_serializer=osv__service__v1__pb2.GetVulnByIdParameters.SerializeToString,
-                response_deserializer=osv_dot_osvschema_dot_proto_dot_vulnerability__pb2.Vulnerability.FromString,
+                response_deserializer=osv_dot_osvschema_dot_bindings_dot_python_dot_vulnerability__pb2.Vulnerability.FromString,
                 _registered_method=True)
         self.QueryAffected = channel.unary_unary(
                 '/osv.v1.OSV/QueryAffected',
@@ -111,7 +111,7 @@ def add_OSVServicer_to_server(servicer, server):
             'GetVulnById': grpc.unary_unary_rpc_method_handler(
                     servicer.GetVulnById,
                     request_deserializer=osv__service__v1__pb2.GetVulnByIdParameters.FromString,
-                    response_serializer=osv_dot_osvschema_dot_proto_dot_vulnerability__pb2.Vulnerability.SerializeToString,
+                    response_serializer=osv_dot_osvschema_dot_bindings_dot_python_dot_vulnerability__pb2.Vulnerability.SerializeToString,
             ),
             'QueryAffected': grpc.unary_unary_rpc_method_handler(
                     servicer.QueryAffected,
@@ -161,7 +161,7 @@ class OSV(object):
             target,
             '/osv.v1.OSV/GetVulnById',
             osv__service__v1__pb2.GetVulnByIdParameters.SerializeToString,
-            osv_dot_osvschema_dot_proto_dot_vulnerability__pb2.Vulnerability.FromString,
+            osv_dot_osvschema_dot_bindings_dot_python_dot_vulnerability__pb2.Vulnerability.FromString,
             options,
             channel_credentials,
             insecure,

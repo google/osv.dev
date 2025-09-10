@@ -777,7 +777,7 @@ func CheckQuality(text string) QualityCheck {
 	return Success
 }
 
-// loadAllCVEs loads the downloaded CVE's from the NVD database into memory.
+// LoadAllCVEs loads the downloaded CVE's from the NVD database into memory.
 func LoadAllCVEs(cvePath string) map[cves.CVEID]cves.Vulnerability {
 	dir, err := os.ReadDir(cvePath)
 	if err != nil {

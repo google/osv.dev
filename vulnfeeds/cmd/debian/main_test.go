@@ -14,11 +14,11 @@ import (
 	"github.com/ossf/osv-schema/bindings/go/osvschema"
 )
 
-func mustRead(tb testing.TB, filename string) []byte {
-	tb.Helper()
+func mustRead(t *testing.T, filename string) []byte {
+	t.Helper()
 	data, err := os.ReadFile(filename)
 	if err != nil {
-		tb.Fatalf("Failed to read file %s: %v", filename, err)
+		t.Fatalf("Failed to read file %s: %v", filename, err)
 	}
 
 	return data

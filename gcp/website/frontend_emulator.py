@@ -19,10 +19,10 @@ import datetime
 from gcp.workers.alias import upstream_computation, alias_computation
 
 
-def setUp():
+def setUp(emulator):
   """ Set Up a series of bugs and UpstreamGroups to put in the emulator
   for testing purposes."""
-  tests.reset_emulator()
+  emulator.reset()
   osv.Bug(
       id='ALIAS-CVE-1',
       db_id='ALIAS-CVE-1',
@@ -483,13 +483,10 @@ def setUp():
 if __name__ == '__main__':
   # The datastore emulator needs to be started before main is imported
   # to make the global ndb client use the emulator.
-  ds_emulator = tests.start_datastore_emulator()
-  import main
-  try:
+  with tests.datastore_emulator() as em:
+    import main
     with ndb.Client().context() as context:
       context.set_memcache_policy(False)
       context.set_cache_policy(False)
-      setUp()
+      setUp(em)
     main.app.run(host='127.0.0.1', port=8000, debug=False)
-  finally:
-    tests.stop_emulator()

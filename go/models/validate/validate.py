@@ -50,10 +50,6 @@ def main() -> int:
 
 
 if __name__ == '__main__':
-  try:
-    osv.tests.start_datastore_emulator()
-    with ndb.Client().context():
-      ret = main()
-  finally:
-    osv.tests.stop_emulator()
+  with osv.tests.datastore_emulator(), ndb.Client().context():
+    ret = main()
   sys.exit(ret)

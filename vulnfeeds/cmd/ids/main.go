@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"io"
 	"io/fs"
+	"log/slog"
 	"os"
 	"path/filepath"
 	"strconv"
@@ -50,8 +51,7 @@ func main() {
 
 	flag.Parse()
 
-	cleanup := logger.InitGlobalLogger("ids", false)
-	defer cleanup()
+	logger.InitGlobalLogger()
 
 	if *prefix == "" || *dir == "" {
 		flag.Usage()
@@ -64,8 +64,7 @@ func main() {
 	}
 
 	if err := assignIDs(*prefix, *dir, fileFormat(*format)); err != nil {
-		logger.Infof("Failed to assign IDs: %v", err)
-		cleanup()
+		logger.Info("Failed to assign IDs", slog.Any("err", err))
 		//nolint:gocritic // We run cleanup right before exiting
 		os.Exit(1)
 	}
@@ -137,7 +136,7 @@ func assignID(prefix, path string, format fileFormat, yearCounters map[int]int, 
 		return fmt.Errorf("failed to serialize: %w", err)
 	}
 
-	logger.Infof("Assigning %s to %s\n", path, newPath)
+	logger.Info("Assigning", slog.String("path", path), slog.String("newPath", newPath))
 
 	return os.Remove(path)
 }
@@ -178,11 +177,11 @@ func assignIDs(prefix, dir string, format fileFormat) error {
 	}
 
 	if len(unassigned) == 0 {
-		logger.Infof("Nothing to allocate")
+		logger.Info("Nothing to allocate")
 		return nil
 	}
 
-	logger.Infof("Assigning IDs using detected maximums: %v\n", yearCounters)
+	logger.Info("Assigning IDs using detected maximums", slog.Any("counters", yearCounters))
 	for _, path := range unassigned {
 		if err := assignID(prefix, path, format, yearCounters, defaultYear); err != nil {
 			return fmt.Errorf("failed to assign ID: %w", err)

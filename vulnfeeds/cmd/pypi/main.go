@@ -20,6 +20,7 @@ import (
 	"flag"
 	"fmt"
 	"io/fs"
+	"log/slog"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -108,33 +109,32 @@ func main() {
 
 	flag.Parse()
 
-	cleanup := logger.InitGlobalLogger("pypi", false)
-	defer cleanup()
+	logger.InitGlobalLogger()
 
 	data, err := os.ReadFile(*jsonPath)
 	if err != nil {
-		logger.Fatalf("Failed to open file: %v", err)
+		logger.Fatal("Failed to open file", slog.Any("err", err))
 	}
 	var parsed cves.CVEAPIJSON20Schema
 	err = json.Unmarshal(data, &parsed)
 	if err != nil {
-		logger.Fatalf("Failed to parse NVD CVE JSON: %v", err)
+		logger.Fatal("Failed to parse NVD CVE JSON", slog.Any("err", err))
 	}
 
 	falsePositives, err := triage.LoadFalsePositives(*falsePositivesPath)
 	if err != nil {
-		logger.Fatalf("Failed to load false positives file %s: %v", *falsePositivesPath, err)
+		logger.Fatal("Failed to load false positives file", slog.String("path", *falsePositivesPath), slog.Any("err", err))
 	}
 
 	ecosystem := pypi.New(*pypiLinksPath, *pypiVersionsPath)
 	existingIDs, err := loadExisting(*outDir)
 	if err != nil {
-		logger.Fatalf("Failed to load existing IDs: %v", err)
+		logger.Fatal("Failed to load existing IDs", slog.Any("err", err))
 	}
 
 	for _, cve := range parsed.Vulnerabilities {
 		if falsePositives.CheckID(string(cve.CVE.ID)) {
-			logger.Infof("Skipping %s as a false positive.", cve.CVE.ID)
+			logger.Info("Skipping as a false positive", slog.String("cve", string(cve.CVE.ID)))
 			continue
 		}
 
@@ -145,17 +145,17 @@ func main() {
 
 		for _, pkg := range pkgs {
 			if _, exists := existingIDs[string(cve.CVE.ID)+"/"+pkg]; exists {
-				logger.Infof("Skipping %s match for %s as it already exists.", cve.CVE.ID, pkg)
+				logger.Info("Skipping match as it already exists", slog.String("cve", string(cve.CVE.ID)), slog.String("package", pkg))
 				continue
 			}
 
-			logger.Infof("Matched %s to %s.", cve.CVE.ID, pkg)
+			logger.Info("Matched CVE to package", slog.String("cve", string(cve.CVE.ID)), slog.String("package", pkg))
 			validVersions := ecosystem.Versions(pkg)
 			if validVersions == nil {
-				logger.Infof("pkg %s does not have valid versions, skipping", pkg)
+				logger.Info("Package does not have valid versions, skipping", slog.String("package", pkg))
 				continue
 			}
-			logger.Infof("Valid versions = %v\n", validVersions)
+			logger.Info("Got valid versions", slog.Any("versions", validVersions))
 
 			id := "PYSEC-0000-" + cve.CVE.ID // To be assigned later.
 			purl := ecosystem.PackageURL(pkg)
@@ -171,39 +171,39 @@ func main() {
 
 			vulns.AttachExtractedVersionInfo(&v.Affected[0], versions)
 			if len(v.Affected[0].Ranges) == 0 {
-				logger.Infof("No affected versions detected.")
+				logger.Info("No affected versions detected")
 			}
 
 			if *excludeUnbounded && anyUnbounded(v) {
-				logger.Infof("Skipping %s as we could not find an upperbound version.", cve.CVE.ID)
+				logger.Info("Skipping as we could not find an upperbound version", slog.String("cve", string(cve.CVE.ID)))
 				continue
 			}
 
 			pkgDir := filepath.Join(*outDir, pkg)
 			err = os.MkdirAll(pkgDir, 0755)
 			if err != nil {
-				logger.Fatalf("Failed to create dir: %v", err)
+				logger.Fatal("Failed to create dir", slog.Any("err", err))
 			}
 
 			vulnPath := filepath.Join(pkgDir, v.ID+extension)
 			if _, err := os.Stat(vulnPath); err == nil {
-				logger.Infof("Skipping %s as it already exists.", vulnPath)
+				logger.Info("Skipping as it already exists", slog.String("path", vulnPath))
 				continue
 			}
 
 			if len(notes) > 0 && *withoutNotes {
-				logger.Infof("Skipping %s as there are notes associated with it.", vulnPath)
+				logger.Info("Skipping as there are notes associated with it", slog.String("path", vulnPath))
 				continue
 			}
 
 			f, err := os.Create(vulnPath)
 			if err != nil {
-				logger.Fatalf("Failed to open %s for writing: %v", vulnPath, err)
+				logger.Fatal("Failed to open for writing", slog.String("path", vulnPath), slog.Any("err", err))
 			}
 			defer f.Close()
 			err = v.ToYAML(f)
 			if err != nil {
-				logger.Panicf("Failed to write %s: %v", vulnPath, err)
+				logger.Panic("Failed to write", slog.String("path", vulnPath), slog.Any("err", err))
 			}
 
 			// If there are notes that require human intervention, write them to the end of the YAML.
@@ -211,7 +211,7 @@ func main() {
 				notesPath := filepath.Join(pkgDir, v.ID+".notes")
 				_, err = f.WriteString("\n# <Vulnfeeds Notes>\n# " + strings.Join(notes, "\n# "))
 				if err != nil {
-					logger.Panicf("Failed to write %s: %v", notesPath, err)
+					logger.Panic("Failed to write", slog.String("path", notesPath), slog.Any("err", err))
 				}
 			}
 		}

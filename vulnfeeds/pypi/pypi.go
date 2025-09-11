@@ -18,6 +18,7 @@ package pypi
 import (
 	"encoding/json"
 	"log"
+	"log/slog"
 	"net/http"
 	"net/url"
 	"os"
@@ -248,7 +249,7 @@ func (p *PyPI) Matches(cve cves.CVE, falsePositives *triage.FalsePositives) []st
 	for _, reference := range cve.References {
 		// If there is a PyPI link, it must be a Python package. These take precedence.
 		if pkg := extractPyPIProject(reference.URL); pkg != "" {
-			logger.Infof("Matched via PyPI link: %s", reference.URL)
+			logger.Info("Matched via PyPI link", slog.String("url", reference.URL))
 			matches = append(matches, pkg)
 		}
 	}
@@ -361,7 +362,7 @@ func (p *PyPI) finalPkgCheck(cve cves.CVE, pkg string, falsePositives *triage.Fa
 			return false
 		}
 	}
-	logger.Infof("Matched description for %s", pkg)
+	logger.Info("Matched description", slog.String("package", pkg))
 
 	if falsePositives.CheckPackage(pkg) && !strings.Contains(desc, "python") {
 		// If this package is listed as a false positive, and the description does not
@@ -397,7 +398,7 @@ func (p *PyPI) matchesPackage(link string, cve cves.CVE, falsePositives *triage.
 
 		// Check that the package still exists on PyPI.
 		for _, pkg := range candidates {
-			logger.Infof("Got potential match for %s: %s", fullURL, pkg)
+			logger.Info("Got potential match", slog.String("url", fullURL), slog.String("package", pkg))
 			if p.finalPkgCheck(cve, pkg, falsePositives) {
 				pkgs = append(pkgs, pkg)
 			}

@@ -32,6 +32,10 @@ spec:
               - name: GOOGLE_CLOUD_PROJECT
                 value: oss-vdb-test 
           restartPolicy: Never
+          tolerations:
+          - key: workloadType
+            operator: Equal
+            value: highend
           volumes:
             - name: "ssd"
               hostPath:

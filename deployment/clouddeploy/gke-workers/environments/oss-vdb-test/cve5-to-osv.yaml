@@ -21,14 +21,16 @@ spec:
               privileged: true
             resources:
               requests:
-                cpu: "1"
+                cpu: "8"
                 memory: "2G"
               limits:
-                cpu: "1"
+                cpu: "10"
                 memory: "4G"
             env:
               - name: WORK_DIR
                 value: /tmp
+              - name: GOOGLE_CLOUD_PROJECT
+                value: oss-vdb-test 
           restartPolicy: Never
           volumes:
             - name: "ssd"

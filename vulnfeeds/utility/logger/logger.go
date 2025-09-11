@@ -17,11 +17,11 @@ func InitGlobalLogger() {
 
 	opts := &slog.HandlerOptions{
 		// AddSource adds the source code position to the log output, which is invaluable for debugging.
-		// Google Cloud Logging will automatically parse this into the `logging.googleapis.com/sourceLocation` field.
+		// Google Cloud Logging will automatically parse this into the `sourceLocation` field.
 		AddSource: true,
 		// ReplaceAttr is used to customize log attributes. We use it here to make the output
 		// perfectly align with what Google Cloud Logging expects for structured logs.
-		ReplaceAttr: func(groups []string, a slog.Attr) slog.Attr {
+		ReplaceAttr: func(_ []string, a slog.Attr) slog.Attr {
 			// Remap the default "level" key to "severity" for Google Cloud Logging.
 			if a.Key == slog.LevelKey {
 				level := a.Value.Any().(slog.Level)
@@ -38,12 +38,14 @@ func InitGlobalLogger() {
 				default:
 					levelStr = "DEFAULT"
 				}
+
 				return slog.String("severity", levelStr)
 			}
 			// Remap the default "msg" key to "message" for better compatibility.
 			if a.Key == slog.MessageKey {
 				return slog.Attr{Key: "message", Value: a.Value}
 			}
+
 			return a
 		},
 	}

@@ -58,7 +58,7 @@ func main() {
 // Pages are offset based, this assumes the default (and maximum) page size of PageSize
 // Maintaining the recommended 6 seconds betweens calls is left to the caller.
 // See https://nvd.nist.gov/developers/vulnerabilities
-func _downloadCVE2FromAPIWithOffset(apiKey string, offset int) (page *cves.CVEAPIJSON20Schema, err error) {
+func downloadCVE2FromAPIWithOffset(apiKey string, offset int) (page *cves.CVEAPIJSON20Schema, err error) { //nolint:unused
 	client := &http.Client{}
 	APIURL, err := url.Parse(NVDAPIEndpoint)
 	if err != nil {
@@ -119,7 +119,7 @@ func _downloadCVE2FromAPIWithOffset(apiKey string, offset int) (page *cves.CVEAP
 
 // Download all of the CVE data using the 2.0 API
 // See https://nvd.nist.gov/developers/vulnerabilities
-func _downloadCVE2FromAPI(apiKey string, cvePath string) {
+func downloadCVE2FromAPI(apiKey string, cvePath string) { //nolint:unused
 	file, err := os.OpenFile(path.Join(cvePath, "nvdcve-2.0.json.new"), os.O_CREATE|os.O_RDWR|os.O_TRUNC, 0644)
 	if err != nil { // There's an existing file, check if it matches server file
 		logger.Fatalf("Something went wrong when creating/opening file: %+v", err)
@@ -130,7 +130,7 @@ func _downloadCVE2FromAPI(apiKey string, cvePath string) {
 	offset := 0
 	prevTotal := 0
 	for {
-		page, err = _downloadCVE2FromAPIWithOffset(apiKey, offset)
+		page, err = downloadCVE2FromAPIWithOffset(apiKey, offset)
 		if err != nil {
 			logger.Fatalf("Failed to download at offset %d: %+v", offset, err)
 		}

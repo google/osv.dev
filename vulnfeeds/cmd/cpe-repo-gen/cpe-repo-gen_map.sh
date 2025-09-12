@@ -38,7 +38,7 @@ unzip -o "${WORK_DIR}/cpe.zip" -d "${CPE_JSON_DIR}"
 
 MAYBE_USE_DEBIAN_COPYRIGHT_METADATA=""
 if [[ -n "${DEBIAN_COPYRIGHT_GCS_PATH}" ]]; then
-  gsutil ${BE_VERBOSE="-q"} cp "${DEBIAN_COPYRIGHT_GCS_PATH}" "${WORK_DIR}"
+  gcloud storage cp "${DEBIAN_COPYRIGHT_GCS_PATH}" "${WORK_DIR}" ${BE_VERBOSE="-q"}
   tar -C "${WORK_DIR}" -xf "${WORK_DIR}/$(basename ${DEBIAN_COPYRIGHT_GCS_PATH})"
   MAYBE_USE_DEBIAN_COPYRIGHT_METADATA="--debian_metadata_path ${WORK_DIR}/metadata.ftp-master.debian.org"
 fi
@@ -49,4 +49,4 @@ fi
   --output_dir="${WORK_DIR}"
 
 
-gsutil ${BE_VERBOSE="-q"} cp "${WORK_DIR}/cpe_product_to_repo.json" "${CPEREPO_GCS_PATH}"
+gcloud storage cp "${WORK_DIR}/cpe_product_to_repo.json" "${CPEREPO_GCS_PATH}" ${BE_VERBOSE="-q"}

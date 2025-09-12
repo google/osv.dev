@@ -16,5 +16,5 @@ rm -rf $OSV_PARTS_OUTPUT && mkdir -p $OSV_PARTS_OUTPUT
 
 ./debian-osv
 echo "Begin Syncing with cloud, GCS bucket: ${OUTPUT_BUCKET}"
-gsutil -q -m rsync -c -d $OSV_PARTS_OUTPUT "gs://$OUTPUT_BUCKET/$OSV_PARTS_OUTPUT"
+gcloud storage rsync $OSV_PARTS_OUTPUT "gs://$OUTPUT_BUCKET/$OSV_PARTS_OUTPUT" --delete-unmatched-destination-objects -q -c 
 echo "Successfully synced with cloud"

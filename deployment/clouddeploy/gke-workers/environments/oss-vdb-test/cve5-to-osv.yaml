@@ -22,15 +22,17 @@ spec:
             resources:
               requests:
                 cpu: "8"
-                memory: "2G"
+                memory: "64G"
               limits:
-                cpu: "10"
-                memory: "4G"
+                cpu: "12"
+                memory: "96G"
             env:
-              - name: WORK_DIR
-                value: /tmp
+              - name: LOCAL_OUT_DIR
+                value: cvelist2osv
               - name: GOOGLE_CLOUD_PROJECT
                 value: oss-vdb-test 
+              - name: NUM_WORKERS
+                value: 30
           restartPolicy: Never
           tolerations:
           - key: workloadType

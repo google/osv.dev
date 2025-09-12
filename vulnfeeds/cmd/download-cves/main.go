@@ -23,38 +23,42 @@ import (
 )
 
 const (
-	CVEURLBase     = "https://nvd.nist.gov/feeds/json/cve/1.1/"
+	CVEURLBase     = "https://nvd.nist.gov/feeds/json/cve/2.0/"
 	NVDAPIEndpoint = "https://services.nvd.nist.gov/rest/json/cves/2.0"
 	PageSize       = 2000 // maximum page size with the 2.0 API is 2000
-	fileNameBase   = "nvdcve-1.1-"
+	fileNameBase   = "nvdcve-2.0-"
 	startingYear   = 2002
 	CVEPathDefault = "cve_jsons"
 )
 
-var apiKey = flag.String("api_key", "", "API key for accessing NVD API 2.0")
+// Note that we were originally downloading NVD data from data dumps - which were deprecated,
+// so we began using the API. The data dumps are now undeprecated and are a more reliable
+// source of data. API code here will remain just in case.
+
+// var apiKey = flag.String("api_key", "", "API key for accessing NVD API 2.0")
 var cvePath = flag.String("cvePath", CVEPathDefault, "Where to download CVEs to")
 
 func main() {
 	logger.InitGlobalLogger()
 
 	flag.Parse()
-	if *apiKey != "" {
-		downloadCVE2(*apiKey, *cvePath)
-	} else {
-		currentYear := time.Now().Year()
-		for i := startingYear; i <= currentYear; i++ {
-			downloadCVE(strconv.Itoa(i), *cvePath)
-		}
-		downloadCVE("modified", *cvePath)
-		downloadCVE("recent", *cvePath)
+	// if *apiKey != "" {
+	// 	downloadCVE2FromAPI(*apiKey, *cvePath)
+	// } else {
+	currentYear := time.Now().Year()
+	for i := startingYear; i <= currentYear; i++ {
+		downloadCVEFromDataDumps(strconv.Itoa(i), *cvePath)
 	}
+	downloadCVEFromDataDumps("modified", *cvePath)
+	downloadCVEFromDataDumps("recent", *cvePath)
+	// }
 }
 
 // Download one "page" of the CVE data using the 2.0 API.
 // Pages are offset based, this assumes the default (and maximum) page size of PageSize
 // Maintaining the recommended 6 seconds betweens calls is left to the caller.
 // See https://nvd.nist.gov/developers/vulnerabilities
-func downloadCVE2WithOffset(apiKey string, offset int) (page *cves.CVEAPIJSON20Schema, err error) {
+func downloadCVE2FromAPIWithOffset(apiKey string, offset int) (page *cves.CVEAPIJSON20Schema, err error) { //nolint:unused
 	client := &http.Client{}
 	APIURL, err := url.Parse(NVDAPIEndpoint)
 	if err != nil {
@@ -115,7 +119,7 @@ func downloadCVE2WithOffset(apiKey string, offset int) (page *cves.CVEAPIJSON20S
 
 // Download all of the CVE data using the 2.0 API
 // See https://nvd.nist.gov/developers/vulnerabilities
-func downloadCVE2(apiKey string, cvePath string) {
+func downloadCVE2FromAPI(apiKey string, cvePath string) { //nolint:unused
 	file, err := os.OpenFile(path.Join(cvePath, "nvdcve-2.0.json.new"), os.O_CREATE|os.O_RDWR|os.O_TRUNC, 0644)
 	if err != nil { // There's an existing file, check if it matches server file
 		logger.Fatal("Something went wrong when creating/opening file", slog.Any("err", err))
@@ -126,7 +130,7 @@ func downloadCVE2(apiKey string, cvePath string) {
 	offset := 0
 	prevTotal := 0
 	for {
-		page, err = downloadCVE2WithOffset(apiKey, offset)
+		page, err = downloadCVE2FromAPIWithOffset(apiKey, offset)
 		if err != nil {
 			logger.Fatal("Failed to download", slog.Int("offset", offset), slog.Any("err", err))
 		}
@@ -156,7 +160,7 @@ func downloadCVE2(apiKey string, cvePath string) {
 	}
 }
 
-func downloadCVE(version string, cvePath string) {
+func downloadCVEFromDataDumps(version string, cvePath string) {
 	file, err := os.OpenFile(path.Join(cvePath, fileNameBase+version+".json"), os.O_CREATE|os.O_RDWR|os.O_TRUNC, 0644)
 	if err != nil { // There's an existing file, check if it matches server file
 		logger.Fatal("Something went wrong when creating/opening file", slog.String("version", version), slog.Any("err", err))

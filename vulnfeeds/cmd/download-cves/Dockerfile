@@ -25,7 +25,6 @@ COPY ./ /src/
 RUN go build -o download-cves ./cmd/download-cves/
 
 FROM gcr.io/google.com/cloudsdktool/google-cloud-cli:alpine@sha256:af3dac7ae5f9d28fee1c2ec738f616467a99f9f23bc31a49bb8a297af5f1eabf
-RUN apk --no-cache add jq
 
 WORKDIR /usr/local/bin
 COPY --from=GO_BUILD /src/download-cves ./

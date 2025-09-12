@@ -28,7 +28,8 @@ from google.protobuf import json_format
 # pylint: disable=relative-beyond-top-level
 from . import cache
 from . import repos
-from . import vulnerability_pb2
+
+from .osvschema.bindings.python import vulnerability_pb2
 
 AUTHOR_EMAIL = 'infra@osv.dev'
 PUSH_RETRIES = 2
@@ -108,7 +109,7 @@ def _parse_vulnerability_dict(path):
 @cache.cached(shared_cache)
 def load_schema():
   path = os.path.join(
-      os.path.dirname(os.path.abspath(__file__)), 'osv-schema', 'validation',
+      os.path.dirname(os.path.abspath(__file__)), 'osvschema', 'validation',
       'schema.json')
   with open(path, 'r') as schema:
     text = schema.read()

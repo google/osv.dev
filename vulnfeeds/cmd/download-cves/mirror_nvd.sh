@@ -35,4 +35,4 @@ mkdir -p "${WORK_DIR}/nvd"
 
 echo "Copying files to GCS bucket"
 gcloud config set storage/parallel_composite_upload_enabled True
-gcloud --no-user-output-enabled storage rsync "${WORK_DIR}/nvd/" "gs://${BUCKET}/nvd/" --checksums-only -c --delete-unmatched-destination-objects -q
+gcloud --no-user-output-enabled storage rsync "${WORK_DIR}/nvd/" "gs://${BUCKET}/nvd/" --checksums-only -c --delete-unmatched-destination-objects -q -J

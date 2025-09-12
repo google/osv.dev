@@ -97,7 +97,7 @@ func loadInnerParts(innerPartInputPath string, output map[cves.CVEID][]vulns.Pac
 		cveID := cves.CVEID(strings.Split(entryInner.Name(), ".")[0])
 		output[cveID] = append(output[cveID], pkgInfos...)
 
-		logger.Info("Loaded Item", slog.String("item", entryInner.Name()))
+		logger.Info("Loaded "+entryInner.Name(), slog.String("file", entryInner.Name()))
 
 		// Updates the latest OSV parts modified time of each CVE
 		modifiedTime, err := getModifiedTime(filePath)
@@ -147,7 +147,7 @@ func loadParts(partsInputPath string) (map[cves.CVEID][]vulns.PackageInfo, map[c
 
 // combineIntoOSV creates OSV entry by combining loaded CVEs from NVD and PackageInfo information from security advisories.
 func combineIntoOSV(loadedCves map[cves.CVEID]cves.Vulnerability, allParts map[cves.CVEID][]vulns.PackageInfo, cveList string, cvePartsModifiedTime map[cves.CVEID]time.Time) map[cves.CVEID]*vulns.Vulnerability {
-	logger.Info("Begin writing OSV files", slog.Int("parts_count", len(allParts)))
+	logger.Info("Begin writing OSV files", slog.Int("count", len(allParts)))
 	convertedCves := map[cves.CVEID]*vulns.Vulnerability{}
 	for cveID, cve := range loadedCves {
 		if len(allParts[cveID]) == 0 {
@@ -185,7 +185,7 @@ func combineIntoOSV(loadedCves map[cves.CVEID]cves.Vulnerability, allParts map[c
 		}
 		convertedCves[cveID] = convertedCve
 	}
-	logger.Info("Ended writing OSV files", slog.Int("file_count", len(convertedCves)))
+	logger.Info("Ended writing OSV files", slog.Int("count", len(convertedCves)))
 
 	return convertedCves
 }
@@ -206,7 +206,7 @@ func writeOSVFile(osvData map[cves.CVEID]*vulns.Vulnerability, osvOutputPath str
 		file.Close()
 	}
 
-	logger.Info("Successfully written OSV files", slog.Int("file_count", len(osvData)))
+	logger.Info("Successfully written OSV files", slog.Int("count", len(osvData)))
 }
 
 // loadAllCVEs loads the downloaded CVE's from the NVD database into memory.
@@ -235,7 +235,7 @@ func loadAllCVEs(cvePath string) map[cves.CVEID]cves.Vulnerability {
 		for _, item := range nvdcve.Vulnerabilities {
 			result[item.CVE.ID] = item
 		}
-		logger.Info("Loaded CVE", slog.String("cve", entry.Name()))
+		logger.Info("Loaded CVE "+entry.Name(), slog.String("cve", entry.Name()))
 		file.Close()
 	}
 

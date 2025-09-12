@@ -9,6 +9,7 @@ import (
 	"flag"
 	"fmt"
 	"io"
+	"log/slog"
 	"net/http"
 	"net/url"
 	"os"
@@ -38,8 +39,7 @@ const (
 var cvePath = flag.String("cvePath", CVEPathDefault, "Where to download CVEs to")
 
 func main() {
-	var logCleanup = logger.InitGlobalLogger("download-cves", false)
-	defer logCleanup()
+	logger.InitGlobalLogger()
 
 	flag.Parse()
 	// if *apiKey != "" {
@@ -92,27 +92,27 @@ func downloadCVE2FromAPIWithOffset(apiKey string, offset int) (page *cves.CVEAPI
 		case 4:
 			return fmt.Errorf("bad response for %q: %q", resp.Request.URL, resp.Status)
 		case 5:
-			logger.Warnf("Bad response for %q: %q, retrying", resp.Request.URL, resp.Status)
+			logger.Warn("Bad response, retrying", slog.String("url", resp.Request.URL.String()), slog.String("status", resp.Status))
 			return retry.RetryableError(fmt.Errorf("bad response for %q: %q", resp.Request.URL, resp.Status))
 		default:
 			body, err := io.ReadAll(resp.Body)
 			if err != nil {
-				logger.Warnf("Error reading response body for request for %q: %+v, retrying", resp.Request.URL, err)
+				logger.Warn("Error reading response body, retrying", slog.String("url", resp.Request.URL.String()), slog.Any("err", err))
 				return retry.RetryableError(fmt.Errorf("error reading response body for request for %q: %q", resp.Request.URL, resp.Status))
 			}
 			err = json.Unmarshal(body, &page)
 			if err != nil {
-				logger.Warnf("Failed to decode NVD data: %q", err)
+				logger.Warn("Failed to decode NVD data", slog.Any("err", err))
 				return fmt.Errorf("failed to decode NVD data from %q: %+w", resp.Request.URL, err)
 			}
 
 			return nil
 		}
 	}); err != nil {
-		logger.Warnf("Unable to retrieve %q: %v", APIURL, err)
+		logger.Warn("Unable to retrieve", slog.String("url", APIURL.String()), slog.Any("err", err))
 		return page, fmt.Errorf("unable to retrieve %q: %w", APIURL, err)
 	}
-	logger.Infof("Retrieved offset %d of %d total results", page.StartIndex, page.TotalResults)
+	logger.Info("Retrieved", slog.Int("offset", page.StartIndex), slog.Int("total", page.TotalResults))
 
 	return page, nil
 }
@@ -122,7 +122,7 @@ func downloadCVE2FromAPIWithOffset(apiKey string, offset int) (page *cves.CVEAPI
 func downloadCVE2FromAPI(apiKey string, cvePath string) { //nolint:unused
 	file, err := os.OpenFile(path.Join(cvePath, "nvdcve-2.0.json.new"), os.O_CREATE|os.O_RDWR|os.O_TRUNC, 0644)
 	if err != nil { // There's an existing file, check if it matches server file
-		logger.Fatalf("Something went wrong when creating/opening file: %+v", err)
+		logger.Fatal("Something went wrong when creating/opening file", slog.Any("err", err))
 	}
 	defer file.Close()
 	var vulnerabilities []cves.Vulnerability
@@ -132,10 +132,10 @@ func downloadCVE2FromAPI(apiKey string, cvePath string) { //nolint:unused
 	for {
 		page, err = downloadCVE2FromAPIWithOffset(apiKey, offset)
 		if err != nil {
-			logger.Fatalf("Failed to download at offset %d: %+v", offset, err)
+			logger.Fatal("Failed to download", slog.Int("offset", offset), slog.Any("err", err))
 		}
 		if page.TotalResults < prevTotal {
-			logger.Warnf("TotalResults decreased from %d to %d", prevTotal, page.TotalResults)
+			logger.Warn("TotalResults decreased", slog.Int("previous", prevTotal), slog.Int("current", page.TotalResults))
 		}
 		prevTotal = page.TotalResults
 		vulnerabilities = append(vulnerabilities, page.Vulnerabilities...)
@@ -151,40 +151,39 @@ func downloadCVE2FromAPI(apiKey string, cvePath string) { //nolint:unused
 	page.ResultsPerPage = page.TotalResults
 	err = page.ToJSON(file)
 	if err != nil {
-		logger.Fatalf("Failed to write %s: %+v", path.Join(cvePath, "nvdcve-2.0.json.new"), err)
+		logger.Fatal("Failed to write", slog.String("path", path.Join(cvePath, "nvdcve-2.0.json.new")), slog.Any("err", err))
 	}
 	file.Close()
 	err = os.Rename(path.Join(cvePath, "nvdcve-2.0.json.new"), path.Join(cvePath, "nvdcve-2.0.json"))
 	if err != nil {
-		logger.Fatalf("Failed to rename temporary file: %+v", err)
+		logger.Fatal("Failed to rename temporary file", slog.Any("err", err))
 	}
 }
 
 func downloadCVEFromDataDumps(version string, cvePath string) {
 	file, err := os.OpenFile(path.Join(cvePath, fileNameBase+version+".json"), os.O_CREATE|os.O_RDWR|os.O_TRUNC, 0644)
 	if err != nil { // There's an existing file, check if it matches server file
-		logger.Fatalf("Something went wrong when creating/opening file %s, %s", version, err)
+		logger.Fatal("Something went wrong when creating/opening file", slog.String("version", version), slog.Any("err", err))
 	}
 	defer file.Close()
 
 	res, err := http.Get(CVEURLBase + fileNameBase + version + ".json.gz")
 	if err != nil {
-		logger.Fatalf("Failed to retrieve CVE json with: %d, for version: %s", err, version)
+		logger.Fatal("Failed to retrieve cve json", slog.Any("err", err), slog.String("version", version))
 	}
 	defer res.Body.Close()
 
 	if res.StatusCode != http.StatusOK {
-		logger.Fatalf("Failed to retrieve CVE json with: %d, for version: %s", res.StatusCode, version)
+		logger.Fatal("Failed to retrieve cve json", slog.Int("status_code", res.StatusCode), slog.String("version", version))
 	}
 
 	reader, err := gzip.NewReader(res.Body)
 	if err != nil {
-		logger.Fatalf("Failed to create gzip reader: %s", err)
+		logger.Fatal("Failed to create gzip reader", slog.Any("err", err))
 	}
 
 	if _, err := io.CopyN(file, reader, 1024*1024*1024*10); err != nil && !errors.Is(err, io.EOF) { // 10GB limit
-		logger.Fatalf("Failed to write to file %s: %s", version, err)
+		logger.Fatal("Failed to write to file", slog.String("version", version), slog.Any("err", err))
 	}
-	logger.Infof(
-		"Successfully downloaded CVE %s\n", version)
+	logger.Info("Successfully downloaded CVE", slog.String("version", version))
 }

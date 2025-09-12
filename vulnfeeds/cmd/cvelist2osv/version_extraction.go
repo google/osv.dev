@@ -4,6 +4,7 @@ import (
 	"cmp"
 	"errors"
 	"fmt"
+	"log/slog"
 	"strconv"
 	"strings"
 
@@ -130,7 +131,7 @@ func AddVersionInfo(cve cves.CVE5, v *vulns.Vulnerability, repos []string) ([]Ve
 			var err error
 			aff, err = gitVersionsToCommits(cve.Metadata.CVEID, versionRanges, repos, make(git.RepoTagsCache))
 			if err != nil {
-				logger.Errorf("%+v", err)
+				logger.Error("Failed to convert git versions to commits", slog.Any("err", err))
 			} else {
 				hasGit = true
 			}
@@ -190,23 +191,23 @@ func gitVersionsToCommits(cveID cves.CVEID, versionRanges []osvschema.Range, rep
 	for _, repo := range repos {
 		normalizedTags, err := git.NormalizeRepoTags(repo, cache)
 		if err != nil {
-			logger.Warnf("[%s]: Failed to normalize tags for %s: %v", cveID, repo, err)
+			logger.Warn("Failed to normalize tags", slog.String("cve", string(cveID)), slog.String("repo", repo), slog.Any("err", err))
 			continue
 		}
 		for _, vr := range versionRanges {
 			var ic, fc, lac string
 			var err error
 			for _, ev := range vr.Events {
-				logger.Infof("[%s]: Attempting version resolution for %+v using %q", cveID, ev, repo)
+				logger.Info("Attempting version resolution", slog.String("cve", string(cveID)), slog.Any("event", ev), slog.String("repo", repo))
 				if ev.Introduced != "" {
 					if ev.Introduced == "0" {
 						ic = "0"
 					} else {
 						ic, err = git.VersionToCommit(ev.Introduced, normalizedTags)
 						if err != nil {
-							logger.Warnf("[%s]: Failed to get a Git commit for introduced version %q from %q: %v", cveID, ev.Introduced, repo, err)
+							logger.Warn("Failed to get Git commit for introduced version", slog.String("cve", string(cveID)), slog.String("version", ev.Introduced), slog.String("repo", repo), slog.Any("err", err))
 						} else {
-							logger.Infof("[%s]: Successfully derived %+v for introduced version %q", cveID, ic, ev.Introduced)
+							logger.Info("Successfully derived commit for introduced version", slog.String("cve", string(cveID)), slog.String("commit", ic), slog.String("version", ev.Introduced))
 						}
 					}
 				}
@@ -214,17 +215,17 @@ func gitVersionsToCommits(cveID cves.CVEID, versionRanges []osvschema.Range, rep
 					// check if fixed commit doesnt already exist?
 					fc, err = git.VersionToCommit(ev.Fixed, normalizedTags)
 					if err != nil {
-						logger.Warnf("[%s]: Failed to get a Git commit for fixed version %q from %q: %v", cveID, ev.Fixed, repo, err)
+						logger.Warn("Failed to get Git commit for fixed version", slog.String("cve", string(cveID)), slog.String("version", ev.Fixed), slog.String("repo", repo), slog.Any("err", err))
 					} else {
-						logger.Infof("[%s]: Successfully derived %+v for fixed version %q", cveID, fc, ev.Fixed)
+						logger.Info("Successfully derived commit for fixed version", slog.String("cve", string(cveID)), slog.String("commit", fc), slog.String("version", ev.Fixed))
 					}
 				}
 				if ev.LastAffected != "" {
 					lac, err = git.VersionToCommit(ev.LastAffected, normalizedTags)
 					if err != nil {
-						logger.Warnf("[%s]: Failed to get a Git commit for last affected version %q from %q: %v", cveID, ev.LastAffected, repo, err)
+						logger.Warn("Failed to get Git commit for last affected version", slog.String("cve", string(cveID)), slog.String("version", ev.LastAffected), slog.String("repo", repo), slog.Any("err", err))
 					} else {
-						logger.Infof("[%s]: Successfully derived %+v for fixed version %q", cveID, lac, ev.LastAffected)
+						logger.Info("Successfully derived commit for last affected version", slog.String("cve", string(cveID)), slog.String("commit", lac), slog.String("version", ev.LastAffected))
 					}
 				}
 			}
@@ -247,7 +248,7 @@ func gitVersionsToCommits(cveID cves.CVEID, versionRanges []osvschema.Range, rep
 			}
 
 			// Nothing resolved, move on to the next AffectedVersion
-			logger.Warnf("[%s]: Sufficient resolution not possible for %+v", cveID, vr)
+			logger.Warn("Sufficient resolution not possible", slog.String("cve", string(cveID)), slog.Any("range", vr))
 			unresolvedRanges = append(unresolvedRanges, vr)
 			continue
 		}

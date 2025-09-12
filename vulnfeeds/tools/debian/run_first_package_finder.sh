@@ -25,7 +25,7 @@ echo "Finding first packages"
 poetry run python3 first_package_finder.py
 
 echo "Syncing with cloud first_package_output ${OUTPUT_BUCKET}"
-gsutil -q -m rsync -c -d 'first_package_output' "gs://${OUTPUT_BUCKET}/first_package_output"
+gcloud storage rsync 'first_package_output' "gs://${OUTPUT_BUCKET}/first_package_output" --delete-unmatched-destination-objects -q -c
 echo "Successfully synced with cloud"
 
 popd

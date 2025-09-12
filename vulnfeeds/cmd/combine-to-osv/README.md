@@ -43,6 +43,6 @@ This statically overrides the record generated, meaning any and all of the input
 
 #### Procedure
 
-1. `gsutil cp gs://cve-osv-conversion/osv-output/CVE-YYYY-NNNN.json`
+1. `gcloud storage cp gs://cve-osv-conversion/osv-output/CVE-YYYY-NNNN.json`
 2. manually edit the file
-3. `gsutil cp gs://cve-osv-conversion/osv-output-overrides/CVE-YYYY-NNNN.json`
+3. `gcloud storage cp gs://cve-osv-conversion/osv-output-overrides/CVE-YYYY-NNNN.json`

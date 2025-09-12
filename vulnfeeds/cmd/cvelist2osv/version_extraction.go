@@ -236,6 +236,7 @@ func gitVersionsToCommits(cveID cves.CVEID, versionRanges []osvschema.Range, rep
 				newVR.DatabaseSpecific = make(map[string]any)
 				newVR.DatabaseSpecific["versions"] = vr.Events
 				newVersionRanges = append(newVersionRanges, newVR)
+
 				continue
 			} else if lac != "" && ic != "" {
 				newVR := buildVersionRange(ic, lac, "")
@@ -244,12 +245,14 @@ func gitVersionsToCommits(cveID cves.CVEID, versionRanges []osvschema.Range, rep
 				newVR.DatabaseSpecific = make(map[string]any)
 				newVR.DatabaseSpecific["versions"] = vr.Events
 				newVersionRanges = append(newVersionRanges, newVR)
+
 				continue
 			}
 
 			// Nothing resolved, move on to the next AffectedVersion
 			logger.Warn("Sufficient resolution not possible", slog.String("cve", string(cveID)), slog.Any("range", vr))
 			unresolvedRanges = append(unresolvedRanges, vr)
+
 			continue
 		}
 	}
@@ -262,7 +265,7 @@ func gitVersionsToCommits(cveID cves.CVEID, versionRanges []osvschema.Range, rep
 	if len(newVersionRanges) > 0 {
 		newAff.Ranges = newVersionRanges
 	} else {
-		err = fmt.Errorf("was not able to get git version ranges")
+		err = errors.New("was not able to get git version ranges")
 	}
 
 	return newAff, err

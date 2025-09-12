@@ -198,7 +198,7 @@ func TestFromCVE5(t *testing.T) {
 								{Introduced: "504fd9e5236e13d674e051c6b8a1e9892b371c58"},
 								{Fixed: "3426be1b93852c5358240c5df40970c0ddfbdb2a"},
 							},
-							DatabaseSpecific: map[string]interface{}{
+							DatabaseSpecific: map[string]any{
 								"versions": []osvschema.Event{{Introduced: "18.0"}, {Fixed: "18.0.1"}},
 							},
 						}},
@@ -239,7 +239,7 @@ func TestFromCVE5(t *testing.T) {
 								{Introduced: "0"},
 								{Fixed: "019a6117fb99131f74f92ecf462169613234abbf"},
 							},
-							DatabaseSpecific: map[string]interface{}{
+							DatabaseSpecific: map[string]any{
 								"versions": []osvschema.Event{{Introduced: "0"}, {Fixed: "1.10.5"}},
 							},
 						}},

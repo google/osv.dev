@@ -1,161 +1,98 @@
-// Package logger provides a gcloud logging wrapper that all packages within vulnfeeds should use to log output
+// Package logger provides a slog logging wrapper that all packages within vulnfeeds should use to log output.
 package logger
 
 import (
-	"context"
-	"fmt"
-	"log"
+	"log/slog"
 	"os"
-	"runtime/debug"
-
-	"cloud.google.com/go/logging"
 )
 
-var GlobalLogger Wrapper
+var slogLogger *slog.Logger
 
-func InitGlobalLogger(logID string, forceLocalLogging bool) func() {
-	if GlobalLogger.GCloudLogger != nil {
-		log.Panicf("logger already initialized")
-	}
-
-	gl, cleanup := createLoggerWrapper(logID, forceLocalLogging)
-	GlobalLogger = gl
-
-	return cleanup
-}
-
-// CreateLoggerWrapper creates and initializes the LoggerWrapper,
-// and also returns a cleanup function to be deferred
-func createLoggerWrapper(logID string, forceLocalLogging bool) (Wrapper, func()) {
-	_, runningInCloud := os.LookupEnv("KUBERNETES_SERVICE_HOST")
-	if !runningInCloud {
-		log.Println("[Info] Detected running locally, routing logs to stdout.")
-		return Wrapper{}, func() {}
-	}
-
-	projectID, projectIDSet := os.LookupEnv("GOOGLE_CLOUD_PROJECT")
-	if !projectIDSet {
-		return Wrapper{}, func() {}
-	}
-
-	log.Println("Logging to project id: " + projectID)
-	client, err := logging.NewClient(context.Background(), projectID)
-	if err != nil {
-		log.Fatalf("Failed to create client: %v", err)
-	}
-	wrapper := Wrapper{
-		GCloudLogger:      client.Logger(logID),
-		ForceLocalLogging: forceLocalLogging,
-	}
-
-	return wrapper, func() { client.Close() }
-}
-
-// Wrapper wraps the Logger provided by google cloud
-// Will default to the go stdout and stderr logging if GCP logger is not set
-type Wrapper struct {
-	GCloudLogger      *logging.Logger
-	ForceLocalLogging bool
-}
-
-// Infof prints Info level log
-func (wrapper Wrapper) Infof(format string, a ...any) {
-	if wrapper.GCloudLogger == nil || wrapper.ForceLocalLogging {
-		log.Printf("[Info] "+format, a...)
+// InitGlobalLogger initializes the global slog logger.
+func InitGlobalLogger() {
+	if slogLogger != nil {
+		// Logger is already initialized.
 		return
 	}
 
-	wrapper.GCloudLogger.Log(logging.Entry{
-		Severity: logging.Info,
-		Payload:  fmt.Sprintf(format, a...) + "\n",
-	})
+	opts := &slog.HandlerOptions{
+		// AddSource adds the source code position to the log output, which is invaluable for debugging.
+		// Google Cloud Logging will automatically parse this into the `sourceLocation` field.
+		AddSource: true,
+		// ReplaceAttr is used to customize log attributes. We use it here to make the output
+		// perfectly align with what Google Cloud Logging expects for structured logs.
+		ReplaceAttr: func(_ []string, a slog.Attr) slog.Attr {
+			// Remap the default "level" key to "severity" for Google Cloud Logging.
+			if a.Key == slog.LevelKey {
+				level := a.Value.Any().(slog.Level)
+				var levelStr string
+				switch level {
+				case slog.LevelDebug:
+					levelStr = "DEBUG"
+				case slog.LevelInfo:
+					levelStr = "INFO"
+				case slog.LevelWarn:
+					levelStr = "WARNING"
+				case slog.LevelError:
+					levelStr = "ERROR"
+				default:
+					levelStr = "DEFAULT"
+				}
+
+				return slog.String("severity", levelStr)
+			}
+			// Remap the default "msg" key to "message" for better compatibility.
+			if a.Key == slog.MessageKey {
+				return slog.Attr{Key: "message", Value: a.Value}
+			}
+
+			return a
+		},
+	}
+
+	// A JSONHandler writing to stdout is the standard and correct way to log in GKE.
+	handler := slog.NewJSONHandler(os.Stdout, opts)
+	slogLogger = slog.New(handler)
 }
 
-// Warnf prints Warning level log, defaults to stdout if GCP logger is not set
-func (wrapper Wrapper) Warnf(format string, a ...any) {
-	if wrapper.GCloudLogger == nil || wrapper.ForceLocalLogging {
-		log.Printf("[Warning] "+format, a...)
-		return
+// Info prints an Info level log.
+func Info(msg string, a ...any) {
+	if slogLogger == nil {
+		InitGlobalLogger() // Initialize with defaults if not already done.
 	}
-
-	wrapper.GCloudLogger.Log(logging.Entry{
-		Severity: logging.Warning,
-		Payload:  fmt.Sprintf(format, a...) + "\n",
-	})
+	slogLogger.Info(msg, a...)
 }
 
-// Errorf prints Error level log
-func (wrapper Wrapper) Errorf(format string, a ...any) {
-	if wrapper.GCloudLogger == nil || wrapper.ForceLocalLogging {
-		log.Printf("[Error] "+format, a...)
-		return
+// Warn prints a Warning level log.
+func Warn(msg string, a ...any) {
+	if slogLogger == nil {
+		InitGlobalLogger() // Initialize with defaults if not already done.
 	}
-
-	wrapper.GCloudLogger.Log(logging.Entry{
-		Severity: logging.Error,
-		Payload:  fmt.Sprintf(format, a...) + "\n",
-	})
+	slogLogger.Warn(msg, a...)
 }
 
-// Fatalf prints Error level log with stack trace, before exiting with error code 1
-func (wrapper Wrapper) Fatalf(format string, a ...any) {
-	if wrapper.GCloudLogger == nil || wrapper.ForceLocalLogging {
-		log.Fatalf("[Fatal] "+format, a...)
-		return
+// Error prints an Error level log.
+func Error(msg string, a ...any) {
+	if slogLogger == nil {
+		InitGlobalLogger() // Initialize with defaults if not already done.
 	}
+	slogLogger.Error(msg, a...)
+}
 
-	wrapper.GCloudLogger.Log(logging.Entry{
-		Severity: logging.Error,
-		Payload:  fmt.Sprintf(format, a...) + "\n" + string(debug.Stack()),
-	})
-	err := wrapper.GCloudLogger.Flush()
-	if err != nil {
-		log.Fatalln("Failed to flush logger")
+// Fatal prints an Error level log and then exits the program.
+func Fatal(msg string, a ...any) {
+	if slogLogger == nil {
+		InitGlobalLogger() // Initialize with defaults if not already done.
 	}
+	slogLogger.Error(msg, a...)
 	os.Exit(1)
 }
 
-// Panicf prints Error level log with stack trace, before panicing
-func (wrapper Wrapper) Panicf(format string, a ...any) {
-	if wrapper.GCloudLogger == nil || wrapper.ForceLocalLogging {
-		log.Panicf("[Panic] "+format, a...)
-		return
+// Panic prints an Error level log and then panics.
+func Panic(msg string, a ...any) {
+	if slogLogger == nil {
+		InitGlobalLogger() // Initialize with defaults if not already done.
 	}
-
-	wrapper.GCloudLogger.Log(logging.Entry{
-		Severity: logging.Error,
-		Payload:  fmt.Sprintf(format, a...) + "\n" + string(debug.Stack()),
-	})
-	err := wrapper.GCloudLogger.Flush()
-	if err != nil {
-		log.Panicln("Failed to flush logger")
-	}
-	panic(nil)
-}
-
-// ---- Global versions of these funcs:
-
-// Infof prints Info level log
-func Infof(format string, a ...any) {
-	GlobalLogger.Infof(format, a...)
-}
-
-// Warnf prints Warning level log, defaults to stdout if GCP logger is not set
-func Warnf(format string, a ...any) {
-	GlobalLogger.Warnf(format, a...)
-}
-
-// Errorf prints an error level log, defaults to stdout if GCP logger is not set
-func Errorf(format string, a ...any) {
-	GlobalLogger.Errorf(format, a...)
-}
-
-// Fatalf prints Error level log with stack trace, before exiting with error code 1
-func Fatalf(format string, a ...any) {
-	GlobalLogger.Fatalf(format, a...)
-}
-
-// Panicf prints Error level log with stack trace, before panicing
-func Panicf(format string, a ...any) {
-	GlobalLogger.Panicf(format, a...)
+	slogLogger.Error(msg, a...)
+	panic(msg)
 }

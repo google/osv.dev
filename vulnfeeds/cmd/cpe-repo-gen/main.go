@@ -35,6 +35,7 @@ import (
 	"flag"
 	"fmt"
 	"io"
+	"log/slog"
 	"net/url"
 	"os"
 	"path"
@@ -133,7 +134,7 @@ func LoadCPEsFromJSONDir(dir string) ([]CPE, error) {
 	for _, filePath := range files {
 		jsonFile, err := os.Open(filePath)
 		if err != nil {
-			logger.Warnf("Failed to open %s: %v", filePath, err)
+			logger.Warn("Failed to open", slog.String("path", filePath), slog.Any("err", err))
 			continue
 		}
 
@@ -145,7 +146,7 @@ func LoadCPEsFromJSONDir(dir string) ([]CPE, error) {
 		jsonFile.Close()
 		var feed CPEFeed
 		if err := json.Unmarshal(byteValue, &feed); err != nil {
-			logger.Warnf("Failed to unmarshal %s: %v", filePath, err)
+			logger.Warn("Failed to unmarshal", slog.String("path", filePath), slog.Any("err", err))
 			continue
 		}
 		for _, p := range feed.Products {
@@ -174,7 +175,7 @@ func outputProductToRepoMap(prm VendorProductToRepoMap, f io.Writer) error {
 		return err
 	}
 
-	logger.Infof("Outputting information about %d application products, %d do not have repos", len(prm), productsWithoutRepos)
+	logger.Info("Outputting information", slog.Int("products", len(prm)), slog.Int("without_repos", productsWithoutRepos))
 
 	return nil
 }
@@ -206,14 +207,15 @@ func outputDescriptionFrequency(df map[string]int, f io.Writer) error {
 		return err
 	}
 
-	logger.Infof("Seen %d distinct reference descriptions", len(df))
+	logger.Info("Seen distinct reference descriptions", slog.Int("count", len(df)))
 
 	return nil
 }
 
 // Checks if a URL relates to the FSF.
 func IsGNUURL(u string) bool {
-	re := regexp.MustCompile(`^https?://.*\.(?:non)?gnu\.org/`)
+	re := regexp.MustCompile(`^https?://.*
+.(?:non)?gnu.org/`)
 
 	return re.MatchString(u)
 }
@@ -274,7 +276,7 @@ func MaybeGetSourceFromDebianCopyright(copyrightFile string) (string, bool) {
 
 	file, err := os.Open(copyrightFile)
 	if err != nil {
-		logger.Fatalf("%v", err)
+		logger.Fatal("Failed to open copyright file", slog.Any("err", err))
 	}
 	defer file.Close()
 
@@ -307,7 +309,7 @@ func MaybeGetSourceRepoFromDebian(mdir string, pkg string) string {
 	}
 	if _, err := os.Stat(metadata); err == nil {
 		// parse the copyright file and go from here
-		logger.Infof("FYI: Looking at %s for %s", metadata, pkg)
+		logger.Info("FYI: Looking at file for package", slog.String("metadata", metadata), slog.String("package", pkg))
 		possibleRepo, ok := MaybeGetSourceFromDebianCopyright(metadata)
 		if !ok {
 			return ""
@@ -322,7 +324,7 @@ func MaybeGetSourceRepoFromDebian(mdir string, pkg string) string {
 				return repo
 			}
 		}
-		logger.Infof("FYI: Disregarding %s for %s", possibleRepo, pkg)
+		logger.Info("FYI: Disregarding", slog.String("repo", possibleRepo), slog.String("package", pkg))
 	}
 
 	return ""
@@ -335,12 +337,12 @@ func analyzeCPEDictionary(cpes []CPE) (productToRepo VendorProductToRepoMap, des
 	MaybeTryDebian := make(map[VendorProduct]bool)
 	for _, c := range cpes {
 		if c.Deprecated {
-			logger.Infof("Skipping deprecated %q", c.Name)
+			logger.Info("Skipping deprecated", slog.String("cpe", c.Name))
 			continue
 		}
 		parsedCPE, err := cves.ParseCPE(c.Name)
 		if err != nil {
-			logger.Infof("Failed to parse %q", c.Name)
+			logger.Info("Failed to parse", slog.String("cpe", c.Name))
 			continue
 		}
 		if parsedCPE.Part != "a" {
@@ -351,7 +353,7 @@ func analyzeCPEDictionary(cpes []CPE) (productToRepo VendorProductToRepoMap, des
 			descriptionFrequency[r.Type] += 1
 			repo, err := cves.Repo(r.URL)
 			if err != nil {
-				logger.Infof("Disregarding %q for %s:%s (%s) because %v", r.URL, parsedCPE.Vendor, parsedCPE.Product, r.Type, err)
+				logger.Info("Disregarding", slog.String("url", r.URL), slog.String("vendor", parsedCPE.Vendor), slog.String("product", parsedCPE.Product), slog.String("type", r.Type), slog.Any("err", err))
 				continue
 			}
 			if IsGitHubURL(repo) {
@@ -361,7 +363,7 @@ func analyzeCPEDictionary(cpes []CPE) (productToRepo VendorProductToRepoMap, des
 			if slices.Contains(productToRepo[VendorProduct{parsedCPE.Vendor, parsedCPE.Product}], repo) {
 				continue
 			}
-			logger.Infof("Liking %q for %s:%s (%s)", repo, parsedCPE.Vendor, parsedCPE.Product, r.Type)
+			logger.Info("Liking", slog.String("repo", repo), slog.String("vendor", parsedCPE.Vendor), slog.String("product", parsedCPE.Product), slog.String("type", r.Type))
 			productToRepo[VendorProduct{parsedCPE.Vendor, parsedCPE.Product}] = append(productToRepo[VendorProduct{parsedCPE.Vendor, parsedCPE.Product}], repo)
 			// If this was queued for trying to find via Debian, and subsequently found, dequeue it.
 			if *DebianMetadataPath != "" {
@@ -382,23 +384,23 @@ func analyzeCPEDictionary(cpes []CPE) (productToRepo VendorProductToRepoMap, des
 	}
 	// Try any Debian possible ones as a last resort.
 	if len(MaybeTryDebian) > 0 && *DebianMetadataPath != "" {
-		logger.Infof("Trying to derive repos from Debian for %d products", len(MaybeTryDebian))
+		logger.Info("Trying to derive repos from Debian", slog.Int("products", len(MaybeTryDebian)))
 		// This is likely to be time consuming, so give an impatient log watcher something to gauge progress by.
 		entryCount := 0
 		for vp := range MaybeTryDebian {
 			entryCount++
-			logger.Infof("%d/%d: Trying to derive a repo from Debian for %s:%s", entryCount, len(MaybeTryDebian), vp.Vendor, vp.Product)
+			logger.Info("Trying to derive a repo from Debian", slog.Int("count", entryCount), slog.Int("total", len(MaybeTryDebian)), slog.String("vendor", vp.Vendor), slog.String("product", vp.Product))
 			repo := MaybeGetSourceRepoFromDebian(*DebianMetadataPath, vp.Product)
 			if repo != "" {
-				logger.Infof("Derived repo: %s for %s:%s", repo, vp.Vendor, vp.Product)
+				logger.Info("Derived repo", slog.String("repo", repo), slog.String("vendor", vp.Vendor), slog.String("product", vp.Product))
 				// Now check that what Debian gave us meets our expectations and is valid.
 				repo, err := cves.Repo(repo)
 				if err != nil {
-					logger.Infof("Disregarding derived repo %s for %s:%s because %v", repo, vp.Vendor, vp.Product, err)
+					logger.Info("Disregarding derived repo", slog.String("repo", repo), slog.String("vendor", vp.Vendor), slog.String("product", vp.Product), slog.Any("err", err))
 					continue
 				}
 				if !git.ValidRepoAndHasUsableRefs(repo) {
-					logger.Infof("Disregarding derived repo %s for %s:%s because it is unusable for version resolution", repo, vp.Vendor, vp.Product)
+					logger.Info("Disregarding derived repo as unusable", slog.String("repo", repo), slog.String("vendor", vp.Vendor), slog.String("product", vp.Product))
 					continue
 				}
 				productToRepo[VendorProduct{vp.Vendor, vp.Product}] = append(productToRepo[VendorProduct{vp.Vendor, vp.Product}], repo)
@@ -412,7 +414,7 @@ func analyzeCPEDictionary(cpes []CPE) (productToRepo VendorProductToRepoMap, des
 // validateRepos takes a VendorProductToRepoMap and removes any entries where the repository fails remote validation.
 func validateRepos(prm VendorProductToRepoMap) (validated VendorProductToRepoMap) {
 	validated = make(VendorProductToRepoMap)
-	logger.Infof("Validating repos for %d products", len(prm))
+	logger.Info("Validating repos", slog.Int("products", len(prm)))
 	// This is likely to be time consuming, so give an impatient log watcher something to gauge progress by.
 	entryCount := 0
 	for vp := range prm {
@@ -420,13 +422,13 @@ func validateRepos(prm VendorProductToRepoMap) (validated VendorProductToRepoMap
 		// As a side-effect, this also omits any with no repos.
 		for _, r := range prm[vp] {
 			if !git.ValidRepoAndHasUsableRefs(r) {
-				logger.Infof("%d/%d: %q is not a valid repo for %s:%s", entryCount, len(prm), r, vp.Vendor, vp.Product)
+				logger.Info("Invalid repo", slog.Int("count", entryCount), slog.Int("total", len(prm)), slog.String("repo", r), slog.String("vendor", vp.Vendor), slog.String("product", vp.Product))
 				continue
 			}
 			validated[vp] = append(validated[vp], r)
 		}
 	}
-	logger.Infof("Before validation: %d, after: %d. Delta: %d", len(prm), len(validated), len(prm)-len(validated))
+	logger.Info("Validation complete", slog.Int("before", len(prm)), slog.Int("after", len(validated)), slog.Int("delta", len(prm)-len(validated)))
 
 	return validated
 }
@@ -439,11 +441,10 @@ func main() {
 	}
 	flag.Parse()
 
-	var logCleanup = logger.InitGlobalLogger("cpe-repo-gen", *Verbose)
-	defer logCleanup()
+	logger.InitGlobalLogger()
 	cpes, err := LoadCPEsFromJSONDir(*CPEDictionaryDir)
 	if err != nil {
-		logger.Fatalf("Failed to load CPEs from %s: %v", *CPEDictionaryDir, err)
+		logger.Fatal("Failed to load CPEs", slog.String("path", *CPEDictionaryDir), slog.Any("err", err))
 	}
 
 	productToRepo, descriptionFrequency := analyzeCPEDictionary(cpes)
@@ -453,20 +454,20 @@ func main() {
 
 	mappingFile, err := os.Create(filepath.Join(*OutputDir, "cpe_product_to_repo.json"))
 	if err != nil {
-		logger.Fatalf("%v", err)
+		logger.Fatal("Failed to create mapping file", slog.Any("err", err))
 	}
 	defer mappingFile.Close()
 	err = outputProductToRepoMap(productToRepo, mappingFile)
 	if err != nil {
-		logger.Fatalf("%v", err)
+		logger.Fatal("Failed to output product to repo map", slog.Any("err", err))
 	}
 	frequencyFile, err := os.Create(filepath.Join(*OutputDir, "cpe_reference_description_frequency.csv"))
 	if err != nil {
-		logger.Fatalf("%v", err)
+		logger.Fatal("Failed to create frequency file", slog.Any("err", err))
 	}
 	defer frequencyFile.Close()
 	err = outputDescriptionFrequency(descriptionFrequency, frequencyFile)
 	if err != nil {
-		logger.Fatalf("%v", err)
+		logger.Fatal("Failed to output description frequency", slog.Any("err", err))
 	}
 }

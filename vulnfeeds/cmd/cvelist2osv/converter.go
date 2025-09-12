@@ -4,6 +4,7 @@ package cvelist2osv
 import (
 	"encoding/json"
 	"fmt"
+	"log/slog"
 	"os"
 	"path/filepath"
 	"slices"
@@ -127,22 +128,22 @@ func FromCVE5(cve cves.CVE5, refs []cves.Reference, metrics *ConversionMetrics) 
 func writeOSVToFile(id cves.CVEID, cnaAssigner string, vulnDir string, v *vulns.Vulnerability) error {
 	err := os.MkdirAll(vulnDir, 0755)
 	if err != nil {
-		logger.Warnf("Failed to create dir: %v", err)
+		logger.Warn("Failed to create dir", slog.Any("err", err))
 		return fmt.Errorf("failed to create dir: %w", err)
 	}
 	outputFile := filepath.Join(vulnDir, v.ID+extension)
 	f, err := os.Create(outputFile)
 	if err != nil {
-		logger.Infof("[%s] Failed to open %s for writing: %v", id, outputFile, err)
+		logger.Info("Failed to open for writing", slog.String("cve", string(id)), slog.String("path", outputFile), slog.Any("err", err))
 		return err
 	}
 	defer f.Close()
 
 	err = v.ToJSON(f)
 	if err != nil {
-		logger.Infof("Failed to write %s: %v", outputFile, err)
+		logger.Info("Failed to write", slog.String("path", outputFile), slog.Any("err", err))
 	} else {
-		logger.Infof("[%s]: Generated OSV record under the %s CNA", id, cnaAssigner)
+		logger.Info("Generated OSV record", slog.String("cve", string(id)), slog.String("cna", cnaAssigner))
 	}
 
 	return err
@@ -155,11 +156,11 @@ func writeMetricToFile(id cves.CVEID, vulnDir string, metrics *ConversionMetrics
 	metricsFile := filepath.Join(vulnDir, string(id)+".metrics.json")
 	marshalledMetrics, err := json.MarshalIndent(metrics, "", "  ")
 	if err != nil {
-		logger.Warnf("[%s]: Failed to marshal metrics: %v", id, err)
+		logger.Warn("Failed to marshal metrics", slog.String("cve", string(id)), slog.Any("err", err))
 		return err
 	}
 	if err = os.WriteFile(metricsFile, marshalledMetrics, 0600); err != nil {
-		logger.Warnf("[%s]: Failed to write %s: %v", id, metricsFile, err)
+		logger.Warn("Failed to write", slog.String("cve", string(id)), slog.String("path", metricsFile), slog.Any("err", err))
 		return err
 	}
 

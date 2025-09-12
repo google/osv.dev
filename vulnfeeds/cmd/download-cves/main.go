@@ -185,5 +185,5 @@ func downloadCVEFromDataDumps(version string, cvePath string) {
 	if _, err := io.CopyN(file, reader, 1024*1024*1024*10); err != nil && !errors.Is(err, io.EOF) { // 10GB limit
 		logger.Fatal("Failed to write to file", slog.String("version", version), slog.Any("err", err))
 	}
-	logger.Info("Successfully downloaded CVE", slog.String("version", version))
+	logger.Info("Successfully downloaded CVE "+version, slog.String("version", version))
 }

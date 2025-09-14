@@ -11,17 +11,22 @@ import (
 	"os"
 	"path"
 	"regexp"
+	"sort"
 	"strings"
+	"time"
 
+	"github.com/google/osv/vulnfeeds/cves"
 	"github.com/google/osv/vulnfeeds/models"
 	"github.com/google/osv/vulnfeeds/utility/logger"
 	"github.com/google/osv/vulnfeeds/vulns"
+	"github.com/ossf/osv-schema/bindings/go/osvschema"
 )
 
 const (
 	alpineURLBase           = "https://secdb.alpinelinux.org/%s/main.json"
 	alpineIndexURL          = "https://secdb.alpinelinux.org/"
 	alpineOutputPathDefault = "parts/alpine"
+	defaultCvePath          = "cve_jsons"
 )
 
 func main() {
@@ -38,8 +43,9 @@ func main() {
 		logger.Fatal("Can't create output path", slog.Any("err", err))
 	}
 
+	allCVEs := vulns.LoadAllCVEs(defaultCvePath)
 	allAlpineSecDB := getAlpineSecDBData()
-	generateAlpineOSV(allAlpineSecDB, *alpineOutputPath)
+	generateAlpineOSV(allAlpineSecDB, *alpineOutputPath, allCVEs)
 }
 
 // getAllAlpineVersions gets all available version name in alpine secdb
@@ -55,7 +61,7 @@ func getAllAlpineVersions() []string {
 		logger.Fatal("Failed to get alpine index page", slog.Any("err", err))
 	}
 
-	exp := regexp.MustCompile("href=\"(v[\\d.]*)/\"")
+	exp := regexp.MustCompile(`href="(v[\d.]*)/"`)
 
 	searchRes := exp.FindAllStringSubmatch(buf.String(), -1)
 	alpineVersions := make([]string, 0, len(searchRes))
@@ -87,8 +93,11 @@ func getAlpineSecDBData() map[string][]VersionAndPkg {
 					cveID = strings.Split(cveID, " ")[0]
 
 					if !validVersion(version) {
-						logger.Warn("Invalid alpine version",
-							slog.String("version", version),
+						logger.Warnf(fmt.Sprintf("[%s] Invalid alpine version: '%s', on package: '%s', and alpine version: '%s'",
+							cveID,
+							version,
+							pkg.Pkg.Name,
+							alpineVer), slog.String("version", version),
 							slog.String("package", pkg.Pkg.Name),
 							slog.String("alpine_version", alpineVer),
 						)
@@ -111,9 +120,49 @@ func getAlpineSecDBData() map[string][]VersionAndPkg {
 }
 
 // generateAlpineOSV generates the generic PackageInfo package from the information given by alpine advisory
-func generateAlpineOSV(allAlpineSecDb map[string][]VersionAndPkg, alpineOutputPath string) {
-	for cveID, verPkgs := range allAlpineSecDb {
-		pkgInfos := make([]vulns.PackageInfo, 0, len(verPkgs))
+func generateAlpineOSV(allAlpineSecDb map[string][]VersionAndPkg, alpineOutputPath string, allCVEs map[cves.CVEID]cves.Vulnerability) {
+	cveIDs := make([]string, 0, len(allAlpineSecDb))
+	for cveID := range allAlpineSecDb {
+		cveIDs = append(cveIDs, cveID)
+	}
+	sort.Strings(cveIDs)
+
+	for _, cveID := range cveIDs {
+		verPkgs := allAlpineSecDb[cveID]
+		sort.Slice(verPkgs, func(i, j int) bool {
+			if verPkgs[i].Pkg != verPkgs[j].Pkg {
+				return verPkgs[i].Pkg < verPkgs[j].Pkg
+			}
+			if verPkgs[i].AlpineVer != verPkgs[j].AlpineVer {
+				return verPkgs[i].AlpineVer < verPkgs[j].AlpineVer
+			}
+			return verPkgs[i].Ver < verPkgs[j].Ver
+		})
+		cve, ok := allCVEs[cves.CVEID(cveID)]
+		published := time.Time{}
+		details := ""
+		if ok {
+			published = cve.CVE.Published.Time
+			details = cve.CVE.Descriptions[0].Value
+		} else {
+			logger.Warnf("CVE %s not found in cve_jsons", cveID)
+		}
+
+		v := &vulns.Vulnerability{
+			Vulnerability: osvschema.Vulnerability{
+				ID:        "ALPINE-" + cveID,
+				Upstream:  []string{cveID},
+				Modified:  time.Now().UTC(),
+				Published: published,
+				Details:   details,
+				References: []osvschema.Reference{
+					{
+						Type: "ADVISORY",
+						URL:  "https://security.alpinelinux.org/vuln/" + cveID,
+					},
+				},
+			},
+		}
 
 		for _, verPkg := range verPkgs {
 			pkgInfo := vulns.PackageInfo{
@@ -124,16 +173,21 @@ func generateAlpineOSV(allAlpineSecDb map[string][]VersionAndPkg, alpineOutputPa
 				Ecosystem: "Alpine:" + verPkg.AlpineVer,
 				PURL:      "pkg:apk/alpine/" + verPkg.Pkg + "?arch=source",
 			}
-			pkgInfos = append(pkgInfos, pkgInfo)
+			v.AddPkgInfo(pkgInfo)
 		}
 
-		file, err := os.OpenFile(path.Join(alpineOutputPath, cveID+".alpine.json"), os.O_CREATE|os.O_RDWR, 0644)
+		if len(v.Affected) == 0 {
+			logger.Warnf("Skipping %s as no affected versions found.", v.ID)
+			continue
+		}
+
+		file, err := os.OpenFile(path.Join(alpineOutputPath, v.ID+".json"), os.O_CREATE|os.O_RDWR|os.O_TRUNC, 0644)
 		if err != nil {
 			logger.Fatal("Failed to create/write osv output file", slog.Any("err", err))
 		}
 		encoder := json.NewEncoder(file)
 		encoder.SetIndent("", "  ")
-		err = encoder.Encode(&pkgInfos)
+		err = encoder.Encode(v)
 		if err != nil {
 			logger.Fatal("Failed to encode package info output file", slog.Any("err", err))
 		}

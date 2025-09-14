@@ -8,6 +8,7 @@ import (
 	"net/url"
 	"os"
 	"path"
+	"sort"
 	"strings"
 	"time"
 
@@ -279,13 +280,78 @@ func enrichRepoPURLs(v *vulns.Vulnerability) {
 		return
 	}
 	for i := range v.Affected {
-		if v.Affected[i].Package.Purl != "" {
-			continue
+		aff := &v.Affected[i]
+
+		// Ensure base purl is set (unversioned).
+		if aff.Package.Purl == "" {
+			if repo := repoURLFromRanges(aff.Ranges); repo != "" {
+				if p, err := gitpurl.BuildGenericRepoPURL(repo); err == nil && p != "" {
+					aff.Package.Purl = p
+				}
+			}
 		}
-		if repo := repoURLFromRanges(v.Affected[i].Ranges); repo != "" {
-			if p, err := gitpurl.BuildGenericRepoPURL(repo); err == nil && p != "" {
-				v.Affected[i].Package.Purl = p
+
+		// Add versioned repo pURLs when possible.
+		if repo := repoURLFromRanges(aff.Ranges); repo != "" {
+			addVersionedRepoPURLs(aff, repo)
+		}
+	}
+}
+
+var repoTagsCache = make(gitpurl.RepoTagsCache)
+
+// addVersionedRepoPURLs populates affected.database_specific["repo_purls"]
+// with pkg:generic/...@<tag> entries, using affected.versions if available.
+func addVersionedRepoPURLs(aff *osvschema.Affected, repo string) {
+	if aff == nil || repo == "" {
+		return
+	}
+
+	var tags []string
+	if len(aff.Versions) > 0 {
+		tags = append(tags, aff.Versions...)
+	} else if os.Getenv("ENABLE_REPO_PURL_TAGS") == "1" {
+		norm, err := gitpurl.NormalizeRepoTags(repo, repoTagsCache)
+		if err == nil && len(norm) > 0 {
+			for tag := range norm {
+				tags = append(tags, tag)
+			}
+			sort.Strings(tags)
+			const maxTags = 200
+			if len(tags) > maxTags {
+				tags = tags[:maxTags]
 			}
 		}
 	}
+
+	if len(tags) == 0 {
+		return
+	}
+
+	base, err := gitpurl.BuildGenericRepoPURL(repo)
+	if err != nil || base == "" {
+		return
+	}
+
+	// Dedup and format.
+	seen := make(map[string]struct{}, len(tags))
+	vPURLs := make([]string, 0, len(tags))
+	for _, t := range tags {
+		if t == "" {
+			continue
+		}
+		if _, ok := seen[t]; ok {
+			continue
+		}
+		seen[t] = struct{}{}
+		vPURLs = append(vPURLs, base+"@"+t)
+	}
+	if len(vPURLs) == 0 {
+		return
+	}
+
+	if aff.DatabaseSpecific == nil {
+		aff.DatabaseSpecific = map[string]any{}
+	}
+	aff.DatabaseSpecific["repo_purls"] = vPURLs
 }

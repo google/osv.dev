@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"github.com/google/osv/vulnfeeds/cves"
+	gitpurl "github.com/google/osv/vulnfeeds/git"
 	"github.com/google/osv/vulnfeeds/utility/logger"
 	"github.com/google/osv/vulnfeeds/vulns"
 	"github.com/ossf/osv-schema/bindings/go/osvschema"
@@ -183,6 +184,7 @@ func combineIntoOSV(loadedCves map[cves.CVEID]cves.Vulnerability, allParts map[c
 		if cvePartsModifiedTime[cveID].After(cveModified) {
 			convertedCve.Modified = cvePartsModifiedTime[cveID]
 		}
+		enrichRepoPURLs(convertedCve)
 		convertedCves[cveID] = convertedCve
 	}
 	logger.Info("Ended writing OSV files", slog.Int("count", len(convertedCves)))
@@ -257,4 +259,33 @@ func addReference(cveID string, ecosystem string, convertedCve *vulns.Vulnerabil
 	}
 
 	convertedCve.References = append(convertedCve.References, securityReference)
+}
+
+// repoURLFromRanges returns the first repo URL from a GIT-type range, if present.
+func repoURLFromRanges(ranges []osvschema.Range) string {
+	for _, r := range ranges {
+		if r.Type == "GIT" && r.Repo != "" {
+			return r.Repo
+		}
+	}
+
+	return ""
+}
+
+// enrichRepoPURLs sets affected.package.purl to an unversioned pkg:generic repo pURL
+// when a GIT range with a repo URL exists and purl is currently empty.
+func enrichRepoPURLs(v *vulns.Vulnerability) {
+	if v == nil || len(v.Affected) == 0 {
+		return
+	}
+	for i := range v.Affected {
+		if v.Affected[i].Package.Purl != "" {
+			continue
+		}
+		if repo := repoURLFromRanges(v.Affected[i].Ranges); repo != "" {
+			if p, err := gitpurl.BuildGenericRepoPURL(repo); err == nil && p != "" {
+				v.Affected[i].Package.Purl = p
+			}
+		}
+	}
 }

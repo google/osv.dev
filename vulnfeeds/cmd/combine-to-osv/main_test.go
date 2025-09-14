@@ -13,6 +13,7 @@ import (
 
 	"github.com/google/osv/vulnfeeds/cves"
 	"github.com/google/osv/vulnfeeds/utility"
+	"github.com/ossf/osv-schema/bindings/go/osvschema"
 )
 
 func loadTestData2(cveName string) cves.Vulnerability {
@@ -177,5 +178,41 @@ func TestUpdateModifiedDate(t *testing.T) {
 	// Updates the CVE's modified time if any of its parts have a later modification time
 	if combinedOSV[cveID2].Modified != modifiedTime2 {
 		t.Errorf("Wrong modified time, expected: %s, got: %s", time2, combinedOSV["CVE-2022-32746"].Modified)
+	}
+}
+
+func TestRepoURLFromRanges_GIT(t *testing.T) {
+	t.Parallel()
+
+	ranges := []osvschema.Range{
+		{
+			Type: "GIT",
+			Repo: "https://github.com/eclipse-openj9/openj9",
+			Events: []osvschema.Event{
+				{Introduced: "0"},
+			},
+		},
+	}
+	got := repoURLFromRanges(ranges)
+	want := "https://github.com/eclipse-openj9/openj9"
+	if got != want {
+		t.Fatalf("repoURLFromRanges() = %q, want %q", got, want)
+	}
+}
+
+func TestRepoURLFromRanges_NoGIT(t *testing.T) {
+	t.Parallel()
+
+	ranges := []osvschema.Range{
+		{
+			Type: "ECOSYSTEM",
+			Events: []osvschema.Event{
+				{Introduced: "0"},
+				{Fixed: "1.2.3"},
+			},
+		},
+	}
+	if got := repoURLFromRanges(ranges); got != "" {
+		t.Fatalf("repoURLFromRanges() = %q, want empty", got)
 	}
 }

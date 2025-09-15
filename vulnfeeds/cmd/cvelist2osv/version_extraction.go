@@ -195,42 +195,43 @@ func gitVersionsToCommits(cveID cves.CVEID, versionRanges []osvschema.Range, rep
 			continue
 		}
 		for _, vr := range versionRanges {
-			var ic, fc, lac string
+			var introducedCommit, fixedCommit, lastAffectedCommit string
 			var err error
 			for _, ev := range vr.Events {
 				logger.Info("Attempting version resolution", slog.String("cve", string(cveID)), slog.Any("event", ev), slog.String("repo", repo))
 				if ev.Introduced != "" {
 					if ev.Introduced == "0" {
-						ic = "0"
+						introducedCommit = "0"
 					} else {
-						ic, err = git.VersionToCommit(ev.Introduced, normalizedTags)
+						introducedCommit, err = git.VersionToCommit(ev.Introduced, normalizedTags)
 						if err != nil {
 							logger.Warn("Failed to get Git commit for introduced version", slog.String("cve", string(cveID)), slog.String("version", ev.Introduced), slog.String("repo", repo), slog.Any("err", err))
 						} else {
-							logger.Info("Successfully derived commit for introduced version", slog.String("cve", string(cveID)), slog.String("commit", ic), slog.String("version", ev.Introduced))
+							logger.Info("Successfully derived commit for introduced version", slog.String("cve", string(cveID)), slog.String("commit", introducedCommit), slog.String("version", ev.Introduced))
 						}
 					}
 				}
 				if ev.Fixed != "" {
 					// check if fixed commit doesnt already exist?
-					fc, err = git.VersionToCommit(ev.Fixed, normalizedTags)
+					// todo: also check ref links for commits.
+					fixedCommit, err = git.VersionToCommit(ev.Fixed, normalizedTags)
 					if err != nil {
 						logger.Warn("Failed to get Git commit for fixed version", slog.String("cve", string(cveID)), slog.String("version", ev.Fixed), slog.String("repo", repo), slog.Any("err", err))
 					} else {
-						logger.Info("Successfully derived commit for fixed version", slog.String("cve", string(cveID)), slog.String("commit", fc), slog.String("version", ev.Fixed))
+						logger.Info("Successfully derived commit for fixed version", slog.String("cve", string(cveID)), slog.String("commit", fixedCommit), slog.String("version", ev.Fixed))
 					}
 				}
 				if ev.LastAffected != "" {
-					lac, err = git.VersionToCommit(ev.LastAffected, normalizedTags)
+					lastAffectedCommit, err = git.VersionToCommit(ev.LastAffected, normalizedTags)
 					if err != nil {
 						logger.Warn("Failed to get Git commit for last affected version", slog.String("cve", string(cveID)), slog.String("version", ev.LastAffected), slog.String("repo", repo), slog.Any("err", err))
 					} else {
-						logger.Info("Successfully derived commit for last affected version", slog.String("cve", string(cveID)), slog.String("commit", lac), slog.String("version", ev.LastAffected))
+						logger.Info("Successfully derived commit for last affected version", slog.String("cve", string(cveID)), slog.String("commit", lastAffectedCommit), slog.String("version", ev.LastAffected))
 					}
 				}
 			}
-			if fc != "" && ic != "" {
-				newVR := buildVersionRange(ic, "", fc)
+			if fixedCommit != "" && introducedCommit != "" {
+				newVR := buildVersionRange(introducedCommit, "", fixedCommit)
 				newVR.Repo = repo
 				newVR.Type = osvschema.RangeGit
 				newVR.DatabaseSpecific = make(map[string]any)
@@ -238,8 +239,8 @@ func gitVersionsToCommits(cveID cves.CVEID, versionRanges []osvschema.Range, rep
 				newVersionRanges = append(newVersionRanges, newVR)
 
 				continue
-			} else if lac != "" && ic != "" {
-				newVR := buildVersionRange(ic, lac, "")
+			} else if lastAffectedCommit != "" && introducedCommit != "" {
+				newVR := buildVersionRange(introducedCommit, lastAffectedCommit, "")
 				newVR.Repo = repo
 				newVR.Type = osvschema.RangeGit
 				newVR.DatabaseSpecific = make(map[string]any)

@@ -8,7 +8,7 @@
 
 set -e
 
-OSV_PARTS_OUTPUT="parts/alpine"
+OSV_PARTS_OUTPUT="alpine"
 INPUT_BUCKET="${INPUT_GCS_BUCKET:=cve-osv-conversion}"
 OUTPUT_BUCKET="${OUTPUT_GCS_BUCKET:=cve-osv-conversion}"
 CVE_OUTPUT="cve_jsons/"

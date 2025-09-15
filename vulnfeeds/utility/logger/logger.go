@@ -57,6 +57,7 @@ func InitGlobalLogger() {
 			if a.Key == slog.SourceKey {
 				source := a.Value.Any().(*slog.Source)
 				source.File = filepath.Base(source.File)
+
 				return slog.Attr{Key: "sourceLocation", Value: slog.AnyValue(source)}
 			}
 
@@ -79,10 +80,13 @@ func log(level slog.Level, msg string, a []any) {
 	runtime.Callers(3, pcs[:]) // skip [Callers, log, Info/Warn/etc]
 	r := slog.NewRecord(time.Now(), level, msg, pcs[0])
 	r.Add(a...)
+	//nolint:errcheck
 	slogLogger.Handler().Handle(context.Background(), r)
 }
 
 // Info prints an Info level log.
+//
+//nolint:contextcheck,nolintlint
 func Info(msg string, a ...any) {
 	if slogLogger == nil {
 		InitGlobalLogger() // Initialize with defaults if not already done.
@@ -91,6 +95,8 @@ func Info(msg string, a ...any) {
 }
 
 // Warn prints a Warning level log.
+//
+//nolint:contextcheck,nolintlint
 func Warn(msg string, a ...any) {
 	if slogLogger == nil {
 		InitGlobalLogger() // Initialize with defaults if not already done.
@@ -99,6 +105,8 @@ func Warn(msg string, a ...any) {
 }
 
 // Error prints an Error level log.
+//
+//nolint:contextcheck,nolintlint
 func Error(msg string, a ...any) {
 	if slogLogger == nil {
 		InitGlobalLogger() // Initialize with defaults if not already done.
@@ -107,6 +115,8 @@ func Error(msg string, a ...any) {
 }
 
 // Fatal prints an Error level log and then exits the program.
+//
+//nolint:contextcheck,nolintlint
 func Fatal(msg string, a ...any) {
 	if slogLogger == nil {
 		InitGlobalLogger() // Initialize with defaults if not already done.
@@ -116,6 +126,8 @@ func Fatal(msg string, a ...any) {
 }
 
 // Panic prints an Error level log and then panics.
+//
+//nolint:contextcheck,nolintlint
 func Panic(msg string, a ...any) {
 	if slogLogger == nil {
 		InitGlobalLogger() // Initialize with defaults if not already done.

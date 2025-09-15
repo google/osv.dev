@@ -93,10 +93,8 @@ func getAlpineSecDBData() map[string][]VersionAndPkg {
 					cveID = strings.Split(cveID, " ")[0]
 
 					if !validVersion(version) {
-						logger.Warnf(fmt.Sprintf("[%s] Invalid alpine version: '%s', on package: '%s', and alpine version: '%s'",
-							cveID,
-							version,
-							pkg.Pkg.Name,
+						logger.Warn(fmt.Sprintf("[%s] Invalid alpine version: '%s', on package: '%s', and alpine version: '%s'",
+							cveID, version, pkg.Pkg.Name,
 							alpineVer), slog.String("version", version),
 							slog.String("package", pkg.Pkg.Name),
 							slog.String("alpine_version", alpineVer),
@@ -148,7 +146,7 @@ func generateAlpineOSV(allAlpineSecDb map[string][]VersionAndPkg, alpineOutputPa
 			}
 		} else {
 			// TODO: add support for non-CVE reports
-			logger.Warnf("CVE %s not found in cve_jsons", cveID)
+			logger.Warn(fmt.Sprintf("CVE %s not found in cve_jsons", cveID), slog.String("cveID", cveID))
 			continue
 		}
 
@@ -181,7 +179,7 @@ func generateAlpineOSV(allAlpineSecDb map[string][]VersionAndPkg, alpineOutputPa
 		}
 
 		if len(v.Affected) == 0 {
-			logger.Warnf("Skipping %s as no affected versions found.", v.ID)
+			logger.Warn(fmt.Sprintf("Skipping %s as no affected versions found.", v.ID), slog.String("cveID", cveID))
 			continue
 		}
 

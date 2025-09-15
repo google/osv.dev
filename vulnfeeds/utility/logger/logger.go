@@ -2,8 +2,12 @@
 package logger
 
 import (
+	"context"
 	"log/slog"
 	"os"
+	"path/filepath"
+	"runtime"
+	"time"
 )
 
 var slogLogger *slog.Logger
@@ -14,6 +18,10 @@ func InitGlobalLogger() {
 		// Logger is already initialized.
 		return
 	}
+
+	inGKE := os.Getenv("KUBERNETES_SERVICE_HOST") != ""
+	inCloudRun := os.Getenv("K_SERVICE") != ""
+	inCloud := inGKE || inCloudRun
 
 	opts := &slog.HandlerOptions{
 		// AddSource adds the source code position to the log output, which is invaluable for debugging.
@@ -45,14 +53,33 @@ func InitGlobalLogger() {
 			if a.Key == slog.MessageKey {
 				return slog.Attr{Key: "message", Value: a.Value}
 			}
+			// Remap the default "source" key to "sourceLocation", and trim file path to just file name.
+			if a.Key == slog.SourceKey {
+				source := a.Value.Any().(*slog.Source)
+				source.File = filepath.Base(source.File)
+				return slog.Attr{Key: "sourceLocation", Value: slog.AnyValue(source)}
+			}
 
 			return a
 		},
 	}
 
-	// A JSONHandler writing to stdout is the standard and correct way to log in GKE.
-	handler := slog.NewJSONHandler(os.Stdout, opts)
+	var handler slog.Handler
+	if inCloud {
+		// A JSONHandler writing to stdout is the standard and correct way to log in GKE.
+		handler = slog.NewJSONHandler(os.Stdout, opts)
+	} else {
+		handler = slog.NewTextHandler(os.Stdout, opts)
+	}
 	slogLogger = slog.New(handler)
+}
+
+func log(level slog.Level, msg string, a []any) {
+	var pcs [1]uintptr
+	runtime.Callers(3, pcs[:]) // skip [Callers, log, Info/Warn/etc]
+	r := slog.NewRecord(time.Now(), level, msg, pcs[0])
+	r.Add(a...)
+	slogLogger.Handler().Handle(context.Background(), r)
 }
 
 // Info prints an Info level log.
@@ -60,7 +87,7 @@ func Info(msg string, a ...any) {
 	if slogLogger == nil {
 		InitGlobalLogger() // Initialize with defaults if not already done.
 	}
-	slogLogger.Info(msg, a...)
+	log(slog.LevelInfo, msg, a)
 }
 
 // Warn prints a Warning level log.
@@ -68,7 +95,7 @@ func Warn(msg string, a ...any) {
 	if slogLogger == nil {
 		InitGlobalLogger() // Initialize with defaults if not already done.
 	}
-	slogLogger.Warn(msg, a...)
+	log(slog.LevelWarn, msg, a)
 }
 
 // Error prints an Error level log.
@@ -76,7 +103,7 @@ func Error(msg string, a ...any) {
 	if slogLogger == nil {
 		InitGlobalLogger() // Initialize with defaults if not already done.
 	}
-	slogLogger.Error(msg, a...)
+	log(slog.LevelError, msg, a)
 }
 
 // Fatal prints an Error level log and then exits the program.
@@ -84,7 +111,7 @@ func Fatal(msg string, a ...any) {
 	if slogLogger == nil {
 		InitGlobalLogger() // Initialize with defaults if not already done.
 	}
-	slogLogger.Error(msg, a...)
+	log(slog.LevelError, msg, a)
 	os.Exit(1)
 }
 
@@ -93,6 +120,6 @@ func Panic(msg string, a ...any) {
 	if slogLogger == nil {
 		InitGlobalLogger() // Initialize with defaults if not already done.
 	}
-	slogLogger.Error(msg, a...)
+	log(slog.LevelError, msg, a)
 	panic(msg)
 }

@@ -143,9 +143,13 @@ func generateAlpineOSV(allAlpineSecDb map[string][]VersionAndPkg, alpineOutputPa
 		details := ""
 		if ok {
 			published = cve.CVE.Published.Time
-			details = cve.CVE.Descriptions[0].Value
+			if len(cve.CVE.Descriptions) > 0 {
+				details = cve.CVE.Descriptions[0].Value
+			}
 		} else {
+			// TODO: add support for non-CVE reports
 			logger.Warnf("CVE %s not found in cve_jsons", cveID)
+			continue
 		}
 
 		v := &vulns.Vulnerability{

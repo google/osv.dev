@@ -124,7 +124,7 @@ E.g. for PyPI vulnerabilities:
 
 ```bash
 # Or download over HTTP via https://osv-vulnerabilities.storage.googleapis.com/PyPI/all.zip
-gsutil cp gs://osv-vulnerabilities/PyPI/all.zip .
+gcloud storage cp gs://osv-vulnerabilities/PyPI/all.zip .
 ```
 
 ### Downloading recent changes

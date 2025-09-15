@@ -134,11 +134,12 @@ func generateAlpineOSV(allAlpineSecDb map[string][]VersionAndPkg, alpineOutputPa
 			if verPkgs[i].AlpineVer != verPkgs[j].AlpineVer {
 				return verPkgs[i].AlpineVer < verPkgs[j].AlpineVer
 			}
+
 			return verPkgs[i].Ver < verPkgs[j].Ver
 		})
 		cve, ok := allCVEs[cves.CVEID(cveID)]
-		published := time.Time{}
-		details := ""
+		var published time.Time
+		var details string
 		if ok {
 			published = cve.CVE.Published.Time
 			if len(cve.CVE.Descriptions) > 0 {

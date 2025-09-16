@@ -1,6 +1,6 @@
 module github.com/google/osv.dev/go
 
-go 1.23.5
+go 1.24.6
 
 require (
 	cloud.google.com/go/datastore v1.20.0

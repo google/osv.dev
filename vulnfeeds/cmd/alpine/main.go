@@ -25,7 +25,7 @@ import (
 const (
 	alpineURLBase           = "https://secdb.alpinelinux.org/%s/main.json"
 	alpineIndexURL          = "https://secdb.alpinelinux.org/"
-	alpineOutputPathDefault = "alpine"
+	alpineOutputPathDefault = "tmp/alpine"
 	defaultCvePath          = "cve_jsons"
 )
 

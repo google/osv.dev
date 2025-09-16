@@ -138,8 +138,7 @@ func AddVersionInfo(cve cves.CVE5, v *vulns.Vulnerability, repos []string) ([]Ve
 		}
 
 		v.Affected = append(v.Affected, aff)
-		source = append(source, VersionSourceAffected)
-
+		source = append(source, VersionSourceAffected) //nolint:prealloc
 	}
 
 	// If no versions were found so far, fall back to CPEs.

@@ -1047,17 +1047,30 @@ dl.vulnerability-details,
       border: 1px solid #444;
       border-top: none;
       border-radius: 0;
-      
-      .mdc-layout-grid {
-        padding: 0 16px 16px 16px;
-      }
+
       .vulnerability-package-subsection {
         padding: 14px 0;
         border-bottom: 1px dashed #555;
+        
+        &.affected-ranges-subsection {
+          padding-bottom: 4px;
+        }
+
+        h3 {
+          font-size: 16.55px;
+        }
+
+        dl {
+          font-size: 15px;
+        }
 
         &:last-child {
           border-bottom: none;
         }
+      }
+      
+      .mdc-layout-grid {
+        padding: 8px 16px 16px;
       }
     }
   }

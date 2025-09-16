@@ -8,7 +8,7 @@
 
 set -e
 
-OSV_OUTPUT_PATH="/debian-cve-osv"
+OSV_OUTPUT_PATH="debian-cve-osv"
 INPUT_BUCKET="${INPUT_GCS_BUCKET:=cve-osv-conversion}"
 OUTPUT_BUCKET="${OUTPUT_GCS_BUCKET:=debian-osv}"
 CVE_OUTPUT="cve_jsons/"

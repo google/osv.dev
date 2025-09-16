@@ -804,7 +804,7 @@ func LoadAllCVEs(cvePath string) map[cves.CVEID]cves.Vulnerability {
 		for _, item := range nvdcve.Vulnerabilities {
 			result[item.CVE.ID] = item
 		}
-		logger.Info("Loaded CVE "+entry.Name(), slog.String("cve", entry.Name()))
+		logger.Info("Loaded "+entry.Name(), slog.String("cve", entry.Name()))
 		file.Close()
 	}
 

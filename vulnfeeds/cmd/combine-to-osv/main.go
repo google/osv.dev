@@ -25,8 +25,6 @@ const (
 
 	alpineEcosystem          = "Alpine"
 	alpineSecurityTrackerURL = "https://security.alpinelinux.org/vuln"
-	debianEcosystem          = "Debian"
-	debianSecurityTrackerURL = "https://security-tracker.debian.org/tracker"
 )
 
 func main() {
@@ -47,7 +45,7 @@ func main() {
 		logger.Fatal("Can't create output path", slog.Any("err", err))
 	}
 
-	allCves := loadAllCVEs(*cvePath)
+	allCves := vulns.LoadAllCVEs(*cvePath)
 	allParts, cveModifiedMap := loadParts(*partsInputPath)
 	combinedData := combineIntoOSV(allCves, allParts, *cveListPath, cveModifiedMap)
 	writeOSVFile(combinedData, *osvOutputPath)
@@ -166,14 +164,10 @@ func combineIntoOSV(loadedCves map[cves.CVEID]cves.Vulnerability, allParts map[c
 			}
 		}
 
-		addedDebianURL := false
 		addedAlpineURL := false
 		for _, pkgInfo := range allParts[cveID] {
 			convertedCve.AddPkgInfo(pkgInfo)
-			if strings.HasPrefix(pkgInfo.Ecosystem, debianEcosystem) && !addedDebianURL {
-				addReference(string(cveID), debianEcosystem, convertedCve)
-				addedDebianURL = true
-			} else if strings.HasPrefix(pkgInfo.Ecosystem, alpineEcosystem) && !addedAlpineURL {
+			if strings.HasPrefix(pkgInfo.Ecosystem, alpineEcosystem) && !addedAlpineURL {
 				addReference(string(cveID), alpineEcosystem, convertedCve)
 				addedAlpineURL = true
 			}
@@ -209,47 +203,11 @@ func writeOSVFile(osvData map[cves.CVEID]*vulns.Vulnerability, osvOutputPath str
 	logger.Info("Successfully written OSV files", slog.Int("count", len(osvData)))
 }
 
-// loadAllCVEs loads the downloaded CVE's from the NVD database into memory.
-func loadAllCVEs(cvePath string) map[cves.CVEID]cves.Vulnerability {
-	dir, err := os.ReadDir(cvePath)
-	if err != nil {
-		logger.Fatal("Failed to read dir", slog.String("path", cvePath), slog.Any("err", err))
-	}
-
-	result := make(map[cves.CVEID]cves.Vulnerability)
-
-	for _, entry := range dir {
-		if !strings.HasSuffix(entry.Name(), ".json") {
-			continue
-		}
-		file, err := os.Open(path.Join(cvePath, entry.Name()))
-		if err != nil {
-			logger.Fatal("Failed to open CVE JSON", slog.String("path", path.Join(cvePath, entry.Name())), slog.Any("err", err))
-		}
-		var nvdcve cves.CVEAPIJSON20Schema
-		err = json.NewDecoder(file).Decode(&nvdcve)
-		if err != nil {
-			logger.Fatal("Failed to decode JSON", slog.String("file", file.Name()), slog.Any("err", err))
-		}
-
-		for _, item := range nvdcve.Vulnerabilities {
-			result[item.CVE.ID] = item
-		}
-		logger.Info("Loaded CVE "+entry.Name(), slog.String("cve", entry.Name()))
-		file.Close()
-	}
-
-	return result
-}
-
 // addReference adds the related security tracker URL to a given vulnerability's references
 func addReference(cveID string, ecosystem string, convertedCve *vulns.Vulnerability) {
 	securityReference := osvschema.Reference{Type: osvschema.ReferenceAdvisory}
-	switch ecosystem {
-	case alpineEcosystem:
+	if ecosystem == alpineEcosystem {
 		securityReference.URL, _ = url.JoinPath(alpineSecurityTrackerURL, cveID)
-	case debianEcosystem:
-		securityReference.URL, _ = url.JoinPath(debianSecurityTrackerURL, cveID)
 	}
 
 	if securityReference.URL == "" {

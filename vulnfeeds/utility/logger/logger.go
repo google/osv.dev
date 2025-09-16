@@ -22,55 +22,54 @@ func InitGlobalLogger() {
 	inGKE := os.Getenv("KUBERNETES_SERVICE_HOST") != ""
 	inCloudRun := os.Getenv("K_SERVICE") != ""
 	inCloud := inGKE || inCloudRun
-
-	opts := &slog.HandlerOptions{
-		// AddSource adds the source code position to the log output, which is invaluable for debugging.
-		// Google Cloud Logging will automatically parse this into the `sourceLocation` field.
-		AddSource: true,
-		// ReplaceAttr is used to customize log attributes. We use it here to make the output
-		// perfectly align with what Google Cloud Logging expects for structured logs.
-		ReplaceAttr: func(_ []string, a slog.Attr) slog.Attr {
-			// Remap the default "level" key to "severity" for Google Cloud Logging.
-			if a.Key == slog.LevelKey {
-				level := a.Value.Any().(slog.Level)
-				var levelStr string
-				switch level {
-				case slog.LevelDebug:
-					levelStr = "DEBUG"
-				case slog.LevelInfo:
-					levelStr = "INFO"
-				case slog.LevelWarn:
-					levelStr = "WARNING"
-				case slog.LevelError:
-					levelStr = "ERROR"
-				default:
-					levelStr = "DEFAULT"
-				}
-
-				return slog.String("severity", levelStr)
-			}
-			// Remap the default "msg" key to "message" for better compatibility.
-			if a.Key == slog.MessageKey {
-				return slog.Attr{Key: "message", Value: a.Value}
-			}
-			// Remap the default "source" key to "sourceLocation", and trim file path to just file name.
-			if a.Key == slog.SourceKey {
-				source := a.Value.Any().(*slog.Source)
-				source.File = filepath.Base(source.File)
-
-				return slog.Attr{Key: "sourceLocation", Value: slog.AnyValue(source)}
-			}
-
-			return a
-		},
-	}
-
 	var handler slog.Handler
 	if inCloud {
+		opts := &slog.HandlerOptions{
+			// AddSource adds the source code position to the log output, which is invaluable for debugging.
+			// Google Cloud Logging will automatically parse this into the `sourceLocation` field.
+			AddSource: true,
+			// ReplaceAttr is used to customize log attributes. We use it here to make the output
+			// perfectly align with what Google Cloud Logging expects for structured logs.
+			ReplaceAttr: func(_ []string, a slog.Attr) slog.Attr {
+				// Remap the default "level" key to "severity" for Google Cloud Logging.
+				if a.Key == slog.LevelKey {
+					level := a.Value.Any().(slog.Level)
+					var levelStr string
+					switch level {
+					case slog.LevelDebug:
+						levelStr = "DEBUG"
+					case slog.LevelInfo:
+						levelStr = "INFO"
+					case slog.LevelWarn:
+						levelStr = "WARNING"
+					case slog.LevelError:
+						levelStr = "ERROR"
+					default:
+						levelStr = "DEFAULT"
+					}
+
+					return slog.String("severity", levelStr)
+				}
+				// Remap the default "msg" key to "message" for better compatibility.
+				if a.Key == slog.MessageKey {
+					return slog.Attr{Key: "message", Value: a.Value}
+				}
+				// Remap the default "source" key to "sourceLocation", and trim file path to just file name.
+				if a.Key == slog.SourceKey {
+					source := a.Value.Any().(*slog.Source)
+					source.File = filepath.Base(source.File)
+
+					return slog.Attr{Key: "sourceLocation", Value: slog.AnyValue(source)}
+				}
+
+				return a
+			},
+		}
+
 		// A JSONHandler writing to stdout is the standard and correct way to log in GKE.
 		handler = slog.NewJSONHandler(os.Stdout, opts)
 	} else {
-		handler = slog.NewTextHandler(os.Stdout, opts)
+		handler = newLocalHandler(os.Stdout)
 	}
 	slogLogger = slog.New(handler)
 }
@@ -82,6 +81,16 @@ func log(level slog.Level, msg string, a []any) {
 	r.Add(a...)
 	//nolint:errcheck
 	slogLogger.Handler().Handle(context.Background(), r)
+}
+
+// Debug prints a Debug level log.
+//
+//nolint:contextcheck,nolintlint
+func Debug(msg string, a ...any) {
+	if slogLogger == nil {
+		InitGlobalLogger() // Initialize with defaults if not already done.
+	}
+	log(slog.LevelDebug, msg, a)
 }
 
 // Info prints an Info level log.

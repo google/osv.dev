@@ -998,14 +998,38 @@ dl.vulnerability-details,
       }
     }
 
-    .ecosystem-content-panel {
-      padding: 8px 0;
+.ecosystem-content-panel {
+      position: relative;
+      padding: 8px 0 8px 16px; 
       border-bottom: 2px solid $osv-grey-800;
       margin-bottom: 8px;
-    }
 
+      // The vertical "tree" line
+      &::before {
+        content: '';
+        position: absolute;
+        left: 8px; 
+        top: 0;
+        bottom: 0;
+        width: 1px;
+        background: #555;
+      }
+    }
+    
     .package-accordion {
+      position: relative;
       margin-bottom: 8px;
+
+      // The horizontal "connector" line
+      &::before {
+        content: '';
+        position: absolute;
+        left: -8px;
+        width: 8px;
+        top: 20px;
+        height: 1px;
+        background: #555;
+      }
     }
 
     .package-accordion h3.package-name-title {

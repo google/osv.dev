@@ -4,14 +4,15 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"log/slog"
 	"os"
 	"sync"
 	"time"
 
 	"cloud.google.com/go/datastore"
-	"cloud.google.com/go/logging"
 	"cloud.google.com/go/pubsub"
 	"cloud.google.com/go/storage"
+	"github.com/google/osv.dev/go/logger"
 	"github.com/google/osv.dev/go/models"
 	"google.golang.org/api/iterator"
 )
@@ -46,7 +47,9 @@ func getRecordCheckerData(ctx context.Context, cl *datastore.Client) (recordChec
 	if err != nil && !errors.Is(err, datastore.ErrNoSuchEntity) {
 		return data, err
 	}
-	if err == nil {
+	if errors.Is(err, datastore.ErrNoSuchEntity) {
+		logger.Info("no prior record checker last run time found")
+	} else {
 		data.lastRun = lr.Value
 	}
 
@@ -56,7 +59,9 @@ func getRecordCheckerData(ctx context.Context, cl *datastore.Client) (recordChec
 	if err != nil && !errors.Is(err, datastore.ErrNoSuchEntity) {
 		return data, err
 	}
-	if err == nil {
+	if errors.Is(err, datastore.ErrNoSuchEntity) {
+		logger.Info("no prior record checker invalid records list found")
+	} else {
 		data.invalidRecords = ir.Value
 	}
 
@@ -105,7 +110,7 @@ func run(ctx context.Context, env *appEnv) error {
 	go func() {
 		defer resultsWg.Done()
 		for result := range resultsChan {
-			if handleResult(ctx, env.logger, env.topic, result) {
+			if handleResult(ctx, env.topic, result) {
 				newInvalid = append(newInvalid, result.ID)
 			}
 		}
@@ -118,13 +123,14 @@ func run(ctx context.Context, env *appEnv) error {
 		go func() {
 			defer workerWg.Done()
 			for task := range tasksChan {
-				checkRecord(ctx, env.logger, env.ds, env.bucket, task.ID, task.Vuln, resultsChan)
+				checkRecord(ctx, env.ds, env.bucket, task.ID, task.Vuln, resultsChan)
 			}
 		}()
 	}
 
 	// Queue all invalid records from the previous run.
 	for _, id := range rcData.invalidRecords {
+		logger.Debug("checking previously invalid record", slog.String("id", id))
 		tasksChan <- struct {
 			ID   string
 			Vuln *models.Vulnerability
@@ -147,6 +153,7 @@ func run(ctx context.Context, env *appEnv) error {
 		if err != nil {
 			return fmt.Errorf("failed to query vulnerabilities: %w", err)
 		}
+		logger.Debug("checking newly modified record", slog.String("id", key.Name))
 		tasksChan <- struct {
 			ID   string
 			Vuln *models.Vulnerability
@@ -170,29 +177,20 @@ func run(ctx context.Context, env *appEnv) error {
 	return nil
 }
 
-func handleResult(ctx context.Context, logger *logging.Logger, topic *pubsub.Topic, result checkRecordResult) bool {
+func handleResult(ctx context.Context, topic *pubsub.Topic, result checkRecordResult) bool {
 	wasInvalid := false
 	if result.Err != nil {
-		logger.Log(logging.Entry{
-			Severity: logging.Error,
-			Payload:  fmt.Sprintf("failed to process record %s: %v", result.ID, result.Err),
-		})
+		logger.Error("failed to process record", slog.String("id", result.ID), slog.Any("err", result.Err))
 	}
 	if result.NeedsRetry {
 		wasInvalid = true
 		msg := pubsub.Message{
 			Attributes: map[string]string{"type": "gcs_missing", "id": result.ID},
 		}
-		logger.Log(logging.Entry{
-			Severity: logging.Info,
-			Payload:  fmt.Sprintf("Publishing gcs_missing for %s", result.ID),
-		})
+		logger.Info("publishing gcs_missing message", slog.String("id", result.ID))
 		_, err := topic.Publish(ctx, &msg).Get(ctx)
 		if err != nil {
-			logger.Log(logging.Entry{
-				Severity: logging.Error,
-				Payload:  fmt.Sprintf("failed to publish message for %s: %v", result.ID, err),
-			})
+			logger.Error("failed publishing message", slog.String("id", result.ID), slog.Any("err", err))
 		}
 	}
 	return wasInvalid
@@ -200,7 +198,6 @@ func handleResult(ctx context.Context, logger *logging.Logger, topic *pubsub.Top
 
 // appEnv holds the clients and other environment-specific resources.
 type appEnv struct {
-	logger *logging.Logger
 	bucket *storage.BucketHandle
 	ds     *datastore.Client
 	topic  *pubsub.Topic
@@ -208,26 +205,20 @@ type appEnv struct {
 
 // setup initializes the application environment.
 func setup(ctx context.Context) (*appEnv, error) {
+	logger.InitGlobalLogger()
 	projectID, ok := os.LookupEnv("GOOGLE_CLOUD_PROJECT")
 	if !ok {
 		return nil, errors.New("GOOGLE_CLOUD_PROJECT must be set")
 	}
 
-	logger, err := setupLogging(ctx, projectID)
-	if err != nil {
-		return nil, fmt.Errorf("failed to setup logging: %w", err)
-	}
-
 	bucketName, ok := os.LookupEnv("OSV_VULNERABILITIES_BUCKET")
 	if !ok {
 		err := errors.New("OSV_VULNERABILITIES_BUCKET must be set")
-		logger.Log(logging.Entry{Severity: logging.Critical, Payload: err.Error()})
 		return nil, err
 	}
 	stClient, err := storage.NewClient(ctx)
 	if err != nil {
 		err = fmt.Errorf("failed to create storage client: %w", err)
-		logger.Log(logging.Entry{Severity: logging.Critical, Payload: err.Error()})
 		return nil, err
 	}
 	bucket := stClient.Bucket(bucketName)
@@ -235,32 +226,21 @@ func setup(ctx context.Context) (*appEnv, error) {
 	dsClient, err := datastore.NewClient(ctx, projectID)
 	if err != nil {
 		err = fmt.Errorf("failed to create datastore client: %w", err)
-		logger.Log(logging.Entry{Severity: logging.Critical, Payload: err.Error()})
 		return nil, err
 	}
 
 	pubsubClient, err := pubsub.NewClient(ctx, projectID)
 	if err != nil {
 		err = fmt.Errorf("failed to create pubsub client: %w", err)
-		logger.Log(logging.Entry{Severity: logging.Critical, Payload: err.Error()})
 		return nil, err
 	}
 	topic := pubsubClient.Topic(pubsubTopic)
 
 	return &appEnv{
-		logger: logger,
 		bucket: bucket,
 		ds:     dsClient,
 		topic:  topic,
 	}, nil
-}
-
-func setupLogging(ctx context.Context, projectID string) (*logging.Logger, error) {
-	client, err := logging.NewClient(ctx, projectID)
-	if err != nil {
-		return nil, fmt.Errorf("failed to create logging client: %w", err)
-	}
-	return client.Logger("record_checker"), nil
 }
 
 type checkRecordResult struct {
@@ -269,7 +249,7 @@ type checkRecordResult struct {
 	Err        error
 }
 
-func checkRecord(ctx context.Context, logger *logging.Logger, cl *datastore.Client, bucket *storage.BucketHandle, id string, vuln *models.Vulnerability, out chan<- checkRecordResult) {
+func checkRecord(ctx context.Context, cl *datastore.Client, bucket *storage.BucketHandle, id string, vuln *models.Vulnerability, out chan<- checkRecordResult) {
 	res := checkRecordResult{ID: id}
 	// Send the result when the function returns.
 	defer func() { out <- res }()
@@ -311,11 +291,11 @@ func main() {
 	ctx := context.Background()
 	env, err := setup(ctx)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "failed to setup application: %v\n", err)
-		os.Exit(1)
+		logger.Fatal("failed setting up environment", slog.Any("err", err))
 	}
+	logger.Info("starting record checker")
 	if err := run(ctx, env); err != nil {
-		fmt.Fprintf(os.Stderr, "failed to run application: %v\n", err)
-		os.Exit(1)
+		logger.Fatal("failed running record checker", slog.Any("err", err))
 	}
+	logger.Info("record checker done")
 }

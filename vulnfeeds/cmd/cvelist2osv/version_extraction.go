@@ -76,7 +76,7 @@ func toVersionRangeType(s string) VersionRangeType {
 // It returns the source of the version information and a slice of notes detailing the extraction process.
 func AddVersionInfo(cve cves.CVE5, v *vulns.Vulnerability, repos []string) ([]VersionSource, []string) {
 	var notes []string
-	var source []VersionSource
+	var source []VersionSource //nolint:prealloc
 	gotVersions := false
 
 	// Combine 'affected' entries from both CNA and ADP containers.
@@ -138,7 +138,7 @@ func AddVersionInfo(cve cves.CVE5, v *vulns.Vulnerability, repos []string) ([]Ve
 		}
 
 		v.Affected = append(v.Affected, aff)
-		source = append(source, VersionSourceAffected) //nolint:prealloc
+		source = append(source, VersionSourceAffected)
 	}
 
 	// If no versions were found so far, fall back to CPEs.

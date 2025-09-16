@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log/slog"
 	"os"
+	"strconv"
 	"sync"
 	"time"
 
@@ -19,7 +20,9 @@ import (
 
 const (
 	pubsubTopic = "failed-tasks"
-	numWorkers  = 50
+	// defaultNumWorkers is the default number of concurrent workers to use.
+	// This can be overridden by setting the NUM_WORKERS environment variable.
+	defaultNumWorkers = 50
 
 	jobDataKind           = "JobData"
 	JobDataLastRun        = "record_checker_last_run"
@@ -44,11 +47,12 @@ func getRecordCheckerData(ctx context.Context, cl *datastore.Client) (recordChec
 	lastRunKey := datastore.NameKey(jobDataKind, JobDataLastRun, nil)
 	var lr jobDataLastRunEntity
 	err := cl.Get(ctx, lastRunKey, &lr)
-	if err != nil && !errors.Is(err, datastore.ErrNoSuchEntity) {
-		return data, err
-	}
-	if errors.Is(err, datastore.ErrNoSuchEntity) {
-		logger.Info("no prior record checker last run time found")
+	if err != nil {
+		if errors.Is(err, datastore.ErrNoSuchEntity) {
+			logger.Info("no prior record checker last run time found")
+		} else {
+			return data, fmt.Errorf("failed to get %s: %w", JobDataLastRun, err)
+		}
 	} else {
 		data.lastRun = lr.Value
 	}
@@ -56,11 +60,12 @@ func getRecordCheckerData(ctx context.Context, cl *datastore.Client) (recordChec
 	invalidRecordsKey := datastore.NameKey(jobDataKind, JobDataInvalidRecords, nil)
 	var ir jobDataInvalidRecordsEntity
 	err = cl.Get(ctx, invalidRecordsKey, &ir)
-	if err != nil && !errors.Is(err, datastore.ErrNoSuchEntity) {
-		return data, err
-	}
-	if errors.Is(err, datastore.ErrNoSuchEntity) {
-		logger.Info("no prior record checker invalid records list found")
+	if err != nil {
+		if errors.Is(err, datastore.ErrNoSuchEntity) {
+			logger.Info("no prior record checker invalid records list found")
+		} else {
+			return data, fmt.Errorf("failed to get %s: %w", JobDataInvalidRecords, err)
+		}
 	} else {
 		data.invalidRecords = ir.Value
 	}
@@ -74,20 +79,25 @@ func writeRecordCheckData(ctx context.Context, cl *datastore.Client, data record
 		lr := jobDataLastRunEntity{Value: data.lastRun}
 		_, err := tx.Put(lastRunKey, &lr)
 		if err != nil {
-			return err
+			return fmt.Errorf("failed to write %s: %w", JobDataLastRun, err)
 		}
 
 		invalidRecordsKey := datastore.NameKey(jobDataKind, JobDataInvalidRecords, nil)
 		ir := jobDataInvalidRecordsEntity{Value: data.invalidRecords}
 		_, err = tx.Put(invalidRecordsKey, &ir)
 		if err != nil {
-			return err
+			return fmt.Errorf("failed to write %s: %w", JobDataInvalidRecords, err)
 		}
 
 		return nil
 	})
 
 	return err
+}
+
+type checkTask struct {
+	ID   string
+	Vuln *models.Vulnerability
 }
 
 // run is the main application logic
@@ -97,10 +107,7 @@ func run(ctx context.Context, env *appEnv) error {
 		return fmt.Errorf("failed to get prior run data: %w", err)
 	}
 
-	tasksChan := make(chan struct {
-		ID   string
-		Vuln *models.Vulnerability
-	})
+	tasksChan := make(chan checkTask)
 	resultsChan := make(chan checkRecordResult)
 
 	// Start the results handler
@@ -118,7 +125,7 @@ func run(ctx context.Context, env *appEnv) error {
 
 	// Start the worker pool
 	var workerWg sync.WaitGroup
-	for range numWorkers {
+	for range env.numWorkers {
 		workerWg.Add(1)
 		go func() {
 			defer workerWg.Done()
@@ -131,10 +138,7 @@ func run(ctx context.Context, env *appEnv) error {
 	// Queue all invalid records from the previous run.
 	for _, id := range rcData.invalidRecords {
 		logger.Debug("checking previously invalid record", slog.String("id", id))
-		tasksChan <- struct {
-			ID   string
-			Vuln *models.Vulnerability
-		}{ID: id}
+		tasksChan <- checkTask{ID: id}
 	}
 
 	// Queue all new records.
@@ -154,10 +158,7 @@ func run(ctx context.Context, env *appEnv) error {
 			return fmt.Errorf("failed to query vulnerabilities: %w", err)
 		}
 		logger.Debug("checking newly modified record", slog.String("id", key.Name))
-		tasksChan <- struct {
-			ID   string
-			Vuln *models.Vulnerability
-		}{ID: key.Name, Vuln: &vuln}
+		tasksChan <- checkTask{ID: key.Name, Vuln: &vuln}
 	}
 	// Wait for all tasks to finish processing
 	close(tasksChan)
@@ -198,9 +199,10 @@ func handleResult(ctx context.Context, topic *pubsub.Topic, result checkRecordRe
 
 // appEnv holds the clients and other environment-specific resources.
 type appEnv struct {
-	bucket *storage.BucketHandle
-	ds     *datastore.Client
-	topic  *pubsub.Topic
+	bucket     *storage.BucketHandle
+	ds         *datastore.Client
+	topic      *pubsub.Topic
+	numWorkers int
 }
 
 // setup initializes the application environment.
@@ -236,10 +238,20 @@ func setup(ctx context.Context) (*appEnv, error) {
 	}
 	topic := pubsubClient.Topic(pubsubTopic)
 
+	numWorkers := defaultNumWorkers
+	if numWorkersStr, ok := os.LookupEnv("NUM_WORKERS"); ok {
+		if i, err := strconv.Atoi(numWorkersStr); err == nil {
+			numWorkers = i
+		} else {
+			logger.Warn("invalid NUM_WORKERS value, using default", slog.String("value", numWorkersStr))
+		}
+	}
+
 	return &appEnv{
-		bucket: bucket,
-		ds:     dsClient,
-		topic:  topic,
+		bucket:     bucket,
+		ds:         dsClient,
+		topic:      topic,
+		numWorkers: numWorkers,
 	}, nil
 }
 

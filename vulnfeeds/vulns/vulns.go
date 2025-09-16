@@ -20,6 +20,7 @@ import (
 	"encoding/json"
 	"errors"
 	"io"
+	"log/slog"
 	"net/url"
 	"os"
 	"path"
@@ -372,7 +373,7 @@ func ClassifyReferenceLink(link string, tag string) osvschema.ReferenceType {
 
 	// Check if URL is git repo
 	if strings.HasPrefix(link, "git://") || strings.HasSuffix(link, ".git") {
-		return osvschema.ReferenceGit
+		return osvschema.ReferencePackage
 	}
 
 	u, err := url.Parse(link)
@@ -781,7 +782,7 @@ func CheckQuality(text string) QualityCheck {
 func LoadAllCVEs(cvePath string) map[cves.CVEID]cves.Vulnerability {
 	dir, err := os.ReadDir(cvePath)
 	if err != nil {
-		logger.Fatalf("Failed to read dir %s: %s", cvePath, err)
+		logger.Fatal("Failed to read dir", slog.String("path", cvePath), slog.Any("err", err))
 	}
 
 	result := make(map[cves.CVEID]cves.Vulnerability)
@@ -792,18 +793,18 @@ func LoadAllCVEs(cvePath string) map[cves.CVEID]cves.Vulnerability {
 		}
 		file, err := os.Open(path.Join(cvePath, entry.Name()))
 		if err != nil {
-			logger.Fatalf("Failed to open CVE JSON %q: %s", path.Join(cvePath, entry.Name()), err)
+			logger.Fatal("Failed to open CVE JSON", slog.String("path", path.Join(cvePath, entry.Name())), slog.Any("err", err))
 		}
 		var nvdcve cves.CVEAPIJSON20Schema
 		err = json.NewDecoder(file).Decode(&nvdcve)
 		if err != nil {
-			logger.Fatalf("Failed to decode JSON in %q: %s", file.Name(), err)
+			logger.Fatal("Failed to decode JSON", slog.String("file", file.Name()), slog.Any("err", err))
 		}
 
 		for _, item := range nvdcve.Vulnerabilities {
 			result[item.CVE.ID] = item
 		}
-		logger.Infof("Loaded CVE: %s", entry.Name())
+		logger.Info("Loaded CVE "+entry.Name(), slog.String("cve", entry.Name()))
 		file.Close()
 	}
 

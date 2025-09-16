@@ -1,4 +1,4 @@
-# Copyright 2021 Google LLC
+# Copyright 2025 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -22,12 +22,24 @@ import typing
 from ..third_party.univers.alpine import AlpineLinuxVersion
 
 from . import config
-from .helper_base import Ecosystem, EnumerateError
+from .ecosystems_base import EnumerableEcosystem, EnumerateError
+from .ecosystems_base import OrderedEcosystem
 from .. import repos
 from ..cache import cached
 
 
-class Alpine(Ecosystem):
+class APK(OrderedEcosystem):
+  """Alpine Package Keeper ecosystem helper."""
+
+  def sort_key(self, version):
+    if not AlpineLinuxVersion.is_valid(version):
+      # If version is not valid, it is most likely an invalid input
+      # version then sort it to the last/largest element
+      return AlpineLinuxVersion('999999')
+    return AlpineLinuxVersion(version)
+
+
+class Alpine(APK, EnumerableEcosystem):
   """
   Alpine packages ecosystem
   
@@ -39,25 +51,18 @@ class Alpine(Ecosystem):
   # Use github mirror which supports more bandwidth.
   _APORTS_GIT_URL = 'https://github.com/alpinelinux/aports.git'
   _BRANCH_SUFFIX = '-stable'
-  alpine_release_ver: str
   _GIT_REPO_PATH = 'version_enum/aports/'
   # Sometimes (2 or 3 packages) APKBUILD files are a bash script and version
   # is actually stored in variables. _kver is the common variable name.
   _PKGVER_ALIASES = ('+pkgver=', '+_kver=')
   _PKGREL_ALIASES = ('+pkgrel=', '+_krel=')
 
-  def __init__(self, alpine_release_ver: str):
-    self.alpine_release_ver = alpine_release_ver
+  @property
+  def alpine_release_ver(self) -> str:
+    return self.suffix if self.suffix is not None else ''
 
   def get_branch_name(self) -> str:
     return self.alpine_release_ver.lstrip('v') + self._BRANCH_SUFFIX
-
-  def sort_key(self, version):
-    if not AlpineLinuxVersion.is_valid(version):
-      # If version is not valid, it is most likely an invalid input
-      # version then sort it to the last/largest element
-      return AlpineLinuxVersion('999999')
-    return AlpineLinuxVersion(version)
 
   @staticmethod
   def _process_git_log(output: str) -> list:

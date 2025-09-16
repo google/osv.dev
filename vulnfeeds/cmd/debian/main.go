@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"flag"
 	"fmt"
+	"log/slog"
 
 	"net/http"
 	"os"
@@ -31,40 +32,39 @@ const (
 )
 
 func main() {
-	var logCleanup = logger.InitGlobalLogger("debian-osv", false)
-	defer logCleanup()
+	logger.InitGlobalLogger()
 
 	debianOutputPath := flag.String("output_path", debianOutputPathDefault, "Path to output OSV files.")
 	flag.Parse()
 
 	err := os.MkdirAll(*debianOutputPath, 0755)
 	if err != nil {
-		logger.Fatalf("Can't create output path: %s", err)
+		logger.Fatal("Can't create output path", slog.Any("err", err))
 	}
 
 	debianData, err := downloadDebianSecurityTracker()
 	if err != nil {
-		logger.Fatalf("Failed to download/parse Debian Security Tracker json file: %s", err)
+		logger.Fatal("Failed to download/parse Debian Security Tracker json file", slog.Any("err", err))
 	}
 
 	debianReleaseMap, err := getDebianReleaseMap()
 	if err != nil {
-		logger.Fatalf("Failed to get Debian distro info data: %s", err)
+		logger.Fatal("Failed to get Debian distro info data", slog.Any("err", err))
 	}
 
 	allCVEs := vulns.LoadAllCVEs(defaultCvePath)
 	osvCves := generateOSVFromDebianTracker(debianData, debianReleaseMap, allCVEs)
 
 	if err = writeToOutput(osvCves, *debianOutputPath); err != nil {
-		logger.Fatalf("Failed to write OSV output file: %s", err)
+		logger.Fatal("Failed to write OSV output file", slog.Any("err", err))
 	}
 
-	logger.Infof("Debian CVE conversion succeeded.")
+	logger.Info("Debian CVE conversion succeeded.")
 }
 
 // generateOSVFromDebianTracker converts Debian Security Tracker entries to OSV format.
 func generateOSVFromDebianTracker(debianData DebianSecurityTrackerData, debianReleaseMap map[string]string, allCVEs map[cves.CVEID]cves.Vulnerability) map[string]*vulns.Vulnerability {
-	logger.Infof("Converting Debian Security Tracker data to OSV.")
+	logger.Info("Converting Debian Security Tracker data to OSV.")
 	osvCves := make(map[string]*vulns.Vulnerability)
 
 	// Sorts packages to ensure results remain consistent between runs.
@@ -196,10 +196,10 @@ func getDebianReleaseMap() (map[string]string, error) {
 }
 
 func writeToOutput(osvCves map[string]*vulns.Vulnerability, debianOutputPath string) error {
-	logger.Infof("Writing OSV files to the output.")
+	logger.Info("Writing OSV files to the output.")
 	for cveID, osv := range osvCves {
 		if len(osv.Affected) == 0 {
-			logger.Warnf("Skipping DEBIAN-%s as no affected versions found.", cveID)
+			logger.Warn("Skipping DEBIAN-%s as no affected versions found.", cveID)
 			continue
 		}
 		file, err := os.OpenFile(path.Join(debianOutputPath, "DEBIAN-"+cveID+".json"), os.O_CREATE|os.O_RDWR|os.O_TRUNC, 0644)
@@ -241,7 +241,7 @@ func downloadDebianSecurityTracker() (DebianSecurityTrackerData, error) {
 		return nil, err
 	}
 
-	logger.Infof("Successfully downloaded Debian Security Tracker Data.")
+	logger.Info("Successfully downloaded Debian Security Tracker Data")
 
 	return decodedDebianData, err
 }

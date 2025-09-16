@@ -494,5 +494,5 @@ func TestCVEIsDisputed(t *testing.T) {
 
 func TestNVD2(t *testing.T) {
 	cve := loadTestData2("CVE-2023-4863")
-	t.Logf("Loaded CVE: %#v", cve)
+	t.Logf("Loaded: %#v", cve)
 }

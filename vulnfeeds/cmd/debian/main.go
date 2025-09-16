@@ -198,11 +198,12 @@ func getDebianReleaseMap() (map[string]string, error) {
 func writeToOutput(osvCves map[string]*vulns.Vulnerability, debianOutputPath string) error {
 	logger.Info("Writing OSV files to the output.")
 	for cveID, osv := range osvCves {
+		debianID := "DEBIAN-" + cveID
 		if len(osv.Affected) == 0 {
-			logger.Warn("Skipping DEBIAN-%s as no affected versions found.", cveID)
+			logger.Warn(fmt.Sprintf("Skipping %s as no affected versions found.", debianID), slog.String("id", debianID))
 			continue
 		}
-		file, err := os.OpenFile(path.Join(debianOutputPath, "DEBIAN-"+cveID+".json"), os.O_CREATE|os.O_RDWR|os.O_TRUNC, 0644)
+		file, err := os.OpenFile(path.Join(debianOutputPath, debianID+".json"), os.O_CREATE|os.O_RDWR|os.O_TRUNC, 0644)
 		if err != nil {
 			return err
 		}

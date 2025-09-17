@@ -1001,9 +1001,7 @@ dl.vulnerability-details,
 
 .ecosystem-content-panel {
       position: relative;
-      padding: 8px 0 8px 16px; 
-      border-bottom: 2px solid $osv-grey-800;
-      margin-bottom: 8px;
+      padding: 8px 0 16px 16px;
 
       // The vertical "tree" line
       &::before {

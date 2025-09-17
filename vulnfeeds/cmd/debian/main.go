@@ -4,6 +4,7 @@ package main
 import (
 	"encoding/csv"
 	"encoding/json"
+	"flag"
 	"fmt"
 	"log/slog"
 
@@ -12,15 +13,20 @@ import (
 	"path"
 	"sort"
 	"strconv"
+	"strings"
+	"time"
 
+	"github.com/google/osv/vulnfeeds/cves"
 	"github.com/google/osv/vulnfeeds/faulttolerant"
 	"github.com/google/osv/vulnfeeds/models"
 	"github.com/google/osv/vulnfeeds/utility/logger"
 	"github.com/google/osv/vulnfeeds/vulns"
+	"github.com/ossf/osv-schema/bindings/go/osvschema"
 )
 
 const (
-	debianOutputPathDefault  = "parts/debian"
+	defaultCvePath           = "cve_jsons"
+	debianOutputPathDefault  = "debian-cve-osv"
 	debianDistroInfoURL      = "https://debian.pages.debian.net/distro-info-data/debian.csv"
 	debianSecurityTrackerURL = "https://security-tracker.debian.org/tracker/data/json"
 )
@@ -28,7 +34,10 @@ const (
 func main() {
 	logger.InitGlobalLogger()
 
-	err := os.MkdirAll(debianOutputPathDefault, 0755)
+	debianOutputPath := flag.String("output_path", debianOutputPathDefault, "Path to output OSV files.")
+	flag.Parse()
+
+	err := os.MkdirAll(*debianOutputPath, 0755)
 	if err != nil {
 		logger.Fatal("Can't create output path", slog.Any("err", err))
 	}
@@ -43,12 +52,100 @@ func main() {
 		logger.Fatal("Failed to get Debian distro info data", slog.Any("err", err))
 	}
 
-	cvePkgInfos := generateDebianSecurityTrackerOSV(debianData, debianReleaseMap)
-	if err = writeToOutput(cvePkgInfos); err != nil {
+	allCVEs := vulns.LoadAllCVEs(defaultCvePath)
+	osvCves := generateOSVFromDebianTracker(debianData, debianReleaseMap, allCVEs)
+
+	if err = writeToOutput(osvCves, *debianOutputPath); err != nil {
 		logger.Fatal("Failed to write OSV output file", slog.Any("err", err))
 	}
 
-	logger.Info("Debian CVE conversion succeeded")
+	logger.Info("Debian CVE conversion succeeded.")
+}
+
+// generateOSVFromDebianTracker converts Debian Security Tracker entries to OSV format.
+func generateOSVFromDebianTracker(debianData DebianSecurityTrackerData, debianReleaseMap map[string]string, allCVEs map[cves.CVEID]cves.Vulnerability) map[string]*vulns.Vulnerability {
+	logger.Info("Converting Debian Security Tracker data to OSV.")
+	osvCves := make(map[string]*vulns.Vulnerability)
+
+	// Sorts packages to ensure results remain consistent between runs.
+	pkgNames := make([]string, 0, len(debianData))
+	for name := range debianData {
+		pkgNames = append(pkgNames, name)
+	}
+	sort.Strings(pkgNames)
+
+	// Sorts releases to ensure pkgInfos remain consistent between runs.
+	releaseNames := make([]string, 0, len(debianReleaseMap))
+	for k := range debianReleaseMap {
+		releaseNames = append(releaseNames, k)
+	}
+
+	sort.Slice(releaseNames, func(i, j int) bool {
+		vi, _ := strconv.ParseFloat(debianReleaseMap[releaseNames[i]], 64)
+		vj, _ := strconv.ParseFloat(debianReleaseMap[releaseNames[j]], 64)
+
+		return vi < vj
+	})
+
+	for _, pkgName := range pkgNames {
+		pkg := debianData[pkgName]
+		for cveID, cveData := range pkg {
+			// Debian Security Tracker has some 'TEMP-' Records we don't want to convert
+			if !strings.HasPrefix(cveID, "CVE") {
+				continue
+			}
+			v, ok := osvCves[cveID]
+			if !ok {
+				v = &vulns.Vulnerability{
+					Vulnerability: osvschema.Vulnerability{
+						ID:        "DEBIAN-" + cveID,
+						Upstream:  []string{cveID},
+						Modified:  time.Now().UTC(),
+						Published: allCVEs[cves.CVEID(cveID)].CVE.Published.Time,
+						Details:   cveData.Description,
+						References: []osvschema.Reference{
+							{
+								Type: "ADVISORY",
+								URL:  "https://security-tracker.debian.org/tracker/" + cveID,
+							},
+						},
+					},
+				}
+				osvCves[cveID] = v
+			}
+
+			for _, releaseName := range releaseNames {
+				// For reference on urgency levels, see: https://security-team.debian.org/security_tracker.html#severity-levels
+				release, ok := cveData.Releases[releaseName]
+				if !ok {
+					continue
+				}
+				debianVersion, ok := debianReleaseMap[releaseName]
+				if !ok {
+					continue
+				}
+
+				if release.Status == "resolved" && release.FixedVersion == "0" { // not affected
+					continue
+				}
+
+				pkgInfo := vulns.PackageInfo{
+					PkgName:   pkgName,
+					Ecosystem: "Debian:" + debianVersion,
+					EcosystemSpecific: map[string]any{
+						"urgency": release.Urgency,
+					},
+				}
+
+				if release.Status == "resolved" {
+					pkgInfo.VersionInfo.AffectedVersions = []models.AffectedVersion{{Fixed: release.FixedVersion}}
+				}
+				v.AddPkgInfo(pkgInfo)
+			}
+		}
+	}
+
+	return osvCves
 }
 
 // getDebianReleaseMap gets the Debian version number, excluding testing and experimental versions.
@@ -98,98 +195,28 @@ func getDebianReleaseMap() (map[string]string, error) {
 	return releaseMap, err
 }
 
-// updateOSVPkgInfos adds new release entries to osvPkgInfos.
-func updateOSVPkgInfos(pkgName string, cveID string, releases map[string]Release, osvPkgInfos map[string][]vulns.PackageInfo, debianReleaseMap map[string]string, releaseNames []string) {
-	//nolint:prealloc
-	var pkgInfos []vulns.PackageInfo
-	if value, ok := osvPkgInfos[cveID]; ok {
-		pkgInfos = value
-	}
-
-	for _, releaseName := range releaseNames {
-		// For reference on urgency levels, see: https://security-team.debian.org/security_tracker.html#severity-levels
-		release, ok := releases[releaseName]
-		if !ok {
+func writeToOutput(osvCves map[string]*vulns.Vulnerability, debianOutputPath string) error {
+	logger.Info("Writing OSV files to the output.")
+	for cveID, osv := range osvCves {
+		if len(osv.Affected) == 0 {
+			logger.Warn("Skipping DEBIAN-%s as no affected versions found.", cveID)
 			continue
 		}
-		debianVersion, ok := debianReleaseMap[releaseName]
-		if !ok {
-			continue
-		}
-
-		pkgInfo := vulns.PackageInfo{
-			PkgName:   pkgName,
-			Ecosystem: "Debian:" + debianVersion,
-		}
-		pkgInfo.EcosystemSpecific = make(map[string]any)
-
-		pkgInfo.VersionInfo = models.VersionInfo{
-			AffectedVersions: []models.AffectedVersion{{Introduced: "0"}},
-		}
-		if release.Status == "resolved" {
-			if release.FixedVersion == "0" { // not affected
-				continue
-			}
-			pkgInfo.VersionInfo.AffectedVersions = append(pkgInfo.VersionInfo.AffectedVersions, models.AffectedVersion{Fixed: release.FixedVersion})
-		}
-		pkgInfo.EcosystemSpecific["urgency"] = release.Urgency
-		pkgInfos = append(pkgInfos, pkgInfo)
-	}
-	if pkgInfos != nil {
-		osvPkgInfos[cveID] = pkgInfos
-	}
-}
-
-// generateDebianSecurityTrackerOSV converts Debian Security Tracker entries to OSV PackageInfo format.
-func generateDebianSecurityTrackerOSV(debianData DebianSecurityTrackerData, debianReleaseMap map[string]string) map[string][]vulns.PackageInfo {
-	logger.Info("Converting Debian Security Tracker data to OSV package infos")
-	osvPkgInfos := make(map[string][]vulns.PackageInfo)
-
-	// Sorts packages to ensure results remain consistent between runs.
-	pkgNames := make([]string, 0, len(debianData))
-	for name := range debianData {
-		pkgNames = append(pkgNames, name)
-	}
-	sort.Strings(pkgNames)
-
-	// Sorts releases to ensure pkgInfos remain consistent between runs.
-	releaseNames := make([]string, 0, len(debianReleaseMap))
-	for k := range debianReleaseMap {
-		releaseNames = append(releaseNames, k)
-	}
-
-	sort.Slice(releaseNames, func(i, j int) bool {
-		vi, _ := strconv.ParseFloat(debianReleaseMap[releaseNames[i]], 64)
-		vj, _ := strconv.ParseFloat(debianReleaseMap[releaseNames[j]], 64)
-
-		return vi < vj
-	})
-
-	for _, pkgName := range pkgNames {
-		pkg := debianData[pkgName]
-		for cveID, cve := range pkg {
-			updateOSVPkgInfos(pkgName, cveID, cve.Releases, osvPkgInfos, debianReleaseMap, releaseNames)
-		}
-	}
-
-	return osvPkgInfos
-}
-
-func writeToOutput(cvePkgInfos map[string][]vulns.PackageInfo) error {
-	logger.Info("Writing package infos to the output")
-	for cveID := range cvePkgInfos {
-		pkgInfos := cvePkgInfos[cveID]
-		file, err := os.OpenFile(path.Join(debianOutputPathDefault, cveID+".debian.json"), os.O_CREATE|os.O_RDWR, 0644)
+		file, err := os.OpenFile(path.Join(debianOutputPath, "DEBIAN-"+cveID+".json"), os.O_CREATE|os.O_RDWR|os.O_TRUNC, 0644)
 		if err != nil {
 			return err
 		}
+
 		encoder := json.NewEncoder(file)
 		encoder.SetIndent("", "  ")
-		err = encoder.Encode(&pkgInfos)
+		err = encoder.Encode(osv)
+		closeErr := file.Close()
 		if err != nil {
 			return err
 		}
-		_ = file.Close()
+		if closeErr != nil {
+			return closeErr
+		}
 	}
 
 	return nil

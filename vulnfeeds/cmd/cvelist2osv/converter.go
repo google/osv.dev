@@ -134,16 +134,16 @@ func writeOSVToFile(id cves.CVEID, cnaAssigner string, vulnDir string, v *vulns.
 	outputFile := filepath.Join(vulnDir, v.ID+extension)
 	f, err := os.Create(outputFile)
 	if err != nil {
-		logger.Info("Failed to open for writing", slog.String("cve", string(id)), slog.String("path", outputFile), slog.Any("err", err))
+		logger.Info("Failed to open for writing "+outputFile, slog.String("cve", string(id)), slog.String("path", outputFile), slog.Any("err", err))
 		return err
 	}
 	defer f.Close()
 
 	err = v.ToJSON(f)
 	if err != nil {
-		logger.Info("Failed to write", slog.String("path", outputFile), slog.Any("err", err))
+		logger.Info("Failed to write "+outputFile, slog.String("path", outputFile), slog.Any("err", err))
 	} else {
-		logger.Info("Generated OSV record", slog.String("cve", string(id)), slog.String("cna", cnaAssigner))
+		logger.Info("Generated OSV record for "+string(id), slog.String("cve", string(id)), slog.String("cna", cnaAssigner))
 	}
 
 	return err
@@ -156,11 +156,11 @@ func writeMetricToFile(id cves.CVEID, vulnDir string, metrics *ConversionMetrics
 	metricsFile := filepath.Join(vulnDir, string(id)+".metrics.json")
 	marshalledMetrics, err := json.MarshalIndent(metrics, "", "  ")
 	if err != nil {
-		logger.Warn("Failed to marshal metrics", slog.String("cve", string(id)), slog.Any("err", err))
+		logger.Warn("Failed to marshal metrics for "+string(id), slog.String("cve", string(id)), slog.Any("err", err))
 		return err
 	}
 	if err = os.WriteFile(metricsFile, marshalledMetrics, 0600); err != nil {
-		logger.Warn("Failed to write", slog.String("cve", string(id)), slog.String("path", metricsFile), slog.Any("err", err))
+		logger.Warn("Failed to write "+metricsFile, slog.String("cve", string(id)), slog.String("path", metricsFile), slog.Any("err", err))
 		return err
 	}
 

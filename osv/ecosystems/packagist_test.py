@@ -39,6 +39,12 @@ class PackagistEcosystemTest(vcr.unittest.VCRTestCase):
     self.assertEqual(
         ecosystem.sort_key('1.0.0rc2'), ecosystem.sort_key('1.0.0.rc2'))
 
+    # Check >= / <= methods
+    self.assertGreaterEqual(
+        ecosystem.sort_key('1.10-2RC1'), ecosystem.sort_key('1.2-2RC1'))
+    self.assertLessEqual(
+        ecosystem.sort_key('1.2-2RC1'), ecosystem.sort_key('1.10-2RC1'))
+
     enumerated_versions = ecosystem.enumerate_versions('neos/neos', '3.3.0',
                                                        '4.4.0')
     self.assertIn('4.3.19', enumerated_versions)

@@ -241,6 +241,13 @@ class MavenVersionTest(unittest.TestCase):
     # actual case from com.graphql-java:graphql-java
     self.check_versions_order('0.0.0-2021-05-17T01-01-51-5ec03a8b', '20.0.0')
 
+  def test_version_ge_le(self):
+    """Test >= and <=."""
+    self.assertGreaterEqual(
+        maven.Version.from_string('1.10.0'), maven.Version.from_string('1.2.0'))
+    self.assertLessEqual(
+        maven.Version.from_string('1.2.0'), maven.Version.from_string('1.10.0'))
+
 
 class MavenEcosystemTest(vcr.unittest.VCRTestCase):
   """Maven ecosystem helper tests."""

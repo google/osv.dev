@@ -1271,6 +1271,14 @@ def query_by_version(
 
   is_semver = ecosystems.is_semver(ecosystem)
   supports_comparing = ecosystem_info is not None
+  # TODO(michaelkedar): We don't support grabbing the release number from PURLs
+  # https://github.com/google/osv.dev/issues/3126
+  # This causes many false positive matches in Ubuntu and Alpine in particular
+  # when doing range-based matching.
+  # We have version enumeration for Alpine, and Ubuntu provides versions for us.
+  # Just skip range-based matching if they don't have release numbers for now.
+  if ecosystem in ('Alpine', 'Ubuntu'):
+    supports_comparing = False
 
   bugs = []
   if ecosystem:

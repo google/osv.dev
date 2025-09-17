@@ -111,6 +111,14 @@ class RPMEcosystemTest(unittest.TestCase):
     self.assertEqual(
         ecosystem.sort_key("2.0.8-4.8.2"), ecosystem.sort_key("2.0.8-4.8.2"))
 
+    # Check >= / <= methods
+    self.assertGreaterEqual(
+        ecosystem.sort_key('1.10.2-1.oe2203'),
+        ecosystem.sort_key('1.2.2-1.oe2203'))
+    self.assertLessEqual(
+        ecosystem.sort_key('1.2.2-1.oe2203'),
+        ecosystem.sort_key('1.10.2-1.oe2203'))
+
   def test_rpm_ecosystems(self):
     """Test RPM-based ecosystems return an RPM ecosystem."""
     ecos = [

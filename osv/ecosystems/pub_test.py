@@ -59,6 +59,13 @@ class PubVersionTest(unittest.TestCase):
     check_version_equals('1.2.3-01', '1.2.3-1')
     check_version_equals('1.2.3+01', '1.2.3+1')
 
+  def test_ge_le(self):
+    """Test version >=/<=."""
+    self.assertGreaterEqual(
+        pub.Version.from_string('1.10.0'), pub.Version.from_string('1.2.0'))
+    self.assertLessEqual(
+        pub.Version.from_string('1.2.0'), pub.Version.from_string('1.10.0'))
+
   def test_parse(self):
     """Test versions can be parsed."""
     pub.Version.from_string('0.0.0')

@@ -42,6 +42,12 @@ class HackageEcosystemTest(vcr.unittest.VCRTestCase):
     self.assertGreater(
         ecosystem.sort_key('1-20-0'), ecosystem.sort_key('1.20.0'))
 
+    # Check >= / <= methods
+    self.assertGreaterEqual(
+        ecosystem.sort_key('1-20-0'), ecosystem.sort_key('1.20.0'))
+    self.assertLessEqual(
+        ecosystem.sort_key('1.20.0'), ecosystem.sort_key('1-20-0'))
+
 
 class GHCEcosystemTest(vcr.unittest.VCRTestCase):
   """GHC ecosystem helper tests."""

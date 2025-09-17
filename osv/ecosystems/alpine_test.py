@@ -74,8 +74,8 @@ class APKEcosystemTest(unittest.TestCase):
         ecosystem.sort_key('13.0.14.5-r1'), ecosystem.sort_key('7.64.3-r2'))
     self.assertLess(
         ecosystem.sort_key('13.0.14.5-r1'), ecosystem.sort_key('16.6-r0'))
-    
-    # Double check >= / <= methods: https://github.com/google/osv.dev/pull/3978
+
+    # Check >= / <= methods: https://github.com/google/osv.dev/pull/3978
     self.assertGreaterEqual(
         ecosystem.sort_key('1.10.0-r0'), ecosystem.sort_key('1.2.0-r0'))
     self.assertLessEqual(

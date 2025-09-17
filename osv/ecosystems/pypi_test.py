@@ -39,3 +39,8 @@ class PyPIEcosystemTest(vcr.unittest.VCRTestCase):
     ecosystem = ecosystems.get('PyPI')
     self.assertGreater(ecosystem.sort_key('2.0.0'), ecosystem.sort_key('1.0.0'))
     self.assertLess(ecosystem.sort_key('invalid'), ecosystem.sort_key('0'))
+    # Check >= / <= methods
+    self.assertGreaterEqual(
+        ecosystem.sort_key('1.10.0'), ecosystem.sort_key('1.2.0'))
+    self.assertLessEqual(
+        ecosystem.sort_key('1.2.0'), ecosystem.sort_key('1.10.0'))

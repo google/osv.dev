@@ -96,8 +96,8 @@ func writeRecordCheckData(ctx context.Context, cl *datastore.Client, data record
 }
 
 type checkTask struct {
-	ID   string
-	Vuln *models.Vulnerability
+	id   string
+	vuln *models.Vulnerability
 }
 
 // run is the main application logic
@@ -113,12 +113,12 @@ func run(ctx context.Context, env *appEnv) error {
 	// Start the results handler
 	var resultsWg sync.WaitGroup
 	resultsWg.Add(1)
-	var newInvalid []string
+	var newInvalids []string
 	go func() {
 		defer resultsWg.Done()
 		for result := range resultsChan {
 			if handleResult(ctx, env.topic, result) {
-				newInvalid = append(newInvalid, result.ID)
+				newInvalids = append(newInvalids, result.id)
 			}
 		}
 	}()
@@ -130,7 +130,7 @@ func run(ctx context.Context, env *appEnv) error {
 		go func() {
 			defer workerWg.Done()
 			for task := range tasksChan {
-				checkRecord(ctx, env.ds, env.bucket, task.ID, task.Vuln, resultsChan)
+				resultsChan <- checkRecord(ctx, env.ds, env.bucket, task.id, task.vuln)
 			}
 		}()
 	}
@@ -138,7 +138,7 @@ func run(ctx context.Context, env *appEnv) error {
 	// Queue all invalid records from the previous run.
 	for _, id := range rcData.invalidRecords {
 		logger.Debug("checking previously invalid record", slog.String("id", id))
-		tasksChan <- checkTask{ID: id}
+		tasksChan <- checkTask{id: id}
 	}
 
 	// Queue all new records.
@@ -158,7 +158,7 @@ func run(ctx context.Context, env *appEnv) error {
 			return fmt.Errorf("failed to query vulnerabilities: %w", err)
 		}
 		logger.Debug("checking newly modified record", slog.String("id", key.Name))
-		tasksChan <- checkTask{ID: key.Name, Vuln: &vuln}
+		tasksChan <- checkTask{id: key.Name, vuln: &vuln}
 	}
 	// Wait for all tasks to finish processing
 	close(tasksChan)
@@ -169,7 +169,7 @@ func run(ctx context.Context, env *appEnv) error {
 	// Update the record checker run data
 	rcData = recordCheckerData{
 		lastRun:        &runStartTime,
-		invalidRecords: newInvalid,
+		invalidRecords: newInvalids,
 	}
 	if err := writeRecordCheckData(ctx, env.ds, rcData); err != nil {
 		return fmt.Errorf("failed to store run data: %w", err)
@@ -178,23 +178,24 @@ func run(ctx context.Context, env *appEnv) error {
 	return nil
 }
 
+// handleResult handles logging and sending pub/sub message to the recoverer.
+// Returns true if a pub/sub message was sent to the recoverer,
+// to indicate that we need to verify that the recoverer fixes the problem on the next run.
 func handleResult(ctx context.Context, topic *pubsub.Topic, result checkRecordResult) bool {
-	wasInvalid := false
-	if result.Err != nil {
-		logger.Error("failed to process record", slog.String("id", result.ID), slog.Any("err", result.Err))
+	if result.err != nil {
+		logger.Error("failed to process record", slog.String("id", result.id), slog.Any("err", result.err))
 	}
-	if result.NeedsRetry {
-		wasInvalid = true
+	if result.needsRetry {
 		msg := pubsub.Message{
-			Attributes: map[string]string{"type": "gcs_missing", "id": result.ID},
+			Attributes: map[string]string{"type": "gcs_missing", "id": result.id},
 		}
-		logger.Info("publishing gcs_missing message", slog.String("id", result.ID))
+		logger.Info("publishing gcs_missing message", slog.String("id", result.id))
 		_, err := topic.Publish(ctx, &msg).Get(ctx)
 		if err != nil {
-			logger.Error("failed publishing message", slog.String("id", result.ID), slog.Any("err", err))
+			logger.Error("failed publishing message", slog.String("id", result.id), slog.Any("err", err))
 		}
 	}
-	return wasInvalid
+	return result.needsRetry
 }
 
 // appEnv holds the clients and other environment-specific resources.
@@ -256,15 +257,13 @@ func setup(ctx context.Context) (*appEnv, error) {
 }
 
 type checkRecordResult struct {
-	ID         string
-	NeedsRetry bool
-	Err        error
+	id         string
+	needsRetry bool
+	err        error
 }
 
-func checkRecord(ctx context.Context, cl *datastore.Client, bucket *storage.BucketHandle, id string, vuln *models.Vulnerability, out chan<- checkRecordResult) {
-	res := checkRecordResult{ID: id}
-	// Send the result when the function returns.
-	defer func() { out <- res }()
+func checkRecord(ctx context.Context, cl *datastore.Client, bucket *storage.BucketHandle, id string, vuln *models.Vulnerability) checkRecordResult {
+	res := checkRecordResult{id: id}
 
 	if vuln == nil {
 		key := datastore.NameKey("Vulnerability", id, nil)
@@ -272,13 +271,13 @@ func checkRecord(ctx context.Context, cl *datastore.Client, bucket *storage.Buck
 		if err := cl.Get(ctx, key, &fetchedVuln); err != nil {
 			if errors.Is(err, datastore.ErrNoSuchEntity) {
 				// This is a permanent error, don't retry.
-				res.Err = fmt.Errorf("vulnerability %s not found in datastore: %w", id, err)
+				res.err = fmt.Errorf("vulnerability %s not found in datastore: %w", id, err)
 			} else {
 				// This is likely a transient error, retry.
-				res.NeedsRetry = true
-				res.Err = fmt.Errorf("failed to get vulnerability %s from datastore: %w", id, err)
+				res.needsRetry = true
+				res.err = fmt.Errorf("failed to get vulnerability %s from datastore: %w", id, err)
 			}
-			return
+			return res
 		}
 		vuln = &fetchedVuln
 	}
@@ -286,17 +285,19 @@ func checkRecord(ctx context.Context, cl *datastore.Client, bucket *storage.Buck
 	obj := bucket.Object(fmt.Sprintf("all/pb/%s.pb", id))
 	attrs, err := obj.Attrs(ctx)
 	if err != nil {
-		res.NeedsRetry = true
+		res.needsRetry = true
 		if !errors.Is(err, storage.ErrObjectNotExist) {
 			// Log the error if it's not the expected "not found" error.
-			res.Err = fmt.Errorf("failed to get GCS attributes for %s: %w", id, err)
+			res.err = fmt.Errorf("failed to get GCS attributes for %s: %w", id, err)
 		}
-		return
+		return res
 	}
 
 	if attrs.CustomTime.Before(vuln.Modified) {
-		res.NeedsRetry = true
+		res.needsRetry = true
 	}
+
+	return res
 }
 
 func main() {

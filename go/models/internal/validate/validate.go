@@ -12,6 +12,9 @@ import (
 
 func main() {
 	ctx := context.Background()
+	// Note: this does not communicate with GCP.
+	// The Python code that runs this sets up the datastore emulator
+	// with the relevant environment variables necessary.
 	client, err := datastore.NewClient(ctx, os.Getenv("GOOGLE_CLOUD_PROJECT"))
 	if err != nil {
 		fmt.Printf("(Go) Failed creating Datastore client: %v\n", err)

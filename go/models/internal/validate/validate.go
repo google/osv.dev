@@ -1,3 +1,5 @@
+// Package main reads datastore records that were created by the validate.py python script.
+// This should not be run outside of the validate.py script.
 package main
 
 import (

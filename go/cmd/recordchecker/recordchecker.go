@@ -1,3 +1,4 @@
+// Package main runs the record checker, checking that each Vulnerability in Datastore has an up-to-date corresponding GCS object.
 package main
 
 import (
@@ -195,6 +196,7 @@ func handleResult(ctx context.Context, topic *pubsub.Topic, result checkRecordRe
 			logger.Error("failed publishing message", slog.String("id", result.id), slog.Any("err", err))
 		}
 	}
+
 	return result.needsRetry
 }
 
@@ -277,6 +279,7 @@ func checkRecord(ctx context.Context, cl *datastore.Client, bucket *storage.Buck
 				res.needsRetry = true
 				res.err = fmt.Errorf("failed to get vulnerability %s from datastore: %w", id, err)
 			}
+
 			return res
 		}
 		vuln = &fetchedVuln
@@ -290,6 +293,7 @@ func checkRecord(ctx context.Context, cl *datastore.Client, bucket *storage.Buck
 			// Log the error if it's not the expected "not found" error.
 			res.err = fmt.Errorf("failed to get GCS attributes for %s: %w", id, err)
 		}
+
 		return res
 	}
 

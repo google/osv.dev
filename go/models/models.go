@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// Package models contains definitions of Datastore entities for OSV.dev.
 package models
 
 import "time"

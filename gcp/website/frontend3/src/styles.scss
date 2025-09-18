@@ -1016,10 +1016,11 @@ dl.vulnerability-details,
     }
 
     $last-ecosystem-border-offset: 12px;
+    $last-ecosystem-border-gap: 8px;
     $last-ecosystem-border-thickness: 3px;
 
     .ecosystem-content-panel--last {
-      padding-bottom: $last-ecosystem-border-offset + 8px;
+      padding-bottom: $last-ecosystem-border-offset + $last-ecosystem-border-gap;
 
       &::before {
         bottom: $last-ecosystem-border-offset + $last-ecosystem-border-thickness;
@@ -1053,7 +1054,11 @@ dl.vulnerability-details,
     }
 
     .package-accordion--last {
-      margin-bottom: $last-ecosystem-border-offset;
+      margin-bottom: 0;
+
+      .package-details-card {
+        margin-bottom: $last-ecosystem-border-gap;
+      }
     }
 
     .package-accordion h3.package-name-title {

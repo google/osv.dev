@@ -999,7 +999,7 @@ dl.vulnerability-details,
       }
     }
 
-.ecosystem-content-panel {
+    .ecosystem-content-panel {
       position: relative;
       padding: 8px 0 16px 16px;
 
@@ -1012,6 +1012,15 @@ dl.vulnerability-details,
         bottom: 0;
         width: 1px;
         background: #555;
+      }
+
+      &:last-child,
+      &:last-of-type {
+        padding-bottom: 0;
+
+        &::before {
+          bottom: 0;
+        }
       }
     }
     

@@ -36,7 +36,6 @@ const (
 	debianSecurityTrackerURL = "https://security-tracker.debian.org/tracker/data/json"
 	outputBucketDefault      = "debian-osv"
 	hashMetadataKey          = "sha256-hash"
-	numWorkers               = 128
 )
 
 func main() {
@@ -44,6 +43,7 @@ func main() {
 
 	debianOutputPath := flag.String("output_path", debianOutputPathDefault, "Path to output OSV files.")
 	outputBucketName := flag.String("output_bucket", outputBucketDefault, "The GCS bucket to write to.")
+	numWorkers := flag.String("num_workers", "64", "Number of workers to process records")
 	flag.Parse()
 
 	err := os.MkdirAll(*debianOutputPath, 0755)
@@ -73,7 +73,7 @@ func main() {
 	var wg sync.WaitGroup
 	vulnChan := make(chan *vulns.Vulnerability)
 
-	for range numWorkers {
+	for range *numWorkers {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
@@ -81,8 +81,15 @@ func main() {
 		}()
 	}
 
-	generateOSVFromDebianTracker(debianData, debianReleaseMap, allCVEs, vulnChan)
+	osvCVEs := generateOSVFromDebianTracker(debianData, debianReleaseMap, allCVEs)
 
+	for _, v := range osvCVEs {
+		if len(v.Affected) == 0 {
+			logger.Warn(fmt.Sprintf("Skipping %s as no affected versions found.", v.ID), slog.String("id", v.ID))
+			continue
+		}
+		vulnChan <- v
+	}
 	close(vulnChan)
 	wg.Wait()
 
@@ -156,7 +163,7 @@ func worker(ctx context.Context, vulnChan <-chan *vulns.Vulnerability, bkt *stor
 }
 
 // generateOSVFromDebianTracker converts Debian Security Tracker entries to OSV format.
-func generateOSVFromDebianTracker(debianData DebianSecurityTrackerData, debianReleaseMap map[string]string, allCVEs map[cves.CVEID]cves.Vulnerability, vulnChan chan<- *vulns.Vulnerability) {
+func generateOSVFromDebianTracker(debianData DebianSecurityTrackerData, debianReleaseMap map[string]string, allCVEs map[cves.CVEID]cves.Vulnerability) map[string]*vulns.Vulnerability {
 	logger.Info("Converting Debian Security Tracker data to OSV.")
 	osvCves := make(map[string]*vulns.Vulnerability)
 
@@ -236,13 +243,7 @@ func generateOSVFromDebianTracker(debianData DebianSecurityTrackerData, debianRe
 			}
 		}
 	}
-	for _, v := range osvCves {
-		if len(v.Affected) == 0 {
-			logger.Warn(fmt.Sprintf("Skipping %s as no affected versions found.", v.ID), slog.String("id", v.ID))
-			continue
-		}
-		vulnChan <- v
-	}
+	return osvCves
 }
 
 // getDebianReleaseMap gets the Debian version number, excluding testing and experimental versions.

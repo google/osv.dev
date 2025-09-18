@@ -140,7 +140,10 @@ func generateOSVFromDebianTracker(debianData DebianSecurityTrackerData, debianRe
 				if release.Status == "resolved" {
 					pkgInfo.VersionInfo.AffectedVersions = []models.AffectedVersion{{Fixed: release.FixedVersion}}
 				}
-				v.AddPkgInfo(pkgInfo)
+
+				if len(pkgInfo.VersionInfo.AffectedVersions) > 0 {
+					v.AddPkgInfo(pkgInfo)
+				}
 			}
 		}
 	}

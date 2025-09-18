@@ -105,7 +105,8 @@ def affected_affects(name: str, version: str,
   # Make sure the package name correctly matches this entity.
   if affected.ecosystem != 'GIT' and name != affected.name:
     return False
-  if affected.ecosystem == 'GIT' and osv.normalize_repo_package(name) != name:
+  if (affected.ecosystem == 'GIT' and
+      osv.normalize_repo_package(name) != affected.name):
     return False
 
   if len(affected.versions) > 0:

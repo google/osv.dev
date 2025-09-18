@@ -26,7 +26,6 @@ import threading
 import time
 import concurrent.futures
 from typing import Callable
-from urllib.parse import urlparse
 
 from collections import defaultdict
 
@@ -108,38 +107,6 @@ ToResponseCallable = Callable[[osv.Bug], ndb.Future]
 _ndb_client = ndb.Client()
 
 # ----
-
-
-def _normalize_git_repo_url(repo_url: str) -> str:
-  """Normalize git repository URL for matching by removing protocol/scheme.
-  
-  This enables matching git repositories regardless of whether they use
-  http, https, git, or other protocols. For example:
-  - http://git.musl-libc.org/git/musl
-  - https://git.musl-libc.org/git/musl
-  - git://git.musl-libc.org/git/musl
-  
-  Will all normalize to: git.musl-libc.org/git/musl
-  
-  Args:
-    repo_url: The git repository URL to normalize
-    
-  Returns:
-    The normalized URL without protocol/scheme
-  """
-  if not repo_url:
-    return repo_url
-
-  try:
-    parsed = urlparse(repo_url)
-    # Remove scheme and reconstruct without it
-    # Keep netloc (hostname) and path
-    normalized = parsed.netloc + parsed.path
-
-    # Remove trailing slash
-    return normalized.rstrip('/')
-  except Exception:
-    return repo_url
 
 
 def ndb_context(func):
@@ -1082,8 +1049,8 @@ def _is_version_affected(affected_packages,
 
         # Normalize both URLs for comparison to handle protocol differences
         # (http vs https vs git://, etc.)
-        normalized_package_name = _normalize_git_repo_url(package_name)
-        normalized_repo_url = _normalize_git_repo_url(repo_url)
+        normalized_package_name = osv.normalize_repo_package(package_name)
+        normalized_repo_url = osv.normalize_repo_package(repo_url)
 
         if normalized_package_name != normalized_repo_url:
           continue

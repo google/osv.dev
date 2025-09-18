@@ -24,6 +24,7 @@ const (
 	defaultCVEListPath    = "."
 
 	alpineEcosystem          = "Alpine"
+	debianEcosystem          = "Debian"
 	alpineSecurityTrackerURL = "https://security.alpinelinux.org/vuln"
 )
 
@@ -166,6 +167,10 @@ func combineIntoOSV(loadedCves map[cves.CVEID]cves.Vulnerability, allParts map[c
 
 		addedAlpineURL := false
 		for _, pkgInfo := range allParts[cveID] {
+			// skip debian parts, but still write out the CVEs.
+			if strings.HasPrefix(pkgInfo.Ecosystem, debianEcosystem) {
+				continue
+			}
 			convertedCve.AddPkgInfo(pkgInfo)
 			if strings.HasPrefix(pkgInfo.Ecosystem, alpineEcosystem) && !addedAlpineURL {
 				addReference(string(cveID), alpineEcosystem, convertedCve)

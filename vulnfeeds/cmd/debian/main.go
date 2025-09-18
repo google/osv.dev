@@ -36,7 +36,7 @@ const (
 	debianSecurityTrackerURL = "https://security-tracker.debian.org/tracker/data/json"
 	outputBucketDefault      = "debian-osv"
 	hashMetadataKey          = "sha256-hash"
-	numWorkers               = 16
+	numWorkers               = 128
 )
 
 func main() {
@@ -73,7 +73,7 @@ func main() {
 	var wg sync.WaitGroup
 	vulnChan := make(chan *vulns.Vulnerability)
 
-	for i := 0; i < numWorkers; i++ {
+	for range numWorkers {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
@@ -136,6 +136,7 @@ func worker(ctx context.Context, vulnChan <-chan *vulns.Vulnerability, bkt *stor
 		wc.Metadata = map[string]string{
 			hashMetadataKey: hexHash,
 		}
+		wc.ContentType = "application/json"
 
 		if _, err := wc.Write(buf); err != nil {
 			logger.Error("failed to write to GCS object", slog.String("id", debianID), slog.Any("err", err))

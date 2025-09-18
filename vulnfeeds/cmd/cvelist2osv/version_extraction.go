@@ -320,7 +320,7 @@ func extractVersionsFromAffectedField(affected cves.Affected, cnaAssigner string
 		return findInverseAffectedRanges(affected, cnaAssigner)
 	}
 
-	return findNormalAffectedRanges(affected, cnaAssigner)
+	return findNormalAffectedRanges(affected)
 }
 
 // findInverseAffectedRanges calculates the affected version ranges by analyzing a list
@@ -391,7 +391,7 @@ func findInverseAffectedRanges(cveAff cves.Affected, cnaAssigner string) (ranges
 	return nil, VersionRangeTypeUnknown, notes
 }
 
-func findNormalAffectedRanges(affected cves.Affected, cnaAssigner string) (versionRanges []osvschema.Range, versType VersionRangeType, notes []string) {
+func findNormalAffectedRanges(affected cves.Affected) (versionRanges []osvschema.Range, versType VersionRangeType, notes []string) {
 	versionTypesCount := make(map[VersionRangeType]int)
 
 	for _, vers := range affected.Versions {
@@ -457,6 +457,7 @@ func findNormalAffectedRanges(affected cves.Affected, cnaAssigner string) (versi
 			} else if av.LastAffected != "" {
 				versionRanges = append(versionRanges, buildVersionRange(av.Introduced, av.LastAffected, ""))
 			}
+
 			continue
 		}
 

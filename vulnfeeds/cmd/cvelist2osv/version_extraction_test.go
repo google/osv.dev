@@ -111,7 +111,6 @@ func TestFindNormalAffectedRanges(t *testing.T) {
 					},
 				},
 			},
-			cnaAssigner: "test",
 			wantRanges: []osvschema.Range{
 				buildVersionRange("1.0", "", "1.5"),
 			},
@@ -128,7 +127,6 @@ func TestFindNormalAffectedRanges(t *testing.T) {
 					},
 				},
 			},
-			cnaAssigner: "test",
 			wantRanges: []osvschema.Range{
 				buildVersionRange("0", "", "2.0"),
 			},
@@ -144,7 +142,6 @@ func TestFindNormalAffectedRanges(t *testing.T) {
 					},
 				},
 			},
-			cnaAssigner: "GitHub_M",
 			wantRanges: []osvschema.Range{
 				buildVersionRange("2.0", "", "2.5"),
 			},
@@ -161,7 +158,6 @@ func TestFindNormalAffectedRanges(t *testing.T) {
 					},
 				},
 			},
-			cnaAssigner: "test",
 			wantRanges: []osvschema.Range{
 				buildVersionRange("deadbeef", "", ""),
 			},
@@ -171,7 +167,7 @@ func TestFindNormalAffectedRanges(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			gotRanges, gotRangeType, _ := findNormalAffectedRanges(tt.affected, tt.cnaAssigner)
+			gotRanges, gotRangeType, _ := findNormalAffectedRanges(tt.affected)
 			if diff := cmp.Diff(tt.wantRanges, gotRanges); diff != "" {
 				t.Errorf("findNormalAffectedRanges() ranges mismatch (-want +got):\n%s", diff)
 			}

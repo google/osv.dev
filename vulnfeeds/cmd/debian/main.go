@@ -246,6 +246,7 @@ func generateOSVFromDebianTracker(debianData DebianSecurityTrackerData, debianRe
 			}
 		}
 	}
+
 	return osvCves
 }
 

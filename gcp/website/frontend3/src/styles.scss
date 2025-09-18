@@ -1013,14 +1013,26 @@ dl.vulnerability-details,
         width: 1px;
         background: #555;
       }
+    }
 
-      &:last-child,
-      &:last-of-type {
-        padding-bottom: 0;
+    $last-ecosystem-border-offset: 12px;
+    $last-ecosystem-border-thickness: 3px;
 
-        &::before {
-          bottom: 0;
-        }
+    .ecosystem-content-panel--last {
+      padding-bottom: $last-ecosystem-border-offset + 8px;
+
+      &::before {
+        bottom: $last-ecosystem-border-offset + $last-ecosystem-border-thickness;
+      }
+
+      &::after {
+        content: '';
+        position: absolute;
+        left: 0;
+        right: 0;
+        bottom: $last-ecosystem-border-offset;
+        height: $last-ecosystem-border-thickness;
+        background: $osv-grey-600;
       }
     }
     
@@ -1038,6 +1050,10 @@ dl.vulnerability-details,
         height: 1px;
         background: #555;
       }
+    }
+
+    .package-accordion--last {
+      margin-bottom: $last-ecosystem-border-offset;
     }
 
     .package-accordion h3.package-name-title {

@@ -75,31 +75,14 @@ func TestGenerateOSVFromDebianTracker(t *testing.T) {
 		"trixie":   "13",
 	}
 	cveStuff := map[cves.CVEID]cves.Vulnerability{
-		"CVE-2014-1424":    loadTestData(t, "CVE-2014-1424"),
-		"CVE-2017-6507":    loadTestData(t, "CVE-2017-6507"),
-		"CVE-2018-1000500": loadTestData(t, "CVE-2018-1000500"),
-		"CVE-2016-1585":    loadTestData(t, "CVE-2016-1585"),
+		"CVE-2014-1424": loadTestData(t, "CVE-2014-1424"),
+		"CVE-2017-6507": loadTestData(t, "CVE-2017-6507"),
+		"CVE-2016-1585": loadTestData(t, "CVE-2016-1585"),
 	}
 	got := generateOSVFromDebianTracker(trackerData, releaseMap, cveStuff)
 
 	// Define the expected OSV entries.
 	want := map[string]*vulns.Vulnerability{
-		"CVE-2018-1000500": {
-			Vulnerability: osvschema.Vulnerability{
-				ID:        "DEBIAN-CVE-2018-1000500",
-				Upstream:  []string{"CVE-2018-1000500"},
-				Modified:  now,
-				Published: now,
-				Details:   "Busybox contains a Missing SSL certificate validation vulnerability in The \"busybox wget\" applet that can result in arbitrary code execution. This attack appear to be exploitable via Simply download any file over HTTPS using \"busybox wget https://compromised-domain.com/important-file\".",
-				Affected: []osvschema.Affected{
-					{Package: osvschema.Package{Name: "busybox", Ecosystem: "Debian:10"}, EcosystemSpecific: map[string]any{"urgency": "end-of-life"}},
-					{Package: osvschema.Package{Name: "busybox", Ecosystem: "Debian:11"}, EcosystemSpecific: map[string]any{"urgency": "unimportant"}},
-					{Package: osvschema.Package{Name: "busybox", Ecosystem: "Debian:12"}, EcosystemSpecific: map[string]any{"urgency": "unimportant"}},
-					{Package: osvschema.Package{Name: "busybox", Ecosystem: "Debian:13"}, EcosystemSpecific: map[string]any{"urgency": "unimportant"}},
-				},
-				References: []osvschema.Reference{{Type: "ADVISORY", URL: "https://security-tracker.debian.org/tracker/CVE-2018-1000500"}},
-			},
-		},
 		"CVE-2014-1424": {
 			Vulnerability: osvschema.Vulnerability{
 				ID:         "DEBIAN-CVE-2014-1424",
@@ -119,9 +102,6 @@ func TestGenerateOSVFromDebianTracker(t *testing.T) {
 				Published: now,
 				Details:   "In all versions of AppArmor mount rules are accidentally widened when compiled.",
 				Affected: []osvschema.Affected{
-					{Package: osvschema.Package{Name: "apparmor", Ecosystem: "Debian:10"}, EcosystemSpecific: map[string]any{"urgency": "unimportant"}},
-					{Package: osvschema.Package{Name: "apparmor", Ecosystem: "Debian:11"}, EcosystemSpecific: map[string]any{"urgency": "unimportant"}},
-					{Package: osvschema.Package{Name: "apparmor", Ecosystem: "Debian:12"}, EcosystemSpecific: map[string]any{"urgency": "unimportant"}},
 					{
 						Package:           osvschema.Package{Name: "apparmor", Ecosystem: "Debian:13"},
 						Ranges:            []osvschema.Range{{Type: "ECOSYSTEM", Events: []osvschema.Event{{Introduced: "0"}, {Fixed: "3.0.12-1"}}}},

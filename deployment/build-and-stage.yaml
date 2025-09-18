@@ -113,7 +113,7 @@ steps:
   id: 'pull-record-checker'
   waitFor: ['setup']
 - name: gcr.io/cloud-builders/docker
-  args: ['build', '-t', 'gcr.io/oss-vdb/record-checker:latest', '-t', 'gcr.io/oss-vdb/record-checker:$COMMIT_SHA', '.']
+  args: ['build', '-t', 'gcr.io/oss-vdb/record-checker:latest', '-t', 'gcr.io/oss-vdb/record-checker:$COMMIT_SHA', '-f', 'cmd/recordchecker/Dockerfile', '--cache-from', 'gcr.io/oss-vdb/record-checker:latest', '--pull', '.']
   dir: 'go'
   id: 'build-record-checker'
   waitFor: ['pull-record-checker']

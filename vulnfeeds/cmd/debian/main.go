@@ -7,6 +7,7 @@ import (
 	"encoding/csv"
 	"encoding/hex"
 	"encoding/json"
+	"errors"
 	"flag"
 	"fmt"
 	"log/slog"
@@ -117,7 +118,7 @@ func worker(ctx context.Context, vulnChan <-chan *vulns.Vulnerability, bkt *stor
 				logger.Info("Skipping upload, hash matches", slog.String("id", debianID))
 				continue
 			}
-		} else if err != storage.ErrObjectNotExist {
+		} else if !errors.Is(err, storage.ErrObjectNotExist) {
 			logger.Error("failed to get object attributes", slog.String("id", debianID), slog.Any("err", err))
 			continue
 		}

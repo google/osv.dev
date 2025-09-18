@@ -2,20 +2,24 @@
 package main
 
 import (
+	"context"
+	"crypto/sha256"
 	"encoding/csv"
+	"encoding/hex"
 	"encoding/json"
 	"flag"
 	"fmt"
 	"log/slog"
-
 	"net/http"
 	"os"
 	"path"
 	"sort"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 
+	"cloud.google.com/go/storage"
 	"github.com/google/osv/vulnfeeds/cves"
 	"github.com/google/osv/vulnfeeds/faulttolerant"
 	"github.com/google/osv/vulnfeeds/models"
@@ -29,12 +33,16 @@ const (
 	debianOutputPathDefault  = "debian-cve-osv"
 	debianDistroInfoURL      = "https://debian.pages.debian.net/distro-info-data/debian.csv"
 	debianSecurityTrackerURL = "https://security-tracker.debian.org/tracker/data/json"
+	outputBucketDefault      = "debian-osv"
+	hashMetadataKey          = "sha256-hash"
+	numWorkers               = 16
 )
 
 func main() {
 	logger.InitGlobalLogger()
 
 	debianOutputPath := flag.String("output_path", debianOutputPathDefault, "Path to output OSV files.")
+	outputBucketName := flag.String("output_bucket", outputBucketDefault, "The GCS bucket to write to.")
 	flag.Parse()
 
 	err := os.MkdirAll(*debianOutputPath, 0755)
@@ -53,17 +61,99 @@ func main() {
 	}
 
 	allCVEs := vulns.LoadAllCVEs(defaultCvePath)
-	osvCves := generateOSVFromDebianTracker(debianData, debianReleaseMap, allCVEs)
 
-	if err = writeToOutput(osvCves, *debianOutputPath); err != nil {
-		logger.Fatal("Failed to write OSV output file", slog.Any("err", err))
+	ctx := context.Background()
+	storageClient, err := storage.NewClient(ctx)
+	if err != nil {
+		logger.Fatal("Failed to create storage client", slog.Any("err", err))
 	}
+	bkt := storageClient.Bucket(*outputBucketName)
+
+	var wg sync.WaitGroup
+	vulnChan := make(chan *vulns.Vulnerability)
+
+	for i := 0; i < numWorkers; i++ {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			worker(ctx, vulnChan, bkt, *debianOutputPath)
+		}()
+	}
+
+	generateOSVFromDebianTracker(debianData, debianReleaseMap, allCVEs, vulnChan)
+
+	close(vulnChan)
+	wg.Wait()
 
 	logger.Info("Debian CVE conversion succeeded.")
 }
 
+func worker(ctx context.Context, vulnChan <-chan *vulns.Vulnerability, bkt *storage.BucketHandle, outputDir string) {
+	for v := range vulnChan {
+		debianID := v.ID
+		if len(v.Affected) == 0 {
+			logger.Warn(fmt.Sprintf("Skipping %s as no affected versions found.", debianID), slog.String("id", debianID))
+			continue
+		}
+
+		// Marshal before setting modified time to generate hash.
+		buf, err := json.MarshalIndent(v, "", "  ")
+		if err != nil {
+			logger.Error("failed to marshal vulnerability", slog.String("id", debianID), slog.Any("err", err))
+			continue
+		}
+
+		hash := sha256.Sum256(buf)
+		hexHash := hex.EncodeToString(hash[:])
+
+		objName := path.Join(outputDir, debianID+".json")
+		obj := bkt.Object(objName)
+
+		// Check if object exists and if hash matches.
+		attrs, err := obj.Attrs(ctx)
+		if err == nil {
+			// Object exists, check hash.
+			if attrs.Metadata != nil && attrs.Metadata[hashMetadataKey] == hexHash {
+				logger.Info("Skipping upload, hash matches", slog.String("id", debianID))
+				continue
+			}
+		} else if err != storage.ErrObjectNotExist {
+			logger.Error("failed to get object attributes", slog.String("id", debianID), slog.Any("err", err))
+			continue
+		}
+
+		// Object does not exist or hash differs, upload.
+		v.Modified = time.Now().UTC()
+		buf, err = json.MarshalIndent(v, "", "  ")
+		if err != nil {
+			logger.Error("failed to marshal vulnerability with modified time", slog.String("id", debianID), slog.Any("err", err))
+			continue
+		}
+
+		logger.Info("Uploading", slog.String("id", debianID))
+		wc := obj.NewWriter(ctx)
+		wc.Metadata = map[string]string{
+			hashMetadataKey: hexHash,
+		}
+
+		if _, err := wc.Write(buf); err != nil {
+			logger.Error("failed to write to GCS object", slog.String("id", debianID), slog.Any("err", err))
+			// Try to close writer even if write failed.
+			if closeErr := wc.Close(); closeErr != nil {
+				logger.Error("failed to close GCS writer after write error", slog.String("id", debianID), slog.Any("err", closeErr))
+			}
+			continue
+		}
+
+		if err := wc.Close(); err != nil {
+			logger.Error("failed to close GCS writer", slog.String("id", debianID), slog.Any("err", err))
+			continue
+		}
+	}
+}
+
 // generateOSVFromDebianTracker converts Debian Security Tracker entries to OSV format.
-func generateOSVFromDebianTracker(debianData DebianSecurityTrackerData, debianReleaseMap map[string]string, allCVEs map[cves.CVEID]cves.Vulnerability) map[string]*vulns.Vulnerability {
+func generateOSVFromDebianTracker(debianData DebianSecurityTrackerData, debianReleaseMap map[string]string, allCVEs map[cves.CVEID]cves.Vulnerability, vulnChan chan<- *vulns.Vulnerability) {
 	logger.Info("Converting Debian Security Tracker data to OSV.")
 	osvCves := make(map[string]*vulns.Vulnerability)
 
@@ -100,7 +190,6 @@ func generateOSVFromDebianTracker(debianData DebianSecurityTrackerData, debianRe
 					Vulnerability: osvschema.Vulnerability{
 						ID:        "DEBIAN-" + cveID,
 						Upstream:  []string{cveID},
-						Modified:  time.Now().UTC(),
 						Published: allCVEs[cves.CVEID(cveID)].CVE.Published.Time,
 						Details:   cveData.Description,
 						References: []osvschema.Reference{
@@ -144,8 +233,13 @@ func generateOSVFromDebianTracker(debianData DebianSecurityTrackerData, debianRe
 			}
 		}
 	}
-
-	return osvCves
+	for _, v := range osvCves {
+		if len(v.Affected) == 0 {
+			logger.Warn(fmt.Sprintf("Skipping %s as no affected versions found.", v.ID), slog.String("id", v.ID))
+			continue
+		}
+		vulnChan <- v
+	}
 }
 
 // getDebianReleaseMap gets the Debian version number, excluding testing and experimental versions.
@@ -193,34 +287,6 @@ func getDebianReleaseMap() (map[string]string, error) {
 	}
 
 	return releaseMap, err
-}
-
-func writeToOutput(osvCves map[string]*vulns.Vulnerability, debianOutputPath string) error {
-	logger.Info("Writing OSV files to the output.")
-	for cveID, osv := range osvCves {
-		debianID := "DEBIAN-" + cveID
-		if len(osv.Affected) == 0 {
-			logger.Warn(fmt.Sprintf("Skipping %s as no affected versions found.", debianID), slog.String("id", debianID))
-			continue
-		}
-		file, err := os.OpenFile(path.Join(debianOutputPath, debianID+".json"), os.O_CREATE|os.O_RDWR|os.O_TRUNC, 0644)
-		if err != nil {
-			return err
-		}
-
-		encoder := json.NewEncoder(file)
-		encoder.SetIndent("", "  ")
-		err = encoder.Encode(osv)
-		closeErr := file.Close()
-		if err != nil {
-			return err
-		}
-		if closeErr != nil {
-			return closeErr
-		}
-	}
-
-	return nil
 }
 
 // downloadDebianSecurityTracker download Debian json file

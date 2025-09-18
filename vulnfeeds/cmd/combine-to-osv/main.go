@@ -97,20 +97,14 @@ func combineIntoOSV(cve5osv map[cves.CVEID]osvschema.Vulnerability, nvdosv map[c
 		nvd, ok := nvdosv[cveID]
 
 		if ok {
-			// NVD data exists, merge it into the record.
-			// Prefer NVD summary and details as they are generally more canonical.
-			if nvd.Summary != "" {
-				combined.Summary = nvd.Summary
-			}
-			if nvd.Details != "" {
-				combined.Details = nvd.Details
-			}
+			// TODO: check either have version ranges.
 
-			// If the advisory-derived record has no affected packages, use NVD's.
-			// Advisory data is considered more precise, so we prefer it if present.
+			// If the cve5-derived record has no affected packages, use NVD's.
 			if len(combined.Affected) == 0 && len(nvd.Affected) > 0 {
 				combined.Affected = nvd.Affected
 			}
+
+			// TODO: if both NVD and CVE5 data exists, compare each affected range and make good decisions
 
 			// Merge references, ensuring no duplicates.
 			refMap := make(map[string]bool)
@@ -125,25 +119,13 @@ func combineIntoOSV(cve5osv map[cves.CVEID]osvschema.Vulnerability, nvdosv map[c
 			}
 
 			// Merge timestamps: latest modified, earliest published.
-			cve5Modified, err1 := time.Parse(time.RFC3339, combined.Modified)
-			nvdModified, err2 := time.Parse(time.RFC3339, nvd.Modified)
-			if err1 == nil && err2 == nil {
-				if nvdModified.After(cve5Modified) {
-					combined.Modified = nvd.Modified
-				}
-			} else if err1 != nil && err2 == nil {
-				// Use NVD time if cve5 time is invalid.
+			cve5Modified := combined.Modified
+			if nvd.Modified.After(cve5Modified) {
 				combined.Modified = nvd.Modified
 			}
 
-			cve5Published, err1 := time.Parse(time.RFC3339, combined.Published)
-			nvdPublished, err2 := time.Parse(time.RFC3339, nvd.Published)
-			if err1 == nil && err2 == nil {
-				if nvdPublished.Before(cve5Published) {
-					combined.Published = nvd.Published
-				}
-			} else if err1 != nil && err2 == nil {
-				// Use NVD time if cve5 time is invalid.
+			cve5Published := combined.Published
+			if nvd.Published.Before(cve5Published) {
 				combined.Published = nvd.Published
 			}
 
@@ -159,10 +141,7 @@ func combineIntoOSV(cve5osv map[cves.CVEID]osvschema.Vulnerability, nvdosv map[c
 				}
 			}
 
-			// NVD is the canonical source for CVSS severity scores.
-			if len(nvd.Severity) > 0 {
-				combined.Severity = nvd.Severity
-			}
+			// TODO: Elegantly handle combining severity scores
 
 			// The CVE is processed, so remove it from the nvdosv map to avoid re-processing.
 			delete(nvdosv, cveID)

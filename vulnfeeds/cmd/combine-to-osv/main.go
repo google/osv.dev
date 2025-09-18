@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"flag"
 	"log/slog"
-	"net/url"
 	"os"
 	"path"
 	"strings"
@@ -13,43 +12,39 @@ import (
 
 	"github.com/google/osv/vulnfeeds/cves"
 	"github.com/google/osv/vulnfeeds/utility/logger"
-	"github.com/google/osv/vulnfeeds/vulns"
 	"github.com/ossf/osv-schema/bindings/go/osvschema"
 )
 
 const (
-	defaultCvePath        = "cve_jsons"
-	defaultPartsInputPath = "parts"
-	defaultOSVOutputPath  = "osv_output"
-	defaultCVEListPath    = "."
-
-	alpineEcosystem          = "Alpine"
-	alpineSecurityTrackerURL = "https://security.alpinelinux.org/vuln"
+	defaultOSVOutputPath = "osv_output"
+	defaultCVE5Path      = "cve5"
+	defaultNVDPath       = "nvd"
 )
 
 func main() {
 	logger.InitGlobalLogger()
 
-	cvePath := flag.String("cvePath", defaultCvePath, "Path to CVE file")
-	partsInputPath := flag.String("partsPath", defaultPartsInputPath, "Path to CVE file")
+	cve5Path := flag.String("cve5Path", defaultCVE5Path, "Path to CVE file")
+	nvdPath := flag.String("partsPath", defaultNVDPath, "Path to CVE file")
 	osvOutputPath := flag.String("osvOutputPath", defaultOSVOutputPath, "Path to CVE file")
-	cveListPath := flag.String("cveListPath", defaultCVEListPath, "Path to clone of https://github.com/CVEProject/cvelistV5")
 	flag.Parse()
 
-	err := os.MkdirAll(*cvePath, 0755)
-	if err != nil {
-		logger.Fatal("Can't create output path", slog.Any("err", err))
-	}
-	err = os.MkdirAll(*osvOutputPath, 0755)
+	err := os.MkdirAll(*osvOutputPath, 0755)
 	if err != nil {
 		logger.Fatal("Can't create output path", slog.Any("err", err))
 	}
 
-	allCves := vulns.LoadAllCVEs(*cvePath)
-	allParts, cveModifiedMap := loadParts(*partsInputPath)
-	combinedData := combineIntoOSV(allCves, allParts, *cveListPath, cveModifiedMap)
+	// Load CVE5 OSVs/PackageInfo
+	allCVE5 := loadOSV(*cve5Path)
+	// Load NVD OSVs/PackageInfo
+	allNVD := loadOSV(*nvdPath)
+	// Combine
+	combinedData := combineIntoOSV(allCVE5, allNVD)
 	writeOSVFile(combinedData, *osvOutputPath)
+
 }
+
+// for record in dir
 
 // getModifiedTime gets the modification time of a given file
 // This function assumes that the modified time on disk matches with it in GCS
@@ -64,130 +59,130 @@ func getModifiedTime(filePath string) (time.Time, error) {
 	return parsedTime, err
 }
 
-// loadInnerParts loads second level folder for the loadParts function
-//
-// Parameters:
-//   - innerPartInputPath: The inner part path, such as "parts/alpine"
-//   - output: A map to store all PackageInfos for each CVE ID
-//   - cvePartsModifiedTime: A map tracking the latest modification time of each CVE part files
-func loadInnerParts(innerPartInputPath string, output map[cves.CVEID][]vulns.PackageInfo, cvePartsModifiedTime map[cves.CVEID]time.Time) {
-	dirInner, err := os.ReadDir(innerPartInputPath)
+func loadOSV(osvPath string) map[cves.CVEID]osvschema.Vulnerability {
+	allVulns := make(map[cves.CVEID]osvschema.Vulnerability)
+	dir, err := os.ReadDir(osvPath)
 	if err != nil {
-		logger.Fatal("Failed to read dir", slog.String("path", innerPartInputPath), slog.Any("err", err))
+		logger.Fatal("Failed to read dir", slog.String("path", osvPath), slog.Any("err", err))
 	}
-	for _, entryInner := range dirInner {
-		if !strings.HasSuffix(entryInner.Name(), ".json") {
+	for _, entry := range dir {
+		if !strings.HasSuffix(entry.Name(), ".json") {
 			continue
 		}
-		filePath := path.Join(innerPartInputPath, entryInner.Name())
+		filePath := path.Join(osvPath, entry.Name())
 		file, err := os.Open(filePath)
 		if err != nil {
-			logger.Fatal("Failed to open PackageInfo JSON", slog.String("path", path.Join(innerPartInputPath, entryInner.Name())), slog.Any("err", err))
+			logger.Fatal("Failed to open OSV JSON file", slog.String("path", filePath), slog.Any("err", err))
 		}
-		defer file.Close()
-		var pkgInfos []vulns.PackageInfo
-		err = json.NewDecoder(file).Decode(&pkgInfos)
+
+		var vuln osvschema.Vulnerability
+		err = json.NewDecoder(file).Decode(&vuln)
+		file.Close()
 		if err != nil {
-			logger.Fatal("Failed to decode", slog.String("file", file.Name()), slog.Any("err", err))
+			logger.Fatal("Failed to decode", slog.String("file", entry.Name()), slog.Any("err", err))
 		}
-
-		// Turns CVE-2022-12345.alpine.json into CVE-2022-12345
-		cveID := cves.CVEID(strings.Split(entryInner.Name(), ".")[0])
-		output[cveID] = append(output[cveID], pkgInfos...)
-
-		logger.Info("Loaded "+entryInner.Name(), slog.String("file", entryInner.Name()))
-
-		// Updates the latest OSV parts modified time of each CVE
-		modifiedTime, err := getModifiedTime(filePath)
-		if err != nil {
-			logger.Warn("Failed to get modified time", slog.String("path", filePath), slog.Any("err", err))
-			continue
-		}
-		existingDate, exists := cvePartsModifiedTime[cveID]
-		if !exists || modifiedTime.After(existingDate) {
-			cvePartsModifiedTime[cveID] = modifiedTime
-		}
+		allVulns[cves.CVEID(vuln.ID)] = vuln
+		logger.Info("Loaded "+entry.Name(), slog.String("file", entry.Name()))
 	}
-}
-
-// loadParts loads files generated by other executables in the cmd folder.
-//
-// Expects directory structure of:
-//
-// - <partsInputPath>/
-//   - alpineParts/
-//   - CVE-2020-1234.alpine.json
-//   - ...
-//   - debianParts/
-//   - ...
-//
-// ## Returns
-// A mapping of "CVE-ID": []<Affected Package Information>
-// A mapping of "CVE-ID": time.Time (the latest modified time of its part files)
-func loadParts(partsInputPath string) (map[cves.CVEID][]vulns.PackageInfo, map[cves.CVEID]time.Time) {
-	dir, err := os.ReadDir(partsInputPath)
-	if err != nil {
-		logger.Fatal("Failed to read dir", slog.String("path", partsInputPath), slog.Any("err", err))
-	}
-	output := map[cves.CVEID][]vulns.PackageInfo{}
-	cvePartsModifiedTime := make(map[cves.CVEID]time.Time)
-	for _, entry := range dir {
-		if !entry.IsDir() {
-			logger.Warn("Unexpected file entry", slog.String("file", entry.Name()), slog.String("path", partsInputPath))
-			continue
-		}
-		// map is already a reference type, so no need to pass in a pointer
-		loadInnerParts(path.Join(partsInputPath, entry.Name()), output, cvePartsModifiedTime)
-	}
-
-	return output, cvePartsModifiedTime
+	return allVulns
 }
 
 // combineIntoOSV creates OSV entry by combining loaded CVEs from NVD and PackageInfo information from security advisories.
-func combineIntoOSV(loadedCves map[cves.CVEID]cves.Vulnerability, allParts map[cves.CVEID][]vulns.PackageInfo, cveList string, cvePartsModifiedTime map[cves.CVEID]time.Time) map[cves.CVEID]*vulns.Vulnerability {
-	logger.Info("Begin writing OSV files", slog.Int("count", len(allParts)))
-	convertedCves := map[cves.CVEID]*vulns.Vulnerability{}
-	for cveID, cve := range loadedCves {
-		if len(allParts[cveID]) == 0 {
-			continue
-		}
-		convertedCve := vulns.FromNVDCVE(cveID, cve.CVE)
-		if len(cveList) > 0 {
-			// Best-effort attempt to mark a disputed CVE as withdrawn.
-			modified, err := vulns.CVEIsDisputed(convertedCve, cveList)
-			if err != nil {
-				logger.Warn("Unable to determine CVE dispute status", slog.String("id", convertedCve.ID), slog.Any("err", err))
-			}
-			if err == nil && !modified.IsZero() {
-				convertedCve.DatabaseSpecific = make(map[string]any)
-				convertedCve.DatabaseSpecific["isDisputed"] = true
-			}
-		}
+func combineIntoOSV(cve5osv map[cves.CVEID]osvschema.Vulnerability, nvdosv map[cves.CVEID]osvschema.Vulnerability) map[cves.CVEID]osvschema.Vulnerability {
+	vulns := make(map[cves.CVEID]osvschema.Vulnerability)
 
-		addedAlpineURL := false
-		for _, pkgInfo := range allParts[cveID] {
-			convertedCve.AddPkgInfo(pkgInfo)
-			if strings.HasPrefix(pkgInfo.Ecosystem, alpineEcosystem) && !addedAlpineURL {
-				addReference(string(cveID), alpineEcosystem, convertedCve)
-				addedAlpineURL = true
-			}
-		}
+	// Iterate through CVEs from security advisories (cve5) as the base
+	for cveID, cve5 := range cve5osv {
+		combined := cve5 // Start with the cve5 record
+		nvd, ok := nvdosv[cveID]
 
-		cveModified := convertedCve.Modified
-		if cvePartsModifiedTime[cveID].After(cveModified) {
-			convertedCve.Modified = cvePartsModifiedTime[cveID]
+		if ok {
+			// NVD data exists, merge it into the record.
+			// Prefer NVD summary and details as they are generally more canonical.
+			if nvd.Summary != "" {
+				combined.Summary = nvd.Summary
+			}
+			if nvd.Details != "" {
+				combined.Details = nvd.Details
+			}
+
+			// If the advisory-derived record has no affected packages, use NVD's.
+			// Advisory data is considered more precise, so we prefer it if present.
+			if len(combined.Affected) == 0 && len(nvd.Affected) > 0 {
+				combined.Affected = nvd.Affected
+			}
+
+			// Merge references, ensuring no duplicates.
+			refMap := make(map[string]bool)
+			for _, r := range combined.References {
+				refMap[r.URL] = true
+			}
+			for _, r := range nvd.References {
+				if !refMap[r.URL] {
+					combined.References = append(combined.References, r)
+					refMap[r.URL] = true
+				}
+			}
+
+			// Merge timestamps: latest modified, earliest published.
+			cve5Modified, err1 := time.Parse(time.RFC3339, combined.Modified)
+			nvdModified, err2 := time.Parse(time.RFC3339, nvd.Modified)
+			if err1 == nil && err2 == nil {
+				if nvdModified.After(cve5Modified) {
+					combined.Modified = nvd.Modified
+				}
+			} else if err1 != nil && err2 == nil {
+				// Use NVD time if cve5 time is invalid.
+				combined.Modified = nvd.Modified
+			}
+
+			cve5Published, err1 := time.Parse(time.RFC3339, combined.Published)
+			nvdPublished, err2 := time.Parse(time.RFC3339, nvd.Published)
+			if err1 == nil && err2 == nil {
+				if nvdPublished.Before(cve5Published) {
+					combined.Published = nvd.Published
+				}
+			} else if err1 != nil && err2 == nil {
+				// Use NVD time if cve5 time is invalid.
+				combined.Published = nvd.Published
+			}
+
+			// Merge aliases, ensuring no duplicates.
+			aliasMap := make(map[string]bool)
+			for _, alias := range combined.Aliases {
+				aliasMap[alias] = true
+			}
+			for _, alias := range nvd.Aliases {
+				if !aliasMap[alias] {
+					combined.Aliases = append(combined.Aliases, alias)
+					aliasMap[alias] = true
+				}
+			}
+
+			// NVD is the canonical source for CVSS severity scores.
+			if len(nvd.Severity) > 0 {
+				combined.Severity = nvd.Severity
+			}
+
+			// The CVE is processed, so remove it from the nvdosv map to avoid re-processing.
+			delete(nvdosv, cveID)
 		}
-		convertedCves[cveID] = convertedCve
+		vulns[cveID] = combined
 	}
-	logger.Info("Ended writing OSV files", slog.Int("count", len(convertedCves)))
 
-	return convertedCves
+	// Add any remaining CVEs from NVD that were not in the advisory data.
+	for cveID, nvd := range nvdosv {
+		vulns[cveID] = nvd
+	}
+
+	return vulns
 }
 
 // writeOSVFile writes out the given osv objects into individual json files
-func writeOSVFile(osvData map[cves.CVEID]*vulns.Vulnerability, osvOutputPath string) {
+func writeOSVFile(osvData map[cves.CVEID]osvschema.Vulnerability, osvOutputPath string) {
 	for vID, osv := range osvData {
-		file, err := os.OpenFile(path.Join(osvOutputPath, string(vID)+".json"), os.O_CREATE|os.O_RDWR, 0644)
+		filePath := path.Join(osvOutputPath, string(vID)+".json")
+		file, err := os.OpenFile(filePath, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0644)
 		if err != nil {
 			logger.Fatal("Failed to create/open file to write", slog.Any("err", err))
 		}
@@ -195,24 +190,11 @@ func writeOSVFile(osvData map[cves.CVEID]*vulns.Vulnerability, osvOutputPath str
 		encoder.SetIndent("", "  ")
 		err = encoder.Encode(osv)
 		if err != nil {
-			logger.Fatal("Failed to encode OSVs")
+			file.Close()
+			logger.Fatal("Failed to encode OSVs", slog.Any("err", err))
 		}
 		file.Close()
 	}
 
 	logger.Info("Successfully written OSV files", slog.Int("count", len(osvData)))
-}
-
-// addReference adds the related security tracker URL to a given vulnerability's references
-func addReference(cveID string, ecosystem string, convertedCve *vulns.Vulnerability) {
-	securityReference := osvschema.Reference{Type: osvschema.ReferenceAdvisory}
-	if ecosystem == alpineEcosystem {
-		securityReference.URL, _ = url.JoinPath(alpineSecurityTrackerURL, cveID)
-	}
-
-	if securityReference.URL == "" {
-		return
-	}
-
-	convertedCve.References = append(convertedCve.References, securityReference)
 }

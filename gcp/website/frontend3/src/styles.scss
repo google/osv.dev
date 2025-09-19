@@ -999,7 +999,7 @@ dl.vulnerability-details,
       }
     }
 
-.ecosystem-content-panel {
+    .ecosystem-content-panel {
       position: relative;
       padding: 8px 0 16px 16px;
 
@@ -1012,6 +1012,28 @@ dl.vulnerability-details,
         bottom: 0;
         width: 1px;
         background: #555;
+      }
+    }
+
+    $last-ecosystem-border-offset: 12px;
+    $last-ecosystem-border-gap: 8px;
+    $last-ecosystem-border-thickness: 1px;
+
+    .ecosystem-content-panel--last {
+      padding-bottom: $last-ecosystem-border-offset + $last-ecosystem-border-gap;
+
+      &::before {
+        bottom: $last-ecosystem-border-offset + $last-ecosystem-border-thickness;
+      }
+
+      &::after {
+        content: '';
+        position: absolute;
+        left: 0;
+        right: 0;
+        bottom: $last-ecosystem-border-offset;
+        height: $last-ecosystem-border-thickness;
+        background: $osv-grey-600;
       }
     }
     
@@ -1028,6 +1050,14 @@ dl.vulnerability-details,
         top: 20px;
         height: 1px;
         background: #555;
+      }
+    }
+
+    .package-accordion--last {
+      margin-bottom: 0;
+
+      .package-details-card {
+        margin-bottom: $last-ecosystem-border-gap;
       }
     }
 

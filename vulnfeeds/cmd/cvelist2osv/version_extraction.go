@@ -482,10 +482,10 @@ func findNormalAffectedRanges(affected cves.Affected) (versionRanges []osvschema
 			continue
 		}
 
-		// As a fallback, assume a single version means it's the fixed version.
+		// As a fallback, assume a single version means it's the last_affected version.
 		if vQuality.AtLeast(acceptableQuality) {
-			versionRanges = append(versionRanges, buildVersionRange("0", "", vers.Version))
-			notes = append(notes, fmt.Sprintf("%s - Single version found %v - Assuming introduced = 0 and Fixed = %v", vQuality, vers.Version, vers.Version))
+			versionRanges = append(versionRanges, buildVersionRange("0", vers.Version, ""))
+			notes = append(notes, fmt.Sprintf("%s - Single version found %v - Assuming introduced = 0 and last affected = %v", vQuality, vers.Version, vers.Version))
 		}
 	}
 

@@ -124,7 +124,7 @@ def main():
     else:
       print(f'No bug IDs provided. Querying all bugs for source {args.source}...')
       query = osv.Bug.query(osv.Bug.source == args.source)
-      bugs_to_process = [b.key.id() for b in query]
+      bugs_to_process = [b.id() for b in query.iter(keys_only=True)]
       print(f'Found {len(bugs_to_process)} bugs to update.')
       confirm = input('Are you sure you want to proceed? (y/N) ')
       if confirm.lower() not in ('y', 'yes'):

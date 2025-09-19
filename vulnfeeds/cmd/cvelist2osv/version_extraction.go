@@ -320,7 +320,7 @@ func extractVersionsFromAffectedField(affected cves.Affected, cnaAssigner string
 		return findInverseAffectedRanges(affected, cnaAssigner)
 	}
 
-	return findNormalAffectedRanges(affected, cnaAssigner)
+	return findNormalAffectedRanges(affected)
 }
 
 // findInverseAffectedRanges calculates the affected version ranges by analyzing a list
@@ -391,7 +391,7 @@ func findInverseAffectedRanges(cveAff cves.Affected, cnaAssigner string) (ranges
 	return nil, VersionRangeTypeUnknown, notes
 }
 
-func findNormalAffectedRanges(affected cves.Affected, cnaAssigner string) (versionRanges []osvschema.Range, versType VersionRangeType, notes []string) {
+func findNormalAffectedRanges(affected cves.Affected) (versionRanges []osvschema.Range, versType VersionRangeType, notes []string) {
 	versionTypesCount := make(map[VersionRangeType]int)
 
 	for _, vers := range affected.Versions {
@@ -446,18 +446,16 @@ func findNormalAffectedRanges(affected cves.Affected, cnaAssigner string) (versi
 		// affected, but more likely, it affects up to that version. It could also mean that the range is given
 		// in one line instead - like "< 1.5.3" or "< 2.45.4, >= 2.0 " or just "before 1.4.7", so check for that.
 		notes = append(notes, "Only version exists")
-		// GitHub often encodes the range directly in the version string.
-		if cnaAssigner == "GitHub_M" {
-			av, err := git.ParseVersionRange(vers.Version)
-			if err == nil {
-				if av.Introduced == "" {
-					continue
-				}
-				if av.Fixed != "" {
-					versionRanges = append(versionRanges, buildVersionRange(av.Introduced, "", av.Fixed))
-				} else if av.LastAffected != "" {
-					versionRanges = append(versionRanges, buildVersionRange(av.Introduced, av.LastAffected, ""))
-				}
+		// GitHub/GitLab often encodes the range directly in the version string.
+		av, err := git.ParseVersionRange(vers.Version)
+		if err == nil {
+			if av.Introduced == "" {
+				continue
+			}
+			if av.Fixed != "" {
+				versionRanges = append(versionRanges, buildVersionRange(av.Introduced, "", av.Fixed))
+			} else if av.LastAffected != "" {
+				versionRanges = append(versionRanges, buildVersionRange(av.Introduced, av.LastAffected, ""))
 			}
 
 			continue

@@ -956,7 +956,7 @@ typing-extensions = ">=4.5.0"
 
 [[package]]
 name = "osv"
-version = "0.0.22"
+version = "0.1.0"
 description = "Open Source Vulnerabilities library"
 optional = false
 python-versions = ">=3.11,<4.0"

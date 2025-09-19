@@ -103,35 +103,55 @@ def main():
       default=False,
       help="Delete bugs if not found in source (GIT only)")
   parser.add_argument(
-      "bugs", action="append", nargs="+", help="The bug IDs to operate on")
+      "bugs",
+      action="append",
+      nargs="*",
+      help="The bug IDs to operate on. If not specified, all bugs from the "
+      "source will be processed.")
 
   args = parser.parse_args()
 
   datastore_client = ndb.Client(args.project_id)
 
   with datastore_client.context():
-    source = osv.SourceRepository.get_by_id(args.source)
+    source_repo = osv.SourceRepository.get_by_id(args.source)
+    if not source_repo:
+      raise ValueError(f"Source repository '{args.source}' not found.")
 
-    if source.type == osv.SourceRepositoryType.REST_ENDPOINT:
-      for bug in args.bugs[0]:
-        record_url = f'{source.link}{bug}{source.extension}'
-        path = f'{bug}{source.extension}'
+    bugs_to_process = []
+    if args.bugs and args.bugs[0]:
+      bugs_to_process = args.bugs[0]
+    else:
+      print(f'No bug IDs provided. Querying all bugs for source {args.source}...')
+      query = osv.Bug.query(osv.Bug.source == args.source)
+      bugs_to_process = [b.key.id() for b in query]
+      print(f'Found {len(bugs_to_process)} bugs to update.')
+      confirm = input('Are you sure you want to proceed? (y/N) ')
+      if confirm.lower() not in ('y', 'yes'):
+        print('Aborting.')
+        return
+
+    if source_repo.type == osv.SourceRepositoryType.REST_ENDPOINT:
+      for bug in bugs_to_process:
+        record_url = f'{source_repo.link}{bug}{source_repo.extension}'
+        path = f'{bug}{source_repo.extension}'
         request_url_update(record_url, args.project_id, args.source, path,
                            args.timeout, False)
 
-    if source.type == osv.SourceRepositoryType.GIT:
-      for bug in args.bugs[0]:
+    if source_repo.type == osv.SourceRepositoryType.GIT:
+      for bug in bugs_to_process:
         entity = osv.Bug.get_by_id(bug)
         if not entity:
-          raise ValueError(f'{bug} does not exist in Datastore')
+          print(f'Warning: {bug} does not exist in Datastore, skipping.')
+          continue
 
         path = entity.source_id.split(':')[1]
 
-        record_url = github_raw_url(source.repo_url, path)
+        record_url = github_raw_url(source_repo.repo_url, path)
         request_url_update(record_url, args.project_id, args.source, path,
                            args.timeout, args.allow_delete)
 
-    if source.type == osv.SourceRepositoryType.BUCKET:
+    if source_repo.type == osv.SourceRepositoryType.BUCKET:
       raise NotImplementedError("Use reimport_gcs_record.py for now")
 
 

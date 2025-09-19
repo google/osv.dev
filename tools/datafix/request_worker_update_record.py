@@ -122,7 +122,8 @@ def main():
     if args.bugs and args.bugs[0]:
       bugs_to_process = args.bugs[0]
     else:
-      print(f'No bug IDs provided. Querying all bugs for source {args.source}...')
+      print(
+          f'No bug IDs provided. Querying all bugs for source {args.source}...')
       query = osv.Bug.query(osv.Bug.source == args.source)
       bugs_to_process = [b.id() for b in query.iter(keys_only=True)]
       print(f'Found {len(bugs_to_process)} bugs to update.')

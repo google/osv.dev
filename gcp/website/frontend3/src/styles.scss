@@ -1161,6 +1161,8 @@ dl.vulnerability-details,
     &[tabindex="0"] {
       background: #fff;
       color: $osv-accent-color;
+      // Override spicy-sections default blue bottom border.
+      border-bottom: 1px solid $osv-accent-color;
     }
 
     // Show parts of the vulnerability on separate lines.

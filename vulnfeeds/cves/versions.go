@@ -554,6 +554,7 @@ func ExtractGitCommit(link string, httpClient *http.Client) (string, string, err
 	if possiblyDifferentLink != link {
 		return ExtractGitCommit(possiblyDifferentLink, httpClient)
 	}
+
 	return commit, r, nil
 }
 

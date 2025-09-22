@@ -2,30 +2,36 @@
 package main
 
 import (
+	"context"
 	"encoding/json"
 	"flag"
+	"fmt"
 	"log/slog"
 	"os"
 	"path"
 	"strings"
 	"time"
 
+	"cloud.google.com/go/storage"
 	"github.com/google/osv/vulnfeeds/cves"
 	"github.com/google/osv/vulnfeeds/utility/logger"
 	"github.com/ossf/osv-schema/bindings/go/osvschema"
+	"golang.org/x/exp/slices"
+	"google.golang.org/api/iterator"
 )
 
 const (
 	defaultOSVOutputPath = "osv_output"
 	defaultCVE5Path      = "cve5"
-	defaultNVDPath       = "nvd"
+	defaultNVDOSVPath    = "nvd"
+	defaultNVDPath       = "cve_jsons"
 )
 
 func main() {
 	logger.InitGlobalLogger()
 
 	cve5Path := flag.String("cve5Path", defaultCVE5Path, "Path to CVE file")
-	nvdPath := flag.String("partsPath", defaultNVDPath, "Path to CVE file")
+	nvdPath := flag.String("partsPath", defaultNVDOSVPath, "Path to CVE file")
 	osvOutputPath := flag.String("osvOutputPath", defaultOSVOutputPath, "Path to CVE file")
 	flag.Parse()
 
@@ -38,13 +44,48 @@ func main() {
 	allCVE5 := loadOSV(*cve5Path)
 	// Load NVD OSVs/PackageInfo
 	allNVD := loadOSV(*nvdPath)
+
+	// nvdCVEs := vulns.LoadAllCVEs(defaultNVDOSVPath)
+	debianCVEs, err := listBucketObjects("osv-test-debian-osv/debian-cve-osv")
+
 	// Combine
-	combinedData := combineIntoOSV(allCVE5, allNVD)
+	combinedData := combineIntoOSV(allCVE5, allNVD, debianCVEs)
 	writeOSVFile(combinedData, *osvOutputPath)
 
 }
 
-// for record in dir
+// listBucketObjects lists the names of all objects in a Google Cloud Storage bucket.
+// It does not download the file contents.
+func listBucketObjects(bucketName string) ([]string, error) {
+
+	ctx := context.Background()
+	client, err := storage.NewClient(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("storage.NewClient: %w", err)
+	}
+	defer client.Close()
+
+	bucket := client.Bucket(bucketName)
+
+	it := bucket.Objects(ctx, nil)
+
+	var filenames []string
+
+	for {
+		attrs, err := it.Next()
+
+		if err == iterator.Done {
+			break // All objects have been listed.
+		}
+		if err != nil {
+			return nil, fmt.Errorf("bucket.Objects: %w", err)
+		}
+
+		filenames = append(filenames, attrs.Name)
+	}
+
+	return filenames, nil
+}
 
 // getModifiedTime gets the modification time of a given file
 // This function assumes that the modified time on disk matches with it in GCS
@@ -66,7 +107,7 @@ func loadOSV(osvPath string) map[cves.CVEID]osvschema.Vulnerability {
 		logger.Fatal("Failed to read dir", slog.String("path", osvPath), slog.Any("err", err))
 	}
 	for _, entry := range dir {
-		if !strings.HasSuffix(entry.Name(), ".json") {
+		if !strings.HasSuffix(entry.Name(), ".json") || strings.HasSuffix(entry.Name(), ".metrics.json") {
 			continue
 		}
 		filePath := path.Join(osvPath, entry.Name())
@@ -88,7 +129,7 @@ func loadOSV(osvPath string) map[cves.CVEID]osvschema.Vulnerability {
 }
 
 // combineIntoOSV creates OSV entry by combining loaded CVEs from NVD and PackageInfo information from security advisories.
-func combineIntoOSV(cve5osv map[cves.CVEID]osvschema.Vulnerability, nvdosv map[cves.CVEID]osvschema.Vulnerability) map[cves.CVEID]osvschema.Vulnerability {
+func combineIntoOSV(cve5osv map[cves.CVEID]osvschema.Vulnerability, nvdosv map[cves.CVEID]osvschema.Vulnerability, debianCVEs []string) map[cves.CVEID]osvschema.Vulnerability {
 	vulns := make(map[cves.CVEID]osvschema.Vulnerability)
 
 	// Iterate through CVEs from security advisories (cve5) as the base
@@ -97,8 +138,6 @@ func combineIntoOSV(cve5osv map[cves.CVEID]osvschema.Vulnerability, nvdosv map[c
 		nvd, ok := nvdosv[cveID]
 
 		if ok {
-			// TODO: check either have version ranges.
-
 			// If the cve5-derived record has no affected packages, use NVD's.
 			if len(combined.Affected) == 0 && len(nvd.Affected) > 0 {
 				combined.Affected = nvd.Affected
@@ -146,12 +185,20 @@ func combineIntoOSV(cve5osv map[cves.CVEID]osvschema.Vulnerability, nvdosv map[c
 			// The CVE is processed, so remove it from the nvdosv map to avoid re-processing.
 			delete(nvdosv, cveID)
 		}
+		if len(combined.Affected) == 0 {
+			// check if part exists.
+			if !slices.Contains(debianCVEs, string(cveID)) {
+				// logger.Info("No affected range, so skipping.")
+				continue
+			}
+		}
 		vulns[cveID] = combined
 	}
 
 	// Add any remaining CVEs from NVD that were not in the advisory data.
 	for cveID, nvd := range nvdosv {
 		vulns[cveID] = nvd
+		logger.Info("" + string(cveID))
 	}
 
 	return vulns

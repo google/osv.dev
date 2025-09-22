@@ -190,9 +190,9 @@ func ConvertAndExportCVEToOSV(cve cves.CVE5, directory string) error {
 	}
 
 	// Save the conversion metrics to a file.
-	if err := writeMetricToFile(cveID, vulnDir, metrics); err != nil {
-		return err
-	}
+	// if err := writeMetricToFile(cveID, vulnDir, metrics); err != nil {
+	// 	return err
+	// }
 
 	return nil
 }

@@ -183,49 +183,57 @@ func AddVersionInfo(cve cves.CVE5, v *vulns.Vulnerability, repos []string) ([]Ve
 func gitVersionsToCommits(cveID cves.CVEID, versionRanges []osvschema.Range, repos []string, cache git.RepoTagsCache) (osvschema.Affected, error) {
 	var newAff osvschema.Affected
 	var newVersionRanges []osvschema.Range
-	var unresolvedRanges []osvschema.Range
+	unresolvedRanges := versionRanges
+
 	for _, repo := range repos {
+		if len(unresolvedRanges) == 0 {
+			break // All ranges have been resolved.
+		}
+
 		normalizedTags, err := git.NormalizeRepoTags(repo, cache)
 		if err != nil {
 			logger.Warn("Failed to normalize tags", slog.String("cve", string(cveID)), slog.String("repo", repo), slog.Any("err", err))
 			continue
 		}
-		for _, vr := range versionRanges {
+
+		var stillUnresolvedRanges []osvschema.Range
+		for _, vr := range unresolvedRanges {
 			var introducedCommit, fixedCommit, lastAffectedCommit string
-			var err error
+			var resolutionErr error
+
 			for _, ev := range vr.Events {
 				logger.Info("Attempting version resolution", slog.String("cve", string(cveID)), slog.Any("event", ev), slog.String("repo", repo))
 				if ev.Introduced != "" {
 					if ev.Introduced == "0" {
 						introducedCommit = "0"
 					} else {
-						introducedCommit, err = git.VersionToCommit(ev.Introduced, normalizedTags)
-						if err != nil {
-							logger.Warn("Failed to get Git commit for introduced version", slog.String("cve", string(cveID)), slog.String("version", ev.Introduced), slog.String("repo", repo), slog.Any("err", err))
+						introducedCommit, resolutionErr = git.VersionToCommit(ev.Introduced, normalizedTags)
+						if resolutionErr != nil {
+							logger.Warn("Failed to get Git commit for introduced version", slog.String("cve", string(cveID)), slog.String("version", ev.Introduced), slog.String("repo", repo), slog.Any("err", resolutionErr))
 						} else {
 							logger.Info("Successfully derived commit for introduced version", slog.String("cve", string(cveID)), slog.String("commit", introducedCommit), slog.String("version", ev.Introduced))
 						}
 					}
 				}
 				if ev.Fixed != "" {
-					// check if fixed commit doesnt already exist?
-					// todo: also check ref links for commits.
-					fixedCommit, err = git.VersionToCommit(ev.Fixed, normalizedTags)
-					if err != nil {
-						logger.Warn("Failed to get Git commit for fixed version", slog.String("cve", string(cveID)), slog.String("version", ev.Fixed), slog.String("repo", repo), slog.Any("err", err))
+					fixedCommit, resolutionErr = git.VersionToCommit(ev.Fixed, normalizedTags)
+					if resolutionErr != nil {
+						logger.Warn("Failed to get Git commit for fixed version", slog.String("cve", string(cveID)), slog.String("version", ev.Fixed), slog.String("repo", repo), slog.Any("err", resolutionErr))
 					} else {
 						logger.Info("Successfully derived commit for fixed version", slog.String("cve", string(cveID)), slog.String("commit", fixedCommit), slog.String("version", ev.Fixed))
 					}
 				}
 				if ev.LastAffected != "" {
-					lastAffectedCommit, err = git.VersionToCommit(ev.LastAffected, normalizedTags)
-					if err != nil {
-						logger.Warn("Failed to get Git commit for last affected version", slog.String("cve", string(cveID)), slog.String("version", ev.LastAffected), slog.String("repo", repo), slog.Any("err", err))
+					lastAffectedCommit, resolutionErr = git.VersionToCommit(ev.LastAffected, normalizedTags)
+					if resolutionErr != nil {
+						logger.Warn("Failed to get Git commit for last affected version", slog.String("cve", string(cveID)), slog.String("version", ev.LastAffected), slog.String("repo", repo), slog.Any("err", resolutionErr))
 					} else {
 						logger.Info("Successfully derived commit for last affected version", slog.String("cve", string(cveID)), slog.String("commit", lastAffectedCommit), slog.String("version", ev.LastAffected))
 					}
 				}
 			}
+
+			resolved := false
 			if fixedCommit != "" && introducedCommit != "" {
 				newVR := buildVersionRange(introducedCommit, "", fixedCommit)
 				newVR.Repo = repo
@@ -233,8 +241,7 @@ func gitVersionsToCommits(cveID cves.CVEID, versionRanges []osvschema.Range, rep
 				newVR.DatabaseSpecific = make(map[string]any)
 				newVR.DatabaseSpecific["versions"] = vr.Events
 				newVersionRanges = append(newVersionRanges, newVR)
-
-				continue
+				resolved = true
 			} else if lastAffectedCommit != "" && introducedCommit != "" {
 				newVR := buildVersionRange(introducedCommit, lastAffectedCommit, "")
 				newVR.Repo = repo
@@ -242,17 +249,16 @@ func gitVersionsToCommits(cveID cves.CVEID, versionRanges []osvschema.Range, rep
 				newVR.DatabaseSpecific = make(map[string]any)
 				newVR.DatabaseSpecific["versions"] = vr.Events
 				newVersionRanges = append(newVersionRanges, newVR)
-
-				continue
+				resolved = true
 			}
 
-			// Nothing resolved, move on to the next AffectedVersion
-			logger.Warn("Sufficient resolution not possible", slog.String("cve", string(cveID)), slog.Any("range", vr))
-			unresolvedRanges = append(unresolvedRanges, vr)
-
-			continue
+			if !resolved {
+				stillUnresolvedRanges = append(stillUnresolvedRanges, vr)
+			}
 		}
+		unresolvedRanges = stillUnresolvedRanges
 	}
+
 	var err error
 	if len(unresolvedRanges) > 0 {
 		newAff.DatabaseSpecific = make(map[string]any)
@@ -261,7 +267,7 @@ func gitVersionsToCommits(cveID cves.CVEID, versionRanges []osvschema.Range, rep
 
 	if len(newVersionRanges) > 0 {
 		newAff.Ranges = newVersionRanges
-	} else {
+	} else if len(unresolvedRanges) > 0 { // Only error if there were ranges to resolve but none were.
 		err = errors.New("was not able to get git version ranges")
 	}
 
@@ -476,10 +482,10 @@ func findNormalAffectedRanges(affected cves.Affected) (versionRanges []osvschema
 			continue
 		}
 
-		// As a fallback, assume a single version means it's the fixed version.
+		// As a fallback, assume a single version means it's the last_affected version.
 		if vQuality.AtLeast(acceptableQuality) {
-			versionRanges = append(versionRanges, buildVersionRange("0", "", vers.Version))
-			notes = append(notes, fmt.Sprintf("%s - Single version found %v - Assuming introduced = 0 and Fixed = %v", vQuality, vers.Version, vers.Version))
+			versionRanges = append(versionRanges, buildVersionRange("0", vers.Version, ""))
+			notes = append(notes, fmt.Sprintf("%s - Single version found %v - Assuming introduced = 0 and last affected = %v", vQuality, vers.Version, vers.Version))
 		}
 	}
 

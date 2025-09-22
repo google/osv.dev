@@ -855,6 +855,7 @@ dl.vulnerability-details,
 
 .vulnerability-packages-container {
   margin-top: 50px;
+  padding-bottom: 50px;
 
   .title {
     margin-left: 20px;
@@ -948,6 +949,183 @@ dl.vulnerability-details,
   .spicy-sections-workaround {
     // https://github.com/tabvengers/spicy-sections/issues/64.
     pointer-events: none;
+  }
+
+  &.force-collapse {
+    h2.package-header {
+      width: 100%;
+      background: #393939;
+      color: #fff;
+      padding: 16px;
+      margin-bottom: 2px;
+      border-radius: 0;
+      font-weight: normal;
+      transition: background-color 0.2s ease-in-out;
+      cursor: pointer;
+
+      &::before {
+        content: '';
+        width: 12px;
+        height: 12px;
+        margin-right: 8px;
+        background-image: url(/static/img/filled-triangle.svg);
+        background-position: center;
+        background-repeat: no-repeat;
+        transition: transform 0.2s ease-in-out;
+        transform: rotate(0deg);
+        filter: invert(100%);
+      }
+
+      &[expanded]::before {
+        transform: rotate(90deg);
+      }
+
+      &:hover {
+        background: #4F4F4F;
+      }
+
+      &[expanded] {
+        background: #fff;
+        color: $osv-accent-color;
+        font-weight: bold;
+        
+        &::before {
+          filter: invert(24%) sepia(89%) saturate(2293%) hue-rotate(345deg) brightness(81%) contrast(107%);
+        }
+          
+        &:hover {
+          background: #f0f0f0;
+        }
+      }
+    }
+
+    .ecosystem-content-panel {
+      position: relative;
+      padding: 8px 0 16px 16px;
+
+      // The vertical "tree" line
+      &::before {
+        content: '';
+        position: absolute;
+        left: 8px; 
+        top: 0;
+        bottom: 0;
+        width: 1px;
+        background: #555;
+      }
+    }
+
+    $last-ecosystem-border-offset: 12px;
+    $last-ecosystem-border-gap: 8px;
+    $last-ecosystem-border-thickness: 1px;
+
+    .ecosystem-content-panel--last {
+      padding-bottom: $last-ecosystem-border-offset + $last-ecosystem-border-gap;
+
+      &::before {
+        bottom: $last-ecosystem-border-offset + $last-ecosystem-border-thickness;
+      }
+
+      &::after {
+        content: '';
+        position: absolute;
+        left: 0;
+        right: 0;
+        bottom: $last-ecosystem-border-offset;
+        height: $last-ecosystem-border-thickness;
+        background: $osv-grey-600;
+      }
+    }
+    
+    .package-accordion {
+      position: relative;
+      margin-bottom: 8px;
+
+      // The horizontal "connector" line
+      &::before {
+        content: '';
+        position: absolute;
+        left: -8px;
+        width: 8px;
+        top: 20px;
+        height: 1px;
+        background: #555;
+      }
+    }
+
+    .package-accordion--last {
+      margin-bottom: 0;
+
+      .package-details-card {
+        margin-bottom: $last-ecosystem-border-gap;
+      }
+    }
+
+    .package-accordion h3.package-name-title {
+      font-family: $osv-heading-font-family;
+      font-size: 1.1rem;
+      color: #f1f1f1;
+      padding: 12px 16px;
+      cursor: pointer;
+      background: #333333;
+      border: 1px solid #444;
+      border-radius: 0;
+
+      &::before {
+        content: '';
+        width: 12px;
+        height: 12px;
+        margin-right: 8px;
+        background-image: url(/static/img/filled-triangle.svg);
+        background-position: center;
+        background-repeat: no-repeat;
+        filter: invert(100%);
+        transition: transform 0.2s ease-in-out;
+        display: inline-block;
+        vertical-align: middle;
+        transform: rotate(0deg);
+      }
+
+      &[expanded] {
+        border-bottom: 1px dashed #fff;
+        
+        &::before {
+          transform: rotate(90deg);
+        }
+      }
+    }
+
+    .package-accordion .package-details-card {
+      background: #333333;
+      border: 1px solid #444;
+      border-top: none;
+      border-radius: 0;
+
+      .vulnerability-package-subsection {
+        padding: 14px 0;
+        border-bottom: 1px dashed #555;
+        
+        &.affected-ranges-subsection {
+          padding-bottom: 4px;
+        }
+
+        h3 {
+          font-size: 16.55px;
+        }
+
+        dl {
+          font-size: 15px;
+        }
+
+        &:last-child {
+          border-bottom: none;
+        }
+      }
+      
+      .mdc-layout-grid {
+        padding: 8px 16px 16px;
+      }
+    }
   }
 
   &[affordance="collapse"] h2.package-header {

@@ -128,7 +128,7 @@ func TestFindNormalAffectedRanges(t *testing.T) {
 				},
 			},
 			wantRanges: []osvschema.Range{
-				buildVersionRange("0", "", "2.0"),
+				buildVersionRange("0", "2.0", ""),
 			},
 			wantRangeType: VersionRangeTypeSemver,
 		},

@@ -1,4 +1,4 @@
-# Copyright 2022 Google LLC
+# Copyright 2025 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -19,6 +19,7 @@
 
 import unittest
 import vcr.unittest
+import warnings
 
 from . import nuget
 from .. import ecosystems
@@ -83,6 +84,11 @@ class NuGetVersionTest(unittest.TestCase):
     self.check_order(self.assertLess, '1.0.0', '1.0.0.1-alpha')
     self.check_order(self.assertLess, '0.9.9.1', '1.0.0')
 
+  def test_ge_le(self):
+    """Test version >=/<=."""
+    self.check_order(self.assertGreaterEqual, '1.10.0', '1.2.0')
+    self.check_order(self.assertLessEqual, '1.2.0', '1.10.0')
+
 
 class NuGetEcosystemTest(vcr.unittest.VCRTestCase):
   """NuGet ecosystem helper tests."""
@@ -90,16 +96,19 @@ class NuGetEcosystemTest(vcr.unittest.VCRTestCase):
   def test_next_version(self):
     """Test next_version."""
     ecosystem = ecosystems.get('NuGet')
-    self.assertEqual('3.0.1',
-                     ecosystem.next_version('NuGet.Server.Core', '3.0.0'))
-    self.assertEqual('3.0.0.4001',
-                     ecosystem.next_version('Castle.Core', '3.0.0.3001'))
-    self.assertEqual('3.1.0-RC',
-                     ecosystem.next_version('Castle.Core', '3.0.0.4001'))
-    self.assertEqual('2.1.0-dev-00668',
-                     ecosystem.next_version('Serilog', '2.1.0-dev-00666'))
-    with self.assertRaises(ecosystems.EnumerateError):
-      ecosystem.next_version('doesnotexist123456', '1')
+    with warnings.catch_warnings():
+      # Filter the DeprecationWarning from next_version
+      warnings.filterwarnings('ignore', 'Avoid using this method')
+      self.assertEqual('3.0.1',
+                       ecosystem.next_version('NuGet.Server.Core', '3.0.0'))
+      self.assertEqual('3.0.0.4001',
+                       ecosystem.next_version('Castle.Core', '3.0.0.3001'))
+      self.assertEqual('3.1.0-RC',
+                       ecosystem.next_version('Castle.Core', '3.0.0.4001'))
+      self.assertEqual('2.1.0-dev-00668',
+                       ecosystem.next_version('Serilog', '2.1.0-dev-00666'))
+      with self.assertRaises(ecosystems.EnumerateError):
+        ecosystem.next_version('doesnotexist123456', '1')
 
   def test_sort_key(self):
     ecosystem = ecosystems.get('NuGet')

@@ -1,4 +1,4 @@
-# Copyright 2021 Google LLC
+# Copyright 2025 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -11,14 +11,82 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""Debian ecosystem helper tests."""
+"""dpkg / Debian ecosystem helper tests."""
 
 import requests
 import vcr.unittest
+import unittest
 from unittest import mock
+import warnings
+
+from . import debian
 
 from .. import cache
 from .. import ecosystems
+
+
+class DPKGEcosystemTest(unittest.TestCase):
+  """dpkg ecosystem helper tests."""
+
+  def test_dpkg(self):
+    """Test sort_key"""
+    ecosystem = debian.DPKG()
+    # Debian
+    self.assertGreater(
+        ecosystem.sort_key('1.13.6-2'), ecosystem.sort_key('1.13.6-1'))
+
+    # Test that <end-of-life> specifically is greater than normal versions
+    self.assertGreater(
+        ecosystem.sort_key('<end-of-life>'), ecosystem.sort_key('1.13.6-1'))
+
+    # Compares base versions
+    self.assertGreater(ecosystem.sort_key('1.2.3'), ecosystem.sort_key('1.2'))
+    self.assertGreater(ecosystem.sort_key('1.3'), ecosystem.sort_key('1.2-3'))
+
+    # Compares versions within the same Debian release
+    self.assertGreater(
+        ecosystem.sort_key('1.3+deb11u1'), ecosystem.sort_key('1.2+deb11u5'))
+
+    # Compare versions across Debian releases
+    self.assertGreater(
+        ecosystem.sort_key('1.2+deb12u1'),
+        ecosystem.sort_key('1.2+deb11u2'))  # deb12 > deb11
+    self.assertGreater(
+        ecosystem.sort_key('1.18+deb11u3'),
+        ecosystem.sort_key('1.14+deb10u3'))  # 1.18 > 1.14
+    self.assertGreater(
+        ecosystem.sort_key('1.18+deb10'),
+        ecosystem.sort_key('1.14+deb11'))  # 1.18 > 1.14
+
+    # Echo
+    self.assertGreater(
+        ecosystem.sort_key("38.52.0-e1"), ecosystem.sort_key("37.52.0-e0"))
+    self.assertLess(ecosystem.sort_key("453"), ecosystem.sort_key("453-e1"))
+    self.assertGreater(ecosystem.sort_key("5.4.13-e1"), ecosystem.sort_key("0"))
+    self.assertGreater(
+        ecosystem.sort_key("1.4.0-e1"), ecosystem.sort_key("1.4.0-e0"))
+    self.assertGreater(
+        ecosystem.sort_key("invalid"), ecosystem.sort_key("1.4.0-e0"))
+    self.assertGreater(
+        ecosystem.sort_key("13.0.14.5-e1"), ecosystem.sort_key("7.64.3-e2"))
+    self.assertLess(
+        ecosystem.sort_key("13.0.14.5-e1"), ecosystem.sort_key("16.6-e0"))
+
+    # Check >= / <= methods
+    self.assertGreaterEqual(
+        ecosystem.sort_key('1.10.0-1'), ecosystem.sort_key('1.2.0-1'))
+    self.assertLessEqual(
+        ecosystem.sort_key('1.2.0-1'), ecosystem.sort_key('1.10.0-1'))
+
+  def test_dpkg_ecosystems(self):
+    """Test dpkg-based ecosystems return a DPKG ecosystem."""
+    ecos = [
+        'Debian',
+        'Echo',
+    ]
+    for ecosystem_name in ecos:
+      ecosystem = ecosystems.get(ecosystem_name)
+      self.assertIsInstance(ecosystem, debian.DPKG)
 
 
 class DebianEcosystemTest(vcr.unittest.VCRTestCase):
@@ -37,18 +105,13 @@ class DebianEcosystemTest(vcr.unittest.VCRTestCase):
     ecosystem = ecosystems.get('Debian:9')
 
     # Tests that next version and version enumeration generally works
-    self.assertEqual('1.13.6-1', ecosystem.next_version('nginx', '1.13.5-1'))
-    self.assertEqual('1.13.6-2', ecosystem.next_version('nginx', '1.13.6-1'))
-    self.assertEqual('3.0.1+dfsg-2',
-                     ecosystem.next_version('blender', '3.0.1+dfsg-1'))
-
-    # Tests that sort key works
-    self.assertGreater(
-        ecosystem.sort_key('1.13.6-2'), ecosystem.sort_key('1.13.6-1'))
-
-    # Test that <end-of-life> specifically is greater than normal versions
-    self.assertGreater(
-        ecosystem.sort_key('<end-of-life>'), ecosystem.sort_key('1.13.6-1'))
+    with warnings.catch_warnings():
+      # Filter the DeprecationWarning from next_version
+      warnings.filterwarnings('ignore', 'Avoid using this method')
+      self.assertEqual('1.13.6-1', ecosystem.next_version('nginx', '1.13.5-1'))
+      self.assertEqual('1.13.6-2', ecosystem.next_version('nginx', '1.13.6-1'))
+      self.assertEqual('3.0.1+dfsg-2',
+                       ecosystem.next_version('blender', '3.0.1+dfsg-1'))
 
     # Test that end-of-life enumeration is disabled
     with self.assertLogs(level='WARNING') as logs:
@@ -79,7 +142,9 @@ class DebianEcosystemTest(vcr.unittest.VCRTestCase):
     self.assertNotIn('2.1.27~101-g0780600+dfsg-3+deb9u1', versions)
     self.assertNotIn('2.1.27~101-g0780600+dfsg-3+deb9u2', versions)
 
-    with self.assertRaises(ecosystems.EnumerateError):
+    with self.assertRaises(
+        ecosystems.EnumerateError), warnings.catch_warnings():
+      warnings.filterwarnings('ignore', 'Avoid using this method')
       ecosystem.next_version('doesnotexist123456', '1')
 
     self.assertEqual(general_requests_mock.call_count, 5)
@@ -90,35 +155,16 @@ class DebianEcosystemTest(vcr.unittest.VCRTestCase):
     self.assertEqual(general_requests_mock.call_count, 5)
     ecosystems.config.set_cache(None)
 
-  def test_debian_sort_key(self):
-    """Tests Debian sort key across different releases."""
-    ecosystem = ecosystems.get('Debian')
-
-    # Compares base versions
-    self.assertGreater(ecosystem.sort_key('1.2.3'), ecosystem.sort_key('1.2'))
-    self.assertGreater(ecosystem.sort_key('1.3'), ecosystem.sort_key('1.2-3'))
-
-    # Compares versions within the same Debian release
-    self.assertGreater(
-        ecosystem.sort_key('1.3+deb11u1'), ecosystem.sort_key('1.2+deb11u5'))
-
-    # Compare versions across Debian releases
-    self.assertGreater(
-        ecosystem.sort_key('1.2+deb12u1'),
-        ecosystem.sort_key('1.2+deb11u2'))  # deb12 > deb11
-    self.assertGreater(
-        ecosystem.sort_key('1.18+deb11u3'),
-        ecosystem.sort_key('1.14+deb10u3'))  # 1.18 > 1.14
-    self.assertGreater(
-        ecosystem.sort_key('1.18+deb10'),
-        ecosystem.sort_key('1.14+deb11'))  # 1.18 > 1.14
-
   @mock.patch('osv.cache.Cache')
   def test_cache(self, cache_mock: mock.MagicMock):
+    """Test caching works."""
     cache_mock.get.return_value = None
     ecosystems.config.set_cache(cache_mock)
 
-    debian = ecosystems.get('Debian:9')
-    debian.next_version('nginx', '1.13.5-1')
+    deb = ecosystems.get('Debian:9')
+    with warnings.catch_warnings():
+      # Filter the DeprecationWarning from next_version
+      warnings.filterwarnings('ignore', 'Avoid using this method')
+      deb.next_version('nginx', '1.13.5-1')
     cache_mock.get.assert_called_once()
     cache_mock.set.assert_called_once()

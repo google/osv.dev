@@ -31,32 +31,7 @@ set -e
 
 echo "Downloading the entire NVD"
 mkdir -p "${WORK_DIR}/nvd"
-APIKEY="$(gcloud --project "$GOOGLE_CLOUD_PROJECT" secrets versions access latest --secret=nvd-api --format='get(payload.data)' | base64 -d)"
-/usr/local/bin/download-cves --api_key "$APIKEY" --cvePath "${WORK_DIR}/nvd"
-
-echo "Splitting monolithic file into years"
-for (( YEAR = 2002 ; YEAR <= $(date +%Y) ; YEAR++ ))
-do
-  cat "${WORK_DIR}/nvd/nvdcve-2.0.json" \
-    | jq \
-      --arg year $YEAR \
-      'def count_matching_cves:
-          reduce .vulnerabilities[] as $v (0;
-          if $v.cve?.id? | startswith("CVE-" + $year + "-") then . + 1 else . end
-        );
-
-        {
-        "resultsPerPage": count_matching_cves,
-        "startIndex": 0,
-        "totalResults": count_matching_cves,
-        "format": .format,
-        "version": .version,
-        "timestamp": .timestamp,
-        "vulnerabilities": .vulnerabilities | map(select(.cve?.id? | startswith("CVE-" + $year + "-")))
-       }' > "${WORK_DIR}/nvd/nvdcve-2.0-${YEAR}.json" &
-done
-
-wait
+/usr/local/bin/download-cves --cvePath "${WORK_DIR}/nvd"
 
 echo "Copying files to GCS bucket"
 gcloud config set storage/parallel_composite_upload_enabled True

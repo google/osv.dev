@@ -34,6 +34,12 @@
       "enabled": false
     },
     {
+      "matchDepNames": [
+        "gcp/workers/worker/osv-test"
+      ],
+      "enabled": false
+    },
+    {
       "matchFileNames": [
         "gcp/website/**"
       ],

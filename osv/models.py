@@ -453,7 +453,7 @@ class Bug(ndb.Model):
     for affected_package in self.affected_packages:
       # Indexes used for querying by exact version.
       ecosystem_helper = ecosystems.get(affected_package.package.ecosystem)
-      if ecosystem_helper and ecosystem_helper.supports_ordering:
+      if ecosystem_helper is not None:
         # No need to normalize if the ecosystem is supported.
         self.affected_fuzzy.extend(affected_package.versions)
       else:
@@ -1168,10 +1168,6 @@ def affected_from_bug(entity: Bug) -> list[AffectedVersions]:
 
     # Ecosystem helper for sorting the events.
     e_helper = ecosystems.get(pkg_ecosystem)
-    if e_helper is not None and not (e_helper.supports_comparing or
-                                     e_helper.is_semver):
-      e_helper = None
-
     # TODO(michaelkedar): I am matching the current behaviour of the API,
     # where GIT tags match to the first git repo in the ranges list, even if
     # there are non-git ranges or multiple git repos in a range.
@@ -1216,7 +1212,7 @@ def affected_from_bug(entity: Bug) -> list[AffectedVersions]:
             AffectedVersions(
                 vuln_id=entity.db_id,
                 ecosystem='GIT',
-                name=repo_url,
+                name=normalize_repo_package(repo_url),
                 versions=affected.versions,
             ))
 
@@ -1247,6 +1243,36 @@ def diff_affected_versions(
   removed = [all_dict[k] for k in removed_keys]
 
   return added, removed
+
+
+def normalize_repo_package(repo_url: str) -> str:
+  """Normalize the repo_url for use with GIT AffectedVersions entities.
+  
+  Removes the scheme/protocol and the .git extension, and trailing slashes.
+  
+  For example:
+    - 'http://git.musl-libc.org/git/musl' (e.g. CVE-2017-15650)
+      and 'https://git.musl-libc.org/git/musl' (e.g. CVE-2025-26519)
+      both become 'git.musl-libc.org/git/musl'
+    - 'https://github.com/curl/curl.git' (e.g. CURL-CVE-2024-2004)
+      and 'https://github.com/curl/curl' (e.g. CVE-2025-5025)
+      both become 'github.com/curl/curl'
+  """
+  if not repo_url:
+    return repo_url
+
+  try:
+    parsed = urlparse(repo_url)
+    # Remove scheme and reconstruct without it
+    # Keep netloc (hostname) and path
+    normalized = parsed.netloc + parsed.path
+
+    # Remove trailing slash
+    normalized = normalized.rstrip('/')
+    normalized = normalized.removesuffix('.git')
+    return normalized
+  except Exception:
+    return repo_url
 
 
 # --- Indexer entities ---
@@ -1465,7 +1491,7 @@ def sorted_events(ecosystem, range_type, events) -> list[AffectedEvent]:
   else:
     ecosystem_helper = ecosystems.get(ecosystem)
 
-  if ecosystem_helper is None or not ecosystem_helper.supports_ordering:
+  if ecosystem_helper is None:
     raise ValueError('Unsupported ecosystem ' + ecosystem)
 
   # Remove any magic '0' values.

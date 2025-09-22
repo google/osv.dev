@@ -38,7 +38,7 @@ func loadTestData2(cveName string) cves.Vulnerability {
 
 func TestLoadParts(t *testing.T) {
 	allParts, _ := loadParts("../../test_data/parts")
-	expectedPartCount := 15
+	expectedPartCount := 14
 	actualPartCount := len(allParts)
 
 	if actualPartCount != expectedPartCount {
@@ -86,15 +86,14 @@ func TestLoadParts(t *testing.T) {
 
 func TestCombineIntoOSV(t *testing.T) {
 	cveStuff := map[cves.CVEID]cves.Vulnerability{
-		"CVE-2022-33745":   loadTestData2("CVE-2022-33745"),
-		"CVE-2022-32746":   loadTestData2("CVE-2022-32746"),
-		"CVE-2018-1000500": loadTestData2("CVE-2018-1000500"),
+		"CVE-2022-33745": loadTestData2("CVE-2022-33745"),
+		"CVE-2022-32746": loadTestData2("CVE-2022-32746"),
 	}
 	allParts, cveModifiedTime := loadParts("../../test_data/parts")
 
 	combinedOSV := combineIntoOSV(cveStuff, allParts, "", cveModifiedTime)
 
-	expectedCombined := 3
+	expectedCombined := 2
 	actualCombined := len(combinedOSV)
 
 	if actualCombined != expectedCombined {
@@ -104,15 +103,9 @@ func TestCombineIntoOSV(t *testing.T) {
 		if len(combinedOSV[cve].Affected) != len(allParts[cve]) {
 			t.Errorf("Affected lengths for %s do not match", cve)
 		}
+
 		found := false
 		switch cve {
-		case "CVE-2018-1000500":
-			for _, reference := range combinedOSV[cve].References {
-				if reference.Type == "ADVISORY" &&
-					reference.URL == "https://security-tracker.debian.org/tracker/CVE-2018-1000500" {
-					found = true
-				}
-			}
 		case "CVE-2022-33745":
 			for _, reference := range combinedOSV[cve].References {
 				if reference.Type == "ADVISORY" &&
@@ -133,7 +126,6 @@ func TestCombineIntoOSV(t *testing.T) {
 		}
 	}
 }
-
 func TestGetModifiedTime(t *testing.T) {
 	_, err := getModifiedTime("../../test_data/parts/debian/CVE-2016-1585.debian.json")
 	if err != nil {

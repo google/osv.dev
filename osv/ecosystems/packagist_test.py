@@ -1,4 +1,4 @@
-# Copyright 2022 Google LLC
+# Copyright 2025 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -38,6 +38,12 @@ class PackagistEcosystemTest(vcr.unittest.VCRTestCase):
     self.assertGreater(ecosystem.sort_key('1.0.0'), ecosystem.sort_key('1.0'))
     self.assertEqual(
         ecosystem.sort_key('1.0.0rc2'), ecosystem.sort_key('1.0.0.rc2'))
+
+    # Check >= / <= methods
+    self.assertGreaterEqual(
+        ecosystem.sort_key('1.10-2RC1'), ecosystem.sort_key('1.2-2RC1'))
+    self.assertLessEqual(
+        ecosystem.sort_key('1.2-2RC1'), ecosystem.sort_key('1.10-2RC1'))
 
     enumerated_versions = ecosystem.enumerate_versions('neos/neos', '3.3.0',
                                                        '4.4.0')

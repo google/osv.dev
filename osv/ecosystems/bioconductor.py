@@ -1,4 +1,4 @@
-# Copyright 2023 Google LLC
+# Copyright 2025 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -16,11 +16,11 @@
 import requests
 
 from . import config
-from .helper_base import Ecosystem, EnumerateError
-from .. import semver_index
+from .ecosystems_base import EnumerableEcosystem, EnumerateError
+from .semver_ecosystem_helper import SemverLike
 
 
-class Bioconductor(Ecosystem):
+class Bioconductor(EnumerableEcosystem, SemverLike):
   """Bioconductor ecosystem helpers."""
 
   # Use the Posit Public Package Manager API to pull both the current and
@@ -41,15 +41,6 @@ class Bioconductor(Ecosystem):
       raise RuntimeError('Failed to get Bioconductor versions')
 
     return [bioc['bioc_version'] for bioc in data['bioc_versions']]
-
-  def sort_key(self, version):
-    """Sort key."""
-    try:
-      return semver_index.parse(version)
-    except ValueError:
-      # If a user gives us an unparsable semver version,
-      # treat it as a very large version so as to not match anything.
-      return semver_index.parse('999999')
 
   def _enumerate_versions(self,
                           url,

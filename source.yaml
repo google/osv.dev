@@ -191,6 +191,20 @@
   editable: False
   strict_validation: True
 
+- name: 'echo'
+  versions_from_repo: False
+  rest_api_url: 'https://advisory.echohq.com/osv/all.json'
+  type: 2
+  ignore_patterns: ['^(?!ECHO-).*$']
+  directory_path: 'osv'
+  detect_cherrypicks: False
+  extension: '.json'
+  db_prefix: ['ECHO-']
+  ignore_git: True
+  link: 'https://advisory.echohq.com/osv/'
+  editable: False
+  strict_validation: True
+
 - name: 'ghsa'
   versions_from_repo: False
   type: 0

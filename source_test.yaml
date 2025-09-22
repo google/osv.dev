@@ -141,7 +141,7 @@
   bucket: 'osv-test-debian-osv'
   db_prefix: ['DEBIAN-']
   ignore_git: True
-  human_link: 'https://security-tracker.debian.org/tracker/{{ BUG_ID }}'
+  human_link: 'https://security-tracker.debian.org/tracker/{{ BUG_ID | replace("DEBIAN-", "") }}'
   link: 'https://storage.googleapis.com/osv-test-debian-osv/'
   editable: False
   strict_validation: True

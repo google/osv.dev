@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"flag"
 	"log/slog"
-	"net/url"
 	"os"
 	"path"
 	"strings"
@@ -14,7 +13,6 @@ import (
 	"github.com/google/osv/vulnfeeds/cves"
 	"github.com/google/osv/vulnfeeds/utility/logger"
 	"github.com/google/osv/vulnfeeds/vulns"
-	"github.com/ossf/osv-schema/bindings/go/osvschema"
 )
 
 const (
@@ -23,9 +21,8 @@ const (
 	defaultOSVOutputPath  = "osv_output"
 	defaultCVEListPath    = "."
 
-	alpineEcosystem          = "Alpine"
-	debianEcosystem          = "Debian"
-	alpineSecurityTrackerURL = "https://security.alpinelinux.org/vuln"
+	alpineEcosystem = "Alpine"
+	debianEcosystem = "Debian"
 )
 
 func main() {
@@ -165,17 +162,12 @@ func combineIntoOSV(loadedCves map[cves.CVEID]cves.Vulnerability, allParts map[c
 			}
 		}
 
-		addedAlpineURL := false
 		for _, pkgInfo := range allParts[cveID] {
-			// skip debian parts, but still write out the CVEs.
-			if strings.HasPrefix(pkgInfo.Ecosystem, debianEcosystem) {
+			// skip debian and alpine parts, but still write out the CVEs.
+			if strings.HasPrefix(pkgInfo.Ecosystem, debianEcosystem) || strings.HasPrefix(pkgInfo.Ecosystem, alpineEcosystem) {
 				continue
 			}
 			convertedCve.AddPkgInfo(pkgInfo)
-			if strings.HasPrefix(pkgInfo.Ecosystem, alpineEcosystem) && !addedAlpineURL {
-				addReference(string(cveID), alpineEcosystem, convertedCve)
-				addedAlpineURL = true
-			}
 		}
 
 		cveModified := convertedCve.Modified
@@ -206,18 +198,4 @@ func writeOSVFile(osvData map[cves.CVEID]*vulns.Vulnerability, osvOutputPath str
 	}
 
 	logger.Info("Successfully written OSV files", slog.Int("count", len(osvData)))
-}
-
-// addReference adds the related security tracker URL to a given vulnerability's references
-func addReference(cveID string, ecosystem string, convertedCve *vulns.Vulnerability) {
-	securityReference := osvschema.Reference{Type: osvschema.ReferenceAdvisory}
-	if ecosystem == alpineEcosystem {
-		securityReference.URL, _ = url.JoinPath(alpineSecurityTrackerURL, cveID)
-	}
-
-	if securityReference.URL == "" {
-		return
-	}
-
-	convertedCve.References = append(convertedCve.References, securityReference)
 }

@@ -40,7 +40,7 @@ func main() {
 	numWorkers := flag.Int("num_workers", 64, "Number of workers to process records")
 	flag.Parse()
 
-	err = os.MkdirAll(*debianOutputPath, 0755)
+	err := os.MkdirAll(*debianOutputPath, 0755)
 	if err != nil {
 		logger.Fatal("Can't create output path", slog.Any("err", err))
 	}
@@ -67,7 +67,7 @@ func main() {
 	var wg sync.WaitGroup
 	vulnChan := make(chan *vulns.Vulnerability)
 
-	for range numWorkers {
+	for range *numWorkers {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()

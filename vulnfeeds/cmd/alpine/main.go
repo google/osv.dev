@@ -12,7 +12,6 @@ import (
 	"os"
 	"regexp"
 	"sort"
-	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -41,15 +40,10 @@ func main() {
 		alpineOutputPathDefault,
 		"path to output general alpine affected package information")
 	outputBucketName := flag.String("output_bucket", outputBucketDefault, "The GCS bucket to write to.")
-	numWorkersStr := flag.String("num_workers", "64", "Number of workers to process records")
+	numWorkers := flag.Int("num_workers", 64, "Number of workers to process records")
 	flag.Parse()
 
-	numWorkers, err := strconv.Atoi(*numWorkersStr)
-	if err != nil {
-		logger.Fatal("-num_workers must be an integer", slog.Any("err", err))
-	}
-
-	err = os.MkdirAll(*alpineOutputPath, 0755)
+	err := os.MkdirAll(*alpineOutputPath, 0755)
 	if err != nil {
 		logger.Fatal("Can't create output path", slog.Any("err", err))
 	}
@@ -68,7 +62,7 @@ func main() {
 	var wg sync.WaitGroup
 	vulnChan := make(chan *vulns.Vulnerability)
 
-	for range numWorkers {
+	for range *numWorkers {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()

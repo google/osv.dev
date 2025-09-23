@@ -4,15 +4,18 @@ package main
 import (
 	"encoding/json"
 	"flag"
+	"fmt"
 	"log/slog"
 	"os"
 	"path"
+	"sort"
 	"strings"
 	"time"
 
 	"github.com/google/osv/vulnfeeds/cves"
 	"github.com/google/osv/vulnfeeds/utility/logger"
 	"github.com/google/osv/vulnfeeds/vulns"
+	"github.com/ossf/osv-schema/bindings/go/osvschema"
 )
 
 const (
@@ -43,9 +46,18 @@ func main() {
 		logger.Fatal("Can't create output path", slog.Any("err", err))
 	}
 
-	allCves := vulns.LoadAllCVEs(*cvePath)
-	allParts, cveModifiedMap := loadParts(*partsInputPath)
-	combinedData := combineIntoOSV(allCves, allParts, *cveListPath, cveModifiedMap)
+	// Load CVE5 OSVs
+	allCVE5 := loadOSV(*cve5Path)
+	// Load NVD OSVs
+	allNVD := loadOSV(*nvdPath)
+
+	// nvdCVEs := vulns.LoadAllCVEs(defaultNVDOSVPath)
+	debianCVEs, err := listBucketObjects("osv-test-debian-osv/debian-cve-osv")
+	alpineCVEs, err := listBucketObjects("osv-test-cve-osv-conversion/alpine")
+
+	noPkg := append(debianCVEs, alpineCVEs...)
+	// Combine
+	combinedData := combineIntoOSV(allCVE5, allNVD, noPkg)
 	writeOSVFile(combinedData, *osvOutputPath)
 }
 
@@ -142,23 +154,49 @@ func loadParts(partsInputPath string) (map[cves.CVEID][]vulns.PackageInfo, map[c
 }
 
 // combineIntoOSV creates OSV entry by combining loaded CVEs from NVD and PackageInfo information from security advisories.
-func combineIntoOSV(loadedCves map[cves.CVEID]cves.Vulnerability, allParts map[cves.CVEID][]vulns.PackageInfo, cveList string, cvePartsModifiedTime map[cves.CVEID]time.Time) map[cves.CVEID]*vulns.Vulnerability {
-	logger.Info("Begin writing OSV files", slog.Int("count", len(allParts)))
-	convertedCves := map[cves.CVEID]*vulns.Vulnerability{}
-	for cveID, cve := range loadedCves {
-		if len(allParts[cveID]) == 0 {
-			continue
-		}
-		convertedCve := vulns.FromNVDCVE(cveID, cve.CVE)
-		if len(cveList) > 0 {
-			// Best-effort attempt to mark a disputed CVE as withdrawn.
-			modified, err := vulns.CVEIsDisputed(convertedCve, cveList)
-			if err != nil {
-				logger.Warn("Unable to determine CVE dispute status", slog.String("id", convertedCve.ID), slog.Any("err", err))
+func combineIntoOSV(cve5osv map[cves.CVEID]osvschema.Vulnerability, nvdosv map[cves.CVEID]osvschema.Vulnerability, debianCVEs []string) map[cves.CVEID]osvschema.Vulnerability {
+	vulns := make(map[cves.CVEID]osvschema.Vulnerability)
+
+	// Iterate through CVEs from security advisories (cve5) as the base
+	for cveID, cve5 := range cve5osv {
+		combined := cve5 // Start with the cve5 record
+		nvd, ok := nvdosv[cveID]
+
+		if ok {
+			// If the cve5-derived record has no affected packages, use NVD's.
+			if len(combined.Affected) == 0 && len(nvd.Affected) > 0 {
+				combined.Affected = nvd.Affected
 			}
-			if err == nil && !modified.IsZero() {
-				convertedCve.DatabaseSpecific = make(map[string]any)
-				convertedCve.DatabaseSpecific["isDisputed"] = true
+			pickAffectedInformation(&combined.Affected, nvd.Affected)
+			// TODO: if both NVD and CVE5 data exists, compare each affected range and make good decisions
+
+			// Merge references, ensuring no duplicates.
+			refMap := make(map[string]bool)
+			for _, r := range combined.References {
+				refMap[r.URL] = true
+			}
+			for _, r := range nvd.References {
+				if !refMap[r.URL] {
+					combined.References = append(combined.References, r)
+					refMap[r.URL] = true
+				}
+			}
+
+			// Merge timestamps: latest modified, earliest published.
+			cve5Modified := combined.Modified
+			if nvd.Modified.After(cve5Modified) {
+				combined.Modified = nvd.Modified
+			}
+
+			cve5Published := combined.Published
+			if nvd.Published.Before(cve5Published) {
+				combined.Published = nvd.Published
+			}
+
+			// Merge aliases, ensuring no duplicates.
+			aliasMap := make(map[string]bool)
+			for _, alias := range combined.Aliases {
+				aliasMap[alias] = true
 			}
 		}
 
@@ -167,18 +205,46 @@ func combineIntoOSV(loadedCves map[cves.CVEID]cves.Vulnerability, allParts map[c
 			if strings.HasPrefix(pkgInfo.Ecosystem, debianEcosystem) || strings.HasPrefix(pkgInfo.Ecosystem, alpineEcosystem) {
 				continue
 			}
-			convertedCve.AddPkgInfo(pkgInfo)
 		}
-
-		cveModified := convertedCve.Modified
-		if cvePartsModifiedTime[cveID].After(cveModified) {
-			convertedCve.Modified = cvePartsModifiedTime[cveID]
-		}
-		convertedCves[cveID] = convertedCve
+		vulns[cveID] = combined
 	}
-	logger.Info("Ended writing OSV files", slog.Int("count", len(convertedCves)))
 
-	return convertedCves
+	// Add any remaining CVEs from NVD that were not in the advisory data.
+	for cveID, nvd := range nvdosv {
+		vulns[cveID] = nvd
+		logger.Info("" + string(cveID))
+	}
+
+	return vulns
+}
+
+func pickAffectedInformation(affected *[]osvschema.Affected, nvdAffected []osvschema.Affected) {
+	// Compare version information
+	if len(*affected) == 1 && len(nvdAffected) == 1 {
+
+	}
+
+}
+
+func affectedToSignature(a osvschema.Affected) string {
+	var parts []string
+	if a.Package.Ecosystem != "" && a.Package.Name != "" {
+		parts = append(parts, fmt.Sprintf("pkg:%s/%s", a.Package.Ecosystem, a.Package.Name))
+	}
+	for _, r := range a.Ranges {
+		var events []string
+		for _, e := range r.Events {
+			if e.Fixed != "" {
+				events = append(events, fmt.Sprintf("intro:%s,fixed:%s", e.Introduced, e.Fixed))
+			} else if e.LastAffected != "" {
+				events = append(events, fmt.Sprintf("intro:%s,lastaff:%s", e.Introduced, e.LastAffected))
+			}
+		}
+		sort.Strings(events)
+		parts = append(parts, fmt.Sprintf("type:%s,events:[%s]", r.Type, strings.Join(events, ",")))
+	}
+	sort.Strings(parts)
+	return strings.Join(parts, "|")
 }
 
 // writeOSVFile writes out the given osv objects into individual json files

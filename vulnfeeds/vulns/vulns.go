@@ -846,36 +846,3 @@ func getBestCVE5Severity(metricsData []cves.Metrics) (string, osvschema.Severity
 
 	return "", ""
 }
-
-// LoadAllCVEs loads the downloaded CVE's from the NVD database into memory.
-func LoadAllCVEs(cvePath string) map[cves.CVEID]cves.Vulnerability {
-	dir, err := os.ReadDir(cvePath)
-	if err != nil {
-		logger.Fatal("Failed to read dir", slog.String("path", cvePath), slog.Any("err", err))
-	}
-
-	result := make(map[cves.CVEID]cves.Vulnerability)
-
-	for _, entry := range dir {
-		if !strings.HasSuffix(entry.Name(), ".json") {
-			continue
-		}
-		file, err := os.Open(path.Join(cvePath, entry.Name()))
-		if err != nil {
-			logger.Fatal("Failed to open CVE JSON", slog.String("path", path.Join(cvePath, entry.Name())), slog.Any("err", err))
-		}
-		var nvdcve cves.CVEAPIJSON20Schema
-		err = json.NewDecoder(file).Decode(&nvdcve)
-		if err != nil {
-			logger.Fatal("Failed to decode JSON", slog.String("file", file.Name()), slog.Any("err", err))
-		}
-
-		for _, item := range nvdcve.Vulnerabilities {
-			result[item.CVE.ID] = item
-		}
-		logger.Info("Loaded CVE", slog.String("cve", entry.Name()))
-		file.Close()
-	}
-
-	return result
-}

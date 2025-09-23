@@ -43,7 +43,7 @@ func main() {
 
 	debianOutputPath := flag.String("output_path", debianOutputPathDefault, "Path to output OSV files.")
 	outputBucketName := flag.String("output_bucket", outputBucketDefault, "The GCS bucket to write to.")
-	numWorkers := flag.String("num_workers", "64", "Number of workers to process records")
+	numWorkers := flag.Int("num_workers", 64, "Number of workers to process records")
 	flag.Parse()
 
 	err := os.MkdirAll(*debianOutputPath, 0755)

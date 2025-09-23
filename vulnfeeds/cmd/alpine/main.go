@@ -20,7 +20,6 @@ import (
 	"cloud.google.com/go/storage"
 	"github.com/google/osv/vulnfeeds/cves"
 	"github.com/google/osv/vulnfeeds/models"
-	"github.com/google/osv/vulnfeeds/utility"
 	"github.com/google/osv/vulnfeeds/utility/logger"
 	"github.com/google/osv/vulnfeeds/vulns"
 	"github.com/ossf/osv-schema/bindings/go/osvschema"
@@ -73,7 +72,7 @@ func main() {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
-			utility.Worker(ctx, vulnChan, bkt, *alpineOutputPath)
+			vulns.Worker(ctx, vulnChan, bkt, *alpineOutputPath)
 		}()
 	}
 

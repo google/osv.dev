@@ -1,4 +1,4 @@
-package utility
+package vulns
 
 import (
 	"context"
@@ -13,7 +13,6 @@ import (
 
 	"cloud.google.com/go/storage"
 	"github.com/google/osv/vulnfeeds/utility/logger"
-	"github.com/google/osv/vulnfeeds/vulns"
 )
 
 const (
@@ -22,7 +21,7 @@ const (
 )
 
 // Worker is a generic worker that processes vulnerabilities from a channel and uploads them to a GCS bucket.
-func Worker(ctx context.Context, vulnChan <-chan *vulns.Vulnerability, bkt *storage.BucketHandle, outputDir string) {
+func Worker(ctx context.Context, vulnChan <-chan *Vulnerability, bkt *storage.BucketHandle, outputDir string) {
 	for v := range vulnChan {
 		vulnID := v.ID
 		if len(v.Affected) == 0 {

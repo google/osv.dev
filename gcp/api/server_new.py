@@ -161,6 +161,14 @@ def _match_versions(version: str, affected: osv.AffectedVersions) -> bool:
 
 def _match_events(version: str, affected: osv.AffectedVersions) -> bool:
   """Check if the given version matches in the AffectedVersions' events list."""
+  # TODO(michaelkedar): We don't support grabbing the release number from PURLs
+  # https://github.com/google/osv.dev/issues/3126
+  # This causes many false positive matches in Ubuntu and Alpine in particular
+  # when doing range-based matching.
+  # We have version enumeration for Alpine, and Ubuntu provides versions for us.
+  # Just skip range-based matching if they don't have release numbers for now.
+  if affected.ecosystem in ('Alpine', 'Ubuntu'):
+    return False
   ecosystem_helper = osv.ecosystems.get(affected.ecosystem)
   if ecosystem_helper is None:
     # Ecosystem does not support comparisons.

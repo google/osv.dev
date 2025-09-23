@@ -2,29 +2,15 @@ apiVersion: batch/v1
 kind: CronJob
 metadata:
   name: record-checker
-  labels:
-    cronLastSuccessfulTimeMins: "90"
 spec:
-  schedule: "10/15 * * * *"
-  concurrencyPolicy: Forbid
   jobTemplate:
     spec:
       template:
         spec:
           containers:
           - name: record-checker
-            image: record-checker
             env:
             - name: GOOGLE_CLOUD_PROJECT
               value: oss-vdb-test
             - name: OSV_VULNERABILITIES_BUCKET
               value: osv-test-vulnerabilities
-            imagePullPolicy: Always
-            resources:
-              requests:
-                cpu: "1"
-                memory: "1G"
-              limits:
-                cpu: "1"
-                memory: "2G"
-          restartPolicy: Never

@@ -20,3 +20,4 @@ patches:
 - path: backup.yaml
 - path: generate-sitemap.yaml
 - path: recoverer.yaml
+- path: record-checker.yaml

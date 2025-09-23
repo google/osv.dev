@@ -34,7 +34,6 @@ from . import pubsub
 from . import purl_helpers
 from . import semver_index
 from . import sources
-from . import utils
 from . import vulnerability_pb2
 
 SCHEMA_VERSION = '1.7.3'
@@ -876,13 +875,6 @@ class Bug(ndb.Model):
 
   def _post_put_hook(self: Self, future: ndb.Future):  # pylint: disable=arguments-differ
     """Post-put hook for writing new entities for database migration."""
-    # TODO(michaelkedar): Currently, only want to run this on the test instance
-    # (or when running tests). Remove this check when we're ready for prod.
-    project = utils.get_google_cloud_project()
-    if not project:
-      logging.error('failed to get GCP project')
-    if project not in ('oss-vdb-test', 'test-osv'):
-      return
     if future.exception():
       logging.error("Not writing new entities for %s since Bug.put() failed",
                     self.db_id)

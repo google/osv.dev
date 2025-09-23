@@ -28,9 +28,9 @@ import (
 const (
 	alpineURLBase           = "https://secdb.alpinelinux.org/%s/main.json"
 	alpineIndexURL          = "https://secdb.alpinelinux.org/"
-	alpineOutputPathDefault = "parts/alpine"
+	alpineOutputPathDefault = "alpine"
 	defaultCvePath          = "cve_jsons"
-	outputBucketDefault     = "osv-cv-results"
+	outputBucketDefault     = "osv-test-cve-osv-conversion"
 )
 
 func main() {

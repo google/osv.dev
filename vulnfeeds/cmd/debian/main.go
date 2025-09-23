@@ -3,27 +3,23 @@ package main
 
 import (
 	"context"
-	"crypto/sha256"
 	"encoding/csv"
-	"encoding/hex"
 	"encoding/json"
-	"errors"
 	"flag"
 	"fmt"
 	"log/slog"
 	"net/http"
 	"os"
-	"path"
 	"sort"
 	"strconv"
 	"strings"
 	"sync"
-	"time"
 
 	"cloud.google.com/go/storage"
 	"github.com/google/osv/vulnfeeds/cves"
 	"github.com/google/osv/vulnfeeds/faulttolerant"
 	"github.com/google/osv/vulnfeeds/models"
+	"github.com/google/osv/vulnfeeds/utility"
 	"github.com/google/osv/vulnfeeds/utility/logger"
 	"github.com/google/osv/vulnfeeds/vulns"
 	"github.com/ossf/osv-schema/bindings/go/osvschema"
@@ -35,7 +31,6 @@ const (
 	debianDistroInfoURL      = "https://debian.pages.debian.net/distro-info-data/debian.csv"
 	debianSecurityTrackerURL = "https://security-tracker.debian.org/tracker/data/json"
 	outputBucketDefault      = "debian-osv"
-	hashMetadataKey          = "sha256-hash"
 )
 
 func main() {
@@ -43,10 +38,15 @@ func main() {
 
 	debianOutputPath := flag.String("output_path", debianOutputPathDefault, "Path to output OSV files.")
 	outputBucketName := flag.String("output_bucket", outputBucketDefault, "The GCS bucket to write to.")
-	numWorkers := flag.String("num_workers", "64", "Number of workers to process records")
+	numWorkersStr := flag.String("num_workers", "64", "Number of workers to process records")
 	flag.Parse()
 
-	err := os.MkdirAll(*debianOutputPath, 0755)
+	numWorkers, err := strconv.Atoi(*numWorkersStr)
+	if err != nil {
+		logger.Fatal("-num_workers must be an integer", slog.Any("err", err))
+	}
+
+	err = os.MkdirAll(*debianOutputPath, 0755)
 	if err != nil {
 		logger.Fatal("Can't create output path", slog.Any("err", err))
 	}
@@ -73,11 +73,11 @@ func main() {
 	var wg sync.WaitGroup
 	vulnChan := make(chan *vulns.Vulnerability)
 
-	for range *numWorkers {
+	for range numWorkers {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
-			worker(ctx, vulnChan, bkt, *debianOutputPath)
+			utility.Worker(ctx, vulnChan, bkt, *debianOutputPath)
 		}()
 	}
 
@@ -94,72 +94,6 @@ func main() {
 	wg.Wait()
 
 	logger.Info("Debian CVE conversion succeeded.")
-}
-
-func worker(ctx context.Context, vulnChan <-chan *vulns.Vulnerability, bkt *storage.BucketHandle, outputDir string) {
-	for v := range vulnChan {
-		debianID := v.ID
-		if len(v.Affected) == 0 {
-			logger.Warn(fmt.Sprintf("Skipping %s as no affected versions found.", debianID), slog.String("id", debianID))
-			continue
-		}
-
-		// Marshal before setting modified time to generate hash.
-		buf, err := json.MarshalIndent(v, "", "  ")
-		if err != nil {
-			logger.Error("failed to marshal vulnerability", slog.String("id", debianID), slog.Any("err", err))
-			continue
-		}
-
-		hash := sha256.Sum256(buf)
-		hexHash := hex.EncodeToString(hash[:])
-
-		objName := path.Join(outputDir, debianID+".json")
-		obj := bkt.Object(objName)
-
-		// Check if object exists and if hash matches.
-		attrs, err := obj.Attrs(ctx)
-		if err == nil {
-			// Object exists, check hash.
-			if attrs.Metadata != nil && attrs.Metadata[hashMetadataKey] == hexHash {
-				logger.Info("Skipping upload, hash matches", slog.String("id", debianID))
-				continue
-			}
-		} else if !errors.Is(err, storage.ErrObjectNotExist) {
-			logger.Error("failed to get object attributes", slog.String("id", debianID), slog.Any("err", err))
-			continue
-		}
-
-		// Object does not exist or hash differs, upload.
-		v.Modified = time.Now().UTC()
-		buf, err = json.MarshalIndent(v, "", "  ")
-		if err != nil {
-			logger.Error("failed to marshal vulnerability with modified time", slog.String("id", debianID), slog.Any("err", err))
-			continue
-		}
-
-		logger.Info("Uploading", slog.String("id", debianID))
-		wc := obj.NewWriter(ctx)
-		wc.Metadata = map[string]string{
-			hashMetadataKey: hexHash,
-		}
-		wc.ContentType = "application/json"
-
-		if _, err := wc.Write(buf); err != nil {
-			logger.Error("failed to write to GCS object", slog.String("id", debianID), slog.Any("err", err))
-			// Try to close writer even if write failed.
-			if closeErr := wc.Close(); closeErr != nil {
-				logger.Error("failed to close GCS writer after write error", slog.String("id", debianID), slog.Any("err", closeErr))
-			}
-
-			continue
-		}
-
-		if err := wc.Close(); err != nil {
-			logger.Error("failed to close GCS writer", slog.String("id", debianID), slog.Any("err", err))
-			continue
-		}
-	}
 }
 
 // generateOSVFromDebianTracker converts Debian Security Tracker entries to OSV format.

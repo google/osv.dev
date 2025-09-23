@@ -2,6 +2,7 @@
 package main
 
 import (
+	"context"
 	"encoding/json"
 	"flag"
 	"fmt"
@@ -9,14 +10,17 @@ import (
 	"log/slog"
 	"net/http"
 	"os"
-	"path"
 	"regexp"
 	"sort"
+	"strconv"
 	"strings"
+	"sync"
 	"time"
 
+	"cloud.google.com/go/storage"
 	"github.com/google/osv/vulnfeeds/cves"
 	"github.com/google/osv/vulnfeeds/models"
+	"github.com/google/osv/vulnfeeds/utility"
 	"github.com/google/osv/vulnfeeds/utility/logger"
 	"github.com/google/osv/vulnfeeds/vulns"
 	"github.com/ossf/osv-schema/bindings/go/osvschema"
@@ -25,8 +29,9 @@ import (
 const (
 	alpineURLBase           = "https://secdb.alpinelinux.org/%s/main.json"
 	alpineIndexURL          = "https://secdb.alpinelinux.org/"
-	alpineOutputPathDefault = "tmp/alpine"
+	alpineOutputPathDefault = "parts/alpine"
 	defaultCvePath          = "cve_jsons"
+	outputBucketDefault     = "osv-cv-results"
 )
 
 func main() {
@@ -36,16 +41,49 @@ func main() {
 		"alpineOutput",
 		alpineOutputPathDefault,
 		"path to output general alpine affected package information")
+	outputBucketName := flag.String("output_bucket", outputBucketDefault, "The GCS bucket to write to.")
+	numWorkersStr := flag.String("num_workers", "64", "Number of workers to process records")
 	flag.Parse()
 
-	err := os.MkdirAll(*alpineOutputPath, 0755)
+	numWorkers, err := strconv.Atoi(*numWorkersStr)
+	if err != nil {
+		logger.Fatal("-num_workers must be an integer", slog.Any("err", err))
+	}
+
+	err = os.MkdirAll(*alpineOutputPath, 0755)
 	if err != nil {
 		logger.Fatal("Can't create output path", slog.Any("err", err))
 	}
 
 	allCVEs := vulns.LoadAllCVEs(defaultCvePath)
 	allAlpineSecDB := getAlpineSecDBData()
-	generateAlpineOSV(allAlpineSecDB, *alpineOutputPath, allCVEs)
+	osvVulnerabilities := generateAlpineOSV(allAlpineSecDB, allCVEs)
+
+	ctx := context.Background()
+	storageClient, err := storage.NewClient(ctx)
+	if err != nil {
+		logger.Fatal("Failed to create storage client", slog.Any("err", err))
+	}
+	bkt := storageClient.Bucket(*outputBucketName)
+
+	var wg sync.WaitGroup
+	vulnChan := make(chan *vulns.Vulnerability)
+
+	for i := 0; i < numWorkers; i++ {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			utility.Worker(ctx, vulnChan, bkt, *alpineOutputPath)
+		}()
+	}
+
+	for _, v := range osvVulnerabilities {
+		vulnChan <- v
+	}
+
+	close(vulnChan)
+	wg.Wait()
+	logger.Info("Alpine CVE conversion succeeded.")
 }
 
 // getAllAlpineVersions gets all available version name in alpine secdb
@@ -118,7 +156,8 @@ func getAlpineSecDBData() map[string][]VersionAndPkg {
 }
 
 // generateAlpineOSV generates the generic PackageInfo package from the information given by alpine advisory
-func generateAlpineOSV(allAlpineSecDb map[string][]VersionAndPkg, alpineOutputPath string, allCVEs map[cves.CVEID]cves.Vulnerability) {
+func generateAlpineOSV(allAlpineSecDb map[string][]VersionAndPkg, allCVEs map[cves.CVEID]cves.Vulnerability) []*vulns.Vulnerability {
+	var osvVulnerabilities []*vulns.Vulnerability
 	cveIDs := make([]string, 0, len(allAlpineSecDb))
 	for cveID := range allAlpineSecDb {
 		cveIDs = append(cveIDs, cveID)
@@ -155,7 +194,6 @@ func generateAlpineOSV(allAlpineSecDb map[string][]VersionAndPkg, alpineOutputPa
 			Vulnerability: osvschema.Vulnerability{
 				ID:        "ALPINE-" + cveID,
 				Upstream:  []string{cveID},
-				Modified:  time.Now().UTC(),
 				Published: published,
 				Details:   details,
 				References: []osvschema.Reference{
@@ -183,21 +221,9 @@ func generateAlpineOSV(allAlpineSecDb map[string][]VersionAndPkg, alpineOutputPa
 			logger.Warn(fmt.Sprintf("Skipping %s as no affected versions found.", v.ID), slog.String("cveID", cveID))
 			continue
 		}
-
-		file, err := os.OpenFile(path.Join(alpineOutputPath, v.ID+".json"), os.O_CREATE|os.O_RDWR|os.O_TRUNC, 0644)
-		if err != nil {
-			logger.Fatal("Failed to create/write osv output file", slog.Any("err", err))
-		}
-		encoder := json.NewEncoder(file)
-		encoder.SetIndent("", "  ")
-		err = encoder.Encode(v)
-		if err != nil {
-			logger.Fatal("Failed to encode package info output file", slog.Any("err", err))
-		}
-		_ = file.Close()
+		osvVulnerabilities = append(osvVulnerabilities, v)
 	}
-
-	logger.Info("Finished")
+	return osvVulnerabilities
 }
 
 // downloadAlpine downloads Alpine SecDB data from their API

@@ -61,7 +61,12 @@ def query_package(context,
   if not package_name:
     return []
 
-  query = osv.AffectedVersions.query(osv.AffectedVersions.name == package_name)
+  query = osv.AffectedVersions.query(
+      osv.AffectedVersions.name.IN([
+          package_name,
+          # Also query the normalized name in case this is a GIT repo.
+          osv.normalize_repo_package(package_name)
+      ]))
   if ecosystem:
     query = query.filter(osv.AffectedVersions.ecosystem == ecosystem)
   query = query.order(osv.AffectedVersions.vuln_id)
@@ -83,7 +88,7 @@ def query_package(context,
     affected: osv.AffectedVersions = it.next()
     if affected.vuln_id == last_matched_id:
       continue
-    if not version or affected_affects(version, affected):
+    if not version or affected_affects(package_name, version, affected):
       if include_details:
         bugs.append(get_vuln_async(affected.vuln_id))
       else:
@@ -94,8 +99,16 @@ def query_package(context,
   return bugs
 
 
-def affected_affects(version: str, affected: osv.AffectedVersions) -> bool:
+def affected_affects(name: str, version: str,
+                     affected: osv.AffectedVersions) -> bool:
   """Check if a given version is affected by the AffectedVersions entry."""
+  # Make sure the package name correctly matches this entity.
+  if affected.ecosystem != 'GIT' and name != affected.name:
+    return False
+  if (affected.ecosystem == 'GIT' and
+      osv.normalize_repo_package(name) != affected.name):
+    return False
+
   if len(affected.versions) > 0:
     return _match_versions(version, affected)
   if len(affected.events) > 0:
@@ -148,6 +161,14 @@ def _match_versions(version: str, affected: osv.AffectedVersions) -> bool:
 
 def _match_events(version: str, affected: osv.AffectedVersions) -> bool:
   """Check if the given version matches in the AffectedVersions' events list."""
+  # TODO(michaelkedar): We don't support grabbing the release number from PURLs
+  # https://github.com/google/osv.dev/issues/3126
+  # This causes many false positive matches in Ubuntu and Alpine in particular
+  # when doing range-based matching.
+  # We have version enumeration for Alpine, and Ubuntu provides versions for us.
+  # Just skip range-based matching if they don't have release numbers for now.
+  if affected.ecosystem in ('Alpine', 'Ubuntu'):
+    return False
   ecosystem_helper = osv.ecosystems.get(affected.ecosystem)
   if ecosystem_helper is None:
     # Ecosystem does not support comparisons.

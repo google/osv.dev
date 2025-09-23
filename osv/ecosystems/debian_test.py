@@ -72,6 +72,12 @@ class DPKGEcosystemTest(unittest.TestCase):
     self.assertLess(
         ecosystem.sort_key("13.0.14.5-e1"), ecosystem.sort_key("16.6-e0"))
 
+    # Check >= / <= methods
+    self.assertGreaterEqual(
+        ecosystem.sort_key('1.10.0-1'), ecosystem.sort_key('1.2.0-1'))
+    self.assertLessEqual(
+        ecosystem.sort_key('1.2.0-1'), ecosystem.sort_key('1.10.0-1'))
+
   def test_dpkg_ecosystems(self):
     """Test dpkg-based ecosystems return a DPKG ecosystem."""
     ecos = [

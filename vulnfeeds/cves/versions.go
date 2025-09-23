@@ -160,7 +160,7 @@ func Repo(u string) (string, error) {
 					parsedURL.Hostname(), parsedURL.Path),
 				nil
 		}
-		if len(pathParts) >= 2 && parsedURL.Hostname() == "git.ffmpeg.org" {
+		if len(pathParts) > 2 && parsedURL.Hostname() == "git.ffmpeg.org" {
 			return fmt.Sprintf("%s://%s/%s", parsedURL.Scheme, parsedURL.Hostname(), pathParts[2]), nil
 		}
 		if parsedURL.Hostname() == "sourceware.org" {

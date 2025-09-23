@@ -84,6 +84,11 @@ class NuGetVersionTest(unittest.TestCase):
     self.check_order(self.assertLess, '1.0.0', '1.0.0.1-alpha')
     self.check_order(self.assertLess, '0.9.9.1', '1.0.0')
 
+  def test_ge_le(self):
+    """Test version >=/<=."""
+    self.check_order(self.assertGreaterEqual, '1.10.0', '1.2.0')
+    self.check_order(self.assertLessEqual, '1.2.0', '1.10.0')
+
 
 class NuGetEcosystemTest(vcr.unittest.VCRTestCase):
   """NuGet ecosystem helper tests."""

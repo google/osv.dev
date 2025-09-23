@@ -72,8 +72,8 @@ def do_reput(start: str | None = None, stop: str | None = None):
     for b in q:
       count += 1
       if count % 500 == 0:
-        logging.info('Processed %d entities in shard [%s, %s)',
-                     count, start, stop)
+        logging.info('Processed %d entities in shard [%s, %s)', count, start,
+                     stop)
       try:
         b.put()
       except Exception as e:

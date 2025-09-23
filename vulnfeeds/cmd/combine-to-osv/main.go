@@ -9,6 +9,7 @@ import (
 	"log/slog"
 	"os"
 	"path"
+	"sort"
 	"strings"
 	"time"
 
@@ -40,16 +41,18 @@ func main() {
 		logger.Fatal("Can't create output path", slog.Any("err", err))
 	}
 
-	// Load CVE5 OSVs/PackageInfo
+	// Load CVE5 OSVs
 	allCVE5 := loadOSV(*cve5Path)
-	// Load NVD OSVs/PackageInfo
+	// Load NVD OSVs
 	allNVD := loadOSV(*nvdPath)
 
 	// nvdCVEs := vulns.LoadAllCVEs(defaultNVDOSVPath)
 	debianCVEs, err := listBucketObjects("osv-test-debian-osv/debian-cve-osv")
+	alpineCVEs, err := listBucketObjects("osv-test-cve-osv-conversion/alpine")
 
+	noPkg := append(debianCVEs, alpineCVEs...)
 	// Combine
-	combinedData := combineIntoOSV(allCVE5, allNVD, debianCVEs)
+	combinedData := combineIntoOSV(allCVE5, allNVD, noPkg)
 	writeOSVFile(combinedData, *osvOutputPath)
 
 }
@@ -142,7 +145,7 @@ func combineIntoOSV(cve5osv map[cves.CVEID]osvschema.Vulnerability, nvdosv map[c
 			if len(combined.Affected) == 0 && len(nvd.Affected) > 0 {
 				combined.Affected = nvd.Affected
 			}
-
+			pickAffectedInformation(&combined.Affected, nvd.Affected)
 			// TODO: if both NVD and CVE5 data exists, compare each affected range and make good decisions
 
 			// Merge references, ensuring no duplicates.
@@ -202,6 +205,35 @@ func combineIntoOSV(cve5osv map[cves.CVEID]osvschema.Vulnerability, nvdosv map[c
 	}
 
 	return vulns
+}
+
+func pickAffectedInformation(affected *[]osvschema.Affected, nvdAffected []osvschema.Affected) {
+	// Compare version information
+	if len(*affected) == 1 && len(nvdAffected) == 1 {
+
+	}
+
+}
+
+func affectedToSignature(a osvschema.Affected) string {
+	var parts []string
+	if a.Package.Ecosystem != "" && a.Package.Name != "" {
+		parts = append(parts, fmt.Sprintf("pkg:%s/%s", a.Package.Ecosystem, a.Package.Name))
+	}
+	for _, r := range a.Ranges {
+		var events []string
+		for _, e := range r.Events {
+			if e.Fixed != "" {
+				events = append(events, fmt.Sprintf("intro:%s,fixed:%s", e.Introduced, e.Fixed))
+			} else if e.LastAffected != "" {
+				events = append(events, fmt.Sprintf("intro:%s,lastaff:%s", e.Introduced, e.LastAffected))
+			}
+		}
+		sort.Strings(events)
+		parts = append(parts, fmt.Sprintf("type:%s,events:[%s]", r.Type, strings.Join(events, ",")))
+	}
+	sort.Strings(parts)
+	return strings.Join(parts, "|")
 }
 
 // writeOSVFile writes out the given osv objects into individual json files

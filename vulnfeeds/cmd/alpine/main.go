@@ -68,7 +68,7 @@ func main() {
 	var wg sync.WaitGroup
 	vulnChan := make(chan *vulns.Vulnerability)
 
-	for i := 0; i < numWorkers; i++ {
+	for range numWorkers {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
@@ -155,8 +155,7 @@ func getAlpineSecDBData() map[string][]VersionAndPkg {
 }
 
 // generateAlpineOSV generates the generic PackageInfo package from the information given by alpine advisory
-func generateAlpineOSV(allAlpineSecDb map[string][]VersionAndPkg, allCVEs map[cves.CVEID]cves.Vulnerability) []*vulns.Vulnerability {
-	var osvVulnerabilities []*vulns.Vulnerability
+func generateAlpineOSV(allAlpineSecDb map[string][]VersionAndPkg, allCVEs map[cves.CVEID]cves.Vulnerability) (osvVulnerabilities []*vulns.Vulnerability) {
 	cveIDs := make([]string, 0, len(allAlpineSecDb))
 	for cveID := range allAlpineSecDb {
 		cveIDs = append(cveIDs, cveID)
@@ -222,6 +221,7 @@ func generateAlpineOSV(allAlpineSecDb map[string][]VersionAndPkg, allCVEs map[cv
 		}
 		osvVulnerabilities = append(osvVulnerabilities, v)
 	}
+
 	return osvVulnerabilities
 }
 

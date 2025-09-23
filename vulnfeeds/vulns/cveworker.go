@@ -76,6 +76,7 @@ func Worker(ctx context.Context, vulnChan <-chan *Vulnerability, bkt *storage.Bu
 			if closeErr := wc.Close(); closeErr != nil {
 				logger.Error("failed to close GCS writer after write error", slog.String("id", vulnID), slog.Any("err", closeErr))
 			}
+
 			continue
 		}
 

@@ -44,7 +44,7 @@ func main() {
 	debianOutputPath := flag.String("output_path", debianOutputPathDefault, "Path to output OSV files.")
 	outputBucketName := flag.String("output_bucket", outputBucketDefault, "The GCS bucket to write to.")
 	numWorkers := flag.Int("num_workers", 64, "Number of workers to process records")
-	dryRun := flag.Bool("dry_run", false, "If true, do not write to GCS bucket and instead write to local disk.")
+	uploadToGCS := flag.Bool("uploadToGCS", false, "If true, do not write to GCS bucket and instead write to local disk.")
 	flag.Parse()
 
 	err := os.MkdirAll(*debianOutputPath, 0755)
@@ -66,7 +66,7 @@ func main() {
 
 	ctx := context.Background()
 	var bkt *storage.BucketHandle
-	if !*dryRun {
+	if *uploadToGCS {
 		storageClient, err := storage.NewClient(ctx)
 		if err != nil {
 			logger.Fatal("Failed to create storage client", slog.Any("err", err))
@@ -101,7 +101,7 @@ func main() {
 }
 
 func worker(ctx context.Context, vulnChan <-chan *vulns.Vulnerability, bkt *storage.BucketHandle, outputDir string) {
-	isDryRun := bkt == nil
+	noUpload := bkt == nil
 	for v := range vulnChan {
 		debianID := v.ID
 		if len(v.Affected) == 0 {
@@ -118,8 +118,8 @@ func worker(ctx context.Context, vulnChan <-chan *vulns.Vulnerability, bkt *stor
 
 		objName := path.Join(outputDir, debianID+".json")
 
-		if isDryRun {
-			logger.Info("Dry run: writing to local disk", slog.String("path", objName))
+		if noUpload {
+			logger.Info("Writing to local disk", slog.String("path", objName))
 			v.Modified = time.Now().UTC()
 			buf, err = json.MarshalIndent(v, "", "  ")
 			if err != nil {

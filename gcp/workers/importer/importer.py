@@ -913,6 +913,8 @@ class Importer:
       json_format.ParseDict(datum, vulnerability, ignore_unknown_fields=True)
       if not vulnerability.id:
         raise ValueError('Missing id field. Invalid vulnerability.')
+      if not vulnerability.modified:
+        raise ValueError('Missing modified field. Invalid vulnerability.')
       vulns.append(vulnerability)
 
     vulns_last_modified = last_update_date

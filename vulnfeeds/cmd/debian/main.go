@@ -44,6 +44,7 @@ func main() {
 	debianOutputPath := flag.String("output_path", debianOutputPathDefault, "Path to output OSV files.")
 	outputBucketName := flag.String("output_bucket", outputBucketDefault, "The GCS bucket to write to.")
 	numWorkers := flag.Int("num_workers", 64, "Number of workers to process records")
+	dryRun := flag.Bool("dry_run", false, "If true, do not write to GCS bucket and instead write to local disk.")
 	flag.Parse()
 
 	err := os.MkdirAll(*debianOutputPath, 0755)
@@ -64,11 +65,14 @@ func main() {
 	allCVEs := vulns.LoadAllCVEs(defaultCvePath)
 
 	ctx := context.Background()
-	storageClient, err := storage.NewClient(ctx)
-	if err != nil {
-		logger.Fatal("Failed to create storage client", slog.Any("err", err))
+	var bkt *storage.BucketHandle
+	if !*dryRun {
+		storageClient, err := storage.NewClient(ctx)
+		if err != nil {
+			logger.Fatal("Failed to create storage client", slog.Any("err", err))
+		}
+		bkt = storageClient.Bucket(*outputBucketName)
 	}
-	bkt := storageClient.Bucket(*outputBucketName)
 
 	var wg sync.WaitGroup
 	vulnChan := make(chan *vulns.Vulnerability)
@@ -97,6 +101,7 @@ func main() {
 }
 
 func worker(ctx context.Context, vulnChan <-chan *vulns.Vulnerability, bkt *storage.BucketHandle, outputDir string) {
+	isDryRun := bkt == nil
 	for v := range vulnChan {
 		debianID := v.ID
 		if len(v.Affected) == 0 {
@@ -111,10 +116,25 @@ func worker(ctx context.Context, vulnChan <-chan *vulns.Vulnerability, bkt *stor
 			continue
 		}
 
+		objName := path.Join(outputDir, debianID+".json")
+
+		if isDryRun {
+			logger.Info("Dry run: writing to local disk", slog.String("path", objName))
+			v.Modified = time.Now().UTC()
+			buf, err = json.MarshalIndent(v, "", "  ")
+			if err != nil {
+				logger.Error("failed to marshal vulnerability with modified time", slog.String("id", debianID), slog.Any("err", err))
+				continue
+			}
+			if err := os.WriteFile(objName, buf, 0644); err != nil {
+				logger.Error("failed to write file in dry run", slog.String("path", objName), slog.Any("err", err))
+			}
+			continue
+		}
+
 		hash := sha256.Sum256(buf)
 		hexHash := hex.EncodeToString(hash[:])
 
-		objName := path.Join(outputDir, debianID+".json")
 		obj := bkt.Object(objName)
 
 		// Check if object exists and if hash matches.

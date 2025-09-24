@@ -824,14 +824,14 @@ typing-extensions = ">=4.5.0"
 
 [[package]]
 name = "osv"
-version = "0.1.0"
+version = "0.1.1"
 description = "Open Source Vulnerabilities library"
 optional = false
-python-versions = "<4.0,>=3.11"
+python-versions = "<4.0,>=3.13"
 groups = ["main"]
 files = [
-    {file = "osv-0.1.0-py3-none-any.whl", hash = "sha256:010d36f485eea2b07fdfcf13731fbfe142274294852e84fb1d1fe8513fa9f006"},
-    {file = "osv-0.1.0.tar.gz", hash = "sha256:d35e0247b2da5a4b376bd04aa7bcbd67b05130eb096e98fc735c490112fa37c0"},
+    {file = "osv-0.1.1-py3-none-any.whl", hash = "sha256:8d8bc402614c25686c1b8e406765c2fda0fc2ba5d444fcc47d0216d8bcd00134"},
+    {file = "osv-0.1.1.tar.gz", hash = "sha256:0de0206e474d7a746d142f5f1e9eb4c70b591015d1da85e6d0affa9a20fccb15"},
 ]
 
 [package.dependencies]
@@ -1407,4 +1407,4 @@ type = ["pytest-mypy"]
 [metadata]
 lock-version = "2.1"
 python-versions = ">=3.13,<4.0"
-content-hash = "34f98c2263b9d1fe3a3e841c0204c8942930fd9ceaa0dc1a89adc61e0edded19"
+content-hash = "807b2916155a6bf0ce1aa4243e5902a330a75dacda922d8279ddeb7058a38bb4"

@@ -25,6 +25,7 @@ import json
 import logging
 import os
 import requests
+from google.protobuf import json_format
 from requests.adapters import HTTPAdapter
 import shutil
 import threading
@@ -42,6 +43,7 @@ import pygit2.enums
 
 import osv
 import osv.logs
+from osv import vulnerability_pb2
 
 DEFAULT_WORK_DIR = '/work'
 DEFAULT_PUBLIC_LOGGING_BUCKET = 'osv-public-import-logs'
@@ -847,7 +849,7 @@ class Importer:
 
   def _process_updates_rest(self, source_repo: osv.SourceRepository):
     """Process updates from REST API.
-    
+
     To find new updates, first makes a HEAD request to check the 'Last-Modified'
     header, and skips processing if it's before the source's last_modified_date
     (and ignore_last_import_time isn't set).
@@ -903,11 +905,15 @@ class Importer:
     except Exception:
       logging.exception('Exception querying REST API:')
       return
-    # Parse vulns into Vulnerability objects from the REST API request.
-    vulns = osv.parse_vulnerabilities_from_data(
-        request.text,
-        source_repo.extension,
-        strict=source_repo.strict_validation and self._strict_validation)
+
+    data = json.loads(request.text)
+    vulns = []
+    for datum in data:
+      vulnerability = vulnerability_pb2.Vulnerability()
+      json_format.ParseDict(datum, vulnerability, ignore_unknown_fields=True)
+      if not vulnerability.id:
+        raise ValueError('Missing id field. Invalid vulnerability.')
+      vulns.append(vulnerability)
 
     vulns_last_modified = last_update_date
     logging.info('%d records to consider', len(vulns))

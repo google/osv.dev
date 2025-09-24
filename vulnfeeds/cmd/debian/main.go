@@ -126,9 +126,10 @@ func worker(ctx context.Context, vulnChan <-chan *vulns.Vulnerability, bkt *stor
 				logger.Error("failed to marshal vulnerability with modified time", slog.String("id", debianID), slog.Any("err", err))
 				continue
 			}
-			if err := os.WriteFile(objName, buf, 0644); err != nil {
+			if err := os.WriteFile(objName, buf, 0600); err != nil {
 				logger.Error("failed to write file in dry run", slog.String("path", objName), slog.Any("err", err))
 			}
+
 			continue
 		}
 

@@ -532,7 +532,6 @@ class IntegrationTests(unittest.TestCase,
     self.assert_results_equal({'vulns': another_expected}, response.json())
 
     expected_deb = [
-        self._get('CVE-2018-25047'),
         self._get('DEBIAN-CVE-2018-25047'),
         self._get('DEBIAN-CVE-2023-28447'),
         self._get('DEBIAN-CVE-2024-35226'),

@@ -25,20 +25,6 @@ import (
 
 var versionRangeRegex = regexp.MustCompile(`^(>=|<=|~|\^|>|<|=)\s*([0-9a-zA-Z\.\-]+)(?:,\s*(>=|<=|~|\^|>|<|=)\s*([0-9a-zA-Z\.\-]+))?$`) // Used to parse version strings from the GitHub CNA.
 
-// setCommitByType sets the appropriate commit field on an AffectedCommit based on the CommitType.
-func setCommitByType(ac *models.AffectedCommit, commitType models.CommitType, commitHash string) {
-	switch commitType {
-	case models.Introduced:
-		ac.SetIntroduced(commitHash)
-	case models.LastAffected:
-		ac.SetLastAffected(commitHash)
-	case models.Limit:
-		ac.SetLimit(commitHash)
-	case models.Fixed:
-		ac.SetFixed(commitHash)
-	}
-}
-
 // findFuzzyCommit takes an already normalized version and the mapping of repo tags to
 // normalized tags and commits, and performs fuzzy matching to find a commit hash.
 func findFuzzyCommit(normalizedVersion string, normalizedTags map[string]NormalizedTag) (string, bool) {
@@ -87,7 +73,7 @@ func VersionToAffectedCommit(version string, repo string, commitType models.Comm
 		return ac, err
 	}
 	ac.SetRepo(repo)
-	setCommitByType(&ac, commitType, commitHash)
+	models.SetCommitByType(&ac, commitType, commitHash)
 
 	return ac, nil
 }

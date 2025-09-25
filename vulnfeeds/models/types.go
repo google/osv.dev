@@ -15,6 +15,20 @@ type AffectedCommit struct {
 	LastAffected string `json:"last_affected,omitempty" yaml:"last_affected,omitempty"`
 }
 
+// SetCommitByType sets the appropriate commit field on an AffectedCommit based on the CommitType.
+func SetCommitByType(ac *AffectedCommit, commitType CommitType, commitHash string) {
+	switch commitType {
+	case Introduced:
+		ac.SetIntroduced(commitHash)
+	case LastAffected:
+		ac.SetLastAffected(commitHash)
+	case Limit:
+		ac.SetLimit(commitHash)
+	case Fixed:
+		ac.SetFixed(commitHash)
+	}
+}
+
 func (ac *AffectedCommit) SetRepo(repo string) {
 	// GitHub.com repos are demonstrably case-insensitive, and frequently
 	// expressed in URLs with varying cases, so normalize them to lowercase.

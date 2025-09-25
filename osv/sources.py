@@ -348,7 +348,7 @@ def source_path(source_repo, bug):
   if source_name == 'oss-fuzz' and len(bug.project) > 0:
     # Because we populate the Github link for matching, the shortest
     # name is the package name.
-    project = sorted(bug.project, key = lambda x:len(x))[0]
+    project = sorted(bug.project, key=len)[0]
     path = os.path.join(project, bug.id() + source_repo.extension)
     if source_repo.directory_path:
       path = os.path.join(source_repo.directory_path, path)

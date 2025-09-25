@@ -41,6 +41,7 @@ func main() {
 		"path to output general alpine affected package information")
 	outputBucketName := flag.String("output_bucket", outputBucketDefault, "The GCS bucket to write to.")
 	numWorkers := flag.Int("num_workers", 64, "Number of workers to process records")
+	uploadToGCS := flag.Bool("uploadToGCS", false, "If true, do not write to GCS bucket and instead write to local disk.")
 	flag.Parse()
 
 	err := os.MkdirAll(*alpineOutputPath, 0755)
@@ -53,12 +54,14 @@ func main() {
 	osvVulnerabilities := generateAlpineOSV(allAlpineSecDB, allCVEs)
 
 	ctx := context.Background()
-	storageClient, err := storage.NewClient(ctx)
-	if err != nil {
-		logger.Fatal("Failed to create storage client", slog.Any("err", err))
+	var bkt *storage.BucketHandle
+	if *uploadToGCS {
+		storageClient, err := storage.NewClient(ctx)
+		if err != nil {
+			logger.Fatal("Failed to create storage client", slog.Any("err", err))
+		}
+		bkt = storageClient.Bucket(*outputBucketName)
 	}
-	bkt := storageClient.Bucket(*outputBucketName)
-
 	var wg sync.WaitGroup
 	vulnChan := make(chan *vulns.Vulnerability)
 
@@ -71,6 +74,10 @@ func main() {
 	}
 
 	for _, v := range osvVulnerabilities {
+		if len(v.Affected) == 0 {
+			logger.Warn(fmt.Sprintf("Skipping %s as no affected versions found.", v.ID), slog.String("id", v.ID))
+			continue
+		}
 		vulnChan <- v
 	}
 

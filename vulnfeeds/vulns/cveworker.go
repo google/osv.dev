@@ -17,7 +17,7 @@ import (
 
 const (
 	// HashMetadataKey is the key for the sha256 hash in the GCS object metadata.
-	HashMetadataKey = "sha256-hash"
+	hashMetadataKey = "sha256-hash"
 )
 
 // Worker is a generic worker that processes vulnerabilities from a channel and uploads them to a GCS bucket.
@@ -46,7 +46,7 @@ func Worker(ctx context.Context, vulnChan <-chan *Vulnerability, bkt *storage.Bu
 		attrs, err := obj.Attrs(ctx)
 		if err == nil {
 			// Object exists, check hash.
-			if attrs.Metadata != nil && attrs.Metadata[HashMetadataKey] == hexHash {
+			if attrs.Metadata != nil && attrs.Metadata[hashMetadataKey] == hexHash {
 				logger.Info("Skipping upload, hash matches", slog.String("id", vulnID))
 				continue
 			}
@@ -66,7 +66,7 @@ func Worker(ctx context.Context, vulnChan <-chan *Vulnerability, bkt *storage.Bu
 		logger.Info("Uploading", slog.String("id", vulnID))
 		wc := obj.NewWriter(ctx)
 		wc.Metadata = map[string]string{
-			HashMetadataKey: hexHash,
+			hashMetadataKey: hexHash,
 		}
 		wc.ContentType = "application/json"
 

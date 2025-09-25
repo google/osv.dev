@@ -143,7 +143,10 @@ func generateOSVFromDebianTracker(debianData DebianSecurityTrackerData, debianRe
 						},
 					},
 				}
-				v.AddSeverity(currentNVDCVE.CVE.Metrics)
+				if currentNVDCVE.CVE.Metrics != nil {
+					v.AddSeverity(currentNVDCVE.CVE.Metrics)
+				}
+
 				osvCves[cveID] = v
 			}
 

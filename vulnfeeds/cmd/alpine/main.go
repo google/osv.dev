@@ -36,7 +36,7 @@ func main() {
 	logger.InitGlobalLogger()
 
 	alpineOutputPath := flag.String(
-		"alpineOutput",
+		"output_path",
 		alpineOutputPathDefault,
 		"path to output general alpine affected package information")
 	outputBucketName := flag.String("output_bucket", outputBucketDefault, "The GCS bucket to write to.")

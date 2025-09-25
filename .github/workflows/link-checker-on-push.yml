@@ -1,13 +1,14 @@
 name: Check links on push and schedule
 
+# Temporarily disabled due to https://github.com/google/osv.dev/issues/4037
 on:
   push:
-    branches: [ master ]
+    branches: []
   pull_request:
     # The branches below must be a subset of the branches above
-    branches: [ master ]
-  schedule:
-    - cron: '30 22 * * 1,4'
+    branches: []
+  # schedule:
+  #   - cron: '30 22 * * 1,4'
 permissions:  # added using https://github.com/step-security/secure-repo
   contents: read
 

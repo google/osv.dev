@@ -27,6 +27,7 @@ import (
 	"slices"
 	"sort"
 	"strings"
+	"sync"
 	"time"
 
 	"gopkg.in/yaml.v2"
@@ -785,27 +786,46 @@ func LoadAllCVEs(cvePath string) map[cves.CVEID]cves.Vulnerability {
 		logger.Fatal("Failed to read dir", slog.String("path", cvePath), slog.Any("err", err))
 	}
 
-	result := make(map[cves.CVEID]cves.Vulnerability)
+	vulnsChan := make(chan cves.Vulnerability)
+	var wg sync.WaitGroup
 
 	for _, entry := range dir {
 		if !strings.HasSuffix(entry.Name(), ".json") {
 			continue
 		}
-		file, err := os.Open(path.Join(cvePath, entry.Name()))
-		if err != nil {
-			logger.Fatal("Failed to open CVE JSON", slog.String("path", path.Join(cvePath, entry.Name())), slog.Any("err", err))
-		}
-		var nvdcve cves.CVEAPIJSON20Schema
-		err = json.NewDecoder(file).Decode(&nvdcve)
-		if err != nil {
-			logger.Fatal("Failed to decode JSON", slog.String("file", file.Name()), slog.Any("err", err))
-		}
 
-		for _, item := range nvdcve.Vulnerabilities {
-			result[item.CVE.ID] = item
-		}
-		logger.Info("Loaded "+entry.Name(), slog.String("cve", entry.Name()))
-		file.Close()
+		wg.Add(1)
+		go func(filename string) {
+			defer wg.Done()
+			filePath := path.Join(cvePath, filename)
+			file, err := os.Open(filePath)
+			if err != nil {
+				logger.Error("Failed to open CVE JSON", slog.String("path", filePath), slog.Any("err", err))
+				return
+			}
+			defer file.Close()
+
+			var nvdcve cves.CVEAPIJSON20Schema
+			if err := json.NewDecoder(file).Decode(&nvdcve); err != nil {
+				logger.Error("Failed to decode JSON", slog.String("file", filename), slog.Any("err", err))
+				return
+			}
+
+			for _, item := range nvdcve.Vulnerabilities {
+				vulnsChan <- item
+			}
+			logger.Info("Loaded "+filename, slog.String("cve", filename))
+		}(entry.Name())
+	}
+
+	go func() {
+		wg.Wait()
+		close(vulnsChan)
+	}()
+
+	result := make(map[cves.CVEID]cves.Vulnerability)
+	for item := range vulnsChan {
+		result[item.CVE.ID] = item
 	}
 
 	return result

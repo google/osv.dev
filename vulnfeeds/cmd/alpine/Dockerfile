@@ -25,7 +25,7 @@ COPY ./ /src/
 RUN go build -o alpine ./cmd/alpine/
 
 
-FROM gcr.io/google.com/cloudsdktool/google-cloud-cli:alpine@sha256:cf7a564b01721aeff7fa6128569ff1fa1cd7b47538fb034228fbdb99b9b07835
+FROM gcr.io/google.com/cloudsdktool/google-cloud-cli:alpine@sha256:cdac858d976cb0e6bfdc3288fee5a0a7bf6348a009089be130b2009e28463c52
 
 WORKDIR /root/
 COPY --from=GO_BUILD /src/alpine ./

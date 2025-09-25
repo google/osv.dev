@@ -25,3 +25,4 @@ resources:
 - ksm_service.yaml
 - ksm_stateful_set.yaml
 - recoverer.yaml
+- record-checker.yaml

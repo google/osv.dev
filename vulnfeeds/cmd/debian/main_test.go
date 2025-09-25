@@ -103,6 +103,21 @@ func TestGenerateOSVFromDebianTracker(t *testing.T) {
 				Details:   "In all versions of AppArmor mount rules are accidentally widened when compiled.",
 				Affected: []osvschema.Affected{
 					{
+						Package:           osvschema.Package{Ecosystem: "Debian:10", Name: "apparmor"},
+						Ranges:            []osvschema.Range{{Type: "ECOSYSTEM", Events: []osvschema.Event{{Introduced: "0"}}}},
+						EcosystemSpecific: map[string]any{"urgency": string("unimportant")},
+					},
+					{
+						Package:           osvschema.Package{Ecosystem: "Debian:11", Name: "apparmor"},
+						Ranges:            []osvschema.Range{{Type: "ECOSYSTEM", Events: []osvschema.Event{{Introduced: "0"}}}},
+						EcosystemSpecific: map[string]any{"urgency": string("unimportant")},
+					},
+					{
+						Package:           osvschema.Package{Ecosystem: "Debian:12", Name: "apparmor"},
+						Ranges:            []osvschema.Range{{Type: "ECOSYSTEM", Events: []osvschema.Event{{Introduced: "0"}}}},
+						EcosystemSpecific: map[string]any{"urgency": string("unimportant")},
+					},
+					{
 						Package:           osvschema.Package{Name: "apparmor", Ecosystem: "Debian:13"},
 						Ranges:            []osvschema.Range{{Type: "ECOSYSTEM", Events: []osvschema.Event{{Introduced: "0"}, {Fixed: "3.0.12-1"}}}},
 						EcosystemSpecific: map[string]any{"urgency": "unimportant"},

@@ -36,7 +36,7 @@ func main() {
 	logger.InitGlobalLogger()
 
 	alpineOutputPath := flag.String(
-		"alpineOutput",
+		"output_path",
 		alpineOutputPathDefault,
 		"path to output general alpine affected package information")
 	outputBucketName := flag.String("output_bucket", outputBucketDefault, "The GCS bucket to write to.")
@@ -220,7 +220,10 @@ func generateAlpineOSV(allAlpineSecDb map[string][]VersionAndPkg, allCVEs map[cv
 			logger.Warn(fmt.Sprintf("Skipping %s as no affected versions found.", v.ID), slog.String("cveID", cveID))
 			continue
 		}
-		v.AddSeverity(cve.CVE.Metrics)
+		if cve.CVE.Metrics != nil {
+			v.AddSeverity(cve.CVE.Metrics)
+		}
+
 		osvVulnerabilities = append(osvVulnerabilities, v)
 	}
 

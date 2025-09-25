@@ -1,6 +1,6 @@
 [project]
 name = "osv"
-version = "0.1.1"
+version = "0.1.2"
 description = "Open Source Vulnerabilities library"
 authors = [
     {name = "OSV Authors", email = "osv-discuss@googlegroups.com"}

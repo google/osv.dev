@@ -197,10 +197,15 @@ class Importer:
                                  path,
                                  deleted=False):
     """Request analysis."""
+    # TODO(michaelkedar): Making a distinction for oss-fuzz updates so we can
+    # track the logic flow for our eventual decoupling of the special logic.
+    task_type = 'update'
+    if source_repo.name == 'oss-fuzz':
+      task_type = 'update-oss-fuzz'
     self._publisher.publish(
         self._tasks_topic,
         data=b'',
-        type='update',
+        type=task_type,
         source=source_repo.name,
         path=path,
         original_sha256=original_sha256,

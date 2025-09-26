@@ -71,7 +71,7 @@ class Pub(EnumerableEcosystem):
 
   _API_PACKAGE_URL = 'https://pub.dev/api/packages/{package}'
 
-  def sort_key(self, version):
+  def _sort_key(self, version):
     """Sort key."""
     return Version.from_string(version)
 

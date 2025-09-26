@@ -32,7 +32,7 @@ class Hackage(EnumerableEcosystem):
 
   _API_PACKAGE_URL = 'https://hackage.haskell.org/package/{package}.json'
 
-  def sort_key(self, version):
+  def _sort_key(self, version):
     """Sort key.
 
     The Haskell package version data type is defined at

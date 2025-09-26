@@ -21,7 +21,7 @@ from .ecosystems_base import OrderedEcosystem
 class Ubuntu(OrderedEcosystem):
   """Ubuntu ecosystem"""
 
-  def sort_key(self, version):
+  def _sort_key(self, version):
     if not UbuntuVersion.is_valid(version):
-      return UbuntuVersion(999999, '999999')
+      return UbuntuVersion(9999999999, '9999999999')
     return UbuntuVersion.from_string(version)

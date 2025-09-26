@@ -86,7 +86,7 @@ class NuGet(EnumerableEcosystem):
   _API_PACKAGE_URL = ('https://api.nuget.org/v3/registration5-semver1/'
                       '{package}/index.json')
 
-  def sort_key(self, version):
+  def _sort_key(self, version):
     """Sort key."""
     return Version.from_string(version)
 

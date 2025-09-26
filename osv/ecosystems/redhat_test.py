@@ -36,7 +36,10 @@ class RPMEcosystemTest(unittest.TestCase):
     self.assertGreater(
         ecosystem.sort_key('2:1.14.3-2.module+el8.10.0+1815+5fe7415e'),
         ecosystem.sort_key('2:1.10.3-1.module+el8.10.0+1815+5fe7415e'))
-    self.assertLess(ecosystem.sort_key('invalid'), ecosystem.sort_key('0'))
+    self.assertLess(ecosystem.sort_key('0.string'), ecosystem.sort_key('0.0'))
+
+    # Check the 0 sentinel value.
+    self.assertLess(ecosystem.sort_key('0'), ecosystem.sort_key('0:0~0-0'))
 
     # AlmaLinux
     self.assertGreater(
@@ -60,7 +63,6 @@ class RPMEcosystemTest(unittest.TestCase):
         ecosystem.sort_key('3.2.7-1.mga9'))
     self.assertGreater(
         ecosystem.sort_key('3.2.7-1.2.mga9'), ecosystem.sort_key('0'))
-    self.assertLess(ecosystem.sort_key('invalid'), ecosystem.sort_key('0'))
     self.assertGreater(
         ecosystem.sort_key('1:1.8.11-1.mga9'),
         ecosystem.sort_key('0:1.9.1-2.mga9'))

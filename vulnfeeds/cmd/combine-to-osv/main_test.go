@@ -37,7 +37,7 @@ func loadTestData2(cveName string) cves.Vulnerability {
 }
 
 func TestLoadParts(t *testing.T) {
-	allParts, _ := loadParts("../../test_data/parts")
+	allParts, _ := vulns.LoadParts("../../test_data/parts")
 	expectedPartCount := 14
 	actualPartCount := len(allParts)
 

@@ -9,6 +9,7 @@ import (
 	"log/slog"
 	"os"
 	"path"
+	"path/filepath"
 	"sort"
 	"strings"
 	"time"
@@ -32,7 +33,7 @@ func main() {
 	logger.InitGlobalLogger()
 
 	cve5Path := flag.String("cve5Path", defaultCVE5Path, "Path to CVE file")
-	nvdPath := flag.String("partsPath", defaultNVDOSVPath, "Path to CVE file")
+	nvdPath := flag.String("nvdPath", defaultNVDOSVPath, "Path to CVE file")
 	osvOutputPath := flag.String("osvOutputPath", defaultOSVOutputPath, "Path to CVE file")
 	flag.Parse()
 
@@ -47,8 +48,8 @@ func main() {
 	allNVD := loadOSV(*nvdPath)
 
 	// nvdCVEs := vulns.LoadAllCVEs(defaultNVDOSVPath)
-	debianCVEs, err := listBucketObjects("osv-test-debian-osv/debian-cve-osv")
-	alpineCVEs, err := listBucketObjects("osv-test-cve-osv-conversion/alpine")
+	debianCVEs, err := listBucketObjects("osv-test-debian-osv", "/debian-cve-osv")
+	alpineCVEs, err := listBucketObjects("osv-test-cve-osv-conversion", "/alpine")
 
 	noPkg := append(debianCVEs, alpineCVEs...)
 	// Combine
@@ -57,9 +58,19 @@ func main() {
 
 }
 
+func cleanFilename(filename string, prefix string) string {
+	cleaned := strings.TrimPrefix(filename, prefix)
+	cleaned = strings.TrimSuffix(cleaned, ".json")
+	pre := strings.SplitAfter(cleaned, "-")
+	if pre[0] != "CVE" {
+		cleaned = pre[1]
+	}
+	return cleaned
+}
+
 // listBucketObjects lists the names of all objects in a Google Cloud Storage bucket.
 // It does not download the file contents.
-func listBucketObjects(bucketName string) ([]string, error) {
+func listBucketObjects(bucketName string, prefix string) ([]string, error) {
 
 	ctx := context.Background()
 	client, err := storage.NewClient(ctx)
@@ -70,7 +81,7 @@ func listBucketObjects(bucketName string) ([]string, error) {
 
 	bucket := client.Bucket(bucketName)
 
-	it := bucket.Objects(ctx, nil)
+	it := bucket.Objects(ctx, &storage.Query{Prefix: prefix})
 
 	var filenames []string
 
@@ -84,9 +95,8 @@ func listBucketObjects(bucketName string) ([]string, error) {
 			return nil, fmt.Errorf("bucket.Objects: %w", err)
 		}
 
-		filenames = append(filenames, attrs.Name)
+		filenames = append(filenames, cleanFilename(attrs.Name, prefix))
 	}
-
 	return filenames, nil
 }
 
@@ -113,17 +123,32 @@ func loadOSV(osvPath string) map[cves.CVEID]osvschema.Vulnerability {
 		if !strings.HasSuffix(entry.Name(), ".json") || strings.HasSuffix(entry.Name(), ".metrics.json") {
 			continue
 		}
-		filePath := path.Join(osvPath, entry.Name())
+		filePath := filepath.Join(osvPath, entry.Name())
 		file, err := os.Open(filePath)
 		if err != nil {
-			logger.Fatal("Failed to open OSV JSON file", slog.String("path", filePath), slog.Any("err", err))
+			logger.Warn("Failed to open OSV JSON file, attempting glob", slog.String("path", filePath), slog.Any("err", err))
+
+			globPattern := filepath.Join(osvPath, "**", entry.Name())
+			matches, globErr := filepath.Glob(globPattern)
+			if globErr != nil || len(matches) == 0 {
+				logger.Error("Globbing for file failed, skipping", slog.String("pattern", globPattern), slog.Any("globErr", globErr))
+				continue
+			}
+			// Open the first match
+			filePath = matches[0]
+			file, err = os.Open(filePath)
+			if err != nil {
+				logger.Error("Failed to open file after globbing, skipping", slog.String("path", filePath), slog.Any("err", err))
+				continue
+			}
 		}
 
 		var vuln osvschema.Vulnerability
 		err = json.NewDecoder(file).Decode(&vuln)
 		file.Close()
 		if err != nil {
-			logger.Fatal("Failed to decode", slog.String("file", entry.Name()), slog.Any("err", err))
+			logger.Error("Failed to decode, skipping", slog.String("file", entry.Name()), slog.Any("err", err))
+			continue
 		}
 		allVulns[cves.CVEID(vuln.ID)] = vuln
 		logger.Info("Loaded "+entry.Name(), slog.String("file", entry.Name()))
@@ -141,10 +166,6 @@ func combineIntoOSV(cve5osv map[cves.CVEID]osvschema.Vulnerability, nvdosv map[c
 		nvd, ok := nvdosv[cveID]
 
 		if ok {
-			// If the cve5-derived record has no affected packages, use NVD's.
-			if len(combined.Affected) == 0 && len(nvd.Affected) > 0 {
-				combined.Affected = nvd.Affected
-			}
 			pickAffectedInformation(&combined.Affected, nvd.Affected)
 			// TODO: if both NVD and CVE5 data exists, compare each affected range and make good decisions
 
@@ -207,12 +228,80 @@ func combineIntoOSV(cve5osv map[cves.CVEID]osvschema.Vulnerability, nvdosv map[c
 	return vulns
 }
 
-func pickAffectedInformation(affected *[]osvschema.Affected, nvdAffected []osvschema.Affected) {
-	// Compare version information
-	if len(*affected) == 1 && len(nvdAffected) == 1 {
+func getRangeBoundaryVersions(events []osvschema.Event) (introduced, fixed string) {
+	for _, e := range events {
+		if e.Introduced != "0" && e.Introduced != "" {
+			introduced = e.Introduced
+		}
+		if e.Fixed != "" {
+			fixed = e.Fixed
+		}
+	}
+	return introduced, fixed
+}
 
+// pickAffectedInformation merges information from nvdAffected into cve5Affected.
+// It matches affected packages by the repo URL in their version ranges.
+// If a match is found, it merges the version range information.
+// Unmatched nvdAffected packages are appended.
+// cve5Affected is modified in place.
+func pickAffectedInformation(cve5Affected *[]osvschema.Affected, nvdAffected []osvschema.Affected) {
+	if len(nvdAffected) == 0 {
+		return
+	}
+	if len(*cve5Affected) == 0 {
+		*cve5Affected = nvdAffected
+		return
 	}
 
+	nvdRepoMap := make(map[string]osvschema.Affected)
+	for _, affected := range nvdAffected {
+		// Assuming one range per affected for matching purposes.
+		if len(affected.Ranges) > 0 && affected.Ranges[0].Repo != "" {
+			nvdRepoMap[affected.Ranges[0].Repo] = affected
+		}
+	}
+
+	c5a := *cve5Affected
+	for i, c5Aff := range c5a {
+		if len(c5Aff.Ranges) > 0 && c5Aff.Ranges[0].Repo != "" {
+			repoURL := c5Aff.Ranges[0].Repo
+			if nvdAff, ok := nvdRepoMap[repoURL]; ok {
+				// Found a match. Merge ranges.
+				// This logic is simplistic and only handles one range per affected.
+				// TODO: Implement more robust range merging.
+				if len(c5Aff.Ranges) == 1 && len(nvdAff.Ranges) == 1 {
+					c5Intro, c5Fixed := getRangeBoundaryVersions(c5Aff.Ranges[0].Events)
+					nvdIntro, nvdFixed := getRangeBoundaryVersions(nvdAff.Ranges[0].Events)
+
+					// Prefer cve5 data, but use nvd data if cve5 data is missing.
+					finalIntro := c5Intro
+					if finalIntro == "" {
+						finalIntro = nvdIntro
+					}
+
+					finalFixed := c5Fixed
+					if finalFixed == "" {
+						finalFixed = nvdFixed
+					}
+
+					if finalIntro != "" && finalFixed != "" {
+						newRange := cves.BuildVersionRange(finalIntro, "", finalFixed)
+						newRange.Repo = repoURL // Preserve the repo
+						c5a[i].Ranges[0] = newRange
+					}
+				}
+				// Remove from map so we know which NVD packages are left.
+				delete(nvdRepoMap, repoURL)
+			}
+		}
+	}
+
+	// Add remaining NVD packages that were not in cve5.
+	for _, nvdAff := range nvdRepoMap {
+		c5a = append(c5a, nvdAff)
+	}
+	*cve5Affected = c5a
 }
 
 func affectedToSignature(a osvschema.Affected) string {

@@ -34,8 +34,7 @@ class NuGetVersionTest(unittest.TestCase):
 
   def check_order(self, comparison, first, second):
     """Check order."""
-    comparison(
-        self.ecosystem.sort_key(first), self.ecosystem.sort_key(second))
+    comparison(self.ecosystem.sort_key(first), self.ecosystem.sort_key(second))
 
   def test_equals(self):
     """Test version equals."""

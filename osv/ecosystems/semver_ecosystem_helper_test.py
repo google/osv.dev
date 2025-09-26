@@ -32,7 +32,7 @@ class SemVerEcosystemTest(unittest.TestCase):
       self.assertEqual('1.0.1-0', ecosystem.next_version('blah', '1.0.0'))
       self.assertEqual('1.0.0-pre.0',
                        ecosystem.next_version('blah', '1.0.0-pre'))
-      
+
   def test_sort_key(self):
     """Test sort_key"""
     ecosystem = semver_ecosystem_helper.SemverLike('')

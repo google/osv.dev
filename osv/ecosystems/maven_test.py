@@ -93,7 +93,10 @@ class MavenVersionTest(unittest.TestCase):
         '1-alpha-1', '2', 'valid', '0.0'
     ]
 
-    sorted_versions = [str(vk._key) for vk in sorted(self.ecosystem.sort_key(v) for v in unsorted)]
+    sorted_versions = [
+        str(vk._key) for vk in sorted(  # pylint: disable=protected-access
+            self.ecosystem.sort_key(v) for v in unsorted)
+    ]
 
     self.assertListEqual([
         'valid', '0', '1-alpha-1', '1-alpha-1', '1-snapshot', '1', '1', '1',

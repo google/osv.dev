@@ -52,7 +52,7 @@ class VersionKey:
 
     if self._is_zero:
       return other._is_zero
-    
+
     if other._is_zero:
       return False
 

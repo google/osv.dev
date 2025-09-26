@@ -38,8 +38,7 @@ class BioconductorEcosystemTest(vcr.unittest.VCRTestCase):
     ecosystem = ecosystems.get('Bioconductor')
     self.assertGreater(
         ecosystem.sort_key('1.20.0'), ecosystem.sort_key('1.18.0'))
-    self.assertLess(
-        ecosystem.sort_key('1.18.0'), ecosystem.sort_key('1.18.1'))
+    self.assertLess(ecosystem.sort_key('1.18.0'), ecosystem.sort_key('1.18.1'))
 
     # Check the 0 sentinel value.
     self.assertLess(ecosystem.sort_key('0'), ecosystem.sort_key('0.0.0'))

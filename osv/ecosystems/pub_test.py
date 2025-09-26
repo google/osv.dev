@@ -52,8 +52,7 @@ class PubVersionTest(unittest.TestCase):
     """Test version equality."""
 
     def check_version_equals(v1, v2):
-      self.assertEqual(
-          self.ecosystem.sort_key(v1), self.ecosystem.sort_key(v2))
+      self.assertEqual(self.ecosystem.sort_key(v1), self.ecosystem.sort_key(v2))
 
     check_version_equals('01.2.3', '1.2.3')
     check_version_equals('1.02.3', '1.2.3')

@@ -83,9 +83,9 @@ func TestBuildVersionRange(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got := buildVersionRange(tt.intro, tt.lastAff, tt.fixed)
+			got := cves.BuildVersionRange(tt.intro, tt.lastAff, tt.fixed)
 			if diff := cmp.Diff(tt.want, got); diff != "" {
-				t.Errorf("buildVersionRange() mismatch (-want +got):\n%s", diff)
+				t.Errorf("cves.BuildVersionRange() mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}
@@ -112,7 +112,7 @@ func TestFindNormalAffectedRanges(t *testing.T) {
 				},
 			},
 			wantRanges: []osvschema.Range{
-				buildVersionRange("1.0", "", "1.5"),
+				cves.BuildVersionRange("1.0", "", "1.5"),
 			},
 			wantRangeType: VersionRangeTypeSemver,
 		},
@@ -128,7 +128,7 @@ func TestFindNormalAffectedRanges(t *testing.T) {
 				},
 			},
 			wantRanges: []osvschema.Range{
-				buildVersionRange("0", "2.0", ""),
+				cves.BuildVersionRange("0", "2.0", ""),
 			},
 			wantRangeType: VersionRangeTypeSemver,
 		},
@@ -143,7 +143,7 @@ func TestFindNormalAffectedRanges(t *testing.T) {
 				},
 			},
 			wantRanges: []osvschema.Range{
-				buildVersionRange("2.0", "", "2.5"),
+				cves.BuildVersionRange("2.0", "", "2.5"),
 			},
 			wantRangeType: VersionRangeTypeEcosystem,
 		},
@@ -159,7 +159,7 @@ func TestFindNormalAffectedRanges(t *testing.T) {
 				},
 			},
 			wantRanges: []osvschema.Range{
-				buildVersionRange("deadbeef", "", ""),
+				cves.BuildVersionRange("deadbeef", "", ""),
 			},
 			wantRangeType: VersionRangeTypeGit,
 		},
@@ -228,7 +228,7 @@ func TestFindInverseAffectedRanges(t *testing.T) {
 			versionType: VersionRangeTypeSemver,
 			cnaAssigner: "Linux",
 			want: []osvschema.Range{
-				buildVersionRange("5.0.0", "", "5.10.1"),
+				cves.BuildVersionRange("5.0.0", "", "5.10.1"),
 			},
 		},
 		{
@@ -267,7 +267,7 @@ func TestFindInverseAffectedRanges(t *testing.T) {
 			versionType: VersionRangeTypeSemver,
 			cnaAssigner: "Linux",
 			want: []osvschema.Range{
-				buildVersionRange("4.0.0", "", "4.5.2"),
+				cves.BuildVersionRange("4.0.0", "", "4.5.2"),
 			},
 		},
 	}

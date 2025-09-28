@@ -17,6 +17,8 @@ require (
 	github.com/sethvargo/go-retry v0.3.0
 	golang.org/x/exp v0.0.0-20250819193227-8b4c13bb791b
 	google.golang.org/api v0.247.0
+	golang.org/x/exp v0.0.0-20250819193227-8b4c13bb791b
+	google.golang.org/api v0.247.0
 	gopkg.in/dnaeon/go-vcr.v4 v4.0.5
 	gopkg.in/yaml.v2 v2.4.0
 )

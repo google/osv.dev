@@ -37,11 +37,6 @@ echo "Begin syncing NVD data from GCS bucket ${INPUT_BUCKET}"
 gcloud --no-user-output-enabled storage -q cp "gs://${INPUT_BUCKET}/nvd/*-????.json" "${CVE_OUTPUT}"
 echo "Successfully synced from GCS bucket"
 
-if [[ -n "$CVELIST" ]]; then
-    echo "Clone CVE List"
-    git clone --quiet https://github.com/CVEProject/cvelistV5
-fi
-
 echo "Run combine-to-osv"
 ./combine-to-osv -cvePath "$CVE_OUTPUT" -partsPath "$OSV_PARTS_ROOT" -osvOutputPath "$OSV_OUTPUT" -cveListPath "$CVELIST"
 

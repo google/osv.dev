@@ -514,19 +514,6 @@ func ValidateAndCanonicalizeLink(link string, httpClient *http.Client) (canonica
 	return canonicalLink, nil
 }
 
-func ExtractGitAffectedCommit(link string, commitType models.CommitType, httpClient *http.Client) (ac models.AffectedCommit, err error) {
-	c, r, err := ExtractGitCommit(link, httpClient, 0)
-	if err != nil {
-		return ac, err
-	}
-
-	ac.SetRepo(r)
-
-	models.SetCommitByType(&ac, commitType, c)
-
-	return ac, nil
-}
-
 // For URLs referencing commits in supported Git repository hosts, return a cloneable AffectedCommit.
 func extractGitAffectedCommit(link string, commitType models.CommitType, httpClient *http.Client) (models.AffectedCommit, error) {
 	var ac models.AffectedCommit

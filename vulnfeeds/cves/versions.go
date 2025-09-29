@@ -530,12 +530,11 @@ func extractGitAffectedCommit(link string, commitType models.CommitType, httpCli
 	return ac, nil
 }
 
-
 func ExtractGitCommit(link string, httpClient *http.Client, depth int) (string, string, error) {
 	if depth > 10 {
 		return "", "", fmt.Errorf("max recursion depth exceeded for %s", link)
 	}
-  
+
 	var commit string
 	r, err := Repo(link)
 	if err != nil {

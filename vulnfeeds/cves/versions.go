@@ -515,7 +515,7 @@ func ValidateAndCanonicalizeLink(link string, httpClient *http.Client) (canonica
 }
 
 func ExtractGitAffectedCommit(link string, commitType models.CommitType, httpClient *http.Client) (ac models.AffectedCommit, err error) {
-	c, r, err := ExtractGitCommit(link, httpClient)
+	c, r, err := ExtractGitCommit(link, httpClient, 0)
 	if err != nil {
 		return ac, err
 	}
@@ -528,7 +528,26 @@ func ExtractGitAffectedCommit(link string, commitType models.CommitType, httpCli
 }
 
 // For URLs referencing commits in supported Git repository hosts, return a cloneable AffectedCommit.
-func ExtractGitCommit(link string, httpClient *http.Client) (string, string, error) {
+func extractGitAffectedCommit(link string, commitType models.CommitType, httpClient *http.Client) (models.AffectedCommit, error) {
+	var ac models.AffectedCommit
+	c, r, err := ExtractGitCommit(link, httpClient, 0)
+
+	if err != nil {
+		return ac, err
+	}
+
+	ac.SetRepo(r)
+
+	models.SetCommitByType(&ac, commitType, c)
+
+	return ac, nil
+}
+
+func ExtractGitCommit(link string, httpClient *http.Client, depth int) (string, string, error) {
+	if depth > 10 {
+		return "", "", fmt.Errorf("max recursion depth exceeded for %s", link)
+	}
+
 	var commit string
 	r, err := Repo(link)
 	if err != nil {
@@ -552,7 +571,7 @@ func ExtractGitCommit(link string, httpClient *http.Client) (string, string, err
 	// redirect to a completely different host, instead of a redirect within
 	// GitHub)
 	if possiblyDifferentLink != link {
-		return ExtractGitCommit(possiblyDifferentLink, httpClient)
+		return ExtractGitCommit(possiblyDifferentLink, httpClient, depth+1)
 	}
 
 	return commit, r, nil
@@ -679,7 +698,7 @@ func deduplicateAffectedCommits(commits []models.AffectedCommit) []models.Affect
 func ExtractVersionInfo(cve CVE, validVersions []string, httpClient *http.Client) (v models.VersionInfo, notes []string) {
 	for _, reference := range cve.References {
 		// (Potentially faulty) Assumption: All viable Git commit reference links are fix commits.
-		if commit, err := ExtractGitAffectedCommit(reference.URL, models.Fixed, httpClient); err == nil {
+		if commit, err := extractGitAffectedCommit(reference.URL, models.Fixed, httpClient); err == nil {
 			v.AffectedCommits = append(v.AffectedCommits, commit)
 		}
 	}

@@ -167,6 +167,11 @@ class OSVServicer(osv_service_v1_pb2_grpc.OSVServicer,
   @ndb.synctasklet
   def GetVulnById(self, request, context: grpc.ServicerContext):
     """Return a `Vulnerability` object for a given OSV ID."""
+    # Datastore has a limit of how large indexed properties can be (<=1500B).
+    # Vulnerability IDs aren't going to be that long.
+    if len(request.id) > 100:
+      context.abort(grpc.StatusCode.INVALID_ARGUMENT, 'ID too long')
+      return None
 
     if get_gcp_project() in ('oss-vdb-test', 'test-osv'):
       # Get vuln from GCS

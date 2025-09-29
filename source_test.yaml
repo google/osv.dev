@@ -44,6 +44,21 @@
   editable: False
   strict_validation: True
 
+- name: 'alpine'
+  versions_from_repo: False
+  type: 1
+  ignore_patterns: ['^(?!ALPINE-).*$']
+  directory_path: 'alpine'
+  detect_cherrypicks: False
+  extension: '.json'
+  bucket: 'osv-test-cve-osv-conversion'
+  db_prefix: ['ALPINE-']
+  ignore_git: True
+  human_link: 'https://security.alpinelinux.org/vuln/{{ BUG_ID | replace("ALPINE-", "") }}'
+  link: 'https://storage.googleapis.com/osv-test-cve-osv-conversion/alpine/'
+  editable: False
+  strict_validation: True
+
 - name: 'android'
   versions_from_repo: False
   type: 1
@@ -141,7 +156,7 @@
   bucket: 'osv-test-debian-osv'
   db_prefix: ['DEBIAN-']
   ignore_git: True
-  human_link: 'https://security-tracker.debian.org/tracker/{{ BUG_ID }}'
+  human_link: 'https://security-tracker.debian.org/tracker/{{ BUG_ID | replace("DEBIAN-", "") }}'
   link: 'https://storage.googleapis.com/osv-test-debian-osv/'
   editable: False
   strict_validation: True

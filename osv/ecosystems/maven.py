@@ -240,7 +240,7 @@ class Maven(DepsDevMixin, EnumerableEcosystem):
   def deps_dev_system(self) -> str:
     return 'maven'
 
-  def sort_key(self, version):
+  def _sort_key(self, version):
     """Sort key."""
     return Version.from_string(version)
 

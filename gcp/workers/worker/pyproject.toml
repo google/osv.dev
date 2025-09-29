@@ -1,6 +1,6 @@
 [project]
 name = "worker"
-requires-python = ">=3.11,<3.14"
+requires-python = ">=3.13,<3.14"
 dependencies = [
     "google-auth-httplib2==0.2.0",
     "google-api-python-client==2.181.0",

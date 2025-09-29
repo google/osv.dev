@@ -2,6 +2,7 @@
 package main
 
 import (
+	"context"
 	"encoding/json"
 	"flag"
 	"fmt"
@@ -9,28 +10,38 @@ import (
 	"log/slog"
 	"net/http"
 	"os"
-	"path"
 	"regexp"
+	"sort"
 	"strings"
+	"sync"
+	"time"
 
+	"cloud.google.com/go/storage"
+	"github.com/google/osv/vulnfeeds/cves"
 	"github.com/google/osv/vulnfeeds/models"
 	"github.com/google/osv/vulnfeeds/utility/logger"
 	"github.com/google/osv/vulnfeeds/vulns"
+	"github.com/ossf/osv-schema/bindings/go/osvschema"
 )
 
 const (
 	alpineURLBase           = "https://secdb.alpinelinux.org/%s/main.json"
 	alpineIndexURL          = "https://secdb.alpinelinux.org/"
-	alpineOutputPathDefault = "parts/alpine"
+	alpineOutputPathDefault = "alpine"
+	defaultCvePath          = "cve_jsons"
+	outputBucketDefault     = "osv-test-cve-osv-conversion"
 )
 
 func main() {
 	logger.InitGlobalLogger()
 
 	alpineOutputPath := flag.String(
-		"alpineOutput",
+		"output_path",
 		alpineOutputPathDefault,
 		"path to output general alpine affected package information")
+	outputBucketName := flag.String("output_bucket", outputBucketDefault, "The GCS bucket to write to.")
+	numWorkers := flag.Int("num_workers", 64, "Number of workers to process records")
+	uploadToGCS := flag.Bool("uploadToGCS", false, "If true, do not write to GCS bucket and instead write to local disk.")
 	flag.Parse()
 
 	err := os.MkdirAll(*alpineOutputPath, 0755)
@@ -38,8 +49,41 @@ func main() {
 		logger.Fatal("Can't create output path", slog.Any("err", err))
 	}
 
+	allCVEs := vulns.LoadAllCVEs(defaultCvePath)
 	allAlpineSecDB := getAlpineSecDBData()
-	generateAlpineOSV(allAlpineSecDB, *alpineOutputPath)
+	osvVulnerabilities := generateAlpineOSV(allAlpineSecDB, allCVEs)
+
+	ctx := context.Background()
+	var bkt *storage.BucketHandle
+	if *uploadToGCS {
+		storageClient, err := storage.NewClient(ctx)
+		if err != nil {
+			logger.Fatal("Failed to create storage client", slog.Any("err", err))
+		}
+		bkt = storageClient.Bucket(*outputBucketName)
+	}
+	var wg sync.WaitGroup
+	vulnChan := make(chan *vulns.Vulnerability)
+
+	for range *numWorkers {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			vulns.Worker(ctx, vulnChan, bkt, *alpineOutputPath)
+		}()
+	}
+
+	for _, v := range osvVulnerabilities {
+		if len(v.Affected) == 0 {
+			logger.Warn(fmt.Sprintf("Skipping %s as no affected versions found.", v.ID), slog.String("id", v.ID))
+			continue
+		}
+		vulnChan <- v
+	}
+
+	close(vulnChan)
+	wg.Wait()
+	logger.Info("Alpine CVE conversion succeeded.")
 }
 
 // getAllAlpineVersions gets all available version name in alpine secdb
@@ -55,7 +99,7 @@ func getAllAlpineVersions() []string {
 		logger.Fatal("Failed to get alpine index page", slog.Any("err", err))
 	}
 
-	exp := regexp.MustCompile("href=\"(v[\\d.]*)/\"")
+	exp := regexp.MustCompile(`href="(v[\d.]*)/"`)
 
 	searchRes := exp.FindAllStringSubmatch(buf.String(), -1)
 	alpineVersions := make([]string, 0, len(searchRes))
@@ -87,8 +131,9 @@ func getAlpineSecDBData() map[string][]VersionAndPkg {
 					cveID = strings.Split(cveID, " ")[0]
 
 					if !validVersion(version) {
-						logger.Warn("Invalid alpine version",
-							slog.String("version", version),
+						logger.Warn(fmt.Sprintf("[%s] Invalid alpine version: '%s', on package: '%s', and alpine version: '%s'",
+							cveID, version, pkg.Pkg.Name,
+							alpineVer), slog.String("version", version),
 							slog.String("package", pkg.Pkg.Name),
 							slog.String("alpine_version", alpineVer),
 						)
@@ -111,9 +156,53 @@ func getAlpineSecDBData() map[string][]VersionAndPkg {
 }
 
 // generateAlpineOSV generates the generic PackageInfo package from the information given by alpine advisory
-func generateAlpineOSV(allAlpineSecDb map[string][]VersionAndPkg, alpineOutputPath string) {
-	for cveID, verPkgs := range allAlpineSecDb {
-		pkgInfos := make([]vulns.PackageInfo, 0, len(verPkgs))
+func generateAlpineOSV(allAlpineSecDb map[string][]VersionAndPkg, allCVEs map[cves.CVEID]cves.Vulnerability) (osvVulnerabilities []*vulns.Vulnerability) {
+	cveIDs := make([]string, 0, len(allAlpineSecDb))
+	for cveID := range allAlpineSecDb {
+		cveIDs = append(cveIDs, cveID)
+	}
+	sort.Strings(cveIDs)
+
+	for _, cveID := range cveIDs {
+		verPkgs := allAlpineSecDb[cveID]
+		sort.Slice(verPkgs, func(i, j int) bool {
+			if verPkgs[i].Pkg != verPkgs[j].Pkg {
+				return verPkgs[i].Pkg < verPkgs[j].Pkg
+			}
+			if verPkgs[i].AlpineVer != verPkgs[j].AlpineVer {
+				return verPkgs[i].AlpineVer < verPkgs[j].AlpineVer
+			}
+
+			return verPkgs[i].Ver < verPkgs[j].Ver
+		})
+		cve, ok := allCVEs[cves.CVEID(cveID)]
+		var published time.Time
+		var details string
+		if ok {
+			published = cve.CVE.Published.Time
+			if len(cve.CVE.Descriptions) > 0 {
+				details = cve.CVE.Descriptions[0].Value
+			}
+		} else {
+			// TODO: add support for non-CVE reports
+			logger.Warn(fmt.Sprintf("CVE %s not found in cve_jsons", cveID), slog.String("cveID", cveID))
+			continue
+		}
+
+		v := &vulns.Vulnerability{
+			Vulnerability: osvschema.Vulnerability{
+				ID:        "ALPINE-" + cveID,
+				Upstream:  []string{cveID},
+				Published: published,
+				Details:   details,
+				References: []osvschema.Reference{
+					{
+						Type: "ADVISORY",
+						URL:  "https://security.alpinelinux.org/vuln/" + cveID,
+					},
+				},
+			},
+		}
 
 		for _, verPkg := range verPkgs {
 			pkgInfo := vulns.PackageInfo{
@@ -124,23 +213,21 @@ func generateAlpineOSV(allAlpineSecDb map[string][]VersionAndPkg, alpineOutputPa
 				Ecosystem: "Alpine:" + verPkg.AlpineVer,
 				PURL:      "pkg:apk/alpine/" + verPkg.Pkg + "?arch=source",
 			}
-			pkgInfos = append(pkgInfos, pkgInfo)
+			v.AddPkgInfo(pkgInfo)
 		}
 
-		file, err := os.OpenFile(path.Join(alpineOutputPath, cveID+".alpine.json"), os.O_CREATE|os.O_RDWR, 0644)
-		if err != nil {
-			logger.Fatal("Failed to create/write osv output file", slog.Any("err", err))
+		if len(v.Affected) == 0 {
+			logger.Warn(fmt.Sprintf("Skipping %s as no affected versions found.", v.ID), slog.String("cveID", cveID))
+			continue
 		}
-		encoder := json.NewEncoder(file)
-		encoder.SetIndent("", "  ")
-		err = encoder.Encode(&pkgInfos)
-		if err != nil {
-			logger.Fatal("Failed to encode package info output file", slog.Any("err", err))
+		if cve.CVE.Metrics != nil {
+			v.AddSeverity(cve.CVE.Metrics)
 		}
-		_ = file.Close()
+
+		osvVulnerabilities = append(osvVulnerabilities, v)
 	}
 
-	logger.Info("Finished")
+	return osvVulnerabilities
 }
 
 // downloadAlpine downloads Alpine SecDB data from their API

@@ -25,7 +25,7 @@ class PyPI(EnumerableEcosystem):
 
   _API_PACKAGE_URL = 'https://pypi.org/pypi/{package}/json'
 
-  def sort_key(self, version):
+  def _sort_key(self, version):
     """Sort key."""
     # version.parse() handles invalid versions by returning LegacyVersion()
     return packaging_legacy.version.parse(version)

@@ -1,10 +1,10 @@
 [project]
 name = "pypi-publish"
-requires-python = ">=3.11,<4.0"
+requires-python = ">=3.13,<4.0"
 dependencies = [
     "cryptography (==44.0.3)",
     "google-cloud-secret-manager (==2.24.0)",
-    "osv (==0.0.22)",
+    "osv (==0.1.1)",
     "requests (==2.32.5)",
 ]
 [tool.poetry]

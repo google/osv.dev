@@ -326,7 +326,7 @@ func TestValidRepo(t *testing.T) {
 		{
 			description: "Valid repository with a git:// protocol URL",
 			// Note: git:// protocol cannot go through go-vcr - this will connect to internet
-			repoURL:        "git://git.infradead.org/mtd-utils.git",
+			repoURL:        "git://git.gnupg.org/gnupg.git",
 			expectedResult: true,
 		},
 		{

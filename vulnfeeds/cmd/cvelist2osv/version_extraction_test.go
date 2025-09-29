@@ -171,7 +171,7 @@ func TestFindNormalAffectedRanges(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			gotRanges, gotRangeType, _ := findNormalAffectedRanges(tt.affected, tt.cnaAssigner)
+			gotRanges, gotRangeType := findNormalAffectedRanges(tt.affected, tt.cnaAssigner, &ConversionMetrics{})
 			if diff := cmp.Diff(tt.wantRanges, gotRanges); diff != "" {
 				t.Errorf("findNormalAffectedRanges() ranges mismatch (-want +got):\n%s", diff)
 			}
@@ -278,7 +278,8 @@ func TestFindInverseAffectedRanges(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			gotRanges, gotVersionType, _ := findInverseAffectedRanges(tt.affected, tt.cnaAssigner)
+			metrics := &ConversionMetrics{}
+			gotRanges, gotVersionType := findInverseAffectedRanges(tt.affected, tt.cnaAssigner, metrics)
 			if diff := cmp.Diff(tt.want, gotRanges); diff != "" {
 				t.Errorf("findInverseAffectedRanges() ranges mismatch (-want +got):\n%s", diff)
 			}
@@ -336,7 +337,7 @@ func TestRealWorldFindInverseAffectedRanges(t *testing.T) {
 			}
 
 			// Run the function under test.
-			gotRanges, _, _ := findInverseAffectedRanges(affectedBlock, tc.cve.Metadata.AssignerShortName)
+			gotRanges, _ := findInverseAffectedRanges(affectedBlock, tc.cve.Metadata.AssignerShortName, &ConversionMetrics{})
 
 			// Sort slices for deterministic comparison.
 			sort.Slice(gotRanges, func(i, j int) bool {

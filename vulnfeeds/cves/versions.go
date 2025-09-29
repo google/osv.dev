@@ -518,6 +518,7 @@ func ValidateAndCanonicalizeLink(link string, httpClient *http.Client) (canonica
 func extractGitAffectedCommit(link string, commitType models.CommitType, httpClient *http.Client) (models.AffectedCommit, error) {
 	var ac models.AffectedCommit
 	c, r, err := ExtractGitCommit(link, httpClient, 0)
+
 	if err != nil {
 		return ac, err
 	}
@@ -533,6 +534,7 @@ func ExtractGitCommit(link string, httpClient *http.Client, depth int) (string, 
 	if depth > 10 {
 		return "", "", fmt.Errorf("max recursion depth exceeded for %s", link)
 	}
+
 	var commit string
 	r, err := Repo(link)
 	if err != nil {

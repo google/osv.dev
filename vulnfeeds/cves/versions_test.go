@@ -686,10 +686,10 @@ func TestExtractGitCommit(t *testing.T) {
 				t.Skipf("test %q: running on Cloud Build", tc.description)
 			}
 			if time.Now().Before(tc.disableExpiryDate) {
-				t.Skipf("test %q: extractGitCommit for %q (%q) has been skipped due to known outage and will be reenabled on %s.", tc.description, tc.inputLink, tc.inputCommitType, tc.disableExpiryDate)
+				t.Skipf("test %q: ExtractGitAffectedCommit for %q (%q) has been skipped due to known outage and will be reenabled on %s.", tc.description, tc.inputLink, tc.inputCommitType, tc.disableExpiryDate)
 			}
 			if !tc.disableExpiryDate.IsZero() && time.Now().After(tc.disableExpiryDate) {
-				t.Logf("test %q: extractGitCommit(%q, %q) has been enabled on %s.", tc.description, tc.inputLink, tc.inputCommitType, tc.disableExpiryDate)
+				t.Logf("test %q: ExtractGitAffectedCommit(%q, %q) has been enabled on %s.", tc.description, tc.inputLink, tc.inputCommitType, tc.disableExpiryDate)
 			}
 			got, err := ExtractGitAffectedCommit(tc.inputLink, tc.inputCommitType, client)
 			if err != nil && !tc.expectFailure {

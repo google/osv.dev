@@ -10,6 +10,7 @@ import (
 	"os"
 	"path"
 	"path/filepath"
+	"slices"
 	"sort"
 	"strings"
 	"time"
@@ -23,13 +24,9 @@ import (
 )
 
 const (
-	defaultCvePath        = "cve_jsons"
-	defaultPartsInputPath = "parts"
-	defaultOSVOutputPath  = "osv_output"
-	defaultCVEListPath    = "."
-
-	alpineEcosystem = "Alpine"
-	debianEcosystem = "Debian"
+	defaultOSVOutputPath = "osv_output"
+	defaultCVE5Path      = "cve5"
+	defaultNVDOSVPath    = "nvd"
 )
 
 func main() {
@@ -121,68 +118,40 @@ func getModifiedTime(filePath string) (time.Time, error) {
 	return parsedTime, err
 }
 
-// loadInnerParts loads second level folder for the loadParts function
-//
-// Parameters:
-//   - innerPartInputPath: The inner part path, such as "parts/alpine"
-//   - output: A map to store all PackageInfos for each CVE ID
-//   - cvePartsModifiedTime: A map tracking the latest modification time of each CVE part files
-func loadInnerParts(innerPartInputPath string, output map[cves.CVEID][]vulns.PackageInfo, cvePartsModifiedTime map[cves.CVEID]time.Time) {
-	dirInner, err := os.ReadDir(innerPartInputPath)
+func loadOSV(osvPath string) map[cves.CVEID]osvschema.Vulnerability {
+	allVulns := make(map[cves.CVEID]osvschema.Vulnerability)
+	globPattern := filepath.Join(osvPath, "**", "*.json")
+	matches, err := filepath.Glob(globPattern)
 	if err != nil {
-		logger.Fatal("Failed to read dir", slog.String("path", innerPartInputPath), slog.Any("err", err))
+		logger.Fatal("Failed to glob for OSV files", slog.String("pattern", globPattern), slog.Any("err", err))
 	}
-	for _, entryInner := range dirInner {
-		if !strings.HasSuffix(entryInner.Name(), ".json") {
+	logger.Info("Loading OSV records", slog.String("path", osvPath))
+	for _, filePath := range matches {
+		if strings.HasSuffix(filePath, ".metrics.json") {
 			continue
 		}
-		filePath := filepath.Join(osvPath, entry.Name())
+
 		file, err := os.Open(filePath)
 		if err != nil {
-			logger.Warn("Failed to open OSV JSON file, attempting glob", slog.String("path", filePath), slog.Any("err", err))
-
-			globPattern := filepath.Join(osvPath, "**", entry.Name())
-			matches, globErr := filepath.Glob(globPattern)
-			if globErr != nil || len(matches) == 0 {
-				logger.Error("Globbing for file failed, skipping", slog.String("pattern", globPattern), slog.Any("globErr", globErr))
-				continue
-			}
-			// Open the first match
-			filePath = matches[0]
-			file, err = os.Open(filePath)
-			if err != nil {
-				logger.Error("Failed to open file after globbing, skipping", slog.String("path", filePath), slog.Any("err", err))
-				continue
-			}
-		}
-		defer file.Close()
-		var pkgInfos []vulns.PackageInfo
-		err = json.NewDecoder(file).Decode(&pkgInfos)
-		if err != nil {
-			logger.Fatal("Failed to decode", slog.String("file", file.Name()), slog.Any("err", err))
+			logger.Warn("Failed to open OSV JSON file", slog.String("path", filePath), slog.Any("err", err))
+			continue
 		}
 
-		// Turns CVE-2022-12345.alpine.json into CVE-2022-12345
-		cveID := cves.CVEID(strings.Split(entryInner.Name(), ".")[0])
-		output[cveID] = append(output[cveID], pkgInfos...)
-
-		logger.Info("Loaded "+entryInner.Name(), slog.String("file", entryInner.Name()))
-
-		// Updates the latest OSV parts modified time of each CVE
-		modifiedTime, err := getModifiedTime(filePath)
+		var vuln osvschema.Vulnerability
+		err = json.NewDecoder(file).Decode(&vuln)
+		file.Close()
 		if err != nil {
-			logger.Error("Failed to decode, skipping", slog.String("file", entry.Name()), slog.Any("err", err))
+			logger.Error("Failed to decode, skipping", slog.String("file", filePath), slog.Any("err", err))
 			continue
 		}
 		allVulns[cves.CVEID(vuln.ID)] = vuln
-		logger.Info("Loaded "+entry.Name(), slog.String("file", entry.Name()))
 	}
 
 	return output, cvePartsModifiedTime
 }
 
 // combineIntoOSV creates OSV entry by combining loaded CVEs from NVD and PackageInfo information from security advisories.
-func combineIntoOSV(cve5osv map[cves.CVEID]osvschema.Vulnerability, nvdosv map[cves.CVEID]osvschema.Vulnerability, debianCVEs []string) map[cves.CVEID]osvschema.Vulnerability {
+func combineIntoOSV(cve5osv map[cves.CVEID]osvschema.Vulnerability, nvdosv map[cves.CVEID]osvschema.Vulnerability, noPkgCVEs []string) map[cves.CVEID]osvschema.Vulnerability {
 	vulns := make(map[cves.CVEID]osvschema.Vulnerability)
 
 	// Iterate through CVEs from security advisories (cve5) as the base
@@ -222,11 +191,22 @@ func combineIntoOSV(cve5osv map[cves.CVEID]osvschema.Vulnerability, nvdosv map[c
 			for _, alias := range combined.Aliases {
 				aliasMap[alias] = true
 			}
-		}
+			for _, alias := range nvd.Aliases {
+				if !aliasMap[alias] {
+					combined.Aliases = append(combined.Aliases, alias)
+					aliasMap[alias] = true
+				}
+			}
 
-		for _, pkgInfo := range allParts[cveID] {
-			// skip debian and alpine parts, but still write out the CVEs.
-			if strings.HasPrefix(pkgInfo.Ecosystem, debianEcosystem) || strings.HasPrefix(pkgInfo.Ecosystem, alpineEcosystem) {
+			// TODO: Elegantly handle combining severity scores
+
+			// The CVE is processed, so remove it from the nvdosv map to avoid re-processing.
+			delete(nvdosv, cveID)
+		}
+		if len(combined.Affected) == 0 {
+			// check if part exists.
+			if !slices.Contains(noPkgCVEs, string(cveID)) {
+				// logger.Info("No affected range, so skipping.")
 				continue
 			}
 		}

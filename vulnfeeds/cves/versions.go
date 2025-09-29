@@ -515,44 +515,47 @@ func ValidateAndCanonicalizeLink(link string, httpClient *http.Client) (canonica
 }
 
 // For URLs referencing commits in supported Git repository hosts, return a cloneable AffectedCommit.
-func ExtractGitCommit(link string, commitType models.CommitType, httpClient *http.Client) (ac models.AffectedCommit, err error) {
-	r, err := Repo(link)
+func ExtractGitAffectedCommit(link string, commitType models.CommitType, httpClient *http.Client) (ac models.AffectedCommit, err error) {
+	c, r, err := ExtractGitCommit(link, httpClient)
 	if err != nil {
 		return ac, err
+	}
+
+	ac.SetRepo(r)
+
+	models.SetCommitByType(&ac, commitType, c)
+
+	return ac, nil
+}
+
+func ExtractGitCommit(link string, httpClient *http.Client) (string, string, error) {
+	var commit string
+	r, err := Repo(link)
+	if err != nil {
+		return "", "", err
 	}
 
 	c, err := Commit(link)
 	if err != nil {
-		return ac, err
+		return "", "", err
 	}
+
+	commit = c
 
 	// If URL doesn't validate, treat it as linkrot.
 	possiblyDifferentLink, err := ValidateAndCanonicalizeLink(link, httpClient)
 	if err != nil {
-		return ac, err
+		return "", "", err
 	}
 
 	// restart the entire extraction process when the URL changes (i.e. handle a
 	// redirect to a completely different host, instead of a redirect within
 	// GitHub)
 	if possiblyDifferentLink != link {
-		return ExtractGitCommit(possiblyDifferentLink, commitType, httpClient)
+		return ExtractGitCommit(possiblyDifferentLink, httpClient)
 	}
 
-	ac.SetRepo(r)
-
-	switch commitType {
-	case models.Introduced:
-		ac.SetIntroduced(c)
-	case models.LastAffected:
-		ac.SetLastAffected(c)
-	case models.Limit:
-		ac.SetLimit(c)
-	case models.Fixed:
-		ac.SetFixed(c)
-	}
-
-	return ac, nil
+	return commit, r, nil
 }
 
 func HasVersion(validVersions []string, version string) bool {
@@ -676,7 +679,7 @@ func deduplicateAffectedCommits(commits []models.AffectedCommit) []models.Affect
 func ExtractVersionInfo(cve CVE, validVersions []string, httpClient *http.Client) (v models.VersionInfo, notes []string) {
 	for _, reference := range cve.References {
 		// (Potentially faulty) Assumption: All viable Git commit reference links are fix commits.
-		if commit, err := ExtractGitCommit(reference.URL, models.Fixed, httpClient); err == nil {
+		if commit, err := ExtractGitAffectedCommit(reference.URL, models.Fixed, httpClient); err == nil {
 			v.AffectedCommits = append(v.AffectedCommits, commit)
 		}
 	}

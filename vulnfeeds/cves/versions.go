@@ -515,8 +515,9 @@ func ValidateAndCanonicalizeLink(link string, httpClient *http.Client) (canonica
 }
 
 // For URLs referencing commits in supported Git repository hosts, return a cloneable AffectedCommit.
-func ExtractGitAffectedCommit(link string, commitType models.CommitType, httpClient *http.Client) (ac models.AffectedCommit, err error) {
-	c, r, err := ExtractGitCommit(link, httpClient)
+func ExtractGitAffectedCommit(link string, commitType models.CommitType, httpClient *http.Client) (models.AffectedCommit, error) {
+	var ac models.AffectedCommit
+	c, r, err := ExtractGitCommit(link, httpClient, 0)
 	if err != nil {
 		return ac, err
 	}
@@ -528,7 +529,10 @@ func ExtractGitAffectedCommit(link string, commitType models.CommitType, httpCli
 	return ac, nil
 }
 
-func ExtractGitCommit(link string, httpClient *http.Client) (string, string, error) {
+func ExtractGitCommit(link string, httpClient *http.Client, depth int) (string, string, error) {
+	if depth > 10 {
+		return "", "", fmt.Errorf("max recursion depth exceeded for %s", link)
+	}
 	var commit string
 	r, err := Repo(link)
 	if err != nil {
@@ -552,7 +556,7 @@ func ExtractGitCommit(link string, httpClient *http.Client) (string, string, err
 	// redirect to a completely different host, instead of a redirect within
 	// GitHub)
 	if possiblyDifferentLink != link {
-		return ExtractGitCommit(possiblyDifferentLink, httpClient)
+		return ExtractGitCommit(possiblyDifferentLink, httpClient, depth+1)
 	}
 
 	return commit, r, nil

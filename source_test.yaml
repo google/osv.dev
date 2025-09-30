@@ -55,7 +55,7 @@
   db_prefix: ['ALPINE-']
   ignore_git: True
   human_link: 'https://security.alpinelinux.org/vuln/{{ BUG_ID | replace("ALPINE-", "") }}'
-  link: 'https://storage.googleapis.com/osv-test-cve-osv-conversion/alpine/'
+  link: 'https://storage.googleapis.com/osv-test-cve-osv-conversion/'
   editable: False
   strict_validation: True
 

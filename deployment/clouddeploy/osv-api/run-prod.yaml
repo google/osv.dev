@@ -10,6 +10,9 @@ spec:
     spec:
       containers:
       - image: osv-server
+        env:
+        - name: OSV_VULNERABILITIES_BUCKET
+          value: osv-vulnerabilities
         resources:
           limits:
             cpu: 2

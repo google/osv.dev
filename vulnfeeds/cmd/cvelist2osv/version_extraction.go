@@ -291,9 +291,9 @@ func findCPEVersionRanges(cve cves.CVE5) (versionRanges []osvschema.Range, cpes 
 				}
 
 				if match.VersionEndExcluding != "" {
-					versionRanges = append(versionRanges, buildVersionRange(match.VersionStartIncluding, "", match.VersionEndExcluding))
+					versionRanges = append(versionRanges, cves.BuildVersionRange(match.VersionStartIncluding, "", match.VersionEndExcluding))
 				} else if match.VersionEndIncluding != "" {
-					versionRanges = append(versionRanges, buildVersionRange(match.VersionStartIncluding, match.VersionEndIncluding, ""))
+					versionRanges = append(versionRanges, cves.BuildVersionRange(match.VersionStartIncluding, match.VersionEndIncluding, ""))
 				}
 			}
 		}
@@ -380,7 +380,7 @@ func findInverseAffectedRanges(cveAff cves.Affected, cnaAssigner string, metrics
 	// Create ranges by pairing sorted introduced and fixed versions.
 	for index, f := range fixed {
 		if index < len(introduced) {
-			ranges = append(ranges, buildVersionRange(introduced[index], "", f))
+			ranges = append(ranges, cves.BuildVersionRange(introduced[index], "", f))
 			metrics.AddNote("Introduced from version value - %s", introduced[index])
 			metrics.AddNote("Fixed from version value - %s", f)
 		}
@@ -437,9 +437,9 @@ func findNormalAffectedRanges(affected cves.Affected, metrics *ConversionMetrics
 			}
 
 			if introduced != "" && fixed != "" {
-				versionRanges = append(versionRanges, buildVersionRange(introduced, "", fixed))
+				versionRanges = append(versionRanges, cves.BuildVersionRange(introduced, "", fixed))
 			} else if introduced != "" && lastaffected != "" {
-				versionRanges = append(versionRanges, buildVersionRange(introduced, lastaffected, ""))
+				versionRanges = append(versionRanges, cves.BuildVersionRange(introduced, lastaffected, ""))
 			}
 
 			continue
@@ -456,16 +456,16 @@ func findNormalAffectedRanges(affected cves.Affected, metrics *ConversionMetrics
 				continue
 			}
 			if av.Fixed != "" {
-				versionRanges = append(versionRanges, buildVersionRange(av.Introduced, "", av.Fixed))
+				versionRanges = append(versionRanges, cves.BuildVersionRange(av.Introduced, "", av.Fixed))
 				continue
 			} else if av.LastAffected != "" {
-				versionRanges = append(versionRanges, buildVersionRange(av.Introduced, av.LastAffected, ""))
+				versionRanges = append(versionRanges, cves.BuildVersionRange(av.Introduced, av.LastAffected, ""))
 				continue
 			}
 		}
 
 		if currentVersionType == VersionRangeTypeGit {
-			versionRanges = append(versionRanges, buildVersionRange(vers.Version, "", ""))
+			versionRanges = append(versionRanges, cves.BuildVersionRange(vers.Version, "", ""))
 			continue
 		}
 
@@ -483,7 +483,7 @@ func findNormalAffectedRanges(affected cves.Affected, metrics *ConversionMetrics
 
 		// As a fallback, assume a single version means it's the last affected version.
 		if vQuality.AtLeast(acceptableQuality) {
-			versionRanges = append(versionRanges, buildVersionRange("0", vers.Version, ""))
+			versionRanges = append(versionRanges, cves.BuildVersionRange("0", vers.Version, ""))
 			metrics.Notes = append(metrics.Notes, fmt.Sprintf("%s - Single version found %v - Assuming introduced = 0 and last affected = %v", vQuality, vers.Version, vers.Version))
 		}
 	}
@@ -499,31 +499,6 @@ func findNormalAffectedRanges(affected cves.Affected, metrics *ConversionMetrics
 	}
 
 	return versionRanges, mostFrequentVersionType
-}
-
-// buildVersionRange is a helper function that adds 'introduced', 'fixed', or 'last_affected'
-// events to an OSV version range. If 'intro' is empty, it defaults to "0".
-func buildVersionRange(intro string, lastAff string, fixed string) osvschema.Range {
-	var versionRange osvschema.Range
-	var i string
-	if intro == "" {
-		i = "0"
-	} else {
-		i = intro
-	}
-	versionRange.Events = append(versionRange.Events, osvschema.Event{
-		Introduced: i})
-
-	if fixed != "" {
-		versionRange.Events = append(versionRange.Events, osvschema.Event{
-			Fixed: fixed})
-	} else if lastAff != "" {
-		versionRange.Events = append(versionRange.Events, osvschema.Event{
-			LastAffected: lastAff,
-		})
-	}
-
-	return versionRange
 }
 
 // compareSemverLike provides a custom comparison function for version strings that may not

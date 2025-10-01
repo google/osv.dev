@@ -1167,58 +1167,6 @@ def get_gcp_project():
   return project
 
 
-def _is_affected(ecosystem: str, version: str,
-                 affected_package: osv.AffectedPackage) -> bool:
-  """Checks if a version is affected."""
-  affected = False
-  ecosystem_info = ecosystems.get(ecosystem)
-  queried_version = ecosystem_info.sort_key(version)
-
-  # OSV allows users to add affected versions
-  # that are not covered by affected ranges.
-  if version in affected_package.versions:
-    return True
-
-  for r in affected_package.ranges:
-    r: osv.AffectedRange2
-
-    for event in osv.sorted_events(ecosystem, r.type, r.events):
-      event: osv.AffectedEvent
-      if (event.type == 'introduced' and
-          (event.value == '0' or
-           queried_version >= ecosystem_info.sort_key(event.value))):
-        affected = True
-      elif (event.type == 'fixed' and
-            queried_version >= ecosystem_info.sort_key(event.value)):
-        affected = False
-      elif (event.type == 'last_affected' and
-            queried_version > ecosystem_info.sort_key(event.value)):
-        affected = False
-
-    if affected:
-      return True
-
-  return False
-
-
-def is_matching_package_ecosystem(package_ecosystem: str,
-                                  ecosystem: str) -> bool:
-  """Checks if the queried ecosystem matches the affected package's ecosystem,
-  considering potential variations in the package's ecosystem.
-  """
-
-  # Special case for GIT queries,
-  # for which osv entries will have an empty ecosystem for.
-  if ecosystem == 'GIT' and package_ecosystem == '':
-    return True
-
-  return any(eco == ecosystem for eco in (
-      package_ecosystem,
-      ecosystems.normalize(package_ecosystem),
-      ecosystems.remove_variants(package_ecosystem),
-  ))
-
-
 def main():
   """Entrypoint."""
   if is_cloud_run():

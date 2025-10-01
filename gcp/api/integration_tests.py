@@ -173,17 +173,20 @@ class IntegrationTests(unittest.TestCase,
         timeout=_TIMEOUT)
     self.assert_results_equal({'vulns': [self._VULN_744]}, response.json())
 
-    response = requests.post(
-        _api() + _BASE_QUERY,
-        data=json.dumps({
-            'version': '2.1.2-rc',
-            'package': {
-                'name': 'mruby',
-            }
-        }),
-        timeout=_TIMEOUT)
+    # NOTE(michaelkedar): version queries without ecosystem specified is not
+    # officially supported. Since our change to matching logic, this test
+    # would now return >50 vulnerabilities across 4 ecosystems.
+    # response = requests.post(
+    #     _api() + _BASE_QUERY,
+    #     data=json.dumps({
+    #         'version': '2.1.2-rc',
+    #         'package': {
+    #             'name': 'mruby',
+    #         }
+    #     }),
+    #     timeout=_TIMEOUT)
 
-    self.assert_results_equal({'vulns': [self._VULN_744]}, response.json())
+    # self.assert_results_equal({'vulns': [self._VULN_744]}, response.json())
     # self.assertEqual(
     #   response.text,
     #   '{"code":3,"message":"Ecosystem not specified"}')
@@ -262,6 +265,7 @@ class IntegrationTests(unittest.TestCase,
         go_2021_0052,
         ghsa_3vp4_m3rf_835h,
     ]
+    expected_vulns.sort(key=lambda x: x['id'])
 
     # Test that a SemVer (believed to be vulnerable) version and an ecosystem
     # returns expected vulnerabilities.

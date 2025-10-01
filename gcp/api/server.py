@@ -173,28 +173,10 @@ class OSVServicer(osv_service_v1_pb2_grpc.OSVServicer,
       context.abort(grpc.StatusCode.INVALID_ARGUMENT, 'ID too long')
       return None
 
-    if get_gcp_project() in ('oss-vdb-test', 'test-osv'):
-      # Get vuln from GCS
-      try:
-        return osv.gcs.get_by_id(request.id)
-      except exceptions.NotFound:
-        # Check for aliases
-        alias_group = yield osv.AliasGroup.query(
-            osv.AliasGroup.bug_ids == request.id).get_async()
-        if alias_group:
-          alias_string = ' '.join([
-              f'{alias}' for alias in alias_group.bug_ids if alias != request.id
-          ])
-          context.abort(
-              grpc.StatusCode.NOT_FOUND,
-              f'Bug not found, but the following aliases were: {alias_string}')
-          return None
-        context.abort(grpc.StatusCode.NOT_FOUND, 'Bug not found.')
-        return None
-
-    bug = yield osv.Bug.query(osv.Bug.db_id == request.id).get_async()
-
-    if not bug:
+    # Get vuln from GCS
+    try:
+      return osv.gcs.get_by_id(request.id)
+    except exceptions.NotFound:
       # Check for aliases
       alias_group = yield osv.AliasGroup.query(
           osv.AliasGroup.bug_ids == request.id).get_async()
@@ -208,17 +190,6 @@ class OSVServicer(osv_service_v1_pb2_grpc.OSVServicer,
         return None
       context.abort(grpc.StatusCode.NOT_FOUND, 'Bug not found.')
       return None
-
-    if bug.status == osv.BugStatus.UNPROCESSED:
-      context.abort(grpc.StatusCode.NOT_FOUND, 'Bug not found.')
-      return None
-
-    if not bug.public:
-      context.abort(grpc.StatusCode.PERMISSION_DENIED, 'Permission denied.')
-      return None
-
-    resp = yield bug_to_response(bug, include_details=True)
-    return resp
 
   @ndb_context
   @trace_filter.log_trace
@@ -876,18 +847,10 @@ def do_query(query: osv_service_v1_pb2.Query,
       return None
 
     bugs = yield query_by_commit(context, commit_bytes, to_response=to_response)
-  elif package_name and get_gcp_project() in ('oss-vdb-test', 'test-osv'):
+  elif package_name:
     # New Database table & GCS querying
     bugs = yield query_package(context, package_name, ecosystem, version,
                                include_details)
-  # Version query needs to include a package.
-  elif package_name and version:
-    bugs = yield query_by_version(
-        context, package_name, ecosystem, version, to_response=to_response)
-  elif package_name and ecosystem:
-    # Package specified without version.
-    bugs = yield query_by_package(
-        context, package_name, ecosystem, to_response=to_response)
   else:
     context.service_context.abort(grpc.StatusCode.INVALID_ARGUMENT,
                                   'Invalid query.')

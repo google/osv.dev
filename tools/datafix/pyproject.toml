@@ -4,7 +4,7 @@ requires-python = ">=3.13,<4.0"
 dependencies = [
     "google-cloud-ndb==2.3.4",
     "google-cloud-storage==2.19.0",
-    "pyyaml==6.0.2",
+    "pyyaml==6.0.3",
     "osv",
     "google-cloud-pubsub>=2.25.2", 
 ]

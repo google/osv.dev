@@ -448,7 +448,7 @@ func findNormalAffectedRanges(affected cves.Affected, metrics *ConversionMetrics
 		// affected, but more likely, it affects up to that version. It could also mean that the range is given
 		// in one line instead - like "< 1.5.3" or "< 2.45.4, >= 2.0 " or just "before 1.4.7", so check for that.
 		metrics.Notes = append(metrics.Notes, "Only version exists")
-		// GitHub/GitLab often encodes the range directly in the version string.
+
 		av, err := git.ParseVersionRange(vers.Version)
 		if err == nil {
 			if av.Introduced == "" {
@@ -456,11 +456,11 @@ func findNormalAffectedRanges(affected cves.Affected, metrics *ConversionMetrics
 			}
 			if av.Fixed != "" {
 				versionRanges = append(versionRanges, buildVersionRange(av.Introduced, "", av.Fixed))
+				continue
 			} else if av.LastAffected != "" {
 				versionRanges = append(versionRanges, buildVersionRange(av.Introduced, av.LastAffected, ""))
+				continue
 			}
-
-			continue
 		}
 
 		if currentVersionType == VersionRangeTypeGit {
@@ -478,7 +478,7 @@ func findNormalAffectedRanges(affected cves.Affected, metrics *ConversionMetrics
 			continue
 		}
 
-		// As a fallback, assume a single version means it's the last_affected version.
+		// As a fallback, assume a single version means it's the last affected version.
 		if vQuality.AtLeast(acceptableQuality) {
 			versionRanges = append(versionRanges, buildVersionRange("0", vers.Version, ""))
 			metrics.Notes = append(metrics.Notes, fmt.Sprintf("%s - Single version found %v - Assuming introduced = 0 and last affected = %v", vQuality, vers.Version, vers.Version))

@@ -238,9 +238,9 @@ func gitVersionsToCommits(cveID cves.CVEID, versionRanges []osvschema.Range, rep
 				var newVR osvschema.Range
 
 				if fixedCommit != "" {
-					newVR = buildVersionRange(introducedCommit, "", fixedCommit)
+					newVR = cves.BuildVersionRange(introducedCommit, "", fixedCommit)
 				} else {
-					newVR = buildVersionRange(introducedCommit, lastAffectedCommit, "")
+					newVR = cves.BuildVersionRange(introducedCommit, lastAffectedCommit, "")
 				}
 
 				newVR.Repo = repo

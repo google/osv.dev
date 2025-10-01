@@ -913,11 +913,14 @@ def query_by_commit(context: QueryContext,
     # <BugID>-<PageNumber>
     affected_commits: ndb.Key = it.next()
     bug_id: str = affected_commits.id().rsplit("-", 1)[0]
+    vuln: osv.Vulnerability = yield osv.Vulnerability.get_by_id_async(bug_id)
+    if vuln.is_withdrawn:
+      continue
 
     if include_details:
       bugs.append(get_vuln_async(bug_id))
     else:
-      bugs.append(get_minimal_async(bug_id))
+      bugs.append(vulnerability_to_minimal(vuln))
     context.total_responses.add(1)
 
   return bugs
@@ -1096,6 +1099,14 @@ def _match_events(version: str, affected: osv.AffectedVersions) -> bool:
 def get_minimal_async(vuln_id: str):
   """Asynchronously get a minimal vulnerability record."""
   vuln = yield osv.Vulnerability.get_by_id_async(vuln_id)
+  minimal = yield vulnerability_to_minimal(vuln)
+  return minimal
+
+
+@ndb.tasklet
+def vulnerability_to_minimal(vuln: osv.Vulnerability):
+  """Construct a minimal response from a Vulnerability entity."""
+  vuln_id = vuln.key.id()
   modified = timestamp_pb2.Timestamp()
   modified.FromDatetime(vuln.modified)
   return osv.vulnerability_pb2.Vulnerability(id=vuln_id, modified=modified)

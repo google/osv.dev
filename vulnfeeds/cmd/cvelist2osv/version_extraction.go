@@ -4,6 +4,7 @@ import (
 	"cmp"
 	"errors"
 	"fmt"
+	"log/slog"
 	"strconv"
 	"strings"
 
@@ -11,6 +12,7 @@ import (
 
 	"github.com/google/osv/vulnfeeds/cves"
 	"github.com/google/osv/vulnfeeds/git"
+	"github.com/google/osv/vulnfeeds/utility/logger"
 	"github.com/google/osv/vulnfeeds/vulns"
 	"github.com/ossf/osv-schema/bindings/go/osvschema"
 )
@@ -72,7 +74,7 @@ func toVersionRangeType(s string) VersionRangeType {
 // 3. If no versions are found, it falls back to searching for CPEs in the CNA container.
 // 4. As a last resort, it attempts to extract version information from the description text (currently not saved).
 // It returns the source of the version information and a slice of notes detailing the extraction process.
-func AddVersionInfo(cve cves.CVE5, v *vulns.Vulnerability, metrics *ConversionMetrics) {
+func AddVersionInfo(cve cves.CVE5, v *vulns.Vulnerability, metrics *ConversionMetrics, repos []string) {
 	gotVersions := false
 
 	// Combine 'affected' entries from both CNA and ADP containers.
@@ -104,31 +106,36 @@ func AddVersionInfo(cve cves.CVE5, v *vulns.Vulnerability, metrics *ConversionMe
 			hasGit = true
 		}
 
-		aff := osvschema.Affected{}
-		for _, vr := range versionRanges {
-			if versionType == VersionRangeTypeGit {
-				vr.Type = osvschema.RangeGit
-				vr.Repo = cveAff.Repo
-			} else {
-				vr.Type = osvschema.RangeEcosystem
-			}
-			aff.Ranges = append(aff.Ranges, vr)
-		}
-
+		var aff osvschema.Affected
 		// Special handling for Linux kernel CVEs.
-		if cve.Metadata.AssignerShortName == "Linux" && versionType != VersionRangeTypeGit {
-			aff.Package = osvschema.Package{
-				Ecosystem: string(osvschema.EcosystemLinux),
-				Name:      "Kernel",
+		if cve.Metadata.AssignerShortName == "Linux" {
+			for _, vr := range versionRanges {
+				if versionType == VersionRangeTypeGit {
+					vr.Type = osvschema.RangeGit
+					vr.Repo = cveAff.Repo
+				} else {
+					vr.Type = osvschema.RangeEcosystem
+				}
+				aff.Ranges = append(aff.Ranges, vr)
+			}
+			if versionType != VersionRangeTypeGit {
+				aff.Package = osvschema.Package{
+					Ecosystem: string(osvschema.EcosystemLinux),
+					Name:      "Kernel",
+				}
+			}
+		} else {
+			var err error
+			aff, err = gitVersionsToCommits(cve.Metadata.CVEID, versionRanges, repos, make(git.RepoTagsCache))
+			if err != nil {
+				logger.Error("Failed to convert git versions to commits", slog.Any("err", err))
+			} else {
+				hasGit = true
 			}
 		}
 
 		v.Affected = append(v.Affected, aff)
-		if hasGit {
-			metrics.AddSource(VersionSourceGit)
-		} else {
-			metrics.AddSource(VersionSourceAffected)
-		}
+		metrics.VersionSources = append(metrics.VersionSources, VersionSourceAffected)
 	}
 
 	// If no versions were found so far, fall back to CPEs.
@@ -164,6 +171,103 @@ func AddVersionInfo(cve cves.CVE5, v *vulns.Vulnerability, metrics *ConversionMe
 			metrics.AddNote("Extracted versions from description but did not save them: %+v", versions)
 		}
 	}
+}
+
+// resolveVersionToCommit is a helper to convert a version string to a commit hash.
+// It logs the outcome of the conversion attempt and returns an empty string on failure.
+func resolveVersionToCommit(cveID cves.CVEID, version, versionType, repo string, normalizedTags map[string]git.NormalizedTag) string {
+	if version == "" {
+		return ""
+	}
+	logger.Info("Attempting to resolve version to commit", slog.String("cve", string(cveID)), slog.String("version", version), slog.String("type", versionType), slog.String("repo", repo))
+	commit, err := git.VersionToCommit(version, normalizedTags)
+	if err != nil {
+		logger.Warn("Failed to get Git commit for version", slog.String("cve", string(cveID)), slog.String("version", version), slog.String("type", versionType), slog.String("repo", repo), slog.Any("err", err))
+		return ""
+	}
+	logger.Info("Successfully derived commit for version", slog.String("cve", string(cveID)), slog.String("commit", commit), slog.String("version", version), slog.String("type", versionType))
+
+	return commit
+}
+
+// Examines repos and tries to convert versions to commits by treating them as Git tags.
+// Takes a CVE ID string (for logging), VersionInfo with AffectedVersions and
+// typically no AffectedCommits and attempts to add AffectedCommits (including Fixed commits) where there aren't any.
+// Refuses to add the same commit to AffectedCommits more than once.
+func gitVersionsToCommits(cveID cves.CVEID, versionRanges []osvschema.Range, repos []string, cache git.RepoTagsCache) (osvschema.Affected, error) {
+	var newAff osvschema.Affected
+	var newVersionRanges []osvschema.Range
+	unresolvedRanges := versionRanges
+
+	for _, repo := range repos {
+		if len(unresolvedRanges) == 0 {
+			break // All ranges have been resolved.
+		}
+
+		normalizedTags, err := git.NormalizeRepoTags(repo, cache)
+		if err != nil {
+			logger.Warn("Failed to normalize tags", slog.String("cve", string(cveID)), slog.String("repo", repo), slog.Any("err", err))
+			continue
+		}
+
+		var stillUnresolvedRanges []osvschema.Range
+		for _, vr := range unresolvedRanges {
+			var introduced, fixed, lastAffected string
+			for _, e := range vr.Events {
+				if e.Introduced != "" {
+					introduced = e.Introduced
+				}
+				if e.Fixed != "" {
+					fixed = e.Fixed
+				}
+				if e.LastAffected != "" {
+					lastAffected = e.LastAffected
+				}
+			}
+
+			var introducedCommit string
+			if introduced == "0" {
+				introducedCommit = "0"
+			} else {
+				introducedCommit = resolveVersionToCommit(cveID, introduced, "introduced", repo, normalizedTags)
+			}
+			fixedCommit := resolveVersionToCommit(cveID, fixed, "fixed", repo, normalizedTags)
+			lastAffectedCommit := resolveVersionToCommit(cveID, lastAffected, "last_affected", repo, normalizedTags)
+
+			if introducedCommit != "" && (fixedCommit != "" || lastAffectedCommit != "") {
+				var newVR osvschema.Range
+
+				if fixedCommit != "" {
+					newVR = buildVersionRange(introducedCommit, "", fixedCommit)
+				} else {
+					newVR = buildVersionRange(introducedCommit, lastAffectedCommit, "")
+				}
+
+				newVR.Repo = repo
+				newVR.Type = osvschema.RangeGit
+				newVR.DatabaseSpecific = make(map[string]any)
+				newVR.DatabaseSpecific["versions"] = vr.Events
+				newVersionRanges = append(newVersionRanges, newVR)
+			} else {
+				stillUnresolvedRanges = append(stillUnresolvedRanges, vr)
+			}
+		}
+		unresolvedRanges = stillUnresolvedRanges
+	}
+
+	var err error
+	if len(unresolvedRanges) > 0 {
+		newAff.DatabaseSpecific = make(map[string]any)
+		newAff.DatabaseSpecific["unresolved_versions"] = unresolvedRanges
+	}
+
+	if len(newVersionRanges) > 0 {
+		newAff.Ranges = newVersionRanges
+	} else if len(unresolvedRanges) > 0 { // Only error if there were ranges to resolve but none were.
+		err = errors.New("was not able to get git version ranges")
+	}
+
+	return newAff, err
 }
 
 // findCPEVersionRanges extracts version ranges and CPE strings from the CNA's
@@ -345,7 +449,6 @@ func findNormalAffectedRanges(affected cves.Affected, metrics *ConversionMetrics
 		// affected, but more likely, it affects up to that version. It could also mean that the range is given
 		// in one line instead - like "< 1.5.3" or "< 2.45.4, >= 2.0 " or just "before 1.4.7", so check for that.
 		metrics.AddNote("Only version exists")
-		// GitHub often encodes the range directly in the version string.
 
 		av, err := git.ParseVersionRange(vers.Version)
 		if err == nil {

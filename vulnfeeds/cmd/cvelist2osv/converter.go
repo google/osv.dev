@@ -103,9 +103,15 @@ func FromCVE5(cve cves.CVE5, refs []cves.Reference, metrics *ConversionMetrics) 
 	}
 	v.Modified = modified
 
-	// Add affected version information.
-	AddVersionInfo(cve, &v, metrics)
+	// Try to extract repository URLs from references.
+	repos, repoNotes := cves.ReposFromReferencesCVEList(string(cve.Metadata.CVEID), refs, RefTagDenyList)
+	for _, note := range repoNotes {
+		metrics.AddNote("%s", note)
+	}
+	metrics.Repos = repos
 
+	// Add affected version information.
+	AddVersionInfo(cve, &v, metrics, repos)
 	// TODO(jesslowe@): Add CWEs.
 
 	// Combine severity metrics from both CNA and ADP containers.
@@ -178,19 +184,13 @@ func ConvertAndExportCVEToOSV(cve cves.CVE5, directory string) error {
 	cveID := cve.Metadata.CVEID
 	cnaAssigner := cve.Metadata.AssignerShortName
 	references := identifyPossibleURLs(cve)
-	metrics := &ConversionMetrics{CVEID: cveID, CNA: cnaAssigner}
+	metrics := ConversionMetrics{CVEID: cveID, CNA: cnaAssigner}
+
 	// Create a base OSV record from the CVE.
-	v := FromCVE5(cve, references, metrics)
+	v := FromCVE5(cve, references, &metrics)
 
 	// Collect metrics about the conversion.
-	extractConversionMetrics(cve, v.References, metrics)
-
-	// Try to extract repository URLs from references.
-	repos, repoNotes := cves.ReposFromReferencesCVEList(string(cveID), references, RefTagDenyList)
-	for _, note := range repoNotes {
-		metrics.AddNote("%s", note)
-	}
-	metrics.Repos = repos
+	extractConversionMetrics(cve, v.References, &metrics)
 
 	vulnDir := filepath.Join(directory, cnaAssigner)
 
@@ -200,7 +200,7 @@ func ConvertAndExportCVEToOSV(cve cves.CVE5, directory string) error {
 	}
 
 	// Save the conversion metrics to a file.
-	if err := writeMetricToFile(cveID, vulnDir, metrics); err != nil {
+	if err := writeMetricToFile(cveID, vulnDir, &metrics); err != nil {
 		return err
 	}
 

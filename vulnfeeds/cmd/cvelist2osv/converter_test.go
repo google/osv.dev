@@ -191,13 +191,18 @@ func TestFromCVE5(t *testing.T) {
 						},
 					},
 					Affected: []osvschema.Affected{{
-						// DatabaseSpecific: map[string]interface{}{
-						// 	"CPE": []string{"cpe:2.3:a:gitlab:gitlab:*:*:*:*:*:*:*:*"},
-						// },
-
-						Ranges: []osvschema.Range{{Type: "ECOSYSTEM",
-							Events: []osvschema.Event{{Introduced: "18.0"}, {Fixed: "18.0.1"}},
-						}}}},
+						Ranges: []osvschema.Range{{
+							Type: "GIT",
+							Repo: "https://gitlab.com/gitlab-org/gitlab",
+							Events: []osvschema.Event{
+								{Introduced: "504fd9e5236e13d674e051c6b8a1e9892b371c58"},
+								{Fixed: "3426be1b93852c5358240c5df40970c0ddfbdb2a"},
+							},
+							DatabaseSpecific: map[string]any{
+								"versions": []osvschema.Event{{Introduced: "18.0"}, {Fixed: "18.0.1"}},
+							},
+						}},
+					}},
 				},
 			},
 		},
@@ -226,9 +231,19 @@ func TestFromCVE5(t *testing.T) {
 							Score: "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:H",
 						},
 					},
-					Affected: []osvschema.Affected{{Ranges: []osvschema.Range{{
-						Type:   "ECOSYSTEM",
-						Events: []osvschema.Event{{Introduced: "0"}, {Fixed: "1.10.5"}}}}}},
+					Affected: []osvschema.Affected{{
+						Ranges: []osvschema.Range{{
+							Type: "GIT",
+							Repo: "https://github.com/amazon-ion/ion-java",
+							Events: []osvschema.Event{
+								{Introduced: "0"},
+								{Fixed: "019a6117fb99131f74f92ecf462169613234abbf"},
+							},
+							DatabaseSpecific: map[string]any{
+								"versions": []osvschema.Event{{Introduced: "0"}, {Fixed: "1.10.5"}},
+							},
+						}},
+					}},
 					DatabaseSpecific: nil,
 				},
 			},

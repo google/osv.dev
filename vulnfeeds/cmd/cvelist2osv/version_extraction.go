@@ -216,7 +216,7 @@ func extractVersionsFromAffectedField(affected cves.Affected, cnaAssigner string
 		return findInverseAffectedRanges(affected, cnaAssigner, metrics)
 	}
 
-	return findNormalAffectedRanges(affected, cnaAssigner, metrics)
+	return findNormalAffectedRanges(affected, metrics)
 }
 
 // findInverseAffectedRanges calculates the affected version ranges by analyzing a list
@@ -288,7 +288,7 @@ func findInverseAffectedRanges(cveAff cves.Affected, cnaAssigner string, metrics
 	return nil, VersionRangeTypeUnknown
 }
 
-func findNormalAffectedRanges(affected cves.Affected, cnaAssigner string, metrics *ConversionMetrics) (versionRanges []osvschema.Range, versType VersionRangeType) {
+func findNormalAffectedRanges(affected cves.Affected, metrics *ConversionMetrics) (versionRanges []osvschema.Range, versType VersionRangeType) {
 	versionTypesCount := make(map[VersionRangeType]int)
 
 	for _, vers := range affected.Versions {
@@ -344,20 +344,19 @@ func findNormalAffectedRanges(affected cves.Affected, cnaAssigner string, metric
 		// in one line instead - like "< 1.5.3" or "< 2.45.4, >= 2.0 " or just "before 1.4.7", so check for that.
 		metrics.Notes = append(metrics.Notes, "Only version exists")
 		// GitHub often encodes the range directly in the version string.
-		if cnaAssigner == "GitHub_M" {
-			av, err := git.ParseVersionRange(vers.Version)
-			if err == nil {
-				if av.Introduced == "" {
-					continue
-				}
-				if av.Fixed != "" {
-					versionRanges = append(versionRanges, buildVersionRange(av.Introduced, "", av.Fixed))
-				} else if av.LastAffected != "" {
-					versionRanges = append(versionRanges, buildVersionRange(av.Introduced, av.LastAffected, ""))
-				}
-			}
 
-			continue
+		av, err := git.ParseVersionRange(vers.Version)
+		if err == nil {
+			if av.Introduced == "" {
+				continue
+			}
+			if av.Fixed != "" {
+				versionRanges = append(versionRanges, buildVersionRange(av.Introduced, "", av.Fixed))
+				continue
+			} else if av.LastAffected != "" {
+				versionRanges = append(versionRanges, buildVersionRange(av.Introduced, av.LastAffected, ""))
+				continue
+			}
 		}
 
 		if currentVersionType == VersionRangeTypeGit {
@@ -375,10 +374,10 @@ func findNormalAffectedRanges(affected cves.Affected, cnaAssigner string, metric
 			continue
 		}
 
-		// As a fallback, assume a single version means it's the fixed version.
+		// As a fallback, assume a single version means it's the last affected version.
 		if vQuality.AtLeast(acceptableQuality) {
-			versionRanges = append(versionRanges, buildVersionRange("0", "", vers.Version))
-			metrics.Notes = append(metrics.Notes, fmt.Sprintf("%s - Single version found %v - Assuming introduced = 0 and Fixed = %v", vQuality, vers.Version, vers.Version))
+			versionRanges = append(versionRanges, buildVersionRange("0", vers.Version, ""))
+			metrics.Notes = append(metrics.Notes, fmt.Sprintf("%s - Single version found %v - Assuming introduced = 0 and last affected = %v", vQuality, vers.Version, vers.Version))
 		}
 	}
 

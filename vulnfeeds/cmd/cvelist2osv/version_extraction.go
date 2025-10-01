@@ -184,6 +184,7 @@ func resolveVersionToCommit(cveID cves.CVEID, version, versionType, repo string,
 		return ""
 	}
 	logger.Info("Successfully derived commit for version", slog.String("cve", string(cveID)), slog.String("commit", commit), slog.String("version", version), slog.String("type", versionType))
+
 	return commit
 }
 

@@ -23,6 +23,7 @@ const (
 
 // ConversionMetrics holds the collected data about the conversion process for a single CVE.
 type ConversionMetrics struct {
+	CVEID          cves.CVEID                      `json:"id"`              // The CVE ID
 	CNA            string                          `json:"cna"`             // The CNA that assigned the CVE.
 	Outcome        string                          `json:"outcome"`         // The final outcome of the conversion (e.g., "Successful", "Failed").
 	Repos          []string                        `json:"repos"`           // A list of repositories extracted from the CVE's references.
@@ -34,6 +35,7 @@ type ConversionMetrics struct {
 // AddNote adds a formatted note to the ConversionMetrics.
 func (m *ConversionMetrics) AddNote(format string, a ...any) {
 	m.Notes = append(m.Notes, fmt.Sprintf(format, a...))
+	logger.Debug(fmt.Sprintf(format, a...), slog.String("cna", m.CNA), slog.String("cve", string(m.CVEID)))
 }
 
 // AddSource appends a source to the ConversionMetrics
@@ -176,7 +178,7 @@ func ConvertAndExportCVEToOSV(cve cves.CVE5, directory string) error {
 	cveID := cve.Metadata.CVEID
 	cnaAssigner := cve.Metadata.AssignerShortName
 	references := identifyPossibleURLs(cve)
-	metrics := &ConversionMetrics{}
+	metrics := &ConversionMetrics{CVEID: cveID}
 	// Create a base OSV record from the CVE.
 	v := FromCVE5(cve, references, metrics)
 

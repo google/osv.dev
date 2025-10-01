@@ -170,12 +170,12 @@ func ConvertAndExportCVEToOSV(cve cves.CVE5, directory string) error {
 	cveID := cve.Metadata.CVEID
 	cnaAssigner := cve.Metadata.AssignerShortName
 	references := identifyPossibleURLs(cve)
-	metrics := &ConversionMetrics{}
+	metrics := ConversionMetrics{}
 	// Create a base OSV record from the CVE.
-	v := FromCVE5(cve, references, metrics)
+	v := FromCVE5(cve, references, &metrics)
 
 	// Collect metrics about the conversion.
-	extractConversionMetrics(cve, v.References, metrics)
+	extractConversionMetrics(cve, v.References, &metrics)
 
 	vulnDir := filepath.Join(directory, cnaAssigner)
 
@@ -185,7 +185,7 @@ func ConvertAndExportCVEToOSV(cve cves.CVE5, directory string) error {
 	}
 
 	// Save the conversion metrics to a file.
-	if err := writeMetricToFile(cveID, vulnDir, metrics); err != nil {
+	if err := writeMetricToFile(cveID, vulnDir, &metrics); err != nil {
 		return err
 	}
 

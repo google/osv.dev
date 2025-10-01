@@ -82,6 +82,7 @@ func TestCombineIntoOSV(t *testing.T) {
 		if len(a.Ranges) > 0 && a.Ranges[0].Repo == "https://example.com/repo/a" {
 			affectedForRepoA = a
 			foundAffected = true
+
 			break
 		}
 	}
@@ -158,7 +159,7 @@ func TestPickAffectedInformation(t *testing.T) {
 
 	// Test case: NVD has more affected packages
 	cve5WithOne := cve5Affected
-	nvdWithTwo := append(nvdAffected, osvschema.Affected{Package: osvschema.Package{Name: "another"}})
+	nvdWithTwo := append(nvdAffected, osvschema.Affected{Package: osvschema.Package{Name: "another"}}) //nolint:gocritic
 	pickAffectedInformation(&cve5WithOne, nvdWithTwo)
 	if len(cve5WithOne) != 2 {
 		t.Errorf("Expected NVD affected to be chosen when it has more packages")

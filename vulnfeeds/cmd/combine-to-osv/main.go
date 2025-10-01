@@ -4,6 +4,7 @@ package main
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"flag"
 	"fmt"
 	"io/fs"
@@ -13,11 +14,12 @@ import (
 	"path/filepath"
 	"strings"
 
+	"slices"
+
 	"cloud.google.com/go/storage"
 	"github.com/google/osv/vulnfeeds/cves"
 	"github.com/google/osv/vulnfeeds/utility/logger"
 	"github.com/ossf/osv-schema/bindings/go/osvschema"
-	"golang.org/x/exp/slices"
 	"google.golang.org/api/iterator"
 )
 
@@ -47,13 +49,18 @@ func main() {
 
 	// nvdCVEs := vulns.LoadAllCVEs(defaultNVDOSVPath)
 	debianCVEs, err := listBucketObjects("osv-test-debian-osv", "/debian-cve-osv")
+	if err != nil {
+		logger.Warn("Failed to list debian cves", slog.Any("err", err))
+	}
 	alpineCVEs, err := listBucketObjects("osv-test-cve-osv-conversion", "/alpine")
+	if err != nil {
+		logger.Warn("Failed to list alpine cves", slog.Any("err", err))
+	}
 
-	noPkg := append(debianCVEs, alpineCVEs...)
+	noPkg := append(debianCVEs, alpineCVEs...) //nolint:gocritic
 	// Combine
 	combinedData := combineIntoOSV(allCVE5, allNVD, noPkg)
 	writeOSVFile(combinedData, *osvOutputPath)
-
 }
 
 func cleanFilename(filename string, prefix string) string {
@@ -63,13 +70,13 @@ func cleanFilename(filename string, prefix string) string {
 	if pre[0] != "CVE" {
 		cleaned = pre[1]
 	}
+
 	return cleaned
 }
 
 // listBucketObjects lists the names of all objects in a Google Cloud Storage bucket.
 // It does not download the file contents.
 func listBucketObjects(bucketName string, prefix string) ([]string, error) {
-
 	ctx := context.Background()
 	client, err := storage.NewClient(ctx)
 	if err != nil {
@@ -86,7 +93,7 @@ func listBucketObjects(bucketName string, prefix string) ([]string, error) {
 	for {
 		attrs, err := it.Next()
 
-		if err == iterator.Done {
+		if errors.Is(err, iterator.Done) {
 			break // All objects have been listed.
 		}
 		if err != nil {
@@ -95,6 +102,7 @@ func listBucketObjects(bucketName string, prefix string) ([]string, error) {
 
 		filenames = append(filenames, cleanFilename(attrs.Name, prefix))
 	}
+
 	return filenames, nil
 }
 
@@ -123,12 +131,14 @@ func loadOSV(osvPath string) map[cves.CVEID]osvschema.Vulnerability {
 			return nil
 		}
 		allVulns[cves.CVEID(vuln.ID)] = vuln
+
 		return nil
 	})
 
 	if err != nil {
 		logger.Fatal("Failed to walk OSV directory", slog.String("path", osvPath), slog.Any("err", err))
 	}
+
 	return allVulns
 }
 
@@ -212,6 +222,7 @@ func getRangeBoundaryVersions(events []osvschema.Event) (introduced, fixed strin
 			fixed = e.Fixed
 		}
 	}
+
 	return introduced, fixed
 }
 
@@ -311,13 +322,12 @@ func pickAffectedInformation(cve5Affected *[]osvschema.Affected, nvdAffected []o
 		}
 	}
 
-	var newAffected []osvschema.Affected
+	newAffected := make([]osvschema.Affected, 0, len(newAffectedMap))
 	for _, aff := range newAffectedMap {
 		newAffected = append(newAffected, aff)
 	}
 
 	*cve5Affected = newAffected
-
 }
 
 // writeOSVFile writes out the given osv objects into individual json files

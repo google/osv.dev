@@ -178,7 +178,7 @@ func ConvertAndExportCVEToOSV(cve cves.CVE5, directory string) error {
 	cveID := cve.Metadata.CVEID
 	cnaAssigner := cve.Metadata.AssignerShortName
 	references := identifyPossibleURLs(cve)
-	metrics := &ConversionMetrics{CVEID: cveID}
+	metrics := &ConversionMetrics{CVEID: cveID, CNA: cnaAssigner}
 	// Create a base OSV record from the CVE.
 	v := FromCVE5(cve, references, metrics)
 

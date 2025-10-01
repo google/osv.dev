@@ -627,11 +627,11 @@ class TaskRunner:
         if not source_id:
           logging.error('got message without source_id: %s', message)
         elif source_id.startswith('oss-fuzz'):
-          if task_type == 'update':
-            logging.error('got regular update task for oss-fuzz source %s',
+          if task_type not in ('regressed', 'fixed', 'impact', 'invalid',
+                               'update-oss-fuzz'):
+            logging.error('got %s task for oss-fuzz source %s', task_type,
                           source_id)
-        elif task_type in ('regressed', 'fixed', 'impact', 'invalid',
-                           'update-oss-fuzz'):
+        elif task_type != 'update':
           logging.error('got %s task for non-oss-fuzz source %s', task_type,
                         source_id)
 

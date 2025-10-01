@@ -621,6 +621,20 @@ class TaskRunner:
         _state.bug_id = message.attributes.get('allocated_bug_id', None)
 
         task_type = message.attributes['type']
+
+        # Validating that oss-fuzz-related tasks are only sent by oss-fuzz and
+        # the non-oss-fuzz task is not used by oss-fuzz.
+        if not source_id:
+          logging.error('got message without source_id: %s', message)
+        elif source_id.startswith('oss-fuzz'):
+          if task_type not in ('regressed', 'fixed', 'impact', 'invalid',
+                               'update-oss-fuzz'):
+            logging.error('got unexpected \'%s\' task for oss-fuzz source %s',
+                          task_type, source_id)
+        elif task_type != 'update':
+          logging.error('got unexpected \'%s\' task for non-oss-fuzz source %s',
+                        task_type, source_id)
+
         if task_type in ('regressed', 'fixed'):
           oss_fuzz.process_bisect_task(self._oss_fuzz_dir, task_type, source_id,
                                        message)
@@ -631,6 +645,9 @@ class TaskRunner:
             logging.exception('Failed to process impact: ')
         elif task_type == 'invalid':
           mark_bug_invalid(message)
+        elif task_type == 'update-oss-fuzz':
+          # TODO(michaelkedar): create separate _source_update for oss-fuzz.
+          self._source_update(message)
         elif task_type == 'update':
           self._source_update(message)
 

@@ -31,6 +31,16 @@ type ConversionMetrics struct {
 	Notes          []string                        `json:"notes"`           // A collection of notes and warnings generated during conversion.
 }
 
+// AddNote adds a formatted note to the ConversionMetrics.
+func (m *ConversionMetrics) AddNote(format string, a ...any) {
+	m.Notes = append(m.Notes, fmt.Sprintf(format, a...))
+}
+
+// AddSource appends a source to the ConversionMetrics
+func (m *ConversionMetrics) AddSource(source VersionSource) {
+	m.VersionSources = append(m.VersionSources, source)
+}
+
 // RefTagDenyList contains reference tags that are often associated with unreliable or
 // irrelevant repository URLs. References with these tags are currently ignored
 // to avoid incorrect repository associations.
@@ -55,7 +65,7 @@ func extractConversionMetrics(cve cves.CVE5, refs []osvschema.Reference, metrics
 	}
 	metrics.RefTypesCount = refTypeCounts
 	for refType, count := range refTypeCounts {
-		metrics.Notes = append(metrics.Notes, fmt.Sprintf("[%s]: Reference Type %s: %d", cve.Metadata.CVEID, refType, count))
+		metrics.AddNote("[%s]: Reference Type %s: %d", cve.Metadata.CVEID, refType, count)
 	}
 
 	// TODO(jesslowe): Add more analysis based on ADP containers, CVSS, KEV, CWE, etc.
@@ -79,14 +89,14 @@ func FromCVE5(cve cves.CVE5, refs []cves.Reference, metrics *ConversionMetrics) 
 
 	published, err := cves.ParseCVE5Timestamp(cve.Metadata.DatePublished)
 	if err != nil {
-		metrics.Notes = append(metrics.Notes, "Published date failed to parse, setting time to now")
+		metrics.AddNote("[%s]: Published date failed to parse, setting time to now", cve.Metadata.CVEID)
 		published = time.Now()
 	}
 	v.Published = published
 
 	modified, err := cves.ParseCVE5Timestamp(cve.Metadata.DateUpdated)
 	if err != nil {
-		metrics.Notes = append(metrics.Notes, "Modified date failed to parse, setting time to now")
+		metrics.AddNote("[%s]: Modified date failed to parse, setting time to now", cve.Metadata.CVEID)
 		modified = time.Now()
 	}
 	v.Modified = modified
@@ -175,7 +185,9 @@ func ConvertAndExportCVEToOSV(cve cves.CVE5, directory string) error {
 
 	// Try to extract repository URLs from references.
 	repos, repoNotes := cves.ReposFromReferencesCVEList(string(cveID), references, RefTagDenyList)
-	metrics.Notes = append(metrics.Notes, repoNotes...)
+	for _, note := range repoNotes {
+		metrics.AddNote("%s", note)
+	}
 	metrics.Repos = repos
 
 	vulnDir := filepath.Join(directory, cnaAssigner)

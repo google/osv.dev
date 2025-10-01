@@ -29,11 +29,11 @@ from ..request_helper import RequestError, RequestHelper
 class DPKG(OrderedEcosystem):
   """Debian package (dpkg) ecosystem"""
 
-  def sort_key(self, version):
+  def _sort_key(self, version):
     if not DebianVersion.is_valid(version):
       # If debian version is not valid, it is most likely an invalid fixed
       # version then sort it to the last/largest element
-      return DebianVersion(999999, '999999')
+      return DebianVersion(9999999999, '9999999999')
     return DebianVersion.from_string(version)
 
 

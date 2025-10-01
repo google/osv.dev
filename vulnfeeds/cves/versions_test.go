@@ -686,20 +686,20 @@ func TestExtractGitCommit(t *testing.T) {
 				t.Skipf("test %q: running on Cloud Build", tc.description)
 			}
 			if time.Now().Before(tc.disableExpiryDate) {
-				t.Skipf("test %q: extractGitCommit for %q (%q) has been skipped due to known outage and will be reenabled on %s.", tc.description, tc.inputLink, tc.inputCommitType, tc.disableExpiryDate)
+				t.Skipf("test %q: extractGitAffectedCommit for %q (%q) has been skipped due to known outage and will be reenabled on %s.", tc.description, tc.inputLink, tc.inputCommitType, tc.disableExpiryDate)
 			}
 			if !tc.disableExpiryDate.IsZero() && time.Now().After(tc.disableExpiryDate) {
-				t.Logf("test %q: extractGitCommit(%q, %q) has been enabled on %s.", tc.description, tc.inputLink, tc.inputCommitType, tc.disableExpiryDate)
+				t.Logf("test %q: extractGitAffectedCommit(%q, %q) has been enabled on %s.", tc.description, tc.inputLink, tc.inputCommitType, tc.disableExpiryDate)
 			}
-			got, err := ExtractGitCommit(tc.inputLink, tc.inputCommitType, client)
+			got, err := extractGitAffectedCommit(tc.inputLink, tc.inputCommitType, client)
 			if err != nil && !tc.expectFailure {
-				t.Errorf("test %q: extractGitCommit for %q (%q) errored unexpectedly: %#v", tc.description, tc.inputLink, tc.inputCommitType, err)
+				t.Errorf("test %q: extractGitAffectedCommit for %q (%q) errored unexpectedly: %#v", tc.description, tc.inputLink, tc.inputCommitType, err)
 			}
 			if err == nil && tc.expectFailure {
-				t.Errorf("test %q: extractGitCommit for %q (%q) did not error as unexpected!", tc.description, tc.inputLink, tc.inputCommitType)
+				t.Errorf("test %q: extractGitAffectedCommit for %q (%q) did not error as unexpected!", tc.description, tc.inputLink, tc.inputCommitType)
 			}
 			if !reflect.DeepEqual(got, tc.expectedAffectedCommit) {
-				t.Errorf("test %q: extractGitCommit for %q was incorrect, got: %#v, expected: %#v", tc.description, tc.inputLink, got, tc.expectedAffectedCommit)
+				t.Errorf("test %q: extractGitAffectedCommit for %q was incorrect, got: %#v, expected: %#v", tc.description, tc.inputLink, got, tc.expectedAffectedCommit)
 			}
 		})
 	}

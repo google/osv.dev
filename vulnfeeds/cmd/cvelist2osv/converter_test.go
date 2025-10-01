@@ -352,7 +352,8 @@ func TestFromCVE5(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			vuln, _ := FromCVE5(tc.cve, tc.refs)
+			metrics := &ConversionMetrics{}
+			vuln := FromCVE5(tc.cve, tc.refs, metrics)
 
 			// Handle non-deterministic time.Now()
 			if strings.Contains(tc.name, "invalid date") {

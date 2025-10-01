@@ -29,7 +29,7 @@ class CRAN(EnumerableEcosystem):
   _API_PACKAGE_URL_POSIT_CRAN = 'https://packagemanager.posit.co/__api__/' + \
     'repos/2/packages/{package}'
 
-  def sort_key(self, version):
+  def _sort_key(self, version):
     """Sort key."""
     # Some documentation on CRAN versioning and the R numeric_version method:
     # https://cran.r-project.org/doc/manuals/R-exts.html#The-DESCRIPTION-file

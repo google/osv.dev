@@ -22,14 +22,14 @@ class SemverLike(OrderedEcosystem):
   """Ecosystem helper for ecosystems that use SEMVER-compatible versioning,
   but use the ECOSYSTEM version type."""
 
-  def sort_key(self, version):
+  def _sort_key(self, version):
     """Sort key."""
     try:
       return semver_index.parse(version)
     except ValueError:
       # If a user gives us an unparsable semver version,
       # treat it as a very large version so as to not match anything.
-      return semver_index.parse('999999')
+      return semver_index.parse('9999999999')
 
 
 class SemverEcosystem(SemverLike):

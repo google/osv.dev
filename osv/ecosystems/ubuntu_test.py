@@ -30,6 +30,10 @@ class UbuntuEcosystemTest(unittest.TestCase):
         ecosystem.sort_key('2.42.8+dfsg-1ubuntu0.3'),
         ecosystem.sort_key('2.42.8+dfsg-1ubuntu0.2'))
     self.assertGreater(ecosystem.sort_key('5.4.13-1'), ecosystem.sort_key('0'))
+
+    # Check the 0 sentinel value.
+    self.assertLess(ecosystem.sort_key('0'), ecosystem.sort_key('0:0~0-0'))
+
     self.assertGreater(
         ecosystem.sort_key('5.4.13-1'), ecosystem.sort_key('3.2.30-1'))
     self.assertGreater(

@@ -46,7 +46,7 @@ api-server-tests:
 	cd gcp/api && ./run_tests.sh $(HOME)/.config/gcloud/application_default_credentials.json
 
 lint:
-	tools/lint_and_format.sh
+	$(run-cmd) tools/lint_and_format.sh
 
 build-protos:
 	$(run-cmd) python -m grpc_tools.protoc --python_out=. --mypy_out=. --proto_path=. osv/*.proto

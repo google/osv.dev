@@ -12,7 +12,7 @@ import (
 	"time"
 
 	"cloud.google.com/go/datastore"
-	"cloud.google.com/go/pubsub"
+	"cloud.google.com/go/pubsub/v2"
 	"cloud.google.com/go/storage"
 	"github.com/google/osv.dev/go/logger"
 	"github.com/google/osv.dev/go/models"
@@ -118,7 +118,7 @@ func run(ctx context.Context, env *appEnv) error {
 	go func() {
 		defer resultsWg.Done()
 		for result := range resultsChan {
-			if handleResult(ctx, env.topic, result) {
+			if handleResult(ctx, env.publisher, result) {
 				newInvalids = append(newInvalids, result.id)
 			}
 		}
@@ -182,7 +182,7 @@ func run(ctx context.Context, env *appEnv) error {
 // handleResult handles logging and sending pub/sub message to the recoverer.
 // Returns true if a pub/sub message was sent to the recoverer,
 // to indicate that we need to verify that the recoverer fixes the problem on the next run.
-func handleResult(ctx context.Context, topic *pubsub.Topic, result checkRecordResult) bool {
+func handleResult(ctx context.Context, publisher *pubsub.Publisher, result checkRecordResult) bool {
 	if result.err != nil {
 		logger.Error("failed to process record", slog.String("id", result.id), slog.Any("err", result.err))
 	}
@@ -191,7 +191,7 @@ func handleResult(ctx context.Context, topic *pubsub.Topic, result checkRecordRe
 			Attributes: map[string]string{"type": "gcs_missing", "id": result.id},
 		}
 		logger.Info("publishing gcs_missing message", slog.String("id", result.id))
-		_, err := topic.Publish(ctx, &msg).Get(ctx)
+		_, err := publisher.Publish(ctx, &msg).Get(ctx)
 		if err != nil {
 			logger.Error("failed publishing message", slog.String("id", result.id), slog.Any("err", err))
 		}
@@ -204,7 +204,7 @@ func handleResult(ctx context.Context, topic *pubsub.Topic, result checkRecordRe
 type appEnv struct {
 	bucket     *storage.BucketHandle
 	ds         *datastore.Client
-	topic      *pubsub.Topic
+	publisher  *pubsub.Publisher
 	numWorkers int
 }
 
@@ -239,7 +239,7 @@ func setup(ctx context.Context) (*appEnv, error) {
 		err = fmt.Errorf("failed to create pubsub client: %w", err)
 		return nil, err
 	}
-	topic := pubsubClient.Topic(pubsubTopic)
+	publisher := pubsubClient.Publisher(pubsubTopic)
 
 	numWorkers := defaultNumWorkers
 	if numWorkersStr, ok := os.LookupEnv("NUM_WORKERS"); ok {
@@ -253,7 +253,7 @@ func setup(ctx context.Context) (*appEnv, error) {
 	return &appEnv{
 		bucket:     bucket,
 		ds:         dsClient,
-		topic:      topic,
+		publisher:  publisher,
 		numWorkers: numWorkers,
 	}, nil
 }

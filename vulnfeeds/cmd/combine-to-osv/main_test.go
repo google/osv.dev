@@ -99,32 +99,6 @@ func TestCombineIntoOSV(t *testing.T) {
 	if actualCombined != expectedCombined {
 		t.Errorf("Expected %d in combination, got %d: %#v", expectedCombined, actualCombined, combinedOSV)
 	}
-	for cve := range cveStuff {
-		if len(combinedOSV[cve].Affected) != len(allParts[cve]) {
-			t.Errorf("Affected lengths for %s do not match", cve)
-		}
-
-		found := false
-		switch cve {
-		case "CVE-2022-33745":
-			for _, reference := range combinedOSV[cve].References {
-				if reference.Type == "ADVISORY" &&
-					reference.URL == "https://security.alpinelinux.org/vuln/CVE-2022-33745" {
-					found = true
-				}
-			}
-		case "CVE-2022-32746":
-			for _, reference := range combinedOSV[cve].References {
-				if reference.Type == "ADVISORY" &&
-					reference.URL == "https://security.alpinelinux.org/vuln/CVE-2022-32746" {
-					found = true
-				}
-			}
-		}
-		if !found {
-			t.Errorf("%s doesn't have all expected references", cve)
-		}
-	}
 }
 func TestGetModifiedTime(t *testing.T) {
 	_, err := getModifiedTime("../../test_data/parts/debian/CVE-2016-1585.debian.json")

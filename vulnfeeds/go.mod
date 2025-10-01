@@ -12,7 +12,7 @@ require (
 	github.com/google/go-cmp v0.7.0
 	github.com/google/osv-scanner v1.9.2
 	github.com/knqyf263/go-cpe v0.0.0-20230627041855-cb0794d06872
-	github.com/ossf/osv-schema/bindings/go v0.0.0-20250923052108-c3926b680ad5
+	github.com/ossf/osv-schema/bindings/go v0.0.0-20250926044009-f6ae0b6bae32
 	github.com/sethvargo/go-retry v0.3.0
 	gopkg.in/dnaeon/go-vcr.v4 v4.0.5
 	gopkg.in/yaml.v2 v2.4.0

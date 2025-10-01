@@ -69,7 +69,7 @@ class PackagistVersion:
   def __eq__(self, other):
     if not isinstance(other, self.__class__):
       return NotImplemented
-    return self.canonicalized_version == other.canonicalized_version
+    return self.__cmp__(other) == 0
 
   def __lt__(self, other):
     return self.__cmp__(other) < 0
@@ -199,7 +199,7 @@ class Packagist(EnumerableEcosystem):
 
   _API_PACKAGE_URL = 'https://repo.packagist.org/p2/{package}.json'
 
-  def sort_key(self, version):
+  def _sort_key(self, version):
     return PackagistVersion(version)
 
   def enumerate_versions(self,

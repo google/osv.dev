@@ -32,3 +32,19 @@ class BioconductorEcosystemTest(vcr.unittest.VCRTestCase):
       self.assertEqual('1.20.0', ecosystem.next_version('a4', '1.18.0'))
       with self.assertRaises(ecosystems.EnumerateError):
         ecosystem.next_version('doesnotexist123456', '1')
+
+  def test_sort_key(self):
+    """Test sort_key."""
+    ecosystem = ecosystems.get('Bioconductor')
+    self.assertGreater(
+        ecosystem.sort_key('1.20.0'), ecosystem.sort_key('1.18.0'))
+    self.assertLess(ecosystem.sort_key('1.18.0'), ecosystem.sort_key('1.18.1'))
+
+    # Check the 0 sentinel value.
+    self.assertLess(ecosystem.sort_key('0'), ecosystem.sort_key('0.0.0'))
+
+    # Check >= / <= methods
+    self.assertGreaterEqual(
+        ecosystem.sort_key('1.20.0'), ecosystem.sort_key('1.18.0'))
+    self.assertLessEqual(
+        ecosystem.sort_key('1.18.0'), ecosystem.sort_key('1.20.0'))

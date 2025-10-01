@@ -105,7 +105,9 @@ func FromCVE5(cve cves.CVE5, refs []cves.Reference, metrics *ConversionMetrics) 
 
 	// Try to extract repository URLs from references.
 	repos, repoNotes := cves.ReposFromReferencesCVEList(string(cve.Metadata.CVEID), refs, RefTagDenyList)
-	metrics.Notes = append(metrics.Notes, repoNotes...)
+	for _, note := range repoNotes {
+		metrics.AddNote("%s", note)
+	}
 	metrics.Repos = repos
 
 	// Add affected version information.
@@ -183,6 +185,7 @@ func ConvertAndExportCVEToOSV(cve cves.CVE5, directory string) error {
 	cnaAssigner := cve.Metadata.AssignerShortName
 	references := identifyPossibleURLs(cve)
 	metrics := ConversionMetrics{CVEID: cveID, CNA: cnaAssigner}
+
 	// Create a base OSV record from the CVE.
 	v := FromCVE5(cve, references, &metrics)
 

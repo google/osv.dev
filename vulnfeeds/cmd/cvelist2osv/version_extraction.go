@@ -449,7 +449,6 @@ func findNormalAffectedRanges(affected cves.Affected, metrics *ConversionMetrics
 		// affected, but more likely, it affects up to that version. It could also mean that the range is given
 		// in one line instead - like "< 1.5.3" or "< 2.45.4, >= 2.0 " or just "before 1.4.7", so check for that.
 		metrics.AddNote("Only version exists")
-		// GitHub often encodes the range directly in the version string.
 
 		av, err := git.ParseVersionRange(vers.Version)
 		if err == nil {

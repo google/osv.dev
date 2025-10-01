@@ -11,9 +11,7 @@ import (
 	"os"
 	"path"
 	"path/filepath"
-	"sort"
 	"strings"
-	"time"
 
 	"cloud.google.com/go/storage"
 	"github.com/google/osv/vulnfeeds/cves"
@@ -100,19 +98,6 @@ func listBucketObjects(bucketName string, prefix string) ([]string, error) {
 	return filenames, nil
 }
 
-// getModifiedTime gets the modification time of a given file
-// This function assumes that the modified time on disk matches with it in GCS
-func getModifiedTime(filePath string) (time.Time, error) {
-	var emptyTime time.Time
-	fileInfo, err := os.Stat(filePath)
-	if err != nil {
-		return emptyTime, err
-	}
-	parsedTime := fileInfo.ModTime()
-
-	return parsedTime, err
-}
-
 func loadOSV(osvPath string) map[cves.CVEID]osvschema.Vulnerability {
 	allVulns := make(map[cves.CVEID]osvschema.Vulnerability)
 	logger.Info("Loading OSV records", slog.String("path", osvPath))
@@ -158,7 +143,6 @@ func combineIntoOSV(cve5osv map[cves.CVEID]osvschema.Vulnerability, nvdosv map[c
 
 		if ok {
 			pickAffectedInformation(&combined.Affected, nvd.Affected)
-			// TODO: if both NVD and CVE5 data exists, compare each affected range and make good decisions
 
 			// Merge references, ensuring no duplicates.
 			refMap := make(map[string]bool)
@@ -334,27 +318,6 @@ func pickAffectedInformation(cve5Affected *[]osvschema.Affected, nvdAffected []o
 
 	*cve5Affected = newAffected
 
-}
-
-func affectedToSignature(a osvschema.Affected) string {
-	var parts []string
-	if a.Package.Ecosystem != "" && a.Package.Name != "" {
-		parts = append(parts, fmt.Sprintf("pkg:%s/%s", a.Package.Ecosystem, a.Package.Name))
-	}
-	for _, r := range a.Ranges {
-		var events []string
-		for _, e := range r.Events {
-			if e.Fixed != "" {
-				events = append(events, fmt.Sprintf("intro:%s,fixed:%s", e.Introduced, e.Fixed))
-			} else if e.LastAffected != "" {
-				events = append(events, fmt.Sprintf("intro:%s,lastaff:%s", e.Introduced, e.LastAffected))
-			}
-		}
-		sort.Strings(events)
-		parts = append(parts, fmt.Sprintf("type:%s,events:[%s]", r.Type, strings.Join(events, ",")))
-	}
-	sort.Strings(parts)
-	return strings.Join(parts, "|")
 }
 
 // writeOSVFile writes out the given osv objects into individual json files

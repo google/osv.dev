@@ -847,7 +847,7 @@ def do_query(query: osv_service_v1_pb2.Query,
       return None
 
     bugs = yield query_by_commit(context, commit_bytes, include_details)
-  elif package_name:
+  elif package_name and (ecosystem or version):
     # New Database table & GCS querying
     bugs = yield query_package(context, package_name, ecosystem, version,
                                include_details)

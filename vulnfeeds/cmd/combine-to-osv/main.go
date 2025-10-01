@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"flag"
 	"fmt"
+	"io/fs"
 	"log/slog"
 	"os"
 	"path"
@@ -120,31 +121,34 @@ func getModifiedTime(filePath string) (time.Time, error) {
 
 func loadOSV(osvPath string) map[cves.CVEID]osvschema.Vulnerability {
 	allVulns := make(map[cves.CVEID]osvschema.Vulnerability)
-	globPattern := filepath.Join(osvPath, "**", "*.json")
-	matches, err := filepath.Glob(globPattern)
-	if err != nil {
-		logger.Fatal("Failed to glob for OSV files", slog.String("pattern", globPattern), slog.Any("err", err))
-	}
 	logger.Info("Loading OSV records", slog.String("path", osvPath))
-	for _, filePath := range matches {
-		if strings.HasSuffix(filePath, ".metrics.json") {
-			continue
+	err := filepath.WalkDir(osvPath, func(path string, d fs.DirEntry, err error) error {
+		if err != nil {
+			return err
+		}
+		if d.IsDir() || !strings.HasSuffix(path, ".json") || strings.HasSuffix(path, ".metrics.json") {
+			return nil
 		}
 
-		file, err := os.Open(filePath)
+		file, err := os.Open(path)
 		if err != nil {
-			logger.Warn("Failed to open OSV JSON file", slog.String("path", filePath), slog.Any("err", err))
-			continue
+			logger.Warn("Failed to open OSV JSON file", slog.String("path", path), slog.Any("err", err))
+			return nil
 		}
 
 		var vuln osvschema.Vulnerability
-		err = json.NewDecoder(file).Decode(&vuln)
+		decodeErr := json.NewDecoder(file).Decode(&vuln)
 		file.Close()
-		if err != nil {
-			logger.Error("Failed to decode, skipping", slog.String("file", filePath), slog.Any("err", err))
-			continue
+		if decodeErr != nil {
+			logger.Error("Failed to decode, skipping", slog.String("file", path), slog.Any("err", decodeErr))
+			return nil
 		}
 		allVulns[cves.CVEID(vuln.ID)] = vuln
+		return nil
+	})
+
+	if err != nil {
+		logger.Fatal("Failed to walk OSV directory", slog.String("path", osvPath), slog.Any("err", err))
 	}
 
 	return output, cvePartsModifiedTime

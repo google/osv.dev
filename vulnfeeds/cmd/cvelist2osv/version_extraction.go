@@ -74,9 +74,7 @@ func toVersionRangeType(s string) VersionRangeType {
 // 3. If no versions are found, it falls back to searching for CPEs in the CNA container.
 // 4. As a last resort, it attempts to extract version information from the description text (currently not saved).
 // It returns the source of the version information and a slice of notes detailing the extraction process.
-func AddVersionInfo(cve cves.CVE5, v *vulns.Vulnerability, repos []string) ([]VersionSource, []string) {
-	var notes []string
-	var source []VersionSource //nolint:prealloc
+func AddVersionInfo(cve cves.CVE5, v *vulns.Vulnerability, metrics *ConversionMetrics, repos []string) {
 	gotVersions := false
 
 	// Combine 'affected' entries from both CNA and ADP containers.
@@ -93,12 +91,11 @@ func AddVersionInfo(cve cves.CVE5, v *vulns.Vulnerability, repos []string) ([]Ve
 	// Attempt to extract version ranges from the combined 'affected' fields.
 	hasGit := false
 	for _, cveAff := range affected {
-		versionRanges, versionType, extractNotes := extractVersionsFromAffectedField(cveAff, cve.Metadata.AssignerShortName)
+		versionRanges, versionType := extractVersionsFromAffectedField(cveAff, cve.Metadata.AssignerShortName, metrics)
 		// TODO(jesslowe): update this to be more elegant (currently skips retrieving more git ranges after the first)
 		if versionType == VersionRangeTypeGit && hasGit {
 			continue
 		}
-		notes = append(notes, extractNotes...)
 
 		if len(versionRanges) == 0 {
 			continue
@@ -138,16 +135,16 @@ func AddVersionInfo(cve cves.CVE5, v *vulns.Vulnerability, repos []string) ([]Ve
 		}
 
 		v.Affected = append(v.Affected, aff)
-		source = append(source, VersionSourceAffected)
+		metrics.VersionSources = append(metrics.VersionSources, VersionSourceAffected)
 	}
 
 	// If no versions were found so far, fall back to CPEs.
 	if !gotVersions {
-		notes = append(notes, "No versions in affected, attempting to extract from CPE")
+		metrics.Notes = append(metrics.Notes, "No versions in affected, attempting to extract from CPE")
 		cpeRanges, cpeStrings, err := findCPEVersionRanges(cve)
 		if err == nil && len(cpeRanges) > 0 {
 			gotVersions = true
-			source = append(source, VersionSourceCPE)
+			metrics.VersionSources = append(metrics.VersionSources, VersionSourceCPE)
 			aff := osvschema.Affected{}
 			for _, vr := range cpeRanges {
 				vr.Type = osvschema.RangeEcosystem
@@ -157,23 +154,38 @@ func AddVersionInfo(cve cves.CVE5, v *vulns.Vulnerability, repos []string) ([]Ve
 			aff.DatabaseSpecific["CPEs"] = vulns.Unique(cpeStrings)
 			v.Affected = append(v.Affected, aff)
 		} else if err != nil {
-			notes = append(notes, err.Error())
+			metrics.Notes = append(metrics.Notes, err.Error())
 		}
 	}
 
 	// As a last resort, try extracting versions from the description text.
 	if !gotVersions {
-		notes = append(notes, "No versions in CPEs so attempting extraction from description")
+		metrics.Notes = append(metrics.Notes, "No versions in CPEs so attempting extraction from description")
 		versions, extractNotes := cves.ExtractVersionsFromText(nil, cves.EnglishDescription(cve.Containers.CNA.Descriptions))
-		notes = append(notes, extractNotes...)
+		metrics.Notes = append(metrics.Notes, extractNotes...)
 		if len(versions) > 0 {
 			// NOTE: These versions are not currently saved due to the need for better validation.
-			source = append(source, VersionSourceDescription)
-			notes = append(notes, fmt.Sprintf("Extracted versions from description but did not save them: %+v", versions))
+			metrics.VersionSources = append(metrics.VersionSources, VersionSourceDescription)
+			metrics.Notes = append(metrics.Notes, fmt.Sprintf("Extracted versions from description but did not save them: %+v", versions))
 		}
 	}
+}
 
-	return source, notes
+// resolveVersionToCommit is a helper to convert a version string to a commit hash.
+// It logs the outcome of the conversion attempt and returns an empty string on failure.
+func resolveVersionToCommit(cveID cves.CVEID, version, versionType, repo string, normalizedTags map[string]git.NormalizedTag) string {
+	if version == "" {
+		return ""
+	}
+	logger.Info("Attempting to resolve version to commit", slog.String("cve", string(cveID)), slog.String("version", version), slog.String("type", versionType), slog.String("repo", repo))
+	commit, err := git.VersionToCommit(version, normalizedTags)
+	if err != nil {
+		logger.Warn("Failed to get Git commit for version", slog.String("cve", string(cveID)), slog.String("version", version), slog.String("type", versionType), slog.String("repo", repo), slog.Any("err", err))
+		return ""
+	}
+	logger.Info("Successfully derived commit for version", slog.String("cve", string(cveID)), slog.String("commit", commit), slog.String("version", version), slog.String("type", versionType))
+
+	return commit
 }
 
 // Examines repos and tries to convert versions to commits by treating them as Git tags.
@@ -198,61 +210,43 @@ func gitVersionsToCommits(cveID cves.CVEID, versionRanges []osvschema.Range, rep
 
 		var stillUnresolvedRanges []osvschema.Range
 		for _, vr := range unresolvedRanges {
-			var introducedCommit, fixedCommit, lastAffectedCommit string
-			var resolutionErr error
-
-			for _, ev := range vr.Events {
-				logger.Info("Attempting version resolution", slog.String("cve", string(cveID)), slog.Any("event", ev), slog.String("repo", repo))
-				if ev.Introduced != "" {
-					if ev.Introduced == "0" {
-						introducedCommit = "0"
-					} else {
-						introducedCommit, resolutionErr = git.VersionToCommit(ev.Introduced, normalizedTags)
-						if resolutionErr != nil {
-							logger.Warn("Failed to get Git commit for introduced version", slog.String("cve", string(cveID)), slog.String("version", ev.Introduced), slog.String("repo", repo), slog.Any("err", resolutionErr))
-						} else {
-							logger.Info("Successfully derived commit for introduced version", slog.String("cve", string(cveID)), slog.String("commit", introducedCommit), slog.String("version", ev.Introduced))
-						}
-					}
+			var introduced, fixed, lastAffected string
+			for _, e := range vr.Events {
+				if e.Introduced != "" {
+					introduced = e.Introduced
 				}
-				if ev.Fixed != "" {
-					fixedCommit, resolutionErr = git.VersionToCommit(ev.Fixed, normalizedTags)
-					if resolutionErr != nil {
-						logger.Warn("Failed to get Git commit for fixed version", slog.String("cve", string(cveID)), slog.String("version", ev.Fixed), slog.String("repo", repo), slog.Any("err", resolutionErr))
-					} else {
-						logger.Info("Successfully derived commit for fixed version", slog.String("cve", string(cveID)), slog.String("commit", fixedCommit), slog.String("version", ev.Fixed))
-					}
+				if e.Fixed != "" {
+					fixed = e.Fixed
 				}
-				if ev.LastAffected != "" {
-					lastAffectedCommit, resolutionErr = git.VersionToCommit(ev.LastAffected, normalizedTags)
-					if resolutionErr != nil {
-						logger.Warn("Failed to get Git commit for last affected version", slog.String("cve", string(cveID)), slog.String("version", ev.LastAffected), slog.String("repo", repo), slog.Any("err", resolutionErr))
-					} else {
-						logger.Info("Successfully derived commit for last affected version", slog.String("cve", string(cveID)), slog.String("commit", lastAffectedCommit), slog.String("version", ev.LastAffected))
-					}
+				if e.LastAffected != "" {
+					lastAffected = e.LastAffected
 				}
 			}
 
-			resolved := false
-			if fixedCommit != "" && introducedCommit != "" {
-				newVR := cves.BuildVersionRange(introducedCommit, "", fixedCommit)
+			var introducedCommit string
+			if introduced == "0" {
+				introducedCommit = "0"
+			} else {
+				introducedCommit = resolveVersionToCommit(cveID, introduced, "introduced", repo, normalizedTags)
+			}
+			fixedCommit := resolveVersionToCommit(cveID, fixed, "fixed", repo, normalizedTags)
+			lastAffectedCommit := resolveVersionToCommit(cveID, lastAffected, "last_affected", repo, normalizedTags)
+
+			if introducedCommit != "" && (fixedCommit != "" || lastAffectedCommit != "") {
+				var newVR osvschema.Range
+
+				if fixedCommit != "" {
+					newVR = buildVersionRange(introducedCommit, "", fixedCommit)
+				} else {
+					newVR = buildVersionRange(introducedCommit, lastAffectedCommit, "")
+				}
+
 				newVR.Repo = repo
 				newVR.Type = osvschema.RangeGit
 				newVR.DatabaseSpecific = make(map[string]any)
 				newVR.DatabaseSpecific["versions"] = vr.Events
 				newVersionRanges = append(newVersionRanges, newVR)
-				resolved = true
-			} else if lastAffectedCommit != "" && introducedCommit != "" {
-				newVR := cves.BuildVersionRange(introducedCommit, lastAffectedCommit, "")
-				newVR.Repo = repo
-				newVR.Type = osvschema.RangeGit
-				newVR.DatabaseSpecific = make(map[string]any)
-				newVR.DatabaseSpecific["versions"] = vr.Events
-				newVersionRanges = append(newVersionRanges, newVR)
-				resolved = true
-			}
-
-			if !resolved {
+			} else {
 				stillUnresolvedRanges = append(stillUnresolvedRanges, vr)
 			}
 		}
@@ -319,23 +313,24 @@ func findCPEVersionRanges(cve cves.CVE5) (versionRanges []osvschema.Range, cpes 
 // - As a fallback, it may assume a single version means "fixed at this version, introduced at 0".
 //
 // Returns the extracted OSV ranges, the most frequent version type (e.g., "semver"), and any notes.
-func extractVersionsFromAffectedField(affected cves.Affected, cnaAssigner string) ([]osvschema.Range, VersionRangeType, []string) {
+func extractVersionsFromAffectedField(affected cves.Affected, cnaAssigner string, metrics *ConversionMetrics) ([]osvschema.Range, VersionRangeType) {
 	// Handle cases where a product is marked as "affected" by default, and specific versions are marked "unaffected".
 	if affected.DefaultStatus == "affected" {
 		// Calculate the affected ranges by finding the inverse of the unaffected ranges.
-		return findInverseAffectedRanges(affected, cnaAssigner)
+		return findInverseAffectedRanges(affected, cnaAssigner, metrics)
 	}
 
-	return findNormalAffectedRanges(affected)
+	return findNormalAffectedRanges(affected, metrics)
 }
 
 // findInverseAffectedRanges calculates the affected version ranges by analyzing a list
 // of 'unaffected' versions. This is common in Linux kernel CVEs where a product is
 // considered affected by default, and only unaffected versions are listed.
 // It sorts the introduced and fixed versions to create chronological ranges.
-func findInverseAffectedRanges(cveAff cves.Affected, cnaAssigner string) (ranges []osvschema.Range, versType VersionRangeType, notes []string) {
+func findInverseAffectedRanges(cveAff cves.Affected, cnaAssigner string, metrics *ConversionMetrics) (ranges []osvschema.Range, versType VersionRangeType) {
 	if cnaAssigner != "Linux" {
-		return nil, VersionRangeTypeUnknown, append(notes, "Currently only supporting Linux inverse logic")
+		metrics.Notes = append(metrics.Notes, "Currently only supporting Linux inverse logic")
+		return nil, VersionRangeTypeUnknown
 	}
 	var introduced []string
 	fixed := make([]string, 0, len(cveAff.Versions))
@@ -349,7 +344,7 @@ func findInverseAffectedRanges(cveAff cves.Affected, cnaAssigner string) (ranges
 			case 3:
 				introduced = append(introduced, versionValue)
 			default:
-				notes = append(notes, "Bad non-semver version given: "+versionValue)
+				metrics.Notes = append(metrics.Notes, "Bad non-semver version given: "+versionValue)
 				continue
 			}
 		}
@@ -383,21 +378,21 @@ func findInverseAffectedRanges(cveAff cves.Affected, cnaAssigner string) (ranges
 	// Create ranges by pairing sorted introduced and fixed versions.
 	for index, f := range fixed {
 		if index < len(introduced) {
-			ranges = append(ranges, cves.BuildVersionRange(introduced[index], "", f))
-			notes = append(notes, "Introduced from version value - "+introduced[index])
-			notes = append(notes, "Fixed from version value - "+f)
+			ranges = append(ranges, buildVersionRange(introduced[index], "", f))
+			metrics.Notes = append(metrics.Notes, "Introduced from version value - "+introduced[index])
+			metrics.Notes = append(metrics.Notes, "Fixed from version value - "+f)
 		}
 	}
 
 	if len(ranges) != 0 {
-		return ranges, VersionRangeTypeSemver, notes
+		return ranges, VersionRangeTypeSemver
 	}
-	notes = append(notes, "no ranges found")
+	metrics.Notes = append(metrics.Notes, "no ranges found")
 
-	return nil, VersionRangeTypeUnknown, notes
+	return nil, VersionRangeTypeUnknown
 }
 
-func findNormalAffectedRanges(affected cves.Affected) (versionRanges []osvschema.Range, versType VersionRangeType, notes []string) {
+func findNormalAffectedRanges(affected cves.Affected, metrics *ConversionMetrics) (versionRanges []osvschema.Range, versType VersionRangeType) {
 	versionTypesCount := make(map[VersionRangeType]int)
 
 	for _, vers := range affected.Versions {
@@ -413,30 +408,30 @@ func findNormalAffectedRanges(affected cves.Affected) (versionRanges []osvschema
 		// Quality check the version strings to avoid using filler content.
 		vQuality := vulns.CheckQuality(vers.Version)
 		if !vQuality.AtLeast(acceptableQuality) {
-			notes = append(notes, fmt.Sprintf("Version value for %s %s is filler or empty", affected.Vendor, affected.Product))
+			metrics.Notes = append(metrics.Notes, fmt.Sprintf("Version value for %s %s is filler or empty", affected.Vendor, affected.Product))
 		}
 		vLessThanQual := vulns.CheckQuality(vers.LessThan)
 		vLTOEQual := vulns.CheckQuality(vers.LessThanOrEqual)
 
 		hasRange := vLessThanQual.AtLeast(acceptableQuality) || vLTOEQual.AtLeast(acceptableQuality)
-		notes = append(notes, fmt.Sprintf("Range detected: %v", hasRange))
+		metrics.Notes = append(metrics.Notes, fmt.Sprintf("Range detected: %v", hasRange))
 		// Handle cases where 'lessThan' is mistakenly the same as 'version'.
 		if vers.LessThan != "" && vers.LessThan == vers.Version {
-			notes = append(notes, fmt.Sprintf("Warning: lessThan (%s) is the same as introduced (%s)\n", vers.LessThan, vers.Version))
+			metrics.Notes = append(metrics.Notes, fmt.Sprintf("Warning: lessThan (%s) is the same as introduced (%s)\n", vers.LessThan, vers.Version))
 			hasRange = false
 		}
 
 		if hasRange {
 			if vQuality.AtLeast(acceptableQuality) {
 				introduced = vers.Version
-				notes = append(notes, fmt.Sprintf("%s - Introduced from version value - %s", vQuality.String(), vers.Version))
+				metrics.Notes = append(metrics.Notes, fmt.Sprintf("%s - Introduced from version value - %s", vQuality.String(), vers.Version))
 			}
 			if vLessThanQual.AtLeast(acceptableQuality) {
 				fixed = vers.LessThan
-				notes = append(notes, fmt.Sprintf("%s - Fixed from LessThan value - %s", vLessThanQual.String(), vers.LessThan))
+				metrics.Notes = append(metrics.Notes, fmt.Sprintf("%s - Fixed from LessThan value - %s", vLessThanQual.String(), vers.LessThan))
 			} else if vLTOEQual.AtLeast(acceptableQuality) {
 				lastaffected = vers.LessThanOrEqual
-				notes = append(notes, fmt.Sprintf("%s - LastAffected from LessThanOrEqual value- %s", vLTOEQual.String(), vers.LessThanOrEqual))
+				metrics.Notes = append(metrics.Notes, fmt.Sprintf("%s - LastAffected from LessThanOrEqual value- %s", vLTOEQual.String(), vers.LessThanOrEqual))
 			}
 
 			if introduced != "" && fixed != "" {
@@ -451,20 +446,20 @@ func findNormalAffectedRanges(affected cves.Affected) (versionRanges []osvschema
 		// In this case only vers.Version exists which either means that it is _only_ that version that is
 		// affected, but more likely, it affects up to that version. It could also mean that the range is given
 		// in one line instead - like "< 1.5.3" or "< 2.45.4, >= 2.0 " or just "before 1.4.7", so check for that.
-		notes = append(notes, "Only version exists")
-		// GitHub/GitLab often encodes the range directly in the version string.
+		metrics.Notes = append(metrics.Notes, "Only version exists")
+
 		av, err := git.ParseVersionRange(vers.Version)
 		if err == nil {
 			if av.Introduced == "" {
 				continue
 			}
 			if av.Fixed != "" {
-				versionRanges = append(versionRanges, cves.BuildVersionRange(av.Introduced, "", av.Fixed))
+				versionRanges = append(versionRanges, buildVersionRange(av.Introduced, "", av.Fixed))
+				continue
 			} else if av.LastAffected != "" {
-				versionRanges = append(versionRanges, cves.BuildVersionRange(av.Introduced, av.LastAffected, ""))
+				versionRanges = append(versionRanges, buildVersionRange(av.Introduced, av.LastAffected, ""))
+				continue
 			}
-
-			continue
 		}
 
 		if currentVersionType == VersionRangeTypeGit {
@@ -475,17 +470,17 @@ func findNormalAffectedRanges(affected cves.Affected) (versionRanges []osvschema
 		// Try to extract versions from text like "before 1.4.7".
 		possibleVersions, note := cves.ExtractVersionsFromText(nil, vers.Version)
 		if note != nil {
-			notes = append(notes, note...)
+			metrics.Notes = append(metrics.Notes, note...)
 		}
 		if possibleVersions != nil {
-			notes = append(notes, "Versions retrieved from text but not used CURRENTLY")
+			metrics.Notes = append(metrics.Notes, "Versions retrieved from text but not used CURRENTLY")
 			continue
 		}
 
-		// As a fallback, assume a single version means it's the last_affected version.
+		// As a fallback, assume a single version means it's the last affected version.
 		if vQuality.AtLeast(acceptableQuality) {
-			versionRanges = append(versionRanges, cves.BuildVersionRange("0", vers.Version, ""))
-			notes = append(notes, fmt.Sprintf("%s - Single version found %v - Assuming introduced = 0 and last affected = %v", vQuality, vers.Version, vers.Version))
+			versionRanges = append(versionRanges, buildVersionRange("0", vers.Version, ""))
+			metrics.Notes = append(metrics.Notes, fmt.Sprintf("%s - Single version found %v - Assuming introduced = 0 and last affected = %v", vQuality, vers.Version, vers.Version))
 		}
 	}
 
@@ -499,7 +494,32 @@ func findNormalAffectedRanges(affected cves.Affected) (versionRanges []osvschema
 		}
 	}
 
-	return versionRanges, mostFrequentVersionType, notes
+	return versionRanges, mostFrequentVersionType
+}
+
+// buildVersionRange is a helper function that adds 'introduced', 'fixed', or 'last_affected'
+// events to an OSV version range. If 'intro' is empty, it defaults to "0".
+func buildVersionRange(intro string, lastAff string, fixed string) osvschema.Range {
+	var versionRange osvschema.Range
+	var i string
+	if intro == "" {
+		i = "0"
+	} else {
+		i = intro
+	}
+	versionRange.Events = append(versionRange.Events, osvschema.Event{
+		Introduced: i})
+
+	if fixed != "" {
+		versionRange.Events = append(versionRange.Events, osvschema.Event{
+			Fixed: fixed})
+	} else if lastAff != "" {
+		versionRange.Events = append(versionRange.Events, osvschema.Event{
+			LastAffected: lastAff,
+		})
+	}
+
+	return versionRange
 }
 
 // compareSemverLike provides a custom comparison function for version strings that may not

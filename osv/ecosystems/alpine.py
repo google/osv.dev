@@ -31,11 +31,11 @@ from ..cache import cached
 class APK(OrderedEcosystem):
   """Alpine Package Keeper ecosystem helper."""
 
-  def sort_key(self, version):
+  def _sort_key(self, version):
     if not AlpineLinuxVersion.is_valid(version):
       # If version is not valid, it is most likely an invalid input
       # version then sort it to the last/largest element
-      return AlpineLinuxVersion('999999')
+      return AlpineLinuxVersion('9999999999')
     return AlpineLinuxVersion(version)
 
 

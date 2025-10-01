@@ -35,6 +35,9 @@ class DPKGEcosystemTest(unittest.TestCase):
     self.assertGreater(
         ecosystem.sort_key('1.13.6-2'), ecosystem.sort_key('1.13.6-1'))
 
+    # Check the 0 sentinel value.
+    self.assertLess(ecosystem.sort_key('0'), ecosystem.sort_key('0:0~0-0'))
+
     # Test that <end-of-life> specifically is greater than normal versions
     self.assertGreater(
         ecosystem.sort_key('<end-of-life>'), ecosystem.sort_key('1.13.6-1'))

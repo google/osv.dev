@@ -29,6 +29,7 @@ class PubVersionTest(unittest.TestCase):
 
   def setUp(self):
     self.maxDiff = None  # pylint: disable=invalid-name
+    self.ecosystem = pub.Pub()
 
   def test_comparison(self):
     """Test version comparisons."""
@@ -42,8 +43,8 @@ class PubVersionTest(unittest.TestCase):
 
     for i, a_str in enumerate(versions):
       for j, b_str in enumerate(versions):
-        a = pub.Version.from_string(a_str)
-        b = pub.Version.from_string(b_str)
+        a = self.ecosystem.sort_key(a_str)
+        b = self.ecosystem.sort_key(b_str)
         self.assertEqual(a < b, i < j)
         self.assertEqual(a == b, i == j)
 
@@ -51,7 +52,7 @@ class PubVersionTest(unittest.TestCase):
     """Test version equality."""
 
     def check_version_equals(v1, v2):
-      self.assertEqual(pub.Version.from_string(v1), pub.Version.from_string(v2))
+      self.assertEqual(self.ecosystem.sort_key(v1), self.ecosystem.sort_key(v2))
 
     check_version_equals('01.2.3', '1.2.3')
     check_version_equals('1.02.3', '1.2.3')
@@ -62,21 +63,26 @@ class PubVersionTest(unittest.TestCase):
   def test_ge_le(self):
     """Test version >=/<=."""
     self.assertGreaterEqual(
-        pub.Version.from_string('1.10.0'), pub.Version.from_string('1.2.0'))
+        self.ecosystem.sort_key('1.10.0'), self.ecosystem.sort_key('1.2.0'))
     self.assertLessEqual(
-        pub.Version.from_string('1.2.0'), pub.Version.from_string('1.10.0'))
+        self.ecosystem.sort_key('1.2.0'), self.ecosystem.sort_key('1.10.0'))
+
+  def test_zero_sentinel(self):
+    """Test the 0 sentinel value."""
+    self.assertLess(
+        self.ecosystem.sort_key('0'), self.ecosystem.sort_key('0.0.0-0'))
 
   def test_parse(self):
     """Test versions can be parsed."""
-    pub.Version.from_string('0.0.0')
-    pub.Version.from_string('12.34.56')
-    pub.Version.from_string('1.2.3-alpha.1')
-    pub.Version.from_string('1.2.3-x.7.z-92')
-    pub.Version.from_string('1.2.3+build.1')
-    pub.Version.from_string('1.2.3+x.7.z-92')
-    pub.Version.from_string('1.0.0-rc-1+build-1')
+    self.ecosystem.sort_key('0.0.0')
+    self.ecosystem.sort_key('12.34.56')
+    self.ecosystem.sort_key('1.2.3-alpha.1')
+    self.ecosystem.sort_key('1.2.3-x.7.z-92')
+    self.ecosystem.sort_key('1.2.3+build.1')
+    self.ecosystem.sort_key('1.2.3+x.7.z-92')
+    self.ecosystem.sort_key('1.0.0-rc-1+build-1')
     # Tests invalid versions
-    pub.Version.from_string('3.4.0rc3-invalid')
+    self.ecosystem.sort_key('3.4.0rc3-invalid')
 
   def test_empty_identifier(self):
     """Test parsing versions with empty identifiers.
@@ -86,20 +92,20 @@ class PubVersionTest(unittest.TestCase):
 
     This test is probably unnecessary."""
 
-    pub.Version.from_string('1.0.0-a..b')
-    pub.Version.from_string('1.0.0-.a.b')
-    pub.Version.from_string('1.0.0-a.b.')
-    pub.Version.from_string('1.0.0+a..b')
-    pub.Version.from_string('1.0.0+.a.b')
-    pub.Version.from_string('1.0.0+a.b.')
-    pub.Version.from_string('1.0.0-+')
-    pub.Version.from_string('1.0.0-.+.')
-    pub.Version.from_string('1.0.0-....+....')
+    self.ecosystem.sort_key('1.0.0-a..b')
+    self.ecosystem.sort_key('1.0.0-.a.b')
+    self.ecosystem.sort_key('1.0.0-a.b.')
+    self.ecosystem.sort_key('1.0.0+a..b')
+    self.ecosystem.sort_key('1.0.0+.a.b')
+    self.ecosystem.sort_key('1.0.0+a.b.')
+    self.ecosystem.sort_key('1.0.0-+')
+    self.ecosystem.sort_key('1.0.0-.+.')
+    self.ecosystem.sort_key('1.0.0-....+....')
 
     # Basic test for ordering.
-    v_empty = pub.Version.from_string('1.0.0-a..b')
-    v_number = pub.Version.from_string('1.0.0-a.0.b')
-    v_str = pub.Version.from_string('1.0.0-a.a.b')
+    v_empty = self.ecosystem.sort_key('1.0.0-a..b')
+    v_number = self.ecosystem.sort_key('1.0.0-a.0.b')
+    v_str = self.ecosystem.sort_key('1.0.0-a.a.b')
     self.assertLess(v_number, v_empty)
     self.assertLess(v_empty, v_str)
 

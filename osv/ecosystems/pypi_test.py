@@ -38,7 +38,11 @@ class PyPIEcosystemTest(vcr.unittest.VCRTestCase):
     """Test sort_key"""
     ecosystem = ecosystems.get('PyPI')
     self.assertGreater(ecosystem.sort_key('2.0.0'), ecosystem.sort_key('1.0.0'))
-    self.assertLess(ecosystem.sort_key('invalid'), ecosystem.sort_key('0'))
+    self.assertLess(ecosystem.sort_key('0'), ecosystem.sort_key('legacy'))
+
+    # Check the 0 sentinel value.
+    self.assertLess(ecosystem.sort_key('0'), ecosystem.sort_key('0.dev0'))
+
     # Check >= / <= methods
     self.assertGreaterEqual(
         ecosystem.sort_key('1.10.0'), ecosystem.sort_key('1.2.0'))

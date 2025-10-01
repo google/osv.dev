@@ -99,13 +99,6 @@ def _update_vuln_with_group(vuln_id: str, alias_group: osv.AliasGroup | None):
   """Updates the Vulnerability in Datastore & GCS with the new alias group.
   If `alias_group` is None, assumes a preexisting AliasGroup was just deleted.
   """
-  # TODO(michaelkedar): Currently, only want to run this on the test instance
-  # (or when running tests). Remove this check when we're ready for prod.
-  project = osv.utils.get_google_cloud_project()
-  if not project:
-    logging.error('failed to get GCP project')
-  if project not in ('oss-vdb-test', 'test-osv'):
-    return
   # Get the existing vulnerability first, so we can recalculate search_indices
   result = gcs.get_by_id_with_generation(vuln_id)
   if result is None:

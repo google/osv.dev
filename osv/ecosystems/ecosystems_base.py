@@ -16,10 +16,56 @@ from abc import ABC, abstractmethod
 from typing import Any
 from warnings import deprecated
 import bisect
+import functools
 import requests
 from urllib.parse import quote
 
 from . import config
+
+
+@functools.total_ordering
+class VersionKey:
+  """A wrapper class for version keys."""
+
+  _key: Any
+  _is_zero: bool
+
+  def __init__(self, key: Any = None, is_zero: bool = False):
+    self._key = key
+    self._is_zero = is_zero
+
+  def __lt__(self, other):
+    if not isinstance(other, VersionKey):
+      return NotImplemented
+
+    if self._is_zero:
+      return not other._is_zero
+
+    if other._is_zero:
+      return False
+
+    return self._key < other._key
+
+  def __eq__(self, other):
+    if not isinstance(other, VersionKey):
+      return NotImplemented
+
+    if self._is_zero:
+      return other._is_zero
+
+    if other._is_zero:
+      return False
+
+    return self._key == other._key
+
+  def __repr__(self):
+    if self._is_zero:
+      return 'VersionKey(is_zero=True)'
+
+    return f'VersionKey(key={self._key!r})'
+
+
+_VERSION_ZERO = VersionKey(is_zero=True)
 
 
 class OrderedEcosystem(ABC):
@@ -34,11 +80,18 @@ class OrderedEcosystem(ABC):
     self.suffix = suffix
 
   @abstractmethod
-  def sort_key(self, version: str) -> Any:
+  def _sort_key(self, version: str) -> Any:
     """Comparable key for a version.
     
     If the version string is invalid, return a very large version.
     """
+
+  def sort_key(self, version: str) -> VersionKey:
+    """Sort key."""
+    if version == '0':
+      return _VERSION_ZERO
+
+    return VersionKey(self._sort_key(version))
 
   def sort_versions(self, versions: list[str]):
     """Sort versions."""

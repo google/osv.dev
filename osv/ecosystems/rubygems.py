@@ -26,14 +26,14 @@ class RubyGems(EnumerableEcosystem):
 
   _API_PACKAGE_URL = 'https://rubygems.org/api/v1/versions/{package}.json'
 
-  def sort_key(self, version):
+  def _sort_key(self, version):
     """Sort key."""
     # If version is not valid, it is most likely an invalid input
     # version then sort it to the last/largest element
     try:
       return GemVersion(version)
     except InvalidVersionError:
-      return GemVersion('999999')
+      return GemVersion('9999999999')
 
   def enumerate_versions(self,
                          package,

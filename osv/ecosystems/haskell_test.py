@@ -42,6 +42,9 @@ class HackageEcosystemTest(vcr.unittest.VCRTestCase):
     self.assertGreater(
         ecosystem.sort_key('1-20-0'), ecosystem.sort_key('1.20.0'))
 
+    # Check the 0 sentinel value.
+    self.assertLess(ecosystem.sort_key('0'), ecosystem.sort_key('0.0.0.1'))
+
     # Check >= / <= methods
     self.assertGreaterEqual(
         ecosystem.sort_key('1-20-0'), ecosystem.sort_key('1.20.0'))

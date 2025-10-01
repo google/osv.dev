@@ -44,6 +44,21 @@
   editable: False
   strict_validation: False
 
+- name: 'alpine'
+  versions_from_repo: False
+  type: 1
+  ignore_patterns: ['^(?!ALPINE-).*$']
+  directory_path: 'alpine'
+  detect_cherrypicks: False
+  extension: '.json'
+  bucket: 'cve-osv-conversion'
+  db_prefix: ['ALPINE-']
+  ignore_git: True
+  human_link: 'https://security.alpinelinux.org/vuln/{{ BUG_ID | replace("ALPINE-", "") }}'
+  link: 'https://storage.googleapis.com/cve-osv-conversion/'
+  editable: False
+  strict_validation: True
+
 - name: 'android'
   versions_from_repo: False
   type: 1
@@ -128,6 +143,21 @@
   ignore_git: False
   human_link: 'https://nvd.nist.gov/vuln/detail/{{ BUG_ID }}'
   link: 'https://storage.googleapis.com/cve-osv-conversion/'
+  editable: False
+  strict_validation: True
+
+- name: 'debian-cve'
+  versions_from_repo: False
+  type: 1
+  ignore_patterns: ['^(?!DEBIAN-).*$']
+  directory_path: 'debian-cve-osv'
+  detect_cherrypicks: False
+  extension: '.json'
+  bucket: 'debian-osv'
+  db_prefix: ['DEBIAN-']
+  ignore_git: True
+  human_link: 'https://security-tracker.debian.org/tracker/{{ BUG_ID | replace("DEBIAN-", "") }}'
+  link: 'https://storage.googleapis.com/debian-osv/'
   editable: False
   strict_validation: True
 

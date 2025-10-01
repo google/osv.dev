@@ -103,12 +103,28 @@ func TestGenerateOSVFromDebianTracker(t *testing.T) {
 				Details:   "In all versions of AppArmor mount rules are accidentally widened when compiled.",
 				Affected: []osvschema.Affected{
 					{
+						Package:           osvschema.Package{Ecosystem: "Debian:10", Name: "apparmor"},
+						Ranges:            []osvschema.Range{{Type: "ECOSYSTEM", Events: []osvschema.Event{{Introduced: "0"}}}},
+						EcosystemSpecific: map[string]any{"urgency": string("unimportant")},
+					},
+					{
+						Package:           osvschema.Package{Ecosystem: "Debian:11", Name: "apparmor"},
+						Ranges:            []osvschema.Range{{Type: "ECOSYSTEM", Events: []osvschema.Event{{Introduced: "0"}}}},
+						EcosystemSpecific: map[string]any{"urgency": string("unimportant")},
+					},
+					{
+						Package:           osvschema.Package{Ecosystem: "Debian:12", Name: "apparmor"},
+						Ranges:            []osvschema.Range{{Type: "ECOSYSTEM", Events: []osvschema.Event{{Introduced: "0"}}}},
+						EcosystemSpecific: map[string]any{"urgency": string("unimportant")},
+					},
+					{
 						Package:           osvschema.Package{Name: "apparmor", Ecosystem: "Debian:13"},
 						Ranges:            []osvschema.Range{{Type: "ECOSYSTEM", Events: []osvschema.Event{{Introduced: "0"}, {Fixed: "3.0.12-1"}}}},
 						EcosystemSpecific: map[string]any{"urgency": "unimportant"},
 					},
 				},
 				References: []osvschema.Reference{{Type: "ADVISORY", URL: "https://security-tracker.debian.org/tracker/CVE-2016-1585"}},
+				Severity:   []osvschema.Severity{{Type: "CVSS_V3", Score: "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H"}},
 			},
 		},
 		"CVE-2017-6507": {
@@ -141,6 +157,7 @@ func TestGenerateOSVFromDebianTracker(t *testing.T) {
 					},
 				},
 				References: []osvschema.Reference{{Type: "ADVISORY", URL: "https://security-tracker.debian.org/tracker/CVE-2017-6507"}},
+				Severity:   []osvschema.Severity{{Type: "CVSS_V3", Score: "CVSS:3.0/AV:N/AC:H/PR:N/UI:N/S:U/C:N/I:H/A:N"}},
 			},
 		},
 	}

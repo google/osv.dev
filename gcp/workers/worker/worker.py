@@ -629,11 +629,11 @@ class TaskRunner:
         elif source_id.startswith('oss-fuzz'):
           if task_type not in ('regressed', 'fixed', 'impact', 'invalid',
                                'update-oss-fuzz'):
-            logging.error('got %s task for oss-fuzz source %s', task_type,
-                          source_id)
+            logging.error('got unexpected \'%s\' task for oss-fuzz source %s',
+                          task_type, source_id)
         elif task_type != 'update':
-          logging.error('got %s task for non-oss-fuzz source %s', task_type,
-                        source_id)
+          logging.error('got unexpected \'%s\' task for non-oss-fuzz source %s',
+                        task_type, source_id)
 
         if task_type in ('regressed', 'fixed'):
           oss_fuzz.process_bisect_task(self._oss_fuzz_dir, task_type, source_id,

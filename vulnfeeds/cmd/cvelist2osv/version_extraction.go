@@ -368,11 +368,11 @@ func findNormalAffectedRanges(affected cves.Affected, metrics *ConversionMetrics
 
 		// Try to extract versions from text like "before 1.4.7".
 		possibleVersions, notes := cves.ExtractVersionsFromText(nil, vers.Version)
-		if notes != nil {
-			for _, note := range notes {
-				metrics.AddNote("%s", note)
-			}
+
+		for _, note := range notes {
+			metrics.AddNote("%s", note)
 		}
+
 		if possibleVersions != nil {
 			metrics.AddNote("Versions retrieved from text but not used CURRENTLY")
 			continue

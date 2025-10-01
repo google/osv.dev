@@ -171,6 +171,22 @@ func AddVersionInfo(cve cves.CVE5, v *vulns.Vulnerability, metrics *ConversionMe
 	}
 }
 
+// resolveVersionToCommit is a helper to convert a version string to a commit hash.
+// It logs the outcome of the conversion attempt and returns an empty string on failure.
+func resolveVersionToCommit(cveID cves.CVEID, version, versionType, repo string, normalizedTags map[string]git.NormalizedTag) string {
+	if version == "" {
+		return ""
+	}
+	logger.Info("Attempting to resolve version to commit", slog.String("cve", string(cveID)), slog.String("version", version), slog.String("type", versionType), slog.String("repo", repo))
+	commit, err := git.VersionToCommit(version, normalizedTags)
+	if err != nil {
+		logger.Warn("Failed to get Git commit for version", slog.String("cve", string(cveID)), slog.String("version", version), slog.String("type", versionType), slog.String("repo", repo), slog.Any("err", err))
+		return ""
+	}
+	logger.Info("Successfully derived commit for version", slog.String("cve", string(cveID)), slog.String("commit", commit), slog.String("version", version), slog.String("type", versionType))
+	return commit
+}
+
 // Examines repos and tries to convert versions to commits by treating them as Git tags.
 // Takes a CVE ID string (for logging), VersionInfo with AffectedVersions and
 // typically no AffectedCommits and attempts to add AffectedCommits (including Fixed commits) where there aren't any.
@@ -193,61 +209,43 @@ func gitVersionsToCommits(cveID cves.CVEID, versionRanges []osvschema.Range, rep
 
 		var stillUnresolvedRanges []osvschema.Range
 		for _, vr := range unresolvedRanges {
-			var introducedCommit, fixedCommit, lastAffectedCommit string
-			var resolutionErr error
-
-			for _, ev := range vr.Events {
-				logger.Info("Attempting version resolution", slog.String("cve", string(cveID)), slog.Any("event", ev), slog.String("repo", repo))
-				if ev.Introduced != "" {
-					if ev.Introduced == "0" {
-						introducedCommit = "0"
-					} else {
-						introducedCommit, resolutionErr = git.VersionToCommit(ev.Introduced, normalizedTags)
-						if resolutionErr != nil {
-							logger.Warn("Failed to get Git commit for introduced version", slog.String("cve", string(cveID)), slog.String("version", ev.Introduced), slog.String("repo", repo), slog.Any("err", resolutionErr))
-						} else {
-							logger.Info("Successfully derived commit for introduced version", slog.String("cve", string(cveID)), slog.String("commit", introducedCommit), slog.String("version", ev.Introduced))
-						}
-					}
+			var introduced, fixed, lastAffected string
+			for _, e := range vr.Events {
+				if e.Introduced != "" {
+					introduced = e.Introduced
 				}
-				if ev.Fixed != "" {
-					fixedCommit, resolutionErr = git.VersionToCommit(ev.Fixed, normalizedTags)
-					if resolutionErr != nil {
-						logger.Warn("Failed to get Git commit for fixed version", slog.String("cve", string(cveID)), slog.String("version", ev.Fixed), slog.String("repo", repo), slog.Any("err", resolutionErr))
-					} else {
-						logger.Info("Successfully derived commit for fixed version", slog.String("cve", string(cveID)), slog.String("commit", fixedCommit), slog.String("version", ev.Fixed))
-					}
+				if e.Fixed != "" {
+					fixed = e.Fixed
 				}
-				if ev.LastAffected != "" {
-					lastAffectedCommit, resolutionErr = git.VersionToCommit(ev.LastAffected, normalizedTags)
-					if resolutionErr != nil {
-						logger.Warn("Failed to get Git commit for last affected version", slog.String("cve", string(cveID)), slog.String("version", ev.LastAffected), slog.String("repo", repo), slog.Any("err", resolutionErr))
-					} else {
-						logger.Info("Successfully derived commit for last affected version", slog.String("cve", string(cveID)), slog.String("commit", lastAffectedCommit), slog.String("version", ev.LastAffected))
-					}
+				if e.LastAffected != "" {
+					lastAffected = e.LastAffected
 				}
 			}
 
-			resolved := false
-			if fixedCommit != "" && introducedCommit != "" {
-				newVR := buildVersionRange(introducedCommit, "", fixedCommit)
+			var introducedCommit string
+			if introduced == "0" {
+				introducedCommit = "0"
+			} else {
+				introducedCommit = resolveVersionToCommit(cveID, introduced, "introduced", repo, normalizedTags)
+			}
+			fixedCommit := resolveVersionToCommit(cveID, fixed, "fixed", repo, normalizedTags)
+			lastAffectedCommit := resolveVersionToCommit(cveID, lastAffected, "last_affected", repo, normalizedTags)
+
+			if introducedCommit != "" && (fixedCommit != "" || lastAffectedCommit != "") {
+				var newVR osvschema.Range
+
+				if fixedCommit != "" {
+					newVR = buildVersionRange(introducedCommit, "", fixedCommit)
+				} else {
+					newVR = buildVersionRange(introducedCommit, lastAffectedCommit, "")
+				}
+
 				newVR.Repo = repo
 				newVR.Type = osvschema.RangeGit
 				newVR.DatabaseSpecific = make(map[string]any)
 				newVR.DatabaseSpecific["versions"] = vr.Events
 				newVersionRanges = append(newVersionRanges, newVR)
-				resolved = true
-			} else if lastAffectedCommit != "" && introducedCommit != "" {
-				newVR := buildVersionRange(introducedCommit, lastAffectedCommit, "")
-				newVR.Repo = repo
-				newVR.Type = osvschema.RangeGit
-				newVR.DatabaseSpecific = make(map[string]any)
-				newVR.DatabaseSpecific["versions"] = vr.Events
-				newVersionRanges = append(newVersionRanges, newVR)
-				resolved = true
-			}
-
-			if !resolved {
+			} else {
 				stillUnresolvedRanges = append(stillUnresolvedRanges, vr)
 			}
 		}

@@ -202,7 +202,7 @@ class ImporterTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
                              '19a3cd03fc15360bf16187f54df92a75'),
             path='2021-111.yaml',
             source='oss-fuzz',
-            type='update',
+            type='update-oss-fuzz',
             req_timestamp='12345')
     ])
     bug = osv.Bug.get_by_id('OSV-2017-134')
@@ -357,7 +357,7 @@ class ImporterTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
                              '19a3cd03fc15360bf16187f54df92a75'),
             path='proj/OSV-2021-1337.yaml',
             source='oss-fuzz',
-            type='update',
+            type='update-oss-fuzz',
             req_timestamp='12345'),
         mock.call(
             self.tasks_topic,

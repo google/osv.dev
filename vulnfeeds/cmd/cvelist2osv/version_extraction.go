@@ -140,11 +140,11 @@ func AddVersionInfo(cve cves.CVE5, v *vulns.Vulnerability, metrics *ConversionMe
 
 	// If no versions were found so far, fall back to CPEs.
 	if !gotVersions {
-		metrics.Notes = append(metrics.Notes, "No versions in affected, attempting to extract from CPE")
+		metrics.AddNote("No versions in affected, attempting to extract from CPE")
 		cpeRanges, cpeStrings, err := findCPEVersionRanges(cve)
 		if err == nil && len(cpeRanges) > 0 {
 			gotVersions = true
-			metrics.VersionSources = append(metrics.VersionSources, VersionSourceCPE)
+			metrics.AddSource(VersionSourceCPE)
 			aff := osvschema.Affected{}
 			for _, vr := range cpeRanges {
 				vr.Type = osvschema.RangeEcosystem
@@ -154,19 +154,21 @@ func AddVersionInfo(cve cves.CVE5, v *vulns.Vulnerability, metrics *ConversionMe
 			aff.DatabaseSpecific["CPEs"] = vulns.Unique(cpeStrings)
 			v.Affected = append(v.Affected, aff)
 		} else if err != nil {
-			metrics.Notes = append(metrics.Notes, err.Error())
+			metrics.AddNote("%s", err.Error())
 		}
 	}
 
 	// As a last resort, try extracting versions from the description text.
 	if !gotVersions {
-		metrics.Notes = append(metrics.Notes, "No versions in CPEs so attempting extraction from description")
+		metrics.AddNote("No versions in CPEs so attempting extraction from description")
 		versions, extractNotes := cves.ExtractVersionsFromText(nil, cves.EnglishDescription(cve.Containers.CNA.Descriptions))
-		metrics.Notes = append(metrics.Notes, extractNotes...)
+		for _, note := range extractNotes {
+			metrics.AddNote("%s", note)
+		}
 		if len(versions) > 0 {
 			// NOTE: These versions are not currently saved due to the need for better validation.
-			metrics.VersionSources = append(metrics.VersionSources, VersionSourceDescription)
-			metrics.Notes = append(metrics.Notes, fmt.Sprintf("Extracted versions from description but did not save them: %+v", versions))
+			metrics.AddSource(VersionSourceDescription)
+			metrics.AddNote("Extracted versions from description but did not save them: %+v", versions)
 		}
 	}
 }
@@ -329,7 +331,7 @@ func extractVersionsFromAffectedField(affected cves.Affected, cnaAssigner string
 // It sorts the introduced and fixed versions to create chronological ranges.
 func findInverseAffectedRanges(cveAff cves.Affected, cnaAssigner string, metrics *ConversionMetrics) (ranges []osvschema.Range, versType VersionRangeType) {
 	if cnaAssigner != "Linux" {
-		metrics.Notes = append(metrics.Notes, "Currently only supporting Linux inverse logic")
+		metrics.AddNote("Currently only supporting Linux inverse logic")
 		return nil, VersionRangeTypeUnknown
 	}
 	var introduced []string
@@ -344,7 +346,7 @@ func findInverseAffectedRanges(cveAff cves.Affected, cnaAssigner string, metrics
 			case 3:
 				introduced = append(introduced, versionValue)
 			default:
-				metrics.Notes = append(metrics.Notes, "Bad non-semver version given: "+versionValue)
+				metrics.AddNote("Bad non-semver version given: %s", versionValue)
 				continue
 			}
 		}
@@ -379,15 +381,15 @@ func findInverseAffectedRanges(cveAff cves.Affected, cnaAssigner string, metrics
 	for index, f := range fixed {
 		if index < len(introduced) {
 			ranges = append(ranges, buildVersionRange(introduced[index], "", f))
-			metrics.Notes = append(metrics.Notes, "Introduced from version value - "+introduced[index])
-			metrics.Notes = append(metrics.Notes, "Fixed from version value - "+f)
+			metrics.AddNote("Introduced from version value - %s", introduced[index])
+			metrics.AddNote("Fixed from version value - %s", f)
 		}
 	}
 
 	if len(ranges) != 0 {
 		return ranges, VersionRangeTypeSemver
 	}
-	metrics.Notes = append(metrics.Notes, "no ranges found")
+	metrics.AddNote("no ranges found")
 
 	return nil, VersionRangeTypeUnknown
 }
@@ -408,30 +410,30 @@ func findNormalAffectedRanges(affected cves.Affected, metrics *ConversionMetrics
 		// Quality check the version strings to avoid using filler content.
 		vQuality := vulns.CheckQuality(vers.Version)
 		if !vQuality.AtLeast(acceptableQuality) {
-			metrics.Notes = append(metrics.Notes, fmt.Sprintf("Version value for %s %s is filler or empty", affected.Vendor, affected.Product))
+			metrics.AddNote("Version value for %s %s is filler or empty", affected.Vendor, affected.Product)
 		}
 		vLessThanQual := vulns.CheckQuality(vers.LessThan)
 		vLTOEQual := vulns.CheckQuality(vers.LessThanOrEqual)
 
 		hasRange := vLessThanQual.AtLeast(acceptableQuality) || vLTOEQual.AtLeast(acceptableQuality)
-		metrics.Notes = append(metrics.Notes, fmt.Sprintf("Range detected: %v", hasRange))
+		metrics.AddNote("Range detected: %v", hasRange)
 		// Handle cases where 'lessThan' is mistakenly the same as 'version'.
 		if vers.LessThan != "" && vers.LessThan == vers.Version {
-			metrics.Notes = append(metrics.Notes, fmt.Sprintf("Warning: lessThan (%s) is the same as introduced (%s)\n", vers.LessThan, vers.Version))
+			metrics.AddNote("Warning: lessThan (%s) is the same as introduced (%s)\n", vers.LessThan, vers.Version)
 			hasRange = false
 		}
 
 		if hasRange {
 			if vQuality.AtLeast(acceptableQuality) {
 				introduced = vers.Version
-				metrics.Notes = append(metrics.Notes, fmt.Sprintf("%s - Introduced from version value - %s", vQuality.String(), vers.Version))
+				metrics.AddNote("%s - Introduced from version value - %s", vQuality.String(), vers.Version)
 			}
 			if vLessThanQual.AtLeast(acceptableQuality) {
 				fixed = vers.LessThan
-				metrics.Notes = append(metrics.Notes, fmt.Sprintf("%s - Fixed from LessThan value - %s", vLessThanQual.String(), vers.LessThan))
+				metrics.AddNote("%s - Fixed from LessThan value - %s", vLessThanQual.String(), vers.LessThan)
 			} else if vLTOEQual.AtLeast(acceptableQuality) {
 				lastaffected = vers.LessThanOrEqual
-				metrics.Notes = append(metrics.Notes, fmt.Sprintf("%s - LastAffected from LessThanOrEqual value- %s", vLTOEQual.String(), vers.LessThanOrEqual))
+				metrics.AddNote("%s - LastAffected from LessThanOrEqual value- %s", vLTOEQual.String(), vers.LessThanOrEqual)
 			}
 
 			if introduced != "" && fixed != "" {
@@ -446,7 +448,7 @@ func findNormalAffectedRanges(affected cves.Affected, metrics *ConversionMetrics
 		// In this case only vers.Version exists which either means that it is _only_ that version that is
 		// affected, but more likely, it affects up to that version. It could also mean that the range is given
 		// in one line instead - like "< 1.5.3" or "< 2.45.4, >= 2.0 " or just "before 1.4.7", so check for that.
-		metrics.Notes = append(metrics.Notes, "Only version exists")
+		metrics.AddNote("Only version exists")
 
 		av, err := git.ParseVersionRange(vers.Version)
 		if err == nil {
@@ -468,12 +470,14 @@ func findNormalAffectedRanges(affected cves.Affected, metrics *ConversionMetrics
 		}
 
 		// Try to extract versions from text like "before 1.4.7".
-		possibleVersions, note := cves.ExtractVersionsFromText(nil, vers.Version)
-		if note != nil {
-			metrics.Notes = append(metrics.Notes, note...)
+		possibleVersions, notes := cves.ExtractVersionsFromText(nil, vers.Version)
+
+		for _, note := range notes {
+			metrics.AddNote("%s", note)
 		}
+
 		if possibleVersions != nil {
-			metrics.Notes = append(metrics.Notes, "Versions retrieved from text but not used CURRENTLY")
+			metrics.AddNote("Versions retrieved from text but not used CURRENTLY")
 			continue
 		}
 

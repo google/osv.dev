@@ -348,16 +348,18 @@ func writeOSVFile(osvData map[cves.CVEID]osvschema.Vulnerability, osvOutputPath 
 		filePath := path.Join(osvOutputPath, string(vID)+".json")
 		file, err := os.OpenFile(filePath, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0644)
 		if err != nil {
-			logger.Fatal("Failed to create/open file to write", slog.Any("err", err))
+			logger.Error("Failed to create/open file to write", slog.Any("err", err))
+			panic(err)
 		}
+		defer file.Close()
+
 		encoder := json.NewEncoder(file)
 		encoder.SetIndent("", "  ")
 		err = encoder.Encode(osv)
 		if err != nil {
-			file.Close()
-			logger.Fatal("Failed to encode OSVs", slog.Any("err", err))
+			logger.Error("Failed to encode OSVs", slog.Any("err", err))
+			panic(err)
 		}
-		file.Close()
 	}
 
 	logger.Info("Successfully written OSV files", slog.Int("count", len(osvData)))

@@ -997,8 +997,7 @@ def query_package(context,
   return bugs
 
 
-def affected_affects(version: str,
-                     affected: osv.AffectedVersions) -> bool:
+def affected_affects(version: str, affected: osv.AffectedVersions) -> bool:
   """Check if a given version is affected by the AffectedVersions entry."""
   if len(affected.versions) > 0:
     return _match_versions(version, affected)

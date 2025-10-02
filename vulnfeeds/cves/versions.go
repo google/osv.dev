@@ -28,6 +28,7 @@ import (
 	"time"
 
 	"github.com/knqyf263/go-cpe/naming"
+	"github.com/ossf/osv-schema/bindings/go/osvschema"
 	"github.com/sethvargo/go-retry"
 
 	"github.com/google/osv/vulnfeeds/git"
@@ -515,44 +516,53 @@ func ValidateAndCanonicalizeLink(link string, httpClient *http.Client) (canonica
 }
 
 // For URLs referencing commits in supported Git repository hosts, return a cloneable AffectedCommit.
-func ExtractGitCommit(link string, commitType models.CommitType, httpClient *http.Client) (ac models.AffectedCommit, err error) {
-	r, err := Repo(link)
+func extractGitAffectedCommit(link string, commitType models.CommitType, httpClient *http.Client) (models.AffectedCommit, error) {
+	var ac models.AffectedCommit
+	c, r, err := ExtractGitCommit(link, httpClient, 0)
+
 	if err != nil {
 		return ac, err
+	}
+
+	ac.SetRepo(r)
+
+	models.SetCommitByType(&ac, commitType, c)
+
+	return ac, nil
+}
+
+func ExtractGitCommit(link string, httpClient *http.Client, depth int) (string, string, error) {
+	if depth > 10 {
+		return "", "", fmt.Errorf("max recursion depth exceeded for %s", link)
+	}
+
+	var commit string
+	r, err := Repo(link)
+	if err != nil {
+		return "", "", err
 	}
 
 	c, err := Commit(link)
 	if err != nil {
-		return ac, err
+		return "", "", err
 	}
+
+	commit = c
 
 	// If URL doesn't validate, treat it as linkrot.
 	possiblyDifferentLink, err := ValidateAndCanonicalizeLink(link, httpClient)
 	if err != nil {
-		return ac, err
+		return "", "", err
 	}
 
 	// restart the entire extraction process when the URL changes (i.e. handle a
 	// redirect to a completely different host, instead of a redirect within
 	// GitHub)
 	if possiblyDifferentLink != link {
-		return ExtractGitCommit(possiblyDifferentLink, commitType, httpClient)
+		return ExtractGitCommit(possiblyDifferentLink, httpClient, depth+1)
 	}
 
-	ac.SetRepo(r)
-
-	switch commitType {
-	case models.Introduced:
-		ac.SetIntroduced(c)
-	case models.LastAffected:
-		ac.SetLastAffected(c)
-	case models.Limit:
-		ac.SetLimit(c)
-	case models.Fixed:
-		ac.SetFixed(c)
-	}
-
-	return ac, nil
+	return commit, r, nil
 }
 
 func HasVersion(validVersions []string, version string) bool {
@@ -676,7 +686,7 @@ func deduplicateAffectedCommits(commits []models.AffectedCommit) []models.Affect
 func ExtractVersionInfo(cve CVE, validVersions []string, httpClient *http.Client) (v models.VersionInfo, notes []string) {
 	for _, reference := range cve.References {
 		// (Potentially faulty) Assumption: All viable Git commit reference links are fix commits.
-		if commit, err := ExtractGitCommit(reference.URL, models.Fixed, httpClient); err == nil {
+		if commit, err := extractGitAffectedCommit(reference.URL, models.Fixed, httpClient); err == nil {
 			v.AffectedCommits = append(v.AffectedCommits, commit)
 		}
 	}
@@ -1065,4 +1075,29 @@ func ReposFromReferencesCVEList(cve string, refs []Reference, tagDenyList []stri
 	}
 
 	return repos, notes
+}
+
+// BuildVersionRange is a helper function that adds 'introduced', 'fixed', or 'last_affected'
+// events to an OSV version range. If 'intro' is empty, it defaults to "0".
+func BuildVersionRange(intro string, lastAff string, fixed string) osvschema.Range {
+	var versionRange osvschema.Range
+	var i string
+	if intro == "" {
+		i = "0"
+	} else {
+		i = intro
+	}
+	versionRange.Events = append(versionRange.Events, osvschema.Event{
+		Introduced: i})
+
+	if fixed != "" {
+		versionRange.Events = append(versionRange.Events, osvschema.Event{
+			Fixed: fixed})
+	} else if lastAff != "" {
+		versionRange.Events = append(versionRange.Events, osvschema.Event{
+			LastAffected: lastAff,
+		})
+	}
+
+	return versionRange
 }

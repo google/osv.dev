@@ -45,6 +45,10 @@ class APKEcosystemTest(unittest.TestCase):
     self.assertGreater(
         ecosystem.sort_key('1.13.2-r0'), ecosystem.sort_key('1.13.2_alpha'))
 
+    # Check the 0 sentinel value.
+    self.assertLess(
+        ecosystem.sort_key('0'), ecosystem.sort_key('0.0.0_alpha-r0'))
+
     # Check invalid version handle
     self.assertGreater(
         ecosystem.sort_key('1-0-0'), ecosystem.sort_key('1.13.2-r0'))

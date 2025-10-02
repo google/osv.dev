@@ -32,65 +32,6 @@ func TestToVersionRangeType(t *testing.T) {
 	}
 }
 
-func TestBuildVersionRange(t *testing.T) {
-	tests := []struct {
-		name    string
-		intro   string
-		lastAff string
-		fixed   string
-		want    osvschema.Range
-	}{
-		{
-			name:  "intro and fixed",
-			intro: "1.0.0",
-			fixed: "1.0.1",
-			want: osvschema.Range{
-				Events: []osvschema.Event{
-					{Introduced: "1.0.0"},
-					{Fixed: "1.0.1"},
-				},
-			},
-		},
-		{
-			name:    "intro and last_affected",
-			intro:   "1.0.0",
-			lastAff: "1.0.0",
-			want: osvschema.Range{
-				Events: []osvschema.Event{
-					{Introduced: "1.0.0"},
-					{LastAffected: "1.0.0"},
-				},
-			},
-		},
-		{
-			name:  "only intro",
-			intro: "1.0.0",
-			want: osvschema.Range{
-				Events: []osvschema.Event{
-					{Introduced: "1.0.0"},
-				},
-			},
-		},
-		{
-			name: "empty intro",
-			want: osvschema.Range{
-				Events: []osvschema.Event{
-					{Introduced: "0"},
-				},
-			},
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			got := buildVersionRange(tt.intro, tt.lastAff, tt.fixed)
-			if diff := cmp.Diff(tt.want, got); diff != "" {
-				t.Errorf("buildVersionRange() mismatch (-want +got):\n%s", diff)
-			}
-		})
-	}
-}
-
 func TestFindNormalAffectedRanges(t *testing.T) {
 	tests := []struct {
 		name          string
@@ -111,9 +52,8 @@ func TestFindNormalAffectedRanges(t *testing.T) {
 					},
 				},
 			},
-			cnaAssigner: "test",
 			wantRanges: []osvschema.Range{
-				buildVersionRange("1.0", "", "1.5"),
+				cves.BuildVersionRange("1.0", "", "1.5"),
 			},
 			wantRangeType: VersionRangeTypeSemver,
 		},
@@ -128,9 +68,8 @@ func TestFindNormalAffectedRanges(t *testing.T) {
 					},
 				},
 			},
-			cnaAssigner: "test",
 			wantRanges: []osvschema.Range{
-				buildVersionRange("0", "", "2.0"),
+				cves.BuildVersionRange("0", "2.0", ""),
 			},
 			wantRangeType: VersionRangeTypeSemver,
 		},
@@ -144,9 +83,8 @@ func TestFindNormalAffectedRanges(t *testing.T) {
 					},
 				},
 			},
-			cnaAssigner: "GitHub_M",
 			wantRanges: []osvschema.Range{
-				buildVersionRange("2.0", "", "2.5"),
+				cves.BuildVersionRange("2.0", "", "2.5"),
 			},
 			wantRangeType: VersionRangeTypeEcosystem,
 		},
@@ -161,9 +99,8 @@ func TestFindNormalAffectedRanges(t *testing.T) {
 					},
 				},
 			},
-			cnaAssigner: "test",
 			wantRanges: []osvschema.Range{
-				buildVersionRange("deadbeef", "", ""),
+				cves.BuildVersionRange("deadbeef", "", ""),
 			},
 			wantRangeType: VersionRangeTypeGit,
 		},
@@ -171,7 +108,7 @@ func TestFindNormalAffectedRanges(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			gotRanges, gotRangeType, _ := findNormalAffectedRanges(tt.affected, tt.cnaAssigner)
+			gotRanges, gotRangeType := findNormalAffectedRanges(tt.affected, &ConversionMetrics{})
 			if diff := cmp.Diff(tt.wantRanges, gotRanges); diff != "" {
 				t.Errorf("findNormalAffectedRanges() ranges mismatch (-want +got):\n%s", diff)
 			}
@@ -232,7 +169,7 @@ func TestFindInverseAffectedRanges(t *testing.T) {
 			versionType: VersionRangeTypeSemver,
 			cnaAssigner: "Linux",
 			want: []osvschema.Range{
-				buildVersionRange("5.0.0", "", "5.10.1"),
+				cves.BuildVersionRange("5.0.0", "", "5.10.1"),
 			},
 		},
 		{
@@ -271,14 +208,15 @@ func TestFindInverseAffectedRanges(t *testing.T) {
 			versionType: VersionRangeTypeSemver,
 			cnaAssigner: "Linux",
 			want: []osvschema.Range{
-				buildVersionRange("4.0.0", "", "4.5.2"),
+				cves.BuildVersionRange("4.0.0", "", "4.5.2"),
 			},
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			gotRanges, gotVersionType, _ := findInverseAffectedRanges(tt.affected, tt.cnaAssigner)
+			metrics := &ConversionMetrics{}
+			gotRanges, gotVersionType := findInverseAffectedRanges(tt.affected, tt.cnaAssigner, metrics)
 			if diff := cmp.Diff(tt.want, gotRanges); diff != "" {
 				t.Errorf("findInverseAffectedRanges() ranges mismatch (-want +got):\n%s", diff)
 			}
@@ -336,7 +274,7 @@ func TestRealWorldFindInverseAffectedRanges(t *testing.T) {
 			}
 
 			// Run the function under test.
-			gotRanges, _, _ := findInverseAffectedRanges(affectedBlock, tc.cve.Metadata.AssignerShortName)
+			gotRanges, _ := findInverseAffectedRanges(affectedBlock, tc.cve.Metadata.AssignerShortName, &ConversionMetrics{})
 
 			// Sort slices for deterministic comparison.
 			sort.Slice(gotRanges, func(i, j int) bool {

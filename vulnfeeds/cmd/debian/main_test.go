@@ -124,6 +124,7 @@ func TestGenerateOSVFromDebianTracker(t *testing.T) {
 					},
 				},
 				References: []osvschema.Reference{{Type: "ADVISORY", URL: "https://security-tracker.debian.org/tracker/CVE-2016-1585"}},
+				Severity:   []osvschema.Severity{{Type: "CVSS_V3", Score: "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H"}},
 			},
 		},
 		"CVE-2017-6507": {
@@ -156,6 +157,7 @@ func TestGenerateOSVFromDebianTracker(t *testing.T) {
 					},
 				},
 				References: []osvschema.Reference{{Type: "ADVISORY", URL: "https://security-tracker.debian.org/tracker/CVE-2017-6507"}},
+				Severity:   []osvschema.Severity{{Type: "CVSS_V3", Score: "CVSS:3.0/AV:N/AC:H/PR:N/UI:N/S:U/C:N/I:H/A:N"}},
 			},
 		},
 	}

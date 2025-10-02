@@ -73,9 +73,11 @@ func main() {
 		}
 	}
 
-	noPkg := append(debianCVEs, alpineCVEs...) //nolint:gocritic
-	// Combine
-	combinedData := combineIntoOSV(allCVE5, allNVD, noPkg)
+	// this ensures the creation of CVEs even if they don't have packages
+	// to ensure Alpine and Debian CVEs have an upstream CVE.
+	mandatoryCVEIDs := append(debianCVEs, alpineCVEs...) //nolint:gocritic
+
+	combinedData := combineIntoOSV(allCVE5, allNVD, mandatoryCVEIDs)
 	writeOSVFile(combinedData, *osvOutputPath)
 }
 

@@ -322,7 +322,7 @@ func pickAffectedInformation(cve5Affected []osvschema.Affected, nvdAffected []os
 		}
 	}
 
-	var combinedAffected []osvschema.Affected
+	var combinedAffected []osvschema.Affected //nolint:prealloc
 	for _, aff := range newAffectedMap {
 		combinedAffected = append(combinedAffected, aff)
 	}

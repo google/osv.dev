@@ -339,6 +339,7 @@ func TestPickAffectedInformation(t *testing.T) {
 		if len(b.Ranges) == 0 || len(b.Ranges[0].Repo) == 0 {
 			return false
 		}
+
 		return a.Ranges[0].Repo < b.Ranges[0].Repo
 	})
 
@@ -399,7 +400,7 @@ func TestCombineTwoOSVRecords(t *testing.T) {
 
 	expected := osvschema.Vulnerability{
 		ID:        "CVE-2023-1234",
-		Modified:  nvdModified,   // Should take later date from NVD
+		Modified:  nvdModified,  // Should take later date from NVD
 		Published: nvdPublished, // Should take earlier date from NVD
 		Aliases:   []string{"GHSA-1234", "GHSA-5678"},
 		References: []osvschema.Reference{

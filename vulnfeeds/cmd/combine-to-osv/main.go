@@ -258,29 +258,18 @@ func pickAffectedInformation(cve5Affected []osvschema.Affected, nvdAffected []os
 
 	nvdRepoMap := make(map[string][]osvschema.Range)
 	for _, affected := range nvdAffected {
-		// Assuming one range per affected for matching purposes.
-		if len(affected.Ranges) > 0 && affected.Ranges[0].Repo != "" {
-			for _, r := range affected.Ranges {
-				x, ok := nvdRepoMap[r.Repo]
-				if ok {
-					nvdRepoMap[r.Repo] = append(x, r)
-				} else {
-					nvdRepoMap[r.Repo] = append([]osvschema.Range{}, r)
-				}
+		for _, r := range affected.Ranges {
+			if r.Repo != "" {
+				nvdRepoMap[r.Repo] = append(nvdRepoMap[r.Repo], r)
 			}
 		}
 	}
 
 	cve5RepoMap := make(map[string][]osvschema.Range)
 	for _, affected := range cve5Affected {
-		if len(affected.Ranges) > 0 && affected.Ranges[0].Repo != "" {
-			for _, r := range affected.Ranges {
-				x, ok := cve5RepoMap[r.Repo]
-				if ok {
-					cve5RepoMap[r.Repo] = append(x, r)
-				} else {
-					cve5RepoMap[r.Repo] = append([]osvschema.Range{}, r)
-				}
+		for _, r := range affected.Ranges {
+			if r.Repo != "" {
+				cve5RepoMap[r.Repo] = append(cve5RepoMap[r.Repo], r)
 			}
 		}
 	}
@@ -302,18 +291,15 @@ func pickAffectedInformation(cve5Affected []osvschema.Affected, nvdAffected []os
 				nvdIntro, nvdFixed := getRangeBoundaryVersions(nvdRanges[0].Events)
 
 				// Prefer cve5 data, but use nvd data if cve5 data is missing.
-				finalIntro := c5Intro
-				if finalIntro == "" {
-					finalIntro = nvdIntro
+				if c5Intro == "" {
+					c5Intro = nvdIntro
+				}
+				if c5Fixed == "" {
+					c5Fixed = nvdFixed
 				}
 
-				finalFixed := c5Fixed
-				if finalFixed == "" {
-					finalFixed = nvdFixed
-				}
-
-				if finalIntro != "" || finalFixed != "" {
-					newRange := cves.BuildVersionRange(finalIntro, "", finalFixed)
+				if c5Intro != "" || c5Fixed != "" {
+					newRange := cves.BuildVersionRange(c5Intro, "", c5Fixed)
 					newRange.Repo = repo
 					newRange.Type = osvschema.RangeGit // Preserve the repo
 					newAffectedRanges = append(newAffectedRanges, newRange)

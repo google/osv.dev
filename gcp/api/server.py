@@ -927,7 +927,7 @@ def query_by_commit(context: QueryContext,
 
 
 @ndb.tasklet
-def query_package(context,
+def query_package(context: QueryContext,
                   package_name: str | None,
                   ecosystem: str | None,
                   version: str | None,
@@ -956,6 +956,12 @@ def query_package(context,
   # Bare minimum we need a package name.
   if not package_name:
     return []
+
+  if (package_name.startswith('linux') and ecosystem.startswith('Ubuntu') and
+      version):
+    result = yield query_ubuntu_linux(context, package_name, ecosystem, version,
+                                      include_details)
+    return result
 
   # Ideally, we'd check both unnormalized and normalized named at once, if there
   # is no provided ecosystem (even though that is not explicitly supported), but
@@ -1131,6 +1137,56 @@ def get_vuln_async(vuln_id: str) -> ndb.Future:
   future = async_poll_result()
   future.add_done_callback(cleanup)
   return future
+
+
+@ndb.tasklet
+def query_ubuntu_linux(context: QueryContext,
+                       package_name: str,
+                       ecosystem: str,
+                       version: str,
+                       include_details: bool = True) -> list[ndb.Future]:
+  """Workaround query for linux kernel vulns in Ubuntu, because there's heaps of
+  them and it takes a while to check all the version ranges.
+  
+  The logic here is copied from the original implementation of server.py,
+  using the Bug entity to perform matching on only the version strings, and not
+  doing range-based matching.
+  """
+
+  query = osv.Bug.query(
+      osv.Bug.status == osv.BugStatus.PROCESSED,
+      osv.Bug.project == package_name,
+      # pylint: disable=singleton-comparison
+      osv.Bug.public == True,
+      osv.Bug.ecosystem == ecosystem,
+      osv.Bug.affected_fuzzy == version)
+
+  bugs = []
+  it: ndb.QueryIterator = query.iter(start_cursor=context.cursor_at_current())
+  while (yield it.has_next_async()):
+    if context.should_break_page(len(bugs)):
+      context.save_cursor_at_page_break(it)
+      break
+
+    bug: osv.Bug = it.next()
+    for affected in bug.affected_packages:
+      eco = affected.package.ecosystem
+      if ecosystem not in (eco, ecosystems.normalize(eco),
+                           ecosystems.remove_variants(eco)):
+        continue
+      if package_name != affected.package.name:
+        continue
+      if version not in affected.versions:
+        continue
+      # Found a match: retrieve the proto from the bucket / Vulnerability entity
+      if include_details:
+        bugs.append(get_vuln_async(bug.db_id))
+      else:
+        bugs.append(vulnerability_to_minimal(bug.db_id))
+      context.total_responses.add(1)
+      break
+
+  return bugs
 
 
 def serve(port: int, local: bool):

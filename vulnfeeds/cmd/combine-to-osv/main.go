@@ -32,8 +32,8 @@ const (
 func main() {
 	logger.InitGlobalLogger()
 
-	cve5Path := flag.String("cve5Path", defaultCVE5Path, "Path to CVE file")
-	nvdPath := flag.String("nvdPath", defaultNVDOSVPath, "Path to CVE file")
+	cve5Path := flag.String("cve5Path", defaultCVE5Path, "Path to CVE5 OSV files")
+	nvdPath := flag.String("nvdPath", defaultNVDOSVPath, "Path to NVD OSV files")
 	osvOutputPath := flag.String("osvOutputPath", defaultOSVOutputPath, "Path to CVE file")
 	flag.Parse()
 
@@ -46,15 +46,31 @@ func main() {
 	allCVE5 := loadOSV(*cve5Path)
 	// Load NVD OSVs
 	allNVD := loadOSV(*nvdPath)
-
-	// nvdCVEs := vulns.LoadAllCVEs(defaultNVDOSVPath)
 	debianCVEs, err := listBucketObjects("osv-test-debian-osv", "/debian-cve-osv")
 	if err != nil {
 		logger.Warn("Failed to list debian cves", slog.Any("err", err))
+	} else {
+		for i, filename := range debianCVEs {
+			cve := extractCVEName(filename, "DEBIAN-")
+			if cve != "" {
+				debianCVEs[i] = cve
+			}
+
+		}
 	}
+
+	// run extract file name on each element in debianCVEs and alpineCVEs.
 	alpineCVEs, err := listBucketObjects("osv-test-cve-osv-conversion", "/alpine")
 	if err != nil {
 		logger.Warn("Failed to list alpine cves", slog.Any("err", err))
+	} else {
+		for i, filename := range alpineCVEs {
+			cve := extractCVEName(filename, "ALPINE-")
+			if cve != "" {
+				debianCVEs[i] = cve
+			}
+
+		}
 	}
 
 	noPkg := append(debianCVEs, alpineCVEs...) //nolint:gocritic
@@ -63,12 +79,12 @@ func main() {
 	writeOSVFile(combinedData, *osvOutputPath)
 }
 
-func cleanFilename(filename string, prefix string) string {
+func extractCVEName(filename string, prefix string) string {
 	cleaned := strings.TrimPrefix(filename, prefix)
 	cleaned = strings.TrimSuffix(cleaned, ".json")
 	pre := strings.SplitAfter(cleaned, "-")
 	if pre[0] != "CVE" {
-		cleaned = pre[1]
+		return ""
 	}
 
 	return cleaned
@@ -83,24 +99,18 @@ func listBucketObjects(bucketName string, prefix string) ([]string, error) {
 		return nil, fmt.Errorf("storage.NewClient: %w", err)
 	}
 	defer client.Close()
-
 	bucket := client.Bucket(bucketName)
-
 	it := bucket.Objects(ctx, &storage.Query{Prefix: prefix})
-
 	var filenames []string
-
 	for {
 		attrs, err := it.Next()
-
 		if errors.Is(err, iterator.Done) {
 			break // All objects have been listed.
 		}
 		if err != nil {
 			return nil, fmt.Errorf("bucket.Objects: %w", err)
 		}
-
-		filenames = append(filenames, cleanFilename(attrs.Name, prefix))
+		filenames = append(filenames, attrs.Name, prefix)
 	}
 
 	return filenames, nil

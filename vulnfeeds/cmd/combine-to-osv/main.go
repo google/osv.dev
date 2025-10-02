@@ -162,62 +162,25 @@ func loadOSV(osvPath string) map[cves.CVEID]osvschema.Vulnerability {
 }
 
 // combineIntoOSV creates OSV entry by combining loaded CVEs from NVD and PackageInfo information from security advisories.
-func combineIntoOSV(cve5osv map[cves.CVEID]osvschema.Vulnerability, nvdosv map[cves.CVEID]osvschema.Vulnerability, noPkgCVEs []string) map[cves.CVEID]osvschema.Vulnerability {
+func combineIntoOSV(cve5osv map[cves.CVEID]osvschema.Vulnerability, nvdosv map[cves.CVEID]osvschema.Vulnerability, mandatoryCVEIDs []string) map[cves.CVEID]osvschema.Vulnerability {
 	vulns := make(map[cves.CVEID]osvschema.Vulnerability)
 
 	// Iterate through CVEs from security advisories (cve5) as the base
 	for cveID, cve5 := range cve5osv {
-		baseOSV := cve5
+		var baseOSV osvschema.Vulnerability
 		nvd, ok := nvdosv[cveID]
 
 		if ok {
-			combinedAffected := pickAffectedInformation(cve5.Affected, nvd.Affected)
-
-			baseOSV.Affected = combinedAffected
-			// Merge references, ensuring no duplicates.
-			refMap := make(map[string]bool)
-			for _, r := range baseOSV.References {
-				refMap[r.URL] = true
-			}
-			for _, r := range nvd.References {
-				if !refMap[r.URL] {
-					baseOSV.References = append(baseOSV.References, r)
-					refMap[r.URL] = true
-				}
-			}
-
-			// Merge timestamps: latest modified, earliest published.
-			cve5Modified := baseOSV.Modified
-			if nvd.Modified.After(cve5Modified) {
-				baseOSV.Modified = nvd.Modified
-			}
-
-			cve5Published := baseOSV.Published
-			if nvd.Published.Before(cve5Published) {
-				baseOSV.Published = nvd.Published
-			}
-
-			// Merge aliases, ensuring no duplicates.
-			aliasMap := make(map[string]bool)
-			for _, alias := range baseOSV.Aliases {
-				aliasMap[alias] = true
-			}
-			for _, alias := range nvd.Aliases {
-				if !aliasMap[alias] {
-					baseOSV.Aliases = append(baseOSV.Aliases, alias)
-					aliasMap[alias] = true
-				}
-			}
-
-			// TODO: Elegantly handle combining severity scores
-
+			baseOSV = combineTwoOSVRecords(cve5, nvd)
 			// The CVE is processed, so remove it from the nvdosv map to avoid re-processing.
 			delete(nvdosv, cveID)
+		} else {
+			baseOSV = cve5
 		}
+
 		if len(baseOSV.Affected) == 0 {
 			// check if part exists.
-			if !slices.Contains(noPkgCVEs, string(cveID)) {
-				// logger.Info("No affected range, so skipping.")
+			if !slices.Contains(mandatoryCVEIDs, string(cveID)) {
 				continue
 			}
 		}
@@ -226,10 +189,56 @@ func combineIntoOSV(cve5osv map[cves.CVEID]osvschema.Vulnerability, nvdosv map[c
 
 	// Add any remaining CVEs from NVD that were not in the advisory data.
 	for cveID, nvd := range nvdosv {
+		if len(nvd.Affected) == 0 {
+			continue
+		}
 		vulns[cveID] = nvd
 	}
 
 	return vulns
+}
+
+// combineTwoOSVRecords takes two osv records and combines them into one
+func combineTwoOSVRecords(cve5 osvschema.Vulnerability, nvd osvschema.Vulnerability) osvschema.Vulnerability {
+	baseOSV := cve5
+	combinedAffected := pickAffectedInformation(cve5.Affected, nvd.Affected)
+
+	baseOSV.Affected = combinedAffected
+	// Merge references, ensuring no duplicates.
+	refMap := make(map[string]bool)
+	for _, r := range baseOSV.References {
+		refMap[r.URL] = true
+	}
+	for _, r := range nvd.References {
+		if !refMap[r.URL] {
+			baseOSV.References = append(baseOSV.References, r)
+			refMap[r.URL] = true
+		}
+	}
+
+	// Merge timestamps: latest modified, earliest published.
+	cve5Modified := baseOSV.Modified
+	if nvd.Modified.After(cve5Modified) {
+		baseOSV.Modified = nvd.Modified
+	}
+
+	cve5Published := baseOSV.Published
+	if nvd.Published.Before(cve5Published) {
+		baseOSV.Published = nvd.Published
+	}
+
+	// Merge aliases, ensuring no duplicates.
+	aliasMap := make(map[string]bool)
+	for _, alias := range baseOSV.Aliases {
+		aliasMap[alias] = true
+	}
+	for _, alias := range nvd.Aliases {
+		if !aliasMap[alias] {
+			baseOSV.Aliases = append(baseOSV.Aliases, alias)
+			aliasMap[alias] = true
+		}
+	}
+	return baseOSV
 }
 
 // pickAffectedInformation merges information from nvdAffected into cve5Affected.

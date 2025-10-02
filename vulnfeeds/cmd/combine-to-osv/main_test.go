@@ -2,6 +2,7 @@ package main
 
 import (
 	"path/filepath"
+	"sort"
 	"testing"
 	"time"
 
@@ -353,5 +354,75 @@ func TestPickAffectedInformation(t *testing.T) {
 				t.Errorf("pickAffectedInformation() mismatch (-want +got):\n%s", diff)
 			}
 		})
+	}
+}
+
+func TestCombineTwoOSVRecords(t *testing.T) {
+	cve5Modified, _ := time.Parse(time.RFC3339, "2023-01-01T12:00:00Z")
+	cve5Published, _ := time.Parse(time.RFC3339, "2023-01-01T10:00:00Z")
+	nvdModified, _ := time.Parse(time.RFC3339, "2023-01-02T12:00:00Z")  // Later
+	nvdPublished, _ := time.Parse(time.RFC3339, "2023-01-01T09:00:00Z") // Earlier
+
+	cve5 := osvschema.Vulnerability{
+		ID:        "CVE-2023-1234",
+		Modified:  cve5Modified,
+		Published: cve5Published,
+		Aliases:   []string{"GHSA-1234"},
+		References: []osvschema.Reference{
+			{Type: "WEB", URL: "https://example.com/cve5"},
+		},
+		Affected: []osvschema.Affected{
+			{
+				Package: osvschema.Package{Name: "package-a"},
+			},
+		},
+	}
+
+	nvd := osvschema.Vulnerability{
+		ID:        "CVE-2023-1234",
+		Modified:  nvdModified,
+		Published: nvdPublished,
+		Aliases:   []string{"GHSA-1234", "GHSA-5678"},
+		References: []osvschema.Reference{
+			{Type: "WEB", URL: "https://example.com/cve5"}, // Duplicate
+			{Type: "WEB", URL: "https://example.com/nvd"},
+		},
+		Affected: []osvschema.Affected{
+			{
+				Package: osvschema.Package{Name: "package-a"},
+			},
+			{
+				Package: osvschema.Package{Name: "package-b"},
+			},
+		},
+	}
+
+	expected := osvschema.Vulnerability{
+		ID:        "CVE-2023-1234",
+		Modified:  nvdModified,   // Should take later date from NVD
+		Published: nvdPublished, // Should take earlier date from NVD
+		Aliases:   []string{"GHSA-1234", "GHSA-5678"},
+		References: []osvschema.Reference{
+			{Type: "WEB", URL: "https://example.com/cve5"},
+			{Type: "WEB", URL: "https://example.com/nvd"},
+		},
+		// pickAffectedInformation prefers nvd if it has more packages
+		Affected: nvd.Affected,
+	}
+
+	got := combineTwoOSVRecords(cve5, nvd)
+
+	// Sort slices for consistent comparison
+	sort.Strings(got.Aliases)
+	sort.Strings(expected.Aliases)
+	sort.Slice(got.References, func(i, j int) bool {
+		return got.References[i].URL < got.References[j].URL
+	})
+	sort.Slice(expected.References, func(i, j int) bool {
+		return expected.References[i].URL < expected.References[j].URL
+	})
+
+	if diff := cmp.Diff(expected, got); diff != "" {
+		t.Errorf("combineTwoOSVRecords() mismatch (-want +got):\n%s", diff)
 	}
 }

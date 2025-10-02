@@ -1930,13 +1930,14 @@ zstd = ["zstandard (>=0.18.0)"]
 
 [[package]]
 name = "vanir"
-version = "1.0.2"
+version = "1.0.2rc1"
 description = "Vanir is a source code-based static analysis tool that automatically identifies the list of missing security patches in the target system. "
 optional = false
 python-versions = "<3.14,>=3.9"
 groups = ["main"]
 files = [
-    {file = "vanir-1.0.2-py3-none-any.whl", hash = "sha256:d924328f5f52f0315bc4489ede33869592a2c44f4faa703d596a85923e3cea40"},
+    {file = "vanir-1.0.2rc1-py3-none-any.whl", hash = "sha256:26e13901bf77fdbb9ff68d168bdc3213cd183184fb675b39f29fac96e71a294a"},
+    {file = "vanir-1.0.2rc1.tar.gz", hash = "sha256:a3eab5ddd0c2a82cdb94f53902b99e9015ee599b72a03ccb2eb85d12e51ce839"},
 ]
 
 [package.dependencies]
@@ -1955,6 +1956,11 @@ requests = ">=2.32.5,<3"
 tenacity = ">=9.1.2,<10"
 typing-extensions = ">=4.15.0,<5"
 unidiff = ">=0.7.5,<1"
+
+[package.source]
+type = "legacy"
+url = "https://test.pypi.org/simple"
+reference = "test-pypi"
 
 [[package]]
 name = "yapf"
@@ -1994,4 +2000,4 @@ type = ["pytest-mypy"]
 [metadata]
 lock-version = "2.1"
 python-versions = ">=3.13,<3.14"
-content-hash = "13982b62c8d753e5c2b31455b9bccd839a485159141be7372c5eb50bb73a03f0"
+content-hash = "dda0781b73ec9e566f9715ef55b5e27a8fd09bcd5dd9f6f66bd2e162031ea3cc"

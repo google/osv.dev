@@ -11,9 +11,9 @@ dependencies = [
     "redis==5.3.1",
     "packageurl-python==0.17.5",
     "pygit2==1.18.2",
-    "requests==2.32.4",
+    "requests==2.32.5",
     "jsonschema==4.25.1",
-    "vanir==1.0.1",
+    "vanir==1.0.2",
     "osv",
 ]
 

@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/google/go-cmp/cmp"
+	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/google/osv/vulnfeeds/cves"
 	"github.com/ossf/osv-schema/bindings/go/osvschema"
 )
@@ -128,7 +129,10 @@ func TestCombineIntoOSV(t *testing.T) {
 
 func TestPickAffectedInformation(t *testing.T) {
 	repoA := "https://example.com/repo/a"
-	cve5Affected := []osvschema.Affected{
+	repoB := "https://example.com/repo/b"
+
+	// Base data for tests
+	cve5Base := []osvschema.Affected{
 		{
 			Ranges: []osvschema.Range{
 				{
@@ -142,7 +146,8 @@ func TestPickAffectedInformation(t *testing.T) {
 			},
 		},
 	}
-	nvdAffected := []osvschema.Affected{
+
+	nvdBase := []osvschema.Affected{
 		{
 			Ranges: []osvschema.Range{
 				{
@@ -150,26 +155,203 @@ func TestPickAffectedInformation(t *testing.T) {
 					Repo: repoA,
 					Events: []osvschema.Event{
 						{Introduced: "1.0.0"},
-						{Fixed: "1.0.2"},
+						{Fixed: "1.0.2"}, // Different fixed version
 					},
 				},
 			},
 		},
 	}
 
-	// Test case: NVD has more affected packages
-	cve5WithOne := cve5Affected
-	nvdWithTwo := append(nvdAffected, osvschema.Affected{Package: osvschema.Package{Name: "another"}}) //nolint:gocritic
-	pickAffectedInformation(&cve5WithOne, nvdWithTwo)
-	if len(cve5WithOne) != 2 {
-		t.Errorf("Expected NVD affected to be chosen when it has more packages")
+	testCases := []struct {
+		name         string
+		cve5Affected []osvschema.Affected
+		nvdAffected  []osvschema.Affected
+		wantAffected []osvschema.Affected
+	}{
+		{
+			name:         "NVD has more affected packages",
+			cve5Affected: cve5Base,
+			nvdAffected: append(append([]osvschema.Affected(nil), nvdBase...), osvschema.Affected{
+				Package: osvschema.Package{Name: "another"},
+			}),
+			wantAffected: append(append([]osvschema.Affected(nil), nvdBase...), osvschema.Affected{
+				Package: osvschema.Package{Name: "another"},
+			}),
+		},
+		{
+			name:         "Same repo, same number of ranges, cve5 data is preferred",
+			cve5Affected: cve5Base,
+			nvdAffected:  nvdBase,
+			// cve5's "1.0.1" fixed version should be kept
+			wantAffected: []osvschema.Affected{
+				{
+					Ranges: []osvschema.Range{
+						{
+							Type:   "GIT",
+							Repo:   repoA,
+							Events: cve5Base[0].Ranges[0].Events,
+						},
+					},
+				},
+			},
+		},
+		{
+			name:         "cve5 is empty, use nvd",
+			cve5Affected: []osvschema.Affected{},
+			nvdAffected:  nvdBase,
+			wantAffected: nvdBase,
+		},
+		{
+			name:         "nvd is empty, use cve5",
+			cve5Affected: cve5Base,
+			nvdAffected:  []osvschema.Affected{},
+			wantAffected: cve5Base,
+		},
+		{
+			name: "NVD provides missing introduced version",
+			cve5Affected: []osvschema.Affected{
+				{
+					Ranges: []osvschema.Range{
+						{
+							Type: "GIT",
+							Repo: repoA,
+							Events: []osvschema.Event{
+								{Fixed: "1.0.1"}, // No introduced
+							},
+						},
+					},
+				},
+			},
+			nvdAffected: []osvschema.Affected{
+				{
+					Ranges: []osvschema.Range{
+						{
+							Type: "GIT",
+							Repo: repoA,
+							Events: []osvschema.Event{
+								{Introduced: "1.0.0"}, // NVD has introduced
+								{Fixed: "1.0.2"},
+							},
+						},
+					},
+				},
+			},
+			wantAffected: []osvschema.Affected{
+				{
+					Ranges: []osvschema.Range{
+						{
+							Type: "GIT",
+							Repo: repoA,
+							Events: []osvschema.Event{
+								{Introduced: "1.0.0"},
+								{Fixed: "1.0.1"},
+							},
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "NVD provides missing fixed version",
+			cve5Affected: []osvschema.Affected{
+				{
+					Ranges: []osvschema.Range{
+						{
+							Type: "GIT",
+							Repo: repoA,
+							Events: []osvschema.Event{
+								{Introduced: "1.0.0"}, // No fixed
+							},
+						},
+					},
+				},
+			},
+			nvdAffected: []osvschema.Affected{
+				{
+					Ranges: []osvschema.Range{
+						{
+							Type: "GIT",
+							Repo: repoA,
+							Events: []osvschema.Event{
+								{Introduced: "0.9.0"},
+								{Fixed: "1.0.2"}, // NVD has fixed
+							},
+						},
+					},
+				},
+			},
+			wantAffected: []osvschema.Affected{
+				{
+					Ranges: []osvschema.Range{
+						{
+							Type: "GIT",
+							Repo: repoA,
+							Events: []osvschema.Event{
+								{Introduced: "1.0.0"},
+								{Fixed: "1.0.2"},
+							},
+						},
+					},
+				},
+			},
+		},
+		{
+			name:         "NVD has unmatched repo, should be added",
+			cve5Affected: cve5Base,
+			nvdAffected: []osvschema.Affected{
+				{
+					Ranges: []osvschema.Range{
+						{
+							Type: "GIT",
+							Repo: repoB, // Different repo
+							Events: []osvschema.Event{
+								{Introduced: "2.0.0"},
+								{Fixed: "2.0.1"},
+							},
+						},
+					},
+				},
+			},
+			wantAffected: []osvschema.Affected{
+				cve5Base[0], // From cve5
+				{
+					Ranges: []osvschema.Range{
+						{
+							Type: "GIT",
+							Repo: repoB,
+							Events: []osvschema.Event{
+								{Introduced: "2.0.0"},
+								{Fixed: "2.0.1"},
+							},
+						},
+					},
+				},
+			},
+		},
 	}
 
-	// Test case: Same repo, same number of ranges, cve5 data is preferred
-	cve5Copy := make([]osvschema.Affected, len(cve5Affected))
-	copy(cve5Copy, cve5Affected)
-	pickAffectedInformation(&cve5Copy, nvdAffected)
-	if cve5Copy[0].Ranges[0].Events[1].Fixed != "1.0.1" {
-		t.Errorf("Expected cve5 fixed version to be preferred, got %s", cve5Copy[0].Ranges[0].Events[1].Fixed)
+	// Sorter for comparing slices of Affected, ignoring order.
+	sorter := cmpopts.SortSlices(func(a, b osvschema.Affected) bool {
+		if len(a.Ranges) == 0 || len(a.Ranges[0].Repo) == 0 {
+			return true
+		}
+		if len(b.Ranges) == 0 || len(b.Ranges[0].Repo) == 0 {
+			return false
+		}
+		return a.Ranges[0].Repo < b.Ranges[0].Repo
+	})
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			// Create a copy to avoid modifying the test case data
+			cve5Actual := make([]osvschema.Affected, len(tc.cve5Affected))
+			copy(cve5Actual, tc.cve5Affected)
+
+			gotAffected := pickAffectedInformation(cve5Actual, tc.nvdAffected)
+
+			if diff := cmp.Diff(tc.wantAffected, gotAffected, sorter); diff != "" {
+				t.Errorf("pickAffectedInformation() mismatch (-want +got):\n%s", diff)
+			}
+		})
 	}
 }

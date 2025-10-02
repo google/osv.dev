@@ -55,7 +55,6 @@ func main() {
 			if cve != "" {
 				debianCVEs[i] = cve
 			}
-
 		}
 	}
 
@@ -69,7 +68,6 @@ func main() {
 			if cve != "" {
 				debianCVEs[i] = cve
 			}
-
 		}
 	}
 
@@ -238,6 +236,7 @@ func combineTwoOSVRecords(cve5 osvschema.Vulnerability, nvd osvschema.Vulnerabil
 			aliasMap[alias] = true
 		}
 	}
+
 	return baseOSV
 }
 
@@ -245,9 +244,8 @@ func combineTwoOSVRecords(cve5 osvschema.Vulnerability, nvd osvschema.Vulnerabil
 // It matches affected packages by the repo URL in their version ranges.
 // If a match is found, it merges the version range information, preferring the entry
 // with more ranges. Unmatched nvdAffected packages are appended.
-// cve5Affected is modified in place.
+// It returns a new slice and does not modify cve5Affected in place.
 func pickAffectedInformation(cve5Affected []osvschema.Affected, nvdAffected []osvschema.Affected) []osvschema.Affected {
-	var combinedAffected []osvschema.Affected
 	if len(nvdAffected) == 0 {
 		return cve5Affected
 	}
@@ -310,6 +308,10 @@ func pickAffectedInformation(cve5Affected []osvschema.Affected, nvdAffected []os
 			newAffectedMap[repo] = osvschema.Affected{
 				Ranges: newAffectedRanges,
 			}
+		} else {
+			newAffectedMap[repo] = osvschema.Affected{
+				Ranges: cveRanges,
+			}
 		}
 	}
 
@@ -320,6 +322,7 @@ func pickAffectedInformation(cve5Affected []osvschema.Affected, nvdAffected []os
 		}
 	}
 
+	var combinedAffected []osvschema.Affected
 	for _, aff := range newAffectedMap {
 		combinedAffected = append(combinedAffected, aff)
 	}

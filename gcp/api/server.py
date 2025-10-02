@@ -957,12 +957,14 @@ def query_package(context,
   if not package_name:
     return []
 
-  query = osv.AffectedVersions.query(
-      osv.AffectedVersions.name.IN([
-          package_name,
-          # Also query the normalized name in case this is a GIT repo.
-          osv.normalize_repo_package(package_name)
-      ]))
+  # Ideally, we'd check both unnormalized and normalized named at once, if there
+  # is no provided ecosystem (even though that is not explicitly supported), but
+  # Datastore cannot give cursors for 'OR' queries, so just only normalize if
+  # this is explicitly GIT.
+  if ecosystem == 'GIT':
+    package_name = osv.normalize_repo_package(package_name)
+
+  query = osv.AffectedVersions.query(osv.AffectedVersions.name == package_name)
   if ecosystem:
     query = query.filter(osv.AffectedVersions.ecosystem == ecosystem)
   query = query.order(osv.AffectedVersions.vuln_id)
@@ -984,7 +986,7 @@ def query_package(context,
     affected: osv.AffectedVersions = it.next()
     if affected.vuln_id == last_matched_id:
       continue
-    if not version or affected_affects(package_name, version, affected):
+    if not version or affected_affects(version, affected):
       if include_details:
         bugs.append(get_vuln_async(affected.vuln_id))
       else:
@@ -995,16 +997,8 @@ def query_package(context,
   return bugs
 
 
-def affected_affects(name: str, version: str,
-                     affected: osv.AffectedVersions) -> bool:
+def affected_affects(version: str, affected: osv.AffectedVersions) -> bool:
   """Check if a given version is affected by the AffectedVersions entry."""
-  # Make sure the package name correctly matches this entity.
-  if affected.ecosystem != 'GIT' and name != affected.name:
-    return False
-  if (affected.ecosystem == 'GIT' and
-      osv.normalize_repo_package(name) != affected.name):
-    return False
-
   if len(affected.versions) > 0:
     return _match_versions(version, affected)
   if len(affected.events) > 0:

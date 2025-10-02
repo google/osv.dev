@@ -272,7 +272,7 @@ func pickAffectedInformation(cve5Affected []osvschema.Affected, nvdAffected []os
 		}
 	}
 
-	newAffectedMap := make(map[string]osvschema.Affected)
+	newRepoAffectedMap := make(map[string]osvschema.Affected)
 
 	for repo, cveRanges := range cve5RepoMap {
 		if nvdRanges, ok := nvdRepoMap[repo]; ok {
@@ -305,11 +305,11 @@ func pickAffectedInformation(cve5Affected []osvschema.Affected, nvdAffected []os
 			}
 			// Remove from map so we know which NVD packages are left.
 			delete(nvdRepoMap, repo)
-			newAffectedMap[repo] = osvschema.Affected{
+			newRepoAffectedMap[repo] = osvschema.Affected{
 				Ranges: newAffectedRanges,
 			}
 		} else {
-			newAffectedMap[repo] = osvschema.Affected{
+			newRepoAffectedMap[repo] = osvschema.Affected{
 				Ranges: cveRanges,
 			}
 		}
@@ -317,13 +317,13 @@ func pickAffectedInformation(cve5Affected []osvschema.Affected, nvdAffected []os
 
 	// Add remaining NVD packages that were not in cve5.
 	for repo, nvdRange := range nvdRepoMap {
-		newAffectedMap[repo] = osvschema.Affected{
+		newRepoAffectedMap[repo] = osvschema.Affected{
 			Ranges: nvdRange,
 		}
 	}
 
 	var combinedAffected []osvschema.Affected //nolint:prealloc
-	for _, aff := range newAffectedMap {
+	for _, aff := range newRepoAffectedMap {
 		combinedAffected = append(combinedAffected, aff)
 	}
 

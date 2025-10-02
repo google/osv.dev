@@ -108,7 +108,8 @@ func TestFindNormalAffectedRanges(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			gotRanges, gotRangeType := findNormalAffectedRanges(tt.affected, &ConversionMetrics{})
+			versionExtractor := &DefaultVersionExtractor{}
+			gotRanges, gotRangeType := versionExtractor.FindNormalAffectedRanges(tt.affected, &ConversionMetrics{})
 			if diff := cmp.Diff(tt.wantRanges, gotRanges); diff != "" {
 				t.Errorf("findNormalAffectedRanges() ranges mismatch (-want +got):\n%s", diff)
 			}

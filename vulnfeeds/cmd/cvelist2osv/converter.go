@@ -30,6 +30,7 @@ type ConversionMetrics struct {
 	RefTypesCount  map[osvschema.ReferenceType]int `json:"ref_types_count"` // A count of each type of reference found.
 	VersionSources []VersionSource                 `json:"version_sources"` // A list of the ways the versions were extracted
 	Notes          []string                        `json:"notes"`           // A collection of notes and warnings generated during conversion.
+	CPEs           []string                        `json:"cpes"`
 }
 
 // AddNote adds a formatted note to the ConversionMetrics.
@@ -111,7 +112,9 @@ func FromCVE5(cve cves.CVE5, refs []cves.Reference, metrics *ConversionMetrics) 
 	metrics.Repos = repos
 
 	// Add affected version information.
-	AddVersionInfo(cve, &v, metrics, repos)
+	cnaVersExtractor := CNAVersionExtractor{}
+	versionExtractor := cnaVersExtractor.GetVersionExtractor(cve.Metadata.AssignerShortName)
+	versionExtractor.ExtractVersions(cve, &v, metrics, repos)
 	// TODO(jesslowe@): Add CWEs.
 
 	// Combine severity metrics from both CNA and ADP containers.

@@ -66,15 +66,16 @@ func main() {
 		for i, filename := range alpineCVEs {
 			cve := extractCVEName(filename, "ALPINE-")
 			if cve != "" {
-				debianCVEs[i] = cve
+				alpineCVEs[i] = cve
 			}
 		}
 	}
 
 	// this ensures the creation of CVEs even if they don't have packages
 	// to ensure Alpine and Debian CVEs have an upstream CVE.
+	// linter is compaining that we aren't appending to the same slice, but we
+	// just want to combine these two arrays with a more descriptive name.
 	mandatoryCVEIDs := append(debianCVEs, alpineCVEs...) //nolint:gocritic
-
 	combinedData := combineIntoOSV(allCVE5, allNVD, mandatoryCVEIDs)
 	writeOSVFile(combinedData, *osvOutputPath)
 }
@@ -351,8 +352,7 @@ func writeOSVFile(osvData map[cves.CVEID]osvschema.Vulnerability, osvOutputPath 
 		filePath := path.Join(osvOutputPath, string(vID)+".json")
 		file, err := os.OpenFile(filePath, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0644)
 		if err != nil {
-			logger.Error("Failed to create/open file to write", slog.Any("err", err))
-			panic(err)
+			logger.Panic("Failed to create/open file to write", slog.Any("err", err))
 		}
 		defer file.Close()
 
@@ -360,8 +360,7 @@ func writeOSVFile(osvData map[cves.CVEID]osvschema.Vulnerability, osvOutputPath 
 		encoder.SetIndent("", "  ")
 		err = encoder.Encode(osv)
 		if err != nil {
-			logger.Error("Failed to encode OSVs", slog.Any("err", err))
-			panic(err)
+			logger.Panic("Failed to encode OSVs", slog.Any("err", err))
 		}
 	}
 

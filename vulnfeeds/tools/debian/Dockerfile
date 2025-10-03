@@ -19,7 +19,7 @@ FROM gcr.io/google.com/cloudsdktool/google-cloud-cli:alpine@sha256:cdac858d976cb
 # when managing our dependencies.
 # See: https://python-poetry.org/docs/#installation 
 ENV POETRY_HOME "/opt/poetry"
-COPY docker/poetry/requirements.txt ./poetry-requirements.txt
+COPY docker/poetry/requirements-py3.12.txt ./poetry-requirements.txt
 RUN python3 -m venv $POETRY_HOME && \
     $POETRY_HOME/bin/pip install --require-hashes -r ./poetry-requirements.txt && \
     ln -s $POETRY_HOME/bin/poetry /usr/local/bin/poetry

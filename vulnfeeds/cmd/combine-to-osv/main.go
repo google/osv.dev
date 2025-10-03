@@ -34,7 +34,7 @@ func main() {
 
 	cve5Path := flag.String("cve5Path", defaultCVE5Path, "Path to CVE5 OSV files")
 	nvdPath := flag.String("nvdPath", defaultNVDOSVPath, "Path to NVD OSV files")
-	osvOutputPath := flag.String("osvOutputPath", defaultOSVOutputPath, "Path to CVE file")
+	osvOutputPath := flag.String("osvOutputPath", defaultOSVOutputPath, "Local output path of combined OSV files")
 	flag.Parse()
 
 	err := os.MkdirAll(*osvOutputPath, 0755)

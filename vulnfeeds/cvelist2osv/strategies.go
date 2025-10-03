@@ -11,10 +11,12 @@ func cpeVersionExtraction(cve cves.CVE5, metrics *ConversionMetrics) ([]osvschem
 	if err == nil && len(cpeRanges) > 0 {
 		metrics.VersionSources = append(metrics.VersionSources, VersionSourceCPE)
 		metrics.CPEs = vulns.Unique(cpeStrings)
+
 		return cpeRanges, nil
 	} else if err != nil {
 		metrics.AddNote("%s", err.Error())
 	}
+
 	return nil, err
 }
 
@@ -30,9 +32,6 @@ func textVersionExtraction(cve cves.CVE5, metrics *ConversionMetrics) []osvschem
 		metrics.VersionSources = append(metrics.VersionSources, VersionSourceDescription)
 		metrics.AddNote("Extracted versions from description but did not save them: %+v", versions)
 	}
-	return []osvschema.Range{}
-}
 
-func aiVersionExtraction() {
-	// not implemented yet
+	return []osvschema.Range{}
 }

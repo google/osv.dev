@@ -253,5 +253,6 @@ func combineAffected(cve cves.CVE5) []cves.Affected {
 			affected = append(affected, adp.Affected...)
 		}
 	}
+
 	return affected
 }

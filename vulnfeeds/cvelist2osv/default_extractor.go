@@ -52,11 +52,15 @@ func (d *DefaultVersionExtractor) ExtractVersions(cve cves.CVE5, v *vulns.Vulner
 		}
 	}
 
-	// if !gotVersions {
-	// 	metrics.AddNote("No versions in CPEs so attempting extraction from description")
-	// 	versionRanges, err := fallbackVersionExtraction(cve, metrics)
-	// }
-
+	if !gotVersions {
+		metrics.AddNote("No versions in CPEs so attempting extraction from description")
+		versionRanges := textVersionExtraction(cve, metrics)
+		aff, err := gitVersionsToCommits(cve.Metadata.CVEID, versionRanges, repos, metrics, repoTagsCache)
+		if err != nil {
+			logger.Error("Failed to convert git versions to commits", slog.Any("err", err))
+		}
+		v.Affected = append(v.Affected, aff)
+	}
 }
 
 func (d *DefaultVersionExtractor) FindNormalAffectedRanges(affected cves.Affected, metrics *ConversionMetrics) (versionRanges []osvschema.Range, versType VersionRangeType) {

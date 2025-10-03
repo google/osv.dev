@@ -17,7 +17,7 @@ type LinuxVersionExtractor struct {
 }
 
 // ExtractVersions for LinuxVersionExtractor.
-func (l *LinuxVersionExtractor) ExtractVersions(cve cves.CVE5, v *vulns.Vulnerability, metrics *ConversionMetrics, repos []string) {
+func (l *LinuxVersionExtractor) ExtractVersions(cve cves.CVE5, v *vulns.Vulnerability, metrics *ConversionMetrics, _ []string) {
 	affected := combineAffected(cve)
 	gotVersions := false
 	hasGit := false
@@ -56,7 +56,6 @@ func (l *LinuxVersionExtractor) ExtractVersions(cve cves.CVE5, v *vulns.Vulnerab
 			v.Affected = append(v.Affected, aff)
 		}
 	}
-
 }
 
 func createLinuxAffected(versionRanges []osvschema.Range, versionType VersionRangeType, repo string) osvschema.Affected {
@@ -76,6 +75,7 @@ func createLinuxAffected(versionRanges []osvschema.Range, versionType VersionRan
 			Name:      "Kernel",
 		}
 	}
+
 	return aff
 }
 

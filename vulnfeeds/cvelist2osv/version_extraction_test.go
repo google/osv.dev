@@ -100,7 +100,7 @@ func TestFindNormalAffectedRanges(t *testing.T) {
 				},
 			},
 			wantRanges: []osvschema.Range{
-				cves.BuildVersionRange("deadbeef", "", ""),
+				cves.BuildVersionRange("", "deadbeef", ""),
 			},
 			wantRangeType: VersionRangeTypeGit,
 		},

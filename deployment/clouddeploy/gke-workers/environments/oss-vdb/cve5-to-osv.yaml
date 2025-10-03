@@ -13,6 +13,6 @@ spec:
               - name: LOCAL_OUT_DIR
                 value: cvelist2osv
               - name: GOOGLE_CLOUD_PROJECT
-                value: oss-vdb-test 
+                value: oss-vdb
               - name: NUM_WORKERS
                 value: "30"

@@ -1182,7 +1182,7 @@ def query_ubuntu_linux(context: QueryContext,
       if include_details:
         bugs.append(get_vuln_async(bug.db_id))
       else:
-        bugs.append(vulnerability_to_minimal(bug.db_id))
+        bugs.append(get_minimal_async(bug.db_id))
       context.total_responses.add(1)
       break
 

@@ -2,7 +2,6 @@ resources:
 - ../../base
 - staging-api-test.yaml
 - osv-linter.yaml
-- cve5-to-osv.yaml
 patches:
 - path: workers.yaml
 - path: scaler.yaml

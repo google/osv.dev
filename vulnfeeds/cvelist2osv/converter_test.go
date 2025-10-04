@@ -18,7 +18,7 @@ func loadTestData(t *testing.T, cveName string) cves.CVE5 {
 	t.Helper()
 	prefix := strings.Split(cveName, "-")[2]
 	prefixpath := prefix[:len(prefix)-3] + "xxx"
-	fileName := filepath.Join("..", "..", "test_data", "cvelistV5", "cves", cveName[4:8], prefixpath, cveName+".json")
+	fileName := filepath.Join("..", "test_data", "cvelistV5", "cves", cveName[4:8], prefixpath, cveName+".json")
 
 	return loadTestCVE(t, fileName)
 }

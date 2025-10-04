@@ -135,7 +135,7 @@ func AddVersionInfo(cve cves.CVE5, v *vulns.Vulnerability, metrics *ConversionMe
 		}
 
 		v.Affected = append(v.Affected, aff)
-		metrics.VersionSources = append(metrics.VersionSources, VersionSourceAffected)
+		metrics.AddSource(VersionSourceAffected)
 	}
 
 	// If no versions were found so far, fall back to CPEs.

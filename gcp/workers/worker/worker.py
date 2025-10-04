@@ -531,10 +531,8 @@ class TaskRunner:
 
     filter_unknown_ecosystems(vulnerability)
 
-    # Generate Vanir signatures for test instance.
-    project = osv.utils.get_google_cloud_project()
-    if project in ('oss-vdb-test', 'test-osv'):
-      vulnerability = self._generate_vanir_signatures(vulnerability)
+    # Generate Vanir signatures.
+    vulnerability = self._generate_vanir_signatures(vulnerability)
 
     orig_modified_date = vulnerability.modified.ToDatetime(datetime.UTC)
     try:

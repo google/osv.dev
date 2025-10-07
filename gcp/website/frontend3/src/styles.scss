@@ -806,6 +806,8 @@ dl.vulnerability-details,
 
   .purl {
     font-family: $osv-heading-font-family;
+    overflow-wrap: anywhere;
+    word-break: break-all;
   }
 
   .links {

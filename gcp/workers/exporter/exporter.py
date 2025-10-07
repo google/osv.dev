@@ -16,6 +16,7 @@
 import argparse
 import concurrent.futures
 import csv
+import json
 import logging
 import os
 import zipfile
@@ -25,6 +26,7 @@ from google.cloud import ndb
 from google.cloud import storage
 from google.cloud.storage import retry
 from google.cloud.storage.bucket import Bucket
+from google.protobuf import json_format
 
 import requests
 
@@ -38,6 +40,8 @@ DEFAULT_SAFE_DELTA_PCT = 10
 _EXPORT_WORKERS = 32
 ECOSYSTEMS_FILE = 'ecosystems.txt'
 LAST_MODIFIED_FILE = 'modified_id.csv'
+VANIR_SIGNATURES_KEY = 'vanir_signatures'
+OSV_GIT_JSON_FILE_NAME = 'osv_git.json'
 
 
 class Error(Exception):
@@ -141,6 +145,7 @@ class Exporter:
     ecosystem_dir = os.path.join(work_dir, ecosystem)
     os.makedirs(ecosystem_dir, exist_ok=True)
     zip_path = os.path.join(ecosystem_dir, 'all.zip')
+    git_vulns_with_vanir_signatures = []
     with zipfile.ZipFile(zip_path, 'w', zipfile.ZIP_DEFLATED) as zip_file:
       files_to_zip = []
       id_and_modified = []
@@ -157,6 +162,15 @@ class Exporter:
               include_source=True, include_alias=True, include_upstream=True)
           osv.write_vulnerability(vulnerability, file_path)
 
+          if ecosystem == 'GIT':
+            # The GIT ecosystem has vulnerabilities that have Vanir sigantures
+            # generated. These are exported to a file.
+            if any(VANIR_SIGNATURES_KEY in affected.database_specific
+                   for affected in vulnerability.affected):
+              git_vulns_with_vanir_signatures.append(
+                  json_format.MessageToDict(
+                      vulnerability, preserving_proto_field_name=True))
+
           files_to_zip.append(file_path)
           # ToJsonString converts it into an ISO string
           # with timezone Z correctly appended
@@ -170,6 +184,13 @@ class Exporter:
       # all the exports have been written to disk.
       osv.Bug.query(
           osv.Bug.ecosystem == ecosystem).map(_export_to_file_and_zipfile)
+
+      # Write out the GIT vulnerabilities that have Vanir signatures to
+      # the test bucket.
+      if git_vulns_with_vanir_signatures:
+        output_path = os.path.join(ecosystem_dir, OSV_GIT_JSON_FILE_NAME)
+        with open(output_path, 'w') as f:
+          json.dump(git_vulns_with_vanir_signatures, f, indent=2)
 
       files_to_zip.sort()
       for file_path in files_to_zip:

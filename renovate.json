@@ -140,6 +140,10 @@
         "python"
       ],
       "enabled": false
+    },
+    {
+      "matchDepTypes": ["uses-with"],
+      "enabled": false
     }
   ],
   "ignorePaths": ["docker/poetry/requirements.txt"]

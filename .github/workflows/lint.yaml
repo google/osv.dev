@@ -32,7 +32,7 @@ jobs:
         with:
           persist-credentials: false
       - run: |
-          find . -mindepth 1 ! -regex '.*/[@A-Za-z0-9._-]*' \
+          find . -mindepth 1 ! -regex '.*/[()#@,A-Za-z0-9._-]*' \
             | xargs -I '{}' bash -c \
               "echo '{}' && echo '::error file={}::This filename contains undesired characters' && false"
   lint:

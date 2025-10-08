@@ -44,7 +44,7 @@ func (l *LinuxVersionExtractor) ExtractVersions(cve cves.CVE5, v *vulns.Vulnerab
 		}
 		aff := createLinuxAffected(versionRanges, versionType, cveAff.Repo)
 		v.Affected = append(v.Affected, aff)
-		metrics.VersionSources = append(metrics.VersionSources, VersionSourceAffected)
+		metrics.AddSource(VersionSourceAffected)
 	}
 
 	if !gotVersions {

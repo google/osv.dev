@@ -34,7 +34,7 @@ func (d *DefaultVersionExtractor) ExtractVersions(cve cves.CVE5, v *vulns.Vulner
 		}
 
 		v.Affected = append(v.Affected, aff)
-		metrics.VersionSources = append(metrics.VersionSources, VersionSourceAffected)
+		metrics.AddSource(VersionSourceAffected)
 	}
 
 	if !gotVersions {

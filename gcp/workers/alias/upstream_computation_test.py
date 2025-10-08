@@ -27,13 +27,15 @@ from osv import tests
 TEST_DATA_DIR = os.path.join(
     os.path.dirname(os.path.abspath(__file__)), 'testdata')
 
+emulator = None
+
 
 class UpstreamTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
   """Upstream tests."""
 
   def setUp(self):
     self.maxDiff = None  # pylint: disable=invalid-name
-    tests.reset_emulator()
+    emulator.reset()
     osv.Bug(
         id='CVE-1',
         db_id='CVE-1',
@@ -457,14 +459,15 @@ class UpstreamTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
     self.assertEqual(expected, bug_ids)
 
 
+def setUpModule():
+  """Set up the test module."""
+  # Start the emulator BEFORE creating the ndb client
+  global emulator
+  emulator = unittest.enterModuleContext(tests.datastore_emulator())
+  unittest.enterModuleContext(ndb.Client().context(cache_policy=False))
+  logging.getLogger("UpstreamTest.test_compute_upstream").setLevel(
+      logging.DEBUG)
+
+
 if __name__ == '__main__':
-  ds_emulator = tests.start_datastore_emulator()
-  try:
-    with ndb.Client().context() as context:
-      context.set_memcache_policy(False)
-      context.set_cache_policy(False)
-      logging.getLogger("UpstreamTest.test_compute_upstream").setLevel(
-          logging.DEBUG)
-      unittest.main()
-  finally:
-    tests.stop_emulator()
+  unittest.main()

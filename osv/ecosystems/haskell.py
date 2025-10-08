@@ -1,4 +1,4 @@
-# Copyright 2021 Google LLC
+# Copyright 2025 Google LLC
 # Copyright 2023 Fraser Tweedale
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -21,19 +21,18 @@ if something is broken and you need help to fix it.
 """
 
 import requests
-import typing
 
 from . import config
-from .helper_base import Ecosystem, EnumerateError
-from .. import semver_index
+from .ecosystems_base import EnumerableEcosystem, EnumerateError
+from .semver_ecosystem_helper import SemverLike
 
 
-class Hackage(Ecosystem):
+class Hackage(EnumerableEcosystem):
   """Hackage (Haskell package index) ecosystem."""
 
   _API_PACKAGE_URL = 'https://hackage.haskell.org/package/{package}.json'
 
-  def sort_key(self, version):
+  def _sort_key(self, version):
     """Sort key.
 
     The Haskell package version data type is defined at
@@ -70,7 +69,7 @@ class Hackage(Ecosystem):
                                        last_affected, limits)
 
 
-class GHC(Ecosystem):
+class GHC(EnumerableEcosystem, SemverLike):
   """Glasgow Haskell Compiler (GHC) ecosystem."""
 
   _API_PACKAGE_URL = ('https://gitlab.haskell.org'
@@ -99,17 +98,9 @@ class GHC(Ecosystem):
     '7.0.3', '7.0.4-rc1', '7.0.4',
   ]  # yapf: disable
 
-  def sort_key(self, version):
-    """Sort key."""
-    try:
-      return semver_index.parse(version)
-    except ValueError:
-      # If a user gives us an unparsable semver version,
-      # treat it as a very large version so as to not match anything.
-      return semver_index.parse('999999')
 
   @classmethod
-  def tag_to_version(cls, tag: str) -> typing.Optional[str]:
+  def tag_to_version(cls, tag: str) -> str | None:
     """Convert a tag to a release version, or return None if invalid.
 
     GHC release tags follow the scheme:

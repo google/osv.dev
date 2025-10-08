@@ -1,3 +1,4 @@
+// Package utility provides some basic utility functions
 package utility
 
 import (
@@ -27,5 +28,5 @@ func GetSecret(secretVersion string) (secret string, err error) {
 		return "", err
 	}
 
-	return string(resp.Payload.Data), nil
+	return string(resp.GetPayload().GetData()), nil
 }

@@ -17,9 +17,12 @@ package git
 
 import (
 	"context"
+	"errors"
+	"maps"
 	"net/url"
 	"path"
 	"regexp"
+	"slices"
 	"sort"
 	"strings"
 	"time"
@@ -30,9 +33,6 @@ import (
 	"github.com/go-git/go-git/v5/plumbing/transport"
 	"github.com/go-git/go-git/v5/storage/memory"
 	"github.com/sethvargo/go-retry"
-
-	"golang.org/x/exp/maps"
-	"golang.org/x/exp/slices"
 )
 
 const (
@@ -81,18 +81,21 @@ func RemoteRepoRefsWithRetry(repoURL string, retries uint64) (refs []*plumbing.R
 	backoff := retry.NewExponential(1 * time.Second)
 	backoff = retry.WithMaxRetries(retries, backoff)
 
-	if err := retry.Do(ctx, backoff, func(ctx context.Context) error {
+	if err := retry.Do(ctx, backoff, func(_ context.Context) error {
 		refs, err = repo.List(&git.ListOptions{PeelingOption: git.AppendPeeled})
 		if err != nil {
-			if err == context.DeadlineExceeded {
+			if errors.Is(err, context.DeadlineExceeded) {
 				return retry.RetryableError(err)
 			}
+
 			return err
 		}
+
 		return nil
 	}); err != nil {
 		return refs, err
 	}
+
 	return refs, nil
 }
 
@@ -104,6 +107,7 @@ func RepoName(repoURL string) (name string, e error) {
 	}
 	assumedReponame := strings.ToLower(path.Base(u.Path))
 	name = strings.TrimSuffix(assumedReponame, ".git")
+
 	return name, nil
 }
 
@@ -113,7 +117,7 @@ func RepoTags(repoURL string, repoTagsCache RepoTagsCache) (tags Tags, e error) 
 	if repoTagsCache != nil {
 		tags, ok := repoTagsCache[repoURL]
 		if ok {
-			return maps.Values(tags.Tag), nil
+			return slices.Collect(maps.Values(tags.Tag)), nil
 		}
 	}
 	// Cache miss.
@@ -147,6 +151,7 @@ func RepoTags(repoURL string, repoTagsCache RepoTagsCache) (tags Tags, e error) 
 	if repoTagsCache != nil {
 		repoTagsCache[repoURL] = RepoTagsMap{Tag: tagsMap, NormalizedTag: nil}
 	}
+
 	return tags, nil
 }
 
@@ -175,12 +180,13 @@ func normalizeRepoTag(tag string, reponame string) (normalizedTag string, err er
 	}
 	prenormalizedTag = strings.TrimPrefix(prenormalizedTag, "-")
 	normalizedTag, err = NormalizeVersion(prenormalizedTag)
+
 	return normalizedTag, err
 }
 
 // NormalizeRepoTags returns a map of normalized tags mapping back to original tags and also commit hashes.
 // An optional repoTagsCache can be supplied to reduce repeated remote connections to the same repo.
-func NormalizeRepoTags(repoURL string, repoTagsCache RepoTagsCache) (NormalizedTags map[string]NormalizedTag, e error) {
+func NormalizeRepoTags(repoURL string, repoTagsCache RepoTagsCache) (normalizedTags map[string]NormalizedTag, e error) {
 	if repoTagsCache != nil {
 		tags, ok := repoTagsCache[repoURL]
 		if ok && tags.NormalizedTag != nil {
@@ -196,21 +202,22 @@ func NormalizeRepoTags(repoURL string, repoTagsCache RepoTagsCache) (NormalizedT
 	if err != nil {
 		return nil, err
 	}
-	NormalizedTags = make(map[string]NormalizedTag)
+	normalizedTags = make(map[string]NormalizedTag)
 	for _, t := range tags {
 		normalizedTag, err := normalizeRepoTag(strings.ToLower(t.Tag), assumedReponame)
 		if err != nil {
 			// It's conceivable that not all tags are normalizable or potentially versions.
 			continue
 		}
-		NormalizedTags[normalizedTag] = NormalizedTag{OriginalTag: t.Tag, Commit: t.Commit}
+		normalizedTags[normalizedTag] = NormalizedTag{OriginalTag: t.Tag, Commit: t.Commit}
 	}
 	if repoTagsCache != nil {
 		// The RepoTags() call above will have cached the Tag map already
 		tagsMap := repoTagsCache[repoURL].Tag
-		repoTagsCache[repoURL] = RepoTagsMap{Tag: tagsMap, NormalizedTag: NormalizedTags}
+		repoTagsCache[repoURL] = RepoTagsMap{Tag: tagsMap, NormalizedTag: normalizedTags}
 	}
-	return NormalizedTags, nil
+
+	return normalizedTags, nil
 }
 
 // Return a list of just the references that are tags.
@@ -220,6 +227,7 @@ func RefTags(refs []*plumbing.Reference) (tags []*plumbing.Reference) {
 			tags = append(tags, ref)
 		}
 	}
+
 	return tags
 }
 
@@ -230,26 +238,28 @@ func RefBranches(refs []*plumbing.Reference) (branches []*plumbing.Reference) {
 			branches = append(branches, ref)
 		}
 	}
+
 	return branches
 }
 
 // Validate the repo by attempting to query it's references.
 func ValidRepo(repoURL string) (valid bool) {
 	_, err := RemoteRepoRefsWithRetry(repoURL, 3)
-	if err != nil && err == transport.ErrAuthenticationRequired {
+	if err != nil && errors.Is(err, transport.ErrAuthenticationRequired) {
 		// somewhat strangely, we get an authentication prompt via Git on non-existent repos.
 		return false
 	}
 	if err != nil {
 		return false
 	}
+
 	return true
 }
 
 // Otherwise functional repos that don't have any tags are not valid.
 func ValidRepoAndHasUsableRefs(repoURL string) (valid bool) {
 	refs, err := RemoteRepoRefsWithRetry(repoURL, 3)
-	if err != nil && err == transport.ErrAuthenticationRequired {
+	if err != nil && errors.Is(err, transport.ErrAuthenticationRequired) {
 		// somewhat strangely, we get an authentication prompt via Git on non-existent repos.
 		return false
 	}
@@ -263,5 +273,6 @@ func ValidRepoAndHasUsableRefs(repoURL string) (valid bool) {
 	if len(RefTags(refs)) == 0 {
 		return false
 	}
+
 	return true
 }

@@ -1,0 +1,18 @@
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: cve5-to-osv
+spec:
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          containers:
+          - name: cve5-to-osv
+            env:
+              - name: LOCAL_OUT_DIR
+                value: cvelist2osv
+              - name: GOOGLE_CLOUD_PROJECT
+                value: oss-vdb-test 
+              - name: NUM_WORKERS
+                value: "30"

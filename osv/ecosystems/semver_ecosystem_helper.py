@@ -1,4 +1,4 @@
-# Copyright 2021 Google LLC
+# Copyright 2025 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -12,35 +12,31 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Ecosystem helper for ecosystems using SemVer."""
+from warnings import deprecated
 
-from .helper_base import Ecosystem
+from .ecosystems_base import OrderedEcosystem
 from .. import semver_index
 
 
-class SemverEcosystem(Ecosystem):
-  """Generic semver ecosystem helpers."""
+class SemverLike(OrderedEcosystem):
+  """Ecosystem helper for ecosystems that use SEMVER-compatible versioning,
+  but use the ECOSYSTEM version type."""
 
-  def sort_key(self, version):
+  def _sort_key(self, version):
     """Sort key."""
     try:
       return semver_index.parse(version)
     except ValueError:
       # If a user gives us an unparsable semver version,
       # treat it as a very large version so as to not match anything.
-      return semver_index.parse('999999')
+      return semver_index.parse('9999999999')
 
-  def enumerate_versions(self,
-                         package,
-                         introduced,
-                         fixed=None,
-                         last_affected=None,
-                         limits=None):
-    """Enumerate versions (no-op)."""
-    del package
-    del introduced
-    del fixed
-    del limits
 
+class SemverEcosystem(SemverLike):
+  """Ecosystems which use the 'SEMVER' OSV version type"""
+
+  @deprecated('Avoid using this method. '
+              'It is provided only to maintain existing tooling.')
   def next_version(self, package, version):
     """Get the next version after the given version."""
     del package  # Unused.
@@ -49,7 +45,3 @@ class SemverEcosystem(Ecosystem):
       return version + '.0'
 
     return str(parsed_version.bump_patch()) + '-0'
-
-  @property
-  def is_semver(self):
-    return True

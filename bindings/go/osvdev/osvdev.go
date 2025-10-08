@@ -1,3 +1,4 @@
+// Package osvdev contains bindings to the osv.dev API
 package osvdev
 
 import (
@@ -119,6 +120,7 @@ func (c *OSVClient) QueryBatch(ctx context.Context, queries []*Query) (*BatchedR
 			if err != nil {
 				return err
 			}
+
 			defer resp.Body.Close()
 
 			var osvResp BatchedResponse
@@ -178,6 +180,7 @@ func (c *OSVClient) Query(ctx context.Context, query *Query) (*Response, error) 
 	if err != nil {
 		return nil, err
 	}
+
 	defer resp.Body.Close()
 
 	var osvResp Response

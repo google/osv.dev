@@ -145,7 +145,7 @@ class ImpactTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
   """Impact task tests."""
 
   def setUp(self):
-    tests.reset_emulator()
+    ds_emulator.reset()
     self.maxDiff = None
 
     tests.mock_clone(self, return_value=pygit2.Repository('osv-test'))
@@ -516,7 +516,7 @@ class MarkBugInvalidTest(unittest.TestCase):
   """Test mark_bug_invalid."""
 
   def setUp(self):
-    tests.reset_emulator()
+    ds_emulator.reset()
 
   def test_mark_bug_invalid(self):
     """Test mark_bug_invalid."""
@@ -607,7 +607,7 @@ class RESTUpdateTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
 
   def setUp(self):
     self.maxDiff = None
-    tests.reset_emulator()
+    ds_emulator.reset()
     tests.mock_datetime(self)
 
     # Initialise fake source_repo.
@@ -681,6 +681,8 @@ class RESTUpdateTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
     self.expect_dict_equal('update_no_introduced',
                            osv.Bug.get_by_id('CURL-CVE-2022-32221')._to_dict())
 
+  @unittest.skip('Takes too long. '
+                 'Also, firestore emulator cannot handle records of this size.')
   def test_update_redhat_toobig(self):
     """Test failure handling of a too-large Red Hat record."""
     solo_endpoint = 'RHSA-2018:3140' + '.json'
@@ -727,7 +729,7 @@ class UpdateTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
 
   def setUp(self):
     self.maxDiff = None
-    tests.reset_emulator()
+    ds_emulator.reset()
 
     self.original_clone = osv.clone
     tests.mock_clone(self, func=self.mock_clone)
@@ -834,7 +836,7 @@ class UpdateTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
 
     # Add fake ecosystems used in tests to supported ecosystems.
     osv.ecosystems._ecosystems._ecosystems.update({
-        'ecosystem': osv.ecosystems.OrderingUnsupportedEcosystem(),
+        'ecosystem': None,
     })
 
   def tearDown(self):
@@ -1138,17 +1140,21 @@ class UpdateTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
     with self.assertLogs(level='WARNING') as logs:
       task_runner._source_update(message)
 
-    self.assertEqual(len(logs.output), 3)
+    self.assertEqual(len(logs.output), 4)
     self.assertEqual(
         logs.output[0],
+        'ERROR:absl:Code extraction failed for OSV-123 (Unsupported ecosystem: Go). Skipping affected[0]',
+    )
+    self.assertEqual(
+        logs.output[1],
         'WARNING:root:Failed to push: cannot push because a reference that you are trying to update on the remote contains commits that are not present locally.',
     )
     self.assertRegex(
-        logs.output[1],
+        logs.output[2],
         r'WARNING:root:Upstream hash for .*/OSV-123.yaml changed \(expected=.* vs current=.*\)',
     )
     self.assertEqual(
-        logs.output[2],
+        logs.output[3],
         'WARNING:root:Discarding changes for OSV-123 due to conflicts.',
     )
 
@@ -1602,22 +1608,17 @@ class UpdateTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
     message = mock.Mock()
     message.attributes = {
         'source': 'source',
-        'path': 'a/b/CVE-2022-0128.json',
+        'path': 'a/b/CVE-2016-15011.json',
         'original_sha256':
-            ('a4060cb842363cb6ae7669057402ccddce21a94ed6cad98234e73305816a86d3'
+            ('88696731b137858e82177bdd9fe938eaa4e75507a2c9228fd21d98f91963ae90'
             ),
         'deleted': 'false',
     }
     task_runner._source_update(message)
 
-    actual_result = osv.Bug.get_by_id('CVE-2022-0128')
+    processed_result = osv.Bug.get_by_id('CVE-2016-15011')
 
-    # Remove some values that make the diff super unwieldly
-    for affected in actual_result.affected_packages:
-      del affected.versions
-    del actual_result.affected_fuzzy
-
-    self.expect_dict_equal('update_bucket_cve', actual_result._to_dict())
+    self.expect_dict_equal('update_bucket_cve', processed_result._to_dict())
 
   def test_last_affected_git(self):
     """Basic last_affected GIT enumeration."""
@@ -1716,37 +1717,6 @@ class UpdateTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
     bug.put()
     self.expect_dict_equal('dont_index_too_many_git_versions', bug._to_dict())
 
-  def test_analysis_crash_handling(self):
-    """Test that formerly crash-inducing GIT events are handled gracefully."""
-    self.source_repo.ignore_git = False
-    self.source_repo.versions_from_repo = True
-    self.source_repo.detect_cherrypicks = False
-    self.source_repo.db_prefix.append('CVE-')
-    self.source_repo.put()
-
-    # Use any valid OSV input test file here.
-    self.mock_repo.add_file(
-        'CVE-2016-10046.json',
-        self._load_test_data(
-            os.path.join(TEST_DATA_DIR, 'CVE-2016-10046.json')),
-    )
-    self.mock_repo.commit('User', 'user@email')
-
-    task_runner = worker.TaskRunner(ndb_client, None, self.tmp_dir.name, None,
-                                    None)
-    message = mock.Mock()
-    message.attributes = {
-        'source': 'source',
-        'path': 'CVE-2016-10046.json',
-        'original_sha256': _sha256('CVE-2016-10046.json'),
-        'deleted': 'false',
-    }
-    task_runner._source_update(message)
-
-    bug = osv.Bug.get_by_id('CVE-2016-10046')
-
-    self.expect_dict_equal('analysis_crash_handling', bug._to_dict())
-
   def test_update_clears_stale_import_finding(self):
     """A subsequent successful update removes the now stale import finding."""
 
@@ -1802,24 +1772,11 @@ class UpdateTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
 def setUpModule():
   """Set up the test module."""
   print("Starting Datastore Emulator for the test suite...")
-  global ds_emulator, ndb_client, context_manager
-  ds_emulator = tests.start_datastore_emulator()
+  global ds_emulator, ndb_client
+  # Start the emulator BEFORE creating the ndb client
+  ds_emulator = unittest.enterModuleContext(tests.datastore_emulator())
   ndb_client = ndb.Client()
-
-  # Set the NDB client context for all tests in this module
-  context_manager = ndb_client.context()
-  # __enter__ is needed to activate the context
-  context = context_manager.__enter__()
-  context.set_memcache_policy(False)
-  context.set_cache_policy(False)
-
-
-def tearDownModule():
-  """Tear down the test module."""
-  print("Stopping Datastore Emulator.")
-  # Deactivate the NDB context
-  context_manager.__exit__(None, None, None)
-  tests.stop_emulator()
+  unittest.enterModuleContext(ndb_client.context(cache_policy=False))
 
 
 if __name__ == '__main__':

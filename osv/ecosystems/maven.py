@@ -1,4 +1,4 @@
-# Copyright 2021 Google LLC
+# Copyright 2025 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -17,7 +17,7 @@ import collections
 import functools
 import re
 
-from .helper_base import DepsDevMixin
+from .ecosystems_base import EnumerableEcosystem, DepsDevMixin
 
 
 # pylint: disable=line-too-long
@@ -233,10 +233,14 @@ class Version:
     return version
 
 
-class Maven(DepsDevMixin):
+class Maven(DepsDevMixin, EnumerableEcosystem):
   """Maven ecosystem."""
 
-  def sort_key(self, version):
+  @property
+  def deps_dev_system(self) -> str:
+    return 'maven'
+
+  def _sort_key(self, version):
     """Sort key."""
     return Version.from_string(version)
 

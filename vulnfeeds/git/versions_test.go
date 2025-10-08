@@ -9,7 +9,7 @@ import (
 	"github.com/google/osv/vulnfeeds/models"
 )
 
-func TestVersionToCommit(t *testing.T) {
+func TestVersionToAffectedCommit(t *testing.T) {
 	cache := make(RepoTagsCache)
 
 	tests := []struct {
@@ -99,22 +99,22 @@ func TestVersionToCommit(t *testing.T) {
 		t.Run(tc.description, func(t *testing.T) {
 			testutils.SetupGitVCR(t)
 			if time.Now().Before(tc.disableExpiryDate) {
-				t.Skipf("test %q: VersionToCommit(%q, %q) has been skipped due to known outage and will be reenabled on %s.", tc.description, tc.inputVersion, tc.inputRepoURL, tc.disableExpiryDate)
+				t.Skipf("test %q: VersionToAffectedCommit(%q, %q) has been skipped due to known outage and will be reenabled on %s.", tc.description, tc.inputVersion, tc.inputRepoURL, tc.disableExpiryDate)
 			}
 			if !tc.disableExpiryDate.IsZero() && time.Now().After(tc.disableExpiryDate) {
-				t.Logf("test %q: VersionToCommit(%q, %q) has been enabled on %s.", tc.description, tc.inputVersion, tc.inputRepoURL, tc.disableExpiryDate)
+				t.Logf("test %q: VersionToAffectedCommit(%q, %q) has been enabled on %s.", tc.description, tc.inputVersion, tc.inputRepoURL, tc.disableExpiryDate)
 			}
 			normalizedTags, err := NormalizeRepoTags(tc.inputRepoURL, cache)
 			if err != nil {
 				t.Errorf("test %q: unexpected failure normalizing repo tags: %#v", tc.description, err)
 			}
-			got, err := VersionToCommit(tc.inputVersion, tc.inputRepoURL, models.Fixed, normalizedTags)
+			got, err := VersionToAffectedCommit(tc.inputVersion, tc.inputRepoURL, models.Fixed, normalizedTags)
 			if err != nil && tc.expectedOk {
-				t.Errorf("test %q: VersionToCommit(%q, %q) unexpectedly failed: %#v", tc.description, tc.inputVersion, tc.inputRepoURL, err)
+				t.Errorf("test %q: VersionToAffectedCommit(%q, %q) unexpectedly failed: %#v", tc.description, tc.inputVersion, tc.inputRepoURL, err)
 				t.Skip()
 			}
 			if got.Fixed != tc.expectedResult {
-				t.Errorf("test %q: VersionToCommit(%q, %q) result incorrect, got: %q wanted: %q", tc.description, tc.inputVersion, tc.inputRepoURL, got.Fixed, tc.expectedResult)
+				t.Errorf("test %q: VersionToAffectedCommit(%q, %q) result incorrect, got: %q wanted: %q", tc.description, tc.inputVersion, tc.inputRepoURL, got.Fixed, tc.expectedResult)
 			}
 		})
 	}
@@ -218,7 +218,6 @@ func TestNormalizeVersion(t *testing.T) {
 		},
 	}
 	for _, tc := range tests {
-
 		t.Run(tc.description, func(t *testing.T) {
 			t.Parallel()
 			got, err := NormalizeVersion(tc.inputVersion)

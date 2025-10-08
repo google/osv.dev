@@ -1,4 +1,4 @@
-# Copyright 2021 Google LLC
+# Copyright 2025 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -14,7 +14,9 @@
 """SemVer-based ecosystem helper tests."""
 
 import unittest
+import warnings
 
+from . import semver_ecosystem_helper
 from .. import ecosystems
 
 
@@ -24,5 +26,15 @@ class SemVerEcosystemTest(unittest.TestCase):
   def test_next_version(self):
     """Test next_version."""
     ecosystem = ecosystems.get('Go')
-    self.assertEqual('1.0.1-0', ecosystem.next_version('blah', '1.0.0'))
-    self.assertEqual('1.0.0-pre.0', ecosystem.next_version('blah', '1.0.0-pre'))
+    with warnings.catch_warnings():
+      # Filter the DeprecationWarning from next_version
+      warnings.filterwarnings('ignore', 'Avoid using this method')
+      self.assertEqual('1.0.1-0', ecosystem.next_version('blah', '1.0.0'))
+      self.assertEqual('1.0.0-pre.0',
+                       ecosystem.next_version('blah', '1.0.0-pre'))
+
+  def test_sort_key(self):
+    """Test sort_key"""
+    ecosystem = semver_ecosystem_helper.SemverLike('')
+    # Check the 0 sentinel value
+    self.assertLess(ecosystem.sort_key('0'), ecosystem.sort_key('0.0.0-0.0'))

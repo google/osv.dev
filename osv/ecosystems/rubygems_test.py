@@ -1,4 +1,4 @@
-# Copyright 2021 Google LLC
+# Copyright 2025 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -14,6 +14,7 @@
 """RubyGems ecosystem helper tests."""
 
 import vcr.unittest
+import warnings
 
 from .. import ecosystems
 
@@ -24,15 +25,18 @@ class RubyGemsEcosystemTest(vcr.unittest.VCRTestCase):
   def test_next_version(self):
     """Test next_version."""
     ecosystem = ecosystems.get('RubyGems')
-    self.assertEqual('0.8.0', ecosystem.next_version('rails', '0'))
-    self.assertEqual('0.9.5', ecosystem.next_version('rails', '0.9.4.1'))
-    self.assertEqual('2.3.8.pre1', ecosystem.next_version('rails', '2.3.7'))
-    self.assertEqual('4.0.0.rc1',
-                     ecosystem.next_version('rails', '4.0.0.beta1'))
-    self.assertEqual('5.0.0.racecar1',
-                     ecosystem.next_version('rails', '5.0.0.beta4'))
-    with self.assertRaises(ecosystems.EnumerateError):
-      ecosystem.next_version('doesnotexist123456', '1')
+    with warnings.catch_warnings():
+      # Filter the DeprecationWarning from next_version
+      warnings.filterwarnings('ignore', 'Avoid using this method')
+      self.assertEqual('0.8.0', ecosystem.next_version('rails', '0'))
+      self.assertEqual('0.9.5', ecosystem.next_version('rails', '0.9.4.1'))
+      self.assertEqual('2.3.8.pre1', ecosystem.next_version('rails', '2.3.7'))
+      self.assertEqual('4.0.0.rc1',
+                       ecosystem.next_version('rails', '4.0.0.beta1'))
+      self.assertEqual('5.0.0.racecar1',
+                       ecosystem.next_version('rails', '5.0.0.beta4'))
+      with self.assertRaises(ecosystems.EnumerateError):
+        ecosystem.next_version('doesnotexist123456', '1')
 
   def test_sort_key(self):
     """Test sort_key with invalid versions"""
@@ -41,3 +45,10 @@ class RubyGemsEcosystemTest(vcr.unittest.VCRTestCase):
         ecosystem.sort_key('invalid'), ecosystem.sort_key('4.0.0.rc1'))
     self.assertGreater(
         ecosystem.sort_key('v3.1.1'), ecosystem.sort_key('4.0.0.rc1'))
+    # Check >= / <= methods
+    self.assertGreaterEqual(
+        ecosystem.sort_key('1.10.0.rc1'), ecosystem.sort_key('1.2.0.rc1'))
+    self.assertLessEqual(
+        ecosystem.sort_key('1.2.0.rc1'), ecosystem.sort_key('1.10.0.rc1'))
+    # Check the 0 sentinel value
+    self.assertLess(ecosystem.sort_key('0'), ecosystem.sort_key('0.0.0.rc0'))

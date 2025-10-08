@@ -1,4 +1,4 @@
-# Copyright 2022 Google LLC
+# Copyright 2025 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -18,7 +18,7 @@ import re
 import requests
 
 from . import config
-from .helper_base import Ecosystem, EnumerateError
+from .ecosystems_base import EnumerableEcosystem, EnumerateError
 from .. import semver_index
 
 # This relies on a strict SemVer implementation.
@@ -80,13 +80,13 @@ class Version:
       return Version(semver_index.parse('999999'), 999999)
 
 
-class NuGet(Ecosystem):
+class NuGet(EnumerableEcosystem):
   """NuGet ecosystem."""
 
   _API_PACKAGE_URL = ('https://api.nuget.org/v3/registration5-semver1/'
                       '{package}/index.json')
 
-  def sort_key(self, version):
+  def _sort_key(self, version):
     """Sort key."""
     return Version.from_string(version)
 
@@ -126,7 +126,3 @@ class NuGet(Ecosystem):
     self.sort_versions(versions)
     return self._get_affected_versions(versions, introduced, fixed,
                                        last_affected, limits)
-
-  @property
-  def supports_comparing(self):
-    return True

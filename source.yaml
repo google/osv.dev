@@ -44,6 +44,21 @@
   editable: False
   strict_validation: False
 
+- name: 'alpine'
+  versions_from_repo: False
+  type: 1
+  ignore_patterns: ['^(?!ALPINE-).*$']
+  directory_path: 'alpine'
+  detect_cherrypicks: False
+  extension: '.json'
+  bucket: 'cve-osv-conversion'
+  db_prefix: ['ALPINE-']
+  ignore_git: True
+  human_link: 'https://security.alpinelinux.org/vuln/{{ BUG_ID | replace("ALPINE-", "") }}'
+  link: 'https://storage.googleapis.com/cve-osv-conversion/'
+  editable: False
+  strict_validation: True
+
 - name: 'android'
   versions_from_repo: False
   type: 1
@@ -131,6 +146,21 @@
   editable: False
   strict_validation: True
 
+- name: 'debian-cve'
+  versions_from_repo: False
+  type: 1
+  ignore_patterns: ['^(?!DEBIAN-).*$']
+  directory_path: 'debian-cve-osv'
+  detect_cherrypicks: False
+  extension: '.json'
+  bucket: 'debian-osv'
+  db_prefix: ['DEBIAN-']
+  ignore_git: True
+  human_link: 'https://security-tracker.debian.org/tracker/{{ BUG_ID | replace("DEBIAN-", "") }}'
+  link: 'https://storage.googleapis.com/debian-osv/'
+  editable: False
+  strict_validation: True
+
 - name: 'debian-dla'
   versions_from_repo: False
   type: 1
@@ -173,6 +203,20 @@
   ignore_git: True
   human_link: 'https://security-tracker.debian.org/tracker/{{ BUG_ID }}'
   link: 'https://storage.googleapis.com/debian-osv/'
+  editable: False
+  strict_validation: True
+
+- name: 'echo'
+  versions_from_repo: False
+  rest_api_url: 'https://advisory.echohq.com/osv/all.json'
+  type: 2
+  ignore_patterns: ['^(?!ECHO-).*$']
+  directory_path: 'osv'
+  detect_cherrypicks: False
+  extension: '.json'
+  db_prefix: ['ECHO-']
+  ignore_git: True
+  link: 'https://advisory.echohq.com/osv/'
   editable: False
   strict_validation: True
 
@@ -263,6 +307,21 @@
   link: 'https://packages.mini.dev/advisories/osv/'
   editable: False
   strict_validation: True
+
+- name: 'openeuler'
+  versions_from_repo: False
+  rest_api_url: 'https://repo.openeuler.org/security/data/osv/all.json'
+  type: 2
+  ignore_patterns: ['^(?!OESA-).*$']
+  directory_path: 'security/data/osv'
+  detect_cherrypicks: False
+  extension: '.json'
+  db_prefix: ['OESA-']
+  ignore_git: True
+  human_link: 'https://www.openeuler.org/en/security/security-bulletins/detail/?id=openEuler-SA-{{ BUG_ID | replace("OESA-", "") }}'
+  link: 'https://repo.openeuler.org/security/data/osv/'
+  editable: False
+  strict_validation: False
 
 - name: 'oss-fuzz'
   versions_from_repo: True

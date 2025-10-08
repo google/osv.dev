@@ -1,3 +1,4 @@
+// Package testhelper contains error matching structs used in tests
 package testhelper
 
 import (

@@ -1,21 +1,26 @@
+// package main contains a utility for assigning IDs to OSV records.
 package main
 
 import (
+	"crypto/rand"
 	"encoding/hex"
 	"encoding/json"
 	"flag"
 	"fmt"
 	"io"
 	"io/fs"
-	"math/rand"
+	"log/slog"
 	"os"
 	"path/filepath"
 	"strconv"
 	"strings"
 	"time"
 
+	"github.com/google/osv/vulnfeeds/utility/logger"
+
+	"slices"
+
 	"github.com/google/osv-scanner/pkg/models"
-	"golang.org/x/exp/slices"
 	"gopkg.in/yaml.v2"
 )
 
@@ -40,12 +45,13 @@ var (
 )
 
 func main() {
-	rand.Seed(time.Now().Unix())
 	prefix := flag.String("prefix", "", "Vulnerability prefix (e.g. \"PYSEC\".")
-	dir := flag.String("dir", "", "Path to vulnerabilites.")
+	dir := flag.String("dir", "", "Path to vulnerabilities.")
 	format := flag.String("format", string(fileFormatYAML), "Format of OSV reports in the repository. Must be \"json\" or \"yaml\".")
 
 	flag.Parse()
+
+	logger.InitGlobalLogger()
 
 	if *prefix == "" || *dir == "" {
 		flag.Usage()
@@ -58,7 +64,7 @@ func main() {
 	}
 
 	if err := assignIDs(*prefix, *dir, fileFormat(*format)); err != nil {
-		fmt.Printf("Failed to assign IDs: %v", err)
+		logger.Info("Failed to assign IDs", slog.Any("err", err))
 		os.Exit(1)
 	}
 }
@@ -129,7 +135,8 @@ func assignID(prefix, path string, format fileFormat, yearCounters map[int]int, 
 		return fmt.Errorf("failed to serialize: %w", err)
 	}
 
-	fmt.Printf("Assigning %s to %s\n", path, newPath)
+	logger.Info("Assigning", slog.String("path", path), slog.String("newPath", newPath))
+
 	return os.Remove(path)
 }
 
@@ -161,6 +168,7 @@ func assignIDs(prefix, dir string, format fileFormat) error {
 		if num > yearCounters[year] {
 			yearCounters[year] = num
 		}
+
 		return nil
 	})
 	if err != nil {
@@ -168,11 +176,11 @@ func assignIDs(prefix, dir string, format fileFormat) error {
 	}
 
 	if len(unassigned) == 0 {
-		fmt.Printf("Nothing to allocate")
+		logger.Info("Nothing to allocate")
 		return nil
 	}
 
-	fmt.Printf("Assigning IDs using detected maximums: %v\n", yearCounters)
+	logger.Info("Assigning IDs using detected maximums", slog.Any("counters", yearCounters))
 	for _, path := range unassigned {
 		if err := assignID(prefix, path, format, yearCounters, defaultYear); err != nil {
 			return fmt.Errorf("failed to assign ID: %w", err)
@@ -184,7 +192,7 @@ func assignIDs(prefix, dir string, format fileFormat) error {
 		return fmt.Errorf("failed to generate random string: %w", err)
 	}
 
-	return os.WriteFile(filepath.Join(dir, conflictFile), []byte(hex.EncodeToString(b)), 0644)
+	return os.WriteFile(filepath.Join(dir, conflictFile), []byte(hex.EncodeToString(b)), 0600)
 }
 
 func readVulnWithFormat(r io.Reader, format fileFormat) (*models.Vulnerability, error) {
@@ -203,6 +211,7 @@ func readVulnWithFormat(r io.Reader, format fileFormat) (*models.Vulnerability, 
 	default:
 		return nil, fmt.Errorf("unknown file format: %v", format)
 	}
+
 	return &v, nil
 }
 
@@ -211,6 +220,7 @@ func writeVulnWithFormat(v *models.Vulnerability, w io.Writer, format fileFormat
 	case fileFormatJSON:
 		enc := json.NewEncoder(w)
 		enc.SetIndent("", "  ")
+
 		return enc.Encode(v)
 	case fileFormatYAML:
 		enc := yaml.NewEncoder(w)

@@ -27,9 +27,14 @@
 
 mkdir -p "${WORK_DIR}" || true
 
-curl ${BE_VERBOSE="--silent"} \
-  https://nvd.nist.gov/feeds/xml/cpe/dictionary/official-cpe-dictionary_v2.3.xml.gz \
-  | gzip -dc > "${WORK_DIR}/official-cpe-dictionary_v2.3.xml"
+CPE_JSON_DIR="${WORK_DIR}/cpe_json"
+mkdir -p "${CPE_JSON_DIR}" || true
+
+curl ${BE_VERBOSE="-q"} \
+  https://nvd.nist.gov/feeds/json/cpe/2.0/nvdcpe-2.0.zip \
+  -o "${WORK_DIR}/cpe.zip"
+
+unzip -o "${WORK_DIR}/cpe.zip" -d "${CPE_JSON_DIR}"
 
 MAYBE_USE_DEBIAN_COPYRIGHT_METADATA=""
 if [[ -n "${DEBIAN_COPYRIGHT_GCS_PATH}" ]]; then
@@ -38,9 +43,10 @@ if [[ -n "${DEBIAN_COPYRIGHT_GCS_PATH}" ]]; then
   MAYBE_USE_DEBIAN_COPYRIGHT_METADATA="--debian_metadata_path ${WORK_DIR}/metadata.ftp-master.debian.org"
 fi
 
-/cpe-repo-gen \
-  --cpe_dictionary "${WORK_DIR}/official-cpe-dictionary_v2.3.xml" \
+./cpe-repo-gen \
+  --cpe_dictionary_dir="${CPE_JSON_DIR}/nvdcpe-2.0-chunks" \
   ${MAYBE_USE_DEBIAN_COPYRIGHT_METADATA} \
-  --output_dir "${WORK_DIR}"
+  --output_dir="${WORK_DIR}"
+
 
 gsutil ${BE_VERBOSE="-q"} cp "${WORK_DIR}/cpe_product_to_repo.json" "${CPEREPO_GCS_PATH}"

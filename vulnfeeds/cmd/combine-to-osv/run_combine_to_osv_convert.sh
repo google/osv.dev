@@ -18,32 +18,26 @@ set -eu
 
 INPUT_BUCKET="${INPUT_GCS_BUCKET:=cve-osv-conversion}"
 OUTPUT_BUCKET="${OUTPUT_GCS_BUCKET:=cve-osv-conversion}"
-OSV_PARTS_ROOT="parts/"
-OSV_OUTPUT="osv_output/"
-CVE_OUTPUT="cve_jsons/"
-CVELIST="${CVELIST_PATH:=cvelistV5/}"
+
+OSV_OUTPUT="osv-output"
+NVD_OSV_OUTPUT="nvd"
+CVE5_OSV_OUTPUT="cve5" 
 
 echo "Setup initial directories"
-rm -rf $OSV_PARTS_ROOT && mkdir -p $OSV_PARTS_ROOT
+rm -rf $NVD_OSV_OUTPUT && mkdir -p $NVD_OSV_OUTPUT
 rm -rf $OSV_OUTPUT && mkdir -p $OSV_OUTPUT
-rm -rf $CVE_OUTPUT && mkdir -p $CVE_OUTPUT
-[[ -n "$CVELIST" ]] && rm -rf $CVELIST
-
-echo "Begin syncing from parts in GCS bucket ${INPUT_BUCKET}"
-gcloud --no-user-output-enabled storage rsync "gs://${INPUT_BUCKET}/parts/" "$OSV_PARTS_ROOT" -r -q
-echo "Successfully synced from GCS bucket"
+rm -rf $CVE5_OSV_OUTPUT && mkdir -p $CVE5_OSV_OUTPUT
 
 echo "Begin syncing NVD data from GCS bucket ${INPUT_BUCKET}"
-gcloud --no-user-output-enabled storage -q cp "gs://${INPUT_BUCKET}/nvd/*-????.json" "${CVE_OUTPUT}"
+gcloud --no-user-output-enabled storage -q cp "gs://${INPUT_BUCKET}/nvd-osv/CVE-????-*.json" "${NVD_OSV_OUTPUT}"
 echo "Successfully synced from GCS bucket"
 
-if [[ -n "$CVELIST" ]]; then
-    echo "Clone CVE List"
-    git clone --quiet https://github.com/CVEProject/cvelistV5
-fi
+echo "Begin syncing CVE5 data from GCS bucket ${INPUT_BUCKET}"
+gcloud --no-user-output-enabled storage -q cp "gs://${INPUT_BUCKET}/cve5/CVE-????-*.json" "${CVE5_OSV_OUTPUT}"
+echo "Successfully synced from GCS bucket"
 
 echo "Run combine-to-osv"
-./combine-to-osv -cvePath "$CVE_OUTPUT" -partsPath "$OSV_PARTS_ROOT" -osvOutputPath "$OSV_OUTPUT" -cveListPath "$CVELIST"
+./combine-to-osv -cve5Path "$CVE5_OSV_OUTPUT" -nvdPath "$NVD_OSV_OUTPUT" -osvOutputPath "$OSV_OUTPUT" 
 
 echo "Override"
 gcloud --no-user-output-enabled storage rsync "gs://${INPUT_BUCKET}/osv-output-overrides/" $OSV_OUTPUT

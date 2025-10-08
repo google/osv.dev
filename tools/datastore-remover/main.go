@@ -60,7 +60,6 @@ func main() {
 
 	if len(batch) > 0 {
 		deleteBatch(ctx, client, batch)
-		batch = nil
 	}
 }
 

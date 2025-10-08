@@ -1,4 +1,4 @@
-# Copyright 2023 Google LLC
+# Copyright 2025 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -17,7 +17,7 @@ import functools
 import json
 
 from . import config
-from .helper_base import Ecosystem, EnumerateError
+from .ecosystems_base import EnumerableEcosystem, EnumerateError
 from .. import semver_index
 from ..request_helper import RequestError, RequestHelper
 
@@ -31,7 +31,7 @@ from ..request_helper import RequestError, RequestHelper
 #  - Pre-release suffixes are evaluated before build suffixes.
 #  - Versions with build suffixes come after versions without.
 #    e.g. 1.0.0-pre < 1.0.0-pre+build < 1.0.0 < 1.0.0+build
-# SemVer 2.0.0-rc.1 also does not explcitly disallow empty identifiers or
+# SemVer 2.0.0-rc.1 also does not explicitly disallow empty identifiers or
 # leading 0s on numeric identifiers, but our SemVer implementation also will
 # parse these cases.
 
@@ -66,12 +66,12 @@ class Version:
       return Version(semver_index.parse('999999'))
 
 
-class Pub(Ecosystem):
+class Pub(EnumerableEcosystem):
   """Pub ecosystem"""
 
   _API_PACKAGE_URL = 'https://pub.dev/api/packages/{package}'
 
-  def sort_key(self, version):
+  def _sort_key(self, version):
     """Sort key."""
     return Version.from_string(version)
 

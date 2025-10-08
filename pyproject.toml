@@ -1,13 +1,13 @@
 [project]
 name = "osv"
-version = "0.0.22"
+version = "0.1.2"
 description = "Open Source Vulnerabilities library"
 authors = [
     {name = "OSV Authors", email = "osv-discuss@googlegroups.com"}
 ]
 license = "Apache-2.0"
 readme = "README.md"
-requires-python = ">=3.11,<4.0"
+requires-python = ">=3.13,<4.0"
 dependencies = [
     "google-cloud-ndb>=2.3", 
     "google-cloud-logging>=3.10",

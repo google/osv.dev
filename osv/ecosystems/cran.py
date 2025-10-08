@@ -1,4 +1,4 @@
-# Copyright 2023 Google LLC
+# Copyright 2025 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -17,10 +17,10 @@ import requests
 import packaging_legacy.version
 
 from . import config
-from .helper_base import Ecosystem, EnumerateError
+from .ecosystems_base import EnumerableEcosystem, EnumerateError
 
 
-class CRAN(Ecosystem):
+class CRAN(EnumerableEcosystem):
   """CRAN ecosystem helpers."""
 
   # Use the Posit Public Package Manager API to pull both the current
@@ -29,7 +29,7 @@ class CRAN(Ecosystem):
   _API_PACKAGE_URL_POSIT_CRAN = 'https://packagemanager.posit.co/__api__/' + \
     'repos/2/packages/{package}'
 
-  def sort_key(self, version):
+  def _sort_key(self, version):
     """Sort key."""
     # Some documentation on CRAN versioning and the R numeric_version method:
     # https://cran.r-project.org/doc/manuals/R-exts.html#The-DESCRIPTION-file

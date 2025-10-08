@@ -1,3 +1,4 @@
+// Package triage contains helpers for triaging vulnerabilities.
 package triage
 
 import (

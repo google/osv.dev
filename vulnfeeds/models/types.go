@@ -1,3 +1,4 @@
+// Package models contains data structures for OSV feeds.
 package models
 
 import (
@@ -7,11 +8,25 @@ import (
 )
 
 type AffectedCommit struct {
-	Repo         string `json:"repo,omitempty" yaml:"repo,omitempty"`
-	Introduced   string `json:"introduced,omitempty" yaml:"introduced,omitempty"`
-	Fixed        string `json:"fixed,omitempty" yaml:"fixed,omitempty"`
-	Limit        string `json:"limit,omitempty" yaml:"limit,omitempty"`
+	Repo         string `json:"repo,omitempty"          yaml:"repo,omitempty"`
+	Introduced   string `json:"introduced,omitempty"    yaml:"introduced,omitempty"`
+	Fixed        string `json:"fixed,omitempty"         yaml:"fixed,omitempty"`
+	Limit        string `json:"limit,omitempty"         yaml:"limit,omitempty"`
 	LastAffected string `json:"last_affected,omitempty" yaml:"last_affected,omitempty"`
+}
+
+// SetCommitByType sets the appropriate commit field on an AffectedCommit based on the CommitType.
+func SetCommitByType(ac *AffectedCommit, commitType CommitType, commitHash string) {
+	switch commitType {
+	case Introduced:
+		ac.SetIntroduced(commitHash)
+	case LastAffected:
+		ac.SetLastAffected(commitHash)
+	case Limit:
+		ac.SetLimit(commitHash)
+	case Fixed:
+		ac.SetFixed(commitHash)
+	}
 }
 
 func (ac *AffectedCommit) SetRepo(repo string) {
@@ -50,6 +65,7 @@ func (ac *AffectedCommit) InvalidRange() bool {
 	if ac.Introduced == ac.LastAffected && ac.Introduced != "" {
 		return true
 	}
+
 	return false
 }
 
@@ -65,12 +81,13 @@ func AffectedCommitCompare(i, j AffectedCommit) int {
 	if n := cmp.Compare(i.LastAffected, j.LastAffected); n != 0 {
 		return n
 	}
+
 	return cmp.Compare(i.Introduced, j.Introduced)
 }
 
 type AffectedVersion struct {
-	Introduced   string `json:"introduced,omitempty" yaml:"introduced,omitempty"`
-	Fixed        string `json:"fixed,omitempty" yaml:"fixed,omitempty"`
+	Introduced   string `json:"introduced,omitempty"    yaml:"introduced,omitempty"`
+	Fixed        string `json:"fixed,omitempty"         yaml:"fixed,omitempty"`
 	LastAffected string `json:"last_affected,omitempty" yaml:"last_affected,omitempty"`
 }
 
@@ -85,7 +102,7 @@ const (
 )
 
 type VersionInfo struct {
-	AffectedCommits  []AffectedCommit  `json:"affect_commits,omitempty" yaml:"affected_commits,omitempty"`
+	AffectedCommits  []AffectedCommit  `json:"affect_commits,omitempty"    yaml:"affected_commits,omitempty"`
 	AffectedVersions []AffectedVersion `json:"affected_versions,omitempty" yaml:"affected_versions,omitempty"`
 }
 
@@ -95,6 +112,7 @@ func (vi *VersionInfo) HasFixedVersions() bool {
 			return true
 		}
 	}
+
 	return false
 }
 
@@ -104,6 +122,7 @@ func (vi *VersionInfo) HasLastAffectedVersions() bool {
 			return true
 		}
 	}
+
 	return false
 }
 
@@ -113,6 +132,7 @@ func (vi *VersionInfo) HasIntroducedCommits(repo string) bool {
 			return true
 		}
 	}
+
 	return false
 }
 
@@ -122,6 +142,7 @@ func (vi *VersionInfo) HasFixedCommits(repo string) bool {
 			return true
 		}
 	}
+
 	return false
 }
 
@@ -131,6 +152,7 @@ func (vi *VersionInfo) HasLastAffectedCommits(repo string) bool {
 			return true
 		}
 	}
+
 	return false
 }
 
@@ -140,25 +162,28 @@ func (vi *VersionInfo) HasLimitCommits(repo string) bool {
 			return true
 		}
 	}
+
 	return false
 }
 
-func (vi *VersionInfo) FixedCommits(repo string) (FixedCommits []string) {
+func (vi *VersionInfo) FixedCommits(repo string) (fixedCommits []string) {
 	for _, ac := range vi.AffectedCommits {
 		if strings.EqualFold(ac.Repo, repo) && ac.Fixed != "" {
-			FixedCommits = append(FixedCommits, ac.Fixed)
+			fixedCommits = append(fixedCommits, ac.Fixed)
 		}
 	}
-	return FixedCommits
+
+	return fixedCommits
 }
 
-func (vi *VersionInfo) LastAffectedCommits(repo string) (LastAffectedCommits []string) {
+func (vi *VersionInfo) LastAffectedCommits(repo string) (lastAffectedCommits []string) {
 	for _, ac := range vi.AffectedCommits {
 		if strings.EqualFold(ac.Repo, repo) && ac.LastAffected != "" {
-			LastAffectedCommits = append(LastAffectedCommits, ac.Fixed)
+			lastAffectedCommits = append(lastAffectedCommits, ac.Fixed)
 		}
 	}
-	return LastAffectedCommits
+
+	return lastAffectedCommits
 }
 
 // Check if the same commit appears in multiple fields of the AffectedCommits array.
@@ -190,6 +215,7 @@ func (vi *VersionInfo) Duplicated(candidate AffectedCommit) bool {
 			}
 		}
 	}
+
 	return false
 }
 

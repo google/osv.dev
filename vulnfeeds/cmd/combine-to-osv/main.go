@@ -24,7 +24,7 @@ import (
 )
 
 const (
-	defaultOSVOutputPath = "osv_output"
+	defaultOSVOutputPath = "osv-output"
 	defaultCVE5Path      = "cve5"
 	defaultNVDOSVPath    = "nvd"
 )

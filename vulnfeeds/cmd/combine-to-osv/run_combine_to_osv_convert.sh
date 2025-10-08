@@ -19,7 +19,7 @@ set -eu
 INPUT_BUCKET="${INPUT_GCS_BUCKET:=cve-osv-conversion}"
 OUTPUT_BUCKET="${OUTPUT_GCS_BUCKET:=cve-osv-conversion}"
 
-OSV_OUTPUT="osv_output/"
+OSV_OUTPUT="osv-output"
 NVD_OSV_OUTPUT="nvd"
 CVE5_OSV_OUTPUT="cve5" 
 
@@ -29,11 +29,11 @@ rm -rf $OSV_OUTPUT && mkdir -p $OSV_OUTPUT
 rm -rf $CVE5_OSV_OUTPUT && mkdir -p $CVE5_OSV_OUTPUT
 
 echo "Begin syncing NVD data from GCS bucket ${INPUT_BUCKET}"
-gcloud --no-user-output-enabled storage -q cp "gs://${INPUT_BUCKET}/nvd-osv/*-????.json" "${NVD_OSV_OUTPUT}"
+gcloud --no-user-output-enabled storage -q cp "gs://${INPUT_BUCKET}/nvd-osv/CVE-????-*.json" "${NVD_OSV_OUTPUT}"
 echo "Successfully synced from GCS bucket"
 
 echo "Begin syncing CVE5 data from GCS bucket ${INPUT_BUCKET}"
-gcloud --no-user-output-enabled storage -q cp "gs://${INPUT_BUCKET}/cve5/*-????.json" "${CVE5_OSV_OUTPUT}"
+gcloud --no-user-output-enabled storage -q cp "gs://${INPUT_BUCKET}/cve5/CVE-????-*.json" "${CVE5_OSV_OUTPUT}"
 echo "Successfully synced from GCS bucket"
 
 echo "Run combine-to-osv"

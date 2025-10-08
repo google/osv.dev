@@ -13,9 +13,7 @@ import (
 	"sort"
 	"strconv"
 	"strings"
-	"sync"
 
-	"cloud.google.com/go/storage"
 	"github.com/google/osv/vulnfeeds/cves"
 	"github.com/google/osv/vulnfeeds/faulttolerant"
 	"github.com/google/osv/vulnfeeds/models"

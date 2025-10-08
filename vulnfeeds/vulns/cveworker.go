@@ -193,7 +193,7 @@ func Run(
 	var wg sync.WaitGroup
 	vulnChan := make(chan *osvschema.Vulnerability, numWorkers)
 
-	for i := 0; i < numWorkers; i++ {
+	for range numWorkers {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()

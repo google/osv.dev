@@ -186,7 +186,7 @@ class Exporter:
           osv.Bug.ecosystem == ecosystem).map(_export_to_file_and_zipfile)
 
       # Write out the GIT vulnerabilities that have Vanir signatures to
-      # the test bucket.
+      # a JSON file.
       if git_vulns_with_vanir_signatures:
         output_path = os.path.join(ecosystem_dir, OSV_GIT_JSON_FILE_NAME)
         with open(output_path, 'w') as f:

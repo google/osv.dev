@@ -97,7 +97,7 @@ func main() {
 	var wg sync.WaitGroup
 	vulnChan := make(chan *osvschema.Vulnerability, *numWorkers)
 
-	for i := 0; i < *numWorkers; i++ {
+	for range *numWorkers {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
@@ -196,7 +196,7 @@ func loadOSV(osvPath string) map[cves.CVEID]osvschema.Vulnerability {
 
 // combineIntoOSV creates OSV entry by combining loaded CVEs from NVD and PackageInfo information from security advisories.
 func combineIntoOSV(cve5osv map[cves.CVEID]osvschema.Vulnerability, nvdosv map[cves.CVEID]osvschema.Vulnerability, mandatoryCVEIDs []string) map[cves.CVEID]osvschema.Vulnerability {
-	vulns := make(map[cves.CVEID]osvschema.Vulnerability)
+	osvRecords := make(map[cves.CVEID]osvschema.Vulnerability)
 
 	// Iterate through CVEs from security advisories (cve5) as the base
 	for cveID, cve5 := range cve5osv {
@@ -217,7 +217,7 @@ func combineIntoOSV(cve5osv map[cves.CVEID]osvschema.Vulnerability, nvdosv map[c
 				continue
 			}
 		}
-		vulns[cveID] = baseOSV
+		osvRecords[cveID] = baseOSV
 	}
 
 	// Add any remaining CVEs from NVD that were not in the advisory data.
@@ -225,10 +225,10 @@ func combineIntoOSV(cve5osv map[cves.CVEID]osvschema.Vulnerability, nvdosv map[c
 		if len(nvd.Affected) == 0 {
 			continue
 		}
-		vulns[cveID] = nvd
+		osvRecords[cveID] = nvd
 	}
 
-	return vulns
+	return osvRecords
 }
 
 // combineTwoOSVRecords takes two osv records and combines them into one

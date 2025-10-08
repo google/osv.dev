@@ -69,13 +69,13 @@ func main() {
 	}
 
 	var wg sync.WaitGroup
-	vulnChan := make(chan *vulns.Vulnerability)
+	vulnChan := make(chan *osvschema.Vulnerability)
 
 	for range *numWorkers {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
-			vulns.Worker(ctx, vulnChan, bkt, *debianOutputPath)
+			vulns.Worker(ctx, vulnChan, bkt, nil, *debianOutputPath)
 		}()
 	}
 
@@ -86,7 +86,7 @@ func main() {
 			logger.Warn(fmt.Sprintf("Skipping %s as no affected versions found.", v.ID), slog.String("id", v.ID))
 			continue
 		}
-		vulnChan <- v
+		vulnChan <- &v.Vulnerability
 	}
 	close(vulnChan)
 	wg.Wait()

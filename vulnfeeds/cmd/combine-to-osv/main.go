@@ -10,15 +10,16 @@ import (
 	"io/fs"
 	"log/slog"
 	"os"
-	"path"
 	"path/filepath"
 	"strings"
+	"sync"
 
 	"slices"
 
 	"cloud.google.com/go/storage"
 	"github.com/google/osv/vulnfeeds/cves"
 	"github.com/google/osv/vulnfeeds/utility/logger"
+	"github.com/google/osv/vulnfeeds/vulns"
 	"github.com/ossf/osv-schema/bindings/go/osvschema"
 	"google.golang.org/api/iterator"
 )
@@ -34,7 +35,11 @@ func main() {
 
 	cve5Path := flag.String("cve5Path", defaultCVE5Path, "Path to CVE5 OSV files")
 	nvdPath := flag.String("nvdPath", defaultNVDOSVPath, "Path to NVD OSV files")
-	osvOutputPath := flag.String("osvOutputPath", defaultOSVOutputPath, "Local output path of combined OSV files")
+	osvOutputPath := flag.String("osvOutputPath", defaultOSVOutputPath, "Local output path of combined OSV files, or GCS prefix if uploading.")
+	outputBucketName := flag.String("output_bucket", "cve-osv-conversion", "The GCS bucket to write to.")
+	overridesBucketName := flag.String("overrides_bucket", "cve-osv-conversion", "The GCS bucket to read overrides from.")
+	uploadToGCS := flag.Bool("uploadToGCS", false, "If true, upload to GCS bucket instead of writing to local disk.")
+	numWorkers := flag.Int("num_workers", 64, "Number of workers to process records")
 	flag.Parse()
 
 	err := os.MkdirAll(*osvOutputPath, 0755)
@@ -77,7 +82,36 @@ func main() {
 	// just want to combine these two arrays with a more descriptive name.
 	mandatoryCVEIDs := append(debianCVEs, alpineCVEs...) //nolint:gocritic
 	combinedData := combineIntoOSV(allCVE5, allNVD, mandatoryCVEIDs)
-	writeOSVFile(combinedData, *osvOutputPath)
+
+	ctx := context.Background()
+	var outBkt, overridesBkt *storage.BucketHandle
+	if *uploadToGCS {
+		storageClient, err := storage.NewClient(ctx)
+		if err != nil {
+			logger.Fatal("Failed to create storage client", slog.Any("err", err))
+		}
+		outBkt = storageClient.Bucket(*outputBucketName)
+		overridesBkt = storageClient.Bucket(*overridesBucketName)
+	}
+
+	var wg sync.WaitGroup
+	vulnChan := make(chan *osvschema.Vulnerability, *numWorkers)
+
+	for i := 0; i < *numWorkers; i++ {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			vulns.Worker(ctx, vulnChan, outBkt, overridesBkt, *osvOutputPath)
+		}()
+	}
+
+	for _, v := range combinedData {
+		vulnChan <- &v
+	}
+
+	close(vulnChan)
+	wg.Wait()
+	logger.Info("Successfully processed OSV files", slog.Int("count", len(combinedData)))
 }
 
 // extractCVEName extracts the CVE name from a given filename and prefix.
@@ -344,25 +378,4 @@ func getRangeBoundaryVersions(events []osvschema.Event) (introduced, fixed strin
 	}
 
 	return introduced, fixed
-}
-
-// writeOSVFile writes out the given osv objects into individual json files
-func writeOSVFile(osvData map[cves.CVEID]osvschema.Vulnerability, osvOutputPath string) {
-	for vID, osv := range osvData {
-		filePath := path.Join(osvOutputPath, string(vID)+".json")
-		file, err := os.OpenFile(filePath, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0644)
-		if err != nil {
-			logger.Panic("Failed to create/open file to write", slog.Any("err", err))
-		}
-		defer file.Close()
-
-		encoder := json.NewEncoder(file)
-		encoder.SetIndent("", "  ")
-		err = encoder.Encode(osv)
-		if err != nil {
-			logger.Panic("Failed to encode OSVs", slog.Any("err", err))
-		}
-	}
-
-	logger.Info("Successfully written OSV files", slog.Int("count", len(osvData)))
 }

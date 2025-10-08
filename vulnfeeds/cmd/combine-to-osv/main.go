@@ -84,34 +84,13 @@ func main() {
 	combinedData := combineIntoOSV(allCVE5, allNVD, mandatoryCVEIDs)
 
 	ctx := context.Background()
-	var outBkt, overridesBkt *storage.BucketHandle
-	if *uploadToGCS {
-		storageClient, err := storage.NewClient(ctx)
-		if err != nil {
-			logger.Fatal("Failed to create storage client", slog.Any("err", err))
-		}
-		outBkt = storageClient.Bucket(*outputBucketName)
-		overridesBkt = storageClient.Bucket(*overridesBucketName)
-	}
-
-	var wg sync.WaitGroup
-	vulnChan := make(chan *osvschema.Vulnerability, *numWorkers)
-
-	for range *numWorkers {
-		wg.Add(1)
-		go func() {
-			defer wg.Done()
-			vulns.Worker(ctx, vulnChan, outBkt, overridesBkt, *osvOutputPath)
-		}()
-	}
-
+	var vulnerabilities []*osvschema.Vulnerability
 	for _, v := range combinedData {
-		vulnChan <- &v
+		v := v
+		vulnerabilities = append(vulnerabilities, &v)
 	}
 
-	close(vulnChan)
-	wg.Wait()
-	logger.Info("Successfully processed OSV files", slog.Int("count", len(combinedData)))
+	vulns.Run(ctx, "OSV files", *uploadToGCS, *outputBucketName, *overridesBucketName, *numWorkers, *osvOutputPath, vulnerabilities)
 }
 
 // extractCVEName extracts the CVE name from a given filename and prefix.

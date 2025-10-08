@@ -10,6 +10,7 @@ import (
 	"log/slog"
 	"os"
 	"path"
+	"sync"
 	"time"
 
 	"cloud.google.com/go/storage"
@@ -164,4 +165,47 @@ func Worker(ctx context.Context, vulnChan <-chan *osvschema.Vulnerability, outBk
 		// Upload to GCS
 		uploadToGCS(ctx, vulnToProcess, preModifiedBuf, outBkt, outputPrefix)
 	}
+}
+
+// Run starts the workers to process vulnerabilities.
+func Run(
+	ctx context.Context,
+	jobName string,
+	uploadToGCS bool,
+	outputBucketName string,
+	overridesBucketName string,
+	numWorkers int,
+	osvOutputPath string,
+	vulnerabilities []*osvschema.Vulnerability,
+) {
+	var outBkt, overridesBkt *storage.BucketHandle
+	if uploadToGCS {
+		storageClient, err := storage.NewClient(ctx)
+		if err != nil {
+			logger.Fatal("Failed to create storage client", slog.Any("err", err))
+		}
+		outBkt = storageClient.Bucket(outputBucketName)
+		if overridesBucketName != "" {
+			overridesBkt = storageClient.Bucket(overridesBucketName)
+		}
+	}
+
+	var wg sync.WaitGroup
+	vulnChan := make(chan *osvschema.Vulnerability, numWorkers)
+
+	for i := 0; i < numWorkers; i++ {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			Worker(ctx, vulnChan, outBkt, overridesBkt, osvOutputPath)
+		}()
+	}
+
+	for _, v := range vulnerabilities {
+		vulnChan <- v
+	}
+
+	close(vulnChan)
+	wg.Wait()
+	logger.Info("Successfully processed "+jobName, slog.Int("count", len(vulnerabilities)))
 }

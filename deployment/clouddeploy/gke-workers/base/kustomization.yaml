@@ -26,3 +26,4 @@ resources:
 - ksm_stateful_set.yaml
 - recoverer.yaml
 - record-checker.yaml
+- cve5-to-osv.yaml

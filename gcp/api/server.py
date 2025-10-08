@@ -914,6 +914,11 @@ def query_by_commit(context: QueryContext,
     affected_commits: ndb.Key = it.next()
     bug_id: str = affected_commits.id().rsplit("-", 1)[0]
     vuln: osv.Vulnerability = yield osv.Vulnerability.get_by_id_async(bug_id)
+    if vuln is None:
+      logging.error('AffectedCommit for %s matched but Vulnerability not found',
+                    bug_id)
+      osv.pubsub.publish_failure(b'', type='gcs_missing', id=bug_id)
+      continue
     if vuln.is_withdrawn:
       continue
 
@@ -1182,7 +1187,7 @@ def query_ubuntu_linux(context: QueryContext,
       if include_details:
         bugs.append(get_vuln_async(bug.db_id))
       else:
-        bugs.append(vulnerability_to_minimal(bug.db_id))
+        bugs.append(get_minimal_async(bug.db_id))
       context.total_responses.add(1)
       break
 

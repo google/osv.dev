@@ -13,10 +13,8 @@ import (
 	"regexp"
 	"sort"
 	"strings"
-	"sync"
 	"time"
 
-	"cloud.google.com/go/storage"
 	"github.com/google/osv/vulnfeeds/cves"
 	"github.com/google/osv/vulnfeeds/models"
 	"github.com/google/osv/vulnfeeds/utility/logger"

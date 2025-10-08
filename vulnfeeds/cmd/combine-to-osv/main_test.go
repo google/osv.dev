@@ -1,184 +1,432 @@
 package main
 
 import (
-	"encoding/json"
-	"fmt"
-	"log"
-	"os"
-	"slices"
+	"path/filepath"
+	"sort"
 	"testing"
 	"time"
 
-	"maps"
-
+	"github.com/google/go-cmp/cmp"
+	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/google/osv/vulnfeeds/cves"
 	gitpurl "github.com/google/osv/vulnfeeds/git"
 	"github.com/google/osv/vulnfeeds/utility"
 	"github.com/ossf/osv-schema/bindings/go/osvschema"
 )
 
-func loadTestData2(cveName string) cves.Vulnerability {
-	fileName := fmt.Sprintf("../../test_data/nvdcve-2.0/%s.json", cveName)
-	file, err := os.Open(fileName)
-	if err != nil {
-		log.Fatalf("Failed to load test data from %q: %#v", fileName, err)
-	}
-	var nvdCves cves.CVEAPIJSON20Schema
-	err = json.NewDecoder(file).Decode(&nvdCves)
-	if err != nil {
-		log.Fatalf("Failed to decode %q: %+v", fileName, err)
-	}
-	for _, vulnerability := range nvdCves.Vulnerabilities {
-		if string(vulnerability.CVE.ID) == cveName {
-			return vulnerability
-		}
-	}
-	log.Fatalf("test data doesn't contain %q", cveName)
+const testdataPath = "../../test_data/combine-to-osv"
 
-	return cves.Vulnerability{}
-}
+func TestLoadOSV(t *testing.T) {
+	cve5Path := filepath.Join(testdataPath, "cve5")
+	allVulns := loadOSV(cve5Path)
 
-func TestLoadParts(t *testing.T) {
-	allParts, _ := loadParts("../../test_data/parts")
-	expectedPartCount := 15
-	actualPartCount := len(allParts)
-
-	if actualPartCount != expectedPartCount {
-		t.Errorf("Expected %d entries, got %d entries: %#v", expectedPartCount, actualPartCount, slices.Collect(maps.Keys(allParts)))
+	if len(allVulns) != 4 {
+		t.Errorf("Expected 4 vulnerabilities, got %d", len(allVulns))
 	}
 
-	tests := map[cves.CVEID]struct {
-		ecosystems []string
-	}{
-		"CVE-2015-9251": {
-			ecosystems: []string{"Alpine:v3.10"},
-		},
-		"CVE-2016-2176": {
-			ecosystems: []string{
-				"Alpine:v3.2",
-				"Alpine:v3.3",
-				"Alpine:v3.4",
-				"Alpine:v3.5",
-				"Alpine:v3.6",
-				"Alpine:v3.7",
-				"Alpine:v3.8",
-				"", // NVD converted CVEs have no ecosystem
-			},
-		},
-	}
-
-	hasCve := 0
-	for id, v := range allParts {
-		if elem, ok := tests[id]; ok {
-			var ecosystemArray []string
-			for _, elem := range v {
-				ecosystemArray = append(ecosystemArray, elem.Ecosystem)
-			}
-			if !utility.SliceEqualUnordered(elem.ecosystems, ecosystemArray) {
-				t.Errorf("Expected ecosystem for %s to have: %#v, got %#v.", id, elem.ecosystems, ecosystemArray)
-			}
-			hasCve++
-		}
-	}
-
-	if hasCve != len(tests) {
-		t.Errorf("Expected CVEs do not exist")
+	if _, ok := allVulns["CVE-2023-1234"]; !ok {
+		t.Error("Expected to load CVE-2023-1234")
 	}
 }
 
 func TestCombineIntoOSV(t *testing.T) {
-	cveStuff := map[cves.CVEID]cves.Vulnerability{
-		"CVE-2022-33745":   loadTestData2("CVE-2022-33745"),
-		"CVE-2022-32746":   loadTestData2("CVE-2022-32746"),
-		"CVE-2018-1000500": loadTestData2("CVE-2018-1000500"),
+	cve5Path := filepath.Join(testdataPath, "cve5")
+	nvdPath := filepath.Join(testdataPath, "nvd")
+
+	cve5osv := loadOSV(cve5Path)
+	nvdosv := loadOSV(nvdPath)
+	nvdosvCopy := make(map[cves.CVEID]osvschema.Vulnerability)
+	for k, v := range nvdosv {
+		nvdosvCopy[k] = v
 	}
-	allParts, cveModifiedTime := loadParts("../../test_data/parts")
+	noPkgCVEs := []string{"CVE-2023-0003"}
 
-	combinedOSV := combineIntoOSV(cveStuff, allParts, "", cveModifiedTime)
+	combined := combineIntoOSV(cve5osv, nvdosvCopy, noPkgCVEs)
 
-	expectedCombined := 3
-	actualCombined := len(combinedOSV)
-
-	if actualCombined != expectedCombined {
-		t.Errorf("Expected %d in combination, got %d: %#v", expectedCombined, actualCombined, combinedOSV)
+	// Expected results
+	// CVE-2023-1234: merged
+	// CVE-2023-0001: from cve5 only
+	// CVE-2023-0002: from nvd only
+	// CVE-2023-0003: from cve5, no affected, but in noPkgCVEs
+	// CVE-2023-0004: from cve5, no affected, not in noPkgCVEs, so skipped
+	if len(combined) != 4 {
+		t.Errorf("Expected 4 combined vulnerabilities, got %d", len(combined))
 	}
-	for cve := range cveStuff {
-		if len(combinedOSV[cve].Affected) != len(allParts[cve]) {
-			t.Errorf("Affected lengths for %s do not match", cve)
+
+	// Test case 1: Merged CVE
+	cve1234, ok := combined["CVE-2023-1234"]
+	if !ok {
+		t.Fatal("Expected combined map to contain CVE-2023-1234")
+	}
+
+	// Check modified and published dates
+	expectedModified, _ := time.Parse(time.RFC3339, "2023-01-02T12:00:00Z")
+	if !cve1234.Modified.Equal(expectedModified) {
+		t.Errorf("CVE-2023-1234: expected modified time %v, got %v", expectedModified, cve1234.Modified)
+	}
+	expectedPublished, _ := time.Parse(time.RFC3339, "2023-01-01T09:00:00Z")
+	if !cve1234.Published.Equal(expectedPublished) {
+		t.Errorf("CVE-2023-1234: expected published time %v, got %v", expectedPublished, cve1234.Published)
+	}
+
+	// Check references
+	if len(cve1234.References) != 2 {
+		t.Errorf("CVE-2023-1234: expected 2 references, got %d", len(cve1234.References))
+	}
+
+	// Check aliases
+	if len(cve1234.Aliases) != 2 {
+		t.Errorf("CVE-2023-1234: expected 2 aliases, got %d", len(cve1234.Aliases))
+	}
+
+	// Check affected (based on pickAffectedInformation logic)
+	var affectedForRepoA osvschema.Affected
+	foundAffected := false
+	for _, a := range cve1234.Affected {
+		if len(a.Ranges) > 0 && a.Ranges[0].Repo == "https://example.com/repo/a" {
+			affectedForRepoA = a
+			foundAffected = true
+
+			break
 		}
-		found := false
-		switch cve {
-		case "CVE-2018-1000500":
-			for _, reference := range combinedOSV[cve].References {
-				if reference.Type == "ADVISORY" &&
-					reference.URL == "https://security-tracker.debian.org/tracker/CVE-2018-1000500" {
-					found = true
-				}
-			}
-		case "CVE-2022-33745":
-			for _, reference := range combinedOSV[cve].References {
-				if reference.Type == "ADVISORY" &&
-					reference.URL == "https://security.alpinelinux.org/vuln/CVE-2022-33745" {
-					found = true
-				}
-			}
-		case "CVE-2022-32746":
-			for _, reference := range combinedOSV[cve].References {
-				if reference.Type == "ADVISORY" &&
-					reference.URL == "https://security.alpinelinux.org/vuln/CVE-2022-32746" {
-					found = true
-				}
-			}
-		}
-		if !found {
-			t.Errorf("%s doesn't have all expected references", cve)
-		}
+	}
+	if !foundAffected {
+		t.Fatal("Did not find affected for repo https://example.com/repo/a")
+	}
+
+	expectedRange := osvschema.Range{
+		Type: "GIT",
+		Repo: "https://example.com/repo/a",
+		Events: []osvschema.Event{
+			{Introduced: "1.0.0"},
+			{Fixed: "1.0.1"},
+		},
+	}
+
+	// The current logic for pickAffectedInformation when len(cveRanges) == 1 && len(nvdRanges) == 1
+	// is to prefer cve5 data.
+	if diff := cmp.Diff(expectedRange, affectedForRepoA.Ranges[0]); diff != "" {
+		t.Errorf("CVE-2023-1234: affected range mismatch (-want +got):\n%s", diff)
+	}
+
+	// Test case 2: CVE only in cve5
+	if _, ok = combined["CVE-2023-0001"]; !ok {
+		t.Error("Expected combined map to contain CVE-2023-0001")
+	}
+
+	// Test case 3: CVE only in nvd
+	if _, ok = combined["CVE-2023-0002"]; !ok {
+		t.Error("Expected combined map to contain CVE-2023-0002")
+	}
+
+	// Test case 4: No affected, in noPkgCVEs
+	if _, ok = combined["CVE-2023-0003"]; !ok {
+		t.Error("Expected combined map to contain CVE-2023-0003")
+	}
+
+	// Test case 5: No affected, not in noPkgCVEs
+	if _, ok = combined["CVE-2023-0004"]; ok {
+		t.Error("Expected combined map to NOT contain CVE-2023-0004")
 	}
 }
 
-func TestGetModifiedTime(t *testing.T) {
-	_, err := getModifiedTime("../../test_data/parts/debian/CVE-2016-1585.debian.json")
-	if err != nil {
-		t.Errorf("Failed to get modified time.")
+func TestPickAffectedInformation(t *testing.T) {
+	repoA := "https://example.com/repo/a"
+	repoB := "https://example.com/repo/b"
+
+	// Base data for tests
+	cve5Base := []osvschema.Affected{
+		{
+			Ranges: []osvschema.Range{
+				{
+					Type: "GIT",
+					Repo: repoA,
+					Events: []osvschema.Event{
+						{Introduced: "1.0.0"},
+						{Fixed: "1.0.1"},
+					},
+				},
+			},
+		},
+	}
+
+	nvdBase := []osvschema.Affected{
+		{
+			Ranges: []osvschema.Range{
+				{
+					Type: "GIT",
+					Repo: repoA,
+					Events: []osvschema.Event{
+						{Introduced: "1.0.0"},
+						{Fixed: "1.0.2"}, // Different fixed version
+					},
+				},
+			},
+		},
+	}
+
+	testCases := []struct {
+		name         string
+		cve5Affected []osvschema.Affected
+		nvdAffected  []osvschema.Affected
+		wantAffected []osvschema.Affected
+	}{
+		{
+			name:         "NVD has more affected packages",
+			cve5Affected: cve5Base,
+			nvdAffected: append(append([]osvschema.Affected(nil), nvdBase...), osvschema.Affected{
+				Package: osvschema.Package{Name: "another"},
+			}),
+			wantAffected: append(append([]osvschema.Affected(nil), nvdBase...), osvschema.Affected{
+				Package: osvschema.Package{Name: "another"},
+			}),
+		},
+		{
+			name:         "Same repo, same number of ranges, cve5 data is preferred",
+			cve5Affected: cve5Base,
+			nvdAffected:  nvdBase,
+			// cve5's "1.0.1" fixed version should be kept
+			wantAffected: []osvschema.Affected{
+				{
+					Ranges: []osvschema.Range{
+						{
+							Type:   "GIT",
+							Repo:   repoA,
+							Events: cve5Base[0].Ranges[0].Events,
+						},
+					},
+				},
+			},
+		},
+		{
+			name:         "cve5 is empty, use nvd",
+			cve5Affected: []osvschema.Affected{},
+			nvdAffected:  nvdBase,
+			wantAffected: nvdBase,
+		},
+		{
+			name:         "nvd is empty, use cve5",
+			cve5Affected: cve5Base,
+			nvdAffected:  []osvschema.Affected{},
+			wantAffected: cve5Base,
+		},
+		{
+			name: "NVD provides missing introduced version",
+			cve5Affected: []osvschema.Affected{
+				{
+					Ranges: []osvschema.Range{
+						{
+							Type: "GIT",
+							Repo: repoA,
+							Events: []osvschema.Event{
+								{Fixed: "1.0.1"}, // No introduced
+							},
+						},
+					},
+				},
+			},
+			nvdAffected: []osvschema.Affected{
+				{
+					Ranges: []osvschema.Range{
+						{
+							Type: "GIT",
+							Repo: repoA,
+							Events: []osvschema.Event{
+								{Introduced: "1.0.0"}, // NVD has introduced
+								{Fixed: "1.0.2"},
+							},
+						},
+					},
+				},
+			},
+			wantAffected: []osvschema.Affected{
+				{
+					Ranges: []osvschema.Range{
+						{
+							Type: "GIT",
+							Repo: repoA,
+							Events: []osvschema.Event{
+								{Introduced: "1.0.0"},
+								{Fixed: "1.0.1"},
+							},
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "NVD provides missing fixed version",
+			cve5Affected: []osvschema.Affected{
+				{
+					Ranges: []osvschema.Range{
+						{
+							Type: "GIT",
+							Repo: repoA,
+							Events: []osvschema.Event{
+								{Introduced: "1.0.0"}, // No fixed
+							},
+						},
+					},
+				},
+			},
+			nvdAffected: []osvschema.Affected{
+				{
+					Ranges: []osvschema.Range{
+						{
+							Type: "GIT",
+							Repo: repoA,
+							Events: []osvschema.Event{
+								{Introduced: "0.9.0"},
+								{Fixed: "1.0.2"}, // NVD has fixed
+							},
+						},
+					},
+				},
+			},
+			wantAffected: []osvschema.Affected{
+				{
+					Ranges: []osvschema.Range{
+						{
+							Type: "GIT",
+							Repo: repoA,
+							Events: []osvschema.Event{
+								{Introduced: "1.0.0"},
+								{Fixed: "1.0.2"},
+							},
+						},
+					},
+				},
+			},
+		},
+		{
+			name:         "NVD has unmatched repo, should be added",
+			cve5Affected: cve5Base,
+			nvdAffected: []osvschema.Affected{
+				{
+					Ranges: []osvschema.Range{
+						{
+							Type: "GIT",
+							Repo: repoB, // Different repo
+							Events: []osvschema.Event{
+								{Introduced: "2.0.0"},
+								{Fixed: "2.0.1"},
+							},
+						},
+					},
+				},
+			},
+			wantAffected: []osvschema.Affected{
+				cve5Base[0], // From cve5
+				{
+					Ranges: []osvschema.Range{
+						{
+							Type: "GIT",
+							Repo: repoB,
+							Events: []osvschema.Event{
+								{Introduced: "2.0.0"},
+								{Fixed: "2.0.1"},
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+
+	// Sorter for comparing slices of Affected, ignoring order.
+	sorter := cmpopts.SortSlices(func(a, b osvschema.Affected) bool {
+		if len(a.Ranges) == 0 || len(a.Ranges[0].Repo) == 0 {
+			return true
+		}
+		if len(b.Ranges) == 0 || len(b.Ranges[0].Repo) == 0 {
+			return false
+		}
+
+		return a.Ranges[0].Repo < b.Ranges[0].Repo
+	})
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			// Create a copy to avoid modifying the test case data
+			cve5Actual := make([]osvschema.Affected, len(tc.cve5Affected))
+			copy(cve5Actual, tc.cve5Affected)
+
+			gotAffected := pickAffectedInformation(cve5Actual, tc.nvdAffected)
+
+			if diff := cmp.Diff(tc.wantAffected, gotAffected, sorter); diff != "" {
+				t.Errorf("pickAffectedInformation() mismatch (-want +got):\n%s", diff)
+			}
+		})
 	}
 }
 
-func TestUpdateModifiedDate(t *testing.T) {
-	var cveID1, cveID2 cves.CVEID
-	cveID1 = "CVE-2022-33745"
-	cveID2 = "CVE-2022-32746"
+func TestCombineTwoOSVRecords(t *testing.T) {
+	cve5Modified, _ := time.Parse(time.RFC3339, "2023-01-01T12:00:00Z")
+	cve5Published, _ := time.Parse(time.RFC3339, "2023-01-01T10:00:00Z")
+	nvdModified, _ := time.Parse(time.RFC3339, "2023-01-02T12:00:00Z")  // Later
+	nvdPublished, _ := time.Parse(time.RFC3339, "2023-01-01T09:00:00Z") // Earlier
 
-	cveStuff := map[cves.CVEID]cves.Vulnerability{
-		cveID1: loadTestData2("CVE-2022-33745"),
-		cveID2: loadTestData2("CVE-2022-32746"),
-	}
-	allParts, _ := loadParts("../../test_data/parts")
-
-	cveModifiedTimeMock := make(map[cves.CVEID]time.Time)
-	time1 := "0001-00-00T00:00:00Z"
-	time2 := "2024-04-30T00:38:53Z"
-	modifiedTime1, _ := time.Parse(time.RFC3339, time1)
-	modifiedTime2, _ := time.Parse(time.RFC3339, time2)
-	cveModifiedTimeMock[cveID1] = modifiedTime1
-	cveModifiedTimeMock[cveID2] = modifiedTime2
-
-	combinedOSV := combineIntoOSV(cveStuff, allParts, "", cveModifiedTimeMock)
-
-	expectedCombined := 2
-	actualCombined := len(combinedOSV)
-
-	if actualCombined != expectedCombined {
-		t.Errorf("Expected %d in combination, got %d: %#v", expectedCombined, actualCombined, combinedOSV)
+	cve5 := osvschema.Vulnerability{
+		ID:        "CVE-2023-1234",
+		Modified:  cve5Modified,
+		Published: cve5Published,
+		Aliases:   []string{"GHSA-1234"},
+		References: []osvschema.Reference{
+			{Type: "WEB", URL: "https://example.com/cve5"},
+		},
+		Affected: []osvschema.Affected{
+			{
+				Package: osvschema.Package{Name: "package-a"},
+			},
+		},
 	}
 
-	// Keeps CVE modified time if none of its parts have a later modification time
-	if combinedOSV[cveID1].Modified.Equal(modifiedTime1) {
-		t.Errorf("Wrong modified time: %s", combinedOSV["CVE-2022-33745"].Modified)
+	nvd := osvschema.Vulnerability{
+		ID:        "CVE-2023-1234",
+		Modified:  nvdModified,
+		Published: nvdPublished,
+		Aliases:   []string{"GHSA-1234", "GHSA-5678"},
+		References: []osvschema.Reference{
+			{Type: "WEB", URL: "https://example.com/cve5"}, // Duplicate
+			{Type: "WEB", URL: "https://example.com/nvd"},
+		},
+		Affected: []osvschema.Affected{
+			{
+				Package: osvschema.Package{Name: "package-a"},
+			},
+			{
+				Package: osvschema.Package{Name: "package-b"},
+			},
+		},
 	}
 
-	// Updates the CVE's modified time if any of its parts have a later modification time
-	if combinedOSV[cveID2].Modified != modifiedTime2 {
-		t.Errorf("Wrong modified time, expected: %s, got: %s", time2, combinedOSV["CVE-2022-32746"].Modified)
+	expected := osvschema.Vulnerability{
+		ID:        "CVE-2023-1234",
+		Modified:  nvdModified,  // Should take later date from NVD
+		Published: nvdPublished, // Should take earlier date from NVD
+		Aliases:   []string{"GHSA-1234", "GHSA-5678"},
+		References: []osvschema.Reference{
+			{Type: "WEB", URL: "https://example.com/cve5"},
+			{Type: "WEB", URL: "https://example.com/nvd"},
+		},
+		// pickAffectedInformation prefers nvd if it has more packages
+		Affected: nvd.Affected,
+	}
+
+	got := combineTwoOSVRecords(cve5, nvd)
+
+	// Sort slices for consistent comparison
+	sort.Strings(got.Aliases)
+	sort.Strings(expected.Aliases)
+	sort.Slice(got.References, func(i, j int) bool {
+		return got.References[i].URL < got.References[j].URL
+	})
+	sort.Slice(expected.References, func(i, j int) bool {
+		return expected.References[i].URL < expected.References[j].URL
+	})
+
+	if diff := cmp.Diff(expected, got); diff != "" {
+		t.Errorf("combineTwoOSVRecords() mismatch (-want +got):\n%s", diff)
 	}
 }
 

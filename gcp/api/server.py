@@ -26,14 +26,15 @@ import threading
 import time
 import concurrent.futures
 from typing import Callable
-from urllib.parse import urlparse
 
 from collections import defaultdict
 
 from google.cloud import exceptions
 from google.cloud import ndb
+from google.cloud.ndb import tasklets
 from google.api_core.exceptions import InvalidArgument
 import google.cloud.ndb.exceptions as ndb_exceptions
+from google.protobuf import timestamp_pb2
 
 import grpc
 from grpc_health.v1 import health_pb2
@@ -43,14 +44,15 @@ from packaging.utils import canonicalize_version
 
 import osv
 from osv import ecosystems
-from osv import semver_index
 from osv import purl_helpers
 from osv.logs import setup_gcp_logging
 import osv_service_v1_pb2
 import osv_service_v1_pb2_grpc
 
 from cursor import QueryCursor, QueryCursorMetadata
-from server_new import query_package
+
+# TODO(michaelkedar): A Global ThreadPoolExecutor is not ideal.
+_BUCKET_THREAD_POOL = concurrent.futures.ThreadPoolExecutor(max_workers=32)
 
 _SHUTDOWN_GRACE_DURATION = 5
 
@@ -108,38 +110,6 @@ ToResponseCallable = Callable[[osv.Bug], ndb.Future]
 _ndb_client = ndb.Client()
 
 # ----
-
-
-def _normalize_git_repo_url(repo_url: str) -> str:
-  """Normalize git repository URL for matching by removing protocol/scheme.
-  
-  This enables matching git repositories regardless of whether they use
-  http, https, git, or other protocols. For example:
-  - http://git.musl-libc.org/git/musl
-  - https://git.musl-libc.org/git/musl
-  - git://git.musl-libc.org/git/musl
-  
-  Will all normalize to: git.musl-libc.org/git/musl
-  
-  Args:
-    repo_url: The git repository URL to normalize
-    
-  Returns:
-    The normalized URL without protocol/scheme
-  """
-  if not repo_url:
-    return repo_url
-
-  try:
-    parsed = urlparse(repo_url)
-    # Remove scheme and reconstruct without it
-    # Keep netloc (hostname) and path
-    normalized = parsed.netloc + parsed.path
-
-    # Remove trailing slash
-    return normalized.rstrip('/')
-  except Exception:
-    return repo_url
 
 
 def ndb_context(func):
@@ -200,29 +170,16 @@ class OSVServicer(osv_service_v1_pb2_grpc.OSVServicer,
   @ndb.synctasklet
   def GetVulnById(self, request, context: grpc.ServicerContext):
     """Return a `Vulnerability` object for a given OSV ID."""
+    # Datastore has a limit of how large indexed properties can be (<=1500B).
+    # Vulnerability IDs aren't going to be that long.
+    if len(request.id) > 100:
+      context.abort(grpc.StatusCode.INVALID_ARGUMENT, 'ID too long')
+      return None
 
-    if get_gcp_project() in ('oss-vdb-test', 'test-osv'):
-      # Get vuln from GCS
-      try:
-        return osv.gcs.get_by_id(request.id)
-      except exceptions.NotFound:
-        # Check for aliases
-        alias_group = yield osv.AliasGroup.query(
-            osv.AliasGroup.bug_ids == request.id).get_async()
-        if alias_group:
-          alias_string = ' '.join([
-              f'{alias}' for alias in alias_group.bug_ids if alias != request.id
-          ])
-          context.abort(
-              grpc.StatusCode.NOT_FOUND,
-              f'Bug not found, but the following aliases were: {alias_string}')
-          return None
-        context.abort(grpc.StatusCode.NOT_FOUND, 'Bug not found.')
-        return None
-
-    bug = yield osv.Bug.query(osv.Bug.db_id == request.id).get_async()
-
-    if not bug:
+    # Get vuln from GCS
+    try:
+      return osv.gcs.get_by_id(request.id)
+    except exceptions.NotFound:
       # Check for aliases
       alias_group = yield osv.AliasGroup.query(
           osv.AliasGroup.bug_ids == request.id).get_async()
@@ -236,17 +193,6 @@ class OSVServicer(osv_service_v1_pb2_grpc.OSVServicer,
         return None
       context.abort(grpc.StatusCode.NOT_FOUND, 'Bug not found.')
       return None
-
-    if bug.status == osv.BugStatus.UNPROCESSED:
-      context.abort(grpc.StatusCode.NOT_FOUND, 'Bug not found.')
-      return None
-
-    if not bug.public:
-      context.abort(grpc.StatusCode.PERMISSION_DENIED, 'Permission denied.')
-      return None
-
-    resp = yield bug_to_response(bug, include_details=True)
-    return resp
 
   @ndb_context
   @trace_filter.log_trace
@@ -891,9 +837,6 @@ def do_query(query: osv_service_v1_pb2.Query,
       context.single_page_limit_override = \
         _MAX_VULN_LISTED_PRE_EXCEEDED_UBUNTU_EXCEPTION
 
-  def to_response(b: osv.Bug):
-    return bug_to_response(b, include_details)
-
   bugs: list[ndb.Future]
   if query.WhichOneof('param') == 'commit':
     try:
@@ -903,19 +846,11 @@ def do_query(query: osv_service_v1_pb2.Query,
                                     'Invalid hash.')
       return None
 
-    bugs = yield query_by_commit(context, commit_bytes, to_response=to_response)
-  elif package_name and get_gcp_project() in ('oss-vdb-test', 'test-osv'):
+    bugs = yield query_by_commit(context, commit_bytes, include_details)
+  elif package_name and (ecosystem or version):
     # New Database table & GCS querying
     bugs = yield query_package(context, package_name, ecosystem, version,
                                include_details)
-  # Version query needs to include a package.
-  elif package_name and version:
-    bugs = yield query_by_version(
-        context, package_name, ecosystem, version, to_response=to_response)
-  elif package_name and ecosystem:
-    # Package specified without version.
-    bugs = yield query_by_package(
-        context, package_name, ecosystem, to_response=to_response)
   else:
     context.service_context.abort(grpc.StatusCode.INVALID_ARGUMENT,
                                   'Invalid query.')
@@ -942,38 +877,10 @@ def do_query(query: osv_service_v1_pb2.Query,
   return [b for b in bugs if b is not None], next_page_token_str
 
 
-def bug_to_response(bug: osv.Bug, include_details=True) -> ndb.Future:
-  """Asynchronously convert a Bug entity to a response object."""
-  if include_details:
-    return bug.to_vulnerability_async(
-        include_source=True, include_alias=True, include_upstream=True)
-
-  return bug.to_vulnerability_minimal_async(
-      include_alias=True, include_upstream=True)
-
-
 @ndb.tasklet
-def _get_bugs(
-    bug_ids: list[str],
-    to_response: ToResponseCallable = bug_to_response) -> list[ndb.Future]:
-  """Get bugs from bug ids."""
-  bugs = ndb.get_multi_async([ndb.Key(osv.Bug, bug_id) for bug_id in bug_ids
-                             ])  # type: ignore
-
-  responses = []
-  for future_bug in bugs:
-    bug: osv.Bug = yield future_bug
-    if bug and bug.status == osv.BugStatus.PROCESSED and bug.public:
-      responses.append(to_response(bug))
-
-  return responses
-
-
-@ndb.tasklet
-def query_by_commit(
-    context: QueryContext,
-    commit: bytes,
-    to_response: ToResponseCallable = bug_to_response) -> list[ndb.Future]:
+def query_by_commit(context: QueryContext,
+                    commit: bytes,
+                    include_details: bool = True) -> list[ndb.Future]:
   """
   Perform a query by commit.
 
@@ -982,11 +889,10 @@ def query_by_commit(
   Args:
     context: QueryContext for the current query.
     commit: The commit hash to query.
-    to_response: Optional function to convert osv.Bug to a 
-      vulnerability response.
+    include_details: Whether to return full or minimal vulnerability details.
 
   Returns:
-    list of responses (return values from to_response)
+    A list of Vulnerability protos.
   """
   query = osv.AffectedCommits.query(osv.AffectedCommits.commits == commit)
 
@@ -994,12 +900,12 @@ def query_by_commit(
   if context.should_skip_query():
     return []
 
-  bug_ids = []
+  bugs = []
   it: ndb.QueryIterator = query.iter(
       keys_only=True, start_cursor=context.cursor_at_current())
 
   while (yield it.has_next_async()):
-    if context.should_break_page(len(bug_ids)):
+    if context.should_break_page(len(bugs)):
       context.save_cursor_at_page_break(it)
       break
 
@@ -1007,423 +913,285 @@ def query_by_commit(
     # <BugID>-<PageNumber>
     affected_commits: ndb.Key = it.next()
     bug_id: str = affected_commits.id().rsplit("-", 1)[0]
+    vuln: osv.Vulnerability = yield osv.Vulnerability.get_by_id_async(bug_id)
+    if vuln is None:
+      logging.error('AffectedCommit for %s matched but Vulnerability not found',
+                    bug_id)
+      osv.pubsub.publish_failure(b'', type='gcs_missing', id=bug_id)
+      continue
+    if vuln.is_withdrawn:
+      continue
 
-    bug_ids.append(bug_id)
+    if include_details:
+      bugs.append(get_vuln_async(bug_id))
+    else:
+      bugs.append(vulnerability_to_minimal(vuln))
     context.total_responses.add(1)
 
-  bugs = yield _get_bugs(bug_ids, to_response=to_response)
   return bugs
 
 
-def _is_semver_affected(affected_packages: list[osv.AffectedPackage],
-                        package_name: str | None, ecosystem: str | None,
-                        version_str: str):
-  """Returns whether or not the given version is within an affected SEMVER
-
-  range.
+@ndb.tasklet
+def query_package(context: QueryContext,
+                  package_name: str | None,
+                  ecosystem: str | None,
+                  version: str | None,
+                  include_details: bool = True) -> list[ndb.Future]:
   """
-  version = semver_index.parse(version_str)
+  Queries for vulnerabilities by package and version using a new data model.
 
-  affected = False
-  for affected_package in affected_packages:
-    if package_name and package_name != affected_package.package.name:
+  This function is designed to test a new query path that may use different
+  data sources (like GCS) for fetching vulnerability details.
+
+  Args:
+    context: The QueryContext for the current request.
+    package_name: The name of the package.
+    ecosystem: The package's ecosystem.
+    version: The version of the package to query for.
+    include_details: Whether to return full or minimal vulnerability details.
+
+  Returns:
+    A list of Vulnerability protos.
+  """
+
+  context.query_counter += 1
+  if context.should_skip_query():
+    return []
+
+  # Bare minimum we need a package name.
+  if not package_name:
+    return []
+
+  if (package_name.startswith('linux') and ecosystem.startswith('Ubuntu') and
+      version):
+    result = yield query_ubuntu_linux(context, package_name, ecosystem, version,
+                                      include_details)
+    return result
+
+  # Ideally, we'd check both unnormalized and normalized named at once, if there
+  # is no provided ecosystem (even though that is not explicitly supported), but
+  # Datastore cannot give cursors for 'OR' queries, so just only normalize if
+  # this is explicitly GIT.
+  if ecosystem == 'GIT':
+    package_name = osv.normalize_repo_package(package_name)
+
+  query = osv.AffectedVersions.query(osv.AffectedVersions.name == package_name)
+  if ecosystem:
+    query = query.filter(osv.AffectedVersions.ecosystem == ecosystem)
+  query = query.order(osv.AffectedVersions.vuln_id)
+
+  bugs = []
+  last_matched_id = ''
+  if query_cursor := context.input_cursor:
+    if query_cursor.metadata.last_id:
+      last_matched_id = query_cursor.metadata.last_id
+
+  it: ndb.QueryIterator = query.iter(start_cursor=context.cursor_at_current())
+  while (yield it.has_next_async()):
+    if context.should_break_page(len(bugs)):
+      meta = QueryCursorMetadata(
+          last_id=last_matched_id) if last_matched_id else None
+      context.save_cursor_at_page_break(it, meta)
+      break
+
+    affected: osv.AffectedVersions = it.next()
+    if affected.vuln_id == last_matched_id:
       continue
-
-    if ecosystem and ecosystem != affected_package.package.ecosystem:
-      continue
-
-    for affected_range in affected_package.ranges:
-      if affected_range.type != 'SEMVER':
-        continue
-
-      for event in osv.sorted_events('', affected_range.type,
-                                     affected_range.events):
-        if (event.type == 'introduced' and
-            (event.value == '0' or version >= semver_index.parse(event.value))):
-          affected = True
-
-        if event.type == 'fixed' and version >= semver_index.parse(event.value):
-          affected = False
-
-        if event.type == 'last_affected' and version > semver_index.parse(
-            event.value):
-          affected = False
-
-      if affected:
-        return affected
-
-  return affected
-
-
-def _is_version_affected(affected_packages,
-                         package_name,
-                         ecosystem,
-                         version,
-                         normalize=False):
-  """
-  Returns whether or not the given version is within an affected ECOSYSTEM
-  range.
-  """
-  for affected_package in affected_packages:
-    if ecosystem:
-      # If package ecosystem has a :, also try ignoring parts after it.
-      if not is_matching_package_ecosystem(affected_package.package.ecosystem,
-                                           ecosystem):
-        continue
-
-    if package_name:
-      if ecosystem == 'GIT':
-        # Special case for git ecosystems to match repo urls
-        repo_url = ''
-        for rg in affected_package.ranges:
-          if rg.repo_url != '':
-            repo_url = rg.repo_url
-            break
-
-        # Normalize both URLs for comparison to handle protocol differences
-        # (http vs https vs git://, etc.)
-        normalized_package_name = _normalize_git_repo_url(package_name)
-        normalized_repo_url = _normalize_git_repo_url(repo_url)
-
-        if normalized_package_name != normalized_repo_url:
-          continue
+    if not version or affected_affects(version, affected):
+      if include_details:
+        bugs.append(get_vuln_async(affected.vuln_id))
       else:
-        if package_name != affected_package.package.name:
-          continue
+        bugs.append(get_minimal_async(affected.vuln_id))
+      last_matched_id = affected.vuln_id
+      context.total_responses.add(1)
 
-    if normalize:
-      if any(
-          osv.normalize_tag(version) == osv.normalize_tag(v)
-          for v in affected_package.versions):
-        return True
-    else:
-      if version in affected_package.versions:
-        return True
+  return bugs
+
+
+def affected_affects(version: str, affected: osv.AffectedVersions) -> bool:
+  """Check if a given version is affected by the AffectedVersions entry."""
+  if len(affected.versions) > 0:
+    return _match_versions(version, affected)
+  if len(affected.events) > 0:
+    return _match_events(version, affected)
+
+  logging.warning('AffectedVersion %s (%s) has no events or versions',
+                  affected.key, affected.vuln_id)
+  return False
+
+
+def _match_versions(version: str, affected: osv.AffectedVersions) -> bool:
+  """Check if the given version matches one of the AffectedVersions' listed 
+  versions."""
+  ecosystem_helper = osv.ecosystems.get(affected.ecosystem)
+  if ecosystem_helper is not None:
+    # Most ecosystem helpers return a very large version on invalid, but if it
+    # does cause an error, just match nothing.
+    try:
+      parsed_version = ecosystem_helper.sort_key(version)
+    except:
+      # TODO(michaelkedar): This log is noisy.
+      logging.error('Ecosystem helper for %s raised an exception',
+                    affected.ecosystem)
+      return False
+
+    for v in affected.versions:
+      try:
+        if ecosystem_helper.sort_key(v) == parsed_version:
+          return True
+      except:
+        logging.error('Version %s in AffectedVersion %s (%s) does not parse', v,
+                      affected.key, affected.vuln_id)
+    return False
+
+  # Helper not implemented:
+  # Direct string matching
+  if version in affected.versions:
+    return True
+  # Try fuzzy matching
+  vers = affected.versions
+  if affected.ecosystem == 'GIT':
+    vers = osv.models.maybe_strip_repo_prefixes(vers, [affected.name])
+  if osv.normalize_tag(version) in osv.normalize_tags(vers):
+    return True
+  if canonicalize_version(version) in (
+      canonicalize_version(v) for v in affected.versions):
+    return True
+  return False
+
+
+def _match_events(version: str, affected: osv.AffectedVersions) -> bool:
+  """Check if the given version matches in the AffectedVersions' events list."""
+  # TODO(michaelkedar): We don't support grabbing the release number from PURLs
+  # https://github.com/google/osv.dev/issues/3126
+  # This causes many false positive matches in Ubuntu and Alpine in particular
+  # when doing range-based matching.
+  # We have version enumeration for Alpine, and Ubuntu provides versions for us.
+  # Just skip range-based matching if they don't have release numbers for now.
+  if affected.ecosystem in ('Alpine', 'Ubuntu'):
+    return False
+  ecosystem_helper = osv.ecosystems.get(affected.ecosystem)
+  if ecosystem_helper is None:
+    # Ecosystem does not support comparisons.
+    return False
+  try:
+    parsed_version = ecosystem_helper.sort_key(version)
+  except:
+    # TODO(michaelkedar): This log is noisy.
+    logging.error('Ecosystem helper for %s raised an exception',
+                  affected.ecosystem)
+    return False
+
+  # Find where this version would belong in the sorted events list.
+  for event in reversed(affected.events):
+    try:
+      event_ver = ecosystem_helper.sort_key(event.value)
+    except:
+      # Shouldn't really happen. We use sort_key to sort these before creating
+      # the AffectedVersions entity.
+      logging.error('Event %s in AffectedVersion %s (%s) does not parse',
+                    event.value, affected.key, affected.vuln_id)
+      return False
+    if event_ver == parsed_version:
+      return event.type in ('introduced', 'last_affected')
+    if event_ver < parsed_version:
+      return event.type == 'introduced'
 
   return False
 
 
 @ndb.tasklet
-def _query_by_semver(context: QueryContext, query: ndb.Query,
-                     package_name: str | None, ecosystem: str | None,
-                     version: str) -> list[osv.Bug]:
-  """
-  Perform a query by semver version.
-
-  This is a ndb.tasklet, so will return a future that will need to be yielded.
-
-  Args:
-    context: QueryContext for the current query.
-    query: A partially completed ndb.Query object which only needs 
-      semver filters to be added before query is performed.
-    package_name: Optional name of the package to query.
-    ecosystem: Optional ecosystem of the package to query.
-    version: The semver version to query for.
-
-  Returns:
-    list of osv.Bug entries wrapped in a Future.
-  """
-  if not semver_index.is_valid(version):
-    return []
-
-  results = []
-  query = query.filter(osv.Bug.semver_fixed_indexes
-                       > semver_index.normalize(version))  # type: ignore
-
-  context.query_counter += 1
-  if context.should_skip_query():
-    return []
-
-  it: ndb.QueryIterator = query.iter(start_cursor=context.cursor_at_current())
-
-  while (yield it.has_next_async()):
-    if context.should_break_page(len(results)):
-      context.save_cursor_at_page_break(it)
-      break
-
-    bug: osv.Bug = it.next()  # type: ignore
-    if _is_semver_affected(bug.affected_packages, package_name, ecosystem,
-                           version):
-      results.append(bug)
-      context.total_responses.add(1)
-
-  return results
+def get_minimal_async(vuln_id: str):
+  """Asynchronously get a minimal vulnerability record."""
+  vuln = yield osv.Vulnerability.get_by_id_async(vuln_id)
+  minimal = yield vulnerability_to_minimal(vuln)
+  return minimal
 
 
 @ndb.tasklet
-def _query_by_generic_version(
-    context: QueryContext,
-    base_query: ndb.Query,
-    package_name: str | None,
-    ecosystem: str | None,
-    version: str,
-) -> list[osv.Bug]:
-  """
-  Query by generic version. 
-  
-  This is a ndb.tasklet, so will return a future that will need to be yielded.
-
-  Args:
-    context: QueryContext for the current query.
-    base_query: A partially completed ndb.Query object which only needs 
-      version filters to be added before query is performed.
-    package_name: Optional name of the package to query.
-    ecosystem: Optional ecosystem of the package to query.
-    version: The non-semver version to query for.
-  
-  Returns:
-    list of osv.Bug entries wrapped in a Future.
-  """
-  # Try without normalizing.
-  results = yield query_by_generic_helper(context, base_query, package_name,
-                                          ecosystem, version, False)
-
-  # If there are results, then we should return with this query,
-  # as no normalization seem to be the correct format.
-  if results:
-    return results
-
-  results = yield query_by_generic_helper(context, base_query,
-                                          package_name, ecosystem,
-                                          osv.normalize_tag(version), True)
-
-  if results:
-    return results
-
-  # Try again after canonicalizing + normalizing version.
-  results = yield query_by_generic_helper(context, base_query, package_name,
-                                          ecosystem,
-                                          canonicalize_version(version), True)
-
-  return results
+def vulnerability_to_minimal(vuln: osv.Vulnerability):
+  """Construct a minimal response from a Vulnerability entity."""
+  vuln_id = vuln.key.id()
+  modified = timestamp_pb2.Timestamp()
+  modified.FromDatetime(vuln.modified)
+  return osv.vulnerability_pb2.Vulnerability(id=vuln_id, modified=modified)
 
 
-@ndb.tasklet
-def query_by_generic_helper(context: QueryContext, base_query: ndb.Query,
-                            package_name: str | None, ecosystem: str | None,
-                            version: str, is_normalized: bool) -> list[osv.Bug]:
-  """
-  Helper function for query_by_generic. 
-  This function can be called multiple times.
-  """
-  query: ndb.Query = base_query.filter(osv.Bug.affected_fuzzy == version)
-  results: list[osv.Bug] = []
-  context.query_counter += 1
-  if context.should_skip_query():
-    return []
+def get_vuln_async(vuln_id: str) -> ndb.Future:
+  """Asynchronously get a full vulnerability record."""
 
-  it: ndb.QueryIterator = query.iter(start_cursor=context.cursor_at_current())
+  # As a work around for using external processes with ndb's async,
+  # do the bucket get in another thread, and poll it with abd ndb Future.
+  f = _BUCKET_THREAD_POOL.submit(osv.gcs.get_by_id, vuln_id)
 
-  while (yield it.has_next_async()):
-    if context.should_break_page(len(results)):
-      context.save_cursor_at_page_break(it)
-      break
-    bug: osv.Bug = it.next()  # type: ignore
-    if _is_version_affected(
-        bug.affected_packages,
-        package_name,
-        ecosystem,
-        version,
-        normalize=is_normalized):
-      results.append(bug)
-      context.total_responses.add(1)
-  return results
-
-
-@ndb.tasklet
-def query_by_version(
-    context: QueryContext,
-    package_name: str | None,
-    ecosystem: str | None,
-    version: str,
-    to_response: ToResponseCallable = bug_to_response) -> list[ndb.Future]:
-  """
-  Query by (fuzzy) version.
-
-  This is a ndb.tasklet, so will return a future that will need to be yielded.
-
-  Args:
-    context: QueryContext for the current query.
-    package_name: Optional name of the package to query.
-    ecosystem: Optional ecosystem of the package to query.
-    version: The version str to query by.
-    to_response: Optional function to convert osv.Bug to a 
-      vulnerability response.
-
-  Returns:
-    list of responses (return values from to_response)
-  """
-
-  if package_name:
-    query = osv.Bug.query(
-        osv.Bug.status == osv.BugStatus.PROCESSED,
-        osv.Bug.project == package_name,
-        # pylint: disable=singleton-comparison
-        osv.Bug.public == True,  # noqa: E712
-    )
-  else:
-    return []
-
-  ecosystem_info = None
-  if ecosystem:
-    query = query.filter(osv.Bug.ecosystem == ecosystem)
-    ecosystem_info = ecosystems.get(ecosystem)
-
-  is_semver = ecosystems.is_semver(ecosystem)
-  supports_comparing = ecosystem_info is not None
-
-  bugs = []
-  if ecosystem:
-    if is_semver:
-      # Ecosystem supports semver only.
-      bugs = yield _query_by_semver(context, query, package_name, ecosystem,
-                                    version)
-
-      # If the previous query has fully finished (or skipped),
-      # try generic version
-      new_bugs = yield _query_by_generic_version(context, query, package_name,
-                                                 ecosystem, version)
-      for bug in new_bugs:
-        if bug not in bugs:
-          bugs.append(bug)
-    elif supports_comparing:
-      # Query for non-enumerated ecosystems.
-      bugs = yield _query_by_comparing_versions(context, query, package_name,
-                                                ecosystem, version)
-    else:
-      bugs = yield _query_by_generic_version(context, query, package_name,
-                                             ecosystem, version)
-
-  else:
-    logging.warning("Package query without ecosystem specified")
-    # Unspecified ecosystem. Try semver first.
-    new_bugs = yield _query_by_semver(context, query, package_name, ecosystem,
-                                      version)
-    bugs.extend(new_bugs)
-
-    new_bugs = yield _query_by_generic_version(context, query, package_name,
-                                               ecosystem, version)
-    for bug in new_bugs:
-      if bug not in bugs:
-        bugs.append(bug)
-
-    # Our documentation states that this is an invalid query
-    # context.service_context.abort(grpc.StatusCode.INVALID_ARGUMENT,
-    #                               'Ecosystem not specified')
-
-  return [to_response(bug) for bug in bugs]
-
-
-@ndb.tasklet
-def _query_by_comparing_versions(context: QueryContext, query: ndb.Query,
-                                 package_name: str, ecosystem: str,
-                                 version: str) -> list[osv.Bug]:
-  """
-  Query by comparing versions.
-
-  Args:
-    context: QueryContext for the current query.
-    query: A partially completed ndb.Query object which only needs 
-      version filters to be added before query is performed.
-    package_name: Required name of the package to query.
-    ecosystem: Required ecosystem of the package to query.
-    version: The version str to query by.
-
-  Returns:
-    list of osv.Bugs
-  """
-  bugs: list[osv.Bug] = []
-
-  context.query_counter += 1
-  if context.should_skip_query():
-    return []
-
-  it: ndb.QueryIterator = query.iter(start_cursor=context.cursor_at_current())
-
-  while (yield it.has_next_async()):
+  @ndb.tasklet
+  def async_poll_result():
+    while not f.done():
+      yield tasklets.sleep(0.1)
     try:
-      if context.should_break_page(len(bugs)):
-        context.save_cursor_at_page_break(it)
-        break
+      return f.result()
+    except exceptions.NotFound:
+      logging.error('Vulnerability %s matched query but not found in GCS',
+                    vuln_id)
+      osv.pubsub.publish_failure(b'', type='gcs_missing', id=vuln_id)
+      return None
 
-      # next() will never return None as we check for has next above.
-      bug: osv.Bug = it.next()  # type: ignore
-      for affected_package in bug.affected_packages:  # type: ignore
-        affected_package: osv.AffectedPackage
-        package: osv.Package = affected_package.package  # type: ignore
+  def cleanup(_: ndb.Future):
+    f.cancel()
 
-        # If the queried ecosystem has no release specified (e.g., "Debian"),
-        # compare against packages in all releases (e.g., "Debian:X").
-        # Otherwise, only compare within
-        # the specified release (e.g., "Debian:11").
-        # Skips if the affected package ecosystem does not match
-        # the queried ecosystem.
-        if not is_matching_package_ecosystem(package.ecosystem, ecosystem):
-          continue
-
-        # Skips if the affected package name does not match
-        # the queried package name.
-        if package_name != package.name:
-          continue
-
-        if _is_affected(ecosystem, version, affected_package):
-          bugs.append(bug)
-          context.total_responses.add(1)
-          break
-    except Exception:
-      logging.exception('failed to compare versions')
-
-  return bugs
+  future = async_poll_result()
+  future.add_done_callback(cleanup)
+  return future
 
 
 @ndb.tasklet
-def query_by_package(context: QueryContext, package_name: str | None,
-                     ecosystem: str | None,
-                     to_response: ToResponseCallable) -> list[ndb.Future]:
-  """
-  Query by package.
+def query_ubuntu_linux(context: QueryContext,
+                       package_name: str,
+                       ecosystem: str,
+                       version: str,
+                       include_details: bool = True) -> list[ndb.Future]:
+  """Workaround query for linux kernel vulns in Ubuntu, because there's heaps of
+  them and it takes a while to check all the version ranges.
   
-  This is a ndb.tasklet, so will return a future that will need to be yielded.
-
-  Args:
-    context: QueryContext for the current query.
-    package_name: Optional name of the package to query.
-    ecosystem: Optional ecosystem of the package to query.
-    to_response: Function to convert osv.Bug to a 
-      vulnerability response.
-
-  Returns:
-    list of responses (return values from to_response)
+  The logic here is copied from the original implementation of server.py,
+  using the Bug entity to perform matching on only the version strings, and not
+  doing range-based matching.
   """
+
+  query = osv.Bug.query(
+      osv.Bug.status == osv.BugStatus.PROCESSED,
+      osv.Bug.project == package_name,
+      # pylint: disable=singleton-comparison
+      osv.Bug.public == True,
+      osv.Bug.ecosystem == ecosystem,
+      osv.Bug.affected_fuzzy == version)
+
   bugs = []
-  if package_name and ecosystem:
-    query = osv.Bug.query(
-        osv.Bug.status == osv.BugStatus.PROCESSED,
-        osv.Bug.project == package_name,
-        osv.Bug.ecosystem == ecosystem,
-        # pylint: disable=singleton-comparison
-        osv.Bug.public == True,  # noqa: E712
-    )
-  else:
-    return []
-
-  context.query_counter += 1
-  if context.should_skip_query():
-    return []
-
   it: ndb.QueryIterator = query.iter(start_cursor=context.cursor_at_current())
-
   while (yield it.has_next_async()):
     if context.should_break_page(len(bugs)):
       context.save_cursor_at_page_break(it)
       break
 
-    bug: osv.Bug = it.next()  # type: ignore
+    bug: osv.Bug = it.next()
+    for affected in bug.affected_packages:
+      eco = affected.package.ecosystem
+      if ecosystem not in (eco, ecosystems.normalize(eco),
+                           ecosystems.remove_variants(eco)):
+        continue
+      if package_name != affected.package.name:
+        continue
+      if version not in affected.versions:
+        continue
+      # Found a match: retrieve the proto from the bucket / Vulnerability entity
+      if include_details:
+        bugs.append(get_vuln_async(bug.db_id))
+      else:
+        bugs.append(get_minimal_async(bug.db_id))
+      context.total_responses.add(1)
+      break
 
-    bugs.append(bug)
-    context.total_responses.add(1)
-
-  return [to_response(bug) for bug in bugs]
+  return bugs
 
 
 def serve(port: int, local: bool):
@@ -1463,58 +1231,6 @@ def get_gcp_project():
   if not project:
     project = 'oss-vdb'  # fall back to oss-vdb
   return project
-
-
-def _is_affected(ecosystem: str, version: str,
-                 affected_package: osv.AffectedPackage) -> bool:
-  """Checks if a version is affected."""
-  affected = False
-  ecosystem_info = ecosystems.get(ecosystem)
-  queried_version = ecosystem_info.sort_key(version)
-
-  # OSV allows users to add affected versions
-  # that are not covered by affected ranges.
-  if version in affected_package.versions:
-    return True
-
-  for r in affected_package.ranges:
-    r: osv.AffectedRange2
-
-    for event in osv.sorted_events(ecosystem, r.type, r.events):
-      event: osv.AffectedEvent
-      if (event.type == 'introduced' and
-          (event.value == '0' or
-           queried_version >= ecosystem_info.sort_key(event.value))):
-        affected = True
-      elif (event.type == 'fixed' and
-            queried_version >= ecosystem_info.sort_key(event.value)):
-        affected = False
-      elif (event.type == 'last_affected' and
-            queried_version > ecosystem_info.sort_key(event.value)):
-        affected = False
-
-    if affected:
-      return True
-
-  return False
-
-
-def is_matching_package_ecosystem(package_ecosystem: str,
-                                  ecosystem: str) -> bool:
-  """Checks if the queried ecosystem matches the affected package's ecosystem,
-  considering potential variations in the package's ecosystem.
-  """
-
-  # Special case for GIT queries,
-  # for which osv entries will have an empty ecosystem for.
-  if ecosystem == 'GIT' and package_ecosystem == '':
-    return True
-
-  return any(eco == ecosystem for eco in (
-      package_ecosystem,
-      ecosystems.normalize(package_ecosystem),
-      ecosystems.remove_variants(package_ecosystem),
-  ))
 
 
 def main():

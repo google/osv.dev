@@ -47,7 +47,7 @@ For example, a project only declares the following direct dependency in pom.xml,
 
 ![Vulnerabilities reported scanning transitive dependencies in Maven pom.xml](transitive-scan-maven.png "Vulnerabilities reported scanning transitive dependencies in Maven pom.xml")
 
-Transitive dependency support is disabled in the [experimental offline mode](https://google.github.io/osv-scanner/experimental/offline-mode/).
+Transitive dependency support is disabled in the [experimental offline mode](https://google.github.io/osv-scanner/usage/offline-mode/).
 
 See our detailed documentation for more usage information on [transitive dependency scanning](https://google.github.io/osv-scanner/supported-languages-and-lockfiles/#transitive-dependency-scanning).
 

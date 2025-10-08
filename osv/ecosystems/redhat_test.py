@@ -36,7 +36,10 @@ class RPMEcosystemTest(unittest.TestCase):
     self.assertGreater(
         ecosystem.sort_key('2:1.14.3-2.module+el8.10.0+1815+5fe7415e'),
         ecosystem.sort_key('2:1.10.3-1.module+el8.10.0+1815+5fe7415e'))
-    self.assertLess(ecosystem.sort_key('invalid'), ecosystem.sort_key('0'))
+    self.assertLess(ecosystem.sort_key('0.string'), ecosystem.sort_key('0.0'))
+
+    # Check the 0 sentinel value.
+    self.assertLess(ecosystem.sort_key('0'), ecosystem.sort_key('0:0~0-0'))
 
     # AlmaLinux
     self.assertGreater(
@@ -60,7 +63,6 @@ class RPMEcosystemTest(unittest.TestCase):
         ecosystem.sort_key('3.2.7-1.mga9'))
     self.assertGreater(
         ecosystem.sort_key('3.2.7-1.2.mga9'), ecosystem.sort_key('0'))
-    self.assertLess(ecosystem.sort_key('invalid'), ecosystem.sort_key('0'))
     self.assertGreater(
         ecosystem.sort_key('1:1.8.11-1.mga9'),
         ecosystem.sort_key('0:1.9.1-2.mga9'))
@@ -110,6 +112,14 @@ class RPMEcosystemTest(unittest.TestCase):
         ecosystem.sort_key("2.86-150100.7.23.1"))
     self.assertEqual(
         ecosystem.sort_key("2.0.8-4.8.2"), ecosystem.sort_key("2.0.8-4.8.2"))
+
+    # Check >= / <= methods
+    self.assertGreaterEqual(
+        ecosystem.sort_key('1.10.2-1.oe2203'),
+        ecosystem.sort_key('1.2.2-1.oe2203'))
+    self.assertLessEqual(
+        ecosystem.sort_key('1.2.2-1.oe2203'),
+        ecosystem.sort_key('1.10.2-1.oe2203'))
 
   def test_rpm_ecosystems(self):
     """Test RPM-based ecosystems return an RPM ecosystem."""

@@ -20,18 +20,21 @@ import (
 	"encoding/json"
 	"errors"
 	"io"
+	"log/slog"
 	"net/url"
 	"os"
 	"path"
 	"slices"
 	"sort"
 	"strings"
+	"sync"
 	"time"
 
 	"gopkg.in/yaml.v2"
 
 	"github.com/google/osv/vulnfeeds/cves"
 	"github.com/google/osv/vulnfeeds/models"
+	"github.com/google/osv/vulnfeeds/utility/logger"
 	"github.com/ossf/osv-schema/bindings/go/osvschema"
 )
 
@@ -774,6 +777,58 @@ func CheckQuality(text string) QualityCheck {
 	}
 
 	return Success
+}
+
+// LoadAllCVEs loads the downloaded CVE's from the NVD database into memory.
+func LoadAllCVEs(cvePath string) map[cves.CVEID]cves.Vulnerability {
+	dir, err := os.ReadDir(cvePath)
+	if err != nil {
+		logger.Fatal("Failed to read dir", slog.String("path", cvePath), slog.Any("err", err))
+	}
+
+	vulnsChan := make(chan cves.Vulnerability)
+	var wg sync.WaitGroup
+
+	for _, entry := range dir {
+		if !strings.HasSuffix(entry.Name(), ".json") {
+			continue
+		}
+
+		wg.Add(1)
+		go func(filename string) {
+			defer wg.Done()
+			filePath := path.Join(cvePath, filename)
+			file, err := os.Open(filePath)
+			if err != nil {
+				logger.Error("Failed to open CVE JSON", slog.String("path", filePath), slog.Any("err", err))
+				return
+			}
+			defer file.Close()
+
+			var nvdcve cves.CVEAPIJSON20Schema
+			if err := json.NewDecoder(file).Decode(&nvdcve); err != nil {
+				logger.Error("Failed to decode JSON", slog.String("file", filename), slog.Any("err", err))
+				return
+			}
+
+			for _, item := range nvdcve.Vulnerabilities {
+				vulnsChan <- item
+			}
+			logger.Info("Loaded "+filename, slog.String("cve", filename))
+		}(entry.Name())
+	}
+
+	go func() {
+		wg.Wait()
+		close(vulnsChan)
+	}()
+
+	result := make(map[cves.CVEID]cves.Vulnerability)
+	for item := range vulnsChan {
+		result[item.CVE.ID] = item
+	}
+
+	return result
 }
 
 func FindSeverity(metricsData []cves.Metrics) osvschema.Severity {

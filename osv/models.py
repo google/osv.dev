@@ -34,7 +34,6 @@ from . import pubsub
 from . import purl_helpers
 from . import semver_index
 from . import sources
-from . import utils
 from . import vulnerability_pb2
 
 SCHEMA_VERSION = '1.7.3'
@@ -876,13 +875,6 @@ class Bug(ndb.Model):
 
   def _post_put_hook(self: Self, future: ndb.Future):  # pylint: disable=arguments-differ
     """Post-put hook for writing new entities for database migration."""
-    # TODO(michaelkedar): Currently, only want to run this on the test instance
-    # (or when running tests). Remove this check when we're ready for prod.
-    project = utils.get_google_cloud_project()
-    if not project:
-      logging.error('failed to get GCP project')
-    if project not in ('oss-vdb-test', 'test-osv'):
-      return
     if future.exception():
       logging.error("Not writing new entities for %s since Bug.put() failed",
                     self.db_id)
@@ -1212,7 +1204,7 @@ def affected_from_bug(entity: Bug) -> list[AffectedVersions]:
             AffectedVersions(
                 vuln_id=entity.db_id,
                 ecosystem='GIT',
-                name=repo_url,
+                name=normalize_repo_package(repo_url),
                 versions=affected.versions,
             ))
 
@@ -1243,6 +1235,36 @@ def diff_affected_versions(
   removed = [all_dict[k] for k in removed_keys]
 
   return added, removed
+
+
+def normalize_repo_package(repo_url: str) -> str:
+  """Normalize the repo_url for use with GIT AffectedVersions entities.
+  
+  Removes the scheme/protocol and the .git extension, and trailing slashes.
+  
+  For example:
+    - 'http://git.musl-libc.org/git/musl' (e.g. CVE-2017-15650)
+      and 'https://git.musl-libc.org/git/musl' (e.g. CVE-2025-26519)
+      both become 'git.musl-libc.org/git/musl'
+    - 'https://github.com/curl/curl.git' (e.g. CURL-CVE-2024-2004)
+      and 'https://github.com/curl/curl' (e.g. CVE-2025-5025)
+      both become 'github.com/curl/curl'
+  """
+  if not repo_url:
+    return repo_url
+
+  try:
+    parsed = urlparse(repo_url)
+    # Remove scheme and reconstruct without it
+    # Keep netloc (hostname) and path
+    normalized = parsed.netloc + parsed.path
+
+    # Remove trailing slash
+    normalized = normalized.rstrip('/')
+    normalized = normalized.removesuffix('.git')
+    return normalized
+  except Exception:
+    return repo_url
 
 
 # --- Indexer entities ---

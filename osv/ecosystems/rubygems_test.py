@@ -45,3 +45,10 @@ class RubyGemsEcosystemTest(vcr.unittest.VCRTestCase):
         ecosystem.sort_key('invalid'), ecosystem.sort_key('4.0.0.rc1'))
     self.assertGreater(
         ecosystem.sort_key('v3.1.1'), ecosystem.sort_key('4.0.0.rc1'))
+    # Check >= / <= methods
+    self.assertGreaterEqual(
+        ecosystem.sort_key('1.10.0.rc1'), ecosystem.sort_key('1.2.0.rc1'))
+    self.assertLessEqual(
+        ecosystem.sort_key('1.2.0.rc1'), ecosystem.sort_key('1.10.0.rc1'))
+    # Check the 0 sentinel value
+    self.assertLess(ecosystem.sort_key('0'), ecosystem.sort_key('0.0.0.rc0'))

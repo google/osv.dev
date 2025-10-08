@@ -27,8 +27,7 @@ class PackagistEcosystemTest(vcr.unittest.VCRTestCase):
   def test_packagist(self):
     """Test Packagist."""
     ecosystem = ecosystems.get('Packagist')
-    # Any invalid versions will be handled.
-    self.assertLess(ecosystem.sort_key('invalid'), ecosystem.sort_key('0'))
+    self.assertLess(ecosystem.sort_key('string'), ecosystem.sort_key('0.0'))
     self.assertLess(
         ecosystem.sort_key('4.3-2RC1'), ecosystem.sort_key('4.3-2RC2'))
     self.assertGreater(
@@ -38,6 +37,15 @@ class PackagistEcosystemTest(vcr.unittest.VCRTestCase):
     self.assertGreater(ecosystem.sort_key('1.0.0'), ecosystem.sort_key('1.0'))
     self.assertEqual(
         ecosystem.sort_key('1.0.0rc2'), ecosystem.sort_key('1.0.0.rc2'))
+
+    # Check the 0 sentinel value.
+    self.assertLess(ecosystem.sort_key('0'), ecosystem.sort_key('0-a'))
+
+    # Check >= / <= methods
+    self.assertGreaterEqual(
+        ecosystem.sort_key('1.10-2RC1'), ecosystem.sort_key('1.2-2RC1'))
+    self.assertLessEqual(
+        ecosystem.sort_key('1.2-2RC1'), ecosystem.sort_key('1.10-2RC1'))
 
     enumerated_versions = ecosystem.enumerate_versions('neos/neos', '3.3.0',
                                                        '4.4.0')
@@ -52,8 +60,9 @@ class PackagistEcosystemTest(vcr.unittest.VCRTestCase):
         if line.startswith('//') or line.isspace():
           continue
         pieces = line.strip('\n').split(' ')
-        sort_value = ecosystem.sort_key(pieces[0]).__cmp__(
-            ecosystem.sort_key(pieces[2]))
+        v1 = ecosystem.sort_key(pieces[0])
+        v2 = ecosystem.sort_key(pieces[2])
+        sort_value = (v1 > v2) - (v1 < v2)
 
         if pieces[1] == '<':
           expected_value = -1

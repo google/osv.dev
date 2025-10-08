@@ -35,6 +35,9 @@ class DPKGEcosystemTest(unittest.TestCase):
     self.assertGreater(
         ecosystem.sort_key('1.13.6-2'), ecosystem.sort_key('1.13.6-1'))
 
+    # Check the 0 sentinel value.
+    self.assertLess(ecosystem.sort_key('0'), ecosystem.sort_key('0:0~0-0'))
+
     # Test that <end-of-life> specifically is greater than normal versions
     self.assertGreater(
         ecosystem.sort_key('<end-of-life>'), ecosystem.sort_key('1.13.6-1'))
@@ -71,6 +74,12 @@ class DPKGEcosystemTest(unittest.TestCase):
         ecosystem.sort_key("13.0.14.5-e1"), ecosystem.sort_key("7.64.3-e2"))
     self.assertLess(
         ecosystem.sort_key("13.0.14.5-e1"), ecosystem.sort_key("16.6-e0"))
+
+    # Check >= / <= methods
+    self.assertGreaterEqual(
+        ecosystem.sort_key('1.10.0-1'), ecosystem.sort_key('1.2.0-1'))
+    self.assertLessEqual(
+        ecosystem.sort_key('1.2.0-1'), ecosystem.sort_key('1.10.0-1'))
 
   def test_dpkg_ecosystems(self):
     """Test dpkg-based ecosystems return a DPKG ecosystem."""

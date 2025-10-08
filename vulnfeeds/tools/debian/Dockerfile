@@ -12,14 +12,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-FROM gcr.io/google.com/cloudsdktool/google-cloud-cli:alpine@sha256:af3dac7ae5f9d28fee1c2ec738f616467a99f9f23bc31a49bb8a297af5f1eabf
+FROM gcr.io/google.com/cloudsdktool/google-cloud-cli:alpine@sha256:cdac858d976cb0e6bfdc3288fee5a0a7bf6348a009089be130b2009e28463c52
 
 # Setup Poetry in its own virtual environment.
 # So when poetry changes the system dependencies, it doesn't mess with its own dependencies
 # when managing our dependencies.
 # See: https://python-poetry.org/docs/#installation 
 ENV POETRY_HOME "/opt/poetry"
-COPY docker/poetry/requirements.txt ./poetry-requirements.txt
+COPY docker/poetry/requirements-py3.12.txt ./poetry-requirements.txt
 RUN python3 -m venv $POETRY_HOME && \
     $POETRY_HOME/bin/pip install --require-hashes -r ./poetry-requirements.txt && \
     ln -s $POETRY_HOME/bin/poetry /usr/local/bin/poetry

@@ -30,11 +30,11 @@ class NuGetVersionTest(unittest.TestCase):
 
   def setUp(self):
     self.maxDiff = None  # pylint: disable=invalid-name
+    self.ecosystem = nuget.NuGet()
 
   def check_order(self, comparison, first, second):
     """Check order."""
-    comparison(
-        nuget.Version.from_string(first), nuget.Version.from_string(second))
+    comparison(self.ecosystem.sort_key(first), self.ecosystem.sort_key(second))
 
   def test_equals(self):
     """Test version equals."""
@@ -83,6 +83,14 @@ class NuGetVersionTest(unittest.TestCase):
     self.check_order(self.assertLess, '1.0.0-pre', '1.0.0.1-alpha')
     self.check_order(self.assertLess, '1.0.0', '1.0.0.1-alpha')
     self.check_order(self.assertLess, '0.9.9.1', '1.0.0')
+
+    # Check the 0 sentinel value.
+    self.check_order(self.assertLess, '0', '0.0.0-0')
+
+  def test_ge_le(self):
+    """Test version >=/<=."""
+    self.check_order(self.assertGreaterEqual, '1.10.0', '1.2.0')
+    self.check_order(self.assertLessEqual, '1.2.0', '1.10.0')
 
 
 class NuGetEcosystemTest(vcr.unittest.VCRTestCase):

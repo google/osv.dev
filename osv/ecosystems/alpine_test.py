@@ -45,6 +45,10 @@ class APKEcosystemTest(unittest.TestCase):
     self.assertGreater(
         ecosystem.sort_key('1.13.2-r0'), ecosystem.sort_key('1.13.2_alpha'))
 
+    # Check the 0 sentinel value.
+    self.assertLess(
+        ecosystem.sort_key('0'), ecosystem.sort_key('0.0.0_alpha-r0'))
+
     # Check invalid version handle
     self.assertGreater(
         ecosystem.sort_key('1-0-0'), ecosystem.sort_key('1.13.2-r0'))
@@ -74,6 +78,12 @@ class APKEcosystemTest(unittest.TestCase):
         ecosystem.sort_key('13.0.14.5-r1'), ecosystem.sort_key('7.64.3-r2'))
     self.assertLess(
         ecosystem.sort_key('13.0.14.5-r1'), ecosystem.sort_key('16.6-r0'))
+
+    # Check >= / <= methods: https://github.com/google/osv.dev/pull/3978
+    self.assertGreaterEqual(
+        ecosystem.sort_key('1.10.0-r0'), ecosystem.sort_key('1.2.0-r0'))
+    self.assertLessEqual(
+        ecosystem.sort_key('1.2.0-r0'), ecosystem.sort_key('1.10.0-r0'))
 
   def test_apk_ecosystems(self):
     """Test apk-based ecosystems return an APK ecosystem."""

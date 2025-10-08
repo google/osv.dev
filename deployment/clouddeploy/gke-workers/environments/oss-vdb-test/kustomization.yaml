@@ -2,7 +2,6 @@ resources:
 - ../../base
 - staging-api-test.yaml
 - osv-linter.yaml
-- cve5-to-osv.yaml
 patches:
 - path: workers.yaml
 - path: scaler.yaml
@@ -10,6 +9,7 @@ patches:
 - path: importer-deleter.yaml
 - path: exporter.yaml
 - path: alpine-cve-convert.yaml
+- path: cve5-to-osv.yaml
 - path: debian-cve-convert.yaml
 - path: combine-to-osv.yaml
 - path: debian-convert.yaml
@@ -22,3 +22,4 @@ patches:
 - path: backup.yaml
 - path: generate-sitemap.yaml
 - path: recoverer.yaml
+- path: record-checker.yaml

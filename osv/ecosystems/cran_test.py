@@ -43,3 +43,18 @@ class CRANEcosystemTest(vcr.unittest.VCRTestCase):
 
       # Test atypical versioned package
       self.assertEqual('0.99-8.47', ecosystem.next_version('aqp', '0.99-8.1'))
+
+  def test_sort_key(self):
+    """Test sort_key."""
+    ecosystem = ecosystems.get('CRAN')
+    self.assertGreater(ecosystem.sort_key('1.0-0'), ecosystem.sort_key('0.1-0'))
+    self.assertLess(ecosystem.sort_key('0.1-0'), ecosystem.sort_key('0.1-1'))
+
+    # Check the 0 sentinel value.
+    self.assertLess(ecosystem.sort_key('0'), ecosystem.sort_key('0.0-0'))
+
+    # Check >= / <= methods
+    self.assertGreaterEqual(
+        ecosystem.sort_key('1.10-0'), ecosystem.sort_key('1.2-0'))
+    self.assertLessEqual(
+        ecosystem.sort_key('1.2-0'), ecosystem.sort_key('1.10-0'))

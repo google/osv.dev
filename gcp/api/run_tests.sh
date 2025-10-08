@@ -18,7 +18,7 @@ if [ $# -lt 1 ]; then
   exit 1
 fi
 
-export GOOGLE_CLOUD_PROJECT=oss-vdb
+export GOOGLE_CLOUD_PROJECT=oss-vdb OSV_VULNERABILITIES_BUCKET=osv-vulnerabilities
 service docker start
 
 # Set -e later as service docker start should be able to successfully fail

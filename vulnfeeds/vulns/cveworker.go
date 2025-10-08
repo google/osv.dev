@@ -90,6 +90,7 @@ func Worker(ctx context.Context, vulnChan <-chan *osvschema.Vulnerability, outBk
 				if closeErr := wc.Close(); closeErr != nil {
 					logger.Error("failed to close GCS writer after write error", slog.String("id", vulnID), slog.Any("err", closeErr))
 				}
+
 				continue
 			}
 
@@ -100,7 +101,7 @@ func Worker(ctx context.Context, vulnChan <-chan *osvschema.Vulnerability, outBk
 		} else {
 			// Write to local disk
 			filePath := path.Join(outputPrefix, filename)
-			err := os.WriteFile(filePath, preModifiedBuf, 0644)
+			err := os.WriteFile(filePath, preModifiedBuf, 0600)
 			if err != nil {
 				logger.Error("Failed to write OSV file", slog.Any("err", err), slog.String("path", filePath))
 			}

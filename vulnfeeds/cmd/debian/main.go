@@ -57,7 +57,7 @@ func main() {
 	allCVEs := vulns.LoadAllCVEs(defaultCvePath)
 	osvCVEs := generateOSVFromDebianTracker(debianData, debianReleaseMap, allCVEs)
 
-	var vulnerabilities []*osvschema.Vulnerability
+	var vulnerabilities []*osvschema.Vulnerability //nolint:prealloc
 	for _, v := range osvCVEs {
 		if len(v.Affected) == 0 {
 			logger.Warn(fmt.Sprintf("Skipping %s as no affected versions found.", v.ID), slog.String("id", v.ID))

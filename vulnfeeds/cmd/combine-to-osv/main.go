@@ -83,9 +83,8 @@ func main() {
 	combinedData := combineIntoOSV(allCVE5, allNVD, mandatoryCVEIDs)
 
 	ctx := context.Background()
-	var vulnerabilities []*osvschema.Vulnerability
+	var vulnerabilities []*osvschema.Vulnerability //nolint:prealloc
 	for _, v := range combinedData {
-		v := v
 		vulnerabilities = append(vulnerabilities, &v)
 	}
 

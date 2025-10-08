@@ -51,7 +51,7 @@ func main() {
 	allAlpineSecDB := getAlpineSecDBData()
 	osvVulnerabilities := generateAlpineOSV(allAlpineSecDB, allCVEs)
 
-	var vulnerabilities []*osvschema.Vulnerability
+	var vulnerabilities []*osvschema.Vulnerability //nolint:prealloc
 	for _, v := range osvVulnerabilities {
 		if len(v.Affected) == 0 {
 			logger.Warn(fmt.Sprintf("Skipping %s as no affected versions found.", v.ID), slog.String("id", v.ID))

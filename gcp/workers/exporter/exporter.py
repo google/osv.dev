@@ -187,7 +187,7 @@ class Exporter:
 
       # Write out the GIT vulnerabilities that have Vanir signatures to
       # a JSON file.
-      if git_vulns_with_vanir_signatures:
+      if ecosystem == 'GIT' and git_vulns_with_vanir_signatures:
         output_path = os.path.join(ecosystem_dir, OSV_GIT_JSON_FILE_NAME)
         with open(output_path, 'w') as f:
           json.dump(git_vulns_with_vanir_signatures, f, indent=2)

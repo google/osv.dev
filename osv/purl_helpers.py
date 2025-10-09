@@ -57,6 +57,8 @@ ECOSYSTEM_PURL_DATA = {
         EcosystemPURL('hackage', None),
     'Hex':
         EcosystemPURL('hex', None),
+    'Julia':
+        EcosystemPURL('julia', None),
     # Linux
     'Mageia':
         EcosystemPURL('rpm', 'mageia'),

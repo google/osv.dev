@@ -110,6 +110,13 @@ func FromCVE5(cve cves.CVE5, refs []cves.Reference, metrics *ConversionMetrics) 
 	}
 	metrics.Repos = repos
 
+	if slices.Contains(cve.Containers.CNA.Tags, "disputed") {
+		if v.DatabaseSpecific == nil {
+			v.DatabaseSpecific = make(map[string]any)
+		}
+		v.DatabaseSpecific["isDisputed"] = true
+	}
+
 	// Add affected version information.
 	AddVersionInfo(cve, &v, metrics, repos)
 	// TODO(jesslowe@): Add CWEs.

@@ -28,7 +28,6 @@ import (
 	"sort"
 	"strings"
 	"sync"
-	"time"
 
 	"gopkg.in/yaml.v2"
 
@@ -704,52 +703,6 @@ func FromJSON(r io.Reader) (*Vulnerability, error) {
 	}
 
 	return &vuln, nil
-}
-
-// CVEIsDisputed will return if the underlying CVE is disputed.
-// It returns the CVE's CNA container's dateUpdated value if it is disputed.
-// This can be used to set the Withdrawn field.
-// It consults a local clone of https://github.com/CVEProject/cvelistV5 found in the location specified by cveList
-func CVEIsDisputed(v *Vulnerability, cveList string) (time.Time, error) {
-	// iff the v.ID starts with a CVE...
-	// 	Try to make an HTTP request for the CVE record in the CVE List
-	// 	iff .containers.cna.tags contains "disputed"
-	//		return .containers.cna.providerMetadata.dateUpdated, formatted for use in the Withdrawn field.
-	if !strings.HasPrefix(v.ID, "CVE-") {
-		return time.Time{}, ErrVulnNotACVE
-	}
-
-	CVEParts := strings.Split(v.ID, "-")[1:3]
-	// Replace the last three digits of the CVE ID with "xxx".
-	CVEYear, CVEIndexShard := CVEParts[0], CVEParts[1][:len(CVEParts[1])-3]+"xxx"
-
-	// cvelistV5/cves/2023/23xxx/CVE-2023-23127.json
-	CVEListFile := path.Join(cveList, CVEListBasePath, CVEYear, CVEIndexShard, v.ID+".json")
-
-	f, err := os.Open(CVEListFile)
-
-	if err != nil {
-		if os.IsNotExist(err) {
-			return time.Time{}, nil
-		}
-
-		return time.Time{}, &CVEListError{CVEListFile, err}
-	}
-
-	defer f.Close()
-
-	CVE := &cves.CVE5{}
-
-	if err := json.NewDecoder(f).Decode(&CVE); err != nil {
-		return time.Time{}, &CVEListError{CVEListFile, err}
-	}
-
-	if slices.Contains(CVE.Containers.CNA.Tags, "disputed") {
-		modified, err := cves.ParseCVE5Timestamp(CVE.Containers.CNA.ProviderMetadata.DateUpdated)
-		return modified, err
-	}
-
-	return time.Time{}, nil
 }
 
 // CheckQuality will return true if field text is not a filler text or otherwise empty

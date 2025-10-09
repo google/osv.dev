@@ -41,7 +41,7 @@ Follow these steps:
 
 1. Clone the yuzu project to your local machine using `git clone --recursive https://github.com/yuzu-emu-mirror/yuzu`.
 2. Checkout the relevant commit using `git -C yuzu checkout 43be2bfe332d5537041262eb08037993239eaf5f`
-3. Run `osv-scanner -r yuzu`
+3. Run `osv-scanner yuzu`
 
 OSV-Scanner returns the following vulnerabilities from the submoduled dependencies:
 

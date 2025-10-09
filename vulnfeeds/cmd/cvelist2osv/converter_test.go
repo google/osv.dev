@@ -153,13 +153,49 @@ func TestFromCVE5(t *testing.T) {
 	cve21634Mod, _ := cves.ParseCVE5Timestamp("2025-06-16T19:45:37.088Z")
 	cve21772Pub, _ := cves.ParseCVE5Timestamp("2025-02-27T02:18:19.528Z")
 	cve21772Mod, _ := cves.ParseCVE5Timestamp("2025-05-04T07:20:46.575Z")
-
+	cvePlaceholder, _ := cves.ParseCVE5Timestamp("2025-05-04T07:20:46.575Z")
 	testCases := []struct {
 		name         string
 		cve          cves.CVE5
 		refs         []cves.Reference
 		expectedVuln *vulns.Vulnerability
 	}{
+		{
+			name: "disputed record",
+			cve: cves.CVE5{
+				Metadata: cves.CVE5Metadata{
+					CVEID:         "CVE-2025-9999",
+					State:         "PUBLISHED",
+					DatePublished: "2025-05-04T07:20:46.575Z",
+					DateUpdated:   "2025-05-04T07:20:46.575Z",
+				},
+				Containers: struct {
+					CNA cves.CNA   `json:"cna"`
+					ADP []cves.CNA `json:"adp,omitempty"`
+				}{
+					CNA: cves.CNA{
+						Tags: []string{"disputed"},
+						Descriptions: []cves.LangString{
+							{
+								Lang:  "en",
+								Value: "A disputed vulnerability.",
+							},
+						},
+					},
+				},
+			},
+			refs: []cves.Reference{},
+			expectedVuln: &vulns.Vulnerability{
+				Vulnerability: osvschema.Vulnerability{
+					ID:               "CVE-2025-9999",
+					SchemaVersion:    osvschema.SchemaVersion,
+					Published:        cvePlaceholder,
+					Modified:         cvePlaceholder,
+					Details:          "A disputed vulnerability.",
+					DatabaseSpecific: map[string]any{"isDisputed": "true"},
+				},
+			},
+		},
 		{
 			name: "CVE-2025-1110",
 			cve:  loadTestData(t, "CVE-2025-1110"),

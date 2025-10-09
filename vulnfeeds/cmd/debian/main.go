@@ -17,6 +17,7 @@ import (
 	"github.com/google/osv/vulnfeeds/cves"
 	"github.com/google/osv/vulnfeeds/faulttolerant"
 	"github.com/google/osv/vulnfeeds/models"
+	"github.com/google/osv/vulnfeeds/upload"
 	"github.com/google/osv/vulnfeeds/utility/logger"
 	"github.com/google/osv/vulnfeeds/vulns"
 	"github.com/ossf/osv-schema/bindings/go/osvschema"
@@ -57,7 +58,7 @@ func main() {
 	allCVEs := vulns.LoadAllCVEs(defaultCvePath)
 	osvCVEs := generateOSVFromDebianTracker(debianData, debianReleaseMap, allCVEs)
 
-	var vulnerabilities []*osvschema.Vulnerability //nolint:prealloc
+	vulnerabilities := make([]*osvschema.Vulnerability, 0, len(osvCVEs))
 	for _, v := range osvCVEs {
 		if len(v.Affected) == 0 {
 			logger.Warn(fmt.Sprintf("Skipping %s as no affected versions found.", v.ID), slog.String("id", v.ID))
@@ -67,7 +68,7 @@ func main() {
 	}
 
 	ctx := context.Background()
-	vulns.Run(ctx, "Debian CVEs", *uploadToGCS, *outputBucketName, "", *numWorkers, *debianOutputPath, vulnerabilities)
+	upload.Upload(ctx, "Debian CVEs", *uploadToGCS, *outputBucketName, "", *numWorkers, *debianOutputPath, vulnerabilities)
 	logger.Info("Debian CVE conversion succeeded.")
 }
 

@@ -1,4 +1,4 @@
-package vulns
+package upload
 
 import (
 	"context"
@@ -167,8 +167,8 @@ func Worker(ctx context.Context, vulnChan <-chan *osvschema.Vulnerability, outBk
 	}
 }
 
-// Run starts the workers to process vulnerabilities.
-func Run(
+// Upload delegates workers to upload vulnerabilities to the buckets.
+func Upload(
 	ctx context.Context,
 	jobName string,
 	uploadToGCS bool,

@@ -17,6 +17,7 @@ import (
 
 	"github.com/google/osv/vulnfeeds/cves"
 	"github.com/google/osv/vulnfeeds/models"
+	"github.com/google/osv/vulnfeeds/upload"
 	"github.com/google/osv/vulnfeeds/utility/logger"
 	"github.com/google/osv/vulnfeeds/vulns"
 	"github.com/ossf/osv-schema/bindings/go/osvschema"
@@ -51,7 +52,7 @@ func main() {
 	allAlpineSecDB := getAlpineSecDBData()
 	osvVulnerabilities := generateAlpineOSV(allAlpineSecDB, allCVEs)
 
-	var vulnerabilities []*osvschema.Vulnerability //nolint:prealloc
+	vulnerabilities := make([]*osvschema.Vulnerability, 0, len(osvVulnerabilities))
 	for _, v := range osvVulnerabilities {
 		if len(v.Affected) == 0 {
 			logger.Warn(fmt.Sprintf("Skipping %s as no affected versions found.", v.ID), slog.String("id", v.ID))
@@ -61,7 +62,7 @@ func main() {
 	}
 
 	ctx := context.Background()
-	vulns.Run(ctx, "Alpine CVEs", *uploadToGCS, *outputBucketName, "", *numWorkers, *alpineOutputPath, vulnerabilities)
+	upload.Upload(ctx, "Alpine CVEs", *uploadToGCS, *outputBucketName, "", *numWorkers, *alpineOutputPath, vulnerabilities)
 	logger.Info("Alpine CVE conversion succeeded.")
 }
 

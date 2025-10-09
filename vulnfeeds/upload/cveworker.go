@@ -1,3 +1,4 @@
+// Package upload handles allocating workers to intelligently uploading OSV records to a bucket
 package upload
 
 import (
@@ -91,42 +92,41 @@ func uploadToGCS(ctx context.Context, v *osvschema.Vulnerability, preModifiedBuf
 // It returns the vulnerability to process, a pre-marshalled buffer if an override was used,
 // and an error if a critical failure occurred.
 func handleOverride(ctx context.Context, v *osvschema.Vulnerability, overridesBkt *storage.BucketHandle) (*osvschema.Vulnerability, []byte, error) {
-	if overridesBkt == nil {
-		return v, nil, nil
-	}
 
 	filename := v.ID + ".json"
 	overrideObj := overridesBkt.Object(path.Join("osv-output-overrides", filename))
-	if _, err := overrideObj.Attrs(ctx); err == nil {
-		// Override exists, read it and replace original vulnerability.
-		logger.Info("Using override", slog.String("id", v.ID))
-		rc, err := overrideObj.NewReader(ctx)
-		if err != nil {
-			logger.Warn("failed to get reader for override object, using original", slog.String("id", v.ID), slog.Any("err", err))
+	if _, err := overrideObj.Attrs(ctx); err != nil {
+		if errors.Is(err, storage.ErrObjectNotExist) {
+			// No override found.
 			return v, nil, nil
 		}
-		defer rc.Close()
-
-		overrideBuf, err := io.ReadAll(rc)
-		if err != nil {
-			logger.Warn("failed to read override object, using original", slog.String("id", v.ID), slog.Any("err", err))
-			return v, nil, nil
-		}
-
-		var overrideV osvschema.Vulnerability
-		if err := json.Unmarshal(overrideBuf, &overrideV); err != nil {
-			logger.Warn("failed to unmarshal override object, using original", slog.String("id", v.ID), slog.Any("err", err))
-			return v, nil, nil
-		}
-
-		return &overrideV, overrideBuf, nil
-	} else if !errors.Is(err, storage.ErrObjectNotExist) {
+		// For any other error, we can't know if an override exists, so we return an error.
 		logger.Error("failed to check for override object", slog.String("id", v.ID), slog.Any("err", err))
 		return nil, nil, err
 	}
 
-	// No override found.
-	return v, nil, nil
+	// Override exists, read it and replace original vulnerability.
+	logger.Info("Using override", slog.String("id", v.ID))
+	rc, err := overrideObj.NewReader(ctx)
+	if err != nil {
+		logger.Error("failed to get reader for override object", slog.String("id", v.ID), slog.Any("err", err))
+		return nil, nil, err
+	}
+	defer rc.Close()
+
+	overrideBuf, err := io.ReadAll(rc)
+	if err != nil {
+		logger.Error("failed to read override object", slog.String("id", v.ID), slog.Any("err", err))
+		return nil, nil, err
+	}
+
+	var overrideV osvschema.Vulnerability
+	if err := json.Unmarshal(overrideBuf, &overrideV); err != nil {
+		logger.Error("failed to unmarshal override object", slog.String("id", v.ID), slog.Any("err", err))
+		return nil, nil, err
+	}
+
+	return &overrideV, overrideBuf, nil
 }
 
 // Worker is a generic worker that processes OSV vulnerabilities from a channel.
@@ -142,10 +142,15 @@ func Worker(ctx context.Context, vulnChan <-chan *osvschema.Vulnerability, outBk
 			logger.Warn("Skipping OSV record as no affected versions found.", slog.String("id", vulnID))
 			continue
 		}
+		var vulnToProcess *osvschema.Vulnerability
+		var preModifiedBuf []byte
+		var err error
 
-		vulnToProcess, preModifiedBuf, err := handleOverride(ctx, v, overridesBkt)
-		if err != nil {
-			continue
+		if overridesBkt != nil {
+			vulnToProcess, preModifiedBuf, err = handleOverride(ctx, v, overridesBkt)
+			if err != nil {
+				continue
+			}
 		}
 
 		if preModifiedBuf == nil {

@@ -92,7 +92,6 @@ func uploadToGCS(ctx context.Context, v *osvschema.Vulnerability, preModifiedBuf
 // It returns the vulnerability to process, a pre-marshalled buffer if an override was used,
 // and an error if a critical failure occurred.
 func handleOverride(ctx context.Context, v *osvschema.Vulnerability, overridesBkt *storage.BucketHandle) (*osvschema.Vulnerability, []byte, error) {
-
 	filename := v.ID + ".json"
 	overrideObj := overridesBkt.Object(path.Join("osv-output-overrides", filename))
 	if _, err := overrideObj.Attrs(ctx); err != nil {
@@ -102,6 +101,7 @@ func handleOverride(ctx context.Context, v *osvschema.Vulnerability, overridesBk
 		}
 		// For any other error, we can't know if an override exists, so we return an error.
 		logger.Error("failed to check for override object", slog.String("id", v.ID), slog.Any("err", err))
+
 		return nil, nil, err
 	}
 

@@ -320,6 +320,7 @@ func getBestSeverity(metricsData *cves.CVEItemMetrics) (string, osvschema.Severi
 			}
 		}
 	}
+
 	return "", ""
 }
 

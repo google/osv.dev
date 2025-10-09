@@ -114,7 +114,7 @@ func FromCVE5(cve cves.CVE5, refs []cves.Reference, metrics *ConversionMetrics) 
 		if v.DatabaseSpecific == nil {
 			v.DatabaseSpecific = make(map[string]any)
 		}
-		v.DatabaseSpecific["isDisputed"] = "true"
+		v.DatabaseSpecific["isDisputed"] = true
 	}
 
 	// Add affected version information.

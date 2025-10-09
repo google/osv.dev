@@ -192,7 +192,7 @@ func TestFromCVE5(t *testing.T) {
 					Published:        cvePlaceholder,
 					Modified:         cvePlaceholder,
 					Details:          "A disputed vulnerability.",
-					DatabaseSpecific: map[string]any{"isDisputed": "true"},
+					DatabaseSpecific: map[string]any{"isDisputed": true},
 				},
 			},
 		},

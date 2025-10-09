@@ -101,13 +101,7 @@ class PurlHelpersTest(unittest.TestCase):
     self.assertEqual('pkg:julia/Example',
                      purl_helpers.package_to_purl('Julia', 'Example'))
 
-    self.assertEqual('pkg:julia/Example?uuid=7876af07-990d-54b4-ab0e-23690620f79a',
-                     purl_helpers.package_to_purl('Julia', 'Example'))
-
-    self.assertEqual('pkg:julia/Dates?uuid=ade2ca70-3891-5945-98fb-dc099432e06a',
-                     purl_helpers.package_to_purl('Julia', 'Dates'))
-
-    self.assertEqual('pkg:julia/Dates@1.9.0?uuid=ade2ca70-3891-5945-98fb-dc099432e06a',
+    self.assertEqual('pkg:julia/Dates@1.9.0',
                      purl_helpers.package_to_purl('Julia', 'Dates'))
 
     self.assertEqual('pkg:npm/test-package',

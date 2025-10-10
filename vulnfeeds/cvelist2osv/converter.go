@@ -119,8 +119,7 @@ func FromCVE5(cve cves.CVE5, refs []cves.Reference, metrics *ConversionMetrics) 
 	}
 
 	// Add affected version information.
-	cnaVersExtractor := CNAVersionExtractor{}
-	versionExtractor := cnaVersExtractor.GetVersionExtractor(cve.Metadata.AssignerShortName)
+	versionExtractor := GetVersionExtractor(cve.Metadata.AssignerShortName)
 	versionExtractor.ExtractVersions(cve, &v, metrics, repos)
 	// TODO(jesslowe@): Add CWEs.
 

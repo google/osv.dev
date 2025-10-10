@@ -65,11 +65,13 @@ func (d *DefaultVersionExtractor) ExtractVersions(cve cves.CVE5, v *vulns.Vulner
 	if !gotVersions {
 		metrics.AddNote("No versions in CPEs so attempting extraction from description")
 		versionRanges := textVersionExtraction(cve, metrics)
-		aff, err := gitVersionsToCommits(cve.Metadata.CVEID, versionRanges, repos, metrics, repoTagsCache)
-		if err != nil {
-			logger.Error("Failed to convert git versions to commits", slog.Any("err", err))
+		if len(versionRanges) != 0 {
+			aff, err := gitVersionsToCommits(cve.Metadata.CVEID, versionRanges, repos, metrics, repoTagsCache)
+			if err != nil {
+				logger.Error("Failed to convert git versions to commits", slog.Any("err", err))
+			}
+			v.Affected = append(v.Affected, aff)
 		}
-		v.Affected = append(v.Affected, aff)
 	}
 }
 

@@ -12,11 +12,8 @@ type VersionExtractor interface {
 	FindNormalAffectedRanges(affected cves.Affected, metrics *ConversionMetrics) ([]osvschema.Range, VersionRangeType)
 }
 
-// VersionExtractorFactory creates a VersionExtractor based on the CNA.
-type CNAVersionExtractor struct{}
-
 // GetVersionExtractor returns the appropriate VersionExtractor for a given CNA.
-func (f *CNAVersionExtractor) GetVersionExtractor(cna string) VersionExtractor {
+func GetVersionExtractor(cna string) VersionExtractor {
 	switch cna {
 	case "Linux":
 		return &LinuxVersionExtractor{}

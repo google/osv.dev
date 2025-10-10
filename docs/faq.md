@@ -204,5 +204,10 @@ We recommend using HTTP/2 for queries that may result in large responses (e.g. b
 OSV.dev strives to provide reliable vulnerability information to our users. To support that goal, the following service level objectives are targeted:
 
 1. Availability, website and API: 99.9% measured on a 7 day rolling window.
-2. Latency, website and API: P50 ≤ 300ms, P90 ≤ 500ms, P95 ≤ 1s, that is 50% of requests will be faster than 300ms, 90% of requests will be faster than 500ms, and 95% of requests will be faster than 1s.
+2. Latency:
+    - Website: P50 ≤ 300ms, P90 ≤ 500ms, P95 ≤ 1s, that is 50% of requests will be faster than 300ms, 90% of requests will be faster than 500ms, and 95% of requests will be faster than 1s.
+    - API, per endpoint:
+      - `GET /v1/vulns/{id}`: P50 ≤ 100ms, P90 ≤ 200ms, P95 ≤ 500ms
+      - `POST /v1/query`: P50 ≤ 300ms, P90 ≤ 500ms, P95 ≤ 1s
+      - `POST /v1/querybatch`: P50 ≤ 500ms, P90 ≤ 4s, P95 ≤ 6s
 3. Data Freshness: Data sources no more than 15 minutes stale, 99.5% of the time.

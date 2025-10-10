@@ -11,6 +11,7 @@ import (
 	"log/slog"
 	"os"
 	"path"
+	"sort"
 	"path/filepath"
 	"strings"
 
@@ -18,6 +19,7 @@ import (
 
 	"cloud.google.com/go/storage"
 	"github.com/google/osv/vulnfeeds/cves"
+	gitpurl "github.com/google/osv/vulnfeeds/git"
 	"github.com/google/osv/vulnfeeds/utility/logger"
 	"github.com/ossf/osv-schema/bindings/go/osvschema"
 	"google.golang.org/api/iterator"
@@ -191,6 +193,7 @@ func combineIntoOSV(cve5osv map[cves.CVEID]osvschema.Vulnerability, nvdosv map[c
 		if len(nvd.Affected) == 0 {
 			continue
 		}
+		enrichRepoPURLs(convertedCve)
 		vulns[cveID] = nvd
 	}
 
@@ -365,4 +368,98 @@ func writeOSVFile(osvData map[cves.CVEID]osvschema.Vulnerability, osvOutputPath 
 	}
 
 	logger.Info("Successfully written OSV files", slog.Int("count", len(osvData)))
+}
+
+// repoURLFromRanges returns the first repo URL from a GIT-type range, if present.
+func repoURLFromRanges(ranges []osvschema.Range) string {
+	for _, r := range ranges {
+		if r.Type == "GIT" && r.Repo != "" {
+			return r.Repo
+		}
+	}
+
+	return ""
+}
+
+// enrichRepoPURLs sets affected.package.purl to an unversioned pkg:generic repo pURL
+// when a GIT range with a repo URL exists and purl is currently empty.
+func enrichRepoPURLs(v *vulns.Vulnerability) {
+	if v == nil || len(v.Affected) == 0 {
+		return
+	}
+	for i := range v.Affected {
+		aff := &v.Affected[i]
+
+		// Ensure base purl is set (unversioned).
+		if aff.Package.Purl == "" {
+			if repo := repoURLFromRanges(aff.Ranges); repo != "" {
+				if p, err := gitpurl.BuildGenericRepoPURL(repo); err == nil && p != "" {
+					aff.Package.Purl = p
+				}
+			}
+		}
+
+		// Add versioned repo pURLs when possible.
+		if repo := repoURLFromRanges(aff.Ranges); repo != "" {
+			addVersionedRepoPURLs(aff, repo)
+		}
+	}
+}
+
+var repoTagsCache = make(gitpurl.RepoTagsCache)
+
+// addVersionedRepoPURLs populates affected.database_specific["repo_purls"]
+// with pkg:generic/...@<tag> entries, using affected.versions if available.
+func addVersionedRepoPURLs(aff *osvschema.Affected, repo string) {
+	if aff == nil || repo == "" {
+		return
+	}
+
+	var tags []string
+	if len(aff.Versions) > 0 {
+		tags = append(tags, aff.Versions...)
+	} else if os.Getenv("ENABLE_REPO_PURL_TAGS") == "1" {
+		norm, err := gitpurl.NormalizeRepoTags(repo, repoTagsCache)
+		if err == nil && len(norm) > 0 {
+			for tag := range norm {
+				tags = append(tags, tag)
+			}
+			sort.Strings(tags)
+			const maxTags = 200
+			if len(tags) > maxTags {
+				tags = tags[:maxTags]
+			}
+		}
+	}
+
+	if len(tags) == 0 {
+		return
+	}
+
+	base, err := gitpurl.BuildGenericRepoPURL(repo)
+	if err != nil || base == "" {
+		return
+	}
+
+	// Dedup and format.
+	seen := make(map[string]struct{}, len(tags))
+	vPURLs := make([]string, 0, len(tags))
+	for _, t := range tags {
+		if t == "" {
+			continue
+		}
+		if _, ok := seen[t]; ok {
+			continue
+		}
+		seen[t] = struct{}{}
+		vPURLs = append(vPURLs, base+"@"+t)
+	}
+	if len(vPURLs) == 0 {
+		return
+	}
+
+	if aff.DatabaseSpecific == nil {
+		aff.DatabaseSpecific = map[string]any{}
+	}
+	aff.DatabaseSpecific["repo_purls"] = vPURLs
 }

@@ -101,7 +101,7 @@ class PurlHelpersTest(unittest.TestCase):
     self.assertEqual('pkg:julia/Example',
                      purl_helpers.package_to_purl('Julia', 'Example'))
 
-    self.assertEqual('pkg:julia/Dates@1.9.0',
+    self.assertEqual('pkg:julia/Dates',
                      purl_helpers.package_to_purl('Julia', 'Dates'))
 
     self.assertEqual('pkg:npm/test-package',

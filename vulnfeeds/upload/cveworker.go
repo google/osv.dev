@@ -142,7 +142,7 @@ func Worker(ctx context.Context, vulnChan <-chan *osvschema.Vulnerability, outBk
 			logger.Warn("Skipping OSV record as no affected versions found.", slog.String("id", vulnID))
 			continue
 		}
-		var vulnToProcess *osvschema.Vulnerability
+		vulnToProcess := v
 		var preModifiedBuf []byte
 		var err error
 

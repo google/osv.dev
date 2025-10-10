@@ -416,9 +416,14 @@ func TestAddSeverity(t *testing.T) {
 			},
 		},
 		{
-			description:    "CVE with no impact information",
-			inputCVE:       loadTestData2("CVE-2023-5341"),
-			expectedResult: nil,
+			description: "CVE with only Secondary CVSS information",
+			inputCVE:    loadTestData2("CVE-2023-5341"),
+			expectedResult: []osvschema.Severity{
+				{
+					Type:  osvschema.SeverityCVSSV3,
+					Score: "CVSS:3.1/AV:L/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:H",
+				},
+			},
 		},
 	}
 

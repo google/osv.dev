@@ -304,17 +304,20 @@ func (v *Vulnerability) AddPkgInfo(pkgInfo PackageInfo) {
 }
 
 // getBestSeverity finds the best CVSS severity vector from the provided metrics data.
-// It prioritizes newer CVSS versions.
+// It prioritizes newer CVSS versions and "Primary" sources.
 func getBestSeverity(metricsData *cves.CVEItemMetrics) (string, osvschema.SeverityType) {
-	// Prioritize CVSS v3.1 over v3.0 from the Primary scorer.
-	for _, metric := range metricsData.CVSSMetricV31 {
-		if metric.Type == "Primary" && metric.CVSSData.VectorString != "" {
-			return metric.CVSSData.VectorString, osvschema.SeverityCVSSV3
+	// Define search passes. First pass for "Primary", second for any.
+	for _, primaryOnly := range []bool{true, false} {
+		// Inside each pass, prioritize v3.1 over v3.0.
+		for _, metric := range metricsData.CVSSMetricV31 {
+			if (!primaryOnly || metric.Type == "Primary") && metric.CVSSData.VectorString != "" {
+				return metric.CVSSData.VectorString, osvschema.SeverityCVSSV3
+			}
 		}
-	}
-	for _, metric := range metricsData.CVSSMetricV30 {
-		if metric.Type == "Primary" && metric.CVSSData.VectorString != "" {
-			return metric.CVSSData.VectorString, osvschema.SeverityCVSSV3
+		for _, metric := range metricsData.CVSSMetricV30 {
+			if (!primaryOnly || metric.Type == "Primary") && metric.CVSSData.VectorString != "" {
+				return metric.CVSSData.VectorString, osvschema.SeverityCVSSV3
+			}
 		}
 	}
 

@@ -180,7 +180,7 @@ func TestFindInverseAffectedRanges(t *testing.T) {
 					{
 						Status:          "unaffected",
 						Version:         "1.0",
-						VersionType:     "semver",
+						VersionType:     "unknown",
 						LessThanOrEqual: "1.0.*",
 					},
 				},

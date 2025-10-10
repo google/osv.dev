@@ -241,18 +241,3 @@ func compareSemverLike(a, b string) int {
 	// All extra parts were zero, so the versions are effectively equal.
 	return 0
 }
-
-// combineAffected merges affected entries from CNA and ADP containers.
-func combineAffected(cve cves.CVE5) []cves.Affected {
-	cna := cve.Containers.CNA
-	adps := cve.Containers.ADP
-
-	affected := cna.Affected
-	for _, adp := range adps {
-		if adp.Affected != nil {
-			affected = append(affected, adp.Affected...)
-		}
-	}
-
-	return affected
-}

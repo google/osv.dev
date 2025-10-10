@@ -217,7 +217,7 @@ func TestFindInverseAffectedRanges(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			metrics := &ConversionMetrics{}
-			gotRanges, gotVersionType := findInverseAffectedRanges(tt.affected, tt.cnaAssigner, metrics)
+			gotRanges, gotVersionType := findInverseAffectedRanges(tt.affected, metrics)
 			if diff := cmp.Diff(tt.want, gotRanges); diff != "" {
 				t.Errorf("findInverseAffectedRanges() ranges mismatch (-want +got):\n%s", diff)
 			}
@@ -275,7 +275,7 @@ func TestRealWorldFindInverseAffectedRanges(t *testing.T) {
 			}
 
 			// Run the function under test.
-			gotRanges, _ := findInverseAffectedRanges(affectedBlock, tc.cve.Metadata.AssignerShortName, &ConversionMetrics{})
+			gotRanges, _ := findInverseAffectedRanges(affectedBlock, &ConversionMetrics{})
 
 			// Sort slices for deterministic comparison.
 			sort.Slice(gotRanges, func(i, j int) bool {

@@ -1010,13 +1010,13 @@ def query_package(context: QueryContext,
 
 def affected_affects(version: str, affected: osv.AffectedVersions) -> bool:
   """Check if a given version is affected by the AffectedVersions entry."""
-  if len(affected.versions) > 0:
+  if affected.versions:
     return _match_versions(version, affected)
-  if len(affected.events) > 0:
+  if affected.events:
     return _match_events(version, affected)
 
-  logging.warning('AffectedVersion %s (%s) has no events or versions',
-                  affected.key, affected.vuln_id)
+  # No versions or events can happen with e.g. GIT ranges that could not find
+  # tags. Just ignore these entities.
   return False
 
 

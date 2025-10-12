@@ -16,6 +16,8 @@ type LinuxVersionExtractor struct {
 	DefaultVersionExtractor
 }
 
+var _ VersionExtractor = &LinuxVersionExtractor{}
+
 // handleAffected takes an array of cves.Affected and handles how to extract them
 func (l *LinuxVersionExtractor) handleAffected(v *vulns.Vulnerability, affected []cves.Affected, metrics *ConversionMetrics) bool {
 	hasGit := false

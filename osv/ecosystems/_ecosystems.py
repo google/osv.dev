@@ -19,6 +19,7 @@ from .ecosystems_base import EnumerableEcosystem, OrderedEcosystem
 from .alpine import Alpine, APK
 from .bioconductor import Bioconductor
 from .cran import CRAN
+from .crates import CratesIO
 from .debian import Debian, DPKG
 from .haskell import Hackage, GHC
 from .maven import Maven
@@ -40,7 +41,7 @@ _ecosystems = {
     'Bitnami': SemverEcosystem,
     'Chainguard': APK,
     'CRAN': CRAN,
-    'crates.io': SemverEcosystem,
+    'crates.io': CratesIO,
     'Debian': Debian,
     'Echo': DPKG,
     'GHC': GHC,

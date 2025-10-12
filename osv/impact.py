@@ -612,6 +612,26 @@ def enumerate_versions(package, ecosystem, affected_range):
   return versions
 
 
+def _enrich_range_versions(ecosystem_helper,
+                           package_name: str,
+                           affected_range: vulnerability_pb2.Range) -> bool:
+  """Update range events with resolved version strings when available."""
+
+  changed = False
+  for event in affected_range.events:
+    for field in ('introduced', 'fixed', 'last_affected', 'limit'):
+      value = getattr(event, field)
+      if not value:
+        continue
+
+      resolved = ecosystem_helper.resolve_version(package_name, value)
+      if resolved != value:
+        setattr(event, field, resolved)
+        changed = True
+
+  return changed
+
+
 def _analyze_git_ranges(repo_analyzer: RepoAnalyzer, checkout_path: str,
                         affected_range: vulnerability_pb2.Range,
                         new_versions: set, commits: set, new_introduced: set,
@@ -740,6 +760,13 @@ def analyze(vulnerability: vulnerability_pb2.Vulnerability,
           logging.warning('No ecosystem helpers implemented for %s: %s',
                           affected.package.ecosystem, vulnerability.id)
         elif isinstance(ecosystem_helpers, ecosystems.EnumerableEcosystem):
+          if (affected.package.name and
+              hasattr(ecosystem_helpers, 'resolve_version') and
+              hasattr(ecosystem_helpers.resolve_version, '__call__')):
+            if _enrich_range_versions(ecosystem_helpers,
+                                      affected.package.name,
+                                      affected_range):
+              has_changes = True
           try:
             versions.extend(
                 enumerate_versions(affected.package.name, ecosystem_helpers,

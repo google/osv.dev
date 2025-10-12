@@ -20,6 +20,7 @@ from unittest import mock
 from . import impact
 from . import tests
 from . import models
+from . import vulnerability_pb2
 
 from google.cloud import ndb
 
@@ -140,3 +141,31 @@ class UpdateAffectedCommitsTests(unittest.TestCase):
     impact.update_affected_commits('BUG-1', set(), True)
     affected_commits = list(models.AffectedCommits.query())
     self.assertEqual(0, len(affected_commits))
+
+
+class AnalyzeCratesSemverTests(unittest.TestCase):
+  """Tests for crates.io specific analyse behaviour."""
+
+  @mock.patch('osv.ecosystems.crates.CratesIO.enumerate_versions', return_value=[])
+  @mock.patch('osv.ecosystems.crates.CratesIO.resolve_version')
+  def test_fixed_version_metadata_applied(self, mock_resolve, _):
+    def _resolve(package, version):
+      if package == 'libgit2-sys' and version == '0.16.2':
+        return '0.16.2+1.7.2'
+      return version
+
+    mock_resolve.side_effect = _resolve
+
+    vulnerability = vulnerability_pb2.Vulnerability(id='RUSTSEC-TEST')
+    affected = vulnerability.affected.add()
+    affected.package.name = 'libgit2-sys'
+    affected.package.ecosystem = 'crates.io'
+    affected_range = affected.ranges.add()
+    affected_range.type = vulnerability_pb2.Range.SEMVER
+    affected_range.events.add(introduced='0.0.0-0')
+    affected_range.events.add(fixed='0.16.2')
+
+    result = impact.analyze(vulnerability, analyze_git=False)
+
+    self.assertTrue(result.has_changes)
+    self.assertEqual('0.16.2+1.7.2', affected_range.events[1].fixed)

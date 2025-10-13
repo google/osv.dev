@@ -100,7 +100,7 @@ func TestFindNormalAffectedRanges(t *testing.T) {
 				},
 			},
 			wantRanges: []osvschema.Range{
-				cves.BuildVersionRange("deadbeef", "", ""),
+				cves.BuildVersionRange("", "deadbeef", ""),
 			},
 			wantRangeType: VersionRangeTypeGit,
 		},
@@ -108,7 +108,8 @@ func TestFindNormalAffectedRanges(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			gotRanges, gotRangeType := findNormalAffectedRanges(tt.affected, &ConversionMetrics{})
+			versionExtractor := &DefaultVersionExtractor{}
+			gotRanges, gotRangeType := versionExtractor.FindNormalAffectedRanges(tt.affected, &ConversionMetrics{})
 			if diff := cmp.Diff(tt.wantRanges, gotRanges); diff != "" {
 				t.Errorf("findNormalAffectedRanges() ranges mismatch (-want +got):\n%s", diff)
 			}
@@ -179,7 +180,7 @@ func TestFindInverseAffectedRanges(t *testing.T) {
 					{
 						Status:          "unaffected",
 						Version:         "1.0",
-						VersionType:     "semver",
+						VersionType:     "unknown",
 						LessThanOrEqual: "1.0.*",
 					},
 				},
@@ -216,7 +217,7 @@ func TestFindInverseAffectedRanges(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			metrics := &ConversionMetrics{}
-			gotRanges, gotVersionType := findInverseAffectedRanges(tt.affected, tt.cnaAssigner, metrics)
+			gotRanges, gotVersionType := findInverseAffectedRanges(tt.affected, metrics)
 			if diff := cmp.Diff(tt.want, gotRanges); diff != "" {
 				t.Errorf("findInverseAffectedRanges() ranges mismatch (-want +got):\n%s", diff)
 			}
@@ -274,7 +275,7 @@ func TestRealWorldFindInverseAffectedRanges(t *testing.T) {
 			}
 
 			// Run the function under test.
-			gotRanges, _ := findInverseAffectedRanges(affectedBlock, tc.cve.Metadata.AssignerShortName, &ConversionMetrics{})
+			gotRanges, _ := findInverseAffectedRanges(affectedBlock, &ConversionMetrics{})
 
 			// Sort slices for deterministic comparison.
 			sort.Slice(gotRanges, func(i, j int) bool {

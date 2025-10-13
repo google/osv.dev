@@ -37,6 +37,20 @@ const (
 	VersionSourceDescription VersionSource = "DESCRVERS"
 )
 
+type ConversionOutcome int
+
+const (
+	// Set of enums for categorizing conversion outcomes.
+	ConversionUnknown ConversionOutcome = iota // Shouldn't happen
+	Successful                                 // It worked!
+	Rejected                                   // The CVE was rejected
+	NoSoftware                                 // The CVE had no CPEs relating to software (i.e. Operating Systems or Hardware).
+	NoRepos                                    // The CPE Vendor/Product had no repositories derived for it.
+	NoCommitRanges                             // No viable commit ranges could be calculated from the repository for the CVE's CPE(s).
+	NoRanges                                   // No version ranges could be extracted from the record.
+	FixUnresolvable                            // Partial resolution of versions, resulting in a false positive.
+)
+
 // String returns the string representation of a VersionRangeType.
 func (vrt VersionRangeType) String() string {
 	switch vrt {
@@ -73,7 +87,7 @@ func resolveVersionToCommit(cveID cves.CVEID, version, versionType, repo string,
 	logger.Info("Attempting to resolve version to commit", slog.String("cve", string(cveID)), slog.String("version", version), slog.String("type", versionType), slog.String("repo", repo))
 	commit, err := git.VersionToCommit(version, normalizedTags)
 	if err != nil {
-		logger.Warn("Failed to get Git commit for version", slog.String("cve", string(cveID)), slog.String("version", version), slog.String("type", versionType), slog.String("repo", repo), slog.Any("err", err))
+		logger.Warn("Failed to get Git commit for version", slog.String("cve", string(cveID)), slog.String("version", version), slog.String("type", versionType), slog.String("repo", repo))
 		return ""
 	}
 	logger.Info("Successfully derived commit for version", slog.String("cve", string(cveID)), slog.String("commit", commit), slog.String("version", version), slog.String("type", versionType))
@@ -150,10 +164,12 @@ func gitVersionsToCommits(cveID cves.CVEID, versionRanges []osvschema.Range, rep
 	if len(unresolvedRanges) > 0 {
 		newAff.DatabaseSpecific = make(map[string]any)
 		newAff.DatabaseSpecific["unresolved_versions"] = unresolvedRanges
+		metrics.UnresolvedRangesCount += len(unresolvedRanges)
 	}
 
 	if len(newVersionRanges) > 0 {
 		newAff.Ranges = newVersionRanges
+		metrics.ResolvedRangesCount += len(newVersionRanges)
 	} else if len(unresolvedRanges) > 0 { // Only error if there were ranges to resolve but none were.
 		err = errors.New("was not able to get git version ranges")
 	}

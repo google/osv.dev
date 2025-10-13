@@ -22,6 +22,7 @@ import (
 const (
 	// hashMetadataKey is the key for the sha256 hash in the GCS object metadata.
 	hashMetadataKey = "sha256-hash"
+	overrideFolder  = "osv-output-overrides" // location of overrides within bucket
 )
 
 // writeToDisk writes the vulnerability to a local file.
@@ -93,7 +94,7 @@ func uploadToGCS(ctx context.Context, v *osvschema.Vulnerability, preModifiedBuf
 // and an error if a critical failure occurred.
 func handleOverride(ctx context.Context, v *osvschema.Vulnerability, overridesBkt *storage.BucketHandle) (*osvschema.Vulnerability, []byte, error) {
 	filename := v.ID + ".json"
-	overrideObj := overridesBkt.Object(path.Join("osv-output-overrides", filename))
+	overrideObj := overridesBkt.Object(path.Join(overrideFolder, filename))
 	if _, err := overrideObj.Attrs(ctx); err != nil {
 		if errors.Is(err, storage.ErrObjectNotExist) {
 			// No override found.

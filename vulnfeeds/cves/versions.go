@@ -1057,7 +1057,8 @@ func ReposFromReferencesCVEList(cve string, refs []Reference, tagDenyList []stri
 		if strings.HasSuffix(ref.URL, ".md") {
 			continue
 		}
-		repo, err := Repo(ref.URL)
+		repoURL := strings.ToLower(ref.URL)
+		repo, err := Repo(repoURL)
 		if err != nil {
 			// Failed to parse as a valid repo.
 			continue

@@ -100,6 +100,7 @@ if __name__ == '__main__':
         return vulnerability if vulnerability.id else None
 
       def _load_dir(emulator, dir_path: str):
+        """Load all OSV files from a directory into the emulator."""
         emulator.reset()
         for root, _, files in os.walk(dir_path):
           for fname in files:

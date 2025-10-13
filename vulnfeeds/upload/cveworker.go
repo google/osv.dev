@@ -168,7 +168,6 @@ func Worker(ctx context.Context, vulnChan <-chan *osvschema.Vulnerability, outBk
 			// Upload to GCS
 			uploadToGCS(ctx, vulnToProcess, preModifiedBuf, outBkt, outputPrefix)
 		}
-
 	}
 }
 

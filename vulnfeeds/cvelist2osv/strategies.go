@@ -76,9 +76,9 @@ func initialNormalExtraction(vers cves.Versions, metrics *ConversionMetrics, ver
 			metrics.AddNote("%s - LastAffected from LessThanOrEqual value- %s", vLTOEQual.String(), vers.LessThanOrEqual)
 		}
 		var versionRanges []osvschema.Range
-		if introduced != "" && fixed != "" {
+		if fixed != "" {
 			versionRanges = append(versionRanges, cves.BuildVersionRange(introduced, "", fixed))
-		} else if introduced != "" && lastaffected != "" {
+		} else if lastaffected != "" {
 			versionRanges = append(versionRanges, cves.BuildVersionRange(introduced, lastaffected, ""))
 		}
 

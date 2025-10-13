@@ -1,11 +1,7 @@
 {
-  "timeout": "60s",
-  "retryOn429": true,
-  "retryCount": 8,
-  "fallbackRetryDelay": "60s",
   "aliveStatusCodes": [
     200, 201, 202, 203, 204, 206,
     301, 302, 303, 307, 308,
-    401, 403, 405
+    401, 403, 405, 429
   ]
 }

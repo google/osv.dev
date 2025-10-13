@@ -149,11 +149,10 @@ func Worker(ctx context.Context, vulnChan <-chan *osvschema.Vulnerability, outBk
 		if overridesBkt != nil {
 			vulnToProcess, preModifiedBuf, err = handleOverride(ctx, v, overridesBkt)
 			if err != nil {
+				logger.Error("Failed to use override", slog.Any("error", err))
 				continue
 			}
-		}
-
-		if preModifiedBuf == nil {
+		} else {
 			// Marshal before setting modified time to generate hash.
 			preModifiedBuf, err = json.MarshalIndent(vulnToProcess, "", "  ")
 			if err != nil {
@@ -165,10 +164,11 @@ func Worker(ctx context.Context, vulnChan <-chan *osvschema.Vulnerability, outBk
 		if outBkt == nil {
 			// Write to local disk
 			writeToDisk(vulnToProcess, preModifiedBuf, outputPrefix)
-			continue
+		} else {
+			// Upload to GCS
+			uploadToGCS(ctx, vulnToProcess, preModifiedBuf, outBkt, outputPrefix)
 		}
-		// Upload to GCS
-		uploadToGCS(ctx, vulnToProcess, preModifiedBuf, outBkt, outputPrefix)
+
 	}
 }
 

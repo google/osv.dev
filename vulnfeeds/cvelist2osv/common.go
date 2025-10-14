@@ -261,6 +261,7 @@ func addAffected(v *vulns.Vulnerability, aff osvschema.Affected, metrics *Conver
 		if err != nil {
 			metrics.AddNote("Could not marshal range to check for duplicates, adding anyway: %+v", r)
 			uniqueRanges = append(uniqueRanges, r)
+
 			continue
 		}
 		rangeStr := string(rangeBytes)

@@ -2,6 +2,7 @@ package cvelist2osv
 
 import (
 	"cmp"
+	"encoding/json"
 	"errors"
 	"log/slog"
 	"strconv"
@@ -240,4 +241,43 @@ func compareSemverLike(a, b string) int {
 
 	// All extra parts were zero, so the versions are effectively equal.
 	return 0
+}
+
+// addAffected adds an osvschema.Affected to a vulnerability, ensuring that no duplicate ranges are added.
+func addAffected(v *vulns.Vulnerability, aff osvschema.Affected, metrics *ConversionMetrics) {
+	allExistingRanges := make(map[string]struct{})
+	for _, existingAff := range v.Affected {
+		for _, r := range existingAff.Ranges {
+			rangeBytes, err := json.Marshal(r)
+			if err == nil {
+				allExistingRanges[string(rangeBytes)] = struct{}{}
+			}
+		}
+	}
+
+	uniqueRanges := []osvschema.Range{}
+	for _, r := range aff.Ranges {
+		rangeBytes, err := json.Marshal(r)
+		if err != nil {
+			metrics.AddNote("Could not marshal range to check for duplicates, adding anyway: %+v", r)
+			uniqueRanges = append(uniqueRanges, r)
+			continue
+		}
+		rangeStr := string(rangeBytes)
+		if _, exists := allExistingRanges[rangeStr]; !exists {
+			uniqueRanges = append(uniqueRanges, r)
+			allExistingRanges[rangeStr] = struct{}{}
+		} else {
+			metrics.AddNote("Skipping duplicate range: %+v", r)
+		}
+	}
+
+	if len(uniqueRanges) > 0 {
+		newAff := osvschema.Affected{
+			Package:          aff.Package,
+			Ranges:           uniqueRanges,
+			DatabaseSpecific: aff.DatabaseSpecific,
+		}
+		v.Affected = append(v.Affected, newAff)
+	}
 }

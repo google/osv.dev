@@ -40,8 +40,9 @@ func (l *LinuxVersionExtractor) handleAffected(v *vulns.Vulnerability, affected 
 			hasGit = true
 		}
 		aff := createLinuxAffected(versionRanges, versionType, cveAff.Repo)
-		v.Affected = append(v.Affected, aff)
 		metrics.AddSource(VersionSourceAffected)
+		addAffected(v, aff, metrics)
+
 	}
 
 	return gotVersions

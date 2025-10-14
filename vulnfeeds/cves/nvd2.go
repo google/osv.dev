@@ -224,6 +224,15 @@ type CVSSV31 struct {
 	ImpactScore         *DefSubscore `json:"impactScore,omitempty"         mapstructure:"impactScore,omitempty"         yaml:"impactScore,omitempty"`
 }
 
+// CVSS V4.0 score. (hand-generated)
+type CVSSV40 struct {
+	Source              string       `json:"source"                        mapstructure:"source"                        yaml:"source"`
+	Type                string       `json:"type"                          mapstructure:"type"                          yaml:"type"`
+	CVSSData            CVSS         `json:"cvssData"                      mapstructure:"cvssData"                      yaml:"cvssData"`
+	ExploitabilityScore *DefSubscore `json:"exploitabilityScore,omitempty" mapstructure:"exploitabilityScore,omitempty" yaml:"exploitabilityScore,omitempty"`
+	ImpactScore         *DefSubscore `json:"impactScore,omitempty"         mapstructure:"impactScore,omitempty"         yaml:"impactScore,omitempty"`
+}
+
 // Metric scores for a vulnerability as found on NVD.
 type CVEItemMetrics struct {
 	// CVSS V2.0 score.
@@ -234,6 +243,9 @@ type CVEItemMetrics struct {
 
 	// CVSS V3.1 score.
 	CVSSMetricV31 []CVSSV31 `json:"cvssMetricV31,omitempty" mapstructure:"cvssMetricV31,omitempty" yaml:"cvssMetricV31,omitempty"`
+
+	// CVSS V4 score
+	CVSSMetricV4 []CVSSV40 `json:"cvssMetricV40,omitempty" mapstructure:"cvssMetricV31,omitempty" yaml:"cvssMetricV31,omitempty"`
 }
 
 type Reference struct {

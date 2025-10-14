@@ -308,7 +308,12 @@ func (v *Vulnerability) AddPkgInfo(pkgInfo PackageInfo) {
 func getBestSeverity(metricsData *cves.CVEItemMetrics) (string, osvschema.SeverityType) {
 	// Define search passes. First pass for "Primary", second for any.
 	for _, primaryOnly := range []bool{true, false} {
-		// Inside each pass, prioritize v3.1 over v3.0.
+		// Inside each pass, prioritize v4.0 over v3.1 over v3.0.
+		for _, metric := range metricsData.CVSSMetricV4 {
+			if (!primaryOnly || metric.Type == "Primary") && metric.CVSSData.VectorString != "" {
+				return metric.CVSSData.VectorString, osvschema.SeverityCVSSV4
+			}
+		}
 		for _, metric := range metricsData.CVSSMetricV31 {
 			if (!primaryOnly || metric.Type == "Primary") && metric.CVSSData.VectorString != "" {
 				return metric.CVSSData.VectorString, osvschema.SeverityCVSSV3

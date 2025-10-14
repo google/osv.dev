@@ -213,14 +213,19 @@ class PurlHelpersTest(unittest.TestCase):
     self.assertEqual(('Julia', 'Example', None),
                      purl_helpers.parse_purl('pkg:julia/Example'))
 
-    self.assertEqual(('Julia', 'Example', None),
-                     purl_helpers.parse_purl('pkg:julia/Example?uuid=7876af07-990d-54b4-ab0e-23690620f79a'))
+    self.assertEqual(
+        ('Julia', 'Example', None),
+        purl_helpers.parse_purl(
+            'pkg:julia/Example?uuid=7876af07-990d-54b4-ab0e-23690620f79a'))
 
     self.assertEqual(('Julia', 'Example', '0.5.5'),
                      purl_helpers.parse_purl('pkg:julia/Example@0.5.5'))
 
-    self.assertEqual(('Julia', 'Example', '0.5.5'),
-                     purl_helpers.parse_purl('pkg:julia/Example@0.5.5?uuid=7876af07-990d-54b4-ab0e-23690620f79a'))
+    self.assertEqual(
+        ('Julia', 'Example', '0.5.5'),
+        purl_helpers.parse_purl(
+            'pkg:julia/Example@0.5.5?uuid=7876af07-990d-54b4-ab0e-23690620f79a')
+    )
 
     self.assertEqual(('Mageia', 'python-aiohttp', None),
                      purl_helpers.parse_purl(

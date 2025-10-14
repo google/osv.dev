@@ -93,7 +93,7 @@ func VersionToCommit(version string, normalizedTags map[string]NormalizedTag) (s
 		return commitHash, nil
 	}
 
-	return "", fmt.Errorf("failed to find a commit for version %q normalized as %q in %+v", version, normalizedVersion, normalizedTags)
+	return "", fmt.Errorf("failed to find a commit for version %q normalized as %q", version, normalizedVersion)
 }
 
 // Normalize version strings found in CVE CPE Match data or Git tags.

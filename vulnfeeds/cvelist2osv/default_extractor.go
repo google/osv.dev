@@ -52,10 +52,11 @@ func (d *DefaultVersionExtractor) ExtractVersions(cve cves.CVE5, v *vulns.Vulner
 		versionRanges, _ := cpeVersionExtraction(cve, metrics)
 
 		if len(versionRanges) != 0 {
-			gotVersions = true
 			aff, err := gitVersionsToCommits(cve.Metadata.CVEID, versionRanges, repos, metrics, repoTagsCache)
 			if err != nil {
 				logger.Error("Failed to convert git versions to commits", slog.Any("err", err))
+			} else {
+				gotVersions = true
 			}
 
 			v.Affected = append(v.Affected, aff)

@@ -9,7 +9,7 @@ As more vulnerabilities are published to OSV.dev, we want to ensure our API rema
 
 <!--more-->
 
-## Technical Details
+## Overview
 
 Previously, the OSV.dev API was querying and serving its records from a large database entity that contained all fields necessary to build the vulnerability JSON from. This had a couple of drawbacks:
 - The whole record must be retrieved to verify if it matched a query, even it was not needed (e.g. batch queries only return the ID and modified dates).

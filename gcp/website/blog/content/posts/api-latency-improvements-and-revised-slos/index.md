@@ -1,6 +1,6 @@
 ---
 title: "API Latency Improvements and Revised SLOs"
-date: 2025-10-08T11:00:00+11:00
+date: 2025-10-14T11:00:00+11:00
 draft: false
 author: Michael Kedar
 ---
@@ -8,6 +8,16 @@ author: Michael Kedar
 As more vulnerabilities are published to OSV.dev, we want to ensure our API remains fast and reliable for our users. To support this, we've rolled out a new database indexing strategy, resulting in API queries that are now up to 5x faster.
 
 <!--more-->
+
+## Technical Details
+
+Previously, the OSV.dev API was querying and serving its records from a large database entity that contained all fields necessary to build the vulnerability JSON from. This had a couple of drawbacks:
+- The whole record must be retrieved to verify if it matched a query, even it was not needed (e.g. batch queries only return the ID and modified dates).
+- Reconstructing the OSV format from these potentially large entities could be costly.
+
+Now, we are storing the complete computed OSV records directly (including with populated alias/related/upstream fields from other records), and have a secondary table containing only the affected version information of the vulnerabilities, which we perform matching against. This has some significant benefits:
+- Queries by versions can be performed more efficiently, as we match against smaller entities.
+- Returning the full vulnerability details is much faster by just reading the final record directly from our database, and only when needed.
 
 ## API Latency Improvements
 

@@ -18,6 +18,8 @@ package osv;
 
 import "google/protobuf/timestamp.proto";
 
+option go_package = "osv.dev/bindings/go/api";
+
 enum ImportFindingType {
   IMPORT_FINDING_TYPE_NONE = 0;
   IMPORT_FINDING_TYPE_DELETED = 1;

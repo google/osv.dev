@@ -7,7 +7,9 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
+	"github.com/ossf/osv-schema/bindings/go/osvconstants"
 	"github.com/ossf/osv-schema/bindings/go/osvschema"
+	"osv.dev/bindings/go/api"
 	"osv.dev/bindings/go/internal/testhelper"
 	"osv.dev/bindings/go/osvdev"
 )
@@ -56,7 +58,7 @@ func TestOSVClient_GetVulnsByID(t *testing.T) {
 				return
 			}
 
-			if got.ID != tt.id {
+			if got.Id != tt.id {
 				t.Errorf("OSVClient.GetVulnsByID() = %v, want %v", got, tt.id)
 			}
 		})
@@ -68,29 +70,35 @@ func TestOSVClient_QueryBatch(t *testing.T) {
 
 	tests := []struct {
 		name    string
-		queries []*osvdev.Query
+		queries []*api.Query
 		wantIDs [][]string
 		wantErr error
 	}{
 		{
 			name: "multiple queries lookup",
-			queries: []*osvdev.Query{
+			queries: []*api.Query{
 				{
-					Package: osvdev.Package{
+					Package: &osvschema.Package{
 						Name:      "faker",
-						Ecosystem: string(osvschema.EcosystemNPM),
+						Ecosystem: string(osvconstants.EcosystemNPM),
 					},
-					Version: "6.6.6",
+					Param: &api.Query_Version{
+						Version: "6.6.6",
+					},
 				},
 				{
-					Commit: "60e572dbf7b4ded66b488f54773f66aaf6184321",
+					Param: &api.Query_Commit{
+						Commit: "60e572dbf7b4ded66b488f54773f66aaf6184321",
+					},
 				},
 				{
-					Package: osvdev.Package{
+					Package: &osvschema.Package{
 						Name:      "abcd-definitely-does-not-exist",
-						Ecosystem: string(osvschema.EcosystemNPM),
+						Ecosystem: string(osvconstants.EcosystemNPM),
 					},
-					Version: "1.0.0",
+					Param: &api.Query_Version{
+						Version: "1.0.0",
+					},
 				},
 			},
 			wantIDs: [][]string{
@@ -107,16 +115,18 @@ func TestOSVClient_QueryBatch(t *testing.T) {
 		},
 		{
 			name: "multiple queries with invalid",
-			queries: []*osvdev.Query{
+			queries: []*api.Query{
 				{
-					Package: osvdev.Package{
+					Package: &osvschema.Package{
 						Name:      "faker",
-						Ecosystem: string(osvschema.EcosystemNPM),
+						Ecosystem: string(osvconstants.EcosystemNPM),
 					},
-					Version: "6.6.6",
+					Param: &api.Query_Version{
+						Version: "6.6.6",
+					},
 				},
 				{
-					Package: osvdev.Package{
+					Package: &osvschema.Package{
 						Name: "abcd-definitely-does-not-exist",
 					},
 				},
@@ -149,7 +159,7 @@ func TestOSVClient_QueryBatch(t *testing.T) {
 			for _, res := range got.Results {
 				gotVulnIDs := make([]string, 0, len(res.Vulns))
 				for _, vuln := range res.Vulns {
-					gotVulnIDs = append(gotVulnIDs, vuln.ID)
+					gotVulnIDs = append(gotVulnIDs, vuln.Id)
 				}
 				gotResults = append(gotResults, gotVulnIDs)
 			}
@@ -166,29 +176,35 @@ func TestOSVClient_QueryBatchDeadline(t *testing.T) {
 
 	tests := []struct {
 		name    string
-		queries []*osvdev.Query
+		queries []*api.Query
 		wantIDs [][]string
 		wantErr error
 	}{
 		{
 			name: "linux package lookup",
-			queries: []*osvdev.Query{
+			queries: []*api.Query{
 				{
-					Commit: "60e572dbf7b4ded66b488f54773f66aaf6184321",
+					Param: &api.Query_Commit{
+						Commit: "60e572dbf7b4ded66b488f54773f66aaf6184321",
+					},
 				},
 				{
-					Package: osvdev.Package{
+					Package: &osvschema.Package{
 						Name:      "linux",
 						Ecosystem: "Ubuntu:22.04:LTS",
 					},
-					Version: "5.15.0-17.17",
+					Param: &api.Query_Version{
+						Version: "5.15.0-17.17",
+					},
 				},
 				{
-					Package: osvdev.Package{
+					Package: &osvschema.Package{
 						Name:      "abcd-definitely-does-not-exist",
-						Ecosystem: string(osvschema.EcosystemNPM),
+						Ecosystem: string(osvconstants.EcosystemNPM),
 					},
-					Version: "1.0.0",
+					Param: &api.Query_Version{
+						Version: "1.0.0",
+					},
 				},
 			},
 			wantErr: context.DeadlineExceeded,
@@ -217,7 +233,7 @@ func TestOSVClient_QueryBatchDeadline(t *testing.T) {
 			for _, res := range got.Results {
 				gotVulnIDs := make([]string, 0, len(res.Vulns))
 				for _, vuln := range res.Vulns {
-					gotVulnIDs = append(gotVulnIDs, vuln.ID)
+					gotVulnIDs = append(gotVulnIDs, vuln.Id)
 				}
 				gotResults = append(gotResults, gotVulnIDs)
 			}
@@ -234,19 +250,21 @@ func TestOSVClient_Query(t *testing.T) {
 
 	tests := []struct {
 		name    string
-		query   osvdev.Query
+		query   api.Query
 		wantIDs []string
 		wantErr error
 	}{
 		{
 			name: "npm Package lookup",
-			query: osvdev.Query{
-				Package: osvdev.Package{
+			query: api.Query{
+				Package: &osvschema.Package{
 					// Use a deleted package as it is less likely new vulns will be published for it
 					Name:      "faker",
-					Ecosystem: string(osvschema.EcosystemNPM),
+					Ecosystem: string(osvconstants.EcosystemNPM),
 				},
-				Version: "6.6.6",
+				Param: &api.Query_Version{
+					Version: "6.6.6",
+				},
 			},
 			wantIDs: []string{
 				"GHSA-5w9c-rv96-fr7g",
@@ -254,8 +272,10 @@ func TestOSVClient_Query(t *testing.T) {
 		},
 		{
 			name: "commit lookup",
-			query: osvdev.Query{
-				Commit: "60e572dbf7b4ded66b488f54773f66aaf6184321",
+			query: api.Query{
+				Param: &api.Query_Commit{
+					Commit: "60e572dbf7b4ded66b488f54773f66aaf6184321",
+				},
 			},
 			wantIDs: []string{
 				"CVE-2024-2002",
@@ -264,19 +284,21 @@ func TestOSVClient_Query(t *testing.T) {
 		},
 		{
 			name: "unknown package lookup",
-			query: osvdev.Query{
-				Package: osvdev.Package{
+			query: api.Query{
+				Package: &osvschema.Package{
 					Name:      "abcd-definitely-does-not-exist",
-					Ecosystem: string(osvschema.EcosystemNPM),
+					Ecosystem: string(osvconstants.EcosystemNPM),
 				},
-				Version: "1.0.0",
+				Param: &api.Query_Version{
+					Version: "1.0.0",
+				},
 			},
 			wantIDs: []string{},
 		},
 		{
 			name: "invalid query",
-			query: osvdev.Query{
-				Package: osvdev.Package{
+			query: api.Query{
+				Package: &osvschema.Package{
 					Name: "abcd-definitely-does-not-exist",
 				},
 			},
@@ -304,7 +326,7 @@ func TestOSVClient_Query(t *testing.T) {
 
 			gotVulnIDs := make([]string, 0, len(got.Vulns))
 			for _, vuln := range got.Vulns {
-				gotVulnIDs = append(gotVulnIDs, vuln.ID)
+				gotVulnIDs = append(gotVulnIDs, vuln.Id)
 			}
 
 			if diff := cmp.Diff(tt.wantIDs, gotVulnIDs); diff != "" {
@@ -319,19 +341,21 @@ func TestOSVClient_QueryDeadline(t *testing.T) {
 
 	tests := []struct {
 		name    string
-		query   osvdev.Query
+		query   api.Query
 		wantIDs []string
 		wantErr error
 	}{
 		{
 			name: "linux Package lookup",
-			query: osvdev.Query{
-				Package: osvdev.Package{
+			query: api.Query{
+				Package: &osvschema.Package{
 					// Use a deleted package as it is less likely new vulns will be published for it
 					Name:      "linux",
 					Ecosystem: "Ubuntu:22.04:LTS",
 				},
-				Version: "5.15.0-17.17",
+				Param: &api.Query_Version{
+					Version: "5.15.0-17.17",
+				},
 			},
 			wantErr: context.DeadlineExceeded,
 		},
@@ -357,7 +381,7 @@ func TestOSVClient_QueryDeadline(t *testing.T) {
 
 			gotVulnIDs := make([]string, 0, len(got.Vulns))
 			for _, vuln := range got.Vulns {
-				gotVulnIDs = append(gotVulnIDs, vuln.ID)
+				gotVulnIDs = append(gotVulnIDs, vuln.Id)
 			}
 
 			if diff := cmp.Diff(tt.wantIDs, gotVulnIDs); diff != "" {
@@ -372,17 +396,19 @@ func TestOSVClient_ExperimentalDetermineVersion(t *testing.T) {
 
 	tests := []struct {
 		name     string
-		query    osvdev.DetermineVersionsRequest
+		query    api.DetermineVersionParameters
 		wantPkgs []string
 	}{
 		{
 			name: "Simple non existent package query",
-			query: osvdev.DetermineVersionsRequest{
-				Name: "test file",
-				FileHashes: []osvdev.DetermineVersionHash{
-					{
-						Path: "test file/file",
-						Hash: []byte{},
+			query: api.DetermineVersionParameters{
+				Query: &api.VersionQuery{
+					Name: "test file",
+					FileHashes: []*api.FileHash{
+						{
+							FilePath: "test file/file",
+							Hash:     []byte{},
+						},
 					},
 				},
 			},

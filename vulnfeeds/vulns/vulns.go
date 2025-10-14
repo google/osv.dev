@@ -309,7 +309,7 @@ func getBestSeverity(metricsData *cves.CVEItemMetrics) (string, osvschema.Severi
 	// Define search passes. First pass for "Primary", second for any.
 	for _, primaryOnly := range []bool{true, false} {
 		// Inside each pass, prioritize v4.0 over v3.1 over v3.0.
-		for _, metric := range metricsData.CVSSMetricV4 {
+		for _, metric := range metricsData.CVSSMetricV40 {
 			if (!primaryOnly || metric.Type == "Primary") && metric.CVSSData.VectorString != "" {
 				return metric.CVSSData.VectorString, osvschema.SeverityCVSSV4
 			}

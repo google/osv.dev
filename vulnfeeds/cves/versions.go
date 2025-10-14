@@ -1015,7 +1015,7 @@ func ReposFromReferences(cve string, cache VendorProductToRepoMap, vp *VendorPro
 		if !RefAcceptable(ref, tagDenyList) {
 			// Also remove it if previously added under an acceptable tag.
 			MaybeRemoveFromVPRepoCache(cache, vp, ref.URL)
-			logger.Info("Disregarding due to a denied tag", slog.String("cve", cve), slog.String("url", ref.URL), slog.Any("product", vp), slog.Any("tags", ref.Tags))
+			logger.Info(fmt.Sprintf("[%s] Disregarding due to a denied tag", cve), slog.String("cve", cve), slog.String("url", ref.URL), slog.Any("product", vp), slog.Any("tags", ref.Tags))
 
 			continue
 		}
@@ -1036,10 +1036,10 @@ func ReposFromReferences(cve string, cache VendorProductToRepoMap, vp *VendorPro
 		repos = append(repos, repo)
 		MaybeUpdateVPRepoCache(cache, vp, repo)
 	}
-	if vp != nil {
-		logger.Info("Derived repos using references", slog.String("cve", cve), slog.Any("repos", repos), slog.String("vendor", vp.Vendor), slog.String("product", vp.Product))
+	if vp != nil && repos != nil {
+		logger.Info(fmt.Sprintf("[%s] Derived repos using references", cve), slog.String("cve", cve), slog.Any("repos", repos), slog.String("vendor", vp.Vendor), slog.String("product", vp.Product))
 	} else {
-		logger.Info("Derived repos (no CPEs) using references", slog.String("cve", cve), slog.Any("repos", repos))
+		logger.Info(fmt.Sprintf("[%s] Derived repos (no CPEs) using references", cve), slog.String("cve", cve), slog.Any("repos", repos))
 	}
 
 	return repos
@@ -1057,7 +1057,8 @@ func ReposFromReferencesCVEList(cve string, refs []Reference, tagDenyList []stri
 		if strings.HasSuffix(ref.URL, ".md") {
 			continue
 		}
-		repo, err := Repo(ref.URL)
+		repoURL := strings.ToLower(ref.URL)
+		repo, err := Repo(repoURL)
 		if err != nil {
 			// Failed to parse as a valid repo.
 			continue
@@ -1069,7 +1070,7 @@ func ReposFromReferencesCVEList(cve string, refs []Reference, tagDenyList []stri
 		repos = append(repos, repo)
 	}
 	if len(repos) == 0 {
-		notes = append(notes, "[%s]: Failed to identify any repos using references")
+		notes = append(notes, fmt.Sprintf("[%s]: Failed to identify any repos using references", cve))
 	} else {
 		notes = append(notes, fmt.Sprintf("[%s]: Derived %q (no CPEs) using references", cve, repos))
 	}

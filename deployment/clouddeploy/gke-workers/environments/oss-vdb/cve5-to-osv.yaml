@@ -16,3 +16,5 @@ spec:
                 value: oss-vdb
               - name: NUM_WORKERS
                 value: "30"
+              - name: OUTPUT_BUCKET
+                value: cve-osv-conversion

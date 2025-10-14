@@ -1069,7 +1069,7 @@ func ReposFromReferencesCVEList(cve string, refs []Reference, tagDenyList []stri
 		repos = append(repos, repo)
 	}
 	if len(repos) == 0 {
-		notes = append(notes, "[%s]: Failed to identify any repos using references", cve)
+		notes = append(notes, fmt.Sprintf("[%s]: Failed to identify any repos using references", cve))
 	} else {
 		notes = append(notes, fmt.Sprintf("[%s]: Derived %q (no CPEs) using references", cve, repos))
 	}

@@ -19,6 +19,8 @@ Now, we are storing the complete computed OSV records directly (including with p
 - Queries by versions can be performed more efficiently, as we match against smaller entities.
 - Returning the full vulnerability details is much faster by just reading the final record directly from our database, and only when needed.
 
+These database changes allow us to serve data much more efficiently, having a significant improvement on our API's overall performance.
+
 ## API Latency Improvements
 
 This change is now fully rolled out to production, and the impact on API latency can be seen below (solid line) compared to our old implementation (dashed line).

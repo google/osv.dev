@@ -19,33 +19,48 @@ type writeMsg struct {
 	data []byte
 }
 
-func writer(ctx context.Context, ch <-chan writeMsg, bucket *storage.BucketHandle, pathPrefix string, wg *sync.WaitGroup) {
+func writer(ctx context.Context, cancel context.CancelFunc, ch <-chan writeMsg, bucket *storage.BucketHandle, pathPrefix string, wg *sync.WaitGroup) {
 	defer wg.Done()
-	for msg := range ch {
-		path := filepath.Join(pathPrefix, msg.path)
-		if bucket != nil {
-			// write using the bucket
-			obj := bucket.Object(path)
-			w := obj.NewWriter(ctx)
-			w.ContentType = msg.mimeType
-			r := bytes.NewReader(msg.data)
-			if _, err := io.Copy(w, r); err != nil {
-				logger.Error("failed to write file", slog.String("path", path), slog.Any("err", err))
+	for {
+		select {
+		case msg, ok := <-ch:
+			if !ok {
+				// Channel closed, we're done.
+				return
 			}
-			if err := w.Close(); err != nil {
-				logger.Error("failed closing file", slog.String("path", path), slog.Any("err", err))
+			path := filepath.Join(pathPrefix, msg.path)
+			if bucket != nil {
+				// write using the bucket
+				obj := bucket.Object(path)
+				w := obj.NewWriter(ctx)
+				w.ContentType = msg.mimeType
+				r := bytes.NewReader(msg.data)
+				if _, err := io.Copy(w, r); err != nil {
+					logger.Error("failed to write file", slog.String("path", path), slog.Any("err", err))
+					cancel()
+					break
+				}
+				if err := w.Close(); err != nil {
+					logger.Error("failed closing file", slog.String("path", path), slog.Any("err", err))
+					cancel()
+					break
+				}
+			} else {
+				// write locally
+				dir := filepath.Dir(path)
+				if err := os.MkdirAll(dir, 0755); err != nil {
+					logger.Error("failed to create directories", slog.String("dir", dir), slog.Any("err", err))
+					cancel()
+					break
+				}
+				if err := os.WriteFile(path, msg.data, 0644); err != nil {
+					logger.Error("failed to write file", slog.String("path", path), slog.Any("err", err))
+					cancel()
+					break
+				}
 			}
-		} else {
-			// write locally
-			dir := filepath.Dir(path)
-			if err := os.MkdirAll(dir, 0755); err != nil {
-				logger.Error("failed to create directories", slog.String("dir", dir), slog.Any("err", err))
-			}
-			if err := os.WriteFile(path, msg.data, 0644); err != nil {
-				logger.Error("failed to write file", slog.String("path", path), slog.Any("err", err))
-				continue
-			}
-
+		case <-ctx.Done():
+			return
 		}
 	}
 }

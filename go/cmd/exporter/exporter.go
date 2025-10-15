@@ -22,10 +22,10 @@ import (
 func main() {
 	logger.InitGlobalLogger()
 
-	outBucketName := flag.String("bucket", "osv-vulnerabilities", "Bucket name to export to")
-	vulnBucketName := flag.String("osv_vulns_bucket", os.Getenv("OSV_VULNERABILITIES_BUCKET"), "Bucket to read vuln protos from")
-	local := flag.Bool("local", true, "")
-	numWorkers := flag.Int("num_workers", 200, "Number of workers to download/upload")
+	outBucketName := flag.String("bucket", "osv-vulnerabilities", "Output bucket or directory name. If -local is true, this is a local path; otherwise, it's a GCS bucket name.")
+	vulnBucketName := flag.String("osv_vulns_bucket", os.Getenv("OSV_VULNERABILITIES_BUCKET"), "GCS bucket to read vulnerability protobufs from. Can also be set with the OSV_VULNERABILITIES_BUCKET environment variable.")
+	local := flag.Bool("local", true, "If true, writes the output to a local directory specified by -bucket instead of a GCS bucket.")
+	numWorkers := flag.Int("num_workers", 200, "The total number of concurrent workers to use for downloading from GCS and writing the output.")
 
 	flag.Parse()
 
@@ -33,7 +33,10 @@ func main() {
 		logger.Fatal("OSV_VULNERABILITIES_BUCKET must be set")
 	}
 
-	cl, err := storage.NewClient(context.Background())
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	cl, err := storage.NewClient(ctx)
 	if err != nil {
 		logger.Fatal("failed to create storage client", slog.Any("err", err))
 	}
@@ -54,20 +57,21 @@ func main() {
 	var downloaderWg sync.WaitGroup
 	for range *numWorkers / 2 {
 		downloaderWg.Add(1)
-		go downloader(context.Background(), objCh, resultsCh, &downloaderWg)
+		go downloader(ctx, objCh, resultsCh, &downloaderWg)
 	}
 
 	var writerWg sync.WaitGroup
 	for range *numWorkers / 2 {
 		writerWg.Add(1)
-		go writer(context.Background(), writeCh, outBucket, outPrefix, &writerWg)
+		go writer(ctx, cancel, writeCh, outBucket, outPrefix, &writerWg)
 	}
 	var routerWg sync.WaitGroup
 	routerWg.Add(1)
-	go ecosystemRouter(context.Background(), resultsCh, writeCh, &routerWg)
+	go ecosystemRouter(ctx, resultsCh, writeCh, &routerWg)
 
-	it := vulnBucket.Objects(context.Background(), &storage.Query{Prefix: "all/pb/"})
+	it := vulnBucket.Objects(ctx, &storage.Query{Prefix: "all/pb/"})
 	prevPrefix := ""
+MainLoop:
 	for {
 		attrs, err := it.Next()
 		if errors.Is(err, iterator.Done) {
@@ -82,7 +86,11 @@ func main() {
 			logger.Info("reached new prefix", slog.String("file", attrs.Name))
 			prevPrefix = prefix
 		}
-		objCh <- vulnBucket.Object(attrs.Name)
+		select {
+		case objCh <- vulnBucket.Object(attrs.Name):
+		case <-ctx.Done():
+			break MainLoop
+		}
 	}
 
 	close(objCh)
@@ -91,11 +99,29 @@ func main() {
 	routerWg.Wait()
 	close(writeCh)
 	writerWg.Wait()
+
+	if ctx.Err() != nil {
+		logger.Fatal("exporter cancelled")
+	}
 }
 
 func downloader(ctx context.Context, objectCh <-chan *storage.ObjectHandle, resultsCh chan<- *osvschema.Vulnerability, wg *sync.WaitGroup) {
 	defer wg.Done()
-	for obj := range objectCh {
+	for {
+		var obj *storage.ObjectHandle
+		var ok bool
+
+		// First, wait to receive an object, or be cancelled.
+		select {
+		case obj, ok = <-objectCh:
+			if !ok {
+				return // Channel closed.
+			}
+		case <-ctx.Done():
+			return
+		}
+
+		// Now that we have an object, process it.
 		r, err := obj.NewReader(ctx)
 		if err != nil {
 			logger.Error("failed to open vulnerability", slog.String("obj", obj.ObjectName()), slog.Any("err", err))
@@ -112,6 +138,8 @@ func downloader(ctx context.Context, objectCh <-chan *storage.ObjectHandle, resu
 			logger.Error("failed to unmarshal vulnerability", slog.String("obj", obj.ObjectName()), slog.Any("err", err))
 			continue
 		}
+
+		// Now, wait to send the result, or be cancelled.
 		select {
 		case resultsCh <- vuln:
 		case <-ctx.Done():
@@ -124,9 +152,10 @@ func ecosystemRouter(ctx context.Context, inCh <-chan *osvschema.Vulnerability, 
 	defer wg.Done()
 	workers := make(map[string]*ecosystemWorker)
 	var workersWg sync.WaitGroup
-	allWorkerChan := make(chan vulnAndEcos)
+
 	workersWg.Add(1)
-	go allWorker(allWorkerChan, writeCh, &workersWg)
+	allWorker := newAllWorker(ctx, writeCh, &workersWg)
+
 	for vuln := range inCh {
 		ecosystems := make(map[string]struct{})
 		for _, aff := range vuln.GetAffected() {
@@ -144,23 +173,23 @@ func ecosystemRouter(ctx context.Context, inCh <-chan *osvschema.Vulnerability, 
 		if len(ecosystems) == 0 {
 			ecosystems["[EMPTY]"] = struct{}{}
 		}
-		eco_names := make([]string, 0, len(ecosystems))
+		ecoNames := make([]string, 0, len(ecosystems))
 		for eco := range ecosystems {
-			eco_names = append(eco_names, eco)
+			ecoNames = append(ecoNames, eco)
 			worker, ok := workers[eco]
 			if !ok {
 				workersWg.Add(1)
-				worker = spawnEcosystemWorker(eco, writeCh, &workersWg)
+				worker = newEcosystemWorker(ctx, eco, writeCh, &workersWg)
 				workers[eco] = worker
 			}
 			worker.ch <- vuln
 		}
-		allWorkerChan <- vulnAndEcos{Vulnerability: vuln, ecosystems: eco_names}
+		allWorker.ch <- vulnAndEcos{Vulnerability: vuln, ecosystems: ecoNames}
 	}
 
 	for _, worker := range workers {
 		worker.Finish()
 	}
-	close(allWorkerChan)
+	allWorker.Finish()
 	workersWg.Wait()
 }

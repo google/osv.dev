@@ -206,17 +206,8 @@ type CVSSV2 struct {
 	UserInteractionRequired bool         `json:"userInteractionRequired,omitempty" mapstructure:"userInteractionRequired,omitempty" yaml:"userInteractionRequired,omitempty"`
 }
 
-// CVSS V3.0 score. (hand-generated)
-type CVSSV30 struct {
-	Source              string       `json:"source"                        mapstructure:"source"                        yaml:"source"`
-	Type                string       `json:"type"                          mapstructure:"type"                          yaml:"type"`
-	CVSSData            CVSS         `json:"cvssData"                      mapstructure:"cvssData"                      yaml:"cvssData"`
-	ExploitabilityScore *DefSubscore `json:"exploitabilityScore,omitempty" mapstructure:"exploitabilityScore,omitempty" yaml:"exploitabilityScore,omitempty"`
-	ImpactScore         *DefSubscore `json:"impactScore,omitempty"         mapstructure:"impactScore,omitempty"         yaml:"impactScore,omitempty"`
-}
-
-// CVSS V3.1 score. (hand-generated)
-type CVSSV31 struct {
+// CVSS Score to encapsulate V3.0, V3.1, V4.0 structs
+type BaseCVSSNVD struct {
 	Source              string       `json:"source"                        mapstructure:"source"                        yaml:"source"`
 	Type                string       `json:"type"                          mapstructure:"type"                          yaml:"type"`
 	CVSSData            CVSS         `json:"cvssData"                      mapstructure:"cvssData"                      yaml:"cvssData"`
@@ -230,10 +221,13 @@ type CVEItemMetrics struct {
 	CVSSMetricV2 []CVSSV2 `json:"cvssMetricV2,omitempty" mapstructure:"cvssMetricV2,omitempty" yaml:"cvssMetricV2,omitempty"`
 
 	// CVSS V3.0 score.
-	CVSSMetricV30 []CVSSV30 `json:"cvssMetricV30,omitempty" mapstructure:"cvssMetricV30,omitempty" yaml:"cvssMetricV30,omitempty"`
+	CVSSMetricV30 []BaseCVSSNVD `json:"cvssMetricV30,omitempty" mapstructure:"cvssMetricV30,omitempty" yaml:"cvssMetricV30,omitempty"`
 
 	// CVSS V3.1 score.
-	CVSSMetricV31 []CVSSV31 `json:"cvssMetricV31,omitempty" mapstructure:"cvssMetricV31,omitempty" yaml:"cvssMetricV31,omitempty"`
+	CVSSMetricV31 []BaseCVSSNVD `json:"cvssMetricV31,omitempty" mapstructure:"cvssMetricV31,omitempty" yaml:"cvssMetricV31,omitempty"`
+
+	// CVSS V4 score
+	CVSSMetricV40 []BaseCVSSNVD `json:"cvssMetricV40,omitempty" mapstructure:"cvssMetricV40,omitempty" yaml:"cvssMetricV40,omitempty"`
 }
 
 type Reference struct {

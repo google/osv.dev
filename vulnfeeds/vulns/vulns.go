@@ -718,6 +718,7 @@ func CheckQuality(text string) QualityCheck {
 		"tbd",
 		"to be determined",
 		"-",
+		"latest",
 	}
 	for _, filler := range fillerText {
 		if strings.EqualFold(strings.TrimSpace(text), filler) {

@@ -271,7 +271,8 @@ func pickAffectedInformation(cve5Affected []osvschema.Affected, nvdAffected []os
 	for _, affected := range nvdAffected {
 		for _, r := range affected.Ranges {
 			if r.Repo != "" {
-				nvdRepoMap[r.Repo] = append(nvdRepoMap[r.Repo], r)
+				repo := strings.ToLower(r.Repo)
+				nvdRepoMap[repo] = append(nvdRepoMap[repo], r)
 			}
 		}
 	}
@@ -280,7 +281,8 @@ func pickAffectedInformation(cve5Affected []osvschema.Affected, nvdAffected []os
 	for _, affected := range cve5Affected {
 		for _, r := range affected.Ranges {
 			if r.Repo != "" {
-				cve5RepoMap[r.Repo] = append(cve5RepoMap[r.Repo], r)
+				repo := strings.ToLower(r.Repo)
+				cve5RepoMap[repo] = append(cve5RepoMap[repo], r)
 			}
 		}
 	}

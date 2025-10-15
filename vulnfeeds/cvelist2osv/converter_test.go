@@ -226,19 +226,6 @@ func TestFromCVE5(t *testing.T) {
 							Score: "CVSS:3.1/AV:N/AC:L/PR:H/UI:N/S:U/C:L/I:N/A:N",
 						},
 					},
-					Affected: []osvschema.Affected{{
-						Ranges: []osvschema.Range{{
-							Type: "GIT",
-							Repo: "https://gitlab.com/gitlab-org/gitlab",
-							Events: []osvschema.Event{
-								{Introduced: "504fd9e5236e13d674e051c6b8a1e9892b371c58"},
-								{Fixed: "3426be1b93852c5358240c5df40970c0ddfbdb2a"},
-							},
-							DatabaseSpecific: map[string]any{
-								"versions": []osvschema.Event{{Introduced: "18.0"}, {Fixed: "18.0.1"}},
-							},
-						}},
-					}},
 				},
 			},
 		},
@@ -267,19 +254,6 @@ func TestFromCVE5(t *testing.T) {
 							Score: "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:H",
 						},
 					},
-					Affected: []osvschema.Affected{{
-						Ranges: []osvschema.Range{{
-							Type: "GIT",
-							Repo: "https://github.com/amazon-ion/ion-java",
-							Events: []osvschema.Event{
-								{Introduced: "0"},
-								{Fixed: "019a6117fb99131f74f92ecf462169613234abbf"},
-							},
-							DatabaseSpecific: map[string]any{
-								"versions": []osvschema.Event{{Introduced: "0"}, {Fixed: "1.10.5"}},
-							},
-						}},
-					}},
 					DatabaseSpecific: nil,
 				},
 			},
@@ -308,84 +282,6 @@ func TestFromCVE5(t *testing.T) {
 					Aliases:          nil,
 					Related:          nil,
 					DatabaseSpecific: nil,
-					Affected: []osvschema.Affected{{
-						Ranges: []osvschema.Range{{
-							Type: "GIT",
-							Events: []osvschema.Event{
-								{Introduced: "1da177e4c3f41524e886b7f1b8a0c1fc7321cac2"},
-								{Fixed: "a3e77da9f843e4ab93917d30c314f0283e28c124"},
-							},
-							Repo: "https://git.kernel.org/pub/scm/linux/kernel/git/stable/linux.git",
-						},
-							{
-								Type: "GIT",
-								Events: []osvschema.Event{
-									{Introduced: "1da177e4c3f41524e886b7f1b8a0c1fc7321cac2"},
-									{Fixed: "213ba5bd81b7e97ac6e6190b8f3bc6ba76123625"},
-								},
-								Repo: "https://git.kernel.org/pub/scm/linux/kernel/git/stable/linux.git",
-							},
-							{
-								Type: "GIT",
-								Events: []osvschema.Event{
-									{Introduced: "1da177e4c3f41524e886b7f1b8a0c1fc7321cac2"},
-									{Fixed: "40a35d14f3c0dc72b689061ec72fc9b193f37d1f"},
-								},
-								Repo: "https://git.kernel.org/pub/scm/linux/kernel/git/stable/linux.git",
-							},
-							{
-								Type: "GIT",
-								Events: []osvschema.Event{
-									{Introduced: "1da177e4c3f41524e886b7f1b8a0c1fc7321cac2"},
-									{Fixed: "27a39d006f85e869be68c1d5d2ce05e5d6445bf5"},
-								},
-								Repo: "https://git.kernel.org/pub/scm/linux/kernel/git/stable/linux.git",
-							},
-							{
-								Type: "GIT",
-								Events: []osvschema.Event{
-									{Introduced: "1da177e4c3f41524e886b7f1b8a0c1fc7321cac2"},
-									{Fixed: "92527100be38ede924768f4277450dfe8a40e16b"},
-								},
-								Repo: "https://git.kernel.org/pub/scm/linux/kernel/git/stable/linux.git",
-							},
-							{
-								Type: "GIT",
-								Events: []osvschema.Event{
-									{Introduced: "1da177e4c3f41524e886b7f1b8a0c1fc7321cac2"},
-									{Fixed: "6578717ebca91678131d2b1f4ba4258e60536e9f"},
-								},
-								Repo: "https://git.kernel.org/pub/scm/linux/kernel/git/stable/linux.git",
-							},
-							{
-								Type: "GIT",
-								Events: []osvschema.Event{
-									{Introduced: "1da177e4c3f41524e886b7f1b8a0c1fc7321cac2"},
-									{Fixed: "7fa9706722882f634090bfc9af642bf9ed719e27"},
-								},
-								Repo: "https://git.kernel.org/pub/scm/linux/kernel/git/stable/linux.git",
-							},
-							{
-								Type: "GIT",
-								Events: []osvschema.Event{
-									{Introduced: "1da177e4c3f41524e886b7f1b8a0c1fc7321cac2"},
-									{Fixed: "80e648042e512d5a767da251d44132553fe04ae0"},
-								},
-								Repo: "https://git.kernel.org/pub/scm/linux/kernel/git/stable/linux.git",
-							}},
-					},
-						{
-							Package: osvschema.Package{Ecosystem: "Linux", Name: "Kernel"},
-							Ranges: []osvschema.Range{
-								{Type: "ECOSYSTEM", Events: []osvschema.Event{{Introduced: "0"}, {Fixed: "5.4.291"}}},
-								{Type: "ECOSYSTEM", Events: []osvschema.Event{{Introduced: "5.5.0"}, {Fixed: "5.10.235"}}},
-								{Type: "ECOSYSTEM", Events: []osvschema.Event{{Introduced: "5.11.0"}, {Fixed: "5.15.179"}}},
-								{Type: "ECOSYSTEM", Events: []osvschema.Event{{Introduced: "5.16.0"}, {Fixed: "6.1.129"}}},
-								{Type: "ECOSYSTEM", Events: []osvschema.Event{{Introduced: "6.2.0"}, {Fixed: "6.6.79"}}},
-								{Type: "ECOSYSTEM", Events: []osvschema.Event{{Introduced: "6.7.0"}, {Fixed: "6.12.16"}}},
-								{Type: "ECOSYSTEM", Events: []osvschema.Event{{Introduced: "6.13.0"}, {Fixed: "6.13.4"}}},
-							},
-						}},
 					References: []osvschema.Reference{
 						{Type: "WEB", URL: "https://git.kernel.org/stable/c/a3e77da9f843e4ab93917d30c314f0283e28c124"},
 						{Type: "WEB", URL: "https://git.kernel.org/stable/c/213ba5bd81b7e97ac6e6190b8f3bc6ba76123625"},

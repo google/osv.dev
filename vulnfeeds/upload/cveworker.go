@@ -153,7 +153,9 @@ func Worker(ctx context.Context, vulnChan <-chan *osvschema.Vulnerability, outBk
 				logger.Error("Failed to use override", slog.Any("error", err))
 				continue
 			}
-		} else {
+		}
+
+		if preModifiedBuf == nil {
 			// Marshal before setting modified time to generate hash.
 			preModifiedBuf, err = json.MarshalIndent(vulnToProcess, "", "  ")
 			if err != nil {

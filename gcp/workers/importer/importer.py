@@ -56,6 +56,7 @@ _NO_UPDATE_MARKER = 'OSV-NO-UPDATE'
 _BUCKET_THREAD_COUNT = 20
 _HTTP_LAST_MODIFIED_FORMAT = '%a, %d %b %Y %H:%M:%S %Z'
 _TIMEOUT_SECONDS = 60
+_STORE_QUALITY_FINDINGS = False
 
 _client_store = threading.local()
 
@@ -272,6 +273,12 @@ class Importer:
     findings for the record (if any already exist)
     """
 
+    # TODO: Do not write import findings at import time, as it could cause
+    #       confusing results.
+    #       We run osv-linter daily on all records and populate
+    #       the linting bucket.
+    if not _STORE_QUALITY_FINDINGS:
+      return
     # Get any current findings for this record.
     findingtimenow = utcnow()
     if existing_finding := osv.ImportFinding.get_by_id(bug_id):

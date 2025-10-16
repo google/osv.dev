@@ -1,6 +1,8 @@
 github.com/google/go-cmp v0.7.0 h1:wk8382ETsv4JYUZwIsn6YpYiWiBsYLSJiTsyBybVuN8=
 github.com/google/go-cmp v0.7.0/go.mod h1:pXiqmnSA92OHEEa9HXL2W4E7lf9JzCmGVUdgjX3N/iU=
-github.com/ossf/osv-schema/bindings/go v0.0.0-20251007010119-a9120ca6469d h1:0cClIZG/KY9cHzY4e661KZHTzRZkGFb1oHAnjr+NK4w=
-github.com/ossf/osv-schema/bindings/go v0.0.0-20251007010119-a9120ca6469d/go.mod h1:/ypmJBpoMvgNp4g93snzyYoyIPmZfLdSiGn/Vq07Dfo=
+github.com/ossf/osv-schema/bindings/go v0.0.0-20251014054035-182a83c87455 h1:lzqmDclYSSfl7fynmc2+I2Avi/ckHKNMVg8JZRIPceE=
+github.com/ossf/osv-schema/bindings/go v0.0.0-20251014054035-182a83c87455/go.mod h1:Eo7R19vlnflsCRdHW1ynyNUyoRwxdaTmTWD9MtKnJTc=
 golang.org/x/sync v0.17.0 h1:l60nONMj9l5drqw6jlhIELNv9I0A4OFgRsG9k2oT9Ug=
 golang.org/x/sync v0.17.0/go.mod h1:9KTHXmSnoGruLpwFjVSX0lNNA75CykiMECbovNTZqGI=
+google.golang.org/protobuf v1.36.10 h1:AYd7cD/uASjIL6Q9LiTjz8JLcrh/88q5UObnmY3aOOE=
+google.golang.org/protobuf v1.36.10/go.mod h1:HTf+CrKn2C3g5S8VImy6tdcUvCska2kB7j23XfzDpco=

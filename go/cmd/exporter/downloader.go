@@ -11,7 +11,7 @@ import (
 	"github.com/ossf/osv-schema/bindings/go/osvschema"
 	"google.golang.org/protobuf/proto"
 )
-  
+
 func downloader(ctx context.Context, objectCh <-chan *storage.ObjectHandle, resultsCh chan<- *osvschema.Vulnerability, wg *sync.WaitGroup) {
 	defer wg.Done()
 	for {
@@ -54,4 +54,3 @@ func downloader(ctx context.Context, objectCh <-chan *storage.ObjectHandle, resu
 		}
 	}
 }
-  

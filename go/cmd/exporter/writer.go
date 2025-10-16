@@ -14,9 +14,9 @@ import (
 )
 
 type writeMsg struct {
-	path string
+	path     string
 	mimeType string
-	data []byte
+	data     []byte
 }
 
 func writer(ctx context.Context, cancel context.CancelFunc, ch <-chan writeMsg, bucket *storage.BucketHandle, pathPrefix string, wg *sync.WaitGroup) {
@@ -38,11 +38,13 @@ func writer(ctx context.Context, cancel context.CancelFunc, ch <-chan writeMsg, 
 				if _, err := io.Copy(w, r); err != nil {
 					logger.Error("failed to write file", slog.String("path", path), slog.Any("err", err))
 					cancel()
+
 					break
 				}
 				if err := w.Close(); err != nil {
 					logger.Error("failed closing file", slog.String("path", path), slog.Any("err", err))
 					cancel()
+
 					break
 				}
 			} else {
@@ -51,11 +53,13 @@ func writer(ctx context.Context, cancel context.CancelFunc, ch <-chan writeMsg, 
 				if err := os.MkdirAll(dir, 0755); err != nil {
 					logger.Error("failed to create directories", slog.String("dir", dir), slog.Any("err", err))
 					cancel()
+
 					break
 				}
-				if err := os.WriteFile(path, msg.data, 0644); err != nil {
+				if err := os.WriteFile(path, msg.data, 0600); err != nil {
 					logger.Error("failed to write file", slog.String("path", path), slog.Any("err", err))
 					cancel()
+
 					break
 				}
 			}
@@ -64,4 +68,3 @@ func writer(ctx context.Context, cancel context.CancelFunc, ch <-chan writeMsg, 
 		}
 	}
 }
-

@@ -75,6 +75,7 @@ func (w *ecosystemWorker) run(ctx context.Context, writeCh chan<- writeMsg, wg *
 					writeVanir(ctx, vanirVulns, writeCh)
 				}
 				logger.Info("ecosystem worker finished processing", slog.String("ecosystem", w.ecosystem))
+
 				return
 			}
 		case <-ctx.Done():
@@ -119,6 +120,7 @@ func (w *ecosystemWorker) Finish() {
 
 type vulnAndEcos struct {
 	*osvschema.Vulnerability
+
 	ecosystems []string
 }
 
@@ -132,6 +134,7 @@ func newAllWorker(ctx context.Context, writeCh chan<- writeMsg, wg *sync.WaitGro
 		ch: ch,
 	}
 	go worker.run(ctx, writeCh, wg)
+
 	return worker
 }
 
@@ -191,7 +194,10 @@ func writeCSV(ctx context.Context, path string, csvData [][]string, writeCh chan
 
 	var buf bytes.Buffer
 	wr := csv.NewWriter(&buf)
-	wr.WriteAll(csvData)
+	if err := wr.WriteAll(csvData); err != nil {
+		logger.Error("failed writing csv", slog.String("path", path), slog.Any("err", err))
+		return
+	}
 	wr.Flush()
 	write(ctx, path, buf.Bytes(), "text/csv", writeCh)
 }

@@ -1,3 +1,12 @@
+// Package main runs the GCS exporter.
+// The exporter is responsible for creating many files in the OSV vulnerabilities bucket:
+// - [ECOSYSTEM]/VULN-ID.json - OSV JSON file for each vulnerability in each ecosystem
+// - [ECOSYSTEM]/all.zip - contains each OSV JSON file for that ecosystem
+// - [ECOSYSTEM]/modified_id.csv - contains the (modified, ID) of each vulnerability in the ecosystem directory
+// - /ecosystems.txt - a line-separated list of each exported ecosystem
+// - /all.zip - contains every OSV JSON file across all ecosytems
+// - /modified_id.csv - the (modified, [ECOSYSTEM]/ID) of every vulnerability across all ecosystem directories
+// - GIT/osv_git.json - a json array of every OSV vulnerability that has Vanir signatures.
 package main
 
 import (
@@ -15,7 +24,6 @@ import (
 	"github.com/ossf/osv-schema/bindings/go/osvschema"
 	"google.golang.org/api/iterator"
 )
-
 
 func main() {
 	logger.InitGlobalLogger()

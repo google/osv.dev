@@ -81,7 +81,7 @@ const (
 )
 
 // AttachExtractedVersionInfo converts the models.VersionInfo struct to OSV GIT and ECOSYSTEM AffectedRanges and AffectedPackage.
-func AttachExtractedVersionInfo(affected *osvschema.Affected, version models.VersionInfo) {
+func AttachExtractedVersionInfo(v *Vulnerability, version models.VersionInfo) {
 	// commit holds a commit hash of one of the supported commit types.
 	type commit struct {
 		commitType models.CommitType
@@ -114,65 +114,72 @@ func AttachExtractedVersionInfo(affected *osvschema.Affected, version models.Ver
 		}
 		// We're not always able to determine when a vulnerability is introduced, and may need to default to the dawn of time.
 		addedIntroduced := false
-		for _, commit := range commits {
-			if commit.commitType == models.Introduced {
-				gitRange.Events = append(gitRange.Events, osvschema.Event{Introduced: commit.hash})
+		for _, c := range commits {
+			if c.commitType == models.Introduced {
+				gitRange.Events = append(gitRange.Events, osvschema.Event{Introduced: c.hash})
 				addedIntroduced = true
 			}
-			if commit.commitType == models.Fixed {
-				gitRange.Events = append(gitRange.Events, osvschema.Event{Fixed: commit.hash})
+			if c.commitType == models.Fixed {
+				gitRange.Events = append(gitRange.Events, osvschema.Event{Fixed: c.hash})
 			}
-			if commit.commitType == models.Limit {
-				gitRange.Events = append(gitRange.Events, osvschema.Event{Limit: commit.hash})
+			if c.commitType == models.Limit {
+				gitRange.Events = append(gitRange.Events, osvschema.Event{Limit: c.hash})
 			}
 			// Only add any LastAffectedCommits in the absence of
 			// any FixCommits to maintain schema compliance.
-			if commit.commitType == models.LastAffected && unfixed {
-				gitRange.Events = append(gitRange.Events, osvschema.Event{LastAffected: commit.hash})
+			if c.commitType == models.LastAffected && unfixed {
+				gitRange.Events = append(gitRange.Events, osvschema.Event{LastAffected: c.hash})
 			}
 		}
 		if !addedIntroduced {
 			// Prepending not strictly necessary, but seems nicer to have the Introduced first in the list.
 			gitRange.Events = append([]osvschema.Event{{Introduced: "0"}}, gitRange.Events...)
 		}
-		affected.Ranges = append(affected.Ranges, gitRange)
+		v.Affected = append(v.Affected, osvschema.Affected{Ranges: []osvschema.Range{gitRange}})
 	}
 
-	// Adding an ECOSYSTEM version range only makes sense if we have package information.
-	if affected.Package == (osvschema.Package{}) {
-		return
-	}
-
-	versionRange := osvschema.Range{
-		Type: "ECOSYSTEM",
-	}
-	seenIntroduced := map[string]bool{}
-	seenFixed := map[string]bool{}
-
-	for _, v := range version.AffectedVersions {
-		var introduced string
-		if v.Introduced == "" {
-			introduced = "0"
-		} else {
-			introduced = v.Introduced
-		}
-
-		if _, seen := seenIntroduced[introduced]; !seen {
-			versionRange.Events = append(versionRange.Events, osvschema.Event{
-				Introduced: introduced,
-			})
-			seenIntroduced[introduced] = true
-		}
-
-		if _, seen := seenFixed[v.Fixed]; v.Fixed != "" && !seen {
-			versionRange.Events = append(versionRange.Events, osvschema.Event{
-				Fixed: v.Fixed,
-			})
-			seenFixed[v.Fixed] = true
-		}
-	}
 	if len(version.AffectedVersions) > 0 {
-		affected.Ranges = append(affected.Ranges, versionRange)
+		var ecosystemAffected *osvschema.Affected
+		// Find an existing affected with package info to add the ecosystem range to.
+		for i := range v.Affected {
+			if v.Affected[i].Package != (osvschema.Package{}) {
+				ecosystemAffected = &v.Affected[i]
+				break
+			}
+		}
+
+		// Adding an ECOSYSTEM version range only makes sense if we have package information.
+		if ecosystemAffected != nil {
+			versionRange := osvschema.Range{
+				Type: "ECOSYSTEM",
+			}
+			seenIntroduced := map[string]bool{}
+			seenFixed := map[string]bool{}
+
+			for _, ver := range version.AffectedVersions {
+				var introduced string
+				if ver.Introduced == "" {
+					introduced = "0"
+				} else {
+					introduced = ver.Introduced
+				}
+
+				if _, seen := seenIntroduced[introduced]; !seen {
+					versionRange.Events = append(versionRange.Events, osvschema.Event{
+						Introduced: introduced,
+					})
+					seenIntroduced[introduced] = true
+				}
+
+				if _, seen := seenFixed[ver.Fixed]; ver.Fixed != "" && !seen {
+					versionRange.Events = append(versionRange.Events, osvschema.Event{
+						Fixed: ver.Fixed,
+					})
+					seenFixed[ver.Fixed] = true
+				}
+			}
+			ecosystemAffected.Ranges = append(ecosystemAffected.Ranges, versionRange)
+		}
 	}
 }
 

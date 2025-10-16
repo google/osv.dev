@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"flag"
-	"io"
 	"log/slog"
 	"os"
 	"path/filepath"
@@ -15,7 +14,6 @@ import (
 	"github.com/google/osv.dev/go/logger"
 	"github.com/ossf/osv-schema/bindings/go/osvschema"
 	"google.golang.org/api/iterator"
-	"google.golang.org/protobuf/proto"
 )
 
 
@@ -102,49 +100,6 @@ MainLoop:
 
 	if ctx.Err() != nil {
 		logger.Fatal("exporter cancelled")
-	}
-}
-
-func downloader(ctx context.Context, objectCh <-chan *storage.ObjectHandle, resultsCh chan<- *osvschema.Vulnerability, wg *sync.WaitGroup) {
-	defer wg.Done()
-	for {
-		var obj *storage.ObjectHandle
-		var ok bool
-
-		// First, wait to receive an object, or be cancelled.
-		select {
-		case obj, ok = <-objectCh:
-			if !ok {
-				return // Channel closed.
-			}
-		case <-ctx.Done():
-			return
-		}
-
-		// Now that we have an object, process it.
-		r, err := obj.NewReader(ctx)
-		if err != nil {
-			logger.Error("failed to open vulnerability", slog.String("obj", obj.ObjectName()), slog.Any("err", err))
-			continue
-		}
-		data, err := io.ReadAll(r)
-		r.Close()
-		if err != nil {
-			logger.Error("failed to read vulnerability", slog.String("obj", obj.ObjectName()), slog.Any("err", err))
-			continue
-		}
-		vuln := &osvschema.Vulnerability{}
-		if err := proto.Unmarshal(data, vuln); err != nil {
-			logger.Error("failed to unmarshal vulnerability", slog.String("obj", obj.ObjectName()), slog.Any("err", err))
-			continue
-		}
-
-		// Now, wait to send the result, or be cancelled.
-		select {
-		case resultsCh <- vuln:
-		case <-ctx.Done():
-			return
-		}
 	}
 }
 

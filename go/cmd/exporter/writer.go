@@ -25,12 +25,12 @@ func writer(ctx context.Context, cancel context.CancelFunc, ch <-chan writeMsg, 
 		select {
 		case msg, ok := <-ch:
 			if !ok {
-				// Channel closed, we're done.
+				// Channel closed.
 				return
 			}
 			path := filepath.Join(pathPrefix, msg.path)
 			if bucket != nil {
-				// write using the bucket
+				// Write to the bucket.
 				obj := bucket.Object(path)
 				w := obj.NewWriter(ctx)
 				w.ContentType = msg.mimeType
@@ -46,7 +46,7 @@ func writer(ctx context.Context, cancel context.CancelFunc, ch <-chan writeMsg, 
 					break
 				}
 			} else {
-				// write locally
+				// Write locally.
 				dir := filepath.Dir(path)
 				if err := os.MkdirAll(dir, 0755); err != nil {
 					logger.Error("failed to create directories", slog.String("dir", dir), slog.Any("err", err))

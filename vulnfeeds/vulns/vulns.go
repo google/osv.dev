@@ -138,49 +138,52 @@ func AttachExtractedVersionInfo(v *Vulnerability, version models.VersionInfo) {
 		v.Affected = append(v.Affected, osvschema.Affected{Ranges: []osvschema.Range{gitRange}})
 	}
 
-	if len(version.AffectedVersions) > 0 {
-		var ecosystemAffected *osvschema.Affected
-		// Find an existing affected with package info to add the ecosystem range to.
-		for i := range v.Affected {
-			if v.Affected[i].Package != (osvschema.Package{}) {
-				ecosystemAffected = &v.Affected[i]
-				break
-			}
-		}
-
-		// Adding an ECOSYSTEM version range only makes sense if we have package information.
-		if ecosystemAffected != nil {
-			versionRange := osvschema.Range{
-				Type: "ECOSYSTEM",
-			}
-			seenIntroduced := map[string]bool{}
-			seenFixed := map[string]bool{}
-
-			for _, ver := range version.AffectedVersions {
-				var introduced string
-				if ver.Introduced == "" {
-					introduced = "0"
-				} else {
-					introduced = ver.Introduced
-				}
-
-				if _, seen := seenIntroduced[introduced]; !seen {
-					versionRange.Events = append(versionRange.Events, osvschema.Event{
-						Introduced: introduced,
-					})
-					seenIntroduced[introduced] = true
-				}
-
-				if _, seen := seenFixed[ver.Fixed]; ver.Fixed != "" && !seen {
-					versionRange.Events = append(versionRange.Events, osvschema.Event{
-						Fixed: ver.Fixed,
-					})
-					seenFixed[ver.Fixed] = true
-				}
-			}
-			ecosystemAffected.Ranges = append(ecosystemAffected.Ranges, versionRange)
+	if len(version.AffectedVersions) == 0 {
+		return
+	}
+	var ecosystemAffected *osvschema.Affected
+	// Find an existing affected with package info to add the ecosystem range to.
+	for i := range v.Affected {
+		if v.Affected[i].Package != (osvschema.Package{}) {
+			ecosystemAffected = &v.Affected[i]
+			break
 		}
 	}
+
+	// Adding an ECOSYSTEM version range only makes sense if we have package information.
+	if ecosystemAffected == nil {
+		return
+	}
+
+	versionRange := osvschema.Range{
+		Type: "ECOSYSTEM",
+	}
+	seenIntroduced := map[string]bool{}
+	seenFixed := map[string]bool{}
+
+	for _, ver := range version.AffectedVersions {
+		var introduced string
+		if ver.Introduced == "" {
+			introduced = "0"
+		} else {
+			introduced = ver.Introduced
+		}
+
+		if _, seen := seenIntroduced[introduced]; !seen {
+			versionRange.Events = append(versionRange.Events, osvschema.Event{
+				Introduced: introduced,
+			})
+			seenIntroduced[introduced] = true
+		}
+
+		if _, seen := seenFixed[ver.Fixed]; ver.Fixed != "" && !seen {
+			versionRange.Events = append(versionRange.Events, osvschema.Event{
+				Fixed: ver.Fixed,
+			})
+			seenFixed[ver.Fixed] = true
+		}
+	}
+	ecosystemAffected.Ranges = append(ecosystemAffected.Ranges, versionRange)
 }
 
 // PackageInfo is an intermediate struct to ease generating Vulnerability structs.

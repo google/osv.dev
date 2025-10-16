@@ -70,7 +70,7 @@ func (w *ecosystemWorker) run(ctx context.Context, writeCh chan<- writeMsg, wg *
 			if !ok {
 				logger.Info("All vulnerabilities processed", slog.String("ecosystem", w.ecosystem))
 				writeCSV(ctx, filepath.Join(w.ecosystem, modifiedCSVFilename), csvData, writeCh)
-				writeZip(ctx, filepath.Join(w.ecosystem, allZipFilename), allVulns, writeCh)
+				writeZIP(ctx, filepath.Join(w.ecosystem, allZipFilename), allVulns, writeCh)
 				if w.ecosystem == gitEcosystem {
 					writeVanir(ctx, vanirVulns, writeCh)
 				}
@@ -140,6 +140,7 @@ func newAllWorker(ctx context.Context, writeCh chan<- writeMsg, wg *sync.WaitGro
 
 func (w *allWorker) run(ctx context.Context, writeCh chan<- writeMsg, wg *sync.WaitGroup) {
 	defer wg.Done()
+	logger.Info("all worker started")
 	var allVulns []vulnData
 	var csvData [][]string
 	ecosystems := make(map[string]struct{})
@@ -148,11 +149,12 @@ func (w *allWorker) run(ctx context.Context, writeCh chan<- writeMsg, wg *sync.W
 		case v, ok := <-w.ch:
 			if !ok {
 				writeCSV(ctx, modifiedCSVFilename, csvData, writeCh)
-				writeZip(ctx, allZipFilename, allVulns, writeCh)
+				writeZIP(ctx, allZipFilename, allVulns, writeCh)
 				ecos := slices.Collect(maps.Keys(ecosystems))
 				slices.Sort(ecos)
 				ecoString := strings.Join(ecos, "\n")
 				write(ctx, ecosystemsFilename, []byte(ecoString), "text/plain", writeCh)
+				logger.Info("all worker finished processing")
 
 				return
 			}
@@ -185,6 +187,7 @@ func write(ctx context.Context, path string, data []byte, mimeType string, write
 }
 
 func writeCSV(ctx context.Context, path string, csvData [][]string, writeCh chan<- writeMsg) {
+	logger.Info("constructing csv file", slog.String("path", path))
 	slices.SortFunc(csvData, func(a, b []string) int {
 		return cmp.Or(
 			-cmp.Compare(a[0], b[0]),
@@ -199,10 +202,12 @@ func writeCSV(ctx context.Context, path string, csvData [][]string, writeCh chan
 		return
 	}
 	wr.Flush()
+	logger.Info("writing csv file", slog.String("path", path))
 	write(ctx, path, buf.Bytes(), "text/csv", writeCh)
 }
 
-func writeZip(ctx context.Context, path string, allVulns []vulnData, writeCh chan<- writeMsg) {
+func writeZIP(ctx context.Context, path string, allVulns []vulnData, writeCh chan<- writeMsg) {
+	logger.Info("constructing zip file", slog.String("path", path))
 	slices.SortFunc(allVulns, func(a, b vulnData) int {
 		return cmp.Compare(a.id, b.id)
 	})
@@ -222,6 +227,7 @@ func writeZip(ctx context.Context, path string, allVulns []vulnData, writeCh cha
 	if err := wr.Close(); err != nil {
 		logger.Error("failed to close zip writer", slog.String("path", path), slog.Any("err", err))
 	}
+	logger.Info("writing zip file", slog.String("path", path))
 	write(ctx, path, buf.Bytes(), "application/zip", writeCh)
 }
 

@@ -35,6 +35,12 @@ func main() {
 
 	flag.Parse()
 
+	logger.Info("exporter starting",
+		slog.String("bucket", *outBucketName),
+		slog.String("osv_vulns_bucket", *vulnBucketName),
+		slog.Bool("local", *local),
+		slog.Int("num_workers", *numWorkers))
+
 	if *vulnBucketName == "" {
 		logger.Fatal("OSV_VULNERABILITIES_BUCKET must be set")
 	}
@@ -86,10 +92,11 @@ MainLoop:
 		if err != nil {
 			logger.Fatal("failed to list objects", slog.Any("err", err))
 		}
+		// Only log when we see a new ID prefix (i.e. roughly once per data source)
 		prefix := filepath.Base(attrs.Name)
 		prefix, _, _ = strings.Cut(prefix, "-")
 		if prefix != prevPrefix {
-			logger.Info("reached new prefix", slog.String("file", attrs.Name))
+			logger.Info("iterating vulnerabilities", slog.String("now_at", attrs.Name))
 			prevPrefix = prefix
 		}
 		select {
@@ -109,17 +116,21 @@ MainLoop:
 	if ctx.Err() != nil {
 		logger.Fatal("exporter cancelled")
 	}
+	logger.Info("export completed successfully")
 }
 
 func ecosystemRouter(ctx context.Context, inCh <-chan *osvschema.Vulnerability, writeCh chan<- writeMsg, wg *sync.WaitGroup) {
 	defer wg.Done()
+	logger.Info("ecosystem router starting")
 	workers := make(map[string]*ecosystemWorker)
 	var workersWg sync.WaitGroup
+	var vulnCounter int
 
 	workersWg.Add(1)
 	allWorker := newAllWorker(ctx, writeCh, &workersWg)
 
 	for vuln := range inCh {
+		vulnCounter++
 		ecosystems := make(map[string]struct{})
 		for _, aff := range vuln.GetAffected() {
 			eco := aff.GetPackage().GetEcosystem()
@@ -155,4 +166,5 @@ func ecosystemRouter(ctx context.Context, inCh <-chan *osvschema.Vulnerability, 
 	}
 	allWorker.Finish()
 	workersWg.Wait()
+	logger.Info("ecosystem router finished, all vulnerabilities dispatched", slog.Int("total_vulnerabilities", vulnCounter))
 }

@@ -13,4 +13,7 @@ spec:
             - name: GOOGLE_CLOUD_PROJECT
               value: oss-vdb
             args:
+              - "--local=false"
               - "--bucket=osv-vulnerabilities"
+              - "--osv_vulns_bucket=osv-vulnerabilities"
+

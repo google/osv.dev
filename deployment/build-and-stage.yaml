@@ -62,7 +62,7 @@ steps:
   args: ['push', '--all-tags', 'gcr.io/oss-vdb/worker-base']
   waitFor: ['build-worker-base', 'cloud-build-queue']
 
-# Build/push core worker/importer/exporter/alias images.
+# Build/push core worker/importer/alias images.
 - name: gcr.io/cloud-builders/docker
   args: ['build', '-t', 'gcr.io/oss-vdb/worker:latest', '-t', 'gcr.io/oss-vdb/worker:$COMMIT_SHA', '-f', 'gcp/workers/worker/Dockerfile', '.']
   id: 'build-worker'
@@ -81,15 +81,6 @@ steps:
   waitFor: ['build-importer', 'cloud-build-queue']
 
 - name: gcr.io/cloud-builders/docker
-  args: ['build', '-t', 'gcr.io/oss-vdb/exporter:latest', '-t', 'gcr.io/oss-vdb/exporter:$COMMIT_SHA', '.']
-  dir: 'gcp/workers/exporter'
-  id: 'build-exporter'
-  waitFor: ['build-worker']
-- name: gcr.io/cloud-builders/docker
-  args: ['push', '--all-tags', 'gcr.io/oss-vdb/exporter']
-  waitFor: ['build-exporter', 'cloud-build-queue']
-
-- name: gcr.io/cloud-builders/docker
   args: ['build', '-t', 'gcr.io/oss-vdb/alias-computation:latest', '-t', 'gcr.io/oss-vdb/alias-computation:$COMMIT_SHA', '.']
   dir: 'gcp/workers/alias'
   id: 'build-alias-computation'
@@ -106,6 +97,20 @@ steps:
 - name: gcr.io/cloud-builders/docker
   args: ['push', '--all-tags', 'gcr.io/oss-vdb/recoverer']
   waitFor: ['build-recoverer', 'cloud-build-queue']
+
+- name: 'gcr.io/cloud-builders/docker'
+  entrypoint: 'bash'
+  args: ['-c', 'docker pull gcr.io/oss-vdb/exporter:latest || exit 0']
+  id: 'pull-exporter'
+  waitFor: ['setup']
+- name: gcr.io/cloud-builders/docker
+  args: ['build', '-t', 'gcr.io/oss-vdb/exporter:latest', '-t', 'gcr.io/oss-vdb/exporter:$COMMIT_SHA', '-f', 'cmd/exporter/Dockerfile', '--cache-from', 'gcr.io/oss-vdb/record-checker:latest', '--pull', '.']
+  dir: 'go'
+  id: 'build-exporter'
+  waitFor: ['pull-exporter']
+- name: gcr.io/cloud-builders/docker
+  args: ['push', '--all-tags', 'gcr.io/oss-vdb/exporter']
+  waitFor: ['build-exporter', 'cloud-build-queue']
 
 - name: 'gcr.io/cloud-builders/docker'
   entrypoint: 'bash'

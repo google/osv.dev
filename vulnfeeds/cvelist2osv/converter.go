@@ -91,7 +91,8 @@ func attachCWEs(v *vulns.Vulnerability, cna cves.CNA, metrics *ConversionMetrics
 	if len(cwes) == 0 {
 		return
 	}
-	//Sort and remove duplicates
+
+	// Sort and remove duplicates
 	slices.Sort(cwes)
 	cwes = slices.Compact(cwes)
 
@@ -167,6 +168,7 @@ func FromCVE5(cve cves.CVE5, refs []cves.Reference, metrics *ConversionMetrics) 
 
 	// attachCWEs extract and adds the cwes from the CVE5 Problem-types
 	attachCWEs(&v, cve.Containers.CNA, metrics)
+
 	return &v
 }
 

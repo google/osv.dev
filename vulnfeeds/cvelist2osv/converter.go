@@ -23,13 +23,16 @@ const (
 
 // ConversionMetrics holds the collected data about the conversion process for a single CVE.
 type ConversionMetrics struct {
-	CVEID          cves.CVEID                      `json:"id"`              // The CVE ID
-	CNA            string                          `json:"cna"`             // The CNA that assigned the CVE.
-	Outcome        string                          `json:"outcome"`         // The final outcome of the conversion (e.g., "Successful", "Failed").
-	Repos          []string                        `json:"repos"`           // A list of repositories extracted from the CVE's references.
-	RefTypesCount  map[osvschema.ReferenceType]int `json:"ref_types_count"` // A count of each type of reference found.
-	VersionSources []VersionSource                 `json:"version_sources"` // A list of the ways the versions were extracted
-	Notes          []string                        `json:"notes"`           // A collection of notes and warnings generated during conversion.
+	CVEID                 cves.CVEID                      `json:"id"`              // The CVE ID
+	CNA                   string                          `json:"cna"`             // The CNA that assigned the CVE.
+	Outcome               ConversionOutcome               `json:"outcome"`         // The final outcome of the conversion (e.g., "Successful", "Failed").
+	Repos                 []string                        `json:"repos"`           // A list of repositories extracted from the CVE's references.
+	RefTypesCount         map[osvschema.ReferenceType]int `json:"ref_types_count"` // A count of each type of reference found.
+	VersionSources        []VersionSource                 `json:"version_sources"` // A list of the ways the versions were extracted
+	Notes                 []string                        `json:"notes"`           // A collection of notes and warnings generated during conversion.
+	CPEs                  []string                        `json:"cpes"`
+	UnresolvedRangesCount int                             `json:"unresolved_ranges_count"`
+	ResolvedRangesCount   int                             `json:"resolved_ranges_count"`
 }
 
 // AddNote adds a formatted note to the ConversionMetrics.
@@ -110,9 +113,12 @@ func FromCVE5(cve cves.CVE5, refs []cves.Reference, metrics *ConversionMetrics) 
 	}
 	metrics.Repos = repos
 
-	// Add affected version information.
-	AddVersionInfo(cve, &v, metrics, repos)
-	// TODO(jesslowe@): Add CWEs.
+	if slices.Contains(cve.Containers.CNA.Tags, "disputed") {
+		if v.DatabaseSpecific == nil {
+			v.DatabaseSpecific = make(map[string]any)
+		}
+		v.DatabaseSpecific["isDisputed"] = true
+	}
 
 	// Combine severity metrics from both CNA and ADP containers.
 	var severity []cves.Metrics
@@ -129,6 +135,8 @@ func FromCVE5(cve cves.CVE5, refs []cves.Reference, metrics *ConversionMetrics) 
 			v.Severity = []osvschema.Severity{sev}
 		}
 	}
+
+	// TODO(jesslowe@): Add CWEs.
 
 	return &v
 }
@@ -178,19 +186,42 @@ func writeMetricToFile(id cves.CVEID, vulnDir string, metrics *ConversionMetrics
 	return nil
 }
 
+func determineOutcome(metrics *ConversionMetrics) {
+	// check if we have affected ranges/versions.
+	if len(metrics.Repos) == 0 {
+		// Fix unlikely, as no repos to resolve
+		metrics.Outcome = NoRepos
+		return
+	}
+
+	if metrics.ResolvedRangesCount > 0 {
+		metrics.Outcome = Successful
+	} else if metrics.UnresolvedRangesCount > 0 {
+		metrics.Outcome = NoCommitRanges
+	} else {
+		metrics.Outcome = NoRanges
+	}
+}
+
 // ConvertAndExportCVEToOSV is the main function for this file. It takes a CVE,
 // converts it into an OSV record, collects metrics, and writes both to disk.
 func ConvertAndExportCVEToOSV(cve cves.CVE5, directory string) error {
 	cveID := cve.Metadata.CVEID
 	cnaAssigner := cve.Metadata.AssignerShortName
 	references := identifyPossibleURLs(cve)
-	metrics := ConversionMetrics{CVEID: cveID, CNA: cnaAssigner}
+	metrics := ConversionMetrics{CVEID: cveID, CNA: cnaAssigner, UnresolvedRangesCount: 0, ResolvedRangesCount: 0}
 
 	// Create a base OSV record from the CVE.
 	v := FromCVE5(cve, references, &metrics)
 
 	// Collect metrics about the conversion.
 	extractConversionMetrics(cve, v.References, &metrics)
+
+	// Add affected version information.
+	versionExtractor := GetVersionExtractor(cve.Metadata.AssignerShortName)
+	versionExtractor.ExtractVersions(cve, v, &metrics, metrics.Repos)
+
+	determineOutcome(&metrics)
 
 	vulnDir := filepath.Join(directory, cnaAssigner)
 

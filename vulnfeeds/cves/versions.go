@@ -1057,7 +1057,8 @@ func ReposFromReferencesCVEList(cve string, refs []Reference, tagDenyList []stri
 		if strings.HasSuffix(ref.URL, ".md") {
 			continue
 		}
-		repo, err := Repo(ref.URL)
+		repoURL := strings.ToLower(ref.URL)
+		repo, err := Repo(repoURL)
 		if err != nil {
 			// Failed to parse as a valid repo.
 			continue
@@ -1069,7 +1070,7 @@ func ReposFromReferencesCVEList(cve string, refs []Reference, tagDenyList []stri
 		repos = append(repos, repo)
 	}
 	if len(repos) == 0 {
-		notes = append(notes, "[%s]: Failed to identify any repos using references")
+		notes = append(notes, fmt.Sprintf("[%s]: Failed to identify any repos using references", cve))
 	} else {
 		notes = append(notes, fmt.Sprintf("[%s]: Derived %q (no CPEs) using references", cve, repos))
 	}

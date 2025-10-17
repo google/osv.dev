@@ -10,7 +10,6 @@ import (
 	"io/fs"
 	"log/slog"
 	"os"
-	"path"
 	"path/filepath"
 	"strings"
 
@@ -18,6 +17,7 @@ import (
 
 	"cloud.google.com/go/storage"
 	"github.com/google/osv/vulnfeeds/cves"
+	"github.com/google/osv/vulnfeeds/upload"
 	"github.com/google/osv/vulnfeeds/utility/logger"
 	"github.com/ossf/osv-schema/bindings/go/osvschema"
 	"google.golang.org/api/iterator"
@@ -34,7 +34,11 @@ func main() {
 
 	cve5Path := flag.String("cve5Path", defaultCVE5Path, "Path to CVE5 OSV files")
 	nvdPath := flag.String("nvdPath", defaultNVDOSVPath, "Path to NVD OSV files")
-	osvOutputPath := flag.String("osvOutputPath", defaultOSVOutputPath, "Local output path of combined OSV files")
+	osvOutputPath := flag.String("osvOutputPath", defaultOSVOutputPath, "Local output path of combined OSV files, or GCS prefix if uploading.")
+	outputBucketName := flag.String("output_bucket", "cve-osv-conversion", "The GCS bucket to write to.")
+	overridesBucketName := flag.String("overrides_bucket", "cve-osv-conversion", "The GCS bucket to read overrides from.")
+	uploadToGCS := flag.Bool("uploadToGCS", false, "If true, upload to GCS bucket instead of writing to local disk.")
+	numWorkers := flag.Int("num_workers", 64, "Number of workers to process records")
 	flag.Parse()
 
 	err := os.MkdirAll(*osvOutputPath, 0755)
@@ -77,7 +81,15 @@ func main() {
 	// just want to combine these two arrays with a more descriptive name.
 	mandatoryCVEIDs := append(debianCVEs, alpineCVEs...) //nolint:gocritic
 	combinedData := combineIntoOSV(allCVE5, allNVD, mandatoryCVEIDs)
-	writeOSVFile(combinedData, *osvOutputPath)
+
+	ctx := context.Background()
+
+	vulnerabilities := make([]*osvschema.Vulnerability, 0, len(combinedData))
+	for _, v := range combinedData {
+		vulnerabilities = append(vulnerabilities, &v)
+	}
+
+	upload.Upload(ctx, "OSV files", *uploadToGCS, *outputBucketName, *overridesBucketName, *numWorkers, *osvOutputPath, vulnerabilities)
 }
 
 // extractCVEName extracts the CVE name from a given filename and prefix.
@@ -162,7 +174,7 @@ func loadOSV(osvPath string) map[cves.CVEID]osvschema.Vulnerability {
 
 // combineIntoOSV creates OSV entry by combining loaded CVEs from NVD and PackageInfo information from security advisories.
 func combineIntoOSV(cve5osv map[cves.CVEID]osvschema.Vulnerability, nvdosv map[cves.CVEID]osvschema.Vulnerability, mandatoryCVEIDs []string) map[cves.CVEID]osvschema.Vulnerability {
-	vulns := make(map[cves.CVEID]osvschema.Vulnerability)
+	osvRecords := make(map[cves.CVEID]osvschema.Vulnerability)
 
 	// Iterate through CVEs from security advisories (cve5) as the base
 	for cveID, cve5 := range cve5osv {
@@ -183,7 +195,7 @@ func combineIntoOSV(cve5osv map[cves.CVEID]osvschema.Vulnerability, nvdosv map[c
 				continue
 			}
 		}
-		vulns[cveID] = baseOSV
+		osvRecords[cveID] = baseOSV
 	}
 
 	// Add any remaining CVEs from NVD that were not in the advisory data.
@@ -191,10 +203,10 @@ func combineIntoOSV(cve5osv map[cves.CVEID]osvschema.Vulnerability, nvdosv map[c
 		if len(nvd.Affected) == 0 {
 			continue
 		}
-		vulns[cveID] = nvd
+		osvRecords[cveID] = nvd
 	}
 
-	return vulns
+	return osvRecords
 }
 
 // combineTwoOSVRecords takes two osv records and combines them into one
@@ -259,7 +271,8 @@ func pickAffectedInformation(cve5Affected []osvschema.Affected, nvdAffected []os
 	for _, affected := range nvdAffected {
 		for _, r := range affected.Ranges {
 			if r.Repo != "" {
-				nvdRepoMap[r.Repo] = append(nvdRepoMap[r.Repo], r)
+				repo := strings.ToLower(r.Repo)
+				nvdRepoMap[repo] = append(nvdRepoMap[repo], r)
 			}
 		}
 	}
@@ -268,7 +281,8 @@ func pickAffectedInformation(cve5Affected []osvschema.Affected, nvdAffected []os
 	for _, affected := range cve5Affected {
 		for _, r := range affected.Ranges {
 			if r.Repo != "" {
-				cve5RepoMap[r.Repo] = append(cve5RepoMap[r.Repo], r)
+				repo := strings.ToLower(r.Repo)
+				cve5RepoMap[repo] = append(cve5RepoMap[repo], r)
 			}
 		}
 	}
@@ -344,25 +358,4 @@ func getRangeBoundaryVersions(events []osvschema.Event) (introduced, fixed strin
 	}
 
 	return introduced, fixed
-}
-
-// writeOSVFile writes out the given osv objects into individual json files
-func writeOSVFile(osvData map[cves.CVEID]osvschema.Vulnerability, osvOutputPath string) {
-	for vID, osv := range osvData {
-		filePath := path.Join(osvOutputPath, string(vID)+".json")
-		file, err := os.OpenFile(filePath, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0644)
-		if err != nil {
-			logger.Panic("Failed to create/open file to write", slog.Any("err", err))
-		}
-		defer file.Close()
-
-		encoder := json.NewEncoder(file)
-		encoder.SetIndent("", "  ")
-		err = encoder.Encode(osv)
-		if err != nil {
-			logger.Panic("Failed to encode OSVs", slog.Any("err", err))
-		}
-	}
-
-	logger.Info("Successfully written OSV files", slog.Int("count", len(osvData)))
 }

@@ -1397,7 +1397,7 @@ func TestReposFromReferencesCVEList(t *testing.T) {
 				},
 				tagDenyList: RefTagDenyList,
 			},
-			wantRepos: []string{"https://github.com/saemorris/TheRadSystem"},
+			wantRepos: []string{"https://github.com/saemorris/theradsystem"},
 		},
 		{
 			name: "A CVE with a useless (vulnerability researcher) repo",

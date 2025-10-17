@@ -1,0 +1,7 @@
+{
+  "id": "CYCLE-ROOT-3",
+  "modified": "2025-02-04T00:00:00Z",
+  "published": "2023-08-14T00:00:00Z",
+  "upstream": ["CYCLE-ROOT-1", "CYCLE-ROOT-2"],
+  "affected": []
+}

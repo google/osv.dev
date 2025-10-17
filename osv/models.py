@@ -1164,6 +1164,7 @@ def affected_from_bug(entity: Bug) -> list[AffectedVersions]:
     # where GIT tags match to the first git repo in the ranges list, even if
     # there are non-git ranges or multiple git repos in a range.
     repo_url = ''
+    pkg_has_affected = False
     for r in affected.ranges:
       if r.type == 'GIT':
         if not repo_url:
@@ -1172,8 +1173,10 @@ def affected_from_bug(entity: Bug) -> list[AffectedVersions]:
       if r.type not in ('SEMVER', 'ECOSYSTEM'):
         logging.warning('Unknown range type "%s" in %s', r.type, entity.db_id)
         continue
-
       events = r.events
+      if not events:
+        continue
+      pkg_has_affected = True
       if e_helper is not None:
         # If we have an ecosystem helper sort the events to help with querying.
         events.sort(key=lambda e, sort_key=e_helper.sort_key:
@@ -1189,24 +1192,43 @@ def affected_from_bug(entity: Bug) -> list[AffectedVersions]:
             ))
 
     # Add the enumerated versions
-    if affected.versions:
-      if pkg_name:  # We need at least a package name to perform matching.
-        for e in all_pkg_ecosystems:
-          affected_versions.append(
-              AffectedVersions(
-                  vuln_id=entity.db_id,
-                  ecosystem=e,
-                  name=pkg_name,
-                  versions=affected.versions,
-              ))
-      if repo_url:
+    # We need at least a package name to perform matching.
+    if pkg_name and affected.versions:
+      pkg_has_affected = True
+      for e in all_pkg_ecosystems:
         affected_versions.append(
             AffectedVersions(
                 vuln_id=entity.db_id,
-                ecosystem='GIT',
-                name=normalize_repo_package(repo_url),
+                ecosystem=e,
+                name=pkg_name,
                 versions=affected.versions,
             ))
+    if pkg_name and not pkg_has_affected:
+      # We have a package that does not have any affected ranges or versions,
+      # which doesn't really make sense.
+      # Add an empty AffectedVersions entry so that this vuln is returned when
+      # querying the API with no version specified.
+      logging.warning('Vuln has empty affected ranges and versions: %s, %s/%s',
+                      entity.db_id, pkg_ecosystem, pkg_name)
+      for e in all_pkg_ecosystems:
+        affected_versions.append(
+            AffectedVersions(
+                vuln_id=entity.db_id,
+                ecosystem=e,
+                name=pkg_name,
+            ))
+
+    if repo_url:
+      # If we have a repository, always add a GIT entry.
+      # Even if affected.versions is empty, we still want to return this vuln
+      # for the API queries with no versions specified.
+      affected_versions.append(
+          AffectedVersions(
+              vuln_id=entity.db_id,
+              ecosystem='GIT',
+              name=normalize_repo_package(repo_url),
+              versions=affected.versions,
+          ))
 
   # Deduplicate and sort the affected_versions
   unique_affected_dict = {av.sort_key(): av for av in affected_versions}

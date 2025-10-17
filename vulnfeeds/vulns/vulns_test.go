@@ -3,7 +3,6 @@ package vulns
 import (
 	"cmp"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"log"
 	"os"
@@ -417,9 +416,14 @@ func TestAddSeverity(t *testing.T) {
 			},
 		},
 		{
-			description:    "CVE with no impact information",
-			inputCVE:       loadTestData2("CVE-2023-5341"),
-			expectedResult: nil,
+			description: "CVE with only Secondary CVSS information",
+			inputCVE:    loadTestData2("CVE-2023-5341"),
+			expectedResult: []osvschema.Severity{
+				{
+					Type:  osvschema.SeverityCVSSV3,
+					Score: "CVSS:3.1/AV:L/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:H",
+				},
+			},
 		},
 	}
 
@@ -430,64 +434,6 @@ func TestAddSeverity(t *testing.T) {
 		got := vuln.Severity
 		if diff := gocmp.Diff(got, tc.expectedResult); diff != "" {
 			t.Errorf("test %q: Incorrect result: %s", tc.description, diff)
-		}
-	}
-}
-
-func TestCVEIsDisputed(t *testing.T) {
-	tests := []struct {
-		description       string
-		inputVulnID       string
-		expectedWithdrawn bool
-		expectedError     error
-	}{
-		{
-			description:       "A non-CVE vulnerability",
-			inputVulnID:       "OSV-1234",
-			expectedWithdrawn: false,
-			expectedError:     ErrVulnNotACVE,
-		},
-		{
-			description:       "A disputed CVE vulnerability",
-			inputVulnID:       "CVE-2023-23127",
-			expectedWithdrawn: true,
-			expectedError:     nil,
-		},
-		{
-			description:       "A disputed CVE vulnerability",
-			inputVulnID:       "CVE-2021-26917",
-			expectedWithdrawn: true,
-			expectedError:     nil,
-		},
-		{
-			description:       "An undisputed CVE vulnerability",
-			inputVulnID:       "CVE-2023-38408",
-			expectedWithdrawn: false,
-			expectedError:     nil,
-		},
-	}
-
-	for _, tc := range tests {
-		inputVuln := &Vulnerability{}
-		inputVuln.ID = tc.inputVulnID
-
-		withdrawnTime, err := CVEIsDisputed(inputVuln, "../test_data/cvelistV5")
-
-		if !errors.Is(err, tc.expectedError) {
-			var verr *CVEListError
-			if errors.As(err, &verr) {
-				t.Errorf("test %q: unexpectedly errored: %#v", tc.description, verr.Err)
-			} else {
-				t.Errorf("test %q: unexpectedly errored: %#v, expected: %#v", tc.description, err, tc.expectedError)
-			}
-		}
-
-		if withdrawnTime.IsZero() && tc.expectedWithdrawn {
-			t.Errorf("test: %q: withdrawn time not set as expected", tc.description)
-		}
-
-		if !withdrawnTime.IsZero() && !tc.expectedWithdrawn {
-			t.Errorf("test: %q: withdrawn time (%s) set unexpectedly", tc.description, withdrawnTime)
 		}
 	}
 }

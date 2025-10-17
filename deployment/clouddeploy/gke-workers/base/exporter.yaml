@@ -24,18 +24,11 @@ spec:
           - name: exporter
             image: exporter
             imagePullPolicy: Always
-            volumeMounts:
-              - mountPath: "/work"
-                name: "ssd"
             resources:
               requests:
                 cpu: "12"
-                memory: "48G"
+                memory: "48Gi"
               limits:
                 cpu: "24"
-                memory: "128G"
+                memory: "128Gi"
           restartPolicy: Never
-          volumes:
-            - name: "ssd"
-              emptyDir:
-                sizeLimit: 60Gi

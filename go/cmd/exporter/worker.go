@@ -51,7 +51,7 @@ type vulnData struct {
 }
 
 var protoMarshaller = protojson.MarshalOptions{
-	UseProtoNames: true,
+	UseProtoNames: true, // TODO(michaelkedar): https://github.com/ossf/osv-schema/pull/442
 }
 
 func (w *ecosystemWorker) run(ctx context.Context, writeCh chan<- writeMsg, wg *sync.WaitGroup) {

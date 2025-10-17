@@ -10,7 +10,6 @@ import (
 	"slices"
 	"strings"
 	"time"
-	"regexp"
 
 	"github.com/google/osv/vulnfeeds/cves"
 	"github.com/google/osv/vulnfeeds/utility/logger"
@@ -77,65 +76,33 @@ func extractConversionMetrics(cve cves.CVE5, refs []osvschema.Reference, metrics
 	// TODO(jesslowe): Add more analysis based on ADP containers, CVSS, KEV, CWE, etc.
 }
 
-//attachCWEs extracts and adds CWE IDs from the CVE5 problem-types
-func attachCWEs(v *vulns.Vulnerability, cve cves.CVE5, metrics *ConversionMetrics){
-	foundCWEs := make(map[string]struct{})
-	addCWE := func(id string){
-		id = strings.TrimSpace(id)
-		if id == ""{
-			return
-		}
-		if !strings.HasPrefix(id,"CWE-"){
-			id = "CWE-" + id
-		}
-		foundCWEs[id] = struct{}{}
-	}
-	re := regexp.MustCompile(`CWE-\d+`)
-	
-	// iterate over CNA problem-types
-	for _, pt := range cve.Containers.CNA.ProblemTypes {
-		for _, desc := range pt.Descriptions {
-			// desc is the anonymous struct{Type,Lang,Description string}
-			if desc.Type == "CWE" {
-				if desc.CWEID != ""{
-					addCWE(desc.CWEID)
-				}else{
-					addCWE(desc.Description)
-				}
-			}
-			for _, m := range re.FindAllString(desc.Description, -1) {
-				addCWE(m)
-			}
-		}
-	}
-	// iterate over ADP problem-types
-	for _, adp := range cve.Containers.ADP {
-		for _, pt := range adp.ProblemTypes {
-			for _, desc := range pt.Descriptions {
-				if desc.Type == "CWE" {
-					addCWE(desc.Description) // CWE ID is stored in Description field
-				}
-				for _, m := range re.FindAllString(desc.Description, -1) {
-					addCWE(m)
-				}
-			}
-		}
-	}
+// attachCWEs extracts and adds CWE IDs from the CVE5 problem-types
+func attachCWEs(v *vulns.Vulnerability, cna cves.CNA, metrics *ConversionMetrics) {
+	var cwes []string
 
-	if len(foundCWEs) == 0 {
+	for _, pt := range cna.ProblemTypes {
+		for _, desc := range pt.Descriptions {
+			if desc.CWEID == "" {
+				continue
+			}
+			cwes = append(cwes, desc.CWEID)
+		}
+	}
+	if len(cwes) == 0 {
 		return
 	}
-	list := make([]string, 0, len(foundCWEs))
-	for id := range foundCWEs{
-		list = append(list, id)
-	}
-	slices.Sort(list)
-	if v.DatabaseSpecific == nil{
+	//Sort and remove duplicates
+	slices.Sort(cwes)
+	cwes = slices.Compact(cwes)
+
+	if v.DatabaseSpecific == nil {
 		v.DatabaseSpecific = make(map[string]any)
 	}
-	
-	v.DatabaseSpecific["cwes"] = list
-	metrics.AddNote("[%s]: Extracted CWEs: %v", cve.Metadata.CVEID, list)
+
+	// Add CWEs to DatabaseSpecific for consistency with GHSA schema.
+	v.DatabaseSpecific["cwe_ids"] = cwes
+
+	metrics.AddNote("Extracted CWEIDs: %v", cwes)
 }
 
 // FromCVE5 creates a `vulns.Vulnerability` object from a `cves.CVE5` object.
@@ -199,7 +166,7 @@ func FromCVE5(cve cves.CVE5, refs []cves.Reference, metrics *ConversionMetrics) 
 	}
 
 	// attachCWEs extract and adds the cwes from the CVE5 Problem-types
-	attachCWEs(&v, cve, metrics)
+	attachCWEs(&v, cve.Containers.CNA, metrics)
 	return &v
 }
 

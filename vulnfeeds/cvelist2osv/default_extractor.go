@@ -44,7 +44,7 @@ func (d *DefaultVersionExtractor) ExtractVersions(cve cves.CVE5, v *vulns.Vulner
 		} else {
 			gotVersions = true
 		}
-		v.Affected = append(v.Affected, aff)
+		addAffected(v, aff, metrics)
 	}
 
 	if !gotVersions {
@@ -59,7 +59,7 @@ func (d *DefaultVersionExtractor) ExtractVersions(cve cves.CVE5, v *vulns.Vulner
 				gotVersions = true
 			}
 
-			v.Affected = append(v.Affected, aff)
+			addAffected(v, aff, metrics)
 		}
 	}
 
@@ -71,7 +71,7 @@ func (d *DefaultVersionExtractor) ExtractVersions(cve cves.CVE5, v *vulns.Vulner
 			if err != nil {
 				logger.Error("Failed to convert git versions to commits", slog.Any("err", err))
 			}
-			v.Affected = append(v.Affected, aff)
+			addAffected(v, aff, metrics)
 		}
 	}
 }

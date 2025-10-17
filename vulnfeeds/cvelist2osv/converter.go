@@ -76,6 +76,36 @@ func extractConversionMetrics(cve cves.CVE5, refs []osvschema.Reference, metrics
 	// TODO(jesslowe): Add more analysis based on ADP containers, CVSS, KEV, CWE, etc.
 }
 
+// attachCWEs extracts and adds CWE IDs from the CVE5 problem-types
+func attachCWEs(v *vulns.Vulnerability, cna cves.CNA, metrics *ConversionMetrics) {
+	var cwes []string
+
+	for _, pt := range cna.ProblemTypes {
+		for _, desc := range pt.Descriptions {
+			if desc.CWEID == "" {
+				continue
+			}
+			cwes = append(cwes, desc.CWEID)
+		}
+	}
+	if len(cwes) == 0 {
+		return
+	}
+
+	// Sort and remove duplicates
+	slices.Sort(cwes)
+	cwes = slices.Compact(cwes)
+
+	if v.DatabaseSpecific == nil {
+		v.DatabaseSpecific = make(map[string]any)
+	}
+
+	// Add CWEs to DatabaseSpecific for consistency with GHSA schema.
+	v.DatabaseSpecific["cwe_ids"] = cwes
+
+	metrics.AddNote("Extracted CWEIDs: %v", cwes)
+}
+
 // FromCVE5 creates a `vulns.Vulnerability` object from a `cves.CVE5` object.
 // It populates the main fields of the OSV record, including ID, summary, details,
 // references, timestamps, severity, and version information.
@@ -136,7 +166,8 @@ func FromCVE5(cve cves.CVE5, refs []cves.Reference, metrics *ConversionMetrics) 
 		}
 	}
 
-	// TODO(jesslowe@): Add CWEs.
+	// attachCWEs extract and adds the cwes from the CVE5 Problem-types
+	attachCWEs(&v, cve.Containers.CNA, metrics)
 
 	return &v
 }

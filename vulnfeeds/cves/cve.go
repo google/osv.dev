@@ -26,6 +26,7 @@ const (
 
 type ProblemTypes []struct {
 	Descriptions []struct {
+		CWEID       string `json:"cweId,omitempty"`
 		Type        string `json:"type,omitempty"`
 		Lang        string `json:"lang,omitempty"`
 		Description string `json:"description,omitempty"`

@@ -948,6 +948,46 @@ dl.vulnerability-details,
     overflow: auto;
   }
 
+  .database-specific-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .database-specific-section {
+    --const-mq-affordances: [screen] collapse;
+
+    h2.database-specific-header {
+      background: none;
+      font-family: $osv-heading-font-family;
+      color: #fff;
+      padding-left: 0;
+      font-size: 16px;
+      display: flex;
+      align-items: center;
+
+      &::before {
+        content: '';
+        width: 12px;
+        height: 12px;
+        margin-right: 8px;
+        background: url(/static/img/filled-triangle.svg);
+        background-position: center;
+        background-repeat: no-repeat;
+        transform: rotate(0deg);
+        filter: invert(100%);
+      }
+
+      &[expanded]::before {
+        transform: rotate(90deg);
+      }
+    }
+  }
+
+  .database-specific-content {
+    padding: 8px 0 0 24px;
+  }
+
   .spicy-sections-workaround {
     // https://github.com/tabvengers/spicy-sections/issues/64.
     pointer-events: none;

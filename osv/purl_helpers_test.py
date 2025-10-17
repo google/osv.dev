@@ -98,6 +98,12 @@ class PurlHelpersTest(unittest.TestCase):
     self.assertEqual('pkg:hex/acme/foo',
                      purl_helpers.package_to_purl('Hex', 'acme/foo'))
 
+    self.assertEqual('pkg:julia/Example',
+                     purl_helpers.package_to_purl('Julia', 'Example'))
+
+    self.assertEqual('pkg:julia/Dates',
+                     purl_helpers.package_to_purl('Julia', 'Dates'))
+
     self.assertEqual('pkg:npm/test-package',
                      purl_helpers.package_to_purl('npm', 'test-package'))
 
@@ -203,6 +209,23 @@ class PurlHelpersTest(unittest.TestCase):
 
     self.assertEqual(('Hex', 'acme/foo', '2.3.'),
                      purl_helpers.parse_purl('pkg:hex/acme/foo@2.3.'))
+
+    self.assertEqual(('Julia', 'Example', None),
+                     purl_helpers.parse_purl('pkg:julia/Example'))
+
+    self.assertEqual(
+        ('Julia', 'Example', None),
+        purl_helpers.parse_purl(
+            'pkg:julia/Example?uuid=7876af07-990d-54b4-ab0e-23690620f79a'))
+
+    self.assertEqual(('Julia', 'Example', '0.5.5'),
+                     purl_helpers.parse_purl('pkg:julia/Example@0.5.5'))
+
+    self.assertEqual(
+        ('Julia', 'Example', '0.5.5'),
+        purl_helpers.parse_purl(
+            'pkg:julia/Example@0.5.5?uuid=7876af07-990d-54b4-ab0e-23690620f79a')
+    )
 
     self.assertEqual(('Mageia', 'python-aiohttp', None),
                      purl_helpers.parse_purl(

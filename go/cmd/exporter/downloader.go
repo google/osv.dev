@@ -12,6 +12,9 @@ import (
 	"google.golang.org/protobuf/proto"
 )
 
+// downloader is a worker that receives GCS object handles from inCh, downloads
+// the raw protobuf data, unmarshals it into a Vulnerability, and sends the
+// result to outCh.
 func downloader(ctx context.Context, inCh <-chan *storage.ObjectHandle, outCh chan<- *osvschema.Vulnerability, wg *sync.WaitGroup) {
 	defer wg.Done()
 	for {

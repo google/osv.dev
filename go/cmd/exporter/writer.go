@@ -13,12 +13,15 @@ import (
 	"github.com/google/osv.dev/go/logger"
 )
 
+// writeMsg holds the data for a file to be written.
 type writeMsg struct {
 	path     string
 	mimeType string
 	data     []byte
 }
 
+// writer is a worker that receives writeMsgs and writes them to either a GCS
+// bucket or a local directory.
 func writer(ctx context.Context, cancel context.CancelFunc, inCh <-chan writeMsg, bucket *storage.BucketHandle, pathPrefix string, wg *sync.WaitGroup) {
 	defer wg.Done()
 	for {

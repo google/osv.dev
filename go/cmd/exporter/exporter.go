@@ -27,6 +27,8 @@ import (
 
 const gcsProtoPrefix = "all/pb/"
 
+// main is the entry point for the exporter. It initializes the GCS clients,
+// sets up the worker pipeline, and starts the GCS object iteration.
 func main() {
 	logger.InitGlobalLogger()
 
@@ -131,6 +133,9 @@ MainLoop:
 	logger.Info("export completed successfully")
 }
 
+// ecosystemRouter receives vulnerabilities from inCh and fans them out to the
+// appropriate ecosystemWorker. It creates workers on-demand for each new
+// ecosystem encountered. It also sends every vulnerability to the allEcosystemWorker.
 func ecosystemRouter(ctx context.Context, inCh <-chan *osvschema.Vulnerability, outCh chan<- writeMsg, wg *sync.WaitGroup) {
 	defer wg.Done()
 	logger.Info("ecosystem router starting")

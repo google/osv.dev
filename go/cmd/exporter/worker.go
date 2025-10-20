@@ -29,11 +29,13 @@ const (
 	ecosystemsFilename  = "ecosystems.txt"
 )
 
+// ecosystemWorker processes vulnerabilities for a single ecosystem.
 type ecosystemWorker struct {
 	ecosystem string
 	inCh      chan *osvschema.Vulnerability
 }
 
+// newEcosystemWorker creates and starts a new ecosystemWorker.
 func newEcosystemWorker(ctx context.Context, ecosystem string, outCh chan<- writeMsg, wg *sync.WaitGroup) *ecosystemWorker {
 	ch := make(chan *osvschema.Vulnerability)
 	worker := &ecosystemWorker{
@@ -46,6 +48,7 @@ func newEcosystemWorker(ctx context.Context, ecosystem string, outCh chan<- writ
 	return worker
 }
 
+// vulnData holds the ID and marshalled JSON data for a vulnerability.
 type vulnData struct {
 	id   string
 	data []byte
@@ -55,6 +58,9 @@ var protoMarshaller = protojson.MarshalOptions{
 	UseProtoNames: true, // TODO(michaelkedar): https://github.com/ossf/osv-schema/pull/442
 }
 
+// run is the main loop for the ecosystemWorker. It receives vulnerabilities,
+// aggregates them, and upon completion, writes out the ecosystem-specific
+// zip, csv, and (for GIT) vanir files.
 func (w *ecosystemWorker) run(ctx context.Context, outCh chan<- writeMsg, wg *sync.WaitGroup) {
 	defer wg.Done()
 	logger.Info("new ecosystem worker started", slog.String("ecosystem", w.ecosystem))
@@ -115,20 +121,25 @@ func (w *ecosystemWorker) run(ctx context.Context, outCh chan<- writeMsg, wg *sy
 	}
 }
 
+// Finish signals the worker to stop processing by closing its input channel.
 func (w *ecosystemWorker) Finish() {
 	close(w.inCh)
 }
 
+// vulnAndEcos holds a vulnerability and the list of ecosystems it belongs to.
 type vulnAndEcos struct {
 	*osvschema.Vulnerability
 
 	ecosystems []string
 }
 
+// allEcosystemWorker processes all vulnerabilities from all ecosystems to create
+// the global export files.
 type allEcosystemWorker struct {
 	inCh chan vulnAndEcos
 }
 
+// newAllEcosystemWorker creates and starts a new allEcosystemWorker.
 func newAllEcosystemWorker(ctx context.Context, outCh chan<- writeMsg, wg *sync.WaitGroup) *allEcosystemWorker {
 	ch := make(chan vulnAndEcos)
 	worker := &allEcosystemWorker{
@@ -140,6 +151,8 @@ func newAllEcosystemWorker(ctx context.Context, outCh chan<- writeMsg, wg *sync.
 	return worker
 }
 
+// run is the main loop for the allEcosystemWorker. It receives all vulnerabilities
+// and generates the global all.zip, modified_id.csv, and ecosystems.txt files.
 func (w *allEcosystemWorker) run(ctx context.Context, outCh chan<- writeMsg, wg *sync.WaitGroup) {
 	defer wg.Done()
 	logger.Info("all-ecosystem worker started")
@@ -177,10 +190,12 @@ func (w *allEcosystemWorker) run(ctx context.Context, outCh chan<- writeMsg, wg 
 	}
 }
 
+// Finish signals the worker to stop processing by closing its input channel.
 func (w *allEcosystemWorker) Finish() {
 	close(w.inCh)
 }
 
+// write is a helper to send a writeMsg to the writer channel, handling context cancellation.
 func write(ctx context.Context, path string, data []byte, mimeType string, outCh chan<- writeMsg) {
 	select {
 	case outCh <- writeMsg{path: path, mimeType: mimeType, data: data}:
@@ -188,6 +203,7 @@ func write(ctx context.Context, path string, data []byte, mimeType string, outCh
 	}
 }
 
+// writeModifiedIDCSV constructs and writes a modified_id.csv file.
 func writeModifiedIDCSV(ctx context.Context, path string, csvData [][]string, outCh chan<- writeMsg) {
 	logger.Info("constructing csv file", slog.String("path", path))
 	slices.SortFunc(csvData, func(a, b []string) int {
@@ -208,6 +224,7 @@ func writeModifiedIDCSV(ctx context.Context, path string, csvData [][]string, ou
 	write(ctx, path, buf.Bytes(), "text/csv", outCh)
 }
 
+// writeZIP constructs and writes an all.zip file.
 func writeZIP(ctx context.Context, path string, allVulns []vulnData, outCh chan<- writeMsg) {
 	logger.Info("constructing zip file", slog.String("path", path))
 	slices.SortFunc(allVulns, func(a, b vulnData) int {
@@ -233,6 +250,7 @@ func writeZIP(ctx context.Context, path string, allVulns []vulnData, outCh chan<
 	write(ctx, path, buf.Bytes(), "application/zip", outCh)
 }
 
+// writeVanir constructs and writes the osv_git.json file containing vulnerabilities with Vanir signatures.
 func writeVanir(ctx context.Context, vanirVulns []vulnData, outCh chan<- writeMsg) {
 	slices.SortFunc(vanirVulns, func(a, b vulnData) int { return cmp.Compare(a.id, b.id) })
 	vulns := make([]json.RawMessage, len(vanirVulns))

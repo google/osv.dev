@@ -13,12 +13,11 @@ import (
 	"regexp"
 	"sort"
 	"strings"
-	"sync"
 	"time"
 
-	"cloud.google.com/go/storage"
 	"github.com/google/osv/vulnfeeds/cves"
 	"github.com/google/osv/vulnfeeds/models"
+	"github.com/google/osv/vulnfeeds/upload"
 	"github.com/google/osv/vulnfeeds/utility/logger"
 	"github.com/google/osv/vulnfeeds/vulns"
 	"github.com/ossf/osv-schema/bindings/go/osvschema"
@@ -53,36 +52,17 @@ func main() {
 	allAlpineSecDB := getAlpineSecDBData()
 	osvVulnerabilities := generateAlpineOSV(allAlpineSecDB, allCVEs)
 
-	ctx := context.Background()
-	var bkt *storage.BucketHandle
-	if *uploadToGCS {
-		storageClient, err := storage.NewClient(ctx)
-		if err != nil {
-			logger.Fatal("Failed to create storage client", slog.Any("err", err))
-		}
-		bkt = storageClient.Bucket(*outputBucketName)
-	}
-	var wg sync.WaitGroup
-	vulnChan := make(chan *vulns.Vulnerability)
-
-	for range *numWorkers {
-		wg.Add(1)
-		go func() {
-			defer wg.Done()
-			vulns.Worker(ctx, vulnChan, bkt, *alpineOutputPath)
-		}()
-	}
-
+	vulnerabilities := make([]*osvschema.Vulnerability, 0, len(osvVulnerabilities))
 	for _, v := range osvVulnerabilities {
 		if len(v.Affected) == 0 {
 			logger.Warn(fmt.Sprintf("Skipping %s as no affected versions found.", v.ID), slog.String("id", v.ID))
 			continue
 		}
-		vulnChan <- v
+		vulnerabilities = append(vulnerabilities, &v.Vulnerability)
 	}
 
-	close(vulnChan)
-	wg.Wait()
+	ctx := context.Background()
+	upload.Upload(ctx, "Alpine CVEs", *uploadToGCS, *outputBucketName, "", *numWorkers, *alpineOutputPath, vulnerabilities)
 	logger.Info("Alpine CVE conversion succeeded.")
 }
 

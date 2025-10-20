@@ -118,6 +118,12 @@ class ModelsTest(unittest.TestCase):
                         type='GIT', repo_url='https://github.com/test/test')
                 ],
                 versions=['v1', 'v2']),
+            models.AffectedPackage(
+                package=models.Package(ecosystem='', name=''),
+                ranges=[
+                    models.AffectedRange2(
+                        type='GIT', repo_url='https://github.com/test/test2')
+                ]),
         ],
     ).put()
     put_bug = models.Bug.get_by_id(vuln_id)
@@ -149,7 +155,7 @@ class ModelsTest(unittest.TestCase):
     self.assertListEqual(['GIT', 'Ubuntu', 'npm'], listed_vuln.ecosystems)
     self.assertListEqual([
         'Ubuntu:24.04:LTS/test', 'Ubuntu:25.04/test', 'github.com/test/test',
-        'npm/testjs'
+        'github.com/test/test2', 'npm/testjs'
     ], listed_vuln.packages)
     self.assertEqual('This is a vuln', listed_vuln.summary)
     self.assertTrue(listed_vuln.is_fixed)
@@ -158,9 +164,10 @@ class ModelsTest(unittest.TestCase):
         models.Severity(type='Ubuntu', score='High'),
         models.Severity(type='Ubuntu', score='Low')
     ], listed_vuln.severities)
-    self.assertListEqual(
-        ['https://github.com/test/test', 'test', 'test-123', 'testjs'],
-        listed_vuln.autocomplete_tags)
+    self.assertListEqual([
+        'https://github.com/test/test', 'https://github.com/test/test2', 'test',
+        'test-123', 'testjs'
+    ], listed_vuln.autocomplete_tags)
     # search_indices should include all the original search indices,
     # plus the transitive alias & upstream ids
     search_indices = sorted(put_bug.search_indices +
@@ -176,6 +183,8 @@ class ModelsTest(unittest.TestCase):
             ecosystem='GIT',
             name='github.com/test/test',
             versions=['v1', 'v2']),
+        models.AffectedVersions(
+            vuln_id=vuln_id, ecosystem='GIT', name='github.com/test/test2'),
         models.AffectedVersions(
             vuln_id=vuln_id,
             ecosystem='Ubuntu',

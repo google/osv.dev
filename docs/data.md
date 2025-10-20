@@ -57,7 +57,7 @@ The following ecosystems have vulnerabilities encoded in this format:
 -   [Haskell Security Advisory DB](https://github.com/haskell/security-advisories)
     ([CC0 1.0](https://github.com/haskell/security-advisories/blob/main/LICENSE.txt))
 -   [Ubuntu](https://github.com/canonical/ubuntu-security-notices)
-    ([GPL v3](https://github.com/canonical/ubuntu-security-notices/blob/main/LICENSE))
+    ([CC-BY-SA 4.0](https://github.com/canonical/ubuntu-security-notices/blob/main/LICENSE))
 
 ## Converted data
 

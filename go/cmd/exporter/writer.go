@@ -19,11 +19,11 @@ type writeMsg struct {
 	data     []byte
 }
 
-func writer(ctx context.Context, cancel context.CancelFunc, ch <-chan writeMsg, bucket *storage.BucketHandle, pathPrefix string, wg *sync.WaitGroup) {
+func writer(ctx context.Context, cancel context.CancelFunc, inCh <-chan writeMsg, bucket *storage.BucketHandle, pathPrefix string, wg *sync.WaitGroup) {
 	defer wg.Done()
 	for {
 		select {
-		case msg, ok := <-ch:
+		case msg, ok := <-inCh:
 			if !ok {
 				// Channel closed.
 				return

@@ -12,7 +12,7 @@ import (
 	"google.golang.org/protobuf/proto"
 )
 
-func downloader(ctx context.Context, objectCh <-chan *storage.ObjectHandle, resultsCh chan<- *osvschema.Vulnerability, wg *sync.WaitGroup) {
+func downloader(ctx context.Context, inCh <-chan *storage.ObjectHandle, outCh chan<- *osvschema.Vulnerability, wg *sync.WaitGroup) {
 	defer wg.Done()
 	for {
 		var obj *storage.ObjectHandle
@@ -20,7 +20,7 @@ func downloader(ctx context.Context, objectCh <-chan *storage.ObjectHandle, resu
 
 		// Wait to receive an object, or be cancelled.
 		select {
-		case obj, ok = <-objectCh:
+		case obj, ok = <-inCh:
 			if !ok {
 				return // Channel closed.
 			}
@@ -48,7 +48,7 @@ func downloader(ctx context.Context, objectCh <-chan *storage.ObjectHandle, resu
 
 		// Wait to send the result, or be cancelled.
 		select {
-		case resultsCh <- vuln:
+		case outCh <- vuln:
 		case <-ctx.Done():
 			return
 		}

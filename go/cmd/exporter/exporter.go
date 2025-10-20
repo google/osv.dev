@@ -25,6 +25,8 @@ import (
 	"google.golang.org/api/iterator"
 )
 
+const gcsProtoPrefix = "all/pb/"
+
 func main() {
 	logger.InitGlobalLogger()
 
@@ -62,26 +64,36 @@ func main() {
 		outBucket = cl.Bucket(*outBucketName)
 	}
 
-	objCh := make(chan *storage.ObjectHandle)
-	resultsCh := make(chan *osvschema.Vulnerability)
-	writeCh := make(chan writeMsg)
+	// The exporter uses a pipeline of channels and worker pools. The data flow is as follows:
+	// 1. The main goroutine lists GCS objects and sends them to `gcsObjToDownloaderCh`.
+	// 2. A pool of `downloader` workers receive GCS objects, downloads and unmarshals them into
+	//    OSV vulnerabilities, and send them to `downloaderToRouterCh`.
+	// 3. The `ecosystemRouter` receives vulnerabilities and dispatches them. It creates a new
+	//    `ecosystemWorker` for each new ecosystem, and sends all vulnerabilities to a single
+	//    `allEcosystemWorker`.
+	// 4. The `ecosystemWorker`s and the `allEcosystemWorker` process the vulnerabilities and
+	//    generate the final files, sending the data to be written to `routerToWriteCh`.
+	// 5. A pool of `writer` workers receive the file data and write it to the output.
+	gcsObjToDownloaderCh := make(chan *storage.ObjectHandle)
+	downloaderToRouterCh := make(chan *osvschema.Vulnerability)
+	routerToWriteCh := make(chan writeMsg)
 
 	var downloaderWg sync.WaitGroup
 	for range *numWorkers / 2 {
 		downloaderWg.Add(1)
-		go downloader(ctx, objCh, resultsCh, &downloaderWg)
+		go downloader(ctx, gcsObjToDownloaderCh, downloaderToRouterCh, &downloaderWg)
 	}
 
 	var writerWg sync.WaitGroup
 	for range *numWorkers / 2 {
 		writerWg.Add(1)
-		go writer(ctx, cancel, writeCh, outBucket, outPrefix, &writerWg)
+		go writer(ctx, cancel, routerToWriteCh, outBucket, outPrefix, &writerWg)
 	}
 	var routerWg sync.WaitGroup
 	routerWg.Add(1)
-	go ecosystemRouter(ctx, resultsCh, writeCh, &routerWg)
+	go ecosystemRouter(ctx, downloaderToRouterCh, routerToWriteCh, &routerWg)
 
-	it := vulnBucket.Objects(ctx, &storage.Query{Prefix: "all/pb/"})
+	it := vulnBucket.Objects(ctx, &storage.Query{Prefix: gcsProtoPrefix})
 	prevPrefix := ""
 MainLoop:
 	for {
@@ -100,17 +112,17 @@ MainLoop:
 			prevPrefix = prefix
 		}
 		select {
-		case objCh <- vulnBucket.Object(attrs.Name):
+		case gcsObjToDownloaderCh <- vulnBucket.Object(attrs.Name):
 		case <-ctx.Done():
 			break MainLoop
 		}
 	}
 
-	close(objCh)
+	close(gcsObjToDownloaderCh)
 	downloaderWg.Wait()
-	close(resultsCh)
+	close(downloaderToRouterCh)
 	routerWg.Wait()
-	close(writeCh)
+	close(routerToWriteCh)
 	writerWg.Wait()
 
 	if ctx.Err() != nil {
@@ -119,15 +131,14 @@ MainLoop:
 	logger.Info("export completed successfully")
 }
 
-func ecosystemRouter(ctx context.Context, inCh <-chan *osvschema.Vulnerability, writeCh chan<- writeMsg, wg *sync.WaitGroup) {
+func ecosystemRouter(ctx context.Context, inCh <-chan *osvschema.Vulnerability, outCh chan<- writeMsg, wg *sync.WaitGroup) {
 	defer wg.Done()
 	logger.Info("ecosystem router starting")
 	workers := make(map[string]*ecosystemWorker)
 	var workersWg sync.WaitGroup
-	var vulnCounter int
+	vulnCounter := 0
 
-	workersWg.Add(1)
-	allWorker := newAllWorker(ctx, writeCh, &workersWg)
+	allEcosystemWorker := newAllEcosystemWorker(ctx, outCh, &workersWg)
 
 	for vuln := range inCh {
 		vulnCounter++
@@ -152,19 +163,18 @@ func ecosystemRouter(ctx context.Context, inCh <-chan *osvschema.Vulnerability, 
 			ecoNames = append(ecoNames, eco)
 			worker, ok := workers[eco]
 			if !ok {
-				workersWg.Add(1)
-				worker = newEcosystemWorker(ctx, eco, writeCh, &workersWg)
+				worker = newEcosystemWorker(ctx, eco, outCh, &workersWg)
 				workers[eco] = worker
 			}
-			worker.ch <- vuln
+			worker.inCh <- vuln
 		}
-		allWorker.ch <- vulnAndEcos{Vulnerability: vuln, ecosystems: ecoNames}
+		allEcosystemWorker.inCh <- vulnAndEcos{Vulnerability: vuln, ecosystems: ecoNames}
 	}
 
 	for _, worker := range workers {
 		worker.Finish()
 	}
-	allWorker.Finish()
+	allEcosystemWorker.Finish()
 	workersWg.Wait()
 	logger.Info("ecosystem router finished, all vulnerabilities dispatched", slog.Int("total_vulnerabilities", vulnCounter))
 }

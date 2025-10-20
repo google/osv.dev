@@ -98,13 +98,14 @@ steps:
   args: ['push', '--all-tags', 'gcr.io/oss-vdb/recoverer']
   waitFor: ['build-recoverer', 'cloud-build-queue']
 
+# Build/push exporter/record-checker go images
 - name: 'gcr.io/cloud-builders/docker'
   entrypoint: 'bash'
   args: ['-c', 'docker pull gcr.io/oss-vdb/exporter:latest || exit 0']
   id: 'pull-exporter'
   waitFor: ['setup']
 - name: gcr.io/cloud-builders/docker
-  args: ['build', '-t', 'gcr.io/oss-vdb/exporter:latest', '-t', 'gcr.io/oss-vdb/exporter:$COMMIT_SHA', '-f', 'cmd/exporter/Dockerfile', '--cache-from', 'gcr.io/oss-vdb/record-checker:latest', '--pull', '.']
+  args: ['build', '-t', 'gcr.io/oss-vdb/exporter:latest', '-t', 'gcr.io/oss-vdb/exporter:$COMMIT_SHA', '-f', 'cmd/exporter/Dockerfile', '--cache-from', 'gcr.io/oss-vdb/exporter:latest', '--pull', '.']
   dir: 'go'
   id: 'build-exporter'
   waitFor: ['pull-exporter']

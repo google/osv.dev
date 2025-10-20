@@ -31,16 +31,17 @@ const (
 
 type ecosystemWorker struct {
 	ecosystem string
-	ch        chan *osvschema.Vulnerability
+	inCh      chan *osvschema.Vulnerability
 }
 
-func newEcosystemWorker(ctx context.Context, ecosystem string, writeCh chan<- writeMsg, wg *sync.WaitGroup) *ecosystemWorker {
+func newEcosystemWorker(ctx context.Context, ecosystem string, outCh chan<- writeMsg, wg *sync.WaitGroup) *ecosystemWorker {
 	ch := make(chan *osvschema.Vulnerability)
 	worker := &ecosystemWorker{
 		ecosystem: ecosystem,
-		ch:        ch,
+		inCh:      ch,
 	}
-	go worker.run(ctx, writeCh, wg)
+	wg.Add(1)
+	go worker.run(ctx, outCh, wg)
 
 	return worker
 }
@@ -54,7 +55,7 @@ var protoMarshaller = protojson.MarshalOptions{
 	UseProtoNames: true, // TODO(michaelkedar): https://github.com/ossf/osv-schema/pull/442
 }
 
-func (w *ecosystemWorker) run(ctx context.Context, writeCh chan<- writeMsg, wg *sync.WaitGroup) {
+func (w *ecosystemWorker) run(ctx context.Context, outCh chan<- writeMsg, wg *sync.WaitGroup) {
 	defer wg.Done()
 	logger.Info("new ecosystem worker started", slog.String("ecosystem", w.ecosystem))
 	var allVulns []vulnData
@@ -66,13 +67,13 @@ func (w *ecosystemWorker) run(ctx context.Context, writeCh chan<- writeMsg, wg *
 
 		// Wait to receive a vulnerability, or be cancelled.
 		select {
-		case v, ok = <-w.ch:
+		case v, ok = <-w.inCh:
 			if !ok {
 				logger.Info("All vulnerabilities processed", slog.String("ecosystem", w.ecosystem))
-				writeCSV(ctx, filepath.Join(w.ecosystem, modifiedCSVFilename), csvData, writeCh)
-				writeZIP(ctx, filepath.Join(w.ecosystem, allZipFilename), allVulns, writeCh)
+				writeModifiedIDCSV(ctx, filepath.Join(w.ecosystem, modifiedCSVFilename), csvData, outCh)
+				writeZIP(ctx, filepath.Join(w.ecosystem, allZipFilename), allVulns, outCh)
 				if w.ecosystem == gitEcosystem {
-					writeVanir(ctx, vanirVulns, writeCh)
+					writeVanir(ctx, vanirVulns, outCh)
 				}
 				logger.Info("ecosystem worker finished processing", slog.String("ecosystem", w.ecosystem))
 
@@ -92,7 +93,7 @@ func (w *ecosystemWorker) run(ctx context.Context, writeCh chan<- writeMsg, wg *
 
 		// Wait to send the result, or be cancelled.
 		select {
-		case writeCh <- writeMsg{path: filepath.Join(w.ecosystem, v.GetId()) + ".json", mimeType: "application/json", data: b}:
+		case outCh <- writeMsg{path: filepath.Join(w.ecosystem, v.GetId()) + ".json", mimeType: "application/json", data: b}:
 		case <-ctx.Done():
 			logger.Warn("ecosystem worker cancelled", slog.String("ecosystem", w.ecosystem), slog.Any("err", ctx.Err()))
 			return
@@ -115,7 +116,7 @@ func (w *ecosystemWorker) run(ctx context.Context, writeCh chan<- writeMsg, wg *
 }
 
 func (w *ecosystemWorker) Finish() {
-	close(w.ch)
+	close(w.inCh)
 }
 
 type vulnAndEcos struct {
@@ -124,37 +125,38 @@ type vulnAndEcos struct {
 	ecosystems []string
 }
 
-type allWorker struct {
-	ch chan vulnAndEcos
+type allEcosystemWorker struct {
+	inCh chan vulnAndEcos
 }
 
-func newAllWorker(ctx context.Context, writeCh chan<- writeMsg, wg *sync.WaitGroup) *allWorker {
+func newAllEcosystemWorker(ctx context.Context, outCh chan<- writeMsg, wg *sync.WaitGroup) *allEcosystemWorker {
 	ch := make(chan vulnAndEcos)
-	worker := &allWorker{
-		ch: ch,
+	worker := &allEcosystemWorker{
+		inCh: ch,
 	}
-	go worker.run(ctx, writeCh, wg)
+	wg.Add(1)
+	go worker.run(ctx, outCh, wg)
 
 	return worker
 }
 
-func (w *allWorker) run(ctx context.Context, writeCh chan<- writeMsg, wg *sync.WaitGroup) {
+func (w *allEcosystemWorker) run(ctx context.Context, outCh chan<- writeMsg, wg *sync.WaitGroup) {
 	defer wg.Done()
-	logger.Info("all worker started")
+	logger.Info("all-ecosystem worker started")
 	var allVulns []vulnData
 	var csvData [][]string
 	ecosystems := make(map[string]struct{})
 	for {
 		select {
-		case v, ok := <-w.ch:
+		case v, ok := <-w.inCh:
 			if !ok {
-				writeCSV(ctx, modifiedCSVFilename, csvData, writeCh)
-				writeZIP(ctx, allZipFilename, allVulns, writeCh)
+				writeModifiedIDCSV(ctx, modifiedCSVFilename, csvData, outCh)
+				writeZIP(ctx, allZipFilename, allVulns, outCh)
 				ecos := slices.Collect(maps.Keys(ecosystems))
 				slices.Sort(ecos)
 				ecoString := strings.Join(ecos, "\n")
-				write(ctx, ecosystemsFilename, []byte(ecoString), "text/plain", writeCh)
-				logger.Info("all worker finished processing")
+				write(ctx, ecosystemsFilename, []byte(ecoString), "text/plain", outCh)
+				logger.Info("all-ecosystem worker finished processing")
 
 				return
 			}
@@ -169,29 +171,29 @@ func (w *allWorker) run(ctx context.Context, writeCh chan<- writeMsg, wg *sync.W
 				csvData = append(csvData, []string{v.GetModified().AsTime().Format(time.RFC3339Nano), e + "/" + v.GetId()})
 			}
 		case <-ctx.Done():
-			logger.Warn("all worker cancelled", slog.Any("err", ctx.Err()))
+			logger.Warn("all-ecosystem worker cancelled", slog.Any("err", ctx.Err()))
 			return
 		}
 	}
 }
 
-func (w *allWorker) Finish() {
-	close(w.ch)
+func (w *allEcosystemWorker) Finish() {
+	close(w.inCh)
 }
 
-func write(ctx context.Context, path string, data []byte, mimeType string, writeCh chan<- writeMsg) {
+func write(ctx context.Context, path string, data []byte, mimeType string, outCh chan<- writeMsg) {
 	select {
-	case writeCh <- writeMsg{path: path, mimeType: mimeType, data: data}:
+	case outCh <- writeMsg{path: path, mimeType: mimeType, data: data}:
 	case <-ctx.Done():
 	}
 }
 
-func writeCSV(ctx context.Context, path string, csvData [][]string, writeCh chan<- writeMsg) {
+func writeModifiedIDCSV(ctx context.Context, path string, csvData [][]string, outCh chan<- writeMsg) {
 	logger.Info("constructing csv file", slog.String("path", path))
 	slices.SortFunc(csvData, func(a, b []string) int {
 		return cmp.Or(
-			-cmp.Compare(a[0], b[0]),
-			cmp.Compare(a[1], b[1]),
+			-cmp.Compare(a[0], b[0]), // Modified date, descending
+			cmp.Compare(a[1], b[1]),  // path/vuln ID, ascending
 		)
 	})
 
@@ -203,10 +205,10 @@ func writeCSV(ctx context.Context, path string, csvData [][]string, writeCh chan
 	}
 	wr.Flush()
 	logger.Info("writing csv file", slog.String("path", path))
-	write(ctx, path, buf.Bytes(), "text/csv", writeCh)
+	write(ctx, path, buf.Bytes(), "text/csv", outCh)
 }
 
-func writeZIP(ctx context.Context, path string, allVulns []vulnData, writeCh chan<- writeMsg) {
+func writeZIP(ctx context.Context, path string, allVulns []vulnData, outCh chan<- writeMsg) {
 	logger.Info("constructing zip file", slog.String("path", path))
 	slices.SortFunc(allVulns, func(a, b vulnData) int {
 		return cmp.Compare(a.id, b.id)
@@ -228,10 +230,10 @@ func writeZIP(ctx context.Context, path string, allVulns []vulnData, writeCh cha
 		logger.Error("failed to close zip writer", slog.String("path", path), slog.Any("err", err))
 	}
 	logger.Info("writing zip file", slog.String("path", path))
-	write(ctx, path, buf.Bytes(), "application/zip", writeCh)
+	write(ctx, path, buf.Bytes(), "application/zip", outCh)
 }
 
-func writeVanir(ctx context.Context, vanirVulns []vulnData, writeCh chan<- writeMsg) {
+func writeVanir(ctx context.Context, vanirVulns []vulnData, outCh chan<- writeMsg) {
 	slices.SortFunc(vanirVulns, func(a, b vulnData) int { return cmp.Compare(a.id, b.id) })
 	vulns := make([]json.RawMessage, len(vanirVulns))
 	for i, v := range vanirVulns {
@@ -242,5 +244,5 @@ func writeVanir(ctx context.Context, vanirVulns []vulnData, writeCh chan<- write
 		logger.Error("failed to marshal vanir JSON file", slog.Any("err", err))
 		return
 	}
-	write(ctx, filepath.Join(gitEcosystem, vanirVulnsFilename), finalJSON, "application/json", writeCh)
+	write(ctx, filepath.Join(gitEcosystem, vanirVulnsFilename), finalJSON, "application/json", outCh)
 }

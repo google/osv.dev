@@ -213,7 +213,7 @@ func TestFromCVE5(t *testing.T) {
 					Details:          "An issue has been discovered in GitLab CE/EE affecting all versions from 18.0 before 18.0.1. In certain circumstances, a user with limited permissions could access Job Data via a crafted GraphQL query.",
 					Aliases:          nil,
 					Related:          nil,
-					DatabaseSpecific: nil,
+					DatabaseSpecific: map[string]any{"cwe_ids": []string{"CWE-1220"}},
 					References: []osvschema.Reference{
 						{Type: "ARTICLE", URL: "https://hackerone.com/reports/2972576"},
 						{Type: "EVIDENCE", URL: "https://hackerone.com/reports/2972576"},
@@ -254,7 +254,7 @@ func TestFromCVE5(t *testing.T) {
 							Score: "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:H",
 						},
 					},
-					DatabaseSpecific: nil,
+					DatabaseSpecific: map[string]any{"cwe_ids": []string{"CWE-770"}},
 				},
 			},
 		},

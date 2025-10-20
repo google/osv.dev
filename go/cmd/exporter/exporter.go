@@ -1,3 +1,5 @@
+// Package main runs the exporter, exporting the whole OSV database to the GCS bucket.
+// See the README.md for more details.
 package main
 
 import (

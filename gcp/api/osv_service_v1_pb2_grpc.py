@@ -6,7 +6,7 @@ import warnings
 import osv_service_v1_pb2 as osv__service__v1__pb2
 import vulnerability_pb2 as vulnerability__pb2
 
-GRPC_GENERATED_VERSION = '1.73.1'
+GRPC_GENERATED_VERSION = '1.75.0'
 GRPC_VERSION = grpc.__version__
 _version_not_supported = False
 

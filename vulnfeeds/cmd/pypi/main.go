@@ -169,7 +169,7 @@ func main() {
 			v.AddPkgInfo(pkgInfo)
 			versions, notes := cves.ExtractVersionInfo(cve.CVE, validVersions, http.DefaultClient)
 
-			vulns.AttachExtractedVersionInfo(&v.Affected[0], versions)
+			vulns.AttachExtractedVersionInfo(v, versions)
 			if len(v.Affected[0].Ranges) == 0 {
 				logger.Info("No affected versions detected")
 			}

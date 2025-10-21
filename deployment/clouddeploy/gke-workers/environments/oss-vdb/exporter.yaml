@@ -14,6 +14,7 @@ spec:
               value: oss-vdb
             args:
               - "--uploadToGCS=true"
+              - "--num_workers=400"
               - "--bucket=osv-vulnerabilities"
               - "--osv_vulns_bucket=osv-vulnerabilities"
 

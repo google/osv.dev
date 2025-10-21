@@ -5,7 +5,7 @@ metadata:
   labels:
     cronLastSuccessfulTimeMins: "180"
 spec:
-  schedule: "*/30 * * * *"
+  schedule: "*/15 * * * *"
   concurrencyPolicy: Forbid
   # If the previous job overruns by more than a minute,
   # Don't try to immediately queue up the next job
@@ -26,9 +26,9 @@ spec:
             imagePullPolicy: Always
             resources:
               requests:
-                cpu: "12"
-                memory: "48Gi"
+                cpu: "10"
+                memory: "40Gi"
               limits:
-                cpu: "24"
-                memory: "128Gi"
+                cpu: "20"
+                memory: "64Gi"
           restartPolicy: Never

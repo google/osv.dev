@@ -7,7 +7,9 @@ require (
 	cloud.google.com/go/pubsub/v2 v2.2.1
 	cloud.google.com/go/storage v1.57.0
 	github.com/charmbracelet/lipgloss v1.1.0
+	github.com/ossf/osv-schema/bindings/go v0.0.0-20251014054035-182a83c87455
 	google.golang.org/api v0.252.0
+	google.golang.org/protobuf v1.36.10
 )
 
 require (
@@ -68,5 +70,4 @@ require (
 	google.golang.org/genproto/googleapis/api v0.0.0-20250818200422-3122310a409c // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20251002232023-7c0ddcbb5797 // indirect
 	google.golang.org/grpc v1.75.1 // indirect
-	google.golang.org/protobuf v1.36.10 // indirect
 )

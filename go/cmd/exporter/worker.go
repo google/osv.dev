@@ -169,7 +169,7 @@ WorkLoop:
 			if !ok {
 				break WorkLoop
 			}
-			b, err := protojson.MarshalOptions{}.Marshal(v.Vulnerability)
+			b, err := protoMarshaller.Marshal(v.Vulnerability)
 			if err != nil {
 				logger.Error("failed to marshal vulnerability to json", slog.String("id", v.GetId()), slog.Any("err", err))
 				continue
@@ -185,7 +185,7 @@ WorkLoop:
 	writeZIP(ctx, allZipFilename, allVulns, outCh)
 	ecos := slices.Collect(maps.Keys(ecosystems))
 	slices.Sort(ecos)
-	ecoString := strings.Join(ecos, "\n")
+	ecoString := strings.Join(ecos, "\n") + "\n"
 	write(ctx, ecosystemsFilename, []byte(ecoString), "text/plain", outCh)
 	logger.Info("all-ecosystem worker finished processing")
 }

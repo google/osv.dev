@@ -194,6 +194,8 @@ class AffectedRange2(ndb.Model):
   # Events.
   events: list[AffectedEvent] = ndb.LocalStructuredProperty(
       AffectedEvent, repeated=True)
+  # Database specific metadata.
+  database_specific: dict = ndb.JsonProperty()
 
 
 class SourceOfTruth(enum.IntEnum):
@@ -585,6 +587,11 @@ class Bug(ndb.Model):
                 AffectedEvent(type='limit', value=evt.limit))
             continue
 
+        if affected_range.database_specific:
+          current_range.database_specific = json_format.MessageToDict(
+              affected_range.database_specific,
+              preserving_proto_field_name=True)
+
         current.ranges.append(current_range)
 
       current.versions = list(affected_package.versions)
@@ -694,6 +701,10 @@ class Bug(ndb.Model):
               type=vulnerability_pb2.Range.Type.Value(affected_range.type),
               repo=affected_range.repo_url,
               events=events)
+
+          if affected_range.database_specific:
+            current_range.database_specific.update(
+                affected_range.database_specific)
 
           ranges.append(current_range)
 

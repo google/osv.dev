@@ -67,29 +67,21 @@ func (w *ecosystemWorker) run(ctx context.Context, outCh chan<- writeMsg, wg *sy
 	var allVulns []vulnData
 	var csvData [][]string
 	var vanirVulns []vulnData
+WorkLoop:
 	for {
 		var v *osvschema.Vulnerability
 		var ok bool
 
 		// Wait to receive a vulnerability, or be cancelled.
 		select {
-		case v, ok = <-w.inCh:
-			if !ok {
-				logger.Info("All vulnerabilities processed", slog.String("ecosystem", w.ecosystem))
-				writeModifiedIDCSV(ctx, filepath.Join(w.ecosystem, modifiedCSVFilename), csvData, outCh)
-				writeZIP(ctx, filepath.Join(w.ecosystem, allZipFilename), allVulns, outCh)
-				if w.ecosystem == gitEcosystem {
-					writeVanir(ctx, vanirVulns, outCh)
-				}
-				logger.Info("ecosystem worker finished processing", slog.String("ecosystem", w.ecosystem))
-
-				return
-			}
 		case <-ctx.Done():
 			logger.Warn("ecosystem worker cancelled", slog.String("ecosystem", w.ecosystem), slog.Any("err", ctx.Err()))
 			return
+		case v, ok = <-w.inCh:
+			if !ok {
+				break WorkLoop
+			}
 		}
-
 		// Process vulnerability.
 		b, err := protoMarshaller.Marshal(v)
 		if err != nil {
@@ -119,6 +111,14 @@ func (w *ecosystemWorker) run(ctx context.Context, outCh chan<- writeMsg, wg *sy
 			}
 		}
 	}
+
+	logger.Info("All vulnerabilities processed", slog.String("ecosystem", w.ecosystem))
+	writeModifiedIDCSV(ctx, filepath.Join(w.ecosystem, modifiedCSVFilename), csvData, outCh)
+	writeZIP(ctx, filepath.Join(w.ecosystem, allZipFilename), allVulns, outCh)
+	if w.ecosystem == gitEcosystem {
+		writeVanir(ctx, vanirVulns, outCh)
+	}
+	logger.Info("ecosystem worker finished processing", slog.String("ecosystem", w.ecosystem))
 }
 
 // Finish signals the worker to stop processing by closing its input channel.
@@ -159,19 +159,15 @@ func (w *allEcosystemWorker) run(ctx context.Context, outCh chan<- writeMsg, wg 
 	var allVulns []vulnData
 	var csvData [][]string
 	ecosystems := make(map[string]struct{})
+WorkLoop:
 	for {
 		select {
+		case <-ctx.Done():
+			logger.Warn("all-ecosystem worker cancelled", slog.Any("err", ctx.Err()))
+			return
 		case v, ok := <-w.inCh:
 			if !ok {
-				writeModifiedIDCSV(ctx, modifiedCSVFilename, csvData, outCh)
-				writeZIP(ctx, allZipFilename, allVulns, outCh)
-				ecos := slices.Collect(maps.Keys(ecosystems))
-				slices.Sort(ecos)
-				ecoString := strings.Join(ecos, "\n")
-				write(ctx, ecosystemsFilename, []byte(ecoString), "text/plain", outCh)
-				logger.Info("all-ecosystem worker finished processing")
-
-				return
+				break WorkLoop
 			}
 			b, err := protojson.MarshalOptions{}.Marshal(v.Vulnerability)
 			if err != nil {
@@ -183,11 +179,15 @@ func (w *allEcosystemWorker) run(ctx context.Context, outCh chan<- writeMsg, wg 
 				ecosystems[e] = struct{}{}
 				csvData = append(csvData, []string{v.GetModified().AsTime().Format(time.RFC3339Nano), e + "/" + v.GetId()})
 			}
-		case <-ctx.Done():
-			logger.Warn("all-ecosystem worker cancelled", slog.Any("err", ctx.Err()))
-			return
 		}
 	}
+	writeModifiedIDCSV(ctx, modifiedCSVFilename, csvData, outCh)
+	writeZIP(ctx, allZipFilename, allVulns, outCh)
+	ecos := slices.Collect(maps.Keys(ecosystems))
+	slices.Sort(ecos)
+	ecoString := strings.Join(ecos, "\n")
+	write(ctx, ecosystemsFilename, []byte(ecoString), "text/plain", outCh)
+	logger.Info("all-ecosystem worker finished processing")
 }
 
 // Finish signals the worker to stop processing by closing its input channel.

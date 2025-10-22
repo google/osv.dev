@@ -50,8 +50,9 @@ func newEcosystemWorker(ctx context.Context, ecosystem string, outCh chan<- writ
 
 // vulnData holds the ID and marshalled JSON data for a vulnerability.
 type vulnData struct {
-	id   string
-	data []byte
+	id       string
+	modified time.Time
+	data     []byte
 }
 
 var protoMarshaller = protojson.MarshalOptions{
@@ -97,8 +98,9 @@ WorkLoop:
 			return
 		}
 
-		allVulns = append(allVulns, vulnData{id: v.GetId(), data: b})
-		csvData = append(csvData, []string{v.GetModified().AsTime().Format(time.RFC3339Nano), v.GetId()})
+		modified := v.GetModified().AsTime()
+		allVulns = append(allVulns, vulnData{id: v.GetId(), modified: modified, data: b})
+		csvData = append(csvData, []string{modified.Format(time.RFC3339Nano), v.GetId()})
 
 		// For GIT ecosystem, we want to make a file containing every vulnerability with vanir signatures
 		if w.ecosystem == gitEcosystem {
@@ -174,10 +176,11 @@ WorkLoop:
 				logger.Error("failed to marshal vulnerability to json", slog.String("id", v.GetId()), slog.Any("err", err))
 				continue
 			}
-			allVulns = append(allVulns, vulnData{id: v.GetId(), data: b})
+			modified := v.GetModified().AsTime()
+			allVulns = append(allVulns, vulnData{id: v.GetId(), modified: modified, data: b})
 			for _, e := range v.ecosystems {
 				ecosystems[e] = struct{}{}
-				csvData = append(csvData, []string{v.GetModified().AsTime().Format(time.RFC3339Nano), e + "/" + v.GetId()})
+				csvData = append(csvData, []string{modified.Format(time.RFC3339Nano), e + "/" + v.GetId()})
 			}
 		}
 	}
@@ -233,7 +236,11 @@ func writeZIP(ctx context.Context, path string, allVulns []vulnData, outCh chan<
 	var buf bytes.Buffer
 	wr := zip.NewWriter(&buf)
 	for _, vuln := range allVulns {
-		w, err := wr.Create(vuln.id + ".json")
+		// w, err := wr.Create(vuln.id + ".json")
+		w, err := wr.CreateHeader(&zip.FileHeader{
+			Name:     vuln.id + ".json",
+			Modified: vuln.modified,
+		})
 		if err != nil {
 			logger.Error("failed to create vuln json in zip file", slog.String("id", vuln.id), slog.Any("err", err))
 			continue

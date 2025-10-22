@@ -251,7 +251,6 @@ func writeZIP(ctx context.Context, path string, allVulns []vulnData, outCh chan<
 	var buf bytes.Buffer
 	wr := zip.NewWriter(&buf)
 	for _, vuln := range allVulns {
-		// w, err := wr.Create(vuln.id + ".json")
 		w, err := wr.CreateHeader(&zip.FileHeader{
 			Name:     vuln.id + ".json",
 			Modified: vuln.modified,

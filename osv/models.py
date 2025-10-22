@@ -587,7 +587,6 @@ class Bug(ndb.Model):
                 AffectedEvent(type='limit', value=evt.limit))
             continue
 
-        current_range.database_specific = None
         if affected_range.HasField('database_specific'):
           current_range.database_specific = json_format.MessageToDict(
               affected_range.database_specific,
@@ -596,13 +595,11 @@ class Bug(ndb.Model):
         current.ranges.append(current_range)
 
       current.versions = list(affected_package.versions)
-      current.database_specific = None
       if affected_package.HasField('database_specific'):
         current.database_specific = json_format.MessageToDict(
             affected_package.database_specific,
             preserving_proto_field_name=True)
 
-      current.ecosystem_specific = None
       if affected_package.HasField('ecosystem_specific'):
         current.ecosystem_specific = json_format.MessageToDict(
             affected_package.ecosystem_specific,
@@ -631,7 +628,6 @@ class Bug(ndb.Model):
         cr.type = vulnerability_pb2.Credit.Type.Name(credit.type)
       self.credits.append(cr)
 
-    self.database_specific = None
     if vulnerability.HasField('database_specific'):
       self.database_specific = json_format.MessageToDict(
           vulnerability.database_specific, preserving_proto_field_name=True)

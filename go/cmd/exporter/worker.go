@@ -55,10 +55,6 @@ type vulnData struct {
 	data     []byte
 }
 
-var protoMarshaller = protojson.MarshalOptions{
-	UseProtoNames: true, // TODO(michaelkedar): https://github.com/ossf/osv-schema/pull/442
-}
-
 // run is the main loop for the ecosystemWorker. It receives vulnerabilities,
 // aggregates them, and upon completion, writes out the ecosystem-specific
 // zip, csv, and (for GIT) vanir files.
@@ -84,7 +80,7 @@ WorkLoop:
 			}
 		}
 		// Process vulnerability.
-		b, err := protoMarshaller.Marshal(v)
+		b, err := marshalToJSON(v)
 		if err != nil {
 			logger.Error("failed to marshal vulnerability to json", slog.String("id", v.GetId()), slog.Any("err", err))
 			continue
@@ -171,7 +167,7 @@ WorkLoop:
 			if !ok {
 				break WorkLoop
 			}
-			b, err := protoMarshaller.Marshal(v.Vulnerability)
+			b, err := marshalToJSON(v.Vulnerability)
 			if err != nil {
 				logger.Error("failed to marshal vulnerability to json", slog.String("id", v.GetId()), slog.Any("err", err))
 				continue
@@ -196,6 +192,25 @@ WorkLoop:
 // Finish signals the worker to stop processing by closing its input channel.
 func (w *allEcosystemWorker) Finish() {
 	close(w.inCh)
+}
+
+var protoMarshaller = protojson.MarshalOptions{
+	UseProtoNames: true, // TODO(michaelkedar): https://github.com/ossf/osv-schema/pull/442
+}
+
+// marshalToJSON marshals the vulnerability proto to formatted JSON bytes.
+func marshalToJSON(vuln *osvschema.Vulnerability) ([]byte, error) {
+	b, err := protoMarshaller.Marshal(vuln)
+	if err != nil {
+		return nil, err
+	}
+	// Indent the JSON, making output stable.
+	var out bytes.Buffer
+	if err := json.Indent(&out, b, "", "  "); err != nil {
+		return nil, err
+	}
+
+	return out.Bytes(), nil
 }
 
 // write is a helper to send a writeMsg to the writer channel, handling context cancellation.

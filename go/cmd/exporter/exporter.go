@@ -196,6 +196,6 @@ RouterLoop:
 	if ctx.Err() == nil {
 		logger.Info("ecosystem router finished, all vulnerabilities dispatched", slog.Int("total_vulnerabilities", vulnCounter))
 	} else {
-		logger.Info("ecosystem router cancelled")
+		logger.Info("ecosystem router cancelled", slog.Any("err", ctx.Err()))
 	}
 }

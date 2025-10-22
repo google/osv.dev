@@ -597,12 +597,11 @@ class Bug(ndb.Model):
         current.ranges.append(current_range)
 
       current.versions = list(affected_package.versions)
+      current.database_specific = None
       if affected_package.HasField('database_specific'):
         current.database_specific = json_format.MessageToDict(
             affected_package.database_specific,
             preserving_proto_field_name=True)
-      else:
-        current.database_specific = None
 
       if affected_package.HasField('ecosystem_specific'):
         current.ecosystem_specific = json_format.MessageToDict(

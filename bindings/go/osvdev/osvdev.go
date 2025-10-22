@@ -169,6 +169,7 @@ func (c *OSVClient) Query(ctx context.Context, query *api.Query) (*api.Vulnerabi
 	if err != nil {
 		return nil, err
 	}
+
 	return &osvResp, nil
 }
 

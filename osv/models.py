@@ -591,6 +591,8 @@ class Bug(ndb.Model):
           current_range.database_specific = json_format.MessageToDict(
               affected_range.database_specific,
               preserving_proto_field_name=True)
+        else:
+          current_range.database_specific = None
 
         current.ranges.append(current_range)
 
@@ -599,11 +601,15 @@ class Bug(ndb.Model):
         current.database_specific = json_format.MessageToDict(
             affected_package.database_specific,
             preserving_proto_field_name=True)
+      else:
+        current.database_specific = None
 
       if affected_package.HasField('ecosystem_specific'):
         current.ecosystem_specific = json_format.MessageToDict(
             affected_package.ecosystem_specific,
             preserving_proto_field_name=True)
+      else:
+        current.ecosystem_specific = None
 
       current.severities = []
       for severity in affected_package.severity:
@@ -631,6 +637,8 @@ class Bug(ndb.Model):
     if vulnerability.HasField('database_specific'):
       self.database_specific = json_format.MessageToDict(
           vulnerability.database_specific, preserving_proto_field_name=True)
+    else:
+      self.database_specific = None
 
   def to_vulnerability_minimal(self):
     """Convert to Vulnerability proto (minimal)."""

@@ -595,12 +595,12 @@ class Bug(ndb.Model):
         current.ranges.append(current_range)
 
       current.versions = list(affected_package.versions)
-      if affected_package.database_specific:
+      if affected_package.HasField('database_specific'):
         current.database_specific = json_format.MessageToDict(
             affected_package.database_specific,
             preserving_proto_field_name=True)
 
-      if affected_package.ecosystem_specific:
+      if affected_package.HasField('ecosystem_specific'):
         current.ecosystem_specific = json_format.MessageToDict(
             affected_package.ecosystem_specific,
             preserving_proto_field_name=True)
@@ -628,7 +628,7 @@ class Bug(ndb.Model):
         cr.type = vulnerability_pb2.Credit.Type.Name(credit.type)
       self.credits.append(cr)
 
-    if vulnerability.database_specific:
+    if vulnerability.HasField('database_specific'):
       self.database_specific = json_format.MessageToDict(
           vulnerability.database_specific, preserving_proto_field_name=True)
 

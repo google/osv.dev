@@ -50,12 +50,9 @@ func newEcosystemWorker(ctx context.Context, ecosystem string, outCh chan<- writ
 
 // vulnData holds the ID and marshalled JSON data for a vulnerability.
 type vulnData struct {
-	id   string
-	data []byte
-}
-
-var protoMarshaller = protojson.MarshalOptions{
-	UseProtoNames: true, // TODO(michaelkedar): https://github.com/ossf/osv-schema/pull/442
+	id       string
+	modified time.Time
+	data     []byte
 }
 
 // run is the main loop for the ecosystemWorker. It receives vulnerabilities,
@@ -83,7 +80,7 @@ WorkLoop:
 			}
 		}
 		// Process vulnerability.
-		b, err := protoMarshaller.Marshal(v)
+		b, err := marshalToJSON(v)
 		if err != nil {
 			logger.Error("failed to marshal vulnerability to json", slog.String("id", v.GetId()), slog.Any("err", err))
 			continue
@@ -97,8 +94,9 @@ WorkLoop:
 			return
 		}
 
-		allVulns = append(allVulns, vulnData{id: v.GetId(), data: b})
-		csvData = append(csvData, []string{v.GetModified().AsTime().Format(time.RFC3339Nano), v.GetId()})
+		modified := v.GetModified().AsTime()
+		allVulns = append(allVulns, vulnData{id: v.GetId(), modified: modified, data: b})
+		csvData = append(csvData, []string{modified.Format(time.RFC3339Nano), v.GetId()})
 
 		// For GIT ecosystem, we want to make a file containing every vulnerability with vanir signatures
 		if w.ecosystem == gitEcosystem {
@@ -169,15 +167,16 @@ WorkLoop:
 			if !ok {
 				break WorkLoop
 			}
-			b, err := protoMarshaller.Marshal(v.Vulnerability)
+			b, err := marshalToJSON(v.Vulnerability)
 			if err != nil {
 				logger.Error("failed to marshal vulnerability to json", slog.String("id", v.GetId()), slog.Any("err", err))
 				continue
 			}
-			allVulns = append(allVulns, vulnData{id: v.GetId(), data: b})
+			modified := v.GetModified().AsTime()
+			allVulns = append(allVulns, vulnData{id: v.GetId(), modified: modified, data: b})
 			for _, e := range v.ecosystems {
 				ecosystems[e] = struct{}{}
-				csvData = append(csvData, []string{v.GetModified().AsTime().Format(time.RFC3339Nano), e + "/" + v.GetId()})
+				csvData = append(csvData, []string{modified.Format(time.RFC3339Nano), e + "/" + v.GetId()})
 			}
 		}
 	}
@@ -193,6 +192,25 @@ WorkLoop:
 // Finish signals the worker to stop processing by closing its input channel.
 func (w *allEcosystemWorker) Finish() {
 	close(w.inCh)
+}
+
+var protoMarshaller = protojson.MarshalOptions{
+	UseProtoNames: true, // TODO(michaelkedar): https://github.com/ossf/osv-schema/pull/442
+}
+
+// marshalToJSON marshals the vulnerability proto to formatted JSON bytes.
+func marshalToJSON(vuln *osvschema.Vulnerability) ([]byte, error) {
+	b, err := protoMarshaller.Marshal(vuln)
+	if err != nil {
+		return nil, err
+	}
+	// Indent the JSON, making output stable.
+	var out bytes.Buffer
+	if err := json.Indent(&out, b, "", "  "); err != nil {
+		return nil, err
+	}
+
+	return out.Bytes(), nil
 }
 
 // write is a helper to send a writeMsg to the writer channel, handling context cancellation.
@@ -233,7 +251,10 @@ func writeZIP(ctx context.Context, path string, allVulns []vulnData, outCh chan<
 	var buf bytes.Buffer
 	wr := zip.NewWriter(&buf)
 	for _, vuln := range allVulns {
-		w, err := wr.Create(vuln.id + ".json")
+		w, err := wr.CreateHeader(&zip.FileHeader{
+			Name:     vuln.id + ".json",
+			Modified: vuln.modified,
+		})
 		if err != nil {
 			logger.Error("failed to create vuln json in zip file", slog.String("id", vuln.id), slog.Any("err", err))
 			continue

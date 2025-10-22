@@ -587,7 +587,7 @@ class Bug(ndb.Model):
                 AffectedEvent(type='limit', value=evt.limit))
             continue
 
-        if affected_range.database_specific:
+        if affected_range.HasField('database_specific'):
           current_range.database_specific = json_format.MessageToDict(
               affected_range.database_specific,
               preserving_proto_field_name=True)

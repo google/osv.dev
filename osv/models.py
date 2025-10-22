@@ -587,12 +587,11 @@ class Bug(ndb.Model):
                 AffectedEvent(type='limit', value=evt.limit))
             continue
 
+        current_range.database_specific = None
         if affected_range.HasField('database_specific'):
           current_range.database_specific = json_format.MessageToDict(
               affected_range.database_specific,
               preserving_proto_field_name=True)
-        else:
-          current_range.database_specific = None
 
         current.ranges.append(current_range)
 

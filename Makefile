@@ -57,8 +57,8 @@ build-api-protos:
       --include_source_info \
       --proto_path=googleapis \
       --proto_path=. \
-	  --proto_path=../../../osv \
-      --proto_path=../../../osv/osv-schema/proto \
+	  --proto_path=osv \
+      --proto_path=osv/osv-schema/proto \
       --descriptor_set_out=api_descriptor.pb \
       --python_out=../. \
       --grpc_python_out=../ \
@@ -71,8 +71,8 @@ build-api-protos:
 	cd gcp/api/v1 && protoc \
 	  --proto_path=googleapis \
 	  --proto_path=. \
-	  --proto_path=../../../osv \
-      --proto_path=../../../osv/osv-schema/proto \
+	  --proto_path=osv \
+      --proto_path=osv/osv-schema/proto \
 	  --go_out=paths=source_relative:../../../bindings/go/api \
       --go-grpc_out=paths=source_relative:../../../bindings/go/api \
 	  osv_service_v1.proto

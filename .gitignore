@@ -15,3 +15,7 @@ build/lib
 hurl-scripts/
 temp/*
 **/tmp/**
+gcp/api/*_pb2.py
+gcp/api/*_pb2.pyi
+gcp/api/*_pb2_grpc.py
+gcp/api/*_pb2_grpc.py

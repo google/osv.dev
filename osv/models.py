@@ -603,12 +603,11 @@ class Bug(ndb.Model):
             affected_package.database_specific,
             preserving_proto_field_name=True)
 
+      current.ecosystem_specific = None
       if affected_package.HasField('ecosystem_specific'):
         current.ecosystem_specific = json_format.MessageToDict(
             affected_package.ecosystem_specific,
             preserving_proto_field_name=True)
-      else:
-        current.ecosystem_specific = None
 
       current.severities = []
       for severity in affected_package.severity:

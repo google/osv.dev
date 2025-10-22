@@ -628,7 +628,7 @@ class Bug(ndb.Model):
         cr.type = vulnerability_pb2.Credit.Type.Name(credit.type)
       self.credits.append(cr)
 
-    if vulnerability.HasField('database_specific'):
+    if vulnerability.database_specific:
       self.database_specific = json_format.MessageToDict(
           vulnerability.database_specific, preserving_proto_field_name=True)
 

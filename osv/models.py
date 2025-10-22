@@ -632,11 +632,10 @@ class Bug(ndb.Model):
         cr.type = vulnerability_pb2.Credit.Type.Name(credit.type)
       self.credits.append(cr)
 
+    self.database_specific = None
     if vulnerability.HasField('database_specific'):
       self.database_specific = json_format.MessageToDict(
           vulnerability.database_specific, preserving_proto_field_name=True)
-    else:
-      self.database_specific = None
 
   def to_vulnerability_minimal(self):
     """Convert to Vulnerability proto (minimal)."""

@@ -5,6 +5,7 @@ import (
 	"context"
 	"errors"
 
+	"google.golang.org/protobuf/proto"
 	"osv.dev/bindings/go/api"
 )
 
@@ -24,7 +25,7 @@ func QueryPaging(ctx context.Context, c OSVClientInterface, query *api.Query) (*
 	// --- Paging logic ---
 	var errToReturn error
 
-	if queryResponse.NextPageToken == "" {
+	if queryResponse.GetNextPageToken() == "" {
 		return queryResponse, nil
 	}
 
@@ -35,9 +36,9 @@ func QueryPaging(ctx context.Context, c OSVClientInterface, query *api.Query) (*
 		}
 	}
 
-	newQuery := *query
-	newQuery.PageToken = queryResponse.NextPageToken
-	nextPageResponse, err := QueryPaging(ctx, c, &newQuery)
+	newQuery := proto.Clone(query).(*api.Query)
+	newQuery.PageToken = queryResponse.GetNextPageToken()
+	nextPageResponse, err := QueryPaging(ctx, c, newQuery)
 
 	if err != nil {
 		var dpe *DuringPagingError
@@ -54,8 +55,8 @@ func QueryPaging(ctx context.Context, c OSVClientInterface, query *api.Query) (*
 		return queryResponse, errToReturn
 	}
 
-	queryResponse.Vulns = append(queryResponse.Vulns, nextPageResponse.Vulns...)
-	queryResponse.NextPageToken = nextPageResponse.NextPageToken
+	queryResponse.Vulns = append(queryResponse.GetVulns(), nextPageResponse.GetVulns()...)
+	queryResponse.NextPageToken = nextPageResponse.GetNextPageToken()
 
 	return queryResponse, errToReturn
 }
@@ -74,14 +75,14 @@ func BatchQueryPaging(ctx context.Context, c OSVClientInterface, queries []*api.
 	var nextPageQueries []*api.Query
 	//nolint:prealloc
 	var nextPageIndexMap []int
-	for i, res := range batchResp.Results {
-		if res.NextPageToken == "" {
+	for i, res := range batchResp.GetResults() {
+		if res.GetNextPageToken() == "" {
 			continue
 		}
 
-		query := *queries[i]
-		query.PageToken = res.NextPageToken
-		nextPageQueries = append(nextPageQueries, &query)
+		clonedQuery := proto.Clone(queries[i]).(*api.Query)
+		clonedQuery.PageToken = res.GetNextPageToken()
+		nextPageQueries = append(nextPageQueries, clonedQuery)
 		nextPageIndexMap = append(nextPageIndexMap, i)
 	}
 
@@ -111,11 +112,11 @@ func BatchQueryPaging(ctx context.Context, c OSVClientInterface, queries []*api.
 		// Whether there is an error or not, if there is any data,
 		// we want to save and return what we got.
 		if nextPageResp != nil {
-			for i, res := range nextPageResp.Results {
-				batchResp.Results[nextPageIndexMap[i]].Vulns = append(batchResp.Results[nextPageIndexMap[i]].Vulns, res.Vulns...)
+			for i, res := range nextPageResp.GetResults() {
+				batchResp.GetResults()[nextPageIndexMap[i]].Vulns = append(batchResp.GetResults()[nextPageIndexMap[i]].GetVulns(), res.GetVulns()...)
 				// Set next page token so caller knows whether this is all of the results
 				// even if it is being cancelled.
-				batchResp.Results[nextPageIndexMap[i]].NextPageToken = res.NextPageToken
+				batchResp.GetResults()[nextPageIndexMap[i]].NextPageToken = res.GetNextPageToken()
 			}
 		}
 	}

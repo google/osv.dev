@@ -66,7 +66,6 @@ build-api-protos:
       vulnerability.proto importfinding.proto osv_service_v1.proto
 	cd osv && protoc \
 	  --proto_path=. \
-	  --proto_path=/Users/cuixq/protoc-29.5-osx-aarch_64/include \
 	  --go_out=paths=source_relative:../bindings/go/api \
 	  importfinding.proto
 	cd gcp/api/v1 && protoc \
@@ -74,7 +73,6 @@ build-api-protos:
 	  --proto_path=. \
 	  --proto_path=../../../osv \
       --proto_path=../../../osv/osv-schema/proto \
-	  --proto_path=/Users/cuixq/protoc-29.5-osx-aarch_64/include \
 	  --go_out=paths=source_relative:../../../bindings/go/api \
       --go-grpc_out=paths=source_relative:../../../bindings/go/api \
 	  osv_service_v1.proto

@@ -7,8 +7,8 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/ossf/osv-schema/bindings/go/osvschema"
-	"osv.dev/bindings/go/api"
 	"google.golang.org/protobuf/testing/protocmp"
+	"osv.dev/bindings/go/api"
 )
 
 type mockOSVClient struct {
@@ -17,7 +17,7 @@ type mockOSVClient struct {
 }
 
 func (m *mockOSVClient) Query(_ context.Context, query *api.Query) (*api.VulnerabilityList, error) {
-	key := query.PageToken
+	key := query.GetPageToken()
 	if key == "" {
 		key = "first"
 	}
@@ -33,7 +33,7 @@ func (m *mockOSVClient) QueryBatch(_ context.Context, queries []*api.Query) (*ap
 	// For simplicity, we'll just use the first query's page token to determine the response.
 	key := ""
 	if len(queries) > 0 {
-		key = queries[0].PageToken
+		key = queries[0].GetPageToken()
 	}
 	if key == "" {
 		key = "first"
@@ -82,12 +82,12 @@ func TestQueryPaging(t *testing.T) {
 		{Id: "VULN-3"},
 	}
 
-	if diff := cmp.Diff(expectedVulns, resp.Vulns, protocmp.Transform()); diff != "" {
+	if diff := cmp.Diff(expectedVulns, resp.GetVulns(), protocmp.Transform()); diff != "" {
 		t.Errorf("QueryPaging returned unexpected vulns (-want +got):\n%s", diff)
 	}
 
-	if resp.NextPageToken != "" {
-		t.Errorf("Expected empty NextPageToken, got %s", resp.NextPageToken)
+	if resp.GetNextPageToken() != "" {
+		t.Errorf("Expected empty NextPageToken, got %s", resp.GetNextPageToken())
 	}
 }
 
@@ -147,7 +147,7 @@ func TestBatchQueryPaging(t *testing.T) {
 		},
 	}
 
-	if diff := cmp.Diff(expectedResponses, resp.Results, protocmp.Transform()); diff != "" {
-			t.Errorf("BatchQueryPaging returned unexpected results (-want +got):\n%s", diff)
-		}
+	if diff := cmp.Diff(expectedResponses, resp.GetResults(), protocmp.Transform()); diff != "" {
+		t.Errorf("BatchQueryPaging returned unexpected results (-want +got):\n%s", diff)
+	}
 }

@@ -41,7 +41,8 @@ func TestOSVClient_GetVulnsByID(t *testing.T) {
 			},
 		},
 	}
-	for _, tt := range tests {
+	for i := range tests {
+		tt := &tests[i]
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 
@@ -58,7 +59,7 @@ func TestOSVClient_GetVulnsByID(t *testing.T) {
 				return
 			}
 
-			if got.Id != tt.id {
+			if got.GetId() != tt.id {
 				t.Errorf("OSVClient.GetVulnsByID() = %v, want %v", got, tt.id)
 			}
 		})
@@ -138,7 +139,8 @@ func TestOSVClient_QueryBatch(t *testing.T) {
 		},
 	}
 
-	for _, tt := range tests {
+	for i := range tests {
+		tt := &tests[i]
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 
@@ -155,11 +157,11 @@ func TestOSVClient_QueryBatch(t *testing.T) {
 				return
 			}
 
-			gotResults := make([][]string, 0, len(got.Results))
-			for _, res := range got.Results {
-				gotVulnIDs := make([]string, 0, len(res.Vulns))
-				for _, vuln := range res.Vulns {
-					gotVulnIDs = append(gotVulnIDs, vuln.Id)
+			gotResults := make([][]string, 0, len(got.GetResults()))
+			for _, res := range got.GetResults() {
+				gotVulnIDs := make([]string, 0, len(res.GetVulns()))
+				for _, vuln := range res.GetVulns() {
+					gotVulnIDs = append(gotVulnIDs, vuln.GetId())
 				}
 				gotResults = append(gotResults, gotVulnIDs)
 			}
@@ -211,7 +213,8 @@ func TestOSVClient_QueryBatchDeadline(t *testing.T) {
 		},
 	}
 
-	for _, tt := range tests {
+	for i := range tests {
+		tt := &tests[i]
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 
@@ -229,11 +232,11 @@ func TestOSVClient_QueryBatchDeadline(t *testing.T) {
 				return
 			}
 
-			gotResults := make([][]string, 0, len(got.Results))
-			for _, res := range got.Results {
-				gotVulnIDs := make([]string, 0, len(res.Vulns))
-				for _, vuln := range res.Vulns {
-					gotVulnIDs = append(gotVulnIDs, vuln.Id)
+			gotResults := make([][]string, 0, len(got.GetResults()))
+			for _, res := range got.GetResults() {
+				gotVulnIDs := make([]string, 0, len(res.GetVulns()))
+				for _, vuln := range res.GetVulns() {
+					gotVulnIDs = append(gotVulnIDs, vuln.GetId())
 				}
 				gotResults = append(gotResults, gotVulnIDs)
 			}
@@ -307,7 +310,8 @@ func TestOSVClient_Query(t *testing.T) {
 			},
 		},
 	}
-	for _, tt := range tests {
+	for i := range tests {
+		tt := &tests[i]
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 
@@ -324,9 +328,9 @@ func TestOSVClient_Query(t *testing.T) {
 				return
 			}
 
-			gotVulnIDs := make([]string, 0, len(got.Vulns))
-			for _, vuln := range got.Vulns {
-				gotVulnIDs = append(gotVulnIDs, vuln.Id)
+			gotVulnIDs := make([]string, 0, len(got.GetVulns()))
+			for _, vuln := range got.GetVulns() {
+				gotVulnIDs = append(gotVulnIDs, vuln.GetId())
 			}
 
 			if diff := cmp.Diff(tt.wantIDs, gotVulnIDs); diff != "" {
@@ -360,7 +364,8 @@ func TestOSVClient_QueryDeadline(t *testing.T) {
 			wantErr: context.DeadlineExceeded,
 		},
 	}
-	for _, tt := range tests {
+	for i := range tests {
+		tt := &tests[i]
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 
@@ -379,9 +384,9 @@ func TestOSVClient_QueryDeadline(t *testing.T) {
 				return
 			}
 
-			gotVulnIDs := make([]string, 0, len(got.Vulns))
-			for _, vuln := range got.Vulns {
-				gotVulnIDs = append(gotVulnIDs, vuln.Id)
+			gotVulnIDs := make([]string, 0, len(got.GetVulns()))
+			for _, vuln := range got.GetVulns() {
+				gotVulnIDs = append(gotVulnIDs, vuln.GetId())
 			}
 
 			if diff := cmp.Diff(tt.wantIDs, gotVulnIDs); diff != "" {
@@ -416,7 +421,8 @@ func TestOSVClient_ExperimentalDetermineVersion(t *testing.T) {
 		},
 		// TODO: Add query for an actual package, this is not added at the moment as it requires too many hashes
 	}
-	for _, tt := range tests {
+	for i := range tests {
+		tt := &tests[i]
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 
@@ -428,9 +434,9 @@ func TestOSVClient_ExperimentalDetermineVersion(t *testing.T) {
 				t.Fatalf("Unexpected error %v", err)
 			}
 
-			gotPkgInfo := make([]string, 0, len(got.Matches))
-			for _, vuln := range got.Matches {
-				gotPkgInfo = append(gotPkgInfo, vuln.RepoInfo.Address+"@"+vuln.RepoInfo.Version)
+			gotPkgInfo := make([]string, 0, len(got.GetMatches()))
+			for _, vuln := range got.GetMatches() {
+				gotPkgInfo = append(gotPkgInfo, vuln.GetRepoInfo().GetAddress()+"@"+vuln.GetRepoInfo().GetVersion())
 			}
 
 			if diff := cmp.Diff(tt.wantPkgs, gotPkgInfo); diff != "" {

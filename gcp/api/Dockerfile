@@ -34,6 +34,6 @@ WORKDIR /osv/gcp/api
 RUN poetry install
 
 # Generate the Python Protobuf code
-RUN chmod +x gen-proto.sh && ./gen-proto.sh
+RUN poetry run poe gen-proto
 
 ENTRYPOINT ["poetry", "run", "python", "/osv/gcp/api/server.py"]

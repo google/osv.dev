@@ -220,7 +220,7 @@ const file_importfinding_proto_rawDesc = "" +
 	"$IMPORT_FINDING_TYPE_INVALID_UPSTREAM\x10\n" +
 	"\x12'\n" +
 	"#IMPORT_FINDING_TYPE_INVALID_RELATED\x10\v\x12'\n" +
-	"#IMPORT_FINDING_TYPE_BAD_ALIASED_CVE\x10\fB\x19Z\x17osv.dev/bindings/go/apib\x06proto3"
+	"#IMPORT_FINDING_TYPE_BAD_ALIASED_CVE\x10\fB\"Z osv.dev/bindings/go/internal/apib\x06proto3"
 
 var (
 	file_importfinding_proto_rawDescOnce sync.Once

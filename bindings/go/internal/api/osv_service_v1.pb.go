@@ -1042,7 +1042,7 @@ const file_osv_service_v1_proto_rawDesc = "" +
 	"\rQueryAffected\x12\x1f.osv.v1.QueryAffectedParameters\x1a\x19.osv.v1.VulnerabilityList\"\x18\x82\xd3\xe4\x93\x02\x12:\x05query\"\t/v1/query\x12y\n" +
 	"\x12QueryAffectedBatch\x12$.osv.v1.QueryAffectedBatchParameters\x1a\x1e.osv.v1.BatchVulnerabilityList\"\x1d\x82\xd3\xe4\x93\x02\x17:\x05query\"\x0e/v1/querybatch\x12\x81\x01\n" +
 	"\x10DetermineVersion\x12\".osv.v1.DetermineVersionParameters\x1a\x18.osv.v1.VersionMatchList\"/\x82\xd3\xe4\x93\x02):\x05query\" /v1experimental/determineversion\x12~\n" +
-	"\x0eImportFindings\x12 .osv.v1.ImportFindingsParameters\x1a\x19.osv.v1.ImportFindingList\"/\x82\xd3\xe4\x93\x02)\x12'/v1experimental/importfindings/{source}B\x19Z\x17osv.dev/bindings/go/apib\x06proto3"
+	"\x0eImportFindings\x12 .osv.v1.ImportFindingsParameters\x1a\x19.osv.v1.ImportFindingList\"/\x82\xd3\xe4\x93\x02)\x12'/v1experimental/importfindings/{source}B\"Z osv.dev/bindings/go/internal/apib\x06proto3"
 
 var (
 	file_osv_service_v1_proto_rawDescOnce sync.Once

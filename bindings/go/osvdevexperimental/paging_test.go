@@ -8,7 +8,7 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/ossf/osv-schema/bindings/go/osvschema"
 	"google.golang.org/protobuf/testing/protocmp"
-	"osv.dev/bindings/go/api"
+	"osv.dev/bindings/go/internal/api"
 )
 
 type mockOSVClient struct {

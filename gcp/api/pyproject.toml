@@ -24,11 +24,7 @@ grpcio-tools = "*"
 mypy-protobuf = "^3.6.0"
 yapf = "*"
 pylint = "*"
-poethepoet = "*"
 
 [build-system]
 requires = ["poetry-core>=2.0.0"]
 build-backend = "poetry.core.masonry.api"
-
-[tool.poe.tasks]
-gen-proto = "python -m grpc_tools.protoc --include_imports --include_source_info --proto_path=googleapis --proto_path=v1 --proto_path=v1/osv --proto_path=v1/osv/osv-schema/proto --descriptor_set_out=api_descriptor.pb --python_out=. --grpc_python_out=. --mypy_out=. --mypy_grpc_out=. vulnerability.proto importfinding.proto osv_service_v1.proto"

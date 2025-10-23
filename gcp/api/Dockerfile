@@ -33,7 +33,4 @@ COPY gcp/api /osv/gcp/api
 WORKDIR /osv/gcp/api
 RUN poetry install
 
-# Generate the Python Protobuf code
-RUN poetry run poe gen-proto
-
 ENTRYPOINT ["poetry", "run", "python", "/osv/gcp/api/server.py"]

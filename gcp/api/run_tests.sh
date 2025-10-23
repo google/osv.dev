@@ -25,6 +25,5 @@ service docker start
 set -e
 
 poetry install
-poetry run poe gen-proto
 poetry run python server_test.py
 poetry run python integration_tests.py "$1"

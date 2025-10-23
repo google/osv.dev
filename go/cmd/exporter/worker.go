@@ -204,9 +204,9 @@ func marshalToJSON(vuln *osvschema.Vulnerability) ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
-	// Indent the JSON, making output stable.
+	// Compact the JSON, making output (more) stable.
 	var out bytes.Buffer
-	if err := json.Indent(&out, b, "", "  "); err != nil {
+	if err := json.Compact(&out, b); err != nil {
 		return nil, err
 	}
 

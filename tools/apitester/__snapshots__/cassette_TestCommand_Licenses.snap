@@ -1,0 +1,68 @@
+
+[Test/cassette_TestCommand_Licenses/TestCommand_Licenses/Licenses_in_summary_mode_json - 1]
+{"results":[{},{},{},{}]}
+---
+
+[Test/cassette_TestCommand_Licenses/TestCommand_Licenses/Licenses_with_expressions - 1]
+{"results":[{},{},{},{}]}
+---
+
+[Test/cassette_TestCommand_Licenses/TestCommand_Licenses/Licenses_with_invalid_expression_in_config - 1]
+{"results":[{},{},{},{}]}
+---
+
+[Test/cassette_TestCommand_Licenses/TestCommand_Licenses/No_license_violations_and_show-all-packages_in_json - 1]
+{"results":[{},{},{},{}]}
+---
+
+[Test/cassette_TestCommand_Licenses/TestCommand_Licenses/No_vulnerabilities_but_license_violations_with_allowlist - 1]
+{"results":[{}]}
+---
+
+[Test/cassette_TestCommand_Licenses/TestCommand_Licenses/No_vulnerabilities_with_license_summary - 1]
+{"results":[{},{},{},{}]}
+---
+
+[Test/cassette_TestCommand_Licenses/TestCommand_Licenses/No_vulnerabilities_with_license_summary#01 - 1]
+{"results":[{},{},{},{"vulns":[{"id":"GHSA-whgm-jr23-g3j9","modified":"2023-11-08T04:05:08.868477Z"}]},{},{},{},{},{},{},{},{},{"vulns":[{"id":"ALPINE-CVE-2025-26519","modified":"2025-10-14T04:20:58.312543Z"}]},{},{},{},{},{}]}
+---
+
+[Test/cassette_TestCommand_Licenses/TestCommand_Licenses/No_vulnerabilities_with_license_summary_in_markdown - 1]
+{"results":[{},{},{},{"vulns":[{"id":"GHSA-whgm-jr23-g3j9","modified":"2023-11-08T04:05:08.868477Z"}]},{},{},{},{},{},{},{},{},{"vulns":[{"id":"ALPINE-CVE-2025-26519","modified":"2025-10-14T04:20:58.312543Z"}]},{},{},{},{},{}]}
+---
+
+[Test/cassette_TestCommand_Licenses/TestCommand_Licenses/No_vulnerabilities_with_license_summary_in_markdown#01 - 1]
+{"results":[{},{},{},{}]}
+---
+
+[Test/cassette_TestCommand_Licenses/TestCommand_Licenses/Show_all_Packages_with_license_summary_in_json - 1]
+{"results":[{},{},{},{}]}
+---
+
+[Test/cassette_TestCommand_Licenses/TestCommand_Licenses/Some_packages_with_ignored_licenses - 1]
+{"results":[{},{},{},{},{},{},{},{"vulns":[{"id":"GHSA-9f46-5r25-5wfm","modified":"2024-02-16T08:21:35.601880Z"}]},{},{},{},{"vulns":[{"id":"ALPINE-CVE-2025-26519","modified":"2025-10-14T04:20:58.312543Z"}]},{},{},{},{},{},{},{}]}
+---
+
+[Test/cassette_TestCommand_Licenses/TestCommand_Licenses/Some_packages_with_ignored_licenses#01 - 1]
+{"results":[{},{"vulns":[{"id":"GHSA-9f46-5r25-5wfm","modified":"2024-02-16T08:21:35.601880Z"}]},{},{},{}]}
+---
+
+[Test/cassette_TestCommand_Licenses/TestCommand_Licenses/Some_packages_with_license_violations_and_show-all-packages_in_json - 1]
+{"results":[{},{},{},{}]}
+---
+
+[Test/cassette_TestCommand_Licenses/TestCommand_Licenses/Some_packages_with_license_violations_in_json - 1]
+{"results":[{},{},{},{}]}
+---
+
+[Test/cassette_TestCommand_Licenses/TestCommand_Licenses/Vulnerabilities_and_all_license_violations_allowlisted - 1]
+{"results":[{"vulns":[{"id":"GHSA-whgm-jr23-g3j9","modified":"2023-11-08T04:05:08.868477Z"}]}]}
+---
+
+[Test/cassette_TestCommand_Licenses/TestCommand_Licenses/Vulnerabilities_and_license_summary - 1]
+{"results":[{"vulns":[{"id":"GHSA-whgm-jr23-g3j9","modified":"2023-11-08T04:05:08.868477Z"}]}]}
+---
+
+[Test/cassette_TestCommand_Licenses/TestCommand_Licenses/Vulnerabilities_and_license_violations_with_allowlist - 1]
+{"results":[{"vulns":[{"id":"GHSA-whgm-jr23-g3j9","modified":"2023-11-08T04:05:08.868477Z"}]}]}
+---

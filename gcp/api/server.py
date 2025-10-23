@@ -894,7 +894,10 @@ def query_by_commit(context: QueryContext,
   Returns:
     A list of Vulnerability protos.
   """
-  query = osv.AffectedCommits.query(osv.AffectedCommits.commits == commit)
+  query = osv.AffectedCommits.query(
+      osv.AffectedCommits.commits == commit,
+      # pylint: disable=singleton-comparison
+      osv.AffectedCommits.public == True)
 
   context.query_counter += 1
   if context.should_skip_query():

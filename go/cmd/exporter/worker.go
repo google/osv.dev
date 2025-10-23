@@ -278,7 +278,7 @@ func writeVanir(ctx context.Context, vanirVulns []vulnData, outCh chan<- writeMs
 	for i, v := range vanirVulns {
 		vulns[i] = v.data
 	}
-	finalJSON, err := json.MarshalIndent(vulns, "", "  ")
+	finalJSON, err := json.Marshal(vulns)
 	if err != nil {
 		logger.Error("failed to marshal vanir JSON file", slog.Any("err", err))
 		return

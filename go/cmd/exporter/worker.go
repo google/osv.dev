@@ -254,6 +254,7 @@ func writeZIP(ctx context.Context, path string, allVulns []vulnData, outCh chan<
 		w, err := wr.CreateHeader(&zip.FileHeader{
 			Name:     vuln.id + ".json",
 			Modified: vuln.modified,
+			Method:   zip.Deflate,
 		})
 		if err != nil {
 			logger.Error("failed to create vuln json in zip file", slog.String("id", vuln.id), slog.Any("err", err))

@@ -204,9 +204,9 @@ func marshalToJSON(vuln *osvschema.Vulnerability) ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
-	// Indent the JSON, making output stable.
+	// Compact the JSON, making output (more) stable.
 	var out bytes.Buffer
-	if err := json.Indent(&out, b, "", "  "); err != nil {
+	if err := json.Compact(&out, b); err != nil {
 		return nil, err
 	}
 
@@ -278,7 +278,7 @@ func writeVanir(ctx context.Context, vanirVulns []vulnData, outCh chan<- writeMs
 	for i, v := range vanirVulns {
 		vulns[i] = v.data
 	}
-	finalJSON, err := json.MarshalIndent(vulns, "", "  ")
+	finalJSON, err := json.Marshal(vulns)
 	if err != nil {
 		logger.Error("failed to marshal vanir JSON file", slog.Any("err", err))
 		return

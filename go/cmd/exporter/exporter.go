@@ -138,7 +138,18 @@ func ecosystemRouter(ctx context.Context, inCh <-chan *osvschema.Vulnerability, 
 
 	allEcosystemWorker := newAllEcosystemWorker(ctx, outCh, &workersWg)
 
-	for vuln := range inCh {
+RouterLoop:
+	for {
+		var vuln *osvschema.Vulnerability
+		var ok bool
+		select {
+		case <-ctx.Done():
+			break RouterLoop
+		case vuln, ok = <-inCh:
+			if !ok {
+				break RouterLoop
+			}
+		}
 		vulnCounter++
 		ecosystems := make(map[string]struct{})
 		for _, aff := range vuln.GetAffected() {
@@ -164,9 +175,17 @@ func ecosystemRouter(ctx context.Context, inCh <-chan *osvschema.Vulnerability, 
 				worker = newEcosystemWorker(ctx, eco, outCh, &workersWg)
 				workers[eco] = worker
 			}
-			worker.inCh <- vuln
+			select {
+			case worker.inCh <- vuln:
+			case <-ctx.Done():
+				break RouterLoop
+			}
 		}
-		allEcosystemWorker.inCh <- vulnAndEcos{Vulnerability: vuln, ecosystems: ecoNames}
+		select {
+		case allEcosystemWorker.inCh <- vulnAndEcos{Vulnerability: vuln, ecosystems: ecoNames}:
+		case <-ctx.Done():
+			break RouterLoop
+		}
 	}
 
 	for _, worker := range workers {
@@ -174,5 +193,9 @@ func ecosystemRouter(ctx context.Context, inCh <-chan *osvschema.Vulnerability, 
 	}
 	allEcosystemWorker.Finish()
 	workersWg.Wait()
-	logger.Info("ecosystem router finished, all vulnerabilities dispatched", slog.Int("total_vulnerabilities", vulnCounter))
+	if ctx.Err() == nil {
+		logger.Info("ecosystem router finished, all vulnerabilities dispatched", slog.Int("total_vulnerabilities", vulnCounter))
+	} else {
+		logger.Info("ecosystem router cancelled", slog.Any("err", ctx.Err()))
+	}
 }

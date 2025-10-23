@@ -48,9 +48,36 @@ api-server-tests:
 lint:
 	$(run-cmd) tools/lint_and_format.sh
 
-build-protos:
-	$(run-cmd) python -m grpc_tools.protoc --python_out=. --mypy_out=. --proto_path=. osv/*.proto
-	cd gcp/api/v1 && $(run-cmd) python -m grpc_tools.protoc --include_imports --include_source_info --proto_path=googleapis --proto_path=. --proto_path=.. --descriptor_set_out=api_descriptor.pb --python_out=../. --grpc_python_out=../ --mypy_out=../ osv_service_v1.proto
+build-osv-protos:
+	cd osv && $(run-cmd) python -m grpc_tools.protoc --python_out=. --mypy_out=. --proto_path=. --proto_path=osv-schema/proto vulnerability.proto importfinding.proto
+
+build-api-protos:
+	cd gcp/api/v1 && $(run-cmd) python -m grpc_tools.protoc \
+      --include_imports \
+      --include_source_info \
+      --proto_path=googleapis \
+      --proto_path=. \
+      --proto_path=osv \
+      --proto_path=osv/osv-schema/proto \
+      --descriptor_set_out=api_descriptor.pb \
+      --python_out=.. \
+      --grpc_python_out=.. \
+      --mypy_out=.. \
+      vulnerability.proto importfinding.proto osv_service_v1.proto
+	cd osv && protoc \
+      --proto_path=. \
+      --go_out=paths=source_relative:../bindings/go/internal/api \
+      importfinding.proto
+	cd gcp/api/v1 && protoc \
+      --proto_path=googleapis \
+      --proto_path=. \
+      --proto_path=osv \
+      --proto_path=osv/osv-schema/proto \
+      --go_out=paths=source_relative:../../../bindings/go/internal/api \
+      --go-grpc_out=paths=source_relative:../../../bindings/go/internal/api \
+      osv_service_v1.proto
+
+build-protos: build-osv-protos build-api-protos
 
 run-website:
 	cd gcp/website/frontend3 && npm install && npm run build

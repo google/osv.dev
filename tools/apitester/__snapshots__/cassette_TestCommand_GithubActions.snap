@@ -1,8 +1,44 @@
 
 [Test/cassette_TestCommand_GithubActions/TestCommand_GithubActions/scanning_osv-scanner_custom_format - 1]
-{"results":[{},{"vulns":[{"id":"CVE-2023-39137","modified":"2025-10-21T13:22:57.391415Z"},{"id":"CVE-2023-39139","modified":"2025-10-21T13:22:57.568653Z"}]},{}]}
+{
+  "results": [
+    {},
+    {
+      "vulns": [
+        {
+          "id": "CVE-2023-39137",
+          "modified": "2025-10-21T13:22:57.391415Z"
+        },
+        {
+          "id": "CVE-2023-39139",
+          "modified": "2025-10-21T13:22:57.568653Z"
+        }
+      ]
+    },
+    {}
+  ]
+}
+
 ---
 
 [Test/cassette_TestCommand_GithubActions/TestCommand_GithubActions/scanning_osv-scanner_custom_format_output_json - 1]
-{"results":[{},{"vulns":[{"id":"CVE-2023-39137","modified":"2025-10-21T13:22:57.391415Z"},{"id":"CVE-2023-39139","modified":"2025-10-21T13:22:57.568653Z"}]},{}]}
+{
+  "results": [
+    {},
+    {
+      "vulns": [
+        {
+          "id": "CVE-2023-39137",
+          "modified": "2025-10-21T13:22:57.391415Z"
+        },
+        {
+          "id": "CVE-2023-39139",
+          "modified": "2025-10-21T13:22:57.568653Z"
+        }
+      ]
+    },
+    {}
+  ]
+}
+
 ---

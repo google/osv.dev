@@ -1,28 +1,132 @@
 
 [Test/cassette_TestCommand_LockfileWithExplicitParseAs/TestCommand_LockfileWithExplicitParseAs/absolute_paths_are_automatically_escaped_on_windows - 1]
-{"results":[{}]}
+{
+  "results": [
+    {}
+  ]
+}
+
 ---
 
 [Test/cassette_TestCommand_LockfileWithExplicitParseAs/TestCommand_LockfileWithExplicitParseAs/absolute_paths_work_with_explicit_escaping - 1]
-{"results":[{}]}
+{
+  "results": [
+    {}
+  ]
+}
+
 ---
 
 [Test/cassette_TestCommand_LockfileWithExplicitParseAs/TestCommand_LockfileWithExplicitParseAs/empty_is_default - 1]
-{"results":[{}]}
+{
+  "results": [
+    {}
+  ]
+}
+
 ---
 
 [Test/cassette_TestCommand_LockfileWithExplicitParseAs/TestCommand_LockfileWithExplicitParseAs/multiple,_+_output_order_is_deterministic - 1]
-{"results":[{"vulns":[{"id":"GHSA-whgm-jr23-g3j9","modified":"2023-11-08T04:05:08.868477Z"}]},{"vulns":[{"id":"GHSA-whgm-jr23-g3j9","modified":"2023-11-08T04:05:08.868477Z"}]},{},{"vulns":[{"id":"GHSA-9f46-5r25-5wfm","modified":"2024-02-16T08:21:35.601880Z"}]},{},{},{}]}
+{
+  "results": [
+    {
+      "vulns": [
+        {
+          "id": "GHSA-whgm-jr23-g3j9",
+          "modified": "2023-11-08T04:05:08.868477Z"
+        }
+      ]
+    },
+    {
+      "vulns": [
+        {
+          "id": "GHSA-whgm-jr23-g3j9",
+          "modified": "2023-11-08T04:05:08.868477Z"
+        }
+      ]
+    },
+    {},
+    {
+      "vulns": [
+        {
+          "id": "GHSA-9f46-5r25-5wfm",
+          "modified": "2024-02-16T08:21:35.601880Z"
+        }
+      ]
+    },
+    {},
+    {},
+    {}
+  ]
+}
+
 ---
 
 [Test/cassette_TestCommand_LockfileWithExplicitParseAs/TestCommand_LockfileWithExplicitParseAs/multiple,_+_output_order_is_deterministic_2 - 1]
-{"results":[{"vulns":[{"id":"GHSA-whgm-jr23-g3j9","modified":"2023-11-08T04:05:08.868477Z"}]},{"vulns":[{"id":"GHSA-whgm-jr23-g3j9","modified":"2023-11-08T04:05:08.868477Z"}]},{},{"vulns":[{"id":"GHSA-9f46-5r25-5wfm","modified":"2024-02-16T08:21:35.601880Z"}]},{},{},{}]}
+{
+  "results": [
+    {
+      "vulns": [
+        {
+          "id": "GHSA-whgm-jr23-g3j9",
+          "modified": "2023-11-08T04:05:08.868477Z"
+        }
+      ]
+    },
+    {
+      "vulns": [
+        {
+          "id": "GHSA-whgm-jr23-g3j9",
+          "modified": "2023-11-08T04:05:08.868477Z"
+        }
+      ]
+    },
+    {},
+    {
+      "vulns": [
+        {
+          "id": "GHSA-9f46-5r25-5wfm",
+          "modified": "2024-02-16T08:21:35.601880Z"
+        }
+      ]
+    },
+    {},
+    {},
+    {}
+  ]
+}
+
 ---
 
 [Test/cassette_TestCommand_LockfileWithExplicitParseAs/TestCommand_LockfileWithExplicitParseAs/one_lockfile_with_local_path - 1]
 {}
+
 ---
 
 [Test/cassette_TestCommand_LockfileWithExplicitParseAs/TestCommand_LockfileWithExplicitParseAs/when_an_explicit_parse-as_is_given,_it's_applied_to_that_file - 1]
-{"results":[{"vulns":[{"id":"GHSA-whgm-jr23-g3j9","modified":"2023-11-08T04:05:08.868477Z"}]},{},{"vulns":[{"id":"GHSA-9f46-5r25-5wfm","modified":"2024-02-16T08:21:35.601880Z"}]},{},{},{}]}
+{
+  "results": [
+    {
+      "vulns": [
+        {
+          "id": "GHSA-whgm-jr23-g3j9",
+          "modified": "2023-11-08T04:05:08.868477Z"
+        }
+      ]
+    },
+    {},
+    {
+      "vulns": [
+        {
+          "id": "GHSA-9f46-5r25-5wfm",
+          "modified": "2024-02-16T08:21:35.601880Z"
+        }
+      ]
+    },
+    {},
+    {},
+    {}
+  ]
+}
+
 ---

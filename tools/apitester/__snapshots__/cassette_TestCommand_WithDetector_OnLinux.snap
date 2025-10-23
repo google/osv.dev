@@ -1,12 +1,27 @@
 
 [Test/cassette_TestCommand_WithDetector_OnLinux/TestCommand_WithDetector_OnLinux/ssh_version_errors - 1]
-{"results":[{}]}
+{
+  "results": [
+    {}
+  ]
+}
+
 ---
 
 [Test/cassette_TestCommand_WithDetector_OnLinux/TestCommand_WithDetector_OnLinux/ssh_version_is_after_last_vuln_version - 1]
-{"results":[{}]}
+{
+  "results": [
+    {}
+  ]
+}
+
 ---
 
 [Test/cassette_TestCommand_WithDetector_OnLinux/TestCommand_WithDetector_OnLinux/ssh_version_is_before_first_vuln_version - 1]
-{"results":[{}]}
+{
+  "results": [
+    {}
+  ]
+}
+
 ---

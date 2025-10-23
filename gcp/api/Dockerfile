@@ -16,7 +16,7 @@ FROM python:3.13.3-slim@sha256:56a11364ffe0fee3bd60af6d6d5209eba8a99c2c16dc4c7c5
 
 # Generation 1 of cloud run overrides the HOME environment variable, causing
 # poetry to run in the incorrect environment, as it defaults to using $HOME/.cache/virtualenvs/...
-#
+# 
 # This forces it to create the virtualenv in the same directory as the project, avoiding this issue.
 ENV POETRY_VIRTUALENVS_IN_PROJECT=true
 ENV POETRY_HOME "/opt/poetry"

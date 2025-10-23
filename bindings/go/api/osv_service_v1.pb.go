@@ -981,7 +981,7 @@ var File_osv_service_v1_proto protoreflect.FileDescriptor
 
 const file_osv_service_v1_proto_rawDesc = "" +
 	"\n" +
-	"\x14osv_service_v1.proto\x12\x06osv.v1\x1a\x13vulnerability.proto\x1a\x13importfinding.proto\x1a\x1cgoogle/api/annotations.proto\"e\n" +
+	"\x14osv_service_v1.proto\x12\x06osv.v1\x1a(osv/osv-schema/proto/vulnerability.proto\x1a\x13importfinding.proto\x1a\x1cgoogle/api/annotations.proto\"e\n" +
 	"\x11VulnerabilityList\x12(\n" +
 	"\x05vulns\x18\x01 \x03(\v2\x12.osv.VulnerabilityR\x05vulns\x12&\n" +
 	"\x0fnext_page_token\x18\x02 \x01(\tR\rnextPageToken\"M\n" +

@@ -6,7 +6,7 @@ import (
 	"errors"
 
 	"google.golang.org/protobuf/proto"
-	"osv.dev/bindings/go/internal/api"
+	"osv.dev/bindings/go/api"
 )
 
 type OSVClientInterface interface {

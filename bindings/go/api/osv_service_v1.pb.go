@@ -25,6 +25,7 @@ import (
 	_ "google.golang.org/genproto/googleapis/api/annotations"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
+	api "osv.dev/bindings/go/internal/api"
 	reflect "reflect"
 	sync "sync"
 	unsafe "unsafe"
@@ -764,7 +765,7 @@ func (x *VersionMatchList) GetMatches() []*VersionMatch {
 // Result of ImportFindings.
 type ImportFindingList struct {
 	state          protoimpl.MessageState `protogen:"open.v1"`
-	InvalidRecords []*ImportFinding       `protobuf:"bytes,1,rep,name=invalid_records,proto3" json:"invalid_records,omitempty"`
+	InvalidRecords []*api.ImportFinding   `protobuf:"bytes,1,rep,name=invalid_records,proto3" json:"invalid_records,omitempty"`
 	unknownFields  protoimpl.UnknownFields
 	sizeCache      protoimpl.SizeCache
 }
@@ -799,7 +800,7 @@ func (*ImportFindingList) Descriptor() ([]byte, []int) {
 	return file_osv_service_v1_proto_rawDescGZIP(), []int{12}
 }
 
-func (x *ImportFindingList) GetInvalidRecords() []*ImportFinding {
+func (x *ImportFindingList) GetInvalidRecords() []*api.ImportFinding {
 	if x != nil {
 		return x.InvalidRecords
 	}
@@ -1042,7 +1043,7 @@ const file_osv_service_v1_proto_rawDesc = "" +
 	"\rQueryAffected\x12\x1f.osv.v1.QueryAffectedParameters\x1a\x19.osv.v1.VulnerabilityList\"\x18\x82\xd3\xe4\x93\x02\x12:\x05query\"\t/v1/query\x12y\n" +
 	"\x12QueryAffectedBatch\x12$.osv.v1.QueryAffectedBatchParameters\x1a\x1e.osv.v1.BatchVulnerabilityList\"\x1d\x82\xd3\xe4\x93\x02\x17:\x05query\"\x0e/v1/querybatch\x12\x81\x01\n" +
 	"\x10DetermineVersion\x12\".osv.v1.DetermineVersionParameters\x1a\x18.osv.v1.VersionMatchList\"/\x82\xd3\xe4\x93\x02):\x05query\" /v1experimental/determineversion\x12~\n" +
-	"\x0eImportFindings\x12 .osv.v1.ImportFindingsParameters\x1a\x19.osv.v1.ImportFindingList\"/\x82\xd3\xe4\x93\x02)\x12'/v1experimental/importfindings/{source}B\"Z osv.dev/bindings/go/internal/apib\x06proto3"
+	"\x0eImportFindings\x12 .osv.v1.ImportFindingsParameters\x1a\x19.osv.v1.ImportFindingList\"/\x82\xd3\xe4\x93\x02)\x12'/v1experimental/importfindings/{source}B\x19Z\x17osv.dev/bindings/go/apib\x06proto3"
 
 var (
 	file_osv_service_v1_proto_rawDescOnce sync.Once
@@ -1078,7 +1079,7 @@ var file_osv_service_v1_proto_goTypes = []any{
 	(*VersionRepositoryInformation)(nil),       // 16: osv.v1.VersionRepositoryInformation
 	(*osvschema.Vulnerability)(nil),            // 17: osv.Vulnerability
 	(*osvschema.Package)(nil),                  // 18: osv.Package
-	(*ImportFinding)(nil),                      // 19: osv.ImportFinding
+	(*api.ImportFinding)(nil),                  // 19: osv.ImportFinding
 }
 var file_osv_service_v1_proto_depIdxs = []int32{
 	17, // 0: osv.v1.VulnerabilityList.vulns:type_name -> osv.Vulnerability
@@ -1117,7 +1118,6 @@ func file_osv_service_v1_proto_init() {
 	if File_osv_service_v1_proto != nil {
 		return
 	}
-	file_importfinding_proto_init()
 	file_osv_service_v1_proto_msgTypes[2].OneofWrappers = []any{
 		(*Query_Commit)(nil),
 		(*Query_Version)(nil),

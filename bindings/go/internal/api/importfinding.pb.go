@@ -120,11 +120,11 @@ func (ImportFindingType) EnumDescriptor() ([]byte, []int) {
 // the JSON based API.
 type ImportFinding struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	BugId         string                 `protobuf:"bytes,1,opt,name=bug_id,json=bugId,proto3" json:"bug_id,omitempty"`
+	BugId         string                 `protobuf:"bytes,1,opt,name=bug_id,proto3" json:"bug_id,omitempty"`
 	Source        string                 `protobuf:"bytes,2,opt,name=source,proto3" json:"source,omitempty"`
 	Findings      []ImportFindingType    `protobuf:"varint,3,rep,packed,name=findings,proto3,enum=osv.ImportFindingType" json:"findings,omitempty"`
-	FirstSeen     *timestamppb.Timestamp `protobuf:"bytes,4,opt,name=first_seen,json=firstSeen,proto3" json:"first_seen,omitempty"`
-	LastAttempt   *timestamppb.Timestamp `protobuf:"bytes,5,opt,name=last_attempt,json=lastAttempt,proto3" json:"last_attempt,omitempty"`
+	FirstSeen     *timestamppb.Timestamp `protobuf:"bytes,4,opt,name=first_seen,proto3" json:"first_seen,omitempty"`
+	LastAttempt   *timestamppb.Timestamp `protobuf:"bytes,5,opt,name=last_attempt,proto3" json:"last_attempt,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -198,14 +198,15 @@ var File_importfinding_proto protoreflect.FileDescriptor
 
 const file_importfinding_proto_rawDesc = "" +
 	"\n" +
-	"\x13importfinding.proto\x12\x03osv\x1a\x1fgoogle/protobuf/timestamp.proto\"\xec\x01\n" +
-	"\rImportFinding\x12\x15\n" +
-	"\x06bug_id\x18\x01 \x01(\tR\x05bugId\x12\x16\n" +
+	"\x13importfinding.proto\x12\x03osv\x1a\x1fgoogle/protobuf/timestamp.proto\"\xef\x01\n" +
+	"\rImportFinding\x12\x16\n" +
+	"\x06bug_id\x18\x01 \x01(\tR\x06bug_id\x12\x16\n" +
 	"\x06source\x18\x02 \x01(\tR\x06source\x122\n" +
-	"\bfindings\x18\x03 \x03(\x0e2\x16.osv.ImportFindingTypeR\bfindings\x129\n" +
+	"\bfindings\x18\x03 \x03(\x0e2\x16.osv.ImportFindingTypeR\bfindings\x12:\n" +
 	"\n" +
-	"first_seen\x18\x04 \x01(\v2\x1a.google.protobuf.TimestampR\tfirstSeen\x12=\n" +
-	"\flast_attempt\x18\x05 \x01(\v2\x1a.google.protobuf.TimestampR\vlastAttempt*\x8c\x04\n" +
+	"first_seen\x18\x04 \x01(\v2\x1a.google.protobuf.TimestampR\n" +
+	"first_seen\x12>\n" +
+	"\flast_attempt\x18\x05 \x01(\v2\x1a.google.protobuf.TimestampR\flast_attempt*\x8c\x04\n" +
 	"\x11ImportFindingType\x12\x1c\n" +
 	"\x18IMPORT_FINDING_TYPE_NONE\x10\x00\x12\x1f\n" +
 	"\x1bIMPORT_FINDING_TYPE_DELETED\x10\x01\x12$\n" +

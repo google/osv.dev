@@ -25,7 +25,7 @@ _sym_db = _symbol_database.Default()
 from google.protobuf import timestamp_pb2 as google_dot_protobuf_dot_timestamp__pb2
 
 
-DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x13importfinding.proto\x12\x03osv\x1a\x1fgoogle/protobuf/timestamp.proto\"\xbb\x01\n\rImportFinding\x12\x0e\n\x06\x62ug_id\x18\x01 \x01(\t\x12\x0e\n\x06source\x18\x02 \x01(\t\x12(\n\x08\x66indings\x18\x03 \x03(\x0e\x32\x16.osv.ImportFindingType\x12.\n\nfirst_seen\x18\x04 \x01(\x0b\x32\x1a.google.protobuf.Timestamp\x12\x30\n\x0clast_attempt\x18\x05 \x01(\x0b\x32\x1a.google.protobuf.Timestamp*\x8c\x04\n\x11ImportFindingType\x12\x1c\n\x18IMPORT_FINDING_TYPE_NONE\x10\x00\x12\x1f\n\x1bIMPORT_FINDING_TYPE_DELETED\x10\x01\x12$\n IMPORT_FINDING_TYPE_INVALID_JSON\x10\x02\x12\'\n#IMPORT_FINDING_TYPE_INVALID_PACKAGE\x10\x03\x12$\n IMPORT_FINDING_TYPE_INVALID_PURL\x10\x04\x12\'\n#IMPORT_FINDING_TYPE_INVALID_VERSION\x10\x05\x12&\n\"IMPORT_FINDING_TYPE_INVALID_COMMIT\x10\x06\x12%\n!IMPORT_FINDING_TYPE_INVALID_RANGE\x10\x07\x12&\n\"IMPORT_FINDING_TYPE_INVALID_RECORD\x10\x08\x12\'\n#IMPORT_FINDING_TYPE_INVALID_ALIASES\x10\t\x12(\n$IMPORT_FINDING_TYPE_INVALID_UPSTREAM\x10\n\x12\'\n#IMPORT_FINDING_TYPE_INVALID_RELATED\x10\x0b\x12\'\n#IMPORT_FINDING_TYPE_BAD_ALIASED_CVE\x10\x0c\x42\"Z osv.dev/bindings/go/internal/apib\x06proto3')
+DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x13importfinding.proto\x12\x03osv\x1a\x1fgoogle/protobuf/timestamp.proto\"\xdd\x01\n\rImportFinding\x12\x16\n\x06\x62ug_id\x18\x01 \x01(\tR\x06\x62ug_id\x12\x0e\n\x06source\x18\x02 \x01(\t\x12(\n\x08\x66indings\x18\x03 \x03(\x0e\x32\x16.osv.ImportFindingType\x12:\n\nfirst_seen\x18\x04 \x01(\x0b\x32\x1a.google.protobuf.TimestampR\nfirst_seen\x12>\n\x0clast_attempt\x18\x05 \x01(\x0b\x32\x1a.google.protobuf.TimestampR\x0clast_attempt*\x8c\x04\n\x11ImportFindingType\x12\x1c\n\x18IMPORT_FINDING_TYPE_NONE\x10\x00\x12\x1f\n\x1bIMPORT_FINDING_TYPE_DELETED\x10\x01\x12$\n IMPORT_FINDING_TYPE_INVALID_JSON\x10\x02\x12\'\n#IMPORT_FINDING_TYPE_INVALID_PACKAGE\x10\x03\x12$\n IMPORT_FINDING_TYPE_INVALID_PURL\x10\x04\x12\'\n#IMPORT_FINDING_TYPE_INVALID_VERSION\x10\x05\x12&\n\"IMPORT_FINDING_TYPE_INVALID_COMMIT\x10\x06\x12%\n!IMPORT_FINDING_TYPE_INVALID_RANGE\x10\x07\x12&\n\"IMPORT_FINDING_TYPE_INVALID_RECORD\x10\x08\x12\'\n#IMPORT_FINDING_TYPE_INVALID_ALIASES\x10\t\x12(\n$IMPORT_FINDING_TYPE_INVALID_UPSTREAM\x10\n\x12\'\n#IMPORT_FINDING_TYPE_INVALID_RELATED\x10\x0b\x12\'\n#IMPORT_FINDING_TYPE_BAD_ALIASED_CVE\x10\x0c\x42\"Z osv.dev/bindings/go/internal/apib\x06proto3')
 
 _globals = globals()
 _builder.BuildMessageAndEnumDescriptors(DESCRIPTOR, _globals)
@@ -33,8 +33,8 @@ _builder.BuildTopDescriptorsAndMessages(DESCRIPTOR, 'importfinding_pb2', _global
 if not _descriptor._USE_C_DESCRIPTORS:
   _globals['DESCRIPTOR']._loaded_options = None
   _globals['DESCRIPTOR']._serialized_options = b'Z osv.dev/bindings/go/internal/api'
-  _globals['_IMPORTFINDINGTYPE']._serialized_start=252
-  _globals['_IMPORTFINDINGTYPE']._serialized_end=776
+  _globals['_IMPORTFINDINGTYPE']._serialized_start=286
+  _globals['_IMPORTFINDINGTYPE']._serialized_end=810
   _globals['_IMPORTFINDING']._serialized_start=62
-  _globals['_IMPORTFINDING']._serialized_end=249
+  _globals['_IMPORTFINDING']._serialized_end=283
 # @@protoc_insertion_point(module_scope)

@@ -40,9 +40,9 @@ enum ImportFindingType {
 // The protobuf representation is *NOT* stable and only used for implementing
 // the JSON based API.
 message ImportFinding {
-  string bug_id = 1;
+  string bug_id = 1 [json_name="bug_id"];
   string source = 2;
   repeated ImportFindingType findings = 3;
-  google.protobuf.Timestamp first_seen = 4;
-  google.protobuf.Timestamp last_attempt = 5;
+  google.protobuf.Timestamp first_seen = 4 [json_name="first_seen"];
+  google.protobuf.Timestamp last_attempt = 5 [json_name="last_attempt"];
 }

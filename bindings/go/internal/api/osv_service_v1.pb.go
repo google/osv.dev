@@ -130,7 +130,7 @@ func (VersionRepositoryInformation_RepoType) EnumDescriptor() ([]byte, []int) {
 type VulnerabilityList struct {
 	state         protoimpl.MessageState     `protogen:"open.v1"`
 	Vulns         []*osvschema.Vulnerability `protobuf:"bytes,1,rep,name=vulns,proto3" json:"vulns,omitempty"`
-	NextPageToken string                     `protobuf:"bytes,2,opt,name=next_page_token,json=nextPageToken,proto3" json:"next_page_token,omitempty"`
+	NextPageToken string                     `protobuf:"bytes,2,opt,name=next_page_token,proto3" json:"next_page_token,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -235,7 +235,7 @@ type Query struct {
 	// The package to query against. When a `commit` hash is given, this is
 	// optional.
 	Package       *osvschema.Package `protobuf:"bytes,4,opt,name=package,proto3" json:"package,omitempty"`
-	PageToken     string             `protobuf:"bytes,5,opt,name=page_token,json=pageToken,proto3" json:"page_token,omitempty"`
+	PageToken     string             `protobuf:"bytes,5,opt,name=page_token,proto3" json:"page_token,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -604,7 +604,7 @@ type VersionQuery struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// The name of the dependency. Can be empty.
 	Name          string      `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
-	FileHashes    []*FileHash `protobuf:"bytes,2,rep,name=file_hashes,json=fileHashes,proto3" json:"file_hashes,omitempty"`
+	FileHashes    []*FileHash `protobuf:"bytes,2,rep,name=file_hashes,proto3" json:"file_hashes,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -658,8 +658,8 @@ func (x *VersionQuery) GetFileHashes() []*FileHash {
 type FileHash struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// The file path inside the repository, relative to the repository root.
-	FilePath      string            `protobuf:"bytes,1,opt,name=file_path,json=filePath,proto3" json:"file_path,omitempty"`
-	HashType      FileHash_HashType `protobuf:"varint,2,opt,name=hash_type,json=hashType,proto3,enum=osv.v1.FileHash_HashType" json:"hash_type,omitempty"`
+	FilePath      string            `protobuf:"bytes,1,opt,name=file_path,proto3" json:"file_path,omitempty"`
+	HashType      FileHash_HashType `protobuf:"varint,2,opt,name=hash_type,proto3,enum=osv.v1.FileHash_HashType" json:"hash_type,omitempty"`
 	Hash          []byte            `protobuf:"bytes,3,opt,name=hash,proto3" json:"hash,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -764,7 +764,7 @@ func (x *VersionMatchList) GetMatches() []*VersionMatch {
 // Result of ImportFindings.
 type ImportFindingList struct {
 	state          protoimpl.MessageState `protogen:"open.v1"`
-	InvalidRecords []*ImportFinding       `protobuf:"bytes,1,rep,name=invalid_records,json=invalidRecords,proto3" json:"invalid_records,omitempty"`
+	InvalidRecords []*ImportFinding       `protobuf:"bytes,1,rep,name=invalid_records,proto3" json:"invalid_records,omitempty"`
 	unknownFields  protoimpl.UnknownFields
 	sizeCache      protoimpl.SizeCache
 }
@@ -814,13 +814,13 @@ type VersionMatch struct {
 	// Information about the upstream repository.
 	RepoInfo *VersionRepositoryInformation `protobuf:"bytes,2,opt,name=repo_info,json=repoInfo,proto3" json:"repo_info,omitempty"`
 	// The OSV identifier.
-	OsvIdentifier *osvschema.Package `protobuf:"bytes,3,opt,name=osv_identifier,json=osvIdentifier,proto3" json:"osv_identifier,omitempty"`
+	OsvIdentifier *osvschema.Package `protobuf:"bytes,3,opt,name=osv_identifier,proto3" json:"osv_identifier,omitempty"`
 	// CPE 2.3.
 	Cpe23 string `protobuf:"bytes,5,opt,name=cpe23,proto3" json:"cpe23,omitempty"`
 	// Definite number of files that have matched.
-	MinimumFileMatches int64 `protobuf:"varint,6,opt,name=minimum_file_matches,json=minimumFileMatches,proto3" json:"minimum_file_matches,omitempty"`
+	MinimumFileMatches int64 `protobuf:"varint,6,opt,name=minimum_file_matches,proto3" json:"minimum_file_matches,omitempty"`
 	// Estimated number of files that are different.
-	EstimatedDiffFiles int64 `protobuf:"varint,7,opt,name=estimated_diff_files,json=estimatedDiffFiles,proto3" json:"estimated_diff_files,omitempty"`
+	EstimatedDiffFiles int64 `protobuf:"varint,7,opt,name=estimated_diff_files,proto3" json:"estimated_diff_files,omitempty"`
 	unknownFields      protoimpl.UnknownFields
 	sizeCache          protoimpl.SizeCache
 }
@@ -981,18 +981,19 @@ var File_osv_service_v1_proto protoreflect.FileDescriptor
 
 const file_osv_service_v1_proto_rawDesc = "" +
 	"\n" +
-	"\x14osv_service_v1.proto\x12\x06osv.v1\x1a\x13vulnerability.proto\x1a\x13importfinding.proto\x1a\x1cgoogle/api/annotations.proto\"e\n" +
+	"\x14osv_service_v1.proto\x12\x06osv.v1\x1a\x13vulnerability.proto\x1a\x13importfinding.proto\x1a\x1cgoogle/api/annotations.proto\"g\n" +
 	"\x11VulnerabilityList\x12(\n" +
-	"\x05vulns\x18\x01 \x03(\v2\x12.osv.VulnerabilityR\x05vulns\x12&\n" +
-	"\x0fnext_page_token\x18\x02 \x01(\tR\rnextPageToken\"M\n" +
+	"\x05vulns\x18\x01 \x03(\v2\x12.osv.VulnerabilityR\x05vulns\x12(\n" +
+	"\x0fnext_page_token\x18\x02 \x01(\tR\x0fnext_page_token\"M\n" +
 	"\x16BatchVulnerabilityList\x123\n" +
-	"\aresults\x18\x01 \x03(\v2\x19.osv.v1.VulnerabilityListR\aresults\"\x8d\x01\n" +
+	"\aresults\x18\x01 \x03(\v2\x19.osv.v1.VulnerabilityListR\aresults\"\x8e\x01\n" +
 	"\x05Query\x12\x18\n" +
 	"\x06commit\x18\x01 \x01(\tH\x00R\x06commit\x12\x1a\n" +
 	"\aversion\x18\x02 \x01(\tH\x00R\aversion\x12&\n" +
-	"\apackage\x18\x04 \x01(\v2\f.osv.PackageR\apackage\x12\x1d\n" +
+	"\apackage\x18\x04 \x01(\v2\f.osv.PackageR\apackage\x12\x1e\n" +
 	"\n" +
-	"page_token\x18\x05 \x01(\tR\tpageTokenB\a\n" +
+	"page_token\x18\x05 \x01(\tR\n" +
+	"page_tokenB\a\n" +
 	"\x05param\"5\n" +
 	"\n" +
 	"BatchQuery\x12'\n" +
@@ -1006,28 +1007,27 @@ const file_osv_service_v1_proto_rawDesc = "" +
 	"\x1aDetermineVersionParameters\x12*\n" +
 	"\x05query\x18\x01 \x01(\v2\x14.osv.v1.VersionQueryR\x05query\"2\n" +
 	"\x18ImportFindingsParameters\x12\x16\n" +
-	"\x06source\x18\x01 \x01(\tR\x06source\"U\n" +
+	"\x06source\x18\x01 \x01(\tR\x06source\"V\n" +
 	"\fVersionQuery\x12\x12\n" +
-	"\x04name\x18\x01 \x01(\tR\x04name\x121\n" +
-	"\vfile_hashes\x18\x02 \x03(\v2\x10.osv.v1.FileHashR\n" +
-	"fileHashes\"\x88\x01\n" +
-	"\bFileHash\x12\x1b\n" +
-	"\tfile_path\x18\x01 \x01(\tR\bfilePath\x126\n" +
-	"\thash_type\x18\x02 \x01(\x0e2\x19.osv.v1.FileHash.HashTypeR\bhashType\x12\x12\n" +
+	"\x04name\x18\x01 \x01(\tR\x04name\x122\n" +
+	"\vfile_hashes\x18\x02 \x03(\v2\x10.osv.v1.FileHashR\vfile_hashes\"\x8a\x01\n" +
+	"\bFileHash\x12\x1c\n" +
+	"\tfile_path\x18\x01 \x01(\tR\tfile_path\x127\n" +
+	"\thash_type\x18\x02 \x01(\x0e2\x19.osv.v1.FileHash.HashTypeR\thash_type\x12\x12\n" +
 	"\x04hash\x18\x03 \x01(\fR\x04hash\"\x13\n" +
 	"\bHashType\x12\a\n" +
 	"\x03MD5\x10\x00\"B\n" +
 	"\x10VersionMatchList\x12.\n" +
-	"\amatches\x18\x01 \x03(\v2\x14.osv.v1.VersionMatchR\amatches\"P\n" +
-	"\x11ImportFindingList\x12;\n" +
-	"\x0finvalid_records\x18\x01 \x03(\v2\x12.osv.ImportFindingR\x0einvalidRecords\"\x96\x02\n" +
+	"\amatches\x18\x01 \x03(\v2\x14.osv.v1.VersionMatchR\amatches\"Q\n" +
+	"\x11ImportFindingList\x12<\n" +
+	"\x0finvalid_records\x18\x01 \x03(\v2\x12.osv.ImportFindingR\x0finvalid_records\"\x9b\x02\n" +
 	"\fVersionMatch\x12\x14\n" +
 	"\x05score\x18\x01 \x01(\x01R\x05score\x12A\n" +
-	"\trepo_info\x18\x02 \x01(\v2$.osv.v1.VersionRepositoryInformationR\brepoInfo\x123\n" +
-	"\x0eosv_identifier\x18\x03 \x01(\v2\f.osv.PackageR\rosvIdentifier\x12\x14\n" +
-	"\x05cpe23\x18\x05 \x01(\tR\x05cpe23\x120\n" +
-	"\x14minimum_file_matches\x18\x06 \x01(\x03R\x12minimumFileMatches\x120\n" +
-	"\x14estimated_diff_files\x18\a \x01(\x03R\x12estimatedDiffFiles\"\xe5\x01\n" +
+	"\trepo_info\x18\x02 \x01(\v2$.osv.v1.VersionRepositoryInformationR\brepoInfo\x124\n" +
+	"\x0eosv_identifier\x18\x03 \x01(\v2\f.osv.PackageR\x0eosv_identifier\x12\x14\n" +
+	"\x05cpe23\x18\x05 \x01(\tR\x05cpe23\x122\n" +
+	"\x14minimum_file_matches\x18\x06 \x01(\x03R\x14minimum_file_matches\x122\n" +
+	"\x14estimated_diff_files\x18\a \x01(\x03R\x14estimated_diff_files\"\xe5\x01\n" +
 	"\x1cVersionRepositoryInformation\x12A\n" +
 	"\x04type\x18\x01 \x01(\x0e2-.osv.v1.VersionRepositoryInformation.RepoTypeR\x04type\x12\x18\n" +
 	"\aaddress\x18\x02 \x01(\tR\aaddress\x12\x10\n" +

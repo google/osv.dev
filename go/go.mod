@@ -7,7 +7,7 @@ require (
 	cloud.google.com/go/pubsub/v2 v2.2.1
 	cloud.google.com/go/storage v1.57.0
 	github.com/charmbracelet/lipgloss v1.1.0
-	github.com/ossf/osv-schema/bindings/go v0.0.0-20251021042217-ed6345fb08ca
+	github.com/ossf/osv-schema/bindings/go v0.0.0-20251023235818-d5eaee79a3a5
 	google.golang.org/api v0.252.0
 	google.golang.org/protobuf v1.36.10
 )

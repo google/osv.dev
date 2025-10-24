@@ -16,7 +16,7 @@ import (
 	"golang.org/x/sync/errgroup"
 	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/proto"
-	"osv.dev/bindings/go/internal/api"
+	"osv.dev/bindings/go/api"
 )
 
 const (

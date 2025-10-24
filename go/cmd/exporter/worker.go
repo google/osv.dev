@@ -194,13 +194,9 @@ func (w *allEcosystemWorker) Finish() {
 	close(w.inCh)
 }
 
-var protoMarshaller = protojson.MarshalOptions{
-	UseProtoNames: true, // TODO(michaelkedar): https://github.com/ossf/osv-schema/pull/442
-}
-
 // marshalToJSON marshals the vulnerability proto to formatted JSON bytes.
 func marshalToJSON(vuln *osvschema.Vulnerability) ([]byte, error) {
-	b, err := protoMarshaller.Marshal(vuln)
+	b, err := protojson.Marshal(vuln)
 	if err != nil {
 		return nil, err
 	}

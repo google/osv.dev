@@ -71,6 +71,8 @@ func PlayInteraction(t *testing.T, interaction *cassette.Interaction) *http.Resp
 		t.Fatal(err)
 	}
 
+	req.Header.Set("User-Agent", "osv.dev/apitester")
+
 	resp, err := http.DefaultClient.Do(req)
 
 	if err != nil {

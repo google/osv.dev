@@ -8,7 +8,25 @@ interactions:
     proto_minor: 1
     content_length: 158
     host: api.osv.dev
-    body: "{\"queries\":[{\"package\":{\"name\":\"ansi-html\",\"ecosystem\":\"npm\"},\"version\":\"0.0.1\"},{\"package\":{\"name\":\"sentry/sdk\",\"ecosystem\":\"Packagist\"},\"version\":\"2.0.4\"}]}"
+    body: |
+      {
+        "queries": [
+          {
+            "package": {
+              "name": "ansi-html",
+              "ecosystem": "npm"
+            },
+            "version": "0.0.1"
+          },
+          {
+            "package": {
+              "name": "sentry/sdk",
+              "ecosystem": "Packagist"
+            },
+            "version": "2.0.4"
+          }
+        ]
+      }
     headers:
       Content-Type:
       - application/json
@@ -25,7 +43,25 @@ interactions:
     proto_minor: 1
     content_length: 158
     host: api.osv.dev
-    body: "{\"queries\":[{\"package\":{\"name\":\"ansi-html\",\"ecosystem\":\"npm\"},\"version\":\"0.0.8\"},{\"package\":{\"name\":\"sentry/sdk\",\"ecosystem\":\"Packagist\"},\"version\":\"2.0.4\"}]}"
+    body: |
+      {
+        "queries": [
+          {
+            "package": {
+              "name": "ansi-html",
+              "ecosystem": "npm"
+            },
+            "version": "0.0.8"
+          },
+          {
+            "package": {
+              "name": "sentry/sdk",
+              "ecosystem": "Packagist"
+            },
+            "version": "2.0.4"
+          }
+        ]
+      }
     headers:
       Content-Type:
       - application/json
@@ -42,7 +78,25 @@ interactions:
     proto_minor: 1
     content_length: 158
     host: api.osv.dev
-    body: "{\"queries\":[{\"package\":{\"name\":\"ansi-html\",\"ecosystem\":\"npm\"},\"version\":\"0.0.1\"},{\"package\":{\"name\":\"sentry/sdk\",\"ecosystem\":\"Packagist\"},\"version\":\"2.0.4\"}]}"
+    body: |
+      {
+        "queries": [
+          {
+            "package": {
+              "name": "ansi-html",
+              "ecosystem": "npm"
+            },
+            "version": "0.0.1"
+          },
+          {
+            "package": {
+              "name": "sentry/sdk",
+              "ecosystem": "Packagist"
+            },
+            "version": "2.0.4"
+          }
+        ]
+      }
     headers:
       Content-Type:
       - application/json
@@ -59,7 +113,25 @@ interactions:
     proto_minor: 1
     content_length: 158
     host: api.osv.dev
-    body: "{\"queries\":[{\"package\":{\"name\":\"ansi-html\",\"ecosystem\":\"npm\"},\"version\":\"0.0.8\"},{\"package\":{\"name\":\"sentry/sdk\",\"ecosystem\":\"Packagist\"},\"version\":\"2.0.4\"}]}"
+    body: |
+      {
+        "queries": [
+          {
+            "package": {
+              "name": "ansi-html",
+              "ecosystem": "npm"
+            },
+            "version": "0.0.8"
+          },
+          {
+            "package": {
+              "name": "sentry/sdk",
+              "ecosystem": "Packagist"
+            },
+            "version": "2.0.4"
+          }
+        ]
+      }
     headers:
       Content-Type:
       - application/json
@@ -76,7 +148,18 @@ interactions:
     proto_minor: 1
     content_length: 82
     host: api.osv.dev
-    body: "{\"queries\":[{\"package\":{\"name\":\"ansi-html\",\"ecosystem\":\"npm\"},\"version\":\"0.0.1\"}]}"
+    body: |
+      {
+        "queries": [
+          {
+            "package": {
+              "name": "ansi-html",
+              "ecosystem": "npm"
+            },
+            "version": "0.0.1"
+          }
+        ]
+      }
     headers:
       Content-Type:
       - application/json
@@ -93,7 +176,18 @@ interactions:
     proto_minor: 1
     content_length: 82
     host: api.osv.dev
-    body: "{\"queries\":[{\"package\":{\"name\":\"ansi-html\",\"ecosystem\":\"npm\"},\"version\":\"0.0.8\"}]}"
+    body: |
+      {
+        "queries": [
+          {
+            "package": {
+              "name": "ansi-html",
+              "ecosystem": "npm"
+            },
+            "version": "0.0.8"
+          }
+        ]
+      }
     headers:
       Content-Type:
       - application/json
@@ -110,7 +204,130 @@ interactions:
     proto_minor: 1
     content_length: 1319
     host: api.osv.dev
-    body: "{\"queries\":[{\"package\":{\"name\":\"alpine-baselayout\",\"ecosystem\":\"Alpine\"},\"version\":\"3.4.0-r0\"},{\"package\":{\"name\":\"alpine-baselayout-data\",\"ecosystem\":\"Alpine\"},\"version\":\"3.4.0-r0\"},{\"package\":{\"name\":\"alpine-keys\",\"ecosystem\":\"Alpine\"},\"version\":\"2.4-r1\"},{\"package\":{\"name\":\"apk-tools\",\"ecosystem\":\"Alpine\"},\"version\":\"2.12.10-r1\"},{\"package\":{\"name\":\"ast\",\"ecosystem\":\"RubyGems\"},\"version\":\"2.4.2\"},{\"package\":{\"name\":\"balanced-match\",\"ecosystem\":\"npm\"},\"version\":\"1.0.2\"},{\"package\":{\"name\":\"busybox-binsh\",\"ecosystem\":\"Alpine\"},\"version\":\"1.36.1-r27\"},{\"package\":{\"name\":\"ca-certificates-bundle\",\"ecosystem\":\"Alpine\"},\"version\":\"20220614-r4\"},{\"package\":{\"name\":\"libc-utils\",\"ecosystem\":\"Alpine\"},\"version\":\"0.7.2-r3\"},{\"package\":{\"name\":\"libcrypto3\",\"ecosystem\":\"Alpine\"},\"version\":\"3.0.8-r0\"},{\"package\":{\"name\":\"libssl3\",\"ecosystem\":\"Alpine\"},\"version\":\"3.0.8-r0\"},{\"package\":{\"name\":\"musl\",\"ecosystem\":\"Alpine\"},\"version\":\"1.2.3-r4\"},{\"package\":{\"name\":\"musl-utils\",\"ecosystem\":\"Alpine\"},\"version\":\"1.2.3-r4\"},{\"package\":{\"name\":\"scanelf\",\"ecosystem\":\"Alpine\"},\"version\":\"1.3.5-r1\"},{\"package\":{\"name\":\"sentry/sdk\",\"ecosystem\":\"Packagist\"},\"version\":\"2.0.4\"},{\"package\":{\"name\":\"ssl_client\",\"ecosystem\":\"Alpine\"},\"version\":\"1.36.1-r27\"},{\"package\":{\"name\":\"zlib\",\"ecosystem\":\"Alpine\"},\"version\":\"1.2.13-r0\"}]}"
+    body: |
+      {
+        "queries": [
+          {
+            "package": {
+              "name": "alpine-baselayout",
+              "ecosystem": "Alpine"
+            },
+            "version": "3.4.0-r0"
+          },
+          {
+            "package": {
+              "name": "alpine-baselayout-data",
+              "ecosystem": "Alpine"
+            },
+            "version": "3.4.0-r0"
+          },
+          {
+            "package": {
+              "name": "alpine-keys",
+              "ecosystem": "Alpine"
+            },
+            "version": "2.4-r1"
+          },
+          {
+            "package": {
+              "name": "apk-tools",
+              "ecosystem": "Alpine"
+            },
+            "version": "2.12.10-r1"
+          },
+          {
+            "package": {
+              "name": "ast",
+              "ecosystem": "RubyGems"
+            },
+            "version": "2.4.2"
+          },
+          {
+            "package": {
+              "name": "balanced-match",
+              "ecosystem": "npm"
+            },
+            "version": "1.0.2"
+          },
+          {
+            "package": {
+              "name": "busybox-binsh",
+              "ecosystem": "Alpine"
+            },
+            "version": "1.36.1-r27"
+          },
+          {
+            "package": {
+              "name": "ca-certificates-bundle",
+              "ecosystem": "Alpine"
+            },
+            "version": "20220614-r4"
+          },
+          {
+            "package": {
+              "name": "libc-utils",
+              "ecosystem": "Alpine"
+            },
+            "version": "0.7.2-r3"
+          },
+          {
+            "package": {
+              "name": "libcrypto3",
+              "ecosystem": "Alpine"
+            },
+            "version": "3.0.8-r0"
+          },
+          {
+            "package": {
+              "name": "libssl3",
+              "ecosystem": "Alpine"
+            },
+            "version": "3.0.8-r0"
+          },
+          {
+            "package": {
+              "name": "musl",
+              "ecosystem": "Alpine"
+            },
+            "version": "1.2.3-r4"
+          },
+          {
+            "package": {
+              "name": "musl-utils",
+              "ecosystem": "Alpine"
+            },
+            "version": "1.2.3-r4"
+          },
+          {
+            "package": {
+              "name": "scanelf",
+              "ecosystem": "Alpine"
+            },
+            "version": "1.3.5-r1"
+          },
+          {
+            "package": {
+              "name": "sentry/sdk",
+              "ecosystem": "Packagist"
+            },
+            "version": "2.0.4"
+          },
+          {
+            "package": {
+              "name": "ssl_client",
+              "ecosystem": "Alpine"
+            },
+            "version": "1.36.1-r27"
+          },
+          {
+            "package": {
+              "name": "zlib",
+              "ecosystem": "Alpine"
+            },
+            "version": "1.2.13-r0"
+          }
+        ]
+      }
     headers:
       Content-Type:
       - application/json
@@ -127,7 +344,32 @@ interactions:
     proto_minor: 1
     content_length: 231
     host: api.osv.dev
-    body: "{\"queries\":[{\"package\":{\"name\":\"ast\",\"ecosystem\":\"RubyGems\"},\"version\":\"2.4.2\"},{\"package\":{\"name\":\"balanced-match\",\"ecosystem\":\"npm\"},\"version\":\"1.0.2\"},{\"package\":{\"name\":\"sentry/sdk\",\"ecosystem\":\"Packagist\"},\"version\":\"2.0.4\"}]}"
+    body: |
+      {
+        "queries": [
+          {
+            "package": {
+              "name": "ast",
+              "ecosystem": "RubyGems"
+            },
+            "version": "2.4.2"
+          },
+          {
+            "package": {
+              "name": "balanced-match",
+              "ecosystem": "npm"
+            },
+            "version": "1.0.2"
+          },
+          {
+            "package": {
+              "name": "sentry/sdk",
+              "ecosystem": "Packagist"
+            },
+            "version": "2.0.4"
+          }
+        ]
+      }
     headers:
       Content-Type:
       - application/json
@@ -144,7 +386,18 @@ interactions:
     proto_minor: 1
     content_length: 82
     host: api.osv.dev
-    body: "{\"queries\":[{\"package\":{\"name\":\"ansi-html\",\"ecosystem\":\"npm\"},\"version\":\"0.0.1\"}]}"
+    body: |
+      {
+        "queries": [
+          {
+            "package": {
+              "name": "ansi-html",
+              "ecosystem": "npm"
+            },
+            "version": "0.0.1"
+          }
+        ]
+      }
     headers:
       Content-Type:
       - application/json
@@ -161,7 +414,18 @@ interactions:
     proto_minor: 1
     content_length: 82
     host: api.osv.dev
-    body: "{\"queries\":[{\"package\":{\"name\":\"ansi-html\",\"ecosystem\":\"npm\"},\"version\":\"0.0.8\"}]}"
+    body: |
+      {
+        "queries": [
+          {
+            "package": {
+              "name": "ansi-html",
+              "ecosystem": "npm"
+            },
+            "version": "0.0.8"
+          }
+        ]
+      }
     headers:
       Content-Type:
       - application/json
@@ -178,7 +442,18 @@ interactions:
     proto_minor: 1
     content_length: 82
     host: api.osv.dev
-    body: "{\"queries\":[{\"package\":{\"name\":\"ansi-html\",\"ecosystem\":\"npm\"},\"version\":\"0.0.1\"}]}"
+    body: |
+      {
+        "queries": [
+          {
+            "package": {
+              "name": "ansi-html",
+              "ecosystem": "npm"
+            },
+            "version": "0.0.1"
+          }
+        ]
+      }
     headers:
       Content-Type:
       - application/json
@@ -195,7 +470,18 @@ interactions:
     proto_minor: 1
     content_length: 82
     host: api.osv.dev
-    body: "{\"queries\":[{\"package\":{\"name\":\"ansi-html\",\"ecosystem\":\"npm\"},\"version\":\"0.0.8\"}]}"
+    body: |
+      {
+        "queries": [
+          {
+            "package": {
+              "name": "ansi-html",
+              "ecosystem": "npm"
+            },
+            "version": "0.0.8"
+          }
+        ]
+      }
     headers:
       Content-Type:
       - application/json

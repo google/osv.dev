@@ -8,7 +8,18 @@ interactions:
     proto_minor: 1
     content_length: 87
     host: api.osv.dev
-    body: "{\"queries\":[{\"package\":{\"name\":\"balanced-match\",\"ecosystem\":\"npm\"},\"version\":\"1.0.2\"}]}"
+    body: |
+      {
+        "queries": [
+          {
+            "package": {
+              "name": "balanced-match",
+              "ecosystem": "npm"
+            },
+            "version": "1.0.2"
+          }
+        ]
+      }
     headers:
       Content-Type:
       - application/json
@@ -25,7 +36,18 @@ interactions:
     proto_minor: 1
     content_length: 87
     host: api.osv.dev
-    body: "{\"queries\":[{\"package\":{\"name\":\"balanced-match\",\"ecosystem\":\"npm\"},\"version\":\"1.0.2\"}]}"
+    body: |
+      {
+        "queries": [
+          {
+            "package": {
+              "name": "balanced-match",
+              "ecosystem": "npm"
+            },
+            "version": "1.0.2"
+          }
+        ]
+      }
     headers:
       Content-Type:
       - application/json
@@ -42,7 +64,18 @@ interactions:
     proto_minor: 1
     content_length: 89
     host: api.osv.dev
-    body: "{\"queries\":[{\"package\":{\"name\":\"sentry/sdk\",\"ecosystem\":\"Packagist\"},\"version\":\"2.0.4\"}]}"
+    body: |
+      {
+        "queries": [
+          {
+            "package": {
+              "name": "sentry/sdk",
+              "ecosystem": "Packagist"
+            },
+            "version": "2.0.4"
+          }
+        ]
+      }
     headers:
       Content-Type:
       - application/json
@@ -59,7 +92,60 @@ interactions:
     proto_minor: 1
     content_length: 502
     host: api.osv.dev
-    body: "{\"queries\":[{\"package\":{\"name\":\"ansi-html\",\"ecosystem\":\"npm\"},\"version\":\"0.0.1\"},{\"package\":{\"name\":\"ansi-html\",\"ecosystem\":\"npm\"},\"version\":\"0.0.1\"},{\"package\":{\"name\":\"has-flag\",\"ecosystem\":\"npm\"},\"version\":\"4.0.0\"},{\"package\":{\"name\":\"league/flysystem\",\"ecosystem\":\"Packagist\"},\"version\":\"1.0.8\"},{\"package\":{\"name\":\"stdlib\",\"ecosystem\":\"Go\"},\"version\":\"1.99.9\"},{\"package\":{\"name\":\"toolchain\",\"ecosystem\":\"Go\"},\"version\":\"1.99.9\"},{\"package\":{\"name\":\"wrappy\",\"ecosystem\":\"npm\"},\"version\":\"1.0.2\"}]}"
+    body: |
+      {
+        "queries": [
+          {
+            "package": {
+              "name": "ansi-html",
+              "ecosystem": "npm"
+            },
+            "version": "0.0.1"
+          },
+          {
+            "package": {
+              "name": "ansi-html",
+              "ecosystem": "npm"
+            },
+            "version": "0.0.1"
+          },
+          {
+            "package": {
+              "name": "has-flag",
+              "ecosystem": "npm"
+            },
+            "version": "4.0.0"
+          },
+          {
+            "package": {
+              "name": "league/flysystem",
+              "ecosystem": "Packagist"
+            },
+            "version": "1.0.8"
+          },
+          {
+            "package": {
+              "name": "stdlib",
+              "ecosystem": "Go"
+            },
+            "version": "1.99.9"
+          },
+          {
+            "package": {
+              "name": "toolchain",
+              "ecosystem": "Go"
+            },
+            "version": "1.99.9"
+          },
+          {
+            "package": {
+              "name": "wrappy",
+              "ecosystem": "npm"
+            },
+            "version": "1.0.2"
+          }
+        ]
+      }
     headers:
       Content-Type:
       - application/json
@@ -76,7 +162,60 @@ interactions:
     proto_minor: 1
     content_length: 502
     host: api.osv.dev
-    body: "{\"queries\":[{\"package\":{\"name\":\"ansi-html\",\"ecosystem\":\"npm\"},\"version\":\"0.0.1\"},{\"package\":{\"name\":\"ansi-html\",\"ecosystem\":\"npm\"},\"version\":\"0.0.1\"},{\"package\":{\"name\":\"has-flag\",\"ecosystem\":\"npm\"},\"version\":\"4.0.0\"},{\"package\":{\"name\":\"league/flysystem\",\"ecosystem\":\"Packagist\"},\"version\":\"1.0.8\"},{\"package\":{\"name\":\"stdlib\",\"ecosystem\":\"Go\"},\"version\":\"1.99.9\"},{\"package\":{\"name\":\"toolchain\",\"ecosystem\":\"Go\"},\"version\":\"1.99.9\"},{\"package\":{\"name\":\"wrappy\",\"ecosystem\":\"npm\"},\"version\":\"1.0.2\"}]}"
+    body: |
+      {
+        "queries": [
+          {
+            "package": {
+              "name": "ansi-html",
+              "ecosystem": "npm"
+            },
+            "version": "0.0.1"
+          },
+          {
+            "package": {
+              "name": "ansi-html",
+              "ecosystem": "npm"
+            },
+            "version": "0.0.1"
+          },
+          {
+            "package": {
+              "name": "has-flag",
+              "ecosystem": "npm"
+            },
+            "version": "4.0.0"
+          },
+          {
+            "package": {
+              "name": "league/flysystem",
+              "ecosystem": "Packagist"
+            },
+            "version": "1.0.8"
+          },
+          {
+            "package": {
+              "name": "stdlib",
+              "ecosystem": "Go"
+            },
+            "version": "1.99.9"
+          },
+          {
+            "package": {
+              "name": "toolchain",
+              "ecosystem": "Go"
+            },
+            "version": "1.99.9"
+          },
+          {
+            "package": {
+              "name": "wrappy",
+              "ecosystem": "npm"
+            },
+            "version": "1.0.2"
+          }
+        ]
+      }
     headers:
       Content-Type:
       - application/json
@@ -93,7 +232,10 @@ interactions:
     proto_minor: 1
     content_length: 14
     host: api.osv.dev
-    body: "{\"queries\":[]}"
+    body: |
+      {
+        "queries": []
+      }
     headers:
       Content-Type:
       - application/json
@@ -110,7 +252,53 @@ interactions:
     proto_minor: 1
     content_length: 433
     host: api.osv.dev
-    body: "{\"queries\":[{\"package\":{\"name\":\"ansi-html\",\"ecosystem\":\"npm\"},\"version\":\"0.0.1\"},{\"package\":{\"name\":\"has-flag\",\"ecosystem\":\"npm\"},\"version\":\"4.0.0\"},{\"package\":{\"name\":\"league/flysystem\",\"ecosystem\":\"Packagist\"},\"version\":\"1.0.8\"},{\"package\":{\"name\":\"stdlib\",\"ecosystem\":\"Go\"},\"version\":\"1.99.9\"},{\"package\":{\"name\":\"toolchain\",\"ecosystem\":\"Go\"},\"version\":\"1.99.9\"},{\"package\":{\"name\":\"wrappy\",\"ecosystem\":\"npm\"},\"version\":\"1.0.2\"}]}"
+    body: |
+      {
+        "queries": [
+          {
+            "package": {
+              "name": "ansi-html",
+              "ecosystem": "npm"
+            },
+            "version": "0.0.1"
+          },
+          {
+            "package": {
+              "name": "has-flag",
+              "ecosystem": "npm"
+            },
+            "version": "4.0.0"
+          },
+          {
+            "package": {
+              "name": "league/flysystem",
+              "ecosystem": "Packagist"
+            },
+            "version": "1.0.8"
+          },
+          {
+            "package": {
+              "name": "stdlib",
+              "ecosystem": "Go"
+            },
+            "version": "1.99.9"
+          },
+          {
+            "package": {
+              "name": "toolchain",
+              "ecosystem": "Go"
+            },
+            "version": "1.99.9"
+          },
+          {
+            "package": {
+              "name": "wrappy",
+              "ecosystem": "npm"
+            },
+            "version": "1.0.2"
+          }
+        ]
+      }
     headers:
       Content-Type:
       - application/json

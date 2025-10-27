@@ -8,7 +8,32 @@ interactions:
     proto_minor: 1
     content_length: 259
     host: api.osv.dev
-    body: "{\"queries\":[{\"package\":{\"name\":\"github.com/gogo/protobuf\",\"ecosystem\":\"Go\"},\"version\":\"1.3.1\"},{\"package\":{\"name\":\"github.com/ipfs/go-bitfield\",\"ecosystem\":\"Go\"},\"version\":\"1.0.0\"},{\"package\":{\"name\":\"golang.org/x/image\",\"ecosystem\":\"Go\"},\"version\":\"0.4.0\"}]}"
+    body: |
+      {
+        "queries": [
+          {
+            "package": {
+              "name": "github.com/gogo/protobuf",
+              "ecosystem": "Go"
+            },
+            "version": "1.3.1"
+          },
+          {
+            "package": {
+              "name": "github.com/ipfs/go-bitfield",
+              "ecosystem": "Go"
+            },
+            "version": "1.0.0"
+          },
+          {
+            "package": {
+              "name": "golang.org/x/image",
+              "ecosystem": "Go"
+            },
+            "version": "0.4.0"
+          }
+        ]
+      }
     headers:
       Content-Type:
       - application/json
@@ -25,7 +50,18 @@ interactions:
     proto_minor: 1
     content_length: 96
     host: api.osv.dev
-    body: "{\"queries\":[{\"package\":{\"name\":\"github.com/gogo/protobuf\",\"ecosystem\":\"Go\"},\"version\":\"1.3.1\"}]}"
+    body: |
+      {
+        "queries": [
+          {
+            "package": {
+              "name": "github.com/gogo/protobuf",
+              "ecosystem": "Go"
+            },
+            "version": "1.3.1"
+          }
+        ]
+      }
     headers:
       Content-Type:
       - application/json
@@ -42,7 +78,18 @@ interactions:
     proto_minor: 1
     content_length: 96
     host: api.osv.dev
-    body: "{\"queries\":[{\"package\":{\"name\":\"github.com/gogo/protobuf\",\"ecosystem\":\"Go\"},\"version\":\"1.3.1\"}]}"
+    body: |
+      {
+        "queries": [
+          {
+            "package": {
+              "name": "github.com/gogo/protobuf",
+              "ecosystem": "Go"
+            },
+            "version": "1.3.1"
+          }
+        ]
+      }
     headers:
       Content-Type:
       - application/json

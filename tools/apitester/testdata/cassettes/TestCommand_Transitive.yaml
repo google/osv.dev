@@ -8,7 +8,18 @@ interactions:
     proto_minor: 1
     content_length: 110
     host: api.osv.dev
-    body: "{\"queries\":[{\"package\":{\"name\":\"org.apache.logging.log4j:log4j-web\",\"ecosystem\":\"Maven\"},\"version\":\"2.14.1\"}]}"
+    body: |
+      {
+        "queries": [
+          {
+            "package": {
+              "name": "org.apache.logging.log4j:log4j-web",
+              "ecosystem": "Maven"
+            },
+            "version": "2.14.1"
+          }
+        ]
+      }
     headers:
       Content-Type:
       - application/json
@@ -25,7 +36,32 @@ interactions:
     proto_minor: 1
     content_length: 218
     host: api.osv.dev
-    body: "{\"queries\":[{\"package\":{\"name\":\"django\",\"ecosystem\":\"PyPI\"},\"version\":\"1.11.29\"},{\"package\":{\"name\":\"flask\",\"ecosystem\":\"PyPI\"},\"version\":\"1.0.0\"},{\"package\":{\"name\":\"requests\",\"ecosystem\":\"PyPI\"},\"version\":\"2.20.0\"}]}"
+    body: |
+      {
+        "queries": [
+          {
+            "package": {
+              "name": "django",
+              "ecosystem": "PyPI"
+            },
+            "version": "1.11.29"
+          },
+          {
+            "package": {
+              "name": "flask",
+              "ecosystem": "PyPI"
+            },
+            "version": "1.0.0"
+          },
+          {
+            "package": {
+              "name": "requests",
+              "ecosystem": "PyPI"
+            },
+            "version": "2.20.0"
+          }
+        ]
+      }
     headers:
       Content-Type:
       - application/json
@@ -42,7 +78,32 @@ interactions:
     proto_minor: 1
     content_length: 218
     host: api.osv.dev
-    body: "{\"queries\":[{\"package\":{\"name\":\"flask\",\"ecosystem\":\"PyPI\"},\"version\":\"1.0.0\"},{\"package\":{\"name\":\"flask-cors\",\"ecosystem\":\"PyPI\"},\"version\":\"1.0.0\"},{\"package\":{\"name\":\"pandas\",\"ecosystem\":\"PyPI\"},\"version\":\"0.23.4\"}]}"
+    body: |
+      {
+        "queries": [
+          {
+            "package": {
+              "name": "flask",
+              "ecosystem": "PyPI"
+            },
+            "version": "1.0.0"
+          },
+          {
+            "package": {
+              "name": "flask-cors",
+              "ecosystem": "PyPI"
+            },
+            "version": "1.0.0"
+          },
+          {
+            "package": {
+              "name": "pandas",
+              "ecosystem": "PyPI"
+            },
+            "version": "0.23.4"
+          }
+        ]
+      }
     headers:
       Content-Type:
       - application/json
@@ -59,7 +120,424 @@ interactions:
     proto_minor: 1
     content_length: 6169
     host: api.osv.dev
-    body: "{\"queries\":[{\"package\":{\"name\":\"com.android.support:animated-vector-drawable\",\"ecosystem\":\"Maven\"},\"version\":\"24.0.0\"},{\"package\":{\"name\":\"com.android.support:appcompat-v7\",\"ecosystem\":\"Maven\"},\"version\":\"24.0.0\"},{\"package\":{\"name\":\"com.android.support:mediarouter-v7\",\"ecosystem\":\"Maven\"},\"version\":\"24.0.0\"},{\"package\":{\"name\":\"com.android.support:palette-v7\",\"ecosystem\":\"Maven\"},\"version\":\"24.0.0\"},{\"package\":{\"name\":\"com.android.support:support-annotations\",\"ecosystem\":\"Maven\"},\"version\":\"24.0.0\"},{\"package\":{\"name\":\"com.android.support:support-v4\",\"ecosystem\":\"Maven\"},\"version\":\"24.0.0\"},{\"package\":{\"name\":\"com.android.support:support-vector-drawable\",\"ecosystem\":\"Maven\"},\"version\":\"24.0.0\"},{\"package\":{\"name\":\"com.google.android.gms:play-services\",\"ecosystem\":\"Maven\"},\"version\":\"10.0.0\"},{\"package\":{\"name\":\"com.google.android.gms:play-services-ads\",\"ecosystem\":\"Maven\"},\"version\":\"10.0.0\"},{\"package\":{\"name\":\"com.google.android.gms:play-services-ads-lite\",\"ecosystem\":\"Maven\"},\"version\":\"10.0.0\"},{\"package\":{\"name\":\"com.google.android.gms:play-services-analytics\",\"ecosystem\":\"Maven\"},\"version\":\"10.0.0\"},{\"package\":{\"name\":\"com.google.android.gms:play-services-analytics-impl\",\"ecosystem\":\"Maven\"},\"version\":\"10.0.0\"},{\"package\":{\"name\":\"com.google.android.gms:play-services-appinvite\",\"ecosystem\":\"Maven\"},\"version\":\"10.0.0\"},{\"package\":{\"name\":\"com.google.android.gms:play-services-auth\",\"ecosystem\":\"Maven\"},\"version\":\"10.0.0\"},{\"package\":{\"name\":\"com.google.android.gms:play-services-auth-base\",\"ecosystem\":\"Maven\"},\"version\":\"10.0.0\"},{\"package\":{\"name\":\"com.google.android.gms:play-services-awareness\",\"ecosystem\":\"Maven\"},\"version\":\"10.0.0\"},{\"package\":{\"name\":\"com.google.android.gms:play-services-base\",\"ecosystem\":\"Maven\"},\"version\":\"10.0.0\"},{\"package\":{\"name\":\"com.google.android.gms:play-services-basement\",\"ecosystem\":\"Maven\"},\"version\":\"10.0.0\"},{\"package\":{\"name\":\"com.google.android.gms:play-services-cast\",\"ecosystem\":\"Maven\"},\"version\":\"10.0.0\"},{\"package\":{\"name\":\"com.google.android.gms:play-services-cast-framework\",\"ecosystem\":\"Maven\"},\"version\":\"10.0.0\"},{\"package\":{\"name\":\"com.google.android.gms:play-services-clearcut\",\"ecosystem\":\"Maven\"},\"version\":\"10.0.0\"},{\"package\":{\"name\":\"com.google.android.gms:play-services-drive\",\"ecosystem\":\"Maven\"},\"version\":\"10.0.0\"},{\"package\":{\"name\":\"com.google.android.gms:play-services-fitness\",\"ecosystem\":\"Maven\"},\"version\":\"10.0.0\"},{\"package\":{\"name\":\"com.google.android.gms:play-services-games\",\"ecosystem\":\"Maven\"},\"version\":\"10.0.0\"},{\"package\":{\"name\":\"com.google.android.gms:play-services-gass\",\"ecosystem\":\"Maven\"},\"version\":\"10.0.0\"},{\"package\":{\"name\":\"com.google.android.gms:play-services-gcm\",\"ecosystem\":\"Maven\"},\"version\":\"10.0.0\"},{\"package\":{\"name\":\"com.google.android.gms:play-services-identity\",\"ecosystem\":\"Maven\"},\"version\":\"10.0.0\"},{\"package\":{\"name\":\"com.google.android.gms:play-services-iid\",\"ecosystem\":\"Maven\"},\"version\":\"10.0.0\"},{\"package\":{\"name\":\"com.google.android.gms:play-services-instantapps\",\"ecosystem\":\"Maven\"},\"version\":\"10.0.0\"},{\"package\":{\"name\":\"com.google.android.gms:play-services-location\",\"ecosystem\":\"Maven\"},\"version\":\"10.0.0\"},{\"package\":{\"name\":\"com.google.android.gms:play-services-maps\",\"ecosystem\":\"Maven\"},\"version\":\"10.0.0\"},{\"package\":{\"name\":\"com.google.android.gms:play-services-nearby\",\"ecosystem\":\"Maven\"},\"version\":\"10.0.0\"},{\"package\":{\"name\":\"com.google.android.gms:play-services-panorama\",\"ecosystem\":\"Maven\"},\"version\":\"10.0.0\"},{\"package\":{\"name\":\"com.google.android.gms:play-services-places\",\"ecosystem\":\"Maven\"},\"version\":\"10.0.0\"},{\"package\":{\"name\":\"com.google.android.gms:play-services-plus\",\"ecosystem\":\"Maven\"},\"version\":\"10.0.0\"},{\"package\":{\"name\":\"com.google.android.gms:play-services-safetynet\",\"ecosystem\":\"Maven\"},\"version\":\"10.0.0\"},{\"package\":{\"name\":\"com.google.android.gms:play-services-tagmanager\",\"ecosystem\":\"Maven\"},\"version\":\"10.0.0\"},{\"package\":{\"name\":\"com.google.android.gms:play-services-tagmanager-api\",\"ecosystem\":\"Maven\"},\"version\":\"10.0.0\"},{\"package\":{\"name\":\"com.google.android.gms:play-services-tagmanager-v4-impl\",\"ecosystem\":\"Maven\"},\"version\":\"10.0.0\"},{\"package\":{\"name\":\"com.google.android.gms:play-services-tasks\",\"ecosystem\":\"Maven\"},\"version\":\"10.0.0\"},{\"package\":{\"name\":\"com.google.android.gms:play-services-vision\",\"ecosystem\":\"Maven\"},\"version\":\"10.0.0\"},{\"package\":{\"name\":\"com.google.android.gms:play-services-wallet\",\"ecosystem\":\"Maven\"},\"version\":\"10.0.0\"},{\"package\":{\"name\":\"com.google.android.gms:play-services-wearable\",\"ecosystem\":\"Maven\"},\"version\":\"10.0.0\"},{\"package\":{\"name\":\"com.google.firebase:firebase-analytics\",\"ecosystem\":\"Maven\"},\"version\":\"10.0.0\"},{\"package\":{\"name\":\"com.google.firebase:firebase-analytics-impl\",\"ecosystem\":\"Maven\"},\"version\":\"10.0.0\"},{\"package\":{\"name\":\"com.google.firebase:firebase-appindexing\",\"ecosystem\":\"Maven\"},\"version\":\"10.0.0\"},{\"package\":{\"name\":\"com.google.firebase:firebase-auth\",\"ecosystem\":\"Maven\"},\"version\":\"10.0.0\"},{\"package\":{\"name\":\"com.google.firebase:firebase-common\",\"ecosystem\":\"Maven\"},\"version\":\"10.0.0\"},{\"package\":{\"name\":\"com.google.firebase:firebase-config\",\"ecosystem\":\"Maven\"},\"version\":\"10.0.0\"},{\"package\":{\"name\":\"com.google.firebase:firebase-crash\",\"ecosystem\":\"Maven\"},\"version\":\"10.0.0\"},{\"package\":{\"name\":\"com.google.firebase:firebase-database\",\"ecosystem\":\"Maven\"},\"version\":\"10.0.0\"},{\"package\":{\"name\":\"com.google.firebase:firebase-database-connection\",\"ecosystem\":\"Maven\"},\"version\":\"10.0.0\"},{\"package\":{\"name\":\"com.google.firebase:firebase-iid\",\"ecosystem\":\"Maven\"},\"version\":\"10.0.0\"},{\"package\":{\"name\":\"com.google.firebase:firebase-messaging\",\"ecosystem\":\"Maven\"},\"version\":\"10.0.0\"},{\"package\":{\"name\":\"com.google.firebase:firebase-storage\",\"ecosystem\":\"Maven\"},\"version\":\"10.0.0\"},{\"package\":{\"name\":\"com.google.firebase:firebase-storage-common\",\"ecosystem\":\"Maven\"},\"version\":\"10.0.0\"},{\"package\":{\"name\":\"org.apache.logging.log4j:log4j-api\",\"ecosystem\":\"Maven\"},\"version\":\"2.14.1\"},{\"package\":{\"name\":\"org.apache.logging.log4j:log4j-core\",\"ecosystem\":\"Maven\"},\"version\":\"2.14.1\"},{\"package\":{\"name\":\"org.apache.logging.log4j:log4j-web\",\"ecosystem\":\"Maven\"},\"version\":\"2.14.1\"}]}"
+    body: |
+      {
+        "queries": [
+          {
+            "package": {
+              "name": "com.android.support:animated-vector-drawable",
+              "ecosystem": "Maven"
+            },
+            "version": "24.0.0"
+          },
+          {
+            "package": {
+              "name": "com.android.support:appcompat-v7",
+              "ecosystem": "Maven"
+            },
+            "version": "24.0.0"
+          },
+          {
+            "package": {
+              "name": "com.android.support:mediarouter-v7",
+              "ecosystem": "Maven"
+            },
+            "version": "24.0.0"
+          },
+          {
+            "package": {
+              "name": "com.android.support:palette-v7",
+              "ecosystem": "Maven"
+            },
+            "version": "24.0.0"
+          },
+          {
+            "package": {
+              "name": "com.android.support:support-annotations",
+              "ecosystem": "Maven"
+            },
+            "version": "24.0.0"
+          },
+          {
+            "package": {
+              "name": "com.android.support:support-v4",
+              "ecosystem": "Maven"
+            },
+            "version": "24.0.0"
+          },
+          {
+            "package": {
+              "name": "com.android.support:support-vector-drawable",
+              "ecosystem": "Maven"
+            },
+            "version": "24.0.0"
+          },
+          {
+            "package": {
+              "name": "com.google.android.gms:play-services",
+              "ecosystem": "Maven"
+            },
+            "version": "10.0.0"
+          },
+          {
+            "package": {
+              "name": "com.google.android.gms:play-services-ads",
+              "ecosystem": "Maven"
+            },
+            "version": "10.0.0"
+          },
+          {
+            "package": {
+              "name": "com.google.android.gms:play-services-ads-lite",
+              "ecosystem": "Maven"
+            },
+            "version": "10.0.0"
+          },
+          {
+            "package": {
+              "name": "com.google.android.gms:play-services-analytics",
+              "ecosystem": "Maven"
+            },
+            "version": "10.0.0"
+          },
+          {
+            "package": {
+              "name": "com.google.android.gms:play-services-analytics-impl",
+              "ecosystem": "Maven"
+            },
+            "version": "10.0.0"
+          },
+          {
+            "package": {
+              "name": "com.google.android.gms:play-services-appinvite",
+              "ecosystem": "Maven"
+            },
+            "version": "10.0.0"
+          },
+          {
+            "package": {
+              "name": "com.google.android.gms:play-services-auth",
+              "ecosystem": "Maven"
+            },
+            "version": "10.0.0"
+          },
+          {
+            "package": {
+              "name": "com.google.android.gms:play-services-auth-base",
+              "ecosystem": "Maven"
+            },
+            "version": "10.0.0"
+          },
+          {
+            "package": {
+              "name": "com.google.android.gms:play-services-awareness",
+              "ecosystem": "Maven"
+            },
+            "version": "10.0.0"
+          },
+          {
+            "package": {
+              "name": "com.google.android.gms:play-services-base",
+              "ecosystem": "Maven"
+            },
+            "version": "10.0.0"
+          },
+          {
+            "package": {
+              "name": "com.google.android.gms:play-services-basement",
+              "ecosystem": "Maven"
+            },
+            "version": "10.0.0"
+          },
+          {
+            "package": {
+              "name": "com.google.android.gms:play-services-cast",
+              "ecosystem": "Maven"
+            },
+            "version": "10.0.0"
+          },
+          {
+            "package": {
+              "name": "com.google.android.gms:play-services-cast-framework",
+              "ecosystem": "Maven"
+            },
+            "version": "10.0.0"
+          },
+          {
+            "package": {
+              "name": "com.google.android.gms:play-services-clearcut",
+              "ecosystem": "Maven"
+            },
+            "version": "10.0.0"
+          },
+          {
+            "package": {
+              "name": "com.google.android.gms:play-services-drive",
+              "ecosystem": "Maven"
+            },
+            "version": "10.0.0"
+          },
+          {
+            "package": {
+              "name": "com.google.android.gms:play-services-fitness",
+              "ecosystem": "Maven"
+            },
+            "version": "10.0.0"
+          },
+          {
+            "package": {
+              "name": "com.google.android.gms:play-services-games",
+              "ecosystem": "Maven"
+            },
+            "version": "10.0.0"
+          },
+          {
+            "package": {
+              "name": "com.google.android.gms:play-services-gass",
+              "ecosystem": "Maven"
+            },
+            "version": "10.0.0"
+          },
+          {
+            "package": {
+              "name": "com.google.android.gms:play-services-gcm",
+              "ecosystem": "Maven"
+            },
+            "version": "10.0.0"
+          },
+          {
+            "package": {
+              "name": "com.google.android.gms:play-services-identity",
+              "ecosystem": "Maven"
+            },
+            "version": "10.0.0"
+          },
+          {
+            "package": {
+              "name": "com.google.android.gms:play-services-iid",
+              "ecosystem": "Maven"
+            },
+            "version": "10.0.0"
+          },
+          {
+            "package": {
+              "name": "com.google.android.gms:play-services-instantapps",
+              "ecosystem": "Maven"
+            },
+            "version": "10.0.0"
+          },
+          {
+            "package": {
+              "name": "com.google.android.gms:play-services-location",
+              "ecosystem": "Maven"
+            },
+            "version": "10.0.0"
+          },
+          {
+            "package": {
+              "name": "com.google.android.gms:play-services-maps",
+              "ecosystem": "Maven"
+            },
+            "version": "10.0.0"
+          },
+          {
+            "package": {
+              "name": "com.google.android.gms:play-services-nearby",
+              "ecosystem": "Maven"
+            },
+            "version": "10.0.0"
+          },
+          {
+            "package": {
+              "name": "com.google.android.gms:play-services-panorama",
+              "ecosystem": "Maven"
+            },
+            "version": "10.0.0"
+          },
+          {
+            "package": {
+              "name": "com.google.android.gms:play-services-places",
+              "ecosystem": "Maven"
+            },
+            "version": "10.0.0"
+          },
+          {
+            "package": {
+              "name": "com.google.android.gms:play-services-plus",
+              "ecosystem": "Maven"
+            },
+            "version": "10.0.0"
+          },
+          {
+            "package": {
+              "name": "com.google.android.gms:play-services-safetynet",
+              "ecosystem": "Maven"
+            },
+            "version": "10.0.0"
+          },
+          {
+            "package": {
+              "name": "com.google.android.gms:play-services-tagmanager",
+              "ecosystem": "Maven"
+            },
+            "version": "10.0.0"
+          },
+          {
+            "package": {
+              "name": "com.google.android.gms:play-services-tagmanager-api",
+              "ecosystem": "Maven"
+            },
+            "version": "10.0.0"
+          },
+          {
+            "package": {
+              "name": "com.google.android.gms:play-services-tagmanager-v4-impl",
+              "ecosystem": "Maven"
+            },
+            "version": "10.0.0"
+          },
+          {
+            "package": {
+              "name": "com.google.android.gms:play-services-tasks",
+              "ecosystem": "Maven"
+            },
+            "version": "10.0.0"
+          },
+          {
+            "package": {
+              "name": "com.google.android.gms:play-services-vision",
+              "ecosystem": "Maven"
+            },
+            "version": "10.0.0"
+          },
+          {
+            "package": {
+              "name": "com.google.android.gms:play-services-wallet",
+              "ecosystem": "Maven"
+            },
+            "version": "10.0.0"
+          },
+          {
+            "package": {
+              "name": "com.google.android.gms:play-services-wearable",
+              "ecosystem": "Maven"
+            },
+            "version": "10.0.0"
+          },
+          {
+            "package": {
+              "name": "com.google.firebase:firebase-analytics",
+              "ecosystem": "Maven"
+            },
+            "version": "10.0.0"
+          },
+          {
+            "package": {
+              "name": "com.google.firebase:firebase-analytics-impl",
+              "ecosystem": "Maven"
+            },
+            "version": "10.0.0"
+          },
+          {
+            "package": {
+              "name": "com.google.firebase:firebase-appindexing",
+              "ecosystem": "Maven"
+            },
+            "version": "10.0.0"
+          },
+          {
+            "package": {
+              "name": "com.google.firebase:firebase-auth",
+              "ecosystem": "Maven"
+            },
+            "version": "10.0.0"
+          },
+          {
+            "package": {
+              "name": "com.google.firebase:firebase-common",
+              "ecosystem": "Maven"
+            },
+            "version": "10.0.0"
+          },
+          {
+            "package": {
+              "name": "com.google.firebase:firebase-config",
+              "ecosystem": "Maven"
+            },
+            "version": "10.0.0"
+          },
+          {
+            "package": {
+              "name": "com.google.firebase:firebase-crash",
+              "ecosystem": "Maven"
+            },
+            "version": "10.0.0"
+          },
+          {
+            "package": {
+              "name": "com.google.firebase:firebase-database",
+              "ecosystem": "Maven"
+            },
+            "version": "10.0.0"
+          },
+          {
+            "package": {
+              "name": "com.google.firebase:firebase-database-connection",
+              "ecosystem": "Maven"
+            },
+            "version": "10.0.0"
+          },
+          {
+            "package": {
+              "name": "com.google.firebase:firebase-iid",
+              "ecosystem": "Maven"
+            },
+            "version": "10.0.0"
+          },
+          {
+            "package": {
+              "name": "com.google.firebase:firebase-messaging",
+              "ecosystem": "Maven"
+            },
+            "version": "10.0.0"
+          },
+          {
+            "package": {
+              "name": "com.google.firebase:firebase-storage",
+              "ecosystem": "Maven"
+            },
+            "version": "10.0.0"
+          },
+          {
+            "package": {
+              "name": "com.google.firebase:firebase-storage-common",
+              "ecosystem": "Maven"
+            },
+            "version": "10.0.0"
+          },
+          {
+            "package": {
+              "name": "org.apache.logging.log4j:log4j-api",
+              "ecosystem": "Maven"
+            },
+            "version": "2.14.1"
+          },
+          {
+            "package": {
+              "name": "org.apache.logging.log4j:log4j-core",
+              "ecosystem": "Maven"
+            },
+            "version": "2.14.1"
+          },
+          {
+            "package": {
+              "name": "org.apache.logging.log4j:log4j-web",
+              "ecosystem": "Maven"
+            },
+            "version": "2.14.1"
+          }
+        ]
+      }
     headers:
       Content-Type:
       - application/json
@@ -76,7 +554,39 @@ interactions:
     proto_minor: 1
     content_length: 284
     host: api.osv.dev
-    body: "{\"queries\":[{\"package\":{\"name\":\"django\",\"ecosystem\":\"PyPI\"},\"version\":\"1.11.29\"},{\"package\":{\"name\":\"flask\",\"ecosystem\":\"PyPI\"},\"version\":\"1.0.0\"},{\"package\":{\"name\":\"numpy\",\"ecosystem\":\"PyPI\"},\"version\":\"2.3.1\"},{\"package\":{\"name\":\"requests\",\"ecosystem\":\"PyPI\"},\"version\":\"2.20.0\"}]}"
+    body: |
+      {
+        "queries": [
+          {
+            "package": {
+              "name": "django",
+              "ecosystem": "PyPI"
+            },
+            "version": "1.11.29"
+          },
+          {
+            "package": {
+              "name": "flask",
+              "ecosystem": "PyPI"
+            },
+            "version": "1.0.0"
+          },
+          {
+            "package": {
+              "name": "numpy",
+              "ecosystem": "PyPI"
+            },
+            "version": "2.3.1"
+          },
+          {
+            "package": {
+              "name": "requests",
+              "ecosystem": "PyPI"
+            },
+            "version": "2.20.0"
+          }
+        ]
+      }
     headers:
       Content-Type:
       - application/json
@@ -93,7 +603,424 @@ interactions:
     proto_minor: 1
     content_length: 6169
     host: api.osv.dev
-    body: "{\"queries\":[{\"package\":{\"name\":\"com.android.support:animated-vector-drawable\",\"ecosystem\":\"Maven\"},\"version\":\"24.0.0\"},{\"package\":{\"name\":\"com.android.support:appcompat-v7\",\"ecosystem\":\"Maven\"},\"version\":\"24.0.0\"},{\"package\":{\"name\":\"com.android.support:mediarouter-v7\",\"ecosystem\":\"Maven\"},\"version\":\"24.0.0\"},{\"package\":{\"name\":\"com.android.support:palette-v7\",\"ecosystem\":\"Maven\"},\"version\":\"24.0.0\"},{\"package\":{\"name\":\"com.android.support:support-annotations\",\"ecosystem\":\"Maven\"},\"version\":\"24.0.0\"},{\"package\":{\"name\":\"com.android.support:support-v4\",\"ecosystem\":\"Maven\"},\"version\":\"24.0.0\"},{\"package\":{\"name\":\"com.android.support:support-vector-drawable\",\"ecosystem\":\"Maven\"},\"version\":\"24.0.0\"},{\"package\":{\"name\":\"com.google.android.gms:play-services\",\"ecosystem\":\"Maven\"},\"version\":\"10.0.0\"},{\"package\":{\"name\":\"com.google.android.gms:play-services-ads\",\"ecosystem\":\"Maven\"},\"version\":\"10.0.0\"},{\"package\":{\"name\":\"com.google.android.gms:play-services-ads-lite\",\"ecosystem\":\"Maven\"},\"version\":\"10.0.0\"},{\"package\":{\"name\":\"com.google.android.gms:play-services-analytics\",\"ecosystem\":\"Maven\"},\"version\":\"10.0.0\"},{\"package\":{\"name\":\"com.google.android.gms:play-services-analytics-impl\",\"ecosystem\":\"Maven\"},\"version\":\"10.0.0\"},{\"package\":{\"name\":\"com.google.android.gms:play-services-appinvite\",\"ecosystem\":\"Maven\"},\"version\":\"10.0.0\"},{\"package\":{\"name\":\"com.google.android.gms:play-services-auth\",\"ecosystem\":\"Maven\"},\"version\":\"10.0.0\"},{\"package\":{\"name\":\"com.google.android.gms:play-services-auth-base\",\"ecosystem\":\"Maven\"},\"version\":\"10.0.0\"},{\"package\":{\"name\":\"com.google.android.gms:play-services-awareness\",\"ecosystem\":\"Maven\"},\"version\":\"10.0.0\"},{\"package\":{\"name\":\"com.google.android.gms:play-services-base\",\"ecosystem\":\"Maven\"},\"version\":\"10.0.0\"},{\"package\":{\"name\":\"com.google.android.gms:play-services-basement\",\"ecosystem\":\"Maven\"},\"version\":\"10.0.0\"},{\"package\":{\"name\":\"com.google.android.gms:play-services-cast\",\"ecosystem\":\"Maven\"},\"version\":\"10.0.0\"},{\"package\":{\"name\":\"com.google.android.gms:play-services-cast-framework\",\"ecosystem\":\"Maven\"},\"version\":\"10.0.0\"},{\"package\":{\"name\":\"com.google.android.gms:play-services-clearcut\",\"ecosystem\":\"Maven\"},\"version\":\"10.0.0\"},{\"package\":{\"name\":\"com.google.android.gms:play-services-drive\",\"ecosystem\":\"Maven\"},\"version\":\"10.0.0\"},{\"package\":{\"name\":\"com.google.android.gms:play-services-fitness\",\"ecosystem\":\"Maven\"},\"version\":\"10.0.0\"},{\"package\":{\"name\":\"com.google.android.gms:play-services-games\",\"ecosystem\":\"Maven\"},\"version\":\"10.0.0\"},{\"package\":{\"name\":\"com.google.android.gms:play-services-gass\",\"ecosystem\":\"Maven\"},\"version\":\"10.0.0\"},{\"package\":{\"name\":\"com.google.android.gms:play-services-gcm\",\"ecosystem\":\"Maven\"},\"version\":\"10.0.0\"},{\"package\":{\"name\":\"com.google.android.gms:play-services-identity\",\"ecosystem\":\"Maven\"},\"version\":\"10.0.0\"},{\"package\":{\"name\":\"com.google.android.gms:play-services-iid\",\"ecosystem\":\"Maven\"},\"version\":\"10.0.0\"},{\"package\":{\"name\":\"com.google.android.gms:play-services-instantapps\",\"ecosystem\":\"Maven\"},\"version\":\"10.0.0\"},{\"package\":{\"name\":\"com.google.android.gms:play-services-location\",\"ecosystem\":\"Maven\"},\"version\":\"10.0.0\"},{\"package\":{\"name\":\"com.google.android.gms:play-services-maps\",\"ecosystem\":\"Maven\"},\"version\":\"10.0.0\"},{\"package\":{\"name\":\"com.google.android.gms:play-services-nearby\",\"ecosystem\":\"Maven\"},\"version\":\"10.0.0\"},{\"package\":{\"name\":\"com.google.android.gms:play-services-panorama\",\"ecosystem\":\"Maven\"},\"version\":\"10.0.0\"},{\"package\":{\"name\":\"com.google.android.gms:play-services-places\",\"ecosystem\":\"Maven\"},\"version\":\"10.0.0\"},{\"package\":{\"name\":\"com.google.android.gms:play-services-plus\",\"ecosystem\":\"Maven\"},\"version\":\"10.0.0\"},{\"package\":{\"name\":\"com.google.android.gms:play-services-safetynet\",\"ecosystem\":\"Maven\"},\"version\":\"10.0.0\"},{\"package\":{\"name\":\"com.google.android.gms:play-services-tagmanager\",\"ecosystem\":\"Maven\"},\"version\":\"10.0.0\"},{\"package\":{\"name\":\"com.google.android.gms:play-services-tagmanager-api\",\"ecosystem\":\"Maven\"},\"version\":\"10.0.0\"},{\"package\":{\"name\":\"com.google.android.gms:play-services-tagmanager-v4-impl\",\"ecosystem\":\"Maven\"},\"version\":\"10.0.0\"},{\"package\":{\"name\":\"com.google.android.gms:play-services-tasks\",\"ecosystem\":\"Maven\"},\"version\":\"10.0.0\"},{\"package\":{\"name\":\"com.google.android.gms:play-services-vision\",\"ecosystem\":\"Maven\"},\"version\":\"10.0.0\"},{\"package\":{\"name\":\"com.google.android.gms:play-services-wallet\",\"ecosystem\":\"Maven\"},\"version\":\"10.0.0\"},{\"package\":{\"name\":\"com.google.android.gms:play-services-wearable\",\"ecosystem\":\"Maven\"},\"version\":\"10.0.0\"},{\"package\":{\"name\":\"com.google.firebase:firebase-analytics\",\"ecosystem\":\"Maven\"},\"version\":\"10.0.0\"},{\"package\":{\"name\":\"com.google.firebase:firebase-analytics-impl\",\"ecosystem\":\"Maven\"},\"version\":\"10.0.0\"},{\"package\":{\"name\":\"com.google.firebase:firebase-appindexing\",\"ecosystem\":\"Maven\"},\"version\":\"10.0.0\"},{\"package\":{\"name\":\"com.google.firebase:firebase-auth\",\"ecosystem\":\"Maven\"},\"version\":\"10.0.0\"},{\"package\":{\"name\":\"com.google.firebase:firebase-common\",\"ecosystem\":\"Maven\"},\"version\":\"10.0.0\"},{\"package\":{\"name\":\"com.google.firebase:firebase-config\",\"ecosystem\":\"Maven\"},\"version\":\"10.0.0\"},{\"package\":{\"name\":\"com.google.firebase:firebase-crash\",\"ecosystem\":\"Maven\"},\"version\":\"10.0.0\"},{\"package\":{\"name\":\"com.google.firebase:firebase-database\",\"ecosystem\":\"Maven\"},\"version\":\"10.0.0\"},{\"package\":{\"name\":\"com.google.firebase:firebase-database-connection\",\"ecosystem\":\"Maven\"},\"version\":\"10.0.0\"},{\"package\":{\"name\":\"com.google.firebase:firebase-iid\",\"ecosystem\":\"Maven\"},\"version\":\"10.0.0\"},{\"package\":{\"name\":\"com.google.firebase:firebase-messaging\",\"ecosystem\":\"Maven\"},\"version\":\"10.0.0\"},{\"package\":{\"name\":\"com.google.firebase:firebase-storage\",\"ecosystem\":\"Maven\"},\"version\":\"10.0.0\"},{\"package\":{\"name\":\"com.google.firebase:firebase-storage-common\",\"ecosystem\":\"Maven\"},\"version\":\"10.0.0\"},{\"package\":{\"name\":\"org.apache.logging.log4j:log4j-api\",\"ecosystem\":\"Maven\"},\"version\":\"2.14.1\"},{\"package\":{\"name\":\"org.apache.logging.log4j:log4j-core\",\"ecosystem\":\"Maven\"},\"version\":\"2.14.1\"},{\"package\":{\"name\":\"org.apache.logging.log4j:log4j-web\",\"ecosystem\":\"Maven\"},\"version\":\"2.14.1\"}]}"
+    body: |
+      {
+        "queries": [
+          {
+            "package": {
+              "name": "com.android.support:animated-vector-drawable",
+              "ecosystem": "Maven"
+            },
+            "version": "24.0.0"
+          },
+          {
+            "package": {
+              "name": "com.android.support:appcompat-v7",
+              "ecosystem": "Maven"
+            },
+            "version": "24.0.0"
+          },
+          {
+            "package": {
+              "name": "com.android.support:mediarouter-v7",
+              "ecosystem": "Maven"
+            },
+            "version": "24.0.0"
+          },
+          {
+            "package": {
+              "name": "com.android.support:palette-v7",
+              "ecosystem": "Maven"
+            },
+            "version": "24.0.0"
+          },
+          {
+            "package": {
+              "name": "com.android.support:support-annotations",
+              "ecosystem": "Maven"
+            },
+            "version": "24.0.0"
+          },
+          {
+            "package": {
+              "name": "com.android.support:support-v4",
+              "ecosystem": "Maven"
+            },
+            "version": "24.0.0"
+          },
+          {
+            "package": {
+              "name": "com.android.support:support-vector-drawable",
+              "ecosystem": "Maven"
+            },
+            "version": "24.0.0"
+          },
+          {
+            "package": {
+              "name": "com.google.android.gms:play-services",
+              "ecosystem": "Maven"
+            },
+            "version": "10.0.0"
+          },
+          {
+            "package": {
+              "name": "com.google.android.gms:play-services-ads",
+              "ecosystem": "Maven"
+            },
+            "version": "10.0.0"
+          },
+          {
+            "package": {
+              "name": "com.google.android.gms:play-services-ads-lite",
+              "ecosystem": "Maven"
+            },
+            "version": "10.0.0"
+          },
+          {
+            "package": {
+              "name": "com.google.android.gms:play-services-analytics",
+              "ecosystem": "Maven"
+            },
+            "version": "10.0.0"
+          },
+          {
+            "package": {
+              "name": "com.google.android.gms:play-services-analytics-impl",
+              "ecosystem": "Maven"
+            },
+            "version": "10.0.0"
+          },
+          {
+            "package": {
+              "name": "com.google.android.gms:play-services-appinvite",
+              "ecosystem": "Maven"
+            },
+            "version": "10.0.0"
+          },
+          {
+            "package": {
+              "name": "com.google.android.gms:play-services-auth",
+              "ecosystem": "Maven"
+            },
+            "version": "10.0.0"
+          },
+          {
+            "package": {
+              "name": "com.google.android.gms:play-services-auth-base",
+              "ecosystem": "Maven"
+            },
+            "version": "10.0.0"
+          },
+          {
+            "package": {
+              "name": "com.google.android.gms:play-services-awareness",
+              "ecosystem": "Maven"
+            },
+            "version": "10.0.0"
+          },
+          {
+            "package": {
+              "name": "com.google.android.gms:play-services-base",
+              "ecosystem": "Maven"
+            },
+            "version": "10.0.0"
+          },
+          {
+            "package": {
+              "name": "com.google.android.gms:play-services-basement",
+              "ecosystem": "Maven"
+            },
+            "version": "10.0.0"
+          },
+          {
+            "package": {
+              "name": "com.google.android.gms:play-services-cast",
+              "ecosystem": "Maven"
+            },
+            "version": "10.0.0"
+          },
+          {
+            "package": {
+              "name": "com.google.android.gms:play-services-cast-framework",
+              "ecosystem": "Maven"
+            },
+            "version": "10.0.0"
+          },
+          {
+            "package": {
+              "name": "com.google.android.gms:play-services-clearcut",
+              "ecosystem": "Maven"
+            },
+            "version": "10.0.0"
+          },
+          {
+            "package": {
+              "name": "com.google.android.gms:play-services-drive",
+              "ecosystem": "Maven"
+            },
+            "version": "10.0.0"
+          },
+          {
+            "package": {
+              "name": "com.google.android.gms:play-services-fitness",
+              "ecosystem": "Maven"
+            },
+            "version": "10.0.0"
+          },
+          {
+            "package": {
+              "name": "com.google.android.gms:play-services-games",
+              "ecosystem": "Maven"
+            },
+            "version": "10.0.0"
+          },
+          {
+            "package": {
+              "name": "com.google.android.gms:play-services-gass",
+              "ecosystem": "Maven"
+            },
+            "version": "10.0.0"
+          },
+          {
+            "package": {
+              "name": "com.google.android.gms:play-services-gcm",
+              "ecosystem": "Maven"
+            },
+            "version": "10.0.0"
+          },
+          {
+            "package": {
+              "name": "com.google.android.gms:play-services-identity",
+              "ecosystem": "Maven"
+            },
+            "version": "10.0.0"
+          },
+          {
+            "package": {
+              "name": "com.google.android.gms:play-services-iid",
+              "ecosystem": "Maven"
+            },
+            "version": "10.0.0"
+          },
+          {
+            "package": {
+              "name": "com.google.android.gms:play-services-instantapps",
+              "ecosystem": "Maven"
+            },
+            "version": "10.0.0"
+          },
+          {
+            "package": {
+              "name": "com.google.android.gms:play-services-location",
+              "ecosystem": "Maven"
+            },
+            "version": "10.0.0"
+          },
+          {
+            "package": {
+              "name": "com.google.android.gms:play-services-maps",
+              "ecosystem": "Maven"
+            },
+            "version": "10.0.0"
+          },
+          {
+            "package": {
+              "name": "com.google.android.gms:play-services-nearby",
+              "ecosystem": "Maven"
+            },
+            "version": "10.0.0"
+          },
+          {
+            "package": {
+              "name": "com.google.android.gms:play-services-panorama",
+              "ecosystem": "Maven"
+            },
+            "version": "10.0.0"
+          },
+          {
+            "package": {
+              "name": "com.google.android.gms:play-services-places",
+              "ecosystem": "Maven"
+            },
+            "version": "10.0.0"
+          },
+          {
+            "package": {
+              "name": "com.google.android.gms:play-services-plus",
+              "ecosystem": "Maven"
+            },
+            "version": "10.0.0"
+          },
+          {
+            "package": {
+              "name": "com.google.android.gms:play-services-safetynet",
+              "ecosystem": "Maven"
+            },
+            "version": "10.0.0"
+          },
+          {
+            "package": {
+              "name": "com.google.android.gms:play-services-tagmanager",
+              "ecosystem": "Maven"
+            },
+            "version": "10.0.0"
+          },
+          {
+            "package": {
+              "name": "com.google.android.gms:play-services-tagmanager-api",
+              "ecosystem": "Maven"
+            },
+            "version": "10.0.0"
+          },
+          {
+            "package": {
+              "name": "com.google.android.gms:play-services-tagmanager-v4-impl",
+              "ecosystem": "Maven"
+            },
+            "version": "10.0.0"
+          },
+          {
+            "package": {
+              "name": "com.google.android.gms:play-services-tasks",
+              "ecosystem": "Maven"
+            },
+            "version": "10.0.0"
+          },
+          {
+            "package": {
+              "name": "com.google.android.gms:play-services-vision",
+              "ecosystem": "Maven"
+            },
+            "version": "10.0.0"
+          },
+          {
+            "package": {
+              "name": "com.google.android.gms:play-services-wallet",
+              "ecosystem": "Maven"
+            },
+            "version": "10.0.0"
+          },
+          {
+            "package": {
+              "name": "com.google.android.gms:play-services-wearable",
+              "ecosystem": "Maven"
+            },
+            "version": "10.0.0"
+          },
+          {
+            "package": {
+              "name": "com.google.firebase:firebase-analytics",
+              "ecosystem": "Maven"
+            },
+            "version": "10.0.0"
+          },
+          {
+            "package": {
+              "name": "com.google.firebase:firebase-analytics-impl",
+              "ecosystem": "Maven"
+            },
+            "version": "10.0.0"
+          },
+          {
+            "package": {
+              "name": "com.google.firebase:firebase-appindexing",
+              "ecosystem": "Maven"
+            },
+            "version": "10.0.0"
+          },
+          {
+            "package": {
+              "name": "com.google.firebase:firebase-auth",
+              "ecosystem": "Maven"
+            },
+            "version": "10.0.0"
+          },
+          {
+            "package": {
+              "name": "com.google.firebase:firebase-common",
+              "ecosystem": "Maven"
+            },
+            "version": "10.0.0"
+          },
+          {
+            "package": {
+              "name": "com.google.firebase:firebase-config",
+              "ecosystem": "Maven"
+            },
+            "version": "10.0.0"
+          },
+          {
+            "package": {
+              "name": "com.google.firebase:firebase-crash",
+              "ecosystem": "Maven"
+            },
+            "version": "10.0.0"
+          },
+          {
+            "package": {
+              "name": "com.google.firebase:firebase-database",
+              "ecosystem": "Maven"
+            },
+            "version": "10.0.0"
+          },
+          {
+            "package": {
+              "name": "com.google.firebase:firebase-database-connection",
+              "ecosystem": "Maven"
+            },
+            "version": "10.0.0"
+          },
+          {
+            "package": {
+              "name": "com.google.firebase:firebase-iid",
+              "ecosystem": "Maven"
+            },
+            "version": "10.0.0"
+          },
+          {
+            "package": {
+              "name": "com.google.firebase:firebase-messaging",
+              "ecosystem": "Maven"
+            },
+            "version": "10.0.0"
+          },
+          {
+            "package": {
+              "name": "com.google.firebase:firebase-storage",
+              "ecosystem": "Maven"
+            },
+            "version": "10.0.0"
+          },
+          {
+            "package": {
+              "name": "com.google.firebase:firebase-storage-common",
+              "ecosystem": "Maven"
+            },
+            "version": "10.0.0"
+          },
+          {
+            "package": {
+              "name": "org.apache.logging.log4j:log4j-api",
+              "ecosystem": "Maven"
+            },
+            "version": "2.14.1"
+          },
+          {
+            "package": {
+              "name": "org.apache.logging.log4j:log4j-core",
+              "ecosystem": "Maven"
+            },
+            "version": "2.14.1"
+          },
+          {
+            "package": {
+              "name": "org.apache.logging.log4j:log4j-web",
+              "ecosystem": "Maven"
+            },
+            "version": "2.14.1"
+          }
+        ]
+      }
     headers:
       Content-Type:
       - application/json
@@ -110,7 +1037,25 @@ interactions:
     proto_minor: 1
     content_length: 171
     host: api.osv.dev
-    body: "{\"queries\":[{\"package\":{\"name\":\"junit:junit\",\"ecosystem\":\"Maven\"},\"version\":\"4.12\"},{\"package\":{\"name\":\"org.hamcrest:hamcrest-core\",\"ecosystem\":\"Maven\"},\"version\":\"1.3\"}]}"
+    body: |
+      {
+        "queries": [
+          {
+            "package": {
+              "name": "junit:junit",
+              "ecosystem": "Maven"
+            },
+            "version": "4.12"
+          },
+          {
+            "package": {
+              "name": "org.hamcrest:hamcrest-core",
+              "ecosystem": "Maven"
+            },
+            "version": "1.3"
+          }
+        ]
+      }
     headers:
       Content-Type:
       - application/json
@@ -127,7 +1072,32 @@ interactions:
     proto_minor: 1
     content_length: 305
     host: api.osv.dev
-    body: "{\"queries\":[{\"package\":{\"name\":\"org.apache.logging.log4j:log4j-api\",\"ecosystem\":\"Maven\"},\"version\":\"2.14.1\"},{\"package\":{\"name\":\"org.apache.logging.log4j:log4j-core\",\"ecosystem\":\"Maven\"},\"version\":\"2.14.1\"},{\"package\":{\"name\":\"org.apache.logging.log4j:log4j-web\",\"ecosystem\":\"Maven\"},\"version\":\"2.14.1\"}]}"
+    body: |
+      {
+        "queries": [
+          {
+            "package": {
+              "name": "org.apache.logging.log4j:log4j-api",
+              "ecosystem": "Maven"
+            },
+            "version": "2.14.1"
+          },
+          {
+            "package": {
+              "name": "org.apache.logging.log4j:log4j-core",
+              "ecosystem": "Maven"
+            },
+            "version": "2.14.1"
+          },
+          {
+            "package": {
+              "name": "org.apache.logging.log4j:log4j-web",
+              "ecosystem": "Maven"
+            },
+            "version": "2.14.1"
+          }
+        ]
+      }
     headers:
       Content-Type:
       - application/json
@@ -144,7 +1114,32 @@ interactions:
     proto_minor: 1
     content_length: 305
     host: api.osv.dev
-    body: "{\"queries\":[{\"package\":{\"name\":\"org.apache.logging.log4j:log4j-api\",\"ecosystem\":\"Maven\"},\"version\":\"2.14.1\"},{\"package\":{\"name\":\"org.apache.logging.log4j:log4j-core\",\"ecosystem\":\"Maven\"},\"version\":\"2.14.1\"},{\"package\":{\"name\":\"org.apache.logging.log4j:log4j-web\",\"ecosystem\":\"Maven\"},\"version\":\"2.14.1\"}]}"
+    body: |
+      {
+        "queries": [
+          {
+            "package": {
+              "name": "org.apache.logging.log4j:log4j-api",
+              "ecosystem": "Maven"
+            },
+            "version": "2.14.1"
+          },
+          {
+            "package": {
+              "name": "org.apache.logging.log4j:log4j-core",
+              "ecosystem": "Maven"
+            },
+            "version": "2.14.1"
+          },
+          {
+            "package": {
+              "name": "org.apache.logging.log4j:log4j-web",
+              "ecosystem": "Maven"
+            },
+            "version": "2.14.1"
+          }
+        ]
+      }
     headers:
       Content-Type:
       - application/json
@@ -161,7 +1156,102 @@ interactions:
     proto_minor: 1
     content_length: 900
     host: api.osv.dev
-    body: "{\"queries\":[{\"package\":{\"name\":\"certifi\",\"ecosystem\":\"PyPI\"},\"version\":\"2025.10.5\"},{\"package\":{\"name\":\"chardet\",\"ecosystem\":\"PyPI\"},\"version\":\"3.0.4\"},{\"package\":{\"name\":\"click\",\"ecosystem\":\"PyPI\"},\"version\":\"8.3.0\"},{\"package\":{\"name\":\"django\",\"ecosystem\":\"PyPI\"},\"version\":\"1.11.29\"},{\"package\":{\"name\":\"flask\",\"ecosystem\":\"PyPI\"},\"version\":\"1.0\"},{\"package\":{\"name\":\"idna\",\"ecosystem\":\"PyPI\"},\"version\":\"2.7\"},{\"package\":{\"name\":\"itsdangerous\",\"ecosystem\":\"PyPI\"},\"version\":\"2.2.0\"},{\"package\":{\"name\":\"jinja2\",\"ecosystem\":\"PyPI\"},\"version\":\"3.1.6\"},{\"package\":{\"name\":\"markupsafe\",\"ecosystem\":\"PyPI\"},\"version\":\"3.0.3\"},{\"package\":{\"name\":\"pytz\",\"ecosystem\":\"PyPI\"},\"version\":\"2025.2\"},{\"package\":{\"name\":\"requests\",\"ecosystem\":\"PyPI\"},\"version\":\"2.20.0\"},{\"package\":{\"name\":\"urllib3\",\"ecosystem\":\"PyPI\"},\"version\":\"1.24.3\"},{\"package\":{\"name\":\"werkzeug\",\"ecosystem\":\"PyPI\"},\"version\":\"3.1.3\"}]}"
+    body: |
+      {
+        "queries": [
+          {
+            "package": {
+              "name": "certifi",
+              "ecosystem": "PyPI"
+            },
+            "version": "2025.10.5"
+          },
+          {
+            "package": {
+              "name": "chardet",
+              "ecosystem": "PyPI"
+            },
+            "version": "3.0.4"
+          },
+          {
+            "package": {
+              "name": "click",
+              "ecosystem": "PyPI"
+            },
+            "version": "8.3.0"
+          },
+          {
+            "package": {
+              "name": "django",
+              "ecosystem": "PyPI"
+            },
+            "version": "1.11.29"
+          },
+          {
+            "package": {
+              "name": "flask",
+              "ecosystem": "PyPI"
+            },
+            "version": "1.0"
+          },
+          {
+            "package": {
+              "name": "idna",
+              "ecosystem": "PyPI"
+            },
+            "version": "2.7"
+          },
+          {
+            "package": {
+              "name": "itsdangerous",
+              "ecosystem": "PyPI"
+            },
+            "version": "2.2.0"
+          },
+          {
+            "package": {
+              "name": "jinja2",
+              "ecosystem": "PyPI"
+            },
+            "version": "3.1.6"
+          },
+          {
+            "package": {
+              "name": "markupsafe",
+              "ecosystem": "PyPI"
+            },
+            "version": "3.0.3"
+          },
+          {
+            "package": {
+              "name": "pytz",
+              "ecosystem": "PyPI"
+            },
+            "version": "2025.2"
+          },
+          {
+            "package": {
+              "name": "requests",
+              "ecosystem": "PyPI"
+            },
+            "version": "2.20.0"
+          },
+          {
+            "package": {
+              "name": "urllib3",
+              "ecosystem": "PyPI"
+            },
+            "version": "1.24.3"
+          },
+          {
+            "package": {
+              "name": "werkzeug",
+              "ecosystem": "PyPI"
+            },
+            "version": "3.1.3"
+          }
+        ]
+      }
     headers:
       Content-Type:
       - application/json

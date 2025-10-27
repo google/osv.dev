@@ -8,7 +8,23 @@ interactions:
     proto_minor: 1
     content_length: 214
     host: api.osv.dev
-    body: "{\"queries\":[{\"commit\":\"4579d5538f06c5ef615a15bc67ebb9ac0523a973\",\"package\":{}},{\"commit\":\"9de7a0544457c6aba755ccb65abb41b0dc1db70d\",\"package\":{}},{\"commit\":\"5d60bd2eb4642b64d00c845e5ca9f1ea41fd6db6\",\"package\":{}}]}"
+    body: |
+      {
+        "queries": [
+          {
+            "commit": "4579d5538f06c5ef615a15bc67ebb9ac0523a973",
+            "package": {}
+          },
+          {
+            "commit": "9de7a0544457c6aba755ccb65abb41b0dc1db70d",
+            "package": {}
+          },
+          {
+            "commit": "5d60bd2eb4642b64d00c845e5ca9f1ea41fd6db6",
+            "package": {}
+          }
+        ]
+      }
     headers:
       Content-Type:
       - application/json
@@ -25,7 +41,23 @@ interactions:
     proto_minor: 1
     content_length: 214
     host: api.osv.dev
-    body: "{\"queries\":[{\"commit\":\"4579d5538f06c5ef615a15bc67ebb9ac0523a973\",\"package\":{}},{\"commit\":\"9de7a0544457c6aba755ccb65abb41b0dc1db70d\",\"package\":{}},{\"commit\":\"5d60bd2eb4642b64d00c845e5ca9f1ea41fd6db6\",\"package\":{}}]}"
+    body: |
+      {
+        "queries": [
+          {
+            "commit": "4579d5538f06c5ef615a15bc67ebb9ac0523a973",
+            "package": {}
+          },
+          {
+            "commit": "9de7a0544457c6aba755ccb65abb41b0dc1db70d",
+            "package": {}
+          },
+          {
+            "commit": "5d60bd2eb4642b64d00c845e5ca9f1ea41fd6db6",
+            "package": {}
+          }
+        ]
+      }
     headers:
       Content-Type:
       - application/json

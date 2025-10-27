@@ -72,6 +72,7 @@ func PlayInteraction(t *testing.T, interaction *cassette.Interaction) *http.Resp
 	}
 
 	req.Header.Set("User-Agent", "osv.dev/apitester")
+	req.ContentLength = -1
 
 	resp, err := http.DefaultClient.Do(req)
 

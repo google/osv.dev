@@ -18,20 +18,6 @@ interactions:
       - TestCommand_Licenses/Licenses_in_summary_mode_json
     url: https://api.osv.dev/v1/querybatch
     method: POST
-  response:
-    proto: HTTP/2.0
-    proto_major: 2
-    proto_minor: 0
-    content_length: 25
-    body: "{\"results\":[{},{},{},{}]}"
-    headers:
-      Content-Length:
-      - "25"
-      Content-Type:
-      - application/json
-    status: 200 OK
-    code: 200
-    duration: 0s
 - id: 1
   request:
     proto: HTTP/1.1
@@ -49,20 +35,6 @@ interactions:
       - TestCommand_Licenses/Licenses_with_expressions
     url: https://api.osv.dev/v1/querybatch
     method: POST
-  response:
-    proto: HTTP/2.0
-    proto_major: 2
-    proto_minor: 0
-    content_length: 25
-    body: "{\"results\":[{},{},{},{}]}"
-    headers:
-      Content-Length:
-      - "25"
-      Content-Type:
-      - application/json
-    status: 200 OK
-    code: 200
-    duration: 0s
 - id: 2
   request:
     proto: HTTP/1.1
@@ -80,20 +52,6 @@ interactions:
       - TestCommand_Licenses/Licenses_with_invalid_expression_in_config
     url: https://api.osv.dev/v1/querybatch
     method: POST
-  response:
-    proto: HTTP/2.0
-    proto_major: 2
-    proto_minor: 0
-    content_length: 25
-    body: "{\"results\":[{},{},{},{}]}"
-    headers:
-      Content-Length:
-      - "25"
-      Content-Type:
-      - application/json
-    status: 200 OK
-    code: 200
-    duration: 0s
 - id: 3
   request:
     proto: HTTP/1.1
@@ -111,20 +69,6 @@ interactions:
       - TestCommand_Licenses/No_license_violations_and_show-all-packages_in_json
     url: https://api.osv.dev/v1/querybatch
     method: POST
-  response:
-    proto: HTTP/2.0
-    proto_major: 2
-    proto_minor: 0
-    content_length: 25
-    body: "{\"results\":[{},{},{},{}]}"
-    headers:
-      Content-Length:
-      - "25"
-      Content-Type:
-      - application/json
-    status: 200 OK
-    code: 200
-    duration: 0s
 - id: 4
   request:
     proto: HTTP/1.1
@@ -142,20 +86,6 @@ interactions:
       - TestCommand_Licenses/No_vulnerabilities_but_license_violations_with_allowlist
     url: https://api.osv.dev/v1/querybatch
     method: POST
-  response:
-    proto: HTTP/2.0
-    proto_major: 2
-    proto_minor: 0
-    content_length: 16
-    body: "{\"results\":[{}]}"
-    headers:
-      Content-Length:
-      - "16"
-      Content-Type:
-      - application/json
-    status: 200 OK
-    code: 200
-    duration: 0s
 - id: 5
   request:
     proto: HTTP/1.1
@@ -173,20 +103,6 @@ interactions:
       - TestCommand_Licenses/No_vulnerabilities_with_license_summary
     url: https://api.osv.dev/v1/querybatch
     method: POST
-  response:
-    proto: HTTP/2.0
-    proto_major: 2
-    proto_minor: 0
-    content_length: 25
-    body: "{\"results\":[{},{},{},{}]}"
-    headers:
-      Content-Length:
-      - "25"
-      Content-Type:
-      - application/json
-    status: 200 OK
-    code: 200
-    duration: 0s
 - id: 6
   request:
     proto: HTTP/1.1
@@ -204,20 +120,6 @@ interactions:
       - TestCommand_Licenses/No_vulnerabilities_with_license_summary
     url: https://api.osv.dev/v1/querybatch
     method: POST
-  response:
-    proto: HTTP/2.0
-    proto_major: 2
-    proto_minor: 0
-    content_length: 227
-    body: "{\"results\":[{},{},{},{\"vulns\":[{\"id\":\"GHSA-whgm-jr23-g3j9\",\"modified\":\"2023-11-08T04:05:08.868477Z\"}]},{},{},{},{},{},{},{},{},{\"vulns\":[{\"id\":\"ALPINE-CVE-2025-26519\",\"modified\":\"2025-09-30T05:29:32.392594Z\"}]},{},{},{},{},{}]}"
-    headers:
-      Content-Length:
-      - "227"
-      Content-Type:
-      - application/json
-    status: 200 OK
-    code: 200
-    duration: 0s
 - id: 7
   request:
     proto: HTTP/1.1
@@ -235,20 +137,6 @@ interactions:
       - TestCommand_Licenses/No_vulnerabilities_with_license_summary_in_markdown
     url: https://api.osv.dev/v1/querybatch
     method: POST
-  response:
-    proto: HTTP/2.0
-    proto_major: 2
-    proto_minor: 0
-    content_length: 227
-    body: "{\"results\":[{},{},{},{\"vulns\":[{\"id\":\"GHSA-whgm-jr23-g3j9\",\"modified\":\"2023-11-08T04:05:08.868477Z\"}]},{},{},{},{},{},{},{},{},{\"vulns\":[{\"id\":\"ALPINE-CVE-2025-26519\",\"modified\":\"2025-09-30T05:29:32.392594Z\"}]},{},{},{},{},{}]}"
-    headers:
-      Content-Length:
-      - "227"
-      Content-Type:
-      - application/json
-    status: 200 OK
-    code: 200
-    duration: 0s
 - id: 8
   request:
     proto: HTTP/1.1
@@ -266,20 +154,6 @@ interactions:
       - TestCommand_Licenses/No_vulnerabilities_with_license_summary_in_markdown
     url: https://api.osv.dev/v1/querybatch
     method: POST
-  response:
-    proto: HTTP/2.0
-    proto_major: 2
-    proto_minor: 0
-    content_length: 25
-    body: "{\"results\":[{},{},{},{}]}"
-    headers:
-      Content-Length:
-      - "25"
-      Content-Type:
-      - application/json
-    status: 200 OK
-    code: 200
-    duration: 0s
 - id: 9
   request:
     proto: HTTP/1.1
@@ -297,20 +171,6 @@ interactions:
       - TestCommand_Licenses/Show_all_Packages_with_license_summary_in_json
     url: https://api.osv.dev/v1/querybatch
     method: POST
-  response:
-    proto: HTTP/2.0
-    proto_major: 2
-    proto_minor: 0
-    content_length: 25
-    body: "{\"results\":[{},{},{},{}]}"
-    headers:
-      Content-Length:
-      - "25"
-      Content-Type:
-      - application/json
-    status: 200 OK
-    code: 200
-    duration: 0s
 - id: 10
   request:
     proto: HTTP/1.1
@@ -328,20 +188,6 @@ interactions:
       - TestCommand_Licenses/Some_packages_with_ignored_licenses
     url: https://api.osv.dev/v1/querybatch
     method: POST
-  response:
-    proto: HTTP/2.0
-    proto_major: 2
-    proto_minor: 0
-    content_length: 230
-    body: "{\"results\":[{},{},{},{},{},{},{},{\"vulns\":[{\"id\":\"GHSA-9f46-5r25-5wfm\",\"modified\":\"2024-02-16T08:21:35.601880Z\"}]},{},{},{},{\"vulns\":[{\"id\":\"ALPINE-CVE-2025-26519\",\"modified\":\"2025-09-30T05:29:32.392594Z\"}]},{},{},{},{},{},{},{}]}"
-    headers:
-      Content-Length:
-      - "230"
-      Content-Type:
-      - application/json
-    status: 200 OK
-    code: 200
-    duration: 0s
 - id: 11
   request:
     proto: HTTP/1.1
@@ -359,20 +205,6 @@ interactions:
       - TestCommand_Licenses/Some_packages_with_ignored_licenses
     url: https://api.osv.dev/v1/querybatch
     method: POST
-  response:
-    proto: HTTP/2.0
-    proto_major: 2
-    proto_minor: 0
-    content_length: 107
-    body: "{\"results\":[{},{\"vulns\":[{\"id\":\"GHSA-9f46-5r25-5wfm\",\"modified\":\"2024-02-16T08:21:35.601880Z\"}]},{},{},{}]}"
-    headers:
-      Content-Length:
-      - "107"
-      Content-Type:
-      - application/json
-    status: 200 OK
-    code: 200
-    duration: 0s
 - id: 12
   request:
     proto: HTTP/1.1
@@ -390,20 +222,6 @@ interactions:
       - TestCommand_Licenses/Some_packages_with_license_violations_and_show-all-packages_in_json
     url: https://api.osv.dev/v1/querybatch
     method: POST
-  response:
-    proto: HTTP/2.0
-    proto_major: 2
-    proto_minor: 0
-    content_length: 25
-    body: "{\"results\":[{},{},{},{}]}"
-    headers:
-      Content-Length:
-      - "25"
-      Content-Type:
-      - application/json
-    status: 200 OK
-    code: 200
-    duration: 0s
 - id: 13
   request:
     proto: HTTP/1.1
@@ -421,20 +239,6 @@ interactions:
       - TestCommand_Licenses/Some_packages_with_license_violations_in_json
     url: https://api.osv.dev/v1/querybatch
     method: POST
-  response:
-    proto: HTTP/2.0
-    proto_major: 2
-    proto_minor: 0
-    content_length: 25
-    body: "{\"results\":[{},{},{},{}]}"
-    headers:
-      Content-Length:
-      - "25"
-      Content-Type:
-      - application/json
-    status: 200 OK
-    code: 200
-    duration: 0s
 - id: 14
   request:
     proto: HTTP/1.1
@@ -452,20 +256,6 @@ interactions:
       - TestCommand_Licenses/Vulnerabilities_and_all_license_violations_allowlisted
     url: https://api.osv.dev/v1/querybatch
     method: POST
-  response:
-    proto: HTTP/2.0
-    proto_major: 2
-    proto_minor: 0
-    content_length: 95
-    body: "{\"results\":[{\"vulns\":[{\"id\":\"GHSA-whgm-jr23-g3j9\",\"modified\":\"2023-11-08T04:05:08.868477Z\"}]}]}"
-    headers:
-      Content-Length:
-      - "95"
-      Content-Type:
-      - application/json
-    status: 200 OK
-    code: 200
-    duration: 0s
 - id: 15
   request:
     proto: HTTP/1.1
@@ -483,20 +273,6 @@ interactions:
       - TestCommand_Licenses/Vulnerabilities_and_license_summary
     url: https://api.osv.dev/v1/querybatch
     method: POST
-  response:
-    proto: HTTP/2.0
-    proto_major: 2
-    proto_minor: 0
-    content_length: 95
-    body: "{\"results\":[{\"vulns\":[{\"id\":\"GHSA-whgm-jr23-g3j9\",\"modified\":\"2023-11-08T04:05:08.868477Z\"}]}]}"
-    headers:
-      Content-Length:
-      - "95"
-      Content-Type:
-      - application/json
-    status: 200 OK
-    code: 200
-    duration: 0s
 - id: 16
   request:
     proto: HTTP/1.1
@@ -514,17 +290,3 @@ interactions:
       - TestCommand_Licenses/Vulnerabilities_and_license_violations_with_allowlist
     url: https://api.osv.dev/v1/querybatch
     method: POST
-  response:
-    proto: HTTP/2.0
-    proto_major: 2
-    proto_minor: 0
-    content_length: 95
-    body: "{\"results\":[{\"vulns\":[{\"id\":\"GHSA-whgm-jr23-g3j9\",\"modified\":\"2023-11-08T04:05:08.868477Z\"}]}]}"
-    headers:
-      Content-Length:
-      - "95"
-      Content-Type:
-      - application/json
-    status: 200 OK
-    code: 200
-    duration: 0s

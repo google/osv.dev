@@ -9,8 +9,14 @@ from `osv-scanner` without sacrificing the ability to easy to craft cases
 manually.
 
 Each cassette is a YAML file in `testdata/cassettes` that stores an array of
-"interactions" made up of an `id`, a `request`, and a `response`, though ony the
-`request` field is used by this tool.
+"interactions" made up of three fields:
+
+- `id`
+- `request`
+- `response`
+
+Of these, the tool only uses the `request` field, and the `response` field will
+be automatically removed as part of running tool.
 
 The `request` in each interaction for a cassette is replayed and the response
 body captured as a snapshot for the particular cassette using

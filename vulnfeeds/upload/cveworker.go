@@ -17,6 +17,7 @@ import (
 	"cloud.google.com/go/storage"
 	"github.com/google/osv/vulnfeeds/utility/logger"
 	"github.com/ossf/osv-schema/bindings/go/osvschema"
+	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 const (
@@ -27,7 +28,7 @@ const (
 
 // writeToDisk writes the vulnerability to a local file.
 func writeToDisk(v *osvschema.Vulnerability, preModifiedBuf []byte, outputPrefix string) {
-	filename := v.ID + ".json"
+	filename := v.Id + ".json"
 	filePath := path.Join(outputPrefix, filename)
 	err := os.WriteFile(filePath, preModifiedBuf, 0600)
 	if err != nil {
@@ -37,7 +38,7 @@ func writeToDisk(v *osvschema.Vulnerability, preModifiedBuf []byte, outputPrefix
 
 // uploadToGCS uploads the vulnerability to a GCS bucket.
 func uploadToGCS(ctx context.Context, v *osvschema.Vulnerability, preModifiedBuf []byte, outBkt *storage.BucketHandle, outputPrefix string) {
-	vulnID := v.ID
+	vulnID := v.Id
 	filename := vulnID + ".json"
 
 	hash := sha256.Sum256(preModifiedBuf)
@@ -60,7 +61,7 @@ func uploadToGCS(ctx context.Context, v *osvschema.Vulnerability, preModifiedBuf
 	}
 
 	// Object does not exist or hash differs, upload.
-	v.Modified = time.Now().UTC()
+	v.Modified = timestamppb.New(time.Now().UTC())
 	postModifiedBuf, err := json.MarshalIndent(v, "", "  ")
 	if err != nil {
 		logger.Error("failed to marshal vulnerability with modified time", slog.String("id", vulnID), slog.Any("err", err))
@@ -93,7 +94,7 @@ func uploadToGCS(ctx context.Context, v *osvschema.Vulnerability, preModifiedBuf
 // It returns the vulnerability to process, a pre-marshalled buffer if an override was used,
 // and an error if a critical failure occurred.
 func handleOverride(ctx context.Context, v *osvschema.Vulnerability, overridesBkt *storage.BucketHandle) (*osvschema.Vulnerability, []byte, error) {
-	filename := v.ID + ".json"
+	filename := v.Id + ".json"
 	overrideObj := overridesBkt.Object(path.Join(overrideFolder, filename))
 	if _, err := overrideObj.Attrs(ctx); err != nil {
 		if errors.Is(err, storage.ErrObjectNotExist) {
@@ -101,29 +102,29 @@ func handleOverride(ctx context.Context, v *osvschema.Vulnerability, overridesBk
 			return v, nil, nil
 		}
 		// For any other error, we can't know if an override exists, so we return an error.
-		logger.Error("failed to check for override object", slog.String("id", v.ID), slog.Any("err", err))
+		logger.Error("failed to check for override object", slog.String("id", v.Id), slog.Any("err", err))
 
 		return nil, nil, err
 	}
 
 	// Override exists, read it and replace original vulnerability.
-	logger.Info("Using override", slog.String("id", v.ID))
+	logger.Info("Using override", slog.String("id", v.Id))
 	rc, err := overrideObj.NewReader(ctx)
 	if err != nil {
-		logger.Error("failed to get reader for override object", slog.String("id", v.ID), slog.Any("err", err))
+		logger.Error("failed to get reader for override object", slog.String("id", v.Id), slog.Any("err", err))
 		return nil, nil, err
 	}
 	defer rc.Close()
 
 	overrideBuf, err := io.ReadAll(rc)
 	if err != nil {
-		logger.Error("failed to read override object", slog.String("id", v.ID), slog.Any("err", err))
+		logger.Error("failed to read override object", slog.String("id", v.Id), slog.Any("err", err))
 		return nil, nil, err
 	}
 
 	var overrideV osvschema.Vulnerability
 	if err := json.Unmarshal(overrideBuf, &overrideV); err != nil {
-		logger.Error("failed to unmarshal override object", slog.String("id", v.ID), slog.Any("err", err))
+		logger.Error("failed to unmarshal override object", slog.String("id", v.Id), slog.Any("err", err))
 		return nil, nil, err
 	}
 
@@ -138,7 +139,7 @@ func handleOverride(ctx context.Context, v *osvschema.Vulnerability, overridesBk
 // modified time updated. This prevents updating the modified time for vulnerabilities with no content changes.
 func Worker(ctx context.Context, vulnChan <-chan *osvschema.Vulnerability, outBkt, overridesBkt *storage.BucketHandle, outputPrefix string) {
 	for v := range vulnChan {
-		vulnID := v.ID
+		vulnID := v.Id
 		if len(v.Affected) == 0 {
 			logger.Warn("Skipping OSV record as no affected versions found.", slog.String("id", vulnID))
 			continue

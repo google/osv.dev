@@ -12,6 +12,9 @@ import (
 	"github.com/google/osv/vulnfeeds/cves"
 	"github.com/google/osv/vulnfeeds/vulns"
 	"github.com/ossf/osv-schema/bindings/go/osvschema"
+	"google.golang.org/protobuf/testing/protocmp"
+	"google.golang.org/protobuf/types/known/structpb"
+	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 func mustRead(t *testing.T, filename string) []byte {
@@ -25,7 +28,7 @@ func mustRead(t *testing.T, filename string) []byte {
 }
 
 // sortAffected is a helper to sort affected packages for consistent comparison.
-func sortAffected(affected []osvschema.Affected) {
+func sortAffected(affected []*osvschema.Affected) {
 	sort.Slice(affected, func(i, j int) bool {
 		if affected[i].Package.Name != affected[j].Package.Name {
 			return affected[i].Package.Name < affected[j].Package.Name
@@ -85,79 +88,111 @@ func TestGenerateOSVFromDebianTracker(t *testing.T) {
 	want := map[string]*vulns.Vulnerability{
 		"CVE-2014-1424": {
 			Vulnerability: osvschema.Vulnerability{
-				ID:         "DEBIAN-CVE-2014-1424",
+				Id:         "DEBIAN-CVE-2014-1424",
 				Upstream:   []string{"CVE-2014-1424"},
-				Modified:   now,
-				Published:  now,
+				Modified:   timestamppb.New(now),
+				Published:  timestamppb.New(now),
 				Details:    "apparmor_parser in the apparmor package before 2.8.95~2430-0ubuntu5.1 in Ubuntu 14.04 allows attackers to bypass AppArmor policies via unspecified vectors, related to a \"miscompilation flaw.\"",
 				Affected:   nil, // Empty because all are resolved at version "0"
-				References: []osvschema.Reference{{Type: "ADVISORY", URL: "https://security-tracker.debian.org/tracker/CVE-2014-1424"}},
+				References: []*osvschema.Reference{{Type: osvschema.Reference_ADVISORY, Url: "https://security-tracker.debian.org/tracker/CVE-2014-1424"}},
 			},
 		},
 		"CVE-2016-1585": {
 			Vulnerability: osvschema.Vulnerability{
-				ID:        "DEBIAN-CVE-2016-1585",
+				Id:        "DEBIAN-CVE-2016-1585",
 				Upstream:  []string{"CVE-2016-1585"},
-				Modified:  now,
-				Published: now,
+				Modified:  timestamppb.New(now),
+				Published: timestamppb.New(now),
 				Details:   "In all versions of AppArmor mount rules are accidentally widened when compiled.",
-				Affected: []osvschema.Affected{
+				Affected: []*osvschema.Affected{
 					{
-						Package:           osvschema.Package{Ecosystem: "Debian:10", Name: "apparmor"},
-						Ranges:            []osvschema.Range{{Type: "ECOSYSTEM", Events: []osvschema.Event{{Introduced: "0"}}}},
-						EcosystemSpecific: map[string]any{"urgency": string("unimportant")},
+						Package: &osvschema.Package{Ecosystem: "Debian:10", Name: "apparmor"},
+						Ranges:  []*osvschema.Range{{Type: osvschema.Range_ECOSYSTEM, Events: []*osvschema.Event{{Introduced: "0"}}}},
+						EcosystemSpecific: &structpb.Struct{
+							Fields: map[string]*structpb.Value{
+								"urgency": {Kind: &structpb.Value_StringValue{StringValue: "unimportant"}},
+							},
+						},
 					},
 					{
-						Package:           osvschema.Package{Ecosystem: "Debian:11", Name: "apparmor"},
-						Ranges:            []osvschema.Range{{Type: "ECOSYSTEM", Events: []osvschema.Event{{Introduced: "0"}}}},
-						EcosystemSpecific: map[string]any{"urgency": string("unimportant")},
+						Package: &osvschema.Package{Ecosystem: "Debian:11", Name: "apparmor"},
+						Ranges:  []*osvschema.Range{{Type: osvschema.Range_ECOSYSTEM, Events: []*osvschema.Event{{Introduced: "0"}}}},
+						EcosystemSpecific: &structpb.Struct{
+							Fields: map[string]*structpb.Value{
+								"urgency": {Kind: &structpb.Value_StringValue{StringValue: "unimportant"}},
+							},
+						},
 					},
 					{
-						Package:           osvschema.Package{Ecosystem: "Debian:12", Name: "apparmor"},
-						Ranges:            []osvschema.Range{{Type: "ECOSYSTEM", Events: []osvschema.Event{{Introduced: "0"}}}},
-						EcosystemSpecific: map[string]any{"urgency": string("unimportant")},
+						Package: &osvschema.Package{Ecosystem: "Debian:12", Name: "apparmor"},
+						Ranges:  []*osvschema.Range{{Type: osvschema.Range_ECOSYSTEM, Events: []*osvschema.Event{{Introduced: "0"}}}},
+						EcosystemSpecific: &structpb.Struct{
+							Fields: map[string]*structpb.Value{
+								"urgency": {Kind: &structpb.Value_StringValue{StringValue: "unimportant"}},
+							},
+						},
 					},
 					{
-						Package:           osvschema.Package{Name: "apparmor", Ecosystem: "Debian:13"},
-						Ranges:            []osvschema.Range{{Type: "ECOSYSTEM", Events: []osvschema.Event{{Introduced: "0"}, {Fixed: "3.0.12-1"}}}},
-						EcosystemSpecific: map[string]any{"urgency": "unimportant"},
+						Package: &osvschema.Package{Name: "apparmor", Ecosystem: "Debian:13"},
+						Ranges:  []*osvschema.Range{{Type: osvschema.Range_ECOSYSTEM, Events: []*osvschema.Event{{Introduced: "0"}, {Fixed: "3.0.12-1"}}}},
+						EcosystemSpecific: &structpb.Struct{
+							Fields: map[string]*structpb.Value{
+								"urgency": {Kind: &structpb.Value_StringValue{StringValue: "unimportant"}},
+							},
+						},
 					},
 				},
-				References: []osvschema.Reference{{Type: "ADVISORY", URL: "https://security-tracker.debian.org/tracker/CVE-2016-1585"}},
-				Severity:   []osvschema.Severity{{Type: "CVSS_V3", Score: "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H"}},
+				References: []*osvschema.Reference{{Type: osvschema.Reference_ADVISORY, Url: "https://security-tracker.debian.org/tracker/CVE-2016-1585"}},
+				Severity:   []*osvschema.Severity{{Type: osvschema.Severity_CVSS_V3, Score: "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H"}},
 			},
 		},
 		"CVE-2017-6507": {
 			Vulnerability: osvschema.Vulnerability{
-				ID:        "DEBIAN-CVE-2017-6507",
+				Id:        "DEBIAN-CVE-2017-6507",
 				Upstream:  []string{"CVE-2017-6507"},
-				Modified:  now,
-				Published: now,
+				Modified:  timestamppb.New(now),
+				Published: timestamppb.New(now),
 				Details:   "An issue was discovered in AppArmor before 2.12. Incorrect handling of unknown AppArmor profiles in AppArmor init scripts, upstart jobs, and/or systemd unit files allows an attacker to possibly have increased attack surfaces of processes that were intended to be confined by AppArmor. This is due to the common logic to handle 'restart' operations removing AppArmor profiles that aren't found in the typical filesystem locations, such as /etc/apparmor.d/. Userspace projects that manage their own AppArmor profiles in atypical directories, such as what's done by LXD and Docker, are affected by this flaw in the AppArmor init script logic.",
-				Affected: []osvschema.Affected{
+				Affected: []*osvschema.Affected{
 					{
-						Package:           osvschema.Package{Name: "apparmor", Ecosystem: "Debian:10"},
-						Ranges:            []osvschema.Range{{Type: "ECOSYSTEM", Events: []osvschema.Event{{Introduced: "0"}, {Fixed: "2.11.0-3"}}}},
-						EcosystemSpecific: map[string]any{"urgency": "not yet assigned"},
+						Package: &osvschema.Package{Name: "apparmor", Ecosystem: "Debian:10"},
+						Ranges:  []*osvschema.Range{{Type: osvschema.Range_ECOSYSTEM, Events: []*osvschema.Event{{Introduced: "0"}, {Fixed: "2.11.0-3"}}}},
+						EcosystemSpecific: &structpb.Struct{
+							Fields: map[string]*structpb.Value{
+								"urgency": {Kind: &structpb.Value_StringValue{StringValue: "not yet assigned"}},
+							},
+						},
 					},
 					{
-						Package:           osvschema.Package{Name: "apparmor", Ecosystem: "Debian:11"},
-						Ranges:            []osvschema.Range{{Type: "ECOSYSTEM", Events: []osvschema.Event{{Introduced: "0"}, {Fixed: "2.11.0-3"}}}},
-						EcosystemSpecific: map[string]any{"urgency": "not yet assigned"},
+						Package: &osvschema.Package{Name: "apparmor", Ecosystem: "Debian:11"},
+						Ranges:  []*osvschema.Range{{Type: osvschema.Range_ECOSYSTEM, Events: []*osvschema.Event{{Introduced: "0"}, {Fixed: "2.11.0-3"}}}},
+						EcosystemSpecific: &structpb.Struct{
+							Fields: map[string]*structpb.Value{
+								"urgency": {Kind: &structpb.Value_StringValue{StringValue: "not yet assigned"}},
+							},
+						},
 					},
 					{
-						Package:           osvschema.Package{Name: "apparmor", Ecosystem: "Debian:12"},
-						Ranges:            []osvschema.Range{{Type: "ECOSYSTEM", Events: []osvschema.Event{{Introduced: "0"}, {Fixed: "2.11.0-3"}}}},
-						EcosystemSpecific: map[string]any{"urgency": "not yet assigned"},
+						Package: &osvschema.Package{Name: "apparmor", Ecosystem: "Debian:12"},
+						Ranges:  []*osvschema.Range{{Type: osvschema.Range_ECOSYSTEM, Events: []*osvschema.Event{{Introduced: "0"}, {Fixed: "2.11.0-3"}}}},
+						EcosystemSpecific: &structpb.Struct{
+							Fields: map[string]*structpb.Value{
+								"urgency": {Kind: &structpb.Value_StringValue{StringValue: "not yet assigned"}},
+							},
+						},
 					},
 					{
-						Package:           osvschema.Package{Name: "apparmor", Ecosystem: "Debian:13"},
-						Ranges:            []osvschema.Range{{Type: "ECOSYSTEM", Events: []osvschema.Event{{Introduced: "0"}, {Fixed: "2.11.0-3"}}}},
-						EcosystemSpecific: map[string]any{"urgency": "not yet assigned"},
+						Package: &osvschema.Package{Name: "apparmor", Ecosystem: "Debian:13"},
+						Ranges:  []*osvschema.Range{{Type: osvschema.Range_ECOSYSTEM, Events: []*osvschema.Event{{Introduced: "0"}, {Fixed: "2.11.0-3"}}}},
+						EcosystemSpecific: &structpb.Struct{
+							Fields: map[string]*structpb.Value{
+								"urgency": {Kind: &structpb.Value_StringValue{StringValue: "not yet assigned"}},
+							},
+						},
 					},
 				},
-				References: []osvschema.Reference{{Type: "ADVISORY", URL: "https://security-tracker.debian.org/tracker/CVE-2017-6507"}},
-				Severity:   []osvschema.Severity{{Type: "CVSS_V3", Score: "CVSS:3.0/AV:N/AC:H/PR:N/UI:N/S:U/C:N/I:H/A:N"}},
+				References: []*osvschema.Reference{{Type: osvschema.Reference_ADVISORY, Url: "https://security-tracker.debian.org/tracker/CVE-2017-6507"}},
+				Severity:   []*osvschema.Severity{{Type: osvschema.Severity_CVSS_V3, Score: "CVSS:3.0/AV:N/AC:H/PR:N/UI:N/S:U/C:N/I:H/A:N"}},
 			},
 		},
 	}
@@ -181,7 +216,7 @@ func TestGenerateOSVFromDebianTracker(t *testing.T) {
 		sortAffected(gotVuln.Affected)
 		sortAffected(wantVuln.Affected)
 
-		if diff := cmp.Diff(wantVuln, gotVuln); diff != "" {
+		if diff := cmp.Diff(wantVuln, gotVuln, protocmp.Transform()); diff != "" {
 			t.Errorf("OSV for %s mismatch (-want +got):\n%s", cveID, diff)
 		}
 	}

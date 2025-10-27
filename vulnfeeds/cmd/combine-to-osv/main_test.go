@@ -10,6 +10,8 @@ import (
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/google/osv/vulnfeeds/cves"
 	"github.com/ossf/osv-schema/bindings/go/osvschema"
+	"google.golang.org/protobuf/types/known/timestamppb"
+	"google.golang.org/protobuf/testing/protocmp"
 )
 
 const testdataPath = "../../test_data/combine-to-osv"
@@ -59,11 +61,11 @@ func TestCombineIntoOSV(t *testing.T) {
 
 	// Check modified and published dates
 	expectedModified, _ := time.Parse(time.RFC3339, "2023-01-02T12:00:00Z")
-	if !cve1234.Modified.Equal(expectedModified) {
+	if !cve1234.Modified.AsTime().Equal(expectedModified) {
 		t.Errorf("CVE-2023-1234: expected modified time %v, got %v", expectedModified, cve1234.Modified)
 	}
 	expectedPublished, _ := time.Parse(time.RFC3339, "2023-01-01T09:00:00Z")
-	if !cve1234.Published.Equal(expectedPublished) {
+	if !cve1234.Published.AsTime().Equal(expectedPublished) {
 		t.Errorf("CVE-2023-1234: expected published time %v, got %v", expectedPublished, cve1234.Published)
 	}
 
@@ -78,7 +80,7 @@ func TestCombineIntoOSV(t *testing.T) {
 	}
 
 	// Check affected (based on pickAffectedInformation logic)
-	var affectedForRepoA osvschema.Affected
+	var affectedForRepoA *osvschema.Affected
 	foundAffected := false
 	for _, a := range cve1234.Affected {
 		if len(a.Ranges) > 0 && a.Ranges[0].Repo == "https://example.com/repo/a" {
@@ -92,10 +94,10 @@ func TestCombineIntoOSV(t *testing.T) {
 		t.Fatal("Did not find affected for repo https://example.com/repo/a")
 	}
 
-	expectedRange := osvschema.Range{
-		Type: "GIT",
+	expectedRange := &osvschema.Range{
+		Type: osvschema.Range_GIT,
 		Repo: "https://example.com/repo/a",
-		Events: []osvschema.Event{
+		Events: []*osvschema.Event{
 			{Introduced: "1.0.0"},
 			{Fixed: "1.0.1"},
 		},
@@ -103,7 +105,7 @@ func TestCombineIntoOSV(t *testing.T) {
 
 	// The current logic for pickAffectedInformation when len(cveRanges) == 1 && len(nvdRanges) == 1
 	// is to prefer cve5 data.
-	if diff := cmp.Diff(expectedRange, affectedForRepoA.Ranges[0]); diff != "" {
+	if diff := cmp.Diff(expectedRange, affectedForRepoA.Ranges[0], protocmp.Transform()); diff != "" {
 		t.Errorf("CVE-2023-1234: affected range mismatch (-want +got):\n%s", diff)
 	}
 
@@ -133,13 +135,13 @@ func TestPickAffectedInformation(t *testing.T) {
 	repoB := "https://example.com/repo/b"
 
 	// Base data for tests
-	cve5Base := []osvschema.Affected{
+	cve5Base := []*osvschema.Affected{
 		{
-			Ranges: []osvschema.Range{
+			Ranges: []*osvschema.Range{
 				{
-					Type: "GIT",
+					Type: osvschema.Range_GIT,
 					Repo: repoA,
-					Events: []osvschema.Event{
+					Events: []*osvschema.Event{
 						{Introduced: "1.0.0"},
 						{Fixed: "1.0.1"},
 					},
@@ -148,13 +150,13 @@ func TestPickAffectedInformation(t *testing.T) {
 		},
 	}
 
-	nvdBase := []osvschema.Affected{
+	nvdBase := []*osvschema.Affected{
 		{
-			Ranges: []osvschema.Range{
+			Ranges: []*osvschema.Range{
 				{
-					Type: "GIT",
+					Type: osvschema.Range_GIT,
 					Repo: repoA,
-					Events: []osvschema.Event{
+					Events: []*osvschema.Event{
 						{Introduced: "1.0.0"},
 						{Fixed: "1.0.2"}, // Different fixed version
 					},
@@ -165,18 +167,18 @@ func TestPickAffectedInformation(t *testing.T) {
 
 	testCases := []struct {
 		name         string
-		cve5Affected []osvschema.Affected
-		nvdAffected  []osvschema.Affected
-		wantAffected []osvschema.Affected
+		cve5Affected []*osvschema.Affected
+		nvdAffected  []*osvschema.Affected
+		wantAffected []*osvschema.Affected
 	}{
 		{
 			name:         "NVD has more affected packages",
 			cve5Affected: cve5Base,
-			nvdAffected: append(append([]osvschema.Affected(nil), nvdBase...), osvschema.Affected{
-				Package: osvschema.Package{Name: "another"},
+			nvdAffected: append(append([]*osvschema.Affected(nil), nvdBase...), &osvschema.Affected{
+				Package: &osvschema.Package{Name: "another"},
 			}),
-			wantAffected: append(append([]osvschema.Affected(nil), nvdBase...), osvschema.Affected{
-				Package: osvschema.Package{Name: "another"},
+			wantAffected: append(append([]*osvschema.Affected(nil), nvdBase...), &osvschema.Affected{
+				Package: &osvschema.Package{Name: "another"},
 			}),
 		},
 		{
@@ -184,11 +186,11 @@ func TestPickAffectedInformation(t *testing.T) {
 			cve5Affected: cve5Base,
 			nvdAffected:  nvdBase,
 			// cve5's "1.0.1" fixed version should be kept
-			wantAffected: []osvschema.Affected{
+			wantAffected: []*osvschema.Affected{
 				{
-					Ranges: []osvschema.Range{
+					Ranges: []*osvschema.Range{
 						{
-							Type:   "GIT",
+							Type:   osvschema.Range_GIT,
 							Repo:   repoA,
 							Events: cve5Base[0].Ranges[0].Events,
 						},
@@ -198,38 +200,38 @@ func TestPickAffectedInformation(t *testing.T) {
 		},
 		{
 			name:         "cve5 is empty, use nvd",
-			cve5Affected: []osvschema.Affected{},
+			cve5Affected: []*osvschema.Affected{},
 			nvdAffected:  nvdBase,
 			wantAffected: nvdBase,
 		},
 		{
 			name:         "nvd is empty, use cve5",
 			cve5Affected: cve5Base,
-			nvdAffected:  []osvschema.Affected{},
+			nvdAffected:  []*osvschema.Affected{},
 			wantAffected: cve5Base,
 		},
 		{
 			name: "NVD provides missing introduced version",
-			cve5Affected: []osvschema.Affected{
+			cve5Affected: []*osvschema.Affected{
 				{
-					Ranges: []osvschema.Range{
+					Ranges: []*osvschema.Range{
 						{
-							Type: "GIT",
+							Type: osvschema.Range_GIT,
 							Repo: repoA,
-							Events: []osvschema.Event{
+							Events: []*osvschema.Event{
 								{Fixed: "1.0.1"}, // No introduced
 							},
 						},
 					},
 				},
 			},
-			nvdAffected: []osvschema.Affected{
+			nvdAffected: []*osvschema.Affected{
 				{
-					Ranges: []osvschema.Range{
+					Ranges: []*osvschema.Range{
 						{
-							Type: "GIT",
+							Type: osvschema.Range_GIT,
 							Repo: repoA,
-							Events: []osvschema.Event{
+							Events: []*osvschema.Event{
 								{Introduced: "1.0.0"}, // NVD has introduced
 								{Fixed: "1.0.2"},
 							},
@@ -237,13 +239,13 @@ func TestPickAffectedInformation(t *testing.T) {
 					},
 				},
 			},
-			wantAffected: []osvschema.Affected{
+			wantAffected: []*osvschema.Affected{
 				{
-					Ranges: []osvschema.Range{
+					Ranges: []*osvschema.Range{
 						{
-							Type: "GIT",
+							Type: osvschema.Range_GIT,
 							Repo: repoA,
-							Events: []osvschema.Event{
+							Events: []*osvschema.Event{
 								{Introduced: "1.0.0"},
 								{Fixed: "1.0.1"},
 							},
@@ -254,26 +256,26 @@ func TestPickAffectedInformation(t *testing.T) {
 		},
 		{
 			name: "NVD provides missing fixed version",
-			cve5Affected: []osvschema.Affected{
+			cve5Affected: []*osvschema.Affected{
 				{
-					Ranges: []osvschema.Range{
+					Ranges: []*osvschema.Range{
 						{
-							Type: "GIT",
+							Type: osvschema.Range_GIT,
 							Repo: repoA,
-							Events: []osvschema.Event{
+							Events: []*osvschema.Event{
 								{Introduced: "1.0.0"}, // No fixed
 							},
 						},
 					},
 				},
 			},
-			nvdAffected: []osvschema.Affected{
+			nvdAffected: []*osvschema.Affected{
 				{
-					Ranges: []osvschema.Range{
+					Ranges: []*osvschema.Range{
 						{
-							Type: "GIT",
+							Type: osvschema.Range_GIT,
 							Repo: repoA,
-							Events: []osvschema.Event{
+							Events: []*osvschema.Event{
 								{Introduced: "0.9.0"},
 								{Fixed: "1.0.2"}, // NVD has fixed
 							},
@@ -281,13 +283,13 @@ func TestPickAffectedInformation(t *testing.T) {
 					},
 				},
 			},
-			wantAffected: []osvschema.Affected{
+			wantAffected: []*osvschema.Affected{
 				{
-					Ranges: []osvschema.Range{
+					Ranges: []*osvschema.Range{
 						{
-							Type: "GIT",
+							Type: osvschema.Range_GIT,
 							Repo: repoA,
-							Events: []osvschema.Event{
+							Events: []*osvschema.Event{
 								{Introduced: "1.0.0"},
 								{Fixed: "1.0.2"},
 							},
@@ -299,13 +301,13 @@ func TestPickAffectedInformation(t *testing.T) {
 		{
 			name:         "NVD has unmatched repo, should be added",
 			cve5Affected: cve5Base,
-			nvdAffected: []osvschema.Affected{
+			nvdAffected: []*osvschema.Affected{
 				{
-					Ranges: []osvschema.Range{
+					Ranges: []*osvschema.Range{
 						{
-							Type: "GIT",
+							Type: osvschema.Range_GIT,
 							Repo: repoB, // Different repo
-							Events: []osvschema.Event{
+							Events: []*osvschema.Event{
 								{Introduced: "2.0.0"},
 								{Fixed: "2.0.1"},
 							},
@@ -313,14 +315,14 @@ func TestPickAffectedInformation(t *testing.T) {
 					},
 				},
 			},
-			wantAffected: []osvschema.Affected{
+			wantAffected: []*osvschema.Affected{
 				cve5Base[0], // From cve5
 				{
-					Ranges: []osvschema.Range{
+					Ranges: []*osvschema.Range{
 						{
-							Type: "GIT",
+							Type: osvschema.Range_GIT,
 							Repo: repoB,
-							Events: []osvschema.Event{
+							Events: []*osvschema.Event{
 								{Introduced: "2.0.0"},
 								{Fixed: "2.0.1"},
 							},
@@ -332,7 +334,7 @@ func TestPickAffectedInformation(t *testing.T) {
 	}
 
 	// Sorter for comparing slices of Affected, ignoring order.
-	sorter := cmpopts.SortSlices(func(a, b osvschema.Affected) bool {
+	sorter := cmpopts.SortSlices(func(a, b *osvschema.Affected) bool {
 		if len(a.Ranges) == 0 || len(a.Ranges[0].Repo) == 0 {
 			return true
 		}
@@ -346,17 +348,18 @@ func TestPickAffectedInformation(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			// Create a copy to avoid modifying the test case data
-			cve5Actual := make([]osvschema.Affected, len(tc.cve5Affected))
+			cve5Actual := make([]*osvschema.Affected, len(tc.cve5Affected))
 			copy(cve5Actual, tc.cve5Affected)
 
 			gotAffected := pickAffectedInformation(cve5Actual, tc.nvdAffected)
 
-			if diff := cmp.Diff(tc.wantAffected, gotAffected, sorter); diff != "" {
+			if diff := cmp.Diff(tc.wantAffected, gotAffected, sorter, protocmp.Transform()); diff != "" {
 				t.Errorf("pickAffectedInformation() mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}
 }
+
 
 func TestCombineTwoOSVRecords(t *testing.T) {
 	cve5Modified, _ := time.Parse(time.RFC3339, "2023-01-01T12:00:00Z")
@@ -365,47 +368,47 @@ func TestCombineTwoOSVRecords(t *testing.T) {
 	nvdPublished, _ := time.Parse(time.RFC3339, "2023-01-01T09:00:00Z") // Earlier
 
 	cve5 := osvschema.Vulnerability{
-		ID:        "CVE-2023-1234",
-		Modified:  cve5Modified,
-		Published: cve5Published,
+		Id:        "CVE-2023-1234",
+		Modified:  timestamppb.New(cve5Modified),
+		Published: timestamppb.New(cve5Published),
 		Aliases:   []string{"GHSA-1234"},
-		References: []osvschema.Reference{
-			{Type: "WEB", URL: "https://example.com/cve5"},
+		References: []*osvschema.Reference{
+			{Type: osvschema.Reference_WEB, Url: "https://example.com/cve5"},
 		},
-		Affected: []osvschema.Affected{
+		Affected: []*osvschema.Affected{
 			{
-				Package: osvschema.Package{Name: "package-a"},
+				Package: &osvschema.Package{Name: "package-a"},
 			},
 		},
 	}
 
 	nvd := osvschema.Vulnerability{
-		ID:        "CVE-2023-1234",
-		Modified:  nvdModified,
-		Published: nvdPublished,
+		Id:        "CVE-2023-1234",
+		Modified:  timestamppb.New(nvdModified),
+		Published: timestamppb.New(nvdPublished),
 		Aliases:   []string{"GHSA-1234", "GHSA-5678"},
-		References: []osvschema.Reference{
-			{Type: "WEB", URL: "https://example.com/cve5"}, // Duplicate
-			{Type: "WEB", URL: "https://example.com/nvd"},
+		References: []*osvschema.Reference{
+			{Type: osvschema.Reference_WEB, Url: "https://example.com/cve5"}, // Duplicate
+			{Type: osvschema.Reference_WEB, Url: "https://example.com/nvd"},
 		},
-		Affected: []osvschema.Affected{
+		Affected: []*osvschema.Affected{
 			{
-				Package: osvschema.Package{Name: "package-a"},
+				Package: &osvschema.Package{Name: "package-a"},
 			},
 			{
-				Package: osvschema.Package{Name: "package-b"},
+				Package: &osvschema.Package{Name: "package-b"},
 			},
 		},
 	}
 
 	expected := osvschema.Vulnerability{
-		ID:        "CVE-2023-1234",
-		Modified:  nvdModified,  // Should take later date from NVD
-		Published: nvdPublished, // Should take earlier date from NVD
+		Id:        "CVE-2023-1234",
+		Modified:  timestamppb.New(nvdModified),  // Should take later date from NVD
+		Published: timestamppb.New(nvdPublished), // Should take earlier date from NVD
 		Aliases:   []string{"GHSA-1234", "GHSA-5678"},
-		References: []osvschema.Reference{
-			{Type: "WEB", URL: "https://example.com/cve5"},
-			{Type: "WEB", URL: "https://example.com/nvd"},
+		References: []*osvschema.Reference{
+			{Type: osvschema.Reference_WEB, Url: "https://example.com/cve5"},
+			{Type: osvschema.Reference_WEB, Url: "https://example.com/nvd"},
 		},
 		// pickAffectedInformation prefers nvd if it has more packages
 		Affected: nvd.Affected,
@@ -417,13 +420,13 @@ func TestCombineTwoOSVRecords(t *testing.T) {
 	sort.Strings(got.Aliases)
 	sort.Strings(expected.Aliases)
 	sort.Slice(got.References, func(i, j int) bool {
-		return got.References[i].URL < got.References[j].URL
+		return got.References[i].Url < got.References[j].Url
 	})
 	sort.Slice(expected.References, func(i, j int) bool {
-		return expected.References[i].URL < expected.References[j].URL
+		return expected.References[i].Url < expected.References[j].Url
 	})
 
-	if diff := cmp.Diff(expected, got); diff != "" {
+	if diff := cmp.Diff(expected, got, protocmp.Transform()); diff != "" {
 		t.Errorf("combineTwoOSVRecords() mismatch (-want +got):\n%s", diff)
 	}
 }

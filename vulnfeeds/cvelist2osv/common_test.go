@@ -6,21 +6,22 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/osv/vulnfeeds/vulns"
 	"github.com/ossf/osv-schema/bindings/go/osvschema"
+	"google.golang.org/protobuf/testing/protocmp"
 )
 
 func TestAddAffected(t *testing.T) {
 	v := &vulns.Vulnerability{
 		Vulnerability: osvschema.Vulnerability{
-			Affected: []osvschema.Affected{
+			Affected: []*osvschema.Affected{
 				{
-					Package: osvschema.Package{
+					Package: &osvschema.Package{
 						Name:      "my-package",
 						Ecosystem: "my-ecosystem",
 					},
-					Ranges: []osvschema.Range{
+					Ranges: []*osvschema.Range{
 						{
-							Type: "SEMVER",
-							Events: []osvschema.Event{
+							Type: osvschema.Range_SEMVER,
+							Events: []*osvschema.Event{
 								{Introduced: "1.0.0"},
 								{Fixed: "1.0.1"},
 							},
@@ -30,22 +31,24 @@ func TestAddAffected(t *testing.T) {
 			},
 		},
 	}
-	aff := osvschema.Affected{
-		Package: osvschema.Package{
+	aff := &osvschema.Affected{
+		Package: &osvschema.Package{
 			Name:      "my-package",
 			Ecosystem: "my-ecosystem",
 		},
-		Ranges: []osvschema.Range{
-			{ // Duplicate range
-				Type: "SEMVER",
-				Events: []osvschema.Event{
+		Ranges: []*osvschema.Range{
+			{
+				// Duplicate range
+				Type: osvschema.Range_SEMVER,
+				Events: []*osvschema.Event{
 					{Introduced: "1.0.0"},
 					{Fixed: "1.0.1"},
 				},
 			},
-			{ // New range
-				Type: "SEMVER",
-				Events: []osvschema.Event{
+			{
+				// New range
+				Type: osvschema.Range_SEMVER,
+				Events: []*osvschema.Event{
 					{Introduced: "2.0.0"},
 					{Fixed: "2.0.1"},
 				},
@@ -56,16 +59,16 @@ func TestAddAffected(t *testing.T) {
 
 	addAffected(v, aff, metrics)
 
-	expectedAffected := []osvschema.Affected{
+	expectedAffected := []*osvschema.Affected{
 		{
-			Package: osvschema.Package{
+			Package: &osvschema.Package{
 				Name:      "my-package",
 				Ecosystem: "my-ecosystem",
 			},
-			Ranges: []osvschema.Range{
+			Ranges: []*osvschema.Range{
 				{
-					Type: "SEMVER",
-					Events: []osvschema.Event{
+					Type: osvschema.Range_SEMVER,
+					Events: []*osvschema.Event{
 						{Introduced: "1.0.0"},
 						{Fixed: "1.0.1"},
 					},
@@ -73,14 +76,14 @@ func TestAddAffected(t *testing.T) {
 			},
 		},
 		{
-			Package: osvschema.Package{
+			Package: &osvschema.Package{
 				Name:      "my-package",
 				Ecosystem: "my-ecosystem",
 			},
-			Ranges: []osvschema.Range{
+			Ranges: []*osvschema.Range{
 				{
-					Type: "SEMVER",
-					Events: []osvschema.Event{
+					Type: osvschema.Range_SEMVER,
+					Events: []*osvschema.Event{
 						{Introduced: "2.0.0"},
 						{Fixed: "2.0.1"},
 					},
@@ -89,7 +92,7 @@ func TestAddAffected(t *testing.T) {
 		},
 	}
 
-	if diff := cmp.Diff(expectedAffected, v.Affected); diff != "" {
+	if diff := cmp.Diff(expectedAffected, v.Affected, protocmp.Transform()); diff != "" {
 		t.Errorf("addAffected() mismatch (-want +got):\n%s", diff)
 	}
 

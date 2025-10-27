@@ -13,6 +13,7 @@ import (
 	"github.com/google/osv/vulnfeeds/utility/logger"
 	"github.com/google/osv/vulnfeeds/vulns"
 	"github.com/ossf/osv-schema/bindings/go/osvschema"
+	"google.golang.org/protobuf/types/known/structpb"
 )
 
 // VersionRangeType represents the type of versioning scheme for a range.
@@ -96,13 +97,81 @@ func resolveVersionToCommit(cveID cves.CVEID, version, versionType, repo string,
 	return commit
 }
 
+// eventsToStructValueManual manually converts a slice of osvschema.Event into a
+// protobuf ListValue.
+func eventsToStructValueManual(events []*osvschema.Event) *structpb.Value {
+	// Create a slice to hold the protobuf Value representation of each Event.
+	eventListValues := make([]*structpb.Value, 0, len(events))
+
+	for _, event := range events {
+		// For each Event, create a map for its fields. The values must be *structpb.Value.
+		fields := make(map[string]*structpb.Value)
+
+		// Manually check and convert each field from a Go string to a protobuf StringValue.
+		if event.Introduced != "" {
+			fields["introduced"] = structpb.NewStringValue(event.Introduced)
+		}
+		if event.Fixed != "" {
+			fields["fixed"] = structpb.NewStringValue(event.Fixed)
+		}
+		if event.LastAffected != "" {
+			fields["last_affected"] = structpb.NewStringValue(event.LastAffected)
+		}
+		if event.Limit != "" {
+			fields["limit"] = structpb.NewStringValue(event.Limit)
+		}
+
+		// Create a protobuf Struct from the map of fields.
+		eventStruct := &structpb.Struct{Fields: fields}
+
+		// Wrap the Struct in a Value and append it to our list.
+		eventListValues = append(eventListValues, structpb.NewStructValue(eventStruct))
+	}
+
+	// Wrap the list of Value objects into a single ListValue.
+	return structpb.NewListValue(&structpb.ListValue{Values: eventListValues})
+}
+
+// rangesToStructValueManual manually converts a slice of osvschema.Range into a
+// protobuf ListValue.
+func rangesToStructValueManual(ranges []*osvschema.Range) *structpb.Value {
+	rangeListValues := make([]*structpb.Value, 0, len(ranges))
+
+	for _, r := range ranges {
+		fields := make(map[string]*structpb.Value)
+
+		// The Type is an enum, so we use its string representation.
+		fields["type"] = structpb.NewStringValue(r.Type.String())
+
+		if r.Repo != "" {
+			fields["repo"] = structpb.NewStringValue(r.Repo)
+		}
+
+		// The Events field is itself a list of structs, so we can reuse our
+		// manual event converter.
+		if len(r.Events) > 0 {
+			fields["events"] = eventsToStructValueManual(r.Events)
+		}
+
+		// The original range's DatabaseSpecific is preserved if it exists.
+		if r.DatabaseSpecific != nil {
+			fields["database_specific"] = structpb.NewStructValue(r.DatabaseSpecific)
+		}
+
+		rangeStruct := &structpb.Struct{Fields: fields}
+		rangeListValues = append(rangeListValues, structpb.NewStructValue(rangeStruct))
+	}
+
+	return structpb.NewListValue(&structpb.ListValue{Values: rangeListValues})
+}
+
 // Examines repos and tries to convert versions to commits by treating them as Git tags.
 // Takes a CVE ID string (for logging), VersionInfo with AffectedVersions and
 // typically no AffectedCommits and attempts to add AffectedCommits (including Fixed commits) where there aren't any.
 // Refuses to add the same commit to AffectedCommits more than once.
-func gitVersionsToCommits(cveID cves.CVEID, versionRanges []osvschema.Range, repos []string, metrics *ConversionMetrics, cache git.RepoTagsCache) (osvschema.Affected, error) {
+func gitVersionsToCommits(cveID cves.CVEID, versionRanges []*osvschema.Range, repos []string, metrics *ConversionMetrics, cache git.RepoTagsCache) (*osvschema.Affected, error) {
 	var newAff osvschema.Affected
-	var newVersionRanges []osvschema.Range
+	var newVersionRanges []*osvschema.Range
 	unresolvedRanges := versionRanges
 
 	for _, repo := range repos {
@@ -116,7 +185,7 @@ func gitVersionsToCommits(cveID cves.CVEID, versionRanges []osvschema.Range, rep
 			continue
 		}
 
-		var stillUnresolvedRanges []osvschema.Range
+		var stillUnresolvedRanges []*osvschema.Range
 		for _, vr := range unresolvedRanges {
 			var introduced, fixed, lastAffected string
 			for _, e := range vr.Events {
@@ -141,7 +210,7 @@ func gitVersionsToCommits(cveID cves.CVEID, versionRanges []osvschema.Range, rep
 			lastAffectedCommit := resolveVersionToCommit(cveID, lastAffected, "last_affected", repo, normalizedTags)
 
 			if introducedCommit != "" && (fixedCommit != "" || lastAffectedCommit != "") {
-				var newVR osvschema.Range
+				var newVR *osvschema.Range
 
 				if fixedCommit != "" {
 					newVR = cves.BuildVersionRange(introducedCommit, "", fixedCommit)
@@ -150,9 +219,13 @@ func gitVersionsToCommits(cveID cves.CVEID, versionRanges []osvschema.Range, rep
 				}
 
 				newVR.Repo = repo
-				newVR.Type = osvschema.RangeGit
-				newVR.DatabaseSpecific = make(map[string]any)
-				newVR.DatabaseSpecific["versions"] = vr.Events
+				newVR.Type = osvschema.Range_GIT
+				// Use the manual converter to store the original version info.
+				newVR.DatabaseSpecific = &structpb.Struct{
+					Fields: map[string]*structpb.Value{
+						"versions": eventsToStructValueManual(vr.Events),
+					},
+				}
 				newVersionRanges = append(newVersionRanges, newVR)
 			} else {
 				stillUnresolvedRanges = append(stillUnresolvedRanges, vr)
@@ -163,8 +236,12 @@ func gitVersionsToCommits(cveID cves.CVEID, versionRanges []osvschema.Range, rep
 
 	var err error
 	if len(unresolvedRanges) > 0 {
-		newAff.DatabaseSpecific = make(map[string]any)
-		newAff.DatabaseSpecific["unresolved_versions"] = unresolvedRanges
+		// Use the manual converter to store the unresolved ranges.
+		newAff.DatabaseSpecific = &structpb.Struct{
+			Fields: map[string]*structpb.Value{
+				"unresolved_ranges": rangesToStructValueManual(unresolvedRanges),
+			},
+		}
 		metrics.UnresolvedRangesCount += len(unresolvedRanges)
 	}
 
@@ -175,12 +252,12 @@ func gitVersionsToCommits(cveID cves.CVEID, versionRanges []osvschema.Range, rep
 		err = errors.New("was not able to get git version ranges")
 	}
 
-	return newAff, err
+	return &newAff, err
 }
 
 // findCPEVersionRanges extracts version ranges and CPE strings from the CNA's
 // CPE applicability statements in a CVE record.
-func findCPEVersionRanges(cve cves.CVE5) (versionRanges []osvschema.Range, cpes []string, err error) {
+func findCPEVersionRanges(cve cves.CVE5) (versionRanges []*osvschema.Range, cpes []string, err error) {
 	// TODO(jesslowe): Add logic to also extract CPEs from the 'affected' field (e.g., CVE-2025-1110).
 	for _, c := range cve.Containers.CNA.CPEApplicability {
 		for _, node := range c.Nodes {
@@ -260,7 +337,7 @@ func compareSemverLike(a, b string) int {
 }
 
 // addAffected adds an osvschema.Affected to a vulnerability, ensuring that no duplicate ranges are added.
-func addAffected(v *vulns.Vulnerability, aff osvschema.Affected, metrics *ConversionMetrics) {
+func addAffected(v *vulns.Vulnerability, aff *osvschema.Affected, metrics *ConversionMetrics) {
 	allExistingRanges := make(map[string]struct{})
 	for _, existingAff := range v.Affected {
 		for _, r := range existingAff.Ranges {
@@ -271,7 +348,7 @@ func addAffected(v *vulns.Vulnerability, aff osvschema.Affected, metrics *Conver
 		}
 	}
 
-	uniqueRanges := []osvschema.Range{}
+	uniqueRanges := []*osvschema.Range{}
 	for _, r := range aff.Ranges {
 		rangeBytes, err := json.Marshal(r)
 		if err != nil {
@@ -290,7 +367,7 @@ func addAffected(v *vulns.Vulnerability, aff osvschema.Affected, metrics *Conver
 	}
 
 	if len(uniqueRanges) > 0 {
-		newAff := osvschema.Affected{
+		newAff := &osvschema.Affected{
 			Package:          aff.Package,
 			Ranges:           uniqueRanges,
 			DatabaseSpecific: aff.DatabaseSpecific,

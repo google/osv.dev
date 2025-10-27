@@ -62,7 +62,7 @@ func loadExisting(vulnsDir string) (map[string]bool, error) {
 			return fmt.Errorf("failed to parse %s: %w", path, err)
 		}
 
-		ids[vuln.ID+"/"+vuln.Affected[0].Package.Name] = true
+		ids[vuln.Id+"/"+vuln.Affected[0].Package.Name] = true
 		for _, alias := range vuln.Aliases {
 			ids[alias+"/"+vuln.Affected[0].Package.Name] = true
 		}
@@ -185,7 +185,7 @@ func main() {
 				logger.Fatal("Failed to create dir", slog.Any("err", err))
 			}
 
-			vulnPath := filepath.Join(pkgDir, v.ID+extension)
+			vulnPath := filepath.Join(pkgDir, v.Id+extension)
 			if _, err := os.Stat(vulnPath); err == nil {
 				logger.Info("Skipping as it already exists", slog.String("path", vulnPath))
 				continue
@@ -208,7 +208,7 @@ func main() {
 
 			// If there are notes that require human intervention, write them to the end of the YAML.
 			if len(notes) > 0 {
-				notesPath := filepath.Join(pkgDir, v.ID+".notes")
+				notesPath := filepath.Join(pkgDir, v.Id+".notes")
 				_, err = f.WriteString("\n# <Vulnfeeds Notes>\n# " + strings.Join(notes, "\n# "))
 				if err != nil {
 					logger.Panic("Failed to write", slog.String("path", notesPath), slog.Any("err", err))

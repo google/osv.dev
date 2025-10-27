@@ -3,7 +3,6 @@ package main
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
 	"flag"
 	"fmt"
@@ -21,6 +20,7 @@ import (
 	"github.com/google/osv/vulnfeeds/utility/logger"
 	"github.com/ossf/osv-schema/bindings/go/osvschema"
 	"google.golang.org/api/iterator"
+	"google.golang.org/protobuf/encoding/protojson"
 )
 
 const (
@@ -147,20 +147,19 @@ func loadOSV(osvPath string) map[cves.CVEID]osvschema.Vulnerability {
 			return nil
 		}
 
-		file, err := os.Open(path)
+		file, err := os.ReadFile(path)
 		if err != nil {
 			logger.Warn("Failed to open OSV JSON file", slog.String("path", path), slog.Any("err", err))
 			return nil
 		}
 
 		var vuln osvschema.Vulnerability
-		decodeErr := json.NewDecoder(file).Decode(&vuln)
-		file.Close()
+		decodeErr := protojson.Unmarshal(file, &vuln)
 		if decodeErr != nil {
 			logger.Error("Failed to decode, skipping", slog.String("file", path), slog.Any("err", decodeErr))
 			return nil
 		}
-		allVulns[cves.CVEID(vuln.ID)] = vuln
+		allVulns[cves.CVEID(vuln.Id)] = vuln
 
 		return nil
 	})
@@ -218,23 +217,23 @@ func combineTwoOSVRecords(cve5 osvschema.Vulnerability, nvd osvschema.Vulnerabil
 	// Merge references, ensuring no duplicates.
 	refMap := make(map[string]bool)
 	for _, r := range baseOSV.References {
-		refMap[r.URL] = true
+		refMap[r.Url] = true
 	}
 	for _, r := range nvd.References {
-		if !refMap[r.URL] {
+		if !refMap[r.Url] {
 			baseOSV.References = append(baseOSV.References, r)
-			refMap[r.URL] = true
+			refMap[r.Url] = true
 		}
 	}
 
 	// Merge timestamps: latest modified, earliest published.
 	cve5Modified := baseOSV.Modified
-	if nvd.Modified.After(cve5Modified) {
+	if nvd.Modified.AsTime().After(cve5Modified.AsTime()) {
 		baseOSV.Modified = nvd.Modified
 	}
 
 	cve5Published := baseOSV.Published
-	if nvd.Published.Before(cve5Published) {
+	if nvd.Published.AsTime().Before(cve5Published.AsTime()) {
 		baseOSV.Published = nvd.Published
 	}
 
@@ -258,7 +257,7 @@ func combineTwoOSVRecords(cve5 osvschema.Vulnerability, nvd osvschema.Vulnerabil
 // If a match is found, it merges the version range information, preferring the entry
 // with more ranges. Unmatched nvdAffected packages are appended.
 // It returns a new slice and does not modify cve5Affected in place.
-func pickAffectedInformation(cve5Affected []osvschema.Affected, nvdAffected []osvschema.Affected) []osvschema.Affected {
+func pickAffectedInformation(cve5Affected []*osvschema.Affected, nvdAffected []*osvschema.Affected) []*osvschema.Affected {
 	if len(nvdAffected) == 0 {
 		return cve5Affected
 	}
@@ -267,7 +266,7 @@ func pickAffectedInformation(cve5Affected []osvschema.Affected, nvdAffected []os
 		return nvdAffected
 	}
 
-	nvdRepoMap := make(map[string][]osvschema.Range)
+	nvdRepoMap := make(map[string][]*osvschema.Range)
 	for _, affected := range nvdAffected {
 		for _, r := range affected.Ranges {
 			if r.Repo != "" {
@@ -277,7 +276,7 @@ func pickAffectedInformation(cve5Affected []osvschema.Affected, nvdAffected []os
 		}
 	}
 
-	cve5RepoMap := make(map[string][]osvschema.Range)
+	cve5RepoMap := make(map[string][]*osvschema.Range)
 	for _, affected := range cve5Affected {
 		for _, r := range affected.Ranges {
 			if r.Repo != "" {
@@ -287,11 +286,11 @@ func pickAffectedInformation(cve5Affected []osvschema.Affected, nvdAffected []os
 		}
 	}
 
-	newRepoAffectedMap := make(map[string]osvschema.Affected)
+	newRepoAffectedMap := make(map[string]*osvschema.Affected)
 
 	for repo, cveRanges := range cve5RepoMap {
 		if nvdRanges, ok := nvdRepoMap[repo]; ok {
-			var newAffectedRanges []osvschema.Range
+			var newAffectedRanges []*osvschema.Range
 
 			// Found a match. If NVD has more ranges, use its ranges.
 			if len(nvdRanges) > len(cveRanges) {
@@ -314,17 +313,17 @@ func pickAffectedInformation(cve5Affected []osvschema.Affected, nvdAffected []os
 				if c5Intro != "" || c5Fixed != "" {
 					newRange := cves.BuildVersionRange(c5Intro, "", c5Fixed)
 					newRange.Repo = repo
-					newRange.Type = osvschema.RangeGit // Preserve the repo
+					newRange.Type = osvschema.Range_GIT // Preserve the repo
 					newAffectedRanges = append(newAffectedRanges, newRange)
 				}
 			}
 			// Remove from map so we know which NVD packages are left.
 			delete(nvdRepoMap, repo)
-			newRepoAffectedMap[repo] = osvschema.Affected{
+			newRepoAffectedMap[repo] = &osvschema.Affected{
 				Ranges: newAffectedRanges,
 			}
 		} else {
-			newRepoAffectedMap[repo] = osvschema.Affected{
+			newRepoAffectedMap[repo] = &osvschema.Affected{
 				Ranges: cveRanges,
 			}
 		}
@@ -332,12 +331,12 @@ func pickAffectedInformation(cve5Affected []osvschema.Affected, nvdAffected []os
 
 	// Add remaining NVD packages that were not in cve5.
 	for repo, nvdRange := range nvdRepoMap {
-		newRepoAffectedMap[repo] = osvschema.Affected{
+		newRepoAffectedMap[repo] = &osvschema.Affected{
 			Ranges: nvdRange,
 		}
 	}
 
-	var combinedAffected []osvschema.Affected //nolint:prealloc
+	var combinedAffected []*osvschema.Affected //nolint:prealloc
 	for _, aff := range newRepoAffectedMap {
 		combinedAffected = append(combinedAffected, aff)
 	}
@@ -347,7 +346,7 @@ func pickAffectedInformation(cve5Affected []osvschema.Affected, nvdAffected []os
 
 // getRangeBoundaryVersions extracts the introduced and fixed versions from a slice of OSV events.
 // It iterates through the events and returns the last non-empty "introduced" and "fixed" versions found.
-func getRangeBoundaryVersions(events []osvschema.Event) (introduced, fixed string) {
+func getRangeBoundaryVersions(events []*osvschema.Event) (introduced, fixed string) {
 	for _, e := range events {
 		if e.Introduced != "0" && e.Introduced != "" {
 			introduced = e.Introduced

@@ -159,7 +159,7 @@ func loadOSV(osvPath string) map[cves.CVEID]*osvschema.Vulnerability {
 			logger.Error("Failed to decode, skipping", slog.String("file", path), slog.Any("err", decodeErr))
 			return nil
 		}
-		allVulns[cves.CVEID(vuln.Id)] = &vuln
+		allVulns[cves.CVEID(vuln.GetId())] = &vuln
 
 		return nil
 	})

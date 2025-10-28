@@ -62,9 +62,9 @@ func loadExisting(vulnsDir string) (map[string]bool, error) {
 			return fmt.Errorf("failed to parse %s: %w", path, err)
 		}
 
-		ids[vuln.Id+"/"+vuln.Affected[0].Package.Name] = true
-		for _, alias := range vuln.Aliases {
-			ids[alias+"/"+vuln.Affected[0].Package.Name] = true
+		ids[vuln.GetId()+"/"+vuln.GetAffected()[0].GetPackage().GetName()] = true
+		for _, alias := range vuln.GetAliases() {
+			ids[alias+"/"+vuln.GetAffected()[0].GetPackage().GetName()] = true
 		}
 
 		return nil
@@ -78,14 +78,14 @@ func loadExisting(vulnsDir string) (map[string]bool, error) {
 
 func anyUnbounded(v *vulns.Vulnerability) bool {
 	for _, affected := range v.Affected {
-		for _, ranges := range affected.Ranges {
+		for _, ranges := range affected.GetRanges() {
 			hasFixed := false
 			hasLastAffected := false
-			for _, event := range ranges.Events {
-				if event.Fixed != "" {
+			for _, event := range ranges.GetEvents() {
+				if event.GetFixed() != "" {
 					hasFixed = true
 				}
-				if event.LastAffected != "" {
+				if event.GetLastAffected() != "" {
 					hasLastAffected = true
 				}
 			}
@@ -170,7 +170,7 @@ func main() {
 			versions, notes := cves.ExtractVersionInfo(cve.CVE, validVersions, http.DefaultClient)
 
 			vulns.AttachExtractedVersionInfo(v, versions)
-			if len(v.Affected[0].Ranges) == 0 {
+			if len(v.Affected[0].GetRanges()) == 0 {
 				logger.Info("No affected versions detected")
 			}
 

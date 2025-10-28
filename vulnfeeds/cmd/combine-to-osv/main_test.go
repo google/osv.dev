@@ -410,19 +410,19 @@ func TestCombineTwoOSVRecords(t *testing.T) {
 			{Type: osvschema.Reference_WEB, Url: "https://example.com/nvd"},
 		},
 		// pickAffectedInformation prefers nvd if it has more packages
-		Affected: nvd.Affected,
+		Affected: nvd.GetAffected(),
 	}
 
 	got := combineTwoOSVRecords(cve5, nvd)
 
 	// Sort slices for consistent comparison
-	sort.Strings(got.Aliases)
-	sort.Strings(expected.Aliases)
-	sort.Slice(got.References, func(i, j int) bool {
-		return got.References[i].Url < got.References[j].Url
+	sort.Strings(got.GetAliases())
+	sort.Strings(expected.GetAliases())
+	sort.Slice(got.GetReferences(), func(i, j int) bool {
+		return got.GetReferences()[i].GetUrl() < got.GetReferences()[j].GetUrl()
 	})
-	sort.Slice(expected.References, func(i, j int) bool {
-		return expected.References[i].Url < expected.References[j].Url
+	sort.Slice(expected.GetReferences(), func(i, j int) bool {
+		return expected.GetReferences()[i].GetUrl() < expected.GetReferences()[j].GetUrl()
 	})
 
 	if diff := cmp.Diff(expected, got, protocmp.Transform()); diff != "" {

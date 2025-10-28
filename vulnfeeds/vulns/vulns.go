@@ -296,7 +296,7 @@ func (v *Vulnerability) AddPkgInfo(pkgInfo PackageInfo) {
 			// all versions before fixed is affected
 			versionRange.Events = append([]*osvschema.Event{{
 				Introduced: "0",
-			}}, versionRange.Events...)
+			}}, versionRange.GetEvents()...)
 		}
 		affected.Ranges = append(affected.Ranges, versionRange)
 	}

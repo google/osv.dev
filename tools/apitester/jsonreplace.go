@@ -92,7 +92,7 @@ var (
 )
 
 // replaceJSONInput takes a gjson path and replaces all elements the path matches with the output of matcher
-func replaceJSONInput(t *testing.T, jsonInput, path string, matcher func(toReplace gjson.Result) any) string {
+func replaceJSONInput(t *testing.T, jsonInput []byte, path string, matcher func(toReplace gjson.Result) any) []byte {
 	t.Helper()
 
 	pathArray := []string{}
@@ -103,7 +103,7 @@ func replaceJSONInput(t *testing.T, jsonInput, path string, matcher func(toRepla
 		// E.g. results.#.packages.#.vulnerabilities => results.#.packages.#
 		numOfEntriesPath := path[:strings.LastIndex(path, "#")+1]
 		// This returns a potentially nested array of array lengths
-		numOfEntries := gjson.Get(jsonInput, numOfEntriesPath)
+		numOfEntries := gjson.GetBytes(jsonInput, numOfEntriesPath)
 
 		// Use it to build up a list of concrete paths
 		buildSJSONPaths(t, &pathArray, path, numOfEntries)
@@ -114,9 +114,8 @@ func replaceJSONInput(t *testing.T, jsonInput, path string, matcher func(toRepla
 	var err error
 	json := jsonInput
 	for _, pathElem := range pathArray {
-		res := gjson.Get(jsonInput, pathElem)
-		// TODO: Optimize with byte arrays instead
-		json, err = sjson.SetOptions(json, pathElem, matcher(res), &sjson.Options{Optimistic: true})
+		res := gjson.GetBytes(jsonInput, pathElem)
+		json, err = sjson.SetBytesOptions(json, pathElem, matcher(res), &sjson.Options{Optimistic: true})
 		if err != nil {
 			t.Fatalf("failed to set element")
 		}

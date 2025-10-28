@@ -147,8 +147,8 @@ func Test_replaceJSONInput(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 
-			got := replaceJSONInput(&testing.T{}, tt.args.jsonInput, tt.args.path, tt.args.matcher)
-			if !gjson.Valid(got) {
+			got := replaceJSONInput(&testing.T{}, []byte(tt.args.jsonInput), tt.args.path, tt.args.matcher)
+			if !gjson.ValidBytes(got) {
 				t.Fatalf("Output not valid: \n%s", got)
 			}
 
@@ -160,7 +160,7 @@ func Test_replaceJSONInput(t *testing.T) {
 			var gotPretty bytes.Buffer
 
 			_ = json.Indent(&wantPretty, []byte(tt.want), "", "\t")
-			_ = json.Indent(&gotPretty, []byte(got), "", "\t")
+			_ = json.Indent(&gotPretty, got, "", "\t")
 
 			if diff := cmp.Diff(wantPretty.String(), gotPretty.String()); diff != "" {
 				t.Errorf("replaceJSONInput() diff (-want +got): %s", diff)

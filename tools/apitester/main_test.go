@@ -50,7 +50,7 @@ func normalizeJSONBody(t *testing.T, resp *http.Response) string {
 		body = replaceJSONInput(t, body, rule.Path, rule.ReplaceFunc)
 	}
 
-	return string(pretty.Pretty([]byte(body)))
+	return string(pretty.Pretty(body))
 }
 
 func Test(t *testing.T) {

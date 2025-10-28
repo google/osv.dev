@@ -47,7 +47,7 @@ func determineInteractionName(interaction *cassette.Interaction) string {
 	return interaction.Request.Headers.Get("X-Test-Name")
 }
 
-func readBody(t *testing.T, resp *http.Response) string {
+func readBody(t *testing.T, resp *http.Response) []byte {
 	t.Helper()
 
 	defer resp.Body.Close()
@@ -58,7 +58,7 @@ func readBody(t *testing.T, resp *http.Response) string {
 		t.Fatal(err)
 	}
 
-	return string(body)
+	return body
 }
 
 func PlayInteraction(t *testing.T, interaction *cassette.Interaction) *http.Response {

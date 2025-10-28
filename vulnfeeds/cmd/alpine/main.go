@@ -62,7 +62,7 @@ func main() {
 	}
 
 	ctx := context.Background()
-	upload.Upload(ctx, "Alpine CVEs", *uploadToGCS, *outputBucketName, "", *numWorkers, *alpineOutputPath, vulnerabilities)
+	upload.Upload(ctx, "Alpine CVEs", *uploadToGCS, *outputBucketName, "", *numWorkers, *alpineOutputPath, vulnerabilities, true)
 	logger.Info("Alpine CVE conversion succeeded.")
 }
 

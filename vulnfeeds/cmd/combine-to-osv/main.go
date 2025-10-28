@@ -89,7 +89,7 @@ func main() {
 		vulnerabilities = append(vulnerabilities, &v)
 	}
 
-	upload.Upload(ctx, "OSV files", *uploadToGCS, *outputBucketName, *overridesBucketName, *numWorkers, *osvOutputPath, vulnerabilities)
+	upload.Upload(ctx, "OSV files", *uploadToGCS, *outputBucketName, *overridesBucketName, *numWorkers, *osvOutputPath, vulnerabilities, false)
 }
 
 // extractCVEName extracts the CVE name from a given filename and prefix.

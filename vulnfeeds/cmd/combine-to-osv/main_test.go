@@ -10,8 +10,8 @@ import (
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/google/osv/vulnfeeds/cves"
 	"github.com/ossf/osv-schema/bindings/go/osvschema"
-	"google.golang.org/protobuf/types/known/timestamppb"
 	"google.golang.org/protobuf/testing/protocmp"
+	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 const testdataPath = "../../test_data/combine-to-osv"
@@ -35,7 +35,7 @@ func TestCombineIntoOSV(t *testing.T) {
 
 	cve5osv := loadOSV(cve5Path)
 	nvdosv := loadOSV(nvdPath)
-	nvdosvCopy := make(map[cves.CVEID]osvschema.Vulnerability)
+	nvdosvCopy := make(map[cves.CVEID]*osvschema.Vulnerability)
 	for k, v := range nvdosv {
 		nvdosvCopy[k] = v
 	}
@@ -61,29 +61,29 @@ func TestCombineIntoOSV(t *testing.T) {
 
 	// Check modified and published dates
 	expectedModified, _ := time.Parse(time.RFC3339, "2023-01-02T12:00:00Z")
-	if !cve1234.Modified.AsTime().Equal(expectedModified) {
-		t.Errorf("CVE-2023-1234: expected modified time %v, got %v", expectedModified, cve1234.Modified)
+	if !cve1234.GetModified().AsTime().Equal(expectedModified) {
+		t.Errorf("CVE-2023-1234: expected modified time %v, got %v", expectedModified, cve1234.GetModified())
 	}
 	expectedPublished, _ := time.Parse(time.RFC3339, "2023-01-01T09:00:00Z")
-	if !cve1234.Published.AsTime().Equal(expectedPublished) {
-		t.Errorf("CVE-2023-1234: expected published time %v, got %v", expectedPublished, cve1234.Published)
+	if !cve1234.GetPublished().AsTime().Equal(expectedPublished) {
+		t.Errorf("CVE-2023-1234: expected published time %v, got %v", expectedPublished, cve1234.GetPublished())
 	}
 
 	// Check references
-	if len(cve1234.References) != 2 {
-		t.Errorf("CVE-2023-1234: expected 2 references, got %d", len(cve1234.References))
+	if len(cve1234.GetReferences()) != 2 {
+		t.Errorf("CVE-2023-1234: expected 2 references, got %d", len(cve1234.GetReferences()))
 	}
 
 	// Check aliases
-	if len(cve1234.Aliases) != 2 {
-		t.Errorf("CVE-2023-1234: expected 2 aliases, got %d", len(cve1234.Aliases))
+	if len(cve1234.GetAliases()) != 2 {
+		t.Errorf("CVE-2023-1234: expected 2 aliases, got %d", len(cve1234.GetAliases()))
 	}
 
 	// Check affected (based on pickAffectedInformation logic)
 	var affectedForRepoA *osvschema.Affected
 	foundAffected := false
-	for _, a := range cve1234.Affected {
-		if len(a.Ranges) > 0 && a.Ranges[0].Repo == "https://example.com/repo/a" {
+	for _, a := range cve1234.GetAffected() {
+		if len(a.GetRanges()) > 0 && a.GetRanges()[0].GetRepo() == "https://example.com/repo/a" {
 			affectedForRepoA = a
 			foundAffected = true
 
@@ -105,7 +105,7 @@ func TestCombineIntoOSV(t *testing.T) {
 
 	// The current logic for pickAffectedInformation when len(cveRanges) == 1 && len(nvdRanges) == 1
 	// is to prefer cve5 data.
-	if diff := cmp.Diff(expectedRange, affectedForRepoA.Ranges[0], protocmp.Transform()); diff != "" {
+	if diff := cmp.Diff(expectedRange, affectedForRepoA.GetRanges()[0], protocmp.Transform()); diff != "" {
 		t.Errorf("CVE-2023-1234: affected range mismatch (-want +got):\n%s", diff)
 	}
 
@@ -192,7 +192,7 @@ func TestPickAffectedInformation(t *testing.T) {
 						{
 							Type:   osvschema.Range_GIT,
 							Repo:   repoA,
-							Events: cve5Base[0].Ranges[0].Events,
+							Events: cve5Base[0].GetRanges()[0].GetEvents(),
 						},
 					},
 				},
@@ -335,14 +335,14 @@ func TestPickAffectedInformation(t *testing.T) {
 
 	// Sorter for comparing slices of Affected, ignoring order.
 	sorter := cmpopts.SortSlices(func(a, b *osvschema.Affected) bool {
-		if len(a.Ranges) == 0 || len(a.Ranges[0].Repo) == 0 {
+		if len(a.GetRanges()) == 0 || len(a.GetRanges()[0].GetRepo()) == 0 {
 			return true
 		}
-		if len(b.Ranges) == 0 || len(b.Ranges[0].Repo) == 0 {
+		if len(b.GetRanges()) == 0 || len(b.GetRanges()[0].GetRepo()) == 0 {
 			return false
 		}
 
-		return a.Ranges[0].Repo < b.Ranges[0].Repo
+		return a.GetRanges()[0].GetRepo() < b.GetRanges()[0].GetRepo()
 	})
 
 	for _, tc := range testCases {
@@ -360,14 +360,13 @@ func TestPickAffectedInformation(t *testing.T) {
 	}
 }
 
-
 func TestCombineTwoOSVRecords(t *testing.T) {
 	cve5Modified, _ := time.Parse(time.RFC3339, "2023-01-01T12:00:00Z")
 	cve5Published, _ := time.Parse(time.RFC3339, "2023-01-01T10:00:00Z")
 	nvdModified, _ := time.Parse(time.RFC3339, "2023-01-02T12:00:00Z")  // Later
 	nvdPublished, _ := time.Parse(time.RFC3339, "2023-01-01T09:00:00Z") // Earlier
 
-	cve5 := osvschema.Vulnerability{
+	cve5 := &osvschema.Vulnerability{
 		Id:        "CVE-2023-1234",
 		Modified:  timestamppb.New(cve5Modified),
 		Published: timestamppb.New(cve5Published),
@@ -382,7 +381,7 @@ func TestCombineTwoOSVRecords(t *testing.T) {
 		},
 	}
 
-	nvd := osvschema.Vulnerability{
+	nvd := &osvschema.Vulnerability{
 		Id:        "CVE-2023-1234",
 		Modified:  timestamppb.New(nvdModified),
 		Published: timestamppb.New(nvdPublished),
@@ -401,7 +400,7 @@ func TestCombineTwoOSVRecords(t *testing.T) {
 		},
 	}
 
-	expected := osvschema.Vulnerability{
+	expected := &osvschema.Vulnerability{
 		Id:        "CVE-2023-1234",
 		Modified:  timestamppb.New(nvdModified),  // Should take later date from NVD
 		Published: timestamppb.New(nvdPublished), // Should take earlier date from NVD

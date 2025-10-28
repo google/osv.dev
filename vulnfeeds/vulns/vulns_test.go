@@ -302,7 +302,7 @@ func TestAddPkgInfo(t *testing.T) {
 	vuln.AddPkgInfo(testPkgInfoCommitsMultiple) // This will end up in vuln.Affected[4]
 	vuln.AddPkgInfo(testPkgInfoEcoMultiple)     // This will end up in vuln.Affected[5]
 
-	t.Logf("Resulting vuln: %+v", vuln)
+	t.Logf("Resulting vuln: %+v", &vuln)
 
 	// testPkgInfoNameEco vvvvvvvvvvvvvvv
 	if vuln.Affected[0].Package.Name != testPkgInfoNameEco.PkgName {

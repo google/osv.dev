@@ -348,12 +348,14 @@ func TestFromCVE5(t *testing.T) {
 				if vuln.References[i].Url != vuln.References[j].Url {
 					return vuln.References[i].Url < vuln.References[j].Url
 				}
+
 				return vuln.References[i].Type < vuln.References[j].Type
 			})
 			sort.Slice(tc.expectedVuln.References, func(i, j int) bool {
 				if tc.expectedVuln.References[i].Url != tc.expectedVuln.References[j].Url {
 					return tc.expectedVuln.References[i].Url < tc.expectedVuln.References[j].Url
 				}
+
 				return tc.expectedVuln.References[i].Type < tc.expectedVuln.References[j].Type
 			})
 

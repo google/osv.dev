@@ -86,7 +86,7 @@ func main() {
 
 	vulnerabilities := make([]*osvschema.Vulnerability, 0, len(combinedData))
 	for _, v := range combinedData {
-		vulnerabilities = append(vulnerabilities, &v)
+		vulnerabilities = append(vulnerabilities, v)
 	}
 
 	upload.Upload(ctx, "OSV files", *uploadToGCS, *outputBucketName, *overridesBucketName, *numWorkers, *osvOutputPath, vulnerabilities)
@@ -136,8 +136,8 @@ func listBucketObjects(bucketName string, prefix string) ([]string, error) {
 // The function returns a map of CVE IDs to their corresponding Vulnerability objects.
 // Files that are not ".json" files, directories, or files ending in ".metrics.json" are skipped.
 // The function will log warnings for files that fail to open or decode, and will terminate if it fails to walk the directory.
-func loadOSV(osvPath string) map[cves.CVEID]osvschema.Vulnerability {
-	allVulns := make(map[cves.CVEID]osvschema.Vulnerability)
+func loadOSV(osvPath string) map[cves.CVEID]*osvschema.Vulnerability {
+	allVulns := make(map[cves.CVEID]*osvschema.Vulnerability)
 	logger.Info("Loading OSV records", slog.String("path", osvPath))
 	err := filepath.WalkDir(osvPath, func(path string, d fs.DirEntry, err error) error {
 		if err != nil {
@@ -159,7 +159,7 @@ func loadOSV(osvPath string) map[cves.CVEID]osvschema.Vulnerability {
 			logger.Error("Failed to decode, skipping", slog.String("file", path), slog.Any("err", decodeErr))
 			return nil
 		}
-		allVulns[cves.CVEID(vuln.Id)] = vuln
+		allVulns[cves.CVEID(vuln.Id)] = &vuln
 
 		return nil
 	})
@@ -172,12 +172,12 @@ func loadOSV(osvPath string) map[cves.CVEID]osvschema.Vulnerability {
 }
 
 // combineIntoOSV creates OSV entry by combining loaded CVEs from NVD and PackageInfo information from security advisories.
-func combineIntoOSV(cve5osv map[cves.CVEID]osvschema.Vulnerability, nvdosv map[cves.CVEID]osvschema.Vulnerability, mandatoryCVEIDs []string) map[cves.CVEID]osvschema.Vulnerability {
-	osvRecords := make(map[cves.CVEID]osvschema.Vulnerability)
+func combineIntoOSV(cve5osv map[cves.CVEID]*osvschema.Vulnerability, nvdosv map[cves.CVEID]*osvschema.Vulnerability, mandatoryCVEIDs []string) map[cves.CVEID]*osvschema.Vulnerability {
+	osvRecords := make(map[cves.CVEID]*osvschema.Vulnerability)
 
 	// Iterate through CVEs from security advisories (cve5) as the base
 	for cveID, cve5 := range cve5osv {
-		var baseOSV osvschema.Vulnerability
+		var baseOSV *osvschema.Vulnerability
 		nvd, ok := nvdosv[cveID]
 
 		if ok {
@@ -188,7 +188,7 @@ func combineIntoOSV(cve5osv map[cves.CVEID]osvschema.Vulnerability, nvdosv map[c
 			baseOSV = cve5
 		}
 
-		if len(baseOSV.Affected) == 0 {
+		if len(baseOSV.GetAffected()) == 0 {
 			// check if part exists.
 			if !slices.Contains(mandatoryCVEIDs, string(cveID)) {
 				continue
@@ -199,7 +199,7 @@ func combineIntoOSV(cve5osv map[cves.CVEID]osvschema.Vulnerability, nvdosv map[c
 
 	// Add any remaining CVEs from NVD that were not in the advisory data.
 	for cveID, nvd := range nvdosv {
-		if len(nvd.Affected) == 0 {
+		if len(nvd.GetAffected()) == 0 {
 			continue
 		}
 		osvRecords[cveID] = nvd
@@ -209,40 +209,40 @@ func combineIntoOSV(cve5osv map[cves.CVEID]osvschema.Vulnerability, nvdosv map[c
 }
 
 // combineTwoOSVRecords takes two osv records and combines them into one
-func combineTwoOSVRecords(cve5 osvschema.Vulnerability, nvd osvschema.Vulnerability) osvschema.Vulnerability {
+func combineTwoOSVRecords(cve5 *osvschema.Vulnerability, nvd *osvschema.Vulnerability) *osvschema.Vulnerability {
 	baseOSV := cve5
-	combinedAffected := pickAffectedInformation(cve5.Affected, nvd.Affected)
+	combinedAffected := pickAffectedInformation(cve5.GetAffected(), nvd.GetAffected())
 
 	baseOSV.Affected = combinedAffected
 	// Merge references, ensuring no duplicates.
 	refMap := make(map[string]bool)
-	for _, r := range baseOSV.References {
-		refMap[r.Url] = true
+	for _, r := range baseOSV.GetReferences() {
+		refMap[r.GetUrl()] = true
 	}
-	for _, r := range nvd.References {
-		if !refMap[r.Url] {
+	for _, r := range nvd.GetReferences() {
+		if !refMap[r.GetUrl()] {
 			baseOSV.References = append(baseOSV.References, r)
-			refMap[r.Url] = true
+			refMap[r.GetUrl()] = true
 		}
 	}
 
 	// Merge timestamps: latest modified, earliest published.
-	cve5Modified := baseOSV.Modified
-	if nvd.Modified.AsTime().After(cve5Modified.AsTime()) {
-		baseOSV.Modified = nvd.Modified
+	cve5Modified := baseOSV.GetModified()
+	if nvd.GetModified().AsTime().After(cve5Modified.AsTime()) {
+		baseOSV.Modified = nvd.GetModified()
 	}
 
-	cve5Published := baseOSV.Published
-	if nvd.Published.AsTime().Before(cve5Published.AsTime()) {
-		baseOSV.Published = nvd.Published
+	cve5Published := baseOSV.GetPublished()
+	if nvd.GetPublished().AsTime().Before(cve5Published.AsTime()) {
+		baseOSV.Published = nvd.GetPublished()
 	}
 
 	// Merge aliases, ensuring no duplicates.
 	aliasMap := make(map[string]bool)
-	for _, alias := range baseOSV.Aliases {
+	for _, alias := range baseOSV.GetAliases() {
 		aliasMap[alias] = true
 	}
-	for _, alias := range nvd.Aliases {
+	for _, alias := range nvd.GetAliases() {
 		if !aliasMap[alias] {
 			baseOSV.Aliases = append(baseOSV.Aliases, alias)
 			aliasMap[alias] = true
@@ -268,9 +268,9 @@ func pickAffectedInformation(cve5Affected []*osvschema.Affected, nvdAffected []*
 
 	nvdRepoMap := make(map[string][]*osvschema.Range)
 	for _, affected := range nvdAffected {
-		for _, r := range affected.Ranges {
-			if r.Repo != "" {
-				repo := strings.ToLower(r.Repo)
+		for _, r := range affected.GetRanges() {
+			if r.GetRepo() != "" {
+				repo := strings.ToLower(r.GetRepo())
 				nvdRepoMap[repo] = append(nvdRepoMap[repo], r)
 			}
 		}
@@ -278,9 +278,9 @@ func pickAffectedInformation(cve5Affected []*osvschema.Affected, nvdAffected []*
 
 	cve5RepoMap := make(map[string][]*osvschema.Range)
 	for _, affected := range cve5Affected {
-		for _, r := range affected.Ranges {
-			if r.Repo != "" {
-				repo := strings.ToLower(r.Repo)
+		for _, r := range affected.GetRanges() {
+			if r.GetRepo() != "" {
+				repo := strings.ToLower(r.GetRepo())
 				cve5RepoMap[repo] = append(cve5RepoMap[repo], r)
 			}
 		}
@@ -299,8 +299,8 @@ func pickAffectedInformation(cve5Affected []*osvschema.Affected, nvdAffected []*
 			} else if len(nvdRanges) < len(cveRanges) {
 				newAffectedRanges = cveRanges
 			} else if len(cveRanges) == 1 && len(nvdRanges) == 1 {
-				c5Intro, c5Fixed := getRangeBoundaryVersions(cveRanges[0].Events)
-				nvdIntro, nvdFixed := getRangeBoundaryVersions(nvdRanges[0].Events)
+				c5Intro, c5Fixed := getRangeBoundaryVersions(cveRanges[0].GetEvents())
+				nvdIntro, nvdFixed := getRangeBoundaryVersions(nvdRanges[0].GetEvents())
 
 				// Prefer cve5 data, but use nvd data if cve5 data is missing.
 				if c5Intro == "" {
@@ -348,11 +348,11 @@ func pickAffectedInformation(cve5Affected []*osvschema.Affected, nvdAffected []*
 // It iterates through the events and returns the last non-empty "introduced" and "fixed" versions found.
 func getRangeBoundaryVersions(events []*osvschema.Event) (introduced, fixed string) {
 	for _, e := range events {
-		if e.Introduced != "0" && e.Introduced != "" {
-			introduced = e.Introduced
+		if e.GetIntroduced() != "0" && e.GetIntroduced() != "" {
+			introduced = e.GetIntroduced()
 		}
-		if e.Fixed != "" {
-			fixed = e.Fixed
+		if e.GetFixed() != "" {
+			fixed = e.GetFixed()
 		}
 	}
 

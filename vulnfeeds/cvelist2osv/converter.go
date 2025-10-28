@@ -69,7 +69,7 @@ func extractConversionMetrics(cve cves.CVE5, refs []*osvschema.Reference, metric
 	// Count number of references of each type
 	refTypeCounts := make(map[osvschema.Reference_Type]int)
 	for _, ref := range refs {
-		refTypeCounts[ref.Type]++
+		refTypeCounts[ref.GetType()]++
 	}
 	metrics.RefTypesCount = refTypeCounts
 	for refType, count := range refTypeCounts {

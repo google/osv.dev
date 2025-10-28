@@ -283,35 +283,35 @@ func TestRealWorldFindInverseAffectedRanges(t *testing.T) {
 
 			// Sort slices for deterministic comparison.
 			sort.Slice(gotRanges, func(i, j int) bool {
-				if len(gotRanges[i].Events) == 0 || len(gotRanges[j].Events) == 0 {
+				if len(gotRanges[i].GetEvents()) == 0 || len(gotRanges[j].GetEvents()) == 0 {
 					return false
 				}
-				eventI := gotRanges[i].Events[0]
-				eventJ := gotRanges[j].Events[0]
-				if eventI.Introduced != "" && eventJ.Introduced != "" {
-					return eventI.Introduced < eventJ.Introduced
+				eventI := gotRanges[i].GetEvents()[0]
+				eventJ := gotRanges[j].GetEvents()[0]
+				if eventI.GetIntroduced() != "" && eventJ.GetIntroduced() != "" {
+					return eventI.GetIntroduced() < eventJ.GetIntroduced()
 				}
-				if eventI.Fixed != "" && eventJ.Fixed != "" {
-					return eventI.Fixed < eventJ.Fixed
+				if eventI.GetFixed() != "" && eventJ.GetFixed() != "" {
+					return eventI.GetFixed() < eventJ.GetFixed()
 				}
 
-				return eventI.Introduced != ""
+				return eventI.GetIntroduced() != ""
 			})
 
 			sort.Slice(tc.expectedRanges, func(i, j int) bool {
-				if len(tc.expectedRanges[i].Events) == 0 || len(tc.expectedRanges[j].Events) == 0 {
+				if len(tc.expectedRanges[i].GetEvents()) == 0 || len(tc.expectedRanges[j].GetEvents()) == 0 {
 					return false
 				}
-				eventI := tc.expectedRanges[i].Events[0]
-				eventJ := tc.expectedRanges[j].Events[0]
-				if eventI.Introduced != "" && eventJ.Introduced != "" {
-					return eventI.Introduced < eventJ.Introduced
+				eventI := tc.expectedRanges[i].GetEvents()[0]
+				eventJ := tc.expectedRanges[j].GetEvents()[0]
+				if eventI.GetIntroduced() != "" && eventJ.GetIntroduced() != "" {
+					return eventI.GetIntroduced() < eventJ.GetIntroduced()
 				}
-				if eventI.Fixed != "" && eventJ.Fixed != "" {
-					return eventI.Fixed < eventJ.Fixed
+				if eventI.GetFixed() != "" && eventJ.GetFixed() != "" {
+					return eventI.GetFixed() < eventJ.GetFixed()
 				}
 
-				return eventI.Introduced != ""
+				return eventI.GetIntroduced() != ""
 			})
 
 			if diff := cmp.Diff(tc.expectedRanges, gotRanges, protocmp.Transform()); diff != "" {

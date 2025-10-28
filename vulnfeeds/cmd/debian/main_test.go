@@ -30,11 +30,11 @@ func mustRead(t *testing.T, filename string) []byte {
 // sortAffected is a helper to sort affected packages for consistent comparison.
 func sortAffected(affected []*osvschema.Affected) {
 	sort.Slice(affected, func(i, j int) bool {
-		if affected[i].Package.Name != affected[j].Package.Name {
-			return affected[i].Package.Name < affected[j].Package.Name
+		if affected[i].GetPackage().GetName() != affected[j].GetPackage().GetName() {
+			return affected[i].GetPackage().GetName() < affected[j].GetPackage().GetName()
 		}
-
-		return affected[i].Package.Ecosystem < affected[j].Package.Ecosystem
+		// If package names are the same, sort by ecosystem
+		return affected[i].GetPackage().GetEcosystem() < affected[j].GetPackage().GetEcosystem()
 	})
 }
 

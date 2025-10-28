@@ -108,17 +108,17 @@ func eventsToStructValueManual(events []*osvschema.Event) *structpb.Value {
 		fields := make(map[string]*structpb.Value)
 
 		// Manually check and convert each field from a Go string to a protobuf StringValue.
-		if event.Introduced != "" {
-			fields["introduced"] = structpb.NewStringValue(event.Introduced)
+		if event.GetIntroduced() != "" {
+			fields["introduced"] = structpb.NewStringValue(event.GetIntroduced())
 		}
-		if event.Fixed != "" {
-			fields["fixed"] = structpb.NewStringValue(event.Fixed)
+		if event.GetFixed() != "" {
+			fields["fixed"] = structpb.NewStringValue(event.GetFixed())
 		}
-		if event.LastAffected != "" {
-			fields["last_affected"] = structpb.NewStringValue(event.LastAffected)
+		if event.GetLastAffected() != "" {
+			fields["last_affected"] = structpb.NewStringValue(event.GetLastAffected())
 		}
-		if event.Limit != "" {
-			fields["limit"] = structpb.NewStringValue(event.Limit)
+		if event.GetLimit() != "" {
+			fields["limit"] = structpb.NewStringValue(event.GetLimit())
 		}
 
 		// Create a protobuf Struct from the map of fields.
@@ -141,21 +141,21 @@ func rangesToStructValueManual(ranges []*osvschema.Range) *structpb.Value {
 		fields := make(map[string]*structpb.Value)
 
 		// The Type is an enum, so we use its string representation.
-		fields["type"] = structpb.NewStringValue(r.Type.String())
+		fields["type"] = structpb.NewStringValue(r.GetType().String())
 
-		if r.Repo != "" {
-			fields["repo"] = structpb.NewStringValue(r.Repo)
+		if r.GetRepo() != "" {
+			fields["repo"] = structpb.NewStringValue(r.GetRepo())
 		}
 
 		// The Events field is itself a list of structs, so we can reuse our
 		// manual event converter.
-		if len(r.Events) > 0 {
-			fields["events"] = eventsToStructValueManual(r.Events)
+		if len(r.GetEvents()) > 0 {
+			fields["events"] = eventsToStructValueManual(r.GetEvents())
 		}
 
 		// The original range's DatabaseSpecific is preserved if it exists.
-		if r.DatabaseSpecific != nil {
-			fields["database_specific"] = structpb.NewStructValue(r.DatabaseSpecific)
+		if r.GetDatabaseSpecific() != nil {
+			fields["database_specific"] = structpb.NewStructValue(r.GetDatabaseSpecific())
 		}
 
 		rangeStruct := &structpb.Struct{Fields: fields}
@@ -188,15 +188,15 @@ func gitVersionsToCommits(cveID cves.CVEID, versionRanges []*osvschema.Range, re
 		var stillUnresolvedRanges []*osvschema.Range
 		for _, vr := range unresolvedRanges {
 			var introduced, fixed, lastAffected string
-			for _, e := range vr.Events {
-				if e.Introduced != "" {
-					introduced = e.Introduced
+			for _, e := range vr.GetEvents() {
+				if e.GetIntroduced() != "" {
+					introduced = e.GetIntroduced()
 				}
-				if e.Fixed != "" {
-					fixed = e.Fixed
+				if e.GetFixed() != "" {
+					fixed = e.GetFixed()
 				}
-				if e.LastAffected != "" {
-					lastAffected = e.LastAffected
+				if e.GetLastAffected() != "" {
+					lastAffected = e.GetLastAffected()
 				}
 			}
 
@@ -223,7 +223,7 @@ func gitVersionsToCommits(cveID cves.CVEID, versionRanges []*osvschema.Range, re
 				// Use the manual converter to store the original version info.
 				newVR.DatabaseSpecific = &structpb.Struct{
 					Fields: map[string]*structpb.Value{
-						"versions": eventsToStructValueManual(vr.Events),
+						"versions": eventsToStructValueManual(vr.GetEvents()),
 					},
 				}
 				newVersionRanges = append(newVersionRanges, newVR)
@@ -340,7 +340,7 @@ func compareSemverLike(a, b string) int {
 func addAffected(v *vulns.Vulnerability, aff *osvschema.Affected, metrics *ConversionMetrics) {
 	allExistingRanges := make(map[string]struct{})
 	for _, existingAff := range v.Affected {
-		for _, r := range existingAff.Ranges {
+		for _, r := range existingAff.GetRanges() {
 			rangeBytes, err := json.Marshal(r)
 			if err == nil {
 				allExistingRanges[string(rangeBytes)] = struct{}{}
@@ -349,7 +349,7 @@ func addAffected(v *vulns.Vulnerability, aff *osvschema.Affected, metrics *Conve
 	}
 
 	uniqueRanges := []*osvschema.Range{}
-	for _, r := range aff.Ranges {
+	for _, r := range aff.GetRanges() {
 		rangeBytes, err := json.Marshal(r)
 		if err != nil {
 			metrics.AddNote("Could not marshal range to check for duplicates, adding anyway: %+v", r)
@@ -368,9 +368,9 @@ func addAffected(v *vulns.Vulnerability, aff *osvschema.Affected, metrics *Conve
 
 	if len(uniqueRanges) > 0 {
 		newAff := &osvschema.Affected{
-			Package:          aff.Package,
+			Package:          aff.GetPackage(),
 			Ranges:           uniqueRanges,
-			DatabaseSpecific: aff.DatabaseSpecific,
+			DatabaseSpecific: aff.GetDatabaseSpecific(),
 		}
 		v.Affected = append(v.Affected, newAff)
 	}

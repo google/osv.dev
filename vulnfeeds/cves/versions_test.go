@@ -1560,13 +1560,13 @@ func TestBuildVersionRange(t *testing.T) {
 		intro   string
 		lastAff string
 		fixed   string
-		want    osvschema.Range
+		want    *osvschema.Range
 	}{
 		{
 			name:  "intro and fixed",
 			intro: "1.0.0",
 			fixed: "1.0.1",
-			want: osvschema.Range{
+			want: &osvschema.Range{
 				Events: []*osvschema.Event{
 					{Introduced: "1.0.0"},
 					{Fixed: "1.0.1"},
@@ -1577,7 +1577,7 @@ func TestBuildVersionRange(t *testing.T) {
 			name:    "intro and last_affected",
 			intro:   "1.0.0",
 			lastAff: "1.0.0",
-			want: osvschema.Range{
+			want: &osvschema.Range{
 				Events: []*osvschema.Event{
 					{Introduced: "1.0.0"},
 					{LastAffected: "1.0.0"},
@@ -1587,7 +1587,7 @@ func TestBuildVersionRange(t *testing.T) {
 		{
 			name:  "only intro",
 			intro: "1.0.0",
-			want: osvschema.Range{
+			want: &osvschema.Range{
 				Events: []*osvschema.Event{
 					{Introduced: "1.0.0"},
 				},
@@ -1595,7 +1595,7 @@ func TestBuildVersionRange(t *testing.T) {
 		},
 		{
 			name: "empty intro",
-			want: osvschema.Range{
+			want: &osvschema.Range{
 				Events: []*osvschema.Event{
 					{Introduced: "0"},
 				},

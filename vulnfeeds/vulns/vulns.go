@@ -135,7 +135,7 @@ func AttachExtractedVersionInfo(v *Vulnerability, version models.VersionInfo) {
 		}
 		if !addedIntroduced {
 			// Prepending not strictly necessary, but seems nicer to have the Introduced first in the list.
-			gitRange.Events = append([]*osvschema.Event{{Introduced: "0"}}, gitRange.Events...)
+			gitRange.Events = append([]*osvschema.Event{{Introduced: "0"}}, gitRange.GetEvents()...)
 		}
 		v.Affected = append(v.Affected, &osvschema.Affected{Ranges: []*osvschema.Range{&gitRange}})
 	}
@@ -146,7 +146,7 @@ func AttachExtractedVersionInfo(v *Vulnerability, version models.VersionInfo) {
 	var ecosystemAffected *osvschema.Affected
 	// Find an existing affected with package info to add the ecosystem range to.
 	for i := range v.Affected {
-		if v.Affected[i].Package != nil {
+		if v.Affected[i].GetPackage() != nil {
 			ecosystemAffected = v.Affected[i]
 			break
 		}
@@ -303,12 +303,12 @@ func (v *Vulnerability) AddPkgInfo(pkgInfo PackageInfo) {
 
 	// Sort affected[].ranges (by type) for stability.
 	// https://ossf.github.io/osv-schema/#requirements
-	slices.SortFunc(affected.Ranges, func(a, b *osvschema.Range) int {
-		if n := cmp.Compare(a.Type, b.Type); n != 0 {
+	slices.SortFunc(affected.GetRanges(), func(a, b *osvschema.Range) int {
+		if n := cmp.Compare(a.GetType(), b.GetType()); n != 0 {
 			return n
 		}
 		// Sort by repo within the same (GIT) typed range.
-		return cmp.Compare(a.Repo, b.Repo)
+		return cmp.Compare(a.GetRepo(), b.GetRepo())
 	})
 
 	b, err := json.Marshal(pkgInfo.EcosystemSpecific)
@@ -675,7 +675,7 @@ func ClassifyReferences(refs []cves.Reference) []*osvschema.Reference {
 		}
 	}
 	sort.SliceStable(references, func(i, j int) bool {
-		return references[i].Type < references[j].Type
+		return references[i].GetType() < references[j].GetType()
 	})
 
 	return references
@@ -831,7 +831,7 @@ func FindSeverity(metricsData []cves.Metrics) *osvschema.Severity {
 	}
 
 	return &osvschema.Severity{
-		Type:  osvschema.Severity_Type(severityType),
+		Type:  severityType,
 		Score: bestVectorString,
 	}
 }

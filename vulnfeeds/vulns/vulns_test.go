@@ -145,7 +145,7 @@ func TestClassifyReferences(t *testing.T) {
 	for _, tc := range testcases {
 		references := ClassifyReferences(tc.refData)
 		sort.SliceStable(tc.references, func(i, j int) bool {
-			return tc.references[i].Type < tc.references[j].Type
+			return tc.references[i].GetType() < tc.references[j].GetType()
 		})
 		if !reflect.DeepEqual(references, tc.references) {
 			t.Errorf("ClassifyReferences for %+v was incorrect, got: %+v, expected: %+v", tc.refData, references, tc.references)
@@ -305,90 +305,90 @@ func TestAddPkgInfo(t *testing.T) {
 	t.Logf("Resulting vuln: %+v", &vuln)
 
 	// testPkgInfoNameEco vvvvvvvvvvvvvvv
-	if vuln.Affected[0].Package.Name != testPkgInfoNameEco.PkgName {
+	if vuln.Affected[0].GetPackage().GetName() != testPkgInfoNameEco.PkgName {
 		t.Errorf("AddPkgInfo has not correctly added package name.")
 	}
 
-	if vuln.Affected[0].Package.Ecosystem != testPkgInfoNameEco.Ecosystem {
+	if vuln.Affected[0].GetPackage().GetEcosystem() != testPkgInfoNameEco.Ecosystem {
 		t.Errorf("AddPkgInfo has not correctly added package ecosystem.")
 	}
 
-	if vuln.Affected[0].Ranges[0].Type != osvschema.Range_ECOSYSTEM {
+	if vuln.Affected[0].GetRanges()[0].GetType() != osvschema.Range_ECOSYSTEM {
 		t.Errorf("AddPkgInfo has not correctly added ranges type.")
 	}
 
-	if vuln.Affected[0].Ranges[0].Events[1].Fixed != testPkgInfoNameEco.VersionInfo.AffectedVersions[0].Fixed {
+	if vuln.Affected[0].GetRanges()[0].GetEvents()[1].GetFixed() != testPkgInfoNameEco.VersionInfo.AffectedVersions[0].Fixed {
 		t.Errorf("AddPkgInfo has not correctly added ranges fixed.")
 	}
 
-	if vuln.Affected[0].Ranges[0].Events[0].Introduced != "0" {
+	if vuln.Affected[0].GetRanges()[0].GetEvents()[0].GetIntroduced() != "0" {
 		t.Errorf("AddPkgInfo has not correctly added zero introduced commit.")
 	}
 	// testPkgInfoNameEco ^^^^^^^^^^^^^^^
 
 	// testPkgInfoPURL vvvvvvvvvvvvvvv
-	if vuln.Affected[1].Package.Purl != testPkgInfoPURL.PURL {
+	if vuln.Affected[1].GetPackage().GetPurl() != testPkgInfoPURL.PURL {
 		t.Errorf("AddPkgInfo has not correctly added package PURL.")
 	}
-	if vuln.Affected[1].Ranges[0].Type != osvschema.Range_ECOSYSTEM {
+	if vuln.Affected[1].GetRanges()[0].GetType() != osvschema.Range_ECOSYSTEM {
 		t.Errorf("AddPkgInfo has not correctly added ranges type.")
 	}
-	if vuln.Affected[1].Ranges[0].Events[1].Fixed != testPkgInfoPURL.VersionInfo.AffectedVersions[0].Fixed {
+	if vuln.Affected[1].GetRanges()[0].GetEvents()[1].GetFixed() != testPkgInfoPURL.VersionInfo.AffectedVersions[0].Fixed {
 		t.Errorf("AddPkgInfo has not correctly added ranges fixed.")
 	}
 	// testPkgInfoPURL ^^^^^^^^^^^^^^^
 
 	// testPkgInfoCommits vvvvvvvvvvvvvv
-	if vuln.Affected[2].Ranges[0].Repo != "github.com/foo/bar" {
+	if vuln.Affected[2].GetRanges()[0].GetRepo() != "github.com/foo/bar" {
 		t.Errorf("AddPkgInfo has not corrected add ranges repo. %#v", vuln.Affected[2])
 	}
 
-	if vuln.Affected[2].Ranges[0].Type != osvschema.Range_GIT {
+	if vuln.Affected[2].GetRanges()[0].GetType() != osvschema.Range_GIT {
 		t.Errorf("AddPkgInfo has not correctly added ranges type.")
 	}
-	if vuln.Affected[2].Ranges[0].Events[1].Fixed != testPkgInfoCommits.VersionInfo.AffectedCommits[0].Fixed {
+	if vuln.Affected[2].GetRanges()[0].GetEvents()[1].GetFixed() != testPkgInfoCommits.VersionInfo.AffectedCommits[0].Fixed {
 		t.Errorf("AddPkgInfo has not correctly added ranges fixed.")
 	}
-	if vuln.Affected[2].Package != nil {
+	if vuln.Affected[2].GetPackage() != nil {
 		t.Errorf("AddPkgInfo has not correctly avoided setting a package field for an ecosystem-less vulnerability.")
 	}
-	if !slices.IsSortedFunc(vuln.Affected[3].Ranges, func(a, b *osvschema.Range) int {
-		if n := cmp.Compare(a.Type, b.Type); n != 0 {
+	if !slices.IsSortedFunc(vuln.Affected[3].GetRanges(), func(a, b *osvschema.Range) int {
+		if n := cmp.Compare(a.GetType(), b.GetType()); n != 0 {
 			return n
 		}
 
-		return cmp.Compare(a.Repo, b.Repo)
+		return cmp.Compare(a.GetRepo(), b.GetRepo())
 	}) {
 		t.Errorf("AddPkgInfo has not generated a correctly sorted range.")
 	}
 	// testPkgInfoCommits ^^^^^^^^^^^^^^^
 
 	// testPkgInfoCommitsMultiple vvvvvvvvvvvvv
-	if len(vuln.Affected[4].Ranges[0].Events) != 3 {
-		t.Errorf("AddPkgInfo has not correctly added distinct range events from commits: %+v", vuln.Affected[4].Ranges)
+	if len(vuln.Affected[4].GetRanges()[0].GetEvents()) != 3 {
+		t.Errorf("AddPkgInfo has not correctly added distinct range events from commits: %+v", vuln.Affected[4].GetRanges())
 	}
 	// testPkgInfoCommitsMultiple ^^^^^^^^^^^^^
 
 	// testPkgInfoEcoMultiple vvvvvvvvvvvvv
-	if len(vuln.Affected[5].Ranges[0].Events) != 2 {
-		t.Errorf("AddPkgInfo has not correctly added distinct range events from versions: %+v", vuln.Affected[5].Ranges)
+	if len(vuln.Affected[5].GetRanges()[0].GetEvents()) != 2 {
+		t.Errorf("AddPkgInfo has not correctly added distinct range events from versions: %+v", vuln.Affected[5].GetRanges())
 	}
 	// testPkgInfoEcoMultiple ^^^^^^^^^^^^^
 
 	for _, a := range vuln.Affected {
 		perRepoZeroIntroducedCommitHashCount := make(map[string]int)
-		for _, r := range a.Ranges {
-			for _, e := range r.Events {
-				if r.Type == osvschema.Range_GIT && e.Introduced == "0" {
+		for _, r := range a.GetRanges() {
+			for _, e := range r.GetEvents() {
+				if r.GetType() == osvschema.Range_GIT && e.GetIntroduced() == "0" {
 					// zeroIntroducedCommitHashCount++
-					if _, ok := perRepoZeroIntroducedCommitHashCount[r.Repo]; !ok {
-						perRepoZeroIntroducedCommitHashCount[r.Repo] = 1
+					if _, ok := perRepoZeroIntroducedCommitHashCount[r.GetRepo()]; !ok {
+						perRepoZeroIntroducedCommitHashCount[r.GetRepo()] = 1
 					} else {
-						perRepoZeroIntroducedCommitHashCount[r.Repo]++
+						perRepoZeroIntroducedCommitHashCount[r.GetRepo()]++
 					}
 				}
-				if e.Introduced == "" && e.Fixed == "" && e.LastAffected == "" && e.Limit == "" {
-					t.Errorf("Empty event detected for the repo %s", r.Repo)
+				if e.GetIntroduced() == "" && e.GetFixed() == "" && e.GetLastAffected() == "" && e.GetLimit() == "" {
+					t.Errorf("Empty event detected for the repo %s", r.GetRepo())
 				}
 			}
 		}

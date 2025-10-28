@@ -239,9 +239,9 @@ class PurlHelpersTest(unittest.TestCase):
                      purl_helpers.parse_purl(
                          'pkg:gradle/org.apache.struts/struts2-core@1.0.0'))
 
-    self.assertEqual(('Maven', 'org.apache.struts:struts2-core', None),
-                     purl_helpers.parse_purl(
-                         'pkg:gradle/org.apache.struts/struts2-core'))
+    self.assertEqual(
+        ('Maven', 'org.apache.struts:struts2-core', None),
+        purl_helpers.parse_purl('pkg:gradle/org.apache.struts/struts2-core'))
 
     self.assertEqual(('MinimOS', 'nginx', None),
                      purl_helpers.parse_purl('pkg:apk/minimos/nginx'))
